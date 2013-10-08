@@ -231,7 +231,6 @@ contains
     use m_ts_electype
 
     use m_ts_options, only : ElLeft, ElRight
-    use m_ts_options, only : GFFileL, GFFileR
     use m_ts_options, only : na_BufL, no_BufL
     use m_ts_options, only : na_BufR, no_BufR
     use m_ts_options, only : N_mon, iu_MON, monitor_list
@@ -420,9 +419,9 @@ contains
     ! Open GF files...
     if ( IONode ) then
        call io_assign(uGFL)
-       open(file=GFFileL,unit=uGFL,form='unformatted')
+       open(file=GFFile(ElLeft),unit=uGFL,form='unformatted')
        call io_assign(uGFR)
-       open(file=GFFileR,unit=uGFR,form='unformatted')
+       open(file=GFFile(ElRight),unit=uGFR,form='unformatted')
     end if
 
     ! Read-in header of Green's functions

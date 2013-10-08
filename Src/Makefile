@@ -583,6 +583,7 @@ m_efield.o: atmfuncs.o mesh.o parallel.o precision.o siesta_cml.o siesta_geom.o
 m_efield.o: sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
+m_exp_coord.o: files.o m_fdf_global.o parallel.o precision.o sys.o units.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_filter.o: bessph.o m_recipes.o radfft.o sorting.o
 m_fire.o: parallel.o precision.o
@@ -592,7 +593,7 @@ m_fire_para.o: m_mpi_utils.o parallel.o precision.o
 m_forces.o: precision.o
 m_getopts.o: f2kcli.o
 m_glob_sparse.o: parallel.o parallelsubs.o precision.o
-m_hs_matrix.o: alloc.o precision.o sys.o
+m_hs_matrix.o: alloc.o geom_helper.o precision.o sys.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_integrate.o: precision.o
@@ -647,10 +648,12 @@ m_ts_dm_update.o: intrinsic_missing.o m_ts_cctype.o m_ts_weight.o parallel.o
 m_ts_dm_update.o: precision.o units.o
 m_ts_elec_se.o: intrinsic_missing.o m_ts_cctype.o m_ts_electype.o parallel.o
 m_ts_elec_se.o: precision.o units.o
-m_ts_electrode.o: files.o m_hs_matrix.o m_mat_invert.o m_ts_cctype.o
-m_ts_electrode.o: m_ts_electype.o m_ts_io.o m_ts_kpoints.o m_ts_tdir.o
-m_ts_electrode.o: parallel.o precision.o sys.o units.o
-m_ts_electype.o: precision.o
+m_ts_electrode.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o files.o
+m_ts_electrode.o: geom_helper.o m_mat_invert.o m_ts_cctype.o m_ts_electype.o
+m_ts_electrode.o: m_ts_io.o m_ts_kpoints.o parallel.o precision.o sys.o units.o
+m_ts_electype.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_ts_electype.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o m_ts_io.o
+m_ts_electype.o: parallel.o precision.o
 m_ts_full.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_full.o: class_SpData1D.o class_Sparsity.o m_ts_cctype.o m_ts_contour.o
 m_ts_full.o: m_ts_debug.o m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o

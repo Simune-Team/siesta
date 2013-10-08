@@ -41,7 +41,7 @@ module m_hs_matrix
 ! The use of this module is a straight forward call:
 ! 
 !   call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-!       xij,numh,listhptr,listh,indxuo,H,S, &
+!       xij,numh,listhptr,listh,H,S, &
 !       k,Hk,Sk, &
 !       xa,iaorb, &
 !       RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
@@ -57,7 +57,7 @@ module m_hs_matrix
 !
 ! Gamma denotes whether it is a Gamma calculation (if true, it will not
 ! add k-phases, no matter if k /= \Gamma-point.
-! na_u,no_u,no_s,maxnh,xij,numh,listhptr,listh,indxuo,H,S are all variables
+! na_u,no_u,no_s,maxnh,xij,numh,listhptr,listh,H,S are all variables
 ! needed in the definition of the entire H and S matrices in the sparse format.
 !
 ! k is the k-point that will be created for the Hamiltonian.
@@ -86,7 +86,7 @@ module m_hs_matrix
 ! However, here it has this interface:
 !
 !   call set_HS_transfermatrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-!       xij,numh,listhptr,listh,indxuo,H,S, &
+!       xij,numh,listhptr,listh,H,S, &
 !       k,transfer_cell,HkT,SkT,xa,iaorb, &
 !       RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
 ! 
@@ -104,7 +104,7 @@ module m_hs_matrix
 !
 ! In this conjunction the routine
 !   call set_HS_available_transfers(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-!       xij,numh,listhptr,listh,indxuo,xa,iaorb,transfer_cell)
+!       xij,numh,listhptr,listh,xa,iaorb,transfer_cell)
 ! is invaluable. It returns in transfer_cell the allowed transfer cell units for
 ! the system. Notice that transfer_cell is a 2x3 matrix with the formatting like this:
 !
@@ -174,7 +174,7 @@ contains
 ! It requires that the Node has the full sparse matrix available
 !*****************
   subroutine set_HS_matrix_1d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,H,S, &
+       xij,numh,listhptr,listh,H,S, &
        k,Hk,Sk, &
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        xa,iaorb,lasto, &
@@ -182,6 +182,7 @@ contains
     use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
+    use geom_helper, only : ucorb
 
 ! ***********************
 ! * INPUT variables     *
@@ -194,7 +195,7 @@ contains
     integer, intent(in)           :: maxnh ! Hamiltonian size
     real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)           :: numh(no_u),listhptr(no_u)
-    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    integer, intent(in)           :: listh(maxnh)
     real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
     real(dp), intent(in)          :: S(maxnh) ! Overlap
     real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
@@ -342,7 +343,7 @@ contains
           iind = listhptr(iu)
           do j = 1,numh(iu)
              ind = iind + j
-             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+             juo = ucorb(listh(ind),no_u) - l_RemNFirstOrbitals
 
              ! Cycle if we are not in the middle region
              if ( juo < 1 .or. no_tot < juo ) cycle
@@ -440,7 +441,7 @@ contains
 ! It requires that the Node has the full sparse matrix available
 !*****************
   subroutine set_HS_matrix_2d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,H,S, &
+       xij,numh,listhptr,listh,H,S, &
        k,Hk,Sk, &
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        xa,iaorb,lasto, &
@@ -448,6 +449,7 @@ contains
     use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
+    use geom_helper, only : ucorb
 
 ! ***********************
 ! * INPUT variables     *
@@ -460,7 +462,7 @@ contains
     integer, intent(in)           :: maxnh ! Hamiltonian size
     real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)           :: numh(no_u),listhptr(no_u)
-    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    integer, intent(in)           :: listh(maxnh)
     real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
     real(dp), intent(in)          :: S(maxnh) ! Overlap
     real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
@@ -610,7 +612,7 @@ contains
           iind = listhptr(iu)
           do j = 1,numh(iu)
              ind = iind + j
-             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+             juo = ucorb(listh(ind),no_u) - l_RemNFirstOrbitals
 
              ! Cycle if we are not in the middle region
              if ( juo < 1 .or. no_tot < juo ) cycle
@@ -706,13 +708,14 @@ contains
 ! It requires that the Node has the full sparse matrix available
 !*****************
   subroutine set_HS_transfermatrix_1d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,H,S, &
+       xij,numh,listhptr,listh,H,S, &
        k,transfer_cell,HkT,SkT,xa,iaorb, &
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
     use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
+    use geom_helper, only : ucorb
 
 ! ***********************
 ! * INPUT variables     *
@@ -725,7 +728,7 @@ contains
     integer, intent(in)           :: maxnh ! Hamiltonian size
     real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)           :: numh(no_u),listhptr(no_u)
-    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    integer, intent(in)           :: listh(maxnh)
     real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
     real(dp), intent(in)          :: S(maxnh) ! Overlap
     real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
@@ -801,7 +804,7 @@ contains
           iind = listhptr(iu)
           do j = 1,numh(iu)
              ind = iind + j
-             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+             juo = ucorb(listh(ind),no_u) - l_RemNFirstOrbitals
 
              ! Cycle if we are not in the middle region
              if ( juo < 1 .or. no_tot < juo ) cycle
@@ -890,13 +893,14 @@ contains
 
 
   subroutine set_HS_transfermatrix_2d(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,H,S, &
+       xij,numh,listhptr,listh,H,S, &
        k,transfer_cell,HkT,SkT,xa,iaorb,&
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
     use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
+    use geom_helper, only : ucorb
 
 ! ***********************
 ! * INPUT variables     *
@@ -909,7 +913,7 @@ contains
     integer, intent(in)           :: maxnh ! Hamiltonian size
     real(dp), intent(in)          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)           :: numh(no_u),listhptr(no_u)
-    integer, intent(in)           :: listh(maxnh),indxuo(no_s)
+    integer, intent(in)           :: listh(maxnh)
     real(dp), intent(in)          :: H(maxnh) ! Hamiltonian
     real(dp), intent(in)          :: S(maxnh) ! Overlap
     real(dp), intent(in)          :: k(3) ! k-point in [1/Bohr]
@@ -988,7 +992,7 @@ contains
           iind = listhptr(iu)
           do j = 1,numh(iu)
              ind = iind + j
-             juo = indxuo(listh(ind)) - l_RemNFirstOrbitals
+             juo = ucorb(listh(ind),no_u) - l_RemNFirstOrbitals
 
              ! Cycle if we are not in the middle region
              if ( juo < 1 .or. no_tot < juo ) cycle
@@ -1073,8 +1077,9 @@ contains
   end subroutine set_HS_transfermatrix_2d
 
   subroutine set_HS_available_transfers(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,indxuo,xa,iaorb,transfer_cell)
+       xij,numh,listhptr,listh,xa,iaorb,transfer_cell)
     use precision, only : dp
+    use geom_helper, only : ucorb
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -1086,7 +1091,7 @@ contains
     integer, intent(in)  :: maxnh ! Hamiltonian size
     real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)  :: numh(no_u),listhptr(no_u)
-    integer, intent(in)  :: listh(maxnh),indxuo(no_s)
+    integer, intent(in)  :: listh(maxnh)
     real(dp), intent(in) :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
     integer, intent(in)  :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
 ! ***********************
@@ -1112,7 +1117,7 @@ contains
     do iuo = 1 , no_u
        do j = 1 , numh(iuo)
           ind = listhptr(iuo) + j
-          juo = indxuo(listh(ind))
+          juo = ucorb(listh(ind),no_u)
           xijo(:) = xij(:,ind)-(xa(:,iaorb(juo))-xa(:,iaorb(iuo)))
           ! Loop over directions
           do i = 1 , 3 

@@ -146,18 +146,16 @@ contains
           call memory('A','Z',NEn*nspin,'transiesta')
      
           ! Create the Left GF file
-          call do_Green('L',ElLeft, GFFileL, GFTitleL, &
-               ElecValenceBandBot, ReUseGF, &
+          call do_Green(ElLeft, ReUseGF, &
                ts_nkpnt,ts_kpoint,ts_kweight, &
-               na_BufL, .false., Elec_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
-               ucell,xa,na_u,NEn,contour,VoltL,.false.,dos,nspin)
+               .false., Elec_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
+               ucell,xa,na_u,NEn,contour,.false.,dos,nspin)
           
           ! Create the Right GF file
-          call do_Green('R',ElRight,GFFileR, GFTitleR, &
-               ElecValenceBandBot, ReUseGF, &
+          call do_Green(ElRight, ReUseGF, &
                ts_nkpnt,ts_kpoint,ts_kweight, &
-               na_BufR, .false., Elec_xa_Eps, &
-               ucell,xa,na_u,NEn,contour,VoltR,.false.,dos,nspin)
+               .false., Elec_xa_Eps, &
+               ucell,xa,na_u,NEn,contour,.false.,dos,nspin)
           
           call memory('D','Z',NEn*nspin,'transiesta')
           deallocate(dos)

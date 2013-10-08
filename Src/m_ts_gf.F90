@@ -47,11 +47,11 @@ module m_ts_GF
 
 contains
 
-  subroutine do_Green(tElec, El, GFFile, GFTitle, &
-       ElecValenceBandBot, optReUseGF, &
+  subroutine do_Green(El, optReUseGF, &
        nkpnt,kpoint,kweight, &
-       NBufAt, RemUCellDistance, xa_Eps, &
-       ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
+       RemUCellDistance, xa_Eps, &
+       ucell,xa,na_u, &
+       NEn,contour,CalcDOS,ZBulkDOS,nspin)
     
     use precision,  only : dp
     use parallel  , only : IONode
@@ -69,25 +69,19 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    character(len=1), intent(in) :: tElec   ! 'L' for Left electrode, 'R' for right
-    type(Elec),       intent(in) :: El
-    character(len=*), intent(in) :: GFFile  ! The electrode GF file to be saved to
-    character(len=*), intent(in) :: GFTitle ! The title to be written in the GF file
-    logical, intent(in)          :: ElecValenceBandBot ! Whether or not to calculate electrodes valence bandbottom
+    type(Elec),       intent(inout) :: El
     logical, intent(in)          :: optReUseGF ! Should we re-use the GF files if they exists?    
     integer, intent(in)          :: nkpnt ! Number of k-points
     real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
     real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
-    integer, intent(in)            :: NBufAt ! Buffer atoms
     logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
     real(dp), intent(in)           :: xa_Eps ! coordinate precision check
-    integer, intent(in)            :: nua ! Full system count of atoms in unit cell
+    integer, intent(in)            :: na_u ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
-    real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
+    real(dp), intent(in)           :: xa(3,na_u) ! Coordinates in the system for the TranSIESTA routine
     integer, intent(in)            :: nspin ! spin in system
     integer, intent(in)            :: NEn ! Number of energy points
     type(ts_ccontour), intent(in)  :: contour(NEn) ! contour for GF
-    real(dp), intent(in)           :: chem_shift ! the Fermi-energy we REQUIRE the electrode
     logical, intent(in)            :: CalcDOS
 ! ***********************
 ! * OUTPUT variables    *
@@ -109,17 +103,17 @@ contains
 #endif
     
 ! check the file for existance
-    inquire(file=GFfile,exist=exist)
+    inquire(file=trim(GFfile(El)),exist=exist)
     
     ReUseGF = optReUseGF
 ! If it does not find the file, calculate the GF
     if ( exist ) then
        if (IONode ) then
           write(*,*) "Electrode Green's function file: '"//&
-               trim(GFFile)//"' already exist."
+               trim(GFfile(El))//"' already exist."
           if ( .not. ReUseGF ) then
              write(*,*)"Green's function file '"//&
-                  trim(GFFile)//"' is requested overwritten."
+                  trim(GFfile(El))//"' is requested overwritten."
           end if
        end if
     else
@@ -128,12 +122,15 @@ contains
 
     ! We return if we should not calculate it
     if ( .not. ReUseGF ) then
+       
        ! Create the GF file
-       call create_Green(tElec,El, GFFile, GFTitle, &
-            ElecValenceBandBot, &
+       call create_Green(El, &
             nkpnt,kpoint,kweight, &
-            NBufAt, RemUCellDistance, xa_Eps, &
-            ucell,xa,nua,NEn,contour,chem_shift,CalcDOS,ZBulkDOS,nspin)
+            RemUCellDistance, xa_Eps, &
+            ucell,xa,na_u,NEn,contour,CalcDOS,ZBulkDOS,nspin)
+
+       ! clean-up data arrays...
+       call delete_TSHS(El)
     end if
 
     !
@@ -147,27 +144,20 @@ contains
     ! Check the GF file
     if(IONode) then
        call io_assign(uGF)
-       open(file=GFFile,unit=uGF,form='UNFORMATTED')
+       open(file=GFfile(El),unit=uGF,form='UNFORMATTED')
 
        ! Read in the title and rewind
        read(uGF) rGfTitle
        rewind(uGF)
 
-       if ( tElec == 'L' ) then
-          call check_Green(uGF,chem_shift,ucell, &
-               TotUsedAtoms(El),xa(1,NBufAt+1), &
-               nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,RepA1(El),RepA2(El),RepA3(El),RemUCellDistance, &
-               xa_Eps, errorGF)
-       else if ( tElec == 'R' ) then
-          call check_Green(uGF,chem_shift,ucell, &
-               TotUsedAtoms(El),xa(1,nua-NBufAt-TotUsedAtoms(El)+1), &
-               nspin,nkpnt,kpoint, &
-               kweight,NEn,contour,RepA1(El),RepA2(El),RepA3(El),RemUCellDistance, &
-               xa_Eps, errorGF)
-       end if
+       call check_Green(uGF,El,ucell, &
+            TotUsedAtoms(El),xa(1,El%idx_na), &
+            nspin,nkpnt,kpoint, &
+            kweight,NEn,contour,RemUCellDistance, &
+            xa_Eps, errorGF)
        
-       write(*,'(/,4a,/)') "Using GF-file '",trim(GFfile),"' with title: '",trim(rGfTitle)//"'"
+       write(*,'(/,4a,/)') "Using GF-file '",trim(GFfile(El)), &
+            "' with title: '",trim(rGfTitle)//"'"
        
        call io_close(uGF)
     endif
@@ -177,7 +167,7 @@ contains
     call MPI_Bcast(errorGF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
 #endif
     if ( errorGF ) &
-         call die("Error in GFfile: "//trim(GFFile)//". Please move or delete")
+         call die("Error in GFfile: "//trim(GFFile(El))//". Please move or delete")
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS do_Green' )
@@ -228,19 +218,21 @@ contains
 ! * OUTPUT variables    *
 ! ***********************    
     integer, intent(out) :: nkpar,nq
-    real(dp),allocatable, intent(inout) :: kpar(:,:), wkpar(:)
-    real(dp),allocatable, intent(inout) :: qb(:,:), wq(:)
+    real(dp), allocatable, intent(inout) :: kpar(:,:), wkpar(:)
+    real(dp), allocatable, intent(inout) :: qb(:,:)  , wq(:)
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    character(200) :: GFfile ! Name of the GF file
-    integer :: NEn,nua,NA1,NA2,NA3,no,nspin
+    character(200) :: curGFfile ! Name of the GF file
+    character(len=200) :: curGFtitle ! title of the GF file
+
+    integer :: NEn,na_u,NA1,NA2,NA3,no,nspin
     real(dp) :: EfShift            ! The Fermi energy shift due to a voltage
     real(dp), dimension(:,:), allocatable :: xa
     complex(dp), dimension(:), allocatable :: contour,wgf
     real(dp) :: ucell(3,3)
-    character(len=200) :: GFtitle
+
     logical :: errorGf , RemUCell
 #ifdef MPI
     integer :: MPIerror
@@ -256,24 +248,24 @@ contains
     io_read: if ( IONode ) then
 
        ! Retrieve name of file currently reading
-       inquire(unit=funit,name=GFfile)
+       inquire(unit=funit,name=curGFfile)
 
-       read(funit) GFtitle
+       read(funit) curGFtitle
        if ( print_title ) then
-          write(*,'(1x,a)')   "Reading GF file: "//trim(GFfile)
-          write(*,'(1x,a,/)') "Title: '"//trim(GFtitle)//"'"
+          write(*,'(1x,a)')   "Reading GF file: "//trim(curGFfile)
+          write(*,'(1x,a,/)') "Title: '"//trim(curGFfile)//"'"
        end if
        read(funit) EfShift,NEn
        read(funit) RemUCell
-       read(funit) nua,NA1,NA2,NA3,nkpar,nq
+       read(funit) na_u,NA1,NA2,NA3,nkpar,nq
        read(funit) nspin,ucell
-       allocate(xa(3,nua))
+       allocate(xa(3,na_u))
        read(funit) xa
        deallocate(xa) ! We expect check_Green to catch this...
 
-! Check unit cell distances..
+       ! Check unit cell distances..
        if ( RemUCell .neqv. c_RemUCell ) then
-          write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           if ( RemUCell ) then
              write(*,*)"The GF file has no inner unit cell distances. You have requested &
                &that they are preserved!"
@@ -285,47 +277,47 @@ contains
           errorGF = .true.
        end if
 
-! Check Fermi shift
+       ! Check Fermi shift
        if ( dabs(c_EfShift-EfShift) > EPS ) then
-          write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*)"The chemical shift in the electrode does not match the &
                &required shift!"
           write(*,'(2(a,f12.6))')"Found: ",EfShift,", expected: ",c_EfShift
           errorGF = .true.
        end if
 
-! Check # of energy points
+       ! Check # of energy points
        if (NEn .ne. c_NEn) then
-          write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: NEn=',NEn,' expected:', c_NEn
           errorGF = .true.
        end if
 
-! Check # of atoms
-       if (nua .ne. UsedAtoms(c_El)) then
-          write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
-          write(*,*) 'read_Green: ERROR: nua=',nua,' expected:', UsedAtoms(c_El)
+       ! Check # of atoms
+       if (na_u .ne. UsedAtoms(c_El)) then
+          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*) 'read_Green: ERROR: na_u=',na_u,' expected:', UsedAtoms(c_El)
           errorGF = .true.
        end if
 
-! Check # of q-points
+       ! Check # of q-points
        if (Rep(c_El) .ne. NA1*NA2*NA3) then
-          write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: unexpected no. q-points'
           errorGF = .true.
        end if
 
-! Check # of k-points
+       ! Check # of k-points
        if ( nkpar .ne. c_nkpar ) then
-          write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*) 'read_Green: Unexpected number of kxy-points'
           write(*,*) 'read_Green: ERROR: nkpt=',nkpar,' expected:', c_nkpar
           errorGF = .true.
        end if
 
-! Check # of spin
+       ! Check # of spin
        if (nspin .ne. c_nspin) then
-          write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: nspin=',nspin,' expected:', c_nspin
           errorGF = .true.
        end if
@@ -349,7 +341,7 @@ contains
 
 ! Check # of orbitals
        if (no .ne. UsedOrbs(c_El)) then
-          write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: no=',no,' expected:', UsedOrbs(c_El)
           errorGF = .true.
        end if
@@ -363,7 +355,7 @@ contains
 #endif
 
     if ( errorGF ) then
-       call die("Error in reading GFfile: "//trim(GFfile))
+       call die("Error in reading GFfile: "//trim(curGFfile))
     end if
 
 #ifdef MPI
@@ -400,13 +392,15 @@ contains
 ! ##                                                              ##
 ! ## Checks information an returns number of atoms and orbitals   ##
 ! ##################################################################
-  subroutine check_Green(funit,c_EfShift,c_ucell,c_nua,c_xa,c_nspin,c_nkpar,c_kpar,c_wkpar, &
+  subroutine check_Green(funit,El, &
+       c_ucell,c_na_u,c_xa,c_nspin,c_nkpar,c_kpar,c_wkpar, &
        c_NEn,c_contour, &
-       c_NA1,c_NA2,c_NA3,c_RemUCell,xa_Eps, errorGF)
+       c_RemUCell,xa_Eps, errorGF)
 
     use precision, only: dp
     use units,     only: Ang
     use m_ts_cctype
+    use m_ts_electype
 
     real(dp) , parameter :: EPS = 1d-7
 
@@ -415,10 +409,10 @@ contains
 ! ***********************
 ! file for reading, Green's function file
     integer, intent(in)        :: funit
-    real(dp), intent(in)       :: c_EfShift ! The Fermi energy shift of the electrode
+    type(Elec), intent(in)     :: El
     real(dp), intent(in)       :: c_ucell(3,3) ! Unit cell of the CONTACT
-    integer, intent(in)        :: c_nua ! number of atoms in the electrode which match the expanded electrode
-    real(dp), intent(in)       :: c_xa(3,c_nua) ! Atomic coordinates of the electrode in Transiesta
+    integer, intent(in)        :: c_na_u ! number of atoms in the electrode which match the expanded electrode
+    real(dp), intent(in)       :: c_xa(3,c_na_u) ! Atomic coordinates of the electrode in Transiesta
 ! spin of system
     integer, intent(in)        :: c_nspin
 ! k-point information
@@ -427,10 +421,6 @@ contains
 ! Energy point on the contour used 
     integer, intent(in)        :: c_NEn
     type(ts_ccontour), intent(in) :: c_contour(c_NEn)
-! We cannot check for number of atoms in the unit cell.
-! TODO Add this so that it is possible.
-! Repetition information
-    integer, intent(in)        :: c_NA1,c_NA2,c_NA3
     logical, intent(in)        :: c_RemUCell ! Should the Green's function file have the inner cell distances or not?
     real(dp), intent(in)       :: xa_Eps
 ! ***********************
@@ -442,11 +432,11 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    character(200) :: GFtitle ! Title, currently not used
+    character(200) :: curGFtitle ! Title, currently not used
     real(dp) :: EfShift ! The energy shift in the Fermi energy
 
     integer :: NA1,NA2,NA3 ! # repetitions in x, # repetitions in y
-    integer :: nua,no,nkpar,nspin ! # of atoms, # of orbs, # k-points, # spin
+    integer :: na_u,no,nkpar,nspin ! # of atoms, # of orbs, # k-points, # spin
     real(dp), dimension (:,:), allocatable :: xa ! electrode atomic coordinates
     real(dp), dimension (:,:), allocatable :: kpar ! k-points
     real(dp), dimension (:), allocatable :: wkpar ! k-point weights
@@ -458,7 +448,7 @@ contains
     complex(dp), dimension(:), allocatable :: contour,wGF ! Energies and weights
 
 ! Helpers..
-    character(200) :: GFfile
+    character(200) :: curGFfile
     real(dp) :: ucell(3,3)
     integer :: iEn
     integer :: i,j,k,iq, iaa, ia
@@ -476,22 +466,22 @@ contains
     errorGF = .true.
     
 ! Retrieve name of file currently reading
-    inquire(unit=funit,name=GFfile)
+    inquire(unit=funit,name=curGFfile)
 
 ! Read in header of the file
-    read(funit) GFtitle
+    read(funit) curGFtitle
     read(funit) EfShift,NEn
 ! Check Fermi shift
-    if ( dabs(c_EfShift-EfShift) > EPS ) then
-       write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+    if ( dabs(El%mu-EfShift) > EPS ) then
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"The chemical shift in the electrode does not match the &
             &required shift!"
-       write(*,'(2(a,f12.6))')"Found: ",EfShift,", expected: ",c_EfShift
+       write(*,'(2(a,f12.6))')"Found: ",EfShift,", expected: ",El%mu
        localErrorGf = .true.
     end if
 ! Check energy points
     if ( c_NEn /= NEn ) then
-       write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of energy points is not as expected!"
        write(*,'(2(a,i4))') "Found: ",NEn,", expected: ",c_NEn
        localErrorGf = .true.
@@ -499,7 +489,7 @@ contains
     read(funit) RemUCell
 ! Check unit cell distances..
     if ( RemUCell .neqv. c_RemUCell ) then
-       write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        if ( RemUCell ) then
           write(*,*)"The GF file has no inner unit cell distances. You have requested &
                &that they are preserved!"
@@ -509,23 +499,24 @@ contains
     end if
 
     ! Read in integers (also the returned number of atoms)
-    read(funit) nua,NA1,NA2,NA3,nkpar,nqb
-    if ( c_NA1/=NA1 .or. c_NA2/=NA2 .or. c_NA3/=NA3 .or. c_NA1*c_NA2*c_NA3/=nqb ) then
-       write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+    read(funit) na_u,NA1,NA2,NA3,nkpar,nqb
+    if ( RepA1(El)/=NA1 .or. RepA2(El)/=NA2 .or. RepA3(El)/=NA3 &
+         .or. Rep(El)/=nqb ) then
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of repetitions is wrong!"
-       write(*,'(2(a,i3))') "Found NA1: ",NA1,", expected NA1: ",c_NA1
-       write(*,'(2(a,i3))') "Found NA2: ",NA2,", expected NA2: ",c_NA2
-       write(*,'(2(a,i3))') "Found NA3: ",NA3,", expected NA3: ",c_NA3
+       write(*,'(2(a,i3))') "Found NA1: ",NA1,", expected NA1: ",RepA1(El)
+       write(*,'(2(a,i3))') "Found NA2: ",NA2,", expected NA2: ",RepA2(El)
+       write(*,'(2(a,i3))') "Found NA3: ",NA3,", expected NA3: ",RepA3(El)
        localErrorGf = .true.
     end if
-    if ( c_nua /= nua*NA1*NA2*NA3 ) then
-       write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+    if ( UsedAtoms(El) /= na_u ) then
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of atoms is wrong!"
-       write(*,'(2(a,i2))') "Found: ",nua,", expected: ",c_nua/NA1/NA2/NA3
+       write(*,'(2(a,i2))') "Found: ",na_u,", expected: ",UsedAtoms(El)
        localErrorGf = .true.
     end if
     if ( c_nkpar /= nkpar ) then
-       write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of k-points is wrong!"
        write(*,'(2(a,i4))') "Found: ",nkpar,", expected: ",c_nkpar
        localErrorGf = .true.
@@ -533,15 +524,25 @@ contains
 
     read(funit) nspin,ucell
     if ( c_nspin /= nspin ) then
-       write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of spin is wrong!"
        write(*,'(2(a,i2))') "Found: ",nspin,", expected: ",c_nspin
        localErrorGf = .true.
     end if
 
+    if ( any(unitcell(El)-ucell > EPS) ) then
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"Unit-cell is not consistent!"
+       write(*,*) "Found (Ang):"
+       write(*,'(3(3(tr1,f10.5),/))') ucell/Ang
+       write(*,*) "Expected (Ang):"
+       write(*,'(3(3(tr1,f10.5),/))') unitcell(El)/Ang
+       localErrorGf = .true.
+    end if
+
     ! Read in electrode coordinates
     ! We know that NA[123] == c_NA[123] 
-    allocate(xa(3,nua))
+    allocate(xa(3,na_u))
     read(funit) xa 
     ! Check electrode coordinates
     ! Save origo of System electrode
@@ -552,7 +553,7 @@ contains
     ! Initialize error parameter
     eXa = .false.
     iaa = 1
-    do ia = 1 , nua
+    do ia = 1 , na_u
        do k=0,NA3-1
        do j=0,NA2-1
        do i=0,NA1-1
@@ -571,7 +572,7 @@ contains
        end do
     end do
     if ( eXa ) then
-       write(*,*)"ERROR: Green's function file: "//TRIM(GFfile)
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Atomic coordinates are wrong:"
        write(*,'(1x,a,t35,a)') &
             "Structure of GF electrode","| System electrode:"
@@ -579,7 +580,7 @@ contains
             "X (Ang)","Y (Ang)","Z (Ang)", &
             "X (Ang)","Y (Ang)","Z (Ang)"
        iaa = 1
-       do ia = 1, nua
+       do ia = 1, na_u
           do k=0,NA3-1
           do j=0,NA2-1
           do i=0,NA1-1
@@ -704,8 +705,13 @@ contains
     call memory('D','D',nqb*4,'check_GF')
     deallocate(qb,wqb)
 
-! TODO, need to check this in some fashion
     read(funit) no
+    if ( UsedOrbs(El) /= no ) then
+       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"Number of used orbitals is wrong!"
+       write(*,'(2(a,i2))') "Found: ",no,", expected: ",UsedOrbs(El)
+       localErrorGf = .true.
+    end if
 
     errorGF = localErrorGf
 

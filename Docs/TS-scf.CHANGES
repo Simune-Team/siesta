@@ -1,4 +1,42 @@
 ----------------------------------------------------
+October 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-93
+Surface Green's functions are now fully created by the electrode type
+
+* Made the type Elec fully compliant to contain all the information
+  required to make the surface Green's function.
+  This should leverage some space required to retain all information 
+  about the electrode.
+
+* Changed the name of the cell_xyz to cell_abc to not refrain the 
+  programmer from interpreting as a direction in the Cartesian 
+  coordiante system.
+
+* Removed indxuo from the m_HS_matrix module.
+
+* TODO we do not check the range of the electrode yet.
+  We could do this by creating the sp02 sparsity pattern.
+
+* Removed the calculation of the band-bottom eigenvalue.
+
+* Speeded up the surface-GF creation by retaining the Hamiltonian
+  and overlap separately.
+  Should make it much faster for many E-points.
+
+modified:
+  Src/Makefile
+  Src/create_Sparsity_SC.F90
+  Src/geom_helper.f90
+  Src/m_hs_matrix.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/m_ts_tri.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 October 4, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-92
 Made transport possible in any direction 
 

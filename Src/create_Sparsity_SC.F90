@@ -3,9 +3,11 @@ module create_Sparsity_SC
   implicit none
 
   integer, parameter :: dp = selected_real_kind(10,100)
+  integer, parameter :: TM_ALL = -999999
 
   private
 
+  public :: TM_ALL
   public :: crtSparsity_SC
 
 contains
@@ -157,7 +159,14 @@ contains
             name='(MASK-ed region of: '//name(in)//')', &
             ncols=ncols(in),ncols_g=ncols_g(in))
     else if ( present(TM) ) then
-       write(cTM,'(i2,'','',i2,'','',i2)') TM(1),TM(2),TM(3)
+       do i = 1 , 3
+          if ( TM(i) == TM_ALL ) then
+             cTM((i-1)*3+1:i*3) = '--,'
+          else
+             write(cTM((i-1)*3+1:i*3),'(i2,'','')') TM(i)
+          end if
+       end do
+       cTM(9:) = ' '
        call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
             name='(TM region ['//trim(cTM)//'] of: '//name(in)//')', &
             ncols=ncols(in),ncols_g=nrows_g(in))
@@ -360,7 +369,7 @@ contains
 ! Local variables...
     real(dp) :: recell(3,3)
     integer, pointer :: l_col(:) => null()
-    integer :: ncol, ptr, i,j, no_e, nr
+    integer :: ncol, ptr, i,j, no_e, nr, t(3)
 
     ! Retrieve the pointer providing the index of the columns
     ncol  =  n_col   (sp,row)
@@ -385,12 +394,14 @@ contains
        ! By doing this, we explicitly assume that the
        ! sparsity pattern of xij and *in* are the same! 
        ! TODO, check this in the beginning of the routine!
-       do i = 1 , ncol
-          if ( count(TM(:) == cell_xyz(recell, &
-               xa(:,iaorb(row         ,lasto)), & ! xa_i
-               xa(:,iaorb(l_col(ptr+i),lasto)), & ! xa_j
-               xij(:,ptr+i) &! xij 
-               )) == 3 ) then ! All TM has to be equal to the found TM's
+       do i = ptr+1 , ptr+ncol
+          t = cell_abc(recell, &
+               xa(:,iaorb(row     ,lasto)), & ! xa_i
+               xa(:,iaorb(l_col(i),lasto)), & ! xa_j
+               xij(:,i))
+          if ( (TM(1) == TM_ALL .or. TM(1) == t(1)) .and. &
+               (TM(2) == TM_ALL .or. TM(2) == t(2)) .and. &
+               (TM(3) == TM_ALL .or. TM(3) == t(3)) ) then
              no_e = no_e + 1
           end if
        end do
@@ -404,20 +415,17 @@ contains
        ! We need the number of rows (i.e. no_u)
        nr = nrows_g(sp)
        j = 0
-       do i = 1 , ncol
-          if ( count(TM(:) == cell_xyz(recell, &
-               xa(:,iaorb(row         ,lasto)), & ! xa_i
-               xa(:,iaorb(l_col(ptr+i),lasto)), & ! xa_j
-               xij(:,ptr+i) &                     ! xij 
-               )) == 3 ) then 
+       do i = ptr+1 , ptr+ncol
+          t = cell_abc(recell, &
+               xa(:,iaorb(row     ,lasto)), & ! xa_i
+               xa(:,iaorb(l_col(i),lasto)), & ! xa_j
+               xij(:,i))
+          if ( (TM(1) == TM_ALL .or. TM(1) == t(1)) .and. &
+               (TM(2) == TM_ALL .or. TM(2) == t(2)) .and. &
+               (TM(3) == TM_ALL .or. TM(3) == t(3)) ) then
 
-             ! All TM has to be equal to the found TM's
-             ! When requesting a TM, we shift
-             ! the index to the unit-cell case.
-             ! This has the effect of treating the TM
-             ! as a UC sparsity matrix             
              j = j + 1
-             entries(j) = ucorb(l_col(ptr+i),nr)
+             entries(j) = l_col(i)
           end if
        end do
        ! lets sort the entries !

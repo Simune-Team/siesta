@@ -70,11 +70,6 @@ integer  :: na_BufL      ! Number of Left Buffer Atoms
 integer  :: na_BufR      ! Number of Right Buffer Atoms
 integer  :: no_BufL      ! Number of Left Buffer orbitals
 integer  :: no_BufR      ! Number of Right Buffer orbitals
-character(200) :: GFTitle ! Title to paste in electrode Green's function files
-character(200) :: GFTitleL ! Title to paste in left electrode Green's function files
-character(200) :: GFTitleR ! Title to paste in right electrode Green's function files
-character(200) :: GFFileL ! Electrode Left GF File
-character(200) :: GFFileR ! Electrode Right GF File
 type(Elec) :: ElLeft, ElRight
 logical :: ElecValenceBandBot ! Calculate Electrode valence band bottom when creating electrode GF
 logical :: ReUseGF        ! Calculate the electrodes GF
@@ -326,22 +321,7 @@ CONTAINS
        call read_contour_options( kT_in, IsVolt, VoltL, VoltR )
     end if
 
-    call fdf_deprecated('TS.GFTitle','TS.Elec.Left/Right.GF.Title')
-    GFTitle    = fdf_get('TS.GFTitle',GFTitle_def)
 
-    ! Left -->
-    chars = trim(slabel)//'.TSGFL'
-    call fdf_deprecated('TS.GFFileLeft','TS.Elec.Left.GF')
-    GFFileL    = fdf_get('TS.GFFileLeft',trim(chars))
-    GFFileL    = fdf_get('TS.Elec.Left.GF',trim(GFFileL))
-    GFTitleL   = fdf_get('TS.Elec.Left.GF.Title',trim(GFTitle))
-
-    ! Right -->
-    chars = trim(slabel)//'.TSGFR'
-    call fdf_deprecated('TS.GFFileRight','TS.Elec.Right.GF')
-    GFFileR    = fdf_get('TS.GFFileRight',trim(chars))
-    GFFileR    = fdf_get('TS.Elec.Right.GF',trim(GFFileR))
-    GFTitleR   = fdf_get('TS.Elec.Right.GF.Title',trim(GFTitle))
 
     call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
     ReUseGF    = fdf_get('TS.ReUseGF',ReUseGF_def)
@@ -352,42 +332,58 @@ CONTAINS
     ! To determine the same coordinate nature of the electrodes
     Elec_xa_EPS= fdf_get('TS.Elec.Coord.Eps',1e-4_dp,'Bohr')
 
+    ! Setup the correct transmission directions
+    ElLeft%inf_dir = INF_NEGATIVE
+    ElLeft%t_dir = ts_tdir
     call fdf_deprecated('TS.HSFileLeft','TS.Elec.Left.TSHS')
-    ElLeft%HSFile    = fdf_get('TS.HSFileLeft',HSFile_def)
-    ElLeft%HSFile    = fdf_get('TS.Elec.Left.TSHS',ElLeft%HSFile)
+    ElLeft%HSfile  = fdf_get('TS.HSFileLeft',HSFile_def)
+    ElLeft%HSfile  = fdf_get('TS.Elec.Left.TSHS',ElLeft%HSfile)
+    call fdf_deprecated('TS.GFFileLeft','TS.Elec.Left.GF')
+    ElLeft%GFfile  = fdf_get('TS.GFFileLeft',trim(slabel)//'.TSGFL')
+    ElLeft%GFfile  = fdf_get('TS.Elec.Left.GF',ElLeft%GFfile)
+    ElLeft%GFtitle = fdf_get('TS.Elec.Left.GF.Title','Left Greens function')
     call fdf_deprecated('TS.NumUsedAtomsLeft','TS.Elec.Left.UsedAtoms')
-    ElLeft%UsedAtoms = fdf_get('TS.NumUsedAtomsLeft',NUsedAtoms_def)
-    ElLeft%UsedAtoms = fdf_get('TS.Elec.Left.UsedAtoms',ElLeft%UsedAtoms)
-    call check_HSfile('Left',ElLeft)
+    ElLeft%na_used = fdf_get('TS.NumUsedAtomsLeft',NUsedAtoms_def)
+    ElLeft%na_used = fdf_get('TS.Elec.Left.UsedAtoms',ElLeft%na_used)
+    call check_HSfile(ElLeft)
     call fdf_deprecated('TS.ReplicateA1Left','TS.Elec.Left.Replicate.A1')
-    ElLeft%RepA1     = fdf_get('TS.ReplicateA1Left',NRepA_def)
-    ElLeft%RepA1     = fdf_get('TS.Elec.Left.Replicate.A1',ElLeft%RepA1)
+    ElLeft%RepA1   = fdf_get('TS.ReplicateA1Left',1)
+    ElLeft%RepA1   = fdf_get('TS.Elec.Left.Replicate.A1',ElLeft%RepA1)
     call fdf_deprecated('TS.ReplicateA2Left','TS.Elec.Left.Replicate.A2')
-    ElLeft%RepA2     = fdf_get('TS.ReplicateA2Left',NRepA_def)
-    ElLeft%RepA2     = fdf_get('TS.Elec.Left.Replicate.A2',ElLeft%RepA2)
-    ElLeft%RepA3     = fdf_get('TS.Elec.Left.Replicate.A3',ElLeft%RepA3)
+    ElLeft%RepA2   = fdf_get('TS.ReplicateA2Left',1)
+    ElLeft%RepA2   = fdf_get('TS.Elec.Left.Replicate.A2',ElLeft%RepA2)
+    ElLeft%RepA3   = fdf_get('TS.Elec.Left.Replicate.A3',1)
     if ( RepA1(ElLeft) < 1 .or. RepA2(ElLeft) < 1 .or. RepA3(ElLeft) < 1 ) &
          call die("Repetition in left electrode must be >= 1.")
+    ElLeft%idx_na = na_BufL + 1
+    ElLeft%mu = VoltL
 
-
+    ElRight%inf_dir = INF_POSITIVE
+    ElRight%t_dir   = ts_tdir
     call fdf_deprecated('TS.HSFileRight','TS.Elec.Right.TSHS')
-    ElRight%HSFile    = fdf_get('TS.HSFileRight',HSFile_def)
-    ElRight%HSFile    = fdf_get('TS.Elec.Right.TSHS',ElRight%HSFile)
+    ElRight%HSfile  = fdf_get('TS.HSFileRight',HSFile_def)
+    ElRight%HSfile  = fdf_get('TS.Elec.Right.TSHS',ElRight%HSfile)
+    call fdf_deprecated('TS.GFFileRight','TS.Elec.Right.GF')
+    ElRight%GFfile  = fdf_get('TS.GFFileRight',trim(slabel)//'.TSGFR')
+    ElRight%GFfile  = fdf_get('TS.Elec.Right.GF',ElRight%GFfile)
+    ElRight%GFtitle = fdf_get('TS.Elec.Right.GF.Title','Right Greens function')
     call fdf_deprecated('TS.NumUsedAtomsRight','TS.Elec.Right.UsedAtoms')
-    ElRight%UsedAtoms = fdf_get('TS.NumUsedAtomsRight',NUsedAtoms_def)
-    ElRight%UsedAtoms = fdf_get('TS.Elec.Right.UsedAtoms',ElRight%UsedAtoms)
-    call check_HSfile('Right',ElRight)
+    ElRight%na_used = fdf_get('TS.NumUsedAtomsRight',NUsedAtoms_def)
+    ElRight%na_used = fdf_get('TS.Elec.Right.UsedAtoms',ElRight%na_used)
+    call check_HSfile(ElRight)
+
     call fdf_deprecated('TS.ReplicateA1Right','TS.Elec.Right.Replicate.A1')
-    ElRight%RepA1     = fdf_get('TS.ReplicateA1Right',NRepA_def)
-    ElRight%RepA1     = fdf_get('TS.Elec.Right.Replicate.A1',ElRight%RepA1)
+    ElRight%RepA1   = fdf_get('TS.ReplicateA1Right',1)
+    ElRight%RepA1   = fdf_get('TS.Elec.Right.Replicate.A1',ElRight%RepA1)
     call fdf_deprecated('TS.ReplicateA2Right','TS.Elec.Right.Replicate.A2')
-    ElRight%RepA2     = fdf_get('TS.ReplicateA2Right',NRepA_def)
-    ElRight%RepA2     = fdf_get('TS.Elec.Right.Replicate.A2',ElRight%RepA2)
-    ElRight%RepA3     = fdf_get('TS.Elec.Right.Replicate.A3',ElRight%RepA3)
+    ElRight%RepA2   = fdf_get('TS.ReplicateA2Right',1)
+    ElRight%RepA2   = fdf_get('TS.Elec.Right.Replicate.A2',ElRight%RepA2)
+    ElRight%RepA3   = fdf_get('TS.Elec.Right.Replicate.A3',1)
     if ( RepA1(ElRight) < 1 .or. RepA2(ElRight) < 1 .or. RepA3(ElRight) < 1 ) &
          call die("Repetition in left electrode must be >= 1.")
+    ElRight%idx_na  = na_u - na_BufR - TotUsedAtoms(ElRight) + 1
+    ElRight%mu = VoltR
 
-    
     ! Read in information about the voltage placement.
     chars = fdf_get('TS.HartreePotential.Position','central')
     VoltageInC = .true.
@@ -406,7 +402,7 @@ CONTAINS
     ! then this is also not allowed.
     ! For non bias and na_u_elec == NUsedAtomsL == NUsedAtomsR
     ! then this is perfectly acceptable!
-    if ( TSmode .and. trim(GFFileL) == trim(GFFileR) ) then ! Has to be case-sensitive !
+    if ( TSmode .and. trim(GFFile(ElLeft)) == trim(GFFile(ElRight)) ) then ! Has to be case-sensitive !
        ! Read in the total number (if NumUsedAtoms is not the full...)
        call ts_read_TSHS_opt(HSFile(ElLeft),na_u=i)
 
@@ -527,14 +523,14 @@ CONTAINS
        write(*,1) 'Re-use GF file if exists', ReUseGF
        write(*,10)'          >> Electrodes << '
        write(*,10)'>> Left'
-       write(*,10)'  GF file', trim(GFFileL)
-       write(*,10)'  GF title', trim(GFTitleL)
+       write(*,10)'  GF file', trim(GFFile(ElLeft))
+       write(*,10)'  GF title', trim(GFtitle(ElLeft))
        write(*,10)'  Electrode TSHS file', trim(HSFile(ElLeft))
        write(*,5) '  # atoms used in electrode ', UsedAtoms(ElLeft)
        write(*,15)'  Electrode repetition A1/A2/A3', RepA1(ElLeft),RepA2(ElLeft),RepA3(ElLeft)
        write(*,10)'>> Right'
-       write(*,10)'  GF file', trim(GFFileR)
-       write(*,10)'  GF title', trim(GFTitleR)
+       write(*,10)'  GF file', trim(GFFile(ElRight))
+       write(*,10)'  GF title', trim(GFtitle(ElRight))
        write(*,10)'  Electrode TSHS file', trim(HSFile(ElRight))
        write(*,5) '  # atoms used in electrode ', UsedAtoms(ElRight)
        write(*,15)'  Electrode repetition A1/A2/A3', RepA1(ElRight),RepA2(ElRight),RepA3(ElRight)
@@ -615,6 +611,8 @@ CONTAINS
 
     end if
 
+    call fdf_obsolete('TS.GFTitle')
+
 1   format('ts_options: ',a,t53,'=',4x,l1)
 5   format('ts_options: ',a,t53,'=',i5,a)
 6   format('ts_options: ',a,t53,'=',f10.4,tr1,a)
@@ -626,33 +624,36 @@ CONTAINS
 
 contains 
   
-  subroutine check_HSfile(LR,el)
-    character(len=*), intent(in) :: LR
+  subroutine check_HSfile(El)
     type(Elec), intent(inout) :: el
-    integer :: tmp_NUsedAtoms
-    integer, allocatable, dimension(:) :: lasto
     logical :: exist
+
     if ( TSmode ) then
        ! Check existance for left Electrode.TSHS
        inquire(file=TRIM(HSfile(el)),exist=exist)
        if ( .not. exist ) then
-          call die(trim(LR)//" electrode file does not exist. &
-               &Please create electrode '"//trim(HSFile(el))//"' first.")
+          call die("Electrode file does not exist. &
+               &Please create electrode '"//trim(HSFile(El))//"' first.")
        end if
        ! Read in the number of atoms in the HSfile
-       call ts_read_TSHS_opt(HSFile(el),na_u=tmp_NUsedAtoms)
+       call ts_read_TSHS_opt(HSFile(el),no_u=El%no_u,na_u=El%na_u, &
+            Bcast=.true.)
+       allocate(El%xa(3,El%na_u),El%lasto(0:El%na_u))
+       call ts_read_TSHS_opt(HSFile(el),xa=El%xa,lasto=El%lasto, &
+            ucell=El%ucell,Ef=El%Ef, &
+            Bcast=.true.)
 
        if ( UsedAtoms(el) < 0 ) then
-          el%UsedAtoms = tmp_NUsedAtoms
+          El%na_used = El%na_u
        else if ( UsedAtoms(el) == 0 ) then
           if(IONode) &
                write(*,*) "You need at least one atom in the electrode."
           call die("None atoms requested for electrode calculation.")
-       else if ( tmp_NUsedAtoms < UsedAtoms(el) ) then
+       else if ( El%na_u < UsedAtoms(el) ) then
           if (IONode) then
              write(*,*) "# of requested atoms is larger than available."
              write(*,*) "Requested: ",UsedAtoms(el)
-             write(*,*) "Available: ",tmp_NUsedAtoms
+             write(*,*) "Available: ",El%na_u
           end if
           call die("Error on requested atoms.")
        end if
@@ -660,22 +661,28 @@ contains
        ! We have determined the number of atoms in the 
        ! TSHS file
        ! Read in lasto to determine the number of orbitals 
-       ! used in the electrode
-       allocate(lasto(0:tmp_NUsedAtoms))
-       call ts_read_TSHS_opt(HSFile(el), &
-            ucell=el%ucell,lasto=lasto,Ef=el%Ef)
-       el%UsedOrbs = 0
-       if ( LR == 'Left' ) then
+       allocate(El%xa_used(3,El%na_used),El%lasto_used(0:El%na_used))
+       El%lasto_used(0) = 0
+       El%no_used = 0
+       if ( El%inf_dir == INF_NEGATIVE ) then
           ! We use the first atoms
-          do i = 1 , UsedAtoms(el)
-             el%UsedOrbs = el%UsedOrbs + lasto(i)-lasto(i-1)
+          do i = 1 , El%na_used
+             El%lasto_used(i) = El%lasto_used(i-1) + lasto(i)-lasto(i-1)
+             El%xa_used(:,i)  = El%xa(:,i)
+          end do
+       else if ( El%inf_dir == INF_POSITIVE ) then
+          ! We use the last atoms
+          do i = El%na_u - UsedAtoms(El) + 1 , El%na_u
+             El%lasto_used(i) = El%lasto_used(i-1) + lasto(i)-lasto(i-1)
+             El%xa_used(:,i)  = El%xa(:,i)
           end do
        else
-          ! We use the last atoms
-          do i = tmp_NUsedAtoms - UsedAtoms(el) + 1 , tmp_NUsedAtoms
-             el%UsedOrbs = el%UsedOrbs + lasto(i)-lasto(i-1)
-          end do
+          call die('Unknown direction for the semi-infinite lead')
        end if
+       El%no_used = El%lasto_used(El%na_used)
+
+       ! We deallocate xa and lasto as they are not needed
+       deallocate(El%xa,El%lasto)
 
     end if
 

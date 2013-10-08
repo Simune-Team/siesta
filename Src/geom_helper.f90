@@ -50,8 +50,8 @@ module geom_helper
   ! It does the same thing
   public :: ucorb
   public :: iaorb
-  public :: cell_xyz
-  public :: cell_d, cell_x, cell_y, cell_z
+  public :: cell_abc
+  public :: cell_d, cell_a, cell_b, cell_c
 
 contains
 
@@ -102,7 +102,7 @@ contains
   end function iaorb
 
 
-  pure function cell_xyz(recell,xai,xaj,xij) result(nnn)
+  pure function cell_abc(recell,xai,xaj,xij) result(nnn)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -119,10 +119,10 @@ contains
     nnn(2) = nint(sum(xd*recell(:,2)))
     nnn(3) = nint(sum(xd*recell(:,3)))
 
-  end function cell_xyz
+  end function cell_abc
 
 
-  pure function cell_x(recell,xai,xaj,xij) result(n)
+  pure function cell_a(recell,xai,xaj,xij) result(n)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -133,9 +133,9 @@ contains
 ! *********************
     integer  :: n
     n = cell_d(recell,xai,xaj,xij,1)
-  end function cell_x
+  end function cell_a
 
-  pure function cell_y(recell,xai,xaj,xij) result(n)
+  pure function cell_b(recell,xai,xaj,xij) result(n)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -146,9 +146,9 @@ contains
 ! *********************
     integer  :: n
     n = cell_d(recell,xai,xaj,xij,2)
-  end function cell_y
+  end function cell_b
 
-  pure function cell_z(recell,xai,xaj,xij) result(n)
+  pure function cell_c(recell,xai,xaj,xij) result(n)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -159,15 +159,15 @@ contains
 ! *********************
     integer  :: n
     n = cell_d(recell,xai,xaj,xij,3)
-  end function cell_z
+  end function cell_c
 
-  pure function cell_d(recell,xai,xaj,xij,xyz) result(n)
+  pure function cell_d(recell,xai,xaj,xij,abc) result(n)
 ! *********************
 ! * INPUT variables   *
 ! *********************
     real(dp), intent(in) :: recell(3,3) ! the reciprocal cell, WITHOUT 2Pi!!
     real(dp), intent(in) :: xai(3), xaj(3), xij(3)
-    integer,  intent(in) :: xyz
+    integer,  intent(in) :: abc
 ! *********************
 ! * OUTPUT variables  *
 ! *********************
@@ -175,7 +175,7 @@ contains
     real(dp) :: xd(3)
     ! The actual length between two atomic centered orbitals:
     xd (:) = xij(:) - (xaj(:)-xai(:))
-    n = nint(sum(xd*recell(:,xyz)))
+    n = nint(sum(xd*recell(:,abc)))
   end function cell_d
 
 end module geom_helper

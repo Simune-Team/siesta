@@ -29,7 +29,7 @@ contains
   ! the number of atoms in the electrode.
   subroutine ts_read_TSHS_opt(TSHS,DUMMY,na_u,no_u,no_s,nspin,maxnh, &
        xa,isa,ucell, Qtot, Temp, Ef, &
-       Gamma,Gamma_SCF,OnlyS,lasto, &
+       Gamma,Gamma_SCF,kscell,kdispl,OnlyS,lasto, &
        Bcast)
     use precision, only : dp
     use parallel, only : IONode
@@ -45,8 +45,8 @@ contains
 ! * OUTPUT variables    *
 ! *********************** 
     integer, optional :: DUMMY ! MUST NEVER BE PASSED
-    integer, intent(out), optional :: na_u, no_u, no_s, nspin, maxnh, isa(:), lasto(:)
-    real(dp), intent(out), optional :: xa(:,:), ucell(3,3), Qtot, Temp, Ef
+    integer, intent(out), optional :: na_u, no_u, no_s, nspin, maxnh, isa(:), lasto(:), kscell(3,3)
+    real(dp), intent(out), optional :: xa(:,:), ucell(3,3), Qtot, Temp, Ef, kdispl(3)
     logical, intent(out), optional :: Gamma, Gamma_SCF, OnlyS
     logical, intent(in), optional :: Bcast
 
@@ -104,8 +104,16 @@ contains
        else
           read(uTSHS) ! Gamma_SCF
        end if
-       read(uTSHS) ! ts_kscell_file
-       read(uTSHS) ! ts_kdispl_file  
+       if ( present(kscell) ) then
+          read(uTSHS) kscell
+       else
+          read(uTSHS) ! ts_kscell_file
+       end if
+       if ( present(kdispl) ) then
+          read(uTSHS) kdispl
+       else
+          read(uTSHS) ! ts_kdispl_file  
+       end if
        read(uTSHS) ! istep, ia1
 
        if ( present(lasto) ) then
@@ -164,6 +172,12 @@ contains
          call MPI_Bcast(Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
     if ( present(OnlyS) ) &
          call MPI_Bcast(OnlyS,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+    if ( present(Gamma_SCF) ) &
+         call MPI_Bcast(Gamma_SCF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+    if ( present(kscell) ) &
+         call MPI_Bcast(kscell,9,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(kdispl) ) &
+         call MPI_Bcast(kdispl,3,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
     if ( present(lasto) ) &
          call MPI_Bcast(lasto(1),tmp(1)+1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     if ( present(Qtot) ) &
@@ -209,8 +223,17 @@ contains
        if ( present(Gamma) ) &
             call MPI_Pack(Gamma,1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(kscell) ) &
+            call MPI_Pack(kscell(1,1),9,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(kdispl) ) &
+            call MPI_Pack(kdispl(1),3,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
        if ( present(OnlyS) ) &
             call MPI_Pack(OnlyS,1,MPI_Logical, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Gamma_SCF) ) &
+            call MPI_Pack(Gamma_SCF,1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
        if ( present(lasto) ) &
             call MPI_Pack(lasto(1),tmp(1)+1,MPI_Logical, &
@@ -225,7 +248,7 @@ contains
             call MPI_Pack(Ef,1,MPI_Double_Precision, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
 
-       if ( ipos >= buffer_size .or. ipos < 0 ) then
+       if ( ipos >= buffer_size .or. ipos < 0 .or. MPIerror /= MPI_Success ) then
           call die('Error in estimating the buffer-size for the &
                &TSHS reading. Please contact the developers')
        end if
@@ -272,9 +295,21 @@ contains
             call MPI_UnPack(buffer,buffer_size,ipos, &
             Gamma,1,MPI_Logical, &
             MPI_Comm_World, MPIerror)
+       if ( present(kscell) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            kscell(1,1),9,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(kdispl) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            kdispl(1),3,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
        if ( present(OnlyS) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
             OnlyS,1,MPI_Logical, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Gamma_SCF) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Gamma_SCF,1,MPI_Logical, &
             MPI_Comm_World, MPIerror)
        if ( present(lasto) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
