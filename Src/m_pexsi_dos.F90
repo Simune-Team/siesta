@@ -59,10 +59,9 @@ integer :: nrows, nnz, nnzLocal, numColLocal
 
 integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
 real(dp), pointer, dimension(:) :: HnzvalLocal=>null(), SnzvalLocal=>null()
-real(dp), pointer, dimension(:) :: HnzvalSave=>null(), SnzvalSave=>null()
 
-real(dp), pointer, dimension(:) :: shiftList=>null()
-integer,  pointer, dimension(:) :: inertiaList=>null()
+real(dp), allocatable, dimension(:) :: shiftList
+integer,  allocatable, dimension(:) :: inertiaList
 
 logical  :: PEXSI_worker
 integer  :: nShifts
@@ -165,15 +164,8 @@ if (PEXSI_worker) then
   enddo
 
   rowindLocal => m2%cols
-
-  ! In case the call to the inertia-count routine corrupts H and S...
-  ! Keep these safe
-  SnzvalSave => m2%vals(1)%data
-  HnzvalSave => m2%vals(2)%data
-
-  ! and use work arrays for the call
-  allocate(SnzvalLocal(size(SnzvalSave)))
-  allocate(HnzvalLocal(size(HnzvalSave)))
+  SnzvalLocal => m2%vals(1)%data
+  HnzvalLocal => m2%vals(2)%data
 
 endif ! PEXSI worker
 
@@ -188,8 +180,7 @@ nShifts = numNodesTotal/npPerPole
 
 ! Arrays for reporting back information about the integrated DOS
 ! computed by the inertia count method.
-call re_alloc(shiftList,1,nShifts,"shiftList","pexsi_DOS")
-call re_alloc(inertiaList,1,nShifts,"inertiaList","pexsi_DOS")
+allocate(shiftList(nShifts), inertiaList(nShifts))
 
 ! Ordering flag:
 !   1: Use METIS
@@ -238,10 +229,6 @@ call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
     endif
 
     call timer("pexsi-raw-inertia-ct", 1)
-    if (PEXSI_worker) then
-      SnzvalLocal(:) = SnzvalSave(:)
-      HnzvalLocal(:) = HnzvalSave(:)	
-    endif
 
     call f_ppexsi_raw_inertiacount_interface(&
          ! input parameters
@@ -260,16 +247,22 @@ call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
         ordering,&
         npPerPole,&
         npSymbFact,&
-        World_Comm,&
-! output parameters
+        World_Comm,&        
+        ! output parameters
         shiftList,&
         inertiaList,&
         info)
+
 
     call timer("pexsi-raw-inertia-ct", 2)
 
     call globalize_max(info,infomax,comm=World_Comm)
     info = infomax
+
+    if(mpirank == 0) then
+      write(6,*) "DOS call no., Info : ", ncalls, info
+      call pxfflush(6)
+    endif	
 
     do i=1, nShifts
        j = (ncalls-1)*nShifts + i
@@ -302,32 +295,34 @@ call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
     enddo
  endif
 
-call de_alloc(shiftList,"shiftList","pexsi_DOS")
-call de_alloc(inertiaList,"inertiaList","pexsi_DOS")
+deallocate(shiftList,inertiaList)
 deallocate(edos,intdos)
 
    if (SIESTA_worker) then
       call timer("pexsi_dos", 2)
-      deallocate(m1%vals)
+     ! deallocate(m1%vals)
    endif
 
 call delete(dist1)
 call delete(dist2)
 
 if (PEXSI_worker) then
-   deallocate(SnzvalLocal, HnzvalLocal)
-   !
-   call de_alloc(m2%numcols,"m2%numcols","m_pexsi_dos")
-   call de_alloc(m2%cols,"m2%cols","m_pexsi_dos")
-   do j=1,size(m2%vals)
-      call de_alloc(m2%vals(j)%data,"m2%vals(j)%data","m_pexsi_dos")
-   enddo
-   deallocate(m2%vals)
-   !
+
+    call de_alloc(colptrLocal,"colptrLocal","pexsi_DOS")
+
+!   call de_alloc(m2%numcols,"m2%numcols","m_pexsi_dos")
+!   call de_alloc(m2%cols,"m2%cols","m_pexsi_dos")
+!   do j=1,size(m2%vals)
+!      call de_alloc(m2%vals(j)%data,"m2%vals(j)%data","m_pexsi_dos")
+!   enddo
+!   deallocate(m2%vals)
+
+endif
+
+if (PEXSI_worker) then
    call MPI_Comm_Free(PEXSI_Comm, ierr)
    call MPI_Group_Free(PEXSI_Group, ierr)
 endif
-
 
 #endif 
 
