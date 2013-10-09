@@ -34,6 +34,7 @@ c
       double precision fourier_eps
       parameter (fourier_eps = 1.0d-2)
 
+      integer n_shells_down(5), n_shells_up(5)
       integer n_channels, lun
 
       double precision cutoff_function, force_underflow
@@ -65,8 +66,23 @@ c
          nops(i) = 0
     5 continue
 c
+!     nops is the "effective principal quantum number", which
+!     sets the number of "nodes"     
+
+      do lp = 1, lmax
+         n_shells_down(lp) = 0
+         n_shells_up(lp) = 0
+      enddo
       do 10 i = ncp, norb
-         nops(i) = lo(i) + 1
+         lp = lo(i) + 1
+         if (down(i)) then
+            n_shells_down(lp) = n_shells_down(lp) + 1
+            nops(i) = lo(i) + n_shells_down(lp)
+         else
+            n_shells_up(lp) = n_shells_up(lp) + 1
+            nops(i) = lo(i) + n_shells_up(lp)
+         endif
+!         nops(i) = lo(i) + 1
          zval = zval + zo(i)
    10 continue
       zion = zval + znuc - zel
@@ -265,12 +281,33 @@ c     the potentials plotted are always the "up" ones (except of
 c     course for scalar calculations and for "s" states in relativistic
 c     calculations, for which the distinction is irrelevant.
 
+c
+c  Determine the number of  potentials.  Coded them as
+c  two digits, where the first digit is the number
+c  of down or sum potentials and the second the number of
+c  up or difference potentials.
+c
+      npotd = 0
+      npotu = 0
+      do 290 i = 1, lmax
+         if (indd(i) .ne. 0) npotd = npotd + 1
+         if (indu(i) .ne. 0) npotu = npotu + 1
+  290 continue
+
+
       write(6,9020)
  9020 format(/)
       ecut = ecuts
-      do 150 i = ncp, norb
-         lp = lo(i) + 1
-         if (down(i)) then
+
+      ! This loop needs to be changed to allow for multiple
+      ! shells with the same l (lp) value
+
+      do 150 lp = 1, lmax
+!      do 150 i = ncp, norb
+!         lp = lo(i) + 1
+         if (indd(lp) .ne. 0) then
+            i = indd(lp)
+!         if (down(i)) then
             do 90 j = 2, nr
                v(j) = viod(lp,j)/r(j) + vid(j)
                viod(lp,j) = viod(lp,j) + (vid(j)-vod(j))*r(j)
@@ -302,13 +339,16 @@ cag               fcut = exp(-5*(r(j)-r(jcut)))
                v(j) = viod(lp,j)/r(j)
   110       continue
 c
-c           Dwon potentials are  always generated
+c           Down potentials are  always generated
 c
             call potran(lo(i)+1,v,r,nr,zion,fourier_area(lo(i)+1),
      $                  fourier_eps,qc(lo(i)+1))
             call potrv(v,r,nr-120,lo(i),zion)
 c
-         else
+         endif
+
+         if (indu(lp) .ne. 0) then
+            i = indu(lp)
             do 120 j = 2, nr
                v(j) = viou(lp,j)/r(j) + viu(j)
                viou(lp,j) = viou(lp,j) + (viu(j)-vou(j))*r(j)
@@ -359,7 +399,9 @@ c
       minabs = 1.0d10
       norm1 = 0.0d0
       norm2 = 0.0d0
-      do j=lo(ncp) + 1, lo(norb) + 1
+
+      do j = 1, npotd
+!      do j=lo(ncp) + 1, lo(norb) + 1
          absval = fourier_area(j)
          if (absval .gt. maxabs) maxabs = absval
          if (absval .lt. minabs) minabs = absval
@@ -370,7 +412,7 @@ c
       norm1 = norm1 / n_channels
       norm2 = sqrt( norm2 / n_channels)
       write(lun,"(i4)") n_channels
-      write(lun,"(5f10.5)") (fourier_area(j),j=lo(ncp)+1,lo(norb)+1)
+      write(lun,"(5f10.5)") (fourier_area(j),j=1,npotd)
       write(lun,"(4f10.5)") minabs, maxabs, norm1, norm2
       close(lun)
 c
@@ -388,7 +430,9 @@ c
       minabs = 1.0d10
       norm1 = 0.0d0
       norm2 = 0.0d0
-      do j=lo(ncp) + 1, lo(norb) + 1
+
+!      do j=lo(ncp) + 1, lo(norb) + 1
+      do j = 1, npotd
          absval = qc(j)
          if (absval .gt. maxabs) maxabs = absval
          if (absval .lt. minabs) minabs = absval
@@ -399,7 +443,7 @@ c
       norm1 = norm1 / n_channels
       norm2 = sqrt( norm2 / n_channels)
       write(lun,"(i4)") n_channels
-      write(lun,"(5f14.5)") (qc(j),j=lo(ncp)+1,lo(norb)+1)
+      write(lun,"(5f14.5)") (qc(j),j=1,npotd)
       write(lun,"(4f14.5)") minabs, maxabs, norm1, norm2
       close(lun)
 c
@@ -410,8 +454,13 @@ c   by occupation weight(zo).  Assumes core polarization is
 c   zero, ie. polarization is only a valence effect.
 c
       if (polarized) then
-         do 180 i = ncp, norb, 2
-            lp = lo(i) + 1
+         do 180 lp=1,lmax
+            if ((indd(lp) .eq. 0) .or. (indu(lp) .eq. 0)) then
+               goto 180
+            endif
+            i = indd(lp)
+!!         do 180 i = ncp, norb, 2
+!!            lp = lo(i) + 1
             zot = zo(i) + zo(i+1)
             if (zot .ne. zero) then
                do 160 j = 2, nr
@@ -440,10 +489,15 @@ c
 c
 c  Printout the pseudo eigenvalues after cutoff.
 c
-      write(6,9030) (il(lo(i)+1),rcut(i-ncore),i=ncp,norb)
-      write(6,9040) (ev(i),i=ncp,norb)
- 9030 format(//' test of eigenvalues',//' rcut =',8(2x,a1,f7.2))
- 9040 format(' eval =',8(2x,f8.5))
+      write(6,9030)
+ 9030 format(//' test of eigenvalues',//' rcut :')
+ 9035 format((2x,i1,a1,f7.2,2x,f8.5))
+      do i = ncp, norb
+         lp = lo(i) + 1
+         if ((indd(lp) .eq. i) .or. (indu(lp) .eq. i)) then
+            write(6,9035) no(i), il(lo(i)+1),rcut(i-ncore), ev(i)
+         endif
+      enddo
 c
 c  Printout the data for potentials.
 c
@@ -548,18 +602,6 @@ c
   270       continue
   280    continue
       end if
-c
-c  Determine the number of  potentials.  Coded them as
-c  two digits, where the first digit is the number
-c  of down or sum potentials and the second the number of
-c  up or difference potentials.
-c
-      npotd = 0
-      npotu = 0
-      do 290 i = 1, lmax
-         if (indd(i) .ne. 0) npotd = npotd + 1
-         if (indu(i) .ne. 0) npotu = npotu + 1
-  290 continue
 c
 c  Write the heading to the current pseudo.dat
 c  file (unit=1).

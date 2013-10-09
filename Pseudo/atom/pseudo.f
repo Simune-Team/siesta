@@ -88,22 +88,34 @@ c
          llp = lo(i)*lp
          if (down(i)) then
             if (indd(lp) .ne. 0) then
-               write(6,9020) 'down', lp - 1
-               call ext(800+lp)
+               write(6,9030) 'down', lp - 1
+               goto 220
+!               write(6,9020) 'down', lp - 1
+!               call ext(800+lp)
             else
                indd(lp) = i
+               write(6,9035) no(i), il(lo(i)+1), 'down'
             end if
          else
             if (indu(lp) .ne. 0) then
-               write(6,9020) 'up',lp - 1
-               call ext(810+lp)
+               write(6,9030) 'up',lp - 1
+               goto 220
+!               write(6,9020) 'up',lp - 1
+!               call ext(810+lp)
             else
                indu(lp) = i
+               write(6,9035) no(i), il(lo(i)+1), 'up'
             end if
          end if
  9020    format(//' error in pseudo - two ',a4,
      &            ' spin orbitals of the same ',
      &         /'angular momentum (',i1,') exist')
+ 9030    format(//' multiple ',a4,
+     &            ' spin orbitals of the same ',
+     &         /'angular momentum (',i1,') exist.',
+     &          ' Pseudizing the first one.')
+ 9035 format((2x,'Pseudizing: ',i1,a1,2x,a))
+
 c
 c
 c      Find all electron wave function and its nodes and
