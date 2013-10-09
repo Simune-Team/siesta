@@ -48,6 +48,7 @@
       type(converger_t)  ::  conv_harris, conv_etot
 
 !---------------------------------------------------------------------- BEGIN
+      call timer("IterMD",1)
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
@@ -188,6 +189,7 @@
       if (siesta_server) 
      &  call forcesToMaster( na_u, Etot, cfa, cstress )
 
+      call timer("IterMD",2)
 
 !------------------------------------------------------------------------ END
 

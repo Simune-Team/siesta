@@ -64,13 +64,11 @@
       real(dp), external :: volcel
 
 
-!------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( 'PRE siesta_move' )
-#endif
+!------------------------------------------------------------------ BEGIN
+
       ! Save the last geometry for which the density matrix 
       ! (electronic structure) has been calculated
-      call timer( 'SIMOVE', 1 )
+      call timer( 'SiestaMove', 1 )
 
         xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
         ucell_last(1:3,1:3) = ucell(1:3,1:3)
@@ -288,8 +286,7 @@
          call cmlEndStep(mainXML)
       endif
 !!      call printmemory( 6, 0 )
-      call timer( 'SIMOVE', 2 )
-      call timer( 'IterMD', 2 )
+      call timer( 'SiestaMove', 2 )
 ! End of one MD step - flush stdout
       if (ionode) call pxfflush(6)
 

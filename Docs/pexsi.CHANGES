@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+October 9, 2013  A. Garcia        trunk-445--pexsi-45
+Re-organize some timing labels
+
+The timing label 'IterMD' now corresponds explicitly to 'siesta_forces',
+and there is a separate label 'SiestaMove' for the 'siesta_move' routine.
+
+These, together with "Setup", and "Analysis", complete the four main
+blocks of timing information.
+
+Additionally, timing calls for the "cellxc" routine(s) have been added.
+
+modified:
+  Src/dhscf.F
+  Src/siesta_forces.F
+  Src/siesta_move.F
+  Src/state_init.F
+
+------------------------------------------------------------
 October 7, 2013  A. Garcia        trunk-445--pexsi-44
 Add option to write the DM at the end of the SCF loop
 

@@ -71,11 +71,8 @@
 !     SIESTA External
       character(len=label_length+5) :: PASTE
 #endif
-!------------------------------------------------------------------------- BEGIN
-      call timer( 'IterMD', 1 )
-#ifdef DEBUG
-      call write_debug( '  PRE state_init' )
-#endif
+!---------------------------------------------------------- BEGIN
+
       call timer( 'STinit', 1 )
 
       istp = istp + 1
@@ -323,9 +320,7 @@
       endif
 #endif
       call timer( 'STinit', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS state_init' )
-#endif
-!--------------------------------------------------------------------------- END
+
+!------------------------------------------------------------------ END
       END subroutine state_init
       END module m_state_init
