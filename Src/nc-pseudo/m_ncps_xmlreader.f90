@@ -6,7 +6,7 @@ module m_ncps_xmlreader
 
   subroutine ncps_xmlreader(fname,psxml)
 
-  use m_ncps_xml_ps_t,        only: xml_ps_t
+  use m_ncps_xml_ps_t,        only: xml_ps_t, dump_pseudo
   use m_ncps_parsing_helpers, only: begin_element, end_element, pcdata_chunk
   use m_ncps_parsing_helpers, only: pseudo
 
@@ -25,6 +25,7 @@ module m_ncps_xmlreader
                                                                          
  call xml_parse(fxml, begin_element,end_element,pcdata_chunk,verbose=.false.)
  psxml = pseudo  ! should this be a pointer assignment?
+ call dump_pseudo(pseudo,6)
 
 end subroutine ncps_xmlreader
 end module m_ncps_xmlreader

@@ -1,4 +1,18 @@
 ------------------------------------------------------------
+October 10, 2013  Alberto Garcia           trunk-427--ncps-4
+Implement grid_data support in ncps library
+
+Some more error checking, and addition of a 
+global_grid element to the 'pseudo' data structure.
+
+To Do: Check consistency of grid metadata and values.
+
+modified:
+  Src/nc-pseudo/m_ncps_parsing_helpers.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_ncps_xmlreader.f90
+
+------------------------------------------------------------
 September 5, 2013  Alberto Garcia          trunk-427--ncps-3
 Streamline ncps library and simplify Util/Pseudo-operator
 

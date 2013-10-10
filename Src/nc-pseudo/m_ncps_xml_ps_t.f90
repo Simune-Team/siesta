@@ -16,11 +16,12 @@ type, public :: grid_t
       character(len=20)              :: type
       real(kind=dp)                  :: scale
       real(kind=dp)                  :: step 
-      integer                        :: npts 
+      integer                        :: npts = 0
+      real(dp), pointer              :: grid_data(:) => null()
 end type grid_t      
 !
 type, public :: radfunc_t
-      type(grid_t)                            :: grid
+      type(grid_t), pointer                   :: grid => null()
       real(kind=dp), dimension(:), pointer    :: data => null()
 end type radfunc_t      
       
@@ -60,6 +61,7 @@ type, public :: xml_ps_t
       integer                            :: npswfs
       integer                            :: npots_down
       integer                            :: npots_up 
+      type(grid_t), pointer              :: global_grid => null()
       type(vps_t), dimension(MAXN_POTS)  :: pot
       type(pswf_t), dimension(MAXN_POTS) :: pswf
       type(radfunc_t)                    :: core_charge
@@ -80,6 +82,11 @@ type(radfunc_t), pointer :: rp
 
 write(lun,*) "---PSEUDO data:"
 
+      if (associated(pseudo%global_grid)) then
+         write(lun,*) "global grid data: ",  &
+           pseudo%global_grid%npts, pseudo%global_grid%scale
+      endif
+         
 do i = 1, pseudo%npots
       pp =>  pseudo%pot(i)
       rp =>  pseudo%pot(i)%V

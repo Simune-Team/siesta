@@ -19,24 +19,27 @@ private :: die
 logical, private  :: in_vps = .false. , in_radfunc = .false.
 logical, private  :: in_semilocal = .false. , in_header = .false.
 logical, private  :: in_coreCharge = .false. , in_data = .false.
+logical, private  :: in_grid_data = .false. , in_grid = .false.
 logical, private  :: in_valenceCharge = .false.
 logical, private  :: in_pseudowavefun = .false. , in_pswf = .false.
 
-integer, private, save  :: ndata
+integer, private, save  :: ndata, ndata_grid
 
 integer, parameter, private    :: dp = selected_real_kind(14)
 real(dp), private, save :: zval_generation
 
 type(xml_ps_t), public, target, save :: pseudo
-type(grid_t), private, save        :: grid
-type(grid_t), private, save        :: global_grid
+
+type(grid_t), private, save, pointer  :: grid => null()
 !
 ! Pointers to make it easier to manage the data
 !
-type(header_t), private, pointer   :: hp
-type(vps_t), private, pointer      :: pp
-type(pswf_t), private, pointer     :: pw
-type(radfunc_t), private, pointer  :: rp
+type(header_t), private, pointer   :: hp => null()
+type(vps_t), private, pointer      :: pp => null()
+type(pswf_t), private, pointer     :: pw => null()
+type(radfunc_t), private, pointer  :: rp => null()
+
+
 
 CONTAINS  !===========================================================
 
@@ -54,7 +57,7 @@ select case(name)
       case ("pseudo")
          pseudo%npots  = 0
          pseudo%npswfs = 0
-         global_grid%npts = 0
+
 !         call get_value(attributes,"version",value,status)
 !         if (value == "0.5") then
 !            print *, "Processing a PSEUDO version 0.5 XML file"
@@ -132,6 +135,9 @@ select case(name)
 
       case ("grid")
 
+         in_grid = .true.
+         allocate(grid)   ! Will forget about previous allocation
+
          call get_value(attributes,"type",grid%type,status)
          if (status /= 0 ) call die("Cannot determine grid type")
 
@@ -152,22 +158,32 @@ select case(name)
          ! or for a global grid specification
          !
          if (in_radfunc) then
-            rp%grid = grid
+            rp%grid => grid
          else
-            global_grid = grid
+            print *, "Associated global grid"
+            pseudo%global_grid => grid
          endif
 
       case ("data")
+         if (.not. in_radfunc) STOP "<data> element outside <rad_func> element"
          in_data = .true.
+         if (.not. associated(rp%grid)) STOP "Cannot find grid data for radfunc"
          if (rp%grid%npts == 0) STOP "Grid not specified correctly"
          allocate(rp%data(rp%grid%npts))
          ndata = 0             ! To start the build up
 
+      case ("grid_data")
+         if (.not. in_grid) STOP "Grid_data element outside grid element"
+         in_grid_data = .true.
+         if (grid%npts == 0) STOP "Grid npts attribute not specified correctly"
+         allocate(grid%grid_data(grid%npts))
+         ndata_grid = 0             ! To start the build up
+
       case ("radfunc")
          in_radfunc = .true.
-         rp%grid = global_grid     ! Might be empty
-                                   ! There should then be a local grid element
-                                   ! read later
+         rp%grid => pseudo%global_grid    ! Might be null
+                                          ! There should then be a local grid element
+                                          ! read later
 
       case ("pseudocore-charge")
          in_coreCharge = .true.
@@ -227,13 +243,24 @@ select case(name)
       case ("radfunc")
          in_radfunc = .false.
 
+      case ("grid")
+         in_grid = .false.
+
       case ("data")
       !
       ! We are done filling up the radfunc data
       ! Check that we got the advertised number of items
       !
          in_data = .false.
-         if (ndata /= size(rp%data)) STOP "npts mismatch"
+         if (ndata /= size(rp%data)) STOP "npts mismatch in radfunc data"
+
+      case ("grid_data")
+      !
+      ! We are done filling up the grid data
+      ! Check that we got the advertised number of items
+      !
+         in_grid_data = .false.
+         if (ndata_grid /= size(grid%grid_data)) STOP "npts mismatch in grid"
 
       case ("pseudocore-charge")
          in_coreCharge = .false.
@@ -270,6 +297,11 @@ if (in_data) then
 ! Note that we know where we need to put it through the pointer rp...
 !
       call build_data_array(chunk,rp%data,ndata)
+
+else if (in_grid_data) then
+!
+!     Fill the explicit grid data
+      call build_data_array(chunk,grid%grid_data,ndata_grid)
 
 else if (in_header) then
       !
