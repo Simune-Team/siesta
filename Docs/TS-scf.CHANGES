@@ -1,4 +1,16 @@
 ----------------------------------------------------
+October 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-94
+Added a fdf_bboolean to read in booleans from blocks
+
+* Simply added the fdf_bboolean.
+  We note that it will be not the best thing to distinguish between
+  labels and boolean values as they essentially are the same.
+  Hence an fdf_bnboolean does not exist.
+
+modified:
+  Src/fdf/fdf.F90
+
+----------------------------------------------------
 October 8, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-93
 Surface Green's functions are now fully created by the electrode type
 

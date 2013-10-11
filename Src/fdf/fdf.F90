@@ -152,6 +152,7 @@ MODULE fdf
   public :: fdf_block, fdf_bline, fdf_bbackspace, fdf_brewind
   public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
   public :: fdf_bintegers, fdf_breals, fdf_bvalues, fdf_bnames, fdf_btokens
+  public :: fdf_bboolean
 
 ! Match, search over blocks, and destroy block structure
   public :: fdf_bmatch, fdf_bsearch, fdf_substring_search
@@ -1794,6 +1795,84 @@ MODULE fdf
 
 !--------------------------------------------------------------------------- END
     END FUNCTION fdf_boolean
+
+!
+!   Returns true if label 'label' appears by itself or in the form
+!   label {yes,true,.true.,t,y} (case insensitive).
+!
+!   Returns false if label 'label' appears in the form
+!   label {no,false,.false.,f,n} (case insensitive).
+!
+!   If label is not found in the fdf file, fdf_boolean returns the 
+!   LOGICAL variable default.
+!
+!   Optionally can return a pointer to the line found.
+!
+    FUNCTION fdf_bboolean(pline,ind,after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_bboolean
+
+!--------------------------------------------------------------- Local Variables
+      character(80)                       :: msg, valstr
+      type(line_dlist), pointer           :: mark
+
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_bboolean', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (ind <= nnames(pline,after=after)) then
+
+        valstr = names(pline,ind,after=after)
+
+        if (is_true(valstr)) then
+           fdf_bboolean = .TRUE.
+           if (fdf_output) write(fdf_out,'(a,5x,l10)') valstr, fdf_bboolean
+           
+        elseif (is_false(valstr)) then
+           fdf_bboolean = .FALSE.
+           if (fdf_output) write(fdf_out,'(a,5x,l10)') valstr, fdf_bboolean
+           
+        else
+           write(msg,*) 'unexpected logical value ', valstr
+           call die('FDF module: fdf_bboolean', msg,                    &
+                THIS_FILE, __LINE__, fdf_err)
+        endif
+      else
+         fdf_bboolean = .TRUE.
+         if (fdf_output) write(fdf_out,'(l10,5x,a)') fdf_bboolean, &
+                                       '# block designation by itself'
+      endif
+
+      RETURN
+
+      CONTAINS
+
+      logical function is_true(valstr)  result(a)
+      character(len=*), intent(in) :: valstr
+      a = leqi(valstr, 'yes')    .or. leqi(valstr, 'true') .or. &
+          leqi(valstr, '.true.') .or. leqi(valstr, 't')    .or. &
+          leqi(valstr, 'y')
+      end function is_true
+
+      logical function is_false(valstr)  result(a)
+      character(len=*), intent(in) :: valstr
+      a = leqi(valstr, 'no')      .or. leqi(valstr, 'false') .or. &
+          leqi(valstr, '.false.') .or. leqi(valstr, 'f')     .or. &
+          leqi(valstr, 'n')
+      end function is_false
+
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_bboolean
 
 !
 !   Returns a single precision value associated with label 'label', 
