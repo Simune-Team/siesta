@@ -39,7 +39,7 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    character(len=200), intent(in) :: TSHS
+    character(len=*), intent(in) :: TSHS
 
 ! ***********************
 ! * OUTPUT variables    *
@@ -67,7 +67,7 @@ contains
     
     if ( IONode ) then
        call io_assign(uTSHS)
-       open(file=TSHS,unit=uTSHS,form='unformatted')
+       open(file=trim(TSHS),unit=uTSHS,form='unformatted')
        read(uTSHS) tmp(1:5) !na_u, no_u, no_s, Enspin, maxnh
        if ( present(na_u) ) na_u = tmp(1)
        if ( present(no_u) ) no_u = tmp(2)

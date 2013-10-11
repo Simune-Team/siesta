@@ -12,7 +12,7 @@ module m_ts_electrode
 
 ! TODO
 ! Remove all references to Gamma for the electrode.
-! The TranSIESTA routine can at the moment not create the surface Green's
+! The TranSIESTA routine will never create the surface Green's
 ! function without having a transfer matrix.
 ! Thus we ENFORCE Gamma == .false. and the program should die if
 ! the electrode calculation was a Gamma calculation!
@@ -568,30 +568,28 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    type(Elec), intent(inout)    :: El  ! The electrode 
-    integer, intent(in)            :: nkpnt ! Number of k-points
-    real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
-    real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
-    logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
-    real(dp), intent(in)           :: xa_Eps ! the coordinate precision for the electrodes
-    integer, intent(in)            :: na_u ! Full system count of atoms in unit cell
-    real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
-    real(dp), intent(in)           :: xa(3,na_u) ! Coordinates in the system for the TranSIESTA routine
-    integer, intent(in)            :: nspin ! spin in system
-    integer, intent(in)            :: NEn ! Number of energy points
-    type(ts_ccontour), intent(in)  :: contour(NEn) ! contours path for GF
-    logical, intent(in)            :: CalcDOS ! whether or not to calculate the bulk-density of states.
+    type(Elec), intent(inout)     :: El  ! The electrode 
+    integer, intent(in)           :: nkpnt ! Number of k-points
+    real(dp),intent(in)           :: kpoint(3,nkpnt) ! k-points
+    real(dp),intent(in)           :: kweight(nkpnt) ! weights of kpoints
+    logical, intent(in)           :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
+    real(dp), intent(in)          :: xa_Eps ! the coordinate precision for the electrodes
+    integer, intent(in)           :: na_u ! Full system count of atoms in unit cell
+    real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
+    real(dp), intent(in)          :: xa(3,na_u) ! Coordinates in the system for the TranSIESTA routine
+    integer, intent(in)           :: nspin ! spin in system
+    integer, intent(in)           :: NEn ! Number of energy points
+    type(ts_ccontour), intent(in) :: contour(NEn) ! contours path for GF
+    logical, intent(in)           :: CalcDOS ! whether or not to calculate the bulk-density of states.
 
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)       :: ZBulkDOS(NEn,nspin) 
+    complex(dp), intent(out)      :: ZBulkDOS(NEn,nspin) 
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    character(len=5)   :: GFjob ! Contains either 'Left' or 'Right'
-    
     ! Array for holding converted k-points
     real(dp), allocatable :: kE(:,:)
 
@@ -605,15 +603,15 @@ contains
     integer :: nuo_E, nS, nuou_E, nuS
 
     ! Electrode transfer and hamiltonian matrix
-    complex(dp), dimension(:), pointer :: H00 => null()
-    complex(dp), dimension(:), pointer :: S00 => null()
-    complex(dp), dimension(:), pointer :: H01 => null()
-    complex(dp), dimension(:), pointer :: S01 => null()
-    complex(dp), dimension(:), pointer :: zwork => null()
-    complex(dp), dimension(:), pointer :: zHS => null()
+    complex(dp), pointer :: H00(:) => null()
+    complex(dp), pointer :: S00(:) => null()
+    complex(dp), pointer :: H01(:) => null()
+    complex(dp), pointer :: S01(:) => null()
+    complex(dp), pointer :: zwork(:) => null()
+    complex(dp), pointer :: zHS(:) => null()
 
     ! Green's function variables
-    complex(dp), dimension(:), allocatable, target :: GS
+    complex(dp), pointer :: GS(:)
     complex(dp), pointer :: Hq(:), Sq(:), Gq(:)
     complex(dp) :: ZEnergy, ZSEnergy, zdos
 
@@ -642,10 +640,8 @@ contains
     ! Check input for what to do
     if( El%inf_dir == INF_NEGATIVE ) then
        is_left = .true.
-       GFjob = 'left '
     else if( El%inf_dir == INF_POSITIVE ) then
        is_left = .false.
-       GFjob = 'right'
     else
        call die("init electrode has received wrong job ID [L,R].")
     endif
@@ -654,7 +650,7 @@ contains
 
     if (IONode) then
        write(*,'(/,2a,/,2a)') &
-            "Creating Green's function file for: ",GFjob, &
+            "Creating Green's function file for: ",trim(name(El)), &
             "Green's function file title: ",trim(GFTitle(El))
 
        write(*,*) "Electrodes with transport k-points &
@@ -707,8 +703,14 @@ contains
     end if
 
     ! Initialize Green's function and Hamiltonian arrays
-    allocate(GS(nS))
-    call memory('A','Z',nS,'create_green')
+    nullify(GS)
+    if ( nS /= nuS ) then
+       allocate(GS(nS))
+       call memory('A','Z',nS,'create_green')
+    !else
+    !  the regions are of same size, so we can just point
+    !  to the correct memory segment
+    end if
 
     ! Allocate work array
     allocate(zwork(max(nS*9,nuS*nq*2)))
@@ -761,13 +763,7 @@ contains
        ! Write spin, ELECTRODE unit-cell
        write(uGF) spin(El), unitcell(El)
        ! Write out the atomic coordinates of the used electrode
-       if ( is_left ) then
-          ! Left, we use the last atoms in the list
-          write(uGF) El%xa(:,Atoms(El)-UsedAtoms(El)+1:Atoms(El))
-       else
-          ! Right, the first atoms in the list
-          write(uGF) El%xa(:,1:UsedAtoms(El))
-       end if
+       write(uGF) El%xa_used
        ! Notice that we write the k-points for the ELECTRODE
        ! Do a conversion here
        allocate(kE(3,nkpnt))
@@ -915,6 +911,11 @@ contains
                 S00 => zHS((  nq+iqpt-1)*nS+1:(  nq+iqpt)*nS)
                 H01 => zHS((2*nq+iqpt-1)*nS+1:(2*nq+iqpt)*nS)
                 S01 => zHS((3*nq+iqpt-1)*nS+1:(3*nq+iqpt)*nS)
+                if ( nS == nuS ) then
+                   ! instead of doing a copy afterward, we can
+                   ! put it the correct place immediately
+                   GS => Gq((     iqpt-1)*nS+1:      iqpt *nS)
+                end if
 
                 ! Calculate the surface Green's function
                 ! ZSenergy is Zenergy together with the chemical shift
@@ -936,22 +937,24 @@ contains
                   
                 ! Copy over surface Green's function
                 i = (iqpt-1)*nuS
-                if ( is_left ) then
-                   ! Left, we use the last orbitals
-                   do jo = nuo_E - nuou_E , nuo_E - 1
-                      do io = nuo_E - nuou_E + 1 , nuo_E
-                         i = i + 1
-                         Gq(i) = GS(io+nuo_E*jo)
-                      end do           ! io
-                   end do              ! jo
-                else
-                   ! Right, the first orbitals
-                   do jo = 0,nuou_E-1
-                      do io = 1,nuou_E
-                         i = i + 1
-                         Gq(i) = GS(io+nuo_E*jo)
-                      end do           ! io
-                   end do              ! jo
+                if ( nS /= nuS ) then
+                   if ( is_left ) then
+                      ! Left, we use the last orbitals
+                      do jo = nuo_E - nuou_E , nuo_E - 1
+                         do io = nuo_E - nuou_E + 1 , nuo_E
+                            i = i + 1
+                            Gq(i) = GS(io+nuo_E*jo)
+                         end do           ! io
+                      end do              ! jo
+                   else
+                      ! Right, the first orbitals
+                      do jo = 0,nuou_E-1
+                         do io = 1,nuou_E
+                            i = i + 1
+                            Gq(i) = GS(io+nuo_E*jo)
+                         end do           ! io
+                      end do              ! jo
+                   end if
                 end if
 
              end do q_loop
@@ -1039,8 +1042,10 @@ contains
     end if
     
     ! Clean up computational arrays
-    call memory('D','Z',size(GS),'create_green')
-    deallocate(GS)
+    if ( nS /= nuS ) then
+       call memory('D','Z',size(GS),'create_green')
+       deallocate(GS)
+    end if
 
     if ( Gq_allocated ) then
        call memory('D','Z',size(Gq),'create_green')
@@ -1059,8 +1064,6 @@ contains
     call clear_mat_inversion()
 
     ! Clean up the data in the electrode
-    deallocate(El%xa,El%lasto)
-    nullify(El%xa,El%lasto)
     call delete_TSHS(El)
 
 #ifdef MPI
@@ -1134,8 +1137,6 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-! >>>> Related to the Electrode TSHS
-    character(len=5) :: GFjob
     integer :: notot  ! Total orbitals in all supercells
     integer :: nspin  ! The spin polarization
     integer,  dimension(:), pointer :: iza ! atomic species
@@ -1171,9 +1172,11 @@ contains
     ! Save the number of atoms in the electrode
     na_u = Atoms(El)
     ! Read-in and create the corresponding transfer-matrices
+    call delete_TSHS(EL) ! ensure clean electrode
     call read_Elec(El,Bcast=.true.)
     call create_sp2sp01(El,calc_xijo=Rep(El)/=1 .or. RemUCellDistance)
     ! Clean-up, we will not need these!
+    ! we should not be very memory hungry now, but just in case...
     call delete(El%H)
     call delete(El%S)
    
@@ -1272,10 +1275,8 @@ contains
     call reclat(unitcell(El),recell,0)
 
     if( El%inf_dir == INF_NEGATIVE ) then
-       GFjob = 'Left'
        elecElec = na_u - UsedAtoms(El) + 1
     else if ( El%inf_dir == INF_POSITIVE ) then
-       GFjob = 'Right'
        elecElec = 1
     else
        call die("init electrode has received wrong job ID [L,R].")
@@ -1283,13 +1284,13 @@ contains
 
     ! Print out structural information of the system versus the electrode
     struct_info: if ( IONode ) then
-       write(*,*) trim(GFjob)//' unit cell (Ang):'
+       write(*,*) trim(name(El))//' unit cell (Ang):'
        do j=1,3
           write(*,'(3F8.4)') (El%ucell(i,j)/Ang,i=1,3)
        end do
 
        write(*,'(a,t35,a)') &
-            " Structure of the "//trim(GFjob)//" electrode","| System electrode:"
+            " Structure of the "//trim(name(El))//" electrode","| System electrode:"
        write(*,'(t3,3a10,''  |'',3a10)') &
             "X (Ang)","Y (Ang)","Z (Ang)", &
             "X (Ang)","Y (Ang)","Z (Ang)"
@@ -1611,6 +1612,5 @@ contains
     end do
     
   end subroutine mkqgrid
-
 
 end module m_ts_electrode

@@ -97,7 +97,7 @@ contains
 
     use m_ts_electype
     use m_ts_options, only : IsVolt
-    use m_ts_options, only : ElLeft, ElRight
+    use m_ts_options, only : Elecs
     use m_ts_options, only : na_BufL, no_BufL
     use m_ts_options, only : na_BufR, no_BufR
     use m_ts_options, only : monitor_list, iu_MON, N_mon
@@ -126,27 +126,24 @@ contains
 ! **********************
     type(OrbitalDistribution) :: dit
     ! Temporary arrays for knowing the electrode size
-    integer :: no_L, no_R, i
-    integer :: no_u_LCR
-    ! Calculate the number of used atoms/orbitals in left/right
-    no_L = TotUsedOrbs(ElLeft)
-    no_R = TotUsedOrbs(ElRight)
+    integer :: i
+    integer :: no_u_TS
 
     ! Number of orbitals in TranSIESTA
-    no_u_LCR = nrows_g(sparse_pattern) - no_BufL - no_BufR
+    no_u_TS = nrows_g(sparse_pattern) - no_BufL - no_BufR
 
     ! Do a crude check of the sizes
-    if ( no_u_LCR <= no_L + no_R ) then
+    if ( no_u_TS <= sum(TotUsedOrbs(Elecs)) ) then
        call die("The contact region size is &
             &smaller than the electrode size. Please correct.")
     end if
 
-    if ( IsVolt ) then    
+    if ( IsVolt ) then 
+
        ! Create the update region (a direct subset of the local sparsity pattern)
        ! Hence it is still a local sparsity pattern.
-       call ts_Sparsity_Update(block_dist,sparse_pattern,UseBulk,UpdateDMCR, &
-            no_BufL, no_BufR, no_L, no_R, &
-            no_u_LCR, ltsup_sp_sc)
+       call ts_Sparsity_Update(block_dist,sparse_pattern, Elecs, &
+            ltsup_sp_sc)
        
        if ( IONode ) then
           write(*,'(/,a)') 'Created the TranSIESTA local update sparsity pattern:'
@@ -166,10 +163,7 @@ contains
 
     ! Create the global transiesta H(k), S(k) sparsity pattern
     call ts_Sparsity_Global(block_dist,sparse_pattern, &
-         nnzs(sparse_pattern), &
-         UseBulk, UpdateDMCR, &
-         no_BufL,no_BufR,no_L,no_R, &
-         no_u_LCR, &
+         nnzs(sparse_pattern), Elecs, &
          ts_sp_uc)
 
     if ( IONode ) then
@@ -196,9 +190,8 @@ contains
 #endif
 
     ! Create the update region (a direct subset of ts_sp_uc)
-    call ts_Sparsity_Update(dit,ts_sp_uc,UseBulk,UpdateDMCR, &
-         no_BufL, no_BufR, no_L, no_R, &
-         no_u_LCR, tsup_sp_uc)
+    call ts_Sparsity_Update(dit,ts_sp_uc, Elecs, &
+         tsup_sp_uc)
 
     if ( IONode ) then
        write(*,'(/,a)') 'Created the TranSIESTA global update sparsity pattern:'
@@ -266,9 +259,7 @@ contains
 ! z-connections (less orbitals to move about, and they should
 ! not exist).
   subroutine ts_Sparsity_Global(block_dist,s_sp,n_nzs, &
-       UseBulk, UpdateDMCR, &
-       no_BufL,no_BufR,no_L,no_R, &
-       no_u_LCR, &
+       Elecs, &
        ts_sp)
 
     use parallel, only : IONode, Node
@@ -278,6 +269,8 @@ contains
 #endif
     use class_OrbitalDistribution
     use create_Sparsity_SC
+    use m_ts_electype
+    use m_ts_method
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
 #endif
@@ -285,19 +278,16 @@ contains
 ! **********************
 ! * INPUT variables    *
 ! **********************
-    ! If we have a Gamma calculation
-    logical, intent(in) :: UseBulk, UpdateDMCR
-    ! Number of orbitals in each segment
-    integer, intent(in) :: no_BufL, no_BufR, no_L, no_R
-    ! Number of rows in the transiesta SP
-    integer, intent(in) :: no_u_LCR
     ! The SIESTA distribution of the sparsity pattern
     type(OrbitalDistribution), intent(inout) :: block_dist
-    ! Sparsity patterns of SIESTA and the returned update region.    
-    ! SIESTA sparsity pattern is the local one...
-    type(Sparsity), intent(inout) :: s_sp, ts_sp
+    ! Sparsity patterns of SIESTA (local)
+    type(Sparsity), intent(inout) :: s_sp
     ! The number of non-zeroes in the sparsity pattern (local)
     integer, intent(in) :: n_nzs
+    ! All the electrodes
+    type(Elec), intent(in) :: Elecs(:)
+    ! the returned update region.    
+    type(Sparsity), intent(inout) :: ts_sp
 
 ! **********************
 ! * LOCAL variables    *
@@ -323,12 +313,13 @@ contains
     integer :: no_local, no_u, uc_n_nzs, n_nzsg
 
     ! search logical to determine the update region...
-    logical, allocatable :: lup_DM(:)
-    logical :: direct_LR
+    logical, allocatable :: l_HS(:)
 
     ! Loop-counters
-    integer :: j ,io, ic,jc, ind
+    integer :: j ,io, jo, ind
+    integer :: iot, jot
     integer :: no_u_LC
+    logical :: UseBulk
 
     ! Initialize
     call delete(ts_sp)
@@ -384,21 +375,19 @@ contains
          nnzs=n_nzsg)
 
     ! allocate space for the MASK to create the TranSIESTA GLOBAL region
-    allocate(lup_DM(n_nzsg))
+    allocate(l_HS(n_nzsg))
     call memory('A','L',n_nzsg,'transiesta')
 
     ! Initialize
-    lup_DM(:) = .false.
-    direct_LR = .false.
-
-    ! Retrieve the ending point of LC region
-    no_u_LC = no_u_LCR - no_R
+    l_HS(:) = .false.
 
     ! We do not need to check the buffer regions...
     ! We know they will do NOTHING! :)
-    do io = no_BufL + 1 , no_u - no_BufR
-       ! Shift out of the buffer region
-       ic = io - no_BufL
+    do io = 1 , no_u
+
+       iot = get_orb_type(io)
+       if ( iot == TYP_BUFFER ) cycle
+
        ! Loop number of entries in the row...
        do j = 1 , l_ncol(io)
 
@@ -406,39 +395,39 @@ contains
           ind = l_ptr(io) + j
           
           ! The unit-cell column index (remember we are looping a UC SP)
-          jc = l_col(ind) - no_BufL
+          jo = l_col(ind)
 
-          ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
+          ! If we are in the buffer region, cycle (l_HS(ind) =.false. already)
           ! note, that we have already *checked* ic
-          if ( jc < 1 ) cycle
-          if ( no_u_LCR < jc ) cycle
+          jot = get_orb_type(jo)
+          if ( jot == TYP_BUFFER ) cycle
 
-          ! We check whether it is electrode-connections. 
-          ! If, so, they are not used in transiesta:
-          if      ( ic <= no_L .and. no_u_LC < jc ) then
-             lup_DM(ind) = .false.
-
-             ! This means that we have an INNER-cell connection
-             ! TODO, do a check on the local nodes SP for this
-             !direct_LR = direct_LR .or. ( jc == jo - no_BufL )
-          else if ( jc <= no_L .and. no_u_LC < ic ) then
-             lup_DM(ind) = .false.
-
-             ! This means that we have an INNER-cell connection
-             ! TODO, do a check on the local nodes SP for this
-             !direct_LR = direct_LR .or. ( jc == jo - no_BufL )
-          else if ( UseBulk .and. ic <= no_L .and. jc <= no_L ) then
-             lup_DM(ind) = .false.
-
-             ! in case of UseBulk we remove the left electrode from
-             ! the Hamiltonian
-          else if ( UseBulk .and. no_u_LC < ic .and. no_u_LC < jc ) then
-             lup_DM(ind) = .false.
-
-             ! in case of UseBulk we remove the right electrode from
-             ! the Hamiltonian
+          if ( iot > 0 ) then
+             UseBulk = Elecs(iot)%UseBulk
+          else if ( jot > 0 ) then
+             UseBulk = Elecs(jot)%UseBulk
           else
-             lup_DM(ind) = .true.
+             ! we are definitely not in an electrode
+             UseBulk = .true.
+          end if
+             
+          if ( UseBulk ) then
+             ! here we create the update-density matrix on these criterias:
+             !  1) no electrode-electrode connections
+             !  2) no only-electrode connections
+             !  3) add cross-terms
+
+             l_HS(ind) = any((/iot,jot/)==TYP_DEVICE)
+
+          else
+             ! If not usebulk we update everything that is not buffer
+             ! We also do not add things that are from one electrode
+             ! to another
+             if ( all(0 < (/iot,jot/)) ) then
+                l_HS(ind) = iot == jot
+             else
+                l_HS(ind) = .true.
+             end if
           end if
 
        end do
@@ -447,14 +436,13 @@ contains
 
     ! We now have a MASK of the actual needed TranSIESTA sparsity pattern
     ! We create the TranSIESTA sparsity pattern
-    call crtSparsity_SC(sp_uc,ts_sp,MASK=lup_DM)
+    call crtSparsity_SC(sp_uc,ts_sp,MASK=l_HS)
 
     ! clean-up
-    deallocate(lup_DM)
+    deallocate(l_HS)
     call memory('D','L',n_nzsg,'transiesta')
     
     ! Furthermore, we dont need the SIESTA UC sparsity global...
-    ! TODO check that this object is in fact deleted...
     call delete(sp_uc)
 
   end subroutine ts_Sparsity_Global
@@ -465,28 +453,22 @@ contains
 ! cross connections from left-right, AND remove any
 ! z-connections (less orbitals to move about, and they should
 ! not exist).
-  subroutine ts_Sparsity_Update(dit,s_sp, &
-       UseBulk, UpdateDMCR, &
-       no_BufL,no_BufR,no_L,no_R, &
-       no_u_LCR, &
+  subroutine ts_Sparsity_Update(dit,s_sp, Elecs, &
        tsup_sp)
 
     use parallel, only : IONode, Node
     use geom_helper, only : UCORB
     use create_Sparsity_SC
     use class_OrbitalDistribution
-
+    use m_ts_method
+    use m_ts_electype
 ! **********************
 ! * INPUT variables    *
 ! **********************
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: s_sp
-    ! Options for creating the update
-    logical, intent(in) :: UseBulk, UpdateDMCR
-    ! Number of orbitals in each segment
-    integer, intent(in) :: no_BufL, no_BufR, no_L, no_R
-    ! Number of rows in the transiesta SP
-    integer, intent(in) :: no_u_LCR
+    ! the electrodes
+    type(Elec), intent(in) :: Elecs(:)
     type(Sparsity), intent(inout) :: tsup_sp
 
 ! **********************
@@ -505,11 +487,12 @@ contains
     ! search logical to determine the update region...
     logical, allocatable :: lup_DM(:)
     logical :: direct_LR
+    logical :: UseBulk, UpdateDMCR
 
     ! Loop-counters
     integer :: j ,io, ic,jc, ind
-    integer :: no_u_LC
-
+    integer :: ict, jct
+    
     ! Logical for determining the region
     logical :: i_in_C, j_in_C
 
@@ -526,49 +509,54 @@ contains
     lup_DM(:) = .false.
     direct_LR = .false.
 
-    ! Retrieve the ending orbital of the LC region
-    no_u_LC = no_u_LCR - no_R
-
     call attach(s_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! We do not need to check the buffer regions...
     ! We know they will do NOTHING! :)
     do io = 1 , no_local
+
        ! Shift out of the buffer region
-       ic = index_local_to_global(dit,io,Node) - no_BufL
+       ic = index_local_to_global(dit,io,Node)
 
        ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-       if ( ic < 1 ) cycle
-       if ( no_u_LCR < ic ) cycle
+       ict = get_orb_type(ic)
+       if ( ict == TYP_BUFFER ) cycle
 
-       ! Loop number of entries in the row...
-       do j = 1 , l_ncol(io)
+       ! Loop the index of the pointer array
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-          ! The index in the pointer array is retrieved
-          ind = l_ptr(io) + j
-          
           ! The unit-cell column index, without buffer
-          jc = UCORB(l_col(ind),no_u) - no_BufL
+          jc = UCORB(l_col(ind),no_u)
 
           ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
           ! note, that we have already *checked* ic
-          if ( jc < 1 ) cycle
-          if ( no_u_LCR < jc ) cycle
+          jct = get_orb_type(jc)
+          if ( jct == TYP_BUFFER ) cycle
+
+          if ( ict > 0 ) then
+             UseBulk = Elecs(ict)%UseBulk
+             UpdateDMCR = Elecs(ict)%UpdateDMCR
+          else if ( jct > 0 ) then
+             UseBulk = Elecs(jct)%UseBulk
+             UpdateDMCR = Elecs(jct)%UpdateDMCR
+          else
+             ! we are definitely not in an electrode
+             UseBulk = .true.
+             UpdateDMCR = .true.
+          end if
 
           ! We check whether it is electrode-connections. 
           ! If, so, they are not used in transiesta:
-          if      ( ic <= no_L .and. no_u_LC < jc ) then
+          if      ( all((/ict,jct/) > 0) .and. ict /= jct ) then
              lup_DM(ind) = .false.
 
              ! This means that we have an INNER-cell connection
-             ! TODO, do a check on the local nodes SP for this
-             !direct_LR = direct_LR .or. ( jc == jo - no_BufL )
-          else if ( jc <= no_L .and. no_u_LC < ic ) then
-             lup_DM(ind) = .false.
-
-             ! This means that we have an INNER-cell connection
-             ! TODO, do a check on the local nodes SP for this
-             !direct_LR = direct_LR .or. ( jc == jo - no_BufL )
+             !if ( jc == l_col(ind) ) then
+                ! The first super-cell is the home-unit-cell
+                ! hence it means a direct interaction in the unit-cell
+                !print *,get_orb_type((/ic,jc/))
+                !direct_LR = .true.
+             !end if
           else if ( UseBulk ) then
              ! If UseBulk, we can safely update cross-terms
              ! between the central and the electrodes (the self-energies are the
@@ -577,8 +565,8 @@ contains
              ! via the option UpdateDMCR
              ! This will also remove any electrode terms
 
-             i_in_C = ( no_L < ic .and. ic <= no_u_LC )
-             j_in_C = ( no_L < jc .and. jc <= no_u_LC )
+             i_in_C = ict == TYP_DEVICE
+             j_in_C = jct == TYP_DEVICE
 
              if ( UpdateDMCR ) then
                 ! the user has requested to ONLY update the central region

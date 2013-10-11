@@ -40,8 +40,11 @@ module m_ts_Sparsity2TriMat
 contains
 
   ! IF parts == 0 will create new partition
-  subroutine ts_Sparsity2TriMat(sp,parts,n_part)
+  subroutine ts_Sparsity2TriMat(dit,sp,parts,n_part)
+
+    use class_OrbitalDistribution
     use class_Sparsity
+    use create_Sparsity_Union
     use parallel, only : IONode, Node, Nodes
 #ifdef MPI
     use mpi_siesta
@@ -49,9 +52,11 @@ contains
     use alloc, only : re_alloc, de_alloc
     use m_ts_electype
     use m_ts_options, only : no_BufL, no_BufR
-    use m_ts_options, only : ElLeft, ElRight
+    use m_ts_options, only : Elecs
     use m_ts_options, only : opt_TriMat_method
 
+    ! the distribution
+    type(OrbitalDistribution), intent(inout) :: dit
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! The sizes of the parts in the tri-diagonal matrix
@@ -79,12 +84,15 @@ contains
     ! We initialize to the standard 3-tri-diagonal matrix
     call set_3TriMat(nrows_g(sp),parts,n_part)
 
+    ! TODO
+    ! create array containing max-min for each orbital
+    ! this will speed up this routine greatly!!!!
+    
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
-    ! left electrode
     ! In cases of MPI we do it distributed (however, the collection routine
     ! below could be optimized)
-    do i = 2 , TotUsedOrbs(ElLeft) , Nodes
+    do i = 2 , nrows_g(sp) / 10 , Nodes
 
        ! Make new guess...
        call guess_TriMat(sp,i,guess_parts,guess_part)
@@ -135,6 +143,7 @@ contains
           end if
        end if
        call re_alloc(n_part, 1, 3, routine='tsSp2TM',name='n_part')
+       call die('Not yet implemented')
        call set_3TriMat(nrows_g(sp),parts,n_part)
 
     end if
@@ -528,16 +537,26 @@ contains
   function ts_valid_tri(sp,parts,n_part) result(val)
     use class_Sparsity
     use m_ts_electype
-    use m_ts_options, only: ElLeft, ElRight
+    use m_ts_options, only: no_BufL, Elecs
     type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: parts, n_part(parts)
     integer :: val
+    integer :: i, idx1, idx2, j
 
-    if ( sum(n_part(1:2)) < TotUsedOrbs(ElLeft) .or. &
-         sum(n_part(parts-1:parts)) < TotUsedOrbs(ElRight) ) then
-       val = NONVALID_TS_ELECTRODE
-       return
-    end if
+    do i = 1 , size(Elecs)
+       idx1 = Elecs(i)%idx_no - no_BufL
+
+       do j = 1 , parts - 1
+          idx2 = idx1 - sum(n_part(1:j))
+          if ( 0 <= idx2 ) then
+             if ( idx2 + TotUsedOrbs(Elecs(i)) < n_part(j+1) ) then
+                val = NONVALID_TS_ELECTRODE
+                return
+             end if
+             exit
+          end if
+       end do
+    end do
 
     val = valid_tri(sp,parts,n_part)
     if ( val /= VALID ) return
@@ -548,14 +567,14 @@ contains
   subroutine set_3TriMat(no_u,parts,n_part)
     use m_ts_electype
     use m_ts_options, only : no_BufL, no_BufR
-    use m_ts_options, only : ElLeft, ElRight
+    use m_ts_options, only : Elecs
     integer, intent(in) :: no_u
     integer, intent(out) :: parts
     integer, intent(out) :: n_part(3)
 
     parts = 3
-    n_part(1) = TotUsedOrbs(ElLeft)
-    n_part(3) = TotUsedOrbs(ElRight)
+    n_part(1) = TotUsedOrbs(Elecs(1))
+    n_part(3) = TotUsedOrbs(Elecs(size(Elecs)))
     n_part(2) = no_u - no_BufL - no_BufR - n_part(1) - n_part(3)
   end subroutine set_3TriMat
 

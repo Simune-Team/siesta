@@ -1,5 +1,5 @@
 subroutine ts_show_regions(ucell,na_u,xa,naBufL, &
-     ElLeft, ElRight,naBufR)
+     nElecs,Elecs,naBufR)
   use m_ts_electype
   use precision, only : dp
   use units, only : Ang
@@ -11,36 +11,45 @@ subroutine ts_show_regions(ucell,na_u,xa,naBufL, &
   real(dp), intent(in) :: ucell(3,3)
   integer, intent(in)  :: na_u
   real(dp), intent(in) :: xa(3,na_u)
-  type(Elec), intent(in) :: ElLeft, ElRight
+  integer, intent(in) :: nElecs
+  type(Elec), intent(in) :: Elecs(nElecs)
   integer, intent(in)  :: naBufL, naBufR
 
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-  integer :: ia, i, mid
+  integer :: ia, i, mid, ia_mid
+  logical :: printed_elec
 
   if ( .not. IONode ) return
 
   ! Initialize ia counter
   ia = 0
 
+  ia_mid = (na_u - naBufL-sum(TotUsedAtoms(Elecs))-naBufR+1) / 2
+
   write(*,'(/,a)') 'transiesta: Atomic coordinates and regions (Ang):'
   call out_REGION(ia,naBufL,'Left buffer','/')
-  call out_REGION(ia,TotUsedAtoms(ElLeft),'Left electrode','#')
-
-  mid = (na_u - naBufL-TotUsedAtoms(ElLeft)-TotUsedAtoms(ElRight)-naBufR+1) / 2
-  do i = 1 , na_u - naBufL-TotUsedAtoms(ElLeft)-TotUsedAtoms(ElRight)-naBufR
-     ia = ia + 1
-     if ( i == mid ) then
-        write(*,'(tr1,3(tr2,f12.7),tr8,a)') &
-             xa(:,ia)/Ang,'Device'
-     else
-        write(*,'(tr1,3(tr2,f12.7))') &
-             xa(:,ia)/Ang
+  do while ( ia < na_u - naBufR )
+     printed_elec = .false.
+     do i = 1 , nElecs
+        if ( ia + 1 == Elecs(i)%idx_na ) then
+           call out_REGION(ia,TotUsedAtoms(Elecs(i)), &
+                trim(name(Elecs(i)))//' electrode','#')
+           printed_elec = .true.
+        end if
+     end do
+     if ( .not. printed_elec ) then
+        ia = ia + 1
+        ia_mid = ia_mid - 1
+        if ( ia_mid == 0 ) then
+           write(*,'(tr1,3(tr2,f12.7),tr8,a)') xa(:,ia)/Ang,'Device'
+        else
+           write(*,'(tr1,3(tr2,f12.7))') xa(:,ia)/Ang
+        end if
      end if
   end do
 
-  call out_REGION(ia,TotUsedAtoms(ElRight),'Right electrode','#')
   call out_REGION(ia,naBufR,'Right buffer','/')
 
   write(*,*)

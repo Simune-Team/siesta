@@ -30,7 +30,7 @@
 ! There are however a few routines which are encouraged
 ! to use through-out, and also in heavy duty calculations.
 ! These are:
-!   - cell_xyz which does not do any calculations that would not
+!   - cell_abc which does not do any calculations that would not
 !     be performed otherwise.
 !   - ucorb, even though there are calculations in this routine
 !     the lack of passing, and look-up in the indxuo array

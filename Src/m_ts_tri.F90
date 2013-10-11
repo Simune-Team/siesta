@@ -69,18 +69,19 @@ contains
 
     use m_ts_options, only : IsVolt, no_BufL, no_BufR
     use m_ts_electype
-    use m_ts_options, only : ElLeft, ElRight
+    use m_ts_options, only : Elecs
     use m_ts_sparse, only : ts_sp_uc
 
     use m_ts_Sparsity2TriMat
 
     type(OrbitalDistribution) :: dit
-    type(Sparsity) :: ts_uc_inc_L, ts_uc_inc_LR
+    type(Sparsity) :: tmpSp1, tmpSp2
 
+    integer :: idx, no
     integer :: i, els, no_L, no_C, no_R
 
-    no_L = TotUsedOrbs(ElLeft)
-    no_R = TotUsedOrbs(ElRight)
+    no_L = TotUsedOrbs(Elecs(1))
+    no_R = TotUsedOrbs(Elecs(2))
     no_C = nrows_g(ts_sp_uc) - no_L - no_R - no_BufL - no_BufR
 
     ! In order to ensure that the electrodes are in the
@@ -100,17 +101,26 @@ contains
     ! use and for large systems it could prove faster.
     ! For small systems, it will probably be slower...
 
-    call crtSparsity_Union(dit,ts_sp_uc,&
-         no_BufL+1, no_BufL+1, & ! place of matrix
-         no_L, no_L, &           ! size of the matrix
-         ts_uc_inc_L)
-    call delete(ts_uc_inc_LR)
-    call crtSparsity_Union(dit,ts_uc_inc_L,&
-         no_BufL+no_L+no_C+1, no_BufL+no_L+no_C+1, &
-         no_R, no_R, &
-         ts_uc_inc_LR)
-    call delete(dit)
-    call delete(ts_uc_inc_L)
+    ! This works as creating a new sparsity deletes the previous
+    ! and as it is referenced several times it will not be actually
+    ! deleted...
+    tmpSp1 = ts_sp_uc
+    tmpSp2 = ts_sp_uc
+    do i = 1 , size(Elecs)
+
+       idx = Elecs(i)%idx_no
+       no = TotUsedOrbs(Elecs(i))
+
+       ! we first create the super-set sparsity
+       if ( mod(i,2) == mod(size(Elecs),2) ) then
+          call crtSparsity_Union(dit,tmpSp1, &
+               idx,idx,no,no, tmpSp2)
+       else
+          call crtSparsity_Union(dit,tmpSp2, &
+               idx,idx,no,no, tmpSp1)
+       end if
+    end do
+    call delete(tmpSp1)
 
     ! This will create and even out the parts
     if ( associated(tri_part) ) &
@@ -121,8 +131,9 @@ contains
     tri_parts = 0
     nullify(tri_part)
     if ( IONode ) write(*,'(/,a)') 'transiesta: Determining an optimal tri-matrix...'
-    call ts_Sparsity2TriMat(ts_uc_inc_LR,tri_parts,tri_part)
-    call delete(ts_uc_inc_LR)
+    call ts_Sparsity2TriMat(dit,tmpSp2,tri_parts,tri_part)
+    call delete(tmpSp2)
+    call delete(dit)
 
     if ( tri_parts < 3 ) then
        call die('Erroneous transiesta update sparsity pattern. &
@@ -230,7 +241,7 @@ contains
 
     use m_ts_electype
 
-    use m_ts_options, only : ElLeft, ElRight
+    use m_ts_options, only : Elecs
     use m_ts_options, only : na_BufL, no_BufL
     use m_ts_options, only : na_BufR, no_BufR
     use m_ts_options, only : N_mon, iu_MON, monitor_list
@@ -371,27 +382,27 @@ contains
     call timer('TS_calc',1)
     
     ! Calculate the number of used atoms in left/right
-    na_L_HS = UsedAtoms(ElLeft)
-    na_R_HS = UsedAtoms(ElRight)
-    no_L_HS = UsedOrbs(ElLeft)
-    no_R_HS = UsedOrbs(ElRight)
-    na_L = TotUsedAtoms(ElLeft)
-    no_L = TotUsedOrbs(ElLeft)
-    na_R = TotUsedAtoms(ElRight)
-    no_R = TotUsedOrbs(ElRight)
+    na_L_HS = UsedAtoms(Elecs(1))
+    na_R_HS = UsedAtoms(Elecs(2))
+    no_L_HS = UsedOrbs(Elecs(1))
+    no_R_HS = UsedOrbs(Elecs(2))
+    na_L = TotUsedAtoms(Elecs(1))
+    no_L = TotUsedOrbs(Elecs(1))
+    na_R = TotUsedAtoms(Elecs(2))
+    no_R = TotUsedOrbs(Elecs(2))
 
     ! Create the lasto pointers for the electrode expansions...
     allocate(lasto_L(0:na_L_HS))
     lasto_L(0) = 0
     ia_E = 0
-    do ia = na_BufL + 1 , na_BufL + na_L, Rep(ElLeft)
+    do ia = na_BufL + 1 , na_BufL + na_L, Rep(Elecs(1))
        ia_E = ia_E + 1
        lasto_L(ia_E) = lasto_L(ia_E-1) + lasto(ia) - lasto(ia-1)
     end do
     allocate(lasto_R(0:na_R_HS))
     lasto_R(0) = 0
     ia_E = 0
-    do ia = na_u - na_R - na_BufR + 1 , na_u - na_BufR , Rep(ElRight)
+    do ia = na_u - na_R - na_BufR + 1 , na_u - na_BufR , Rep(Elecs(2))
        ia_E = ia_E + 1
        lasto_R(ia_E) = lasto_R(ia_E-1) + lasto(ia) - lasto(ia-1)
     end do
@@ -419,9 +430,9 @@ contains
     ! Open GF files...
     if ( IONode ) then
        call io_assign(uGFL)
-       open(file=GFFile(ElLeft),unit=uGFL,form='unformatted')
+       open(file=GFFile(Elecs(1)),unit=uGFL,form='unformatted')
        call io_assign(uGFR)
-       open(file=GFFile(ElRight),unit=uGFR,form='unformatted')
+       open(file=GFFile(Elecs(2)),unit=uGFR,form='unformatted')
     end if
 
     ! Read-in header of Green's functions
@@ -433,13 +444,13 @@ contains
     ! Read in the headers of the surface-Green's function files...
     ! Left
     call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn, &
-         ElLeft,.false.,nspin, &
+         Elecs(1),.false.,nspin, &
          nkparL,kparL,wkparL, &
          nqL,wqL,qLb)
 
     ! Right
     call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn, &
-         ElRight,.false.,nspin,  &
+         Elecs(2),.false.,nspin,  &
          nkparR,kparR,wkparR, &
          nqR,wqR,qRb)
 
@@ -483,12 +494,12 @@ contains
     call init_mat_inversion(maxval(tri_part))
 
     ! Allocate the left-right electrode quantities that we need
-    allocate(HAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
-    allocate(SAAL(no_L_HS,no_L_HS,Rep(ElLeft)))
-    allocate(HAAR(no_R_HS,no_R_HS,Rep(ElRight)))
-    allocate(SAAR(no_R_HS,no_R_HS,Rep(ElRight)))
-    ispin =         no_L_HS**2*Rep(ElLeft)  * 2
-    ispin = ispin + no_R_HS**2*Rep(ElRight) * 2
+    allocate(HAAL(no_L_HS,no_L_HS,Rep(Elecs(1))))
+    allocate(SAAL(no_L_HS,no_L_HS,Rep(Elecs(1))))
+    allocate(HAAR(no_R_HS,no_R_HS,Rep(Elecs(2))))
+    allocate(SAAR(no_R_HS,no_R_HS,Rep(Elecs(2))))
+    ispin =         no_L_HS**2*Rep(Elecs(1))  * 2
+    ispin = ispin + no_R_HS**2*Rep(Elecs(2)) * 2
     call memory('A','Z',ispin,'transiesta')
     
     ! This seems stupid, however, we never use the Sigma[LR] and
@@ -1105,14 +1116,14 @@ contains
       ! Hence we can perform the calculation without 
       ! calculating them.
       call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
-           ElLeft, &
+           Elecs(1), &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
       call UC_expansion(.false.,UseBulk,Z,no_R_HS,no_R, &
-           ElRight, &
+           Elecs(2), &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
@@ -1198,14 +1209,14 @@ contains
       ZW = Z * W
 
       call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
-           ElLeft, &
+           Elecs(1), &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
       call UC_expansion(.true.,UseBulk,Z,no_R_HS,no_R, &
-           ElRight, &
+           Elecs(2), &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
@@ -1297,14 +1308,14 @@ contains
       ZW = Z * W
 
       call UC_expansion(.true.,UseBulk,Z,no_L_HS,no_L, &
-           ElLeft, &
+           Elecs(1), &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
       call UC_expansion(.false.,UseBulk,Z,no_R_HS,no_R, &
-           ElRight, &
+           Elecs(2), &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
@@ -1389,14 +1400,14 @@ contains
       ZW = Z * W
 
       call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
-           ElLeft, &
+           Elecs(1), &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
       call UC_expansion(.true.,UseBulk,Z,no_R_HS,no_R, &
-           ElRight, &
+           Elecs(2), &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 

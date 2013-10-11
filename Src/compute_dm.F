@@ -32,7 +32,7 @@
       use files,            only : slabel
       use m_ts_global_vars, only : TSiscf, TSinit, TSrun
       use m_ts_method
-      use m_ts_options,     only : TSmode, ElLeft, ElRight
+      use m_ts_options,     only : TSmode, Elecs
       use m_ts_options,     only : no_BufL, no_BufR
       use m_ts_full,        only : transiesta_full
       use m_ts_tri,         only : ts_tri_init
@@ -112,7 +112,7 @@
            call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
      &             na_u, lasto)
            call ts_tri_init()
-           call ts_print_charges(ElLeft, ElRight, no_BufL, no_BufR,
+           call ts_print_charges(Elecs,
      &          block_dist, sparse_pattern,nspin, maxnh, Dscf, S)
         end if
         call transiesta_full(nspin,Gamma, block_dist,
@@ -130,7 +130,7 @@
            if ( ts_method == TS_SPARSITY_TRI ) then
               call ts_tri_init()
            end if
-           call ts_print_charges(ElLeft, ElRight, no_BufL, no_BufR,
+           call ts_print_charges(Elecs,
      &          block_dist, sparse_pattern,nspin, maxnh, Dscf, S)
         end if
         if ( ts_method == TS_SPARSITY ) then
@@ -147,9 +147,9 @@
         ! We do the charge correction of the transiesta
         ! computation here (notice that the routine will automatically
         ! return if no charge-correction is requested)
-        call ts_charge_correct(ElLeft, ElRight,
-     &       no_BufL, no_BufR, block_dist, sparse_pattern, 
-     &       nspin, maxnh, Dscf, Escf, S, Qtot, TS_RHOCORR_METHOD)
+        call ts_charge_correct(no_BufL+no_BufR, Elecs, block_dist,
+     &       sparse_pattern,nspin, maxnh, Dscf, Escf, S, Qtot,
+     &       TS_RHOCORR_METHOD)
 
            
         call timer('TS',2)

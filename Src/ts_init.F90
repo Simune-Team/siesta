@@ -67,7 +67,7 @@ contains
     complex(dp), dimension(:,:), allocatable :: dos
     type(ts_ccontour), pointer :: c(:) => null()
     integer :: i, sNE, eNE
-    integer :: nL, nC, nR, nTS
+    integer :: nC, nTS
 
 
     ! Read in options for transiesta
@@ -80,6 +80,10 @@ contains
     ! If we actually have a transiesta run we need to process accordingly!
     if ( TSmode ) then
 
+       ! initialize regions of the electrodes and device
+       ! the number of LCAO orbitals on each atom will not change
+       call ts_init_region_types(na_BufL,Elecs,na_BufR,na_u,lasto)
+
        ! here we will check for all the size requirements of Transiesta
        ! I.e. whether some of the optimizations can be erroneous or not
 
@@ -90,21 +94,19 @@ contains
        ! First calculate L/C/R sizes (we remember to subtract the buffer
        ! orbitals)
        nTS = no_u - no_BufL - no_BufR
-       nL  = TotUsedOrbs(ElLeft)
-       nR  = TotUsedOrbs(ElRight)
-       nC  = nTS  - nL  - nR
+       nC  = nTS  - sum(TotUsedOrbs(Elecs))
        if ( nC < 1 ) &
             call die("The contact region size is &
                &smaller than the electrode size. &
                &What have you done? Please correct this insanity...")
 
-       if ( nL < 2 .or. nR < 2 ) &
+       if ( minval(TotUsedOrbs(Elecs)) < 2 ) &
             call die('We cannot perform sparse pattern on the electrode &
             &system.')
 
        ! Show every region of the Transiesta run
        call ts_show_regions(ucell,na_u,xa, &
-            na_BufL,ElLeft, ElRight,na_BufR)
+            na_BufL,size(Elecs),Elecs,na_BufR)
        
        ! Create the contour lines
        call setup_contour(IsVolt)
@@ -144,18 +146,13 @@ contains
           ! GF generation:
           allocate(dos(NEn,nspin))
           call memory('A','Z',NEn*nspin,'transiesta')
-     
-          ! Create the Left GF file
-          call do_Green(ElLeft, ReUseGF, &
-               ts_nkpnt,ts_kpoint,ts_kweight, &
-               .false., Elec_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
-               ucell,xa,na_u,NEn,contour,.false.,dos,nspin)
-          
-          ! Create the Right GF file
-          call do_Green(ElRight, ReUseGF, &
-               ts_nkpnt,ts_kpoint,ts_kweight, &
-               .false., Elec_xa_Eps, &
-               ucell,xa,na_u,NEn,contour,.false.,dos,nspin)
+
+          do i = 1 , size(Elecs)
+             call do_Green(Elecs(i), ReUseGF, &
+                  ts_nkpnt,ts_kpoint,ts_kweight, &
+                  .false., Elec_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
+                  ucell,xa,na_u,NEn,contour,.false.,dos,nspin)
+          end do
           
           call memory('D','Z',NEn*nspin,'transiesta')
           deallocate(dos)
@@ -165,19 +162,14 @@ contains
        ! Print out information in Green's function files
        ! Show the number of used atoms and orbitals
        if ( IONode ) then
-          write(*,'(/,a,i6,'' / '',i6)') &
-               'Left : GF atoms    / Expanded atoms    : ',UsedAtoms(ElLeft), &
-               TotUsedAtoms(ElLeft)
-          write(*,'(a,i6,'' / '',i6)') &
-               'Left : GF orbitals / Expanded orbitals : ',UsedOrbs(ElLeft), &
-               TotUsedOrbs(ElLeft)
-          write(*,'(a,i6,'' / '',i6)') &
-               'Right: GF atoms    / Expanded atoms    : ',UsedAtoms(ElRight), &
-               TotUsedAtoms(ElRight)
-          write(*,'(a,i6,'' / '',i6)') &
-               'Right: GF orbitals / Expanded orbitals : ',UsedOrbs(ElRight), &
-               TotUsedOrbs(ElRight)
-
+          do i = 1 , size(Elecs)
+             write(*,'(a30,i6,'' / '',i6)') &
+                  trim(Name(Elecs(i)))//' : GF atoms    / Expanded atoms    : ', &
+                  UsedAtoms(Elecs(i)), TotUsedAtoms(Elecs(i))
+             write(*,'(a30,i6,'' / '',i6)') &
+                  trim(Name(Elecs(i)))//' : GF orbitals / Expanded orbitals : ', &
+                  UsedOrbs(Elecs(i)), TotUsedOrbs(Elecs(i))
+          end do
           write(*,*) ! New line
        end if
 

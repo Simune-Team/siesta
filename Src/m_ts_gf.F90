@@ -69,24 +69,24 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    type(Elec),       intent(inout) :: El
-    logical, intent(in)          :: optReUseGF ! Should we re-use the GF files if they exists?    
-    integer, intent(in)          :: nkpnt ! Number of k-points
-    real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
-    real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
-    logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
-    real(dp), intent(in)           :: xa_Eps ! coordinate precision check
-    integer, intent(in)            :: na_u ! Full system count of atoms in unit cell
-    real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
-    real(dp), intent(in)           :: xa(3,na_u) ! Coordinates in the system for the TranSIESTA routine
-    integer, intent(in)            :: nspin ! spin in system
-    integer, intent(in)            :: NEn ! Number of energy points
-    type(ts_ccontour), intent(in)  :: contour(NEn) ! contour for GF
-    logical, intent(in)            :: CalcDOS
+    type(Elec), intent(inout)     :: El
+    logical, intent(in)           :: optReUseGF ! Should we re-use the GF files if they exists?    
+    integer, intent(in)           :: nkpnt ! Number of k-points
+    real(dp), intent(in)          :: kpoint(3,nkpnt) ! k-points
+    real(dp), intent(in)          :: kweight(nkpnt) ! weights of kpoints
+    logical, intent(in)           :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
+    real(dp), intent(in)          :: xa_Eps ! coordinate precision check
+    integer, intent(in)           :: na_u ! Full system count of atoms in unit cell
+    real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
+    real(dp), intent(in)          :: xa(3,na_u) ! Coordinates in the system for the TranSIESTA routine
+    integer, intent(in)           :: nspin ! spin in system
+    integer, intent(in)           :: NEn ! Number of energy points
+    type(ts_ccontour), intent(in) :: contour(NEn) ! contour for GF
+    logical, intent(in)           :: CalcDOS
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)       :: ZBulkDOS(NEn,nspin) ! DOS at energy points
+    complex(dp), intent(out)      :: ZBulkDOS(NEn,nspin) ! DOS at energy points
 
 ! ***********************
 ! * LOCAL variables     *
@@ -129,8 +129,6 @@ contains
             RemUCellDistance, xa_Eps, &
             ucell,xa,na_u,NEn,contour,CalcDOS,ZBulkDOS,nspin)
 
-       ! clean-up data arrays...
-       call delete_TSHS(El)
     end if
 
     !
@@ -216,7 +214,7 @@ contains
 
 ! ***********************
 ! * OUTPUT variables    *
-! ***********************    
+! *********************** 
     integer, intent(out) :: nkpar,nq
     real(dp), allocatable, intent(inout) :: kpar(:,:), wkpar(:)
     real(dp), allocatable, intent(inout) :: qb(:,:)  , wq(:)

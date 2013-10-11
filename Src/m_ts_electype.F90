@@ -10,12 +10,18 @@ module m_ts_electype
 
   private
 
+  ! Name is part of the class-system, we need
+  ! it as an interface
+  interface name
+     module procedure name_
+  end interface name
+
   public :: assign, read_Elec
   public :: create_sp2sp01
   public :: delete_TSHS
-  
+
   public :: Elec
-  public :: HSfile, GFFile, GFTitle
+  public :: Name, HSfile, GFFile, GFTitle
   public :: Atoms, UsedAtoms, TotUsedAtoms
   public :: Orbs, UsedOrbs, TotUsedOrbs
   public :: SCOrbs
@@ -24,27 +30,31 @@ module m_ts_electype
   public :: Rep
   public :: RepA1, RepA2, RepA3
 
+  public :: fdf_nElec, fdf_elec
+
   public :: INF_NEGATIVE, INF_POSITIVE
 
   integer, parameter :: FILE_LEN = 200
 
-  integer, parameter :: INF_NEGATIVE = 0
-  integer, parameter :: INF_POSITIVE = 1
+  integer, parameter :: INF_NEGATIVE = 0 ! old 'left'
+  integer, parameter :: INF_POSITIVE = 1 ! old 'right'
 
   integer, parameter :: HAS_NOTHING = 0
   integer, parameter :: HAS_HS = 1
   integer, parameter :: HAS_HS00_HS01 = 2
 
   type :: Elec
-     character(len=FILE_LEN) :: HSfile, GFfile, GFtitle
+     character(len=FILE_LEN) :: Name=' ', HSfile=' ', GFfile=' ', GFtitle=' '
      ! These variables are relative to the big system
-     integer :: idx_na
+     integer :: idx_na, idx_no
      integer :: na_used
      integer :: no_used
      integer :: RepA1 = 1, RepA2 = 1, RepA3 = 1
      real(dp) :: mu
      integer :: inf_dir = INF_NEGATIVE
      integer :: t_dir = 3
+     logical :: UseBulk = .true.
+     logical :: UpdateDMCR = .true.
      ! Used xa and lasto
      real(dp), pointer :: xa_used(:,:) => null()
      integer, pointer :: lasto_used(:) => null()
@@ -53,7 +63,7 @@ module m_ts_electype
      real(dp) :: ucell(3,3), Ef, Qtot
      real(dp), pointer :: xa(:,:) => null()
      integer, pointer :: lasto(:) => null()
-     type(Sparsity) :: sp
+     type(Sparsity)  :: sp
      type(dSpData2D) :: H, xij
      type(dSpData1D) :: S
      ! --- --- completed the content of the TSHS file
@@ -64,6 +74,226 @@ module m_ts_electype
   end type Elec
 
 contains
+
+  function fdf_nElec(prefix,this_n) result(n)
+    use fdf
+
+    character(len=*), intent(in) :: prefix
+    type(Elec), allocatable :: this_n(:)
+    integer :: n
+
+    ! prepare to read in the data...
+    type(block_fdf) :: bfdf
+    type(parsed_line), pointer :: pline => null()
+    integer :: i
+    
+    logical :: found
+
+    n = 0
+    found = fdf_block(trim(prefix)//'.Elec',bfdf)
+    if ( .not. found ) return
+
+    ! first count the number of electrodes
+    n = 0
+    do while ( fdf_bline(bfdf,pline) )
+       if ( fdf_bnnames(pline) == 0 ) cycle
+       n = n + 1 
+    end do
+
+    allocate(this_n(n))
+
+    ! rewind to read again
+    call fdf_brewind(bfdf)
+
+    n = 0
+    do while ( fdf_bline(bfdf,pline) )
+       if ( fdf_bnnames(pline) == 0 ) cycle
+       n = n + 1 
+       this_n(n)%Name = fdf_bnames(pline,1)
+       if ( n > 1 ) then
+          ! Check that no name is the same
+          do i = 1 , n - 1 
+             if ( leqi(name(this_n(i)),name(this_n(n))) ) then
+                call die('Electrode names must not be the same')
+             end if
+          end do
+       end if
+    end do
+
+  end function fdf_nElec
+  
+
+  function fdf_Elec(prefix,slabel,this) result(found)
+    use fdf
+    use m_ts_io, only : ts_read_TSHS_opt
+
+    character(len=*), intent(in) :: prefix,slabel
+    type(Elec), intent(inout) :: this
+    logical :: found
+
+    ! prepare to read in the data...
+    type(block_fdf) :: bfdf
+    type(parsed_line), pointer :: pline => null()
+    logical :: info(4)
+    integer :: i
+
+    character(len=50) :: ln
+
+    found = fdf_block(trim(prefix)//'.Elec.'//trim(Name(this)),bfdf)
+    if ( .not. found ) return
+
+    info(:) = .false.
+
+    ! We default a lot of the options
+    this%GFtitle = 'Greens function for '//trim(Name(this))
+    this%GFfile = trim(slabel)//'.'//trim(prefix)//'GF'//trim(Name(this))
+    this%na_used = -1
+    
+    do while ( fdf_bline(bfdf,pline) )
+       if ( fdf_bnnames(pline) == 0 ) cycle
+       
+       ln = fdf_bnames(pline,1) 
+       
+       ! We select the input
+       if ( leqi(ln,'TSHS') ) then
+          if ( fdf_bnnames(pline) < 2 ) call die('TSHS name not supplied')
+          this%HSfile = trim(fdf_bnames(pline,2))
+          info(1) = .true.
+       else if ( leqi(ln,'semi-inf-direction') ) then
+          if ( fdf_bnintegers(pline) < 1 .and. &
+               fdf_bnnames(pline)    < 2 ) call die('Semi-infinite direction not specified')
+          this%inf_dir = -1
+          if ( fdf_bnintegers(pline) > 0 ) then
+             if ( fdf_bintegers(pline,1) > 0 ) then
+                this%inf_dir = INF_POSITIVE
+             else
+                this%inf_dir = INF_NEGATIVE
+             end if
+          else
+             ln = fdf_bnames(pline,2)
+             if ( leqi(ln,'+') .or. leqi(ln,'positive') ) then
+                this%inf_dir = INF_POSITIVE
+             else if ( leqi(ln,'-') .or. leqi(ln,'negative') ) then
+                this%inf_dir = INF_NEGATIVE
+             end if
+          end if
+          if ( this%inf_dir /= INF_POSITIVE .and. &
+               this%inf_dir /= INF_NEGATIVE ) then
+             call die('Semi-infinite direction could not be understood')
+          end if
+          info(2) = .true.
+       else if ( leqi(ln,'chemical-shift') ) then
+          if ( fdf_bnvalues(pline) < 1 ) call die('Chemical-shift not supplied')
+          if ( fdf_bnnames(pline) < 2 ) call die('Unit of chemical-shift not supplied')
+          this%mu = fdf_bvalues(pline,1) * fdf_convfac(fdf_bnames(pline,2),'Ry')
+          info(3) = .true.
+       else if ( leqi(ln,'electrode-position') ) then
+          if ( fdf_bnintegers(pline) < 1 ) call die('Position of electrode')
+          this%idx_na = fdf_bintegers(pline,1)
+          info(4) = .true.
+       else if ( leqi(ln,'transport-direction') ) then
+          if ( fdf_bnintegers(pline) < 1 .and. &
+               fdf_bnnames(pline)    < 2 ) call die('Transport direction not specified')
+          this%t_dir = -1
+          if ( fdf_bnintegers(pline) > 0 ) then
+             this%t_dir = fdf_bintegers(pline,1)
+          else
+             ln = fdf_bnames(pline,2)
+             if ( leqi(ln,'a') .or. leqi(ln,'a1') ) then
+                this%t_dir = 1
+             else if ( leqi(ln,'b') .or. leqi(ln,'a2') ) then
+                this%t_dir = 2
+             else if ( leqi(ln,'c') .or. leqi(ln,'a3') ) then
+                this%t_dir = 3
+             end if
+          end if
+          if ( this%t_dir < 1 .or. 3 < this%t_dir ) then
+             call die('Transport-direction is not recognized [a|b|c|A1|A2|A3]')
+          end if
+       else if ( leqi(ln,'usebulk') ) then
+          this%UseBulk = fdf_bboolean(pline,1,after=1)
+       else if ( leqi(ln,'updatedmcronly') ) then
+          this%UpdateDMCR = fdf_bboolean(pline,1,after=1)
+       else if ( leqi(ln,'GF-title') ) then
+          if ( fdf_bnnames(pline) < 2 ) call die('GF-title not supplied')
+          this%GFtitle = trim(fdf_bnames(pline,2))
+       else if ( leqi(ln,'GF') ) then
+          if ( fdf_bnnames(pline) < 2 ) call die('GF-file not supplied')
+          this%GFfile = trim(fdf_bnames(pline,2))
+       else if ( leqi(ln,'UsedAtoms') ) then
+          if ( fdf_bnintegers(pline) < 1 ) call die('Number of atoms used not supplied')
+          this%na_used = fdf_bintegers(pline,1)
+       else if ( leqi(ln,'replicate-a') .or. leqi(ln,'rep-a') .or. &
+            leqi(ln,'replicate-a1') .or. leqi(ln,'rep-a1') ) then
+          if ( fdf_bnintegers(pline) < 1 ) call die('Repetition A1 is not supplied')
+          this%RepA1 = fdf_bintegers(pline,1)
+       else if ( leqi(ln,'replicate-b') .or. leqi(ln,'rep-b') .or. &
+            leqi(ln,'replicate-a2') .or. leqi(ln,'rep-a2') ) then
+          if ( fdf_bnintegers(pline) < 1 ) call die('Repetition A2 is not supplied')
+          this%RepA2 = fdf_bintegers(pline,1)
+       else if ( leqi(ln,'replicate-c') .or. leqi(ln,'rep-c') .or. &
+            leqi(ln,'replicate-a3') .or. leqi(ln,'rep-a3') ) then
+          if ( fdf_bnintegers(pline) < 1 ) call die('Repetition A3 is not supplied')
+          this%RepA3 = fdf_bintegers(pline,1)
+       else if ( leqi(ln,'replicate') .or. leqi(ln,'rep') ) then
+          if ( fdf_bnintegers(pline) < 3 ) call die('Repetition for all directions are not supplied')
+          this%RepA1 = fdf_bintegers(pline,1)
+          this%RepA2 = fdf_bintegers(pline,2)
+          this%RepA3 = fdf_bintegers(pline,3)
+       end if
+
+    end do
+    
+    if ( RepA1(this) < 1 .or. RepA2(this) < 1 .or. RepA3(this) < 1 ) &
+         call die("Repetition in "//trim(Name(this))//" electrode must be >= 1.")
+
+    if ( .not. all(info) ) then
+       write(*,*)'You need to supply at least:'
+       write(*,*)' - TSHS'
+       write(*,*)' - transport-direction'
+       write(*,*)' - semi-inf-direction'
+       write(*,*)' - chemical-shift'
+       write(*,*)' - electrode-position'
+       call die('You have not supplied all electrode information')
+    end if
+
+    ! Read in the number of atoms in the HSfile
+    call ts_read_TSHS_opt(HSFile(this),no_u=this%no_u,na_u=this%na_u, &
+         Bcast=.true.)
+
+    allocate(this%xa(3,this%na_u),this%lasto(0:this%na_u))
+    call ts_read_TSHS_opt(HSFile(this),xa=this%xa,lasto=this%lasto, &
+         ucell=this%ucell,Ef=this%Ef, &
+         Bcast=.true.)
+
+    ! in case the number of used atoms has not been set
+    if ( this%na_used <= 0 ) this%na_used = this%na_u
+
+    allocate(this%lasto_used(0:this%na_used),this%xa_used(3,this%na_used))
+    this%lasto_used(0) = 0
+    this%no_used = 0
+    if ( this%inf_dir == INF_NEGATIVE ) then ! same as old 'left'
+       ! We use the last atoms
+       do i = this%na_u - UsedAtoms(this) + 1 , this%na_u
+          this%lasto_used(i) = this%lasto_used(i-1) + this%lasto(i)-this%lasto(i-1)
+          this%xa_used(:,i)  = this%xa(:,i)
+       end do
+    else if ( this%inf_dir == INF_POSITIVE ) then ! same as old 'right'
+       ! We use the first atoms
+       do i = 1 , this%na_used
+          this%lasto_used(i) = this%lasto_used(i-1) + this%lasto(i)-this%lasto(i-1)
+          this%xa_used(:,i)  = this%xa(:,i)
+       end do
+    else
+       call die('Unknown direction for the semi-infinite lead')
+    end if
+    this%no_used = this%lasto_used(this%na_used)
+
+    ! We deallocate xa and lasto as they are not needed
+    deallocate(this%xa,this%lasto)
+
+  end function fdf_Elec
+       
 
   subroutine assign(this,D,HSfile,GFfile,GFtitle, &
        na_u,na_used,no_u,no_s,no_used, &
@@ -90,6 +320,12 @@ contains
 
   end subroutine assign
   
+  elemental function Name_(this)
+    type(Elec), intent(in) :: this
+    character(len=FILE_LEN) :: Name_
+    Name_ = this%Name
+  end function Name_
+
   elemental function HSfile(this)
     type(Elec), intent(in) :: this
     character(len=FILE_LEN) :: HSfile
@@ -459,6 +695,9 @@ contains
     call delete(this%sp00)
     call delete(this%sp01)
     call delete(this%sp)
+    if ( associated(this%xa) ) deallocate(this%xa)
+    if ( associated(this%lasto) ) deallocate(this%lasto)
+    nullify(this%xa,this%lasto)
 
   end subroutine delete_TSHS
 

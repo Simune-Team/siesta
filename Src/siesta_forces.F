@@ -47,7 +47,7 @@
       use m_ts_method
       use m_ts_global_vars,      only: ts_istep, TSrun, TSiscf
       use m_ts_options,          only: TSmode
-      use m_ts_options,          only: ElLeft, ElRight, no_BufL, no_BufR
+      use m_ts_options,          only: Elecs, no_BufL, no_BufR
       use m_ts_charge,           only: ts_print_charges, TS_INFO_SCF
       use siesta_geom,           only: na_u
       use atomlist,              only: lasto
@@ -134,7 +134,7 @@
 
 #ifdef TRANSIESTA
         if ( TSrun ) then
-           call ts_print_charges(ElLeft, ElRight, no_BufL, no_BufR,
+           call ts_print_charges(Elecs,
      &          block_dist, sparse_pattern,nspin, maxnh, Dscf, S,
      &          method=TS_INFO_SCF)
         end if
@@ -156,7 +156,7 @@
         if (SCFconverged) then
 #ifdef TRANSIESTA
            if ( TSmode ) then
-              call ts_print_charges(ElLeft, ElRight, no_BufL, no_BufR,
+              call ts_print_charges(Elecs,
      &             block_dist, sparse_pattern,nspin, maxnh, Dscf, S)
            end if
 #endif

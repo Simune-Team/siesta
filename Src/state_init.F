@@ -43,7 +43,7 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
 
 #ifdef TRANSIESTA
-      use m_ts_options, only : na_BufL, na_BufR, ElLeft, ElRight
+      use m_ts_options, only : na_BufL, na_BufR
       use m_ts_options, only : onlyS, UseBulk
       use m_ts_options, only : TS_Analyze, TS_bandwidth_algo
       use m_ts_electype
@@ -338,31 +338,17 @@
      &        na_u, lasto)
          call ts_tri_init()
 
-! Currently the below electrode optimizations does not work
-! due to the sparsity pattern not being complete.
-         
          ! print out the pivoting elements
          ! for optimizing the tri-diagonal matrix form
-!         if (IONode) write(*,'(a)')'transiesta: Left electrode...'
-
-!         fnlength = na_u - na_BufL - TotUsedAtoms(ElLeft)
-!         fnlength = fnlength - TotUsedAtoms(ElRight) - na_BufR
-!         call ts_Optimize(ts_sp_uc,na_u, lasto, 
-!     &        max(1,na_BufL), 
-!     &        fnlength+TotUsedAtoms(ElRight)+na_BufR)
          
          ! If you change this output statement then please
          ! revisit the TSAnalyzeSort utility for updating the correct
          ! search region.
          if (IONode) write(*,'(a)')'transiesta: Central region...'
-         call ts_Optimize(ts_sp_uc,na_u, lasto, 
-     &        na_BufL+TotUsedAtoms(ElLeft), 
-     &        TotUsedAtoms(ElRight)+na_BufR,xa, TS_bandwidth_algo)
-
-!         if (IONode) write(*,'(a)')'transiesta: Right electrode...'
 !         call ts_Optimize(ts_sp_uc,na_u, lasto, 
-!     &        na_BufL+TotUsedAtoms(ElLeft)+fnlength, na_BufR)
-         
+!     &        na_BufL+TotUsedAtoms(ElLeft), 
+!     &        TotUsedAtoms(ElRight)+na_BufR,xa, TS_bandwidth_algo)
+
          ! Bye also waits for all processors
          call bye('transiesta analyzation performed')
       end if

@@ -105,6 +105,22 @@ contains
             &This is not enforced.')
     end if
 
+    ! We first check whether the parts are contained...
+    dense_inserted = .false.
+    do lir = 1 , n_rows
+       ! Retrieve the global row-index
+       ir = index_local_to_global(dit,lir,Node)
+       if ( in_i <= ir .and. ir < in_i + ni ) then
+          dense_inserted = .true.
+       end if
+    end do
+
+    ! if the dense part is not present, we can easily return
+    if ( .not. dense_inserted ) then
+       out = in
+       return
+    end if
+
     ! Prepare creation of num and listptr arrays
     allocate(num    (n_rows))
     allocate(listptr(n_rows))

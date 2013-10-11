@@ -607,7 +607,6 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     real(dp) :: E1,E2 ! Sorted energies
-    integer :: i, Ni
     real(dp) :: delta
     
     ! sort the energies

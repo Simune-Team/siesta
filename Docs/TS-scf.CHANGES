@@ -1,4 +1,60 @@
 ----------------------------------------------------
+October 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-95
+Changed the ElLeft/ElRight to a generic electrode type
+
+* Instead of using a separate electrode for left/right, we now employ
+  a fully self-compliant electrode type which contains information about its
+  implementation.
+  I.e. they can be differentiated by UseBulk, UpdateDMCROnly, transport-direction
+  etc.
+
+* Reading in the electrode can now also be performed via the blocks:
+  %block TS.Elec
+    	Name1
+	Name2
+  %endblock
+
+  %block TS.Elec.Name1
+         <settings>
+  %endblock
+  %block TS.Elec.Name2
+         <settings>
+  %endblock
+
+  This makes it a bit more consistent and leverages a lot of the 
+  static read-ins.
+
+* Instead of having static fields of the orbitals position in the 
+  regions we now use a look-up table to decipher each orbitals type
+  dynamically.
+
+* Fixed coordinates of electrodes, we can now do a check of the electrodes
+  in the options. (TODO)
+
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/create_Sparsity_Union.F90
+  Src/geom_helper.f90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_contour.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_io.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_voltage.F90
+  Src/siesta_forces.F
+  Src/state_init.F
+  Src/ts_init.F90
+  Src/ts_show_regions.f90
+
+----------------------------------------------------
 October 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-94
 Added a fdf_bboolean to read in booleans from blocks
 

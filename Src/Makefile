@@ -628,7 +628,8 @@ m_stress.o: precision.o
 m_svd.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 m_trimat_invert.o: alloc.o class_TriMat.o m_mat_invert.o precision.o
-m_ts_Sparsity2TriMat.o: alloc.o class_Sparsity.o geom_helper.o
+m_ts_Sparsity2TriMat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
+m_ts_Sparsity2TriMat.o: create_Sparsity_Union.o geom_helper.o
 m_ts_Sparsity2TriMat.o: intrinsic_missing.o m_ts_electype.o m_ts_options.o
 m_ts_Sparsity2TriMat.o: parallel.o precision.o
 m_ts_aux.o: precision.o
@@ -671,6 +672,7 @@ m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o m_ts_options.o m_ts_tdir.o minvec.o
 m_ts_kpoints.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
+m_ts_method.o: alloc.o geom_helper.o m_ts_electype.o
 m_ts_options.o: files.o m_bandwidth.o m_monitor.o m_ts_cctype.o m_ts_charge.o
 m_ts_options.o: m_ts_contour.o m_ts_electype.o m_ts_global_vars.o m_ts_io.o
 m_ts_options.o: m_ts_io_contour.o m_ts_method.o m_ts_tdir.o m_ts_weight.o
@@ -678,7 +680,8 @@ m_ts_options.o: parallel.o precision.o siesta_options.o sys.o units.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
 m_ts_sparse.o: m_bandwidth.o m_glob_sparse.o m_monitor.o m_ts_debug.o
-m_ts_sparse.o: m_ts_electype.o m_ts_options.o parallel.o precision.o
+m_ts_sparse.o: m_ts_electype.o m_ts_method.o m_ts_options.o parallel.o
+m_ts_sparse.o: precision.o
 m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse_helper.o: class_SpData1D.o class_Sparsity.o geom_helper.o
 m_ts_sparse_helper.o: intrinsic_missing.o parallel.o precision.o

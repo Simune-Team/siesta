@@ -300,7 +300,7 @@ contains
     use units,        only : Ang
     use m_ts_options, only : na_BufL, na_BufR
     use m_ts_electype
-    use m_ts_options, only : ElLeft, ElRight
+    use m_ts_options, only : Elecs
     
 ! ***********************
 ! * INPUT variables     *
@@ -320,16 +320,17 @@ contains
     real(dp) :: dot
     external :: dot
 
+    if ( size(Elecs) > 2 ) call die('Not fully implemented')
     Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
 
     left_t_max  = -huge(1._dp)
     right_t_min = huge(1._dp)
-    do i = na_BufL + 1 , na_BufL + TotUsedAtoms(ElLeft)
+    do i = na_BufL + 1 , na_BufL + TotUsedAtoms(Elecs(1))
        if ( left_t_max < xa(ts_tdir,i) ) then
           left_t_max = xa(ts_tdir,i) + 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
        end if
     end do
-    do i = na_u - na_BufR - TotUsedAtoms(ElRight) + 1 , na_u - na_BufR
+    do i = na_u - na_BufR - TotUsedAtoms(Elecs(2)) + 1 , na_u - na_BufR
        if ( right_t_min > xa(ts_tdir,i) ) then
           right_t_min = xa(ts_tdir,i) - 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
        end if
