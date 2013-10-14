@@ -1,4 +1,67 @@
 ------------------------------------------------------------
+October 14, 2013  A. Garcia       trunk-445--pexsi-46
+Implement cumulative DOS calculation based on raw inertia counts. H flow.
+
+* A new routine (in m_pexsi_dos) can now compute the cumulative DOS
+in a certain enery range using the inertia-count interface.
+
+The routine is activated by
+
+PEXSI.DOS T
+
+and the energy range is specified by:
+
+PEXSI.DOS.emin Energy unit
+PEXSI.DOS.emax Energy unit
+
+If the option
+
+   PEXSI.DOS.Ef.Reference   [ T | F ]
+
+is true, the above energies are referred to the Fermi level.
+
+The program produces a file called PEXSI_INTDOS, which contains a
+first line with the Fermi level and the number of electrons, and then
+a number of lines with an energy value (in eV) and the inertia count
+for that value.
+
+The number of energy values (shifts) used can be controlled by the option
+
+    PEXSI.DOS.npoints    [ default 200 ]
+
+The actual number will be increased if it is not a multiple of
+nNodes/npPerPole.
+
+The cumulative DOS can be post-processed in a number of ways. One
+option is to generate a file with "approximate eigenvalues" located at
+the points at which there are jumps in the cumulative DOS. This is
+implemented in Util/PEXSI/intdos2eig, which produces a file suitable
+for treatment with Util/Eig2DOS.
+
+* Automated the compilation of the dummy PEXSI library, including
+an option to consider only the new raw-inertia-counts routine.
+See Src/dummy_pexsi.
+
+* final_H_f_stress does not update H (nor S) (even though it writes out
+  updated versions to the .HS and .TSHS files...), unless the option
+
+     	 UpdateHamiltonianAfterSCF  T
+
+  is used (S is still not updated).
+
+  The final H going through to the analysis section is then:
+ 
+  -- If mixing the DM, the last H generated and used to compute the DM
+
+  -- If mixing H, a mixed version if performing a final mix after convergence.
+     If not mixing after convergence, the H used to compute the DM (i.e., Hold).
+
+     (To avoid mixing after convergence, use "SCF.MixAfterConvergence F". This
+      should be made the default soon).
+
+  This should be made more explicit at the argument level.
+
+------------------------------------------------------------
 October 9, 2013  A. Garcia        trunk-445--pexsi-45
 Re-organize some timing labels
 

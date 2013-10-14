@@ -265,5 +265,61 @@ subroutine f_ppexsi_localdos_interface(&
 
 end subroutine f_ppexsi_localdos_interface
 end interface
+
+! Raw Inertia Counts for DOS
+!
+interface
+subroutine f_ppexsi_raw_inertiacount_interface( &
+      nrows,&
+      nnz,&
+      nnzLocal,&
+      numColLocal,&
+      colptrLocal,&
+      rowindLocal,&
+      HnzvalLocal,&
+      isSIdentity,&
+      SnzvalLocal,&
+      eMin,&
+      eMax,&
+      nShifts,&
+      ordering,&
+      npPerPole,&
+      npSymbFact,&
+      comm_global,&
+      shiftList,&
+      inertiaList,&
+      info) &
+   BIND(C,Name="f_ppexsi_raw_inertiacount_interface_")
+
+   USE, INTRINSIC :: ISO_C_BINDING, ONLY: C_INT,C_DOUBLE
+
+
+   integer(C_INT), intent(in) :: nrows, nnz, nnzLocal, numColLocal
+   integer(C_INT), intent(in) :: colptrLocal(*), rowindLocal(*)
+   real(C_DOUBLE), intent(in) :: HnzvalLocal(*)
+   integer(C_INT), intent(in) :: isSIdentity
+   real(C_DOUBLE), intent(in) :: SnzvalLocal(*)
+   real(C_DOUBLE), intent(in) :: eMin, eMax  ! Energy range
+   integer(C_INT), intent(in) :: nShifts     ! Should be mpisize/npPerPole
+   
+   ! Ordering 
+   !   0   : PARMETIS
+   !   1   : METIS_AT_PLUS_A
+   !   2   : MMD_AT_PLUS_A
+   integer(C_INT), intent(in)  :: ordering
+   
+   integer(C_INT), intent(in)  :: npPerPole, comm_global
+   
+   ! Number of processors used for symbolic factorization
+   ! (Maximum: npPerPole)
+   ! Only relevant if PARMETIS/PT-SCOTCH is used.
+
+   integer(C_INT), intent(in)  :: npSymbFact
+
+   real(C_DOUBLE), intent(out) :: shiftList(nShifts)
+   integer(C_INT), intent(out) :: inertiaList(nShifts)
+   integer(C_INT), intent(out) :: info
+end subroutine f_ppexsi_raw_inertiacount_interface
+end interface
    
 end module m_pexsi_interface

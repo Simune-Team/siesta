@@ -265,9 +265,9 @@
       else
          call save_density_matrix("dmout",when=write_dm_at_end_of_cycle)
          if (MixH) then
-             ! We could make sure that we keep the H actually used 
+             ! Make sure that we keep the H actually used 
              ! to generate the last DM, if needed.
-             !!!    H = Hold
+             H = Hold
          endif
       endif
 
