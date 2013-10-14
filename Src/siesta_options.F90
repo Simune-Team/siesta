@@ -57,7 +57,9 @@ MODULE siesta_options
   logical :: varcel        ! Change unit cell during relaxation or dynamics?
   logical :: do_pdos       ! Compute the projected density of states?
   logical :: writedm       ! Write file with density matrix?
-  logical :: write_dm_at_end_of_cycle ! Write DM at end of SCF cycle?
+  logical :: write_dm_at_end_of_cycle ! Write DM at end of SCF cycle? (converged or not)
+  logical :: writeH        ! Write file with Hamiltonian? (in "DM" format)
+  logical :: write_H_at_end_of_cycle ! Write H at end of SCF cycle? 
   logical :: writedm_cdf   ! Write file with density matrix in netCDF form?
   logical :: writedm_cdf_history   ! Write file with SCF history of DM in netCDF form?
   logical :: writedmhs_cdf ! Write file with DM_in, H, DM_out, and S in netCDF form?
@@ -1537,6 +1539,8 @@ MODULE siesta_options
     writef                = fdf_get( 'WriteForces', outlng )
     writedm               = fdf_get( 'WriteDM', .true. )
     write_dm_at_end_of_cycle = fdf_get( 'WriteDM.End.Of.Cycle', writedm )
+    writeH                = fdf_get( 'WriteH', .true. )
+    write_H_at_end_of_cycle  = fdf_get( 'WriteH.End.Of.Cycle', writeH )
     writedm_cdf           = fdf_get('WriteDM.NetCDF', .false. )
     writedm_cdf_history   = fdf_get('WriteDM.History.NetCDF', .false. )
     writedmhs_cdf         = fdf_get('WriteDMHS.NetCDF', .false. )

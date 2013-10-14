@@ -1,0 +1,37 @@
+---------------------------------------------------------------
+October 14, 2013   Alberto Garcia    trunk-445--pexsi-46--hio-1
+Save Hamiltonian and/or DM with proper filenames
+
+New file names:
+
+DM_MIXED: Useful for checkpointing
+DM_OUT:   Last DM computed
+
+H_MIXED:  Useful for checkpointing
+H_DMGEN:  Last H from which the electronic structure was computed
+
+The "mixed" files are produced only in the appropriate runs (MixDM
+(default), or MixHamiltonian).
+
+Other options affecting which files are written:
+
+- Checkpointing options:
+
+WriteDM
+WriteH
+
+- Analysis options:
+
+WriteDM.end.of.cycle
+WriteH.end.of.cycle
+
+- Backwards compatibility:
+
+SCF.MixAfterConvergence
+
+modified:
+  Src/Makefile
+  Src/m_iodm.F
+  Src/save_density_matrix.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90

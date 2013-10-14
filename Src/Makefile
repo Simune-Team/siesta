@@ -569,7 +569,7 @@ m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_io.o: sys.o
 m_iodm.o: alloc.o files.o m_mpi_utils.o parallel.o parallelsubs.o precision.o
-m_iodm.o: sys.o
+m_iodm.o: sparse_matrices.o sys.o
 m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
@@ -749,7 +749,7 @@ siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o siesta_master.o sparse_matrices.o
 siesta_end.o: timestamp.o
 siesta_forces.o: compute_dm.o compute_max_diff.o final_H_f_stress.o
-siesta_forces.o: m_convergence.o m_energies.o m_forces.o m_mpi_utils.o
+siesta_forces.o: m_convergence.o m_energies.o m_forces.o m_iodm.o m_mpi_utils.o
 siesta_forces.o: m_pexsi_solver.o m_pulay.o m_steps.o m_stress.o
 siesta_forces.o: m_ts_global_vars.o m_ts_options.o mixer.o parallel.o
 siesta_forces.o: post_scf_work.o save_density_matrix.o scfconvergence_test.o
