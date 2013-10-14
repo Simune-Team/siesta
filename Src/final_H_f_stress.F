@@ -211,6 +211,9 @@
 ! TSS End
 #endif /* TRANSIESTA */
 
+      if (fdf_get("UpdateHamiltonianAfterSCF",.false.)) then
+         H(:,:) = H_dummy(:,:)
+      endif
       deallocate(H_dummy,S_dummy)
 !----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
