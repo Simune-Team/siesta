@@ -738,8 +738,8 @@ siesta.o: alloc.o m_mpi_utils.o m_steps.o parallel.o siesta_analysis.o
 siesta.o: siesta_end.o siesta_forces.o siesta_init.o siesta_move.o
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
 siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
-siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
-siesta_analysis.o: m_ntm.o m_partial_charges.o m_pexsi_dos.o
+siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iodm.o
+siesta_analysis.o: m_mpi_utils.o m_ntm.o m_partial_charges.o m_pexsi_dos.o
 siesta_analysis.o: m_pexsi_local_dos.o m_spin.o m_steps.o parallel.o
 siesta_analysis.o: projected_DOS.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
