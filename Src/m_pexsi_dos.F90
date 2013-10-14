@@ -292,7 +292,7 @@ call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
     call io_assign(lun)
     open(unit=lun,file="PEXSI_INTDOS",form="formatted",status="unknown", &
          position="rewind",action="write")
-    write(lun,"(2f15.6,i6,a)") ef/eV, qtot, npoints, &
+    write(lun,"(f15.6,f12.2,i6,a)") ef/eV, qtot, npoints, &
                             "# (Ef, qtot, npoints) / npoints lines: E(eV), IntDos(E)"
     do j=1,npoints
        write(lun,"(f15.6,i15)") edos(j)/eV, intdos(j)

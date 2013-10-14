@@ -32,6 +32,7 @@
       use siesta_master, only: forcesToMaster ! Send forces to master prog
       use siesta_master, only: siesta_server  ! Is siesta a server?
       use m_save_density_matrix, only: save_density_matrix
+      use m_iodm,        only: write_spmatrix
       use units,         only: eV, Ang
       use sparse_matrices, only: H, Hold, Dold, Dscf
       use m_pexsi_solver,        only: prevDmax
@@ -143,7 +144,13 @@
            call mixer( iscf )
            ! Save for possible restarts
            ! Could save H in the future
-           call save_density_matrix("mixed",when=writedm)
+           if (MixH) then
+              call write_spmatrix(H,file="H_MIXED",when=writeH)
+              call save_density_matrix(file="DM_OUT",when=writedm)
+           else
+              call save_density_matrix(file="DM_MIXED",when=writedm)
+              call write_spmatrix(H,file="H_DMGEN",when=writeH)
+           endif
         endif
 
         call timer( 'IterSCF', 2 )
@@ -245,30 +252,33 @@
       ! Depending on various conditions, save the DMin
       ! or the DMout, and possibly keep a copy of H
       !
-      ! WriteDM is the historical catch-all flag.
-      ! The labels in the calls are for documentation
-      ! purposes. The files will have the .DM extension
-      ! for compatibility, for now.
       !
       subroutine end_of_cycle_save_operations()
 
       if (mix_after_convergence) then
-         if (MixH) then
-            call save_density_matrix("dmout",
-     $                                when=write_dm_at_end_of_cycle)
-         else
-            ! If we have been saving it, there is no point in doing
+            ! If we have been saving them, there is no point in doing
             ! it one more time
-            call save_density_matrix("mixed",
+         if (MixH) then
+            call save_density_matrix(file="DM_OUT",
      $          when=((.not. writedm) .and. write_dm_at_end_of_cycle))
+            call write_spmatrix(H,file="H_MIXED", 
+     $          when=((.not. writeH) .and. write_H_at_end_of_cycle))
+         else
+            call save_density_matrix(file="DM_MIXED",
+     $          when=((.not. writedm) .and. write_dm_at_end_of_cycle))
+            call write_spmatrix(H,file="H_DMGEN", 
+     $          when=((.not. writeH) .and. write_H_at_end_of_cycle))
          endif
       else
-         call save_density_matrix("dmout",when=write_dm_at_end_of_cycle)
+         call save_density_matrix(file="DM_OUT",
+     $                            when=write_dm_at_end_of_cycle)
          if (MixH) then
              ! Make sure that we keep the H actually used 
              ! to generate the last DM, if needed.
              H = Hold
          endif
+         call write_spmatrix(H,file="H_DMGEN", 
+     $                       when=write_H_at_end_of_cycle)
       endif
 
       end subroutine end_of_cycle_save_operations

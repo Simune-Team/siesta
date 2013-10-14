@@ -3,7 +3,7 @@
 
       CONTAINS
 
-      subroutine save_density_matrix(id,when)
+      subroutine save_density_matrix(when,file)
 
       ! Stores DM and EDM on files
       ! This version uses module variables.
@@ -31,8 +31,8 @@
       use m_energies,           only:  ef
 #endif
 
-      character(len=*), intent(in)   :: id
       logical, intent(in), optional  :: when
+      character(len=*), intent(in), optional   :: file
 
       logical :: do_it
 
@@ -63,10 +63,12 @@
         if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
           if (istp.eq.1)
      &    call write_dm (maxnh, no_l, nspin,
-     &               numh, listhptr, listh, Dscf)
+     &               numh, listhptr, listh, Dscf,
+     $               userfile=file)
         else
           call write_dm (maxnh, no_l, nspin,
-     &               numh, listhptr, listh, Dscf)
+     &               numh, listhptr, listh, Dscf,
+     $               userfile=file)
         endif
       endif ! writedm
 #else /* TRANSIESTA */
@@ -76,10 +78,12 @@
           if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
             if (istp.eq.1)
      &        call write_dm( maxnh, no_l, nspin, numh,
-     &                       listhptr, listh, Dscf )
+     &                       listhptr, listh, Dscf,
+     $                       userfile=file)
           else
             call write_dm( maxnh, no_l, nspin, numh,
-     &                     listhptr, listh, Dscf)
+     &                     listhptr, listh, Dscf,
+     $                     userfile=file)
           endif
         else
 !         TSS write DscfE

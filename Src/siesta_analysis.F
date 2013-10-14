@@ -45,6 +45,7 @@
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
       use m_partial_charges, only: want_partial_charges
+      use m_iodm,            only: read_spmatrix
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -53,7 +54,7 @@
 
       character(len=label_length+5), external :: paste
 
-      logical :: relaxd, getPSI
+      logical :: relaxd, getPSI, found
 
       character(len=label_length+5) :: fildrh
       character(len=label_length+5) :: filepsch
@@ -75,12 +76,24 @@
 
       integer           :: j, ix, ind, ik, io, ispin
       integer           :: wfs_band_min, wfs_band_max
-      real(dp)          :: g2max
+      real(dp)          :: g2max, current_ef
 #ifdef MPI
       real(dp)          :: qtmp(4)
 #endif
 
 !----------------------------------------------------------------------- BEGIN
+
+      if (SIESTA_worker) call timer("Analysis",1)
+
+      if (fdf_get("Read-H-from-file",.false.)) then
+         if (SIESTA_worker) then
+            call read_spmatrix(maxnh, no_l, nspin, numh,
+     .           listhptr, listh, H, found, userfile="H_IN")
+            if (.not. found) call die("Could not find H_IN")
+            current_ef = ef
+            ef = fdf_get("Manual-Fermi-Level",current_ef,"Ry") 
+         endif
+      endif
 
       if (fdf_get("PEXSI.DOS",.false.)) then
          call pexsi_DOS(no_u, no_l, nspin,
@@ -89,8 +102,6 @@
 
       ! section done by Siesta subset of nodes
       if (SIESTA_worker) then
-
-      call timer("Analysis",1)
 
       final = .true.
       if (cml_p) then

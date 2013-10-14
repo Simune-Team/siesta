@@ -26,7 +26,20 @@
       implicit none
 
       private
+
+      ! aliases for old routines
+
+      interface read_spmatrix
+         module procedure read_dm
+      end interface
+      interface read_dynamic_spmatrix
+         module procedure read_dynamic_dm
+      end interface
+
+      ! write_spmatrix is a wrapper
+
       PUBLIC :: write_dm, read_dm, read_dynamic_dm
+      PUBLIC :: write_spmatrix, read_spmatrix, read_dynamic_spmatrix
 
 C     Saved internal variables:
       logical,           save :: frstme = .true., scndme = .false.
@@ -49,7 +62,7 @@ C     Saved internal variables:
       CONTAINS
 
       subroutine read_dynamic_dm ( maxnd, no_l, nspin, numd, 
-     .                     listdptr, listd, dm, found )
+     .                     listdptr, listd, dm, found, userfile )
 
       ! The only "in" parameter is no_l, to determine the distribution
       integer, intent(in) :: no_l
@@ -68,6 +81,8 @@ C     Saved internal variables:
       real(dp), pointer    :: dm(:,:)
 
       logical, intent(out) :: found
+      character(len=*), intent(in), optional :: userfile
+
 
 C     Internal variables
       logical   exist3
@@ -84,7 +99,7 @@ C     Internal variables
       
       external          chkdim
 
-      call setup_file_modes()
+      call setup_file_modes(userfile)
 
 C     Find file name
 
@@ -271,7 +286,7 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       end subroutine read_dynamic_dm
 !-----------------------      
       subroutine read_dm ( maxnd, no_l, nspin, numd, 
-     .                     listdptr, listd, dm, found )
+     .                     listdptr, listd, dm, found, userfile )
 
 C     Reads density matrix from file
 C     Written by P.Ordejon and J.M.Soler. May 1997.
@@ -305,6 +320,7 @@ C     *******************************************
       real(dp), intent(out) :: dm(maxnd, nspin)
 
       logical, intent(out) :: found
+      character(len=*), intent(in), optional :: userfile
 
 C     Internal variables
       logical   exist3
@@ -321,7 +337,7 @@ C     Internal variables
       
       external          chkdim
 
-      call setup_file_modes()
+      call setup_file_modes(userfile)
 
 C     Find file name
 
@@ -501,7 +517,7 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       end subroutine read_dm
 !-----------------------      
       subroutine write_dm (maxnd, no_l, nspin,
-     $     numd, listdptr, listd, dm)
+     $     numd, listdptr, listd, dm, userfile)
 
       integer, intent(in) :: maxnd
       integer, intent(in) :: no_l
@@ -510,6 +526,8 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       integer, intent(in) :: listdptr(1:no_l)
       integer, intent(in) :: listd(maxnd)
       real(dp), intent(in) :: dm(maxnd,nspin)
+
+      character(len=*), intent(in), optional :: userfile
 
       integer :: no_u, m, ml, im, ndmaxg, unit1, is
 #ifdef MPI
@@ -520,9 +538,9 @@ C     Create buffer arrays for transfering density matrix between nodes and list
 #endif
       integer, dimension(:), pointer  :: numdg
 
-      call timer("WriteDM",1)
+      call timer("WriteM",1)
 
-      call setup_file_modes()
+      call setup_file_modes(userfile)
 
 C     Find total number of basis functions over all Nodes
 #ifdef MPI
@@ -684,12 +702,40 @@ C     Write density matrix
 
       call de_alloc( numdg, 'numdg', 'write_dm' )
 
-      call timer("WriteDM",2)
+      call timer("WriteM",2)
 
       end subroutine write_dm
 
+!-----------------------------------------------------
+      subroutine write_spmatrix(M,file,when)
+      !
+      ! Convenience wrapper
+      !
+      use sparse_matrices, only: numh, listhptr, listh
+
+      real(dp), intent(in) :: M(:,:)
+      character(len=*), intent(in), optional :: file
+      logical, intent(in), optional          :: when
+
+      integer :: no_l, maxnh, nspin
+
+      if (present(when)) then
+         if (.not. when) return
+      endif
+
+      no_l = size(numh)
+      maxnh = size(M,dim=1)
+      nspin = size(M,dim=2)
+
+      call write_dm (maxnh, no_l, nspin,
+     $     numh, listhptr, listh, M, userfile=file)
+
+      end subroutine write_spmatrix
+
 !-------------------
-      subroutine setup_file_modes()
+      subroutine setup_file_modes(userfile)
+
+      character(len=*), intent(in), optional :: userfile
 !
 !     Utility routine to deal with different options
 !     (AG, after first implementation by Toby White)
@@ -727,6 +773,13 @@ C     Write density matrix
          else
             formin = 'unformatted'
             fnamei = fnameu
+         endif
+
+         if (present(userfile)) then
+            fnamei = userfile
+            fnameo = userfile
+            formout = 'unformatted'
+            formin  = 'unformatted'
          endif
       endif
 
