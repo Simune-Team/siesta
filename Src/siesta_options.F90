@@ -33,8 +33,9 @@ MODULE siesta_options
   logical :: savevh        ! Write file with Hartree electrostatic potential?
   logical :: savevna       ! Write file with neutral-atom potential?
   logical :: savevt        ! Write file with total effective potential?
-  logical :: savdrh        ! Write file with diff. between SCF and atomic density?
-  logical :: savrho        ! Write file with electron density?
+  logical :: savedrho      ! Write file with diff. between SCF and atomic density?
+  logical :: saverho       ! Write file with electron density?
+  logical :: saverhoxc     ! Write file with electron density including nonlinear core correction?
   logical :: savepsch      ! Write file with ionic (local pseudopotential) charge?
   logical :: savetoch      ! Write file with total charge?
   logical :: savebader     ! Write file with charge for Bader analysis?
@@ -308,6 +309,7 @@ MODULE siesta_options
     use parallel,  only : IOnode, Nodes
     use fdf
     use files,     only : slabel
+    use files,     only : filesOut_t   ! derived type for output file names
     use sys
     use units,     only : eV
     use diagmemory,   only: memoryfactor
@@ -1567,8 +1569,9 @@ MODULE siesta_options
 !
     write_coop = fdf_get('COOP.Write', .false.)
 !
-    savrho   = fdf_get( 'SaveRho', dumpcharge)
-    savdrh   = fdf_get( 'SaveDeltaRho',       .false. )
+    saverho  = fdf_get( 'SaveRho', dumpcharge)
+    savedrho = fdf_get( 'SaveDeltaRho',       .false. )
+    saverhoxc= fdf_get( 'SaveRhoXC', .false.)
     savevh   = fdf_get( 'SaveElectrostaticPotential', .false. )
     savevna  = fdf_get( 'SaveNeutralAtomPotential', .false. )
     savevt   = fdf_get( 'SaveTotalPotential', .false. )

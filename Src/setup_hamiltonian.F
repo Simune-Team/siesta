@@ -30,6 +30,7 @@
       use m_hsx, only: write_hsx
       use sys, only: die, bye
       use m_partial_charges, only: want_partial_charges
+      use files, only : filesOut_t    ! derived type for output file names
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -48,6 +49,7 @@
       integer             :: istr    ! Calc. stress?      0=>no, 1=>yes
       integer             :: ihmat   ! Calc. hamiltonian? 0=>no, 1=>yes
       real(dp)            :: g2max
+      type(filesOut_t)    :: filesOut  ! blank output file names
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -109,7 +111,7 @@
       endif
       call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
-     .            ntm, ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
+     .            ntm, ifa, istr, ihmat, filesOut,
      .            maxnh, numh, listhptr, listh, Dscf, Datm,
      .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .            Exc, Dxc, dipol, stress, fal, stressl)

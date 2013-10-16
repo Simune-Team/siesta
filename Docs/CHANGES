@@ -6,6 +6,31 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-10-16  12:30:00 GMT                                     trunk-446
+Output file names for dhscf packed in a derived type (JMS)
+
+   The file names passed to dhscf, for output densities and potentials 
+on the grid, have been packed into a derived type defined in files.f
+   Also, a new density file .RHOXC, with the density passed to cellxc
+(i.e. including the nonlocal core corrections), can be written by 
+activating SaveRhoXC in the .fdf file.
+   As a minor point, file .VNA was being written in every call to
+dhscf (provided that SaveNeutralAtomPotential was active). Now it is
+written only when dhscf is called by siesta_analysis, as the other
+output files.
+   
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/dhscf.F
+  Src/files.f
+  Src/grdsam.F
+  Src/local_DOS.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
 2013-09-30  10:30:00 GMT                                     trunk-445
 New mixing options and simplification of scf loop
 

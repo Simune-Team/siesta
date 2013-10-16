@@ -5707,6 +5707,20 @@ If netCDF support is compiled in, the file {\tt DeltaRho.grid.nc} is produced.
 {\it Default value:} {\tt .false.}
 
 
+\item[{\bf SaveRhoXC}] ({\it logical}): \index{SaveRhoXC@{\bf
+    SaveRhoXC}}\index{output!charge density} Instructs to write the
+  valence pseudocharge density at the mesh, including the nonlocal
+core corrections used to calculate the exchange-correlation energy, 
+in file {\tt
+    SystemLabel}.RHOXC.
+
+{\it Use:} File {\tt SystemLabel}.RHOXC is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt RhoXC.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
+
+
 \item[{\bf SaveElectrostaticPotential}] ({\it logical}):
 \index{SaveElectrostaticPotential@{\bf SaveElectrostaticPotential}}
 \index{output!electrostatic potential}
