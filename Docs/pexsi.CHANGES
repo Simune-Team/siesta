@@ -1,4 +1,27 @@
 ------------------------------------------------------------
+October 16, 2013  A. Garcia       trunk-445--pexsi-48
+Wrap timing call. Simplify DOS routine. Add output to unit 6.
+
+* A timing call for IterMD was performed by all processors. It has
+  been wrapped so that only the SIESTA-workers perform it.
+
+* The new DOS routine now makes a single call to the raw-inertia-count
+  routine, with the entire interval and set of shifts.
+
+* A number of output statements have been changed from "write(*, )"
+  to "write(6, )" form, and viceversa. If the command-line option
+  " -o OUTfile" is used, output to unit 6 will be redirected to
+  OUTfile. The rest will end up in the default standard output stream.
+  
+modified:
+  Src/m_iodm.F
+  Src/m_pexsi_dos.F90
+  Src/m_pexsi_local_dos.F90
+  Src/m_pexsi_solver.F90
+  Src/siesta_forces.F
+  Src/timer_tree.f90
+
+------------------------------------------------------------
 October 14, 2013  A. Garcia       trunk-445--pexsi-47
 Richer matrix I/O to facilitate analysis
 

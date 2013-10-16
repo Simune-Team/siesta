@@ -60,9 +60,6 @@ integer :: nrows, nnz, nnzLocal, numColLocal
 integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
 real(dp), pointer, dimension(:) :: HnzvalLocal=>null(), SnzvalLocal=>null()
 
-real(dp), allocatable, dimension(:) :: shiftList
-integer,  allocatable, dimension(:) :: inertiaList
-
 logical  :: PEXSI_worker
 integer  :: nShifts
 
@@ -178,10 +175,6 @@ isSIdentity = 0
 call mpi_comm_size( World_Comm, numNodesTotal, ierr )
 nShifts = numNodesTotal/npPerPole
 
-! Arrays for reporting back information about the integrated DOS
-! computed by the inertia count method.
-allocate(shiftList(nShifts), inertiaList(nShifts))
-
 ! Ordering flag:
 !   1: Use METIS
 !   0: Use PARMETIS/PTSCOTCH
@@ -212,22 +205,12 @@ call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
 
   allocate (edos(npoints),intdos(npoints))
 
-  deltaE = (emax-emin)/(npoints-1)
-
-  e1 = emin
-  e2 = e1 + (nShifts-1)*deltaE
-
-  ncalls = 0
-  do 
-    ncalls = ncalls + 1
-
     if(mpirank == 0) then
        write (6,"(a,f12.5,a,f12.5,a,a,i4)")  &
                     'Calling inertia_count for DOS: [', &
-                    e1/eV, ",", e2/eV, "] (eV)", &
-                    " Nshifts: ", nShifts
+                    emin/eV, ",", emax/eV, "] (eV)", &
+                    " Nshifts: ", npoints
     endif
-
     call timer("pexsi-raw-inertia-ct", 1)
 
     call f_ppexsi_raw_inertiacount_interface(&
@@ -241,16 +224,16 @@ call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
         HnzvalLocal,&
         isSIdentity,&
         SnzvalLocal,&
-        e1,&
-        e2,&
-        nShifts,&
+        emin,&
+        emax,&
+        npoints,&
         ordering,&
         npPerPole,&
         npSymbFact,&
         World_Comm,&        
         ! output parameters
-        shiftList,&
-        inertiaList,&
+        edos,&
+        intdos,&
         info)
 
 
@@ -261,45 +244,25 @@ call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
 
     if(mpirank == 0) then
        if (info /= 0) then
-          write(6,*) "DOS call no., Info : ", ncalls, info
+          write(6,*) "DOS call Info : ", info
           call die("Error exit from raw-inertia-count routine")
        endif
       call pxfflush(6)
     endif	
-
-    do i=1, nShifts
-       j = (ncalls-1)*nShifts + i
-       edos(j) = shiftList(i)
-       intdos(j) = inertiaList(i)
-    enddo
     
 !    if(mpirank == 0) then
-!
-!       write(6,"(/,a)") "Cumulative DOS by inertia count:"
-!       do i=1, nShifts
-!          write(6,"(f10.4,i10)") shiftList(i)/eV, inertiaList(i)
-!       enddo
-!    end if
-
-    e1 = e1 + (nShifts)*deltaE
-    e2 = e2 + (nShifts)*deltaE
-
-    if (ncalls == npoints/nShifts) EXIT
-
- enddo
 
  if (mpirank == 0) then
     call io_assign(lun)
     open(unit=lun,file="PEXSI_INTDOS",form="formatted",status="unknown", &
          position="rewind",action="write")
-    write(lun,"(f15.6,f12.2,i6,a)") ef/eV, qtot, npoints, &
+    write(lun,"(2f15.6,i6,a)") ef/eV, qtot, npoints, &
                             "# (Ef, qtot, npoints) / npoints lines: E(eV), IntDos(E)"
     do j=1,npoints
        write(lun,"(f15.6,i15)") edos(j)/eV, intdos(j)
     enddo
  endif
 
-deallocate(shiftList,inertiaList)
 deallocate(edos,intdos)
 
    if (SIESTA_worker) then
@@ -314,12 +277,12 @@ if (PEXSI_worker) then
 
     call de_alloc(colptrLocal,"colptrLocal","pexsi_DOS")
 
-!   call de_alloc(m2%numcols,"m2%numcols","m_pexsi_dos")
-!   call de_alloc(m2%cols,"m2%cols","m_pexsi_dos")
-!   do j=1,size(m2%vals)
-!      call de_alloc(m2%vals(j)%data,"m2%vals(j)%data","m_pexsi_dos")
-!   enddo
-!   deallocate(m2%vals)
+    call de_alloc(m2%numcols,"m2%numcols","m_pexsi_dos")
+    call de_alloc(m2%cols,"m2%cols","m_pexsi_dos")
+    do j=1,size(m2%vals)
+       call de_alloc(m2%vals(j)%data,"m2%vals(j)%data","m_pexsi_dos")
+    enddo
+    deallocate(m2%vals)
 
 endif
 

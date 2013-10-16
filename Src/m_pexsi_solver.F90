@@ -497,10 +497,10 @@ if (PEXSI_worker) then
       write(*, *) "eBandS (Ry) = ", eBandStructure
       write(*, *) "eBandH (Ry) = ", eBandH
       write(*, *) "freeBandEnergy (Ry) = ", (free_bs_energy)
-      write(*,*) "Number of mu iterations: ", muIter
-      write(*,"(a3,2a12,a20)") "it", "mu", "N_e", "dN_e/dmu"
+      write(6,*) "Number of mu iterations: ", muIter
+      write(6,"(a3,2a12,a20)") "it", "mu", "N_e", "dN_e/dmu"
       do i = 1, muIter
-         write(*,"(i3,2f12.4,g20.5)") i, muList(i)/eV, &
+         write(6,"(i3,2f12.4,g20.5)") i, muList(i)/eV, &
                  numElectronList(i), numElectronDrvList(i)*eV
       end do
    endif
@@ -709,16 +709,16 @@ enddo search_interval
    muInertia    = (muLowerEdge + muUpperEdge) / 2d0
 
    if(mpirank == 0) then
-     write (6,"(/,a)") 'PEXSI inertia count executed'
-     write (6,"(a,f10.4)") ' mu (eV)=', muInertia/eV
-     write (6,"(a,f10.4)") ' mu lowerEdge (eV):', muLowerEdge/eV
-     write (6,"(a,f10.4)") ' mu upperEdge (eV):', muUpperEdge/eV
-     write (6,"(a,f10.4)") ' muMin (eV):', muMinInertia/eV
-     write (6,"(a,f10.4)") ' muMax (eV):', muMaxInertia/eV
+     write (*,"(/,a)") 'PEXSI inertia count executed'
+     write (*,"(a,f10.4)") ' mu (eV)=', muInertia/eV
+     write (*,"(a,f10.4)") ' mu lowerEdge (eV):', muLowerEdge/eV
+     write (*,"(a,f10.4)") ' mu upperEdge (eV):', muUpperEdge/eV
+     write (*,"(a,f10.4)") ' muMin (eV):', muMinInertia/eV
+     write (*,"(a,f10.4)") ' muMax (eV):', muMaxInertia/eV
 
-     write(6,"(/,a)") "Cumulative DOS by inertia count:"
+     write(*,"(/,a)") "Cumulative DOS by inertia count:"
      do i=1, nptsInertia
-        write(6,"(f10.4,f10.4)") shiftList(i)/eV, inertiaList(i)
+        write(*,"(f10.4,f10.4)") shiftList(i)/eV, inertiaList(i)
      enddo
   end if
 end subroutine do_inertia

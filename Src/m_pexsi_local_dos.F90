@@ -226,9 +226,8 @@ if (PEXSI_worker) then
 !call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
 
    if(mpirank == 0) then
-     write (*,*) 'Calling PEXSI LDOS routine...'
-     write(*, *) "energy (eV)       = ", energy/eV
-     write(*, *) "broadening (eV)   = ", broadening/eV
+     write(6,"(a,f16.5,f10.5)") 'Calling PEXSI LDOS routine. Energy and broadening (eV) ', &
+                  energy/eV, broadening/eV
    endif 
 
 ! (Note that only the first-pole team does this)

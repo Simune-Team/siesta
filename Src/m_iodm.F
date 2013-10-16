@@ -120,7 +120,8 @@ C     Find total number of basis functions over all Nodes
 #endif
 
       if (Node.eq.0) then
-         write(6,'(/,a)') 'iodm: Reading Density Matrix from files'
+         write(6,'(/,a)')
+     $        'Reading matrix from file ' // trim(fnamei)
          call io_assign(unit1)
          open( unit1, file=fnamei, form=formin, status='old' )
          rewind(unit1)
@@ -358,7 +359,7 @@ C     Find total number of basis functions over all Nodes
 #endif
 
       if (Node.eq.0) then
-         write(6,'(/,a)') 'iodm: Reading Density Matrix from files'
+         write(6,'(/,a)') 'Reading Matrix from file ' // trim(fnamei)
          call io_assign(unit1)
          open( unit1, file=fnamei, form=formin, status='old' )
          rewind(unit1)

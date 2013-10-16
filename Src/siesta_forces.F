@@ -49,7 +49,7 @@
       type(converger_t)  ::  conv_harris, conv_etot
 
 !---------------------------------------------------------------------- BEGIN
-      call timer("IterMD",1)
+      if (SIESTA_worker) call timer("IterMD",1)
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
