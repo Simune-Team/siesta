@@ -27,7 +27,8 @@
 !  WRITTEN BY J.SOLER. JUL.2009
 !=============================================================================
 module timer_options
- logical, public :: use_tree_timer
+ logical, public :: use_tree_timer = .true.
+ logical, public :: use_parallel_timer = .false.
 end module timer_options
 
 subroutine timer( prog, iOpt )
@@ -35,7 +36,7 @@ subroutine timer( prog, iOpt )
 ! Module procedures used
   use sys,     only: die           ! Termination routine
   use parallel,only: node
-  use timer_options, only: use_tree_timer
+  use timer_options, only: use_tree_timer, use_parallel_timer
 
   ! New 'tree-based' module by A. Garcia
   use m_timer_tree, only: timer_on   ! Start counting time
@@ -53,24 +54,12 @@ subroutine timer( prog, iOpt )
   character(len=*),intent(in):: prog   ! Name of program to time
   integer,         intent(in):: iOpt   ! Action option
 
-! Select action
-  if (iOpt==0) then
-     call timer_init()
-  else if (iOpt==1) then
-    call timer_start( prog )
-  else if (iOpt==2) then
-    call timer_stop( prog )
-  else if (iOpt==3) then
-    call jms_timer_report( prog, printNow=.true. )
-  else
-    call die('timer: ERROR: invalid iOpt value')
-  end if
-
-if ((Node == 0)  .and. use_tree_timer) then
+if (use_tree_timer) then
 
   ! New method, based on walltime in the master node only,
   ! and with a tree structure for the report
 
+ if (Node == 0) then
   if (iOpt==0) then
     ! The timer is initialized in the first call to timer_on...
     !     call timer_init()
@@ -80,6 +69,23 @@ if ((Node == 0)  .and. use_tree_timer) then
     call timer_off( prog )
   else if (iOpt==3) then
     call timer_report(prog) 
+  else
+    call die('timer: ERROR: invalid iOpt value')
+  end if
+ end if
+
+endif
+
+if (use_parallel_timer) then
+! Select action
+  if (iOpt==0) then
+     call timer_init()
+  else if (iOpt==1) then
+    call timer_start( prog )
+  else if (iOpt==2) then
+    call timer_stop( prog )
+  else if (iOpt==3) then
+    call jms_timer_report( prog, printNow=.true. )
   else
     call die('timer: ERROR: invalid iOpt value')
   end if

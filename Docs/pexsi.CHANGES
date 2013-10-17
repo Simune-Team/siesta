@@ -1,4 +1,28 @@
 ------------------------------------------------------------
+October 17, 2013  A. Garcia       trunk-445--pexsi-49
+Disable parallel timer by default
+
+When large numbers of processors are used, the "parallel" timer
+(producing the TIMES file) might be inefficient, and introduce
+inbalances in the "tree_timer" (based on walltime on the root node).
+
+The "parallel" timer has been disabled by default. It can be 
+enabled by
+
+  Use.Parallel.Timer T
+
+(The "tree_timer" is on by default. It can be disabled by
+
+  Use.Tree.Timer F
+)
+
+modified:
+  Src/siesta_init.F
+  Src/timer.F90
+
+
+
+------------------------------------------------------------
 October 16, 2013  A. Garcia       trunk-445--pexsi-48
 Wrap timing call. Simplify DOS routine. Add output to unit 6.
 

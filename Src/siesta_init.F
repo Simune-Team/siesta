@@ -12,7 +12,7 @@
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
       use siesta_options
-      use timer_options,      only: use_tree_timer
+      use timer_options,      only: use_tree_timer, use_parallel_timer
       use sparse_matrices
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
@@ -210,7 +210,9 @@ C     Initialise MPI and set processor number
       threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
      .                   threshold=threshold )
-      ! This variable lives in siesta_options
+      ! Note that the parallel timer might be inefficient for reports
+      ! when large numbers of processors are used
+      use_parallel_timer = fdf_get('UseParallelTimer', .false.)
       use_tree_timer = fdf_get('UseTreeTimer', .true.)
 
 !     Start time counter
