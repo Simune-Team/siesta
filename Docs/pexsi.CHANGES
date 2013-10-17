@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+October 17, 2013  A. Garcia       trunk-445--pexsi-50
+Do not time 'matel' to avoid overheads
+
+For large systems, there are too many calls to matel, and
+the timer overhead is noticeable. Timing calls have been
+disabled in matel.f
+
+modified:
+  Src/matel.f
+
+------------------------------------------------------------
 October 17, 2013  A. Garcia       trunk-445--pexsi-49
 Disable parallel timer by default
 

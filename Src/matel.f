@@ -213,7 +213,7 @@ C Internal variable types and dimensions ----------------------------
       EXTERNAL  PROPOR, TIMER
 C -------------------------------------------------------------------
 C Start time counter 
-      CALL TIMER( 'matel', 1 )
+!!      CALL TIMER( 'matel', 1 )
 
 C Set allocation defaults 
       CALL ALLOC_DEFAULT( OLD=OLDEFS, COPY=.TRUE., SHRINK=.FALSE. )
@@ -682,7 +682,7 @@ C Restore allocation defaults
       CALL ALLOC_DEFAULT( RESTORE=OLDEFS )
 
 C Stop time counter
-      CALL TIMER( 'matel', 2 )
+!!      CALL TIMER( 'matel', 2 )
 
 !------------------------ Internal procedures
 
