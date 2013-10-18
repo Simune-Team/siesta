@@ -163,7 +163,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_object_debug.o m_uuid.o\
         m_dminim.o m_zminim.o \
         m_getopts.o f2kcli.o \
-        m_svd.o m_pexsi_dos.o
+        m_svd.o m_pexsi_dos.o m_matio.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -574,6 +574,7 @@ m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
+m_matio.o: parallel.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
@@ -670,7 +671,8 @@ ordern.o: precision.o siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: alloc.o atmfuncs.o precision.o siesta_geom.o sys.o units.o
 overfsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
-overlap.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
+overlap.o: alloc.o atmfuncs.o atomlist.o m_matio.o mneighb.o parallel.o
+overlap.o: parallelsubs.o precision.o
 parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o

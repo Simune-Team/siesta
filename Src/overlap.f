@@ -17,6 +17,8 @@
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
+      use m_matio,       only : write_mat
+      use atomlist,      only : no_l
 
       implicit none
 
@@ -118,6 +120,9 @@ C     Deallocate local memory
 !      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
       call de_alloc( Si, 'Si', 'overlap' )
+
+      call write_mat (maxnh, no_l, 1,
+     $     numh, listhptr, listh, S, "SMAT")
 
 C     Finish timer
       call timer( 'overlap', 2 )
