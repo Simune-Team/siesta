@@ -37,18 +37,20 @@ CONTAINS
     integer, intent(in) :: listd(maxnd)
     real(dp), intent(in) :: mat(maxnd,nspin)
 
-    character(len=*), intent(in) :: userfile
+    character(len=*), intent(in), optional :: userfile
 
     integer :: no_u, m, ml, im, ndmaxg, unit1, is
-    integer :: n_l, nsize_l, n_g, nsize_g, node, myrank, nprocs
+    integer :: n_l, norbs_l, n_g, norbs_g, node, myrank, nprocs
     integer :: nnzbs, base, maxnnzbs, nblocks, norbs, nsize
     integer :: base_l, nnzs_bl, nnzs_bg
+    integer :: i, j, ptr, nnzsi
 #ifdef MPI
     integer  :: MPIerror, stat(MPI_STATUS_SIZE)
     real(dp), dimension(:), pointer :: buffer => null()
     integer,  dimension(:), pointer :: ibuffer => null()
 #endif
     integer, dimension(:), pointer  :: numdg => null()
+    character(len=256) :: filename
 
     call timer("WriteMat",1)
 
@@ -69,15 +71,23 @@ CONTAINS
 #endif
 
     if (myrank.eq.0) then
-       print *, "Blocksize, no_u: ", blocksize, no_u
+       if (.not. present(userfile)) then
+          filename = "SPMAT"
+       else
+          filename = userfile
+       endif
+       !print *, "Blocksize, no_u: ", blocksize, no_u
 
-       call io_assign(unit1)
-       open( unit1, file=trim(userfile), form="formatted", status='unknown' )
-       rewind(unit1)
-       write(unit1,*) no_u, nspin, blocksize
+!       call io_assign(unit1)
+!       open( unit1, file=trim(userfile), form="formatted", status='unknown' )
+!       rewind(unit1)
+       open( 2, file=trim(filename), form="unformatted", status='unknown' )
+       rewind(2)
+!       write(unit1,*) no_u, nspin, blocksize
+       write(2) no_u, nspin
        
        call re_alloc( numdg, 1, no_u, 'numdg', 'write_mat' )
-       print *, "Size of numdg: ", size(numdg)
+       !print *, "Size of numdg: ", size(numdg)
     endif
 
 !     Get info about numd
@@ -89,42 +99,42 @@ CONTAINS
        node = node + 1
        if (node == nprocs) node = 0
 
-       print *, " node: ", node, " myrank: ", myrank
+       !print *, " node: ", node, " myrank: ", myrank
 
        if (myrank == node) then
-          nsize_l = min(blocksize,no_l-n_l)
-          print *, "myrank: ", myrank, " processing size:", nsize_l
+          norbs_l = min(blocksize,no_l-n_l)
+          !print *, "myrank: ", myrank, " processing size:", norbs_l
           if (node==0) then
-             nsize_g = min(blocksize,no_u-n_g)
-             print *, "myrank: ", myrank, " will just copy: (l,g)", &
-                      nsize_l, nsize_g
-             numdg(n_g+1:n_g+nsize_g) = numd(n_l+1:n_l+nsize_l)
-             n_g = n_g + nsize_g
-             print *, "root has received so far: ", n_g
+             norbs_g = min(blocksize,no_u-n_g)
+             !print *, "myrank: ", myrank, " will just copy: (l,g)", &
+             !                      norbs_l, norbs_g
+             numdg(n_g+1:n_g+norbs_g) = numd(n_l+1:n_l+norbs_l)
+             n_g = n_g + norbs_g
+             !print *, "root has received so far: ", n_g
           else
-             print *, "myrank: ", myrank, " will send to 0: ", nsize_l
-             call MPI_Send(numd(n_l+1),nsize_l,MPI_integer, &
+             !print *, "myrank: ", myrank, " will send to 0: ", norbs_l
+             call MPI_Send(numd(n_l+1),norbs_l,MPI_integer, &
                   0,1,MPI_Comm,MPIerror)
-             print *, "myrank: ", myrank, " completed send ", nsize_l
+             !print *, "myrank: ", myrank, " completed send ", norbs_l
           endif
-          n_l = n_l + nsize_l
+          n_l = n_l + norbs_l
 
        else if (myrank == 0) then
-          nsize_g = min(blocksize,no_u-n_g)
-          print *, "root will receive from ", node, " size: ", nsize_g
-          print *, "will put it starting at: ", n_g+1
-!          call sub(numdg(n_g+1:),nsize_g)
-          call MPI_Recv(numdg(n_g+1:),nsize_g,MPI_integer, &
+          norbs_g = min(blocksize,no_u-n_g)
+          !print *, "root will receive from ", node, " size: ", norbs_g
+          !print *, "will put it starting at: ", n_g+1
+
+          call MPI_Recv(numdg(n_g+1:),norbs_g,MPI_integer, &
                 node,1,MPI_Comm,stat,MPIerror)
-          n_g = n_g + nsize_g
-          print *, "root has received so far: ", n_g
+          n_g = n_g + norbs_g
+          !print *, "root has received so far: ", n_g
        endif
 
        if (myrank == 0) then
           if (n_g == no_u) EXIT
        else
           if (n_l == no_l) then
-             print *, "rank ", myrank, " exiting loop"
+             !print *, "rank ", myrank, " exiting loop"
              EXIT
           endif
        endif
@@ -133,7 +143,8 @@ CONTAINS
           
 !     Write out numd array
       if (myrank.eq.0) then
-         write(unit1,*) (numdg(m),m=1,no_u)
+!         write(unit1,*) (numdg(m),m=1,no_u)
+         write(2) (numdg(m),m=1,no_u)
       endif
 
 !     Find out how big the buffer has to be
@@ -150,7 +161,7 @@ CONTAINS
             if (norbs == no_u) EXIT
             nblocks = nblocks + 1
          enddo
-         print *, "Maznnzbs = ", maxnnzbs
+         !print *, "Maznnzbs = ", maxnnzbs
 
          call re_alloc( buffer,  1, maxnnzbs, 'buffer',  'write_mat' )
          call re_alloc( ibuffer, 1, maxnnzbs, 'ibuffer', 'write_mat' )
@@ -169,61 +180,143 @@ CONTAINS
        node = node + 1
        if (node == nprocs) node = 0
 
-       print *, " node: ", node, " myrank: ", myrank
+       !print *, " node: ", node, " myrank: ", myrank
 
        if (myrank == node) then
 
-          if (n_l == 0) then
-             base_l = 1
-          else
-             base_l = listdptr(n_l) 
-          endif
-          nsize_l = min(blocksize,no_l-n_l)
-          nnzs_bl = sum(numd(n_l+1:n_l+nsize_l))
-          print *, "myrank: ", myrank, " processing size:", nsize_l, nnzs_bl
+          base_l = listdptr(n_l+1) 
+
+          norbs_l = min(blocksize,no_l-n_l)
+          nnzs_bl = sum(numd(n_l+1:n_l+norbs_l))
+          !print *, "myrank: ", myrank, " processing size:", norbs_l, nnzs_bl
 
           if (node==0) then
-             nsize_g = min(blocksize,no_u-n_g)
-             nnzs_bg = sum(numdg(n_g+1:n_g+nsize_g))
-             print *, "myrank: ", myrank, " will just copy: (l,g)", &
-                      nnzs_bl, nnzs_bg
+             norbs_g = min(blocksize,no_u-n_g)
+             nnzs_bg = sum(numdg(n_g+1:n_g+norbs_g))
+             !print *, "myrank: ", myrank, " will just copy: (l,g)", &
+             !                      nnzs_bl, nnzs_bg
              ibuffer(1:nnzs_bg) = listd(base_l+1:base_l+nnzs_bl)
-             n_g = n_g + nsize_g
-             print *, "root has received so far: ", n_g
           else
-             print *, "myrank: ", myrank, " will send to 0: ", nsize_l
-             print *, "myrank: ", myrank, " will start at: ", base_l+1
+             !print *, "myrank: ", myrank, " will send to 0: ", norbs_l
+             !print *, "myrank: ", myrank, " will start at: ", base_l+1
              call MPI_Send(listd(base_l+1:),nnzs_bl,MPI_integer, &
                   0,1,MPI_Comm,MPIerror)
-             print *, "myrank: ", myrank, " completed send ", nnzs_bl
+             !print *, "myrank: ", myrank, " completed send ", nnzs_bl
           endif
-          n_l = n_l + nsize_l
+          n_l = n_l + norbs_l
 
        else if (myrank == 0) then
-          nsize_g = min(blocksize,no_u-n_g)
-          nnzs_bg = sum(numdg(n_g+1:n_g+nsize_g))
-          print *, "root will receive from ", node, " size: ", nnzs_bg
+          norbs_g = min(blocksize,no_u-n_g)
+          nnzs_bg = sum(numdg(n_g+1:n_g+norbs_g))
+          !print *, "root will receive from ", node, " size: ", nnzs_bg
 
           call MPI_Recv(ibuffer,nnzs_bg,MPI_integer, &
                 node,1,MPI_Comm,stat,MPIerror)
-          n_g = n_g + nsize_g
-          print *, "root has received so far: ", n_g
        endif
 
        if (myrank == 0) then
-          write(unit1,*) "------  new block, n_g: ", n_g
-          write(unit1,*) ibuffer(1:nnzs_bg)
+          !           if (old_style) then
+             ptr = 0
+             do i = 1, norbs_g
+                nnzsi = numdg(n_g+i)
+                write(2) (ibuffer(j),j=ptr+1,ptr+nnzsi)
+                ptr = ptr + nnzsi
+             enddo
+
+             n_g = n_g + norbs_g
+             !print *, "root has received so far: ", n_g
+                
+!          write(unit1,*) "------  new block, n_g: ", n_g
+!          write(unit1,*) ibuffer(1:nnzs_bg)
           if (n_g == no_u) EXIT
        else
           if (n_l == no_l) then
-             print *, "rank ", myrank, " exiting loop"
+             !print *, "rank ", myrank, " exiting loop"
              EXIT
           endif
        endif
           
     enddo
-    call io_close(unit1)
 
+!     Get values
+
+ do is = 1, nspin
+
+     call mpi_barrier(mpi_comm, mpierror)
+
+
+    n_g = 0
+    n_l = 0
+    node = -1
+    DO
+
+       node = node + 1
+       if (node == nprocs) node = 0
+
+       !print *, " node: ", node, " myrank: ", myrank
+
+       if (myrank == node) then
+
+          base_l = listdptr(n_l+1) 
+
+          norbs_l = min(blocksize,no_l-n_l)
+          nnzs_bl = sum(numd(n_l+1:n_l+norbs_l))
+          !print *, "myrank: ", myrank, " processing size:", norbs_l, nnzs_bl
+
+          if (node==0) then
+             norbs_g = min(blocksize,no_u-n_g)
+             nnzs_bg = sum(numdg(n_g+1:n_g+norbs_g))
+             !print *, "myrank: ", myrank, " will just copy: (l,g)", &
+             !                      nnzs_bl, nnzs_bg
+             buffer(1:nnzs_bg) = mat(base_l+1:base_l+nnzs_bl,is)
+          else
+             !print *, "myrank: ", myrank, " will send to 0: ", norbs_l
+             !print *, "myrank: ", myrank, " will start at: ", base_l+1
+             call MPI_Send(mat(base_l+1:,is),nnzs_bl,MPI_double_precision, &
+                  0,1,MPI_Comm,MPIerror)
+             !print *, "myrank: ", myrank, " completed send ", nnzs_bl
+          endif
+          n_l = n_l + norbs_l
+
+       else if (myrank == 0) then
+          norbs_g = min(blocksize,no_u-n_g)
+          nnzs_bg = sum(numdg(n_g+1:n_g+norbs_g))
+          !print *, "root will receive from ", node, " size: ", nnzs_bg
+
+          call MPI_Recv(buffer,nnzs_bg,MPI_double_precision, &
+                node,1,MPI_Comm,stat,MPIerror)
+       endif
+
+       if (myrank == 0) then
+          !           if (old_style) then
+             ptr = 0
+             do i = 1, norbs_g
+                nnzsi = numdg(n_g+i)
+                write(2) (buffer(j),j=ptr+1,ptr+nnzsi)
+                ptr = ptr + nnzsi
+             enddo
+
+             n_g = n_g + norbs_g
+             !print *, "root has received so far: ", n_g
+                
+!          write(unit1,*) "------  new block, n_g: ", n_g
+!          write(unit1,*) buffer(1:nnzs_bg)
+          if (n_g == no_u) EXIT
+       else
+          if (n_l == no_l) then
+             !print *, "rank ", myrank, " exiting loop"
+             EXIT
+          endif
+       endif
+          
+    enddo
+
+ enddo
+
+!    call io_close(unit1)
+    close(2)
+
+    call timer("WriteMat",2)
 
     end subroutine write_mat
 

@@ -568,13 +568,13 @@ m_hs_matrix.o: alloc.o precision.o sys.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_io.o: sys.o
-m_iodm.o: alloc.o files.o m_mpi_utils.o parallel.o parallelsubs.o precision.o
-m_iodm.o: sparse_matrices.o sys.o
+m_iodm.o: alloc.o files.o m_matio.o m_mpi_utils.o parallel.o parallelsubs.o
+m_iodm.o: precision.o sparse_matrices.o sys.o
 m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
-m_matio.o: parallel.o
+m_matio.o: alloc.o parallel.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o

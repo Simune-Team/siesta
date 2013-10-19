@@ -14,7 +14,7 @@
       use parallel,     only : ionode,  Node, Nodes
       use parallelsubs, only : LocalToGlobalOrb
       use sys,          only : die
-      use fdf,          only : fdf_boolean, fdf_string
+      use fdf,          only : fdf_boolean, fdf_string, fdf_get
       use files,        only : slabel, label_length
       use alloc,        only : re_alloc, de_alloc
       use m_mpi_utils,  only : broadcast
@@ -713,6 +713,7 @@ C     Write density matrix
       ! Convenience wrapper
       !
       use sparse_matrices, only: numh, listhptr, listh
+      use m_matio,         only: write_mat
 
       real(dp), intent(in) :: M(:,:)
       character(len=*), intent(in), optional :: file
@@ -728,9 +729,13 @@ C     Write density matrix
       maxnh = size(M,dim=1)
       nspin = size(M,dim=2)
 
-      call write_dm (maxnh, no_l, nspin,
+      if (fdf_get("UseOldWriteDM",.false.)) then
+         call write_dm (maxnh, no_l, nspin,
      $     numh, listhptr, listh, M, userfile=file)
-
+      else
+         call write_mat (maxnh, no_l, nspin,
+     $     numh, listhptr, listh, M, userfile=file)
+      endif
       end subroutine write_spmatrix
 
 !-------------------
