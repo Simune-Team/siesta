@@ -4,13 +4,13 @@ use densematrix,    only : psi
 use fdf,            only : fdf_boolean, fdf_integer, fdf_get, fdf_physical
 use files,          only : slabel
 use parallel,       only : ProcessorY, BlockSize, Node, Nodes
-use parallelsubs,   only : set_BlockSizeDefault
 use precision,      only : dp
 use siesta_options, only : fixspin
 use sys,            only : die
 #ifdef MPI
 use mpi_siesta,     only : mpi_integer, mpi_double_precision, mpi_comm_world, mpi_sum, mpi_status_size
 use parallelsubs,   only : GetNodeOrbs, GlobalToLocalOrb, WhichNodeOrb
+use parallelsubs,   only : set_BlockSizeDefault
 #endif
 
 implicit none

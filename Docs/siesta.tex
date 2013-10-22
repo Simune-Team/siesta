@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large September 30, 2013 }
+{\Large October 22, 2013 }
 
 \vspace{1.5cm}
 
@@ -5978,7 +5978,9 @@ optimised by varying this parameter until a suitable value is found.
 {\it Use:} Controls the blocksize used for distributing orbitals over
 processors
 
-{\it Default value:}  8
+{\it Default value:}  Estimated by a heuristic algorithm, with a
+maximum value of 24. The imbalance in the distribution is not
+larger than 2.
 
 \item[{\bf ProcessorY}] ({\it integer}): \index{ProcessorY@{\bf
 ProcessorY}} The mesh points are divided in the Y and Z directions
@@ -8465,7 +8467,7 @@ For optimal performance, this parameter
 should be adjusted according to the size of problem and the machine
 being used. Very small and very large values tend to be inefficient
 and typically values in the range 8 - 32 tend to be optimal. Parts of
-the code that parallelise in this way are, evaluation of the kinetic
+the code that parallelise in this way are: evaluation of the kinetic
 energy, the non-local pseudopotential contribution, determination of
 the overlap integrals and matrix diagonalisation/order N. Note that
 for matrix diagonalisation, the default option is now to transform the

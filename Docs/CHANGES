@@ -6,6 +6,30 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-10-22  14:10:00 GMT                                     trunk-447
+Improve the estimation of the orbital distribution blocksize
+
+For small problems or a too-large number of processors (heuristically,
+when nprocs*24 > norbs), the estimation of the default blocksize for
+orbital distribution could lead to some processors being idle, or to a
+large imbalance in the distribution.
+
+This has been fixed. The imbalance (the ratio of maximum to minimum
+number of orbitals assigned to a processor) is now not larger than 2 for
+those badly designed runs.
+
+The imbalance is printed to the output file.
+
+(A. Garcia)
+
+modified:
+  Src/initparallel.F
+  Src/m_dminim.F90
+  Src/m_zminim.F90
+  Src/parallelsubs.F
+  Docs/siesta.tex
+
+-----------------------------------------------------------------------
 2013-10-16  12:30:00 GMT                                     trunk-446
 Output file names for dhscf packed in a derived type (JMS)
 
