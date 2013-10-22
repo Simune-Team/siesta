@@ -1,0 +1,16 @@
+-----------------------------------------------------------------
+October 22, 2013   Alberto Garcia    trunk-445--pexsi-50--matio-4
+Use larger chunks for file writes
+
+The information in a whole "blocksize"-worth of data is now
+written to a single record on disk. This speeds up the I/O
+significantly.
+
+The new format is not backwards compatible. A new reading routine
+(possibly with on-the-fly blocksize changes) has to be written.
+
+modified:
+  Src/Makefile
+  Src/m_matio.F90
+  Src/overlap.f
+  Src/siesta_forces.F
