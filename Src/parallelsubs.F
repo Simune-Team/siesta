@@ -761,7 +761,8 @@ C Choose default value as lowest of Nx and Ny
 
       end subroutine set_processorYdefault
 
-      subroutine set_blocksizedefault(Nodes,nuotot,blocksizedefault)
+#ifdef MPI
+      subroutine set_blocksizedefault(Nodes,nuotot,bs)
 C
 C Finds a sensible default value for the blocksize default.
 C When the number of orbitals is less than the blocksize
@@ -775,21 +776,48 @@ C integer nuotot       : total number of orbitals
 C
 C Output :
 C
-C integer blocksizedefault : default value of blocksize
+C integer bs : default value of blocksize
 C
 C Written by Julian Gale, March 2001
+C Modified by Alberto Garcia, October 2013
 C
 C Passed arguments
-      integer
-     .  Nodes, nuotot, blocksizedefault
+      integer, intent(in)  :: Nodes, nuotot
+      integer, intent(out) :: bs
+
+      integer  :: n1, nn
+
+      ! Scalapack routine for block-cyclic distributions
+      integer, external :: numroc
 
 C Compare number of orbitals against sensible number
+! Note that this number could be optimized...
+
       if (nuotot.gt.24*Nodes) then
-        blocksizedefault = 24
+        bs = 24
       else
-        blocksizedefault = ( (nuotot - 1) / Nodes) + 1
+
+         bs = nuotot/Nodes + 1
+         do
+            ! Check the number of orbitals handled
+            ! by the first and last processors
+            ! Avoid idle processors, and too-high
+            ! imbalances
+
+            n1 = numroc(nuotot,bs,0,0,nodes)
+            nn = numroc(nuotot,bs,nodes-1,0,nodes)
+
+            if (nn == 0) then
+               bs = bs - 1
+            else if (dble(n1)/nn > 2) then
+               bs = bs - 1
+            else
+               exit
+            endif
+         enddo
+               
       endif
 
       end subroutine set_blocksizedefault
-
+#endif
       end module parallelsubs

@@ -410,8 +410,8 @@ C ----------------------------------------------------------------------
 
       subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
      &                  nuotot, nua, na, isa, xa, indxua,
-     &                  ntm, ifa, istr, iHmat, filrho, fildrh, 
-     &                  filevh, filevt, filepsch, filetoch, maxnd, numd,
+     &                  ntm, ifa, istr, iHmat, filesOut, 
+     &                  maxnd, numd,
      &                  listdptr, listd, Dscf, datm, maxnh, Hmat,
      &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, 
      &                  Exc, Dxc, dipol, stress, Fal, stressl )
@@ -444,18 +444,7 @@ C integer istr          : Switch which fixes whether the SCF contrib.
 C                         to stress is calculated and added to stress
 C integer iHmat         : Switch which fixes whether the Hmat matrix
 C                         elements are calculated or not.
-C character*(*) filrho  : Name of file to saving the electron density
-C                         (If blank => not saved)
-C character*(*) fildrh  : Name of file to saving Delta Rho (Rho - Rho_atoms)
-C                         (If blank => not saved)
-C character*(*) filevh  : Name of file to save electrostatic potential
-C                         (If blank => not saved)
-C character*(*) filevt  : Name of file to save total potential
-C                         (If blank => not saved)
-C character*(*) filepsch: Name of file to save the soft diffuse ionic charge
-C                         (If blank => not saved)
-C character*(*) filetoch: Name of file to save the total ionic+electronic charge
-C                         (If blank => not saved)
+C type(filesOut_t) filesOut : output file names (If blank => not saved)
 C integer maxnd             : First dimension of listd and Dscf
 C integer numd(nuo)         : Number of nonzero density-matrix
 C                             elements for each matrix row
@@ -533,6 +522,7 @@ C     Modules
       use m_forhar,      only  : forhar
       use alloc,         only  : re_alloc, de_alloc
       use files,         only  : slabel
+      use files,         only  : filesOut_t ! derived type for output file names
       use siesta_options, only : harrisfun, save_initial_charge_density
       use meshsubs,       only : LocalChargeOnMesh
       use meshsubs,       only : PartialCoreOnMesh
@@ -584,9 +574,8 @@ C     Modules
      &  Hmat(maxnh,nspin), Uatm, Uscf, xa(3,na),
      &  stress(3,3), Fal(3,nua), stressl(3,3)
 
-      character
-     &  filevh*(*), filevt*(*), fildrh*(*), filrho*(*), 
-     &  filepsch*(*), filetoch*(*)
+      type(filesOut_t)
+     &  filesOut
 
 C ----------------------------------------------------------------------
 C Routines called internally:
@@ -728,10 +717,10 @@ C ----------------------------------------------------------------------
       volume = volcel(cell)
 
 C-------------------------------------------------------------------------
-      if (savevna) then
+      if (filesOut%vna .ne. ' ') then
         ! Uniform dist, sequential form
-        call write_rho( trim(slabel)// ".VNA",
-     &                  cell, ntm, nsm, ntpl, 1, Vna)
+        call write_rho( filesOut%vna,
+     &                  cell, ntm, nsm, ntpl, 1, Vna )
         call write_grid_netcdf( cell, ntm, 1, ntpl, Vna, "Vna")
       endif
 
@@ -846,15 +835,16 @@ C       Set the UNIFORM distribution again and copy DRho to it
 C ----------------------------------------------------------------------
 C Save electron density
 C ----------------------------------------------------------------------
-      if (filrho .ne. ' ') then
+      if (filesOut%rho .ne. ' ') then
         !  DRho is already using a uniform, sequential form
-        call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, DRho )
+        call write_rho( filesOut%rho, cell, ntm, nsm, ntpl, nspin,
+     &                  DRho )
         call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "Rho")
       endif
 C ----------------------------------------------------------------------
 C Save the diffuse ionic charge and/or the total (ionic+electronic) charge
 C ----------------------------------------------------------------------
-      if (filepsch .ne. ' ' .or. filetoch .ne. ' ') then
+      if (filesOut%psch .ne. ' ' .or. filesOut%toch .ne. ' ') then
 C       Find diffuse ionic charge on mesh
         ! Note that the *OnMesh routines, except PhiOnMesh,
         ! work with any distribution, thanks to the fact that
@@ -865,14 +855,15 @@ C       Find diffuse ionic charge on mesh
         call reord( Chlocal, Chlocal, nml, nsm, TO_SEQUENTIAL )
       
 C       Save diffuse ionic charge 
-        if (filepsch .ne. ' ') then
-          call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, Chlocal)
+        if (filesOut%psch .ne. ' ') then
+          call write_rho( filesOut%psch, cell, ntm, nsm, ntpl, 1, 
+     &                    Chlocal)
           call write_grid_netcdf( cell, ntm, 1, ntpl,
      &                            Chlocal, 'Chlocal' )
         endif
 
 C       Save total (ionic+electronic) charge 
-        if ( filetoch .ne. ' ') then
+        if ( filesOut%toch .ne. ' ') then
            call re_alloc( Totchar, 1, ntpl, 'Totchar', 'dhscf' )
         
           do ip= 1, ntpl
@@ -885,7 +876,8 @@ C       Save total (ionic+electronic) charge
             enddo
           enddo
 
-          call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
+          call write_rho( filesOut%toch, cell, ntm, nsm, ntpl, 1, 
+     &                    Totchar )
           call write_grid_netcdf( cell, ntm, 1, ntpl,
      &                            Totchar, "TotalCharge")
           call de_alloc( Totchar, 'Totchar', 'dhscf' )
@@ -897,7 +889,7 @@ C ----------------------------------------------------------------------
 C Save the total charge (model core + valence) for Bader analysis
 C ----------------------------------------------------------------------
 
-      if (filetoch .ne. ' ' .and. savebader) then
+      if (filesOut%toch .ne. ' ' .and. savebader) then
         call save_bader_charge()
       endif
 
@@ -913,8 +905,9 @@ C Find difference between selfconsistent and atomic densities
 C ----------------------------------------------------------------------
 C Save electron density difference
 C ----------------------------------------------------------------------
-      if (fildrh .ne. ' ') then
-        call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, DRho )
+      if (filesOut%drho .ne. ' ') then
+        call write_rho( filesOut%drho, cell, ntm, nsm, ntpl, nspin, 
+     &                  DRho )
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
      &                          DRho, "DeltaRho")
       endif
@@ -1059,9 +1052,9 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
 C     Save electrostatic potential
 C ----------------------------------------------------------------------
-      if (filevh .ne. ' ') then
+      if (filesOut%vh .ne. ' ') then
         ! Note that only the first spin component is used
-        call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf )
+        call write_rho( filesOut%vh, cell, ntm, nsm, ntpl, 1, Vscf )
         call write_grid_netcdf( cell, ntm, 1, ntpl,
      &                          Vscf, "ElectrostaticPotential")
       endif
@@ -1107,6 +1100,13 @@ C ----------------------------------------------------------------------
           enddo
         endif
       enddo
+
+      ! Write the electron density used by cellxc
+      if (filesOut%rhoxc .ne. ' ') then
+        call write_rho( filesOut%rhoxc, cell, ntm, nsm, ntpl, nspin, 
+     &                  Drho )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "RhoXC")
+      endif
 
 !     Everything now is in UNIFORM, sequential form
 
@@ -1179,8 +1179,8 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
 C     Save total potential
 C ----------------------------------------------------------------------
-      if (filevt .ne. ' ') then
-        call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, Vscf )
+      if (filesOut%vt .ne. ' ') then
+        call write_rho( filesOut%vt, cell, ntm, nsm, ntpl, nspin, Vscf)
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
      &                          Vscf, "TotalPotential")
       endif
@@ -1189,7 +1189,7 @@ C ----------------------------------------------------------------------
 C Print vacuum level
 C ----------------------------------------------------------------------
 
-      if (filevt/=' ' .or. filevh/=' ') then
+      if (filesOut%vt/=' ' .or. filesOut%vh/=' ') then
         forall(ispin=1:nsd) 
      .    DRho(:,ispin) = DRho(:,ispin) + rhoatm(:) / nsd
         call vacuum_level( ntpl, nspin, DRho, Vscf, 

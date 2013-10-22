@@ -16,26 +16,28 @@
       use atomlist,       only: datm, no_s, iaorb        
       use fdf
       use files,          only : slabel     
-      use parallel,       only:  SIESTA_worker
+      use files,          only : filesOut_t ! type for output file names
       use files,          only : label_length            
+      use parallel,       only:  SIESTA_worker
       use m_ntm
       use m_forces,       only: fa
       use m_eo
       use m_spin,         only: nspin, qs, efs
       use m_gamma
       use m_dhscf,        only: dhscf
+
       implicit none
 
       character(len=label_length+5), external :: paste
 
-      integer :: dummy_iscf = 1
-      character(len=label_length+5) :: fildos
-
+      integer   :: dummy_iscf = 1
       real(dp)  :: dummy_str(3,3), dummy_strl(3,3)  ! for dhscf call
       real(dp)  :: dummy_dipol(3)
 
       real(dp)  :: factor, g2max
       real(dp)  :: energy, broadening
+
+      type(filesOut_t)     :: filesOut  ! blank output file names
 
       ! Find local density of states with Selected Inversion
       ! Only the first pole group participates 
@@ -53,11 +55,11 @@
 
       if (SIESTA_worker) then
          !Find the LDOS in the real space mesh
-         fildos = paste( slabel, '.LDSI' )
+         filesOut%rho = paste( slabel, '.LDSI' )
          g2max = g2cut
          call dhscf( nspin, no_s, iaorb, iphorb, no_l, &
                    no_u, na_u, na_s, isa, xa_last, indxua,  &
-                   ntm, 0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ', &
+                   ntm, 0, 0, 0, filesOut,                  &
                    maxnh, numh, listhptr, listh, Dscf, Datm, maxnh, H, &
                    Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc, &
                    dummy_dipol, dummy_str, fa, dummy_strl )

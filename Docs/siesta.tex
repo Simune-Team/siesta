@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large September 30, 2013 }
+{\Large October 22, 2013 }
 
 \vspace{1.5cm}
 
@@ -5715,6 +5715,20 @@ If netCDF support is compiled in, the file {\tt DeltaRho.grid.nc} is produced.
 {\it Default value:} {\tt .false.}
 
 
+\item[{\bf SaveRhoXC}] ({\it logical}): \index{SaveRhoXC@{\bf
+    SaveRhoXC}}\index{output!charge density} Instructs to write the
+  valence pseudocharge density at the mesh, including the nonlocal
+core corrections used to calculate the exchange-correlation energy, 
+in file {\tt
+    SystemLabel}.RHOXC.
+
+{\it Use:} File {\tt SystemLabel}.RHOXC is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt RhoXC.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
+
+
 \item[{\bf SaveElectrostaticPotential}] ({\it logical}):
 \index{SaveElectrostaticPotential@{\bf SaveElectrostaticPotential}}
 \index{output!electrostatic potential}
@@ -5972,7 +5986,9 @@ optimised by varying this parameter until a suitable value is found.
 {\it Use:} Controls the blocksize used for distributing orbitals over
 processors
 
-{\it Default value:}  8
+{\it Default value:}  Estimated by a heuristic algorithm, with a
+maximum value of 24. The imbalance in the distribution is not
+larger than 2.
 
 \item[{\bf ProcessorY}] ({\it integer}): \index{ProcessorY@{\bf
 ProcessorY}} The mesh points are divided in the Y and Z directions
@@ -8459,7 +8475,7 @@ For optimal performance, this parameter
 should be adjusted according to the size of problem and the machine
 being used. Very small and very large values tend to be inefficient
 and typically values in the range 8 - 32 tend to be optimal. Parts of
-the code that parallelise in this way are, evaluation of the kinetic
+the code that parallelise in this way are: evaluation of the kinetic
 energy, the non-local pseudopotential contribution, determination of
 the overlap integrals and matrix diagonalisation/order N. Note that
 for matrix diagonalisation, the default option is now to transform the

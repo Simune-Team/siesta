@@ -1,4 +1,30 @@
 ------------------------------------------------------------
+October 22, 2013  A. Garcia       trunk-447--pexsi-50
+Sync to trunk-447
+
+* Improve the estimation of the orbital distribution blocksize
+* Output file names for dhscf packed in a derived type (JMS)
+
+See the CHANGES file.
+
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Src/Makefile
+  Src/dhscf.F
+  Src/files.f
+  Src/grdsam.F
+  Src/initparallel.F
+  Src/local_DOS.F
+  Src/m_dminim.F90
+  Src/m_pexsi_local_dos.F90
+  Src/m_zminim.F90
+  Src/parallelsubs.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+
+------------------------------------------------------------
 October 17, 2013  A. Garcia       trunk-445--pexsi-50
 Do not time 'matel' to avoid overheads
 
