@@ -32,11 +32,12 @@
       interface read_spmatrix
          module procedure read_dm
       end interface
+      interface write_spmatrix
+         module procedure write_spmatrix1, write_spmatrix2
+      end interface
       interface read_dynamic_spmatrix
          module procedure read_dynamic_dm
       end interface
-
-      ! write_spmatrix is a wrapper
 
       PUBLIC :: write_dm, read_dm, read_dynamic_dm
       PUBLIC :: write_spmatrix, read_spmatrix, read_dynamic_spmatrix
@@ -708,7 +709,7 @@ C     Write density matrix
       end subroutine write_dm
 
 !-----------------------------------------------------
-      subroutine write_spmatrix(M,file,when)
+      subroutine write_spmatrix2(M,file,when)
       !
       ! Convenience wrapper
       !
@@ -729,14 +730,45 @@ C     Write density matrix
       maxnh = size(M,dim=1)
       nspin = size(M,dim=2)
 
-      if (fdf_get("UseOldWriteDM",.false.)) then
+      if (fdf_get("Use.Blocked.WriteMat",.true.)) then
+         call write_mat (maxnh, no_l, nspin,
+     $     numh, listhptr, listh, M, userfile=file,historical=.false.)
+      else
          call write_dm (maxnh, no_l, nspin,
      $     numh, listhptr, listh, M, userfile=file)
-      else
+      endif
+      end subroutine write_spmatrix2
+
+!-----------------------------------------------------
+      subroutine write_spmatrix1(M,file,when)
+      !
+      ! Convenience wrapper for 1-dim sparse data
+      ! (i.e., no spin, as in S matrix)
+      !
+      use sparse_matrices, only: numh, listhptr, listh
+      use m_matio,         only: write_mat
+
+      real(dp), intent(in) :: M(:)
+      character(len=*), intent(in), optional :: file
+      logical, intent(in), optional          :: when
+
+      integer :: no_l, maxnh, nspin
+
+      if (present(when)) then
+         if (.not. when) return
+      endif
+
+      no_l = size(numh)
+      maxnh = size(M,dim=1)
+
+      if (fdf_get("Use.Blocked.WriteMat",.true.)) then
          call write_mat (maxnh, no_l, nspin,
+     $     numh, listhptr, listh, M, userfile=file,historical=.false.)
+      else
+         call write_dm (maxnh, no_l, nspin,
      $     numh, listhptr, listh, M, userfile=file)
       endif
-      end subroutine write_spmatrix
+      end subroutine write_spmatrix1
 
 !-------------------
       subroutine setup_file_modes(userfile)

@@ -714,9 +714,9 @@ rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o
 rhoofdsp.o: meshdscf.o meshphi.o precision.o sys.o
-save_density_matrix.o: atomlist.o iodm_netcdf.o m_energies.o m_iodm.o m_spin.o
-save_density_matrix.o: m_steps.o m_ts_global_vars.o m_ts_iodm.o precision.o
-save_density_matrix.o: siesta_options.o sparse_matrices.o
+save_density_matrix.o: atomlist.o iodm_netcdf.o m_energies.o m_iodm.o m_matio.o
+save_density_matrix.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o
+save_density_matrix.o: precision.o siesta_options.o sparse_matrices.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
 scfconvergence_test.o: m_convergence.o m_energies.o m_wallclock.o parallel.o
 scfconvergence_test.o: siesta_cml.o siesta_options.o write_subs.o

@@ -13,12 +13,14 @@
       use sparse_matrices,      only:  maxnh, numh
       use sparse_matrices,      only:  listh, listhptr
       use m_iodm,               only:  write_dm
+      use m_matio,              only:  write_mat
       use m_spin,               only:  nspin
       use atomlist,             only:  no_l
       use siesta_options,       only:  writedm, writedm_cdf
       use siesta_options,       only:  writedm_cdf_history
       use m_steps,              only:  istp
       use sparse_matrices,      only:  Dscf
+      use fdf,                  only:  fdf_get
 #ifdef CDF
       use iodm_netcdf,          only:  write_dm_netcdf
 #endif
@@ -60,17 +62,22 @@
     
 #ifndef TRANSIESTA
       if (do_it) then
-        if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
-          if (istp.eq.1)
-     &    call write_dm (maxnh, no_l, nspin,
-     &               numh, listhptr, listh, Dscf,
-     $               userfile=file)
+        if (        ((idyn .eq. 6) .or. (idyn .eq. 7))
+     $        .and. (istp .ne. 1)                      ) then
+            ! do not write
         else
-          call write_dm (maxnh, no_l, nspin,
+          if (fdf_get("Use.Blocked.WriteMat",.true.)) then
+             call write_mat (maxnh, no_l, nspin,
+     &               numh, listhptr, listh, Dscf,
+     $               userfile=file,historical=.false.)
+          else
+             call write_dm (maxnh, no_l, nspin,
      &               numh, listhptr, listh, Dscf,
      $               userfile=file)
+          endif
         endif
-      endif ! writedm
+      endif 
+
 #else /* TRANSIESTA */
 ! TSS Begin
       if (do_it) then
