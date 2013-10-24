@@ -135,7 +135,7 @@ C     Deallocate local memory
          call timer("fastWriteMat",1)
          call write_mat(maxnh, no_l, 1,
      &               numh, listhptr, listh, S,
-     $               userfile="SMATBS",historical=.false.)
+     $               userfile="SMATBS",compatible=.false.)
          call timer("fastWriteMat",2)
       endif
 

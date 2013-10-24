@@ -69,7 +69,7 @@
           if (fdf_get("Use.Blocked.WriteMat",.true.)) then
              call write_mat (maxnh, no_l, nspin,
      &               numh, listhptr, listh, Dscf,
-     $               userfile=file,historical=.false.)
+     $               userfile=file,compatible=.false.)
           else
              call write_dm (maxnh, no_l, nspin,
      &               numh, listhptr, listh, Dscf,

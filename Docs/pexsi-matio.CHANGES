@@ -1,4 +1,21 @@
 -----------------------------------------------------------------
+October 24, 2013   Alberto Garcia    trunk-445--pexsi-50--matio-6
+Fix bug in dmbs2dm. Change name of argument to write_mat
+
+* A record was missing in the conversion to classic DM format by
+Util/DensityMatrix/dmbs2dm.
+
+* The optional argument to signal blocked operation in write_mat in
+module m_matio has been changed from "historical" to "compatible".
+
+modified:
+  Src/m_iodm.F
+  Src/m_matio.F90
+  Src/overlap.f
+  Src/save_density_matrix.F
+  Util/DensityMatrix/dmbs2dm.F90
+
+-----------------------------------------------------------------
 October 23, 2013   Alberto Garcia    trunk-445--pexsi-50--matio-5
 Write converter from blocked to non-blocked and deploy
 

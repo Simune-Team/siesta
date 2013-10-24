@@ -114,6 +114,7 @@ write(2) no_u, nspin
 allocate(numdg(1:no_u))
 
 read(1) (numdg(iog),iog=1,no_u)
+write(2) (numdg(iog),iog=1,no_u)
 
 !     Find out how big the buffer has to be
 

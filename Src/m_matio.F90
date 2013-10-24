@@ -20,7 +20,7 @@ CONTAINS
 
 !------------------------------------------------------
   subroutine write_mat (maxnd, no_l, nspin, &
-       numd, listdptr, listd, mat, userfile, historical)
+       numd, listdptr, listd, mat, userfile, compatible)
 
     use mpi
     use parallel, only: blocksize, SIESTA_comm
@@ -38,7 +38,10 @@ CONTAINS
     real(dp), intent(in) :: mat(maxnd,nspin)
 
     character(len=*), intent(in), optional :: userfile
-    logical, intent(in), optional          :: historical
+    ! Whether to create files with one-orbital data blocks,
+    ! compatible with the current reading routines
+    ! The default is to do so
+    logical, intent(in), optional          :: compatible
 
     integer :: no_u, m, ml, im, ndmaxg, unit1, is
     integer :: n_l, norbs_l, n_g, norbs_g, node, myrank, nprocs
@@ -78,10 +81,10 @@ CONTAINS
        else
           filename = userfile
        endif
-       if (.not. present(historical)) then
+       if (.not. present(compatible)) then
           bck_compat = .true.
        else
-          bck_compat = historical
+          bck_compat = compatible
        endif
 
 !       call io_assign(unit1)

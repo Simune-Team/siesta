@@ -732,7 +732,7 @@ C     Write density matrix
 
       if (fdf_get("Use.Blocked.WriteMat",.true.)) then
          call write_mat (maxnh, no_l, nspin,
-     $     numh, listhptr, listh, M, userfile=file,historical=.false.)
+     $     numh, listhptr, listh, M, userfile=file,compatible=.false.)
       else
          call write_dm (maxnh, no_l, nspin,
      $     numh, listhptr, listh, M, userfile=file)
@@ -763,7 +763,7 @@ C     Write density matrix
 
       if (fdf_get("Use.Blocked.WriteMat",.true.)) then
          call write_mat (maxnh, no_l, nspin,
-     $     numh, listhptr, listh, M, userfile=file,historical=.false.)
+     $     numh, listhptr, listh, M, userfile=file,compatible=.false.)
       else
          call write_dm (maxnh, no_l, nspin,
      $     numh, listhptr, listh, M, userfile=file)
