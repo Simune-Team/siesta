@@ -1,4 +1,16 @@
 ------------------------------------------------------------
+October 28, 2013  A. Garcia       trunk-447--pexsi-52
+Fix boundary bug in SiestaXC's vdW code
+
+An erratic misbehavior of the vdW XC code has been traced
+to an improper initialization of an array. It has been fixed.
+
+(Thanks to G. Huhs and J.M. Soler)
+
+modified:
+  Src/SiestaXC/mesh1d.f90
+
+------------------------------------------------------------
 October 28, 2013  A. Garcia       trunk-447--pexsi-51
 Speedup the I/O for DM and H writes
 
