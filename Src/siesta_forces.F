@@ -38,6 +38,7 @@
       use m_pexsi_solver,        only: prevDmax
 
       use m_mpi_utils, only: broadcast
+      use fdf
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
@@ -62,6 +63,13 @@
       if (SIESTA_worker)  then
       !     Initialization tasks for a given geometry
          call state_init( istep )
+      endif
+      if (fdf_get("Sonly",.false.)) then
+         if (SIESTA_worker) then
+            call timer( 'all', 2 )
+            call timer( 'all', 3 )
+         endif
+         call bye("S only")
       endif
 
 !     The current structure of the loop tries to reproduce the

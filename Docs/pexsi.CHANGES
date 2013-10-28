@@ -1,4 +1,54 @@
 ------------------------------------------------------------
+October 28, 2013  A. Garcia       trunk-447--pexsi-51
+Speedup the I/O for DM and H writes
+
+By using blocks of orbitals (according to the underlying default
+block-cyclic distribution), the sparse-matrix I/O can be speeded-up
+significantly, both by saving MPI communication and by reducing the
+number of file accesses. This is essential for large systems, for
+which the I/O could take a significant fraction of the total
+computation time.
+
+The newly re-organized DM and H information is now written to file in
+"blocked format" by default, unless the option
+
+       Use.Blocked.WriteMat F
+
+is used.
+
+The new format is not backwards compatible. A converter program
+(Util/DensityMatrix/dmbs2dm.F90) has been written to post-process
+those files intended for further analysis or re-use in Siesta. This is
+the best option for now, since it allows liberal checkpointing with a
+much smaller time consumption, and only incurs costs when re-using or
+analyzing files.
+
+Note that TranSiesta will continue to produce .DM files, in the old
+format (See save_density_matrix.F)
+
+( To test the new features, the option
+
+ S.Only T
+
+can be used. It will produce three files: a standard one, another one
+with optimized MPI communications, and a third, blocked one.
+)
+
+added:
+  Docs/pexsi-matio.CHANGES
+  Src/m_matio.F90
+  Util/DensityMatrix/dmbs2dm.F90
+  Util/DensityMatrix/f2kcli.F90
+  Util/DensityMatrix/m_getopts.f90
+modified:
+  Src/Makefile
+  Src/m_iodm.F
+  Src/overlap.f
+  Src/save_density_matrix.F
+  Src/siesta_forces.F
+  Util/DensityMatrix/makefile
+
+------------------------------------------------------------
 October 22, 2013  A. Garcia       trunk-447--pexsi-50
 Sync to trunk-447
 

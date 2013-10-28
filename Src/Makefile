@@ -163,7 +163,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_object_debug.o m_uuid.o\
         m_dminim.o m_zminim.o \
         m_getopts.o f2kcli.o \
-        m_svd.o m_pexsi_dos.o
+        m_svd.o m_pexsi_dos.o m_matio.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -568,12 +568,13 @@ m_hs_matrix.o: alloc.o precision.o sys.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_io.o: sys.o
-m_iodm.o: alloc.o files.o m_mpi_utils.o parallel.o parallelsubs.o precision.o
-m_iodm.o: sparse_matrices.o sys.o
+m_iodm.o: alloc.o files.o m_matio.o m_mpi_utils.o parallel.o parallelsubs.o
+m_iodm.o: precision.o sparse_matrices.o sys.o
 m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
+m_matio.o: alloc.o parallel.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
@@ -670,7 +671,8 @@ ordern.o: precision.o siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: alloc.o atmfuncs.o precision.o siesta_geom.o sys.o units.o
 overfsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
-overlap.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
+overlap.o: alloc.o atmfuncs.o atomlist.o m_iodm.o m_matio.o mneighb.o
+overlap.o: parallel.o parallelsubs.o precision.o
 parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
@@ -712,9 +714,9 @@ rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o
 rhoofdsp.o: meshdscf.o meshphi.o precision.o sys.o
-save_density_matrix.o: atomlist.o iodm_netcdf.o m_energies.o m_iodm.o m_spin.o
-save_density_matrix.o: m_steps.o m_ts_global_vars.o m_ts_iodm.o precision.o
-save_density_matrix.o: siesta_options.o sparse_matrices.o
+save_density_matrix.o: atomlist.o iodm_netcdf.o m_energies.o m_iodm.o m_matio.o
+save_density_matrix.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_iodm.o
+save_density_matrix.o: precision.o siesta_options.o sparse_matrices.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
 scfconvergence_test.o: m_convergence.o m_energies.o m_wallclock.o parallel.o
 scfconvergence_test.o: siesta_cml.o siesta_options.o write_subs.o
