@@ -342,6 +342,8 @@ if (present(level)) then
   REPORT_LEVEL = level
 end if
 
+if (REPORT_LEVEL <= 0) RETURN
+
 if (node == 0) then
   if (present(unit)) then  ! Assume that unit has been open outside
     if (unit > 0) then

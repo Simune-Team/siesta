@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+October 30, 2013  A. Garcia       trunk-447--pexsi-53
+Avoid opening .alloc file when not needed
+
+For alloc-report-level == 0, the SystemLabel.alloc file
+was still opened. This has been fixed.
+
+modified:
+  Src/alloc.F90
+
+------------------------------------------------------------
 October 28, 2013  A. Garcia       trunk-447--pexsi-52
 Fix boundary bug in SiestaXC's vdW code
 
