@@ -248,6 +248,7 @@ MODULE m_vdwxc
   use m_ggaxc,     only: ggaxc             ! General GGA XC routine
   use m_ldaxc,     only: ldaxc             ! General LDA XC routine
   use m_radfft,    only: radfft            ! Radial fast Fourier transform
+  use alloc,       only: re_alloc          ! Re-allocation routine
   use mesh1D,      only: set_interpolation ! Sets interpolation method
   use mesh1D,      only: set_mesh          ! Sets a 1D mesh
   use m_recipes,   only: spline            ! Sets spline in a uniform mesh
@@ -355,15 +356,16 @@ PRIVATE  ! Nothing is declared public beyond this point
   logical, save:: phi_table_set=.false.    ! Has phi_table been set?
   logical, save:: qmesh_set=.false.        ! Has qmesh been set?
   logical, save:: kcut_set=.false.         ! Has kcut been set?
-  real(dp),save:: phir(0:nr,mq,mq)         ! Table of phi(r)
-  real(dp),save:: d2phidr2(0:nr,mq,mq)     ! Table of d2_phi/dr2
   real(dp),save:: dr                       ! r-mesh interval
-  real(dp),save:: phik(0:nr,mq,mq)         ! Table of phi(k)
-  real(dp),save:: d2phidk2(0:nr,mq,mq)     ! Table of d2_phi/dk2
   real(dp),save:: dk                       ! k-mesh interval
   real(dp),save:: kcut                     ! Planewave cutoff: k>kcut => phi=0
   integer, save:: nk                       ! # k points within kcut
   real(dp),save:: zab=-0.8491_dp           ! Parameter of the vdW functional
+  real(dp),pointer,save:: &
+                  phir(:,:,:)=>null(),    &! Table of phi(r)
+                  phik(:,:,:)=>null(),    &! Table of phi(k)
+                  d2phidr2(:,:,:)=>null(),&! Table of d^2(phi)/dr^2
+                  d2phidk2(:,:,:)=>null()  ! Table of d^2(phi)/dk^2
 
 !  real(dp),save:: dqmaxdqmin, qcut
 
@@ -1609,6 +1611,7 @@ subroutine vdw_set_kcut( kc )
   implicit none
   real(dp),intent(in):: kc  ! Planewave cutoff: k>kcut => phi=0
 
+  character(len=*),parameter:: myName = 'vdw_set_kcut '
   integer :: ik, iq1, iq2, ir, nrs
   real(dp):: dphids, dphidk0, dphidkmax, dphidr0, dphidrmax, dqdq0, &
              k, kmax, phi(0:nr), phi0, phi2, phis, pi, q1, q2, r(0:nr), rs
@@ -1621,6 +1624,12 @@ subroutine vdw_set_kcut( kc )
 
   if (kc == kcut) return   ! Work alredy done
   if (.not.qmesh_set) call set_qmesh()
+
+  ! Allocate arrays
+  call re_alloc( phir,     0,nr, 1,mq, 1,mq, myName//'phir' )
+  call re_alloc( phik,     0,nr, 1,mq, 1,mq, myName//'phik' )
+  call re_alloc( d2phidr2, 0,nr, 1,mq, 1,mq, myName//'d2phidr2' )
+  call re_alloc( d2phidk2, 0,nr, 1,mq, 1,mq, myName//'d2phidk2' )
 
   pi = acos(-1._dp)
   dr = rcut / nr

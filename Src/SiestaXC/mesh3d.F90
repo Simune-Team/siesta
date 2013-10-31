@@ -687,7 +687,7 @@ PRIVATE ! Nothing is declared public beyond this point
 
   ! Private module parameters
   character(len=*),parameter:: moduleName = 'mesh3D '
-  integer,parameter:: maxDistr   = 10 ! Max. number of mesh distributions
+  integer,parameter:: maxDistr  = 100 ! Max. number of mesh distributions
                                       !   allocated at any given time
   integer,parameter:: maxTasks   = 30 ! Max. number of communication tasks
                                       !   allocated at any given time
