@@ -57,6 +57,7 @@ CONTAINS
     real(dp), save :: mu
     real(dp), save :: muMin0, muMax0
     real(dp)       :: muSolverInput, muMinSolverInput, muMaxSolverInput
+    real(dp)       :: mu_bracket
     logical, save  :: first_call = .true.
     real(dp)       :: eBandStructure, eBandH, on_the_fly_tolerance
 
@@ -85,8 +86,12 @@ integer  :: npPerPole
 integer  :: npSymbFact
 integer  :: mpirank, ierr
 integer  :: isSIdentity
-integer  :: inertiaMaxIter, inertiaIter
+integer  :: inertiaMaxIter, inertiaIter, inertiaMaxNumRounds
+logical  :: inertiaExpertDriver
 real(dp) :: inertiaNumElectronTolerance, &
+            inertiaMinNumElectronTolerance, &
+            inertiaEnergyTolerance, &
+            inertiaMuTolerance, &
             PEXSINumElectronToleranceMin, &
             PEXSINumElectronToleranceMax, &
             PEXSINumElectronTolerance
@@ -281,9 +286,42 @@ numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
 ! Maximum number of iterations for computing the inertia
 ! in a given scf step (until a proper bracket is obtained)
 inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
+inertiaMaxNumRounds  = inertiaMaxIter
+
+! Call the inertia-count routine one step at a time, and perform
+! convergence checks in the caller. Note that "inertiaMaxIter" will
+! still be honored, in the sense that the total number of rounds will
+! be capped by it.
+
+inertiaExpertDriver = fdf_get("PEXSI.inertia-expert-driver",.false.)
+if (inertiaExpertDriver) then
+   inertiaMaxIter = 1
+endif
 
 ! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
-inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",10)
+! This is the only stopping criterion available in non-expert mode
+! Note that this number should grow with the size of the system
+
+inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",20)
+
+! If the electron tolerance is too low the bracketting will not work.
+! Set a minimum tolerance 
+inertiaMinNumElectronTolerance = fdf_get("PEXSI.inertia-min-num-electron-tolerance",10)
+
+inertiaNumElectronTolerance = max(inertiaNumElectronTolerance,inertiaMinNumElectronTolerance)
+
+
+! Stop inertia count if (muMax - muMin) < inertiaEnergyTolerance
+! Useful for metals only. By default, use a very small tolerance to deactivate this
+! criterion. Reasonable values otherwise might be 0.1-0.2 eV.
+!
+inertiaEnergyTolerance = fdf_get("PEXSI.inertia-energy-tolerance",1.0e-5_dp*eV,"Ry")
+
+! Stop inertia count if mu has not changed much from iteration to iteration.
+! By default, use a very small tolerance to deactivate this
+! criterion. Reasonable values otherwise might be 0.1-0.2 eV.
+!
+inertiaMuTolerance = fdf_get("PEXSI.inertia-mu-tolerance",1.0e-8_dp*eV,"Ry")
 
 ! Since we use the processor teams corresponding to the different poles, 
 ! the number of points in the energy interval should be a multiple
@@ -329,18 +367,26 @@ if ((isInertiaCount .ne. 0) .and. (scf_step .le. numInertiaCounts)) then
 
   call do_inertia()
 
-  muSolverInput = muInertia
-  muMinSolverInput = muMinInertia
-  muMaxSolverInput = muMaxInertia
-
   ! re-define the starting interval for successive steps
   ! this is the most reasonable starting point, pending
   ! further refining (see above)
 
-  muMin0 = muMinInertia
-  muMax0 = muMaxInertia
+  mu =  muInertia
 
-else !no inertia count
+  if (fdf_get("PEXSI.UseFixedMuBracket",.false.)) then
+     mu_bracket = fdf_get("PEXSI.FixedMuBracket",0.4_dp*eV,"Ry")
+     muMin0 = muLowerEdge - 0.5_dp*mu_bracket
+     muMax0 = muUpperEdge + 0.5_dp*mu_bracket
+  else   
+     muMin0 = muMinInertia
+     muMax0 = muMaxInertia
+  endif
+
+endif
+
+!
+!  do actual solve
+!
 
   ! Use the starting values, or the output of previous inertia-count iterations
   ! (see above)
@@ -348,12 +394,6 @@ else !no inertia count
   muSolverInput = mu
   muMinSolverInput = muMin0
   muMaxSolverInput = muMax0
-
-end if
-
-!
-!  do actual solve
-!
 
 solver_loop: do
 
@@ -448,12 +488,6 @@ solver_loop: do
    endif
 
 enddo solver_loop
-
-if (fdf_get("PEXSI.InheritSolverInterval",.false.)) then
-   ! re-define the starting interval		       
-   muMin0 = muMinPEXSI
-   muMax0 = muMaxPEXSI
-endif
 
 !------------ End of solver step
 
@@ -597,11 +631,20 @@ CONTAINS
 subroutine do_inertia()
 
     use m_pexsi_interface, only: f_ppexsi_inertiacount_interface
+    use m_convergence, only: converger_t
+    use m_convergence, only: reset, set_tolerance, is_converged, add_value
+    use m_interpolate, only: interpolate
 
-    logical        :: interval_problem
+    logical        :: interval_problem, one_more_round
     logical        :: bad_lower_bound
     logical        :: bad_upper_bound
+    real(dp)       :: inertia_electron_width, inertia_energy_width
+    real(dp)       :: inertia_original_electron_width
+    integer        :: nInertiaRounds
+    real(dp)       :: numElectronMax, numElectronMin
+    type(converger_t)  ::  conv_mu
 
+   nInertiaRounds = 0
 
 search_interval: do
 
@@ -610,6 +653,7 @@ search_interval: do
                                       muMin0/eV, ",", muMax0/eV, "] (eV)", &
                                       " Nshifts: ", nptsInertia
    endif 
+
 
    call timer("pexsi-inertia-ct", 1)
 
@@ -645,6 +689,8 @@ search_interval: do
         inertiaList,&
         info)
 
+   muInertia    = (muLowerEdge + muUpperEdge) / 2d0
+
    call timer("pexsi-inertia-ct", 2)
 
    call globalize_max(info,infomax,comm=World_Comm)
@@ -652,12 +698,7 @@ search_interval: do
 
    interval_problem = .false.
    if (info /= 0) then
-!       call mpi_gather(inertiaList(1),1,MPI_Double_Precision, lower_inertia(:),1, &&
-!                       MPI_Double_Precision,0,World_Comm, ierr)
-!       call mpi_gather(inertiaList(nptsInertia),1,MPI_Double_Precision, upper_inertia(:),1, &&
-!                       MPI_Double_Precision,0,World_Comm, ierr)
-!      write(6,"(a,i4,2f12.4,4x,2f12.4)") "Node, lb, ub, lin, uin:", &
-!               mpirank, shiftlist(1), shiftlist(nptsInertia), inertialist(1), inertialist(nptsInertia)
+
       if(mpirank == 0) then
          write(msg,"(i6)") info 
          write (6,"(/,a)") 'PEXSI inertia count ended in error. Info: ' // msg
@@ -694,19 +735,90 @@ search_interval: do
       endif
 
       if (interval_problem) then
-          ! do nothing more
+          ! do nothing more, stay in loop
+	  nInertiaRounds = 0
       else
          write(msg,"(i6)") info 
          call die("Non-interval error in inertia count routine. Info: " // msg)
       endif
 
    else
-      exit search_interval
+
+      if (.not. inertiaExpertDriver) exit search_interval
+
+       nInertiaRounds = nInertiaRounds + 1
+
+
+      ! Check the energy and electron number widths and the convergence of mu,
+      ! and decide whether to go one more round
+      !
+      ! This assumes that we either:
+      !   - Have set a limit to the number of inertia iterations (i.e.,
+      !     automatic refinings of the interval) or
+      !   - The automatic refining has not converged
+      !
+      ! If we end up driving the routine one-step at a time, the only major difference
+      ! would be extra calls to the symbolic factorization...
+
+      if (mpirank==0) then
+         inertia_energy_width = (muMaxInertia - muMinInertia)
+         ! Note that this is the width of the starting interval...
+         inertia_original_electron_width = (inertiaList(nptsInertia) - inertiaList(1))
+         ! Compute the actual electron width
+         numElectronMax = interpolate(shiftList,inertiaList,muMaxInertia)
+         numElectronMin = interpolate(shiftList,inertiaList,muMinInertia)
+         inertia_electron_width = (numElectronMax - numElectronMin)
+
+         write (6,"(a,2f9.4,a,f9.4,3(a,f10.3))") 'Refined bracket (eV): [', &
+              muMinInertia/eV, muMaxInertia/eV,  &
+              "] estimated mu: ", muInertia/eV, &
+              " Nel width: ", inertia_electron_width, &
+              " (Base: ", inertia_original_electron_width, &
+	      " ) E width: ", inertia_energy_width/eV
+
+         if (nInertiaRounds == 1) then
+           call reset(conv_mu)
+           call set_tolerance(conv_mu,inertiaMuTolerance)
+         endif
+         call add_value(conv_mu, muInertia)
+!	 write(6,"(l1,f14.4,i3,f15.4)"), conv_mu%converged, conv_mu%value/eV, conv_mu%counter, conv_mu%tolerance/eV
+
+         !
+         one_more_round = .true.
+         if (inertia_original_electron_width < inertiaNumElectronTolerance) then
+            write (6,"(a)") 'Leaving inertia loop: electron tolerance'
+            one_more_round = .false.
+         endif
+         if (inertia_electron_width < inertiaMinNumElectronTolerance) then
+            write (6,"(a)") 'Leaving inertia loop: minimum workable electron tolerance'
+            one_more_round = .false.
+         endif
+         if (inertia_energy_width < inertiaEnergyTolerance) then
+            write (6,"(a,f12.6)") 'Leaving inertia loop: energy tolerance: ', inertiaEnergyTolerance/eV
+            one_more_round = .false.
+         endif
+         if (is_converged(conv_mu)) then
+            write (6,"(a,f12.6)") 'Leaving inertia loop: mu tolerance: ', inertiaMuTolerance/eV
+            one_more_round = .false.
+         endif
+	 if (nInertiaRounds == inertiaMaxNumRounds) then
+            write (6,"(a)") 'Leaving inertia loop: too many rounds'
+            one_more_round = .false.
+         endif
+      endif
+      call broadcast(one_more_round,comm=World_Comm)
+      
+      if (one_more_round) then
+         ! stay in loop
+	 muMin0 = muMinInertia
+	 muMax0 = muMaxInertia
+      else
+         exit search_interval
+      endif
    endif
 
 enddo search_interval
 
-   muInertia    = (muLowerEdge + muUpperEdge) / 2d0
 
    if(mpirank == 0) then
      write (*,"(/,a)") 'PEXSI inertia count executed'

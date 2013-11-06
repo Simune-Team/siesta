@@ -1,0 +1,64 @@
+-------------------------------------------------------------------
+November 6, 2013   Alberto Garcia    trunk-447--pexsi-53--bracket-1
+Implement an "expert" inertia-count driver and mu bracket heuristics
+
+(Work in progress)
+
+With the option
+
+  PEXSI.inertia-expert-driver T
+
+the program will call the inertia-count routine requesting a single
+iteration, and use the results in a loop to increase the number of
+criteria for convergence:
+
+-- Electron tolerance in the base interval.
+
+This reflects the basic heuristic that the integrated DOS should be more
+precise as the interval gets shorter.
+
+    PEXSI.inertia-num-electron-tolerance  [default 20]
+
+-- Workable electron tolerance in the base interval.
+
+    PEXSI.inertia-min-num-electron-tolerance  [default 10]
+
+There can be problems with the algorithm if the interval is too small. Hence this termination criterion.
+
+-- Mu tolerance
+
+If the chemical potential has changed by less than
+
+    PEXSI.inertia-mu-tolerance  [default a very small number] unit
+
+from one inertia-count iteration to the next, the cycle ends, and mu is passed
+on to the PEXSI solver.
+
+-- Energy width of the interval (deprecated, as it does not make sense
+   for gapped systems)
+
+
+When the inertia-count cycle ends, the bracket passed to the PEXSI solver is:
+
+  [muMinInertia, muMaxInertia]  (the refined interval)
+
+unless the user uses the option 
+
+   PEXSI.UseFixedMuBracket T
+
+in which case the bracket is
+
+ [muLower - delta/2, muUpper + delta/2]
+
+where delta is controlled by
+
+   PEXSI.FixedMuBracket [default 0.4 eV]
+
+added:
+  Src/m_interpolate.F90
+modified:
+  Src/Makefile
+  Src/m_pexsi_solver.F90
+
+
+

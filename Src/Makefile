@@ -163,7 +163,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_object_debug.o m_uuid.o\
         m_dminim.o m_zminim.o \
         m_getopts.o f2kcli.o \
-        m_svd.o m_pexsi_dos.o m_matio.o
+        m_svd.o m_pexsi_dos.o m_matio.o m_interpolate.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -587,8 +587,9 @@ m_pexsi_local_dos.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
 m_pexsi_local_dos.o: m_ntm.o m_pexsi_interface.o m_redist_spmatrix.o m_spin.o
 m_pexsi_local_dos.o: parallel.o precision.o siesta_geom.o siesta_options.o
 m_pexsi_local_dos.o: sparse_matrices.o sys.o units.o
-m_pexsi_solver.o: alloc.o class_Dist.o m_mpi_utils.o m_pexsi_interface.o
-m_pexsi_solver.o: m_redist_spmatrix.o parallel.o precision.o units.o
+m_pexsi_solver.o: alloc.o class_Dist.o m_convergence.o m_interpolate.o
+m_pexsi_solver.o: m_mpi_utils.o m_pexsi_interface.o m_redist_spmatrix.o
+m_pexsi_solver.o: parallel.o precision.o units.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
