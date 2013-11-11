@@ -757,7 +757,7 @@ c
             call radial_dump_ascii(spp%orbnl(i),lun)
 
            if (write_ion_plot_files) then
-            write(fileid,'(a,i1,a,i1,a,a)') "ORB.S", n_series, ".",
+            write(fileid,'(a,i1,a,i0,a,a)') "ORB.S", n_series, ".",
      $            zeta, ".", trim(spp%label)
             call io_assign(lun2)
             open(unit=lun2,file=fileid,status='replace',

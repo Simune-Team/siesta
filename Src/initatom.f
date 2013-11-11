@@ -102,7 +102,7 @@
      &                    vcte(0:lmaxd,1:nsemx,is),
      &                    split_norm(0:lmaxd,1:nsemx,is), basp)
         enddo 
-        call prinput(nsp)
+!        call prinput(nsp)
 
 !       Create the new data structures for atmfuncs.
         call atm_transfer( )
@@ -111,9 +111,11 @@
         ns = nsp               ! Set number of species for main program
       endif
 
+      print *, "before dump in initatom"
       call dump_basis_ascii()
-      call dump_basis_netcdf()
-      call dump_basis_xml()
+!      call dump_basis_netcdf()
+!      call dump_basis_xml()
+      print *, "after dump in initatom"
 
       if (.not. user_basis .and. .not. user_basis_netcdf) then
         call deallocate_spec_arrays()

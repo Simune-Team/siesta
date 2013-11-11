@@ -706,7 +706,7 @@ C    value of nphi
       double precision  rmod, phir, dphidr
       real(dp) rly(max_ilm), grly(3,max_ilm)
 
-      integer, parameter :: maxphi=100
+      integer, parameter :: maxphi= 500
 
       integer :: ilm(maxphi)
       double precision :: rmax(maxphi)

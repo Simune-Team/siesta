@@ -116,7 +116,7 @@
 !       Number of shells of PAOs with the same angular momentum. 
 !       (i.e.not including the polarization base functions)
 
-      real(dp), intent(IN) :: rco(nzetmx,0:lmaxd,nsemx)
+      real(dp), intent(INOUT) :: rco(nzetmx,0:lmaxd,nsemx)
 !       Cutoff radius for Sankey-type basis orbitals
 
       real(dp), intent(IN) :: lambda_in(nzetmx,0:lmaxd,nsemx)
@@ -3122,7 +3122,12 @@ C***Internal variables**
              
                 noPAO=0
                 noPOL=0
-                if(basis_type.eq.'split') then  
+                if(basis_type.eq.'bessel-typ') then  
+
+                   call Bessel_Type (is,a,b,rofi,drdi,s,
+     .                  lmxo,nzeta,rco,lambda, rphi,noPAO)
+ 
+                else if(basis_type.eq.'split') then  
 
                  call SPLIT(Zval,is, iz, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO, 
@@ -5686,6 +5691,156 @@ C****
             end subroutine bessel
 !
 !
+          subroutine BESSEL_Type(is,a,b,rofi,drdi,s,
+     .             lmxo,
+     .             nzeta,rco,lambda, rphi, norb) 
+
+           use basis_specs, only: restricted_grid
+
+
+C  Generates Bessel-function PAOs to go with the
+!  proper KB projectors  (NOT just floating orbs)
+!  
+!  Re-jigged by A. Garcia, Nov. 2013. based on work by:
+C   Written by D. Sanchez-Portal, Aug. 1998.
+C   Modify by DSP, July 1999
+
+               implicit none
+
+               real(dp), intent(in)    :: a, b, rofi(nrmax),
+     .                                    drdi(nrmax), s(nrmax)
+               real(dp), intent(inout) :: rco(nzetmx,0:lmaxd,nsemx),
+     .                                    lambda(nzetmx, 0:lmaxd,nsemx)
+               real(dp), intent(out)   :: rphi(nrmax,0:lmaxd,nsemx)
+
+               integer, intent(in)     :: lmxo, is, nzeta(0:lmaxd,nsemx)
+               integer, intent(out)    :: norb
+
+
+C***Internal variables**
+
+               integer
+     .           l,nprin, nnodes, nodd, nrc, ir,indx,
+     .           izeta, nsm
+
+               real(dp)
+     .           rc, 
+     .           dnrm, phi,
+     .           g(nrmax), eorb, eps
+
+               ! automatic array to hold a constant potential
+               real(dp) :: v(nrmax)=0.0d0
+
+             norb=0 
+             indx=0
+             nsm = 1     ! To be generalized
+             do l=0,lmxo 
+
+               if(nzeta(l,1).gt.0) then
+
+            write(6,'(/2A,I2)')
+     .       'Bessel: floating Bessel functions ',
+     .           'with angular momentum L=',l
+
+              do izeta=1, nzeta(l,1) 
+
+C**Cut-off radius for Bessel functions must be an explicit input***
+C
+                if (rco(izeta,l,1).lt.1.0d-5) then 
+                    write(6,'(a)')
+     .     'Bessel: ERROR Zero cut-off radius with Z=-100 option'
+                    write(6,'(a)')
+     .     'Bessel: ERROR Cut-off radius must be explicitly specified'
+                    write(6,'(a)')
+     .     'Bessel: ERROR using Z=-100 (Floating Bessel functions)'
+                  call die
+ 
+                endif
+C
+
+          if(abs(lambda(izeta,l,1)).lt.1.0d-3) lambda(izeta,l,1)=1.0d0
+C*
+           if(abs(lambda(izeta,l,1)-1.0d0).gt.1.0d-3) then
+              write(6,'(/,a)')
+     .             'Bessel: WARNING Scale factor is not active' 
+           endif 
+           lambda(izeta,l,1)=1.0d0
+C*
+
+                  rc=rco(izeta,l,1)
+                  nrc=nint(log(rc/b+1.0d0)/a)+1
+                  if (restricted_grid) then
+                     nodd=mod(nrc,2)
+                     if(nodd.eq.0) then
+                        nrc=nrc+1
+                     endif
+                  endif
+                  rc=b*(exp(a*(nrc-1))-1.0d0)
+                  rco(izeta,l,1)=rc
+                  
+                  ! Integrate Schroedinger's equation with
+                  ! a constant potential. This will automatically
+                  ! produce a Bessel function of the form j_l(qr)
+                  ! where q is appropriate to generate the requested
+                  ! number of nodes (apart from the node at rc)
+
+                      nnodes=izeta
+                      nprin=l+1  ! should it be l + izeta?
+                  ! when generalizing:
+                  !   nnodes = izeta + nsm - 1
+                  !   nprin  = l + 1 + nsm - 1
+                  !   nprin  = l + izeta?? + nsm - 1
+                      call schro_eq(1.0d0,rofi,v,v,s,drdi,
+     .                  nrc,l,a,b,nnodes,nprin,
+     .                  eorb,g) 
+
+                       dnrm=0.0d0
+                       do ir=2,nrc
+                          phi=g(ir)
+                          dnrm=dnrm+drdi(ir)*phi*phi
+                          g(ir)=phi/(rofi(ir)**(l+1))
+                       enddo 
+                       g(1)=g(2)        
+
+C****Checking normalization of the wavefunctions**
+                 eps=1.0d-4
+                 if(abs(dnrm-1.0d0).gt.eps) then
+                   do ir=1,nrc
+                   g(ir)=g(ir)/sqrt(dnrm)
+                  enddo
+                 endif
+
+!
+!                Return proper array to Gen_basis, for
+!                further analysis (i.e., in Vna)
+!
+                 if (izeta == 1) then
+                    do ir=1,nrc
+                       rphi(ir,l,nsm) = g(ir) * (rofi(ir)**(l+1))
+                    enddo
+                 endif
+
+             write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
+     .          'izeta =',izeta,
+     .          'rc =',rco(izeta,l,1),
+     .          'energy =',eorb  
+
+            norb=norb+(2*l+1)
+            indx=indx+1
+            call comBasis(is,a,b,rofi,g,l,
+     .           rco(izeta,l,1),lambda(izeta,l,1),izeta,
+     .           1,nrc,indx)
+
+
+              enddo 
+        
+              endif  
+
+             enddo 
+
+        end subroutine bessel_type
+!
+!
         subroutine energ_deriv(a,r,psi,vps,
      .      ve,drdi,nrc,l,el,psidev,nrval)
       
@@ -5867,6 +6022,9 @@ C Written by D. Sanchez-Portal, Aug. 1998.
          elseif(basistype.eq.'USER') then
               basistype='user'
          elseif(basistype.eq.'user') then
+         elseif(basistype.eq.'BESSEL-typ') then
+              basistype='bessel-t'
+         elseif(basistype.eq.'bessel-typ') then
          else
 
               write(6,'(/,2a,(/,5(3x,a)),(/,2(3x,a)))')

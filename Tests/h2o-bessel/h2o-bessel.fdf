@@ -1,0 +1,48 @@
+SystemName          Water molecule
+SystemLabel         h2o-bessel
+NumberOfAtoms       3
+NumberOfSpecies     2
+
+MeshCutoff  50 Ry
+DM.NumberPulay 4
+
+%block ChemicalSpeciesLabel
+ 1  8  O      # Species index, atomic number, species label
+ 2  1  H
+%endblock ChemicalSpeciesLabel
+
+write-ion-plot-files T
+
+PAO.BasisType bessel-type
+%block PAO.Basis
+O    3
+ n=2    0    16
+   3.4 3.4 3.4 3.4 3.4 3.4 3.4 3.4 3.4 3.4 3.4 3.4 3.4 3.4 3.4 3.4
+   1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+ n=2    1    16
+   4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0
+   1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+ n=3    2    16
+   4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0 4.0
+   1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+H    2
+ n=1    0    16
+   5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0
+   1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+ n=2    1    16
+   5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0 5.0
+   1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
+%endblock PAO.Basis
+
+AtomicCoordinatesFormat  Ang
+%block AtomicCoordinatesAndAtomicSpecies
+ 0.000  0.000  0.000  1
+ 0.757  0.586  0.000  2
+-0.757  0.586  0.000  2
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+save-rho T
+save-delta-rho T
+save-total-potential T
+save-neutral-atom-potential T
+save-hs T

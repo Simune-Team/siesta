@@ -84,7 +84,7 @@ C  Passed arguments
 C Internal variables
       integer, parameter ::
      .   minb  = 100,  ! Min buffer size for local copy of Dscf
-     .   maxoa = 100   ! Max # of orbitals per atom
+     .   maxoa = 1000   ! Max # of orbitals per atom
       integer
      .   i, ia, ib, ibuff(no), ic, ii, imp, ind, iop, ip, iphi, io,
      .   is, isp, ispin, iu, iua, iul, ix, ix1, ix2, iy,

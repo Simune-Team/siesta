@@ -999,6 +999,8 @@ c (according to atmass subroutine).
         basistype='split'
       elseif(leqi(basistype,'SPLITGAUSS')) then
         basistype='splitgauss'
+      elseif(leqi(basistype,'BESSEL-TYP')) then
+        basistype='bessel-typ'
       else
         write(6,'(/,2a,(/,5(3x,a)),(/,2(3x,a)))')
      .    'type_name: Incorrect basis-type option specified,',

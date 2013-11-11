@@ -1,0 +1,24 @@
+--------------------------------------------------------
+November 11, 2013 Alberto Garcia     trunk-413--bessel-1
+Bessel PAOs with KB projectors
+
+This is an enhancement over the "floating orbs only" Bessel option.
+
+Specify:
+
+PAO.BasisType bessel-type  (only the first 10 chars significant...)
+
+and generate a PAO.Basis block with the full description.
+See Tests/h2o-bessel.
+
+modified:
+  Src/atm_types.f
+  Src/atmfuncs.f
+  Src/atmparams.f
+  Src/atom.F
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/dfscf.f
+  Src/initatom.f
+added:
+  Tests/h2o-bessel

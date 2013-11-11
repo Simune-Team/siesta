@@ -23,12 +23,12 @@
 !     These parameters are over-dimensioned, but there is no storage
 !     penalty, as the real information is packed and indexed.
 !
-      integer, parameter, public  :: maxnorbs = 100
+      integer, parameter, public  :: maxnorbs = 1000
 !       Maximum number of nlm orbitals
 !
       integer, parameter, public  :: maxn_pjnl = 10
 !       Maximum number of projectors (not counting different "m" copies)
-      integer, parameter, public  :: maxn_orbnl = 20
+      integer, parameter, public  :: maxn_orbnl = 200  ! increased for bessel...
 !       Maximum number of nl orbitals (not counting different "m" copies)
       integer, parameter, public  :: maxnprojs = 50
 !       Maximum number of nlm projectors
