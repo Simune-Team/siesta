@@ -6,6 +6,21 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-11-15  15:20:00 GMT                                     trunk-449
+Fix Tbtrans runs at Gamma when using Transiesta k-point data
+
+(Thanks to Nick P. Andersen)
+
+When a calculation was performed with k-points in transiesta and a
+subsequent tbtrans calculation was performed ONLY at the Gamma point,
+the calculated transmission was wrong.
+
+This has now been fixed.
+
+modified:
+  Util/TBTrans_rep/tbtrans.F90
+
+-----------------------------------------------------------------------
 2013-10-31  19:30:00 GMT                                     trunk-448
 Minor fixes in XC library (JMS)
 

@@ -736,7 +736,7 @@ program tbtrans
            kpt_Node(:) = kpoint(:,min(ikpt+Node,nkpnt))
 
 #ifdef MPI
-           call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
+           call set_HS_matrix(siesta_Gamma,ucell,na_u,no_u,no_s,maxnh, &
                 xij,numh,listhptr,listh,indxuo,H(:,ispin),S, &
                 kpt_Node, &
                 Hk_Node,Sk_Node, &
@@ -744,7 +744,7 @@ program tbtrans
                 RemUCellDistances=RemUCellDistances,lasto=lasto, &
                 RemNFirstOrbitals=noBufL,RemNLastOrbitals=noBufR)
 #else
-           call set_HS_matrix(Gamma,ucell,na_u,no_u,no_s,maxnh, &
+           call set_HS_matrix(siesta_Gamma,ucell,na_u,no_u,no_s,maxnh, &
                 xij,numh,listhptr,listh,indxuo,H(:,ispin),S, &
                 kpt_Node, &
                 Hk,Sk, &
