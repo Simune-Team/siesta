@@ -210,6 +210,8 @@ if (PEXSI_worker) then
 
 endif ! PEXSI worker
 
+if (mpirank == 0) call memory_snapshot("after setting up H+S for PEXSI")
+
 isSIdentity = 0
 
 numPole          = fdf_get("PEXSI.num-poles",20)
@@ -366,6 +368,7 @@ call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
 if ((isInertiaCount .ne. 0) .and. (scf_step .le. numInertiaCounts)) then
 
   call do_inertia()
+  if (mpirank == 0) call memory_snapshot("after inertia-count")
 
   ! re-define the starting interval for successive steps
   ! this is the most reasonable starting point, pending
@@ -446,6 +449,7 @@ solver_loop: do
         numElectronDrvList,&
         info)
 
+   if (mpirank == 0) call memory_snapshot("after solver")
    call timer("pexsi-solver", 2)
 
   ! Make sure that all processors report info=1 when any of them
@@ -616,6 +620,8 @@ if (PEXSI_worker) then
    call MPI_Comm_Free(PEXSI_Comm, ierr)
    call MPI_Group_Free(PEXSI_Group, ierr)
 endif
+
+if (mpirank == 0) call memory_snapshot("after pexsi_solver call")
 
 #endif 
 

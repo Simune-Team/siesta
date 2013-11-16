@@ -9,6 +9,7 @@
       use alloc
 
       use parallel, only: SIESTA_worker ! whether part of Siesta's communicator
+      use parallel, only: ionode
       use mpi_siesta, only: true_mpi_comm_world
       use m_mpi_utils, only: broadcast
 
@@ -33,7 +34,9 @@
 ! the "relaxd" variable from 'siesta_move'.
 !
 !----------------------------------------------------------------- BEGIN
+      if (ionode) call memory_snapshot("at start of program")
       call siesta_init()
+      if (ionode) call memory_snapshot("after siesta_init")
 
 C     Begin of coordinate relaxation iteration
       relaxd = .false.
@@ -53,12 +56,16 @@ C     Begin of coordinate relaxation iteration
         if (.not. relaxd) then
           istep = istep + 1
         endif
+        if (ionode) call memory_snapshot("after geometry step")
 
       ENDDO
 
 C     End of coordinate-relaxation loop 
       call siesta_analysis( relaxd )
+      if (ionode) call memory_snapshot("after siesta_analysis")
 
       call siesta_end()
+      if (ionode) call memory_snapshot("at end of program")
+
 !----------------------------------------------------------------------- END
       END program siesta

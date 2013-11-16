@@ -163,7 +163,8 @@ OBJS =  automatic_cell.o atom_options.o \
         m_object_debug.o m_uuid.o\
         m_dminim.o m_zminim.o \
         m_getopts.o f2kcli.o \
-        m_svd.o m_pexsi_dos.o m_matio.o m_interpolate.o
+        m_svd.o m_pexsi_dos.o m_matio.o m_interpolate.o\
+        rusage.o memory_snapshot.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -759,6 +760,7 @@ siesta_forces.o: post_scf_work.o save_density_matrix.o scfconvergence_test.o
 siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_geom.o
 siesta_forces.o: siesta_master.o siesta_options.o sparse_matrices.o
 siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
+memory_snapshot.o: rusage.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o f2kcli.o
 siesta_init.o: files.o ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o

@@ -51,6 +51,9 @@
 
 !---------------------------------------------------------------------- BEGIN
       if (SIESTA_worker) call timer("IterMD",1)
+
+      if (ionode) call memory_snapshot("start of siesta_forces")
+
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
@@ -64,6 +67,9 @@
       !     Initialization tasks for a given geometry
          call state_init( istep )
       endif
+
+      if (ionode) call memory_snapshot("after state_init")
+
       if (fdf_get("Sonly",.false.)) then
          if (SIESTA_worker) then
             call timer( 'all', 2 )
@@ -87,6 +93,7 @@
 !     Start of SCF loop
       iscf  = 0
       if (SIESTA_worker) call setup_H0()
+      if (ionode) call memory_snapshot("after setup_H0")
 
       DO 
         ! Conditions of exit:
@@ -121,12 +128,18 @@
 
        if (mixH) then
           if ( first .and. SIESTA_worker) call setup_hamiltonian( iscf )
+          if (ionode .and. first)
+     $         call memory_snapshot("after initial setup_H")
           call compute_dm( iscf )
+          if (ionode) call memory_snapshot("after compute_DM")
           if (SIESTA_worker) call setup_hamiltonian( iscf )
+          if (ionode) call memory_snapshot("after setup_H")
           if (SIESTA_worker) call compute_max_diff(Hold,H,dmax)
        else 
           if (SIESTA_worker) call setup_hamiltonian( iscf )
+          if (ionode) call memory_snapshot("after setup_H")
           call compute_dm( iscf )
+          if (ionode) call memory_snapshot("after compute_DM")
           if (SIESTA_worker) call compute_max_diff(Dold,Dscf,dmax)
        end if                   
 
@@ -197,8 +210,10 @@
 !     Do one more pass to compute forces and stresses
 
       call post_scf_work( iscf )
+      if (ionode) call memory_snapshot("after post_scf_work")
 
       call state_analysis( istep )
+      if (ionode) call memory_snapshot("after state_analysis")
 
       ! If siesta is running as a subroutine, send forces to master program
       if (siesta_server) 

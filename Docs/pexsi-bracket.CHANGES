@@ -1,4 +1,22 @@
 -------------------------------------------------------------------
+November 16, 2013   Alberto Garcia    trunk-447--pexsi-53--bracket-2
+Monitoring of memory peaks by calls to getrusage()
+
+A simple, and crude for now, method to display the maximum resident
+size so far at several points in the program has been implemented, with
+file rusage.f90 (an interface to the C routine getrusage()) and 
+memory_snapshot.f90. This is not completely portable.
+
+added:
+  Src/memory_snapshot.f90
+  Src/rusage.f90
+modified:
+  Src/Makefile
+  Src/m_pexsi_solver.F90
+  Src/siesta.F
+  Src/siesta_forces.F
+
+-------------------------------------------------------------------
 November 6, 2013   Alberto Garcia    trunk-447--pexsi-53--bracket-1
 Implement an "expert" inertia-count driver and mu bracket heuristics
 
