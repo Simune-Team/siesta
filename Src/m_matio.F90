@@ -43,7 +43,7 @@ CONTAINS
     ! The default is to do so
     logical, intent(in), optional          :: compatible
 
-    integer :: no_u, m, ml, im, ndmaxg, unit1, is
+    integer :: no_u, m, ml, im, ndmaxg, lun, is
     integer :: n_l, norbs_l, n_g, norbs_g, node, myrank, nprocs
     integer :: nnzbs, base, maxnnzbs, nblocks, norbs, nsize
     integer :: base_l, nnzs_bl, nnzs_bg
@@ -68,9 +68,8 @@ CONTAINS
 #endif
 
 !     Find total number of orbitals over all Nodes
-!     *** Do we want *all*reduce?
 #ifdef MPI
-    call MPI_AllReduce(no_l,no_u,1,MPI_integer,MPI_sum,SIESTA_Comm,MPIerror)
+    call MPI_Reduce(no_l,no_u,1,MPI_integer,MPI_sum,0,SIESTA_Comm,MPIerror)
 #else
     no_u = no_l
 #endif
@@ -87,20 +86,16 @@ CONTAINS
           bck_compat = compatible
        endif
 
-!       call io_assign(unit1)
-!       open( unit1, file=trim(userfile), form="formatted", status='unknown' )
-!       rewind(unit1)
-       open( 2, file=trim(filename), form="unformatted", status='unknown' )
-       rewind(2)
-!       write(unit1,*) no_u, nspin, blocksize
+       call io_assign(lun)
+       open( lun, file=trim(filename), form="unformatted", status='unknown' )
+       rewind(lun)
        if (bck_compat) then
-          write(2) no_u, nspin
+          write(lun) no_u, nspin
        else
-          write(2) no_u, nspin, blocksize
+          write(lun) no_u, nspin, blocksize
        endif
        
        call re_alloc( numdg, 1, no_u, 'numdg', 'write_mat' )
-       !print *, "Size of numdg: ", size(numdg)
     endif
 
 !     Get info about numd
@@ -108,7 +103,7 @@ CONTAINS
     n_l = 0
     node = -1
     DO
-!!       call mpi_barrier(SIESTA_comm, mpierror)
+
        node = node + 1
        if (node == nprocs) node = 0
 
@@ -156,8 +151,7 @@ CONTAINS
           
 !     Write out numd array
       if (myrank.eq.0) then
-!         write(unit1,*) (numdg(m),m=1,no_u)
-         write(2) (numdg(m),m=1,no_u)
+         write(lun) (numdg(m),m=1,no_u)
       endif
 
 !     Find out how big the buffer has to be
@@ -233,18 +227,16 @@ CONTAINS
              ptr = 0
              do i = 1, norbs_g
                 nnzsi = numdg(n_g+i)
-                write(2) (ibuffer(j),j=ptr+1,ptr+nnzsi)
+                write(lun) (ibuffer(j),j=ptr+1,ptr+nnzsi)
                 ptr = ptr + nnzsi
              enddo
           else	
-             write(2) (ibuffer(j),j=1,nnzs_bg)
+             write(lun) (ibuffer(j),j=1,nnzs_bg)
           endif
 
              n_g = n_g + norbs_g
              !print *, "root has received so far: ", n_g
                 
-!          write(unit1,*) "------  new block, n_g: ", n_g
-!          write(unit1,*) ibuffer(1:nnzs_bg)
           if (n_g == no_u) EXIT
        else
           if (n_l == no_l) then
@@ -310,11 +302,11 @@ CONTAINS
              ptr = 0
              do i = 1, norbs_g
                 nnzsi = numdg(n_g+i)
-                write(2) (buffer(j),j=ptr+1,ptr+nnzsi)
+                write(lun) (buffer(j),j=ptr+1,ptr+nnzsi)
                 ptr = ptr + nnzsi
              enddo
           else
-             write(2) (buffer(j),j=1,nnzs_bg)
+             write(lun) (buffer(j),j=1,nnzs_bg)
           endif
 
 
@@ -322,8 +314,6 @@ CONTAINS
              n_g = n_g + norbs_g
              !print *, "root has received so far: ", n_g
                 
-!          write(unit1,*) "------  new block, n_g: ", n_g
-!          write(unit1,*) buffer(1:nnzs_bg)
           if (n_g == no_u) EXIT
        else
           if (n_l == no_l) then
@@ -336,11 +326,15 @@ CONTAINS
 
  enddo
 
-!    call io_close(unit1)
-    close(2)
+ if (myrank.eq.0) then
+    call io_close(lun)
+    call de_alloc( numdg, 'numdg', 'write_mat')
+    call de_alloc( buffer, 'buffer',  'write_mat' )
+    call de_alloc( ibuffer, 'ibuffer', 'write_mat' )
+ endif
 
-    call timer("WriteMat",2)
+ call timer("WriteMat",2)
 
-    end subroutine write_mat
+end subroutine write_mat
 
   end module m_matio

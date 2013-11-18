@@ -1,4 +1,13 @@
 ------------------------------------------------------------
+November 18, 2013  A. Garcia       trunk-447--pexsi-54
+Deallocate auxiliary buffers in write_mat
+
+Some buffers were not deallocated at the end of the routine.
+
+modified:
+  Src/m_matio.F90
+
+------------------------------------------------------------
 October 30, 2013  A. Garcia       trunk-447--pexsi-53
 Avoid opening .alloc file when not needed
 
