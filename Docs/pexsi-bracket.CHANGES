@@ -1,4 +1,16 @@
 -------------------------------------------------------------------
+November 18, 2013   Alberto Garcia    trunk-447--pexsi-54--bracket-2
+Sync to trunk-pexsi-54
+
+Deallocate buffers in write_mat.
+
+(+ comment out initial memory snapshot in siesta.F -- no ionode yet)
+
+modified:
+  Src/m_matio.F90
+  Src/siesta.F
+
+-------------------------------------------------------------------
 November 16, 2013   Alberto Garcia    trunk-447--pexsi-53--bracket-2
 Monitoring of memory peaks by calls to getrusage()
 

@@ -34,7 +34,7 @@
 ! the "relaxd" variable from 'siesta_move'.
 !
 !----------------------------------------------------------------- BEGIN
-      if (ionode) call memory_snapshot("at start of program")
+!      if (ionode) call memory_snapshot("at start of program")
       call siesta_init()
       if (ionode) call memory_snapshot("after siesta_init")
 
