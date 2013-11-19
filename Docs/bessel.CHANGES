@@ -1,4 +1,11 @@
 --------------------------------------------------------
+November 19, 2013 Alberto Garcia     trunk-413--bessel-2
+Allow more data than needed in nzeta section of PAO.basis
+
+modified:
+  Src/basis_specs.f
+
+--------------------------------------------------------
 November 11, 2013 Alberto Garcia     trunk-413--bessel-1
 Bessel PAOs with KB projectors
 

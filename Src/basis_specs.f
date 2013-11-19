@@ -688,7 +688,7 @@ C Sanity checks on values
           s%rc(:) = 0.d0
           s%lambda(:) = 1.d0
           if (.not. fdf_bline(bfdf,pline)) call die("No rc's")
-          if (fdf_bnvalues(pline) .ne. s%nzeta)
+          if (fdf_bnvalues(pline) < s%nzeta)
      $      call die("Wrong number of rc's")
           do i= 1, s%nzeta
             s%rc(i) = fdf_bvalues(pline,i)
@@ -716,7 +716,7 @@ C Sanity checks on values
      $          call die('repaobasis: ERROR in PAO.Basis block')
               cycle shells
             else
-              if (fdf_bnreals(pline) .ne. s%nzeta)
+              if (fdf_bnreals(pline) < s%nzeta)
      $          call die("Wrong number of lambda's")
               do i=1,s%nzeta
                 s%lambda(i) = fdf_breals(pline,i)
