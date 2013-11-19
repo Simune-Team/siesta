@@ -13,7 +13,7 @@ CONTAINS
 !
   subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
        maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
-       ef, Entrop, temp)
+       ef, Entrop, temp, delta_Ef)
 
     use fdf
     use parallel, only   : SIESTA_worker, BlockSize
@@ -40,6 +40,7 @@ CONTAINS
     real(dp), intent(out)        :: ef  ! Fermi energy
     real(dp), intent(out)        :: Entrop ! Entropy/k, dimensionless
     real(dp), intent(in)         :: temp   ! Electronic temperature
+    real(dp), intent(in)         :: delta_Ef  ! Estimated shift in E_fermi
 
 #ifndef MPI
     call die("PEXSI needs MPI")
@@ -361,7 +362,13 @@ call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
 call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
 call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
 call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
-
+call MPI_Bcast(delta_Ef,1,MPI_double_precision,0,World_Comm,ierr)
+!
+! Shift brackets using estimate of Ef change from previous iteration
+!
+  muMin0 = muMin0 + delta_Ef
+  muMax0 = muMax0 + delta_Ef
+  mu     = mu + delta_Ef
 !
 !  Possible inertia-count stage
 !
@@ -390,7 +397,6 @@ endif
 !
 !  do actual solve
 !
-
   ! Use the starting values, or the output of previous inertia-count iterations
   ! (see above)
 

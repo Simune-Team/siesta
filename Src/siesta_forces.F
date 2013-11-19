@@ -52,8 +52,6 @@
 !---------------------------------------------------------------------- BEGIN
       if (SIESTA_worker) call timer("IterMD",1)
 
-      if (ionode) call memory_snapshot("start of siesta_forces")
-
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
@@ -128,18 +126,12 @@
 
        if (mixH) then
           if ( first .and. SIESTA_worker) call setup_hamiltonian( iscf )
-          if (ionode .and. first)
-     $         call memory_snapshot("after initial setup_H")
           call compute_dm( iscf )
-          if (ionode) call memory_snapshot("after compute_DM")
           if (SIESTA_worker) call setup_hamiltonian( iscf )
-          if (ionode) call memory_snapshot("after setup_H")
           if (SIESTA_worker) call compute_max_diff(Hold,H,dmax)
        else 
           if (SIESTA_worker) call setup_hamiltonian( iscf )
-          if (ionode) call memory_snapshot("after setup_H")
           call compute_dm( iscf )
-          if (ionode) call memory_snapshot("after compute_DM")
           if (SIESTA_worker) call compute_max_diff(Dold,Dscf,dmax)
        end if                   
 

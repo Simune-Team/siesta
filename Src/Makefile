@@ -164,7 +164,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_dminim.o m_zminim.o \
         m_getopts.o f2kcli.o \
         m_svd.o m_pexsi_dos.o m_matio.o m_interpolate.o\
-        rusage.o memory_snapshot.o
+        rusage.o memory_snapshot.o compute_ebs_shift.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -423,12 +423,13 @@ class_Dist.o: basic_type.inc
 class_Dist.o: class_BlockCyclicDist.o class_PEXSIDist.o
 class_PEXSIDist.o: basic_type.inc
 coceri.o: files.o periodic_table.o precision.o
-compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_dminim.o m_energies.o
-compute_dm.o: m_eo.o m_gamma.o m_hsx.o m_mpi_utils.o m_pexsi_solver.o m_rmaxh.o
-compute_dm.o: m_spin.o m_steps.o m_ts_global_vars.o m_ts_in_siesta.o
-compute_dm.o: m_ts_options.o m_zminim.o normalize_dm.o ordern.o parallel.o
-compute_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
-compute_dm.o: sys.o units.o
+compute_dm.o: atomlist.o compute_ebs_shift.o iodmhs_netcdf.o kpoint_grid.o
+compute_dm.o: m_dminim.o m_energies.o m_eo.o m_gamma.o m_hsx.o m_mpi_utils.o
+compute_dm.o: m_pexsi_solver.o m_rmaxh.o m_spin.o m_steps.o m_ts_global_vars.o
+compute_dm.o: m_ts_in_siesta.o m_ts_options.o m_zminim.o normalize_dm.o
+compute_dm.o: ordern.o parallel.o precision.o siesta_geom.o siesta_options.o
+compute_dm.o: sparse_matrices.o sys.o units.o
+compute_ebs_shift.o: m_mpi_utils.o parallel.o precision.o
 compute_max_diff.o: atomlist.o m_mpi_utils.o m_spin.o precision.o
 compute_max_diff.o: sparse_matrices.o
 compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
@@ -632,6 +633,7 @@ matel.o: spher_harm.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
+memory_snapshot.o: rusage.o
 memoryinfo.o: precision.o
 mesh.o: precision.o
 meshcomm.o: mesh.o precision.o
@@ -760,7 +762,6 @@ siesta_forces.o: post_scf_work.o save_density_matrix.o scfconvergence_test.o
 siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_geom.o
 siesta_forces.o: siesta_master.o siesta_options.o sparse_matrices.o
 siesta_forces.o: state_analysis.o state_init.o sys.o units.o write_subs.o
-memory_snapshot.o: rusage.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o f2kcli.o
 siesta_init.o: files.o ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o
@@ -841,6 +842,7 @@ m_cgwf.o: cgwf.o
 m_chempot.o: chempot.o
 m_chkgmx.o: chkgmx.o
 m_compute_dm.o: compute_dm.o
+m_compute_ebs_shift.o: compute_ebs_shift.o
 m_compute_max_diff.o: compute_max_diff.o
 m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
@@ -882,6 +884,7 @@ m_post_scf_work.o: post_scf_work.o
 m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
+m_rusage.o: rusage.o
 m_save_density_matrix.o: save_density_matrix.o
 m_scf_options.o: m_options.o
 m_scfconvergence_test.o: scfconvergence_test.o

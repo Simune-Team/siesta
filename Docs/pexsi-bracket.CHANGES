@@ -1,4 +1,24 @@
 -------------------------------------------------------------------
+November 18, 2013   Alberto Garcia    trunk-447--pexsi-54--bracket-3
+Implement Ef shift estimation
+
+Using H for the current and the previous iterations, and the most recent DM,
+the program estimates the change in the band-structure energy, and from it
+(assuming a rigid shift), the change in Fermi level. This is passed to
+the PEXSI solver to modify the inherited brackets.
+
+added:
+  Src/compute_ebs_shift.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_pexsi_solver.F90
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-------------------------------------------------------------------
 November 18, 2013   Alberto Garcia    trunk-447--pexsi-54--bracket-2
 Sync to trunk-pexsi-54
 
