@@ -57,8 +57,14 @@ CONTAINS
 
     real(dp), save :: mu
     real(dp), save :: muMin0, muMax0
-    real(dp)       :: muSolverInput, muMinSolverInput, muMaxSolverInput
-    real(dp)       :: mu_bracket
+    real(dp), save :: muMinInertia, muMaxInertia
+    real(dp), save :: muLowerEdge, muUpperEdge
+    real(dp), save :: muSolverInput, muMinSolverInput, muMaxSolverInput
+
+    real(dp)       :: safe_width_ic, safe_width_solver
+    real(dp)       :: safe_dDmax_NoInertia, safe_dDmax_Ef_inertia
+    real(dp)       :: safe_dDmax_Ef_solver
+    logical        :: do_inertia_count
     logical, save  :: first_call = .true.
     real(dp)       :: eBandStructure, eBandH, on_the_fly_tolerance
 
@@ -80,7 +86,7 @@ real(dp), pointer, dimension(:) :: muList=>null(), &
 logical  :: PEXSI_worker
 integer  :: numPole, nptsInertia
 real(dp) :: temperature, numElectronExact, numElectron, gap, deltaE
-real(dp) :: muInertia, muMinInertia, muMaxInertia, muLowerEdge, muUpperEdge
+real(dp) :: muInertia
 real(dp) :: muMinPEXSI, muMaxPEXSI
 integer  :: muMaxIter
 integer  :: npPerPole
@@ -209,9 +215,13 @@ if (PEXSI_worker) then
   call re_alloc(EDMnzvalLocal,1,nnzLocal,"EDMnzvalLocal","pexsi_solver")
   call re_alloc(FDMnzvalLocal,1,nnzLocal,"FDMnzvalLocal","pexsi_solver")
 
+  call memory_all("after setting up H+S for PEXSI (PEXSI_workers)",PEXSI_comm)
+
 endif ! PEXSI worker
 
 if (mpirank == 0) call memory_snapshot("after setting up H+S for PEXSI")
+call memory_all("after setting up H+S for PEXSI",World_comm)
+
 
 isSIdentity = 0
 
@@ -230,9 +240,13 @@ PEXSINumElectronToleranceMax = fdf_get("PEXSI.num-electron-tolerance-upper-bound
 ! muMaxIter should be 1 or 2 later when combined with SCF.
 muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
 
+! How to expand the intervals in case of need.
+!lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",1.0_dp*eV,"Ry")
+!lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",3.0_dp*eV,"Ry")
 ! How to expand the intervals in case of need. Default: ~ 3 eV
 lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",0.2_dp,"Ry")
 lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",0.2_dp,"Ry")
+
 
 
 ! Initial guess of chemical potential and containing interval
@@ -254,17 +268,6 @@ else
 !  Here we could also check whether we are in the first scf iteration
 !  of a multi-geometry run...
 !
-   !
-   ! Here we have to decide what to do with the previous 
-   ! step's muMin0 and muMax0:
-   !
-   ! - Use a rigid shift based on Tr(DM*DeltaH)
-   ! - Do nothing and just inherit the interval
-   ! - Do something else.
-   ! 
-   ! For now, do nothing, but as a safeguard 
-   ! use numInertiaCounts > 1 or 2... below
-   !
    ! Use a moving tolerance, based on how far DM_out was to DM_in
    ! in the previous iteration (except if overriden by user)
 
@@ -364,33 +367,53 @@ call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
 call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
 call MPI_Bcast(delta_Ef,1,MPI_double_precision,0,World_Comm,ierr)
 !
-! Shift brackets using estimate of Ef change from previous iteration
-!
-  muMin0 = muMin0 + delta_Ef
-  muMax0 = muMax0 + delta_Ef
-  mu     = mu + delta_Ef
+safe_width_ic = fdf_get("PEXSI.safe-width-ic-bracket",4.0_dp*eV,"Ry")
+safe_width_solver = fdf_get("PEXSI.safe-width-solver-bracket",2.0_dp*eV,"Ry")
+safe_dDmax_NoInertia = fdf_get("PEXSI.safe-dDmax-no-inertia",0.05)
+safe_dDmax_Ef_Inertia = fdf_get("PEXSI.safe-dDmax-ef-inertia",0.1)
+safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
+
 !
 !  Possible inertia-count stage
 !
-if ((isInertiaCount .ne. 0) .and. (scf_step .le. numInertiaCounts)) then
+do_inertia_count = .false.
+if (isInertiaCount .ne. 0) then
+  if (scf_step .le. numInertiaCounts) then
+     if (mpirank == 0) write(6,"(a,i4)") "&o Inertia-count step scf_step<numIC ", scf_step
+     do_inertia_count = .true.
+  endif
+  if (numInertiaCounts < 0) then
+     if (scf_step <= -numInertiaCounts) then
+        if (mpirank == 0) write(6,"(a,i4)") "&o Inertia-count step scf_step<-numIC ", scf_step
+        do_inertia_count = .true.
+     else if (prevDmax > safe_dDmax_NoInertia) then
+        if (mpirank == 0) write(6,"(a,i4)") "&o Inertia-count step as prevDmax > safe_Dmax ", scf_step
+        do_inertia_count = .true.
+     endif
+  endif
+endif
+
+if (do_inertia_count) then
+
+ ! Proper bracketting
+ if (scf_step > 1) then
+   if (prevDmax < safe_dDmax_Ef_inertia) then
+      ! Shift brackets using estimate of Ef change from previous iteration
+      !
+      if (mpirank == 0) write(6,"(a)") "&o Inertia-count bracket shifted by Delta_Ef"
+      muMin0 = muMinInertia + delta_Ef
+      muMax0 = muMaxInertia + delta_Ef
+      mu     = mu + delta_Ef
+   else
+      if (mpirank == 0) write(6,"(a)") "&o Inertia-count safe bracket"
+      muMin0 = min(muLowerEdge - 0.5*safe_width_ic, muMinInertia)
+      muMax0 = max(muUpperEdge + 0.5*safe_width_ic, muMaxInertia)
+   endif
+ endif
 
   call do_inertia()
   if (mpirank == 0) call memory_snapshot("after inertia-count")
-
-  ! re-define the starting interval for successive steps
-  ! this is the most reasonable starting point, pending
-  ! further refining (see above)
-
-  mu =  muInertia
-
-  if (fdf_get("PEXSI.UseFixedMuBracket",.false.)) then
-     mu_bracket = fdf_get("PEXSI.FixedMuBracket",0.4_dp*eV,"Ry")
-     muMin0 = muLowerEdge - 0.5_dp*mu_bracket
-     muMax0 = muUpperEdge + 0.5_dp*mu_bracket
-  else   
-     muMin0 = muMinInertia
-     muMax0 = muMaxInertia
-  endif
+  call memory_all("after inertia-count ",World_comm)
 
 endif
 
@@ -400,19 +423,43 @@ endif
   ! Use the starting values, or the output of previous inertia-count iterations
   ! (see above)
 
-  muSolverInput = mu
-  muMinSolverInput = muMin0
-  muMaxSolverInput = muMax0
+  if (do_inertia_count) then
+     if (mpirank == 0) write(6,"(a)") "&o Solver bracket from Inertia count"
+     muSolverInput = muInertia
+     muMinSolverInput = muMinInertia
+     muMaxSolverInput = muMaxInertia
+  else
+     if (scf_step > 1) then
+        if (prevDmax < safe_dDmax_Ef_solver) then
+           ! Shift brackets using estimate of Ef change from previous iteration
+           if (mpirank == 0) write(6,"(a)") "&o Solver bracket shifted by delta_Ef"
+           muSolverInput = mu + delta_Ef
+           muMinSolverInput = muMinSolverInput + delta_Ef
+           muMaxSolverInput = muMaxSolverInput + delta_Ef
+        else
+           if (mpirank == 0) write(6,"(a)") "&o Safe Solver bracket"
+           muSolverInput = mu 
+           muMinSolverInput = min(mu - 0.5*safe_width_solver, muMinSolverInput)
+           muMaxSolverInput = max(mu + 0.5*safe_width_solver, muMaxSolverInput)
+        endif
+     else
+        if (mpirank == 0) write(6,"(a)") "&o Solver bracket from initial values"
+        muSolverInput = mu
+        muMinSolverInput = muMin0
+        muMaxSolverInput = muMax0
+     endif
+
+  endif
 
 solver_loop: do
 
    if(mpirank == 0) then
-     write (6,"(a,f12.5,a,f12.5,a,f12.5,a,a,f8.5)") 'Calling PEXSI solver. mu: ', &
-                                              muSolverInput/eV, &
-                                              ' in [',muMinSolverInput/eV, &
-                                              ',', muMaxSolverInput/eV, "] (eV)", &
+     write (6,"(a,2f9.4,a,f9.4,a,f9.5)") 'Calling PEXSI   (eV): [', &
+                                              muMinSolverInput/eV, &
+                                              muMaxSolverInput/eV, &
+                                              "] estimated mu: ", muSolverInput/eV, &
                                               ' Tol: ', PEXSINumElectronTolerance
-   endif 
+   endif
 
    call timer("pexsi-solver", 1)
 
@@ -456,6 +503,7 @@ solver_loop: do
         info)
 
    if (mpirank == 0) call memory_snapshot("after solver")
+   call memory_all("after solver ",World_comm)
    call timer("pexsi-solver", 2)
 
   ! Make sure that all processors report info=1 when any of them
@@ -469,22 +517,30 @@ solver_loop: do
       call die("Error in pexsi solver routine. Info: " // msg)
    endif
 
+
    if (abs(numElectron-numElectronExact) > PEXSInumElectronTolerance) then
-      if (mpirank == 0) then
-         write(6,"(a,2f14.6,a,f14.6)") &
-            "The PEXSI solver did not converge well. Nel, Nel_exact: ", &
-            numElectron, numElectronExact, &
-            " Requested tol: ", PEXSInumElectronTolerance
-         write(6,"(a)") "You need a better interval. Computing inertia-counts..."
-      endif
-      ! we need to do an inertia-count step...
+
+      ! The solver did not converge.
+      ! We need to do an inertia-count step...
       ! check which side of the interval we need to expand
-      ! Expand by 0.2 Ry ~ 3 eV
       !
       if ((numElectron-numElectronExact) > 0) then
-         muMin0 = muMin0 - lateral_expansion_solver !0.2_dp 
+         muMin0 = muMin0 - lateral_expansion_solver 
       else
-         muMax0 = muMax0 + lateral_expansion_solver ! 0.2_dp
+         muMax0 = muMax0 + lateral_expansion_solver 
+      endif
+      if (mpirank == 0) then
+         write (6,"(a,f10.4,a,f8.4,a,f9.4,a)") 'The PEXSI solver did not converge. Nel - Nel_exact: ', &
+                                          (numElectron - numElectronExact), &
+                                          ". Tolerance: ", PEXSInumElectronTolerance, &
+                                          '. Expanding interval by ', lateral_expansion_solver/eV, ' eV.'
+
+         write(6,"(a,i3)") " #&s Number of solver iterations: ", muIter
+         write(6,"(a3,2a12,a20)") "it", "mu", "N_e", "dN_e/dmu"
+         do i = 1, muIter
+            write(6,"(i3,2f12.4,g20.5,2x,a2)") i, muList(i)/eV, &
+                 numElectronList(i), numElectronDrvList(i)*eV, "&s"
+         end do
       endif
 
       call do_inertia()
@@ -492,6 +548,7 @@ solver_loop: do
       muSolverInput = muInertia
       muMinSolverInput = muMinInertia
       muMaxSolverInput = muMaxInertia
+
       !  will take another iteration of the solver
    else
       exit solver_loop
@@ -500,6 +557,15 @@ solver_loop: do
 enddo solver_loop
 
 !------------ End of solver step
+
+   if (mpirank == 0) then
+            write(6,"(a,i3)") " #&s Number of solver iterations: ", muIter
+      write(6,"(a3,2a12,a20)") "it", "mu", "N_e", "dN_e/dmu"
+      do i = 1, muIter
+         write(6,"(i3,2f12.4,g20.5,2x,a2)") i, muList(i)/eV, &
+              numElectronList(i), numElectronDrvList(i)*eV, "&s"
+      end do
+   endif
 
 if (PEXSI_worker) then
 
@@ -541,12 +607,7 @@ if (PEXSI_worker) then
       write(*, *) "eBandS (Ry) = ", eBandStructure
       write(*, *) "eBandH (Ry) = ", eBandH
       write(*, *) "freeBandEnergy (Ry) = ", (free_bs_energy)
-      write(6,*) "Number of mu iterations: ", muIter
-      write(6,"(a3,2a12,a20)") "it", "mu", "N_e", "dN_e/dmu"
-      do i = 1, muIter
-         write(6,"(i3,2f12.4,g20.5)") i, muList(i)/eV, &
-                 numElectronList(i), numElectronDrvList(i)*eV
-      end do
+
    endif
 
    ef = mu
@@ -658,11 +719,11 @@ subroutine do_inertia()
 
    nInertiaRounds = 0
 
-search_interval: do
+refine_interval: do
 
-   if(mpirank == 0) then
-     write (6,"(a,f12.5,a,f12.5,a,a,i4)") 'Calling inertia_count with interval: [', &
-                                      muMin0/eV, ",", muMax0/eV, "] (eV)", &
+   if ( (mpirank == 0) .and. (nInertiaRounds == 0) ) then
+     write (6,"(a,2f9.4,a,a,i4)") 'Calling inertiaCount: [', &
+                                      muMin0/eV, muMax0/eV, "] (eV)", &
                                       " Nshifts: ", nptsInertia
    endif 
 
@@ -712,37 +773,29 @@ search_interval: do
    if (info /= 0) then
 
       if(mpirank == 0) then
-         write(msg,"(i6)") info 
-         write (6,"(/,a)") 'PEXSI inertia count ended in error. Info: ' // msg
-         write (6,"(a,2f12.4)") 'Lower, Upper counts: ', inertiaList(1), &
-                                                    inertiaList(nptsInertia)
          bad_lower_bound = (inertiaList(1) > (numElectronExact - 0.1)) 
          bad_upper_bound = (inertiaList(nptsInertia) < (numElectronExact + 0.1)) 
       endif
 
       call broadcast(bad_lower_bound,comm=World_Comm)
       call broadcast(bad_upper_bound,comm=World_Comm)
-      call broadcast(inertiaList(1),comm=World_Comm)
-      call broadcast(inertiaList(nptsInertia),comm=World_Comm)
 
       if (bad_lower_bound) then
          interval_problem =  .true.
          muMin0 = muMin0 - lateral_expansion_inertia ! 0.5
          if (mpirank==0) then
-            write(6,"(a,f10.4)") "At the lower end, inertiaList: ", &
-                                  inertiaList(1)
-            write (6,"(a,2f10.4)") 'Updating the interval: ', &
-                                  muMin0/eV, muMax0/eV
+            write (6,"(a,2f12.4,a,2f10.4)") 'Wrong inertia-count interval (lower end). Counts: ', &
+                                 inertiaList(1), inertiaList(nptsInertia), &
+                                 ' New interval: ', muMin0/eV, muMax0/eV
          endif
       endif
       if (bad_upper_bound) then
          interval_problem =  .true.
          muMax0 = muMax0 + lateral_expansion_inertia ! 0.5
          if (mpirank==0) then
-            write(6,"(a,f10.4)") "At the upper end, inertiaList: ", &
-                                  inertiaList(nptsInertia)
-            write (6,"(a,2f10.4)") 'Updating the interval: ', &
-                                  muMin0/eV, muMax0/eV
+            write (6,"(a,2f12.4,a,2f10.4)") 'Wrong inertia-count interval (upper end). Counts: ', &
+                                 inertiaList(1), inertiaList(nptsInertia), &
+                                 ' New interval: ', muMin0/eV, muMax0/eV
          endif
       endif
 
@@ -756,21 +809,16 @@ search_interval: do
 
    else
 
-      if (.not. inertiaExpertDriver) exit search_interval
-
-       nInertiaRounds = nInertiaRounds + 1
-
-
-      ! Check the energy and electron number widths and the convergence of mu,
+      ! "Expert mode" of operation. At every inertia-count iteration,
+      ! we check the energy and electron number widths and the convergence of mu,
       ! and decide whether to go one more round
       !
-      ! This assumes that we either:
-      !   - Have set a limit to the number of inertia iterations (i.e.,
-      !     automatic refinings of the interval) or
-      !   - The automatic refining has not converged
-      !
-      ! If we end up driving the routine one-step at a time, the only major difference
+      ! By driving the routine one-step at a time, the only major difference
       ! would be extra calls to the symbolic factorization...
+
+      if (.not. inertiaExpertDriver) exit refine_interval
+
+       nInertiaRounds = nInertiaRounds + 1
 
       if (mpirank==0) then
          inertia_energy_width = (muMaxInertia - muMinInertia)
@@ -781,7 +829,7 @@ search_interval: do
          numElectronMin = interpolate(shiftList,inertiaList,muMinInertia)
          inertia_electron_width = (numElectronMax - numElectronMin)
 
-         write (6,"(a,2f9.4,a,f9.4,3(a,f10.3))") 'Refined bracket (eV): [', &
+         write (6,"(a,2f9.4,a,f9.4,3(a,f10.3))") ' -- new bracket (eV): [', &
               muMinInertia/eV, muMaxInertia/eV,  &
               "] estimated mu: ", muInertia/eV, &
               " Nel width: ", inertia_electron_width, &
@@ -793,7 +841,6 @@ search_interval: do
            call set_tolerance(conv_mu,inertiaMuTolerance)
          endif
          call add_value(conv_mu, muInertia)
-!	 write(6,"(l1,f14.4,i3,f15.4)"), conv_mu%converged, conv_mu%value/eV, conv_mu%counter, conv_mu%tolerance/eV
 
          !
          one_more_round = .true.
@@ -825,11 +872,11 @@ search_interval: do
 	 muMin0 = muMinInertia
 	 muMax0 = muMaxInertia
       else
-         exit search_interval
+         exit refine_interval
       endif
    endif
 
-enddo search_interval
+enddo refine_interval
 
 
    if(mpirank == 0) then

@@ -1,4 +1,59 @@
 -------------------------------------------------------------------
+November 21, 2013   Alberto Garcia    trunk-447--pexsi-54--bracket-4
+Add more heuristics for bracketting
+
+Clarification of the workflow. Many more options to control the number
+of inertia count steps, the bracketting convergence, and the use of
+the information about the shift in Ef:
+
+
+* In numInertiaCounts is negative, it indicates a minimum number of ic
+  steps. There can be more, if the dDmax in the previous iteration is
+  above:
+
+  safe_dDmax_NoInertia = fdf_get("PEXSI.safe-dDmax-no-inertia",0.05)
+
+* Use of Ef shift:
+
+  If the dDmax in the previous iteration is above:
+
+  safe_dDmax_Ef_Inertia = fdf_get("PEXSI.safe-dDmax-ef-inertia",0.1)
+  safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
+
+  the bracketting for IC and solver steps is controlled by
+
+  safe_width_ic = fdf_get("PEXSI.safe-width-ic-bracket",4.0_dp*eV,"Ry")
+ 
+  (half that width on either side of muLower and muUpper from the latest
+   inertia count step)
+
+  safe_width_solver = fdf_get("PEXSI.safe-width-solver-bracket",2.0_dp*eV,"Ry")
+
+  (half that width on either side of mu from the latest solver step)
+
+  If the dDmax is below the tolerance, the shift in Ef is used to move the
+  previous brackets for IC and the solver
+
+* Cosmetics
+
+  The flow is now more clear.
+
+  See the code for a complete rundown of the changes. There are too many
+  to list at this stage.
+
+* New version of "memory" routine with basic MPI awareness.
+
+  The routine memory_all prints the maximum and minimum values of the
+  peak working set size accross the processors in the
+  communicator. Used only in the PEXSI routines for now.
+
+added:
+  Src/memory_all.F90
+modified:
+  Src/Makefile
+  Src/m_pexsi_solver.F90
+
+-------------------------------------------------------------------
 November 18, 2013   Alberto Garcia    trunk-447--pexsi-54--bracket-3
 Implement Ef shift estimation
 

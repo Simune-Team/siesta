@@ -164,7 +164,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_dminim.o m_zminim.o \
         m_getopts.o f2kcli.o \
         m_svd.o m_pexsi_dos.o m_matio.o m_interpolate.o\
-        rusage.o memory_snapshot.o compute_ebs_shift.o
+        rusage.o memory_snapshot.o compute_ebs_shift.o memory_all.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -633,6 +633,7 @@ matel.o: spher_harm.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
+memory_all.o: rusage.o
 memory_snapshot.o: rusage.o
 memoryinfo.o: precision.o
 mesh.o: precision.o
