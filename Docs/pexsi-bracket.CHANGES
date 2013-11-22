@@ -1,4 +1,21 @@
 -------------------------------------------------------------------
+November 22, 2013   Alberto Garcia    trunk-447--pexsi-54--bracket-5
+Implement PEXSI "annealing"
+
+Use larger PEXSI temperatures when dDmax is far from convergence.
+This can remove instabilities for problematic systems.
+
+Option:
+
+  PEXSI.use-annealing T
+  PEXSI.annealing-preconditioner  {number}
+
+  See code for details.
+
+modified:
+  Src/m_pexsi_solver.F90
+
+-------------------------------------------------------------------
 November 21, 2013   Alberto Garcia    trunk-447--pexsi-54--bracket-4
 Add more heuristics for bracketting
 

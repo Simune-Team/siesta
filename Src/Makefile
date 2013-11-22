@@ -591,7 +591,7 @@ m_pexsi_local_dos.o: parallel.o precision.o siesta_geom.o siesta_options.o
 m_pexsi_local_dos.o: sparse_matrices.o sys.o units.o
 m_pexsi_solver.o: alloc.o class_Dist.o m_convergence.o m_interpolate.o
 m_pexsi_solver.o: m_mpi_utils.o m_pexsi_interface.o m_redist_spmatrix.o
-m_pexsi_solver.o: parallel.o precision.o units.o
+m_pexsi_solver.o: parallel.o precision.o siesta_options.o units.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o

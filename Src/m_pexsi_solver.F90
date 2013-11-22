@@ -24,6 +24,7 @@ CONTAINS
     use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
     use class_Dist
     use alloc,             only: re_alloc, de_alloc
+    use siesta_options,    only: dDtol
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -60,6 +61,7 @@ CONTAINS
     real(dp), save :: muMinInertia, muMaxInertia
     real(dp), save :: muLowerEdge, muUpperEdge
     real(dp), save :: muSolverInput, muMinSolverInput, muMaxSolverInput
+    real(dp), save :: previous_pexsi_temperature
 
     real(dp)       :: safe_width_ic, safe_width_solver
     real(dp)       :: safe_dDmax_NoInertia, safe_dDmax_Ef_inertia
@@ -95,6 +97,9 @@ integer  :: mpirank, ierr
 integer  :: isSIdentity
 integer  :: inertiaMaxIter, inertiaIter, inertiaMaxNumRounds
 logical  :: inertiaExpertDriver
+logical  :: use_annealing
+real(dp) :: annealing_preconditioner, temp_factor
+real(dp) :: pexsi_temperature
 real(dp) :: inertiaNumElectronTolerance, &
             inertiaMinNumElectronTolerance, &
             inertiaEnergyTolerance, &
@@ -132,6 +137,7 @@ endif
 call broadcast(norbs,comm=World_Comm)
 call broadcast(scf_step,comm=World_Comm)
 call broadcast(prevDmax,comm=World_Comm)
+call broadcast(dDtol,comm=World_Comm)
 
 !  Find rank in global communicator
 call mpi_comm_rank( World_Comm, mpirank, ierr )
@@ -175,9 +181,8 @@ if (SIESTA_worker) then
 
    temperature      = temp
 
-   if (mpirank==0) write(6,"(a,g12.5,a,f10.2)") &
-                          "Electronic temperature: ", temperature, &
-                          ". In Kelvin:", temperature/Kelvin
+   if (mpirank==0) write(6,"(a,f10.2)") &
+               "Electronic temperature (K): ", temperature/Kelvin
 
    m1%norbs = norbs
    m1%no_l  = no_l
@@ -219,7 +224,6 @@ if (PEXSI_worker) then
 
 endif ! PEXSI worker
 
-if (mpirank == 0) call memory_snapshot("after setting up H+S for PEXSI")
 call memory_all("after setting up H+S for PEXSI",World_comm)
 
 
@@ -241,12 +245,8 @@ PEXSINumElectronToleranceMax = fdf_get("PEXSI.num-electron-tolerance-upper-bound
 muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
 
 ! How to expand the intervals in case of need.
-!lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",1.0_dp*eV,"Ry")
-!lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",3.0_dp*eV,"Ry")
-! How to expand the intervals in case of need. Default: ~ 3 eV
-lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",0.2_dp,"Ry")
-lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",0.2_dp,"Ry")
-
+lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",1.0_dp*eV,"Ry")
+lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",3.0_dp*eV,"Ry")
 
 
 ! Initial guess of chemical potential and containing interval
@@ -373,6 +373,40 @@ safe_dDmax_NoInertia = fdf_get("PEXSI.safe-dDmax-no-inertia",0.05)
 safe_dDmax_Ef_Inertia = fdf_get("PEXSI.safe-dDmax-ef-inertia",0.1)
 safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
 
+use_annealing = fdf_get("PEXSI.use-annealing",.false.)
+if (use_annealing) then
+   annealing_preconditioner = fdf_get("PEXSI.annealing-preconditioner",1.0_dp)
+!   The temperature goes to the target at a level 10 times dDtol
+!   annealing_base= fdf_get("PEXSI.annealing-base",10.0_dp)
+   if (scf_step > 1 ) then
+      ! Example: dDtol=0.0001, prevDmax=0.1, precond=1, factor=3
+      ! Example: dDtol=0.0001, prevDmax=0.1, precond=2, factor=5
+      ! Example: dDtol=0.0001, prevDmax=0.1, precond=3, factor=7
+      ! Example: dDtol=0.0001, prevDmax<=0.001, factor = 1
+      ! Example: dDtol=0.0001, prevDmax<0.001, factor = 1
+      temp_factor = 1 + annealing_preconditioner *  &
+                        max(0.0_dp, (log10(prevDmax/dDtol)-log10(10.0_dp)))
+      pexsi_temperature = temp_factor * temperature
+      if (pexsi_temperature > previous_pexsi_temperature) then
+         if (mpirank==0) write(6,"(a,f10.2)") &
+              "Will not raise PEXSI temperature to: ", &
+              pexsi_temperature/Kelvin
+         pexsi_temperature = previous_pexsi_temperature
+      endif
+      previous_pexsi_temperature = pexsi_temperature
+   else
+      ! No heuristics for now
+      previous_pexsi_temperature = huge(1.0_dp)
+      pexsi_temperature = temperature
+      !   Keep in mind for the future if modifying T at the 1st step
+      !      previous_pexsi_temperature = pexsi_temperature
+   endif
+else
+      pexsi_temperature = temperature
+endif
+if (mpirank==0) write(6,"(a,f10.2)") &
+     "Current PEXSI temperature (K): ", pexsi_temperature/Kelvin
+
 !
 !  Possible inertia-count stage
 !
@@ -412,7 +446,6 @@ if (do_inertia_count) then
  endif
 
   call do_inertia()
-  if (mpirank == 0) call memory_snapshot("after inertia-count")
   call memory_all("after inertia-count ",World_comm)
 
 endif
@@ -474,7 +507,7 @@ solver_loop: do
         HnzvalLocal,&
         isSIdentity,&
         SnzvalLocal,&
-        temperature,&
+        pexsi_temperature,&
         numElectronExact,&
         muSolverInput,&
         muMinSolverInput,&
@@ -502,7 +535,6 @@ solver_loop: do
         numElectronDrvList,&
         info)
 
-   if (mpirank == 0) call memory_snapshot("after solver")
    call memory_all("after solver ",World_comm)
    call timer("pexsi-solver", 2)
 
@@ -688,8 +720,6 @@ if (PEXSI_worker) then
    call MPI_Group_Free(PEXSI_Group, ierr)
 endif
 
-if (mpirank == 0) call memory_snapshot("after pexsi_solver call")
-
 #endif 
 
 CONTAINS 
@@ -741,7 +771,7 @@ refine_interval: do
         HnzvalLocal,&
         isSIdentity,&
         SnzvalLocal,&
-        temperature,&
+        pexsi_temperature,&
         numElectronExact,&
         muMin0,&
         muMax0,&
