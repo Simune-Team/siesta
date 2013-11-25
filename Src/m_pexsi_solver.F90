@@ -99,6 +99,7 @@ integer  :: inertiaMaxIter, inertiaIter, inertiaMaxNumRounds
 logical  :: inertiaExpertDriver
 logical  :: use_annealing
 real(dp) :: annealing_preconditioner, temp_factor
+real(dp) :: annealing_target_factor
 real(dp) :: pexsi_temperature
 real(dp) :: inertiaNumElectronTolerance, &
             inertiaMinNumElectronTolerance, &
@@ -376,16 +377,21 @@ safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
 use_annealing = fdf_get("PEXSI.use-annealing",.false.)
 if (use_annealing) then
    annealing_preconditioner = fdf_get("PEXSI.annealing-preconditioner",1.0_dp)
-!   The temperature goes to the target at a level 10 times dDtol
-!   annealing_base= fdf_get("PEXSI.annealing-base",10.0_dp)
+!   By default, the temperature goes to the target at a level 10 times dDtol
+   annealing_target_factor = fdf_get("PEXSI.annealing-target-factor",10.0_dp)
+
    if (scf_step > 1 ) then
-      ! Example: dDtol=0.0001, prevDmax=0.1, precond=1, factor=3
-      ! Example: dDtol=0.0001, prevDmax=0.1, precond=2, factor=5
-      ! Example: dDtol=0.0001, prevDmax=0.1, precond=3, factor=7
-      ! Example: dDtol=0.0001, prevDmax<=0.001, factor = 1
-      ! Example: dDtol=0.0001, prevDmax<0.001, factor = 1
-      temp_factor = 1 + annealing_preconditioner *  &
-                        max(0.0_dp, (log10(prevDmax/dDtol)-log10(10.0_dp)))
+
+      ! Examples for target_factor = 10, dDtol=0.0001:
+      ! prevDmax=0.1, preconditioner=1, factor=3
+      ! prevDmax=0.1, preconditioner=2, factor=5
+      ! prevDmax=0.1, preconditioner=3, factor=7
+      ! prevDmax<=0.001, factor = 1
+      ! prevDmax<0.001, factor = 1
+
+      temp_factor = (log10(prevDmax/(annealing_target_factor*dDtol)))
+      temp_factor = 1 + annealing_preconditioner * max(0.0_dp, temp_factor)
+
       pexsi_temperature = temp_factor * temperature
       if (pexsi_temperature > previous_pexsi_temperature) then
          if (mpirank==0) write(6,"(a,f10.2)") &
@@ -395,7 +401,7 @@ if (use_annealing) then
       endif
       previous_pexsi_temperature = pexsi_temperature
    else
-      ! No heuristics for now
+      ! No heuristics for now for first step
       previous_pexsi_temperature = huge(1.0_dp)
       pexsi_temperature = temperature
       !   Keep in mind for the future if modifying T at the 1st step

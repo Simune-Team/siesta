@@ -1,4 +1,36 @@
 -------------------------------------------------------------------
+November 25, 2013   Alberto Garcia    trunk-447--pexsi-54--bracket-6
+Extra parameter for PEXSI "annealing"
+
+Use larger PEXSI temperatures when dDmax is far from convergence.
+This can remove instabilities for problematic systems.
+
+Options:
+
+  PEXSI.use-annealing T
+
+  PEXSI.annealing-preconditioner  {number} (default 1)
+  PEXSI.annealing-target-factor   {number} (default 10)
+
+  The effective PEXSI temperature (for solver and inertia-counts processing) is computed
+  as:
+
+   T = T_0 * ( 1 + precond* log(prevDmax/(target_factor*Dtol))  
+
+        (with maximum of T_0)
+
+  where 'Dtol' is the scf tolerance, 'prevDmax' is the previous iteration's maximum
+  deviation in DM (or H), 'target_factor' determines the level at which the nominal
+  temperature is reached in relation to the scf tolerance, and 'precond' is a scale
+  factor for the increase in temperature.
+
+  After the second iteration, the temperature decreases monotonically, regardless of
+  any large fluctuations in prevDmax, to avoid convergence oscillations.
+
+modified:
+  Src/m_pexsi_solver.F90
+
+-------------------------------------------------------------------
 November 22, 2013   Alberto Garcia    trunk-447--pexsi-54--bracket-5
 Implement PEXSI "annealing"
 
