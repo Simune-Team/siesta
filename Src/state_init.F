@@ -12,7 +12,7 @@
       use siesta_options
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
-      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
+      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb, Hprev
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -255,6 +255,8 @@
       
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',
+     .              routine='state_init',shrink=.true.,copy=.false.)
+      call re_alloc( Hprev, 1, maxnh, 1, nspin, 'Hprev',
      .              routine='state_init',shrink=.true.,copy=.false.)
       call re_alloc(H_kin,1,maxnh,name='H_kin',routine='state_init',
      &              shrink=.true., copy=.false. )

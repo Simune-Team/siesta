@@ -12,6 +12,12 @@
 
   character(len=*), parameter :: mod_name=__FILE__
 
+#ifndef MPI
+  ! To allow compilation in serial mode
+  integer, parameter, private :: MPI_GROUP_NULL = -huge(1)
+  integer, parameter, private :: MPI_UNDEFINED = -huge(1)
+#endif
+
 !---------------------------------------------
   type, private :: distKind
      private

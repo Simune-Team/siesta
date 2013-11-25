@@ -14,6 +14,8 @@
 
       ! Used to hold the "input" H when mixing the Hamiltonian
       real(dp), dimension(:,:), pointer :: Hold => null()   
+      ! Used to hold the previous iteration's H to estimate Ef shift
+      real(dp), dimension(:,:), pointer :: Hprev => null()   
 
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
@@ -36,6 +38,7 @@
       call de_alloc( Eold,        'Eold',        'sparseMat' )
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
+      call de_alloc( Hprev,       'Hprev',       'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
       call de_alloc( H_vkb,       'H_vkb',       'sparseMat' )
       call de_alloc( xijo,        'xijo',        'sparseMat' )

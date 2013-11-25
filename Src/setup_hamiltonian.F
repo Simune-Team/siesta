@@ -60,7 +60,6 @@
          Hold(1:maxnh,1:nspin) = H(1:maxnh,1:nspin)
       end if
 
-
       ! Initialize Hamiltonian with the non-SCF part...................
 
       do ispin = 1,nspin
@@ -145,6 +144,7 @@
         endif
 
       call timer('setup_H',2)
+      if (node==0) call memory_snapshot("after setup_H")
 
       if (h_setup_only) then
          call timer( 'all', 2 )  ! New call to close the tree

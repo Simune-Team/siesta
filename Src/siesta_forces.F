@@ -51,6 +51,7 @@
 
 !---------------------------------------------------------------------- BEGIN
       if (SIESTA_worker) call timer("IterMD",1)
+
 #ifdef TRANSIESTA
 ! Used in force constant runs
       ts_istep = istep
@@ -64,6 +65,9 @@
       !     Initialization tasks for a given geometry
          call state_init( istep )
       endif
+
+      if (ionode) call memory_snapshot("after state_init")
+
       if (fdf_get("Sonly",.false.)) then
          if (SIESTA_worker) then
             call timer( 'all', 2 )
@@ -87,6 +91,7 @@
 !     Start of SCF loop
       iscf  = 0
       if (SIESTA_worker) call setup_H0()
+      if (ionode) call memory_snapshot("after setup_H0")
 
       DO 
         ! Conditions of exit:
@@ -197,8 +202,10 @@
 !     Do one more pass to compute forces and stresses
 
       call post_scf_work( iscf )
+      if (ionode) call memory_snapshot("after post_scf_work")
 
       call state_analysis( istep )
+      if (ionode) call memory_snapshot("after state_analysis")
 
       ! If siesta is running as a subroutine, send forces to master program
       if (siesta_server) 

@@ -22,6 +22,7 @@
       use m_gamma
       use parallel, only: IONode
       use parallel, only: SIESTA_worker
+      use m_compute_ebs_shift, only: compute_ebs_shift
       use m_pexsi_solver,  only: pexsi_solver
       use m_hsx, only      : write_hs_formatted
 c$$$      use m_matrixwrite
@@ -46,7 +47,8 @@ c$$$      use m_matrixwrite
       implicit none
 !     Input variables
       integer, intent(in) :: iscf
-!     Local variables
+
+      real(dp)            :: delta_Ebs, delta_Ef
       logical             :: CallDiagon
       integer             :: io, ispin, nnz
       real(dp)            :: const ! Temporary factor used in
@@ -74,12 +76,33 @@ c$$$      use m_matrixwrite
          Eold(1:maxnh,1:nspin) = Escf(1:maxnh,1:nspin)
       endif
 
+      ! Compute shift in Tr(H*DM) for fermi-level bracketting
+      ! Use the current H, the previous iteration H, and the
+      ! previous iteration DM
+
+      if (SIESTA_worker) then
+         if (iscf > 1) then
+            call compute_Ebs_shift(Dscf,H,Hprev,delta_Ebs)
+            delta_Ef = delta_Ebs / qtot
+            if (ionode) then
+               write(6,"(a,f16.5)")
+     $              "Estimated change in band-structure energy:",
+     $              delta_Ebs/eV, "Estimated shift in E_fermi: ",
+     $              delta_Ef/eV
+            endif
+               
+         else
+            delta_Ebs = 0.0_dp
+            delta_Ef  = 0.0_dp
+         endif
+      endif
+
       if (isolve .eq. SOLVE_PEXSI) then
          ! Prototype interface
          call pexsi_solver(iscf, no_u, no_l, nspin,
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
-     $              ef, Entrop, temp)
+     $              ef, Entrop, temp, delta_Ef)
          if (ionode) write (6,"(/a,f14.6)") 'Entropy/k:', Entrop 
       endif
       if (.not. SIESTA_worker) RETURN
@@ -244,7 +267,11 @@ c$$$     &           S, 'S.matrix')
          call normalize_dm(first=.false.)
 #endif  /* TRANSIESTA */
 
+! Save Hamiltonian used to generate the DM in this iteration
+      Hprev = H
+
       call timer( 'compute_dm', 2 )
+      if (ionode) call memory_snapshot("after compute_DM")
 
 !----------------------------------------------------------------------- END
       END subroutine compute_dm

@@ -22,9 +22,11 @@ CONTAINS
   subroutine write_mat (maxnd, no_l, nspin, &
        numd, listdptr, listd, mat, userfile, compatible)
 
+#ifdef MPI
     use mpi
     use parallel, only: blocksize, SIESTA_comm
     use alloc
+#endif
 
     integer, parameter :: dp = selected_real_kind(10,100)
 
@@ -52,27 +54,39 @@ CONTAINS
     integer  :: MPIerror, stat(MPI_STATUS_SIZE)
     real(dp), dimension(:), pointer :: buffer => null()
     integer,  dimension(:), pointer :: ibuffer => null()
-#endif
     integer, dimension(:), pointer  :: numdg => null()
+#endif
+
     character(len=256) :: filename
     logical            :: bck_compat
 
     call timer("WriteMat",1)
 
-#ifdef MPI
+#ifndef MPI
+
+    ! Serial mode.
+       call io_assign(lun)
+       open( lun, file=trim(filename), form="unformatted", status='unknown' )
+       rewind(lun)
+       no_u = no_l
+       write(lun) no_u, nspin       
+       write(lun) (numd(m),m=1,no_u)
+       do i = 1, no_u
+          write(lun) (listd(j),j=listdptr(i)+1,listdptr(i)+numd(i))
+       enddo
+       do is=1,nspin
+          do i = 1, no_u
+             write(lun) (mat(j,is),j=listdptr(i)+1,listdptr(i)+numd(i))
+          enddo
+       enddo
+       call io_close(lun)
+
+#else  
     call MPI_Comm_Size( SIESTA_Comm, nprocs, MPIerror )
     call MPI_Comm_Rank( SIESTA_Comm, myrank, MPIerror )
-#else
-    nprocs = 1
-    myrank = 0
-#endif
 
 !     Find total number of orbitals over all Nodes
-#ifdef MPI
     call MPI_Reduce(no_l,no_u,1,MPI_integer,MPI_sum,0,SIESTA_Comm,MPIerror)
-#else
-    no_u = no_l
-#endif
 
     if (myrank.eq.0) then
        if (.not. present(userfile)) then
@@ -332,6 +346,8 @@ CONTAINS
     call de_alloc( buffer, 'buffer',  'write_mat' )
     call de_alloc( ibuffer, 'ibuffer', 'write_mat' )
  endif
+
+#endif 
 
  call timer("WriteMat",2)
 
