@@ -1,4 +1,13 @@
 --------------------------------------------------------
+November 29, 2013 Alberto Garcia     trunk-413--bessel-3
+Let the user specify fewer rc's than needed in zeta section
+
+In that case, the last rc is used for the remaining orbitals.
+
+modified:
+  Src/basis_specs.f
+
+--------------------------------------------------------
 November 19, 2013 Alberto Garcia     trunk-413--bessel-2
 Allow more data than needed in nzeta section of PAO.basis
 

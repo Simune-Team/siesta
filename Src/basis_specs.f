@@ -591,6 +591,7 @@ C Sanity checks on values
       subroutine repaobasis()
 
       integer isp, ish, nn, i, ind, l, indexp, index_splnorm
+      integer :: nval_zetas
 
       if (.not. fdf_block('PAO.Basis',bfdf)) RETURN
 
@@ -688,11 +689,18 @@ C Sanity checks on values
           s%rc(:) = 0.d0
           s%lambda(:) = 1.d0
           if (.not. fdf_bline(bfdf,pline)) call die("No rc's")
-          if (fdf_bnvalues(pline) < s%nzeta)
-     $      call die("Wrong number of rc's")
+
+          ! Use the last rc entered for the successive zetas
+          nval_zetas = fdf_bnvalues(pline)
+          if (nval_zetas < 1) call die("Need at least one rc !!!!")
           do i= 1, s%nzeta
-            s%rc(i) = fdf_bvalues(pline,i)
+             if (i <= nval_zetas) then
+                s%rc(i) = fdf_bvalues(pline,i)
+             else
+                s%rc(i) = fdf_bvalues(pline,nval_zetas)
+             endif
           enddo
+
           if (s%split_norm_specified) then
             do i = 2, s%nzeta
               if (s%rc(i) /= 0.0_dp) then
@@ -716,10 +724,16 @@ C Sanity checks on values
      $          call die('repaobasis: ERROR in PAO.Basis block')
               cycle shells
             else
-              if (fdf_bnreals(pline) < s%nzeta)
+              ! Same as above: make sure the blocks match, and
+              ! use the last number for the missing zetas
+              if (fdf_bnreals(pline) /= nval_zetas) 
      $          call die("Wrong number of lambda's")
               do i=1,s%nzeta
-                s%lambda(i) = fdf_breals(pline,i)
+                 if (i <= nval_zetas) then
+                    s%lambda(i) = fdf_breals(pline,i)
+                 else
+                    s%lambda(i) = fdf_breals(pline,nval_zetas)
+                 endif
               enddo
             endif
           endif
