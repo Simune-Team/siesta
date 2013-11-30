@@ -1,4 +1,29 @@
 --------------------------------------------------------
+November 30, 2013 Alberto Garcia     trunk-413--bessel-5
+Refinement of split-bessel basis-generation option
+
+nzetas_split can be specified in a special section
+shell by shell:
+
+.... (other info)     B 2
+
+If izeta < nzetas_split, the orbital is generated as
+usual in the 'split' method. If not, Bessel functions
+are used from then on.
+
+Note that the "principal quantum number" for Bessel-function
+generation is set to a reasonable (historical) value, but we need to
+understand the implications of changing it.  See the code.
+
+(Updated the values to make them consistent with the
+practice in bessel-typ)
+
+modified:
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+
+--------------------------------------------------------
 November 30, 2013 Alberto Garcia     trunk-413--bessel-4
 Implementation of split-bessel basis-generation option
 

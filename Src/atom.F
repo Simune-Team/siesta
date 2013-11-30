@@ -3136,7 +3136,7 @@ C***Internal variables**
      .                   rphi, ePAO, noPAO,
      $                   rinn, vcte, split_norm,atm_label)
          
-                else if(basis_type.eq.'splitbess') then  
+                else if(basis_type.eq.'split_bess') then  
 
                  call SPLIT_bessel(Zval,is, iz, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO, 
@@ -3988,8 +3988,8 @@ C     SPLIT OPTION FOR THE GENERATION OF THE BASIS SET
                      nprin=l+nsm
 
                      ! B) as in the other routine
-                      nnodes=izeta
-                      nprin=l+1  ! should it be l + izeta?
+                      !nnodes=izeta
+                      !nprin=l+1  ! should it be l + izeta?
                   ! when generalizing:
                   !   nnodes = izeta + nsm - 1
                   !   nprin  = l + 1 + nsm - 1
@@ -4133,8 +4133,8 @@ C     SPLIT OPTION FOR THE GENERATION OF THE BASIS SET
                      ! Bessel function (with soft confining potential only)
                      ! Which set of values to use?
                      ! A) As above
-                     nnodes=nsm
-                     nprin=l+nsm
+                     !!nnodes=nsm
+                     !!nprin=l+nsm
 
                      ! B) as in the other routine
                       nnodes=izeta + nsm - 1

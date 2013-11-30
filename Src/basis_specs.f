@@ -591,7 +591,7 @@ C Sanity checks on values
       subroutine repaobasis()
 
       integer isp, ish, nn, i, ind, l, indexp, index_splnorm
-      integer :: nval_zetas, index_zfromV
+      integer :: nval_zetas, index_bessel, val
 
       if (.not. fdf_block('PAO.Basis',bfdf)) RETURN
 
@@ -641,14 +641,21 @@ C Sanity checks on values
             call die("Bad format of (n), l, nzeta line in PAO.Basis")
           endif
 
-          ! Optional stuff: For some basis types, specify whether
-          ! we still want a 1st zeta generated in the usual way
+          if (basp%basis_type == "split_bess") then
+          ! Specify the first zeta built as Bessel function
 
-          if (fdf_bsearch(pline,'No1stZfromVps',index_zfromV)) then
-             s%want_1z_from_Vps = .false.
-          else
-             s%want_1z_from_Vps = .true.
-          endif
+          if (fdf_bsearch(pline,'B',index_bessel)) then
+            if (fdf_bmatch(pline,'i',after=index_bessel)) then
+               val = fdf_bvalues(pline,ind=1,after=index_bessel)
+               if (val<1) call die("Wrong index for 1st Bessel orbital")
+               s%nzetas_split = val - 1
+            else
+               call die("Need to specify index for 1st Bessel orbital")
+            endif
+         else
+            s%nzetas_split = s%nzeta
+         endif
+         endif
 
           ! Optional stuff: Polarization and Soft-confinement Potential
 
@@ -1022,7 +1029,7 @@ c (according to atmass subroutine).
       elseif(leqi(basistype,'SPLIT')) then
         basistype='split'
       elseif(leqi(basistype,'SPLIT_BESS')) then
-        basistype='splitbess'
+        basistype='split_bess'
       elseif(leqi(basistype,'SPLITGAUSS')) then
         basistype='splitgauss'
       elseif(leqi(basistype,'BESSEL-TYP')) then

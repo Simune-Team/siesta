@@ -55,7 +55,7 @@
           real(dp), pointer         ::  rc(:)      ! rc's for PAOs
           real(dp), pointer         ::  lambda(:)  ! Contraction factors
           !!! type(rad_func), pointer   ::  orb(:) ! Actual orbitals 
-          logical                   ::  want_1z_from_Vps
+          integer                   ::  nzetas_split
       end type shell_t
 
       type, public :: lshell_t
@@ -113,7 +113,7 @@
       integer      ,save, public, pointer :: cnfigmx(:,:)
       integer      ,save, public, pointer :: polorb(:,:,:)
       integer      ,save, public, pointer :: nzeta(:,:,:)
-      logical      ,save, public, pointer :: want_1z_from_Vps(:,:,:)
+      integer      ,save, public, pointer :: nzetas_split(:,:,:)
       real(dp)     ,save, public, pointer :: split_norm(:,:,:)
       real(dp)     ,save, public, pointer :: vcte(:,:,:)
       real(dp)     ,save, public, pointer :: rinn(:,:,:)
@@ -185,7 +185,7 @@
       p%vcte = 0._dp
       p%split_norm = 0.0_dp
       p%split_norm_specified = .false.
-      p%want_1z_from_Vps = .true.
+      p%nzetas_split = 0
       nullify(p%rc,p%lambda)
       end subroutine init_shell
 
@@ -273,7 +273,7 @@
       write(6,'(5x,a20,i20)') 'Angular momentum',     p%l
       write(6,'(5x,a20,i20)') 'n quantum number',     p%n
       write(6,'(5x,a20,i20)') 'Nzeta'           ,     p%nzeta
-      write(6,'(5x,a20,i20)') '1st zeta from Vps',    p%want_1z_from_Vps
+      write(6,'(5x,a20,i20)') 'Nzeta built split',    p%nzetas_split
       write(6,'(5x,a20,l20)') 'Polarized?       ',    p%polarized
       write(6,'(5x,a20,i20)') 'Nzeta pol'           , p%nzeta_pol
       write(6,'(5x,a20,g20.10)') 'split_norm'     , p%split_norm
@@ -437,9 +437,9 @@
       nullify( nzeta )
       call re_alloc( nzeta, 0, lmaxd, 1, nsemx, 1, nsp,
      &               'nzeta', 'basis_types' )
-      nullify( want_1z_from_Vps )
-      call re_alloc( want_1z_from_Vps, 0, lmaxd, 1, nsemx, 1, nsp,
-     &               'want_1z_from_Vps', 'basis_types' )
+      nullify( nzetas_split )
+      call re_alloc( nzetas_split, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               'nzetas_split', 'basis_types' )
       nullify( split_norm )
       call re_alloc( split_norm, 0, lmaxd, 1, nsemx, 1, nsp,
      &               'split_norm', 'basis_types' )
@@ -477,7 +477,7 @@
 
       nkbl(:,:) = 0
       nzeta(:,:,:) = 0
-      want_1z_from_Vps(:,:,:) = .true.
+      nzetas_split(:,:,:) = 0
       split_norm(:,:,:) = 0.d0
       vcte(:,:,:) = 0.d0
       rinn(:,:,:) = 0.d0
@@ -515,7 +515,7 @@
                s=>ls%shell(n)
                cnfigmx(l,isp) = max(cnfigmx(l,isp),s%n)
                nzeta(l,n,isp) = s%nzeta
-               want_1z_from_Vps(l,n,isp) = s%want_1z_from_Vps
+               nzetas_split(l,n,isp) = s%nzetas_split
                polorb(l,n,isp) = s%nzeta_pol
                split_norm(l,n,isp) = s%split_norm
                vcte(l,n,isp) = s%vcte
@@ -614,7 +614,7 @@
       call de_alloc( nkbl,       'nkbl',       'basis_types' )
       call de_alloc( polorb,     'polorb',     'basis_types' )
       call de_alloc( nzeta,      'nzeta',      'basis_types' )
-      call de_alloc( want_1z_from_Vps,'want_1z_from_Vps','basis_types')
+      call de_alloc( nzetas_split,'nzetas_split','basis_types')
       call de_alloc( split_norm, 'split_norm', 'basis_types' )
       call de_alloc( vcte,       'vcte',       'basis_types' )
       call de_alloc( rinn,       'rinn',       'basis_types' )
