@@ -591,7 +591,7 @@ C Sanity checks on values
       subroutine repaobasis()
 
       integer isp, ish, nn, i, ind, l, indexp, index_splnorm
-      integer :: nval_zetas
+      integer :: nval_zetas, index_zfromV
 
       if (.not. fdf_block('PAO.Basis',bfdf)) RETURN
 
@@ -640,6 +640,16 @@ C Sanity checks on values
           else
             call die("Bad format of (n), l, nzeta line in PAO.Basis")
           endif
+
+          ! Optional stuff: For some basis types, specify whether
+          ! we still want a 1st zeta generated in the usual way
+
+          if (fdf_bsearch(pline,'No1stZfromVps',index_zfromV)) then
+             s%want_1z_from_Vps = .false.
+          else
+             s%want_1z_from_Vps = .true.
+          endif
+
           ! Optional stuff: Polarization and Soft-confinement Potential
 
           if (fdf_bsearch(pline,'S',index_splnorm)) then
@@ -1011,6 +1021,8 @@ c (according to atmass subroutine).
         basistype='nonodes'
       elseif(leqi(basistype,'SPLIT')) then
         basistype='split'
+      elseif(leqi(basistype,'SPLIT_BESS')) then
+        basistype='splitbess'
       elseif(leqi(basistype,'SPLITGAUSS')) then
         basistype='splitgauss'
       elseif(leqi(basistype,'BESSEL-TYP')) then

@@ -3136,6 +3136,15 @@ C***Internal variables**
      .                   rphi, ePAO, noPAO,
      $                   rinn, vcte, split_norm,atm_label)
          
+                else if(basis_type.eq.'splitbess') then  
+
+                 call SPLIT_bessel(Zval,is, iz, a,b,rofi,drdi,s,
+     .                   vps, ve, vePAO, 
+     .                   nrval, lmxo, nsemic,
+     .                   nzeta, rco, lambda,
+     .                   rphi, ePAO, noPAO,
+     $                   rinn, vcte, split_norm,atm_label)
+         
                 elseif(basis_type.eq.'nodes') then 
  
                  call NODES(Zval,is, a,b,rofi,drdi,s,
@@ -3768,6 +3777,640 @@ C Potential energy after compression
           
           end subroutine SPLIT
 !
+      subroutine SPLIT_Bessel(Zval,is, iz, a,b,rofi,drdi,s,
+     .     vps,ve,vePAO,
+     .     nrval,lmxo, nsemic,
+     .     nzeta,rco,lambda, rphi, ePAO, norb,
+     $     rinn,vcte,split_norm,atm_label)
+
+      use basis_specs, only:  restricted_grid
+
+C     Calculates the atomic orbitals basis set, using the option SPLIT
+C     for the generation of the augmentation orbitals.
+C     and/or Bessel functions
+C     Written by D. Sanchez-Portal, Aug. 1998
+C     Modified by DSP, July 1999
+
+
+      implicit none
+
+      real(dp)
+     .     a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .     drdi(nrmax), s(nrmax), ve(nrmax),
+     .     rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
+     .     lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
+     .     ePAO(0:lmaxd,nsemx),
+     .     rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
+     .     split_norm(0:lmaxd,nsemx)
+      character(len=*) atm_label
+
+
+      integer
+     .     nrval, lmxo, is, iz, nzeta(0:lmaxd,nsemx),
+     .     norb, nsemic(0:lmaxd)
+
+
+      integer :: nzetas_split = 1
+C***  Internal variables**
+
+      integer
+     .     l,nprin, nnodes, nodd, nrc, nsp, i, ir,indx,
+     .     izeta, nmax, nmin, nn, nr, nrcomp, nsm, nrc1,
+     .     nrc2, nrc3, nrc4, ism
+
+      real(dp)
+     .     eigen(0:lmaxd), rc, split_table(nrmax),
+     .     rnrm(nrmax), dnrm, phi,
+     .     cons1, cons2, rnp, spln, eshift,
+     .     g(nrmax), r, el, ekin,
+     .     r1, r2, dfdi, d2fdi2, d2fdr2, dr,
+     .     epot, epot2, rh, dy, eorb, eps,
+     .     over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
+     $     dlt, d, dn, norm(nsemx),
+     $     kmax, kmax_tol, etol, paofilterFactor,
+     $     spln_min
+      integer :: n_eigen
+      real(dp),allocatable,dimension(:) :: forb !filtered orbital
+      logical :: filterOrbitals
+      logical :: new_split_code, fix_split_table, split_tail_norm
+
+      parameter (dlt=0.60d0)
+
+C**** NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
+C     
+      integer  npoint
+      parameter(npoint=4)
+C     
+C***  READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
+
+      eshift=fdf_physical('PAO.EnergyShift',eshift_default,'Ry')
+
+      split_tail_norm=fdf_boolean('PAO.SplitTailNorm',.false.)
+      fix_split_table=fdf_boolean('PAO.FixSplitTable',.false.)
+      if (split_tail_norm .or. fix_split_table) then
+         new_split_code = .true.
+      else
+         new_split_code=fdf_boolean('PAO.NewSplitCode',.false.)
+      endif
+
+      norb=0
+      indx=0
+!     
+!     LOOP over angular momenta
+!     
+      do l=0,lmxo
+
+         do nsm=1,nsemic(l)+1
+            if(nzeta(l,nsm).gt.0) then
+               write(6,'(/A,I2)')
+     .              'SPLIT: Orbitals with angular momentum L=',l
+               goto 50
+            endif
+         enddo
+
+ 50      continue
+
+         do nsm=1,nsemic(l)+1
+
+            if(nzeta(l,nsm).le.0) cycle
+
+            write(6,'(/A,I1,A)')
+     .           'SPLIT: Basis orbitals for state ',
+     .           cnfigtb(l,nsm,is), sym(l)
+
+            if(rco(1,l,nsm).lt.1.0d-5) then
+
+!     Determine rc by energy shift
+
+               nnodes=nsm
+               nprin=l+nsm
+               call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+     .              nrval,l,a,b,nnodes,nprin,
+     .              eigen(l),rphi(1,l,nsm))
+
+               if(eigen(l).gt.0.0d0) then
+                  call die("Orbital not bound in the atom." //
+     $                     " An explicit rc must be given.")
+               endif
+
+               if(abs(eshift).gt.1.0d-5) then
+                  el=eigen(l)+eshift
+                  call rc_vs_e(a,b,rofi,vps(1,l),
+     .                 ve,nrval,l,el,nnodes,rco(1,l,nsm))
+               else
+                  rco(1,l,nsm)=rofi(nrval-2)   ! large r?
+               endif
+               write(6,'(/,A,/,A,f10.6,A)')
+     .              'SPLIT: PAO cut-off radius determined from an',
+     .              'SPLIT: energy shift=',eshift,' Ry'
+
+            endif
+C     
+
+C     IF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE
+C     LEFT UNTOUCHED
+            if(lambda(1,l,nsm).le.0.0d0) lambda(1,l,nsm)=1.0d0
+!     
+!     SOFT-CONFINEMENT
+!     
+C     Calculate the soft confinement potential for a given atomic species
+C     and angular momentum
+!     !AG** rco might not be the PAO cutoff radius! See below
+
+            call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
+     $           a, b, rco(1,l,nsm),rofi,nrval,
+     $           vsoft,plot=write_ion_plot_files)
+
+            do ir = 1, nrval
+               vePAOsoft(ir) = vePAO(ir) + vsoft(ir)
+            enddo
+            if (write_ion_plot_files) then
+               call file_out(nrval,rofi,vePAOsoft,
+     $              trim(global_label)//".Vsoft")
+            endif
+
+!     END SOFT-CONFINEMENT
+
+            do izeta=1, nzeta(l,nsm)
+
+C     COMPRESSION FACTOR IS ONLY ACTIVE FOR THE INITIAL PAO WHEN USING
+C     SPLIT OPTION FOR THE GENERATION OF THE BASIS SET
+
+               lambda(izeta,l,nsm)=lambda(1,l,nsm)
+
+!     
+!     If rc is negative, treat it as a fractional value
+!     
+               if (rco(izeta,l,nsm) < 0.0_dp) then
+                  if (izeta == 1) then
+                     call die("rc < 0 for first-zeta orbital")
+                  else
+                     rco(izeta,l,nsm) = rco(1,l,nsm) *
+     $                    (-rco(izeta,l,nsm))
+                  endif
+               endif
+
+               rc=rco(izeta,l,nsm)/lambda(1,l,nsm)
+               nrc=nint(log(rc/b+1.0d0)/a)+1
+
+!     Note that rco is redefined here, to make it fall on an odd-numbered
+!     grid point.
+!     
+               if (restricted_grid) then
+                  nodd=mod(nrc,2)
+                  if(nodd.eq.0) then
+                     nrc=nrc+1
+                  endif
+               endif
+               rc=b*(exp(a*(nrc-1))-1.0d0)
+               rco(izeta,l,nsm)=rc*lambda(1,l,nsm)
+
+               if(izeta.eq.1) then
+
+!     
+!     AG**    Soft-confinement setup might need to go here
+!     
+                  ! Generate PAO orbitals for the first zeta
+
+                  if (nzetas_split >= 1) then
+                     ! Standard confined solution for Vps
+                     nnodes=nsm
+                     nprin=l+nsm
+                     call schro_eq(Zval,rofi,vps(1,l),vePAOsoft,s,drdi,
+     .                    nrc,l,a,b,nnodes,nprin,
+     .                    eorb,rphi(1,l,nsm))
+
+                  else
+                     ! Bessel function (with soft confining potential only)
+                     ! Which set of values to use?
+                     ! A) As above
+                     nnodes=nsm
+                     nprin=l+nsm
+
+                     ! B) as in the other routine
+                      nnodes=izeta
+                      nprin=l+1  ! should it be l + izeta?
+                  ! when generalizing:
+                  !   nnodes = izeta + nsm - 1
+                  !   nprin  = l + 1 + nsm - 1
+                  !   nprin  = l + izeta?? + nsm - 1
+
+                     ! Make sure that the sum of vps and vePAOsoft
+                     ! is just the soft part
+                     do ir = 1, nrval
+                        vePAOsoft(ir) = -vps(ir,l) + vsoft(ir)
+                     enddo
+                     call schro_eq(Zval,rofi,vps(1,l),vePAOsoft,s,drdi,
+     .                    nrc,l,a,b,nnodes,nprin,
+     .                    eorb,rphi(1,l,nsm))
+                  endif
+
+                  dnrm=0.0d0
+                  do ir=2,nrc
+                     phi=rphi(ir,l,nsm)
+                     dnrm=dnrm+drdi(ir)*phi*phi
+                     rnrm(ir)=dnrm
+                     g(ir)=rphi(ir,l,nsm)/(rofi(ir)**(l+1))
+                  enddo
+                  g(1)=g(2)
+
+                  ! Prepare the table for split-norm calculations
+
+                  if (split_tail_norm) then
+                     write(*,"(a)") "Split based on tail norm"
+                     ! Follows the criterion of the JPC paper, but
+                     ! with more contrast
+                     ! (use the actual math norm (sqrt(int(f^2)))
+
+                     split_table(1:nrc) =
+     $                    sqrt(max(1.0_dp-rnrm(1:nrc),0.0_dp))
+
+                  else
+                    ! Do a full scan of the old method
+                    ! (norm of tail+parabola)
+                     call split_scan(nrc, rofi, drdi, l,
+     $                    rphi(1:,l,nsm),rnrm,atm_label,
+     $                    split_table,fix_split_table)
+                  endif
+
+               else             ! izeta > 1...
+
+                  ! Determine rc's for the higher zetas
+
+                  if(rco(izeta,l,nsm).gt.rco(1,l,nsm)) then
+                     call die("rc for higher zetas should be " //
+     $                        "smaller than for initial PAO")
+                  endif
+
+
+                  if(rco(izeta,l,nsm).gt.1.0d-5) then
+
+                     ! Use this rc for the matching
+
+                     rc=rco(izeta,l,nsm)/lambda(1,l,nsm)
+                     nrc=nint(log(rc/b+1.0d0)/a)+1
+
+                     call fit_parabola(nrc,rofi,drdi,rphi(1:,l,nsm),
+     $                    l, cons1, cons2, rnp)
+                     spln=split_table(nrc)
+
+
+                  else      
+
+                     ! Determine rc using the split-norm parameters
+
+                     rc=rco(1,l,nsm)/lambda(1,l,nsm)
+                     nrc=nint(log(rc/b+1.0d0)/a)+1
+
+                     ! Halve spln for higher zetas
+                     spln = split_norm(l,nsm)
+                     if(izeta.gt.2) then
+                        spln=split_norm(l,nsm)/(2.0d0*(izeta-2) )
+                     endif
+!     
+!     !            Maybe fix on the fly in the future?
+!     !            if (spln < minval(split_table(1:nrc))
+!     !                ...  ! maybe fix split_table
+
+                     if (new_split_code) then
+                        call find_split_location(nrc,rofi,drdi,
+     $                       rphi(1:,l,nsm),split_table,
+     $                       l,spln,cons1,cons2,nsp)
+                     else
+                        spln_min = minval(split_table(1:nrc))
+                        if (spln < spln_min) then
+                           write(6,"(a,f8.5,a,f8.5)")
+     $                       "WARNING: Minimum split_norm parameter: ",
+     $                       spln_min, ". Will not be able to generate "
+     $                          // "orbital with split_norm = ", spln
+                           call die("See manual for new split options")
+                        endif
+                        call parabola(a,b,nrc,rphi(1,l,nsm),rnrm,
+     .                       l,spln,cons1,cons2,nsp)
+                     endif
+
+                     nrc=nsp
+                     rco(izeta,l,nsm)= rofi(nsp) *lambda(izeta,l,nsm)
+
+                  endif
+
+                  if (izeta <= nzetas_split) then
+
+                       do i=1,izeta-1
+                         if(abs(rco(izeta,l,nsm)-rco(i,l,nsm))
+     $                         < 1.0d-5) then
+                           write(6,'(/,A,I2,A,I2,A,I2)')
+     .                 'SPLIT: WARNING: Split-orbital with zeta=',izeta,
+     .                          ' and zeta=',i,' are identical for l=',l
+                           call die()
+                         endif
+                      enddo
+
+
+                     ! Parabolic split
+
+                     do ir=1,nrval
+                        r=rofi(ir)
+                        if (ir.ge.nrc) then
+                           g(ir)=0.0d0
+                        else
+                           ! Store first-zeta minus second-zeta in g
+                           g(ir)=-(cons1*r**2+cons2)*r**(l+1)
+     $                           +rphi(ir,l,nsm)
+                        endif
+                     enddo
+
+                  else
+                     
+                     call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
+     $                    a, b, rco(1,l,nsm),rofi,nrval,
+     $                    vsoft,plot=write_ion_plot_files)
+
+                     do ir = 1, nrval
+                        vePAOsoft(ir) = -vps(ir,l) + vsoft(ir)
+                     enddo
+
+                     ! Bessel function (with soft confining potential only)
+                     ! Which set of values to use?
+                     ! A) As above
+                     nnodes=nsm
+                     nprin=l+nsm
+
+                     ! B) as in the other routine
+                      nnodes=izeta + nsm - 1
+                      nprin=l+1 + nsm - 1  ! should it be l + izeta?
+                  ! when generalizing:
+                  !   nnodes = izeta + nsm - 1
+                  !   nprin  = l + 1 + nsm - 1
+                  !   nprin  = l + izeta?? + nsm - 1
+
+                     call schro_eq(Zval,rofi,vps(1,l),vePAOsoft,s,drdi,
+     .                    nrc,l,a,b,nnodes,nprin,
+     .                    eorb,g)
+
+                  endif
+
+C***  Orthogonalize to the inner shells if present***
+C***  In some cases we have to use a "smooth" version of the orginal
+C***  PAO orbitals in this orthogonalization process***************
+
+                  if(nsm.gt.1) then
+                     do ism=1,nsm-1
+                        rc=rco(1,l,ism)/lambda(1,l,ism)
+!     
+                        nrc4=nint(dlog(rc/b+1.0d0)/a)+1
+                        rc=rc-dlt
+                        nrc3=nint(dlog(rc/b+1.0d0)/a)+1
+                        rc=rofi(nrc3)
+                        cons1=rphi(nrc3,l,ism)
+                        d=dsqrt(cons1**2+dlt**2)
+                        rc=rc+d+dlt
+                        nrc2=nint(dlog(rc/b+1.0d0)/a)+1
+                        d=rofi(nrc2)-rofi(nrc3)
+                        rc=rofi(nrc2)
+                        cons2=0.5d0*(cons1**2+(d)**2)/cons1
+                        dnrm=0.0d0
+                        dn=0.0d0
+!     
+                        do ir=1, nrc2
+                           r=rofi(ir)
+                           if(ir.gt.nrc3.and.nrc.gt.nrc4) then
+                              rh=cons2-
+     $                  cons1*dsqrt(cons2**2-(r-rc)**2)/dabs(cons1)
+                           else
+                              rh=rphi(ir,l,ism)
+                           endif
+c     write(68,*) r,rh,rphi(ir,l,ism)
+                           dnrm=dnrm+drdi(ir)*rh*g(ir)
+                           dn=dn+drdi(ir)*rh*rh
+                        enddo
+                        over(ism)=dnrm
+                        norm(ism)=dn
+                     enddo
+!     
+                     nrc1=nrc
+                     do ism=1,nsm-1
+                        rc=rco(1,l,ism)/lambda(1,l,ism)
+!     
+                        nrc4=nint(dlog(rc/b+1.0d0)/a)+1
+                        rc=rc-dlt
+                        rc=rco(1,l,ism)/lambda(1,l,ism)-dlt
+                        nrc3=nint(dlog(rc/b+1.0d0)/a)+1
+                        rc=rofi(nrc3)
+                        cons1=rphi(nrc3,l,ism)
+                        d=dsqrt(cons1**2+dlt**2)
+                        rc=rc+d+dlt
+                        nrc2=nint(dlog(rc/b+1.0d0)/a)+1
+                        d=rofi(nrc2)-rofi(nrc3)
+                        rc=rofi(nrc2)
+                        cons2=0.5d0*(cons1**2+(d)**2)/cons1
+                        if(nrc4.lt.nrc) nrc1=max(nrc1,nrc2)
+
+                        do ir=1, nrc2
+                           r=rofi(ir)
+                           if(ir.gt.nrc3.and.nrc.gt.nrc4) then
+                              rh=cons2-
+     $                   cons1*dsqrt(cons2**2-(r-rc)**2)/dabs(cons1)
+                           else
+                              rh=rphi(ir,l,ism)
+                           endif
+                           g(ir)=g(ir)-over(ism)*rh/(norm(ism)+1.0d-20)
+                        enddo
+                     enddo
+
+
+                     if(nrc.ne.nrc1) then
+                        nrc=nrc1
+                        rco(izeta,l,nsm)=
+     $                  b*(exp(a*(nrc1-1))-1.0d0)*lambda(izeta,l,nsm)
+                     endif
+                  endif
+
+                  dnrm=0.0d0
+                  do ir=2,nrc-1
+                     r=rofi(ir)
+                     phi=g(ir)/(r**(l+1))
+                     dnrm=dnrm+drdi(ir)*(phi*r**(l+1))**2
+                     g(ir)=phi
+                  enddo
+                  g(1)=g(2)
+                  g(nrc)=0.0d0
+
+               endif
+
+C**** Normalization of basis functions***
+               eps=1.0d-4
+               if(abs(dnrm-1.0d0).gt.eps) then
+                  do ir=1,nrc
+                     g(ir)=g(ir)/sqrt(dnrm)
+                     if(izeta.eq.1) then
+                        rphi(ir,l,nsm)=rphi(ir,l,nsm)/sqrt(dnrm)
+                        rnrm(ir)=rnrm(ir)/dnrm
+                     endif
+                  enddo
+               endif
+
+C     *Calculation of the mean value of kinetic and potential energy**
+C     Potential and kinetic energy of the orbital before compression
+
+
+
+               ekin=0.0d0
+               do ir=2,nrc-1
+                  r=rofi(ir)
+                  r1=rofi(ir-1)
+                  r2=rofi(ir+1)
+                  d2fdi2=(g(ir-1)*r1**(l+1)+g(ir+1)*r2**(l+1)
+     .                 -2.0d0*g(ir)*r**(l+1))
+                  dfdi=0.5d0*(g(ir+1)*r2**(l+1)-g(ir-1)*r1**(l+1))
+                  dr=drdi(ir)
+                  d2fdr2= ((-a)*dfdi +  d2fdi2)/dr**2
+                  ekin=ekin+
+     .                 dr*g(ir)*r**(l+1)*(-d2fdr2)
+     .                 +dr*l*(l+1)*(g(ir)*r**l)**2
+               enddo
+
+
+C     Kinetic energy after compression
+
+               ekin=ekin/(lambda(izeta,l,nsm)**2)
+
+C     Potential energy after compression
+
+               nrcomp=nint(log(rco(izeta,l,nsm)/b+1.0d0)/a)+1
+               epot=0.0d0
+               epot2=0.0d0
+               do ir=1,nrcomp
+                  r=rofi(ir)
+                  r2=r/lambda(izeta,l,nsm)
+                  nr=nint(log(r2/b+1.0d0)/a)+1
+                  nmin=max(1,nr-npoint)
+                  nmax=min(nrc,nr+npoint)
+                  nn=nmax-nmin+1
+                  call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
+                  rh=rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
+                  epot=epot+
+     .                 drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+                  epot2=epot2+
+     .                 drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+               enddo
+               eorb=ekin+epot
+
+
+
+               if(izeta.eq.1) then
+
+                  write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
+     .                 'izeta =',izeta,
+     .                 'lambda =',lambda(izeta,l,nsm),
+     .                 'rc =',rco(izeta,l,nsm),
+     .                 'energy =',eorb
+
+                  ePAO(l,nsm)=eorb
+
+               elseif(izeta.gt.1) then
+
+                  write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
+     .                 'izeta =',izeta,
+     .                 'rmatch =',rco(izeta,l,nsm),
+     .                 'splitnorm =',spln,
+     .                 'energy =',eorb
+                  if (spln < 0.05_dp) then
+                     write(6,"(a)")
+     $        "* WARNING: effective split_norm is quite small."
+     $             // " Orbitals will be very similar."
+                  endif
+
+               endif
+
+               write(6,'(a25,f12.6)') 'kinetic =',ekin
+               write(6,'(a25,f12.6)') 'potential(screened) =',epot
+               write(6,'(a25,f12.6)') 'potential(ionic) =',epot2
+
+               norb=norb+(2*l+1)
+               indx=indx+1
+!     Filter
+!     Allow re-setting
+         filterOrbitals = fdf_boolean("PAO.Filter",filtering_requested)
+
+               if (filterOrbitals) then
+
+                  allocate(forb(1:nrc))
+
+                  do ir=1,nrc
+                     if(l .eq. 0) then
+                        forb(ir) = g(ir)
+                     else
+                        forb(ir) = g(ir)*rofi(ir)**(l)
+                     endif
+                  enddo
+
+!     Allow re-setting by user
+                  if (filter_cutoff_specified) then
+                     paoFilterFactor = fdf_double("PAO.FilterFactor",
+     $                    (0.7_dp)**2.0_dp)
+                     kmax = sqrt(filter_cutoff * paoFilterFactor)
+                     write(6,'(a,f8.2,a)') "PAO Filter: Cutoff used:",
+     $                    kmax**2,' Ry'
+
+!     For diagnostic only --------------
+                     etol = fdf_physical('PAO.FilterTol',
+     $                    EkinTolDefault,'Ry')
+                     write(6,'(a,f12.6,a)')
+     $                    "PAO Filter: diagnostic kin energy tol:",
+     $                    etol,' Ry'
+                     kmax_tol = kcPhi(l=l,nr=nrc,r=rofi(1:nrc),
+     $                    phi=forb(1:nrc),etol=etol)
+                     write(6,'(a,f8.2,a)')
+     $                 "PAO Filter: Nominal cutoff (before filtering):",
+     $                    kmax_tol**2,' Ry'
+!     ----------------------------------
+                  else
+                     kmax = kcPhi(l=l,nr=nrc,r=rofi(1:nrc),
+     $                    phi=forb(1:nrc),etol=filter_tol)
+                     write(6,'(a,f8.2,a)')
+     $                    "PAO Filter:" //
+     $                    " Cutoff estimated from residual kin energy:",
+     $                    kmax**2,' Ry'
+                  endif
+
+               call filter(l=l,nr=nrc,r=rofi(1:nrc),f=forb(1:nrc),
+     $                 kc=kmax,norm_opt=2,n_eigen=n_eigen)
+
+                  filter_cutoff_orbitals = max(filter_cutoff_orbitals,
+     $                 kmax**2)
+
+!     Store the filtered orbital in g
+                  g = 0.0_dp
+                  do ir=2,nrc
+                     if(l .eq. 0)then
+                        g(ir) = forb(ir)
+                     else
+                        g(ir) = forb(ir)/rofi(ir)**l
+                     endif
+                  enddo
+                  g(1) = g(2)
+
+                  deallocate(forb)
+
+               endif            !End of filtering
+
+               call comBasis(is,a,b,rofi,g,l,
+     .              rco(izeta,l,nsm),lambda(izeta,l,nsm),izeta,
+     .              nsm,nrc,indx)
+
+
+            enddo
+
+            call compress_PAO(a,b,rofi,rphi(1,l,nsm),
+     .           rco(1,l,nsm),lambda(1,l,nsm))
+
+
+         enddo
+      enddo
+
+      end subroutine SPLIT_Bessel
+
            subroutine NODES(Zval,is,a,b,rofi,drdi,s,
      .             vps,ve,vePAO,
      .             nrval,lmxo,nsemic,
