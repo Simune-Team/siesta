@@ -387,6 +387,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 #ifdef DEBUG_XC
   integer :: iip, jjp, jq
   real(dp):: rmod, rvec(3)
+  integer,save:: myIter=0
 #endif /* DEBUG_XC */
   logical :: &
      GGA, GGAfunctl, VDW, VDWfunctl
@@ -502,8 +503,10 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     call de_alloc( workload, myName//'workload' )
     call de_alloc( myDens,   myName//'myDens' )
 #ifdef DEBUG_XC
+    myIter = myIter+1
     call myMeshBox( nMesh, myDistr, myBox )
-    write(udebug,'(a,3(2x,2i4))') myName//'My new box =', myBox
+    write(udebug,'(a,i6,1x,3i5,3(1x,2i5))') &
+      myName//'Iter,nMesh,myBox=', myIter, nMesh, myBox
 #endif /* DEBUG_XC */
   end if ! (nodes>1 .and. timeDisp/timeAvge>maxUnbalance)
 
@@ -1317,7 +1320,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   timeDisp = sqrt( max( sumTime2/nodes - timeAvge**2, 0._dp ) )
 
 #ifdef DEBUG_XC
-  write(udebug,'(a,3f12.6)') &
+  write(udebug,'(a,3f12.6,/)') &
     myName//'My CPU time, avge, rel.disp =', &
     myTime, timeAvge, timeDisp/timeAvge
 #endif /* DEBUG_XC */

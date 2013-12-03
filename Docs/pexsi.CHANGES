@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+December 3, 2013  A. Garcia       trunk-450--pexsi-55
+Sync to trunk-450
+
+* Fix SiestaXC/mesh3d to avoid overflow of distributions and/or tasks
+* Fix Tbtrans runs at Gamma when using Transiesta k-point data
+* Minor fixes in XC library (JMS)
+
+(See CHANGES file)
+
+modified:
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh3d.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+  Util/TBTrans_rep/tbtrans.F90
+
+------------------------------------------------------------
 November 25, 2013  A. Garcia       trunk-447--pexsi-55
 More hooks for PEXSI steering during scf-loop
 

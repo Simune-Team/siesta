@@ -679,9 +679,9 @@ PRIVATE ! Nothing is declared public beyond this point
 
   ! Private module parameters
   character(len=*),parameter:: moduleName = 'mesh3D '
-  integer,parameter:: maxDistr   = 10 ! Max. number of mesh distributions
+  integer,parameter:: maxDistr   = 20 ! Max. number of mesh distributions
                                       !   allocated at any given time
-  integer,parameter:: maxTasks   = 30 ! Max. number of communication tasks
+  integer,parameter:: maxTasks  = 100 ! Max. number of communication tasks
                                       !   allocated at any given time
   integer,parameter:: maxDistrID = 20 ! Max. IDs assigned to the same distrib.
   integer,parameter:: maxTaskID  = 10 ! Max. IDs assigned to the same task
@@ -934,11 +934,19 @@ subroutine associateMeshTask( taskID, distrID1, distrID2 )
 
 #ifdef DEBUG_XC
 !  if (present(distrID2)) then
-!    write(udebug,'(a,3(2x,2i4))') myName//'taskID,iTask,distrID,iDistr=', &
+!    write(udebug,'(a,2i4,2(2x,2i4))') &
+!      myName//'taskID,iTask,distrID,iDistr=', &
 !      taskID, iTask, distrID1, iDistr1, distrID2, iDistr2
+!    write(udebug,'(a,i3,2x,25i3,/,(36x,25i3))') myName//'iDistr,tasks=', &
+!      iDistr1, pack(distr1%task,distr1%task>0)
+!    write(udebug,'(a,i3,2x,25i3,/,(36x,25i3))') myName//'iDistr,tasks=', &
+!      iDistr2, pack(distr2%task,distr2%task>0)
 !  else
-!    write(udebug,'(a,3(2x,2i4))') myName//'taskID,iTask,distrID,iDistr=', &
+!    write(udebug,'(a,2i4,2x,2i4)') &
+!      myName//'taskID,iTask,distrID,iDistr=', &
 !      taskID, iTask, distrID1, iDistr1
+!    write(udebug,'(a,i3,2x,25i3,/,(36x,25i3))') myName//'iDistr,tasks=', &
+!      iDistr1, pack(distr1%task,distr1%task>0)
 !  end if
 #endif /* DEBUG_XC */
 
@@ -1312,7 +1320,7 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
   character(len=*),parameter:: errHead = myName//'ERROR: '
   integer:: axis, axis1, axis2, axis3, axisNodes(3), box0(2,3), boxNodes(3), &
             iDistr, iNode, iNode1, iNode2, iNode3, jNode2, jNode3, &
-            node0, nodeSpan(3), rowMesh(3), rowNodes
+            node0, nodeSpan(3), oldDistr, rowMesh(3), rowNodes
   integer,allocatable:: subBox(:,:,:)
   logical:: found
   type(distrType),pointer:: distr
@@ -1359,11 +1367,6 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
 ! Return already if axis distributions are not required
   if (.not.present(axisDistr)) return
 
-! Initialize the axis distributions for the 1D FFT transforms
-  do axis = 1,3
-    call initDistr( axisDistr(axis), nMesh, 0, totNodes )
-  end do
-
 ! Find span between nodes along each axis
 !  nodeSpan(1) = 1
 !  nodeSpan(2) = axisNodes(1)
@@ -1383,6 +1386,11 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
 
 ! Loop on the three cell axes
   do axis1 = 1,3
+
+    ! (Re)initialize the axis distribution for the 1D FFT transforms
+    oldDistr = axisDistr(axis1)
+    call freeMeshDistr( axisDistr(axis1) )
+    call initDistr( axisDistr(axis1), nMesh, 0, totNodes )
 
     ! Find the two other axes
     axis2 = modulo(axis1,3) + 1
@@ -1454,8 +1462,9 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
     iDistr = indexDistr( axisDistr(axis1) )
     distr => storedMeshDistr(iDistr)
 !    write(udebug,'(a,3i4)') myName//'axis1,axis2,axis3=', axis1, axis2, axis3
-    write(udebug,'(a,2i6,3(2x,2i4))') myName//'distrID,iDistr,myBox=', &
-      axisDistr(axis1), iDistr, distr%box(:,:,myNode)
+    write(udebug,'(a,6x,3i4,3(2x,2i4))') &
+      myName//'    old/newDistrID,iDistr,myBox=', &
+      oldDistr, axisDistr(axis1), iDistr, distr%box(:,:,myNode)
 #endif /* DEBUG_XC */
 
   end do ! axis1
@@ -1478,6 +1487,7 @@ subroutine freeMeshDistr( distrID )
   character(len=*),parameter:: myName = 'freeMeshDistr '
   character(len=*),parameter:: errHead = myName//'ERROR: '
   integer:: iDistr, iID, iNode, it, iTask, taskID
+  logical:: found
   type(distrType),pointer :: distr
   type(taskType),pointer :: task
 
@@ -1487,7 +1497,6 @@ subroutine freeMeshDistr( distrID )
 ! Check that distribution exists
   if (iDistr<1 .or. iDistr>maxDistr) return
   distr => storedMeshDistr(iDistr) ! Just a shorter name
-  if (.not.distr%defined) return
 
 ! Erase ID from the distribution
   do iID = 1,maxDistrID
@@ -1500,17 +1509,25 @@ subroutine freeMeshDistr( distrID )
 ! Free distribution if no other IDs are assigned to it
   if (all(distr%ID<0)) then
     ! First free all distribution tasks
+#ifdef DEBUG_XC
+!    if (any(distr%task>0)) &
+!      write(udebug,'(a,i3,2x,25i3,/,(32x,25i3))') &
+!        myName//'iDistr,tasks=', iDistr, pack(distr%task,distr%task>0)
+#endif /* DEBUG_XC */
     do it = 1,maxDistrTasks
       iTask = distr%task(it)
       if (iTask>0) then
         task => storedMeshTask(iTask)
+        found = .false.
         do iID = 1,maxTaskID  ! Find a valid ID of task, to call freeMeshTask
           taskID = task%ID(iID)
           if (taskID>0) then
+            found = .true.
             call freeMeshTask( taskID )
             exit ! iID loop
           end if ! (taskID>0)
         end do ! iID
+        if (.not.found) call die(myName//'ERROR: no valid task ID found')
       end if ! (iTask>0)
     end do ! it
     ! Finally free distribution itself
@@ -1543,10 +1560,9 @@ subroutine freeMeshTask( taskID )
 ! Check that task exists
   if (iTask<1 .or. iTask>maxTasks) return
   task => storedMeshTask(iTask) ! Just a shorter name
-  if (.not.task%defined) return
 
 #ifdef DEBUG_XC
-!  write(udebug,'(a,4i6)') &
+!  write(udebug,'(a,2i4,2x,2i4)') &
 !    myName//'taskID,iTask,task%distr=', taskID, iTask, task%distr
 #endif /* DEBUG_XC */
 
@@ -1698,7 +1714,7 @@ subroutine initDistr( distrID, nMesh, firstNode, nNodes )
 ! Find an available internal distribution slot
   found = .false.
   do iDistr = 1,maxDistr
-    if (.not.storedMeshDistr(iDistr)%defined) then  ! Available (empty) slot
+    if (all(storedMeshDistr(iDistr)%ID<0)) then  ! Available (empty) slot
       found = .true.
       exit ! iDistr loop
     end if
@@ -1756,8 +1772,7 @@ subroutine initTask( taskID )
 ! Find an available internal distribution slot
   found = .false.
   do iTask = 1,maxTasks
-    if (.not.storedMeshTask(iTask)%defined .and. &
-        .not.storedMeshTask(iTask)%associated) then  ! Available (empty) slot
+    if (all(storedMeshTask(iTask)%ID<0)) then ! Available (empty) slot
       found = .true.
       exit ! iTask loop
     end if
@@ -2492,6 +2507,12 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
       task%srcBox = srcBoxes
       task%dstBox = dstBoxes
       task%defined = .true.
+#ifdef DEBUG_XC
+!      write(udebug,'(a,2i4,3(2x,2i4))') &
+!        myName//'taskID,iTask,srcBox=', taskID, iTask, srcBox
+!      write(udebug,'(31x,a,2i4,3(2x,2i4))') &
+!                             'dstBox=', taskID, iTask, dstBox
+#endif /* DEBUG_XC */
     end if
   end if
 
@@ -2902,6 +2923,7 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
             nFactors, node0, nParts, nRem, nBlocks, newDistrID, &
             oldDistrID, partSize, power(maxFactors)
   logical:: found
+  character(len=5):: dat
 
 ! Make sure that myNode and totNodes are defined
   call parallel_init()
@@ -3097,8 +3119,18 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
 #ifdef DEBUG_XC
     iDistr = indexDistr( distrID )
     distr => storedMeshDistr(iDistr)
-    write(udebug,'(a,2i6,3(2x,2i4))') myName//'distrID,iDistr,myBox=', &
-      distrID, iDistr, distr%Box(:,:,myNode)
+    if (present(box)) then
+      dat = 'box'
+    elseif (present(workload)) then
+      dat = 'wkld'
+    elseif (present(nNodesX)) then
+      dat = 'xNod'
+    else
+      dat = 'none'
+    endif
+    write(udebug,'(a,a6,3i4,3(2x,2i4))') &
+      myName//'dat,old/newDistrID,iDistr,myBox=', &
+      dat, oldDistrID, newDistrID, iDistr, distr%Box(:,:,myNode)
 #endif /* DEBUG_XC */
   end if
 

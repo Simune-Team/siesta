@@ -171,6 +171,7 @@ MODULE m_vv_vdwxc
   use flib_spline, only: generate_spline   ! Sets spline in a general mesh
   use mesh1D,      only: get_mesh          ! Returns the mesh points
   use m_radfft,    only: radfft            ! Radial fast Fourier transform
+  use alloc,       only: re_alloc          ! Re-allocation routine
   use mesh1D,      only: set_mesh          ! Sets a 1D mesh
   use m_recipes,   only: spline            ! Sets spline in a uniform mesh
   use m_recipes,   only: splint            ! Performs spline interpolation
@@ -246,10 +247,11 @@ PRIVATE  ! Nothing is declared public beyond this point
   real(dp),save:: kmax                     ! Max. k vector in Fourier transforms
   real(dp),save:: kfmesh(nkf)              ! Mesh points for Fermi wavevector
   real(dp),save:: kgmesh(nkg)              ! Mesh points for grad(n)/n
-  real(dp),save:: phik(0:nr,nkfg,nkfg)     ! Table of phi(k1,k2,k)
-  real(dp),save:: phir(0:nr,nkfg,nkfg)     ! Table of phi(k1,k2,r)
-  real(dp),save:: d2phidk2(0:nr,nkfg,nkfg) ! Table of d2_phi/dk2
-  real(dp),save:: d2phidr2(0:nr,nkfg,nkfg) ! Table of d2_phi/dr2
+  real(dp),pointer,save:: &
+                  phir(:,:,:)=>null(),    &! Table of phi(r)
+                  phik(:,:,:)=>null(),    &! Table of phi(k)
+                  d2phidr2(:,:,:)=>null(),&! Table of d^2(phi)/dr^2
+                  d2phidk2(:,:,:)=>null()  ! Table of d^2(phi)/dk^2
 
 CONTAINS
 
@@ -316,8 +318,8 @@ subroutine iofk( kf, kg, ikf, ikg )
   endif
 
   ! Find interpolation mesh intervals
-  ikf = 1 + log( 1 + (kf-kfmesh(1))/bkf ) / akf
-  ikg = 1 + log( 1 + (kg-kgmesh(1))/bkg ) / akg
+  ikf = 1 + int( log( 1 + (kf-kfmesh(1))/bkf ) / akf )
+  ikg = 1 + int( log( 1 + (kg-kgmesh(1))/bkg ) / akg )
   ikf = max( 1, ikf )
   ikg = max( 1, ikg )
   ikf = min( nkf-1, ikf )
@@ -564,6 +566,7 @@ subroutine set_phi_table()
 ! function values) for the kernel phi(k1,k2,k).
 
   implicit none
+  character(len=*),parameter:: myName = 'vv_vdwxc/set_phi_table '
   integer :: ik, ikf1, ikf2, ikg1, ikg2, ik1, ik2, ir
   real(dp):: dkdk0, dphidk0, dphidkmax, dphidr0, dphidrmax, &
              k, kf1, kf2, kg1, kg2, pi, r(0:nr)
@@ -576,6 +579,12 @@ subroutine set_phi_table()
   if (.not.kcut_set) call die('vv_vdw_set_phi_table ERROR: kcut not set')
   forall(ir=0:nr) r(ir) = ir*dr
   pi = acos(-1.0_dp)
+
+! Allocate arrays
+  call re_alloc( phir,     0,nr, 1,nkfg, 1,nkfg, myName//'phir' )
+  call re_alloc( phik,     0,nr, 1,nkfg, 1,nkfg, myName//'phik' )
+  call re_alloc( d2phidr2, 0,nr, 1,nkfg, 1,nkfg, myName//'d2phidr2' )
+  call re_alloc( d2phidk2, 0,nr, 1,nkfg, 1,nkfg, myName//'d2phidk2' )
 
 ! Loop on (k1,k2) mesh points
   do ikg2 = 1,nkg                    ! loop on kg2
@@ -800,7 +809,7 @@ subroutine vv_vdw_phi( k, phi, dphidk )
     dphidk(:,:) = 0
   else
     ! Expand interpolation inline since this is the hottest point in VdW
-    ik = k/dk
+    ik = int(k/dk)
     a = ((ik+1)*dk-k)/dk
     b = 1 - a
     a2 = (3*a**2 -1) * dk / 6
