@@ -117,21 +117,6 @@
       want_partial_charges = .false.
       call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
 
-
-! Find entropy ........................................................
-! Entropy is returned from the call to diagon. To add to the energy
-! the entropy computed from the input charge, here it is assigned to the one
-! of the former SCF step
-
-!** Can we trust the Entropy if iscf == 1 ??
-      Entropy = 0.0_dp
-      if ((isolve .eq. SOLVE_DIAGON) .or.(isolve .eq. SOLVE_PEXSI)) then
-        if (istp.gt.1 .or. iscf.gt.1) then
-          Entropy = Entrop
-        endif
-      endif
-
-
 !  It is wasteful to write over and over H and S, as there are
 !  no different files.
 ! Save Hamiltonian and overlap matrices ............................

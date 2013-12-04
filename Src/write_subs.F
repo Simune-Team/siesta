@@ -303,7 +303,7 @@
      .     'siesta: Emeta   =', Emeta/eV,
      .     'siesta: Emolmec =', Emm/eV,
      .     'siesta: Ekinion =', Ekinion/eV,
-     .     'siesta: Eharris =', (Eharrs1+Ekinion)/eV,
+     .     'siesta: Eharris =', (Eharrs+Ekinion)/eV,
      .     'siesta: Etot    =', (Etot+Ekinion)/eV,
      .     'siesta: FreeEng =', (FreeE+Ekinion)/eV
         if (cml_p) then
@@ -351,7 +351,7 @@
           call cmlAddProperty(xf=mainXML,value=Ekinion/eV,
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Ekinion', fmt='r6')
-          call cmlAddProperty(xf=mainXML, value=(Eharrs1+Ekinion)/eV,
+          call cmlAddProperty(xf=mainXML, value=(Eharrs+Ekinion)/eV,
      .         units='siestaUnits:eV', 
      .         dictref='siesta:EharrsK', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=(Etot+Ekinion)/eV, 

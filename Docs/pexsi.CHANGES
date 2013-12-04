@@ -1,4 +1,27 @@
 ------------------------------------------------------------
+December 4, 2013  A. Garcia       trunk-451--pexsi-55
+Sync to trunk-451
+
+* Use electronic entropy from current scf step. 
+* Do not update EHarris after scf step.
+* Added message detailing which DM is used in 'post_scf_work'
+ 
+(See CHANGES file)
+
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/local_DOS.F
+  Src/m_energies.F90
+  Src/post_scf_work.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_init.F
+  Src/write_md_record.F
+  Src/write_subs.F
+
+------------------------------------------------------------
 December 3, 2013  A. Garcia       trunk-450--pexsi-55
 Sync to trunk-450
 

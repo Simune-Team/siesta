@@ -13,7 +13,7 @@ CONTAINS
 !
   subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
        maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
-       ef, Entrop, temp, delta_Ef)
+       ef, Entropy, temp, delta_Ef)
 
     use fdf
     use parallel, only   : SIESTA_worker, BlockSize
@@ -39,7 +39,7 @@ CONTAINS
     real(dp), intent(in) :: qtot
     real(dp), intent(out), target:: DM(maxnh,nspin), EDM(maxnh,nspin)
     real(dp), intent(out)        :: ef  ! Fermi energy
-    real(dp), intent(out)        :: Entrop ! Entropy/k, dimensionless
+    real(dp), intent(out)        :: Entropy ! Entropy/k, dimensionless
     real(dp), intent(in)         :: temp   ! Electronic temperature
     real(dp), intent(in)         :: delta_Ef  ! Estimated shift in E_fermi
 
@@ -649,7 +649,7 @@ if (PEXSI_worker) then
    endif
 
    ef = mu
-   Entrop = - (free_bs_energy - ebandStructure) / temp
+   Entropy = - (free_bs_energy - ebandStructure) / temp
 
    call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","pexsi_solver")
    call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","pexsi_solver")
@@ -690,7 +690,7 @@ endif
 ! We assume that the root node is common to both communicators
 if (SIESTA_worker) then
    call broadcast(ef,comm=SIESTA_Comm)
-   call broadcast(Entrop,comm=SIESTA_Comm)
+   call broadcast(Entropy,comm=SIESTA_Comm)
    ! In future, m1%vals(1,2) could be pointing to DM and EDM,
    ! and the 'redistribute' routine check whether the vals arrays are
    ! associated, to use them instead of allocating them.

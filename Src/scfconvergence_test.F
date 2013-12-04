@@ -39,10 +39,6 @@
 
       FreeE  = Etot - Temp * Entropy
 
-      ! Recalculating the energy in the last iter (for
-      ! gridcellsampling) but preserving the value of Eharrs1
-      Eharrs1 = Eharrs
-
       converged = .false.
 
       Elast = Etot

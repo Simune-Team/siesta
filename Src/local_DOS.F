@@ -40,7 +40,7 @@
       real(dp)  :: dummy_str(3,3), dummy_strl(3,3)  ! for dhscf call
       real(dp)  :: dummy_dipol(3)
 
-      real(dp)  :: factor, g2max
+      real(dp)  :: factor, g2max, dummy_Entrop
       logical   :: genlogic   ! Generate local density of states?
 
       type(block_fdf)            :: bfdf
@@ -72,7 +72,7 @@
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qs, temp, e1, e2,
      .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     .                eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     .                eo, qo, Dscf, Escf, ef, efs, dummy_Entrop, no_u,
      .                occtol, dummy_iscf, neigwanted)
 
           !Find the LDOS in the real space mesh
