@@ -16,7 +16,7 @@
      &                    qtot, no_l
       use sys, only: die
       use Kpoint_grid
-      use m_energies,   only: Ebs, DEHarr, Ecorrec, Ef, Entrop
+      use m_energies,   only: Ebs, DEHarr, Ecorrec, Ef, Entropy
       use m_rmaxh
       use m_eo
       use m_gamma
@@ -80,7 +80,7 @@
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     &              eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
@@ -92,7 +92,7 @@
      &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
      &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
         Ecorrec = 0.0_dp
-        Entrop = 0.0_dp
+        Entropy = 0.0_dp
       elseif (isolve .eq. SOLVE_MINIM) then
         if (nspin==4) call die('ERROR: Non-collinear spin calculations
      &                          not yet implemented with the OMM!')
@@ -107,7 +107,7 @@
      &                 kweight, h, s, h_kin)
         end if
         Ecorrec = 0.0_dp
-        Entrop = 0.0_dp
+        Entropy = 0.0_dp
         PreviousCallDiagon=.false.
 #ifdef TRANSIESTA
 ! TSS Begin
@@ -116,7 +116,7 @@
      &              numh, listhptr, listh, numh, listhptr, listh,
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     &              eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
 
         Ecorrec = 0._dp

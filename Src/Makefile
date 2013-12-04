@@ -649,7 +649,7 @@ plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
 poison.o: alloc.o cellsubs.o chkgmx.o fft.o parallel.o precision.o sys.o
 post_scf_work.o: atomlist.o compute_dm.o final_H_f_stress.o kpoint_grid.o
 post_scf_work.o: m_dminim.o m_energies.o m_eo.o m_gamma.o m_spin.o m_steps.o
-post_scf_work.o: m_zminim.o mneighb.o siesta_geom.o siesta_options.o
+post_scf_work.o: m_zminim.o mneighb.o parallel.o siesta_geom.o siesta_options.o
 post_scf_work.o: sparse_matrices.o
 printmatrix.o: alloc.o
 projected_DOS.o: alloc.o atomlist.o kpoint_grid.o kpoint_pdos.o m_eo.o

@@ -161,17 +161,6 @@
 #endif
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
 
-!     Find entropy ........................................................
-!     Entropy is returned from the call to diagon. To add to the energy
-!     the entropy computed from the input charge, here it is assigned to the one
-!     of the former SCF step
-      Entropy = 0.0_dp
-      if (isolve .eq. SOLVE_DIAGON) then
-        if (istp.gt.1 .or. iscf.gt.1) then
-          Entropy = Entrop
-        endif
-      endif
-        
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
       if (savehs) then

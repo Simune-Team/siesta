@@ -6,6 +6,55 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2013-12-04  14:00:00 GMT                                     trunk-451
+Use electronic entropy from current SCF step. EHarris update fix.
+
+* The electronic entropy is computed (in 'compute_dm') once the
+  electronic structure is known. The -TS term in the electronic free
+  energy was previously computed using the information from the
+  previous SCF step (by having it added to Etot in
+  'setup_hamiltonian', using an intermediate variable). Now it is
+  added in 'scfconvergence_test' and it corresponds to the current SCF
+  step. (The last entropy computed in the scf cycle is also added to
+  the final Etot in 'post_scf_work'.) There is not much theoretical
+  justification for the previous choice, and the new one looks more
+  appropriate in general, and notably if E_KS(out) is computed (as
+  with H mixing).
+
+* The Harris energy update DEharr is computed in 'compute_dm', and
+  corresponds to Tr(H*(DM_out-DM_in)).
+  
+  In 'post_scf_work' there was a statement
+  
+        Eharrs = Etot + DEharr
+
+  Since this Etot is computed with DM_mixed (the DM predicted by
+  'mixer' for a hypothetical next SCF iteration) or with DM_out
+  (depending on whether a final mixing is done at the end of the
+  cycle) this value for Eharrs is suspect. This value was never
+  actually printed, since printing routines used 'Eharrs1', which is
+  the last value of Eharrs computed in the SCF cycle (set in
+  'scfconvergence_test'). To reproduce that behavior, the above
+  statement has been removed, and Eharris1 replaced by Eharrs
+  everywhere.
+
+* Added a message detailing which DM is used in 'post_scf_work',
+  and suggesting the use of "SCF.MixAfterConvergence F"
+
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/local_DOS.F
+  Src/m_energies.F90
+  Src/post_scf_work.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_init.F
+  Src/write_md_record.F
+  Src/write_subs.F
+
+-----------------------------------------------------------------------
 2013-11-22  15:30:00 GMT                                     trunk-450
 Fix SiestaXC/mesh3d to avoid overflow of distributions and/or tasks
 
