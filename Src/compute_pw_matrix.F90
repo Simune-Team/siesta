@@ -152,7 +152,7 @@ real(dp),intent(out) :: vector(3)
   do i = 1, 3
     vector(i) = 0.0_dp
     do j = 1, 3
-      vector(i) = frac(j)*reclatvec(j,i) + vector(i)
+      vector(i) = frac(j)*reclatvec(i,j) + vector(i)
     enddo
   enddo
 

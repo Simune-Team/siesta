@@ -4,8 +4,8 @@ subroutine Mmn( ispin )
 !     In this subroutine we compute the overlaps between Bloch orbitals
 !     at neighboring k points:
 !
-!     $M_{m n}^{(\vec{k}, \vec{k} + \vec{b})} = 
-!        \langle u_{m \vec{k}} \vbar u_{n \vec{k} + \vec{b} \rangle
+!     $M_{m n}^{(\vec{k}, \vec{b})} = 
+!        \langle u_{m \vec{k}} \vbar u_{n \vec{k} + \vec{b} \rangle$
 !
 !     Eq. (27) of the paper by N. Marzari et al. 
 !     Review of Modern Physics 84, 1419 (2012)
@@ -56,17 +56,26 @@ subroutine Mmn( ispin )
                                              !   the actual \vec{k} + \vec{b} 
                                              !   that we need.
   use m_siesta2wannier90, only: numbands     ! Number of bands for wannierizatio
+                                             !   before excluding bands         
+  use m_siesta2wannier90, only: numincbands  ! Number of bands for wannierizatio
+                                             !   after excluding bands         
+  use m_siesta2wannier90, only: numproj      ! Total number of projectors
   use m_siesta2wannier90, only: bvectorsfrac ! Vectors that connect each 
                                              !   mesh k-point to its 
                                              !   nearest neighbours.
   use m_siesta2wannier90, only: Mmnkb        ! Matrix of the overlaps of 
                                              !   periodic parts of Bloch waves.
                                              !   <u_{n,k}|u_{m,k+b}>
+  use m_siesta2wannier90, only: Amnmat       ! Matrix of the overlaps of 
+                                             !   trial projector funtions
+                                             !   with Eigenstates of the
+                                             !   Hamiltonian
   use m_siesta2wannier90, only: eo           ! Eigenvalues of the Hamiltonian 
                                              !   at the numkpoints introduced in
                                              !   kpointsfrac 
                                              !   First  index: band index
                                              !   Second index: k-point index
+  use m_siesta2wannier90, only: isexcluded   ! Masks excluded bands
   use m_spin,             only: nspin        ! Number of spin components
   use atomlist,           only: no_s         ! Number of orbitals in supercell
                                              ! NOTE: When running in parallel,
@@ -101,6 +110,13 @@ subroutine Mmn( ispin )
                                              ! NOTE: while running in parallel,
                                              ! each core knows about the 
                                              ! wave functions of no_l bands
+  use siesta_options, only: towriteamn       ! Write the Amn matrix for the
+                                             !   interface with Wannier
+  use siesta_options, only: towriteunk       ! Write the periodic part of
+                                             !   the wave function at the point
+                                             !   of a real space mesh
+  use siesta_options, only: towriteeig       ! Write the eigenvalues for the
+                                             !   interface with Wannier
 ! Notes about the use of psi:
 ! the array psi is allocated with a size equal to 2 * no_u * no_l
 ! 2 is for the complex nature of the coefficients (we have to store the
@@ -118,7 +134,15 @@ subroutine Mmn( ispin )
 ! The second index refers to the atomic orbital.
 ! The third index is the band index.
 ! 
-! However, the array is reallocated in savepsi, when we want to store it
+! Since only a few bands might be used for wannierization, 
+! and those bands might not be the numincbands lowest bands,
+! a first reordering of the coefficients is done in the subroutine reordpsi.
+! After calling it, the bands whose number ranges from 1 to numincbands(ispin)
+! correspond to those bands that will be included for wannierization.
+! The rest of the coefficients are set to zero.
+! 
+! Then, the array with the coefficients is reallocated in savepsi, 
+! when we want to store it
 ! to save the coefficients for a given k-point.
 ! There, a new variable is defined, psiatk (psiprev in ksv.f), 
 ! with a dimension of 
@@ -132,6 +156,7 @@ subroutine Mmn( ispin )
 ! For the unoccupied bands the coefficients are set to zero.
 
   use alloc,              only: re_alloc     ! Reallocation routines
+  use alloc,              only: de_alloc     ! Deallocation routines
   use parallel,           only: IOnode       ! Input/output node
   use m_digest_nnkp,      only: getdelkmatgenhandle
   use m_noccbands,        only: noccupied    ! Number of occupied bands for a 
@@ -146,7 +171,6 @@ subroutine Mmn( ispin )
 
 ! For debugging
   use parallel,           only: Node, Nodes
-  use sys,                only: die
 ! End debugging
 
   implicit none
@@ -174,7 +198,7 @@ subroutine Mmn( ispin )
                              !   it gives the position of the delkmatgen 
                              !   array where exp^(i \vec{b} \cdot \vec{r})
                              !   will be stored
-  integer  :: nbands         ! Number of occupied bands
+  integer  :: nincbands      ! Number of occupied bands
   real(dp) :: kvector(3)     ! k-point vector for which the Overlap matrix 
                              !   between the periodic part of the 
                              !   wave functions will be computed
@@ -195,6 +219,9 @@ subroutine Mmn( ispin )
   real(dp), dimension(:), pointer :: epsilon ! Eigenvalues of the Hamiltonian
   real(dp), dimension(:), pointer :: psiatk  ! Coefficients of the eigenvector
                                              !   at the k-point
+  real(dp), dimension(:), pointer :: psitmp  ! Temporal array used to 
+                                             !   store the coefficients of the
+                                             !   wave functions
 
 ! Start time counter
   call timer( 'Mmn', 1 )
@@ -213,9 +240,10 @@ subroutine Mmn( ispin )
 ! Allocate memory related with the eigenvalues of the Hamiltonian (epsilon)
 ! and with a local variable where the coefficients of the eigenvector at the
 ! k-point will be stored
-  nullify( epsilon, psiatk )
-  call re_alloc( epsilon,      1, no_u, 'epsilon',      'Mmn' )
-  call re_alloc( psiatk,       1, npsi, 'psiatk',       'Mmn' )
+  nullify( epsilon, psiatk, psitmp )
+  call re_alloc( epsilon, 1, no_u, 'epsilon', 'Mmn' )
+  call re_alloc( psiatk,  1, npsi, 'psiatk',  'Mmn' )
+  call re_alloc( psitmp,  1, npsi, 'psitmp',  'Mmn' )
 
 ! Allocate memory related with the overlap matrix between periodic parts
 ! of Bloch functions at neighbour k-points.
@@ -228,20 +256,44 @@ subroutine Mmn( ispin )
 ! will be computed and 
 ! $\vec{b}$ runs over all the neighbours of the k-point.
 ! These last two variables are read from the .nnkp file.
-  nbands = noccupied( ispin )
+  nincbands = numincbands( ispin )
   nullify( Mmnkb )
   call re_alloc( Mmnkb,          &
- &               1, nbands,      &
- &               1, nbands,      &
+ &               1, nincbands,   &
+ &               1, nincbands,   &
  &               1, numkpoints,  &
  &               1, nncount,     &
  &               'Mmnkb',        &
  &               'Mmn' )
 
+! Allocate memory related with the overlap matrix between the trial projection
+! function and the Hamiltonian eigenstate.
+! These matrices will depend on three indices (see paragraph after Eq. (16) 
+! of the review by
+! N. Marzari et al., Review of Modern Physics 84, 1419 (2012),
+! or Eq. (1.8) of the Wannier Users Guide, Version 1.2
+! $A_{m n}^{(\vec{k})} = 
+!    \langle \psi_{m \vec{k}} \vbar g_{n} \rangle =
+!    \sum_{\mu} \sum_{lcell} c_{\mu m}^{\ast} (\vec{k}) \times
+!    exp^{i \vec{k} \cdot \left( \tau_{\mu} + \vec{R}_{lcell} \right)} \times
+!    \langle \phi_{\mu} (\vec{r}-\tau_{\mu} - \vec{r}_{lcell} \vbar g_{n}\rangle
+! where $m$ runs between 1 and the number of bands considered for wannierization
+! $n$ runs between 1 and the number of projection functions, 
+! $\vec{k}$ runs over all the k-points in the first BZ where these matrices 
+! will be computed 
+
+  nullify( Amnmat )
+  call re_alloc( Amnmat,         &
+ &               1, nincbands,   &
+ &               1, numproj,     &
+ &               1, numkpoints,  &
+ &               'Amnmat',       &
+ &               'Mmn'           )
+
 ! Allocate memory related with the eigenvalues of the Hamiltonian
   nullify( eo )
   call re_alloc( eo,             &
- &               1, nbands,      &
+ &               1, nincbands,   &
  &               1, numkpoints,  &
  &               'eo',           &
  &               'Mmn' )
@@ -250,6 +302,7 @@ subroutine Mmn( ispin )
   do io = 1, npsi
     psi(io)     = 0.0_dp
     psiatk(io)  = 0.0_dp
+    psitmp(io)  = 0.0_dp
   enddo
 
   do ik = 1, numkpoints
@@ -272,8 +325,8 @@ subroutine Mmn( ispin )
 !   Diagonalize the Hamiltonian for the k-point.
 !   Here, we obtain $\psi_{n} (\vec{k})$, where n runs between 1 and no_l
     call diagpol( ispin, nspin, no_l, no_s, no_u,                             &
- &                maxnh, numh, listhptr, listh, H, S, xijo, indxuo, kVector,  &
- &                epsilon, psi, 2, Haux, Saux )
+ &                maxnh, numh, listhptr, listh, H, S, xijo, indxuo, kvector,  &
+ &                epsilon, psitmp, 2, Haux, Saux )
 
 !!   For debugging
 !!   NOTE OF CAUTION: beware when comparing the coefficients of the
@@ -285,30 +338,68 @@ subroutine Mmn( ispin )
 !!   and the coefficients of the linear combination might be different.
 !    if( Node .eq. 1 ) then
 !!    if( IOnode ) then
+!      do iband = 1, no_u
+!        write(6,'(i5,f12.5)') iband, epsilon(iband)/eV
+!      enddo
 !      iuo = 0
 !      do iband = 1, no_l
 !        write(6,'(a,i5,f12.5)')         &
-! &        'mmn: iband, epsilon = ', iband, epsilon(iband)
+! &        'mmn: iband, epsilon = ', iband, epsilon(iband)/eV
 !        do io = 1, no_u
 !          write(6,'(a,i5,2f12.5)')         &
-! &          'mmn: io, coeff = ', io, psi(iuo+1), psi(iuo+2)
+! &          'mmn: io, coeff = ', io, psitmp(iuo+1), psitmp(iuo+2)
 !          iuo = iuo + 2
 !        enddo 
 !      enddo 
 !    endif
 !!   End debugging
 
-!   Store the wavefunction at the k-point. 
-!   Take into account the note on how psi is stored before.
-!   Only the coefficients for the occupied bands are kept.
-!   The coefficients for the unoccupied bands are set to 0.
-    call savepsi( psiatk, psi, no_l, no_u, nbands )
-
 !   Store the eigenvalues, while skipping the excluded bands
-!    eo(1:numIncBands(spin),ik) = pack(epsilon/eV,.not.isExcluded)
-    eo(1:numbands(ispin),ik) = epsilon(1:numbands(ispin))/eV
+    eo(1:numincbands(ispin),ik) = pack(epsilon/eV,.not.isexcluded)
+
+!   Keep only the coefficients of the included bands for wannierization,
+!   while skipping the excluded eigenvectors.
+!   The coefficients of the included eigenvectors will be stored in psi.
+!   Bands whose band index ranges from 1 to numbands(ispin) correspond
+!   to the bands included for wannierization.
+    call reordpsi( psi, psitmp, no_l, no_u, numbands(ispin) )
 
 !!   For debugging
+!    if( IOnode ) then
+!      iuo = 0
+!      do iband = 1, no_l
+!        write(6,'(a,i5,f12.5)')         &
+! &        'mmn: iband, eo = ', iband, eo(iband,ik)
+!        do io = 1, no_u
+!          write(6,'(a,i5,2f12.5)')         &
+! &          'mmn: io, psi   = ', io, psi(iuo+1), psi(iuo+2)
+!          iuo = iuo + 2
+!        enddo 
+!      enddo 
+!    endif
+!!   End debugging
+
+!   Compute the overlaps between Bloch states onto trial localized orbitals
+    if( towriteamn ) call amn( ik, kvector, nincbands, npsi, psi )
+
+!   Compute the overlaps between Bloch states onto trial localized orbitals
+    if( towriteunk ) call writeunk( ispin, ik, kvector, npsi, psi )
+
+!   Store the wavefunction at the k-point. 
+!   Take into account the previous comments about how psi is stored.
+!   Only the coefficients for the bands considered for wannierization are kept.
+!   The coefficients for the non-considered bands are set to 0.
+    call savepsi( psiatk, psi, no_l, no_u, nincbands )
+
+!!   For debugging
+!    if( IOnode ) then
+!      do iband = 1, numincbands(ispin)
+!        write(6,*) ik, iband, eo(iband,ik)
+!      enddo
+!      do iband = 1, no_u
+!        write(6,*) ik, iband, epsilon(iband)/eV
+!      enddo
+!    endif
 !    if( Node .eq. 1 ) then
 !!    if( IOnode ) then
 !      iuo = 0
@@ -327,6 +418,7 @@ subroutine Mmn( ispin )
 !     Initialise psi
       do io = 1, npsi
         psi(io)     = 0.0_dp
+        psitmp(io)  = 0.0_dp
       enddo 
 
 !     Get the coordinates of the neighbor k-point.
@@ -344,7 +436,15 @@ subroutine Mmn( ispin )
 !     where m runs between 1 and no_l
       call diagpol( ispin, nspin, no_l, no_s, no_u,                   &
  &                  maxnh, numh, listhptr, listh, H, S, xijo, indxuo, &
- &                  kvectorneig, epsilon, psi, 2, Haux, Saux )
+ &                  kvectorneig, epsilon, psitmp, 2, Haux, Saux )
+
+!     Keep only the coefficients of the included bands for wannierization,
+!     while skipping the excluded eigenvectors.
+!     The coefficients of the included eigenvectors will be stored in psi.
+!     Bands whose band index ranges from 1 to numincbands(ispin) correspond
+!     to the bands included for wannierization, while the rest of the
+!     coefficients are set to zero.
+      call reordpsi( psi, psitmp, no_l, no_u, numbands(ispin) )
 
 !     The neighbour k-point, as specified in the nnlist, 
 !     is always in the first Brillouin zone.
@@ -363,7 +463,6 @@ subroutine Mmn( ispin )
       if ( fold .gt. 0 ) then
         foldfrac(:) = nnfolding(:,ik,inn) * 1.0_dp
         call getkvector( foldfrac, gfold )  
-!        do iband = 1, numincbands(ispin)
 !!       For debugging
 !        if ( IOnode )
 !          write(6,'(a,i5,3i5,3f12.5)')         &
@@ -435,7 +534,7 @@ subroutine Mmn( ispin )
 !     D. Sanchez-Portal et al., Fundamental Physics for Ferroelectrics 
 !     (AIP Conf. Proc. Vol 535) ed R. Cohen (Melville, AIP) pp 111-120 (2000).
       call overkkneig( kvector, bvector, no_l, no_u, psiatk, psi,   &
- &                     maxnh, delkmat, nbands, Mmnkb(:,:,ik,inn) )
+ &                     maxnh, delkmat, nincbands, Mmnkb(:,:,ik,inn) )
 
     enddo ! End loop on neighbour k-points (inn)
 
@@ -444,11 +543,23 @@ subroutine Mmn( ispin )
 
 ! Write the Mmn overlap matrices in a file, in the format required
 ! by Wannier90
-  if(IOnode) call writemmn( ispin )
+  if( IOnode ) call writemmn( ispin )
+
+! Write the Amn overlap matrices in a file, in the format required
+! by Wannier90
+  if( IOnode .and. towriteamn ) call writeamn( ispin )
 
 ! Write the eigenvalues in a file, in the format required
 ! by Wannier90
-  if(IOnode) call writeeig( ispin )
+  if( IOnode .and. towriteeig ) call writeeig( ispin )
+
+! Deallocate some of the arrays
+  call de_alloc( Haux,    'Haux',    'mmn' )
+  call de_alloc( Saux,    'Saux',    'mmn' )
+  call de_alloc( psi,     'psi',     'mmn' )
+  call de_alloc( epsilon, 'epsilon', 'mmn' )
+  call de_alloc( psiatk,  'psiatk',  'mmn' )
+  call de_alloc( psitmp,  'psitmp',  'mmn' )
 
 ! End time counter
   call timer( 'Mmn', 2 )

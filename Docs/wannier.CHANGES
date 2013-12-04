@@ -3,6 +3,33 @@ ____________________________________________________________
 ------------------------------------------------------------
 
 ------------------------------------------------------------
+2013-12-04   Javier Junquera trunk-438--radfunc-5--wannier-4
+
+The parallelization of the interface with Wannier90 has finished.
+
+This version runs the test ranging from number 1 to number 12 distributed
+with the Wannier90 suite, and the results are perfectly compatible with
+those obtained using QuantumEspresso
+
+added:
+  Src/reordpsi.F
+modified:
+  Src/Makefile
+  Src/alloc.F90
+  Src/amn.F90
+  Src/compute_pw_matrix.F90
+  Src/m_digest_nnkp.F90
+  Src/m_noccbands.f
+  Src/m_overkkneig.F90
+  Src/m_trialorbitalclass.f90
+  Src/mmn.F90
+  Src/mneighb.f
+  Src/siesta2wannier90.F90
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+  Src/write_inp_wannier.F90
+
+------------------------------------------------------------
 2013-08-02   Alberto Garcia  trunk-438--radfunc-5--wannier-3
 Move wannier analysis to 'siesta_analysis'. Reinstate call to siesta_end
 

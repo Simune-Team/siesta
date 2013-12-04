@@ -60,7 +60,7 @@
      .      'noccbands: Non-integer number of electrons',
      .      'noccbands: This is hardly an insulator',
      .      'noccbands: No polarization calculation performed'
-           call die
+!           call die
         endif
 
         ntote = nint(ntote_real)
@@ -69,17 +69,16 @@
           if (IOnode)
      .       write(6,'(/,a,/,a,/a)')
      .      'noccbands: Odd total number of electrons',
-     .      'noccbands: This is hardly an insulator',
-     .      'noccbands: No polarization calculation performed'
-          call die
-        else
-          noccupied(1) = ntote / 2
-          if (IOnode) then
-            write(6,'(/a,i5)')
-     .        'noccbands: Total number of electrons ',ntote
-             write(6,'(a,i5)')
-     .        'noccbands: Number of occupied bands ', noccupied(1)
-          endif
+     .      'noccbands: This is hardly an insulator'
+!     .      'noccbands: No polarization calculation performed'
+!          call die
+        endif
+        noccupied(1) = ntote / 2
+        if (IOnode) then
+          write(6,'(/a,i5)')
+     .      'noccbands: Total number of electrons ',ntote
+           write(6,'(a,i5)')
+     .      'noccbands: Number of occupied bands ', noccupied(1)
         endif
 
 !     If the calculation is spin polarized ---
@@ -90,9 +89,9 @@
           if (IOnode) 
      .     write(6,'(/,a,/,a,/a)')
      .  'noccbands: Spin polarization should have an integer value',
-     .  'noccbands: This is not an insulator for both spin components',
-     .  'noccbands: No polarization calculation performed'
-          call die
+     .  'noccbands: This is not an insulator for both spin components'
+!     .  'noccbands: No polarization calculation performed'
+!          call die
         endif
 
         noccupied(1) = nint( qspin(1) )

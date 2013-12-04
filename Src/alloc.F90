@@ -232,7 +232,7 @@ PRIVATE      ! Nothing is declared public beyond this point
       dealloc_E1,                                     &
       dealloc_r1, dealloc_r2, dealloc_r3, dealloc_r4, &
       dealloc_d1, dealloc_d2, dealloc_d3, dealloc_d4, &
-      dealloc_z1, dealloc_z2,                         &
+      dealloc_z1, dealloc_z2, dealloc_z3, dealloc_z4, &
       dealloc_l1, dealloc_l2, dealloc_l3,             &
       dealloc_s1
   end interface

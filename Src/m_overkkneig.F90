@@ -3,7 +3,9 @@
 
    
   use precision,            only: dp             ! Real double precision type
-  use parallel,             only: Node, Nodes, IOnode
+  use parallel,             only: Nodes          ! Total number of Nodes
+  use parallel,             only: Node           ! Local Node
+  use parallel,             only: IONode         ! Input/output node
   use atomlist,             only: iaorb          ! Pointer to atom to which
                                                  !   orbital belongs
   use atomlist,             only: indxuo         ! Index of equivalent orbital
@@ -20,14 +22,15 @@
   use siesta_geom,          only: xa             ! Atomic positions
   use alloc,                only: re_alloc       ! Allocatation routines
   use alloc,                only: de_alloc       ! Deallocatation routines
+
+#ifdef MPI
   use parallelsubs,         only: LocalToGlobalOrb ! Converts an orbital index
                                                  !   in the local frame 
                                                  !   to the global frame
   use parallelsubs,         only: GetNodeOrbs    ! Calculates the number of
                                                  !   orbitals stored on the 
                                                  !   local Node.
-#ifdef MPI
-      use mpi_siesta
+  use mpi_siesta
 #endif
 
   implicit none
@@ -119,22 +122,23 @@
   complex(dp), dimension(:,:), pointer :: aux
   complex(dp), dimension(:,:), pointer :: aux2
 
+  integer     :: imu_global                      ! Global index of the atom orbi
 #ifdef MPI
   integer     :: MPIerror
   integer     :: inode                           ! Counter for the loop on nodes
   integer     :: nbands_max_loc                  ! Maximum number of bands that 
                                                  !   will be stored on any node
-  integer     :: norb_max_loc                    ! Maximum number of atomic 
-                                                 !   orbitals that will be 
-                                                 !   stored on any node
   integer     :: nbands_loc                      ! Number of bands on the local
                                                  !   node
   integer     :: norb_loc                        ! Number of atomic orbitals
                                                  !   on the local node
-  integer     :: nocc_loc                        ! Number of occupied states
-                                                 !   on the local node
   integer     :: moccband_global                 ! Global index of the 
                                                  !   occupied band
+  integer     :: nocc_loc                        ! Number of occupied states
+                                                 !   on the local node
+  integer     :: norb_max_loc                    ! Maximum number of atomic 
+                                                 !   orbitals that will be 
+                                                 !   stored on any node
   complex(dp), dimension(:,:), pointer :: psitmp ! Temporal array used to 
                                                  !   broadcast the coefficients
                                                  !   of the wave function at the
@@ -142,7 +146,6 @@
                                                  !   rest of the nodes
   complex(dp), dimension(:,:), pointer :: auxtmp ! Temporal array used to 
   complex(dp), dimension(:,:), pointer :: aux2loc! 
-  integer     :: imu_global                      ! Global index of the atom orbi
   integer     :: inu_global                      ! Global index of the atom orbi
   integer     :: mband_global                    ! Global index of the band     
 #endif
@@ -193,7 +196,11 @@
 ! Loop on all the atomic orbitals known by the local node
   do imu = 1, nuo
 !   Identify the global index of the orbital
+#ifdef MPI
     call LocalToGlobalOrb( imu, Node, Nodes, imu_global)
+#else
+    imu_global = imu
+#endif
 !   For each atomic orbital, find the atom to which that orbital belongs...
     ia = iaorb( imu_global )
 !   ... the position of the atom and the dot product between the vector 
@@ -259,6 +266,7 @@
 
   aux2(:,:)  = cmplx(0.0_dp,0.0_dp,kind=dp)
 
+#ifdef MPI
 ! Compute the number of occupied bands stored on local node
   call GetNodeOrbs( nbandsocc, Node, Nodes, nocc_loc )
 
@@ -337,7 +345,6 @@
     enddo       ! End loop on local occupied bands (mband)
   enddo         ! End loop on nodes (inode) 
 
-#ifdef MPI
 ! Allocate workspace array for global reduction
   nullify( aux2loc )
   call re_alloc( aux2loc, 1, nbandsocc, 1, nuotot,      &
@@ -347,6 +354,15 @@
   call MPI_AllReduce( aux2(1,1), aux2loc(1,1), nbandsocc*nuotot, &
  &                    MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
   aux2(:,:) = aux2loc(:,:)
+#else
+  do mband = 1, nbandsocc
+    do inu = 1, nuotot
+      do imu = 1, nuotot
+        aux2(mband,inu) = aux2(mband,inu) +    &
+ &                        psinei(imu,mband) * aux(inu,imu)
+      enddo
+    enddo
+  enddo
 #endif
 
 !! For debugging
@@ -373,9 +389,14 @@
   do nband = 1, nbandsocc 
     do mband = 1, nbandsocc
       do inu = 1, nuo
+#ifdef MPI
         call LocalToGlobalOrb( inu, Node, Nodes, inu_global )
         Mkb(nband,mband) = Mkb(nband,mband) +    &
           conjg(psiatk(inu,nband)) * aux2(mband,inu_global)
+#else
+        Mkb(nband,mband) = Mkb(nband,mband) +    &
+          conjg(psiatk(inu,nband)) * aux2(mband,inu)
+#endif
       enddo
     enddo
   enddo
@@ -413,109 +434,11 @@
 !  endif
 !! End debugging
 
-
-
-
-!! Allocate local memory
-!  nullify( aux2 )
-!  call re_alloc( aux2, 1, nbandsocc, 1, nbandsocc,      &
-! &               name='aux2', routine='overkkneig' )
-!
-!  aux2(:,:)  = cmplx(0.0_dp,0.0_dp,kind=dp)
-!
-!#ifdef MPI
-!
-!! Compute the number of bands stored on Node 0
-!! We assume that this is the maximum number of bands that will be stored
-!! on any node.
-!  call GetNodeOrbs( nuotot, 0, Nodes, nbands_max_loc)
-!
-!!! For debugging
-!!  write(6,'(a,4i5)')'overkkneig: Node, nuotot, Nodes, nbands_max_loc = ', &
-!! &               Node, nuotot, Nodes, nbands_max_loc
-!!! End debugging
-!
-!! Allocate the temporal variable that will be used to broadcast
-!! the coefficients of the wave functiont at the neighbour k-point 
-!! to all the other nodes
-!! psitmp follows the same structure as psinei:
-!! For a given node, it knows all the coefficients for all the atomic orbitals
-!! in the unit cell for no_l bands
-!  nullify( psitmp )
-!  call re_alloc( psitmp, 1, nuotot, 1, nbands_max_loc, &
-! &               name='psitmp', routine='overkkneig' )
-!
-!! Loop on nodes
-!  do inode = 0, Nodes-1 
-!
-!!   Compute the number of occupied bands stored on Node inode 
-!    call GetNodeOrbs( nbandsocc, inode, Nodes, nocc_loc )
-!!   Compute the number of bands (occupied or not) stored on Node inode
-!    call GetNodeOrbs( nuotot, inode, Nodes, nbands_loc )
-!
-!!! For debugging
-!!  write(6,'(a,6i5)') &
-!! &  'overkkneig: Node, inode, nuotot, Nodes, nbands_loc, nocc_loc = ', &
-!! &               Node, inode, nuotot, Nodes, nbands_loc, nocc_loc
-!!! End debugging
-!
-!!   Copy the coefficients of the wave function at the neighbour k-point on the
-!!   temporal variable. It follows the same structure as usual:
-!!   first index: all the atomic orbitals in the unit cell
-!!   second index: all the bands stored on the local node        
-!    if( Node .eq. inode ) then
-!      do mband = 1, nbands_loc
-!        do imu = 1, nuotot
-!          psitmp(imu,mband) = psinei(imu,mband)
-!        enddo
-!      enddo
-!    endif
-!
-!!   Broadcast the coefficients from node inode to all the other nodes
-!    call MPI_Bcast( psitmp(1,1), nuotot*nbands_loc, &
-! &                  MPI_double_complex, inode, MPI_Comm_World, MPIerror ) 
-!
-!!   At this point, the node number Node knows the coefficients of the wave
-!!   function at the neighbour k-point stored at node=inode
-!
-!    do nband = 1, nbandsocc
-!      do mband = 1, nocc_loc
-!        call LocalToGlobalOrb( mband, inode, Nodes, mband_global )
-!
-!        do inu = 1, nuo
-!          do imu = 1, nuotot
-!            pipj = conjg( psiatk(inu,nband) ) * psitmp(imu,mband)
-!            aux2(nband,mband_global) = aux2(nband,mband_global) + &
-! &            pipj * aux(inu,imu)
-!          enddo ! Loop on imu
-!        enddo ! Loop on inu
-!
-!      enddo ! Loop on nband
-!    enddo ! Loop on mband
-!
-!  enddo ! End loop on inodes
-!
-!  call de_alloc( psitmp, name='psitmp' )
-!
-!#else
-!
-!#endif 
-!
-!! Resize aux for reuse  
-!  call re_alloc( aux, 1, nbandsocc, 1, nbandsocc,      &
-! &               name='aux', routine='overkkneig' )
-!
-!#ifdef MPI
-!! Global reduction of the aux matrix matrix
-!  call MPI_AllReduce( aux2(1,1), aux(1,1), nbandsocc*nbandsocc, &
-! &                    MPI_double_complex, MPI_sum, MPI_Comm_World, MPIerror )
-!  aux2(:,:) = aux(:,:)
-!#endif
-
-
   call de_alloc( aux,    name='aux'    )
   call de_alloc( aux2,   name='aux2'   )
+#ifdef MPI
   call de_alloc( auxtmp, name='auxtmp' )
+#endif
 
 ! End time counter
   call timer( 'overkkneig', 2 )

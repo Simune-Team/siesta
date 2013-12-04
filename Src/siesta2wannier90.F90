@@ -1,9 +1,19 @@
 module m_siesta2wannier90
 
-  use precision, only : dp
-  use parallel,  only : IOnode, Node, Nodes
-  use sys,       only : die
-  use files,     only: label_length  ! Number of characters in slabel
+  use precision, only : dp                   ! Real double precision type
+  use parallel,  only : IOnode               ! Input/output node
+  use parallel,  only : Node                 ! This process node
+  use parallel,  only : Nodes                ! Total number of processor nodes
+  use sys,       only : die                  ! Termination routine
+  use files,     only : label_length         ! Number of characters in slabel
+  use siesta_options, only: towritemmn       ! Write the Mmn matrix for the
+                                             !   interface with Wannier
+  use siesta_options, only: towriteamn       ! Write the Amn matrix for the
+                                             !   interface with Wannier
+  use siesta_options, only: towriteeig       ! Write the eigenvalues for the
+                                             !   interface with Wannier
+  use siesta_options, only: towriteunk       ! Write the unks for the
+                                             !   interface with Wannier
   use TrialOrbitalClass
 
 !
@@ -14,14 +24,21 @@ module m_siesta2wannier90
                              !   Cartesian coordinates. 
                              !   Readed in Angstroms and transformed to Bohr
                              !   internally
-                             !   First  index: vector
-                             !   Second index: component
+                             !   First  index: component
+                             !   Second index: vector   
+                             !   This is consistent with the unit cell read
+                             !   in Siesta, but it has changed with respect
+                             !   the first version implemented by R. Korytar
   real(dp) :: reclatvec(3,3) ! Reciprocal lattice vectors.
                              !   Cartesian coordinates. 
                              !   Readed in Angstroms^-1 and transformed 
                              !   to Bohr^-1 internally
-                             !   First  index: vector
-                             !   Second index: component
+                             !   First  index: component 
+                             !   Second index: vector
+                             !   This is consistent with the reciprocal 
+                             !   lattice read in Siesta
+                             !   in Siesta, but it has changed with respect
+                             !   the first version implemented by R. Korytar
 !
 ! Variables related with the k-point list for which the overlap
 ! matrices Mmn between a k-point and its neighbor will be computed
@@ -66,17 +83,23 @@ module m_siesta2wannier90
                              !   actual \vec{k} + \vec{b} that we need.
                              !   In reciprocal lattice units.
 !
-! Variables related with the excluded bands
-!
-  integer          :: numexcluded 
-                             ! Number of states to exclude from the calculation
-                             !   of the overlap and projection matrices.
-  integer, pointer :: excludedbands(:)
-                             ! States to be excluded
-!
 ! Variables related with the number of bands considered for wannierization
 !
   integer          :: numbands(2) ! Number of bands for wannierization
+                                  !    before excluding bands
+  integer          :: numexcluded 
+                             ! Number of bands to exclude from the calculation
+                             !   of the overlap and projection matrices.
+                             !   This variable is read from the .nnkp file
+
+  integer          :: numincbands(2) 
+                             ! Number of included bands in the calc. 
+                             !   of the overlap and projection matrices.
+  integer, pointer :: excludedbands(:)
+                             ! Bands to be excluded
+                             !   This variable is read from the .nnkp file
+  logical, pointer :: isexcluded(:) ! Masks excluded bands
+  integer, pointer :: isincluded(:) ! Masks included bands
 
 !
 ! Output matrices
@@ -121,6 +144,9 @@ subroutine siesta2wannier90
   use m_digest_nnkp, only: chosing_b_vectors ! Subroutine that computes the b
                                          ! vectors that connect each mesh 
                                          ! k-point to its nearest neighbours.
+  use m_digest_nnkp, only: set_excluded_bands   ! Subroutine that choses the 
+                                                !   bands that are excluded from
+                                                !   the wannierization procedure
   use m_digest_nnkp, only: number_bands_wannier ! Subroutine that computes the
                                          ! number of bands for wannierization
 
@@ -156,25 +182,31 @@ subroutine siesta2wannier90
     endif
     call read_nnkp( seedname, latvec, reclatvec, numkpoints,          &
                     kpointsfrac, nncount, nnlist, nnfolding,          &
-                    numproj, projections, numexcluded, excludedbands  )
+                    numproj, projections, numexcluded, excludedbands, &
+                    towriteamn )
 
 !   Compute the vectors that connect each mesh k-point to its nearest neighbours
-    call chosing_b_vectors( kpointsfrac, nncount, nnlist, nnfolding, &
+    call chosing_b_vectors( kpointsfrac, nncount, nnlist, nnfolding,  &
                             bvectorsfrac )
 
 !   Compute the number of bands for wannierization
     call number_bands_wannier( numbandswan )
     numbands(ispin) = numbandswan(ispin)
 
+!   Chose which bands are excluded from the wannierization procedure
+    call set_excluded_bands(  ispin, numexcluded, excludedbands, numbands, &
+ &                            isexcluded, isincluded, numincbands )
+
 !   Compute the matrix elements of the plane wave,
 !   for all the wave vectors that connect a given k-point to its nearest
 !   neighbours
     call compute_pw_matrix( nncount, bvectorsfrac )
 
-    call mmn( ispin )
+!   Compute the overlap between periodic parts of the wave functions
+    if( towritemmn .or. towriteamn .or. towriteeig ) call mmn( ispin )
 
-!   Compute the projections on the trial functions
-    call amn( ispin )
+!!   Compute the projections on the trial functions
+!    call amn( ispin )
 
 !!   For debugging
 !    write(6,*)' Node, Nodes, numproj_l = ', Node, Nodes, numproj_l

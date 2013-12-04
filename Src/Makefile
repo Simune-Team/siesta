@@ -96,7 +96,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	projected_DOS.o propor.o m_partial_charges.o \
 	ran3.o reclat.o redcel.o \
-	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
+	reinit.o reord.o reordpsi.o rhoofd.o rhoofdsp.o rhooda.o \
 	savepsi.o shaper.o timer_tree.o timer.o \
 	vmb.o vmat.o vmatsp.o volcel.o \
 	cdiag.o rdiag.o \
@@ -521,7 +521,7 @@ m_cell.o: precision.o siesta_geom.o units.o
 m_check_supercell.o: minvec.o parallel.o precision.o
 m_diagon.o: precision.o
 m_digest_nnkp.o: alloc.o atomlist.o files.o m_mpi_utils.o m_noccbands.o
-m_digest_nnkp.o: m_spin.o m_trialorbitalclass.o parallel.o precision.o
+m_digest_nnkp.o: m_spin.o m_trialorbitalclass.o parallel.o precision.o sys.o
 m_digest_nnkp.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
 m_dipol.o: precision.o
 m_dminim.o: densematrix.o files.o m_timer.o parallel.o parallelsubs.o
@@ -622,8 +622,8 @@ mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
 mixer.o: m_ts_global_vars.o m_ts_iodm.o m_ts_options.o parallel.o siesta_geom.o
 mixer.o: siesta_options.o sparse_matrices.o
 mmn.o: alloc.o atomlist.o densematrix.o m_digest_nnkp.o m_noccbands.o
-mmn.o: m_planewavematrixvar.o m_spin.o parallel.o precision.o
-mmn.o: siesta2wannier90.o siesta_geom.o sparse_matrices.o sys.o units.o
+mmn.o: m_planewavematrixvar.o m_spin.o parallel.o precision.o siesta_options.o
+mmn.o: siesta2wannier90.o siesta_geom.o sparse_matrices.o sys.o units.o 
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
@@ -694,6 +694,7 @@ reinit.o: files.o parallel.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
 reord.o: alloc.o precision.o
+reordpsi.o: alloc.o parallel.o parallelsubs.o precision.o siesta2wannier90.o
 rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
@@ -788,7 +789,8 @@ vmat.o: meshphi.o parallel.o parallelsubs.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 vmatsp.o: meshphi.o precision.o
 vmb.o: fixed.o parallel.o precision.o sys.o
-write_inp_wannier.o: mneighb.o siesta2wannier90.o
+write_inp_wannier.o: mneighb.o siesta2wannier90.o precision.o alloc.o parallel.o
+write_inp_wannier.o: siesta_geom.o atomlist.o atmfuncs.o m_ntm.o parallelsubs.o
 write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_steps.o m_stress.o
 write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o
 write_orb_indx.o: atmfuncs.o cellsubs.o files.o precision.o

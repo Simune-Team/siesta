@@ -49,6 +49,7 @@ MODULE siesta_options
   logical :: writb         ! Write band eigenvalues?
   logical :: writec        ! Write atomic coordinates at every geometry step?
   logical :: write_coop    ! Write information for COOP/COHP analysis ?
+  logical :: tosiesta2wannier ! Will we call the interface with Wannier90
   logical :: towritemmn    ! Write the Mmn matrix for the interface with Wannier
   logical :: towriteamn    ! Write the Amn matrix for the interface with Wannier
   logical :: towriteeig    ! Write the eigenvalues or the interface with Wannier
@@ -111,9 +112,6 @@ MODULE siesta_options
   integer :: level          ! Option for allocation report level of detail
   integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
   integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
-  integer :: unk_nx         ! 
-  integer :: unk_ny         ! 
-  integer :: unk_nz         ! 
   logical :: hasnobup       ! Is the number of bands with spin up for 
                             !   wannierization defined?
   logical :: hasnobdown     ! Is the number of bands with spin down for 
@@ -1580,9 +1578,11 @@ MODULE siesta_options
     towriteamn = fdf_get( 'Siesta2Wannier90.WriteAmn',   .false. )
     towriteeig = fdf_get( 'Siesta2Wannier90.WriteEig',   .false. )
 
-    unk_nx     = fdf_get( 'Siesta2Wannier90.UnkGrid1',        10 )
-    unk_ny     = fdf_get( 'Siesta2Wannier90.UnkGrid2',        10 )
-    unk_nz     = fdf_get( 'Siesta2Wannier90.UnkGrid3',        10 )
+    if( towritemmn .or. towriteunk .or. towriteamn .or. towriteeig ) then
+      tosiesta2wannier = .true.
+    else
+      tosiesta2wannier = .false.
+    endif
 
     hasnobup   = fdf_defined( 'Siesta2Wannier90.NumberOfBandsUp'   )
     hasnobdown = fdf_defined( 'Siesta2Wannier90.NumberOfBandsDown' )

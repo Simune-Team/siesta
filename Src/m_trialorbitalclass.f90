@@ -443,7 +443,6 @@ real(dp) function gettrialwavefunction( orbital, atpoint )
     end select
   endif ! this ends the first if regarding rr = 0 or not
 
-  !print *,x,getTrialWaveFunction,orbital%zovera**(3.0_dp/2.0_dp)
   !print *,3.0_dp/2_dp,1.5_dp,3.0_dp/2.0_dp,3.0_dp/2.0_dp
   gettrialwavefunction = gettrialwavefunction * angular
 end function gettrialwavefunction
