@@ -91,6 +91,10 @@
           xcfuntype    = 'VDW'
           xcfunparam   = 'Klimes-et-al--KBM'
 
+        case('vv') 
+          xcfuntype    = 'VDW'
+          xcfunparam   = 'Vydrov-VanVoorhis--VV'
+
         case('wc') 
           xcfuntype    = 'GGA'
           xcfunparam   = 'Wu-Cohen'

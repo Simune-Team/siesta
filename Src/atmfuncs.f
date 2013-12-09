@@ -566,10 +566,11 @@ C  2) Returns exactly zero when |R| > Rcore
 
       func => species(is)%core
       rmod = sqrt(sum(r*r))
+      rmod=rmod+tiny20                   ! Moved here. JMS, Dec.2012
       if (rmod .gt. func%cutoff) return
 
       call rad_get(func,rmod,ch,dchdr)
-      rmod=rmod+tiny20
+!      rmod=rmod+tiny20                   ! Removed. JMS, Dec.2012
       grch(1:3) = dchdr * r(1:3)/rmod
  
       end subroutine chcore_sub

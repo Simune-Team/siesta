@@ -23,16 +23,21 @@ C
       use siesta_options, only: isolve, SOLVE_ORDERN
       use siesta_options, only: rcoor
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
-      use parallelsubs, only : set_processorY, set_BlockSizeDefault
-      use parallelsubs, only : set_processorYdefault
       use parallelsubs, only : WhichNodeOrb, GetNodeOrbs
       use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
       use spatial
       use sys
       use alloc,        only : re_alloc
       use domain_decom, only: use_dd, use_dd_perm, preSetOrbitLimits
-
+      use parallelsubs, only : set_processorY, set_processorYdefault
+#ifdef MPI
+      use parallelsubs, only : set_BlockSizeDefault
+#endif
       implicit none
+
+#ifdef MPI
+      integer, external :: numroc
+#endif
 C
 C  Passed variables
 C
@@ -49,6 +54,7 @@ C
       integer       :: blocksizedefault
       integer       :: procYdefault
       integer       :: procYval
+      integer       :: n1, nn
 #endif
       integer       :: ii, j, LOrb, GOrb, iu
       integer       :: maxorb
@@ -181,6 +187,7 @@ C Set BlockSize
 #ifdef MPI
         call set_blocksizedefault(Nodes,no_u,blocksizedefault)
         BlockSize = fdf_integer('blocksize',blocksizedefault)
+
 #else
         BlockSize = 8
 #endif
@@ -196,6 +203,10 @@ C Output indication of parallel parameters
            write(6,'(/,a,2i4,/)')
      .        '* ProcessorY, Blocksize: ', procYval, Blocksize
         endif
+        n1 = numroc(no_u,Blocksize,0,0,Nodes)
+        nn = numroc(no_u,Blocksize,Nodes-1,0,Nodes)
+        write(6,"(/,a,2i6,/)")
+     $       "* Orbital distribution balance (max,min):", n1, nn
       endif
 #endif
 
@@ -217,7 +228,7 @@ C If spatial perform allocation of atoms to processors
      .        '* ProcessorY ', processorY
         endif
 
-      elseif (.not. use_dd) then
+      elseif ((isolve.eq.SOLVE_ORDERN) .AND. (.not. use_dd)) then
 C
 C  Build dummy lists linking orbitals with parallel structure
 C

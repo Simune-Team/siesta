@@ -37,7 +37,9 @@
 #if defined(F2003)
       flush(unit)
 #elif defined(GFORTRAN)
-  call flush(unit)      
+      call flush(unit)
+#elif defined(__GFORTRAN__)
+      call flush(unit)
 #elif defined(XLF)
       if (unit.eq.6 .or. unit.eq.0) then
         call flush_(unit)
@@ -77,9 +79,11 @@
         subroutine abort(), bind(c)
         end subroutine abort
       end interface
-  call abort()
+      call abort()
 #elif defined(GFORTRAN)
       call abort()
+#elif defined(__GFORTRAN__)
+  call abort()
 #elif defined(XLF)
       call abort_()
 #elif defined(FC_HAVE_ABORT)

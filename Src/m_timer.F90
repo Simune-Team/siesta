@@ -241,8 +241,8 @@ PRIVATE ! Nothing is declared public beyond this point
 ! Module variables and arrays
   real(dp),save :: minRepTime = 0.0_dp  ! Min reported CPU time fraction
   integer, save :: nProgs=0             ! Number of timed programs
-  type(times_t), target, save:: progData(maxProgs) ! Array to hold data of timed progs
-  character(len=32),save:: reportFile = 'timer_report'  ! File name for report
+  type(times_t), target, save:: progData(maxProgs) ! Holds data of timed progs
+  character(len=150),save:: reportFile = 'timer_report'  ! File name for report
   integer, save :: reportUnit=0         ! IO unit for report file
   real(dp),save :: time0=0.0_dp         ! CPU time at timer initialization
   real(dp),save :: wallTime0=0.0_dp     ! Wall-time at timer initialization

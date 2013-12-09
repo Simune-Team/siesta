@@ -26,6 +26,7 @@
       use writewave,    only: wwave
       use siesta_cml
       use files,        only : slabel
+      use files,        only : filesOut_t   ! derived type for output file names
       use zmatrix,      only: lUseZmatrix, write_zmatrix
       use Kpoint_grid
       use parallel, only: IOnode
@@ -50,16 +51,9 @@
 
       implicit none
 
-      character(len=label_length+5), external :: paste
+      character(len=label_length+6), external :: paste
 
       logical :: relaxd, getPSI
-
-      character(len=label_length+5) :: fildrh
-      character(len=label_length+5) :: filepsch
-      character(len=label_length+5) :: filetoch
-      character(len=label_length+5) :: filevh
-      character(len=label_length+5) :: filevt
-      character(len=label_length+5) :: filrho
 
       real(dp)          :: dummy_str(3,3)
       real(dp)          :: dummy_strl(3,3)
@@ -78,6 +72,7 @@
 #ifdef MPI
       real(dp)          :: qtmp(4)
 #endif
+      type(filesOut_t)  :: filesOut  ! blank output file names
 
 !----------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
@@ -344,28 +339,24 @@
      $                   (.not. partial_charges_at_every_geometry)
 
 !     Save electron density and potential
-      if (savrho .or. savdrh .or. savevh .or. savevt .or.
-     &    savepsch .or. savetoch 
-     &     .or. want_partial_charges) then
-        filrho = ' '
-        fildrh = ' '
-        filevh = ' '
-        filevt = ' '
-        filepsch = ' '
-        filetoch = ' '
-        if (savrho) filrho = paste( slabel, '.RHO' )
-        if (savdrh) fildrh = paste( slabel, '.DRHO' )
-        if (savevh) filevh = paste( slabel, '.VH'  )
-        if (savevt) filevt = paste( slabel, '.VT'  )
-        if (savepsch) filepsch = paste( slabel, '.IOCH'  )
-        if (savetoch) filetoch = paste( slabel, '.TOCH'  )
+      if (saverho .or. savedrho .or. saverhoxc .or. 
+     &    savevh .or. savevt .or. savevna .or.
+     &    savepsch .or. savetoch .or. 
+     &    want_partial_charges) then
+        if (saverho)   filesOut%rho   = paste( slabel, '.RHO' )
+        if (savedrho)  filesOut%drho  = paste( slabel, '.DRHO' )
+        if (saverhoxc) filesOut%rhoxc = paste( slabel, '.RHOXC' )
+        if (savevh)    filesOut%vh    = paste( slabel, '.VH'  )
+        if (savevt)    filesOut%vt    = paste( slabel, '.VT'  )
+        if (savevna)   filesOut%vna   = paste( slabel, '.VNA'  )
+        if (savepsch)  filesOut%psch  = paste( slabel, '.IOCH'  )
+        if (savetoch)  filesOut%toch  = paste( slabel, '.TOCH'  )
         g2max = g2cut
         dummy_str  = 0.0
         dummy_strl = 0.0
         call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 
-     &              ntm, 0, 0, 0, 0, filrho, fildrh, filevh, filevt,
-     &              filepsch, filetoch, 
+     &              ntm, 0, 0, 0, 0, filesOut, 
      &              maxnh, numh, listhptr, listh, Dscf, Datm,
      &              maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &              Exc, Dxc, dipol, dummy_str, fa, dummy_strl )

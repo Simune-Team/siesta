@@ -71,6 +71,7 @@ module m_planewavematrix
     use m_energies,       only: Dxc      ! Integral((epsxc-Vxc)*Rho)
     use m_dipol,          only: dipol    ! Electric dipole
     use m_stress,         only: stress   ! Stress tensor
+    use files,            only: filesOut_t ! derived type for output file names
 
 !   Used module procedures
     use m_dhscf,          only: dhscf    ! Mesh subroutine
@@ -87,6 +88,8 @@ module m_planewavematrix
     real(dp)             :: stressl(3,3) ! Local node part of stress
     real(dp), pointer    :: fal(:,:)     ! Local node part of atomic forces
 
+    type(filesOut_t)     :: filesOut  ! blank output file names
+
 !   Initialize the wave vector
     wavevector = kptpw
 
@@ -100,7 +103,7 @@ module m_planewavematrix
 
     call dhscf( nspin, no_s, iaorb, iphorb, no_l, no_u, na_u,             &
  &              na_s, isa, xa, indxua, ntm,                               &
- &              0, 0, 0, isigneikr, ' ', ' ', ' ', ' ', ' ', ' ',         &
+ &              0, 0, 0, isigneikr, filesOut,                             &
  &              maxnh, numh, listhptr, listh, Dscf, Datm,                 &
  &              maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf,              &
  &              DUext, Exc, Dxc, dipol, stress, fal, stressl )

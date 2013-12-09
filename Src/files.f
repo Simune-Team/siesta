@@ -16,6 +16,19 @@
       integer, parameter, public                  :: label_length = 60
       character(len=label_length), save, public   :: slabel
 
+      ! Derived type to hold some output file names
+      type, public:: filesOut_t
+        character(len=label_length+6)::
+     &    rho   = ' ',  ! (pseudo)electron density
+     &    drho  = ' ',  ! diff. between SCF and atomic electron densities
+     &    rhoxc = ' ',  ! electron density including nonlinear core correction
+     &    psch  = ' ',  ! soft diffuse ionic charge
+     &    toch  = ' ',  ! total ionic+electronic charge
+     &    vh    = ' ',  ! Hartree electrostatic potential
+     &    vt    = ' ',  ! total effective potential
+     &    vna   = ' '   ! neutral-atom potential
+      end type filesOut_t
+
       private
 
       end module files

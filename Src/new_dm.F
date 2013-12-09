@@ -91,8 +91,8 @@
       use atomlist, only: datm, no_s, iaorb, lasto, no_u, no_l
       use m_spin,   only: nspin
       use m_steps, only: istp
+      USE m_normalize_dm, only: normalize_dm
       use sparse_matrices, only: Escf     !! To be moved
-
 #ifdef TRANSIESTA
       use M_ts_global_vars, only : TSrun
 #endif /* TRANSIESTA */
@@ -238,7 +238,15 @@
       Escf(:,:) = 0.0_dp
 #endif /* TRANSIESTA */
 
+!     Normalize density matrix to exact charge
+#ifdef TRANSIESTA      
+      if (.not.TSrun ) call normalize_dm( first= .true. )
+#else
+      call normalize_dm(first=.true.)
+#endif  /* TRANSIESTA */
+
       END subroutine new_dm
+
       subroutine new_extrapol(nrows,num, listptr,list, DM)
 
       USE siesta_options
@@ -628,10 +636,11 @@ C If found, check and update, otherwise initialize with neutral atoms
                
 #endif /* TRANSIESTA */
            enddo
-           call de_alloc(num_tmp)
-           call de_alloc(listptr_tmp)
-           call de_alloc(list_tmp)
-           call de_alloc(D_tmp)
+           call de_alloc(num_tmp,name='num_tmp',routine=myName)
+           call de_alloc(listptr_tmp,name='listptr_tmp',routine=myName)
+           call de_alloc(list_tmp,name='listd',
+     .                   routine='read_dynamic_dm')
+           call de_alloc(D_tmp,name='dm',routine='read_dynamic_dm')
            call de_alloc(work)  ! Allocated by change_sparsity
 #ifdef TRANSIESTA
            if(ts_found) call de_alloc(EDM_tmp)

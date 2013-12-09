@@ -11,7 +11,7 @@
       use m_proximity_check, only: proximity_check
       use siesta_options
       use sparse_matrices, only: maxnh, numh, listh, listhptr
-      use sparse_matrices, only: Dscf, Dold, Escf, Eold
+      use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
       use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
@@ -39,8 +39,7 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
 
 #ifdef TRANSIESTA
-      use m_ts_options, only : onlyS, mixH
-      use m_ts_global_vars, only : Hold
+      use m_ts_options, only : onlyS
       use sys, only : bye
       use m_ts_io, only : ts_iohs
       use files, only: slabel, label_length
@@ -250,12 +249,12 @@
      .     routine='state_init',copy=.false.,shrink=.true.)
       call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
      .     routine='state_init',copy=.false.,shrink=.true.)
-#ifdef TRANSIESTA
+
       if(mixH) then
          call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
      .     routine='state_init',copy=.false.,shrink=.true.)
       end if
-#endif /* TRANSIESTA */
+
       
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',

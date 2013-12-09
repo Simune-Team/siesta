@@ -5,10 +5,12 @@
       CONTAINS
 
       subroutine post_scf_work( iscf )
+
       USE m_final_H_f_stress, only: final_H_f_stress
       USE siesta_options
       use sparse_matrices
       use siesta_geom
+      use parallel, only: ionode
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u,
      &                    iphorb, no_l, qtot
       use m_energies
@@ -26,14 +28,12 @@
       integer  :: iscf
       external :: plcharge
 
-!------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE post_scf_work' )
-#endif
       call timer( 'PostSCF', 1 )
+
 !     If we use the minimization routine, the energy-density
 !     matrix is not calculated inside the SCF step, and
 !     so this must be done now
+
       if ((isolve .eq. SOLVE_MINIM) .and.
      &    (.not. PreviousCallDiagon)) then
         if (minim_calc_eigenvalues) then
@@ -41,7 +41,7 @@
      &                numh, listhptr, listh, numh, listhptr, listh, 
      &                H, S, qtot, fixspin, qs, temp, 1.0_dp, -1.0_dp,
      &                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     &                eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     &                eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &                occtol, iscf, neigwanted)
           Ecorrec = 0.0_dp
         else
@@ -56,33 +56,52 @@
         endif
       endif
 
-!     If converged, make one last iteration to find forces and
-!     stress
-!     Note that here we are using the Dscf guessed by mixer,
-!     not the last Dscf really computed from Wavefunctions
+!     Find final energy, forces and stress.
+
+!     Note that here we are using the Dscf coming out of the
+!     scf cycle, which could be DM_out or DM_mixed, depending
+!     on whether we are mixing H or DM, and on whether we
+!     mix one final time after convergence
+
+      if (ionode) then
+         if (mix_after_convergence .and. (.not. MixH)) then
+            write(6,"(/,a)")
+     $      "Using DM_mixed to compute the final energy and forces"
+            write(6,"(a)")
+     $      "Consider using 'SCF.MixAfterConvergence F' or mixing H"
+         else
+            write(6,"(/,a)")
+     $      "Using DM_out to compute the final energy and forces"
+         endif
+      endif
+
       call final_H_f_stress( iscf )
 
 !     Print energies
       DEna = Enascf - Enaatm
       Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec +
      &       Emad + Emm + Emeta
-      Eharrs = Etot + DEharr
+
+!     Since this Etot is computed with DM_mixed (the DM predicted by
+!     'mixer' for a hypothetical next SCF iteration) or with DM_out
+!     (depending on whether a final mixing is done at the end of the
+!     cycle) this value for Eharrs is suspect. This value was never
+!     actually printed, since printing routines used 'Eharrs1', which is
+!     the last value of Eharrs computed in the SCF cycle (set in
+!     'scfconvergence_test'). To reproduce that behavior, the following
+!     statement has been removed, and Eharris1 replaced by Eharrs
+!     everywhere.
+
+      !! Eharrs = Etot + DEharr
+
+      !
+      ! Update the Free electronic energy with the new Etot
+      ! and the latest entropy. This is not completely 
+      ! consistent if using a mixed DM to compute Etot, but
+      ! is a reasonable approximation
+      !
       FreeE  = Etot - Temp * Entropy
-
 !
-!     WHY IS THIS?? To make Dscf (which might be re-used in the next
-!     geometry iteration) equal to the last DM used to construct the
-!     hamiltonian, instead of the output DM.
-!
-!       We need the last D really computed from Wavefunctions,
-!       not the one guessed by mixer as the D_in for a hypothetical
-!       next iteration. BUT in the old version of the program
-!       Dold was set equal to Dscf at the end of setup_hamiltonian,
-!       also in the "last" iteration.  
-      
-      Dscf(1:maxnh,1:nspin) = Dold(1:maxnh,1:nspin)
-      Escf(1:maxnh,1:nspin) = Eold(1:maxnh,1:nspin)
-
       if (dumpcharge) then
         call plcharge( no_s, na_s, no_u, maxnh, maxna, nspin,
      &       isa, iphorb, indxuo, lasto,
@@ -90,10 +109,7 @@
       endif
 
       call timer( 'PostSCF', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS post_scf_work' )
-#endif
-!--------------------------------------------------------------------------- END
+
       END subroutine post_scf_work
 
       END MODULE m_post_scf_work
