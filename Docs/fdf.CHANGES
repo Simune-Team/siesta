@@ -1,4 +1,13 @@
 ----------------------------------------------------------
+December 11 2013  Alberto Garcia  siesta-trunk-448--fdf-2
+Nullify fdf buffer pointer at declaration
+
+(Thanks to Nick P Andersen)
+
+modified:
+ Src/fdf/fdf.F90
+
+----------------------------------------------------------
 December 11 2013  Alberto Garcia  siesta-trunk-448--fdf-1
 A more flexible fdf_init (JM Soler)
 

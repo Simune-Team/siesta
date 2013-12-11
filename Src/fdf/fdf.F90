@@ -718,9 +718,8 @@ MODULE fdf
       integer, intent(in)       :: reading_node         ! Node which contains the struct
 
 !--------------------------------------------------------------- Local Variables
-      character, pointer        :: bufferFDF(:)
+      character, pointer        :: bufferFDF(:) => null()
       integer(ip)               :: i, j, k, ierr, nlines
-      type(line_dlist), pointer :: mark
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -2663,7 +2662,7 @@ MODULE fdf
       use mpi_siesta
       implicit none
 !--------------------------------------------------------------- Local Variables
-      character, pointer        :: bufferFDF(:)
+      character, pointer        :: bufferFDF(:) => null()
       integer(ip)               :: i, j, k, ierr
       type(line_dlist), pointer :: mark
 
@@ -2716,7 +2715,7 @@ MODULE fdf
 
 !--------------------------------------------------------------- Local Variables
       integer(ip)        :: i, j, lun, ierr, nlines
-      character, pointer :: bufferFDF(:)
+      character, pointer :: bufferFDF(:) => null()
       character(len=10)  :: fmt
 !------------------------------------------------------------------------- BEGIN
       call MPI_Bcast(nlines, 1,                                         &
