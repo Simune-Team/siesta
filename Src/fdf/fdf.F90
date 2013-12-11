@@ -116,6 +116,7 @@ MODULE fdf
   USE parse, only: match
   USE parse, only: digest, blocks, endblocks, labels
   USE parse, only: destroy, setdebug, setlog, setmorphol
+  USE parse, only: nlists, lists
 
   USE parse, only: search
   USE parse, only: fdf_bsearch => search
@@ -138,6 +139,7 @@ MODULE fdf
   public :: fdf_integer, fdf_single, fdf_double
   public :: fdf_string, fdf_boolean
   public :: fdf_physical, fdf_convfac
+  public :: fdf_islist, fdf_list
 
 ! Returns the string associated with a mark line
   public :: fdf_getline
@@ -152,6 +154,7 @@ MODULE fdf
   public :: fdf_block, fdf_bline, fdf_bbackspace, fdf_brewind
   public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
   public :: fdf_bintegers, fdf_breals, fdf_bvalues, fdf_bnames, fdf_btokens
+  public :: fdf_bnlists, fdf_blists
 
 ! Match, search over blocks, and destroy block structure
   public :: fdf_bmatch, fdf_bsearch, fdf_substring_search
@@ -200,6 +203,10 @@ MODULE fdf
     module procedure nintegers
   end interface
 
+  interface fdf_bnlists
+    module procedure nlists
+  end interface
+
   interface fdf_bnreals
     module procedure nreals
   end interface
@@ -218,6 +225,10 @@ MODULE fdf
 
   interface fdf_bintegers
     module procedure integers
+  end interface
+
+  interface fdf_blists
+    module procedure lists
   end interface
 
   interface fdf_breals
@@ -1774,6 +1785,100 @@ MODULE fdf
     END FUNCTION fdf_integer
 
 !
+!   Returns true or false whether or not the label 'label' is
+!   a list or not, you cannot get the line out from this routine
+!
+    FUNCTION fdf_islist(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_islist
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_islist', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+         ! if it is a list:
+         fdf_islist = match(mark%pline, 'la')
+         if (fdf_output) write(fdf_out,'(a,5x,l10)') label, fdf_islist
+      else
+         fdf_islist = .false.
+         if (fdf_output) write(fdf_out,'(a,5x,a)') label, '# not found as list'
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_islist
+
+!
+!   Returns a list with label 'label', or the default
+!   value if label is not found in the fdf file.
+!
+    SUBROUTINE fdf_list(label,ni,list,line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+      integer(ip)                         :: ni
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                         :: list(ni)
+      type(line_dlist), pointer, optional :: line
+      
+!--------------------------------------------------------------- Local Variables
+      character(80)                       :: msg
+      type(line_dlist), pointer           :: mark
+      integer(ip)                         :: lni, llist(1)
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_list', 'FDF subsystem not initialized', &
+              THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+         if (.not. match(mark%pline, 'la')) then
+            write(msg,*) 'no list value for ', label
+            call die('FDF module: fdf_list', msg, THIS_FILE, __LINE__, fdf_err)
+         endif
+
+         ! Retrieve length of list
+         lni = -1
+         call lists(mark%pline,1,lni,llist)
+         if ( ni <= 0 ) then
+            ! the user has requested size...
+            ni = lni
+         else
+            ! the list is not long enough
+            if ( ni < lni ) then
+               call die('FDF module: fdf_list', 'List container too small', &
+                    THIS_FILE, __LINE__, fdf_err)
+            end if
+            call lists(mark%pline,1,ni,list)
+         end if
+         
+         if (fdf_output) write(fdf_out,'(a,5x,i10)') label, lni
+      else
+         write(msg,*) 'no list value for ', label
+         call die('FDF module: fdf_list', msg, THIS_FILE, __LINE__, fdf_err)
+      endif
+      
+      if (PRESENT(line)) line = mark
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_list
+
+!
 !   Returns a string associated with label 'label', or the default
 !   string if label is not found in the fdf file.
 !   Optionally can return a pointer to the line found.
@@ -2353,13 +2458,14 @@ MODULE fdf
 !   Backspace to the previous physical line in the block
 !   returning .TRUE. while more lines exist in the block bfdf.
 !
-    FUNCTION fdf_bbackspace(bfdf)
+    FUNCTION fdf_bbackspace(bfdf,pline)
       implicit none
 !--------------------------------------------------------------- Input Variables
       type(block_fdf)            :: bfdf
 
 !-------------------------------------------------------------- Output Variables
       logical                    :: fdf_bbackspace
+      type(parsed_line), pointer, optional :: pline
 
 !--------------------------------------------------------------- Local Variables
       character(80)              :: strlabel
@@ -2408,6 +2514,8 @@ MODULE fdf
         if (fdf_output) write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
       endif
+
+      if ( present(pline) ) pline => bfdf%mark%pline
 
       RETURN
 !--------------------------------------------------------------------------- END

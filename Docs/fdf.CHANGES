@@ -1,4 +1,18 @@
 ----------------------------------------------------------
+December 11 2013  Alberto Garcia  siesta-trunk-448--fdf-3
+New list functionality in fdf
+
+See Src/fdf/sample.F90 and sample.fdf for examples.
+
+(Thanks to Nick P Andersen)
+
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/fdf/sample.F90
+  Src/fdf/sample.fdf
+
+----------------------------------------------------------
 December 11 2013  Alberto Garcia  siesta-trunk-448--fdf-2
 Nullify fdf buffer pointer at declaration
 
