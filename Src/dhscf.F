@@ -568,7 +568,7 @@ C     Modules
       use m_doping_uniform,       only: doping_active, doping_uniform
 
 #ifdef TRANSIESTA
-      use m_ts_options, only: UseVFix, TSmode, IsVolt
+      use m_ts_options, only: TSmode, IsVolt
       use m_ts_voltage, only : ts_voltage, ts_VH_fix
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
@@ -978,7 +978,7 @@ C ----------------------------------------------------------------------
       ! the first spin index
 
 #ifdef TRANSIESTA
-      if (TSmode .and. UseVFix) call ts_VH_fix( ntm, nsm, Vscf )
+      if (TSmode) call ts_VH_fix( ntm, nsm, Vscf )
 #endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm

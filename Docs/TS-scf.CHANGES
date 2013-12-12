@@ -1,4 +1,57 @@
 ----------------------------------------------------
+December 12, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-96
+Created a new contour method for input
+
+* Preparing for multiple electrodes requires a new input method of 
+  the contour methods. 
+  Most importantly we can reduce the number of contour points on the 
+  equilibrium contour.
+  
+* We do this by separating the equilibrium contour to the non-equilibrium
+  and associate a weight for each of the electrodes.
+  This is because the circle contour can now be allocated to all the electrodes
+  if the appropriate edges are set correctly.
+
+* I am not particularly proud of the complexity level of the contour 
+  specification. However, I plan to generate a small shell script which 
+  creates the contours for you. (just by specifying the different
+  chemical potentials)
+  
+* Each of the electrodes now have a lot of options for specifying the 
+  usage of that particular electrode.
+  These options are now electrode specific:
+    UseBulk
+    Update cross-terms
+    Calculate band-bottom
+
+* Cleaned up in some of the files.
+  The old gaussian weights are now discarded.
+
+* NOTE this revision does not work!
+  It is a work in progress.
+
+added:
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_io_ctype.f90
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/m_gauss_quad.f90
+  Src/m_ts_aux.F90
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_full.F90
+  Src/m_ts_io_contour.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri.F90
+  Src/m_ts_voltage.F90
+  Src/state_init.F
+  Src/ts_init.F90
+
+----------------------------------------------------
 October 11, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-95
 Changed the ElLeft/ElRight to a generic electrode type
 

@@ -246,7 +246,7 @@ contains
     use m_ts_options, only : na_BufR, no_BufR
     use m_ts_options, only : N_mon, iu_MON, monitor_list
 
-    use m_ts_options, only : IsVolt, UseBulk, UpdateDMCR
+    use m_ts_options, only : IsVolt
     use m_ts_options, only : VoltL, VoltR
 
     use m_ts_sparse, only : ts_sp_uc
@@ -369,11 +369,13 @@ contains
 ! ************************************************************
 
 ! ******************* Miscalleneous variables ****************
+    logical :: Bulk, DM_CrossTerms ! TODO DELETE
     integer :: ierr
 #ifdef MPI
     integer :: MPIerror
 #endif
 ! ************************************************************
+
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE transiesta mem' )
@@ -1115,14 +1117,14 @@ contains
       ! Gamma's.
       ! Hence we can perform the calculation without 
       ! calculating them.
-      call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
+      call UC_expansion(.false.,Bulk,Z,no_L_HS,no_L, &
            Elecs(1), &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
-      call UC_expansion(.false.,UseBulk,Z,no_R_HS,no_R, &
+      call UC_expansion(.false.,Bulk,Z,no_R_HS,no_R, &
            Elecs(2), &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
@@ -1134,13 +1136,13 @@ contains
       call write_Full(iu_SR,no_R,SigmaR)
 #endif
 
-      call prepare_GF_inv(UseBulk, Z, no_BufL, &
+      call prepare_GF_inv(Bulk, Z, no_BufL, &
            no_u_TS,zwork_tri, &
            no_L, SigmaL, no_R, SigmaR, &
            spH =spH , spS =spS, &
            spzH=spzH, spzS=spzS )
          
-      if ( UpdateDMCR ) then
+      if ( .not. DM_CrossTerms ) then
          ! Only calculate the middle part of the Gf
          call calc_GF_Part(no_u_TS, no_L,no_R,zwork_tri, GF_tri, ierr)
       else
@@ -1150,7 +1152,7 @@ contains
 #endif
 
          ! Calculate the full GF
-         call calc_GF(UseBulk, no_u_TS, zwork_tri, GF_tri, ierr)
+         call calc_GF(Bulk, no_u_TS, zwork_tri, GF_tri, ierr)
 
 #ifdef TRANSIESTA_DEBUG
          ! currently we will only write out the equilibrium GF
@@ -1208,31 +1210,31 @@ contains
       W  = zmi * i_W
       ZW = Z * W
 
-      call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
+      call UC_expansion(.false.,Bulk,Z,no_L_HS,no_L, &
            Elecs(1), &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
-      call UC_expansion(.true.,UseBulk,Z,no_R_HS,no_R, &
+      call UC_expansion(.true.,Bulk,Z,no_R_HS,no_R, &
            Elecs(2), &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
            nzwork, zwork)
 
-      call prepare_GF_inv(UseBulk, Z, no_BufL, &
+      call prepare_GF_inv(Bulk, Z, no_BufL, &
            no_u_TS,zwork_tri, &
            no_L, SigmaL, no_R, SigmaR, &
            spH =spH , spS =spS, &
            spzH=spzH, spzS=spzS )
 
       ! Calculate the Greens function
-      call calc_GF_Bias(UpdateDMCR,no_u_TS,zwork_tri,GF_tri)
+      call calc_GF_Bias(.not. DM_CrossTerms,no_u_TS,zwork_tri,GF_tri)
 
       ! We calculate the right thing.
-      call GF_Gamma_GF_Right(UseBulk,UpdateDMCR,no_R, Gf_tri, GammaRT, zwork_tri)
+      call GF_Gamma_GF_Right(Bulk,.not. DM_CrossTerms,no_R, Gf_tri, GammaRT, zwork_tri)
 
       ! work is now GFGGF
 
@@ -1260,7 +1262,7 @@ contains
       end if
 
       ! We calculate the left thing.
-      call GF_Gamma_GF_Left(UseBulk,UpdateDMCR,no_L, Gf_tri, GammaLT, zwork_tri)
+      call GF_Gamma_GF_Left(Bulk,.not. DM_CrossTerms,no_L, Gf_tri, GammaLT, zwork_tri)
       ! work is now GFGGF
 
 #ifdef TRANSIESTA_DEBUG
@@ -1307,27 +1309,27 @@ contains
       W  = zmi * i_W
       ZW = Z * W
 
-      call UC_expansion(.true.,UseBulk,Z,no_L_HS,no_L, &
+      call UC_expansion(.true.,Bulk,Z,no_L_HS,no_L, &
            Elecs(1), &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
-      call UC_expansion(.false.,UseBulk,Z,no_R_HS,no_R, &
+      call UC_expansion(.false.,Bulk,Z,no_R_HS,no_R, &
            Elecs(2), &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
            nzwork, zwork)
 
-      call prepare_GF_inv(UseBulk, Z, no_BufL, &
+      call prepare_GF_inv(Bulk, Z, no_BufL, &
            no_u_TS, zwork_tri, &
            no_L, SigmaL, no_R, SigmaR, &
            spH =spH , spS =spS, &
            spzH=spzH, spzS=spzS )
       
-      call invert_BiasTriMat(UpdateDMCR,zwork_tri,GF_tri,no_L)
+      call invert_BiasTriMat(.not. DM_CrossTerms,zwork_tri,GF_tri,no_L)
 
 #ifdef TRANSIESTA_DEBUG
       fG => val(zwork_tri)
@@ -1348,7 +1350,7 @@ contains
       end do
 #endif
 
-      call GF_Gamma_GF_Left_Full(UseBulk,UpdateDMCR,no_L,no_R, &
+      call GF_Gamma_GF_Left_Full(Bulk,.not. DM_CrossTerms,no_L,no_R, &
            zwork_tri,GammaLT,GF_tri, &
            no_R**2,GammaRT) ! work-array
       
@@ -1399,27 +1401,27 @@ contains
       W  = zmi * i_W
       ZW = Z * W
 
-      call UC_expansion(.false.,UseBulk,Z,no_L_HS,no_L, &
+      call UC_expansion(.false.,Bulk,Z,no_L_HS,no_L, &
            Elecs(1), &
            na_L_HS,lasto_L,nqL,qLb,wqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
-      call UC_expansion(.true.,UseBulk,Z,no_R_HS,no_R, &
+      call UC_expansion(.true.,Bulk,Z,no_R_HS,no_R, &
            Elecs(2), &
            na_R_HS,lasto_R,nqR,qRb,wqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
            nzwork, zwork)
 
-      call prepare_GF_inv(UseBulk, Z, no_BufL, &
+      call prepare_GF_inv(Bulk, Z, no_BufL, &
            no_u_TS, zwork_tri, &
            no_L, SigmaL, no_R, SigmaR, &
            spH =spH , spS =spS, &
            spzH=spzH, spzS=spzS )
       
-      call invert_BiasTriMat(UpdateDMCR,zwork_tri,GF_tri,-no_R)
+      call invert_BiasTriMat(.not. DM_CrossTerms,zwork_tri,GF_tri,-no_R)
 
 #ifdef TRANSIESTA_DEBUG
       fG => val(zwork_tri)
@@ -1440,7 +1442,7 @@ contains
       end do
 #endif
 
-      call GF_Gamma_GF_Right_Full(UseBulk,UpdateDMCR,no_L,no_R, &
+      call GF_Gamma_GF_Right_Full(Bulk,.not. DM_CrossTerms,no_L,no_R, &
            zwork_tri,GammaRT,GF_tri, &
            no_L**2,GammaLT) ! work-array
       
@@ -1584,14 +1586,14 @@ contains
 
   ! creation of the GF^{-1}.
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
-  subroutine prepare_GF_inv(UseBulk,Z, no_BufL,no_u,GFinv_tri, &
+  subroutine prepare_GF_inv(Bulk,Z, no_BufL,no_u,GFinv_tri, &
        no_L, SigmaL, no_R, SigmaR, spH, spS, spzH, spzS)
     use class_dSpData1D
     use class_zSpData1D
     use class_Sparsity
     use class_zTriMat
 
-    logical, intent(in) :: UseBulk
+    logical, intent(in) :: Bulk
     ! the current energy point
     complex(dp), intent(in) :: Z
     ! Remark that we need the left buffer orbitals
@@ -1678,16 +1680,16 @@ contains
        end do
     end if
 
-    call insert_Self_Energies(UseBulk, Gfinv_tri, &
+    call insert_Self_Energies(Bulk, Gfinv_tri, &
          no_L, SigmaL, no_R, SigmaR)
     
   end subroutine prepare_GF_inv
 
-  subroutine insert_Self_Energies(UseBulk,Gfinv_tri, &
+  subroutine insert_Self_Energies(Bulk,Gfinv_tri, &
        no_L, SigmaL, no_R, SigmaR)
     use class_zTriMat
 
-    logical, intent(in) :: UseBulk
+    logical, intent(in) :: Bulk
     type(zTriMat), intent(inout) :: GFinv_tri
     integer, intent(in) :: no_L, no_R
     complex(dp), intent(in) :: SigmaL(no_L,no_L)
@@ -1699,7 +1701,7 @@ contains
     Gfinv => val(GFinv_tri)
 
     ! We cannot be sure of the parts sizes...
-    if ( UseBulk ) then
+    if ( Bulk ) then
        do j = 1 , no_L
           do i = 1 , no_L
              idx = index(GFinv_tri,i,j)
@@ -1717,7 +1719,7 @@ contains
 
     no_ER = nrows_g(GFinv_tri) - no_R
     
-    if ( UseBulk ) then
+    if ( Bulk ) then
        do j = 1 , no_R
           do i = 1 , no_R
              idx = index(GFinv_tri,no_ER+i,no_ER+j)

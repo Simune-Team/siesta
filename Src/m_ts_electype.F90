@@ -6,6 +6,8 @@ module m_ts_electype
   use class_dSpData1D
   use class_dSpData2D
 
+  use m_ts_io_ctype, only : C_N_NAME_LEN
+
   implicit none
 
   private
@@ -16,9 +18,11 @@ module m_ts_electype
      module procedure name_
   end interface name
 
-  public :: assign, read_Elec
-  public :: create_sp2sp01
-  public :: delete_TSHS
+  interface operator(.eq.)
+     module procedure equal_el_el
+     module procedure equal_el_str
+     module procedure equal_str_el
+  end interface
 
   public :: Elec
   public :: Name, HSfile, GFFile, GFTitle
@@ -30,48 +34,82 @@ module m_ts_electype
   public :: Rep
   public :: RepA1, RepA2, RepA3
 
+  public :: has_contour_segments
+  public :: Eq_segs
+
+  public :: Elec_p
   public :: fdf_nElec, fdf_elec
 
-  public :: INF_NEGATIVE, INF_POSITIVE
+  public :: assign, read_Elec
+  public :: create_sp2sp01
+  public :: delete_TSHS
 
-  integer, parameter :: FILE_LEN = 200
+  public :: operator(.eq.)
 
-  integer, parameter :: INF_NEGATIVE = 0 ! old 'left'
-  integer, parameter :: INF_POSITIVE = 1 ! old 'right'
+  ! 300 chars for a full path should be fine
+  integer, parameter, public :: FILE_LEN = 300
+  integer, parameter, public :: NAME_LEN = 100
+
+  integer, parameter, public :: INF_NEGATIVE = 0 ! old 'left'
+  integer, parameter, public :: INF_POSITIVE = 1 ! old 'right'
 
   integer, parameter :: HAS_NOTHING = 0
   integer, parameter :: HAS_HS = 1
   integer, parameter :: HAS_HS00_HS01 = 2
 
   type :: Elec
-     character(len=FILE_LEN) :: Name=' ', HSfile=' ', GFfile=' ', GFtitle=' '
+     character(len=FILE_LEN) :: HSfile = ' ', GFfile  = ' '
+     character(len=NAME_LEN) :: Name   = ' ', GFtitle = ' '
      ! These variables are relative to the big system
      integer :: idx_na, idx_no
+     ! atoms used
      integer :: na_used
+     ! orbitals used
      integer :: no_used
+     ! repetitions
      integer :: RepA1 = 1, RepA2 = 1, RepA3 = 1
+     ! chemical potential of the electrode
      real(dp) :: mu
+     ! infinity direction
      integer :: inf_dir = INF_NEGATIVE
-     integer :: t_dir = 3
-     logical :: UseBulk = .true.
-     logical :: UpdateDMCR = .true.
+     ! transport direction (determines H01)
+     integer :: t_dir = 3 
+     ! whether the electrode should be bulk
+     logical :: Bulk = .true.
+     logical :: DM_CrossTerms = .false.
+     logical :: BandBottom = .false.
      ! Used xa and lasto
      real(dp), pointer :: xa_used(:,:) => null()
-     integer, pointer :: lasto_used(:) => null()
+     integer,  pointer :: lasto_used(:) => null()
+
+     ! We must have a container which determines the contour segments
+     ! that gets attached to the electrode
+     character(len=C_N_NAME_LEN), allocatable :: Eq_seg(:)
+
      ! ---v--- Below we have the content of the TSHS file
-     integer :: nspin, na_u, no_u, no_s
+     integer  :: nspin, na_u, no_u, no_s
      real(dp) :: ucell(3,3), Ef, Qtot
      real(dp), pointer :: xa(:,:) => null()
-     integer, pointer :: lasto(:) => null()
+     integer,  pointer :: lasto(:) => null()
      type(Sparsity)  :: sp
      type(dSpData2D) :: H, xij
      type(dSpData1D) :: S
      ! --- --- completed the content of the TSHS file
      ! Below we create the content for the self-energy creation
-     type(Sparsity)  :: sp00,               sp01
-     type(dSpData2D) :: H00, xij00, xijo00, H01, xij01, xijo01
-     type(dSpData1D) :: S00,                S01
+     ! Notice that we can save some elements simply by extracting the 0-1 connections
+     ! for large systems this is a non-negligeble part of the memory...
+     type(Sparsity)  :: sp00
+     type(dSpData2D) :: H00, xij00, xijo00
+     type(dSpData1D) :: S00
+     type(Sparsity)  :: sp01
+     type(dSpData2D) :: H01, xij01, xijo01
+     type(dSpData1D) :: S01
   end type Elec
+
+  ! this type aids in the creation of arrays with pointers to electrodes
+  type Elec_p
+     type(Elec), pointer :: El => null()
+  end type Elec_p
 
 contains
 
@@ -90,7 +128,7 @@ contains
     logical :: found
 
     n = 0
-    found = fdf_block(trim(prefix)//'.Elec',bfdf)
+    found = fdf_block(trim(prefix)//'.Elecs',bfdf)
     if ( .not. found ) return
 
     ! first count the number of electrodes
@@ -159,6 +197,7 @@ contains
           if ( fdf_bnnames(pline) < 2 ) call die('TSHS name not supplied')
           this%HSfile = trim(fdf_bnames(pline,2))
           info(1) = .true.
+
        else if ( leqi(ln,'semi-inf-direction') ) then
           if ( fdf_bnintegers(pline) < 1 .and. &
                fdf_bnnames(pline)    < 2 ) call die('Semi-infinite direction not specified')
@@ -182,15 +221,19 @@ contains
              call die('Semi-infinite direction could not be understood')
           end if
           info(2) = .true.
-       else if ( leqi(ln,'chemical-shift') ) then
+
+       else if ( leqi(ln,'chemical-shift') .or. &
+            leqi(ln,'mu') ) then
           if ( fdf_bnvalues(pline) < 1 ) call die('Chemical-shift not supplied')
           if ( fdf_bnnames(pline) < 2 ) call die('Unit of chemical-shift not supplied')
           this%mu = fdf_bvalues(pline,1) * fdf_convfac(fdf_bnames(pline,2),'Ry')
           info(3) = .true.
+
        else if ( leqi(ln,'electrode-position') ) then
           if ( fdf_bnintegers(pline) < 1 ) call die('Position of electrode')
           this%idx_na = fdf_bintegers(pline,1)
           info(4) = .true.
+
        else if ( leqi(ln,'transport-direction') ) then
           if ( fdf_bnintegers(pline) < 1 .and. &
                fdf_bnnames(pline)    < 2 ) call die('Transport direction not specified')
@@ -210,36 +253,69 @@ contains
           if ( this%t_dir < 1 .or. 3 < this%t_dir ) then
              call die('Transport-direction is not recognized [a|b|c|A1|A2|A3]')
           end if
-       else if ( leqi(ln,'usebulk') ) then
-          this%UseBulk = fdf_bboolean(pline,1,after=1)
-       else if ( leqi(ln,'updatedmcronly') ) then
-          this%UpdateDMCR = fdf_bboolean(pline,1,after=1)
+
+       else if ( leqi(ln,'bulk') ) then
+          this%Bulk = fdf_bboolean(pline,1,after=1)
+
+       else if ( leqi(ln,'calculate-band-bottom') ) then
+          this%BandBottom = fdf_bboolean(pline,1,after=1)
+
+       else if ( leqi(ln,'update-cross-terms') ) then
+          this%DM_CrossTerms = fdf_bboolean(pline,1,after=1)
+
        else if ( leqi(ln,'GF-title') ) then
           if ( fdf_bnnames(pline) < 2 ) call die('GF-title not supplied')
           this%GFtitle = trim(fdf_bnames(pline,2))
+
        else if ( leqi(ln,'GF') ) then
           if ( fdf_bnnames(pline) < 2 ) call die('GF-file not supplied')
           this%GFfile = trim(fdf_bnames(pline,2))
-       else if ( leqi(ln,'UsedAtoms') ) then
+
+       else if ( leqi(ln,'used-atoms') ) then
           if ( fdf_bnintegers(pline) < 1 ) call die('Number of atoms used not supplied')
           this%na_used = fdf_bintegers(pline,1)
+
        else if ( leqi(ln,'replicate-a') .or. leqi(ln,'rep-a') .or. &
             leqi(ln,'replicate-a1') .or. leqi(ln,'rep-a1') ) then
           if ( fdf_bnintegers(pline) < 1 ) call die('Repetition A1 is not supplied')
           this%RepA1 = fdf_bintegers(pline,1)
+
        else if ( leqi(ln,'replicate-b') .or. leqi(ln,'rep-b') .or. &
             leqi(ln,'replicate-a2') .or. leqi(ln,'rep-a2') ) then
           if ( fdf_bnintegers(pline) < 1 ) call die('Repetition A2 is not supplied')
           this%RepA2 = fdf_bintegers(pline,1)
+
        else if ( leqi(ln,'replicate-c') .or. leqi(ln,'rep-c') .or. &
             leqi(ln,'replicate-a3') .or. leqi(ln,'rep-a3') ) then
           if ( fdf_bnintegers(pline) < 1 ) call die('Repetition A3 is not supplied')
           this%RepA3 = fdf_bintegers(pline,1)
+
        else if ( leqi(ln,'replicate') .or. leqi(ln,'rep') ) then
           if ( fdf_bnintegers(pline) < 3 ) call die('Repetition for all directions are not supplied')
           this%RepA1 = fdf_bintegers(pline,1)
           this%RepA2 = fdf_bintegers(pline,2)
           this%RepA3 = fdf_bintegers(pline,3)
+
+       else if ( leqi(ln,'contours.eq') ) then
+          ! we need to read in the equilibrium contour
+
+          ! we automatically make room for one pole contour
+          call read_contour_names('Equilibrium',this%Eq_seg,fakes=1)
+
+       !else if ( leqi(ln,'contours.neq.tail') ) then
+          ! we need to read in the non-equilibrium contour
+
+       !   call read_contour_names('Non-equilibrium',this%nEq_seg)
+
+       !else if ( leqi(ln,'contour.T') ) then
+          ! we need to read in the transport contour
+
+       !   call read_contour_names('Transport',this%t_seg)
+       else
+          
+          call die('Unrecognized option "'//trim(ln)//'" &
+               &for electrode: '//trim(Name(this)))
+
        end if
 
     end do
@@ -250,7 +326,6 @@ contains
     if ( .not. all(info) ) then
        write(*,*)'You need to supply at least:'
        write(*,*)' - TSHS'
-       write(*,*)' - transport-direction'
        write(*,*)' - semi-inf-direction'
        write(*,*)' - chemical-shift'
        write(*,*)' - electrode-position'
@@ -278,22 +353,150 @@ contains
           this%lasto_used(i) = this%lasto_used(i-1) + this%lasto(i)-this%lasto(i-1)
           this%xa_used(:,i)  = this%xa(:,i)
        end do
+
     else if ( this%inf_dir == INF_POSITIVE ) then ! same as old 'right'
        ! We use the first atoms
        do i = 1 , this%na_used
           this%lasto_used(i) = this%lasto_used(i-1) + this%lasto(i)-this%lasto(i-1)
           this%xa_used(:,i)  = this%xa(:,i)
        end do
+
     else
        call die('Unknown direction for the semi-infinite lead')
+
     end if
     this%no_used = this%lasto_used(this%na_used)
 
     ! We deallocate xa and lasto as they are not needed
     deallocate(this%xa,this%lasto)
 
+    ! if the electrode does not use a bulk electrode we need to update
+    ! the cross-terms
+    if ( .not. this%Bulk ) then
+       this%DM_CrossTerms = .true.
+    end if
+
+  contains
+    
+    subroutine read_contour_names(name,con,fakes)
+      character(len=*), intent(in) :: name
+      character(len=C_N_NAME_LEN), allocatable :: con(:)
+      integer, intent(in), optional :: fakes
+      integer :: i, empty
+
+      if ( allocated(con) ) call die("Contour already found")
+
+      ! we need to read in the equilibrium contour
+      ! skip to "begin"
+      if ( .not. fdf_bline(bfdf,pline) ) &
+           call die("Electrode block ended prematurely")
+
+      ! read in the begin ... end block
+      ln = fdf_bnames(pline,1)
+      if ( .not. leqi(ln,"begin") ) &
+           call die(trim(name)//" contour errorneously formatted. &
+           &First line *must* be begin")
+
+      ! Count lines
+      i = 0
+      empty = 0
+      do 
+         if ( .not. fdf_bline(bfdf,pline) ) &
+              call die("Electrode block ended prematurely")
+         if ( fdf_bnnames(pline) < 1 ) then
+            empty = empty + 1
+         else
+            ln = fdf_bnames(pline,1)
+            if ( leqi(ln,'end') ) exit
+            i = i + 1
+         end if
+      end do
+
+      ! allocate names
+      if ( present(fakes) ) then
+         allocate(con(i+fakes))
+         empty = empty - fakes
+      else
+         allocate(con(i))
+      end if
+      con = ' '
+      do i = 0 , size(con) + empty
+         if ( .not. fdf_bbackspace(bfdf) ) &
+              call die("Backspacing too much")
+      end do
+      i = 0
+      do 
+         if ( .not. fdf_bline(bfdf,pline) ) &
+              call die("Electrode block ended prematurely")
+         if ( fdf_bnnames(pline) < 1 ) cycle
+         ln = fdf_bnames(pline,1)
+         if ( leqi(ln,'end') ) exit
+         i = i + 1
+         if ( len_trim(ln) > C_N_NAME_LEN ) then
+            call die('Contour name: '//trim(ln)//' is too long, please use a &
+                 shorter name')
+         end if
+         con(i) = trim(ln)
+      end do
+
+    end subroutine read_contour_names
+
   end function fdf_Elec
-       
+
+  elemental function has_contour_segments(this) result(val)
+    type(Elec), intent(in) :: this
+    logical :: val
+    val = allocated(this%Eq_seg)
+    !val = val .or. allocated(this%nEq_seg)
+    !val = val .or. allocated(this%t_seg)
+  end function has_contour_segments
+
+  elemental function Eq_segs(this) result(N)
+    type(Elec), intent(in) :: this
+    integer :: N
+    N = 0 
+    if ( allocated(this%Eq_seg) ) then
+       N = size(this%Eq_seg)
+    end if
+  end function Eq_segs
+
+  !elemental function nEq_segs(this) result(N)
+  !  type(Elec), intent(in) :: this
+  !  integer :: N
+  !  N = 0 
+  !  if ( allocated(this%nEq_seg) ) then
+  !     N = size(this%nEq_seg)
+  !  end if
+  !end function NEq_segs
+
+  !elemental function t_segs(this) result(N)
+  !  type(Elec), intent(in) :: this
+  !  integer :: N
+  !  N = 0 
+  !  if ( allocated(this%t_seg) ) then
+  !     N = size(this%t_seg)
+  !  end if
+  !end function t_segs
+
+  function equal_el_el(this1,this2) result(equal)
+    type(Elec), intent(in) :: this1, this2
+    logical :: equal
+    equal = name(this1) == name(this2)
+  end function equal_el_el
+
+  function equal_el_str(this,str) result(equal)
+    type(Elec), intent(in) :: this
+    character(len=*), intent(in) :: str
+    logical :: equal
+    equal = name(this) == trim(str)
+  end function equal_el_str
+
+  function equal_str_el(str,this) result(equal)
+    character(len=*), intent(in) :: str
+    type(Elec), intent(in) :: this
+    logical :: equal
+    equal = name(this) == trim(str)
+  end function equal_str_el
 
   subroutine assign(this,D,HSfile,GFfile,GFtitle, &
        na_u,na_used,no_u,no_s,no_used, &
@@ -322,7 +525,7 @@ contains
   
   elemental function Name_(this)
     type(Elec), intent(in) :: this
-    character(len=FILE_LEN) :: Name_
+    character(len=NAME_LEN) :: Name_
     Name_ = this%Name
   end function Name_
 
@@ -340,7 +543,7 @@ contains
 
   elemental function GFtitle(this)
     type(Elec), intent(in) :: this
-    character(len=FILE_LEN) :: GFtitle
+    character(len=NAME_LEN) :: GFtitle
     GFtitle = this%GFtitle
   end function GFtitle
 
@@ -430,7 +633,6 @@ contains
     val = this%ucell
   end function unitcell
 
-
   subroutine read_Elec(this,Bcast)
     use fdf
     use m_ts_io
@@ -516,7 +718,6 @@ contains
     call print_type(this%sp)
 
   end subroutine read_Elec
-
 
   subroutine create_sp2sp01(this,calc_xijo)
     use parallel, only : Node
@@ -660,6 +861,7 @@ contains
                 H01(ind01,:)   = H(ind,:)
                 S01(ind01)     = S(ind)
                 xij01(:,ind01) = xij(:,ind)
+
                 if ( lcalc_xijo ) then
                    ja = iaorb(col01(ind01),this%lasto)
                    xijo01(:,ind01) = xij(:,ind) - &
@@ -698,7 +900,11 @@ contains
     if ( associated(this%xa) ) deallocate(this%xa)
     if ( associated(this%lasto) ) deallocate(this%lasto)
     nullify(this%xa,this%lasto)
+    if ( associated(this%xa_used) ) deallocate(this%xa_used)
+    if ( associated(this%lasto_used) ) deallocate(this%lasto_used)
+    nullify(this%xa_used,this%lasto_used)
 
   end subroutine delete_TSHS
 
+  ! TODO create routine for extracting max size in the neighbour cells!
 end module m_ts_electype

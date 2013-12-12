@@ -100,7 +100,7 @@ contains
     use precision,    only : grid_p
     use parallel,     only : IONode
     use mesh,         only : meshLim
-    use m_ts_options, only : VoltFDF, VoltL
+    use m_ts_options, only : Volt, VoltL
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -127,7 +127,7 @@ contains
     dLvc = Lvc/max( meshG(ts_tdir), 1 ) !
 
     ! field in [0;Lvc]: v = e*x = f*index
-    dF = -VoltFDF*dLvc/Lvc
+    dF = -Volt*dLvc/Lvc
 
     ! Set up counter
     if ( ts_tdir == 1 ) then
@@ -171,7 +171,7 @@ contains
     use precision,    only : grid_p
     use parallel,     only : IONode
     use mesh,         only : meshLim
-    use m_ts_options, only : VoltFDF, VoltL, VoltR
+    use m_ts_options, only : Volt, VoltL, VoltR
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -199,7 +199,7 @@ contains
     Lvc = dLvc * (right_elec_mesh_idx - left_elec_mesh_idx)
 
     ! field in [0;Lvc]: v = e*x = f*index
-    dF = VoltFDF*dLvc/Lvc
+    dF = Volt*dLvc/Lvc
 
     ! Find quantities in mesh coordinates
     meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
@@ -398,7 +398,7 @@ contains
   subroutine print_ts_voltage(ucell)
     use parallel,     only : IONode
     use units,        only : eV
-    use m_ts_options, only : VoltFDF
+    use m_ts_options, only : Volt
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -420,7 +420,7 @@ contains
 
     if(IONode) then
        write(*,*)
-       write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias ', VoltFDF/eV,'V'
+       write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias ', Volt/eV,'V'
        write(*,'(a,3(f6.3,a))')'ts_voltage: In unit cell direction = {', &
             vcdir(1),',',vcdir(2),',',vcdir(3),'}'
     end if

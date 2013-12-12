@@ -92,8 +92,6 @@ contains
     use mpi_siesta, only : MPI_Comm_Self
 #endif 
     use parallel, only: IONode, Node
-    ! Used when creating the update region...
-    use m_ts_options, only : UseBulk, UpdateDMCR
 
     use m_ts_electype
     use m_ts_options, only : IsVolt
@@ -403,9 +401,9 @@ contains
           if ( jot == TYP_BUFFER ) cycle
 
           if ( iot > 0 ) then
-             UseBulk = Elecs(iot)%UseBulk
+             UseBulk = Elecs(iot)%Bulk
           else if ( jot > 0 ) then
-             UseBulk = Elecs(jot)%UseBulk
+             UseBulk = Elecs(jot)%Bulk
           else
              ! we are definitely not in an electrode
              UseBulk = .true.
@@ -487,7 +485,7 @@ contains
     ! search logical to determine the update region...
     logical, allocatable :: lup_DM(:)
     logical :: direct_LR
-    logical :: UseBulk, UpdateDMCR
+    logical :: UseBulk, DM_CrossTerms
 
     ! Loop-counters
     integer :: j ,io, ic,jc, ind
@@ -534,15 +532,15 @@ contains
           if ( jct == TYP_BUFFER ) cycle
 
           if ( ict > 0 ) then
-             UseBulk = Elecs(ict)%UseBulk
-             UpdateDMCR = Elecs(ict)%UpdateDMCR
+             UseBulk = Elecs(ict)%Bulk
+             DM_CrossTerms = Elecs(ict)%DM_CrossTerms
           else if ( jct > 0 ) then
-             UseBulk = Elecs(jct)%UseBulk
-             UpdateDMCR = Elecs(jct)%UpdateDMCR
+             UseBulk = Elecs(jct)%Bulk
+             DM_CrossTerms = Elecs(jct)%DM_CrossTerms
           else
              ! we are definitely not in an electrode
              UseBulk = .true.
-             UpdateDMCR = .true.
+             DM_CrossTerms = .false.
           end if
 
           ! We check whether it is electrode-connections. 
@@ -568,7 +566,7 @@ contains
              i_in_C = ict == TYP_DEVICE
              j_in_C = jct == TYP_DEVICE
 
-             if ( UpdateDMCR ) then
+             if ( .not. DM_CrossTerms ) then
                 ! the user has requested to ONLY update the central region
                 lup_DM(ind) = i_in_C .and. j_in_C
              else

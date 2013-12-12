@@ -320,6 +320,9 @@ TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux.o m_ts_kpoints.o \
 	 m_ts_method.o m_ts_elec_se.o \
 	 m_ts_debug.o m_ts_io_contour.o m_ts_tdir.o
 
+# New contour objects
+TS_OBJS += m_ts_contour_eq.o m_ts_contour_neq.o m_ts_io_ctype.o
+
 # Transiesta objects (new memory reduced objects)
 TS_OBJS += m_ts_Sparsity2TriMat.o \
 	m_ts_dm_update.o m_ts_weight.o \
@@ -576,14 +579,11 @@ m_cell.o: precision.o siesta_geom.o units.o
 m_check_supercell.o: minvec.o parallel.o precision.o
 m_diagon.o: precision.o
 m_dipol.o: precision.o
-m_dm_init.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
-m_dm_init.o: parallel.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 m_efield.o: atmfuncs.o mesh.o parallel.o precision.o siesta_cml.o siesta_geom.o
 m_efield.o: sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
-m_exp_coord.o: files.o m_fdf_global.o parallel.o precision.o sys.o units.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_filter.o: bessph.o m_recipes.o radfft.o sorting.o
 m_fire.o: parallel.o precision.o
@@ -633,14 +633,23 @@ m_ts_Sparsity2TriMat.o: create_Sparsity_Union.o geom_helper.o
 m_ts_Sparsity2TriMat.o: intrinsic_missing.o m_ts_electype.o m_ts_options.o
 m_ts_Sparsity2TriMat.o: parallel.o precision.o
 m_ts_aux.o: precision.o
-m_ts_cctype.o: m_gauss_fermi_inf.o precision.o
+m_ts_cctype.o: m_gauss_fermi_inf.o m_ts_electype.o m_ts_io_ctype.o precision.o
 m_ts_charge.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_ts_charge.o: m_ts_electype.o m_ts_method.o parallel.o precision.o
-m_ts_contour.o: m_gauss_fermi_17.o m_gauss_fermi_18.o m_gauss_fermi_19.o
-m_ts_contour.o: m_gauss_fermi_20.o m_gauss_fermi_22.o m_gauss_fermi_24.o
-m_ts_contour.o: m_gauss_fermi_26.o m_gauss_fermi_28.o m_gauss_fermi_30.o
-m_ts_contour.o: m_gauss_fermi_inf.o m_gauss_quad.o m_integrate.o m_ts_aux.o
-m_ts_contour.o: m_ts_cctype.o m_ts_io_contour.o parallel.o precision.o units.o
+m_ts_contour.o: m_ts_cctype.o m_ts_contour_eq.o m_ts_contour_neq.o
+m_ts_contour.o: m_ts_electype.o m_ts_io_contour.o parallel.o precision.o
+m_ts_contour_eq.o: m_gauss_fermi_17.o m_gauss_fermi_18.o m_gauss_fermi_19.o
+m_ts_contour_eq.o: m_gauss_fermi_20.o m_gauss_fermi_22.o m_gauss_fermi_24.o
+m_ts_contour_eq.o: m_gauss_fermi_26.o m_gauss_fermi_28.o m_gauss_fermi_30.o
+m_ts_contour_eq.o: m_gauss_fermi_inf.o m_gauss_quad.o m_integrate.o m_ts_aux.o
+m_ts_contour_eq.o: m_ts_cctype.o m_ts_electype.o m_ts_io_contour.o
+m_ts_contour_eq.o: m_ts_io_ctype.o parallel.o precision.o units.o
+m_ts_contour_neq.o: m_gauss_fermi_17.o m_gauss_fermi_18.o m_gauss_fermi_19.o
+m_ts_contour_neq.o: m_gauss_fermi_20.o m_gauss_fermi_22.o m_gauss_fermi_24.o
+m_ts_contour_neq.o: m_gauss_fermi_26.o m_gauss_fermi_28.o m_gauss_fermi_30.o
+m_ts_contour_neq.o: m_gauss_fermi_inf.o m_gauss_quad.o m_integrate.o m_ts_aux.o
+m_ts_contour_neq.o: m_ts_cctype.o m_ts_electype.o m_ts_io_contour.o
+m_ts_contour_neq.o: m_ts_io_ctype.o parallel.o precision.o units.o
 m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
 m_ts_debug.o: precision.o
 m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
@@ -654,7 +663,7 @@ m_ts_electrode.o: geom_helper.o m_mat_invert.o m_ts_cctype.o m_ts_electype.o
 m_ts_electrode.o: m_ts_io.o m_ts_kpoints.o parallel.o precision.o sys.o units.o
 m_ts_electype.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_ts_electype.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o m_ts_io.o
-m_ts_electype.o: parallel.o precision.o
+m_ts_electype.o: m_ts_io_ctype.o parallel.o precision.o
 m_ts_full.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_full.o: class_SpData1D.o class_Sparsity.o m_ts_cctype.o m_ts_contour.o
 m_ts_full.o: m_ts_debug.o m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o
@@ -666,8 +675,8 @@ m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o m_ts_electype.o parallel.o
 m_ts_gf.o: precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
 m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
-m_ts_io_contour.o: m_gauss_fermi_inf.o m_ts_cctype.o parallel.o precision.o
-m_ts_io_contour.o: units.o
+m_ts_io_contour.o: m_ts_io_ctype.o precision.o units.o
+m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
 m_ts_kpoints.o: files.o find_kgrid.o m_ts_options.o m_ts_tdir.o minvec.o
@@ -873,8 +882,7 @@ sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 ts_init.o: files.o m_ts_cctype.o m_ts_contour.o m_ts_electype.o m_ts_gf.o
-ts_init.o: m_ts_io_contour.o m_ts_kpoints.o m_ts_method.o m_ts_options.o
-ts_init.o: parallel.o
+ts_init.o: m_ts_kpoints.o m_ts_method.o m_ts_options.o parallel.o
 ts_show_regions.o: m_ts_electype.o parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o

@@ -37,10 +37,8 @@ contains
     use m_ts_gf,      only : do_Green
     
     use m_ts_contour, only : contour_Eq, contour_EqL, contour_EqR, contour_nEq
-    use m_ts_contour, only : setup_contour
     use m_ts_contour, only : sort_contour
     use m_ts_contour, only : NEn, contour
-    use m_ts_io_contour, only : ts_print_contour, ts_io_contour
     use m_ts_kpoints, only : setup_ts_kpoint_grid
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
     use m_ts_cctype
@@ -109,37 +107,37 @@ contains
             na_BufL,size(Elecs),Elecs,na_BufR)
        
        ! Create the contour lines
-       call setup_contour(IsVolt)
+!       call setup_contour(IsVolt)
 
        ! Print out the contour path
-       call ts_print_contour(contour)
+!       call ts_print_contour(contour)
      
        ! Save the contour path to <slabel>.CONTOUR
-       call ts_io_contour(contour,slabel)
+!       call ts_io_contour(contour,slabel)
 
        ! We sort the contour to obtain the highest 
        ! numerical accuracy (simply sort by weight in ascending order)
        eNE = 0
-       if ( IsVolt ) then
-          c => contour_EqL()
-          eNE = eNE + size(c)
+!       if ( IsVolt ) then
+!          c => contour_EqL()
+!          eNE = eNE + size(c)
           ! 1) sort the left equilibrium points
-          call sort_contour(size(c),c)
-          c => contour_EqR()
-          eNE = eNE + size(c)
+!          call sort_contour(size(c),c)
+!          c => contour_EqR()
+!          eNE = eNE + size(c)
           ! 2) sort the right equilibrium points
-          call sort_contour(size(c),c)
-          c => contour_nEq()
-          eNE = eNE + size(c)
+!          call sort_contour(size(c),c)
+!          c => contour_nEq()
+!          eNE = eNE + size(c)
           ! 3) sort the non-equilibrium points
-          call sort_contour(size(c),c)
-       else
-          c => contour_Eq()
-          eNE = eNE + size(c)
+!          call sort_contour(size(c),c)
+!       else
+!          c => contour_Eq()
+!          eNE = eNE + size(c)
           ! 1) sort the equilibrium points
-          call sort_contour(size(c),c)
-       end if
-       if ( eNE /= NEn ) call die('Wrong sorting of the contour')
+!          call sort_contour(size(c),c)
+!       end if
+!       if ( eNE /= NEn ) call die('Wrong sorting of the contour')
 
        if ( .not. TS_Analyze ) then
 
@@ -150,7 +148,7 @@ contains
           do i = 1 , size(Elecs)
              call do_Green(Elecs(i), ReUseGF, &
                   ts_nkpnt,ts_kpoint,ts_kweight, &
-                  .false., Elec_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
+                  .false., Elecs_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
                   ucell,xa,na_u,NEn,contour,.false.,dos,nspin)
           end do
           

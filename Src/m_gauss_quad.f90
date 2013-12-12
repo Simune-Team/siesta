@@ -85,9 +85,9 @@ module m_gauss_quad
   
   implicit none
 
-  integer,  parameter :: dp = selected_real_kind(p=10)
-  real(dp), parameter :: Pi     = 3.14159265358979323846264338328_dp
-  real(dp), parameter :: Pihalf = 1.57079632679489655799898173427_dp 
+  integer,  parameter :: dp      = selected_real_kind(p=10)
+  real(dp), parameter :: Pi      = 3.14159265358979323846264338328_dp
+  real(dp), parameter :: Pihalf  = 1.57079632679489655799898173427_dp 
   real(dp), parameter :: def_EPS = 1.e-12_dp
 
   private 

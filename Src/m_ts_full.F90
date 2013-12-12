@@ -107,7 +107,7 @@ contains
     use m_ts_options, only : na_BufL, no_BufL
     use m_ts_options, only : na_BufR, no_BufR
 
-    use m_ts_options, only : IsVolt, UseBulk, UpdateDMCR
+    use m_ts_options, only : IsVolt
     use m_ts_options, only : VoltL, VoltR
 
     use m_ts_sparse, only : ts_sp_uc
@@ -220,6 +220,7 @@ contains
 ! ************************************************************
 
 ! ******************* Miscalleneous variables ****************
+    logical :: UseBulk, UpdateDMCR ! TODO DELETE
     integer :: ierr
 ! ************************************************************
 

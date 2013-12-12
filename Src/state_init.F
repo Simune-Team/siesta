@@ -44,7 +44,7 @@
 
 #ifdef TRANSIESTA
       use m_ts_options, only : na_BufL, na_BufR
-      use m_ts_options, only : onlyS, UseBulk
+      use m_ts_options, only : onlyS!, UseBulk
       use m_ts_options, only : TS_Analyze, TS_bandwidth_algo
       use m_ts_electype
       use m_ts_global_vars, only: TSrun
@@ -333,7 +333,7 @@
       ! request, and then a more general way to do this should be encouraged.
       if ( TS_Analyze ) then
          ! Force the creation of the full sparsity pattern
-         UseBulk = .false.
+         !UseBulk = .false.
          call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
      &        na_u, lasto)
          call ts_tri_init()
