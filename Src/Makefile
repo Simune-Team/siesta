@@ -658,9 +658,9 @@ m_ts_dm_update.o: intrinsic_missing.o m_ts_cctype.o m_ts_weight.o parallel.o
 m_ts_dm_update.o: precision.o units.o
 m_ts_elec_se.o: intrinsic_missing.o m_ts_cctype.o m_ts_electype.o parallel.o
 m_ts_elec_se.o: precision.o units.o
-m_ts_electrode.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o files.o
-m_ts_electrode.o: geom_helper.o m_mat_invert.o m_ts_cctype.o m_ts_electype.o
-m_ts_electrode.o: m_ts_io.o m_ts_kpoints.o parallel.o precision.o sys.o units.o
+m_ts_electrode.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o
+m_ts_electrode.o: geom_helper.o m_mat_invert.o m_ts_electype.o parallel.o
+m_ts_electrode.o: precision.o sys.o units.o
 m_ts_electype.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_ts_electype.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o m_ts_io.o
 m_ts_electype.o: m_ts_io_ctype.o parallel.o precision.o
@@ -671,8 +671,9 @@ m_ts_full.o: m_ts_full_scat.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
 m_ts_full.o: m_ts_sparse.o m_ts_sparse_helper.o m_ts_weight.o parallel.o
 m_ts_full.o: precision.o units.o
 m_ts_full_scat.o: intrinsic_missing.o parallel.o precision.o
-m_ts_gf.o: m_ts_cctype.o m_ts_electrode.o m_ts_electype.o parallel.o
-m_ts_gf.o: precision.o sys.o units.o
+m_ts_gf.o: m_ts_cctype.o m_ts_contour.o m_ts_contour_eq.o m_ts_contour_neq.o
+m_ts_gf.o: m_ts_electrode.o m_ts_electype.o parallel.o precision.o sys.o
+m_ts_gf.o: units.o
 m_ts_global_vars.o: precision.o
 m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
 m_ts_io_contour.o: m_ts_io_ctype.o precision.o units.o
@@ -881,8 +882,9 @@ struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_init.o: files.o m_ts_cctype.o m_ts_contour.o m_ts_electype.o m_ts_gf.o
-ts_init.o: m_ts_kpoints.o m_ts_method.o m_ts_options.o parallel.o
+ts_init.o: files.o m_ts_cctype.o m_ts_contour.o m_ts_electrode.o
+ts_init.o: m_ts_electype.o m_ts_gf.o m_ts_kpoints.o m_ts_method.o
+ts_init.o: m_ts_options.o parallel.o
 ts_show_regions.o: m_ts_electype.o parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o

@@ -1,4 +1,39 @@
 ----------------------------------------------------
+December 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-97
+Easy way to handle the different arrays, redid GF creation
+
+* The handling of the electrodes are now fully conforming with the
+  left/right 0-1/01 Hamiltonians. This generalizes a lot of the 
+  routines.
+
+* Renamed surface green function routines to incorporate the
+  method used. 
+  This might be useful when other methods are added.
+
+* Added some final routines for the electrode type which eases 
+  the handling of the electrodes.
+
+* Can now successfully create the electrodes for all supplied
+  electrodes
+  Also:
+   1) checking the electrodes matches the new out-put format
+   2) reading in the header of the Green's function is also redone
+
+modified:
+  Src/Makefile
+  Src/m_ts_cctype.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_options.F90
+  Src/m_ts_tri.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 December 12, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-96
 Created a new contour method for input
 

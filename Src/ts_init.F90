@@ -34,7 +34,8 @@ contains
     use parallel, only : IONode
     use files, only : slabel
 
-    use m_ts_gf,      only : do_Green
+    use m_ts_gf,        only : do_Green
+    use m_ts_electrode, only : init_Electrode_HS
     
     use m_ts_contour, only : contour_Eq, contour_EqL, contour_EqR, contour_nEq
     use m_ts_contour, only : sort_contour
@@ -66,7 +67,9 @@ contains
     type(ts_ccontour), pointer :: c(:) => null()
     integer :: i, sNE, eNE
     integer :: nC, nTS
+    logical :: RemUCellDistance
 
+    RemUCellDistance = .false.
 
     ! Read in options for transiesta
     call read_ts_options( wmix, kT, ucell , na_u , xa, lasto )
@@ -142,18 +145,20 @@ contains
        if ( .not. TS_Analyze ) then
 
           ! GF generation:
-          allocate(dos(NEn,nspin))
-          call memory('A','Z',NEn*nspin,'transiesta')
-
           do i = 1 , size(Elecs)
+
+             ! initialize the electrode for Green's function calculation
+             call init_Electrode_HS(Elecs(i),RemUCellDistance)
+
              call do_Green(Elecs(i), ReUseGF, &
-                  ts_nkpnt,ts_kpoint,ts_kweight, &
-                  .false., Elecs_xa_Eps, & !For now TranSIESTA will only perform with inner-cell distances
-                  ucell,xa,na_u,NEn,contour,.false.,dos,nspin)
+                  ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
+                  RemUCellDistance, Elecs_xa_Eps, &
+                  .false.)
+
+             ! clean-up
+             call delete(Elecs(i))
+
           end do
-          
-          call memory('D','Z',NEn*nspin,'transiesta')
-          deallocate(dos)
 
        end if
 

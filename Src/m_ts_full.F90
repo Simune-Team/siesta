@@ -285,24 +285,18 @@ contains
        open(file=GFFile(Elecs(2)),unit=uGFR,form='unformatted')
     end if
 
-! Read-in header of Green's functions
-! Prepare for the calculation
-! We read in the k-points that the electrode was generated with.
-! Furthermore we read in the expansion q-points
-! They are communicated in the routine
+    ! Read-in header of Green's functions
+    ! Prepare for the calculation
+    ! We read in the k-points that the electrode was generated with.
+    ! Furthermore we read in the expansion q-points
+    ! They are communicated in the routine
 
-! Read in the headers of the surface-Green's function files...
-! Left
-    call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn,  &
-         Elecs(1),.false.,nspin, &
-         nkparL,kparL,wkparL, &
-         nqL,wqL,qLb)
+    ! Read in the headers of the surface-Green's function files...
+    ! Left
+    call read_Green(uGFL,Elecs(1), ts_nkpnt, NEn, .false. )
 
-! Right
-    call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn, &
-         Elecs(2),.false.,nspin,  &
-         nkparR,kparR,wkparR, &
-         nqR,wqR,qRb)
+    ! Right
+    call read_Green(uGFR,Elecs(2), ts_nkpnt, NEn, .false. )
 
 
     ! We do need the full GF AND a single work array to handle the

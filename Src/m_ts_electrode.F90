@@ -22,8 +22,9 @@ module m_ts_electrode
   implicit none
 
   public :: create_Green
+  public :: init_Electrode_HS
 
-  private !
+  private
 
   ! Accuracy of the surface-Green's function
   real(dp), parameter :: accur = 1.e-15_dp
@@ -34,12 +35,14 @@ module m_ts_electrode
 
 contains
 
+
   ! Calculates the surface Green's function for the electrodes
   ! Handles both the left and right one
-  subroutine surface_Green_DOS(no,ZE,H00,S00,H01,S01,GS, &
+  ! this is the Sancho, Sancho and Rubio algorithm
+  subroutine SSR_sGreen_DOS(no,ZE,H00,S00,H01,S01,GS, &
        zDOS, &
        nwork, zwork, &
-       iterations, is_left, final_invert)
+       iterations, final_invert)
        
 ! ***************** INPUT **********************************************
 ! integer     no      : Number of orbitals in the electrode
@@ -65,7 +68,6 @@ contains
 
     integer,     intent(in) :: nwork
 
-    logical, intent(in), optional :: is_left
     logical, intent(in), optional :: final_invert
 
 ! ***********************
@@ -83,7 +85,7 @@ contains
     integer :: nom1, no2, nosq
     integer :: ierr             !error in inversion
     integer :: i,j,ic,ic2
-    logical :: LEFT, as_first
+    logical :: as_first
 
     real(dp) :: ro
 
@@ -100,10 +102,6 @@ contains
     if ( present(iterations) ) iterations = 0
 
     call timer('ts_GS',1)
-
-    ! We default to requesting the left surface Green's function
-    LEFT = .true.
-    if ( present(is_left) ) LEFT = is_left
 
     nom1 = no - 1
     no2  = 2 * no
@@ -124,13 +122,9 @@ contains
     i = i + nosq
     gb => zwork(i+1:i+nosq) 
     i = i + nosq
-    if ( LEFT ) then
-       gsR => zwork(i+1:i+nosq) 
-       gsL => GS
-    else
-       gsL => zwork(i+1:i+nosq) 
-       gsR => GS
-    end if
+
+    gsL => zwork(i+1:i+nosq) 
+    gsR => GS
 
 
 ! gb    =   Z*S00-H00
@@ -193,19 +187,22 @@ contains
 
 ! ba    = (Z*S10-H10)*t0b
        call zgemm('N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_0,w,no)
-       gb(:)  = gb(:) + w(:)
-       gsL(:) = gsL(:) + w(:)
+       do i = 1 , nosq
+          gb(i)  = gb(i) + w(i)
+          gsL(i) = gsL(i) + w(i)
+       end do
 
 ! ab    = (Z*S01-H01)*t0
        call zgemm('N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
-       gb(:)  = gb(:) + w(:)
-       gsR(:) = gsR(:) + w(:)
-       
        ro = -1._dp
        do i = 1 , nosq
+          gb(i)  = gb(i) + w(i)
+          gsR(i) = gsR(i) + w(i)
+
+          ! also update the criteria
           ro = max(ro,abs(w(i)))
        end do
-
+       
     end do
 
     if ( present(final_invert) ) then
@@ -305,13 +302,14 @@ contains
 
     end subroutine switch_alpha_beta_rh1
 
-  end subroutine surface_Green_DOS
+  end subroutine SSR_sGreen_DOS
 
   ! Calculates the surface Green's function for the electrodes
   ! Handles both the left and right one
-  subroutine surface_Green_NoDOS(no,ZE,H00,S00,H01,S01,GS, &
+  ! this is the Sancho, Sancho and Rubio algorithm
+  subroutine SSR_sGreen_NoDOS(no,ZE,H00,S00,H01,S01,GS, &
        nwork, zwork, &
-       iterations, is_left, final_invert)
+       iterations, final_invert)
        
 ! ***************** INPUT **********************************************
 ! integer     no      : Number of orbitals in the electrode
@@ -337,7 +335,6 @@ contains
 
     integer,     intent(in) :: nwork
 
-    logical, intent(in), optional :: is_left
     logical, intent(in), optional :: final_invert
 
 ! ***********************
@@ -354,7 +351,7 @@ contains
     integer :: nom1, no2, nosq
     integer :: ierr             !error in inversion
     integer :: i,j,ic,ic2
-    logical :: LEFT, as_first
+    logical :: as_first
 
     real(dp) :: ro
 
@@ -370,10 +367,6 @@ contains
     if ( present(iterations) ) iterations = 0
 
     call timer('ts_GS',1)
-
-    ! We default to requesting the left surface Green's function
-    LEFT = .true.
-    if ( present(is_left) ) LEFT = is_left
 
     nom1 = no - 1
     no2  = 2 * no
@@ -448,26 +441,18 @@ contains
 ! beta  = -(Z*S10-H10)*t0 ??
        call zgemm('N','N',no,no,no,z_1,rh1(nosq+1),no,rh(nosq+1),no,z_0,beta,no)
 
-       if ( LEFT ) then
-! ba    = (Z*S10-H10)*t0b
-          call zgemm('N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_0,w,no)
-          gb(:) = gb(:) + w(:)
-          gs(:) = gs(:) + w(:)
-       else
 ! gb = gb + [ba    = (Z*S10-H10)*t0b]
-          call zgemm('N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_1,gb,no)
-       end if
+       call zgemm('N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_1,gb,no)
 
 ! ab    = (Z*S01-H01)*t0
        call zgemm('N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
-       
-       gb(:) = gb(:) + w(:)
-       if ( .not. LEFT ) then
-          gs(:) = gs(:) + w(:)
-       end if
-       
+
        ro = -1._dp
        do i = 1 , nosq
+          gb(i) = gb(i) + w(i)
+          gs(i) = gs(i) + w(i)
+
+          ! also do the accuracy calculation
           ro = max(ro,abs(w(i)))
        end do
 
@@ -520,7 +505,7 @@ contains
 
     end subroutine switch_alpha_beta_rh1
 
-  end subroutine surface_Green_NoDOS
+  end subroutine SSR_sGreen_NoDOS
 
 !------------------------------------------------------------------------
 !************************************************************************
@@ -541,9 +526,10 @@ contains
 ! ##################################################################
 
   subroutine create_Green(El, &
-       nkpnt,kpoint,kweight, &
-       RemUCellDistance, xa_Eps, &
-       ucell,xa,na_u,NEn,contour,CalcDOS,ZBulkDOS,nspin)
+       ucell,nkpnt,kpoint,kweight, &
+       RemUCellDistance, &
+       NEn,ce,cidx, &
+       CalcDOS,ZBulkDOS)
 
     use precision,  only : dp
     use parallel  , only : Node, Nodes, IONode
@@ -554,11 +540,10 @@ contains
     use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
     use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_integer
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
-    use mpi_siesta, only : DAT_dcomplex => MPI_double_complex
+    use mpi_siesta, only : MPI_double_complex
     use mpi_siesta, only : MPI_double_precision
 #endif
     use m_ts_electype
-    use m_ts_cctype
     use m_mat_invert
 
     use class_Sparsity
@@ -573,33 +558,26 @@ contains
     real(dp),intent(in)           :: kpoint(3,nkpnt) ! k-points
     real(dp),intent(in)           :: kweight(nkpnt) ! weights of kpoints
     logical, intent(in)           :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
-    real(dp), intent(in)          :: xa_Eps ! the coordinate precision for the electrodes
-    integer, intent(in)           :: na_u ! Full system count of atoms in unit cell
     real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
-    real(dp), intent(in)          :: xa(3,na_u) ! Coordinates in the system for the TranSIESTA routine
-    integer, intent(in)           :: nspin ! spin in system
     integer, intent(in)           :: NEn ! Number of energy points
-    type(ts_ccontour), intent(in) :: contour(NEn) ! contours path for GF
+    complex(dp), intent(in)       :: ce(NEn) ! the energy points
+    integer, intent(in)           :: cidx(3,NEn) ! a 3-index designator, (<eq|neq|neq-tail>,c_io,ie)
     logical, intent(in)           :: CalcDOS ! whether or not to calculate the bulk-density of states.
 
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)      :: ZBulkDOS(NEn,nspin) 
+    complex(dp), intent(out)      :: ZBulkDOS(NEn,Spin(El)) 
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
     ! Array for holding converted k-points
     real(dp), allocatable :: kE(:,:)
-
-    integer :: nq ! number of q-points, set 'ts_mkqgrid'
-    real(dp), allocatable :: qb(:,:), wq(:) ! q points for repetition, in units
-                                            ! of reciprocal lattice vectors (hence the b)
-                                            ! weights for q points for repetition
-    real(dp) :: kpt(3), qpt(3), ktmp(3)
+    real(dp) :: kpt(3), qpt(3), ktmp(3), wq
     
     ! Dimensions
+    integer :: nq, nspin
     integer :: nuo_E, nS, nuou_E, nuS
 
     ! Electrode transfer and hamiltonian matrix
@@ -617,15 +595,15 @@ contains
 
     ! In order to print information about the recursize algorithm
     integer, allocatable :: iters(:,:)
-    real(dp) :: i_mean, i_std
+    real(dp) :: i_mean, i_std, mu
 
     integer :: ierror,uGF
     ! Big loop counters
     integer :: iEn,ispin, iqpt,ikpt
     ! Counters
-    integer :: i,j,ia,io,jo
+    integer :: i,j,k,ia,io,jo
 
-    logical :: is_left, Gq_allocated
+    logical :: is_left, Gq_allocated, final_invert
 
 #ifdef MPI
     integer :: MPIerror,curNode
@@ -637,6 +615,8 @@ contains
     call write_debug( 'PRE create_Green' )
 #endif
 
+    call timer('genGreen',1)
+
     ! Check input for what to do
     if( El%inf_dir == INF_NEGATIVE ) then
        is_left = .true.
@@ -645,8 +625,18 @@ contains
     else
        call die("init electrode has received wrong job ID [L,R].")
     endif
-    
-    call timer('genGreen',1)
+
+    ! capture information from the electrode
+    nspin = Spin(El)
+    mu = El%mu
+    nuo_E  = Orbs(El)
+    nS     = nuo_E ** 2
+    nuou_E = UsedOrbs(El)
+    nuS    = nuou_E ** 2
+    ! create expansion q-points (weight of q-points)
+    nq = Rep(El)
+    wq = 1._dp / real(nq,dp)
+    final_invert = nq /= 1
 
     if (IONode) then
        write(*,'(/,2a,/,2a)') &
@@ -673,33 +663,16 @@ contains
             Atoms(El),UsedAtoms(El)
        write(*,'(a,i6,'' / '',i6)') ' Orbitals available / used orbitals: ', &
             Orbs(El),UsedOrbs(El)
-    end if
 
-    ! Read in all variables from the TSHS electrode file.
-    ! Broadcasting within the routine is performed in MPI run
-    call init_electrode_HS(El,xa,na_u,nspin,xa_Eps,RemUCellDistance)
-       
-    nuo_E  = Orbs(El)
-    nS     = nuo_E ** 2
-    nuou_E = UsedOrbs(El)
-    nuS    = nuou_E ** 2
 
-    ! create expansion q-points
-    nq = Rep(El)
-    allocate(qb(3,nq),wq(nq))
-    ! expansion q-points
-    call mkqgrid(RepA1(El),RepA2(El),RepA3(El),nq,qb,wq)
-
-    if ( IONode ) then
        ! We show them in units of Bohr**-1
-       write(*,'(a)') &
-            ' q-points for expanding electrode (Bohr**-1):'
-       do i=1,nq
-          call kpoint_convert(unitcell(El),qb(:,i),qpt,-1)
-          write(*,'(i4,2x,4(E14.5))') i,qpt(1),qpt(2),qpt(3),wq(i)
+       write(*,'(a)') ' q-points for expanding electrode (Bohr**-1):'
+       do i = 1 , nq
+          call kpoint_convert(unitcell(El),q_exp(El,i),qpt,-1)
+          write(*,'(i4,2x,4(E14.5))') i,qpt,wq
        end do
        write(*,'(a,f14.5,1x,a)') &
-            " Fermi level shift in electrode : ",El%mu/eV,' eV'
+            " Fermi level shift in electrode (chemical potential) : ",mu/eV,' eV'
     end if
 
     ! Initialize Green's function and Hamiltonian arrays
@@ -757,13 +730,16 @@ contains
 
        ! Initial header for file
        write(uGF) GFTitle(El)
-       write(uGF) El%mu,NEn
+       ! Electrode information
+       write(uGF) Spin(El), UnitCell(El)
+       write(uGF) UsedAtoms(El),UsedOrbs(El)
+       write(uGF) El%xa_used, El%lasto_used
+       write(uGF) RepA1(El),RepA2(El),RepA3(El)
+       write(uGF) El%mu
+
+       ! Write out explicit information about this content
        write(uGF) RemUCellDistance
-       write(uGF) UsedAtoms(El),RepA1(El),RepA2(El),RepA3(El),nkpnt,nq
-       ! Write spin, ELECTRODE unit-cell
-       write(uGF) spin(El), unitcell(El)
-       ! Write out the atomic coordinates of the used electrode
-       write(uGF) El%xa_used
+       write(uGF) nkpnt
        ! Notice that we write the k-points for the ELECTRODE
        ! Do a conversion here
        allocate(kE(3,nkpnt))
@@ -775,13 +751,15 @@ contains
           ktmp(2) = ktmp(2)/real(RepA2(El),dp)
           ktmp(3) = ktmp(3)/real(RepA3(El),dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
-          call kpoint_convert(unitcell(El),ktmp,kE(:,ikpt),-1)
+          call kpoint_convert(UnitCell(El),ktmp,kE(:,ikpt),-1)
        end do
-       write(uGF) contour(:)%c,contour(:)%w,kE,kweight,qb,wq
+       write(uGF) kE,kweight
        call memory('D','D',nkpnt*3,'create_green')
        deallocate(kE)
-       ! Write the number of USED orbitals for the calculation
-       write(uGF) nuou_E
+
+       ! write out the contour information
+       write(uGF) NEn
+       write(uGF) ce,cidx ! energy points and index designation
     end if
     
 #ifdef MPI
@@ -794,12 +772,12 @@ contains
        ! contour points. Say NEn > 1000
        ! Look in the loop for MPI_Start(...) for where this is used
        do i = 1 , Nodes - 1
-          call MPI_Recv_Init(Gq(1),nuS*nq,DAT_dcomplex, &
+          call MPI_Recv_Init(Gq(1),nuS*nq,MPI_double_complex, &
                i,i,MPI_Comm_World,reqs(i),MPIerror)
        end do
     else
        ! Create request handles for communication
-       call MPI_Send_Init(Gq(1),nuS*nq,DAT_dcomplex, &
+       call MPI_Send_Init(Gq(1),nuS*nq,MPI_double_complex, &
             0,Node,MPI_Comm_World,req,MPIerror)
     end if
 #endif
@@ -807,17 +785,16 @@ contains
     ! prepare the iteration counter
     allocate(iters(NEn,2))
     if ( IONode ) then
+       ! TODO when adding new surface-Green's functions schemes, please update here
        write(*,'(1x,a)') 'Lopez Sancho, Lopez Sancho & Rubio recursive &
             &surface self-energy calculation...'
     end if
 
-! Spin loop .............................................. Spin loop
     spin_loop: do ispin = 1 , nspin
 
        ! Number of iterations
        iters(:,:) = 0
        
-! TS k-point loop ........................................ k-point loop
        kpoint_loop: do ikpt = 1 , nkpnt
             
           ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
@@ -838,7 +815,7 @@ contains
              S01 => zHS((3*nq+iqpt-1)*nS+1:(3*nq+iqpt)*nS)
 
              ! init qpoint in reciprocal lattice vectors
-             call kpoint_convert(unitcell(El),qb(:,iqpt),qpt,-1)
+             call kpoint_convert(unitcell(El),q_exp(El,iqpt),qpt,-1)
 
              ! Setup the transfer matrix and the intra cell at the k-point and q-point
              if ( RemUCellDistance ) then
@@ -858,18 +835,16 @@ contains
                          Sq(i) = S00(io+(nuo_E-nuou_E)+&
                               nuo_E*(jo+(nuo_E-nuou_E)-1))
                          Hq(i) = H00(io+(nuo_E-nuou_E)+&
-                              nuo_E*(jo+(nuo_E-nuou_E)-1)) + &
-                              El%mu * Sq(i)
-                      end do  ! io
-                   end do     ! jo
+                              nuo_E*(jo+(nuo_E-nuou_E)-1)) + mu * Sq(i)
+                      end do
+                   end do
                 else
                    ! Right, the first orbitals
                    do jo = 1 , nuou_E
                       do io = 1 , nuou_E
                          i = i + 1
                          Sq(i) = S00(io+nuo_E*(jo-1))
-                         Hq(i) = H00(io+nuo_E*(jo-1)) + &
-                              El%mu * Sq(i)
+                         Hq(i) = H00(io+nuo_E*(jo-1)) + mu * Sq(i)
                       end do   ! io
                    end do      ! jo
                 end if
@@ -878,7 +853,7 @@ contains
           end do HSq_loop
           
           if ( IONode ) then
-             write(uGF) 1,contour(1)%c,contour(1)%w,ikpt
+             write(uGF) ikpt,1,ce(1),cidx(:,1) ! information about k-point and energy point
              if ( nuo_E /= nuou_E ) then
                 write(uGF) Hq
                 write(uGF) Sq
@@ -891,7 +866,6 @@ contains
              end if
           end if
 
-! Energy contour loop .................................... Energy loop
           Econtour_loop: do iEn = 1, NEn
              
 #ifdef MPI
@@ -901,8 +875,8 @@ contains
              curNode = MOD(iEn-1,Nodes)
              E_Nodes: if ( curNode == Node ) then
 #endif
-             ZEnergy  = contour(iEn)%c
-             ZSEnergy = ZEnergy - dcmplx(El%mu,0.0_dp)
+             ZEnergy  = ce(iEn)
+             ZSEnergy = ZEnergy - dcmplx(mu,0.0_dp)
              
 ! loop over the repeated cell...
              q_loop: do iqpt = 1 , nq
@@ -914,25 +888,25 @@ contains
                 if ( nS == nuS ) then
                    ! instead of doing a copy afterward, we can
                    ! put it the correct place immediately
-                   GS => Gq((     iqpt-1)*nS+1:      iqpt *nS)
+                   GS => Gq((    iqpt-1)*nS+1:      iqpt *nS)
                 end if
 
                 ! Calculate the surface Green's function
                 ! ZSenergy is Zenergy together with the chemical shift
                 if ( CalcDOS ) then
-                   call surface_Green_DOS(nuo_E,ZSEnergy,H00,S00,H01,S01,GS, &
+                   call SSR_sGreen_DOS(nuo_E,ZSEnergy,H00,S00,H01,S01,GS, &
                         zDOS,9*nS,zwork, &
-                        iterations=iters(iEn,1),is_left=is_left,final_invert=Rep(El)/=1)
+                        iterations=iters(iEn,1),final_invert=final_invert)
                 else
-                   call surface_Green_NoDos(nuo_E,ZSEnergy,H00,S00,H01,S01,GS, &
+                   call SSR_sGreen_NoDos(nuo_E,ZSEnergy,H00,S00,H01,S01,GS, &
                         8*nS,zwork, &
-                        iterations=iters(iEn,1),is_left=is_left,final_invert=Rep(El)/=1)
+                        iterations=iters(iEn,1),final_invert=final_invert)
                 end if
 
                 ! We also average the k-points.
                 if ( CalcDOS ) then
                    ZBulkDOS(iEn,ispin) = ZBulkDOS(iEn,ispin) + &
-                        wq(iqpt)*zdos * kweight(ikpt)
+                        wq * zDOS * kweight(ikpt)
                 end if
                   
                 ! Copy over surface Green's function
@@ -962,7 +936,7 @@ contains
              if (IONode) then
                 ! Write out calculated information at E point
 
-                if ( iEn /= 1 ) write(uGF) iEn,contour(iEn)%c,contour(iEn)%w,ikpt
+                if ( iEn /= 1 ) write(uGF) ikpt,iEn,ce(iEn),cidx(:,iEn)
                 write(uGF) Gq
 
              end if
@@ -984,20 +958,20 @@ contains
           ! There is no need to create a buffer array for the Gq
           ! We will not use it until we are in the loop again
           if ( IONode .and. curNode /= Node ) then
-             if ( iEn /= 1 ) write(uGF) iEn,contour(iEn)%c,contour(iEn)%w,ikpt
              call MPI_Start(reqs(curNode),MPIerror)
+             if ( iEn /= 1 ) write(uGF) ikpt,iEn,ce(iEn),cidx(:,iEn)
              call MPI_Wait(reqs(curNode),status,MPIerror)
              write(uGF) Gq
           end if
 
-#endif             
+#endif
 
           end do Econtour_loop
           
        end do kpoint_loop
 
 #ifdef MPI
-       call MPI_Reduce(iters(1,1), iters(1,2), NEn, MPI_Integer, MPI_Max, &
+       call MPI_Reduce(iters(1,1), iters(1,2), NEn, MPI_Integer, MPI_Sum, &
             0, MPI_Comm_World, MPIerror)
 #else
        iters(:,2) = iters(:,1)
@@ -1009,6 +983,7 @@ contains
              i_std = i_std + ( iters(i,2) - i_mean ) ** 2
           end do
           i_std = sqrt(i_std/real(NEn,dp))
+          ! TODO if new surface-Green's function scheme is implemented, fix here
           write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
                &Mean/std iterations: ', i_mean             , i_std
           write(*,'(1x,a,i10,'' / '',i10)')     'Lopez Sancho, Lopez Sancho & Rubio: &
@@ -1058,13 +1033,7 @@ contains
     call memory('D','Z',size(zHS),'create_green')
     deallocate(zHS)
 
-    ! not in memory
-    deallocate(qb,wq)
-
     call clear_mat_inversion()
-
-    ! Clean up the data in the electrode
-    call delete_TSHS(El)
 
 #ifdef MPI
     if ( CalcDOS ) then
@@ -1073,7 +1042,7 @@ contains
        allocate(Gq(NEn*nspin))
        call memory('A','Z',NEn*nspin,'create_green')
        Gq = 0.0_dp
-       call MPI_AllReduce(ZBulkDOS(1,1),Gq(1),NEn*nspin, DAT_dComplex, &
+       call MPI_AllReduce(ZBulkDOS(1,1),Gq(1),NEn*nspin, MPI_double_complex, &
             MPI_Sum,MPI_Comm_World,MPIerror)
        i = 0
        do j = 1 , nspin
@@ -1095,84 +1064,17 @@ contains
     
   end subroutine create_Green
 
-
-!------------------------------------------------------------------------
-!************************************************************************
-!------------------------------------------------------------------------
-  subroutine init_electrode_HS(El,xa_sys,na_u_sys,nspin_sys,xa_Eps,RemUCellDistance)
-
-    use precision, only: dp
-    use sys, only : die
-    use units, only : Ang
-    use parallel, only : IONode
-    use files, only: slabel
-    use m_ts_io, only : ts_read_TSHS_opt
+  subroutine init_Electrode_HS(El,RemUCellDistance)
     use m_ts_electype
     use class_dSpData2D
     use class_dSpData1D
     use class_Sparsity
 
-#ifdef MPI
-    use mpi_siesta, only: MPI_Comm_World
-    use mpi_siesta, only: MPI_Bcast, MPI_Barrier
-    use mpi_siesta, only: MPI_Double_Precision
-    use mpi_siesta, only: MPI_Logical, MPI_Integer
-    use mpi_siesta, only: MPI_Reduce
-#endif
-#ifndef TBTRANS
-    use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
-#endif
-
-
-! ***********************
-! * INPUT variables     *
-! ***********************
     type(Elec), intent(inout) :: El
-    integer, intent(in)       :: na_u_sys ! Full system count of atoms in unit cell
-    real(dp), intent(in)      :: xa_sys(3,na_u_sys) ! Coordinates in the system for the TranSIESTA routine
-    integer, intent(in)       :: nspin_sys ! spin in system
-    real(dp), intent(in)      :: xa_Eps
-    logical, intent(in)       :: RemUCellDistance
-
-! ***********************
-! * LOCAL variables     *
-! ***********************
-    integer :: notot  ! Total orbitals in all supercells
-    integer :: nspin  ! The spin polarization
-    integer,  dimension(:), pointer :: iza ! atomic species
-    logical :: Gamma_file,TSGamma ! Read gamma from file
-    logical :: onlyS ! onlyS
-    real(dp) :: kdispl(3)
-    integer  :: kscell(3,3)
-    real(dp) :: qtot,Temp ! total charges, electronic temperature
-
-    logical :: eXa ! Errors when testing for position of electrodes
-    real(dp),dimension(3) :: xa_o,xa_sys_o ! Origo coordinates of the electrodes
-    real(dp), pointer :: xa(:,:)
-    real(dp) :: zc
-    real(dp), dimension(:,:), allocatable :: xo
-    real(dp), dimension(3,3) :: recell ! Reciprocal cell without 2Pi, used for Tconnect
-    integer :: sysElec ! the first atom of the electrode in the SYSTEM setup
-    integer :: elecElec ! The first atom in the electrode in the ELECTRODE setup
-    integer :: i,j,k,ia,iuo,juo,ind,iaa !Loop counters
-    integer :: fL ! Filename length
-    integer :: na_u
-    ! For acquiring the maximum Hamiltonian value
-    integer :: mH_i, mH_j, mH_Z, uc_z
-    real(dp) :: mH, mS
-#ifdef MPI
-    logical :: eXa_buff
-    integer :: MPIerror
-#endif
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'PRE init_elec_HS' )
-#endif
-
-    ! Save the number of atoms in the electrode
-    na_u = Atoms(El)
+    logical, intent(in) :: RemUCellDistance
+    
     ! Read-in and create the corresponding transfer-matrices
-    call delete_TSHS(EL) ! ensure clean electrode
+    call delete(El) ! ensure clean electrode
     call read_Elec(El,Bcast=.true.)
     call create_sp2sp01(El,calc_xijo=Rep(El)/=1 .or. RemUCellDistance)
     ! Clean-up, we will not need these!
@@ -1197,211 +1099,314 @@ contains
        call delete(El%xij01)
     end if
 
-    ! Read in the optional needed requests
-    call ts_read_TSHS_opt(HSFile(El), &
-         kscell=kscell,kdispl=kdispl, &
-         Gamma_SCF=TSGamma, &
-         Bcast=.true.)
-          
-! Checking the electrode k-grid against the system k-grid...
-! This will also check for the repetition...
-! This check is not advisable in the TBtrans utility.
-! This is because the k-grid is often more fine when calculating
-! the transmission function. (it could also be more coarse!)
-! Perhaps this should only check that the electrode k-sampling
-! is AT LEAST as good as the system k-grid for a TranSiesta run?
-#ifndef TBTRANS
+  end subroutine init_Electrode_HS
 
-    ! If the system is not a Gamma calculation, then the file must
-    ! not be either (the repetition will only increase the number of
-    ! k-points, hence the above)
-    eXa = (.not. ts_gamma_scf ) .and. TSGamma
-    do j = 1 , 3
-       if ( j == El%t_dir ) cycle
-       do i = 1 , 3
-          if ( i == El%t_dir ) cycle
-          if ( j == 1 .and. j == i ) then
-             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*RepA1(El) )
-          else if ( j == 2 .and. j == i ) then
-             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*RepA2(El) )
-          else if ( j == 3 .and. j == i ) then
-             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*RepA3(El) )
-          else 
-             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j) )
-          end if
-       end do
-       eXa = eXa .or. ( kdispl(j) /= ts_kdispl(j) )
-    end do
-    ! We still require that the offset in the T-direction is the same
-    ! is this even necessary?
-    eXa = eXa .or. ( kdispl(El%t_dir) /= ts_kdispl(El%t_dir) )
-    if ( eXa ) then
-       write(*,'(a)') 'Incompatible k-grids...'
-       write(*,'(a)') 'Electrode file k-grid:'
-       do j = 1 , 3
-          write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),kdispl(j)
-       end do
-       write(*,'(a)') 'System k-grid:'
-       do j = 1 , 3
-          write(*,'(3(i4,tr1),f8.4)') (ts_kscell(i,j),i=1,3),ts_kdispl(j)
-       end do
-       write(*,'(a)') 'Electrode file k-grid should be:'
-       kscell(:,1) = ts_kscell(:,1) * RepA1(El)
-       kscell(:,2) = ts_kscell(:,2) * RepA2(El)
-       kscell(:,3) = ts_kscell(:,3) * RepA3(El)
-       do j = 1 , 3
-          write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),ts_kdispl(j)
-       end do
-       call die('Incompatible electrode k-grids') 
-    end if
-#endif
-
-    if( nspin_sys /= spin(El) ) then
-       write(*,*) "Spin of electrode '"//trim(HSfile(El)) &
-            //"' is different."
-       write(*,*) "Spin electrode / Spin system",spin(El),nspin_sys
-       call die('Wrong spin! Check system and electrode!')
-    end if
-
-    ! Do a recheck if the electrode file has been overwritted or??
-    if ( UsedAtoms(El) > na_u ) then
-       write(*,*) "# of requested atoms is larger than available."
-       write(*,*) "Requested: ",UsedAtoms(El)
-       write(*,*) "Available: ",na_u
-       call die("Error on requested atoms.")
-    end if
-
-    ! Create reciprocal cell, without 2Pi
-    call reclat(unitcell(El),recell,0)
-
-    if( El%inf_dir == INF_NEGATIVE ) then
-       elecElec = na_u - UsedAtoms(El) + 1
-    else if ( El%inf_dir == INF_POSITIVE ) then
-       elecElec = 1
-    else
-       call die("init electrode has received wrong job ID [L,R].")
-    endif
-
-    ! Print out structural information of the system versus the electrode
-    struct_info: if ( IONode ) then
-       write(*,*) trim(name(El))//' unit cell (Ang):'
-       do j=1,3
-          write(*,'(3F8.4)') (El%ucell(i,j)/Ang,i=1,3)
-       end do
-
-       write(*,'(a,t35,a)') &
-            " Structure of the "//trim(name(El))//" electrode","| System electrode:"
-       write(*,'(t3,3a10,''  |'',3a10)') &
-            "X (Ang)","Y (Ang)","Z (Ang)", &
-            "X (Ang)","Y (Ang)","Z (Ang)"
-
-       ! Save origo of System electrode
-       xa_sys_o(:) = xa_sys(:,El%idx_na)
-       xa => El%xa
-       ! Save origo of electrode 
-       xa_o(:) = xa(:,elecElec)
-
-       ! Initialize error parameter
-       eXa = .false.
-       iaa = El%idx_na
-       do ia = elecElec , elecElec + UsedAtoms(El) - 1
-          do k=0,RepA3(El)-1
-          do j=0,RepA2(El)-1
-          do i=0,RepA1(El)-1
-             write(*,'(t3,3f10.5,''  |'',3f10.5)') &
-                  (xa(1,ia)-xa_o(1)+sum(El%ucell(1,:)*(/i,j,k/)))/Ang, &
-                  (xa(2,ia)-xa_o(2)+sum(El%ucell(2,:)*(/i,j,k/)))/Ang, &
-                  (xa(3,ia)-xa_o(3)+sum(El%ucell(3,:)*(/i,j,k/)))/Ang, &
-                  (xa_sys(1,iaa)-xa_sys_o(1))/Ang, &
-                  (xa_sys(2,iaa)-xa_sys_o(2))/Ang, &
-                  (xa_sys(3,iaa)-xa_sys_o(3))/Ang
-             ! Assert the coordinates
-             eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
-                  sum(El%ucell(1,:)*(/i,j,k/)) - &
-                  xa_sys(1,iaa)+xa_sys_o(1)) > xa_EPS
-             eXa=eXa.or.abs(xa(2,ia)-xa_o(2) + &
-                  sum(El%ucell(2,:)*(/i,j,k/)) - &
-                  xa_sys(2,iaa)+xa_sys_o(2)) > xa_EPS
-             eXa=eXa.or.abs(xa(3,ia)-xa_o(3) + &
-                  sum(El%ucell(3,:)*(/i,j,k/)) - &
-                  xa_sys(3,iaa)+xa_sys_o(3)) > xa_EPS
-             iaa = iaa + 1
-          end do
-          end do
-          end do
-       end do
-       if ( eXa ) then
-
-          ! We need to write out the correct formatting of the electrodes.
-          ! We shift to the first electrode coordinate, and add the 
-          ! first system electrode atom. 
-          ! If the user has the %block AtomicCoord... in:
-          !    LatticeConstant         1. Ang
-          !    AtomicCoordinatesFormat    Ang
-          ! then it is direct copy paste ! :)
-          xa_o(:) = -xa(:,elecElec) + xa_sys(:,El%idx_na)
-
-          write(*,'(a)') "Coordinates from the electrode repeated &
-               &out to an FDF file"
-          write(*,'(a,i0,a)') "NOTICE: that these coordinates are &
-               &arranged with respect to atom ", El%idx_na," in your FDF file"
-          write(*,'(a)') "NOTICE: that you need to add the species label again"
-          write(*,'(a)') "For the same species in the electrode you can do:"
-          write(*,'(a,/)') "awk '{print $1,$2,$3,1}' <OUT-file>"
-          write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
-          iaa = El%idx_na
-          do ia = elecElec , elecElec + UsedAtoms(El) - 1
-             do k=0,RepA3(El)-1
-             do j=0,RepA2(El)-1
-             do i=0,RepA1(El)-1
-                write(*,'(t2,3(tr1,f20.12))') &
-                     (xa(1,ia)+xa_o(1)+sum(El%ucell(1,:)*(/i,j,k/)))/Ang, &
-                     (xa(2,ia)+xa_o(2)+sum(El%ucell(2,:)*(/i,j,k/)))/Ang, &
-                     (xa(3,ia)+xa_o(3)+sum(El%ucell(3,:)*(/i,j,k/)))/Ang
-             end do
-             end do
-             end do
-          end do
-
-          call die("The electrodes are not situated in the same coordinates. &
-               &Please correct.")
-       end if
-
-    end if struct_info
-
-    if ( IONode ) write(*,*)'I have not checked for too small an electrode'
-
-    uc_z = 0
-
-    if ( IONode .and. uc_z > 1 ) then
-       call warn_err(0,mH,mS, mH_i,mH_j, uc_z)
-       call warn_err(6,mH,mS, mH_i,mH_j, uc_z)
-    end if
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'POS init_elec_HS' )
-#endif
-
-  contains
-    
-    subroutine warn_err(o,mH,mS, i,j, uc_T)
-      integer, intent(in) :: o
-      real(dp), intent(in) :: mH,mS
-      integer, intent(in) :: i,j, uc_T
-      write(o,'(1x,a,i0,a)') 'WARNING: Connections across ',uc_T, &
-           ' unit cells in the transport direction.'
-      write(o,*) 'WARNING: This is inadvisable.'
-      write(o,*) 'WARNING: Please increase the electrode size &
-           &in the transport direction.'
-      write(o,*) 'WARNING: Will proceed without further notice.'
-      write(o,'(1x,a,g11.4,a)') 'WARNING: &
-           &Maximum |Hamiltonian| value: ',mH, ' Ry'
-      write(o,'(1x,a,i0,'', '',i0,a)') 'WARNING: &
-           &Maximum |Hamiltonian| in element ( ',i,j,')'
-      write(o,'(1x,a,g11.4)') 'WARNING: Overlap value at max(|H|): ',mS
-    end subroutine warn_err
-
-  end subroutine init_electrode_HS
+!!------------------------------------------------------------------------
+!!************************************************************************
+!!------------------------------------------------------------------------
+!  subroutine init_electrode_HS(El,xa_sys,na_u_sys,nspin_sys,xa_Eps,RemUCellDistance)
+!
+!    use precision, only: dp
+!    use sys, only : die
+!    use units, only : Ang
+!    use parallel, only : IONode
+!    use files, only: slabel
+!    use m_ts_io, only : ts_read_TSHS_opt
+!    use m_ts_electype
+!    use class_dSpData2D
+!    use class_dSpData1D
+!    use class_Sparsity
+!
+!#ifdef MPI
+!    use mpi_siesta, only: MPI_Comm_World
+!    use mpi_siesta, only: MPI_Bcast, MPI_Barrier
+!    use mpi_siesta, only: MPI_Double_Precision
+!    use mpi_siesta, only: MPI_Logical, MPI_Integer
+!    use mpi_siesta, only: MPI_Reduce
+!#endif
+!#ifndef TBTRANS
+!    use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
+!#endif
+!
+!
+!! ***********************
+!! * INPUT variables     *
+!! ***********************
+!    type(Elec), intent(inout) :: El
+!    integer, intent(in)       :: na_u_sys ! Full system count of atoms in unit cell
+!    real(dp), intent(in)      :: xa_sys(3,na_u_sys) ! Coordinates in the system for the TranSIESTA routine
+!    integer, intent(in)       :: nspin_sys ! spin in system
+!    real(dp), intent(in)      :: xa_Eps
+!    logical, intent(in)       :: RemUCellDistance
+!
+!! ***********************
+!! * LOCAL variables     *
+!! ***********************
+!    integer :: notot  ! Total orbitals in all supercells
+!    integer :: nspin  ! The spin polarization
+!    integer,  dimension(:), pointer :: iza ! atomic species
+!    logical :: Gamma_file,TSGamma ! Read gamma from file
+!    logical :: onlyS ! onlyS
+!    real(dp) :: kdispl(3)
+!    integer  :: kscell(3,3)
+!    real(dp) :: qtot,Temp ! total charges, electronic temperature
+!
+!    logical :: eXa ! Errors when testing for position of electrodes
+!    real(dp),dimension(3) :: xa_o,xa_sys_o ! Origo coordinates of the electrodes
+!    real(dp), pointer :: xa(:,:)
+!    real(dp) :: zc
+!    real(dp), dimension(:,:), allocatable :: xo
+!    real(dp), dimension(3,3) :: recell ! Reciprocal cell without 2Pi, used for Tconnect
+!    integer :: sysElec ! the first atom of the electrode in the SYSTEM setup
+!    integer :: elecElec ! The first atom in the electrode in the ELECTRODE setup
+!    integer :: i,j,k,ia,iuo,juo,ind,iaa !Loop counters
+!    integer :: fL ! Filename length
+!    integer :: na_u
+!    ! For acquiring the maximum Hamiltonian value
+!    integer :: mH_i, mH_j, mH_Z, uc_z
+!    real(dp) :: mH, mS
+!#ifdef MPI
+!    logical :: eXa_buff
+!    integer :: MPIerror
+!#endif
+!
+!#ifdef TRANSIESTA_DEBUG
+!    call write_debug( 'PRE init_elec_HS' )
+!#endif
+!
+!    ! Save the number of atoms in the electrode
+!    na_u = Atoms(El)
+!    ! Read-in and create the corresponding transfer-matrices
+!    call delete_TSHS(EL) ! ensure clean electrode
+!    call read_Elec(El,Bcast=.true.)
+!    call create_sp2sp01(El,calc_xijo=Rep(El)/=1 .or. RemUCellDistance)
+!    ! Clean-up, we will not need these!
+!    ! we should not be very memory hungry now, but just in case...
+!    call delete(El%H)
+!    call delete(El%S)
+!   
+!    ! We do not accept onlyS files
+!    if ( .not. initialized(El%H00) ) then
+!       call die('An electrode file must contain the Hamiltonian')
+!    end if
+!
+!    if ( .not. initialized(El%xij) ) then
+!       call die('An electrode file needs to be a non-Gamma calculation. &
+!            &Ensure at least two k-points in the T-direction.')
+!    end if
+!
+!    call delete(El%xij)
+!    call delete(El%sp)
+!    if ( RemUCellDistance ) then
+!       call delete(El%xij00)
+!       call delete(El%xij01)
+!    end if
+!
+!    ! Read in the optional needed requests
+!    call ts_read_TSHS_opt(HSFile(El), &
+!         kscell=kscell,kdispl=kdispl, &
+!         Gamma_SCF=TSGamma, &
+!         Bcast=.true.)
+!          
+!! Checking the electrode k-grid against the system k-grid...
+!! This will also check for the repetition...
+!! This check is not advisable in the TBtrans utility.
+!! This is because the k-grid is often more fine when calculating
+!! the transmission function. (it could also be more coarse!)
+!! Perhaps this should only check that the electrode k-sampling
+!! is AT LEAST as good as the system k-grid for a TranSiesta run?
+!#ifndef TBTRANS
+!
+!    ! If the system is not a Gamma calculation, then the file must
+!    ! not be either (the repetition will only increase the number of
+!    ! k-points, hence the above)
+!    eXa = (.not. ts_gamma_scf ) .and. TSGamma
+!    do j = 1 , 3
+!       if ( j == El%t_dir ) cycle
+!       do i = 1 , 3
+!          if ( i == El%t_dir ) cycle
+!          if ( j == 1 .and. j == i ) then
+!             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*RepA1(El) )
+!          else if ( j == 2 .and. j == i ) then
+!             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*RepA2(El) )
+!          else if ( j == 3 .and. j == i ) then
+!             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*RepA3(El) )
+!          else 
+!             eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j) )
+!          end if
+!       end do
+!       eXa = eXa .or. ( kdispl(j) /= ts_kdispl(j) )
+!    end do
+!    ! We still require that the offset in the T-direction is the same
+!    ! is this even necessary?
+!    eXa = eXa .or. ( kdispl(El%t_dir) /= ts_kdispl(El%t_dir) )
+!    if ( eXa ) then
+!       write(*,'(a)') 'Incompatible k-grids...'
+!       write(*,'(a)') 'Electrode file k-grid:'
+!       do j = 1 , 3
+!          write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),kdispl(j)
+!       end do
+!       write(*,'(a)') 'System k-grid:'
+!       do j = 1 , 3
+!          write(*,'(3(i4,tr1),f8.4)') (ts_kscell(i,j),i=1,3),ts_kdispl(j)
+!       end do
+!       write(*,'(a)') 'Electrode file k-grid should be:'
+!       kscell(:,1) = ts_kscell(:,1) * RepA1(El)
+!       kscell(:,2) = ts_kscell(:,2) * RepA2(El)
+!       kscell(:,3) = ts_kscell(:,3) * RepA3(El)
+!       do j = 1 , 3
+!          write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),ts_kdispl(j)
+!       end do
+!       call die('Incompatible electrode k-grids') 
+!    end if
+!#endif
+!
+!    if( nspin_sys /= spin(El) ) then
+!       write(*,*) "Spin of electrode '"//trim(HSfile(El)) &
+!            //"' is different."
+!       write(*,*) "Spin electrode / Spin system",spin(El),nspin_sys
+!       call die('Wrong spin! Check system and electrode!')
+!    end if
+!
+!    ! Do a recheck if the electrode file has been overwritted or??
+!    if ( UsedAtoms(El) > na_u ) then
+!       write(*,*) "# of requested atoms is larger than available."
+!       write(*,*) "Requested: ",UsedAtoms(El)
+!       write(*,*) "Available: ",na_u
+!       call die("Error on requested atoms.")
+!    end if
+!
+!    ! Create reciprocal cell, without 2Pi
+!    call reclat(unitcell(El),recell,0)
+!
+!    if( El%inf_dir == INF_NEGATIVE ) then
+!       elecElec = na_u - UsedAtoms(El) + 1
+!    else if ( El%inf_dir == INF_POSITIVE ) then
+!       elecElec = 1
+!    else
+!       call die("init electrode has received wrong job ID [L,R].")
+!    endif
+!
+!    ! Print out structural information of the system versus the electrode
+!    struct_info: if ( IONode ) then
+!       write(*,*) trim(name(El))//' unit cell (Ang):'
+!       do j=1,3
+!          write(*,'(3F8.4)') (El%ucell(i,j)/Ang,i=1,3)
+!       end do
+!
+!       write(*,'(a,t35,a)') &
+!            " Structure of the "//trim(name(El))//" electrode","| System electrode:"
+!       write(*,'(t3,3a10,''  |'',3a10)') &
+!            "X (Ang)","Y (Ang)","Z (Ang)", &
+!            "X (Ang)","Y (Ang)","Z (Ang)"
+!
+!       ! Save origo of System electrode
+!       xa_sys_o(:) = xa_sys(:,El%idx_na)
+!       xa => El%xa
+!       ! Save origo of electrode 
+!       xa_o(:) = xa(:,elecElec)
+!
+!       ! Initialize error parameter
+!       eXa = .false.
+!       iaa = El%idx_na
+!       do ia = elecElec , elecElec + UsedAtoms(El) - 1
+!          do k=0,RepA3(El)-1
+!          do j=0,RepA2(El)-1
+!          do i=0,RepA1(El)-1
+!             write(*,'(t3,3f10.5,''  |'',3f10.5)') &
+!                  (xa(1,ia)-xa_o(1)+sum(El%ucell(1,:)*(/i,j,k/)))/Ang, &
+!                  (xa(2,ia)-xa_o(2)+sum(El%ucell(2,:)*(/i,j,k/)))/Ang, &
+!                  (xa(3,ia)-xa_o(3)+sum(El%ucell(3,:)*(/i,j,k/)))/Ang, &
+!                  (xa_sys(1,iaa)-xa_sys_o(1))/Ang, &
+!                  (xa_sys(2,iaa)-xa_sys_o(2))/Ang, &
+!                  (xa_sys(3,iaa)-xa_sys_o(3))/Ang
+!             ! Assert the coordinates
+!             eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
+!                  sum(El%ucell(1,:)*(/i,j,k/)) - &
+!                  xa_sys(1,iaa)+xa_sys_o(1)) > xa_EPS
+!             eXa=eXa.or.abs(xa(2,ia)-xa_o(2) + &
+!                  sum(El%ucell(2,:)*(/i,j,k/)) - &
+!                  xa_sys(2,iaa)+xa_sys_o(2)) > xa_EPS
+!             eXa=eXa.or.abs(xa(3,ia)-xa_o(3) + &
+!                  sum(El%ucell(3,:)*(/i,j,k/)) - &
+!                  xa_sys(3,iaa)+xa_sys_o(3)) > xa_EPS
+!             iaa = iaa + 1
+!          end do
+!          end do
+!          end do
+!       end do
+!       if ( eXa ) then
+!
+!          ! We need to write out the correct formatting of the electrodes.
+!          ! We shift to the first electrode coordinate, and add the 
+!          ! first system electrode atom. 
+!          ! If the user has the %block AtomicCoord... in:
+!          !    LatticeConstant         1. Ang
+!          !    AtomicCoordinatesFormat    Ang
+!          ! then it is direct copy paste ! :)
+!          xa_o(:) = -xa(:,elecElec) + xa_sys(:,El%idx_na)
+!
+!          write(*,'(a)') "Coordinates from the electrode repeated &
+!               &out to an FDF file"
+!          write(*,'(a,i0,a)') "NOTICE: that these coordinates are &
+!               &arranged with respect to atom ", El%idx_na," in your FDF file"
+!          write(*,'(a)') "NOTICE: that you need to add the species label again"
+!          write(*,'(a)') "For the same species in the electrode you can do:"
+!          write(*,'(a,/)') "awk '{print $1,$2,$3,1}' <OUT-file>"
+!          write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
+!          iaa = El%idx_na
+!          do ia = elecElec , elecElec + UsedAtoms(El) - 1
+!             do k=0,RepA3(El)-1
+!             do j=0,RepA2(El)-1
+!             do i=0,RepA1(El)-1
+!                write(*,'(t2,3(tr1,f20.12))') &
+!                     (xa(1,ia)+xa_o(1)+sum(El%ucell(1,:)*(/i,j,k/)))/Ang, &
+!                     (xa(2,ia)+xa_o(2)+sum(El%ucell(2,:)*(/i,j,k/)))/Ang, &
+!                     (xa(3,ia)+xa_o(3)+sum(El%ucell(3,:)*(/i,j,k/)))/Ang
+!             end do
+!             end do
+!             end do
+!          end do
+!
+!          call die("The electrodes are not situated in the same coordinates. &
+!               &Please correct.")
+!       end if
+!
+!    end if struct_info
+!
+!    if ( IONode ) write(*,*)'I have not checked for too small an electrode'
+!
+!    uc_z = 0
+!
+!    if ( IONode .and. uc_z > 1 ) then
+!       call warn_err(0,mH,mS, mH_i,mH_j, uc_z)
+!       call warn_err(6,mH,mS, mH_i,mH_j, uc_z)
+!    end if
+!
+!#ifdef TRANSIESTA_DEBUG
+!    call write_debug( 'POS init_elec_HS' )
+!#endif
+!
+!  contains
+!    
+!    subroutine warn_err(o,mH,mS, i,j, uc_T)
+!      integer, intent(in) :: o
+!      real(dp), intent(in) :: mH,mS
+!      integer, intent(in) :: i,j, uc_T
+!      write(o,'(1x,a,i0,a)') 'WARNING: Connections across ',uc_T, &
+!           ' unit cells in the transport direction.'
+!      write(o,*) 'WARNING: This is inadvisable.'
+!      write(o,*) 'WARNING: Please increase the electrode size &
+!           &in the transport direction.'
+!      write(o,*) 'WARNING: Will proceed without further notice.'
+!      write(o,'(1x,a,g11.4,a)') 'WARNING: &
+!           &Maximum |Hamiltonian| value: ',mH, ' Ry'
+!      write(o,'(1x,a,i0,'', '',i0,a)') 'WARNING: &
+!           &Maximum |Hamiltonian| in element ( ',i,j,')'
+!      write(o,'(1x,a,g11.4)') 'WARNING: Overlap value at max(|H|): ',mS
+!    end subroutine warn_err
+!
+!  end subroutine init_electrode_HS
 
 
 !**********
@@ -1435,7 +1440,7 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer :: no_u
-    real(dp) :: kqxij
+    real(dp) :: kqxij, Ef
     complex(dp) :: cphase
     integer :: i,j,iuo,juo,ind
     integer, pointer :: ncol00(:), l_ptr00(:),l_col00(:)
@@ -1449,7 +1454,8 @@ contains
 #endif
 
     t_dir = El%t_dir
-    no_u = Orbs(El)
+    Ef    = El%Ef
+    no_u  = Orbs(El) ! this has to be the total size of the electrode
 
     if ( no_u ** 2 /= nS ) call die('Wrong size of the electrode array')
 
@@ -1485,15 +1491,11 @@ contains
        do j = 1 , ncol00(iuo)
           ind = l_ptr00(iuo) + j
           juo = ucorb(l_col00(ind),no_u)
-          kqxij = &
-               k(1)     * xij00(1,ind) + &
-               k(2)     * xij00(2,ind) + &
-               k(3)     * xij00(3,ind) - &
-               k(t_dir) * xij00(t_dir,ind) + &
-               q(1)     * xijo00(1,ind) + &
-               q(2)     * xijo00(2,ind) + &
-               q(3)     * xijo00(3,ind) - &
-               q(t_dir) * xijo00(t_dir,ind)
+          kqxij = 0._dp
+          do i = 1 , 3 
+             if ( i == t_dir ) cycle
+             kqxij = kqxij + k(i) * xij00(i,ind) + q(i) * xijo00(i,ind)
+          end do
 
           cphase = cdexp(dcmplx(0._dp,kqxij) )
           
@@ -1506,15 +1508,11 @@ contains
        do j = 1 , ncol01(iuo)
           ind = l_ptr01(iuo) + j
           juo = ucorb(l_col01(ind),no_u)
-          kqxij = &
-               k(1)     * xij01(1,ind) + &
-               k(2)     * xij01(2,ind) + &
-               k(3)     * xij01(3,ind) - &
-               k(t_dir) * xij01(t_dir,ind) + &
-               q(1)     * xijo01(1,ind) + &
-               q(2)     * xijo01(2,ind) + &
-               q(3)     * xijo01(3,ind) - &
-               q(t_dir) * xijo01(t_dir,ind)
+          kqxij = 0._dp
+          do i = 1 , 3 
+             if ( i == t_dir ) cycle
+             kqxij = kqxij + k(i) * xij01(i,ind) + q(i) * xijo01(i,ind)
+          end do
 
           cphase = cdexp(dcmplx(0._dp,kqxij) )
           
@@ -1533,24 +1531,22 @@ contains
           Sk(j) = 0.5_dp*( Sk(j) + dconjg(Sk(i)) )
           Sk(i) = dconjg(Sk(j))
 
-          Hk(j) = 0.5_dp*( Hk(j) + dconjg(Hk(i)) ) &
-               - El%Ef*Sk(j)
+          Hk(j) = 0.5_dp*( Hk(j) + dconjg(Hk(i)) ) - Ef*Sk(j)
           Hk(i) = dconjg(Hk(j))
 
           ! Transfer matrix
-          Hk_T(i) = Hk_T(i) - El%Ef*Sk_T(i)
-          Hk_T(j) = Hk_T(j) - El%Ef*Sk_T(j)
+          Hk_T(i) = Hk_T(i) - Ef*Sk_T(i)
+          Hk_T(j) = Hk_T(j) - Ef*Sk_T(j)
 
        enddo
        
        i = iuo+(iuo-1)*no_u
        Sk(i) = Sk(i) - dcmplx(0._dp,dimag(Sk(i)))
        
-       Hk(i) = Hk(i) - dcmplx(0._dp,dimag(Hk(i))) &
-            - El%Ef*Sk(i)
+       Hk(i) = Hk(i) - dcmplx(0._dp,dimag(Hk(i))) - Ef*Sk(i)
        
        ! Transfer matrix
-       Hk_T(i) = Hk_T(i) - El%Ef*Sk_T(i)
+       Hk_T(i) = Hk_T(i) - Ef*Sk_T(i)
     enddo
 
 #ifdef TRANSIESTA_DEBUG
@@ -1559,58 +1555,5 @@ contains
 
 !-----------------------------------------------------------------
   end subroutine set_electrode_HS_Transfer
-
-
-! ******************************************************
-! * ts_mkqgrid creates a q-point grid which is used    *
-! * for expanding a smaller unit cell into a larger    *
-! * coinciding one.                                    *
-! *                                                    *
-! * Example:                                           *
-! *   Electrode of 1 atom, can be repeated 3x3 times   *
-! *   to form a 3x3 atom layer in the TranSIESTA       *
-! *   calculation.                                     *
-! *                                                    *
-! * (Re-)Introduced by Nick Papior Andersen            *
-! ******************************************************
-  subroutine mkqgrid(NA1,NA2,NA3,nq,q,wq)
-    use precision, only : dp
-
-! ***********************
-! * INPUT variables     *
-! ***********************
-    integer , intent(in)  :: NA1, NA2, NA3 ! no. repetitions of simple unitcell in A1,A2,A3 directions   
-    integer , intent(in) :: nq      ! no. q-points (<= NA1*NA2 for gamma)
-
-! ***********************
-! * OUTPUT variables    *
-! ***********************
-    real(dp) :: q(3,nq)  ! q-points
-    real(dp) :: wq(nq)   ! weight of q-points (k_||)
-
-! ***********************
-! * LOCAL variables     *
-! ***********************
-    integer               :: i,j,k,iq
-
-    if ( nq /= NA1*NA2*NA3 ) call die('Error in mkqgrid')
-
-    ! Initialize to 0.0
-    q(:,:) = 0.0_dp
-    wq(:)  = 0.0_dp
-    iq = 0
-    do i = 1 , NA1
-    do j = 1 , NA2
-    do k = 1 , NA3
-       iq = iq+1
-       q(1,iq) = 1.0_dp*(i-1) / real(NA1,dp)
-       q(2,iq) = 1.0_dp*(j-1) / real(NA2,dp)
-       q(3,iq) = 1.0_dp*(k-1) / real(NA3,dp)
-       wq(iq)  = 1.0_dp       / real(nq,dp)
-    end do
-    end do
-    end do
-    
-  end subroutine mkqgrid
 
 end module m_ts_electrode

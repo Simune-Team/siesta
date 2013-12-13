@@ -53,6 +53,8 @@ module m_ts_contour_eq
   public :: print_contour_eq_options
   public :: print_contour_eq_block
   public :: io_contour_eq
+  public :: N_Eq_E
+  public :: Eq_E
 
   private
 
@@ -791,6 +793,59 @@ contains
     end do
 
   end subroutine contour_poles
+
+  function Eq_E(id,step) result(c)
+    integer, intent(in) :: id
+    integer, intent(in), optional :: step
+    type(ts_c) :: c ! the configuration of the energy-segment
+    integer :: lstep, i, PN
+    lstep = 1
+    if ( present(step) ) lstep = step
+    PN = N_Eq_E()
+    i = MOD(PN,lstep)
+    if ( i /= 0 ) PN = PN + lstep - i
+    do i = 1 , PN , lstep
+       if ( i == id ) then
+          c = get_c(id)
+          return
+       end if
+    end do
+    c = get_c(-1)
+  end function Eq_E
+
+  function get_c(id) result(c)
+    integer, intent(in) :: id
+    type(ts_c) :: c
+    integer :: i,j,iE
+    c%exist = .false.
+    c%e     = dcmplx(0._dp,0._dp)
+    c%idx   = 0
+    if ( id < 1 ) return
+
+    iE = 0
+    do j = 1 , N_Eq ! number of contours
+       do i = 1 , Eq_c(j)%c_io%N
+          iE = iE + 1 
+          if ( iE == id ) then
+             c%exist = .true.
+             c%e     = Eq_c(j)%c(i)
+             c%idx(1) = 1 ! this designates the equilibrium contours
+             c%idx(2) = j ! this designates the index of the equilibrium contour
+             c%idx(3) = i ! this is the index of the equilibrium contour
+             return
+          end if
+       end do
+    end do
+
+  end function get_c
+
+  function N_Eq_E() result(N)
+    integer :: N, i
+    N = 0
+    do i = 1 , N_Eq
+       N = N + size(Eq_c(i)%c)
+    end do
+  end function N_Eq_E
 
   subroutine print_contour_eq_block(prefix)
     character(len=*), intent(in) :: prefix

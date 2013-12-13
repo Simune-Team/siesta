@@ -18,6 +18,15 @@ module m_ts_electype
      module procedure name_
   end interface name
 
+  interface delete
+     module procedure delete_
+  end interface delete
+
+  interface q_exp
+     module procedure q_exp_all
+     module procedure q_exp_idx
+  end interface q_exp
+
   interface operator(.eq.)
      module procedure equal_el_el
      module procedure equal_el_str
@@ -33,6 +42,7 @@ module m_ts_electype
   public :: spin, EFermi
   public :: Rep
   public :: RepA1, RepA2, RepA3
+  public :: q_exp
 
   public :: has_contour_segments
   public :: Eq_segs
@@ -42,7 +52,7 @@ module m_ts_electype
 
   public :: assign, read_Elec
   public :: create_sp2sp01
-  public :: delete_TSHS
+  public :: delete
 
   public :: operator(.eq.)
 
@@ -61,15 +71,15 @@ module m_ts_electype
      character(len=FILE_LEN) :: HSfile = ' ', GFfile  = ' '
      character(len=NAME_LEN) :: Name   = ' ', GFtitle = ' '
      ! These variables are relative to the big system
-     integer :: idx_na, idx_no
+     integer :: idx_na = 0, idx_no = 0
      ! atoms used
-     integer :: na_used
+     integer :: na_used = 0
      ! orbitals used
-     integer :: no_used
+     integer :: no_used = 0
      ! repetitions
      integer :: RepA1 = 1, RepA2 = 1, RepA3 = 1
      ! chemical potential of the electrode
-     real(dp) :: mu
+     real(dp) :: mu = 0._dp
      ! infinity direction
      integer :: inf_dir = INF_NEGATIVE
      ! transport direction (determines H01)
@@ -87,7 +97,7 @@ module m_ts_electype
      character(len=C_N_NAME_LEN), allocatable :: Eq_seg(:)
 
      ! ---v--- Below we have the content of the TSHS file
-     integer  :: nspin, na_u, no_u, no_s
+     integer  :: nspin = 0, na_u = 0, no_u = 0, no_s = 0
      real(dp) :: ucell(3,3), Ef, Qtot
      real(dp), pointer :: xa(:,:) => null()
      integer,  pointer :: lasto(:) => null()
@@ -597,14 +607,34 @@ contains
     val = this%RepA3
   end function RepA3
 
-  pure function q_exp(this,i,j,k) result(q)
+  pure function q_exp_all(this,i,j,k) result(q)
     type(Elec), intent(in) :: this
     integer, intent(in) :: i,j,k
     real(dp) :: q(3)
     q(1) = 1._dp*(i-1) / real(RepA1(this),dp)
     q(2) = 1._dp*(j-1) / real(RepA2(this),dp)
     q(3) = 1._dp*(k-1) / real(RepA3(this),dp)
-  end function q_exp
+  end function q_exp_all
+
+  pure function q_exp_idx(this,idx) result(q)
+    type(Elec), intent(in) :: this
+    integer, intent(in) :: idx
+    real(dp) :: q(3)
+    integer :: i,j,k,ii
+    ii = 0
+    do k = 1 , RepA3(this)
+    do j = 1 , RepA2(this)
+    do i = 1 , RepA1(this)
+       ii = ii + 1
+       if ( ii == idx ) then
+          q = q_exp(this,i,j,k)
+          return
+       end if
+    end do
+    end do
+    end do
+    q = 0._dp
+  end function q_exp_idx
 
   elemental function Orbs(this) result(val)
     type(Elec), intent(in) :: this
@@ -768,7 +798,15 @@ contains
     call crtSparsity_SC(this%sp,this%sp00, &
          TM=tm, ucell=this%ucell, &
          lasto=this%lasto, xa=this%xa, xij=xij)
-    tm(this%t_dir) = 1
+
+    ! Notice that we create the correct electrode transfer hamiltonian...
+    if ( this%inf_dir == INF_NEGATIVE ) then
+       tm(this%t_dir) = -1
+    else if ( this%inf_dir == INF_POSITIVE ) then
+       tm(this%t_dir) =  1
+    else
+       call die('Electrode direction not recognized')
+    end if
     call crtSparsity_SC(this%sp,this%sp01, &
          TM=tm, ucell=this%ucell, &
          lasto=this%lasto, xa=this%xa, xij=xij)
@@ -880,7 +918,7 @@ contains
 
   end subroutine create_sp2sp01
 
-  subroutine delete_TSHS(this)
+  subroutine delete_(this)
     type(Elec), intent(inout) :: this
 
     call delete(this%H)
@@ -900,11 +938,14 @@ contains
     if ( associated(this%xa) ) deallocate(this%xa)
     if ( associated(this%lasto) ) deallocate(this%lasto)
     nullify(this%xa,this%lasto)
-    if ( associated(this%xa_used) ) deallocate(this%xa_used)
-    if ( associated(this%lasto_used) ) deallocate(this%lasto_used)
-    nullify(this%xa_used,this%lasto_used)
+    !if ( associated(this%xa_used) ) deallocate(this%xa_used)
+    !if ( associated(this%lasto_used) ) deallocate(this%lasto_used)
+    !nullify(this%xa_used,this%lasto_used)
 
-  end subroutine delete_TSHS
+  end subroutine delete_
 
   ! TODO create routine for extracting max size in the neighbour cells!
+  ! TODO create routine to check for correct placement and atomic positions
+  ! TODO create routine to check for the correct k-point sampling
+
 end module m_ts_electype

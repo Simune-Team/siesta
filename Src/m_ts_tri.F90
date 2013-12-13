@@ -445,17 +445,12 @@ contains
 
     ! Read in the headers of the surface-Green's function files...
     ! Left
-    call read_Green(uGFL,TSiscf==1,VoltL,ts_nkpnt,NEn, &
-         Elecs(1),.false.,nspin, &
-         nkparL,kparL,wkparL, &
-         nqL,wqL,qLb)
+    call read_Green(uGFL,Elecs(1), &
+         ts_nkpnt, NEn, .false. )
 
     ! Right
-    call read_Green(uGFR,TSiscf==1,VoltR,ts_nkpnt,NEn, &
-         Elecs(2),.false.,nspin,  &
-         nkparR,kparR,wkparR, &
-         nqR,wqR,qRb)
-
+    call read_Green(uGFR,Elecs(2), &
+         ts_nkpnt, NEn, .false. )
 
     ! We do need the full GF AND a single work array to handle the
     ! left-hand side of the inversion...

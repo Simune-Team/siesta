@@ -47,6 +47,13 @@ module m_ts_cctype
      type(ts_c_io), pointer :: c_io => null()
      complex(dp), allocatable :: c(:), w(:)
   end type ts_neq_c
+
+  type :: ts_c
+     sequence
+     logical :: exist = .false.
+     complex(dp) :: e
+     integer     :: idx(3)
+  end type ts_c
   
 !  ! maximum length of the string that returns the type
 !  integer, parameter :: CC_METHOD_LEN = 17

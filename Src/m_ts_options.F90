@@ -702,6 +702,7 @@ contains
        end if
        ! Read in the number of atoms in the HSfile
        call ts_read_TSHS_opt(HSFile(El),no_u=El%no_u,na_u=El%na_u, &
+            nspin=El%nspin, &
             Bcast=.true.)
        allocate(El%xa(3,El%na_u),El%lasto(0:El%na_u))
        call ts_read_TSHS_opt(HSFile(El),xa=El%xa,lasto=El%lasto, &

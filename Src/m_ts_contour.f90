@@ -30,6 +30,7 @@ module m_ts_contour
   public :: print_contour_block
   public :: io_contour
   public :: sort_contour
+  public :: nextE
 
   integer, public :: PNEn, NEn, NEn_eq,N_transport
   type(ts_ccontour), public, pointer :: contour(:)!, contour_Eq(:), contour_nEq(:)
@@ -63,6 +64,21 @@ contains
     type(ts_ccontour), pointer :: c(:)
     c => contour(NEn-N_transport+1:NEn)
   end function contour_Transport
+
+  function nextE(id,step) result(c)
+    use m_ts_contour_eq,  only : N_Eq_E, Eq_E
+    use m_ts_contour_neq, only : nEq_E
+    integer, intent(in) :: id
+    integer, intent(in), optional :: step
+    type(ts_c) :: c ! the configuration of the energy-segment
+    integer :: lid
+    if ( id > N_Eq_E() ) then
+       lid = id - N_Eq_E()
+       c = nEq_E(lid,step=step)
+    else
+       c = Eq_E(id,step=step)
+    end if
+  end function nextE
 
   subroutine io_contour(IsVolt, Elecs,slabel,suffix)
     use m_ts_electype

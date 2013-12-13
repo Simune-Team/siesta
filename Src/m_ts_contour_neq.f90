@@ -63,6 +63,8 @@ module m_ts_contour_neq
   public :: print_contour_neq_options
   public :: print_contour_neq_block
   public :: io_contour_neq
+  public :: N_nEq_E, N_nEq_window_E, N_nEq_tail_E
+  public :: nEq_E
 
   private
 
@@ -664,7 +666,87 @@ contains
     deallocate(ce,cw)
 
   end subroutine contour_tail
-  
+
+
+  function nEq_E(id,step) result(c)
+    integer, intent(in) :: id
+    integer, intent(in), optional :: step
+    type(ts_c) :: c ! the configuration of the energy-segment
+    integer :: lstep, i, PN
+    lstep = 1
+    if ( present(step) ) lstep = step
+    PN = N_nEq_E()
+    i = MOD(PN,lstep)
+    if ( i /= 0 ) PN = PN + lstep - i
+    do i = 1 , PN , lstep
+       if ( i == id ) then
+          c = get_c(id)
+          return
+       end if
+    end do
+    c = get_c(-1)
+  end function nEq_E
+
+  function get_c(id) result(c)
+    integer, intent(in) :: id
+    type(ts_c) :: c
+    integer :: i,j,iE
+    c%exist = .false.
+    c%e     = dcmplx(0._dp,0._dp)
+    c%idx   = 0
+    if ( id < 1 ) return
+
+    iE = 0
+    do j = 1 , N_nEq ! number of contours
+       do i = 1 , nEq_c(j)%c_io%N
+          iE = iE + 1 
+          if ( iE == id ) then
+             c%exist = .true.
+             c%e     = nEq_c(j)%c(i)
+             c%idx(1) = 2 ! this designates the non-equilibrium contours
+             c%idx(2) = j ! this designates the index of the non-equilibrium contour
+             c%idx(3) = i ! this is the index of the non-equilibrium contour
+             return
+          end if
+       end do
+    end do
+
+    do j = 1 , N_nEq_tail ! number of contours
+       do i = 1 , nEq_tail_c(j)%c_io%N
+          iE = iE + 1 
+          if ( iE == id ) then
+             c%exist = .true.
+             c%e     = nEq_tail_c(j)%c(i)
+             c%idx(1) = 3 ! this designates the tail non-equilibrium contours
+             c%idx(2) = j ! this designates the index of the tail non-equilibrium contour
+             c%idx(3) = i ! this is the index of the tail non-equilibrium contour
+             return
+          end if
+       end do
+    end do
+
+  end function get_c
+
+  function N_nEq_E() result(N)
+    integer :: N
+    N = N_nEq_window_E() + N_nEq_tail_E()
+  end function N_nEq_E
+
+  function N_nEq_window_E() result(N)
+    integer :: N, i
+    N = 0
+    do i = 1 , N_nEq
+       N = N + size(nEq_c(i)%c)
+    end do
+  end function N_nEq_window_E
+
+  function N_nEq_tail_E() result(N)
+    integer :: N, i
+    N = 0
+    do i = 1 , N_nEq_tail
+       N = N + size(nEq_tail_c(i)%c)
+    end do
+  end function N_nEq_tail_E
 
   subroutine print_contour_neq_block(prefix)
     use parallel, only : IONode
