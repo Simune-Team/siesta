@@ -42,7 +42,9 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
+
       implicit none
+
       integer, intent(in)  :: istep
       integer  :: iscf
       logical  :: first, last_step, SCFconverged
@@ -125,7 +127,13 @@
        endif ! SIESTA_worker
 
        if (mixH) then
-          if ( first .and. SIESTA_worker) call setup_hamiltonian( iscf )
+          if ( first .and. SIESTA_worker) then
+             if (fdf_get("Read-H-from-file",.false.)) then
+                call get_H_from_file()
+             else
+                call setup_hamiltonian( iscf )
+             endif
+          endif
           call compute_dm( iscf )
           if (SIESTA_worker) call setup_hamiltonian( iscf )
           if (SIESTA_worker) call compute_max_diff(Hold,H,dmax)
@@ -216,6 +224,20 @@
 !------------------------------------------------------------------------ END
 
       CONTAINS
+
+!-----------------------------------------------------
+      subroutine get_H_from_file()
+      use sparse_matrices, only: maxnh, numh, listh, listhptr
+      use atomlist,        only: no_l
+      use m_spin,          only: nspin
+      use m_iodm,          only: read_spmatrix
+
+      logical :: found
+
+      call read_spmatrix(maxnh, no_l, nspin, numh,
+     .     listhptr, listh, H, found, userfile="H_IN")
+      if (.not. found) call die("Could not find H_IN")
+      end subroutine get_H_from_file
 
 !-----------------------------------------------------
       subroutine compute_forces()

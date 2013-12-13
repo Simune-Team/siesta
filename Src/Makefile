@@ -465,6 +465,7 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 die.o: parallel.o
 dipole.o: mesh.o parallel.o precision.o sys.o
+dist.o: class_Dist.o m_redist_spmatrix.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
 domain_decom.o: sparse_matrices.o sys.o
@@ -755,9 +756,9 @@ siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o siesta_master.o sparse_matrices.o
 siesta_end.o: timestamp.o
-siesta_forces.o: compute_dm.o compute_max_diff.o final_H_f_stress.o
+siesta_forces.o: atomlist.o compute_dm.o compute_max_diff.o final_H_f_stress.o
 siesta_forces.o: m_convergence.o m_energies.o m_forces.o m_iodm.o m_mpi_utils.o
-siesta_forces.o: m_pexsi_solver.o m_pulay.o m_steps.o m_stress.o
+siesta_forces.o: m_pexsi_solver.o m_pulay.o m_spin.o m_steps.o m_stress.o
 siesta_forces.o: m_ts_global_vars.o m_ts_options.o mixer.o parallel.o
 siesta_forces.o: post_scf_work.o save_density_matrix.o scfconvergence_test.o
 siesta_forces.o: setup_H0.o setup_hamiltonian.o siesta_cml.o siesta_geom.o

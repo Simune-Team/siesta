@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+December 13, 2013  A. Garcia       trunk-451--pexsi-56
+Add option to read a starting Hamiltonian for the scf cycle
+
+When mixing the Hamiltonian, the option
+
+  Read-H-from-file T
+
+will use a starting Hamiltonian read from file H_IN. 
+
+(Note that the same option, when used with 'MaxSCFIterations 0', will
+read H to be used in post-processing, such as in (L)DOS calculation.)
+
+modified:
+  Src/Makefile
+  Src/m_iodm.F
+  Src/siesta_forces.F
+
+------------------------------------------------------------
 December 4, 2013  A. Garcia       trunk-451--pexsi-55
 Sync to trunk-451
 

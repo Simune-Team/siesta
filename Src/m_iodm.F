@@ -339,6 +339,8 @@ C     Internal variables
       
       external          chkdim
 
+      call timer("ReadM",1)
+
       call setup_file_modes(userfile)
 
 C     Find file name
@@ -515,6 +517,7 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       endif
 
       found = .true.
+      call timer("ReadM",2)
 
       end subroutine read_dm
 !-----------------------      
