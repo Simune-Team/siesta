@@ -245,9 +245,6 @@ contains
     type(ts_c_io), intent(inout) :: cur
     type(ts_c_io), intent(inout), optional :: next, prev
 
-    ! local variables
-    real(dp) :: val
-
     ! we need this to "look ahead"
     if ( present(next) ) then
        if ( leqi(next%ca,'prev') .or. leqi(next%ca,'previous') ) then

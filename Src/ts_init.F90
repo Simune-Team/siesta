@@ -42,6 +42,7 @@ contains
     use m_ts_contour, only : NEn, contour
     use m_ts_kpoints, only : setup_ts_kpoint_grid
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
+    use m_ts_kpoints, only : ts_kscell, ts_kdispl
     use m_ts_cctype
     use m_ts_electype
     use m_ts_options ! Just everything (easier)
@@ -80,6 +81,12 @@ contains
 
     ! If we actually have a transiesta run we need to process accordingly!
     if ( TSmode ) then
+
+       ! Check the electrodes
+       do  i = 1 , size(Elecs)
+          call check_Elec(Elecs(i),nspin,na_u,xa,lasto,Elecs_xa_EPS, &
+               kcell=ts_kscell,kdispl=ts_kdispl)
+       end do
 
        ! initialize regions of the electrodes and device
        ! the number of LCAO orbitals on each atom will not change

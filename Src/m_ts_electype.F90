@@ -52,6 +52,8 @@ module m_ts_electype
 
   public :: assign, read_Elec
   public :: create_sp2sp01
+  public :: print_Elec
+  public :: check_Elec
   public :: delete
 
   public :: operator(.eq.)
@@ -665,9 +667,10 @@ contains
 
   subroutine read_Elec(this,Bcast)
     use fdf
-    use m_ts_io
     use parallel
     use class_OrbitalDistribution
+
+    use m_ts_io
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -693,7 +696,8 @@ contains
     if ( leqi(fN(fL-4:fL),'.TSHS') ) then
        call ts_read_tshs(fN, &
             onlyS, Gamma_file, TSGamma, &
-            this%ucell, this%na_u, this%no_u, this%no_u, this%no_s, n_nzs, this%nspin,  &
+            this%ucell, this%na_u, this%no_u, &
+            this%no_u, this%no_s, n_nzs, this%nspin,  &
             kscell, kdispl, &
             this%xa, iza, this%lasto, &
             numh, listhptr, listh, xij, indxuo, &
@@ -745,12 +749,13 @@ contains
     deallocate(numh,listhptr,listh)
     call memory('D','I',this%no_u*2+n_nzs,'iohs')
 
-    call print_type(this%sp)
+    if ( IONode ) call print_type(this%sp)
 
   end subroutine read_Elec
 
   subroutine create_sp2sp01(this,calc_xijo)
-    use parallel, only : Node
+
+    use parallel, only : IONode, Node
 
     use class_OrbitalDistribution
 
@@ -781,7 +786,7 @@ contains
     integer, pointer :: ptr01(:)  => null()
     integer, pointer :: col01(:)  => null()
 
-    integer :: no_l, i, io, j, ind, ind00, ind01, ia, ja,t
+    integer :: no_l, i, io, j, ind, ind00, ind01, ia, ja
     integer :: tm(3)
 
     ! Retrieve distribution
@@ -913,8 +918,10 @@ contains
        end do
     end do
 
-    call print_type(this%sp00)
-    call print_type(this%sp01)
+    if ( IONode ) then
+       call print_type(this%sp00)
+       call print_type(this%sp01)
+    end if
 
   end subroutine create_sp2sp01
 
@@ -944,8 +951,242 @@ contains
 
   end subroutine delete_
 
+  ! Routine for checking the validity of the electrode against the 
+  ! system setup in transiesta
+  subroutine check_Elec(this,nspin,na_u,xa,lasto,xa_EPS, &
+       kcell,kdispl)
+
+    use parallel, only : IONode
+    use units, only : Ang
+    use m_ts_io, only : ts_read_TSHS_opt
+    use mpi_siesta, only : MPI_Bcast, MPI_Logical, MPI_Comm_World
+
+    type(Elec), intent(in) :: this
+    integer, intent(in) :: nspin,na_u
+    real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in) :: lasto(0:na_u)
+    real(dp), intent(in) :: xa_EPS
+    integer, intent(in), optional :: kcell(3,3) ! optional as then we can control when to check
+    real(dp), intent(in), optional :: kdispl(3)
+
+    ! Local variables
+    integer :: i,j,k, ia, iaa, this_kcell(3,3)
+    logical :: er, this_er, TSgamma
+    real(dp) :: xa_o(3), this_xa_o(3), ucell(3,3), this_kdispl(3)
+    real(dp), pointer :: this_xa(:,:)
+
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    er = .false.
+
+    this_xa => this%xa_used
+    xa_o(:) = xa(:,this%idx_na)
+    this_xa_o(:) = this_xa(:,1)
+    ucell = this%ucell
+
+    iaa = this%idx_na
+    do ia = 1 , UsedAtoms(this)
+       do k = 0 , RepA3(this) - 1
+       do j = 0 , RepA2(this) - 1
+       do i = 0 , RepA1(this) - 1
+          ! Assert the coordinates
+          er=er.or.abs(this_xa(1,ia)-this_xa_o(1) + &
+               sum(ucell(1,:)*(/i,j,k/)) - &
+               xa(1,iaa)+xa_o(1)) > xa_EPS
+          er=er.or.abs(this_xa(2,ia)-this_xa_o(2) + &
+               sum(ucell(2,:)*(/i,j,k/)) - &
+               xa(2,iaa)+xa_o(2)) > xa_EPS
+          er=er.or.abs(this_xa(3,ia)-this_xa_o(3) + &
+               sum(ucell(3,:)*(/i,j,k/)) - &
+               xa(3,iaa)+xa_o(3)) > xa_EPS
+          iaa = iaa + 1
+       end do
+       end do
+       end do
+    end do
+
+    if ( er ) then
+       
+       ! We need to write out the correct formatting of the electrodes.
+       ! We shift to the first electrode coordinate, and add the 
+       ! first system electrode atom. 
+       ! If the user has the %block AtomicCoord... in:
+       !    LatticeConstant         1. Ang
+       !    AtomicCoordinatesFormat    Ang
+       ! then it is direct copy paste ! :)
+       xa_o(:) = -this_xa(:,1) + xa(:,this%idx_na)
+
+       if ( IONode ) then
+          write(*,'(a)') "Coordinates from the electrode repeated &
+               &out to an FDF file"
+          write(*,'(a,i0,a)') "NOTICE: that these coordinates are &
+               &arranged with respect to atom ", this%idx_na," in your FDF file"
+          write(*,'(a)') "NOTICE: that you need to add the species label again"
+          write(*,'(a)') "For the same species in the electrode you can do:"
+          write(*,'(a,/)') "awk '{print $1,$2,$3,1}' <OUT-file>"
+          write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
+          iaa = this%idx_na
+          do ia = 1 , UsedAtoms(this)
+             do k=0,RepA3(this)-1
+             do j=0,RepA2(this)-1
+             do i=0,RepA1(this)-1
+                write(*,'(t2,3(tr1,f20.10))') &
+                     (this_xa(1,ia)+xa_o(1)+sum(ucell(1,:)*(/i,j,k/)))/Ang, &
+                     (this_xa(2,ia)+xa_o(2)+sum(ucell(2,:)*(/i,j,k/)))/Ang, &
+                     (this_xa(3,ia)+xa_o(3)+sum(ucell(3,:)*(/i,j,k/)))/Ang
+             end do
+             end do
+             end do
+          end do
+          
+       end if
+     
+    end if
+
+    if ( nspin /= Spin(this) ) then
+       write(*,*)"ERROR: Electrode: "//trim(Name(this))
+       write(*,*) '  nspin=',nspin,' expected:', Spin(this)
+       er = .true.
+    end if
+
+    this_er = er
+
+    if ( present(kcell) ) then
+
+       er = .false.
+
+       call ts_read_TSHS_opt(HSFile(this), &
+            kscell=this_kcell,kdispl=this_kdispl, &
+            Gamma_SCF=TSGamma, &
+            Bcast=.true.)
+
+       ! If the system is not a Gamma calculation, then the file must
+       ! not be either (the repetition will only increase the number of
+       ! k-points, hence the above)
+       do j = 1 , 3
+          select case ( j ) 
+          case ( 1 ) 
+             k = RepA1(this)
+          case ( 2 )
+             k = RepA2(this)
+          case ( 3 )
+             k = RepA3(this)
+          end select
+          if ( j == this%t_dir ) cycle
+          do i = 1 , 3
+             if ( i == this%t_dir ) cycle
+             if ( j == i ) then
+                er = er .or. ( this_kcell(i,j) /= kcell(i,j)*k )
+             else 
+                er = er .or. ( this_kcell(i,j) /= kcell(i,j) )
+             end if
+          end do
+          er = er .or. ( abs(this_kdispl(j) - kdispl(j)) > 1.e-7_dp )
+       end do
+       
+       ! We still require that the offset in the T-direction is the same
+       ! is this even necessary?
+       er = er .or. ( abs(this_kdispl(this%t_dir) /= kdispl(this%t_dir)) > 1.e-7_dp )
+       if ( er .and. IONode ) then
+          write(*,'(a)') 'Incompatible k-grids...'
+          write(*,'(a)') 'Electrode file k-grid:'
+          do j = 1 , 3
+             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),this_kdispl(j)
+          end do
+          write(*,'(a)') 'System k-grid:'
+          do j = 1 , 3
+             write(*,'(3(i4,tr1),f8.4)') (kcell(i,j),i=1,3),kdispl(j)
+          end do
+          write(*,'(a)') 'Electrode file k-grid should be:'
+          this_kcell(:,1) = kcell(:,1) * RepA1(this)
+          this_kcell(:,2) = kcell(:,2) * RepA2(this)
+          this_kcell(:,3) = kcell(:,3) * RepA3(this)
+          do j = 1 , 3
+             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(j)
+          end do
+       end if
+    else
+       
+       call ts_read_TSHS_opt(HSFile(this), &
+            Gamma_SCF=TSGamma, &
+            Bcast=.true.)
+
+    end if
+
+    er = this_er .or. er
+
+#ifdef MPI
+    call MPI_Bcast(er,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+#endif
+
+    if ( TSGamma ) then
+       write(*,*) 'Electrode : '//trim(Name(this))//' is a Gamma-only calculation &
+            &this is not feasible.'
+       er = .true.
+    end if
+
+    if ( IONode ) write(*,*) 'TODO Check the electrode connectivity'
+
+    if ( er ) then
+       call die("The electrode does not conform with the system settings. &
+            &Please correct accordingly.")
+    end if
+
+  end subroutine check_Elec
+
+  ! Routine for checking the validity of the electrode against the 
+  ! system setup in transiesta
+  subroutine print_Elec(this,na_u,xa)
+    use parallel, only : IONode
+    use units, only : Ang
+    type(Elec), intent(in) :: this
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+
+    ! Local variables
+    integer :: i,j,k, ia, iaa
+    real(dp) :: xa_o(3), this_xa_o(3), ucell(3,3)
+    real(dp), pointer :: this_xa(:,:)
+
+    if ( .not. IONode ) return
+
+    write(*,*) trim(name(this))//' unit cell (Ang):'
+    write(*,'(2(3(f8.4),/),3(f8.4))') this%ucell/Ang
+    
+    write(*,'(a,t35,a)') &
+         " Structure of "//trim(name(this))//" electrode","| System electrode:"
+    write(*,'(t3,3a10,''  |'',3a10)') &
+         "X (Ang)","Y (Ang)","Z (Ang)", "X (Ang)","Y (Ang)","Z (Ang)"
+
+    this_xa => this%xa_used
+    xa_o(:) = xa(:,this%idx_na)
+    this_xa_o(:) = this_xa(:,1)
+    ucell = this%ucell
+
+    iaa = this%idx_na
+    do ia = 1 , UsedAtoms(this)
+       do k = 0 , RepA3(this) - 1
+       do j = 0 , RepA2(this) - 1
+       do i = 0 , RepA1(this) - 1
+          write(*,'(t3,3f10.5,''  |'',3f10.5)') &
+               (this_xa(1,ia)-this_xa_o(1)+sum(ucell(1,:)*(/i,j,k/)))/Ang, &
+               (this_xa(2,ia)-this_xa_o(2)+sum(ucell(2,:)*(/i,j,k/)))/Ang, &
+               (this_xa(3,ia)-this_xa_o(3)+sum(ucell(3,:)*(/i,j,k/)))/Ang, &
+               (xa(1,iaa)-xa_o(1))/Ang, &
+               (xa(2,iaa)-xa_o(2))/Ang, &
+               (xa(3,iaa)-xa_o(3))/Ang
+          iaa = iaa + 1
+       end do
+       end do
+       end do
+    end do
+    
+    write(*,*) ! new-line
+
+  end subroutine print_Elec
+
   ! TODO create routine for extracting max size in the neighbour cells!
-  ! TODO create routine to check for correct placement and atomic positions
-  ! TODO create routine to check for the correct k-point sampling
 
 end module m_ts_electype

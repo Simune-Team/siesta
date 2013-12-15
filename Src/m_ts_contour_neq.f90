@@ -492,7 +492,8 @@ contains
     real(dp), intent(out) :: weight ! the weight returned
     logical :: left
     ! local variables
-    integer :: i, idx
+    integer :: i
+
     if ( .not. (segment_has_c(seg,i_c) .or. &
          segment_has_El(seg,El)) ) then
        weight = 0._dp
@@ -567,7 +568,7 @@ contains
     
   end subroutine contour_line
 
-  subroutine contour_tail(c,kT,Eta,offset)
+  subroutine contour_tail(c,kT,Eta)
     use m_gauss_fermi_inf
     use m_gauss_fermi_30
     use m_gauss_fermi_28
@@ -580,11 +581,10 @@ contains
     use m_gauss_fermi_17
     type(ts_neq_c), intent(inout) :: c
     real(dp), intent(in) :: kT, Eta
-    real(dp), intent(in), optional :: offset
 
     ! local variables
-    integer :: i, ioffset, infinity
-    real(dp) :: a,b, loffset
+    integer :: ioffset, infinity
+    real(dp) :: a,b
     real(dp), allocatable :: ce(:), cw(:)
 
     if ( c%c_io%part /= 'tail' ) &
@@ -866,7 +866,7 @@ contains
 ! * LOCAL variables   *
 ! *********************
     character(len=200) :: fname
-    integer :: i, j, idx, unit
+    integer :: i, unit
     
     if ( .not. IONode ) return
     

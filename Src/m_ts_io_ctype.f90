@@ -89,7 +89,6 @@ contains
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    integer :: i
     
     logical :: found
 
@@ -156,9 +155,7 @@ contains
     type(ts_c_opt_ll), pointer :: opt, opt_tmp
 
     character(len=200) :: g
-    integer :: pNames, my_loop, cI, iV
     integer :: iS, iE
-    logical :: read_method, read_points, read_int, error
     
     ! if the block does not exist, return
     if ( len_trim(suffix) ) then
@@ -401,8 +398,8 @@ contains
     integer, intent(in), optional   :: before
 
     ! Local parameters
-    real(dp) :: ret, tmp
-    character(len=50) :: g, tmp_g
+    real(dp) :: tmp
+    character(len=50) :: g
     logical :: add, get_val, has_V, has_kT
     integer :: i, j, stat, offset
     

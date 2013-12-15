@@ -88,7 +88,7 @@ contains
     complex(dp), allocatable :: ZBulkDOS(:,:) ! DOS at energy points
     integer :: uGF, i, iE, NEn
     logical :: errorGF, exist, ReUseGF
-    character(len=200) :: rGFtitle
+    character(len=NAME_LEN) :: rGFtitle
     complex(dp), allocatable :: ce(:)
     integer, allocatable :: cidx(:,:)
     type(ts_c) :: c
@@ -225,8 +225,8 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    character(200) :: curGFfile ! Name of the GF file
-    character(len=200) :: curGFtitle ! title of the GF file
+    character(len=FILE_LEN) :: curGFfile  ! Name of the GF file
+    character(len=NAME_LEN) :: curGFtitle ! title of the GF file
 
     integer :: nspin,nkpar,na,no,NA1,NA2,NA3,NEn
     real(dp) :: mu ! The Fermi energy shift due to a voltage
@@ -392,7 +392,7 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    character(200) :: curGFtitle ! Title, currently not used
+    character(NAME_LEN) :: curGFtitle ! Title, currently not used
     real(dp) :: mu ! The energy shift in the Fermi energy
     integer :: nspin, na, no, nkpar ! spin, # of atoms, # of orbs, # k-points
     integer :: NA1,NA2,NA3 ! # repetitions in x, # repetitions in y
@@ -472,7 +472,7 @@ contains
     do ia = 1 , min(na,UsedAtoms(El)) ! in case it is completely wrong
        do i = 1 , 3
           eXa= eXa .or. &
-               abs(xa(1,ia)-El%xa_used(i,ia)) > xa_Eps
+               abs(xa(i,ia)-El%xa_used(i,ia)) > xa_Eps
        end do
     end do
     if ( eXa ) then

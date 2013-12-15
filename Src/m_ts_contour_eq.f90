@@ -355,7 +355,7 @@ contains
 
     ! Local variables
     integer :: i, idx
-    real(dp) :: a,b,R,cR,cI,lift
+    real(dp) :: a,b,R,cR,lift
 
     if ( Eq_segs(El) == 0 ) &
          call die('Electrode: '//trim(Name(El))//' has no equilibrium contours.')
@@ -460,7 +460,7 @@ contains
     ! local variables
     logical :: set_c
     complex(dp) :: ztmp
-    integer :: i, j, iE
+    integer :: i, iE
     real(dp) :: a,b, tmp
     real(dp), allocatable :: ce(:), cw(:)
 
@@ -569,7 +569,7 @@ contains
     ! local variables
     logical :: set_c
     integer :: i, iE
-    real(dp) :: a,b, tmp, loffset
+    real(dp) :: a,b, tmp
     real(dp), allocatable :: ce(:), cw(:)
 
     if ( c%c_io%part /= 'line' ) &
@@ -659,7 +659,7 @@ contains
     real(dp), intent(in) :: kT, Eta
 
     ! local variables
-    integer :: i, iE, offset, infinity
+    integer :: iE, offset, infinity
     real(dp) :: a,b
     real(dp), allocatable :: ce(:), cw(:)
 

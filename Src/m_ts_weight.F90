@@ -104,7 +104,7 @@ contains
     integer,  pointer :: l_ptr(:)
     integer,  pointer :: l_col(:)
     integer :: nr
-    integer :: io, gio, jo, ind, j
+    integer :: io, jo, ind, j
     ! For error estimation
     integer  :: eM_i,eM_j
     real(dp) :: eM, DM, ee

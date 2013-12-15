@@ -148,7 +148,6 @@ CONTAINS
 ! Internal Variables
     real(dp) :: tmp
     character(len=70) :: c, chars
-    integer :: tmp_G_NF
     integer :: i, j, idx, idx1, idx2
     type(Elec) :: tmpElec
 
@@ -416,11 +415,15 @@ CONTAINS
             na_u < Elecs(i)%idx_na ) &
             call die("Electrode position does not exist")
        Elecs(i)%idx_no = lasto(Elecs(i)%idx_na-1)+1
+
+       ! Populate the intrinsic things
+       call check_HSfile(Elecs(i))
        
     end do
 
     ! check that all have at least 2 contour points on the equilibrium contour
     if ( .not. all(Eq_segs(Elecs) > 1) ) then
+       print *,Eq_segs(Elecs)
        call die('All electrodes does not have at least 2 equilibrium contours')
     end if
     
@@ -674,6 +677,11 @@ CONTAINS
        ! write out the contour
        call io_contour(IsVolt, Elecs, slabel)
 
+       ! Print out the electrode coordinates
+       do i = 1 , size(Elecs)
+          call print_elec(Elecs(i),na_u,xa)
+       end do
+
     end if
 
 1   format('ts_options: ',a,t53,'=',4x,l1)
@@ -691,6 +699,7 @@ contains
   subroutine check_HSfile(El)
     type(Elec), intent(inout) :: el
     logical :: exist
+    integer :: i
 
     if ( TSmode ) then
 
@@ -700,13 +709,13 @@ contains
           call die("Electrode file does not exist. &
                &Please create electrode '"//trim(HSFile(El))//"' first.")
        end if
+
        ! Read in the number of atoms in the HSfile
        call ts_read_TSHS_opt(HSFile(El),no_u=El%no_u,na_u=El%na_u, &
-            nspin=El%nspin, &
+            nspin=El%nspin, Ef=El%Ef, ucell=El%ucell, &
             Bcast=.true.)
        allocate(El%xa(3,El%na_u),El%lasto(0:El%na_u))
        call ts_read_TSHS_opt(HSFile(El),xa=El%xa,lasto=El%lasto, &
-            ucell=El%ucell,Ef=El%Ef, &
             Bcast=.true.)
 
        if ( UsedAtoms(El) < 0 ) then

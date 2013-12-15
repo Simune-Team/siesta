@@ -1,4 +1,29 @@
 ----------------------------------------------------
+December 15, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-98
+Added proper coordinate checks of the electrodes
+
+* Added check of the coordinates consistency in the system
+  with regards to the electrodes.
+  This has been generalized to all directions of the semi-infinite
+  direction.
+  
+* Cleaned up a lot of the unused variables in several of the
+  transiesta routines
+
+modified:
+  Src/Makefile
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_io_contour.f90
+  Src/m_ts_io_ctype.f90
+  Src/m_ts_options.F90
+  Src/m_ts_weight.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 December 13, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-97
 Easy way to handle the different arrays, redid GF creation
 
