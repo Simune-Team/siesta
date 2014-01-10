@@ -1,4 +1,18 @@
 ----------------------------------------------------------
+January 10 2014  Alberto Garcia  siesta-trunk-448--fdf-4
+Fix handling of empty value for fdf_string
+
+When a line contains only a label, fdf_string incorrectly tried to
+read beyond the first token.  It has now been fixed, assigning an
+empty string to the function value.
+
+(+ fix the assignment of the name for the debug file)
+
+
+modified:
+  Src/fdf/fdf.F90
+
+----------------------------------------------------------
 December 11 2013  Alberto Garcia  siesta-trunk-448--fdf-3
 New list functionality in fdf
 

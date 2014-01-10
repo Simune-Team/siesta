@@ -340,8 +340,6 @@ MODULE fdf
                  THIS_FILE, __LINE__, fdf_err)
       endif
 
-      filedebug = trim(fileout) // ".debug"
-
 #ifdef _MPI_
       call fdf_mpi_init()
 #endif
@@ -352,6 +350,7 @@ MODULE fdf
       ! Set in/out file names, if fileInput and fileOutput are not present
       call set_file_names( filein, fileout, &
                            fileInput, fileOutput, unitInput )
+      filedebug = trim(fileout) // ".debug"
 
 #ifdef FDF_DEBUG
       ! To monitor the parsing and the build-up of the
@@ -1729,7 +1728,7 @@ MODULE fdf
         do i= 1, ntokens
           tok = tokens(dlp%pline,i)
           id  = dlp%pline%id(i)
-          write(fdf_log,*) '  Token:', tok, '(', dlp%pline%id(i), ')'
+          write(fdf_log,*) '  Token:', trim(tok), '(', dlp%pline%id(i), ')'
         enddo
         dlp => dlp%next
       enddo
@@ -1904,10 +1903,16 @@ MODULE fdf
       endif
 
       if (fdf_locate(label, mark)) then
-        ! Get all the characters spanning the space from the second to
-        ! the last token
-        fdf_string = characters(mark%pline, ind_init=2, ind_final=-1)
-        if (fdf_output) write(fdf_out,'(a,5x,a)') label, fdf_string
+         if (ntokens(mark%pline) < 2) then
+            fdf_string = ""
+            if (fdf_output) write(fdf_out,'(a,5x,a)') label, &
+             "#  *** Set to empty string *** "
+         else
+            ! Get all the characters spanning the space from the second to
+            ! the last token
+            fdf_string = characters(mark%pline, ind_init=2, ind_final=-1)
+            if (fdf_output) write(fdf_out,'(a,5x,a)') label, fdf_string
+         endif
       else
         fdf_string = default
         if (fdf_output) write(fdf_out,'(a,5x,a,5x,a)') label, default, '# default value'
