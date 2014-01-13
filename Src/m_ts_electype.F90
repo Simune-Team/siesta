@@ -6,7 +6,7 @@ module m_ts_electype
   use class_dSpData1D
   use class_dSpData2D
 
-  use m_ts_io_ctype, only : C_N_NAME_LEN
+  use m_ts_chem_pot, only : ts_mu, name
 
   implicit none
 
@@ -38,22 +38,19 @@ module m_ts_electype
   public :: Atoms, UsedAtoms, TotUsedAtoms
   public :: Orbs, UsedOrbs, TotUsedOrbs
   public :: SCOrbs
-  public :: unitcell
+  public :: OrbInElec
+  public :: UnitCell
   public :: spin, EFermi
   public :: Rep
   public :: RepA1, RepA2, RepA3
   public :: q_exp
 
-  public :: has_contour_segments
-  public :: Eq_segs
-
-  public :: Elec_p
   public :: fdf_nElec, fdf_elec
 
   public :: assign, read_Elec
   public :: create_sp2sp01
   public :: print_Elec
-  public :: check_Elec
+  public :: check_Elec, check_connectivity
   public :: delete
 
   public :: operator(.eq.)
@@ -64,10 +61,6 @@ module m_ts_electype
 
   integer, parameter, public :: INF_NEGATIVE = 0 ! old 'left'
   integer, parameter, public :: INF_POSITIVE = 1 ! old 'right'
-
-  integer, parameter :: HAS_NOTHING = 0
-  integer, parameter :: HAS_HS = 1
-  integer, parameter :: HAS_HS00_HS01 = 2
 
   type :: Elec
      character(len=FILE_LEN) :: HSfile = ' ', GFfile  = ' '
@@ -81,7 +74,7 @@ module m_ts_electype
      ! repetitions
      integer :: RepA1 = 1, RepA2 = 1, RepA3 = 1
      ! chemical potential of the electrode
-     real(dp) :: mu = 0._dp
+     type(ts_mu), pointer :: mu => null()
      ! infinity direction
      integer :: inf_dir = INF_NEGATIVE
      ! transport direction (determines H01)
@@ -94,13 +87,9 @@ module m_ts_electype
      real(dp), pointer :: xa_used(:,:) => null()
      integer,  pointer :: lasto_used(:) => null()
 
-     ! We must have a container which determines the contour segments
-     ! that gets attached to the electrode
-     character(len=C_N_NAME_LEN), allocatable :: Eq_seg(:)
-
      ! ---v--- Below we have the content of the TSHS file
      integer  :: nspin = 0, na_u = 0, no_u = 0, no_s = 0
-     real(dp) :: ucell(3,3), Ef, Qtot
+     real(dp) :: ucell(3,3) = 0._dp, Ef = 0._dp, Qtot = 0._dp
      real(dp), pointer :: xa(:,:) => null()
      integer,  pointer :: lasto(:) => null()
      type(Sparsity)  :: sp
@@ -116,12 +105,12 @@ module m_ts_electype
      type(Sparsity)  :: sp01
      type(dSpData2D) :: H01, xij01, xijo01
      type(dSpData1D) :: S01
-  end type Elec
 
-  ! this type aids in the creation of arrays with pointers to electrodes
-  type Elec_p
-     type(Elec), pointer :: El => null()
-  end type Elec_p
+     ! These arrays are used to construct the full Hamiltonian and overlap and Green's function
+     complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:,:)
+     ! Arrays needed to partition the scattering matrix and self-energies
+     complex(dp), pointer :: Gamma(:,:), Sigma(:)
+  end type Elec
 
 contains
 
@@ -173,12 +162,14 @@ contains
   end function fdf_nElec
   
 
-  function fdf_Elec(prefix,slabel,this) result(found)
+  function fdf_Elec(prefix,slabel,this,N_mu,mus) result(found)
     use fdf
     use m_ts_io, only : ts_read_TSHS_opt
 
     character(len=*), intent(in) :: prefix,slabel
     type(Elec), intent(inout) :: this
+    integer, intent(in) :: N_mu
+    type(ts_mu), intent(in), target :: mus(N_mu)
     logical :: found
 
     ! prepare to read in the data...
@@ -195,7 +186,7 @@ contains
     info(:) = .false.
 
     ! We default a lot of the options
-    this%GFtitle = 'Greens function for '//trim(Name(this))
+    this%GFtitle = 'Surface-Greens function for '//trim(Name(this))
     this%GFfile = trim(slabel)//'.'//trim(prefix)//'GF'//trim(Name(this))
     this%na_used = -1
     
@@ -205,7 +196,8 @@ contains
        ln = fdf_bnames(pline,1) 
        
        ! We select the input
-       if ( leqi(ln,'TSHS') ) then
+       if ( leqi(ln,'TSHS') .or. &
+            leqi(ln,'TSHS-file') ) then
           if ( fdf_bnnames(pline) < 2 ) call die('TSHS name not supplied')
           this%HSfile = trim(fdf_bnames(pline,2))
           info(1) = .true.
@@ -236,9 +228,19 @@ contains
 
        else if ( leqi(ln,'chemical-shift') .or. &
             leqi(ln,'mu') ) then
-          if ( fdf_bnvalues(pline) < 1 ) call die('Chemical-shift not supplied')
-          if ( fdf_bnnames(pline) < 2 ) call die('Unit of chemical-shift not supplied')
-          this%mu = fdf_bvalues(pline,1) * fdf_convfac(fdf_bnames(pline,2),'Ry')
+          if ( fdf_bnnames(pline) < 2 ) call die('Name of chemical-shift not supplied')
+          ln = fdf_bnames(pline,2)
+          nullify(this%mu)
+          do i = 1 , N_mu
+             if ( leqi(ln,name(mus(i))) ) then
+                this%mu => mus(i)
+                exit
+             end if
+          end do
+          if ( .not. associated(this%mu) ) then
+             call die('Could not find the chemical potential for the electrode: &
+                  '//trim(name(this))//'. Please supply an existing name.')
+          end if
           info(3) = .true.
 
        else if ( leqi(ln,'electrode-position') ) then
@@ -279,7 +281,8 @@ contains
           if ( fdf_bnnames(pline) < 2 ) call die('GF-title not supplied')
           this%GFtitle = trim(fdf_bnames(pline,2))
 
-       else if ( leqi(ln,'GF') ) then
+       else if ( leqi(ln,'GF') .or. &
+            leqi(ln,'GF-file') ) then
           if ( fdf_bnnames(pline) < 2 ) call die('GF-file not supplied')
           this%GFfile = trim(fdf_bnames(pline,2))
 
@@ -308,21 +311,6 @@ contains
           this%RepA2 = fdf_bintegers(pline,2)
           this%RepA3 = fdf_bintegers(pline,3)
 
-       else if ( leqi(ln,'contours.eq') ) then
-          ! we need to read in the equilibrium contour
-
-          ! we automatically make room for one pole contour
-          call read_contour_names('Equilibrium',this%Eq_seg,fakes=1)
-
-       !else if ( leqi(ln,'contours.neq.tail') ) then
-          ! we need to read in the non-equilibrium contour
-
-       !   call read_contour_names('Non-equilibrium',this%nEq_seg)
-
-       !else if ( leqi(ln,'contour.T') ) then
-          ! we need to read in the transport contour
-
-       !   call read_contour_names('Transport',this%t_seg)
        else
           
           call die('Unrecognized option "'//trim(ln)//'" &
@@ -388,107 +376,7 @@ contains
        this%DM_CrossTerms = .true.
     end if
 
-  contains
-    
-    subroutine read_contour_names(name,con,fakes)
-      character(len=*), intent(in) :: name
-      character(len=C_N_NAME_LEN), allocatable :: con(:)
-      integer, intent(in), optional :: fakes
-      integer :: i, empty
-
-      if ( allocated(con) ) call die("Contour already found")
-
-      ! we need to read in the equilibrium contour
-      ! skip to "begin"
-      if ( .not. fdf_bline(bfdf,pline) ) &
-           call die("Electrode block ended prematurely")
-
-      ! read in the begin ... end block
-      ln = fdf_bnames(pline,1)
-      if ( .not. leqi(ln,"begin") ) &
-           call die(trim(name)//" contour errorneously formatted. &
-           &First line *must* be begin")
-
-      ! Count lines
-      i = 0
-      empty = 0
-      do 
-         if ( .not. fdf_bline(bfdf,pline) ) &
-              call die("Electrode block ended prematurely")
-         if ( fdf_bnnames(pline) < 1 ) then
-            empty = empty + 1
-         else
-            ln = fdf_bnames(pline,1)
-            if ( leqi(ln,'end') ) exit
-            i = i + 1
-         end if
-      end do
-
-      ! allocate names
-      if ( present(fakes) ) then
-         allocate(con(i+fakes))
-         empty = empty - fakes
-      else
-         allocate(con(i))
-      end if
-      con = ' '
-      do i = 0 , size(con) + empty
-         if ( .not. fdf_bbackspace(bfdf) ) &
-              call die("Backspacing too much")
-      end do
-      i = 0
-      do 
-         if ( .not. fdf_bline(bfdf,pline) ) &
-              call die("Electrode block ended prematurely")
-         if ( fdf_bnnames(pline) < 1 ) cycle
-         ln = fdf_bnames(pline,1)
-         if ( leqi(ln,'end') ) exit
-         i = i + 1
-         if ( len_trim(ln) > C_N_NAME_LEN ) then
-            call die('Contour name: '//trim(ln)//' is too long, please use a &
-                 shorter name')
-         end if
-         con(i) = trim(ln)
-      end do
-
-    end subroutine read_contour_names
-
   end function fdf_Elec
-
-  elemental function has_contour_segments(this) result(val)
-    type(Elec), intent(in) :: this
-    logical :: val
-    val = allocated(this%Eq_seg)
-    !val = val .or. allocated(this%nEq_seg)
-    !val = val .or. allocated(this%t_seg)
-  end function has_contour_segments
-
-  elemental function Eq_segs(this) result(N)
-    type(Elec), intent(in) :: this
-    integer :: N
-    N = 0 
-    if ( allocated(this%Eq_seg) ) then
-       N = size(this%Eq_seg)
-    end if
-  end function Eq_segs
-
-  !elemental function nEq_segs(this) result(N)
-  !  type(Elec), intent(in) :: this
-  !  integer :: N
-  !  N = 0 
-  !  if ( allocated(this%nEq_seg) ) then
-  !     N = size(this%nEq_seg)
-  !  end if
-  !end function NEq_segs
-
-  !elemental function t_segs(this) result(N)
-  !  type(Elec), intent(in) :: this
-  !  integer :: N
-  !  N = 0 
-  !  if ( allocated(this%t_seg) ) then
-  !     N = size(this%t_seg)
-  !  end if
-  !end function t_segs
 
   function equal_el_el(this1,this2) result(equal)
     type(Elec), intent(in) :: this1, this2
@@ -618,24 +506,33 @@ contains
     q(3) = 1._dp*(k-1) / real(RepA3(this),dp)
   end function q_exp_all
 
-  pure function q_exp_idx(this,idx) result(q)
+  function q_exp_idx(this,idx) result(q)
     type(Elec), intent(in) :: this
     integer, intent(in) :: idx
     real(dp) :: q(3)
     integer :: i,j,k,ii
-    ii = 0
-    do k = 1 , RepA3(this)
-    do j = 1 , RepA2(this)
-    do i = 1 , RepA1(this)
-       ii = ii + 1
-       if ( ii == idx ) then
-          q = q_exp(this,i,j,k)
-          return
-       end if
-    end do
-    end do
-    end do
-    q = 0._dp
+    i =     RepA1(this)
+    j = i * RepA2(this)
+    k = j * RepA3(this)
+    if ( idx <= i ) then
+       q = q_exp(this,idx,1,1)
+    else if ( idx <= j ) then
+       j = idx / i
+       if ( MOD(idx,i) /= 0 ) j = j + 1
+       i = idx - (j-1) * i
+       q = q_exp(this,i,j,1)
+    else if ( idx <= k ) then
+       write(*,*)'CHeck that THSI WORKS with A3'
+       k = idx / j
+       if ( MOD(idx,j) /= 0 ) k = k + 1
+       ii = idx - (k-1) * j
+       j = ii / i
+       if ( MOD(ii,i) /= 0 ) j = j + 1
+       i = ii - (j-1) * i
+       q = q_exp(this,i,j,k)
+    else
+       q = 0._dp
+    end if
   end function q_exp_idx
 
   elemental function Orbs(this) result(val)
@@ -658,6 +555,13 @@ contains
     integer :: val
     val = this%no_s
   end function SCOrbs
+
+  elemental function OrbInElec(this,io) result(in)
+    type(Elec), intent(in) :: this
+    integer, intent(in) :: io
+    logical :: in
+    in = this%idx_no <= io .and. io < this%idx_no + TotUsedOrbs(this)
+  end function OrbInElec
 
   function unitcell(this) result(val)
     type(Elec), intent(in) :: this
@@ -798,7 +702,7 @@ contains
     H   => val(this%H)
     S   => val(this%S)
     xij => val(this%xij)
-    tm(:) = TM_ALL
+    tm(:)          = TM_ALL
     tm(this%t_dir) = 0
     call crtSparsity_SC(this%sp,this%sp00, &
          TM=tm, ucell=this%ucell, &
@@ -959,7 +863,9 @@ contains
     use parallel, only : IONode
     use units, only : Ang
     use m_ts_io, only : ts_read_TSHS_opt
+#ifdef MPI
     use mpi_siesta, only : MPI_Bcast, MPI_Logical, MPI_Comm_World
+#endif
 
     type(Elec), intent(in) :: this
     integer, intent(in) :: nspin,na_u
@@ -1088,7 +994,7 @@ contains
        
        ! We still require that the offset in the T-direction is the same
        ! is this even necessary?
-       er = er .or. ( abs(this_kdispl(this%t_dir) /= kdispl(this%t_dir)) > 1.e-7_dp )
+       er = er .or. ( abs(this_kdispl(this%t_dir) - kdispl(this%t_dir)) > 1.e-7_dp )
        if ( er .and. IONode ) then
           write(*,'(a)') 'Incompatible k-grids...'
           write(*,'(a)') 'Electrode file k-grid:'
@@ -1135,6 +1041,130 @@ contains
     end if
 
   end subroutine check_Elec
+
+  subroutine check_connectivity(this)
+
+    use parallel, only : IONode, Node
+    use units, only : eV
+
+    use class_OrbitalDistribution
+    use class_Sparsity
+
+    use create_Sparsity_SC
+    use geom_helper, only : iaorb, ucorb
+#ifdef MPI
+    use mpi_siesta
+#endif
+
+    type(Elec), intent(inout) :: this
+
+    real(dp), pointer :: H(:,:)
+    real(dp), pointer :: S(:)
+    real(dp), pointer :: xij(:,:)
+    type(OrbitalDistribution), pointer :: fdist
+    type(Sparsity) :: sp02
+
+    integer, pointer :: l_ncol(:) => null()
+    integer, pointer :: l_ptr(:)  => null()
+    integer, pointer :: l_col(:)  => null()
+    integer, pointer :: ncol02(:) => null()
+    integer, pointer :: ptr02(:)  => null()
+    integer, pointer :: col02(:)  => null()
+
+    integer :: no_l, no_u, i, io, j, ind, ind02, ia, ja
+    integer :: tm(3)
+    real(dp) :: maxH, maxS
+    integer :: maxi, maxj, maxia, maxja
+
+    ! Retrieve distribution
+    fdist => dist(this%H)
+
+    if ( .not. initialized(this%H) ) then
+       call die('check_connectivity: Error in code')
+    end if
+    H   => val(this%H)
+    S   => val(this%S)
+    xij => val(this%xij)
+
+    tm(:) = TM_ALL
+    if ( this%inf_dir == INF_POSITIVE ) then
+       tm(this%t_dir) =  2
+    else
+       tm(this%t_dir) = -2
+    end if
+    call crtSparsity_SC(this%sp,sp02, &
+         TM=tm, ucell=this%ucell, lasto=this%lasto, &
+         xa=this%xa, xij=xij)
+
+    call attach(this%sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=no_l,nrows_g=no_u)
+
+    call attach(sp02,n_col=ncol02,list_ptr=ptr02,list_col=col02)
+
+    ! initialize
+    maxH = 0._dp
+    maxS = 0._dp
+    maxi = 0
+    maxj = 0
+
+    ! loop and assign data elements
+    do i = 1 , no_l
+
+       ! Shift out of the buffer region
+       io = index_local_to_global(fdist,i,Node)
+       ia = iaorb(io,this%lasto)
+
+       ! Loop number of entries in the row...
+       do j = 1 , ncol02(i)
+
+          ! The index in the pointer array is retrieved
+          ind02 = ptr02(i) + j
+
+          ! Loop in the super-set sparsity pattern
+          idx02: do ind = l_ptr(i) + 1 , l_ptr(i) + l_ncol(i)
+
+             ! If we have the same column index it must be
+             ! the same entry they represent
+             if ( col02(ind02) == l_col(ind) ) then
+
+                if ( any(abs(H(ind,:)) > maxH) ) then
+                   maxH  = maxval(abs(H(ind,:)))
+                   maxS  = S(ind)
+                   maxia = ia
+                   maxi  = io
+                   maxj  = ucorb(col02(ind02),no_u)
+                   maxja = iaorb(col02(ind02),this%lasto)
+                end if
+                exit idx02
+             end if
+             
+          end do idx02
+          
+       end do
+       
+    end do
+
+    ind = nnzs(sp02)
+    ! clean-up
+    call delete(sp02)
+
+    if ( .not. IONode ) return
+    if ( maxi == 0 .and. ind == 0 ) then
+       write(*,*) trim(name(this))//' principal cell is perfect!'
+    else if ( ind > 0 ) then
+       write(*,*) trim(name(this))//' principal cell is extending out &
+            &with all zeroes'
+    else
+       write(*,*) trim(name(this))//' principal cell is extending out:'
+       write(*,'(t5,2(a,i0))') 'Atom ',maxia,' connects with ',maxja
+       write(*,'(t5,2(a,i0))') 'Orbs ',maxi,' connects with ',maxj
+       write(*,'(t5,3(a,i0),a,g10.3,a)') 'Hamiltonian value: |H(',&
+            maxi,',',maxj,')|@R=',tm(this%t_dir),' = ',maxH/eV,' eV'
+       write(*,'(t5,3(a,i0),a,g10.3)') 'Overlap          :  S(',&
+            maxi,',',maxj,')|@R=',tm(this%t_dir),' = ',maxS
+    end if
+
+  end subroutine check_connectivity
 
   ! Routine for checking the validity of the electrode against the 
   ! system setup in transiesta

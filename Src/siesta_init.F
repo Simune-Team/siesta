@@ -155,7 +155,8 @@ C     Initialise MPI and set processor number
 !     Set object debugging level
 !
       call set_object_debug_level(0)
-      if (IONode) then
+      i = fdf_get('DebugObjects.Node',0)
+      if (Node==i) then
          if (fdf_get('DebugObjects',.false.)) then
             call set_object_debug_level(1)
          endif

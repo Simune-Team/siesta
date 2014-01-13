@@ -23,9 +23,25 @@ module m_ts_sparse_helper
   use precision, only : dp
 
   implicit none
-  
-  private :: dp
-  
+
+  private
+
+#ifdef MPI
+  interface AllReduce_SpData
+     module procedure AllReduce_dSpData1D
+     module procedure AllReduce_zSpData1D
+     module procedure AllReduce_dSpData2D
+     module procedure AllReduce_zSpData2D
+  end interface 
+  public :: AllReduce_SpData
+#endif
+
+  interface create_HS
+     module procedure create_HS_Gamma
+     module procedure create_HS_kpt
+  end interface 
+  public :: create_HS
+
 contains
 
    ! Helper routine to create and distribute the sparse 
@@ -33,7 +49,7 @@ contains
   subroutine create_HS_kpt(dit,sp, &
        Ef, &
        no_BufL, no_BufR, &
-       no_C_L, no_C_R, no_u, &
+       N_Elec, Elecs, no_u, &
        maxnh, H, S, xij, SpArrH, SpArrS, k, &
        nwork, work)
 
@@ -43,7 +59,9 @@ contains
     use class_zSpData1D
 
     use intrinsic_missing, only : SFIND
-    use geom_helper, only : UCORB
+    use geom_helper,       only : UCORB
+
+    use m_ts_electype
 
 ! *********************
 ! * INPUT variables   *
@@ -56,7 +74,10 @@ contains
     real(dp), intent(in) :: Ef
     ! The number of orbitals we wish to cut-off at both ends
     integer, intent(in) :: no_BufL, no_BufR
-    integer, intent(in) :: no_C_L, no_C_R, no_u
+    ! The electrodes
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    integer, intent(in) :: no_u
     ! The number of elements in the sparse arrays
     integer, intent(in) :: maxnh
     ! The hamiltonian and overlap sparse matrices 
@@ -132,9 +153,8 @@ contains
 
           ! Do a check whether we have connections
           ! across the junction...
-          ! This is the same as removing LEFT-RIGHT states..
-          if ( io < no_C_L .and. no_C_R < jo ) cycle
-          if ( jo < no_C_L .and. no_C_R < io ) cycle
+          ! This is the same as removing all electrode connections
+          if ( count(OrbInElec(Elecs,io) .neqv. OrbInElec(Elecs,jo)) == 2 ) cycle
            
           ! find the equivalent position in the sparsity pattern
           ! of the full unit cell
@@ -165,8 +185,8 @@ contains
 #ifdef MPI
     ! Note that zH => val(SpArrH)
     ! Note that zS => val(SpArrS)
-    call AllReduce_zSpData1D(SpArrH,nwork,work)
-    call AllReduce_zSpData1D(SpArrS,nwork,work)
+    call AllReduce_SpData(SpArrH,nwork,work)
+    call AllReduce_SpData(SpArrS,nwork,work)
 #endif
 
     ! We symmetrize AND shift
@@ -264,16 +284,20 @@ contains
   subroutine create_HS_Gamma(dit,sp, &
        Ef, &
        no_BufL, no_BufR, &
-       no_C_L, no_C_R, no_u, &
+       N_Elec, Elecs, no_u, &
        maxnh, H, S, SpArrH, SpArrS, &
        nwork, work)
 
-    use intrinsic_missing, only : SFIND
-    use geom_helper,       only : UCORB
+    use parallel, only : Node
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData1D
-    use parallel, only : Node
+
+    use intrinsic_missing, only : SFIND
+    use geom_helper,       only : UCORB
+
+    use m_ts_electype
+
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -285,7 +309,10 @@ contains
     real(dp), intent(in) :: Ef
     ! The number of orbitals we wish to cut-off at both ends
     integer, intent(in) :: no_BufL, no_BufR
-    integer, intent(in) :: no_C_L, no_C_R, no_u
+    ! The electrodes
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    integer, intent(in) :: no_u
     ! The number of elements in the sparse arrays
     integer, intent(in) :: maxnh
     ! The hamiltonian and overlap sparse matrices 
@@ -352,9 +379,8 @@ contains
 
           ! Do a check whether we have connections
           ! across the junction...
-          ! This is the same as removing LEFT-RIGHT states..
-          if ( io < no_C_L .and. no_C_R < jo ) cycle
-          if ( jo < no_C_L .and. no_C_R < io ) cycle
+          ! This is the same as removing all electrode connections
+          if ( count(OrbInElec(Elecs,io) .neqv. OrbInElec(Elecs,jo)) == 2 ) cycle
            
           ! find the equivalent position in the sparsity pattern
           ! of the full unit cell
@@ -380,8 +406,8 @@ contains
 #ifdef MPI
     ! Note that dH => val(SpArrH)
     ! Note that dS => val(SpArrS)
-    call AllReduce_dSpData1D(SpArrH,nwork,work)
-    call AllReduce_dSpData1D(SpArrS,nwork,work)
+    call AllReduce_SpData(SpArrH,nwork,work)
+    call AllReduce_SpData(SpArrS,nwork,work)
 #endif
 
     ! We need to do symmetrization AFTER reduction as we need the full
@@ -398,13 +424,14 @@ contains
 
   end subroutine create_HS_Gamma
 
-  subroutine symmetrize_HS_Gamma(Ef,SpArrH, SpArrS)
+  subroutine symmetrize_HS_Gamma(Ef, SpArrH, SpArrS)
+    use parallel, only : Node
+    use class_Sparsity
+    use class_dSpData1D
+
     use intrinsic_missing, only : SFIND
     use geom_helper,       only : UCORB
 
-    use class_Sparsity
-    use class_dSpData1D
-    use parallel, only : Node
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -479,6 +506,29 @@ contains
 ! ************************************************
 
 #ifdef MPI
+
+  ! **** Double precision complex ****
+  subroutine AllReduce_z1D(nnzs,arr,nwork,work)
+    use mpi_siesta
+    integer, intent(in) :: nnzs
+    complex(dp), intent(inout) :: arr(nnzs)
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout) :: work(nwork)
+    integer :: MPIerror, i
+    i = 0
+    do while ( i + nwork <= nnzs ) 
+       work(1:nwork) = arr(i+1:i+nwork)
+       call MPI_AllReduce(work(1),arr(i+1),nwork, &
+            MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
+       i = i + nwork
+    end do
+    if ( i < nnzs ) then
+       work(1:nnzs-i) = arr(i+1:nnzs)
+       call MPI_AllReduce(work(1),arr(i+1),nnzs-i, &
+            MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
+    end if
+  end subroutine AllReduce_z1D
+
   subroutine AllReduce_zSpData1D(sp_arr,nwork,work)
     use mpi_siesta
     use class_zSpData1D
@@ -486,17 +536,52 @@ contains
     integer, intent(in) :: nwork
     complex(dp), intent(inout) :: work(nwork)
     complex(dp), pointer :: arr(:)
-    integer :: MPIerror, n_nzs
+    integer :: n_nzs
     n_nzs = nnzs(sp_arr)
-    ! This should never happen, exactly due to the sparsity
-    if ( n_nzs > nwork ) call die('Sparsity seems larger than &
-         &work arrays, Transiesta????')
     arr => val(sp_arr)
-    work(1:n_nzs) = arr(1:n_nzs)
-    call MPI_AllReduce(work(1),arr(1),n_nzs, &
-         MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
+    call AllReduce_z1D(n_nzs,arr,nwork,work)
   end subroutine AllReduce_zSpData1D
 
+  subroutine AllReduce_zSpData2D(sp_arr,nwork,work,dim2_count)
+    use mpi_siesta
+    use class_zSpData2D
+    type(zSpData2D), intent(inout) :: sp_arr
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout) :: work(nwork)
+    integer, intent(in), optional :: dim2_count
+    complex(dp), pointer :: arr(:,:)
+    integer :: n_nzs, n_nzs1, d2
+    arr => val(sp_arr)
+    d2 = size(arr,dim=2)
+    if ( present(dim2_count) ) d2 = dim2_count
+    n_nzs = nnzs(sp_arr) * d2
+    call AllReduce_z1D(n_nzs,arr,nwork,work)
+  end subroutine AllReduce_zSpData2D
+
+
+
+  ! **** Double precision ****
+  subroutine AllReduce_d1D(nnzs,arr,nwork,work)
+    use mpi_siesta
+    integer, intent(in) :: nnzs
+    real(dp), intent(inout) :: arr(nnzs)
+    integer, intent(in) :: nwork
+    real(dp), intent(inout) :: work(nwork)
+    integer :: MPIerror, i
+    i = 0
+    do while ( i + nwork <= nnzs ) 
+       work(1:nwork) = arr(i+1:i+nwork)
+       call MPI_AllReduce(work(1),arr(i+1),nwork, &
+            MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
+       i = i + nwork
+    end do
+    if ( i < nnzs ) then
+       work(1:nnzs-i) = arr(i+1:nnzs)
+       call MPI_AllReduce(work(1),arr(i+1),nnzs-i, &
+            MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
+    end if
+  end subroutine AllReduce_d1D
+  
   subroutine AllReduce_dSpData1D(sp_arr,nwork,work)
     use mpi_siesta
     use class_dSpData1D
@@ -504,58 +589,28 @@ contains
     integer, intent(in)     :: nwork
     real(dp), intent(inout) :: work(nwork)
     real(dp), pointer :: arr(:)
-    integer :: MPIerror, n_nzs
+    integer :: n_nzs
     n_nzs = nnzs(sp_arr)
-    ! This should never happen, exactly due to the sparsity
-    if ( n_nzs > nwork ) call die('Sparsity seems larger than &
-         &work arrays, Transiesta????')
     arr => val(sp_arr)
-    work(1:n_nzs) = arr(1:n_nzs)
-    call MPI_AllReduce(work(1),arr(1),n_nzs, &
-         MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
+    call AllReduce_d1D(n_nzs,arr,nwork,work)
   end subroutine AllReduce_dSpData1D
-#endif
 
-  subroutine d_DM_EDM_Reduce_Shift(Ef,spDM, spEDM, nwork, work)
-    use class_dSpData1D
-    real(dp), intent(in) :: Ef
-    type(dSpData1D), intent(inout) :: spDM, spEDM
+  subroutine AllReduce_dSpData2D(sp_arr,nwork,work,dim2_count)
+    use mpi_siesta
+    use class_dSpData2D
+    type(dSpData2D), intent(inout) :: sp_arr
     integer, intent(in) :: nwork
     real(dp), intent(inout) :: work(nwork)
-    integer :: n
-    real(dp), pointer :: DM(:), EDM(:)
+    integer, intent(in), optional :: dim2_count
+    real(dp), pointer :: arr(:,:)
+    integer :: n_nzs, n_nzs1, d2
+    arr => val(sp_arr)
+    d2 = size(arr,dim=2)
+    if ( present(dim2_count) ) d2 = dim2_count
+    n_nzs = nnzs(sp_arr) * d2
+    call AllReduce_d1D(n_nzs,arr,nwork,work)
+  end subroutine AllReduce_dSpData2D
 
-#ifdef MPI
-    call AllReduce_dSpData1D(spDM,nwork,work)
-    call AllReduce_dSpData1D(spEDM,nwork,work)
 #endif
-    n   = nnzs(spDM)
-    DM  => val(spDM)
-    EDM => val(spEDM)
-    call daxpy(n,Ef,DM,1,EDM,1)
 
-  end subroutine d_DM_EDM_Reduce_Shift
-
-  subroutine z_DM_EDM_Reduce_Shift(Ef,spDM, spEDM, nwork, work)
-    use class_zSpData1D
-    real(dp), intent(in) :: Ef
-    type(zSpData1D), intent(inout) :: spDM, spEDM
-    integer, intent(in) :: nwork
-    complex(dp), intent(inout) :: work(nwork)
-    integer :: n
-    complex(dp) :: zEf
-    complex(dp), pointer :: DM(:), EDM(:)
-
-#ifdef MPI
-    call AllReduce_zSpData1D(spDM,nwork,work)
-    call AllReduce_zSpData1D(spEDM,nwork,work)
-#endif
-    zEf = cmplx(Ef,0._dp,dp)
-    n   = nnzs(spDM)
-    DM  => val(spDM)
-    EDM => val(spEDM)
-    call zaxpy(n,zEf,DM,1,EDM,1)
-
-  end subroutine z_DM_EDM_Reduce_Shift
- 
 end module m_ts_sparse_helper

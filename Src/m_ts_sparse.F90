@@ -48,7 +48,7 @@ module m_ts_sparse
   ! matrices. In principle this could be made obsolete. However,
   ! that task seems more cumbersome than worthy of notice (for
   ! the moment).
-  type(Sparsity), save :: ts_sp_uc ! TS-GLOBAL only UC
+  type(Sparsity), save :: ts_sp_uc ! TS-GLOBAL (UC)
 
   ! We will save the "update region sparsity"
   ! Note that this is NOT the same as the sparsity pattern
@@ -58,7 +58,7 @@ module m_ts_sparse
   ! Lastly the usage of a MASKED sparsity pattern, will reduce the clutter
   ! between MPI and non-MPI codes as it will be the same array in both 
   ! circumstances.
-  type(Sparsity), save :: tsup_sp_uc ! TS-update-GLOBAL only UC
+  type(Sparsity), save :: tsup_sp_uc ! TS-update-GLOBAL (UC)
 
   ! We will save the local "update region sparsity"
   ! Note that this is NOT the same as the sparsity pattern
@@ -72,6 +72,17 @@ module m_ts_sparse
   ! sparsity pattern.
   ! TODO: check how much speed we gain from not searching in the sparsity pattern
   type(iSpData1D), save :: ltsup_sc_pnt
+
+#ifdef MPI
+  ! The reduction of the calculated sparse patterns of the Green's function
+  ! at non-zero bias.
+  ! It can be read as this:
+  !  d_dist(Node,1) is the starting orbital that is to be transferred
+  !  d_dist(Node,2) is the ending orbital that is to be transferred
+  !  d_dist(Node,3) is the number of elements to be transferred
+  !  d_dist(Node,4) is the stride in the elements
+  integer, save, allocatable :: d_dist(:,:)
+#endif
 
   integer, parameter :: CUTHILL_MCKEE = 0
   integer, parameter :: CUTHILL_MCKEE_Z_PRIORITY = 1
@@ -124,7 +135,7 @@ contains
 ! **********************
     type(OrbitalDistribution) :: dit
     ! Temporary arrays for knowing the electrode size
-    integer :: i
+    integer :: i, bool
     integer :: no_u_TS
 
     ! Number of orbitals in TranSIESTA
@@ -142,6 +153,9 @@ contains
        ! Hence it is still a local sparsity pattern.
        call ts_Sparsity_Update(block_dist,sparse_pattern, Elecs, &
             ltsup_sp_sc)
+
+       ! assign distribution array
+       call ts_init_distribution(block_dist,sparse_pattern)
        
        if ( IONode ) then
           write(*,'(/,a)') 'Created the TranSIESTA local update sparsity pattern:'
@@ -164,7 +178,12 @@ contains
          nnzs(sparse_pattern), Elecs, &
          ts_sp_uc)
 
-    if ( IONode ) then
+    ! The update sparsity pattern can be simplied to the H,S sparsity
+    ! pattern, if all electrodes have certain options to be the same.
+    bool = all(Elecs(:)%Bulk) .and. all(Elecs(:)%DM_CrossTerms)
+    bool = bool .or. all( .not. Elecs(:)%Bulk )
+
+    if ( IONode .and. .not. bool ) then
        write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern:'
        call print_type(ts_sp_uc)
     end if
@@ -187,13 +206,22 @@ contains
          name='TranSIESTA UC distribution')
 #endif
 
-    ! Create the update region (a direct subset of ts_sp_uc)
-    call ts_Sparsity_Update(dit,ts_sp_uc, Elecs, &
-         tsup_sp_uc)
-
-    if ( IONode ) then
-       write(*,'(/,a)') 'Created the TranSIESTA global update sparsity pattern:'
-       call print_type(tsup_sp_uc)
+    if ( bool ) then
+       tsup_sp_uc = ts_sp_uc
+       if ( IONode ) then
+          write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern:'
+          write(*,'(a)') 'TranSIESTA global update sparsity pattern same as H,S'
+          call print_type(ts_sp_uc)
+       end if
+    else
+       ! Create the update region (a direct subset of ts_sp_uc)
+       call ts_Sparsity_Update(dit,ts_sp_uc, Elecs, &
+            tsup_sp_uc)
+       
+       if ( IONode ) then
+          write(*,'(/,a)') 'Created the TranSIESTA global update sparsity pattern:'
+          call print_type(tsup_sp_uc)
+       end if
     end if
 
     ! Read in the monitor lists...
@@ -523,12 +551,9 @@ contains
        ! Loop the index of the pointer array
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-          ! The unit-cell column index, without buffer
-          jc = UCORB(l_col(ind),no_u)
-
           ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
           ! note, that we have already *checked* ic
-          jct = get_orb_type(jc)
+          jct = get_orb_type(l_col(ind))
           if ( jct == TYP_BUFFER ) cycle
 
           if ( ict > 0 ) then
@@ -539,14 +564,21 @@ contains
              DM_CrossTerms = Elecs(jct)%DM_CrossTerms
           else
              ! we are definitely not in an electrode
-             UseBulk = .true.
-             DM_CrossTerms = .false.
+             ! just set it to be updated
+             UseBulk = .false.
+             DM_CrossTerms = .true.
           end if
 
           ! We check whether it is electrode-connections. 
           ! If, so, they are not used in transiesta:
-          if      ( all((/ict,jct/) > 0) .and. ict /= jct ) then
-             lup_DM(ind) = .false.
+          if      ( all((/ict,jct/) > 0) ) then
+             ! Remove connections between electrodes
+             ! but maintain same electrode updates if not usebulk
+             if ( ict == jct .and. .not. UseBulk ) then
+                lup_DM(ind) = .true.
+             else
+                lup_DM(ind) = .false.
+             end if
 
              ! This means that we have an INNER-cell connection
              !if ( jc == l_col(ind) ) then
@@ -559,19 +591,17 @@ contains
              ! If UseBulk, we can safely update cross-terms
              ! between the central and the electrodes (the self-energies are the
              ! same)
-             ! However, cross-term updates are controlled by the user 
-             ! via the option UpdateDMCR
              ! This will also remove any electrode terms
-
+             
              i_in_C = ict == TYP_DEVICE
              j_in_C = jct == TYP_DEVICE
 
-             if ( .not. DM_CrossTerms ) then
-                ! the user has requested to ONLY update the central region
-                lup_DM(ind) = i_in_C .and. j_in_C
-             else
+             if ( DM_CrossTerms ) then
                 ! the user has requested to also update cross-terms
                 lup_DM(ind) = i_in_C .or.  j_in_C
+             else
+                ! the user has requested to ONLY update the central region
+                lup_DM(ind) = i_in_C .and. j_in_C
              end if
 
           else
@@ -819,5 +849,83 @@ contains
     call de_alloc(a_priority)
 
   end subroutine ts_Optimize
-  
+
+#ifdef MPI  
+  subroutine ts_init_distribution(dit,sparse_pattern)
+
+    use parallel, only : Node, Nodes
+    use intrinsic_missing, only : UNIQC
+    use geom_helper, only : UCORB
+
+    use mpi_siesta, only : MPI_Integer, MPI_Sum
+    use mpi_siesta, only : MPI_AllReduce, MPI_Comm_World
+
+    use class_Sparsity
+    use class_OrbitalDistribution
+
+    type(OrbitalDistribution), intent(in) :: dit
+    type(Sparsity), intent(inout) :: sparse_pattern
+
+    ! pointers to the sparsity pattern
+    integer, pointer :: l_ncol(:) => null()
+    integer, pointer :: l_ptr(:) => null()
+    integer, pointer :: l_col(:) => null()
+    integer, allocatable :: tmp(:)
+
+    integer :: io, jo, ind, no_local, no_u, N
+
+    integer :: MPIerror
+
+    ! Allocate all the nodes distribution sizes
+    if ( allocated(d_dist) ) deallocate(d_dist)
+    allocate(d_dist(0:Nodes-1,4))
+    d_dist = 0
+
+    call attach(sparse_pattern,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=no_local, nrows_g=no_u)
+    ! Assign starting / ending
+    d_dist(Node,1) = index_local_to_global(dit,1,Node)
+    d_dist(Node,2) = index_local_to_global(dit,no_local,Node)
+
+    ! allocate space to capture content
+    N = maxval(l_ncol)
+    allocate(tmp(N))
+    ! find the local update size
+    N = 0
+    do io = 1 , no_local
+
+       ind = l_ptr(io)
+       jo  = l_ncol(io)
+       tmp(1:jo) = UCORB(l_col(ind+1:ind+jo),no_u)
+       N = N + UNIQC(tmp(1:jo))
+
+    end do
+    d_dist(Node,3) = N
+    deallocate(tmp)
+
+    allocate(tmp(3*Nodes))
+
+    call MPI_AllReduce(d_dist(1,1),tmp,3*Nodes, &
+         MPI_Integer, MPI_Sum, MPI_Comm_World, MPIerror)
+
+    ! insert the values again
+    ind = 0
+    do jo = 1 , 3
+       do io = 0 , Nodes - 1
+          ind = ind + 1
+          d_dist(io,jo) = tmp(ind)
+       end do
+    end do
+
+    deallocate(tmp)
+    
+    ! create the stride in data
+    do io = 1 , Nodes - 1
+       d_dist(io,4) = d_dist(io-1,4) + d_dist(io-1,3)
+    end do
+
+  end subroutine ts_init_distribution
+
+#endif
+     
 end module m_ts_sparse

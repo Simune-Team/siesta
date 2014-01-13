@@ -11,7 +11,6 @@ module m_ts_cctype
 !   4. The type of contour (i.e. which method is used to create it)
 ! 
 
-  use m_ts_electype, only : NAME_LEN
   use m_ts_io_ctype, only : ts_c_io, CC_METHOD_LEN => c_N
   use precision, only : dp
 
@@ -22,38 +21,24 @@ module m_ts_cctype
   private :: dp
   public
 
-  type :: ts_ccontour
-     sequence
-     complex(dp) :: c    ! Contour value
-     complex(dp) :: w    ! Contour weight
-     integer     :: part ! part of the contour
-     integer     :: type ! type of the contour point
-  end type ts_ccontour
-
   ! Create a type to contain the contour information
-  type :: ts_eq_c
-     type(ts_c_io), pointer :: c_io => null()
-     integer :: Ne = 0
-     ! the electrode names
-     character(len=NAME_LEN), allocatable :: elec(:)
-     ! In the same spirit we need to control whether the 
-     ! weight has to be altered in any way.
-     ! I.e. we have a weight per electrode
+  type :: ts_cw
+     type(ts_c_io), pointer   :: c_io => null()
+     integer,     allocatable :: ID(:)
      complex(dp), allocatable :: c(:), w(:,:)
-  end type ts_eq_c
+  end type ts_cw
 
-  ! Create a type to contain the contour information
-  type :: ts_neq_c
-     type(ts_c_io), pointer :: c_io => null()
-     complex(dp), allocatable :: c(:), w(:)
-  end type ts_neq_c
-
-  type :: ts_c
-     sequence
-     logical :: exist = .false.
-     complex(dp) :: e
-     integer     :: idx(3)
-  end type ts_c
+  type :: ts_c_idx
+     !sequence
+     logical     :: exist = .false.
+     logical     :: fake  = .false.
+     complex(dp) :: e ! the energy for the curve
+     ! contains:
+     ! (1) : whether this is eq,noneq,noneq-tail
+     ! (2) : index of the io contour
+     ! (3) : index of the point in the io(2)'th contour-array
+     integer     :: idx(3) 
+  end type ts_c_idx
   
 !  ! maximum length of the string that returns the type
 !  integer, parameter :: CC_METHOD_LEN = 17
@@ -98,36 +83,36 @@ module m_ts_cctype
   end interface method
   private :: method_str, method_ts_c_io
 
-  interface elec_idx
-     module procedure elec_idx_el_eq
-     module procedure elec_idx_str_eq
-  end interface elec_idx
-  private :: elec_idx_el_eq, elec_idx_str_eq
+!  interface elec_idx
+!     module procedure elec_idx_el_eq
+!     module procedure elec_idx_str_eq
+!  end interface elec_idx
+!  private :: elec_idx_el_eq, elec_idx_str_eq
 
 contains
 
-  function elec_idx_el_eq(c,el) result(idx)
-    use m_ts_electype
-    use fdf, only : leqi
-    type(ts_eq_c), intent(in) :: c
-    type(Elec), intent(in) :: El
-    integer :: idx
-    idx = elec_idx(c,name(El))
-  end function elec_idx_el_eq
-
-  function elec_idx_str_eq(c,name) result(idx)
-    use fdf, only : leqi
-    type(ts_eq_c), intent(in) :: c
-    character(len=*), intent(in) :: name
-    integer :: i, idx
-    do i = 1 , size(c%elec)
-       if ( leqi(c%elec(i),name) ) then
-          idx = i
-          return
-       end if
-    end do
-    idx = 0
-  end function elec_idx_str_eq
+!  function elec_idx_el_eq(c,el) result(idx)
+!    use m_ts_electype
+!    use fdf, only : leqi
+!    type(ts_eq_c), intent(in) :: c
+!    type(Elec), intent(in) :: El
+!    integer :: idx
+!    idx = elec_idx(c,name(El))
+!  end function elec_idx_el_eq
+!
+!  function elec_idx_str_eq(c,name) result(idx)
+!    use fdf, only : leqi
+!    type(ts_eq_c), intent(in) :: c
+!    character(len=*), intent(in) :: name
+!    integer :: i, idx
+!    do i = 1 , size(c%elec)
+!       if ( leqi(c%elec(i),name) ) then
+!          idx = i
+!          return
+!       end if
+!    end do
+!    idx = 0
+!  end function elec_idx_str_eq
 
   function method2str_ts_c_io(c) result(str)
     type(ts_c_io), intent(in) :: c
@@ -241,7 +226,6 @@ contains
   end function method_str
 
   function method_ts_c_io(c) result(ret)
-    use fdf, only : leqi
     type(ts_c_io), intent(in) :: c
     integer :: ret
     ret = method(c%method)

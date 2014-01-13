@@ -22,6 +22,7 @@ module m_ts_io_contour
 
   character(len=200), parameter :: OPT_N   = '(''ts_options: '',a)'
   character(len=200), parameter :: OPT_C   = '(''ts_options: '',a,t53,''=    '',a)'
+  character(len=200), parameter :: OPT_CC  = '(''ts_options: '',a,t53,''=    '',a,tr2,a)'
   character(len=200), parameter :: OPT_F   = '(''ts_options: '',a,t53,''='',f10.4)'
   character(len=200), parameter :: OPT_INT = '(''ts_options: '',a,t53,''='',i5)'
   character(len=200), parameter :: OPT_F_U = '(''ts_options: '',a,t53,''='',f10.4,tr1,a)'
@@ -275,14 +276,14 @@ contains
 
     ! we can compare bounds
     if ( present(prev) ) then
-       if (abs(cur%a - prev%b) > 1.e-8_dp ) then
+       if ( abs(cur%a - prev%b) > 1.e-8_dp ) then
           call die('Contour: '//trim(prev%name)//' and '//trim(cur%name)// &
                ' are not connected.')
        end if
     end if
     
     if ( present(next) ) then
-       if (abs(cur%b - next%a) > 1.e-8_dp ) then
+       if ( abs(next%a - cur%b) > 1.e-8_dp ) then
           call die('Contour: '//trim(cur%name)//' and '//trim(next%name)// &
                ' are not connected.')
        end if
@@ -292,6 +293,7 @@ contains
     if ( len_trim(cur%cd) > 0 .and. len_trim(cur%cN) == 0 ) then
        write(*,*)'TODO check limits for infinity'
        cur%N = nint(abs(cur%b - cur%a)/cur%d)
+       !print *,cur%a,cur%b,cur%d,cur%N
     end if
          
   end subroutine ts_fix_contour

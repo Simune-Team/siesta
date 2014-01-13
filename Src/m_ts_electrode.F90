@@ -341,7 +341,7 @@ contains
 ! * OUTPUT variables    *
 ! ***********************
     complex(dp), target :: GS(no*no)
-    complex(dp), pointer :: zwork(:)
+    complex(dp), target :: zwork(nwork)
 
     integer, intent(out), optional :: iterations
 
@@ -398,9 +398,9 @@ contains
 
 ! beta = -(Z*S10-H10)
     do j = 1 , no
-       ic = no * (j-1)
-       do i = 1 , no
-          ic2 = j + no*(i-1)
+       ic = no * (j-1) + 1
+       do i = 0 , nom1
+          ic2 = j + no*i
           beta(ic+i) = dconjg(H01(ic2)) - ZE * dconjg(S01(ic2))
        end do
     end do
@@ -458,7 +458,6 @@ contains
 
     end do
 
-    ierr = 0 
     if ( present(final_invert) ) then
        if ( final_invert ) then
           ! Invert to get the Surface Green's function
@@ -528,7 +527,7 @@ contains
   subroutine create_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
        RemUCellDistance, &
-       NEn,ce,cidx, &
+       NEn,ce, &
        CalcDOS,ZBulkDOS)
 
     use precision,  only : dp
@@ -550,6 +549,8 @@ contains
     use class_dSpData1D
     use class_dSpData2D
 
+    use m_iterator
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -561,7 +562,6 @@ contains
     real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
     integer, intent(in)           :: NEn ! Number of energy points
     complex(dp), intent(in)       :: ce(NEn) ! the energy points
-    integer, intent(in)           :: cidx(3,NEn) ! a 3-index designator, (<eq|neq|neq-tail>,c_io,ie)
     logical, intent(in)           :: CalcDOS ! whether or not to calculate the bulk-density of states.
 
 ! ***********************
@@ -591,22 +591,24 @@ contains
     ! Green's function variables
     complex(dp), pointer :: GS(:)
     complex(dp), pointer :: Hq(:), Sq(:), Gq(:)
-    complex(dp) :: ZEnergy, ZSEnergy, zdos
+    complex(dp) :: ZEnergy, zDOS
 
     ! In order to print information about the recursize algorithm
     integer, allocatable :: iters(:,:)
-    real(dp) :: i_mean, i_std, mu
+    real(dp) :: i_mean, i_std
 
     integer :: ierror,uGF
     ! Big loop counters
-    integer :: iEn,ispin, iqpt,ikpt
+    type(itt2) :: it2
+    integer, pointer :: ispin, ikpt
+    integer :: iEn, iqpt
     ! Counters
-    integer :: i,j,k,ia,io,jo
+    integer :: i, j, k, io, jo, off
 
     logical :: is_left, Gq_allocated, final_invert
 
 #ifdef MPI
-    integer :: MPIerror,curNode
+    integer :: MPIerror, curNode
     integer :: req, status(MPI_Status_Size)
     integer, allocatable :: reqs(:)
 #endif
@@ -615,7 +617,7 @@ contains
     call write_debug( 'PRE create_Green' )
 #endif
 
-    call timer('genGreen',1)
+    call timer('TS_SE',1)
 
     ! Check input for what to do
     if( El%inf_dir == INF_NEGATIVE ) then
@@ -627,15 +629,14 @@ contains
     endif
 
     ! capture information from the electrode
-    nspin = Spin(El)
-    mu = El%mu
+    nspin  = Spin(El)
     nuo_E  = Orbs(El)
     nS     = nuo_E ** 2
     nuou_E = UsedOrbs(El)
     nuS    = nuou_E ** 2
     ! create expansion q-points (weight of q-points)
-    nq = Rep(El)
-    wq = 1._dp / real(nq,dp)
+    nq     = Rep(El)
+    wq     = 1._dp / real(nq,dp)
     final_invert = nq /= 1
 
     if (IONode) then
@@ -653,9 +654,8 @@ contains
           if ( RepA1(El) > 1 ) ktmp(1) = ktmp(1)/real(RepA1(El),dp)
           if ( RepA2(El) > 1 ) ktmp(2) = ktmp(2)/real(RepA2(El),dp)
           if ( RepA3(El) > 1 ) ktmp(3) = ktmp(3)/real(RepA3(El),dp)
-          call kpoint_convert(unitcell(El),ktmp,kpt,-1)
-          write(*,'(i4,2x,4(E14.5))') i, &
-               kpt(1),kpt(2),kpt(3),kweight(i)
+          call kpoint_convert(UnitCell(El),ktmp,kpt,-1)
+          write(*,'(i4,2x,4(E14.5))') i, kpt,kweight(i)
        end do
 
        ! Show the number of used atoms and orbitals
@@ -672,7 +672,7 @@ contains
           write(*,'(i4,2x,4(E14.5))') i,qpt,wq
        end do
        write(*,'(a,f14.5,1x,a)') &
-            " Fermi level shift in electrode (chemical potential) : ",mu/eV,' eV'
+            " Fermi level shift in electrode (chemical potential) : ",El%mu%mu/eV,' eV'
     end if
 
     ! Initialize Green's function and Hamiltonian arrays
@@ -698,10 +698,10 @@ contains
        Gq => zwork(nS*9+1:nS*9+nuS*nq)
        Gq_allocated = .false.
     else
-       Gq_allocated = .true.
        nullify(Gq)
        allocate(Gq(nuS*nq))
        call memory('A','Z',size(Gq),'create_green')
+       Gq_allocated = .true.
     end if
 
     ! all the Hamiltonian and overlaps
@@ -713,11 +713,7 @@ contains
 
     ! Reset bulk DOS
     if ( CalcDOS ) then
-       do ispin = 1 , nspin
-          do iEn = 1 , NEn
-             ZBulkDOS(iEn,ispin) = dcmplx(0.d0,0.d0)
-          end do
-       end do
+       ZBulkDOS(:,:) = dcmplx(0._dp,0._dp)
     end if
 
 !******************************************************************
@@ -735,7 +731,7 @@ contains
        write(uGF) UsedAtoms(El),UsedOrbs(El)
        write(uGF) El%xa_used, El%lasto_used
        write(uGF) RepA1(El),RepA2(El),RepA3(El)
-       write(uGF) El%mu
+       write(uGF) El%mu%mu
 
        ! Write out explicit information about this content
        write(uGF) RemUCellDistance
@@ -744,14 +740,14 @@ contains
        ! Do a conversion here
        allocate(kE(3,nkpnt))
        call memory('A','D',nkpnt*3,'create_green')
-       do ikpt = 1 , nkpnt
+       do i = 1 , nkpnt
           ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-          call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
+          call kpoint_convert(ucell,kpoint(:,i),ktmp,1)
           ktmp(1) = ktmp(1)/real(RepA1(El),dp)
           ktmp(2) = ktmp(2)/real(RepA2(El),dp)
           ktmp(3) = ktmp(3)/real(RepA3(El),dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
-          call kpoint_convert(UnitCell(El),ktmp,kE(:,ikpt),-1)
+          call kpoint_convert(UnitCell(El),ktmp,kE(:,i),-1)
        end do
        write(uGF) kE,kweight
        call memory('D','D',nkpnt*3,'create_green')
@@ -759,7 +755,7 @@ contains
 
        ! write out the contour information
        write(uGF) NEn
-       write(uGF) ce,cidx ! energy points and index designation
+       write(uGF) ce ! energy points
     end if
     
 #ifdef MPI
@@ -790,93 +786,98 @@ contains
             &surface self-energy calculation...'
     end if
 
-    spin_loop: do ispin = 1 , nspin
+    ! start up the iterators
+    call itt_init  (it2,end1=nspin,end2=nkpnt)
+    call itt_attach(it2,cur1=ispin,cur2=ikpt)
 
-       ! Number of iterations
-       iters(:,:) = 0
+    ! do spin and k-point loop in one go...
+    do while ( .not. itt_step(it2) )
        
-       kpoint_loop: do ikpt = 1 , nkpnt
-            
-          ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-          call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
-          ktmp(1) = ktmp(1)/real(RepA1(El),dp)
-          ktmp(2) = ktmp(2)/real(RepA2(El),dp)
-          ktmp(3) = ktmp(3)/real(RepA3(El),dp)
-          ! Convert back to reciprocal units (to electrode)
-          call kpoint_convert(unitcell(El),ktmp,kpt,-1)
-          
-          ! loop over the repeated cell...
-          HSq_loop: do iqpt = 1 , nq
+       if ( itt_stepped(it2,1) ) then
+          ! Number of iterations
+          iters(:,:) = 0
+       end if
+       
+       ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
+       call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
+       ktmp(1) = ktmp(1)/real(RepA1(El),dp)
+       ktmp(2) = ktmp(2)/real(RepA2(El),dp)
+       ktmp(3) = ktmp(3)/real(RepA3(El),dp)
+       ! Convert back to reciprocal units (to electrode)
+       call kpoint_convert(UnitCell(El),ktmp,kpt,-1)
+       
+       ! loop over the repeated cell...
+       HSq_loop: do iqpt = 1 , nq
              
-             ! point to the correct segment of memory
-             H00 => zHS((     iqpt-1)*nS+1:      iqpt *nS)
-             S00 => zHS((  nq+iqpt-1)*nS+1:(  nq+iqpt)*nS)
-             H01 => zHS((2*nq+iqpt-1)*nS+1:(2*nq+iqpt)*nS)
-             S01 => zHS((3*nq+iqpt-1)*nS+1:(3*nq+iqpt)*nS)
+          ! point to the correct segment of memory
+          H00 => zHS((     iqpt-1)*nS+1:      iqpt *nS)
+          S00 => zHS((  nq+iqpt-1)*nS+1:(  nq+iqpt)*nS)
+          H01 => zHS((2*nq+iqpt-1)*nS+1:(2*nq+iqpt)*nS)
+          S01 => zHS((3*nq+iqpt-1)*nS+1:(3*nq+iqpt)*nS)
 
-             ! init qpoint in reciprocal lattice vectors
-             call kpoint_convert(unitcell(El),q_exp(El,iqpt),qpt,-1)
+          ! init qpoint in reciprocal lattice vectors
+          call kpoint_convert(UnitCell(El),q_exp(El,iqpt),qpt,-1)
 
-             ! Setup the transfer matrix and the intra cell at the k-point and q-point
-             if ( RemUCellDistance ) then
-                call die('Not working yet')
-             end if
-             ! Calculate transfer matrices
-             call set_electrode_HS_Transfer(ispin, El, kpt, qpt, &
-                  nS, H00,S00,H01,S01, RemUCellDistance=RemUCellDistance)
-
-             i = (iqpt-1)*nuS
-             if ( nuo_E /= nuou_E ) then
-                if( is_left ) then
-                   ! Left, we use the last orbitals
-                   do jo = 1 , nuou_E
-                      do io = 1 , nuou_E
-                         i = i + 1
-                         Sq(i) = S00(io+(nuo_E-nuou_E)+&
-                              nuo_E*(jo+(nuo_E-nuou_E)-1))
-                         Hq(i) = H00(io+(nuo_E-nuou_E)+&
-                              nuo_E*(jo+(nuo_E-nuou_E)-1)) + mu * Sq(i)
-                      end do
-                   end do
-                else
-                   ! Right, the first orbitals
-                   do jo = 1 , nuou_E
-                      do io = 1 , nuou_E
-                         i = i + 1
-                         Sq(i) = S00(io+nuo_E*(jo-1))
-                         Hq(i) = H00(io+nuo_E*(jo-1)) + mu * Sq(i)
-                      end do   ! io
-                   end do      ! jo
-                end if
-             end if
-
-          end do HSq_loop
-          
-          if ( IONode ) then
-             write(uGF) ikpt,1,ce(1),cidx(:,1) ! information about k-point and energy point
-             if ( nuo_E /= nuou_E ) then
-                write(uGF) Hq
-                write(uGF) Sq
-             else
-                H00 => zHS(1:nS*nq)
-                S00 => zHS(nS*nq+1:nS*nq*2)
-                zwork(1:nS*nq) = H00 + El%mu * S00
-                write(uGF) zwork(1:nS*nq)
-                write(uGF) S00
-             end if
+          ! Setup the transfer matrix and the intra cell at the k-point and q-point
+          if ( RemUCellDistance ) then
+             call die('Not working yet')
           end if
 
-          Econtour_loop: do iEn = 1, NEn
-             
+          ! Calculate transfer matrices @Ef (including the chemical potential)
+          call set_electrode_HS_Transfer(ispin, El, kpt, qpt, &
+               nS, H00,S00,H01,S01, RemUCellDistance=RemUCellDistance)
+
+          i = (iqpt-1)*nuS
+          if ( nuo_E /= nuou_E ) then
+             if( is_left ) then
+                ! Left, we use the last orbitals
+                off = nuo_E - nuou_E + 1
+                do jo = off - 1 , nuo_E - 1
+                   do io = off , nuo_E
+                      i = i + 1
+                      Sq(i) = S00(io+nuo_E*jo)
+                      Hq(i) = H00(io+nuo_E*jo)
+                   end do
+                end do
+             else
+                ! Right, the first orbitals
+                do jo = 0 , nuou_E - 1
+                   do io = 1 , nuou_E
+                      i = i + 1
+                      Sq(i) = S00(io+nuo_E*jo)
+                      Hq(i) = H00(io+nuo_E*jo)
+                   end do   ! io
+                end do      ! jo
+             end if
+          end if
+          
+       end do HSq_loop
+       
+       if ( IONode ) then
+          write(uGF) ikpt, 1, ce(1) ! k-point and energy point
+          if ( nuo_E /= nuou_E ) then
+             write(uGF) Hq
+             write(uGF) Sq
+          else
+             H00 => zHS(      1:nq*nS  )
+             S00 => zHS(nq*nS+1:nq*nS*2)
+             write(uGF) H00
+             write(uGF) S00
+          end if
+       end if
+       
+       Econtour_loop: do iEn = 1, NEn
+          
 #ifdef MPI
-             ! Every node takes one energy point
-             ! This asserts that IONode = Node == 0 will have iEn == 1
-             ! Important !
-             curNode = MOD(iEn-1,Nodes)
-             E_Nodes: if ( curNode == Node ) then
+          ! Every node takes one energy point
+          ! This asserts that IONode = Node == 0 will have iEn == 1
+          ! Important !
+          curNode = MOD(iEn-1,Nodes)
+          E_Nodes: if ( curNode == Node ) then
 #endif
-             ZEnergy  = ce(iEn)
-             ZSEnergy = ZEnergy - dcmplx(mu,0.0_dp)
+             ! as we already have shifted H,S to Ef + mu, and ZEnergy is
+             ! wrt. mu, we don't need to subtract mu again
+             ZEnergy = ce(iEn)
              
 ! loop over the repeated cell...
              q_loop: do iqpt = 1 , nq
@@ -892,22 +893,23 @@ contains
                 end if
 
                 ! Calculate the surface Green's function
-                ! ZSenergy is Zenergy together with the chemical shift
+                ! Zenergy is wrt. to the system Fermi-level
                 if ( CalcDOS ) then
-                   call SSR_sGreen_DOS(nuo_E,ZSEnergy,H00,S00,H01,S01,GS, &
+                   call SSR_sGreen_DOS(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
                         zDOS,9*nS,zwork, &
-                        iterations=iters(iEn,1),final_invert=final_invert)
-                else
-                   call SSR_sGreen_NoDos(nuo_E,ZSEnergy,H00,S00,H01,S01,GS, &
-                        8*nS,zwork, &
-                        iterations=iters(iEn,1),final_invert=final_invert)
-                end if
-
-                ! We also average the k-points.
-                if ( CalcDOS ) then
+                        iterations=iters(iEn,1), final_invert = final_invert)
+                   
+                   ! We also average the k-points.
                    ZBulkDOS(iEn,ispin) = ZBulkDOS(iEn,ispin) + &
                         wq * zDOS * kweight(ikpt)
+
+                else
+                   call SSR_sGreen_NoDos(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
+                        8*nS,zwork, &
+                        iterations=iters(iEn,1), final_invert = final_invert)
+                   
                 end if
+
                   
                 ! Copy over surface Green's function
                 i = (iqpt-1)*nuS
@@ -930,13 +932,13 @@ contains
                       end do              ! jo
                    end if
                 end if
-
+                
              end do q_loop
              
              if (IONode) then
                 ! Write out calculated information at E point
 
-                if ( iEn /= 1 ) write(uGF) ikpt,iEn,ce(iEn),cidx(:,iEn)
+                if ( iEn /= 1 ) write(uGF) ikpt, iEn, ce(iEn)
                 write(uGF) Gq
 
              end if
@@ -951,7 +953,7 @@ contains
                 call MPI_Start(req,MPIerror)
                 call MPI_Wait(req,status,MPIerror)
              end if
-
+             
           end if E_Nodes
 
           ! If IONode, we should receive in each energy point
@@ -959,38 +961,39 @@ contains
           ! We will not use it until we are in the loop again
           if ( IONode .and. curNode /= Node ) then
              call MPI_Start(reqs(curNode),MPIerror)
-             if ( iEn /= 1 ) write(uGF) ikpt,iEn,ce(iEn),cidx(:,iEn)
+             if ( iEn /= 1 ) write(uGF) ikpt, iEn, ce(iEn)
              call MPI_Wait(reqs(curNode),status,MPIerror)
              write(uGF) Gq
           end if
 
 #endif
 
-          end do Econtour_loop
+       end do Econtour_loop
           
-       end do kpoint_loop
 
+       if ( itt_last(it2,2) ) then
 #ifdef MPI
-       call MPI_Reduce(iters(1,1), iters(1,2), NEn, MPI_Integer, MPI_Sum, &
-            0, MPI_Comm_World, MPIerror)
+          call MPI_Reduce(iters(1,1), iters(1,2), NEn, MPI_Integer, MPI_Sum, &
+               0, MPI_Comm_World, MPIerror)
 #else
-       iters(:,2) = iters(:,1)
+          iters(:,2) = iters(:,1)
 #endif
-       if ( IONode ) then
-          i_mean = sum(iters(:,2)) / real(NEn,dp)
-          i_std = 0._dp
-          do i = 1 , NEn
-             i_std = i_std + ( iters(i,2) - i_mean ) ** 2
-          end do
-          i_std = sqrt(i_std/real(NEn,dp))
-          ! TODO if new surface-Green's function scheme is implemented, fix here
-          write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
-               &Mean/std iterations: ', i_mean             , i_std
-          write(*,'(1x,a,i10,'' / '',i10)')     'Lopez Sancho, Lopez Sancho & Rubio: &
-               &Min/Max iterations : ', minval(iters(:,2)) , maxval(iters(:,2))
+          if ( IONode ) then
+             i_mean = sum(iters(:,2)) / real(NEn,dp)
+             i_std = 0._dp
+             do i = 1 , NEn
+                i_std = i_std + ( iters(i,2) - i_mean ) ** 2
+             end do
+             i_std = sqrt(i_std/real(NEn,dp))
+             ! TODO if new surface-Green's function scheme is implemented, fix here
+             write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
+                  &Mean/std iterations: ', i_mean             , i_std
+             write(*,'(1x,a,i10,'' / '',i10)')     'Lopez Sancho, Lopez Sancho & Rubio: &
+                  &Min/Max iterations : ', minval(iters(:,2)) , maxval(iters(:,2))
+          end if
        end if
-       
-    end do spin_loop
+
+    end do
 !*******************************************************************
 !         Green's function calculation is done
 !*******************************************************************
@@ -1033,6 +1036,8 @@ contains
     call memory('D','Z',size(zHS),'create_green')
     deallocate(zHS)
 
+    call itt_destroy(it2)
+
     call clear_mat_inversion()
 
 #ifdef MPI
@@ -1056,7 +1061,7 @@ contains
     end if
 #endif
 
-    call timer('genGreen',2)
+    call timer('TS_SE',2)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS create_Green' )
@@ -1066,9 +1071,9 @@ contains
 
   subroutine init_Electrode_HS(El,RemUCellDistance)
     use m_ts_electype
-    use class_dSpData2D
-    use class_dSpData1D
     use class_Sparsity
+    use class_dSpData1D
+    use class_dSpData2D
 
     type(Elec), intent(inout) :: El
     logical, intent(in) :: RemUCellDistance
@@ -1076,6 +1081,16 @@ contains
     ! Read-in and create the corresponding transfer-matrices
     call delete(El) ! ensure clean electrode
     call read_Elec(El,Bcast=.true.)
+
+    if ( .not. initialized(El%xij) ) then
+       call die('An electrode file needs to be a non-Gamma calculation. &
+            &Ensure at least two k-points in the T-direction.')
+    end if
+
+    ! print out the precision of the electrode (whether it extends
+    ! beyond first principal layer)
+    call check_Connectivity(El)
+    
     call create_sp2sp01(El,calc_xijo=Rep(El)/=1 .or. RemUCellDistance)
     ! Clean-up, we will not need these!
     ! we should not be very memory hungry now, but just in case...
@@ -1085,11 +1100,6 @@ contains
     ! We do not accept onlyS files
     if ( .not. initialized(El%H00) ) then
        call die('An electrode file must contain the Hamiltonian')
-    end if
-
-    if ( .not. initialized(El%xij) ) then
-       call die('An electrode file needs to be a non-Gamma calculation. &
-            &Ensure at least two k-points in the T-direction.')
     end if
 
     call delete(El%xij)
@@ -1141,13 +1151,15 @@ contains
     real(dp), pointer :: xij00(:,:), xij01(:,:), xijo00(:,:), xijo01(:,:) 
     real(dp), pointer :: H00(:,:) , S00(:), H01(:,:), S01(:)
     integer :: t_dir
+    logical :: has_o
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE elec_HS_Transfer' )
 #endif
 
     t_dir = El%t_dir
-    Ef    = El%Ef
+    ! we need to subtract as the below code shifts to Ef
+    Ef    = El%Ef - El%mu%mu
     no_u  = Orbs(El) ! this has to be the total size of the electrode
 
     if ( no_u ** 2 /= nS ) call die('Wrong size of the electrode array')
@@ -1169,13 +1181,15 @@ contains
     end if
     xijo00 => val(El%xijo00)
     xijo01 => val(El%xijo01)
+    has_o = initialized(El%xijo00)
+
 
     ! Initialize arrays
     do i = 1, nS
-       Hk(i) = dcmplx(0.d0,0.d0)
-       Sk(i) = dcmplx(0.d0,0.d0)
-       Hk_T(i) = dcmplx(0.d0,0.d0)
-       Sk_T(i) = dcmplx(0.d0,0.d0)
+       Hk(i)   = dcmplx(0._dp,0._dp)
+       Sk(i)   = dcmplx(0._dp,0._dp)
+       Hk_T(i) = dcmplx(0._dp,0._dp)
+       Sk_T(i) = dcmplx(0._dp,0._dp)
     enddo
 
     do iuo = 1 , no_u
@@ -1183,12 +1197,19 @@ contains
        ! Create the 00
        do j = 1 , ncol00(iuo)
           ind = l_ptr00(iuo) + j
-          juo = ucorb(l_col00(ind),no_u)
+          juo = Ucorb(l_col00(ind),no_u)
           kqxij = 0._dp
-          do i = 1 , 3 
-             if ( i == t_dir ) cycle
-             kqxij = kqxij + k(i) * xij00(i,ind) + q(i) * xijo00(i,ind)
-          end do
+          if ( has_o ) then
+             do i = 1 , 3 
+                if ( i == t_dir ) cycle
+                kqxij = kqxij + k(i) * xij00(i,ind) + q(i) * xijo00(i,ind)
+             end do
+          else
+             do i = 1 , 3 
+                if ( i == t_dir ) cycle
+                kqxij = kqxij + k(i) * xij00(i,ind)
+             end do
+          end if
 
           cphase = cdexp(dcmplx(0._dp,kqxij) )
           
@@ -1202,18 +1223,25 @@ contains
           ind = l_ptr01(iuo) + j
           juo = ucorb(l_col01(ind),no_u)
           kqxij = 0._dp
-          do i = 1 , 3 
-             if ( i == t_dir ) cycle
-             kqxij = kqxij + k(i) * xij01(i,ind) + q(i) * xijo01(i,ind)
-          end do
+          if ( has_o ) then
+             do i = 1 , 3 
+                if ( i == t_dir ) cycle
+                kqxij = kqxij + k(i) * xij01(i,ind) + q(i) * xijo01(i,ind)
+             end do
+          else
+             do i = 1 , 3 
+                if ( i == t_dir ) cycle
+                kqxij = kqxij + k(i) * xij00(i,ind)
+             end do
+          end if
 
           cphase = cdexp(dcmplx(0._dp,kqxij) )
           
           i = iuo+(juo-1)*no_u
           Hk_T(i) = Hk_T(i) + H01(ind,ispin) * cphase
           Sk_T(i) = Sk_T(i) + S01(ind)       * cphase
-       enddo
-    enddo
+       end do
+    end do
 
     ! Symmetrize and make EF the energy-zero
     do iuo = 1,no_u
@@ -1224,23 +1252,23 @@ contains
           Sk(j) = 0.5_dp*( Sk(j) + dconjg(Sk(i)) )
           Sk(i) = dconjg(Sk(j))
 
-          Hk(j) = 0.5_dp*( Hk(j) + dconjg(Hk(i)) ) - Ef*Sk(j)
+          Hk(j) = 0.5_dp*( Hk(j) + dconjg(Hk(i)) ) - Ef * Sk(j)
           Hk(i) = dconjg(Hk(j))
 
-          ! Transfer matrix
-          Hk_T(i) = Hk_T(i) - Ef*Sk_T(i)
-          Hk_T(j) = Hk_T(j) - Ef*Sk_T(j)
+          ! Transfer matrix is not symmetric
+          Hk_T(i) = Hk_T(i) - Ef * Sk_T(i)
+          Hk_T(j) = Hk_T(j) - Ef * Sk_T(j)
 
-       enddo
+       end do
        
        i = iuo+(iuo-1)*no_u
        Sk(i) = Sk(i) - dcmplx(0._dp,dimag(Sk(i)))
        
-       Hk(i) = Hk(i) - dcmplx(0._dp,dimag(Hk(i))) - Ef*Sk(i)
+       Hk(i) = Hk(i) - dcmplx(0._dp,dimag(Hk(i))) - Ef * Sk(i)
        
        ! Transfer matrix
-       Hk_T(i) = Hk_T(i) - Ef*Sk_T(i)
-    enddo
+       Hk_T(i) = Hk_T(i) - Ef * Sk_T(i)
+    end do
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS elec_HS_Transfer' )

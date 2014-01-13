@@ -51,7 +51,7 @@
       use sys, only : bye
       use m_ts_io, only : fname_TSHS, ts_write_tshs
       use m_ts_sparse, only : ts_sparse_init, ts_sp_uc, ts_Optimize
-      use m_ts_tri, only : ts_tri_init
+!      use m_ts_tri, only : ts_tri_init
       use files, only: slabel, label_length
 #endif
 #ifdef CDF
@@ -336,7 +336,7 @@
          !UseBulk = .false.
          call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
      &        na_u, lasto)
-         call ts_tri_init()
+!         call ts_tri_init()
 
          ! print out the pivoting elements
          ! for optimizing the tri-diagonal matrix form

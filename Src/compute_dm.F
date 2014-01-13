@@ -29,18 +29,9 @@
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
 #ifdef TRANSIESTA
-      use files,            only : slabel
       use m_ts_global_vars, only : TSiscf, TSinit, TSrun
-      use m_ts_method
-      use m_ts_options,     only : TSmode, Elecs
-      use m_ts_options,     only : no_BufL, no_BufR
-      use m_ts_full,        only : transiesta_full
-      use m_ts_tri,         only : ts_tri_init
-      use m_ts_tri,         only : transiesta_tri
-      use m_ts_sparse,      only : ts_sparse_init
-      use m_ts_charge,      only : ts_print_charges
-      use m_ts_charge,      only : TS_RHOCORR_METHOD
-      use m_ts_charge,      only : ts_charge_correct
+      use m_ts_options,     only : TSmode
+      use m_transiesta,     only : transiesta
 #endif /* TRANSIESTA */
       implicit none
 !     Input variables
@@ -99,66 +90,13 @@
         Ecorrec = 0._dp
 
       else if (TSrun) then
-        call timer('TS',1)
 
-#ifdef TRANSIESTA_DEBUG
-        ! When we do a transiesta DEBUG run, we will write out
-        ! all matrices: SigmaL, SigmaR, Gf^-1, Gf
-        ! To compare we "force" both the tri-diagonal and the
-        ! regular method
-        if ( TSiscf == 1 ) then
-           ! This is a first Transiesta run, we need to initialize
-           ! the sparsity patterns...
-           call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
-     &             na_u, lasto)
-           call ts_tri_init()
-           call ts_print_charges(Elecs,
-     &          block_dist, sparse_pattern,nspin, maxnh, Dscf, S)
-        end if
-        call transiesta_full(nspin,Gamma, block_dist,
-     &       sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
-     &       xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
-        call transiesta_tri(nspin,Gamma, block_dist,
-     &       sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
-     &       xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
-#else
-        if ( TSiscf == 1 ) then
-           ! This is a first Transiesta run, we need to initialize
-           ! the sparsity patterns...
-           call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
-     &             na_u, lasto)
-           if ( ts_method == TS_SPARSITY_TRI ) then
-              call ts_tri_init()
-           end if
-           call ts_print_charges(Elecs,
-     &          block_dist, sparse_pattern,nspin, maxnh, Dscf, S)
-        end if
-        if ( ts_method == TS_SPARSITY ) then
-           call transiesta_full(nspin,Gamma, block_dist,
-     &             sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
-     &          xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
-        else if ( ts_method == TS_SPARSITY_TRI ) then
-           call transiesta_tri(nspin,Gamma, block_dist,
-     &          sparse_pattern,ucell, no_u, na_u, lasto, xa, maxnh,
-     &          xijo, H, S, Dscf,Escf, Ef, TSiscf, Qtot)
-        end if
-#endif
+         call transiesta(TSiscf,nspin, block_dist, sparse_pattern,
+     &        Gamma, ucell, no_u, na_u, lasto, xa, maxnh,
+     &        xijo, H, S, Dscf, Escf, Ef, temp, Qtot)
 
-        ! We do the charge correction of the transiesta
-        ! computation here (notice that the routine will automatically
-        ! return if no charge-correction is requested)
-        call ts_charge_correct(no_BufL+no_BufR, Elecs, block_dist,
-     &       sparse_pattern,nspin, maxnh, Dscf, Escf, S, Qtot,
-     &       TS_RHOCORR_METHOD)
-
-           
-        call timer('TS',2)
-
-        if (TSiscf .eq. 1) call timer( 'TS', 3 ) 
-        if (TSiscf .eq. 1) call timer( 'TS_calc', 3 ) 
-
-        Ecorrec = 0._dp
-        Entropy = 0.0_dp
+         Ecorrec = 0._dp
+         Entropy = 0.0_dp
 ! TSS End
 #endif /* TRANSIESTA */
       else

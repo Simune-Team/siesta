@@ -6,13 +6,14 @@ module m_ts_aux
 
   implicit none
 
+  private
+
   interface nf
      module procedure nf_z
      module procedure nf_d
      module procedure nf2
   end interface nf
-
-  private :: nf_z, nf_d
+  public :: nf
 
 contains
   
@@ -30,11 +31,11 @@ contains
 
   ! Double fermi function
   ! calculates
-  !   nF(E-E2) - nF(E-E1)
+  !   nF(E-E1) - nF(E-E2)
   elemental function nf2(E,E1,E2,kT) result(nf)
     real(dp), intent(in) :: E, E1,E2,kT
     real(dp) :: nf
-    nf = nf_d((E-E2)/kT) - nf_d((E-E1)/kT)
+    nf = nf_d((E-E1)/kT) - nf_d((E-E2)/kT)
   end function nf2
 
 end module m_ts_aux

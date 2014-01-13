@@ -313,11 +313,7 @@ contains
 ! ************************************************************
 
 ! ****************** Electrode variables *********************
-    integer :: nqL, nqR, nkparL, nkparR
-    real(dp), allocatable :: qLb(:,:), qRb(:,:)
-    real(dp), allocatable :: wqL(:), wqR(:)
-    real(dp), allocatable :: kparL(:,:), kparR(:,:)
-    real(dp), allocatable :: wkparL(:), wkparR(:)
+    integer :: nqL, nqR
     complex(dp), allocatable :: HAAL(:,:,:), SAAL(:,:,:)
     complex(dp), allocatable :: HAAR(:,:,:), SAAR(:,:,:)
     complex(dp), pointer :: GAAL(:,:), GAAR(:,:)
@@ -333,15 +329,19 @@ contains
     logical :: Is_Volt_TriMat
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
-    ! The Hamiltonian and overlap sparse matrices
+    ! The Hamiltonian and overlap sparse matrices (in global sparsity pattern)
     type(dSpData1D) ::  spH,  spS
     type(zSpData1D) :: spzH, spzS
     ! The different sparse matrices... (these two lines are in local update sparsity pattern)
-    type(dSpData1D) ::  spDML,  spDMR,  spDMneqL,  spDMneqR
-    type(dSpData1D) :: spEDML, spEDMR
+    type(dSpData2D) ::  spDM,  spDMneq
+    type(dSpData2D) :: spEDM
     ! The different sparse matrices... (these two lines are in global update sparsity pattern)
-    type(dSpData1D) ::  spDMu,  spEDMu,  spDMuR,  spEDMuR
-    type(zSpData1D) :: spzDMu, spzEDMu, spzDMuR, spzEDMuR
+    !type(dSpData1D) ::  spDMu,  spEDMu,  spDMuR,  spEDMuR
+    !type(zSpData1D) :: spzDMu, spzEDMu, spzDMuR, spzEDMuR
+    ! we greatly reduce the memory-consumption by using a 
+    ! MPI_ScatterV call subsequently 
+    type(dSpData2D) ::  spDMu,  spEDMu
+    type(zSpData2D) :: spzDMu, spzEDMu
 ! ************************************************************
 
 ! ******************* Computational variables ****************
@@ -354,6 +354,7 @@ contains
 
 ! ******************** Loop variables ************************
     integer :: ispin, ikpt, iPE, iE, NEReqs, up_nzs, ia, ia_E
+    type(ts_c) :: cE
 #ifdef TRANSIESTA_DEBUG
     integer :: iu_GF, iu_GFinv
     integer :: iu_SL, iu_SR
@@ -445,12 +446,10 @@ contains
 
     ! Read in the headers of the surface-Green's function files...
     ! Left
-    call read_Green(uGFL,Elecs(1), &
-         ts_nkpnt, NEn, .false. )
+    call read_Green(uGFL,Elecs(1), ts_nkpnt, NEn, .false. )
 
     ! Right
-    call read_Green(uGFR,Elecs(2), &
-         ts_nkpnt, NEn, .false. )
+    call read_Green(uGFR,Elecs(2), ts_nkpnt, NEn, .false. )
 
     ! We do need the full GF AND a single work array to handle the
     ! left-hand side of the inversion...
@@ -688,6 +687,31 @@ contains
        call timer('TS_HS',2)
 #endif
 
+       iE = Node + 1
+       cE = nextE(iE,steps=Nodes)
+       do while ( cE%exist )
+
+          ! Capture energy point
+          Z = cE%e
+          
+          !call read_next_GS(cE, Z, ikpt, &
+          !     uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
+          !     uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
+          !     nzwork, zwork, forward = .false.)
+          
+          < determine contour type >
+          
+          < calculate contribution to the DM >
+          
+          < loop over electrodes and contour segments >
+            < add contribution to each electrode >
+          
+          
+
+          ! step energy-point
+          iE = iE + Nodes
+          cE = next(iE,steps=Nodes)
+       end do
        ii = 0
 
        ! The left contour is the full contour if: .not. IsVolt
@@ -699,7 +723,7 @@ contains
        eqEPOINTS: do iPE = Nodes - Node , cPNEn, Nodes
 
           if ( N_mon > 0 ) iM = ii + iPE
-          
+
           call select_dE(cNEn,c, iPE, nspin, ts_kweight(ikpt), Z, W, ZW)
           call read_next_GS(iPE, cNEn,Z,ikpt, &
                uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
@@ -1058,10 +1082,6 @@ contains
     ! We can safely delete the orbital distribution, it is local
     call delete(fdist)
 
-    deallocate(qLb,wqL,qRb,wqR)
-    deallocate(kparL,wkparL,kparR,wkparR)
-    call memory('D','D',4*(nqL+nqR+nkparL+nkparR),'transiesta')
-
     if ( ts_Gamma_SCF ) then
        call memory('D','D',ndwork,'transiesta')
        deallocate(dwork)
@@ -1112,16 +1132,16 @@ contains
       ! Gamma's.
       ! Hence we can perform the calculation without 
       ! calculating them.
-      call UC_expansion(.false.,Bulk,Z,no_L_HS,no_L, &
+      call UC_expansion(.false.,Z,no_L_HS,no_L, &
            Elecs(1), &
-           na_L_HS,lasto_L,nqL,qLb,wqL, &
+           na_L_HS,lasto_L,nqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
-      call UC_expansion(.false.,Bulk,Z,no_R_HS,no_R, &
+      call UC_expansion(.false.,Z,no_R_HS,no_R, &
            Elecs(2), &
-           na_R_HS,lasto_R,nqR,qRb,wqR, &
+           na_R_HS,lasto_R,nqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
            nzwork, zwork)
@@ -1205,16 +1225,16 @@ contains
       W  = zmi * i_W
       ZW = Z * W
 
-      call UC_expansion(.false.,Bulk,Z,no_L_HS,no_L, &
+      call UC_expansion(.false.,Z,no_L_HS,no_L, &
            Elecs(1), &
-           na_L_HS,lasto_L,nqL,qLb,wqL, &
+           na_L_HS,lasto_L,nqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
-      call UC_expansion(.true.,Bulk,Z,no_R_HS,no_R, &
+      call UC_expansion(.true.,Z,no_R_HS,no_R, &
            Elecs(2), &
-           na_R_HS,lasto_R,nqR,qRb,wqR, &
+           na_R_HS,lasto_R,nqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
            nzwork, zwork)
@@ -1304,16 +1324,16 @@ contains
       W  = zmi * i_W
       ZW = Z * W
 
-      call UC_expansion(.true.,Bulk,Z,no_L_HS,no_L, &
+      call UC_expansion(.true.,Z,no_L_HS,no_L, &
            Elecs(1), &
-           na_L_HS,lasto_L,nqL,qLb,wqL, &
+           na_L_HS,lasto_L,nqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
-      call UC_expansion(.false.,Bulk,Z,no_R_HS,no_R, &
+      call UC_expansion(.false.,Z,no_R_HS,no_R, &
            Elecs(2), &
-           na_R_HS,lasto_R,nqR,qRb,wqR, &
+           na_R_HS,lasto_R,nqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
            nzwork, zwork)
@@ -1396,16 +1416,16 @@ contains
       W  = zmi * i_W
       ZW = Z * W
 
-      call UC_expansion(.false.,Bulk,Z,no_L_HS,no_L, &
+      call UC_expansion(.false.,Z,no_L_HS,no_L, &
            Elecs(1), &
-           na_L_HS,lasto_L,nqL,qLb,wqL, &
+           na_L_HS,lasto_L,nqL, &
            HAAL, SAAL, GAAL, &
            SigmaL, GammaLT, & 
            nzwork, zwork)
 
-      call UC_expansion(.true.,Bulk,Z,no_R_HS,no_R, &
+      call UC_expansion(.true.,Z,no_R_HS,no_R, &
            Elecs(2), &
-           na_R_HS,lasto_R,nqR,qRb,wqR, &
+           na_R_HS,lasto_R,nqR, &
            HAAR, SAAR, GAAR, &
            SigmaR, GammaRT, & 
            nzwork, zwork)

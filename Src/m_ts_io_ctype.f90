@@ -51,6 +51,7 @@ module m_ts_io_ctype
 
   type ts_c_opt_ll
      character(len=c_N) :: opt = ' '
+     character(len=c_N) :: val = ' '
      type(ts_c_opt_ll), pointer :: next => null()
   end type ts_c_opt_ll
 
@@ -65,18 +66,18 @@ contains
     type(ts_c_io), intent(in) :: from
     type(ts_c_io), intent(out) :: to
     to%name = from%name
-    to%a = from%a
-    to%b = from%b
-    to%ca = from%ca
-    to%cb = from%cb
-    to%d = from%d
-    to%cd = from%cd
-    to%N = from%N
-    to%cN = from%cN
+    to%a    = from%a
+    to%b    = from%b
+    to%ca   = from%ca
+    to%cb   = from%cb
+    to%d    = from%d
+    to%cd   = from%cd
+    to%N    = from%N
+    to%cN   = from%cN
     to%method = from%method
     to%type = from%type
     to%part = from%part
-    to%opt => from%opt
+    to%opt  => from%opt
   end subroutine copy_
 
   function fdf_nc_iotype(prefix,suffix) result(n)
@@ -136,12 +137,75 @@ contains
 
   end function fdf_name_c_iotype
 
+  subroutine c_io_add_opt(this,opt,val)
+    use fdf, only : leqi
+    type(ts_c_io), intent(in out) :: this
+    character(len=*), intent(in) :: opt, val
+    type(ts_c_opt_ll), pointer :: copt, new_opt
+    logical :: has
+
+    if ( c_io_has_opt(this,opt) ) return
+    
+    nullify(new_opt)
+    allocate(new_opt)
+    new_opt%opt = trim(opt)
+    new_opt%val = trim(val)
+
+    if ( .not. associated(this%opt) ) then
+       this%opt => new_opt
+    else
+       copt => this%opt
+       do while ( associated(copt%next) )
+          copt => copt%next
+       end do
+       copt%next => new_opt
+    end if
+    
+  end subroutine c_io_add_opt
+
+  function c_io_has_opt(this,opt) result(has)
+    use fdf, only : leqi
+    type(ts_c_io), intent(in) :: this
+    character(len=*), intent(in) :: opt
+    logical :: has
+    type(ts_c_opt_ll), pointer :: copt
+
+    copt => this%opt
+
+    has = .false.
+    do while ( associated(copt) )
+       has = has .or. leqi(copt%opt,opt)
+       copt => copt%next
+    end do
+
+  end function c_io_has_opt
+
+  function c_io_get_opt(this,opt) result(res)
+    use fdf, only : leqi
+    type(ts_c_io), intent(in) :: this
+    character(len=*), intent(in) :: opt
+    character(len=c_N) :: res
+    type(ts_c_opt_ll), pointer :: copt
+
+    copt => this%opt
+
+    res = ' '
+    do while ( associated(copt) )
+       if ( leqi(copt%opt,opt) ) then
+          res = copt%val
+          return
+       end if
+       copt => copt%next
+    end do
+
+  end function c_io_get_opt
+
   subroutine ts_read_contour_block(prefix,suffix,bName,c, kT, V) 
 
     use parallel, only : IONode
     use units, only : eV
     use fdf
-    use parse, only : search_fun, characters
+    use parse, only : search_fun, characters, ntokens
 
     character(len=*), intent(in) :: prefix, suffix
     character(len=C_N_NAME_LEN), intent(in) :: bName
@@ -152,13 +216,12 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
 
-    type(ts_c_opt_ll), pointer :: opt, opt_tmp
-
     character(len=200) :: g
+    character(len=c_N) :: opt, val
     integer :: iS, iE
     
     ! if the block does not exist, return
-    if ( len_trim(suffix) ) then
+    if ( len_trim(suffix) > 0 ) then
        g = trim(prefix)//'.Contour.'//trim(suffix)
     else
        g = trim(prefix)//'.Contour'
@@ -265,6 +328,11 @@ contains
     if ( 0 <= iS ) then
        c%N  = fdf_bintegers(pline,1,after=iS) ! first integer
        c%cN = characters(pline,1,-1,after=iS)
+       if ( c%N < 1 ) then
+          call die('Block: '//trim(bName)//' is not valid. &
+               &A negative amount of integration points is not &
+               &a valide input.')
+       end if
     else ! we have a delta designation
        ! notice that we can actually use kT here
        call pline_E_parse(pline,iE,c%cd,val=c%d,kT=kT)
@@ -292,31 +360,26 @@ contains
     ! } "method"
 
     ! { "opt <option>"
+    nullify(c%opt)
     do 
        ! if we don't find anything simply exit the optional reading
        if ( .not. move2names() ) exit
        
-       ! we can allocate the opt
-       nullify(opt)
-       allocate(opt)
-       
-       if ( .not. associated(c%opt) ) then
-          c%opt => opt
-       else
-          ! find the last element
-          opt_tmp => c%opt
-          do while ( associated(opt_tmp%next) ) 
-             opt_tmp => opt_tmp%next
+       opt = trim(characters(pline,1,1,after=1))
+       if ( ntokens(pline,after=1) > 1 ) then
+          val = trim(characters(pline,1,1,after=2))
+          do iE = 2 , ntokens(pline,after=2)
+             val = trim(val)//' '//trim(characters(pline,iE,iE,after=2))
           end do
-          opt_tmp%next => opt
+       else
+          val = ' '
        end if
 
-       ! populate the option
-       opt%opt = trim(characters(pline,1,-1,after=1))
+       call c_io_add_opt(c,opt,val)
 
     end do
     ! } "opt"
-
+    
   contains 
 
     function move2names() result(found)
@@ -633,7 +696,11 @@ contains
 
     opt => c%opt
     do while ( associated(opt) )
-       write(*,'(t10,a,tr1,a)') 'opt', trim(opt%opt)
+       if ( len_trim(opt%val) > 0 ) then
+          write(*,'(t10,a,2(tr1,a))') 'opt', trim(opt%opt),trim(opt%val)
+       else
+          write(*,'(t10,a,tr1,a)') 'opt', trim(opt%opt)
+       end if
        opt => opt%next
     end do
     

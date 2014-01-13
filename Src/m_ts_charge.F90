@@ -71,7 +71,7 @@ contains
 ! * LOCAL variables    *
 ! **********************
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer :: no_lo, no_u, lio, io, ind, jo, ispin, ir, jr, r
+    integer :: no_lo, no_u, lio, io, ind, jo, ir, jr, r
 #ifdef MPI
     real(dp) :: tmp(0:1+1+Nelecs*2, nspin)
     integer :: MPIerror
@@ -89,49 +89,45 @@ contains
     Q(:,:)   = 0._dp
 #endif
 
-    do ispin = 1 , nspin
-       do lio = 1 , no_lo
+    do lio = 1 , no_lo
 
-          ! obtain the global index of the orbital.
-          io = index_local_to_global(dit,lio,Node)
-          ir = get_orb_type(io)
+       ! obtain the global index of the orbital.
+       io = index_local_to_global(dit,lio,Node)
+       ir = get_orb_type(io)
 
-          ! Loop number of entries in the row... (index frame)
-          do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
-             
-             ! as the local sparsity pattern is a super-cell pattern,
-             ! we need to check the unit-cell orbital
-             ! The unit-cell column index
-             jo = UCORB(l_col(ind),no_u)
-             jr = get_orb_type(jo)
+       ! Loop number of entries in the row... (index frame)
+       do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+          
+          ! as the local sparsity pattern is a super-cell pattern,
+          ! we need to check the unit-cell orbital
+          ! The unit-cell column index
+          jo = UCORB(l_col(ind),no_u)
+          jr = get_orb_type(jo)
 
-             if      ( all((/ir,jr/) == TYP_BUFFER) ) then
-                r = 1 ! buffer
-             else if ( any((/ir,jr/) == TYP_BUFFER) ) then
-                r = 0 ! other
-             else if ( all((/ir,jr/) == TYP_DEVICE) ) then
-                r = 2 ! device
-             else if ( any((/ir,jr/) == TYP_DEVICE) ) then
-                r = 4+(ir+jr-1)*2 ! device/electrode
-             else if ( ir == jr ) then
-                r = 3+(ir-1)*2 ! electrode/electrode
-             else
-                r = 0 ! other
-             end if
+          if      ( all((/ir,jr/) == TYP_BUFFER) ) then
+             r = 1 ! buffer
+          else if ( any((/ir,jr/) == TYP_BUFFER) ) then
+             r = 0 ! other
+          else if ( all((/ir,jr/) == TYP_DEVICE) ) then
+             r = 2 ! device
+          else if ( any((/ir,jr/) == TYP_DEVICE) ) then
+             r = 4+(ir+jr-1)*2 ! device/electrode
+          else if ( ir == jr ) then
+             r = 3+(ir-1)*2 ! electrode/electrode
+          else
+             r = 0 ! other
+          end if
 #ifdef MPI
-             tmp(r,ispin) = tmp(r,ispin) + &
-                  DM(ind,ispin) * S(ind)
+          tmp(r,:) = tmp(r,:) + DM(ind,:) * S(ind)
 #else
-             Q(r,ispin) = Q(r,ispin) + &
-                  DM(ind,ispin) * S(ind)
+          Q(r,:) = Q(r,:) + DM(ind,:) * S(ind)
 #endif
-          end do
        end do
     end do
 
 #ifdef MPI
-    call MPI_AllReduce(tmp(0,1),Q(0,1),size(tmp),MPI_Double_Precision,MPI_SUM, &
-         MPI_Comm_World,MPIerror)
+    call MPI_AllReduce(tmp(0,1),Q(0,1),size(tmp), &
+         MPI_Double_Precision,MPI_SUM, MPI_Comm_World,MPIerror)
 #endif
 
   end subroutine ts_get_charges
@@ -199,10 +195,12 @@ contains
           write(*,'(a,2(f12.5,tr1))') &
                'Device                        [C]  :',Q(2,1), Q(2,2)
           do i = 1 , Nelecs 
-             write(*,'(a,t31,a,2(f12.5,tr1))') &
-                  trim(name(Elecs(i))),'[E]  :',Q(3+(i-1)*2,1), Q(3+(i-1)*2,1)
-             write(*,'(a,t22,a,2(f12.5,tr1))') &
-               trim(name(Elecs(i))),'/ device [CE] :',Q(4+(i-1)*2,1), Q(4+(i-1)*2,1)
+             write(*,'(a,t31,a,i0,a,f12.5)') &
+                  trim(name(Elecs(i))),'[E',i,'] :', &
+                  Q(3+(i-1)*2,1), Q(3+(i-1)*2,2)
+             write(*,'(a,t22,a,i0,a,2(f12.5,tr1))') &
+                  trim(name(Elecs(i))),'/ device [C',i,'] :', &
+                  Q(4+(i-1)*2,1), Q(4+(i-1)*2,2)
           end do
           write(*,'(a,2(f12.5,tr1),/)') &
                'Other                         [O]  :',Q(0,1), Q(0,2)
@@ -219,8 +217,8 @@ contains
           do i = 1 , Nelecs 
              write(*,'(a,t31,a,i0,a,f12.5)') &
                trim(name(Elecs(i)))         ,'[E',i,'] :',Q(3+(i-1)*2,1)
-             write(*,'(a,t22,a,f12.5)') &
-               trim(name(Elecs(i))),'/ device [CE] :',Q(4+(i-1)*2,1)
+             write(*,'(a,t22,a,i0,a,f12.5)') &
+               trim(name(Elecs(i))),'/ device [C',i,'] :',Q(4+(i-1)*2,1)
           end do
           write(*,'(a,f12.5,/)') &
                'Other                         [O]  :',Q(0,1)
@@ -229,19 +227,19 @@ contains
     else if ( lmethod == TS_INFO_SCF ) then
 
        ! We write out the information from the SCF cycle...
-       write(*,'(a,1x,a9)',advance='no') 'ts-charge:','D'
+       write(*,'(a,1x,a9)',advance='no') 'ts-q:','D'
        do i = 1 , Nelecs
-          write(*,'(1x,a8,i0,1x,a9)',advance='no') 'E',i,'EC'
+          write(*,'(1x,a8,i0,1x,a8,i0)',advance='no') 'E',i,'C',i
        end do
        write(*,'(1x,a9)') 'Q'
        do ispin = 1 , nspin
-          write(*,'(a,1x,f9.3)',advance='no') 'ts-charge:', Q(2,ispin)
+          write(*,'(a,1x,f9.3)',advance='no') 'ts-q:', Q(2,ispin)
           do i = 1 , Nelecs
              write(*,'(2(1x,f9.3))',advance='no') Q(3+(i-1)*2,ispin),Q(4+(i-1)*2,ispin)
           end do
           write(*,'(1x,f9.3)') sum(Q(:,ispin))
        end do
-
+       
     end if
 
     deallocate(Q)

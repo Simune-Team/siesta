@@ -37,9 +37,6 @@ contains
     use m_ts_gf,        only : do_Green
     use m_ts_electrode, only : init_Electrode_HS
     
-    use m_ts_contour, only : contour_Eq, contour_EqL, contour_EqR, contour_nEq
-    use m_ts_contour, only : sort_contour
-    use m_ts_contour, only : NEn, contour
     use m_ts_kpoints, only : setup_ts_kpoint_grid
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
     use m_ts_kpoints, only : ts_kscell, ts_kdispl
@@ -65,7 +62,6 @@ contains
 ! * LOCAL variables   *
 ! *********************
     complex(dp), dimension(:,:), allocatable :: dos
-    type(ts_ccontour), pointer :: c(:) => null()
     integer :: i, sNE, eNE
     integer :: nC, nTS
     logical :: RemUCellDistance
@@ -125,30 +121,6 @@ contains
        ! Save the contour path to <slabel>.CONTOUR
 !       call ts_io_contour(contour,slabel)
 
-       ! We sort the contour to obtain the highest 
-       ! numerical accuracy (simply sort by weight in ascending order)
-       eNE = 0
-!       if ( IsVolt ) then
-!          c => contour_EqL()
-!          eNE = eNE + size(c)
-          ! 1) sort the left equilibrium points
-!          call sort_contour(size(c),c)
-!          c => contour_EqR()
-!          eNE = eNE + size(c)
-          ! 2) sort the right equilibrium points
-!          call sort_contour(size(c),c)
-!          c => contour_nEq()
-!          eNE = eNE + size(c)
-          ! 3) sort the non-equilibrium points
-!          call sort_contour(size(c),c)
-!       else
-!          c => contour_Eq()
-!          eNE = eNE + size(c)
-          ! 1) sort the equilibrium points
-!          call sort_contour(size(c),c)
-!       end if
-!       if ( eNE /= NEn ) call die('Wrong sorting of the contour')
-
        if ( .not. TS_Analyze ) then
 
           ! GF generation:
@@ -165,6 +137,19 @@ contains
              ! clean-up
              call delete(Elecs(i))
 
+          end do
+call die('')
+       else
+
+          do i = 1 , size(Elecs)
+             call delete(Elecs(i)) ! ensure clean electrode
+             call read_Elec(Elecs(i),Bcast=.true.)
+
+            ! print out the precision of the electrode (whether it extends
+            ! beyond first principal layer)
+             call check_Connectivity(Elecs(i))
+
+             call delete(Elecs(i))
           end do
 
        end if

@@ -55,7 +55,7 @@
   subroutine delete_Data(a2d_data)
     type(TYPE_NAME_) :: a2d_data
     if (associated(a2d_data%val)) then
-       call de_alloc( a2d_data%val, &
+        call de_alloc( a2d_data%val, &
             name="val "//trim(a2d_data%name),routine=STR_TYPE_NAME)	
     endif
   end subroutine delete_Data
@@ -83,6 +83,12 @@
     else
        this%data%name = "("//STR_TYPE_NAME//" from n,m)"
     endif
+    if ( n < 1 ) then
+       call die('n size invalid. Data2D, must be larger than 0')
+    end if
+    if ( m < 1 ) then
+       call die('m size invalid. Data2D, must be larger than 0')
+    end if
 
     call re_alloc(this%data%val,1,n,1,m, &
          name="val "//trim(this%data%name),routine=STR_TYPE_NAME)

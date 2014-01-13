@@ -60,9 +60,9 @@ contains
   ! We use a combination of the Booles, Simpson 3/8 and Simpson 3-point rules
   ! to generate arbitrary N rules
   subroutine Booles_Simpson_38_3_rule(N,x,w,a,b)
-    integer, intent(in) :: N
+    integer,  intent(in)  :: N
     real(dp), intent(out) :: x(N), w(N)
-    real(dp), intent(in) :: a, b
+    real(dp), intent(in)  :: a, b
 
     real(dp), parameter :: S_38_E = 6480._dp ** .2_dp
     real(dp), parameter :: S_3_E  = 2880._dp ** .2_dp
@@ -196,7 +196,8 @@ contains
     real(dp) :: D, mD, curA, curB
     integer :: i, j, m38, m3
 
-    if ( N < 1 ) call die('Cannot integrate a negative &
+    if ( N < 1 ) &
+         call die('Cannot integrate a negative &
          &number of points.')
 
     ! First initalize (we are doing additions)

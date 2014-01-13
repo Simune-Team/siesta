@@ -70,9 +70,14 @@
   public :: newDistribution
   public :: num_local_elements, node_handling_element
   public :: index_local_to_global, index_global_to_local
+  public :: print_type
 
   interface newDistribution
      module procedure newBlockCyclicDistribution
+  end interface
+
+  interface print_type
+     module procedure printOrbitalDistribution
   end interface
 
 !==================================== 
@@ -337,6 +342,22 @@
       endif
 
       end function node_handling_element
+
+      subroutine printOrbitalDistribution(this)
+        type(OrbitalDistribution), intent(in) :: this
+
+        if (.not. initialized(this) ) then
+           print "(a)", "Orbital distribution Not Associated"
+           RETURN
+        endif
+
+        print "(a,/,t4,5(a,i0),a)", &
+             "  <orb-dist:"//trim(this%data%name), &
+             " comm=", this%data%comm, &
+             " node/nodes=", this%data%node,' / ',this%data%nodes, &
+             " blocksize=",this%data%blocksize, &
+             ", refcount: ", refcount(this), ">"
+      end subroutine printOrbitalDistribution
 
 !========================================================================
        INTEGER FUNCTION NUMROC( N, NB, IPROC, ISRCPROC, NPROCS )

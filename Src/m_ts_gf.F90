@@ -63,7 +63,6 @@ contains
     use m_ts_electype
     use m_ts_electrode, only : create_Green
 
-    use m_ts_contour, only : nextE
     use m_ts_contour_eq
     use m_ts_contour_neq
 
@@ -90,8 +89,7 @@ contains
     logical :: errorGF, exist, ReUseGF
     character(len=NAME_LEN) :: rGFtitle
     complex(dp), allocatable :: ce(:)
-    integer, allocatable :: cidx(:,:)
-    type(ts_c) :: c
+    type(ts_c_idx) :: c
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -127,12 +125,16 @@ contains
 
     ! we need to create all the contours
     NEn = N_Eq_E() + N_nEq_E()
-    allocate(ce(NEn),cidx(3,NEn))
+    allocate(ce(NEn))
     iE = 0
-    do i = 1 , NEn
-       c = nextE(i)
+    do i = 1 , N_Eq_E()
+       c = Eq_E(i)
        ce(i) = c%e
-       cidx(:,i) = c%idx
+    end do
+    iE = N_Eq_E()
+    do i = 1 , N_nEq_E()
+       c = nEq_E(i)
+       ce(iE+i) = c%e
     end do
        
     ! We return if we should not calculate it
@@ -141,7 +143,7 @@ contains
        call create_Green(El, &
             ucell,nkpnt,kpoint,kweight, &
             RemUCellDistance, &
-            NEn,ce,cidx, &
+            NEn,ce, &
             CalcDOS,ZBulkDOS)
 
     else
@@ -162,7 +164,7 @@ contains
           
           call check_Green(uGF,El, &
                ucell,nkpnt,kpoint,kweight, &
-               NEn, ce, cidx, &
+               NEn, ce, &
                RemUCellDistance, xa_Eps, errorGF)
           
           write(*,'(/,4a,/)') "Using GF-file '",trim(GFfile(El)), &
@@ -180,7 +182,7 @@ contains
     if ( errorGF ) &
          call die("Error in GFfile: "//trim(GFFile(El))//". Please move or delete")
 
-    deallocate(ce,cidx)
+    deallocate(ce)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS do_Green' )
@@ -252,21 +254,17 @@ contains
 
        read(funit) curGFtitle
        ! read electrode information
-       read(funit) nspin,ucell
-       read(funit) na,no ! used atoms and used orbitals
-       allocate(xa(3,na),lasto(na))
-       read(funit) xa,lasto
-       deallocate(xa,lasto)
+       read(funit) nspin, ucell
+       read(funit) na, no ! used atoms and used orbitals
+       read(funit) ! xa, lasto
        read(funit) NA1,NA2,NA3
        read(funit) mu
        ! read contour information
        read(funit) RemUCell
        read(funit) nkpar
+       read(funit) ! kpoints, kweight
        read(funit) NEn
-       allocate(xa(2,NEn),lasto(3*NEn))
-       read(funit) xa ! ce
-       read(funit) lasto ! cidx
-       deallocate(xa,lasto)
+       read(funit)! ce
 
        ! Check unit cell distances..
        if ( RemUCell .neqv. c_RemUCell ) then
@@ -283,11 +281,11 @@ contains
        end if
 
        ! Check Fermi shift
-       if ( dabs(El%mu-mu) > EPS ) then
+       if ( dabs(El%mu%mu-mu) > EPS ) then
           write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*)"The chemical shift in the electrode does not match the &
                &required shift!"
-          write(*,'(2(a,f12.6))')"Found: ",mu,", expected: ",El%mu
+          write(*,'(2(a,f12.6))')"Found: ",mu,", expected: ",El%mu%mu
           errorGF = .true.
        end if
 
@@ -357,7 +355,7 @@ contains
 ! ##################################################################
   subroutine check_Green(funit,El, &
        c_ucell,c_nkpar,c_kpar,c_wkpar, &
-       c_NEn,c_ce,c_cidx, &
+       c_NEn,c_ce, &
        c_RemUCell, xa_Eps, errorGF)
 
     use precision, only: dp
@@ -380,7 +378,6 @@ contains
 ! Energy point on the contour used 
     integer, intent(in)        :: c_NEn
     complex(dp), intent(in)    :: c_ce(c_NEn)
-    integer, intent(in)        :: c_cidx(3,c_NEn)
     logical, intent(in)        :: c_RemUCell ! Should the Green's function file have the inner cell distances or not?
     real(dp), intent(in)       :: xa_Eps
 ! ***********************
@@ -403,7 +400,6 @@ contains
 
     integer :: NEn ! # energy points on the contour
     complex(dp), allocatable :: ce(:)
-    integer, allocatable :: cidx(:,:)
 
 ! Helpers..
     character(200) :: curGFfile
@@ -508,11 +504,11 @@ contains
        write(*,'(2(a,i3))') "Found NA3: ",NA3,", expected NA3: ",RepA3(El)
        localErrorGf = .true.
     end if
-    if ( abs(El%mu-mu) > EPS ) then
+    if ( abs(El%mu%mu-mu) > EPS ) then
        write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"The chemical shift in the electrode does not match the &
             &required shift!"
-       write(*,'(2(a,f12.6))')"Found: ",mu,", expected: ",El%mu
+       write(*,'(2(a,f12.6))')"Found: ",mu,", expected: ",El%mu%mu
        localErrorGf = .true.
     end if
 
@@ -579,8 +575,7 @@ contains
     ! Read in information about the contour
     read(funit) NEn
     allocate(ce(NEn))
-    allocate(cidx(3,NEn))
-    read(funit) ce, cidx
+    read(funit) ce
 
     ! Check energy points
     if ( c_NEn /= NEn ) then
@@ -597,12 +592,8 @@ contains
           write(*,*) ' ERROR  : contours differ by >', 10.d0*EPS
           localErrorGf = .true.
        end if
-       if ( any(cidx(:,iEn) - c_cidx(:,iEn) /= 0 ) ) then 
-          write(*,*) ' ERROR: contour segments does not co-incide'
-          localErrorGf = .true.
-       end if
     end do
-    deallocate(ce,cidx)
+    deallocate(ce)
 
     errorGF = localErrorGf
     

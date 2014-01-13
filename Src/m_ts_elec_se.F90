@@ -6,59 +6,62 @@
 module m_ts_elec_se
 
   use precision, only : dp
+
   use m_ts_electype
+  use m_ts_cctype
 
   implicit none
 
   private
 
   public :: UC_expansion
-  public :: UC_expansion_Sigma_Bulk
-  public :: UC_expansion_Sigma
-  public :: UC_expansion_Sigma_GammaT
+  !public :: UC_expansion_Sigma_Bulk
+  !public :: UC_expansion_Sigma
+  !public :: UC_expansion_Sigma_GammaT
   public :: read_next_GS
-  public :: read_next_GS_LR
+!  public :: read_next_GS_LR
 
 contains
 
-  subroutine UC_expansion(non_Eq,UseBulk,ZEnergy, &
-       no_u,no_s,El, &
-       na_u,lasto,nq,qb,wq, &
-       H,S,GS,Sigma,Gamma,nwork,work)
+  subroutine UC_expansion(cE,El,nwork,work, &
+       non_Eq)
 ! ********************
 ! * INPUT variables  *
 ! ********************
-    logical,  intent(in) :: non_Eq, UseBulk
-    complex(dp), intent(in) :: ZEnergy
-    integer,  intent(in) :: no_u, no_s
-    type(Elec), intent(in) :: El
-    integer,  intent(in) :: na_u,lasto(0:na_u)
-    integer,  intent(in) :: nq
-    real(dp), intent(in) :: qb(3,nq), wq(nq)
-    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
-    complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
-! ********************
-! * OUTPUT variables *
-! ********************
-    complex(dp), intent(inout) :: Sigma(no_s,no_s)
-    complex(dp), intent(inout) :: Gamma(no_s,no_s)
+    type(ts_c_idx), intent(in) :: cE
+    type(Elec), intent(in out) :: El
 
+! ********************
+! * WORK variables   *
+! ********************
     integer,  intent(in) :: nwork
-    complex(dp), intent(inout) :: work(no_s,no_s,2)
+    complex(dp), intent(inout) :: work(nwork)
+
+    logical,  intent(in), optional :: non_Eq
+
+    logical :: lnon_Eq
+
+    if ( cE%fake ) return
 
     call timer('ts_expand',1)
 
-    if ( non_Eq ) then
-       call UC_expansion_Sigma_GammaT(UseBulk,ZEnergy, &
-            no_u,no_s,El, &
-            na_u,lasto,nq,qb,wq,H,S,GS,Sigma,Gamma,nwork,work)
+    lnon_Eq = .false.
+    if ( present(non_Eq) ) lnon_Eq = non_Eq
+
+    if ( lnon_Eq ) then
+       call UC_expansion_Sigma_GammaT(cE%e, &
+            UsedOrbs(El),TotUsedOrbs(El),El, &
+            UsedAtoms(El),El%lasto_used,Rep(El), &
+            El%HA,El%SA,El%GA,El%Sigma,El%Gamma,nwork,work)
     else
-       if ( UseBulk ) then
-          call UC_expansion_Sigma_Bulk(no_u,no_s,El, &
-               na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
+       if ( El%Bulk ) then
+          call UC_expansion_Sigma_Bulk(UsedOrbs(El),TotUsedOrbs(El),El, &
+               UsedAtoms(El),El%lasto_used,Rep(El), &
+               El%HA,El%SA,El%GA,El%Sigma,nwork,work)
        else
-          call UC_expansion_Sigma(ZEnergy,no_u,no_s,El, &
-               na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
+          call UC_expansion_Sigma(cE%e,UsedOrbs(El),TotUsedOrbs(El),El, &
+               UsedAtoms(El),El%lasto_used,Rep(El), &
+               El%HA,El%SA,El%GA,El%Sigma,nwork,work)
        end if
     end if
 
@@ -67,7 +70,7 @@ contains
   end subroutine UC_expansion
 
   subroutine UC_expansion_Sigma_Bulk(no_u,no_s,El, &
-       na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
+       na_u,lasto,nq,H,S,GS,Sigma,nwork,work)
     use intrinsic_missing, only : EYE
     use units, only : Pi
 ! ********************
@@ -77,7 +80,6 @@ contains
     type(Elec), intent(in) :: El
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
-    real(dp), intent(in) :: qb(3,nq), wq(nq)
     complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
     complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
 ! ********************
@@ -97,7 +99,7 @@ contains
     complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2._dp * Pi)
     complex(dp), parameter :: zPi2  = dcmplx(0._dp, 2._dp * Pi)
     complex(dp) :: ph
-    real(dp) :: qmPi(3,nq)
+    real(dp) :: qmPi(3,nq), wq
 
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2 ) call die('Size of work-array is &
@@ -112,8 +114,9 @@ contains
     else
 
        do iq = 1 , nq 
-          qmPi(1:3,iq) = - 2._dp * Pi * qb(1:3,iq)
+          qmPi(1:3,iq) = - 2._dp * Pi * q_exp(El,iq)
        end do
+       wq = 1._dp / Rep(El)
 
        ! TODO qb(:,1) == 0.0_dp in any case currently used
        ! So we could do without.
@@ -139,7 +142,7 @@ contains
             do ja3 = 1 , RepA3(El)
             do ja2 = 1 , RepA2(El)
             do ja1 = 1 , RepA1(El)
-              ph = wq(iq) * cdexp(dcmplx(0._dp, &
+              ph = wq * cdexp(dcmplx(0._dp, &
                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau) 
                  jow = jow + 1
@@ -168,7 +171,7 @@ contains
              do ja3 = 1 , RepA3(El)
              do ja2 = 1 , RepA2(El)
              do ja1 = 1 , RepA1(El)
-               ph = wq(iq) * cdexp(dcmplx(0._dp, &
+               ph = wq * cdexp(dcmplx(0._dp, &
                     (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau) 
                   jow = jow + 1
@@ -201,7 +204,7 @@ contains
 
 
   subroutine UC_expansion_Sigma(ZEnergy,no_u,no_s,El, &
-       na_u,lasto,nq,qb,wq,H,S,GS,Sigma,nwork,work)
+       na_u,lasto,nq,H,S,GS,Sigma,nwork,work)
     use intrinsic_missing, only : EYE
 ! ********************
 ! * INPUT variables  *
@@ -211,7 +214,6 @@ contains
     type(Elec), intent(in) :: El
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
-    real(dp), intent(in) :: qb(3,nq), wq(nq)
     complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
     complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
 ! ********************
@@ -233,7 +235,7 @@ contains
          &too small')
        
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
-       na_u,lasto,nq,qb,wq,H,S,GS,nwork,work(1,1,1))
+         na_u,lasto,nq,H,S,GS,nwork,work(1,1,1))
 
     if ( Rep(El) == 1 ) then
 
@@ -262,19 +264,17 @@ contains
 
   end subroutine UC_expansion_Sigma
 
-  subroutine UC_expansion_Sigma_GammaT(UseBulk,ZEnergy,no_u,no_s,El, &
-       na_u,lasto,nq,qb,wq,H,S,GS,Sigma,GammaT,nwork,work)
+  subroutine UC_expansion_Sigma_GammaT(ZEnergy,no_u,no_s,El, &
+       na_u,lasto,nq,H,S,GS,Sigma,GammaT,nwork,work)
     use intrinsic_missing, only: EYE
 ! ********************
 ! * INPUT variables  *
 ! ********************
     complex(dp), intent(in) :: ZEnergy
-    logical,  intent(in) :: UseBulk
     integer,  intent(in) :: no_u, no_s
     type(Elec), intent(in) :: El
     integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
-    real(dp), intent(in) :: qb(3,nq), wq(nq)
     complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
     complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
 ! ********************
@@ -298,7 +298,7 @@ contains
          &too small')
 
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
-       na_u,lasto,nq,qb,wq,H,S,GS,nwork,work(1,1,1))
+         na_u,lasto,nq,H,S,GS,nwork,work(1,1,1))
 
     if ( Rep(El) == 1 ) then
 
@@ -317,7 +317,7 @@ contains
 
     end if
 
-    if ( UseBulk ) then
+    if ( El%Bulk ) then
 
        ! Do:
        ! \Sigma = Z*S - H - \Sigma_bulk
@@ -368,7 +368,7 @@ contains
   end subroutine UC_expansion_Sigma_GammaT
 
   subroutine update_UC_expansion(ZEnergy,no_u,no_s,El, &
-       na_u,lasto,nq,qb,wq,H,S,GS,nwork,work)
+       na_u,lasto,nq,H,S,GS,nwork,work)
     use units, only : Pi
 ! ********************
 ! * INPUT variables  *
@@ -376,9 +376,7 @@ contains
     complex(dp), intent(in) :: ZEnergy
     integer,  intent(in) :: no_u, no_s
     type(Elec), intent(in) :: El
-    integer,  intent(in) :: na_u,lasto(0:na_u)
-    integer,  intent(in) :: nq
-    real(dp), intent(in) :: qb(3,nq), wq(nq)
+    integer,  intent(in) :: na_u,lasto(0:na_u), nq
     complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S, GS
 ! ********************
 ! * OUTPUT variables *
@@ -394,9 +392,9 @@ contains
     complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2.0_dp * Pi)
     complex(dp), parameter :: zPi2  = dcmplx(0._dp, 2.0_dp * Pi)
     complex(dp) :: ph
-    real(dp) :: qmPi(3,nq)
+    real(dp) :: qmPi(3,nq), wq
 
-    if ( Rep(El) == 1 ) then
+    if ( nq == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
        ! We do not need this...
@@ -406,8 +404,9 @@ contains
     else
 
        do iq = 1 , nq 
-          qmPi(1:3,iq) = - 2._dp * Pi * qb(1:3,iq)
+          qmPi(1:3,iq) = - 2._dp * Pi * q_exp(El,iq)
        end do
+       wq = 1._dp / real(Rep(El),dp)
 
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
@@ -427,7 +426,7 @@ contains
             do ja3 = 1 , RepA3(El)
             do ja2 = 1 , RepA2(El)
             do ja1 = 1 , RepA1(El)
-              ph = wq(iq) * cdexp(dcmplx(0._dp, &
+              ph = wq * cdexp(dcmplx(0._dp, &
                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau)
                 jow = jow + 1
@@ -459,7 +458,7 @@ contains
              do ja3 = 1 , RepA3(El)
              do ja2 = 1 , RepA2(El)
              do ja1 = 1 , RepA1(El)
-               ph = wq(iq) * cdexp(dcmplx(0._dp, &
+               ph = wq * cdexp(dcmplx(0._dp, &
                     (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)
                   jow = jow + 1
@@ -495,36 +494,32 @@ contains
 ! ## Fully recoded to conform with the memory reduced TranSIESTA  ##
 ! ##################################################################
 
-  subroutine read_next_GS_LR(uGF,NEReqs,ikpt,no_GS,nq,HAA,SAA,GAA,ZEnergy, &
+  subroutine read_next_GS_Elec(uGF,NEReqs,ikpt,El,cE, &
        nwork,work, &
        forward)
 
-    use parallel,  only : IONode, Node, Nodes
-    use units, only : eV
+    use parallel, only : IONode, Node, Nodes
+    use units,    only : eV
 
 #ifdef MPI
-    use mpi_siesta, only : MPI_Bcast, MPI_Isend, MPI_Irecv,  &
-         MPI_Sum, MPI_Integer, MPI_Status_Size, MPI_Comm_World
-    use mpi_siesta, only : MPI_double_complex
-
+    use mpi_siesta, only : MPI_Bcast, MPI_Isend, MPI_Irecv
+    use mpi_siesta, only : MPI_Sum, MPI_Integer, MPI_Double_Complex
+    use mpi_siesta, only : MPI_Status_Size, MPI_Comm_World
 #endif
+
 ! *********************
 ! * INPUT variables   *
 ! *********************
     ! file-unit, and k-point index
     integer, intent(in) :: uGF, ikpt
     integer, intent(in) :: NEReqs
-    ! Size of the arrays we will read etc.
-    integer, intent(in) :: no_GS, nq
-    ! Hamiltonian, overlap, and GS
-    complex(dp), intent(inout) :: HAA(no_GS,no_GS,nq)
-    complex(dp), intent(inout) :: SAA(no_GS,no_GS,nq)
-    complex(dp), intent(inout) :: GAA(no_GS,no_GS,nq)
-    complex(dp), intent(in) :: ZEnergy
+    ! The electrode also contains the arrays
+    type(Elec), intent(in out) :: El
+    type(ts_c_idx), intent(in)     :: cE
     ! The work array passed, this means we do not have
     ! to allocate anything down here.
     integer, intent(in) :: nwork
-    complex(dp), intent(inout) :: work(no_GS,no_GS,nq)
+    complex(dp), intent(inout) :: work(nwork)
     ! If 'forward' is .true. we will read consecutively 
     ! and distribute from Node = 0, to Node = Nodes - 1
     ! (default)
@@ -543,21 +538,14 @@ contains
     integer :: MPIerror, Request, Status(MPI_Status_Size)
 #endif
 
-    complex(dp) :: ZE_cur, wGFi
-    integer :: iEni, iNode, ikGS
+    complex(dp) :: ZE_cur
+    integer :: iNode, ikGS, iEni
     integer :: iNodeS, iNodeE, iNodeStep
     logical :: lforward
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE read_next_GS' )
 #endif
-
-#ifdef MPI
-    ! This will make the timings be more realistic
-    call MPI_Barrier(MPI_Comm_World,MPIerror)
-#endif
-
-    call timer('rn_GS',1)
 
     lforward = .true.
     if ( present(forward) ) lforward = forward
@@ -571,7 +559,7 @@ contains
        iNodeStep = -1
     end if
 
-    read_Size = no_GS * no_GS * nq
+    read_Size = UsedOrbs(El) ** 2 * Rep(El) ! no_GS * no_GS * nq
 
     ! Check if the number of energy points requested are 
     ! inconsistent
@@ -602,13 +590,13 @@ contains
 
        if ( IONode ) then
           ! read in header of GF-point
-          read(uGF) iEni,ZE_cur,wGFI,ikGS
+          read(uGF) ikGS, iEni, ZE_cur
        end if
 
 #ifdef MPI
-       ! distribute the energy index (in case of iEni == 1)
-       call MPI_Bcast(iEni,1,MPI_integer,0, &
-            MPI_Comm_World,MPIerror)
+       call MPI_Bcast(iEni,1,MPI_Integer, &
+            0,MPI_Comm_World,MPIerror)
+
        ! distribute the current energy point
        if ( IONode .and. Node == iNode ) then
           ! do nothing
@@ -620,15 +608,17 @@ contains
        else if ( IONode ) then
           call MPI_iSend(ZE_cur,1,MPI_Double_Complex,iNode,iNode, &
                MPI_Comm_World,Request,MPIerror)
+          call MPI_Wait(Request,Status,MPIerror)
        end if
 #endif
 
        ! The test of the energy-point is performed on
        ! the calculating node...
        if ( Node == iNode ) then
-          if ( cdabs(ZEnergy-ZE_cur) > EPS ) then
+          if ( cdabs(cE%e-ZE_cur) > EPS ) then
+             write(*,*) 'GF-file: '//trim(GFFile(El))
              write(*,'(2(a,2(tr1,g12.5)))') 'Energies, TS / Gf:', &
-                  ZEnergy / eV, ' /', ZE_cur / eV
+                  cE%e / eV, ' /', ZE_cur / eV
              call die('Energy point in GF file does &
                   not match the internal energy-point in transiesta. &
                   &Please correct your GF files.')
@@ -637,7 +627,8 @@ contains
        
        ! If the k-point does not match what we expected...
        if ( IONode .and. ikpt /= ikGS ) then
-          write(*,'(2(a,i0))') 'Kpoint, TS / Gf: ', &
+          write(*,*) 'GF-file: '//trim(GFFile(El))
+          write(*,'(2(a,i0))') 'k-point, TS / Gf: ', &
                ikpt, ' / ', ikGS
           call die('Read k-point in GF file does not match &
                &the requested k-point. Please correct your &
@@ -646,16 +637,16 @@ contains
 
        if ( iEni == 1 ) then
 
-          ! We have to read in electrode Hamiltonian and overlap...
+          ! read in the electrode Hamiltonian and overlap...
           if ( IONode ) then
-             read(uGF) HAA
-             read(uGF) SAA
+             read(uGF) El%HA
+             read(uGF) El%SA
           end if
 
 #ifdef MPI
-          call MPI_Bcast(HAA(1,1,1),read_Size,MPI_Double_Complex, &
+          call MPI_Bcast(El%HA(1,1,1),read_Size,MPI_Double_Complex, &
                0,MPI_Comm_World,MPIerror)
-          call MPI_Bcast(SAA(1,1,1),read_Size,MPI_Double_Complex, &
+          call MPI_Bcast(El%SA(1,1,1),read_Size,MPI_Double_Complex, &
                0,MPI_Comm_World,MPIerror)
 #endif
        end if 
@@ -664,21 +655,18 @@ contains
 #ifdef MPI
        if ( IONode .and. iNode == Node ) then
 #endif
-          ! Read in point directly to correct array...
-          read(uGF) GAA
+          ! read in surface Green's function
+          read(uGF) El%GA
 #ifdef MPI
        else if ( IONode ) then
-          ! We need to ensure that the energy point has been sent
-          ! I.e. this is for the ZE_cur message
-          call MPI_Wait(Request,Status,MPIerror)
 
-          read(uGF) work(1:no_GS,1:no_GS,1:nq)
+          read(uGF) work(1:read_Size)
           
-          call MPI_ISend(work(1,1,1),read_Size,MPI_Double_Complex, &
+          call MPI_ISend(work(1),read_Size,MPI_Double_Complex, &
                iNode,1,MPI_Comm_World,Request,MPIerror) 
           call MPI_Wait(Request,Status,MPIerror)
        else if ( Node ==  iNode ) then
-          call MPI_IRecv(GAA(1,1,1),read_Size,MPI_Double_Complex, &
+          call MPI_IRecv(El%GA(1,1),read_Size,MPI_Double_Complex, &
                0    ,1,MPI_Comm_World,Request,MPIerror)
           call MPI_Wait(Request,Status,MPIerror)
        end if
@@ -686,61 +674,67 @@ contains
 
     end do
 
-    call timer('rn_GS',2)
-
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS read_next_GS' )
 #endif
 
-  end subroutine read_next_GS_LR
+  end subroutine read_next_GS_Elec
 
 
   ! Subroutine for reading in both the left and right next energy point
   
-  subroutine read_next_GS(iPE,cNEn,Z,ikpt, &
-       uGFL, no_L_HS, nqL, HAAL, SAAL, GAAL, &
-       uGFR, no_R_HS, nqR, HAAR, SAAR, GAAR, &
+  subroutine read_next_GS(ikpt, cE, &
+       NElecs, uGF, Elecs, &
        nzwork, zwork, reread, &
        forward )
 
     use parallel, only : Node, Nodes, IONode
+
+#ifdef MPI
+    use mpi_siesta, only : MPI_AllReduce, MPI_Sum, MPI_Integer
+    use mpi_siesta, only : MPI_Comm_World
+#endif
+
     use m_ts_cctype
       
-    integer, intent(in) :: iPE, cNEn, ikpt
-    complex(dp), intent(in) :: Z
-    integer, intent(in) :: uGFL, no_L_HS, nqL
-    complex(dp), intent(inout), dimension(no_L_HS,no_L_HS,nqL) :: HAAL, SAAL, GAAL
-    integer, intent(in) :: uGFR, no_R_HS, nqR
-    complex(dp), intent(inout), dimension(no_R_HS,no_R_HS,nqR) :: HAAR, SAAR, GAAR
+    integer, intent(in) :: ikpt
+    type(ts_c_idx), intent(in) :: cE
+    integer, intent(in) :: NElecs, uGF(NElecs)
+    type(Elec), intent(inout) :: Elecs(NElecs)
     integer, intent(in) :: nzwork
     complex(dp), intent(inout) :: zwork(nzwork)
     logical, intent(in), optional :: reread, forward
 
-    logical :: lforward
-    integer :: iE, NEReqs, i
+    integer :: iE, NEReqs, i, j
+#ifdef MPI
+    integer :: MPIerror
+#endif
 
-    ! obtain a valid energy point (truncate at NEn)
-    iE = min(iPE,cNEn)
-    
+#ifdef MPI
+    ! This will make the timings be more realistic
+    call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+
     ! save the current weight of the point
     ! This is where we include the factor-of-two for spin and
     ! and the (1/Pi) from DM = Im[G]/Pi
     ! Furthermore we include the weight of the k-point
 
     ! the number of points we wish to read in this segment
-    lforward = .true.
-    if ( present(forward) ) lforward = forward
-    if ( lforward ) then
-       NEReqs = min(Nodes, cNEn-(iPE-1-Node))
-    else
-       NEReqs = min(Nodes, cNEn-(iPE-Nodes+Node))
-    end if
+    NEReqs = 1
+#ifdef MPI
+    i = 0
+    if ( cE%exist .and. .not. cE%fake) i = 1
+    call MPI_AllReduce(i,NEReqs,1,MPI_Integer, MPI_Sum, &
+         MPI_Comm_World, MPIerror)
+#endif
 
     if ( present(reread) ) then
        if ( IONode .and. reread ) then
-          do i = 1 , NEReqs * 2
-             backspace(unit=uGFL)
-             backspace(unit=uGFR)
+          do j = 1 , NElecs
+             do i = 1 , NEReqs * 2
+                backspace(unit=uGF(j))
+             end do
           end do
 ! Currently the equilibrium energy points are just after
 ! the k-point, hence we will never need to backspace behind the
@@ -762,16 +756,11 @@ contains
     ! However, this will probably come at the expense 
     ! of doing the same "repetition" expansion twice, we can live with
     ! that!
-
-    ! Read in the left electrode
-    call read_next_GS_LR(uGFL, NEReqs, &
-         ikpt,no_L_HS,nqL, HAAL, SAAL, &
-         GAAL, Z, nzwork, zwork,forward = forward)
-    
-    ! Read in the right electrode
-    call read_next_GS_LR(uGFR, NEReqs, &
-         ikpt,no_R_HS,nqR, HAAR, SAAR, &
-         GAAR, Z, nzwork, zwork,forward = forward)
+    do i = 1 , NElecs
+       call read_next_GS_Elec(uGF(i), NEReqs, &
+            ikpt, Elecs(i), cE, &
+            nzwork, zwork, forward = forward)
+    end do
 
   end subroutine read_next_GS
 

@@ -84,7 +84,7 @@
   
   subroutine delete_Data(smdata)
     type(TYPE_NAME_) :: smdata
-    
+
     call delete(smdata%sp)
     call delete(smdata%a)
     call delete(smdata%dist)

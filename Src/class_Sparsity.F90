@@ -279,9 +279,10 @@ module class_Sparsity
        RETURN
     endif
 
-    print "(2(a,i0),a,f0.4,2(a,i0),a)", &
-                "  <sparsity:"//trim(sp%data%name)//" nrows_g=", &
-                sp%data%nrows_g, " nrows=", sp%data%nrows, &
+    print "(a,/,t4,2(a,i0),a,f0.4,2(a,i0),a)", &
+                "  <sparsity:"//trim(sp%data%name), &
+                " nrows_g=", sp%data%nrows_g, &
+                " nrows=", sp%data%nrows, &
                 " sparsity=",real(sp%data%nnzs)/ &
                 (sp%data%nrows_g*sp%data%ncols_g), &
                 " nnzs=",sp%data%nnzs,", refcount: ",  &

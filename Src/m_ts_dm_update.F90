@@ -98,38 +98,6 @@ module m_ts_dm_update
 
 contains
 
-
-  subroutine select_dE(cNEn,c, iPE, nspin, kw, Z, W, ZW)
-    use precision, only: dp
-    use units, only: Pi
-    use parallel, only: Node, Nodes
-    use m_ts_cctype
-    integer, intent(in) :: cNEn
-    type(ts_ccontour), intent(in) :: c(cNEn)
-    integer, intent(in) :: iPE, nspin
-    real(dp),intent(in) :: kw
-    complex(dp), intent(out) :: Z, W, ZW
-
-    integer :: iE
-
-    ! obtain a valid energy point (truncate at NEn)
-    iE = min(iPE,cNEn)
-
-    ! save the current weight of the point
-    ! This is where we include the factor-of-two for spin and
-    ! and the (1/Pi) from DM = Im[G]/Pi
-    ! Furthermore we include the weight of the k-point
-    W = 1._dp/Pi*c(iE)%w * kw
-    if ( nspin == 1 ) W = W * 2._dp
-
-    ! save the contour energy point
-    Z = c(iE)%c
-    ! Save Z*W, used for E-arrays
-    ZW = Z*W
-
-  end subroutine select_dE
-
-
   ! ***
   ! The following scheme should be followed:
   !   add_*_DM routines are constructed to be able to handle different schemes
@@ -326,12 +294,11 @@ contains
 
   end subroutine add_k_DM
 
-  subroutine add_Gamma_DM(dit,spDM,spEDM,spDMu,spEDMu)
+  subroutine add_Gamma_DM(spDM,spuDM,D_dim2,spEDM,spuEDM,E_dim2)
 
     use class_OrbitalDistribution
     use class_Sparsity
-    use class_dSpData1D
-    use m_ts_weight
+    use class_dSpData2D
     use geom_helper, only : UCORB
     use intrinsic_missing, only : SFIND
     use parallel, only : Node
@@ -339,33 +306,60 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    type(OrbitalDistribution), intent(inout) :: dit
     ! The local integrated sparsity arrays
-    type(dSpData1D), intent(inout) :: spDM, spEDM
-    ! The current k-point global sparsity arrays
-    type(dSpData1D), intent(inout) :: spDMu, spEDMu
+    type(dSpData2D), intent(inout) :: spDM
+    ! The current Gamma-point global sparsity arrays
+    type(dSpData2D), intent(inout) :: spuDM
+    integer, intent(in) :: D_dim2
+    ! The local integrated sparsity arrays
+    type(dSpData2D), intent(inout), optional :: spEDM
+    ! The current Gamma-point global sparsity arrays
+    type(dSpData2D), intent(inout), optional :: spuEDM
+    integer, intent(in), optional :: E_dim2
 
     ! Arrays needed for looping the sparsity
+    type(OrbitalDistribution), pointer :: dit
     type(Sparsity), pointer :: l_s, up_s
     integer, pointer :: l_ncol(:) , l_ptr(:) , l_col(:)
     integer, pointer :: up_ncol(:), up_ptr(:), up_col(:)
-    real(dp), pointer :: dD(:) , dE(:)
-    real(dp), pointer :: dDu(:), dEu(:)
+    real(dp), pointer :: dD(:,:), dE(:,:)
+    real(dp), pointer :: dDu(:,:), dEu(:,:)
     integer :: lnr, lio, lind, io, ind, nr, jo
     integer :: rind
+    logical :: hasEDM
 
-    if ( (.not. initialized(spDM)) .or. (.not. initialized(spDMu)) ) return
+    if ( (.not. initialized(spDM)) .or. (.not. initialized(spuDM)) ) return
+
+    if ( (present(spEDM) .neqv. present(spuEDM)) .or. &
+         (present(spEDM) .neqv. present(E_dim2)) ) &
+         call die('add_Gamma_DM: Error in code') ! TODO DELETE
+
+    hasEDM = present(spEDM)
+    if ( hasEDM ) hasEDM = initialized(spEDM)
+
+    ! get distribution
+    dit  => dist(spDM)
 
     l_s  => spar(spDM)
     call attach(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     dD   => val(spDM)
-    dE   => val(spEDM)
+    if ( hasEDM ) dE  => val(spEDM)
 
-    up_s => spar(spDMu)
+    up_s => spar(spuDM)
     call attach(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
-    dDu  => val(spDMu)
-    dEu  => val(spEDMu)
+    dDu  => val(spuDM)
+    if ( hasEDM ) dEu => val(spuEDM)
+
+    if ( size(dDu,2) < D_dim2 .or. size(dD,2) < D_dim2 ) then
+       call die('add_Gamma_DM: Error in code')
+    end if
+
+    if ( hasEDM ) then
+       if ( size(dEu,2) < E_dim2 .or. size(dE,2) < E_dim2 ) then
+          call die('add_Gamma_DM: Error in code')
+       end if
+    end if
 
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
@@ -373,35 +367,60 @@ contains
     if ( nr /= nrows(up_s) ) call die('The sparsity format is not as &
          &expected.')
 
-    do lio = 1 , lnr
-       
-       if ( l_ncol(lio) == 0 ) cycle
-       io = index_local_to_global(dit,lio,Node)
-       if ( up_ncol(io) == 0 ) cycle
-       
-       do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
-          
-          jo = l_col(lind)
-          
-          rind = up_ptr(io)
-          ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
-          if ( ind <= rind ) cycle ! The element does not exist
+    if ( hasEDM ) then
+       do lio = 1 , lnr
 
-          ! This integration is this:
-          ! \rho = \int Re(Gf^R) dE
-          dD(lind) = dDu(ind)
-          dE(lind) = dEu(ind)
+          if ( l_ncol(lio) == 0 ) cycle
+          io = index_local_to_global(dit,lio,Node)
+          if ( up_ncol(io) == 0 ) cycle
 
+          do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+
+             jo = l_col(lind)
+
+             rind = up_ptr(io)
+             ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
+             if ( ind <= rind ) cycle ! The element does not exist
+
+             ! This integration is this:
+             ! \rho = \int Re(Gf^R) dE
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + dDu(ind,1:D_dim2)
+             dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + dEu(ind,1:E_dim2)
+             
+          end do
        end do
-    end do
+    else
+       do lio = 1 , lnr
+
+          if ( l_ncol(lio) == 0 ) cycle
+          io = index_local_to_global(dit,lio,Node)
+          if ( up_ncol(io) == 0 ) cycle
+
+          do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+
+             jo = l_col(lind)
+
+             rind = up_ptr(io)
+             ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
+             if ( ind <= rind ) cycle ! The element does not exist
+
+             ! This integration is this:
+             ! \rho = \int Re(Gf^R) dE (we have already taken the imaginary part of Gf)
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + dDu(ind,1:D_dim2)
+             
+          end do
+       end do
+    end if
 
   end subroutine add_Gamma_DM
 
-  subroutine update_DM(dit,sp,n_nzs,DM,EDM, spDM, spEDM, ipnt, UpGlobal)
+  subroutine update_DM(dit,sp,n_nzs,DM, spDM, Ef, &
+       EDM, spEDM, ipnt, UpSpGlobal)
+
     use class_OrbitalDistribution
     use class_Sparsity
+    use class_dSpData2D
     use class_iSpData1D
-    use class_dSpData1D
     use parallel, only : Node
     use geom_helper, only : UCORB
     use intrinsic_missing, only : SFIND
@@ -414,14 +433,21 @@ contains
     ! Size of the sparsity arrays
     integer, intent(in) :: n_nzs
     ! Sparse DM-arrays (local)
-    real(dp), intent(inout) :: DM(n_nzs), EDM(n_nzs)
+    real(dp), intent(inout) :: DM(n_nzs)
     ! Updated sparsity arrays (they contain the current integration)
-    type(dSpData1D), intent(inout) :: spDM, spEDM
+    type(dSpData2D), intent(inout) :: spDM
+    ! fermi-level, we shift the energy density matrix back
+    real(dp), intent(in), optional :: Ef
+    ! Sparse energy-DM-arrays (local)
+    real(dp), intent(inout), optional :: EDM(n_nzs)
+    ! Updated sparsity arrays (they contain the current integration)
+    type(dSpData2D), intent(inout), optional :: spEDM
     ! The pointer from xij -> spar(spDM).
     ! I.e. a pointer from the local update sparsity to the local sparsity
     ! (only needed to refrain from creating a duplicate xij array)
-    type(iSpData1D), intent(inout), optional :: ipnt
-    logical, intent(in), optional :: UpGlobal
+    type(iSpData1D), intent(in), optional :: ipnt
+    ! Whether the update sparsity pattern is a global update sparsity pattern
+    logical, intent(in), optional :: UpSpGlobal
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
@@ -429,90 +455,114 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
     integer, pointer :: pnt(:)
-    real(dp), pointer :: dD(:), dE(:)
-    integer :: lnr, uind, lio, io, lind, ind, nr, ljo, jo
-    logical :: lUpGlobal
+    real(dp), pointer :: dD(:,:), dE(:,:)
+    integer :: lnr, nr, uind, lio, io, lind, ind, ljo, jo
+    logical :: hasipnt, hasEDM, lUpSpGlobal
 
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     s  => spar(spDM)
     call attach(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     dD => val(spDM)
-    dE => val(spEDM)
 
-    lUpGlobal = .false.
-    if ( present(UpGlobal) ) lUpGlobal = UpGlobal
+    if ( (present(EDM) .neqv. present(spEDM)) .or. &
+         (present(EDM) .neqv. present(Ef)) ) &
+         call die('update_DM: Error in code')
 
-    if ( .not. lUpGlobal ) then
+    hasEDM = present(EDM)
+    if ( hasEDM ) hasEDM = initialized(spEDM) 
+    if ( hasEDM ) then
 
-       ! We have that the update sparsity pattern is in local
-       ! form.
-       ! this means that sp == s (besides the non-update objects)
-       ! Hence we don't need to utilize index_local_to_global
+       dE => val(spEDM)
 
-       if ( lnr /= nrows(s) ) call die('The sparsity format is not as &
-            &expected.')
+       ! the actual size of the shift
+       jo = nnzs(spDM)
 
-       if ( present(ipnt) ) then
-          ! The pointer
-          pnt  => val(ipnt)
+       ! As we have shifted the fermi-level up to 0, we need to shift the
+       ! energy-density matrix back
+       call daxpy(jo,Ef,dD(1,1),1,dE(1,1),1)
 
-          ! This loop is across the local rows...
-          do io = 1 , lnr
+    end if
 
-             ! Quickly go past the empty regions... (we have nothing to update)
-             if ( lup_ncol(io) == 0 ) cycle
+    ! We have that the update sparsity pattern is in local
+    ! form.
+    ! this means that sp == s (besides the non-update objects)
+    ! Hence we don't need to utilize index_local_to_global
 
-             ! Do a loop in the local update sparsity pattern...
-             ! The local sparsity pattern is more "spread", hence
-             ! we do fewer operations by having this as an outer loop
-             do uind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
+    if ( lnr /= nrows(s) ) call die('The sparsity format is not as &
+         &expected.')
+    
+    hasipnt = present(ipnt)
+    if ( hasipnt ) hasipnt = initialized(ipnt)
+
+    lUpSpGlobal = .false.
+    if ( present(UpSpGlobal) ) lUpSpGlobal = UpSpGlobal
+
+    if ( .not. lUpSpGlobal ) then
+
+    if ( hasipnt ) then
+
+       ! The pointer
+       pnt => val(ipnt)
+
+       ! This loop is across the local rows...
+       do io = 1 , lnr
+
+          ! Quickly go past the empty regions... (we have nothing to update)
+          if ( lup_ncol(io) == 0 ) cycle
+
+          ! Do a loop in the local update sparsity pattern...
+          ! The local sparsity pattern is more "spread", hence
+          ! we do fewer operations by having this as an outer loop
+          do uind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
                 
-                ind = pnt(uind)
-                
-                DM(ind)  = DM(ind)  + dD(uind)
-                EDM(ind) = EDM(ind) + dE(uind)
-                
-             end do
+             ind = pnt(uind)
+             
+             DM(ind) = DM(ind) + dD(uind,1)
+             if ( hasEDM ) EDM(ind) = EDM(ind) + dE(uind,1)
+             
           end do
-          
-       else       
+       end do
+       
+    else       
 
-          ! This loop is across the local rows...
-          do io = 1 , lnr
+       ! This loop is across the local rows...
+       do io = 1 , lnr
 
-             ! Quickly go past the empty regions... (we have nothing to update)
-             if ( lup_ncol(io) == 0 ) cycle
+          ! Quickly go past the empty regions... (we have nothing to update)
+          if ( lup_ncol(io) == 0 ) cycle
 
-             ! Do a loop in the local update sparsity pattern...
-             ! The local sparsity pattern is more "spread", hence
-             ! we do fewer operations by having this as an outer loop
-             do uind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
+          ! Do a loop in the local update sparsity pattern...
+          ! The local sparsity pattern is more "spread", hence
+          ! we do fewer operations by having this as an outer loop
+          do uind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
                 
-                ! We are dealing with a non-UC sparsity pattern
-                jo = lup_col(uind)
+             ! We are dealing with a non-UC sparsity pattern
+             jo = lup_col(uind)
 
-                ! Now we loop across the local region
-                ind = l_ptr(io)
-                ind = l_ptr(io) + minloc(abs(l_col(ind+1:ind+l_ncol(io))-jo),1)
-                if ( l_col(ind) /= jo ) then
-                   do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                      if ( l_col(ind) /= jo ) cycle
-                      exit ! we have the correct ind-value
-                   end do
-                end if
-                
-                ! We need to add in case of special weighting...
-                DM(ind)  = DM(ind)  + dD(uind)
-                EDM(ind) = EDM(ind) + dE(uind)
-
-             end do
+             ! Now we loop across the local region
+             ind = l_ptr(io)
+             ind = l_ptr(io) + minloc(abs(l_col(ind+1:ind+l_ncol(io))-jo),1)
+             if ( l_col(ind) /= jo ) then
+                do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+                   if ( l_col(ind) /= jo ) cycle
+                   exit ! we have the correct ind-value
+                end do
+                if ( l_col(ind) /= jo ) cycle
+             end if
+             
+             ! We need to add in case of special weighting...
+             DM(ind)  = DM(ind)  + dD(uind,1)
+             if ( hasEDM ) EDM(ind) = EDM(ind) + dE(uind,1)
+             
           end do
-       end if
+       end do
+    end if
 
     else
+       ! We have a global update sparsity pattern
 
-       ! This is the global sparsity pattern
+              ! This is the global sparsity pattern
        ! i.e. we require to call index_local_to_global
        ! The global sparsity pattern is not in supercell format
 
@@ -530,6 +580,7 @@ contains
           ! we do fewer operations by having this as an outer loop
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
+             ! we need to compare with the global update sparsity
              ljo = UCORB(l_col(lind),nr)
 
              ! Now we loop across the update region
@@ -542,12 +593,12 @@ contains
              if ( ind <= lup_ptr(io) ) cycle
              
              ! We only have one k-point, yet in case of non-Gamma siesta
-             DM(lind)  = DM(lind)  + dD(ind)
-             EDM(lind) = EDM(lind) + dE(ind)
+             DM(lind)  = DM(lind)  + dD(ind,1)
+             if ( hasEDM ) EDM(lind) = EDM(lind) + dE(ind,1)
              
           end do
        end do
-       
+
     end if
 
   end subroutine update_DM
@@ -651,8 +702,8 @@ contains
   end subroutine update_zDM
 
 
-  subroutine init_DM(dit,sp,maxn,DM,EDM, up_sp)
-          ! The DM and EDM equivalent matrices
+  subroutine init_DM(dit,sp,maxn,DM,EDM, up_sp, Calc_Forces)
+    ! The DM and EDM equivalent matrices
     use class_OrbitalDistribution
     use class_Sparsity
     use geom_helper, only : UCORB
@@ -665,6 +716,7 @@ contains
     real(dp), intent(inout) :: DM(maxn), EDM(maxn)
     ! The updated sparsity arrays...
     type(Sparsity), intent(inout) :: up_sp
+    logical, intent(in) :: Calc_Forces
 
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
@@ -679,39 +731,55 @@ contains
      
     if ( nr /= nrows(up_sp) ) call die('The sparsity format is not as &
          &expected.')
+
+    if ( Calc_Forces ) then
      
-    ! This loop is across the local rows...
-    do lio = 1 , lnr
+       ! This loop is across the local rows...
+       do lio = 1 , lnr
 
-       ! obtain the global index of the local orbital.
-       io = index_local_to_global(dit,lio,Node)
+          ! obtain the global index of the local orbital.
+          io = index_local_to_global(dit,lio,Node)
 
-       ! Quickly go past the empty regions... (we have nothing to update)
-       if ( lup_ncol(io) == 0 ) cycle
+          ! Quickly go past the empty regions... (we have nothing to update)
+          if ( lup_ncol(io) == 0 ) cycle
 
-       ! Now we loop across the update region
-       ! This one must *per definition* have less elements.
-       ! Hence, we can exploit this, and find equivalent
-       ! super-cell orbitals.
-       ! Ok, this is Gamma (but to be consistent)
-       do ind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
+          ! Now we loop across the update region
+          ! This one must *per definition* have less elements.
+          ! Hence, we can exploit this, and find equivalent
+          ! super-cell orbitals.
+          ! Ok, this is Gamma (but to be consistent)
+          do ind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
 
-          jo = lup_col(ind)
+             jo = lup_col(ind)
 
-          ! Do a loop in the local sparsity pattern...
-          do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+             ! Do a loop in the local sparsity pattern...
+             do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-             ! We know that the update region is in 
-             ! UC-format. Hence we can compare directly, via
-             ! the orbital index in the unit-cell.
-             if ( UCORB(l_col(lind),nr) == jo ) then
-                DM (lind) = 0._dp
-                EDM(lind) = 0._dp
-             end if
-             
+                ! We know that the update region is in 
+                ! UC-format. Hence we can compare directly, via
+                ! the orbital index in the unit-cell.
+                if ( UCORB(l_col(lind),nr) == jo ) then
+                   DM (lind) = 0._dp
+                   EDM(lind) = 0._dp
+                end if
+                
+             end do
           end do
        end do
-    end do
+
+    else
+       do lio = 1 , lnr
+          io = index_local_to_global(dit,lio,Node)
+          if ( lup_ncol(io) == 0 ) cycle
+          do ind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
+             jo = lup_col(ind)
+             do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+                if ( UCORB(l_col(lind),nr) == jo ) &
+                     DM(lind) = 0._dp
+             end do
+          end do
+       end do
+    end if
     
   end subroutine init_DM
 

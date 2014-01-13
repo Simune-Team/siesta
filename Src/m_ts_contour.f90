@@ -19,104 +19,110 @@ module m_ts_contour
 ! Use the type associated with the contour
 ! Maybe they should be collected to this module.
 ! However, I like this partition.
+  use m_ts_electype
+  use m_ts_chem_pot
+
   use m_ts_cctype
   use m_ts_io_contour
+
+  use m_ts_contour_eq,  only : CONTOUR_EQ
+  use m_ts_contour_neq, only : CONTOUR_NEQ
+  use m_ts_contour_neq, only : CONTOUR_NEQ_TAIL
+
   use precision, only : dp
 
   implicit none
+
+  private
 
   public :: read_contour_options
   public :: print_contour_options
   public :: print_contour_block
   public :: io_contour
   public :: sort_contour
-  public :: nextE
-
-  integer, public :: PNEn, NEn, NEn_eq,N_transport
-  type(ts_ccontour), public, pointer :: contour(:)!, contour_Eq(:), contour_nEq(:)
-
-  public :: contour_Eq, contour_EqL, contour_EqR, contour_nEq, contour_Transport
-  private
+  public :: nextE_Eq, nextE_nEq
+  public :: has_cE
 
 contains
 
-  function contour_Eq() result(c)
-    type(ts_ccontour), pointer :: c(:)
-    c => contour_EqL()
-  end function contour_Eq
-
-  function contour_EqL() result(c)
-    type(ts_ccontour), pointer :: c(:)
-    c => contour(1:NEn_eq)
-  end function contour_EqL
-
-  function contour_EqR() result(c)
-    type(ts_ccontour), pointer :: c(:)
-    c => contour(NEn_eq+1:NEn_eq*2)
-  end function contour_EqR
-
-  function contour_nEq() result(c)
-    type(ts_ccontour), pointer :: c(:)
-    c => contour(NEn_eq*2+1:NEn-N_transport)
-  end function contour_nEq
-
-  function contour_Transport() result(c)
-    type(ts_ccontour), pointer :: c(:)
-    c => contour(NEn-N_transport+1:NEn)
-  end function contour_Transport
-
-  function nextE(id,step) result(c)
+  function nextE_Eq(id,step) result(c)
     use m_ts_contour_eq,  only : N_Eq_E, Eq_E
+    integer, intent(in) :: id
+    integer, intent(in), optional :: step
+    type(ts_c_idx) :: c ! the configuration of the energy-segment
+    c = Eq_E(id,step=step)
+  end function nextE_Eq
+
+  function nextE_nEq(id,step) result(c)
     use m_ts_contour_neq, only : nEq_E
     integer, intent(in) :: id
     integer, intent(in), optional :: step
-    type(ts_c) :: c ! the configuration of the energy-segment
-    integer :: lid
-    if ( id > N_Eq_E() ) then
-       lid = id - N_Eq_E()
-       c = nEq_E(lid,step=step)
-    else
-       c = Eq_E(id,step=step)
-    end if
-  end function nextE
+    type(ts_c_idx) :: c ! the configuration of the energy-segment
+    c = nEq_E(id,step=step)
+  end function nextE_nEq
 
-  subroutine io_contour(IsVolt, Elecs,slabel,suffix)
-    use m_ts_electype
+  function has_cE(c,D,iEl,imu,ineq) result(has)
+    use m_ts_contour_eq,  only : ID2idx
+    use m_ts_contour_neq, only : has_cE_neq
+    type(ts_c_idx), intent(in) :: c
+    character, intent(in), optional :: D
+    integer, intent(in), optional :: iEl, imu, ineq
+    logical :: has
+    integer :: idx
+    if ( present(D) ) call die('Error in code... Please correct.')
+    has = .false.
+    select case ( c%idx(1) ) 
+    case ( CONTOUR_EQ )
+       if ( .not. present(imu) ) &
+            call die('Error in code... Please correct.')
+       call ID2idx(c,imu,idx)
+       has = idx > 0
+    case ( CONTOUR_NEQ , CONTOUR_NEQ_TAIL )
+       has = has_cE_neq(c,iEl=iEl,ID=ineq)
+
+    case default
+       call die('Error in contour setup')
+    end select
+    
+  end function has_cE
+
+  subroutine io_contour(IsVolt, mus, kT, slabel,suffix)
     use m_ts_contour_eq, only : io_contour_eq
     use m_ts_contour_neq, only : io_contour_neq
     logical, intent(in) :: IsVolt
-    type(Elec), intent(in) :: Elecs(:)
+    type(ts_mu), intent(in) :: mus(:)
+    real(dp), intent(in) :: kT
     character(len=*), intent(in) :: slabel
     character(len=*), intent(in), optional :: suffix
 
-    call io_contour_eq(Elecs,slabel,suffix)
+    call io_contour_eq(mus,slabel,suffix)
 
     if ( IsVolt ) then
-       call io_contour_neq(slabel,suffix)
+       call io_contour_neq(slabel,kT,suffix)
     end if
 
   end subroutine io_contour
 
-  subroutine read_contour_options(Elecs, kT, IsVolt, Volt)
-
-    use m_ts_electype
+  subroutine read_contour_options(N_Elec, Elecs, N_mu, mus, kT, IsVolt, Volt)
     use m_ts_contour_eq, only : read_contour_eq_options
     use m_ts_contour_neq, only : read_contour_neq_options
 
-    type(Elec), intent(inout) :: Elecs(:)
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(inout) :: Elecs(N_Elec)
+    integer, intent(in) :: N_mu
+    type(ts_mu), intent(inout) :: mus(N_mu)
     logical, intent(in) :: IsVolt
     real(dp), intent(in) :: kT, Volt
 
-    call read_contour_eq_options(Elecs,kT,Volt)
+    call read_contour_eq_options(N_mu,mus,kT,Volt)
 
     if ( IsVolt ) then
-       call read_contour_neq_options(Elecs,kT,Volt)
+       call read_contour_neq_options(N_Elec,Elecs,N_mu,mus,kT,Volt)
     end if
 
   end subroutine read_contour_options
 
   subroutine print_contour_options(prefix,IsVolt)
-
     use m_ts_contour_eq, only : print_contour_eq_options
     use m_ts_contour_neq, only : print_contour_neq_options
 
@@ -132,7 +138,6 @@ contains
   end subroutine print_contour_options
 
   subroutine print_contour_block(prefix, IsVolt)
-
     use parallel, only : IONode
     use m_ts_contour_eq, only : print_contour_eq_block
     use m_ts_contour_neq, only : print_contour_neq_block

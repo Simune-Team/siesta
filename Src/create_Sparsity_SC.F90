@@ -371,6 +371,13 @@ contains
     integer, pointer :: l_col(:) => null()
     integer :: ncol, ptr, i,j, no_e, nr, t(3)
 
+    call attach(sp,nrows=i,nrows_g=j)
+    if ( i /= j ) then
+       call die('Creating TM sparsity pattern requires correct &
+            &atomic placement. You must not use a distributed &
+            &sparsity pattern.')
+    end if
+
     ! Retrieve the pointer providing the index of the columns
     ncol  =  n_col   (sp,row)
     ptr   =  list_ptr(sp,row)

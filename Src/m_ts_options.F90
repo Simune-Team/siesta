@@ -10,7 +10,7 @@
 !                                                                          *
 !  1) read_ts_options : Reads the optional parameters from the fdf file    *
 !                                                                          *
-!==========================================================================*                                         
+!==========================================================================* 
 
 
 module m_ts_options
@@ -20,6 +20,7 @@ module m_ts_options
   USE siesta_options, only : fixspin, isolve, SOLVE_TRANSI
   USE sys, only : die
   USE m_ts_electype
+  use m_ts_chem_pot
   use m_ts_tdir
   implicit none
   PUBLIC
@@ -67,11 +68,18 @@ integer  :: na_BufL      ! Number of Left Buffer Atoms
 integer  :: na_BufR      ! Number of Right Buffer Atoms
 integer  :: no_BufL      ! Number of Left Buffer orbitals
 integer  :: no_BufR      ! Number of Right Buffer orbitals
+! Electrodes and different chemical potentials
+integer :: N_Elec
 type(Elec), allocatable, target :: Elecs(:)
+integer :: N_mu
+type(ts_mu), allocatable, target :: mus(:)
 logical :: ReUseGF        ! Calculate the electrodes GF
 logical :: ImmediateTSmode=.false. ! will determine to immediately start the transiesta
                                    ! SCF. This is useful when you already have a converged
                                    ! siesta DM
+
+! Flag to control whether we should update the forces (i.e. calculate energy-density matrix)
+logical :: Calc_Forces = .true.
 
 ! If the energy-contour is not perfectly divisable by the number of nodes then adjust
 integer :: opt_TriMat_method = 0 ! Optimization method for determining the best tri-diagonal matrix split
@@ -97,11 +105,7 @@ integer,          save :: N_mon = 0
 integer, pointer, save :: monitor_list(:,:) => null()
 integer, pointer, save :: iu_MON(:,:) => null()
 
-!==========================================================================*
-!==========================================================================*
-!  Default Values for arguments read from input file                       *
-!--------------------------------------------------------------------------*
-
+! Flag to control TranSIESTA
 logical, save :: TSmode = .false.
 
 CONTAINS
@@ -120,6 +124,7 @@ CONTAINS
   subroutine read_ts_options( wmix, kT, ucell, na_u, xa, lasto)
 
 ! SIESTA Modules Used
+    use alloc
     use files, only  : slabel
     use fdf, only : fdf_get, fdf_deprecated, fdf_obsolete
     use fdf, only : leqi
@@ -135,7 +140,7 @@ CONTAINS
     use m_ts_weight
     use m_ts_charge
     use m_ts_tdir
-
+    
     use m_monitor
     use m_bandwidth
 
@@ -150,7 +155,7 @@ CONTAINS
     character(len=70) :: c, chars
     integer :: i, j, idx, idx1, idx2
     type(Elec) :: tmpElec
-
+    type(ts_mu) :: tmpmu
 
     ! External routines
     real(dp) :: dot
@@ -171,6 +176,29 @@ CONTAINS
     !Set ts_istep default
     ts_istep = 0
 
+    ! Read in general values that should be used in the electrode generation
+    ! I.e. these FDF-parameters are used for diagon runs with transiesta
+    saveTSHS = fdf_get('TS.SaveHS',.true.)
+    onlyS    = fdf_get('TS.onlyS',.false.)
+
+    if ( .not. TSmode ) then
+       if ( IONode ) then
+          write(*,1) 'Save H and S matrices', saveTSHS
+          write(*,1) 'Save S and quit (onlyS)', onlyS
+          write(*,11) repeat('*', 62)
+          write(*,*)
+
+          if ( SaveTSHS .and. FixSpin ) then
+             write(*,*) 'Fixed Spin not possible with Transiesta!'
+             write(*,*) 'Electrodes with fixed spin is not possible with Transiesta !'
+             call die('Stopping code')
+          end if
+
+       end if
+       return
+    end if
+
+
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
     
@@ -187,29 +215,47 @@ CONTAINS
     end if
 
     ! Reading the Transiesta solution method
-    chars = fdf_get('TS.SolutionMethod','tri')
+    chars = fdf_get('TS.SolutionMethod','sparse')
     if ( leqi(chars,'sparse') ) then
        ts_method = TS_SPARSITY
     else if ( leqi(chars,'tri') ) then
        ts_method = TS_SPARSITY_TRI
+       call die('Not implemented yet')
     else
        call die('Unrecognized Transiesta solution method: '//trim(chars))
     end if
 
-    ! Reading TS Options from fdf ...
-    saveTSHS = fdf_get('TS.SaveHS',.true.)
-    onlyS    = fdf_get('TS.onlyS',.false.)
-
-    Volt     = fdf_get('TS.Voltage',0._dp,'Ry') 
+    ! Read in the chemical potentials
+    N_mu = fdf_nmu('TS',mus)
+    if ( N_mu < 1 ) &
+         call die('You need at least one chemical potential')
+    do i = 1 , N_mu
+       ! Default things that could be of importance
+       if ( .not. fdf_mu('TS',slabel,mus(i)) ) then
+          call die('Could not find chemical potential: '//trim(name(mus(i))))
+       end if
+       do j = 1 , i - 1 
+          ! sort the chemical potentials
+          if ( mus(j)%mu > mus(i)%mu ) then
+             tmpmu = mus(j)
+             mus(j) = mus(i)
+             mus(i) = tmpmu
+          end if
+       end do
+    end do
+    ! attach the ID
+    mus(:)%ID = (/(i,i=1,N_mu)/)
+    
+    ! The sign can not be chosen from this (several mu, where to define it)
+    Volt = maxval(mus(:)%mu) - minval(mus(:)%mu)
+    call fdf_obsolete('TS.Voltage')
+    !Volt     = fdf_get('TS.Voltage',0._dp,'Ry') 
     ! Voltage situation is above 0.1 meV (probably too low...)
     IsVolt   = dabs(Volt) > 0.0001_dp*eV
-    if ( .not. IsVolt ) Volt = 0._dp
-
-    ! Set up the fermi shifts for the left and right electrodes
-    ! in case of several electrodes the first and last electrode
-    ! correspond to left/right respectively. (the remaining electrodes have mu=0)
-    VoltL =  0.5_dp * Volt
-    VoltR = -0.5_dp * Volt
+    if ( .not. IsVolt ) then
+       Volt = 0._dp
+       mus(:)%mu = 0._dp
+    end if
 
     ! Determine whether the user wishes to only do an analyzation
     TS_Analyze = fdf_get('TS.Analyze',.false.)
@@ -293,9 +339,12 @@ CONTAINS
          1.0_dp < TS_RHOCORR_FACTOR) then
        call die("Charge correction factor must be in the range [0;1]")
     endif
+    
+    Calc_Forces = fdf_get('TS.Forces.Calc',.true.)
+
 
     call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
-    ReUseGF    = fdf_get('TS.ReUseGF',.false.)
+    ReUseGF = fdf_get('TS.ReUseGF',.false.)
 
     ! This should never be used!!!!
     ! It is required to fix the potential in the cell
@@ -320,7 +369,6 @@ CONTAINS
        call fdf_obsolete('TS.NumUsedAtoms'//trim(chars))
        call fdf_obsolete('TS.ReplicateA1'//trim(chars))
        call fdf_obsolete('TS.ReplicateA2'//trim(chars))
-       call fdf_obsolete('TS.ReplicateA3'//trim(chars))
     end do
 
     ! notice that this does not have the same meaning... 
@@ -331,7 +379,8 @@ CONTAINS
     Elecs_xa_EPS= fdf_get('TS.Elecs.Coord.Eps',1e-4_dp,'Bohr')
 
     ! detect how many electrodes we have
-    if ( fdf_nElec('TS',Elecs) < 2 ) then
+    N_Elec = fdf_nElec('TS',Elecs)
+    if ( N_Elec < 2 ) then
        ! The user has done something wrong...
        ! Write out a working FDF (similar to the first thing)
        write(*,*) '%block TS.Elecs'
@@ -390,22 +439,21 @@ CONTAINS
     ! Currently the transport direction for all electrodes is the default
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
-    Elecs(:)%mu = 0._dp
-    Elecs(1)%mu = VoltL
-    Elecs(size(Elecs))%mu = VoltR
     Elecs(:)%t_dir = ts_tdir
-    Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.)
+    Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     if ( .not. Elecs(1)%Bulk ) then
        Elecs(:)%DM_CrossTerms = .true.
     else
+       ! default to not update the cross-terms
        Elecs(:)%DM_CrossTerms = fdf_get('TS.Elecs.DM.CrossTerms',.false.)
     end if
     ! We default to not calculate the band-bottom...
+    ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
     Elecs(:)%BandBottom = fdf_get('TS.Elecs.Calc.BandBottom', .false.)
 
-    do i = 1 , size(Elecs)
+    do i = 1 , N_Elec
        ! Default things that could be of importance
-       if ( .not. fdf_Elec('TS',slabel,Elecs(i)) ) then
+       if ( .not. fdf_Elec('TS',slabel,Elecs(i),N_mu,mus) ) then
           call die('Could not find electrode: '//trim(name(Elecs(i))))
        end if
        ! set the placement in orbitals
@@ -416,23 +464,10 @@ CONTAINS
             call die("Electrode position does not exist")
        Elecs(i)%idx_no = lasto(Elecs(i)%idx_na-1)+1
 
-       ! Populate the intrinsic things
-       call check_HSfile(Elecs(i))
-       
     end do
 
-    ! check that all have at least 2 contour points on the equilibrium contour
-    if ( .not. all(Eq_segs(Elecs) > 1) ) then
-       print *,Eq_segs(Elecs)
-       call die('All electrodes does not have at least 2 equilibrium contours')
-    end if
-    
-    if ( sum(TotUsedAtoms(Elecs)) >= na_u ) then
-       call die('Electrodes occupy the entire device')
-    end if
-       
     ! Sort the electrodes according to the structure
-    do i = 1 , size(Elecs) - 1
+    do i = 1 , N_Elec - 1
        idx = Elecs(i)%idx_na+TotUsedAtoms(Elecs(i))-1
        j = i + minloc(Elecs(i+1:)%idx_na,dim=1)
        if ( idx > Elecs(j)%idx_na ) then
@@ -442,47 +477,76 @@ CONTAINS
        end if
     end do
 
+    ! Populate/check the intrinsic things
+    do i = 1 , N_Elec
+       call check_HSfile(Elecs(i))
+    end do
+
+    ! Populate the electrodes in the chemical potential type
+    do i = 1 , N_Elec
+       do j = 1 , N_mu
+          if ( associated(Elecs(i)%mu,target=mus(j)) ) then
+             call chem_pot_add_Elec(mus(j),i)
+             exit
+          end if
+       end do
+    end do
+
+    ! check that all electrodes and chemical potentials are paired in
+    ! some way.
+    if ( any(mus(:)%N_El == 0) ) then
+       call die('A chemical potential has not been assigned any electrodes. &
+            &All chemical potentials *MUST* be assigned an electrode')
+    end if
+
+    ! check that all have at least 2 contour points on the equilibrium contour
+    ! the 3 is the fictive pole segment
+    if ( .not. all(Eq_segs(mus(:)) > 2) ) then
+       call die('All chemical potentials does not have at least 2 equilibrium contours')
+    end if
+    
+    if ( na_u <= sum(TotUsedAtoms(Elecs)) ) then
+       call die('Electrodes occupy the entire device')
+    end if
+
     ! we need to check that they indeed do not overlap
-    do i = 1 , size(Elecs) - 1
+    do i = 1 , N_Elec
        idx1 = Elecs(i)%idx_na
        idx2 = idx1 + TotUsedAtoms(Elecs(i)) - 1
        if ( idx1 <= na_BufL ) then
           print *,1,idx1,idx2,na_u
-          call die('Buffer atoms overlap an electrode')
-       else if ( na_u - na_BufR <= idx2 ) then
+          call die('Left buffer atoms overlap an electrode')
+       else if ( na_u - na_BufR < idx2 ) then
           print *,1,idx1,idx2,na_u
-          call die('Buffer atoms overlap an electrode')
+          call die('Right buffer atoms overlap an electrode')
        end if
-       do j = i + 1 , size(Elecs)
-          ! if the index is smaller (then we have an error)
-          if ( Elecs(j)%idx_na <= idx1 ) then
-             print *,Elecs(j)%idx_na, idx1
-             call die('Sorting of electrodes went wrong, ensure no overlapping &
-                  &electrodes')
-          else if ( Elecs(j)%idx_na <= idx2 ) then
-             print *,Elecs(j)%idx_na, idx2
-             call die('Overlapping electrodes is not physical, please correct.')
-          end if
-       end do
+       if ( i < N_Elec ) then
+          do j = i + 1 , N_Elec
+             ! if the index is smaller (then we have an error)
+             if ( Elecs(j)%idx_na <= idx1 ) then
+                print *,Elecs(j)%idx_na, idx1
+                call die('Sorting of electrodes went wrong, ensure no overlapping &
+                     &electrodes')
+             else if ( Elecs(j)%idx_na <= idx2 ) then
+                print *,Elecs(j)%idx_na, idx2
+                call die('Overlapping electrodes is not physical, please correct.')
+             end if
+          end do
+       end if
     end do
-    ! check the last electrode
-    i = size(Elecs)
-    idx1 = Elecs(i)%idx_na
-    idx2 = idx1 + TotUsedAtoms(Elecs(i)) - 1
-    if ( idx1 <= na_BufL ) then
-       print *,1,idx1,idx2,na_u
-       call die('Buffer atoms overlap an electrode')
-    else if ( na_u - na_BufR < idx2 ) then
-       print *,1,idx1,idx2,na_u
-       call die('Buffer atoms overlap an electrode')
-    end if
 
     ! CHECK THIS (we could allow it by only checking the difference...)
-    write(*,*) 'TODO MU'
-    if ( maxval(Elecs(:)%mu) > max(VoltL,VoltR) ) then
-       call die('MU')
-    else if ( minval(Elecs(:)%mu) < min(VoltL,VoltR) ) then
-       call die('MU')
+    if ( .5_dp * Volt < maxval(mus(:)%mu) .or. &
+         -.5_dp * Volt > minval(mus(:)%mu) ) then
+       if ( IONode ) then
+          write(*,'(a)') 'Chemical potentials [eV]:'
+          do i = 1 , N_Elec
+             write(*,'(a,f10.5,a)') trim(Name(Elecs(i)))//' at ',Elecs(i)%mu%mu/eV,' eV'
+          end do
+          write(*,'(a,f10.5,a)') '-V/2'//' at ',min(VoltL,VoltR)/eV,' eV'
+          write(*,'(a,f10.5,a)') ' V/2'//' at ',max(VoltL,VoltR)/eV,' eV'
+       end if
+       call die('Chemical potentials are not in range [-V/2 ; V/2]')
     end if
 
     ! WILL WORK EVENTUALLY
@@ -492,9 +556,8 @@ CONTAINS
 
     ! read in contour options
     if ( TSmode ) then
-       call read_contour_options( Elecs, kT, IsVolt, Volt )
+       call read_contour_options( N_Elec, Elecs, N_mu, mus, kT, IsVolt, Volt )
     end if
-
 
     ! Read in information about the voltage placement.
     chars = fdf_get('TS.HartreePotential.Position','central')
@@ -512,13 +575,8 @@ CONTAINS
     call fdf_obsolete('TS.KxyPoints')
     call fdf_obsolete('TS.NKVoltScale')
 
-    ! Output Used Options in OUT file ....
-    if (IOnode) then
-       write(*,1) 'Save H and S matrices', saveTSHS
-       write(*,1) 'Save S and quit (onlyS)', onlyS
-    end if
-
     if (IONode .and. TSmode ) then
+       write(*,1) 'Save H and S matrices', saveTSHS
        if ( TS_Analyze ) then
           write(*,11)'Will analyze bandwidth of LCAO sparse matrix and quit'
           chars = ''
@@ -613,7 +671,7 @@ CONTAINS
           else
           write(*,10) '  Semi-infinite direction for electrode', 'negative wrt. '//trim(chars)
           end if
-          write(*,7)  '  Chemical shift', Elecs(i)%mu/eV,'eV'
+          write(*,7)  '  Chemical shift', Elecs(i)%mu%mu/eV,'eV'
           write(*,1)  '  Bulk values in electrode', Elecs(i)%Bulk
           write(*,1)  '  Update cross terms contact/electrode', Elecs(i)%DM_CrossTerms
           write(*,1)  '  Calc. valence band-bottom eigenvalue', Elecs(i)%BandBottom
@@ -671,19 +729,16 @@ CONTAINS
             ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
     end if
 
-    if ( TSmode ) then
-       call print_contour_block( 'TS' , IsVolt )
+    call print_contour_block( 'TS' , IsVolt )
 
-       ! write out the contour
-       call io_contour(IsVolt, Elecs, slabel)
+    ! write out the contour
+    call io_contour(IsVolt, mus, kT, slabel)
 
-       ! Print out the electrode coordinates
-       do i = 1 , size(Elecs)
-          call print_elec(Elecs(i),na_u,xa)
-       end do
-
-    end if
-
+    ! Print out the electrode coordinates
+    do i = 1 , size(Elecs)
+       call print_elec(Elecs(i),na_u,xa)
+    end do
+    
 1   format('ts_options: ',a,t53,'=',4x,l1)
 5   format('ts_options: ',a,t53,'=',i5,a)
 20  format('ts_options: ',a,t53,'= ',i0,' -- ',i0)
