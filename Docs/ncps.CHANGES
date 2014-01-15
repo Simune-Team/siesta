@@ -1,4 +1,19 @@
 ------------------------------------------------------------
+January 15, 2014  Alberto Garcia           trunk-427--ncps-5
+More grid_data support in ncps library
+
+Some more error checking.
+Grids with explicit data are used internally. Thus,
+any attributes but "npts" are optional. So far only
+logarithmic grids are supported.
+
+To Do: Check consistency of grid metadata and values,
+when given.
+
+modified:
+  Src/nc-pseudo/m_ncps_parsing_helpers.f90
+
+------------------------------------------------------------
 October 10, 2013  Alberto Garcia           trunk-427--ncps-4
 Implement grid_data support in ncps library
 

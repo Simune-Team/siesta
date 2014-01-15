@@ -4,6 +4,7 @@ module m_ncps
   use m_ncps_translators
   use m_ncps_writers
   use m_ncps_reader
+  use m_ncps_xmlreader, only: ncps_xmlreader
 
   public
 end module m_ncps

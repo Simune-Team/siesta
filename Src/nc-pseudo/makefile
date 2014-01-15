@@ -2,7 +2,14 @@
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 module:  libncps.a
-include ../arch.make
+# This makefile can also be used "remotely", so we allow
+# for an external specification of the (relative) location 
+# of the arch.make file.
+#
+#
+ARCH_MAKE_DEFAULT=../arch.make
+ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
+include $(ARCH_MAKE)
 #
 INCFLAGS:= $(INCFLAGS) -I../xmlparser
 #

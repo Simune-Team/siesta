@@ -81,6 +81,15 @@ $(XC):
                           "MPI_INTERFACE= " \
                           "FFLAGS=$(FFLAGS)"  module )
 #
+NCPS=libncps.a
+NCPS_MAKEFILE=$(TOP_LEVEL)/nc-pseudo/makefile
+$(NCPS): 
+	(mkdir -p nc-pseudo; cd nc-pseudo ; $(MAKE) -f $(NCPS_MAKEFILE) \
+        "ARCH_MAKE=../$(ARCH_MAKE)" \
+        "VPATH=$(VPATH)/nc-pseudo" \
+	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
+#
+#
 # Use the makefile in Src/fdf and all the sources there.
 #
 FDF=libfdf.a
@@ -94,11 +103,11 @@ $(FDF):
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS)
+gen-basis: $(FDF) $(XC) $(NCPS) $(OBJS_GEN-BASIS)
 	$(FC) -o gen-basis \
 	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) $(NETCDF_LIBS) $(LIBS)
 #
-ioncat:  $(FDF) $(IONCAT_OBJS)
+ioncat:  $(FDF) $(NCPS) $(IONCAT_OBJS)
 	$(FC) -o ioncat \
 	       $(LDFLAGS) $(IONCAT_OBJS) $(FDF) $(NETCDF_LIBS)
 #

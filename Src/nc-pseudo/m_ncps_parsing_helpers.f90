@@ -22,6 +22,8 @@ logical, private  :: in_coreCharge = .false. , in_data = .false.
 logical, private  :: in_grid_data = .false. , in_grid = .false.
 logical, private  :: in_valenceCharge = .false.
 logical, private  :: in_pseudowavefun = .false. , in_pswf = .false.
+logical, private  :: need_explicit_grid_data
+logical, private  :: got_explicit_grid_data
 
 integer, private, save  :: ndata, ndata_grid
 
@@ -51,6 +53,7 @@ type(dictionary_t), intent(in)  :: attributes
 character(len=100)  :: value
 integer             :: status
 
+print *, "Element: ", trim(name)
 
 select case(name)
 
@@ -134,56 +137,89 @@ select case(name)
          read(unit=value,fmt=*) pp%spin
 
       case ("grid")
-
          in_grid = .true.
          allocate(grid)   ! Will forget about previous allocation
 
-         call get_value(attributes,"type",grid%type,status)
-         if (status /= 0 ) call die("Cannot determine grid type")
+         got_explicit_grid_data = .false.
 
+         ! This attribute is mandatory
          call get_value(attributes,"npts",value,status)
          if (status /= 0 ) call die("Cannot determine grid npts")
          read(unit=value,fmt=*) grid%npts
 
+         call get_value(attributes,"type",grid%type,status)
+         ! Only "log" for now?
+         if (status /= 0 ) then
+            ! call die("Cannot determine grid type")
+            need_explicit_grid_data = .true.
+         endif
+
          call get_value(attributes,"scale",value,status)
-         if (status /= 0 ) call die("Cannot determine grid scale")
-         read(unit=value,fmt=*) grid%scale
+         if (status /= 0 ) then
+            ! maybe fallback to demanding this (as it is
+            ! currently the default, expected by clients
+            ! such as Abinit)
+            ! call die("Cannot determine grid scale")
+            need_explicit_grid_data = .true.
+         else
+            read(unit=value,fmt=*) grid%scale
+         endif
 
          call get_value(attributes,"step",value,status)
-         if (status /= 0 ) call die("Cannot determine grid step")
-         read(unit=value,fmt=*) grid%step
+         if (status /= 0 ) then
+            !call die("Cannot determine grid step")
+            need_explicit_grid_data = .true.
+         else
+            read(unit=value,fmt=*) grid%step
+         endif
 
          !
          ! In this way we allow for a private grid for each radfunc,
          ! or for a global grid specification
          !
          if (in_radfunc) then
+            if (associated(rp%grid)) then
+               call die("psxml: Two grids specified for a radfunc")
+            endif
             rp%grid => grid
          else
-            print *, "Associated global grid"
+            ! We should really check that we are at the top level,
+            ! and not, say, at the semilocal or pswf level (although
+            ! it could be useful to allow these "regional" grids)
+
+            if (associated(pseudo%global_grid)) then
+               call die("psxml: Two global grids specified")
+            endif
+            print *, "Found global grid"
             pseudo%global_grid => grid
          endif
 
       case ("data")
-         if (.not. in_radfunc) STOP "<data> element outside <rad_func> element"
+         if (.not. in_radfunc) then
+            call die("<data> element outside <rad_func> element")
+         endif
          in_data = .true.
-         if (.not. associated(rp%grid)) STOP "Cannot find grid data for radfunc"
-         if (rp%grid%npts == 0) STOP "Grid not specified correctly"
+         if (.not. associated(rp%grid)) then
+            if (associated(pseudo%global_grid)) then
+               rp%grid => pseudo%global_grid
+            else
+               call die("Cannot find grid data for radfunc")
+            endif
+         endif
+         if (rp%grid%npts == 0) call die("Grid not specified correctly")
          allocate(rp%data(rp%grid%npts))
          ndata = 0             ! To start the build up
 
       case ("grid_data")
-         if (.not. in_grid) STOP "Grid_data element outside grid element"
+         if (.not. in_grid) call die("Grid_data element outside grid element")
          in_grid_data = .true.
-         if (grid%npts == 0) STOP "Grid npts attribute not specified correctly"
+         got_explicit_grid_data = .true.
+         if (grid%npts == 0) call die("Grid npts attribute faulty")
          allocate(grid%grid_data(grid%npts))
          ndata_grid = 0             ! To start the build up
 
       case ("radfunc")
          in_radfunc = .true.
-         rp%grid => pseudo%global_grid    ! Might be null
-                                          ! There should then be a local grid element
-                                          ! read later
 
       case ("pseudocore-charge")
          in_coreCharge = .true.
@@ -217,14 +253,14 @@ select case(name)
          rp => pw%V                       ! Pointer to radial function
 
          call get_value(attributes,"l",pw%l,status)
-         if (status /= 0 ) call die("Cannot determine l for Vps")
-                                                                                 
+         if (status /= 0 ) call die("Cannot determine l for PSwf")
+                                                                              
          call get_value(attributes,"principal-n",value,status)
-         if (status /= 0 ) call die("Cannot determine n for Vps")
+         if (status /= 0 ) call die("Cannot determine n for PSwf")
          read(unit=value,fmt=*) pw%n
-                                                                                 
+
          call get_value(attributes,"spin",value,status)
-         if (status /= 0 ) call die("Cannot determine spin for Vps")
+         if (status /= 0 ) call die("Cannot determine spin for PSwf")
          read(unit=value,fmt=*) pw%spin
 
 end select
@@ -235,6 +271,8 @@ end subroutine begin_element
 subroutine end_element(name)
 character(len=*), intent(in)     :: name
 
+integer :: i
+
 select case(name)
 
       case ("vps")
@@ -242,9 +280,32 @@ select case(name)
 
       case ("radfunc")
          in_radfunc = .false.
+         if (.not. associated(rp%data)) then
+            call die("No data for radfunc!")
+         endif
 
       case ("grid")
          in_grid = .false.
+         !
+         if (need_explicit_grid_data) then
+            if (got_explicit_grid_data) then
+               need_explicit_grid_data = .false.
+            else
+               call die("Need explicit grid data!")
+            endif
+         else
+            ! Now we need to *generate* the data
+            if (grid%npts == 0) call die("Grid npts attribute faulty")
+            print *, "Allocating and computing grid data..."
+            allocate(grid%grid_data(grid%npts))
+            do i = 1, grid%npts
+               ! possible units handling
+               grid%grid_data(i) = grid%scale * &
+                    (exp(grid%step*(i-1)) - 1)
+            enddo
+
+         endif
+
 
       case ("data")
       !
@@ -252,7 +313,9 @@ select case(name)
       ! Check that we got the advertised number of items
       !
          in_data = .false.
-         if (ndata /= size(rp%data)) STOP "npts mismatch in radfunc data"
+         if (ndata /= size(rp%data)) then
+            call die("npts mismatch in radfunc data")
+         endif
 
       case ("grid_data")
       !
@@ -260,7 +323,9 @@ select case(name)
       ! Check that we got the advertised number of items
       !
          in_grid_data = .false.
-         if (ndata_grid /= size(grid%grid_data)) STOP "npts mismatch in grid"
+         if (ndata_grid /= size(grid%grid_data)) then
+            call die("npts mismatch in grid")
+         endif
 
       case ("pseudocore-charge")
          in_coreCharge = .false.
@@ -315,6 +380,9 @@ endif
 end subroutine pcdata_chunk
 !----------------------------------------------------------------------
 
+      ! To be bypassed by the global "die" of a client program
+      ! Use interface mechanism as in newer versions of Siesta
+      !
       subroutine die(str)
       character(len=*), intent(in), optional   :: str
       if (present(str)) then
