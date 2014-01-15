@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-01-15  11:40:00 GMT                                     trunk-452
+Fixed a wrong threshold for the bias for transiesta runs
+
+* Due to a programming error, at low bias the Voltage was considered
+  to be too low at 0.1 V instead of at 10^(-4) V.
+  
+modified:
+  Src/m_ts_options.F90
+
+-----------------------------------------------------------------------
 2013-12-04  14:00:00 GMT                                     trunk-451
 Use electronic entropy from current SCF step. EHarris update fix.
 
