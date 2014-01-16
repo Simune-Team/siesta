@@ -1,6 +1,19 @@
 ------------------------------------------------------------
-January 16, 2014  Alberto Garcia           trunk-453--ncps-5
-Sync to trunk-453
+January 16, 2014  Alberto Garcia           trunk-453--ncps-6
+Work toward semicore handling
+
+Pseudo/atom/Util/Ps2Inp contains now new code to determine the
+ground-state valence configuration. By taking the "difference" between
+that and the ps-generation configuration, one can get information
+about which shells have semicore states.
+
+added:
+  Pseudo/atom/Util/Ps2Inp/Ba.psf
+  Pseudo/atom/Util/Ps2Inp/ground_state.f90
+  Pseudo/atom/Util/Ps2Inp/makefile
+  Pseudo/atom/Util/Ps2Inp/periodic_table.f
+modified:
+  Pseudo/atom/Util/Ps2Inp/make_ps_input.f90
 
 ------------------------------------------------------------
 January 15, 2014  Alberto Garcia           trunk-427--ncps-5

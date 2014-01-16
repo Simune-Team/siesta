@@ -4,6 +4,8 @@ program make_ps_input
 !
   use pseudopotential, only: pseudopotential_t
   use pseudopotential, only: pseudo_read, get_ps_conf
+  use m_ground_state
+  use periodic_table, only: atnumber
 
   implicit none
 
@@ -12,7 +14,9 @@ program make_ps_input
   character(len=20) :: label
   type(pseudopotential_t) :: p
 
-  integer   :: n_val_first, ncore, lmax, inp_lun, l, n
+  type(ground_state_t)    :: gs
+
+  integer   :: n_val_first, ncore, lmax, inp_lun, l, n, z
 
   character(len=1) :: code_val_first
   character(len=1) :: ispp
@@ -31,6 +35,9 @@ program make_ps_input
 
   read(5,*) label
   call pseudo_read(label,p)
+
+  z = atnumber(p%name)
+  call ground_state(z,gs)
 
   lmax = p%npotd-1
   allocate(orb_arr(0:lmax))
