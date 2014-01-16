@@ -637,7 +637,8 @@ contains
     ! create expansion q-points (weight of q-points)
     nq     = Rep(El)
     wq     = 1._dp / real(nq,dp)
-    final_invert = nq /= 1
+    ! We also need to invert to get the contribution in the
+    final_invert = nq /= 1 .or. nuo_E /= nuou_E
 
     if (IONode) then
        write(*,'(/,2a,/,2a)') &
@@ -835,8 +836,8 @@ contains
                 do jo = off - 1 , nuo_E - 1
                    do io = off , nuo_E
                       i = i + 1
-                      Sq(i) = S00(io+nuo_E*jo)
-                      Hq(i) = H00(io+nuo_E*jo)
+                      Hq(i) = H00(nuo_E*jo+io)
+                      Sq(i) = S00(nuo_E*jo+io)
                    end do
                 end do
              else
@@ -844,8 +845,8 @@ contains
                 do jo = 0 , nuou_E - 1
                    do io = 1 , nuou_E
                       i = i + 1
-                      Sq(i) = S00(io+nuo_E*jo)
-                      Hq(i) = H00(io+nuo_E*jo)
+                      Hq(i) = H00(nuo_E*jo+io)
+                      Sq(i) = S00(nuo_E*jo+io)
                    end do   ! io
                 end do      ! jo
              end if
@@ -909,28 +910,41 @@ contains
                         iterations=iters(iEn,1), final_invert = final_invert)
                    
                 end if
-
                   
                 ! Copy over surface Green's function
                 i = (iqpt-1)*nuS
                 if ( nS /= nuS ) then
                    if ( is_left ) then
                       ! Left, we use the last orbitals
-                      do jo = nuo_E - nuou_E , nuo_E - 1
-                         do io = nuo_E - nuou_E + 1 , nuo_E
+                      off = nuo_E - nuou_E + 1
+                      do jo = off - 1 , nuo_E - 1
+                         do io = off , nuo_E
                             i = i + 1
-                            Gq(i) = GS(io+nuo_E*jo)
+                            Gq(i) = GS(nuo_E*jo+io)
                          end do           ! io
                       end do              ! jo
                    else
                       ! Right, the first orbitals
-                      do jo = 0,nuou_E-1
-                         do io = 1,nuou_E
+                      do jo = 0 , nuou_E-1
+                         do io = 1 , nuou_E
                             i = i + 1
-                            Gq(i) = GS(io+nuo_E*jo)
+                            Gq(i) = GS(nuo_E*jo+io)
                          end do           ! io
                       end do              ! jo
                    end if
+
+                   if ( nq == 1 ) then
+                      ! We invert back here, instead of in
+                      ! the SCF (this is important as the
+                      ! decreased size of the surface-Greens function
+                      ! would otherwise yield a different result)
+                      i = (iqpt-1)*nuS + 1
+                      call mat_invert(Gq(i:i+nuS-1),zwork(1:nuS),&
+                           nuou_E, &
+                           MI_IN_PLACE_LAPACK)
+
+                   end if
+
                 end if
                 
              end do q_loop
@@ -1179,10 +1193,11 @@ contains
        xij00 => val(El%xij00)
        xij01 => val(El%xij01)
     end if
-    xijo00 => val(El%xijo00)
-    xijo01 => val(El%xijo01)
     has_o = initialized(El%xijo00)
-
+    if ( has_o ) then
+       xijo00 => val(El%xijo00)
+       xijo01 => val(El%xijo01)
+    end if
 
     ! Initialize arrays
     do i = 1, nS

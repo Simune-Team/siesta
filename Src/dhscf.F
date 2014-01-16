@@ -386,7 +386,7 @@ C ----------------------------------------------------------------------
 !        corresponding to the voltage-drop.
         if (TSmode) then
            if ( IsVolt ) then
-              call ts_init_voltage(cell,nua,xa,ntm,nsm)
+              call ts_init_voltage( cell, nua, xa, ntm, nsm)
            end if
            if(IsVolt .and. acting_efield) then
               if(Node.eq.0) then
@@ -1040,7 +1040,6 @@ C ----------------------------------------------------------------------
       endif
 
 #ifdef TRANSIESTA
-!     TSS Begin
 ! ---------------------------------------------------------------------
 !     transiesta:
 !     add the potential corresponding to the (possible) voltage-drop.
@@ -1048,12 +1047,10 @@ C ----------------------------------------------------------------------
 !     we should not encounter both at the same time.
 ! ---------------------------------------------------------------------
       if (TSmode.and.IsVolt.and.TSrun) then
-        ! This routine expects a sequential array,
-        ! in whatever distribution
-        !FDN** The comment above should be clarified
-        call ts_voltage(cell, ntm, nsm, Vscf )
+         ! This routine expects a sequential array,
+         ! in whatever distribution
+         call ts_voltage( cell, ntm, nsm, Vscf )
       endif
-!    TSS End
 #endif /* TRANSIESTA */
 
 C ----------------------------------------------------------------------

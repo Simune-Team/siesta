@@ -25,7 +25,7 @@ module m_ts_io_ctype
   integer, parameter :: c_N = 200
   type :: ts_c_io
      ! the name of the integration segment
-     character(len=C_N) :: name = ' '
+     character(len=C_N_NAME_LEN) :: name = ' '
      ! The integral bounds
      real(dp) :: a, b
      ! (text-form)
@@ -462,7 +462,7 @@ contains
 
     ! Local parameters
     real(dp) :: tmp
-    character(len=50) :: g
+    character(len=200) :: g
     logical :: add, get_val, has_V, has_kT
     integer :: i, j, stat, offset
     

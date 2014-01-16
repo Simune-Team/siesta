@@ -14,21 +14,25 @@
 ! * It has been heavily inspired by the original authors of the 
 !   Transiesta code (hence the references here are still remaining) *
 
-module m_ts_fullg
+module m_ts_fullk
 
   use precision, only : dp
 
   use m_ts_sparse_helper
 
   use m_ts_dm_update, only : init_DM
-  use m_ts_dm_update, only : update_DM
-  use m_ts_dm_update, only : add_Gamma_DM
+  use m_ts_dm_update, only : update_DM, update_zDM
+  use m_ts_dm_update, only : add_k_DM
   
   use m_ts_weight, only : weight_DM
+  use m_ts_weight, only : TS_W_METHOD
+  use m_ts_weight, only : TS_W_CORRELATED
+  use m_ts_weight, only : TS_W_UNCORRELATED
+  use m_ts_weight, only : TS_W_K_UNCORRELATED
   
   implicit none
   
-  public :: ts_fullg
+  public :: ts_fullk
   
   private
   
@@ -67,12 +71,12 @@ contains
 ! permitted without prior and explicit authorization by the authors.
 !
   
-  subroutine ts_fullg(N_Elec,Elecs, &
+  subroutine ts_fullk(N_Elec,Elecs, &
        nq,uGF, &
        nspin, &
        sp_dist, sparse_pattern, &
        ucell, no_u, na_u, lasto, xa, n_nzs, &
-       Hs, Ss, DM, EDM, Ef, kT)
+       Hs, Ss, xij, DM, EDM, Ef, kT)
 
     use units, only : Pi, eV
     use parallel, only : Node, Nodes, IONode
@@ -84,12 +88,15 @@ contains
 
     use class_OrbitalDistribution
     use class_Sparsity
-    use class_dSpData1D
     use class_dSpData2D
+    use class_zSpData1D
+    use class_zSpData2D
 
     use m_ts_electype
     ! Self-energy retrival and expansion
     use m_ts_elec_se
+
+    use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
 
     use m_ts_options, only : Calc_Forces
     use m_ts_options, only : N_mu, mus
@@ -131,7 +138,7 @@ contains
     integer, intent(in)  :: lasto(0:na_u)
     real(dp), intent(in) :: xa(3,na_u)
     integer, intent(in)  :: n_nzs
-    real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs)
+    real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs), xij(3,n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
     real(dp), intent(in) :: Ef, kT
 
@@ -140,33 +147,32 @@ contains
 ! ************************************************************
 
 ! ******************* Computational arrays *******************
-    integer :: ndwork, nzwork
-    real(dp), pointer :: dwork(:,:)
+    integer :: nzwork
     complex(dp), allocatable, target :: zwork(:), GF(:)
 
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
     ! The Hamiltonian and overlap sparse matrices
-    type(dSpData1D) :: spH, spS
+    type(zSpData1D) :: spH, spS
     ! local sparsity pattern in local SC pattern
     type(dSpData2D) :: spDM, spDMneq
     type(dSpData2D) :: spEDM ! only used if calc_forces
     ! The different sparse matrices that will surmount to the integral
     ! These two lines are in global update sparsity pattern (UC)
-    type(dSpData2D) ::  spuDM
-    type(dSpData2D) :: spuEDM ! only used if calc_forces
+    type(zSpData2D) ::  spuDM
+    type(zSpData2D) :: spuEDM ! only used if calc_forces
 ! ************************************************************
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
-    real(dp)    :: kw
+    real(dp)    :: kw, kpt(3)
     complex(dp) :: Z, W, ZW
     complex(dp), parameter :: zmi = dcmplx(0._dp,-1._dp)
 ! ************************************************************
 
 ! ******************** Loop variables ************************
-    type(itt1) :: Sp
-    integer, pointer :: ispin
+    type(itt2) :: SpKp
+    integer, pointer :: ispin, ikpt
     integer :: iEl, iID, up_nzs, ia, ia_E
     integer :: ind, iE, imu, io, idx
 ! ************************************************************
@@ -262,8 +268,8 @@ contains
     ! we will not have any phases, hence, it makes no sense to
     ! have the arrays in complex)
     ! TODO move into a Data2D (could reduce overhead of COMM)
-    call newdSpData1D(ts_sp_uc,fdist,spH,name='TS spH')
-    call newdSpData1D(ts_sp_uc,fdist,spS,name='TS spS')
+    call newzSpData1D(ts_sp_uc,fdist,spH,name='TS spH')
+    call newzSpData1D(ts_sp_uc,fdist,spS,name='TS spS')
 
     ! If we have a bias calculation we need additional arrays.
     ! If not bias we don't need the update arrays (we already have
@@ -271,48 +277,41 @@ contains
 
     ! Allocate space for global sparsity arrays
     no = max(N_mu,N_nEq_id)
-    call newdSpData2D(tsup_sp_uc,no,fdist, spuDM, name='TS spuDM')
-    ! assign dwork, this will problably come at the expence of
-    ! two full reductions, however, we save some memory...
-    ndwork = nnzs(tsup_sp_uc)
-    dwork => val(spuDM)
+    call newzSpData2D(tsup_sp_uc,no,fdist, spuDM, name='TS spuDM')
     if ( Calc_Forces ) then
-       call newdSpData2D(tsup_sp_uc,N_mu,fdist, spuEDM, name='TS spuEDM')
+       call newzSpData2D(tsup_sp_uc,N_mu,fdist, spuEDM, name='TS spuEDM')
     end if
     
     if ( IsVolt ) then
        ! Allocate space for update arrays, local sparsity arrays
        call newdSpData2D(ltsup_sp_sc,N_mu,    sp_dist,spDM   ,name='TS spDM')
        call newdSpData2D(ltsup_sp_sc,N_nEq_id,sp_dist,spDMneq,name='TS spDM-neq')
-       if ( nnzs(ltsup_sp_sc) > ndwork ) then
-          ! only update if this array is larger (should only happen in 
-          ! few processor setups
-          ndwork = nnzs(ltsup_sp_sc)
-          dwork => val(spDMneq)
-       end if
        if ( Calc_Forces ) then
           call newdSpData2D(ltsup_sp_sc,N_mu, sp_dist,spEDM  ,name='TS spEDM')
        end if
     end if
 
     ! start the itterators
-    call itt_init  (Sp,end=nspin)
+    call itt_init  (SpKp,end1=nspin,end2=ts_nkpnt)
     ! point to the index iterators
-    call itt_attach(Sp,cur=ispin)
+    call itt_attach(SpKp,cur1=ispin,cur2=ikpt)
 
-    do while ( .not. itt_step(Sp) )
+    do while ( .not. itt_step(SpKp) )
 
        ! This is going to get messy...
        ! we do not want to create, yet another sparsity pattern
        ! Hence we need to do the SAME checks, again and again and again....
        ! However, the extra computation should be negligible to the gain.
 
-       call init_DM(sp_dist, sparse_pattern, &
-            n_nzs, DM(:,ispin), EDM(:,ispin), &
-            tsup_sp_uc, Calc_Forces)
+       if ( itt_stepped(SpKp,1) ) then ! spin has incremented
+          call init_DM(sp_dist, sparse_pattern, &
+               n_nzs, DM(:,ispin), EDM(:,ispin), &
+               tsup_sp_uc, Calc_Forces)
+       end if
 
        ! Include spin factor and 1/\pi
-       kw = 1._dp / Pi
+       kpt(:) = ts_kpoint(:,ikpt)
+       kw = 1._dp / Pi * ts_kweight(ikpt)
        if ( nspin == 1 ) kw = kw * 2._dp
 
 #ifdef TRANSIESTA_TIMING
@@ -324,9 +323,10 @@ contains
             Ef, &
             no_BufL, no_BufR, & ! cut-out region
             N_Elec, Elecs, no_u, & ! electrodes, SIESTA size
-            n_nzs, Hs(:,ispin), Ss, &
-            spH, spS, &
-            ndwork, dwork(:,1)) ! annoyingly we can't pass the full array!!!!!
+            n_nzs, Hs(:,ispin), Ss, xij, &
+            spH, spS, kpt, &
+            nzwork, zwork)
+
 
 #ifdef TRANSIESTA_TIMING
        call timer('TS_HS',2)
@@ -354,7 +354,7 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(1, cE, N_Elec, uGF, Elecs, &
+          call read_next_GS(ikpt, cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, forward = .false. )
           do iEl = 1 , N_Elec
              call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
@@ -430,18 +430,17 @@ close(io)
 #ifdef MPI
        ! We need to reduce all the arrays
        call timer('TS_comm',1)
-       call my_full_G_reduce(spuDM,nzwork*2,zwork,N_mu)
+       call AllReduce_SpData(spuDM,nzwork,zwork,N_mu)
        if ( Calc_Forces ) then
-          call my_full_G_reduce(spuEDM,nzwork*2,zwork,N_mu)
+          call AllReduce_SpData(spuEDM,nzwork,zwork,N_mu)
        end if
        call timer('TS_comm',2)
 #endif
 
        if ( .not. IsVolt ) then
-          call update_DM(sp_dist,sparse_pattern, n_nzs, &
-               DM(:,ispin), spuDM, Ef=Ef, &
-               EDM=EDM(:,ispin), spEDM=spuEDM, &
-               UpSpGlobal = .true.)
+          call update_zDM(sp_dist,sparse_pattern, n_nzs, &
+               DM(:,ispin), spuDM, Ef, &
+               EDM(:,ispin), spuEDM, kpt, xij)
 
           ! The remaining code segment only deals with 
           ! bias integration... So we skip instantly
@@ -456,13 +455,22 @@ close(io)
 
        ! initialize to zero
        ! local sparsity update patterns
-       call init_val(spDM)
-       call init_val(spDMneq)
-       if ( Calc_Forces ) call init_val(spEDM)
+       ! if (tsweightmethod...)
+       if ( TS_W_METHOD == TS_W_K_UNCORRELATED ) then
+          call init_val(spDM)
+          call init_val(spDMneq)
+          if ( Calc_Forces ) call init_val(spEDM)
+       else if ( itt_stepped(SpKp,1) ) then
+          ! we only need to initialize once per spin
+          call init_val(spDM)
+          call init_val(spDMneq)
+          if ( Calc_Forces ) call init_val(spEDM)
+       end if
 
-       ! transfer data to local sparsity arrays
-       call add_Gamma_DM(spDM,   spuDM, D_dim2=N_mu, &
-            spEDM=spEDM, spuEDM=spuEDM, E_dim2=N_mu)
+       ! transfer equilibrium data to local sparsity arrays
+       call add_k_DM(spDM, spuDM, N_mu, &
+            spEDM, spuEDM, N_mu, &
+            n_nzs, xij, kpt, ipnt=ltsup_sc_pnt, non_Eq = .false. )
 
 #ifdef TRANSIESTA_TIMING
        call timer('TS_NEQ',1)
@@ -480,7 +488,7 @@ close(io)
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(1, cE, N_Elec, uGF, Elecs, &
+          call read_next_GS(ikpt, cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, forward = .false. )
           do iEl = 1 , N_Elec
              call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
@@ -562,9 +570,9 @@ close(io)
 #ifdef MPI
        ! We need to reduce all the arrays
        call timer('TS_comm',1)
-       call my_full_G_reduce(spuDM, nzwork*2, zwork, N_nEq_id)
+       call AllReduce_SpData(spuDM, nzwork, zwork, N_nEq_id)
        if ( Calc_Forces ) then
-          call my_full_G_reduce(spuEDM, nzwork*2, zwork, N_mu)
+          call AllReduce_SpData(spuEDM, nzwork, zwork, N_mu)
        end if
        call timer('TS_comm',2)
 #endif
@@ -572,21 +580,33 @@ close(io)
        ! 1. move from global UC to local SC
        ! 2. calculate the correct contribution by applying the weight
        ! 3. add the density to the real arrays
-       call add_Gamma_DM(spDMneq, spuDM, D_dim2=N_nEq_id, &
-            spEDM=spEDM,  spuEDM=spuEDM, E_dim2=N_mu)
-       
-       call weight_DM( N_Elec, N_mu, spDM, spDMneq, spEDM, &
-            nonEq_IsWeight = .false.)
-       
-       call update_DM(sp_dist,sparse_pattern, n_nzs, &
-            DM(:,ispin), spDM, Ef=Ef, &
-            EDM=EDM(:,ispin), spEDM=spEDM, ipnt=ltsup_sc_pnt)
-       
+       call add_k_DM(spDMneq, spuDM, N_nEq_id, &
+            spEDM, spuEDM, N_mu, &
+            n_nzs, xij, kpt, ipnt=ltsup_sc_pnt, non_Eq = .true. )
+
+       if ( TS_W_METHOD == TS_W_K_UNCORRELATED ) then
+          call weight_DM( N_Elec, N_mu, spDM, spDMneq, spEDM, &
+               nonEq_IsWeight = .false.)
+          
+          call update_DM(sp_dist,sparse_pattern, n_nzs, &
+               DM(:,ispin), spDM, Ef=Ef, &
+               EDM=EDM(:,ispin), spEDM=spEDM, ipnt=ltsup_sc_pnt)
+       else if ( TS_W_METHOD == TS_W_UNCORRELATED ) then
+          call die('not functioning yet')
+       else if ( itt_last(SpKp,2) ) then ! TS_W_METHOD must be == TS_W_CORRELATED
+          call weight_DM( N_Elec, N_mu, spDM, spDMneq, spEDM, &
+               nonEq_IsWeight = .false.)
+          
+          call update_DM(sp_dist,sparse_pattern, n_nzs, &
+               DM(:,ispin), spDM, Ef=Ef, &
+               EDM=EDM(:,ispin), spEDM=spEDM, ipnt=ltsup_sc_pnt)          
+       end if
+
        ! We don't need to do anything here..
 
     end do ! spin
 
-    call itt_destroy(Sp)
+    call itt_destroy(SpKp)
 
 #ifdef TRANSIESTA_DEBUG
     write(*,*) 'Completed TRANSIESTA SCF'
@@ -622,7 +642,7 @@ close(io)
     call write_debug( 'POS transiesta mem' )
 #endif
 
-  end subroutine ts_fullg
+  end subroutine ts_fullk
 
   ! Update DM
   ! These routines are supplied for easy update of the update region
@@ -635,13 +655,13 @@ close(io)
        has_offset)
 
     use class_Sparsity
-    use class_dSpData2D
+    use class_zSpData2D
     use m_ts_electype
 
     ! The DM and EDM equivalent matrices
-    type(dSpData2D), intent(inout) :: DM
+    type(zSpData2D), intent(inout) :: DM
     complex(dp), intent(in) :: DMfact
-    type(dSpData2D), intent(inout) :: EDM
+    type(zSpData2D), intent(inout) :: EDM
     complex(dp), intent(in) :: EDMfact
     ! The size of GF
     integer, intent(in) :: no1, no2
@@ -659,7 +679,7 @@ close(io)
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
     integer,  pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    real(dp), pointer :: D(:,:), E(:,:)
+    complex(dp), pointer :: D(:,:), E(:,:)
     integer :: io, ind, nr
     integer :: iu, ju, i1, i2
     logical :: lh_off, hasEDM
@@ -693,8 +713,8 @@ close(io)
                 
                 ju = l_col(ind) - no_BufL - offset(N_Elec,Elecs,l_col(ind))
                 
-                D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact  )
-                E(ind,i2) = E(ind,i2) - dimag( GF(iu,ju) * EDMfact )
+                D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
+                E(ind,i2) = E(ind,i2) - GF(iu,ju) * EDMfact
                 
              end do
           end do
@@ -705,8 +725,8 @@ close(io)
              iu = io - no_BufL
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                 ju = l_col(ind) - no_BufL
-                D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact  )
-                E(ind,i2) = E(ind,i2) - dimag( GF(iu,ju) * EDMfact )
+                D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
+                E(ind,i2) = E(ind,i2) - GF(iu,ju) * EDMfact
              end do
           end do
 
@@ -725,7 +745,7 @@ close(io)
                 
                 ju = l_col(ind) - no_BufL - offset(N_Elec,Elecs,l_col(ind))
                 
-                D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact )
+                D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
                 
              end do
           end do
@@ -736,7 +756,7 @@ close(io)
              iu = io - no_BufL
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                 ju = l_col(ind) - no_BufL
-                D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact )
+                D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
              end do
           end do
 
@@ -763,7 +783,7 @@ close(io)
   subroutine prepare_invGF(cE, no_BufL,no_u,GFinv, &
        N_Elec, Elecs, spH, spS)
 
-    use class_dSpData1D
+    use class_zSpData1D
     use class_Sparsity
     use m_ts_electype
     use m_ts_cctype, only : ts_c_idx
@@ -780,13 +800,13 @@ use parallel,only:ionode
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     ! The Hamiltonian and overlap sparse matrices
-    type(dSpData1D), intent(inout), optional :: spH,  spS
+    type(zSpData1D), intent(inout), optional :: spH,  spS
 
     ! Local variables
     complex(dp) :: Z
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    real(dp), pointer :: H(:), S(:)
+    complex(dp), pointer :: H(:), S(:)
     integer :: io, iu, ind, ioff
 
 #ifdef TS_DEV
@@ -899,19 +919,4 @@ integer :: i
 
   end subroutine insert_Self_Energies
 
-end module m_ts_fullg
-
-
-#ifdef MPI
-subroutine my_full_G_reduce(sp_arr,nwork,work,dim2_count)
-  use precision, only : dp
-  use class_dSpData2D
-  use m_ts_sparse_helper, only : AllReduce_SpData
-  type(dSpData2D), intent(inout) :: sp_arr
-  integer, intent(in)     :: nwork
-  real(dp), intent(inout) :: work(nwork)
-  integer, intent(in) :: dim2_count
-  call AllReduce_SpData(sp_arr,nwork,work,dim2_count)
-end subroutine my_full_G_reduce
-#endif
-
+end module m_ts_fullk

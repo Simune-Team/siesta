@@ -81,7 +81,7 @@ module m_ts_sparse
   !  d_dist(Node,2) is the ending orbital that is to be transferred
   !  d_dist(Node,3) is the number of elements to be transferred
   !  d_dist(Node,4) is the stride in the elements
-  integer, save, allocatable :: d_dist(:,:)
+!  integer, save, allocatable :: d_dist(:,:)
 #endif
 
   integer, parameter :: CUTHILL_MCKEE = 0
@@ -135,7 +135,8 @@ contains
 ! **********************
     type(OrbitalDistribution) :: dit
     ! Temporary arrays for knowing the electrode size
-    integer :: i, bool
+    integer :: i
+    logical :: bool
     integer :: no_u_TS
 
     ! Number of orbitals in TranSIESTA
@@ -155,7 +156,7 @@ contains
             ltsup_sp_sc)
 
        ! assign distribution array
-       call ts_init_distribution(block_dist,sparse_pattern)
+       !call ts_init_distribution(block_dist,sparse_pattern)
        
        if ( IONode ) then
           write(*,'(/,a)') 'Created the TranSIESTA local update sparsity pattern:'
@@ -850,7 +851,7 @@ contains
 
   end subroutine ts_Optimize
 
-#ifdef MPI  
+#ifdef MPI_NEW
   subroutine ts_init_distribution(dit,sparse_pattern)
 
     use parallel, only : Node, Nodes

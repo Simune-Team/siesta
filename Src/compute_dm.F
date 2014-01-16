@@ -58,7 +58,7 @@
          do io = 1,maxnh
             Dold(io,ispin) = Dscf(io,ispin)
          enddo
-      enddo
+      enddo 
 
 !     Solve eigenvalue problem 
       if (isolve .eq. SOLVE_DIAGON) then

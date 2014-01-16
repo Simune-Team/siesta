@@ -380,7 +380,7 @@ contains
           ! Do a check whether we have connections
           ! across the junction...
           ! This is the same as removing all electrode connections
-          if ( count(OrbInElec(Elecs,io) .neqv. OrbInElec(Elecs,jo)) == 2 ) cycle
+          if ( count(OrbInElec(Elecs,io) .neqv. OrbInElec(Elecs,jo)) > 1 ) cycle
            
           ! find the equivalent position in the sparsity pattern
           ! of the full unit cell
@@ -390,7 +390,7 @@ contains
 !          if ( ind_k <= k_ptr(io) ) &
 !               call die('Could not find k-point index')
           if ( ind_k <= k_ptr(io) ) cycle
-     
+
           ! Todo, as this is a Gamma-calculation
           ! we probably should NOT do 'dH = dH + H'
           ! rather 'dH = H'
@@ -488,10 +488,10 @@ contains
           dH(ind)  = 0.5_dp * ( dH(ind) + dH(rind) ) &
                - Ef * dS(ind)
 
-          ! we have a real Matrix (so imaginary part is zero)
+          ! we have a real Matrix
           dH(rind) = dH(ind)
           dS(rind) = dS(ind)
-                      
+          
        end do
     end do
     

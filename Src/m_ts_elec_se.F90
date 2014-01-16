@@ -93,6 +93,7 @@ contains
 ! * LOCAL variables  *
 ! ********************
     integer :: iq, ierr
+    integer :: r1, r2, r3
     integer :: iow,iau,ia3,ia2,ia1,iuo
     integer :: jow,jau,ja3,ja2,ja1,juo
     integer :: ipvt(no_s)
@@ -105,7 +106,7 @@ contains
     if ( nwork < no_s**2 ) call die('Size of work-array is &
          &too small')
 
-    if ( Rep(El) == 1 ) then
+    if ( nq == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
        ! When no repetition we save it "as is"
@@ -116,10 +117,11 @@ contains
        do iq = 1 , nq 
           qmPi(1:3,iq) = - 2._dp * Pi * q_exp(El,iq)
        end do
-       wq = 1._dp / Rep(El)
+       wq = 1._dp / nq
 
-       ! TODO qb(:,1) == 0.0_dp in any case currently used
-       ! So we could do without.
+       r1 = RepA1(El)
+       r2 = RepA2(El)
+       r3 = RepA3(El)
 
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
@@ -132,16 +134,16 @@ contains
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia3 = 1 , RepA3(El)
-        do ia2 = 1 , RepA2(El)
-        do ia1 = 1 , RepA1(El)
+        do ia3 = 1 , r3
+        do ia2 = 1 , r2
+        do ia1 = 1 , r1
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja3 = 1 , RepA3(El)
-            do ja2 = 1 , RepA2(El)
-            do ja1 = 1 , RepA1(El)
+            do ja3 = 1 , r3
+            do ja2 = 1 , r2
+            do ja1 = 1 , r1
               ph = wq * cdexp(dcmplx(0._dp, &
                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau) 
@@ -161,16 +163,16 @@ contains
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia3 = 1 , RepA3(El)
-         do ia2 = 1 , RepA2(El)
-         do ia1 = 1 , RepA1(El)
+         do ia3 = 1 , r3
+         do ia2 = 1 , r2
+         do ia1 = 1 , r1
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja3 = 1 , RepA3(El)
-             do ja2 = 1 , RepA2(El)
-             do ja1 = 1 , RepA1(El)
+             do ja3 = 1 , r3
+             do ja2 = 1 , r2
+             do ja1 = 1 , r1
                ph = wq * cdexp(dcmplx(0._dp, &
                     (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau) 
@@ -193,10 +195,8 @@ contains
 
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1),no_s,ipvt,Sigma,no_s,ierr)
-
-       if ( ierr /= 0 ) THEN
-          write(*,*) 'Inversion of surface Greens function failed'
-       end if
+       if ( ierr /= 0 ) &
+            write(*,*) 'Inversion of surface Greens function failed'
        
     end if
 
@@ -237,7 +237,7 @@ contains
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
          na_u,lasto,nq,H,S,GS,nwork,work(1,1,1))
 
-    if ( Rep(El) == 1 ) then
+    if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
        Sigma(:,:) = GS(:,:,1)
@@ -248,9 +248,8 @@ contains
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
 
-       if ( ierr /= 0 ) then
-          write(*,*) 'Inversion of surface Greens function failed'
-       end if
+       if ( ierr /= 0 ) &
+            write(*,*) 'Inversion of surface Greens function failed'
 
     end if
 
@@ -300,11 +299,11 @@ contains
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
          na_u,lasto,nq,H,S,GS,nwork,work(1,1,1))
 
-    if ( Rep(El) == 1 ) then
+    if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
        Sigma(:,:) = GS(:,:,1)
-
+       
     else
        call EYE(no_s,Sigma)
 
@@ -387,6 +386,7 @@ contains
 ! * LOCAL variables  *
 ! ********************
     integer :: iq
+    integer :: r1, r2, r3
     integer :: iow,iau,ia3,ia2,ia1,iuo
     integer :: jow,jau,ja3,ja2,ja1,juo
     complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2.0_dp * Pi)
@@ -406,7 +406,11 @@ contains
        do iq = 1 , nq 
           qmPi(1:3,iq) = - 2._dp * Pi * q_exp(El,iq)
        end do
-       wq = 1._dp / real(Rep(El),dp)
+       wq = 1._dp / real(nq,dp)
+
+       r1 = RepA1(El)
+       r2 = RepA2(El)
+       r3 = RepA3(El)
 
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
@@ -416,16 +420,16 @@ contains
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia3 = 1 , RepA3(El)
-        do ia2 = 1 , RepA2(El)
-        do ia1 = 1 , RepA1(El)
+        do ia3 = 1 , r3
+        do ia2 = 1 , r2
+        do ia1 = 1 , r1
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja3 = 1 , RepA3(El)
-            do ja2 = 1 , RepA2(El)
-            do ja1 = 1 , RepA1(El)
+            do ja3 = 1 , r3
+            do ja2 = 1 , r2
+            do ja1 = 1 , r1
               ph = wq * cdexp(dcmplx(0._dp, &
                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau)
@@ -448,16 +452,16 @@ contains
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia3 = 1 , RepA3(El)
-         do ia2 = 1 , RepA2(El)
-         do ia1 = 1 , RepA1(El)
+         do ia3 = 1 , r3
+         do ia2 = 1 , r2
+         do ia1 = 1 , r1
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja3 = 1 , RepA3(El)
-             do ja2 = 1 , RepA2(El)
-             do ja1 = 1 , RepA1(El)
+             do ja3 = 1 , r3
+             do ja2 = 1 , r2
+             do ja1 = 1 , r1
                ph = wq * cdexp(dcmplx(0._dp, &
                     (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)

@@ -107,14 +107,15 @@ contains
   ! The k-point routine is constructed to handle three different methods of doing
   ! the weighting which is performed here.
 
-  subroutine add_k_DM(dit,spDM,spEDM,spDMu,spEDMu,k,ipnt,n_nzs,xij,&
+  subroutine add_k_DM(spDM,spuDM,D_dim2, spEDM, spuEDM, E_dim2, &
+       n_nzs,xij,k,ipnt, &
        non_Eq,spW)
 
     use class_OrbitalDistribution
     use class_Sparsity
     use class_iSpData1D
-    use class_dSpData1D
-    use class_zSpData1D
+    use class_dSpData2D
+    use class_zSpData2D
     use geom_helper, only : UCORB
     use intrinsic_missing, only : SFIND
     use parallel, only : Node
@@ -122,53 +123,70 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    type(OrbitalDistribution), intent(inout) :: dit
     ! The local integrated sparsity arrays
-    type(dSpData1D), intent(inout) :: spDM, spEDM
+    type(dSpData2D), intent(inout) :: spDM, spEDM
     ! The current k-point global sparsity arrays
-    type(zSpData1D), intent(inout) :: spDMu, spEDMu
+    type(zSpData2D), intent(inout) :: spuDM, spuEDM
+    ! current update region of last dimension
+    integer, intent(in) :: D_dim2, E_dim2
     ! The k-point
     real(dp), intent(in) :: k(3)
+    ! The orbitals distances (in the local SIESTA sparsity pattern)
+    integer, intent(in) :: n_nzs
+    real(dp), intent(in) :: xij(3,n_nzs)
     ! The pointer from xij -> spar(spDM).
     ! I.e. a pointer from the local update sparsity to the local sparsity
     ! (only needed to refrain from creating a duplicate xij array)
     type(iSpData1D), intent(inout) :: ipnt
-    ! The orbitals distances (in the local SIESTA sparsity pattern)
-    integer, intent(in) :: n_nzs
-    real(dp), intent(in) :: xij(3,n_nzs)
 
     ! If the sparsity-weight is provided we will do this:
     ! DM = DM + DMu
     ! spW = DMu ** 2
     ! It MUST meen that we do TS_W_UNCORRELATED (see m_ts_weight)
     logical, intent(in), optional :: non_Eq
-    type(dSpData1D), intent(inout), optional :: spW
+    type(dSpData2D), intent(inout), optional :: spW
 
     ! Arrays needed for looping the sparsity
+    type(OrbitalDistribution), pointer :: dit
     type(Sparsity), pointer :: l_s, up_s
     integer, pointer :: l_ncol(:) , l_ptr(:) , l_col(:)
     integer, pointer :: up_ncol(:), up_ptr(:), up_col(:)
     integer, pointer :: pnt(:)
-    real(dp), pointer :: dD(:) , dE(:), dW(:)
-    complex(dp), pointer :: zDu(:), zEu(:)
+    real(dp), pointer :: dD(:,:) , dE(:,:), dW(:,:)
+    complex(dp), pointer :: zDu(:,:), zEu(:,:)
     integer :: lnr, lio, lind, io, ind, nr, jo
     integer :: rin, rind
-    logical :: save_weight
-    real(dp) :: kx
+    logical :: save_weight, hasEDM
+    real(dp) :: kx, kw(D_dim2)
     complex(dp) :: ph
 
-    if ( (.not. initialized(spDM)) .or. (.not. initialized(spDMu)) ) return
+    if ( (.not. initialized(spDM)) .or. (.not. initialized(spuDM)) ) return
+
+    hasEDM = initialized(spEDM)
+
+    ! get the distribution
+    dit => dist(spDM)
 
     l_s  => spar(spDM)
     call attach(l_s ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     dD   => val(spDM)
-    dE   => val(spEDM)
+    if ( hasEDM ) dE => val(spEDM)
 
-    up_s => spar(spDMu)
+    up_s => spar(spuDM)
     call attach(up_s,n_col=up_ncol,list_ptr=up_ptr,list_col=up_col)
-    zDu  => val(spDMu)
-    zEu  => val(spEDMu)
+    zDu  => val(spuDM)
+    if ( hasEDM ) zEu => val(spuEDM)
+
+    if ( size(zDu,2) < D_dim2 .or. size(dD,2) < D_dim2 ) then
+       call die('add_k_DM: Error in code')
+    end if
+
+    if ( hasEDM ) then
+       if ( size(zEu,2) < E_dim2 .or. size(dE,2) < E_dim2 ) then
+          call die('add_k_DM: Error in code')
+       end if
+    end if
 
     ! The pointer
     pnt  => val(ipnt)
@@ -215,12 +233,13 @@ contains
 
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
-             kx = aimag( ph*zDu(ind) )
-             dD(lind) = dD(lind) + kx
-             dE(lind) = dE(lind) + aimag( ph*zEu(ind) )
+             kw = aimag( ph*zDu(ind,1:D_dim2) )
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + kw
+             if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
+                  aimag( ph*zEu(ind,1:D_dim2) )
 
              ! Sum up the weight here
-             dW(lind) = dW(lind) + kx ** 2
+             dW(lind,1:D_dim2) = dW(lind,1:D_dim2) + kw ** 2
 
           end do
        end do
@@ -249,8 +268,9 @@ contains
 
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
-             dD(lind) = dD(lind) + aimag( ph*zDu(ind) )
-             dE(lind) = dE(lind) + aimag( ph*zEu(ind) )
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + aimag( ph*zDu(ind,1:D_dim2) )
+             if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
+                  aimag( ph*zEu(ind,1:D_dim2) )
 
           end do
        end do
@@ -284,8 +304,10 @@ contains
 
              ! This integration is this:
              ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A)/2 dE
-             dD(lind) = dD(lind) + aimag( ph*(zDu(ind) - conjg(zDu(rind))) )
-             dE(lind) = dE(lind) + aimag( ph*(zEu(ind) - conjg(zEu(rind))) )
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
+                  aimag( ph*(zDu(ind,1:D_dim2) - conjg(zDu(rind,1:D_dim2))) )
+             if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
+                  aimag( ph*(zEu(ind,1:D_dim2) - conjg(zEu(rind,1:D_dim2))) )
 
           end do
        end do
@@ -312,10 +334,10 @@ contains
     type(dSpData2D), intent(inout) :: spuDM
     integer, intent(in) :: D_dim2
     ! The local integrated sparsity arrays
-    type(dSpData2D), intent(inout), optional :: spEDM
+    type(dSpData2D), intent(inout) :: spEDM
     ! The current Gamma-point global sparsity arrays
-    type(dSpData2D), intent(inout), optional :: spuEDM
-    integer, intent(in), optional :: E_dim2
+    type(dSpData2D), intent(inout) :: spuEDM
+    integer, intent(in) :: E_dim2
 
     ! Arrays needed for looping the sparsity
     type(OrbitalDistribution), pointer :: dit
@@ -330,12 +352,7 @@ contains
 
     if ( (.not. initialized(spDM)) .or. (.not. initialized(spuDM)) ) return
 
-    if ( (present(spEDM) .neqv. present(spuEDM)) .or. &
-         (present(spEDM) .neqv. present(E_dim2)) ) &
-         call die('add_Gamma_DM: Error in code') ! TODO DELETE
-
-    hasEDM = present(spEDM)
-    if ( hasEDM ) hasEDM = initialized(spEDM)
+    hasEDM = initialized(spEDM)
 
     ! get distribution
     dit  => dist(spDM)
@@ -376,14 +393,13 @@ contains
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-             jo = l_col(lind)
+             ! we might still have SIESTA-non-Gamma
+             jo = ucorb(l_col(lind),nr)
 
              rind = up_ptr(io)
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist
 
-             ! This integration is this:
-             ! \rho = \int Re(Gf^R) dE
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + dDu(ind,1:D_dim2)
              dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + dEu(ind,1:E_dim2)
              
@@ -398,14 +414,12 @@ contains
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-             jo = l_col(lind)
+             jo = ucorb(l_col(lind),nr)
 
              rind = up_ptr(io)
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist
 
-             ! This integration is this:
-             ! \rho = \int Re(Gf^R) dE (we have already taken the imaginary part of Gf)
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + dDu(ind,1:D_dim2)
              
           end do
@@ -437,11 +451,11 @@ contains
     ! Updated sparsity arrays (they contain the current integration)
     type(dSpData2D), intent(inout) :: spDM
     ! fermi-level, we shift the energy density matrix back
-    real(dp), intent(in), optional :: Ef
+    real(dp), intent(in) :: Ef
     ! Sparse energy-DM-arrays (local)
-    real(dp), intent(inout), optional :: EDM(n_nzs)
+    real(dp), intent(inout) :: EDM(n_nzs)
     ! Updated sparsity arrays (they contain the current integration)
-    type(dSpData2D), intent(inout), optional :: spEDM
+    type(dSpData2D), intent(inout) :: spEDM
     ! The pointer from xij -> spar(spDM).
     ! I.e. a pointer from the local update sparsity to the local sparsity
     ! (only needed to refrain from creating a duplicate xij array)
@@ -465,12 +479,8 @@ contains
     call attach(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     dD => val(spDM)
 
-    if ( (present(EDM) .neqv. present(spEDM)) .or. &
-         (present(EDM) .neqv. present(Ef)) ) &
-         call die('update_DM: Error in code')
+    hasEDM = initialized(spEDM) 
 
-    hasEDM = present(EDM)
-    if ( hasEDM ) hasEDM = initialized(spEDM) 
     if ( hasEDM ) then
 
        dE => val(spEDM)
@@ -541,8 +551,8 @@ contains
              jo = lup_col(uind)
 
              ! Now we loop across the local region
-             ind = l_ptr(io)
-             ind = l_ptr(io) + minloc(abs(l_col(ind+1:ind+l_ncol(io))-jo),1)
+             ind = l_ptr(io) + &
+                  minloc(abs(l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))-jo),1)
              if ( l_col(ind) /= jo ) then
                 do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                    if ( l_col(ind) /= jo ) cycle
@@ -552,7 +562,7 @@ contains
              end if
              
              ! We need to add in case of special weighting...
-             DM(ind)  = DM(ind)  + dD(uind,1)
+             DM(ind) = DM(ind) + dD(uind,1)
              if ( hasEDM ) EDM(ind) = EDM(ind) + dE(uind,1)
              
           end do
@@ -593,7 +603,7 @@ contains
              if ( ind <= lup_ptr(io) ) cycle
              
              ! We only have one k-point, yet in case of non-Gamma siesta
-             DM(lind)  = DM(lind)  + dD(ind,1)
+             DM(lind)  = DM(lind) + dD(ind,1)
              if ( hasEDM ) EDM(lind) = EDM(lind) + dE(ind,1)
              
           end do
@@ -606,10 +616,11 @@ contains
   ! This routine will ONLY be called if .not. IsVolt,
   ! Hence we don't have any sparsity patterns with local sparsity patterns
   ! that is dealing with this routine (hence we do need the index_local_to_global)
-  subroutine update_zDM(dit,sp,n_nzs,DM,EDM,xij,spDM, spEDM,k)
+  subroutine update_zDM(dit,sp,n_nzs,DM,spDM, Ef, &
+       EDM,spEDM, k, xij)
     use class_OrbitalDistribution
     use class_Sparsity
-    use class_zSpData1D
+    use class_zSpData2D
 
     use geom_helper, only : UCORB
     use intrinsic_missing, only : SFIND
@@ -620,30 +631,46 @@ contains
     integer, intent(in) :: n_nzs
     ! Sparse DM-arrays (local)
     real(dp), intent(inout) :: DM(n_nzs), EDM(n_nzs)
-    ! The orbital distances
-    real(dp), intent(in) :: xij(3,n_nzs)
     ! Updated sparsity arrays (they contain the current integration)
-    type(zSpData1D), intent(inout) :: spDM, spEDM
+    type(zSpData2D), intent(inout) :: spDM, spEDM
+    ! The fermi level
+    real(dp), intent(in) :: Ef
     ! The k-point...
     real(dp), intent(in) :: k(3)
+    ! The orbital distances
+    real(dp), intent(in) :: xij(3,n_nzs)
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
-    complex(dp), pointer :: zD(:), zE(:)
+    complex(dp), pointer :: zD(:,:), zE(:,:)
     complex(dp) :: ph
     real(dp) :: kx
     integer :: lio, io, jo, ind, nr
     integer :: lnr, lind, rin, rind
+    logical :: hasEDM
 
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
     s => spar(spDM)
     call attach(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     zD     => val(spDM)
-    zE     => val(spEDM)
-     
+    hasEDM = initialized(spEDM)
+    if ( hasEDM ) then
+
+       zE => val(spEDM)
+
+       ! the actual size of the shift
+       jo = nnzs(spDM)
+
+       ! As we have shifted the fermi-level up to 0, we need to shift the
+       ! energy-density matrix back
+       ph = dcmplx(Ef,0._dp)
+       call zaxpy(jo,ph,zD(1,1),1,zE(1,1),1)
+
+    end if
+
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern (but still the global sparsity pattern)
 
@@ -692,9 +719,10 @@ contains
           ! NOTE that weightDMC removes the daggered Gf^R\Gamma Gf^A
           ph = 0.5_dp * cdexp(dcmplx(0._dp,-kx))
           
-          DM(lind)  = DM(lind)  + aimag( ph*(zD(ind) - conjg(zD(rind))) )
+          DM(lind)  = DM(lind)  + aimag( ph*(zD(ind,1) - conjg(zD(rind,1))) )
           
-          EDM(lind) = EDM(lind) + aimag( ph*(zE(ind) - conjg(zE(rind))) )
+          if ( hasEDM ) &
+               EDM(lind) = EDM(lind) + aimag( ph*(zE(ind,1) - conjg(zE(rind,1))) )
 
        end do
     end do

@@ -78,7 +78,7 @@ module m_ts_contour_neq
   public :: nEq_E
   public :: has_cE_neq
   public :: c2weight_neq
-  public :: muij2ID, ID2mult
+  public :: ID2mult
   public :: indices2eq
 public :: IDhasmu_right
 
@@ -104,7 +104,6 @@ contains
     real(dp) :: tmp
     integer, allocatable :: mus_tail(:)
 
-    write(*,*) 'STARTING WITH NON-EQ',kT,5* kT
 
     call fdf_obsolete('TS.biasContour.Eta')
 
@@ -114,7 +113,7 @@ contains
     end if
 
     ! broadening
-    nEq_Eta = fdf_get('TS.Contours.nEq.Eta',0.000001_dp*eV,'Ry')
+    nEq_Eta = fdf_get('TS.Contours.nEq.Eta',0.00001_dp*eV,'Ry')
     if ( nEq_Eta <= 0._dp ) call die('ERROR: nEq_Eta <= 0, we do not allow &
          &for using the advanced Greens function, please correct.')
 
@@ -152,7 +151,7 @@ contains
 
           call copy(tail_io(1),nEq_tail_io(j)) ! TODO N_tail > 1
           call assign_set_E(nEq_tail_c(j),nEq_tail_io(j), &
-               tail_c(1),tail_io(:),mus(i)) ! TODO N_tail > 1
+               tail_c(1),tail_io(:),mus(i), reverse = .true. ) ! TODO N_tail > 1
           j = j + 1
 
        else if ( abs(maxval(mus(:)%mu) - mus(i)%mu) < mu_same ) then
@@ -160,11 +159,11 @@ contains
 
           call copy(tail_io(1),nEq_tail_io(j)) ! TODO N_tail > 1
           call assign_set_E(nEq_tail_c(j),nEq_tail_io(j), & 
-               tail_c(1), tail_io(:), mus(i))
+               tail_c(1), tail_io(:), mus(i), reverse = .false. )
           j = j + 1
 
        else
-          ! we are in a middle segment
+          ! we are in a middle chemical potential
           mus_tail(i) = min(fits_left(mus(i),tail_io),fits_right(mus(i),tail_io))
 
           ! we need both the left and right tail
@@ -184,6 +183,7 @@ contains
     if ( any(mus_tail == 0) ) then
        call die('No real axis contour tail fits with your chemical potentials')
     end if
+    deallocate(mus_tail)
 
 
     ! Allocate all the segments, this comes from simple permutation rules
@@ -226,13 +226,16 @@ contains
     N_nEq_id = 0
     cur_mu = 1
     do i = 1 , N_mu - 1
-       do j = 0 , N_mu - i - 1
-          ! the mus(i) contain information about the electrodes
-          nEq_segs(cur_mu+j)%mu1 => mus(i)
-       end do
-
        do j = i + 1 , N_mu
-          nEq_segs(cur_mu)%mu2 => mus(j)
+          ! ensure the segments are aligned with increasing chemical
+          ! potential
+          if ( mus(j)%mu > mus(i)%mu ) then
+             nEq_segs(cur_mu)%mu1 => mus(i)
+             nEq_segs(cur_mu)%mu2 => mus(j)
+          else
+             nEq_segs(cur_mu)%mu1 => mus(j)
+             nEq_segs(cur_mu)%mu2 => mus(i)
+          end if
 
           ! create the ID's
           call add_ID(nEq_id,N_nEq_id,nEq_segs(cur_mu))
@@ -269,6 +272,8 @@ contains
           cur_mu = cur_mu + 1
        end do
     end do
+    if ( N_nEq_id /= size(nEq_id) ) &
+         call die('Error in code')
 
 !do i = 1 , N_nEq_ID
 !   print *,i,nEq_ID(i)%seg%mu1%mu,nEq_ID(i)%seg%mu2%mu,nEq_ID(i)%iEl
@@ -284,7 +289,6 @@ contains
        write(*,'(f10.5)',advance='no') nEq_segs(i)%mu2%mu
     end do
 
-    deallocate(mus_tail)
     write(*,*) 'TODO check that the bias window stops at every \mu and that &
          &a equivalent electrode has that \mu'
     write(*,*) 'TODO correct empty cycles, i.e. if two line contours are neighbours &
@@ -304,7 +308,7 @@ contains
       ! assign
       c%c_io => c_io
 
-      lreverse = mu%mu < 0._dp
+      lreverse = .false.!mu%mu < 0._dp
       if ( present(reverse) ) lreverse = reverse
 
       ! correct the end points
@@ -327,7 +331,7 @@ contains
          end do
       else
          do i = 1 , c_io%N
-            c%c(i) = c_from%c(i) + mu%mu
+            c%c(i)   = c_from%c(i) + mu%mu
             c%w(i,1) = c_from%w(i,1)
          end do
       end if
@@ -342,6 +346,7 @@ contains
             return
          end if
       end do
+      ! TODO DELETE
       print*,'L',tail_io(1)%a
       do i = 1 , N_nEq
          print*,'L',mu%mu,nEq_io(i)%a,mu%mu-nEq_io(i)%a
@@ -582,21 +587,29 @@ contains
        end if
     end if
 
+    ! Notice that we multiply with -i to move Gf.Gamma.Gf^\dagger
+    ! to the imaginary part
+
     ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
     if ( has_correct_weight ) then
        ! the gauss-fermi contour has the "correct" weight already...
-       W = k * cw%w(c%idx(3),1)
+       if ( nEq_ID(ID)%seg%mu1%mu > nEq_ID(ID)%seg%mu2%mu ) then
+          W =  k * cw%w(c%idx(3),1) * dcmplx(0._dp,-1._dp)
+       else
+          W = -k * cw%w(c%idx(3),1) * dcmplx(0._dp,-1._dp)
+       end if
     else
        W = k * cw%w(c%idx(3),1) * &
             nf(E, &
-            nEq_ID(ID)%seg%mu2%mu, &
-            nEq_ID(ID)%seg%mu1%mu, kT)
+            nEq_ID(ID)%seg%mu1%mu, &
+            nEq_ID(ID)%seg%mu2%mu, kT) * dcmplx(0._dp,-1._dp)
     end if
 
     if ( .not. isLeft ) W = - W
 
-    ! TODO assert that we are multiplying with the correct energy! We need not the imaginary part!!!!
-    ZW = W * E
+    ! TODO assert that we are multiplying with the correct energy! 
+    ! We need not the imaginary part!!!!
+    ZW = E * W
 
   end subroutine c2weight_neq
 
@@ -628,14 +641,19 @@ contains
     E = real(cw%c(c%idx(3)),dp)
 
     if ( has_correct_weight ) then
-       W = cw%w(c%idx(3),1)
+       ! the gauss-fermi contour has the "correct" weight already...
+       if ( seg%mu1%mu > seg%mu2%mu ) then
+          W =   cw%w(c%idx(3),1)
+       else
+          W = - cw%w(c%idx(3),1)
+       end if
     else
        ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
        ! We use this to get the positive weight (the mu's are sorted in descending order)
        W = cw%w(c%idx(3),1) * &
             nf(E, &
-            seg%mu2%mu, &
-            seg%mu1%mu, kT)
+            seg%mu1%mu, &
+            seg%mu2%mu, kT)
     end if
     
   end subroutine cseq2weight_neq
@@ -678,37 +696,6 @@ contains
        call die('Error in code')
     end if
   end function ID2mult
-
-!  function ID2mult_sign(ID) result(mult)
-!    integer, intent(in) :: ID
-!    real(dp) :: mult
-!    mult = 0._dp
-!    if ( hasEl(nEq_ID(ID)%seg%mu1,nEq_ID(ID)%seg%iEl) ) then
-!       mult = nEq_ID(ID)%seg%mu2%N_el
-!    else if ( hasEl(nEq_ID(ID)%seg%mu2,nEq_ID(ID)%seg%iEl) ) then
-!       mult = nEq_ID(ID)%seg%mu1%N_el
-!    else
-!       call die('Error in code')
-!    end if
-!  end function ID2mult_sign
-  
-  ! returns the id of the segment that has the \mu_i -- \mu_j part (notice
-  function muij2ID(imu,jmu,after) result(ID)
-    integer, intent(in) :: imu, jmu, after
-    integer :: ID
-    do ID = after + 1 , N_nEq_id 
-       if ( nEq_ID(ID)%seg%mu1%ID == imu ) then
-          if ( nEq_ID(ID)%seg%mu2%ID == jmu ) then
-             return
-          end if
-       else if ( nEq_ID(ID)%seg%mu2%ID == imu ) then
-          if ( nEq_ID(ID)%seg%mu1%ID == jmu ) then
-             return
-          end if
-       end if
-    end do
-    ID = N_nEq_ID + 1
-  end function muij2ID
 
   ! returns the id of the segment that has the \mu_i -- \mu_j part (notice
   function IDhasmu_right(ID,imu) result(has)

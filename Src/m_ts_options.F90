@@ -30,9 +30,9 @@ module m_ts_options
 !  Arguments read from input file using the fdf package                    *
 !--------------------------------------------------------------------------*
   
-logical  :: SaveTSHS     ! Saves the Hamiltonian and Overlap matrices if the 
+logical  :: SaveTSHS = .true.     ! Saves the Hamiltonian and Overlap matrices if the 
                          ! the option TS.SaveHS is specified in the input file
-logical  :: onlyS        ! Option to only save overlap matrix
+logical  :: onlyS = .false. ! Option to only save overlap matrix
   ! Logical variable that describes the solution method on
   ! LEFT-RIGHT-EQUILIBRIUM contour points.
   ! This is realized by the fact that for:
@@ -60,23 +60,21 @@ logical  :: onlyS        ! Option to only save overlap matrix
   ! Note, that this can ONLY be used in EQUI contour points.
   ! In principle we can obtain the EXACT size of the problem
   ! For very large electrodes. This could come in handy.
-logical  :: IsVolt       ! Logical for dabs(VoltFDF) > 0.0001d*eV
-real(dp) :: Volt         ! Bias applied, Internally Volt=voltfdf/eV (eV). 
-real(dp) :: VoltL        ! Bias on the left electrode   (  .5 * Volt )
-real(dp) :: VoltR        ! Bias on the right electrode  ( -.5 * Volt )
-integer  :: na_BufL      ! Number of Left Buffer Atoms
-integer  :: na_BufR      ! Number of Right Buffer Atoms
-integer  :: no_BufL      ! Number of Left Buffer orbitals
-integer  :: no_BufR      ! Number of Right Buffer orbitals
+logical  :: IsVolt = .false.      ! Logical for dabs(VoltFDF) > 0.0001d*eV
+real(dp) :: Volt = 0._dp         ! Bias applied, Internally Volt=voltfdf/eV (eV). 
+integer  :: na_BufL = 0     ! Number of Left Buffer Atoms
+integer  :: na_BufR = 0     ! Number of Right Buffer Atoms
+integer  :: no_BufL = 0     ! Number of Left Buffer orbitals
+integer  :: no_BufR = 0     ! Number of Right Buffer orbitals
 ! Electrodes and different chemical potentials
-integer :: N_Elec
+integer :: N_Elec = 0
 type(Elec), allocatable, target :: Elecs(:)
-integer :: N_mu
+integer :: N_mu = 0
 type(ts_mu), allocatable, target :: mus(:)
 logical :: ReUseGF        ! Calculate the electrodes GF
-logical :: ImmediateTSmode=.false. ! will determine to immediately start the transiesta
-                                   ! SCF. This is useful when you already have a converged
-                                   ! siesta DM
+logical :: ImmediateTSmode = .false. ! will determine to immediately start the transiesta
+                                     ! SCF. This is useful when you already have a converged
+                                     ! siesta DM
 
 ! Flag to control whether we should update the forces (i.e. calculate energy-density matrix)
 logical :: Calc_Forces = .true.
@@ -86,19 +84,20 @@ integer :: opt_TriMat_method = 0 ! Optimization method for determining the best 
 ! 0  == We optimize for speed
 ! 1  == We optimize for memory
 
-logical :: VoltageInC ! Determines whether the voltage-drop should be located in the constriction
-                      ! I.e. if the electrode starts at 10 Ang and the central region ends at 20 Ang
-                      ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
+! Determines whether the voltage-drop should be located in the constriction
+! I.e. if the electrode starts at 10 Ang and the central region ends at 20 Ang
+! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
+logical :: VoltageInC = .false.
 
-real(dp) :: Elecs_xa_EPS
+real(dp) :: Elecs_xa_EPS = 1.e-4_dp
 
 ! The mixing weight in the transiesta cycles...
-real(dp) :: ts_wmix
+real(dp) :: ts_wmix ! = wmix
 
 ! The user can request to analyze the system, returning information about the 
 ! tri-diagonalization partition and the contour
-logical, save :: TS_Analyze = .false.
-integer, save :: TS_bandwidth_algo = 0
+logical :: TS_Analyze = .false.
+integer :: TS_bandwidth_algo = 0
 
 ! If the user request to monitor the Density matrix update elements
 integer,          save :: N_mon = 0
@@ -152,10 +151,9 @@ CONTAINS
     real(dp), intent(in) :: xa(3,na_u)
 ! Internal Variables
     real(dp) :: tmp
-    character(len=70) :: c, chars
+    character(len=200) :: c, chars
     integer :: i, j, idx, idx1, idx2
     type(Elec) :: tmpElec
-    type(ts_mu) :: tmpmu
 
     ! External routines
     real(dp) :: dot
@@ -234,18 +232,10 @@ CONTAINS
        if ( .not. fdf_mu('TS',slabel,mus(i)) ) then
           call die('Could not find chemical potential: '//trim(name(mus(i))))
        end if
-       do j = 1 , i - 1 
-          ! sort the chemical potentials
-          if ( mus(j)%mu > mus(i)%mu ) then
-             tmpmu = mus(j)
-             mus(j) = mus(i)
-             mus(i) = tmpmu
-          end if
-       end do
     end do
     ! attach the ID
     mus(:)%ID = (/(i,i=1,N_mu)/)
-    
+
     ! The sign can not be chosen from this (several mu, where to define it)
     Volt = maxval(mus(:)%mu) - minval(mus(:)%mu)
     call fdf_obsolete('TS.Voltage')
@@ -256,6 +246,8 @@ CONTAINS
        Volt = 0._dp
        mus(:)%mu = 0._dp
     end if
+write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts_voltage, say if we change sign'
+write(*,*) 'TODO if no bias consider reverting to all electrodes using the first chemical potential'
 
     ! Determine whether the user wishes to only do an analyzation
     TS_Analyze = fdf_get('TS.Analyze',.false.)
@@ -302,6 +294,7 @@ CONTAINS
        TS_W_METHOD = TS_W_CORRELATED
     else if ( leqi(chars,'uncorrelated') ) then
        TS_W_METHOD = TS_W_UNCORRELATED
+       call die('Not currently functioning')
     else if ( leqi(chars,'k-uncorrelated') ) then
        TS_W_METHOD = TS_W_K_UNCORRELATED
     else
@@ -376,7 +369,7 @@ CONTAINS
     call fdf_deprecated('TS.UseBulk','TS.Elecs.Bulk')
 
     ! To determine the same coordinate nature of the electrodes
-    Elecs_xa_EPS= fdf_get('TS.Elecs.Coord.Eps',1e-4_dp,'Bohr')
+    Elecs_xa_EPS= fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
 
     ! detect how many electrodes we have
     N_Elec = fdf_nElec('TS',Elecs)
@@ -392,12 +385,12 @@ CONTAINS
              chars = 'Left'
              c = 'negative'
              j = na_BufL + 1
-             tmp = VoltL
+             !tmp = VoltL
           else
              chars = 'Right'
              c = 'positive'
              j = na_u - na_BufR
-             tmp = VoltR
+             !tmp = VoltR
           end if
           
           write(*,*)
@@ -458,7 +451,7 @@ CONTAINS
        end if
        ! set the placement in orbitals
        if ( Elecs(i)%idx_na < 0 ) &
-            Elecs(i)%idx_na = na_u + Elecs(i)%idx_na
+            Elecs(i)%idx_na = na_u + Elecs(i)%idx_na + 1
        if ( Elecs(i)%idx_na < 1 .or. &
             na_u < Elecs(i)%idx_na ) &
             call die("Electrode position does not exist")
@@ -475,11 +468,6 @@ CONTAINS
           Elecs(j) = Elecs(i)
           Elecs(i) = tmpElec
        end if
-    end do
-
-    ! Populate/check the intrinsic things
-    do i = 1 , N_Elec
-       call check_HSfile(Elecs(i))
     end do
 
     ! Populate the electrodes in the chemical potential type
@@ -543,8 +531,8 @@ CONTAINS
           do i = 1 , N_Elec
              write(*,'(a,f10.5,a)') trim(Name(Elecs(i)))//' at ',Elecs(i)%mu%mu/eV,' eV'
           end do
-          write(*,'(a,f10.5,a)') '-V/2'//' at ',min(VoltL,VoltR)/eV,' eV'
-          write(*,'(a,f10.5,a)') ' V/2'//' at ',max(VoltL,VoltR)/eV,' eV'
+          write(*,'(a,f10.5,a)') '-V/2'//' at ',-Volt*.5_dp/eV,' eV'
+          write(*,'(a,f10.5,a)') ' V/2'//' at ',Volt*.5_dp/eV,' eV'
        end if
        call die('Chemical potentials are not in range [-V/2 ; V/2]')
     end if
@@ -702,7 +690,8 @@ CONTAINS
        ! Check that the atoms are placed correctly in the unit-cell
        ! The Hartree potential correction will only be put correctly 
        ! when the atoms are sorted by z and starting from z == 0
-       if ( IsVolt ) then
+write(*,*)'Check the bias placement'
+       if ( IsVolt .and. .false. ) then
           tmp = minval(xa(3,na_BufL+1:)) / Ang
           ! below -.5 or above .5 Ang from the bottom of the unit-cell
           if ( tmp < -.5_dp .or. .5_dp < tmp ) then
@@ -748,75 +737,6 @@ CONTAINS
 10  format('ts_options: ',a,t53,'=',4x,a)
 11  format('ts_options: ',a)
 15  format('ts_options: ',a,t53,'= ',i0,' x ',i0,' x ',i0)
-
-contains 
-  
-  subroutine check_HSfile(El)
-    type(Elec), intent(inout) :: el
-    logical :: exist
-    integer :: i
-
-    if ( TSmode ) then
-
-       ! Check existance for left Electrode.TSHS
-       inquire(file=TRIM(HSfile(El)),exist=exist)
-       if ( .not. exist ) then
-          call die("Electrode file does not exist. &
-               &Please create electrode '"//trim(HSFile(El))//"' first.")
-       end if
-
-       ! Read in the number of atoms in the HSfile
-       call ts_read_TSHS_opt(HSFile(El),no_u=El%no_u,na_u=El%na_u, &
-            nspin=El%nspin, Ef=El%Ef, ucell=El%ucell, &
-            Bcast=.true.)
-       allocate(El%xa(3,El%na_u),El%lasto(0:El%na_u))
-       call ts_read_TSHS_opt(HSFile(El),xa=El%xa,lasto=El%lasto, &
-            Bcast=.true.)
-
-       if ( UsedAtoms(El) < 0 ) then
-          El%na_used = El%na_u
-       else if ( UsedAtoms(El) == 0 ) then
-          if(IONode) &
-               write(*,*) "You need at least one atom in the electrode."
-          call die("None atoms requested for electrode calculation.")
-       else if ( El%na_u < UsedAtoms(El) ) then
-          if (IONode) then
-             write(*,*) "# of requested atoms is larger than available."
-             write(*,*) "Requested: ",UsedAtoms(El)
-             write(*,*) "Available: ",El%na_u
-          end if
-          call die("Error on requested atoms.")
-       end if
-
-       ! We have determined the number of atoms in the 
-       ! TSHS file
-       ! Read in lasto to determine the number of orbitals 
-       allocate(El%xa_used(3,El%na_used),El%lasto_used(0:El%na_used))
-       El%lasto_used(0) = 0
-       El%no_used = 0
-       if ( El%inf_dir == INF_NEGATIVE ) then ! old 'left'
-          ! We use the last atoms
-          do i = El%na_u - UsedAtoms(El) + 1 , El%na_u
-             El%lasto_used(i) = El%lasto_used(i-1) + lasto(i)-lasto(i-1)
-             El%xa_used(:,i)  = El%xa(:,i)
-          end do
-       else if ( El%inf_dir == INF_POSITIVE ) then ! old 'right'
-          ! We use the last atoms
-          do i = 1 , El%na_used
-             El%lasto_used(i) = El%lasto_used(i-1) + lasto(i)-lasto(i-1)
-             El%xa_used(:,i)  = El%xa(:,i)
-          end do
-       else
-          call die('Unknown direction for the semi-infinite lead')
-       end if
-       El%no_used = El%lasto_used(El%na_used)
-
-       ! We deallocate xa and lasto as they are not needed
-       deallocate(El%xa,El%lasto)
-
-    end if
-
-  end subroutine check_HSfile
 
 end subroutine read_ts_options
 

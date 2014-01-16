@@ -34,14 +34,12 @@ contains
 ! Full converted GF.G.GF^\dagger routine for speed.
 ! This routine is extremely fast compared to any previous implementation.
 ! It relies on the fact that Gf only contains the electrode columns.
-! Furthermore we retain all information by not imposing any symmetry in
-! the product (TODO, check that we dont necessarily have this)
   subroutine GF_Gamma_GF(no_BufL, El, no_u_TS, no, GF, &
        GGG,nwork,work)
 
 !  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a (no_u)x(no)
 !  matrix and the states
-!  corresponds to the (no) Left/Right electrode states (decided with Offset)
+!  corresponds to the (no) electrode states
 !  Gamma is a (no)x(no) matrix.
 
     use precision, only : dp
@@ -66,7 +64,7 @@ contains
 ! *********************
 ! * OUTPUT variables  *
 ! *********************
-    complex(dp), intent(out) :: GGG(no_u_TS*no_u_TS)    !GF.GAMMA.GF^\dagger
+    complex(dp), intent(out) :: GGG(no_u_TS*no_u_TS)    !GF.Gamma.GF^\dagger
 
 ! *********************
 ! * LOCAL variables   *
@@ -182,7 +180,7 @@ subroutine my_symmetrize(N,M)
 ! ##                                                              ##
 ! ##  Modified by Nick Papior Andersen                            ##
 ! ##################################################################
-  subroutine calc_GF(cE,no_u_TS,GFinv,GF,ierr)
+  subroutine calc_GF(cE,no_u_TS,GFinv,GF)
     
     use intrinsic_missing, only: EYE
     use precision, only: dp
@@ -201,10 +199,9 @@ subroutine my_symmetrize(N,M)
     ! Hamiltonian values.
     complex(dp), intent(in out) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
     complex(dp), intent(out) :: GF(no_u_TS**2)
-    integer,     intent(out) :: ierr              !inversion err
 
 ! Local variables
-    integer :: ipvt(no_u_TS)
+    integer :: ipvt(no_u_TS), ierr
 
     if ( cE%fake ) return
 
@@ -214,12 +211,11 @@ subroutine my_symmetrize(N,M)
 
     call timer('GFT',1) 
 
-    ierr = 0
-
     call EYE(no_u_TS,GF)
     
     ! Invert directly
     call zgesv(no_u_TS,no_u_TS,GFinv,no_u_TS,ipvt,GF,no_u_TS,ierr)            
+    if ( ierr /= 0 ) call die('GF: Could not invert the Greens function')
        
     call timer('GFT',2)  
 
@@ -235,7 +231,7 @@ subroutine my_symmetrize(N,M)
 ! ##                                                              ##          
 ! ##  Fully created by Nick Papior Andersen, nickpapior@gmail.com ##
 ! ##################################################################
-  subroutine calc_GF_Bias(cE, no_BufL, no_u_TS,N_Elec,Elecs,GFinv,GF,ierr)
+  subroutine calc_GF_Bias(cE,no_BufL,no_u_TS,N_Elec,Elecs,GFinv,GF)
     
     use precision, only: dp
 
@@ -259,7 +255,6 @@ subroutine my_symmetrize(N,M)
     complex(dp), intent(in out) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
     ! We only need Gf in the left and right blocks...
     complex(dp), intent(out) :: GF(:)
-    integer,     intent(out) :: ierr              !inversion err
 
 ! Local variables
     integer :: ipvt(no_u_TS)
@@ -273,16 +268,14 @@ subroutine my_symmetrize(N,M)
 
     call timer('GFTB',1) 
 
-    no = no_u_TS
+    no = 0
     do iEl = 1, N_Elec
-       if ( .not. has_cE(cE,iEl=iEl) ) then
-          no = no - TotUsedOrbs(Elecs(iEl))
-       end if
+       if ( has_cE(cE,iEl=iEl) ) &
+            no = no + TotUsedOrbs(Elecs(iEl))
     end do
+    if ( no == 0 ) call die('GFB: Error in contour setup')
     if ( no * no_u_TS > size(GF) ) &
-         call die('Wrong size of Greens function')
-
-    ierr = 0
+         call die('GFB: Wrong size of Greens function')
 
     ! Create the RHS for inversion...
     GF(:) = dcmplx(0._dp,0._dp)
@@ -296,10 +289,10 @@ subroutine my_symmetrize(N,M)
           o = o + 1
        end do
     end do
-    
+
     ! Invert directly
-    call zgesv(no_u_TS,o,GFinv,no_u_TS,ipvt,GF,no_u_TS,ierr)
-    if ( ierr /= 0 ) call die('Could not invert the Greens function')
+    call zgesv(no_u_TS,o,GFinv,no_u_TS,ipvt,GF,no_u_TS,i)
+    if ( i /= 0 ) call die('GFB: Could not invert the Greens function')
        
     call timer('GFTB',2)  
 
@@ -323,7 +316,7 @@ subroutine my_symmetrize(N,M)
 ! ##  Modified by Nick Papior Andersen                            ##
 ! ##################################################################
   subroutine calc_GF_Part(cE,no_BufL, no_u_TS, N_Elec, Elecs, & ! Size of the problem
-       GFinv,GF,ierr)
+       GFinv,GF)
     
     use intrinsic_missing, only: EYE
     use precision, only: dp
@@ -344,11 +337,11 @@ subroutine my_symmetrize(N,M)
     ! Hamiltonian values.
     complex(dp), intent(in out) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
     complex(dp), intent(out) :: GF(:)
-    integer,     intent(out) :: ierr              ! inversion err
 
 ! Local variables
     integer :: ipvt(no_u_TS)
-    integer :: i,j, ii, no
+    integer :: i, j, no
+    logical :: found
 
     if ( cE%fake ) return
 
@@ -364,25 +357,27 @@ subroutine my_symmetrize(N,M)
           no = no - TotUsedOrbs(Elecs(i))
        end if
     end do
-    if ( no * no_u_TS /= size(GF) ) &
-         call die('Wrong size of Greens function')
+    if ( no * no_u_TS > size(GF) ) &
+         call die('GFP: Wrong size of Greens function')
 
     ! initialize
     GF(:) = dcmplx(0._dp,0._dp)
 
-    do j = 1 , no
-       ii = (j-1) * no_u_TS - no_BufL
-       do i = no_BufL + 1 , no_BufL + no_u_TS
-          if ( any(OrbInElec(Elecs,i) .and. .not. Elecs(:)%DM_CrossTerms) ) then
-             ! do nothing
-          else
-             GF(ii+i) = dcmplx(1._dp,0._dp)
+    i = no_BufL
+    do j = 0 , no - 1
+       found = .false.
+       do while ( .not. found ) 
+          i = i + 1
+          if ( .not. any(OrbInElec(Elecs,i) .and. .not. Elecs(:)%DM_CrossTerms) ) then
+             GF(j*no_u_TS-no_BufL+i) = dcmplx(1._dp,0._dp)
+             found = .true.
           end if
        end do
     end do
 
     ! Invert directly
-    call zgesv(no_u_TS,no,GFinv,no_u_TS,ipvt,GF,no_u_TS,ierr)
+    call zgesv(no_u_TS,no,GFinv,no_u_TS,ipvt,GF,no_u_TS,i)
+    if ( i /= 0 ) call die('GFP: Could not invert the Greens function')
 
     call timer('GFT_P',2)
 

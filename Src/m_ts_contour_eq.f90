@@ -261,7 +261,7 @@ contains
     
     do i = 1 , N_mu
 
-       call setup_Eq_contour(mus(i),N_poles,kT,Eq_Eta,ID=i)
+       call setup_Eq_contour(mus(i),N_poles,kT,Eq_Eta)
        
     end do
 
@@ -292,11 +292,10 @@ contains
 
   ! This routine assures that we have setup all the 
   ! equilibrium contours for the passed electrode
-  subroutine setup_Eq_contour(mu,N_poles,kT,Eta,ID)
+  subroutine setup_Eq_contour(mu,N_poles,kT,Eta)
     type(ts_mu), intent(in) :: mu
     integer, intent(in) :: N_poles
     real(dp), intent(in) :: kT, Eta
-    integer, intent(in) :: ID
 
     ! Local variables
     integer :: i, idx
@@ -318,15 +317,15 @@ contains
 
        if ( Eq_c(idx)%c_io%part == 'circle' ) then
 
-          call contour_Circle(Eq_c(idx),mu,kT,R,cR,Eta,ID=ID)
+          call contour_Circle(Eq_c(idx),mu,kT,R,cR,Eta)
 
        else if ( Eq_c(idx)%c_io%part == 'line' ) then
 
-          call contour_line(Eq_c(idx),mu,kT,lift,ID=ID)
+          call contour_line(Eq_c(idx),mu,kT,lift)
 
        else if ( Eq_c(idx)%c_io%part == 'tail' ) then
 
-          call contour_tail(Eq_c(idx),mu,kT,lift,ID=ID)
+          call contour_tail(Eq_c(idx),mu,kT,lift)
 
        else if ( Eq_c(idx)%c_io%part == 'pole' ) then
 
@@ -357,20 +356,22 @@ contains
       ! local variables
       real(dp) :: alpha
 
-      lift = Pi*kT*(2._dp*(N_poles-1)+1._dp)
+      lift = Pi * kT * (2._dp*(N_poles-1)+1._dp)
       do while ( lift < Eta )
          lift = lift + 2._dp * Pi * kT
       end do
       lift = lift + Pi * kT
       ! this means that we place the line contour right in the middle of two poles!
 
-      ! the angle between point 'a' and 'gamma'
-      alpha = datan(lift - Eta) / (b-a)
+      cR = b - a
+      ! the angle between the axis and the line from the start
+      ! of the circle to the end of the circle contour
+      alpha = datan( (lift - Eta) / cR )
     
       ! the radius can be calculated using two triangles in the circle
       ! there is no need to use the cosine-relations
-      R = .5_dp * (b-a)/cos(alpha)**2
-    
+      R = .5_dp * cR / cos(alpha) ** 2
+
       ! the real-axis center
       cR = a + R
 
@@ -432,13 +433,12 @@ contains
     
   end subroutine c2weight_eq
 
-  subroutine contour_Circle(c,mu,kT,R,cR,Eta,ID)
+  subroutine contour_Circle(c,mu,kT,R,cR,Eta)
     use m_integrate
     use m_gauss_quad
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
     real(dp), intent(in) :: kT, R, cR, Eta
-    integer, intent(in) :: ID
 
     ! local variables
     character(len=c_N) :: tmpC
@@ -546,7 +546,7 @@ contains
     set_c = sum(abs(c%c(:))) == 0._dp
 
     ! get the index in the ID array (same index in w-array)
-    call ID2idx(c,ID,idx)
+    call ID2idx(c,mu%ID,idx)
 
     do i = 1 , c%c_io%N
        ztmp = R * cdexp(dcmplx(0._dp,ce(i)))
@@ -597,14 +597,13 @@ contains
 
   end subroutine contour_Circle
 
-  subroutine contour_line(c,mu,kT,Eta,ID)
+  subroutine contour_line(c,mu,kT,Eta)
     use m_integrate
     use m_gauss_quad
 
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
     real(dp), intent(in) :: kT, Eta
-    integer, intent(in) :: ID
 
     ! local variables
     character(len=c_N) :: tmpC
@@ -718,7 +717,7 @@ contains
     set_c = sum(abs(c%c(:))) == 0._dp
 
     ! get the index in the ID array (same index in w-array)
-    call ID2idx(c,ID,idx)
+    call ID2idx(c,mu%ID,idx)
 
     do i = 1 , c%c_io%N
        if ( set_c ) then
@@ -738,7 +737,7 @@ contains
     
   end subroutine contour_line
 
-  subroutine contour_tail(c,mu,kT,Eta,ID)
+  subroutine contour_tail(c,mu,kT,Eta)
     use m_gauss_fermi_inf
     use m_gauss_fermi_30
     use m_gauss_fermi_28
@@ -754,7 +753,6 @@ contains
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
     real(dp), intent(in) :: kT, Eta
-    integer, intent(in) :: ID
 
     ! local variables
     integer :: idx, offset, infinity
@@ -829,7 +827,7 @@ contains
        ce = ce * kT + mu%mu
        cw = cw * kT
 
-       call ID2idx(c,ID,idx)
+       call ID2idx(c,mu%ID,idx)
 
        ! move over the weights and the contour values
        c%c        = dcmplx(ce,Eta)
@@ -840,7 +838,7 @@ contains
        ! we revert so that we can actually use the line-integral
        c%c_io%part = 'line'
 
-       call contour_line(c,mu,kT,Eta,ID=ID)
+       call contour_line(c,mu,kT,Eta)
 
     end select
 

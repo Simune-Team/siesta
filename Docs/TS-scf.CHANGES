@@ -1,4 +1,93 @@
 ----------------------------------------------------
+December 16, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-99
+Added a k-point full transiesta routine
+
+* Have added a k-point calculation of transiesta with same usability as the
+  Gamma calculation.
+
+* Added both the correlated and the k-uncorrelated weight function
+  for the non-equilibrium contour
+  
+* I have leveraged the need for having the chemical potentials in 
+  increasing order. They are now as the user has put them.
+
+* Made sure that there was enough room for character retrieval 
+  of fdf_? in various places (probably some more are missing)
+
+* Removed the ID passing when setting up the equilibrium contour,
+  it is already associated with the chemical potential that is passed.
+
+* Bugfix for the angle calculation for the circle contour.
+
+* Changed default non-equilibrium Eta to 0.00001 eV
+
+* Made non-equilibrium weight function return the weight
+  with a -i factor. This leverages the need to dublicate alot of routines.
+
+* Reduced overhead in the expansion routine of elec_se, all integers
+  are now explicitly set and not retrieved by the electrode type
+
+* When used-Atoms < Atoms
+  We had several bugs:
+  - lasto was constructed erroneously
+  - Rep(El) == 1 for the electrode the 
+    self-energy passed was erroneous.
+
+* Made the elec-reading implicit to read a lot of the information from
+  the TSHS file. This has leveraged the need for a check_HSfile in the
+  ts_options reading.
+  Also a check of electrode Gamma calculation was using the TS-gamma 
+  and not the SIESTA-gamma.
+
+* Fixed calculating the Green's function:
+  - in bias-part the number of used orbitals was counted wrong.
+  - in part-calculation the identity matrix is now setup correctly
+
+* Removed some references to TRANSIESTA_DEBUG. They cannot be used
+  anymore.
+
+* Moved all calc_forces references into the corresponding routines
+  by checking if the spEDM array exists, if not we surely will
+  not update the forces.
+
+* Removed the add_Bias_DM, it is not needed
+
+* Made a name change in ts_io from Gamma_SCF to Gamma_TS
+  To be clear:
+    Gamma => SIESTA Gamma calculation
+    Gamma_TS => transiesta Gamma calculation
+
+* Changed interface of ts_voltage to use full implicit shape 
+  Vscf arrays instead of deferred Vscf passing.
+
+* Cleaned the ts_init routine (still needs more attention)
+
+added:
+  Src/m_ts_fullk.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/m_transiesta.F90
+  Src/m_ts_chem_pot.f90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_dm_update.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_io.F90
+  Src/m_ts_io_ctype.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_voltage.F90
+  Src/m_ts_weight.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 December 15, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-98
 Added proper coordinate checks of the electrodes
 

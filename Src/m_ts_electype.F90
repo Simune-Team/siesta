@@ -22,11 +22,6 @@ module m_ts_electype
      module procedure delete_
   end interface delete
 
-  interface q_exp
-     module procedure q_exp_all
-     module procedure q_exp_idx
-  end interface q_exp
-
   interface operator(.eq.)
      module procedure equal_el_el
      module procedure equal_el_str
@@ -148,7 +143,7 @@ contains
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
        n = n + 1 
-       this_n(n)%Name = fdf_bnames(pline,1)
+       this_n(n)%Name = trim(fdf_bnames(pline,1))
        if ( n > 1 ) then
           ! Check that no name is the same
           do i = 1 , n - 1 
@@ -176,9 +171,9 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     logical :: info(4)
-    integer :: i
+    integer :: i, j
 
-    character(len=50) :: ln
+    character(len=200) :: ln
 
     found = fdf_block(trim(prefix)//'.Elec.'//trim(Name(this)),bfdf)
     if ( .not. found ) return
@@ -306,7 +301,7 @@ contains
           this%RepA3 = fdf_bintegers(pline,1)
 
        else if ( leqi(ln,'replicate') .or. leqi(ln,'rep') ) then
-          if ( fdf_bnintegers(pline) < 3 ) call die('Repetition for all directions are not supplied')
+          if ( fdf_bnintegers(pline) < 3 ) call die('Repetition for all directions are not supplied <A1> <A2> <A3>')
           this%RepA1 = fdf_bintegers(pline,1)
           this%RepA2 = fdf_bintegers(pline,2)
           this%RepA3 = fdf_bintegers(pline,3)
@@ -332,26 +327,44 @@ contains
        call die('You have not supplied all electrode information')
     end if
 
+    inquire(file=trim(HSFile(this)), exist=info(1))
+    if ( .not. info(1) ) then
+       call die("Electrode file does not exist. &
+            &Please create electrode '"//trim(HSFile(this))//"' first.")
+    end if
+
     ! Read in the number of atoms in the HSfile
     call ts_read_TSHS_opt(HSFile(this),no_u=this%no_u,na_u=this%na_u, &
+         nspin=this%nspin, Ef=this%Ef, ucell=this%ucell, &
          Bcast=.true.)
 
     allocate(this%xa(3,this%na_u),this%lasto(0:this%na_u))
     call ts_read_TSHS_opt(HSFile(this),xa=this%xa,lasto=this%lasto, &
-         ucell=this%ucell,Ef=this%Ef, &
          Bcast=.true.)
 
     ! in case the number of used atoms has not been set
     if ( this%na_used <= 0 ) this%na_used = this%na_u
+
+    if ( this%na_used <= 0 ) &
+         call die("None atoms requested for electrode calculation.")
+
+    if ( this%na_u < this%na_used ) then
+       write(*,*) "# of requested atoms is larger than available."
+       write(*,*) "Requested: ",this%na_used
+       write(*,*) "Available: ",this%na_u
+       call die("Error on requested atoms.")
+    end if
 
     allocate(this%lasto_used(0:this%na_used),this%xa_used(3,this%na_used))
     this%lasto_used(0) = 0
     this%no_used = 0
     if ( this%inf_dir == INF_NEGATIVE ) then ! same as old 'left'
        ! We use the last atoms
+       j = 0
        do i = this%na_u - UsedAtoms(this) + 1 , this%na_u
-          this%lasto_used(i) = this%lasto_used(i-1) + this%lasto(i)-this%lasto(i-1)
-          this%xa_used(:,i)  = this%xa(:,i)
+          j = j + 1
+          this%lasto_used(j) = this%lasto_used(j-1) + this%lasto(i)-this%lasto(i-1)
+          this%xa_used(:,j)  = this%xa(:,i)
        end do
 
     else if ( this%inf_dir == INF_POSITIVE ) then ! same as old 'right'
@@ -506,7 +519,7 @@ contains
     q(3) = 1._dp*(k-1) / real(RepA3(this),dp)
   end function q_exp_all
 
-  function q_exp_idx(this,idx) result(q)
+  pure function q_exp(this,idx) result(q)
     type(Elec), intent(in) :: this
     integer, intent(in) :: idx
     real(dp) :: q(3)
@@ -515,25 +528,25 @@ contains
     j = i * RepA2(this)
     k = j * RepA3(this)
     if ( idx <= i ) then
-       q = q_exp(this,idx,1,1)
+       q = q_exp_all(this,idx,1,1)
     else if ( idx <= j ) then
        j = idx / i
        if ( MOD(idx,i) /= 0 ) j = j + 1
        i = idx - (j-1) * i
-       q = q_exp(this,i,j,1)
+       q = q_exp_all(this,i,j,1)
     else if ( idx <= k ) then
-       write(*,*)'CHeck that THSI WORKS with A3'
+       ! this seems to work well!
        k = idx / j
        if ( MOD(idx,j) /= 0 ) k = k + 1
        ii = idx - (k-1) * j
        j = ii / i
        if ( MOD(ii,i) /= 0 ) j = j + 1
        i = ii - (j-1) * i
-       q = q_exp(this,i,j,k)
+       q = q_exp_all(this,i,j,k)
     else
        q = 0._dp
     end if
-  end function q_exp_idx
+  end function q_exp
 
   elemental function Orbs(this) result(val)
     type(Elec), intent(in) :: this
@@ -560,7 +573,7 @@ contains
     type(Elec), intent(in) :: this
     integer, intent(in) :: io
     logical :: in
-    in = this%idx_no <= io .and. io < this%idx_no + TotUsedOrbs(this)
+    in = this%idx_no <= io .and. io < (this%idx_no + TotUsedOrbs(this))
   end function OrbInElec
 
   function unitcell(this) result(val)
@@ -877,7 +890,7 @@ contains
 
     ! Local variables
     integer :: i,j,k, ia, iaa, this_kcell(3,3)
-    logical :: er, this_er, TSgamma
+    logical :: er, this_er, Gamma
     real(dp) :: xa_o(3), this_xa_o(3), ucell(3,3), this_kdispl(3)
     real(dp), pointer :: this_xa(:,:)
 
@@ -965,7 +978,7 @@ contains
 
        call ts_read_TSHS_opt(HSFile(this), &
             kscell=this_kcell,kdispl=this_kdispl, &
-            Gamma_SCF=TSGamma, &
+            Gamma=Gamma, &
             Bcast=.true.)
 
        ! If the system is not a Gamma calculation, then the file must
@@ -1016,7 +1029,7 @@ contains
     else
        
        call ts_read_TSHS_opt(HSFile(this), &
-            Gamma_SCF=TSGamma, &
+            Gamma=Gamma, &
             Bcast=.true.)
 
     end if
@@ -1027,13 +1040,11 @@ contains
     call MPI_Bcast(er,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-    if ( TSGamma ) then
+    if ( Gamma ) then
        write(*,*) 'Electrode : '//trim(Name(this))//' is a Gamma-only calculation &
             &this is not feasible.'
        er = .true.
     end if
-
-    if ( IONode ) write(*,*) 'TODO Check the electrode connectivity'
 
     if ( er ) then
        call die("The electrode does not conform with the system settings. &
@@ -1150,14 +1161,14 @@ contains
 
     if ( .not. IONode ) return
     if ( maxi == 0 .and. ind == 0 ) then
-       write(*,*) trim(name(this))//' principal cell is perfect!'
-    else if ( ind > 0 ) then
-       write(*,*) trim(name(this))//' principal cell is extending out &
+       write(*,'(t2,a)') trim(name(this))//' principal cell is perfect!'
+    else if ( maxi == 0 ) then
+       write(*,'(t2,a)') trim(name(this))//' principal cell is extending out &
             &with all zeroes'
     else
-       write(*,*) trim(name(this))//' principal cell is extending out:'
-       write(*,'(t5,2(a,i0))') 'Atom ',maxia,' connects with ',maxja
-       write(*,'(t5,2(a,i0))') 'Orbs ',maxi,' connects with ',maxj
+       write(*,'(t2,a)') trim(name(this))//' principal cell is extending out:'
+       write(*,'(t5,2(a,i0))') 'Atom ',maxia,' connects with atom ',maxja
+       write(*,'(t5,2(a,i0))') 'Orbital ',maxi ,' connects with orbital ',maxj
        write(*,'(t5,3(a,i0),a,g10.3,a)') 'Hamiltonian value: |H(',&
             maxi,',',maxj,')|@R=',tm(this%t_dir),' = ',maxH/eV,' eV'
        write(*,'(t5,3(a,i0),a,g10.3)') 'Overlap          :  S(',&

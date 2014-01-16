@@ -80,7 +80,8 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    real(grid_p), intent(inout) :: Vscf(*)
+    real(grid_p), intent(inout) :: Vscf(:,:)
+
     call timer('ts_volt',1)
 
     ! Here one should implement different calls...
@@ -100,7 +101,7 @@ contains
     use precision,    only : grid_p
     use parallel,     only : IONode
     use mesh,         only : meshLim
-    use m_ts_options, only : Volt, VoltL
+    use m_ts_options, only : Volt
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -109,7 +110,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    real(grid_p), intent(inout) :: Vscf(*)
+    real(grid_p), intent(inout) :: Vscf(:,:)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -119,7 +120,7 @@ contains
     integer, pointer          :: iT
     integer                   :: meshl(3), Xoffset, Yoffset, Zoffset
     real(dp)                  :: Lvc, dLvc, dF
-    real(dp)                  :: dot
+    real(dp)                  :: dot, VoltL
     external                  :: dot
 
     Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
@@ -127,7 +128,8 @@ contains
     dLvc = Lvc/max( meshG(ts_tdir), 1 ) !
 
     ! field in [0;Lvc]: v = e*x = f*index
-    dF = -Volt*dLvc/Lvc
+    dF = Volt * dLvc/Lvc
+    VoltL = .5_dp * Volt
 
     ! Set up counter
     if ( ts_tdir == 1 ) then
@@ -142,6 +144,9 @@ contains
     meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
     meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
     meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
+
+    if ( meshl(1) * meshl(2) * meshl(3) /= size(Vscf,1) ) &
+         call die('ERROR: Vscf size not correct')
 
     ! Calculate starting point for grid
     Xoffset = (meshLim(1,1)-1)*nsm
@@ -160,7 +165,7 @@ contains
           do i1 = 0,meshl(1)-1
              i10   = i10 + 1
              imesh = imesh + 1
-             Vscf(imesh) = Vscf(imesh) + VoltL + dF*iT
+             Vscf(imesh,1) = Vscf(imesh,1) + VoltL - dF*iT
           enddo
        enddo
     enddo
@@ -171,7 +176,7 @@ contains
     use precision,    only : grid_p
     use parallel,     only : IONode
     use mesh,         only : meshLim
-    use m_ts_options, only : Volt, VoltL, VoltR
+    use m_ts_options, only : Volt
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -180,7 +185,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    real(grid_p), intent(inout) :: Vscf(*)
+    real(grid_p), intent(inout) :: Vscf(:,:)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -188,7 +193,7 @@ contains
     integer  :: i1, i2, i3, idT, imesh
     integer  :: meshl(3), Xoffset, Yoffset, Zoffset
     real(dp) :: Lvc, dLvc, dF
-    real(dp) :: dot
+    real(dp) :: dot, VoltL
     external :: dot
 
     Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
@@ -199,12 +204,16 @@ contains
     Lvc = dLvc * (right_elec_mesh_idx - left_elec_mesh_idx)
 
     ! field in [0;Lvc]: v = e*x = f*index
-    dF = Volt*dLvc/Lvc
+    dF = Volt * dLvc / Lvc
+    VoltL = .5_dp * Volt
 
     ! Find quantities in mesh coordinates
     meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
     meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
     meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
+
+    if ( meshl(1) * meshl(2) * meshl(3) /= size(Vscf,1) ) &
+         call die('ERROR: Vscf size not correct')
 
     ! Calculate starting point for grid
     Xoffset = (meshLim(1,1)-1)*nsm
@@ -233,7 +242,7 @@ contains
                 end if
                 
                 imesh = imesh + 1
-                Vscf(imesh) = Vscf(imesh) + VoltL - dF*idT
+                Vscf(imesh,1) = Vscf(imesh,1) + VoltL - dF*idT
              enddo
           enddo
        enddo
@@ -259,7 +268,7 @@ contains
              end if
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh) = Vscf(imesh) + VoltL - dF*idT
+                Vscf(imesh,1) = Vscf(imesh,1) + VoltL - dF*idT
              enddo
           enddo
        enddo
@@ -286,7 +295,7 @@ contains
           do i2 = 1,meshl(2)
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh) = Vscf(imesh) + VoltL - dF*idT
+                Vscf(imesh,1) = Vscf(imesh,1) + VoltL - dF*idT
              enddo
           enddo
        enddo
@@ -429,7 +438,7 @@ contains
 
 
 ! Fix the voltage in the mesh
-  subroutine ts_VH_fix(  mesh, nsm, v )
+  subroutine ts_VH_fix(  mesh, nsm, V )
 !
 !  Modules
 !
@@ -439,12 +448,12 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_AllReduce, MPI_Sum
     use mpi_siesta, only : MPI_Integer, MPI_Comm_World
-    use mpi_siesta, only : DAT_double => MPI_double_precision
+    use mpi_siesta, only : MPI_double_precision
     use parallelsubs, only : HowManyMeshPerNode
 #endif
     
     implicit          none
-    real(grid_p)      v(*)
+    real(grid_p), intent(inout) :: V(:,:)
     integer           mesh(3), nsm
 
 ! Internal variables
@@ -491,6 +500,9 @@ contains
     meshl(3) = mesh(3)
 #endif
 
+    if ( meshl(1) * meshl(2) * meshl(3) /= size(V,1) ) &
+         call die('ERROR: Vscf size not correct')
+
 ! Check that ProcessorY is a factor of the number of processors
     if (mod(Nodes,ProcessorY).gt.0) then
        call die('ERROR: ProcessorY must be a factor of the &
@@ -513,7 +525,7 @@ contains
     Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
 
     vtot = 0._dp
-    nlp  = meshl(1)*meshl(2)*meshl(3)
+    nlp  = 0
 
     ! Test whether we should do anything (note that iT => [i10|i20|i30]):
     i10 = 0
@@ -530,35 +542,36 @@ contains
              do i10 = 0,meshl(1)-1
                 imesh = imesh + 1
                 if (iT.eq.0) then
-                   vtot = vtot + v(imesh)
-                endif
-             enddo
-          enddo
-       enddo
+                   nlp = nlp + 1
+                   vtot = vtot + V(imesh,1)
+                end if
+             end do
+          end do
+       end do
     end if
 
 #ifdef MPI
     temp=0.d0
-    call MPI_AllReduce(vtot,temp,1,DAT_double,MPI_Sum, &
+    call MPI_AllReduce(Vtot,temp,1,MPI_double_precision,MPI_Sum, &
          MPI_Comm_World,MPIerror)
-    vtot = temp
-    ntemp=0
+    Vtot  = temp
+    ntemp = 0
     call MPI_AllReduce(nlp,ntemp,1,MPI_integer,MPI_Sum, &
          MPI_Comm_World,MPIerror)
     nlp = ntemp
-
 #endif
-    vav = vtot/real(nlp,dp)
+
+    Vav = Vtot/real(nlp,dp)
 
     imesh = 0
     do i30 = 1 , meshl(3)
        do i20 = 1 , meshl(2)
           do i10 = 1 , meshl(1)
              imesh = imesh + 1
-             v(imesh) = v(imesh) - vav
-          enddo
-       enddo
-    enddo
+             V(imesh,1) = V(imesh,1) - Vav
+          end do
+       end do
+    end do
 
     call timer('TSVHFix',2)
 

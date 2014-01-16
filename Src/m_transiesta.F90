@@ -22,6 +22,7 @@ module m_transiesta
   use m_ts_method, only : ts_method, TS_SPARSITY, TS_SPARSITY_TRI
 
   use m_ts_fullg
+  use m_ts_fullk
 
   implicit none
 
@@ -61,13 +62,13 @@ contains
 ! ********************
 ! * INPUT variables  *
 ! ********************
-    integer, intent(in) :: TSiscf
-    integer, intent(in) :: nspin
+    integer, intent(in)  :: TSiscf
+    integer, intent(in)  :: nspin
     type(OrbitalDistribution), intent(inout) :: sp_dist
     type(Sparsity), intent(inout) :: sparse_pattern
-    logical, intent(in) :: Gamma
+    logical, intent(in)  :: Gamma
     real(dp), intent(in) :: ucell(3,3)
-    integer, intent(in)  :: no_u,na_u
+    integer, intent(in)  :: no_u, na_u
     integer, intent(in)  :: lasto(0:na_u)
     real(dp), intent(in) :: xa(3,na_u)
     integer, intent(in)  :: n_nzs
@@ -159,7 +160,7 @@ contains
 
 
     if ( ts_method == TS_SPARSITY ) then
-       if ( Gamma ) then
+       if ( Gamma ) then ! we can't even do this in TS_Gamma it would result in errorneous connections
           call ts_fullg(N_Elec,Elecs, &
                nq,uGF, &
                nspin, &
@@ -167,7 +168,12 @@ contains
                ucell, no_u, na_u, lasto, xa, n_nzs, &
                H, S, DM, EDM, Ef, kT)
        else
-          !call ts_fullk()
+          call ts_fullk(N_Elec,Elecs, &
+               nq,uGF, &
+               nspin, &
+               sp_dist, sparse_pattern, &
+               ucell, no_u, na_u, lasto, xa, n_nzs, &
+               H, S, xij, DM, EDM, Ef, kT)
        end if
     else if ( ts_method == TS_SPARSITY_TRI ) then
        if ( Gamma ) then
@@ -214,10 +220,9 @@ contains
 
     if ( TSiscf == 1 ) call timer('TS',3)
 
-!    call ts_print_charges(Elecs, sp_dist, sparse_pattern, &
-!         nspin, n_nzs, DM, S)
-    
+#ifdef TS_DEV
     call die('to not disturb the TSDE')
+#endif
 
   end subroutine transiesta
 

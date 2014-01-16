@@ -26,11 +26,11 @@ module m_ts_chem_pot
      ! name of the chemical potential
      character(len=NAME_MU_LEN) :: name = ' '
      ! ID
-     integer :: ID = 0
+     integer  :: ID = 0
      ! the chemical potential
      real(dp) :: mu = 0._dp
      ! number of electrodes having this chemical potential
-     integer :: N_El = 0
+     integer  :: N_El = 0
      ! array of electrode indices (conforming with the Elecs-array)
      integer, pointer :: el(:) => null()
      ! We must have a container which determines the contour segments
@@ -98,7 +98,7 @@ contains
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
        n = n + 1 
-       this_n(n)%Name = fdf_bnames(pline,1)
+       this_n(n)%Name = trim(fdf_bnames(pline,1))
        if ( n > 1 ) then
           ! Check that no name is the same
           do i = 1 , n - 1 
@@ -124,7 +124,7 @@ contains
     logical :: info(2)
     integer :: i
 
-    character(len=50) :: ln
+    character(len=200) :: ln
 
     found = fdf_block(trim(prefix)//'.ChemPot.'//trim(Name(this)),bfdf)
     if ( .not. found ) return
@@ -134,7 +134,7 @@ contains
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
        
-       ln = fdf_bnames(pline,1) 
+       ln = trim(fdf_bnames(pline,1))
        
        ! We select the input
        if ( leqi(ln,'chemical-shift') .or. &
@@ -173,7 +173,7 @@ contains
       integer, intent(in), optional :: fakes
       integer :: i, empty
 
-      character(len=50) :: ln
+      character(len=200) :: ln
 
       if ( allocated(con) ) call die("Contour already found.")
 

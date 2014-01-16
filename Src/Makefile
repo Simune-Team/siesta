@@ -333,7 +333,7 @@ TS_OBJS += m_ts_Sparsity2TriMat.o \
 	m_ts_charge.o
 
 # Sparse full-matrix method
-TS_OBJS += m_ts_fullg.o m_ts_full_scat.o
+TS_OBJS += m_ts_fullg.o m_ts_fullk.o m_ts_full_scat.o
 TS_OBJS += m_transiesta.o
 
 # Transiesta tri-diagonal sparsity...
@@ -840,9 +840,9 @@ m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 
 m_transiesta.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o files.o
 m_transiesta.o: m_ts_charge.o m_ts_contour_eq.o m_ts_contour_neq.o
-m_transiesta.o: m_ts_electype.o m_ts_fullg.o m_ts_gf.o m_ts_kpoints.o
-m_transiesta.o: m_ts_method.o m_ts_options.o m_ts_sparse.o parallel.o
-m_transiesta.o: precision.o
+m_transiesta.o: m_ts_electype.o m_ts_fullg.o m_ts_fullk.o m_ts_gf.o
+m_transiesta.o: m_ts_kpoints.o m_ts_method.o m_ts_options.o m_ts_sparse.o
+m_transiesta.o: parallel.o precision.o
 
 m_trimat_invert.o: alloc.o class_TriMat.o m_mat_invert.o precision.o
 
@@ -883,9 +883,9 @@ m_ts_contour_neq.o: units.o
 m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
 m_ts_debug.o: precision.o
 
-m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
-m_ts_dm_update.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o
-m_ts_dm_update.o: geom_helper.o intrinsic_missing.o parallel.o precision.o
+m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_ts_dm_update.o: class_SpData2D.o class_Sparsity.o geom_helper.o
+m_ts_dm_update.o: intrinsic_missing.o parallel.o precision.o
 
 m_ts_elec_se.o: intrinsic_missing.o m_ts_cctype.o m_ts_electype.o parallel.o
 m_ts_elec_se.o: precision.o units.o
@@ -913,12 +913,22 @@ m_ts_fullg.o: class_SpData2D.o class_Sparsity.o m_iterator.o m_ts_cctype.o
 m_ts_fullg.o: m_ts_contour.o m_ts_contour_eq.o m_ts_contour_neq.o m_ts_debug.o
 m_ts_fullg.o: m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o m_ts_full_scat.o
 m_ts_fullg.o: m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o m_ts_weight.o
-m_ts_fullg.o: object_debug.o parallel.o precision.o units.o
+m_ts_fullg.o: parallel.o precision.o units.o
+
+m_ts_fullk.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_fullk.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o m_iterator.o
+m_ts_fullk.o: m_ts_cctype.o m_ts_contour.o m_ts_contour_eq.o m_ts_contour_neq.o
+m_ts_fullk.o: m_ts_debug.o m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o
+m_ts_fullk.o: m_ts_full_scat.o m_ts_kpoints.o m_ts_options.o m_ts_sparse.o
+m_ts_fullk.o: m_ts_sparse_helper.o m_ts_weight.o parallel.o precision.o units.o
 
 m_ts_gf.o: m_ts_cctype.o m_ts_contour_eq.o m_ts_contour_neq.o m_ts_electrode.o
 m_ts_gf.o: m_ts_electype.o parallel.o precision.o sys.o units.o
 
 m_ts_global_vars.o: precision.o
+
+m_ts_hartree.o: m_ts_electype.o m_ts_options.o parallel.o parallelsubs.o
+m_ts_hartree.o: precision.o sys.o units.o
 
 m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
 

@@ -63,7 +63,7 @@ contains
 
   subroutine weight_DM(N_Elec,N_mu, spDM, spDMneq, spEDM, &
        nonEq_IsWeight)
-
+    
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -72,7 +72,7 @@ contains
     use class_OrbitalDistribution
     use class_dSpData2D
 
-    use m_ts_contour_neq, only : N_nEq_ID
+    use m_ts_contour_neq, only : N_nEq_ID, indices2eq
 
     implicit none
 
@@ -85,7 +85,7 @@ contains
     ! Real-axis part of DM integration
     type(dSpData2D), intent(inout) :: spDMneq
     ! Estimates of EDM
-    type(dSpData2D), intent(inout), optional :: spEDM
+    type(dSpData2D), intent(inout) :: spEDM
     ! Determine whether DMneq already is the weight for the
     ! current weighting scheme
     logical, intent(in), optional :: nonEq_IsWeight
@@ -105,6 +105,7 @@ contains
     integer :: nr
     integer :: io, jo, ind, j
     integer :: mu_i, mu_j
+    integer :: ID2mu1, ID2mu2 ! TODO delete
     ! For error estimation
     integer  :: eM_i,eM_j
     real(dp) :: eM, DMe, ee, ee_i, tmp
@@ -129,7 +130,7 @@ contains
     ! Obtain the values in the arrays...
     DM     => val(spDM)
     DMneq  => val(spDMneq)
-    hasEDM = present(spEDM)
+    hasEDM = initialized(spEDM)
     if ( hasEDM ) EDM => val(spEDM)
 
     ! initialize the errors
@@ -180,6 +181,10 @@ contains
 
     else
 
+!       call indices2eq(1,ID2mu1)
+!       call indices2eq(2,ID2mu2)
+!       print *,1,ID2mu1,2,ID2mu2
+
        do io = 1 , nr
           ! We are in a buffer region...
           if ( l_ncol(io) == 0 ) cycle
@@ -191,8 +196,11 @@ contains
 
              ! get both contribution and weight
              call get_neq_weight(N_Elec,N_mu,N_nEq_ID,DMneq(ind,:),neq,w)
-
-
+             
+             !if ( io == 30 .and. jo < 365 ) &
+             !     print '(i0,tr1,8(f10.6,tr1))',jo,DM(ind,2),DMneq(ind,ID2mu2),neq(2),w(2), &
+              !    DM(ind,1),DMneq(ind,ID2mu1),neq(1),w(1)
+             
              ! Do error estimation (capture before update)
              ee = 0._dp
              do mu_i = 1 , N_mu - 1
@@ -226,15 +234,13 @@ contains
 
 #ifdef MPI
     ! remove pointer
-    DM => null()
-    EDM => null()
-    !nullify(DM,EDM)
+    nullify(DM,EDM)
     allocate(DM(Nodes,4),EDM(Nodes,4))
 
     dit => dist(spDM)
     io = Node + 1
     ! Initialize
-    DM(:,:) = 0._dp
+    DM(:,:)  = 0._dp
     DM(io,1) = eM
     DM(io,2) = real(index_local_to_global(dit,eM_i,Node),dp)
     DM(io,3) = real(eM_j,dp)
@@ -242,11 +248,11 @@ contains
     call MPI_Reduce(DM(1,1),EDM(1,1),4*Nodes, &
          MPI_Double_Precision, MPI_Sum, 0, MPI_Comm_World, MPIerror)
     if ( IONode ) then
-       io = maxloc(EDM(:,1),1)
+       io   = maxloc(EDM(:,1),1)
        eM   = EDM(io,1)
        eM_i = nint(EDM(io,2))
        eM_j = nint(EDM(io,3))
-       DMe   = EDM(io,4)
+       DMe  = EDM(io,4)
     endif
     deallocate(DM,EDM)
 #endif
@@ -281,37 +287,32 @@ contains
 
   ! do simple weight calculation and return correct numbers
   subroutine get_weight(N_El,N_mu,N_id,w_ID,w)
-    use m_ts_contour_neq, only : muij2ID, ID2mult
+    use m_ts_contour_neq, only : indices2eq, ID2mult,IDhasmu_right
     integer,  intent(in)  :: N_El, N_id, N_mu
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: w(N_mu)
-    integer :: mu_i, mu_j, ID
+    integer :: mu_i, mu, ID
     real(dp) :: total, tmp
 
     if ( any(w_ID < 0._dp) ) call die('get_weight: Error in code')
 
     ! TODO check that this is correct!
-    total = 0._dp
-    w(:)  = 0._dp
-    do mu_i = 1 , N_mu
-       tmp = 0._dp
-       do mu_j = 1 , N_mu
-          if ( mu_i == mu_j ) cycle
-          ID = muij2ID(mu_i,mu_j,after=0)
-          do while ( ID <= N_id ) 
-             tmp = tmp + w_ID(ID) * ID2mult(ID)
-             ID = muij2ID(mu_i,mu_j,after=ID)
-          end do
-       end do
-       total = total + tmp ! save the normalization weight
-       do mu_j = 1 , N_mu
-          if ( mu_i /= mu_j ) cycle
-          w(mu_j) = w(mu_j) + tmp ! add to the full weight
+    total  = 0._dp
+    w(:)   = 0._dp
+    do ID = 1 , N_id
+       call indices2eq(ID,mu)
+       tmp = w_ID(ID) * ID2mult(ID)
+       total = total + tmp
+       do mu_i = 1 , N_mu
+          if ( .not. IDhasmu_right(ID,mu_i) .and. &
+               mu_i /= mu ) then
+             w(mu_i) = w(mu_i) + tmp
+          end if
        end do
     end do
 
     total = total * ( N_El - 1 )
-
+    
     if ( total > 0._dp ) then
        w(:) = w(:) / total
     else
@@ -322,12 +323,12 @@ contains
 
   ! do simple weight calculation and return correct numbers
   subroutine get_neq_weight(N_El,N_mu,N_id,neq_ID,neq,w)
-    use m_ts_contour_neq, only : muij2ID, ID2mult, indices2eq, IDhasmu_right
+    use m_ts_contour_neq, only : indices2eq, ID2mult, IDhasmu_right
     integer,  intent(in)  :: N_El, N_id, N_mu
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
     real(dp), intent(out) :: w(N_mu)
-    integer :: mu_i, mu_j, ID, mu
+    integer :: mu_i, ID, mu
     real(dp) :: total, tmp, cur_neq, mult
 
     ! TODO check that this is correct!
@@ -341,31 +342,13 @@ contains
        tmp = neq_ID(ID) ** 2 * mult
        total = total + tmp
        do mu_i = 1 , N_mu
-          if ( .not. IDhasmu_right(ID,mu_i) ) then
+          if ( .not. IDhasmu_right(ID,mu_i) .and. &
+               mu_i /= mu ) then
              w(mu_i) = w(mu_i) + tmp
           end if
        end do
     end do
 
-!    do mu_i = 1 , N_mu
-!       tmp     = 0._dp
-!       do mu_j = 1 , N_mu
-!          if ( mu_i == mu_j ) cycle
-!          ID = muij2ID(mu_i,mu_j,after=0)
-!          do while ( ID <= N_id ) 
-!             call indices2eq(ID,mu)
-!             neq(mu) = neq(mu) + neq_ID(ID) * ID2mult(ID)
-!             tmp = neq_ID(ID) ** 2 * ID2mult(ID)
-!             total = total + tmp
-!             ID      = muij2ID(mu_i,mu_j,after=ID)
-!          end do
-!       end do
-!       do mu_j = 1 , N_mu
-!          if ( mu_i /= mu_j ) cycle
-!          w(mu_j) = w(mu_j) + tmp
-!       end do
-!    end do
-    
     total = total * ( N_El - 1 )
 
     if ( total > 0._dp ) then

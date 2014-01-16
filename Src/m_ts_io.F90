@@ -29,7 +29,7 @@ contains
   ! the number of atoms in the electrode.
   subroutine ts_read_TSHS_opt(TSHS,DUMMY,na_u,no_u,no_s,nspin,maxnh, &
        xa,isa,ucell, Qtot, Temp, Ef, &
-       Gamma,Gamma_SCF,kscell,kdispl,OnlyS,lasto, &
+       Gamma,Gamma_TS,kscell,kdispl,OnlyS,lasto, &
        Bcast)
     use precision, only : dp
     use parallel, only : IONode
@@ -47,7 +47,7 @@ contains
     integer, optional :: DUMMY ! MUST NEVER BE PASSED
     integer, intent(out), optional :: na_u, no_u, no_s, nspin, maxnh, isa(:), lasto(:), kscell(3,3)
     real(dp), intent(out), optional :: xa(:,:), ucell(3,3), Qtot, Temp, Ef, kdispl(3)
-    logical, intent(out), optional :: Gamma, Gamma_SCF, OnlyS
+    logical, intent(out), optional :: Gamma, Gamma_TS, OnlyS
     logical, intent(in), optional :: Bcast
 
 ! ***********************
@@ -91,7 +91,7 @@ contains
        else
           read(uTSHS) ! ucell
        end if
-       read(uTSHS) fGamma
+       read(uTSHS) fGamma ! SIESTA_Gamma
        if ( present(Gamma) ) Gamma = fGamma
        if ( present(OnlyS) ) then
           read(uTSHS) OnlyS
@@ -99,10 +99,10 @@ contains
           read(uTSHS) ! OnlyS
        end if
 
-       if ( present(Gamma_SCF) ) then
-          read(uTSHS) Gamma_SCF
+       if ( present(Gamma_TS) ) then
+          read(uTSHS) Gamma_TS
        else
-          read(uTSHS) ! Gamma_SCF
+          read(uTSHS) ! Gamma_TS
        end if
        if ( present(kscell) ) then
           read(uTSHS) kscell
@@ -172,8 +172,8 @@ contains
          call MPI_Bcast(Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
     if ( present(OnlyS) ) &
          call MPI_Bcast(OnlyS,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
-    if ( present(Gamma_SCF) ) &
-         call MPI_Bcast(Gamma_SCF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+    if ( present(Gamma_TS) ) &
+         call MPI_Bcast(Gamma_TS,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
     if ( present(kscell) ) &
          call MPI_Bcast(kscell,9,MPI_Integer,0,MPI_Comm_World,MPIerror)
     if ( present(kdispl) ) &
@@ -232,8 +232,8 @@ contains
        if ( present(OnlyS) ) &
             call MPI_Pack(OnlyS,1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(Gamma_SCF) ) &
-            call MPI_Pack(Gamma_SCF,1,MPI_Logical, &
+       if ( present(Gamma_TS) ) &
+            call MPI_Pack(Gamma_TS,1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
        if ( present(lasto) ) &
             call MPI_Pack(lasto(1),tmp(1)+1,MPI_Logical, &
@@ -307,9 +307,9 @@ contains
             call MPI_UnPack(buffer,buffer_size,ipos, &
             OnlyS,1,MPI_Logical, &
             MPI_Comm_World, MPIerror)
-       if ( present(Gamma_SCF) ) &
+       if ( present(Gamma_TS) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
-            Gamma_SCF,1,MPI_Logical, &
+            Gamma_TS,1,MPI_Logical, &
             MPI_Comm_World, MPIerror)
        if ( present(lasto) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
