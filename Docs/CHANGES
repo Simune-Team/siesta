@@ -6,6 +6,24 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-01-16  15:35:00 GMT                                     trunk-453
+Added a simple ps-->inp converter for ATOM
+
+This program is useful when the INP file is no longer available.
+
+It has a few limitations: note in particular that it cannot possibly
+reconstruct the partial core radius.
+
+(A. Garcia)
+
+added:
+  Pseudo/atom/Util/Ps2Inp/
+  Pseudo/atom/Util/Ps2Inp/die.F
+  Pseudo/atom/Util/Ps2Inp/flib_spline.f90
+  Pseudo/atom/Util/Ps2Inp/make_ps_input.f90
+  Pseudo/atom/Util/Ps2Inp/pseudopotential.f
+
+-----------------------------------------------------------------------
 2014-01-15  11:40:00 GMT                                     trunk-452
 Fixed a wrong threshold for the bias for transiesta runs
 
