@@ -57,7 +57,8 @@ contains
 
     use parallel,     only : Node,Nodes
     use precision,    only : dp  
-    use mpi_siesta,   only : MPI_Comm_World,MPI_Integer,DAT_double
+    use mpi_siesta,   only : MPI_Comm_World,MPI_Integer
+    use mpi_siesta,   only : DAT_double => MPI_double_precision
     use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
 
 ! **********************
@@ -197,7 +198,8 @@ contains
 
     use parallel,     only : Node,Nodes
     use precision,    only : dp  
-    use mpi_siesta,   only : MPI_Comm_World,DAT_double
+    use mpi_siesta,   only : MPI_Comm_World
+    use mpi_siesta,   only : DAT_double => MPI_double_precision
     use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
 
 ! **********************

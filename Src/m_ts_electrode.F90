@@ -396,7 +396,8 @@ contains
     use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
     use mpi_siesta, only : MPI_Sum
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
-    use mpi_siesta, only : DAT_dcomplex, DAT_double
+    use mpi_siesta, only : DAT_dcomplex => MPI_double_complex, &
+                           DAT_double => MPI_double_precision
 #endif
     use m_hs_matrix,only : set_HS_matrix, matrix_symmetrize
     use m_ts_cctype
@@ -954,7 +955,8 @@ contains
 #ifdef MPI
     use mpi_siesta, only: MPI_Comm_World, MPI_LOR
     use mpi_siesta, only: MPI_Bcast,MPI_Barrier
-    use mpi_siesta, only: DAT_double,MPI_Logical,MPI_Integer
+    use mpi_siesta, only: DAT_double => MPI_double_precision
+    use mpi_siesta, only: MPI_Logical,MPI_Integer
     use mpi_siesta, only: MPI_Reduce
 #endif
 #ifdef TBTRANS

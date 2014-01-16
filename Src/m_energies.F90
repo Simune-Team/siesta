@@ -4,7 +4,7 @@ module m_energies
 
   public
 
-  real(dp):: DEharr
+  real(dp):: DEharr     ! Tr[H * (DM_out - DM_in)], for Harris energy
   real(dp):: DEna       ! Neutral-atom energy term, calculated  in dnaefs
   real(dp):: DUext      ! Interaction energy with external  electric field,
                         ! calculated in dhscf
@@ -14,7 +14,6 @@ module m_energies
   real(dp):: Ecorrec    ! Energy term eta*DeltaQ, calculated in  ordern
   real(dp):: ef         ! Fermi energy
   real(dp):: Eharrs     ! Harris-functional total energy
-  real(dp):: Eharrs1    ! Same as Eharrs, but preserved in grid  cell sampling
   real(dp):: Eions      ! Self-energy of isolated ions
   real(dp):: Ekin       ! Kinetic energy of electrons,  calculated in kinefsm
   real(dp):: Ekinion    ! Kinetic energy of ions
@@ -25,8 +24,7 @@ module m_energies
   real(dp):: Enascf     ! Integral of Vna * rhoscf, calculated  in dhscf
   real(dp):: Enl        ! Non-local pseudopot. energy term,  calculated in nlefsm
   real(dp):: Emeta      ! Metadynamics energy contribution  calculated in meta
-  real(dp):: Entrop     ! Temporary to call diagon
-  real(dp):: Entropy    ! Entropy due to electron state  occupations, calc. in diagon
+  real(dp):: Entropy    ! Entropy due to electron state occupations
   real(dp):: Etot       ! Total electronic energy
   real(dp):: Exc        ! Exchange-correlation energy,  calculated in dhscf
   real(dp):: E0         ! Non-SCF part of total energy

@@ -31,7 +31,6 @@ SAVE
 logical  :: savetshs     ! Saves the Hamiltonian and Overlap matrices if the 
                          ! the option TS.SaveHS is specified in the input file
 logical  :: onlyS        ! Option to only save overlap matrix
-logical  :: mixH         ! Mixing of the Hamiltoninan instead of DM
 logical  :: USEBULK      ! Use Bulk Hamiltonian in Electrodes
 logical  :: TriDiag      ! true if tridiagonalization
 logical  :: updatedmcr   ! Update DM values of ONLY Central Region
@@ -40,7 +39,7 @@ integer  :: ChargeCorr   ! Integer holding the method of charge correction
                          !  1 => Excess/missing charge is corrected in the buffer layers
 real(dp) :: ChargeCorr_factor ! A factor for the correction (should be in the range 0 <= 1)
 logical  :: UseVFix      ! Call the routine TSVHFix 
-logical  :: IsVolt       ! Logical for dabs(VoltFDF) > 0.001d/eV
+logical  :: IsVolt       ! Logical for abs(VoltFDF) > 10^(-4) eV
 real(dp) :: VoltFDF      ! Bias applied, Internally Volt=voltfdf/eV. 
 real(dp) :: VoltL        ! Bias on the left electrode   (  .5 * VoltFDF )
 real(dp) :: VoltR        ! Bias on the right electrode  ( -.5 * VoltFDF )
@@ -79,7 +78,6 @@ logical :: ReUseGF        ! Calculate the electrodes GF
 logical, parameter :: savetshs_def = .true.
 logical, parameter :: onlyS_def = .false.
 logical, parameter :: tsdme_def = .true.
-logical, parameter :: mixH_def = .false.
 logical, parameter :: USEBULK_def = .true.
 logical, parameter :: TriDiag_def = .false.
 logical, parameter :: updatedmcr_def = .true.
@@ -105,7 +103,7 @@ real(dp),  parameter :: ChargeCorr_factor_def = 0.75_dp
 logical, parameter :: ElecValenceBandBot_def = .false.
 logical, parameter :: ReUseGF_def = .true.
 
-logical, save :: TSmode = .false.
+logical    :: TSmode = .false.
 
       CONTAINS
 
@@ -162,9 +160,8 @@ ts_istep=0
 ! Reading TS Options from fdf ...
 call fdf_global_get(savetshs,'TS.SaveHS',savetshs_def)
 call fdf_global_get(onlyS,'TS.onlyS',onlyS_def)
-call fdf_global_get(mixH,'TS.MixH',mixH_def)
 call fdf_global_get(VoltFDF,'TS.Voltage',voltfdf_def,'Ry') 
-IsVolt = dabs(VoltFDF) > 0.001_dp/eV
+IsVolt = dabs(VoltFDF) > 0.0001_dp*eV
 ! Set up the fermi shifts for the left and right electrodes
 VoltL =  0.5_dp*VoltFDF
 VoltR = -0.5_dp*VoltFDF
@@ -241,7 +238,6 @@ call fdf_obsolete('TS.NKVoltScale')
 ! Output Used Options in OUT file ....
 if (IOnode) then
  write(*,1) 'ts_read_options: Save H and S matrices        =', savetshs
- write(*,1) 'ts_read_options: Mixing Hamiltonian           =', mixH
  write(*,1) 'ts_read_options: Save S and quit (onlyS)      =', onlyS
 end if
 if (ionode .and. TSmode ) then

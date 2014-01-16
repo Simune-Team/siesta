@@ -122,11 +122,7 @@ C
       save OldMesh
       data OldMesh/0,0,0/
 
-C
-C  Start time counter
-C
-      call timer_start( 'fft' )
-
+      call timer( 'fft', 1 )
 C
 C  Set mesh size variables
 C
@@ -235,7 +231,7 @@ C
 C
 C  Free local memory ready for re-use
 C
-      call de_alloc( ft, name='ft' )
+      call de_alloc( ft, name='ft', routine='fft' )
 C
 C  Find new distributed x dimension
 C
@@ -265,7 +261,7 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( ft, name='ft' )
+      call de_alloc( ft, name='ft', routine='fft' )
 #else
 C
 C  FFT in Y direction
@@ -291,10 +287,7 @@ C
         enddo
       endif
 
-C
-C  Stop time counter
-C
-      call timer_stop( 'fft' )
+      call timer( 'fft', 2 )
 
       return
       end subroutine fft
@@ -553,8 +546,8 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( ftmp2, name='ftmp2' )
-      call de_alloc( ftmp, name='ftmp' )
+      call de_alloc( ftmp2, name='ftmp2', routine='redistribXZ' )
+      call de_alloc( ftmp, name='ftmp', routine='redistribXZ' )
 
       end subroutine redistribXZ
 
@@ -813,8 +806,8 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( ftmp2, name='ftmp2' )
-      call de_alloc( ftmp, name='ftmp' )
+      call de_alloc( ftmp2, name='ftmp2', routine='redistribXY' )
+      call de_alloc( ftmp, name='ftmp', routine='redistribXY' )
 
       return
       end subroutine redistribXY

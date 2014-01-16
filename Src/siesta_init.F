@@ -12,6 +12,7 @@
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
       use siesta_options
+      use timer_options,      only: use_tree_timer
       use sparse_matrices
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
@@ -63,6 +64,7 @@
 
       implicit none
 #ifdef MPI
+      logical :: initialized
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
@@ -71,20 +73,26 @@
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
 !------------------------------------------------------------------------- BEGIN
+! Initialise MPI unless siesta is running as a subroutine 
+! of a driver program that may have initialized MPI already
 #ifdef MPI
-C     Initialise MPI and set processor number
-      call MPI_Init( MPIerror )
+      call MPI_Initialized( initialized, MPIerror )
+      if (.not.initialized) then
+        call MPI_Init( MPIerror )
 #ifdef _TRACE_
-      call MPItrace_shutdown( )
+        call MPItrace_shutdown( )
 #endif
+      endif ! (.not.initialized)
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-
       if (.not. fdf_parallel()) then
         call die('siesta_init: ERROR: FDF module ' //
      &           'doesn''t have parallel support')
       endif
 #endif
+      if (Node==0) then
+         call system("rm -f 0_NORMAL_EXIT")
+      endif
 #ifdef DEBUG
 !     Generates a debug file for every process to track the execution.
 !     The file is called debug.$(PID) Where PID is the process number.
@@ -113,10 +121,6 @@ C     Initialise MPI and set processor number
          call wallclock('Start of run')
       endif
 
-!     Start time counter
-      call timer( 'siesta', 0 )
-      call timer( 'siesta', 1 )
-      call timer( 'Setup', 1 )
 
 !     Nullify arrays
       nullify(Haux,Saux,psi)
@@ -128,14 +132,12 @@ C     Initialise MPI and set processor number
 !     Initialize some variables
       DUext   = 0.0_dp
       Eharrs  = 0.0_dp
-      Eharrs1 = 0.0_dp
       Eions   = 0.0_dp
       Ekinion = 0.0_dp
       Elast   = 0.0_dp
       Emad    = 0.0_dp
       Emeta   = 0.0_dp
       Emm     = 0.0_dp
-      Entrop  = 0.0_dp
       Entropy = 0.0_dp
       FreeE   = 0.0_dp
 
@@ -154,6 +156,16 @@ C     Initialise MPI and set processor number
       threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
      .                   threshold=threshold )
+      ! This variable lives in siesta_options
+      use_tree_timer = fdf_get('UseTreeTimer', .false.)
+
+!     Start time counter
+!     Note new placement of this first use, so that
+!     initialization is done after the setup of relevant variables
+
+      call timer( 'siesta', 0 )
+      call timer( 'siesta', 1 )
+      call timer( 'Setup', 1 )
 
 ! Set allocation report level .........................................
 ! variables level and threshold imported from module siesta_options
@@ -192,13 +204,16 @@ C     Initialise MPI and set processor number
       struct_only = fdf_get( 'Output-Structure-Only', .false. )
       if (IONode) then
          call write_struct( ucell, na_u, isa, iza, xa )
+         if (fdf_boolean('WriteCoorXmol',.false.)) then
+            call coxmol(iza, xa, na_u)
+         endif
          if (lUseZmatrix) then
             call write_canonical_ucell_and_Zmatrix(
      &                        filename="OUT.UCELL.ZMATRIX.INITIAL")
          endif
       endif
       if (struct_only) then
-         call bye( 'End of structure processing' )
+         call bye('End of structure processing')
       endif
       
 !     End of Initial Structure Processing

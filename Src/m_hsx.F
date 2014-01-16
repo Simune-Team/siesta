@@ -86,6 +86,7 @@ C Internal variables and arrays
       save       frstme, fname
       data frstme /.true./
 
+      call timer("writeHSX",1)
 C Find name of file
       if (frstme) then
         fname = paste( slabel, '.HSX' )
@@ -352,6 +353,8 @@ C Deallocate local array for global numh
 C Close file
           call io_close( iu )
         endif
+
+      call timer("writeHSX",2)
 
       end subroutine write_hsx
       end module m_hsx

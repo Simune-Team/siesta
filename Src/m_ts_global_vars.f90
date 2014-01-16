@@ -15,10 +15,6 @@ USE precision, only : dp
 
 integer :: TSiscf=0
 
-! Used to hold the "input" H when mixing the Hamiltonian
-real(dp), dimension(:,:), pointer :: Hold => null()   
-
- 
 logical :: TSinit=.false.,TSrun=.false.
 
 integer :: ts_istep      ! FC step in phonon calculation

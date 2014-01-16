@@ -4,12 +4,12 @@
       CONTAINS
 
       subroutine setup_hamiltonian( iscf )
-      USE m_normalize_dm, only: normalize_dm
+
       USE siesta_options
       use sparse_matrices, only: H_kin, H_vkb
       use sparse_matrices, only: listh, listhptr, numh, maxnh
-      use sparse_matrices, only: H, S
-      use sparse_matrices, only: Dold, Dscf, Eold, Escf, xijo
+      use sparse_matrices, only: H, S, Hold
+      use sparse_matrices, only: Dscf, Escf, xijo
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -28,8 +28,9 @@
       use alloc, only: re_alloc, de_alloc
       use m_gamma
       use m_hsx, only: write_hsx
-      use sys, only: die
+      use sys, only: die, bye
       use m_partial_charges, only: want_partial_charges
+      use files, only : filesOut_t    ! derived type for output file names
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -48,24 +49,17 @@
       integer             :: istr    ! Calc. stress?      0=>no, 1=>yes
       integer             :: ihmat   ! Calc. hamiltonian? 0=>no, 1=>yes
       real(dp)            :: g2max
+      type(filesOut_t)    :: filesOut  ! blank output file names
 
 !------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE setup_hamiltonian' )
-#endif
-      
-!     Normalize density matrix to exact charge
-!     Setup_hamiltonian is called before the density is printed out...
-#ifdef TRANSIESTA      
-      if (.not.TSrun ) call normalize_dm( first= (iscf==1) )
-#else
-      ! Normalize density matrix to exact charge, except if
-      ! we are just using the DM to generate the initial rho and exit
-      !
-      if (.not. save_initial_charge_density) then
-         call normalize_dm(first= (iscf==1))
-      endif
-#endif  /* TRANSIESTA */
+
+      call timer('setup_H',1)
+
+! Save present H matrix
+      if(mixH) then
+         Hold(1:maxnh,1:nspin) = H(1:maxnh,1:nspin)
+      end if
+
 
       ! Initialize Hamiltonian with the non-SCF part...................
 
@@ -117,34 +111,12 @@
       endif
       call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
-     .            ntm, ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
+     .            ntm, ifa, istr, ihmat, filesOut,
      .            maxnh, numh, listhptr, listh, Dscf, Datm,
      .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .            Exc, Dxc, dipol, stress, fal, stressl)
       want_partial_charges = .false.
       call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
-
-
-! Find entropy ........................................................
-! Entropy is returned from the call to diagon. To add to the energy
-! the entropy computed from the input charge, here it is assigned to the one
-! of the former SCF step
-
-!** Can we trust the Entropy if iscf == 1 ??
-      Entropy = 0.0_dp
-      if (isolve .eq. SOLVE_DIAGON) then
-        if (istp.gt.1 .or. iscf.gt.1) then
-          Entropy = Entrop
-        endif
-      endif
-
-! Save present density matrix ........................................
-      do is = 1,nspin
-        do io = 1,maxnh
-          Dold(io,is) = Dscf(io,is)
-          Eold(io,is) = Escf(io,is)
-        enddo
-      enddo
 
 !  It is wasteful to write over and over H and S, as there are
 !  no different files.
@@ -157,9 +129,14 @@
      &                    temp, xijo)
         endif
 
-#ifdef DEBUG
-      call write_debug( '  POS setup_hamiltonian' )
-#endif
-!--------------------------------------------------------------------------- END
+      call timer('setup_H',2)
+
+      if (h_setup_only) then
+         call timer( 'all', 2 )  ! New call to close the tree
+         call timer( 'all', 3 )
+         call bye("H-Setup-Only requested")
+      endif
+
+!------------------------------------------------------------------------- END
       END subroutine setup_hamiltonian
       END module m_setup_hamiltonian

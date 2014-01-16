@@ -17,14 +17,14 @@ PROGRAM siestaXCtest2
   integer, parameter:: irel  =  0 ! Relativistic? 0=>no, 1=>yes
   integer, parameter:: nSpin =  2 ! Number of spin components
   integer, parameter:: nfTot = 11 ! Number of functionals
-  integer, parameter:: nr    = 51 ! Number of radial points
+  integer, parameter:: nr    = 101 ! Number of radial points
   integer, parameter:: n1cut =  8 ! Cutoff parameter
   integer, parameter:: n2cut =  2 ! Cutoff parameter:
                                   !    fCut(r)=(1-(r/rMax)**n1cut)**n2cut
   real(dp),parameter:: dWidth = 2._dp ! Width of density distribution, in Bohr
   real(dp),parameter:: Qtot = 10._dp  ! Integral of density distribution
   real(dp),parameter:: spinPol= 2._dp ! Integral of densUp - densDown
-  real(dp),parameter:: rMax = 12._dp  ! Cutoff radius, in Bohr
+  real(dp),parameter:: rMax = 20._dp  ! Cutoff radius, in Bohr
   real(dp),parameter:: deltaDens = 1.e-8_dp  ! Finite diff. change
   real(dp),parameter:: densMin  = 1.e-9_dp  ! Min. density to proceed
 
@@ -48,14 +48,15 @@ PROGRAM siestaXCtest2
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
                     'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
 !                    'DRSLL ' /) 
-                    'LMKLL ' /) 
+!                    'LMKLL ' /) 
+                    'VV    ' /) 
 
   ! Tester variables and arrays
   integer :: iDelta, ir, irmax, ismax, iSpin, one, two
-  real(dp):: avgDiffVxc, dens(nr,nSpin), dens0(nr,nSpin), &
+  real(dp):: avgDiffVxc, dDensdr, dens(nr,nSpin), dens0(nr,nSpin), &
              d0tot, d0(nSpin), dEdDens, dDens, diffVxc, &
              Dc, Dc0, dr, dVol, Dx, Dx0, Ec, Ec0, Ex, Ex0, &
-             maxDiffVxc, pi, r, rMesh(nr), &
+             kf, kg, maxDiffVxc, pi, r, rMesh(nr), &
              Vxc(nr,nSpin), Vxc0(nr,nSpin), wc(nfTot), wr, wx(nfTot)
 
   ! Initialize hybrid XC functional with all tested functionals
@@ -111,13 +112,23 @@ PROGRAM siestaXCtest2
         irMax = ir
         isMax = iSpin
       end if
+      kf = (3*pi**2*sum(dens0(ir,:)))**(1.0_dp/3)
+      dDensdr = sum(dens0(ir+1,:)-dens0(ir-1,:))/(rMesh(ir+1)-rMesh(ir-1))
+      kg = abs(dDensdr)/sum(dens0(ir,:))
       if (ir==2) then
         print'(a5,a9,4a15)','iSpin','r','dens','Vxc','dExc/dDens','diff'
         print'(i5,f9.3,4f15.9)', &
           ispin, rMesh(1), dens0(1,iSpin), Vxc0(1,iSpin)
+!        print'(a5,a9,6a15)','iSpin','r','dens','kf','kg','Vxc', &
+!                            'dExc/dDens','diff'
+!        print'(i5,f9.3,6f15.9)', &
+!          ispin, rMesh(1), dens0(1,iSpin), kf, kg, Vxc0(1,iSpin)
       end if
       print'(i5,f9.3,4f15.9)', &
         ispin, rMesh(ir), dens0(ir,iSpin), Vxc0(ir,iSpin), dEdDens, diffVxc
+!      print'(i5,f9.3,6f15.9)', &
+!        ispin, rMesh(ir), dens0(ir,iSpin), kf, kg, &
+!        Vxc0(ir,iSpin), dEdDens, diffVxc
       write(44,'(f9.3,4f15.9)') &
         rMesh(ir), dens0(ir,iSpin), Vxc0(ir,iSpin), dEdDens, diffVxc
     end do ! ir

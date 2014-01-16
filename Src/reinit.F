@@ -27,13 +27,14 @@ C
       use parallel,    only : Node
       use fdf
       use files,       only : slabel
+      use siesta_master, only: input_file  ! fdf data file
 
       implicit none
 
       character(len=*), intent(out) :: sname
 
 C  Internal variables .................................................
-      character(len=20) filein, fileout, string
+      character(len=20) filein, fileout
 
       integer  ::  count, length, lun, lun_tmp, iostat
       character :: slabel_default*59, sname_default*20, line*256
@@ -41,19 +42,6 @@ C  Internal variables .................................................
       logical debug_input, file_exists
 
 C Print Welcome and Presentation .......................................
-#ifdef DEBUG
-      call write_debug( '  PRE reinit' )
-#endif
-!     Non-master mpi-processes receive a copy of all the
-!     pre-processed fdf input information (recursively
-!     including files when necessary), and dump it on a
-!     text file with name "fdf_input.<ProcessNumber>".
-!     They then read from this file to construct a memory
-!     image of the information.
-!
-!     The master process creates its memory image directly
-!     from the standard fdf file (renamed as INPUT_TMP.$$,
-!     as usually done for historical reasons (see below)).
 !
       filein = "fdf_input"  
 
@@ -81,16 +69,21 @@ c
            filein = 'INPUT_DEBUG'
 
         else
-c
-c          Read from standard input (dumped to a temp file)
-c
-           write(6,'(/a)') 'reinit: Reading from standard input'
-           lun = 5
+
+           if (input_file/=' ') then   ! Read data from given file
+             write(6,'(a)') 'reinit: Reading from '//trim(input_file)
+             call io_assign(lun)
+             open(lun,file=input_file,form='formatted',status='old')
+             rewind(lun)
+           else                        ! Read from standard input
+             write(6,'(/a)') 'reinit: Reading from standard input'
+             lun = 5
+           end if ! (input_file/=' ')
+
            call io_assign(lun_tmp)
            do  ! make sure we get a new file
               call system_clock( count )
-              write(string,*) count
-              filein = 'INPUT_TMP.'//adjustl(string)
+              write(filein,"(a,i5.5)") 'INPUT_TMP.', mod(count,100000)
               inquire( file=filein, exist=file_exists )
               if (.not.file_exists) exit
            end do
@@ -131,7 +124,7 @@ C Set up fdf ...
 !     processors, depending on the system time.
 
       call system_clock( count )
-      write(fileout,"(a,i5,a)") 'fdf-', mod(count,100000), ".log"
+      write(fileout,"(a,i5.5,a)") 'fdf-', mod(count,100000), ".log"
 
       call fdf_init(filein,trim(fileout))
 
@@ -153,8 +146,5 @@ C Define System Label (short name to label files) ...
         write(6,'(a,71("-"))') 'reinit: '
       endif
 C ...
-#ifdef DEBUG
-      call write_debug( '  POS reinit' )
-#endif
 
       end

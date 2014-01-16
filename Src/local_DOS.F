@@ -17,7 +17,8 @@
       use atomlist,       only: datm, no_s, iaorb        
       use fdf
       use sys,            only: die                      
-      use files,          only : slabel     
+      use files,          only: slabel     ! system label
+      use files,          only: filesOut_t ! derived type for output file names
       use Kpoint_grid
       use parallel,       only: IOnode                   
       use files,          only : label_length            
@@ -29,11 +30,9 @@
       use m_dhscf,        only: dhscf
       implicit none
 
-      character(len=label_length+5), external :: paste
-
+      character(len=label_length+6), external :: paste
 
       integer :: dummy_iscf = 1
-      character(len=label_length+5) :: fildos
 
       real(dp):: e1  ! Lower bound of energy range
       real(dp):: e2  ! Upper bound of energy range
@@ -41,11 +40,12 @@
       real(dp)  :: dummy_str(3,3), dummy_strl(3,3)  ! for dhscf call
       real(dp)  :: dummy_dipol(3)
 
-      real(dp)  :: factor, g2max
+      real(dp)  :: factor, g2max, dummy_Entrop
       logical   :: genlogic   ! Generate local density of states?
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
+      type(filesOut_t)           :: filesOut  ! blank output file names
 
 #ifdef DEBUG
       call write_debug( '  PRE local_DOS' )
@@ -65,20 +65,22 @@
         e2 = fdf_bvalues(pline,2)*factor
 
         !Find the density matrix for states between e1 and e2
-        if (isolve .eq. SOLVE_DIAGON) then
+        if ((isolve .eq. SOLVE_DIAGON) .or.
+     .      ((isolve .eq. SOLVE_MINIM) .and.
+     .       minim_calc_eigenvalues)) then
           call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qs, temp, e1, e2,
      .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     .                eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     .                eo, qo, Dscf, Escf, ef, efs, dummy_Entrop, no_u,
      .                occtol, dummy_iscf, neigwanted)
 
           !Find the LDOS in the real space mesh
-          fildos = paste( slabel, '.LDOS' )
+          filesOut%rho = paste( slabel, '.LDOS' )
           g2max = g2cut
           call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 
-     .              ntm, 0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ',
+     .              ntm, 0, 0, 0, filesOut,
      .              maxnh, numh, listhptr, listh, Dscf, Datm, maxnh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
      .              dummy_dipol, dummy_str, fa, dummy_strl )

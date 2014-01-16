@@ -520,6 +520,8 @@ C     Create buffer arrays for transfering density matrix between nodes and list
 #endif
       integer, dimension(:), pointer  :: numdg
 
+      call timer("WriteDM",1)
+
       call setup_file_modes()
 
 C     Find total number of basis functions over all Nodes
@@ -681,6 +683,8 @@ C     Write density matrix
       endif
 
       call de_alloc( numdg, 'numdg', 'write_dm' )
+
+      call timer("WriteDM",2)
 
       end subroutine write_dm
 

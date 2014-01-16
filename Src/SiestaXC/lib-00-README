@@ -4,8 +4,10 @@ This directory contains, as a self-contained package, the source code of the
 siestaXC library, used by the SIESTA program. It provides routines to calculate 
 the exchange and correlation energy and potential in spherical (i.e. an atom) 
 or periodic systems, using a variety of LDA and GGA functionals, as well as
-the van der Waals DFT functional of Dion et al (PRL 92, 246401 (2004)), 
-implemented as described by Roman-Perez and Soler (PRL 103, 096102 (2009))
+the van der Waals DFT functionals of Dion et al (PRL 92, 246401 (2004)), 
+Lee et al (PRB 82, 081101 (2010)), Klimes et al (JPCM 22, 022201 (2009)),
+and Vydrov and VanVoorhis (JCP 133, 244103 (2010)) implemented as described 
+by Roman-Perez and Soler (PRL 103, 096102 (2009))
 
 See siestaxc.f90 for how to call the siestaXC library routines
 

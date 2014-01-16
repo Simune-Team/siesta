@@ -82,8 +82,8 @@ contains
     call MPI_Bcast(na_u,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     call MPI_Bcast(nspin,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     call MPI_Bcast(maxnh,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(Ef,1,DAT_double,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(ucell(1,1),3*3,DAT_double,0, &
+    call MPI_Bcast(Ef,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+    call MPI_Bcast(ucell(1,1),3*3,MPI_Double_Precision,0, &
          MPI_Comm_World,MPIerror)
     if ( .not. IONode ) then
        if ( .not. Gamma ) then 
@@ -107,20 +107,20 @@ contains
        allocate(S(maxnh))
        call memory('A','D',maxnh,'read_tshs')
     end if
-    call MPI_Bcast(xa(1,1),3*na_u,DAT_Double,0, &
+    call MPI_Bcast(xa(1,1),3*na_u,MPI_Double_Precision,0, &
          MPI_Comm_World,MPIerror)
     if ( .not. Gamma ) then
        call MPI_Bcast(indxuo,no_s,MPI_Integer,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(xij(1,1),3*maxnh,DAT_Double,0, &
+       call MPI_Bcast(xij(1,1),3*maxnh,MPI_Double_Precision,0, &
             MPI_Comm_World,MPIerror)
     end if
     call MPI_Bcast(lasto(0),1+na_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
     call MPI_Bcast(numh,no_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
     call MPI_Bcast(listhptr,no_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
     call MPI_Bcast(listh,maxnh,MPI_Integer,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(H(1,1),maxnh*nspin,DAT_Double,0, &
+    call MPI_Bcast(H(1,1),maxnh*nspin,MPI_Double_Precision,0, &
          MPI_Comm_World,MPIerror)
-    call MPI_Bcast(S,maxnh,DAT_Double,0, MPI_Comm_World,MPIerror)
+    call MPI_Bcast(S,maxnh,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
 #endif
 
   end subroutine tbt_read_tshs

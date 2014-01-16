@@ -5,9 +5,10 @@
       CONTAINS
 
       subroutine siesta_end( )
-      use alloc,           only : alloc_report, de_alloc
+      use alloc,           only : alloc_report
       use siesta_cml,      only : cml_p, mainXML, cmlEndModule
       use siesta_cmlsubs,  only : siesta_cml_exit
+      use siesta_master,   only : siesta_subroutine  ! Is siesta a subroutine?
 #ifdef DEBUG_XC
       USE siestaXC,        only : closeDebugOutputFile
 #endif /* DEBUG_XC */
@@ -17,7 +18,6 @@
 #ifdef MPI
       use mpi_siesta,      only : MPI_Finalize
 #endif
-      use alloc,           only : re_alloc
       use m_pulay,         only : resetPulayArrays
       use moreMeshSubs,    only : resetMeshDistr
       use densematrix,     only : resetDenseMatrix
@@ -69,18 +69,22 @@
         call wallclock('End of run')
       endif
 
-!     Finalize MPI
-#ifdef DEBUG
-      call write_debug( 'POS SIESTA_END' )
-#endif
-#ifdef MPI
-      call MPI_Finalize( MPIerror )
-#endif
-
       if (cml_p) then
         call cmlEndModule(mainXML)
         call siesta_cml_exit()
       endif      
+
+! Finalize MPI, unless siesta is running as a subroutine
+#ifdef DEBUG
+      call write_debug( 'POS SIESTA_END' )
+#endif
+#ifdef MPI
+      if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )
+#endif
+
+      if (IOnode) then
+         call system("touch 0_NORMAL_EXIT")
+      endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_end
       END MODULE m_siesta_end

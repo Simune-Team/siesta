@@ -6,7 +6,7 @@
       CONTAINS
 
       subroutine siesta_move( istep, relaxd )
-      use siesta_geom
+!      use siesta_geom
       use zmatrix,         only: lUseZmatrix, iofaZmat, write_Zmatrix,
      .                           CartesianForce_to_ZmatForce
       use atomlist,        only: iaorb, iphorb, iza, amass, no_u, 
@@ -27,13 +27,27 @@
       use m_dynamics,      only: nose, verlet2, npr, anneal, pr
       use phonon,          only: phonon_setup, phonon_restore_coords,
      .                           phonon_set_coords
-      use iopipes,         only: forcestopipe, coordsfrompipe
+!      use iopipes,         only: forcestopipe, coordsfrompipe
       use m_energies,      only: Ekinion, Etot
       use write_subs
-      use m_stress
       use m_steps
       use m_kinetic
-      use m_forces
+      use siesta_geom,     only: na_u       ! Number of atoms in unit cell
+      use siesta_geom,     only: na_s       ! Number of atoms in super-cell
+      use siesta_geom,     only: nsc        ! Unit cells in each supercell dir
+      use siesta_geom,     only: isa        ! Atomic species
+      use siesta_geom,     only: xa         ! Atomic positions
+      use siesta_geom,     only: xa_last    ! Previous atomic positions
+      use siesta_geom,     only: va         ! Atomic velocities
+      use siesta_geom,     only: ucell      ! Unit cell vectors
+      use siesta_geom,     only: ucell_last ! Previous unit cell vectors
+      use siesta_geom,     only: scell      ! Super-cell vectors
+      use siesta_geom,     only: scell_last ! Previous super-cell vectors
+      use siesta_geom,     only: vcell      ! Time derivative of unit cell vecs
+      use m_forces,        only: cfa        ! Constrained forces
+      use m_forces,        only: ntcon      ! Number of geometry constraints
+      use m_stress,        only: cstress    ! Constrained stress tensor
+      use siesta_master,   only: coordsFromMaster ! Get coords from master prog
 
       implicit none
 
@@ -220,7 +234,8 @@
           endif
 
       case (8)
-          call forcesToPipe( na_u, Etot, cfa, cstress )
+!          Moved to siesta_forces. JMS Oct.2010
+!          call forcesToPipe( na_u, Etot, cfa, cstress )
 
           ! Save last atomic positions and velocities 
           call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
@@ -235,7 +250,9 @@
           call write_md_record( istep )
 
           ! Get coordinates from driver program trough pipe
-          call coordsFromPipe( na_u, xa, ucell )
+!          Changed by JMS. Oct.2010
+!          call coordsFromPipe( na_u, xa, ucell )
+          call coordsFromMaster( na_u, xa, ucell )
           if (volcel(ucell) < 1.0e-8_dp) then
             call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
           endif

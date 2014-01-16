@@ -66,9 +66,9 @@
 
 \vspace{1cm}
 \hrulefill
-\vspace{1cm}
+\vspace{0.5cm}
 
-{\Large December 10, 2012 }
+{\Large October 22, 2013 }
 
 \vspace{1.5cm}
 
@@ -76,7 +76,7 @@
 \begin{tabular}{ll}
 
 {\Large Emilio Artacho} &
-   \Large{\it University of Cambridge} \\ \\
+   \Large{\it CIC-Nanogune and University of Cambridge} \\ \\
 
 {\Large Jos\'e Mar\'{\i}a Cela} &
    \Large{\it Barcelona Supercomputing Center} \\ \\
@@ -115,7 +115,7 @@
 \vspace{0.5cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2012
+D.S\'anchez-Portal and J.M.Soler, 1996-2013
 
 \end{center}
 
@@ -1110,6 +1110,28 @@ diverges at $r_c$ ensuring the strict localization there.  It is
 \end{equation}
 and both $r_i$ and $V_{\rm o}$ can be given to {\sc Siesta} together
 with $r_c$ in the input (see {\bf PAO.Basis} below).
+The kink is normally well smoothened with the default values 
+for soft confinement by default ({\bf PAO.SoftDefault} true), which 
+are $r_i = 0.9 \, r_c$ and $V_{\rm o} = 40$ Ry.
+
+When explicitly introducing orbitals in the basis that would be empty in 
+the atom (e.g. polarisation orbitals) these tend to be extremely 
+extended if not completely unbound. The above procedure produces
+orbitals that bulge as far away from the nucleus as possible, to 
+plunge abruptly at $r_c$. Soft confinement can be used to try
+to force a more reasonable shape, but it is not ideal (for orbitals
+peaking in the right region the tails tend to be far too short).
+{\it Charge confinement} \index{Charge confinement} produces
+very good shapes for empty orbitals. Essentially a $Z/r$ potential
+is added to the soft confined potential above. For flexibility
+the charge confinement option in {\sc Siesta} is defined as
+\begin{equation}
+  V_{\rm Q}(r) = {Z e^{-\lambda r} \over \sqrt{r^2 + \delta^2}} 
+\end{equation}
+where $\delta$ is there to avoid the singularity (default $\delta=0.01$ Bohr),
+and $\lambda$ allows to screen the potential if longer tails are needed.
+The description on how to introduce this option can be found in
+the {\bf PAO.Basis} entry below.
 
 Finally, the shape of an orbital is also changed by the ionic
 character of the atom.  Orbitals in cations tend to shrink, and they
@@ -1194,6 +1216,10 @@ sufficiently.
 \item {\tt nonodes:}\index{nonodes@{\tt nonodes}}
 The original PAO's are used, multiple-zeta is generated
 by changing the scale-factors, instead of using the excited orbitals.
+
+\item {\tt filteret:} Use the filterets as a systematic basis set.
+The size of the basis set is controlled by the filter cut-off for
+the orbitals.
 
 \end{itemize}
 
@@ -1358,6 +1384,52 @@ automatically).
 \end{itemize}
 
 \end{description}
+
+\begin{description}
+\item[{\bf PAO.EnergyCutoff}] ({\it real energy}): If the multiple
+zetas are generated using filterets then only the filterets with
+an energy lower than this cutoff are included. Increasing this
+value leads to a richer basis set (provided the cutoff is raised
+above the energy of any filteret that was previously not included)
+but a more expensive calculation.
+It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be positive.
+
+{\it Default value:} {\tt 20.0 Ry}
+\end{description}
+
+\begin{description}
+\item[{\bf PAO.EnergyPolCutoff}] ({\it real energy}): If the multiple
+zetas are generated using filterets then only the filterets with
+an energy lower than this cutoff are included for the polarisation
+functions. Increasing this value leads to a richer basis set 
+(provided the cutoff is raised above the energy of any filteret 
+that was previously not included) but a more expensive calculation.
+It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be positive.
+
+{\it Default value:} {\tt 20.0 Ry}
+\end{description}
+
+\begin{description}
+\item[{\bf PAO.ContractionCutoff}] ({\it real}): If the multiple
+zetas are generated using filterets then any filterets that have
+a coefficient less than this threshold within the original PAO
+will be contracted together to form a single filteret.
+Increasing this value leads to a smaller basis set but allows
+the underlying basis to have a higher kinetic energy cut-off for
+filtering. It only has an effect when the option
+{\bf PAO.BasisType} is set to filteret.
+
+{\it Use:} It has to be in the range 0 to 1.
+
+{\it Default value:} {\tt 0.0}
+\end{description}
+
 \subsubsection{Soft-confinement options}
 \begin{description}
 
@@ -1500,6 +1572,16 @@ constructed from the nodeless eigenfunction, used for each angular
 momentum.
 \noindent
 
+\item[{\bf KB.New.Reference.Orbitals}] ({\it boolean}):
+\index{KB.New.Reference.Orbitals@{\bf KB.New.Reference.Orbitals}}
+
+If {\tt .true.}, the routine to generate KB projectors will use
+slightly different parameters for the construction of the reference
+orbitals involved (Rmax=60 bohr both for integration and
+normalization).
+
+{\it Default value:} {\tt .false.}
+
 \end{description}
 
 \subsubsection{The PAO.Basis block}
@@ -1529,14 +1611,16 @@ the following ({\tt opt} means optional):
 \begin{verbatim}
 %block PAO.Basis     # Define Basis set
 O    2  nodes  1.0   # Label, l_shells, type (opt), ionic_charge (opt)
- n=2 0 2  E 50.0 2.5 # n (opt if not using semicore levels),l,Nzeta,Softconf(opt
+ n=2 0 2  E 50.0 2.5 # n (opt if not using semicore levels),l,Nzeta,Softconf(opt)
      3.50  3.50      #     rc(izeta=1,Nzeta)(Bohr)
      0.95  1.00      #     scaleFactor(izeta=1,Nzeta) (opt)
      1 1  P 2        # l, Nzeta, PolOrb (opt), NzetaPol (opt)
      3.50            #     rc(izeta=1,Nzeta)(Bohr)
-H    1               # Label, l_shells, type (opt), ionic_charge (opt)
+H    2               # Label, l_shells, type (opt), ionic_charge (opt)
      0 2 S 0.2       # l, Nzeta, Per-shell split norm parameter
      5.00  0.00      #     rc(izeta=1,Nzeta)(Bohr)
+     1 1 Q 3. 0.2    # l, Nzeta, Charge conf (opt): Z and screening
+     5.00            #    rc(izeta=1,Nzeta)(Bohr)
 %endblock PAO.Basis
 \end{verbatim}
 
@@ -1552,7 +1636,9 @@ the routines in {\tt Src/basis\_specs.f} for detailed information):
         read:
          { n }, l(lsh), nzls(lsh,is), { PolOrb(l+1) }, { NzetaPol(l+1) },
          {SplitNormfFlag(lsh,is)}, {SplitNormValue(lsh,is)}
-         {SoftConfFlag(lsh,is)}, {PrefactorSoft(lsh,is)}, {InnerRadSoft(lsh,is)}
+         {SoftConfFlag(lsh,is)}, {PrefactorSoft(lsh,is)}, {InnerRadSoft(lsh,is)},
+         {FilteretFlag(lsh,is)}, {FilteretCutoff(lsh,is)}
+         {ChargeConfFlag(lsh,is)}, {Z(lsh,is)}, {Screen(lsh,is)}, {delta(lsh,is}
            read: rcls(izeta,lsh,is), from izeta = 1 to nzls(l,is)
            read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
 \end{verbatim}
@@ -1580,7 +1666,8 @@ considered to belong to the
 valence shell have been included in the calculation)
 \item[-] {\tt l}: Angular momentum of
 basis orbitals of this shell
-\item[-] {\tt nzls(lsh,is)}: Number of 'zetas' for this shell.
+\item[-] {\tt nzls(lsh,is)}: Number of 'zetas' for this shell. For a filteret 
+basis this number is ignored since the number is controlled by the cutoff.
 \item[-] {\tt PolOrb(l+1)}: {\it Optional input}. If set equal to {\tt P}, a
 shell of
 polarization functions (with angular momentum $l+1$)  will be constructed
@@ -1589,23 +1676,42 @@ from the first-zeta orbital of angular momentum $l$. {\it Default value}: ' '
 \item[-] {\tt NzetaPol(l+1)}: {\it Optional input}. Number of
 'zetas' for the
 polarization shell (generated automatically in a split-valence fashion).
+For a filteret basis this number is ignored since the number is controlled
+by the cutoff.
 Only active if {\tt PolOrb = P}. {\it Default value}: {\tt 1}
 \item[-] {\tt SplitNormFlag(lsh,is)}:\index{basis!per-shell split norm}
 {\it Optional input}. If set equal to
 {\tt S}, the following number sets the split-norm parameter for that shell.
 \item[-] {\tt SoftConfFlag(l,is)}:\index{basis!soft confinement potential}
 {\it Optional input}. If set equal to
-{\tt E}, the new soft confinement potential proposed in formula (1) of
+{\tt E}, the soft confinement potential proposed in equation (1) of
 the paper by J. Junquera {\it et al.}, Phys. Rev. B {\bf 64}, 235111 (2001),
 is used instead of the Sankey hard-well potential.
 \item[-] {\tt PrefactorSoft(l,is)}: {\it Optional input}. Prefactor
 of the soft confinement potential ($V_{0}$ in the formula). Units in Ry.
 {\it Default value}: 0 Ry.
 \item[-] {\tt InnerRadSoft(l,is)}: {\it Optional input}. Inner radius where
-the soft confinemet potential starts off ($r_{i}$ in the formula).
+the soft confinement potential starts off ($r_{i}$ in the formula).
 If negative, the inner radius will be computed as the given fraction
 of the PAO cutoff radius.
 Units in bohrs. {\it Default value}: 0 bohrs.
+\item[-] {\tt FilteretFlag(l,is)}:\index{basis!filteret basis set}
+{\it Optional input}. If set equal to
+{\tt F}, then an individual filter cut-off can be specified for the shell.
+\item[-] {\tt FilteretCutoff(l,is)}: {\it Optional input}. Shell-specific
+value for the filteret basis cutoff. Units in Ry.
+{\it Default value}: The same as the value given by {\it FilterCutoff}.
+\item[-] {\tt ChargeConfFlag(lsh,is)}: {\it Optional input}. If set equal to 
+{\tt Q}, the charge confinement potential in equation (2) above is
+added to the confining potential. If present it requires at least
+one number after it ({\tt Z}), but it can be followed by two or three numbers.
+\index{Charge confinement}
+\item[-] {\tt Z(lhs,is)}: {\it Optional input, needed if {\tt Q} is set}. $Z$
+charge in equation (2) above for charge confinement (units of $e$). 
+\item[-] {\tt Screen(lhs,is)}: {\it Optional input}. Yukawa screening parameter
+$\lambda$ in equation (2) above for charge confinement (in Bohr$^{-1}$).
+\item[-] {\tt delta(lhs,is)}: {\it Optional input}. Singularity regularisation parameter
+$\delta$ in equation (2) above for charge confinement (in Bohr).
 \item[-] {\tt rcls(izeta,l,is)}: Cutoff radius (Bohr) of
 each 'zeta' for this shell. For the second zeta onwards, if this value
 is negative, the actual rc used will be the given fraction of the
@@ -2766,10 +2872,13 @@ Phys. Rev. Lett. {\bf 92}, 246401 (2004), with the efficient implementation of
 G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009).
 \item {\tt LMKLL} vdW-DF functional of Dion {\it et al} (same as DRSLL)
 reparametrized by K. Lee, E. Murray, L. Kong, B. I. Lundqvist and 
-D. C. Langreth, arXiv:1003.5255v1 (2010) 
+D. C. Langreth, PRB 82, 081101 (2010)
 \item {\tt KBM} vdW-DF  functional of Dion {\it et al} (same as DRSLL)
 reparametrized by J.Klimes, D.R.Bowler, and A.Michaelides, 
-JPCM {\bf 22}, 022201 (2009) (optB88-vdW version)
+JPCM {\bf 22}, 022201 (2010) (optB88-vdW version)
+\item {\tt VV} vdW-DF  functional of O. A. Vydrov and T. Van Voorhis, 
+JCP 133, 244103 (2010)
+
 \end{itemize}
 
 {\it Use:} {\bf XC.functional} and {\bf XC.authors} must be compatible.
@@ -2922,8 +3031,50 @@ the calculation will stop on the first SCF convergence failure.
 \end{description}
 
 \subsubsection{Mixing options}
+\index{SCF!mixing}
+
 
 \begin{description}
+
+\index{MixHamiltonian@{\bf
+    MixHamiltonian}}\index{SCF!mixing!Hamiltonian}
+\item[{\bf MixHamiltonian}] ({\it logical}):
+Mixing of the Hamiltonian instead of the density-matrix, a
+feature previously available only for TranSiesta runs has been
+implemented for general use. It is enabled by setting either the
+{\bf MixHamiltonian} option (preferred) or the old-style {\bf TS.MixH}
+option (deprecated but retained due to its use in TranSiesta).
+
+The evidence obtained so far from test runs indicates that Hamiltonian
+mixing might be better than density-matrix mixing in most cases, and
+is seldom worse. Users are encouraged to test this feature for their
+favorite tough-converging systems, and report their experiences.
+
+The H mixing algorithms available are exactly the same as for
+density-matrix mixing (Pulay, Broyden, Fire), and the keywords
+controlling it are also the same, e.g. {\tt DM.MixingWeight} applies
+both to H and DM mixing.
+
+\item[{\bf DM.MixSCF1}] ({\it logical}):\index{SCF!mixing}
+\index{DM.MixSCF1@{\bf DM.MixSCF1}}\index{SCF!mixing}
+Logical variable to indicate whether mixing is done in the
+first SCF cycle or not. Usually, mixing should not be done in
+the first cycle, to avoid non-idempotency in density matrix
+from Harris or previous steps. It can be useful, though,
+for restarts of selfconsistency runs.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SCF.MixAfterConvergence}] ({\it
+  logical}):\index{SCF!mixing} \index{SCF.MixAfterConvergence@{\bf
+    SCF.MixAfterConvergence}}\index{SCF!mixing!end of cycle} Logical
+  variable to indicate whether mixing is done in the last SCF cycle
+  (after convergence has been achieved) or not.  Not mixing after
+  convergence improves the quality of the final Kohn-Sham
+  energy and of the forces when mixing the DM.
+
+{\it Default value:} {\tt .false.}
+
 
 \item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
 \index{DM.MixingWeight@{\bf DM.MixingWeight}}\index{SCF!mixing!linear}
@@ -2934,6 +3085,10 @@ $\rho^{n+1}_{in} = \alpha \rho^{n}_{out}
 +(1 - \alpha) \rho^{n}_{in}$.
 
 {\it Default value:} {\tt 0.25}
+
+
+Pulay mixing (also known as DIIS extrapolation) is the method of
+choice for accelerating the convergence of the scf cycle.
 
 \item[{\bf DM.NumberPulay}] ({\it integer}):\index{Pulay mixing}
 \index{DM.NumberPulay@{\bf DM.NumberPulay}}\index{SCF!mixing!Pulay}
@@ -2946,8 +3101,8 @@ reach convergence in cases where linear mixing cannot.
 The guess for the $n+1$ iteration is constructed using the
 input and output matrices of the {\bf DM.NumberPulay} former
 SCF cycles, in the following way:
-$\rho^{n+1}_{in} = \alpha \bar{\rho}^{n}_{out}
-+(1 - \alpha) \bar{\rho}^{n}_{in}$, where $\bar{\rho}^{n}_{out}$
+$\rho^{n+1}_{in} = \alpha_P \bar{\rho}^{n}_{out}
++(1 - \alpha_P) \bar{\rho}^{n}_{in}$, where $\bar{\rho}^{n}_{out}$
 and $\bar{\rho}^{n}_{in}$ are constructed from the previous
 $N=${\bf DM.NumberPulay} cycles:
 %
@@ -2961,12 +3116,74 @@ $N=${\bf DM.NumberPulay} cycles:
 %
 The values of $\beta_i$ are obtained by minimizing the distance
 between $\bar{\rho}^{n}_{out}$ and $\bar{\rho}^{n}_{in}$.
-The value of $\alpha$ is given by variable {\bf DM.MixingWeight}.
+The value of $\alpha_P$ is given by default by variable {\bf
+  DM.MixingWeight}, although it can be set directly by {\bf
+  SCF.PulayDamping}.
 
 If {\bf DM.NumberPulay} is 0 or 1, simple linear mixing is
 performed.
 
 {\it Default value:} {\tt 0}
+
+
+\item[{\bf SCF.Pulay.Damping}] ({\it real}):\index{SCF!mixing}
+\index{SCF.Pulay.Damping@{\bf SCF.Pulay.Damping}}\index{SCF!mixing!Pulay!damping}
+Proportion $\alpha_P$ of the predicted
+output Density Matrix to be used for the input Density Matrix of
+next SCF cycle in Pulay mixing (see above). Typically, this can be
+significantly higher than the mixing parameter used for linear
+mixing. 
+
+{\it Default value:} {\it (the value of {\bf DM.MixingWeight})}
+
+\item[{\bf SCF.PulayMinimumHistory}] ({\it integer}):\index{Pulay mixing}
+\index{SCF.PulayMinimumHistory@{\bf SCF.PulayMinimumHistory}}\index{SCF!mixing!Pulay}
+
+Pulay mixing might kick in only after a specified number of history
+steps have been built up.
+
+{\it Default value:} {\tt 2}
+
+\item[{\bf SCF.PulayDmaxRegion}] ({\it real}):\index{SCF!mixing!Pulay}
+\index{SCF.PulayDmaxRegion@{\bf
+    SCF.PulayDmaxRegion}}\index{SCF!mixing!Pulay!close region}
+
+Pulay mixing might not work well if far from the fixed point. This option
+will avoid inserting the current $X_{in}$, $X_{out}$ pair ($X$ could be
+the density matrix or the hamiltonian) in the history stack if
+the maximum difference is above the specified number.
+
+{\it Default value:} {\it (a very high number, so no effect by
+  default)}
+
+\item[{\bf DM.NumberKick}] ({\it integer}):\index{Linear mixing kick}
+\index{DM.NumberKick@{\bf DM.NumberKick}}
+%\index{SCF!mixing!linear!Pulay!Broyden}
+\index{SCF!mixing!linear}
+Option to skip the Pulay (or Broyden) mixing each certain number of iterations,
+and use a linear mixing instead. Linear mixing is done
+every {\bf DM.NumberKick} iterations, using a mixing coefficient
+$\alpha$ given by variable {\bf DM.KickMixingWeight}
+(instead of the usual mixing {\bf DM.MixingWeight}).
+This allows in some difficult cases to bring the SCF out of
+loops in which the selfconsistency is stuck.
+If {\bf DM.MixingWeight}=0, no linear mix is used.
+
+{\it Default value:} {\tt 0}
+
+\item[{\bf DM.KickMixingWeight}] ({\it real}):\index{SCF!mixing!Pulay!Broyden}
+\index{DM.KickMixingWeight@{\bf DM.KickMixingWeight}}
+%\index{SCF!mixing!linear!Pulay!Broyden}
+\index{SCF!mixing!linear}
+Proportion $\alpha$ of
+output Density Matrix to be used for the input Density Matrix of
+next SCF cycle (linear mixing):
+$\rho^{n+1}_{in} = \alpha \rho^{n}_{out}
++(1 - \alpha) \rho^{n}_{in}$, for linear mixing kicks within the
+Pulay or Broyden mixing schemes.
+This mixing is done every {\bf DM.NumberKick} cycles.
+
+{\it Default value:} {\tt 0.50}
 
 \item[{\bf DM.Pulay.Avoid.First.After.Kick}] ({\it
   logical}):\index{SCF!mixing}
@@ -2980,6 +3197,61 @@ performed.
   this variable is activated.
 
 {\it Default value:} {\tt .false.}
+
+
+\item[{\bf SCF.LinearMixingAfterPulay}] ({\it logical}):
+  \index{SCF.LinearMixingAfterPulay@{\bf
+      SCF.LinearMixingAfterPulay}}\index{SCF!mixing!Pulay} 
+
+The damping of the DIIS-predicted $X_{in}$ is done to avoid introducing
+linear dependencies into the Pulay history stack. Alternatively (or
+simultaneously) one can use the most recent $X_{in}$, $X_{out}$ pair in a
+linear mixing step, and use a possibly different mixing
+parameter. This would be akin to a ```kick'', but without removing all
+the history information.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SCF.MixingWeightAfterPulay}] ({\it real}):\index{SCF!mixing!Pulay}
+\index{SCF.MixingWeightAfterPulay@{\bf SCF.MixingWeightAfterPulay}}
+\index{SCF!mixing!Pulay}
+
+Proportion $\alpha$ of output Density Matrix to be used for the input
+Density Matrix of next SCF cycle, for linear mixing
+steps after a Pulay mixing step if the option {\bf
+  SCF.LinearMixingAfterPulay} is activated.
+
+{\it Default value:} {\tt 0.50}
+
+\item[{\bf SCF.Pulay.UseSVD}] ({\it logical}):
+  \index{SCF.Pulay.UseSVD@{\bf
+      SCF.Pulay.UseSVD}}\index{SCF!mixing!Pulay!SVD} 
+
+Instead of a direct matrix inversion, the more robust SVD algorithm can
+be used to perform the DIIS extrapolation.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SCF.Pulay.DebugSVD}] ({\it logical}):
+  \index{SCF.Pulay.DebugSVD@{\bf
+      SCF.Pulay.DebugSVD}}\index{SCF!mixing!Pulay!SVD} 
+
+Print more information (effective rank, singular values) if the SVD algorithm
+isused to perform the DIIS extrapolation.
+
+{\it Default value:} {{\tt .true.} {\it when using SVD}}
+
+\item[{\bf SCF.Pulay.RcondSVD}] ({\it real}):\index{SCF!mixing!Pulay!SVD}
+\index{SCF.Pulay.RcondSVD@{\bf SCF.Pulay.RcondSVD}}
+\index{SCF!mixing!Pulay!SVD}
+
+Singular values which are smaller than {\tt rcond} times the maximum
+singular value are effectively discarded in the SVD algorithm for
+solving the DIIS equations. This lowers the effective rank of the
+problem, and is a sign of (near) linear dependencies in the
+extrapolation data.
+
+{\it Default value:} {\tt 10$^{-8}$}
 
 
 \item[{\bf DM.PulayOnFile}] ({\it logical}):
@@ -2999,6 +3271,8 @@ where SystemLabel is the name associated
 to parameter {\tt SystemLabel}.
 
 {\it Default value:} {\tt .false.}
+
+
 
 \item[{\bf DM.NumberBroyden}] ({\it integer}):\index{Broyden mixing}
 \index{DM.NumberBroyden@{\bf DM.NumberBroyden}}\index{SCF!mixing!Broyden}
@@ -3046,45 +3320,6 @@ norm of their residual ${\rho}^{n}_{out}-{\rho}^{n}_{in}$.
 
 {\it Default value:} {\tt .true.}
 
-\item[{\bf DM.NumberKick}] ({\it integer}):\index{Linear mixing kick}
-\index{DM.NumberKick@{\bf DM.NumberKick}}
-%\index{SCF!mixing!linear!Pulay!Broyden}
-\index{SCF!mixing!linear}
-Option to skip the Pulay (or Broyden) mixing earch certain number of iterations,
-and use a linear mixing instead. Linear mixing is done
-every {\bf DM.NumberKick} iterations, using a mixing coefficient
-$\alpha$ given by variable {\bf DM.KickMixingWeight}
-(instead of the usual mixing {\bf DM.MixingWeight}).
-This allows in some difficult cases to bring the SCF out of
-loops in which the selfconsistency is stuck.
-If {\bf DM.MixingWeight}=0, no linear mix is used.
-
-{\it Default value:} {\tt 0}
-
-\item[{\bf DM.KickMixingWeight}] ({\it real}):\index{SCF!mixing!Pulay!Broyden}
-\index{DM.KickMixingWeight@{\bf DM.KickMixingWeight}}
-%\index{SCF!mixing!linear!Pulay!Broyden}
-\index{SCF!mixing!linear}
-Proportion $\alpha$ of
-output Density Matrix to be used for the input Density Matrix of
-next SCF cycle (linear mixing):
-$\rho^{n+1}_{in} = \alpha \rho^{n}_{out}
-+(1 - \alpha) \rho^{n}_{in}$, for linear mixing kicks within the
-Pulay or Broyden mixing schemes.
-This mixing is done every {\bf DM.NumberKick} cycles.
-
-{\it Default value:} {\tt 0.50}
-
-
-\item[{\bf DM.MixSCF1}] ({\it logical}):\index{SCF!mixing}
-\index{DM.MixSCF1@{\bf DM.MixSCF1}}\index{SCF!mixing}
-Logical variable to indicate whether mixing is done in the
-first SCF cycle or not. Usually, mixing should not be done in
-the first cycle, to avoid non-idempotency in density matrix
-from Harris or previous steps. It can be useful, though,
-for restarts of selfconsistency runs.
-
-{\it Default value:} {\tt .false.}
 
 \end{description}
 
@@ -3744,12 +3979,18 @@ to make sure that the unit cell is large enough.
 of the system. One is standard diagonalization, which works for all
 systems and has a cubic scaling with the size. The other is based on
 the direct minimization of a special functional over a set of
-localized functions. The latter scales in principle linearly with the
-size of the system (only if the size is larger than the radial cutoff
-for the local solution wave-functions), but is quite fragile and
-substantially more difficult to use, and only works for systems with
-clearly separated occupied and empty states.  The default is to use
-diagonalization.
+trial orbitals. These orbitals can either extend over the entire system,
+resulting in a cubic scaling algorithm, or be constrained within a
+localization radius, resulting in a linear scaling algorithm. The former
+is a very recent implementation (described in \ref{SolverOMM}), that can
+be viewed as an equivalent approach to diagonlization in terms of the
+accuracy of the solution; the latter is the historic O(N) method used by
+{\sc Siesta} (described in \ref{SolverON}); it scales in principle
+linearly with the size of the system (only if the size is larger than
+the radial cutoff for the local solution wave-functions), but is quite
+fragile and substantially more difficult to use, and only works for
+systems with clearly separated occupied and empty states. The default is
+to use diagonalization.
 
 The calculation of the H and S matrix elements is always done with an
 O(N) method. The actual scaling is not linear for small systems, but
@@ -3784,8 +4025,8 @@ more user-friendly and robust.
 \item[{\bf SolutionMethod}] ({\it string}):
 \index{SolutionMethod@{\bf SolutionMethod}}
 Character string to chose between
-diagonalization ({\tt diagon}) or Order-N ({\tt OrderN}) solution
-of the LDA Hamiltonian.
+diagonalization ({\tt diagon}), cubic-scaling minimization ({\tt OMM})
+or Order-N ({\tt OrderN}) solution of the Kohn-Sham Hamiltonian.
 
 {\it Default value:} {\tt diagon}
 
@@ -4010,7 +4251,190 @@ pp
 
 \end{description}
 
-\subsubsection{Order(N) calculations}
+\subsubsection{Orbital minimization method (OMM)} \label{SolverOMM}
+
+The OMM is an alternative cubic-scaling solver that uses a minimization
+algorithm instead of direct diagonalization to find the occupied subspace.
+The main advantage over diagonalization is the possibility of iteratively
+reusing the solution from each SCF/MD step as the starting guess of the
+following one, thus greatly reducing the time to solution. Typically,
+therefore, the first few SCF cycles of the first MD step of a simulation
+will be slower than diagonalization, but the rest will be faster. The main
+disadvantages are that individual Kohn-Sham eigenvalues are not computed,
+and that only a fixed, integer number of electrons at each k point/spin is
+allowed. Therefore, only spin-polarized calculations with {\bf FixSpin}
+are allowed, and {\bf TotalSpin} must be chosen appropriately. For
+non-$\Gamma$ point calculations, the number of electrons is set to be equal
+at all k points. {\bf NonCollinearSpin} calculations are not supported at
+present.
+
+It is important to note that the OMM requires all occupied Kohn-Sham
+eigenvalues to be negative; this can be achieved by applying a shift
+to the eigenspectrum, controlled by {\bf ON.eta} (in this case,
+{\bf ON.eta} simply needs to be higher than the HOMO level). If the OMM
+exhibits a pathologically slow or unstable convergence, this is almost
+certainly due to the fact that the default value of {\bf ON.eta}
+({\tt 0.0 eV}) is too low, and should be raised by a few eV.
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf OMM.UseCholesky}] ({\it logical}):
+\index{OMM.UseCholesky@{\bf OMM.UseCholesky}}
+Select whether to perform a Cholesky factorization of the generalized eigenvalue
+problem; this removes the overlap matrix from the problem but also destroys the
+sparsity of the Hamiltonian matrix.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf OMM.Use2D}] ({\it logical}):
+\index{OMM.Use2D@{\bf OMM.Use2D}}
+Select whether to use a 2D data decomposition of the matrices for parallel
+calculations. This generally leads to superior scaling for large numbers of MPI
+processes.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf OMM.UseSparse}] ({\it logical}):
+\index{OMM.UseSparse@{\bf OMM.UseSparse}}
+Select whether to make use of the sparsity of the Hamiltonian and overlap
+matrices where possible when performing matrix-matrix multiplications (these
+operations are thus reduced from $O(N^3)$ to $O(N^2)$ without loss of
+accuracy).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}; not compatible with
+{\bf OMM.UseCholesky}, {\bf OMM.Use2D}, or non-$\Gamma$ point calculations
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.Precon}] ({\it integer}):
+\index{OMM.Precon@{\bf OMM.Precon}}
+Number of SCF steps for {\em all} MD steps for which to apply a preconditioning
+scheme based on the overlap and kinetic energy matrices; for negative values the
+preconditioning is always applied. Preconditioning is usually essential for fast
+and accurate convergence (note, however, that it is not needed if a Cholesky
+factorization is performed; in such cases this variable will have no effect on
+the calculation).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}; not used with
+{\bf OMM.UseCholesky}
+
+{\it Default value:} {\tt -1}
+
+\item[{\bf OMM.PreconFirstStep}] ({\it integer}):
+\index{OMM.PreconFirstStep@{\bf OMM.PreconFirstStep}}
+Number of SCF steps in the {\em first} MD step for which to apply the preconditioning
+scheme; if present, this will overwrite the value given in {\bf OMM.Precon} for the
+first MD step only.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}; not used with
+{\bf OMM.UseCholesky}
+
+{\it Default value:} {\tt OMM.Precon}
+
+\item[{\bf OMM.Diagon}] ({\it integer}):
+\index{OMM.Diagon@{\bf OMM.Diagon}}
+Number of SCF steps for {\em all} MD steps for which to use a standard diagonalization
+before switching to the OMM; for negative values diagonalization is always used, and
+so the calculation is effectively equivalent to {\bf SolutionMethod} = {\tt diagon}.
+In general, selecting the first few SCF steps can speed up the calculation by removing
+the costly initial minimization (at present this works best for $\Gamma$ point
+calculations).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt 0}
+
+\item[{\bf OMM.DiagonFirstStep}] ({\it integer}):
+\index{OMM.DiagonFirstStep@{\bf OMM.DiagonFirstStep}}
+Number of SCF steps in the {\em first} MD step for which to use a standard diagonalization
+before switching to the OMM; if present, this will overwrite the value given in
+{\bf OMM.Diagon} for the first MD step only.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt OMM.Diagon}
+
+\item[{\bf OMM.BlockSize}] ({\it integer}):
+\index{OMM.BlockSize@{\bf OMM.BlockSize}}
+Blocksize used for distributing the elements of the matrix over MPI processes. Specifically,
+this variable controls the dimension relating to the trial orbitals used in the minimization
+(equal to the number of occupied states at each k point/spin); the equivalent variable for
+the dimension relating to the underlying basis orbitals is controlled by {\bf BlockSize}.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} chosen by {\sc Siesta}
+
+\item[{\bf OMM.TPreconScale}] ({\it real energy}):
+\index{OMM.TPreconScale@{\bf OMM.TPreconScale}}
+Scale of the kinetic energy preconditioning (see C.~K.~Gan {\em et al.}, Comput. Phys. Commun.
+{\bf 134}, 33 (2001)). A smaller value indicates more aggressive kinetic energy preconditioning,
+while an infinite value indicates no kinetic energy preconditioning. In general, the kinetic
+energy preconditioning is much less important than the tensorial correction brought about by
+the overlap matrix, and so this value will have fairly little impact on the overall performace
+of the preconditioner; however, too aggressive kinetic energy preconditioning can have a
+detrimental effect on performance and accuracy.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt 10.0 Ry}
+
+\item[{\bf OMM.RelTol}] ({\it real}):
+\index{OMM.RelTol@{\bf OMM.RelTol}}
+Relative tolerance in the conjugate gradients minimization of the Kohn-Sham band energy (see
+{\bf ON.etol}).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} ${\tt 10^{-9}}$
+
+\item[{\bf OMM.Eigenvalues}] ({\it logical}):
+\index{OMM.Eigenvalues@{\bf OMM.Eigenvalues}}
+Select whether to perform a diagonalization at the end of each MD step to obtain the Kohn-Sham
+eigenvalues.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.WriteCoeffs}] ({\it logical}):
+\index{OMM.WriteCoeffs@{\bf OMM.WriteCoeffs}}
+Select whether to write the coefficients of the solution orbitals to file at the end of each MD
+step.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.ReadCoeffs}] ({\it logical}):
+\index{OMM.ReadCoeffs@{\bf OMM.ReadCoeffs}}
+Select whether to read the coefficients of the solution orbitals from file at the beginning of
+a new calculation. Useful for restarting an interrupted calculation, especially when used in
+conjuction with {\bf DM.UseSaveDM}. Note that the same number of MPI processes and values of
+{\bf OMM.Use2D}, {\bf OMM.BlockSize}, and {\bf BlockSize} must be used when restarting.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf OMM.LongOutput}] ({\it logical}):
+\index{OMM.LongOutput@{\bf OMM.LongOutput}}
+Select whether to output detailed information of the conjugate gradients minimization for each
+SCF step.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OMM}
+
+{\it Default value:} {\tt .false.}
+
+\end{description}
+
+\subsubsection{Order(N) calculations} \label{SolverON}
 
 The Ordern(N) subsystem is quite fragile and only works for systems
 with clearly separated occupied and empty states. Note also that the
@@ -5283,6 +5707,20 @@ If netCDF support is compiled in, the file {\tt DeltaRho.grid.nc} is produced.
 {\it Default value:} {\tt .false.}
 
 
+\item[{\bf SaveRhoXC}] ({\it logical}): \index{SaveRhoXC@{\bf
+    SaveRhoXC}}\index{output!charge density} Instructs to write the
+  valence pseudocharge density at the mesh, including the nonlocal
+core corrections used to calculate the exchange-correlation energy, 
+in file {\tt
+    SystemLabel}.RHOXC.
+
+{\it Use:} File {\tt SystemLabel}.RHOXC is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt RhoXC.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
+
+
 \item[{\bf SaveElectrostaticPotential}] ({\it logical}):
 \index{SaveElectrostaticPotential@{\bf SaveElectrostaticPotential}}
 \index{output!electrostatic potential}
@@ -5540,7 +5978,9 @@ optimised by varying this parameter until a suitable value is found.
 {\it Use:} Controls the blocksize used for distributing orbitals over
 processors
 
-{\it Default value:}  8
+{\it Default value:}  Estimated by a heuristic algorithm, with a
+maximum value of 24. The imbalance in the distribution is not
+larger than 2.
 
 \item[{\bf ProcessorY}] ({\it integer}): \index{ProcessorY@{\bf
 ProcessorY}} The mesh points are divided in the Y and Z directions
@@ -5673,7 +6113,7 @@ make it possible to run larger jobs where memory is the limiting factor.
 
 \end{description}
 
-\subsection{Memory and CPU-time accounting options}
+\subsection{Memory, CPU-time, and Wall time accounting options}
 \begin{description}
 
 \item[{\bf AllocReportLevel}] ({\it integer}):
@@ -5718,6 +6158,15 @@ output file. In parallel execution, they are reported in a separated
 file named {\tt SystemLabel}.times.
 
 {\it Default value:} {\tt 0.0}
+
+\item[{\bf UseTreeTimer}] ({\it logical}): 
+\index{UseTreeTimer@{\bf UseTreeTimer}}
+
+Enable an experimental timer which is based on wall time on the master
+node and is aware of the tree-structure of the timed sections.
+
+{\it Default value:} {\tt .false.}
+
 
 \end{description}
 
@@ -5829,8 +6278,8 @@ temperature and/or pressure (see variable MD.AnnealOption below)
     Matrix!using phonon@using {\sc Phonon}}.
 
 \item {\tt Forces} (Receive coordinates from, and return forces to, an
-  external driver program, using Unix pipes for communication.  The
-  routines in module fsiesta.f90 allow the user's program to perform
+  external driver program, using MPI or Unix pipes for communication.
+  The routines in module fsiesta allow the user's program to perform
   this communication transparently, as if siesta were a conventional
   force-field subroutine. See {\tt Util/SiestaSubroutine/README} for
   details. WARNING: if this option is specified without a driver
@@ -8018,7 +8467,7 @@ For optimal performance, this parameter
 should be adjusted according to the size of problem and the machine
 being used. Very small and very large values tend to be inefficient
 and typically values in the range 8 - 32 tend to be optimal. Parts of
-the code that parallelise in this way are, evaluation of the kinetic
+the code that parallelise in this way are: evaluation of the kinetic
 energy, the non-local pseudopotential contribution, determination of
 the overlap integrals and matrix diagonalisation/order N. Note that
 for matrix diagonalisation, the default option is now to transform the
