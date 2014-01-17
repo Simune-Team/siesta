@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+January 17, 2014  Alberto Garcia           trunk-453--ncps-8
+Added evaluator for radfuncs in XML struct
+
+Uses polynomial interpolation.
+In principle it could work for r=0, but
+since rV is stored, it is not useful.
+
+modified:
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+
+------------------------------------------------------------
 January 17, 2014  Alberto Garcia           trunk-453--ncps-7
 Added program 'semicore_info'
 
