@@ -90,6 +90,8 @@ C
       use writewave,     only : writew
       use m_fermid,      only : fermid, fermispin, stepf
       use alloc
+      use m_fdf_global,  only : fdf_global_get
+      use m_rdiag_elpa,  only : rdiag_elpa
 
 #ifdef MPI
       use mpi_siesta
@@ -122,7 +124,7 @@ C
       integer, parameter                :: nk = 1
 
       logical
-     &  getD, getPSI, fixspin
+     .  getD, getPSI, fixspin, use_elpa
 
       external rdiag
 
@@ -136,7 +138,13 @@ C  Internal variables .............................................
       real(dp), pointer :: psi_tmp(:), paux(:)
 
 C Solve eigenvalue problem
+
+      
+      call fdf_global_get(use_elpa,"Diag.ELPA",.false.)
+      if (Nodes == 1) use_elpa = .false.
+
       do ispin = 1,nspin
+
         call timer( 'r-eigvec', 1 )
         call timer( 'r-buildHS', 1 )
         do io = 1,nuo
@@ -154,8 +162,15 @@ C Solve eigenvalue problem
           enddo
         enddo
         call timer( 'r-buildHS', 2 )
-        call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     &              psi(1,1,ispin), neigwanted, iscf, ierror )
+        if (use_elpa) then
+           call rdiag_elpa( Haux, Saux, nuotot,
+     $              nuo, nuotot, eo(1,ispin), 
+     .              psi(1,1,ispin), neigwanted, ierror )
+        else
+           call rdiag( Haux, Saux, nuotot, nuo, nuotot,
+     $              eo(1,ispin), 
+     .              psi(1,1,ispin), neigwanted, iscf, ierror )
+        endif
         call timer( 'r-eigvec', 2 )
 
 
@@ -163,6 +178,9 @@ C Check error flag and take appropriate action
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
+           if (use_elpa) then
+              call die('Terminating due to failed diagonalisation')
+           endif
 C Repeat diagonalisation with increased memory to handle clustering
           do io = 1,nuo
             do jo = 1,nuotot
