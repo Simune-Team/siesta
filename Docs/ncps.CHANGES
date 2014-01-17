@@ -1,4 +1,16 @@
 ------------------------------------------------------------
+January 17, 2014  Alberto Garcia           trunk-453--ncps-7
+Added program 'semicore_info'
+
+Created Pseudo/atom/Util/Ps2Inp/semicore_info.f90
+to implement the method to determine the number of semicore shells.
+
+added:
+  Pseudo/atom/Util/Ps2Inp/semicore_info.f90
+modified:
+  Pseudo/atom/Util/Ps2Inp/makefile
+
+------------------------------------------------------------
 January 16, 2014  Alberto Garcia           trunk-453--ncps-6
 Work toward semicore handling
 
