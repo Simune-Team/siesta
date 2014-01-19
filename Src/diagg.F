@@ -92,6 +92,7 @@ C
       use alloc
       use m_fdf_global,  only : fdf_global_get
       use m_rdiag_elpa,  only : rdiag_elpa
+      use m_rdiag_mrrr,  only : rdiag_mrrr
 
 #ifdef MPI
       use mpi_siesta
@@ -124,7 +125,7 @@ C
       integer, parameter                :: nk = 1
 
       logical
-     .  getD, getPSI, fixspin, use_elpa
+     .  getD, getPSI, fixspin, use_elpa, use_mrrr
 
       external rdiag
 
@@ -142,6 +143,8 @@ C Solve eigenvalue problem
       
       call fdf_global_get(use_elpa,"Diag.ELPA",.false.)
       if (Nodes == 1) use_elpa = .false.
+      call fdf_global_get(use_mrrr,"Diag.MRRR",.false.)
+      if (Nodes == 1) use_mrrr = .false.
 
       do ispin = 1,nspin
 
@@ -164,6 +167,10 @@ C Solve eigenvalue problem
         call timer( 'r-buildHS', 2 )
         if (use_elpa) then
            call rdiag_elpa( Haux, Saux, nuotot,
+     $              nuo, nuotot, eo(1,ispin), 
+     .              psi(1,1,ispin), neigwanted, ierror )
+        else if (use_mrrr) then
+           call rdiag_mrrr( Haux, Saux, nuotot,
      $              nuo, nuotot, eo(1,ispin), 
      .              psi(1,1,ispin), neigwanted, ierror )
         else

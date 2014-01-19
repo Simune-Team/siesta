@@ -156,7 +156,8 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
         die.o m_dminim.o m_zminim.o m_svd.o compute_max_diff.o \
         save_density_matrix.o \
-        rdiag_elpa.o elpa1.o elpa2.o elpa_kernels.o
+        rdiag_elpa.o elpa1.o elpa2.o $(ELPA_KERNELS) \
+	rdiag_mrrr.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -424,7 +425,7 @@ dhscf.o: precision.o siesta_options.o sys.o units.o vmat.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: alloc.o fermid.o m_fdf_global.o parallel.o parallelsubs.o precision.o
-diagg.o: rdiag_elpa.o sys.o writewave.o
+diagg.o: rdiag_elpa.o rdiag_mrrr.o sys.o writewave.o
 diagk.o: compute_norm.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagk.o: writewave.o
 diagk_file.o: fermid.o iowfs_netcdf.o parallel.o parallelsubs.o precision.o
@@ -665,6 +666,7 @@ radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
 rdiag_elpa.o: alloc.o elpa1.o elpa2.o parallel.o precision.o sys.o
+rdiag_mrrr.o: alloc.o parallel.o precision.o sys.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
@@ -841,6 +843,7 @@ m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
 m_rdiag_elpa.o: rdiag_elpa.o
+m_rdiag_mrrr.o: rdiag_mrrr.o
 m_save_density_matrix.o: save_density_matrix.o
 m_scf_options.o: m_options.o
 m_scfconvergence_test.o: scfconvergence_test.o
