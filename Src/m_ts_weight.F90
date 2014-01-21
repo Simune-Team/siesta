@@ -72,7 +72,7 @@ contains
     use class_OrbitalDistribution
     use class_dSpData2D
 
-    use m_ts_contour_neq, only : N_nEq_ID, indices2eq
+    use m_ts_contour_neq, only : N_nEq_ID, ID2mu
 
     implicit none
 
@@ -106,6 +106,7 @@ contains
     integer :: io, jo, ind, j
     integer :: mu_i, mu_j
     integer :: ID2mu1, ID2mu2 ! TODO delete
+    integer, allocatable :: ID_mu(:)
     ! For error estimation
     integer  :: eM_i,eM_j
     real(dp) :: eM, DMe, ee, ee_i, tmp
@@ -133,6 +134,11 @@ contains
     hasEDM = initialized(spEDM)
     if ( hasEDM ) EDM => val(spEDM)
 
+    allocate(ID_mu(N_nEq_ID))
+    do io = 1 , N_nEq_ID
+       ID_mu(io) = ID2mu(io)
+    end do
+
     ! initialize the errors
     eM  = 0._dp
     DMe = 0._dp
@@ -148,7 +154,7 @@ contains
              ! Retrieve the connecting orbital
              jo = l_col(ind)
 
-             call get_weight(N_Elec,N_mu,N_nEq_ID,DMneq(ind,:),w)
+             call get_weight(N_Elec,N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),w)
 
              ! Do error estimation (capture before update)
              ee = 0._dp
@@ -195,7 +201,7 @@ contains
              jo = l_col(ind)
 
              ! get both contribution and weight
-             call get_neq_weight(N_Elec,N_mu,N_nEq_ID,DMneq(ind,:),neq,w)
+             call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq,w)
              
              !if ( io == 30 .and. jo < 365 ) &
              !     print '(i0,tr1,8(f10.6,tr1))',jo,DM(ind,2),DMneq(ind,ID2mu2),neq(2),w(2), &
@@ -231,6 +237,8 @@ contains
        end do
 
     end if
+
+    deallocate(ID_mu)
 
 #ifdef MPI
     ! remove pointer
@@ -286,9 +294,9 @@ contains
 
 
   ! do simple weight calculation and return correct numbers
-  subroutine get_weight(N_El,N_mu,N_id,w_ID,w)
-    use m_ts_contour_neq, only : indices2eq, ID2mult,IDhasmu_right
-    integer,  intent(in)  :: N_El, N_id, N_mu
+  subroutine get_weight(N_El,N_mu,N_id,ID_mu,w_ID,w)
+    use m_ts_contour_neq, only : ID2mu, ID2mult, IDhasmu_right
+    integer,  intent(in)  :: N_El, N_id, N_mu, ID_mu(N_id)
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: w(N_mu)
     integer :: mu_i, mu, ID
@@ -300,7 +308,7 @@ contains
     total  = 0._dp
     w(:)   = 0._dp
     do ID = 1 , N_id
-       call indices2eq(ID,mu)
+       mu = ID_mu(ID)
        tmp = w_ID(ID) * ID2mult(ID)
        total = total + tmp
        do mu_i = 1 , N_mu
@@ -322,9 +330,9 @@ contains
   end subroutine get_weight
 
   ! do simple weight calculation and return correct numbers
-  subroutine get_neq_weight(N_El,N_mu,N_id,neq_ID,neq,w)
-    use m_ts_contour_neq, only : indices2eq, ID2mult, IDhasmu_right
-    integer,  intent(in)  :: N_El, N_id, N_mu
+  subroutine get_neq_weight(N_El,N_mu,N_id,ID_mu,neq_ID,neq,w)
+    use m_ts_contour_neq, only : ID2mu, ID2mult, IDhasmu_right
+    integer,  intent(in)  :: N_El, N_id, N_mu, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
     real(dp), intent(out) :: w(N_mu)
@@ -336,7 +344,7 @@ contains
     neq(:) = 0._dp
     w(:)   = 0._dp
     do ID = 1 , N_id
-       call indices2eq(ID,mu)
+       mu   = ID2mu(ID)
        mult = ID2mult(ID)
        neq(mu) = neq(mu) + neq_ID(ID) * mult
        tmp = neq_ID(ID) ** 2 * mult

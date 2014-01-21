@@ -499,8 +499,6 @@ contains
     ! this means that sp == s (besides the non-update objects)
     ! Hence we don't need to utilize index_local_to_global
 
-    if ( lnr /= nrows(s) ) call die('The sparsity format is not as &
-         &expected.')
     
     hasipnt = present(ipnt)
     if ( hasipnt ) hasipnt = initialized(ipnt)
@@ -508,7 +506,11 @@ contains
     lUpSpGlobal = .false.
     if ( present(UpSpGlobal) ) lUpSpGlobal = UpSpGlobal
 
+
     if ( .not. lUpSpGlobal ) then
+
+    if ( lnr /= nrows(s) ) &
+         call die('The sparsity format is not as expected.')
 
     if ( hasipnt ) then
 
@@ -656,7 +658,9 @@ contains
     s => spar(spDM)
     call attach(s, n_col=lup_ncol,list_ptr=lup_ptr,list_col=lup_col)
     zD     => val(spDM)
+
     hasEDM = initialized(spEDM)
+
     if ( hasEDM ) then
 
        zE => val(spEDM)
@@ -730,7 +734,7 @@ contains
   end subroutine update_zDM
 
 
-  subroutine init_DM(dit,sp,maxn,DM,EDM, up_sp, Calc_Forces)
+  subroutine init_DM(dit,sp,n_nzs,DM,EDM, up_sp, Calc_Forces)
     ! The DM and EDM equivalent matrices
     use class_OrbitalDistribution
     use class_Sparsity
@@ -739,9 +743,9 @@ contains
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
     ! Size of the sparsity arrays
-    integer, intent(in) :: maxn
+    integer, intent(in) :: n_nzs
     ! Sparse DM-arrays (local)
-    real(dp), intent(inout) :: DM(maxn), EDM(maxn)
+    real(dp), intent(inout) :: DM(n_nzs), EDM(n_nzs)
     ! The updated sparsity arrays...
     type(Sparsity), intent(inout) :: up_sp
     logical, intent(in) :: Calc_Forces

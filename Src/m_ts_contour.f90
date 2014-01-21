@@ -40,26 +40,9 @@ module m_ts_contour
   public :: print_contour_block
   public :: io_contour
   public :: sort_contour
-  public :: nextE_Eq, nextE_nEq
   public :: has_cE
 
 contains
-
-  function nextE_Eq(id,step) result(c)
-    use m_ts_contour_eq,  only : N_Eq_E, Eq_E
-    integer, intent(in) :: id
-    integer, intent(in), optional :: step
-    type(ts_c_idx) :: c ! the configuration of the energy-segment
-    c = Eq_E(id,step=step)
-  end function nextE_Eq
-
-  function nextE_nEq(id,step) result(c)
-    use m_ts_contour_neq, only : nEq_E
-    integer, intent(in) :: id
-    integer, intent(in), optional :: step
-    type(ts_c_idx) :: c ! the configuration of the energy-segment
-    c = nEq_E(id,step=step)
-  end function nextE_nEq
 
   function has_cE(c,D,iEl,imu,ineq) result(has)
     use m_ts_contour_eq,  only : ID2idx

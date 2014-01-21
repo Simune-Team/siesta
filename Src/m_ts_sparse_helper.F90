@@ -154,7 +154,7 @@ contains
           ! Do a check whether we have connections
           ! across the junction...
           ! This is the same as removing all electrode connections
-          if ( count(OrbInElec(Elecs,io) .neqv. OrbInElec(Elecs,jo)) == 2 ) cycle
+          if ( count(OrbInElec(Elecs,io) .neqv. OrbInElec(Elecs,jo)) > 1 ) cycle
            
           ! find the equivalent position in the sparsity pattern
           ! of the full unit cell
@@ -332,7 +332,7 @@ contains
     integer, pointer  :: k_ncol(:), k_ptr(:), k_col(:)
     real(dp), pointer :: dH(:), dS(:)
     type(Sparsity), pointer :: sp_G
-    integer :: no_l, lio, io, ind, jo, ind_k
+    integer :: no_l, lio, io, ind, jo, ind_k, no_max
     
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
@@ -347,6 +347,9 @@ contains
     ! obtain the full sparsity unit-cell
     sp_G   => spar(SpArrH)
     call attach(sp_G, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
+
+    ! the boundary at the right buffer
+    no_max = no_u - no_BufR
     
     ! initialize to 0
     call init_val(SpArrH)
@@ -375,7 +378,7 @@ contains
           jo = UCORB(l_col(ind),no_u)
 
           ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-          if ( jo <= no_BufL .or. no_u - no_BufR < jo ) cycle
+          if ( jo <= no_BufL .or. no_max < jo ) cycle
 
           ! Do a check whether we have connections
           ! across the junction...
@@ -614,3 +617,17 @@ contains
 #endif
 
 end module m_ts_sparse_helper
+
+#ifdef MPI
+subroutine my_full_G_reduce(sp_arr,nwork,work,dim2_count)
+  use precision, only : dp
+  use class_dSpData2D
+  use m_ts_sparse_helper, only : AllReduce_SpData
+  type(dSpData2D), intent(inout) :: sp_arr
+  integer, intent(in)     :: nwork
+  real(dp), intent(inout) :: work(nwork)
+  integer, intent(in) :: dim2_count
+  call AllReduce_SpData(sp_arr,nwork,work,dim2_count)
+end subroutine my_full_G_reduce
+#endif
+

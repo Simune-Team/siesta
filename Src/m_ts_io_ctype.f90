@@ -142,7 +142,6 @@ contains
     type(ts_c_io), intent(in out) :: this
     character(len=*), intent(in) :: opt, val
     type(ts_c_opt_ll), pointer :: copt, new_opt
-    logical :: has
 
     if ( c_io_has_opt(this,opt) ) return
     
@@ -202,7 +201,6 @@ contains
 
   subroutine ts_read_contour_block(prefix,suffix,bName,c, kT, V) 
 
-    use parallel, only : IONode
     use units, only : eV
     use fdf
     use parse, only : search_fun, characters, ntokens
@@ -604,7 +602,7 @@ contains
           if ( leqi(g,'kt') .or. leqi(g,'kbt') ) then
              ! Read in the former value
              ! We should not remove pm as that will not be read in
-             g = remove_pm(characters(pline,1,1,after=i-offset))
+             g = trim(characters(pline,1,1,after=i-offset))
              c = trim(c)//' '//trim(g)//' kT'
              
              if ( get_val .and. .not. has_kT ) call die('You cannot request &
@@ -707,5 +705,68 @@ contains
     write(*,'(a,a)') '%endblock ',trim(prefix)//trim(c%name)
     
   end subroutine ts_print_contour_block
+
+  ! *****
+  ! This routine fixes the inputs for the contours according to those given by 
+  ! the input electrode
+  ! 1.) It fixes the bounds next to each other if they have designated
+  !     'next' or 'previous'
+  ! 2.) Set the method to be equilibrium/non-equilibrium/transport
+  ! 3.) Calculate number of points if dE specified
+  ! 4.) Checks whether the contours are connected
+  subroutine ts_fix_contour(cur,next,prev)
+    use fdf, only : leqi
+    type(ts_c_io), intent(inout) :: cur
+    type(ts_c_io), intent(inout), optional :: next, prev
+
+    ! we need this to "look ahead"
+    if ( present(next) ) then
+       if ( leqi(next%ca,'prev') .or. leqi(next%ca,'previous') ) then
+          next%a = cur%b
+          if ( leqi(cur%cb,'next') ) then
+             call die('Connecting two contours by next and prev is invalid. &
+                  &An explicit value is needed.')
+          end if
+       end if
+    end if
+
+    if ( leqi(cur%cb,'next') ) then
+       if ( present(next) ) then
+          cur%b = next%a
+       else
+          call die('The contour segment is not &
+               &attached to a following segment.')
+       end if
+    end if
+
+    if ( leqi(cur%ca,'prev') .or. leqi(cur%ca,'previous') ) then
+       if ( present(prev) ) then
+          cur%a = prev%b
+       else
+          call die('The contour is not fully connected')
+       end if
+    end if
+
+    ! we can compare bounds
+    if ( present(prev) ) then
+       if ( abs(cur%a - prev%b) > 1.e-8_dp ) then
+          call die('Contour: '//trim(prev%name)//' and '//trim(cur%name)// &
+               ' are not connected.')
+       end if
+    end if
+    
+    if ( present(next) ) then
+       if ( abs(next%a - cur%b) > 1.e-8_dp ) then
+          call die('Contour: '//trim(cur%name)//' and '//trim(next%name)// &
+               ' are not connected.')
+       end if
+    end if
+    
+    ! at this point both boundaries MUST exist
+    if ( len_trim(cur%cd) > 0 .and. len_trim(cur%cN) == 0 ) then
+       cur%N = nint(abs(cur%b - cur%a)/cur%d)
+    end if
+         
+  end subroutine ts_fix_contour
   
 end module m_ts_io_ctype

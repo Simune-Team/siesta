@@ -21,8 +21,13 @@ module m_transiesta
   use m_ts_sparse, only : ts_sparse_init
   use m_ts_method, only : ts_method, TS_SPARSITY, TS_SPARSITY_TRI
 
+  use m_ts_tri_init, only : ts_tri_init
+
   use m_ts_fullg
   use m_ts_fullk
+
+  use m_ts_trig
+  use m_ts_trik
 
   implicit none
 
@@ -49,7 +54,7 @@ contains
     use m_ts_electype
 
     use m_ts_options, only : N_Elec, Elecs
-    use m_ts_options, only : IsVolt
+    use m_ts_options, only : IsVolt, Calc_Forces
     use m_ts_options, only : no_BufL, no_BufR
 
     use m_ts_contour_eq , only : N_Eq_E
@@ -103,8 +108,17 @@ contains
        call ts_sparse_init(slabel,Gamma, sp_dist, sparse_pattern, &
             na_u, lasto)
 
+       if ( ts_method == TS_SPARSITY_TRI ) then
+          ! initialize the tri-diagonal partition
+          call ts_tri_init()
+       end if
+
        call ts_print_charges(Elecs, sp_dist, sparse_pattern, &
             nspin, n_nzs, DM, S)
+
+       if ( .not. Calc_Forces .and. IONode ) then
+          write(*,'(a)') 'transiesta: Notice that the forces are NOT updated'
+       end if
 
        call timer('TS_init',2)
 
@@ -165,21 +179,30 @@ contains
                nq,uGF, &
                nspin, &
                sp_dist, sparse_pattern, &
-               ucell, no_u, na_u, lasto, xa, n_nzs, &
+               no_u, n_nzs, &
                H, S, DM, EDM, Ef, kT)
        else
           call ts_fullk(N_Elec,Elecs, &
                nq,uGF, &
                nspin, &
                sp_dist, sparse_pattern, &
-               ucell, no_u, na_u, lasto, xa, n_nzs, &
+               no_u, n_nzs, &
                H, S, xij, DM, EDM, Ef, kT)
        end if
     else if ( ts_method == TS_SPARSITY_TRI ) then
        if ( Gamma ) then
-          !call ts_trig()
+          call ts_trig(N_Elec,Elecs, &
+               nq, uGF, nspin, &
+               sp_dist, sparse_pattern, &
+               no_u, n_nzs, &
+               H, S, DM, EDM, Ef, kT)
        else
-          !call ts_trik()
+          call ts_trik(N_Elec,Elecs, &
+               nq,uGF, &
+               nspin, &
+               sp_dist, sparse_pattern, &
+               no_u, n_nzs, &
+               H, S, xij, DM, EDM, Ef, kT)
        end if
     else
 
@@ -227,3 +250,4 @@ contains
   end subroutine transiesta
 
 end module m_transiesta
+

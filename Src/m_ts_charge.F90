@@ -251,7 +251,6 @@ contains
        method)
 
     use m_ts_electype
-    use parallel, only : IONode, Node
     use class_OrbitalDistribution
     use class_Sparsity
 

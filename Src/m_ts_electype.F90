@@ -172,6 +172,7 @@ contains
     type(parsed_line), pointer :: pline => null()
     logical :: info(4)
     integer :: i, j
+    integer :: idx_na 
 
     character(len=200) :: ln
 
@@ -179,6 +180,7 @@ contains
     if ( .not. found ) return
 
     info(:) = .false.
+    idx_na = 0
 
     ! We default a lot of the options
     this%GFtitle = 'Surface-Greens function for '//trim(Name(this))
@@ -239,8 +241,21 @@ contains
           info(3) = .true.
 
        else if ( leqi(ln,'electrode-position') ) then
-          if ( fdf_bnintegers(pline) < 1 ) call die('Position of electrode')
-          this%idx_na = fdf_bintegers(pline,1)
+          if ( fdf_bnintegers(pline) > 0 ) then
+             this%idx_na = fdf_bintegers(pline,1)
+             idx_na = 0
+          else if ( fdf_bnnames(pline) > 1 ) then
+             ln = fdf_bnames(pline,2)
+             if ( leqi(ln,'start') ) then
+                idx_na = 1 ! denotes start
+             else if ( leqi(ln,'end') ) then
+                idx_na = -1 ! denotes end
+             else
+                call die('Unknown string designation of the electrode position')
+             end if
+          else
+             call die('Position of electrode not specified')
+          end if
           info(4) = .true.
 
        else if ( leqi(ln,'transport-direction') ) then
@@ -387,6 +402,13 @@ contains
     ! the cross-terms
     if ( .not. this%Bulk ) then
        this%DM_CrossTerms = .true.
+    end if
+
+    ! if the user has specified text for the electrode position
+    if ( idx_na == 1 ) then
+       this%idx_na = 1
+    else if ( idx_na == -1 ) then
+       this%idx_na = - TotUsedAtoms(this)
     end if
 
   end function fdf_Elec
@@ -1082,7 +1104,7 @@ contains
     integer, pointer :: ptr02(:)  => null()
     integer, pointer :: col02(:)  => null()
 
-    integer :: no_l, no_u, i, io, j, ind, ind02, ia, ja
+    integer :: no_l, no_u, i, io, j, ind, ind02, ia
     integer :: tm(3)
     real(dp) :: maxH, maxS
     integer :: maxi, maxj, maxia, maxja

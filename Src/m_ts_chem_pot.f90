@@ -122,7 +122,6 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     logical :: info(2)
-    integer :: i
 
     character(len=200) :: ln
 

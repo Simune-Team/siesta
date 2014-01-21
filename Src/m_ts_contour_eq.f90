@@ -15,7 +15,8 @@
 module m_ts_contour_eq
 
   use precision, only : dp
-!
+  use fdf, only : leqi
+
 ! Use the type associated with the contour
 ! Maybe they should be collected to this module.
 ! However, I like this partition.
@@ -85,7 +86,6 @@ contains
     integer :: different_poles, N
     character(len=C_N_NAME_LEN), allocatable :: tmp(:), nContours(:)
     integer :: cur, next, prev
-    integer, allocatable :: ID(:)
     logical :: isCircle
     logical :: isTail
 
@@ -177,7 +177,6 @@ contains
     ! read in the equilibrium contours (the last will be the poles)
     do i = 1 , N - N_mu
 
-       print *,'reading ',nContours(i) ! TODO DELETE
        ! read in the contour
        call ts_read_contour_block('TS','',nContours(i),Eq_io(i), kT, Volt)
 
@@ -203,12 +202,14 @@ contains
 
        j = 1
        cur = get_c_io_index(mus(i)%Eq_seg(j))
-       isCircle = Eq_io(cur)%type == 'circle'
-       isTail   = Eq_io(cur)%type == 'tail'
+       isCircle = leqi(Eq_io(cur)%part,'circle')
+       isTail   = leqi(Eq_io(cur)%part,'tail')
        if ( Eq_segs(mus(i)) > 2 ) then
           next = get_c_io_index(mus(i)%Eq_seg(j+1))
           call ts_fix_contour( Eq_io(cur), next=Eq_io(next) )
        end if
+       call consecutive_types(Eq_io(cur),isCircle,isTail, &
+            mus(i)%mu, kT)
           
        ! we should not check the pole (hence minus 2)
        do j = 2 , Eq_segs(mus(i)) - 2
@@ -217,7 +218,8 @@ contains
           next = get_c_io_index(mus(i)%Eq_seg(j+1))
           call ts_fix_contour( Eq_io(cur), &
                prev=Eq_io(prev), next=Eq_io(next) )
-          call consecutive_types(Eq_io(cur),isCircle,isTail)
+          call consecutive_types(Eq_io(cur),isCircle,isTail, &
+               mus(i)%mu, kT)
        end do
 
        ! don't check the pole
@@ -227,7 +229,18 @@ contains
           prev = get_c_io_index(mus(i)%Eq_seg(j-1))
           call ts_fix_contour( Eq_io(cur), prev=Eq_io(prev) )
        end if
-       call consecutive_types(Eq_io(cur),isCircle,isTail)
+
+       ! We also check that the circle lies 3 kT below the fermi level
+       call consecutive_types(Eq_io(cur),isCircle,isTail, &
+            mus(i)%mu, kT)
+
+       ! check that the last contour actually lies on the RHS
+       ! of the chemical potential, at least 10 kT across!
+       if ( Eq_io(cur)%b < mus(i)%mu + 10._dp * kT ) then
+          call die('The last contour of the chemical potential: &
+               &'//trim(Name(mus(i)))//' lies too close to the &
+               chemical potential. It must be at least 10kT from mu.')
+       end if
 
     end do
 
@@ -265,25 +278,35 @@ contains
        
     end do
 
-    write(*,*) 'TODO correct empty cycles'
+    write(*,*) 'TODO correct empty cycles i.e. when two contours share an energy-point'
 
   contains
     
-    subroutine consecutive_types(c_io,isCircle,isTail)
+    subroutine consecutive_types(c_io,isCircle,isTail,mu,kT)
       type(ts_c_io), intent(in) :: c_io
       logical, intent(inout) :: isCircle, isTail
+      real(dp), intent(in) :: mu, kT
 
-      if ( c_io%type == 'circle' .and. .not. isCircle ) then
+      if ( leqi(c_io%part,'circle') .and. .not. isCircle ) then
          call die('The circle contour must be the first contour type &
               &as well as connected to other circle contours.')
       end if
-      isCircle = c_io%type == 'circle'
+      isCircle = leqi(c_io%part,'circle')
 
-      if ( c_io%type /= 'tail' .and. isTail ) then
+      if ( isCircle ) then
+         ! We need to check whether the contour lies well below the
+         ! chemical potential
+         if ( c_io%b > mu - 3._dp * kT ) then
+            call die('The circle contour lies too close or across the &
+                 &chemical potential. This is not allowed!')
+         end if
+      end if
+
+      if ( .not. leqi(c_io%part,'tail') .and. isTail ) then
          call die('The tail contour must be the last contour &
               &as well as connected to other tail contours.')
       end if
-      isTail   = c_io%type == 'tail'
+      isTail = leqi(c_io%part,'tail')
 
     end subroutine consecutive_types
 
@@ -315,19 +338,19 @@ contains
        
        idx = get_c_io_index(mu%Eq_seg(i))
 
-       if ( Eq_c(idx)%c_io%part == 'circle' ) then
+       if ( leqi(Eq_c(idx)%c_io%part,'circle') ) then
 
           call contour_Circle(Eq_c(idx),mu,kT,R,cR,Eta)
 
-       else if ( Eq_c(idx)%c_io%part == 'line' ) then
+       else if ( leqi(Eq_c(idx)%c_io%part,'line') ) then
 
           call contour_line(Eq_c(idx),mu,kT,lift)
 
-       else if ( Eq_c(idx)%c_io%part == 'tail' ) then
+       else if ( leqi(Eq_c(idx)%c_io%part,'tail') ) then
 
           call contour_tail(Eq_c(idx),mu,kT,lift)
 
-       else if ( Eq_c(idx)%c_io%part == 'pole' ) then
+       else if ( leqi(Eq_c(idx)%c_io%part,'pole') ) then
 
           ! the poles all have the same weight (Pi*kT*2)
           call contour_poles(Eq_c(idx),Eq_c(idx)%c_io%d,kT,Eta)
@@ -340,9 +363,6 @@ contains
        end if
 
     end do
-    
-! right-hand side of the center
-    write(*,*)'TODO insert checks for contour'
     
   contains
 
@@ -388,7 +408,7 @@ contains
       b = Eq_c(idx)%c_io%b
       do i = 1 , Eq_segs(mu)
          idx = get_c_io_index(mu%Eq_seg(i))
-         if ( Eq_c(idx)%c_io%type == 'eq' .and. Eq_c(idx)%c_io%part == 'circle' ) then
+         if ( Eq_c(idx)%c_io%type == 'eq' .and. leqi(Eq_c(idx)%c_io%part, 'circle') ) then
             b = Eq_c(idx)%c_io%b
          end if
       end do
@@ -427,8 +447,6 @@ contains
     end if
 
     W  = k * Eq_c(c%idx(2))%w(idx,c%idx(3))
-    ! TODO full write out of the energy-density matrix calculation (suspect that 
-    ! the fault lies in this line)!!
     ZW = W * Eq_c(c%idx(2))%c(c%idx(3))
     
   end subroutine c2weight_eq
@@ -448,7 +466,7 @@ contains
     real(dp) :: a,b, tmp
     real(dp), allocatable :: ce(:), cw(:)
 
-    if ( c%c_io%part /= 'circle' ) &
+    if ( .not. leqi(c%c_io%part,'circle') ) &
          call die('Contour is not a line')
    
     ! notice the switch (the circle has increasing contour
@@ -561,7 +579,8 @@ contains
        end if
 
        ! Factor i, comes from Ed\theta=dE=iR e^{i\theta}
-       c%w(idx,i) = cw(i) * nf((dcmplx(cR,0._dp)+ztmp-mu%mu)/kT) * dcmplx(0._dp,1._dp) * ztmp
+       c%w(idx,i) = cw(i) * nf((dcmplx(cR,0._dp)+ztmp-mu%mu)/kT) &
+            * dcmplx(0._dp,1._dp) * ztmp
 
     end do
 
@@ -612,7 +631,7 @@ contains
     real(dp) :: a,b, tmp
     real(dp), allocatable :: ce(:), cw(:)
 
-    if ( c%c_io%part /= 'line' ) &
+    if ( .not. leqi(c%c_io%part,'line') ) &
          call die('Contour is not a line')
 
     ! get bounds
@@ -759,14 +778,12 @@ contains
     real(dp) :: a,b
     real(dp), allocatable :: ce(:), cw(:)
 
-    if ( c%c_io%part /= 'tail' ) &
+    if ( .not. leqi(c%c_io%part,'tail') ) &
          call die('Contour is not a tail contour')
 
     ! get bounds
     a = c%c_io%a
     b = c%c_io%b
-
-    write(*,*) 'TODO check the contours for the gaussian quadrature'
 
     allocate(ce(c%c_io%N))
     allocate(cw(c%c_io%N))
@@ -947,7 +964,7 @@ contains
     integer :: i
 
     do i = 1 , N_Eq
-       if ( Eq_io(i)%part /= 'pole' ) then
+       if ( .not. leqi(Eq_io(i)%part,'pole') ) then
           call ts_print_contour_block(trim(prefix)//'.Contour.',Eq_io(i))
        end if
     end do
@@ -971,7 +988,7 @@ contains
 
     write(*,opt_n) '           >> Residual contour << '
     do i = 1 , N_eq
-       if ( eq_io(i)%part == 'pole' ) then
+       if ( leqi(eq_io(i)%part,'pole') ) then
           chars = trim(eq_io(i)%part)
           call write_e('Pole chemical potential',eq_io(i)%d)
           write(*,opt_int) '  Pole points',eq_io(i)%N
@@ -981,7 +998,7 @@ contains
     write(*,opt_n) '          >> Equilibrium contour << '
     write(*,opt_g_u) 'Equilibrium Greens function Eta',Eq_Eta/eV,'eV'
     do i = 1 , N_eq
-       if ( eq_io(i)%part /= 'pole' ) then
+       if ( .not. leqi(eq_io(i)%part,'pole') ) then
           chars = '  '//trim(eq_io(i)%part)
           write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.'//trim(eq_io(i)%name)
           call write_e(trim(chars)//' contour E_min',eq_io(i)%a)
@@ -1037,7 +1054,7 @@ contains
 ! * LOCAL variables   *
 ! *********************
     character(len=200) :: fname
-    integer :: i, j, unit, idx
+    integer :: i, unit, idx
     type(ts_c_idx) :: cidx
     
     if ( .not. IONode ) return
@@ -1059,7 +1076,7 @@ contains
     cidx%idx(1) = CONTOUR_EQ
     do i = 1 , Eq_segs(mu)
 
-       cidx%idx(2) = c_ioname2idx(mu%Eq_seg(i))
+       cidx%idx(2) = get_c_io_index(mu%Eq_seg(i))
        if ( cidx%idx(2) < 1 ) call die('io_contour_eq_mu: Error in code, C-ID')
        call ID2idx(Eq_c(cidx%idx(2)),mu%ID,idx)
        if ( idx < 1 ) call die('io_contour_eq_mu: Error in code')
@@ -1073,17 +1090,6 @@ contains
     end do
 
     call io_close( unit )
-
-  contains
-    
-    function c_ioname2idx(cName) result(idx)
-      character(len=*), intent(in) :: cName
-      integer :: idx
-      do idx = 1 , N_Eq
-         if ( Eq_c(idx)%c_io%Name == cName ) return
-      end do
-      idx = -1
-    end function c_ioname2idx
 
   end subroutine io_contour_eq_mu
 

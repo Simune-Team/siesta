@@ -38,7 +38,6 @@ module m_ts_voltage
   ! various voltage layouts
   public :: ts_voltage
   public :: ts_init_voltage
-  public :: ts_VH_fix
 
   ! we set the left/right indices for the input of the voltage ramp.
   ! This will put the voltage in between the electrodes instead of 
@@ -52,6 +51,7 @@ contains
 
   subroutine ts_init_voltage(ucell,na_u,xa,meshG,nsm)
     use m_ts_options, only : VoltageInC
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -69,14 +69,13 @@ contains
 
   end subroutine ts_init_voltage
 
-  subroutine ts_voltage(ucell,meshG,nsm,Vscf)
+  subroutine ts_voltage(ucell,Vscf)
     use precision,    only : grid_p
     use m_ts_options, only : VoltageInC
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
     real(dp),      intent(in) :: ucell(3,3)
-    integer,       intent(in) :: meshG(3), nsm
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -88,25 +87,24 @@ contains
 
     if ( VoltageInC ) then
        ! Voltage drop in between the electrodes
-       call ts_ramp_elec(ucell,meshG,nsm,Vscf)
+       call ts_ramp_elec(ucell,Vscf)
     else
        ! Voltage drop in the entire cell
-       call ts_ramp_cell(ucell,meshG,nsm,Vscf)
+       call ts_ramp_cell(ucell,Vscf)
     end if
 
     call timer('ts_volt',2)
   end subroutine ts_voltage
 
-  subroutine ts_ramp_cell(ucell, meshG, nsm, Vscf)
+  subroutine ts_ramp_cell(ucell, Vscf)
     use precision,    only : grid_p
     use parallel,     only : IONode
-    use mesh,         only : meshLim
     use m_ts_options, only : Volt
+    use m_ts_mesh,    only : meshl, offset_i, dMesh
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
     real(dp),      intent(in) :: ucell(3,3)
-    integer,       intent(in) :: meshG(3), nsm
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -118,14 +116,13 @@ contains
     integer                   :: i1, i2, i3, imesh
     integer, target           :: i10, i20, i30
     integer, pointer          :: iT
-    integer                   :: meshl(3), Xoffset, Yoffset, Zoffset
     real(dp)                  :: Lvc, dLvc, dF
     real(dp)                  :: dot, VoltL
     external                  :: dot
 
+    ! the length of the mesh-elements in the transport direction
+    dLvc = dMesh(ts_tdir)
     Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
-
-    dLvc = Lvc/max( meshG(ts_tdir), 1 ) !
 
     ! field in [0;Lvc]: v = e*x = f*index
     dF = Volt * dLvc/Lvc
@@ -140,28 +137,18 @@ contains
        iT => i30
     end if
  
-    ! Find quantities in mesh coordinates
-    meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
-    meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
-    meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
-
     if ( meshl(1) * meshl(2) * meshl(3) /= size(Vscf,1) ) &
          call die('ERROR: Vscf size not correct')
 
-    ! Calculate starting point for grid
-    Xoffset = (meshLim(1,1)-1)*nsm
-    Yoffset = (meshLim(1,2)-1)*nsm
-    Zoffset = (meshLim(1,3)-1)*nsm
-
     ! Add the electric field potential to the input potential
     imesh = 0
-    i30 = Zoffset - 1
+    i30 = offset_i(3) - 1
     do i3 = 0,meshl(3)-1
        i30 = i30 + 1
-       i20 = Yoffset - 1
+       i20 = offset_i(2) - 1
        do i2 = 0,meshl(2)-1
           i20 = i20 + 1
-          i10 = Xoffset - 1
+          i10 = offset_i(1) - 1
           do i1 = 0,meshl(1)-1
              i10   = i10 + 1
              imesh = imesh + 1
@@ -172,16 +159,15 @@ contains
 
   end subroutine ts_ramp_cell
 
-  subroutine ts_ramp_elec(ucell, meshG, nsm, Vscf)
+  subroutine ts_ramp_elec(ucell, Vscf)
     use precision,    only : grid_p
     use parallel,     only : IONode
-    use mesh,         only : meshLim
     use m_ts_options, only : Volt
+    use m_ts_mesh,    only : meshl, offset_i, dMesh
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
     real(dp),      intent(in) :: ucell(3,3)
-    integer,       intent(in) :: meshG(3), nsm
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -191,14 +177,12 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i1, i2, i3, idT, imesh
-    integer  :: meshl(3), Xoffset, Yoffset, Zoffset
     real(dp) :: Lvc, dLvc, dF
     real(dp) :: dot, VoltL
     external :: dot
 
+    dLvc = dMesh(ts_tdir)
     Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
-
-    dLvc = Lvc/max( meshG(ts_tdir), 1 )
 
     ! For the electrode the distance is only in between the indices
     Lvc = dLvc * (right_elec_mesh_idx - left_elec_mesh_idx)
@@ -208,17 +192,8 @@ contains
     VoltL = .5_dp * Volt
 
     ! Find quantities in mesh coordinates
-    meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
-    meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
-    meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
-
     if ( meshl(1) * meshl(2) * meshl(3) /= size(Vscf,1) ) &
          call die('ERROR: Vscf size not correct')
-
-    ! Calculate starting point for grid
-    Xoffset = (meshLim(1,1)-1)*nsm
-    Yoffset = (meshLim(1,2)-1)*nsm
-    Zoffset = (meshLim(1,3)-1)*nsm
 
     if ( ts_tdir == 1 ) then
 
@@ -226,7 +201,7 @@ contains
        imesh = 0
        do i3 = 1,meshl(3)
           do i2 = 1,meshl(2)
-             do i1 = Xoffset+1,Xoffset+meshl(1)
+             do i1 = offset_i(1)+1,offset_i(1)+meshl(1)
                 ! Check the region
                 if ( i1 <= left_elec_mesh_idx ) then
                    ! We are on the left hand side, hence
@@ -252,7 +227,7 @@ contains
        ! Add the electric field potential to the input potential
        imesh = 0
        do i3 = 1,meshl(3)
-          do i2 = Yoffset+1,Yoffset+meshl(2)
+          do i2 = offset_i(2)+1,offset_i(2)+meshl(2)
              ! Check the region
              if ( i2 <= left_elec_mesh_idx ) then
                 ! We are on the left hand side, hence
@@ -276,7 +251,7 @@ contains
     else
        ! Add the electric field potential to the input potential
        imesh = 0
-       do i3 = Zoffset+1,Zoffset+meshl(3)
+       do i3 = offset_i(3)+1,offset_i(3)+meshl(3)
 
           ! Check the region
           if ( i3 <= left_elec_mesh_idx ) then
@@ -309,7 +284,7 @@ contains
     use units,        only : Ang
     use m_ts_options, only : na_BufL, na_BufR
     use m_ts_electype
-    use m_ts_options, only : Elecs
+    use m_ts_options, only : N_Elec, Elecs
     
 ! ***********************
 ! * INPUT variables     *
@@ -321,7 +296,7 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer  :: i, it
+    integer  :: i, it, iElL, iElR
     real(dp) :: Lvc, dLvc
     real(dp) :: left_t_max, right_t_min
     real(dp) :: ddleft, ddright
@@ -404,182 +379,36 @@ contains
 
 ! Print out the voltage direction dependent on the cell parameters.
 
-  subroutine print_ts_voltage(ucell)
+  subroutine print_ts_voltage( ucell )
     use parallel,     only : IONode
     use units,        only : eV
     use m_ts_options, only : Volt
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    real(dp),      intent(in) :: ucell(3,3)
+    real(dp), intent(in) :: ucell(3,3)
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer                   :: i
-    real(dp)                  :: Lvc, vcdir(3)
+    integer  :: i
+    real(dp) :: Lvc, vcdir(3)
 
-    real(dp)                  :: dot
-    external                  :: dot
+    real(dp) :: dot
+    external :: dot
     
     Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
-    do i=1,3
+    do i = 1 , 3
        vcdir(i) = ucell(i,ts_tdir)/Lvc
     end do
 
-    if(IONode) then
+    if ( IONode ) then
        write(*,*)
        write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias ', Volt/eV,'V'
        write(*,'(a,3(f6.3,a))')'ts_voltage: In unit cell direction = {', &
             vcdir(1),',',vcdir(2),',',vcdir(3),'}'
     end if
+
   end subroutine print_ts_voltage
-
-
-
-! Fix the voltage in the mesh
-  subroutine ts_VH_fix(  mesh, nsm, V )
-!
-!  Modules
-!
-    use precision, only : dp, grid_p
-    use sys, only : die
-    use parallel, only : ProcessorY, Node, Nodes
-#ifdef MPI
-    use mpi_siesta, only : MPI_AllReduce, MPI_Sum
-    use mpi_siesta, only : MPI_Integer, MPI_Comm_World
-    use mpi_siesta, only : MPI_double_precision
-    use parallelsubs, only : HowManyMeshPerNode
-#endif
-    
-    implicit          none
-    real(grid_p), intent(inout) :: V(:,:)
-    integer           mesh(3), nsm
-
-! Internal variables
-    integer           i1, i2, i3, imesh, ntemp
-    integer           nlp, meshl(3)
-    integer           ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset
-    integer           Zoffset, Py, Pz, meshnsm(3)
-    integer, target  :: i10, i20, i30
-    integer, pointer :: iT
-    integer           NRemY, NRemZ
-#ifdef MPI
-    integer           MPIerror, npl
-#endif
-    real(dp)          vav, vtot, temp
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'PRE TSVHfix' )
-#endif
-
-    call timer('TSVHFix',1)
-
-    ! Set up counter
-    if ( ts_tdir == 1 ) then
-       iT => i10
-    else if ( ts_tdir == 2 ) then
-       iT => i20
-    else
-       iT => i30
-    end if
-
-! Find local number of mesh points
-    meshnsm(1) = mesh(1)/nsm
-    meshnsm(2) = mesh(2)/nsm
-    meshnsm(3) = mesh(3)/nsm
-#ifdef MPI
-!! print *, "N:",Node, "TSVHFix-- mesh:", mesh
-    call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
-    meshl(1) = meshl(1)*nsm
-    meshl(2) = meshl(2)*nsm
-    meshl(3) = meshl(3)*nsm
-#else
-    meshl(1) = mesh(1)
-    meshl(2) = mesh(2)
-    meshl(3) = mesh(3)
-#endif
-
-    if ( meshl(1) * meshl(2) * meshl(3) /= size(V,1) ) &
-         call die('ERROR: Vscf size not correct')
-
-! Check that ProcessorY is a factor of the number of processors
-    if (mod(Nodes,ProcessorY).gt.0) then
-       call die('ERROR: ProcessorY must be a factor of the &
-            &number of processors!')
-    endif
-    ProcessorZ = Nodes/ProcessorY
-
-! Calculate blocking sizes
-    BlockSizeY = (meshnsm(2)/ProcessorY)*nsm
-    NRemY = (mesh(2) - ProcessorY*BlockSizeY)/nsm
-    BlockSizeZ = (meshnsm(3)/ProcessorZ)*nsm
-    NRemZ = (mesh(3) - ProcessorZ*BlockSizeZ)/nsm
-
-! Calculate coordinates of current node in processor grid
-    Py = (Node/ProcessorZ)+1
-    Pz = Node - (Py - 1)*ProcessorZ + 1
-
-! Calculate starting point for grid
-    Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
-    Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
-
-    vtot = 0._dp
-    nlp  = 0
-
-    ! Test whether we should do anything (note that iT => [i10|i20|i30]):
-    i10 = 0
-    i20 = Yoffset - 1
-    i30 = Zoffset - 1
-    if ( iT <= 0 ) then
-       imesh = 0
-       i30 = Zoffset - 1
-       do i3 = 0,meshl(3)-1
-          i30 = i30 + 1
-          i20 = Yoffset - 1
-          do i2 = 0,meshl(2)-1
-             i20 = i20 + 1
-             do i10 = 0,meshl(1)-1
-                imesh = imesh + 1
-                if (iT.eq.0) then
-                   nlp = nlp + 1
-                   vtot = vtot + V(imesh,1)
-                end if
-             end do
-          end do
-       end do
-    end if
-
-#ifdef MPI
-    temp=0.d0
-    call MPI_AllReduce(Vtot,temp,1,MPI_double_precision,MPI_Sum, &
-         MPI_Comm_World,MPIerror)
-    Vtot  = temp
-    ntemp = 0
-    call MPI_AllReduce(nlp,ntemp,1,MPI_integer,MPI_Sum, &
-         MPI_Comm_World,MPIerror)
-    nlp = ntemp
-#endif
-
-    Vav = Vtot/real(nlp,dp)
-
-    imesh = 0
-    do i30 = 1 , meshl(3)
-       do i20 = 1 , meshl(2)
-          do i10 = 1 , meshl(1)
-             imesh = imesh + 1
-             V(imesh,1) = V(imesh,1) - Vav
-          end do
-       end do
-    end do
-
-    call timer('TSVHFix',2)
-
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'POS TSVHfix' )
-#endif
-
-  end subroutine ts_VH_fix
-
 
 end module m_ts_voltage

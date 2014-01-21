@@ -10,13 +10,6 @@ module m_ts_electrode
 !          3) init_electrode_HS
 !          4) set_electrode_HS_Transfer
 
-! TODO
-! Remove all references to Gamma for the electrode.
-! The TranSIESTA routine will never create the surface Green's
-! function without having a transfer matrix.
-! Thus we ENFORCE Gamma == .false. and the program should die if
-! the electrode calculation was a Gamma calculation!
-
   use precision, only : dp
 
   implicit none

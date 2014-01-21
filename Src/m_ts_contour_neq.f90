@@ -14,6 +14,7 @@
 module m_ts_contour_neq
 
   use precision, only : dp
+  use fdf, only : leqi
 
 ! Use the type associated with the contour
 ! Maybe they should be collected to this module.
@@ -57,6 +58,7 @@ module m_ts_contour_neq
 
   type :: ts_nEq_id
      integer :: ID = 0
+     integer :: imu = 0
      integer :: iEl = 0
      type(ts_nEq_seg), pointer :: seg => null()
   end type ts_nEq_id
@@ -79,8 +81,8 @@ module m_ts_contour_neq
   public :: has_cE_neq
   public :: c2weight_neq
   public :: ID2mult
-  public :: indices2eq
-public :: IDhasmu_right
+  public :: ID2mu
+  public :: IDhasmu_right
 
   private
 
@@ -127,13 +129,16 @@ contains
          &window.')
 
     ! Here we setup the tail integral
-    ! TODO consider only doing the tails at V/2 and -V/2
-    ! TODO if the dE is small enough then we might not need the quadrature for the real-axis
     call my_setup('Bias.Tail',N_tail,tail_c,tail_io)
     if ( N_tail > 1 ) &
-         call die('You can only use one tail integral')
+         call die('You can currently only use one tail integral')
     if ( N_tail < 1 ) &
          call die('You must at least specify one tail integral')
+    if ( tail_io(N_tail)%b < 10._dp * kT ) then
+       call die('The tail integrals used for the non-equilibrium tails &
+            &are too close to the chemical potential. It must be at least &
+            &10kT from mu.')
+    end if
 
     ! Create all the different tail segments
     ! We have one tail in both ends and two tails for each middle segment
@@ -227,8 +232,8 @@ contains
     cur_mu = 1
     do i = 1 , N_mu - 1
        do j = i + 1 , N_mu
-          ! ensure the segments are aligned with increasing chemical
-          ! potential
+          ! the chemical potentials in the segments
+          ! must be sorted! Otherwise the weights are incorrect
           if ( mus(j)%mu > mus(i)%mu ) then
              nEq_segs(cur_mu)%mu1 => mus(i)
              nEq_segs(cur_mu)%mu2 => mus(j)
@@ -245,7 +250,9 @@ contains
           right = fits_right(nEq_segs(cur_mu)%mu2,tail_io)
           !print *,nEq_segs(cur_mu)%mu1,left,right,nEq_segs(cur_mu)%mu2
           if ( left == 0 .or. right == 0 ) &
-               call die('Something went wrong with the segment tails')
+               call die('Ensure that the tail integrals lower bound fits with &
+               &a break at every chemical potential. This will ensure correct &
+               &partitioning.')
           if ( left > right ) &
                call die('The contours have not been sorted properly, please &
                &contact the developers')
@@ -275,22 +282,6 @@ contains
     if ( N_nEq_id /= size(nEq_id) ) &
          call die('Error in code')
 
-!do i = 1 , N_nEq_ID
-!   print *,i,nEq_ID(i)%seg%mu1%mu,nEq_ID(i)%seg%mu2%mu,nEq_ID(i)%iEl
-!end do
-
-    write(*,'(a,tr1)',advance='no') 'Mu1'
-    do i = 1 , N_nEq_segs
-       write(*,'(f10.5)',advance='no') nEq_segs(i)%mu1%mu
-    end do
-    write(*,*) 
-    write(*,'(a,tr1)',advance='no') 'Mu2'
-    do i = 1 , N_nEq_segs
-       write(*,'(f10.5)',advance='no') nEq_segs(i)%mu2%mu
-    end do
-
-    write(*,*) 'TODO check that the bias window stops at every \mu and that &
-         &a equivalent electrode has that \mu'
     write(*,*) 'TODO correct empty cycles, i.e. if two line contours are neighbours &
          &then we have overlying energy points...'
 
@@ -345,11 +336,6 @@ contains
          if ( abs(mu%mu - nEq_io(i)%a - tail_io(1)%a) < mu_same ) then
             return
          end if
-      end do
-      ! TODO DELETE
-      print*,'L',tail_io(1)%a
-      do i = 1 , N_nEq
-         print*,'L',mu%mu,nEq_io(i)%a,mu%mu-nEq_io(i)%a
       end do
       i = 0
     end function fits_left
@@ -441,8 +427,9 @@ contains
             call die('Error in parsing number of non-equilibrium &
                  &electrode contributions')
          end if
-         nEq_id(ID)%ID = ID
+         nEq_id(ID)%ID  = ID
          nEq_id(ID)%iEl = nEq_seg%mu1%el(i)
+         nEq_id(ID)%imu = nEq_seg%mu2%ID
          nEq_id(ID)%seg => nEq_seg
       end do
       do i = 1 , nEq_seg%mu2%N_El
@@ -451,8 +438,9 @@ contains
             call die('Error in parsing number of non-equilibrium &
                  &electrode contributions')
          end if
-         nEq_id(ID)%ID = ID
+         nEq_id(ID)%ID  = ID
          nEq_id(ID)%iEl = nEq_seg%mu2%el(i)
+         nEq_id(ID)%imu = nEq_seg%mu1%ID
          nEq_id(ID)%seg => nEq_seg
       end do
     end subroutine add_ID
@@ -465,11 +453,11 @@ contains
     type(ts_cw), intent(inout) :: c
     real(dp), intent(in) :: kT, Eta
 
-    if ( c%c_io%part == 'line' ) then
+    if ( leqi(c%c_io%part,'line') ) then
        
        call contour_line(c,kT,Eta)
        
-    else if ( c%c_io%part == 'tail' ) then
+    else if ( leqi(c%c_io%part,'tail') ) then
        
        call contour_tail(c,kT,Eta)
 
@@ -488,6 +476,7 @@ contains
     logical :: has
     integer :: i
     has = .false.
+    if ( cE%fake ) return
     if ( cE%idx(1) /= CONTOUR_NEQ .and. &
          cE%idx(1) /= CONTOUR_NEQ_TAIL ) return
     
@@ -496,7 +485,6 @@ contains
 
     else if ( present(iEl) ) then
        
-       ! TODO consider using a simplified version by looping ID's
        select case ( cE%idx(1) ) 
        case ( CONTOUR_NEQ )
           do i = 1 , N_nEq_segs
@@ -545,12 +533,13 @@ contains
   end function has_cE_neq
 
 
-  subroutine c2weight_neq(c,kT,iEl,ID,k,W,ZW)
+  subroutine c2weight_neq(c,kT,iEl,ID, k,W,imu,ZW)
     use m_ts_aux, only : nf
     type(ts_c_idx), intent(in) :: c
     real(dp), intent(in) :: kT ! the temperature
     integer, intent(in) :: iEl, ID ! the electrode index (wrt. Elecs-array)
     real(dp), intent(in) :: k ! generic weight
+    integer, intent(out) :: imu
     complex(dp), intent(out) :: W, ZW ! the weight returned
     ! local variables
     real(dp) :: E
@@ -563,8 +552,6 @@ contains
        ZW = 0._dp
        return
     end if
-
-    ! TODO assert that this weight is also correct for the tails...
 
     has_correct_weight = .false.
     if ( c%idx(1) == CONTOUR_NEQ ) then
@@ -580,6 +567,7 @@ contains
 
     E = real(cw%c(c%idx(3)),dp)
 
+    imu = nEq_ID(ID)%imu
     isLeft = hasEl(nEq_ID(ID)%seg%mu1,iEl)
     if ( .not. isLeft ) then
        if ( .not. hasEl(nEq_ID(ID)%seg%mu2,iEl) ) then
@@ -593,13 +581,9 @@ contains
     ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
     if ( has_correct_weight ) then
        ! the gauss-fermi contour has the "correct" weight already...
-       if ( nEq_ID(ID)%seg%mu1%mu > nEq_ID(ID)%seg%mu2%mu ) then
-          W =  k * cw%w(c%idx(3),1) * dcmplx(0._dp,-1._dp)
-       else
-          W = -k * cw%w(c%idx(3),1) * dcmplx(0._dp,-1._dp)
-       end if
+       W = -k * cw%w(c%idx(3),1) * dcmplx(0._dp,-1._dp)
     else
-       W = k * cw%w(c%idx(3),1) * &
+       W =  k * cw%w(c%idx(3),1) * &
             nf(E, &
             nEq_ID(ID)%seg%mu1%mu, &
             nEq_ID(ID)%seg%mu2%mu, kT) * dcmplx(0._dp,-1._dp)
@@ -607,9 +591,11 @@ contains
 
     if ( .not. isLeft ) W = - W
 
-    ! TODO assert that we are multiplying with the correct energy! 
-    ! We need not the imaginary part!!!!
-    ZW = E * W
+    if ( isLeft ) then
+       ZW = E * W * nEq_ID(ID)%seg%mu2%N_el
+    else
+       ZW = E * W * nEq_ID(ID)%seg%mu1%N_el
+    end if
 
   end subroutine c2weight_neq
 
@@ -636,21 +622,15 @@ contains
        call die('cseq2weight_neq: Error in code')
     end if
 
-
-    ! TODO assert that this weight is also correct for the tails...
     E = real(cw%c(c%idx(3)),dp)
 
     if ( has_correct_weight ) then
        ! the gauss-fermi contour has the "correct" weight already...
-       if ( seg%mu1%mu > seg%mu2%mu ) then
-          W =   cw%w(c%idx(3),1)
-       else
-          W = - cw%w(c%idx(3),1)
-       end if
+       W = - cw%w(c%idx(3),1)
     else
        ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
        ! We use this to get the positive weight (the mu's are sorted in descending order)
-       W = cw%w(c%idx(3),1) * &
+       W =  cw%w(c%idx(3),1) * &
             nf(E, &
             seg%mu1%mu, &
             seg%mu2%mu, kT)
@@ -658,28 +638,12 @@ contains
     
   end subroutine cseq2weight_neq
 
-  ! returns the index of the equivalent chemical potential for which
-  ! this needs to be added.
-  ! furthermore it updates the multiplicity of the weight.
-  subroutine indices2eq(ID,mu_i,W)
+  function ID2mu(ID) result(imu)
     integer, intent(in) :: ID
-    integer, intent(out) :: mu_i
-    complex(dp), intent(inout), optional :: W
-    ! check where the ID's electrode resides
-    mu_i = nEq_ID(ID)%iEl
-    if ( hasEl(nEq_ID(ID)%seg%mu1,mu_i) ) then
-       ! it is in the left chemical potential
-       ! hence the contribution must be in the right chemical potential
-       mu_i  = nEq_ID(ID)%seg%mu2%ID
-       if ( present(W) ) W = W * nEq_ID(ID)%seg%mu2%N_El
-    else if ( hasEl(nEq_ID(ID)%seg%mu2,mu_i) ) then
-     ! it is in the right chemical potential
-       ! hence the contribution must be in the left chemical potential
-       mu_i  = nEq_ID(ID)%seg%mu1%ID
-       if ( present(W) ) W = W * nEq_ID(ID)%seg%mu1%N_El
-    end if
-  end subroutine indices2eq
-  
+    integer :: imu
+    imu = nEq_ID(ID)%imu
+  end function ID2mu
+
   ! returns the multiplicity of the segment ID
   ! If there are several electrodes in the opposing chemical
   ! potential we need a multiplicity factor equal to the number of electrodes
@@ -687,11 +651,11 @@ contains
   function ID2mult(ID) result(mult)
     integer, intent(in) :: ID
     real(dp) :: mult
-    mult = 0._dp
-    if ( hasEl(nEq_ID(ID)%seg%mu1,nEq_ID(ID)%iEl) ) then
-       mult = nEq_ID(ID)%seg%mu2%N_el
-    else if ( hasEl(nEq_ID(ID)%seg%mu2,nEq_ID(ID)%iEl) ) then
-       mult = nEq_ID(ID)%seg%mu1%N_el
+    mult = 1._dp
+    if (      nEq_ID(ID)%seg%mu1%ID == nEq_ID(ID)%imu ) then
+       mult = nEq_ID(ID)%seg%mu1%N_El
+    else if ( nEq_ID(ID)%seg%mu2%ID == nEq_ID(ID)%imu ) then
+       mult = nEq_ID(ID)%seg%mu2%N_El
     else
        call die('Error in code')
     end if
@@ -719,7 +683,7 @@ contains
     real(dp) :: a,b, tmp
     real(dp), allocatable :: ce(:), cw(:)
 
-    if ( c%c_io%part /= 'line' ) &
+    if ( .not. leqi(c%c_io%part,'line') ) &
          call die('Contour is not a line')
 
     if ( c%c_io%N < 1 ) then
@@ -797,7 +761,7 @@ contains
     real(dp) :: a,b
     real(dp), allocatable :: ce(:), cw(:)
 
-    if ( c%c_io%part /= 'tail' ) &
+    if ( .not. leqi(c%c_io%part,'tail') ) &
          call die('Contour is not a tail contour')
 
     if ( c%c_io%N < 1 ) then
@@ -813,8 +777,6 @@ contains
        call die('The non-equilbrium tail contours can only be &
             &defined with respect to the Fermi-level')
     end if
-
-    write(*,*) 'TODO check the contours for the gaussian quadrature'
 
     allocate(ce(c%c_io%N))
     allocate(cw(c%c_io%N))
@@ -1019,7 +981,8 @@ contains
     write(*,opt_g_u) 'non-Equilibrium Greens function Eta',nEq_Eta/eV,'eV'
     do i = 1 , N_nEq
        chars = '  '//trim(nEq_io(i)%part)
-       write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.Bias.Window.'//trim(neq_io(i)%name)
+       write(*,opt_c) 'Contour name',trim(prefix)// &
+            '.Contour.Bias.Window.'//trim(neq_io(i)%name)
        call write_e(trim(chars)//' contour E_min',neq_io(i)%a)
        call write_e(trim(chars)//' contour E_max',neq_io(i)%b)
        write(*,opt_int) trim(chars)//' contour points',neq_io(i)%N
@@ -1140,6 +1103,7 @@ contains
     type(ts_cw), pointer :: c
     integer :: i
     complex(dp) :: W
+
     if ( cidx%idx(1) == CONTOUR_NEQ ) then
        c => nEq_c(cidx%idx(2))
     else if ( cidx%idx(1) == CONTOUR_NEQ_TAIL ) then

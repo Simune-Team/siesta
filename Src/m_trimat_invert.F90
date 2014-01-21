@@ -22,7 +22,7 @@
 
 ! It has fully been developed by Nick Papior Andersen, 2013
 ! Please contact the author of the code: nickpapior@gmail.com
-! before use
+! before use elsewhere!!!
 
 ! The routine can easily be converted to use another precision.
 
@@ -68,8 +68,31 @@ module m_trimat_invert
   public :: invert_TriMat
   public :: init_TriMat_inversion
   public :: clear_TriMat_inversion
+  public :: attach2piv
+
+  ! For those inclined to do other things
+  ! than simply inverting the matrix... :)
+  public :: calc_Xn_div_Cn_p1
+  public :: calc_Yn_div_Bn_m1
+  public :: Xn_div_Cn_p1
+  public :: Yn_div_Bn_m1
+  public :: calc_Mnn_inv
+  public :: calc_Mnm1n_inv
+  public :: calc_Mnp1n_inv
 
 contains
+
+  subroutine attach2piv(Npiv_in,ipiv_in,err)
+    integer, intent(in) :: Npiv_in
+    integer, pointer :: ipiv_in(:)
+    integer, intent(out) :: err
+    if ( Npiv_in > Npiv ) then
+       err = 1
+       return
+    end if
+    ipiv_in => ipiv
+    err = 0
+  end subroutine attach2piv
 
   subroutine invert_TriMat(M,Minv,sPart,ePart)
     type(zTriMat), intent(inout) :: M, Minv
@@ -87,7 +110,7 @@ contains
        call die('This matrix is not tri-diagonal')
     end if
     piv_initialized = .true.
-    do n = 1 , parts(M) 
+    do n = 1 , parts(M)
        if ( Npiv < nrows_g(M,n) ) piv_initialized = .false.
     end do
     if ( .not. piv_initialized ) then
@@ -105,13 +128,13 @@ contains
     do n = parts(M) - 1 , lsPart , -1 
        Mpinv => val(Minv,n+1,n+1)
        sNp1 = nrows_g(M,n+1)
-       call calc_Xn_div_Cn_p1(M,Minv, n, Mpinv,sNp1**2 )
+       call calc_Xn_div_Cn_p1(M,Minv, n, Mpinv, sNp1**2 )
     end do
     ! Calculate all Yn/Bn-1
     do n = 2 , lePart
        Mpinv => val(Minv,n-1,n-1)
        sNm1 = nrows_g(M,n-1)
-       call calc_Yn_div_Bn_m1(M,Minv, n, Mpinv, sNm1**2)
+       call calc_Yn_div_Bn_m1(M,Minv, n, Mpinv, sNm1**2 )
     end do
     
     ! We calculate all Mnn
@@ -150,7 +173,6 @@ contains
     
     ! Retrieve Ann
     Mp => val(M,n,n)
-    
     if ( n == 1 ) then
        ! First we calculate M11^-1
        ! Retrieve the X1/C2 array

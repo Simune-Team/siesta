@@ -316,11 +316,11 @@ siesta: check-siesta what version \
 # TranSIESTA...
 TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux.o m_ts_kpoints.o \
          m_ts_iodm.o m_ts_io.o \
-         m_ts_electrode.o m_ts_voltage.o m_ts_gf.o \
+         m_ts_electrode.o m_ts_gf.o \
 	 m_ts_cctype.o ts_init.o ts_show_regions.o m_ts_electype.o \
 	 m_ts_method.o m_ts_elec_se.o \
 	 m_ts_debug.o m_ts_tdir.o \
-	 m_ts_chem_pot.o
+	 m_ts_chem_pot.o m_transiesta.o m_ts_mesh.o m_ts_hartree.o m_ts_voltage.o
 
 # contour objects
 TS_OBJS += m_ts_contour_eq.o m_ts_contour_neq.o m_ts_io_ctype.o \
@@ -334,10 +334,10 @@ TS_OBJS += m_ts_Sparsity2TriMat.o \
 
 # Sparse full-matrix method
 TS_OBJS += m_ts_fullg.o m_ts_fullk.o m_ts_full_scat.o
-TS_OBJS += m_transiesta.o
 
-# Transiesta tri-diagonal sparsity...
-#TS_OBJS += m_ts_tri.o m_ts_tri_scat.o m_ts_trimat_invert.o
+# Sparse tri-diagonal matrix method
+TS_OBJS += m_ts_tri_init.o m_ts_trimat_invert.o \
+	m_ts_tri_scat.o m_ts_trig.o m_ts_trik.o
 
 transiesta: FPPFLAGS+=$(DEFS_PREFIX) -DTRANSIESTA 
 transiesta: DEFS+=$(DEFS_PREFIX) -DTRANSIESTA
@@ -544,9 +544,9 @@ dfscf.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
 
 dhscf.o: alloc.o atmfuncs.o bsc_xcmod.o cellxc_mod.o doping_uniform.o files.o
 dhscf.o: forhar.o iogrid_netcdf.o m_efield.o m_iorho.o m_partial_charges.o
-dhscf.o: m_ts_global_vars.o m_ts_options.o m_ts_voltage.o mesh.o meshdscf.o
-dhscf.o: meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o
-dhscf.o: siesta_options.o sys.o units.o vmat.o
+dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_mesh.o m_ts_options.o
+dhscf.o: m_ts_voltage.o mesh.o meshdscf.o meshsubs.o moremeshsubs.o parallel.o
+dhscf.o: parsing.o precision.o siesta_options.o sys.o units.o vmat.o
 
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 
@@ -842,7 +842,7 @@ m_transiesta.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o files.o
 m_transiesta.o: m_ts_charge.o m_ts_contour_eq.o m_ts_contour_neq.o
 m_transiesta.o: m_ts_electype.o m_ts_fullg.o m_ts_fullk.o m_ts_gf.o
 m_transiesta.o: m_ts_kpoints.o m_ts_method.o m_ts_options.o m_ts_sparse.o
-m_transiesta.o: parallel.o precision.o
+m_transiesta.o: m_ts_tri_init.o m_ts_trig.o m_ts_trik.o parallel.o precision.o
 
 m_trimat_invert.o: alloc.o class_TriMat.o m_mat_invert.o precision.o
 
@@ -927,12 +927,11 @@ m_ts_gf.o: m_ts_electype.o parallel.o precision.o sys.o units.o
 
 m_ts_global_vars.o: precision.o
 
-m_ts_hartree.o: m_ts_electype.o m_ts_options.o parallel.o parallelsubs.o
-m_ts_hartree.o: precision.o sys.o units.o
+m_ts_hartree.o: m_ts_mesh.o m_ts_tdir.o mesh.o parallel.o precision.o sys.o
 
 m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
 
-m_ts_io_contour.o: m_ts_io_ctype.o precision.o units.o
+m_ts_io_contour.o: precision.o units.o
 
 m_ts_io_ctype.o: parallel.o precision.o units.o
 
@@ -941,6 +940,8 @@ m_ts_iodm.o: parallelsubs.o precision.o sys.o
 
 m_ts_kpoints.o: files.o find_kgrid.o m_ts_options.o m_ts_tdir.o minvec.o
 m_ts_kpoints.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
+
+m_ts_mesh.o: intrinsic_missing.o parallel.o precision.o
 
 m_ts_method.o: alloc.o geom_helper.o m_ts_electype.o
 
@@ -952,9 +953,9 @@ m_ts_options.o: siesta_options.o sys.o units.o
 
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
-m_ts_sparse.o: intrinsic_missing.o m_bandwidth.o m_glob_sparse.o m_monitor.o
-m_ts_sparse.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_options.o
-m_ts_sparse.o: parallel.o precision.o
+m_ts_sparse.o: intrinsic_missing.o m_bandwidth.o m_glob_sparse.o m_ts_debug.o
+m_ts_sparse.o: m_ts_electype.o m_ts_method.o m_ts_options.o parallel.o
+m_ts_sparse.o: precision.o
 
 m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse_helper.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
@@ -962,22 +963,36 @@ m_ts_sparse_helper.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 m_ts_sparse_helper.o: m_ts_electype.o parallel.o precision.o
 
 
-m_ts_tri.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
-m_ts_tri.o: class_SpData1D.o class_Sparsity.o class_TriMat.o
-m_ts_tri.o: create_Sparsity_Union.o m_mat_invert.o m_trimat_invert.o
-m_ts_tri.o: m_ts_Sparsity2TriMat.o m_ts_cctype.o m_ts_contour.o m_ts_debug.o
-m_ts_tri.o: m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o m_ts_gf.o
-m_ts_tri.o: m_ts_kpoints.o m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o
-m_ts_tri.o: m_ts_tri_scat.o m_ts_trimat_invert.o m_ts_weight.o parallel.o
-m_ts_tri.o: precision.o units.o
+m_ts_tri_init.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
+m_ts_tri_init.o: create_Sparsity_Union.o m_ts_Sparsity2TriMat.o m_ts_electype.o
+m_ts_tri_init.o: m_ts_options.o m_ts_sparse.o m_ts_tri_scat.o parallel.o
+m_ts_tri_init.o: precision.o
 
-m_ts_tri_scat.o: alloc.o class_TriMat.o intrinsic_missing.o m_trimat_invert.o
-m_ts_tri_scat.o: m_ts_trimat_invert.o precision.o
+m_ts_tri_scat.o: alloc.o class_TriMat.o m_ts_electype.o m_ts_trimat_invert.o
+m_ts_tri_scat.o: precision.o
 
-m_ts_trimat_invert.o: alloc.o class_TriMat.o m_mat_invert.o precision.o
+m_ts_trig.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_trig.o: class_SpData2D.o class_Sparsity.o class_TriMat.o m_iterator.o
+m_ts_trig.o: m_mat_invert.o m_trimat_invert.o m_ts_cctype.o m_ts_contour.o
+m_ts_trig.o: m_ts_contour_eq.o m_ts_contour_neq.o m_ts_debug.o m_ts_dm_update.o
+m_ts_trig.o: m_ts_elec_se.o m_ts_electype.o m_ts_options.o m_ts_sparse.o
+m_ts_trig.o: m_ts_sparse_helper.o m_ts_tri_init.o m_ts_tri_scat.o
+m_ts_trig.o: m_ts_trimat_invert.o m_ts_weight.o parallel.o precision.o units.o
 
-m_ts_voltage.o: m_ts_electype.o m_ts_options.o m_ts_tdir.o mesh.o parallel.o
-m_ts_voltage.o: parallelsubs.o precision.o sys.o units.o
+m_ts_trik.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_trik.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o class_TriMat.o
+m_ts_trik.o: m_iterator.o m_mat_invert.o m_trimat_invert.o m_ts_cctype.o
+m_ts_trik.o: m_ts_contour.o m_ts_contour_eq.o m_ts_contour_neq.o m_ts_debug.o
+m_ts_trik.o: m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o m_ts_kpoints.o
+m_ts_trik.o: m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o m_ts_tri_init.o
+m_ts_trik.o: m_ts_tri_scat.o m_ts_trimat_invert.o m_ts_weight.o parallel.o
+m_ts_trik.o: precision.o units.o
+
+m_ts_trimat_invert.o: alloc.o class_TriMat.o m_mat_invert.o m_trimat_invert.o
+m_ts_trimat_invert.o: m_ts_electype.o precision.o
+
+m_ts_voltage.o: m_ts_electype.o m_ts_mesh.o m_ts_options.o m_ts_tdir.o
+m_ts_voltage.o: parallel.o precision.o units.o
 
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_weight.o: m_ts_contour_neq.o parallel.o precision.o

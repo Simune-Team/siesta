@@ -1,4 +1,87 @@
 ----------------------------------------------------
+January 21, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-100
+Added both the tri-diagonal Gamma-only and k-point transiesta routine
+
+* Have recreated the tri-diagonal routine in both Gamma-only and k-only
+  routines.
+  - Currently the routines uses a work-array to handle the Gf.G.Gf
+    product. It is not really saving a lot of memory currently, however
+    it saves a bunch of time as the Gf calculation is now performed only 
+    once.
+    This could be leveraged at the expense of re-calculating the Gf
+    for each electrode.
+  - The new tri-diagonal routine is easier to read (especially for the
+    Gf-column calculation)
+  - Removed the old tri-diagonal routine for only 3-parts.
+    We would like to re-instantiate it somehow... But not now.
+
+  I still need to check the multi-electrode case.
+
+* Made the non-equilibrium ID also contain an equilibrium ID
+  so that look-ups are much easier (faster)
+
+* Currently some code is left over from the development check
+
+* Bugfix in contour check for circle contour on the correct side of the 
+  fermi-level
+
+* Added so that electrodes can get "start" or "end" as position
+  in device.
+
+* Cleaned interfaces for transiesta routines
+
+* Removed the need for sorting the electrodes
+
+* Made the code handle correctly if there is no applied bias
+
+* Removed all references to the monitor function.
+  It is too obscure. Instead we should do something else.
+  (It will be easier when the NetCDF is up and running)
+
+* Split up the hartree potential fixing and the potential drop
+  inclusion into two modules.
+  We have further added a "mesh" module which takes care of
+  calculating the necessary quantities for the Hartree fix and
+  Voltage routines.
+  This will also make a good base for the further development of
+  the Poisson equation solver.
+  Routine names have changed accordingly.
+
+removed:
+  Src/m_ts_tri.F90
+added:
+  Src/m_ts_hartree.F90
+  Src/m_ts_mesh.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/m_transiesta.F90
+  Src/m_trimat_invert.F90
+  Src/m_ts_cctype.f90
+  Src/m_ts_charge.F90
+  Src/m_ts_chem_pot.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_dm_update.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_io_contour.f90
+  Src/m_ts_io_ctype.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trimat_invert.F90
+  Src/m_ts_voltage.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 December 16, 2013 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-99
 Added a k-point full transiesta routine
 

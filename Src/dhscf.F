@@ -62,7 +62,7 @@
       use atmfuncs,       only : rcut, rcore
       use fdf
       use sys,            only : die
-      use mesh,           only : xdsp, nsm, nsp
+      use mesh,           only : xdsp, nsm, nsp, meshLim
       use parsing
 #ifndef BSC_CELLXC
       use siestaXC, only : getXC        ! Returns the XC functional used
@@ -100,7 +100,9 @@
 #ifdef TRANSIESTA
 !     TSS Begin
       use m_ts_options,   only : TSmode, IsVolt
+      use m_ts_mesh   ,   only : ts_init_mesh
       use m_ts_voltage,   only : ts_init_voltage
+      use m_ts_hartree,   only : ts_init_hartree_fix
 !     TSS End
 #endif /* TRANSIESTA */
       implicit none
@@ -381,10 +383,15 @@ C ----------------------------------------------------------------------
       endif
 
 #ifdef TRANSIESTA
+      if (TSmode) then
+         ! in case the mesh changes, we need this every time
+         call ts_init_mesh( cell, ntm , meshLim , nsm )
+      end if
       if (frstme) then
 !        Check if we need to add the potential 
 !        corresponding to the voltage-drop.
         if (TSmode) then
+           call ts_init_hartree_fix( cell, nua, xa , ntm , nsm)
            if ( IsVolt ) then
               call ts_init_voltage( cell, nua, xa, ntm, nsm)
            end if
@@ -569,7 +576,8 @@ C     Modules
 
 #ifdef TRANSIESTA
       use m_ts_options, only: TSmode, IsVolt
-      use m_ts_voltage, only : ts_voltage, ts_VH_fix
+      use m_ts_voltage, only : ts_voltage
+      use m_ts_hartree, only : ts_hartree_fix
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
       implicit none
@@ -978,7 +986,9 @@ C ----------------------------------------------------------------------
       ! the first spin index
 
 #ifdef TRANSIESTA
-      if (TSmode) call ts_VH_fix( ntm, nsm, Vscf )
+      ! We require that even the SIESTA potential is "fixed"
+      ! It will ease transition between siesta and transiesta
+      if (TSmode) call ts_hartree_fix( Vscf )
 #endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
@@ -1049,7 +1059,7 @@ C ----------------------------------------------------------------------
       if (TSmode.and.IsVolt.and.TSrun) then
          ! This routine expects a sequential array,
          ! in whatever distribution
-         call ts_voltage( cell, ntm, nsm, Vscf )
+         call ts_voltage( cell, Vscf )
       endif
 #endif /* TRANSIESTA */
 

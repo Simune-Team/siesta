@@ -29,7 +29,7 @@ module m_ts_cctype
   end type ts_cw
 
   type :: ts_c_idx
-     !sequence
+     sequence
      logical     :: exist = .false.
      logical     :: fake  = .false.
      complex(dp) :: e ! the energy for the curve
@@ -83,36 +83,7 @@ module m_ts_cctype
   end interface method
   private :: method_str, method_ts_c_io
 
-!  interface elec_idx
-!     module procedure elec_idx_el_eq
-!     module procedure elec_idx_str_eq
-!  end interface elec_idx
-!  private :: elec_idx_el_eq, elec_idx_str_eq
-
 contains
-
-!  function elec_idx_el_eq(c,el) result(idx)
-!    use m_ts_electype
-!    use fdf, only : leqi
-!    type(ts_eq_c), intent(in) :: c
-!    type(Elec), intent(in) :: El
-!    integer :: idx
-!    idx = elec_idx(c,name(El))
-!  end function elec_idx_el_eq
-!
-!  function elec_idx_str_eq(c,name) result(idx)
-!    use fdf, only : leqi
-!    type(ts_eq_c), intent(in) :: c
-!    character(len=*), intent(in) :: name
-!    integer :: i, idx
-!    do i = 1 , size(c%elec)
-!       if ( leqi(c%elec(i),name) ) then
-!          idx = i
-!          return
-!       end if
-!    end do
-!    idx = 0
-!  end function elec_idx_str_eq
 
   function method2str_ts_c_io(c) result(str)
     type(ts_c_io), intent(in) :: c
