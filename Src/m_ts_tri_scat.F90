@@ -217,7 +217,7 @@ contains
        sN = tri_parts(n)
 
        scp = max(1 ,n-1)
-       ecp = max(N_tri_part,n+1)
+       ecp = min(N_tri_part,n+1)
        
        do cp = ecp , scp , -1
 

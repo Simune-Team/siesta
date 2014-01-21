@@ -1,4 +1,14 @@
 ----------------------------------------------------
+January 21, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-101
+Bugfix for determining work-size
+
+* The work-size array was referencing out-of-bounds, this could
+  result in too much, or too little memory allocated.
+
+modified:
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 January 21, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-100
 Added both the tri-diagonal Gamma-only and k-point transiesta routine
 
