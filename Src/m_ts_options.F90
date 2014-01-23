@@ -17,7 +17,7 @@ module m_ts_options
 
 ! SIESTA Modules used
   USE precision, only : dp
-  USE siesta_options, only : fixspin, isolve, SOLVE_TRANSI
+  USE siesta_options, only : FixSpin, isolve, SOLVE_TRANSI
   USE sys, only : die
   USE m_ts_electype
   use m_ts_chem_pot
@@ -33,33 +33,6 @@ module m_ts_options
 logical  :: SaveTSHS = .true.     ! Saves the Hamiltonian and Overlap matrices if the 
                          ! the option TS.SaveHS is specified in the input file
 logical  :: onlyS = .false. ! Option to only save overlap matrix
-  ! Logical variable that describes the solution method on
-  ! LEFT-RIGHT-EQUILIBRIUM contour points.
-  ! This is realized by the fact that for:
-  !    UseBulk .and. UpdateDMCR
-  ! the needed part of the GF is only the C...C regions:
-  !
-  !  -------------------------------------
-  !  | L...L | L...C   0     0   |   0   |
-  !  | C...L | C...C C...C C...C |   0   |
-  !  |   0   | C...C C...C C...C |   0   |
-  !  |   0   | C...C C...C C...C | C...R |
-  !  |   0   |   0     0   R...C | R...R |
-  !  -------------------------------------
-  ! 
-  ! This means we can solve the following instead:
-  ! G_F^{-1} G_F I_P = I \times I_P,
-  ! where I_P:
-  !  ---------------------
-  !  |   0     0     0   |
-  !  |   1     0     0   |
-  !  |   0     1     0   |
-  !  |   0     0     1   |
-  !  |   0     0     0   |
-  !  ---------------------
-  ! Note, that this can ONLY be used in EQUI contour points.
-  ! In principle we can obtain the EXACT size of the problem
-  ! For very large electrodes. This could come in handy.
 logical  :: IsVolt = .false.      ! Logical for dabs(VoltFDF) > 0.0001d*eV
 real(dp) :: Volt = 0._dp         ! Bias applied, Internally Volt=voltfdf/eV (eV). 
 integer  :: na_BufL = 0     ! Number of Left Buffer Atoms
@@ -71,7 +44,7 @@ integer :: N_Elec = 0
 type(Elec), allocatable, target :: Elecs(:)
 integer :: N_mu = 0
 type(ts_mu), allocatable, target :: mus(:)
-logical :: ReUseGF        ! Calculate the electrodes GF
+logical :: ReUseGF = .false.         ! Calculate the electrodes GF
 logical :: ImmediateTSmode = .false. ! will determine to immediately start the transiesta
                                      ! SCF. This is useful when you already have a converged
                                      ! siesta DM
@@ -226,6 +199,20 @@ CONTAINS
        call die('Unrecognized Transiesta solution method: '//trim(chars))
     end if
 
+
+    ! currently this does not work
+    !ImmediateTSmode = fdf_get('TS.SCFImmediate',.false.)
+
+    chars = fdf_get('TS.TriMat.Optimize','speed')
+    if ( leqi(chars,'speed') ) then
+       opt_TriMat_method = 0
+    else if ( leqi(chars,'memory') ) then
+       opt_TriMat_method = 1
+    else
+       call die('Could not determine flag TS.TriMat.Optimize, please &
+            &see manual.')
+    end if
+
     ! Determine whether the user wishes to only do an analyzation
     TS_Analyze = fdf_get('TS.Analyze',.false.)
     if ( TS_Analyze ) then
@@ -250,19 +237,6 @@ CONTAINS
        else
           call die('Unrecognized option for Bandwidth algorithm: '//trim(chars))
        end if
-    end if
-
-    ! currently this does not work
-    !ImmediateTSmode = fdf_get('TS.SCFImmediate',.false.)
-
-    chars = fdf_get('TS.TriMat.Optimize','speed')
-    if ( leqi(chars,'speed') ) then
-       opt_TriMat_method = 0
-    else if ( leqi(chars,'memory') ) then
-       opt_TriMat_method = 1
-    else
-       call die('Could not determine flag TS.TriMat.Optimize, please &
-            &see manual.')
     end if
     
     ! Update the weight function
@@ -291,6 +265,8 @@ CONTAINS
     do i = na_u - na_BufR + 1 , na_u
        no_BufR = no_BufR + lasto(i) - lasto(i-1)
     end do
+
+    ! check that it is correctly setup
     if ( na_BufL < 0 .or. na_BufR < 0 ) then
        call die("Buffer atoms must be 0 or a positive integer.")
     end if
@@ -375,7 +351,7 @@ CONTAINS
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
     Elecs(:)%t_dir = ts_tdir
-    Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
+    Elecs(:)%Bulk  = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     if ( .not. Elecs(1)%Bulk ) then
        Elecs(:)%DM_CrossTerms = .true.
     else
@@ -410,9 +386,10 @@ CONTAINS
     ! The sign can not be chosen from this (several mu, where to define it)
     Volt = maxval(mus(:)%mu) - minval(mus(:)%mu)
     call fdf_obsolete('TS.Voltage')
+write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts_voltage, say if we change sign'
     !Volt     = fdf_get('TS.Voltage',0._dp,'Ry') 
-    ! Voltage situation is above 0.1 meV (probably too low...)
-    IsVolt   = dabs(Volt) > 0.0001_dp*eV
+    ! Voltage situation is above 0.01 mV
+    IsVolt = dabs(Volt) > 0.00001_dp*eV
     if ( .not. IsVolt ) then
        Volt = 0._dp
        mus(:)%mu = 0._dp
@@ -433,7 +410,7 @@ CONTAINS
        if ( .not. fdf_mu('TS',slabel,mus(1)) ) then
           call die('Could not find chemical potential: '//trim(name(mus(1))))
        end if
-       ! Firmly assure the chemical potential
+       ! Firmly assure the chemical potential to be zero
        mus(1)%mu = 0._dp
        mus(1)%ID = 1
        
@@ -443,7 +420,19 @@ CONTAINS
        end do
 
     end if
-write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts_voltage, say if we change sign'
+
+    ! We can now check whether two chemical potentials are the same
+    ! We must do this after checking for the equilibrium case as we wish to
+    ! allow users to retain all chemical potentials at 0 eV
+    do i = 1 , N_mu - 1
+       do j = i + 1 , N_mu
+          if ( abs(mus(i)%mu - mus(j)%mu) > 1.e-3_dp*eV ) then
+             call die('Two chemical potentials: '//trim(name(mus(i)))//' and ' &
+                  //trim(name(mus(j)))//' are the same, in bias calculations this &
+                  &is not allowed.')
+          end if
+       end do
+    end do
 
     ! Populate the electrodes in the chemical potential type
     do i = 1 , N_Elec
@@ -463,7 +452,7 @@ write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts
     end if
 
     ! check that all have at least 2 contour points on the equilibrium contour
-    ! the 3 is the fictive pole segment
+    ! the 3rd is the fictive pole segment
     if ( .not. all(Eq_segs(mus(:)) > 2) ) then
        call die('All chemical potentials does not have at least 2 equilibrium contours')
     end if
@@ -516,8 +505,8 @@ write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts
     end do
 
     ! CHECK THIS (we could allow it by only checking the difference...)
-    if ( .5_dp * Volt < maxval(mus(:)%mu) .or. &
-         -.5_dp * Volt > minval(mus(:)%mu) ) then
+    if (  .5_dp * abs(Volt) < maxval(mus(:)%mu) .or. &
+         -.5_dp * abs(Volt) > minval(mus(:)%mu) ) then
        if ( IONode ) then
           write(*,'(a)') 'Chemical potentials [eV]:'
           do i = 1 , N_Elec
@@ -530,7 +519,7 @@ write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts
     end if
 
     ! WILL WORK EVENTUALLY
-    write(*,*) 'TODO SEVERAL ELECTRODES'
+    write(*,*) 'TODO SEVERAL ELECTRODES POTENTIAL DROP!'
     !if ( size(Elecs) > 2 ) call die('currently does not work')
 
     ! read in contour options
@@ -538,7 +527,6 @@ write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts
        call read_contour_options( N_Elec, Elecs, N_mu, mus, kT, IsVolt, Volt )
     end if
 
-    
     ! Show the deprecated and obsolete labels
     call fdf_deprecated('TS.TriDiag','TS.SolutionMethod')
     call fdf_obsolete('TS.FixContactCharge')
@@ -602,7 +590,7 @@ write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts
           write(*,11) 'TranSIESTA no voltage applied'
        end if
        if ( .not. Calc_Forces ) then
-          write(*,11) 'TranSIESTA will NOT update forces'
+          write(*,11) '*** TranSIESTA will NOT update forces ***'
        end if
        write(*,5) 'Left buffer atoms', na_BufL
        write(*,5) 'Right buffer atoms', na_BufR
@@ -657,6 +645,11 @@ write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts
        write(*,*)
 
        write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
+
+       if ( .not. Calc_Forces ) then
+          write(*,11) '*** TranSIESTA will NOT update forces ***'
+       end if
+
 
        ! Check that the unitcell does not extend into the transport direction
        do i = 1 , 3

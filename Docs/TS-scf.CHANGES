@@ -1,4 +1,17 @@
 ----------------------------------------------------
+January 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-102
+Will not allow several chemical potentials with the same value
+
+* Check for same value of chemical potentials is now correct
+
+* Changed the limit for bias calculation to 0.01 mV
+
+* Cleaned some option
+
+modified:
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 January 21, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-101
 Bugfix for determining work-size
 
