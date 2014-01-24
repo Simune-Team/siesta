@@ -1,4 +1,23 @@
 ------------------------------------------------------------
+January 24, 2014  Alberto Garcia           trunk-453--ncps-10
+Dual FoX-XMLF90 operation
+
+Some tricks remain to be implemented.
+Define -DXMLF90 in the arch.make to use xmlf90
+as the XML parser.
+
+XMLF90 is noticeably faster parsing pseudo xml files...
+
+renamed:
+  Src/nc-pseudo/m_ncps_parsing_helpers.f90 => Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_xmlreader.f90 => Src/nc-pseudo/m_ncps_xmlreader.F90
+modified:
+  Src/nc-pseudo/makefile
+  Util/Pseudo-operator/Makefile
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_xmlreader.F90
+
+------------------------------------------------------------
 January 24, 2014  Alberto Garcia           trunk-453--ncps-9
 Merge the .mk prototype mechanism from trunk-mk
 

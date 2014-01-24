@@ -2,21 +2,24 @@
 #
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-.PHONY: ncps xmlparser clean
+.PHONY: ncps clean
 #
 default: pseudooperator
 #
 OBJDIR=Obj
 VPATH:=$(shell pwd)/../../Src
 include ../../$(OBJDIR)/arch.make
+include ../../$(OBJDIR)/Mk/FoX.mk
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)/nc-pseudo # To pick up mod files
+INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)/xmlparser # To pick up mod files
 #
-LIBS= ../../$(OBJDIR)/libncps.a ../../$(OBJDIR)/libxmlparser.a
+LIBS= ../../$(OBJDIR)/libncps.a $(FOX_LIBS) ../../$(OBJDIR)/libxmlparser.a
+
 #
 # Note that machine-specific files are now in top Src directory.
 #
@@ -34,7 +37,7 @@ $(COM_OBJS):
 #
 what:
 	echo "VPATH: " $(VPATH)
-pseudooperator:  ncps xmlparser $(ALL_OBJS)
+pseudooperator:  ncps $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o pseudooperator $(ALL_OBJS) $(LIBS)
 #
 arw.o:  precision.o 
@@ -51,9 +54,6 @@ ncps:
 	@echo "Making sure that the ncps library is compiled..."
 	(cd ../../$(OBJDIR)/nc-pseudo ; make "VPATH=$(VPATH)/nc-pseudo")
 #
-xmlparser:
-	@echo "Making sure that the xmlparser library is compiled..."
-	(cd ../../$(OBJDIR)/xmlparser ; make "VPATH=$(VPATH)/xmlparser")
-#
+
 
 

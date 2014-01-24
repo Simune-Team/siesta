@@ -10,6 +10,7 @@ module:  libncps.a
 ARCH_MAKE_DEFAULT=../arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
+include ../Mk/FoX.mk
 #
 INCFLAGS:= $(INCFLAGS) -I../xmlparser
 #
