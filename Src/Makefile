@@ -47,6 +47,8 @@ dep:
 	@mv tmp.Makefile Makefile
 #
 include arch.make
+include Mk/FoX.mk
+
 INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
 # For removing any -ipo compilation in sub directories...
 # Later compilers are also having this enabled, and it lets you
@@ -157,52 +159,11 @@ OBJS =  automatic_cell.o atom_options.o \
         die.o m_dminim.o m_zminim.o m_svd.o compute_max_diff.o \
         save_density_matrix.o
 #--------------------------------------------------------------
-# FoX whatnot
-#
-# FoX build targets:
-FoX_configured=FoX/.config
-FoX_built=FoX/.FoX
-#
-# This is how we pick up modules and libraries for FoX:
-FoX_FCFLAGS=`FoX/FoX-config --fcflags`
-FoX_LIBS=`FoX/FoX-config --libs --wcml`
-#
-# And add them to global compiler flags:
-INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS) $(NETCDF_INCFLAGS)
-#
-# First, it needs to be configured. This may have been done
-# by the main SIESTA configure, but in case not:
+
+INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
-#
-$(FoX_configured):
-	(cd FoX; touch arch.make ; \
-         CONFIGURE="$(VPATH)/FoX/configure"; \
-         $$CONFIGURE VPATH="$(VPATH)/FoX" \
-         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS:$(IPO_FLAG)=)" \
-         --enable-wcml $(DUMMY_FOX) || false )
-#
-# Note we have to make sure to use the same compiler as SIESTA,
-# and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
-# Note also that the "false" clause will stop the 'make' process if the configuration fails.
-#
-# Then we want to make FoX itself. Like so:
-$(FoX_built): $(FoX_configured)
-	(cd FoX; $(MAKE) )
-#
-# Now ensure that building FoX is inserted into the dependency chain.
-# Routines using FoX:
-# version (compinfo.o) does not actually need FoX, but making it build after
-# FoX is done avoids a warning as we use the FoX-config script everywhere.
-#
-version $(SYSOBJ) $(OBJS) \
-basis_io.o efield.o initatom.o ioeig.o kpoint_grid.o meshsubs.o \
-mulliken.o ordern.o outcell.o pdos.o post_scf_work.o radial.o   \
-scfconvergence_test.o setup_hamiltonian.o siesta_analysis.o     \
-siesta_cml.o siesta_cmlsubs.o siesta_end.o siesta_forces.o      \
-siesta_init.o siesta_move.o siesta_options.o state_analysis.o   \
-state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
 #
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
@@ -302,7 +263,7 @@ siesta: check-siesta what version \
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
                $(XC) $(NCPS) $(MPI_INTERFACE) \
-               $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
+               $(COMP_LIBS) $(FOX_LIBS) $(LIBS) 
 #
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
 	ar $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
@@ -334,7 +295,7 @@ transiesta: check-ts what version \
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
-               $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+               $(COMP_LIBS) $(FOX_LIBS) $(LIBS)
 #
 #
 clean: 
@@ -345,7 +306,6 @@ clean:
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
-	(cd FoX ; touch arch.make ; $(MAKE) distclean)
 	(cd xmlparser ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi

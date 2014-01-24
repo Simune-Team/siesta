@@ -1,4 +1,8 @@
 ------------------------------------------------------------
+January 24, 2014  Alberto Garcia           trunk-453--ncps-9
+Merge the .mk prototype mechanism from trunk-mk
+
+------------------------------------------------------------
 January 17, 2014  Alberto Garcia           trunk-453--ncps-8
 Added evaluator for radfuncs in XML struct
 
