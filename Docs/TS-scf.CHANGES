@@ -1,4 +1,16 @@
 ----------------------------------------------------
+January 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-103
+Creation of 2D array with zero elements should be allowed
+
+* Re-enabled the creation of 0-length 1D/2D sparse data arrays
+  as it is necessary if some systems have no update elements in 
+  their local sparsity pattern. (in TS)
+
+modified:
+  Src/class_Data1D.T90
+  Src/class_Data2D.T90
+
+----------------------------------------------------
 January 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-102
 Will not allow several chemical potentials with the same value
 

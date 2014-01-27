@@ -81,9 +81,9 @@
     else
        this%data%name = "("//STR_TYPE_NAME//" from n)"
     endif
-    if ( n < 1 ) then
-       call die('Size invalid. Data1D, must be larger than 0')
-    end if
+!    if ( n < 1 ) then
+!       call die('Size invalid. Data1D, must be larger than 0')
+!    end if
 
     call re_alloc(this%data%val,1,n, &
          name="val "//trim(this%data%name),routine=STR_TYPE_NAME) 
