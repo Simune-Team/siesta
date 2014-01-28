@@ -19,7 +19,7 @@ module m_ts_init
 
 contains
 
-  subroutine ts_init(wmix, kT, nspin, ucell, na_u, xa, lasto, no_u)
+  subroutine ts_init(wmix, kT, nspin, ucell, na_u, xa, lasto, no_u, inicoor, fincoor )
   ! Routine for initializing everything related to the Transiesta package.
   ! This is to comply with the SIESTA way of initializing at the beginning
   ! and make the code more managable.
@@ -45,6 +45,8 @@ contains
     use m_ts_options ! Just everything (easier)
     use m_ts_method
 
+    use m_fixed, only : is_fixed
+
     implicit none
 ! *********************
 ! * INPUT variables   *
@@ -57,12 +59,13 @@ contains
     real(dp), intent(in) :: xa(3,na_u)
     integer, intent(in)  :: lasto(0:na_u)
     integer, intent(in)  :: no_u
-
+    integer, intent(in)  :: inicoor, fincoor
+    
 ! *********************
 ! * LOCAL variables   *
 ! *********************
     complex(dp), dimension(:,:), allocatable :: dos
-    integer :: i, sNE, eNE
+    integer :: i, sNE, eNE, ia
     integer :: nC, nTS
     logical :: RemUCellDistance
 
@@ -79,7 +82,7 @@ contains
     if ( .not. TSmode ) return
 
     ! Check the electrodes
-    do  i = 1 , N_Elec
+    do i = 1 , N_Elec
        call check_Elec(Elecs(i),nspin,na_u,xa,lasto,Elecs_xa_EPS, &
             kcell=ts_kscell,kdispl=ts_kdispl)
     end do
@@ -87,6 +90,35 @@ contains
     ! initialize regions of the electrodes and device
     ! the number of LCAO orbitals on each atom will not change
     call ts_init_region_types(na_BufL,Elecs,na_BufR,na_u,lasto)
+
+    ! Check that an eventual CGrun will fix all electrodes and 
+    ! buffer atoms
+    if ( fincoor - inicoor > 0 ) then
+       ! check fix
+       do ia = 1 , na_BufL
+          if ( .not. is_fixed(ia) ) then
+             call die('All buffer atoms and electrode atoms *MUST* be &
+                  &fixed while doing transiesta geometry optimizations. &
+                  &Please correct left buffer.')
+          end if
+       end do
+       do i = 1 , N_Elec
+          do ia = Elecs(i)%idx_na , Elecs(i)%idx_na + TotUsedAtoms(Elecs(i)) - 1
+             if ( .not. is_fixed(ia) ) then
+                call die('All buffer atoms and electrode atoms *MUST* be &
+                     &fixed while doing transiesta geometry optimizations. &
+                     &Please correct electrodes.')
+             end if
+          end do
+       end do
+       do ia = na_u - na_BufR + 1 , na_u
+          if ( .not. is_fixed(ia) ) then
+             call die('All buffer atoms and electrode atoms *MUST* be &
+                  &fixed while doing transiesta geometry optimizations. &
+                  &Please correct right buffer.')
+          end if
+       end do
+    end if
 
     ! here we will check for all the size requirements of Transiesta
     ! I.e. whether some of the optimizations can be erroneous or not

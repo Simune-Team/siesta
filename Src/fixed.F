@@ -12,13 +12,14 @@
       use precision
       implicit none
 
-      PUBLIC                     :: fixed, resetFixedPointers
+      PUBLIC                     :: init_fixed
+      PUBLIC                     :: fixed, resetFixedPointers, is_fixed
       PRIVATE
+      SAVE
       ! maxc  : maximum number of constraints
-      integer                    :: maxc = 1000
-      integer                    :: nc
-      real(dp)                   :: xs(6)
-      logical                    :: frstme =.true.
+      integer                    :: maxc  = 100
+      integer                    :: nc    = 0
+      real(dp)                   :: xs(6) = 0._dp
       character(len=10), pointer :: ctype(:)
       integer,           pointer :: iac(:)
       real(dp),          pointer :: xc(:,:)
@@ -110,9 +111,6 @@ c **********************************************************************
       subroutine fixed( cell, stress, na, isa, amass, xa, fa,
      .                  cstress, cfa, ntcon )
       use precision
-      use parallel,   only : Node
-      use fdf
-      use alloc
 
       implicit none
 
@@ -121,6 +119,68 @@ c **********************************************************************
      .                         fa(3,na), stress(3,3), xa(3,na)
       integer, intent(out)  :: ntcon
       real(dp), intent(out) :: cfa(3,na), cstress(3,3)
+
+      integer ia, ic, ix, jx
+
+      real(dp)  ddot, fxc
+      external ddot, constr
+#ifdef DEBUG
+      call write_debug( '    PRE fixed' )
+#endif
+
+      ntcon = 0
+
+      ! Copy stress and forces to output arrays 
+      do ix = 1,3
+        do jx = 1,3
+          cstress(jx,ix) = stress(jx,ix)
+        enddo
+      enddo
+      do ia = 1,na
+        do ix = 1,3
+          cfa(ix,ia) = fa(ix,ia)
+        enddo
+      enddo
+
+      ! Apply constraints
+      do ic = 1,nc
+        if (ctype(ic) .eq. 'routine') then
+          call constr( cell, na, isa, amass, xa, cstress, cfa, ntcon )
+        elseif (ctype(ic) .eq. 'position') then
+          ntcon = ntcon + 1
+          ia = iac(ic)
+          fxc = ddot(3,cfa(1,ia),1,xc(1,ic),1)
+          do ix = 1,3
+            cfa(ix,ia) = cfa(ix,ia) - fxc * xc(ix,ic)
+          enddo
+        endif
+      enddo
+
+      ! Apply stress constraints
+      cstress(1,1) = cstress(1,1) - xs(1)*cstress(1,1)
+      cstress(2,2) = cstress(2,2) - xs(2)*cstress(2,2)
+      cstress(3,3) = cstress(3,3) - xs(3)*cstress(3,3)
+      cstress(3,2) = cstress(3,2) - xs(4)*cstress(3,2)
+      cstress(2,3) = cstress(2,3) - xs(4)*cstress(2,3)
+      cstress(3,1) = cstress(3,1) - xs(5)*cstress(3,1)
+      cstress(1,3) = cstress(1,3) - xs(5)*cstress(1,3)
+      cstress(1,2) = cstress(1,2) - xs(6)*cstress(1,2)
+      cstress(2,1) = cstress(2,1) - xs(6)*cstress(2,1)
+
+#ifdef DEBUG
+      call write_debug( '    POS fixed' )
+#endif
+      end subroutine fixed
+
+      subroutine init_fixed( na )
+      use precision
+      use parallel,   only : Node
+      use fdf
+      use alloc
+
+      implicit none
+
+      integer,  intent(in)  :: na
 
       ! Internal parameters
       ! maxl  : maximum number of input constraint lines
@@ -147,54 +207,49 @@ c **********************************************************************
 
       external ddot, constr
 #ifdef DEBUG
-      call write_debug( '    PRE fixed' )
+      call write_debug( '    PRE init_fixed' )
 #endif
 
-      ! Read constraint data only the first time
-      if (frstme) then
-!       Allocate memory for constraints - Preserve contents
-        nullify( ctype )
-        allocate( ctype(maxc) )
+!     Allocate memory for constraints - Preserve contents
+      nullify( ctype )
+      allocate( ctype(maxc) )
 
-        nullify( iac )
-        call re_alloc( iac, 1, maxc, 'iac', 'fixed' )
+      nullify( iac )
+      call re_alloc( iac, 1, maxc, 'iac', 'fixed' )
 
-        nullify( xc )
-        call re_alloc( xc, 1, 3, 1, maxc, 'xc', 'fixed' )
+      nullify( xc )
+      call re_alloc( xc, 1, 3, 1, maxc, 'xc', 'fixed' )
 
-        ! Initialise stress constraints to unconstrained state
-        xs(1:6) = 0.0d0
+      ! Initialise stress constraints to unconstrained state
+      xs(1:6) = 0.0d0
 
-        nc = 0
+      nc = 0
 
-        ! Look for constraints data block
-        found = fdf_block('GeometryConstraints',bfdf)
-        if (.not. found) goto 30
+      ! Look for constraints data block
+      found = fdf_block('GeometryConstraints',bfdf)
+      if (.not. found) goto 30
 
-        ! Loop on data lines
-        il = 1
-        do while(fdf_bline(bfdf,pline) .and. (il .le. maxl))
+      ! Loop on data lines
+      il = 1
+      do while(fdf_bline(bfdf,pline) .and. (il .le. maxl))
 
-          ! Check if constraints are finished
-          nn = fdf_bnnames(pline)
-          nv = fdf_bnvalues(pline)
-          ni = fdf_bnintegers(pline)
-          nr = fdf_bnreals(pline)
-          name1 = fdf_bnames(pline,1)
+         ! Check if constraints are finished
+         nn = fdf_bnnames(pline)
+         nv = fdf_bnvalues(pline)
+         ni = fdf_bnintegers(pline)
+         nr = fdf_bnreals(pline)
+         name1 = fdf_bnames(pline,1)
 
-          ! Select type of constraint
-          if (name1 .eq. 'routine') then
+         ! Select type of constraint
+         if (name1 .eq. 'routine') then
             if ((nn.eq.1) .or. (fdf_bnames(pline,2).eq.'constr')) then
-              nc = nc + 1
-              if (nc.eq.maxc) then
-                maxcnew = nc + nint(0.1*nc)
-
+               nc = nc + 1
+               if (nc.ge.maxc) then
+                maxcnew = nc + 10 ! we increase the fixed in steps of 10
                 allocate(ctype_tmp(maxcnew))
                 ctype_tmp(1:maxc) = ctype
                 deallocate(ctype)
                 ctype => ctype_tmp
-!                call re_alloc( ctype, 1, maxcnew, name='ctype',            
-!     &                         routine='fixed', copy=.true. )
                 call re_alloc( iac, 1, maxcnew, name='iac',            
      &                          routine='fixed', copy=.true. )
                 call re_alloc( xc, 1, 3, 1, maxcnew, name='xc',            
@@ -209,7 +264,7 @@ c **********************************************************************
               endif
             endif
 
-          elseif (name1 .eq. 'position') then
+         elseif (name1 .eq. 'position') then
 
             ! Check syntax
             if ((nr .ne. 0) .and. (nr .ne. 3)) then
@@ -264,13 +319,15 @@ c **********************************************************************
                 ! Make one constraint for each cartesian coordinate
                 do ix= 1, 3
                   nc = nc + 1
-                  if (nc .eq. maxc) then
-                    maxcnew = nc + nint(0.1*nc)
-                    call re_alloc( ctype, 1, maxcnew, name='ctype',            
+                  if (nc .ge. maxc) then
+                    maxcnew = nc + 10
+                    allocate(ctype_tmp(maxcnew))
+                    ctype_tmp(1:maxc) = ctype
+                    deallocate(ctype)
+                    ctype => ctype_tmp
+                    call re_alloc( iac, 1, maxcnew, name='iac',
      &                             routine='fixed', copy=.true. )
-                    call re_alloc( iac, 1, maxcnew, name='iac',            
-     &                             routine='fixed', copy=.true. )
-                    call re_alloc( xc, 1, 3, 1, maxcnew, name='xc',            
+                    call re_alloc( xc, 1, 3, 1, maxcnew, name='xc',
      &                             routine='fixed', copy=.true. )
                     maxc = maxcnew
                   endif
@@ -284,10 +341,12 @@ c **********************************************************************
               elseif (nr .eq. 3) then
                 ! Make only one constraint in the specified direction
                 nc = nc + 1
-                if (nc .eq. maxc) then
-                  maxcnew = nc + nint(0.1*nc)
-                  call re_alloc( ctype, 1, maxcnew, name='ctype',            
-     &                           routine='fixed', copy=.true. )
+                if (nc .ge. maxc) then
+                  maxcnew = nc + 10
+                  allocate(ctype_tmp(maxcnew))
+                  ctype_tmp(1:maxc) = ctype
+                  deallocate(ctype)
+                  ctype => ctype_tmp
                   call re_alloc( iac, 1, maxcnew, name='iac',            
      &                           routine='fixed', copy=.true. )
                   call re_alloc( xc, 1, 3, 1, maxcnew, name='xc',            
@@ -305,68 +364,62 @@ c **********************************************************************
               endif
             enddo
 
-          elseif (name1 .eq. 'stress') then
+         elseif (name1 .eq. 'stress') then
 
             do ic= 1, nv
               nc = nc + 1
               ctype(nc) = 'stress'
               ix = nint(fdf_bvalues(pline,ic))
-              if ((ix .ge. 1) .and. (ix .le. 6)) xs(ix) = 1.0d0
+              if ( ix < 1 .or. 6 < ix ) then
+                 call die('fixed: Stress restriction not &
+     &with expected input [1:6]')
+              end if
+              xs(ix) = 1.0d0
             enddo
 
-          else
+         else
             if (Node.eq.0) then
-              write(6,*) 'fixed: ERROR: sorry, constraint type ',
-     &                  name1, ' not implemented yet'
+               write(6,*) 'fixed: ERROR: sorry, constraint type ',
+     &              name1, ' not implemented yet'
             endif
-          endif
-          il = il + 1
-        enddo
-   30   continue
-        frstme = .false.
-      endif
-
-      ! Copy stress and forces to output arrays 
-      do ix = 1,3
-        do jx = 1,3
-          cstress(jx,ix) = stress(jx,ix)
-        enddo
+         endif
+         il = il + 1
       enddo
-      do ia = 1,na
-        do ix = 1,3
-          cfa(ix,ia) = fa(ix,ia)
-        enddo
-      enddo
-
-      ! Apply constraints
-      ntcon = 0
-      do ic = 1,nc
-        if (ctype(ic) .eq. 'routine') then
-          call constr( cell, na, isa, amass, xa, cstress, cfa, ntcon )
-        elseif (ctype(ic) .eq. 'position') then
-          ntcon = ntcon + 1
-          ia = iac(ic)
-          fxc = ddot(3,cfa(1,ia),1,xc(1,ic),1)
-          do ix = 1,3
-            cfa(ix,ia) = cfa(ix,ia) - fxc * xc(ix,ic)
-          enddo
-        endif
-      enddo
-
-      ! Apply stress constraints
-      cstress(1,1) = cstress(1,1) - xs(1)*cstress(1,1)
-      cstress(2,2) = cstress(2,2) - xs(2)*cstress(2,2)
-      cstress(3,3) = cstress(3,3) - xs(3)*cstress(3,3)
-      cstress(3,2) = cstress(3,2) - xs(4)*cstress(3,2)
-      cstress(2,3) = cstress(2,3) - xs(4)*cstress(2,3)
-      cstress(3,1) = cstress(3,1) - xs(5)*cstress(3,1)
-      cstress(1,3) = cstress(1,3) - xs(5)*cstress(1,3)
-      cstress(1,2) = cstress(1,2) - xs(6)*cstress(1,2)
-      cstress(2,1) = cstress(2,1) - xs(6)*cstress(2,1)
+ 30   continue
 
 #ifdef DEBUG
-      call write_debug( '    POS fixed' )
+      call write_debug( '    POS init_fixed' )
 #endif
-      end subroutine fixed
+
+      end subroutine init_fixed
+      
+      function is_fixed(ia) result(fixed)
+      integer, intent(in) :: ia
+      logical :: fixed, fi(3)
+      integer :: ic
+      fi = .false.
+      do ic = 1 , nc
+         if ( ctype(ic) .ne. 'position' ) cycle
+         if ( iac(ic) .ne. ia ) cycle
+         if ( xc(1,ic) .eq. 1.d0 .and. 
+     &        xc(2,ic) .eq. 0.d0 .and. 
+     &        xc(3,ic) .eq. 0.d0 ) then
+            fi(1) = .true.
+         else if ( xc(1,ic) .eq. 0.d0 .and. 
+     &           xc(2,ic) .eq. 1.d0 .and. 
+     &           xc(3,ic) .eq. 0.d0 ) then
+            fi(2) = .true.
+         else if ( xc(1,ic) .eq. 0.d0 .and. 
+     &           xc(2,ic) .eq. 0.d0 .and. 
+     &           xc(3,ic) .eq. 1.d0 ) then
+            fi(3) = .true.
+         end if
+         if ( all(fi) ) then
+            fixed = .true.
+            return
+         end if
+      end do
+      fixed = .false.
+      end function is_fixed
       
       END MODULE m_fixed

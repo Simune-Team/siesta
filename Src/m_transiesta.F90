@@ -102,7 +102,7 @@ contains
 
     if ( TSiscf == 1 ) then
        ! We need to initialize TRANSIESTA
-       
+
        call timer('TS_init',1)
 
        call ts_sparse_init(slabel,Gamma, sp_dist, sparse_pattern, &
@@ -240,8 +240,6 @@ contains
          nspin, n_nzs, DM, S, method = TS_INFO_SCF)
 
     call timer('TS',2)
-
-    if ( TSiscf == 1 ) call timer('TS',3)
 
 #ifdef TS_DEV
     call die('to not disturb the TSDE')

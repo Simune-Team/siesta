@@ -59,7 +59,6 @@ contains
     use m_mat_invert
     use m_ts_electype
 
-    ! If we only need the middle part of the Gf^-1
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: no_BufL
     integer, intent(in) :: N_Elec

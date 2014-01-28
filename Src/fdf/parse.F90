@@ -500,7 +500,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: integers', 'Wrong starting position', &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__, cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -521,7 +521,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: integers', 'Not enough integers in line', &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -551,7 +551,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: reals', 'Wrong starting position',    &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -572,7 +572,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: reals', 'Not enough reals in line',     &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -602,7 +602,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: values', 'Wrong starting position',   &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -624,7 +624,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: values', 'Not enough values in line',   &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -654,7 +654,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: names', 'Wrong starting position',    &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -675,7 +675,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: names', 'Not enough names in line',     &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -773,7 +773,7 @@ MODULE parse
       if (PRESENT(after)) then
         if ((after .lt. 0) .or. (after .ge. pline%ntokens))             &
           call die('PARSE module: tokens', 'Wrong starting position',   &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         starting_pos = after
       else
         starting_pos = 0
@@ -781,7 +781,7 @@ MODULE parse
 
       if (starting_pos+ind .gt. pline%ntokens)                          &
         call die('PARSE module: tokens', 'Wrong starting position',     &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
 
       loc = starting_pos+ind
       tokens = pline%line(pline%first(loc):pline%last(loc))
@@ -1315,7 +1315,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: match', 'Wrong starting position',    &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         shift = after
       else
@@ -1568,7 +1568,7 @@ MODULE parse
     if (len(string) < SERIALIZED_LENGTH)  then
        call die('PARSE module: recreate_pline', &
             "String too short", &
-            THIS_FILE, __LINE__)
+            THIS_FILE, __LINE__,cline=characters(pline,1,-1))
     endif
 
     pline%line = string(1:MAX_LENGTH)

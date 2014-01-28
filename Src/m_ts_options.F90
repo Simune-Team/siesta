@@ -426,7 +426,7 @@ write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts
     ! allow users to retain all chemical potentials at 0 eV
     do i = 1 , N_mu - 1
        do j = i + 1 , N_mu
-          if ( abs(mus(i)%mu - mus(j)%mu) > 1.e-3_dp*eV ) then
+          if ( abs(mus(i)%mu - mus(j)%mu) < 0.00001_dp*eV ) then
              call die('Two chemical potentials: '//trim(name(mus(i)))//' and ' &
                   //trim(name(mus(j)))//' are the same, in bias calculations this &
                   &is not allowed.')

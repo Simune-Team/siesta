@@ -1,4 +1,48 @@
 ----------------------------------------------------
+January 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-104
+fixed.F recreated to be able to check if atom is fixed
+
+* When transiesta wants to do relaxation we must enforce that
+  buffer atoms and electrodes are restrained.
+  Hence we needed to add a check against fixed atoms.
+  This meant a restructure of the fixed.F code with a separate
+  init_fixed routine and an additional "is_fixed(ia)" function.
+  
+  ts_init checks that the buffers and electrodes are restrained
+  when running a structural relaxation/MD
+
+* The FDF debugging has been troubling me for quite some time,
+  it now also prints out the line 
+  NOTE/TODO I believe the check for available tokens is wrong
+  in "parse/characters"
+  It should be:
+    if (      (loc_init .lt. 1)                   &
+           .OR. (loc_init .gt. pline%ntokens)       &
+           .OR. (loc_final .lt. 1)                  &
+           .OR. (loc_final .gt. pline%ntokens)      &
+           .OR. (loc_final .lt. loc_init)           &
+         )  then
+	 > wrong limits
+
+* Fixed print-out of transiesta timing when doing relaxation.
+  Will now print right after IterSCF printout
+
+* Bugfix for checking same valued chemical potentials
+  The check is now as strict as the IsVolt check, which makes sense
+
+modified:
+  Src/Makefile
+  Src/fdf/parse.F90
+  Src/fdf/utils.F90
+  Src/fixed.F
+  Src/m_transiesta.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trimat_invert.F90
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/ts_init.F90
+
+----------------------------------------------------
 January 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-103
 Creation of 2D array with zero elements should be allowed
 

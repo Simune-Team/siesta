@@ -82,6 +82,9 @@
 
 !     Start of SCF loop
       iscf  = 1
+#ifdef TRANSIESTA
+      TSiscf = 1
+#endif
       SCFconverged = .false.
 
       if (require_free_energy_convergence) then
@@ -172,6 +175,9 @@
 #ifdef TRANSIESTA
         if (istep.eq.inicoor .and. (iscf==1.and..not.TSrun)) then
            call timer( 'IterSCF', 3 )
+        endif
+        if (istep.eq.inicoor .and. (TSiscf==1.and.TSrun)) then
+           call timer( 'TS', 3 )
         endif
 #else
         if (istep.eq.inicoor .and. (iscf==1)) then

@@ -46,6 +46,7 @@
       use m_forces 
       use m_eo
       use m_gamma
+      use m_fixed,            only: init_fixed
       use m_ioxv,             only: xv_file_read
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
@@ -335,10 +336,6 @@ C     Initialise MPI and set processor number
         gamma = gamma .and. gamma_pdos
       endif
 
-#ifdef TRANSIESTA
-      call ts_init(wmix,temp,nspin,ucell,na_u,xa,lasto,no_u)
-#endif
-
       nullify(eo,qo)
       call re_alloc(eo, 1, no_u, 1, nspin, 1, maxk, 'eo', 'siesta_init')
       call re_alloc(qo, 1, no_u, 1, nspin, 1, maxk, 'qo', 'siesta_init')
@@ -411,6 +408,15 @@ C     Initialise MPI and set processor number
      &    call vmb( na_u, tempinit, amass, xa, isa, va )
 
       istp = 0
+
+      ! initialize the fixed positions (we need to check whether the 
+      ! fixed positions make sense)
+      call init_fixed( na_u )
+      
+#ifdef TRANSIESTA
+      call ts_init(wmix,temp,nspin,ucell,na_u,xa,lasto,no_u,
+     &     inicoor,fincoor)
+#endif
 
 !     Output memory use before main loop
 !!      call printmemory( 6, 0 )
