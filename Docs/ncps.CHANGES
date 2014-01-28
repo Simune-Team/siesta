@@ -1,4 +1,32 @@
 ------------------------------------------------------------
+January 28, 2014  Alberto Garcia           trunk-453--ncps-12
+Reparametrization functionality revamped
+
+For .vps and .psf files, the reparametrization uses the
+existing technology. For .xml files, the new API is used
+to evaluate the magnitudes in the new grid.
+
+File Src/pseudopotential.f is no longer "used" in Src.
+It will be progressively deprecated for programs in Util.
+
+
+added:
+  Src/nc-pseudo/flib_spline.f90
+modified:
+  Src/Makefile
+  Src/atom.F
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/nc-pseudo/m_ncps_froyen_reader.f
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_writers.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/makefile
+  Src/pseudopotential.f
+
+------------------------------------------------------------
 January 28, 2014  Alberto Garcia           trunk-453--ncps-11
 Implementation of basic API to process XML files
 

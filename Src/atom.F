@@ -40,7 +40,7 @@
       use periodic_table
       use basis_types, only: basis_def_t
       use fdf
-      use pseudopotential, only: pseudopotential_t
+      use m_ncps, only: pseudopotential_t => froyen_ps_t
 #ifndef BSC_CELLXC
       use siestaXC, only: atomXC  ! XC for a spherical charge
       use siestaXC, only: getXC   ! Returns the XC functional to be used

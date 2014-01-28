@@ -16,7 +16,7 @@ INCFLAGS:= $(INCFLAGS) -I../xmlparser
 #
 OBJFILES= m_ncps_froyen_ps_t.o m_ncps_xml_ps_t.o \
           m_ncps_parsing_helpers.o m_ncps_xmlreader.o \
-          m_ncps_froyen_reader.o\
+          flib_spline.o m_ncps_froyen_reader.o\
           m_ncps_writers.o m_ncps_reader.o\
           m_ncps_translators.o \
           m_ncps.o
@@ -35,7 +35,7 @@ clean:
 # DO NOT DELETE THIS LINE - used by make depend
 m_ncps.o: m_ncps_froyen_ps_t.o m_ncps_reader.o m_ncps_translators.o
 m_ncps.o: m_ncps_writers.o m_ncps_xml_ps_t.o
-m_ncps_froyen_reader.o: m_ncps_froyen_ps_t.o
+m_ncps_froyen_reader.o: m_ncps_froyen_ps_t.o flib_spline.o
 m_ncps_parsing_helpers.o: m_ncps_xml_ps_t.o
 m_ncps_reader.o: m_ncps_froyen_ps_t.o m_ncps_froyen_reader.o
 m_ncps_reader.o: m_ncps_translators.o m_ncps_xml_ps_t.o m_ncps_xmlreader.o

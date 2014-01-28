@@ -125,7 +125,7 @@
       use basis_types, only: basis_def_t, shell_t, lshell_t, kbshell_t
       use basis_types, only: nsp, basis_parameters, ground_state_t
       use basis_types, only: destroy, copy_shell, initialize
-      use pseudopotential, only: pseudo_read, pseudo_reparametrize
+      use m_ncps, only: pseudo_read
       use periodic_table, only: qvlofz, lmxofz, cnfig, atmass
       use chemical
       use sys
@@ -184,7 +184,7 @@
 
       integer nns, noccs, i, ns_read, l
       logical synthetic_atoms, found, reparametrize_pseudos
-      real(dp) :: new_a, new_b
+      real(dp) :: new_a, new_b, new_rmax
 
 !------------------------------------------------------------------------
       reparametrize_pseudos =
@@ -204,6 +204,7 @@
          ! with N at Rmax=100 on the order of 10000 points.
          new_a = fdf_double("NewAParameter",0.001_dp)
          new_b = fdf_double("NewBParameter",0.01_dp)
+         new_rmax = fdf_double("NewGridRmax",0.0_dp)
       endif
 
 !
@@ -286,14 +287,18 @@ C Sanity checks on values
         else if (basp%synthetic) then
           synthetic_atoms = .true.
           ! Will set gs later
-          call pseudo_read(basp%label,basp%pseudopotential)
+          call pseudo_read(basp%label,basp%pseudopotential,
+     $         new_grid=reparametrize_pseudos,a=new_a,b=new_b,
+     $         rmax=new_rmax)
         else
           call ground_state(abs(int(basp%z)),basp%ground_state)
-          call pseudo_read(basp%label,basp%pseudopotential)
+          call pseudo_read(basp%label,basp%pseudopotential,
+     $         new_grid=reparametrize_pseudos,a=new_a,b=new_b,
+     $         rmax=new_rmax)
         endif
-        if (reparametrize_pseudos)
-     .    call pseudo_reparametrize(p=basp%pseudopotential,
-     .                             a=new_a, b=new_b,label=basp%label)
+!        if (reparametrize_pseudos)
+!     .    call pseudo_reparametrize(p=basp%pseudopotential,
+!     .                             a=new_a, b=new_b,label=basp%label)
       enddo
 
       if (synthetic_atoms) then

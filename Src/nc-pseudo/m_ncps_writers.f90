@@ -5,6 +5,7 @@ module m_ncps_writers
   integer, parameter  :: dp = selected_real_kind(14)
       
   public :: pseudo_write_formatted
+  public :: pseudo_header_print
 
 CONTAINS
 
@@ -104,6 +105,23 @@ CONTAINS
 
   end subroutine get_free_lun
       
+        subroutine pseudo_header_print(lun,p)
+          use m_ncps_froyen_ps_t, only: pseudopotential_t => froyen_ps_t
+
+        integer, intent(in) :: lun
+        type(pseudopotential_t)  :: p
+
+        integer :: i
+
+ 8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
+ 8010   format(1x,6a10,/,1x,a70)
+        
+        write(lun,'(a)') '<pseudopotential_header>'
+        write(lun,8005) p%name, p%icorr, p%irel, p%nicore
+        write(lun,8010) (p%method(i),i=1,6), p%text
+        write(lun,'(a)') '</pseudopotential_header>'
+
+        end subroutine pseudo_header_print
 
 end module m_ncps_writers
 

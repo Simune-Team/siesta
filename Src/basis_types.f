@@ -26,7 +26,7 @@
 !     
 !
       use atmparams, only: lmaxd, nzetmx, nsemx, nkbmx
-      use pseudopotential, only: pseudopotential_t
+      use m_ncps, only: pseudopotential_t => froyen_ps_t
       use precision, only: dp
       use sys, only : die
 

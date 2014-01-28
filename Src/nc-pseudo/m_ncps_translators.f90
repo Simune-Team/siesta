@@ -230,7 +230,7 @@ CONTAINS
       end subroutine ncps_xml2froyen
 
 
-  subroutine ncps_xml2froyen_new( psxml, p, new_grid )
+  subroutine ncps_xml2froyen_new( psxml, p, new_grid, a, b, rmax )
 
 ! Translate the more complete xml-adapted data structure 
 ! into the 'Froyen' ps type used in Atom and Siesta.
@@ -252,13 +252,17 @@ CONTAINS
         type(xml_ps_t), intent(in)           :: psxml
         type(froyen_ps_t), intent(inout)     :: p
         logical, intent(in), optional        :: new_grid 
+        real(dp), intent(in), optional       :: a
+        real(dp), intent(in), optional       :: b
+        real(dp), intent(in), optional       :: rmax
+
 
         logical          :: want_new_grid
         integer          :: position, i, il, ir, l, n
         character(len=1) :: ispp, lshell
         logical          :: polarized
         real(dp)         :: zeld(0:4), zelu(0:4)
-        real(dp)         :: r2, rc
+        real(dp)         :: r2, rc, rmax_grid
         character(len=64):: xc_string
         character(len=40):: method_string
         character(len=1), dimension(0:4) :: &
@@ -334,36 +338,35 @@ CONTAINS
            want_new_grid = new_grid
         endif
 
-        if (psxmlHasGlobalLogGrid(psxml)) then
-!        These have to come from outside
-!!        p%nr           = psxml%pot(1)%V%grid%npts
-!        p%a            = psxml%pot(1)%V%grid%step
-!        p%b            = psxml%pot(1)%V%grid%scale
-           if (want_new_grid) then
-              ! do nothing, assume we have entered nr, a, and b
+        if (want_new_grid) then
+           if (.not. present(a)) call die("new grid: a not present")
+           if (.not. present(b)) call die("new grid: b not present")
+           if (present(rmax)) then
+              rmax_grid = rmax
+              if (rmax == 0.0_dp) rmax_grid = psxmlGridRmax(psxml)
            else
-              p%nr = psxmlGridNpoints(psxml)
-              p%a  = psxmlLogGridStep(psxml)
-              p%b  = psxmlLogGridScale(psxml)
+              rmax_grid = psxmlGridRmax(psxml)
            endif
+           p%a = a
+           p%b = b
+           p%nr = nint(log(rmax_grid/b+1.0d0)/a)
+
         else
-           if (want_new_grid) then
-              ! do nothing
-           else
+           if (.not. psxmlHasGlobalLogGrid(psxml)) then
               call die("Do not have logarithmic grid...")
            endif
+           
+           p%nr = psxmlGridNpoints(psxml)
+           p%a  = psxmlLogGridStep(psxml)
+           p%b  = psxmlLogGridScale(psxml)
+
         endif
 
-!        p%method(1)    = psxml%header%creator
-!        p%method(2)    = psxml%header%date
-!        read(psxml%header%flavor,'(4a10)') (p%method(i),i=3,6) 
         p%method(1)    = psxmlCreator(psxml)
         p%method(2)    = psxmlDate(psxml)
         method_string = psxmlPseudoFlavor(psxml)
         read(method_string,'(4a10)') (p%method(i),i=3,6) 
 
-!        p%npotu        = psxml%npots_up
-!        p%npotd        = psxml%npots_down
         p%npotu        = psxmlPotentialsUp(psxml)
         p%npotd        = psxmlPotentialsDown(psxml)
 

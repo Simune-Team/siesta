@@ -199,6 +199,20 @@ endif
 scale = psxml%global_grid%scale
 end function psxmlLogGridScale
 !
+function psxmlGridRmax(psxml) result(rmax)
+type(xml_ps_t), intent(in) :: psxml
+real(dp)                   :: rmax
+
+integer :: npts
+
+! We should make sure that there is a global grid...
+! Perhaps this should be the maximum rmax among all 
+! possible grids...
+
+npts = psxml%global_grid%npts
+rmax = psxml%global_grid%grid_data(npts)
+end function psxmlGridRmax
+!
 function psxmlPotentialsUp(psxml) result(n)
 type(xml_ps_t), intent(in) :: psxml
 integer                    :: n

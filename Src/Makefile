@@ -321,7 +321,7 @@ atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: m_filter.o m_recipes.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: pseudopotential.o sys.o
+atom.o: sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -330,10 +330,9 @@ bands.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o m_gamma.o
 bands.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o writewave.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o sys.o xml.o
-basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
-basis_specs.o: pseudopotential.o sys.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o sys.o
+basis_io.o: precision.o radial.o sys.o xml.o
+basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o sys.o
+basis_types.o: alloc.o atmparams.o precision.o sys.o
 bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o m_recipes.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
@@ -623,7 +622,7 @@ projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
+pseudopotential.o: atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
