@@ -121,7 +121,7 @@ CONTAINS
     real(dp) :: tmp
     logical :: err
     character(len=200) :: c, chars
-    integer :: i, j, idx, idx1, idx2
+    integer :: i, j, idx, idx1, idx2, ia
 
     ! External routines
     real(dp) :: dot
@@ -386,7 +386,6 @@ CONTAINS
     ! The sign can not be chosen from this (several mu, where to define it)
     Volt = maxval(mus(:)%mu) - minval(mus(:)%mu)
     call fdf_obsolete('TS.Voltage')
-write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts_voltage, say if we change sign'
     !Volt     = fdf_get('TS.Voltage',0._dp,'Ry') 
     ! Voltage situation is above 0.01 mV
     IsVolt = dabs(Volt) > 0.00001_dp*eV
@@ -419,6 +418,37 @@ write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts
           Elecs(i)%mu => mus(1)
        end do
 
+    else if ( N_Elec == 2 ) then
+       ! find the minimum electrode placement
+       ! to figure out the sign of the voltage
+       ! sign of bias only makes sense in case we have 
+       ! two electrodes
+       idx1 = 1 ! lower electrode
+       tmp = huge(0._dp)
+       do i = 1 , N_Elec
+          do ia = Elecs(i)%idx_na, Elecs(i)%idx_na + TotUsedAtoms(Elecs(i)) - 1
+             if ( xa(ts_tdir,ia) < -0.01_dp .or. &
+                  ucell(ts_tdir,ts_tdir) + 0.01_dp < xa(ts_tdir,ia) ) then
+                call die('Electrode '//trim(name(Elecs(i)))//' has coordinates &
+                     &below or above cell boundary, this would mean a wrong potential &
+                     &profile inserted. Please move all coordinates into the unit-cell')
+             end if
+             if ( abs(xa(ts_tdir,ia)) < tmp ) then
+                tmp = abs(xa(ts_tdir,ia))
+                idx1 = i
+             end if
+          end do
+       end do
+       if ( idx1 == 1 ) then
+          ! first electrode is placed first
+          Volt = Elecs(1)%mu%mu - Elecs(2)%mu%mu
+       else
+          ! second electrode is placed first
+          Volt = Elecs(2)%mu%mu - Elecs(1)%mu%mu
+       end if
+
+    else if ( N_Elec > 2 ) then
+       write(*,*) 'TODO the bias is not determined correctly by the direction, see m_ts_voltage, say if we change sign'
     end if
 
     ! We can now check whether two chemical potentials are the same

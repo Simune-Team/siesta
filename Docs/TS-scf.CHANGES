@@ -1,4 +1,17 @@
 ----------------------------------------------------
+January 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-105
+Can detect the sign of the bias in transiesta
+
+* The placement of the potential profile now works irrespective 
+  of the order of the electrodes.
+  We also limit the atomic coordinates in the transport direction
+  to be limited within the unit-cell.
+
+modified:
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 January 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-104
 fixed.F recreated to be able to check if atom is fixed
 

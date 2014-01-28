@@ -306,19 +306,38 @@ contains
 
     if ( size(Elecs) > 2 ) call die('Not fully implemented')
     Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
-
+    
+    ! find "lower" electrode
+    dLvc = huge(1._dp)
+    iElL = 1
+    iElR = 2
+    do i = Elecs(1)%idx_na , Elecs(1)%idx_na + TotUsedAtoms(Elecs(1)) - 1
+       if ( abs(xa(ts_tdir,i)) < dLvc ) then
+          dLvc = abs(xa(ts_tdir,i))
+       end if
+    end do
+    do i = Elecs(2)%idx_na , Elecs(2)%idx_na + TotUsedAtoms(Elecs(2)) - 1
+       if ( abs(xa(ts_tdir,i)) < dLvc ) then
+          dLvc = abs(xa(ts_tdir,i))
+          iElL = 2
+          iElR = 1
+       end if
+    end do
+       
     left_t_max  = -huge(1._dp)
     right_t_min = huge(1._dp)
-    do i = na_BufL + 1 , na_BufL + TotUsedAtoms(Elecs(1))
+    do i = Elecs(iElL)%idx_na , Elecs(iElL)%idx_na + TotUsedAtoms(Elecs(iElL)) - 1
        if ( left_t_max < xa(ts_tdir,i) ) then
-          left_t_max = xa(ts_tdir,i) + 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
+          left_t_max = xa(ts_tdir,i)
        end if
     end do
-    do i = na_u - na_BufR - TotUsedAtoms(Elecs(2)) + 1 , na_u - na_BufR
-       if ( right_t_min > xa(ts_tdir,i) ) then
-          right_t_min = xa(ts_tdir,i) - 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
+    left_t_max = left_t_max + 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
+    do i = Elecs(iElR)%idx_na , Elecs(iElR)%idx_na + TotUsedAtoms(Elecs(iElR)) - 1
+       if ( xa(ts_tdir,i) < right_t_min ) then
+          right_t_min = xa(ts_tdir,i)
        end if
     end do
+    right_t_min = right_t_min - 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
 
     ddleft  = huge(1._dp)
     ddright = huge(1._dp)
