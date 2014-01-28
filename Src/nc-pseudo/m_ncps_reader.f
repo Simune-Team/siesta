@@ -49,7 +49,7 @@
 
         use m_ncps_xml_ps_t, only: xml_ps_t
         use m_ncps_xmlreader, only: ncps_xmlreader
-        use m_ncps_translators, only: ncps_xml2froyen
+        use m_ncps_translators, only: ncps_xml2froyen_new
 
         character(len=*), intent(in)              :: fname
         type(pseudopotential_t), intent(out)      :: p
@@ -57,7 +57,7 @@
         type(xml_ps_t)      :: psxml
 
         call ncps_xmlreader(fname,psxml)
-        call ncps_xml2froyen(psxml,p)
+        call ncps_xml2froyen_new(psxml,p)
 
         end subroutine pseudo_read_xml
 !----

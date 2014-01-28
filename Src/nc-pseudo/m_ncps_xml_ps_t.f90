@@ -2,6 +2,8 @@ module m_ncps_xml_ps_t
 !
 ! Data structures to match the XML pseudopotential format
 !
+implicit none
+
 integer, parameter, private    :: MAXN_POTS = 8
 integer, parameter, private    :: dp = selected_real_kind(14)
 !
@@ -53,6 +55,7 @@ type, public :: header_t
         character(len=30)       :: xcfunctionaltype
         character(len=30)       :: xcfunctionalparametrization
         character(len=4)        :: core_corrections
+        logical                 :: rV
 end type header_t
 
 type, public :: xml_ps_t
@@ -71,11 +74,292 @@ type, public :: xml_ps_t
 
 CONTAINS !===============================================
 
-function eval_radfunc(f,r,remove_rfactor) result(val)
+function psxmlEvaluateValenceCharge(p,r,debug) result(val)
+type(xml_ps_t), intent(in) :: p
+real(dp), intent(in)       :: r
+logical, intent(in), optional :: debug
+real(dp)                   :: val
+
+val = eval_radfunc(p%valence_charge,r,debug)
+end function psxmlEvaluateValenceCharge
+
+function psxmlEvaluateCoreCharge(p,r,debug) result(val)
+type(xml_ps_t), intent(in) :: p
+real(dp), intent(in)       :: r
+logical, intent(in), optional :: debug
+real(dp)                   :: val
+
+val = eval_radfunc(p%core_charge,r,debug)
+end function psxmlEvaluateCoreCharge
+!
+function psxmlAtomicSymbol(psxml) result(name)
+type(xml_ps_t), intent(in) :: psxml
+character(len=2) :: name
+name = psxml%header%symbol
+end function psxmlAtomicSymbol
+!
+function psxmlCreator(psxml) result(name)
+type(xml_ps_t), intent(in) :: psxml
+character(len=len_trim(psxml%header%creator)) :: name
+name = trim(psxml%header%creator)
+end function psxmlCreator
+!
+function psxmlDate(psxml) result(str)
+type(xml_ps_t), intent(in) :: psxml
+character(len=len_trim(psxml%header%date)) :: str
+str = trim(psxml%header%date)
+end function psxmlDate
+!
+function psxmlPseudoFlavor(psxml) result(str)
+type(xml_ps_t), intent(in) :: psxml
+character(len=len_trim(psxml%header%flavor)) :: str
+str = trim(psxml%header%flavor)
+end function psxmlPseudoFlavor
+!
+function psxmlPseudoZval(psxml) result(zval)
+type(xml_ps_t), intent(in) :: psxml
+real(dp)                   :: zval
+zval = psxml%header%zval
+end function psxmlPseudoZval
+!
+function psxmlGenerationZval(psxml) result(zval)
+type(xml_ps_t), intent(in) :: psxml
+real(dp)                   :: zval
+zval = psxml%header%gen_zval
+end function psxmlGenerationZval
+!
+function psxmlXCFunctional(psxml) result(xc_string)
+type(xml_ps_t), intent(in) :: psxml
+character(len=len_trim(psxml%header%xcfunctionalparametrization)) :: xc_string
+xc_string = trim(psxml%header%xcfunctionalparametrization)
+end function psxmlXCFunctional
+!
+function psxmlXCFunctionalType(psxml) result(xc_type)
+type(xml_ps_t), intent(in) :: psxml
+character(len=len_trim(psxml%header%xcfunctionaltype)) :: xc_type
+xc_type = trim(psxml%header%xcfunctionaltype)
+end function psxmlXCFunctionalType
+!
+function psxmlIsRelativistic(psxml) result(rel)
+type(xml_ps_t), intent(in) :: psxml
+logical                    :: rel
+rel = psxml%header%relativistic
+end function psxmlIsRelativistic
+!
+function psxmlIsSpinPolarized(psxml) result(pol)
+type(xml_ps_t), intent(in) :: psxml
+logical                    :: pol
+pol = psxml%header%polarized
+end function psxmlIsSpinPolarized
+!
+function psxmlHasCoreCorrections(psxml) result(cc)
+type(xml_ps_t), intent(in) :: psxml
+logical                    :: cc
+cc = (psxml%header%core_corrections == "yes")
+end function psxmlHasCoreCorrections
+!
+function psxmlHasGlobalLogGrid(psxml) result(log_grid)
+type(xml_ps_t), intent(in) :: psxml
+logical                    :: log_grid
+! to be fixed: use a global grid...
+if (.not.(associated(psxml%global_grid))) then
+   log_grid = .false.
+else
+   log_grid = (psxml%global_grid%type == "log")
+endif
+end function psxmlHasGlobalLogGrid
+
+function psxmlGridNpoints(psxml) result(npts)
+type(xml_ps_t), intent(in) :: psxml
+integer                    :: npts
+
+if (.not.(associated(psxml%global_grid))) then
+   call die("Do not have global grid to get npts...")
+endif
+npts = psxml%global_grid%npts
+end function psxmlGridNpoints
+!
+function psxmlLogGridStep(psxml) result(step)
+type(xml_ps_t), intent(in) :: psxml
+real(dp)                   :: step
+
+if (.not. psxmlHasGlobalLogGrid(psxml)) then
+   call die("Do not have global log grid to get step...")
+endif
+step = psxml%global_grid%step
+end function psxmlLogGridStep
+!
+function psxmlLogGridScale(psxml) result(scale)
+type(xml_ps_t), intent(in) :: psxml
+real(dp)                   :: scale
+
+if (.not. psxmlHasGlobalLogGrid(psxml)) then
+   call die("Do not have global log grid to get scale...")
+endif
+scale = psxml%global_grid%scale
+end function psxmlLogGridScale
+!
+function psxmlPotentialsUp(psxml) result(n)
+type(xml_ps_t), intent(in) :: psxml
+integer                    :: n
+n = psxml%npots_up
+end function psxmlPotentialsUp
+!
+function psxmlPotentialsDown(psxml) result(n)
+type(xml_ps_t), intent(in) :: psxml
+integer                    :: n
+n = psxml%npots_down
+end function psxmlPotentialsDown
+!
+function psxmlPotAngMomentum(psxml,ud,i) result(l)
+type(xml_ps_t), intent(in) :: psxml
+character, intent(in)      :: ud
+integer,   intent(in)      :: i
+integer                    :: l
+
+character(len=1), dimension(0:4) :: sym = (/ "s", "p", "d", "f", "g" /)
+integer :: ndown
+character(len=1) :: str
+
+ndown = psxmlPotentialsDown(psxml)
+
+select case(ud)
+   case ( "u", "U")
+      if (i > psxmlPotentialsUp(psxml)) then
+         call die("attempt to get l from non-existing Up potential")
+      endif
+      str = psxml%pot(ndown+i)%l
+   case ( "d", "D")
+      if (i > ndown) then
+         call die("attempt to get l from non-existing Down potential")
+      endif
+      str = psxml%pot(i)%l
+end select
+!
+do l = 0,4
+   if (str == sym(l)) RETURN
+enddo
+call die("Wrong l symbol in potential")
+
+end function psxmlPotAngMomentum
+!
+function psxmlOccupation(psxml,ud,i) result(zo)
+type(xml_ps_t), intent(in) :: psxml
+character, intent(in)      :: ud
+integer,   intent(in)      :: i
+real(dp)                   :: zo
+
+integer :: ndown
+
+ndown = psxmlPotentialsDown(psxml)
+
+select case(ud)
+   case ( "u", "U")
+      if (i > psxmlPotentialsUp(psxml)) then
+         call die("attempt to get occupation from non-existing Up potential")
+      endif
+      zo = psxml%pot(ndown+i)%occupation
+   case ( "d", "D")
+      if (i > ndown) then
+         call die("attempt to get l from non-existing Down potential")
+      endif
+      zo = psxml%pot(i)%occupation
+end select
+end function psxmlOccupation
+!
+function psxmlGenerationCutoff(psxml,ud,i) result(rc)
+type(xml_ps_t), intent(in) :: psxml
+character, intent(in)      :: ud
+integer,   intent(in)      :: i
+real(dp)                   :: rc
+
+integer :: ndown
+
+ndown = psxmlPotentialsDown(psxml)
+
+select case(ud)
+   case ( "u", "U")
+      if (i > psxmlPotentialsUp(psxml)) then
+         call die("attempt to get cutoff from non-existing Up potential")
+      endif
+      rc = psxml%pot(ndown+i)%cutoff
+   case ( "d", "D")
+      if (i > ndown) then
+         call die("attempt to get cutoff from non-existing Down potential")
+      endif
+      rc = psxml%pot(i)%cutoff
+end select
+end function psxmlGenerationCutoff
+!
+function psxmlPrincipalN(psxml,ud,i) result(n)
+type(xml_ps_t), intent(in) :: psxml
+character, intent(in)      :: ud
+integer,   intent(in)      :: i
+integer                    :: n
+
+integer :: ndown
+
+ndown = psxmlPotentialsDown(psxml)
+
+select case(ud)
+   case ( "u", "U")
+      if (i > psxmlPotentialsUp(psxml)) then
+         call die("attempt to get n from non-existing Up potential")
+      endif
+      n = psxml%pot(ndown+i)%n
+   case ( "d", "D")
+      if (i > ndown) then
+         call die("attempt to get n from non-existing Down potential")
+      endif
+      n = psxml%pot(i)%n
+end select
+end function psxmlPrincipalN
+!
+function psxmlEvaluatePotential(psxml,ud,i,r,debug) result(val)
+type(xml_ps_t), intent(in) :: psxml
+character, intent(in)      :: ud
+integer,   intent(in)      :: i
+real(dp),  intent(in)      :: r
+logical, intent(in), optional :: debug
+real(dp)                   :: val
+
+
+integer :: ndown
+real(dp), parameter :: tiny = 1.0e-8_dp
+real(dp) :: reff
+logical :: hasRfactor
+
+ndown = psxml%npots_down
+hasRfactor = psxml%header%rV
+
+reff = r
+if (r == 0.0_dp) then
+   reff = tiny
+endif
+
+select case(ud)
+   case ( "u", "U")
+      if (i > psxmlPotentialsUp(psxml)) then
+         call die("attempt to evaluate non-existing Up potential")
+      endif
+      val = eval_radfunc(psxml%pot(ndown+i)%V,reff)
+   case ( "d", "D")
+      if (i > ndown) then
+         call die("attempt to get n from non-existing Down potential")
+      endif
+      val = eval_radfunc(psxml%pot(i)%V,reff)
+end select
+
+if (hasRfactor)   val = val / reff
+
+end function psxmlEvaluatePotential
+
+!====================================================
+function eval_radfunc(f,r,debug) result(val)
 type(radfunc_t), intent(in) :: f
 real(dp), intent(in)      :: r
 real(dp)                  :: val
-logical, intent(in), optional :: remove_rfactor
+logical, intent(in), optional :: debug
 
 logical :: remove_r
 real(dp), pointer :: x(:) => null(), y(:) => null()
@@ -83,23 +367,19 @@ real(dp), pointer :: x(:) => null(), y(:) => null()
 x => f%grid%grid_data(:)
 y => f%data(:)
 
-remove_r = .false.
-if (present(remove_rfactor)) then
-   remove_r = remove_rfactor
-endif
-
-call interpolate(x,y,r,val)
+call interpolate(x,y,r,val,debug)
 
 end function eval_radfunc
 
-subroutine interpolate(x,y,r,val)
+subroutine interpolate(x,y,r,val,debug)
 real(dp), intent(in) :: x(:), y(:)
 real(dp), intent(in) :: r
 real(dp), intent(out):: val
+logical, intent(in), optional :: debug
 
 integer, save :: i0
 integer :: npts, nmin, nmax, nn
-integer, parameter :: npoint = 2  ! interpolation order
+integer, parameter :: npoint = 2  ! basis for interpolation order
 real(dp)  :: dy
 
 npts = size(x)
@@ -110,7 +390,12 @@ nmin=max(1,i0-npoint)
 nmax=min(npts,i0+npoint)
 nn=nmax-nmin+1
 call polint(x(nmin:),y(nmin:),nn,r,val,dy)
-
+if (present(debug)) then
+   if (debug) then
+      print "(a,2g20.10,i4,2g20.10)", &
+          "r ,r-x(i0), i0, val, d: ", r, r-x(i0), i0, val, (val-y(i0))
+   endif
+endif
 end subroutine interpolate
 
       SUBROUTINE hunt(xx,n,x,jlo)

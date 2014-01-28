@@ -239,7 +239,7 @@ c$$$      end type pseudopotential_t
 
         use m_ncps, only: xml_ps_t
         use m_ncps, only: ncps_xmlreader
-        use m_ncps, only: ncps_xml2froyen
+        use m_ncps, only: ncps_xml2froyen_new
 
         character(len=*), intent(in)              :: fname
         type(pseudopotential_t), intent(out)      :: p
@@ -247,7 +247,8 @@ c$$$      end type pseudopotential_t
         type(xml_ps_t)      :: psxml
 
         call ncps_xmlreader(fname,psxml)
-        call ncps_xml2froyen(psxml,p)
+        call ncps_xml2froyen_new(psxml,p)
+        call pseudo_write_formatted(trim(fname)//".AfterXML.psf",p)
 
         end subroutine pseudo_read_xml
 !----

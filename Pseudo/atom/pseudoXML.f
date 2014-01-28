@@ -224,14 +224,6 @@
              call my_add_attribute(xf,"spin","-1")
 
              call xml_NewElement(xf,"radfunc")
-               call xml_NewElement(xf,"grid")
-                 call my_add_attribute(xf,"type",gridtype)
-                 call my_add_attribute(xf,"units",gridunits)
-                 call my_add_attribute(xf,"scale",gridscale)
-                 call my_add_attribute(xf,"step",gridstep)
-                 call my_add_attribute(xf,"npts",gridnpoint)
-               call xml_EndElement(xf,"grid")
-
                call xml_NewElement(xf,"data")
                  call xml_AddCharacters(xf,viod(ivps,2:nr))
                call xml_EndElement(xf,"data")
@@ -253,13 +245,6 @@
              call my_add_attribute(xf,"spin","+1")
 
              call xml_NewElement(xf,"radfunc")
-               call xml_NewElement(xf,"grid")
-                 call my_add_attribute(xf,"type",gridtype)
-                 call my_add_attribute(xf,"units",gridunits)
-                 call my_add_attribute(xf,"scale",gridscale)
-                 call my_add_attribute(xf,"step",gridstep)
-                 call my_add_attribute(xf,"npts",gridnpoint)
-               call xml_EndElement(xf,"grid")
 
                call xml_NewElement(xf,"data")
                  call xml_AddCharacters(xf,viou(ivps,2:nr))
@@ -288,13 +273,6 @@
              call my_add_attribute(xf,"spin","-1")
 
              call xml_NewElement(xf,"radfunc")
-               call xml_NewElement(xf,"grid")
-                 call my_add_attribute(xf,"type",gridtype)
-                 call my_add_attribute(xf,"units",gridunits)
-                 call my_add_attribute(xf,"scale",gridscale)
-                 call my_add_attribute(xf,"step",gridstep)
-                 call my_add_attribute(xf,"npts",gridnpoint)
-               call xml_EndElement(xf,"grid")
 
                call xml_NewElement(xf,"data")
                  call xml_AddCharacters(xf,pswfnrd(ivps,2:nr))
@@ -313,13 +291,6 @@
              call my_add_attribute(xf,"spin","+1")
 
              call xml_NewElement(xf,"radfunc")
-               call xml_NewElement(xf,"grid")
-                 call my_add_attribute(xf,"type",gridtype)
-                 call my_add_attribute(xf,"units",gridunits)
-                 call my_add_attribute(xf,"scale",gridscale)
-                 call my_add_attribute(xf,"step",gridstep)
-                 call my_add_attribute(xf,"npts",gridnpoint)
-               call xml_EndElement(xf,"grid")
 
                call xml_NewElement(xf,"data")
                  call xml_AddCharacters(xf,pswfnru(ivps,2:nr))
@@ -331,13 +302,6 @@
 
         call xml_NewElement(xf,"valence-charge")
           call xml_NewElement(xf,"radfunc")
-            call xml_NewElement(xf,"grid")
-              call my_add_attribute(xf,"type",gridtype)
-              call my_add_attribute(xf,"units",gridunits)
-              call my_add_attribute(xf,"scale",gridscale)
-              call my_add_attribute(xf,"step",gridstep)
-              call my_add_attribute(xf,"npts",gridnpoint)
-            call xml_EndElement(xf,"grid")
 
             call xml_NewElement(xf,"data")
               call xml_AddCharacters(xf,chval(2:nr))
@@ -347,13 +311,6 @@
 
         call xml_NewElement(xf,"pseudocore-charge")
           call xml_NewElement(xf,"radfunc")
-            call xml_NewElement(xf,"grid")
-              call my_add_attribute(xf,"type",gridtype)
-              call my_add_attribute(xf,"units",gridunits)
-              call my_add_attribute(xf,"scale",gridscale)
-              call my_add_attribute(xf,"step",gridstep)
-              call my_add_attribute(xf,"npts",gridnpoint)
-            call xml_EndElement(xf,"grid")
 
             call xml_NewElement(xf,"data")
               call xml_AddCharacters(xf,cdc(2:nr))

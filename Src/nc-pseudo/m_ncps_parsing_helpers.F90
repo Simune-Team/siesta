@@ -264,6 +264,10 @@ select case(name)
          if (status /= 0 ) call die("Cannot determine npots-up")
          read(unit=value,fmt=*) pseudo%npots_up
 
+         call get_value(attributes,"format",value,status)
+         if (status /= 0 ) call die("Cannot determine potential format")
+         pseudo%header%rV = (trim(value) == "r*V")
+
       case ("pseudowave-functions")
          in_pseudowavefun = .true. 
 
@@ -331,7 +335,9 @@ select case(name)
             do i = 1, grid%npts
                ! possible units handling
                grid%grid_data(i) = grid%scale * &
-                    (exp(grid%step*(i-1)) - 1)
+!                    (exp(grid%step*(i-1)) - 1)
+! Note that the first element is not r=0...
+                    (exp(grid%step*(i)) - 1)
             enddo
 
          endif

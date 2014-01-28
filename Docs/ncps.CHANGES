@@ -1,4 +1,26 @@
 ------------------------------------------------------------
+January 28, 2014  Alberto Garcia           trunk-453--ncps-11
+Implementation of basic API to process XML files
+
+Accessors are now those needed by Siesta. Some refactoring might
+be carried out after considering Abinit's needs.
+
+The quality of the interpolation is not really tested yet, as the
+grid points in the client and the file are the same.
+
+The new API is used in routine "xml2froyen_new". 
+
+Note that ATOM now writes XML files with just a global grid.
+
+modified:
+  Pseudo/atom/pseudoXML.f
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/pseudopotential.f
+
+------------------------------------------------------------
 January 24, 2014  Alberto Garcia           trunk-453--ncps-10
 Dual FoX-XMLF90 operation
 
