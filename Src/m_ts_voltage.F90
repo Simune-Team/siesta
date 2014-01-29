@@ -195,10 +195,10 @@ contains
     if ( meshl(1) * meshl(2) * meshl(3) /= size(Vscf,1) ) &
          call die('ERROR: Vscf size not correct')
 
+    ! Add the electric field potential to the input potential
+    imesh = 0
     if ( ts_tdir == 1 ) then
 
-       ! Add the electric field potential to the input potential
-       imesh = 0
        do i3 = 1,meshl(3)
           do i2 = 1,meshl(2)
              do i1 = offset_i(1)+1,offset_i(1)+meshl(1)
@@ -224,8 +224,6 @@ contains
 
     else if ( ts_tdir == 2 ) then
 
-       ! Add the electric field potential to the input potential
-       imesh = 0
        do i3 = 1,meshl(3)
           do i2 = offset_i(2)+1,offset_i(2)+meshl(2)
              ! Check the region
@@ -249,8 +247,7 @@ contains
        enddo
        
     else
-       ! Add the electric field potential to the input potential
-       imesh = 0
+
        do i3 = offset_i(3)+1,offset_i(3)+meshl(3)
 
           ! Check the region
@@ -304,7 +301,7 @@ contains
     real(dp) :: dot
     external :: dot
 
-    if ( size(Elecs) > 2 ) call die('Not fully implemented')
+    if ( N_Elec > 2 ) call die('Not fully implemented')
     Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
     
     ! find "lower" electrode

@@ -105,7 +105,6 @@ contains
     integer :: nr
     integer :: io, jo, ind, j
     integer :: mu_i, mu_j
-    integer :: ID2mu1, ID2mu2 ! TODO delete
     integer, allocatable :: ID_mu(:)
     ! For error estimation
     integer  :: eM_i,eM_j
@@ -187,10 +186,6 @@ contains
 
     else
 
-!       call indices2eq(1,ID2mu1)
-!       call indices2eq(2,ID2mu2)
-!       print *,1,ID2mu1,2,ID2mu2
-
        do io = 1 , nr
           ! We are in a buffer region...
           if ( l_ncol(io) == 0 ) cycle
@@ -203,10 +198,6 @@ contains
              ! get both contribution and weight
              call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq,w)
              
-             !if ( io == 30 .and. jo < 365 ) &
-             !     print '(i0,tr1,8(f10.6,tr1))',jo,DM(ind,2),DMneq(ind,ID2mu2),neq(2),w(2), &
-              !    DM(ind,1),DMneq(ind,ID2mu1),neq(1),w(1)
-             
              ! Do error estimation (capture before update)
              ee = 0._dp
              do mu_i = 1 , N_mu - 1
@@ -218,7 +209,7 @@ contains
              end do
              
              DM(ind,1) = w(1) * ( DM(ind,1) + neq(1) )
-             if ( hasEDM ) EDM(ind,1) = w(1) *  EDM(ind,1)
+             if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
              do mu_i = 2 , N_mu
                 DM(ind,1) = DM(ind,1) + &
                      w(mu_i) * ( DM(ind,mu_i) + neq(mu_i) )
@@ -256,7 +247,7 @@ contains
     call MPI_Reduce(DM(1,1),EDM(1,1),4*Nodes, &
          MPI_Double_Precision, MPI_Sum, 0, MPI_Comm_World, MPIerror)
     if ( IONode ) then
-       io   = maxloc(EDM(:,1),1)
+       io   = maxloc(abs(EDM(:,1)),1)
        eM   = EDM(io,1)
        eM_i = nint(EDM(io,2))
        eM_j = nint(EDM(io,3))
@@ -295,7 +286,7 @@ contains
 
   ! do simple weight calculation and return correct numbers
   subroutine get_weight(N_El,N_mu,N_id,ID_mu,w_ID,w)
-    use m_ts_contour_neq, only : ID2mu, ID2mult, IDhasmu_right
+    use m_ts_contour_neq, only : ID2mu, ID2mult
     integer,  intent(in)  :: N_El, N_id, N_mu, ID_mu(N_id)
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: w(N_mu)
@@ -312,8 +303,7 @@ contains
        tmp = w_ID(ID) * ID2mult(ID)
        total = total + tmp
        do mu_i = 1 , N_mu
-          if ( .not. IDhasmu_right(ID,mu_i) .and. &
-               mu_i /= mu ) then
+          if ( mu_i /= mu ) then
              w(mu_i) = w(mu_i) + tmp
           end if
        end do
@@ -331,7 +321,7 @@ contains
 
   ! do simple weight calculation and return correct numbers
   subroutine get_neq_weight(N_El,N_mu,N_id,ID_mu,neq_ID,neq,w)
-    use m_ts_contour_neq, only : ID2mu, ID2mult, IDhasmu_right
+    use m_ts_contour_neq, only : ID2mu, ID2mult
     integer,  intent(in)  :: N_El, N_id, N_mu, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
@@ -350,8 +340,7 @@ contains
        tmp = neq_ID(ID) ** 2 * mult
        total = total + tmp
        do mu_i = 1 , N_mu
-          if ( .not. IDhasmu_right(ID,mu_i) .and. &
-               mu_i /= mu ) then
+          if ( mu /= mu_i ) then
              w(mu_i) = w(mu_i) + tmp
           end if
        end do

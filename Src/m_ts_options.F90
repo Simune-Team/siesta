@@ -698,9 +698,8 @@ CONTAINS
        ! Check that the atoms are placed correctly in the unit-cell
        ! The Hartree potential correction will only be put correctly 
        ! when the atoms are sorted by z and starting from z == 0
-write(*,*)'Check the bias placement'
-       if ( IsVolt .and. .false. ) then
-          tmp = minval(xa(3,na_BufL+1:)) / Ang
+       if ( IsVolt .and. .not. VoltageInC ) then
+          tmp = minval(xa(ts_tdir,:)) / Ang
           ! below -.5 or above .5 Ang from the bottom of the unit-cell
           if ( tmp < -.5_dp .or. .5_dp < tmp ) then
              write(*,*) &

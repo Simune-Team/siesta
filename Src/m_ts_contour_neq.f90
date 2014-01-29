@@ -82,7 +82,6 @@ module m_ts_contour_neq
   public :: c2weight_neq
   public :: ID2mult
   public :: ID2mu
-  public :: IDhasmu_right
 
   private
 
@@ -234,12 +233,12 @@ contains
        do j = i + 1 , N_mu
           ! the chemical potentials in the segments
           ! must be sorted! Otherwise the weights are incorrect
-          if ( mus(j)%mu > mus(i)%mu ) then
-             nEq_segs(cur_mu)%mu1 => mus(i)
-             nEq_segs(cur_mu)%mu2 => mus(j)
+          if ( mus(i)%mu < mus(j)%mu ) then
+             nEq_segs(cur_mu)%mu1 => mus(i) ! smallest
+             nEq_segs(cur_mu)%mu2 => mus(j) ! biggest
           else
-             nEq_segs(cur_mu)%mu1 => mus(j)
-             nEq_segs(cur_mu)%mu2 => mus(i)
+             nEq_segs(cur_mu)%mu1 => mus(j) ! smallest
+             nEq_segs(cur_mu)%mu2 => mus(i) ! biggest
           end if
 
           ! create the ID's
@@ -576,7 +575,7 @@ contains
     end if
 
     ! Notice that we multiply with -i to move Gf.Gamma.Gf^\dagger
-    ! to the imaginary part
+    ! to the negative imaginary part
 
     ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
     if ( has_correct_weight ) then
@@ -626,14 +625,14 @@ contains
 
     if ( has_correct_weight ) then
        ! the gauss-fermi contour has the "correct" weight already...
-       W = - cw%w(c%idx(3),1)
+       W =  cw%w(c%idx(3),1)
     else
        ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
        ! We use this to get the positive weight (the mu's are sorted in descending order)
        W =  cw%w(c%idx(3),1) * &
             nf(E, &
-            seg%mu1%mu, &
-            seg%mu2%mu, kT)
+            seg%mu2%mu, &
+            seg%mu1%mu, kT)
     end if
     
   end subroutine cseq2weight_neq
@@ -657,20 +656,9 @@ contains
     else if ( nEq_ID(ID)%seg%mu2%ID == nEq_ID(ID)%imu ) then
        mult = nEq_ID(ID)%seg%mu2%N_El
     else
-       call die('Error in code')
+       call die('ID2mult: Error in code')
     end if
   end function ID2mult
-
-  ! returns the id of the segment that has the \mu_i -- \mu_j part (notice
-  function IDhasmu_right(ID,imu) result(has)
-    integer, intent(in) :: ID, imu
-    logical :: has
-    if ( hasEl(nEq_ID(ID)%seg%mu1,nEq_ID(ID)%iEl) ) then
-       has = nEq_ID(ID)%seg%mu2%ID == imu
-    else
-       has = nEq_ID(ID)%seg%mu1%ID == imu
-    end if
-  end function IDhasmu_right
 
   subroutine contour_line(c,kT,Eta)
     use m_integrate

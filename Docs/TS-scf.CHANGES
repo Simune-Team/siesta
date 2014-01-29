@@ -1,4 +1,21 @@
 ----------------------------------------------------
+January 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-106
+Bugfix for non-equilibrium weights of "wrong" chemical potential order
+
+* The contribution to the non-equilibrium contour was wrong in 
+  certain cases of the chemical potential ordering.
+
+* The actual contribution to the weights was far more simple
+  than first anticipated. 
+  Thus a routine from m_ts_contour_neq has been removed.
+
+modified:
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 January 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-105
 Can detect the sign of the bias in transiesta
 
