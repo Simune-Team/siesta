@@ -1,4 +1,22 @@
 ----------------------------------------------------
+January 30, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-107
+Added TS_timings through -DTRANSIESTA_TIMING
+
+* Added timing for transiesta, now the partition of timing is
+  very stringent.
+
+* Removed unnecessary file m_ts_full.F90 which was a left-over
+
+removed:
+  Src/m_ts_full.F90
+modified:
+  Src/Makefile
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+
+----------------------------------------------------
 January 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-106
 Bugfix for non-equilibrium weights of "wrong" chemical potential order
 

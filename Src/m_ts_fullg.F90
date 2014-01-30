@@ -553,6 +553,10 @@ close(io)
        call timer('TS_comm',2)
 #endif
 
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_weight',1)
+#endif
+
        ! 1. move from global UC to local SC
        ! 2. calculate the correct contribution by applying the weight
        ! 3. add the density to the real arrays
@@ -565,6 +569,10 @@ close(io)
        call update_DM(sp_dist,sparse_pattern, n_nzs, &
             DM(:,ispin), spDM, Ef=Ef, &
             EDM=EDM(:,ispin), spEDM=spEDM, ipnt=ltsup_sc_pnt)
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_weight',2)
+#endif
        
        ! We don't need to do anything here..
 
