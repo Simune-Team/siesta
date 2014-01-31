@@ -6,6 +6,22 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-01-31  15:15:00 GMT                                     trunk-454
+Allow the handling of ghosts of synthetic atoms
+
+Species with "atomic number" < -200 are now correctly treated as
+ghosts of synthetic atoms.
+
+(Thanks to A. Vozny and A. Suarez)
+
+modified:
+  Docs/siesta.tex
+  Src/atm_transfer.f
+  Src/atom.f
+  Src/chemical.f
+  Src/periodic_table.f
+
+-----------------------------------------------------------------------
 2014-01-16  15:35:00 GMT                                     trunk-453
 Added a simple ps-->inp converter for ATOM
 
