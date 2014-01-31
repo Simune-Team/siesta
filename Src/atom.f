@@ -259,10 +259,11 @@
       
 !!** AG: Symbol is not adequate. Should use the label
 
-             if (iz.gt.200) then  
+             if (abs(iz).gt.200) then  
                write(6,'(3a,i4,a)')
      .         'atom: Called for (synthetic) ', atm_label,
      $               '  (Z =', iz,')' 
+               if (iz.lt.0) write(6,'(a)') '(Floating basis)'
 
              else if (iz.gt.0) then  
                write(6,'(3a,i4,a)')
@@ -5887,7 +5888,7 @@ C***Internal variables
                 write(6,'(2(1x,i4),1x,2a)')
      .                  is,izofis(is),labelfis(is), 
      .              '    # Species index, atomic number, species label' 
-                if (izofis(is) > 200) synthetic_atoms = .true.
+                if (abs(izofis(is)) > 200) synthetic_atoms = .true.
              enddo 
              write(6,'(a)')
      .                  '%endblock ChemicalSpeciesLabel' 
@@ -5900,7 +5901,7 @@ C***Internal variables
      .               '%block SyntheticAtoms   # Valence config'
 
                 do is=1,ntotsp
-                   if (izofis(is) < 200) cycle
+                   if (abs(izofis(is)) < 200) cycle
                    gs => basis_parameters(is)%ground_state
                    write(6,"(i3)") is
                    do i = 0, 3
