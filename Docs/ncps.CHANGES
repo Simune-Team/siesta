@@ -1,4 +1,19 @@
 ------------------------------------------------------------
+February 4, 2014  Alberto Garcia           trunk-453--ncps-13
+Parsing target is now a pointer
+
+The user program receives an allocated pointer, which
+has to be explicitly "destroyed" when not needed.
+
+modified:
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_ncps_xmlreader.F90
+  Src/nc-pseudo/makefile
+  Src/pseudopotential.f
+
+------------------------------------------------------------
 January 28, 2014  Alberto Garcia           trunk-453--ncps-12
 Reparametrization functionality revamped
 

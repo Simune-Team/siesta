@@ -20,6 +20,30 @@ private
 ! to particular events.
 !
 public  :: begin_element, end_element, pcdata_chunk
+
+!
+! The data will be stored in this public variable
+! There are some design issues to decide:
+! -- Should this be a pointer, associated by the client
+!    program to its own variable? In that case, the
+!    client should make sure that the variable is "clean"
+!    before calling this routine, as some fields will be
+!    allocated here.
+! -- Perhaps it should be a pointer allocated here (and
+!    then destroyed when done by the client). It should be
+!    allocated at the beginning of processing, maybe detected
+!    with a (default) "begin_Document" handler, or by 
+!    "begin_Element" after checking for association.
+!    This is the cleanest option, as the caller might want
+!    to keep several instances alive at the same time.
+! -- If "pseudo" here is a normal variable, it should also
+!    be "cleaned" before the next use. The current usage
+!    in Abinit falls in this category: psxml is a pointer
+!    associated to "pseudo", and cleaned after use.
+!
+type(xml_ps_t), pointer, public, save :: pseudo => null()
+
+
 private :: die
 
 logical, private  :: in_vps = .false. , in_radfunc = .false.
@@ -35,8 +59,6 @@ integer, private, save  :: ndata, ndata_grid
 
 integer, parameter, private    :: dp = selected_real_kind(14)
 real(dp), private, save :: zval_generation
-
-type(xml_ps_t), public, target, save :: pseudo
 
 type(grid_t), private, save, pointer  :: grid => null()
 !
@@ -81,6 +103,11 @@ print *, "Element: ", trim(name)
 select case(name)
 
       case ("pseudo")
+
+         if (.not. associated(pseudo)) then
+            allocate(pseudo)
+         endif
+
          pseudo%npots  = 0
          pseudo%npswfs = 0
 

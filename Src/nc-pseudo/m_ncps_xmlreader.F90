@@ -6,7 +6,7 @@ module m_ncps_xmlreader
 
   subroutine ncps_xmlreader(fname,psxml)
 
-  use m_ncps_xml_ps_t,        only: xml_ps_t, dump_pseudo
+  use m_ncps_xml_ps_t,        only: xml_ps_t, xml_ps_destroy, dump_pseudo
   use m_ncps_parsing_helpers, only: begin_element, end_element, pcdata_chunk
   use m_ncps_parsing_helpers, only: pseudo
 
@@ -18,10 +18,14 @@ module m_ncps_xmlreader
   implicit none 
 
   character(len=*), intent(in) :: fname
-  type(xml_ps_t), intent(out)  :: psxml
+  type(xml_ps_t), pointer      :: psxml
 
   type(xml_t)                     :: fxml
   integer :: iostat
+
+  if (associated(psxml)) then
+     call xml_ps_destroy(psxml)
+  endif
 
 #ifdef XMLF90
  call open_xmlfile(fname,fxml,iostat)
@@ -35,7 +39,7 @@ module m_ncps_xmlreader
                   characters_handler=pcdata_chunk) 
 #endif
 
- psxml = pseudo  ! should this be a pointer assignment?
+ psxml => pseudo
  call dump_pseudo(pseudo,6)
 
 end subroutine ncps_xmlreader

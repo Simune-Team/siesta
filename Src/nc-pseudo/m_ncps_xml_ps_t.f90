@@ -7,7 +7,7 @@ implicit none
 integer, parameter, private    :: MAXN_POTS = 8
 integer, parameter, private    :: dp = selected_real_kind(14)
 !
-public  :: dump_pseudo, eval_radfunc
+public  :: dump_pseudo, eval_radfunc, xml_ps_destroy
 !
 !-----------------------------------------------------------
 type, public :: grid_t
@@ -73,6 +73,63 @@ type, public :: xml_ps_t
 
 
 CONTAINS !===============================================
+
+subroutine xml_ps_destroy(p)
+type(xml_ps_t), pointer :: p
+
+integer :: i
+
+if (.not. associated(p)) RETURN
+
+print *, "Deallocating psml object..."
+
+print *, ".. deallocating global grid .."
+if (associated(p%global_grid)) then
+   call destroy_grid(p%global_grid)
+endif
+print *, ".. deallocating potentials .."
+do i = 1, p%npots
+   call destroy_radfunc(p%pot(i)%V)
+enddo
+print *, ".. deallocating pswfns .."
+do i = 1, p%npswfs
+   call destroy_radfunc(p%pswf(i)%V)
+enddo
+print *, ".. deallocating valence charge .."
+call destroy_radfunc(p%valence_charge)
+print *, ".. deallocating core charge .."
+call destroy_radfunc(p%core_charge)
+
+deallocate(p)
+p => null()
+
+end subroutine xml_ps_destroy
+
+subroutine destroy_radfunc(rp)
+type(radfunc_t) :: rp
+
+if (associated(rp%grid)) then
+   call destroy_grid(rp%grid)
+endif
+if (associated(rp%data)) then
+   print *, ".. .. deallocating radfunc data .."
+   deallocate(rp%data)
+   rp%data => null()
+endif
+end subroutine destroy_radfunc
+
+subroutine destroy_grid(gp)
+type(grid_t), pointer :: gp
+
+if (associated(gp%grid_data)) then
+   print *, ".. .. deallocating grid data .."
+   deallocate(gp%grid_data)
+   gp%grid_data => null()
+endif
+gp => null()
+end subroutine destroy_grid
+
+!========================================================
 
 function psxmlEvaluateValenceCharge(p,r,debug) result(val)
 type(xml_ps_t), intent(in) :: p
