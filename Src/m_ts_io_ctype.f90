@@ -461,7 +461,7 @@ contains
     ! Local parameters
     real(dp) :: tmp
     character(len=200) :: g
-    logical :: add, get_val, has_V, has_kT
+    logical :: add, get_val, has_V, has_kT, absolute
     integer :: i, j, stat, offset
     
     ! initialize the output string
@@ -517,6 +517,7 @@ contains
 
        ! else we need to figure out if it is something which is not a specific unit...
          
+       !print *,'Tokens: ',trim(tokens(pline,1,after=i)),' text: ',match(pline,'v',after=i),i,trim(g)
        ! Parse compressed elements
        if ( leqi(g(1:1),'+') ) then
           add = .true.
@@ -553,19 +554,41 @@ contains
           ! "inf" without getting inf again...
           return
 
-       else if ( leqi(g(1:1),'v') ) then
+       else if ( leqi(g(1:1),'v') .or. leqi(g(1:2),'|v') ) then
+
+          ! distinguish between the absolute part or the regular V
+          absolute = leqi(g(1:1),'|')
+          if ( absolute ) then
+             if ( .not. leqi(g(3:3),'|') ) then
+                call die('Requesting the absolute bias point requires it to &
+                     &be formatted as: |V|/<fraction>')
+             end if
+             ! remove the | signs
+             g = g(2:2)//trim(g(4:))
+          end if
+
           ! we still need to make sure that we can interpret the
           ! bias-fraction
           if ( leqi(g(2:2),'/') ) then
              ! read in the bias fraction
              read(g(3:),'(i9)',iostat=stat) j
              if ( stat /= 0 ) then
-                call die('Fractional parameter chosen cannot be distinguished: '//trim(g))
+                call die('Fractional parameter chosen cannot be distinguished: '// &
+                     trim(g)//' expecting '//trim(g(3:)))
              end if
-             write(g,'(a,i0)') 'V/',j
+             if ( absolute ) then
+                write(g,'(a,i0)') '|V|/',j
+             else
+                write(g,'(a,i0)') 'V/',j
+             end if
           else
+             ! no fraction
              j = 1
-             g = 'V'
+             if ( absolute ) then
+                g = '|V|'
+             else
+                g =  'V'
+             end if
           end if
 
           ! get the V designation
@@ -575,7 +598,14 @@ contains
              if ( .not. has_V ) call die('You cannot request &
                   &V value in this segment')
              
-             tmp = abs(V) / real(j,dp)
+             ! Notice that this is with respect to the sign of the bias...
+             ! the sign of the bias is important, ONLY when dealing with
+             ! 2 electrodes
+             if ( absolute ) then
+                tmp = abs(V) / real(j,dp)
+             else
+                tmp = V / real(j,dp)
+             end if
              !print*,'Found : '//trim(g)//' at value: ',tmp/eV
 
              if ( add ) then

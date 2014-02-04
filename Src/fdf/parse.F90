@@ -917,11 +917,12 @@ MODULE parse
       is_alpha(i) = is_upper(i) .or. is_lower(i)
       is_alnum(i) = is_digit(i) .or. is_alpha(i)
 
-!     Extra characters allowed in tokens:  $ % * + & - . / @ ^ _ ~
+!     Extra characters allowed in tokens:  $ % * + & - . / @ ^ _ | ~
       is_extra(i) = ((i .ge. 36) .and. (i .le. 38))                     &
                      .or. (i .eq. 42) .or. (i .eq. 43) .or. (i .eq. 45) &
                      .or. (i .eq. 46) .or. (i .eq. 47) .or. (i .eq. 64) &
-                     .or. (i .eq. 94) .or. (i .eq. 95) .or. (i .eq. 126)
+                     .or. (i .eq. 94) .or. (i .eq. 95) .or. (i .eq. 124)&
+                     .or. (i .eq. 126)
 
       is_tokch(i) = is_alnum(i) .or. is_extra(i)
 

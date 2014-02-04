@@ -1,4 +1,39 @@
 ----------------------------------------------------
+February 4, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-108
+Enabled electrode position by end, absolute V in contour enabled
+
+* When specifying the contour layout the bias was never used
+  as is. Now input is differentiated between:
+    |V|/2 and V/2
+  from the obvious numeric meaning.
+  Input using the |V| is important in the bias non-equilibrium
+  contour which ALWAYS must be put in increasing order.
+  
+  This required an edit to fdf to handle | as a regular token.
+
+* The electrode positions can now be determined using:
+  %block ..
+   electrode-position end -4
+  %endblock
+  which means that the "na_u - 4"'th atom is the last one
+  in the electrode
+
+* A bugfix for printing out spin-polarized charge when entering the transiesta
+
+* Both equilibrium and non-equilibrium contours now show different output
+  when dying. 
+  It prints what has so far been put in the c_io types
+  so that debugging the input is easier to read.
+
+modified:
+  Src/fdf/parse.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_io_ctype.f90
+
+----------------------------------------------------
 January 30, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-107
 Added TS_timings through -DTRANSIESTA_TIMING
 

@@ -134,7 +134,7 @@ contains
     if ( N_tail < 1 ) &
          call die('You must at least specify one tail integral')
     if ( tail_io(N_tail)%b < 10._dp * kT ) then
-       call die('The tail integrals used for the non-equilibrium tails &
+       call neq_die('The tail integrals used for the non-equilibrium tails &
             &are too close to the chemical potential. It must be at least &
             &10kT from mu.')
     end if
@@ -185,7 +185,7 @@ contains
     end do
     ! check that a tail can be placed at all segments
     if ( any(mus_tail == 0) ) then
-       call die('No real axis contour tail fits with your chemical potentials')
+       call neq_die('No real axis contour tail fits with your chemical potentials')
     end if
     deallocate(mus_tail)
 
@@ -220,7 +220,7 @@ contains
        N_nEq_id = N_nEq_id + N_Elec - mus(i)%N_El
     end do
     if ( N_nEq_id < 1 ) then
-       call die('Could not find any non-equilibrium segments. &
+       call neq_die('Could not find any non-equilibrium segments. &
             &Please correct.')
     end if
     allocate(nEq_id(N_nEq_id))
@@ -249,11 +249,11 @@ contains
           right = fits_right(nEq_segs(cur_mu)%mu2,tail_io)
           !print *,nEq_segs(cur_mu)%mu1,left,right,nEq_segs(cur_mu)%mu2
           if ( left == 0 .or. right == 0 ) &
-               call die('Ensure that the tail integrals lower bound fits with &
+               call neq_die('Ensure that the tail integrals lower bound fits with &
                &a break at every chemical potential. This will ensure correct &
                &partitioning.')
           if ( left > right ) &
-               call die('The contours have not been sorted properly, please &
+               call neq_die('The contours have not been sorted properly, please &
                &contact the developers')
 
           ! Allocate the pointers to the non-equilibrium contours
@@ -272,14 +272,14 @@ contains
              end if
           end do
           if ( any(nEq_segs(cur_mu)%tail_io == 0) ) then
-             call die('Could not find all tails')
+             call neq_die('Could not find all tails')
           end if
 
           cur_mu = cur_mu + 1
        end do
     end do
     if ( N_nEq_id /= size(nEq_id) ) &
-         call die('Error in code')
+         call neq_die('Error in code')
 
     write(*,*) 'TODO correct empty cycles, i.e. if two line contours are neighbours &
          &then we have overlying energy points...'
@@ -362,7 +362,7 @@ contains
       character(len=C_N_NAME_LEN), allocatable :: tmp(:)
 
       N_nEq = fdf_nc_iotype('TS',suffix)
-      if ( N_nEq < 1 ) call die('You must specify at least one non-equilbrium &
+      if ( N_nEq < 1 ) call neq_die('You must specify at least one non-equilbrium &
            &contour for the '//trim(suffix)//'.')
       allocate(tmp(N_nEq))
 
@@ -370,7 +370,7 @@ contains
       do i = 2 , N_nEq
          tmp(i) = fdf_name_c_iotype('TS',suffix,i)
          if ( count(tmp(:i-1) == tmp(i)) /= 0 ) then
-            call die('You cannot have two names from the bias-window &
+            call neq_die('You cannot have two names from the bias-window &
                  &to be the same...')
          end if
       end do
@@ -409,7 +409,7 @@ contains
       end do
 
       if ( nEq_c(1)%c_io%a > nEq_c(N_nEq)%c_io%b ) then
-         call die('The non-equilibrium contours must be in increasing &
+         call neq_die('The non-equilibrium contours must be in increasing &
               energy. Even if your bias is negative. Please correct.')
       end if
 
@@ -1108,5 +1108,15 @@ contains
     end do
 
   end subroutine io_contour_c
+
+  subroutine neq_die(msg)
+    character(len=*), intent(in) :: msg
+    
+    write(*,*) 'Killing... printing out so-far gathered information'
+    call print_contour_neq_options('TS')
+    call print_contour_neq_block('TS')
+    call die(msg)
+  end subroutine neq_die
+    
     
 end module m_ts_contour_neq

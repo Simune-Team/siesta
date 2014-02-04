@@ -237,7 +237,7 @@ contains
        ! check that the last contour actually lies on the RHS
        ! of the chemical potential, at least 10 kT across!
        if ( Eq_io(cur)%b < mus(i)%mu + 10._dp * kT ) then
-          call die('The last contour of the chemical potential: &
+          call eq_die('The last contour of the chemical potential: &
                &'//trim(Name(mus(i)))//' lies too close to the &
                chemical potential. It must be at least 10kT from mu.')
        end if
@@ -249,7 +249,7 @@ contains
        ! number of different weights for each energy-point
        k = count(hasC(mus,Eq_c(i)))
        if ( k == 0 ) then
-          call die('No chemical potentials has been assigned this contour: '// &
+          call eq_die('No chemical potentials has been assigned this contour: '// &
                trim(Eq_c(i)%c_io%name))
        end if
 
@@ -288,7 +288,7 @@ contains
       real(dp), intent(in) :: mu, kT
 
       if ( leqi(c_io%part,'circle') .and. .not. isCircle ) then
-         call die('The circle contour must be the first contour type &
+         call eq_die('The circle contour must be the first contour type &
               &as well as connected to other circle contours.')
       end if
       isCircle = leqi(c_io%part,'circle')
@@ -297,13 +297,13 @@ contains
          ! We need to check whether the contour lies well below the
          ! chemical potential
          if ( c_io%b > mu - 3._dp * kT ) then
-            call die('The circle contour lies too close or across the &
+            call eq_die('The circle contour lies too close or across the &
                  &chemical potential. This is not allowed!')
          end if
       end if
 
       if ( .not. leqi(c_io%part,'tail') .and. isTail ) then
-         call die('The tail contour must be the last contour &
+         call eq_die('The tail contour must be the last contour &
               &as well as connected to other tail contours.')
       end if
       isTail = leqi(c_io%part,'tail')
@@ -1119,5 +1119,15 @@ contains
     end do
     
   end subroutine io_contour_c
+
+  subroutine eq_die(msg)
+    use parallel, only : IONode
+    character(len=*), intent(in) :: msg
+    integer :: i
+    write(*,*) 'Killing... printing out so-far gathered information'
+    call print_contour_eq_options('TS')
+    call print_contour_eq_block('TS')
+    call die(msg)
+  end subroutine eq_die
 
 end module m_ts_contour_eq

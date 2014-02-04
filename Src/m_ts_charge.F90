@@ -195,7 +195,7 @@ contains
           write(*,'(a,2(f12.5,tr1))') &
                'Device                        [C]  :',Q(2,1), Q(2,2)
           do i = 1 , Nelecs 
-             write(*,'(a,t31,a,i0,a,f12.5)') &
+             write(*,'(a,t31,a,i0,a,2(f12.5,tr1))') &
                   trim(name(Elecs(i))),'[E',i,'] :', &
                   Q(3+(i-1)*2,1), Q(3+(i-1)*2,2)
              write(*,'(a,t22,a,i0,a,2(f12.5,tr1))') &

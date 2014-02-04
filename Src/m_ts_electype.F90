@@ -241,20 +241,28 @@ contains
           info(3) = .true.
 
        else if ( leqi(ln,'electrode-position') ) then
-          if ( fdf_bnintegers(pline) > 0 ) then
-             this%idx_na = fdf_bintegers(pline,1)
-             idx_na = 0
-          else if ( fdf_bnnames(pline) > 1 ) then
+          idx_na = 0
+          this%idx_na = 0
+          if ( fdf_bnnames(pline) > 1 ) then
+             ! the user is requesting on a string basis
              ln = fdf_bnames(pline,2)
              if ( leqi(ln,'start') ) then
-                idx_na = 1 ! denotes start
+                if ( fdf_bnintegers(pline) > 0 ) then
+                   this%idx_na = fdf_bintegers(pline,1)
+                else
+                   this%idx_na = 1 ! default starting position
+                end if
              else if ( leqi(ln,'end') ) then
-                idx_na = -1 ! denotes end
-             else
-                call die('Unknown string designation of the electrode position')
+                idx_na      = -1
+                this%idx_na =  0
+                if ( fdf_bnintegers(pline) > 0 ) then
+                   this%idx_na = fdf_bintegers(pline,1)
+                end if
              end if
           else
-             call die('Position of electrode not specified')
+             if ( fdf_bnintegers(pline) < 1 ) &
+                  call die('Atomic position not found in input line: '//trim(ln))
+             this%idx_na = fdf_bintegers(pline,1)
           end if
           info(4) = .true.
 
@@ -405,10 +413,8 @@ contains
     end if
 
     ! if the user has specified text for the electrode position
-    if ( idx_na == 1 ) then
-       this%idx_na = 1
-    else if ( idx_na == -1 ) then
-       this%idx_na = - TotUsedAtoms(this)
+    if ( idx_na == -1 ) then
+       this%idx_na = this%idx_na + 1 - TotUsedAtoms(this)
     end if
 
   end function fdf_Elec
