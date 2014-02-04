@@ -147,6 +147,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_io.o \
 	m_recipes.o \
 	m_timer.o \
+	extrae_module.o extrae_eventllist.o\
 	moreParallelSubs.o \
 	read_xc_info.o \
 	siesta_master.o \
@@ -755,8 +756,8 @@ siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o
 siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o siesta_master.o sparse_matrices.o
-siesta_end.o: timestamp.o
-siesta_forces.o: atomlist.o compute_dm.o compute_max_diff.o final_H_f_stress.o
+siesta_end.o: timestamp.o, extrae_eventllist.o
+siesta_forces.o: compute_dm.o compute_max_diff.o final_H_f_stress.o
 siesta_forces.o: m_convergence.o m_energies.o m_forces.o m_iodm.o m_mpi_utils.o
 siesta_forces.o: m_pexsi_solver.o m_pulay.o m_spin.o m_steps.o m_stress.o
 siesta_forces.o: m_ts_global_vars.o m_ts_options.o mixer.o parallel.o
@@ -800,7 +801,7 @@ struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_iostruct.o
 struct_init.o: m_mpi_utils.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_master.o siesta_options.o zmatrix.o
 sys.o: parallel.o
-timer.o: m_timer.o parallel.o sys.o timer_tree.o
+timer.o: m_timer.o parallel.o sys.o timer_tree.o extrae_module.o extrae_eventllist.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 ts_init.o: files.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o

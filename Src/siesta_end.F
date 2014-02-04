@@ -28,6 +28,10 @@
       use meshdscf,        only : resetDscfPointers
       use m_dscfcomm,      only : resetdscfComm
 
+#ifdef TRACING
+      use extrae_eventllist, only : writeList, deleteList, eventlist
+#endif
+
       implicit none
 
 #ifdef MPI
@@ -61,6 +65,15 @@
 !     Stop time counter
       call timer( 'siesta', 2 )
       call timer( 'all', 3 )
+
+#ifdef TRACING
+!     Write extrae user function list
+      if (IOnode) then
+        call writeList(eventlist)
+      end if
+      call deleteList(eventlist)
+#endif /* TRACING */
+
 
 !     Print final date and time
       if (IOnode) then

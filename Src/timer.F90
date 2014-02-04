@@ -49,10 +49,45 @@ subroutine timer( prog, iOpt )
   use m_timer, only: timer_stop    ! Stop counting time
   use m_timer, only: jms_timer_report=>timer_report  ! Write all times
 
+#ifdef TRACING
+  use extrae_module
+  use extrae_eventllist
+#endif
+
 ! Arguments
   implicit none
   character(len=*),intent(in):: prog   ! Name of program to time
   integer,         intent(in):: iOpt   ! Action option
+
+#ifdef TRACING
+  integer*8                           :: extrae_eventnumber
+
+  if (iOpt==0) then
+    extrae_maxEventNumber = 0
+
+  else if (iOpt==1) then
+    ! check if prog is in list, find eventnumber or add to list with new number
+    extrae_eventnumber = getNumber(eventlist, prog)
+    if (extrae_eventnumber == NOT_FOUND) then
+      extrae_eventnumber = addToList(eventlist, prog)
+    end if
+    call extrae_eventandcounters(1000, extrae_eventnumber)
+
+  else if (iOpt==2) then
+    call extrae_eventandcounters(1000, 0)
+
+  else if (iOpt==3) then
+    ! write file with eventnumber-map
+! if (Node == 0) write (*,*) 'extraeLIST write list '
+!     if (Node == 0) then
+!       call writeList(eventlist)
+!     end if
+!     call deleteList(eventlist)
+  else
+    call die('timer: ERROR: invalid iOpt value')
+  end if
+
+#endif
 
 if (use_tree_timer) then
 
