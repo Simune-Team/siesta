@@ -224,7 +224,8 @@ contains
     else
        g = trim(prefix)//'.Contour'
     end if
-    if ( .not. fdf_block(trim(g)//'.'//trim(bName),bfdf) ) return
+    if ( .not. fdf_block(trim(g)//'.'//trim(bName),bfdf) ) &
+         call die('Could not find block: '//trim(g)//'.'//trim(bName))
 
     ! the contour has already been assigned values
     if ( len_trim(c%name) /= 0 ) return

@@ -113,6 +113,9 @@ contains
           call ts_tri_init()
        end if
 
+       ! print out estimated memory usage...
+       call ts_print_memory(Gamma)
+
        call ts_print_charges(Elecs, sp_dist, sparse_pattern, &
             nspin, n_nzs, DM, S)
 
@@ -246,6 +249,111 @@ contains
 #endif
 
   end subroutine transiesta
+
+  subroutine ts_print_memory(Gamma)
+    
+    use parallel, only : IONode
+
+#ifdef MPI
+    use mpi_siesta, only : MPI_Comm_World
+    use mpi_siesta, only : MPI_Max
+    use mpi_siesta, only : MPI_Double_Precision
+#endif 
+
+    use class_Sparsity
+    use m_ts_options, only : IsVolt, Calc_Forces
+    use m_ts_options, only : N_mu, N_Elec, Elecs
+    use m_ts_options, only : no_BufL, no_BufR
+    use m_ts_contour_neq, only : N_nEq_id
+    use m_ts_tri_init, only : tri_parts, N_tri_part
+    use m_ts_sparse, only : ts_sp_uc, tsup_sp_uc, ltsup_sp_sc
+    use m_ts_electype
+
+    logical, intent(in) :: Gamma ! SIESTA Gamma
+    integer :: i, no_E
+    real(dp) :: mem, tmp_mem
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    ! estimate the amount of memory used...
+    ! H and S
+    i = nnzs(ts_sp_uc)
+    mem = i * 2
+
+    ! global sparsity update
+    i = nnzs(tsup_sp_uc)
+    mem = mem + i * max(N_mu,N_nEq_id)
+    if ( Calc_Forces ) mem = mem + i * N_mu
+    if ( Gamma ) then
+       mem = mem * 8._dp
+    else
+       mem = mem * 16._dp
+    end if
+
+    ! local sparsity update
+    if ( IsVolt ) then
+       i = nnzs(ltsup_sp_sc)
+       if ( Calc_Forces ) mem = mem + i * N_mu * 8._dp ! always in double 
+       mem = mem + i * ( N_mu + N_nEq_id ) * 8._dp ! always in double
+    end if
+
+    ! Add electrode sizes
+    tmp_mem = 0._dp
+    do i = 1 , N_Elec
+       if ( IsVolt ) then
+          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) * UsedOrbs(Elecs(i)) * 2
+          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) ** 2
+       else
+          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) * UsedOrbs(Elecs(i)) * 3
+       end if
+    end do
+    mem = mem + tmp_mem * 16._dp
+
+#ifdef MPI
+    call MPI_Reduce(mem,tmp_mem,1, MPI_Double_Precision, MPI_Max, 0, &
+         MPI_Comm_World,MPIerror)
+    mem = tmp_mem
+#endif
+
+    mem = mem / 1024._dp ** 2
+    if ( IONode ) then
+       write(*,'(/,a,f10.2,a)') &
+            'transiesta: Memory usage of sparse arrays and electrodes (static): ', &
+            mem,'MB'
+    end if
+
+    if ( ts_method == TS_SPARSITY_TRI ) then
+       ! Calculate size of the tri-diagonal matrix
+       mem = tri_parts(N_tri_part)**2
+       do i = 1 , N_tri_part - 1
+          mem = mem + tri_parts(i)*( tri_parts(i) + 2 * tri_parts(i+1) )
+       end do
+       mem = mem * 16._dp * 2 / 1024._dp ** 2
+       if ( IONode ) &
+            write(*,'(/,a,f10.2,a)') &
+            'transiesta: Memory usage of tri-diagonal matrices: ', &
+            mem,'MB'
+    else
+       ! Calculate size of the full matrices
+       no_E = sum(TotUsedOrbs(Elecs),.not. Elecs(:)%DM_CrossTerms)
+       i = nrows_g(ts_sp_uc) - no_BufL - no_BufR
+       ! LHS
+       mem = i ** 2
+       ! RHS
+       if ( IsVolt ) then
+          mem = mem + i * max(i-no_E,sum(TotUsedOrbs(Elecs)))
+       else
+          mem = mem + i * (i-no_E)
+       end if
+       mem = mem * 16._dp / 1024._dp ** 2
+       if ( IONode ) &
+            write(*,'(a,f10.2,a)') &
+            'transiesta: Memory usage of full matrices: ', &
+            mem,'MB'
+    end if
+
+  end subroutine ts_print_memory
 
 end module m_transiesta
 

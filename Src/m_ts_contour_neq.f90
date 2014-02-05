@@ -462,7 +462,7 @@ contains
 
     else
        
-       call die('Unrecognized contour type for the &
+       call neq_die('Unrecognized contour type for the &
             &non-equilibrium part.')
        
     end if

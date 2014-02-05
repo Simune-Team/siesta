@@ -1,4 +1,19 @@
 ----------------------------------------------------
+February 5, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-109
+Added memory print-out and a bugfix for non-existing contour
+
+* A memory print-out of the estimated memory usage per processor
+  has been added.
+  It only prints out the memory used for the 3 electrode arrays,
+  the sparse matrices in transiesta and the matrices used
+  for inversion of the Green's function
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_io_ctype.f90
+
+----------------------------------------------------
 February 4, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-108
 Enabled electrode position by end, absolute V in contour enabled
 
