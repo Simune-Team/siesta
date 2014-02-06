@@ -756,7 +756,7 @@ siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o
 siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o parallel.o
 siesta_end.o: siesta_cml.o siesta_cmlsubs.o siesta_master.o sparse_matrices.o
-siesta_end.o: timestamp.o, extrae_eventllist.o
+siesta_end.o: timestamp.o extrae_eventllist.o
 siesta_forces.o: compute_dm.o compute_max_diff.o final_H_f_stress.o
 siesta_forces.o: m_convergence.o m_energies.o m_forces.o m_iodm.o m_mpi_utils.o
 siesta_forces.o: m_pexsi_solver.o m_pulay.o m_spin.o m_steps.o m_stress.o

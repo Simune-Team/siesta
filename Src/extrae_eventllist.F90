@@ -1,5 +1,10 @@
 #ifdef TRACING
 ! linked list for extrae events, holding the event number and the section name
+! functionalities: 
+!   - add entry to list  -> addToList(list, name)
+!   - find ID for name   -> getNumber(list, name)
+!   - write list to file -> writeList(list)
+!   - delete list        -> deleteList(list)
 module extrae_eventllist
   implicit none
 
@@ -17,8 +22,10 @@ module extrae_eventllist
 
   contains
   
+  ! finds the event number associated with 'name' 
+  ! returns NOT_FOUND if the entry is not found
   recursive function getNumber(list, name) result(getNumber_result)
-use parallel,only: node
+!use parallel,only: node
     implicit none
 
     type(extrae_event), pointer, intent(in)  :: list
@@ -28,9 +35,9 @@ use parallel,only: node
     if (associated(list)) then
       if (trim(list%sectionname) == trim(name)) then
         getNumber_result = list%eventnumber
-if (Node == 0) write (*,*) 'extraeLIST found                ', list%eventnumber, name
+!if (Node == 0) write (*,*) 'extraeLIST found                ', list%eventnumber, name
       else
-if (Node == 0) write (*,*) 'extraeLIST continue looking for ', name
+!if (Node == 0) write (*,*) 'extraeLIST continue looking for ', name
         getNumber_result = getNumber(list%next, name)
       end if
     else
@@ -40,8 +47,11 @@ if (Node == 0) write (*,*) 'extraeLIST continue looking for ', name
   end function getNumber
 
 
+  ! adds a new element to the HEAD of the list, 
+  ! resulting in descending numbering in the list
+  ! this order reduces searching time for repeated calls
   function addToList(list, name)
-use parallel,only: node
+!use parallel,only: node
     implicit none
 
     type(extrae_event), pointer, intent(inout)  :: list
@@ -57,11 +67,13 @@ use parallel,only: node
     newElement%next        => list
     list                   => newElement
     
-if (Node == 0) write (*,*) 'extraeLIST adding               ', newElement%eventnumber, name
+!if (Node == 0) write (*,*) 'extraeLIST adding               ', newElement%eventnumber, name
     addToList = newElement%eventnumber
   end function addToList
 
 
+  ! writes the content of the list in pcf format to the file 'siesta_user_labels.pcf'
+  ! its content has to be appended to the trace's pcf file for labeling the user-functions traced
   subroutine writeList(list)
     implicit none
     type(extrae_event), pointer, intent(in)  :: list
@@ -88,16 +100,16 @@ if (Node == 0) write (*,*) 'extraeLIST adding               ', newElement%eventn
     implicit none
     type(extrae_event), pointer, intent(in)  :: list
     integer,                     intent(in)  :: iu
-  
+
+    ! elements are in reverse order in list, so reverse them again  
     if (associated(list)) then
-      write(iu,'(i6, a)') list%eventnumber, '   ' // list%sectionname
       call writeElements(list%next, iu)
+      write(iu,'(i6, a)') list%eventnumber, '   ' // list%sectionname
     end if
    
   end subroutine writeElements
 
   
-
   recursive subroutine deleteList(list)
     implicit none
     type(extrae_event), pointer, intent(inout)  :: list

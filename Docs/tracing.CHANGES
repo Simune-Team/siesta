@@ -1,4 +1,31 @@
 ------------------------------------------------------------
+February 2, 2014  G. Huhs       trunk-451--pexsi-56--georg-tracing-3
+Bugfix in Makefile.
+Extended functionality for tracing with extrae.
+
+When compiling with 
+  -DTRACING_SOLVEONLY
+the tracing is deactivated after initializing Siesta and activated again before starting the first pexsi-solve phase. 
+This ensures that for some time the pexsi-solve is not corrupted by tracing-IO. If this time-window is too short, the event buffer size can be increased in extrae.xml
+
+The user labels are now written with increasing numbering. 
+
+modified:
+  Src/Makefile
+  Src/extrae_eventllist.F90
+  Src/m_pexsi_solver.F90
+  Src/siesta.F
+  version.info
+
+------------------------------------------------------------
+February 5, 2014  G. Huhs       trunk-451--pexsi-56--georg-tracing-2
+Bugfix in Makefile
+
+modified:
+  Src/Makefile
+  version.info
+
+------------------------------------------------------------
 February 2, 2014  G. Huhs       trunk-451--pexsi-56--georg-tracing-1
 Added functionality for tracing with extrae.
 
