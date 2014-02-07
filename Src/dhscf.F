@@ -94,6 +94,9 @@
       use m_doping_uniform,       only: initialize_doping_uniform
       use m_doping_uniform,       only: compute_doping_structs_uniform,
      $                                  doping_active
+      use m_rhog,                 only: rhog, rhog_in
+      use m_rhog,                 only: order_rhog
+      use siesta_options,         only: mix_charge
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -367,6 +370,14 @@ C     DStres is computed but not used later
 !     Always deallocate rhoatm_par, as it was used even if nodes=1
       call de_alloc( rhoatm_par, 'rhoatm_par', 'dhscf_init' )
 
+      if (mix_charge) then
+         call re_alloc( rhog, 1, 2, 1, ntpl, 1, nspin,
+     $                 'Rhog', 'dhscf_init' )
+         call re_alloc( rhog_in, 1, 2, 1, ntpl, 1, nspin,
+     $                 'Rhog_in', 'dhscf_init' )
+         call order_rhog(cell, ntml(1), ntml(2), ntml(3), ntm, nsm)
+      endif
+
 C     Stop time counter for atomic initializations
       call timer( 'DHSCF2', 2 )
 
@@ -414,7 +425,8 @@ C ----------------------------------------------------------------------
      &                  maxnd, numd,
      &                  listdptr, listd, Dscf, datm, maxnh, Hmat,
      &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, 
-     &                  Exc, Dxc, dipol, stress, Fal, stressl )
+     &                  Exc, Dxc, dipol, stress, Fal, stressl,
+     &                  use_rhog_in, charge_density_only )
 
 C
 C Calculates the self-consistent field contributions to Hamiltonian
@@ -550,11 +562,15 @@ C     Modules
       use siesta_options, only: read_charge_cdf
       use siesta_options, only: savevna, savebader
       use siesta_options, only: read_deformation_charge_cdf
+      use siesta_options, only: mix_charge
 
       use m_efield,       only: get_field_from_dipole, dipole_correction
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
       use m_doping_uniform,       only: doping_active, doping_uniform
+
+      use m_rhofft,       only: rhofft, FORWARD, BACKWARD
+      use m_rhog,         only: rhog_in, rhog
 
 #ifdef TRANSIESTA
       use m_ts_options, only: UseVFix, TSmode, isVolt
@@ -576,6 +592,9 @@ C     Modules
 
       type(filesOut_t)
      &  filesOut
+
+      logical, intent(in), optional :: use_rhog_in
+      logical, intent(in), optional :: charge_density_only
 
 C ----------------------------------------------------------------------
 C Routines called internally:
@@ -658,6 +677,8 @@ C     Local variables
       real(grid_p) :: dummy_DVxcdn(1,1,1)
 #endif /* BSC_CELLXC */
 
+      logical :: use_rhog
+
       real(dp), external :: volcel, ddot
 
       external
@@ -737,7 +758,17 @@ C ----------------------------------------------------------------------
 !     The reading routine works in the uniform distribution, in
 !     sequential form
 !
-      if (read_charge_cdf) then
+      if (present(use_rhog_in)) then
+            use_rhog = use_rhog_in
+         else
+            use_rhog = .false.
+      endif
+      if (use_rhog) then
+         ! fourier transform back into drho
+         call rhofft(cell, ntml(1), ntml(2), ntml(3), ntm, nspin,
+     $                  DRho,rhog_in,BACKWARD)
+
+      else if (read_charge_cdf) then
          call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"Rho")
          read_charge_cdf = .false.
       else if (read_deformation_charge_cdf) then
@@ -791,9 +822,17 @@ C       Set the UNIFORM distribution again and copy DRho to it
      $              nspin, DRho)
            call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
      $               "RhoInit")
+            call timer('DHSCF3',2)
+            call timer('DHSCF',2)
            call bye("STOP after producing RHO_INIT from input DM")
         endif
 
+      endif
+
+      if (mix_charge) then
+         ! Save fourier transform of charge density
+         call rhofft(cell, ntml(1), ntml(2), ntml(3), ntm, nspin,
+     $        DRho,rhog,FORWARD)
       endif
 !
 !     Proper place to integrate Hirshfeld and Voronoi code,
@@ -910,6 +949,14 @@ C ----------------------------------------------------------------------
      &                  DRho )
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
      &                          DRho, "DeltaRho")
+      endif
+
+      if (present(charge_density_only)) then 
+         if (charge_density_only) then
+            call timer('DHSCF3',2)
+            call timer('DHSCF',2)
+            RETURN
+         endif
       endif
 
 C Transform spin density into sum and difference

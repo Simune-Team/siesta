@@ -16,6 +16,7 @@
       use m_scfconvergence_test
       use m_post_scf_work
       use m_mixer
+      use m_rhog,                only: mix_rhog, compute_charge_diff
       USE siesta_options
       use parallel,     only : IOnode
       use m_state_analysis
@@ -33,6 +34,7 @@
       use units,         only: eV, Ang
       use sparse_matrices, only: H, Hold, Dold, Dscf
       use m_save_density_matrix, only: save_density_matrix
+      use m_compute_energies, only: compute_energies
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
@@ -43,6 +45,7 @@
       integer  :: iscf
       logical  :: first, last_step, SCFconverged
       real(dp) :: dmax      ! Max. change in DM or H elements
+      real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_etot
 
 #ifdef TRANSIESTA
@@ -112,6 +115,10 @@
            call compute_dm( iscf )
            call compute_max_diff(Dold,Dscf,dmax)
         end if 
+        call compute_energies(iscf)
+        if (mix_charge) then
+           call compute_charge_diff(drhog)
+        endif
 
         call scfconvergence_test( first, iscf, dmax,
      &                            conv_harris, conv_etot,
@@ -130,7 +137,11 @@
 
         if ((.not. SCFconverged) .OR. mix_after_convergence) then
            ! Mix for next step
-           call mixer( iscf )
+           if (mix_charge) then
+              call mix_rhog(iscf)
+           else
+              call mixer( iscf )
+           endif
            ! Save for possible restarts
            ! Could save H in the future
            call save_density_matrix("mixed")

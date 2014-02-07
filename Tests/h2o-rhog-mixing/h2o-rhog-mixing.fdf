@@ -1,0 +1,30 @@
+SystemName          Water molecule -- Charge mixing
+SystemLabel         h2o-rhog-mixing
+NumberOfAtoms       3
+NumberOfSpecies     2
+
+MixCharge T
+ThomasFermiWaveVector 0.0
+DM.RequireChargeConvergence F    # Will use DM(n+1) - Dm(n) as criterion
+#DM.MixingWeight 0.5
+#Rhog-DIIS-Depth 3
+MeshCutoff  50 Ry
+DebugRhogMixing T
+
+%block ChemicalSpeciesLabel
+ 1  8  O      # Species index, atomic number, species label
+ 2  1  H
+%endblock ChemicalSpeciesLabel
+
+AtomicCoordinatesFormat  Ang
+%block AtomicCoordinatesAndAtomicSpecies
+ 0.000  0.000  0.000  1
+ 0.757  0.586  0.000  2
+-0.757  0.586  0.000  2
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+save-rho T
+save-delta-rho T
+save-total-potential T
+save-neutral-atom-potential T
+save-hs T

@@ -5,6 +5,7 @@ MODULE siesta_options
   implicit none
   PUBLIC
 
+  logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
   logical :: mix_after_convergence ! Mix DM or H even after convergence
   logical :: h_setup_only  ! H Setup only
@@ -479,9 +480,23 @@ MODULE siesta_options
 
     mixH = fdf_get('MixHamiltonian',mixH_def)
     mixH = fdf_get('TS.MixH',mixH)   ! Catch old-style keyword
+    mix_charge = fdf_get('MixCharge',.false.)
 
-    if (ionode) then
-       write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
+    if (mix_charge) then
+       if (ionode) then
+          write(6,1) 'redata: Mix charge density rho_g         = ', mix_charge
+       endif
+       if (mixH) then
+          mixH = .false.
+          if (ionode) then
+             write(6,"(a)") 'redata: ***MixCharge takes precedence over MixH'
+          endif
+       endif
+    endif
+    if (mixH) then
+       if (ionode) then
+          write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
+       endif
     endif
     
     mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.true.)

@@ -31,6 +31,7 @@
       use sys, only: die, bye
       use m_partial_charges, only: want_partial_charges
       use files, only : filesOut_t    ! derived type for output file names
+      use m_rhog, only: rhog_in, rhog
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -50,6 +51,7 @@
       integer             :: ihmat   ! Calc. hamiltonian? 0=>no, 1=>yes
       real(dp)            :: g2max
       type(filesOut_t)    :: filesOut  ! blank output file names
+      logical             :: use_rhog_in
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -77,7 +79,13 @@
 ! ..................
 
 ! Non-SCF part of total energy .......................................
+! Note that these will be "impure" for a mixed Dscf
 
+! If mixing the charge, Dscf is the previous step's DM_out. Since
+! the "scf" components of the energy are computed with the (mixed)
+! charge, this introduces an inconsistency. In this case the energies
+! coming out of this routine need to be corrected.
+! 
       Ekin = 0.0_dp
       Enl = 0.0_dp
       do ispin = 1,min(nspin,2)
@@ -109,12 +117,20 @@
      $     .and. partial_charges_at_every_scf_step) then
          want_partial_charges = .true.
       endif
+      use_rhog_in =  (mix_charge .and. iscf > 1)
       call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
      .            ntm, ifa, istr, ihmat, filesOut,
      .            maxnh, numh, listhptr, listh, Dscf, Datm,
      .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .            Exc, Dxc, dipol, stress, fal, stressl)
+     .            Exc, Dxc, dipol, stress, fal, stressl,
+     .            use_rhog_in)
+
+      ! This statement will apply to iscf = 1, for example, when
+      ! we do not use rhog_in. Rhog here is always the charge used to
+      ! build H, that is, rhog_in.
+      if (mix_charge) rhog_in = rhog
+
       want_partial_charges = .false.
       call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
 

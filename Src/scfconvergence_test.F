@@ -26,22 +26,13 @@
 
 !------------------------------------------------------------------- BEGIN
 
-      call timer( 'SCFconv', 1 )
       ! convergence test
-
-      DEna = Enascf - Enaatm
-      Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec+Emad+Emm+
-     &       Emeta
-      Eharrs = Etot + DEharr
 
       call add_value(conv_harris, eharrs)
       call add_value(conv_etot, etot)
 
-      FreeE  = Etot - Temp * Entropy
-
       converged = .false.
 
-      Elast = Etot
       if (require_energy_convergence) then
          if (   dDmax.lt.dDtol
      &        .and. is_converged(conv_etot)) then
@@ -80,8 +71,6 @@
         call pxfflush(6)
         call wallclock("-------------- end of scf step")
       endif
-
-      call timer( 'SCFconv', 2 )
 
 !---------------------------------------------------------------- END
       END subroutine scfconvergence_test

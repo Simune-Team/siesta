@@ -64,11 +64,13 @@
 !     mix one final time after convergence
 
       if (ionode) then
-         if (mix_after_convergence .and. (.not. MixH)) then
+         if (mix_after_convergence .and. (.not. MixH)
+     $                             .and. (.not. mix_charge)) then
             write(6,"(/,a)")
      $      "Using DM_mixed to compute the final energy and forces"
             write(6,"(a)")
-     $      "Consider using 'SCF.MixAfterConvergence F' or mixing H"
+     $      "Consider using 'SCF.MixAfterConvergence F', mixing H" //
+     $           " or mixing the charge density"
          else
             write(6,"(/,a)")
      $      "Using DM_out to compute the final energy and forces"
