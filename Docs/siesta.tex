@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large October 22, 2013 }
+{\Large February 10, 2014 }
 
 \vspace{1.5cm}
 
@@ -3325,6 +3325,153 @@ norm of their residual ${\rho}^{n}_{out}-{\rho}^{n}_{in}$.
 
 \end{description}
 
+\subsubsection{Mixing of the Charge Density}
+
+\begin{description}
+
+\item[{\bf MixCharge}] ({\it logical}):
+\index{MixCharge@{\bf MixCharge}}\index{SCF!mixing!Charge}
+
+If set, this enables an experimental feature, in which the fourier
+components of the charge density are mixed, as done in some plane-wave
+codes. (See for example Kresse and Furthm\"uller, Comp. Mat. Sci. 6,
+15-50 (1996), KF in what follows.) Default: {\tt .false.}
+
+\end{description}
+
+The charge mixing is implemented roughly as follows:
+
+\begin{itemize}
+\item The charge density computed in dhscf is fourier-transformed and stored
+in a new module. This is done both for ``$\rho$({\bf G})(in)'' and
+``$\rho$({\bf G})(out)''  (the ``out'' charge is
+computed during the extra call to dhscf for correction of the
+variational character of the Kohn-Sham energy)
+\item The ``in'' and ``out'' charges are mixed (see below), and the
+  resulting ``in'' fourier components are used by dhscf in successive
+  iterations to reconstruct the charge density.
+\item The new arrays needed and the processing of most new options is
+  done in the new module m\_rhog.F90. The fourier-transforms are
+  carried out by code in rhofft.F.
+\item Following standard practice, two options for mixing are offered:
+  \begin{itemize}
+  \item A simple Kerker mixing, with an optional Thomas-Fermi wavevector to 
+  damp the contributions for small G's. The overall mixing weight is
+  the same as for other kinds of mixing, read from {\bf DM.MixingWeight}.
+  \item A DIIS (Pulay) procedure that takes into account a sub-set of
+    the G vectors (those within a smaller cutoff). Optionally, the
+    scalar product used for the construction of the DIIS matrix from
+    the residuals uses a weight factor. 
+
+    The DIIS extrapolation is followed by a  Kerker mixing step.
+
+    The code is m\_diis.F90. The DIIS history is kept in a circular
+    stack, implemented using the new framework for reference-counted
+    types. This might be overkill for this particular use, and there
+    are a few rough edges, but it works well.
+  \end{itemize}
+\end{itemize}
+
+The default convergence criteria remains based on the differences in
+the density matrix, but in this case the differences are from step to
+step, not the more fundamental {\tt DM\_out-DM\_in}. Perhaps some
+other criterion should be made the default (max |Delta rho(G)|,
+convergence of the free-energy...)
+
+Note that with charge mixing the Harris energy as it is currently
+computed in Siesta loses its meaning, since there is no {\tt
+  DM\_in}. The program prints zeroes in the Harris energy field.
+
+Note that the KS energy is correctly computed throughout the scf
+cycle, as there is an extra step for the calculation of the charge
+stemming from {\tt DM\_out}, which also updates the energies. Forces
+and final energies are correctly computed with the final {\tt
+  DM\_out}, regardless of the setting of the option for mixing after
+scf convergence.
+
+Initial tests suggest that charge mixing has some desirable properties
+and could be a drop-in replacement for density-matrix mixing, but many
+more tests are needed to calibrate its efficiency for different kinds
+of systems, and the heuristics for the (perhaps too many) parameters:
+
+\begin{description}
+
+\item[{\bf ThomasFermiK2}] ({\it physical energy}):
+\index{ThomasFermiK2@{\bf ThomasFermiK2}}
+
+Determines the Thomas-Fermi wavevector squared (in Ry) featuring in
+the Kerker mixing, which is always performed on all components of
+rho(G), even those treated with the DIIS scheme. 
+
+{\it Default value:} 0.0 Ry.
+
+\item[{\bf RhoGMixingCutoff}] ({\it physical energy}):
+\index{RhoGMixingCutoff@{\bf RhoGMixingCutoff}}
+
+Determines the sub-set of G vectors which will undergo the DIIS
+procedure.  Only those with kinetic energies below this cutoff will be
+considered.  The optimal extrapolation of the rho(G) elements will be
+replaced in the fourier series before performing the Kerker
+mixing.
+
+{\it Default value:} 9.0 Ry.
+
+\item[{\bf RhoG-DIIS-Depth}] ({\it integer}):
+\index{RhoG-DIIS-Depth@{\bf RhoG-DIIS-Depth}}
+
+Determines the maximum number of previous steps considered in the DIIS
+procedure. 
+
+{\it Default value:} 0 (no DIIS procedure performed).
+
+{\bf NOTE}: The information from the first scf step is not included in
+the DIIS history. There is no provision yet for any other kind of
+``kick-starting'' procedure. The logic is in m\_rhog (rhog\_mixing routine).
+
+\item[{\bf RhoG-SP-Preconditioner-Cutoff}] ({\it physical energy}):
+\index{RhoG-SP-Preconditioner-Cutoff{\bf
+    RhoG-SP-Preconditioner-Cutoff}}
+
+Determines the value of $q_1^2$ in the weighing of the different G
+components in the scalar products among residuals in the DIIS
+procedure. Following the KF ansatz, this parameter is chosen so that
+the smallest (non-zero) G has a weight 20 times larger than that of
+the smallest G vector in the DIIS set. 
+
+{\it Default value:} The result of the KF prescription.
+
+\item[{\bf DebugRhogMixing}] ({\it logical}):
+\index{DebugRhogMixing@{\bf DebugRhogMixing}}\index{SCF!mixing!Charge}
+
+Controls the level of debugging output in the mixing procedure
+(basically whether the first few stars worth of Fourier components are
+printed). Note that this feature will only display the components in
+the master node.
+
+Default: {\tt .false.}
+
+\item[{\bf DebugDIIS}] ({\it logical}):
+\index{DebugDIIS@{\bf DebugDIIS}}\index{SCF!mixing!Charge}
+
+Controls the level of debugging output in the DIIS procedure. If set,
+the program prints the DIIS matrix and the extrapolation coefficients.
+
+Default: {\tt .false.}
+
+\item[{\bf SCF.MixCharge.SCF1}] ({\it logical}):
+\index{SCF.MixCharge.SCF1@{\bf SCF.MixCharge.SCF1}}\index{SCF!mixing!Charge}
+
+Logical variable to indicate whether or not the charge is mixed in the
+first SCF cycle. Anecdotal evidence indicates that it might be
+advantageous, at least for calculations started from scratch, to avoid
+that first mixing, and retain the ``out'' charge density as ``in'' for
+the next step. 
+
+Default: {\tt .false.}
+
+
+\end{description}
+
 \subsubsection{Initialization of the density-matrix}
 
 The Density matrix can be:
@@ -3594,6 +3741,10 @@ cycle.
 \subsubsection{Convergence criteria}
 \index{SCF convergence criteria}
 
+{\bf NOTE}: Some of the options below have a {\tt DM} prefix. This is
+for historical reasons, as the density-matrix convergence was
+typically the only criterion for termination of the scf cycle.
+
 \begin{description}
 \item[{\bf DM.Tolerance}] ({\it real}):
 \index{DM.Tolerance@{\bf DM.Tolerance}}
@@ -3608,21 +3759,22 @@ the selfconsistency has been achieved.
 
 
 \item[{\bf DM.Require.Energy.Convergence}] ({\it logical}):
-\index{SCF!mixing!energy convergence}
-\index{DM.Require.Energy.Convergence@{\bf DM.Require.Energy.Convergence}}
-Logical variable to request an additional requirement for
-self-consistency: it is considered achieved when the change in the total energy between cycles
-of the SCF procedure is below {\bf DM.EnergyTolerance} and the
-density matrix change criterion is also satisfied.
+  \index{SCF!mixing!energy convergence}
+  \index{DM.Require.Energy.Convergence@{\bf
+      DM.Require.Energy.Convergence}} Logical variable to request an
+  additional requirement for self-consistency: it is considered
+  achieved when the change in the total (free) energy between cycles
+  of the SCF procedure is below {\bf DM.EnergyTolerance} and the
+  density matrix change criterion is also satisfied.
 
 {\it Default value:} {\tt .false.}
 
 \item[{\bf DM.Energy.Tolerance}] ({\it real energy}):
-\index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}}
-If {\bf DM.Require.Energy.Convergence} is {\tt .true.}, then
-self-consistency is achieved when the change in the total energy between cycles
-of the SCF procedure is below this value and the
-density matrix change criterion is also satisfied.
+  \index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}} If {\bf
+    DM.Require.Energy.Convergence} is {\tt .true.}, then
+  self-consistency is achieved when the change in the total (free)
+  energy between cycles of the SCF procedure is below this value and
+  the density matrix change criterion is also satisfied.
 
 {\it Default value:} {${\tt 10^{-4}}$ eV}
 
@@ -8864,6 +9016,29 @@ precision selection
   O(N) routines. 
 
 \end{itemize}
+
+\newpage
+\section{APPENDIX: Data structures and reference counting}
+\index{Reference counting}
+\index{Data Structures}
+
+To implement some of the new features (e.g. charge mixing), {\sc
+  SIESTA} uses new flexible data structures. These are defined and
+handled through a combination and extension of ideas already in the
+Fortran community:
+\begin{itemize}
+\item Simple templating using the ``include file'' mechanism, as for example in
+  the FLIBS project led by Arjen Markus
+  (\url{http://flibs.sourceforge.net}).
+\item The classic reference-counting mechanism to avoid memory leaks, as
+  implemented in the PyF95++ project
+  (\url{http://blockit.sourceforge.net}).
+\end{itemize}
+
+Reference counting makes it much simpler to store data in container
+objects. For example, a circular stack is used in the charge-mixing
+module. A number of future enhancements depend on this paradigm.
+
 
 \addcontentsline{toc}{section}{Index}
 \printindex
