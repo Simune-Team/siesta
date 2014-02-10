@@ -493,7 +493,7 @@ contains
 
           do i = 1 ,c%c_io%N
              ce(i) = ce(i+c%c_io%N)
-             cw(i) = 2._dp * cw(i+c%c_io%N)
+             cw(i) = cw(i+c%c_io%N)
           end do
 
        else if ( c_io_has_opt(c%c_io,'left') ) then
@@ -503,8 +503,6 @@ contains
           allocate(cw(c%c_io%N*2))
 
           call Gauss_Legendre_Rec(2*c%c_io%N,0,a,2._dp*b-a,ce,cw)
-
-          cw = 2._dp * cw
 
        else
 
@@ -533,7 +531,7 @@ contains
 
           do i = 1 ,c%c_io%N
              ce(i) = ce(i+c%c_io%N)
-             cw(i) = 2._dp * cw(i+c%c_io%N)
+             cw(i) = cw(i+c%c_io%N)
           end do
 
        else if ( c_io_has_opt(c%c_io,'left') ) then
@@ -543,8 +541,6 @@ contains
           allocate(cw(c%c_io%N*2))
 
           call TanhSinh_Exact(c%c_io%N*2,ce,cw,a,2._dp*b-a, p=tmp)
-
-          cw = 2._dp * cw
 
        else
 
@@ -666,7 +662,7 @@ contains
 
           do i = 1 ,c%c_io%N
              ce(i) = ce(i+c%c_io%N)
-             cw(i) = 2._dp * cw(i+c%c_io%N)
+             cw(i) = cw(i+c%c_io%N)
           end do
 
        else if ( c_io_has_opt(c%c_io,'left') ) then
@@ -676,8 +672,6 @@ contains
           allocate(cw(c%c_io%N*2))
 
           call Gauss_Legendre_Rec(c%c_io%N*2,0,a,2._dp*b-a,ce,cw)
-
-          cw = 2._dp * cw
 
        else
 
@@ -706,7 +700,7 @@ contains
 
           do i = 1 ,c%c_io%N
              ce(i) = ce(i+c%c_io%N)
-             cw(i) = 2._dp * cw(i+c%c_io%N)
+             cw(i) = cw(i+c%c_io%N)
           end do
 
        else if ( c_io_has_opt(c%c_io,'left') ) then
@@ -716,8 +710,6 @@ contains
           allocate(cw(c%c_io%N*2))
 
           call TanhSinh_Exact(c%c_io%N*2,ce,cw,a,2._dp*b-a, p=tmp)
-
-          cw = 2._dp * cw
 
        else
 

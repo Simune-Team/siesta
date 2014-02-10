@@ -1,4 +1,16 @@
 ----------------------------------------------------
+February 10, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-110
+Fixed weight of right/left contour types it is also faster
+
+* Bugfix for the weights of the left/right assignment of the
+  even weight functions.
+  As the bounds were set to double the distance the weights 
+  were correct.
+
+modified:
+  Src/m_ts_contour_eq.f90
+
+----------------------------------------------------
 February 5, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-109
 Added memory print-out and a bugfix for non-existing contour
 
