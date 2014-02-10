@@ -1,4 +1,24 @@
 -----------------------------------------------------------------------
+February 10, 2014  Alberto Garcia siesta-trunk-454--mixrho-2
+Better output and consistency for scf termination options
+
+The program now prints a more accurate summary of the criterion used
+for scf cycle termination.
+
+Note that the criterion for total-energy convergence now uses the free
+electronic energy, which is the appropriate magnitude to monitor in
+the general case of possibly fractional occupancies.
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_convergence.f90
+  Src/scfconvergence_test.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+  Tests/h2o-rhog-mixing/h2o-rhog-mixing.fdf
+
+-----------------------------------------------------------------------
 February 7, 2014  Alberto Garcia siesta-trunk-454--mixrho-1
 Charge-density mixing
 

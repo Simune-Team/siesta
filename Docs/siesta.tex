@@ -3327,8 +3327,6 @@ norm of their residual ${\rho}^{n}_{out}-{\rho}^{n}_{in}$.
 
 \subsubsection{Mixing of the Charge Density}
 
-This is new and overdue.
-
 \begin{description}
 
 \item[{\bf MixCharge}] ({\it logical}):
@@ -3336,7 +3334,8 @@ This is new and overdue.
 
 If set, this enables an experimental feature, in which the fourier
 components of the charge density are mixed, as done in some plane-wave
-codes. Default: {\tt .false.}
+codes. (See for example Kresse and Furthm\"uller, Comp. Mat. Sci. 6,
+15-50 (1996), KF in what follows.) Default: {\tt .false.}
 
 \end{description}
 
@@ -3373,11 +3372,27 @@ variational character of the Kohn-Sham energy)
   \end{itemize}
 \end{itemize}
 
-Initial tests suggest that charge mixing has some desirable
-properties and could be a drop-in replacement for density-matrix
-mixing, but many more tests are needed to calibrate its efficiency for
-different kinds of systems, and the heuristics for the (perhaps too
-many) parameters:
+The default convergence criteria remains based on the differences in
+the density matrix, but in this case the differences are from step to
+step, not the more fundamental {\tt DM\_out-DM\_in}. Perhaps some
+other criterion should be made the default (max |Delta rho(G)|,
+convergence of the free-energy...)
+
+Note that with charge mixing the Harris energy as it is currently
+computed in Siesta loses its meaning, since there is no {\tt
+  DM\_in}. The program prints zeroes in the Harris energy field.
+
+Note that the KS energy is correctly computed throughout the scf
+cycle, as there is an extra step for the calculation of the charge
+stemming from {\tt DM\_out}, which also updates the energies. Forces
+and final energies are correctly computed with the final {\tt
+  DM\_out}, regardless of the setting of the option for mixing after
+scf convergence.
+
+Initial tests suggest that charge mixing has some desirable properties
+and could be a drop-in replacement for density-matrix mixing, but many
+more tests are needed to calibrate its efficiency for different kinds
+of systems, and the heuristics for the (perhaps too many) parameters:
 
 \begin{description}
 
@@ -3419,7 +3434,7 @@ the DIIS history. There is no provision yet for any other kind of
 
 Determines the value of $q_1^2$ in the weighing of the different G
 components in the scalar products among residuals in the DIIS
-procedure. Following the viennese KF ansatz, this parameter is chosen so that
+procedure. Following the KF ansatz, this parameter is chosen so that
 the smallest (non-zero) G has a weight 20 times larger than that of
 the smallest G vector in the DIIS set. 
 
@@ -3431,7 +3446,7 @@ the smallest G vector in the DIIS set.
 Controls the level of debugging output in the mixing procedure
 (basically whether the first few stars worth of Fourier components are
 printed). Note that this feature will only display the components in
-the master node...
+the master node.
 
 Default: {\tt .false.}
 
@@ -3726,6 +3741,10 @@ cycle.
 \subsubsection{Convergence criteria}
 \index{SCF convergence criteria}
 
+{\bf NOTE}: Some of the options below have a {\tt DM} prefix. This is
+for historical reasons, as the density-matrix convergence was
+typically the only criterion for termination of the scf cycle.
+
 \begin{description}
 \item[{\bf DM.Tolerance}] ({\it real}):
 \index{DM.Tolerance@{\bf DM.Tolerance}}
@@ -3740,21 +3759,22 @@ the selfconsistency has been achieved.
 
 
 \item[{\bf DM.Require.Energy.Convergence}] ({\it logical}):
-\index{SCF!mixing!energy convergence}
-\index{DM.Require.Energy.Convergence@{\bf DM.Require.Energy.Convergence}}
-Logical variable to request an additional requirement for
-self-consistency: it is considered achieved when the change in the total energy between cycles
-of the SCF procedure is below {\bf DM.EnergyTolerance} and the
-density matrix change criterion is also satisfied.
+  \index{SCF!mixing!energy convergence}
+  \index{DM.Require.Energy.Convergence@{\bf
+      DM.Require.Energy.Convergence}} Logical variable to request an
+  additional requirement for self-consistency: it is considered
+  achieved when the change in the total (free) energy between cycles
+  of the SCF procedure is below {\bf DM.EnergyTolerance} and the
+  density matrix change criterion is also satisfied.
 
 {\it Default value:} {\tt .false.}
 
 \item[{\bf DM.Energy.Tolerance}] ({\it real energy}):
-\index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}}
-If {\bf DM.Require.Energy.Convergence} is {\tt .true.}, then
-self-consistency is achieved when the change in the total energy between cycles
-of the SCF procedure is below this value and the
-density matrix change criterion is also satisfied.
+  \index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}} If {\bf
+    DM.Require.Energy.Convergence} is {\tt .true.}, then
+  self-consistency is achieved when the change in the total (free)
+  energy between cycles of the SCF procedure is below this value and
+  the density matrix change criterion is also satisfied.
 
 {\it Default value:} {${\tt 10^{-4}}$ eV}
 

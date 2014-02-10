@@ -46,7 +46,7 @@
       logical  :: first, last_step, SCFconverged
       real(dp) :: dmax      ! Max. change in DM or H elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
-      type(converger_t)  ::  conv_harris, conv_etot
+      type(converger_t)  ::  conv_harris, conv_freeE
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
@@ -96,8 +96,8 @@
               call set_tolerance(conv_harris,harris_tolerance)
            endif
            if (require_energy_convergence) then
-              call reset(conv_etot)
-              call set_tolerance(conv_etot,energy_tolerance)
+              call reset(conv_freeE)
+              call set_tolerance(conv_freeE,energy_tolerance)
            endif
         endif
 
@@ -121,7 +121,7 @@
         endif
 
         call scfconvergence_test( first, iscf, dmax,
-     &                            conv_harris, conv_etot,
+     &                            conv_harris, conv_freeE,
      &                            SCFconverged )
 
         if (SCFconverged .and. (iscf < min_nscf)) then

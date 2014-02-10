@@ -4,12 +4,16 @@ NumberOfAtoms       3
 NumberOfSpecies     2
 
 MixCharge T
-ThomasFermiWaveVector 0.0
-DM.RequireChargeConvergence F    # Will use DM(n+1) - Dm(n) as criterion
-#DM.MixingWeight 0.5
-#Rhog-DIIS-Depth 3
+ThomasFermiWaveVector 0.1   # These parameters are just suggestions
+DM.MixingWeight 0.5
+Rhog-DIIS-Depth 3
 MeshCutoff  50 Ry
 DebugRhogMixing T
+#
+DM.Require.Energy.Convergence T   # default 1.e-5 eV
+DM.Tolerance 0.1   # Will look at the free Energy as a criterion
+                   # The above default might be a bit coarse
+		   # Remember that forces converge more slowly than E
 
 %block ChemicalSpeciesLabel
  1  8  O      # Species index, atomic number, species label
