@@ -11,6 +11,7 @@ type, public :: converger_t
 end type converger_t
 
 public :: set_tolerance, is_converged, add_value, reset
+public :: get_tolerance
 
 CONTAINS
 
@@ -32,6 +33,15 @@ conv%tolerance = tolerance
 conv%counter   = 0
 
 end subroutine set_tolerance
+
+!--------------------------------------
+function tolerance(conv)
+type(converger_t), intent(in) :: conv
+real(dp)                      :: tolerance
+
+tolerance = conv%tolerance
+
+end function tolerance
 
 !--------------------------------------
 function is_converged(conv) result(converged)

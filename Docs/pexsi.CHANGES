@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+February 10, 2014  A. Garcia       trunk-455--pexsi-56
+Sync to trunk-455
+
+455:  [merge] Charge-density mixing
+454:  [merge] Allow the handling of ghosts of synthetic atoms
+453:  Added a simple ps-->inp converter for ATOM
+452:  Fixed a wrong threshold for the bias for transiesta...
+
+See CHANGES file for more details
+
+------------------------------------------------------------
 December 13, 2013  A. Garcia       trunk-451--pexsi-56
 Add option to read a starting Hamiltonian for the scf cycle
 

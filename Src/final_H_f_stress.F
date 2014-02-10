@@ -128,6 +128,10 @@
 !     Last call to dhscf and grid-cell sampling if requested
       ifa  = 1
       istr = 1
+
+      ! This will call dhscf with the final DM coming out of
+      ! the scf cycle
+
       call grdsam( nspin, no_s, iaorb, iphorb, 
      &             no_l, no_u, na_u, na_s, isa, xa, indxua,
      &             ucell, ntm, ifa, istr, maxnh,

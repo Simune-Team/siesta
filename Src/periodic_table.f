@@ -193,6 +193,8 @@ C Written by J. Soler
          SYMBOL = NAME(ABS(Z))
       ELSE IF (Z.GT.200) THEN
          write(SYMBOL,'(a1,i1)') 'S', mod(Z-200,10)
+      ELSE IF (Z.LT.-200) THEN
+         write(SYMBOL,'(a1,i1)') 'G', mod(abs(Z)-200,10)
       ELSE
          WRITE(6,*) 'SYMBOL: ERROR: No data for Z =', Z
          SYMBOL = ' '

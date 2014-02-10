@@ -39,7 +39,7 @@ integer  :: ChargeCorr   ! Integer holding the method of charge correction
                          !  1 => Excess/missing charge is corrected in the buffer layers
 real(dp) :: ChargeCorr_factor ! A factor for the correction (should be in the range 0 <= 1)
 logical  :: UseVFix      ! Call the routine TSVHFix 
-logical  :: IsVolt       ! Logical for dabs(VoltFDF) > 0.001d/eV
+logical  :: IsVolt       ! Logical for abs(VoltFDF) > 10^(-4) eV
 real(dp) :: VoltFDF      ! Bias applied, Internally Volt=voltfdf/eV. 
 real(dp) :: VoltL        ! Bias on the left electrode   (  .5 * VoltFDF )
 real(dp) :: VoltR        ! Bias on the right electrode  ( -.5 * VoltFDF )
@@ -161,7 +161,7 @@ ts_istep=0
 call fdf_global_get(savetshs,'TS.SaveHS',savetshs_def)
 call fdf_global_get(onlyS,'TS.onlyS',onlyS_def)
 call fdf_global_get(VoltFDF,'TS.Voltage',voltfdf_def,'Ry') 
-IsVolt = dabs(VoltFDF) > 0.001_dp/eV
+IsVolt = dabs(VoltFDF) > 0.0001_dp*eV
 ! Set up the fermi shifts for the left and right electrodes
 VoltL =  0.5_dp*VoltFDF
 VoltR = -0.5_dp*VoltFDF

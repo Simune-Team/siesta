@@ -16,7 +16,7 @@
      &                    qtot, no_l
       use sys, only: die, bye
       use Kpoint_grid
-      use m_energies,   only: Ebs, DEHarr, Ecorrec, Ef, Entropy
+      use m_energies,   only: Ebs, Ecorrec, Ef, Entropy
       use m_rmaxh
       use m_eo
       use m_gamma
@@ -26,10 +26,7 @@
       use m_pexsi_solver,  only: pexsi_solver
       use m_hsx, only      : write_hs_formatted
 c$$$      use m_matrixwrite
-#ifdef MPI
       use mpi_siesta
-      use m_mpi_utils,     only:  globalize_sum
-#endif
 #ifdef CDF
       use iodmhs_netcdf, only: write_dmh_netcdf
 #endif
@@ -50,15 +47,12 @@ c$$$      use m_matrixwrite
 
       real(dp)            :: delta_Ebs, delta_Ef
       logical             :: CallDiagon
-      integer             :: io, ispin, nnz
-      real(dp)            :: const ! Temporary factor used in
-                             ! calculation of Harris forces. e1>e2 to
-                             ! signal that we do not want DOS weights
+      integer             :: nnz
+
+      ! e1>e2 to signal that we do not want DOS weights
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
-#ifdef MPI
-      real(dp)            :: buffer1, freeEnergyCorrection
+      real(dp)            :: buffer1
       integer             :: mpierr
-#endif
 
 !       character(15)            :: filename, indexstr
 !       character(15), parameter :: fnameform = '(A,A,A)'
@@ -207,32 +201,6 @@ c$$$     &           S, 'S.matrix')
         !call die('siesta: ERROR: wrong solution method')
       endif
 
-!     Harris-functional energy 
-      DEharr = 0.0_dp
-      Ebs = 0.0_dp
-      do ispin = 1,nspin
-!       const factor takes into account that there are two nondiagonal
-!       elements in non-collinear spin density matrix, stored as
-!       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
-!       ispin=4 => Imag(D12)
-        const = 1._dp
-        if (ispin .gt. 2) const = 2._dp
-        do io = 1,maxnh
-          DEharr = DEharr + H(io,ispin) * const * 
-     &                 ( Dscf(io,ispin) - Dold(io,ispin) )
-          Ebs = Ebs + H(io,ispin) * const * Dscf(io,ispin)
-!         Alternative form
-!         Ebs = Ebs + S(io) * const * Escf(io,ispin)
-        enddo
-      enddo
-#ifdef MPI
-!     Global reduction of DEharr
-      call globalize_sum( DEharr, buffer1 )
-      DEharr = buffer1
-      call globalize_sum(Ebs,buffer1)
-      Ebs = buffer1
-#endif
-! ..................
 #ifdef CDF
       if ( writedmhs_cdf_history) then
         call write_dmh_netcdf( no_l, maxnh, nspin, Dold, H, Dscf )

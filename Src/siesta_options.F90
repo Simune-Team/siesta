@@ -5,6 +5,7 @@ MODULE siesta_options
   implicit none
   PUBLIC
 
+  logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
   logical :: mix_after_convergence ! Mix DM or H even after convergence
   logical :: h_setup_only  ! H Setup only
@@ -73,7 +74,7 @@ MODULE siesta_options
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
-  logical :: require_energy_convergence ! to finish SCF iteration?
+  logical :: require_energy_convergence ! free Energy conv. to finish SCF iteration?
   logical :: require_harris_convergence ! to finish SCF iteration?
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
   logical :: fire_optim    ! Use FIRE method to optimize geometry?
@@ -117,7 +118,7 @@ MODULE siesta_options
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
   real(dp) :: charnet       ! Net electric charge
-  real(dp) :: Energy_tolerance
+  real(dp) :: Energy_tolerance   ! Free-energy tolerance
   real(dp) :: Harris_tolerance
   real(dp) :: rijmin        ! Min. permited interatomic distance without warning
   real(dp) :: dm_normalization_tol    ! Threshold for DM normalization mismatch error
@@ -165,8 +166,8 @@ MODULE siesta_options
   real(dp), parameter :: wmix_default = 0.25_dp
   real(dp), parameter :: wmixkick_default = 0.5_dp
   real(dp), parameter :: dDtol_default = 1.0e-4_dp
-  real(dp), parameter :: Energy_tolerance_default = 1.0e-4_dp * eV
-  real(dp), parameter :: Harris_tolerance_default = 1.0e-4_dp * eV
+  real(dp), parameter :: Energy_tolerance_default = 1.0e-5_dp * eV  ! Free energy...
+  real(dp), parameter :: Harris_tolerance_default = 1.0e-5_dp * eV
   real(dp), parameter :: occtol_default = 1.0e-12_dp
   real(dp), parameter :: etol_default = 1.0e-8_dp
   real(dp), parameter :: rcoor_default = 9.5_dp
@@ -485,9 +486,23 @@ MODULE siesta_options
 
     mixH = fdf_get('MixHamiltonian',mixH_def)
     mixH = fdf_get('TS.MixH',mixH)   ! Catch old-style keyword
+    mix_charge = fdf_get('MixCharge',.false.)
 
-    if (ionode) then
-       write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
+    if (mix_charge) then
+       if (ionode) then
+          write(6,1) 'redata: Mix charge density rho_g         = ', mix_charge
+       endif
+       if (mixH) then
+          mixH = .false.
+          if (ionode) then
+             write(6,"(a)") 'redata: ***MixCharge takes precedence over MixH'
+          endif
+       endif
+    endif
+    if (mixH) then
+       if (ionode) then
+          write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
+       endif
     endif
     
     mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.true.)
@@ -644,7 +659,7 @@ MODULE siesta_options
     require_energy_convergence = fdf_get('DM.RequireEnergyConvergence', &
                                          .false.)
     if (ionode) then
-      write(6,1) 'redata: Require Energy convergence for SCF = ', &
+      write(6,1) 'redata: Require (free) Energy convergence in SCF = ', &
                   require_energy_convergence
     endif
 
@@ -658,7 +673,7 @@ MODULE siesta_options
     Energy_tolerance = fdf_get('DM.EnergyTolerance',    &
                          Energy_tolerance_default, 'Ry' )
     if (ionode) then
-      write(6,7) 'redata: DM Energy tolerance for SCF      = ', Energy_tolerance/eV, ' eV'
+      write(6,7) 'redata: DM (free)Energy tolerance for SCF = ', Energy_tolerance/eV, ' eV'
     endif
 
     if (cml_p) then

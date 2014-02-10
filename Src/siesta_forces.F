@@ -17,6 +17,7 @@
       use m_scfconvergence_test
       use m_post_scf_work
       use m_mixer
+      use m_rhog,                only: mix_rhog, compute_charge_diff
       USE siesta_options
       use parallel,     only : IOnode, SIESTA_worker
       use m_state_analysis
@@ -36,7 +37,7 @@
       use units,         only: eV, Ang
       use sparse_matrices, only: H, Hold, Dold, Dscf
       use m_pexsi_solver,        only: prevDmax
-
+      use m_compute_energies, only: compute_energies
       use m_mpi_utils, only: broadcast
       use fdf
 #ifdef TRANSIESTA
@@ -49,8 +50,8 @@
       integer  :: iscf
       logical  :: first, last_step, SCFconverged
       real(dp) :: dmax      ! Max. change in DM or H elements
-      type(converger_t)  ::  conv_harris, conv_etot
-
+      real(dp) :: drhog     ! Max. change in rho(G) (experimental)
+      type(converger_t)  ::  conv_harris, conv_freeE
 !---------------------------------------------------------------------- BEGIN
       if (SIESTA_worker) call timer("IterMD",1)
 
@@ -115,8 +116,8 @@
                  call set_tolerance(conv_harris,harris_tolerance)
               endif
               if (require_energy_convergence) then
-                 call reset(conv_etot)
-                 call set_tolerance(conv_etot,energy_tolerance)
+              call reset(conv_freeE)
+              call set_tolerance(conv_freeE,energy_tolerance)
               endif
            endif
 
@@ -137,15 +138,20 @@
           call compute_dm( iscf )
           if (SIESTA_worker) call setup_hamiltonian( iscf )
           if (SIESTA_worker) call compute_max_diff(Hold,H,dmax)
-       else 
+       else
           if (SIESTA_worker) call setup_hamiltonian( iscf )
           call compute_dm( iscf )
           if (SIESTA_worker) call compute_max_diff(Dold,Dscf,dmax)
-       end if                   
+       endif
 
        if (SIESTA_worker) then
-        call scfconvergence_test( first, iscf, dmax,
-     &                            conv_harris, conv_etot,
+
+          call compute_energies(iscf)
+          if (mix_charge) then
+             call compute_charge_diff(drhog)
+          endif
+          call scfconvergence_test( first, iscf, dmax,
+     &                            conv_harris, conv_freeE,
      &                            SCFconverged )
         prevDmax = dmax
 
@@ -162,7 +168,11 @@
 
         if ((.not. SCFconverged) .OR. mix_after_convergence) then
            ! Mix for next step
-           call mixer( iscf )
+           if (mix_charge) then
+              call mix_rhog(iscf)
+           else
+              call mixer( iscf )
+           endif
            ! Save for possible restarts
            ! Could save H in the future
            if (MixH) then
