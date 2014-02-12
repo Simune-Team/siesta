@@ -29,6 +29,9 @@ CONTAINS
     use mpi_siesta
 #endif
     use m_pexsi_interface, only: f_ppexsi_solve_interface
+#ifdef TRACING_SOLVEONLY
+      use extrae_module
+#endif
 
     implicit          none
 
@@ -489,6 +492,10 @@ endif
      endif
 
   endif
+
+#ifdef TRACING_SOLVEONLY
+  call extrae_restart
+#endif
 
 solver_loop: do
 

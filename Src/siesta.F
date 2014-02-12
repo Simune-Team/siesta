@@ -13,6 +13,10 @@
       use mpi_siesta, only: true_mpi_comm_world
       use m_mpi_utils, only: broadcast
 
+#ifdef TRACING_SOLVEONLY
+      use extrae_module
+#endif
+
       implicit none
 
       integer :: istep
@@ -35,7 +39,13 @@
 !
 !----------------------------------------------------------------- BEGIN
 !      if (ionode) call memory_snapshot("at start of program")
+
       call siesta_init()
+
+#ifdef TRACING_SOLVEONLY
+      call extrae_shutdown
+#endif      
+
       if (ionode) call memory_snapshot("after siesta_init")
 
 C     Begin of coordinate relaxation iteration
