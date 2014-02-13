@@ -517,9 +517,8 @@ CONTAINS
                idx1 < idx + TotUsedAtoms(Elecs(j))) ) then
              err = .true.
           end if
-          idx = Elecs(j)%idx_na + TotUsedAtoms(Elecs(j)) - 1
-          if ( (idx <= idx1 .and. &
-               idx1 < idx + TotUsedAtoms(Elecs(j))) ) then
+          if ( (idx <= idx2 .and. &
+               idx2 < idx + TotUsedAtoms(Elecs(j))) ) then
              err = .true.
           end if
           if ( err ) then

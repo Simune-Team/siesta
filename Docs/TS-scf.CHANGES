@@ -1,4 +1,19 @@
 ----------------------------------------------------
+February 13, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-111
+Detection of tri-diagonal matrix for N_Elec > 2 was buggy
+
+* Bugfix for the inital creation of the tri-diagonal matrix.
+  It did not sum up to the actual number of orbitals, which 
+  made it crash.
+
+* Detection of overlapping electrodes was wrong. It now correctly
+  detects whether electrodes overlap or not. (i.e. it is not allowed)
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 February 10, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-110
 Fixed weight of right/left contour types it is also faster
 

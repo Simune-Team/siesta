@@ -537,13 +537,13 @@ contains
   function ts_valid_tri(sp,parts,n_part) result(val)
     use class_Sparsity
     use m_ts_electype
-    use m_ts_options, only: no_BufL, Elecs
+    use m_ts_options, only: no_BufL, N_Elec, Elecs
     type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: parts, n_part(parts)
     integer :: val
     integer :: i, idx1, idx2, j
 
-    do i = 1 , size(Elecs)
+    do i = 1 , N_Elec
        idx1 = Elecs(i)%idx_no - no_BufL
 
        do j = 1 , parts - 1
@@ -567,14 +567,14 @@ contains
   subroutine set_3TriMat(no_u,parts,n_part)
     use m_ts_electype
     use m_ts_options, only : no_BufL, no_BufR
-    use m_ts_options, only : Elecs
+    use m_ts_options, only : N_Elec, Elecs
     integer, intent(in) :: no_u
     integer, intent(out) :: parts
     integer, intent(out) :: n_part(3)
 
     parts = 3
-    n_part(1) = TotUsedOrbs(Elecs(1))
-    n_part(3) = TotUsedOrbs(Elecs(size(Elecs)))
+    n_part(1) = sum(TotUsedOrbs(Elecs(1:N_Elec-1)))
+    n_part(3) = TotUsedOrbs(Elecs(N_Elec))
     n_part(2) = no_u - no_BufL - no_BufR - n_part(1) - n_part(3)
   end subroutine set_3TriMat
 
