@@ -1,4 +1,13 @@
 ----------------------------------------------------
+February 13, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-112
+Cosmetic fix
+
+* A print-out was not placed as intended.
+
+modified:
+  Src/m_transiesta.F90
+
+----------------------------------------------------
 February 13, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-111
 Detection of tri-diagonal matrix for N_Elec > 2 was buggy
 

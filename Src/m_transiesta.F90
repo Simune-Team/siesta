@@ -331,7 +331,7 @@ contains
        end do
        mem = mem * 16._dp * 2 / 1024._dp ** 2
        if ( IONode ) &
-            write(*,'(/,a,f10.2,a)') &
+            write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of tri-diagonal matrices: ', &
             mem,'MB'
     else
