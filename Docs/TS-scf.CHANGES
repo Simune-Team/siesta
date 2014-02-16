@@ -1,4 +1,30 @@
 ----------------------------------------------------
+February 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-113
+Added transiesta script to create electrode/contour input
+
+* A script Util/TS/tselecs.sh can create input for the
+  new transiesta method.
+  It has several options to ease the initialization of the
+  input FDF files.
+  The most useful thing must be the direct calls:
+   tselecs -2
+  which creates output that associates the original transiesta
+  settings. One can call the command with many options to 
+  ease the creation of the contours etc.
+  In fact:
+   tselecs -2 
+  is equivalent to this:
+   tselecs -el1 pos=1,inf-dir=-a3,mu=Left,name=Left \
+           -el2 end-pos=-1,inf-dir=+a3,mu=Right,name=Right \
+	   -mu1 name=Left,mu=0.25 -mu2 name=Right,mu=-0.25
+  The help menu for the command is quite instructive with
+  the available options.
+
+added:
+  Util/TS/
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 February 13, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-112
 Cosmetic fix
 
