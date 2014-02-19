@@ -1,4 +1,20 @@
 -----------------------------------------------------------------------
+February 19, 2014  Alberto Garcia siesta-trunk-455--mixrho-4
+Use SVD in DIIS procedure for rho(G) mixing
+
+Use 
+
+debug-diis T
+
+to see debugging information. To turn off SVD, use
+
+  SCF.RhoG.DIIS.UseSVD F
+
+modified:
+  Src/Makefile
+  Src/m_diis.F90
+
+-----------------------------------------------------------------------
 February 19, 2014  Alberto Garcia siesta-trunk-455--mixrho-3
 Bug fixes and option changes in charge-density mixing
 
