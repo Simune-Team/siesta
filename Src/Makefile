@@ -571,7 +571,7 @@ m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
-m_rhog.o: alloc.o class_Fstack_Pair_Vectors.o class_Pair_Vectors.o
+m_rhog.o: alloc.o atomlist.o class_Fstack_Pair_Vectors.o class_Pair_Vectors.o
 m_rhog.o: class_Vector.o m_diis.o m_mpi_utils.o m_recipes.o m_spin.o parallel.o
 m_rhog.o: precision.o siesta_options.o
 m_rmaxh.o: precision.o

@@ -4,11 +4,11 @@ NumberOfAtoms       3
 NumberOfSpecies     2
 
 MixCharge T
-ThomasFermiWaveVector 0.1   # These parameters are just suggestions
+#SCF.Kerker.q0sq 
 DM.MixingWeight 0.5
-Rhog-DIIS-Depth 3
+SCF.Rhog-DIIS-Depth 3
 MeshCutoff  50 Ry
-DebugRhogMixing T
+SCF.DebugRhogMixing T
 #
 DM.Require.Energy.Convergence T   # default 1.e-5 eV
 DM.Tolerance 0.1   # Will look at the free Energy as a criterion
