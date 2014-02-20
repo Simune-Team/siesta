@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+February 20, 2014  A. Garcia        trunk-455--pexsi-58
+Add thermal broadening to inherited bracketing intervals
+
+* When inheriting a bracketing inertia-count interval, the next
+inertia-count or solver steps start with a slightly larger interval,
+broadened by 2kT.
+
+* When the PEXSI solver does not converge, the bracketing interval
+expansion for the subsequent inertia-count step is based on the current
+solver interval, not on the latest inertia-count step's.
+
+modified:
+  Src/m_pexsi_solver.F90
+
+
+------------------------------------------------------------
 February 12, 2014  G. Huhs        trunk-455--pexsi-57
 Added functionality for tracing with extrae
 

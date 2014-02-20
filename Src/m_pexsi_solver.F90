@@ -98,12 +98,12 @@ integer  :: npPerPole
 integer  :: npSymbFact
 integer  :: mpirank, ierr
 integer  :: isSIdentity
-integer  :: inertiaMaxIter, inertiaIter, inertiaMaxNumRounds
+integer  :: inertiaMaxIter, inertiaIter, inertiaMaxNumExpertRounds
 logical  :: inertiaExpertDriver
 logical  :: use_annealing
 real(dp) :: annealing_preconditioner, temp_factor
 real(dp) :: annealing_target_factor
-real(dp) :: pexsi_temperature
+real(dp) :: pexsi_temperature, two_kT
 real(dp) :: inertiaNumElectronTolerance, &
             inertiaMinNumElectronTolerance, &
             inertiaEnergyTolerance, &
@@ -296,7 +296,6 @@ numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
 ! Maximum number of iterations for computing the inertia
 ! in a given scf step (until a proper bracket is obtained)
 inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
-inertiaMaxNumRounds  = inertiaMaxIter
 
 ! Call the inertia-count routine one step at a time, and perform
 ! convergence checks in the caller. Note that "inertiaMaxIter" will
@@ -305,6 +304,7 @@ inertiaMaxNumRounds  = inertiaMaxIter
 
 inertiaExpertDriver = fdf_get("PEXSI.inertia-expert-driver",.false.)
 if (inertiaExpertDriver) then
+   inertiaMaxNumExpertRounds  = inertiaMaxIter
    inertiaMaxIter = 1
 endif
 
@@ -415,6 +415,10 @@ else
 endif
 if (mpirank==0) write(6,"(a,f10.2)") &
      "Current PEXSI temperature (K): ", pexsi_temperature/Kelvin
+!
+!  Set guard smearing for later use
+!
+two_kT = 2.0_dp * pexsi_temperature
 
 !
 !  Possible inertia-count stage
@@ -444,10 +448,16 @@ if (do_inertia_count) then
       ! Shift brackets using estimate of Ef change from previous iteration
       !
       if (mpirank == 0) write(6,"(a)") "&o Inertia-count bracket shifted by Delta_Ef"
-      muMin0 = muMinInertia + delta_Ef
-      muMax0 = muMaxInertia + delta_Ef
-      mu     = mu + delta_Ef
+      ! This might be risky, if the final interval of the previous iteration
+      ! is too narrow. We should broaden it by o(kT)
+      ! The usefulness of delta_Ef is thus debatable...
+
+      muMin0 = muMinInertia + delta_Ef - two_kT
+      muMax0 = muMaxInertia + delta_Ef + two_kT
+      mu     = mu + delta_Ef  !
    else
+      ! Use a large enough interval around the previous estimation of
+      ! mu (or the gap edges)
       if (mpirank == 0) write(6,"(a)") "&o Inertia-count safe bracket"
       muMin0 = min(muLowerEdge - 0.5*safe_width_ic, muMinInertia)
       muMax0 = max(muUpperEdge + 0.5*safe_width_ic, muMaxInertia)
@@ -468,8 +478,8 @@ endif
   if (do_inertia_count) then
      if (mpirank == 0) write(6,"(a)") "&o Solver bracket from Inertia count"
      muSolverInput = muInertia
-     muMinSolverInput = muMinInertia
-     muMaxSolverInput = muMaxInertia
+     muMinSolverInput = muMinInertia - two_kT
+     muMaxSolverInput = muMaxInertia + two_kT
   else
      if (scf_step > 1) then
         if (prevDmax < safe_dDmax_Ef_solver) then
@@ -570,9 +580,9 @@ solver_loop: do
       ! check which side of the interval we need to expand
       !
       if ((numElectron-numElectronExact) > 0) then
-         muMin0 = muMin0 - lateral_expansion_solver 
+         muMin0 = muMinSolverInput - lateral_expansion_solver 
       else
-         muMax0 = muMax0 + lateral_expansion_solver 
+         muMax0 = muMaxSolverInput + lateral_expansion_solver 
       endif
       if (mpirank == 0) then
          write (6,"(a,f10.4,a,f8.4,a,f9.4,a)") 'The PEXSI solver did not converge. Nel - Nel_exact: ', &
@@ -583,7 +593,7 @@ solver_loop: do
          write(6,"(a,i3)") " #&s Number of solver iterations: ", muIter
          write(6,"(a3,2a12,a20)") "it", "mu", "N_e", "dN_e/dmu"
          do i = 1, muIter
-            write(6,"(i3,2f12.4,g20.5,2x,a2)") i, muList(i)/eV, &
+            write(6,"(i3,2f12.5,g20.5,2x,a2)") i, muList(i)/eV, &
                  numElectronList(i), numElectronDrvList(i)*eV, "&s"
          end do
       endif
@@ -591,8 +601,8 @@ solver_loop: do
       call do_inertia()
 
       muSolverInput = muInertia
-      muMinSolverInput = muMinInertia
-      muMaxSolverInput = muMaxInertia
+      muMinSolverInput = muMinInertia - two_kT
+      muMaxSolverInput = muMaxInertia + two_kT
 
       !  will take another iteration of the solver
    else
@@ -607,7 +617,7 @@ enddo solver_loop
             write(6,"(a,i3)") " #&s Number of solver iterations: ", muIter
       write(6,"(a3,2a12,a20)") "it", "mu", "N_e", "dN_e/dmu"
       do i = 1, muIter
-         write(6,"(i3,2f12.4,g20.5,2x,a2)") i, muList(i)/eV, &
+         write(6,"(i3,f12.5,f12.4,g20.5,2x,a2)") i, muList(i)/eV, &
               numElectronList(i), numElectronDrvList(i)*eV, "&s"
       end do
    endif
@@ -756,15 +766,15 @@ subroutine do_inertia()
     logical        :: bad_upper_bound
     real(dp)       :: inertia_electron_width, inertia_energy_width
     real(dp)       :: inertia_original_electron_width
-    integer        :: nInertiaRounds
+    integer        :: nInertiaExpertRounds
     real(dp)       :: numElectronMax, numElectronMin
     type(converger_t)  ::  conv_mu
 
-   nInertiaRounds = 0
+   nInertiaExpertRounds = 0
 
 refine_interval: do
 
-   if ( (mpirank == 0) .and. (nInertiaRounds == 0) ) then
+   if ( (mpirank == 0) .and. (nInertiaExpertRounds == 0) ) then
      write (6,"(a,2f9.4,a,a,i4)") 'Calling inertiaCount: [', &
                                       muMin0/eV, muMax0/eV, "] (eV)", &
                                       " Nshifts: ", nptsInertia
@@ -844,7 +854,7 @@ refine_interval: do
 
       if (interval_problem) then
           ! do nothing more, stay in loop
-	  nInertiaRounds = 0
+	  nInertiaExpertRounds = 0
       else
          write(msg,"(i6)") info 
          call die("Non-interval error in inertia count routine. Info: " // msg)
@@ -861,7 +871,7 @@ refine_interval: do
 
       if (.not. inertiaExpertDriver) exit refine_interval
 
-       nInertiaRounds = nInertiaRounds + 1
+       nInertiaExpertRounds = nInertiaExpertRounds + 1
 
       if (mpirank==0) then
          inertia_energy_width = (muMaxInertia - muMinInertia)
@@ -879,7 +889,7 @@ refine_interval: do
               " (Base: ", inertia_original_electron_width, &
 	      " ) E width: ", inertia_energy_width/eV
 
-         if (nInertiaRounds == 1) then
+         if (nInertiaExpertRounds == 1) then
            call reset(conv_mu)
            call set_tolerance(conv_mu,inertiaMuTolerance)
          endif
@@ -903,7 +913,7 @@ refine_interval: do
             write (6,"(a,f12.6)") 'Leaving inertia loop: mu tolerance: ', inertiaMuTolerance/eV
             one_more_round = .false.
          endif
-	 if (nInertiaRounds == inertiaMaxNumRounds) then
+	 if (nInertiaExpertRounds == inertiaMaxNumExpertRounds) then
             write (6,"(a)") 'Leaving inertia loop: too many rounds'
             one_more_round = .false.
          endif
@@ -912,8 +922,11 @@ refine_interval: do
       
       if (one_more_round) then
          ! stay in loop
-	 muMin0 = muMinInertia
-	 muMax0 = muMaxInertia
+         ! These values should be guarded, in case the refined interval
+         ! is too tight. Use 2*kT
+         ! 
+	 muMin0 = muMinInertia - two_kT
+	 muMax0 = muMaxInertia + two_kT
       else
          exit refine_interval
       endif
