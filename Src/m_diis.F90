@@ -28,6 +28,7 @@ CONTAINS
     use mpi_siesta
 #endif
     use fdf, only: fdf_get
+    use m_svd,      only : solve_with_svd
     !
     type(Fstack_Pair_Vectors), intent(in) :: stack
     !
@@ -54,11 +55,16 @@ CONTAINS
 
     integer :: nmix, i, j, info
 
+    logical            :: use_svd_in_diis = .false.
+    real(dp)           :: rcond_svd_diis  = 1.0e-8_dp
+    integer            :: rank
+
 #ifdef MPI
     integer  MPIerror
 #endif
     !
     real(dp), dimension(:,:), allocatable ::  b , bi
+    real(dp), dimension(:), allocatable   ::  rhs, beta, sigma
     real(dp), dimension(:), allocatable   ::  buffer
     !
     debug_diis = fdf_get("DebugDIIS",.false.)
@@ -67,9 +73,14 @@ CONTAINS
        call die("coeff array too small")
     endif
 
+    use_svd_in_diis = fdf_get("SCF.RhoG.DIIS.UseSVD",.true.)
+    ! Note that 1.0e-6 seems too conservative
+    rcond_svd_diis = fdf_get("SCF.Rhog.DIIS.RcondSVD",1.0e-8_dp)
+
     ! Allocate local arrays
     !
     allocate(b(nmix+1,nmix+1), bi(nmix+1,nmix+1))
+    allocate(rhs(nmix+1),beta(nmix+1),sigma(nmix+1))
     allocate(buffer(nmix))
     !
     !  calculate mixing coefficients
@@ -108,26 +119,53 @@ CONTAINS
        enddo
     enddo
 #endif
-    !
+
     if ((Node == 0) .and. debug_diis) call print_mat(b,nmix+1)
-    call inverse(b,bi,nmix+1,nmix+1,info,debug_diis)
-    coeff(:) = 0.0_dp
+
     !
-    ! If inver was successful, get coefficients for DIIS/Pulay mixing
+    ! Get coefficients for DIIS mixing
     ! (Last column of the inverse matrix, corresponding to solving a
     ! linear system with (0,0,0,...,0,1) in the right-hand side)
-    if (info .eq. 0) then
-       do i=1,nmix
-          coeff(i)=bi(i,nmix+1)
-       enddo
-    else
-       ! Otherwise, use only last step
-       if (Node == 0) then
-         write(6,"(a,i5)")  &
-         "Warning: unstable inversion in DIIS - fallback to linear mixing"
+
+    if (use_svd_in_diis) then
+       rhs(1:nmix) = 0.0_dp
+       rhs(nmix+1) = 1.0_dp
+
+       call solve_with_svd(b,rhs,beta,info,rcond=rcond_svd_diis, &
+                                      rank_out=rank,sigma=sigma)
+
+       if (Node == 0 .AND. debug_diis) then
+          print "(a,i2,7g12.5)", "SVD rank, s(i):", rank, sigma(:)
        endif
-       coeff(nmix) = 1.0_dp
-    endif
+       if (info == 0) then
+          coeff(1:nmix) = beta(1:nmix)
+       else
+          if (Node == 0) then
+             write(6,"(a,i5)") "SVD failed - fallback to linear mixing"
+          endif
+          coeff(1:nmix-1) = 0.0_dp
+          coeff(nmix) = 1.0_dp
+       endif
+    else
+       call inverse(b,bi,nmix+1,nmix+1,info,debug_diis)
+       !
+       ! If inver was successful, get coefficients for DIIS mixing
+       if (info .eq. 0) then
+          do i=1,nmix
+             coeff(i)=bi(i,nmix+1)
+          enddo
+       else
+          ! Otherwise, use only last step
+          if (Node == 0) then
+            write(6,"(a)")  &
+            "Warning: unstable inversion in DIIS - fallback to linear mixing"
+          endif
+          coeff(1:nmix-1) = 0.0_dp
+          coeff(nmix) = 1.0_dp
+       endif
+
+    endif ! SVD
+    !
     if ((Node == 0) .and. debug_diis) then
        do i = 1, n_items(stack)
           print "(a,i2,f12.5)", "DIIS coeff - ", i, coeff(i)
@@ -136,7 +174,7 @@ CONTAINS
 
     ! Deallocate local arrays
     !
-    deallocate(b,bi,buffer)
+    deallocate(b,bi,buffer,beta,sigma,rhs)
     !
   CONTAINS
 

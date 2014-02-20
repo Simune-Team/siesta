@@ -1,4 +1,74 @@
 -----------------------------------------------------------------------
+February 19, 2014  Alberto Garcia siesta-trunk-455--mixrho-4
+Use SVD in DIIS procedure for rho(G) mixing
+
+Use 
+
+debug-diis T
+
+to see debugging information. To turn off SVD, use
+
+  SCF.RhoG.DIIS.UseSVD F
+
+modified:
+  Src/Makefile
+  Src/m_diis.F90
+
+-----------------------------------------------------------------------
+February 19, 2014  Alberto Garcia siesta-trunk-455--mixrho-3
+Bug fixes and option changes in charge-density mixing
+
+* The criterion for participation of a node in the DIIS procedure
+was faulty.
+
+* For spin-polarized systems, the rho(G=0) components were not mixed,
+as they should.
+
+* Several option labels have changed:
+
+The "old"  ThomasFermiK2  option has been renamed to
+
+SCF.Kerker.q0sq  [ physical energy ]
+
+The default remains 0.0 Ry, although the program now prints several
+possible heuristic values:
+
+- The Thomas-Fermi wavevector squared
+- The square of 2*pi/L, where L is the length of the longest cell vector.
+
+SCF.RhoG.DIIS.Cutoff  (physical energy)
+
+determines the sub-set of G vectors which will undergo the DIIS
+procedure.  Default: 9 Ry.
+
+SCF.RhoG.DIIS.Depth
+
+determines the maximum number of previous steps considered in the DIIS
+procedure. Default: 0
+
+SCF.RhoG.Metric.Preconditioner.Cutoff (physical energy)
+
+determines the value of "q1^2" in the weighing of the different G
+components in the scalar products among residuals in the DIIS
+procedure. Following the KF ansatz, this parameter is chosen so that
+the smallest (non-zero) G has a weight 20 times larger than that of
+the smallest G vector in the DIIS set.  Default: The KF prescription.
+
+SCF.DebugRhogMixing
+
+controls the level of debugging output in the mixing procedure
+(basically whether the first few stars worth of Fourier components are
+printed). Default: False.  Note that this feature will only display
+the components in the master node...
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_rhog.F90
+  Tests/h2o-rhog-mixing/h2o-rhog-mixing.fdf
+
+
+-----------------------------------------------------------------------
 February 10, 2014  Alberto Garcia siesta-trunk-454--mixrho-2
 Better output and consistency for scf termination options
 

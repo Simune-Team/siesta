@@ -534,7 +534,7 @@ m_cell.o: precision.o siesta_geom.o units.o
 m_check_supercell.o: minvec.o parallel.o precision.o
 m_diagon.o: precision.o
 m_diis.o: class_Fstack_Pair_Vectors.o class_Pair_Vectors.o class_Vector.o
-m_diis.o: parallel.o precision.o
+m_diis.o: m_svd.o parallel.o precision.o
 m_dipol.o: precision.o
 m_dminim.o: densematrix.o files.o parallel.o parallelsubs.o precision.o
 m_dminim.o: siesta_options.o sys.o
@@ -571,7 +571,7 @@ m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
-m_rhog.o: alloc.o class_Fstack_Pair_Vectors.o class_Pair_Vectors.o
+m_rhog.o: alloc.o atomlist.o class_Fstack_Pair_Vectors.o class_Pair_Vectors.o
 m_rhog.o: class_Vector.o m_diis.o m_mpi_utils.o m_recipes.o m_spin.o parallel.o
 m_rhog.o: precision.o siesta_options.o
 m_rmaxh.o: precision.o
