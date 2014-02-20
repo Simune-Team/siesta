@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large February 10, 2014 }
+{\Large February 20, 2014 }
 
 \vspace{1.5cm}
 
@@ -3401,28 +3401,28 @@ of systems, and the heuristics for the (perhaps too many) parameters:
 
 \begin{description}
 
-\item[{\bf ThomasFermiK2}] ({\it physical energy}):
-\index{ThomasFermiK2@{\bf ThomasFermiK2}}
+\item[{\bf SCF.Kerker.q0sq}] ({\it physical energy}):
+\index{SCF.Kerker.q0sq@{\bf SCF.Kerker.q0sq}}
 
-Determines the Thomas-Fermi wavevector squared (in Ry) featuring in
-the Kerker mixing, which is always performed on all components of
-rho(G), even those treated with the DIIS scheme. 
+Determines the parameter $q_0^2$ featuring in the Kerker
+preconditioning, which is always performed on all components of
+$\rho({\bf G})$, even those treated with the DIIS scheme. 
 
 {\it Default value:} 0.0 Ry.
 
-\item[{\bf RhoGMixingCutoff}] ({\it physical energy}):
+\item[{\bf SCF.RhoGMixingCutoff}] ({\it physical energy}):
 \index{RhoGMixingCutoff@{\bf RhoGMixingCutoff}}
 
 Determines the sub-set of G vectors which will undergo the DIIS
 procedure.  Only those with kinetic energies below this cutoff will be
-considered.  The optimal extrapolation of the rho(G) elements will be
+considered.  The optimal extrapolation of the $\rho({\bf G})$ elements will be
 replaced in the fourier series before performing the Kerker
 mixing.
 
 {\it Default value:} 9.0 Ry.
 
-\item[{\bf RhoG-DIIS-Depth}] ({\it integer}):
-\index{RhoG-DIIS-Depth@{\bf RhoG-DIIS-Depth}}
+\item[{\bf SCF.RhoG.DIIS.Depth}] ({\it integer}):
+\index{SCF.RhoG.DIIS.Depth@{\bf SCF.RhoG.DIIS.Depth}}
 
 Determines the maximum number of previous steps considered in the DIIS
 procedure. 
@@ -3433,20 +3433,20 @@ procedure.
 the DIIS history. There is no provision yet for any other kind of
 ``kick-starting'' procedure. The logic is in m\_rhog (rhog\_mixing routine).
 
-\item[{\bf RhoG-SP-Preconditioner-Cutoff}] ({\it physical energy}):
-\index{RhoG-SP-Preconditioner-Cutoff{\bf
-    RhoG-SP-Preconditioner-Cutoff}}
+\item[{\bf SCF.RhoG.Metric.Preconditioner.Cutoff}] ({\it physical energy}):
+\index{SCF.RhoG.Metric.Preconditioner.Cutoff{\bf
+    SCF.RhoG.Metric.Preconditioner.Cutoff}}
 
-Determines the value of $q_1^2$ in the weighing of the different G
+Determines the value of $q_1^2$ in the weighing of the different {\bf G}
 components in the scalar products among residuals in the DIIS
 procedure. Following the KF ansatz, this parameter is chosen so that
-the smallest (non-zero) G has a weight 20 times larger than that of
+the smallest (non-zero) {\bf G} has a weight 20 times larger than that of
 the smallest G vector in the DIIS set. 
 
 {\it Default value:} The result of the KF prescription.
 
-\item[{\bf DebugRhogMixing}] ({\it logical}):
-\index{DebugRhogMixing@{\bf DebugRhogMixing}}\index{SCF!mixing!Charge}
+\item[{\bf SCF.DebugRhogMixing}] ({\it logical}):
+\index{SCF.DebugRhogMixing@{\bf SCF.DebugRhogMixing}}\index{SCF!mixing!Charge}
 
 Controls the level of debugging output in the mixing procedure
 (basically whether the first few stars worth of Fourier components are

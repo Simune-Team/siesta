@@ -129,6 +129,7 @@ CONTAINS
           !!! maybe           if (g2(j) <= certain cutoff) then
           if (.true.) then
              alpha = wmix * g2(j) / (g2(j) + q0sq)
+             if (alpha == 0) alpha = wmix  ! for G=0
              rhog_in(:,j,:) = alpha * rhog(:,j,:) +  &
                   (1.0_dp - alpha) * rhog_in(:,j,:)
           else
@@ -258,7 +259,7 @@ CONTAINS
     if (Node == 0) print "(a,f12.6)", " Max |\Delta rho(G)|: ", drhog
 
     ! Print info about the first 10 stars
-    debug_stars = fdf_get("DebugRhogMixing",.false.)
+    debug_stars = fdf_get("SCF.DebugRhogMixing",.false.)
     if (debug_stars .and. Node == 0) then
        print "(a8,2x,a20,4x,a20,2x,a8)", "G2", &
             "rho_in(G) (R, C)", "Diff_rho(G) (R, C)", "damping"
@@ -286,12 +287,14 @@ CONTAINS
 
       use parallel,    only : Node, Nodes, ProcessorY
       use alloc, only: re_alloc
-      use fdf,   only: fdf_get
+      use fdf,   only: fdf_get, fdf_defined
       use m_recipes, only: sort
 
       use m_mpi_utils,           only: globalize_max
       use m_mpi_utils,           only: globalize_min
       use m_mpi_utils,           only: globalize_sum
+
+      use atomlist,              only: qtot
 
       implicit none
 
@@ -302,29 +305,66 @@ CONTAINS
 
       ! Local variables
 
-      real(dp)              :: B(3,3), g(3)
+      real(dp)              :: B(3,3), g(3), celvol
       integer               :: I, I1, I2, I3, IX, J, J1, J2, J3, JX,  &
                                NP, NG, NG2, NG3,                      &
                                ProcessorZ, Py, Pz, J2min, J2max,      &
                                J3min, J3max, J2L, J3L, NRemY, NRemZ,  &
                                BlockSizeY, BlockSizeZ
       external :: reclat
+      real(dp), external :: volcel
 
       real(dp), parameter :: tiny = 1.e-10_dp   ! for regularization
       integer :: n_rhog_depth
       integer :: ng_diis_min, ng_diis_max, ng_diis_sum
-      
-      ! The default Thomas-Fermi value in the KF paper seems high
-      ! for most systems, so we set it to zero here.
 
-      q0sq = fdf_get("ThomasFermiK2", 0.0_dp, "Ry")   ! in Ry
+      real(dp) :: pi, qtf2, length, length_max, q0_size
+      
+!
+!     Find the genuine thomas fermi k0^2. This does not
+!     seem to be too relevant for the preconditioning, as
+!     it tends to be too big.
+!
+      pi = 4*atan(1.0_dp)
+      celvol = volcel(cell)
+      qtf2 = 4*(3*qtot/(pi*celvol))**(1.0_dp/3.0_dp)
+
+      ! Find the maximum length of a lattice vector
+      ! This could set a better scale for the Kerker preconditioning
+
+      length_max = 0.0_dp
+      do i = 1, 3
+         length = sqrt(dot_product(cell(:,i),cell(:,i)))
+         length_max = max(length,length_max)
+      enddo
+      q0_size = (2*pi/length_max)
+
+      if (Node == 0 ) then
+         print "(a,f12.6)", "Thomas-Fermi K2 (Ry):", qtf2
+         print "(a,f12.6)", "L max (bohr):", length_max
+         print "(a,f12.6)", "q0_size = 2pi/L (Bohr^-1):", q0_size
+         print "(a,f12.6)", "q0_size^2 (Ry) :", q0_size**2
+      endif
+
+      if (fdf_defined("Thomas.Fermi.K2")) then
+         if (Node == 0 ) then
+            print "(a,f12.6)", "Please use 'SCF.Kerker.q0sq' " // &
+                 "instead of 'Thomas.Fermi.K2'"
+         endif
+      endif
+
+      q0sq = fdf_get("SCF.Kerker.q0sq", 0.0_dp, "Ry")   ! in Ry
+      if (Node == 0 ) then
+         print "(a,f12.6)", "Kerker preconditioner q0^2 (Ry):", q0sq
+      endif
+
       q0sq = q0sq  + tiny 
 
       call re_alloc(g2, 1, n1*n2*n3, "g2", "order_rhog")
       call re_alloc(g2mask, 1, n1*n2*n3, "g2mask", "order_rhog")
       call re_alloc(gindex, 1, n1*n2*n3, "gindex", "order_rhog")
 
-      rhog_cutoff = fdf_get("RhoG-DIIS-Cutoff", 9.0_dp, "Ry")   ! in Ry
+      rhog_cutoff = fdf_get("SCF.RhoG-DIIS-Cutoff", 9.0_dp, "Ry")   ! in Ry
       ng_diis = 0
 
 !     Find reciprocal lattice vectors
@@ -414,11 +454,11 @@ CONTAINS
 #endif
    endif
       
-   n_rhog_depth = fdf_get("RhoG-DIIS-Depth",0)
+   n_rhog_depth = fdf_get("SCF.RhoG-DIIS-Depth",0)
    
    ! Note that some nodes might not have any Gs in the DIIS procedure
    ! But we still go ahead
-   using_diis_for_rhog = ((ng_diis > 1) .and. (n_rhog_depth > 1))
+   using_diis_for_rhog = ((ng_diis_max > 1) .and. (n_rhog_depth > 1))
 
    if (using_diis_for_rhog)  call set_up_diis()
 
@@ -512,13 +552,13 @@ CONTAINS
     q1sq_def = (n-1)*max_g2 / ((max_g2/min_g2) - n)
     if (Node == 0) then
        print "(a,f10.3,a,i3)", &
-            "Scalar-product preconditioner cutoff default (Ry): ", q1sq_def, &
+            "Metric preconditioner cutoff default (Ry): ", q1sq_def, &
             " n:",n
     endif
-    q1sq = fdf_get("RhoG-SP-Preconditioner-Cutoff",q1sq_def, "Ry")
+    q1sq = fdf_get("SCF.RhoG.Metric.Preconditioner.Cutoff",q1sq_def, "Ry")
     if (Node == 0) then
        print "(a,f10.3)", &
-                      "Scalar-product preconditioner cutoff (Ry): ", q1sq
+                      "Metric preconditioner cutoff (Ry): ", q1sq
        print "(a,2f10.4)", "Max and min weights: ", &
                             (min_g2 + q1sq)/min_g2, &
                             (max_g2 + q1sq)/max_g2
