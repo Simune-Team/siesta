@@ -40,6 +40,8 @@ module m_ts_electype
   public :: RepA1, RepA2, RepA3
   public :: q_exp
 
+  public :: ReUseGF, OutOfCore
+
   public :: fdf_nElec, fdf_elec
 
   public :: assign, read_Elec
@@ -78,6 +80,17 @@ module m_ts_electype
      logical :: Bulk = .true.
      logical :: DM_CrossTerms = .false.
      logical :: BandBottom = .false.
+     ! whether to re-calculate the GF-file
+     logical :: ReUseGF = .false. 
+     ! Create a GF-file or re-calculate the self-energies everytime
+     logical :: out_of_core = .true. 
+     ! In case of 'out_of_core == .false.' we can reduce the number of operations
+     ! by skipping the copying of H00, S00. Hence we need to compare when the 
+     ! k-point changes...
+     real(dp), pointer :: bkpt_cur(:) => null()
+     ! If the user requests to assign different "spill-in fermi-level" 
+     ! we allow that
+     real(dp) :: Ef_frac_CT = 0._dp
      ! Used xa and lasto
      real(dp), pointer :: xa_used(:,:) => null()
      integer,  pointer :: lasto_used(:) => null()
@@ -329,6 +342,27 @@ contains
           this%RepA2 = fdf_bintegers(pline,2)
           this%RepA3 = fdf_bintegers(pline,3)
 
+       else if ( leqi(ln,'ReUseGF') ) then
+
+          this%ReUseGF = fdf_bboolean(pline,1,after=1)
+
+       else if ( leqi(ln,'out-of-core') ) then
+
+          this%out_of_core = fdf_bboolean(pline,1,after=1)
+
+       else if ( leqi(ln,'fraction-H-C') ) then
+          ! highly experimental feature,
+          ! it determines the fraction of the electrode fermi-level
+          ! that shifts the energy, of the H_{E-C} region.
+          ! instead of the energy at Ef
+          if ( fdf_bnvalues(pline) < 1 ) &
+               call die('Fraction specification missing.')
+          
+          this%Ef_frac_CT = fdf_bvalues(pline,1,after=1)
+          if ( this%Ef_frac_CT < 0._dp .or. &
+               1._dp < this%Ef_frac_CT ) then
+             call die('Fraction for fermi-level must be in [0;1] range')
+          end if
        else
           
           call die('Unrecognized option "'//trim(ln)//'" &
@@ -610,7 +644,19 @@ contains
     val = this%ucell
   end function unitcell
 
-  subroutine read_Elec(this,Bcast)
+  elemental function ReUseGF(this) result(val)
+    type(Elec), intent(in) :: this
+    logical :: val
+    val = this%ReUseGF
+  end function ReUseGF
+
+  elemental function OutOfCore(this) result(val)
+    type(Elec), intent(in) :: this
+    logical :: val
+    val = this%out_of_core
+  end function OutOfCore
+
+  subroutine read_Elec(this,Bcast,io)
     use fdf
     use parallel
     use class_OrbitalDistribution
@@ -622,10 +668,11 @@ contains
 
     type(Elec), intent(inout) :: this
     logical, intent(in), optional :: Bcast
+    logical, intent(in), optional :: io
 
     character(len=200) :: fN
     integer :: fL, kscell(3,3), istep, ia1
-    logical :: onlyS, Gamma_file, TSGamma
+    logical :: onlyS, Gamma_file, TSGamma, lio
     real(dp) :: temp, kdispl(3)
     
     ! Sparsity pattern
@@ -634,6 +681,9 @@ contains
     integer :: n_nzs
 
     type(OrbitalDistribution) :: fdist
+
+    lio = .true.
+    if ( present(io) ) lio = io
 
     fN = trim(HSfile(this))
     ! We read in the information
@@ -675,9 +725,9 @@ contains
 
     ! Copy data
     t2D => val(this%H)
-    t2D = H
+    t2D(:,:) = H(:,:)
     t1D => val(this%S)
-    t1D = S
+    t1D(:) = S(:)
 
     ! clean-up
     deallocate(H,S)
@@ -694,11 +744,11 @@ contains
     deallocate(numh,listhptr,listh)
     call memory('D','I',this%no_u*2+n_nzs,'iohs')
 
-    if ( IONode ) call print_type(this%sp)
+    if ( IONode .and. lio ) call print_type(this%sp)
 
   end subroutine read_Elec
 
-  subroutine create_sp2sp01(this,calc_xijo)
+  subroutine create_sp2sp01(this,calc_xijo,IO)
 
     use parallel, only : IONode, Node
 
@@ -712,8 +762,9 @@ contains
 
     type(Elec), intent(inout) :: this
     logical, intent(in), optional :: calc_xijo
+    logical, intent(in), optional :: io
 
-    logical :: lcalc_xijo
+    logical :: lcalc_xijo, lio
 
     real(dp), pointer :: xij(:,:), xij00(:,:), xij01(:,:)
     real(dp), pointer :: xijo00(:,:), xijo01(:,:)
@@ -731,7 +782,7 @@ contains
     integer, pointer :: ptr01(:)  => null()
     integer, pointer :: col01(:)  => null()
 
-    integer :: no_l, i, io, j, ind, ind00, ind01, ia, ja
+    integer :: no_l, i, iio, j, ind, ind00, ind01, ia, ja
     integer :: tm(3)
 
     ! Retrieve distribution
@@ -739,6 +790,8 @@ contains
 
     lcalc_xijo = .false.
     if ( present(calc_xijo) ) lcalc_xijo = calc_xijo
+    lio = .true.
+    if ( present(io) ) lio = io
 
     H   => val(this%H)
     S   => val(this%S)
@@ -789,20 +842,20 @@ contains
     call attach(this%sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l)
     call attach(this%sp00,n_col=ncol00,list_ptr=ptr00,list_col=col00, &
-         nrows=io)
-    if ( io /= no_l ) call die('Could not do index matching due to &
+         nrows=iio)
+    if ( iio /= no_l ) call die('Could not do index matching due to &
          &inconsistent sparsity patterns')
     call attach(this%sp01,n_col=ncol01,list_ptr=ptr01,list_col=col01, &
-         nrows=io)
-    if ( io /= no_l ) call die('Could not do index matching due to &
+         nrows=iio)
+    if ( iio /= no_l ) call die('Could not do index matching due to &
          &inconsistent sparsity patterns')
 
     ! loop and assign data elements
     do i = 1 , no_l
 
        ! Shift out of the buffer region
-       io = index_local_to_global(fdist,i,Node)
-       ia = iaorb(io,this%lasto)
+       iio = index_local_to_global(fdist,i,Node)
+       ia = iaorb(iio,this%lasto)
 
        ! Loop number of entries in the row...
        do j = 1 , ncol00(i)
@@ -863,7 +916,7 @@ contains
        end do
     end do
 
-    if ( IONode ) then
+    if ( IONode .and. lio ) then
        call print_type(this%sp00)
        call print_type(this%sp01)
     end if
@@ -889,7 +942,8 @@ contains
     call delete(this%sp)
     if ( associated(this%xa) ) deallocate(this%xa)
     if ( associated(this%lasto) ) deallocate(this%lasto)
-    nullify(this%xa,this%lasto)
+    if ( associated(this%bkpt_cur) ) deallocate(this%bkpt_cur)
+    nullify(this%xa,this%lasto,this%bkpt_cur)
     !if ( associated(this%xa_used) ) deallocate(this%xa_used)
     !if ( associated(this%lasto_used) ) deallocate(this%lasto_used)
     !nullify(this%xa_used,this%lasto_used)
@@ -1191,10 +1245,10 @@ contains
     if ( maxi == 0 .and. ind == 0 ) then
        write(*,'(t2,a)') trim(name(this))//' principal cell is perfect!'
     else if ( maxi == 0 ) then
-       write(*,'(t2,a)') trim(name(this))//' principal cell is extending out &
-            &with all zeroes'
+       write(*,'(t2,a,i0,a)') trim(name(this))//' principal cell is extending out &
+            &with all zeroes ',ind,' elements'
     else
-       write(*,'(t2,a)') trim(name(this))//' principal cell is extending out:'
+       write(*,'(t2,a,i0,a)') trim(name(this))//' principal cell is extending out with ',ind,' elements:'
        write(*,'(t5,2(a,i0))') 'Atom ',maxia,' connects with atom ',maxja
        write(*,'(t5,2(a,i0))') 'Orbital ',maxi ,' connects with orbital ',maxj
        write(*,'(t5,3(a,i0),a,g10.3,a)') 'Hamiltonian value: |H(',&

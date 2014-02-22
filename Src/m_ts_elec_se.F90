@@ -687,9 +687,9 @@ contains
 
   ! Subroutine for reading in both the left and right next energy point
   
-  subroutine read_next_GS(ikpt, cE, &
+  subroutine read_next_GS(ispin,ikpt, kpt, cE, &
        NElecs, uGF, Elecs, &
-       nzwork, zwork, reread, &
+       nzwork, zwork, RemUCellDistance, reread, &
        forward )
 
     use parallel, only : Node, Nodes, IONode
@@ -700,23 +700,21 @@ contains
 #endif
 
     use m_ts_cctype
+    use m_ts_electrode, only: calc_next_GS_Elec
       
-    integer, intent(in) :: ikpt
+    integer, intent(in) :: ispin, ikpt
+    real(dp), intent(in) :: kpt(3)
     type(ts_c_idx), intent(in) :: cE
     integer, intent(in) :: NElecs, uGF(NElecs)
     type(Elec), intent(inout) :: Elecs(NElecs)
     integer, intent(in) :: nzwork
-    complex(dp), intent(inout) :: zwork(nzwork)
+    complex(dp), intent(inout), target :: zwork(nzwork)
+    logical, intent(in) :: RemUCellDistance
     logical, intent(in), optional :: reread, forward
 
     integer :: iE, NEReqs, i, j
 #ifdef MPI
     integer :: MPIerror
-#endif
-
-#ifdef MPI
-    ! This will make the timings be more realistic
-    call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
 
     ! save the current weight of the point
@@ -736,6 +734,7 @@ contains
     if ( present(reread) ) then
        if ( IONode .and. reread ) then
           do j = 1 , NElecs
+             if ( .not. OutOfCore(Elecs(j)) ) cycle
              do i = 1 , NEReqs * 2
                 backspace(unit=uGF(j))
              end do
@@ -761,9 +760,17 @@ contains
     ! of doing the same "repetition" expansion twice, we can live with
     ! that!
     do i = 1 , NElecs
-       call read_next_GS_Elec(uGF(i), NEReqs, &
-            ikpt, Elecs(i), cE, &
-            nzwork, zwork, forward = forward)
+       if ( OutOfCore(Elecs(i)) ) then
+          call read_next_GS_Elec(uGF(i), NEReqs, &
+               ikpt, Elecs(i), cE, &
+               nzwork, zwork, forward = forward)
+       else
+          ! the electrode already have the correct 
+          ! variables which decides whether it is
+          ! RemUCellDistance or not!
+          call calc_next_GS_Elec(Elecs(i),ispin,kpt,cE%e, &
+               nzwork, zwork, RemUCellDistance)
+       end if
     end do
 
   end subroutine read_next_GS

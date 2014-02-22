@@ -56,6 +56,7 @@ contains
     use m_ts_options, only : N_Elec, Elecs
     use m_ts_options, only : IsVolt, Calc_Forces
     use m_ts_options, only : no_BufL, no_BufR
+    use m_ts_options, only : RemUCellDistance
 
     use m_ts_contour_eq , only : N_Eq_E
     use m_ts_contour_neq, only : N_nEq_E
@@ -120,7 +121,7 @@ contains
             nspin, n_nzs, DM, S)
 
        if ( .not. Calc_Forces .and. IONode ) then
-          write(*,'(a)') 'transiesta: Notice that the forces are NOT updated'
+          write(*,'(a)') 'transiesta: *** Notice that the forces are NOT updated ***'
        end if
 
        call timer('TS_init',2)
@@ -132,15 +133,29 @@ contains
 
     ! Total number of energy-points...
     NEn = N_Eq_E() + N_nEq_E()
-    
+
+    ! in case the file-descriptor is negative it basically 
+    ! means "out-of-core" calculation.
     allocate(uGF(N_Elec))
+    uGF(:) = -1
     allocate(nq(N_Elec))
     do iEl = 1 , N_Elec
-       if ( IONode ) then
-          call io_assign(uGF(iEl))
-          open(file=GFFile(Elecs(iEl)),unit=uGF(iEl),form='unformatted')
+
+       if ( OutOfCore(Elecs(iEl)) ) then
+
+          if ( IONode ) then
+             call io_assign(uGF(iEl))
+             open(file=GFFile(Elecs(iEl)),unit=uGF(iEl),form='unformatted')
+          end if
+
+          call read_Green(uGF(iEl),Elecs(iEl), ts_nkpnt, NEn, .false. )
+
+       else
+
+          ! prepare the electrode to create the surface self-energy
+          call init_Electrode_HS(Elecs(iEl), RemUCellDistance)
+
        end if
-       call read_Green(uGF(iEl),Elecs(iEl), ts_nkpnt, NEn, .false. )
        nq(iEl) = Rep(Elecs(iEl))
 
 
@@ -187,7 +202,7 @@ contains
        else
           call ts_fullk(N_Elec,Elecs, &
                nq,uGF, &
-               nspin, &
+               ucell, nspin, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
                H, S, xij, DM, EDM, Ef, kT)
@@ -202,7 +217,7 @@ contains
        else
           call ts_trik(N_Elec,Elecs, &
                nq,uGF, &
-               nspin, &
+               ucell, nspin, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
                H, S, xij, DM, EDM, Ef, kT)
@@ -217,7 +232,12 @@ contains
 !***********************
     if ( IONode ) then
        do iEl = 1 , N_Elec
-          call io_close(uGF(iEl))
+          if ( OutOfCore(Elecs(iEl)) ) then
+             call io_close(uGF(iEl))
+          else
+             ! clean-up
+             call delete(Elecs(iEl))
+          end if
        end do
     end if
     
@@ -248,6 +268,52 @@ contains
     call die('to not disturb the TSDE')
 #endif
 
+  contains
+
+    subroutine init_Electrode_HS(El,RemUCellDistance)
+      use class_Sparsity
+      use class_dSpData1D
+      use class_dSpData2D
+      use alloc, only : re_alloc
+      type(Elec), intent(inout) :: El
+      logical, intent(in) :: RemUCellDistance
+
+      ! Read-in and create the corresponding transfer-matrices
+      call delete(El) ! ensure clean electrode
+      call read_Elec(El,Bcast=.true., IO = .false.)
+      
+      if ( .not. initialized(El%xij) ) then
+         call die('An electrode file needs to be a non-Gamma calculation. &
+              &Ensure at least two k-points in the T-direction.')
+      end if
+      
+      call create_sp2sp01(El, IO = .false., &
+           calc_xijo=Rep(El)/=1 .or. RemUCellDistance)
+
+      ! Clean-up, we will not need these!
+      ! we should not be very memory hungry now, but just in case...
+      call delete(El%H)
+      call delete(El%S)
+      
+      ! We do not accept onlyS files
+      if ( .not. initialized(El%H00) ) then
+         call die('An electrode file must contain the Hamiltonian')
+      end if
+
+      call delete(El%xij)
+      call delete(El%sp)
+      if ( RemUCellDistance ) then
+         call delete(El%xij00)
+         call delete(El%xij01)
+      end if
+
+      ! pre-allocate the room for the k-point
+      call re_alloc(El%bkpt_cur,1,3,routine='elec_in-core')
+      ! initialize the k-point to something it will never be
+      El%bkpt_cur(:) = huge(1._dp)
+
+    end subroutine init_Electrode_HS
+  
   end subroutine transiesta
 
   subroutine ts_print_memory(Gamma)

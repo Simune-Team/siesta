@@ -441,6 +441,7 @@ contains
     use alloc, only : re_alloc
     type(zTriMat), intent(in) :: M
     integer :: i
+
     call clear_BiasTriMat_inversion()
     Npiv = 0
     do i = 1 , parts(M)

@@ -24,6 +24,8 @@ module m_mat_invert
   integer :: N_MAX = 40
   integer, save :: Npiv = 0
   integer, save, pointer :: ipiv(:) => null()
+  ! controls whether the pivoting array should be de-allocated
+  integer, save :: N_level = 0
 
   ! Used for BLAS calls (local variables)
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -309,23 +311,31 @@ contains
 
 
   ! We initialize the pivoting array for rotating the inversion
-  subroutine init_mat_inversion(no)
+  subroutine init_mat_inversion(n)
     use alloc, only : re_alloc
-    integer, intent(in) :: no
-    Npiv = no
+    integer, intent(in) :: n
+    N_level = N_level + 1
 
-    ! Allocate space for the pivoting array
-    call re_alloc(ipiv,1, Npiv, &
-         name="mat_piv",routine='MatInversion')
+    if ( n > Npiv ) then
+       Npiv = n
 
+      ! Allocate space for the pivoting array
+       call re_alloc(ipiv,1, Npiv, &
+            name="mat_piv",routine='MatInversion')
+    end if
+       
   end subroutine init_mat_inversion
 
   subroutine clear_mat_inversion()
     use alloc, only: de_alloc
-    Npiv = 0
-    ! Deallocate the pivoting array
-    call de_alloc(ipiv, &
-         name="mat_piv",routine='MatInversion')
+    N_level = N_level - 1
+    if ( N_level <= 0 ) then
+       N_level = 0 ! ensure that the level is zero
+       Npiv = 0
+       ! Deallocate the pivoting array
+       call de_alloc(ipiv, &
+            name="mat_piv",routine='MatInversion')
+    end if
   end subroutine clear_mat_inversion
 
 end module m_mat_invert

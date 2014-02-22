@@ -15,88 +15,87 @@
 
 module m_ts_options
 
-! SIESTA Modules used
-  USE precision, only : dp
-  USE siesta_options, only : FixSpin, isolve, SOLVE_TRANSI
-  USE sys, only : die
-  USE m_ts_electype
+  use precision, only : dp
+  use siesta_options, only : FixSpin, isolve, SOLVE_TRANSI
+  use sys, only : die
+
+  use m_ts_electype
   use m_ts_chem_pot
   use m_ts_tdir
+
   implicit none
-  PUBLIC
-  SAVE
 
-!=========================================================================*
-!  Arguments read from input file using the fdf package                    *
-!--------------------------------------------------------------------------*
+  public
+  save
+
+  ! Flag to control TranSIESTA
+  logical :: TSmode = .false.
+
+  ! Controls to save the TSHS file
+  logical  :: SaveTSHS = .true. 
+  ! whether we should only save the overlap matricx
+  logical  :: onlyS = .false. 
+  ! whether we will use the bias-contour
+  logical  :: IsVolt = .false.
+  ! maximum difference between chemical potentials
+  real(dp) :: Volt = 0._dp
+  ! Number of buffer atoms (on the left side)
+  integer  :: na_BufL = 0
+  ! Number of buffer atoms (on the right side)
+  integer  :: na_BufR = 0     ! Number of Right Buffer Atoms
+  ! Number of buffer orbitals (on the left side)
+  integer  :: no_BufL = 0
+  ! Number of buffer orbitals (on the right side)
+  integer  :: no_BufR = 0
+  ! Electrodes and different chemical potentials
+  integer :: N_Elec = 0
+  type(Elec), allocatable, target :: Elecs(:)
+  integer :: N_mu = 0
+  type(ts_mu), allocatable, target :: mus(:)
   
-logical  :: SaveTSHS = .true.     ! Saves the Hamiltonian and Overlap matrices if the 
-                         ! the option TS.SaveHS is specified in the input file
-logical  :: onlyS = .false. ! Option to only save overlap matrix
-logical  :: IsVolt = .false.      ! Logical for dabs(VoltFDF) > 0.0001d*eV
-real(dp) :: Volt = 0._dp         ! Bias applied, Internally Volt=voltfdf/eV (eV). 
-integer  :: na_BufL = 0     ! Number of Left Buffer Atoms
-integer  :: na_BufR = 0     ! Number of Right Buffer Atoms
-integer  :: no_BufL = 0     ! Number of Left Buffer orbitals
-integer  :: no_BufR = 0     ! Number of Right Buffer orbitals
-! Electrodes and different chemical potentials
-integer :: N_Elec = 0
-type(Elec), allocatable, target :: Elecs(:)
-integer :: N_mu = 0
-type(ts_mu), allocatable, target :: mus(:)
-logical :: ReUseGF = .false.         ! Calculate the electrodes GF
-logical :: ImmediateTSmode = .false. ! will determine to immediately start the transiesta
-                                     ! SCF. This is useful when you already have a converged
-                                     ! siesta DM
+  logical :: ImmediateTSmode = .false. ! will determine to immediately start the transiesta
+                                       ! SCF. This is useful when you already have a converged
+                                       ! siesta DM
 
-! Flag to control whether we should update the forces (i.e. calculate energy-density matrix)
-logical :: Calc_Forces = .true.
+  ! Whether we should remove the inner-cell distances
+  logical :: RemUCellDistance = .false.
+  ! Flag to control whether we should update the forces (i.e. calculate energy-density matrix)
+  logical :: Calc_Forces = .true.
 
-! If the energy-contour is not perfectly divisable by the number of nodes then adjust
-integer :: opt_TriMat_method = 0 ! Optimization method for determining the best tri-diagonal matrix split
-! 0  == We optimize for speed
-! 1  == We optimize for memory
+  ! If the energy-contour is not perfectly divisable by the number of nodes then adjust
+  integer :: opt_TriMat_method = 0 ! Optimization method for determining the best tri-diagonal matrix split
+  ! 0  == We optimize for speed
+  ! 1  == We optimize for memory
 
-! Determines whether the voltage-drop should be located in the constriction
-! I.e. if the electrode starts at 10 Ang and the central region ends at 20 Ang
-! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
-logical :: VoltageInC = .false.
+  ! Determines whether the voltage-drop should be located in the constriction
+  ! I.e. if the electrode starts at 10 Ang and the central region ends at 20 Ang
+  ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
+  logical :: VoltageInC = .false.
 
-real(dp) :: Elecs_xa_EPS = 1.e-4_dp
+  ! A quantity describing the accuracy of the coordinates of the 
+  ! electrodes.
+  ! * Should only be edited by experienced users *
+  real(dp) :: Elecs_xa_EPS = 1.e-4_dp
 
-! The mixing weight in the transiesta cycles...
-real(dp) :: ts_wmix ! = wmix
+  ! The mixing weight in the transiesta cycles...
+  real(dp) :: ts_wmix ! = wmix
 
-! The user can request to analyze the system, returning information about the 
-! tri-diagonalization partition and the contour
-logical :: TS_Analyze = .false.
-integer :: TS_bandwidth_algo = 0
+  ! The user can request to analyze the system, returning information about the 
+  ! tri-diagonalization partition and the contour
+  logical :: TS_Analyze = .false.
+  integer :: TS_bandwidth_algo = 0
 
-! Flag to control TranSIESTA
-logical :: TSmode = .false.
-
-CONTAINS
-
-! *********************************************************************
-! Subroutine to read the data for the TRANSIESTA program
-!
-!     It uses the FDF (Flexible Data Format) package
-!     of J.M.Soler and A.Garcia
-!
-! Writen by F.D.Novaes May'07
-! Rewritten by Nick Papior Andersen, 2013
-!
-! **************************** OUTPUT *********************************
+contains
   
   subroutine read_ts_options( wmix, kT, ucell, na_u, xa, lasto)
 
-! SIESTA Modules Used
     use alloc
-    use files, only  : slabel
+    use files, only : slabel
     use fdf, only : fdf_get, fdf_deprecated, fdf_obsolete
     use fdf, only : leqi
     use parallel, only: IOnode, Nodes, operator(.parcount.)
     use units, only: eV, Ang, Kelvin
+
     use m_ts_cctype
     use m_ts_global_vars, only : ts_istep, TSinit
     use m_ts_io, only : ts_read_TSHS_opt
@@ -113,11 +112,17 @@ CONTAINS
 
     implicit none
     
+! *******************
+! * INPUT variables *
+! *******************
     real(dp), intent(in) :: wmix, kT
     real(dp),intent(in) :: ucell(3,3)
     integer, intent(in) :: na_u, lasto(0:na_u)
     real(dp), intent(in) :: xa(3,na_u)
-! Internal Variables
+
+! *******************
+! * LOCAL variables *
+! *******************
     real(dp) :: tmp
     logical :: err
     character(len=200) :: c, chars
@@ -127,7 +132,7 @@ CONTAINS
     real(dp) :: dot
     external :: dot
 
-    if (isolve.eq.SOLVE_TRANSI) then
+    if (isolve .eq. SOLVE_TRANSI) then
        TSmode = .true.
        ! If in TSmode default to initalization
        ! In case of 'DM.UseSaveDM TRUE' TSinit will be set accordingly
@@ -139,7 +144,7 @@ CONTAINS
        write(*,11) repeat('*', 62)
     end if
 
-    !Set ts_istep default
+    ! Set ts_istep default
     ts_istep = 0
 
     ! Read in general values that should be used in the electrode generation
@@ -249,8 +254,8 @@ CONTAINS
     else if ( leqi(chars,'k-uncorrelated') ) then
        TS_W_METHOD = TS_W_K_UNCORRELATED
     else
-       call die('Could not determine flag TS.Weight.NonEquilibrium, please &
-            &see manual.')
+       call die('Could not determine flag TS.Weight.NonEquilibrium, &
+            &please see manual.')
     end if
 
     ! Figure out the number of orbitals on the buffer atoms
@@ -286,10 +291,8 @@ CONTAINS
        call die("Charge correction factor must be in the range [0;1]")
     endif
     
-    Calc_Forces = fdf_get('TS.Forces.Calc',.true.)
-
-    call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
-    ReUseGF = fdf_get('TS.ReUseGF',.false.)
+    ! whether to calculate the forces or not (default calculate everything)
+    Calc_Forces = fdf_get('TS.Forces',.true.)
 
     ! This should never be used!!!!
     ! It is required to fix the potential in the cell
@@ -327,7 +330,8 @@ CONTAINS
     do i = 1 , N_mu
        ! Default things that could be of importance
        if ( .not. fdf_mu('TS',slabel,mus(i)) ) then
-          call die('Could not find chemical potential: '//trim(name(mus(i))))
+          call die('Could not find chemical potential: ' &
+               //trim(name(mus(i))))
        end if
        ! Attach the ID
        mus(i)%ID = i
@@ -360,7 +364,15 @@ CONTAINS
     end if
     ! We default to not calculate the band-bottom...
     ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
-    Elecs(:)%BandBottom = fdf_get('TS.Elecs.Calc.BandBottom', .false.)
+    Elecs(:)%BandBottom = fdf_get('TS.Elecs.BandBottom', .false.)
+    ! whether or not the electrodes should be re-instantiated
+    call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
+    err = fdf_get('TS.ReUseGF',.false.)
+    Elecs(:)%ReUseGF = fdf_get('TS.Elecs.ReUseGF',err)
+
+    ! whether all calculations should be performed
+    ! "out-of-core" i.e. whether the GF files should be created or not
+    Elecs(:)%out_of_core = fdf_get('TS.Elecs.Out-of-core',.true.)
 
     do i = 1 , N_Elec
        ! Default things that could be of importance
@@ -407,7 +419,8 @@ CONTAINS
        allocate(mus(1))
        mus(1)%name = trim(c)
        if ( .not. fdf_mu('TS',slabel,mus(1)) ) then
-          call die('Could not find chemical potential: '//trim(name(mus(1))))
+          call die('Could not find chemical potential: ' &
+               //trim(name(mus(1))))
        end if
        ! Firmly assure the chemical potential to be zero
        mus(1)%mu = 0._dp
@@ -636,7 +649,6 @@ CONTAINS
           end if
           write(*,8)'Charge correction factor',TS_RHOCORR_FACTOR
        end if
-       write(*,1) 'Re-use GF file if exists', ReUseGF
        write(*,10)'          >> Electrodes << '
        do i = 1 , size(Elecs)
           write(*,11) '>> '//trim(name(Elecs(i)))
@@ -665,6 +677,9 @@ CONTAINS
           write(*,1)  '  Bulk values in electrode', Elecs(i)%Bulk
           write(*,1)  '  Update cross terms contact/electrode', Elecs(i)%DM_CrossTerms
           write(*,1)  '  Calc. valence band-bottom eigenvalue', Elecs(i)%BandBottom
+          write(*,1)  '  Reuse existing GF-file', Elecs(i)%ReUseGF
+          write(*,1)  '  Out-of-core GF', OutOfCore(Elecs(i))
+          write(*,8)  '  Hamiltonian E-C Ef fractional shift', Elecs(i)%Ef_frac_CT
        end do
 
        ! Print the contour information
@@ -676,7 +691,8 @@ CONTAINS
        write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
 
        if ( .not. Calc_Forces ) then
-          write(*,11) '*** TranSIESTA will NOT update forces ***'
+          write(*,11) '***       TranSIESTA will NOT update forces       ***'
+          write(*,11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
        end if
 
 
@@ -737,7 +753,7 @@ CONTAINS
 10  format('ts_options: ',a,t53,'=',4x,a)
 11  format('ts_options: ',a)
 15  format('ts_options: ',a,t53,'= ',i0,' x ',i0,' x ',i0)
-
-end subroutine read_ts_options
-
+    
+  end subroutine read_ts_options
+  
 end module m_ts_options

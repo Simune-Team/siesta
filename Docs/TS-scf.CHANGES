@@ -1,4 +1,76 @@
 ----------------------------------------------------
+February 22, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-114
+Added in-core calculation of surface Green function
+
+* Enabled the calculation of the surface Green function
+  "in-core" which means that we have prepared for tbtrans
+  re-coding.
+  It can be used for extreme number of contour points, but
+  should in general not be used. It is very slow as it does
+  a lot of operations twice as many times.
+  However, if one were to use it the penalty of using this
+  feature would drastically decrease if one uses the 
+  repetition.
+  
+  I have tried to limit the memory usage as much as possible,
+  for very large systems, we will not use more memory as the
+  entire work-array should be able to have 8-9 times the 
+  electrode-size.
+
+* Made m_mat_invert capable of handling levels of inversions.
+  I.e. it should be able to handle
+  
+  .. 
+     call init_mat_inversion(<size1>)
+  ..
+     call init_mat_inversion(<size2>)
+  .. 
+     call clear_mat_inversion()
+  ..
+     call clear_mat_inversion()
+
+  it will only clear the pivoting array after the last level
+  has been cleared.     
+
+* Enabled a per-electrode need for reusegf option.
+  Probably never will be used, however, it can leverage calculation
+  for many electrode systems.
+
+* A fractional method for "spilling in the fermi-level" from the
+  electrodes has been enabled.
+  It should be considered highly experimental as it exposes
+  the electrode chemical potential with the central region chemical
+  potential.
+  The original (frac == 0) method:
+    H_LL = H - (E - mu_L) S  
+    H_LC = H - E S  
+  the frac /= 0 method:
+    H_LL = H - (E - mu_L) S  
+    H_LC = H - (E - <frac> * mu_L) S  
+  
+  I have not tested this vigorously, and its physical meaning can be
+  questioned. However this is also the case for the original method.
+
+* Fully indented and cleaned a little up in the m_ts_options module
+
+modified:
+  Src/Makefile
+  Src/m_mat_invert.F90
+  Src/m_transiesta.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 February 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-113
 Added transiesta script to create electrode/contour input
 

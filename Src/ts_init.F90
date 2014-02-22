@@ -67,9 +67,6 @@ contains
     complex(dp), dimension(:,:), allocatable :: dos
     integer :: i, sNE, eNE, ia
     integer :: nC, nTS
-    logical :: RemUCellDistance
-
-    RemUCellDistance = .false.
 
     ! Read in options for transiesta
     call read_ts_options( wmix, kT, ucell , na_u , xa, lasto )
@@ -152,7 +149,7 @@ contains
           ! initialize the electrode for Green's function calculation
           call init_Electrode_HS(Elecs(i),RemUCellDistance)
 
-          call do_Green(Elecs(i), ReUseGF, &
+          call do_Green(Elecs(i), &
                ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
                RemUCellDistance, Elecs_xa_Eps, &
                .false.)

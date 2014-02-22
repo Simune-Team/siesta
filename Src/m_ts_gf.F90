@@ -47,7 +47,7 @@ module m_ts_GF
 
 contains
 
-  subroutine do_Green(El, optReUseGF, &
+  subroutine do_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
        RemUCellDistance,xa_EPS, &
        CalcDOS)
@@ -72,7 +72,6 @@ contains
 ! * INPUT variables     *
 ! ***********************
     type(Elec), intent(inout)     :: El
-    logical, intent(in)           :: optReUseGF ! Should we re-use the GF files if they exists?    
     integer, intent(in)           :: nkpnt ! Number of k-points
     real(dp), intent(in)          :: kpoint(3,nkpnt) ! k-points
     real(dp), intent(in)          :: kweight(nkpnt) ! weights of kpoints
@@ -86,13 +85,18 @@ contains
 ! ***********************
     complex(dp), allocatable :: ZBulkDOS(:,:) ! DOS at energy points
     integer :: uGF, i, iE, NEn
-    logical :: errorGF, exist, ReUseGF
+    logical :: errorGF, exist, cReUseGF
     character(len=NAME_LEN) :: rGFtitle
     complex(dp), allocatable :: ce(:)
     type(ts_c_idx) :: c
 #ifdef MPI
     integer :: MPIerror
 #endif
+
+    ! fast exit if the Gf-file should not be created
+    ! i.e. this means the calculation of the self-energy is
+    ! performed in every iteration
+    if ( .not. OutOfCore(El) ) return
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE do_Green' )
@@ -101,23 +105,23 @@ contains
 ! check the file for existance
     inquire(file=trim(GFfile(El)),exist=exist)
     
-    ReUseGF = optReUseGF
+    cReUseGF = ReUseGF(El)
 ! If it does not find the file, calculate the GF
     if ( exist ) then
        if (IONode ) then
           write(*,*) "Electrode Green's function file: '"//&
                trim(GFfile(El))//"' already exist."
-          if ( .not. ReUseGF ) then
+          if ( .not. cReUseGF ) then
              write(*,*)"Green's function file '"//&
                   trim(GFfile(El))//"' is requested overwritten."
           end if
        end if
     else
-       ReUseGF = .false.
+       cReUseGF = .false.
     end if
 
 #ifdef MPI
-    call MPI_Bcast(ReUseGF,1,MPI_Logical,0, &
+    call MPI_Bcast(cReUseGF,1,MPI_Logical,0, &
          MPI_Comm_World,MPIerror)
 #endif
    
@@ -138,7 +142,7 @@ contains
     end do
        
     ! We return if we should not calculate it
-    if ( .not. ReUseGF ) then
+    if ( .not. cReUseGF ) then
 
        call create_Green(El, &
             ucell,nkpnt,kpoint,kweight, &
@@ -239,6 +243,9 @@ contains
 #ifdef MPI
     integer :: MPIerror
 #endif
+
+    ! we should only read if the GF-should exist
+    if ( .not. OutOfCore(El) ) return
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE read_Green' )
@@ -409,6 +416,9 @@ contains
     real(dp) :: c_xa_o(3), xa_o(3)
     real(dp) :: wqbtmp,qbtmp(3), ktmp(3), kpt(3)
     logical :: localErrorGf, eXa, RemUCell
+
+    ! we should only read if the GF-should exist
+    if ( .not. OutOfCore(El) ) return
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE check_Green' )

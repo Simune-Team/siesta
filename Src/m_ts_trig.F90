@@ -332,8 +332,9 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(1, cE, N_Elec, uGF, Elecs, &
-               nzwork, zwork, forward = .false. )
+          call read_next_GS(ispin, 1, (/0._dp,0._dp,0._dp/), &
+               cE, N_Elec, uGF, Elecs, &
+               nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec
              call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
                   non_Eq = .false. )
@@ -432,8 +433,9 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(1, cE, N_Elec, uGF, Elecs, &
-               nzwork, zwork, forward = .false. )
+          call read_next_GS(ispin, 1, (/0._dp,0._dp,0._dp/), &
+               cE, N_Elec, uGF, Elecs, &
+               nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec
              call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
                   non_Eq = .true. )

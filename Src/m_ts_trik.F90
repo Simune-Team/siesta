@@ -45,7 +45,7 @@ module m_ts_trik
 contains
 
   subroutine ts_trik(N_Elec,Elecs, &
-       nq, uGF, nspin, &
+       nq, uGF, ucell, nspin, &
        sp_dist, sparse_pattern, &
        no_u,  n_nzs, &
        Hs, Ss, xij, DM, EDM, Ef, kT)
@@ -111,6 +111,7 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
     integer, intent(in) :: nq(N_Elec), uGF(N_Elec)
+    real(dp), intent(in) :: ucell(3,3)
     integer, intent(in) :: nspin
     type(OrbitalDistribution), intent(inout) :: sp_dist
     type(Sparsity), intent(inout) :: sparse_pattern
@@ -144,7 +145,7 @@ contains
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
     logical     :: has_El(N_Elec)
-    real(dp)    :: kw, kpt(3)
+    real(dp)    :: kw, kpt(3), bkpt(3)
     complex(dp) :: Z, W, ZW
 ! ************************************************************
 
@@ -287,6 +288,8 @@ contains
 
        ! Include spin factor and 1/\pi
        kpt(:) = ts_kpoint(:,ikpt)
+       ! create the k-point in reciprocal space
+       call kpoint_convert(Ucell,kpt,bkpt,1)
        kw = 1._dp / Pi * ts_kweight(ikpt)
        if ( nspin == 1 ) kw = kw * 2._dp
        
@@ -330,8 +333,9 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(ikpt, cE, N_Elec, uGF, Elecs, &
-               nzwork, zwork, forward = .false. )
+          call read_next_GS(ispin, ikpt, kpt, &
+               cE, N_Elec, uGF, Elecs, &
+               nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec
              call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
                   non_Eq = .false. )
@@ -437,8 +441,9 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(ikpt, cE, N_Elec, uGF, Elecs, &
-               nzwork, zwork, forward = .false. )
+          call read_next_GS(ispin, ikpt, kpt, &
+               cE, N_Elec, uGF, Elecs, &
+               nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec
              call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
                   non_Eq = .true. )

@@ -190,7 +190,7 @@ contains
 #endif
 
     ! We symmetrize AND shift
-    call symmetrize_HS_kpt(Ef,SpArrH,SpArrS)
+    call symmetrize_HS_kpt(N_Elec,Elecs,Ef,SpArrH,SpArrS)
      
     ! It could be argued that MPI reduction provides
     ! numeric fluctuations.
@@ -202,15 +202,21 @@ contains
 
   end subroutine create_HS_kpt
 
-  subroutine symmetrize_HS_kpt(Ef,SpArrH, SpArrS)
+  subroutine symmetrize_HS_kpt(N_Elec, Elecs, Ef,SpArrH, SpArrS)
     use parallel, only : Node
     use class_Sparsity
     use class_zSpData1D
+
+    use m_ts_electype
+
     use intrinsic_missing, only : SFIND
     use geom_helper,       only : UCORB
+
 ! *********************
 ! * INPUT variables   *
 ! *********************
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
     real(dp), intent(in) :: Ef
     ! The arrays we will save in... these are the entire TS-region sparsity
     type(zSpData1D), intent(inout) :: SpArrH, SpArrS
@@ -222,7 +228,18 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: zH(:), zS(:)
-    integer :: nr, io, ind, jo, rin, rind
+    integer :: iEl, jEl, nr, io, ind, jo, rin, rind
+    real(dp) :: E_Ef(0:N_Elec)
+
+    ! create the overlap electrode fermi-level
+    E_Ef(:) = Ef
+    do iEl = 1 , N_Elec
+       ! currently I am not sure the not bulk setting
+       ! makes sense with this method, either way, it is an experimental
+       ! feature.
+       if ( .not. Elecs(iEl)%bulk ) cycle
+       E_Ef(iEl) = Ef - Elecs(iEl)%Ef_frac_CT * Elecs(iEl)%mu%mu
+    end do
 
     s  => spar(SpArrH)
     call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
@@ -236,6 +253,16 @@ contains
        ! Quickly go past the empty regions... (we have nothing to update)
        if ( l_ncol(io) == 0 ) cycle
 
+       iEl = 0
+       do jEl = 1 , N_Elec
+          if ( OrbInElec(Elecs(jEl),io) ) then
+             ! an orbital will ever only be in one electrode
+             iEl = jEl
+             exit
+          end if
+       end do
+       jEl = 0
+
        ! Now we loop across the update region
        ! This one must *per definition* have less elements.
        ! Hence, we can exploit this, and find equivalent
@@ -247,6 +274,18 @@ contains
           ! As we symmetrize we do not need
           ! to cycle all points through two times...
           if ( jo < io ) cycle
+
+          ! an electrode will not connect with
+          ! other electrodes, hence, we only need to check
+          ! whether the electrode connects with itself
+          if ( iEl > 0 ) then
+             if ( OrbInElec(Elecs(iEl),jo) ) then
+                jEl = 0
+                exit
+             else
+                jEl = iEl
+             end if
+          end if
 
           ! We will find the Hermitian part:
           ! The fact that we have a SYMMETRIC
@@ -265,7 +304,7 @@ contains
           zS(ind)  = dconjg(zS(rind))
 
           zH(rind) = 0.5_dp * ( zH(ind) + dconjg(zH(rind)) ) &
-               - Ef * zS(rind)
+               - E_Ef(jEl) * zS(rind)
           zH(ind)  = dconjg(zH(rind))
 
           if ( ind == rind ) then
@@ -415,7 +454,7 @@ contains
 
     ! We need to do symmetrization AFTER reduction as we need the full
     ! Hamiltonian before we can do anything
-    call symmetrize_HS_Gamma(Ef,SpArrH,SpArrS)
+    call symmetrize_HS_Gamma(N_Elec,Elecs,Ef,SpArrH,SpArrS)
 
     ! It could be argued that MPI reduction provides
     ! numeric fluctuations.
@@ -427,10 +466,12 @@ contains
 
   end subroutine create_HS_Gamma
 
-  subroutine symmetrize_HS_Gamma(Ef, SpArrH, SpArrS)
+  subroutine symmetrize_HS_Gamma(N_elec, Elecs, Ef, SpArrH, SpArrS)
     use parallel, only : Node
     use class_Sparsity
     use class_dSpData1D
+
+    use m_ts_electype
 
     use intrinsic_missing, only : SFIND
     use geom_helper,       only : UCORB
@@ -438,6 +479,8 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
     real(dp), intent(in) :: Ef
     ! The arrays we will save in... these are the entire TS-region sparsity
     type(dSpData1D), intent(inout) :: SpArrH, SpArrS
@@ -449,19 +492,40 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
     real(dp), pointer :: dH(:), dS(:)
-    integer :: nr, io, ind, jo, rin, rind
+    real(dp) :: E_Ef(0:N_Elec)
+    integer :: iEl, jEl, nr, io, ind, jo, rin, rind
+   
+    ! create the overlap electrode fermi-level
+    E_Ef(:) = Ef
+    do iEl = 1 , N_Elec
+       ! currently I am not sure the not bulk setting
+       ! makes sense with this method, either way, it is an experimental
+       ! feature.
+       if ( .not. Elecs(iEl)%bulk ) cycle
+       E_Ef(iEl) = Ef - Elecs(iEl)%Ef_frac_CT * Elecs(iEl)%mu%mu
+    end do
     
-    s    => spar(SpArrH)
+    s  => spar(SpArrH)
     call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows_g=nr)
-    dH     => val(SpArrH)
-    dS     => val(SpArrS)
+    dH => val(SpArrH)
+    dS => val(SpArrS)
 
     ! This loop is across the local rows...
     do io = 1 , nr
 
        ! Quickly go past the empty regions... (we have nothing to update)
        if ( l_ncol(io) == 0 ) cycle
+
+       iEl = 0
+       do jEl = 1 , N_Elec
+          if ( OrbInElec(Elecs(jEl),io) ) then
+             ! an orbital will ever only be in one electrode
+             iEl = jEl
+             exit
+          end if
+       end do
+       jEl = 0
 
        ! Now we loop across the update region
        ! This one must *per definition* have less elements.
@@ -474,6 +538,18 @@ contains
           ! As we symmetrize we do not need
           ! to cycle all points through two times...
           if ( jo < io ) cycle
+
+          ! an electrode will not connect with
+          ! other electrodes, hence, we only need to check
+          ! whether the electrode connects with itself
+          if ( iEl > 0 ) then
+             if ( OrbInElec(Elecs(iEl),jo) ) then
+                jEl = 0
+                exit
+             else
+                jEl = iEl
+             end if
+          end if
 
           ! We will find the Hermitian part:
           ! The fact that we have a SYMMETRIC
@@ -489,7 +565,7 @@ contains
           ! Symmetrize
           dS(ind)  = 0.5_dp * ( dS(ind) + dS(rind) )
           dH(ind)  = 0.5_dp * ( dH(ind) + dH(rind) ) &
-               - Ef * dS(ind)
+               - E_Ef(jEl) * dS(ind)
 
           ! we have a real Matrix
           dH(rind) = dH(ind)

@@ -16,6 +16,7 @@ module m_ts_electrode
 
   public :: create_Green
   public :: init_Electrode_HS
+  public :: calc_next_GS_Elec
 
   private
 
@@ -410,8 +411,8 @@ contains
 ! rh = -(Z*S01-H01) ,j<no
 ! rh = -(Z*S10-H10) ,j>no
        do i = 1, nosq
-          rh(i)       = alpha(i)
-          rh(nosq+i)  = beta(i)
+          rh(i)      = alpha(i)
+          rh(nosq+i) = beta(i)
        end do
 
 ! w = Z*S00-H00
@@ -1202,7 +1203,7 @@ contains
 
     do iuo = 1 , no_u
 
-       ! Create the 00
+       ! Create 00
        do j = 1 , ncol00(iuo)
           ind = l_ptr00(iuo) + j
           juo = Ucorb(l_col00(ind),no_u)
@@ -1226,7 +1227,7 @@ contains
           Sk(i) = Sk(i) + S00(ind)       * cphase
        enddo
 
-       ! Create the 01
+       ! Create 01
        do j = 1 , ncol01(iuo)
           ind = l_ptr01(iuo) + j
           juo = ucorb(l_col01(ind),no_u)
@@ -1251,7 +1252,7 @@ contains
        end do
     end do
 
-    ! Symmetrize and make EF the energy-zero
+    ! Symmetrize 00 and make EF the energy-zero
     do iuo = 1,no_u
        do juo = 1,iuo-1
           i = iuo+(juo-1)*no_u
@@ -1283,5 +1284,263 @@ contains
 #endif
 
   end subroutine set_electrode_HS_Transfer
+
+  subroutine calc_next_GS_Elec(El,ispin,bkpt,Z,nzwork,in_zwork, &
+       RemUCellDistance)
+    use precision,  only : dp
+
+    use m_ts_electype
+    use m_mat_invert
+
+    use class_Sparsity
+    use class_dSpData1D
+    use class_dSpData2D
+
+    use alloc, only : re_alloc, de_alloc
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    type(Elec), intent(inout) :: El
+    integer, intent(in) :: ispin
+    real(dp), intent(in) :: bkpt(3)
+    complex(dp), intent(in) :: Z
+    integer, intent(in) :: nzwork
+    complex(dp), intent(inout), target :: in_zwork(nzwork)
+    logical, intent(in) :: RemUCellDistance
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+
+    integer  :: iqpt
+    real(dp) :: kpt(3), qpt(3)
+    
+    ! Dimensions
+    integer :: nq
+    integer :: nuo_E, nS, nuou_E, nuS, nuouT_E
+
+    ! Electrode transfer and hamiltonian matrix
+    complex(dp), pointer :: H00(:) => null()
+    complex(dp), pointer :: H01(:) => null()
+    complex(dp), pointer :: S00(:) => null()
+    complex(dp), pointer :: S01(:) => null()
+    complex(dp), pointer :: zwork(:) => null()
+    complex(dp), pointer :: zHS(:) => null()
+
+    ! Green's function variables
+    complex(dp), pointer :: GS(:)
+    complex(dp) :: ZEnergy, zDOS
+
+    ! size requirement
+    integer :: size_req(2)
+    ! Counters
+    integer :: i, j, k, ios, jos, ioe, joe, off
+    logical :: is_left, final_invert
+    logical :: zHS_allocated
+    logical :: same_k
+
+    ! Check input for what to do
+    if( El%inf_dir == INF_NEGATIVE ) then
+       is_left = .true.
+    else if( El%inf_dir == INF_POSITIVE ) then
+       is_left = .false.
+    else
+       call die("init electrode has received wrong job ID [L,R].")
+    endif
+
+    ! pre-point to zwork
+    zwork => in_zwork(:)
+    zHS_allocated = .false.
+
+    ! constants for this electrode
+    nuo_E  = Orbs(El)
+    nS     = nuo_E ** 2
+    nuou_E = UsedOrbs(El)
+    nuS    = nuou_E ** 2
+    ! create expansion q-points (weight of q-points)
+    nq     = Rep(El)
+    ! We also need to invert to get the contribution in the
+    final_invert = nq /= 1 .or. nuo_E /= nuou_E
+    nuouT_E = TotUsedOrbs(El)
+
+    ! whether we already have the H and S set correctly, 
+    ! update accordingly
+    ! it will save a bit of time, but not much
+    same_k = sum(abs(bkpt - El%bkpt_cur)) < 1.e-10_dp
+    if ( .not. same_k ) El%bkpt_cur = bkpt
+
+    ! Convert back to reciprocal units (to electrode)
+    call kpoint_convert(UnitCell(El),bkpt,kpt,-1)
+
+    ! determine whether there is room enough
+    size_req(1) = (4 + 1) * nS
+    size_req(2) =    8    * nS
+    if ( sum(size_req) <= nzwork ) then
+       ! we have enough room in the regular work-array for everything
+       i = 0
+       H00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       H01 => in_zwork(i+1:i+nS)
+       i = i + nS
+       S00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       S01 => in_zwork(i+1:i+nS)
+       i = i + nS
+       GS  => in_zwork(i+1:i+nS)
+       i = i + nS
+       zwork => in_zwork(i+1:nzwork)
+
+    else if ( size_req(2) <= nzwork ) then
+       ! the work-array fits the input work-array
+       zwork => in_zwork(:)
+
+       ! we will allocate H00,H01,S00,S01,GS arrays
+       call re_alloc(zHS,1,size_req(1),routine='next_GS')
+       zHS_allocated = .true.
+
+       i = 0
+       H00 => zHS(i+1:i+nS)
+       i = i + nS
+       H01 => zHS(i+1:i+nS)
+       i = i + nS
+       S00 => zHS(i+1:i+nS)
+       i = i + nS
+       S01 => zHS(i+1:i+nS)
+       i = i + nS
+       GS  => zHS(i+1:i+nS)
+       
+    else if ( size_req(1) <= nzwork ) then
+       ! we will allocate 8*nS work array
+
+       i = 0
+       H00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       H01 => in_zwork(i+1:i+nS)
+       i = i + nS
+       S00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       S01 => in_zwork(i+1:i+nS)
+       i = i + nS
+       GS  => in_zwork(i+1:i+nS)
+
+       call re_alloc(zHS,1,8*nS,routine='next_GS')
+       zHS_allocated = .true.
+       zwork => zHS(:)
+
+    else
+
+       call die('Your electrode is too large compared &
+            &to your system in order to utilize the in-core &
+            &calculation of the self-energies.')
+
+    end if
+
+    call init_mat_inversion(nuo_E)
+
+    ! prepare the indices for the Gamma array
+    ios = 1
+    jos = 1
+    ioe = 0
+    joe = 1
+
+    ! loop over the repeated cell...
+    q_loop: do iqpt = 1 , nq
+
+       ! correct indices of Gamma-array
+       do i = 1 , nuS
+          if ( ioe == nuouT_E ) then
+             ioe = 1
+             joe = joe + 1
+          else
+             ioe = ioe + 1
+          end if
+       end do
+             
+       ! init qpoint in reciprocal lattice vectors
+       call kpoint_convert(UnitCell(El),q_exp(El,iqpt),qpt,-1)
+
+       if ( RemUCellDistance ) then
+          call die('Not working yet')
+       end if
+
+       ! Calculate transfer matrices @Ef (including the chemical potential)
+       call set_electrode_HS_Transfer(ispin, El, kpt, qpt, &
+            nS, H00,S00,H01,S01, RemUCellDistance=RemUCellDistance)
+       
+       ! create the offset for the "left" electrode
+       off = nuo_E - nuou_E + 1
+
+       if ( .not. same_k ) then
+          ! we only need to copy over the data if we don't already have it calculated
+          call copy_over(is_left,nuo_E,H00,nuou_E,El%HA(:,:,iqpt),off)
+          call copy_over(is_left,nuo_E,S00,nuou_E,El%SA(:,:,iqpt),off)
+       end if
+
+       ! calculate the contribution for this q-point
+       call SSR_sGreen_NoDos(nuo_E,Z,H00,S00,H01,S01,GS, &
+            8*nS,zwork, &
+            final_invert = final_invert)
+
+       ! Copy over surface Green's function
+       ! first we need to determine the correct placement
+       call copy_over(is_left,nuo_E,GS,nuou_E,El%Gamma(ios:ioe,jos:joe),off)
+
+       ! we need to invert back as we don't need to
+       ! expand. And the algorithm expects it to be in correct format
+       if ( nq == 1 .and. nuo_E /= nuou_E ) then
+          call mat_invert(El%Gamma(ios:ioe,jos:joe),zwork(1:nuS),&
+               nuou_E, &
+               MI_IN_PLACE_LAPACK)
+             
+       end if
+
+       ! correct indices of Gamma-array
+       ios = ioe
+       jos = joe
+       if ( ios < nuouT_E ) then
+          ios = ios + 1
+       else
+          ios = 1
+          jos = jos + 1
+       end if
+
+    end do q_loop
+
+    if ( zHS_allocated ) then
+       call de_alloc(zHS, routine='next_GS')
+    end if
+
+    call clear_mat_inversion()
+
+  contains
+    
+    subroutine copy_over(is_left,fS,from,tS,to,off)
+      logical, intent(in) :: is_left
+      integer, intent(in) :: fS, tS, off
+      complex(dp), intent(in) :: from(fS,fS)
+      complex(dp), intent(out) :: to(tS,tS)
+
+      integer :: i, j
+
+      if ( is_left ) then
+          ! Left, we use the last orbitals
+          do j = off , fS
+             do i = off , fS
+                to(1+i-off,1+j-off) = from(i,j)
+             end do
+          end do
+       else
+          ! Right, the first orbitals
+          do j = 1 , tS
+             do i = 1 , tS
+                to(i,j) = from(i,j)
+             end do
+          end do
+       end if
+
+     end subroutine copy_over
+
+  end subroutine calc_next_GS_Elec
 
 end module m_ts_electrode
