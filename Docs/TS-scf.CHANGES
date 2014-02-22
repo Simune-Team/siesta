@@ -1,4 +1,15 @@
 ----------------------------------------------------
+February 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-116
+Changed names for electrode options
+
+* The electrode options where not properly defined.
+  We now have a bit more regularity in naming scheme and
+  a bit more short-hands for options.
+
+modified:
+  Src/m_ts_electype.F90
+
+----------------------------------------------------
 February 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-115
 Moved TSAnalyzeSort to TS folder
 

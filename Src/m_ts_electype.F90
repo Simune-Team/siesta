@@ -212,9 +212,11 @@ contains
           this%HSfile = trim(fdf_bnames(pline,2))
           info(1) = .true.
 
-       else if ( leqi(ln,'semi-inf-direction') ) then
+       else if ( leqi(ln,'semi-inf-direction') .or. &
+            leqi(ln,'semi-inf') ) then
           if ( fdf_bnintegers(pline) < 1 .and. &
-               fdf_bnnames(pline)    < 2 ) call die('Semi-infinite direction not specified')
+               fdf_bnnames(pline)    < 2 ) &
+               call die('Semi-infinite direction not specified')
           this%inf_dir = -1
           if ( fdf_bnintegers(pline) > 0 ) then
              if ( fdf_bintegers(pline,1) > 0 ) then
@@ -236,9 +238,10 @@ contains
           end if
           info(2) = .true.
 
-       else if ( leqi(ln,'chemical-shift') .or. &
-            leqi(ln,'mu') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('Name of chemical-shift not supplied')
+       else if ( leqi(ln,'chemical-potential') .or. &
+            leqi(ln,'chem-pot') .or. leqi(ln,'mu') ) then
+          if ( fdf_bnnames(pline) < 2 ) &
+               call die('Name of chemical-potential not supplied')
           ln = fdf_bnames(pline,2)
           nullify(this%mu)
           do i = 1 , N_mu
@@ -253,8 +256,9 @@ contains
           end if
           info(3) = .true.
 
-       else if ( leqi(ln,'electrode-position') ) then
-          idx_na = 0
+       else if ( leqi(ln,'electrode-position') .or. &
+            leqi(ln,'elec-pos') ) then
+          idx_na      = 0
           this%idx_na = 0
           if ( fdf_bnnames(pline) > 1 ) then
              ! the user is requesting on a string basis
@@ -281,7 +285,8 @@ contains
 
        else if ( leqi(ln,'transport-direction') ) then
           if ( fdf_bnintegers(pline) < 1 .and. &
-               fdf_bnnames(pline)    < 2 ) call die('Transport direction not specified')
+               fdf_bnnames(pline)    < 2 ) &
+               call die('Transport direction not specified')
           this%t_dir = -1
           if ( fdf_bnintegers(pline) > 0 ) then
              this%t_dir = fdf_bintegers(pline,1)
@@ -309,7 +314,8 @@ contains
           this%DM_CrossTerms = fdf_bboolean(pline,1,after=1)
 
        else if ( leqi(ln,'GF-title') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('GF-title not supplied')
+          if ( fdf_bnnames(pline) < 2 ) &
+               call die('GF-title not supplied')
           this%GFtitle = trim(fdf_bnames(pline,2))
 
        else if ( leqi(ln,'GF') .or. &
@@ -318,26 +324,31 @@ contains
           this%GFfile = trim(fdf_bnames(pline,2))
 
        else if ( leqi(ln,'used-atoms') ) then
-          if ( fdf_bnintegers(pline) < 1 ) call die('Number of atoms used not supplied')
+          if ( fdf_bnintegers(pline) < 1 ) &
+               call die('Number of atoms used not supplied')
           this%na_used = fdf_bintegers(pline,1)
 
        else if ( leqi(ln,'replicate-a') .or. leqi(ln,'rep-a') .or. &
             leqi(ln,'replicate-a1') .or. leqi(ln,'rep-a1') ) then
-          if ( fdf_bnintegers(pline) < 1 ) call die('Repetition A1 is not supplied')
+          if ( fdf_bnintegers(pline) < 1 ) &
+               call die('Repetition A1 is not supplied')
           this%RepA1 = fdf_bintegers(pline,1)
 
        else if ( leqi(ln,'replicate-b') .or. leqi(ln,'rep-b') .or. &
             leqi(ln,'replicate-a2') .or. leqi(ln,'rep-a2') ) then
-          if ( fdf_bnintegers(pline) < 1 ) call die('Repetition A2 is not supplied')
+          if ( fdf_bnintegers(pline) < 1 ) &
+               call die('Repetition A2 is not supplied')
           this%RepA2 = fdf_bintegers(pline,1)
 
        else if ( leqi(ln,'replicate-c') .or. leqi(ln,'rep-c') .or. &
             leqi(ln,'replicate-a3') .or. leqi(ln,'rep-a3') ) then
-          if ( fdf_bnintegers(pline) < 1 ) call die('Repetition A3 is not supplied')
+          if ( fdf_bnintegers(pline) < 1 ) &
+               call die('Repetition A3 is not supplied')
           this%RepA3 = fdf_bintegers(pline,1)
 
        else if ( leqi(ln,'replicate') .or. leqi(ln,'rep') ) then
-          if ( fdf_bnintegers(pline) < 3 ) call die('Repetition for all directions are not supplied <A1> <A2> <A3>')
+          if ( fdf_bnintegers(pline) < 3 ) &
+               call die('Repetition for all directions are not supplied <A1> <A2> <A3>')
           this%RepA1 = fdf_bintegers(pline,1)
           this%RepA2 = fdf_bintegers(pline,2)
           this%RepA3 = fdf_bintegers(pline,3)
@@ -363,6 +374,7 @@ contains
                1._dp < this%Ef_frac_CT ) then
              call die('Fraction for fermi-level must be in [0;1] range')
           end if
+
        else
           
           call die('Unrecognized option "'//trim(ln)//'" &
@@ -379,7 +391,7 @@ contains
        write(*,*)'You need to supply at least:'
        write(*,*)' - TSHS'
        write(*,*)' - semi-inf-direction'
-       write(*,*)' - chemical-shift'
+       write(*,*)' - chemical-potential'
        write(*,*)' - electrode-position'
        call die('You have not supplied all electrode information')
     end if
