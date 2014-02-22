@@ -1,4 +1,16 @@
 ----------------------------------------------------
+February 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-115
+Moved TSAnalyzeSort to TS folder
+
+* Moved TSAnalyzeSort utility to TS folder
+  and renamed it to AnalyzeSort.
+  This will let me better control the utilities that
+  should be present for transiesta.
+
+renamed:
+  Util/TSAnalyzeSort/ => Util/TS/AnalyzeSort/
+
+----------------------------------------------------
 February 22, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-114
 Added in-core calculation of surface Green function
 
