@@ -111,11 +111,13 @@ contains
 
   end function fdf_nmu
 
-  function fdf_mu(prefix,slabel,this) result(found)
+  function fdf_mu(prefix,slabel,this, Volt) result(found)
     use fdf
+    use m_ts_io_ctype, only: pline_E_parse
 
     character(len=*), intent(in) :: prefix,slabel
     type(ts_mu), intent(inout) :: this
+    real(dp), intent(in) :: Volt
     logical :: found
 
     ! prepare to read in the data...
@@ -138,9 +140,16 @@ contains
        ! We select the input
        if ( leqi(ln,'chemical-shift') .or. &
             leqi(ln,'mu') ) then
-          if ( fdf_bnvalues(pline) < 1 ) call die('Chemical-shift not supplied')
-          if ( fdf_bnnames(pline) < 2 ) call die('Unit of chemical-shift not supplied')
-          this%mu = fdf_bvalues(pline,1) * fdf_convfac(fdf_bnames(pline,2),'Ry')
+          if ( fdf_bnvalues(pline) < 1 .and. &
+               fdf_bnnames(pline) < 2 ) call die('Chemical-shift not supplied')
+
+          ! utilize the io_ctype E-parser to grap the chemical potential
+          ! we force the kT-assignments to be zero, and we force the energies to be before
+          ! the last assignment
+          call pline_E_parse(pline,1,ln, &
+               val = this%mu, V = Volt, kT = 0._dp, before=3)
+
+          !this%mu = fdf_bvalues(pline,1) * fdf_convfac(fdf_bnames(pline,2),'Ry')
           info(1) = .true.
 
        else if ( leqi(ln,'contour.eq') ) then

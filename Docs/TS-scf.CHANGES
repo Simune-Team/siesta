@@ -1,4 +1,27 @@
 ----------------------------------------------------
+February 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-116
+Enabled chemical potential position to be dependent on TS.Voltage
+
+* Added the option of using the TS.Voltage flag again.
+  Now, the chemical potentials should preferably be used like this:
+   %block TS.ChemPot.<Name>
+     mu V/2
+     ...
+   %endblock
+  which makes input more flexible.
+
+  Currently we don't allow the user to add temperature dependent bias.
+
+  I have also updated the tselecs.sh script accordingly.
+  It is not so stringent any-more and a few edits are needed afterwards.
+  (the user is notified if using the program.)
+
+modified:
+  Src/m_ts_chem_pot.f90
+  Src/m_ts_options.F90
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 February 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-115
 Moved TSAnalyzeSort to TS folder
 

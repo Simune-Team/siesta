@@ -3,6 +3,8 @@
 # Script to create output for multiple electrodes
 # and/or multiple chemical potentials
 
+_this=$(basename $0)
+
 # We must require to be able to use the hash-able arrays
 # This allows us to reuse the same input twice more easily
 help=0
@@ -49,37 +51,37 @@ if [ $print_el -eq 0 ] && [ $print_mu -eq 0 ] && [ $print_c -eq 0 ]; then
 fi
 
 if [ $help -eq 1 ]; then
-    fmt="    %20s : %s\n"
+    fmt="      %20s : %s\n"
     echo "Usage:"
-    echo "  $0 <options>"
+    echo "    $_this <options>"
     echo ""
     echo "For intrinsic transiesta runs call this:"
-    echo "  $0 -2"
+    echo "    $_this -2"
     echo ""
     echo "If one wishes to divide it in several files do:"
-    echo "  $0 -only-el > ELECS.fdf"
-    echo "  $0 -only-mu > CHEMPOTS.fdf"
-    echo "  $0 -only-c  > CONTOURS.fdf"
+    echo "    $_this -only-el > ELECS.fdf"
+    echo "    $_this -only-mu > CHEMPOTS.fdf"
+    echo "    $_this -only-c  > CONTOURS.fdf"
     echo ""
     echo "For specifying the contour energy levels you can use these options:"
     printf "$fmt" "-Emin <val>" "band bottom energy in eV (-30. eV)"
     printf "$fmt" "-dE <val>" "real-axis distance between integration points (0.01 eV)"
     echo ""
     echo "There are preset creations of 2,3 and 4 electrodes, call:"
-    echo "  $0 -[2,3,4,5,6,7,8]"
+    echo "    $_this -[2,3,4,5,6,7,8]"
     echo "to create the equivalent systems, note that these options can be accompanied by further setup."
     echo ""
     echo "Available options for the chemical potentials:"
-    echo "  -mu<idx>-X where X is one of the following:"
-    printf "$fmt" "mu <val>" "the chemical potential value in eV"
+    echo "    -mu<idx>-X where X is one of the following:"
+    printf "$fmt" "mu <val>" "the chemical potential value in eV, or in fractions of V (V/2, |V|/3, etc.)"
     printf "$fmt" "name <name>" "the name of the chemical potential (to be referenced by the electrodes)"
     echo ""
     echo "A shorthand notation for supplying the options is:"
-    echo "  -mu<idx> Y=<val>,Z=<val> where Y,Z is one of X above"
+    echo "    -mu<idx> Y=<val>,Z=<val> where Y,Z is one of X above"
     echo ""
     echo ""
     echo "Available options for the electrodes:"
-    echo "  -el<idx>-X where X is one of the following:"
+    echo "    -el<idx>-X where X is one of the following:"
     printf "$fmt" "mu <name>" "the chemical potential name as given by -mu-name"
     printf "$fmt" "name <name>" "the name of the electrode"
     printf "$fmt" "tshs <file>" "the electrode TSHS-file"
@@ -94,11 +96,11 @@ if [ $help -eq 1 ]; then
     printf "$fmt" "cross-terms|ct <T|F>" "whether to update the cross-terms between the central region and the electrode"
     echo ""
     echo "A shorthand notation for supplying the options is:"
-    echo "  -el<idx> Y=<val>,Z=<val> where Y,Z is one of X above"
+    echo "    -el<idx> Y=<val>,Z=<val> where Y,Z is one of X above"
     echo ""
     echo "You can combine -2 with additional electrode options to easily generate different schemes"
     echo "To generate 3 electrodes and 2 chemical potentials you can do this:"
-    echo "  $0 -2 -el3 name=Top,mu=Left,inf-dir=+a2,end-pos=-1"
+    echo "    $_this -2 -el3 name=Top,mu=Left,inf-dir=+a2,end-pos=-1"
     exit 1
 fi
 
@@ -257,14 +259,14 @@ done
 # the particular case of the traditional transiesta code
 if [ $def -eq 2 ]; then
     add_opt -r "-mu1-name" "Left"
-    add_opt -r "-mu1-mu" "<mu-mu1>"
+    add_opt -r "-mu1-mu" "V/2"
     add_opt -r "-el1-name" "Left"
     add_opt -r "-el1-mu" "Left"
     rem_opt -el1-pos -el1-end-pos -el1-inf-dir
     add_opt "-el1-pos" "1"
     add_opt "-el1-inf-dir" "-a3"
     add_opt -r "-mu2-name" "Right"
-    add_opt -r "-mu2-mu" "<mu-mu2>"
+    add_opt -r "-mu2-mu" "-V/2"
     add_opt -r "-el2-name" "Right"
     add_opt -r "-el2-mu" "Right"
     rem_opt -el2-pos -el2-end-pos -el2-inf-dir
@@ -375,12 +377,29 @@ done
 if [ $print_mu -eq 1 ]; then
 
 # Print out chemical potential block:
+echo "TS.Voltage <insert bias>"
 echo "%block TS.ChemPots"
 for mu in ${_mu_names[@]} ; do
     echo "  $mu"
 done
 echo "%endblock TS.ChemPots"
 echo ""
+
+function mu_e_correct {
+    local mu=$1 ; shift
+    if [ "x${mu:0:1}" == "x-" ]; then
+	# we have a negative sign
+	if [ "x${mu:1:2}" != "x|V" ] && [ "x${mu:1:1}" != "xV" ]; then
+	    mu="$mu eV"
+	fi
+    else
+	if [ "x${mu:0:2}" != "x|V" ] && [ "x${mu:0:1}" != "xV" ]; then
+	    mu="$mu eV"
+	fi
+    fi
+    printf "%b" "$mu"
+}
+	
 
 function create_mu {
     local mu=$1 ; shift
@@ -392,8 +411,9 @@ function create_mu {
     if [ ${#chem} -eq 0 ]; then
 	error "Chemical potential: $mu" "Has not received a chemical potential value (-mu$mu-mu)"
     fi
+    chem=$(mu_e_correct $chem)
     echo "%block TS.ChemPot.$name"
-    echo "  mu $chem eV"
+    echo "  mu $chem"
     echo "  contour.eq"
     echo "    begin"
     echo "      C-$name"
@@ -419,8 +439,9 @@ for i in `seq 1 $_mus` ; do
     echo "%block TS.Contour.C-$mu"
     echo "  part circle"
     e=$(get_opt -mu$i-mu 1)
+    e=$(mu_e_correct $e)
     [ ${e:0:1} != "-" ] && e="+ $e"
-    echo "   from $emin $e eV to -10 kT $e eV"
+    echo "   from $emin $e to -10 kT $e"
     echo "     points 30"
     echo "      method g-legendre"
     echo "%endblock TS.Contour.C-$mu"
@@ -436,6 +457,10 @@ for i in `seq 1 $_mus` ; do
 done
 
 echo ""
+if [ $print_c -eq 1 ]; then
+    echo "MSG: You may need to correct the TS.Contours.Bias.Window for signs of bias" >&2
+    echo "MSG: The energies must be in increasing order (you may use |V|/2 to designate absolute values)" >&2
+fi
 # Create the non-equilbrium contour
 echo "%block TS.Contours.Bias.Window"
 for i in `seq 1 $_mus` ; do
@@ -447,7 +472,9 @@ echo "%endblock TS.Contours.Bias.Window"
 # Create array of chemical potentials sorted
 mus=()
 for i in `seq 1 $_mus` ; do
-    mus[$i]="$(get_opt -mu$i-mu 1) eV"
+    mus[$i]="$(get_opt -mu$i-mu 1)"
+    mus[$i]=$(mu_e_correct ${mus[$i]})
+
 done
 # we should probably sort them...
 
