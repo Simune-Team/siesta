@@ -1,4 +1,11 @@
 ----------------------------------------------------
+February 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-117
+Bugfix for tselecs.sh
+
+modified:
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 February 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-116
 Enabled chemical potential position to be dependent on TS.Voltage
 

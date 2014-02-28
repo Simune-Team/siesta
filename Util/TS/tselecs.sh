@@ -374,17 +374,6 @@ for i in `seq 1 $_mus` ; do
     let j++
 done
 
-if [ $print_mu -eq 1 ]; then
-
-# Print out chemical potential block:
-echo "TS.Voltage <insert bias>"
-echo "%block TS.ChemPots"
-for mu in ${_mu_names[@]} ; do
-    echo "  $mu"
-done
-echo "%endblock TS.ChemPots"
-echo ""
-
 function mu_e_correct {
     local mu=$1 ; shift
     if [ "x${mu:0:1}" == "x-" ]; then
@@ -400,6 +389,17 @@ function mu_e_correct {
     printf "%b" "$mu"
 }
 	
+if [ $print_mu -eq 1 ]; then
+
+# Print out chemical potential block:
+echo "TS.Voltage <insert bias>"
+echo "%block TS.ChemPots"
+for mu in ${_mu_names[@]} ; do
+    echo "  $mu"
+done
+echo "%endblock TS.ChemPots"
+echo ""
+
 
 function create_mu {
     local mu=$1 ; shift
