@@ -283,7 +283,8 @@ contains
           end if
           info(4) = .true.
 
-       else if ( leqi(ln,'transport-direction') ) then
+       else if ( leqi(ln,'transport-direction') .or. &
+            leqi(ln,'t-dir') ) then
           if ( fdf_bnintegers(pline) < 1 .and. &
                fdf_bnnames(pline)    < 2 ) &
                call die('Transport direction not specified')

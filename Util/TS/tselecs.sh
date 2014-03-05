@@ -584,7 +584,7 @@ function create_el {
     else
 	echo "  TSHS <input file>"
     fi
-    echo "  chemical-shift $chem"
+    echo "  chemical-potential $chem"
     local opt=$(get_opt -el$el-inf-dir 1)
     local inf_dir=positive
     local t_dir=a3
