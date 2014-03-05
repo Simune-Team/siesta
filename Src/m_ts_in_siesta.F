@@ -1148,7 +1148,7 @@
       ! reset charge summation on the non-update region
       ! This is only used for checking purposes
       if ( ts_ikpt == ts_nkpnt ) then
-         Q_kpt(:,0,:) = 0.0_dp
+         Q_kpt(:,0,ispin) = 0.0_dp
       end if
 
 !

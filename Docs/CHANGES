@@ -6,6 +6,18 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-03-05  09:10:00 GMT                                     trunk-457
+Fix printed charges for transiesta in spin-polarized case
+
+* When using spin the shown charges were wrong, however, the computations
+  are correct.
+  The charges are now consistent.
+  (Thanks to Paula Abufager and Nicolas Lorente for pointing this out)
+  
+modified:
+  Src/m_ts_in_siesta.F
+
+-----------------------------------------------------------------------
 2014-02-20  11:30:00 GMT                                     trunk-456
 Bug fixes and feature changes in charge-density mixing
 
