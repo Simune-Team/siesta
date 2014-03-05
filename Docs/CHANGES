@@ -6,6 +6,40 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-03-05  09:15:00 GMT                                     trunk-458
+Fixes and new features in fdf
+
+* Fix handling of empty value for fdf_string
+
+When a line contains only a label, fdf_string incorrectly tried to
+read beyond the first token.  It has now been fixed, assigning an
+empty string to the function value.
+
+* Nullify fdf buffer pointer at declaration
+
+(+ fix the assignment of the name for the debug file)
+
+* New list functionality in fdf (Nick P Andersen)
+
+See Src/fdf/sample.F90 and sample.fdf for examples.
+
+* A more flexible fdf_init (JM Soler)
+
+The routine fdf_init can be called without arguments in the most
+common case when reading from standard input (unit 5). See the new
+code in fdf.F90 for details. Note that Siesta does not yet use the new
+possibilities.
+
+added:
+  Docs/fdf.CHANGES
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/fdf/sample.F90
+  Src/fdf/sample.fdf
+  version.info
+
+-----------------------------------------------------------------------
 2014-03-05  09:10:00 GMT                                     trunk-457
 Fix printed charges for transiesta in spin-polarized case
 
