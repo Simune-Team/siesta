@@ -1,19 +1,33 @@
 module m_ncps_xml_ps_t
 !
-! Data structures to match the XML pseudopotential format
+! Data structures and functions to handle the XML pseudopotential format.
+!
+! The PSML library will eventually have three sections:
+!
+! A. Definition of data structures.
+! B. Accessors for pseudopotential information and evaluation
+! C. Parsing helpers
+!
+! In order for this module will hide completely the implementation of
+! the parsing of the XML file and the later querying of the data
+! structures, the psxml_t type should be made private. But then all the
+! accessors and the parsing helpers should reside in this module too, making
+! it quite big.
+!
+! Currently the parsing helpers are in 'm_ncps_parsing_helpers'
+! This scattering will be solved with the final packaging of the library.
 !
 implicit none
 
 integer, parameter, private    :: MAXN_POTS = 8
 integer, parameter, private    :: dp = selected_real_kind(14)
 !
-public  :: dump_pseudo, eval_radfunc, xml_ps_destroy
-!
 !-----------------------------------------------------------
 type, public :: grid_t
 !
 !     It should be possible to represent both log and linear
 !     grids with a few parameters here.
+!     Note that the preferred option is to have explicit grid data.
 !
       character(len=20)              :: type
       real(kind=dp)                  :: scale
@@ -71,6 +85,39 @@ type, public :: xml_ps_t
       type(radfunc_t)                    :: valence_charge
    end type xml_ps_t
 
+!
+public  :: xml_ps_destroy
+public  :: dump_pseudo           ! For initial debugging
+!
+
+! Accessor list
+public :: psxmlEvaluateValenceCharge
+public :: psxmlEvaluateCoreCharge
+public :: psxmlAtomicSymbol
+public :: psxmlAtomicNumber
+public :: psxmlCreator
+public :: psxmlDate
+public :: psxmlPseudoFlavor
+public :: psxmlPseudoZval
+public :: psxmlGenerationZval
+public :: psxmlXCFunctional
+public :: psxmlXCFunctionalType
+public :: psxmlIsRelativistic
+public :: psxmlIsSpinPolarized
+public :: psxmlHasCoreCorrections
+public :: psxmlHasGlobalLogGrid
+public :: psxmlGridNpoints
+public :: psxmlLogGridStep
+public :: psxmlLogGridScale
+public :: psxmlGridRmax
+public :: psxmlPotentialsUp
+public :: psxmlPotentialsDown
+public :: psxmlPotAngMomentum
+public :: psxmlOccupation
+public :: psxmlGenerationCutoff
+public :: psxmlPrincipalN
+public :: psxmlEvaluatePotential
+public :: psxmlEvaluatePseudoOrbital
 
 CONTAINS !===============================================
 
@@ -154,6 +201,12 @@ type(xml_ps_t), intent(in) :: psxml
 character(len=2) :: name
 name = psxml%header%symbol
 end function psxmlAtomicSymbol
+!
+function psxmlAtomicNumber(psxml) result(z)
+type(xml_ps_t), intent(in) :: psxml
+integer :: z
+ z = at_number(psxml%header%symbol)
+end function psxmlAtomicNumber
 !
 function psxmlCreator(psxml) result(name)
 type(xml_ps_t), intent(in) :: psxml
@@ -424,6 +477,34 @@ end select
 if (hasRfactor)   val = val / reff
 
 end function psxmlEvaluatePotential
+!
+function psxmlEvaluatePseudoOrbital(psxml,ud,i,r,debug) result(val)
+type(xml_ps_t), intent(in) :: psxml
+character, intent(in)      :: ud
+integer,   intent(in)      :: i
+real(dp),  intent(in)      :: r
+logical, intent(in), optional :: debug
+real(dp)                   :: val
+
+
+integer :: ndown
+
+ndown = psxml%npots_down
+
+select case(ud)
+   case ( "u", "U")
+      if (i > psxmlPotentialsUp(psxml)) then
+         call die("attempt to evaluate non-existing Up pswf")
+      endif
+      val = eval_radfunc(psxml%pswf(ndown+i)%V,r)
+   case ( "d", "D")
+      if (i > ndown) then
+         call die("attempt to get n from non-existing Down pswf")
+      endif
+      val = eval_radfunc(psxml%pswf(i)%V,r)
+end select
+
+end function psxmlEvaluatePseudoOrbital
 
 !====================================================
 function eval_radfunc(f,r,debug) result(val)
@@ -624,6 +705,38 @@ end subroutine dump_pseudo
       END DO ! M
 
       END SUBROUTINE POLINT
+
+!
+      FUNCTION at_number(SYMBOL) result(z)
+
+! Given the atomic symbol, it returns the atomic number
+! Based on code by J. Soler
+
+      character(len=2), intent(in)    :: SYMBOL  ! Atomic symbol
+      integer                         :: Z       ! Atomic number
+
+      integer, parameter  :: NZ=103
+      character(len=2), parameter :: NAME(NZ) =  &
+               (/'H ','He','Li','Be','B ','C ','N ','O ','F ','Ne', &
+                 'Na','Mg','Al','Si','P ','S ','Cl','Ar','K ','Ca', &
+                 'Sc','Ti','V ','Cr','Mn','Fe','Co','Ni','Cu','Zn', &
+                 'Ga','Ge','As','Se','Br','Kr','Rb','Sr','Y ','Zr', &
+                 'Nb','Mo','Tc','Ru','Rh','Pd','Ag','Cd','In','Sn', &
+                 'Sb','Te','I ','Xe','Cs','Ba','La','Ce','Pr','Nd', &
+                 'Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb', &
+                 'Lu','Hf','Ta','W ','Re','Os','Ir','Pt','Au','Hg', &
+                 'Tl','Pb','Bi','Po','At','Rn','Fr','Ra','Ac','Th', &
+                 'Pa','U ','Np','Pu','Am','Cm','Bk','Cf','Es','Fm', &
+                 'Md','No','Lr'/)
+
+     do z = 1, NZ
+        if (SYMBOL == NAME(Z)) then
+           RETURN
+        endif
+     enddo
+     call die("Cannot find atomic number for " // symbol)
+        
+   end FUNCTION at_number
 
 end module m_ncps_xml_ps_t
 

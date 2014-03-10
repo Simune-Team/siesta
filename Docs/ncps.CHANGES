@@ -1,4 +1,25 @@
 ------------------------------------------------------------
+March 10, 2014  Alberto Garcia           trunk-453--ncps-14
+Added new accessors and completed Abinit's support in PSML
+
+PSML library calls have been used in 'psp9in' from the Abinit
+distribution to show the new functionality. More streamlining
+is now possible.
+
+The PSML library is basically complete, with some cosmetic
+rough edges. 
+
+There remains to integrate the Vlocal and KBgen functionality to
+complete the software support for interoperability.
+
+added:
+  Src/nc-pseudo/abinit_psp9in.F90
+  Src/nc-pseudo/m_psml.F90
+  Src/nc-pseudo/psp9in.F90
+modified:
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+
+------------------------------------------------------------
 February 4, 2014  Alberto Garcia           trunk-453--ncps-13
 Parsing target is now a pointer
 
