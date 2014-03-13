@@ -1,4 +1,17 @@
 ----------------------------------------------------
+March 13, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-120
+Added the possibility of having only 1 electrode
+
+* For slap calculations it could be handy to calculate the electronic
+  structure using the Green's function technique to fully capture the
+  semi-infinite system.
+  For non-metallic systems long range surface potentials could be crucial.
+  1-electrode calculations are not allowed to supply a bias.
+  
+modified:
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 March 5, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-119
 Bugfix for tselecs.sh and added t-dir for electrodes
 

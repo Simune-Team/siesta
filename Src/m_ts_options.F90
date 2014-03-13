@@ -348,9 +348,22 @@ contains
 
     ! detect how many electrodes we have
     N_Elec = fdf_nElec('TS',Elecs)
-    if ( N_Elec < 2 ) then
+    if ( N_Elec < 1 ) then
        call die('Please see the manual for how to construct an &
             &example electrode configuration')
+    end if
+    ! If only one electrode you are not allowed to move the fermi-level
+    ! of the electrode. That should be done by other means (i.e. use NetCharge)
+    if ( N_Elec == 1 ) then
+       ! Notice that below the chemical potential gets corrected
+       ! EVEN if the user supplied a bias.
+       if ( IsVolt .and. IONode ) then
+          c = '(''transiesta: ***'',a)'
+          write(*,c) 'Single electrode calculations does not allow shifting the chemical potential.'
+          write(*,c) 'You should do that by changing the states filled in the system.'
+          write(*,c) 'Consult the manual of how to do this.'
+       end if
+       IsVolt = .false.
     end if
 
     ! Setup default parameters for the electrodes
@@ -402,7 +415,8 @@ contains
     end if
 
     if ( .not. IsVolt ) then
-       ! force it to be zero... not necessary
+       ! force it to be zero... can be necessary if considering single electrode
+       ! calculations (assures V == 0)
        Volt = 0._dp
        mus(:)%mu = 0._dp
 
