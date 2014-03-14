@@ -1,4 +1,11 @@
 ----------------------------------------------------
+March 14, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-123
+Bugfix in Makefile, removed the link to the libraries
+
+modified:
+  Util/Grimme/Makefile
+
+----------------------------------------------------
 March 14, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-122
 Added a tool to convert a species list to a Grimme MM input
 

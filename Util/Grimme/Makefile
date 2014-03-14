@@ -22,8 +22,8 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 
-DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI
-FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
+DEFS:=$(DEFS_PREFIX) -UMPI $(DEFS) $(DEFS_PREFIX) -UMPI
+FPPFLAGS:=$(DEFS_PREFIX) -UMPI $(FPPFLAGS) $(DEFS_PREFIX) -UMPI
 INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 
 # Uncomment the following line for debugging support
@@ -32,7 +32,7 @@ INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 SYSOBJ=$(SYS).o
 
 # Note that machine-specific files are now in top Src directory.
-OBJS_GET_CHEM_LABELS=precision.o f2kcli.o parallel.o \
+OBJS = precision.o f2kcli.o parallel.o \
           chemical.o io.o m_io.o alloc.o \
           memoryinfo.o memory.o periodic_table.o \
           pxf.o atom_options.o  \
@@ -51,9 +51,9 @@ $(FDF):
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 
-$(EXE): $(FDF)  $(OBJS_GET_CHEM_LABELS)
+$(EXE): $(FDF)  $(OBJS)
 	$(FC) -o $(EXE) \
-	       $(LDFLAGS) $(OBJS_GET_CHEM_LABELS) $(FDF) $(LIBS)
+	       $(LDFLAGS) $(OBJS) $(FDF)
 
 clean:
 	@echo "==> Cleaning object, library, and executable files"
