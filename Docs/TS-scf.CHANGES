@@ -1,4 +1,29 @@
 ----------------------------------------------------
+March 14, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-122
+Added a tool to convert a species list to a Grimme MM input
+
+* In Util/Grimme I have created a program which
+  can be compiled as:
+    cd Util/Grimme
+    make
+  and the executable:
+    fdf2grimme
+  is created.
+  This executable is called as this:
+
+    fdf2grimme [fdf-file]
+  where it will read the ChemicalSpeciesLabel block
+  and create an output to the command line which sets 
+  all the Grimme parameters ready for vdW forces.
+  It also handles correctly the floating orbitals, i.e. it
+  disregards those as the forces on those does not really make sense.
+
+added:
+  Util/Grimme/
+  Util/Grimme/Makefile
+  Util/Grimme/grimme.f90
+
+----------------------------------------------------
 March 14, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-121
 Fixed MM reading to dynamic allocation and also allowed better units
 
