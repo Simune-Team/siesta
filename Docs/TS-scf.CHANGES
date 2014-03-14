@@ -1,4 +1,21 @@
 ----------------------------------------------------
+March 14, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-121
+Fixed MM reading to dynamic allocation and also allowed better units
+
+* MM.Potentials was not dynamically allocating required potentials
+  
+  This has been fixed
+
+* An instability in the units conversion for the MM potentials 
+  was not consistent which made it extremely error-prone regarding
+  the fdf philosophy.
+  The keywords were not case sensitive and the only allowed energy
+  was eV, everything else (including ev) was regarded as Ry.
+  
+modified:
+  Src/molecularmechanics.F90
+
+----------------------------------------------------
 March 13, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-120
 Added the possibility of having only 1 electrode
 
