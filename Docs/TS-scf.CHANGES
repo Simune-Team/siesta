@@ -1,5 +1,18 @@
 ----------------------------------------------------
-March 14, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-123
+March 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-125
+With 1 electrode the tri-mat always made an empty part
+
+* Bugfix for the creation of the tri-diagonal matrix
+  creation with respect to 1-electrode systems.
+  It now works with the tri-mat and the sparse.
+  Have tested it on a gold-111 slab and it seems to
+  work expected.
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+
+----------------------------------------------------
+March 14, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-124
 Bugfix in Makefile, removed the link to the libraries
 
 modified:

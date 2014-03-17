@@ -504,6 +504,12 @@ contains
        return
     end if
 
+    ! check that all parts are at least size 2
+    if ( any(n_part < 2) ) then
+       val = NONVALID_SIZE
+       return
+    end if
+
     ! Check that every element is contained in the 
     ! tri-diagonal matrix...
     N = 1
@@ -571,11 +577,24 @@ contains
     integer, intent(in) :: no_u
     integer, intent(out) :: parts
     integer, intent(out) :: n_part(3)
+    integer :: noTS
 
+    noTS = no_u - no_BufL - no_BufR
     parts = 3
-    n_part(1) = sum(TotUsedOrbs(Elecs(1:N_Elec-1)))
-    n_part(3) = TotUsedOrbs(Elecs(N_Elec))
-    n_part(2) = no_u - no_BufL - no_BufR - n_part(1) - n_part(3)
+    ! we need special handling if we only have one electrode
+    if ( N_Elec == 1 ) then
+       n_part(1) = TotUsedOrbs(Elecs(1))
+       n_part(2) = noTS - n_part(1)
+       n_part(2:3) = n_part(2) / 2
+       if ( sum(n_part) /= noTS ) then
+          n_part(2) = n_part(2) + noTS - sum(n_part)
+       end if
+    else
+       n_part(1) = sum(TotUsedOrbs(Elecs(1:N_Elec-1)))
+       n_part(3) = TotUsedOrbs(Elecs(N_Elec))
+       n_part(2) = noTS - n_part(1) - n_part(3)
+    end if
+
   end subroutine set_3TriMat
 
 end module m_ts_Sparsity2TriMat
