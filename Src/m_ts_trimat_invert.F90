@@ -110,7 +110,6 @@ contains
 
     ! We calculate all the required Mnn
     ! Here it is permissable to overwrite the old A
-    ! TODO limit the calculation to only the columns needed!
     off = 0
     do n = lsPart , lePart
        do iEl = 1 , N_Elec

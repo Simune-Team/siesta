@@ -52,8 +52,9 @@ contains
     use alloc, only : re_alloc, de_alloc
     use m_ts_electype
     use m_ts_options, only : no_BufL, no_BufR
-    use m_ts_options, only : Elecs
+    use m_ts_options, only : N_Elec, Elecs
     use m_ts_options, only : opt_TriMat_method
+    use m_ts_options, only : IsVolt
 
     ! the distribution
     type(OrbitalDistribution), intent(inout) :: dit
@@ -102,7 +103,8 @@ contains
 
        call full_even_out_parts(sp,guess_parts,guess_part)
        
-       call select_better(parts,n_part, guess_parts, guess_part)
+       call select_better(opt_TriMat_method, &
+            parts,n_part, guess_parts, guess_part)
        
     end do
 
@@ -121,7 +123,8 @@ contains
                MPI_Comm_World, MPIerror)
           ! Only all the other nodes are allowed to check...
           ! TODO this could be made to a communication tree to limit communication
-          call select_better(parts,n_part, guess_parts, guess_part)
+          call select_better(opt_TriMat_method, &
+               parts,n_part, guess_parts, guess_part)
        end if
     end do
 #endif
@@ -164,13 +167,16 @@ contains
 
   contains 
 
-    subroutine select_better(parts,n_part, guess_parts, guess_part)
-      use m_ts_options, only: opt_TriMat_method
+    recursive subroutine select_better(method, parts,n_part, guess_parts, guess_part)
+      use m_ts_tri_scat, only : GFGGF_needed_worksize
+
+      integer, intent(in)    :: method
       integer, intent(inout) :: parts
       integer, intent(in)    :: guess_parts
       integer, intent(inout) :: n_part(max(parts,guess_parts))
       integer, intent(in)    :: guess_part(guess_parts)
       logical :: copy
+      integer :: part_work, guess_work
 
       copy = .false.
 
@@ -178,17 +184,38 @@ contains
       ! or that the number of parts is greater (however, this should
       ! in principle always go together)
       ! If the method of optimization is memory:
-      if ( opt_TriMat_method == 0 ) then
+      if ( method == 0 ) then
          if ( guess_parts == parts ) then
             copy = faster_parts(parts,n_part,guess_part)
          end if
          ! This will take the correct value of true for the above check
          ! and this
          copy = copy .or. guess_parts > parts
-      else if ( opt_TriMat_method == 1 ) then
+      else if ( method == 1 ) then
+
          ! We optimize for memory, i.e. we check for number of elements
-         copy = &
-              calc_nnzs(parts,n_part) > calc_nnzs(guess_parts,guess_part)
+         ! in this regard we also check whether we should allocate
+         ! a work-array in case of bias calculations.
+         if ( IsVolt ) then
+            call GFGGF_needed_worksize(guess_parts,guess_part, &
+                 N_Elec,Elecs,guess_work)
+            guess_work = max(0,guess_work) + calc_nnzs(guess_parts,guess_part)
+            call GFGGF_needed_worksize(parts,n_part, &
+                 N_Elec,Elecs,part_work)
+            part_work = max(0,part_work) + calc_nnzs(parts,n_part)
+         else
+            part_work = calc_nnzs(parts,n_part)
+            guess_work = calc_nnzs(guess_parts,guess_part)
+         end if
+         
+         copy = part_work > guess_work
+         if ( .not. copy ) then
+            ! in case the work-size is the same...
+            if ( part_work == guess_work ) then
+               call select_better(0, parts,n_part, guess_parts, guess_part)
+            end if
+         end if
+
       else
          call die('Unknown optimization scheme for the tri-mat')
       end if
@@ -243,7 +270,6 @@ contains
 
   function faster_parts(parts,n_part,guess_part) result(faster)
     use precision, only: dp
-    use intrinsic_missing, only: SORT
     integer, intent(in) :: parts
     integer, intent(in) :: n_part(parts)
     integer, intent(in) :: guess_part(parts)
@@ -271,7 +297,6 @@ contains
   ! We save it in n_part(part)
   subroutine guess_next_part_size(sp,part,parts,n_part)
     use class_Sparsity
-    use geom_helper, only : UCORB
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! the part we are going to create

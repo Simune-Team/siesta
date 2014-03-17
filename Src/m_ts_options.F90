@@ -446,9 +446,6 @@ contains
           Elecs(i)%mu => mus(1)
        end do
 
-    else if ( N_Elec > 2 ) then
-       write(*,*) 'TODO the bias is not determined correctly by the direction, &
-            &see m_ts_voltage, say if we change sign'
     end if
 
     ! We can now check whether two chemical potentials are the same
@@ -534,22 +531,29 @@ contains
     end do
 
     ! CHECK THIS (we could allow it by only checking the difference...)
-    if (  .5_dp * abs(Volt) < maxval(mus(:)%mu) .or. &
-         -.5_dp * abs(Volt) > minval(mus(:)%mu) ) then
+    if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 1.e-9_dp ) then
        if ( IONode ) then
           write(*,'(a)') 'Chemical potentials [eV]:'
           do i = 1 , N_Elec
              write(*,'(a,f10.5,a)') trim(Name(Elecs(i)))//' at ',Elecs(i)%mu%mu/eV,' eV'
           end do
-          write(*,'(a,f10.5,a)') '-V/2'//' at ',-Volt*.5_dp/eV,' eV'
-          write(*,'(a,f10.5,a)') ' V/2'//' at ',Volt*.5_dp/eV,' eV'
+          write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) > 1e-9"'
+          write(*,'(a,f10.5,a)') 'max(ChemPots) at ', maxval(mus(:)%mu)/eV,' eV'
+          write(*,'(a,f10.5,a)') 'min(ChemPots) at ', minval(mus(:)%mu)/eV,' eV'
+          write(*,'(a,f10.5,a)') '|V| at ', abs(Volt)/eV,' eV'
        end if
-       call die('Chemical potentials are not in range [-V/2 ; V/2]')
+       call die('Chemical potentials are not consistent with the bias applied.')
+    end if
+
+    ! Check that the bias does not introduce a gating
+    if ( any(abs(mus(:)%mu) - abs(Volt) > 1.e-9_dp ) ) then
+       write(*,'(a)') 'Chemical potentials must lie in the range [-V;V] with the maximum &
+            &difference being V'
+       call die('Chemical potentials must not introduce consistent Ef shift to the system.')
     end if
 
     ! WILL WORK EVENTUALLY
-    write(*,*) 'TODO SEVERAL ELECTRODES POTENTIAL DROP!'
-    !if ( size(Elecs) > 2 ) call die('currently does not work')
+    if ( N_Elec > 2 .and. IsVolt ) call die('Several electrodes and bias does not work')
 
     ! read in contour options
     if ( TSmode ) then

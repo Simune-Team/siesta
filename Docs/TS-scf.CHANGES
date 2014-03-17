@@ -1,4 +1,31 @@
 ----------------------------------------------------
+March 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-126
+Allowed to shift the fermi level arbitrarily
+
+* Allowed electrode fermi-shifts to be shifted as wanted 
+  i.e. the user can now have the bias convention:
+    0 -- V 
+    -V -- 0
+    -V/2 -- V/2
+  etc.
+  However, the requirement is that the chemical potential
+  should not exceed the total potential across the junction.
+  I.e.:
+    V -- 2V
+  etc. are not allowed.
+  I have not fully worked out the equations, but I don't see
+  that it should behave differently.
+
+* When requesting memory reduced calculations with tri-mat
+  we now also take into account the work-size when doing bias
+  calculations.
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trimat_invert.F90
+
+----------------------------------------------------
 March 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-125
 With 1 electrode the tri-mat always made an empty part
 
