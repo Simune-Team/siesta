@@ -124,7 +124,16 @@
 !
       dminit = .false.
       try_to_read_from_file = usesavedm     ! As per defaults
-!
+
+!Rafi - just to read the density for the first step.
+      if ((td_elec_dyn) .and. (istp .ne. 1)) then
+
+      try_to_read_from_file = .false.
+
+      end if
+
+
+
 !     Except if there are explicit instructions
 !
       if (.not. allow_dm_reuse) then

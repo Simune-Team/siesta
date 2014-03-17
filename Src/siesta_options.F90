@@ -88,6 +88,15 @@ MODULE siesta_options
 
   logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
   logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
+ 
+!Rafi Feb 17, 2014 
+  logical :: writetdwf   ! To write the wavefuctions at the end of SCF. These
+                         ! would serve as the initial states for time evolution
+                         ! of KS states in TD-DFT.
+  logical :: td_elec_dyn
+
+
+
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
@@ -957,6 +966,9 @@ MODULE siesta_options
           write(6,4) 'redata: Order of the Chebishev expansion = ',pmax
         endif
       endif
+
+
+
       if (cml_p) then
         call cmlAddParameter( xf      = mainXML,        &
                               name    = 'ON.MaxNumIter',&
@@ -1033,6 +1045,29 @@ MODULE siesta_options
         endif 
       endif
     endif
+
+
+!TD-DFT options
+!Rafi           
+           writetdwf = fdf_get('WriteInitialTDWF',.false.)
+           if(writetdwf) then
+             if (ionode) then
+              write(6,1) 'redata: Write Initial TDWF               &
+                              = ',writetdwf
+             endif
+           endif
+
+
+           td_elec_dyn = fdf_get('tddft',.false.)
+           if(td_elec_dyn) then
+             if (ionode) then
+              write(6,1) 'redata: Time-dependent electron dynamics               &
+                              = ',td_elec_dyn
+             endif
+           endif
+
+!End - Rafi!
+
 
     ! Dynamics parameters ...
     varcel = fdf_get('MD.VariableCell', .false. )

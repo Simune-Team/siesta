@@ -30,9 +30,17 @@
       use m_stress,      only: cstress        ! Constrained stress tensor
       use siesta_master, only: forcesToMaster ! Send forces to master prog
       use siesta_master, only: siesta_server  ! Is siesta a server?
+     
+      use m_initwf,      only: initwf         ! Initiate TDDFT KS states
+      use atomlist,      only: no_s, no_l, no_u, qtot, indxuo
+      use m_spin,        only: nspin
+      use m_gamma
+      use Kpoint_grid,    only: nkpnt, kpoint, kweight
+      use m_eo
 
       use units,         only: eV, Ang
-      use sparse_matrices, only: H, Hold, Dold, Dscf
+      use sparse_matrices, only: H, Hold, Dold, Dscf, maxnh, numh,
+     &                           listh, listhptr, S, xijo
       use m_save_density_matrix, only: save_density_matrix
       use m_compute_energies, only: compute_energies
 #ifdef TRANSIESTA
@@ -44,9 +52,11 @@
 
       integer  :: iscf
       logical  :: first, last_step, SCFconverged
+      logical  :: writetdfw
       real(dp) :: dmax      ! Max. change in DM or H elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
+      double precision :: EF7
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
@@ -182,6 +192,16 @@
              !!!    H = Hold
          endif
       endif
+
+      if(writetdwf) then
+      write(6,*) 'Here you need to call initwf'
+      call initwf(no_s, nspin, nspin, no_l, maxnh, no_u,
+     &            numh, listhptr, listh, H, S, qtot,
+     &            gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     &            eo, qo, no_u, EF7)
+      end if
+
+
 
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses

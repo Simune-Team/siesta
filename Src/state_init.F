@@ -272,7 +272,10 @@
 
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
+         
+
       call new_dm( auxchanged, numh, listhptr, listh, Dscf)
+      
 
 !     Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
