@@ -1,4 +1,11 @@
 ----------------------------------------------------
+March 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-128
+Bugfix for makefile
+
+modified:
+  Src/Makefile
+
+----------------------------------------------------
 March 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-127
 Tri-mat memory optimization routine now takes into account the workarray
 
