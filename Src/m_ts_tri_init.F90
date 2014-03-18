@@ -128,7 +128,7 @@ contains
             &for the tri-diagonal matrix.'
        write(*,'(a)') 'transiesta: Size of the partitions:'
        do i = 1 , N_tri_part
-          write(*,'(t15,i3,'':'',tr2,i6)') i,tri_parts(i)
+          write(*,'(tr15,i3,'':'',tr1,i6)') i,tri_parts(i)
        end do
        write(*,'(a,i0,a,i0)') 'transiesta: Matrix elements in tri / full: ', &
             els,' / ',nrows_g(ts_sp_uc)**2

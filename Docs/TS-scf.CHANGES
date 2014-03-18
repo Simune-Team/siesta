@@ -1,4 +1,24 @@
 ----------------------------------------------------
+March 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-127
+Tri-mat memory optimization routine now takes into account the workarray
+
+* In case of bias calculation the memory required for the work
+  array is now taken into account.
+  This was unlike the previous method. However, for very long systems
+  this should not matter much.
+
+* Fixed a bug which showed the memory only half of what it was.
+
+* Added a rotation matrix for vectors in 2D and 3D (in intrinsic_missing)
+
+modified:
+  Src/intrinsic_missing.f90
+  Src/m_transiesta.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 March 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-126
 Allowed to shift the fermi level arbitrarily
 

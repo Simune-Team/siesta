@@ -22,6 +22,7 @@ module m_ts_tri_scat
 
   public :: GF_Gamma_GF
   public :: GFGGF_needed_worksize
+  public :: ts_needed_mem
 
   ! Used for BLAS calls (local variables)
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -281,6 +282,7 @@ contains
        ! update the next columns
        sNc = sNc + sN
     end do
+
     ! tell transiesta to point to this diagonal
     ! block in the tri-diagonal matrix instead of allocating
     if ( idx > 0 ) worksize = -idx
@@ -315,5 +317,31 @@ contains
     end subroutine TriMat_Bias_idxs
 
   end subroutine GFGGF_needed_worksize
+
+  subroutine ts_needed_mem(N_tri_part, tri_parts, worksize)
+    use m_ts_electype
+    use m_ts_options, only : N_Elec, Elecs, IsVolt
+    integer, intent(in) :: N_tri_part
+    integer, intent(in) :: tri_parts(N_tri_part)
+    integer, intent(out) :: worksize
+
+    integer :: n
+
+    ! find at which point they will cross...
+    worksize = tri_parts(N_tri_part)**2
+    do n = 1 , N_tri_part - 1
+       worksize = worksize + &
+            tri_parts(n)*( tri_parts(n) + 2 * tri_parts(n+1) )
+    end do
+    ! for the two arrays
+    worksize = worksize * 2
+
+    if ( IsVolt ) then
+       call GFGGF_needed_worksize(N_tri_part, tri_parts, &
+            N_Elec, Elecs, n)
+       worksize = max(0,n) + worksize
+    end if
+    
+  end subroutine ts_needed_mem
 
 end module m_ts_tri_scat

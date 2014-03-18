@@ -87,8 +87,68 @@ module intrinsic_missing
      module procedure EYE_cp_1D, EYE_zp_1D
   end interface
 
+! Rotation of points
+  public :: ROTATE
+  interface ROTATE
+     module procedure ROTATE_2D
+     module procedure ROTATE_3D
+  end interface ROTATE
 
 contains
+
+
+! ROTATE a point around origo with some angle \theta
+! This is a purely plane rotation
+  subroutine ROTATE_2D(v,theta)
+    real(dp), intent(inout) :: v(2)
+    real(dp), intent(in) :: theta
+    real(dp) :: rmT(2,2), vv(2)
+    integer :: i
+    rmT(1,1) = cos(theta)
+    rmT(1,2) = sin(theta)
+    rmT(2,1) = -rmT(1,2)
+    rmT(2,2) = rmT(1,1)
+
+    do i = 1 , 2
+       vv(i) = sum(rmT(:,i) * v)
+    end do
+    v = vv
+
+  end subroutine ROTATE_2D
+
+  subroutine ROTATE_3D(v,theta,dir)
+    real(dp), intent(inout) :: v(3)
+    real(dp), intent(in) :: theta
+    integer, intent(in) :: dir
+    real(dp) :: rmT(3,3), vv(3)
+    integer :: i
+    rmT(:,:) = 0._dp
+    if ( dir == 3 ) then
+       rmT(1,1) = cos(theta)
+       rmT(1,2) = sin(theta)
+       rmT(2,1) = -rmT(1,2)
+       rmT(2,2) = rmT(1,1)
+       rmT(3,3) = 1._dp
+    else if ( dir == 2 ) then
+       rmT(1,1) = cos(theta)
+       rmT(1,3) = sin(theta)
+       rmT(2,2) = 1._dp
+       rmT(3,1) = -rmT(1,3)
+       rmT(3,3) = rmT(1,1)
+    else if ( dir == 1 ) then
+       rmT(1,1) = 1._dp
+       rmT(2,2) = cos(theta)
+       rmT(2,3) = sin(theta)
+       rmT(3,2) = -rmT(2,3)
+       rmT(3,3) = rmT(2,2)
+    end if
+
+    do i = 1 , 3
+       vv(i) = sum(rmT(:,i) * v)
+    end do
+    v = vv
+
+  end subroutine ROTATE_3D
 
 
 ! A MOD function which behaves differently on the edge.

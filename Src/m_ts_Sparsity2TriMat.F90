@@ -101,7 +101,8 @@ contains
        ! If not valid tri-pattern, simply jump...
        if ( ts_valid_tri(sp,guess_parts, guess_part) /= VALID ) cycle
 
-       call full_even_out_parts(sp,guess_parts,guess_part)
+       call full_even_out_parts(opt_TriMat_method, &
+            sp,guess_parts,guess_part)
        
        call select_better(opt_TriMat_method, &
             parts,n_part, guess_parts, guess_part)
@@ -168,7 +169,7 @@ contains
   contains 
 
     recursive subroutine select_better(method, parts,n_part, guess_parts, guess_part)
-      use m_ts_tri_scat, only : GFGGF_needed_worksize
+      use m_ts_tri_scat, only : ts_needed_mem
 
       integer, intent(in)    :: method
       integer, intent(inout) :: parts
@@ -185,28 +186,23 @@ contains
       ! in principle always go together)
       ! If the method of optimization is memory:
       if ( method == 0 ) then
+
          if ( guess_parts == parts ) then
             copy = faster_parts(parts,n_part,guess_part)
          end if
          ! This will take the correct value of true for the above check
          ! and this
          copy = copy .or. guess_parts > parts
+
       else if ( method == 1 ) then
 
          ! We optimize for memory, i.e. we check for number of elements
          ! in this regard we also check whether we should allocate
          ! a work-array in case of bias calculations.
-         if ( IsVolt ) then
-            call GFGGF_needed_worksize(guess_parts,guess_part, &
-                 N_Elec,Elecs,guess_work)
-            guess_work = max(0,guess_work) + calc_nnzs(guess_parts,guess_part)
-            call GFGGF_needed_worksize(parts,n_part, &
-                 N_Elec,Elecs,part_work)
-            part_work = max(0,part_work) + calc_nnzs(parts,n_part)
-         else
-            part_work = calc_nnzs(parts,n_part)
-            guess_work = calc_nnzs(guess_parts,guess_part)
-         end if
+         call ts_needed_mem(guess_parts,guess_part, &
+              guess_work)
+         call ts_needed_mem(parts, n_part, &
+              part_work)
          
          copy = part_work > guess_work
          if ( .not. copy ) then
@@ -219,10 +215,12 @@ contains
       else
          call die('Unknown optimization scheme for the tri-mat')
       end if
+
       if ( copy ) then
          parts = guess_parts
          n_part(1:parts) = guess_part(1:parts)
       end if
+
     end subroutine select_better
 
   end subroutine ts_Sparsity2TriMat
@@ -365,23 +363,47 @@ contains
     
   end subroutine guess_previous_part_size
 
-  subroutine full_even_out_parts(sp,parts,n_part)
+  subroutine full_even_out_parts(method, sp,parts,n_part)
     use class_Sparsity
+    use m_ts_tri_scat, only : ts_needed_mem
+    integer, intent(in) :: method ! the method used for creating the parts
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! the part we are going to create
     integer, intent(in) :: parts
     integer, intent(in out) :: n_part(parts)
     ! Local variables
-    integer :: o_part(parts), i
+    integer :: o_part(parts), oo_part(parts) , i, o_mem, n_mem
 
-    do
-       o_part(:) = n_part(:)
-       do i = 1 , parts
-          call even_out_parts(sp, parts, n_part, i)
+    if ( method == 1 ) then
+       ! we have a memory determining thing
+       
+       do
+          o_part(:) = n_part(:)
+          call ts_needed_mem(parts,n_part,o_mem)
+          do i = 1 , parts
+             oo_part(:) = n_part(:)
+             call even_out_parts(sp, parts, n_part, i)
+             call ts_needed_mem(parts,n_part,n_mem)
+             if ( n_mem > o_mem ) then
+                ! copy back
+                n_part(:) = oo_part(:)
+             end if
+          end do
+          if ( maxval(abs(o_part-n_part)) == 0 ) exit
        end do
-       if ( maxval(abs(o_part-n_part)) == 0 ) exit
-    end do
+       
+    else
+
+       do
+          o_part(:) = n_part(:)
+          do i = 1 , parts
+             call even_out_parts(sp, parts, n_part, i)
+          end do
+          if ( maxval(abs(o_part-n_part)) == 0 ) exit
+       end do
+
+    end if
 
   end subroutine full_even_out_parts
 

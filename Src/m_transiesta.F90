@@ -334,6 +334,7 @@ contains
     use m_ts_tri_init, only : tri_parts, N_tri_part
     use m_ts_sparse, only : ts_sp_uc, tsup_sp_uc, ltsup_sp_sc
     use m_ts_electype
+    use m_ts_tri_scat
 
     logical, intent(in) :: Gamma ! SIESTA Gamma
     integer :: i, no_E
@@ -390,8 +391,17 @@ contains
     end if
 
     if ( ts_method == TS_SPARSITY_TRI ) then
+
        ! Calculate size of the tri-diagonal matrix
-       mem = tri_parts(N_tri_part)**2
+       if ( IsVolt ) then
+          call GFGGF_needed_worksize(N_tri_part,tri_parts, &
+               N_Elec, Elecs, i)
+          mem = max(0,i)
+       else
+          mem = 0
+       end if
+
+       mem = mem + tri_parts(N_tri_part)**2
        do i = 1 , N_tri_part - 1
           mem = mem + tri_parts(i)*( tri_parts(i) + 2 * tri_parts(i+1) )
        end do
