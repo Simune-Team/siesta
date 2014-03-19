@@ -25,7 +25,6 @@ module m_ts_voltage
 ! The use of this program is allowed for not-for-profit research only.
 ! Copy or disemination of all or part of this package is not
 ! permitted without prior and explicit authorization by the author.
-!
   
   use precision, only : dp
   use m_ts_tdir
@@ -47,10 +46,14 @@ module m_ts_voltage
   integer, save :: left_elec_mesh_idx = 0
   integer, save :: right_elec_mesh_idx = huge(1)
 
+  ! The corresponding bias' for the two different
+  ! electrodes
+  real(dp), save :: left_V = 0._dp
+
 contains
 
   subroutine ts_init_voltage(ucell,na_u,xa,meshG,nsm)
-    use m_ts_options, only : VoltageInC
+    use m_ts_options, only : VoltageInC, N_Elec, Elecs
 
 ! ***********************
 ! * INPUT variables     *
@@ -60,10 +63,15 @@ contains
     real(dp),      intent(in) :: xa(3,na_u)
     integer,       intent(in) :: meshG(3), nsm
 
+    integer :: iElL, iElR
+
+    ! set the left chemical potential
+    call get_elec_indices(na_u, xa, iElL, iElR)
+    left_V = Elecs(iElL)%mu%mu
     call print_ts_voltage(ucell)
 
+    ! Find the electrode mesh sets
     if ( VoltageInC ) then
-       ! Find the electrode mesh sets
        call init_elec_indices(ucell, meshG, nsm, na_u, xa)
     end if
 
@@ -83,8 +91,6 @@ contains
 
     call timer('ts_volt',1)
 
-    ! Here one should implement different calls...
-
     if ( VoltageInC ) then
        ! Voltage drop in between the electrodes
        call ts_ramp_elec(ucell,Vscf)
@@ -94,6 +100,7 @@ contains
     end if
 
     call timer('ts_volt',2)
+
   end subroutine ts_voltage
 
   subroutine ts_ramp_cell(ucell, Vscf)
@@ -117,7 +124,7 @@ contains
     integer, target           :: i10, i20, i30
     integer, pointer          :: iT
     real(dp)                  :: Lvc, dLvc, dF
-    real(dp)                  :: dot, VoltL
+    real(dp)                  :: dot
     external                  :: dot
 
     ! the length of the mesh-elements in the transport direction
@@ -126,7 +133,6 @@ contains
 
     ! field in [0;Lvc]: v = e*x = f*index
     dF = Volt * dLvc/Lvc
-    VoltL = .5_dp * Volt
 
     ! Set up counter
     if ( ts_tdir == 1 ) then
@@ -152,7 +158,7 @@ contains
           do i1 = 0,meshl(1)-1
              i10   = i10 + 1
              imesh = imesh + 1
-             Vscf(imesh,1) = Vscf(imesh,1) + VoltL - dF*iT
+             Vscf(imesh,1) = Vscf(imesh,1) + left_V - dF*iT
           enddo
        enddo
     enddo
@@ -178,7 +184,7 @@ contains
 ! ***********************
     integer  :: i1, i2, i3, idT, imesh
     real(dp) :: Lvc, dLvc, dF
-    real(dp) :: dot, VoltL
+    real(dp) :: dot
     external :: dot
 
     dLvc = dMesh(ts_tdir)
@@ -189,7 +195,6 @@ contains
 
     ! field in [0;Lvc]: v = e*x = f*index
     dF = Volt * dLvc / Lvc
-    VoltL = .5_dp * Volt
 
     ! Find quantities in mesh coordinates
     if ( meshl(1) * meshl(2) * meshl(3) /= size(Vscf,1) ) &
@@ -217,7 +222,7 @@ contains
                 end if
                 
                 imesh = imesh + 1
-                Vscf(imesh,1) = Vscf(imesh,1) + VoltL - dF*idT
+                Vscf(imesh,1) = Vscf(imesh,1) + left_V - dF*idT
              enddo
           enddo
        enddo
@@ -241,7 +246,7 @@ contains
              end if
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh,1) = Vscf(imesh,1) + VoltL - dF*idT
+                Vscf(imesh,1) = Vscf(imesh,1) + left_V - dF*idT
              enddo
           enddo
        enddo
@@ -267,7 +272,7 @@ contains
           do i2 = 1,meshl(2)
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh,1) = Vscf(imesh,1) + VoltL - dF*idT
+                Vscf(imesh,1) = Vscf(imesh,1) + left_V - dF*idT
              enddo
           enddo
        enddo
@@ -276,10 +281,49 @@ contains
 
   end subroutine ts_ramp_elec
 
+  subroutine get_elec_indices(na_u, xa, iElL, iElR)
+    use m_ts_electype
+    use m_ts_options, only : N_Elec, Elecs
+    
+! ***********************
+! * INPUT variables     *
+! ***********************
+    integer,  intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    integer, intent(out) :: iElL, iElR
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer  :: i
+    real(dp) :: tmp
+
+    ! find "lower" electrode
+    tmp = huge(1._dp)
+    iElL = 1
+    iElR = 2
+    do i = Elecs(1)%idx_na , Elecs(1)%idx_na + TotUsedAtoms(Elecs(1)) - 1
+       if ( abs(xa(ts_tdir,i)) < tmp ) then
+          tmp = abs(xa(ts_tdir,i))
+       end if
+    end do
+    do i = Elecs(2)%idx_na , Elecs(2)%idx_na + TotUsedAtoms(Elecs(2)) - 1
+       if ( abs(xa(ts_tdir,i)) < tmp ) then
+          tmp = abs(xa(ts_tdir,i))
+          iElL = 2
+          iElR = 1
+       end if
+    end do
+
+  end subroutine get_elec_indices
+
   subroutine init_elec_indices(ucell, meshG, nsm, na_u, xa)
     use parallel,     only : IONode
     use units,        only : Ang
-    use m_ts_options, only : na_BufL, na_BufR
     use m_ts_electype
     use m_ts_options, only : N_Elec, Elecs
     
@@ -301,26 +345,12 @@ contains
     real(dp) :: dot
     external :: dot
 
-    if ( N_Elec > 2 ) call die('Not fully implemented')
+    if ( N_Elec > 2 ) call die('Not fully implemented, only non-bias with N-electrode')
     Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
-    
-    ! find "lower" electrode
-    dLvc = huge(1._dp)
-    iElL = 1
-    iElR = 2
-    do i = Elecs(1)%idx_na , Elecs(1)%idx_na + TotUsedAtoms(Elecs(1)) - 1
-       if ( abs(xa(ts_tdir,i)) < dLvc ) then
-          dLvc = abs(xa(ts_tdir,i))
-       end if
-    end do
-    do i = Elecs(2)%idx_na , Elecs(2)%idx_na + TotUsedAtoms(Elecs(2)) - 1
-       if ( abs(xa(ts_tdir,i)) < dLvc ) then
-          dLvc = abs(xa(ts_tdir,i))
-          iElL = 2
-          iElR = 1
-       end if
-    end do
-       
+
+    ! get the left/right electrodes
+    call get_elec_indices(na_u,xa,iElL,iElR)
+
     left_t_max  = -huge(1._dp)
     right_t_min = huge(1._dp)
     do i = Elecs(iElL)%idx_na , Elecs(iElL)%idx_na + TotUsedAtoms(Elecs(iElL)) - 1
@@ -421,6 +451,7 @@ contains
     if ( IONode ) then
        write(*,*)
        write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias ', Volt/eV,'V'
+       write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias @bottom ', left_V/eV,'V'
        write(*,'(a,3(f6.3,a))')'ts_voltage: In unit cell direction = {', &
             vcdir(1),',',vcdir(2),',',vcdir(3),'}'
     end if

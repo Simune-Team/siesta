@@ -1330,7 +1330,6 @@ contains
 
     ! Green's function variables
     complex(dp), pointer :: GS(:)
-    complex(dp) :: ZEnergy, zDOS
 
     ! size requirement
     integer :: size_req(2)
@@ -1341,13 +1340,7 @@ contains
     logical :: same_k
 
     ! Check input for what to do
-    if( El%inf_dir == INF_NEGATIVE ) then
-       is_left = .true.
-    else if( El%inf_dir == INF_POSITIVE ) then
-       is_left = .false.
-    else
-       call die("init electrode has received wrong job ID [L,R].")
-    endif
+    is_left = El%inf_dir == INF_NEGATIVE
 
     ! pre-point to zwork
     zwork => in_zwork(:)
@@ -1377,13 +1370,14 @@ contains
     size_req(1) = (4 + 1) * nS
     size_req(2) =    8    * nS
     if ( sum(size_req) <= nzwork ) then
+
        ! we have enough room in the regular work-array for everything
        i = 0
        H00 => in_zwork(i+1:i+nS)
        i = i + nS
-       H01 => in_zwork(i+1:i+nS)
-       i = i + nS
        S00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       H01 => in_zwork(i+1:i+nS)
        i = i + nS
        S01 => in_zwork(i+1:i+nS)
        i = i + nS
@@ -1392,8 +1386,6 @@ contains
        zwork => in_zwork(i+1:nzwork)
 
     else if ( size_req(2) <= nzwork ) then
-       ! the work-array fits the input work-array
-       zwork => in_zwork(:)
 
        ! we will allocate H00,H01,S00,S01,GS arrays
        call re_alloc(zHS,1,size_req(1),routine='next_GS')
@@ -1402,29 +1394,32 @@ contains
        i = 0
        H00 => zHS(i+1:i+nS)
        i = i + nS
-       H01 => zHS(i+1:i+nS)
-       i = i + nS
        S00 => zHS(i+1:i+nS)
+       i = i + nS
+       H01 => zHS(i+1:i+nS)
        i = i + nS
        S01 => zHS(i+1:i+nS)
        i = i + nS
        GS  => zHS(i+1:i+nS)
        
+       ! the work-array fits the input work-array
+       zwork => in_zwork(1:nzwork)
+
     else if ( size_req(1) <= nzwork ) then
        ! we will allocate 8*nS work array
 
        i = 0
        H00 => in_zwork(i+1:i+nS)
        i = i + nS
-       H01 => in_zwork(i+1:i+nS)
-       i = i + nS
        S00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       H01 => in_zwork(i+1:i+nS)
        i = i + nS
        S01 => in_zwork(i+1:i+nS)
        i = i + nS
        GS  => in_zwork(i+1:i+nS)
 
-       call re_alloc(zHS,1,8*nS,routine='next_GS')
+       call re_alloc(zHS,1,size_req(2),routine='next_GS')
        zHS_allocated = .true.
        zwork => zHS(:)
 
@@ -1434,6 +1429,10 @@ contains
             &to your system in order to utilize the in-core &
             &calculation of the self-energies.')
 
+    end if
+
+    if ( RemUCellDistance ) then
+       call die('Not working yet')
     end if
 
     call init_mat_inversion(nuo_E)
@@ -1456,13 +1455,9 @@ contains
              ioe = ioe + 1
           end if
        end do
-             
+
        ! init qpoint in reciprocal lattice vectors
        call kpoint_convert(UnitCell(El),q_exp(El,iqpt),qpt,-1)
-
-       if ( RemUCellDistance ) then
-          call die('Not working yet')
-       end if
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
        call set_electrode_HS_Transfer(ispin, El, kpt, qpt, &
@@ -1484,12 +1479,12 @@ contains
 
        ! Copy over surface Green's function
        ! first we need to determine the correct placement
-       call copy_over(is_left,nuo_E,GS,nuou_E,El%Gamma(ios:ioe,jos:joe),off)
+       call copy_over(is_left,nuo_E,GS,nuou_E,El%GA(ios:ioe,jos:joe),off)
 
        ! we need to invert back as we don't need to
        ! expand. And the algorithm expects it to be in correct format
        if ( nq == 1 .and. nuo_E /= nuou_E ) then
-          call mat_invert(El%Gamma(ios:ioe,jos:joe),zwork(1:nuS),&
+          call mat_invert(El%GA(ios:ioe,jos:joe),zwork(1:nuS),&
                nuou_E, &
                MI_IN_PLACE_LAPACK)
              
@@ -1521,25 +1516,26 @@ contains
       complex(dp), intent(in) :: from(fS,fS)
       complex(dp), intent(out) :: to(tS,tS)
 
-      integer :: i, j
+      integer :: i, j, ioff
 
       if ( is_left ) then
-          ! Left, we use the last orbitals
-          do j = off , fS
-             do i = off , fS
-                to(1+i-off,1+j-off) = from(i,j)
-             end do
-          end do
-       else
-          ! Right, the first orbitals
-          do j = 1 , tS
-             do i = 1 , tS
-                to(i,j) = from(i,j)
-             end do
-          end do
-       end if
+         ! Left, we use the last orbitals
+         ioff = 1 - off
+         do j = off , fS
+            do i = off , fS
+               to(ioff+i,ioff+j) = from(i,j)
+            end do
+         end do
+      else
+         ! Right, the first orbitals
+         do j = 1 , tS
+            do i = 1 , tS
+               to(i,j) = from(i,j)
+            end do
+         end do
+      end if
 
-     end subroutine copy_over
+    end subroutine copy_over
 
   end subroutine calc_next_GS_Elec
 

@@ -1236,9 +1236,9 @@ contains
                 if ( any(abs(H(ind,:)) > maxH) ) then
                    maxH  = maxval(abs(H(ind,:)))
                    maxS  = S(ind)
-                   maxia = ia
                    maxi  = io
-                   maxj  = ucorb(col02(ind02),no_u)
+                   maxia = ia
+                   maxj  = col02(ind02)
                    maxja = iaorb(col02(ind02),this%lasto)
                 end if
                 exit idx02
@@ -1255,7 +1255,8 @@ contains
     call delete(sp02)
 
     if ( .not. IONode ) return
-    if ( maxi == 0 .and. ind == 0 ) then
+
+    if ( ind == 0 ) then
        write(*,'(t2,a)') trim(name(this))//' principal cell is perfect!'
     else if ( maxi == 0 ) then
        write(*,'(t2,a,i0,a)') trim(name(this))//' principal cell is extending out &
@@ -1263,7 +1264,8 @@ contains
     else
        write(*,'(t2,a,i0,a)') trim(name(this))//' principal cell is extending out with ',ind,' elements:'
        write(*,'(t5,2(a,i0))') 'Atom ',maxia,' connects with atom ',maxja
-       write(*,'(t5,2(a,i0))') 'Orbital ',maxi ,' connects with orbital ',maxj
+       write(*,'(t5,2(a,i0))') 'Orbital ',UCORB(maxi,no_u) , &
+            ' connects with orbital ',UCORB(maxj,no_u)
        write(*,'(t5,3(a,i0),a,g10.3,a)') 'Hamiltonian value: |H(',&
             maxi,',',maxj,')|@R=',tm(this%t_dir),' = ',maxH/eV,' eV'
        write(*,'(t5,3(a,i0),a,g10.3)') 'Overlap          :  S(',&
@@ -1322,7 +1324,5 @@ contains
     write(*,*) ! new-line
 
   end subroutine print_Elec
-
-  ! TODO create routine for extracting max size in the neighbour cells!
 
 end module m_ts_electype

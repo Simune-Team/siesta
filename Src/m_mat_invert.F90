@@ -320,7 +320,7 @@ contains
        Npiv = n
 
       ! Allocate space for the pivoting array
-       call re_alloc(ipiv,1, Npiv, &
+       call re_alloc(ipiv,1, Npiv, copy = .false. , &
             name="mat_piv",routine='MatInversion')
     end if
        

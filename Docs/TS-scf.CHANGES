@@ -1,4 +1,29 @@
 ----------------------------------------------------
+March 19, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-129
+Fixed potential field placement for uneven Fermi shift
+
+* In case the regular convention \mu_L = V/2, \mu_R = - V/2
+  is not used the correct potential is now inserted.
+  It thus takes into account the chemical potential in the
+  leads.
+
+* Clarified the output of the super-cell orbitals when the 
+  electrode is not big enough.
+  I.e. people who knows the sparsity layout can read the
+  Hamiltonian and read of the element.
+
+* A bug is present in the in-core calculation of the 
+  self-energies with bias applied.
+  I tried to find the bug, but to no avail.
+  TODO bug in in-core calculation with bias
+
+modified:
+  Src/m_mat_invert.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 March 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-128
 Bugfix for makefile
 
