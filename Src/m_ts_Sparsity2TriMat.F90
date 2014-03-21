@@ -66,6 +66,7 @@ contains
     ! Local variables
     integer, pointer :: guess_part(:) => null()
     integer :: i, N, guess_parts
+    logical :: copy_first
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -84,6 +85,9 @@ contains
 
     ! We initialize to the standard 3-tri-diagonal matrix
     call set_3TriMat(nrows_g(sp),parts,n_part)
+    ! If the first one happens to be the best partition, 
+    ! but non-valid, we need to make sure to overwrite it
+    copy_first = ( ts_valid_tri(sp,parts, n_part) /= VALID ) 
 
     ! TODO
     ! create array containing max-min for each orbital
@@ -103,6 +107,14 @@ contains
 
        call full_even_out_parts(opt_TriMat_method, &
             sp,guess_parts,guess_part)
+
+       if ( copy_first ) then
+          ! ensure to copy it over (the initial one was not valid)
+          copy_first = .false.
+          parts = guess_parts
+          n_part(1:parts) = guess_part(1:parts)
+          cycle
+       end if
        
        call select_better(opt_TriMat_method, &
             parts,n_part, guess_parts, guess_part)
@@ -160,8 +172,21 @@ contains
     ! The most probable thing is that the electrodes are not
     ! contained in the first two parts.
     if ( ts_valid_tri(sp, parts, n_part) /= VALID ) then
+       i = nrows_g(sp) - no_BufL - no_BufR
+       write(*,'(a,i0)') 'TranSIESTA system size: ',i
        write(*,'(a,i0)') 'Current parts: ',parts
        write(*,'(10000000(tr1,i0))') n_part
+       i = ts_valid_tri(sp, parts, n_part)
+       select case ( i )
+       case ( NONVALID_SIZE )
+          write(*,'(a)') 'The size is not valid.'
+       case ( NONVALID_ELEMENT_CONTAIN ) 
+          write(*,'(a)') 'Some elements are not contained.'
+       case ( NONVALID_TS_ELECTRODE ) 
+          write(*,'(a)') 'The electrode is not fully encompassed.'
+       case default
+          write(*,'(a,i0,a)') 'Row ',-i,' not encompassed in the tri-matrix'
+       end select
        call die('Contact the developers. (missing implementation). &
             &You appear to have a special form of electrode.')
     end if
@@ -495,14 +520,15 @@ contains
     ! the row which we will check for
     integer, intent(in) :: row
     ! The result
-    integer :: max_col, ptr, nr, ts_max_col
+    integer :: max_col, ptr, nr, ts_max_col, lr
     integer, pointer :: l_col(:)
     call attach(sp,list_col=l_col,nrows_g=nr)
     ts_max_col = nr - no_BufL - no_BufR
+    lr = row + no_BufL
     ! We have to move past the buffer orbitals
-    ptr     =  list_ptr(sp,row+no_BufL)
+    ptr     =  list_ptr(sp,lr)
     max_col =  maxval(UCORB( &
-         l_col(ptr+1:ptr+n_col(sp,row+no_BufL)),nr)) - no_BufL
+         l_col(ptr+1:ptr+n_col(sp,lr)),nr)) - no_BufL
     ! Check the ts-region
     if ( max_col < 1 .or. ts_max_col < max_col ) &
          call die('Error in TS-sparsity pattern')
@@ -517,14 +543,15 @@ contains
     ! the row which we will check for
     integer, intent(in) :: row
     ! The result
-    integer :: min_col, ptr, nr, ts_max_col
+    integer :: min_col, ptr, nr, ts_max_col, lr
     integer, pointer :: l_col(:)
     call attach(sp,list_col=l_col,nrows_g=nr)
     ts_max_col = nr - no_BufL - no_BufR
+    lr = row + no_BufL
     ! We have to move past the buffer orbitals
-    ptr     =  list_ptr(sp,row+no_BufL)
+    ptr     =  list_ptr(sp,lr)
     min_col =  minval(UCORB( &
-         l_col(ptr+1:ptr+n_col(sp,row+no_BufL)),nr)) - no_BufL
+         l_col(ptr+1:ptr+n_col(sp,lr)),nr)) - no_BufL
     ! Truncate to the ts-region
     if ( min_col < 1 .or. ts_max_col < min_col ) &
          call die('Error in TS-sparsity pattern')
@@ -562,10 +589,13 @@ contains
     N = 1
     Nm1 = 1
     Np1 = n_part(1)
-    do i = 1 , parts - 1
-       ! Update the size of the part after this
-       Np1 = Np1 + n_part(i+1)
-       
+    do i = 1 , parts
+
+       if ( i < parts ) then
+          ! Update the size of the part after this
+          Np1 = Np1 + n_part(i+1)
+       end if
+
        do ir = N , N + n_part(i) - 1
           if ( Nm1 > min_col(sp,ir) .or. &
                max_col(sp,ir) > Np1 ) then
@@ -573,6 +603,7 @@ contains
              return
           end if
        end do
+
        ! Update loop
        N = N + n_part(i)
 
@@ -581,7 +612,7 @@ contains
           Nm1 = Nm1 + n_part(i-1)
        end if
     end do
-       
+
   end function valid_tri
 
   ! Validation routine for the tri-diagonal splitting
@@ -633,8 +664,8 @@ contains
        n_part(1) = TotUsedOrbs(Elecs(1))
        n_part(2) = noTS - n_part(1)
        n_part(2:3) = n_part(2) / 2
-       if ( sum(n_part) /= noTS ) then
-          n_part(2) = n_part(2) + noTS - sum(n_part)
+       if ( sum(n_part(1:3)) /= noTS ) then
+          n_part(2) = n_part(2) + noTS - sum(n_part(1:3))
        end if
     else
        n_part(1) = sum(TotUsedOrbs(Elecs(1:N_Elec-1)))

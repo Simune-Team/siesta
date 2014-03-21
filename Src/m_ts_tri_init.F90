@@ -80,7 +80,6 @@ contains
     ! This works as creating a new sparsity deletes the previous
     ! and as it is referenced several times it will not be actually
     ! deleted...
-    tmpSp1 = ts_sp_uc
     tmpSp2 = ts_sp_uc
     do i = 1 , N_Elec
 
@@ -88,13 +87,9 @@ contains
        no = TotUsedOrbs(Elecs(i))
 
        ! we first create the super-set sparsity
-       if ( mod(i,2) == mod(N_Elec,2) ) then
-          call crtSparsity_Union(dit,tmpSp1, &
-               idx,idx,no,no, tmpSp2)
-       else
-          call crtSparsity_Union(dit,tmpSp2, &
-               idx,idx,no,no, tmpSp1)
-       end if
+       tmpSp1 = tmpSp2
+       call crtSparsity_Union(dit,tmpSp1, &
+            idx,idx,no,no, tmpSp2)
     end do
     call delete(tmpSp1)
 

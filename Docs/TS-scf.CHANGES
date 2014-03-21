@@ -1,4 +1,24 @@
 ----------------------------------------------------
+March 21, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-130
+Bugfix for tri-mat creation for small systems
+
+* When the systems was very small the initial tri-mat blocks
+  could be the "best" but a non-valid block division.
+  The blocks are now correctly handled.
+
+* A consistent check of the entire tri-mat block is now made.
+
+  Before it was all but the last block that was checked.
+  The last block should be apparent from the sparsity setup.
+  However, for consistency we add the full check.
+
+* Added more output in case of errors in the tri-mat setup
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
 March 19, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-129
 Fixed potential field placement for uneven Fermi shift
 
