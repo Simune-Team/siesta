@@ -45,6 +45,9 @@ contains
     use m_ts_options ! Just everything (easier)
     use m_ts_method
 
+    use m_ts_global_vars, only : TSmode, TSinit
+    use siesta_options, only : isolve, SOLVE_TRANSI
+
     use m_fixed, only : is_fixed
 
     implicit none
@@ -68,11 +71,18 @@ contains
     integer :: i, sNE, eNE, ia
     integer :: nC, nTS
 
+    if ( isolve .eq. SOLVE_TRANSI ) then
+       TSmode = .true.
+       ! If in TSmode default to initalization
+       ! In case of 'DM.UseSaveDM TRUE' TSinit will be set accordingly
+       TSinit = .true.
+    end if
+
     ! Read in options for transiesta
     call read_ts_options( wmix, kT, ucell , na_u , xa, lasto )
 
-    ! Setup the k-points, must be done after options reading (determine the transport
-    ! direction)
+    ! Setup the k-points, must be done after options reading 
+    ! (determine the transport direction)
     call setup_ts_kpoint_grid( ucell )
 
     ! If we actually have a transiesta run we need to process accordingly!

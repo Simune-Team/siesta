@@ -220,7 +220,8 @@
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
                                 ! stored in the TSDE file.
-      use m_ts_options,   only : TSmode, ImmediateTSmode, ts_wmix
+      use m_ts_global_vars,only: TSmode
+      use m_ts_options,   only : ImmediateTSmode, ts_wmix
       use siesta_options, only : wmix
 #endif /* TRANSIESTA */
 

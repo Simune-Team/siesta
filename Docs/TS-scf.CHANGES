@@ -1,4 +1,45 @@
 ----------------------------------------------------
+March 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-131
+Added informational output and moved TSmode to global_vars
+
+* When the user has unwieldingly chosen a prime as a sampling
+  of the system in question and does not wish to degrade the 
+  sampling, one can not use the repetition. 
+  However, in certain cases (where the k-point sampling is 
+  more than enough) the electrode k-point sampling does
+  not introduce any noticeable changes to the TB-Hamiltonian.
+  In these cases it could be useful to not force the exact 
+  k-point overlaying the Bloch-states.
+  I would never recommend users to do this unless they know
+  what they are doing. Hence, I don't think we should document
+  this feature.
+
+* Added more output wrt. to electrode setups.
+  A couple of warnings has been added.
+
+* Added a print-out of the size requirement for the 
+  Green's function file.
+  This will enable users to quickly analyze their 
+  disk-utilization.
+
+* Moved the TSmode from ts_options to ts_global_vars
+  which makes more sense as it in total determines 
+  the transiesta usage.
+
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/m_new_dm.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_global_vars.f90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/siesta_forces.F
+  Src/ts_init.F90
+
+----------------------------------------------------
 March 21, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-130
 Bugfix for tri-mat creation for small systems
 

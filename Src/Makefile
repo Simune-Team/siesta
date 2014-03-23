@@ -454,9 +454,8 @@ compute_EKS_Harris.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o precision.o
 compute_EKS_Harris.o: siesta_geom.o siesta_options.o sparse_matrices.o
 compute_dm.o: atomlist.o iodmhs_netcdf.o kpoint_grid.o m_energies.o m_eo.o
 compute_dm.o: m_gamma.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
-compute_dm.o: m_transiesta.o m_ts_global_vars.o m_ts_options.o ordern.o
-compute_dm.o: parallel.o precision.o siesta_geom.o siesta_options.o
-compute_dm.o: sparse_matrices.o sys.o units.o
+compute_dm.o: m_transiesta.o m_ts_global_vars.o ordern.o parallel.o precision.o
+compute_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
 compute_max_diff.o: atomlist.o m_mpi_utils.o m_spin.o precision.o
 compute_max_diff.o: sparse_matrices.o
 compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
@@ -616,9 +615,10 @@ m_new_dm.o: alloc.o atomlist.o class_Data2D.o
 m_new_dm.o: class_Fstack_Pair_Geometry_SpData2D.o class_Geometry.o
 m_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpData2D.o
 m_new_dm.o: class_SpData2D.o class_Sparsity.o files.o m_energies.o
-m_new_dm.o: m_mpi_utils.o m_spin.o m_steps.o m_svd.o m_ts_iodm.o m_ts_options.o
-m_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o readSpData2D.o
-m_new_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
+m_new_dm.o: m_mpi_utils.o m_spin.o m_steps.o m_svd.o m_ts_global_vars.o
+m_new_dm.o: m_ts_iodm.o m_ts_options.o parallel.o parallelsubs.o parsing.o
+m_new_dm.o: precision.o readSpData2D.o siesta_geom.o siesta_options.o
+m_new_dm.o: sparse_matrices.o sys.o units.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
@@ -698,7 +698,7 @@ m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
 m_ts_iodm.o: parallelsubs.o precision.o sys.o
-m_ts_kpoints.o: files.o find_kgrid.o m_ts_options.o m_ts_tdir.o minvec.o
+m_ts_kpoints.o: files.o find_kgrid.o m_ts_global_vars.o m_ts_tdir.o minvec.o
 m_ts_kpoints.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
 m_ts_mesh.o: intrinsic_missing.o parallel.o precision.o
 m_ts_method.o: alloc.o geom_helper.o m_ts_electype.o
@@ -916,7 +916,8 @@ sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 ts_init.o: files.o fixed.o m_ts_cctype.o m_ts_electrode.o m_ts_electype.o
-ts_init.o: m_ts_gf.o m_ts_kpoints.o m_ts_method.o m_ts_options.o parallel.o
+ts_init.o: m_ts_gf.o m_ts_global_vars.o m_ts_kpoints.o m_ts_method.o
+ts_init.o: m_ts_options.o parallel.o siesta_options.o
 ts_show_regions.o: m_ts_electype.o parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o

@@ -95,6 +95,9 @@ module m_ts_electype
      real(dp), pointer :: xa_used(:,:) => null()
      integer,  pointer :: lasto_used(:) => null()
 
+     ! Advanced
+     logical :: kcell_check = .true.
+
      ! ---v--- Below we have the content of the TSHS file
      integer  :: nspin = 0, na_u = 0, no_u = 0, no_s = 0
      real(dp) :: ucell(3,3) = 0._dp, Ef = 0._dp, Qtot = 0._dp
@@ -118,6 +121,7 @@ module m_ts_electype
      complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:,:)
      ! Arrays needed to partition the scattering matrix and self-energies
      complex(dp), pointer :: Gamma(:,:), Sigma(:)
+
   end type Elec
 
 contains
@@ -376,6 +380,17 @@ contains
              call die('Fraction for fermi-level must be in [0;1] range')
           end if
 
+       else if ( leqi(ln,'check-kgrid') ) then
+
+          ! Advanced (NOT recommended)
+          ! if false, it will not check the k-point sampling
+          ! in the electrode
+          ! I.e. it will expect the system to be converged as
+          ! the system
+          ! However, it only checks the k-cell
+          ! and still suspects a non-Gamma calculation
+          this%kcell_check = fdf_bboolean(pline,1,after=1)
+
        else
           
           call die('Unrecognized option "'//trim(ln)//'" &
@@ -452,6 +467,25 @@ contains
 
     ! We deallocate xa and lasto as they are not needed
     deallocate(this%xa,this%lasto)
+
+    ! Check that the repetition is not in the transport-direction
+    select case ( this%t_dir )
+    case ( 1 )
+       if ( RepA1(this) /= 1 ) then
+          call die('Repetition in the transport direction &
+               &is not allowed.')
+       end if
+    case ( 2 )
+       if ( RepA2(this) /= 1 ) then
+          call die('Repetition in the transport direction &
+               &is not allowed.')
+       end if
+    case ( 3 )
+       if ( RepA3(this) /= 1 ) then
+          call die('Repetition in the transport direction &
+               &is not allowed.')
+       end if
+    end select
 
     ! if the electrode does not use a bulk electrode we need to update
     ! the cross-terms
@@ -1067,7 +1101,7 @@ contains
 
     this_er = er
 
-    if ( present(kcell) ) then
+    if ( present(kcell) .and. this%kcell_check ) then
 
        er = .false.
 
@@ -1121,6 +1155,7 @@ contains
              write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(j)
           end do
        end if
+
     else
        
        call ts_read_TSHS_opt(HSFile(this), &

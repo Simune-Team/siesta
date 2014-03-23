@@ -6,19 +6,23 @@
 !  declaration, instead of passing as dummy arguments                      *  
 !                                                                          *
 !  Written by F.D.Novaes, Apr'10                                           *
-!==========================================================================*                                         
-
+!==========================================================================*
 
 module m_ts_global_vars
+  
+  use precision, only : dp
+  
+  save
 
-USE precision, only : dp
+  ! Whether transiesta is the solver
+  logical :: TSmode = .false.
 
-save
+  ! The current iteration in the SCF
+  integer :: TSiscf = 1
 
-integer :: TSiscf = 1
+  ! Controls the change from diagon to transiesta solver
+  logical :: TSinit = .false. , TSrun = .false.
 
-logical :: TSinit = .false. , TSrun = .false.
-
-integer :: ts_istep      ! FC step in phonon calculation
+  integer :: ts_istep ! FC step in phonon calculation
 
 end module m_ts_global_vars

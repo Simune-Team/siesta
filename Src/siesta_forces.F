@@ -45,8 +45,7 @@
       use write_subs,            only: siesta_write_stress_pressure
 #ifdef TRANSIESTA
       use m_ts_method
-      use m_ts_global_vars,      only: ts_istep, TSrun, TSiscf
-      use m_ts_options,          only: TSmode
+      use m_ts_global_vars,      only: TSmode, ts_istep, TSrun, TSiscf
       use m_ts_options,          only: Elecs, no_BufL, no_BufR
       use siesta_geom,           only: na_u
       use atomlist,              only: lasto
@@ -282,8 +281,7 @@
       subroutine check_transiesta_switch(ts_continues_GF)
 
 #ifdef TRANSIESTA
-      use m_ts_global_vars, only: TSinit
-      use m_ts_options,     only: TSmode   
+      use m_ts_global_vars, only: TSinit, TSmode
 #endif
 
       logical, intent(out) :: ts_continues_GF

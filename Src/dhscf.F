@@ -98,12 +98,11 @@
       use mpi_siesta
 #endif
 #ifdef TRANSIESTA
-!     TSS Begin
-      use m_ts_options,   only : TSmode, IsVolt
+      use m_ts_global_vars,only: TSmode
+      use m_ts_options,   only : IsVolt
       use m_ts_mesh   ,   only : ts_init_mesh
       use m_ts_voltage,   only : ts_init_voltage
       use m_ts_hartree,   only : ts_init_hartree_fix
-!     TSS End
 #endif /* TRANSIESTA */
       implicit none
       integer, intent(in)     :: nspin, norb, iaorb(norb), iphorb(norb),
@@ -575,10 +574,10 @@ C     Modules
       use m_doping_uniform,       only: doping_active, doping_uniform
 
 #ifdef TRANSIESTA
-      use m_ts_options, only: TSmode, IsVolt
+      use m_ts_global_vars,only: TSmode, TSrun
+      use m_ts_options, only: IsVolt
       use m_ts_voltage, only : ts_voltage
       use m_ts_hartree, only : ts_hartree_fix
-      use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
       implicit none
       integer

@@ -29,8 +29,7 @@
       use m_steps,         only : istp
       use m_spin,          only : nspin, qs, efs
 #ifdef TRANSIESTA
-      use m_ts_global_vars, only : TSiscf, TSinit, TSrun
-      use m_ts_options,     only : TSmode
+      use m_ts_global_vars, only : TSmode, TSiscf, TSinit, TSrun
       use m_transiesta,     only : transiesta
 #endif /* TRANSIESTA */
       implicit none

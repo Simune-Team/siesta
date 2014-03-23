@@ -28,9 +28,6 @@ module m_ts_options
   public
   save
 
-  ! Flag to control TranSIESTA
-  logical :: TSmode = .false.
-
   ! Controls to save the TSHS file
   logical  :: SaveTSHS = .true. 
   ! whether we should only save the overlap matricx
@@ -97,7 +94,7 @@ contains
     use units, only: eV, Ang, Kelvin
 
     use m_ts_cctype
-    use m_ts_global_vars, only : ts_istep, TSinit
+    use m_ts_global_vars, only : TSmode, ts_istep, TSinit
     use m_ts_io, only : ts_read_TSHS_opt
 
     use m_ts_contour
@@ -127,17 +124,11 @@ contains
     logical :: err
     character(len=200) :: c, chars
     integer :: i, j, idx, idx1, idx2, ia
+    integer :: tot_NEn
 
     ! External routines
     real(dp) :: dot
     external :: dot
-
-    if (isolve .eq. SOLVE_TRANSI) then
-       TSmode = .true.
-       ! If in TSmode default to initalization
-       ! In case of 'DM.UseSaveDM TRUE' TSinit will be set accordingly
-       TSinit = .true.
-    endif
 
     if (IOnode) then
        write(*,*)
@@ -643,8 +634,13 @@ contains
        write(*,10)'          >> Electrodes << '
        do i = 1 , size(Elecs)
           write(*,11) '>> '//trim(name(Elecs(i)))
-          write(*,10) '  GF file', trim(GFFile(Elecs(i)))
-          write(*,10) '  GF title', trim(GFtitle(Elecs(i)))
+          if ( OutOfCore(Elecs(i)) ) then
+             write(*,10) '  GF file', trim(GFFile(Elecs(i)))
+             write(*,10) '  GF title', trim(GFtitle(Elecs(i)))
+             write(*,1)  '  Reuse existing GF-file', Elecs(i)%ReUseGF
+          else
+             write(*,11)  '  In-core GF'
+          end if
           write(*,10) '  Electrode TSHS file', trim(HSFile(Elecs(i)))
           write(*,5)  '  # atoms used in electrode', UsedAtoms(Elecs(i))
           write(*,15) '  Electrode repetition [A1 x A2 x A3]', &
@@ -668,8 +664,6 @@ contains
           write(*,1)  '  Bulk values in electrode', Elecs(i)%Bulk
           write(*,1)  '  Update cross terms contact/electrode', Elecs(i)%DM_CrossTerms
           write(*,1)  '  Calc. valence band-bottom eigenvalue', Elecs(i)%BandBottom
-          write(*,1)  '  Reuse existing GF-file', Elecs(i)%ReUseGF
-          write(*,1)  '  Out-of-core GF', OutOfCore(Elecs(i))
           write(*,8)  '  Hamiltonian E-C Ef fractional shift', Elecs(i)%Ef_frac_CT
        end do
 
@@ -717,6 +711,33 @@ contains
              call die('System setup wrong, please see output')
           end if
        end if
+
+       ! warn the user about suspicous work regarding the electrodes
+       do i = 1 , N_Elec
+
+          if ( .not. Elecs(i)%Bulk ) then
+             write(*,*) 'Electrode '//trim(Name(Elecs(i)))//' will &
+                  &not use bulk Hamiltonian. &
+                  &Be careful here.'
+          end if
+
+          if ( Elecs(i)%DM_CrossTerms ) then
+             write(*,*) 'Electrode '//trim(Name(Elecs(i)))//' will &
+                  &update cross-terms with central region.'
+          end if
+
+          if ( .not. Elecs(i)%kcell_check ) then
+             write(*,*) 'Electrode '//trim(Name(Elecs(i)))//' will &
+                  &not check the k-grid sampling vs. system k-grid &
+                  &sampling. Please ensure appropriate sampling.'
+          end if
+          if ( Elecs(i)%Ef_frac_CT /= 0._dp ) then
+             write(*,*) 'Electrode '//trim(Name(Elecs(i)))//' will &
+                  &shift coupling Hamiltonian with a shift in energy. &
+                  &Be careful here.'
+          end if
+
+       end do
 
     end if
 

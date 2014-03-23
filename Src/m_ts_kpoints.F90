@@ -9,7 +9,7 @@ module m_ts_kpoints
 !          3) ts_write_k_points
 !          4) ts_iokp
   
-  USE precision, only : dp
+  use precision, only : dp
 
   implicit none
 
@@ -95,7 +95,7 @@ contains
 #endif
 
     use m_ts_tdir
-    use m_ts_options, only : TSmode
+    use m_ts_global_vars, only : TSmode
     
     implicit          none
 

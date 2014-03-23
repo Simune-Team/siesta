@@ -639,6 +639,15 @@ contains
             "Creating Green's function file for: ",trim(name(El)), &
             "Green's function file title: ",trim(GFTitle(El))
 
+       ktmp(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * Rep(El) &
+            * UsedOrbs(El) ** 2 / 1024._dp ** 2
+       if ( ktmp(1) > 2050._dp ) then
+          ktmp(1) = ktmp(1) / 1024._dp
+          write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' GB'
+       else
+          write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' MB'
+       end if
+
        write(*,*) "Electrodes with transport k-points &
             & (Bohr**-1) and weights:"
        do i = 1 , nkpnt
