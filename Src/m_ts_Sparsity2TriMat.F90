@@ -398,7 +398,7 @@ contains
     integer, intent(in) :: parts
     integer, intent(in out) :: n_part(parts)
     ! Local variables
-    integer :: o_part(parts), oo_part(parts) , i, o_mem, n_mem
+    integer :: o_part(parts), mem_part(parts) , i, o_mem, n_mem, idx
 
     if ( method == 1 ) then
        ! we have a memory determining thing
@@ -407,12 +407,12 @@ contains
           o_part(:) = n_part(:)
           call ts_needed_mem(parts,n_part,o_mem)
           do i = 1 , parts
-             oo_part(:) = n_part(:)
+             mem_part(:) = n_part(:)
              call even_out_parts(sp, parts, n_part, i)
              call ts_needed_mem(parts,n_part,n_mem)
              if ( n_mem > o_mem ) then
                 ! copy back
-                n_part(:) = oo_part(:)
+                n_part(:) = mem_part(:)
              end if
           end do
           if ( maxval(abs(o_part-n_part)) == 0 ) exit
@@ -422,8 +422,12 @@ contains
 
        do
           o_part(:) = n_part(:)
+          mem_part(:) = n_part(:)
+          ! Even out from the largest one first
           do i = 1 , parts
-             call even_out_parts(sp, parts, n_part, i)
+             idx = maxloc(mem_part,dim=1)
+             mem_part(idx) = 0
+             call even_out_parts(sp, parts, n_part, idx)
           end do
           if ( maxval(abs(o_part-n_part)) == 0 ) exit
        end do

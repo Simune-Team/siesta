@@ -1,4 +1,25 @@
 ----------------------------------------------------
+March 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-132
+Index lookup in tri-diagonal matrices are now easier
+
+* The calculation of the indices for looking up values in the
+  tri-diagonal matrix was not optimal.
+  I have re-implemented some of the routines to ease the 
+  look-up.
+  It does not provide that much of speed-up (which suggests
+  that its quite fast even before).
+  So that is a comforting aspect.
+
+* When the sparsity pattern is evened out we now start by taking the 
+  largest block and "smear" that out. 
+  This will typically not mean anything. But I have a hunch that
+  for certain (wide @ middle) systems this could be useful
+
+modified:
+  Src/class_TriMat.T90
+  Src/m_ts_Sparsity2TriMat.F90
+
+----------------------------------------------------
 March 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-131
 Added informational output and moved TSmode to global_vars
 
