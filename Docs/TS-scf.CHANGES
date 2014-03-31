@@ -1,4 +1,24 @@
 ----------------------------------------------------
+March 30, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-133
+Implemented the restrictive tri-mat inversion
+
+* In my original implementation we only calculated the 
+  needed blocks. 
+  I have now re-implemented this to get the full
+  speed-up that the algorithm deserves.
+
+* I believe that some optimization can still be found
+  in the non-equilibrium contour. I need to look into
+  this later on.
+
+modified:
+  Src/m_trimat_invert.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+
+----------------------------------------------------
 March 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-132
 Index lookup in tri-diagonal matrices are now easier
 

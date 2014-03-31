@@ -68,20 +68,21 @@ contains
     complex(dp), pointer :: Mpinv(:)
 
     integer :: lsPart, lePart
-    integer :: sN, sNm1, sNp1, n
+    integer :: sN, sNm1, sNp1, n, np
     integer :: iEl, idx_no, off, sCol, eCol
     logical, allocatable :: Mnn_parts(:)
     logical :: piv_initialized
 
-    if ( parts(M) /= parts(Minv) ) then
+    np = parts(M)
+    if ( np /= parts(Minv) ) then
        call die('Could not calculate the inverse on non equal sized &
             &matrices')
     end if
-    if ( parts(M) == 1 ) then
+    if ( np == 1 ) then
        call die('This matrix is not tri-diagonal')
     end if
     piv_initialized = .true.
-    do n = 1 , parts(M) 
+    do n = 1 , np
        if ( Npiv < nrows_g(M,n) ) piv_initialized = .false.
     end do
     if ( .not. piv_initialized ) then
@@ -90,28 +91,23 @@ contains
 
     call timer('V_TM_Pinv',1)
 
-    lsPart = 1
-    !if ( present(sPart) ) lsPart = sPart
-    lePart = parts(M)
-    !if ( present(ePart) ) lePart = ePart
-
     ! Calculate all Xn/Cn+1
-    do n = lePart - 1 , lsPart , -1 
+    do n = np - 1 , 1 , -1 
        Mpinv => val(Minv,n+1,n+1)
-       sNp1 = nrows_g(M,n+1)
+       sNp1  =  nrows_g(M,n+1)
        call calc_Xn_div_Cn_p1(M,Minv, n, Mpinv, sNp1**2 )
     end do
     ! Calculate all Yn/Bn-1
-    do n = 2 , lePart
+    do n = 2 , np
        Mpinv => val(Minv,n-1,n-1)
-       sNm1 = nrows_g(M,n-1)
+       sNm1  =  nrows_g(M,n-1)
        call calc_Yn_div_Bn_m1(M,Minv, n, Mpinv, sNm1**2 )
     end do
 
     ! We calculate all the required Mnn
     ! Here it is permissable to overwrite the old A
     off = 0
-    do n = lsPart , lePart
+    do n = 1 , np
        do iEl = 1 , N_Elec
           if ( .not. has_El(iEl) ) cycle
           idx_no = Elecs(iEl)%idx_no - no_BufL
@@ -136,13 +132,14 @@ contains
 
   end subroutine invert_BiasTriMat_prep
 
-  subroutine invert_BiasTriMat_col(M,Minv,no_BufL,El)
+  subroutine invert_BiasTriMat_col(M,Minv,no_BufL,El,calc_parts)
 
     use m_ts_electype
 
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: no_BufL
     type(Elec), intent(in) :: El
+    logical, intent(in) :: calc_parts(:)
 
     complex(dp), pointer :: fullMinv(:)
     complex(dp), pointer :: Mpinv(:), Mp(:)
@@ -151,7 +148,7 @@ contains
 
     integer :: nr, np, no, ip
     integer :: idx_no
-    integer :: sPart, ePart
+    integer :: sPart, ePart, lsPart, lePart
     integer :: sColF, eColF, sIdxF, eIdxF
     integer :: sColT, eColT, sIdxT, eIdxT
     integer :: sN, sNc, sNm1, sNp1, n, s
@@ -177,13 +174,17 @@ contains
        call die('Pivoting array for inverting matrix not set.')
     end if
 
+    if ( parts(M) /= size(calc_parts) ) then
+       call die('Error in code, calc_parts, not consistent')
+    end if
+
     call timer('V_TM_inv',1)
 
     nr = nrows_g(M)
     np = parts(M)
 
-    no = TotUsedOrbs(El)
     idx_no = El%idx_no - no_BufL
+    no = TotUsedOrbs(El)
 
     sPart = which_part(M,idx_no)
     ePart = which_part(M,idx_no+no-1)
@@ -288,10 +289,28 @@ contains
     end do
 
     ! We now have inv(Mnn) in the correct place.
+    ! figure out what we should calculate
+    ! We can not save a lot of computations here
+    ! as we can not be sure of the full extend of
+    ! the "end"-blocks. Only if two consecutive 
+    ! blocks are fully encompassed in one electrode
+    ! can we reduce the computational work.
+    do n = 1 , np
+       if ( calc_parts(n) ) then
+          lsPart = max(1,n-1)
+          exit
+       end if
+    end do
+    do n = np , 1 , -1
+       if ( calc_parts(n) ) then
+          lePart = min(n+1,np)
+          exit
+       end if
+    end do
 
     ! We now calculate:
     !  Mmn = -Ym+1/Bm * Mm+1n, for m<n
-    do n = sPart - 1 , 1 , - 1
+    do n = sPart - 1 , lsPart , - 1
        
        sN   = nrows_g(M,n)
        sNp1 = nrows_g(M,n+1)
@@ -313,7 +332,7 @@ contains
 
     ! We now calculate:
     !  Mmn = -Xm-1/Cm * Mm-1n, for m>n
-    do n = ePart + 1 , np 
+    do n = ePart + 1 , lePart
 
        sNm1 = nrows_g(M,n-1)
        sN   = nrows_g(M,n)

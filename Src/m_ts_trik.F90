@@ -136,6 +136,9 @@ contains
     ! These two lines are in global update sparsity pattern (UC)
     type(zSpData2D) ::  spuDM
     type(zSpData2D) :: spuEDM ! only used if calc_forces
+    ! To figure out which parts of the tri-diagonal blocks we need
+    ! to calculate
+    logical, pointer :: calc_parts(:) => null()
 ! ************************************************************
 
 ! ****************** Electrode variables *********************
@@ -196,6 +199,12 @@ contains
     ! initialize the matrix inversion tool
     call init_mat_inversion(maxval(tri_parts))
 
+    ! Allocate the logical array to handle calculated
+    ! entries in the block-matrix
+    call re_alloc(calc_parts,1,N_tri_part)
+    ! initialize to calculate all blocks
+    calc_parts(:) = .true.
+
     ! we use the GF as a placement for the self-energies
     no = 0
     zwork => val(GF_tri)
@@ -213,6 +222,20 @@ contains
        Elecs(iEl)%Sigma => zwork(no+1:no+io**2)
        no = no + io ** 2
 
+       ! if we don't need the cross-terms we can skip the blocks
+       ! that are not inside the blocks
+       if ( Elecs(iEl)%DM_CrossTerms ) cycle
+
+       io  = Elecs(iEl)%idx_no - no_BufL
+       idx = io + TotUsedOrbs(Elecs(iEl)) - 1
+
+       do ia = 1 , N_tri_part
+          if ( has_full_part(N_tri_part,tri_parts,ia,io,idx) ) then
+             ! The entire part 'ia' is encapsulated in 
+             ! this electrode.
+             calc_parts(ia) = .false.
+          end if
+       end do
     end do
 
     ! Save the work-space
@@ -352,7 +375,7 @@ contains
           ! * calc GF         *
           ! *******************
           if ( .not. cE%fake ) then
-             call invert_TriMat(zwork_tri,GF_tri)
+             call invert_TriMat(zwork_tri,GF_tri,calc_parts)
           end if
           
           ! ** At this point we have calculated the Green's function
@@ -490,7 +513,8 @@ contains
              ! ******************
              ! * calc GF-column *
              ! ******************
-             call invert_BiasTriMat_col(GF_tri,zwork_tri,no_BufL, Elecs(iEl))
+             call invert_BiasTriMat_col(GF_tri,zwork_tri,no_BufL, &
+                  Elecs(iEl), calc_parts)
 
              ! offset and number of orbitals
              no = TotUsedOrbs(Elecs(iEl))
@@ -504,7 +528,7 @@ contains
              end do
 #endif
              
-             call GF_Gamma_GF(zwork_tri, Elecs(iEl), &
+             call GF_Gamma_GF(zwork_tri, Elecs(iEl), calc_parts, &
                   size(GFGGF_work), GFGGF_work)
 
              do iID = 1 , N_nEq_ID
@@ -590,6 +614,8 @@ contains
 !***********************
 ! CLEAN UP
 !***********************
+
+    call de_alloc(calc_parts)
 
     call delete(zwork_tri)
     call delete(GF_tri)

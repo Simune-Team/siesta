@@ -94,13 +94,14 @@ contains
     err = 0
   end subroutine attach2piv
 
-  subroutine invert_TriMat(M,Minv,sPart,ePart)
+  subroutine invert_TriMat(M,Minv,calc_parts)
     type(zTriMat), intent(inout) :: M, Minv
-    integer, intent(in), optional :: sPart, ePart
+    logical, intent(in), optional :: calc_parts(:)
     complex(dp), pointer :: Mpinv(:), Mp(:), XYn(:), CB(:)
     integer :: lsPart, lePart
     integer :: sNm1, sNp1, n
     logical :: piv_initialized
+    logical, allocatable :: lc_parts(:)
 
     if ( parts(M) /= parts(Minv) ) then
        call die('Could not calculate the inverse on non equal sized &
@@ -117,12 +118,33 @@ contains
        call die('Pivoting array for inverting matrix not set.')
     end if
 
-    call timer('TM_inv',1)
+    ! Figure out if the calc_parts is correctly sized
+    allocate(lc_parts(parts(M)))
+    if ( present(calc_parts) ) then
+       if ( size(calc_parts) /= parts(M) ) then
+          call die('Wrong size of calculation parts. Please correct code')
+       end if
+       ! Copy over values
+       lc_parts(:) = calc_parts(:)
+       do n = 1 , parts(M)
+          if ( lc_parts(n) ) then
+             lsPart = n
+             exit
+          end if
+       end do
+       do n = parts(M) , 1 , -1
+          if ( lc_parts(n) ) then
+             lePart = n
+             exit
+          end if
+       end do
+    else
+       lc_parts(:) = .true.
+       lsPart = 1
+       lePart = parts(M)
+    end if
 
-    lsPart = 1
-    if ( present(sPart) ) lsPart = sPart
-    lePart = parts(M)
-    if ( present(ePart) ) lePart = ePart
+    call timer('TM_inv',1)
 
     ! Calculate all Xn/Cn+1
     do n = parts(M) - 1 , lsPart , -1 
@@ -141,18 +163,27 @@ contains
     ! Here it is permissable to overwrite the old A
 
     do n = lsPart , lePart
-       call calc_Mnn_inv(M,Minv,n)
+       if ( lc_parts(n) ) then
+          call calc_Mnn_inv(M,Minv,n)
+       end if
     end do
 
     ! ************ We have now calculated all diagonal parts of the 
     ! tri-diagonal matrix... **************************************
 
     do n = lsPart + 1 , lePart
-       call calc_Mnm1n_inv(M,Minv,n)
+       if ( lc_parts(n) ) then
+          call calc_Mnm1n_inv(M,Minv,n)
+       end if
     end do
-    do n = lsPart , lePart - 1
-       call calc_Mnp1n_inv(M,Minv,n)
+    do n = lePart - 1 , lsPart , -1
+       if ( lc_parts(n) ) then
+          call calc_Mnp1n_inv(M,Minv,n)
+       end if
     end do
+
+    ! De-allocate variable to track calculated parts
+    deallocate(lc_parts)
 
     call timer('TM_inv',2)
        

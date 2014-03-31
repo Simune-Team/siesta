@@ -23,6 +23,7 @@ module m_ts_tri_scat
   public :: GF_Gamma_GF
   public :: GFGGF_needed_worksize
   public :: ts_needed_mem
+  public :: has_full_part
 
   ! Used for BLAS calls (local variables)
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -35,7 +36,7 @@ contains
   ! overwrite the old half-inverted matrix, that would mean
   ! that we need to do the full calculation for each electrode
   ! (which can be quite time-consuming!)
-  subroutine GF_Gamma_GF(Gf_tri, El, nwork, work)
+  subroutine GF_Gamma_GF(Gf_tri, El, calc_parts, nwork, work)
 
     use alloc, only : re_alloc, de_alloc
 
@@ -51,6 +52,7 @@ contains
     ! The Green's function column
     type(zTriMat), intent(inout) :: Gf_tri
     type(Elec), intent(in) :: El ! contains: i (Sigma - Sigma^dagger)/2 ^T
+    logical, intent(in) :: calc_parts(:)
 
 ! *********************
 ! * OUTPUT variables  *
@@ -82,8 +84,19 @@ contains
     np = parts(Gf_tri)
 
     ! Which parts are needed
-    lsPart = 1
-    lePart = np
+    ! In this case we need to calculate till the end
+    do n = 1 , np
+       if ( calc_parts(n) ) then
+          lsPart = max(1,n-1)
+          exit
+       end if
+    end do
+    do n = np , 1 , -1
+       if ( calc_parts(n) ) then
+          lePart = min(n+1,np)
+          exit
+       end if
+    end do
 
     ! Capture the full elements
     fGf => val(Gf_tri)
@@ -138,6 +151,10 @@ contains
           
           ! Update the index of which we will update last
           tn = tn - sNc * sN
+
+          ! skip needed elements
+          if ( (.not. calc_parts( n)) .and. &
+               (.not. calc_parts(cp)) ) cycle
 
           if ( tn <= last_eIdx ) then
              ! transfer to the work-array
@@ -343,5 +360,21 @@ contains
     end if
     
   end subroutine ts_needed_mem
+
+  function has_full_part(N_tri_part,tri_parts, &
+       part,io1,io2) result(has)
+    integer, intent(in) :: N_tri_part, tri_parts(N_tri_part), part, io1, io2
+    logical :: has
+    integer :: i, io
+
+    io = 1
+    do i = 1 , part - 1
+       io = io + tri_parts(i)
+    end do
+    
+    has = io1 <= io .and. &
+         io + tri_parts(i) - 1 <= io2
+
+  end function has_full_part
 
 end module m_ts_tri_scat
