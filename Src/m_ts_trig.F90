@@ -215,8 +215,8 @@ contains
        Elecs(iEl)%Sigma => zwork(no+1:no+io**2)
        no = no + io ** 2
 
-       ! if we don't need the cross-terms we can skip the blocks
-       ! that are not inside the blocks
+       ! if we need the cross-terms we can not skip the blocks
+       ! that are fully inside the electrode
        if ( Elecs(iEl)%DM_CrossTerms ) cycle
 
        io  = Elecs(iEl)%idx_no - no_BufL

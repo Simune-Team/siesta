@@ -71,6 +71,7 @@ contains
 
     integer :: lsPart, lePart
     integer :: BsPart, BePart
+    logical :: tWork
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE GFGammaGF' )
@@ -112,20 +113,53 @@ contains
     
     ! to track the last overwrite place
     tn = elements(Gf_tri) + 1
+    ! Correct for non-counted elements
+    do n = np , lePart + 1 , -1
+       sN = nrows_g(Gf_tri,n)
+       BsPart = max(n-1,lsPart)
+       BePart = min(n+1,lePart)
+       do cp = BePart , BsPart , -1
+          sNc = nrows_g(Gf_tri,cp)
+          tn = tn - sNc * sN
+       end do
+    end do
+
+    ! Keep track of movement of data
+    tWork = .true.
 
     do n = lePart , lsPart , -1
 
        ! Calculate the \Gamma Gf^\dagger sPart,1
        sN = nrows_g(Gf_tri,n)
 
+       ! correct to the quantities that is available
+       BsPart = max(n-1,lsPart)
+       BePart = min(n+1,lePart)
+
+       if ( .not. calc_parts(n) ) then
+          ! skip unneeded elements, and update
+          ! counter
+          do cp = BePart , BsPart , -1
+             sNc = nrows_g(Gf_tri,cp)
+             tn = tn - sNc * sN
+          end do
+          cycle
+       end if
+
+       ! Notice that we check that the Gamma.Gf^\dagger
+       ! is still in the same elements (i.e. oW is only
+       ! made a smaller array)
+       ! (see work-array shift down in tWork check
        if ( size(oW) < no * sN ) then
           call die('Something went wrong with calculating &
                &the maximum work size')
        end if
 
-       ! find the index of the thing that we don't want
-       ! to overwrite...
-       call TriMat_Bias_idxs(Gf_tri,no,min(n+1,lePart),sIdx,last_eIdx)
+       if ( tWork ) then
+          ! find the index of the thing that we don't want
+          ! to overwrite...
+          call TriMat_Bias_idxs(Gf_tri,no,BePart,sIdx,last_eIdx)
+       end if
        
        call TriMat_Bias_idxs(Gf_tri,no,n,sIdx,eIdx)
        ! obtain the Gf in the respective column
@@ -135,10 +169,6 @@ contains
        
        ! Now we are ready to perform the multiplication
        ! for the requested region
-
-       ! correct to the quantities that is available
-       BsPart = max(n-1,lsPart)
-       BePart = min(n+1,lePart)
 
 #ifdef TRANSIESTA_DEBUG
        write(*,'(a,2(tr1,i0),a,2(tr1,i0))')'GfGGf at:',BsPart,ip,' --',BePart,ip
@@ -152,27 +182,30 @@ contains
           ! Update the index of which we will update last
           tn = tn - sNc * sN
 
-          ! skip needed elements
-          if ( (.not. calc_parts( n)) .and. &
-               (.not. calc_parts(cp)) ) cycle
+          ! skip unneeded elements
+          if ( .not. calc_parts(cp) ) cycle
 
-          if ( tn <= last_eIdx ) then
-             ! transfer to the work-array
-
-             ! Retrieve Gf block
-             call TriMat_Bias_idxs(Gf_tri,no,max(cp,n),sIdx,eIdx)
+          if ( tWork ) then
              
-             ! copy over the elements in the end
-             work(nwork-eIdx+1:nwork) = fGf(1:eIdx)
-             ! point to the new place of the Gf-column
-             fGf => work(nwork-eIdx+1:nwork)
+             if ( tn <= last_eIdx ) then
+                ! transfer remaining data
+                ! to the work-array to not overwrite data
 
-             ! restrict work-array to be the remaining size
-             ! lets us check that what we do is correct
-             oW => work(1:nwork-eIdx)
-             if ( size(oW) < no * sN ) then
-                call die('Something went wrong with calculating &
-                     &the maximum work size')
+                ! Retrieve Gf block
+                call TriMat_Bias_idxs(Gf_tri,no,max(cp,n),sIdx,eIdx)
+             
+                ! copy over the elements in the end
+                work(nwork-eIdx+1:nwork) = fGf(1:eIdx)
+                ! point to the new place of the Gf-column
+                fGf => work(nwork-eIdx+1:nwork)
+
+                ! restrict work-array to be the remaining size
+                ! lets us check that what we do is correct
+                oW => work(1:nwork-eIdx)
+
+                ! Don't copy data anymore
+                tWork = .false.
+                
              end if
 
           end if

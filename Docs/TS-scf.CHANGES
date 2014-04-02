@@ -1,4 +1,19 @@
 ----------------------------------------------------
+April 2, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-134
+Further reduced the Gf.G.Gf triple product
+
+* Redid the triple product for the non-equilibrium
+  contour. 
+  This made restricts the calculation further and increases
+  the throughput without any loss of accuracy.
+  We are merely calculating the needed quantities.
+
+modified:
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+
+----------------------------------------------------
 March 30, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-133
 Implemented the restrictive tri-mat inversion
 
