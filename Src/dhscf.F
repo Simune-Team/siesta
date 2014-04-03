@@ -383,6 +383,9 @@ C ----------------------------------------------------------------------
 
 #ifdef TRANSIESTA
       if (TSmode) then
+         ! Ensure the mesh is set to the UNIFORM
+         ! (not necessary as POISSON has just been called)
+
          ! in case the mesh changes, we need this every time
          call ts_init_mesh( cell, ntm , meshLim , nsm )
       end if
@@ -987,7 +990,7 @@ C ----------------------------------------------------------------------
 #ifdef TRANSIESTA
       ! We require that even the SIESTA potential is "fixed"
       ! It will ease transition between siesta and transiesta
-      if (TSmode) call ts_hartree_fix( Vscf )
+      if (TSmode) call ts_hartree_fix( ntpl , Vscf(:,1) )
 #endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
@@ -1058,7 +1061,7 @@ C ----------------------------------------------------------------------
       if (TSmode.and.IsVolt.and.TSrun) then
          ! This routine expects a sequential array,
          ! in whatever distribution
-         call ts_voltage( cell, Vscf )
+         call ts_voltage( cell, ntpl, Vscf(:,1) )
       endif
 #endif /* TRANSIESTA */
 

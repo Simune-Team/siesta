@@ -164,7 +164,7 @@ contains
        if ( n > 1 ) then
           ! Check that no name is the same
           do i = 1 , n - 1 
-             if ( leqi(name(this_n(i)),name(this_n(n))) ) then
+             if ( leqi(this_n(i)%name,this_n(n)%name) ) then
                 call die('Electrode names must not be the same')
              end if
           end do
@@ -191,17 +191,18 @@ contains
     integer :: i, j
     integer :: idx_na 
 
-    character(len=200) :: ln
+    character(len=200) :: name, ln
 
-    found = fdf_block(trim(prefix)//'.Elec.'//trim(Name(this)),bfdf)
+    name = trim(this%name)
+    found = fdf_block(trim(prefix)//'.Elec.'//trim(name),bfdf)
     if ( .not. found ) return
 
     info(:) = .false.
     idx_na = 0
 
     ! We default a lot of the options
-    this%GFtitle = 'Surface-Greens function for '//trim(Name(this))
-    this%GFfile = trim(slabel)//'.'//trim(prefix)//'GF'//trim(Name(this))
+    this%GFtitle = 'Surface-Greens function for '//trim(name)
+    this%GFfile = trim(slabel)//'.'//trim(prefix)//'GF'//trim(name)
     this%na_used = -1
     
     do while ( fdf_bline(bfdf,pline) )
@@ -249,14 +250,14 @@ contains
           ln = fdf_bnames(pline,2)
           nullify(this%mu)
           do i = 1 , N_mu
-             if ( leqi(ln,name(mus(i))) ) then
+             if ( leqi(ln,mus(i)%name) ) then
                 this%mu => mus(i)
                 exit
              end if
           end do
           if ( .not. associated(this%mu) ) then
              call die('Could not find the chemical potential for the electrode: &
-                  '//trim(name(this))//'. Please supply an existing name.')
+                  '//trim(name)//'. Please supply an existing name.')
           end if
           info(3) = .true.
 
@@ -394,14 +395,14 @@ contains
        else
           
           call die('Unrecognized option "'//trim(ln)//'" &
-               &for electrode: '//trim(Name(this)))
+               &for electrode: '//trim(name))
 
        end if
 
     end do
     
     if ( RepA1(this) < 1 .or. RepA2(this) < 1 .or. RepA3(this) < 1 ) &
-         call die("Repetition in "//trim(Name(this))//" electrode must be >= 1.")
+         call die("Repetition in "//trim(name)//" electrode must be >= 1.")
 
     if ( .not. all(info) ) then
        write(*,*)'You need to supply at least:'
@@ -503,21 +504,21 @@ contains
   function equal_el_el(this1,this2) result(equal)
     type(Elec), intent(in) :: this1, this2
     logical :: equal
-    equal = name(this1) == name(this2)
+    equal = this1%name == this2%name
   end function equal_el_el
 
   function equal_el_str(this,str) result(equal)
     type(Elec), intent(in) :: this
     character(len=*), intent(in) :: str
     logical :: equal
-    equal = name(this) == trim(str)
+    equal = this%name == trim(str)
   end function equal_el_str
 
   function equal_str_el(str,this) result(equal)
     character(len=*), intent(in) :: str
     type(Elec), intent(in) :: this
     logical :: equal
-    equal = name(this) == trim(str)
+    equal = this%name == trim(str)
   end function equal_str_el
 
   subroutine assign(this,D,HSfile,GFfile,GFtitle, &
@@ -1094,7 +1095,7 @@ contains
     end if
 
     if ( nspin /= Spin(this) ) then
-       write(*,*)"ERROR: Electrode: "//trim(Name(this))
+       write(*,*)"ERROR: Electrode: "//trim(this%name)
        write(*,*) '  nspin=',nspin,' expected:', Spin(this)
        er = .true.
     end if
@@ -1171,7 +1172,7 @@ contains
 #endif
 
     if ( Gamma ) then
-       write(*,*) 'Electrode : '//trim(Name(this))//' is a Gamma-only calculation &
+       write(*,*) 'Electrode : '//trim(this%name)//' is a Gamma-only calculation &
             &this is not feasible.'
        er = .true.
     end if
@@ -1292,12 +1293,12 @@ contains
     if ( .not. IONode ) return
 
     if ( ind == 0 ) then
-       write(*,'(t2,a)') trim(name(this))//' principal cell is perfect!'
+       write(*,'(t2,a)') trim(this%name)//' principal cell is perfect!'
     else if ( maxi == 0 ) then
-       write(*,'(t2,a,i0,a)') trim(name(this))//' principal cell is extending out &
+       write(*,'(t2,a,i0,a)') trim(this%name)//' principal cell is extending out &
             &with all zeroes ',ind,' elements'
     else
-       write(*,'(t2,a,i0,a)') trim(name(this))//' principal cell is extending out with ',ind,' elements:'
+       write(*,'(t2,a,i0,a)') trim(this%name)//' principal cell is extending out with ',ind,' elements:'
        write(*,'(t5,2(a,i0))') 'Atom ',maxia,' connects with atom ',maxja
        write(*,'(t5,2(a,i0))') 'Orbital ',UCORB(maxi,no_u) , &
             ' connects with orbital ',UCORB(maxj,no_u)
@@ -1325,11 +1326,11 @@ contains
 
     if ( .not. IONode ) return
 
-    write(*,*) trim(name(this))//' unit cell (Ang):'
+    write(*,*) trim(this%name)//' unit cell (Ang):'
     write(*,'(2(3(f8.4),/),3(f8.4))') this%ucell/Ang
     
     write(*,'(a,t35,a)') &
-         " Structure of "//trim(name(this))//" electrode","| System electrode:"
+         " Structure of "//trim(this%name)//" electrode","| System electrode:"
     write(*,'(t3,3a10,''  |'',3a10)') &
          "X (Ang)","Y (Ang)","Z (Ang)", "X (Ang)","Y (Ang)","Z (Ang)"
 

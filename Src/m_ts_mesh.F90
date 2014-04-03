@@ -25,18 +25,16 @@ module m_ts_mesh
 
   implicit none
 
-  save
-
   ! The offset for the current node
-  real(dp) :: offset_r(3) = 0._dp
+  real(dp), save :: offset_r(3) = 0._dp
   ! the voxel-vectors for each sub-mesh element
-  real(dp) :: dL(3,3) = 0._dp
+  real(dp), save :: dL(3,3) = 0._dp
   ! the voxel length along each direction
-  real(dp) :: dMesh(3) = 0._dp
+  real(dp), save :: dMesh(3) = 0._dp
 
   ! offsets for the local node
-  integer :: meshl(3) = 0
-  integer :: offset_i(3) = 0
+  integer, save :: meshl(3) = 0
+  integer, save :: offset_i(3) = 0
 
 contains
 
@@ -69,12 +67,21 @@ contains
     ! dL(1,2) = dX for stepping in the y-direction
     ! dL(1,3) = dX for stepping in the z-direction
     do i = 1 , 3 
-       ! The mesh box-size
-       dMesh(i) = VNORM(ucell(:,i)) / max(meshG(i),1)
+       ldimX = max(meshG(i),1)
        ! The dimension stepping in each direction.
-       dL(:,i) = ucell(:,i) / max(meshG(i),1)
+       dL(:,i) = ucell(:,i) / ldimX
+       ! The mesh box-size
+       dMesh(i) = VNORM(ucell(:,i)) / ldimX
     end do
 
+    ! For nodes == 1 we have no offset
+    ! (also some of the arrays are not initialized, which
+    !  could lead to errors)
+    if ( Nodes == 1 ) then
+       meshl = meshG ! same as meshLim(2,:) * nsm
+       return
+    end if
+       
     ! Now we need to calculate the offset of the local node
 
     ! Calculate the number of big-points

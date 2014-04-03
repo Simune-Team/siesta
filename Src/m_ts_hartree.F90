@@ -36,16 +36,15 @@ module m_ts_hartree
   ! We construct the square at which we fix the potential
 
   ! The lower-left corner and vectors spanning the square
-  real(dp) :: ll_c(3), v1(3), v2(3)
+!  real(dp) :: ll_c(3), v1(3), v2(3)
   ! The normal-vector
-  real(dp) :: n(3)
+!  real(dp) :: n(3)
   ! an auxillary length to ease computations
-  real(dp) :: d
+!  real(dp) :: d
 
 contains
 
   subroutine ts_init_hartree_fix(ucell,na_u,xa,meshG,nsm)
-    use mesh, only : cmesh
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -58,9 +57,51 @@ contains
 
   end subroutine ts_init_hartree_fix
 
+#ifdef INTEL_COMPILER_ERROR 
+! This code segment will create an error with the
+! intel compiler compiled at a high setting: TODO
+!  -m64 -O3 -xHost -fp-model source -fp-model except -ip -prec-div -prec-sqrt
+! If I remove the pointer/target feature below it works beautifully!
+! *** NOT GOOD ***
+  integer, target :: i10, i20, i30
+  integer, pointer :: iT
+  if ( ts_tdir == 1 ) then
+     i10 = 0
+     iT => i10
+  else if ( ts_tdir == 2 ) then
+     i20 = 0
+     iT => i20
+  else
+     i30 = 0
+     iT => i30
+  end if
+
+  i10 = 0
+  i20 = offset_i(2) - 1
+  i30 = offset_i(3) - 1
+  if ( iT <= 0 ) then
+     imesh = 0
+     i30 = offset_i(3) - 1
+     do i3 = 0,meshl(3)-1
+        i30 = i30 + 1
+        i20 = offset_i(2) - 1
+        do i2 = 0,meshl(2)-1
+           i20 = i20 + 1
+           do i10 = 0,meshl(1)-1
+              imesh = imesh + 1
+              if (iT.eq.0) then
+                 nlp = nlp + 1
+                 Vtot = Vtot + Vscf(imesh)
+              end if
+           end do
+        end do
+     end do
+  end if
+#endif
+
   ! Fix the potential
-  subroutine ts_hartree_fix( Vscf )
-    use precision, only : dp, grid_p
+  subroutine ts_hartree_fix( ntpl , Vscf )
+    use precision, only : grid_p
     use sys, only : die
     use parallel, only : Node, Nodes
 #ifdef MPI
@@ -71,15 +112,15 @@ contains
     use m_ts_tdir
     use m_ts_mesh, only : meshl, offset_i
     
-    real(grid_p), intent(inout) :: Vscf(:,:)
+    integer, intent(in) :: ntpl
+    real(grid_p), intent(inout) :: Vscf(ntpl)
 
 ! Internal variables
     integer :: i1, i2, i3, imesh, ntemp
     integer :: nlp
-    integer, target  :: i10, i20, i30
-    integer, pointer :: iT
+    integer :: i10, i20, i30
 #ifdef MPI
-    integer :: MPIerror, npl
+    integer :: MPIerror
 #endif
     real(dp) :: Vav, Vtot, temp
 
@@ -87,35 +128,51 @@ contains
     call write_debug( 'PRE TSVHfix' )
 #endif
 
-    ! Set up counter
-    if ( ts_tdir == 1 ) then
-       iT => i10
-    else if ( ts_tdir == 2 ) then
-       iT => i20
-    else
-       iT => i30
-    end if
-
+    ! Initialize summation
     Vtot = 0._dp
-    nlp  = 0
 
-    ! Test whether we should do anything (note that iT => [i10|i20|i30]):
-    i10 = 0
-    i20 = offset_i(2) - 1
-    i30 = offset_i(3) - 1
-    if ( iT <= 0 ) then
-       imesh = 0
-       i30 = offset_i(3) - 1
-       do i3 = 0,meshl(3)-1
-          i30 = i30 + 1
-          i20 = offset_i(2) - 1
-          do i2 = 0,meshl(2)-1
-             i20 = i20 + 1
-             do i10 = 0,meshl(1)-1
+    ! Initialize counters
+    nlp  = 0
+    imesh = 0
+
+    if ( ts_tdir == 1 ) then
+       do i3 = 1 , meshl(3)
+          do i2 = 1 , meshl(2)
+             i10 = offset_i(1) - 1
+             do i1 = 1 , meshl(1)
+                i10 = i10 + 1
                 imesh = imesh + 1
-                if (iT.eq.0) then
+                if ( i10 == 0 ) then
                    nlp = nlp + 1
-                   Vtot = Vtot + Vscf(imesh,1)
+                   Vtot = Vtot + Vscf(imesh)
+                end if
+             end do
+          end do
+       end do
+    else if ( ts_tdir == 2 ) then
+       do i3 = 1 , meshl(3)
+          i20 = offset_i(2) - 1
+          do i2 = 1 , meshl(2)
+             i20 = i20 + 1
+             do i1 = 1 , meshl(1)
+                imesh = imesh + 1
+                if ( i20 == 0 ) then
+                   nlp = nlp + 1
+                   Vtot = Vtot + Vscf(imesh)
+                end if
+             end do
+          end do
+       end do
+    else
+       i30 = offset_i(3) - 1
+       do i3 = 1 , meshl(3)
+          i30 = i30 + 1
+          do i2 = 1 , meshl(2)
+             do i1 = 1 , meshl(1)
+                imesh = imesh + 1
+                if ( i30 == 0 ) then
+                   nlp = nlp + 1
+                   Vtot = Vtot + Vscf(imesh)
                 end if
              end do
           end do
@@ -131,17 +188,10 @@ contains
     nlp = ntemp
 #endif
 
-    Vav = Vtot/real(nlp,dp)
-
-    imesh = 0
-    do i30 = 1 , meshl(3)
-       do i20 = 1 , meshl(2)
-          do i10 = 1 , meshl(1)
-             imesh = imesh + 1
-             Vscf(imesh,1) = Vscf(imesh,1) - Vav
-          end do
-       end do
-    end do
+    Vav = Vtot / real(nlp,dp)
+    
+    ! Align potential
+    Vscf(1:ntpl) = Vscf(1:ntpl) - Vav
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS TSVHfix' )

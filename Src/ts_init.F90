@@ -80,7 +80,6 @@ contains
 
     ! Read in options for transiesta
     call read_ts_options( wmix, kT, ucell , na_u , xa, lasto )
-
     ! Setup the k-points, must be done after options reading 
     ! (determine the transport direction)
     call setup_ts_kpoint_grid( ucell )

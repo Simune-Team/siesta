@@ -1,4 +1,38 @@
 ----------------------------------------------------
+April 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-135
+Bugfix for intel compiler
+
+* The intel compiler cannot handle pointer/target
+  assignments (see m_ts_hartree)
+  We did:
+    integer, target :: i1,i2
+    integer, pointer :: iT
+    
+    if ...
+      iT => i1
+    else if ...
+      iT => i2
+
+  apparently the above lead to memory leaks.
+  I tried using the exact same thing without pointer/target
+  and that worked perfectly.
+  Hmm...
+
+* Fixed the case of non-bulk electrodes and the position of
+  the potential field.
+  I.e. it should not be moved to the electrode boundary.
+
+* Changed references to Name(this) in electrode file
+
+modified:
+  Src/dhscf.F
+  Src/m_ts_electype.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_mesh.F90
+  Src/m_ts_voltage.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 April 2, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-134
 Further reduced the Gf.G.Gf triple product
 

@@ -70,40 +70,46 @@ contains
     left_V = Elecs(iElL)%mu%mu
     call print_ts_voltage(ucell)
 
-    ! Find the electrode mesh sets
     if ( VoltageInC ) then
+       ! Find the electrode mesh sets
        call init_elec_indices(ucell, meshG, nsm, na_u, xa)
+    else
+       ! Simulate the electrodes at the ends
+       ! This leverages a double routine
+       left_elec_mesh_idx  = 1
+       right_elec_mesh_idx = meshG(ts_tdir)
     end if
 
   end subroutine ts_init_voltage
 
-  subroutine ts_voltage(ucell,Vscf)
+  subroutine ts_voltage(ucell, ntpl, Vscf)
     use precision,    only : grid_p
     use m_ts_options, only : VoltageInC
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
     real(dp),      intent(in) :: ucell(3,3)
+    integer,       intent(in) :: ntpl
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    real(grid_p), intent(inout) :: Vscf(:,:)
+    real(grid_p), intent(inout) :: Vscf(ntpl)
 
     call timer('ts_volt',1)
 
-    if ( VoltageInC ) then
-       ! Voltage drop in between the electrodes
-       call ts_ramp_elec(ucell,Vscf)
-    else
-       ! Voltage drop in the entire cell
-       call ts_ramp_cell(ucell,Vscf)
-    end if
+    ! Voltage drop in between the electrodes
+    ! The indices for the full cell is set
+    ! correctly to not have two routines doing the
+    ! same
+    call ts_ramp_elec(ucell,ntpl,Vscf)
 
     call timer('ts_volt',2)
 
   end subroutine ts_voltage
 
-  subroutine ts_ramp_cell(ucell, Vscf)
+
+  subroutine ts_ramp_elec(ucell, ntpl, Vscf)
+    use intrinsic_missing, only : VNORM
     use precision,    only : grid_p
     use parallel,     only : IONode
     use m_ts_options, only : Volt
@@ -112,83 +118,20 @@ contains
 ! * INPUT variables     *
 ! ***********************
     real(dp),      intent(in) :: ucell(3,3)
+    integer,       intent(in) :: ntpl
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    real(grid_p), intent(inout) :: Vscf(:,:)
-
-! ***********************
-! * LOCAL variables     *
-! ***********************
-    integer                   :: i1, i2, i3, imesh
-    integer, target           :: i10, i20, i30
-    integer, pointer          :: iT
-    real(dp)                  :: Lvc, dLvc, dF
-    real(dp)                  :: dot
-    external                  :: dot
-
-    ! the length of the mesh-elements in the transport direction
-    dLvc = dMesh(ts_tdir)
-    Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
-
-    ! field in [0;Lvc]: v = e*x = f*index
-    dF = Volt * dLvc/Lvc
-
-    ! Set up counter
-    if ( ts_tdir == 1 ) then
-       iT => i10
-    else if ( ts_tdir == 2 ) then
-       iT => i20
-    else
-       iT => i30
-    end if
- 
-    if ( meshl(1) * meshl(2) * meshl(3) /= size(Vscf,1) ) &
-         call die('ERROR: Vscf size not correct')
-
-    ! Add the electric field potential to the input potential
-    imesh = 0
-    i30 = offset_i(3) - 1
-    do i3 = 0,meshl(3)-1
-       i30 = i30 + 1
-       i20 = offset_i(2) - 1
-       do i2 = 0,meshl(2)-1
-          i20 = i20 + 1
-          i10 = offset_i(1) - 1
-          do i1 = 0,meshl(1)-1
-             i10   = i10 + 1
-             imesh = imesh + 1
-             Vscf(imesh,1) = Vscf(imesh,1) + left_V - dF*iT
-          enddo
-       enddo
-    enddo
-
-  end subroutine ts_ramp_cell
-
-  subroutine ts_ramp_elec(ucell, Vscf)
-    use precision,    only : grid_p
-    use parallel,     only : IONode
-    use m_ts_options, only : Volt
-    use m_ts_mesh,    only : meshl, offset_i, dMesh
-! ***********************
-! * INPUT variables     *
-! ***********************
-    real(dp),      intent(in) :: ucell(3,3)
-! ***********************
-! * OUTPUT variables    *
-! ***********************
-    real(grid_p), intent(inout) :: Vscf(:,:)
+    real(grid_p), intent(inout) :: Vscf(ntpl)
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i1, i2, i3, idT, imesh
     real(dp) :: Lvc, dLvc, dF
-    real(dp) :: dot
-    external :: dot
 
     dLvc = dMesh(ts_tdir)
-    Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
+    Lvc = VNORM(ucell(:,ts_tdir))
 
     ! For the electrode the distance is only in between the indices
     Lvc = dLvc * (right_elec_mesh_idx - left_elec_mesh_idx)
@@ -197,7 +140,7 @@ contains
     dF = Volt * dLvc / Lvc
 
     ! Find quantities in mesh coordinates
-    if ( meshl(1) * meshl(2) * meshl(3) /= size(Vscf,1) ) &
+    if ( meshl(1) * meshl(2) * meshl(3) /= ntpl ) &
          call die('ERROR: Vscf size not correct')
 
     ! Add the electric field potential to the input potential
@@ -222,7 +165,7 @@ contains
                 end if
                 
                 imesh = imesh + 1
-                Vscf(imesh,1) = Vscf(imesh,1) + left_V - dF*idT
+                Vscf(imesh) = Vscf(imesh) + left_V - dF*idT
              enddo
           enddo
        enddo
@@ -246,7 +189,7 @@ contains
              end if
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh,1) = Vscf(imesh,1) + left_V - dF*idT
+                Vscf(imesh) = Vscf(imesh) + left_V - dF*idT
              enddo
           enddo
        enddo
@@ -272,7 +215,7 @@ contains
           do i2 = 1,meshl(2)
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh,1) = Vscf(imesh,1) + left_V - dF*idT
+                Vscf(imesh) = Vscf(imesh) + left_V - dF*idT
              enddo
           enddo
        enddo
@@ -322,6 +265,7 @@ contains
   end subroutine get_elec_indices
 
   subroutine init_elec_indices(ucell, meshG, nsm, na_u, xa)
+    use intrinsic_missing, only : VNORM
     use parallel,     only : IONode
     use units,        only : Ang
     use m_ts_electype
@@ -342,26 +286,46 @@ contains
     real(dp) :: left_t_max, right_t_min
     real(dp) :: ddleft, ddright
     real(dp) :: ElecL(3), ElecR(3)
-    real(dp) :: dot
-    external :: dot
 
     if ( N_Elec > 2 ) call die('Not fully implemented, only non-bias with N-electrode')
-    Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
+    Lvc = VNORM(ucell(:,ts_tdir))
 
     ! get the left/right electrodes
     call get_elec_indices(na_u,xa,iElL,iElR)
 
-    left_t_max  = -huge(1._dp)
-    right_t_min = huge(1._dp)
-    do i = Elecs(iElL)%idx_na , Elecs(iElL)%idx_na + TotUsedAtoms(Elecs(iElL)) - 1
-       if ( left_t_max < xa(ts_tdir,i) ) then
-          left_t_max = xa(ts_tdir,i)
+    if ( Elecs(iElL)%Bulk ) then
+       left_t_max  = -huge(1._dp)
+    else
+       left_t_max  =  huge(1._dp)
+    end if
+    if ( Elecs(iElR)%Bulk ) then
+       right_t_min =  huge(1._dp)
+    else
+       right_t_min = -huge(1._dp)
+    end if
+    do i = Elecs(iElL)%idx_na , &
+         Elecs(iElL)%idx_na + TotUsedAtoms(Elecs(iElL)) - 1
+       if ( Elecs(iElL)%Bulk ) then
+          if ( left_t_max < xa(ts_tdir,i) ) then
+             left_t_max = xa(ts_tdir,i)
+          end if
+       else
+          if ( xa(ts_tdir,i) < left_t_max ) then
+             left_t_max = xa(ts_tdir,i)
+          end if
        end if
     end do
     left_t_max = left_t_max + 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
-    do i = Elecs(iElR)%idx_na , Elecs(iElR)%idx_na + TotUsedAtoms(Elecs(iElR)) - 1
-       if ( xa(ts_tdir,i) < right_t_min ) then
-          right_t_min = xa(ts_tdir,i)
+    do i = Elecs(iElR)%idx_na , &
+         Elecs(iElR)%idx_na + TotUsedAtoms(Elecs(iElR)) - 1
+       if ( Elecs(iElL)%Bulk ) then
+          if ( xa(ts_tdir,i) < right_t_min ) then
+             right_t_min = xa(ts_tdir,i)
+          end if
+       else
+          if ( right_t_min < xa(ts_tdir,i) ) then
+             right_t_min = xa(ts_tdir,i)
+          end if
        end if
     end do
     right_t_min = right_t_min - 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
@@ -426,6 +390,7 @@ contains
 ! Print out the voltage direction dependent on the cell parameters.
 
   subroutine print_ts_voltage( ucell )
+    use intrinsic_missing, only : VNORM
     use parallel,     only : IONode
     use units,        only : eV
     use m_ts_options, only : Volt
@@ -440,10 +405,7 @@ contains
     integer  :: i
     real(dp) :: Lvc, vcdir(3)
 
-    real(dp) :: dot
-    external :: dot
-    
-    Lvc = sqrt(dot(ucell(1,ts_tdir),ucell(1,ts_tdir),3))
+    Lvc = VNORM(ucell(:,ts_tdir))
     do i = 1 , 3
        vcdir(i) = ucell(i,ts_tdir)/Lvc
     end do
