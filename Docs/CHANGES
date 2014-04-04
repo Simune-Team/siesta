@@ -6,6 +6,32 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-04-04  11:00:00 UTC+2                                   trunk-459
+Update of xc functionals, adding VDW-BH
+
+* Added VDW-BH of K. Berland and P. Hyldgaard, PRB 89, 035412 (2014)
+  (M.Fritz & J.M.Soler)
+
+* Some tests in SiestaXC/Tester have been modified and updated
+
+* m_timer.F90 has been added to SIESTA_SRCS in SiestaXC/makefile
+
+renamed:
+  Src/SiestaXC/Testers/test2.f90 => Src/SiestaXC/Testers/test2.F90
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaxc.F90
+  Src/xc.f
+  Src/SiestaXC/Testers/test2.F90
+
+-----------------------------------------------------------------------
 2014-03-05  09:15:00 GMT                                     trunk-458
 Fixes and new features in fdf
 

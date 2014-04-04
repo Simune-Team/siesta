@@ -59,7 +59,8 @@ PROGRAM siestaXCtest4
                     'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
 !                    'DRSLL ' /) 
 !                    'LMKLL ' /) 
-                    'VV    ' /) 
+!                    'VV    ' /) 
+                    'BH    ' /) 
 
   ! Tester variables and arrays
   integer :: cellMesh(3) = (/nx,nx,nx/)
@@ -82,7 +83,6 @@ PROGRAM siestaXCtest4
 
 #ifdef MPI
   ! Initialize MPI and get myNode and nNodes
-  print*,'test4: entering MPI_Init'
   call MPI_Init( MPIerror )
   call MPI_Comm_Rank( MPI_Comm_World, myNode, MPIerror )
   call MPI_Comm_Size( MPI_Comm_World, nNodes, MPIerror )

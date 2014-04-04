@@ -11,6 +11,14 @@ PROGRAM siestaXCtest2
   USE siestaXC, only: dp
   USE siestaXC, only: gp => grid_p
 
+! Used MPI procedures and types
+#ifdef MPI
+  USE mpi_siesta, only: MPI_AllReduce
+  USE mpi_siesta, only: MPI_Comm_World
+  USE mpi_siesta, only: MPI_Double_Precision
+  USE mpi_siesta, only: MPI_Sum
+#endif
+
   implicit none
 
   ! Tester parameters
@@ -58,6 +66,14 @@ PROGRAM siestaXCtest2
              Dc, Dc0, dr, dVol, Dx, Dx0, Ec, Ec0, Ex, Ex0, &
              kf, kg, maxDiffVxc, pi, r, rMesh(nr), &
              Vxc(nr,nSpin), Vxc0(nr,nSpin), wc(nfTot), wr, wx(nfTot)
+
+#ifdef MPI
+  ! Initialize MPI, even though this test is intended to be run serially
+  integer:: MPIerror, myNode, nNodes
+  call MPI_Init( MPIerror )
+  call MPI_Comm_Rank( MPI_Comm_World, myNode, MPIerror )
+  call MPI_Comm_Size( MPI_Comm_World, nNodes, MPIerror )
+#endif
 
   ! Initialize hybrid XC functional with all tested functionals
   wx = 1._dp / nf
@@ -137,6 +153,11 @@ PROGRAM siestaXCtest2
   print'(a,2f15.9)', 'avgDiffVxc, maxDiffVxc = ', avgDiffVxc, maxDiffVxc
 !  print'(a,2i6)', 'irMax, iSpinMax = ', irmax, ismax
   close( unit=44 )
+
+! Finalize MPI
+#ifdef MPI
+  call MPI_Finalize( MPIerror )
+#endif
 
 CONTAINS
 

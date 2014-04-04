@@ -17,11 +17,11 @@ PROGRAM siestaXCtest1
 
   ! Tester parameters
   integer, parameter:: irel    =  1      ! Relativistic? 0=>no, 1=>yes
-  integer, parameter:: nCalls  = 100      ! Number of calls to each routine
-  integer, parameter:: nfTot   = 12      ! Total number of functionals
+  integer, parameter:: nCalls  = 100     ! Number of calls to each routine
+  integer, parameter:: nfTot   = 13      ! Total number of functionals
   integer, parameter:: nSpin   =  4      ! Number of spin components (1|2|4)
-  real(dp),parameter:: densMax = 0.1_dp  ! Upper limit to density value
-  real(dp),parameter:: gradMax = 0.5_dp  ! Upper limit to density gradient
+  real(dp),parameter:: kfMax   = 5.0_dp  ! Upper limit to Fermi wavevector
+  real(dp),parameter:: kgMax   = 5.0_dp  ! Upper limit to |grad(rho)|/rho
   real(dp),parameter:: deltaDens  = 1.e-6_dp  ! Finite diff. change
   real(dp),parameter:: deltaGrad  = 1.e-6_dp  ! Finite diff. change
   real(dp),parameter:: dEdDensTol = 1.e-6_dp  ! Tolerance for dE/dDens
@@ -31,22 +31,22 @@ PROGRAM siestaXCtest1
 
   ! List of functionals to be tested
 !  integer, parameter:: nf = 12       ! Number of tested functionals
-!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10,11,12/) ! Indexes from list
-  integer, parameter:: nf = 10        ! Skip problematic functionals
-  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11,12/)
+!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10,11,12,13/) ! Indexes from list
+  integer, parameter:: nf = 11        ! Skip problematic functionals
+  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11,12,13/)
 
   ! All functionals available
   !                  1,       2,       3,       4,       5,   
   !                  6,       7,       8,       9       10,
-  !                 11,      12
+  !                 11,      12,      13
   character(len=3):: &
     func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
                     'GGA',   'GGA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA' /)
+                    'GGA',   'GGA',   'GGA' /)
   character(len=6):: &
     auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
                     'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
-                    'PW86  ','B88   ' /) 
+                    'PW86  ','B88   ','BH    ' /) 
 
   ! Tester variables and arrays
   complex(dp),parameter:: c0 = (0._dp,0._dp)  ! Complex zero
@@ -59,7 +59,7 @@ PROGRAM siestaXCtest1
              dExdDens(nSpin), dExdGrad(3,nSpin), densPol, densTot, &
              dVxdDens(nSpin,nSpin), dVcdDens(nSpin,nSpin), &
              Ec, Ex, gradDens(3,nSpin), gradDensPol(3), gradDensTot(3)
-  real(dp):: cosTheta, phi, pi, ran(6), sinTheta, theta
+  real(dp):: cosTheta, kFermi, phi, pi, ran(6), sinTheta, theta
   real(dp):: epsC0, epsX0, dens0(nSpin), gradDens0(3,nSpin)
   real(dp):: dEcdDens0(nSpin), dEcdGrad0(3,nSpin), &
              dExdDens0(nSpin), dExdGrad0(3,nSpin)
@@ -68,8 +68,9 @@ PROGRAM siestaXCtest1
   integer :: errorC, errorX, iCall, iDelta, iDeriv, iSpin, ix, &
              jf, kf, mSpin, one, two, three, four
   logical :: errorsFound
-  integer :: mySeed(8) = (/39302655,65443109,09887367,99836827, &
-                           70376268,32727926,46717826,35271017/)
+  integer :: mySeed(12) = (/39302655,65443109,09887367,99836827, &
+                            70376268,32727926,46717826,35271017, &
+                            63245609,89012831,78116893,10016273/)
 
   ! Initialize random seed
   call random_seed( put=mySeed )
@@ -103,7 +104,8 @@ PROGRAM siestaXCtest1
     ! Choose random density, but large enough for safe numerical derivatives
     do ! density selection trial
       call random_number( ran(1:2) )
-      densTot = densMax * ran(1)
+      kFermi = kfMax * ran(1)
+      densTot = kFermi**3/3/pi**2
       densPol = densTot * ran(2)
       if (densTot-densPol>10*deltaDens) exit ! density selection trial
     end do
@@ -135,14 +137,14 @@ PROGRAM siestaXCtest1
     ! Choose random gradient of density
     do iSpin = 1,nSpin
       call random_number( ran(1:3) )
-      gradDens0(1:3,iSpin) = gradMax * (2*ran(1:3)-1)
+      gradDens0(1:3,iSpin) = densTot * kgMax * (2*ran(1:3)-1)
     end do
 
     ! Choose density gradient collinear with density itself
     if (nSpin==4 .and. collinear) then
       call random_number( ran(1:6) )
-      gradDensTot(1:3) = gradMax * (2*ran(1:3)-1)
-      gradDensPol(1:3) = gradMax * (2*ran(4:6)-1)
+      gradDensTot(1:3) = densTot * kgMax * (2*ran(1:3)-1)
+      gradDensPol(1:3) = densTot * kgMax * (2*ran(4:6)-1)
       do ix = 1,3
         gradDensMat(ix,:,:) = gradDensTot(ix)/2 * Imat(:,:) &
                             + gradDensPol(ix)/2 * polDirMat(:,:)

@@ -213,6 +213,7 @@
 !          'LMKLL' => VDW K.Lee et al, PRB 82, 081101 (2010)
 !            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2010)
 !             'VV' => VDW Vydrov-VanVoorhis, JCP 133, 244103 (2010)
+!             'BH' => VDW K. Berland and Per Hyldgaard, PRB 89, 035412 (2014)
 ! *******************************************************************
 
 MODULE m_cellXC

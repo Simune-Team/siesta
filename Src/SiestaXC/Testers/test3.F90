@@ -60,7 +60,8 @@ PROGRAM siestaXCtest3
                     'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
 !                    'DRSLL ' /) 
 !                    'LMKLL ' /) 
-                    'VV    ' /) 
+!                    'VV    ' /) 
+                    'BH    ' /) 
                                      
 
   ! A few random numbers
