@@ -71,9 +71,11 @@ contains
   else if ( ts_tdir == 2 ) then
      i20 = 0
      iT => i20
-  else
+  else if ( ts_tdir == 3 ) then
      i30 = 0
      iT => i30
+  else
+     call die('Hartree fix, not implemented')
   end if
 
   i10 = 0
@@ -163,7 +165,7 @@ contains
              end do
           end do
        end do
-    else
+    else if ( ts_tdir == 3 ) then
        i30 = offset_i(3) - 1
        do i3 = 1 , meshl(3)
           i30 = i30 + 1
@@ -177,6 +179,8 @@ contains
              end do
           end do
        end do
+    else
+       call die('N_Elec/=2 not implemented as this')
     end if
 
 #ifdef MPI

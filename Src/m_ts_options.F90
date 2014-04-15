@@ -357,6 +357,12 @@ contains
        IsVolt = .false.
     end if
 
+    ! If many electrodes, no transport direction can be specified
+    ! Hence we use this as an error-check (also for N_Elec == 1)
+    if ( N_Elec /= 2 ) then
+       ts_tdir = - N_Elec
+    end if
+
     ! Setup default parameters for the electrodes
     ! first electrode is the "left"
     ! last electrode is the "right"

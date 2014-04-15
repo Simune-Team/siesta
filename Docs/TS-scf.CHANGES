@@ -1,4 +1,31 @@
 ----------------------------------------------------
+April 15, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-136
+Enabled E-field for transiesta if they are perpendicular
+
+* If the electric fields are perpendicular to the transport 
+  direction we can in principle allow electric fields.
+  It should not violate the periodicity of the system.
+  However the handling of the electrode-device region
+  is blurred by this concept. 
+  Hence any usage of electric fields with transiesta
+  is given a warning.
+  
+* The transport-direction variable is now also an error-handler.
+  For negative values it describes the number of electrodes.
+  And any N_Elec /= 2 will mean ts_tdir = - N_Elec.
+  This makes transiesta checks across the code more stringent
+  as we can easily check for the validity of Hartree potential
+  for the electrode setup.
+
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/m_ts_hartree.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 April 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-135
 Bugfix for intel compiler
 

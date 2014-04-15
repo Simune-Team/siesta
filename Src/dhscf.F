@@ -90,6 +90,9 @@
       use cellxc_mod,     only : setGGA
 #endif /* BSC_CELLXC */
       use m_efield,       only : initialize_efield, acting_efield
+      use m_efield,       only : get_field_from_dipole
+      use m_efield,       only : dipole_correction
+      use m_efield,       only : user_specified_field
 
       use m_doping_uniform,       only: initialize_doping_uniform
       use m_doping_uniform,       only: compute_doping_structs_uniform,
@@ -99,6 +102,7 @@
 #endif
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode
+      use m_ts_tdir,      only : ts_tdir
       use m_ts_options,   only : IsVolt
       use m_ts_mesh   ,   only : ts_init_mesh
       use m_ts_voltage,   only : ts_init_voltage
@@ -130,7 +134,9 @@
       integer                 :: nXCfunc
       character(len=20)       :: XCauth(10), XCfunc(10)
 #endif /* ! BSC_CELLXC */
-
+#ifdef TRANSIESTA
+      real(dp)                :: ortho, field(3), field2(3)
+#endif
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '    PRE dhscf_init' )
@@ -397,13 +403,61 @@ C ----------------------------------------------------------------------
            if ( IsVolt ) then
               call ts_init_voltage( cell, nua, xa, ntm, nsm)
            end if
-           if(IsVolt .and. acting_efield) then
-              if(Node.eq.0) then
+           ! We do not allow the electric field for 
+           ! transiesta runs with V = 0, either.
+           ! It does not make sense.
+           if ( acting_efield ) then
+              ! We need to check that the e-field is perpendicular
+              ! to the transport direction, and that the system is
+              ! either a chain, or a slab.
+              if ( shape .ne. 'chain' .and. shape .ne. 'slab' ) then
+                 ! a molecule with buffer layers is a viable 
+                 ! thing to put E-field across, however,
+                 ! we can not figure out where to place it. :(
                  call die('Error, both external voltage and field!')
-                 ! We have to die, the contour has been created with
-                 ! a voltage and the \mu_{LR} has been set.
-                 ! We have to die...
               end if
+              ! check that we do not violate the periodicity
+              if ( Node .eq. 0 ) then
+                 write(*,'(3a)') 'WARNING: transiesta: ',
+     &                'E-field/dipole-correction and transiesta. ',
+     &                'I hope you know what you are doing!'
+              end if
+              if ( ts_tdir < 1 ) then
+                 call die('Error, electric field and undetermined &
+     &transport direction does not make sense N_Elec /= 2!')
+              end if
+              ! Now we can check the directions of the slab
+              if ( dipole_correction ) then
+                 if ( shape .eq. 'chain' ) then
+                    field  = cell(1:3,ts_tdir)
+                    ortho  = ddot(3,field,1,field,1)
+                    field  = field / ortho
+                    ortho  = ddot(3,bcell,1,bcell,1)
+                    field2 = bcell(1:3,1) / ortho
+                    ! the transport direction must
+                    ! be the periodic direction
+                    if ( sum(abs(field-field2)) > 1.e-9_dp ) then
+                       call die('Dipole correction is not &
+     &perpendicular to transport direction')
+                    end if
+                 else if ( shape .eq. 'slab' ) then
+                    ! get the field-direction
+                    call cross( bcell(1,1), bcell(1,2), field )
+                    ortho = ddot(3,cell(1,ts_tdir),1,field,1) 
+                    if ( ortho > 1.e-9_dp ) then
+                       call die('Dipole-correction must be &
+     &perpendicular to transport direction')
+                    end if
+                 end if
+              else
+                 field = user_specified_field
+                 ortho = ddot(3,cell(1,ts_tdir),1,field,1)
+                 if ( ortho > 1.e-9_dp ) then
+                    call die('User defined E-field must be &
+     &perpendicular to transport direction')
+                 end if
+              end if
+              
            end if
         endif
       endif

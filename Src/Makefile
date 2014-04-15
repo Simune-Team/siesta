@@ -476,8 +476,8 @@ dfscf.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o bsc_xcmod.o cellxc_mod.o doping_uniform.o files.o
 dhscf.o: forhar.o iogrid_netcdf.o m_efield.o m_iorho.o m_partial_charges.o
 dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_mesh.o m_ts_options.o
-dhscf.o: m_ts_voltage.o mesh.o meshdscf.o meshsubs.o moremeshsubs.o parallel.o
-dhscf.o: parsing.o precision.o siesta_options.o sys.o units.o vmat.o
+dhscf.o: m_ts_tdir.o m_ts_voltage.o mesh.o meshdscf.o meshsubs.o moremeshsubs.o
+dhscf.o: parallel.o parsing.o precision.o siesta_options.o sys.o units.o vmat.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
@@ -692,7 +692,7 @@ m_ts_fullk.o: m_ts_sparse_helper.o m_ts_weight.o parallel.o precision.o units.o
 m_ts_gf.o: m_ts_cctype.o m_ts_contour_eq.o m_ts_contour_neq.o m_ts_electrode.o
 m_ts_gf.o: m_ts_electype.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
-m_ts_hartree.o: m_ts_mesh.o m_ts_tdir.o mesh.o parallel.o precision.o sys.o
+m_ts_hartree.o: m_ts_mesh.o m_ts_tdir.o parallel.o precision.o sys.o
 m_ts_io.o: m_glob_sparse.o parallel.o precision.o sys.o
 m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
@@ -739,8 +739,8 @@ m_ts_trik.o: m_ts_tri_scat.o m_ts_trimat_invert.o m_ts_weight.o parallel.o
 m_ts_trik.o: precision.o units.o
 m_ts_trimat_invert.o: alloc.o class_TriMat.o m_mat_invert.o m_trimat_invert.o
 m_ts_trimat_invert.o: m_ts_electype.o precision.o
-m_ts_voltage.o: m_ts_electype.o m_ts_mesh.o m_ts_options.o m_ts_tdir.o
-m_ts_voltage.o: parallel.o precision.o units.o
+m_ts_voltage.o: intrinsic_missing.o m_ts_electype.o m_ts_mesh.o m_ts_options.o
+m_ts_voltage.o: m_ts_tdir.o parallel.o precision.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_weight.o: m_ts_contour_neq.o parallel.o precision.o
 m_wallclock.o: m_walltime.o

@@ -65,6 +65,10 @@ contains
 
     integer :: iElL, iElR
 
+    if ( ts_tdir < 1 ) then
+       call die('Non-determined bias direction not implemented')
+    end if
+
     ! set the left chemical potential
     call get_elec_indices(na_u, xa, iElL, iElR)
     left_V = Elecs(iElL)%mu%mu

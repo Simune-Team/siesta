@@ -170,12 +170,16 @@ contains
     ! This means that we truncate the k-points in the transport direction.
     ! However, if we are dealing with an electrode calculation we simply allow it
     ! to have the same cell (the check made will disregard the transport directions k-points)
-    if ( TSmode ) then
+    if ( TSmode .and. ts_tdir > 0 ) then
        ! Modify the ts_kscell and ts_kdispl to obtain the 2D sampling
        ts_kscell(1:3,ts_tdir)     = 0
        ts_kscell(ts_tdir,1:3)     = 0
        ts_kscell(ts_tdir,ts_tdir) = 1
        ts_kdispl(ts_tdir)         = 0.0_dp
+    else if ( TSmode ) then
+       if ( sum(sum(ts_kscell,dim=1)) /= 3 ) then
+          call die('Not implemented, how to handle many electrodes and k')
+       end if
     end if
     
   end subroutine setup_ts_scf_kscell
