@@ -300,7 +300,7 @@
       subroutine init_transiesta_switch()
 
       use precision,             only: dp
-      use siesta_options,        only: wmix
+      use siesta_options,        only: fire_mix, wmix, broyden_maxit
       use m_ts_global_vars,      only: TSinit, TSrun
       use m_ts_options,          only: ts_wmix
       use m_pulay,               only: init_pulay_arrays
@@ -315,14 +315,23 @@
       TSrun  = .true.
       
       ! DANGER (when going back to the DIAGON run, we should re-instantiate
-      ! the original mixing value
+      ! the original mixing value)
       tmp     = wmix
       wmix    = ts_wmix
       ts_wmix = tmp
       
       ! From now on, a new mixing cycle starts,
-      ! so we have to reset the Pulay record keeping
-      call init_pulay_arrays() 
+      ! Check in mixer.F for new mixing schemes.
+      if ( fire_mix ) then
+         ! do nothing
+      else if ( broyden_maxit == 0 ) then
+         ! so we have to reset the Pulay record keeping
+         call init_pulay_arrays() 
+      else
+         ! do nothing
+      end if
+      ! the Broyden mixing and the Fire-mixing does
+      ! not need to initialize, that is done implicitly
 
       if(IONode) then
          write(6,'(/a)')

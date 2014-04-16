@@ -1,4 +1,18 @@
 ----------------------------------------------------
+April 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-137
+Bugfix for transiesta transition, pulay not reset if fire/broyden
+
+* When changing from diagon to transiesta we automatically reset
+  the pulay arrays. 
+  However, if fire_mix or broyden mixing is used we don't need 
+  to do this. 
+  We now check which type of mixing is performed and only reset
+  the pulay mixing if that is used.
+
+modified:
+  Src/siesta_forces.F
+
+----------------------------------------------------
 April 15, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-136
 Enabled E-field for transiesta if they are perpendicular
 
