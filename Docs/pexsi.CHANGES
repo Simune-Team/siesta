@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+April 25, 2014  A. Garcia        trunk-459--pexsi-58
+Sync to trunk-459
+
+459: Fix bug when reading spin-polarized deformation charge
+458: Fixes and new features in fdf
+457: Fix printed charges for transiesta...
+
+See CHANGES file for more details
+
+------------------------------------------------------------
 February 20, 2014  A. Garcia        trunk-456--pexsi-58
 Sync to trunk-456 [charge-density mixing update]
 

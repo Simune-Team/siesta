@@ -13,7 +13,7 @@ PROGRAM SAMPLE
   logical                    :: doit, debug
   character(20)              :: fname, axis, status
   character(2)               :: symbol(maxa)
-  integer(sp)                :: i, ia, na, external_entry
+  integer(sp)                :: i, j, ia, na, external_entry
   integer(sp)                :: isa(maxa)
   real(sp)                   :: wmix
   real(dp)                   :: cutoff, phonon_energy, factor
@@ -40,7 +40,7 @@ PROGRAM SAMPLE
   write(6,*) 'MeshCutOff:', cutoff
 
   phonon_energy = fdf_physical('phonon-energy', 0.01d0, 'eV')
-  write(6,*) 'Phonom Energy:', phonon_energy
+  write(6,*) 'Phonon Energy:', phonon_energy
 
   i = fdf_integer('SomeInt', 34)
   write(6,*) '#elems:', i
@@ -154,6 +154,38 @@ PROGRAM SAMPLE
       write(6,'(A4,3F10.6)') symbol(ia), (xa(i,ia),i=1,3)
     enddo
   endif
+
+  if ( fdf_block('ListBlock',bfdf) ) then
+     i = 0
+     do while ( fdf_bline(bfdf,pline) )
+        i = i + 1
+        na = fdf_bnlists(pline)
+        write(*,'(2(a,i0),a)') 'Listblock line: ',i,' has ',na,' lists'
+        do ia = 1 , na
+           j = -1
+           call fdf_blists(pline,ia,j,isa)
+           write(*,'(tr5,2(a,i0),a)') 'list ',ia,' has ',j,' entries'
+           call fdf_blists(pline,ia,j,isa)
+           write(*,'(tr5,a,1000(tr1,i0))') 'list: ',isa(1:j)
+        end do
+     end do
+  end if
+
+  if ( fdf_islist('MyList') ) then
+     na = -1
+     call fdf_list('MyList',na,isa)
+     write(*,'(tr5,a,i0,a)') 'MyList has ',na,' entries'
+     call fdf_list('MyList',na,isa)
+     write(*,'(tr5,a,1000(tr1,i0))') 'MyList: ',isa(1:na)
+  else
+     write(*,*)'MyList was not recognized'
+  end if
+
+  if ( fdf_islist('externalentry') ) then
+     write(*,*) 'externalentry is a list'
+  else
+     write(*,*) 'externalentry is not a list'
+  end if
 
   external_entry = fdf_integer('externalentry', 60)
   write(6,*) 'ExternalEntry:', external_entry

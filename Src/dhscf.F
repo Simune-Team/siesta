@@ -776,7 +776,7 @@ C ----------------------------------------------------------------------
          do ispin = 1,nspin
             do ip= 1, ntpl
 C             rhoatm and Drho are in sequential mode
-              DRho(ip,ispin) = DRho(ip,ispin) + rhoatm(ip)
+              DRho(ip,ispin) = DRho(ip,ispin) + rhoatm(ip)/nsd
             enddo
          enddo
          read_deformation_charge_cdf = .false.
