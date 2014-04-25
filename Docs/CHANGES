@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-03-25  12:40:00 GMT                                     trunk-459
+Fix bug when reading spin-polarized deformation charge
+
+When reading a spin-polarized deformation charge (in netCDF form)
+the added atomic-superposition charge was too large by a factor of two.
+
+modified:
+  Src/dhscf.F
+
+-----------------------------------------------------------------------
 2014-03-05  09:15:00 GMT                                     trunk-458
 Fixes and new features in fdf
 
