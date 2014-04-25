@@ -1,4 +1,57 @@
 ------------------------------------------------------------
+April 25, 2014  A. Garcia        trunk-459--pexsi-59
+Implement new PEXSI solver dynamical-tolerance algorithm
+
+The on-the-fly tolerance for the number of electrons can now be
+fine-tuned on the basis of the ratio dDmax/dDtol (i.e., how far from
+convergence we are), instead of through the absolute value of dDmax.
+
+Here dDmax is the measure of last step's deviation in SCF convergence and
+dDtol is the tolerance for SCF convergence.
+
+Parameters:
+
+PEXSI.dynamical-tolerance   (default .false.)
+
+toggles the new algorithm. The default, for compatibility, is to use
+the old one.
+
+The algorithm itself is:
+
+      tolerance_exp = log10(dDmax/(tolerance_target_factor*dDtol))
+      tolerance_exp = max(tolerance_exp,0.0_dp)*tolerance_preconditioner
+      tolerance = PEXSINumElectronToleranceMin * 10.0_dp**tolerance_exp
+      tolerance = min(tolerance,PEXSINumElectronToleranceMax)
+
+and the parameters are set by the following keywords and default
+values:
+
+ tolerance_target_factor = fdf_get("PEXSI.tolerance-target-factor",5.0_dp)
+ tolerance_preconditioner = fdf_get("PEXSI.tolerance-preconditioner",1.0_dp)
+
+For reference, the old algorithm is:
+
+   tolerance = Max(PEXSINumElectronToleranceMin, &
+                              Min(dDmax*1.0, PEXSINumElectronToleranceMax))
+and
+
+PEXSINumElectronToleranceMin = 
+            fdf_get("PEXSI.num-electron-tolerance-lower-bound",0.01_dp)
+PEXSINumElectronToleranceMax = 
+            fdf_get("PEXSI.num-electron-tolerance-upper-bound",0.5_dp)
+
+The tolerance will not move up, only down.
+
+The computed tolerance can still be overridden if an absolute
+tolerance is explicitly specified in the fdf file
+
+   PEXSINumElectronTolerance =  fdf_get("PEXSI.num-electron-tolerance",&
+                                        tolerance)
+
+modified:
+  Src/m_pexsi_solver.F90
+
+------------------------------------------------------------
 April 25, 2014  A. Garcia        trunk-459--pexsi-58
 Sync to trunk-459
 

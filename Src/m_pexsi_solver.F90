@@ -71,7 +71,7 @@ CONTAINS
     real(dp)       :: safe_dDmax_Ef_solver
     logical        :: do_inertia_count
     logical, save  :: first_call = .true.
-    real(dp)       :: eBandStructure, eBandH, on_the_fly_tolerance
+    real(dp)       :: bs_energy, eBandH, on_the_fly_tolerance
 
     integer        :: info, infomax
 
@@ -275,8 +275,9 @@ else
    ! Use a moving tolerance, based on how far DM_out was to DM_in
    ! in the previous iteration (except if overriden by user)
 
-   on_the_fly_tolerance = Max(PEXSINumElectronToleranceMin, &
-                              Min(prevDmax*1.0, PEXSINumElectronToleranceMax))
+   call get_on_the_fly_tolerance(prevDmax,on_the_fly_tolerance)
+
+   ! Override if tolerance is explicitly specified in the fdf file
    PEXSINumElectronTolerance =  fdf_get("PEXSI.num-electron-tolerance",&
                                         on_the_fly_tolerance)
 endif
@@ -625,12 +626,12 @@ enddo solver_loop
 if (PEXSI_worker) then
 
    free_bs_energy = 0.0_dp
-   eBandStructure = 0.0_dp
+   bs_energy = 0.0_dp
    eBandH = 0.0_dp
    do i = 1,nnzLocal
       free_bs_energy = free_bs_energy + SnzvalLocal(i) * &
            ( FDMnzvalLocal(i) )
-      eBandStructure = eBandStructure + SnzvalLocal(i) * &
+      bs_energy = bs_energy + SnzvalLocal(i) * &
            ( EDMnzvalLocal(i) )
       eBandH = eBandH + HnzvalLocal(i) * &
            ( DMnzvalLocal(i) )
@@ -643,8 +644,8 @@ if (PEXSI_worker) then
    call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_comm )
    ! Note that FDM has an extra term: -mu*N
    free_bs_energy = buffer1 + mu*numElectron
-   call globalize_sum( eBandStructure, buffer1, comm=PEXSI_comm )
-   eBandStructure = buffer1
+   call globalize_sum( bs_energy, buffer1, comm=PEXSI_comm )
+   bs_energy = buffer1
    call globalize_sum( eBandH, buffer1, comm=PEXSI_comm )
    eBandH = buffer1
 
@@ -656,17 +657,17 @@ if (PEXSI_worker) then
       write(*, *) "muMaxPEXSI    = ", muMaxPEXSI/eV
       write(*, *) "muZeroT (eV)  = ", muZeroT/eV
       write(*, *) "numElectron   = ", numElectron
-      write(*, *) "eBandS (eV) = ", eBandStructure/eV
+      write(*, *) "eBandS (eV) = ", bs_energy/eV
       write(*, *) "eBandH (eV) = ", eBandH/eV
       write(*, *) "freeBandEnergy (eV) = ", (free_bs_energy)/eV
-      write(*, *) "eBandS (Ry) = ", eBandStructure
+      write(*, *) "eBandS (Ry) = ", bs_energy
       write(*, *) "eBandH (Ry) = ", eBandH
       write(*, *) "freeBandEnergy (Ry) = ", (free_bs_energy)
 
    endif
 
    ef = mu
-   Entropy = - (free_bs_energy - ebandStructure) / temp
+   Entropy = - (free_bs_energy - bs_energy) / temp
 
    call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","pexsi_solver")
    call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","pexsi_solver")
@@ -950,5 +951,67 @@ enddo refine_interval
   end if
 end subroutine do_inertia
 
+!
+! This routine encodes the heuristics to compute the
+! tolerance dynamically.
+!
+subroutine get_on_the_fly_tolerance(dDmax,tolerance)
+real(dp), intent(in)  :: dDmax
+real(dp), intent(out) :: tolerance
+
+real(dp) :: tolerance_preconditioner
+real(dp) :: tolerance_target_factor, tolerance_exp
+real(dp), save :: previous_tolerance
+logical :: new_algorithm
+
+new_algorithm = fdf_get("PEXSI.dynamical-tolerance",.false.)
+!
+!
+if (new_algorithm) then
+
+!   By default, the tolerance goes to the (minimum) target 
+!   at a level 5 times dDtol
+
+   tolerance_target_factor = fdf_get("PEXSI.tolerance-target-factor",5.0_dp)
+
+!
+!  This can range in a (0.5,2.0) interval, approximately
+
+   tolerance_preconditioner = fdf_get("PEXSI.tolerance-preconditioner",1.0_dp)
+
+   if (scf_step > 1 ) then
+
+      tolerance_exp = log10(dDmax/(tolerance_target_factor*dDtol))
+      ! 
+  !   range = log10(PEXSINumElectronToleranceMax/PEXSINumElectronToleranceMin)
+      tolerance_exp = max(tolerance_exp,0.0_dp)*tolerance_preconditioner
+      tolerance = PEXSINumElectronToleranceMin * 10.0_dp**tolerance_exp
+      tolerance = min(tolerance,PEXSINumElectronToleranceMax)
+
+      if (tolerance > previous_tolerance) then
+         if (mpirank==0) write(6,"(a,f10.2)") &
+              "Will not raise PEXSI solver tolerance to: ", &
+              tolerance
+         tolerance = previous_tolerance
+      endif
+      previous_tolerance = tolerance
+   else
+      ! No heuristics for now for first step
+      ! Note that this should really change in MD or geometry optimization
+      previous_tolerance = huge(1.0_dp)
+      tolerance = PEXSINumElectronToleranceMax
+
+   endif
+else
+   tolerance = Max(PEXSINumElectronToleranceMin, &
+                              Min(dDmax*1.0, PEXSINumElectronToleranceMax))
+endif
+
+if (mpirank==0) write(6,"(a,f10.2)") &
+     "Current PEXSI solver tolerance: ", tolerance
+
+end subroutine get_on_the_fly_tolerance
+
 end subroutine pexsi_solver
+
 end module m_pexsi_solver
