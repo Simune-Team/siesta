@@ -569,7 +569,7 @@ C ----------------------------------------------------------------------
          call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"DeltaRho")
          do ispin = 1,nspin
             call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
-            DRho(:,ispin) = DRho(:,ispin) + rhoatm(:)
+            DRho(:,ispin) = DRho(:,ispin) + rhoatm(:)/nsd
          enddo
          read_deformation_charge_cdf = .false.
       else

@@ -4,6 +4,16 @@
 
 ** CHANGES ALONG siesta-3 branch
 ------------------------------------------------------------------------
+2014-04-25  12:40:00 GMT                                 siesta-3.2-pl5
+Fix bug when reading spin-polarized deformation charge
+
+When reading a spin-polarized deformation charge (in netCDF form)
+the added atomic-superposition charge was too large by a factor of two.
+
+modified:
+  Src/dhscf.F
+
+------------------------------------------------------------------------
 2014-01-31  14:50:00 GMT                                 siesta-3.2-pl4
 Allow the handling of ghosts of synthetic atoms
 
