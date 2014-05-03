@@ -1,4 +1,17 @@
 ----------------------------------------------------
+May 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-138
+Bugfix for transiesta work-size array estimation
+
+* The work-array estimation incorrectly determined the
+  size required.
+  
+  However, the code has an automatic check so that it
+  will be caught no matter what.
+
+modified:
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 April 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-137
 Bugfix for transiesta transition, pulay not reset if fire/broyden
 

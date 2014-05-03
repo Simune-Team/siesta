@@ -151,6 +151,7 @@ contains
        ! made a smaller array)
        ! (see work-array shift down in tWork check
        if ( size(oW) < no * sN ) then
+          write(*,'(a,2(tr1,i0))') 'Sizes:',size(oW),no*sN
           call die('Something went wrong with calculating &
                &the maximum work size')
        end if
@@ -202,7 +203,7 @@ contains
                 ! restrict work-array to be the remaining size
                 ! lets us check that what we do is correct
                 oW => work(1:nwork-eIdx)
-
+                
                 ! Don't copy data anymore
                 tWork = .false.
                 
@@ -269,15 +270,18 @@ contains
 
        scp = max(1 ,n-1)
        ecp = min(N_tri_part,n+1)
+
+       ! find the index of the thing that we do not want
+       ! to overwrite...
+       call TriMat_Bias_idxs(N_tri_part, tri_parts, &
+            no_max,ecp,sIdx,eIdx)
        
        do cp = ecp , scp , -1
 
           ! Update the index of which we will update last
           sNc = tri_parts(cp)
-          tn = tn - sNc * sN
+          tn  = tn - sNc * sN
 
-          call TriMat_Bias_idxs(N_tri_part, tri_parts, &
-               no_max,cp,sIdx,eIdx)
           if ( tn <= eIdx ) then
              max_n = max(cp,n)
              exit find
