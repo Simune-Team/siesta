@@ -6,7 +6,41 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
-2014-04-04  11:00:00 UTC+2                                   trunk-459
+2014-05-06  18:30:00 CEST                                  trunk-458+2
+New GGA and VDW functionals
+
+* Added 4 GGA functionals by Capelle et al
+  Refs: L.S.Pedroza et al, PRB 79, 201106 (2009) and
+        M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+
+* Added VDW-DF functional of V.R.Cooper, PRB 81, 161104(R) (2010)
+
+* Corrected a minor bug in vdwxc.F90 (nq->mq)
+
+* Updated XC testers
+
+* Added some test outputs in SiestaXC/Testsers/Reference
+
+added:
+  Src/SiestaXC/Testers/Reference/
+  Src/SiestaXC/Testers/Reference/test1.out
+  Src/SiestaXC/Testers/Reference/test2.out
+  Src/SiestaXC/Testers/Reference/test3.out
+  Src/SiestaXC/Testers/Reference/test4.out
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test2.F90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+
+-----------------------------------------------------------------------
+2014-04-04  11:00:00 UTC+2                                   trunk-458+1
 Update of xc functionals, adding VDW-BH
 
 * Added VDW-BH of K. Berland and P. Hyldgaard, PRB 89, 035412 (2014)

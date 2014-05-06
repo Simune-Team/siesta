@@ -18,7 +18,7 @@ PROGRAM siestaXCtest1
   ! Tester parameters
   integer, parameter:: irel    =  1      ! Relativistic? 0=>no, 1=>yes
   integer, parameter:: nCalls  = 100     ! Number of calls to each routine
-  integer, parameter:: nfTot   = 13      ! Total number of functionals
+  integer, parameter:: nfTot   = 18      ! Total number of functionals
   integer, parameter:: nSpin   =  4      ! Number of spin components (1|2|4)
   real(dp),parameter:: kfMax   = 5.0_dp  ! Upper limit to Fermi wavevector
   real(dp),parameter:: kgMax   = 5.0_dp  ! Upper limit to |grad(rho)|/rho
@@ -30,23 +30,29 @@ PROGRAM siestaXCtest1
                                               ! with density?
 
   ! List of functionals to be tested
-!  integer, parameter:: nf = 12       ! Number of tested functionals
-!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10,11,12,13/) ! Indexes from list
-  integer, parameter:: nf = 11        ! Skip problematic functionals
-  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11,12,13/)
+!  integer, parameter:: nf = 18       ! Number of tested functionals
+!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18/)
+  integer, parameter:: nf = 16        ! Skip problematic functionals
+  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11,12,13,14,15,16,17,18/)
 
   ! All functionals available
-  !                  1,       2,       3,       4,       5,   
-  !                  6,       7,       8,       9       10,
-  !                 11,      12,      13
+  !                  1,             2,            3,             4,   
+  !                  5,             6,            7,             8, 
+  !                  9,            10,           11,            12,
+  !                 13,            14,           15,            16,
+  !                 17,            18
   character(len=3):: &
-    func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA',   'GGA' /)
-  character(len=6):: &
-    auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
-                    'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
-                    'PW86  ','B88   ','BH    ' /) 
+    func(nfTot)=(/'LDA',         'LDA',         'GGA',         'GGA', &
+                  'GGA',         'GGA',         'GGA',         'GGA', &
+                  'GGA',         'GGA',         'GGA',         'GGA', &
+                  'GGA',         'GGA',         'GGA',         'GGA', &
+                  'GGA',         'GGA'         /)
+  character(len=12):: &
+    auth(nfTot)=(/'PZ          ','PW92        ','PW91        ','PBE         ', &
+                  'RPBE        ','revPBE      ','LYP         ','WC          ', &
+                  'PBE(JsJrLO) ','PBE(JsJrHEG)','PBE(GcGxLO) ','PBE(GcGxHEG)', &
+                  'PBESOL      ','AM05        ','PW86        ','B88         ', &
+                  'C09         ','BH          '/) 
 
   ! Tester variables and arrays
   complex(dp),parameter:: c0 = (0._dp,0._dp)  ! Complex zero
@@ -254,23 +260,23 @@ PROGRAM siestaXCtest1
         ! Do it only in first call, or if there is an error
         if (ix==0) then
           if (iCall==1 .or. errorX/=0) &
-            print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
+            print'(a4,a13,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ex', &
               dExdDens0(iSpin), dExdDensN(iSpin), &
               abs(dExdDens0(iSpin)-dExdDensN(iSpin)), errorX
           if (iCall==1 .or. errorC/=0) &
-            print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
+            print'(a4,a13,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ec', &
               dEcdDens0(iSpin), dEcdDensN(iSpin), &
               abs(dEcdDens0(iSpin)-dEcdDensN(iSpin)), errorC
         else
           if (iCall==1 .or. errorX/=0) &
-            print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
+            print'(a4,a13,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ex', &
               dExdGrad0(ix,iSpin), dExdGradN(ix,iSpin), &
               abs(dExdGrad0(ix,iSpin)-dExdGradN(ix,iSpin)), errorX
           if (iCall==1 .or. errorC/=0) &
-            print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
+            print'(a4,a13,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ec', &
               dEcdGrad0(ix,iSpin), dEcdGradN(ix,iSpin), &
               abs(dEcdGrad0(ix,iSpin)-dEcdGradN(ix,iSpin)), errorC
