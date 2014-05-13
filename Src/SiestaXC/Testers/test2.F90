@@ -11,12 +11,20 @@ PROGRAM siestaXCtest2
   USE siestaXC, only: dp
   USE siestaXC, only: gp => grid_p
 
+! Used MPI procedures and types
+#ifdef MPI
+  USE mpi_siesta, only: MPI_AllReduce
+  USE mpi_siesta, only: MPI_Comm_World
+  USE mpi_siesta, only: MPI_Double_Precision
+  USE mpi_siesta, only: MPI_Sum
+#endif
+
   implicit none
 
   ! Tester parameters
   integer, parameter:: irel  =  0 ! Relativistic? 0=>no, 1=>yes
   integer, parameter:: nSpin =  2 ! Number of spin components
-  integer, parameter:: nfTot = 11 ! Number of functionals
+  integer, parameter:: nfTot = 19 ! Number of functionals
   integer, parameter:: nr    = 101 ! Number of radial points
   integer, parameter:: n1cut =  8 ! Cutoff parameter
   integer, parameter:: n2cut =  2 ! Cutoff parameter:
@@ -29,27 +37,32 @@ PROGRAM siestaXCtest2
   real(dp),parameter:: densMin  = 1.e-9_dp  ! Min. density to proceed
 
   ! List of functionals to be tested (avoid those not passing test1)
-  integer, parameter:: nf = 9         ! Number of tested functionals
-  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11/)  ! Indexes from list below
+!  integer, parameter:: nf = nfTot-2-4   ! Number of tested functionals
+!  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11,12,13,14,  18/) 
+!                         ! Indexes from list below (only one VDW allowed)
 
   ! Same to test a single functional
-!  integer, parameter:: nf = 1        ! Number of tested functionals
-!  integer:: indexf(nf) = (/11/)      ! Indexes from list below
+  integer, parameter:: nf = 1        ! Number of tested functionals
+  integer:: indexf(nf) = (/18/)      ! Indexes from list below
 
   ! All functionals available
-  !                  1,       2,       3,       4,       5,   
-  !                  6,       7,       8,       9,      10,
-  !                 11   
+  !                  1,             2,            3,             4,   
+  !                  5,             6,            7,             8, 
+  !                  9,            10,           11,            12,
+  !                 13,            14,           15,            16,
+  !                 17,            18,           19
   character(len=3):: &
-    func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA',   'GGA',   'GGA',   'GGA',    &
-                    'VDW'  /)
-  character(len=6):: &
-    auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
-                    'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
-!                    'DRSLL ' /) 
-!                    'LMKLL ' /) 
-                    'VV    ' /) 
+    func(nfTot)=(/'LDA',         'LDA',         'GGA',         'GGA', &
+                  'GGA',         'GGA',         'GGA',         'GGA', &
+                  'GGA',         'GGA',         'GGA',         'GGA', &
+                  'GGA',         'GGA',         'VDW',         'VDW', &
+                  'VDW',         'VDW',         'VDW'         /)
+  character(len=12):: &
+    auth(nfTot)=(/'PZ          ','PW92        ','PW91        ','PBE         ', &
+                  'RPBE        ','revPBE      ','LYP         ','WC          ', &
+                  'PBE(JsJrLO) ','PBE(JsJrHEG)','PBE(GcGxLO) ','PBE(GcGxHEG)', &
+                  'PBESOL      ','AM05        ','DRSLL       ','LMKLL       ', &
+                  'C09         ','BH          ','VV          '/) 
 
   ! Tester variables and arrays
   integer :: iDelta, ir, irmax, ismax, iSpin, one, two
@@ -58,6 +71,14 @@ PROGRAM siestaXCtest2
              Dc, Dc0, dr, dVol, Dx, Dx0, Ec, Ec0, Ex, Ex0, &
              kf, kg, maxDiffVxc, pi, r, rMesh(nr), &
              Vxc(nr,nSpin), Vxc0(nr,nSpin), wc(nfTot), wr, wx(nfTot)
+
+#ifdef MPI
+  ! Initialize MPI, even though this test is intended to be run serially
+  integer:: MPIerror, myNode, nNodes
+  call MPI_Init( MPIerror )
+  call MPI_Comm_Rank( MPI_Comm_World, myNode, MPIerror )
+  call MPI_Comm_Size( MPI_Comm_World, nNodes, MPIerror )
+#endif
 
   ! Initialize hybrid XC functional with all tested functionals
   wx = 1._dp / nf
@@ -137,6 +158,11 @@ PROGRAM siestaXCtest2
   print'(a,2f15.9)', 'avgDiffVxc, maxDiffVxc = ', avgDiffVxc, maxDiffVxc
 !  print'(a,2i6)', 'irMax, iSpinMax = ', irmax, ismax
   close( unit=44 )
+
+! Finalize MPI
+#ifdef MPI
+  call MPI_Finalize( MPIerror )
+#endif
 
 CONTAINS
 

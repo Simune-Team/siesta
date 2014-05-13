@@ -2834,52 +2834,85 @@ and {\tt LSD}.
 Particular parametrization of the
 exchange-correlation functional. Options are:
 \begin{itemize}
-\item {\tt CA} (Ceperley-Alder) \index{CA}
-equivalent to {\tt PZ} (Perdew-Zunger). \index{PZ}
-Local density approximation.
-Ref: Perdew and Zunger, PRB 23, 5075 (1981)
-\item {\tt PW92} (Perdew-Wang-92). \index{PW92}
-Local density approximation.\index{LDA}\index{LSD}
-Ref: Perdew and Wang, PRB, 45, 13244 (1992)
-\item {\tt PBE} (Perdew-Burke-Ernzerhof). Generalized gradients
-approximation.  Ref: Perdew, Burke and Ernzerhof, PRL 77, 3865
-(1996)\index{GGA} \index{PBE}
-\item {\tt revPBE} (Revised Perdew-Burke-Ernzerhof). Generalized gradients
-approximation.  Ref: Y. Zhang and W. Yang, PRL 80, 890
-(1998)\index{GGA} \index{revPBE}
-\item {\tt RPBE} (Revised Perdew-Burke-Ernzerhof). Generalized gradients
-approximation.  Ref: Hammer, Hansen and Norskov PRB 59, 7413
-(1999)\index{GGA} \index{RPBE}
-\item {\tt WC} (Wu-Cohen modification of PBE functional). Generalized gradients
-approximation.  Ref: Z. Wu and R.E. Cohen, PRB 73, 235116 (2006)
-\index{GGA} \index{WC}
-\item {\tt AM05} (Armiento-Mattsson-05). Generalized gradients
-approximation.  Ref: R. Armiento and A.E. Mattsson, PRB 72, 085108 (2005)
-\index{GGA} \index{AM05}
-\item {\tt PBEsol} (Perdew-Burke-Ernzerhof for solids). Generalized gradients
-approximation.  Ref: Perdew et al, PRL 100, 136406
-(2008)\index{GGA} \index{PBEsol}
-\item {\tt LYP} Generalized gradients approximation \index{BLYP}
-that implements Becke gradient exchange functional (A. D.
-Becke, Phys. Rev. A {\bf 38}, 3098 (1988)) and Lee, Yang, Parr
-correlation functional (C. Lee, W. Yang, R. G. Parr, Phys. Rev. B
-{\bf 37}, 785 (1988)), as modified by Miehlich, Savin, Stoll and Preuss,
-Chem. Phys. Lett. {\bf 157}, 200 (1989). See also Johnson, Gill and Pople,
+\item {\tt CA} (equivalent to {\tt PZ}):  \index{CA} \index{PZ}
+(Spin) local density approximation (LDA/LSD). \index{LDA} \index{LSD}
+Quantum Monte Carlo calculation of the homogeneous electron gas 
+by D. M. Ceperley and B. J. Alder, Phys. Rev. Lett. {\bf 45},566 (1980),
+as parametrized by J. P. Perdew and A. Zunger, Phys. Rev B {\bf 23}, 5075 (1981)
+\item {\tt PW92}: \index{PW92}
+LDA/LSD, as parametrized by 
+J. P. Perdew and Y. Wang, Phys. Rev B, {\bf 45}, 13244 (1992)
+\item {\tt PW91}: \index{PW91}
+Generalized gradients approximation (GGA) \index{GGA} of Perdew and Wang. 
+Ref: P\&W, J. Chem. Phys., {\bf 100}, 1290 (1994)
+\item {\tt PBE}: \index{PBE}
+GGA of J. P. Perdew, K. Burke and M. Ernzerhof, 
+Phys. Rev. Lett. {\bf 77}, 3865 (1996) 
+\item {\tt revPBE}: \index{revPBE}
+Modified GGA-PBE functional of Y. Zhang and W. Yang, 
+Phys. Rev. Lett. {\bf 80}, 890 (1998)
+\item {\tt RPBE}: \index{RPBE}
+Modified GGA-PBE functional of 
+B. Hammer, L. B. Hansen and J. K. Norskov Phys. Rev. B {\bf 59}, 7413 (1999)
+\item {\tt WC} \index{WC}
+Modified GGA-PBE functional of 
+Z. Wu and R. E. Cohen, Phys. Rev. B {\bf 73}, 235116 (2006)
+\item {\tt AM05}: \index{AM05}
+Modified GGA-PBE functional of 
+R. Armiento and A. E. Mattsson, Phys. Rev. B {\bf 72}, 085108 (2005)
+\item {\tt PBEsol}: \index{PBEsol}
+Modified GGA-PBE functional of 
+J. P. Perdew et al, Phys. Rev. Lett. {\bf 100}, 136406 (2008)
+\item {\tt PBE(JsJrLO)}: 
+GGA-PBE functional with parameters $\beta, \mu$, and $\kappa$ fixed by 
+the jellium surface (Js), jellium response (Jr), 
+and Lieb-Oxford bound (LO) criteria, respectively, as described by 
+L. S. Pedroza, A. J. R. da Silva, and K. Capelle, 
+Phys. Rev. B {\bf 79}, 201106(R) (2009), and by 
+M. M. Odashima, K. Capelle, and S. B. Trickey, 
+J. Chem. Theory Comput. {\bf 5}, 798 (2009)
+\item {\tt PBE(JsJrHEG)}: 
+Same as PBE(JsJrLO), with parameter $\kappa$ fixed by the  Lieb-Oxford bound 
+for the low density limit of the homogeneous electron gas (HEG)
+\item {\tt PBE(GcGxLO)}:
+Same as PBE(JsJrLO), with parameters $\beta$ and $\mu$ fixed by the 
+gradient expansion of correlation (Gc) and exchange (Gx), respectively
+\item {\tt PBE(GcGxHEG)}:
+Same as previous ones, with parameters $\beta,\mu$, and $\kappa$ fixed by 
+the Gc, Gx, and HEG criteria, respectively.
+\item {\tt BLYP} (equivalent to {\tt LYP}): \index{BLYP}
+GGA with Becke exchange (A. D. Becke, Phys. Rev. A {\bf 38}, 3098 (1988)) 
+and Lee-Yang-Parr correlation 
+(C. Lee, W. Yang, R. G. Parr, Phys. Rev. B {\bf 37}, 785 (1988)), 
+as modified by B. Miehlich, A. Savin, H. Stoll, and H. Preuss,
+Chem. Phys. Lett. {\bf 157}, 200 (1989). 
+See also B. G. Johnson, P. M. W. Gill and J. A. Pople,
 J. Chem. Phys. {\bf 98}, 5612 (1993). (Some errors were detected in this
 last paper, so not all of their expressions correspond exactly to those
 implemented in {\sc Siesta})
-\item {\tt DRSLL} van der Waals exchange-correlation density functional of
-M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
+\item {\tt DRSLL} (equivalent to {\tt DF1}): \index{vdW-DF1} \index{DRSLL}
+van der Waals \index{vdW} density functional (vdW-DF) \index{vdW-DF}
+of M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
 Phys. Rev. Lett. {\bf 92}, 246401 (2004), with the efficient implementation of 
-G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009).
-\item {\tt LMKLL} vdW-DF functional of Dion {\it et al} (same as DRSLL)
+G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009)
+\item {\tt LMKLL} (equivalent to {\tt DF2}): \index{vdW-DF2} \index{LMKLL}
+vdW-DF functional of Dion {\it et al} (same as DRSLL)
 reparametrized by K. Lee, E. Murray, L. Kong, B. I. Lundqvist and 
-D. C. Langreth, PRB 82, 081101 (2010)
-\item {\tt KBM} vdW-DF  functional of Dion {\it et al} (same as DRSLL)
-reparametrized by J.Klimes, D.R.Bowler, and A.Michaelides, 
-JPCM {\bf 22}, 022201 (2010) (optB88-vdW version)
-\item {\tt VV} vdW-DF  functional of O. A. Vydrov and T. Van Voorhis, 
-JCP 133, 244103 (2010)
+D. C. Langreth, Phys. Rev. B {\bf 82}, 081101 (2010)
+\item {\tt KBM}:
+vdW-DF functional of Dion {\it et al} (same as DRSLL)
+with exchange modified by J. Klimes, D. R. Bowler, and A. Michaelides, 
+J. Phys.: Condens. Matter {\bf 22}, 022201 (2010) (optB88-vdW version)
+\item {\tt C09}:
+vdW-DF functional of Dion {\it et al} (same as DRSLL)
+with exchange modified by V. R. Cooper, Phys. Rev. B {\bf 81}, 161104 (2010)
+\item {\tt BH}:
+vdW-DF functional of Dion {\it et al} (same as DRSLL) 
+with exchange modified by 
+K. Berland and P. Hyldgaard, Phys. Rev. B 89, 035412 (2014)
+\item {\tt VV}: 
+vdW-DF functional of O. A. Vydrov and T. Van Voorhis, 
+J. Chem. Phys. {\bf 133}, 244103 (2010)
 
 \end{itemize}
 
