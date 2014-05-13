@@ -21,13 +21,15 @@ C     .. Parameters ..
       parameter (zero=0.D0,one=1.D0)
 C     ..
 C     .. Local Scalars ..
-      integer i, llp, lp
+      integer i, llp, lp, j
 C     ..
 C     .. Local Arrays ..
       double precision ar(nrmax), br(nrmax)
+      logical pseudized(norbmx)
+
 C     ..
 C     .. External Subroutines ..
-      external ext, wf, wrapup, defined
+      external ext, wf, wrapup, defined, wf_nonpseudized
       logical  defined
 C     ..
 c
@@ -82,41 +84,67 @@ c      start loop over valence orbitals
 c
       ncp = ncore + 1
 c
+!
+!     First, find out which orbitals are going to be pseudized
+!
       do 220 i = ncp, norb
+
+         pseudized(i) = .false.
 c
          lp = lo(i) + 1
          llp = lo(i)*lp
          if (down(i)) then
             if (indd(lp) .ne. 0) then
-               write(6,9030) 'down', lp - 1
-               goto 220
-!               write(6,9020) 'down', lp - 1
-!               call ext(800+lp)
+               write(6,9038) no(i), il(lo(i)+1), 'down'
             else
                indd(lp) = i
                write(6,9035) no(i), il(lo(i)+1), 'down'
+               pseudized(i) = .true.
             end if
          else
             if (indu(lp) .ne. 0) then
-               write(6,9030) 'up',lp - 1
-               goto 220
-!               write(6,9020) 'up',lp - 1
-!               call ext(810+lp)
+               write(6,9038) no(i), il(lo(i)+1), 'up'
             else
                indu(lp) = i
                write(6,9035) no(i), il(lo(i)+1), 'up'
+               pseudized(i) = .true.
             end if
          end if
- 9020    format(//' error in pseudo - two ',a4,
-     &            ' spin orbitals of the same ',
-     &         /'angular momentum (',i1,') exist')
- 9030    format(//' multiple ',a4,
-     &            ' spin orbitals of the same ',
-     &         /'angular momentum (',i1,') exist.',
-     &          ' Pseudizing the first one.')
+
+ 220  continue
+
  9035 format((2x,'Pseudizing: ',i1,a1,2x,a))
+ 9038 format((2x,'Skipping  : ',i1,a1,2x,a))
 
 c
+!
+!     Add the charge density of the states which are not pseudized
+!
+      do i = ncp, norb
+         if (pseudized(i)) cycle
+         if (down(i)) then
+            print "(a,i1,a1)",
+     $           "Adding charge of down ", no(i), il(lo(i)+1)
+            call wf_nonpseudized(i,ar,br)
+            do j = 1, nr
+               vod(j) = vod(j) + zo(i)*ar(j)*ar(j)
+            enddo
+         else
+            print "(a,i1,a1)",
+     $           "Adding charge of up ", no(i), il(lo(i)+1)
+            call wf_nonpseudized(i,ar,br)
+            do j = 1, nr
+               vou(j) = vou(j) + zo(i)*ar(j)*ar(j)
+            enddo
+         endif
+      enddo
+
+!
+!     Compute pseudo-wavefunctions and screened pseudopotentials
+!
+      do 225 i = ncp, norb
+
+         if (.not. pseudized(i)) cycle
 c
 c      Find all electron wave function and its nodes and
 c      extrema.
@@ -127,7 +155,8 @@ c      Find the pseudopotential
 c
          call ps_generator(i,ar,br)
 c
-  220 continue
+ 225  continue
+
 c
 c  End loop over valence orbitals.
 c

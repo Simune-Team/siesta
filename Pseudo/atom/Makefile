@@ -108,7 +108,7 @@ $(XC):
 #
 #
 MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
-        pseudo.o  wf.o  hsc.o  excorr.o \
+        pseudo.o  wf.o  wf_nonpseudized.o hsc.o  excorr.o \
         tm2.o  ker.o  wrapup.o   splift.o   spliq.o  \
         velect.o   vionic.o   wtrans.o   v0pp.o  chg_mism.o  \
         dsolv2.o   etotal.o   ext.o  input.o  header.o orban.o   \

@@ -1,4 +1,29 @@
 --------------------------------------------------------------
+October X, 2013   Alberto Garcia   trunk-427--ncps-3--shells-2
+Add (AE...) charge density of non-pseudized states for descreening
+
+(This was committed later...)
+
+To fix the overall charge descreening, subroutine 'pseudo' now
+adds the charge density of the non-pseudized valence states to the
+array to be used in de-screening.
+
+A new routine 'wf_nonpseudized' is used to find the proper wfs.
+
+This actually gives oscillation problems due to the AE nodes in the
+non-pseudized functions... Another tack should be tried: a form of
+"pseudo test" with the total valence charge and a descreening with the
+"pseudo charge density", which will include just a single node for the
+upper states. (See mention of this in Paolo Giannozzi's "Notes on
+pseudopotential generation").
+
+added:
+  Pseudo/atom/wf_nonpseudized.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudo.f
+
+--------------------------------------------------------------
 October 9, 2013   Alberto Garcia   trunk-427--ncps-3--shells-1
 Lift the restriction on multiple l-shells in atom
 
