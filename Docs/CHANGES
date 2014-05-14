@@ -6,6 +6,17 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-05-14  11:30:00 CEST                                    trunk-461
+%files added to Util/JobList options (J.M.Soler)
+
+added:
+  Util/JobList/Examples/Ice/dummyFile
+modified:
+  Util/JobList/Examples/Ice/iceChecks.jobs
+  Util/JobList/README
+  Util/JobList/Src/jobList.f90
+
+-----------------------------------------------------------------------
 2014-05-13  16:30:00 CEST                                    trunk-460
 New GGA and VDW functionals (M.Fritz & J.M.Soler)
 
