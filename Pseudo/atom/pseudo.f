@@ -29,7 +29,7 @@ C     .. Local Arrays ..
 
 C     ..
 C     .. External Subroutines ..
-      external ext, wf, wrapup, defined, wf_nonpseudized
+      external ext, wf, wrapup, defined
       logical  defined
 C     ..
 c
@@ -115,30 +115,6 @@ c
 
  9035 format((2x,'Pseudizing: ',i1,a1,2x,a))
  9038 format((2x,'Skipping  : ',i1,a1,2x,a))
-
-c
-!
-!     Add the charge density of the states which are not pseudized
-!
-      do i = ncp, norb
-         if (pseudized(i)) cycle
-         if (down(i)) then
-            print "(a,i1,a1)",
-     $           "Adding charge of down ", no(i), il(lo(i)+1)
-            call wf_nonpseudized(i,ar,br)
-            do j = 1, nr
-               vod(j) = vod(j) + zo(i)*ar(j)*ar(j)
-            enddo
-         else
-            print "(a,i1,a1)",
-     $           "Adding charge of up ", no(i), il(lo(i)+1)
-            call wf_nonpseudized(i,ar,br)
-            do j = 1, nr
-               vou(j) = vou(j) + zo(i)*ar(j)*ar(j)
-            enddo
-         endif
-      enddo
-
 !
 !     Compute pseudo-wavefunctions and screened pseudopotentials
 !

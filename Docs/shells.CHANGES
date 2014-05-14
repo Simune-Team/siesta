@@ -1,4 +1,48 @@
 --------------------------------------------------------------
+May 14, 2013   Alberto Garcia   trunk-427--ncps-3--shells-3
+New scheme for dealing with multiple shells in the valence
+
+Use the screened PS to compute the pseudo-wavefunctions for all
+the valence levels, hence obtaining a proper pseudized charge
+density for de-screening later.
+
+There are small changes in the eigenvalues (and slightly larger
+changes in the energies) with respect to previous results.
+Use
+ 
+   %define V3
+
+in the input file to fall back to the previous behavior of using as
+pseudo-valence charge the one constructed directly by the pseudization
+scheme.
+
+removed:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.multiple.shells.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.test-gs-last.inp
+  Pseudo/atom/wf_nonpseudized.f
+added:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.sc-full.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.testGS.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ti/
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.semicore.inp
+renamed:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.semicore.inp => Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.sc-ionic.inp
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/Tutorial/PS_Generation/Guide.txt
+  Pseudo/atom/Tutorial/Utils/ae.gplot
+  Pseudo/atom/Tutorial/Utils/pots.gplot
+  Pseudo/atom/Tutorial/Utils/pt.gplot
+  Pseudo/atom/Tutorial/Utils/scrpots.gplot
+  Pseudo/atom/Tutorial/Utils/subps.gplot
+  Pseudo/atom/Tutorial/Utils/vcharge.gplot
+  Pseudo/atom/Tutorial/Utils/vspin.gplot
+  Pseudo/atom/ker.f
+  Pseudo/atom/pseudo.f
+  Pseudo/atom/wrapup.f
+
+--------------------------------------------------------------
 October X, 2013   Alberto Garcia   trunk-427--ncps-3--shells-2
 Add (AE...) charge density of non-pseudized states for descreening
 

@@ -6,7 +6,7 @@ there_is_p=`test -f PSPOTR1 && echo 1 || echo 0`
 there_is_d=`test -f PSPOTR2 && echo 1 || echo 0`
 there_is_f=`test -f PSPOTR3 && echo 1 || echo 0`
 
-set data style lines
+set style data lines
 #
 set multiplot
 set size 0.5,0.5

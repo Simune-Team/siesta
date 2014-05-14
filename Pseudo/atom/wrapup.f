@@ -40,9 +40,9 @@ c
       double precision cutoff_function, force_underflow
       external cutoff_function, force_underflow
 
-      logical new_scheme
+      logical new_scheme, defined
 c
-      external logder
+      external logder, defined
 c
       pi = 4*atan(one)
 c
@@ -88,10 +88,45 @@ c
       zion = zval + znuc - zel
       if (zval .ne. zero) zratio = zion/zval
 c
-      do 20 i = 1, nr
-         cdd(i) = vod(i)
-         cdu(i) = vou(i)
-   20 continue
+      if (defined("V3")) then
+!
+!     Set the charge density to the 'pseudo-valence' charge
+!     constructed in the 'ps_generator' routine by explicit
+!     squaring of the pseudo-wavefunction.
+!     In the new approach, this would be ONLY for the purposes 
+!     of generating the pseudo-core charge with the standard
+!     heuristics of similarity.
+!
+         do 20 i = 1, nr
+            cdd(i) = vod(i)
+            cdu(i) = vou(i)
+ 20      continue
+
+      else
+
+!     New method able to deal with non-pseudized states in the valence.
+
+!     We can use vio{u,d} and vi{u,d} coming out of the
+!     generation routine to test the whole configuration
+!     and generate the total valence charge density 
+!     (including any non-pseudized states)
+
+!     On entry now: vio{u,d}: ionic ps (de-screened with the total AE charge)
+!                   vi{u,d} : V_HXC(total AE charge)
+!
+!     The net V_ext will be then the screened pseudo that correctly
+!     generates the pseudo-wavefunction for each channel, as constructed
+!     by the appropriate pseudization scheme.
+!     When used to generate any upper levels, it will give "pseudo-wfs"
+!     with nodes, e.g., one node for Ba 6s if we have 5s as semicore and
+!     pseudized. This is precisely what we need to generate the full
+!     pseudo-valence charge for later de-screening.
+!     For pseudized levels, this approach should give exactly the same
+!     charge density as the synthetic method used in each "ps-generator".
+!
+        call dsolv2(0,1,id,ncp,norb,0,nops)
+
+      endif
 c
 c=====================================================================
 c  If a core correction is indicated construct pseudo core charge
@@ -242,8 +277,12 @@ C---------------------------------------------------------------------
 c
 c  End the pseudo core charge.
 c======================================================================
+
+   80 continue
+!
 c
 c  Compute the potential due to pseudo valence charge.
+!  (Total configuration in the new method)
 c
 c  njtj  ***  NOTE  ***
 c  Spin-polarized potentials should be unscreened with
@@ -252,8 +291,13 @@ c  done in pseudo and pseudok in earlier versions
 c  of this program.
 c  njtj  ***  NOTE  ***
 c
-   80 continue
-c
+!     Computes vo{u,d}, which is V_HXC for the current charge
+!     density in cd{u,d} (plus cdc if core-corrections are used)
+
+!     On entry now, cd{u,d} was traditionally synthetically generated from
+!     the pseudo-wavefunctions. In the new method, it is the complete
+!     valence pseudo-charge, including any upper states.
+
       call Velect(0,1,id,zval)
 c
 c  Construct the ionic pseudopotential and find the cutoff,
@@ -309,7 +353,11 @@ c
             i = indd(lp)
 !         if (down(i)) then
             do 90 j = 2, nr
+               ! This is the screened pseudopotential
+               ! vid is still the AE V_HXC
                v(j) = viod(lp,j)/r(j) + vid(j)
+               ! De-screen with the potential from the pseudo-charge
+               ! (including all the valence and the pseudo-core)
                viod(lp,j) = viod(lp,j) + (vid(j)-vod(j))*r(j)
                vp2z = viod(lp,j) + 2*zion
                if (abs(vp2z) .gt. ecut) jcut = j
@@ -476,6 +524,9 @@ c
   180    continue
       end if
 c
+!     Reset V_HXC(AE) for further calculations to 
+!     V_HXC(pseudo-valence + pseudo-core)
+!
       do 190 i = 2, nr
          vid(i) = vod(i)
          viu(i) = vou(i)
@@ -485,6 +536,10 @@ c   Test the pseudopotential self consistency.  Spin-polarized
 c   is tested as spin-polarized(since up/down potentials are
 c   now the same)
 c
+!     This uses implicitly (via common blocks):
+!         -- The un-screened ionic ps
+!         -- The (pseudo-only) vi{d,u}
+!
       call dsolv2(0,1,id,ncp,norb,0,nops)
 c
 c  Printout the pseudo eigenvalues after cutoff.

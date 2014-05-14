@@ -177,14 +177,24 @@ c
 c    Augment the charge density and invert schroedinger equation
 c  to find new potential.
 c
+!    Here:
+!        vi{u,d} is the current all-electron potential
+!        vo{u,d} will be used to accumulate the (pseudo) charge density
+!                for the pseudized states.
+!        vio{u,d} is the "ionic pseudopotential" (times r)
+!                 de-screened with the AE V_HXC potential
+!                 (it will be de-screened in 'wrapup')
   120 continue
       expd = exp(delta)
       if (down(i)) then
          do 130 j = 1, jrc
             ar(j) = expd*ar(j)
             xlamda = (4*alpha*r(j)+3*beta)*r(j) + 2*gamma
+            ! Vj is the (screened) pseudopotential
             vj = eigv + xlamda*(2*lp+xlamda*r(j)**2) +
      &           (12*alpha*r(j)+6*beta)*r(j) + 2*gamma
+            ! Viod stores vj minus the AE V_HXC part, times r,
+            ! so this is already de-screened with the full AE charge
             viod(lp,j) = (vj-vid(j))*r(j)
             vod(j) = vod(j) + zo(i)*ar(j)*ar(j)
   130    continue
