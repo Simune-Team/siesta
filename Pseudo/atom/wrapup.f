@@ -40,7 +40,7 @@ c
       double precision cutoff_function, force_underflow
       external cutoff_function, force_underflow
 
-      logical new_scheme, defined
+      logical new_cc_scheme, defined, new_valence_method
 c
       external logder, defined
 c
@@ -88,21 +88,20 @@ c
       zion = zval + znuc - zel
       if (zval .ne. zero) zratio = zion/zval
 c
-      if (defined("V3")) then
-!
-!     Set the charge density to the 'pseudo-valence' charge
-!     constructed in the 'ps_generator' routine by explicit
-!     squaring of the pseudo-wavefunction.
-!     In the new approach, this would be ONLY for the purposes 
-!     of generating the pseudo-core charge with the standard
-!     heuristics of similarity.
-!
-         do 20 i = 1, nr
-            cdd(i) = vod(i)
-            cdu(i) = vou(i)
- 20      continue
-
+      new_valence_method = .false.
+      if (multi_shell) then
+        write(6,"(/,a)") "Several valence shells have the same l"
+        write(6,"(/,a)") "Using new scheme for multiple valence shells"
+        new_valence_method = .true.
       else
+        if (defined("FORCE_MULTISHELL_METHOD")) then
+           write(6,"(/,a)") "Forcing new scheme for valence shells"
+           write(6,"(/,a)") "Expect some numerical differences"
+           new_valence_method = .true.
+        endif
+      endif
+
+      if (new_valence_method) then
 
 !     New method able to deal with non-pseudized states in the valence.
 
@@ -125,6 +124,17 @@ c
 !     charge density as the synthetic method used in each "ps-generator".
 !
         call dsolv2(0,1,id,ncp,norb,0,nops)
+
+      else
+!
+!     Set the charge density to the 'pseudo-valence' charge
+!     constructed in the 'ps_generator' routine by explicit
+!     squaring of the pseudo-wavefunction.
+
+         do 20 i = 1, nr
+            cdd(i) = vod(i)
+            cdu(i) = vou(i)
+ 20      continue
 
       endif
 c
@@ -169,10 +179,10 @@ C    and matching also the second derivative. This is the default with
 C    the 'mons' compatibility mode for GGA calculations.
 C
 
-            new_scheme = .false.
+            new_cc_scheme = .false.
             if (is_gga) then
                write(6,'(a)') 'Note: GGA calculation ==> New CC scheme'
-               new_scheme = .true.
+               new_cc_scheme = .true.
             endif
 
             if ( (use_old_cc) .and. (is_gga)) then
@@ -181,7 +191,7 @@ C
      $              'WARNING: Using old-style core corrections',
      $            ' despite this being a GGA calculation.',
      $              'I hope you know what you are doing...'
-               new_scheme = .false.
+               new_cc_scheme = .false.
             endif
 
             if ( (use_new_cc) .and. (.not. is_gga)) then
@@ -190,10 +200,10 @@ C
      $              'WARNING: Using new core corrections',
      $            ' despite this being an LDA calculation.',
      $         'Results will not be compatible with older versions.'
-               new_scheme = .true.
+               new_cc_scheme = .true.
             endif
 
-            if (.not. new_scheme) then
+            if (.not. new_cc_scheme) then
 
 c           Fit to  cdc(r) = ac*r * sin(bc*r) inside r(icore)
 c

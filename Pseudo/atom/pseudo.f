@@ -86,7 +86,9 @@ c
 c
 !
 !     First, find out which orbitals are going to be pseudized
-!
+!     We pick the first orbital in each angular-momentum channel
+
+      multi_shell = .false.
       do 220 i = ncp, norb
 
          pseudized(i) = .false.
@@ -96,6 +98,10 @@ c
          if (down(i)) then
             if (indd(lp) .ne. 0) then
                write(6,9038) no(i), il(lo(i)+1), 'down'
+               ! This would traditionally trigger an error,
+               ! but now we simply make a note that there
+               ! are non-pseudized levels in the valence
+               multi_shell = .true.
             else
                indd(lp) = i
                write(6,9035) no(i), il(lo(i)+1), 'down'
@@ -104,6 +110,7 @@ c
          else
             if (indu(lp) .ne. 0) then
                write(6,9038) no(i), il(lo(i)+1), 'up'
+               multi_shell = .true.
             else
                indu(lp) = i
                write(6,9035) no(i), il(lo(i)+1), 'up'
@@ -114,7 +121,8 @@ c
  220  continue
 
  9035 format((2x,'Pseudizing: ',i1,a1,2x,a))
- 9038 format((2x,'Skipping  : ',i1,a1,2x,a))
+ 9038 format((2x,' -------- : ',i1,a1,2x,a))
+
 !
 !     Compute pseudo-wavefunctions and screened pseudopotentials
 !

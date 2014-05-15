@@ -1,4 +1,33 @@
 --------------------------------------------------------------
+May 15, 2013   Alberto Garcia   trunk-427--ncps-3--shells-4
+Preserve backward compatibility, but allow forcing new scheme
+
+To preserve backward compatibility without the need to change
+the INP file, the old method for dealing with the valence complex
+will be used unless there are multiple shells with the same l.
+
+The use of the new scheme can be forced by inserting
+ 
+   %define FORCE_MULTISHELL_METHOD
+
+in the input file.
+
+(+ fix issue with gnuplot script that was preventing log-derivs to
+appear)
+
+(+ add new input file for Ti example)
+
+added:
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.sc-ionic.inp
+modified:
+  Pseudo/atom/Tutorial/PS_Generation/Guide.txt
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.semicore.inp
+  Pseudo/atom/Tutorial/Utils/subps.gplot
+  Pseudo/atom/param.h
+  Pseudo/atom/pseudo.f
+  Pseudo/atom/wrapup.f
+
+--------------------------------------------------------------
 May 14, 2013   Alberto Garcia   trunk-427--ncps-3--shells-3
 New scheme for dealing with multiple shells in the valence
 

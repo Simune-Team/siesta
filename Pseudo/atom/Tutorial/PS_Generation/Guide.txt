@@ -74,6 +74,10 @@ charge is the full valence charge (including semicore states), but its
 range and shape are different from the true full valence charge. This
 has implications for the construction of PAOs by SIESTA.
 
+* Semicore states: Ti
+
+Another example of semicore states.
+
 *Fe 
 
 These are GGA pseudopotentials for Fe, all with core

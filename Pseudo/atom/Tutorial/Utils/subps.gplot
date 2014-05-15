@@ -22,7 +22,12 @@ set origin 0.5,0.5
 #
 # Logarithmic derivative
 #
-there_is_logd=`test -f AELOGD$0 && echo 1 || echo 0`
+# Note: This macro trick seems to be needed in newer versions of gnuplot
+#
+set macro
+sentinel="AELOGD$0"
+there_is_logd=`test -f @sentinel && echo 1 || echo 0`
+
 if (there_is_logd == 1) \
 plot 'AELOGD$0' us 1:2  ti "AE logder l=$0" ,\
      'PSLOGD$0' us 1:2 ti "PS logder l=$0"
