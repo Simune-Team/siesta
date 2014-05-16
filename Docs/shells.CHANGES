@@ -1,4 +1,15 @@
 --------------------------------------------------------------
+May 17, 2013   Alberto Garcia   trunk-427--ncps-3--shells-5
+Fix subtle bug regarding counting of up and down potentials
+
+In the relativistic case, npotd and npotu have to be recalculated
+after the change of character for the s channel.
+
+modified:
+  Pseudo/atom/version.h
+  Pseudo/atom/wrapup.f
+
+--------------------------------------------------------------
 May 15, 2013   Alberto Garcia   trunk-427--ncps-3--shells-4
 Preserve backward compatibility, but allow forcing new scheme
 

@@ -336,18 +336,12 @@ c     course for scalar calculations and for "s" states in relativistic
 c     calculations, for which the distinction is irrelevant.
 
 c
-c  Determine the number of  potentials.  Coded them as
-c  two digits, where the first digit is the number
-c  of down or sum potentials and the second the number of
-c  up or difference potentials.
-c
       npotd = 0
       npotu = 0
-      do 290 i = 1, lmax
+      do 95 i = 1, lmax
          if (indd(i) .ne. 0) npotd = npotd + 1
          if (indu(i) .ne. 0) npotu = npotu + 1
-  290 continue
-
+ 95   continue
 
       write(6,9020)
  9020 format(/)
@@ -667,6 +661,22 @@ c
   270       continue
   280    continue
       end if
+
+c  Determine the number of  potentials.  Coded them as
+c  two digits, where the first digit is the number
+c  of down or sum potentials and the second the number of
+c  up or difference potentials.
+c
+      npotd = 0
+      npotu = 0
+      do 290 i = 1, lmax
+         if (indd(i) .ne. 0) npotd = npotd + 1
+         if (indu(i) .ne. 0) npotu = npotu + 1
+  290 continue
+!
+!     Plotting and Fourier analysis should properly be
+!     done here, for the "down" versions only.
+!
 c
 c  Write the heading to the current pseudo.dat
 c  file (unit=1).
