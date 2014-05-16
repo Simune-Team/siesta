@@ -152,6 +152,17 @@ General notice about compilers:
 !   process will stay listening indefinitedly to the pipe and will need
 !   to be killed in the shell (pipes version).
 ! - siesta_units may be called either before or after siesta_launch
+! - In the MPI version, siesta_launch creates a directory called label
+!   (unless it already exists), for each siesta process, where all the
+!   output and continuation files are written.
+! - In the MPI version, siesta_forces closes the standard output unit 6 and
+!   reopens it as file=label/label.out (different for each siesta process).
+!   Before returning, it again closes and reopens it as the primitive output 
+!   file. If unit 6 was the standard output, rather than a file, and if it
+!   cannot be reopened (this is system dependent), it is opened as a file 
+!   named MAIN_OUTPUT. Therefore, to ensure continuity of the output, it 
+!   is recommended to open unit 6 as an explicit file, before calling 
+!   siesta_launch.
 
 The data flow between the user's 'master' program and siesta is as follows:
   Using unix pipes (master program compiled with fsiesta_pipes.F90):
@@ -159,6 +170,6 @@ The data flow between the user's 'master' program and siesta is as follows:
   Using MPI (master program compiled with libSiestaForces.a):
     master <--> fsiesta_mpi <--> siesta_master <--> siesta
 
-J.M.Soler and A.Garcia. Jan 2004, Dec 2006, Oct 2010
+J.M.Soler and A.Garcia. Jan 2004, Dec 2006, Oct 2010, May 2014
 
 
