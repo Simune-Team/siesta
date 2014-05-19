@@ -36,9 +36,9 @@ PROGRAM siestaXCtest2
   real(dp),parameter:: deltaDens = 1.e-8_dp  ! Finite diff. change
   real(dp),parameter:: densMin  = 1.e-9_dp  ! Min. density to proceed
 
-  ! List of functionals to be tested (avoid those not passing test1)
-!  integer, parameter:: nf = nfTot-2-4   ! Number of tested functionals
-!  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11,12,13,14,  18/) 
+  ! List of functionals to be tested
+!  integer, parameter:: nf = nfTot-4   ! Number of tested functionals
+!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,  18/) 
 !                         ! Indexes from list below (only one VDW allowed)
 
   ! Same to test a single functional
@@ -46,23 +46,23 @@ PROGRAM siestaXCtest2
   integer:: indexf(nf) = (/18/)      ! Indexes from list below
 
   ! All functionals available
-  !                  1,             2,            3,             4,   
-  !                  5,             6,            7,             8, 
-  !                  9,            10,           11,            12,
-  !                 13,            14,           15,            16,
-  !                 17,            18,           19
+  !                  1,           2,          3,           4,   
+  !                  5,           6,          7,           8, 
+  !                  9,          10,         11,          12,
+  !                 13,          14,         15,          16,
+  !                 17,          18,         19
   character(len=3):: &
-    func(nfTot)=(/'LDA',         'LDA',         'GGA',         'GGA', &
-                  'GGA',         'GGA',         'GGA',         'GGA', &
-                  'GGA',         'GGA',         'GGA',         'GGA', &
-                  'GGA',         'GGA',         'VDW',         'VDW', &
-                  'VDW',         'VDW',         'VDW'         /)
-  character(len=12):: &
-    auth(nfTot)=(/'PZ          ','PW92        ','PW91        ','PBE         ', &
-                  'RPBE        ','revPBE      ','LYP         ','WC          ', &
-                  'PBE(JsJrLO) ','PBE(JsJrHEG)','PBE(GcGxLO) ','PBE(GcGxHEG)', &
-                  'PBESOL      ','AM05        ','DRSLL       ','LMKLL       ', &
-                  'C09         ','BH          ','VV          '/) 
+    func(nfTot)=(/'LDA',       'LDA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'VDW',       'VDW', &
+                  'VDW',       'VDW',       'VDW'       /)
+  character(len=10):: &
+    auth(nfTot)=(/'PZ        ','PW92      ','PW91      ','PBE       ', &
+                  'RPBE      ','revPBE    ','LYP       ','WC        ', &
+                  'PBEJsJrLO ','PBEJsJrHEG','PBEGcGxLO ','PBEGcGxHEG', &
+                  'PBESOL    ','AM05      ','DRSLL     ','LMKLL     ', &
+                  'C09       ','BH        ','VV        '/) 
 
   ! Tester variables and arrays
   integer :: iDelta, ir, irmax, ismax, iSpin, one, two

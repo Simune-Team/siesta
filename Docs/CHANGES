@@ -6,6 +6,21 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-05-19  18:00:00 CEST                                    trunk-461
+Parenthesis eliminated from xc author labels (J.M.Soler)
+
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test2.F90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/Testers/test6.f90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/xcmod.f90
+
+-----------------------------------------------------------------------
 2014-05-13  16:30:00 CEST                                    trunk-460
 New GGA and VDW functionals (M.Fritz & J.M.Soler)
 

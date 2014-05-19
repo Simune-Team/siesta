@@ -222,27 +222,27 @@ C Non collinear part rewritten by J.M.Soler. Sept. 2009
         CALL AM05XC( IREL, NS, DD, GDD,
      .               EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
-      ELSEIF (AUTHOR.EQ.'PBE(JsJrLO)' .OR.
-     .        AUTHOR.EQ.'pbe(jsjrlo)' .OR.
-     .        AUTHOR.EQ.'PBE(JSJRLO)') THEN
+      ELSEIF (AUTHOR.EQ.'PBEJsJrLO' .OR.
+     .        AUTHOR.EQ.'pbejsjrlo' .OR.
+     .        AUTHOR.EQ.'PBEJSJRLO') THEN
         CALL PBEJsJrLOxc( IREL, NS, DD, GDD,
      .                  EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
-      ELSEIF (AUTHOR.EQ.'PBE(JsJrHEG)' .OR.
-     .        AUTHOR.EQ.'pbe(jsjrheg)' .OR.
-     .        AUTHOR.EQ.'PBE(JSJRHEG)') THEN
+      ELSEIF (AUTHOR.EQ.'PBEJsJrHEG' .OR.
+     .        AUTHOR.EQ.'pbejsjrheg' .OR.
+     .        AUTHOR.EQ.'PBEJSJRHEG') THEN
         CALL PBEJsJrHEGxc( IREL, NS, DD, GDD,
      .                  EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
-      ELSEIF (AUTHOR.EQ.'PBE(GcGxLO)' .OR.
-     .        AUTHOR.EQ.'pbe(gcgxlo)' .OR.
-     .        AUTHOR.EQ.'PBE(GCGXLO)') THEN
+      ELSEIF (AUTHOR.EQ.'PBEGcGxLO' .OR.
+     .        AUTHOR.EQ.'pbegcgxlo' .OR.
+     .        AUTHOR.EQ.'PBEGCGXLO') THEN
         CALL PBEGcGxLOxc( IREL, NS, DD, GDD,
      .                  EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 
-      ELSEIF (AUTHOR.EQ.'PBE(GcGxHEG)' .OR.
-     .        AUTHOR.EQ.'pbe(gcgxheg)' .OR.
-     .        AUTHOR.EQ.'PBE(GCGXHEG)') THEN
+      ELSEIF (AUTHOR.EQ.'PBEGcGxHEG' .OR.
+     .        AUTHOR.EQ.'pbegcgxheg' .OR.
+     .        AUTHOR.EQ.'PBEGCGXHEG') THEN
         CALL PBEGcGxHEGxc( IREL, NS, DD, GDD,
      .                  EPSX, EPSC, dEXdDD, dECdDD, dEXdGDD, dECdGDD )
 

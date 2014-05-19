@@ -39,33 +39,33 @@ PROGRAM siestaXCtest3
   real(dp),parameter:: deltaDens = 1.e-6_dp ! Used for numerical derivatives
   real(dp),parameter:: deltaStrain = 1.e-4_dp ! Used for numerical derivatives
 
-  ! List of functionals to be tested (avoid those not passing test1)
-!  integer, parameter:: nf = nfTot-2-4   ! Number of tested functionals
-!  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11,12,13,14,  18/) 
-                          ! Indexes from list below (only one VDW allowed)
+  ! List of functionals to be tested
+!  integer, parameter:: nf = nfTot-4   ! Number of tested functionals
+!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,  18/) 
+!                         ! Indexes from list below (only one VDW allowed)
 
   ! Same to test a single functional
   integer, parameter:: nf = 1        ! Number of tested functionals
   integer:: indexf(nf) = (/18/)      ! Indexes from list below
 
   ! All functionals available
-  !                  1,             2,            3,             4,   
-  !                  5,             6,            7,             8, 
-  !                  9,            10,           11,            12,
-  !                 13,            14,           15,            16,
-  !                 17,            18,           19
+  !                  1,           2,          3,           4,   
+  !                  5,           6,          7,           8, 
+  !                  9,          10,         11,          12,
+  !                 13,          14,         15,          16,
+  !                 17,          18,         19
   character(len=3):: &
-    func(nfTot)=(/'LDA',         'LDA',         'GGA',         'GGA', &
-                  'GGA',         'GGA',         'GGA',         'GGA', &
-                  'GGA',         'GGA',         'GGA',         'GGA', &
-                  'GGA',         'GGA',         'VDW',         'VDW', &
-                  'VDW',         'VDW',         'VDW'         /)
-  character(len=12):: &
-    auth(nfTot)=(/'PZ          ','PW92        ','PW91        ','PBE         ', &
-                  'RPBE        ','revPBE      ','LYP         ','WC          ', &
-                  'PBE(JsJrLO) ','PBE(JsJrHEG)','PBE(GcGxLO) ','PBE(GcGxHEG)', &
-                  'PBESOL      ','AM05        ','DRSLL       ','LMKLL       ', &
-                  'C09         ','BH          ','VV          '/) 
+    func(nfTot)=(/'LDA',       'LDA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'VDW',       'VDW', &
+                  'VDW',       'VDW',       'VDW'       /)
+  character(len=10):: &
+    auth(nfTot)=(/'PZ        ','PW92      ','PW91      ','PBE       ', &
+                  'RPBE      ','revPBE    ','LYP       ','WC        ', &
+                  'PBEJsJrLO ','PBEJsJrHEG','PBEGcGxLO ','PBEGcGxHEG', &
+                  'PBESOL    ','AM05      ','DRSLL     ','LMKLL     ', &
+                  'C09       ','BH        ','VV        '/) 
 
   ! A few random numbers
   real(dp):: ran(nRan) = (/0.749218032_dp, 0.928517579_dp, 0.043866380_dp, &

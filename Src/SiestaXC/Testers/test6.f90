@@ -28,28 +28,28 @@ program test6
     dkgndkg1 = 2.0_dp     ! (kg(n)-kg(n-1))/(kg(2)-kg(1))
 
   ! List of functionals to be tested
-  integer, parameter:: nfTot =18       ! total number of functionals
+  integer, parameter:: nfTot = 18      ! total number of functionals
   integer, parameter:: nf = nfTot-2    ! GGA functionals
   integer:: indexf(nf) = (/3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18/)
 
   ! All functionals available
-  !                  1,             2,            3,             4,   
-  !                  5,             6,            7,             8, 
-  !                  9,            10,           11,            12,
-  !                 13,            14,           15,            16,
-  !                 17,            18
+  !                  1,           2,          3,           4,   
+  !                  5,           6,          7,           8, 
+  !                  9,          10,         11,          12,
+  !                 13,          14,         15,          16,
+  !                 17,          18
   character(len=3):: &
-    func(nfTot)=(/'LDA',         'LDA',         'GGA',         'GGA', &
-                  'GGA',         'GGA',         'GGA',         'GGA', &
-                  'GGA',         'GGA',         'GGA',         'GGA', &
-                  'GGA',         'GGA',         'GGA',         'GGA', &
-                  'GGA',         'GGA'         /)
-  character(len=12):: &
-    auth(nfTot)=(/'PZ          ','PW92        ','PW91        ','PBE         ', &
-                  'RPBE        ','revPBE      ','LYP         ','WC          ', &
-                  'PBE(JsJrLO) ','PBE(JsJrHEG)','PBE(GcGxLO) ','PBE(GcGxHEG)', &
-                  'PBESOL      ','AM05        ','PW86        ','B88         ', &
-                  'C09         ','BH          '/) 
+    func(nfTot)=(/'LDA',       'LDA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA'       /)
+  character(len=10):: &
+    auth(nfTot)=(/'PZ        ','PW92      ','PW91      ','PBE       ', &
+                  'RPBE      ','revPBE    ','LYP       ','WC        ', &
+                  'PBEJsJrLO ','PBEJsJrHEG','PBEGcGxLO ','PBEGcGxHEG', &
+                  'PBESOL    ','AM05      ','PW86      ','B88       ', &
+                  'C09       ','BH        '/) 
 
   integer:: &
     ifunc, ikf, ikg, isx, iz, jf, mspin
