@@ -6,6 +6,15 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-05-20  18:30:00 CEST                                    trunk-462
+New functionals added in pseudo-generation program (J.M.Soler)
+
+modified:
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/velect.f
+  Src/atom.F
+
+-----------------------------------------------------------------------
 2014-05-19  18:00:00 CEST                                    trunk-461
 Parenthesis eliminated from xc author labels (J.M.Soler)
 
