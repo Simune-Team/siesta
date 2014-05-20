@@ -1,5 +1,21 @@
 --------------------------------------------------------------
-May 17, 2013   Alberto Garcia   trunk-427--ncps-3--shells-5
+May 20, 2014   Alberto Garcia   trunk-427--ncps-3--shells-6
+Re-organize plotting in 'wrapup'
+
+The plotting is now done only for the final "down" pseudopotentials.
+Removed the plotting of the screened pseudopotential.
+
+Added comments for possible extensions and clarifications.
+
+removed:
+  Pseudo/atom/Tutorial/Utils/scrpots.gplot
+  Pseudo/atom/Tutorial/Utils/scrpots.gps
+modified:
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/wrapup.f
+
+--------------------------------------------------------------
+May 17, 2014   Alberto Garcia   trunk-427--ncps-3--shells-5
 Fix subtle bug regarding counting of up and down potentials
 
 In the relativistic case, npotd and npotu have to be recalculated
@@ -10,7 +26,7 @@ modified:
   Pseudo/atom/wrapup.f
 
 --------------------------------------------------------------
-May 15, 2013   Alberto Garcia   trunk-427--ncps-3--shells-4
+May 15, 2014   Alberto Garcia   trunk-427--ncps-3--shells-4
 Preserve backward compatibility, but allow forcing new scheme
 
 To preserve backward compatibility without the need to change
@@ -39,7 +55,7 @@ modified:
   Pseudo/atom/wrapup.f
 
 --------------------------------------------------------------
-May 14, 2013   Alberto Garcia   trunk-427--ncps-3--shells-3
+May 14, 2014   Alberto Garcia   trunk-427--ncps-3--shells-3
 New scheme for dealing with multiple shells in the valence
 
 Use the screened PS to compute the pseudo-wavefunctions for all
