@@ -52,7 +52,7 @@ echo "==> Pseudopotential in $name.vps and $name.psf (and maybe in $name.xml)"
 #
 #  Copy plotting scripts
 #
-for i in charge vcharge vspin coreq pots pseudo scrpots subps ; do
+for i in charge vcharge vspin coreq pots pseudo subps ; do
             cp -f ${ATOM_UTILS_DIR}/$i.gps .
             cp -f ${ATOM_UTILS_DIR}/$i.gplot .
 done

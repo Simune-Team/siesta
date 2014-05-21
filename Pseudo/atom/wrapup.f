@@ -22,6 +22,7 @@ c
       integer i, icore, j, jcut, lp, noi, npotd, npotu, ifull
       integer nops(norbmx), position, iunit
       character ray(6)*10, title*70, pot_id*40, id*1
+      character id_original*1
 c
       double precision zval, zratio, zion, ac, bc, cdcp, tanb, rbold,
      &                 rbnew, pi, ecut, vp2z, fcut, zot, vpsdm,
@@ -29,24 +30,25 @@ c
      &                 viodj, viouj, cc
       double precision rcut(10), v(nrmax)
 c
-      double precision absval, minabs, maxabs, norm1, norm2
-      double precision fourier_area(5), qc(5), dummy_real, dummy_qc
+      double precision fourier_area(5), qc(5)
       double precision fourier_eps
       parameter (fourier_eps = 1.0d-2)
 
+      integer n_shells_down(5), n_shells_up(5)
       integer n_channels, lun
 
       double precision cutoff_function, force_underflow
       external cutoff_function, force_underflow
 
-      logical new_scheme
+      logical new_cc_scheme, defined, new_valence_method
 c
-      external logder
+      external logder, defined
 c
       pi = 4*atan(one)
 c
 c     Do not use relativity for what follows
 c
+      id_original = id
       if (polarized) then
          id = 's'
       else
@@ -65,17 +67,97 @@ c
          nops(i) = 0
     5 continue
 c
+!     nops is the "effective principal quantum number", which
+!     sets the number of "nodes"     
+
+      do lp = 1, lmax
+         n_shells_down(lp) = 0
+         n_shells_up(lp) = 0
+      enddo
       do 10 i = ncp, norb
-         nops(i) = lo(i) + 1
+         lp = lo(i) + 1
+         if (down(i)) then
+            n_shells_down(lp) = n_shells_down(lp) + 1
+            nops(i) = lo(i) + n_shells_down(lp)
+         else
+            n_shells_up(lp) = n_shells_up(lp) + 1
+            nops(i) = lo(i) + n_shells_up(lp)
+         endif
+!         nops(i) = lo(i) + 1
          zval = zval + zo(i)
    10 continue
       zion = zval + znuc - zel
       if (zval .ne. zero) zratio = zion/zval
 c
-      do 20 i = 1, nr
-         cdd(i) = vod(i)
-         cdu(i) = vou(i)
-   20 continue
+      new_valence_method = .false.
+      if (multi_shell) then
+        write(6,"(/,a)") "Several valence shells have the same l"
+        write(6,"(/,a)") "Using new scheme for multiple valence shells"
+        new_valence_method = .true.
+      else
+        if (defined("FORCE_MULTISHELL_METHOD")) then
+           write(6,"(/,a)") "Forcing new scheme for valence shells"
+           write(6,"(/,a)") "Expect some numerical differences"
+           new_valence_method = .true.
+        endif
+      endif
+
+      if (new_valence_method) then
+
+!     New method able to deal with non-pseudized states in the valence.
+
+!     We can use vio{u,d} and vi{u,d} coming out of the
+!     generation routine to test the whole configuration
+!     and generate the total valence charge density 
+!     (including any non-pseudized states)
+
+!     On entry now: vio{u,d}: ionic ps (de-screened with the total AE charge)
+!                   vi{u,d} : V_HXC(total AE charge)
+!
+!     The net V_ext will be then the screened pseudo that correctly
+!     generates the pseudo-wavefunction for each channel, as constructed
+!     by the appropriate pseudization scheme.
+!     When used to generate any upper levels, it will give "pseudo-wfs"
+!     with nodes, e.g., one node for Ba 6s if we have 5s as semicore and
+!     pseudized. This is precisely what we need to generate the full
+!     pseudo-valence charge for later de-screening.
+!     For pseudized levels, this approach should give exactly the same
+!     charge density as the synthetic method used in each "ps-generator".
+!
+
+!     Notes
+!       There is indeed a difference between the charge density generated
+!       by the pseudizer and the output of this call to dsolv2: the integration
+!       is done non-relativistically, whereas the original charge (outside
+!       rc) might be relativistic.
+!       On the other hand, the inversion of the Schrodinger equation in 
+!       the pseudizer is non-relativistic.
+!       So if we use 'r' here we might impact the r<r_c shape of the charge
+!       density.
+
+!       It might then be better to get the "pseudo" versions of non-pseudized
+!       orbitals only, by managing the implicit loop in dsolv2 explicitly
+!       here
+
+!      do 10 i = ncp, norb
+!          if (.not. pseudized(i)) ...
+!          call integration_routine and get charge(i)
+!          add charge(i) to vod/vou
+
+        call dsolv2(0,1,id,ncp,norb,0,nops)
+
+      else
+!
+!     Set the charge density to the 'pseudo-valence' charge
+!     constructed in the 'ps_generator' routine by explicit
+!     squaring of the pseudo-wavefunction.
+
+         do 20 i = 1, nr
+            cdd(i) = vod(i)
+            cdu(i) = vou(i)
+ 20      continue
+
+      endif
 c
 c=====================================================================
 c  If a core correction is indicated construct pseudo core charge
@@ -118,10 +200,10 @@ C    and matching also the second derivative. This is the default with
 C    the 'mons' compatibility mode for GGA calculations.
 C
 
-            new_scheme = .false.
+            new_cc_scheme = .false.
             if (is_gga) then
                write(6,'(a)') 'Note: GGA calculation ==> New CC scheme'
-               new_scheme = .true.
+               new_cc_scheme = .true.
             endif
 
             if ( (use_old_cc) .and. (is_gga)) then
@@ -130,7 +212,7 @@ C
      $              'WARNING: Using old-style core corrections',
      $            ' despite this being a GGA calculation.',
      $              'I hope you know what you are doing...'
-               new_scheme = .false.
+               new_cc_scheme = .false.
             endif
 
             if ( (use_new_cc) .and. (.not. is_gga)) then
@@ -139,10 +221,10 @@ C
      $              'WARNING: Using new core corrections',
      $            ' despite this being an LDA calculation.',
      $         'Results will not be compatible with older versions.'
-               new_scheme = .true.
+               new_cc_scheme = .true.
             endif
 
-            if (.not. new_scheme) then
+            if (.not. new_cc_scheme) then
 
 c           Fit to  cdc(r) = ac*r * sin(bc*r) inside r(icore)
 c
@@ -226,8 +308,12 @@ C---------------------------------------------------------------------
 c
 c  End the pseudo core charge.
 c======================================================================
+
+   80 continue
+!
 c
 c  Compute the potential due to pseudo valence charge.
+!  (Total configuration in the new method)
 c
 c  njtj  ***  NOTE  ***
 c  Spin-polarized potentials should be unscreened with
@@ -236,12 +322,17 @@ c  done in pseudo and pseudok in earlier versions
 c  of this program.
 c  njtj  ***  NOTE  ***
 c
-   80 continue
-c
+!     Computes vo{u,d}, which is V_HXC for the current charge
+!     density in cd{u,d} (plus cdc if core-corrections are used)
+
+!     On entry now, cd{u,d} was traditionally synthetically generated from
+!     the pseudo-wavefunctions. In the new method, it is the complete
+!     valence pseudo-charge, including any upper states.
+
       call Velect(0,1,id,zval)
 c
-c  Construct the ionic pseudopotential and find the cutoff,
-c  ecut should be adjusted to give a reassonable ionic cutoff
+c  Construct the ionic pseudopotential and find the cutoff.
+c  ecut should be adjusted to give a reasonable ionic cutoff
 c  radius, but should not alter the pseudopotential, ie.,
 c  the ionic cutoff radius should not be inside the pseudopotential
 c  cutoff radius.
@@ -251,42 +342,30 @@ c  them approach -2*Zion/r faster) is not strictly necessary.
 c  It might even be argued that it should be left to "client"
 c  programs to decide what to do.
 
-cag
-c
-c     On the issue of plotting:
-c
-c     For non-relativistic, non-spin-polarized calculations, all
-c     the orbitals are considered as "down".
-c     For relativistic calculations, the "s" orbitals are considered
-c     as "up". The actual things plotted on the files (which only
-c     record l, not the up/down character) depend on the order of
-c     enumeration of the orbitals. Since these are always "down/up",
-c     the potentials plotted are always the "up" ones (except of
-c     course for scalar calculations and for "s" states in relativistic
-c     calculations, for which the distinction is irrelevant.
-
       write(6,9020)
  9020 format(/)
       ecut = ecuts
-      do 150 i = ncp, norb
-         lp = lo(i) + 1
-         if (down(i)) then
+
+
+      do 150 lp = 1, lmax
+         if (indd(lp) .ne. 0) then
+            i = indd(lp)
             do 90 j = 2, nr
+               ! This is the screened pseudopotential
+               ! vid is still the AE V_HXC
                v(j) = viod(lp,j)/r(j) + vid(j)
+               ! De-screen with the potential from the pseudo-charge
+               ! (including all the valence and the pseudo-core)
                viod(lp,j) = viod(lp,j) + (vid(j)-vod(j))*r(j)
                vp2z = viod(lp,j) + 2*zion
                if (abs(vp2z) .gt. ecut) jcut = j
    90       continue
-cag
-c           Plot screened ionic potential
-c
-            call potrvs(v,r,nr-120,lo(i))
-cag
+
 c           Default cutoff function: f(r)=exp(-5*(r-r_cut)). It damps
 c           down the residual of rV+2*Zion.
 c           Should be made smoother... Vps ends up with a kink at rcut.
 c           Maybe use one of the Vanderbilt generalized gaussians.
-cag
+
             rcut(i-ncore) = r(jcut)
             if (rcut(i-ncore) .lt. rc(lp)) then
                write(6,'(a,2f8.4)') 'Vps rcut point moved out to rc: ',
@@ -298,28 +377,18 @@ cag               fcut = exp(-5*(r(j)-r(jcut)))
                fcut = cutoff_function(r(j)-r(jcut))
                viod(lp,j) = -2*zion + fcut*(viod(lp,j)+2*zion)
   100       continue
-            do 110 j = 2, nr
-               v(j) = viod(lp,j)/r(j)
-  110       continue
-c
-c           Dwon potentials are  always generated
-c
-            call potran(lo(i)+1,v,r,nr,zion,fourier_area(lo(i)+1),
-     $                  fourier_eps,qc(lo(i)+1))
-            call potrv(v,r,nr-120,lo(i),zion)
-c
-         else
+
+         endif
+
+         if (indu(lp) .ne. 0) then
+            i = indu(lp)
             do 120 j = 2, nr
                v(j) = viou(lp,j)/r(j) + viu(j)
                viou(lp,j) = viou(lp,j) + (viu(j)-vou(j))*r(j)
                vp2z = viou(lp,j) + 2*zion
                if (abs(vp2z) .gt. ecut) jcut = j
   120       continue
-cag
-c           Plot screened ionic potential
-c
-            call potrvs(v,r,nr-120,lo(i))
-cag
+
             rcut(i-ncore) = r(jcut)
             if (rcut(i-ncore) .lt. rc(lp)) then
                write(6,'(a,2f8.4)') 'Vps rcut point moved out to rc: ',
@@ -331,87 +400,23 @@ cag               fcut = exp(-5*(r(j)-r(jcut)))
                fcut = cutoff_function(r(j)-r(jcut))
                viou(lp,j) = -2*zion + fcut*(viou(lp,j)+2*zion)
   130       continue
-            do 140 j = 2, nr
-               v(j) = viou(lp,j)/r(j)
-  140       continue
-c
-c           Up potentials are not always generated
-c
-            call potran(lo(i)+1,v,r,nr,zion,dummy_real,
-     $           fourier_eps,dummy_qc)
-            call potrv(v,r,nr-120,lo(i),zion)
-c
+
          end if
 c
   150 continue
-c
-c     Write out the Fourier area for each pseudo channel
-c
-      call get_unit(lun)
-      open(unit=lun,file="FOURIER_AREA",form="formatted",
-     $     status="unknown")
-      rewind(lun)
-c
-c     Compute also the minimum, maximum, mean, and root-mean-square.
-c
-      n_channels = 0
-      maxabs = -1.0d0
-      minabs = 1.0d10
-      norm1 = 0.0d0
-      norm2 = 0.0d0
-      do j=lo(ncp) + 1, lo(norb) + 1
-         absval = fourier_area(j)
-         if (absval .gt. maxabs) maxabs = absval
-         if (absval .lt. minabs) minabs = absval
-         norm1 = norm1 + absval
-         norm2 = norm2 + absval*absval
-         n_channels =  n_channels + 1
-      enddo
-      norm1 = norm1 / n_channels
-      norm2 = sqrt( norm2 / n_channels)
-      write(lun,"(i4)") n_channels
-      write(lun,"(5f10.5)") (fourier_area(j),j=lo(ncp)+1,lo(norb)+1)
-      write(lun,"(4f10.5)") minabs, maxabs, norm1, norm2
-      close(lun)
-c
-c     Write out the Fourier threshold for each channel
-c
-      call get_unit(lun)
-      open(unit=lun,file="FOURIER_QMAX",form="formatted",
-     $     status="unknown")
-      rewind(lun)
-c
-c     Compute also the minimum, maximum, mean, and root-mean-square.
-c
-      n_channels = 0
-      maxabs = -1.0d0
-      minabs = 1.0d10
-      norm1 = 0.0d0
-      norm2 = 0.0d0
-      do j=lo(ncp) + 1, lo(norb) + 1
-         absval = qc(j)
-         if (absval .gt. maxabs) maxabs = absval
-         if (absval .lt. minabs) minabs = absval
-         norm1 = norm1 + absval
-         norm2 = norm2 + absval*absval
-         n_channels =  n_channels + 1
-      enddo
-      norm1 = norm1 / n_channels
-      norm2 = sqrt( norm2 / n_channels)
-      write(lun,"(i4)") n_channels
-      write(lun,"(5f14.5)") (qc(j),j=lo(ncp)+1,lo(norb)+1)
-      write(lun,"(4f14.5)") minabs, maxabs, norm1, norm2
-      close(lun)
-c
-      write(6,9020)
 c
 c   Convert spin-polarized potentials back to nonspin-polarized
 c   by occupation weight(zo).  Assumes core polarization is
 c   zero, ie. polarization is only a valence effect.
 c
       if (polarized) then
-         do 180 i = ncp, norb, 2
-            lp = lo(i) + 1
+         do 180 lp=1,lmax
+            if ((indd(lp) .eq. 0) .or. (indu(lp) .eq. 0)) then
+               goto 180
+            endif
+            i = indd(lp)
+!!         do 180 i = ncp, norb, 2
+!!            lp = lo(i) + 1
             zot = zo(i) + zo(i+1)
             if (zot .ne. zero) then
                do 160 j = 2, nr
@@ -427,6 +432,9 @@ c
   180    continue
       end if
 c
+!     Reset V_HXC(AE) for further calculations to 
+!     V_HXC(pseudo-valence + pseudo-core)
+!
       do 190 i = 2, nr
          vid(i) = vod(i)
          viu(i) = vou(i)
@@ -436,14 +444,23 @@ c   Test the pseudopotential self consistency.  Spin-polarized
 c   is tested as spin-polarized(since up/down potentials are
 c   now the same)
 c
+!     This uses implicitly (via common blocks):
+!         -- The un-screened ionic ps
+!         -- The (pseudo-only) vi{d,u}
+!
       call dsolv2(0,1,id,ncp,norb,0,nops)
 c
 c  Printout the pseudo eigenvalues after cutoff.
 c
-      write(6,9030) (il(lo(i)+1),rcut(i-ncore),i=ncp,norb)
-      write(6,9040) (ev(i),i=ncp,norb)
- 9030 format(//' test of eigenvalues',//' rcut =',8(2x,a1,f7.2))
- 9040 format(' eval =',8(2x,f8.5))
+      write(6,9030)
+ 9030 format(//' test of eigenvalues',//' rcut :')
+ 9035 format((2x,i1,a1,f7.2,2x,f8.5))
+      do i = ncp, norb
+         lp = lo(i) + 1
+         if ((indd(lp) .eq. i) .or. (indu(lp) .eq. i)) then
+            write(6,9035) no(i), il(lo(i)+1),rcut(i-ncore), ev(i)
+         endif
+      enddo
 c
 c  Printout the data for potentials.
 c
@@ -485,6 +502,16 @@ c
 c
 c   Compute the logarithmic derivative as a function of energy 
 c
+!
+!     This scans all valence eigenstates. The actual information
+!     finally in the files will depend on which orbital comes
+!     last: up/down and possibly upper states with the same l.
+!
+!     It might be better to select an energy range appropriate
+!     for the full valence complex, and do it only for the "down"
+!     potentials. Note that in that case the AE reference would
+!     need to be changed too.
+!
       if (logder_radius .gt. 0.d0) call logder(ncp,norb,'PS')
 c
 c  Find the jobname and date.
@@ -548,7 +575,7 @@ c
   270       continue
   280    continue
       end if
-c
+
 c  Determine the number of  potentials.  Coded them as
 c  two digits, where the first digit is the number
 c  of down or sum potentials and the second the number of
@@ -560,7 +587,44 @@ c
          if (indd(i) .ne. 0) npotd = npotd + 1
          if (indu(i) .ne. 0) npotu = npotu + 1
   290 continue
+!
+!     Plotting and Fourier analysis should properly be
+!     done here, for the "down" versions only.
+!     The screened potential is no longer plotted
+
+      n_channels = 0
+      do 500 lp = 1, lmax
+         if (indd(lp) .ne. 0) then
+            n_channels = n_channels + 1
+            do 510 j = 2, nr
+               v(j) = viod(lp,j)/r(j)
+  510       continue
+            call potran(lp,v,r,nr,zion,fourier_area(n_channels),
+     $                  fourier_eps,qc(n_channels))
+            call potrv(v,r,nr-120,lp-1,zion)
+         endif
+ 500  enddo
 c
+c     Write out the Fourier area for each pseudo channel
+c
+      call get_unit(lun)
+      open(unit=lun,file="FOURIER_AREA",form="formatted",
+     $     status="unknown")
+      rewind(lun)
+      write(lun,"(i4)") n_channels
+      write(lun,"(5f10.5)") (fourier_area(j),j=1,n_channels)
+      close(lun)
+c
+c     Write out the Fourier threshold for each channel
+c
+      call get_unit(lun)
+      open(unit=lun,file="FOURIER_QMAX",form="formatted",
+     $     status="unknown")
+      rewind(lun)
+      write(lun,"(i4)") n_channels
+      write(lun,"(5f14.5)") (qc(j),j=1,n_channels)
+      close(lun)
+
 c  Write the heading to the current pseudo.dat
 c  file (unit=1).
 c
@@ -700,7 +764,6 @@ c
 c     Write the pseudopotential in XML format
 c
       call pseudoXML( ray, npotd, npotu, zion, zratio )
-
 c
       return
 c

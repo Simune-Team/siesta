@@ -373,12 +373,6 @@ column is $-2Z_{ps}/r$, that is, the Coulomb potential of the pseudo
 atom. All the ionic pseudopotentials tend to this Coulomb tail for $r$
 beyond the range of the core electrons.
 
-\item {\tt SCRPSPOTR0...SCRPSPOTR3:} Screened pseudopotentials
-as a function of $r$, for $s$, $p$, $d$, and $f$ channels (0, 1, 2, 3,
-respectively --- some channels might not be available). 
-They tend to $-2Z_{ion}/r$ for large $r$, where $Z_{ion}$ is the
-global charge of the reference configuration used in pseudopotential generation.
-
 \item {\tt PSPOTQ0...PSPOTQ3:} Fourier transform $V(q)$ (times
 $q^2/Z_{ps}$) of the ionic pseudopotentials as a function of $q$ (in
 bohr$^{-1}$), for $s$, $p$, $d$, and $f$ channels (0, 1, 2, 3,
@@ -439,8 +433,6 @@ channel:
 \item The Fourier-transformed pseudopotential (times $q^2/Z_{ps}$)
 \end{itemize}
 \item {\tt pots:} All the real-space pseudopotentials.
-\item {\tt scrpots:} Comparison of the screened and unscreened
-pseudopotentials.
 \end{itemize}
 
 \subsubsection{Core Corrections}

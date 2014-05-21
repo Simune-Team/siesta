@@ -10,11 +10,13 @@ c
      &                 logder_radius
       integer scheme, ncore, job, ifcore
       logical normal, polarized, relativistic, is_gga
+      logical multi_shell
 c
       common /param/ scheme, job, ifcore, ncore,
      &               rsh, zel, znuc, zsh, rc, rc_input, cfac, rcfac,
      &               logder_radius, indu, indd
       common /par_char/ nameat, ispp, icorr, irel, nicore
       common /par_log/  normal, polarized, relativistic, is_gga
-      save /param/, /par_char/, /par_log/
+      common /par_other/  multi_shell
+      save /param/, /par_char/, /par_log/, /par_other/
 c------

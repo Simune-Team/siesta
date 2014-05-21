@@ -1,7 +1,7 @@
 there_is_ps=`test -f PSCHARGE && echo 1 || echo 0`
 there_is_pt=`test -f PTCHARGE && echo 1 || echo 0`
 #
-set data style lines
+set style data lines
 #
 # Note larger range
 #
