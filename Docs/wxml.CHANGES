@@ -1,0 +1,22 @@
+--------------------------------------------------------------
+May 22, 2014   Alberto Garcia   trunk-427--ncps-16--wxml-1
+Replace FoX by wxml for atom. Add provenance element
+
+Remove the dependency on FoX by using the small
+wxml directory from xml90-1.2g.
+
+Added provenance element which includes a copy of the
+ATOM input file.
+
+added:
+  Pseudo/atom/wxml/
+  Pseudo/atom/wxml/flib_wxml.f90
+  Pseudo/atom/wxml/m_wxml_buffer.f90
+  Pseudo/atom/wxml/m_wxml_core.f90
+  Pseudo/atom/wxml/m_wxml_dictionary.f90
+  Pseudo/atom/wxml/m_wxml_elstack.f90
+  Pseudo/atom/wxml/m_wxml_text.f90
+  Pseudo/atom/wxml/makefile
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXML.f

@@ -2,8 +2,7 @@
 
       subroutine pseudoXML( ray, npotd, npotu, zion, zratio )
 
-      use FoX_wxml
-      use FoX_common
+      use flib_wxml
 
       implicit none
 
@@ -38,6 +37,9 @@
      .         fmt_pot= "(tr1,2i3,i5,3g20.12)" ,      
      .         fmt_rad = "(4(g20.12))"        ,      
      .         fmt_txt = "(tr1,a)"
+
+      integer :: stat
+      character(len=80) :: line
 
 
 ! Digest and dump the information about the exchange and correlation functional
@@ -175,11 +177,23 @@
 
 ! ---------------------------------------------------------------------
                                                                                 
-      call xml_OpenFile("VPSXML",xf, pretty_print=.true.)
+      call xml_OpenFile("VPSXML",xf, indent=.false.)
 
-!     call xml_AddXMLDeclaration(xf,"UTF-8")
+      call xml_AddXMLDeclaration(xf,"UTF-8")
 
       call xml_NewElement(xf,"pseudo")
+
+      call xml_NewElement(xf,"provenance")
+      call my_add_attribute(xf,"creator",ray(1))
+      call my_add_attribute(xf,"date",ray(2))
+      open(44,file="INP",form="formatted",status="old",
+     $     position="rewind",action="read")
+      do
+         read(44,fmt="(a)",iostat=stat) line
+         call xml_AddPcData(xf,line,line_feed=.true.)
+         if (stat .ne. 0) exit
+      enddo
+      call xml_EndElement(xf,"provenance")
 
         call xml_NewElement(xf,"header")
           call my_add_attribute(xf,"symbol",nameat)
@@ -225,7 +239,7 @@
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
-                 call xml_AddCharacters(xf,viod(ivps,2:nr))
+               call xml_AddArray(xf,viod(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"vps")
@@ -247,7 +261,7 @@
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddCharacters(xf,viou(ivps,2:nr))
+                 call xml_AddArray(xf,viou(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"vps")
@@ -275,7 +289,7 @@
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddCharacters(xf,pswfnrd(ivps,2:nr))
+                 call xml_AddArray(xf,pswfnrd(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"pswf")
@@ -293,7 +307,7 @@
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddCharacters(xf,pswfnru(ivps,2:nr))
+                 call xml_AddArray(xf,pswfnru(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"pswf")
@@ -304,7 +318,7 @@
           call xml_NewElement(xf,"radfunc")
 
             call xml_NewElement(xf,"data")
-              call xml_AddCharacters(xf,chval(2:nr))
+              call xml_AddArray(xf,chval(2:nr))
             call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"valence-charge")
@@ -313,7 +327,7 @@
           call xml_NewElement(xf,"radfunc")
 
             call xml_NewElement(xf,"data")
-              call xml_AddCharacters(xf,cdc(2:nr))
+              call xml_AddArray(xf,cdc(2:nr))
             call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"pseudocore-charge")
