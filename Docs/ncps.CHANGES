@@ -1,4 +1,16 @@
 ------------------------------------------------------------
+May 22, 2014  Alberto Garcia           trunk-453--ncps-16
+Fix printing of n-quantum numbers for pseudo-valence
+
+Traditionally, the program printed the "effective" n for a state based
+on the number of nodes, resulting in "n=1" for "s" states, "n=2" for
+"p" states, etc.  This was confusing and has been fixed by calling
+'orban' with the actual n quantum number.
+
+modified:
+  Pseudo/atom/dsolv2.f
+
+------------------------------------------------------------
 May 21, 2014  Alberto Garcia           trunk-453--ncps-15
 Lift the restriction on multiple l-shells for ps generation in ATOM
 

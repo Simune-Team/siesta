@@ -127,7 +127,7 @@ cag            if (ifcore .ne. 1 .and. i .le. n_of_core_orbs) then
 c
 c  Compute various quantitities if last iteration.
 c
-         if (iconv .eq. 1) call orban(i,id,ar,br,nn(i),lo(i),zo(i),
+         if (iconv .eq. 1) call orban(i,id,ar,br,no(i),lo(i),zo(i),
      &                                so(i),ev(i),ek(i),ep(i))
   130 continue
 c
