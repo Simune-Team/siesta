@@ -141,7 +141,7 @@ contains
     allocate(nq(N_Elec))
     do iEl = 1 , N_Elec
 
-       if ( OutOfCore(Elecs(iEl)) ) then
+       if ( Elecs(iEl)%out_of_core ) then
 
           if ( IONode ) then
              call io_assign(uGF(iEl))
@@ -165,7 +165,7 @@ contains
        ! We allocate for once as much space as needed,
 
        ! Allocate the non-repeated hamiltonian and overlaps...
-       no_used = UsedOrbs(Elecs(iEl))
+       no_used = Elecs(iEl)%no_used
        call re_alloc(Elecs(iEl)%HA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
        call re_alloc(Elecs(iEl)%SA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
 
@@ -175,7 +175,7 @@ contains
           no_used2 = no_used
        else
           ! This is only for having space for GA
-          no_used2 = UsedOrbs(Elecs(iEl))
+          no_used2 = Elecs(iEl)%no_used
        end if
        call re_alloc(Elecs(iEl)%Gamma,1,no_used,1,no_used2,routine='transiesta')
 
@@ -185,7 +185,7 @@ contains
        ! When the UC_expansion_Sigma_GammaT is called:
        ! first the GAA is "emptied" of information and then
        ! Gamma is filled.
-       no_used2 = UsedOrbs(Elecs(iEl))
+       no_used2 = Elecs(iEl)%no_used
        Elecs(iEl)%GA => Elecs(iEl)%Gamma(1:no_used,1:no_used2)
 
     end do
@@ -232,7 +232,7 @@ contains
 !***********************
     if ( IONode ) then
        do iEl = 1 , N_Elec
-          if ( OutOfCore(Elecs(iEl)) ) then
+          if ( Elecs(iEl)%out_of_core ) then
              call io_close(uGF(iEl))
           else
              ! clean-up
@@ -369,10 +369,10 @@ contains
     tmp_mem = 0._dp
     do i = 1 , N_Elec
        if ( IsVolt ) then
-          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) * UsedOrbs(Elecs(i)) * 2
+          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2
           tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) ** 2
        else
-          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) * UsedOrbs(Elecs(i)) * 3
+          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 3
        end if
     end do
     mem = mem + tmp_mem * 16._dp

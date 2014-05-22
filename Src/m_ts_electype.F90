@@ -30,17 +30,10 @@ module m_ts_electype
 
   public :: Elec
   public :: Name, HSfile, GFFile, GFTitle
-  public :: Atoms, UsedAtoms, TotUsedAtoms
-  public :: Orbs, UsedOrbs, TotUsedOrbs
-  public :: SCOrbs
+  public :: TotUsedAtoms, TotUsedOrbs
   public :: OrbInElec
-  public :: UnitCell
-  public :: spin, EFermi
   public :: Rep
-  public :: RepA1, RepA2, RepA3
   public :: q_exp
-
-  public :: ReUseGF, OutOfCore
 
   public :: fdf_nElec, fdf_elec
 
@@ -191,7 +184,7 @@ contains
     integer :: i, j
     integer :: idx_na 
 
-    character(len=200) :: name, ln
+    character(len=200) :: name, ln, tmp
 
     name = trim(this%name)
     found = fdf_block(trim(prefix)//'.Elec.'//trim(name),bfdf)
@@ -218,31 +211,49 @@ contains
           info(1) = .true.
 
        else if ( leqi(ln,'semi-inf-direction') .or. &
-            leqi(ln,'semi-inf') ) then
-          if ( fdf_bnintegers(pline) < 1 .and. &
-               fdf_bnnames(pline)    < 2 ) &
-               call die('Semi-infinite direction not specified')
-          this%inf_dir = -1
-          if ( fdf_bnintegers(pline) > 0 ) then
-             if ( fdf_bintegers(pline,1) > 0 ) then
-                this%inf_dir = INF_POSITIVE
-             else
-                this%inf_dir = INF_NEGATIVE
-             end if
-          else
-             ln = fdf_bnames(pline,2)
-             if ( leqi(ln,'+') .or. leqi(ln,'positive') ) then
-                this%inf_dir = INF_POSITIVE
-             else if ( leqi(ln,'-') .or. leqi(ln,'negative') ) then
-                this%inf_dir = INF_NEGATIVE
-             end if
+            leqi(ln,'semi-inf-dir') .or. leqi(ln,'semi-inf') ) then
+
+          tmp = 'Semi-infinite direction not understood correctly, &
+                  &allowed format: [-+][a-c|a[1-3]]'
+
+          ! This possibility exists
+          !  semi-inf [-+][ ][a-c|a[1-3]] -> [direction] [vector]
+          if ( fdf_bnnames(pline) < 2 ) then
+             call die(trim(tmp))
           end if
-          if ( this%inf_dir /= INF_POSITIVE .and. &
-               this%inf_dir /= INF_NEGATIVE ) then
-             call die('Semi-infinite direction could not be understood')
+          
+          ln = fdf_bnames(pline,2)
+          if ( fdf_bnnames(pline) > 2 ) then
+             if ( len_trim(ln) /= 1 ) then
+                call die(trim(tmp))
+             end if
+
+             ln = trim(ln) // fdf_bnames(pline,3)
+
+          end if
+          
+          ! now for testing
+          if ( ln(1:1) == '+' ) then
+             this%inf_dir = INF_POSITIVE
+          else if ( ln(1:1) == '-' ) then
+             this%inf_dir = INF_NEGATIVE
+          else
+             call die(trim(tmp))
+          end if
+
+          ! copy over remaining part...
+          ln = ln(2:)
+          if ( leqi(ln,'a') .or. leqi(ln,'a1') ) then
+             this%t_dir = 1
+          else if ( leqi(ln,'b') .or. leqi(ln,'a2') ) then
+             this%t_dir = 2
+          else if ( leqi(ln,'c') .or. leqi(ln,'a3') ) then
+             this%t_dir = 3
+          else
+             call die(trim(tmp))
           end if
           info(2) = .true.
-
+          
        else if ( leqi(ln,'chemical-potential') .or. &
             leqi(ln,'chem-pot') .or. leqi(ln,'mu') ) then
           if ( fdf_bnnames(pline) < 2 ) &
@@ -260,7 +271,7 @@ contains
                   '//trim(name)//'. Please supply an existing name.')
           end if
           info(3) = .true.
-
+          
        else if ( leqi(ln,'electrode-position') .or. &
             leqi(ln,'elec-pos') ) then
           idx_na      = 0
@@ -268,7 +279,7 @@ contains
           if ( fdf_bnnames(pline) > 1 ) then
              ! the user is requesting on a string basis
              ln = fdf_bnames(pline,2)
-             if ( leqi(ln,'start') ) then
+             if ( leqi(ln,'start') .or. leqi(ln,'begin') ) then
                 if ( fdf_bnintegers(pline) > 0 ) then
                    this%idx_na = fdf_bintegers(pline,1)
                 else
@@ -287,29 +298,7 @@ contains
              this%idx_na = fdf_bintegers(pline,1)
           end if
           info(4) = .true.
-
-       else if ( leqi(ln,'transport-direction') .or. &
-            leqi(ln,'t-dir') ) then
-          if ( fdf_bnintegers(pline) < 1 .and. &
-               fdf_bnnames(pline)    < 2 ) &
-               call die('Transport direction not specified')
-          this%t_dir = -1
-          if ( fdf_bnintegers(pline) > 0 ) then
-             this%t_dir = fdf_bintegers(pline,1)
-          else
-             ln = fdf_bnames(pline,2)
-             if ( leqi(ln,'a') .or. leqi(ln,'a1') ) then
-                this%t_dir = 1
-             else if ( leqi(ln,'b') .or. leqi(ln,'a2') ) then
-                this%t_dir = 2
-             else if ( leqi(ln,'c') .or. leqi(ln,'a3') ) then
-                this%t_dir = 3
-             end if
-          end if
-          if ( this%t_dir < 1 .or. 3 < this%t_dir ) then
-             call die('Transport-direction is not recognized [a|b|c|A1|A2|A3]')
-          end if
-
+          
        else if ( leqi(ln,'bulk') ) then
           this%Bulk = fdf_bboolean(pline,1,after=1)
 
@@ -318,6 +307,21 @@ contains
 
        else if ( leqi(ln,'update-cross-terms') ) then
           this%DM_CrossTerms = fdf_bboolean(pline,1,after=1)
+
+       else if ( leqi(ln,'Ef-fraction') ) then
+
+          ! highly experimental feature,
+          ! it determines the fraction of the electrode fermi-level
+          ! that shifts the energy, of the H_{E-C} region.
+          ! instead of the energy at Ef
+          if ( fdf_bnvalues(pline) < 1 ) &
+               call die('Fraction specification missing.')
+          
+          this%Ef_frac_CT = fdf_bvalues(pline,1,after=1)
+          if ( this%Ef_frac_CT < 0._dp .or. &
+               1._dp < this%Ef_frac_CT ) then
+             call die('Fraction for fermi-level must be in [0;1] range')
+          end if
 
        else if ( leqi(ln,'GF-title') ) then
           if ( fdf_bnnames(pline) < 2 ) &
@@ -328,6 +332,10 @@ contains
             leqi(ln,'GF-file') ) then
           if ( fdf_bnnames(pline) < 2 ) call die('GF-file not supplied')
           this%GFfile = trim(fdf_bnames(pline,2))
+
+       else if ( leqi(ln,'GF-ReUse') ) then
+
+          this%ReUseGF = fdf_bboolean(pline,1,after=1)
 
        else if ( leqi(ln,'used-atoms') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
@@ -359,27 +367,9 @@ contains
           this%RepA2 = fdf_bintegers(pline,2)
           this%RepA3 = fdf_bintegers(pline,3)
 
-       else if ( leqi(ln,'ReUseGF') ) then
-
-          this%ReUseGF = fdf_bboolean(pline,1,after=1)
-
        else if ( leqi(ln,'out-of-core') ) then
 
           this%out_of_core = fdf_bboolean(pline,1,after=1)
-
-       else if ( leqi(ln,'fraction-H-C') ) then
-          ! highly experimental feature,
-          ! it determines the fraction of the electrode fermi-level
-          ! that shifts the energy, of the H_{E-C} region.
-          ! instead of the energy at Ef
-          if ( fdf_bnvalues(pline) < 1 ) &
-               call die('Fraction specification missing.')
-          
-          this%Ef_frac_CT = fdf_bvalues(pline,1,after=1)
-          if ( this%Ef_frac_CT < 0._dp .or. &
-               1._dp < this%Ef_frac_CT ) then
-             call die('Fraction for fermi-level must be in [0;1] range')
-          end if
 
        else if ( leqi(ln,'check-kgrid') ) then
 
@@ -393,7 +383,10 @@ contains
           this%kcell_check = fdf_bboolean(pline,1,after=1)
 
        else
-          
+
+          ! we should always die in case something non-understandable 
+          ! is passed, if that is the case, the chances are that the
+          ! user has made a typo is high
           call die('Unrecognized option "'//trim(ln)//'" &
                &for electrode: '//trim(name))
 
@@ -401,7 +394,7 @@ contains
 
     end do
     
-    if ( RepA1(this) < 1 .or. RepA2(this) < 1 .or. RepA3(this) < 1 ) &
+    if ( this%RepA1 < 1 .or. this%RepA2 < 1 .or. this%RepA3 < 1 ) &
          call die("Repetition in "//trim(name)//" electrode must be >= 1.")
 
     if ( .not. all(info) ) then
@@ -438,7 +431,7 @@ contains
        write(*,*) "# of requested atoms is larger than available."
        write(*,*) "Requested: ",this%na_used
        write(*,*) "Available: ",this%na_u
-       call die("Error on requested atoms.")
+       call die("Error on requested atoms, please correct input.")
     end if
 
     allocate(this%lasto_used(0:this%na_used),this%xa_used(3,this%na_used))
@@ -447,7 +440,7 @@ contains
     if ( this%inf_dir == INF_NEGATIVE ) then ! same as old 'left'
        ! We use the last atoms
        j = 0
-       do i = this%na_u - UsedAtoms(this) + 1 , this%na_u
+       do i = this%na_u - this%na_used + 1 , this%na_u
           j = j + 1
           this%lasto_used(j) = this%lasto_used(j-1) + this%lasto(i)-this%lasto(i-1)
           this%xa_used(:,j)  = this%xa(:,i)
@@ -472,17 +465,17 @@ contains
     ! Check that the repetition is not in the transport-direction
     select case ( this%t_dir )
     case ( 1 )
-       if ( RepA1(this) /= 1 ) then
+       if ( this%RepA1 /= 1 ) then
           call die('Repetition in the transport direction &
                &is not allowed.')
        end if
     case ( 2 )
-       if ( RepA2(this) /= 1 ) then
+       if ( this%RepA2 /= 1 ) then
           call die('Repetition in the transport direction &
                &is not allowed.')
        end if
     case ( 3 )
-       if ( RepA3(this) /= 1 ) then
+       if ( this%RepA3 /= 1 ) then
           call die('Repetition in the transport direction &
                &is not allowed.')
        end if
@@ -570,29 +563,6 @@ contains
     GFtitle = this%GFtitle
   end function GFtitle
 
-  elemental function Spin(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%nspin
-  end function Spin
-
-  elemental function EFermi(this) result(val)
-    type(Elec), intent(in) :: this
-    real(dp) :: val
-    val = this%Ef
-  end function EFermi
-
-  elemental function Atoms(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%na_u
-  end function Atoms
-
-  elemental function UsedAtoms(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%na_used
-  end function UsedAtoms
   elemental function TotUsedAtoms(this) result(val)
     type(Elec), intent(in) :: this
     integer :: val
@@ -602,31 +572,16 @@ contains
   elemental function Rep(this) result(val)
     type(Elec), intent(in) :: this
     integer :: val
-    val = RepA1(this)*RepA2(this)*RepA3(this)
+    val = this%RepA1 * this%RepA2 * this%RepA3
   end function Rep
-  elemental function RepA1(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%RepA1
-  end function RepA1
-  elemental function RepA2(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%RepA2
-  end function RepA2
-  elemental function RepA3(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%RepA3
-  end function RepA3
 
   pure function q_exp_all(this,i,j,k) result(q)
     type(Elec), intent(in) :: this
     integer, intent(in) :: i,j,k
     real(dp) :: q(3)
-    q(1) = 1._dp*(i-1) / real(RepA1(this),dp)
-    q(2) = 1._dp*(j-1) / real(RepA2(this),dp)
-    q(3) = 1._dp*(k-1) / real(RepA3(this),dp)
+    q(1) = 1._dp*(i-1) / real(this%RepA1,dp)
+    q(2) = 1._dp*(j-1) / real(this%RepA2,dp)
+    q(3) = 1._dp*(k-1) / real(this%RepA3,dp)
   end function q_exp_all
 
   pure function q_exp(this,idx) result(q)
@@ -634,9 +589,9 @@ contains
     integer, intent(in) :: idx
     real(dp) :: q(3)
     integer :: i,j,k,ii
-    i =     RepA1(this)
-    j = i * RepA2(this)
-    k = j * RepA3(this)
+    i =     this%RepA1
+    j = i * this%RepA2
+    k = j * this%RepA3
     if ( idx <= i ) then
        q = q_exp_all(this,idx,1,1)
     else if ( idx <= j ) then
@@ -658,26 +613,11 @@ contains
     end if
   end function q_exp
 
-  elemental function Orbs(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%no_u
-  end function Orbs
-  elemental function UsedOrbs(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%no_used
-  end function UsedOrbs
   elemental function TotUsedOrbs(this) result(val)
     type(Elec), intent(in) :: this
     integer :: val
     val = this%no_used * Rep(this)
   end function TotUsedOrbs
-  elemental function SCOrbs(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%no_s
-  end function SCOrbs
 
   elemental function OrbInElec(this,io) result(in)
     type(Elec), intent(in) :: this
@@ -685,24 +625,6 @@ contains
     logical :: in
     in = this%idx_no <= io .and. io < (this%idx_no + TotUsedOrbs(this))
   end function OrbInElec
-
-  function unitcell(this) result(val)
-    type(Elec), intent(in) :: this
-    real(dp) :: val(3,3)
-    val = this%ucell
-  end function unitcell
-
-  elemental function ReUseGF(this) result(val)
-    type(Elec), intent(in) :: this
-    logical :: val
-    val = this%ReUseGF
-  end function ReUseGF
-
-  elemental function OutOfCore(this) result(val)
-    type(Elec), intent(in) :: this
-    logical :: val
-    val = this%out_of_core
-  end function OutOfCore
 
   subroutine read_Elec(this,Bcast,io)
     use fdf
@@ -1036,10 +958,10 @@ contains
     ucell = this%ucell
 
     iaa = this%idx_na
-    do ia = 1 , UsedAtoms(this)
-       do k = 0 , RepA3(this) - 1
-       do j = 0 , RepA2(this) - 1
-       do i = 0 , RepA1(this) - 1
+    do ia = 1 , this%na_used
+       do k = 0 , this%RepA3 - 1
+       do j = 0 , this%RepA2 - 1
+       do i = 0 , this%RepA1 - 1
           ! Assert the coordinates
           er=er.or.abs(this_xa(1,ia)-this_xa_o(1) + &
                sum(ucell(1,:)*(/i,j,k/)) - &
@@ -1077,10 +999,10 @@ contains
           write(*,'(a,/)') "awk '{print $1,$2,$3,1}' <OUT-file>"
           write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
           iaa = this%idx_na
-          do ia = 1 , UsedAtoms(this)
-             do k=0,RepA3(this)-1
-             do j=0,RepA2(this)-1
-             do i=0,RepA1(this)-1
+          do ia = 1 , this%na_used
+             do k=0,this%RepA3-1
+             do j=0,this%RepA2-1
+             do i=0,this%RepA1-1
                 write(*,'(t2,3(tr1,f20.10))') &
                      (this_xa(1,ia)+xa_o(1)+sum(ucell(1,:)*(/i,j,k/)))/Ang, &
                      (this_xa(2,ia)+xa_o(2)+sum(ucell(2,:)*(/i,j,k/)))/Ang, &
@@ -1094,9 +1016,9 @@ contains
      
     end if
 
-    if ( nspin /= Spin(this) ) then
+    if ( nspin /= this%nspin ) then
        write(*,*)"ERROR: Electrode: "//trim(this%name)
-       write(*,*) '  nspin=',nspin,' expected:', Spin(this)
+       write(*,*) '  nspin=',nspin,' expected:', this%nspin
        er = .true.
     end if
 
@@ -1117,11 +1039,11 @@ contains
        do j = 1 , 3
           select case ( j ) 
           case ( 1 ) 
-             k = RepA1(this)
+             k = this%RepA1
           case ( 2 )
-             k = RepA2(this)
+             k = this%RepA2
           case ( 3 )
-             k = RepA3(this)
+             k = this%RepA3
           end select
           if ( j == this%t_dir ) cycle
           do i = 1 , 3
@@ -1149,9 +1071,9 @@ contains
              write(*,'(3(i4,tr1),f8.4)') (kcell(i,j),i=1,3),kdispl(j)
           end do
           write(*,'(a)') 'Electrode file k-grid should be:'
-          this_kcell(:,1) = kcell(:,1) * RepA1(this)
-          this_kcell(:,2) = kcell(:,2) * RepA2(this)
-          this_kcell(:,3) = kcell(:,3) * RepA3(this)
+          this_kcell(:,1) = kcell(:,1) * this%RepA1
+          this_kcell(:,2) = kcell(:,2) * this%RepA2
+          this_kcell(:,3) = kcell(:,3) * this%RepA3
           do j = 1 , 3
              write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(j)
           end do
@@ -1340,10 +1262,10 @@ contains
     ucell = this%ucell
 
     iaa = this%idx_na
-    do ia = 1 , UsedAtoms(this)
-       do k = 0 , RepA3(this) - 1
-       do j = 0 , RepA2(this) - 1
-       do i = 0 , RepA1(this) - 1
+    do ia = 1 , this%na_used
+       do k = 0 , this%RepA3 - 1
+       do j = 0 , this%RepA2 - 1
+       do i = 0 , this%RepA1 - 1
           write(*,'(t3,3f10.5,''  |'',3f10.5)') &
                (this_xa(1,ia)-this_xa_o(1)+sum(ucell(1,:)*(/i,j,k/)))/Ang, &
                (this_xa(2,ia)-this_xa_o(2)+sum(ucell(2,:)*(/i,j,k/)))/Ang, &

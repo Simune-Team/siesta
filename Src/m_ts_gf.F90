@@ -96,7 +96,7 @@ contains
     ! fast exit if the Gf-file should not be created
     ! i.e. this means the calculation of the self-energy is
     ! performed in every iteration
-    if ( .not. OutOfCore(El) ) return
+    if ( .not. El%out_of_core ) return
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE do_Green' )
@@ -105,7 +105,7 @@ contains
 ! check the file for existance
     inquire(file=trim(GFfile(El)),exist=exist)
     
-    cReUseGF = ReUseGF(El)
+    cReUseGF = El%ReUseGf
 ! If it does not find the file, calculate the GF
     if ( exist ) then
        if (IONode ) then
@@ -245,7 +245,7 @@ contains
 #endif
 
     ! we should only read if the GF-should exist
-    if ( .not. OutOfCore(El) ) return
+    if ( .not. El%out_of_core ) return
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE read_Green' )
@@ -304,9 +304,9 @@ contains
        end if
 
        ! Check # of atoms
-       if (na .ne. UsedAtoms(El)) then
+       if (na .ne. El%na_used) then
           write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
-          write(*,*) 'read_Green: ERROR: na_u=',na,' expected:', UsedAtoms(El)
+          write(*,*) 'read_Green: ERROR: na_u=',na,' expected:', El%na_used
           errorGF = .true.
        end if
 
@@ -326,16 +326,16 @@ contains
        end if
 
        ! Check # of spin
-       if (nspin .ne. Spin(El) ) then
+       if (nspin .ne. El%nspin ) then
           write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
-          write(*,*) 'read_Green: ERROR: nspin=',nspin,' expected:', Spin(El)
+          write(*,*) 'read_Green: ERROR: nspin=',nspin,' expected:', El%nspin
           errorGF = .true.
        end if
 
        ! Check # of orbitals
-       if (no .ne. UsedOrbs(El)) then
+       if (no .ne. El%no_used) then
           write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
-          write(*,*) 'read_Green: ERROR: no=',no,' expected:', UsedOrbs(El)
+          write(*,*) 'read_Green: ERROR: no=',no,' expected:', El%no_used
           errorGF = .true.
        end if
 
@@ -418,7 +418,7 @@ contains
     logical :: localErrorGf, eXa, RemUCell
 
     ! we should only read if the GF-should exist
-    if ( .not. OutOfCore(El) ) return
+    if ( .not. El%out_of_core ) return
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE check_Green' )
@@ -443,31 +443,31 @@ contains
     read(funit) NA1,NA2,NA3
     read(funit) mu
 
-    if ( Spin(El) /= nspin ) then
+    if ( El%nspin /= nspin ) then
        write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of spin is wrong!"
-       write(*,'(2(a,i2))') "Found: ",nspin,", expected: ",Spin(El)
+       write(*,'(2(a,i2))') "Found: ",nspin,", expected: ",El%nspin
        localErrorGf = .true.
     end if
-    if ( any(abs(unitcell(El)-ucell) > EPS) ) then
+    if ( any(abs(El%ucell-ucell) > EPS) ) then
        write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Unit-cell is not consistent!"
        write(*,*) "Found (Ang):"
        write(*,'(3(3(tr1,f10.5),/))') ucell/Ang
        write(*,*) "Expected (Ang):"
-       write(*,'(3(3(tr1,f10.5),/))') unitcell(El)/Ang
+       write(*,'(3(3(tr1,f10.5),/))') El%ucell/Ang
        localErrorGf = .true.
     end if
-    if ( UsedAtoms(El) /= na ) then
+    if ( El%na_used /= na ) then
        write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of atoms is wrong!"
-       write(*,'(2(a,i2))') "Found: ",na,", expected: ",UsedAtoms(El)
+       write(*,'(2(a,i2))') "Found: ",na,", expected: ",El%na_used
        localErrorGf = .true.
     end if
-    if ( UsedOrbs(El) /= no ) then
+    if ( El%no_used /= no ) then
        write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of orbitals is wrong!"
-       write(*,'(2(a,i2))') "Found: ",no,", expected: ",UsedOrbs(El)
+       write(*,'(2(a,i2))') "Found: ",no,", expected: ",El%no_used
        localErrorGf = .true.
     end if
     
@@ -475,7 +475,7 @@ contains
     eXa = .false.
     ! We check elsewhere that the electrode is consistent with
     ! the FDF input
-    do ia = 1 , min(na,UsedAtoms(El)) ! in case it is completely wrong
+    do ia = 1 , min(na,El%na_used) ! in case it is completely wrong
        do i = 1 , 3
           eXa= eXa .or. &
                abs(xa(i,ia)-El%xa_used(i,ia)) > xa_Eps
@@ -506,12 +506,12 @@ contains
     end if
     deallocate(lasto)
 
-    if ( RepA1(El)/=NA1 .or. RepA2(El)/=NA2 .or. RepA3(El)/=NA3 ) then
+    if ( El%RepA1/=NA1 .or. El%RepA2/=NA2 .or. El%RepA3/=NA3 ) then
        write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of repetitions is wrong!"
-       write(*,'(2(a,i3))') "Found NA1: ",NA1,", expected NA1: ",RepA1(El)
-       write(*,'(2(a,i3))') "Found NA2: ",NA2,", expected NA2: ",RepA2(El)
-       write(*,'(2(a,i3))') "Found NA3: ",NA3,", expected NA3: ",RepA3(El)
+       write(*,'(2(a,i3))') "Found NA1: ",NA1,", expected NA1: ",El%RepA1
+       write(*,'(2(a,i3))') "Found NA2: ",NA2,", expected NA2: ",El%RepA2
+       write(*,'(2(a,i3))') "Found NA3: ",NA3,", expected NA3: ",El%RepA3
        localErrorGf = .true.
     end if
     if ( abs(El%mu%mu-mu) > EPS ) then

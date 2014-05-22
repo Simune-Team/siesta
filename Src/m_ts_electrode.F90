@@ -561,7 +561,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)      :: ZBulkDOS(NEn,Spin(El)) 
+    complex(dp), intent(out)      :: ZBulkDOS(NEn,El%nspin) 
 
 ! ***********************
 ! * LOCAL variables     *
@@ -623,10 +623,10 @@ contains
     endif
 
     ! capture information from the electrode
-    nspin  = Spin(El)
-    nuo_E  = Orbs(El)
+    nspin  = El%nspin
+    nuo_E  = El%no_u
     nS     = nuo_E ** 2
-    nuou_E = UsedOrbs(El)
+    nuou_E = El%no_used
     nuS    = nuou_E ** 2
     ! create expansion q-points (weight of q-points)
     nq     = Rep(El)
@@ -640,7 +640,7 @@ contains
             "Green's function file title: ",trim(GFTitle(El))
 
        ktmp(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * Rep(El) &
-            * UsedOrbs(El) ** 2 / 1024._dp ** 2
+            * El%no_used ** 2 / 1024._dp ** 2
        if ( ktmp(1) > 2050._dp ) then
           ktmp(1) = ktmp(1) / 1024._dp
           write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' GB'
@@ -655,24 +655,24 @@ contains
           ! First convert to units of reciprocal vectors
           ! Then convert to 1/Bohr in the electrode unit cell coordinates
           call kpoint_convert(ucell,kpoint(:,i),ktmp,1)
-          if ( RepA1(El) > 1 ) ktmp(1) = ktmp(1)/real(RepA1(El),dp)
-          if ( RepA2(El) > 1 ) ktmp(2) = ktmp(2)/real(RepA2(El),dp)
-          if ( RepA3(El) > 1 ) ktmp(3) = ktmp(3)/real(RepA3(El),dp)
-          call kpoint_convert(UnitCell(El),ktmp,kpt,-1)
+          if ( El%RepA1 > 1 ) ktmp(1) = ktmp(1)/real(El%RepA1,dp)
+          if ( El%RepA2 > 1 ) ktmp(2) = ktmp(2)/real(El%RepA2,dp)
+          if ( El%RepA3 > 1 ) ktmp(3) = ktmp(3)/real(El%RepA3,dp)
+          call kpoint_convert(El%ucell,ktmp,kpt,-1)
           write(*,'(i4,2x,4(E14.5))') i, kpt,kweight(i)
        end do
 
        ! Show the number of used atoms and orbitals
        write(*,'(a,i6,'' / '',i6)') ' Atoms available    / used atoms   : ', &
-            Atoms(El),UsedAtoms(El)
+            El%na_u,El%na_used
        write(*,'(a,i6,'' / '',i6)') ' Orbitals available / used orbitals: ', &
-            Orbs(El),UsedOrbs(El)
+            El%no_u,El%no_used
 
 
        ! We show them in units of Bohr**-1
        write(*,'(a)') ' q-points for expanding electrode (Bohr**-1):'
        do i = 1 , nq
-          call kpoint_convert(unitcell(El),q_exp(El,i),qpt,-1)
+          call kpoint_convert(El%ucell,q_exp(El,i),qpt,-1)
           write(*,'(i4,2x,4(E14.5))') i,qpt,wq
        end do
        write(*,'(a,f14.5,1x,a)') &
@@ -731,10 +731,10 @@ contains
        ! Initial header for file
        write(uGF) GFTitle(El)
        ! Electrode information
-       write(uGF) Spin(El), UnitCell(El)
-       write(uGF) UsedAtoms(El),UsedOrbs(El)
+       write(uGF) El%nspin, El%ucell
+       write(uGF) El%na_used,El%no_used
        write(uGF) El%xa_used, El%lasto_used
-       write(uGF) RepA1(El),RepA2(El),RepA3(El)
+       write(uGF) El%RepA1,El%RepA2,El%RepA3
        write(uGF) El%mu%mu
 
        ! Write out explicit information about this content
@@ -747,11 +747,11 @@ contains
        do i = 1 , nkpnt
           ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
           call kpoint_convert(ucell,kpoint(:,i),ktmp,1)
-          ktmp(1) = ktmp(1)/real(RepA1(El),dp)
-          ktmp(2) = ktmp(2)/real(RepA2(El),dp)
-          ktmp(3) = ktmp(3)/real(RepA3(El),dp)
+          ktmp(1) = ktmp(1)/real(El%RepA1,dp)
+          ktmp(2) = ktmp(2)/real(El%RepA2,dp)
+          ktmp(3) = ktmp(3)/real(El%RepA3,dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
-          call kpoint_convert(UnitCell(El),ktmp,kE(:,i),-1)
+          call kpoint_convert(El%ucell,ktmp,kE(:,i),-1)
        end do
        write(uGF) kE,kweight
        call memory('D','D',nkpnt*3,'create_green')
@@ -804,11 +804,11 @@ contains
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
        call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
-       ktmp(1) = ktmp(1)/real(RepA1(El),dp)
-       ktmp(2) = ktmp(2)/real(RepA2(El),dp)
-       ktmp(3) = ktmp(3)/real(RepA3(El),dp)
+       ktmp(1) = ktmp(1)/real(El%RepA1,dp)
+       ktmp(2) = ktmp(2)/real(El%RepA2,dp)
+       ktmp(3) = ktmp(3)/real(El%RepA3,dp)
        ! Convert back to reciprocal units (to electrode)
-       call kpoint_convert(UnitCell(El),ktmp,kpt,-1)
+       call kpoint_convert(El%ucell,ktmp,kpt,-1)
        
        ! loop over the repeated cell...
        HSq_loop: do iqpt = 1 , nq
@@ -820,7 +820,7 @@ contains
           S01 => zHS((3*nq+iqpt-1)*nS+1:(3*nq+iqpt)*nS)
 
           ! init qpoint in reciprocal lattice vectors
-          call kpoint_convert(UnitCell(El),q_exp(El,iqpt),qpt,-1)
+          call kpoint_convert(El%ucell,q_exp(El,iqpt),qpt,-1)
 
           ! Setup the transfer matrix and the intra cell at the k-point and q-point
           if ( RemUCellDistance ) then
@@ -1177,7 +1177,7 @@ contains
     t_dir = El%t_dir
     ! we need to subtract as the below code shifts to Ef
     Ef    = El%Ef - El%mu%mu
-    no_u  = Orbs(El) ! this has to be the total size of the electrode
+    no_u  = El%no_u ! this has to be the total size of the electrode
 
     if ( no_u ** 2 /= nS ) call die('Wrong size of the electrode array')
 
@@ -1356,9 +1356,9 @@ contains
     zHS_allocated = .false.
 
     ! constants for this electrode
-    nuo_E  = Orbs(El)
+    nuo_E  = El%no_u
     nS     = nuo_E ** 2
-    nuou_E = UsedOrbs(El)
+    nuou_E = El%no_used
     nuS    = nuou_E ** 2
     ! create expansion q-points (weight of q-points)
     nq     = Rep(El)
@@ -1373,7 +1373,7 @@ contains
     if ( .not. same_k ) El%bkpt_cur = bkpt
 
     ! Convert back to reciprocal units (to electrode)
-    call kpoint_convert(UnitCell(El),bkpt,kpt,-1)
+    call kpoint_convert(El%ucell,bkpt,kpt,-1)
 
     ! determine whether there is room enough
     size_req(1) = (4 + 1) * nS
@@ -1466,7 +1466,7 @@ contains
        end do
 
        ! init qpoint in reciprocal lattice vectors
-       call kpoint_convert(UnitCell(El),q_exp(El,iqpt),qpt,-1)
+       call kpoint_convert(El%ucell,q_exp(El,iqpt),qpt,-1)
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
        call set_electrode_HS_Transfer(ispin, El, kpt, qpt, &

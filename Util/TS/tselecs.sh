@@ -15,6 +15,7 @@ print_el=0
 print_c=0
 declare -a opts
 _N=0
+volt=0
 while [ $# -gt 0 ]; do
     opt=$1
     case $opt in
@@ -25,6 +26,8 @@ while [ $# -gt 0 ]; do
 	-def|-orig|-original)
 	    # Will produce output for standard TS
 	    def=2 ; shift ;;
+	-V|-bias)
+	    volt=$1 ; shift ; shift ;;
 	-2|-3|-4|-5|-6|-7|-8)
 	    # Will produce output for standard TS
 	    def=${opt:1} ; shift ;;
@@ -56,7 +59,7 @@ if [ $help -eq 1 ]; then
     echo "    $_this <options>"
     echo ""
     echo "For intrinsic transiesta runs call this:"
-    echo "    $_this -2"
+    echo "    $_this -2 -V <bias>"
     echo ""
     echo "If one wishes to divide it in several files do:"
     echo "    $_this -only-el > ELECS.fdf"
@@ -85,7 +88,7 @@ if [ $help -eq 1 ]; then
     printf "$fmt" "mu <name>" "the chemical potential name as given by -mu-name"
     printf "$fmt" "name <name>" "the name of the electrode"
     printf "$fmt" "tshs <file>" "the electrode TSHS-file"
-    printf "$fmt" "inf-dir <val>" "the semi-infinite direction [-a[1-3]|+a[1-3]]"
+    printf "$fmt" "semi-inf <val>" "the semi-infinite direction [-+][a-c|a[1-3]]"
     printf "$fmt" "pos <val>" "the first atom of the electrode in the structure"
     printf "$fmt" "end-pos <val>" "the last atom of the electrode in the structure"
     printf "$fmt" "used-atoms|ua <val>" "number of atoms used in the electrode (all)"
@@ -130,19 +133,22 @@ function rem_opt {
 	opt=$1 ; shift
 	i=0
 	while [ $i -le $_N ]; do
-	    local val=${opts[$i]}
-	    if [ "x$val" == "x$opt" ]; then
-		#echo "Removing ($val|$opt: ${opts[$i]}"
-		unset opts[$i]
-		let i++
-		#echo "Removing: ${opts[$i]}"
-		unset opts[$i]
+            local val=${opts[$i]}
+            if [ "x$val" == "x$opt" ]; then
+                #echo "Removing ($val|$opt: ${opts[$i]}"
+                unset opts[$i]
+                let i++
+                #echo "Removing: ${opts[$i]}"
+                unset opts[$i]
 		break
-	    fi
-	    let i++
-	done
+            fi
+            let i++
+        done
     done
+    opts=( "${opts[@]}" )
+    _N=${#opts[@]}
 }
+
 
 # Lower-case function
 function lc { printf "%b" "$@" | tr '[A-Z]' '[a-z]' ; }
@@ -183,23 +189,6 @@ function get_opt {
     ret=${ret%% }
     ret=${ret## }
     printf "%b" "$ret"
-}
-
-function expand_val {
-    local nm=$1 ; shift
-    local reg_opt=$1 ; shift
-    local reg= ; local opt= ; local val=
-    [ ${#reg_opt} -eq 0 ] && [ $i -gt 10 ] && break
-    reg_opt="${reg_opt//,/ }"
-    reg_opt="${reg_opt//;/ }"
-    # Loop over comma/semi-colon separated entries
-    for reg in $reg_opt ; do
-         # Add to the option list
-         # Retrive the option and value
-	opt=${reg%=*}
-	val=${reg#*=}
-	add_opt -r "-$nm$i-$opt" "$val"
-    done
 }
 
 # Expands the "short-hand" keywords to their full equivalents
@@ -252,7 +241,7 @@ for i in `seq 1 $def` ; do
     add_opt "-el$i-name" "el-$i"
     add_opt "-el$i-mu" "mu-$i"
     add_opt "-el$i-pos" "<input-value>"
-    add_opt "-el$i-inf-dir" "a3"
+    add_opt "-el$i-semi-inf" "+a3"
 done
 
 # In case of only two electrodes we have
@@ -262,20 +251,17 @@ if [ $def -eq 2 ]; then
     add_opt -r "-mu1-mu" "V/2"
     add_opt -r "-el1-name" "Left"
     add_opt -r "-el1-mu" "Left"
-    rem_opt -el1-pos -el1-end-pos -el1-inf-dir
+    rem_opt -el1-pos -el1-end-pos -el1-semi-inf
     add_opt "-el1-pos" "1"
-    add_opt "-el1-inf-dir" "-a3"
+    add_opt "-el1-semi-inf" "-a3"
     add_opt -r "-mu2-name" "Right"
     add_opt -r "-mu2-mu" "-V/2"
     add_opt -r "-el2-name" "Right"
     add_opt -r "-el2-mu" "Right"
-    rem_opt -el2-pos -el2-end-pos -el2-inf-dir
+    rem_opt -el2-pos -el2-end-pos -el2-semi-inf
     add_opt "-el2-end-pos" "-1"
-    add_opt "-el2-inf-dir" "+a3"
+    add_opt "-el2-semi-inf" "+a3"
 fi
-
-# We reduce the array to only contain the necessary values
-reduce
 
 # Add the user options
 while [ $# -gt 0 ]; do
@@ -392,7 +378,7 @@ function mu_e_correct {
 if [ $print_mu -eq 1 ]; then
 
 # Print out chemical potential block:
-echo "TS.Voltage <insert bias>"
+echo "TS.Voltage $volt eV"
 echo "%block TS.ChemPots"
 for mu in ${_mu_names[@]} ; do
     echo "  $mu"
@@ -471,12 +457,15 @@ echo "%endblock TS.Contours.Bias.Window"
 
 # Create array of chemical potentials sorted
 mus=()
-for i in `seq 1 $_mus` ; do
-    mus[$i]="$(get_opt -mu$i-mu 1)"
-    mus[$i]=$(mu_e_correct ${mus[$i]})
-
+j=1
+for i in `seq $_mus -1 1` ; do
+    tmp="$(get_opt -mu$i-mu 1)"
+    tmp=${tmp//|V|/V}
+    tmp=${tmp//V/|V|}
+    mus[$j]=$(mu_e_correct $tmp)
+    let j++
 done
-# we should probably sort them...
+
 
 # Create the contours
 i=1
@@ -485,7 +474,7 @@ echo "  part line"
 j=$((i+1))
 echo "   from ${mus[$i]} to ${mus[$j]}"
 echo "     delta $de eV"
-echo "      method boole-mix"
+echo "      method simpson-mix"
 echo "%endblock TS.Contour.Bias.Window.neq-$i"
 
 # Sort all chemical potentials
@@ -495,7 +484,7 @@ for i in `seq 3 $((_mus))` ; do
     echo "  part line"
     echo "   from prev to ${mus[$i]}"
     echo "     delta $de eV"
-    echo "      method boole-mix"
+    echo "      method simpson-mix"
     echo "%endblock TS.Contour.Bias.Window.neq-$((i-1))"
 done
 
@@ -506,9 +495,9 @@ echo "%endblock TS.Contours.Bias.Tail"
 
 echo "%block TS.Contour.Bias.Tail.neq-tail"
 echo "  part tail"
-echo "   from 0. kT to inf"
-echo "     points 8"
-echo "      method g-fermi"
+echo "   from 0. kT to 10. kT"
+echo "     delta 1. kT"
+echo "      method simpson-mix"
 echo "%endblock TS.Contour.Bias.Tail.neq-tail"
 
 fi
@@ -585,33 +574,7 @@ function create_el {
 	echo "  TSHS <input file>"
     fi
     echo "  chemical-potential $chem"
-    local opt=$(get_opt -el$el-inf-dir 1)
-    local inf_dir=positive
-    local t_dir=a3
-    case $opt in
-	-*)
-	    inf_dir=negative
-	    opt=${opt#-}
-	    ;;
-	+*)
-	    inf_dir=positive
-	    opt=${opt#+}
-            ;;
-    esac
-    case $opt in
-	a|A|a1|A1)
-	    t_dir=a1 ;;
-	b|B|a2|A2)
-	    t_dir=a2 ;;
-	c|C|a3|A3)
-	    t_dir=a3 ;;
-    esac
-    if [ ${#opt} -eq 0 ]; then
-	inf_dir="<set value>"
-	t_dir="<set value>"
-    fi
-    echo "  semi-inf-direction $inf_dir"
-    echo "  transport-direction $t_dir"
+    echo "  semi-inf-direction $(get_opt -el$el-semi-inf 1)"
     local pos=$(get_opt -el$el-pos 1)
     if [ ${#pos} -eq 0 ]; then
 	pos=$(get_opt -el$el-end-pos 1)

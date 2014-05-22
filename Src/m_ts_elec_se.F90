@@ -50,17 +50,17 @@ contains
 
     if ( lnon_Eq ) then
        call UC_expansion_Sigma_GammaT(cE%e, &
-            UsedOrbs(El),TotUsedOrbs(El),El, &
-            UsedAtoms(El),El%lasto_used,Rep(El), &
+            El%no_used,TotUsedOrbs(El),El, &
+            El%na_used,El%lasto_used,Rep(El), &
             El%HA,El%SA,El%GA,El%Sigma,El%Gamma,nwork,work)
     else
        if ( El%Bulk ) then
-          call UC_expansion_Sigma_Bulk(UsedOrbs(El),TotUsedOrbs(El),El, &
-               UsedAtoms(El),El%lasto_used,Rep(El), &
+          call UC_expansion_Sigma_Bulk(El%no_used,TotUsedOrbs(El),El, &
+               El%na_used,El%lasto_used,Rep(El), &
                El%HA,El%SA,El%GA,El%Sigma,nwork,work)
        else
-          call UC_expansion_Sigma(cE%e,UsedOrbs(El),TotUsedOrbs(El),El, &
-               UsedAtoms(El),El%lasto_used,Rep(El), &
+          call UC_expansion_Sigma(cE%e,El%no_used,TotUsedOrbs(El),El, &
+               El%na_used,El%lasto_used,Rep(El), &
                El%HA,El%SA,El%GA,El%Sigma,nwork,work)
        end if
     end if
@@ -93,7 +93,6 @@ contains
 ! * LOCAL variables  *
 ! ********************
     integer :: iq, ierr
-    integer :: r1, r2, r3
     integer :: iow,iau,ia3,ia2,ia1,iuo
     integer :: jow,jau,ja3,ja2,ja1,juo
     integer :: ipvt(no_s)
@@ -119,10 +118,6 @@ contains
        end do
        wq = 1._dp / nq
 
-       r1 = RepA1(El)
-       r2 = RepA2(El)
-       r3 = RepA3(El)
-
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
@@ -134,16 +129,16 @@ contains
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia3 = 1 , r3
-        do ia2 = 1 , r2
-        do ia1 = 1 , r1
+        do ia3 = 1 , El%RepA3
+        do ia2 = 1 , El%RepA2
+        do ia1 = 1 , El%RepA1
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja3 = 1 , r3
-            do ja2 = 1 , r2
-            do ja1 = 1 , r1
+            do ja3 = 1 , El%RepA3
+            do ja2 = 1 , El%RepA2
+            do ja1 = 1 , El%RepA1
               ph = wq * cdexp(dcmplx(0._dp, &
                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau) 
@@ -163,16 +158,16 @@ contains
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia3 = 1 , r3
-         do ia2 = 1 , r2
-         do ia1 = 1 , r1
+         do ia3 = 1 , El%RepA3
+         do ia2 = 1 , El%RepA2
+         do ia1 = 1 , El%RepA1
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja3 = 1 , r3
-             do ja2 = 1 , r2
-             do ja1 = 1 , r1
+             do ja3 = 1 , El%RepA3
+             do ja2 = 1 , El%RepA2
+             do ja1 = 1 , El%RepA1
                ph = wq * cdexp(dcmplx(0._dp, &
                     (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau) 
@@ -386,7 +381,6 @@ contains
 ! * LOCAL variables  *
 ! ********************
     integer :: iq
-    integer :: r1, r2, r3
     integer :: iow,iau,ia3,ia2,ia1,iuo
     integer :: jow,jau,ja3,ja2,ja1,juo
     complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2.0_dp * Pi)
@@ -408,10 +402,6 @@ contains
        end do
        wq = 1._dp / real(nq,dp)
 
-       r1 = RepA1(El)
-       r2 = RepA2(El)
-       r3 = RepA3(El)
-
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
@@ -420,16 +410,16 @@ contains
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia3 = 1 , r3
-        do ia2 = 1 , r2
-        do ia1 = 1 , r1
+        do ia3 = 1 , El%RepA3
+        do ia2 = 1 , El%RepA2
+        do ia1 = 1 , El%RepA1
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja3 = 1 , r3
-            do ja2 = 1 , r2
-            do ja1 = 1 , r1
+            do ja3 = 1 , El%RepA3
+            do ja2 = 1 , El%RepA2
+            do ja1 = 1 , El%RepA1
               ph = wq * cdexp(dcmplx(0._dp, &
                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau)
@@ -452,16 +442,16 @@ contains
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia3 = 1 , r3
-         do ia2 = 1 , r2
-         do ia1 = 1 , r1
+         do ia3 = 1 , El%RepA3
+         do ia2 = 1 , El%RepA2
+         do ia1 = 1 , El%RepA1
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja3 = 1 , r3
-             do ja2 = 1 , r2
-             do ja1 = 1 , r1
+             do ja3 = 1 , El%RepA3
+             do ja2 = 1 , El%RepA2
+             do ja1 = 1 , El%RepA1
                ph = wq * cdexp(dcmplx(0._dp, &
                     (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)
@@ -563,7 +553,7 @@ contains
        iNodeStep = -1
     end if
 
-    read_Size = UsedOrbs(El) ** 2 * Rep(El) ! no_GS * no_GS * nq
+    read_Size = El%no_used ** 2 * Rep(El) ! no_GS * no_GS * nq
 
     ! Check if the number of energy points requested are 
     ! inconsistent
@@ -734,7 +724,7 @@ contains
     if ( present(reread) ) then
        if ( IONode .and. reread ) then
           do j = 1 , NElecs
-             if ( .not. OutOfCore(Elecs(j)) ) cycle
+             if ( .not. Elecs(j)%out_of_core ) cycle
              do i = 1 , NEReqs * 2
                 backspace(unit=uGF(j))
              end do
@@ -760,7 +750,7 @@ contains
     ! of doing the same "repetition" expansion twice, we can live with
     ! that!
     do i = 1 , NElecs
-       if ( OutOfCore(Elecs(i)) ) then
+       if ( Elecs(i)%out_of_core ) then
           call read_next_GS_Elec(uGF(i), NEReqs, &
                ikpt, Elecs(i), cE, &
                nzwork, zwork, forward = forward)

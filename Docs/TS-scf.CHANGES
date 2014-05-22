@@ -1,4 +1,31 @@
 ----------------------------------------------------
+May 22, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-139
+Clean up in electype, changed some fdf-keywords for the electrode
+
+* Many of the elemental routines from elec_type where not helping
+  the code factoring. Hence all single return value routines
+  have been deleted. This should make the code less cluttered.
+
+* Changed the keyword name semi-inf-dir to both have the
+  transport direction and the infinite direction.
+  The format of such an input is:
+    [-+][a-c|a[1-3]]
+
+* Changed tselecs.sh to conform with the changes, also
+  made it print a working copy if doing:
+  tselecs.sh -2
+  Then one only needs to change the TSHS file
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_options.F90
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 May 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-138
 Bugfix for transiesta work-size array estimation
 

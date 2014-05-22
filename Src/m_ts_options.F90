@@ -384,7 +384,7 @@ contains
     ! whether or not the electrodes should be re-instantiated
     call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
     err = fdf_get('TS.ReUseGF',.false.)
-    Elecs(:)%ReUseGF = fdf_get('TS.Elecs.ReUseGF',err)
+    Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF-ReUse',err)
 
     ! whether all calculations should be performed
     ! "out-of-core" i.e. whether the GF files should be created or not
@@ -640,7 +640,7 @@ contains
        write(*,10)'          >> Electrodes << '
        do i = 1 , size(Elecs)
           write(*,11) '>> '//trim(name(Elecs(i)))
-          if ( OutOfCore(Elecs(i)) ) then
+          if ( Elecs(i)%out_of_core ) then
              write(*,10) '  GF file', trim(GFFile(Elecs(i)))
              write(*,10) '  GF title', trim(GFtitle(Elecs(i)))
              write(*,1)  '  Reuse existing GF-file', Elecs(i)%ReUseGF
@@ -648,9 +648,9 @@ contains
              write(*,11)  '  In-core GF'
           end if
           write(*,10) '  Electrode TSHS file', trim(HSFile(Elecs(i)))
-          write(*,5)  '  # atoms used in electrode', UsedAtoms(Elecs(i))
+          write(*,5)  '  # atoms used in electrode', Elecs(i)%na_used
           write(*,15) '  Electrode repetition [A1 x A2 x A3]', &
-               RepA1(Elecs(i)),RepA2(Elecs(i)),RepA3(Elecs(i))
+               Elecs(i)%RepA1,Elecs(i)%RepA2,Elecs(i)%RepA3
           if ( Elecs(i)%t_dir == 1 ) then
              chars = 'A1'
           else if ( Elecs(i)%t_dir == 2 ) then
