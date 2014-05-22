@@ -241,7 +241,7 @@ contains
        TS_W_METHOD = TS_W_CORRELATED
     else if ( leqi(chars,'uncorrelated') ) then
        TS_W_METHOD = TS_W_UNCORRELATED
-       call die('Not currently functioning')
+       call die('Currently not functioning')
     else if ( leqi(chars,'k-uncorrelated') ) then
        TS_W_METHOD = TS_W_K_UNCORRELATED
     else
@@ -322,17 +322,19 @@ contains
 
     ! Read in the chemical potentials
     N_mu = fdf_nmu('TS',mus)
-    if ( N_mu < 1 ) &
-         call die('You need at least one chemical potential')
-    do i = 1 , N_mu
-       ! Default things that could be of importance
-       if ( .not. fdf_mu('TS',slabel,mus(i),Volt) ) then
-          call die('Could not find chemical potential: ' &
-               //trim(name(mus(i))))
-       end if
-       ! Attach the ID
-       mus(i)%ID = i
-    end do
+    if ( N_mu < 1 ) then
+       N_mu = fdffake_mu(mus,Volt)
+    else
+       do i = 1 , N_mu
+          ! Default things that could be of importance
+          if ( .not. fdf_mu('TS',slabel,mus(i),Volt) ) then
+             call die('Could not find chemical potential: ' &
+                  //trim(name(mus(i))))
+          end if
+          ! Attach the ID
+          mus(i)%ID = i
+       end do
+    end if
 
     ! To determine the same coordinate nature of the electrodes
     Elecs_xa_EPS= fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
@@ -340,8 +342,8 @@ contains
     ! detect how many electrodes we have
     N_Elec = fdf_nElec('TS',Elecs)
     if ( N_Elec < 1 ) then
-       call die('Please see the manual for how to construct an &
-            &example electrode configuration')
+       call die('Please see the manual for how to construct an example &
+            &electrode configuration (or use Util/TS/tselecs.sh)')
     end if
     ! If only one electrode you are not allowed to move the fermi-level
     ! of the electrode. That should be done by other means (i.e. use NetCharge)
@@ -752,7 +754,18 @@ contains
             ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
     end if
 
+
+    if ( IONode ) then
+       write(*,'(/,a,/)') '### Transiesta information for FDF-file START ###'
+    end if
+    
+    call print_mus_block( 'TS' , N_mu , mus)
+
     call print_contour_block( 'TS' , IsVolt )
+
+    if ( IONode ) then
+       write(*,'(/,a,/)') '### Transiesta information for FDF-file END ###'
+    end if
 
     ! write out the contour
     call io_contour(IsVolt, mus, kT, slabel)

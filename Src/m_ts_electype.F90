@@ -165,7 +165,6 @@ contains
     end do
 
   end function fdf_nElec
-  
 
   function fdf_Elec(prefix,slabel,this,N_mu,mus) result(found)
     use fdf

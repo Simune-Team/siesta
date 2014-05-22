@@ -21,14 +21,18 @@ module m_ts_chem_pot
 
   real(dp), public, parameter :: mu_same = 1.e-8_dp
   integer,  public, parameter :: NAME_MU_LEN = 20
+  integer, private, parameter :: def_poles = 6
 
   type :: ts_mu
      ! name of the chemical potential
      character(len=NAME_MU_LEN) :: name = ' '
      ! ID
      integer  :: ID = 0
+     ! Number of poles for the equilibrium contour
+     integer  :: N_poles = 0
      ! the chemical potential
      real(dp) :: mu = 0._dp
+     character(len=20) :: cmu
      ! number of electrodes having this chemical potential
      integer  :: N_El = 0
      ! array of electrode indices (conforming with the Elecs-array)
@@ -59,7 +63,10 @@ module m_ts_chem_pot
 
   public :: chem_pot_add_Elec
 
-  public :: fdf_nmu, fdf_mu
+  public :: fdf_nmu, fdffake_mu, fdf_mu
+
+  public :: print_mus_block
+
   private
 
 contains
@@ -91,6 +98,9 @@ contains
 
     allocate(this_n(n))
 
+    ! Read in number of poles
+    this_n(:)%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
+
     ! rewind to read again
     call fdf_brewind(bfdf)
 
@@ -111,6 +121,45 @@ contains
 
   end function fdf_nmu
 
+  function fdffake_mu(this_n,Volt) result(n)
+    use fdf
+
+    type(ts_mu), allocatable :: this_n(:)
+    real(dp), intent(in) :: Volt
+    integer :: n
+    ! In case the user whishes to utilise the standard 
+    ! transiesta setup we fake the chemical potentials
+    n = 2
+    allocate(this_n(n))
+
+    ! Read in number of poles
+    this_n(:)%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
+
+    ! We star-mark the defaultet contours...
+    ! this will let us construct them readily...
+
+
+    ! *** NOTE this is hard-coded together with the ts_contour_eq
+
+    ! Create the left chemical potential...
+    this_n(1)%name = 'Left'
+    this_n(1)%mu   = Volt * 0.5_dp
+    this_n(1)%cmu  = 'V/2'
+    allocate(this_n(1)%Eq_seg(3)) ! one fake for poles
+    this_n(1)%Eq_seg(1) = '*c-left'
+    this_n(1)%Eq_seg(2) = '*t-left'
+    this_n(1)%ID = 1
+
+    this_n(2)%name = 'Right'
+    this_n(2)%mu   = - Volt * 0.5_dp
+    this_n(2)%cmu  = '-V/2'
+    allocate(this_n(2)%Eq_seg(3)) ! one fake for poles
+    this_n(2)%Eq_seg(1) = '*c-right'
+    this_n(2)%Eq_seg(2) = '*t-right'
+    this_n(2)%ID = 2
+
+  end function fdffake_mu
+    
   function fdf_mu(prefix,slabel,this, Volt) result(found)
     use fdf
     use m_ts_io_ctype, only: pline_E_parse
@@ -124,7 +173,7 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     logical :: info(2)
-
+    integer :: int
     character(len=200) :: ln
 
     found = fdf_block(trim(prefix)//'.ChemPot.'//trim(Name(this)),bfdf)
@@ -134,7 +183,7 @@ contains
 
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
-       
+
        ln = trim(fdf_bnames(pline,1))
        
        ! We select the input
@@ -148,14 +197,25 @@ contains
           ! the last assignment
           call pline_E_parse(pline,1,ln, &
                val = this%mu, V = Volt, kT = 0._dp, before=3)
+          this%cmu = trim(ln)
 
-          !this%mu = fdf_bvalues(pline,1) * fdf_convfac(fdf_bnames(pline,2),'Ry')
           info(1) = .true.
 
        else if ( leqi(ln,'contour.eq') ) then
           ! we automatically make room for one pole contour
           call read_contour_names('Equilibrium',this%Eq_seg,fakes=1)
           info(2) = .true.
+
+       else if ( leqi(ln,'contour.eq.pole.n') ) then
+
+          if ( fdf_bnintegers(pline) < 1 ) &
+               call die('You have not specified a number for &
+               &number of poles.')
+          
+          int = fdf_bintegers(pline,1)
+          if ( int > 0 ) then
+             this%N_poles = int
+          end if
 
        else
           
@@ -309,6 +369,60 @@ contains
     character(len=NAME_MU_LEN) :: name
     name = this%name
   end function name_
+
+  subroutine print_mus_block(prefix,N_mu,mus)
+    use parallel, only : IONode
+    character(len=*), intent(in) :: prefix
+    integer, intent(in) :: N_mu
+    type(ts_mu), intent(in) :: mus(N_mu)
+    integer :: i
+
+    if (IONode) then
+       write(*,'(2a)') '%block ',trim(prefix)//'.ChemPots'
+       do i = 1 , N_mu
+          write(*,'(t3,a)') trim(mus(i)%name)
+       end do
+       write(*,'(2a,/)') '%endblock ',trim(prefix)//'.ChemPots'
+    end if
+
+    do i = 1 , N_mu
+       call print_mu_block(prefix,mus(i))
+    end do
+    
+  end subroutine print_mus_block
+
+  subroutine print_mu_block(prefix,this)
+    use parallel, only : IONode
+    use fdf
+    character(len=*), intent(in) :: prefix
+    type(ts_mu), intent(in) :: this
+    integer :: i, def_pole
+    character(len=50) :: ln
+
+    if ( .not. IONode ) return
+
+    def_pole = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
+    
+    ! Start by writing out the block beginning
+    write(*,'(a,a)') '%block '//trim(prefix)//'.ChemPot.',trim(this%name)
+    write(*,'(t3,a,tr2,a)') 'mu',trim(this%cmu)
+    write(*,'(t3,a)') 'contour.eq'
+    write(*,'(t4,a)') 'begin'
+    do i = 1 , Eq_segs(this) - 1 ! no pole-allowed
+       ln = this%Eq_seg(i)
+       if ( ln(1:1) == '*' ) then
+          write(*,'(t5,a)') trim(ln(2:))
+       else
+          write(*,'(t5,a)') trim(ln)
+       end if
+    end do
+    write(*,'(t4,a)') 'end'
+    if ( def_pole /= this%N_poles ) then
+       write(*,'(t3,a,tr2,i0)') 'contour.eq.pole.n',this%N_poles
+    end if
+    write(*,'(a,a)') '%endblock '//trim(prefix)//'.ChemPot.',trim(this%name)
+    
+  end subroutine print_mu_block
 
 end module m_ts_chem_pot
   

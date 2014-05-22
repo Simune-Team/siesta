@@ -38,11 +38,6 @@ module m_ts_contour_eq
   ! The contour specific variables
   real(dp), save, public :: Eq_Eta
 
-  ! We need to retain the information about the contour here.
-  ! It provides an easier overview as there are quite a few constants governing the
-  ! methods.
-  integer, save, public :: N_poles
-
   ! The contours for the equilibrium density are attributed a fruitful discussion with
   ! Hans Skriver. Previously the routine names reflected his contribution.
   ! However, for programming clarity we have employed a different naming scheme.
@@ -85,6 +80,7 @@ contains
     integer :: i,j,k
     integer :: different_poles, N
     character(len=C_N_NAME_LEN), allocatable :: tmp(:), nContours(:)
+    character(len=C_N_NAME_LEN) :: tmp_one
     integer :: cur, next, prev
     logical :: isCircle
     logical :: isTail
@@ -98,9 +94,6 @@ contains
     
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input
-
-    ! Read in the generic things about the contours...
-    N_poles = fdf_get('TS.Contours.Eq.Pole.N',6)
 
     do i = 1 , N_mu
        write(mus(i)%Eq_seg(Eq_segs(mus(i))),'(a,i0)') 'pole',i
@@ -177,9 +170,52 @@ contains
     ! read in the equilibrium contours (the last will be the poles)
     do i = 1 , N - N_mu
 
-       ! read in the contour
-       call ts_read_contour_block('TS','',nContours(i),Eq_io(i), kT, Volt)
+       tmp_one = nContours(i)
 
+       ! read in the contour
+       if ( tmp_one(1:1) == '*' .and. &
+            .not. ts_exists_contour_block('TS','',tmp_one(2:)) ) then
+
+          ! this is a fake-contour, read it in
+          ! if it exists, else create it...
+          ! *** NOTE this is hard coded against the chem_pot code
+
+          Eq_io(i)%name = tmp_one
+          if ( tmp_one(2:2) == 'c' ) then
+             ! the circle contour
+             Eq_io(i)%part = 'circle'
+             Eq_io(i)%N  = 30
+             Eq_io(i)%cN = '30'
+             if ( tmp_one(4:4) == 'l' ) then ! left
+                Eq_io(i)%ca = '-3. Ry + V/2'
+                Eq_io(i)%a  = -3._dp + Volt * .5_dp
+                Eq_io(i)%cb = '-10 kT + V/2'
+                Eq_io(i)%b  = -10._dp * kT + Volt * .5_dp
+             else ! must be right
+                Eq_io(i)%ca = '-3. Ry - V/2'
+                Eq_io(i)%a  = -3._dp - Volt * .5_dp
+                Eq_io(i)%cb = '-10 kT - V/2'
+                Eq_io(i)%b  = -10._dp * kT - Volt * .5_dp
+             end if
+             Eq_io(i)%method = 'g-legendre'
+          else
+             Eq_io(i)%part = 'tail'
+             Eq_io(i)%N  = 8
+             Eq_io(i)%cN = '8'
+             Eq_io(i)%ca = 'prev'
+             if ( tmp_one(4:4) == 'l' ) then ! left
+                Eq_io(i)%a  = -10._dp * kT + Volt * .5_dp
+             else ! must be right
+                Eq_io(i)%a  = -10._dp * kT - Volt * .5_dp
+             end if
+             Eq_io(i)%cb = 'inf'
+             Eq_io(i)%b  = huge(1._dp)
+             Eq_io(i)%method = 'g-fermi'
+          end if
+       else
+          call ts_read_contour_block('TS','',nContours(i),Eq_io(i), kT, Volt)
+       end if
+       
     end do
 
     ! We here create the "fake" pole contours
@@ -187,7 +223,7 @@ contains
     do i = N - N_mu + 1, N
        ! assign name to the Eq_io
        Eq_io(i)%name   = nContours(i)
-       Eq_io(i)%N      = N_poles
+       Eq_io(i)%N      = mus(j)%N_poles
        Eq_io(i)%part   = 'pole'
        Eq_io(i)%method = 'residual'
        Eq_io(i)%a = mus(j)%mu
@@ -201,7 +237,11 @@ contains
     do i = 1 , N_mu
 
        j = 1
-       cur = get_c_io_index(mus(i)%Eq_seg(j))
+       cur      = get_c_io_index(mus(i)%Eq_seg(j))
+       if ( cur == 0 ) then
+          call die('A terrible error has occured, please inform the &
+               &developers')
+       end if
        isCircle = leqi(Eq_io(cur)%part,'circle')
        isTail   = leqi(Eq_io(cur)%part,'tail')
        if ( Eq_segs(mus(i)) > 2 ) then
@@ -237,6 +277,7 @@ contains
        ! check that the last contour actually lies on the RHS
        ! of the chemical potential, at least 10 kT across!
        if ( Eq_io(cur)%b < mus(i)%mu + 10._dp * kT ) then
+          write(*,*) 'Energies are too close: ',Eq_io(cur)%b,mus(i)%mu + 10._dp * kT
           call eq_die('The last contour of the chemical potential: &
                &'//trim(Name(mus(i)))//' lies too close to the &
                chemical potential. It must be at least 10kT from mu.')
@@ -261,6 +302,17 @@ contains
           if ( hasC(mus(j),Eq_c(i)) ) then
              k = k + 1
              Eq_c(i)%ID(k) = j
+
+             ! We need to make sure that the number
+             ! of poles is the same if they overlap
+             if ( k > 1 ) then
+                if ( mus(j)%N_poles /= &
+                     mus(Eq_c(i)%ID(k-1))%N_poles ) then
+                   call die('If two equilibrium contours &
+                        &should overlap, they should have the &
+                        &same number of poles in the contour.')
+                end if
+             end if
           end if
        end do
 
@@ -269,12 +321,12 @@ contains
        Eq_c(i)%c = 0._dp
        allocate(Eq_c(i)%w(k,Eq_c(i)%c_io%N))
        Eq_c(i)%w = 0._dp
-
+       
     end do
     
     do i = 1 , N_mu
 
-       call setup_Eq_contour(mus(i),N_poles,kT,Eq_Eta)
+       call setup_Eq_contour(mus(i),kT,Eq_Eta)
        
     end do
 
@@ -315,9 +367,8 @@ contains
 
   ! This routine assures that we have setup all the 
   ! equilibrium contours for the passed electrode
-  subroutine setup_Eq_contour(mu,N_poles,kT,Eta)
+  subroutine setup_Eq_contour(mu,kT,Eta)
     type(ts_mu), intent(in) :: mu
-    integer, intent(in) :: N_poles
     real(dp), intent(in) :: kT, Eta
 
     ! Local variables
@@ -332,7 +383,7 @@ contains
     call mu_circle_bounds(mu,a,b)
 
     ! Calculate the circle entries
-    call calc_Circle(a,b,N_poles,kT,Eta,R,cR,lift)
+    call calc_Circle(a,b,mu%N_poles,kT,Eta,R,cR,lift)
 
     do i = 1 , Eq_segs(mu)
        
@@ -992,7 +1043,13 @@ contains
     do i = 1 , N_eq
        if ( .not. leqi(eq_io(i)%part,'pole') ) then
           chars = '  '//trim(eq_io(i)%part)
-          write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.'//trim(eq_io(i)%name)
+          ! the starred contours are "fakes"
+          if ( eq_io(i)%name(1:1) == '*' ) then
+             write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.'//trim(eq_io(i)%name(2:))
+          else
+             write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.'//trim(eq_io(i)%name)
+          end if
+
           call write_e(trim(chars)//' contour E_min',eq_io(i)%a)
           call write_e(trim(chars)//' contour E_max',eq_io(i)%b)
           write(*,opt_int) trim(chars)//' contour points',eq_io(i)%N

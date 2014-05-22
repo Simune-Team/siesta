@@ -128,21 +128,11 @@ contains
     character(len=*), intent(in) :: prefix
     logical, intent(in) :: IsVolt
 
-    ! Print out the contour blocks
-    if ( IONode ) then
-       write(*,'(/,a)') 'transiesta: contour input as perceived:'
-       write(*,'(/,a)') 'transiesta: Equilibrium contours'
-    end if
-    
     call print_contour_eq_block(prefix)
 
     if ( IsVolt ) then
-       if ( IONode ) then
-          write(*,'(/,a)') 'transiesta: non-Equilibrium contours'
-       end if
        call print_contour_neq_block(prefix)
     end if
-    if ( IONode ) write(*,'(/)')
 
   end subroutine print_contour_block
 

@@ -123,16 +123,63 @@ contains
 
     ! Bias-window setup
     call my_setup('Bias.Window',N_nEq,nEq_c,nEq_io)
-    if ( N_nEq < 1 ) &
-         call die('You must at least specify one segment for the non-equilibrium &
-         &window.')
+    if ( N_nEq < 1 ) then
+
+       ! We create the default version
+       ! *** NOTE requires an even splitting of the bias
+       N_nEq = 1
+       nullify(nEq_io,nEq_c)
+       allocate(nEq_io(N_nEq),nEq_c(N_nEq))
+       nEq_c(1)%c_io => nEq_io(1)
+       nEq_io(1)%part = 'line'
+       nEq_io(1)%name = 'neq-1'
+       nEq_io(1)%ca = '-|V|/2'
+       nEq_io(1)%a  = -abs(Volt) * .5_dp
+       nEq_io(1)%cb = '|V|/2'
+       nEq_io(1)%b  =  abs(Volt) * .5_dp
+       ! number of points
+       nEq_io(1)%cd = '0.01 eV'
+       nEq_io(1)%d = 0.01_dp * eV
+       nEq_io(1)%method = 'simpson-mix'
+       call ts_fix_contour(nEq_io(1))
+
+       ! setup the contour
+       allocate(nEq_c(1)%c(nEq_c(1)%c_io%N),nEq_c(1)%w(nEq_c(1)%c_io%N,1))
+       call setup_nEq_contour(nEq_c(1), kT, nEq_Eta)
+
+    end if
 
     ! Here we setup the tail integral
     call my_setup('Bias.Tail',N_tail,tail_c,tail_io)
     if ( N_tail > 1 ) &
          call die('You can currently only use one tail integral')
-    if ( N_tail < 1 ) &
-         call die('You must at least specify one tail integral')
+    if ( N_tail < 1 ) then
+
+       ! We create the default version
+       ! *** NOTE requires an even splitting of the bias
+       ! We create the default version
+       ! *** NOTE requires an even splitting of the bias
+       N_tail = 1
+       nullify(tail_c,tail_io)
+       allocate(tail_io(N_tail),tail_c(N_tail))
+       tail_c(1)%c_io => tail_io(1)
+       tail_io(1)%part = 'tail'
+       tail_io(1)%name = 'neq-tail'
+       tail_io(1)%ca = '0. kT'
+       tail_io(1)%a  = 0._dp
+       tail_io(1)%cb = '10 kT'
+       tail_io(1)%b  =  10._dp * kT
+       ! number of points
+       tail_io(1)%cd = '1 kT'
+       tail_io(1)%d =   kT
+       tail_io(1)%method = 'simpson-mix'
+       call ts_fix_contour(tail_io(1))
+
+       ! setup the contour
+       allocate(tail_c(1)%c(tail_c(1)%c_io%N),tail_c(1)%w(tail_c(1)%c_io%N,1))
+       call setup_nEq_contour(tail_c(1), kT, nEq_Eta)
+
+    end if
     if ( tail_io(N_tail)%b < 10._dp * kT ) then
        call neq_die('The tail integrals used for the non-equilibrium tails &
             &are too close to the chemical potential. It must be at least &
@@ -358,21 +405,23 @@ contains
       type(ts_c_io), pointer :: nEq_io(:)
 
       ! Local variables
-      integer :: i
+      integer :: i, j
       character(len=C_N_NAME_LEN), allocatable :: tmp(:)
 
       N_nEq = fdf_nc_iotype('TS',suffix)
-      if ( N_nEq < 1 ) call neq_die('You must specify at least one non-equilbrium &
-           &contour for the '//trim(suffix)//'.')
+      if ( N_nEq < 1 ) return
+
       allocate(tmp(N_nEq))
 
       tmp(1) = fdf_name_c_iotype('TS',suffix,1)
       do i = 2 , N_nEq
          tmp(i) = fdf_name_c_iotype('TS',suffix,i)
-         if ( count(tmp(:i-1) == tmp(i)) /= 0 ) then
-            call neq_die('You cannot have two names from the bias-window &
-                 &to be the same...')
-         end if
+         do j = 1 , i - 1
+            if ( leqi(tmp(j),tmp(i)) ) then
+               call neq_die('You cannot have two names from the bias-window &
+                    &to be the same...')
+            end if
+         end do
       end do
       
       ! allocate all required objects

@@ -1,4 +1,41 @@
 ----------------------------------------------------
+May 22, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-140
+Refactored contour/chemical potential setup for easy start
+
+* The very elaborate fdf-system for inputting the chemical
+  potential and the contours has now been eased by a 
+  default system for regular transiesta.
+  If the code does not find any chemical potentials and/or
+  contours it will create contours for a 2-electrode system  
+  automatically.
+
+  This lets the user run an fdf file, copy a sample fdf
+  from the output and customize to ones needs.
+  All information needed to extend ones own setup system 
+  is now included in the print-out of the fdf-setup.
+
+  However, the user still needs to setup the electrodes
+  manually (however this should be more intuitive).
+
+* The number of poles is now per-chemical potential.
+  This was just so easy to add, that it was added.
+  It will correctly error out if the user overlays
+  two contour-segments with different number of 
+  poles.
+
+* Added print-out of the chemical potential setup in
+  ready to copy format into fdf.
+
+modified:
+  Src/m_ts_chem_pot.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_io_ctype.f90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 May 22, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-139
 Clean up in electype, changed some fdf-keywords for the electrode
 

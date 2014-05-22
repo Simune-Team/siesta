@@ -199,6 +199,35 @@ contains
 
   end function c_io_get_opt
 
+  function ts_exists_contour_block(prefix,suffix,bName,bfdf) result(exist)
+    use fdf
+
+    character(len=*), intent(in) :: prefix, suffix
+    character(len=C_N_NAME_LEN), intent(in) :: bName
+    type(block_fdf), optional :: bfdf
+    logical :: exist
+
+    type(block_fdf) :: bfdf_tmp
+    character(len=200) :: g
+
+    ! if the block does not exist, return
+    if ( len_trim(suffix) > 0 ) then
+       g = trim(prefix)//'.Contour.'//trim(suffix)
+    else
+       g = trim(prefix)//'.Contour'
+    end if
+    g = trim(g) // '.' // trim(bName)
+    if ( present(bfdf) ) then
+       exist = fdf_block(trim(g),bfdf)
+       if ( .not. exist ) then
+          bfdf%label = trim(g)
+       end if
+    else
+       exist = fdf_block(trim(g),bfdf_tmp)
+    end if
+
+  end function ts_exists_contour_block
+
   subroutine ts_read_contour_block(prefix,suffix,bName,c, kT, V) 
 
     use units, only : eV
@@ -214,18 +243,13 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
 
-    character(len=200) :: g
     character(len=c_N) :: opt, val
     integer :: iS, iE
     
     ! if the block does not exist, return
-    if ( len_trim(suffix) > 0 ) then
-       g = trim(prefix)//'.Contour.'//trim(suffix)
-    else
-       g = trim(prefix)//'.Contour'
+    if ( .not. ts_exists_contour_block(prefix,suffix,bName,bfdf=bfdf) ) then
+       call die('Could not find block: '//trim(bfdf%label))
     end if
-    if ( .not. fdf_block(trim(g)//'.'//trim(bName),bfdf) ) &
-         call die('Could not find block: '//trim(g)//'.'//trim(bName))
 
     ! the contour has already been assigned values
     if ( len_trim(c%name) /= 0 ) return
@@ -697,11 +721,18 @@ contains
     character(len=*), intent(in) :: prefix
     type(ts_c_io), intent(in) :: c
     type(ts_c_opt_ll), pointer :: opt
+    character(len=300) :: name
 
     if ( .not. IONode ) return
 
+    if ( c%name(1:1) == '*' ) then
+       name = trim(prefix) // trim(c%name(2:))
+    else
+       name = trim(prefix) // trim(c%name)
+    end if
+
     ! Start by writing out the block beginning
-    write(*,'(a,a)') '%block ',trim(prefix)//trim(c%name)
+    write(*,'(a,a)') '%block ',trim(name)
 
     write(*,'(2a)') 'part ',trim(c%part)
 
@@ -733,7 +764,7 @@ contains
        opt => opt%next
     end do
     
-    write(*,'(a,a)') '%endblock ',trim(prefix)//trim(c%name)
+    write(*,'(a,a)') '%endblock ',trim(name)
     
   end subroutine ts_print_contour_block
 
