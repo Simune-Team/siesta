@@ -1,4 +1,19 @@
 --------------------------------------------------------------
+May 23, 2014   Alberto Garcia   trunk-427--ncps-16--wxml-2
+Added translator for fhi98pp
+
+Some rough edges remain:
+
+-- Treatment of pseudized shells not specified in the valence list
+-- Tail of the pseudos, and format "V"
+
+added:
+  Pseudo/atom/fhi2xml.f90
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXML.f
+
+--------------------------------------------------------------
 May 22, 2014   Alberto Garcia   trunk-427--ncps-16--wxml-1
 Replace FoX by wxml for atom. Add provenance element
 

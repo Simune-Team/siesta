@@ -190,8 +190,8 @@
      $     position="rewind",action="read")
       do
          read(44,fmt="(a)",iostat=stat) line
-         call xml_AddPcData(xf,line,line_feed=.true.)
          if (stat .ne. 0) exit
+         call xml_AddPcData(xf,line,line_feed=.true.)
       enddo
       call xml_EndElement(xf,"provenance")
 

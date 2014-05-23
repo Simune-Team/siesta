@@ -105,6 +105,9 @@ velect.o: $(XC)
 atm:	$(WXML) $(XC) $(OBJS) $(AUX_OBJS) 
 	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(XC) $(LIBS) $(WXML)
 
+fhi2xml: $(WXML) fhi2xml.o
+	$(FC) $(LDFLAGS) -o fhi2xml fhi2xml.o $(WXML)
+
 #
 clean:	
 	rm -f *.o *.mod atm *.a
