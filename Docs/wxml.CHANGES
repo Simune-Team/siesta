@@ -1,0 +1,47 @@
+--------------------------------------------------------------
+May 27, 2014   Alberto Garcia   trunk-427--ncps-16--wxml-3
+Fixes for fhi2xml
+
+Add proper ang momentum codes.
+Fix Flavor
+
+modified:
+  Pseudo/atom/fhi2xml.f90
+
+--------------------------------------------------------------
+May 23, 2014   Alberto Garcia   trunk-427--ncps-16--wxml-2
+Added translator for fhi98pp
+
+Some rough edges remain:
+
+-- Treatment of pseudized shells not specified in the valence list
+-- Tail of the pseudos, and format "V"
+
+added:
+  Pseudo/atom/fhi2xml.f90
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXML.f
+
+--------------------------------------------------------------
+May 22, 2014   Alberto Garcia   trunk-427--ncps-16--wxml-1
+Replace FoX by wxml for atom. Add provenance element
+
+Remove the dependency on FoX by using the small
+wxml directory from xml90-1.2g.
+
+Added provenance element which includes a copy of the
+ATOM input file.
+
+added:
+  Pseudo/atom/wxml/
+  Pseudo/atom/wxml/flib_wxml.f90
+  Pseudo/atom/wxml/m_wxml_buffer.f90
+  Pseudo/atom/wxml/m_wxml_core.f90
+  Pseudo/atom/wxml/m_wxml_dictionary.f90
+  Pseudo/atom/wxml/m_wxml_elstack.f90
+  Pseudo/atom/wxml/m_wxml_text.f90
+  Pseudo/atom/wxml/makefile
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXML.f

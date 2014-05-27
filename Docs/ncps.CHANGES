@@ -1,4 +1,31 @@
 ------------------------------------------------------------
+May 27, 2014  Alberto Garcia           trunk-453--ncps-18
+Replace FoX by wxml for atom. Add translator for fhi98pp
+
+* Remove the ATOM dependency on FoX by using the small wxml directory
+from xml90-1.2g.
+
+* Added provenance element which includes a copy of the ATOM input
+file.
+
+* Add experimental translator for the fhi98pp code.
+
+added:
+  Docs/wxml.CHANGES
+  Pseudo/atom/fhi2xml.f90
+  Pseudo/atom/wxml/
+  Pseudo/atom/wxml/flib_wxml.f90
+  Pseudo/atom/wxml/m_wxml_buffer.f90
+  Pseudo/atom/wxml/m_wxml_core.f90
+  Pseudo/atom/wxml/m_wxml_dictionary.f90
+  Pseudo/atom/wxml/m_wxml_elstack.f90
+  Pseudo/atom/wxml/m_wxml_text.f90
+  Pseudo/atom/wxml/makefile
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXML.f
+
+------------------------------------------------------------
 May 27, 2014  Alberto Garcia           trunk-453--ncps-17
 Generalize psml interface for Siesta
 

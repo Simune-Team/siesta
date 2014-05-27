@@ -43,22 +43,6 @@ FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 AUX_OBJS= auxf95.o
 LIBS= $(EXTRA_LIBS)
 INCFLAGS=
-#--------------------------------------------------------------
-# FoX whatnot
-#
-# FoX build targets:
-FoX_configured=../../$(OBJDIR)/FoX/.config
-FoX_built=../../$(OBJDIR)/FoX/.FoX
-#
-# This is how we pick up modules and libraries for FoX:
-FoX_FCFLAGS=`../../$(OBJDIR)/FoX/FoX-config --fcflags`
-FoX_LIBS=`../../$(OBJDIR)/FoX/FoX-config --libs --wxml`
-#
-# And add them to global compiler flags:
-INCFLAGS:=$(FoX_FCFLAGS) $(INCFLAGS)
-#
-# First, it needs to be configured. This may have been done
-# by the main SIESTA configure, but in case not:
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
@@ -66,25 +50,8 @@ FC_SERIAL?=$(FC_DEFAULT)
 # Note that we hardwire the need to use the configure script in the main Src directory.
 #
 TOP_LEVEL=$(shell pwd)/../../Src
-$(FoX_configured):
-	(cd ../../$(OBJDIR)/FoX; touch arch.make ; \
-         CONFIGURE="$(TOP_LEVEL)/FoX/configure"; \
-         $$CONFIGURE VPATH="$(TOP_LEVEL)/FoX" \
-         FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" \
-         --enable-wcml $(DUMMY_FOX) || false )
 #
-# Note we have to make sure to use the same compiler as SIESTA,
-# and pick up all the same FFLAGS, and also remember to maybe ask for a dummy library.
-# Note also that the "false" clause will stop the 'make' process if the configuration fails.
-#
-# Then we want to make FoX itself. Like so:
-$(FoX_built): $(FoX_configured)
-	(cd ../../$(OBJDIR)/FoX; $(MAKE))
-#
-# Now ensure that building FoX is inserted into the dependency chain.
-# Routines using FoX:
-#
-pseudoXML.o: $(FoX_built)
+pseudoXML.o: $(WXML)
 #
 #--------------------------------------------------------------
 dep:
@@ -92,6 +59,13 @@ dep:
 #----------------------------------------------$$$$$
 #
 INCFLAGS:=$(INCFLAGS)  ##### -I../../$(OBJDIR)
+#
+WXML=libwxml.a
+#
+$(WXML): 
+	(cd wxml ; $(MAKE) \
+               FFLAGS="$(FFLAGS:$(IPO_FLAG)=)" \
+               "ARCH_MAKE=../$(ARCH_MAKE)"  module)
 #
 XC=libSiestaXC.a
 XC_MAKEFILE=$(TOP_LEVEL)/SiestaXC/makefile
@@ -128,14 +102,18 @@ provide_xml:
 pseudoXML.o: provide_xml
 #
 velect.o: $(XC)
-atm:	$(FoX_built) $(XC) $(OBJS) $(AUX_OBJS) 
-	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(XC) $(LIBS) $(FoX_LIBS)
+atm:	$(WXML) $(XC) $(OBJS) $(AUX_OBJS) 
+	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(XC) $(LIBS) $(WXML)
+
+fhi2xml: $(WXML) fhi2xml.o
+	$(FC) $(LDFLAGS) -o fhi2xml fhi2xml.o $(WXML)
 
 #
 clean:	
 	rm -f *.o *.mod atm *.a
 	(cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
                        "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	(cd wxml ; $(MAKE) clean)
 #
 # DO NOT DELETE THIS LINE - used by make depend
 atm.o: charge.h param.h orbital.h radial.h energy.h elecpot.h
