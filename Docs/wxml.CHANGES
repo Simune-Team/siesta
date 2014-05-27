@@ -1,4 +1,14 @@
 --------------------------------------------------------------
+May 27, 2014   Alberto Garcia   trunk-427--ncps-16--wxml-3
+Fixes for fhi2xml
+
+Add proper ang momentum codes.
+Fix Flavor
+
+modified:
+  Pseudo/atom/fhi2xml.f90
+
+--------------------------------------------------------------
 May 23, 2014   Alberto Garcia   trunk-427--ncps-16--wxml-2
 Added translator for fhi98pp
 
