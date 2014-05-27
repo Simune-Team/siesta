@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+May 27, 2014  Alberto Garcia           trunk-453--ncps-17
+Generalize psml interface for Siesta
+
+The experience with the prototype fhi98pp "xml generator" (to be
+merged) has resulted in a number of fixes to the interface and the
+xml2froyen translator used by Siesta.
+
+modified:
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+
+------------------------------------------------------------
 May 22, 2014  Alberto Garcia           trunk-453--ncps-16
 Fix printing of n-quantum numbers for pseudo-valence
 

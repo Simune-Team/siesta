@@ -133,7 +133,20 @@ select case(name)
          if (status /= 0 ) call die("Cannot determine zval")
          read(unit=value,fmt=*) hp%zval
 
-         call get_value(attributes,"xc-functional-parametrization", &
+         call get_value(attributes,"atomic-number",value,status)
+         if (status /= 0 ) call die("Cannot determine atomic number")
+         read(unit=value,fmt=*) hp%z
+
+         call get_value(attributes,"xc-libxc-string", &
+                        hp%xc_libxc_string,status)
+!         if (status /= 0 ) &
+!            call die("Cannot determine xc-libxc-string ")
+
+         call get_value(attributes,"xc-libxc-code",value,status)
+!         if (status /= 0 ) call die("Cannot determine xc-libxc-code ")
+!         read(unit=value,fmt=*) hp%xc_libxc_code
+
+        call get_value(attributes,"xc-functional-parametrization", &
                         hp%xcfunctionalparametrization,status)
          if (status /= 0 ) &
             call die("Cannot determine xc-functional-parametrization ")
@@ -240,7 +253,7 @@ select case(name)
             if (associated(pseudo%global_grid)) then
                call die("psxml: Two global grids specified")
             endif
-            print *, "Found global grid"
+            !print *, "Found global grid"
             pseudo%global_grid => grid
          endif
 
@@ -398,6 +411,9 @@ select case(name)
 
       case ("semilocal")
          in_semilocal = .false.
+         ! Note that this only takes into account
+         ! the populations of the pseudized levels
+         ! (as in the traditional "ionic" semicore cases in ATOM)
          pseudo%header%gen_zval = zval_generation
 
       case ("pseudowave-functions")

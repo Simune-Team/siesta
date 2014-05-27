@@ -59,6 +59,7 @@ end type pswf_t
 
 type, public :: header_t
         character(len=2)        :: symbol
+        real(kind=dp)           :: z         ! atomic number (might be non-integer)
         real(kind=dp)           :: zval
         real(kind=dp)           :: gen_zval  ! Valence charge at generation
         character(len=10)       :: creator
@@ -66,8 +67,12 @@ type, public :: header_t
         character(len=40)       :: flavor
         logical                 :: relativistic
         logical                 :: polarized
+        character(len=80)       :: xc_libxc_string ! LibXC string
+        integer                 :: xc_libxc_code   ! LibXC numerical code
+        ! Generator's own terminology for XC 
         character(len=30)       :: xcfunctionaltype
         character(len=30)       :: xcfunctionalparametrization
+        !
         character(len=4)        :: core_corrections
         logical                 :: rV
 end type header_t
@@ -100,6 +105,8 @@ public :: psxmlDate
 public :: psxmlPseudoFlavor
 public :: psxmlPseudoZval
 public :: psxmlGenerationZval
+public :: psxmlXCLibXCCode
+public :: psxmlXCLibXCString
 public :: psxmlXCFunctional
 public :: psxmlXCFunctionalType
 public :: psxmlIsRelativistic
@@ -128,23 +135,16 @@ integer :: i
 
 if (.not. associated(p)) RETURN
 
-print *, "Deallocating psml object..."
-
-print *, ".. deallocating global grid .."
 if (associated(p%global_grid)) then
    call destroy_grid(p%global_grid)
 endif
-print *, ".. deallocating potentials .."
 do i = 1, p%npots
    call destroy_radfunc(p%pot(i)%V)
 enddo
-print *, ".. deallocating pswfns .."
 do i = 1, p%npswfs
    call destroy_radfunc(p%pswf(i)%V)
 enddo
-print *, ".. deallocating valence charge .."
 call destroy_radfunc(p%valence_charge)
-print *, ".. deallocating core charge .."
 call destroy_radfunc(p%core_charge)
 
 deallocate(p)
@@ -159,7 +159,6 @@ if (associated(rp%grid)) then
    call destroy_grid(rp%grid)
 endif
 if (associated(rp%data)) then
-   print *, ".. .. deallocating radfunc data .."
    deallocate(rp%data)
    rp%data => null()
 endif
@@ -169,7 +168,6 @@ subroutine destroy_grid(gp)
 type(grid_t), pointer :: gp
 
 if (associated(gp%grid_data)) then
-   print *, ".. .. deallocating grid data .."
    deallocate(gp%grid_data)
    gp%grid_data => null()
 endif
@@ -204,8 +202,8 @@ end function psxmlAtomicSymbol
 !
 function psxmlAtomicNumber(psxml) result(z)
 type(xml_ps_t), intent(in) :: psxml
-integer :: z
- z = at_number(psxml%header%symbol)
+real(dp) :: z
+ z = psxml%header%z
 end function psxmlAtomicNumber
 !
 function psxmlCreator(psxml) result(name)
@@ -237,6 +235,18 @@ type(xml_ps_t), intent(in) :: psxml
 real(dp)                   :: zval
 zval = psxml%header%gen_zval
 end function psxmlGenerationZval
+!
+function psxmlXCLibXCString(psxml) result(xc_string)
+type(xml_ps_t), intent(in) :: psxml
+character(len=len_trim(psxml%header%xc_libxc_string)) :: xc_string
+xc_string = trim(psxml%header%xc_libxc_string)
+end function psxmlXCLibXCString
+!
+function psxmlXCLibXCCode(psxml) result(xc_code)
+type(xml_ps_t), intent(in) :: psxml
+integer  :: xc_code
+xc_code = psxml%header%xc_libxc_code
+end function psxmlXCLibXCCode
 !
 function psxmlXCFunctional(psxml) result(xc_string)
 type(xml_ps_t), intent(in) :: psxml
@@ -615,7 +625,7 @@ write(lun,*) "---PSEUDO data:"
 
       if (associated(pseudo%global_grid)) then
          write(lun,*) "global grid data: ",  &
-           pseudo%global_grid%npts, pseudo%global_grid%scale
+           pseudo%global_grid%npts
       endif
          
 do i = 1, pseudo%npots
@@ -626,7 +636,7 @@ do i = 1, pseudo%npots
       write(lun,*) "                 occupation: ", pp%occupation
       write(lun,*) "                 cutoff: ", pp%cutoff
       write(lun,*) "                 spin: ", pp%spin
-      write(lun,*) "grid data: ", rp%grid%npts, rp%grid%scale, rp%data(1)
+      write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
       write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)/rsmall
 enddo
 do i = 1, pseudo%npswfs
@@ -635,15 +645,21 @@ do i = 1, pseudo%npswfs
       write(lun,*) "PSWF ", i, " angular momentum: ", pw%l
       write(lun,*) "                 n: ", pw%n
       write(lun,*) "                 spin: ", pw%spin
-      write(lun,*) "grid data: ", rp%grid%npts, rp%grid%scale, rp%data(1)
+      write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
       write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
 enddo
+
+
 rp => pseudo%valence_charge
-write(lun,*) "grid data: ", rp%grid%npts, rp%grid%scale, rp%data(1)
+write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
 write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
-rp => pseudo%core_charge
-write(lun,*) "grid data: ", rp%grid%npts, rp%grid%scale, rp%data(1)
-write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
+
+if (associated(pseudo%core_charge)) then
+   write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
+   write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
+endif
+
+write(lun,*) "---------------------- Done with Dump_pseudo"
 
 end subroutine dump_pseudo
 
