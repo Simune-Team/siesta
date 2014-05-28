@@ -181,13 +181,13 @@ C *****************************************************************
       real(dp), intent(out)            :: VX(NSP)
       real(dp), intent(out)            :: EX
 
-      real(dp), parameter :: c = 137.035999_dp       ! speed of light in a.u.
       real(dp), parameter :: zero = 0.0_dp, one = 1.0_dp
-!      real(dp), parameter :: pfive = 0.5_dp, opf = 1.5_dp
+      real(dp), parameter :: pfive = 0.5_dp, opf = 1.5_dp
+!      real(dp), parameter :: c = 137.035999_dp       ! speed of light in a.u.
 !      real(dp), parameter :: C014 = 0.014_dp         ! (9*pi/4)^(1/3)/c
-!      real(dp), parameter :: C014 = 0.0140047747_dp  ! updated JMS, May.2014
+      real(dp), parameter :: C014 = 0.0140047747_dp  ! updated JMS, May.2014
 
-!      real(dp) :: a0, alp, sb, rs
+      real(dp) :: a0, alp, sb, rs
       real(dp) :: pi, trd, ftrd, tftm
       real(dp) :: d1, d2, d, z, fz, fzp, vxp, exp_var
       real(dp) :: beta, vxf, exf, alb
@@ -224,37 +224,18 @@ C *****************************************************************
         FZP = ZERO
       ENDIF
 
-!     Code for relativistic exchange modified by JMS, May.2014
-!     Ref: A.H.MacDonald and S.H.Vosco, J.Phys C 12, 2977 (1979)
-!      A0 = (4/(9*PI))**TRD               ! Froyen's old code
-!      ALP = 2 * TRD                      ! X-alpha parameter
-!      RS = (3 / (4*PI*D) )**TRD
-!      VXP = -(3*ALP/(2*PI*A0*RS))
-!      EXP_VAR = 3*VXP/4
-!      IF (IREL .EQ. 1) THEN
-!        BETA = C014/RS                   ! ratio of Fermi to light speed
-!        SB = SQRT(1+BETA*BETA)           ! same as ETA below
-!        ALB = LOG(BETA+SB)
-!        VXP = VXP * (-PFIVE + OPF * ALB / (BETA*SB))  ! JMS: exact?
-!        EXP_VAR = EXP_VAR * (ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
-!      ENDIF
-      KF = (3*PI**2*D)**TRD               ! Fermi wave vector, JMS code
-      dKFdD = KF/D/3                      ! dKF/dD
-      EXP_VAR = -3*KF/4/PI                ! local energy per electron
-      VXP = -KF/PI                        ! d(D*EXP_VAR)/dD
+      A0 = (4/(9*PI))**TRD 
+      ALP = 2 * TRD                      ! X-alpha parameter
+      RS = (3 / (4*PI*D) )**TRD
+      VXP = -(3*ALP/(2*PI*A0*RS))        ! VX=-KF/PI
+      EXP_VAR = 3*VXP/4                  ! epsX=-3*KF/4/PI
       IF (IREL .EQ. 1) THEN
-        BETA = KF/C                       ! ratio of Fermi to light speed
-        dBETAdD = dKFdD/C
-        ETA = SQRT(1+BETA**2)
-        dETAdD = BETA/ETA*dBETAdD
-        GAMMA = ETA/BETA - LOG(BETA+ETA)/BETA**2
-        dGAMMAdD = dETAdD/BETA - ETA/BETA**2*dBETAdD 
-     .           - 1/(BETA+ETA)/BETA**2*(dBETAdD+dETAdD)
-     .           + 2*LOG(BETA+ETA)/BETA**3*dBETAdD
-        PHI = 1 - 3*GAMMA**2/2
-        dPHIdD = -3*GAMMA*dGAMMAdD
-        VXP = VXP*PHI + D*EXP_VAR*dPHIdD  ! d(D*EXP_VAR*PHI)/dD
-        EXP_VAR = EXP_VAR*PHI
+        ! Ref: MacDonald and Vosco, J.Phys C 12, 2977 (1979)
+        BETA = C014/RS                   ! ratio of Fermi to light speed
+        SB = SQRT(1+BETA*BETA)
+        ALB = LOG(BETA+SB)
+        VXP = VXP * (-PFIVE + OPF * ALB / (BETA*SB))
+        EXP_VAR = EXP_VAR * (ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
       ENDIF
 
       IF (NSP .EQ. 2) THEN

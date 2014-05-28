@@ -1102,9 +1102,9 @@ c Internal variables
      .           dg12dd(3,2),dLYPgd(3,2)
   
 c Lower bounds of density and its gradient to avoid divisions by zero
-      parameter ( denmin=1.0e-12_dp )  ! JMS: changed May.2014
-      parameter ( gdmin=1.0e-12_dp )
-      parameter ( dmin=1.0e-12_dp ) 
+      parameter ( denmin=1.0e-8_dp )
+      parameter ( gdmin=1.0e-8_dp )
+      parameter ( dmin=1.0e-5_dp ) 
 
 c Fix some numerical parameters 
       parameter ( thd = 1.d0/3.d0, tthd=2.d0/3.d0 )

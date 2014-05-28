@@ -6,6 +6,17 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-05-28  13:45:00 CEST                                    trunk-463
+Reverted some changes in ldaxc and ggaxc (J.M.Soler)
+
+* Some of the changes and tolerances introduced in 460 produced
+  instabilities in the atomic program and have been reverted
+
+* The new functionals have been added in Pseudo/atom/pseudoXML.f
+
+* Label pg for PW91 in .inp has been changed to wp
+
+-----------------------------------------------------------------------
 2014-05-20  18:30:00 CEST                                    trunk-462
 New functionals added in pseudo-generation program (J.M.Soler)
 

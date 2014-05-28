@@ -210,7 +210,7 @@ c
          r(1) = 0.0d0
 
          is_gga = (leqi(icorr,'pb')        ! PBE
-     $              .or. leqi(icorr,'pg')  ! PW91
+     $              .or. leqi(icorr,'wp')  ! PW91
      $              .or. leqi(icorr,'rp')  ! RPBE
      $              .or. leqi(icorr,'rv')  ! revPBE
      $              .or. leqi(icorr,'wc')  ! WC (Wu-Cohen)
@@ -235,7 +235,7 @@ c
             call setxc(1,(/'LDA'/), (/'PW92'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'pb') then
             call setxc(1,(/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/))
-         elseif(icorr .eq. 'pg') then
+         elseif(icorr .eq. 'wp') then
             call setxc(1,(/'GGA'/), (/'PW91'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'rp') then
             call setxc(1,(/'GGA'/), (/'RPBE'/), (/1._dp/), (/1._dp/))
