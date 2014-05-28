@@ -119,7 +119,7 @@
           relattrib   = 'no'
 
         case('rel') 
-          polattrib   = 'yes'
+          polattrib   = 'no'
           relattrib   = 'yes'
 
         case('nrl') 
@@ -209,6 +209,8 @@
           call my_add_attribute(xf,"xc-functional-parametrization",
      .                          xcfunparam)
         call xml_EndElement(xf,"header")
+
+        call do_configuration()
 
         call xml_NewElement(xf,"grid")
           call my_add_attribute(xf,"type",gridtype)
@@ -339,6 +341,50 @@
 
       CONTAINS
 
+      subroutine do_configuration()
+      integer, parameter :: dp = selected_real_kind(10,100)
+      integer  :: i, lp      
+      real(dp) :: occ_down, occ_up, occupation
+
+      call xml_NewElement(xf,"ps-generation-configuration")
+      i = ncore
+      do 
+         i = i + 1
+         if (i > norb) exit
+         lp = lo(i) + 1
+         occ_down = zo(i)
+         occ_up   = 0.0_dp
+         if (split_shell(lp)) then
+            i = i + 1
+            occ_up = zo(i)
+         endif
+         occupation = occ_down + occ_up
+         if (occupation .lt. 1.0e-10_dp) cycle
+         call xml_NewElement(xf,"shell")
+         call my_add_attribute(xf,"n",str(no(i)))
+         call my_add_attribute(xf,"l",il(lp))
+         call my_add_attribute(xf,"occupation",str(occupation))
+         if (polarized .and. split_shell(lp)) then
+            call my_add_attribute(xf,"occupation-down",str(occ_down))
+            call my_add_attribute(xf,"occupation-up",str(occ_up))
+         endif
+         call xml_EndElement(xf,"shell")
+      enddo
+      call xml_EndElement(xf,"ps-generation-configuration")
+      end subroutine do_configuration
+
+      logical function split_shell(lp)
+      integer, intent(in) :: lp
+
+
+      split_shell = .false.
+      if (polarized) then
+         split_shell = .true.
+      else if (relativistic) then
+         if (lp /= 1) split_shell = .true.
+      endif
+      end function split_shell
+         
       subroutine my_add_attribute(xf,name,value)
       type(xmlf_t), intent(inout)   :: xf
       character(len=*), intent(in)  :: name

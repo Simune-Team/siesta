@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+May 28, 2014  Alberto Garcia           trunk-453--ncps-19
+Add information about the ps-generation configuration to PSML file
+
+Include information about non-empty valence shells in the generation
+configuration.
+
+Done also for the fhi98pp translator.
+
+(+ add code to the "str" conversion routine in wxml to simplify the
+output format for real numbers which are in effect integers)
+
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/fhi2xml.f90
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/wxml/m_wxml_text.f90
+
+------------------------------------------------------------
 May 27, 2014  Alberto Garcia           trunk-453--ncps-18
 Replace FoX by wxml for atom. Add translator for fhi98pp
 

@@ -33,8 +33,9 @@ program fhi2xml
   integer, allocatable  :: n(:), l(:)
   integer, allocatable  :: nn(:), ll(:)
   real(dp), allocatable :: f(:), ff(:), rc(:)
+  real(dp), allocatable :: fdown(:), fup(:)
 
-  logical :: tdopsp, nonrel, polarized, there_is_core
+  logical :: tdopsp, nonrel, polarized, there_is_core, found
   !
   !     Read grid info from valence-charge file 
   !
@@ -57,7 +58,7 @@ program fhi2xml
   enddo
 
 
-  call xml_OpenFile("VPSXML",xf, indent=.false.)
+  call xml_OpenFile("FHIPSML",xf, indent=.false.)
 
   call xml_AddXMLDeclaration(xf,"UTF-8")
 
@@ -65,6 +66,7 @@ program fhi2xml
 
   call xml_NewElement(xf,"provenance")
   call my_add_attribute(xf,"creator","FHIPP98-2003")
+  call my_add_attribute(xf,"translator","fhi2xml v0.1")
   call xml_NewElement(xf,"fort.20")
   open(1,file="fort.20",form="formatted",status="old", &
        position="rewind",action="read")
@@ -86,7 +88,19 @@ program fhi2xml
   enddo
   close(1)
   call xml_EndElement(xf,"fort.22")
+
   call xml_EndElement(xf,"provenance")
+
+  print *, "Done provenance"
+
+  open(1,file="fort.20",form="formatted",status="old", &
+       position="rewind",action="read")
+  read(1,*) tdopsp, nonrel
+  read(1,*) polarized
+  close(1)
+
+  print *, "Done reading fort.20"
+  print *, "Polarized: ", polarized
 
   open(1,file="fort.22",form="formatted",status="old", &
        position="rewind",action="read")
@@ -96,24 +110,70 @@ program fhi2xml
 
   norbs = ncore + nval
   allocate (n(norbs), l(norbs), f(norbs))
+  if (polarized) then
+     allocate (fup(norbs),fdown(norbs))
+  endif
+
   ncp = ncore + 1
   do i = 1, norbs
-     read(1,*) n(i), l(i), f(i)
+     if (polarized) then
+        read(1,*) n(i), l(i), fup(i), fdown(i)
+        f(i) = fup(i) + fdown(i)
+     else
+        read(1,*) n(i), l(i), f(i)
+     endif
   enddo
   read(1,*) lmax, pscode
+  close(1)
 
+  print *, "Done reading fort.20"
+
+  zion = 0.0_dp
+  do i = ncp, norbs
+     zion = zion + f(i)
+  enddo
+
+  call xml_NewElement(xf,"ps-generation-configuration")
+  do i = ncp, norbs
+     if (f(i) .lt. 1.0e-10_dp) cycle
+     call xml_NewElement(xf,"shell")
+     call my_add_attribute(xf,"n",str(n(i)))
+     call my_add_attribute(xf,"l",lsymb(l(i)))
+     call my_add_attribute(xf,"occupation",str(f(i)))
+     if (polarized) then
+        call my_add_attribute(xf,"occupation-down",str(fdown(i)))
+        call my_add_attribute(xf,"occupation-up",str(fup(i)))
+     endif
+     call xml_EndElement(xf,"shell")
+  enddo
+  call xml_EndElement(xf,"ps-generation-configuration")
+          
   npots = lmax + 1
   allocate (rc(npots), ll(npots), nn(npots), ff(npots))
-  do i = 1, nval
-     nn(i) = n(ncore + i)
-     ff(i) = f(ncore + i)
+  do i = 1, npots
+     ll(i) = i - 1
+     found = .false.
+     ! look for the appropriate shell in the valence
+     do j = ncp, norbs
+        if (l(j) == ll(i)) then
+           found = .true.
+           nn(i) = n(j)
+           ff(i) = f(j)
+           exit
+        endif
+     enddo
+     if (.not. found) then
+        ! generate the appropriate effective n
+        nn(i) = ll(i) + 1
+        do j = 1, ncore
+           if (l(j) == ll(i)) then
+              nn(i) = nn(i) + 1
+           endif
+           ff(i) = 0.0_dp
+        enddo
+     endif
   enddo
-  ! horrible kludge for now
-  do i = nval + 1, npots
-     nn(i) = n(ncore+nval) + 1
-     ff(i) = 0.0_dp
-  enddo
-          
+
 
   select case (pscode)
   case ("h","H")
@@ -122,21 +182,8 @@ program fhi2xml
      psflavor ="Troullier-Martins"
   end select
 
-  zion = 0.0_dp
-  do i = ncp, norbs
-     zion = zion + f(i)
-  enddo
-  close(1)
   !
   !
-  !
-  open(1,file="fort.20",form="formatted",status="old", &
-       position="rewind",action="read")
-  read(1,*) tdopsp, nonrel
-  read(1,*) polarized
-  close(1)
-
-
   if (nonrel) then
      relattrib = "no"
   else
@@ -280,7 +327,7 @@ program fhi2xml
      call xml_NewElement(xf,"vps")
      call my_add_attribute(xf,"principal-n",str(nn(i)))
      call my_add_attribute(xf,"l",lsymb(ll(i)))
-     call my_add_attribute(xf,"cutoff",str(0.0))
+     call my_add_attribute(xf,"cutoff",str(rc(i)))
      call my_add_attribute(xf,"occupation",str(ff(i)))
      call my_add_attribute(xf,"spin","-1")
 
@@ -333,7 +380,7 @@ program fhi2xml
      allocate(chcore(npts))
      open(unit=1,file="fort.27",form="formatted")
      do i = 1, npts
-        read(20,*) dummy, rho, rhop, rhopp
+        read(1,*) dummy, rho, rhop, rhopp
         chcore(i) = rho*r(i)*r(i)
      enddo
      close(1)

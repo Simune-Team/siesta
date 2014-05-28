@@ -3,8 +3,6 @@ module m_wxml_text
 integer, private, parameter ::  sp = selected_real_kind(6,30)
 integer, private, parameter ::  dp = selected_real_kind(14,100)
 !
-! TODO : Add optional format parameter
-!
 private
 
 public :: str
@@ -49,9 +47,13 @@ CONTAINS
       character(len=100)    :: s
 
       if (present(format)) then
-         write(s,format) x
+            write(s,format) x
       else
-         write(s,"(g22.12)") x
+         if (abs(nint(x)-x) .lt. epsilon(x)) then
+            write(s,"(f20.0)") x
+         else
+            write(s,"(g22.12)") x
+         endif
       endif
       s = adjustl(s)
       end function str_real_dp
@@ -64,7 +66,11 @@ CONTAINS
       if (present(format)) then
          write(s,format) x
       else
-         write(s,"(g22.12)") x
+         if (abs(nint(x)-x) .lt. epsilon(x)) then
+            write(s,"(f20.0)") x
+         else
+            write(s,"(g22.12)") x
+         endif
       endif
       s = adjustl(s)
       end function str_real_sp

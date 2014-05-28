@@ -94,12 +94,7 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
 #
 OBJS= $(MAIN_OBJS) 
 #
-provide_xml:
-	@echo "Make sure that the wxml library is already compiled."
-	@echo "Otherwise the following command might fail"
-	@echo
-#
-pseudoXML.o: provide_xml
+pseudoXML.o: $(WXML)
 #
 velect.o: $(XC)
 atm:	$(WXML) $(XC) $(OBJS) $(AUX_OBJS) 
@@ -134,8 +129,8 @@ header.o: param.h orbital.h input.h compat.h radial.h version.h
 hsc.o: param.h orbital.h radial.h energy.h ion.h elecpot.h
 input.o: param.h orbital.h input.h compat.h radial.h version.h
 ker.o: param.h orbital.h radial.h energy.h ion.h elecpot.h
-logder.o: ode_blk.h param.h ode_path.h orbital.h radial.h energy.h ion.h
-logder.o: elecpot.h
+logder.o: param.h orbital.h radial.h energy.h elecpot.h ode_blk.h ode_path.h
+logder.o: ion.h
 nv0pp.o: coeffs.h
 ode.o: ode_blk.h radial.h
 orban.o: param.h radial.h ion.h elecpot.h
