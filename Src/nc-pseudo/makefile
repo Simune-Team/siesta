@@ -11,6 +11,9 @@ ARCH_MAKE_DEFAULT=../arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
 include ../Mk/FoX.mk
+ifeq ($(strip $(FOX_ROOT)),)
+FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-DXMLF90
+endif
 #
 INCFLAGS:= $(INCFLAGS) -I../xmlparser
 #

@@ -654,7 +654,7 @@ rp => pseudo%valence_charge
 write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
 write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
 
-if (associated(pseudo%core_charge)) then
+if (associated(pseudo%core_charge%data)) then
    write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
    write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
 endif

@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+May 28, 2014  Alberto Garcia           trunk-453--ncps-20
+Compilation fixes
+
+Improve FoX handling.
+
+(+ fix in core ref)
+
+modified:
+  Src/Makefile
+  Src/Mk/FoX.mk
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/makefile
+  Src/obj_setup.sh
+
+
+------------------------------------------------------------
 May 28, 2014  Alberto Garcia           trunk-453--ncps-19
 Add information about the ps-generation configuration to PSML file
 

@@ -18,6 +18,7 @@
 .SUFFIXES: .f .F .o .a  .f90 .F90 .c
 #
 VPATH=.
+OBJDIR=.
 #
 default: what siesta #  fsiesta_pipes.o libSiestaForces.a
 #
@@ -168,12 +169,13 @@ FC_SERIAL?=$(FC_DEFAULT)
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
-	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" \
+	(cd xmlparser ; $(MAKE) VPATH="$(VPATH)/xmlparser" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 NCPS=libncps.a
 $(NCPS): 
-	(cd nc-pseudo ; $(MAKE) "VPATH=$(VPATH)/nc-pseudo" \
+	(cd nc-pseudo ; $(MAKE) VPATH="$(VPATH)/nc-pseudo" \
+	OBJDIR="$(OBJDIR)" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 #--------------------------------------------------------------
@@ -234,7 +236,7 @@ essl_lapack.a: Libs/essl_lapack.f
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
 #
 
-version: version.F90
+version: version.F90 $(FoX_built)
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
@@ -306,7 +308,9 @@ clean:
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
+	@if [ -d FoX ] ; then (cd FoX ; touch arch.make ; $(MAKE) distclean) ; fi
 	(cd xmlparser ; $(MAKE) clean)
+	(cd nc-pseudo ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
