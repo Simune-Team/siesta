@@ -25,7 +25,7 @@ PROGRAM siestaXCtest4
   ! Tester parameters
   integer, parameter:: irel  =  0 ! Relativistic? 0=>no, 1=>yes
   integer, parameter:: nSpin =  2 ! Number of spin components
-  integer, parameter:: nfTot = 11 ! Number of functionals
+  integer, parameter:: nfTot = 19 ! Number of functionals
   integer, parameter:: nr = 501   ! Number of radial points
   integer, parameter:: nx = 60    ! Number of grid points per lattice vector
   integer, parameter:: n1cut = 8  ! Cutoff parameter
@@ -38,28 +38,33 @@ PROGRAM siestaXCtest4
   real(dp),parameter:: rBuff = 3._dp  ! Radial buffer of zero density, in Bohr
   real(dp),parameter:: densMin  = 1.e-9_dp  ! Min. density to proceed
 
-  ! List of functionals to be tested (avoid those not passing test1)
-  integer, parameter:: nf = 9         ! Number of tested functionals
-  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11/)  ! Indexes from list below
+  ! List of functionals to be tested
+!  integer, parameter:: nf = nfTot-4   ! Number of tested functionals
+!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,  18/) 
+!                         ! Indexes from list below (only one VDW allowed)
 
   ! Same to test a single functional
-!  integer, parameter:: nf = 1        ! Number of tested functionals
-!  integer:: indexf(nf) = (/11/)      ! Indexes from list below
+  integer, parameter:: nf = 1        ! Number of tested functionals
+  integer:: indexf(nf) = (/18/)      ! Indexes from list below
 
   ! All functionals available
-  !                  1,       2,       3,       4,       5,   
-  !                  6,       7,       8,       9,      10,
-  !                 11   
+  !                  1,           2,          3,           4,   
+  !                  5,           6,          7,           8, 
+  !                  9,          10,         11,          12,
+  !                 13,          14,         15,          16,
+  !                 17,          18,         19
   character(len=3):: &
-    func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA',   'GGA',   'GGA',   'GGA',    &
-                    'VDW'  /)
-  character(len=6):: &
-    auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
-                    'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
-!                    'DRSLL ' /) 
-!                    'LMKLL ' /) 
-                    'VV    ' /) 
+    func(nfTot)=(/'LDA',       'LDA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'VDW',       'VDW', &
+                  'VDW',       'VDW',       'VDW'       /)
+  character(len=10):: &
+    auth(nfTot)=(/'PZ        ','PW92      ','PW91      ','PBE       ', &
+                  'RPBE      ','revPBE    ','LYP       ','WC        ', &
+                  'PBEJsJrLO ','PBEJsJrHEG','PBEGcGxLO ','PBEGcGxHEG', &
+                  'PBESOL    ','AM05      ','DRSLL     ','LMKLL     ', &
+                  'C09       ','BH        ','VV        '/) 
 
   ! Tester variables and arrays
   integer :: cellMesh(3) = (/nx,nx,nx/)
@@ -82,7 +87,6 @@ PROGRAM siestaXCtest4
 
 #ifdef MPI
   ! Initialize MPI and get myNode and nNodes
-  print*,'test4: entering MPI_Init'
   call MPI_Init( MPIerror )
   call MPI_Comm_Rank( MPI_Comm_World, myNode, MPIerror )
   call MPI_Comm_Size( MPI_Comm_World, nNodes, MPIerror )

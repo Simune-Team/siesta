@@ -549,12 +549,11 @@ subroutine set_kmesh()
     call set_mesh( nkg, xmax=kgcut, dxndx1=dkgmaxdkgmin )
     call get_mesh( nkg, mkg, kgmesh )
     kmesh_set = .true.
-  end if
-
 #ifdef DEBUG_XC
-  write(udebug,'(/,a,/,(10f8.4))') 'vv_vdw_set_kmesh: kfmesh =', kfmesh
-  write(udebug,'(/,a,/,(10f8.4))') 'vv_vdw_set_kmesh: kgmesh =', kgmesh
+    write(udebug,'(/,a,/,(10f8.4))') 'vv_vdw_set_kmesh: kfmesh =', kfmesh
+    write(udebug,'(/,a,/,(10f8.4))') 'vv_vdw_set_kmesh: kgmesh =', kgmesh
 #endif /* DEBUG_XC */
+  end if
 
 end subroutine set_kmesh
 
@@ -888,16 +887,15 @@ subroutine vv_vdw_set_kcut( kc )
     nk = int(kcut/dk) + 1
     if (nk>nr) stop 'vv_vdw_set_kcut: ERROR: nk>nr'
     kcut_set = .true.
+#ifdef DEBUG_XC
+    write(udebug,'(a,5f8.3)') 'vv_vdw_set_kcut: kfcut,kgcut,rcut,kcut,kmax=', &
+      kfcut, kgcut, rcut, kc, kmax
+#endif /* DEBUG_XC */
   end if
 
   ! Set (kf,kg) mesh and phi table
   call set_kmesh()
   call set_phi_table()
-
-#ifdef DEBUG_XC
-  write(udebug,'(a,5f8.3)') 'vv_vdw_set_kcut: kfcut,kgcut,rcut,kcut,kmax=', &
-    kfcut, kgcut, rcut, kc, kmax
-#endif /* DEBUG_XC */
 
 end subroutine vv_vdw_set_kcut
 
