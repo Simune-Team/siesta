@@ -6,6 +6,28 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-05-29  12:40:00 GMT                                     trunk-462
+Improved MPI version of siesta as a subroutine (J.M.Soler)
+
+* The MPI version of fsiesta now creates a directory for each siesta
+  process, and writes in it all output and continuation files
+
+* New example Util/SiestaSubroutine/ProtoNEB/
+
+added:
+  Util/SiestaSubroutine/ProtoNEB/
+  Util/SiestaSubroutine/ProtoNEB/NH3-point01.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point02.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point03.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3.fdf
+  Util/SiestaSubroutine/ProtoNEB/Src/
+  Util/SiestaSubroutine/ProtoNEB/Src/Makefile
+  Util/SiestaSubroutine/ProtoNEB/Src/protoNEB.F90
+modified:
+  Src/fsiesta_mpi.F90
+  Util/SiestaSubroutine/README
+
+-----------------------------------------------------------------------
 2014-05-29  10:45:00 GMT                                     trunk-461
 %files added to Util/JobList options (J.M.Soler)
 
