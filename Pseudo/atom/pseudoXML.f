@@ -49,6 +49,10 @@
           xcfuntype    = 'LDA'
           xcfunparam   = 'Ceperley-Alder'
 
+        case('pw') 
+          xcfuntype    = 'LDA'
+          xcfunparam   = 'Perdew-Wang-92'
+
         case('wi') 
           xcfuntype    = 'LDA'
           xcfunparam   = 'Wigner'
@@ -81,6 +85,38 @@
           xcfuntype    = 'GGA'
           xcfunparam   = 'Becke-Lee-Yang-Parr'
 
+        case('wc') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Wu-Cohen'
+
+        case('ps') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Perdew-Burke-Ernzerhof-solid'
+
+        case('am') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Armiento-Mattsson-05'
+
+        case('wp') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Perdew-Wang-91'
+
+        case('jo') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Capelle-et-al--PBE-Js-Jr-LO'
+
+        case('jh') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Capelle-et-al--PBE-Js-Jr-HEG'
+
+        case('go') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Capelle-et-al--PBE-Gc-Gx-LO'
+
+        case('gh') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Capelle-et-al--PBE-Gc-Gx-HEG'
+
         case('vw','vf') 
           xcfuntype    = 'VDW'
           xcfunparam   = 'Dion-et-al--DRSLL'
@@ -93,21 +129,17 @@
           xcfuntype    = 'VDW'
           xcfunparam   = 'Klimes-et-al--KBM'
 
+        case('vc') 
+          xcfuntype    = 'VDW'
+          xcfunparam   = 'Cooper--C09'
+
+        case('vb') 
+          xcfuntype    = 'VDW'
+          xcfunparam   = 'Berland-Hyldgaard--BH'
+
         case('vv') 
           xcfuntype    = 'VDW'
           xcfunparam   = 'Vydrov-VanVoorhis--VV'
-
-        case('wc') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Wu-Cohen'
-
-        case('ps') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Perdew-Burke-Ernzerhof-solid'
-
-        case('am') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Armiento-Mattsson-05'
 
       end select
 

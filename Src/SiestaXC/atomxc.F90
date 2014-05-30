@@ -125,9 +125,15 @@
 !             'WC' => GGA Wu-Cohen (see subroutine wcxc)
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
+!    'PBE(JsJrLO)' => GGA Reparametrizations of the PBE functional by
+!   'PBE(JsJrHEG)' => GGA   L.S.Pedroza et al, PRB 79, 201106 (2009) and
+!    'PBE(GcGxLO)' => GGA   M.M.Odashima et al, JCTC 5, 798 (2009)
+!   'PBE(GcGxHEG)' => GGA using 4 different combinations of criteria
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
 !          'LMKLL' => VDW K.Lee et al, PRB 82, 081101 (2010)
 !            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2010)
+!            'C09' => VDW V.R. Cooper, PRB 81, 161104 (2010)
+!             'BH' => VDW K. Berland and Per Hyldgaard, PRB 89, 035412 (2014)
 !             'VV' => VDW Vydrov-VanVoorhis, JCP 133, 244103 (2010)
 ! *******************************************************************
 

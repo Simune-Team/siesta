@@ -84,7 +84,9 @@
       integer, intent(in)  :: i
 
       call check(i)
-      is_synthetic = (chemical_list%z(i) .gt. 200)
+      ! Note that we could have a synthetic ghost atom, with
+      ! z <= -200
+      is_synthetic = (abs(chemical_list%z(i)) .gt. 200)
       end function is_synthetic
 !---
       subroutine read_chemical_types(silent)
@@ -133,7 +135,7 @@
         z = fdf_bintegers(pline,2)
         floating = (z.le.0)
         bessel = (z.eq.-100)
-        synthetic = (z.gt.200)
+        synthetic = (abs(z).gt.200)
 
         if (printing_allowed) then
            if (.not.floating) then
@@ -180,7 +182,7 @@
 
         floating = (z.le.0)
         bessel = (z.eq.-100)
-        synthetic = (z.gt.200)
+        synthetic = (abs(z).gt.200)
 
         if (.not.floating) then
               write(6,*) 'Species number: ', isp,

@@ -32,7 +32,8 @@ PROGRAM siestaXCtest5
   real(dp),parameter:: dkf   = 0.1_dp ! Fermi wavevector mesh interval
   real(dp),parameter:: dkg   = 0.1_dp ! grad(n)/n mesh interval
   character(len=*),parameter:: func = 'VDW'
-  character(len=*),parameter:: auth = 'VV'  ! 'DRSLL'|'LMKLL'|'KBM'|'VV'
+  character(len=*),parameter:: auth = 'VV'  ! 'DRSLL'|'LMKLL'|'VV'
+                                      ! KBM, C09, and BH use DRSLL kernel
 
   ! Tester variables and arrays
   integer :: ik, ikf, ikg, ir, nk, nkf, nkg
@@ -50,7 +51,7 @@ PROGRAM siestaXCtest5
   ! Set planewave cutoff
   call vdw_set_kcut( kcut )
 
-  ! Find number of interpolation points and allocate interpolationarrays
+  ! Find number of interpolation points and allocate interpolation arrays
   call vdw_get_qmesh( nk )
   allocate( dtdn1(nk,nspin), dtdn2(nk,nspin) )
   allocate( dtdgn1(3,nk,nspin), dtdgn2(3,nk,nspin) )

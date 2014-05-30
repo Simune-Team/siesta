@@ -1,4 +1,108 @@
 ------------------------------------------------------------
+May 30, 2014  Alberto Garcia           trunk-463--ncps-20
+Sync to trunk-462
+
+462:  Improved MPI version of siesta as a subroutine (J.M.Soler)
+461:  %files added to Util/JobList options (J.M.Soler)
+460:  New GGA and VDW functionals (M.Fritz & J.M.Soler)
+459:  Fix bug when reading spin-polarized deformation charge
+458:  Fixes and new features in fdf
+457:  Fix printed charges for transiesta in spin-polarized case
+456:  Bug fixes and feature changes in charge-density mixing
+455:  Charge-density mixing
+454:  Allow the handling of ghosts of synthetic atoms
+
+added:
+  Docs/fdf.CHANGES
+  Docs/gga.CHANGES
+  Docs/mixrho.CHANGES
+  Src/Fstack.T90
+  Src/Pair.T90
+  Src/SiestaXC/Testers/Reference/
+  Src/SiestaXC/Testers/Reference/test1.out
+  Src/SiestaXC/Testers/Reference/test2.out
+  Src/SiestaXC/Testers/Reference/test3.out
+  Src/SiestaXC/Testers/Reference/test4.out
+  Src/SiestaXC/Testers/test6.f90
+  Src/SiestaXC/Testers/test6.m
+  Src/basic_type.inc
+  Src/class_Fstack_Pair_Vectors.F90
+  Src/class_Pair_Vectors.F90
+  Src/class_Vector.F90
+  Src/compute_energies.F90
+  Src/compute_rhog.F
+  Src/m_diis.F90
+  Src/m_rhog.F90
+  Src/rhofft.F
+  Tests/h2o-rhog-mixing/
+  Tests/h2o-rhog-mixing/h2o-rhog-mixing.fdf
+  Tests/h2o-rhog-mixing/h2o-rhog-mixing.pseudos
+  Tests/h2o-rhog-mixing/makefile
+  Util/JobList/Examples/Ice/dummyFile
+  Util/SiestaSubroutine/ProtoNEB/
+  Util/SiestaSubroutine/ProtoNEB/NH3-point01.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point02.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point03.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3.fdf
+  Util/SiestaSubroutine/ProtoNEB/Src/
+  Util/SiestaSubroutine/ProtoNEB/Src/Makefile
+  Util/SiestaSubroutine/ProtoNEB/Src/protoNEB.F90
+renamed:
+  Src/SiestaXC/Testers/test2.f90 => Src/SiestaXC/Testers/test2.F90
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/pxf.F90
+  Pseudo/atom/velect.f
+  Pseudo/atom/version.h
+  Src/Makefile
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/ldaxc.f
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+  Src/atm_transfer.f
+  Src/atom.F
+  Src/chemical.f
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/fdf/sample.F90
+  Src/fdf/sample.fdf
+  Src/final_H_f_stress.F
+  Src/fsiesta_mpi.F90
+  Src/m_convergence.f90
+  Src/m_energies.F90
+  Src/m_mpi_utils.F
+  Src/m_ts_in_siesta.F
+  Src/periodic_table.f
+  Src/post_scf_work.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/xc.f
+  Util/JobList/Examples/Ice/iceChecks.jobs
+  Util/JobList/README
+  Util/JobList/Src/jobList.f90
+  Util/SiestaSubroutine/README
+  Src/SiestaXC/Testers/test2.F90
+
+------------------------------------------------------------
 May 28, 2014  Alberto Garcia           trunk-453--ncps-20
 Compilation fixes
 

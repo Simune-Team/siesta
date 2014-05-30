@@ -1,0 +1,167 @@
+!=========================== begin template --- 
+!
+! The basic data structure is an array which can be cyclically shifted,
+! and whose individual elements can be indexed.
+! The most recent item is the highest-numbered one.
+!
+! Parameters: FSTACK_NAME
+!             _T_
+!===============================================
+
+
+type Fstack_
+    integer            :: refCount = 0
+    character(len=36)  :: id = "null_id"
+    !-------------------------------------
+    character(len=256) :: name = "(null Fstack_)"
+    type(_T_), pointer :: val(:) => null()
+    integer            :: size
+    integer            :: nvals
+end type Fstack_
+
+type FSTACK_NAME
+   type(Fstack_), pointer :: data => null()
+end type FSTACK_NAME
+
+public :: new, push, get, get_pointer
+public :: n_items, max_size, print_type
+
+interface new
+ module procedure new__
+end interface
+interface push
+ module procedure push__
+end interface
+interface get
+ module procedure get__
+end interface
+interface get_pointer
+ module procedure get_pointer__
+end interface
+
+interface print_type
+ module procedure print__
+end interface
+
+interface n_items
+ module procedure n_items__
+end interface
+interface max_size
+ module procedure max_size__
+end interface
+
+!==============================
+#define TYPE_NAME FSTACK_NAME
+#include "basic_type.inc"
+!==============================
+
+     subroutine delete_Data(data)
+      type(Fstack_) :: data
+      if (associated(data%val)) then
+        do i = 1, data%size
+           call delete(data%val(i))
+        enddo
+        deallocate(data%val)	
+      endif
+     end subroutine delete_Data
+!=============================================================
+
+!---------------------------------------------
+function max_size__(s) result (n)
+type(FSTACK_NAME), intent(in) :: s
+integer                     :: n
+
+n = s%data%size
+end function max_size__
+
+!---------------------------------------------
+function n_items__(s) result (n)
+type(FSTACK_NAME), intent(in) :: s
+integer                    :: n
+
+n = s%data%nvals
+end function n_items__
+
+!---------------------------------------------
+subroutine new__(this,nsize,name)
+type(FSTACK_NAME), intent(inout) :: this
+integer, intent(in)  :: nsize
+character(len=*), intent(in), OPTIONAL :: name
+
+integer :: i
+
+call init(this)
+this%data%size = nsize
+this%data%nvals = 0
+
+if (present(name)) then
+   this%data%name = name
+else
+   this%data%name = "Fstack"
+endif
+
+allocate(this%data%val(nsize))
+call tag_new_object(this)
+
+end subroutine new__
+
+!---------------------------------------------
+! The most recent item is the highest-numbered
+!
+subroutine push__(s,item)
+type(FSTACK_NAME), intent(inout) :: s
+type(_T_),      intent(in)    :: item
+
+if (max_size(s) == 0) RETURN
+
+if (s%data%nvals == s%data%size) then
+   !! print *, "cycling fstack..."
+   s%data%val = cshift(s%data%val,+1)
+   call delete(s%data%val(s%data%nvals))
+   s%data%val(s%data%nvals) = item         ! Assignment
+else
+   s%data%nvals = s%data%nvals + 1
+   s%data%val(s%data%nvals) = item
+endif
+end subroutine push__
+
+!---------------------------------------------
+subroutine get__(s,i,value)
+type(FSTACK_NAME), intent(in) :: s
+integer,         intent(in) :: i
+type(_T_), intent(inout)    :: value
+
+if (i > s%data%nvals) then
+   call die("wrong index in get__  __FILE__")
+endif
+value = s%data%val(i)
+end subroutine get__
+
+!---------------------------------------------
+function get_pointer__(s,i) result(valuep)
+type(FSTACK_NAME), intent(in) :: s
+integer,        intent(in)  :: i
+type(_T_),          pointer :: valuep
+
+if (i > s%data%nvals) then
+   call die("wrong index in get_pointer__  __FILE__")
+endif
+valuep => s%data%val(i)
+end function get_pointer__
+
+!---------------------------------------------
+subroutine print__(this)
+type(FSTACK_NAME), intent(in) :: this
+
+integer :: i
+
+print "(a,i0,a,i0)", "<" // trim(this%data%name) // ". Slots: ", &
+                this%data%size, " Nvals: ", this%data%nvals
+do i=1,this%data%nvals
+ call print_type(this%data%val(i))
+enddo
+print "(a,i0)", "<refcount: ", this%data%refCount
+
+end subroutine print__
+
+!=========================== end of template
