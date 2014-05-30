@@ -85,12 +85,12 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
         pseudo.o  wf.o  hsc.o  excorr.o \
         tm2.o  ker.o  wrapup.o   splift.o   spliq.o  \
         velect.o   vionic.o   wtrans.o   v0pp.o  chg_mism.o  \
-        dsolv2.o   etotal.o   ext.o  input.o  header.o orban.o   \
+        dsolv2.o  etotal.o   ext.o  input.o  header.o orban.o   \
         potran.o   potrv.o potrvs.o  potrw.o   prdiff.o  string.o  root.o  \
         genrhs.o  logder.o ode.o denplot.o scilib.o  recipes.o \
 	compat_params.o  pcc_exp.o  change_valence.o pswf_store.o \
 	coreq.o get_unit.o gauleg.o divdif.o symbols.o \
-        prversion.o pseudoXML.o pxf.o force_underflow.o
+        prversion.o pseudoXML.o pxf.o force_underflow.o dsolv2_single.o
 #
 OBJS= $(MAIN_OBJS) 
 #
@@ -121,6 +121,7 @@ difnrl.o: param.h radial.h ion.h elecpot.h
 difrel.o: param.h radial.h ion.h elecpot.h
 dsolv1.o: charge.h orbital.h radial.h energy.h ion.h elecpot.h
 dsolv2.o: charge.h param.h orbital.h radial.h energy.h ion.h elecpot.h
+dsolv2_single.o: charge.h param.h orbital.h radial.h energy.h ion.h elecpot.h
 dummy_pseudoXML.o: charge.h param.h orbital.h radial.h pseudowave.h ion.h
 etotal.o: param.h orbital.h energy.h
 excorr.o: param.h radial.h

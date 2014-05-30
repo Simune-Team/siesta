@@ -25,8 +25,6 @@ C     .. Local Scalars ..
 C     ..
 C     .. Local Arrays ..
       double precision ar(nrmax), br(nrmax)
-      logical pseudized(norbmx)
-
 C     ..
 C     .. External Subroutines ..
       external ext, wf, wrapup, defined
@@ -77,8 +75,8 @@ c
 c
 c  Print the heading.
 c
-      write(6,9010) nameat, pot_id, headline
- 9010 format(//1x,a2,' pseudopotential generation: ',a,//,a,/)
+      write(6,9010) nameat, pot_id
+ 9010 format(//1x,a2,' pseudopotential generation: ',a,//)
 c
 c      start loop over valence orbitals
 c
@@ -120,12 +118,19 @@ c
 
  220  continue
 
- 9035 format((2x,'Pseudizing: ',i1,a1,2x,a))
- 9038 format((2x,' -------- : ',i1,a1,2x,a))
+ 9035 format(2x,i1,a1,2x,a,' (pseudized)')
+ 9038 format(2x,i1,a1,2x,a)
 
 !
 !     Compute pseudo-wavefunctions and screened pseudopotentials
 !
+      if (multi_shell) then
+        write(6,"(/,a)") "Several valence shells have the same l"
+        write(6,"(a,/)") "Only the lowest-n shells are pseudized"
+      endif
+
+      write(6,"(a,/)") headline
+
       do 225 i = ncp, norb
 
          if (.not. pseudized(i)) cycle

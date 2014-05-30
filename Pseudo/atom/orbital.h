@@ -12,11 +12,11 @@ c
 c
       integer no(norbmx), lo(norbmx)
       double precision so(norbmx), zo(norbmx)
-      logical down(norbmx)
+      logical down(norbmx), pseudized(norbmx)
 c
       common /orbital/ so, zo
       common /orb_int/ norb, ncp, no, lo
       common /orb_char/ il
-      common /orb_log/  down
+      common /orb_log/  down, pseudized
       save /orbital/, /orb_int/, /orb_char/, /orb_log/
 c------

@@ -1,5 +1,22 @@
 ------------------------------------------------------------
-May 30, 2014  Alberto Garcia           trunk-463--ncps-20
+May 30, 2014  Alberto Garcia           trunk-462--ncps-21
+Minimal change for dealing with multi-shell configurations
+
+Instead of recomputing the whole valence complex as an implicit
+"pseudopotential test", only the non-pseudized shells are recomputed,
+leaving the charge of the pseudized shells as computed in the
+generator.
+
+added:
+  Pseudo/atom/dsolv2_single.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/orbital.h
+  Pseudo/atom/pseudo.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
+May 30, 2014  Alberto Garcia           trunk-462--ncps-20
 Sync to trunk-462
 
 462:  Improved MPI version of siesta as a subroutine (J.M.Soler)

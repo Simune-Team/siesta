@@ -29,6 +29,7 @@ c
      &                 vps, rmind, vpsum, rminu, zelu, zeld, zelt,
      &                 viodj, viouj, cc
       double precision rcut(10), v(nrmax)
+      double precision orb_charge(nrmax)
 c
       double precision fourier_area(5), qc(5)
       double precision fourier_eps
@@ -40,7 +41,7 @@ c
       double precision cutoff_function, force_underflow
       external cutoff_function, force_underflow
 
-      logical new_cc_scheme, defined, new_valence_method
+      logical new_cc_scheme, defined
 c
       external logder, defined
 c
@@ -89,75 +90,70 @@ c
       zion = zval + znuc - zel
       if (zval .ne. zero) zratio = zion/zval
 c
-      new_valence_method = .false.
-      if (multi_shell) then
-        write(6,"(/,a)") "Several valence shells have the same l"
-        write(6,"(/,a)") "Using new scheme for multiple valence shells"
-        new_valence_method = .true.
-      else
-        if (defined("FORCE_MULTISHELL_METHOD")) then
-           write(6,"(/,a)") "Forcing new scheme for valence shells"
-           write(6,"(/,a)") "Expect some numerical differences"
-           new_valence_method = .true.
-        endif
-      endif
-
-      if (new_valence_method) then
 
 !     New method able to deal with non-pseudized states in the valence.
 
-!     We can use vio{u,d} and vi{u,d} coming out of the
+!     We could use vio{u,d} and vi{u,d} coming out of the
 !     generation routine to test the whole configuration
 !     and generate the total valence charge density 
-!     (including any non-pseudized states)
+!     (including any non-pseudized states) by calling:
+
+!         call dsolv2(0,1,id,ncp,norb,0,nops)
+
 
 !     On entry now: vio{u,d}: ionic ps (de-screened with the total AE charge)
 !                   vi{u,d} : V_HXC(total AE charge)
 !
-!     The net V_ext will be then the screened pseudo that correctly
+!     The net V_ext would be then the screened pseudo that correctly
 !     generates the pseudo-wavefunction for each channel, as constructed
 !     by the appropriate pseudization scheme.
 !     When used to generate any upper levels, it will give "pseudo-wfs"
 !     with nodes, e.g., one node for Ba 6s if we have 5s as semicore and
 !     pseudized. This is precisely what we need to generate the full
 !     pseudo-valence charge for later de-screening.
-!     For pseudized levels, this approach should give exactly the same
-!     charge density as the synthetic method used in each "ps-generator".
-!
 
 !     Notes
+!       For pseudized levels, this approach does not give exactly the same
+!       charge density as the synthetic method used in each "ps-generator".
+!
 !       There is indeed a difference between the charge density generated
-!       by the pseudizer and the output of this call to dsolv2: the integration
+!       by the pseudizer and the output of the call to dsolv2: the integration
 !       is done non-relativistically, whereas the original charge (outside
 !       rc) might be relativistic.
 !       On the other hand, the inversion of the Schrodinger equation in 
-!       the pseudizer is non-relativistic.
-!       So if we use 'r' here we might impact the r<r_c shape of the charge
-!       density.
+!       the pseudizer is non-relativistic, so if we use 'r' in 'id' we might 
+!       impact the r<r_c shape of the charge density.
 
-!       It might then be better to get the "pseudo" versions of non-pseudized
+!       It is then be better to get the "pseudo" versions of non-pseudized
 !       orbitals only, by managing the implicit loop in dsolv2 explicitly
-!       here
+!       here and adding the charge to the work arrays vo{u,d} which 
+!       contain the 'pseudo-valence' charge constructed in the 'ps_generator'
+!       routine by explicit squaring of the pseudo-wavefunction of
+!       the pseudized levels.
 
-!      do 10 i = ncp, norb
-!          if (.not. pseudized(i)) ...
-!          call integration_routine and get charge(i)
-!          add charge(i) to vod/vou
+         do 880 i = ncp, norb
+            if (.not. pseudized(i)) then
+               call dsolv2_single(0,id,i,nops,orb_charge)
+               if (down(i)) then
+                  do 580 j = 1, nr
+                     vod(j) = vod(j) + orb_charge(j)
+ 580              continue
+               else
+                  do 590 j = 1, nr
+                     vou(j) = vou(j) + orb_charge(j)
+ 590              continue
+               endif
+            endif
+ 880     continue
 
-        call dsolv2(0,1,id,ncp,norb,0,nops)
-
-      else
-!
-!     Set the charge density to the 'pseudo-valence' charge
-!     constructed in the 'ps_generator' routine by explicit
-!     squaring of the pseudo-wavefunction.
+!     Now re-load the charge arrays with the total
+!     pseudo-valence charge
 
          do 20 i = 1, nr
             cdd(i) = vod(i)
             cdu(i) = vou(i)
  20      continue
 
-      endif
 c
 c=====================================================================
 c  If a core correction is indicated construct pseudo core charge
