@@ -263,7 +263,7 @@ c
 c
 c   Compute the logarithmic derivative as a function of energy 
 c
-      if (logder_radius .gt. 0.d0) call logder(ncore+1,norb,'AE')
+      if (logder_radius .gt. 0.d0) call logder('AE')
 c
 c   Replace the valence charge density. Kludgeish...
 c

@@ -1,5 +1,5 @@
 c
-      subroutine logder(nfirst,nlast,flag)
+      subroutine logder(flag)
 c
       implicit none
 c
@@ -20,10 +20,9 @@ c
 c     Note:  Non-relativistic wave functions are used.
 c
 c     Alberto Garcia, April 27, 1991
+!     A. Garcia, May 2014
 c
 c-----
-c     October 1995: Removed output to unit 6.
-c
 c     Number of energy values at which the LD is computed and
 c     half energy range around the eigenvalue (~2 rydberg)
 c
@@ -33,10 +32,6 @@ c
       double precision eps
       parameter (eps=1.d-7)
 c
-c     Orbitals to be processed: nfirst <= i <= nlast
-c
-      integer nfirst, nlast
-c
 c     Flag: 'AE' for all-electron
 c           'PS' for pseudo
 c
@@ -45,6 +40,7 @@ c
       double precision y(2)
 c
       integer i, j, jr0, k, lp, llp, nok, nbad
+      integer l, llo, lhi
       double precision emin, emax, eigv, step, r0, ld, h1, hmin
       character filename*9
 c
@@ -57,19 +53,40 @@ c
       kmax = 200
       dxsav = 0.1d0
 c
-ccccc      write(6,'(/,1x,a,1x,a2,/)') 'Logarithmic derivatives', flag
+      llo = 10
+      lhi = 0
+      do i = ncp, norb
+         if (lo(i) .gt. lhi) lhi = lo(i)
+         if (lo(i) .lt. llo) llo = lo(i)
+      enddo
+
+!     loop over angular momenta in the valence shell
+
+      do l = llo, lhi
+!        Find the actual range of eigenvalues for this l
+
+         write(filename,"(a2,a2,i1)") flag, 'EV', l
+         open(unit=3,file=filename,form='formatted',status='unknown')
+
+         emin = 1.0d10
+         emax = -1.0d10
+         do i = ncp, norb
+            if (lo(i) .eq. l) then
+               write(3,"(f12.6,f4.1)") ev(i), 0.0d0
+               emin = min(emin,ev(i))
+               emax = max(emax,ev(i))
+            endif
+         enddo
+         close(3)
+
+         emin = emin - half_range
+         emax = emax + half_range
+         step = (emax - emin) / (npt_energ - 1)
 c
-      do 100 i = nfirst, nlast
+         lp = l + 1
+         llp = l*lp
 c
-        eigv = ev(i)
-        emin = eigv - half_range
-        emax = eigv + half_range
-        step = 2 * half_range / (npt_energ - 1)
-c
-         lp = lo(i) + 1
-         llp = lo(i)*lp
-c
-         write(filename,9900) flag, 'LOGD', lo(i)
+         write(filename,9900) flag, 'LOGD', l
  9900    format(a2,a4,i1)
          open(unit=3,file=filename,form='formatted',status='unknown')
 c
@@ -79,19 +96,11 @@ c
          r0 = logder_radius
          call locate(r,nr,r0,jr0)
          r0 = r(jr0)
-c
-ccccccc         write(6,9000) i, no(i), lo(i), so(i), lo(i)+so(i), r0
- 9000    format(/,1x,i2,2i5,2f6.1,2x,'r0:',f5.3,/)
-c
-         if (down(i)) then
-            do 50 j = 2, nr
-               v(j) = viod(lp,j)/r(j) + vid(j) + llp/r(j)**2
-   50       continue
-         else
-            do 60 j = 2, nr
-               v(j) = viou(lp,j)/r(j) + viu(j) + llp/r(j)**2
-   60       continue
-         end if
+
+!        Use only down potential (Coulomb for AE, scalar rel for PS)
+         do 50 j = 2, nr
+            v(j) = viod(lp,j)/r(j) + vid(j) + llp/r(j)**2
+ 50      continue
 c
         do 30 k = 0, npt_energ - 1
 c
@@ -106,31 +115,21 @@ c         Initial values (at r(2), near r=0 and so R ~ r^l )
 c
           y(1) = r(2) ** lp
           y(2) = lp * r(2)**(lp-1)
-c
+!
+!         Integrate up to r0
+!
           call odeint(y,2,r(2),r0,eps,h1,hmin,nok,nbad,ode,rkqc)
 c
-c         Write solution to file 20
-c
-c$$$          do 200 j = 1, kmax
-c$$$             write(20,8000)  xp(j),(yp(m,j),m=1,2)
-c$$$  200     continue
-c$$$ 8000     format(1x,f10.6,4x,2(2x,f14.6))
-c$$$c 
-c$$$          write(20,'(/,1x,a,/)') '---------------------'
-c
           ld = y(2) / y(1)
-ccccccccc          write(6,9100) energ, y(2), y(1), ld, nok, nbad
-          write(3,8000) energ, ld, eigv
- 8000     format(1x,f12.6,3x,f12.6,3x,f12.6)
- 9100     format(1x,f12.6,3x,2(2x,f10.6),3x,f10.6,2(2x,i4))
-c
-   30   continue
-c
+
+          write(3,8000) energ, ld
+
+ 8000     format(1x,f12.6,3x,f12.6)
+
+ 30       enddo
           close(3)
-c
-  100 continue  
-c
-      return
-c
+
+       enddo
+
       end
 

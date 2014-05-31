@@ -496,19 +496,6 @@ c   Print out the energies from etotal. (Valence only...)
 c
       call etotal(ncp,norb)
 c
-c   Compute the logarithmic derivative as a function of energy 
-c
-!
-!     This scans all valence eigenstates. The actual information
-!     finally in the files will depend on which orbital comes
-!     last: up/down and possibly upper states with the same l.
-!
-!     It might be better to select an energy range appropriate
-!     for the full valence complex, and do it only for the "down"
-!     potentials. Note that in that case the AE reference would
-!     need to be changed too.
-!
-      if (logder_radius .gt. 0.d0) call logder(ncp,norb,'PS')
 c
 c  Find the jobname and date.
 c
@@ -600,6 +587,12 @@ c
             call potrv(v,r,nr-120,lp-1,zion)
          endif
  500  enddo
+
+!     Compute the logarithmic derivative as a function of energy 
+!     An energy range appropriate for the full valence complex
+!     is selected, and only the "down" potentials are used.
+!
+      if (logder_radius .gt. 0.d0) call logder('PS')
 c
 c     Write out the Fourier area for each pseudo channel
 c

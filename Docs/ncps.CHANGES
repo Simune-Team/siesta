@@ -1,4 +1,23 @@
 ------------------------------------------------------------
+May 31, 2014  Alberto Garcia           trunk-462--ncps-22
+Fix the range of energies in logarithmic derivative
+
+When dealing with semicore states in the presence of
+higher-lying shells with the same l, the old algorithm
+considered only an energy range appropriate for one of
+the shells. Now the full energy range for that l is
+used.
+
+The eigenvalue(s) are now indicated on the LD plots.
+
+modified:
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.semicore.inp
+  Pseudo/atom/Tutorial/Utils/subps.gplot
+  Pseudo/atom/atm.f
+  Pseudo/atom/logder.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
 May 30, 2014  Alberto Garcia           trunk-462--ncps-21
 Minimal change for dealing with multi-shell configurations
 
