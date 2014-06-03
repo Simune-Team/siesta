@@ -1,4 +1,15 @@
 ----------------------------------------------------
+June 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-142
+Bugfix for ts_show_regions
+
+* In case the buffer regions were ending it printed
+  an erronous line.
+  This has been fixed to handle arbitrary types.
+
+modified:
+  Src/ts_show_regions.f90
+
+----------------------------------------------------
 June 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-141
 Made buffer atoms be where they are needed
 
