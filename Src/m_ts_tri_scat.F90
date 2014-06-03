@@ -65,7 +65,6 @@ contains
     integer :: nr, np, no, tn
     integer :: sIdx, eIdx
     integer :: last_eIdx
-    logical :: need_alloc
     integer :: ip, cp, n
     integer :: sN, sNc
 
@@ -244,7 +243,7 @@ contains
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(out) :: worksize
 
-    integer :: n, idx, sIdx, eIdx, tn, np
+    integer :: n, idx, sIdx, eIdx, tn
 
     integer :: sN, sNc
     integer :: cp, scp, ecp

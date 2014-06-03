@@ -21,16 +21,10 @@
 ! this can be introduced by something like this:
 
 !    call crtSparsity_Union(block_dist,ts_sp,&
-!         no_BufL+1, no_BufL+1, &
-!         no_L, no_L, & ! insertion of the block
+!         Elec%idx_no, Elec%idx_no, &
+!         TotUsedOrbs(Elec), TotUsedOrbs(Elec), & ! insertion of the block
 !         sp_uc)
 !    if(IONode)call print_type(sp_uc)
-
-!    call crtSparsity_Union(block_dist,sp_uc,&
-!         no_BufL+no_u_LCR-no_R+1, no_BufL+no_u_LCR-no_R+1, &
-!         no_R, no_R, & ! insertion of the block
-!         tsup_sp)
-!    if(IONode)call print_type(tsup_sp)
 
 module create_Sparsity_Union
   

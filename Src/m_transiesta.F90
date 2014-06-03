@@ -55,7 +55,6 @@ contains
 
     use m_ts_options, only : N_Elec, Elecs
     use m_ts_options, only : IsVolt, Calc_Forces
-    use m_ts_options, only : no_BufL, no_BufR
     use m_ts_options, only : RemUCellDistance
 
     use m_ts_contour_eq , only : N_Eq_E
@@ -92,7 +91,7 @@ contains
 ! ************************************************************
 
 ! * local variables
-    integer :: iEl, no, NEn, no_used, no_used2
+    integer :: iEl, NEn, no_used, no_used2
 
     ! Open GF files...
     ! Read-in header of Green's functions
@@ -117,7 +116,7 @@ contains
        ! print out estimated memory usage...
        call ts_print_memory(Gamma)
 
-       call ts_print_charges(Elecs, sp_dist, sparse_pattern, &
+       call ts_print_charges(N_Elec,Elecs, sp_dist, sparse_pattern, &
             nspin, n_nzs, DM, S)
 
        if ( .not. Calc_Forces .and. IONode ) then
@@ -255,11 +254,11 @@ contains
     ! We do the charge correction of the transiesta
     ! computation here (notice that the routine will automatically
     ! return if no charge-correction is requested)
-    call ts_charge_correct(no_BufL+no_BufR, Elecs, sp_dist, &
+    call ts_charge_correct(N_Elec,Elecs, sp_dist, &
          sparse_pattern, nspin, n_nzs, DM, EDM, S, Qtot, &
          TS_RHOCORR_METHOD)
 
-    call ts_print_charges(Elecs, sp_dist, sparse_pattern, &
+    call ts_print_charges(N_Elec,Elecs, sp_dist, sparse_pattern, &
          nspin, n_nzs, DM, S, method = TS_INFO_SCF)
 
     call timer('TS',2)
@@ -329,12 +328,12 @@ contains
     use class_Sparsity
     use m_ts_options, only : IsVolt, Calc_Forces
     use m_ts_options, only : N_mu, N_Elec, Elecs
-    use m_ts_options, only : no_BufL, no_BufR
     use m_ts_contour_neq, only : N_nEq_id
     use m_ts_tri_init, only : tri_parts, N_tri_part
     use m_ts_sparse, only : ts_sp_uc, tsup_sp_uc, ltsup_sp_sc
     use m_ts_electype
     use m_ts_tri_scat
+    use m_ts_method, only : no_Buf
 
     logical, intent(in) :: Gamma ! SIESTA Gamma
     integer :: i, no_E
@@ -413,7 +412,7 @@ contains
     else
        ! Calculate size of the full matrices
        no_E = sum(TotUsedOrbs(Elecs),.not. Elecs(:)%DM_CrossTerms)
-       i = nrows_g(ts_sp_uc) - no_BufL - no_BufR
+       i = nrows_g(ts_sp_uc) - no_Buf
        ! LHS
        mem = i ** 2
        ! RHS

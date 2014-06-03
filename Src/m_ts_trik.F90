@@ -35,6 +35,8 @@ module m_ts_trik
   use m_ts_weight, only : TS_W_K_UNCORRELATED
 
   use m_ts_tri_init, only : N_tri_part, tri_parts, GFGGF_size
+
+  use m_ts_method, only : orb_offset, no_Buf
   
   implicit none
 
@@ -75,7 +77,6 @@ contains
 
     use m_ts_options, only : Calc_Forces
     use m_ts_options, only : N_mu, mus
-    use m_ts_options, only : no_BufL, no_BufR
 
     use m_ts_options, only : IsVolt
 
@@ -149,29 +150,23 @@ contains
     type(ts_c_idx) :: cE
     logical     :: has_El(N_Elec)
     real(dp)    :: kw, kpt(3), bkpt(3)
-    complex(dp) :: Z, W, ZW
+    complex(dp) :: W, ZW
 ! ************************************************************
 
 ! ******************** Loop variables ************************
     type(itt2) :: SpKp
     integer, pointer :: ispin, ikpt
-    integer :: iEl, iID, up_nzs, ia, ia_E
-    integer :: ind, iE, imu, io, idx
+    integer :: iEl, iID, up_nzs, ia
+    integer :: iE, imu, io, idx
     integer :: no, no_u_TS
 ! ************************************************************
-
-#ifdef MPI
-! ******************* MPI-related variables   ****************
-    integer :: MPIerror
-! ************************************************************
-#endif
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE transiesta mem' )
 #endif
 
     ! Number of orbitals in TranSIESTA
-    no_u_TS = no_u - no_BufL - no_BufR
+    no_u_TS = no_u - no_Buf
 
     ! We do need the full GF AND a single work array to handle the
     ! left-hand side of the inversion...
@@ -226,7 +221,8 @@ contains
        ! that are fully inside the electrode
        if ( Elecs(iEl)%DM_CrossTerms ) cycle
 
-       io  = Elecs(iEl)%idx_no - no_BufL
+       io  = Elecs(iEl)%idx_no
+       io  = io - orb_offset(io)
        idx = io + TotUsedOrbs(Elecs(iEl)) - 1
 
        do ia = 1 , N_tri_part
@@ -323,7 +319,6 @@ contains
        ! Work-arrays are for MPI distribution...
        call create_HS(sp_dist,sparse_pattern, &
             Ef, &
-            no_BufL, no_BufR, & ! cut-out region
             N_Elec, Elecs, no_u, & ! electrodes, SIESTA size
             n_nzs, Hs(:,ispin), Ss, xij, &
             spH, spS, kpt, &
@@ -367,7 +362,7 @@ contains
           ! *******************
           ! * prep GF^-1      *
           ! *******************
-          call prepare_invGF(cE, no_BufL, no_u_TS, zwork_tri, &
+          call prepare_invGF(cE, no_u_TS, zwork_tri, &
                N_Elec, Elecs, &
                spH=spH , spS=spS)
 
@@ -391,7 +386,7 @@ contains
              call c2weight_eq(cE,idx, kw, W ,ZW)
              call add_DM( spuDM, W, spuEDM, ZW, &
                   GF_tri, &
-                  no_BufL, N_Elec, Elecs, &
+                  N_Elec, Elecs, &
                   DMidx=mus(imu)%ID)
           end do
 
@@ -475,7 +470,7 @@ contains
           ! *******************
           ! * prep GF^-1      *
           ! *******************
-          call prepare_invGF(cE, no_BufL, no_u_TS, zwork_tri, &
+          call prepare_invGF(cE, no_u_TS, zwork_tri, &
                N_Elec, Elecs, &
                spH =spH , spS =spS)
           
@@ -487,7 +482,7 @@ contains
                 has_El(iEl) = has_cE(cE,iEl=iEl)
              end do
              call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
-                  no_BufL, N_Elec, Elecs, has_El)
+                  N_Elec, Elecs, has_El)
           end if
 
           ! ** At this point we have calculated the needed
@@ -513,7 +508,7 @@ contains
              ! ******************
              ! * calc GF-column *
              ! ******************
-             call invert_BiasTriMat_col(GF_tri,zwork_tri,no_BufL, &
+             call invert_BiasTriMat_col(GF_tri,zwork_tri, &
                   Elecs(iEl), calc_parts)
 
              ! offset and number of orbitals
@@ -539,7 +534,7 @@ contains
 
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      zwork_tri, &
-                     no_BufL, N_Elec, Elecs, &
+                     N_Elec, Elecs, &
                      DMidx=iID, EDMidx=imu )
              end do
           end do
@@ -650,7 +645,7 @@ contains
   
   subroutine add_DM(DM, DMfact, EDM, EDMfact, &
        GF_tri, &
-       no_BufL, N_Elec, Elecs, &
+       N_Elec, Elecs, &
        DMidx,EDMidx)
 
     use class_zSpData2D
@@ -667,9 +662,7 @@ contains
 
     ! The Green's function
     type(zTriMat), intent(inout) :: GF_tri
-    ! The number of buffer atoms (needed for the offset in the sparsity
-    ! patterns), and the offset in the GF
-    integer, intent(in) :: no_BufL, N_Elec
+    integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     ! the index of the partition
     integer, intent(in) :: DMidx
@@ -702,11 +695,11 @@ contains
           if ( l_ncol(io) == 0 ) cycle
 
           ! The update region equivalent GF part
-          iu = io - no_BufL
+          iu = io - orb_offset(io)
           
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
              
-             idx = index(Gf_tri,iu,l_col(ind) - no_BufL)
+             idx = index(Gf_tri,iu,l_col(ind) - orb_offset(l_col(ind)))
              
              D(ind,i1) = D(ind,i1) - GF(idx) * DMfact
              E(ind,i2) = E(ind,i2) - GF(idx) * EDMfact
@@ -720,11 +713,11 @@ contains
           if ( l_ncol(io) == 0 ) cycle
 
           ! The update region equivalent GF part
-          iu = io - no_BufL
+          iu = io - orb_offset(io)
           
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
              
-             idx = index(Gf_tri,iu,l_col(ind) - no_BufL)
+             idx = index(Gf_tri,iu,l_col(ind) - orb_offset(l_col(ind)))
              
              D(ind,i1) = D(ind,i1) - GF(idx) * DMfact
              
@@ -737,7 +730,7 @@ contains
 
   ! creation of the GF^{-1}.
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
-  subroutine prepare_invGF(cE, no_BufL, no_u,GFinv_tri, &
+  subroutine prepare_invGF(cE, no_u,GFinv_tri, &
        N_Elec, Elecs, spH, spS)
 
     use class_Sparsity
@@ -748,9 +741,7 @@ contains
 
     ! the current energy point
     type(ts_c_idx), intent(in) :: cE
-    ! Remark that we need the left buffer orbitals
-    ! to calculate the actual orbital of the sparse matrices...
-    integer, intent(in) :: no_BufL, no_u
+    integer, intent(in) :: no_u
     type(zTriMat), intent(inout) :: GFinv_tri
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -782,30 +773,31 @@ contains
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
-    do io = no_BufL + 1, no_BufL + no_u
+    do io = 1, no_u
+       if ( l_ncol(io) == 0 ) cycle
 
-       iu = io - no_BufL
+       iu = io - orb_offset(io)
 
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
 
           ! Notice that we transpose back here...
           ! See symmetrize_HS_kpt
-          idx = index(Gfinv_tri,l_col(ind)-no_BufL,iu)
+          idx = index(Gfinv_tri,l_col(ind)-orb_offset(l_col(ind)),iu)
 
           GFinv(idx) = Z * S(ind) - H(ind)
        end do
     end do
 
     do io = 1 , N_Elec
-       call insert_Self_Energies(no_BufL, no_u, Gfinv_tri, Elecs(io))
+       call insert_Self_Energies(no_u, Gfinv_tri, Elecs(io))
     end do
 
   end subroutine prepare_invGF
    
-  subroutine insert_Self_Energies(no_BufL, no_u, Gfinv_tri, El)
+  subroutine insert_Self_Energies(no_u, Gfinv_tri, El)
     use m_ts_electype
     use class_zTriMat
-    integer, intent(in) :: no_BufL, no_u
+    integer, intent(in) :: no_u
     type(zTriMat), intent(inout) :: GFinv_tri
     type(Elec), intent(in) :: El
 
@@ -813,7 +805,7 @@ contains
     integer :: no, off, i, j, ii, idx
     
     no = TotUsedOrbs(El)
-    off = El%idx_no - no_BufL - 1
+    off = El%idx_no - orb_offset(El%idx_no) - 1
     Gfinv => val(GFinv_tri)
 
     ii = 0

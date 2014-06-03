@@ -46,7 +46,6 @@
 #ifdef TRANSIESTA
       use m_ts_method
       use m_ts_global_vars,      only: TSmode, ts_istep, TSrun, TSiscf
-      use m_ts_options,          only: Elecs, no_BufL, no_BufR
       use siesta_geom,           only: na_u
       use atomlist,              only: lasto
       use sparse_matrices,       only: sparse_pattern, block_dist

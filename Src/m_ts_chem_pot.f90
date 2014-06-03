@@ -59,6 +59,11 @@ module m_ts_chem_pot
   end interface name
   public :: name
 
+  interface copy
+     module procedure copy_
+  end interface copy
+  public :: copy
+
   public :: Eq_segs
 
   public :: chem_pot_add_Elec
@@ -75,7 +80,7 @@ contains
     use fdf
 
     character(len=*), intent(in) :: prefix
-    type(ts_mu), allocatable :: this_n(:)
+    type(ts_mu), intent(inout), allocatable :: this_n(:)
     integer :: n
 
     ! prepare to read in the data...
@@ -97,9 +102,6 @@ contains
     end do
 
     allocate(this_n(n))
-
-    ! Read in number of poles
-    this_n(:)%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
 
     ! rewind to read again
     call fdf_brewind(bfdf)
@@ -124,7 +126,7 @@ contains
   function fdffake_mu(this_n,Volt) result(n)
     use fdf
 
-    type(ts_mu), allocatable :: this_n(:)
+    type(ts_mu), intent(inout), allocatable :: this_n(:)
     real(dp), intent(in) :: Volt
     integer :: n
     ! In case the user whishes to utilise the standard 
@@ -137,7 +139,6 @@ contains
 
     ! We star-mark the defaultet contours...
     ! this will let us construct them readily...
-
 
     ! *** NOTE this is hard-coded together with the ts_contour_eq
 
@@ -160,11 +161,11 @@ contains
 
   end function fdffake_mu
     
-  function fdf_mu(prefix,slabel,this, Volt) result(found)
+  function fdf_mu(prefix,this, Volt) result(found)
     use fdf
     use m_ts_io_ctype, only: pline_E_parse
 
-    character(len=*), intent(in) :: prefix,slabel
+    character(len=*), intent(in) :: prefix
     type(ts_mu), intent(inout) :: this
     real(dp), intent(in) :: Volt
     logical :: found
@@ -173,13 +174,13 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     logical :: info(2)
-    integer :: int
     character(len=200) :: ln
 
     found = fdf_block(trim(prefix)//'.ChemPot.'//trim(Name(this)),bfdf)
     if ( .not. found ) return
 
     info(:) = .false.
+    this%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
 
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
@@ -212,10 +213,7 @@ contains
                call die('You have not specified a number for &
                &number of poles.')
           
-          int = fdf_bintegers(pline,1)
-          if ( int > 0 ) then
-             this%N_poles = int
-          end if
+          this%N_poles = fdf_bintegers(pline,1)
 
        else
           
@@ -233,11 +231,15 @@ contains
        call die('You have not supplied all chemical potential information')
     end if
 
+    if ( this%N_poles < 1 ) then
+       call die('Number of poles must be larger than or equal to 1')
+    end if
+
   contains
     
     subroutine read_contour_names(name,con,fakes)
       character(len=*), intent(in) :: name
-      character(len=C_N_NAME_LEN), allocatable :: con(:)
+      character(len=C_N_NAME_LEN), intent(inout), allocatable :: con(:)
       integer, intent(in), optional :: fakes
       integer :: i, empty
 
@@ -423,6 +425,18 @@ contains
     write(*,'(a,a)') '%endblock '//trim(prefix)//'.ChemPot.',trim(this%name)
     
   end subroutine print_mu_block
+
+  subroutine copy_(this,copy)
+    type(ts_mu), intent(inout) :: this, copy
+    copy%name    = this%name
+    copy%ID      = this%ID
+    copy%N_poles = this%N_poles
+    copy%mu      = this%mu
+    copy%cmu     = this%cmu
+    copy%N_El    = this%N_El
+    allocate(copy%Eq_seg(size(this%Eq_seg)))
+    copy%Eq_seg(:) = this%Eq_seg(:)
+  end subroutine copy_
 
 end module m_ts_chem_pot
   

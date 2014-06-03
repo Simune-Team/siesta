@@ -161,8 +161,12 @@ contains
   elemental function MODP(a,p)
     integer, intent(in) :: a,p
     integer :: MODP
-    MODP = MOD(a,p)
-    if ( MODP == 0 ) MODP = p
+    if ( a > p ) then
+       MODP = MOD(a,p)
+       if ( MODP == 0 ) MODP = p
+    else
+       MODP = a
+    end if
   end function MODP
 
 ! Function to return the unique COUNT of an integer array.

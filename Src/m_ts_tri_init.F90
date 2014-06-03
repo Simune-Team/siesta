@@ -48,9 +48,10 @@ contains
     use create_Sparsity_Union
 
     use m_ts_electype
-    use m_ts_options, only : no_BufL, no_BufR
     use m_ts_options, only : N_Elec, Elecs, IsVolt
     use m_ts_sparse, only : ts_sp_uc
+
+    use m_ts_method
 
     use m_ts_Sparsity2TriMat
 
@@ -62,7 +63,7 @@ contains
     integer :: idx, no
     integer :: i, els, no_u_TS
     
-    no_u_TS = nrows_g(ts_sp_uc) - no_BufR - no_BufL
+    no_u_TS = nrows_g(ts_sp_uc) - no_Buf
 
     ! In order to ensure that the electrodes are in the
     ! tri-diagonal sparsity pattern, we can easily create

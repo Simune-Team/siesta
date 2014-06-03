@@ -25,6 +25,8 @@ module m_ts_fullg
   use m_ts_dm_update, only : add_Gamma_DM
   
   use m_ts_weight, only : weight_DM
+
+  use m_ts_method, only: orb_offset, no_Buf
   
   implicit none
   
@@ -93,7 +95,6 @@ contains
 
     use m_ts_options, only : Calc_Forces
     use m_ts_options, only : N_mu, mus
-    use m_ts_options, only : no_BufL, no_BufR
 
     use m_ts_options, only : IsVolt
 
@@ -157,33 +158,26 @@ contains
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
     real(dp)    :: kw
-    complex(dp) :: Z, W, ZW
+    complex(dp) :: W, ZW
 ! ************************************************************
 
 ! ******************** Loop variables ************************
     type(itt1) :: Sp
     integer, pointer :: ispin
-    integer :: iEl, iID, up_nzs, ia, ia_E
-    integer :: ind, iE, imu, io, idx
+    integer :: iEl, iID, up_nzs
+    integer :: iE, imu, io, idx
 ! ************************************************************
 
 ! ******************* Miscalleneous variables ****************
     integer :: ierr, no_u_TS, off, no
 ! ************************************************************
 
-#ifdef MPI
-! ******************* MPI-related variables   ****************
-    integer :: MPIerror
-! ************************************************************
-#endif
-
-
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE transiesta mem' )
 #endif
 
     ! Number of orbitals in TranSIESTA
-    no_u_TS = no_u - no_BufL - no_BufR
+    no_u_TS = no_u - no_Buf
 
     ! Number of elements that are transiesta updated
     up_nzs = nnzs(tsup_sp_uc)
@@ -312,7 +306,6 @@ contains
        ! Work-arrays are for MPI distribution...
        call create_HS(sp_dist,sparse_pattern, &
             Ef, &
-            no_BufL, no_BufR, & ! cut-out region
             N_Elec, Elecs, no_u, & ! electrodes, SIESTA size
             n_nzs, Hs(:,ispin), Ss, &
             spH, spS, &
@@ -355,7 +348,7 @@ contains
           ! *******************
           ! * prep GF^-1      *
           ! *******************
-          call prepare_invGF(cE, no_BufL, no_u_TS, zwork, &
+          call prepare_invGF(cE, no_u_TS, zwork, &
                N_Elec, Elecs, &
                spH=spH , spS=spS)
 
@@ -384,7 +377,7 @@ close(io)
 #endif
 
           else
-             call calc_GF_part(cE,no_BufL, no_u_TS, &
+             call calc_GF_part(cE, no_u_TS, &
                   N_Elec, Elecs, &
                   zwork, GF)
 
@@ -403,7 +396,7 @@ close(io)
              call c2weight_eq(cE,idx, kw, W ,ZW)
              call add_DM( spuDM, W, spuEDM, ZW, &
                   no_u_TS, no, GF, &
-                  no_BufL, N_Elec, Elecs, &
+                  N_Elec, Elecs, &
                   DMidx=mus(imu)%ID)
           end do
 
@@ -480,14 +473,14 @@ close(io)
           ! *******************
           ! * prep GF^-1      *
           ! *******************
-          call prepare_invGF(cE, no_BufL, no_u_TS, zwork, &
+          call prepare_invGF(cE, no_u_TS, zwork, &
                N_Elec, Elecs, &
                spH =spH , spS =spS)
           
           ! *******************
           ! * calc GF         *
           ! *******************
-          call calc_GF_Bias(cE, no_BufL, no_u_TS, &
+          call calc_GF_Bias(cE, no_u_TS, &
                N_Elec, Elecs, &
                zwork, GF)
 
@@ -516,7 +509,7 @@ close(io)
              ! offset and number of orbitals
              no = TotUsedOrbs(Elecs(iEl))
 
-             call GF_Gamma_GF(no_BufL, Elecs(iEl), no_u_TS, no, &
+             call GF_Gamma_GF(Elecs(iEl), no_u_TS, no, &
                   Gf(no_u_TS*off+1), zwork, size(GFGGF_work), GFGGF_work)
 
              ! step to the next electrode position
@@ -530,7 +523,7 @@ close(io)
 
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      no_u_TS, no_u_TS, zwork, &
-                     no_BufL, N_Elec, Elecs, &
+                     N_Elec, Elecs, &
                      DMidx=iID, EDMidx=imu, &
                      has_offset = .false.)
              end do
@@ -624,7 +617,7 @@ close(io)
   ! Note that these routines implement the usual rho(Z) \propto - GF
   subroutine add_DM(DM, DMfact,EDM, EDMfact, &
        no1,no2,GF, &
-       no_BufL,N_Elec,Elecs, &
+       N_Elec,Elecs, &
        DMidx, EDMidx, &
        has_offset)
 
@@ -641,9 +634,7 @@ close(io)
     integer, intent(in) :: no1, no2
     ! The Green's function
     complex(dp), intent(in) :: GF(no1,no2)
-    ! The number of buffer atoms (needed for the offset in the sparsity
-    ! patterns), and the offset in the GF
-    integer, intent(in) :: no_BufL, N_Elec
+    integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     ! the index of the partition
     integer, intent(in) :: DMidx
@@ -681,11 +672,12 @@ close(io)
              if ( l_ncol(io) == 0 ) cycle
 
              ! The update region equivalent GF part
-             iu = io - no_BufL
+             iu = io - orb_offset(io)
         
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                 
-                ju = l_col(ind) - no_BufL - offset(N_Elec,Elecs,l_col(ind))
+                ju = l_col(ind) - orb_offset(l_col(ind)) &
+                     - offset(N_Elec,Elecs,l_col(ind))
                 
                 D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact  )
                 E(ind,i2) = E(ind,i2) - dimag( GF(iu,ju) * EDMfact )
@@ -696,9 +688,9 @@ close(io)
        else
           do io = 1 , nr
              if ( l_ncol(io) == 0 ) cycle
-             iu = io - no_BufL
+             iu = io - orb_offset(io)
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                ju = l_col(ind) - no_BufL
+                ju = l_col(ind) - orb_offset(l_col(ind))
                 D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact  )
                 E(ind,i2) = E(ind,i2) - dimag( GF(iu,ju) * EDMfact )
              end do
@@ -713,11 +705,12 @@ close(io)
              if ( l_ncol(io) == 0 ) cycle
 
              ! The update region equivalent GF part
-             iu = io - no_BufL
+             iu = io - orb_offset(io)
              
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                 
-                ju = l_col(ind) - no_BufL - offset(N_Elec,Elecs,l_col(ind))
+                ju = l_col(ind) - orb_offset(l_col(ind)) &
+                     - offset(N_Elec,Elecs,l_col(ind))
                 
                 D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact )
                 
@@ -727,9 +720,9 @@ close(io)
        else
           do io = 1 , nr
              if ( l_ncol(io) == 0 ) cycle
-             iu = io - no_BufL
+             iu = io - orb_offset(io)
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                ju = l_col(ind) - no_BufL
+                ju = l_col(ind) - orb_offset(l_col(ind))
                 D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact )
              end do
           end do
@@ -753,7 +746,7 @@ close(io)
 
   ! creation of the GF^{-1}.
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
-  subroutine prepare_invGF(cE, no_BufL,no_u,GFinv, &
+  subroutine prepare_invGF(cE, no_u,GFinv, &
        N_Elec, Elecs, spH, spS)
 
     use class_dSpData1D
@@ -768,7 +761,7 @@ use parallel,only:ionode
     type(ts_c_idx), intent(in) :: cE
     ! Remark that we need the left buffer orbitals
     ! to calculate the actual orbital of the sparse matrices...
-    integer, intent(in) :: no_BufL, no_u
+    integer, intent(in) :: no_u
     complex(dp), intent(out) :: GFinv(no_u**2)
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -799,17 +792,17 @@ integer :: i
     l_ptr  => list_ptr(sp)
     l_col  => list_col(sp)
      
-    ! Offset
-    ioff = no_BufL + 1
-
 #ifdef TS_DEV    
     if (.not. hasSaved )then
        hasSaved = .true.
        GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
-       do io = ioff, no_BufL + no_u
-          iu = (io - ioff) * no_u - no_BufL
+       do io = 1, no_u
+          if ( l_ncol(io) == 0 ) cycle
+          ioff = orb_offset(io) - 1
+          iu = (io - ioff) * no_u
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
-             GFinv(iu+l_col(ind)) = H(ind)
+             ioff = orb_offset(l_col(ind))
+             GFinv(iu+l_col(ind)-ioff) = H(ind)
           end do
        end do
        if (ionode) then
@@ -821,10 +814,13 @@ integer :: i
           write(i) GFinv(1:no_u**2)
           write(i) no_u
           GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
-          do io = ioff, no_BufL + no_u
-             iu = (io - ioff) * no_u - no_BufL
+          do io = 1, no_u
+             if ( l_ncol(io) == 0 ) cycle
+             ioff = orb_offset(io) - 1
+             iu = (io - ioff) * no_u
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
-                GFinv(iu+l_col(ind)) = S(ind)
+                ioff = orb_offset(l_col(ind))
+                GFinv(iu+l_col(ind)-ioff) = S(ind)
              end do
           end do
           write(i) GFinv(1:no_u**2)
@@ -839,35 +835,40 @@ integer :: i
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
-    do io = ioff, no_BufL + no_u
+    do io = 1, no_u
+
+       if ( l_ncol(io) == 0 ) cycle
        
-       iu = (io - ioff) * no_u - no_BufL
+       ioff = orb_offset(io)
+       iu = (io - ioff - 1) * no_u
        
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
              
+          ioff = orb_offset(l_col(ind))
+          
           ! Notice that we transpose S and H back here
           ! See symmetrize_HS_Gamma (H is hermitian)
-          GFinv(iu+l_col(ind)) = Z * S(ind) - H(ind)
+          GFinv(iu+l_col(ind)-ioff) = Z * S(ind) - H(ind)
 
        end do
     end do
 
     do io = 1 , N_Elec
-       call insert_Self_Energies(no_BufL, no_u, Gfinv, Elecs(io))
+       call insert_Self_Energies(no_u, Gfinv, Elecs(io))
     end do
 
   end subroutine prepare_invGF
    
-  subroutine insert_Self_Energies(no_BufL, no_u, Gfinv, El)
+  subroutine insert_Self_Energies(no_u, Gfinv, El)
     use m_ts_electype
-    integer, intent(in) :: no_BufL, no_u
+    integer, intent(in) :: no_u
     complex(dp), intent(in out) :: GFinv(no_u,no_u)
     type(Elec), intent(in) :: El
 
     integer :: i, j, ii, jj, iii, off, no
 
     no = TotUsedOrbs(El)
-    off = El%idx_no - no_BufL - 1
+    off = El%idx_no - orb_offset(El%idx_no) - 1
 
     if ( El%Bulk ) then
        ii = 0

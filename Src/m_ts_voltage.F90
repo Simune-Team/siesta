@@ -53,7 +53,7 @@ module m_ts_voltage
 contains
 
   subroutine ts_init_voltage(ucell,na_u,xa,meshG,nsm)
-    use m_ts_options, only : VoltageInC, N_Elec, Elecs
+    use m_ts_options, only : VoltageInC, Elecs
 
 ! ***********************
 ! * INPUT variables     *
@@ -88,7 +88,6 @@ contains
 
   subroutine ts_voltage(ucell, ntpl, Vscf)
     use precision,    only : grid_p
-    use m_ts_options, only : VoltageInC
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -115,7 +114,6 @@ contains
   subroutine ts_ramp_elec(ucell, ntpl, Vscf)
     use intrinsic_missing, only : VNORM
     use precision,    only : grid_p
-    use parallel,     only : IONode
     use m_ts_options, only : Volt
     use m_ts_mesh,    only : meshl, offset_i, dMesh
 ! ***********************

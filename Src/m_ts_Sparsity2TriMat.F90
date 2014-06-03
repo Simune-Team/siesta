@@ -25,6 +25,9 @@
 ! Please contact the author before utilization in other routines.
 
 module m_ts_Sparsity2TriMat
+
+  ! we heavily utilise the routines in this module
+  use m_ts_method
   
   implicit none
 
@@ -51,7 +54,6 @@ contains
 #endif
     use alloc, only : re_alloc, de_alloc
     use m_ts_electype
-    use m_ts_options, only : no_BufL, no_BufR
     use m_ts_options, only : N_Elec, Elecs
     use m_ts_options, only : opt_TriMat_method
     use m_ts_options, only : IsVolt
@@ -65,7 +67,7 @@ contains
     integer, pointer :: n_part(:)
     ! Local variables
     integer, pointer :: guess_part(:) => null()
-    integer :: i, N, guess_parts
+    integer :: i, guess_parts
     logical :: copy_first
 #ifdef MPI
     integer :: MPIerror
@@ -172,7 +174,7 @@ contains
     ! The most probable thing is that the electrodes are not
     ! contained in the first two parts.
     if ( ts_valid_tri(sp, parts, n_part) /= VALID ) then
-       i = nrows_g(sp) - no_BufL - no_BufR
+       i = nrows_g(sp) - no_Buf
        write(*,'(a,i0)') 'TranSIESTA system size: ',i
        write(*,'(a,i0)') 'Current parts: ',parts
        write(*,'(10000000(tr1,i0))') n_part
@@ -224,10 +226,8 @@ contains
          ! We optimize for memory, i.e. we check for number of elements
          ! in this regard we also check whether we should allocate
          ! a work-array in case of bias calculations.
-         call ts_needed_mem(guess_parts,guess_part, &
-              guess_work)
-         call ts_needed_mem(parts, n_part, &
-              part_work)
+         call ts_needed_mem(guess_parts,guess_part, guess_work)
+         call ts_needed_mem(parts, n_part, part_work)
          
          copy = part_work > guess_work
          if ( .not. copy ) then
@@ -253,7 +253,7 @@ contains
   subroutine guess_TriMat(sp,first_part,parts,n_part)
     use class_Sparsity
     use alloc, only: re_alloc
-    use m_ts_options, only : no_BufL, no_BufR
+    use m_ts_method, only : no_Buf
 
     type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: first_part
@@ -263,13 +263,13 @@ contains
     ! Local variables
     integer :: N
 
-    if ( first_part >= nrows_g(sp) - no_BufL - no_BufR ) &
+    if ( first_part >= nrows_g(sp) - no_Buf ) &
          call die('Not allowed to do 1 tri-diagonal part')
 
     parts = 1
     n_part(1) = first_part
     N = n_part(1)
-    do while ( N < nrows_g(sp) - no_BufL - no_BufR)
+    do while ( N < nrows_g(sp) - no_Buf )
        parts = parts + 1
        if ( parts > size(n_part) ) then
           call die('Size error when guessing the tri-mat size')
@@ -292,25 +292,44 @@ contains
   end function calc_nnzs
 
   function faster_parts(parts,n_part,guess_part) result(faster)
-    use precision, only: dp
+    use precision, only: dp, i8b
     integer, intent(in) :: parts
     integer, intent(in) :: n_part(parts)
     integer, intent(in) :: guess_part(parts)
-    real(dp) :: mean, var_n, var_guess
-    integer :: i
+
+    integer :: i, diff
+    integer(i8b) :: guess_N, part_N
     logical :: faster
-    mean = sum(n_part) / real(parts,dp)
-    var_n = 0._dp
-    var_guess = 0._dp
-    do i = 1 , parts
-       var_n     = var_n     + (n_part(i)     - mean)**2
-       var_guess = var_guess + (guess_part(i) - mean)**2
+
+    ! the faster must be the one with lowest total elemental
+    ! operations
+    guess_N = guess_part(1) ** 3
+    part_N  = n_part(1)     ** 3
+    diff = part_N - guess_N
+    do i = 2 , parts - 1
+
+       ! we suspect that inverting the matrix scales
+       ! as the minor matrix inversions/solves
+       ! I.e. we do not count the matrix multiplications
+
+       guess_N =           guess_part(i) * guess_part(i-1) ** 2
+       guess_N = guess_N + guess_part(i) ** 3
+       guess_N = guess_N + guess_part(i) * guess_part(i+1) ** 2
+
+       part_N  =           n_part(i)     * n_part(i-1)     ** 2
+       part_N  = part_N  + n_part(i)     ** 3
+       part_N  = part_N  + n_part(i)     * n_part(i+1)     ** 2
+
+       diff = diff + part_N - guess_N
+
     end do
-    ! If the variance for the new guess is bigger than the previous
-    ! it means that we have a more spread around the mean and 
-    ! thus some very small matrices (we do not, for now, check 
-    ! whether this is actually true, but we guess)
-    faster = var_n < var_guess
+    guess_N = guess_part(parts) ** 3
+    part_N  = n_part(parts)     ** 3
+    
+    diff = diff + part_N - guess_N
+
+    faster = diff > 0
+
   end function faster_parts
 
 
@@ -343,50 +362,13 @@ contains
        ! this is the # of elements from the RHS of the 'part-1'
        ! part of the tridiagonal matrix and out to the last element of
        ! this row...
-       mcol = max_col(sp,i) - eRow
+       mcol = max_col(sp,tsorb2sorb(i)) - eRow
        if ( n_part(part) < mcol ) then
           n_part(part) = mcol
        end if
     end do
 
   end subroutine guess_next_part_size
-
-  subroutine guess_previous_part_size(sp,part,parts,n_part)
-    use class_Sparsity
-    use m_ts_options, only : no_BufL, no_BufR
-    use geom_helper, only : UCORB
-    ! The sparsity pattern
-    type(Sparsity), intent(inout) :: sp
-    ! the part we are going to create
-    integer, intent(in) :: part, parts
-    integer, intent(inout) :: n_part(parts)
-    ! Local variables
-    integer :: i, sRow, eRow, mcol, ncol
-    
-    ! We are now checking a future part
-    ! Hence we must ensure that the size is what
-    ! is up to the next parts size, and thats it...
-    ncol = ncols(sp) + 1
-    eRow = nrows_g(sp) - no_BufL - no_BufR
-    do i = parts , part + 2 , -1
-       eRow = eRow - n_part(i)
-    end do
-    sRow = eRow - n_part(part+1) + 1
-
-    ! We will check in between the above selected rows and find the 
-    ! difference in size...
-    n_part(part) = 0
-    do i = sRow, eRow
-       ! this is the # of elements from the LHS of the 'part+1'
-       ! part of the tridiagonal matrix and out to the firs element of
-       ! this row...
-       mcol = sRow - min_col(sp,i)
-       if ( n_part(part) < mcol ) then
-          n_part(part) = mcol
-       end if
-    end do
-    
-  end subroutine guess_previous_part_size
 
   subroutine full_even_out_parts(method, sp,parts,n_part)
     use class_Sparsity
@@ -484,14 +466,14 @@ contains
           ! 1. if you wish to shrink it left, then:
           !    the first row must not have any elements
           !    extending into the right part
-          if ( max_col(sp,sRow) <= eRow ) then
+          if ( max_col(sp,tsorb2sorb(sRow)) <= eRow ) then
              call even_if_larger(sRow,n_part(n),n_part(n-1))
           end if
 
           ! 2. if you wish to shrink it right, then:
           !    the last row must not have any elements
           !    extending into the left part
-          if ( sRow <= min_col(sp,eRow) ) then
+          if ( sRow <= min_col(sp,tsorb2sorb(eRow)) ) then
              call even_if_larger(eRow,n_part(n),n_part(n+1))
           end if
 
@@ -518,52 +500,51 @@ contains
   function max_col(sp,row)
     use class_Sparsity
     use geom_helper, only : UCORB
-    use m_ts_options, only : no_BufL, no_BufR
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
-    ! the row which we will check for
-    integer, intent(in) :: row
+    ! the row which we will check for (in SIESTA counting)
+    integer, intent(in) :: row 
     ! The result
-    integer :: max_col, ptr, nr, ts_max_col, lr
+    integer :: max_col, ptr, nr, i, j
     integer, pointer :: l_col(:)
     call attach(sp,list_col=l_col,nrows_g=nr)
-    ts_max_col = nr - no_BufL - no_BufR
-    lr = row + no_BufL
-    ! We have to move past the buffer orbitals
-    ptr     =  list_ptr(sp,lr)
-    max_col =  maxval(UCORB( &
-         l_col(ptr+1:ptr+n_col(sp,lr)),nr)) - no_BufL
+    ptr     =  list_ptr(sp,row)
+    max_col = -1
+    do i = 1 , n_col(sp,row)
+       j = ucorb(l_col(ptr+i),nr)
+       if ( orb_type(j) == TYP_BUFFER ) cycle
+       max_col = max(max_col,j - orb_offset(j))
+    end do
     ! Check the ts-region
-    if ( max_col < 1 .or. ts_max_col < max_col ) &
+    if ( max_col < 1 .or. nr - no_Buf < max_col ) &
          call die('Error in TS-sparsity pattern')
   end function max_col
 
   function min_col(sp,row)
     use class_Sparsity
     use geom_helper, only : UCORB
-    use m_ts_options, only : no_BufL, no_BufR
+    use m_ts_method, only : no_Buf
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
-    ! the row which we will check for
+    ! the row which we will check for (in SIESTA counting)
     integer, intent(in) :: row
     ! The result
-    integer :: min_col, ptr, nr, ts_max_col, lr
+    integer :: min_col, ptr, nr, i, j
     integer, pointer :: l_col(:)
     call attach(sp,list_col=l_col,nrows_g=nr)
-    ts_max_col = nr - no_BufL - no_BufR
-    lr = row + no_BufL
-    ! We have to move past the buffer orbitals
-    ptr     =  list_ptr(sp,lr)
-    min_col =  minval(UCORB( &
-         l_col(ptr+1:ptr+n_col(sp,lr)),nr)) - no_BufL
-    ! Truncate to the ts-region
-    if ( min_col < 1 .or. ts_max_col < min_col ) &
+    ptr     =  list_ptr(sp,row)
+    min_col = huge(1)
+    do i = 1 , n_col(sp,row)
+       j = ucorb(l_col(ptr+i),nr)
+       if ( orb_type(j) == TYP_BUFFER ) cycle
+       min_col = min(min_col,j - orb_offset(j))
+    end do
+    if ( min_col < 1 .or. nr - no_Buf < min_col ) &
          call die('Error in TS-sparsity pattern')
   end function min_col
 
   function valid_tri(sp,parts,n_part) result(val) 
     use class_Sparsity
-    use m_ts_options, only : no_BufL, no_BufR
     type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: parts, n_part(parts)
     integer :: val
@@ -577,7 +558,7 @@ contains
     ! Easy check, if the number of rows
     ! does not sum up to the total number of rows.
     ! Then it must be invalid...
-    if ( N /= nrows_g(sp) - no_BufL - no_BufR ) then
+    if ( N /= nrows_g(sp) - no_Buf ) then
        val = NONVALID_SIZE
        return
     end if
@@ -601,8 +582,8 @@ contains
        end if
 
        do ir = N , N + n_part(i) - 1
-          if ( Nm1 > min_col(sp,ir) .or. &
-               max_col(sp,ir) > Np1 ) then
+          if ( Nm1 > min_col(sp,tsorb2sorb(ir)) .or. &
+               max_col(sp,tsorb2sorb(ir)) > Np1 ) then
              val = - ir 
              return
           end if
@@ -619,20 +600,44 @@ contains
 
   end function valid_tri
 
+  function tsorb2sorb(tsorb) result(sorb)
+    integer, intent(in) :: tsorb
+    integer :: sorb
+
+    ! start with assuming that the orb is the same orb
+    sorb = tsorb
+    if ( orb_offset(sorb) == 0 ) return
+
+    ! we know that we have an offset
+    ! find it by easy increments
+    sorb = sorb + orb_offset(sorb) ! this is just a quick-jump
+    do 
+       if ( sorb - orb_offset(sorb) > tsorb ) then
+          sorb = sorb - 1
+       else if ( sorb - orb_offset(sorb) < tsorb ) then
+          sorb = sorb + 1
+       else
+          exit ! we have found the correct index
+       end if
+    end do
+
+  end function tsorb2sorb
+
   ! Validation routine for the tri-diagonal splitting
   ! with a Transiesta tri-diagonal matrix.
   ! It will first check for the electrode size
   function ts_valid_tri(sp,parts,n_part) result(val)
     use class_Sparsity
     use m_ts_electype
-    use m_ts_options, only: no_BufL, N_Elec, Elecs
+    use m_ts_options, only: N_Elec, Elecs
     type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: parts, n_part(parts)
     integer :: val
     integer :: i, idx1, idx2, j
 
     do i = 1 , N_Elec
-       idx1 = Elecs(i)%idx_no - no_BufL
+       j = Elecs(i)%idx_no
+       idx1 = j - orb_offset(j)
 
        do j = 1 , parts - 1
           idx2 = idx1 - sum(n_part(1:j))
@@ -654,14 +659,13 @@ contains
 
   subroutine set_3TriMat(no_u,parts,n_part)
     use m_ts_electype
-    use m_ts_options, only : no_BufL, no_BufR
     use m_ts_options, only : N_Elec, Elecs
     integer, intent(in) :: no_u
     integer, intent(out) :: parts
     integer, intent(out) :: n_part(3)
     integer :: noTS
 
-    noTS = no_u - no_BufL - no_BufR
+    noTS = no_u - no_Buf
     parts = 3
     ! we need special handling if we only have one electrode
     if ( N_Elec == 1 ) then

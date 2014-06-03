@@ -682,7 +682,7 @@ contains
        nzwork, zwork, RemUCellDistance, reread, &
        forward )
 
-    use parallel, only : Node, Nodes, IONode
+    use parallel, only : Node, IONode
 
 #ifdef MPI
     use mpi_siesta, only : MPI_AllReduce, MPI_Sum, MPI_Integer
@@ -702,7 +702,7 @@ contains
     logical, intent(in) :: RemUCellDistance
     logical, intent(in), optional :: reread, forward
 
-    integer :: iE, NEReqs, i, j
+    integer :: NEReqs, i, j
 #ifdef MPI
     integer :: MPIerror
 #endif

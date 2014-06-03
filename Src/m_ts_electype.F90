@@ -31,7 +31,7 @@ module m_ts_electype
   public :: Elec
   public :: Name, HSfile, GFFile, GFTitle
   public :: TotUsedAtoms, TotUsedOrbs
-  public :: OrbInElec
+  public :: AtomInElec, OrbInElec
   public :: Rep
   public :: q_exp
 
@@ -624,6 +624,13 @@ contains
     logical :: in
     in = this%idx_no <= io .and. io < (this%idx_no + TotUsedOrbs(this))
   end function OrbInElec
+
+  elemental function AtomInElec(this,ia) result(in)
+    type(Elec), intent(in) :: this
+    integer, intent(in) :: ia
+    logical :: in
+    in = this%idx_na <= ia .and. ia < (this%idx_na + TotUsedAtoms(this))
+  end function AtomInElec
 
   subroutine read_Elec(this,Bcast,io)
     use fdf

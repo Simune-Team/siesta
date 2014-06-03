@@ -43,15 +43,15 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
 
 #ifdef TRANSIESTA
-      use m_ts_options, only : na_BufL, na_BufR
       use m_ts_options, only : onlyS!, UseBulk
       use m_ts_options, only : TS_Analyze, TS_bandwidth_algo
+      use m_ts_options, only : N_Elec, Elecs
       use m_ts_electype
       use m_ts_global_vars, only: TSrun
       use sys, only : bye
       use m_ts_io, only : fname_TSHS, ts_write_tshs
       use m_ts_sparse, only : ts_sparse_init, ts_sp_uc, ts_Optimize
-!      use m_ts_tri, only : ts_tri_init
+      use m_ts_tri_init, only : ts_tri_init
       use files, only: slabel, label_length
 #endif
 #ifdef CDF
@@ -332,11 +332,13 @@
       ! TODO, probably, there should be other analyzations that a user can
       ! request, and then a more general way to do this should be encouraged.
       if ( TS_Analyze ) then
+
          ! Force the creation of the full sparsity pattern
-         !UseBulk = .false.
          call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
      &        na_u, lasto)
-!         call ts_tri_init()
+
+         ! create the tri-diagonal matrix
+         call ts_tri_init()
 
          ! print out the pivoting elements
          ! for optimizing the tri-diagonal matrix form
@@ -345,9 +347,8 @@
          ! revisit the TSAnalyzeSort utility for updating the correct
          ! search region.
          if (IONode) write(*,'(a)')'transiesta: Central region...'
-!         call ts_Optimize(ts_sp_uc,na_u, lasto, 
-!     &        na_BufL+TotUsedAtoms(ElLeft), 
-!     &        TotUsedAtoms(ElRight)+na_BufR,xa, TS_bandwidth_algo)
+!         call ts_Optimize(ts_sp_uc,N_Elec, Elecs, na_u, lasto, xa, 
+!     &        TS_bandwidth_algo)
 
          ! Bye also waits for all processors
          call bye('transiesta analyzation performed')

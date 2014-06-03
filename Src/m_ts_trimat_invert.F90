@@ -55,22 +55,20 @@ module m_ts_trimat_invert
 
 contains
 
-  subroutine invert_BiasTriMat_prep(M,Minv,no_BufL, N_Elec,Elecs, has_El)
+  subroutine invert_BiasTriMat_prep(M,Minv, N_Elec,Elecs, has_El)
     use m_mat_invert
     use m_ts_electype
+    use m_ts_method, only : orb_offset
 
     type(zTriMat), intent(inout) :: M, Minv
-    integer, intent(in) :: no_BufL
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     logical, intent(in) :: has_El(N_Elec)
 
     complex(dp), pointer :: Mpinv(:)
 
-    integer :: lsPart, lePart
     integer :: sN, sNm1, sNp1, n, np
     integer :: iEl, idx_no, off, sCol, eCol
-    logical, allocatable :: Mnn_parts(:)
     logical :: piv_initialized
 
     np = parts(M)
@@ -110,7 +108,8 @@ contains
     do n = 1 , np
        do iEl = 1 , N_Elec
           if ( .not. has_El(iEl) ) cycle
-          idx_no = Elecs(iEl)%idx_no - no_BufL
+          sNm1 = Elecs(iEl)%idx_no
+          idx_no = sNm1 - orb_offset(sNm1)
           sNm1 = idx_no
           sN   = nrows_g(M,n)
           sNp1 = idx_no + TotUsedOrbs(Elecs(iEl)) - 1
@@ -132,27 +131,26 @@ contains
 
   end subroutine invert_BiasTriMat_prep
 
-  subroutine invert_BiasTriMat_col(M,Minv,no_BufL,El,calc_parts)
+  subroutine invert_BiasTriMat_col(M,Minv,El,calc_parts)
 
     use m_ts_electype
+    use m_ts_method, only : orb_offset
 
     type(zTriMat), intent(inout) :: M, Minv
-    integer, intent(in) :: no_BufL
     type(Elec), intent(in) :: El
     logical, intent(in) :: calc_parts(:)
 
-    complex(dp), pointer :: fullMinv(:)
     complex(dp), pointer :: Mpinv(:), Mp(:)
     complex(dp), pointer :: Xn(:), Yn(:)
-    complex(dp), pointer :: z(:), fz(:)
+    complex(dp), pointer :: z(:)
 
-    integer :: nr, np, no, ip
+    integer :: nr, np, no
     integer :: idx_no
     integer :: sPart, ePart, lsPart, lePart
     integer :: sColF, eColF, sIdxF, eIdxF
     integer :: sColT, eColT, sIdxT, eIdxT
     integer :: sN, sNc, sNm1, sNp1, n, s
-    integer :: off, off_inv, i
+    integer :: off
     logical :: piv_initialized
 
     ! In this routine M should have been processed through invert_PrepTriMat
@@ -183,7 +181,7 @@ contains
     nr = nrows_g(M)
     np = parts(M)
 
-    idx_no = El%idx_no - no_BufL
+    idx_no = El%idx_no - orb_offset(El%idx_no)
     no = TotUsedOrbs(El)
 
     sPart = which_part(M,idx_no)
@@ -389,7 +387,7 @@ contains
     ! Local variables
     complex(dp), pointer :: Mp(:), Mpinv(:)
     complex(dp), pointer :: Xn(:), Yn(:), Cn(:), Bn(:)
-    integer :: sNm1, sN, sNp1, ierr, i, j
+    integer :: sNm1, sN, sNp1, ierr, i
 
     if ( 1 < n )        sNm1 = nrows_g(M,n-1)
                         sN   = nrows_g(M,n)
@@ -443,11 +441,11 @@ contains
     ! Retrieve the position in the inverted matrix
     Mpinv => val(Minv,n,n)
     Mpinv((sCol-1)*sN+1:eCol*sN) = dcmplx(0._dp,0._dp)
-    do j = sCol - 1 , eCol - 1
-       Mpinv(j * sN + j + 1) = dcmplx(1._dp,0._dp)
+    do i = sCol - 1 , eCol - 1
+       Mpinv(i * sN + i + 1) = dcmplx(1._dp,0._dp)
     end do
-    j = eCol - sCol + 1
-    call zgesv(sN,j,Mp,sN,ipiv,Mpinv((sCol-1)*sN+1),sN,ierr)
+    i = eCol - sCol + 1
+    call zgesv(sN,i,Mp,sN,ipiv,Mpinv((sCol-1)*sN+1),sN,ierr)
     if ( ierr /= 0 ) then
        call die('Error in inverting the partial bias block')
     end if

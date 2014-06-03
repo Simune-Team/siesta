@@ -1,4 +1,87 @@
 ----------------------------------------------------
+June 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-141
+Made buffer atoms be where they are needed
+
+* When adding more electrodes it becomes cumbersome
+  to track the placement of the buffer atoms.
+  The buffer atoms can now be defined using this block:
+  %block TS.Atoms.Buffer
+
+  which is constructed much similar to GeometryConstraints
+
+* A buffer atom is now handled careless of its position
+  in the fdf file. Hence you can have buffer atoms in the 
+  middle of the fdf.
+
+  This required some minor restructuring of the code.
+
+  Currently I have tested this with 1 buffer atom:
+    - at the start
+    - in the middle
+  and got the same result. 
+  It needs more testing.
+
+* The printing of the regions are corrected to
+  handle the above cases. It will print out /
+  around all buffer atoms in clusters.
+
+* The faster_parts algorithm has been improved.
+  It now determines the fastest parts on the basis
+  of number of elemental operations in the inversion 
+  routines.
+
+* Bugfix for V = 0 and several chemical potentials
+  The number of poles were not correctly passed over
+  this meant that N_poles was zero.
+  We now check all contours for 0 points in the contour.
+  It will not be tolerated.
+  This bug was introduced in:
+    rev-580
+
+* Bugfix for the bandwidth calculation. The reverse algorithms
+  had always been wrong.
+  The goal is that it should pivot together with the electrode.
+  Very little code is needed to do this.
+
+modified:
+  Src/Makefile
+  Src/create_Sparsity_Union.F90
+  Src/intrinsic_missing.f90
+  Src/m_bandwidth.f90
+  Src/m_transiesta.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_chem_pot.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_mesh.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Src/m_ts_voltage.F90
+  Src/m_ts_weight.F90
+  Src/siesta_forces.F
+  Src/state_init.F
+  Src/ts_init.F90
+  Src/ts_show_regions.f90
+  Util/TS/AnalyzeSort/tsanalyzesort.py
+
+----------------------------------------------------
 May 22, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-140
 Refactored contour/chemical potential setup for easy start
 

@@ -236,13 +236,8 @@ contains
 
     integer :: nspin,nkpar,na,no,NA1,NA2,NA3,NEn
     real(dp) :: mu ! The Fermi energy shift due to a voltage
-    real(dp), allocatable :: xa(:,:)
-    integer, allocatable :: lasto(:)
     real(dp) :: ucell(3,3)
     logical :: errorGf , RemUCell
-#ifdef MPI
-    integer :: MPIerror
-#endif
 
     ! we should only read if the GF-should exist
     if ( .not. El%out_of_core ) return
@@ -412,9 +407,8 @@ contains
     character(200) :: curGFfile
     real(dp) :: ucell(3,3)
     integer :: iEn
-    integer :: i,j,k,iq, iaa, ia
-    real(dp) :: c_xa_o(3), xa_o(3)
-    real(dp) :: wqbtmp,qbtmp(3), ktmp(3), kpt(3)
+    integer :: i, j, ia
+    real(dp) :: ktmp(3), kpt(3)
     logical :: localErrorGf, eXa, RemUCell
 
     ! we should only read if the GF-should exist

@@ -90,7 +90,6 @@ contains
   subroutine read_contour_neq_options(N_Elec,Elecs,N_mu,mus, kT, Volt)
 
     use units, only : eV
-    use parallel, only : IONode, Nodes, operator(.parcount.)
     use fdf
     use m_ts_electype
 
@@ -102,7 +101,6 @@ contains
     real(dp), intent(in) :: kT, Volt
     
     integer :: i, j, k, N, cur_mu, left, right
-    real(dp) :: tmp
     integer, allocatable :: mus_tail(:)
 
 
@@ -452,6 +450,12 @@ contains
 
       ! setup the contour
       do i = 1 , N_nEq
+         if ( nEq_c(i)%c_io%N < 1 ) then
+            write(*,*) 'Contour: '//trim(nEq_c(i)%c_io%Name)//' has 0 points.'
+            write(*,*) 'Please ensure at least 1 point in each contour...'
+            call die('Contour number of points, invalid')
+         end if
+
          ! allocate contour
          allocate(nEq_c(i)%c(nEq_c(i)%c_io%N),nEq_c(i)%w(nEq_c(i)%c_io%N,1))
          call setup_nEq_contour(nEq_c(i), kT, nEq_Eta)

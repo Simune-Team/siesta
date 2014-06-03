@@ -327,7 +327,7 @@ contains
     real(dp), intent(out) :: neq(N_mu)
     real(dp), intent(out) :: w(N_mu)
     integer :: mu_i, ID, mu
-    real(dp) :: total, tmp, cur_neq, mult
+    real(dp) :: total, tmp, mult
 
     ! TODO check that this is correct!
     total  = 0._dp

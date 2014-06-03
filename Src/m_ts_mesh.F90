@@ -40,7 +40,7 @@ contains
 
   subroutine ts_init_mesh(ucell,meshG,meshLim,nsm)
     use intrinsic_missing, only : VNORM
-    use parallel, only : Node, Nodes, IONode, ProcessorY
+    use parallel, only : Node, Nodes, ProcessorY
 
     ! The unit cell
     real(dp), intent(in) :: ucell(3,3)

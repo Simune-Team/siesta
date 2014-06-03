@@ -67,8 +67,7 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    complex(dp), dimension(:,:), allocatable :: dos
-    integer :: i, sNE, eNE, ia
+    integer :: i, ia
     integer :: nC, nTS
 
     if ( isolve .eq. SOLVE_TRANSI ) then
@@ -93,15 +92,12 @@ contains
             kcell=ts_kscell,kdispl=ts_kdispl)
     end do
 
-    ! initialize regions of the electrodes and device
-    ! the number of LCAO orbitals on each atom will not change
-    call ts_init_region_types(na_BufL,Elecs,na_BufR,na_u,lasto)
-
     ! Check that an eventual CGrun will fix all electrodes and 
     ! buffer atoms
     if ( fincoor - inicoor > 0 ) then
        ! check fix
-       do ia = 1 , na_BufL
+       do ia = 1 , na_u
+          if ( a_isDev(ia) ) cycle ! we need only check buffer- and electrode-atoms
           if ( .not. is_fixed(ia) ) then
              call die('All buffer atoms and electrode atoms *MUST* be &
                   &fixed while doing transiesta geometry optimizations. &
@@ -117,13 +113,6 @@ contains
              end if
           end do
        end do
-       do ia = na_u - na_BufR + 1 , na_u
-          if ( .not. is_fixed(ia) ) then
-             call die('All buffer atoms and electrode atoms *MUST* be &
-                  &fixed while doing transiesta geometry optimizations. &
-                  &Please correct right buffer.')
-          end if
-       end do
     end if
 
     ! here we will check for all the size requirements of Transiesta
@@ -135,7 +124,7 @@ contains
     ! is VERY WRONG...
     ! First calculate L/C/R sizes (we remember to subtract the buffer
     ! orbitals)
-    nTS = no_u - no_BufL - no_BufR
+    nTS = no_u - no_Buf
     nC  = nTS  - sum(TotUsedOrbs(Elecs))
     if ( nC < 1 ) &
          call die("The contact region size is &
@@ -147,8 +136,7 @@ contains
          &system.')
     
     ! Show every region of the Transiesta run
-    call ts_show_regions(ucell,na_u,xa, &
-         na_BufL,N_Elec,Elecs,na_BufR)
+    call ts_show_regions(ucell,na_u,xa,N_Elec,Elecs)
 
     if ( .not. TS_Analyze ) then
 

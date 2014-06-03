@@ -49,7 +49,6 @@ contains
 ! complex(dp) GS      : Surface Green's function of the electrode
 ! **********************************************************************
     use m_mat_invert
-    use parallel,  only: IONode
     use precision, only: dp
 
 ! ***********************
@@ -316,7 +315,6 @@ contains
 ! complex(dp) GS      : Surface Green's function of the electrode
 ! **********************************************************************
     use m_mat_invert
-    use parallel,  only: IONode
     use precision, only: dp
 
 ! ***********************
@@ -591,13 +589,13 @@ contains
     integer, allocatable :: iters(:,:)
     real(dp) :: i_mean, i_std
 
-    integer :: ierror,uGF
+    integer :: uGF
     ! Big loop counters
     type(itt2) :: it2
     integer, pointer :: ispin, ikpt
     integer :: iEn, iqpt
     ! Counters
-    integer :: i, j, k, io, jo, off
+    integer :: i, j, io, jo, off
 
     logical :: is_left, Gq_allocated, final_invert
 
@@ -1343,7 +1341,7 @@ contains
     ! size requirement
     integer :: size_req(2)
     ! Counters
-    integer :: i, j, k, ios, jos, ioe, joe, off
+    integer :: i, ios, jos, ioe, joe, off
     logical :: is_left, final_invert
     logical :: zHS_allocated
     logical :: same_k

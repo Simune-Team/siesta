@@ -21,6 +21,7 @@
 module m_ts_sparse_helper
 
   use precision, only : dp
+  use m_ts_method, only : orb_type, TYP_BUFFER, TYP_DEVICE
 
   implicit none
 
@@ -48,7 +49,6 @@ contains
    ! k-point Hamiltonian.
   subroutine create_HS_kpt(dit,sp, &
        Ef, &
-       no_BufL, no_BufR, &
        N_Elec, Elecs, no_u, &
        maxnh, H, S, xij, SpArrH, SpArrS, k, &
        nwork, work)
@@ -72,8 +72,6 @@ contains
     type(Sparsity), intent(inout) :: sp
     ! Fermi-level
     real(dp), intent(in) :: Ef
-    ! The number of orbitals we wish to cut-off at both ends
-    integer, intent(in) :: no_BufL, no_BufR
     ! The electrodes
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -103,7 +101,6 @@ contains
     complex(dp) :: ph
     type(Sparsity), pointer :: sp_k
     integer :: no_l, lio, io, ind, jo, ind_k, kn
-    integer :: no_max
      
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
@@ -119,9 +116,6 @@ contains
     sp_k   => spar    (SpArrH)
     call attach(sp_k, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
-    ! The boundary at the right buffer
-    no_max = no_u - no_BufR
-     
     call init_val(SpArrH)
     call init_val(SpArrS)
     ! obtain the value arrays...
@@ -138,7 +132,10 @@ contains
 
        ! The io orbitals are in the range [1;no_u_TS]
        ! This should be redundant as it is catched by kn==0
-       if ( io <= no_BufL .or. no_max < io ) cycle
+       if ( orb_type(io) == TYP_BUFFER ) then
+          call die('Error in code, &
+               &please contact Nick Papior Andersen nickpapior@gmail.com')
+       end if
 
        ! Loop number of entries in the row... (index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -149,7 +146,7 @@ contains
           jo = UCORB(l_col(ind),no_u)
 
           ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-          if ( jo <= no_BufL .or. no_max < jo ) cycle
+          if ( orb_type(jo) == TYP_BUFFER ) cycle
 
           ! Do a check whether we have connections
           ! across the junction...
@@ -237,7 +234,6 @@ contains
        ! currently I am not sure the not bulk setting
        ! makes sense with this method, either way, it is an experimental
        ! feature.
-       if ( .not. Elecs(iEl)%bulk ) cycle
        E_Ef(iEl) = Ef - Elecs(iEl)%Ef_frac_CT * Elecs(iEl)%mu%mu
     end do
 
@@ -253,14 +249,8 @@ contains
        ! Quickly go past the empty regions... (we have nothing to update)
        if ( l_ncol(io) == 0 ) cycle
 
-       iEl = 0
-       do jEl = 1 , N_Elec
-          if ( OrbInElec(Elecs(jEl),io) ) then
-             ! an orbital will ever only be in one electrode
-             iEl = jEl
-             exit
-          end if
-       end do
+       iEl = orb_type(io)
+       if ( iEl == TYP_BUFFER ) cycle ! this means a buffer row
        jEl = 0
 
        ! Now we loop across the update region
@@ -279,11 +269,15 @@ contains
           ! other electrodes, hence, we only need to check
           ! whether the electrode connects with itself
           if ( iEl > 0 ) then
-             if ( OrbInElec(Elecs(iEl),jo) ) then
+             jEl = orb_type(jo)
+             if ( jEl /= iEl ) then
+                if ( jEl /= TYP_DEVICE ) &
+                     call die('Programming error, &
+                     &contact Nick Papior Andersen, nickpapior@gmail.com')
+             else if ( Elecs(jEl)%bulk ) then
+                ! we must refrain from shifting the fermi-level
+                ! it has already been done... This should never occur though
                 jEl = 0
-                exit
-             else
-                jEl = iEl
              end if
           end if
 
@@ -322,7 +316,6 @@ contains
   ! k-point Hamiltonian.
   subroutine create_HS_Gamma(dit,sp, &
        Ef, &
-       no_BufL, no_BufR, &
        N_Elec, Elecs, no_u, &
        maxnh, H, S, SpArrH, SpArrS, &
        nwork, work)
@@ -346,8 +339,6 @@ contains
     type(Sparsity), intent(inout) :: sp
     ! Fermi-level
     real(dp), intent(in) :: Ef
-    ! The number of orbitals we wish to cut-off at both ends
-    integer, intent(in) :: no_BufL, no_BufR
     ! The electrodes
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -371,7 +362,7 @@ contains
     integer, pointer  :: k_ncol(:), k_ptr(:), k_col(:)
     real(dp), pointer :: dH(:), dS(:)
     type(Sparsity), pointer :: sp_G
-    integer :: no_l, lio, io, ind, jo, ind_k, no_max
+    integer :: no_l, lio, io, ind, jo, ind_k
     
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
@@ -387,9 +378,6 @@ contains
     sp_G   => spar(SpArrH)
     call attach(sp_G, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
-    ! the boundary at the right buffer
-    no_max = no_u - no_BufR
-    
     ! initialize to 0
     call init_val(SpArrH)
     call init_val(SpArrS)
@@ -405,8 +393,10 @@ contains
        if ( k_ncol(io) == 0 ) cycle
 
        ! The io orbitals are in the range [1;no_u]
-       if ( io <= no_BufL )       cycle
-       if ( no_u - no_BufR < io ) cycle
+       if ( orb_type(io) == TYP_BUFFER ) then
+          call die('Error in programming: Contact &
+               &Nick Papior Andersen: nickpapior@gmail.com')
+       end if
 
        ! Loop number of entries in the row... (in the index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -417,7 +407,7 @@ contains
           jo = UCORB(l_col(ind),no_u)
 
           ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-          if ( jo <= no_BufL .or. no_max < jo ) cycle
+          if ( orb_type(jo) == TYP_BUFFER ) cycle
 
           ! Do a check whether we have connections
           ! across the junction...
@@ -517,14 +507,8 @@ contains
        ! Quickly go past the empty regions... (we have nothing to update)
        if ( l_ncol(io) == 0 ) cycle
 
-       iEl = 0
-       do jEl = 1 , N_Elec
-          if ( OrbInElec(Elecs(jEl),io) ) then
-             ! an orbital will ever only be in one electrode
-             iEl = jEl
-             exit
-          end if
-       end do
+       iEl = orb_type(io)
+       if ( iEl == TYP_BUFFER ) cycle ! this means a buffer row
        jEl = 0
 
        ! Now we loop across the update region
@@ -543,11 +527,15 @@ contains
           ! other electrodes, hence, we only need to check
           ! whether the electrode connects with itself
           if ( iEl > 0 ) then
-             if ( OrbInElec(Elecs(iEl),jo) ) then
+             jEl = orb_type(jo)
+             if ( jEl /= iEl ) then
+                if ( jEl /= TYP_DEVICE ) &
+                     call die('Programming error, &
+                     &contact Nick Papior Andersen, nickpapior@gmail.com')
+             else if ( Elecs(jEl)%bulk ) then
+                ! we must refrain from shifting the fermi-level
+                ! it has already been done... This should never occur though
                 jEl = 0
-                exit
-             else
-                jEl = iEl
              end if
           end if
 
@@ -629,7 +617,7 @@ contains
     complex(dp), intent(inout) :: work(nwork)
     integer, intent(in), optional :: dim2_count
     complex(dp), pointer :: arr(:,:)
-    integer :: n_nzs, n_nzs1, d2
+    integer :: n_nzs, d2
     arr => val(sp_arr)
     d2 = size(arr,dim=2)
     if ( present(dim2_count) ) d2 = dim2_count
@@ -682,7 +670,7 @@ contains
     real(dp), intent(inout) :: work(nwork)
     integer, intent(in), optional :: dim2_count
     real(dp), pointer :: arr(:,:)
-    integer :: n_nzs, n_nzs1, d2
+    integer :: n_nzs, d2
     arr => val(sp_arr)
     d2 = size(arr,dim=2)
     if ( present(dim2_count) ) d2 = dim2_count

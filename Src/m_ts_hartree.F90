@@ -105,7 +105,6 @@ contains
   subroutine ts_hartree_fix( ntpl , Vscf )
     use precision, only : grid_p
     use sys, only : die
-    use parallel, only : Node, Nodes
 #ifdef MPI
     use mpi_siesta, only : MPI_AllReduce, MPI_Sum
     use mpi_siesta, only : MPI_Comm_World, MPI_integer

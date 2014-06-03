@@ -121,7 +121,6 @@ contains
   end subroutine print_contour_options
 
   subroutine print_contour_block(prefix, IsVolt)
-    use parallel, only : IONode
     use m_ts_contour_eq, only : print_contour_eq_block
     use m_ts_contour_neq, only : print_contour_neq_block
 

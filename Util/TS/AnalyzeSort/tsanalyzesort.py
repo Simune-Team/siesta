@@ -85,6 +85,8 @@ def read_Pivot(f,na):
             # If -> is in the line we know we have something
             if '->' in line:
                 old,new = line.split('->')
+                # this star-marks the electrode position
+                if '*' in new: new = new.replace('*','')
                 try:
                     old = int(old) - 1
                     new = int(new) - 1
@@ -106,9 +108,9 @@ def check_Pivot(pvt):
         if c != 1:
             ok = False
             if c == 0:
-                print("Atom {0} has been removed due to the pivot table!".format(ia))
+                print("Atom {0} has been removed due to the pivot table!".format(ia+1))
             else:
-                print("Atom {0} is pivoted {1} times!".format(ia,c))
+                print("Atom {0} is pivoted {1} times!".format(ia+1,c))
     if not ok:
         print("Please contact Nick Papior Andersen at nickpapior<at>gmail.com" +
               " with your FDF files for reviewing. Seems like a bug in the algorithm.")

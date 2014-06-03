@@ -70,7 +70,6 @@ contains
   subroutine read_contour_eq_options(N_mu, mus, kT, Volt)
 
     use units, only : eV
-    use parallel, only : IONode, Nodes, operator(.parcount.)
     use fdf
 
     integer, intent(in)        :: N_mu
@@ -78,7 +77,7 @@ contains
     real(dp), intent(in)       :: kT, Volt
 
     integer :: i,j,k
-    integer :: different_poles, N
+    integer :: N
     character(len=C_N_NAME_LEN), allocatable :: tmp(:), nContours(:)
     character(len=C_N_NAME_LEN) :: tmp_one
     integer :: cur, next, prev
@@ -94,7 +93,6 @@ contains
     
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input
-
     do i = 1 , N_mu
        write(mus(i)%Eq_seg(Eq_segs(mus(i))),'(a,i0)') 'pole',i
     end do
@@ -174,7 +172,7 @@ contains
 
        ! read in the contour
        if ( tmp_one(1:1) == '*' .and. &
-            .not. ts_exists_contour_block('TS','',tmp_one(2:)) ) then
+            .not. ts_exists_contour_block('TS','',tmp_one(2:)//' ') ) then
 
           ! this is a fake-contour, read it in
           ! if it exists, else create it...
@@ -315,6 +313,12 @@ contains
              end if
           end if
        end do
+
+       if ( Eq_c(i)%c_io%N < 1 ) then
+          write(*,*) 'Contour: '//trim(Eq_c(i)%c_io%Name)//' has 0 points.'
+          write(*,*) 'Please ensure at least 1 point in each contour...'
+          call die('Contour number of points, invalid')
+       end if
 
        ! Allocate the different weights and initialize
        allocate(Eq_c(i)%c(Eq_c(i)%c_io%N))
@@ -1170,9 +1174,7 @@ contains
   end subroutine io_contour_c
 
   subroutine eq_die(msg)
-    use parallel, only : IONode
     character(len=*), intent(in) :: msg
-    integer :: i
     write(*,*) 'Killing... printing out so-far gathered information'
     call print_contour_eq_options('TS')
     call print_contour_eq_block('TS')

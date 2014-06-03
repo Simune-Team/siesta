@@ -34,7 +34,7 @@ contains
 ! Full converted GF.G.GF^\dagger routine for speed.
 ! This routine is extremely fast compared to any previous implementation.
 ! It relies on the fact that Gf only contains the electrode columns.
-  subroutine GF_Gamma_GF(no_BufL, El, no_u_TS, no, GF, &
+  subroutine GF_Gamma_GF(El, no_u_TS, no, GF, &
        GGG,nwork,work)
 
 !  This routine returns GGG=GF.Gamma.GF^\dagger, where GF is a (no_u)x(no)
@@ -49,8 +49,6 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    ! Number of orbitals on the buffer atoms
-    integer, intent(in) :: no_BufL
     ! electrode self-energy
     type(Elec), intent(in) :: El
     integer, intent(in) :: no_u_TS ! no. states in contact region
@@ -231,11 +229,12 @@ subroutine my_symmetrize(N,M)
 ! ##                                                              ##          
 ! ##  Fully created by Nick Papior Andersen, nickpapior@gmail.com ##
 ! ##################################################################
-  subroutine calc_GF_Bias(cE,no_BufL,no_u_TS,N_Elec,Elecs,GFinv,GF)
+  subroutine calc_GF_Bias(cE,no_u_TS,N_Elec,Elecs,GFinv,GF)
     
     use precision, only: dp
 
     use m_ts_contour, only : has_cE
+    use m_ts_method, only : orb_offset
 
     implicit none 
 
@@ -244,7 +243,7 @@ subroutine my_symmetrize(N,M)
 ! *********************
     type(ts_c_idx), intent(in) :: cE
     ! Sizes of the different regions...
-    integer, intent(in) :: no_BufL, no_u_TS
+    integer, intent(in) :: no_u_TS
     ! Electrodes
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -283,7 +282,8 @@ subroutine my_symmetrize(N,M)
     o = 0
     do iEl = 1 , N_Elec
        if ( .not. has_cE(cE,iEl=iEl) ) cycle
-       off_row = Elecs(iEl)%idx_no - no_BufL - 1
+       i = Elecs(iEl)%idx_no
+       off_row = i - orb_offset(i) - 1
        do i = 1 , TotUsedOrbs(Elecs(iEl))
           GF(o*no_u_TS+off_row+i) = dcmplx(1._dp,0._dp)
           o = o + 1
@@ -315,11 +315,12 @@ subroutine my_symmetrize(N,M)
 ! ##                                                              ##
 ! ##  Modified by Nick Papior Andersen                            ##
 ! ##################################################################
-  subroutine calc_GF_Part(cE,no_BufL, no_u_TS, N_Elec, Elecs, & ! Size of the problem
+  subroutine calc_GF_Part(cE,no_u_TS, N_Elec, Elecs, & ! Size of the problem
        GFinv,GF)
     
     use intrinsic_missing, only: EYE
     use precision, only: dp
+    use m_ts_method, only : orb_offset
 
     implicit none 
 
@@ -328,7 +329,7 @@ subroutine my_symmetrize(N,M)
 ! *********************
     type(ts_c_idx), intent(in) :: cE
     ! Sizes of the different regions...
-    integer, intent(in) :: no_BufL, no_u_TS
+    integer, intent(in) :: no_u_TS
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     ! Work should already contain Z*S - H
@@ -363,13 +364,14 @@ subroutine my_symmetrize(N,M)
     ! initialize
     GF(:) = dcmplx(0._dp,0._dp)
 
-    i = no_BufL
+    i = 0
     do j = 0 , no - 1
        found = .false.
        do while ( .not. found ) 
           i = i + 1
           if ( .not. any(OrbInElec(Elecs,i) .and. .not. Elecs(:)%DM_CrossTerms) ) then
-             GF(j*no_u_TS-no_BufL+i) = dcmplx(1._dp,0._dp)
+             
+             GF(j*no_u_TS+i-orb_offset(i)) = dcmplx(1._dp,0._dp)
              found = .true.
           end if
        end do

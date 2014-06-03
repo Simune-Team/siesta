@@ -41,10 +41,10 @@ module m_ts_charge
 contains
 
   ! Retrive the mulliken charges in each region of the transiesta setup
-  subroutine ts_get_charges(Nelecs,dit, sp, nspin, n_nzs, DM, S, Q)
+  subroutine ts_get_charges(N_Elec,dit, sp, nspin, n_nzs, DM, S, Q)
 
     use m_ts_method
-    use parallel, only : IONode, Node
+    use parallel, only : Node
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -56,7 +56,7 @@ contains
 ! **********************
 ! * INPUT variables    *
 ! **********************
-    integer, intent(in) :: Nelecs
+    integer, intent(in) :: N_Elec
     type(OrbitalDistribution), intent(inout) :: dit
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sp
@@ -65,7 +65,7 @@ contains
     ! The density matrix and overlap
     real(dp), intent(in) :: DM(n_nzs,nspin), S(n_nzs)
     ! The charge in the regions
-    real(dp), intent(out) :: Q(0:1+1+Nelecs*2, nspin)
+    real(dp), intent(out) :: Q(0:1+1+N_Elec*2, nspin)
 
 ! **********************
 ! * LOCAL variables    *
@@ -73,7 +73,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer :: no_lo, no_u, lio, io, ind, jo, ir, jr, r
 #ifdef MPI
-    real(dp) :: tmp(0:1+1+Nelecs*2, nspin)
+    real(dp) :: tmp(0:1+1+N_Elec*2, nspin)
     integer :: MPIerror
 #endif
 
@@ -93,7 +93,7 @@ contains
 
        ! obtain the global index of the orbital.
        io = index_local_to_global(dit,lio,Node)
-       ir = get_orb_type(io)
+       ir = orb_type(io)
 
        ! Loop number of entries in the row... (index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -102,7 +102,7 @@ contains
           ! we need to check the unit-cell orbital
           ! The unit-cell column index
           jo = UCORB(l_col(ind),no_u)
-          jr = get_orb_type(jo)
+          jr = orb_type(jo)
 
           if      ( all((/ir,jr/) == TYP_BUFFER) ) then
              r = 1 ! buffer
@@ -137,7 +137,7 @@ contains
   ! A subroutine for printing out the charge distribution in the cell
   ! it will currently only handle the full charge distribution, and
   ! not per k-point.
-  subroutine ts_print_charges(Elecs,dit, sp, &
+  subroutine ts_print_charges(N_Elec,Elecs,dit, sp, &
        nspin, n_nzs, DM, S, &
        method)
     use parallel, only : IONode, Node
@@ -152,7 +152,8 @@ contains
 ! **********************
 ! * INPUT variables    *
 ! **********************
-    type(Elec), intent(in) :: Elecs(:)
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
     type(OrbitalDistribution), intent(inout) :: dit
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sp
@@ -166,17 +167,16 @@ contains
 ! **********************
 ! * LOCAL variables    *
 ! **********************
-    integer :: Nelecs, i
+    integer :: i
     real(dp), allocatable :: Q(:,:)
     integer :: ispin, lmethod
 
     lmethod = TS_INFO_FULL
     if ( present(method) ) lmethod = method
 
-    Nelecs = size(Elecs)
-    allocate(Q(0:2+Nelecs*2,nspin))
+    allocate(Q(0:2+N_Elec*2,nspin))
 
-    call ts_get_charges(Nelecs,dit, sp, nspin, n_nzs, DM, S, Q)
+    call ts_get_charges(N_Elec,dit, sp, nspin, n_nzs, DM, S, Q)
          
     ! it will only be the IONode which will write out...
     if ( .not. IONode ) return
@@ -194,7 +194,7 @@ contains
           end if
           write(*,'(a,2(f12.5,tr1))') &
                'Device                        [C]  :',Q(2,1), Q(2,2)
-          do i = 1 , Nelecs 
+          do i = 1 , N_Elec
              write(*,'(a,t31,a,i0,a,2(f12.5,tr1))') &
                   trim(name(Elecs(i))),'[E',i,'] :', &
                   Q(3+(i-1)*2,1), Q(3+(i-1)*2,2)
@@ -214,7 +214,7 @@ contains
           end if
           write(*,'(a,f12.5)') &
                'Device                        [C]  :',Q(2,1)
-          do i = 1 , Nelecs 
+          do i = 1 , N_Elec
              write(*,'(a,t31,a,i0,a,f12.5)') &
                trim(name(Elecs(i)))         ,'[E',i,'] :',Q(3+(i-1)*2,1)
              write(*,'(a,t22,a,i0,a,f12.5)') &
@@ -228,13 +228,13 @@ contains
 
        ! We write out the information from the SCF cycle...
        write(*,'(a,1x,a9)',advance='no') 'ts-q:','D'
-       do i = 1 , Nelecs
+       do i = 1 , N_Elec
           write(*,'(1x,a8,i0,1x,a8,i0)',advance='no') 'E',i,'C',i
        end do
        write(*,'(1x,a9)') 'Q'
        do ispin = 1 , nspin
           write(*,'(a,1x,f9.3)',advance='no') 'ts-q:', Q(2,ispin)
-          do i = 1 , Nelecs
+          do i = 1 , N_Elec
              write(*,'(2(1x,f9.3))',advance='no') Q(3+(i-1)*2,ispin),Q(4+(i-1)*2,ispin)
           end do
           write(*,'(1x,f9.3)') sum(Q(:,ispin))
@@ -246,7 +246,7 @@ contains
     
   end subroutine ts_print_charges
 
-  subroutine ts_charge_correct(no_Buf,Elecs, &
+  subroutine ts_charge_correct(N_Elec,Elecs, &
        dit, sp, nspin, n_nzs, DM, EDM, S, Qtot, &
        method)
 
@@ -257,9 +257,9 @@ contains
 ! **********************
 ! * INPUT variables    *
 ! **********************
-    integer, intent(in) :: no_Buf
+    integer, intent(in) :: N_Elec
     ! The electrodes
-    type(Elec), intent(in) :: Elecs(:)
+    type(Elec), intent(in) :: Elecs(N_Elec)
     type(OrbitalDistribution), intent(inout) :: dit
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sp
@@ -272,19 +272,19 @@ contains
     integer, intent(in) :: method
 
     if ( method == TS_RHOCORR_BUFFER ) then
-       call ts_charge_correct_buffer(no_Buf,Elecs, &
+       call ts_charge_correct_buffer(N_Elec,Elecs, &
             dit, sp, nspin, n_nzs, DM, EDM, S, Qtot)
     end if
 
   end subroutine ts_charge_correct
 
 
-  subroutine ts_charge_correct_buffer(no_Buf,Elecs, &
+  subroutine ts_charge_correct_buffer(N_Elec,Elecs, &
        dit, sp, nspin, n_nzs, DM, EDM, S, Qtot)
 
     use m_ts_electype
     use m_ts_method
-    use parallel, only : IONode, Node
+    use parallel, only : Node
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -295,9 +295,9 @@ contains
 ! **********************
 ! * INPUT variables    *
 ! **********************
-    integer, intent(in) :: no_Buf
+    integer, intent(in) :: N_Elec
     ! The electrodes
-    type(Elec), intent(in) :: Elecs(:)
+    type(Elec), intent(in) :: Elecs(N_Elec)
     type(OrbitalDistribution), intent(inout) :: dit
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sp
@@ -314,17 +314,14 @@ contains
 ! * LOCAL variables    *
 ! **********************
     ! The charge in the regions
-    integer :: Nelecs
     real(dp), allocatable :: Q(:,:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer :: no_lo, no_u, lio, io, ind, ispin
     real(dp) :: reD, addQ(nspin)
 
-    Nelecs = size(Elecs)
-    allocate(Q(0:2+Nelecs*2,nspin))
+    allocate(Q(0:2+N_Elec*2,nspin))
     
-    call ts_get_charges(Nelecs, &
-       dit, sp, nspin, n_nzs, DM, S, Q)
+    call ts_get_charges(N_Elec, dit, sp, nspin, n_nzs, DM, S, Q)
 
     ! Retrieve information about the sparsity pattern
     call attach(sp, &
@@ -354,12 +351,12 @@ contains
           ! obtain the global index of the orbital.
           io = index_local_to_global(dit,lio,Node)
 
-          if ( get_orb_type(io) /= TYP_BUFFER ) cycle
+          if ( orb_type(io) /= TYP_BUFFER ) cycle
 
           ! Loop number of entries in the row... (index frame)
           do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-             if ( get_orb_type(l_col(ind)) /= TYP_BUFFER ) cycle
+             if ( orb_type(l_col(ind)) /= TYP_BUFFER ) cycle
              
              DM(ind,ispin) = DM(ind,ispin) * reD + &
                   DM(ind,ispin)

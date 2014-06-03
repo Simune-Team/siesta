@@ -36,14 +36,6 @@ module m_ts_options
   logical  :: IsVolt = .false.
   ! maximum difference between chemical potentials
   real(dp) :: Volt = 0._dp
-  ! Number of buffer atoms (on the left side)
-  integer  :: na_BufL = 0
-  ! Number of buffer atoms (on the right side)
-  integer  :: na_BufR = 0     ! Number of Right Buffer Atoms
-  ! Number of buffer orbitals (on the left side)
-  integer  :: no_BufL = 0
-  ! Number of buffer orbitals (on the right side)
-  integer  :: no_BufR = 0
   ! Electrodes and different chemical potentials
   integer :: N_Elec = 0
   type(Elec), allocatable, target :: Elecs(:)
@@ -90,11 +82,11 @@ contains
     use files, only : slabel
     use fdf, only : fdf_get, fdf_deprecated, fdf_obsolete
     use fdf, only : leqi
-    use parallel, only: IOnode, Nodes, operator(.parcount.)
+    use parallel, only: IOnode
     use units, only: eV, Ang, Kelvin
 
     use m_ts_cctype
-    use m_ts_global_vars, only : TSmode, ts_istep, TSinit
+    use m_ts_global_vars, only : TSmode, ts_istep
     use m_ts_io, only : ts_read_TSHS_opt
 
     use m_ts_contour
@@ -123,9 +115,9 @@ contains
     real(dp) :: tmp
     logical :: err
     character(len=200) :: c, chars
-    integer :: i, j, idx, idx1, idx2, ia
-    integer :: tot_NEn
+    integer :: i, j, idx, idx1, idx2
 
+    type(ts_mu) :: tmp_mu
     ! External routines
     real(dp) :: dot
     external :: dot
@@ -158,7 +150,6 @@ contains
        end if
        return
     end if
-
 
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
@@ -249,24 +240,6 @@ contains
             &please see manual.')
     end if
 
-    ! Figure out the number of orbitals on the buffer atoms
-    na_BufL = fdf_get('TS.BufferAtomsLeft',0)
-    no_BufL = 0
-    do i = 1 , na_BufL
-       no_BufL = no_BufL + lasto(i) - lasto(i-1)
-    end do
-
-    na_BufR = fdf_get('TS.BufferAtomsRight',0)
-    no_BufR = 0
-    do i = na_u - na_BufR + 1 , na_u
-       no_BufR = no_BufR + lasto(i) - lasto(i-1)
-    end do
-
-    ! check that it is correctly setup
-    if ( na_BufL < 0 .or. na_BufR < 0 ) then
-       call die("Buffer atoms must be 0 or a positive integer.")
-    end if
-
     chars = fdf_get('TS.ChargeCorrection','none')
     TS_RHOCORR_METHOD = 0
     if ( leqi(chars,'none') ) then
@@ -327,7 +300,7 @@ contains
     else
        do i = 1 , N_mu
           ! Default things that could be of importance
-          if ( .not. fdf_mu('TS',slabel,mus(i),Volt) ) then
+          if ( .not. fdf_mu('TS',mus(i),Volt) ) then
              call die('Could not find chemical potential: ' &
                   //trim(name(mus(i))))
           end if
@@ -409,7 +382,8 @@ contains
 
     ! Check that the current transport direction is "aligned"
     ! TODO when we can deal with arbitrary electrodes this should be altered
-    if ( all(Elecs(1)%t_dir == Elecs(:)%t_dir) ) then
+    if ( N_Elec == 2 .and. &
+         all(Elecs(1)%t_dir == Elecs(:)%t_dir) ) then
        ts_tdir = Elecs(1)%t_dir
     end if
 
@@ -417,25 +391,22 @@ contains
        ! force it to be zero... can be necessary if considering single electrode
        ! calculations (assures V == 0)
        Volt = 0._dp
-       mus(:)%mu = 0._dp
 
-       ! We must make all electrodes point to the first chemical potential 
-       ! and discard the rest
-
-       ! Save che first chemical potential name
-       c = mus(1)%name
+       ! copy over electrode...
+       call copy(mus(1),tmp_mu)
+       
+       ! Deallocate all strings
        do i = 1 , N_mu
           deallocate(mus(i)%Eq_seg)
        end do
        deallocate(mus)
+
        ! create the first chemical potential again
        N_mu = 1
        allocate(mus(1))
-       mus(1)%name = trim(c)
-       if ( .not. fdf_mu('TS',slabel,mus(1),Volt) ) then
-          call die('Could not find chemical potential: ' &
-               //trim(name(mus(1))))
-       end if
+       call copy(tmp_mu,mus(1))
+       deallocate(tmp_mu%Eq_seg)
+
        ! Firmly assure the chemical potential to be zero
        mus(1)%mu = 0._dp
        mus(1)%ID = 1
@@ -492,17 +463,6 @@ contains
     do i = 1 , N_Elec
        idx1 = Elecs(i)%idx_na
        idx2 = idx1 + TotUsedAtoms(Elecs(i)) - 1
-       if ( idx1 <= na_BufL ) then
-          write(*,*) 'Electrode: '//trim(Name(Elecs(i)))
-          write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
-          write(*,'(a,i0)') 'Buffer atoms stops at: ',na_BufL
-          call die('Left buffer atoms overlap an electrode')
-       else if ( na_u - na_BufR < idx2 ) then
-          write(*,*) 'Electrode: '//trim(Name(Elecs(i)))
-          write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
-          write(*,'(a,i0)') 'Buffer atoms starts at: ',na_u - na_BufR + 1
-          call die('Right buffer atoms overlap an electrode')
-       end if
        ! we need to check every electrode,
        ! specifically because if one of the electrodes is fully located
        ! inside the other and we check the "small" one 
@@ -557,6 +517,13 @@ contains
     ! read in contour options
     if ( TSmode ) then
        call read_contour_options( N_Elec, Elecs, N_mu, mus, kT, IsVolt, Volt )
+    end if
+
+    ! read in buffer information
+    if ( TSMode ) then
+       ! initialize regions of the electrodes and device
+       ! the number of LCAO orbitals on each atom will not change
+       call ts_init_regions('TS',N_Elec,Elecs,na_u,lasto)
     end if
 
     ! Show the deprecated and obsolete labels
@@ -624,14 +591,11 @@ contains
        if ( .not. Calc_Forces ) then
           write(*,11) '*** TranSIESTA will NOT update forces ***'
        end if
-       write(*,5) 'Left buffer atoms', na_BufL
-       write(*,5) 'Right buffer atoms', na_BufR
-
 
        if ( TS_RHOCORR_METHOD == 0 ) then
           write(*,11)'Will not correct charge fluctuations'
        else if ( TS_RHOCORR_METHOD == TS_RHOCORR_BUFFER ) then ! Correct in buffer
-          if ( 0 < na_BufL .or. 0 < na_BufR ) then
+          if ( 0 < na_Buf ) then
              write(*,10)'Charge fluctuation correction','buffer'
           else
              call die('Charge correction can not happen in buffer as no buffer &

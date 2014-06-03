@@ -1,6 +1,6 @@
-subroutine ts_show_regions(ucell,na_u,xa,naBufL, &
-     nElecs,Elecs,naBufR)
+subroutine ts_show_regions(ucell,na_u,xa,N_Elec,Elecs)
   use m_ts_electype
+  use m_ts_method, only : na_Buf, TYP_BUFFER, atom_type
   use precision, only : dp
   use units, only : Ang
   use parallel, only : IONode
@@ -11,28 +11,32 @@ subroutine ts_show_regions(ucell,na_u,xa,naBufL, &
   real(dp), intent(in) :: ucell(3,3)
   integer, intent(in)  :: na_u
   real(dp), intent(in) :: xa(3,na_u)
-  integer, intent(in) :: nElecs
-  type(Elec), intent(in) :: Elecs(nElecs)
-  integer, intent(in)  :: naBufL, naBufR
+  integer, intent(in) :: N_Elec
+  type(Elec), intent(in) :: Elecs(N_Elec)
 
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-  integer :: ia, i, mid, ia_mid
+  integer :: ia, i, ia_mid
   logical :: printed_elec
 
   if ( .not. IONode ) return
 
-  ! Initialize ia counter
-  ia = 0
-
-  ia_mid = (na_u - naBufL-sum(TotUsedAtoms(Elecs))-naBufR+1) / 2
+  ! mid-point of device
+  ia_mid = (na_u - na_Buf-sum(TotUsedAtoms(Elecs))+1) / 2
 
   write(*,'(/,a)') 'transiesta: Atomic coordinates and regions (Ang):'
-  call out_REGION(ia,naBufL,'Left buffer','/')
-  do while ( ia < na_u - naBufR )
+  ia = 0
+  do while ( ia < na_u )
+     if ( atom_type(ia+1) == TYP_BUFFER ) then
+        i = ia + 1
+        do while ( atom_type(i) == TYP_BUFFER )
+           i = i + 1
+        end do
+        call out_REGION(ia,i-ia-1,'Buffer','/')
+     end if
      printed_elec = .false.
-     do i = 1 , nElecs
+     do i = 1 , N_Elec
         if ( ia + 1 == Elecs(i)%idx_na ) then
            call out_REGION(ia,TotUsedAtoms(Elecs(i)), &
                 trim(name(Elecs(i)))//' electrode','#')
@@ -49,8 +53,6 @@ subroutine ts_show_regions(ucell,na_u,xa,naBufL, &
         end if
      end if
   end do
-
-  call out_REGION(ia,naBufR,'Right buffer','/')
 
   write(*,*)
 
@@ -77,6 +79,7 @@ contains
        end if
     end do
     write(*,'(a)') repeat(marker,46)
+
   end subroutine out_REGION
 
 end subroutine ts_show_regions

@@ -102,13 +102,12 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif 
-    use parallel, only: IONode, Node
+    use parallel, only: IONode
 
     use m_ts_electype
     use m_ts_options, only : IsVolt
     use m_ts_options, only : Elecs
-    use m_ts_options, only : na_BufL, no_BufL
-    use m_ts_options, only : na_BufR, no_BufR
+    use m_ts_method
 !    use m_ts_options, only : monitor_list, iu_MON, N_mon
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
@@ -135,12 +134,11 @@ contains
 ! **********************
     type(OrbitalDistribution) :: dit
     ! Temporary arrays for knowing the electrode size
-    integer :: i
     logical :: bool
     integer :: no_u_TS
 
     ! Number of orbitals in TranSIESTA
-    no_u_TS = nrows_g(sparse_pattern) - no_BufL - no_BufR
+    no_u_TS = nrows_g(sparse_pattern) - no_Buf
 
     ! Do a crude check of the sizes
     if ( no_u_TS <= sum(TotUsedOrbs(Elecs)) ) then
@@ -289,7 +287,7 @@ contains
        Elecs, &
        ts_sp)
 
-    use parallel, only : IONode, Node
+    use parallel, only : IONode
 #ifdef MPI
     use m_glob_sparse
     use mpi_siesta
@@ -345,7 +343,6 @@ contains
     ! Loop-counters
     integer :: j ,io, jo, ind
     integer :: iot, jot
-    integer :: no_u_LC
     logical :: UseBulk
 
     ! Initialize
@@ -412,7 +409,7 @@ contains
     ! We know they will do NOTHING! :)
     do io = 1 , no_u
 
-       iot = get_orb_type(io)
+       iot = orb_type(io)
        if ( iot == TYP_BUFFER ) cycle
 
        ! Loop number of entries in the row...
@@ -426,7 +423,7 @@ contains
 
           ! If we are in the buffer region, cycle (l_HS(ind) =.false. already)
           ! note, that we have already *checked* ic
-          jot = get_orb_type(jo)
+          jot = orb_type(jo)
           if ( jot == TYP_BUFFER ) cycle
 
           if ( iot > 0 ) then
@@ -517,7 +514,7 @@ contains
     logical :: UseBulk, DM_CrossTerms
 
     ! Loop-counters
-    integer :: j ,io, ic,jc, ind
+    integer :: io, ic, ind
     integer :: ict, jct
     
     ! Logical for determining the region
@@ -546,7 +543,7 @@ contains
        ic = index_local_to_global(dit,io,Node)
 
        ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-       ict = get_orb_type(ic)
+       ict = orb_type(ic)
        if ( ict == TYP_BUFFER ) cycle
 
        ! Loop the index of the pointer array
@@ -554,7 +551,7 @@ contains
 
           ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
           ! note, that we have already *checked* ic
-          jct = get_orb_type(l_col(ind))
+          jct = orb_type(l_col(ind))
           if ( jct == TYP_BUFFER ) cycle
 
           if ( ict > 0 ) then
@@ -585,7 +582,7 @@ contains
              !if ( jc == l_col(ind) ) then
                 ! The first super-cell is the home-unit-cell
                 ! hence it means a direct interaction in the unit-cell
-                !print *,get_orb_type((/ic,jc/))
+                !print *,orb_type((/ic,jc/))
                 !direct_LR = .true.
              !end if
           else if ( UseBulk ) then
@@ -729,19 +726,24 @@ contains
 
   end subroutine ts_Sparsity_Subset_pointer
 
-  subroutine ts_Optimize(sp,na_u,lasto,na_L,na_R, xa, algorithm)
+  subroutine ts_Optimize(sp,N_Elec, Elecs,na_u,lasto,xa, algorithm)
     ! We return the pivoting indexes for the atoms
     use class_Sparsity
     use alloc, only : re_alloc, de_alloc
     use parallel, only : IONode
+    use m_ts_tdir, only : ts_tdir
+    use m_ts_method
+    use m_ts_electype
+
     use m_bandwidth
     ! This sparsity pattern must be a full one
     type(Sparsity), intent(in out) :: sp
+    ! Electrodes
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
     ! number of atoms in the cell, also the last orbitals of each
     ! atom.
     integer, intent(in) :: na_u, lasto(0:na_u)
-    ! The atoms which need not be accounted for (na_BufL/R + na_L/R)
-    integer, intent(in) :: na_L, na_R
     ! The atomic coordinates
     ! This means that we can sort against the z-level by assigning 
     ! priority of atoms.
@@ -756,41 +758,63 @@ contains
     integer, pointer :: l_col(:), ncol(:), tmp(:)
 
     integer :: ptr
-    integer :: io, ia, iac, co1, co2
+    integer :: na_b, nrg
+    integer :: io, ia, iab, iab2, iac, co1, co2
+    integer :: in_elec1, in_elec2, N_buff
+    integer :: afrom, ato
 
     ! Retrieve the lists
-    call attach(sp,list_col=l_col,n_col=ncol)
+    call attach(sp,list_col=l_col,n_col=ncol,nrows_g=nrg)
 
     nullify(a_mm,R,tmp,a_priority)
-    call re_alloc(a_mm,1,na_u,1,na_u)
-    call re_alloc(R,1,na_u)
+    na_b = na_u - na_Buf - sum(TotUsedAtoms(Elecs(:))) + N_Elec
+    call re_alloc(a_mm,1,na_b,1,na_b)
+    call re_alloc(R,1,na_b)
     call re_alloc(tmp,1,maxval(ncol))
-    call re_alloc(a_priority,1,na_u)
+    call re_alloc(a_priority,1,na_b)
 
     ! First we create the priority array
     ! We assign an integer that has an arbitrary range 
     ! dependent on the size of the system
     ! A high-z gets a high priority
+    iab = 0
+    in_elec1 = TYP_DEVICE
     do ia = 1 , na_u
        ! notice that it is reversed
-       a_priority(ia) = nint(xa(3,ia) * 10000._dp)
+       if ( a_isBuffer(ia) ) cycle ! the buffers don't matter
+       ! check whether we have a new electrode
+       call step_ia(iab,ia,in_elec1)
+       if ( 1 <= ts_tdir .and. ts_tdir <= 3 ) then
+          a_priority(iab) = nint(xa(ts_tdir,ia) * 10000._dp)
+       else
+          a_priority(iab) = 0
+       end if
     end do
 
     ! Initialize the connections
     ! Notice that we build the matrix from backwards
     ! as we need to do the reversed Cuthill-Mckee algorithm
     a_mm(:,:) = 0
-    a_mm(na_u,na_u) = 1
+    a_mm(na_b,na_b) = 1
+    iab = 0
+    in_elec1 = TYP_DEVICE
     do ia = 1 , na_u - 1
+       if ( a_isBuffer(ia) ) cycle
+       call step_ia(iab,ia,in_elec1)
+
        ! Of course the atom connects to itself
-       a_mm(ia,ia) = 1
+       a_mm(iab,iab) = 1
 
        ! The current atoms orbitals
        co1 = lasto(ia-1) + 1
        co2 = lasto(ia) - co1
 
+       iab2 = iab
+       in_elec2 = in_elec1
        do iac = ia + 1 , na_u
-          
+          if ( a_isBuffer(iac) ) cycle
+          call step_ia(iab2,iac,in_elec2)
+
           ! search for connections
           connection: do io = lasto(iac-1) + 1 , lasto(iac)
              if ( ncol(io) == 0 ) cycle
@@ -802,8 +826,8 @@ contains
              if ( any(tmp(1:ncol(io)) <= co2) ) then
                 ! Create the connection to the other atoms
                 ! here we do the reverse notation
-                a_mm(ia,iac) = 1
-                a_mm(iac,ia) = 1
+                a_mm(iab,iab2) = 1
+                a_mm(iab2,iab) = 1
                 exit connection
              end if
           end do connection
@@ -822,18 +846,70 @@ contains
     !   end do
     !end if
 
-    call BandWidth_pivoting(algorithm, na_u, a_mm, R, &
-         na_L = na_L, na_R = na_R, priority = a_priority )
+    call BandWidth_pivoting(algorithm, na_b, a_mm, R, &
+         priority = a_priority )
          
     if ( IONode ) then
        write(*,'(a)') 'transiesta: Tri-diagonal blocks can be &
             &optimized by the following pivoting'
 
        write(*,'(t5,a4,tr2,a2,tr2,a4)') 'From','->','To'
-       do ia = 1 , na_u
-          if ( ia /= R(ia) ) then
-             write(*,'(t5,i4,tr2,a2,tr2,i4)') R(ia),'->',ia
+       iab = 0
+       iab2 = 0
+       in_elec1 = TYP_DEVICE
+       in_elec2 = TYP_DEVICE
+       N_buff = 0
+       ia = 0
+       do while ( ia < na_u )
+          ia = ia + 1
+
+          ! we do not consider buffer atoms
+          if ( a_isBuffer(ia) ) cycle
+
+          ! step the R(...) counter according to the step
+          call step_ia(iab,ia,in_elec1)
+
+          ! in case no pivoting is required
+          if ( iab == R(iab) ) cycle
+
+          ! Calculate the atom offset due to buffer atoms
+          afrom = R(iab) + atom_offset(R(iab))
+          ! add the electrode offsets
+          iab2 = offset(N_Elec,Elecs,afrom)
+          if ( iab2 > 0 ) afrom = afrom + iab2 - 1
+          if ( offset(N_Elec,Elecs,afrom) > iab2 ) then
+             call die('We cant handle your system yet.')
           end if
+
+          if ( in_elec1 > TYP_DEVICE ) then
+             do iac = 0 , TotUsedAtoms(Elecs(in_elec1)) - 1
+                ! Calculate the atom offset due to buffer atoms
+                ato   = iab + iac + atom_offset( iab + iac )
+                ! add the electrode offsets
+                iab2 = offset(N_Elec,Elecs,ato)
+                if ( iab2 > 0 ) ato = ato + iab2 - 1
+                if ( offset(N_Elec,Elecs,ato) > iab2 ) then
+                   call die('We cant handle your system yet.')
+                end if
+                write(*,'(t5,i4,tr2,a2,tr2,i4,a)') &
+                     afrom , '->', ato ,' *'
+                ia = ia + 1
+                afrom = afrom + 1
+             end do
+          else
+             ! Calculate the atom offset due to buffer atoms
+             ato   = iab    + atom_offset(  iab )
+             ! add the electrode offsets
+             iab2 = offset(N_Elec,Elecs,ato)
+             if ( iab2 > 0 ) ato = ato + iab2 - 1
+             if ( offset(N_Elec,Elecs,ato) > iab2 ) then
+                call die('We cant handle your system yet.')
+             end if
+             write(*,'(t5,i4,tr2,a2,tr2,i4)') &
+                  afrom , '->', ato
+          end if
+!             write(*,'(t5,i4,tr2,a2,tr2,i4)') R(iab)+ia-iab,'->',ia
+
        end do
        
        ! this prints out the connection matrix, it is not
@@ -848,6 +924,35 @@ contains
     call de_alloc(a_mm)
     call de_alloc(R)
     call de_alloc(a_priority)
+
+  contains
+
+    pure function offset(N_Elec,Elecs,ia)
+      integer, intent(in) :: N_Elec
+      type(Elec), intent(in) :: Elecs(N_Elec)
+      integer, intent(in) :: ia
+      integer :: offset
+      offset = sum(TotUsedAtoms(Elecs(:)), MASK=Elecs(:)%idx_na < ia )
+    end function offset
+
+    subroutine step_ia(iab,ia,in_elec)
+      integer, intent(inout) :: iab
+      integer, intent(in) :: ia
+      integer, intent(inout) :: in_elec
+      integer :: at
+      at = atom_type(ia)
+      if ( at > 0 ) then
+         if ( at == in_elec ) then
+            ! do nothing
+         else
+            in_elec = at
+            iab = iab + 1
+         end if
+      else
+         in_elec = TYP_DEVICE
+         iab = iab + 1
+      end if
+    end subroutine step_ia
 
   end subroutine ts_Optimize
 

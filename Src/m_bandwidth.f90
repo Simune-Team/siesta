@@ -38,37 +38,42 @@ module m_bandwidth
 
 contains
 
-  subroutine BandWidth_pivoting(method,na_u,a_mm,R,na_L,na_R,priority)
+  subroutine BandWidth_pivoting(method,na_u,a_mm,R,priority)
     integer, intent(in) :: method, na_u
     integer, intent(inout) :: a_mm(na_u,na_u)
     integer, intent(out) :: R(na_u)
-    integer, intent(in), optional :: na_L, na_R
     integer, intent(inout), optional :: priority(na_u)
-    integer :: i, ia, iac, lL, lR, tmp, band_algo
-
-    lL = 0
-    if ( present(na_L) ) lL = na_L
-    lR = 0
-    if ( present(na_R) ) lR = na_R
+    integer :: i, ia, iac, tmp, band_algo
 
     band_algo = method
 
     if ( method >= BW_REVERSE ) then
        band_algo = method - BW_REVERSE
-       ! Reversing means that the ending atoms are switched
-       if ( present(na_L) ) lR = na_L
-       if ( present(na_R) ) lL = na_R
 
        ! We need to rotate the a_mm array by 180 degrees.
        ! This will enable us to do the reverse algorithm without 
        ! altering the routines
-       a_mm = CSHIFT(a_mm,SHIFT=na_u,DIM=1)
-       a_mm = CSHIFT(a_mm,SHIFT=na_u,DIM=2)
+       do i = 1 , na_u
+          do ia = 1 , na_u / 2
+             tmp = a_mm(ia,i)
+             a_mm(ia,i) = a_mm(na_u-ia+1,i)
+             a_mm(na_u-ia+1,i) = tmp
+          end do
+       end do
+       do ia = 1 , na_u / 2
+          do i = 1 , na_u
+             tmp = a_mm(i,ia)
+             a_mm(i,ia) = a_mm(i,na_u-ia+1)
+             a_mm(i,na_u-ia+1) = tmp
+          end do
+       end do
 
        ! Reverse the priority
        if ( present(priority) ) then
-          do i = 1 , na_u
+          do i = 1 , na_u / 2
+             tmp = priority(na_u+1-i)
              priority(na_u+1-i) = priority(i)
+             priority(i) = tmp
           end do
        end if
 
@@ -81,11 +86,11 @@ contains
 
     select case ( band_algo )
     case ( BW_CUTHILL_MCKEE )
-       call Cuthill_Mckee(na_u,lL,lR,a_mm,R)
+       call Cuthill_Mckee(na_u,a_mm,R)
     case ( BW_CUTHILL_MCKEE_Z_PRIORITY )
-       call Cuthill_Mckee(na_u,lL,lR,a_mm,R, priority = priority)
+       call Cuthill_Mckee(na_u,a_mm,R, priority = priority)
     case ( BW_PAPIOR )
-       call Papior(na_u,lL,lR,a_mm,R, priority = priority)
+       call Papior(na_u,a_mm,R, priority = priority)
     case default
        call die('Could not recognize the bandwidth reduction algorithm')
     end select
@@ -93,15 +98,15 @@ contains
     if ( method >= BW_REVERSE ) then
 
        ! Revert to correct atomic indices
-       do ia = lL + 1 , na_u - lR
+       do ia = 1 , na_u
           R(ia) = na_u + 1 - R(ia)
        end do
 
        ! transfer to the reversed Cuthill-Mckee algorithm
        ! We could do this and the above in one go, but that would require a 
        ! correction if mod(io,2) == 1
-       i = na_u - lL - lR
-       do ia = lL + 1 , lL + i / 2
+       i = na_u
+       do ia = 1 , i / 2
           iac = R(ia)
           R(ia) = R(na_u+1-ia)
           R(na_u+1-ia) = iac
@@ -111,30 +116,23 @@ contains
     
   end subroutine BandWidth_pivoting
 
-  subroutine Cuthill_Mckee(na_u,na_L,na_R,a_mm,R,priority)
+  subroutine Cuthill_Mckee(na_u,a_mm,R,priority)
     ! We return the pivoting indexes for the atoms
     use parallel, only : IONode
     use alloc
     ! number of atoms in the cell, also the last orbitals of each
     ! atom.
     integer, intent(in) :: na_u
-    ! The atoms which need not be accounted for (na_BufL/R + na_L/R)
-    integer, intent(in) :: na_L, na_R
     integer, intent(in) :: a_mm(na_u,na_u)
     integer, intent(inout) :: R(na_u)
     integer, intent(in), optional :: priority(na_u)
 
     integer, pointer :: Q(:)
-    integer :: na_S, na_E, na
     integer :: ia, nQ, iQ, i_ca, ca
     integer :: degree
 
-    na = na_u - na_L - na_R
-    na_S = na_L + 1
-    na_E = na_u - na_R
-
     nullify(Q)
-    call re_alloc(Q,1,na)
+    call re_alloc(Q,1,na_u)
 
     ! we can now perform the Cuthill-Mckee algorithm
     ! Notice that we force the last atom in the electrode
@@ -143,13 +141,13 @@ contains
     ! with the electrode)
 
     ! Prepare counters for the algorithm
-    i_ca = na_L
+    i_ca = 0
 
     ! the counter for the number of saved atoms
     ca = 0
 
     ! start the algorithm 
-    do while ( ca < na )
+    do while ( ca < na_u )
 
        ! initialize the current node
        ! remark that the first iteration fixes
@@ -160,7 +158,7 @@ contains
           ! In case we want a pure Cuthill-Mckee
           ! we shall not construct the queue the first
           ! time
-          call add_Queue(na_u,a_mm,na_S,na_E,i_ca,Q,nQ, &
+          call add_Queue(na_u,a_mm,i_ca,Q,nQ, &
                priority=priority)
        end if
 
@@ -173,10 +171,10 @@ contains
           if ( ca == 0 ) then
              ! Force the addition to the result list
              ca = ca + 1
-             R(na_L+ca) = Q(iQ)
-             call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ, &
+             R(ca) = Q(iQ)
+             call add_Queue(na_u,a_mm,Q(iQ),Q,nQ, &
                   priority=priority)
-          else if ( any( R(na_L+1:na_L+ca) == Q(iQ) ) ) then
+          else if ( any( R(1:ca) == Q(iQ) ) ) then
              ! Just delete the entry (we do not need to worry about
              ! it anymore)
              Q(iQ:nQ-1) = Q(iQ+1:nQ)
@@ -185,34 +183,34 @@ contains
           else
              ! We are allowed to add the queued item to the result list
              ca = ca + 1
-             R(na_L+ca) = Q(iQ)
+             R(ca) = Q(iQ)
              ! update the queue-list
-             call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ, &
+             call add_Queue(na_u,a_mm,Q(iQ),Q,nQ, &
                   priority=priority)
           end if
        end do
 
        ! Do a quick exit if possible
-       if ( ca == na ) cycle
+       if ( ca == na_u ) cycle
 
        ! From here on it is the actual Cuthill-Mckee algorithm
        ! Now we need to select the one with the lowest degree
 
        i_ca = 0
        degree = huge(1)
-       do ia = na_S , na_E
+       do ia = 1 , na_u
           iQ = 0
 
           if ( ca == 0 ) then
              ! If no items has been added
              iQ = 1
-          else if ( .not. any( R(na_L+1:na_L+ca) == ia ) ) then
+          else if ( .not. any( R(1:ca) == ia ) ) then
              ! Check it hasn't been processed 
              iQ = 1
           end if
 
           if ( iQ == 1 ) then
-             iQ = sum(a_mm(na_S:na_E,ia))
+             iQ = sum(a_mm(:,ia))
              if ( degree > iQ ) then
                 
                 ! We save this as the new node
@@ -241,10 +239,10 @@ contains
     
   contains 
     
-    subroutine add_Queue(na_u,a_mm,na_S,na_E,ia,Q,nQ, priority)
+    subroutine add_Queue(na_u,a_mm,ia,Q,nQ, priority)
       integer, intent(in) :: na_u, a_mm(na_u,na_u)
-      integer, intent(in) :: na_S, na_E, ia
-      integer, intent(inout) :: Q(na_E - na_S + 1)
+      integer, intent(in) :: ia
+      integer, intent(inout) :: Q(na_u)
       integer, intent(inout) :: nQ
       integer, intent(in), optional :: priority(na_u)
 
@@ -254,7 +252,7 @@ contains
 
       ! We prepend to the queue
       iQ = nQ
-      do i = na_S , na_E
+      do i = 1 , na_u
          ! if they are connected and not the same atom
          if ( a_mm(i,ia) == 1 .and. i /= ia ) then
             append = .false.
@@ -268,7 +266,7 @@ contains
                ! save its degree
                iQ = iQ + 1 
                Q(iQ) = i
-               degree(iQ) = sum(a_mm(na_S:na_E,i))
+               degree(iQ) = sum(a_mm(:,i))
             end if
          end if
       end do
@@ -305,31 +303,24 @@ contains
 
   end subroutine Cuthill_Mckee
 
-  subroutine Papior(na_u,na_L,na_R,a_mm,R,priority)
+  subroutine Papior(na_u,a_mm,R,priority)
     ! We return the pivoting indexes for the atoms
     use parallel, only : IONode
     use alloc
     ! number of atoms in the cell, also the last orbitals of each
     ! atom.
     integer, intent(in) :: na_u
-    ! The atoms which need not be accounted for (na_BufL/R + na_L/R)
-    integer, intent(in) :: na_L, na_R
     integer, intent(in) :: a_mm(na_u,na_u)
     integer, intent(inout) :: R(na_u)
     integer, intent(in) :: priority(na_u)
 
     integer, pointer :: Q(:), pri_idx(:)
-    integer :: na_S, na_E, na
     integer :: ia, nQ, iQ, i_ca, ca, ja
     integer :: degree
 
-    na = na_u - na_L - na_R
-    na_S = na_L + 1
-    na_E = na_u - na_R
-
     nullify(Q,pri_idx)
-    call re_alloc(Q,1,na)
-    call re_alloc(pri_idx,1,na)
+    call re_alloc(Q,1,na_u)
+    call re_alloc(pri_idx,1,na_u)
 
     ! Notice that we force the last atom in the electrode
     ! to be in the result array (thus we force
@@ -337,13 +328,13 @@ contains
     ! with the electrode)
 
     ! Prepare counters for the algorithm
-    i_ca = na_L
+    i_ca = 0
 
     ! the counter for the number of saved atoms
     ca = 0
 
     ! start the algorithm 
-    do while ( ca < na )
+    do while ( ca < na_u )
 
        ! initialize the current node
        ! remark that the first iteration fixes
@@ -354,7 +345,7 @@ contains
           ! In case we want a pure Papior
           ! we shall not construct the queue the first
           ! time
-          call add_Queue(na_u,a_mm,na_S,na_E,i_ca,Q,nQ, &
+          call add_Queue(na_u,a_mm,i_ca,Q,nQ, &
                priority=priority)
        end if
 
@@ -367,10 +358,10 @@ contains
           if ( ca == 0 ) then
              ! Force the addition to the result list
              ca = ca + 1
-             R(na_L+ca) = Q(iQ)
-             call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ, &
+             R(ca) = Q(iQ)
+             call add_Queue(na_u,a_mm,Q(iQ),Q,nQ, &
                   priority=priority)
-          else if ( any( R(na_L+1:na_L+ca) == Q(iQ) ) ) then
+          else if ( any( R(1:ca) == Q(iQ) ) ) then
              ! Just delete the entry (we do not need to worry about
              ! it anymore)
              Q(iQ:nQ-1) = Q(iQ+1:nQ)
@@ -379,34 +370,34 @@ contains
           else
              ! We are allowed to add the queued item to the result list
              ca = ca + 1
-             R(na_L+ca) = Q(iQ)
+             R(ca) = Q(iQ)
              ! update the queue-list
-             call add_Queue(na_u,a_mm,na_S,na_E,Q(iQ),Q,nQ, &
+             call add_Queue(na_u,a_mm,Q(iQ),Q,nQ, &
                   priority=priority)
           end if
        end do
 
        ! Do a quick exit if possible
-       if ( ca == na ) cycle
+       if ( ca == na_u ) cycle
 
        ! From here on it is the actual Papior algorithm
        ! Now we need to select the one with the lowest degree
 
        i_ca = 0
        degree = huge(1)
-       do ia = na_S , na_E
+       do ia = 1 , na_u
           iQ = 0
 
           if ( ca == 0 ) then
              ! If no items has been added
              iQ = 1
-          else if ( .not. any( R(na_L+1:na_L+ca) == ia ) ) then
+          else if ( .not. any( R(1:ca) == ia ) ) then
              ! Check it hasn't been processed 
              iQ = 1
           end if
 
           if ( iQ == 1 ) then
-             do ja = ia , na_E ! from i ensures that we get at least a zero
+             do ja = ia , na_u ! from i ensures that we get at least a zero
                 if ( a_mm(ja,ia) == 1 ) iQ = ia - ja
              end do
              if ( degree > iQ ) then
@@ -442,10 +433,10 @@ contains
     ! We take that the degree is the distance from the current 
     ! segment to the farthest segment, and then we compare that the
     ! farthest segment is the smallest
-    subroutine add_Queue(na_u,a_mm,na_S,na_E,ia,Q,nQ, priority)
+    subroutine add_Queue(na_u,a_mm,ia,Q,nQ, priority)
       integer, intent(in) :: na_u, a_mm(na_u,na_u)
-      integer, intent(in) :: na_S, na_E, ia
-      integer, intent(inout) :: Q(na_E - na_S + 1)
+      integer, intent(in) :: ia
+      integer, intent(inout) :: Q(na_u)
       integer, intent(inout) :: nQ
       integer, intent(in) :: priority(na_u)
 
@@ -455,7 +446,7 @@ contains
 
       ! We prepend to the queue
       iQ = nQ
-      do i = na_S , na_E
+      do i = 1 , na_u
          ! if they are connected and not the same atom
          if ( a_mm(i,ia) == 1 .and. i /= ia ) then
             append = .false.
@@ -469,7 +460,7 @@ contains
                ! save its degree
                iQ = iQ + 1 
                Q(iQ) = i
-               do j = i , na_E ! from i ensures that we get at least a zero
+               do j = i , na_u ! from i ensures that we get at least a zero
                   if ( a_mm(j,i) == 1 ) degree(iQ) = i - j
                end do
             end if
