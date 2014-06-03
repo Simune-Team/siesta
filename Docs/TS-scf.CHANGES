@@ -1,4 +1,21 @@
 ----------------------------------------------------
+June 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-143
+Enabled bandwidth reduction of the transiesta method
+
+* The bandwidth reduction of the scattering region has 
+  been re-enabled.
+  It still does not consider the electrodes as that
+  poses some logistic problems in the code.
+  I suspect that the electrodes are really necessary
+  when dealing with N_Elec > 2.
+
+modified:
+  Src/m_bandwidth.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/state_init.F
+
+----------------------------------------------------
 June 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-142
 Bugfix for ts_show_regions
 

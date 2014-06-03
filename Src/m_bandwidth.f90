@@ -17,7 +17,7 @@
 
 ! Currently we have implemented 3 different algorithms
 !  1) Cuthill-Mckee
-!  2) Cuthill-Mckee with z-position priority
+!  2) Cuthill-Mckee with transport direction priority
 !  3) Papior algorithm (intuitive algoritm)
 
 ! In all cases the reverse algorithm (reduces fill-in) can be 
@@ -30,7 +30,7 @@ module m_bandwidth
   public 
 
   integer, parameter :: BW_CUTHILL_MCKEE = 1
-  integer, parameter :: BW_CUTHILL_MCKEE_Z_PRIORITY = 2
+  integer, parameter :: BW_CUTHILL_MCKEE_PRIORITY = 2
   integer, parameter :: BW_PAPIOR = 3
 
   ! This integer is added to create the reverse algorithm
@@ -87,7 +87,7 @@ contains
     select case ( band_algo )
     case ( BW_CUTHILL_MCKEE )
        call Cuthill_Mckee(na_u,a_mm,R)
-    case ( BW_CUTHILL_MCKEE_Z_PRIORITY )
+    case ( BW_CUTHILL_MCKEE_PRIORITY )
        call Cuthill_Mckee(na_u,a_mm,R, priority = priority)
     case ( BW_PAPIOR )
        call Papior(na_u,a_mm,R, priority = priority)
@@ -105,8 +105,7 @@ contains
        ! transfer to the reversed Cuthill-Mckee algorithm
        ! We could do this and the above in one go, but that would require a 
        ! correction if mod(io,2) == 1
-       i = na_u
-       do ia = 1 , i / 2
+       do ia = 1 , na_u / 2
           iac = R(ia)
           R(ia) = R(na_u+1-ia)
           R(na_u+1-ia) = iac
@@ -131,6 +130,7 @@ contains
     integer :: ia, nQ, iQ, i_ca, ca
     integer :: degree
 
+    ! 1. initialize queue array
     nullify(Q)
     call re_alloc(Q,1,na_u)
 
@@ -173,7 +173,7 @@ contains
              ca = ca + 1
              R(ca) = Q(iQ)
              call add_Queue(na_u,a_mm,Q(iQ),Q,nQ, &
-                  priority=priority)
+                  priority = priority)
           else if ( any( R(1:ca) == Q(iQ) ) ) then
              ! Just delete the entry (we do not need to worry about
              ! it anymore)
@@ -196,11 +196,13 @@ contains
        ! From here on it is the actual Cuthill-Mckee algorithm
        ! Now we need to select the one with the lowest degree
 
+       ! 2. select lowest degree
        i_ca = 0
        degree = huge(1)
        do ia = 1 , na_u
-          iQ = 0
 
+          ! check that it has not been added to the queue
+          iQ = 0
           if ( ca == 0 ) then
              ! If no items has been added
              iQ = 1
@@ -210,6 +212,7 @@ contains
           end if
 
           if ( iQ == 1 ) then
+             ! calculate the degree of the index
              iQ = sum(a_mm(:,ia))
              if ( degree > iQ ) then
                 
@@ -250,34 +253,39 @@ contains
       integer :: degree(nQ+1:na_u)
       logical :: append, switch
 
+      ! 3. extend the queue for the current parent (ia)
       ! We prepend to the queue
       iQ = nQ
       do i = 1 , na_u
-         ! if they are connected and not the same atom
-         if ( a_mm(i,ia) == 1 .and. i /= ia ) then
-            append = .false.
-            if ( nQ == 0 ) then
-               append = .true.
-            else if ( .not. any( Q(1:nQ) == i ) ) then
-               append = .true.
-            end if
-            if ( append ) then
-               ! We have a connected node
-               ! save its degree
-               iQ = iQ + 1 
-               Q(iQ) = i
-               degree(iQ) = sum(a_mm(:,i))
-            end if
+         ! check that it is not the same atom
+         if ( i /= ia ) cycle
+         ! check that it is connected to the parent
+         if ( a_mm(i,ia) /= 1 ) cycle
+
+         append = .false.
+         if ( nQ == 0 ) then
+            append = .true.
+         else if ( .not. any( Q(1:nQ) == i ) ) then
+            append = .true.
+         end if
+         if ( append ) then
+            ! We have a connected node
+            ! save its degree
+            iQ = iQ + 1 
+            Q(iQ) = i
+            degree(iQ) = sum(a_mm(:,i))
          end if
       end do
-      ! capture the connected nodes
+
+      ! capture the total connected nodes
       lnQ = iQ
 
       ! Sort the queued items (original)
-      do i = nQ + 1 , lnQ
+      do i = nQ + 1 , lnQ - 1
          ! we sort by the first find the one to switch with
          do ii = lnQ , i + 1 , -1
-            switch = (degree(ii) < degree(i))
+            ! we switch to have the lowest degree first
+            switch = degree(ii) < degree(i)
 
             if ( present(priority) ) then
                if ( degree(ii) == degree(i) ) &

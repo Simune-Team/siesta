@@ -347,8 +347,8 @@
          ! revisit the TSAnalyzeSort utility for updating the correct
          ! search region.
          if (IONode) write(*,'(a)')'transiesta: Central region...'
-!         call ts_Optimize(ts_sp_uc,N_Elec, Elecs, na_u, lasto, xa, 
-!     &        TS_bandwidth_algo)
+         call ts_Optimize(ts_sp_uc,N_Elec, Elecs, na_u, lasto, xa, 
+     &        TS_bandwidth_algo)
 
          ! Bye also waits for all processors
          call bye('transiesta analyzation performed')

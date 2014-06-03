@@ -767,7 +767,11 @@ contains
     call attach(sp,list_col=l_col,n_col=ncol,nrows_g=nrg)
 
     nullify(a_mm,R,tmp,a_priority)
+#ifdef TS_PIVOT_ELEC
     na_b = na_u - na_Buf - sum(TotUsedAtoms(Elecs(:))) + N_Elec
+#else
+    na_b = na_u - na_Buf - sum(TotUsedAtoms(Elecs(:)))
+#endif
     call re_alloc(a_mm,1,na_b,1,na_b)
     call re_alloc(R,1,na_b)
     call re_alloc(tmp,1,maxval(ncol))
@@ -780,10 +784,10 @@ contains
     iab = 0
     in_elec1 = TYP_DEVICE
     do ia = 1 , na_u
-       ! notice that it is reversed
        if ( a_isBuffer(ia) ) cycle ! the buffers don't matter
        ! check whether we have a new electrode
        call step_ia(iab,ia,in_elec1)
+       if ( iab > na_b ) exit
        if ( 1 <= ts_tdir .and. ts_tdir <= 3 ) then
           a_priority(iab) = nint(xa(ts_tdir,ia) * 10000._dp)
        else
@@ -800,7 +804,11 @@ contains
     in_elec1 = TYP_DEVICE
     do ia = 1 , na_u - 1
        if ( a_isBuffer(ia) ) cycle
+       ! this will only step if the electrode is changed to another
+       ! electrode...
+       ! Hence, one element for each electrode
        call step_ia(iab,ia,in_elec1)
+       if ( iab > na_b ) exit
 
        ! Of course the atom connects to itself
        a_mm(iab,iab) = 1
@@ -814,13 +822,13 @@ contains
        do iac = ia + 1 , na_u
           if ( a_isBuffer(iac) ) cycle
           call step_ia(iab2,iac,in_elec2)
+          if ( iab2 > na_b ) exit
 
           ! search for connections
           connection: do io = lasto(iac-1) + 1 , lasto(iac)
              if ( ncol(io) == 0 ) cycle
              ! Retrieve the pointer
              ptr = list_ptr(sp,io)
-             tmp(ncol(io)+1:) = -1
              tmp(1:ncol(io)) = l_col(ptr+1:ptr+ncol(io)) - co1
              where ( tmp < 0 ) tmp = co2 + 1
              if ( any(tmp(1:ncol(io)) <= co2) ) then
@@ -839,91 +847,102 @@ contains
     ! deallocate unused array
     call de_alloc(tmp)
 
-    !if ( IONode ) then
-    !   do ia = 1 , na_u
-    !      write(*,'(i3,tr1)',advance='no') ia
-    !      write(*,'(1000(i0))') a_mm(ia,:)
-    !   end do
-    !end if
-
+    ! Calculate the pivoting...
     call BandWidth_pivoting(algorithm, na_b, a_mm, R, &
          priority = a_priority )
+
+    ! We do not need the priority any-more
+    call de_alloc(a_priority)
          
     if ( IONode ) then
+
+       ! Create the pivoting array
+       call re_alloc(tmp,1,na_b)
+#ifdef TS_PIVOT_ELEC
+       tmp(:)   = huge(1)
+#else
+       tmp(:)   = 0
+#endif
+       iab      = 0
+       in_elec1 = TYP_DEVICE
+       do ia = 1 , na_u
+          ! notice that it is reversed
+          if ( a_isBuffer(ia) ) cycle ! the buffers are not pivoted
+          ! check whether we have a new electrode
+          call step_ia(iab,ia,in_elec1)
+          if ( iab > na_b ) exit
+          ! This asserts that we point to the
+          ! first index of each electrode
+#ifdef TS_PIVOT_ELEC
+          tmp(iab) = min(tmp(iab),ia) 
+#else
+          tmp(iab) = max(tmp(iab),ia) 
+#endif
+       end do
+
+#ifdef TS_PIVOT_ELEC
+       ! We need to correct for the pivoting of the electrodes
+       ! Thus we need to check for entire electrode block
+       ! pivoting, remember that the entire electrode is defined
+       ! as 1 entity. This might not make sense, but is necessary
+       ! for the transiesta algorithm
+       iab = 0
+       in_elec1 = TYP_DEVICE
+       do ia = 1 , na_u
+          ! notice that it is reversed
+          if ( a_isBuffer(ia) ) cycle ! the buffers are never pivoted
+          ! check whether we have a new electrode
+          call step_ia(iab,ia,in_elec1)
+          if ( iab > na_b ) exit
+          ! if we are not in an electrode, simply skip...
+          if ( in_elec1 /= TYP_DEVICE ) cycle
+          
+          ! we are not pivoting the electrode! YUPPI
+          if ( R(iab) == iab ) cycle
+
+          ! we will pivot an electrode.. :(
+       end do
+#endif       
+
        write(*,'(a)') 'transiesta: Tri-diagonal blocks can be &
             &optimized by the following pivoting'
 
        write(*,'(t5,a4,tr2,a2,tr2,a4)') 'From','->','To'
+
        iab = 0
-       iab2 = 0
        in_elec1 = TYP_DEVICE
-       in_elec2 = TYP_DEVICE
-       N_buff = 0
-       ia = 0
-       do while ( ia < na_u )
-          ia = ia + 1
+       do ia = 1 , na_u
 
           ! we do not consider buffer atoms
           if ( a_isBuffer(ia) ) cycle
 
           ! step the R(...) counter according to the step
           call step_ia(iab,ia,in_elec1)
+          if ( iab > na_b ) exit
+#ifndef TS_PIVOT_ELEC
+          ! Skip any electrodes
+          if ( in_elec1 /= TYP_DEVICE ) cycle
+#endif
 
           ! in case no pivoting is required
           if ( iab == R(iab) ) cycle
-
-          ! Calculate the atom offset due to buffer atoms
-          afrom = R(iab) + atom_offset(R(iab))
-          ! add the electrode offsets
-          iab2 = offset(N_Elec,Elecs,afrom)
-          if ( iab2 > 0 ) afrom = afrom + iab2 - 1
-          if ( offset(N_Elec,Elecs,afrom) > iab2 ) then
-             call die('We cant handle your system yet.')
-          end if
-
-          if ( in_elec1 > TYP_DEVICE ) then
-             do iac = 0 , TotUsedAtoms(Elecs(in_elec1)) - 1
-                ! Calculate the atom offset due to buffer atoms
-                ato   = iab + iac + atom_offset( iab + iac )
-                ! add the electrode offsets
-                iab2 = offset(N_Elec,Elecs,ato)
-                if ( iab2 > 0 ) ato = ato + iab2 - 1
-                if ( offset(N_Elec,Elecs,ato) > iab2 ) then
-                   call die('We cant handle your system yet.')
-                end if
-                write(*,'(t5,i4,tr2,a2,tr2,i4,a)') &
-                     afrom , '->', ato ,' *'
-                ia = ia + 1
-                afrom = afrom + 1
-             end do
+          
+          if ( in_elec1 /= TYP_DEVICE ) then
+             write(*,'(t5,i4,tr2,a2,tr2,i4,a)') &
+                  tmp(R(iab)) , '->', tmp(iab) ,' *'
           else
-             ! Calculate the atom offset due to buffer atoms
-             ato   = iab    + atom_offset(  iab )
-             ! add the electrode offsets
-             iab2 = offset(N_Elec,Elecs,ato)
-             if ( iab2 > 0 ) ato = ato + iab2 - 1
-             if ( offset(N_Elec,Elecs,ato) > iab2 ) then
-                call die('We cant handle your system yet.')
-             end if
              write(*,'(t5,i4,tr2,a2,tr2,i4)') &
-                  afrom , '->', ato
+                  tmp(R(iab)) , '->', tmp(iab)
           end if
-!             write(*,'(t5,i4,tr2,a2,tr2,i4)') R(iab)+ia-iab,'->',ia
 
        end do
        
-       ! this prints out the connection matrix, it is not
-       ! needed, but can be useful for debugging purposes
-       !do ia = 1 , na_u
-       !   write(*,'(i3,tr1)',advance='no') ia
-       !   write(*,'(1000(i0))') a_mm(ia,:)
-       !end do
+       call de_alloc(tmp)
 
     end if
            
     call de_alloc(a_mm)
     call de_alloc(R)
-    call de_alloc(a_priority)
 
   contains
 
@@ -941,7 +960,8 @@ contains
       integer, intent(inout) :: in_elec
       integer :: at
       at = atom_type(ia)
-      if ( at > 0 ) then
+#ifdef TS_PIVOT_ELEC
+      if ( at > TYP_DEVICE ) then
          if ( at == in_elec ) then
             ! do nothing
          else
@@ -952,6 +972,20 @@ contains
          in_elec = TYP_DEVICE
          iab = iab + 1
       end if
+#else
+      if ( at > TYP_DEVICE ) then
+         ! we are in an electrode
+         if ( in_elec == TYP_DEVICE ) then
+            ! only once, increment it...
+            iab = iab + 1
+         end if
+      else if ( in_elec > TYP_DEVICE ) then
+         ! do nothing, just ensure no incrementing
+      else
+         iab = iab + 1
+      end if
+      in_elec = at
+#endif
     end subroutine step_ia
 
   end subroutine ts_Optimize

@@ -214,11 +214,12 @@ contains
              chars = chars(i+1:)
           end if
        end if
-       if ( leqi(chars,'cuthill-mckee') ) then
+       if ( leqi(chars,'cuthill-mckee') .or. &
+            leqi(chars,'cm') ) then
           TS_bandwidth_algo = TS_bandwidth_algo + BW_CUTHILL_MCKEE
-       else if ( leqi(chars,'cuthill-mckee-z-priority') .or. &
-            leqi(chars,'cuthill-mckee-z') ) then
-          TS_bandwidth_algo = TS_bandwidth_algo + BW_CUTHILL_MCKEE_Z_PRIORITY
+       else if ( leqi(chars,'cuthill-mckee-priority') .or. &
+            leqi(chars,'cm-p') ) then
+          TS_bandwidth_algo = TS_bandwidth_algo + BW_CUTHILL_MCKEE_PRIORITY
        else if ( leqi(chars,'papior') ) then
           TS_bandwidth_algo = TS_bandwidth_algo + BW_PAPIOR
        else
@@ -545,8 +546,8 @@ contains
           select case ( i ) 
           case ( BW_CUTHILL_MCKEE ) 
              chars = trim(chars)//'Cuthill-Mckee'
-          case ( BW_CUTHILL_MCKEE_Z_PRIORITY ) 
-             chars = trim(chars)//'Cuthill-Mckee with z-priority'
+          case ( BW_CUTHILL_MCKEE_PRIORITY ) 
+             chars = trim(chars)//'Cuthill-Mckee with T-dir priority'
           case ( BW_PAPIOR ) 
              chars = trim(chars)//'Papior'
           case default 
