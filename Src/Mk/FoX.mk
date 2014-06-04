@@ -2,7 +2,7 @@
 #
 ifeq ($(strip $(FOX_ROOT)),)
 # Compile in source...
-FOX_OBJ_ROOT=$(OBJDIR)/FoX
+FOX_OBJ_ROOT=$(MAIN_OBJDIR)/FoX
 
 # FoX whatnot
 #

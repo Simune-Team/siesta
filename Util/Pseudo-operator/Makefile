@@ -8,18 +8,38 @@ default: pseudooperator
 #
 OBJDIR=Obj
 VPATH:=$(shell pwd)/../../Src
-include ../../$(OBJDIR)/arch.make
-include ../../$(OBJDIR)/Mk/FoX.mk
+MAIN_OBJDIR=../../$(OBJDIR)
+include $(MAIN_OBJDIR)/arch.make
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)/nc-pseudo # To pick up mod files
-INCFLAGS:=$(INCFLAGS) -I../../$(OBJDIR)/xmlparser # To pick up mod files
+INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/nc-pseudo # To pick up mod files
 #
-LIBS= ../../$(OBJDIR)/libncps.a $(FOX_LIBS) ../../$(OBJDIR)/libxmlparser.a
-
+# If we have compiled libncps.a using XMLF90 instead of FoX,
+# use the appropriate library
+#
+# First, check whether -DXMLF90 is already an option in the arch.make
+# 
+ifneq (,$(findstring DXMLF90,$(FPPFLAGS)))
+ LIBS= $(MAIN_OBJDIR)/libncps.a $(MAIN_OBJDIR)/libxmlparser.a
+else
+#
+# Check whether -DXMLF90 was added on-the-fly while compiling
+# libncps.a. This happens if FoX is not available as an external
+# library (which would include the sax parser), so we fall back to
+# using XMLF90 in the Siesta distribution
+#
+ifeq ($(strip $(FOX_ROOT)),)
+# FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-DXMLF90
+# INCFLAGS:= $(INCFLAGS) -I$(MAIN_OBJDIR)/xmlparser
+ LIBS= $(MAIN_OBJDIR)/libncps.a $(MAIN_OBJDIR)/libxmlparser.a
+else
+ include $(MAIN_OBJDIR)/Mk/FoX.mk
+ LIBS= $(MAIN_OBJDIR)/libncps.a $(FOX_LIBS) 
+endif
+endif
 #
 # Note that machine-specific files are now in top Src directory.
 #

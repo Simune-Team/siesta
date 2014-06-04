@@ -18,7 +18,7 @@
 .SUFFIXES: .f .F .o .a  .f90 .F90 .c
 #
 VPATH=.
-OBJDIR=.
+MAIN_OBJDIR=.
 #
 default: what siesta #  fsiesta_pipes.o libSiestaForces.a
 #
@@ -177,7 +177,7 @@ $(XMLPARSER):
 NCPS=libncps.a
 $(NCPS): 
 	(cd nc-pseudo ; $(MAKE) VPATH="$(VPATH)/nc-pseudo" \
-	OBJDIR="$(OBJDIR)" \
+	MAIN_OBJDIR="$(MAIN_OBJDIR)" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 #--------------------------------------------------------------

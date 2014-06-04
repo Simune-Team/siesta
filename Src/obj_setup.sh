@@ -6,7 +6,11 @@
 # as reference when copying files.
 # 
 #
-objdir=$(pwd)
+objdir=$(
+cd -P -- "$(pwd)" &&
+pwd -P
+)
+#
 srcdir=$(
 cd -P -- "$(dirname -- "$0")" &&
 pwd -P
@@ -45,7 +49,7 @@ destdir=$(pwd)
 )
 #
 sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile | \
-sed "s#OBJDIR=\.#OBJDIR=${objdir}#g" > ${destdir}/Makefile
+sed "s#MAIN_OBJDIR=\.#MAIN_OBJDIR=${objdir}#g" > ${destdir}/Makefile
 
 #
 # Tests directory

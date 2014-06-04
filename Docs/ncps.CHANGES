@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+June 4, 2014  Alberto Garcia           trunk-462--ncps-23
+Support dual FoX-xmlf90 operation in Makefiles
+
+Xmlf90 is used instead of FoX for parsing when a full FoX library is
+not available, or when -DXMLF90 is added to the pre-processor options.
+
+Some makefiles have been modified to support this properly.
+
+modified:
+  Src/Makefile
+  Src/Mk/FoX.mk
+  Src/nc-pseudo/makefile
+  Src/obj_setup.sh
+  Util/Pseudo-operator/Makefile
+
+------------------------------------------------------------
 May 31, 2014  Alberto Garcia           trunk-462--ncps-22
 Fix the range of energies in logarithmic derivative
 

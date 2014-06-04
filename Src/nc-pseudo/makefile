@@ -10,12 +10,27 @@ module:  libncps.a
 ARCH_MAKE_DEFAULT=../arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
-include ../Mk/FoX.mk
-ifeq ($(strip $(FOX_ROOT)),)
-FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-DXMLF90
-endif
 #
-INCFLAGS:= $(INCFLAGS) -I../xmlparser
+# Choice of XML parsers.
+#
+# First, check whether -DXMLF90 is already an option in the arch.make
+# 
+ifneq (,$(findstring DXMLF90,$(FPPFLAGS)))
+ INCFLAGS:= $(INCFLAGS) -I../xmlparser
+else
+#
+# If FoX is not available as an external library
+# (which would include the sax parser), then
+# fall back to using XMLF90 in the Siesta distribution
+# 
+ifeq ($(strip $(FOX_ROOT)),)
+ FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-DXMLF90
+ INCFLAGS:= $(INCFLAGS) -I../xmlparser
+else
+ include ../Mk/FoX.mk
+ # This adds the proper string to INCFLAGS
+endif
+endif
 #
 OBJFILES= m_ncps_froyen_ps_t.o m_ncps_xml_ps_t.o \
           m_ncps_parsing_helpers.o m_ncps_xmlreader.o \
