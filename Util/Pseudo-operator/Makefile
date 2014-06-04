@@ -22,6 +22,8 @@ INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/nc-pseudo # To pick up mod files
 #
 # First, check whether -DXMLF90 is already an option in the arch.make
 # 
+FPPFLAGS:=$(FPPFLAGS) -DHAS_PSML_SUPPORT
+#
 ifneq (,$(findstring DXMLF90,$(FPPFLAGS)))
  LIBS= $(MAIN_OBJDIR)/libncps.a $(MAIN_OBJDIR)/libxmlparser.a
 else
@@ -59,6 +61,10 @@ what:
 	echo "VPATH: " $(VPATH)
 pseudooperator:  ncps $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o pseudooperator $(ALL_OBJS) $(LIBS)
+TEST_OBJS= semicore_info.o test_psml.o local_die.o
+#
+test_psml:  ncps $(TEST_OBJS)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o test_psml $(TEST_OBJS) $(LIBS)
 #
 arw.o:  precision.o 
 module_pseudo.o: atmparams.o precision.o schrodinger.o 

@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+June 4, 2014  Alberto Garcia           trunk-462--ncps-24
+Added code to determine number of semicore shells
+
+added:
+  Util/Pseudo-operator/semicore_info.F90
+  Util/Pseudo-operator/test_psml.f90
+modified:
+  Src/nc-pseudo/makefile
+  Util/Pseudo-operator/Makefile
+
+------------------------------------------------------------
 June 4, 2014  Alberto Garcia           trunk-462--ncps-23
 Support dual FoX-xmlf90 operation in Makefiles
 

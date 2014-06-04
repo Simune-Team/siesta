@@ -37,7 +37,7 @@ OBJFILES= m_ncps_froyen_ps_t.o m_ncps_xml_ps_t.o \
           flib_spline.o m_ncps_froyen_reader.o\
           m_ncps_writers.o m_ncps_reader.o\
           m_ncps_translators.o \
-          m_ncps.o
+          m_ncps.o m_psml.o
 #
 libncps.a: $(OBJFILES)
 	$(AR) $(ARFLAGS_EXTRA) cru libncps.a $(OBJFILES)
