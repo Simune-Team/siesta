@@ -354,7 +354,7 @@ contains
        if ( c%N < 1 ) then
           call die('Block: '//trim(bName)//' is not valid. &
                &A negative amount of integration points is not &
-               &a valide input.')
+               &a valid input.')
        end if
     else ! we have a delta designation
        ! notice that we can actually use kT here
@@ -362,6 +362,12 @@ contains
        if ( c%d <= 0._dp ) then
           call die('Block: '//trim(bName)//' is not valid. &
                &The dE designator is negative or zero.')
+       end if
+       ! Ensure that "inf" is not one of the end-points
+       if ( index(c%ca,'inf') > 0 .or. &
+            index(c%cb,'inf') > 0 ) then
+          call die('Block: '//trim(bName)//' is not valid. &
+               &The dE designator is not allowed with an "inf" boundary.')
        end if
     end if
 
@@ -565,14 +571,13 @@ contains
 
        else if ( leqi(g,'inf') ) then
           ! note: we have already added sign
-          c = trim(c)//' inf'
 
-          if ( get_val ) then
-             if ( add ) then
-                val = huge(1._dp)
-             else
-                val = huge(-1._dp)
-             end if
+          if ( add ) then
+             if ( get_val ) val = huge(1._dp)
+             c = ' + inf'
+          else
+             if ( get_val ) val = -huge(1._dp)
+             c = ' - inf'
           end if
 
           ! you can't add/subtract anything meaningful to

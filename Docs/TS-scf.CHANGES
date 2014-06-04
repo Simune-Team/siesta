@@ -1,4 +1,25 @@
 ----------------------------------------------------
+June 4, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-144
+Fermi fraction in cross-terms bugfix, and inf-tail bugfix
+
+* When the user accidentially used:
+    "delta 0.01 eV"
+  with a boundary at infinity it did not error out.
+  This has been fixed, it is now not possible to 
+  use delta with infinity.
+
+* The fractional cross-term fermi level is now not
+  allowed when updating the cross-terms.
+  The concept is that it should be used to compensate
+  for the missing updated elements, and if we update
+  we are pushing the Hamiltonian elements further out of their 
+  basin.
+    
+modified:
+  Src/m_ts_electype.F90
+  Src/m_ts_io_ctype.f90
+
+----------------------------------------------------
 June 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-143
 Enabled bandwidth reduction of the transiesta method
 

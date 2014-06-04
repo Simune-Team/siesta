@@ -266,8 +266,9 @@ contains
              end if
           end do
           if ( .not. associated(this%mu) ) then
-             call die('Could not find the chemical potential for the electrode: &
-                  '//trim(name)//'. Please supply an existing name.')
+             call die('Could not find the chemical potential "'//trim(ln)//&
+                  '" for the electrode: "'//trim(name)//'". '//&
+                  'Please supply an existing name.')
           end if
           info(3) = .true.
           
@@ -484,6 +485,13 @@ contains
     ! the cross-terms
     if ( .not. this%Bulk ) then
        this%DM_CrossTerms = .true.
+    end if
+
+    if ( this%DM_CrossTerms .or. this%mu%mu == 0._dp ) then
+       ! when updating the cross-terms
+       ! there is no needing to also shift the energy
+       ! I think this will battle each other out...
+       this%Ef_frac_CT = 0._dp
     end if
 
     ! if the user has specified text for the electrode position
