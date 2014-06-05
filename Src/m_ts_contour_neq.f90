@@ -123,6 +123,12 @@ contains
     call my_setup('Bias.Window',N_nEq,nEq_c,nEq_io)
     if ( N_nEq < 1 ) then
 
+       if ( N_Elec /= 2 .or. N_mu /= 2 ) then
+          call die('When using other than 2 electrodes and &
+               &chemical potentials you are forced to setup &
+               &the input yourself.')
+       end if
+
        ! We create the default version
        ! *** NOTE requires an even splitting of the bias
        N_nEq = 1
@@ -153,6 +159,12 @@ contains
          call die('You can currently only use one tail integral')
     if ( N_tail < 1 ) then
 
+       if ( N_Elec /= 2 .or. N_mu /= 2 ) then
+          call die('When using other than 2 electrodes and &
+               &chemical potentials you are forced to setup &
+               &the input yourself.')
+       end if
+
        ! We create the default version
        ! *** NOTE requires an even splitting of the bias
        ! We create the default version
@@ -165,11 +177,11 @@ contains
        tail_io(1)%name = 'neq-tail'
        tail_io(1)%ca = '0. kT'
        tail_io(1)%a  = 0._dp
-       tail_io(1)%cb = '10 kT'
-       tail_io(1)%b  =  10._dp * kT
+       tail_io(1)%cb = '12 kT'
+       tail_io(1)%b  =  12._dp * kT
        ! number of points
-       tail_io(1)%cd = '1 kT'
-       tail_io(1)%d =   kT
+       tail_io(1)%cd = '0.01 eV'
+       tail_io(1)%d =   0.01_dp * eV
        tail_io(1)%method = 'simpson-mix'
        call ts_fix_contour(tail_io(1))
 
@@ -326,8 +338,8 @@ contains
     if ( N_nEq_id /= size(nEq_id) ) &
          call neq_die('Error in code')
 
-    write(*,*) 'TODO correct empty cycles, i.e. if two line contours are neighbours &
-         &then we have overlying energy points...'
+    ! TODO correct empty cycles, i.e. if two line contours are neighbours 
+    ! then we have overlying energy points...
 
   contains 
 

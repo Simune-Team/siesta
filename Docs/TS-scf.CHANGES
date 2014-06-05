@@ -1,4 +1,24 @@
 ----------------------------------------------------
+June 5, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-146
+Forces the user to create their own input for Elec /= 2
+
+* Transiesta now stops if any input has not been given and the 
+  number of electrodes/chemical potentials are
+  different from 2.
+  Say the user inputs 3 electrodes and expects Transiesta
+  to auto-generate input. This is not allowed.
+
+* Changed the default energy separation in the non-eq tail
+  to delta 0.01 eV instead of 1 kT.
+  (I really should implement a "min" function to handle 
+  min(0.01 eV,1 kT)).
+
+modified:
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 June 5, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-145
 Added weight function per atom for the non-equilibrium part
 

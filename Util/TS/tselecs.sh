@@ -495,8 +495,8 @@ echo "%endblock TS.Contours.Bias.Tail"
 
 echo "%block TS.Contour.Bias.Tail.neq-tail"
 echo "  part tail"
-echo "   from 0. kT to 10. kT"
-echo "     delta 1. kT"
+echo "   from 0. kT to 12. kT"
+echo "     delta 0.01 eV"
 echo "      method simpson-mix"
 echo "%endblock TS.Contour.Bias.Tail.neq-tail"
 

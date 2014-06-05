@@ -174,6 +174,14 @@ contains
        if ( tmp_one(1:1) == '*' .and. &
             .not. ts_exists_contour_block('TS','',tmp_one(2:)//' ') ) then
 
+          if ( N_mu > 2 ) then
+             ! here we can have a zero bias case were 
+             ! N_mu == 1 :)
+             call die('When using other than 2 electrodes and &
+                  &chemical potentials you are forced to setup &
+                  &the input yourself.')
+          end if
+
           ! this is a fake-contour, read it in
           ! if it exists, else create it...
           ! *** NOTE this is hard coded against the chem_pot code
@@ -334,7 +342,7 @@ contains
        
     end do
 
-    write(*,*) 'TODO correct empty cycles i.e. when two contours share an energy-point'
+    ! TODO correct empty cycles i.e. when two contours share an energy-point
 
   contains
     
@@ -774,8 +782,8 @@ contains
        
        
     case default
-       !write(*,*) 'Method for contour ',trim(c%c_io%name),' could not be deciphered: ', &
-       !     c%c_io%method
+       write(*,*) 'Method for contour ',trim(c%c_io%name), &
+            ' could not be deciphered: ', c%c_io%method
        call die('Could not determine the line-integral')
     end select
 
