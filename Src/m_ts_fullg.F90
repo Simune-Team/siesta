@@ -71,7 +71,7 @@ contains
   
   subroutine ts_fullg(N_Elec,Elecs, &
        nq,uGF, &
-       nspin, &
+       nspin, na_u, lasto, &
        sp_dist, sparse_pattern, &
        no_u, n_nzs, &
        Hs, Ss, DM, EDM, Ef, kT)
@@ -124,7 +124,7 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
     integer, intent(in) :: nq(N_Elec), uGF(N_Elec)
-    integer, intent(in) :: nspin
+    integer, intent(in) :: nspin, na_u, lasto(0:na_u)
     type(OrbitalDistribution), intent(inout) :: sp_dist
     type(Sparsity), intent(inout) :: sparse_pattern
     integer, intent(in)  :: no_u
@@ -558,7 +558,8 @@ close(io)
        call add_Gamma_DM(spDMneq, spuDM, D_dim2=N_nEq_id, &
             spEDM=spEDM,  spuEDM=spuEDM, E_dim2=N_mu)
        
-       call weight_DM( N_Elec, N_mu, spDM, spDMneq, spEDM, &
+       call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
+            spDM, spDMneq, spEDM, &
             nonEq_IsWeight = .false.)
        
        call update_DM(sp_dist,sparse_pattern, n_nzs, &

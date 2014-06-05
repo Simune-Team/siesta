@@ -1,4 +1,41 @@
 ----------------------------------------------------
+June 5, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-145
+Added weight function per atom for the non-equilibrium part
+
+* When weighting the non-equilibrium contribution it can be
+  performed using 2 methods now:
+   1) Per orbital interaction
+   2) Per atom    interaction (trace of DMneq at atom i)
+  (combining with correlated/uncorrelated weighting is a
+   permutational choice)
+
+  The weighting is performed by calculating the variance
+  contribution for each chemical potential corresponding to
+  each orbital/atom. 
+
+  For orbitals it is as in the original paper.
+
+  For atomic weighting we calculate the geometric mean
+  for the two resulting in the same weighting for all
+  orbitals \mu,\nu for \mu\in ia and \nu \in ja.
+  This can improve the convergence if many of the orbital
+  interactions are very weak so that the variance can be 
+  ill defined.
+  What will typically happen is that the weight will be 
+  "spread" more out, but held constant for all atom-atom
+  interactions.
+
+modified:
+  Src/Makefile
+  Src/m_transiesta.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 June 4, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-144
 Fermi fraction in cross-terms bugfix, and inf-tail bugfix
 

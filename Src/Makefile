@@ -744,7 +744,8 @@ m_ts_trimat_invert.o: m_ts_electype.o m_ts_method.o precision.o
 m_ts_voltage.o: intrinsic_missing.o m_ts_electype.o m_ts_mesh.o m_ts_options.o
 m_ts_voltage.o: m_ts_tdir.o parallel.o precision.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
-m_ts_weight.o: m_ts_contour_neq.o parallel.o precision.o
+m_ts_weight.o: geom_helper.o m_ts_contour_neq.o m_ts_electype.o parallel.o
+m_ts_weight.o: precision.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o m_recipes.o parallel.o precision.o radfft.o

@@ -227,20 +227,6 @@ contains
        end if
     end if
     
-    ! Update the weight function
-    chars = fdf_get('TS.Weight.NonEquilibrium','correlated')
-    if ( leqi(chars,'correlated') ) then
-       TS_W_METHOD = TS_W_CORRELATED
-    else if ( leqi(chars,'uncorrelated') ) then
-       TS_W_METHOD = TS_W_UNCORRELATED
-       call die('Currently not functioning')
-    else if ( leqi(chars,'k-uncorrelated') ) then
-       TS_W_METHOD = TS_W_K_UNCORRELATED
-    else
-       call die('Could not determine flag TS.Weight.NonEquilibrium, &
-            &please see manual.')
-    end if
-
     chars = fdf_get('TS.ChargeCorrection','none')
     TS_RHOCORR_METHOD = 0
     if ( leqi(chars,'none') ) then
@@ -515,6 +501,36 @@ contains
     ! WILL WORK EVENTUALLY
     if ( N_Elec > 2 .and. IsVolt ) call die('Several electrodes and bias does not work')
 
+    ! Update the weight function
+    chars = fdf_get('TS.Weight.NonEquilibrium','correlated')
+    if ( leqi(chars,'correlated') ) then
+       TS_W_METHOD = TS_W_CORRELATED
+    else if ( leqi(chars,'uncorrelated') ) then
+       TS_W_METHOD = TS_W_UNCORRELATED
+       call die('Currently not functioning')
+    else if ( leqi(chars,'k-uncorrelated') ) then
+       TS_W_METHOD = TS_W_K_UNCORRELATED
+    else
+       call die('Could not determine flag TS.Weight.NonEquilibrium, &
+            &please see manual.')
+    end if
+
+    chars = fdf_get('TS.Weight.Per','orb')
+    TS_W_PER_ATOM = .false.
+    if ( leqi(chars,'atom') ) then
+       TS_W_PER_ATOM = .true.
+
+       ! We do not allow to do the UNCORRELATED,
+       ! only the K_UNCORRELATED
+       ! as collecting the weights is not functioning
+       if ( TS_W_METHOD == TS_W_UNCORRELATED ) then
+          call die('The uncorrelated weighting does not work &
+               &with trace-weighting of the density matrix.')
+       end if
+       
+    end if
+
+
     ! read in contour options
     if ( TSmode ) then
        call read_contour_options( N_Elec, Elecs, N_mu, mus, kT, IsVolt, Volt )
@@ -585,6 +601,11 @@ contains
              write(*,10) trim(chars),'Uncorrelated k-points in real-space'
           else if ( TS_W_METHOD == TS_W_K_UNCORRELATED ) then
              write(*,10) trim(chars),'Uncorrelated k-points in k-space'
+          end if
+          if ( .not. TS_W_PER_ATOM ) then
+             write(*,10) trim(chars),'Per i,j orbital'
+          else
+             write(*,10) trim(chars),'Per atomic orbital trace'
           end if
        else
           write(*,11) 'TranSIESTA no voltage applied'

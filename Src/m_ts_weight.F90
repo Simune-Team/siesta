@@ -54,6 +54,10 @@ module m_ts_weight
   ! Method: 3)
   integer, parameter :: TS_W_K_UNCORRELATED = 3
 
+  ! Tells to weight using the Trace of the atomic 
+  ! weights
+  logical, save :: TS_W_PER_ATOM = .false.
+
   ! we default weight of uncorrelated as that should be 
   ! the most accurate
   integer, save :: TS_W_METHOD = TS_W_K_UNCORRELATED
@@ -61,7 +65,8 @@ module m_ts_weight
 contains
 
 
-  subroutine weight_DM(N_Elec,N_mu, spDM, spDMneq, spEDM, &
+  subroutine weight_DM(N_Elec,Elecs,N_mu, na_u, lasto, &
+       spDM, spDMneq, spEDM, &
        nonEq_IsWeight)
     
 #ifdef MPI
@@ -72,7 +77,9 @@ contains
     use class_OrbitalDistribution
     use class_dSpData2D
 
+    use m_ts_electype
     use m_ts_contour_neq, only : N_nEq_ID, ID2mu
+    use geom_helper, only : iaorb, ucorb
 
     implicit none
 
@@ -80,6 +87,9 @@ contains
 ! * OUTPUT variables  *
 ! *********************
     integer,            intent(in) :: N_Elec, N_mu
+    type(Elec),         intent(in) :: Elecs(N_Elec)
+    ! The last-orbital of each atom
+    integer, intent(in) :: na_u, lasto(0:na_u)
     ! Contour part of DM integration
     type(dSpData2D), intent(inout) :: spDM
     ! Real-axis part of DM integration
@@ -110,6 +120,10 @@ contains
     integer  :: eM_i,eM_j
     real(dp) :: eM, DMe, ee, ee_i, tmp
     logical :: l_nonEq_IsWeight, hasEDM
+    ! collecting the error contribution for each atom
+    real(dp), allocatable :: atom_w(:,:), atom_neq(:,:)
+    integer :: ng, lio, ia1, ia2, ia
+    
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -120,18 +134,24 @@ contains
     
     l_nonEq_IsWeight = .false.
     if ( present(nonEq_IsWeight) ) l_nonEq_IsWeight = nonEq_IsWeight
+    if ( l_nonEq_IsWeight .and. TS_W_PER_ATOM ) then
+       call die('Not implemented yet... Programming error')
+    end if
 
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same)
     sp => spar(spDM)
     call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=nr)
+         nrows=nr,nrows_g=ng)
 
     ! Obtain the values in the arrays...
     DM     => val(spDM)
     DMneq  => val(spDMneq)
     hasEDM = initialized(spEDM)
     if ( hasEDM ) EDM => val(spEDM)
+
+    ! point to the orbital-distribution
+    dit => dist(spDM)
 
     allocate(ID_mu(N_nEq_ID))
     do io = 1 , N_nEq_ID
@@ -186,17 +206,119 @@ contains
 
     else
 
+       if ( TS_W_PER_ATOM ) then
+          ! we are doing weighting per trace of each atom
+
+          ! this will not be that large an array... :)
+          allocate(atom_neq(N_nEq_ID,na_u))
+          atom_neq(:,:) = 0._dp
+
+          do lio = 1 , nr
+             ! We are in a buffer region...
+             if ( l_ncol(lio) == 0 ) cycle
+             io = index_local_to_global(dit,lio,Node)
+             do j = 1 , l_ncol(lio)
+                
+                ind = l_ptr(lio) + j
+
+                ! This is a UC sparsity pattern
+                if ( l_col(ind) /= io ) cycle
+                ! we have found the diagonal entry of
+                ! the density matrix
+
+                ! Locate the atom
+                ia = iaorb(io,lasto)
+                ! add the diagonal density matrix
+                atom_neq(:,ia) = atom_neq(:,ia) + DMneq(ind,:)
+                
+             end do
+          end do
+
+#ifdef MPI
+          allocate(atom_w(N_nEq_ID,na_u))
+          ! We need to reduce the things
+          call MPI_AllReduce(atom_neq(1,1),atom_w(1,1),N_nEq_ID*na_u, &
+               MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
+          atom_neq(:,:) = abs(atom_w(:,:))
+          deallocate(atom_w)
+#else
+          atom_neq(:,:) = abs(atom_neq(:,:))
+#endif
+
+          ! in case of Bulk .and. DM_CrossTerms we
+          ! can set the equivalent atom_w to 2 * maximum value
+          ! This will force the nearest electrode to contribute the
+          ! most. :)
+          if ( N_Elec > 2 ) then
+             call die('Check this code segment')
+          end if
+          tmp = maxval(atom_neq)
+          allocate(atom_w(N_mu,na_u))
+          do ia = 1 , na_u
+             do io = 1 , N_Elec
+                if ( .not. AtomInElec(Elecs(io),ia) ) cycle
+                ! we must be in atom Elecs(io)
+                ! If we DO NOT use bulk electrodes we
+                ! do have access to the diagonal correction
+                ! contribution. Hence we only overwrite the electrode
+                ! weight if Elec%Bulk
+                if ( .not. Elecs(io)%Bulk ) cycle
+                atom_neq(:,ia) = tmp
+                atom_neq(Elecs(io)%mu%ID,ia) = 0._dp
+             end do
+             ! Calculate weights for this atom
+             call get_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+                  atom_neq(:,ia), atom_w(:,ia) )
+          end do
+
+          ! clean up
+          deallocate(atom_neq)
+
+       end if
+
        do io = 1 , nr
           ! We are in a buffer region...
           if ( l_ncol(io) == 0 ) cycle
+
+          ! Update the weight of the row-atom
+          if ( TS_W_PER_ATOM ) then
+             ! Calculate the weight of the atom corresponding to this
+             ! orbital
+             lio = index_local_to_global(dit,io,Node)
+             ia1 = iaorb(lio,lasto)
+          end if
+
           do j = 1 , l_ncol(io)
 
              ind = l_ptr(io) + j
              ! Retrieve the connecting orbital
              jo = l_col(ind)
 
-             ! get both contribution and weight
-             call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq,w)
+             if ( TS_W_PER_ATOM ) then
+                
+                ! Get the non-equilibrium contribution
+                call get_neq(N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq)
+
+                ! Re-calculate the weight for special weighting...
+                ia2 = iaorb(ucorb(jo,ng),lasto)
+
+                ! To compare the weights... For DEBUGging purposes...
+                !call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+                !     DMneq(ind,:),neq,w)
+                !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wi: ', ia1,ia2,w
+
+                ! Calculate the weight per trace of the atoms
+                w = sqrt(atom_w(:,ia1) * atom_w(:,ia2))
+                ! ensure normalization, we do not want to loose
+                ! any contribution...
+                w = w / sum(w)
+
+                !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wt: ', ia1,ia2,w,sum(w)
+             else
+                ! Get the non-equilibrium contribution and the weight associated
+                call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+                     DMneq(ind,:),neq,w)
+             end if
              
              ! Do error estimation (capture before update)
              ee = 0._dp
@@ -227,6 +349,10 @@ contains
           end do
        end do
 
+       if ( TS_W_PER_ATOM ) then
+          deallocate(atom_w)
+       end if
+
     end if
 
     deallocate(ID_mu)
@@ -236,7 +362,6 @@ contains
     nullify(DM,EDM)
     allocate(DM(Nodes,4),EDM(Nodes,4))
 
-    dit => dist(spDM)
     io = Node + 1
     ! Initialize
     DM(:,:)  = 0._dp
@@ -284,18 +409,18 @@ contains
   end subroutine print_error_estimate
 
 
-  ! do simple weight calculation and return correct numbers
+  ! Calculate the weight for a given set of variances
   subroutine get_weight(N_El,N_mu,N_id,ID_mu,w_ID,w)
     use m_ts_contour_neq, only : ID2mu, ID2mult
-    integer,  intent(in)  :: N_El, N_id, N_mu, ID_mu(N_id)
+    integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: w(N_mu)
     integer :: mu_i, mu, ID
     real(dp) :: total, tmp
 
-    if ( any(w_ID < 0._dp) ) call die('get_weight: Error in code')
+    !if ( any(w_ID < 0._dp) ) call die('get_weight: Error in code')
 
-    ! TODO check that this is correct!
+    ! TODO check that this is correct for several electrodes
     total  = 0._dp
     w(:)   = 0._dp
     do ID = 1 , N_id
@@ -303,9 +428,8 @@ contains
        tmp = w_ID(ID) * ID2mult(ID)
        total = total + tmp
        do mu_i = 1 , N_mu
-          if ( mu_i /= mu ) then
-             w(mu_i) = w(mu_i) + tmp
-          end if
+          if ( mu_i == mu ) cycle
+          w(mu_i) = w(mu_i) + tmp
        end do
     end do
 
@@ -318,18 +442,19 @@ contains
     end if
 
   end subroutine get_weight
-
-  ! do simple weight calculation and return correct numbers
+  
+  ! Calculate both the non-equilibrium contribution
+  ! and the weight associated with those points
   subroutine get_neq_weight(N_El,N_mu,N_id,ID_mu,neq_ID,neq,w)
     use m_ts_contour_neq, only : ID2mu, ID2mult
-    integer,  intent(in)  :: N_El, N_id, N_mu, ID_mu(N_id)
+    integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
     real(dp), intent(out) :: w(N_mu)
     integer :: mu_i, ID, mu
     real(dp) :: total, tmp, mult
 
-    ! TODO check that this is correct!
+    ! TODO check that this is correct for several electrodes
     total  = 0._dp
     neq(:) = 0._dp
     w(:)   = 0._dp
@@ -340,9 +465,8 @@ contains
        tmp = neq_ID(ID) ** 2 * mult
        total = total + tmp
        do mu_i = 1 , N_mu
-          if ( mu /= mu_i ) then
-             w(mu_i) = w(mu_i) + tmp
-          end if
+          if ( mu == mu_i ) cycle
+          w(mu_i) = w(mu_i) + tmp
        end do
     end do
 
@@ -355,5 +479,23 @@ contains
     end if
 
   end subroutine get_neq_weight
+
+  ! Calculate both the non-equilibrium contribution
+  ! and the weight associated with those points
+  subroutine get_neq(N_mu,N_id,ID_mu,neq_ID,neq)
+    use m_ts_contour_neq, only : ID2mu, ID2mult
+    integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
+    real(dp), intent(in)  :: neq_ID(N_id)
+    real(dp), intent(out) :: neq(N_mu)
+    integer :: ID, mu
+
+    ! TODO check that this is correct for several electrodes
+    neq(:) = 0._dp
+    do ID = 1 , N_id
+       mu      = ID2mu(ID)
+       neq(mu) = neq(mu) + neq_ID(ID) * ID2mult(ID)
+    end do
+
+  end subroutine get_neq
 
 end module m_ts_weight

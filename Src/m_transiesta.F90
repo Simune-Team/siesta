@@ -194,14 +194,14 @@ contains
        if ( Gamma ) then ! we can't even do this in TS_Gamma it would result in errorneous connections
           call ts_fullg(N_Elec,Elecs, &
                nq,uGF, &
-               nspin, &
+               nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
                H, S, DM, EDM, Ef, kT)
        else
           call ts_fullk(N_Elec,Elecs, &
                nq,uGF, &
-               ucell, nspin, &
+               ucell, nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
                H, S, xij, DM, EDM, Ef, kT)
@@ -209,14 +209,14 @@ contains
     else if ( ts_method == TS_SPARSITY_TRI ) then
        if ( Gamma ) then
           call ts_trig(N_Elec,Elecs, &
-               nq, uGF, nspin, &
+               nq, uGF, nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
                H, S, DM, EDM, Ef, kT)
        else
           call ts_trik(N_Elec,Elecs, &
                nq,uGF, &
-               ucell, nspin, &
+               ucell, nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
                H, S, xij, DM, EDM, Ef, kT)

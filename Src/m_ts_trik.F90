@@ -47,7 +47,7 @@ module m_ts_trik
 contains
 
   subroutine ts_trik(N_Elec,Elecs, &
-       nq, uGF, ucell, nspin, &
+       nq, uGF, ucell, nspin, na_u, lasto, &
        sp_dist, sparse_pattern, &
        no_u,  n_nzs, &
        Hs, Ss, xij, DM, EDM, Ef, kT)
@@ -113,7 +113,7 @@ contains
     type(Elec), intent(inout) :: Elecs(N_Elec)
     integer, intent(in) :: nq(N_Elec), uGF(N_Elec)
     real(dp), intent(in) :: ucell(3,3)
-    integer, intent(in) :: nspin
+    integer, intent(in) :: nspin, na_u, lasto(0:na_u)
     type(OrbitalDistribution), intent(inout) :: sp_dist
     type(Sparsity), intent(inout) :: sparse_pattern
     integer, intent(in)  :: no_u
@@ -575,7 +575,8 @@ contains
             n_nzs, xij, kpt, ipnt=ltsup_sc_pnt, non_Eq = .true. )
 
        if ( TS_W_METHOD == TS_W_K_UNCORRELATED ) then
-          call weight_DM( N_Elec, N_mu, spDM, spDMneq, spEDM, &
+          call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
+               spDM, spDMneq, spEDM, &
                nonEq_IsWeight = .false.)
           
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
@@ -584,7 +585,8 @@ contains
        else if ( TS_W_METHOD == TS_W_UNCORRELATED ) then
           call die('not functioning yet')
        else if ( itt_last(SpKp,2) ) then ! TS_W_METHOD must be == TS_W_CORRELATED
-          call weight_DM( N_Elec, N_mu, spDM, spDMneq, spEDM, &
+          call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
+               spDM, spDMneq, spEDM, &
                nonEq_IsWeight = .false.)
           
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
