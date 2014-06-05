@@ -1,0 +1,39 @@
+This directory contains several utilities related to TranSIESTA.
+Scripts to help generate input fdf files and do transmission
+analysis are located here.
+
+These programs has been developed by:
+  Nick Papior Andersen, nickpapior<at>gmail.com
+
+- AnalyzeSort
+  this directory contains a python script that can sort an FDF
+  structure according to the output of TranSIESTA if one uses
+  the flag:
+    TS.Analyze T
+  Refer to the manual for additional information
+
+- tselecs.sh
+  This small scripts eases the creation of several electrodes
+  input. It can also be used to initialize a script for TranSIESTA.
+  Call with:
+    tselecs.sh -2
+  to generate a default input FDF for TranSIESTA which defaults
+  to the old versions implementation.
+
+- TBtrans
+  this directory contains the TBtrans utility which is used for 
+  calculating the transmission and other quatities from the 
+  TSHS files output from TranSIESTA.
+
+- ts2ts
+  A small utility which takes an old input file for TranSIESTA
+  and converts it into the new input format.
+  First call make in the folder and then you can utilise it as:
+    ts2ts <fdf-file> 
+  and it will print out a converted fdf-input file.
+  It is made for piping directly into another file.
+
+  REMARK: It will only read in TranSIESTA options and thus
+          also only print TranSIESTA options. 
+	  It will not copy any other FDF-flags.
+  

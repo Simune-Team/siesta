@@ -344,9 +344,10 @@ contains
     ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
     Elecs(:)%BandBottom = fdf_get('TS.Elecs.BandBottom', .false.)
     ! whether or not the electrodes should be re-instantiated
-    call fdf_deprecated('TS.CalcGF','TS.ReUseGF')
+    call fdf_deprecated('TS.CalcGF','TS.Elecs.GF.ReUse')
+    call fdf_deprecated('TS.ReUseGF','TS.Elecs.GF.ReUse')
     err = fdf_get('TS.ReUseGF',.false.)
-    Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF-ReUse',err)
+    Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF.ReUse',err)
 
     ! whether all calculations should be performed
     ! "out-of-core" i.e. whether the GF files should be created or not

@@ -1,4 +1,37 @@
 ----------------------------------------------------
+June 5, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-147
+Added a utility convert an old TS-fdf to new TS-fdf
+
+* In the folder Util/TS I have added a utility
+  to convert an fdf file from the old input format
+  to an equivalent new format.
+  It is located in the folder:
+    Util/TS/ts2ts/
+  It needs to be compiled like any other utility for SIESTA.
+
+  It can be called like:
+    ts2ts <fdf file>
+  and should not be piped.
+  For help on the utility call:
+    ts2ts -h
+  for a brief explanation of options.
+
+  However, it is useful to pipe it into another file. 
+  Say your fdf-file is "run.fdf" you call this:
+    ts2ts run.fdf > new.fdf
+
+* Bugfix in Makefile for Util/Grimme utility.
+
+added:
+  Util/TS/README
+  Util/TS/ts2ts/
+  Util/TS/ts2ts/Makefile
+  Util/TS/ts2ts/ts2ts.f90
+modified:
+  Src/m_ts_options.F90
+  Util/Grimme/Makefile
+
+----------------------------------------------------
 June 5, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-146
 Forces the user to create their own input for Elec /= 2
 
