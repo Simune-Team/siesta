@@ -29,9 +29,9 @@ module m_ts_trik
   use m_ts_dm_update, only : add_k_DM
   
   use m_ts_weight, only : weight_DM
-  use m_ts_weight, only : TS_W_METHOD
-  use m_ts_weight, only : TS_W_CORRELATED
-  use m_ts_weight, only : TS_W_UNCORRELATED
+  use m_ts_weight, only : TS_W_K_METHOD
+  use m_ts_weight, only : TS_W_K_CORRELATED
+  use m_ts_weight, only : TS_W_K_HALF_CORRELATED
   use m_ts_weight, only : TS_W_K_UNCORRELATED
 
   use m_ts_tri_init, only : N_tri_part, tri_parts, GFGGF_size
@@ -427,7 +427,7 @@ contains
 
        ! initialize to zero
        ! local sparsity update patterns
-       if ( TS_W_METHOD == TS_W_K_UNCORRELATED ) then
+       if ( TS_W_K_METHOD == TS_W_K_UNCORRELATED ) then
           call init_val(spDM)
           call init_val(spDMneq)
           if ( Calc_Forces ) call init_val(spEDM)
@@ -574,7 +574,7 @@ contains
             spEDM, spuEDM, N_mu, &
             n_nzs, xij, kpt, ipnt=ltsup_sc_pnt, non_Eq = .true. )
 
-       if ( TS_W_METHOD == TS_W_K_UNCORRELATED ) then
+       if ( TS_W_K_METHOD == TS_W_K_UNCORRELATED ) then
           call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
                spDM, spDMneq, spEDM, &
                nonEq_IsWeight = .false.)
@@ -582,9 +582,9 @@ contains
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin), spDM, Ef=Ef, &
                EDM=EDM(:,ispin), spEDM=spEDM, ipnt=ltsup_sc_pnt)
-       else if ( TS_W_METHOD == TS_W_UNCORRELATED ) then
+       else if ( TS_W_K_METHOD == TS_W_K_HALF_CORRELATED ) then
           call die('not functioning yet')
-       else if ( itt_last(SpKp,2) ) then ! TS_W_METHOD must be == TS_W_CORRELATED
+       else if ( itt_last(SpKp,2) ) then ! TS_W_K_METHOD == TS_W_K_CORRELATED
           call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
                spDM, spDMneq, spEDM, &
                nonEq_IsWeight = .false.)

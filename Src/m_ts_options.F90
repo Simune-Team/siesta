@@ -503,28 +503,33 @@ contains
     if ( N_Elec > 2 .and. IsVolt ) call die('Several electrodes and bias does not work')
 
     ! Update the weight function
-    chars = fdf_get('TS.Weight.NonEquilibrium','correlated')
+    chars = fdf_get('TS.Weight.k.Method','correlated')
     if ( leqi(chars,'correlated') ) then
-       TS_W_METHOD = TS_W_CORRELATED
-    else if ( leqi(chars,'uncorrelated') ) then
-       TS_W_METHOD = TS_W_UNCORRELATED
+       TS_W_K_METHOD = TS_W_K_CORRELATED
+    else if ( leqi(chars,'half-correlated') ) then
+       TS_W_K_METHOD = TS_W_K_HALF_CORRELATED
        call die('Currently not functioning')
-    else if ( leqi(chars,'k-uncorrelated') ) then
-       TS_W_METHOD = TS_W_K_UNCORRELATED
+    else if ( leqi(chars,'uncorrelated') ) then
+       TS_W_K_METHOD = TS_W_K_UNCORRELATED
     else
-       call die('Could not determine flag TS.Weight.NonEquilibrium, &
+       call die('Could not determine flag TS.Weight.k.Method, &
             &please see manual.')
     end if
 
-    chars = fdf_get('TS.Weight.Per','orb')
-    TS_W_PER_ATOM = .false.
-    if ( leqi(chars,'atom') ) then
-       TS_W_PER_ATOM = .true.
-
-       ! We do not allow to do the UNCORRELATED,
-       ! only the K_UNCORRELATED
-       ! as collecting the weights is not functioning
-       if ( TS_W_METHOD == TS_W_UNCORRELATED ) then
+    chars = fdf_get('TS.Weight.Method','orb-orb')
+    if ( leqi(chars,'orb-orb') ) then
+       TS_W_METHOD = TS_W_ORB_ORB
+    else if ( leqi(chars,'tr-atom-atom') ) then
+       TS_W_METHOD = TS_W_TR_ATOM_ATOM 
+    else if ( leqi(chars,'sum-atom-atom') ) then
+       TS_W_METHOD = TS_W_SUM_ATOM_ATOM 
+    else
+       call die('Could not determine flag TS.Weight.Method, &
+            &please see manual.')
+    end if
+    if ( TS_W_METHOD /= TS_W_ORB_ORB ) then
+       ! We do not allow to do the half-correlated,
+       if ( TS_W_K_METHOD == TS_W_K_HALF_CORRELATED ) then
           call die('The uncorrelated weighting does not work &
                &with trace-weighting of the density matrix.')
        end if
@@ -595,19 +600,25 @@ contains
           else
              write(*,11) 'Voltage drop across entire cell'    
           end if
-          chars = 'Non-equilibrium contour weights'
-          if  ( TS_W_METHOD == TS_W_CORRELATED ) then
-             write(*,10) trim(chars),'Real-space'
-          else if ( TS_W_METHOD == TS_W_UNCORRELATED ) then
-             write(*,10) trim(chars),'Uncorrelated k-points in real-space'
-          else if ( TS_W_METHOD == TS_W_K_UNCORRELATED ) then
-             write(*,10) trim(chars),'Uncorrelated k-points in k-space'
-          end if
-          if ( .not. TS_W_PER_ATOM ) then
-             write(*,10) trim(chars),'Per i,j orbital'
-          else
-             write(*,10) trim(chars),'Per atomic orbital trace'
-          end if
+
+          chars = 'Non-equilibrium contour weight method'
+          select case ( TS_W_METHOD )
+          case ( TS_W_ORB_ORB )
+             write(*,10) trim(chars),'orb-orb'
+          case ( TS_W_TR_ATOM_ATOM )
+             write(*,10) trim(chars),'Tr[atom]-Tr[atom]'
+          case ( TS_W_SUM_ATOM_ATOM )
+             write(*,10) trim(chars),'Sum[atom]-Sum[atom]'
+          end select
+          chars = 'Non-equilibrium contour weight k-method'
+          select case ( TS_W_K_METHOD ) 
+          case ( TS_W_K_CORRELATED )
+             write(*,10) trim(chars),'Correlated k-points'
+          case ( TS_W_K_HALF_CORRELATED )
+             write(*,10) trim(chars),'Half-correlated'
+          case ( TS_W_K_UNCORRELATED )
+             write(*,10) trim(chars),'Uncorrelated k-points'
+          end select
        else
           write(*,11) 'TranSIESTA no voltage applied'
        end if

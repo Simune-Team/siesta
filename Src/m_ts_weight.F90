@@ -47,20 +47,27 @@ module m_ts_weight
   
   private :: dp
 
+  ! Generic methods for the k-weighting method
   ! Method: 1)
-  integer, parameter :: TS_W_CORRELATED = 1
+  integer, parameter :: TS_W_K_CORRELATED = 1
   ! Method: 2)
-  integer, parameter :: TS_W_UNCORRELATED = 2
+  integer, parameter :: TS_W_K_HALF_CORRELATED = 2
   ! Method: 3)
   integer, parameter :: TS_W_K_UNCORRELATED = 3
 
-  ! Tells to weight using the Trace of the atomic 
-  ! weights
-  logical, save :: TS_W_PER_ATOM = .false.
+  ! General weighting method
+  ! 1) orb-orb weighting
+  integer, parameter :: TS_W_ORB_ORB = 1
+  ! 2) atom-atom weighting using the trace of the nEq DM
+  integer, parameter :: TS_W_TR_ATOM_ATOM = 2
+  ! 2) atom-atom weighting using the sum of the nEq DM
+  integer, parameter :: TS_W_SUM_ATOM_ATOM = 3
+
+  integer, save :: TS_W_METHOD = TS_W_ORB_ORB
 
   ! we default weight of uncorrelated as that should be 
   ! the most accurate
-  integer, save :: TS_W_METHOD = TS_W_K_UNCORRELATED
+  integer, save :: TS_W_K_METHOD = TS_W_K_UNCORRELATED
 
 contains
 
@@ -134,7 +141,7 @@ contains
     
     l_nonEq_IsWeight = .false.
     if ( present(nonEq_IsWeight) ) l_nonEq_IsWeight = nonEq_IsWeight
-    if ( l_nonEq_IsWeight .and. TS_W_PER_ATOM ) then
+    if ( l_nonEq_IsWeight .and. TS_W_METHOD /= TS_W_ORB_ORB ) then
        call die('Not implemented yet... Programming error')
     end if
 
@@ -206,7 +213,8 @@ contains
 
     else
 
-       if ( TS_W_PER_ATOM ) then
+       if ( TS_W_METHOD == TS_W_TR_ATOM_ATOM .or. &
+          TS_W_METHOD == TS_W_SUM_ATOM_ATOM ) then
           ! we are doing weighting per trace of each atom
 
           ! this will not be that large an array... :)
@@ -214,20 +222,32 @@ contains
           atom_neq(:,:) = 0._dp
 
           do lio = 1 , nr
+
              ! We are in a buffer region...
              if ( l_ncol(lio) == 0 ) cycle
              io = index_local_to_global(dit,lio,Node)
+
+             ia = iaorb(io,lasto) ! atom-index
+
              do j = 1 , l_ncol(lio)
                 
                 ind = l_ptr(lio) + j
+                
+                if ( TS_W_METHOD == TS_W_SUM_ATOM_ATOM ) then
+                   
+                   ia2 = iaorb(l_col(ind),lasto)
+                   ! Only allow the same atom to contribute
+                   if ( ia2 /= ia ) cycle
 
-                ! This is a UC sparsity pattern
-                if ( l_col(ind) /= io ) cycle
-                ! we have found the diagonal entry of
-                ! the density matrix
+                else
+                   
+                   ! This is a SC sparsity pattern
+                   if ( l_col(ind) /= io ) cycle
+                   ! we have found the diagonal entry of
+                   ! the density matrix
 
-                ! Locate the atom
-                ia = iaorb(io,lasto)
+                end if
+
                 ! add the diagonal density matrix
                 atom_neq(:,ia) = atom_neq(:,ia) + DMneq(ind,:)
                 
@@ -263,12 +283,15 @@ contains
                 ! contribution. Hence we only overwrite the electrode
                 ! weight if Elec%Bulk
                 if ( .not. Elecs(io)%Bulk ) cycle
-                atom_neq(:,ia) = tmp
+                atom_neq(:,ia) = atom_neq(:,ia) + tmp ! in case of sum
                 atom_neq(Elecs(io)%mu%ID,ia) = 0._dp
              end do
              ! Calculate weights for this atom
              call get_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
                   atom_neq(:,ia), atom_w(:,ia) )
+             !if (node==0) &
+             !     write(*,'(a,i2,2(tr1,g10.5))')'W: ', ia,atom_w(:,ia)
+
           end do
 
           ! clean up
@@ -281,7 +304,7 @@ contains
           if ( l_ncol(io) == 0 ) cycle
 
           ! Update the weight of the row-atom
-          if ( TS_W_PER_ATOM ) then
+          if ( TS_W_METHOD /= TS_W_ORB_ORB ) then
              ! Calculate the weight of the atom corresponding to this
              ! orbital
              lio = index_local_to_global(dit,io,Node)
@@ -294,7 +317,11 @@ contains
              ! Retrieve the connecting orbital
              jo = l_col(ind)
 
-             if ( TS_W_PER_ATOM ) then
+             if ( TS_W_METHOD == TS_W_ORB_ORB ) then
+                ! Get the non-equilibrium contribution and the weight associated
+                call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+                     DMneq(ind,:),neq,w)
+             else ! we have weight per atom
                 
                 ! Get the non-equilibrium contribution
                 call get_neq(N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq)
@@ -307,17 +334,16 @@ contains
                 !     DMneq(ind,:),neq,w)
                 !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wi: ', ia1,ia2,w
 
-                ! Calculate the weight per trace of the atoms
+                ! Calculate the weight per atom (geometric mean)
                 w = sqrt(atom_w(:,ia1) * atom_w(:,ia2))
                 ! ensure normalization, we do not want to loose
                 ! any contribution...
+                ! The typical sum of normalized random data
+                ! and its generated geometric mean is around 0.89
+                ! which is smaller than the total!
                 w = w / sum(w)
 
                 !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wt: ', ia1,ia2,w,sum(w)
-             else
-                ! Get the non-equilibrium contribution and the weight associated
-                call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
-                     DMneq(ind,:),neq,w)
              end if
              
              ! Do error estimation (capture before update)
@@ -349,7 +375,8 @@ contains
           end do
        end do
 
-       if ( TS_W_PER_ATOM ) then
+       if ( TS_W_METHOD == TS_W_TR_ATOM_ATOM .or. &
+          TS_W_METHOD == TS_W_SUM_ATOM_ATOM ) then
           deallocate(atom_w)
        end if
 

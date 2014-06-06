@@ -14,7 +14,7 @@ program ts2ts
   integer, parameter :: N_char = 50
   character(len=N_char) :: c_CCEmin, c_GFEta, c_Volt, c_dVolt
   
-  real(dp) :: CCEmin, GFEta, kT, Volt
+  real(dp) :: CCEmin, GFEta, Volt
   integer :: Nline, Ncircle, Npol, Nvolt
 
   logical :: IsVolt, Bulk, UpdateDMCR, ReUse
@@ -140,7 +140,6 @@ program ts2ts
   call e2a(CCEmin,c_CCEmin)
   GFEta   = fdf_get('TS.biasContour.Eta',0.000001_dp,'Ry')
   call e2a(GFEta,c_GFEta,prec=10,force_eV=.false.)
-  kT      = fdf_get('ElectronicTemperature',0.0019_dp,'Ry')
 
   Bulk       = fdf_get('TS.UseBulkInElectrodes',.true.)
   ! in the original implementation this meant only update the central region

@@ -1,4 +1,41 @@
 ----------------------------------------------------
+June 6, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-148
+Added yet another weighting method, cleaned up fdf keys
+
+* The weighting can now be performed like:
+   - orb-orb
+     each orbital calculates its own weight
+   - trace of atom-atom
+     each atoms trace of the correction is used
+   - sum of atom-atom
+     each atoms total correction with itself is used
+
+  This was rather easy to implement as trace and sum 
+  are very similar.
+
+  They also seem to provide a similar result.
+
+* The keywords for using the weighting methods have changed
+  to something more generic:
+    TS.Weight.k.Method
+      - correlated
+      - uncorrelated
+  to determine which type of weight for each k-point.
+  
+    TS.Weight.Method
+      - orb-orb
+      - tr-atom-atom
+      - sum-atom-atom 
+  is then used to determine the how the weighting is done
+  for each k-point.
+
+modified:
+  Src/m_ts_fullk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 June 5, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-147
 Added a utility convert an old TS-fdf to new TS-fdf
 
