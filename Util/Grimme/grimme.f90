@@ -39,13 +39,17 @@ program grimme_program
      narg = narg - 1
   end do
   if ( leqi(filein,'none') ) then
-     stop 'Could not find input file on the command line'
+     write(0,'(a)') 'Input file can not be piped into this program, &
+          &please supply FDF file on command line...'
+     stop
   end if
 
   ! check whether the file exists
   inquire(file=filein,exist=exists)
   if (.not. exists ) then
-     stop 'Input file does not exist'
+     write(0,'(a)') 'Input file can not be piped into this program, &
+          &please supply FDF file on command line...'
+     stop
   end if
 
 

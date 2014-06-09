@@ -85,13 +85,14 @@ program ts2ts
   ! check whether the file exists
   inquire(file=filein,exist=exists)
   if (.not. exists ) then
-     stop 'Input file does not exist'
+     write(0,'(a)') 'Input file can not be piped into this program, &
+          &please supply FDF file on command line...'
+     call nl(0)
+     call help
   end if
 
   ! Initialize the fdf
   call fdf_init(filein,"ts2ts.log")
-
-
 
   ! Buffer atoms
   NBufL    = fdf_get('TS.BufferAtomsLeft',0)
@@ -229,11 +230,11 @@ program ts2ts
   ! the best thing!
   if ( (.not. def_nEq ).and. abs(Volt) / Nvolt > 0.05_dp * eV ) then
      write(0,'(a)') '# Selected non-equilibrium integration'
-     write(0,'(a)') '# integration splitting is above 0.05 eV.'
+     write(0,'(a)') '# integration splitting is larger than 0.05 eV.'
      write(0,'(a)') '# New default setting is: 0.01 eV.'
      write(0,'(a)') '# Consider changing the non-equilibrium "delta <E>" to 0.01 eV.'
      write(*,'(a)') '# Selected non-equilibrium integration'
-     write(*,'(a)') '# integration splitting is above 0.05 eV.'
+     write(*,'(a)') '# integration splitting is larger than 0.05 eV.'
      write(*,'(a)') '# New default setting is: 0.01 eV.'
      write(*,'(a)') '# Consider changing the below "delta <E>" to 0.01 eV.'
 

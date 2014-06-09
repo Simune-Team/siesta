@@ -1,4 +1,30 @@
 ----------------------------------------------------
+June 9, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-149
+Finalised 5 different weighting schemes
+
+* The weighting can now be performed like:
+   - orb-orb
+     each orbital calculates its own weight
+   - trace of atom-atom
+     each atoms trace of the correction is used
+   - trace of atom-orb
+     each atoms trace of the correction is used together
+     with the local orb-orb weight
+   - sum of atom-atom
+     each atoms total correction with itself is used
+   - sum of atom-orb
+     each atoms total correction with itself is used
+     with the local orb-orb weight
+
+  The 4 latter weighting schemes provide very similar
+  results. However, the difference for the last 4 and
+  the default one is relatively big.
+
+modified:
+  Src/m_ts_options.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 June 6, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-148
 Added yet another weighting method, cleaned up fdf keys
 

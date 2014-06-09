@@ -516,16 +516,40 @@ contains
             &please see manual.')
     end if
 
+    ! The default weighting method is correlated if
+    ! atom-atom is utilised
+    TS_W_METHOD = TS_W_CORRELATED
     chars = fdf_get('TS.Weight.Method','orb-orb')
+    ! first check whether we have correlated weighting
+    i = index(chars,'+')
+    if ( i > 0 ) then
+       ! we do have something else
+       if ( leqi(chars(1:i-1),'correlated') .or. &
+            leqi(chars(1:i-1),'corr') ) then
+          TS_W_METHOD = TS_W_CORRELATED
+       else if ( leqi(chars(1:i-1),'uncorrelated') .or. &
+            leqi(chars(1:i-1),'uncorr') ) then
+          TS_W_METHOD = 0 ! non-correlated
+       else
+          call die('Unrecognized second option for TS.Weight.Method &
+               &must be [[un]correlated+][orb-orb|tr-atom-atom|sum-atom-atom]')
+       end if
+       chars = chars(i+1:)
+    end if
     if ( leqi(chars,'orb-orb') ) then
        TS_W_METHOD = TS_W_ORB_ORB
+       ! this does not make sense to make correlated, hence always assign
     else if ( leqi(chars,'tr-atom-atom') ) then
-       TS_W_METHOD = TS_W_TR_ATOM_ATOM 
+       TS_W_METHOD = TS_W_METHOD + TS_W_TR_ATOM_ATOM 
+    else if ( leqi(chars,'tr-atom-orb') ) then
+       TS_W_METHOD = TS_W_METHOD + TS_W_TR_ATOM_ORB
     else if ( leqi(chars,'sum-atom-atom') ) then
-       TS_W_METHOD = TS_W_SUM_ATOM_ATOM 
+       TS_W_METHOD = TS_W_METHOD + TS_W_SUM_ATOM_ATOM 
+    else if ( leqi(chars,'sum-atom-orb') ) then
+       TS_W_METHOD = TS_W_METHOD + TS_W_SUM_ATOM_ORB
     else
-       call die('Could not determine flag TS.Weight.Method, &
-            &please see manual.')
+       call die('Unrecognized option for TS.Weight.Method &
+            &must be [[un]correlated+|][orb-orb|tr-atom-[atom|orb]|sum-atom-[atom|orb]]')
     end if
     if ( TS_W_METHOD /= TS_W_ORB_ORB ) then
        ! We do not allow to do the half-correlated,
@@ -605,10 +629,25 @@ contains
           select case ( TS_W_METHOD )
           case ( TS_W_ORB_ORB )
              write(*,10) trim(chars),'orb-orb'
+          case ( TS_W_CORRELATED + TS_W_TR_ATOM_ATOM )
+             write(*,10) trim(chars),'Correlated Tr[atom]-Tr[atom]'
           case ( TS_W_TR_ATOM_ATOM )
-             write(*,10) trim(chars),'Tr[atom]-Tr[atom]'
+             write(*,10) trim(chars),'Uncorrelated Tr[atom]-Tr[atom]'
+          case ( TS_W_CORRELATED + TS_W_TR_ATOM_ORB )
+             write(*,10) trim(chars),'Correlated Tr[atom]-orb'
+          case ( TS_W_TR_ATOM_ORB )
+             write(*,10) trim(chars),'Uncorrelated Tr[atom]-orb'
+          case ( TS_W_CORRELATED + TS_W_SUM_ATOM_ATOM )
+             write(*,10) trim(chars),'Correlated Sum[atom]-Sum[atom]'
           case ( TS_W_SUM_ATOM_ATOM )
-             write(*,10) trim(chars),'Sum[atom]-Sum[atom]'
+             write(*,10) trim(chars),'Uncorrelated Sum[atom]-Sum[atom]'
+          case ( TS_W_CORRELATED + TS_W_SUM_ATOM_ORB )
+             write(*,10) trim(chars),'Correlated Sum[atom]-orb'
+          case ( TS_W_SUM_ATOM_ORB )
+             write(*,10) trim(chars),'Uncorrelated Sum[atom]-orb'
+          case default
+             ! This is an easy place for cathing mistakes
+             call die('Error in code, this should never occur.')
           end select
           chars = 'Non-equilibrium contour weight k-method'
           select case ( TS_W_K_METHOD ) 

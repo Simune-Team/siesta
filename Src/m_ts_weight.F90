@@ -60,8 +60,17 @@ module m_ts_weight
   integer, parameter :: TS_W_ORB_ORB = 1
   ! 2) atom-atom weighting using the trace of the nEq DM
   integer, parameter :: TS_W_TR_ATOM_ATOM = 2
-  ! 2) atom-atom weighting using the sum of the nEq DM
+  ! 3) atom-atom weighting using the sum of the nEq DM
   integer, parameter :: TS_W_SUM_ATOM_ATOM = 3
+  ! 4) atom-orb weighting using the trace of the nEq DM
+  integer, parameter :: TS_W_TR_ATOM_ORB = 4
+  ! 5) atom-orb weighting using the sum of the nEq DM
+  integer, parameter :: TS_W_SUM_ATOM_ORB = 5
+  
+  ! The general weighting can be:
+  !   UNCORRELATED or CORRELATED
+  ! The correlated is the default
+  integer, parameter :: TS_W_CORRELATED = 100
 
   integer, save :: TS_W_METHOD = TS_W_ORB_ORB
 
@@ -126,10 +135,10 @@ contains
     ! For error estimation
     integer  :: eM_i,eM_j
     real(dp) :: eM, DMe, ee, ee_i, tmp
-    logical :: l_nonEq_IsWeight, hasEDM
+    logical :: l_nonEq_IsWeight, hasEDM, is_correlated, is_trace
     ! collecting the error contribution for each atom
     real(dp), allocatable :: atom_w(:,:), atom_neq(:,:)
-    integer :: ng, lio, ia1, ia2, ia
+    integer :: ng, lio, ia1, ia2, ia, TS_W
     
 #ifdef MPI
     integer :: MPIerror
@@ -213,13 +222,27 @@ contains
 
     else
 
-       if ( TS_W_METHOD == TS_W_TR_ATOM_ATOM .or. &
-          TS_W_METHOD == TS_W_SUM_ATOM_ATOM ) then
-          ! we are doing weighting per trace of each atom
+       ! Is the data correlated
+       is_correlated = TS_W_METHOD >= TS_W_CORRELATED
+       TS_W = TS_W_METHOD
+       if ( is_correlated ) TS_W = TS_W - TS_W_CORRELATED
+
+       if ( TS_W /= TS_W_ORB_ORB ) then
+          ! we are doing weighting per trace/sum of each atom
 
           ! this will not be that large an array... :)
           allocate(atom_neq(N_nEq_ID,na_u))
           atom_neq(:,:) = 0._dp
+
+          ! determine whether it is trace or sum
+          select case ( TS_W )
+          case ( TS_W_SUM_ATOM_ATOM , TS_W_SUM_ATOM_ORB )
+             is_trace = .false.
+          case ( TS_W_TR_ATOM_ATOM , TS_W_TR_ATOM_ORB )
+             is_trace = .true.
+          case default
+             call die('Error in weights: determine trace')
+          end select
 
           do lio = 1 , nr
 
@@ -229,29 +252,33 @@ contains
 
              ia = iaorb(io,lasto) ! atom-index
 
-             do j = 1 , l_ncol(lio)
+             lio_connect: do j = 1 , l_ncol(lio)
                 
                 ind = l_ptr(lio) + j
                 
-                if ( TS_W_METHOD == TS_W_SUM_ATOM_ATOM ) then
+                if ( .not. is_Trace ) then ! TS_W == TS_W_SUM_ATOM_?
                    
                    ia2 = iaorb(l_col(ind),lasto)
                    ! Only allow the same atom to contribute
-                   if ( ia2 /= ia ) cycle
+                   if ( ia2 /= ia ) cycle lio_connect
 
-                else
+                else ! TS_W == TS_W_TR_ATOM_?
                    
                    ! This is a SC sparsity pattern
-                   if ( l_col(ind) /= io ) cycle
-                   ! we have found the diagonal entry of
+
+                   ! Only allow the diagonal entry of
                    ! the density matrix
+                   if ( l_col(ind) /= io ) cycle lio_connect
 
                 end if
 
-                ! add the diagonal density matrix
-                atom_neq(:,ia) = atom_neq(:,ia) + DMneq(ind,:)
-                
-             end do
+                if ( is_correlated ) then
+                   atom_neq(:,ia) = atom_neq(:,ia) + DMneq(ind,:)
+                else
+                   atom_neq(:,ia) = atom_neq(:,ia) + DMneq(ind,:) ** 2
+                end if
+
+             end do lio_connect
           end do
 
 #ifdef MPI
@@ -259,10 +286,16 @@ contains
           ! We need to reduce the things
           call MPI_AllReduce(atom_neq(1,1),atom_w(1,1),N_nEq_ID*na_u, &
                MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
-          atom_neq(:,:) = abs(atom_w(:,:))
+          if ( is_correlated ) then
+             atom_neq(:,:) = atom_w(:,:) ** 2
+          else
+             atom_neq(:,:) = atom_w(:,:)
+          end if
           deallocate(atom_w)
 #else
-          atom_neq(:,:) = abs(atom_neq(:,:))
+          if ( is_correlated ) then
+             atom_neq(:,:) = atom_neq(:,:) ** 2
+          end if
 #endif
 
           ! in case of Bulk .and. DM_CrossTerms we
@@ -276,16 +309,18 @@ contains
           allocate(atom_w(N_mu,na_u))
           do ia = 1 , na_u
              do io = 1 , N_Elec
-                if ( .not. AtomInElec(Elecs(io),ia) ) cycle
-                ! we must be in atom Elecs(io)
                 ! If we DO NOT use bulk electrodes we
                 ! do have access to the diagonal correction
                 ! contribution. Hence we only overwrite the electrode
                 ! weight if Elec%Bulk
                 if ( .not. Elecs(io)%Bulk ) cycle
-                atom_neq(:,ia) = atom_neq(:,ia) + tmp ! in case of sum
-                atom_neq(Elecs(io)%mu%ID,ia) = 0._dp
+                ! if we are not in the electrode we do not correct weight
+                if ( .not. AtomInElec(Elecs(io),ia) ) cycle
+                ! in case of sum with the off-diagonal terms we have to sum (otherwise it should be (:,ia) = tmp ; (mu%ID,ia) = 0._dp) 
+                atom_neq(:,ia) = atom_neq(:,ia) + tmp
+                atom_neq(Elecs(io)%mu%ID,ia) = atom_neq(Elecs(io)%mu%ID,ia) - tmp
              end do
+
              ! Calculate weights for this atom
              call get_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
                   atom_neq(:,ia), atom_w(:,ia) )
@@ -304,7 +339,7 @@ contains
           if ( l_ncol(io) == 0 ) cycle
 
           ! Update the weight of the row-atom
-          if ( TS_W_METHOD /= TS_W_ORB_ORB ) then
+          if ( TS_W /= TS_W_ORB_ORB ) then
              ! Calculate the weight of the atom corresponding to this
              ! orbital
              lio = index_local_to_global(dit,io,Node)
@@ -317,31 +352,66 @@ contains
              ! Retrieve the connecting orbital
              jo = l_col(ind)
 
-             if ( TS_W_METHOD == TS_W_ORB_ORB ) then
+             if ( TS_W == TS_W_ORB_ORB ) then
+
                 ! Get the non-equilibrium contribution and the weight associated
                 call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
                      DMneq(ind,:),neq,w)
-             else ! we have weight per atom
-                
-                ! Get the non-equilibrium contribution
-                call get_neq(N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq)
 
-                ! Re-calculate the weight for special weighting...
-                ia2 = iaorb(ucorb(jo,ng),lasto)
+             else ! we have weight per atom "somewhere"
 
                 ! To compare the weights... For DEBUGging purposes...
                 !call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
                 !     DMneq(ind,:),neq,w)
                 !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wi: ', ia1,ia2,w
+                
+                ! Re-calculate the weight for special weighting...
+                ia2 = iaorb(jo,lasto)
 
-                ! Calculate the weight per atom (geometric mean)
+                ! [[ this is the geometric mean method...
+                ! This should probably be used as the geometric mean
+                ! retains the tendency of the data, however I am not 
+                ! quite sure of its arguments...
+                ! For test:
+                ! A1:    [ 0.95  0.05 ]   # weight 1
+                ! A2:    [ 0.5   0.5  ]   # weight 2
+                ! GM-N:  [ 0.813 0.187]   # geometric mean of weights
+                ! AM-N:  [ 0.725 0.275]   # arithmetic mean of weights
+
                 w = sqrt(atom_w(:,ia1) * atom_w(:,ia2))
-                ! ensure normalization, we do not want to loose
-                ! any contribution...
-                ! The typical sum of normalized random data
-                ! and its generated geometric mean is around 0.89
-                ! which is smaller than the total!
-                w = w / sum(w)
+                   
+                ! geometric mean does not retain normalization
+                w = w / sum(w) 
+                ! ]]
+
+                ! [[ arithmetic mean
+                ! the mean value between the atomic weights
+                ! will be used as the actual weight
+                ! w = (atom_w(:,ia1) + atom_w(:,ia2)) * 0.5_dp
+                ! ]] 
+
+                select case ( TS_W )                   
+                case ( TS_W_TR_ATOM_ATOM , TS_W_SUM_ATOM_ATOM )
+
+                   ! do nothing...
+
+                case ( TS_W_TR_ATOM_ORB , TS_W_SUM_ATOM_ORB )
+                   
+                   ! this ensures that the atomic weights are
+                   ! both taken into account, as well as the orb-orb
+                   call get_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+                        DMneq(ind,:) ** 2, neq(:) )
+
+                   ! see above for arguments
+                   w = sqrt(w(:) * neq(:))
+                   w = w / sum(w) 
+
+                case default
+                   call die('Error in weights...')
+                end select
+
+                ! Get the non-equilibrium contribution
+                call get_neq(N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq)
 
                 !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wt: ', ia1,ia2,w,sum(w)
              end if
@@ -375,8 +445,7 @@ contains
           end do
        end do
 
-       if ( TS_W_METHOD == TS_W_TR_ATOM_ATOM .or. &
-          TS_W_METHOD == TS_W_SUM_ATOM_ATOM ) then
+       if ( TS_W /= TS_W_ORB_ORB ) then
           deallocate(atom_w)
        end if
 
