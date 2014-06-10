@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+June 10, 2014  Alberto Garcia           trunk-462--ncps-25
+Enable writing of legacy XML format. Transiesta compilation.
+
+To support the interim (old) implementation of the PSML reading
+routines, ATOM generates a legacy-format PSML file (marked as
+<pseudo version="0.1">), in addition to a newer format.
+The files are, respectively, VPSXML and PSML.
+
+Ported new compilation symbols to the TranSiesta section.
+
+modified:
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/wrapup.f
+  Src/Makefile
+
+------------------------------------------------------------
 June 4, 2014  Alberto Garcia           trunk-462--ncps-24
 Added code to determine number of semicore shells
 

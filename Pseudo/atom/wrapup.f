@@ -753,6 +753,7 @@ c
 c     Write the pseudopotential in XML format
 c
       call pseudoXML( ray, npotd, npotu, zion, zratio )
+      call pseudoXMLNew( ray, npotd, npotu, zion, zratio )
 c
       return
 c

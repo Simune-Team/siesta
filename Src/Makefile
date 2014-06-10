@@ -265,8 +265,8 @@ siesta: check-siesta what version \
                 $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
                 $(NCPS) $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
-	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
-               $(XC) $(NCPS) $(MPI_INTERFACE) \
+	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML)  \
+               $(XC) $(NCPS) $(XMLPARSER) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) $(LIBS) 
 #
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
@@ -295,9 +295,11 @@ check-ts:
 #
 transiesta: check-ts what version \
             $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
+            $(WXML) $(XMLPARSER) $(NCPS) \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
+               $(WXML) $(XMLPARSER) $(NCPS) \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) $(LIBS)
 #
