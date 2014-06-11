@@ -94,7 +94,9 @@ contains
 ! memory reduced TranSIESTA code.
 ! This means collecting information about which region needs
 ! update, etc.
-  subroutine ts_sparse_init(slabel,Gamma,block_dist,sparse_pattern,na_u,lasto)
+  subroutine ts_sparse_init(slabel, &
+       IsVolt, N_Elec, Elecs, &
+       Gamma,block_dist,sparse_pattern,na_u,lasto)
 
     use class_OrbitalDistribution
 
@@ -105,10 +107,7 @@ contains
     use parallel, only: IONode
 
     use m_ts_electype
-    use m_ts_options, only : IsVolt
-    use m_ts_options, only : Elecs
     use m_ts_method
-!    use m_ts_options, only : monitor_list, iu_MON, N_mon
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
 #endif
@@ -118,6 +117,9 @@ contains
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: slabel
+    logical, intent(in) :: IsVolt ! bias calculation
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(inout) :: Elecs(N_Elec)
     ! A Gamma-calculation?
     logical, intent(in)  :: Gamma
     ! The distribution for the sparsity-pattern
@@ -953,6 +955,14 @@ contains
       integer :: offset
       offset = sum(TotUsedAtoms(Elecs(:)), MASK=Elecs(:)%idx_na < ia )
     end function offset
+
+#ifdef MUMPS
+    ! Add a routine for analysing the structure
+    ! This will let users easily get access to the 
+    ! different orderings in MUMPS and check them
+    ! against each other...
+
+#endif
 
     subroutine step_ia(iab,ia,in_elec)
       integer, intent(inout) :: iab

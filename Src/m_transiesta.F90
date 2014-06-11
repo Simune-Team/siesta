@@ -19,7 +19,11 @@ module m_transiesta
   use files, only : slabel
 
   use m_ts_sparse, only : ts_sparse_init
-  use m_ts_method, only : ts_method, TS_SPARSITY, TS_SPARSITY_TRI
+  use m_ts_method, only : ts_method
+  use m_ts_method, only : TS_SPARSITY, TS_SPARSITY_TRI
+#ifdef MUMPS
+  use m_ts_method, only : TS_SPARSITY_MUMPS
+#endif
 
   use m_ts_tri_init, only : ts_tri_init
 
@@ -28,6 +32,11 @@ module m_transiesta
 
   use m_ts_trig
   use m_ts_trik
+
+#ifdef MUMPS
+  use m_ts_mumpsg
+  use m_ts_mumpsk
+#endif
 
   implicit none
 
@@ -105,7 +114,8 @@ contains
 
        call timer('TS_init',1)
 
-       call ts_sparse_init(slabel,Gamma, sp_dist, sparse_pattern, &
+       call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, &
+            Gamma, sp_dist, sparse_pattern, &
             na_u, lasto)
 
        if ( ts_method == TS_SPARSITY_TRI ) then
@@ -221,6 +231,23 @@ contains
                no_u, n_nzs, &
                H, S, xij, DM, EDM, Ef, kT)
        end if
+#ifdef MUMPS
+    else if ( ts_method == TS_SPARSITY_MUMPS ) then
+       if ( Gamma ) then
+          call ts_mumpsg(N_Elec,Elecs, &
+               nq, uGF, nspin, na_u, lasto, &
+               sp_dist, sparse_pattern, &
+               no_u, n_nzs, &
+               H, S, DM, EDM, Ef, kT)
+       else
+          call ts_mumpsk(N_Elec,Elecs, &
+               nq,uGF, &
+               ucell, nspin, na_u, lasto, &
+               sp_dist, sparse_pattern, &
+               no_u, n_nzs, &
+               H, S, xij, DM, EDM, Ef, kT)
+       end if
+#endif
     else
 
        call die('Error in code')
@@ -409,7 +436,7 @@ contains
             write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of tri-diagonal matrices: ', &
             mem,'MB'
-    else
+    else if ( ts_method == TS_SPARSITY ) then
        ! Calculate size of the full matrices
        no_E = sum(TotUsedOrbs(Elecs),.not. Elecs(:)%DM_CrossTerms)
        i = nrows_g(ts_sp_uc) - no_Buf
@@ -426,6 +453,11 @@ contains
             write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of full matrices: ', &
             mem,'MB'
+#ifdef MUMPS
+    else if ( ts_method == TS_SPARSITY_MUMPS ) then
+       if ( IONode ) &
+            write(*,'(a)')'transiesta: Memory usage is determined by MUMPS, check output logs.'
+#endif
     end if
 
   end subroutine ts_print_memory

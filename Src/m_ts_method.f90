@@ -14,6 +14,11 @@ module m_ts_method
   ! as the heavily optimized tri-diagonalization
   integer, parameter :: TS_SPARSITY_TRI = 2
 
+  ! This is the transiesta version utilizing the 
+  ! full sparsity pattern of SIESTA as well 
+  ! as the MUMPS library
+  integer, parameter :: TS_SPARSITY_MUMPS = 3
+
   ! The default solution method (it will be reset
   ! after option reading)
   integer :: ts_method = TS_SPARSITY_TRI
@@ -194,6 +199,14 @@ contains
     integer :: off
     off = ts_o_offset(ucorb(io,ts_no_u))
   end function orb_offset
+
+  elemental function ts2s_orb(io) result(off)
+    integer, intent(in) :: io
+    integer :: off
+    do off = io , ts_no_u
+       if ( off - ts_o_offset(off) == io ) return
+    end do
+  end function ts2s_orb
 
   elemental function atom_offset(ia) result(off)
     use geom_helper, only : UCORB

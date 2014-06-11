@@ -1,18 +1,3 @@
-!==========================================================================*
-!                                                                          *
-!  TRANSIESTA MODULE m_ts_options : Declaration of the variables           *
-!  involved in a TRANSIESTA calculation.                                   *
-!                                                                          *
-!  Written by F.D.Novaes, May'07                                           *
-!  onlyS option added by M.Paulsson May'09                                 *
-!==========================================================================*
-!  Contains the Subroutines:                                               *
-!                                                                          *
-!  1) read_ts_options : Reads the optional parameters from the fdf file    *
-!                                                                          *
-!==========================================================================* 
-
-
 module m_ts_options
 
   use precision, only : dp
@@ -73,7 +58,7 @@ module m_ts_options
   ! tri-diagonalization partition and the contour
   logical :: TS_Analyze = .false.
   integer :: TS_bandwidth_algo = 0
-
+  
 contains
   
   subroutine read_ts_options( wmix, kT, ucell, na_u, xa, lasto)
@@ -95,6 +80,10 @@ contains
     use m_ts_weight
     use m_ts_charge
     use m_ts_tdir
+
+#ifdef MUMPS
+    use m_ts_mumps_init, only : MUMPS_mem, MUMPS_ordering
+#endif
     
     use m_monitor
     use m_bandwidth
@@ -182,9 +171,35 @@ contains
        ts_method = TS_SPARSITY
     else if ( leqi(chars,'tri') ) then
        ts_method = TS_SPARSITY_TRI
+#ifdef MUMPS
+    else if ( leqi(chars,'mumps') ) then
+       ts_method = TS_SPARSITY_MUMPS
+#endif
     else
        call die('Unrecognized Transiesta solution method: '//trim(chars))
     end if
+
+#ifdef MUMPS
+    MUMPS_mem = fdf_get('TS.MUMPS.Mem',20)
+    chars = fdf_get('TS.MUMPS.Ordering','auto')
+    if ( leqi(chars,'auto') ) then
+       MUMPS_ordering = 7
+    else if ( leqi(chars,'amd') ) then
+       MUMPS_ordering = 0
+    else if ( leqi(chars,'amf') ) then
+       MUMPS_ordering = 2
+    else if ( leqi(chars,'scotch') ) then
+       MUMPS_ordering = 3
+    else if ( leqi(chars,'pord') ) then
+       MUMPS_ordering = 4
+    else if ( leqi(chars,'metis') ) then
+       MUMPS_ordering = 5
+    else if ( leqi(chars,'qamd') ) then
+       MUMPS_ordering = 6
+    else
+       call die('Unknown MUMPS ordering.')
+    end if
+#endif
 
 
     ! currently this does not work
@@ -614,6 +629,10 @@ contains
              chars = 'memory'
           end if
           write(*,10)'Tri-Mat create algorithm', trim(chars)
+#ifdef MUMPS
+       else if ( ts_method == TS_SPARSITY_MUMPS ) then
+          write(*,10)'Solution method', 'Sparsity pattern + MUMPS library'
+#endif
        end if
        write(*,8) 'TranSIESTA SCF cycle mixing weight',ts_wmix
        write(*,1) 'Start TS-SCF cycle immediately', ImmediateTSmode
@@ -725,6 +744,10 @@ contains
           write(*,11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
        end if
 
+       if ( ts_method == TS_SPARSITY_MUMPS .and. IsVolt ) then
+          call die('Currently the bias contour is not functioning &
+               &for the MUMPS solver.')
+       end if
 
        ! Check that the unitcell does not extend into the transport direction
        do i = 1 , 3

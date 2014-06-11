@@ -1,4 +1,90 @@
 ----------------------------------------------------
+June 11, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-150
+Added MUMPS solution method for TRANSIESTA
+
+* Added the MUMPS solver for calculating the Green's function.
+  Currently, this method only works with the equilibrium 
+  contour. 
+  The only thing that is needed is to modify GF_Gamma_GF
+  to handle the sparsity resulting array. 
+  The code should have been finalized to be able to calculate
+  the desired GF-columns.
+
+  The compilation of this is enabled using the MUMPS-flag
+  So the arch.make file needs at least to have these flags:
+  
+  FPPFLAGS += -DMUMPS
+  LIBS += -lzmumps -lmumps_common -lpord [[-lparmetis] -lmetis] [-lscotch]
+
+  with correct linking of the MUMPS library.
+
+  the libraries:
+    - parmetis, metis
+    - scotch
+  are not necessary but are if MUMPS has been compiled with them.
+
+  The MUMPS library only calculates the necessary elements of the 
+  Green's function. 
+  It will not pay of to utilise this for systems below 4000 orbitals.
+  There I would suggest to use the tri-mat method.
+
+  To use the MUMPS library simply do this:
+    TS.SolutionMethod MUMPS
+
+  There are a couple of pitfalls related to how MUMPS
+  works.
+
+  1. Output files for the MUMPS routines are created according to:
+     TS_MUMPS_<Node>.dat
+     They contain relevant information from MUMPS and should be
+     consulted always. If INFOG(1) /= 0, an error has occured.
+  2. They are overwritten at every SCF cycle and contain the 
+     messages that MUMPS provides.
+  3. If you experience an error:
+      INFOG(1) = -9
+     you probably have too little memory allocated.
+     The memory utilised can be handled through this:
+       TS.MUMPS.Mem <integer>
+     the default is 20, which is the MUMPS default.
+     This can be raised until the above error disappears.
+     Else the matrix factorization proves extremely difficult and 
+     I don't know what can be done.
+     If any other error messages pops up, please consult the
+     MUMPS documentation.
+  4. The ordering can significantly reduce analysis step and memory usage.
+     Currently these are allowed:
+       TS.MUMPS.Ordering <string>
+     <string> being:
+        auto : MUMPS decides
+        AMD  : use the AMD ordering
+        AMF  : use the AMF ordering
+        SCOTCH : use scotch library (MUMPS needs to be compiled with it)
+        PORD : use the PORD ordering
+        METIS : use METIS ordering (MUMPS needs to be compiled with it)
+	QAMD : use the QAMD ordering (for long range basis this could be good)
+   
+   Notice the MUMPS library has a print-statement:
+    "Processing the RHS in post-order"
+   which apparently is not directed into the message files.
+   I can't change this, so stick with it. :)
+
+   If you think MUMPS is using too much memory you can reduce this:
+       TS.MUMPS.Mem <integer>
+   however notice point 3 above.
+
+added:
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+modified:
+  Src/Makefile
+  Src/m_transiesta.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/state_init.F
+
+----------------------------------------------------
 June 9, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-149
 Finalised 5 different weighting schemes
 

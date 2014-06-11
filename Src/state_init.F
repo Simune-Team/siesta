@@ -45,7 +45,7 @@
 #ifdef TRANSIESTA
       use m_ts_options, only : onlyS!, UseBulk
       use m_ts_options, only : TS_Analyze, TS_bandwidth_algo
-      use m_ts_options, only : N_Elec, Elecs
+      use m_ts_options, only : N_Elec, Elecs, IsVolt
       use m_ts_electype
       use m_ts_global_vars, only: TSrun
       use sys, only : bye
@@ -334,8 +334,8 @@
       if ( TS_Analyze ) then
 
          ! Force the creation of the full sparsity pattern
-         call ts_sparse_init(slabel,Gamma, block_dist, sparse_pattern,
-     &        na_u, lasto)
+         call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
+     &        Gamma, block_dist, sparse_pattern, na_u, lasto)
 
          ! create the tri-diagonal matrix
          call ts_tri_init()
