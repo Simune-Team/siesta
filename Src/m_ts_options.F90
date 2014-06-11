@@ -67,7 +67,7 @@ contains
     use files, only : slabel
     use fdf, only : fdf_get, fdf_deprecated, fdf_obsolete
     use fdf, only : leqi
-    use parallel, only: IOnode
+    use parallel, only: IOnode, Nodes
     use units, only: eV, Ang, Kelvin
 
     use m_ts_cctype
@@ -75,6 +75,9 @@ contains
     use m_ts_io, only : ts_read_TSHS_opt
 
     use m_ts_contour
+    use m_ts_contour_eq,  only : N_Eq_E
+    use m_ts_contour_neq, only : N_nEq_E
+
     use m_ts_io_contour
     use m_ts_method
     use m_ts_weight
@@ -264,7 +267,6 @@ contains
     Volt   = fdf_get('TS.Voltage',0._dp,'Ry') 
     ! Voltage situation is above 0.01 mV
     IsVolt = abs(Volt/eV) > 0.00001_dp
-
 
     ! This should never be used!!!!
     ! It is required to fix the potential in the cell
@@ -739,6 +741,28 @@ contains
 
        write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
 
+       ! Calculate the number of optimal contour points
+       i = mod(N_Eq_E(), Nodes) ! get remaining part of equilibrium contour
+       if ( IONode .and. i /= 0 ) then
+          i = Nodes - i
+          write(*,'(a)')'Without loosing performance you can increase &
+               &the equilibrium integration precision.'
+          write(*,'(a,i0,a)')'You can add ',i,' more energy points in the &
+               &equilibrium contours, for FREE!'
+          if ( i/N_mu > 0 ) then
+             write(*,'(a,i0,a)')'This is ',i/N_mu,' more energy points per chemical potential.'
+          end if
+       end if
+
+       i = mod(N_nEq_E(), Nodes) ! get remaining part of equilibrium contour
+       if ( IONode .and. i /= 0 ) then
+          i = Nodes - i
+          write(*,'(a)')'Without loosing performance you can increase &
+               &the non-equilibrium integration precision.'
+          write(*,'(a,i0,a)')'You can add ',i,' more energy points in the &
+               &non-equilibrium contours, for FREE!'
+       end if
+
        if ( .not. Calc_Forces ) then
           write(*,11) '***       TranSIESTA will NOT update forces       ***'
           write(*,11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
@@ -752,7 +776,7 @@ contains
        ! Check that the unitcell does not extend into the transport direction
        do i = 1 , 3
           if ( i == ts_tdir ) cycle
-          if ( abs(dot(ucell(:,i),ucell(:,ts_tdir),3)) > 1e-7 ) then
+          if ( abs(dot(ucell(:,i),ucell(:,ts_tdir),3)) > 1e-7_dp ) then
              write(*,*) &
                   "ERROR: Unitcell has the electrode extend into the &
                   &transport direction."
@@ -784,23 +808,23 @@ contains
        do i = 1 , N_Elec
 
           if ( .not. Elecs(i)%Bulk ) then
-             write(*,*) 'Electrode '//trim(Name(Elecs(i)))//' will &
+             write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
                   &not use bulk Hamiltonian. &
                   &Be careful here.'
           end if
 
           if ( Elecs(i)%DM_CrossTerms ) then
-             write(*,*) 'Electrode '//trim(Name(Elecs(i)))//' will &
+             write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
                   &update cross-terms with central region.'
           end if
 
           if ( .not. Elecs(i)%kcell_check ) then
-             write(*,*) 'Electrode '//trim(Name(Elecs(i)))//' will &
+             write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
                   &not check the k-grid sampling vs. system k-grid &
                   &sampling. Please ensure appropriate sampling.'
           end if
           if ( Elecs(i)%Ef_frac_CT /= 0._dp ) then
-             write(*,*) 'Electrode '//trim(Name(Elecs(i)))//' will &
+             write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
                   &shift coupling Hamiltonian with a shift in energy. &
                   &Be careful here.'
           end if

@@ -1,4 +1,29 @@
 ----------------------------------------------------
+June 11, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-151
+Bugfix for buffer atom definitions
+
+* When reading in single atomic positions in the
+  TS.Atoms.Buffer block it was not wrapped around
+  for negative positions.
+  I have now also fully removed the 
+   - TS.BufferAtomsRight
+   - TS.BufferAtomsLeft
+  keywords.
+
+* Added printout of optimal energy-points choice.
+  The user is now encouraged to optimize the number of
+  contour points. Both in the equilibrium and non-equilibrium
+  contour.
+
+* Added a write-out of the maximal mismatch vector when the 
+  atomic coordinates of the electrode/system does not match.
+
+modified:
+  Src/m_ts_electype.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 June 11, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-150
 Added MUMPS solution method for TRANSIESTA
 

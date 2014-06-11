@@ -95,6 +95,7 @@ contains
           if ( fdf_bnnames(pline) == 1 ) then
              do i = 1 , fdf_bnintegers(pline)
                 ia = fdf_bintegers(pline,i)
+                if (ia < 0) ia = na_u + ia + 1
                 call set_type(TYP_BUFFER,ia,na_u,lasto)
              end do
           else if ( fdf_bnnames(pline) == 3 ) then
@@ -132,8 +133,7 @@ contains
     ! old options for buffer atoms
 
     call fdf_deprecated('TS.BufferAtomsLeft','TS.Atoms.Buffer.Start')
-    ia1 = fdf_get('TS.BufferAtomsLeft',0)
-    ia1 = fdf_get('TS.Atoms.Buffer.Start',ia1)
+    ia1 = fdf_get('TS.Atoms.Buffer.Start',0)
     if ( ia1 > 0 ) then
        do ia = 1 , ia1
           if ( atom_type(ia) == TYP_DEVICE ) then
@@ -143,8 +143,7 @@ contains
     end if
 
     call fdf_deprecated('TS.BufferAtomsRight','TS.Atoms.Buffer.End')
-    ia2 = fdf_get('TS.BufferAtomsRight',0)
-    ia2 = fdf_get('TS.Atoms.Buffer.End',ia2)
+    ia2 = fdf_get('TS.Atoms.Buffer.End',0)
     if ( ia2 > 0 ) then
        do ia = na_u - ia2 + 1 , na_u
           if ( atom_type(ia) == TYP_DEVICE ) then
@@ -168,6 +167,9 @@ contains
       integer, intent(in) :: typ, ia, na_u,lasto(0:na_u)
       integer :: i, no
       if ( ts_a_type(ia) /= TYP_DEVICE ) then
+         write(*,'(2(a,i0))') 'Trying to set atom ',ia,' to type: ',typ
+         write(*,'(2(a,i0))') 'Atom ',ia,' is already: ',ts_a_type(ia)
+
          call die('Error in setup. Atoms are having two types, check for &
               &electrode and buffer atom overlap...')
       end if

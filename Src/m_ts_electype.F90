@@ -939,6 +939,7 @@ contains
   subroutine check_Elec(this,nspin,na_u,xa,lasto,xa_EPS, &
        kcell,kdispl)
 
+    use intrinsic_missing, only : VNORM
     use parallel, only : IONode
     use units, only : Ang
     use m_ts_io, only : ts_read_TSHS_opt
@@ -958,6 +959,7 @@ contains
     integer :: i,j,k, ia, iaa, this_kcell(3,3)
     logical :: er, this_er, Gamma
     real(dp) :: xa_o(3), this_xa_o(3), ucell(3,3), this_kdispl(3)
+    real(dp) :: max_xa(3), cur_xa(3)
     real(dp), pointer :: this_xa(:,:)
 
 #ifdef MPI
@@ -971,21 +973,27 @@ contains
     this_xa_o(:) = this_xa(:,1)
     ucell = this%ucell
 
+    max_xa = 0._dp
     iaa = this%idx_na
     do ia = 1 , this%na_used
+       
        do k = 0 , this%RepA3 - 1
        do j = 0 , this%RepA2 - 1
        do i = 0 , this%RepA1 - 1
-          ! Assert the coordinates
-          er=er.or.abs(this_xa(1,ia)-this_xa_o(1) + &
-               sum(ucell(1,:)*(/i,j,k/)) - &
-               xa(1,iaa)+xa_o(1)) > xa_EPS
-          er=er.or.abs(this_xa(2,ia)-this_xa_o(2) + &
-               sum(ucell(2,:)*(/i,j,k/)) - &
-               xa(2,iaa)+xa_o(2)) > xa_EPS
-          er=er.or.abs(this_xa(3,ia)-this_xa_o(3) + &
-               sum(ucell(3,:)*(/i,j,k/)) - &
-               xa(3,iaa)+xa_o(3)) > xa_EPS
+          ! Calculate repetition vector
+          cur_xa(1) = sum(ucell(1,:)*(/i,j,k/))
+          cur_xa(2) = sum(ucell(2,:)*(/i,j,k/))
+          cur_xa(3) = sum(ucell(3,:)*(/i,j,k/))
+          
+          ! Add the electrode distance for the ELEC atom
+          cur_xa(:) = cur_xa(:) + this_xa(:,ia)-this_xa_o(:)
+          ! Subtract the SYSTEM position
+          cur_xa(:) = cur_xa(:) - xa(:,iaa) + xa_o(:)
+          if ( VNORM(cur_xa) > VNORM(max_xa) ) then
+             max_xa = cur_xa
+             er = er .or. any( abs(max_xa) > xa_EPS )
+          end if
+
           iaa = iaa + 1
        end do
        end do
@@ -1009,6 +1017,7 @@ contains
           write(*,'(a,i0,a)') "NOTICE: that these coordinates are &
                &arranged with respect to atom ", this%idx_na," in your FDF file"
           write(*,'(a)') "NOTICE: that you need to add the species label again"
+          write(*,'(a,3(tr1,g10.4))') "Maximal offset in position (Ang):",max_xa/Ang
           write(*,'(a)') "For the same species in the electrode you can do:"
           write(*,'(a,/)') "awk '{print $1,$2,$3,1}' <OUT-file>"
           write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
