@@ -52,6 +52,7 @@ FC_SERIAL?=$(FC_DEFAULT)
 TOP_LEVEL=$(shell pwd)/../../Src
 #
 pseudoXML.o: $(WXML)
+pseudoXMLnew.o: $(WXML)
 #
 #--------------------------------------------------------------
 dep:
@@ -90,11 +91,13 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
         genrhs.o  logder.o ode.o denplot.o scilib.o  recipes.o \
 	compat_params.o  pcc_exp.o  change_valence.o pswf_store.o \
 	coreq.o get_unit.o gauleg.o divdif.o symbols.o \
-        prversion.o pseudoXML.o pxf.o force_underflow.o dsolv2_single.o
+        prversion.o pseudoXML.o pseudoXMLnew.o pxf.o force_underflow.o dsolv2_single.o\
+        m_xcnames.o
 #
 OBJS= $(MAIN_OBJS) 
 #
 pseudoXML.o: $(WXML)
+pseudoXMLnew.o: $(WXML)
 #
 velect.o: $(XC)
 atm:	$(WXML) $(XC) $(OBJS) $(AUX_OBJS) 
@@ -139,6 +142,8 @@ potran.o: plot.h
 prversion.o: version.h
 pseudo.o: param.h orbital.h radial.h elecpot.h
 pseudoXML.o: charge.h param.h orbital.h radial.h pseudowave.h ion.h
+pseudoXMLnew.o: charge.h param.h orbital.h radial.h pseudowave.h ion.h
+pseudoXMLnew.o: m_xcnames.o
 pswf_store.o: radial.h pseudowave.h ion.h
 recipes.o: ode_path.h
 symbols.o: set2.h

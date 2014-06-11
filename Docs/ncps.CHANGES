@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+June 11, 2014  Alberto Garcia           trunk-462--ncps-26
+Add libxc codes to PSML file
+
+Created a 'm_xcnames' module to hold translation information.
+Some checking of libxc names is still needed.
+Error reporting and fallback need to be completed.
+
+(+ Split the 'new' (v 0.6) pseudoXML routine to a 
+   new file)
+
+added:
+  Pseudo/atom/m_xcnames.F90
+  Pseudo/atom/pseudoXMLnew.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXML.f
+
+------------------------------------------------------------
 June 10, 2014  Alberto Garcia           trunk-462--ncps-25
 Enable writing of legacy XML format. Transiesta compilation.
 

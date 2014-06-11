@@ -1,8 +1,9 @@
 
 
-      subroutine pseudoXML( ray, npotd, npotu, zion, zratio )
+      subroutine pseudoXMLnew( ray, npotd, npotu, zion, zratio )
 
       use flib_wxml
+      use m_xcnames
 
       implicit none
 
@@ -41,107 +42,14 @@
       integer :: stat
       character(len=80) :: line
 
+      type(xc_id_t) :: xc_id
 
 ! Digest and dump the information about the exchange and correlation functional
-      select case(icorr) 
 
-        case('ca') 
-          xcfuntype    = 'LDA'
-          xcfunparam   = 'Ceperley-Alder'
-
-        case('pw') 
-          xcfuntype    = 'LDA'
-          xcfunparam   = 'Perdew-Wang-92'
-
-        case('wi') 
-          xcfuntype    = 'LDA'
-          xcfunparam   = 'Wigner'
-
-        case('hl') 
-          xcfuntype    = 'LDA'
-          xcfunparam   = 'Hedin-Lundqvist'
-
-        case('gl') 
-          xcfuntype    = 'LDA'
-          xcfunparam   = 'Gunnarson-Lundqvist'
-
-        case('bh') 
-          xcfuntype    = 'LDA'
-          xcfunparam   = 'von Barth-Hedin'
-
-        case('pb') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Perdew-Burke-Ernzerhof'
-
-        case('rp') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'RPBE - Hammer et al'
-
-        case('rv') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'revPBE Zhang+Yang'
-
-        case('bl') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Becke-Lee-Yang-Parr'
-
-        case('wc') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Wu-Cohen'
-
-        case('ps') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Perdew-Burke-Ernzerhof-solid'
-
-        case('am') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Armiento-Mattsson-05'
-
-        case('wp') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Perdew-Wang-91'
-
-        case('jo') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Capelle-et-al--PBE-Js-Jr-LO'
-
-        case('jh') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Capelle-et-al--PBE-Js-Jr-HEG'
-
-        case('go') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Capelle-et-al--PBE-Gc-Gx-LO'
-
-        case('gh') 
-          xcfuntype    = 'GGA'
-          xcfunparam   = 'Capelle-et-al--PBE-Gc-Gx-HEG'
-
-        case('vw','vf') 
-          xcfuntype    = 'VDW'
-          xcfunparam   = 'Dion-et-al--DRSLL'
-
-        case('vl') 
-          xcfuntype    = 'VDW'
-          xcfunparam   = 'Lee-et-al--LMKLL'
-
-        case('vk') 
-          xcfuntype    = 'VDW'
-          xcfunparam   = 'Klimes-et-al--KBM'
-
-        case('vc') 
-          xcfuntype    = 'VDW'
-          xcfunparam   = 'Cooper--C09'
-
-        case('vb') 
-          xcfuntype    = 'VDW'
-          xcfunparam   = 'Berland-Hyldgaard--BH'
-
-        case('vv') 
-          xcfuntype    = 'VDW'
-          xcfunparam   = 'Vydrov-VanVoorhis--VV'
-
-      end select
+      call get_xc_id_from_atom_id(icorr,xc_id,stat)
+      if (stat /= 0) then
+         stop "Wrong icorr code!"
+      endif
 
 ! Digest and dump the information about the pseudopotential flavor
       select case(irel) 
@@ -209,12 +117,13 @@
 
 ! ---------------------------------------------------------------------
                                                                                 
-      call xml_OpenFile("VPSXML",xf, indent=.false.)
+      call xml_OpenFile("PSML",xf, indent=.false.)
 
       call xml_AddXMLDeclaration(xf,"UTF-8")
 
       call xml_NewElement(xf,"pseudo")
-      call my_add_attribute(xf,"version","0.1")
+      call my_add_attribute(xf,"version","0.6")
+
 
       call xml_NewElement(xf,"provenance")
       call my_add_attribute(xf,"creator",ray(1))
@@ -243,19 +152,22 @@
           call my_add_attribute(xf,"relativistic",relattrib)
           call my_add_attribute(xf,"polarized",polattrib)
           call my_add_attribute(xf,"core-corrections",coreattrib)
-          call my_add_attribute(xf,"xc-functional-type",xcfuntype)
-          call my_add_attribute(xf,"xc-functional-parametrization",
-     .                          xcfunparam)
+          call my_add_attribute(xf,"xc-functional-type",
+     $                              xc_id%siestaxc_type)
+          call my_add_attribute(xf,"xc-functional-authors",
+     $                              xc_id%siestaxc_authors)
+          call my_add_attribute(xf,"xc-libxc-exchange",xc_id%libxc_x)
+          call my_add_attribute(xf,"xc-libxc-correlation",xc_id%libxc_c)
           call do_configuration()
         call xml_EndElement(xf,"header")
 
 
         call xml_NewElement(xf,"grid")
-          call my_add_attribute(xf,"type",gridtype)
           call my_add_attribute(xf,"units",gridunits)
-          call my_add_attribute(xf,"scale",gridscale)
-          call my_add_attribute(xf,"step",gridstep)
           call my_add_attribute(xf,"npts",gridnpoint)
+          call xml_NewElement(xf,"grid_data")
+            call xml_AddArray(xf,r(2:nr))
+          call xml_EndElement(xf,"grid_data")
         call xml_EndElement(xf,"grid")
 
         call xml_NewElement(xf,"semilocal")
@@ -431,4 +343,7 @@
        call xml_AddAttribute(xf,name,trim(value))
       end subroutine my_add_attribute
 
-      end subroutine pseudoXML
+      end subroutine pseudoXMLnew
+
+
+
