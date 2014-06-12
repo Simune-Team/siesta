@@ -101,7 +101,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	projected_DOS.o propor.o m_partial_charges.o \
 	ran3.o reclat.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
-	savepsi.o shaper.o timer_tree.o timer.o \
+	savepsi.o shaper.o syms.o timer_tree.o timer.o \
 	vmb.o vmat.o vmatsp.o volcel.o \
 	cdiag.o rdiag.o \
         cgvc.o cgvc_zmatrix.o m_convergence.o \
@@ -206,6 +206,10 @@ siesta_cml.o siesta_cmlsubs.o siesta_end.o siesta_forces.o      \
 siesta_init.o siesta_move.o siesta_options.o state_analysis.o   \
 state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
 #
+#--------------------------------------------------------------
+# spglib whatnot
+spglib_configured=spglib/
+
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
