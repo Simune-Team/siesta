@@ -374,6 +374,7 @@ clean:
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )
+	(cd spglib ; rm -rf spglib-$(SPG_VER) )
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
