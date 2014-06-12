@@ -17,7 +17,7 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90 .c
 #
-VPATH=.
+VPATH=/home/mverstra/CODES/SIESTA/trunk/Src
 #
 default: what siesta #  fsiesta_pipes.o libSiestaForces.a
 #
@@ -86,7 +86,7 @@ OBJS =  automatic_cell.o atom_options.o \
         born_charge.o cellxc_mod.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o coxmol.o cross.o compute_norm.o\
 	denmat.o denmatlomem.o detover.o dfscf.o m_diagon.o diagon.o digcel.o \
-        fft.o dhscf.o constr.o diagk_file.o \
+        fft.o dhscf.o syms.o constr.o diagk_file.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o doping_uniform.o dot.o  \
 	m_efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
@@ -101,7 +101,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	projected_DOS.o propor.o m_partial_charges.o \
 	ran3.o reclat.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
-	savepsi.o shaper.o syms.o timer_tree.o timer.o \
+	savepsi.o shaper.o timer_tree.o timer.o \
 	vmb.o vmat.o vmatsp.o volcel.o \
 	cdiag.o rdiag.o \
         cgvc.o cgvc_zmatrix.o m_convergence.o \
@@ -208,8 +208,30 @@ state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
 #
 #--------------------------------------------------------------
 # spglib whatnot
-spglib_configured=spglib/
+SPG_VER=1.5.2
 
+#spglib_extract=spglib/spglib-$(SPG_VER)
+#$(spglib_extract): 
+#	( cd ./spglib ; tar -xzvf spglib-$(SPG_VER).tar.gz )
+#
+#spglib_configured=spglib/spglib-$(SPG_VER)/
+#$(spglib_configured): $(spglib_extract)
+#	( cd ./spglib/spglib-$(SPG_VER) ; touch arch.make ; \
+#            ./configure FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --prefix=. )
+
+spglib_binary=spglib/spglib-$(SPG_VER)/src/.libs/libsymspg.a
+$(spglib_binary): 
+	( cd ./spglib ; \
+	  tar -xzvf spglib-$(SPG_VER).tar.gz ; \
+	  cd spglib-$(SPG_VER) ; \
+	  ./configure FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" ; \
+	  $(MAKE) )
+
+SPG_LIBS="./$(spglib_binary)"
+
+syms.o: $(spglib_binary)
+
+# end spglib stuff
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
@@ -303,7 +325,7 @@ siesta: check-siesta what version \
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) \
                $(XC) $(MPI_INTERFACE) \
-               $(COMP_LIBS) $(FoX_LIBS) $(LIBS) 
+               $(COMP_LIBS) $(FoX_LIBS) $(SPG_LIBS) $(LIBS) 
 #
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
 	ar $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
@@ -424,6 +446,7 @@ compute_rhog.o: m_gamma.o m_ntm.o m_spin.o m_stress.o siesta_geom.o
 compute_rhog.o: siesta_options.o sparse_matrices.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o
+constr.o: syms.o
 coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o
 debugmpi.o: parallel.o
