@@ -201,6 +201,10 @@ contains
     ! on ALL routines, i.e. they are not used for anything other
     ! than, yes, work.
 
+#ifdef TRANSIESTA_TIMING
+    call timer('TS_MUMPS_INIT',1)
+#endif
+
     ! initialize MUMPS
     call init_MUMPS(mum,Node)
     
@@ -216,6 +220,10 @@ contains
 
     ! analyzation step
     call analyze_MUMPS(mum)
+
+#ifdef TRANSIESTA_TIMING
+    call timer('TS_MUMPS_INIT',2)
+#endif
 
     if ( IsVolt ) then
        ! we need only allocate one work-array for
@@ -334,21 +342,33 @@ contains
           ! *******************
           ! * prep GF^-1      *
           ! *******************
+#ifdef TRANSIESTA_TIMING
+          call timer('TS_PREP',1)
+#endif
           call prepare_invGF(cE, mum, &
                N_Elec, Elecs, &
                spH=spH , spS=spS)
+#ifdef TRANSIESTA_TIMING
+          call timer('TS_PREP',2)
+#endif
 
           ! *******************
           ! * calc GF         *
           ! *******************
-          write(mum%ICNTL(1),'(a,i0,2(a,i0))') &
+#ifdef TRANSIESTA_TIMING
+          call timer('TS_MUMPS_SOLVE',1)
+#endif
+         write(mum%ICNTL(1),'(a,i0,2(a,i0))') &
                '### Solving Eq Node/iC: ',Node,'/',cE%idx(2),',',cE%idx(3)
           mum%JOB = 5
           call zMUMPS(mum)
           if ( mum%INFO(1) < 0 .or. mum%INFOG(1) < 0 ) then
              call die('MUMPS failed the Eq. inversion, check the output log')
           end if
-          
+#ifdef TRANSIESTA_TIMING
+          call timer('TS_MUMPS_SOLVE',2)
+#endif   
+
           ! ** At this point we have calculated the Green's function
 
           ! ****************

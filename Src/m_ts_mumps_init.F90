@@ -24,6 +24,7 @@ module m_ts_mumps_init
 
   integer, public, save :: MUMPS_mem = 20
   integer, public, save :: MUMPS_ordering = 7
+  integer, public, save :: MUMPS_block = -8 ! blocking factor
 
   public :: init_MUMPS
   public :: analyze_MUMPS
@@ -68,6 +69,9 @@ contains
     
     ! Allow memory increase handled by the user
     mum%ICNTL(14) = MUMPS_Mem
+
+    ! Sets the blocking factor
+    mum%ICNTL(27) = MUMPS_block
 
     ! Request specific elements of the inverse matrix: 
     !   30 == 1 we MUST allocate it, but need not initialize it

@@ -1,4 +1,20 @@
 ----------------------------------------------------
+June 12, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-153
+Added MUMPS blocking factor to be user defined
+
+* The blocking factor has great performance gains by utilising a larger
+  block for MUMPS.
+  It is highly advisable for the user to set this at run-time.
+  Currently it is the MUMPS default (8), but I suspect that a better
+  default would be around 50 or 100.
+
+modified:
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 June 12, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-152
 Reverted to ts_Gamma instead of SIESTA-Gamma only
 

@@ -85,7 +85,7 @@ contains
     use m_ts_tdir
 
 #ifdef MUMPS
-    use m_ts_mumps_init, only : MUMPS_mem, MUMPS_ordering
+    use m_ts_mumps_init, only : MUMPS_mem, MUMPS_ordering, MUMPS_block
 #endif
     
     use m_monitor
@@ -183,7 +183,8 @@ contains
     end if
 
 #ifdef MUMPS
-    MUMPS_mem = fdf_get('TS.MUMPS.Mem',20)
+    MUMPS_mem   = fdf_get('TS.MUMPS.Mem',20)
+    MUMPS_block = fdf_get('TS.MUMPS.BlockingFactor',-8)
     chars = fdf_get('TS.MUMPS.Ordering','auto')
     if ( leqi(chars,'auto') ) then
        MUMPS_ordering = 7
