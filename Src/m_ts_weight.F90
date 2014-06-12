@@ -322,7 +322,7 @@ contains
              end do
 
              ! Calculate weights for this atom
-             call get_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+             call get_contrib(N_Elec,N_mu,N_nEq_ID,ID_mu, &
                   atom_neq(:,ia), atom_w(:,ia) )
              !if (node==0) &
              !     write(*,'(a,i2,2(tr1,g10.5))')'W: ', ia,atom_w(:,ia)
@@ -514,8 +514,6 @@ contains
     integer :: mu_i, mu, ID
     real(dp) :: total, tmp
 
-    !if ( any(w_ID < 0._dp) ) call die('get_weight: Error in code')
-
     ! TODO check that this is correct for several electrodes
     total  = 0._dp
     w(:)   = 0._dp
@@ -538,6 +536,34 @@ contains
     end if
 
   end subroutine get_weight
+
+  ! Calculate the contribution of weight for a given set of neq
+  subroutine get_contrib(N_El,N_mu,N_id,ID_mu,w_ID,w)
+    use m_ts_contour_neq, only : ID2mu, ID2mult
+    integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
+    real(dp), intent(in)  :: w_ID(N_id)
+    real(dp), intent(out) :: w(N_mu)
+    integer :: mu_i, mu, ID
+    real(dp) :: total, tmp
+
+    ! TODO check that this is correct for several electrodes
+    total  = 0._dp
+    w(:)   = 0._dp
+    do ID = 1 , N_id
+       mu = ID_mu(ID)
+       tmp = w_ID(ID) * ID2mult(ID)
+       total = total + tmp
+       do mu_i = 1 , N_mu
+          if ( mu_i == mu ) cycle
+          w(mu_i) = w(mu_i) + tmp
+       end do
+    end do
+
+    if ( total <= 0._dp ) then
+       w = 1._dp / N_mu
+    end if
+
+  end subroutine get_contrib
   
   ! Calculate both the non-equilibrium contribution
   ! and the weight associated with those points

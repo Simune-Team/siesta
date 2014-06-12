@@ -1,4 +1,16 @@
 ----------------------------------------------------
+June 12, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-154
+Weighting method revised so high charge => high weight
+
+* For sum/tr-atom-? we have revised the algorithm to take into account
+  each of the atoms total charge, rather than their individual mean.
+  This means that the weighting method has larger influence on atoms
+  with high charge. 
+
+modified:
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 June 12, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-153
 Added MUMPS blocking factor to be user defined
 
