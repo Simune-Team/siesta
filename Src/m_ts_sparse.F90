@@ -17,23 +17,6 @@
 ! as making the code more clearer in intent.
 ! This module is probably the most *hard* to understand part.
 
-! TODO.
-!   I have a few ideas which could be brought into existance on top
-!   of this version (quite easily, the reason for not doing it
-!   now is that the code will change so much that no-one will be familiar
-!   with the code). I have hence decided not to introduce the "full"
-!   memory reduction scheme for this version.
-!
-!  1. Many electrode dependent arrays could be formed in a sparse format 
-!  2. The codes for collecting charges in regions have not been
-!     transferred. This should be do-able (and quite easily)
-!     However, it would be MUCH better if this information
-!     is only shown per-request.
-!  3. Consider splitting Transiesta up in Gamma and non-Gamma
-!     codes. This will probably dublicate some code, however,
-!     I think it will help the unexperienced in delving into the 
-!     wonderful art of Transiestaing... :)
-!  
 module m_ts_sparse
 
   use class_Sparsity
@@ -96,7 +79,7 @@ contains
 ! update, etc.
   subroutine ts_sparse_init(slabel, &
        IsVolt, N_Elec, Elecs, &
-       Gamma,block_dist,sparse_pattern,na_u,lasto)
+       block_dist,sparse_pattern,na_u,lasto)
 
     use class_OrbitalDistribution
 
@@ -120,8 +103,6 @@ contains
     logical, intent(in) :: IsVolt ! bias calculation
     integer, intent(in) :: N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
-    ! A Gamma-calculation?
-    logical, intent(in)  :: Gamma
     ! The distribution for the sparsity-pattern
     type(OrbitalDistribution), intent(inout) :: block_dist
     ! SIESTA local sparse pattern (not changed)

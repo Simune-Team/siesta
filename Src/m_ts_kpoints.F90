@@ -40,7 +40,7 @@ module m_ts_kpoints
 !==============================================================================
  
   logical, public, save   :: ts_scf_kgrid_first_time = .true.
-  logical, public, save   :: ts_gamma_scf
+  logical, public, save   :: ts_Gamma
   integer, public, save   :: ts_maxk              ! 
   integer, public, save   :: ts_nkpnt             ! Total number of k-points
   real(dp), public, save  :: ts_eff_kgrid_cutoff  ! Effective kgrid_cutoff
@@ -229,7 +229,7 @@ contains
          ts_nkpnt,ts_kpoint,ts_kweight, ts_eff_kgrid_cutoff)
 
     ts_maxk = ts_nkpnt
-    ts_gamma_scf =  (ts_nkpnt == 1 .and. &
+    ts_Gamma =  (ts_nkpnt == 1 .and. &
          dot_product(ts_kpoint(:,1),ts_kpoint(:,1)) < 1.0e-20_dp)
 
     if (IONode) call ts_write_k_points()

@@ -26,6 +26,7 @@ module m_ts_mumps_init
   integer, public, save :: MUMPS_ordering = 7
 
   public :: init_MUMPS
+  public :: analyze_MUMPS
   public :: prep_LHS
   public :: prep_RHS_Eq
   public :: prep_RHS_nEq
@@ -84,6 +85,30 @@ contains
          action='write',form='formatted')
 
   end subroutine init_MUMPS
+
+  subroutine analyze_MUMPS(mum)
+    include 'zmumps_struc.h'
+    type(zMUMPS_STRUC), intent(inout) :: mum
+    integer :: iu
+
+    ! analyse the MUMPS solver, this will determine
+    ! factorization strategy
+    mum%JOB = 1
+    call zMUMPS(mum)
+    if ( mum%INFO(1) < 0 .or. mum%INFOG(1) < 0 ) then
+       call die('MUMPS analysis step had an error.')
+    end if
+
+    ! Write out estimated memory requirements
+    iu = mum%ICNTL(1)
+    write(iu,'(/,a)')'### Memory estimation from ANALYSIS step...'
+    write(iu,'(a,i0,a)')'### Minimum memory required for calculation: ', &
+         mum%INFO(15),' MB'
+    write(iu,'(a,i0,a)')'### MUMPS is allocating: ', &
+         nint(mum%INFO(15)*real(100+mum%ICNTL(14),dp)/100._dp),' MB'
+    write(iu,'(a,/)')"### MUMPS memory can be altered using TS.MUMPS.Mem."
+
+  end subroutine analyze_MUMPS
 
   subroutine prep_LHS(mum,N_Elec,Elecs)
 #ifdef MPI

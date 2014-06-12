@@ -396,6 +396,7 @@ contains
              ! we might still have SIESTA-non-Gamma
              jo = ucorb(l_col(lind),nr)
 
+             ! This sparsity pattern is in UC
              rind = up_ptr(io)
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist

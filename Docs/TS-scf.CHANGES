@@ -1,4 +1,33 @@
 ----------------------------------------------------
+June 12, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-152
+Reverted to ts_Gamma instead of SIESTA-Gamma only
+
+* I had completely forgotten that if it is SIESTA
+  non-Gamma, the calculation for the supercell
+  contributions are defined exactly the same as if it
+  was a Gamma calculation. Hence, we now use
+  ts_Gamma to determine whether we are dealing with 
+  a Gamma calculation or not.
+  Many calculations will now reduce to Gamma calculations
+  if it is ts_Gamma and not Gamma.
+
+* The MUMPS solver now prints out some estimated memory
+  sizes in the log files.
+
+* Changed ts_Gamma_scf to ts_Gamma.
+
+modified:
+  Src/final_H_f_stress.F
+  Src/m_transiesta.F90
+  Src/m_ts_dm_update.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_sparse.F90
+  Src/state_init.F
+
+----------------------------------------------------
 June 11, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-151
 Bugfix for buffer atom definitions
 

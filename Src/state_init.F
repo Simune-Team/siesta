@@ -75,7 +75,7 @@
 #ifdef TRANSIESTA
       integer                       :: ts_kscell_file(3,3) = 0
       real(dp)                      :: ts_kdispl_file(3) = 0.0
-      logical                       :: ts_gamma_scf_file = .true.
+      logical                       :: ts_Gamma_file = .true.
       character(len=label_length+6) :: fname
       integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
@@ -318,7 +318,7 @@
 ! We include H as S, well-knowing that we only write one of
 !     them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
-     &        .true., Gamma, ts_Gamma_SCF_file,
+     &        .true., Gamma, ts_Gamma_file,
      &        ucell, na_u, no_l, no_u, no_s, maxnh, nspin,
      &        ts_kscell_file, ts_kdispl_file,
      &        xa, iza, lasto,
@@ -335,7 +335,7 @@
 
          ! Force the creation of the full sparsity pattern
          call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
-     &        Gamma, block_dist, sparse_pattern, na_u, lasto)
+     &        block_dist, sparse_pattern, na_u, lasto)
 
          ! create the tri-diagonal matrix
          call ts_tri_init()

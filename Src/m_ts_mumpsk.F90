@@ -188,13 +188,8 @@ contains
     nzwork = mum%NZ
     zwork => mum%A(:)
 
-    ! initialize the MUMPS solver, this will determine
-    ! factorization strategy
-    mum%JOB = 1
-    call zMUMPS(mum)
-    if ( mum%INFO(1) < 0 .or. mum%INFOG(1) < 0 ) then
-       call die('MUMPS analysis step had an error.')
-    end if
+    ! analyzation step
+    call analyze_MUMPS(mum)
 
     if ( IsVolt ) then
        ! we need only allocate one work-array for

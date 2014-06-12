@@ -58,7 +58,7 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
 
-    use m_ts_kpoints, only : ts_nkpnt
+    use m_ts_kpoints, only : ts_nkpnt, ts_Gamma
 
     use m_ts_electype
 
@@ -115,7 +115,7 @@ contains
        call timer('TS_init',1)
 
        call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, &
-            Gamma, sp_dist, sparse_pattern, &
+            sp_dist, sparse_pattern, &
             na_u, lasto)
 
        if ( ts_method == TS_SPARSITY_TRI ) then
@@ -124,7 +124,7 @@ contains
        end if
 
        ! print out estimated memory usage...
-       call ts_print_memory(Gamma)
+       call ts_print_memory(ts_Gamma)
 
        call ts_print_charges(N_Elec,Elecs, sp_dist, sparse_pattern, &
             nspin, n_nzs, DM, S)
@@ -201,7 +201,7 @@ contains
 
 
     if ( ts_method == TS_SPARSITY ) then
-       if ( Gamma ) then ! we can't even do this in TS_Gamma it would result in errorneous connections
+       if ( ts_Gamma ) then
           call ts_fullg(N_Elec,Elecs, &
                nq,uGF, &
                nspin, na_u, lasto, &
@@ -217,7 +217,7 @@ contains
                H, S, xij, DM, EDM, Ef, kT)
        end if
     else if ( ts_method == TS_SPARSITY_TRI ) then
-       if ( Gamma ) then
+       if ( ts_Gamma ) then
           call ts_trig(N_Elec,Elecs, &
                nq, uGF, nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
@@ -233,7 +233,7 @@ contains
        end if
 #ifdef MUMPS
     else if ( ts_method == TS_SPARSITY_MUMPS ) then
-       if ( Gamma ) then
+       if ( ts_Gamma ) then
           call ts_mumpsg(N_Elec,Elecs, &
                nq, uGF, nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
@@ -342,7 +342,7 @@ contains
   
   end subroutine transiesta
 
-  subroutine ts_print_memory(Gamma)
+  subroutine ts_print_memory(ts_Gamma)
     
     use parallel, only : IONode
 
@@ -362,7 +362,7 @@ contains
     use m_ts_tri_scat
     use m_ts_method, only : no_Buf
 
-    logical, intent(in) :: Gamma ! SIESTA Gamma
+    logical, intent(in) :: ts_Gamma ! transiesta Gamma
     integer :: i, no_E
     real(dp) :: mem, tmp_mem
 #ifdef MPI
@@ -378,7 +378,7 @@ contains
     i = nnzs(tsup_sp_uc)
     mem = mem + i * max(N_mu,N_nEq_id)
     if ( Calc_Forces ) mem = mem + i * N_mu
-    if ( Gamma ) then
+    if ( ts_Gamma ) then
        mem = mem * 8._dp
     else
        mem = mem * 16._dp
@@ -455,8 +455,10 @@ contains
             mem,'MB'
 #ifdef MUMPS
     else if ( ts_method == TS_SPARSITY_MUMPS ) then
-       if ( IONode ) &
-            write(*,'(a)')'transiesta: Memory usage is determined by MUMPS, check output logs.'
+       if ( IONode ) then
+          write(*,'(a)')'transiesta: Memory usage is determined by MUMPS.'
+          write(*,'(a)')'transiesta: Search in TS_MUMPS_<Node>.dat for: ### Minimum memory.'
+       end if
 #endif
     end if
 
