@@ -135,10 +135,6 @@ contains
 ! *****************************************************************
 ! Arguments:
 ! syms_type syms_t     : object with symops etc...
-! real*8  cell(3,3)    : input lattice vectors (Bohr)
-! integer na           : input number of atoms
-! integer isa(na)      : input species indexes
-! real*8  xa(3,na)     : input atomic cartesian coordinates (Bohr)
 ! *****************************************************************
     implicit         none
     type(syms_type), intent(inout) :: syms_this
@@ -147,5 +143,31 @@ contains
     if(allocated(syms_this%trans)) deallocate (syms_this%trans)
 
   end subroutine delete_syms
+
+  subroutine print_syms( syms_this )
+! *****************************************************************
+! Arguments:
+! syms_type syms_t     : object with symops etc...
+! *****************************************************************
+    implicit         none
+    type(syms_type), intent(in) :: syms_this
+
+
+! local
+    integer :: ii
+
+    write (*,'(a)') " output of crystal symmetries "
+    write (*,'(a,I6)') " nsymop = ", syms_this%nsymop
+    write (*,'(2a)') " symbol = ", syms_this%symbol
+    write (*,'(a)') " symops = "
+    do ii = 1, syms_this%nsymop
+      write (*,'(3(3I10,2x))') syms_this%symops(:,:,ii)
+    end do
+    write (*,'(a)') " trans = "
+    do ii = 1, syms_this%nsymop
+      write (*, '(3(E20.10,2x))') syms_this%trans(:,ii)
+    end do
+  end subroutine print_syms
+
 
 end module m_syms

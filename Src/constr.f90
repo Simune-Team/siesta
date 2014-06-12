@@ -36,18 +36,7 @@
     ! call init routine with main syms_t object from m_syms
     call init_syms( syms_t, cell, na, isa, xa )
 
-print *, "test outputs "
-print *, " nsymop = ", syms_t%nsymop
-print *, " symbol = ", syms_t%symbol
-print *, " symops = "
-do ii = 1, syms_t%nsymop
-  print '(3(3I10,2x))', syms_t%symops(:,:,ii)
-end do
-print *, " trans = "
-do ii = 1, syms_t%nsymop
-  print '(3(E20.10,2x))', syms_t%trans(:,ii)
-end do
-
+    call print_syms(syms_t)
 ! UP TO HERE!!!
 
 ! Write here your problem-specific code.
