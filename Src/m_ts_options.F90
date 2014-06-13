@@ -184,7 +184,7 @@ contains
 
 #ifdef MUMPS
     MUMPS_mem   = fdf_get('TS.MUMPS.Mem',20)
-    MUMPS_block = fdf_get('TS.MUMPS.BlockingFactor',-8)
+    MUMPS_block = fdf_get('TS.MUMPS.BlockingFactor',112)
     chars = fdf_get('TS.MUMPS.Ordering','auto')
     if ( leqi(chars,'auto') ) then
        MUMPS_ordering = 7
@@ -767,11 +767,6 @@ contains
        if ( .not. Calc_Forces ) then
           write(*,11) '***       TranSIESTA will NOT update forces       ***'
           write(*,11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
-       end if
-
-       if ( ts_method == TS_SPARSITY_MUMPS .and. IsVolt ) then
-          call die('Currently the bias contour is not functioning &
-               &for the MUMPS solver.')
        end if
 
        ! Check that the unitcell does not extend into the transport direction

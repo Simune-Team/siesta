@@ -26,6 +26,7 @@ module m_ts_mumps_init
   integer, public, save :: MUMPS_ordering = 7
   integer, public, save :: MUMPS_block = -8 ! blocking factor
 
+  public :: mum_err
   public :: init_MUMPS
   public :: analyze_MUMPS
   public :: prep_LHS
@@ -53,9 +54,8 @@ contains
 
     mum%JOB = -1 ! initialise
     call zMUMPS(mum)
-    if ( mum%INFO(1) < 0 .or. mum%INFOG(1) < 0 ) then
-       call die('MUMPS initialization had an error.')
-    end if
+    call mum_err(mum, &
+         'MUMPS initialization had an error.')
 
     ! Setup the control parameters
     mum%ICNTL(5) = 0 ! assembled format
@@ -70,7 +70,8 @@ contains
     ! Allow memory increase handled by the user
     mum%ICNTL(14) = MUMPS_Mem
 
-    ! Sets the blocking factor
+    ! Sets the blocking factor (opt for change in future versions)
+    ! Current MUMPS version: 4.10.0
     mum%ICNTL(27) = MUMPS_block
 
     ! Request specific elements of the inverse matrix: 
@@ -99,9 +100,8 @@ contains
     ! factorization strategy
     mum%JOB = 1
     call zMUMPS(mum)
-    if ( mum%INFO(1) < 0 .or. mum%INFOG(1) < 0 ) then
-       call die('MUMPS analysis step had an error.')
-    end if
+    call mum_err(mum, &
+         'MUMPS analysis step had an error.')
 
     ! Write out estimated memory requirements
     iu = mum%ICNTL(1)
@@ -168,7 +168,7 @@ contains
     ! Allocate LHS, first we need to
     ! calculate the actual size of the matrix
     ! We know that it must be the Hamiltonian sparsity
-    ! pattern + all Bulk-electrodes!
+    ! pattern UNION DENSE-electrodes!
     allocate( mum%IRN ( mum%NZ ) )
     allocate( mum%JCN ( mum%NZ ) )
     allocate( mum%A   ( mum%NZ ) )
@@ -237,9 +237,9 @@ contains
        ! it is required that prepare_GF_inv is called
        ! immediately (which it is)
        ! Hence the GF must NOT be used in between these two calls!
-       io = TotUsedOrbs(Elecs(iEl))
-       Elecs(iEl)%Sigma => Gf(no+1:no+io**2)
-       no = no + io ** 2
+       io = TotUsedOrbs(Elecs(iEl)) ** 2
+       Elecs(iEl)%Sigma => Gf(no+1:no+io)
+       no = no + io
 
     end do
 
@@ -290,7 +290,6 @@ contains
 
   subroutine prep_RHS_nEq(mum,no_u_TS,N_Elec, Elecs,Gf)
     use m_ts_electype
-    use m_ts_sparse, only : tsup_sp_uc
     use m_ts_method, only : ts2s_orb
     use class_Sparsity
     include 'zmumps_struc.h'
@@ -299,35 +298,20 @@ contains
     integer, intent(in) :: no_u_TS, N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
     complex(dp), pointer :: Gf(:)
-    integer :: iEl, no, i, io, jo, nr
-    integer, pointer :: l_ptr(:), l_ncol(:), l_col(:)
-    integer :: ind, j
+    integer :: iEl, no, i, j, io, jo, ind
 
     ! We only need a partial size of the Green's function
     no = sum(TotUsedOrbs(Elecs))
 
     call allocate_mum(mum,no*no_u_TS,N_Elec,Elecs,GF)
 
-    ! Create the index 
-    call attach(tsup_sp_uc,list_ptr=l_ptr, &
-         n_col=l_ncol,list_col=l_col,nrows_g=nr)
-
-    ! TODO, this requires that the sparsity pattern is symmetric
-    ! Which it always is!
-    mum%IRHS_PTR(1) = 1
-
     ind = 0
     do i = 1 , no_u_TS
-       if ( i > 1 ) then
-          ! initialize
-          mum%IRHS_PTR(i) = mum%IRHS_PTR(i-1)
-       end if
+       mum%IRHS_PTR(i) = ind + 1
        ! get correct siesta-orbital
        io = ts2s_orb(i)
        iElec: do iEl = 1 , N_Elec
           if ( .not. OrbInElec(Elecs(iEl),io) ) cycle
-          ! update pointer
-          mum%IRHS_PTR(i) = mum%IRHS_PTR(i-1) + no_u_TS - 1
           ! Create the row-index
           do j = 1 , no_u_TS
              ind = ind + 1
@@ -380,6 +364,52 @@ contains
     end if
 
   end subroutine insert_Self_Energies
+
+
+  subroutine mum_err(mum,m)
+    include 'zmumps_struc.h'
+    type(zMUMPS_STRUC), intent(inout) :: mum
+    character(len=*), intent(in) :: m
+
+    ! We here check the error message that MUMPS
+    ! has given
+    if ( mum%INFOG(1) == 0 .and. mum%INFO(1) == 0 ) return ! no error
+
+    ! write out the message
+    call msg(m)
+
+    select case ( mum%INFOG(1) ) 
+    case ( -5 ) 
+       call die('Analysis step could not allocate space. &
+            &Do you have enough memory on your machine?')
+    case ( -8 , -14 )
+       call msg('Integer work-array too small, increase &
+            &TS.MUMPS.Mem.')
+       write(*,'(a,i0)') 'Additional elements are needed: ',mum%INFOG(2)
+       write(0,'(a,i0)') 'Additional elements are needed: ',mum%INFOG(2)
+    case ( -9 ) 
+       call msg('Work-array S too small, increase &
+            &TS.MUMPS.Mem.')
+       write(*,'(a,i0)') 'Additional elements are needed: ',-mum%INFOG(2)*1e6
+       write(0,'(a,i0)') 'Additional elements are needed: ',-mum%INFOG(2)*1e6
+    case ( -17, -20 ) 
+       call msg('Work-array S too small, increase &
+            &TS.MUMPS.Mem.')
+    end select
+
+    call die('Check the MUMPS documentation for &
+         &the error message as well as the output.')
+    
+  contains
+    
+    subroutine msg(m)
+      character(len=*), intent(in) :: m
+      write(*,'(a)') m
+      write(0,'(a)') m
+    end subroutine msg
+    
+  end subroutine mum_err
+    
 
 #endif
 end module m_ts_mumps_init

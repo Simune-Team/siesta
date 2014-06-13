@@ -113,6 +113,7 @@ module m_ts_electype
      ! These arrays are used to construct the full Hamiltonian and overlap and Green's function
      complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:,:)
      ! Arrays needed to partition the scattering matrix and self-energies
+     ! Notice that Gamma should "ALWAYS" contain the transposed
      complex(dp), pointer :: Gamma(:,:), Sigma(:)
 
   end type Elec

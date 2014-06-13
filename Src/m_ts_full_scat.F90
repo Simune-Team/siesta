@@ -42,10 +42,6 @@ contains
 !  corresponds to the (no) electrode states
 !  Gamma is a (no)x(no) matrix.
 
-    use precision, only : dp
-
-    implicit none
-
 ! *********************
 ! * INPUT variables   *
 ! *********************

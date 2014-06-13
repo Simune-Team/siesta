@@ -114,8 +114,7 @@ contains
     
     use m_iterator
 
-    ! Gf calculation
-    use m_ts_full_scat
+    use m_ts_mumps_scat
 
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
@@ -138,16 +137,12 @@ contains
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
     real(dp), intent(in) :: Ef, kT
 
-! ****************** Electrode variables *********************
-    complex(dp), pointer :: GFGGF_work(:) => null()
-! ************************************************************
-
 ! ******************* Computational arrays *******************
     integer :: ndwork, nzwork
     real(dp), pointer :: dwork(:,:)
     ! The solution arrays
     type(zMUMPS_STRUC) :: mum
-    complex(dp), pointer :: zwork(:), GF(:)
+    complex(dp), pointer :: zwork(:), Gf(:)
 
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
@@ -189,7 +184,7 @@ contains
     ! Number of elements that are transiesta updated
     up_nzs = nnzs(tsup_sp_uc)
 
-    nullify(GF)
+    nullify(Gf)
 
     ! We do need the full GF AND a single work array to handle the
     ! left-hand side of the inversion...
@@ -221,15 +216,14 @@ contains
     ! analyzation step
     call analyze_MUMPS(mum)
 
+    if ( .not. IsVolt ) then
+       ! We can allocate the equilibrium now
+       call prep_RHS_Eq(mum,no_u_TS,up_nzs,N_Elec,Elecs,Gf)
+    end if
+
 #ifdef TRANSIESTA_TIMING
     call timer('TS_MUMPS_INIT',2)
 #endif
-
-    if ( IsVolt ) then
-       ! we need only allocate one work-array for
-       ! Gf.G.Gf^\dagger
-       call re_alloc(GFGGF_work,1,maxval(TotUsedOrbs(Elecs))**2,routine='transiesta')
-    end if
 
     ! Create the Fake distribution
     ! The Block-size is the number of orbitals, i.e. all on the first processor
@@ -283,6 +277,9 @@ contains
 
     do while ( .not. itt_step(Sp) )
 
+       write(mum%ICNTL(1),'(/,/,a,i0,/,/)') &
+            '### Solving for spin: ',ispin
+
        call init_DM(sp_dist, sparse_pattern, &
             n_nzs, DM(:,ispin), EDM(:,ispin), &
             tsup_sp_uc, Calc_Forces)
@@ -311,7 +308,8 @@ contains
        call timer('TS_EQ',1)
 #endif
 
-       call prep_RHS_Eq(mum,no_u_TS,up_nzs,N_Elec,Elecs,GF)
+       if ( IsVolt ) &
+            call prep_RHS_Eq(mum,no_u_TS,up_nzs,N_Elec,Elecs,Gf)
 
        ! ***************
        ! * EQUILIBRIUM *
@@ -358,13 +356,12 @@ contains
 #ifdef TRANSIESTA_TIMING
           call timer('TS_MUMPS_SOLVE',1)
 #endif
-         write(mum%ICNTL(1),'(a,i0,2(a,i0))') &
+          write(mum%ICNTL(1),'(/,a,i0,2(a,i0),/)') &
                '### Solving Eq Node/iC: ',Node,'/',cE%idx(2),',',cE%idx(3)
           mum%JOB = 5
           call zMUMPS(mum)
-          if ( mum%INFO(1) < 0 .or. mum%INFOG(1) < 0 ) then
-             call die('MUMPS failed the Eq. inversion, check the output log')
-          end if
+          call mum_err(mum, &
+               'MUMPS failed the Eq. inversion, check the output log')
 #ifdef TRANSIESTA_TIMING
           call timer('TS_MUMPS_SOLVE',2)
 #endif   
@@ -436,7 +433,7 @@ contains
        call timer('TS_NEQ',1)
 #endif
 
-       call prep_RHS_nEq(mum,no_u_TS,N_Elec,Elecs,GF)
+       call prep_RHS_nEq(mum,no_u_TS,N_Elec,Elecs,Gf)
 
        ! *******************
        ! * NON-EQUILIBRIUM *
@@ -468,13 +465,12 @@ contains
           ! *******************
           ! * calc GF         *
           ! *******************
-          write(mum%ICNTL(1),'(a,i0,2(a,i0))') &
+          write(mum%ICNTL(1),'(/,a,i0,2(a,i0),/)') &
                '### Solving nEq Node/iC: ',Node,'/',cE%idx(2),',',cE%idx(3)
           mum%JOB = 5
           call zMUMPS(mum)
-          if ( mum%INFO(1) < 0 .or. mum%INFOG(1) < 0 ) then
-             call die('MUMPS failed the nEq. inversion, check the output log')
-          end if
+          call mum_err(mum, &
+               'MUMPS failed the nEq. inversion, check the output log')
 
           ! ** At this point we have calculated the Green's function
 
@@ -485,19 +481,21 @@ contains
           do iEl = 1 , N_Elec
              if ( cE%fake ) cycle ! in case we implement an MPI communication solution
 
-             if ( .not. has_cE(cE,iEl=iEl) ) cycle
+             ! The mumps solver is initialized to always
+             ! solve for all electrode columns... (not very sparse :( )
 
              ! offset and number of orbitals
              no = TotUsedOrbs(Elecs(iEl))
 
-             ! Currently this is the *ONLY* thing
-             ! that we need to correct to get MUMPS nEq to work
-             !call GF_Gamma_GF(Elecs(iEl), no_u_TS, no, &
-             !     Gf(no_u_TS*off+1), zwork, size(GFGGF_work), GFGGF_work)
-
              ! step to the next electrode position
              off = off + no
-                
+
+             if ( .not. has_cE(cE,iEl=iEl) ) cycle
+
+             ! *notice* we correct the Gf index for the column
+             call GF_Gamma_GF(Elecs(iEl), mum, no_u_TS, no, &
+                  Gf(no_u_TS*(off-no)+1:))
+
              do iID = 1 , N_nEq_ID
                 
                 if ( .not. has_cE(cE,iEl=iEl,ineq=iID) ) cycle
@@ -507,7 +505,7 @@ contains
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      mum, &
                      N_Elec, Elecs, &
-                     DMidx=iID, EDMidx=imu)
+                     DMidx=iID, EDMidx=imu, is_nEq = .true. )
              end do
           end do
 
@@ -585,7 +583,7 @@ contains
     deallocate( mum%A )
     deallocate( mum%IRHS_PTR )
     deallocate( mum%IRHS_SPARSE )
-    deallocate( GF ) ! mum%RHS_SPARSE is => GF
+    deallocate( Gf ) ! mum%RHS_SPARSE is => GF
     nullify( mum%RHS_SPARSE )
     ! retain IO, killing makes a last print-out
     no = mum%ICNTL(1)
@@ -593,19 +591,12 @@ contains
     ! Destroy the instance (deallocate internal data structures)
     mum%JOB = -2
     call zMUMPS(mum)
-    if ( mum%INFO(1) < 0 .or. mum%INFOG(1) < 0 ) then
-       call die('Cleaning of MUMPS failed.')
-    end if
+    call mum_err(mum, &
+         'Cleaning of MUMPS failed.')
 
     ! close the file
     call io_close(no)
 
-    ! In case of voltage calculations we need a work-array for
-    ! handling the GF.Gamma.Gf^\dagger multiplication
-    if ( IsVolt ) then
-       call de_alloc(GFGGF_work, routine='transiesta')
-    end if
-   
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
 #endif
@@ -620,7 +611,8 @@ contains
   subroutine add_DM(DM, DMfact,EDM, EDMfact, &
        mum, &
        N_Elec,Elecs, &
-       DMidx, EDMidx)
+       DMidx, EDMidx, &
+       is_nEq)
 
     use class_Sparsity
     use class_dSpData2D
@@ -642,6 +634,8 @@ contains
     ! the index of the partition
     integer, intent(in) :: DMidx
     integer, intent(in), optional :: EDMidx
+    logical, intent(in), optional :: is_nEq
+
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
@@ -650,7 +644,7 @@ contains
     complex(dp), pointer :: GF(:)
     integer :: io, jo, ind, ir, nr, Hn, ind_H
     integer :: i1, i2
-    logical :: hasEDM
+    logical :: hasEDM, nEq
 
     ! Remember that this sparsity pattern HAS to be in Global UC
     s => spar(DM)
@@ -664,7 +658,12 @@ contains
     i2 = i1
     if ( present(EDMidx) ) i2 = EDMidx
 
-    GF => mum%RHS_SPARSE
+    nEq = .false.
+    if ( present(is_nEq) ) nEq = is_nEq
+
+    if ( .not. nEq ) then
+
+    GF => mum%RHS_SPARSE(:)
 
     if ( hasEDM ) then
        
@@ -693,25 +692,58 @@ contains
     else
 
        do ir = 1 , mum%NRHS
-             
-          ! this is column index
           jo = ts2s_orb(ir)
-
-          ! The update region equivalent GF part
           do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
-                
              io = ts2s_orb(mum%IRHS_SPARSE(ind))
-
              Hn    = l_ncol(io)
              ind_H = l_ptr(io)
-             ! Requires that l_col is sorted
              ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
              if ( ind_H == l_ptr(io) ) cycle
-
              D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
-             
           end do
        end do
+
+    end if
+
+    else
+
+    GF => mum%A(:)
+
+    if ( hasEDM ) then
+
+       do ind = 1 , mum%NZ ! looping A
+          
+          ! collect the two indices
+          io = ts2s_orb(mum%JCN(ind)) ! this is row index for Gf.G.Gf^\dagger
+          jo = ts2s_orb(mum%IRN(ind)) ! this is column index for Gf.G.Gf^\dagger
+
+          Hn    = l_ncol(io)
+          ind_H = l_ptr(io)
+          ! Check that the entry exists
+          ! Requires that l_col is sorted
+          ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
+                    
+          if ( ind_H == l_ptr(io) ) cycle ! this occurs as mum%A contains
+                                          ! the electrode as well
+          
+          D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
+          E(ind_H,i2) = E(ind_H,i2) - dimag( GF(ind) * EDMfact )
+             
+       end do
+       
+    else
+
+       do ind = 1 , mum%NZ
+          io = ts2s_orb(mum%JCN(ind))
+          jo = ts2s_orb(mum%IRN(ind))
+          Hn    = l_ncol(io)
+          ind_H = l_ptr(io)
+          ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
+          if ( ind_H == l_ptr(io) ) cycle
+          D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
+       end do
+
+    end if
 
     end if
 

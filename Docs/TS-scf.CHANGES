@@ -1,4 +1,41 @@
 ----------------------------------------------------
+June 13, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-155
+Completed MUMPS non-equilibrium calculation, now 3 methods!
+
+* Using MUMPS for non-equilibrium calcuations has now
+  been enabled. I suspect it to have the same performance
+  vs. the BTD method, i.e. one should revert to the MUMPS
+  method if the blocks of the tri-diagonal matrix are "bad".
+
+  The matrix product is done using the already allocated 
+  work-array in MUMPS. This means that we do not need 
+  to allocate any more memory for calculating the:
+    Gf.Gamma.Gf^\dagger
+  
+  The only way I see an optimized version of the 
+  triple-matrix product above (for MUMPS, and full) is to
+  restrict the product in each row/column in the range of
+  interaction orbitals. However, this would require that
+  the product is done on a per-row/column basis possibly
+  loosing some of the performance gained from the fast BLAS.
+  (only if the overhead of our loops and starting BLAS is
+  larger than the calculation itself).
+
+  I look forward to (if I get/have the time) to make this fully
+  distributed as MUMPS uses quite a bit of memory. :)
+
+added:
+  Src/m_ts_mumps_scat.F90
+modified:
+  Src/Makefile
+  Src/m_ts_electype.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 June 12, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-154
 Weighting method revised so high charge => high weight
 
