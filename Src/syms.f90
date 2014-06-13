@@ -20,7 +20,8 @@ module m_syms
     integer :: space_group
     character (len=11) :: symbol
     integer, allocatable :: symops(:,:,:)
-    integer, allocatable :: symops_cart(:,:,:)
+    !integer, allocatable :: symops_cart(:,:,:)
+    double precision, allocatable :: symops_cart(:,:,:)
     integer, allocatable :: symops_recip(:,:,:)
     double precision, allocatable :: trans(:,:)
     double precision, allocatable :: trans_cart(:,:)
@@ -98,8 +99,10 @@ contains
     integer :: ii, info
     double precision :: symprec
     double precision :: cellinv(3,3)
+    double precision :: celltransp(3,3)
     double precision :: dsymop(3,3)
     double precision :: dsymopinv(3,3)
+    double precision :: zerovec(3) = (/0.0d0, 0.0d0,0.0d0/)
 
     double precision, allocatable :: xreda(:,:)
     integer, allocatable :: symops_tmp(:,:,:)
@@ -109,20 +112,36 @@ contains
 
     allocate (xreda(3,na))
     call cart2red(cell, na, xa, xreda)
+! not necessary - no effect on spgrp recognition by spglib
+!    do ii = 1, na
+!      xreda(:,ii) = wrapvec_zero_one(xreda(:,ii))
+!    end do
+!DEBUG
 print *,  'xred = '
 print '(3E20.10)', xreda
+!END DEBUG
 
     ! refines positions with highest symmetry found within symprec
-    ! removed 13/6/2014 - this returns the conventional cell!!!
+    ! REMOVED 13/6/2014!!! - this returns the conventional cell!!!
     !call spg_refine_cell(cell, xreda, isa, na, symprec)
     !print *, 'xred refined'
     !print '(3E20.10)', xreda
     !print *, 'cell refined'
     !print '(3E20.10)', cell
 
-    call spg_get_international(syms_this%space_group, syms_this%symbol, cell(1,1), xreda(1,1), isa(1), na, symprec)
+    celltransp = transpose(cell)
+print *, 'transposed cell array: 1 vector on each line?'
+print '(3E20.10)', celltransp(:,1)
+print '(3E20.10)', celltransp(:,2)
+print '(3E20.10)', celltransp(:,3)
 
-    call spg_get_multiplicity(max_size, cell(1,1), xreda(1,1), isa(1), na, symprec)
+    call spg_get_international(syms_this%space_group, syms_this%symbol, celltransp(1,1), zerovec(1), isa(1), 1, symprec)
+print *, 'for empty lattice space group is ', syms_this%space_group, syms_this%symbol
+
+    call spg_get_international(syms_this%space_group, syms_this%symbol, celltransp(1,1), xreda(1,1), isa(1), na, symprec)
+print *, 'for full lattice space group is ', syms_this%space_group, syms_this%symbol
+
+    call spg_get_multiplicity(max_size, celltransp(1,1), xreda(1,1), isa(1), na, symprec)
 
     ! spglib returns row-major not column-major matrices!!! --DAS
     ! should we transpose these after reading in???
@@ -130,13 +149,14 @@ print '(3E20.10)', xreda
     allocate(trans_tmp(1:3, 1:max_size))
 
     call spg_get_symmetry(syms_this%nsymop, symops_tmp(1, 1, 1), trans_tmp(1, 1), &
-      max_size, cell(1, 1), xreda(1, 1), isa(1), na, symprec)
+      max_size, celltransp(1, 1), xreda(1, 1), isa(1), na, symprec)
 
     allocate(syms_this%symops(1:3, 1:3, 1:syms_this%nsymop))
     do ii = 1, max_size
 ! transpose needed or not? only visible on triclinic or hexagonal etc..
-! Checked for 1 case with Rm-3m comparing to abinit - no transpose needed...
-      syms_this%symops(:,:,ii) = symops_tmp(:,:,ii)
+! Checked for 1 case with P6_3 c m (#185) comparing to abinit - a transpose is needed!!!
+      syms_this%symops(:,:,ii) = transpose(symops_tmp(:,:,ii))
+      !syms_this%symops(:,:,ii) = symops_tmp(:,:,ii)
     end do
     deallocate(symops_tmp)
 
@@ -147,14 +167,16 @@ print '(3E20.10)', xreda
 
     do ii = 1, syms_this%nsymop
       syms_this%symops_cart(:, :, ii) = nint( matmul(cell, &
-&       matmul(syms_this%symops(:, :, ii), cellinv)) )
+&       matmul(dble(syms_this%symops(:, :, ii)), cellinv)) )
 
-! DEBUG - comment out later
-  if (any(abs(dble(syms_this%symops_cart(:, :, ii)) - matmul(cell, &
-&       matmul(syms_this%symops(:, :, ii), cellinv))) > 1.e-10)) then
-    stop 'error : cartesian symop element is not -1 0 +1'
-  end if
-! END DEBUG
+! it appears these matrices can be non integer for hexagonal systems... 
+!  for the moment, make them dble
+!      if (  any(abs(dble(syms_this%symops_cart(:, :, ii)) &
+!&       - matmul(cell, matmul(dble(syms_this%symops(:, :, ii)), cellinv))) > 1.e-10)  ) then
+!         print *, ii, syms_this%symops(:, :, ii)
+!         print *, matmul(cell, matmul(dble(syms_this%symops(:, :, ii)), cellinv))
+!         stop 'error : cartesian symop element is not -1 0 +1'
+!      end if
 
     end do
 
