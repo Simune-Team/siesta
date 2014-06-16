@@ -1,4 +1,15 @@
 ----------------------------------------------------
+June 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-156
+Require well defined transport direction for 2 electrodes
+
+* We require that the user only uses 1 transport direction
+  for two electrodes. Else the electrostatic potential 
+  will not be well defined.
+
+modified:
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 June 13, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-155
 Completed MUMPS non-equilibrium calculation, now 3 methods!
 

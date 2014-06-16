@@ -388,9 +388,16 @@ contains
 
     ! Check that the current transport direction is "aligned"
     ! TODO when we can deal with arbitrary electrodes this should be altered
-    if ( N_Elec == 2 .and. &
-         all(Elecs(1)%t_dir == Elecs(:)%t_dir) ) then
-       ts_tdir = Elecs(1)%t_dir
+    if ( N_Elec == 2 ) then
+       ! For the moment we require that 2 electrodes have 
+       ! a well defined transport direction
+       if ( all(Elecs(1)%t_dir == Elecs(:)%t_dir) ) then
+          ts_tdir = Elecs(1)%t_dir
+       else
+          call die('Using 2 electrodes requires a well-defined &
+               &transport direction. Only use one direction for &
+               the semi-infinite leads.')
+       end if
     end if
 
     if ( .not. IsVolt ) then
