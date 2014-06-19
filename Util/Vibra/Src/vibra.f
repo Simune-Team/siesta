@@ -9,7 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 
-      program vibrator
+      program vibra
 
 c *********************************************************************
 c Calculation of vibrational modes for clusters, linear chains, slabs 

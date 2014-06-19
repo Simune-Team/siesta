@@ -14,7 +14,7 @@
 c *********************************************************************
 c Build supercell coordinates for Force Constant Matrix calculation,
 c for clusters, linear chains, slabs and 3D xtals.
-c Compatible with vibrator.f
+c Compatible with vibra.f
 c
 c Uses the FDF (Flexible Data Format) package (version 0.66.1.5)
 c of J.M.Soler and A. Garcia, 

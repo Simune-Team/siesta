@@ -50,7 +50,7 @@
 \par\vspace{3cm}
 \hrulefill
 \par\vspace{3cm}
-{\Large {\bf Version 3.3.2, 29 May 2014}}
+{\Large {\bf Version 3.4.0, 29 May 2014}}
 \par\vspace{2cm}
 \hrulefill
 
@@ -151,17 +151,20 @@ materials simulation'', Jour. Phys.: Condens. Matter, 14, 2745-2779
 
 \section{COMPILING THE PROGRAM}
 
-(Please note that {\sc ATOM} now depends on the SiestaXC and FoX libraries
+(Please note that {\sc ATOM} now depends on the SiestaXC library
 for its correct compilation. It is not currently possible to have
 a ``standalone'' version independent of the rest of the Siesta package.)
 
 The Fortran compiler and auxiliary file settings are specified in the
 appropriate {\tt arch.make} file in the Siesta compilation directory.
 
-Just type {\tt make} in the main {\sc ATOM} source directory ({\tt
-Pseudo/atom}). After a short while you will have the executable (called
-{\tt atm}) in that same directory. The program should work for any atom
-without recompilation. 
+If you are using the default compilation directory for Siesta, i.e.,
+ the \texttt{Obj} directory, just type {\tt make} in the main {\sc
+ ATOM} source directory ({\tt Pseudo/atom}). If not, specify the
+ compilation directory's name. For example: {\tt make
+ OBJDIR=Gfortran}. After a short while you will have the executable
+ (called {\tt atm}) in {\tt Pseudo/atom}. The program should work
+ for any atom without recompilation.
 
 Directory {\tt Tutorial} in the source distribution contains a set of
 scripts to automate the process of running {\sc ATOM} and to analyze
@@ -234,8 +237,7 @@ $
 \end{verbatim}
 
 We see some data files (those in all caps) and a few GNUPLOT plotting
-scripts\footnote{GNUPLOT is not a publication-quality package, and
-suffers from serious shortcomings, but it is free, and installed
+scripts\footnote{GNUPLOT has its issues, but it is free, and installed
 almost everywhere. Hence we have chosen it as the lowest-common
 denominator for basic plotting} . 
 
@@ -511,7 +513,7 @@ pseudopotential generation to get a feeling for its quality, there is
 no substitute for a proper {\bf transferability testing}. A
 pseudopotential with good transferability will reproduce the
 all-electron energy levels and wavefunctions in arbitrary
-environments, (i.e., in the presence of charge transfer, which always
+environments, (i.e., in the presence of bonding, which always
 takes place when forming solids and molecules).  We know that norm
 conservation guarantees a certain degree of transferability (usually
 seen clearly in the plot of the logarithmic derivative), but we can
@@ -703,7 +705,7 @@ $ grep '&v' OUT | grep s
 difference should be of around 1~mRyd for a ``good'' pseudopotential.
 (The {\sl real\/} proof of good transferability, remember, can only come
 from a molecular or solid-state calculation). Note that the PT levels
-are labeled starting from principal quantum number 1. 
+(in older versions of {\sc ATOM}) are labeled starting from principal quantum number 1. 
 
 The relevant plotting scripts (without {\tt .gplot} or {\tt .gps}
 extensions) are:

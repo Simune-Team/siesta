@@ -1,4 +1,12 @@
 ------------------------------------------------------------
+June 19, 2014  Alberto Garcia           trunk-462--ncps-27
+Cosmetic changes in atom manual and elsewhere
+
+Updated the atom manual.
+Changed some names in the phonon package.
+
+
+------------------------------------------------------------
 June 11, 2014  Alberto Garcia           trunk-462--ncps-26
 Add libxc codes to PSML file
 
