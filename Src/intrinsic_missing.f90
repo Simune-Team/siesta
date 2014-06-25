@@ -47,6 +47,12 @@
 !           this is a subroutine as I think a function would produce
 !           a large memory foot-print before it actually saves to the array.
 !           When called on a complex array, only the REAL diagonal is 1.
+!  - ROTATE : returns a vector rotated theta angles (in radians).
+!             For 2D points this rotation is implicitly directioned (in the plane)
+!             For 3D points a direction is [1,2,3] is needed to specify the rotation
+!             direction.
+!  - PROJ : A projection method to project a vector onto a certain subspace
+!           Exists only for 3D spaces.
 
 module intrinsic_missing
 
@@ -94,6 +100,13 @@ module intrinsic_missing
      module procedure ROTATE_3D
   end interface ROTATE
 
+! Projection of 3D vector to 3D space
+  public :: PROJ
+  interface PROJ
+     module procedure PROJ_sp
+     module procedure PROJ_dp
+  end interface PROJ
+
 contains
 
 
@@ -103,15 +116,13 @@ contains
     real(dp), intent(inout) :: v(2)
     real(dp), intent(in) :: theta
     real(dp) :: rmT(2,2), vv(2)
-    integer :: i
     rmT(1,1) = cos(theta)
     rmT(1,2) = sin(theta)
     rmT(2,1) = -rmT(1,2)
     rmT(2,2) = rmT(1,1)
 
-    do i = 1 , 2
-       vv(i) = sum(rmT(:,i) * v)
-    end do
+    vv(1) = sum(rmT(:,1) * v)
+    vv(2) = sum(rmT(:,2) * v)
     v = vv
 
   end subroutine ROTATE_2D
@@ -121,7 +132,6 @@ contains
     real(dp), intent(in) :: theta
     integer, intent(in) :: dir
     real(dp) :: rmT(3,3), vv(3)
-    integer :: i
     rmT(:,:) = 0._dp
     if ( dir == 3 ) then
        rmT(1,1) = cos(theta)
@@ -143,9 +153,9 @@ contains
        rmT(3,3) = rmT(2,2)
     end if
 
-    do i = 1 , 3
-       vv(i) = sum(rmT(:,i) * v)
-    end do
+    vv(1) = sum(rmT(:,1) * v)
+    vv(2) = sum(rmT(:,2) * v)
+    vv(3) = sum(rmT(:,3) * v)
     v = vv
 
   end subroutine ROTATE_3D
@@ -898,5 +908,31 @@ contains
     call EYE_zp_2D(size,array)
   end subroutine EYE_zp_1D
     
+
+  ! Projections in 3D space.
+  pure function PROJ_sp(space,vin) result(vout)
+    real(sp), intent(in) :: space(3,3), vin(3)
+    real(sp) :: vout(3)
+    real(sp) :: tmp(3)
+    tmp = space(:,1) / VNORM(space(:,1))
+    vout(1) = sum(vin * tmp)
+    tmp = space(:,2) / VNORM(space(:,2))
+    vout(2) = sum(vin * tmp)
+    tmp = space(:,3) / VNORM(space(:,3))
+    vout(3) = sum(vin * tmp)
+  end function PROJ_sp
+
+  pure function PROJ_dp(space,vin) result(vout)
+    real(dp), intent(in) :: space(3,3), vin(3)
+    real(dp) :: vout(3)
+    real(dp) :: tmp(3)
+    tmp = space(:,1) / VNORM(space(:,1))
+    vout(1) = sum(vin * tmp)
+    tmp = space(:,2) / VNORM(space(:,2))
+    vout(2) = sum(vin * tmp)
+    tmp = space(:,3) / VNORM(space(:,3))
+    vout(3) = sum(vin * tmp)
+  end function PROJ_dp
+
 
 end module intrinsic_missing

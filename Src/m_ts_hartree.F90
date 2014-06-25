@@ -24,6 +24,7 @@ module m_ts_hartree
   
   use precision, only : dp
   use m_ts_electype
+  use m_ts_tdir, only : ts_tdir
 
   implicit none
   
@@ -68,11 +69,14 @@ contains
     integer :: MPIerror
 #endif
 
+    ! We now were to put the Hartree correction 
+    if ( ts_tdir > 0 ) return
+
     ! Easy determination of largest basal plane of electrodes
     area = -1._dp
     do iE = 1 , N_Elec
-       tmp = volcel(Elecs(iE)%ucell)
-       tmp = tmp / vnorm(Elecs(iE)%ucell(:,Elecs(iE)%t_dir))
+       tmp = VOLCEL(Elecs(iE)%ucell)
+       tmp = tmp / VNORM(Elecs(iE)%ucell(:,Elecs(iE)%t_dir))
        if ( tmp > area ) then
           area = tmp
           El => Elecs(iE)
@@ -99,6 +103,13 @@ contains
          MPI_Comm_World,MPIerror)
     nlp = i1
 #endif
+
+    if ( IONode ) then
+       write(*,*)
+       write(*,'(3a)')   'transiesta: Using electrode: ',trim(El%Name),' for Hartree correction'
+       write(*,'(a,i0)') 'transiesta: Number of points used: ',nlp
+       write(*,*)
+    end if
 
     if ( nlp == 0 ) then
        call die('The partitioning of the basal plane went wrong. &
@@ -160,7 +171,6 @@ contains
     use mpi_siesta, only : MPI_Comm_World, MPI_integer
     use mpi_siesta, only : MPI_double_precision
 #endif
-    use m_ts_tdir
     use m_ts_mesh, only : meshl, offset_i, offset_r, dMesh, dL
     
     integer     , intent(in)    :: ntpl

@@ -1,4 +1,21 @@
 ----------------------------------------------------
+June 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-158
+Added a projection function in intrinsic_missing
+
+* Added the PROJ function in intrinsic_missing.
+  It allows to project a vector from the Euclidian space into another 
+  space direction.
+
+* Cleaned a little up
+
+modified:
+  Src/dhscf.F
+  Src/intrinsic_missing.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 June 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-157
 Fixed multi-terminal Hartree potential fixation
 

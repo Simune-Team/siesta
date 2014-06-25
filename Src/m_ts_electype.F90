@@ -500,10 +500,10 @@ contains
     if ( .not. this%Bulk ) then
        this%DM_CrossTerms = .true.
     end if
-
-    if ( this%DM_CrossTerms .or. this%mu%mu == 0._dp ) then
+                                 ! Same criteria as IsVolt
+    if ( this%DM_CrossTerms .or. abs(this%mu%mu) < 0.000000735_dp ) then
        ! when updating the cross-terms
-       ! there is no needing to also shift the energy
+       ! there is no need to also shift the energy
        ! I think this will battle each other out...
        this%Ef_frac_CT = 0._dp
     end if
@@ -985,7 +985,7 @@ contains
   subroutine check_Elec(this,nspin,ucell,na_u,xa,lasto,xa_EPS, &
        kcell,kdispl)
 
-    use intrinsic_missing, only : VNORM
+    use intrinsic_missing, only : VNORM, PROJ
     use parallel, only : IONode
     use units, only : Ang
     use m_ts_io, only : ts_read_TSHS_opt
@@ -1175,36 +1175,22 @@ contains
     end if
 
     ! Create the basal plane of the electrode
-    this%p%c = (/&
-         minval(this%xa_used(1,:)), &
-         minval(this%xa_used(2,:)), &
-         minval(this%xa_used(3,:)) /)
+    ! Decide which end of the electrode we use
+    ! TODO, correct for systems not having the last electrode atom
+    ! farthest from the device region (or correct intrinsically)
+    if ( this%inf_dir == INF_POSITIVE ) then
+       ! We need to utilize the last atom
+       this%p%c = xa(:,this%idx_na+this%na_used-1)
+    else
+       this%p%c = xa(:,this%idx_na)
+    end if
     
-    ! We correct the point of the plane to coincide with the electrode
-    ! in the system
-    this%p%c = this%p%c + xa(:,this%idx_na) - this%xa_used(:,1)
-
     ! Normal vector to electrode transport direction
-    this%p%n = this%ucell(:,this%t_dir)
-    call correct_v(ucell,this%p%n)
+    this%p%n = PROJ(ucell,this%ucell(:,this%t_dir))
     this%p%n = this%p%n / vnorm(this%p%n) ! normalize
 
     ! The distance parameter
     this%p%d = sum(this%p%n(:)*this%p%c(:))
-
-  contains
-
-    subroutine correct_v(ucell,n)
-      real(dp), intent(in)    :: ucell(3,3)
-      real(dp), intent(inout) :: n(3)
-      integer  :: i
-      real(dp) :: tmp(3), cor(3)
-      do i = 1 , 3
-         tmp = ucell(:,i) / vnorm(ucell(:,i))
-         cor(i) = sum(n(:) * tmp(:))
-      end do
-      n = cor
-    end subroutine correct_v
 
   end subroutine check_Elec
 

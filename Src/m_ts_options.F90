@@ -748,7 +748,8 @@ contains
           write(*,1)  '  Bulk values in electrode', Elecs(i)%Bulk
           write(*,1)  '  Update cross terms contact/electrode', Elecs(i)%DM_CrossTerms
           write(*,1)  '  Calc. valence band-bottom eigenvalue', Elecs(i)%BandBottom
-          write(*,8)  '  Hamiltonian E-C Ef fractional shift', Elecs(i)%Ef_frac_CT
+          if ( IsVolt ) &
+               write(*,8)  '  Hamiltonian E-C Ef fractional shift', Elecs(i)%Ef_frac_CT
           if ( .not. Elecs(i)%kcell_check ) then
              write(*,11)  '  Will NOT check the kgrid-cell! Ensure sampling!'
           end if

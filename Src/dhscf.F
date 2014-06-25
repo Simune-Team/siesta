@@ -1044,7 +1044,6 @@ C ----------------------------------------------------------------------
 
 #ifdef TRANSIESTA
       ! We require that even the SIESTA potential is "fixed"
-      ! It will ease transition between siesta and transiesta
       if (TSmode) call ts_hartree_fix( ntpl , Vscf(:,1) )
 #endif /* TRANSIESTA */
 
