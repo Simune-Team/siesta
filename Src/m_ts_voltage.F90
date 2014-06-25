@@ -252,11 +252,13 @@ contains
     iElL = 1
     iElR = 2
     do i = Elecs(1)%idx_na , Elecs(1)%idx_na + TotUsedAtoms(Elecs(1)) - 1
+       ! Correct for rotated unitcells TODO
        if ( abs(xa(ts_tdir,i)) < tmp ) then
           tmp = abs(xa(ts_tdir,i))
        end if
     end do
     do i = Elecs(2)%idx_na , Elecs(2)%idx_na + TotUsedAtoms(Elecs(2)) - 1
+       ! Correct for rotated unitcells TODO
        if ( abs(xa(ts_tdir,i)) < tmp ) then
           tmp = abs(xa(ts_tdir,i))
           iElL = 2
@@ -308,6 +310,7 @@ contains
     do i = Elecs(iElL)%idx_na , &
          Elecs(iElL)%idx_na + TotUsedAtoms(Elecs(iElL)) - 1
        if ( Elecs(iElL)%Bulk ) then
+          ! Correct for rotated unitcells TODO
           if ( left_t_max < xa(ts_tdir,i) ) then
              left_t_max = xa(ts_tdir,i)
           end if
@@ -321,6 +324,7 @@ contains
     do i = Elecs(iElR)%idx_na , &
          Elecs(iElR)%idx_na + TotUsedAtoms(Elecs(iElR)) - 1
        if ( Elecs(iElL)%Bulk ) then
+          ! Correct for rotated unitcells TODO
           if ( xa(ts_tdir,i) < right_t_min ) then
              right_t_min = xa(ts_tdir,i)
           end if

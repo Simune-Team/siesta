@@ -103,7 +103,7 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode
       use m_ts_tdir,      only : ts_tdir
-      use m_ts_options,   only : IsVolt
+      use m_ts_options,   only : IsVolt, N_Elec, Elecs
       use m_ts_mesh   ,   only : ts_init_mesh
       use m_ts_voltage,   only : ts_init_voltage
       use m_ts_hartree,   only : ts_init_hartree_fix
@@ -399,7 +399,8 @@ C ----------------------------------------------------------------------
 !        Check if we need to add the potential 
 !        corresponding to the voltage-drop.
         if (TSmode) then
-           call ts_init_hartree_fix( cell, nua, xa , ntm , nsm)
+           call ts_init_hartree_fix( cell, nua, xa , ntm , nsm, 
+     &          N_Elec, Elecs)
            if ( IsVolt ) then
               call ts_init_voltage( cell, nua, xa, ntm, nsm)
            end if
@@ -424,7 +425,7 @@ C ----------------------------------------------------------------------
               end if
               if ( ts_tdir < 1 ) then
                  call die('Error, electric field and undetermined &
-     &transport direction does not make sense N_Elec /= 2!')
+     &transport direction does not make sense!')
               end if
               ! Now we can check the directions of the slab
               if ( dipole_correction ) then

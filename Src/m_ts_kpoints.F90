@@ -14,6 +14,7 @@ module m_ts_kpoints
   implicit none
 
   private
+  save
 
 
 !===================== K-POINT RELATED VARIABLES ============================== 
@@ -39,23 +40,22 @@ module m_ts_kpoints
 !      changed in the near future
 !==============================================================================
  
-  logical, public, save   :: ts_scf_kgrid_first_time = .true.
-  logical, public, save   :: ts_Gamma
-  integer, public, save   :: ts_maxk              ! 
-  integer, public, save   :: ts_nkpnt             ! Total number of k-points
-  real(dp), public, save  :: ts_eff_kgrid_cutoff  ! Effective kgrid_cutoff
+  logical, public   :: ts_scf_kgrid_first_time = .true.
+  logical, public   :: ts_Gamma
+  integer, public   :: ts_nkpnt             ! Total number of k-points
+  real(dp), public  :: ts_eff_kgrid_cutoff  ! Effective kgrid_cutoff
 
-  real(dp), pointer, public, save :: ts_kweight(:) 
-  real(dp), pointer, public, save :: ts_kpoint(:,:)
+  real(dp), pointer, public :: ts_kweight(:) 
+  real(dp), pointer, public :: ts_kpoint(:,:)
 
-  integer,  public, dimension(3,3), save  :: ts_kscell = 0
-  real(dp), public, dimension(3), save    :: ts_kdispl = 0.0_dp
+  integer,  public, dimension(3,3)  :: ts_kscell = 0
+  real(dp), public, dimension(3)    :: ts_kdispl = 0.0_dp
 
-  logical, public, save     :: ts_user_requested_mp = .false.
-  logical, public, save     :: ts_user_requested_cutoff = .false.
+  logical, public     :: ts_user_requested_mp = .false.
+  logical, public     :: ts_user_requested_cutoff = .false.
 
-  logical, public, save     :: ts_spiral = .false.
-  logical, public, save     :: ts_firm_displ = .false.
+  logical, public     :: ts_spiral = .false.
+  logical, public     :: ts_firm_displ = .false.
 
   public :: setup_ts_scf_kscell, setup_ts_kpoint_grid
   public :: ts_write_k_points
@@ -65,7 +65,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-  subroutine setup_ts_scf_kscell( cell, firm_displ )
+  subroutine setup_ts_scf_kscell( cell, firm_displ , N_Elec, Elecs )
 
 ! ***************** INPUT **********************************************
 ! real*8  cell(3,3)  : Unit cell vectors in real space cell(ixyz,ivec)
@@ -86,7 +86,7 @@ contains
 
 !  Modules
 
-    use parallel,   only : Node
+    use parallel,   only : IONode, Node
     use m_minvec,   only : minvec
     use fdf
     use sys,        only : die
@@ -94,6 +94,7 @@ contains
     use mpi_siesta
 #endif
 
+    use m_ts_electype
     use m_ts_tdir
     use m_ts_global_vars, only : TSmode
     
@@ -102,6 +103,8 @@ contains
 ! Passed variables
     real(dp), intent(in)   :: cell(3,3)
     logical, intent(out)   :: firm_displ
+    integer, intent(in)    :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
 
 ! Internal variables
     integer           i, j,  factor(3,3), expansion_factor
@@ -110,7 +113,6 @@ contains
 #endif
     real(dp)          scmin(3,3),  vmod, cutoff
     real(dp)          ctransf(3,3)
-    logical           mp_input
 
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
@@ -119,8 +121,7 @@ contains
     integer, dimension(3,3), parameter :: unit_matrix =  &
          reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
 
-    mp_input = fdf_block('kgrid_Monkhorst_Pack',bfdf)     
-    if ( mp_input ) then
+    if ( fdf_block('kgrid_Monkhorst_Pack',bfdf) ) then
        ts_user_requested_mp = .true.
        do i = 1,3
           if (fdf_bline(bfdf,pline)) then
@@ -136,9 +137,11 @@ contains
        firm_displ = .true.
     else
 
-       write(*,*) 'WARNING !!!'
-       write(*,*) 'TS kgrid determined first with 3D cell !!!'
-       write(*,*) 'Specifying only cutoff in Electrode AND Scattering calculations might lead to problems !!'
+       if ( IONode ) then
+          write(*,*) 'WARNING !!!'
+          write(*,*) 'TS kgrid determined first with 3D cell !!!'
+          write(*,*) 'Specifying only cutoff in Electrode AND Scattering calculations might lead to problems !!'
+       end if
 
        cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
        if (cutoff /= defcut) then
@@ -177,14 +180,21 @@ contains
        ts_kscell(ts_tdir,ts_tdir) = 1
        ts_kdispl(ts_tdir)         = 0.0_dp
     else if ( TSmode ) then
-       if ( sum(sum(ts_kscell,dim=1)) /= 3 ) then
-          call die('Not implemented, how to handle many electrodes and k')
+       if ( sum(sum(ts_kscell,dim=1)) /= 3 .and. IONode ) then
+          write(*,'(a)') 'transiesta: kgrid-WARNING !'
+          write(*,'(a)') 'transiesta: non-Gamma calculation with multiple electrodes.'
+          write(*,'(a)') 'transiesta: I hope you know what you are doing!'
+          if ( any(Elecs(:)%kcell_check) ) then
+             write(*,'(a)') 'transiesta: All electrode definitions probably need:'
+             write(*,'(a)') 'transiesta:    check-kgrid F'
+          end if
+          write(*,*)
        end if
     end if
     
   end subroutine setup_ts_scf_kscell
   
-  subroutine setup_ts_kpoint_grid( ucell )
+  subroutine setup_ts_kpoint_grid( ucell , N_Elec, Elecs )
     
 ! SIESTA Modules
     USE fdf, only       : fdf_defined
@@ -195,14 +205,20 @@ contains
     USE mpi_siesta, only : MPI_Bcast, MPI_logical, MPI_Comm_World
 #endif
 
-! Local Variables
-    real(dp) :: ucell(3,3)
+    use m_ts_electype
 
+! Local Variables
+    real(dp), intent(in)   :: ucell(3,3)
+    integer, intent(in)    :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+
+    integer :: i
 #ifdef MPI
     integer :: MPIerror
 #endif
 
     if (ts_scf_kgrid_first_time) then
+
        nullify(ts_kweight,ts_kpoint)
        if (IONode) then
           ts_spiral = fdf_defined('SpinSpiral')
@@ -211,16 +227,15 @@ contains
        call MPI_Bcast(ts_spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-       call setup_ts_scf_kscell(ucell, ts_firm_displ)
+       call setup_ts_scf_kscell(ucell, ts_firm_displ, N_Elec, Elecs)
 
        ts_scf_kgrid_first_time = .false.
 
     else
        if ( ts_user_requested_mp    ) then
-! no need to set up the kscell again
+          ! no need to set up the kscell again
        else
-! This was wrong in the old code
-          call setup_ts_scf_kscell(ucell, ts_firm_displ)
+          call setup_ts_scf_kscell(ucell, ts_firm_displ, N_Elec, Elecs)
        endif
     endif
 
@@ -228,9 +243,8 @@ contains
          (.not. ts_spiral), &
          ts_nkpnt,ts_kpoint,ts_kweight, ts_eff_kgrid_cutoff)
 
-    ts_maxk = ts_nkpnt
-    ts_Gamma =  (ts_nkpnt == 1 .and. &
-         dot_product(ts_kpoint(:,1),ts_kpoint(:,1)) < 1.0e-20_dp)
+    ts_Gamma = ts_nkpnt == 1 .and. &
+         dot_product(ts_kpoint(:,1),ts_kpoint(:,1)) < 1.0e-20_dp
 
     if (IONode) call ts_write_k_points()
 
@@ -250,7 +264,8 @@ contains
             ('transiesta: ', ik, (ts_kpoint(ix,ik),ix=1,3), ts_kweight(ik), &
             ik=1,ts_nkpnt)
     endif
-      ! Always write the TranSIESTA k-points
+
+    ! Always write the TranSIESTA k-points
     call ts_iokp( ts_nkpnt, ts_kpoint, ts_kweight )
 
     write(*,'(/,a,i6)')  'transiesta: ts_k-grid: Number of Transport k-points =', ts_nkpnt
@@ -290,21 +305,16 @@ contains
     use fdf
     use files,     only : slabel, label_length
 
-    character(len=label_length+5) :: paste
-    integer                       :: nk
-    real(dp)                      :: points(3,*), weight(*)
-    external          io_assign, io_close, paste
+    integer  :: nk
+    real(dp) :: points(3,nk), weight(nk)
+    external :: io_assign, io_close
 
 ! Internal 
-    character(len=label_length+5), save :: fname
-    integer                             :: ik, iu, ix
-    logical,                       save :: frstme = .true.
+    character(len=label_length+5) :: fname
+    integer                       :: iu, ik, ix
 ! -------------------------------------------------------------------
 
-    if (frstme) then
-       fname = paste( slabel, '.TSKP' )
-       frstme = .false.
-    endif
+    fname = trim( slabel ) // '.TSKP'
 
     call io_assign( iu )
     open( iu, file=fname, form='formatted', status='unknown' )      
@@ -316,6 +326,5 @@ contains
     call io_close( iu )
 
   end subroutine ts_iokp
-
 
 end module m_ts_kpoints

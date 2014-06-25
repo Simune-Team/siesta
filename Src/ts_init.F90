@@ -46,7 +46,7 @@ contains
     use m_ts_method
 
     use m_ts_global_vars, only : TSmode, TSinit
-    use siesta_options, only : isolve, SOLVE_TRANSI
+    use siesta_options, only : isolve, SOLVE_TRANSI, Nmove
 
     use m_fixed, only : is_fixed
 
@@ -78,18 +78,19 @@ contains
     end if
 
     ! Read in options for transiesta
-    call read_ts_options( wmix, kT, ucell , na_u , xa, lasto )
+    call read_ts_options( wmix, kT, ucell , Nmove, na_u , xa, lasto )
     ! Setup the k-points, must be done after options reading 
     ! (determine the transport direction)
-    call setup_ts_kpoint_grid( ucell )
+    call setup_ts_kpoint_grid( ucell , N_Elec, Elecs )
 
     ! If we actually have a transiesta run we need to process accordingly!
     if ( .not. TSmode ) return
 
     ! Check the electrodes
     do i = 1 , N_Elec
-       call check_Elec(Elecs(i),nspin,na_u,xa,lasto,Elecs_xa_EPS, &
-            kcell=ts_kscell,kdispl=ts_kdispl)
+       call check_Elec(Elecs(i), nspin,ucell, na_u, xa, lasto, &
+            Elecs_xa_EPS, &
+            kcell=ts_kscell, kdispl=ts_kdispl)
     end do
 
     ! Check that an eventual CGrun will fix all electrodes and 

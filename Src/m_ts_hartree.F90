@@ -23,6 +23,7 @@ module m_ts_hartree
 ! permitted without prior and explicit authorization by the author.
   
   use precision, only : dp
+  use m_ts_electype
 
   implicit none
   
@@ -33,33 +34,82 @@ module m_ts_hartree
   public :: ts_init_hartree_fix
   public :: ts_hartree_fix
 
-  ! We construct the square at which we fix the potential
-
-  ! The lower-left corner and vectors spanning the square
-!  real(dp) :: ll_c(3), v1(3), v2(3)
-  ! The normal-vector
-!  real(dp) :: n(3)
-  ! an auxillary length to ease computations
-!  real(dp) :: d
+  ! The electrode that provides the basin of the constant potential
+  type(Elec), pointer :: El => null()
 
 contains
 
-  subroutine ts_init_hartree_fix(ucell,na_u,xa,meshG,nsm)
+  subroutine ts_init_hartree_fix(ucell,na_u,xa,meshG,nsm, N_Elec, Elecs)
+
+    use intrinsic_missing, only: VNORM
+    use m_ts_mesh, only : meshl, offset_i, offset_r, dMesh, dL
+    use parallel, only : IONode
+#ifdef MPI
+    use mpi_siesta, only : MPI_AllReduce, MPI_Sum
+    use mpi_siesta, only : MPI_Comm_World, MPI_integer
+#endif
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    real(dp),      intent(in) :: ucell(3,3)
-    integer,       intent(in) :: na_u
-    real(dp),      intent(in) :: xa(3,na_u)
-    integer,       intent(in) :: meshG(3), nsm
+    real(dp),   intent(in) :: ucell(3,3)
+    integer,    intent(in) :: na_u
+    real(dp),   intent(in) :: xa(3,na_u)
+    integer,    intent(in) :: meshG(3), nsm
+    integer,    intent(in) :: N_Elec
+    type(Elec), intent(in), target :: Elecs(N_Elec)
 
-    ! currently we don't do anything...
+    integer :: iE
+    real(dp) :: area, tmp
+    integer :: i1, i2, i3, nlp
+    real(dp) :: ll(3), llZ(3), llYZ(3)
+    real(dp), external :: volcel
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    ! Easy determination of largest basal plane of electrodes
+    area = -1._dp
+    do iE = 1 , N_Elec
+       tmp = volcel(Elecs(iE)%ucell)
+       tmp = tmp / vnorm(Elecs(iE)%ucell(:,Elecs(iE)%t_dir))
+       if ( tmp > area ) then
+          area = tmp
+          El => Elecs(iE)
+       end if
+    end do
+
+    ! We check that we actually process something...
+    nlp = 0
+    do i3 = 0 , meshl(3) - 1
+       llZ(:) = offset_r(:) + i3*dL(:,3)
+       do i2 = 0 , meshl(2) - 1
+          llYZ(:) = i2*dL(:,2) + llZ(:)
+          do i1 = 0 , meshl(1) - 1
+             ll(:) = i1*dL(:,1) + llYZ(:)
+             if ( in_basal_Elec(El%p,ll,dMesh) ) then
+                nlp = nlp + 1
+             end if
+          end do
+       end do
+    end do
+
+#ifdef MPI
+    call MPI_AllReduce(nlp,i1,1,MPI_integer,MPI_Sum, &
+         MPI_Comm_World,MPIerror)
+    nlp = i1
+#endif
+
+    if ( nlp == 0 ) then
+       call die('The partitioning of the basal plane went wrong. &
+            &No points are encapsulated.')
+    end if
 
   end subroutine ts_init_hartree_fix
 
 #ifdef INTEL_COMPILER_ERROR 
 ! This code segment will create an error with the
-! intel compiler compiled at a high setting: TODO
+! intel compiler compiled at a high setting: TODO (not with Gfortran)
 !  -m64 -O3 -xHost -fp-model source -fp-model except -ip -prec-div -prec-sqrt
 ! If I remove the pointer/target feature below it works beautifully!
 ! *** NOT GOOD ***
@@ -111,29 +161,30 @@ contains
     use mpi_siesta, only : MPI_double_precision
 #endif
     use m_ts_tdir
-    use m_ts_mesh, only : meshl, offset_i
+    use m_ts_mesh, only : meshl, offset_i, offset_r, dMesh, dL
     
-    integer, intent(in) :: ntpl
+    integer     , intent(in)    :: ntpl
     real(grid_p), intent(inout) :: Vscf(ntpl)
 
 ! Internal variables
-    integer :: i1, i2, i3, imesh, ntemp
-    integer :: nlp
+    integer :: i1 , i2 , i3
+    integer :: imesh, nlp
     integer :: i10, i20, i30
 #ifdef MPI
     integer :: MPIerror
 #endif
     real(dp) :: Vav, Vtot, temp
+    real(dp) :: ll(3), llZ(3), llYZ(3)
 
 #ifdef TRANSIESTA_DEBUG
-    call write_debug( 'PRE TSVHfix' )
+    call write_debug( 'PRE TS_VH_fix' )
 #endif
 
     ! Initialize summation
     Vtot = 0._dp
 
     ! Initialize counters
-    nlp  = 0
+    nlp   = 0
     imesh = 0
 
     if ( ts_tdir == 1 ) then
@@ -144,7 +195,7 @@ contains
                 i10 = i10 + 1
                 imesh = imesh + 1
                 if ( i10 == 0 ) then
-                   nlp = nlp + 1
+                   nlp  = nlp + 1
                    Vtot = Vtot + Vscf(imesh)
                 end if
              end do
@@ -158,7 +209,7 @@ contains
              do i1 = 1 , meshl(1)
                 imesh = imesh + 1
                 if ( i20 == 0 ) then
-                   nlp = nlp + 1
+                   nlp  = nlp + 1
                    Vtot = Vtot + Vscf(imesh)
                 end if
              end do
@@ -172,32 +223,51 @@ contains
              do i1 = 1 , meshl(1)
                 imesh = imesh + 1
                 if ( i30 == 0 ) then
-                   nlp = nlp + 1
+                   nlp  = nlp + 1
                    Vtot = Vtot + Vscf(imesh)
                 end if
              end do
           end do
        end do
     else
-       call die('N_Elec/=2 not implemented as this')
+       ! This is an electrode averaging...
+       do i3 = 0 , meshl(3) - 1
+          llZ(:) = offset_r(:) + i3*dL(:,3)
+          do i2 = 0 , meshl(2) - 1
+             llYZ(:) = i2*dL(:,2) + llZ(:)
+             do i1 = 0 , meshl(1) - 1
+                ll(:) = i1*dL(:,1) + llYZ(:)
+                imesh = imesh + 1
+                if ( in_basal_Elec(El%p,ll,dMesh) ) then
+                   nlp  = nlp + 1
+                   Vtot = Vtot + Vscf(imesh)
+                end if
+             end do
+          end do
+       end do
     end if
 
 #ifdef MPI
     call MPI_AllReduce(Vtot,temp,1,MPI_double_precision,MPI_Sum, &
          MPI_Comm_World,MPIerror)
     Vtot = temp
-    call MPI_AllReduce(nlp,ntemp,1,MPI_integer,MPI_Sum, &
+    call MPI_AllReduce(nlp,i1,1,MPI_integer,MPI_Sum, &
          MPI_Comm_World,MPIerror)
-    nlp = ntemp
+    nlp = i1
 #endif
 
+    if ( nlp == 0 ) then
+       call die('The partitioning of the basal plane went wrong. &
+            &No points are encapsulated.')
+    end if
+    
     Vav = Vtot / real(nlp,dp)
     
     ! Align potential
     Vscf(1:ntpl) = Vscf(1:ntpl) - Vav
 
 #ifdef TRANSIESTA_DEBUG
-    call write_debug( 'POS TSVHfix' )
+    call write_debug( 'POS TS_VH_fix' )
 #endif
 
   end subroutine ts_hartree_fix

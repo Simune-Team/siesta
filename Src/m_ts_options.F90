@@ -61,7 +61,7 @@ module m_ts_options
   
 contains
   
-  subroutine read_ts_options( wmix, kT, ucell, na_u, xa, lasto)
+  subroutine read_ts_options( wmix, kT, ucell, Nmove, na_u, xa, lasto)
 
     use alloc
     use files, only : slabel
@@ -98,7 +98,7 @@ contains
 ! *******************
     real(dp), intent(in) :: wmix, kT
     real(dp),intent(in) :: ucell(3,3)
-    integer, intent(in) :: na_u, lasto(0:na_u)
+    integer, intent(in) :: Nmove, na_u, lasto(0:na_u)
     real(dp), intent(in) :: xa(3,na_u)
 
 ! *******************
@@ -154,8 +154,10 @@ contains
        ts_tdir = 2
     else if ( leqi(chars,'c') .or. leqi(chars,'a3') ) then
        ts_tdir = 3
+    else if ( leqi(chars,'none') ) then
+       ts_tdir = 0
     else
-       call die('Transport direction not in [a|b|c|a1|a2|a3]')
+       call die('Transport direction not in [a|b|c|A1|A2|A3|none]')
     end if
 
     ! Read in information about the voltage placement.
@@ -526,6 +528,14 @@ contains
 
     ! WILL WORK EVENTUALLY
     if ( N_Elec > 2 .and. IsVolt ) call die('Several electrodes and bias does not work')
+    if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_CrossTerms) ) then
+       call die('transiesta relaxation is only allowed if you also &
+            &update the cross terms, please set: TS.Elecs.DM.CrossTerms T')
+    end if
+    if ( Nmove > 0 .and. .not. Calc_Forces ) then
+       call die('transiesta relaxation is based on calculating the forces, &
+            &you cannot relax your system and not require the calculation of forces')
+    end if
 
     ! Update the weight function
     chars = fdf_get('TS.Weight.k.Method','correlated')
@@ -739,6 +749,9 @@ contains
           write(*,1)  '  Update cross terms contact/electrode', Elecs(i)%DM_CrossTerms
           write(*,1)  '  Calc. valence band-bottom eigenvalue', Elecs(i)%BandBottom
           write(*,8)  '  Hamiltonian E-C Ef fractional shift', Elecs(i)%Ef_frac_CT
+          if ( .not. Elecs(i)%kcell_check ) then
+             write(*,11)  '  Will NOT check the kgrid-cell! Ensure sampling!'
+          end if
        end do
 
        ! Print the contour information
@@ -776,9 +789,15 @@ contains
           write(*,11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
        end if
 
+       if ( ts_tdir == 0 ) then
+          write(*,11) '*** TranSIESTA transport direction is arbitrary  ***'
+       else if ( ts_tdir < 0 ) then
+          write(*,11) '*** TranSIESTA transport direction is individual ***'
+       end if
+
        ! Check that the unitcell does not extend into the transport direction
        do i = 1 , 3
-          if ( i == ts_tdir ) cycle
+          if ( i == ts_tdir .or. ts_tdir <= 0 ) cycle
           if ( abs(dot(ucell(:,i),ucell(:,ts_tdir),3)) > 1e-7_dp ) then
              write(*,*) &
                   "ERROR: Unitcell has the electrode extend into the &

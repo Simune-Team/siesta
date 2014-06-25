@@ -772,6 +772,7 @@ contains
        call step_ia(iab,ia,in_elec1)
        if ( iab > na_b ) exit
        if ( 1 <= ts_tdir .and. ts_tdir <= 3 ) then
+          ! TODO correct ts_tdir for rotated unit-cells!
           a_priority(iab) = nint(xa(ts_tdir,ia) * 10000._dp)
        else
           a_priority(iab) = 0

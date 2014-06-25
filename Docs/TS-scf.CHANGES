@@ -1,4 +1,35 @@
 ----------------------------------------------------
+June 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-157
+Fixed multi-terminal Hartree potential fixation
+
+* The Hartree potential needs a constant potential somewhere in the
+  simulation cell.
+  We now select the largest electrode basal plane to be the plane of 
+  constant potential.
+  I suspect that this fixation of the Hartree potential
+  is the main cause of charge fluctuation as the potential is slightly
+  changing doing SC.
+  TODO Check if other methods exists to fixate the Hartee potential offset.
+
+* Added write-out of distance error in the electrode.
+  It basically shows the length of the vector between the two positions.
+
+* Cleaned a little up in k-points routine. It could do with some more 
+  cleaning.
+
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/m_ts_electype.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_mesh.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_voltage.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 June 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-156
 Require well defined transport direction for 2 electrodes
 

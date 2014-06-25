@@ -43,6 +43,8 @@ module m_ts_electype
   public :: check_Elec, check_connectivity
   public :: delete
 
+  public :: in_basal_Elec
+
   public :: operator(.eq.)
 
   ! 300 chars for a full path should be fine
@@ -51,6 +53,13 @@ module m_ts_electype
 
   integer, parameter, public :: INF_NEGATIVE = 0 ! old 'left'
   integer, parameter, public :: INF_POSITIVE = 1 ! old 'right'
+
+  type :: geo_plane_delta
+     sequence
+     real(dp) :: c(3)
+     real(dp) :: n(3)
+     real(dp) :: d = 0._dp
+  end type geo_plane_delta
 
   type :: Elec
      character(len=FILE_LEN) :: HSfile = ' ', GFfile  = ' '
@@ -116,7 +125,11 @@ module m_ts_electype
      ! Notice that Gamma should "ALWAYS" contain the transposed
      complex(dp), pointer :: Gamma(:,:), Sigma(:)
 
+     ! The basal plane of the electrode
+     type(geo_plane_delta) :: p
+
   end type Elec
+  
 
 contains
 
@@ -641,6 +654,38 @@ contains
     in = this%idx_na <= ia .and. ia < (this%idx_na + TotUsedAtoms(this))
   end function AtomInElec
 
+  function in_basal_elec(plane,ll,d) result(has)
+    type(geo_plane_delta), intent(in) :: plane
+    real(dp), intent(in) :: ll(3), d(3)
+    logical :: has
+    ! The positive and negative vertices
+    real(dp) :: pos(3), neg(3)
+
+    where ( plane%n >= 0._dp )
+       pos = ll + d
+       neg = ll
+    elsewhere
+       pos = ll
+       neg = ll + d
+    end where
+
+    has = .false.
+    ! We can then consider whether the vertices lie both outside
+    ! if not, we have an intersection.
+
+    ! The positive vertex lies on the left side of the plane, 
+    ! hence we know that it will not be crossing the plane
+    if ( plane%n(1)*pos(1)+plane%n(2)*pos(2)+plane%n(3)*pos(3) <  plane%d ) return
+
+    if ( plane%n(1)*neg(1)+plane%n(2)*neg(2)+plane%n(3)*neg(3) <= plane%d ) then
+       ! The positive vertex lies on the right side of the plane, 
+       ! This check ensures that the negative vertex lies on the left side
+       ! of the plane. Hence we have an intersection.
+       has = .true.
+    end if
+
+  end function in_basal_elec
+
   subroutine read_Elec(this,Bcast,io)
     use fdf
     use parallel
@@ -740,7 +785,7 @@ contains
     use class_OrbitalDistribution
 
     use create_Sparsity_SC
-    use geom_helper, only : iaorb,cell_c
+    use geom_helper, only : iaorb
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -937,7 +982,7 @@ contains
 
   ! Routine for checking the validity of the electrode against the 
   ! system setup in transiesta
-  subroutine check_Elec(this,nspin,na_u,xa,lasto,xa_EPS, &
+  subroutine check_Elec(this,nspin,ucell,na_u,xa,lasto,xa_EPS, &
        kcell,kdispl)
 
     use intrinsic_missing, only : VNORM
@@ -948,8 +993,9 @@ contains
     use mpi_siesta, only : MPI_Bcast, MPI_Logical, MPI_Comm_World
 #endif
 
-    type(Elec), intent(in) :: this
+    type(Elec), intent(inout) :: this
     integer, intent(in) :: nspin,na_u
+    real(dp), intent(in) :: ucell(3,3)
     real(dp), intent(in) :: xa(3,na_u)
     integer, intent(in) :: lasto(0:na_u)
     real(dp), intent(in) :: xa_EPS
@@ -959,7 +1005,7 @@ contains
     ! Local variables
     integer :: i,j,k, ia, iaa, this_kcell(3,3)
     logical :: er, this_er, Gamma
-    real(dp) :: xa_o(3), this_xa_o(3), ucell(3,3), this_kdispl(3)
+    real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
     real(dp) :: max_xa(3), cur_xa(3)
     real(dp), pointer :: this_xa(:,:)
 
@@ -972,7 +1018,7 @@ contains
     this_xa => this%xa_used
     xa_o(:) = xa(:,this%idx_na)
     this_xa_o(:) = this_xa(:,1)
-    ucell = this%ucell
+    cell = this%ucell
 
     max_xa = 0._dp
     iaa = this%idx_na
@@ -982,9 +1028,9 @@ contains
        do j = 0 , this%RepA2 - 1
        do i = 0 , this%RepA1 - 1
           ! Calculate repetition vector
-          cur_xa(1) = sum(ucell(1,:)*(/i,j,k/))
-          cur_xa(2) = sum(ucell(2,:)*(/i,j,k/))
-          cur_xa(3) = sum(ucell(3,:)*(/i,j,k/))
+          cur_xa(1) = sum(cell(1,:)*(/i,j,k/))
+          cur_xa(2) = sum(cell(2,:)*(/i,j,k/))
+          cur_xa(3) = sum(cell(3,:)*(/i,j,k/))
           
           ! Add the electrode distance for the ELEC atom
           cur_xa(:) = cur_xa(:) + this_xa(:,ia)-this_xa_o(:)
@@ -1028,9 +1074,9 @@ contains
              do j=0,this%RepA2-1
              do i=0,this%RepA1-1
                 write(*,'(t2,3(tr1,f20.10))') &
-                     (this_xa(1,ia)+xa_o(1)+sum(ucell(1,:)*(/i,j,k/)))/Ang, &
-                     (this_xa(2,ia)+xa_o(2)+sum(ucell(2,:)*(/i,j,k/)))/Ang, &
-                     (this_xa(3,ia)+xa_o(3)+sum(ucell(3,:)*(/i,j,k/)))/Ang
+                     (this_xa(1,ia)+xa_o(1)+sum(cell(1,:)*(/i,j,k/)))/Ang, &
+                     (this_xa(2,ia)+xa_o(2)+sum(cell(2,:)*(/i,j,k/)))/Ang, &
+                     (this_xa(3,ia)+xa_o(3)+sum(cell(3,:)*(/i,j,k/)))/Ang
              end do
              end do
              end do
@@ -1127,6 +1173,38 @@ contains
        call die("The electrode does not conform with the system settings. &
             &Please correct accordingly.")
     end if
+
+    ! Create the basal plane of the electrode
+    this%p%c = (/&
+         minval(this%xa_used(1,:)), &
+         minval(this%xa_used(2,:)), &
+         minval(this%xa_used(3,:)) /)
+    
+    ! We correct the point of the plane to coincide with the electrode
+    ! in the system
+    this%p%c = this%p%c + xa(:,this%idx_na) - this%xa_used(:,1)
+
+    ! Normal vector to electrode transport direction
+    this%p%n = this%ucell(:,this%t_dir)
+    call correct_v(ucell,this%p%n)
+    this%p%n = this%p%n / vnorm(this%p%n) ! normalize
+
+    ! The distance parameter
+    this%p%d = sum(this%p%n(:)*this%p%c(:))
+
+  contains
+
+    subroutine correct_v(ucell,n)
+      real(dp), intent(in)    :: ucell(3,3)
+      real(dp), intent(inout) :: n(3)
+      integer  :: i
+      real(dp) :: tmp(3), cor(3)
+      do i = 1 , 3
+         tmp = ucell(:,i) / vnorm(ucell(:,i))
+         cor(i) = sum(n(:) * tmp(:))
+      end do
+      n = cor
+    end subroutine correct_v
 
   end subroutine check_Elec
 
@@ -1261,42 +1339,42 @@ contains
   subroutine print_Elec(this,na_u,xa)
     use parallel, only : IONode
     use units, only : Ang
+    use intrinsic_missing, only : VNORM
     type(Elec), intent(in) :: this
-    integer, intent(in) :: na_u
+    integer,  intent(in) :: na_u
     real(dp), intent(in) :: xa(3,na_u)
 
     ! Local variables
-    integer :: i,j,k, ia, iaa
-    real(dp) :: xa_o(3), this_xa_o(3), ucell(3,3)
+    integer  :: i,j,k, ia, iaa
+    real(dp) :: xa_o(3), this_xa_o(3), ucell(3,3), tmp(3)
     real(dp), pointer :: this_xa(:,:)
 
     if ( .not. IONode ) return
 
     write(*,*) trim(this%name)//' unit cell (Ang):'
-    write(*,'(2(3(f8.4),/),3(f8.4))') this%ucell/Ang
+    write(*,'(2(3(tr1,f10.5),/),3(tr1,f10.5))') this%ucell/Ang
     
     write(*,'(a,t35,a)') &
          " Structure of "//trim(this%name)//" electrode","| System electrode:"
-    write(*,'(t3,3a10,''  |'',3a10)') &
-         "X (Ang)","Y (Ang)","Z (Ang)", "X (Ang)","Y (Ang)","Z (Ang)"
+    write(*,'(t3,3a10,''  |'',3a10,''  | '',a10)') &
+         "X (Ang)","Y (Ang)","Z (Ang)", "X (Ang)","Y (Ang)","Z (Ang)","|r_S-r_E|"
 
-    this_xa => this%xa_used
-    xa_o(:) = xa(:,this%idx_na)
-    this_xa_o(:) = this_xa(:,1)
-    ucell = this%ucell
+    this_xa      => this%xa_used
+    xa_o(:)      =  xa(:,this%idx_na)
+    this_xa_o(:) =  this_xa(:,1)
+    ucell        =  this%ucell
 
     iaa = this%idx_na
     do ia = 1 , this%na_used
        do k = 0 , this%RepA3 - 1
        do j = 0 , this%RepA2 - 1
        do i = 0 , this%RepA1 - 1
-          write(*,'(t3,3f10.5,''  |'',3f10.5)') &
-               (this_xa(1,ia)-this_xa_o(1)+sum(ucell(1,:)*(/i,j,k/)))/Ang, &
-               (this_xa(2,ia)-this_xa_o(2)+sum(ucell(2,:)*(/i,j,k/)))/Ang, &
-               (this_xa(3,ia)-this_xa_o(3)+sum(ucell(3,:)*(/i,j,k/)))/Ang, &
-               (xa(1,iaa)-xa_o(1))/Ang, &
-               (xa(2,iaa)-xa_o(2))/Ang, &
-               (xa(3,iaa)-xa_o(3))/Ang
+          tmp(1) = this_xa(1,ia)-this_xa_o(1)+sum(ucell(1,:)*(/i,j,k/))
+          tmp(2) = this_xa(2,ia)-this_xa_o(2)+sum(ucell(2,:)*(/i,j,k/))
+          tmp(3) = this_xa(3,ia)-this_xa_o(3)+sum(ucell(3,:)*(/i,j,k/))
+          write(*,'(t3,3f10.5,''  |'',3f10.5,''  | '',e10.5)') &
+               tmp / Ang, (xa(:,iaa) - xa_o(:))/Ang, &
+               VNORM(xa(:,iaa) - xa_o - tmp) / Ang
           iaa = iaa + 1
        end do
        end do
