@@ -475,7 +475,7 @@ contains
     maxnhg = maxnh
 #endif
 
-    if (IONode) then
+    if ( IONode ) then
 ! Open file
        call io_assign( iu )
        open( iu, file=filename, form='unformatted', status='unknown' )
@@ -509,11 +509,11 @@ contains
        write(iu) numh
 #endif
 
-! Write Electronic Structure Information
+       ! Write Electronic Structure Information
        write(iu) Qtot,Temp
        write(iu) Ef
 
-! Write listh
+       ! Write listh
        do i = 1 , no_u
 #ifdef MPI
           write(iu) listhg(listhptrg(i)+1:listhptrg(i)+numhg(i))
@@ -522,7 +522,7 @@ contains
 #endif
        end do
 
-! Write Overlap matrix
+       ! Write Overlap matrix
        do i = 1 , no_u
 #ifdef MPI
           write(iu) Mg(listhptrg(i)+1:listhptrg(i)+numhg(i))
@@ -533,8 +533,8 @@ contains
 
     end if
     
-    if (.not. onlyS) then
-! Write Hamiltonian	 
+    if ( .not. onlyS ) then
+       ! Write Hamiltonian 
        do ispin = 1 , nspin 
 #ifdef MPI
           call glob_sparse_matrix(no_l,no_u,no_s, &
@@ -553,18 +553,18 @@ contains
        end do
     end if  ! onlyS
 
-    if (IONode) then
-       if (.not.Gamma) then
+    if ( IONode ) then
+       if ( .not. Gamma ) then
           do i = 1 , no_u
 #ifdef MPI
-             write(iu) (xijg(j,listhptrg(i)+1:listhptrg(i)+numhg(i)),j=1,3)
+             write(iu) xijg(1:3,listhptrg(i)+1:listhptrg(i)+numhg(i))
 #else
-             write(iu) (xij(j,listhptr(i)+1:listhptr(i)+numh(i)),j=1,3)
+             write(iu) xij(1:3,listhptr(i)+1:listhptr(i)+numh(i))
 #endif
           end do
        end if
 
-! Close file
+       ! Close file
        call io_close( iu )
     end if
 

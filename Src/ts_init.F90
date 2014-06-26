@@ -81,7 +81,11 @@ contains
     call read_ts_options( wmix, kT, ucell , Nmove, na_u , xa, lasto )
     ! Setup the k-points, must be done after options reading 
     ! (determine the transport direction)
-    call setup_ts_kpoint_grid( ucell , N_Elec, Elecs )
+    if ( TSmode ) then
+       call setup_ts_kpoint_grid( ucell , Elecs=Elecs )
+    else
+       call setup_ts_kpoint_grid( ucell )
+    end if
 
     ! If we actually have a transiesta run we need to process accordingly!
     if ( .not. TSmode ) return

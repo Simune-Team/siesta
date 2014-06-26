@@ -65,7 +65,7 @@ contains
 
 !-----------------------------------------------------------------------
 
-  subroutine setup_ts_scf_kscell( cell, firm_displ , N_Elec, Elecs )
+  subroutine setup_ts_scf_kscell( cell, firm_displ , Elecs )
 
 ! ***************** INPUT **********************************************
 ! real*8  cell(3,3)  : Unit cell vectors in real space cell(ixyz,ivec)
@@ -104,8 +104,7 @@ contains
 ! Passed variables
     real(dp), intent(in)   :: cell(3,3)
     logical, intent(out)   :: firm_displ
-    integer, intent(in)    :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
+    type(Elec), intent(in), optional :: Elecs(:)
 
 ! Internal variables
     integer           i, j,  factor(3,3), expansion_factor
@@ -175,14 +174,8 @@ contains
     ! This means that we truncate the k-points in the transport direction.
     ! However, if we are dealing with an electrode calculation we simply allow it
     ! to have the same cell (the check made will disregard the transport directions k-points)
-    if ( TSmode .and. ts_tdir > 0 ) then
-       ! Modify the ts_kscell and ts_kdispl to obtain the 2D sampling
-       ts_kscell(1:3,ts_tdir)     = 0
-       ts_kscell(ts_tdir,1:3)     = 0
-       ts_kscell(ts_tdir,ts_tdir) = 1
-       ts_kdispl(ts_tdir)         = 0.0_dp
-    else if ( TSmode ) then
-       do j = 1 , N_Elec
+    if ( TSmode .and. present(Elecs) ) then
+       do j = 1 , size(Elecs)
           ! project the electrode transport direction onto
           ! the corresponding unit-cell direction
           p = SPC_PROJ(cell,Elecs(j)%ucell(:,Elecs(j)%t_dir))
@@ -225,7 +218,7 @@ contains
     
   end subroutine setup_ts_scf_kscell
   
-  subroutine setup_ts_kpoint_grid( ucell , N_Elec, Elecs )
+  subroutine setup_ts_kpoint_grid( ucell , Elecs )
     
 ! SIESTA Modules
     USE fdf, only       : fdf_defined
@@ -240,8 +233,7 @@ contains
 
 ! Local Variables
     real(dp), intent(in)   :: ucell(3,3)
-    integer, intent(in)    :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
+    type(Elec), intent(in), optional :: Elecs(:)
 
     integer :: i
 #ifdef MPI
@@ -258,7 +250,7 @@ contains
        call MPI_Bcast(ts_spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-       call setup_ts_scf_kscell(ucell, ts_firm_displ, N_Elec, Elecs)
+       call setup_ts_scf_kscell(ucell, ts_firm_displ, Elecs=Elecs)
 
        ts_scf_kgrid_first_time = .false.
 
@@ -266,7 +258,7 @@ contains
        if ( ts_user_requested_mp    ) then
           ! no need to set up the kscell again
        else
-          call setup_ts_scf_kscell(ucell, ts_firm_displ, N_Elec, Elecs)
+          call setup_ts_scf_kscell(ucell, ts_firm_displ, Elecs=Elecs)
        endif
     endif
 

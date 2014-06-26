@@ -1,4 +1,25 @@
 ----------------------------------------------------
+June 26, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-160
+Ensured no temporary arrays were created in IO routines
+
+* When writing the TSHS a rare case of erroneous IO
+  was implicit. This has finally been fixed (it was a remnant
+  from Federico).
+
+* Made transiesta transport direction and k-point sampling be 
+  fully deterermined by the electrodes.
+
+* When having few optimizations it could have problems passing
+  an unallocated array, even though it is never used in the	
+  subroutine. This has been fixed.
+
+modified:
+  Src/m_ts_io.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_sparse.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 June 26, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-159
 Bugfix for buffer atoms in transiesta and added new updating scheme
 

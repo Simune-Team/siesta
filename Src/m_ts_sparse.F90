@@ -93,6 +93,7 @@ contains
     use m_ts_method
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
+    use parallel, only: Node
 #endif
 !    use m_monitor
 
@@ -282,6 +283,7 @@ contains
     use m_ts_method
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
+    use parallel, only: Node
 #endif
 
 ! **********************
