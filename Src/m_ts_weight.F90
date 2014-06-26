@@ -298,7 +298,7 @@ contains
           end if
 #endif
 
-          ! in case of Bulk .and. DM_CrossTerms we
+          ! in case of Bulk or DM_update /= update all we
           ! can set the equivalent atom_w to 2 * maximum value
           ! This will force the nearest electrode to contribute the
           ! most. :)
@@ -313,7 +313,7 @@ contains
                 ! do have access to the diagonal correction
                 ! contribution. Hence we only overwrite the electrode
                 ! weight if Elec%Bulk
-                if ( .not. Elecs(io)%Bulk ) cycle
+                if ( (.not. Elecs(io)%Bulk) .and. Elecs(io)%DM_update /= 2 ) cycle
                 ! if we are not in the electrode we do not correct weight
                 if ( .not. AtomInElec(Elecs(io),ia) ) cycle
                 ! in case of sum with the off-diagonal terms we have to sum (otherwise it should be (:,ia) = tmp ; (mu%ID,ia) = 0._dp) 

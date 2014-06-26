@@ -362,7 +362,7 @@ contains
        ! this is the # of elements from the RHS of the 'part-1'
        ! part of the tridiagonal matrix and out to the last element of
        ! this row...
-       mcol = max_col(sp,tsorb2sorb(i)) - eRow
+       mcol = max_col(sp,i) - eRow
        if ( n_part(part) < mcol ) then
           n_part(part) = mcol
        end if
@@ -466,14 +466,14 @@ contains
           ! 1. if you wish to shrink it left, then:
           !    the first row must not have any elements
           !    extending into the right part
-          if ( max_col(sp,tsorb2sorb(sRow)) <= eRow ) then
+          if ( max_col(sp,sRow) <= eRow ) then
              call even_if_larger(sRow,n_part(n),n_part(n-1))
           end if
 
           ! 2. if you wish to shrink it right, then:
           !    the last row must not have any elements
           !    extending into the left part
-          if ( sRow <= min_col(sp,tsorb2sorb(eRow)) ) then
+          if ( sRow <= min_col(sp,eRow) ) then
              call even_if_larger(eRow,n_part(n),n_part(n+1))
           end if
 
@@ -502,16 +502,16 @@ contains
     use geom_helper, only : UCORB
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
-    ! the row which we will check for (in SIESTA counting)
+    ! the row which we will check for (in TranSIESTA counting)
     integer, intent(in) :: row 
     ! The result
-    integer :: max_col, ptr, nr, i, j
+    integer :: max_col, ptr, nr, j, srow
     integer, pointer :: l_col(:)
     call attach(sp,list_col=l_col,nrows_g=nr)
-    ptr     =  list_ptr(sp,row)
+    srow = ts2s_orb(row)
     max_col = -1
-    do i = 1 , n_col(sp,row)
-       j = ucorb(l_col(ptr+i),nr)
+    do ptr = list_ptr(sp,srow) + 1 , list_ptr(sp,srow) + n_col(sp,srow)
+       j = ucorb(l_col(ptr),nr)
        if ( orb_type(j) == TYP_BUFFER ) cycle
        max_col = max(max_col,j - orb_offset(j))
     end do
@@ -526,16 +526,16 @@ contains
     use m_ts_method, only : no_Buf
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
-    ! the row which we will check for (in SIESTA counting)
+    ! the row which we will check for (in TranSIESTA counting)
     integer, intent(in) :: row
     ! The result
-    integer :: min_col, ptr, nr, i, j
+    integer :: min_col, ptr, nr, j, srow
     integer, pointer :: l_col(:)
     call attach(sp,list_col=l_col,nrows_g=nr)
-    ptr     =  list_ptr(sp,row)
+    srow = ts2s_orb(row)
     min_col = huge(1)
-    do i = 1 , n_col(sp,row)
-       j = ucorb(l_col(ptr+i),nr)
+    do ptr = list_ptr(sp,srow) + 1 , list_ptr(sp,srow) + n_col(sp,srow)
+       j = ucorb(l_col(ptr),nr)
        if ( orb_type(j) == TYP_BUFFER ) cycle
        min_col = min(min_col,j - orb_offset(j))
     end do
@@ -582,8 +582,8 @@ contains
        end if
 
        do ir = N , N + n_part(i) - 1
-          if ( Nm1 > min_col(sp,tsorb2sorb(ir)) .or. &
-               max_col(sp,tsorb2sorb(ir)) > Np1 ) then
+          if ( Nm1 > min_col(sp,ir) .or. &
+               max_col(sp,ir) > Np1 ) then
              val = - ir 
              return
           end if
@@ -600,29 +600,6 @@ contains
 
   end function valid_tri
 
-  function tsorb2sorb(tsorb) result(sorb)
-    integer, intent(in) :: tsorb
-    integer :: sorb
-
-    ! start with assuming that the orb is the same orb
-    sorb = tsorb
-    if ( orb_offset(sorb) == 0 ) return
-
-    ! we know that we have an offset
-    ! find it by easy increments
-    sorb = sorb + orb_offset(sorb) ! this is just a quick-jump
-    do 
-       if ( sorb - orb_offset(sorb) > tsorb ) then
-          sorb = sorb - 1
-       else if ( sorb - orb_offset(sorb) < tsorb ) then
-          sorb = sorb + 1
-       else
-          exit ! we have found the correct index
-       end if
-    end do
-
-  end function tsorb2sorb
-
   ! Validation routine for the tri-diagonal splitting
   ! with a Transiesta tri-diagonal matrix.
   ! It will first check for the electrode size
@@ -636,7 +613,7 @@ contains
     integer :: i, idx1, idx2, j
 
     do i = 1 , N_Elec
-       j = Elecs(i)%idx_no
+       j = Elecs(i)%idx_o
        idx1 = j - orb_offset(j)
 
        do j = 1 , parts - 1

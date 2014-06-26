@@ -251,13 +251,13 @@ contains
     tmp = huge(1._dp)
     iElL = 1
     iElR = 2
-    do i = Elecs(1)%idx_na , Elecs(1)%idx_na + TotUsedAtoms(Elecs(1)) - 1
+    do i = Elecs(1)%idx_a , Elecs(1)%idx_a + TotUsedAtoms(Elecs(1)) - 1
        ! Correct for rotated unitcells TODO
        if ( abs(xa(ts_tdir,i)) < tmp ) then
           tmp = abs(xa(ts_tdir,i))
        end if
     end do
-    do i = Elecs(2)%idx_na , Elecs(2)%idx_na + TotUsedAtoms(Elecs(2)) - 1
+    do i = Elecs(2)%idx_a , Elecs(2)%idx_a + TotUsedAtoms(Elecs(2)) - 1
        ! Correct for rotated unitcells TODO
        if ( abs(xa(ts_tdir,i)) < tmp ) then
           tmp = abs(xa(ts_tdir,i))
@@ -307,8 +307,8 @@ contains
     else
        right_t_min = -huge(1._dp)
     end if
-    do i = Elecs(iElL)%idx_na , &
-         Elecs(iElL)%idx_na + TotUsedAtoms(Elecs(iElL)) - 1
+    do i = Elecs(iElL)%idx_a , &
+         Elecs(iElL)%idx_a + TotUsedAtoms(Elecs(iElL)) - 1
        if ( Elecs(iElL)%Bulk ) then
           ! Correct for rotated unitcells TODO
           if ( left_t_max < xa(ts_tdir,i) ) then
@@ -321,8 +321,8 @@ contains
        end if
     end do
     left_t_max = left_t_max + 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
-    do i = Elecs(iElR)%idx_na , &
-         Elecs(iElR)%idx_na + TotUsedAtoms(Elecs(iElR)) - 1
+    do i = Elecs(iElR)%idx_a , &
+         Elecs(iElR)%idx_a + TotUsedAtoms(Elecs(iElR)) - 1
        if ( Elecs(iElL)%Bulk ) then
           ! Correct for rotated unitcells TODO
           if ( xa(ts_tdir,i) < right_t_min ) then

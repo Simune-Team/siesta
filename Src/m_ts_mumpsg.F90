@@ -172,6 +172,7 @@ contains
 
 ! ******************* Miscalleneous variables ****************
     integer :: ierr, no_u_TS, off, no
+    real(dp), parameter :: kpt(3) = (/0._dp,0._dp,0._dp/)
 ! ************************************************************
 
 #ifdef TRANSIESTA_DEBUG
@@ -318,7 +319,7 @@ contains
        if ( Calc_Forces ) call init_val(spuEDM)
        no = no_u_TS
        do iEl = 1 , N_Elec
-          if ( .not. Elecs(iEl)%DM_CrossTerms ) then
+          if ( Elecs(iEl)%DM_update == 0 ) then
              no = no - TotUsedOrbs(Elecs(iEl))
           end if
        end do
@@ -329,7 +330,7 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(ispin, 1, (/0._dp,0._dp,0._dp/), &
+          call read_next_GS(ispin, 1, kpt, &
                cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec
@@ -447,7 +448,7 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(ispin, 1, (/0._dp,0._dp,0._dp/), &
+          call read_next_GS(ispin, 1, kpt, &
                cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec

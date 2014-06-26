@@ -97,6 +97,7 @@ contains
     use m_ts_electype
     use m_ts_tdir
     use m_ts_global_vars, only : TSmode
+    use intrinsic_missing, only : SPC_PROJ, VEC_PROJ, VNORM
     
     implicit          none
 
@@ -117,6 +118,7 @@ contains
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
 
+    real(dp) :: p(3), contrib(3)
     real(dp), parameter :: defcut = 0.0_dp
     integer, dimension(3,3), parameter :: unit_matrix =  &
          reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
@@ -180,6 +182,35 @@ contains
        ts_kscell(ts_tdir,ts_tdir) = 1
        ts_kdispl(ts_tdir)         = 0.0_dp
     else if ( TSmode ) then
+       do j = 1 , N_Elec
+          ! project the electrode transport direction onto
+          ! the corresponding unit-cell direction
+          p = SPC_PROJ(cell,Elecs(j)%ucell(:,Elecs(j)%t_dir))
+          ! See which unitcell direction has the highest contribution
+          do i = 1 , 3 
+             ! project the unit-cell vector onto each cell component
+             contrib(i) = VNORM(VEC_PROJ(cell(:,i),p))
+          end do
+          ! we kill any k-points along any electrode transport direction
+          ! This will retain k-points perpendicular to all electrodes
+          ! transport directions
+          if ( contrib(1) > contrib(2) .and. contrib(1) > contrib(3) ) then
+             ts_kscell(1:3,1) = 0
+             ts_kscell(1,1:3) = 0
+             ts_kscell(1,1)   = 1
+             ts_kdispl(1)     = 0.0_dp
+          else if ( contrib(2) > contrib(1) .and. contrib(2) > contrib(3) ) then
+             ts_kscell(1:3,2) = 0
+             ts_kscell(2,1:3) = 0
+             ts_kscell(2,2)   = 1
+             ts_kdispl(2)     = 0.0_dp
+          else if ( contrib(3) > contrib(1) .and. contrib(3) > contrib(2) ) then
+             ts_kscell(1:3,3) = 0
+             ts_kscell(3,1:3) = 0
+             ts_kscell(3,3)   = 1
+             ts_kdispl(3)     = 0.0_dp
+          end if
+       end do
        if ( sum(sum(ts_kscell,dim=1)) /= 3 .and. IONode ) then
           write(*,'(a)') 'transiesta: kgrid-WARNING !'
           write(*,'(a)') 'transiesta: non-Gamma calculation with multiple electrodes.'

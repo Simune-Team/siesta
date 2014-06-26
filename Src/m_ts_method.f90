@@ -40,8 +40,8 @@ contains
   subroutine ts_init_regions(prefix,N_Elec, Elecs, na_u, lasto)
 
     use alloc
-    use m_ts_electype
     use fdf
+    use m_ts_electype
 
     character(len=*), intent(in) :: prefix
     integer,    intent(in) :: N_Elec
@@ -177,7 +177,7 @@ contains
       ts_o_type(lasto(ia-1)+1:lasto(ia)) = typ
       if ( typ == TYP_BUFFER ) then
          do i = ia , na_u
-            ts_a_offset(ia) = ts_a_offset(ia) + 1
+            ts_a_offset(i) = ts_a_offset(i) + 1
          end do
          no = lasto(ia) - lasto(ia-1)
          do i = lasto(ia-1) + 1 , lasto(na_u)
@@ -206,6 +206,7 @@ contains
     integer, intent(in) :: io
     integer :: off
     do off = io , ts_no_u
+       if ( ts_o_type(off) == TYP_BUFFER ) cycle ! the buffer atoms are NOT transiesta
        if ( off - ts_o_offset(off) == io ) return
     end do
   end function ts2s_orb

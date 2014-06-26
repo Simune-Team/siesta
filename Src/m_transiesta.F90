@@ -438,7 +438,8 @@ contains
             mem,'MB'
     else if ( ts_method == TS_SPARSITY ) then
        ! Calculate size of the full matrices
-       no_E = sum(TotUsedOrbs(Elecs),.not. Elecs(:)%DM_CrossTerms)
+       ! Here we calculate number of electrodes not needed to update the cross-terms
+       no_E = sum(TotUsedOrbs(Elecs),Elecs(:)%DM_update==0)
        i = nrows_g(ts_sp_uc) - no_Buf
        ! LHS
        mem = i ** 2

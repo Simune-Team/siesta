@@ -209,7 +209,7 @@ contains
     ! We only need a partial size of the Green's function
     no = no_u_TS
     do iEl = 1 , N_Elec
-       if ( .not. Elecs(iEl)%DM_CrossTerms ) then
+       if ( Elecs(iEl)%DM_update == 0 ) then
           no = no - TotUsedOrbs(Elecs(iEl))
        end if
     end do
@@ -334,7 +334,7 @@ contains
        if ( Calc_Forces ) call init_val(spuEDM)
        no = no_u_TS
        do iEl = 1 , N_Elec
-          if ( .not. Elecs(iEl)%DM_CrossTerms ) then
+          if ( Elecs(iEl)%DM_update == 0 ) then
              no = no - TotUsedOrbs(Elecs(iEl))
           end if
        end do
@@ -372,7 +372,7 @@ close(io)
           ! *******************
           ! * calc GF         *
           ! *******************
-          if ( all(Elecs(:)%DM_CrossTerms) ) then
+          if ( all(Elecs(:)%DM_update /= 0) ) then
              call calc_GF(cE,no_u_TS, zwork, GF)
 
 #ifdef TS_DEV
@@ -697,7 +697,7 @@ close(io)
     if ( hasEDM ) then
        if ( lh_off ) then
 
-          do io = 1 , nr ! TODO introduce reduced loop
+          do io = 1 , nr
              ! Quickly go past the buffer atoms...
              if ( l_ncol(io) == 0 ) cycle
 
@@ -730,7 +730,7 @@ close(io)
     else
 
        if ( lh_off ) then
-          do io = 1 , nr ! TODO introduce reduced loop
+          do io = 1 , nr
              ! Quickly go past the buffer atoms...
              if ( l_ncol(io) == 0 ) cycle
 
@@ -768,7 +768,7 @@ close(io)
       integer, intent(in) :: io
       integer :: offset
       offset = sum(TotUsedOrbs(Elecs(:)), &
-           MASK=(.not. Elecs(:)%DM_CrossTerms) .and. Elecs(:)%idx_no <= io )
+           MASK=(Elecs(:)%DM_update == 0) .and. Elecs(:)%idx_o <= io )
     end function offset
     
   end subroutine add_DM
@@ -801,7 +801,7 @@ use parallel,only:ionode
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: H(:), S(:)
-    integer :: io, iu, ind, ioff
+    integer :: io, iu, ind, ioff, nr
 
 #ifdef TS_DEV
 logical, save :: hasSaved = .false.
@@ -816,9 +816,8 @@ integer :: i
     H  => val (spH)
     S  => val (spS)
 
-    l_ncol => n_col   (sp)
-    l_ptr  => list_ptr(sp)
-    l_col  => list_col(sp)
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows_g=nr)
      
 #ifdef TS_DEV    
     if (.not. hasSaved )then
@@ -863,7 +862,7 @@ integer :: i
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
-    do io = 1, no_u
+    do io = 1, nr
 
        if ( l_ncol(io) == 0 ) cycle
 
@@ -896,7 +895,7 @@ integer :: i
     integer :: i, j, ii, jj, iii, off, no
 
     no = TotUsedOrbs(El)
-    off = El%idx_no - orb_offset(El%idx_no) - 1
+    off = El%idx_o - orb_offset(El%idx_o) - 1
 
     if ( El%Bulk ) then
        ii = 0

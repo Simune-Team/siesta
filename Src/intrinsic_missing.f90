@@ -100,12 +100,19 @@ module intrinsic_missing
      module procedure ROTATE_3D
   end interface ROTATE
 
-! Projection of 3D vector to 3D space
-  public :: PROJ
-  interface PROJ
-     module procedure PROJ_sp
-     module procedure PROJ_dp
-  end interface PROJ
+  ! Projection of 3D vector to 3D space
+  public :: SPC_PROJ
+  interface SPC_PROJ
+     module procedure SPC_PROJ_sp
+     module procedure SPC_PROJ_dp
+  end interface SPC_PROJ
+
+  ! Projection of a 3D vector onto 3D vector
+  public :: VEC_PROJ
+  interface VEC_PROJ
+     module procedure VEC_PROJ_sp
+     module procedure VEC_PROJ_dp
+  end interface VEC_PROJ
 
 contains
 
@@ -909,8 +916,8 @@ contains
   end subroutine EYE_zp_1D
     
 
-  ! Projections in 3D space.
-  pure function PROJ_sp(space,vin) result(vout)
+  ! Projections from one direction onto 3D space
+  pure function SPC_PROJ_sp(space,vin) result(vout)
     real(sp), intent(in) :: space(3,3), vin(3)
     real(sp) :: vout(3)
     real(sp) :: tmp(3)
@@ -920,9 +927,8 @@ contains
     vout(2) = sum(vin * tmp)
     tmp = space(:,3) / VNORM(space(:,3))
     vout(3) = sum(vin * tmp)
-  end function PROJ_sp
-
-  pure function PROJ_dp(space,vin) result(vout)
+  end function SPC_PROJ_sp
+  pure function SPC_PROJ_dp(space,vin) result(vout)
     real(dp), intent(in) :: space(3,3), vin(3)
     real(dp) :: vout(3)
     real(dp) :: tmp(3)
@@ -932,7 +938,19 @@ contains
     vout(2) = sum(vin * tmp)
     tmp = space(:,3) / VNORM(space(:,3))
     vout(3) = sum(vin * tmp)
-  end function PROJ_dp
+  end function SPC_PROJ_dp
 
+
+  ! Projection of vector onto other vector
+  pure function VEC_PROJ_sp(vec,vin) result(vout)
+    real(sp), intent(in) :: vec(:), vin(:)
+    real(sp) :: vout(size(vec))
+    vout = sum(vec*vin) * vec / VNORM(vec)
+  end function VEC_PROJ_sp
+  pure function VEC_PROJ_dp(vec,vin) result(vout)
+    real(dp), intent(in) :: vec(:), vin(:)
+    real(dp) :: vout(size(vec))
+    vout = sum(vec*vin) * vec / VNORM(vec)
+  end function VEC_PROJ_dp
 
 end module intrinsic_missing

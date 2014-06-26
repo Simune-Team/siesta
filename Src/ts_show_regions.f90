@@ -18,7 +18,7 @@ subroutine ts_show_regions(ucell,na_u,xa,N_Elec,Elecs)
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-  integer :: ia, i, ia_mid
+  integer :: ia, i, ia_mid, v
 
   if ( .not. IONode ) return
 
@@ -50,8 +50,7 @@ subroutine ts_show_regions(ucell,na_u,xa,N_Elec,Elecs)
      case default
         ! electrode position
         do i = 1 , N_Elec
-           if ( ia == Elecs(i)%idx_na ) then
-              ! steps ia counter
+           if ( ia == Elecs(i)%idx_a ) then
               call out_REGION(ia,TotUsedAtoms(Elecs(i)), &
                    trim(name(Elecs(i)))//' electrode','#')
               exit
@@ -64,20 +63,30 @@ subroutine ts_show_regions(ucell,na_u,xa,N_Elec,Elecs)
 
 contains 
 
-  subroutine out_REGION(ia,NA,name,marker)
+  subroutine out_REGION(ia,NA,name,marker,first,last)
     integer, intent(inout) :: ia
     integer, intent(in)    :: NA
     character(len=*), intent(in) :: name
     character(len=1), intent(in) :: marker
+    character(len=1), intent(in), optional :: first, last
     integer :: i, mid
-    
+    logical :: lfirst, llast
+    lfirst = present(first)
+    llast = present(last)
+
     if ( NA < 1 ) return
     mid = (NA+1) / 2
     write(*,'(a)') repeat(marker,46)
     do i = 1, NA
-       if ( i == mid ) then
+       if ( i == 1 .and. lfirst ) then
+          write(*,'(a1,3(tr2,f12.7),tr2,a1,tr1,a1)') &
+                  marker,xa(:,ia)/Ang,marker,first
+       else if ( i == mid ) then
           write(*,'(a1,3(tr2,f12.7),tr2,a1,tr5,a)') &
                marker,xa(:,ia)/Ang,marker,trim(name)
+       else if ( i == NA .and. llast ) then
+          write(*,'(a1,3(tr2,f12.7),tr2,a1,tr1,a1)') &
+                  marker,xa(:,ia)/Ang,marker,last
        else
           write(*,'(a1,3(tr2,f12.7),tr2,a1)') &
                marker,xa(:,ia)/Ang,marker

@@ -520,7 +520,7 @@ contains
        ucell,nkpnt,kpoint,kweight, &
        RemUCellDistance, &
        NEn,ce, &
-       CalcDOS,ZBulkDOS)
+       ZBulkDOS)
 
     use precision,  only : dp
     use parallel  , only : Node, Nodes, IONode
@@ -554,12 +554,11 @@ contains
     real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
     integer, intent(in)           :: NEn ! Number of energy points
     complex(dp), intent(in)       :: ce(NEn) ! the energy points
-    logical, intent(in)           :: CalcDOS ! whether or not to calculate the bulk-density of states.
 
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)      :: ZBulkDOS(NEn,El%nspin) 
+    complex(dp), intent(out), optional :: ZBulkDOS(NEn,El%nspin) 
 
 ! ***********************
 ! * LOCAL variables     *
@@ -597,6 +596,7 @@ contains
     ! Counters
     integer :: i, j, io, jo, off
 
+    logical :: CalcDOS
     logical :: is_left, Gq_allocated, final_invert
 
 #ifdef MPI
@@ -610,6 +610,8 @@ contains
 #endif
 
     call timer('TS_SE',1)
+
+    CalcDOS = present(ZBulkDOS)
 
     ! Check input for what to do
     if( El%inf_dir == INF_NEGATIVE ) then

@@ -147,8 +147,7 @@ contains
        call create_Green(El, &
             ucell,nkpnt,kpoint,kweight, &
             RemUCellDistance, &
-            NEn,ce, &
-            CalcDOS,ZBulkDOS)
+            NEn,ce)
 
     else
 

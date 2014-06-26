@@ -65,7 +65,7 @@ module m_ts_electype
      character(len=FILE_LEN) :: HSfile = ' ', GFfile  = ' '
      character(len=NAME_LEN) :: Name   = ' ', GFtitle = ' '
      ! These variables are relative to the big system
-     integer :: idx_na = 0, idx_no = 0
+     integer :: idx_a = 0, idx_o = 0
      ! atoms used
      integer :: na_used = 0
      ! orbitals used
@@ -80,7 +80,10 @@ module m_ts_electype
      integer :: t_dir = 3 
      ! whether the electrode should be bulk
      logical :: Bulk = .true.
-     logical :: DM_CrossTerms = .false.
+     integer :: DM_update = 0 ! This determines the update scheme for the crossterms
+                              ! == 0 means no update
+                              ! == 1 means update cross-terms
+                              ! == 2 means update everything (no matter Bulk)
      logical :: BandBottom = .false.
      ! whether to re-calculate the GF-file
      logical :: ReUseGF = .false. 
@@ -193,9 +196,9 @@ contains
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    logical :: info(4)
+    logical :: info(5)
     integer :: i, j
-    integer :: idx_na 
+    integer :: idx_a 
 
     character(len=200) :: name, ln, tmp
 
@@ -204,7 +207,7 @@ contains
     if ( .not. found ) return
 
     info(:) = .false.
-    idx_na = 0
+    idx_a = 0
 
     ! We default a lot of the options
     this%GFtitle = 'Surface-Greens function for '//trim(name)
@@ -288,28 +291,28 @@ contains
           
        else if ( leqi(ln,'electrode-position') .or. &
             leqi(ln,'elec-pos') ) then
-          idx_na      = 0
-          this%idx_na = 0
+          idx_a      = 0
+          this%idx_a = 0
           if ( fdf_bnnames(pline) > 1 ) then
              ! the user is requesting on a string basis
              ln = fdf_bnames(pline,2)
              if ( leqi(ln,'start') .or. leqi(ln,'begin') ) then
                 if ( fdf_bnintegers(pline) > 0 ) then
-                   this%idx_na = fdf_bintegers(pline,1)
+                   this%idx_a = fdf_bintegers(pline,1)
                 else
-                   this%idx_na = 1 ! default starting position
+                   this%idx_a = 1 ! default starting position
                 end if
              else if ( leqi(ln,'end') ) then
-                idx_na      = -1
-                this%idx_na =  0
+                idx_a      = -1
+                this%idx_a =  0
                 if ( fdf_bnintegers(pline) > 0 ) then
-                   this%idx_na = fdf_bintegers(pline,1)
+                   this%idx_a = fdf_bintegers(pline,1)
                 end if
              end if
           else
              if ( fdf_bnintegers(pline) < 1 ) &
                   call die('Atomic position not found in input line: '//trim(ln))
-             this%idx_na = fdf_bintegers(pline,1)
+             this%idx_a = fdf_bintegers(pline,1)
           end if
           info(4) = .true.
           
@@ -319,8 +322,21 @@ contains
        else if ( leqi(ln,'calculate-band-bottom') ) then
           this%BandBottom = fdf_bboolean(pline,1,after=1)
 
-       else if ( leqi(ln,'update-cross-terms') ) then
-          this%DM_CrossTerms = fdf_bboolean(pline,1,after=1)
+       else if ( leqi(ln,'DM-update') ) then
+          if ( fdf_bnnames(pline) < 2 ) &
+               call die('Update scheme not supplied')
+
+          tmp = fdf_bnames(pline,2)
+          if ( leqi(tmp,'none') ) then
+             this%DM_update = 0
+          else if ( leqi(tmp,'cross-terms') ) then
+             this%DM_update = 1
+          else if ( leqi(tmp,'all') ) then
+             this%DM_update = 2
+          else
+             call die('DM-update: unrecognized option: '//trim(tmp))
+          end if
+          info(5) = .true.
 
        else if ( leqi(ln,'Ef-fraction') ) then
 
@@ -411,7 +427,7 @@ contains
     if ( this%RepA1 < 1 .or. this%RepA2 < 1 .or. this%RepA3 < 1 ) &
          call die("Repetition in "//trim(name)//" electrode must be >= 1.")
 
-    if ( .not. all(info) ) then
+    if ( .not. all(info(1:4)) ) then
        write(*,*)'You need to supply at least:'
        write(*,*)' - TSHS'
        write(*,*)' - semi-inf-direction'
@@ -428,7 +444,7 @@ contains
 
     ! Read in the number of atoms in the HSfile
     call ts_read_TSHS_opt(HSFile(this),no_u=this%no_u,na_u=this%na_u, &
-         nspin=this%nspin, Ef=this%Ef, ucell=this%ucell, &
+         nspin=this%nspin, Ef=this%Ef, ucell=this%ucell, Qtot=this%Qtot, &
          Bcast=.true.)
 
     allocate(this%xa(3,this%na_u),this%lasto(0:this%na_u))
@@ -498,10 +514,10 @@ contains
     ! if the electrode does not use a bulk electrode we need to update
     ! the cross-terms
     if ( .not. this%Bulk ) then
-       this%DM_CrossTerms = .true.
+       this%DM_update = 2
     end if
                                  ! Same criteria as IsVolt
-    if ( this%DM_CrossTerms .or. abs(this%mu%mu) < 0.000000735_dp ) then
+    if ( this%DM_update > 0 .or. abs(this%mu%mu) < 0.000000735_dp ) then
        ! when updating the cross-terms
        ! there is no need to also shift the energy
        ! I think this will battle each other out...
@@ -509,8 +525,8 @@ contains
     end if
 
     ! if the user has specified text for the electrode position
-    if ( idx_na == -1 ) then
-       this%idx_na = this%idx_na + 1 - TotUsedAtoms(this)
+    if ( idx_a == -1 ) then
+       this%idx_a = this%idx_a + 1 - TotUsedAtoms(this)
     end if
 
   end function fdf_Elec
@@ -644,14 +660,14 @@ contains
     type(Elec), intent(in) :: this
     integer, intent(in) :: io
     logical :: in
-    in = this%idx_no <= io .and. io < (this%idx_no + TotUsedOrbs(this))
+    in = this%idx_o <= io .and. io < (this%idx_o + TotUsedOrbs(this))
   end function OrbInElec
 
   elemental function AtomInElec(this,ia) result(in)
     type(Elec), intent(in) :: this
     integer, intent(in) :: ia
     logical :: in
-    in = this%idx_na <= ia .and. ia < (this%idx_na + TotUsedAtoms(this))
+    in = this%idx_a <= ia .and. ia < (this%idx_a + TotUsedAtoms(this))
   end function AtomInElec
 
   function in_basal_elec(plane,ll,d) result(has)
@@ -703,7 +719,7 @@ contains
     character(len=200) :: fN
     integer :: fL, kscell(3,3), istep, ia1
     logical :: onlyS, Gamma_file, TSGamma, lio
-    real(dp) :: temp, kdispl(3)
+    real(dp) :: temp, kdispl(3), Qtot, Ef
     
     ! Sparsity pattern
     integer, pointer :: iza(:), numh(:), listhptr(:), listh(:), indxuo(:)
@@ -726,8 +742,8 @@ contains
             kscell, kdispl, &
             this%xa, iza, this%lasto, &
             numh, listhptr, listh, xij, indxuo, &
-            H, S, this%Ef, &
-            this%Qtot, Temp, & ! Qtot, Temp
+            H, S, Ef, &
+            Qtot, Temp, & ! Qtot, Temp
             istep, ia1, &
             Bcast=Bcast)
     else
@@ -985,7 +1001,7 @@ contains
   subroutine check_Elec(this,nspin,ucell,na_u,xa,lasto,xa_EPS, &
        kcell,kdispl)
 
-    use intrinsic_missing, only : VNORM, PROJ
+    use intrinsic_missing, only : VNORM, SPC_PROJ
     use parallel, only : IONode
     use units, only : Ang
     use m_ts_io, only : ts_read_TSHS_opt
@@ -1016,12 +1032,12 @@ contains
     er = .false.
 
     this_xa => this%xa_used
-    xa_o(:) = xa(:,this%idx_na)
+    xa_o(:) = xa(:,this%idx_a)
     this_xa_o(:) = this_xa(:,1)
     cell = this%ucell
 
     max_xa = 0._dp
-    iaa = this%idx_na
+    iaa = this%idx_a
     do ia = 1 , this%na_used
        
        do k = 0 , this%RepA3 - 1
@@ -1056,19 +1072,19 @@ contains
        !    LatticeConstant         1. Ang
        !    AtomicCoordinatesFormat    Ang
        ! then it is direct copy paste ! :)
-       xa_o(:) = -this_xa(:,1) + xa(:,this%idx_na)
+       xa_o(:) = -this_xa(:,1) + xa(:,this%idx_a)
 
        if ( IONode ) then
           write(*,'(a)') "Coordinates from the electrode repeated &
                &out to an FDF file"
           write(*,'(a,i0,a)') "NOTICE: that these coordinates are &
-               &arranged with respect to atom ", this%idx_na," in your FDF file"
+               &arranged with respect to atom ", this%idx_a," in your FDF file"
           write(*,'(a)') "NOTICE: that you need to add the species label again"
           write(*,'(a,3(tr1,g10.4))') "Maximal offset in position (Ang):",max_xa/Ang
           write(*,'(a)') "For the same species in the electrode you can do:"
           write(*,'(a,/)') "awk '{print $1,$2,$3,1}' <OUT-file>"
           write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
-          iaa = this%idx_na
+          iaa = this%idx_a
           do ia = 1 , this%na_used
              do k=0,this%RepA3-1
              do j=0,this%RepA2-1
@@ -1180,13 +1196,13 @@ contains
     ! farthest from the device region (or correct intrinsically)
     if ( this%inf_dir == INF_POSITIVE ) then
        ! We need to utilize the last atom
-       this%p%c = xa(:,this%idx_na+this%na_used-1)
+       this%p%c = xa(:,this%idx_a+this%na_used-1)
     else
-       this%p%c = xa(:,this%idx_na)
+       this%p%c = xa(:,this%idx_a)
     end if
     
     ! Normal vector to electrode transport direction
-    this%p%n = PROJ(ucell,this%ucell(:,this%t_dir))
+    this%p%n = SPC_PROJ(ucell,this%ucell(:,this%t_dir))
     this%p%n = this%p%n / vnorm(this%p%n) ! normalize
 
     ! The distance parameter
@@ -1346,11 +1362,11 @@ contains
          "X (Ang)","Y (Ang)","Z (Ang)", "X (Ang)","Y (Ang)","Z (Ang)","|r_S-r_E|"
 
     this_xa      => this%xa_used
-    xa_o(:)      =  xa(:,this%idx_na)
+    xa_o(:)      =  xa(:,this%idx_a)
     this_xa_o(:) =  this_xa(:,1)
     ucell        =  this%ucell
 
-    iaa = this%idx_na
+    iaa = this%idx_a
     do ia = 1 , this%na_used
        do k = 0 , this%RepA3 - 1
        do j = 0 , this%RepA2 - 1

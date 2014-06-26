@@ -278,7 +278,7 @@ subroutine my_symmetrize(N,M)
     o = 0
     do iEl = 1 , N_Elec
        if ( .not. has_cE(cE,iEl=iEl) ) cycle
-       i = Elecs(iEl)%idx_no
+       i = Elecs(iEl)%idx_o
        off_row = i - orb_offset(i) - 1
        do i = 1 , TotUsedOrbs(Elecs(iEl))
           GF(o*no_u_TS+off_row+i) = dcmplx(1._dp,0._dp)
@@ -350,7 +350,7 @@ subroutine my_symmetrize(N,M)
 
     no = no_u_TS
     do i = 1, N_Elec
-       if ( .not. Elecs(i)%DM_CrossTerms ) then
+       if ( Elecs(i)%DM_update == 0 ) then
           no = no - TotUsedOrbs(Elecs(i))
        end if
     end do
@@ -365,7 +365,7 @@ subroutine my_symmetrize(N,M)
        found = .false.
        do while ( .not. found ) 
           i = i + 1
-          if ( .not. any(OrbInElec(Elecs,i) .and. .not. Elecs(:)%DM_CrossTerms) ) then
+          if ( .not. any(OrbInElec(Elecs,i) .and. Elecs(:)%DM_update == 0) ) then
              
              GF(j*no_u_TS+i-orb_offset(i)) = dcmplx(1._dp,0._dp)
              found = .true.

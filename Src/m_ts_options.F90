@@ -355,11 +355,21 @@ contains
     Elecs(:)%t_dir = ts_tdir
     Elecs(:)%Bulk  = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     if ( .not. Elecs(1)%Bulk ) then
-       Elecs(:)%DM_CrossTerms = .true.
+       Elecs(:)%DM_update = 2
     else
        ! default to not update the cross-terms
-       Elecs(:)%DM_CrossTerms = fdf_get('TS.Elecs.DM.CrossTerms',.false.)
+       c = fdf_get('TS.Elecs.DM.Update','none')
+       if ( leqi(c,'none') ) then
+          Elecs(:)%DM_update = 0
+       else if ( leqi(c,'cross-terms') ) then
+          Elecs(:)%DM_update = 1
+       else if ( leqi(c,'all') ) then
+          Elecs(:)%DM_update = 2
+       else
+          call die('TS.Elecs.DM.Update: unrecognized option: '//trim(c))
+       end if
     end if
+
     ! We default to not calculate the band-bottom...
     ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
     Elecs(:)%BandBottom = fdf_get('TS.Elecs.BandBottom', .false.)
@@ -379,12 +389,12 @@ contains
           call die('Could not find electrode: '//trim(name(Elecs(i))))
        end if
        ! set the placement in orbitals
-       if ( Elecs(i)%idx_na < 0 ) &
-            Elecs(i)%idx_na = na_u + Elecs(i)%idx_na + 1
-       if ( Elecs(i)%idx_na < 1 .or. &
-            na_u < Elecs(i)%idx_na ) &
+       if ( Elecs(i)%idx_a < 0 ) &
+            Elecs(i)%idx_a = na_u + Elecs(i)%idx_a + 1
+       if ( Elecs(i)%idx_a < 1 .or. &
+            na_u < Elecs(i)%idx_a ) &
             call die("Electrode position does not exist")
-       Elecs(i)%idx_no = lasto(Elecs(i)%idx_na-1)+1
+       Elecs(i)%idx_o = lasto(Elecs(i)%idx_a-1)+1
 
     end do
 
@@ -476,14 +486,14 @@ contains
     err = .false.
     ! we need to check that they indeed do not overlap
     do i = 1 , N_Elec
-       idx1 = Elecs(i)%idx_na
+       idx1 = Elecs(i)%idx_a
        idx2 = idx1 + TotUsedAtoms(Elecs(i)) - 1
        ! we need to check every electrode,
        ! specifically because if one of the electrodes is fully located
        ! inside the other and we check the "small" one 
        do j = 1 , N_Elec
           if ( i == j ) cycle
-          idx = Elecs(j)%idx_na
+          idx = Elecs(j)%idx_a
           if ( (idx <= idx1 .and. &
                idx1 < idx + TotUsedAtoms(Elecs(j))) ) then
              err = .true.
@@ -495,7 +505,7 @@ contains
           if ( err ) then
              write(*,*) 'Electrode: '//trim(Name(Elecs(i)))
              write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
-             idx1 = Elecs(j)%idx_na
+             idx1 = Elecs(j)%idx_a
              idx2 = idx1 + TotUsedAtoms(Elecs(j)) - 1
              write(*,*) 'Electrode: '//trim(Name(Elecs(j)))
              write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
@@ -528,7 +538,7 @@ contains
 
     ! WILL WORK EVENTUALLY
     if ( N_Elec > 2 .and. IsVolt ) call die('Several electrodes and bias does not work')
-    if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_CrossTerms) ) then
+    if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_update > 0) ) then
        call die('transiesta relaxation is only allowed if you also &
             &update the cross terms, please set: TS.Elecs.DM.CrossTerms T')
     end if
@@ -736,7 +746,7 @@ contains
           else if ( Elecs(i)%t_dir == 3 ) then
              chars = 'A3'
           end if
-          j = Elecs(i)%idx_na
+          j = Elecs(i)%idx_a
           write(*,20) '  Position in geometry', j, j + TotUsedAtoms(Elecs(i)) - 1
           write(*,10) '  Transport direction for electrode', trim(chars)
           if ( Elecs(i)%inf_dir == INF_POSITIVE ) then
@@ -746,7 +756,13 @@ contains
           end if
           write(*,7)  '  Chemical shift', Elecs(i)%mu%mu/eV,'eV'
           write(*,1)  '  Bulk values in electrode', Elecs(i)%Bulk
-          write(*,1)  '  Update cross terms contact/electrode', Elecs(i)%DM_CrossTerms
+          if ( Elecs(i)%DM_update == 0 ) then
+             write(*,11)  '  Cross-terms is not updated'
+          else if ( Elecs(i)%DM_update == 1 ) then
+             write(*,11)  '  Cross-terms is updated'
+          else if ( Elecs(i)%DM_update == 2 ) then
+             write(*,11)  '  Cross-terms and electrode region is updated'
+          end if
           write(*,1)  '  Calc. valence band-bottom eigenvalue', Elecs(i)%BandBottom
           if ( IsVolt ) &
                write(*,8)  '  Hamiltonian E-C Ef fractional shift', Elecs(i)%Ef_frac_CT
@@ -836,9 +852,9 @@ contains
                   &Be careful here.'
           end if
 
-          if ( Elecs(i)%DM_CrossTerms ) then
+          if ( Elecs(i)%DM_update == 0 ) then
              write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
-                  &update cross-terms with central region.'
+                  &not update cross-terms or local region.'
           end if
 
           if ( .not. Elecs(i)%kcell_check ) then
@@ -853,6 +869,12 @@ contains
           end if
 
        end do
+
+       if ( N_Elec /= 2 .and. any(Elecs(:)%DM_update /= 2) ) then
+          write(*,'(a,/,a)') 'Consider updating all elements when doing &
+               &N-electrode calculations. The charge conservation typically &
+               &increases.','  Enable by: TS.Elecs.DM.Update all'
+       end if
 
     end if
 

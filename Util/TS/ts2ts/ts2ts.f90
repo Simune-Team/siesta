@@ -189,9 +189,9 @@ program ts2ts
      write(*,'(a)') 'TS.Elecs.Bulk false'
   end if
   if ( UpdateDMCR ) then
-     write(*,'(a)') 'TS.Elecs.DM.CrossTerms true'
+     write(*,'(a)') 'TS.Elecs.DM.Update cross-terms'
   else
-     write(*,'(a)') 'TS.Elecs.DM.CrossTerms false'
+     write(*,'(a)') 'TS.Elecs.DM.Update none'
   end if
   if ( ReUse ) then
      write(*,'(a)') 'TS.Elecs.GF.ReUse true'

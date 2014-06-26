@@ -96,7 +96,7 @@ if [ $help -eq 1 ]; then
     printf "$fmt" "bulk <T|F>" "whether the electrode is a bulk electrode (true)"
     printf "$fmt" "gf <file>" "name of the Greens function file (TSGF[el<idx>-name])"
     printf "$fmt" "gf-title <name>" "title of the Greens function"
-    printf "$fmt" "cross-terms|ct <T|F>" "whether to update the cross-terms between the central region and the electrode"
+    printf "$fmt" "cross-terms|ct none|cross-terms|all" "whether to update, no electrode regions, the cross-terms, or everything"
     echo ""
     echo "A shorthand notation for supplying the options is:"
     echo "    -el<idx> Y=<val>,Z=<val> where Y,Z is one of X above"
@@ -600,7 +600,7 @@ function create_el {
     print_if bulk "bulk"
     print_if gf "GF"
     print_if gf-title "GF-title"
-    print_if cross-terms:ct "update-cross-terms"
+    print_if cross-terms:ct "DM-update"
     echo "%endblock TS.Elec.$name"
 }
 for i in `seq 1 $_els` ; do

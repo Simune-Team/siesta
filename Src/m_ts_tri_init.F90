@@ -84,7 +84,7 @@ contains
     tmpSp2 = ts_sp_uc
     do i = 1 , N_Elec
 
-       idx = Elecs(i)%idx_no
+       idx = Elecs(i)%idx_o
        no = TotUsedOrbs(Elecs(i))
 
        ! we first create the super-set sparsity

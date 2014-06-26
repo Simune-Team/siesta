@@ -149,7 +149,7 @@ contains
     tmpSp2 = ts_sp_uc
     do iEl = 1 , N_Elec
 
-       idx = Elecs(iEl)%idx_no
+       idx = Elecs(iEl)%idx_o
        no = TotUsedOrbs(Elecs(iEl))
 
        ! we first create the super-set sparsity
@@ -341,7 +341,7 @@ contains
     iG => mum%A(:)
 
     no = TotUsedOrbs(El)
-    off = El%idx_no - 1
+    off = El%idx_o - 1
 
     if ( El%Bulk ) then
        do ind = 1 , mum%NZ
@@ -349,7 +349,7 @@ contains
           if ( .not. OrbInElec(El,jso) ) cycle
           iso = ts2s_orb(mum%IRN(ind))
           if ( .not. OrbInElec(El,iso) ) cycle
-          ii = (jso - El%idx_no ) * no + iso - off
+          ii = (jso - El%idx_o ) * no + iso - off
           iG(ind) = El%Sigma(ii)
        end do
     else
@@ -358,7 +358,7 @@ contains
           if ( .not. OrbInElec(El,jso) ) cycle
           iso = ts2s_orb(mum%IRN(ind))
           if ( .not. OrbInElec(El,iso) ) cycle
-          ii = (jso - El%idx_no ) * no + iso - off
+          ii = (jso - El%idx_o ) * no + iso - off
           iG(ind) = iG(ind) - El%Sigma(ii)
        end do
     end if

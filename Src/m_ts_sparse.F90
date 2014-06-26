@@ -133,7 +133,7 @@ contains
 
        ! Create the update region (a direct subset of the local sparsity pattern)
        ! Hence it is still a local sparsity pattern.
-       call ts_Sparsity_Update(block_dist,sparse_pattern, Elecs, &
+       call ts_Sparsity_Update(block_dist,sparse_pattern, N_Elec, Elecs, &
             ltsup_sp_sc)
 
        ! assign distribution array
@@ -157,13 +157,14 @@ contains
 
     ! Create the global transiesta H(k), S(k) sparsity pattern
     call ts_Sparsity_Global(block_dist,sparse_pattern, &
-         nnzs(sparse_pattern), Elecs, &
+         nnzs(sparse_pattern), N_Elec, Elecs, &
          ts_sp_uc)
 
     ! The update sparsity pattern can be simplied to the H,S sparsity
     ! pattern, if all electrodes have certain options to be the same.
-    bool = all(Elecs(:)%Bulk) .and. all(Elecs(:)%DM_CrossTerms)
+    bool = all(Elecs(:)%Bulk) .and. all(Elecs(:)%DM_update == 1)
     bool = bool .or. all( .not. Elecs(:)%Bulk )
+    bool = bool .or. all( Elecs(:)%DM_update == 2 )
 
     if ( IONode .and. .not. bool ) then
        write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern:'
@@ -191,13 +192,13 @@ contains
     if ( bool ) then
        tsup_sp_uc = ts_sp_uc
        if ( IONode ) then
-          write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern:'
+          write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern.'
           write(*,'(a)') 'TranSIESTA global update sparsity pattern same as H,S'
           call print_type(ts_sp_uc)
        end if
     else
        ! Create the update region (a direct subset of ts_sp_uc)
-       call ts_Sparsity_Update(dit,ts_sp_uc, Elecs, &
+       call ts_Sparsity_Update(dit,ts_sp_uc, N_Elec, Elecs, &
             tsup_sp_uc)
        
        if ( IONode ) then
@@ -267,7 +268,7 @@ contains
 ! z-connections (less orbitals to move about, and they should
 ! not exist).
   subroutine ts_Sparsity_Global(block_dist,s_sp,n_nzs, &
-       Elecs, &
+       N_Elec, Elecs, &
        ts_sp)
 
     use parallel, only : IONode
@@ -293,7 +294,8 @@ contains
     ! The number of non-zeroes in the sparsity pattern (local)
     integer, intent(in) :: n_nzs
     ! All the electrodes
-    type(Elec), intent(in) :: Elecs(:)
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
     ! the returned update region.    
     type(Sparsity), intent(inout) :: ts_sp
 
@@ -410,9 +412,20 @@ contains
           if ( jot == TYP_BUFFER ) cycle
 
           if ( iot > 0 ) then
-             UseBulk = Elecs(iot)%Bulk
+             ! In order to allow to have the update sparsity pattern
+             ! as a subset, we require that the Hamiltonian also
+             ! has the electrode interconnects
+             if ( Elecs(iot)%DM_update == 2 ) then
+                UseBulk = .false.
+             else
+                UseBulk = Elecs(iot)%Bulk
+             end if
           else if ( jot > 0 ) then
-             UseBulk = Elecs(jot)%Bulk
+             if ( Elecs(jot)%DM_update == 2 ) then
+                UseBulk = .false.
+             else
+                UseBulk = Elecs(jot)%Bulk
+             end if
           else
              ! we are definitely not in an electrode
              UseBulk = .true.
@@ -460,7 +473,7 @@ contains
 ! cross connections from left-right, AND remove any
 ! z-connections (less orbitals to move about, and they should
 ! not exist).
-  subroutine ts_Sparsity_Update(dit,s_sp, Elecs, &
+  subroutine ts_Sparsity_Update(dit,s_sp, N_Elec, Elecs, &
        tsup_sp)
 
     use parallel, only : IONode, Node
@@ -475,7 +488,8 @@ contains
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: s_sp
     ! the electrodes
-    type(Elec), intent(in) :: Elecs(:)
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
     type(Sparsity), intent(inout) :: tsup_sp
 
 ! **********************
@@ -538,11 +552,19 @@ contains
           if ( jct == TYP_BUFFER ) cycle
 
           if ( ict > 0 ) then
-             UseBulk = Elecs(ict)%Bulk
-             DM_CrossTerms = Elecs(ict)%DM_CrossTerms
+             if ( Elecs(ict)%DM_update == 2 ) then ! update everything
+                UseBulk = .false.
+             else
+                UseBulk = Elecs(ict)%Bulk
+                DM_CrossTerms = Elecs(ict)%DM_update == 1
+             end if
           else if ( jct > 0 ) then
-             UseBulk = Elecs(jct)%Bulk
-             DM_CrossTerms = Elecs(jct)%DM_CrossTerms
+             if ( Elecs(jct)%DM_update == 2 ) then ! update everything
+                UseBulk = .false.
+             else
+                UseBulk = Elecs(jct)%Bulk
+                DM_CrossTerms = Elecs(jct)%DM_update == 1
+             end if
           else
              ! we are definitely not in an electrode
              ! just set it to be updated
@@ -935,7 +957,7 @@ contains
       type(Elec), intent(in) :: Elecs(N_Elec)
       integer, intent(in) :: ia
       integer :: offset
-      offset = sum(TotUsedAtoms(Elecs(:)), MASK=Elecs(:)%idx_na < ia )
+      offset = sum(TotUsedAtoms(Elecs(:)), MASK=Elecs(:)%idx_a < ia )
     end function offset
 
 #ifdef MUMPS

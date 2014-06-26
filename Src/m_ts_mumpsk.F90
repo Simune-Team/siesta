@@ -292,7 +292,7 @@ contains
        if ( Calc_Forces ) call init_val(spuEDM)
        no = no_u_TS
        do iEl = 1 , N_Elec
-          if ( .not. Elecs(iEl)%DM_CrossTerms ) then
+          if ( Elecs(iEl)%DM_update == 0 ) then
              no = no - TotUsedOrbs(Elecs(iEl))
           end if
        end do

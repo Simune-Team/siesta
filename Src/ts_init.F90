@@ -106,7 +106,7 @@ contains
           end if
        end do
        do i = 1 , N_Elec
-          do ia = Elecs(i)%idx_na , Elecs(i)%idx_na + TotUsedAtoms(Elecs(i)) - 1
+          do ia = Elecs(i)%idx_a , Elecs(i)%idx_a + TotUsedAtoms(Elecs(i)) - 1
              if ( .not. is_fixed(ia) ) then
                 call die('All buffer atoms and electrode atoms *MUST* be &
                      &fixed while doing transiesta geometry optimizations. &

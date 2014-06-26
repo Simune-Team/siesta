@@ -1,4 +1,83 @@
 ----------------------------------------------------
+June 26, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-159
+Bugfix for buffer atoms in transiesta and added new updating scheme
+
+* Loops were not traversing the entire sparsity pattern of
+  the system when buffer atoms was used.
+  This resulted in bad creating of the LHS before calculating
+  the Greens function.
+
+* Renamed idx_n[ao] to idx_[ao] for consistency.
+  It is the index of atom (a) or orbital (o).
+
+* Renamed projections into a space projector and vector
+  projector. This enables both projections.
+
+* Added a new update method which enables the updating of
+  every element of an electrode even though bulk electrodes
+  are used. This seems to heavily increase the charge
+  conservation. The calculation is just as heavy as using
+  cross-terms.
+  This can be input via these constructs:
+    TS.Elecs.DM.Update none|cross-terms|all
+  or electrode locally:
+    DM-update none|cross-terms|all
+  It is encouraged for N/=2 electrode systems as charge
+  conservation is bad in those cases.
+
+* Cleaned up in Sparsity2trimat by changing an
+  interface to a more generic one considering the trimat.
+
+* The intel-compiler suggested to remove ZBulkDOS from 
+  create_Green.
+  I have done this to ensure that any access to an unallocated
+  array is never done. It is now an optional array,
+  if present it will return the DOS, otherwise nothing will be
+  done.
+
+* Made a k-point parameter for Gamma transiesta calculations.
+  This prohibits an temporary array.
+
+* Ensured that no k-points exists in any of the electrodes transport
+  direction.
+  TODO this should be enforced in every cell direction where
+  the electrode unit-cell transport direction has any weight.
+  Currently it only removes k-points in the most contributing 
+  direction.
+
+* Update utilities for changing updating mechanism. 
+
+modified:
+  Src/create_Sparsity_Union.F90
+  Src/geom_helper.f90
+  Src/intrinsic_missing.f90
+  Src/m_transiesta.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_method.f90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Src/m_ts_voltage.F90
+  Src/m_ts_weight.F90
+  Src/ts_init.F90
+  Src/ts_show_regions.f90
+  Util/TS/ts2ts/ts2ts.f90
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 June 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-158
 Added a projection function in intrinsic_missing
 

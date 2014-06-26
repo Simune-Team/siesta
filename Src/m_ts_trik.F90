@@ -219,9 +219,9 @@ contains
 
        ! if we need the cross-terms we can not skip the blocks
        ! that are fully inside the electrode
-       if ( Elecs(iEl)%DM_CrossTerms ) cycle
+       if ( Elecs(iEl)%DM_update /= 0 ) cycle
 
-       io  = Elecs(iEl)%idx_no
+       io  = Elecs(iEl)%idx_o
        io  = io - orb_offset(io)
        idx = io + TotUsedOrbs(Elecs(iEl)) - 1
 
@@ -340,7 +340,7 @@ contains
        if ( Calc_Forces ) call init_val(spuEDM)
        no = no_u_TS
        do iEl = 1 , N_Elec
-          if ( .not. Elecs(iEl)%DM_CrossTerms ) then
+          if ( Elecs(iEl)%DM_update == 0 ) then
              no = no - TotUsedOrbs(Elecs(iEl))
           end if
        end do
@@ -756,16 +756,18 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: H(:), S(:)
     complex(dp), pointer :: Gfinv(:)
-    integer :: io, iu, ind, idx
+    integer :: io, iu, ind, idx, nr
 
     if ( cE%fake ) return
 
     Z = cE%e
 
     sp => spar(spH)
-    call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
     H  => val (spH)
     S  => val (spS)
+
+    call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col, &
+         nrows_g=nr)
 
     Gfinv  => val(Gfinv_tri)
 
@@ -775,7 +777,7 @@ contains
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
-    do io = 1, no_u
+    do io = 1, nr
        if ( l_ncol(io) == 0 ) cycle
 
        iu = io - orb_offset(io)
@@ -807,7 +809,7 @@ contains
     integer :: no, off, i, j, ii, idx
     
     no = TotUsedOrbs(El)
-    off = El%idx_no - orb_offset(El%idx_no) - 1
+    off = El%idx_o - orb_offset(El%idx_o) - 1
     Gfinv => val(GFinv_tri)
 
     ii = 0

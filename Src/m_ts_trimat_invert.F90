@@ -68,7 +68,7 @@ contains
     complex(dp), pointer :: Mpinv(:)
 
     integer :: sN, sNm1, sNp1, n, np
-    integer :: iEl, idx_no, off, sCol, eCol
+    integer :: iEl, idx_o, off, sCol, eCol
     logical :: piv_initialized
 
     np = parts(M)
@@ -108,11 +108,11 @@ contains
     do n = 1 , np
        do iEl = 1 , N_Elec
           if ( .not. has_El(iEl) ) cycle
-          sNm1 = Elecs(iEl)%idx_no
-          idx_no = sNm1 - orb_offset(sNm1)
-          sNm1 = idx_no
+          sNm1 = Elecs(iEl)%idx_o
+          idx_o = sNm1 - orb_offset(sNm1)
+          sNm1 = idx_o
           sN   = nrows_g(M,n)
-          sNp1 = idx_no + TotUsedOrbs(Elecs(iEl)) - 1
+          sNp1 = idx_o + TotUsedOrbs(Elecs(iEl)) - 1
           if ( which_part(M,sNm1) <= n .and. &
                n <= which_part(M,sNp1) ) then
              ! get number of columns that belongs to
@@ -145,7 +145,7 @@ contains
     complex(dp), pointer :: z(:)
 
     integer :: nr, np, no
-    integer :: idx_no
+    integer :: idx_o
     integer :: sPart, ePart, lsPart, lePart
     integer :: sColF, eColF, sIdxF, eIdxF
     integer :: sColT, eColT, sIdxT, eIdxT
@@ -181,11 +181,11 @@ contains
     nr = nrows_g(M)
     np = parts(M)
 
-    idx_no = El%idx_no - orb_offset(El%idx_no)
+    idx_o = El%idx_o - orb_offset(El%idx_o)
     no = TotUsedOrbs(El)
 
-    sPart = which_part(M,idx_no)
-    ePart = which_part(M,idx_no+no-1)
+    sPart = which_part(M,idx_o)
+    ePart = which_part(M,idx_o+no-1)
     if ( sPart < 1 ) call die('Error in the Bias inversion')
     if ( ePart - sPart + 1 > 2 ) call die('Error in trimat partition')
     if ( ePart > parts(M) ) call die('Error in the Bias inversion')
@@ -201,8 +201,8 @@ contains
     do n = 1 , sPart - 1
        off = off + nrows_g(M,n)
     end do
-    idx_no = idx_no - off
-    if ( idx_no <= 0 ) call die('Error in electrode setup')
+    idx_o = idx_o - off
+    if ( idx_o <= 0 ) call die('Error in electrode setup')
     do n = sPart , ePart
 
        ! current count of orbitals in the tri-diagonal segment
@@ -215,8 +215,8 @@ contains
 
        ! get number of columns that belongs to
        ! the electrode in the 'n' diagonal part
-       sColF = max(idx_no          ,  1)
-       eColF = min(idx_no + no - 1 , sN)
+       sColF = max(idx_o          ,  1)
+       eColF = min(idx_o + no - 1 , sN)
        if ( eColF < sColF ) &
             call die('Here: Something went wrong')
        sIdxF = (sColF-1) * sN + 1
@@ -227,12 +227,12 @@ contains
        Mpinv => z(sIdxT:eIdxT)
 
        ! get the placement in the inversed column
-       if ( 1 <= idx_no ) then
+       if ( 1 <= idx_o ) then
           ! we are taking the first part of the inversed matrix
           sColT = 1
           eColT = min(eColF-sColF+1,no)
        else
-          sColT = -idx_no + 2 ! we have to pass zero
+          sColT = -idx_o + 2 ! we have to pass zero
           eColT = no
        end if
        sIdxT = (sColT-1) * sN + 1
@@ -282,7 +282,7 @@ contains
 
        ! update offset on rows
        off = off + sN
-       idx_no = idx_no - sN
+       idx_o = idx_o - sN
 
     end do
 

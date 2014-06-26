@@ -178,4 +178,25 @@ contains
     n = nint(sum(xd*recell(:,abc)))
   end function cell_d
 
+
+  function cell_v_dir(cell,v) result(dir)
+    use intrinsic_missing, only : VEC_PROJ, VNORM
+! *********************
+! * INPUT variables   *
+! *********************
+    real(dp), intent(in) :: cell(3,3) ! the reciprocal cell, WITHOUT 2Pi!!
+    real(dp), intent(in) :: v(3)
+! *********************
+! * OUTPUT variables  *
+! *********************
+    integer  :: dir
+    real(dp) :: c(3)
+    c(1) = vnorm(VEC_PROJ(cell(:,1)/vnorm(cell(:,1)),v))
+    c(2) = vnorm(VEC_PROJ(cell(:,2)/vnorm(cell(:,2)),v))
+    c(3) = vnorm(VEC_PROJ(cell(:,3)/vnorm(cell(:,3)),v))
+    if ( c(1) > c(2) .and. c(1) > c(3) ) dir = 1
+    if ( c(2) > c(1) .and. c(2) > c(3) ) dir = 2
+    if ( c(3) > c(1) .and. c(3) > c(2) ) dir = 3
+  end function cell_v_dir
+
 end module geom_helper

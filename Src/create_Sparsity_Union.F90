@@ -21,7 +21,7 @@
 ! this can be introduced by something like this:
 
 !    call crtSparsity_Union(block_dist,ts_sp,&
-!         Elec%idx_no, Elec%idx_no, &
+!         Elec%idx_o, Elec%idx_o, &
 !         TotUsedOrbs(Elec), TotUsedOrbs(Elec), & ! insertion of the block
 !         sp_uc)
 !    if(IONode)call print_type(sp_uc)
