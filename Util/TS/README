@@ -28,12 +28,21 @@ These programs has been developed by:
 - ts2ts
   A small utility which takes an old input file for TranSIESTA
   and converts it into the new input format.
-  First call make in the folder and then you can utilise it as:
+  First make the utility in the folder and then you can utilise it as:
     ts2ts <fdf-file> 
   and it will print out a converted fdf-input file.
   It is made for piping directly into another file.
 
+  Easy usage will append to the FDF file:
+    ts2ts run.fdf >> run.fdf
+
   REMARK: It will only read in TranSIESTA options and thus
           also only print TranSIESTA options. 
 	  It will not copy any other FDF-flags.
-  
+
+- tshs2tshs
+  Converts TSHS files to other version files.
+  Currently there exists two file versions:
+   0 : old TSHS format (compatible with all programs)
+   1 : new TSHS format (not compatible with all programs), but 
+       have a drastic memory decrease  

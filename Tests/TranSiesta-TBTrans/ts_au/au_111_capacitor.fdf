@@ -152,3 +152,101 @@ TS.BufferAtomsRight   0
 ==================================================
 ==================================================
 
+TS.Voltage    1.00000 eV                                     
+
+%block TS.ChemPots
+  Left
+  Right
+%endblock TS.ChemPots
+
+%block TS.ChemPot.Left
+  mu V/2
+  contour.eq
+    begin
+      c-Left
+      t-Left
+    end
+%endblock TS.ChemPot.Left
+%block TS.ChemPot.Right
+  mu -V/2
+  contour.eq
+    begin
+      c-Right
+      t-Right
+    end
+%endblock TS.ChemPot.Right
+
+TS.Elecs.Bulk true
+TS.Elecs.DM.Update cross-terms
+TS.Elecs.GF.ReUse false
+%block TS.Elecs
+  Left
+  Right
+%endblock TS.Elecs
+
+%block TS.Elec.Left
+  TSHS ./elec_au_111_abc.TSHS
+  chem-pot Left
+  semi-inf-dir -a3
+  elec-pos begin 1
+  used-atoms 3
+%endblock TS.Elec.Left
+
+%block TS.Elec.Right
+  TSHS ./elec_au_111_abc.TSHS
+  chem-pot Right
+  semi-inf-dir +a3
+  elec-pos end -1
+  used-atoms 3
+%endblock TS.Elec.Right
+
+TS.Contours.Eq.Pole.N 3
+%block TS.Contour.c-Left
+  part circle
+   from  -30.00000 eV + V/2 to -10. kT + V/2
+    points 30
+     method g-legendre
+%endblock TS.Contour.c-Left
+%block TS.Contour.t-Left
+  part tail
+   from prev to inf
+    points 10
+     method g-fermi
+%endblock TS.Contour.t-Left
+%block TS.Contour.c-Right
+  part circle
+   from  -30.00000 eV - V/2 to -10. kT - V/2
+    points 30
+     method g-legendre
+%endblock TS.Contour.c-Right
+%block TS.Contour.t-Right
+  part tail
+   from prev to inf
+    points 10
+     method g-fermi
+%endblock TS.Contour.t-Right
+
+TS.Contours.nEq.Eta    0.0000010000 Ry                                
+%block TS.Contours.Bias.Window
+  neq
+%endblock TS.Contours.Bias.Window
+# Selected non-equilibrium integration
+# integration splitting is larger than 0.05 eV.
+# New default setting is: 0.01 eV.
+# Consider changing the below "delta <E>" to 0.01 eV.
+%block TS.Contour.Bias.Window.neq
+  part line
+   from -|V|/2 to |V|/2
+    delta    0.06667 eV
+     method simpson-mix
+%endblock TS.Contour.Bias.Window.neq
+
+%block TS.Contours.Bias.Tail
+  neq-tail
+%endblock TS.Contours.Bias.tail
+%block TS.Contour.Bias.Tail.neq-tail
+  part tail
+   from 0. kT to 12. kT
+    delta    0.06667 eV
+     method simpson-mix
+%endblock TS.Contour.Bias.Tail.neq-tail

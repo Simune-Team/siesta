@@ -321,7 +321,7 @@
      &        .true., Gamma, ts_Gamma_file,
      &        ucell, na_u, no_l, no_u, no_s, maxnh, nspin,
      &        ts_kscell_file, ts_kdispl_file,
-     &        xa, iza, lasto,
+     &        xa, lasto, 
      &        numh, listhptr, listh, xijo, indxuo, 
      &        S, S, dummyEf,dummyQtot, Temp,0,0)
         call bye( 'Save overlap matrix and exit' ) ! Exit siesta   ! MPN 

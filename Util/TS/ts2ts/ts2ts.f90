@@ -34,7 +34,6 @@ program ts2ts
   Ncircle = -1
   Nvolt = -1
 
-
   def_nEq = .false.
   ! Here we start the routines
   filein = 'none'
@@ -379,6 +378,13 @@ contains
     if ( na > 0 ) then
        write(*,'(tr2,a,i0)') 'used-atoms ', na
     end if
+    ! Only print out repetitions if larger than one
+    if ( RepA1 > 1 ) then
+       write(*,'(tr2,a,i0)') 'rep-a1 ', RepA1
+    end if
+    if ( RepA2 > 1 ) then
+       write(*,'(tr2,a,i0)') 'rep-a2 ', RepA2
+    end if
     call eblock('TS.Elec.'//trim(name))
   end subroutine welec
 
@@ -408,7 +414,6 @@ contains
        stop
     end if
   end subroutine assert
-
 
   subroutine help()
     write(0,'(a)') 'Helps converting an old TranSIESTA input to the new format'

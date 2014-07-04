@@ -164,6 +164,7 @@ module m_hs_matrix
   public :: matrix_rem_left_right
   public :: matrix_symmetrize
   public :: set_HS_available_transfers
+  public :: supercell_offsets
 
   integer, parameter, public :: TRANSFER_ALL = -999999
 
@@ -183,6 +184,7 @@ contains
     use sys,       only : die 
     use alloc,     only : re_alloc
     use geom_helper, only : ucorb
+    use cellSubs, only : reclat
 
 ! ***********************
 ! * INPUT variables     *
@@ -450,6 +452,7 @@ contains
     use sys,       only : die 
     use alloc,     only : re_alloc
     use geom_helper, only : ucorb
+    use cellSubs, only : reclat
 
 ! ***********************
 ! * INPUT variables     *
@@ -716,6 +719,7 @@ contains
     use sys,       only : die 
     use alloc,     only : re_alloc
     use geom_helper, only : ucorb
+    use cellSubs, only : reclat
 
 ! ***********************
 ! * INPUT variables     *
@@ -901,6 +905,7 @@ contains
     use sys,       only : die 
     use alloc,     only : re_alloc
     use geom_helper, only : ucorb
+    use cellSubs, only : reclat
 
 ! ***********************
 ! * INPUT variables     *
@@ -940,7 +945,7 @@ contains
     integer :: no_tot
     real(dp) :: kxij
     complex(dp) :: cphase
-    integer :: i,j,iuo,iu,juo,iind,ind
+    integer :: j,iuo,iu,juo,iind,ind
     logical :: l_RemUCellDistances
     integer :: l_RemNFirstOrbitals, l_RemNLastOrbitals 
 
@@ -973,9 +978,7 @@ contains
     ! Prepare the cell to calculate the index of the atom
     call reclat(ucell,recell,0) ! Without 2*Pi
     
-!
-! Setup H,S for this k-point:
-!
+    ! Setup H,S for this k-point:
     do juo = 1,no_tot
        do iuo = 1,no_tot
           HkT(iuo,juo) = dcmplx(0.d0,0.d0)
@@ -1080,6 +1083,8 @@ contains
        xij,numh,listhptr,listh,xa,iaorb,transfer_cell)
     use precision, only : dp
     use geom_helper, only : ucorb
+    use cellSubs, only : reclat
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -1104,7 +1109,7 @@ contains
 ! ***********************
     real(dp) :: recell(3,3)
     real(dp) :: xijo(3), xc
-    integer :: i,j,iuo,iu,juo,iind,ind
+    integer :: i,j,iuo,juo,ind
 
     ! Initialize the transfer cell to:
     transfer_cell(:,:) = 0
@@ -1285,6 +1290,104 @@ contains
     end do
 
   end subroutine matrix_symmetrize_2d
+
+  ! Create an index array containing the unit-cell expansions
+  ! This means we can do this:
+  !   xij(:,ind) = ucell(:,1) * tm(1) + ucell(:,2) * tm(2) + ucell(:,3) * tm(3) + xa(:,iaorb(jo))-xa(:,iaorb(io))
+  ! to create the full xij array...
+  subroutine supercell_offsets(ucell,na_u, no_u,maxnh, &
+       lasto, xa, numh, listhptr, listh, xij, n_s, offsets, indxs)
+    use precision, only : dp
+    use geom_helper, only : ucorb, iaorb
+    use cellSubs, only : reclat
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    real(dp), intent(in) :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)  :: na_u ! Unit cell atoms
+    integer, intent(in)  :: no_u ! Unit cell orbitals
+    integer, intent(in)  :: maxnh ! Hamiltonian size
+    integer, intent(in)  :: lasto(0:na_u) ! Last orbital of atom
+    real(dp), intent(in) :: xa(3,na_u) ! atom positions
+    integer, intent(in)  :: numh(no_u), listhptr(no_u)
+    integer, intent(in)  :: listh(maxnh)
+    real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    integer, intent(inout) :: n_s ! Number of supercells (no_s/no_u) + padding
+    integer, intent(out) :: offsets(3,n_s)
+    integer, intent(out) :: indxs(maxnh)
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    logical :: set
+    integer :: io, j, ind, ia, ja, is, tm(3), cs
+    real(dp) :: xijo(3), rcell(3,3)
+
+    ! Initialize the offsets
+    offsets(:,:) = 0
+    
+    ! Prepare the cell to calculate the index of the atom
+    call reclat(ucell,rcell,0) ! Without 2*Pi
+
+    ! current super-cell index
+    cs = 1
+
+    do io = 1 , no_u
+       ia = iaorb(io,lasto)
+       do j = 1 , numh(io)
+
+          ind = listhptr(io) + j
+          ja = iaorb(ucorb(listh(ind),no_u),lasto)
+
+          xijo(:) = xij(:,ind) - ( xa(:,ja) - xa(:,ia) )
+
+          tm(:) = nint( matmul(xijo,rcell) )
+
+          set = .false.
+          do is = 1 , cs
+             if ( all(tm == offsets(:,is)) ) then
+                indxs(ind) = is
+                set = .true.
+                exit
+             end if
+          end do
+
+          if ( .not. set ) then
+             cs = cs + 1
+             if ( cs > n_s ) return
+             if ( cs <= n_s ) then
+                offsets(:,cs) = tm
+                indxs(ind) = cs
+             end if
+          end if
+
+!          if ( any(tm /= offsets(:,is)) .and. any(offsets(:,is)/=0) ) then
+!             write(*,'(i3,tr1,3(tr1,i3),tr3,3(tr1,i3))') is, tm, offsets(:,is)
+!             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xijo(:)-&
+! !                 ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3)
+!             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xa(:,(is-1)*na_u +ja)-xa(:,ia)
+!             write(*,'(a,3(tr1,i6))')'r,c',io,listh(ind), ind
+!             if ( any(abs(xijo(:)-&
+!                  ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3))> 1.e-5) ) then
+!                write(*,'(a,6(tr1,f10.5))') 'HERERE',xijo(:)
+!             end if
+!
+!             !call die('Error in supercell setup. Same supercell matrix have different &
+!             !     &positions.')
+!          else
+!             offsets(:,is) = tm(:)
+!          end if
+
+
+       end do
+    end do
+
+    n_s = cs
+
+  end subroutine supercell_offsets
 
 end module m_hs_matrix
   

@@ -39,7 +39,8 @@
 
 module geom_helper
 
-  use intrinsic_missing, only : ucorb => MODP
+  use intrinsic_missing, only : UCORB  => MODP
+  use intrinsic_missing, only : UCATOM => MODP
   implicit none
 
   integer, parameter :: dp = selected_real_kind(10,100)
@@ -48,7 +49,7 @@ module geom_helper
 
   ! We fetch this from the intrinsic_missing module
   ! It does the same thing
-  public :: ucorb
+  public :: ucorb, ucatom
   public :: iaorb
   public :: cell_abc
   public :: cell_d, cell_a, cell_b, cell_c
@@ -83,15 +84,15 @@ contains
 
     ia_loop: do
        if ( iiorb < lasto(ia) ) then
-     ! 1. We have overestimated the orbital position
+          ! 1. We have overestimated the orbital position
           ia = ia - 1
           cycle ia_loop
        else if ( iiorb > lasto(ia+1) ) then
-     ! 2. We have overestimated the orbital position
+          ! 2. We have overestimated the orbital position
           ia = ia + 1
           cycle ia_loop
        else if ( iiorb == lasto(ia) ) then
-     ! 3. it is on the former atom
+          ! 3. it is on the former atom
           ia = ia - 1
        end if
        ! We have found it!!!

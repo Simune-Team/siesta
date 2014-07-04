@@ -722,7 +722,7 @@ contains
     real(dp) :: temp, kdispl(3), Qtot, Ef
     
     ! Sparsity pattern
-    integer, pointer :: iza(:), numh(:), listhptr(:), listh(:), indxuo(:)
+    integer, pointer :: numh(:), listhptr(:), listh(:), indxuo(:)
     real(dp), pointer :: H(:,:), S(:), xij(:,:), t2D(:,:), t1D(:)
     integer :: n_nzs
 
@@ -740,7 +740,7 @@ contains
             this%ucell, this%na_u, this%no_u, &
             this%no_u, this%no_s, n_nzs, this%nspin,  &
             kscell, kdispl, &
-            this%xa, iza, this%lasto, &
+            this%xa, this%lasto, &
             numh, listhptr, listh, xij, indxuo, &
             H, S, Ef, &
             Qtot, Temp, & ! Qtot, Temp
@@ -750,7 +750,7 @@ contains
        call die('Could not infer the file type of the &
             &electrode file: '//trim(fN))
     end if
-    deallocate(indxuo,iza)
+    deallocate(indxuo)
     call memory('D','I',this%na_u+this%no_s,'iohs')
 
     call newSparsity(this%sp,this%no_u,this%no_u, &

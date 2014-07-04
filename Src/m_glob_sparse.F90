@@ -92,6 +92,7 @@ contains
        call WhichNodeOrb(io,Nodes,BNode)
        if (Node.eq.BNode) then
           call GlobalToLocalOrb(io,Node,Nodes,iio)
+          if ( iio == 0 ) call die('Error in glob_sparse_numh')
           numhg(io) = numh(iio)
        end if
        call MPI_Bcast(numhg(io),1,MPI_Integer,BNode,MPI_Comm_World, &
@@ -175,6 +176,7 @@ contains
        call WhichNodeOrb(io,Nodes,BNode)
        if (Node.eq.BNode) then
           call GlobalToLocalOrb(io,Node,Nodes,iio)
+          if ( iio == 0 ) call die('Error in glob_sparse_listh')
           listhg(listhptrg(io)+1:listhptrg(io)+numhg(io)) = &
                listh(listhptr(iio)+1:listhptr(iio)+numh(iio))
        end if
@@ -234,7 +236,8 @@ contains
           call WhichNodeOrb(io,Nodes,BNode)
           if ( Node .eq. BNode ) then
              call GlobalToLocalOrb(io,Node,Nodes,iio)
-             do jo = 1 , numh(iio)
+             if ( iio == 0 ) call die('Error in glob_sparse_xij')
+             do jo = 1 , numhg(io)
                 xijg(1:3,listhptrg(io)+jo) = xij(1:3,listhptr(iio)+jo)
              end do
           end if
@@ -386,6 +389,7 @@ contains
        call WhichNodeOrb(io,Nodes,BNode)
        if (Node.eq.BNode) then
           call GlobalToLocalOrb(io,Node,Nodes,iio)
+          if ( iio == 0 ) call die('Error in glob_sparse_matrices')
           do jo = 1,numh(iio)
              Hg(listhptrg(io)+jo) = H(listhptr(iio)+jo)
              Sg(listhptrg(io)+jo) = S(listhptr(iio)+jo)
@@ -468,6 +472,7 @@ contains
        call WhichNodeOrb(io,Nodes,BNode)
        if (Node.eq.BNode) then
           call GlobalToLocalOrb(io,Node,Nodes,iio)
+          if ( iio == 0 ) call die('Error in glob_sparse_matrix')
           do jo = 1,numh(iio)
              Hg(listhptrg(io)+jo) = H(listhptr(iio)+jo)
           end do

@@ -177,7 +177,7 @@
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
      &           ucell, na_u, no_l, no_u, no_s, maxnh, nspin, 
      &           ts_kscell, ts_kdispl, 
-     &           xa, iza, lasto, 
+     &           xa, lasto, 
      &           numh, listhptr, listh, xijo, indxuo, H, S, Ef,
      &           Qtot, Temp, ts_istep, ia1)
          else
@@ -185,7 +185,7 @@
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
      &           ucell, na_u, no_l, no_u, no_s, maxnh, nspin,
      &           ts_kscell, ts_kdispl, 
-     &           xa, iza, lasto, 
+     &           xa, lasto, 
      &           numh, listhptr, listh, xijo, indxuo, H, S, Ef,
      &           Qtot, Temp,        0,   0)
          end if

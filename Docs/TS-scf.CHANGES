@@ -1,4 +1,71 @@
 ----------------------------------------------------
+July 4, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-161
+Changed TSHS format to new size-reducing format
+
+* The new TSHS format does not utilise the isa array.
+  It provided no information and could still be erroneous.
+  I am now relying fully on the super-cell indices.
+  The size reduction is quite dramatic:
+    -spin==1:
+      old: ( 8 * 5 + 4 ) * maxnh
+      new: ( 8 * 2 + 4 * 2 ) * maxnh
+      reduction: 45%
+    -spin==2:
+      old: ( 8 * 6 + 4 ) * maxnh
+      new: ( 8 * 3 + 4 * 2 ) * maxnh
+      reduction: 38%
+
+* Bugfix for lasto in reading GF, lasto is one length longer
+
+* Stringent test on Global2LocalOrb in glob_sparse.
+  This should never occur, so just a precaution.
+
+* Added new ts-fdf format to all transiesta tests
+
+* Bugfix for ts2ts fdf creator. It did not print the
+  repetitions for electrodes.
+
+* Created a utility to convert TSHS formats to other
+  formats.
+  As isa is not existing in the format anymore this now
+  becomes a "wrong" array when converting the files. 
+  Yet, I have never seen any code use that array.
+
+  In directory: 
+     Util/TS/tshs2tshs
+  type make and copy tshs2tshs to a directory in your
+  path.
+
+added:
+  Util/TS/tshs2tshs/
+  Util/TS/tshs2tshs/Makefile
+  Util/TS/tshs2tshs/m_ts_io_version.f90
+  Util/TS/tshs2tshs/tshs2tshs.f90
+modified:
+  Src/Makefile
+  Src/create_Sparsity_SC.F90
+  Src/final_H_f_stress.F
+  Src/geom_helper.f90
+  Src/m_glob_sparse.F90
+  Src/m_hs_matrix.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_io.F90
+  Src/state_init.F
+  Tests/TranSiesta-TBTrans/ts_au/au_111_capacitor.fdf
+  Tests/TranSiesta-TBTrans/ts_au/bulk_au_111.fdf
+  Tests/TranSiesta-TBTrans/ts_au/elec_au_111_abc.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.fdf
+  Tests/TranSiesta-TBTrans/ts_au_repetition/au_111_capacitor.fdf
+  Tests/TranSiesta-TBTrans/ts_fast/scat.fast.fdf
+  Util/TS/README
+  Util/TS/ts2ts/Makefile
+  Util/TS/ts2ts/ts2ts.f90
+
+----------------------------------------------------
 June 26, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-160
 Ensured no temporary arrays were created in IO routines
 

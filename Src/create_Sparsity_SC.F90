@@ -369,6 +369,7 @@ contains
 ! Local variables...
     real(dp) :: recell(3,3)
     integer, pointer :: l_col(:) => null()
+    integer :: iar
     integer :: ncol, ptr, i,j, no_e, nr, t(3)
 
     call attach(sp,nrows=i,nrows_g=j)
@@ -382,6 +383,7 @@ contains
     ncol  =  n_col   (sp,row)
     ptr   =  list_ptr(sp,row)
     l_col => list_col(sp)
+    iar   =  iaorb(row ,lasto)
 
     call reclat(ucell,recell,0) ! without 2Pi
     
@@ -403,7 +405,7 @@ contains
        ! TODO, check this in the beginning of the routine!
        do i = ptr+1 , ptr+ncol
           t = cell_abc(recell, &
-               xa(:,iaorb(row     ,lasto)), & ! xa_i
+               xa(:,iar)                  , & ! xa_i
                xa(:,iaorb(l_col(i),lasto)), & ! xa_j
                xij(:,i))
           if ( (TM(1) == TM_ALL .or. TM(1) == t(1)) .and. &
@@ -424,7 +426,7 @@ contains
        j = 0
        do i = ptr+1 , ptr+ncol
           t = cell_abc(recell, &
-               xa(:,iaorb(row     ,lasto)), & ! xa_i
+               xa(:,iar)                  , & ! xa_i
                xa(:,iaorb(l_col(i),lasto)), & ! xa_j
                xij(:,i))
           if ( (TM(1) == TM_ALL .or. TM(1) == t(1)) .and. &

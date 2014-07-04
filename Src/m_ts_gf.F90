@@ -431,7 +431,7 @@ contains
     ! Read in electrode information
     read(funit) nspin, ucell
     read(funit) na,no
-    allocate(xa(3,na),lasto(na))
+    allocate(xa(3,na),lasto(na+1))
     read(funit) xa,lasto
     read(funit) NA1,NA2,NA3
     read(funit) mu
