@@ -204,7 +204,7 @@ program ts2ts
   call eblock('TS.Elecs')
   call nl
   ! Write out the electrodes...
-  call welec('Left',.true., L_TSHS,NBufL,NRepA1L,NRepA2L,na_usedL)
+  call welec('Left',.true.  , L_TSHS,NBufL,NRepA1L,NRepA2L,na_usedL)
   call nl
   call welec('Right',.false., R_TSHS,NBufR,NRepA1R,NRepA2R,na_usedR)
   call nl

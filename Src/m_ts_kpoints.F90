@@ -117,7 +117,7 @@ contains
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
 
-    real(dp) :: p(3), contrib(3)
+    real(dp) :: p(3), contrib
     real(dp), parameter :: defcut = 0.0_dp
     integer, dimension(3,3), parameter :: unit_matrix =  &
          reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
@@ -182,38 +182,19 @@ contains
           ! See which unitcell direction has the highest contribution
           do i = 1 , 3 
              ! project the unit-cell vector onto each cell component
-             contrib(i) = VNORM(VEC_PROJ(cell(:,i),p))
+             contrib = VNORM(VEC_PROJ(cell(:,i),p))
+             if ( contrib > 1.e-7_dp ) then ! TODO electrode k-points
+                ! the contribution along this vector is too much
+                ! to disregard the elongation along this
+                ! direction.
+                ! We *MUST* kill all k-points in this direction
+                ts_kscell(:,i) = 0
+                ts_kscell(i,:) = 0
+                ts_kscell(i,i) = 1
+                ts_kdispl(i)   = 0._dp
+             end if
           end do
-          ! we kill any k-points along any electrode transport direction
-          ! This will retain k-points perpendicular to all electrodes
-          ! transport directions
-          if ( contrib(1) > contrib(2) .and. contrib(1) > contrib(3) ) then
-             ts_kscell(1:3,1) = 0
-             ts_kscell(1,1:3) = 0
-             ts_kscell(1,1)   = 1
-             ts_kdispl(1)     = 0.0_dp
-          else if ( contrib(2) > contrib(1) .and. contrib(2) > contrib(3) ) then
-             ts_kscell(1:3,2) = 0
-             ts_kscell(2,1:3) = 0
-             ts_kscell(2,2)   = 1
-             ts_kdispl(2)     = 0.0_dp
-          else if ( contrib(3) > contrib(1) .and. contrib(3) > contrib(2) ) then
-             ts_kscell(1:3,3) = 0
-             ts_kscell(3,1:3) = 0
-             ts_kscell(3,3)   = 1
-             ts_kdispl(3)     = 0.0_dp
-          end if
        end do
-       if ( sum(sum(ts_kscell,dim=1)) /= 3 .and. IONode ) then
-          write(*,'(a)') 'transiesta: kgrid-WARNING !'
-          write(*,'(a)') 'transiesta: non-Gamma calculation with multiple electrodes.'
-          write(*,'(a)') 'transiesta: I hope you know what you are doing!'
-          if ( any(Elecs(:)%kcell_check) ) then
-             write(*,'(a)') 'transiesta: All electrode definitions probably need:'
-             write(*,'(a)') 'transiesta:    check-kgrid F'
-          end if
-          write(*,*)
-       end if
     end if
     
   end subroutine setup_ts_scf_kscell

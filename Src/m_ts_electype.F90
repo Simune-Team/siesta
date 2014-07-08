@@ -28,12 +28,10 @@ module m_ts_electype
      module procedure equal_str_el
   end interface
 
-  public :: Elec
-  public :: Name, HSfile, GFFile, GFTitle
+  public :: Elec, Name
   public :: TotUsedAtoms, TotUsedOrbs
   public :: AtomInElec, OrbInElec
-  public :: Rep
-  public :: q_exp
+  public :: Rep, q_exp
 
   public :: fdf_nElec, fdf_elec
 
@@ -63,7 +61,7 @@ module m_ts_electype
 
   type :: Elec
      character(len=FILE_LEN) :: HSfile = ' ', GFfile  = ' '
-     character(len=NAME_LEN) :: Name   = ' ', GFtitle = ' '
+     character(len=NAME_LEN) :: Name   = ' '
      ! These variables are relative to the big system
      integer :: idx_a = 0, idx_o = 0
      ! atoms used
@@ -72,6 +70,8 @@ module m_ts_electype
      integer :: no_used = 0
      ! repetitions
      integer :: RepA1 = 1, RepA2 = 1, RepA3 = 1
+     ! Preexpand before saving Gf
+     logical :: pre_expand = .true.
      ! chemical potential of the electrode
      type(ts_mu), pointer :: mu => null()
      ! infinity direction
@@ -210,7 +210,6 @@ contains
     idx_a = 0
 
     ! We default a lot of the options
-    this%GFtitle = 'Surface-Greens function for '//trim(name)
     this%GFfile = trim(slabel)//'.'//trim(prefix)//'GF'//trim(name)
     this%na_used = -1
     
@@ -319,6 +318,9 @@ contains
        else if ( leqi(ln,'bulk') ) then
           this%Bulk = fdf_bboolean(pline,1,after=1)
 
+       else if ( leqi(ln,'pre-expand') ) then
+          this%pre_expand = fdf_bboolean(pline,1,after=1)
+
        else if ( leqi(ln,'calculate-band-bottom') ) then
           this%BandBottom = fdf_bboolean(pline,1,after=1)
 
@@ -352,11 +354,6 @@ contains
                1._dp < this%Ef_frac_CT ) then
              call die('Fraction for fermi-level must be in [0;1] range')
           end if
-
-       else if ( leqi(ln,'GF-title') ) then
-          if ( fdf_bnnames(pline) < 2 ) &
-               call die('GF-title not supplied')
-          this%GFtitle = trim(fdf_bnames(pline,2))
 
        else if ( leqi(ln,'GF') .or. &
             leqi(ln,'GF-file') ) then
@@ -436,19 +433,19 @@ contains
        call die('You have not supplied all electrode information')
     end if
 
-    inquire(file=trim(HSFile(this)), exist=info(1))
+    inquire(file=trim(this%HSfile), exist=info(1))
     if ( .not. info(1) ) then
        call die("Electrode file does not exist. &
-            &Please create electrode '"//trim(HSFile(this))//"' first.")
+            &Please create electrode '"//trim(this%HSfile)//"' first.")
     end if
 
     ! Read in the number of atoms in the HSfile
-    call ts_read_TSHS_opt(HSFile(this),no_u=this%no_u,na_u=this%na_u, &
+    call ts_read_TSHS_opt(this%HSfile,no_u=this%no_u,na_u=this%na_u, &
          nspin=this%nspin, Ef=this%Ef, ucell=this%ucell, Qtot=this%Qtot, &
          Bcast=.true.)
 
     allocate(this%xa(3,this%na_u),this%lasto(0:this%na_u))
-    call ts_read_TSHS_opt(HSFile(this),xa=this%xa,lasto=this%lasto, &
+    call ts_read_TSHS_opt(this%HSfile,xa=this%xa,lasto=this%lasto, &
          Bcast=.true.)
 
     ! in case the number of used atoms has not been set
@@ -551,12 +548,12 @@ contains
     equal = this%name == trim(str)
   end function equal_str_el
 
-  subroutine assign(this,D,HSfile,GFfile,GFtitle, &
+  subroutine assign(this,D,HSfile,GFfile, &
        na_u,na_used,no_u,no_s,no_used, &
        RepA1,RepA2,RepA3)
     type(Elec), intent(inout) :: this
     character, optional, intent(in) :: D
-    character(len=*), intent(in), optional :: HSfile, GFfile, Gftitle
+    character(len=*), intent(in), optional :: HSfile, GFfile
     integer, intent(in), optional :: na_u, na_used, no_u, no_s, no_used
     integer, intent(in), optional :: RepA1, RepA2, RepA3
 
@@ -564,7 +561,6 @@ contains
 
     if (present(HSfile)) this%HSfile = HSfile
     if (present(GFfile)) this%GFfile = GFfile
-    if (present(GFtitle)) this%GFtitle = GFtitle
     if (present(na_u)) this%na_u = na_u
     if (present(na_used)) this%na_used = na_used
     if (present(no_u)) this%no_u = no_u
@@ -581,24 +577,6 @@ contains
     character(len=NAME_LEN) :: Name_
     Name_ = this%Name
   end function Name_
-
-  elemental function HSfile(this)
-    type(Elec), intent(in) :: this
-    character(len=FILE_LEN) :: HSfile
-    HSfile = this%HSfile
-  end function HSfile
-
-  elemental function GFfile(this)
-    type(Elec), intent(in) :: this
-    character(len=FILE_LEN) :: GFfile
-    GFfile = this%GFfile
-  end function GFfile
-
-  elemental function GFtitle(this)
-    type(Elec), intent(in) :: this
-    character(len=NAME_LEN) :: GFtitle
-    GFtitle = this%GFtitle
-  end function GFtitle
 
   elemental function TotUsedAtoms(this) result(val)
     type(Elec), intent(in) :: this
@@ -731,7 +709,7 @@ contains
     lio = .true.
     if ( present(io) ) lio = io
 
-    fN = trim(HSfile(this))
+    fN = trim(this%HSfile)
     ! We read in the information
     fL = len_trim(fN)
     if ( leqi(fN(fL-4:fL),'.TSHS') ) then
@@ -1114,7 +1092,7 @@ contains
 
        er = .false.
 
-       call ts_read_TSHS_opt(HSFile(this), &
+       call ts_read_TSHS_opt(this%HSfile, &
             kscell=this_kcell,kdispl=this_kdispl, &
             Gamma=Gamma, &
             Bcast=.true.)
@@ -1167,7 +1145,7 @@ contains
 
     else
        
-       call ts_read_TSHS_opt(HSFile(this), &
+       call ts_read_TSHS_opt(this%HSfile, &
             Gamma=Gamma, &
             Bcast=.true.)
 

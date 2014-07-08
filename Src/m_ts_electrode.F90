@@ -537,6 +537,8 @@ contains
     use m_ts_electype
     use m_mat_invert
 
+    use m_ts_elec_se, only : update_UC_expansion_A
+
     use class_Sparsity
     use class_dSpData1D
     use class_dSpData2D
@@ -569,7 +571,7 @@ contains
     
     ! Dimensions
     integer :: nq, nspin
-    integer :: nuo_E, nS, nuou_E, nuS
+    integer :: nuo_E, nS, nuou_E, nuS, no_X, n_X
 
     ! Electrode transfer and hamiltonian matrix
     complex(dp), pointer :: H00(:) => null()
@@ -578,6 +580,9 @@ contains
     complex(dp), pointer :: S01(:) => null()
     complex(dp), pointer :: zwork(:) => null()
     complex(dp), pointer :: zHS(:) => null()
+
+    ! Expanded arrays
+    complex(dp), pointer :: X(:) => null()
 
     ! Green's function variables
     complex(dp), pointer :: GS(:)
@@ -596,7 +601,7 @@ contains
     ! Counters
     integer :: i, j, io, jo, off
 
-    logical :: CalcDOS
+    logical :: CalcDOS, pre_expand
     logical :: is_left, Gq_allocated, final_invert
 
 #ifdef MPI
@@ -633,16 +638,19 @@ contains
     wq     = 1._dp / real(nq,dp)
     ! We also need to invert to get the contribution in the
     final_invert = nq /= 1 .or. nuo_E /= nuou_E
+    no_X = nuou_E * nq
+    n_X  = no_X ** 2
+    pre_expand = El%pre_expand .and. nq > 1
 
     if (IONode) then
-       write(*,'(/,2a,/,2a)') &
-            "Creating Green's function file for: ",trim(name(El)), &
-            "Green's function file title: ",trim(GFTitle(El))
+       write(*,'(/,2a)') "Creating Green's function file for: ",trim(name(El))
 
        ktmp(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * Rep(El) &
-            * El%no_used ** 2 / 1024._dp ** 2
+            * El%no_used ** 2 / 1000._dp ** 2
+       ! Correct estimated file-size
+       if ( pre_expand ) ktmp(1) = ktmp(1) * Rep(El)
        if ( ktmp(1) > 2050._dp ) then
-          ktmp(1) = ktmp(1) / 1024._dp
+          ktmp(1) = ktmp(1) / 1000._dp
           write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' GB'
        else
           write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' MB'
@@ -668,7 +676,6 @@ contains
        write(*,'(a,i6,'' / '',i6)') ' Orbitals available / used orbitals: ', &
             El%no_u,El%no_used
 
-
        ! We show them in units of Bohr**-1
        write(*,'(a)') ' q-points for expanding electrode (Bohr**-1):'
        do i = 1 , nq
@@ -690,8 +697,12 @@ contains
     end if
 
     ! Allocate work array
-    allocate(zwork(max(nS*9,nuS*nq*2)))
-    call memory('A','Z',size(zwork),'create_Green')
+    i = max(nS*9,nuS*nq*2)
+    if ( pre_expand ) then
+       i = max(i,n_X)
+    end if
+    allocate(zwork(i))
+    call memory('A','Z',i,'create_Green')
 
     ! Point the hamiltonian and the overlap to the work array
     ! The work-array is only used for calculation the surface
@@ -708,12 +719,17 @@ contains
        Gq_allocated = .true.
     end if
 
+    if ( pre_expand ) then
+       ! We allocate space for pre-expansion of the arrays
+       allocate(X(n_X))
+    end if
+
     ! all the Hamiltonian and overlaps
     allocate(zHS(nS * nq * 4))
     call memory('A','Z',nS * nq * 4,'create_Green')
 
     ! Prepare for the inversion
-    call init_mat_inversion(nuo_E)
+    call init_mat_inversion(no_X)
 
     ! Reset bulk DOS
     if ( CalcDOS ) then
@@ -726,15 +742,13 @@ contains
     
     if (IONode) then
        call io_assign(uGF)
-       open(FILE=GFfile(El),UNIT=uGF,FORM='UNFORMATTED')
+       open(FILE=El%GFfile,UNIT=uGF,FORM='UNFORMATTED')
 
-       ! Initial header for file
-       write(uGF) GFTitle(El)
        ! Electrode information
        write(uGF) El%nspin, El%ucell
        write(uGF) El%na_used,El%no_used
        write(uGF) El%xa_used, El%lasto_used
-       write(uGF) El%RepA1,El%RepA2,El%RepA3
+       write(uGF) El%RepA1,El%RepA2,El%RepA3,El%pre_expand
        write(uGF) El%mu%mu
 
        ! Write out explicit information about this content
@@ -772,13 +786,23 @@ contains
        ! contour points. Say NEn > 1000
        ! Look in the loop for MPI_Start(...) for where this is used
        do i = 1 , Nodes - 1
-          call MPI_Recv_Init(Gq(1),nuS*nq,MPI_double_complex, &
-               i,i,MPI_Comm_World,reqs(i),MPIerror)
+          if ( pre_expand ) then
+             call MPI_Recv_Init(X(1),n_X,MPI_double_complex, &
+                  i,i,MPI_Comm_World,reqs(i),MPIerror)
+          else
+             call MPI_Recv_Init(Gq(1),nuS*nq,MPI_double_complex, &
+                  i,i,MPI_Comm_World,reqs(i),MPIerror)
+          end if
        end do
     else
        ! Create request handles for communication
-       call MPI_Send_Init(Gq(1),nuS*nq,MPI_double_complex, &
-            0,Node,MPI_Comm_World,req,MPIerror)
+       if ( pre_expand ) then
+          call MPI_Send_Init(X(1),n_X,MPI_double_complex, &
+               0,Node,MPI_Comm_World,req,MPIerror)
+       else
+          call MPI_Send_Init(Gq(1),nuS*nq,MPI_double_complex, &
+               0,Node,MPI_Comm_World,req,MPIerror)
+       end if
     end if
 #endif
 
@@ -860,13 +884,31 @@ contains
        if ( IONode ) then
           write(uGF) ikpt, 1, ce(1) ! k-point and energy point
           if ( nuo_E /= nuou_E ) then
-             write(uGF) Hq
-             write(uGF) Sq
+             if ( pre_expand ) then
+                call update_UC_expansion_A(nuou_E,no_X,El, &
+                     El%na_used,El%lasto_used,nq,Hq,n_X,X)
+                write(uGF) X
+                call update_UC_expansion_A(nuou_E,no_X,El, &
+                     El%na_used,El%lasto_used,nq,Sq,n_X,X)
+                write(uGF) X
+             else
+                write(uGF) Hq
+                write(uGF) Sq
+             end if
           else
              H00 => zHS(      1:nq*nS  )
              S00 => zHS(nq*nS+1:nq*nS*2)
-             write(uGF) H00
-             write(uGF) S00
+             if ( pre_expand ) then
+                call update_UC_expansion_A(nuo_E,no_X,El, &
+                     El%na_used,El%lasto_used,nq,H00,n_X,X)
+                write(uGF) X
+                call update_UC_expansion_A(nuo_E,no_X,El, &
+                     El%na_used,El%lasto_used,nq,S00,n_X,X)
+                write(uGF) X
+             else
+                write(uGF) H00
+                write(uGF) S00
+             end if
           end if
        end if
        
@@ -941,8 +983,7 @@ contains
                       ! the SCF (this is important as the
                       ! decreased size of the surface-Greens function
                       ! would otherwise yield a different result)
-                      i = (iqpt-1)*nuS + 1
-                      call mat_invert(Gq(i:i+nuS-1),zwork(1:nuS),&
+                      call mat_invert(Gq(1:nuS),zwork(1:nuS),&
                            nuou_E, &
                            MI_IN_PLACE_LAPACK)
 
@@ -951,12 +992,26 @@ contains
                 end if
                 
              end do q_loop
-             
+
+             if ( pre_expand ) then
+                ! Expand this energy-point
+                call update_UC_expansion_A(nuou_E,no_X,El, &
+                     El%na_used,El%lasto_used,nq,Gq,n_X,X)
+                call mat_invert(X(1:n_X),zwork(1:n_X),&
+                     no_X, &
+                     MI_IN_PLACE_LAPACK)
+             end if
+                
+
              if (IONode) then
                 ! Write out calculated information at E point
 
                 if ( iEn /= 1 ) write(uGF) ikpt, iEn, ce(iEn)
-                write(uGF) Gq
+                if ( pre_expand ) then
+                   write(uGF) X
+                else
+                   write(uGF) Gq
+                end if
 
              end if
 
@@ -980,7 +1035,11 @@ contains
              call MPI_Start(reqs(curNode),MPIerror)
              if ( iEn /= 1 ) write(uGF) ikpt, iEn, ce(iEn)
              call MPI_Wait(reqs(curNode),status,MPIerror)
-             write(uGF) Gq
+             if ( pre_expand ) then
+                write(uGF) X
+             else
+                write(uGF) Gq
+             end if
           end if
 
 #endif
@@ -1033,7 +1092,7 @@ contains
     ! Close file
     if ( IONode ) then
        call io_close(uGF)
-       write(*,'(a)') "Done creating '"//trim(GFFile(El))//"'."  
+       write(*,'(a)') "Done creating '"//trim(El%GFfile)//"'."  
     end if
     
     ! Clean up computational arrays
@@ -1052,6 +1111,10 @@ contains
     deallocate(zwork)
     call memory('D','Z',size(zHS),'create_green')
     deallocate(zHS)
+
+    if ( pre_expand ) then
+       deallocate(X)
+    end if
 
     call itt_destroy(it2)
 

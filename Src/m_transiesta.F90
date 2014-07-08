@@ -145,16 +145,15 @@ contains
 
     ! in case the file-descriptor is negative it basically 
     ! means "out-of-core" calculation.
-    allocate(uGF(N_Elec))
+    allocate(uGF(N_Elec),nq(N_Elec))
     uGF(:) = -1
-    allocate(nq(N_Elec))
     do iEl = 1 , N_Elec
 
        if ( Elecs(iEl)%out_of_core ) then
 
           if ( IONode ) then
              call io_assign(uGF(iEl))
-             open(file=GFFile(Elecs(iEl)),unit=uGF(iEl),form='unformatted')
+             open(file=Elecs(iEl)%GFfile,unit=uGF(iEl),form='unformatted')
           end if
 
           call read_Green(uGF(iEl),Elecs(iEl), ts_nkpnt, NEn, .false. )
@@ -175,6 +174,10 @@ contains
 
        ! Allocate the non-repeated hamiltonian and overlaps...
        no_used = Elecs(iEl)%no_used
+       if ( Elecs(iEl)%pre_expand ) then
+          no_used = TotUsedOrbs(Elecs(iEl))
+          nq(iEl) = 1
+       end if
        call re_alloc(Elecs(iEl)%HA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
        call re_alloc(Elecs(iEl)%SA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
 
@@ -182,9 +185,13 @@ contains
        if ( IsVolt ) then
           ! We need Gamma's with voltages (now they are both GAA and GammaT)
           no_used2 = no_used
-       else
+       else 
           ! This is only for having space for GA
-          no_used2 = Elecs(iEl)%no_used
+          if ( Elecs(iEl)%pre_expand ) then
+             no_used2 = no_used
+          else
+             no_used2 = Elecs(iEl)%no_used
+          end if
        end if
        call re_alloc(Elecs(iEl)%Gamma,1,no_used,1,no_used2,routine='transiesta')
 
@@ -194,7 +201,7 @@ contains
        ! When the UC_expansion_Sigma_GammaT is called:
        ! first the GAA is "emptied" of information and then
        ! Gamma is filled.
-       no_used2 = Elecs(iEl)%no_used
+       if ( .not. Elecs(iEl)%pre_expand ) no_used2 = Elecs(iEl)%no_used
        Elecs(iEl)%GA => Elecs(iEl)%Gamma(1:no_used,1:no_used2)
 
     end do
@@ -203,14 +210,13 @@ contains
     if ( ts_method == TS_SPARSITY ) then
        if ( ts_Gamma ) then
           call ts_fullg(N_Elec,Elecs, &
-               nq,uGF, &
-               nspin, na_u, lasto, &
+               nq, uGF, nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
                H, S, DM, EDM, Ef, kT)
        else
           call ts_fullk(N_Elec,Elecs, &
-               nq,uGF, &
+               nq, uGF, &
                ucell, nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
@@ -225,7 +231,7 @@ contains
                H, S, DM, EDM, Ef, kT)
        else
           call ts_trik(N_Elec,Elecs, &
-               nq,uGF, &
+               nq, uGF, &
                ucell, nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
@@ -241,7 +247,7 @@ contains
                H, S, DM, EDM, Ef, kT)
        else
           call ts_mumpsk(N_Elec,Elecs, &
-               nq,uGF, &
+               nq, uGF, &
                ucell, nspin, na_u, lasto, &
                sp_dist, sparse_pattern, &
                no_u, n_nzs, &
@@ -363,7 +369,7 @@ contains
     use m_ts_method, only : no_Buf
 
     logical, intent(in) :: ts_Gamma ! transiesta Gamma
-    integer :: i, no_E
+    integer :: i, f, no_E
     real(dp) :: mem, tmp_mem
 #ifdef MPI
     integer :: MPIerror
@@ -394,11 +400,13 @@ contains
     ! Add electrode sizes
     tmp_mem = 0._dp
     do i = 1 , N_Elec
+       f = 1
+       if ( Elecs(i)%pre_expand ) f = Rep(Elecs(i))
        if ( IsVolt ) then
-          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2
+          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2
           tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) ** 2
        else
-          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 3
+          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 3
        end if
     end do
     mem = mem + tmp_mem * 16._dp
@@ -409,7 +417,7 @@ contains
     mem = tmp_mem
 #endif
 
-    mem = mem / 1024._dp ** 2
+    mem = mem / 1000._dp ** 2
     if ( IONode ) then
        write(*,'(/,a,f10.2,a)') &
             'transiesta: Memory usage of sparse arrays and electrodes (static): ', &
@@ -431,7 +439,7 @@ contains
        do i = 1 , N_tri_part - 1
           mem = mem + tri_parts(i)*( tri_parts(i) + 2 * tri_parts(i+1) )
        end do
-       mem = mem * 16._dp * 2 / 1024._dp ** 2
+       mem = mem * 16._dp * 2 / 1000._dp ** 2
        if ( IONode ) &
             write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of tri-diagonal matrices: ', &
@@ -449,7 +457,7 @@ contains
        else
           mem = mem + i * (i-no_E)
        end if
-       mem = mem * 16._dp / 1024._dp ** 2
+       mem = mem * 16._dp / 1000._dp ** 2
        if ( IONode ) &
             write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of full matrices: ', &

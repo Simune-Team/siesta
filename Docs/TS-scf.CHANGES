@@ -1,4 +1,52 @@
 ----------------------------------------------------
+July 7, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-162
+Made repetition the preferred electrode usage
+
+* The fact that we needed to not invert the matrix for non-repeated
+  cells made repetition worse than non-repeated self-energies.
+  We have now enabled the calculation of the self-energies and
+  pre-expanding them before saving them to heavily reduce the
+  SCF calculation time.
+
+  However, this comes at the cost of a file size Rep(El)
+  times larger than by not expanding it.
+
+  If the user really wishes to not pre-expand it, due to
+  disk-space limitations, one can add the flag:
+    pre-expand F
+  in the electrode.
+
+  It is now highly advisable that users use repeated electrodes.
+
+* Moved the GF read functions into code m_ts_gf.
+  This makes more sense.
+
+* Removed the title of the GF files. They were not used
+  for anything and did not help anything.
+
+* Removed a couple of routines directly related to the
+  data in the Electype.
+  They were superfluous function calls.
+
+modified:
+  Src/Makefile
+  Src/m_transiesta.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_method.f90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Util/TS/ts2ts/ts2ts.f90
+
+----------------------------------------------------
 July 4, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-161
 Changed TSHS format to new size-reducing format
 

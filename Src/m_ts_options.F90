@@ -729,13 +729,12 @@ contains
        do i = 1 , size(Elecs)
           write(*,11) '>> '//trim(name(Elecs(i)))
           if ( Elecs(i)%out_of_core ) then
-             write(*,10) '  GF file', trim(GFFile(Elecs(i)))
-             write(*,10) '  GF title', trim(GFtitle(Elecs(i)))
+             write(*,10) '  GF file', trim(Elecs(i)%GFfile)
              write(*,1)  '  Reuse existing GF-file', Elecs(i)%ReUseGF
           else
              write(*,11)  '  In-core GF'
           end if
-          write(*,10) '  Electrode TSHS file', trim(HSFile(Elecs(i)))
+          write(*,10) '  Electrode TSHS file', trim(Elecs(i)%HSfile)
           write(*,5)  '  # atoms used in electrode', Elecs(i)%na_used
           write(*,15) '  Electrode repetition [A1 x A2 x A3]', &
                Elecs(i)%RepA1,Elecs(i)%RepA2,Elecs(i)%RepA3
@@ -756,6 +755,9 @@ contains
           end if
           write(*,7)  '  Chemical shift', Elecs(i)%mu%mu/eV,'eV'
           write(*,1)  '  Bulk values in electrode', Elecs(i)%Bulk
+          if ( Rep(Elecs(i)) > 1 ) then
+             write(*,1)  '  Pre-expansion to reduce computation', Elecs(i)%pre_expand
+          end if
           if ( Elecs(i)%DM_update == 0 ) then
              write(*,11)  '  Cross-terms is not updated'
           else if ( Elecs(i)%DM_update == 1 ) then

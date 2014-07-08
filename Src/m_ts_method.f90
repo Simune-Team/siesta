@@ -132,25 +132,8 @@ contains
     end if
     ! old options for buffer atoms
 
-    call fdf_deprecated('TS.BufferAtomsLeft','TS.Atoms.Buffer.Start')
-    ia1 = fdf_get('TS.Atoms.Buffer.Start',0)
-    if ( ia1 > 0 ) then
-       do ia = 1 , ia1
-          if ( atom_type(ia) == TYP_DEVICE ) then
-             call set_type(TYP_BUFFER,ia,na_u,lasto)
-          end if
-       end do
-    end if
-
-    call fdf_deprecated('TS.BufferAtomsRight','TS.Atoms.Buffer.End')
-    ia2 = fdf_get('TS.Atoms.Buffer.End',0)
-    if ( ia2 > 0 ) then
-       do ia = na_u - ia2 + 1 , na_u
-          if ( atom_type(ia) == TYP_DEVICE ) then
-             call set_type(TYP_BUFFER,ia,na_u,lasto)
-          end if
-       end do
-    end if
+    call fdf_obsolete('TS.BufferAtomsLeft')
+    call fdf_obsolete('TS.BufferAtomsRight')
 
     ! Update counting buffers
     na_Buf = 0

@@ -19,6 +19,7 @@ module m_ts_GF
 ! This module constitutes the routines that are needed to ensure the
 ! correct format of the GF files. 
 ! In order to limit the size of the m_ts_electrode file this has been created.
+! We also read in the next energy-points using routines in this module.
 !
 ! A call to check_green is used to ensure the correct format of the GF file.
 ! It checks as much information as is available and dies if non-conforming
@@ -29,19 +30,12 @@ module m_ts_GF
 ! read_Green!
 ! This routine will also distribute the arrays in an MPI run.
 
-! In both routines i have added a prefix "c_" which clarifies what is to
-! be checked and what is the read in parameter of the file.
-!
-!=============================================================================
-! CONTAINS:
-!          1) do_Green
-!          2) read_Green
-!          3) check_Green
-
+  use precision, only : dp
 
   implicit none
 
   public :: do_Green, read_Green, check_Green
+  public :: read_next_GS
 
   private
 
@@ -52,7 +46,6 @@ contains
        RemUCellDistance,xa_EPS, &
        CalcDOS)
     
-    use precision,  only : dp
     use parallel  , only : IONode
     use sys ,       only : die
 #ifdef MPI
@@ -86,7 +79,6 @@ contains
     complex(dp), allocatable :: ZBulkDOS(:,:) ! DOS at energy points
     integer :: uGF, i, iE, NEn
     logical :: errorGF, exist, cReUseGF
-    character(len=NAME_LEN) :: rGFtitle
     complex(dp), allocatable :: ce(:)
     type(ts_c_idx) :: c
 #ifdef MPI
@@ -103,17 +95,17 @@ contains
 #endif
     
 ! check the file for existance
-    inquire(file=trim(GFfile(El)),exist=exist)
+    inquire(file=trim(El%GFfile),exist=exist)
     
     cReUseGF = El%ReUseGf
 ! If it does not find the file, calculate the GF
     if ( exist ) then
        if (IONode ) then
           write(*,*) "Electrode Green's function file: '"//&
-               trim(GFfile(El))//"' already exist."
+               trim(El%GFfile)//"' already exist."
           if ( .not. cReUseGF ) then
              write(*,*)"Green's function file '"//&
-                  trim(GFfile(El))//"' is requested overwritten."
+                  trim(El%GFfile)//"' is requested overwritten."
           end if
        end if
     else
@@ -159,19 +151,14 @@ contains
        ! Check the GF file
        if ( IONode ) then
           call io_assign(uGF)
-          open(file=GFfile(El),unit=uGF,form='UNFORMATTED')
-          
-          ! Read in the title and rewind
-          read(uGF) rGfTitle
-          rewind(uGF)
+          open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
           
           call check_Green(uGF,El, &
                ucell,nkpnt,kpoint,kweight, &
                NEn, ce, &
                RemUCellDistance, xa_Eps, errorGF)
           
-          write(*,'(/,4a,/)') "Using GF-file '",trim(GFfile(El)), &
-               "' with title: '",trim(rGfTitle)//"'"
+          write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
           
           call io_close(uGF)
        endif
@@ -183,7 +170,7 @@ contains
     call MPI_Bcast(errorGF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
 #endif
     if ( errorGF ) &
-         call die("Error in GFfile: "//trim(GFFile(El))//". Please move or delete")
+         call die("Error in GFfile: "//trim(El%GFfile)//". Please move or delete")
 
     deallocate(ce)
 
@@ -192,6 +179,300 @@ contains
 #endif
 
   end subroutine do_Green
+
+
+! ##################################################################
+! ## Subroutine which read-in GS for the 1x1 surface cell         ##
+! ##    The expansion of the arrays are performed else-where.     ##
+! ##                                                              ##
+! ##    Nick Papior Andersen, nickpapior@gmail.com                ##
+! ## Fully recoded to conform with the memory reduced TranSIESTA  ##
+! ##################################################################
+
+  subroutine read_next_GS_Elec(uGF,NEReqs,ikpt,El,cE, &
+       nwork,work, &
+       forward)
+
+    use parallel, only : IONode, Node, Nodes
+    use units,    only : eV
+
+    use m_ts_electype
+    use m_ts_cctype
+
+#ifdef MPI
+    use mpi_siesta, only : MPI_Bcast, MPI_Isend, MPI_Irecv
+    use mpi_siesta, only : MPI_Sum, MPI_Integer, MPI_Double_Complex
+    use mpi_siesta, only : MPI_Status_Size, MPI_Comm_World
+#endif
+
+! *********************
+! * INPUT variables   *
+! *********************
+    ! file-unit, and k-point index
+    integer, intent(in) :: uGF, ikpt
+    integer, intent(in) :: NEReqs
+    ! The electrode also contains the arrays
+    type(Elec), intent(in out) :: El
+    type(ts_c_idx), intent(in)     :: cE
+    ! The work array passed, this means we do not have
+    ! to allocate anything down here.
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout) :: work(nwork)
+    ! If 'forward' is .true. we will read consecutively 
+    ! and distribute from Node = 0, to Node = Nodes - 1
+    ! (default)
+    ! 
+    ! if 'forward' is .false. we will read consecutively 
+    ! and distribute from Node = Nodes - 1 to Node = 0
+    logical, intent(in), optional :: forward
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    real(dp), parameter :: EPS = 1.d-7
+    integer :: read_Size
+
+#ifdef MPI
+    integer :: MPIerror, Request, Status(MPI_Status_Size)
+#endif
+
+    complex(dp) :: ZE_cur
+    integer :: iNode, ikGS, iEni
+    integer :: iNodeS, iNodeE, iNodeStep
+    logical :: lforward
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE read_next_GS' )
+#endif
+
+    lforward = .true.
+    if ( present(forward) ) lforward = forward
+    if ( lforward ) then
+       iNodeS = 0
+       iNodeE = NEReqs - 1
+       iNodeStep = 1
+    else
+       iNodeS = Nodes - 1
+       iNodeE = Nodes - NEReqs
+       iNodeStep = -1
+    end if
+
+    read_Size = El%no_used ** 2 * Rep(El) ! no_GS * no_GS * nq
+    if ( El%pre_expand ) then
+       ! if a pre-expansion has been performed we 
+       ! correct the size
+       read_Size = read_Size * Rep(El)
+    end if
+
+    ! Check if the number of energy points requested are 
+    ! inconsistent
+    if ( NEReqs <= 0 ) then
+       if(IONode) &
+            write(*,'(a,i0,a)') 'ERROR GetSFE: Requested E-points=', &
+            NEReqs,'< 0'  
+       call die('ERROR in reading GF file')
+    else if ( Nodes < NEReqs ) then
+       if(IONode) &
+            write(*,'(2(a,i0))')  &
+            'ERROR GetSFE: Requested E-points= ', &
+            NEReqs,' > Nodes = ', Nodes
+       call die('ERROR in reading GF file')
+    end if
+
+    if ( nwork < read_Size ) then
+       write(*,*) 'Size of work array while reading GS was not large &
+            &enough. Something went wrong.'
+       call die('ERROR in reading GF file')
+    end if
+    
+! Loop over nodes. If root send stuff out to relevant nodes, if
+! not root receive information from root.
+
+    ! We only loop over the requested energy points...
+    do iNode = iNodeS, iNodeE, iNodeStep
+
+       if ( IONode ) then
+          ! read in header of GF-point
+          read(uGF) ikGS, iEni, ZE_cur
+       end if
+
+#ifdef MPI
+       call MPI_Bcast(iEni,1,MPI_Integer, &
+            0,MPI_Comm_World,MPIerror)
+
+       ! distribute the current energy point
+       if ( IONode .and. Node == iNode ) then
+          ! do nothing
+       else if ( Node == iNode ) then
+          ! recieve from the host node
+          call MPI_iRecv(ZE_cur,1,MPI_Double_Complex,    0,iNode, &
+               MPI_Comm_World,Request,MPIerror)
+          call MPI_Wait(Request,Status,MPIerror)
+       else if ( IONode ) then
+          call MPI_iSend(ZE_cur,1,MPI_Double_Complex,iNode,iNode, &
+               MPI_Comm_World,Request,MPIerror)
+          call MPI_Wait(Request,Status,MPIerror)
+       end if
+#endif
+
+       ! The test of the energy-point is performed on
+       ! the calculating node...
+       if ( Node == iNode ) then
+          if ( cdabs(cE%e-ZE_cur) > EPS ) then
+             write(*,*) 'GF-file: '//trim(El%GFfile)
+             write(*,'(2(a,2(tr1,g12.5)))') 'Energies, TS / Gf:', &
+                  cE%e / eV, ' /', ZE_cur / eV
+             call die('Energy point in GF file does &
+                  not match the internal energy-point in transiesta. &
+                  &Please correct your GF files.')
+          end if
+       end if
+       
+       ! If the k-point does not match what we expected...
+       if ( IONode .and. ikpt /= ikGS ) then
+          write(*,*) 'GF-file: '//trim(El%GFfile)
+          write(*,'(2(a,i0))') 'k-point, TS / Gf: ', &
+               ikpt, ' / ', ikGS
+          call die('Read k-point in GF file does not match &
+               &the requested k-point. Please correct your &
+               &GF files.')
+       end if
+
+       if ( iEni == 1 ) then
+
+          ! read in the electrode Hamiltonian and overlap...
+          if ( IONode ) then
+             read(uGF) El%HA
+             read(uGF) El%SA
+          end if
+
+#ifdef MPI
+          call MPI_Bcast(El%HA(1,1,1),read_Size,MPI_Double_Complex, &
+               0,MPI_Comm_World,MPIerror)
+          call MPI_Bcast(El%SA(1,1,1),read_Size,MPI_Double_Complex, &
+               0,MPI_Comm_World,MPIerror)
+#endif
+       end if 
+
+
+#ifdef MPI
+       if ( IONode .and. iNode == Node ) then
+#endif
+          ! read in surface Green's function
+          read(uGF) El%GA
+#ifdef MPI
+       else if ( IONode ) then
+
+          read(uGF) work(1:read_Size)
+          
+          call MPI_ISend(work(1),read_Size,MPI_Double_Complex, &
+               iNode,1,MPI_Comm_World,Request,MPIerror) 
+          call MPI_Wait(Request,Status,MPIerror)
+       else if ( Node ==  iNode ) then
+          call MPI_IRecv(El%GA(1,1),read_Size,MPI_Double_Complex, &
+               0    ,1,MPI_Comm_World,Request,MPIerror)
+          call MPI_Wait(Request,Status,MPIerror)
+       end if
+#endif
+
+    end do
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS read_next_GS' )
+#endif
+
+  end subroutine read_next_GS_Elec
+
+
+  ! Subroutine for reading in both the left and right next energy point
+  subroutine read_next_GS(ispin,ikpt, kpt, cE, &
+       NElecs, uGF, Elecs, &
+       nzwork, zwork, RemUCellDistance, reread, &
+       forward )
+
+    use parallel, only : Node, IONode
+
+#ifdef MPI
+    use mpi_siesta, only : MPI_AllReduce, MPI_Sum, MPI_Integer
+    use mpi_siesta, only : MPI_Comm_World
+#endif
+
+    use m_ts_electype
+    use m_ts_cctype
+    use m_ts_electrode, only: calc_next_GS_Elec
+      
+    integer, intent(in) :: ispin, ikpt
+    real(dp), intent(in) :: kpt(3)
+    type(ts_c_idx), intent(in) :: cE
+    integer, intent(in) :: NElecs, uGF(NElecs)
+    type(Elec), intent(inout) :: Elecs(NElecs)
+    integer, intent(in) :: nzwork
+    complex(dp), intent(inout), target :: zwork(nzwork)
+    logical, intent(in) :: RemUCellDistance
+    logical, intent(in), optional :: reread, forward
+
+    integer :: NEReqs, i, j
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    ! save the current weight of the point
+    ! This is where we include the factor-of-two for spin and
+    ! and the (1/Pi) from DM = Im[G]/Pi
+    ! Furthermore we include the weight of the k-point
+
+    ! the number of points we wish to read in this segment
+    NEReqs = 1
+#ifdef MPI
+    i = 0
+    if ( cE%exist .and. .not. cE%fake) i = 1
+    call MPI_AllReduce(i,NEReqs,1,MPI_Integer, MPI_Sum, &
+         MPI_Comm_World, MPIerror)
+#endif
+
+    if ( present(reread) ) then
+       if ( IONode .and. reread ) then
+          do j = 1 , NElecs
+             if ( .not. Elecs(j)%out_of_core ) cycle
+             do i = 1 , NEReqs * 2
+                backspace(unit=uGF(j))
+             end do
+          end do
+! Currently the equilibrium energy points are just after
+! the k-point, hence we will never need to backspace behind the
+! HAA and SAA reads
+! however, when we add kpoints for the bias contour, then it might be
+! necessary!
+!           if ( new_kpt ) then
+!             do i = 1 , 2
+!                backspace(unit=uGFL)
+!                backspace(unit=uGFR)
+!             end do
+!          end if
+       end if
+    end if
+
+    ! TODO Move reading of the energy points
+    ! directly into the subroutines which need them
+    ! In this way we can save both GAA, Sigma AND Gamma arrays!!!!
+    ! However, this will probably come at the expense 
+    ! of doing the same "repetition" expansion twice, we can live with
+    ! that!
+    do i = 1 , NElecs
+       if ( Elecs(i)%out_of_core ) then
+          call read_next_GS_Elec(uGF(i), NEReqs, &
+               ikpt, Elecs(i), cE, &
+               nzwork, zwork, forward = forward)
+       else
+          ! the electrode already have the correct 
+          ! variables which decides whether it is
+          ! RemUCellDistance or not!
+          call calc_next_GS_Elec(Elecs(i),ispin,kpt,cE%e, &
+               nzwork, zwork, RemUCellDistance)
+       end if
+    end do
+
+  end subroutine read_next_GS
 
 
 ! This routine requires a call to check_Green before.
@@ -208,7 +489,6 @@ contains
 ! ##################################################################
   subroutine read_Green(funit,El,c_nkpar,c_NEn, c_RemUCell)
     
-    use precision, only : dp
     use parallel,  only : IONode
     use sys ,      only : die
 #ifdef MPI
@@ -231,12 +511,11 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     character(len=FILE_LEN) :: curGFfile  ! Name of the GF file
-    character(len=NAME_LEN) :: curGFtitle ! title of the GF file
 
     integer :: nspin,nkpar,na,no,NA1,NA2,NA3,NEn
     real(dp) :: mu ! The Fermi energy shift due to a voltage
     real(dp) :: ucell(3,3)
-    logical :: errorGf , RemUCell
+    logical :: errorGf , RemUCell, pre_expand
 
     ! we should only read if the GF-should exist
     if ( .not. El%out_of_core ) return
@@ -253,12 +532,11 @@ contains
        ! Retrieve name of file currently reading
        inquire(unit=funit,name=curGFfile)
 
-       read(funit) curGFtitle
        ! read electrode information
        read(funit) nspin, ucell
        read(funit) na, no ! used atoms and used orbitals
        read(funit) ! xa, lasto
-       read(funit) NA1,NA2,NA3
+       read(funit) NA1,NA2,NA3,pre_expand
        read(funit) mu
        ! read contour information
        read(funit) RemUCell
@@ -333,6 +611,14 @@ contains
           errorGF = .true.
        end if
 
+       if ( Rep(El) > 1 ) then
+          if ( pre_expand .neqv. El%pre_expand ) then
+             write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+             write(*,*) 'read_Green: ERROR: pre-expanded is not expected'
+             errorGF = .true.
+          end if
+       end if
+
     end if io_read
 
     if ( errorGF ) then
@@ -359,7 +645,6 @@ contains
        c_NEn,c_ce, &
        c_RemUCell, xa_Eps, errorGF)
 
-    use precision, only: dp
     use units,     only: Ang
     use m_ts_cctype
     use m_ts_electype
@@ -390,7 +675,6 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    character(NAME_LEN) :: curGFtitle ! Title, currently not used
     real(dp) :: mu ! The energy shift in the Fermi energy
     integer :: nspin, na, no, nkpar ! spin, # of atoms, # of orbs, # k-points
     integer :: NA1,NA2,NA3 ! # repetitions in x, # repetitions in y
@@ -403,12 +687,12 @@ contains
     complex(dp), allocatable :: ce(:)
 
 ! Helpers..
-    character(200) :: curGFfile
+    character(FILE_LEN) :: curGFfile
     real(dp) :: ucell(3,3)
     integer :: iEn
     integer :: i, j, ia
     real(dp) :: ktmp(3), kpt(3)
-    logical :: localErrorGf, eXa, RemUCell
+    logical :: localErrorGf, eXa, RemUCell, pre_expand
 
     ! we should only read if the GF-should exist
     if ( .not. El%out_of_core ) return
@@ -425,15 +709,12 @@ contains
     ! Retrieve name of file currently reading
     inquire(unit=funit,name=curGFfile)
 
-    ! Read in header of the file
-    read(funit) curGFtitle
-
     ! Read in electrode information
     read(funit) nspin, ucell
     read(funit) na,no
     allocate(xa(3,na),lasto(na+1))
     read(funit) xa,lasto
-    read(funit) NA1,NA2,NA3
+    read(funit) NA1,NA2,NA3,pre_expand
     read(funit) mu
 
     if ( El%nspin /= nspin ) then
@@ -506,6 +787,13 @@ contains
        write(*,'(2(a,i3))') "Found NA2: ",NA2,", expected NA2: ",El%RepA2
        write(*,'(2(a,i3))') "Found NA3: ",NA3,", expected NA3: ",El%RepA3
        localErrorGf = .true.
+    end if
+    if ( Rep(El) > 1 ) then
+       if ( pre_expand .neqv. El%pre_expand ) then
+          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*)"Expecting a pre-expanded self-energy!"
+          localErrorGf = .true.
+       end if
     end if
     if ( abs(El%mu%mu-mu) > EPS ) then
        write(*,*)"ERROR: Green's function file: "//trim(curGFfile)

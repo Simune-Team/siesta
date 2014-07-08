@@ -69,8 +69,9 @@ contains
     use class_zTriMat
 
     use m_ts_electype
-
-    ! Self-energy retrival and expansion
+    ! Self-energy read
+    use m_ts_gf
+    ! Self-energy expansion
     use m_ts_elec_se
 
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
