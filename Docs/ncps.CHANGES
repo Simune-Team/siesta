@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+July 8, 2014  Alberto Garcia           trunk-462--ncps-28
+Update of m_xcnames by Jose Soler 
+
+Clarified some libxc correspondences.
+
+modified:
+ Pseudo/atom/m_xcnames.F90
+
+
+------------------------------------------------------------
 June 19, 2014  Alberto Garcia           trunk-462--ncps-27
 Cosmetic changes in atom manual and elsewhere
 

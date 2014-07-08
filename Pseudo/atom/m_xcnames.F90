@@ -57,7 +57,7 @@ data xct(15) / xc_id_t("GGA", "WC", 15, "XC_GGA_X_WC", "XC_GGA_C_PBE", 0, "wc") 
 !"Perdew-Burke-Ernzerhof-solid"
 data xct(16) / xc_id_t("GGA", "PBEsol", 16, "XC_GGA_X_PBE_SOL", "XC_GGA_C_PBE_SOL", 0, "ps") / 
 !
-data xct(17) / xc_id_t("GGA", "PBEJsJrLO", 17, "XC_GGA_X_PBE_???", "XC_GGA_C_PBE_???", 0, "jo") / 
+data xct(17) / xc_id_t("GGA", "PBEJsJrLO", 17, "XC_GGA_X_PBE_JSJR", "XC_GGA_C_PBE_???", 0, "jo") / 
 data xct(18) / xc_id_t("GGA", "PBEJsJrHEG", 18, "XC_GGA_X_PBE_???", "XC_GGA_C_PBE_???", 0, "jh") / 
 data xct(19) / xc_id_t("GGA", "PBEGcGxLO", 19, "XC_GGA_X_PBE_???", "XC_GGA_C_PBE_???", 0, "go") / 
 data xct(20) / xc_id_t("GGA", "PBEGcGxHEG", 20, "XC_GGA_X_PBE_???", "XC_GGA_C_PBE_???", 0, "gh") / 
@@ -67,15 +67,15 @@ data xct(22) / xc_id_t("GGA", "PW91", 22, "XC_GGA_X_PW91", "XC_GGA_C_PW91", 0, "
 data xct(23:30) / 8*xc_id_t("", "", -1, "", "", -1, "") /
 ! VDW
 !"Dion-et-al--DRSLL"
-data xct(31) / xc_id_t("VDW", "DRSLL", 31, "XC_GGA_X_OPTB88_VDW", "???", -1, "vw") /
-data xct(32) / xc_id_t("VDW", "DRSLL", 31, "XC_GGA_X_OPTB88_VDW", "???", -1, "vf") /!alias
+data xct(31) / xc_id_t("VDW", "DRSLL", 31, "XC_GGA_X_OPTB88_VDW", "XC_VDW_C_DF1", -1, "vw") /
+data xct(32) / xc_id_t("VDW", "DRSLL", 31, "XC_GGA_X_OPTB88_VDW", "XC_VDW_C_DF1", -1, "vf") /!alias
 !""
-data xct(33) / xc_id_t("VDW", "LMKLL", 32, "XC_GGA_X_OPTB88_VDW", "???", -1, "vl") /
+data xct(33) / xc_id_t("VDW", "LMKLL", 32, "XC_GGA_X_OPTB88_VDW", "XC_VDW_C_DF2", -1, "vl") /
 !""
-data xct(34) / xc_id_t("VDW", "KKBM", 33, "XC_GGA_X_OPTB88_VDW", "???", -1, "vk") /
-data xct(35) / xc_id_t("VDW", "C09", 34, "XC_GGA_X_OPTB88_VDW", "???", -1, "vc") /
-data xct(36) / xc_id_t("VDW", "BH", 35, "XC_GGA_X_OPTB88_VDW", "???", -1, "vb") /
-data xct(37) / xc_id_t("VDW", "VV", 36, "XC_GGA_X_OPTB88_VDW", "???", -1, "vv") /
+data xct(34) / xc_id_t("VDW", "KKBM", 33, "XC_GGA_X_OPTB88_VDW", "XC_VDW_C_DF1", -1, "vk") /
+data xct(35) / xc_id_t("VDW", "C09", 34, "XC_GGA_X_OPTB88_VDW", "XC_VDW_C_DF1", -1, "vc") /
+data xct(36) / xc_id_t("VDW", "BH", 35, "XC_GGA_X_CX_VDW", "XC_VDW_C_DF1", -1, "vb") /
+data xct(37) / xc_id_t("VDW", "VV", 36, "XC_GGA_X_OPTB88_VDW", "XC_VDW_C_VV10", -1, "vv") /
 data xct(38:40) / 3*xc_id_t("", "", -1, "", "", -1, "") /
 
 
