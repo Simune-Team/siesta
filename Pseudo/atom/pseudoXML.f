@@ -219,18 +219,25 @@
       call xml_NewElement(xf,"provenance")
       call my_add_attribute(xf,"creator",ray(1))
       call my_add_attribute(xf,"date",ray(2))
-      call xml_NewElement(xf,"input_file")
+      call xml_NewElement(xf,"input-file")
       call my_add_attribute(xf,"name","INP")
 !
-      open(44,file="INP",form="formatted",status="old",
+!
+!     Note that a file already connected to one unit
+!     must not be re-opened with another unit...
+!     Since INP is still open at this time, we use
+!     INP_COPY (generated in atm.f)
+!
+      open(44,file="INP_COPY",form="formatted",status="old",
      $     position="rewind",action="read")
       do
          read(44,fmt="(a)",iostat=stat) line
          if (stat .ne. 0) exit
          call xml_AddPcData(xf,trim(line),line_feed=.true.)
       enddo
+      close(44)
 !
-      call xml_EndElement(xf,"input_file")
+      call xml_EndElement(xf,"input-file")
       call xml_EndElement(xf,"provenance")
 
         call xml_NewElement(xf,"header")

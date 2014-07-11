@@ -60,6 +60,10 @@ c
       nconf = 0
       nr = nrmax
 c
+c     Make a copy of INP for further processing
+c
+      call copy_INP()
+c
 c      open files
 c
       open(unit=5,file='INP',status='old',form='formatted')
@@ -336,7 +340,22 @@ c
 c
       end
 
+      subroutine copy_INP()
 
+      character(len=132) :: line
+      integer            :: stat
+
+      open(unit=5,file='INP',status='old',form='formatted')
+      open(unit=55,file='INP_COPY',status='unknown',form='formatted')
+      do
+         read(5,fmt="(a)",iostat=stat) line
+         if (stat .ne. 0) exit
+         write(55,fmt="(a)") trim(line)
+      enddo
+      close(5)
+      close(55)
+
+      end subroutine copy_INP
 
 
 

@@ -142,7 +142,8 @@ potran.o: plot.h
 prversion.o: version.h
 pseudo.o: param.h orbital.h radial.h elecpot.h
 pseudoXML.o: charge.h param.h orbital.h radial.h pseudowave.h ion.h
-pseudoXMLnew.o: charge.h param.h orbital.h radial.h pseudowave.h ion.h
+pseudoXMLnew.o: charge.h param.h corecorr.h orbital.h radial.h pseudowave.h
+pseudoXMLnew.o: ion.h
 pseudoXMLnew.o: m_xcnames.o
 pswf_store.o: radial.h pseudowave.h ion.h
 recipes.o: ode_path.h
@@ -152,6 +153,6 @@ v0pp.o: radial.h tm2_blk.h
 velect.o: charge.h param.h orbital.h compat.h radial.h energy.h elecpot.h
 vionic.o: charge.h param.h orbital.h radial.h ion.h
 wf.o: param.h orbital.h radial.h energy.h ion.h elecpot.h
-wrapup.o: param.h orbital.h radial.h energy.h version.h elecpot.h charge.h
-wrapup.o: compat.h pseudowave.h ion.h
+wrapup.o: param.h corecorr.h orbital.h radial.h energy.h version.h elecpot.h
+wrapup.o: charge.h compat.h pseudowave.h ion.h
 wtrans.o: plot.h

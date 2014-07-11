@@ -1,4 +1,24 @@
 ------------------------------------------------------------
+July 11, 2014  Alberto Garcia           trunk-462--ncps-29
+Update of version 0.6 generator
+
+ new element grid-description
+ updated element valence-charge (no zratio!)
+ new total-valence-charge attribute
+ new attributes for element core-charge
+
+ cosmetic changes
+
+added:
+  Pseudo/atom/corecorr.h
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/atm.f
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
 July 8, 2014  Alberto Garcia           trunk-462--ncps-28
 Update of m_xcnames by Jose Soler 
 

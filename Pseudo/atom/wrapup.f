@@ -13,6 +13,7 @@ c
       include 'compat.h'
       include 'version.h'
       include 'pseudowave.h'
+      include 'corecorr.h'
 c
 c     ecuts now set in compat_params...
 c
@@ -220,7 +221,11 @@ C
                new_cc_scheme = .true.
             endif
 
+            rc_core = r(icore)
+
             if (.not. new_cc_scheme) then
+
+               n_of_continuous_derivs = 1
 
 c           Fit to  cdc(r) = ac*r * sin(bc*r) inside r(icore)
 c
@@ -286,6 +291,8 @@ c
 c                 Use subroutine provided by JLM to fit
 c                 cdc(r) = r^2*exp(ac+bc*r^2+cc*r^4) inside r(icore)
 c
+                  n_of_continuous_derivs = 2
+
                   CALL PCC_EXP(NR,ICORE,AC,BC,CC,R,CDC)
                   write(6,9000) r(icore), ac, bc, cc
 
