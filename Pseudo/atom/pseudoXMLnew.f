@@ -25,7 +25,7 @@
       character*30 xcfuntype, xcfunparam
       character*30 gridtype, gridunits, gridscale, gridstep, gridnpoint
       character*30 slwfnunits, slwfnformat, slwfndown, slwfnup
-      integer                        :: ivps, ip
+      integer                        :: ivps, ip, i
       double precision, allocatable   :: chval(:)
 
       double precision                :: total_valence_charge
@@ -217,23 +217,18 @@
 ! Dump of the pseudowave functions
         call xml_NewElement(xf,"pseudo-wave-functions")
           call my_add_attribute(xf,"format","rR")
-          call my_add_attribute(xf,"npswfs",str(npotd))
-!          call my_add_attribute(xf,"n-pseudowave-functions-down",
-!     .                          slwfndown)
-!          call my_add_attribute(xf,"n-pseudowave-functions-up",
-!     .                          slwfnup)
+          call my_add_attribute(xf,"npswfs",str(nshells_stored))
   
 ! Down pseudowave function follows
 
-        pswfd: do ivps = 1, lmax
-           if (indd(ivps) .eq. 0) cycle
+        pswfd: do i = 1, nshells_stored
            call xml_NewElement(xf,"pswf")
-             call my_add_attribute(xf,"n",str(no(indd(ivps))))
-             call my_add_attribute(xf,"l",il(ivps))
+             call my_add_attribute(xf,"n",str(n_pswf(i)))
+             call my_add_attribute(xf,"l",str(l_pswf(i)))
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf,pswfnrd(ivps,2:nr))
+                 call xml_AddArray(xf,pswf(i,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"pswf")

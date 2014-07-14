@@ -91,7 +91,7 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
         genrhs.o  logder.o ode.o denplot.o scilib.o  recipes.o \
 	compat_params.o  pcc_exp.o  change_valence.o pswf_store.o \
 	coreq.o get_unit.o gauleg.o divdif.o symbols.o \
-        prversion.o pseudoXML.o pseudoXMLnew.o pxf.o force_underflow.o dsolv2_single.o\
+        prversion.o pseudoXML.o pseudoXMLnew.o pxf.o force_underflow.o dsolv2_single.o dsolv2_save_wf.o \
         m_xcnames.o
 #
 OBJS= $(MAIN_OBJS) 

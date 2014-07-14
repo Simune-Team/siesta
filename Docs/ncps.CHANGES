@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+July 14, 2014  Alberto Garcia           trunk-462--ncps-30
+Store and save all valence pseudo-wfns
+
+ATOM now performs an implicit "pseudo test" for the "down" channels for
+all the valence shells, generating the pseudo wave-functions which are
+then stored in the PSML file.
+
+added:
+  Pseudo/atom/dsolv2_save_wf.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/pseudowave.h
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
 July 11, 2014  Alberto Garcia           trunk-462--ncps-29
 Update of version 0.6 generator
 
