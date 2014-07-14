@@ -44,9 +44,9 @@ c
       double precision cutoff_function, force_underflow
       external cutoff_function, force_underflow
 
-      logical new_cc_scheme, defined
+      logical new_cc_scheme, defined, down_channel
 c
-      external logder, defined
+      external logder, defined, down_channel
 c
       pi = 4*atan(one)
 c
@@ -630,7 +630,7 @@ c     Store in arrays in elecpot.h
 c
       nshells_stored = 0
       do 885 i = ncp, norb
-         if (down(i)) then
+         if (down_channel(i)) then
             call dsolv2_save_wf(0,id,i,nops,wfn)
             nshells_stored = nshells_stored + 1
             n_pswf(nshells_stored) = no(i)
@@ -786,6 +786,20 @@ c
 c
       end
 
+      logical function down_channel(i)
+      integer, intent(in) :: i
+
+      include 'orbital.h'
+      include 'param.h'
+
+      if (relativistic) then
+         down_channel = ((lo(i) .eq. 0) .or. down(i))
+      else
+         down_channel = down(i)
+      endif
+
+      end function down_channel
+          
       double precision function cutoff_function(r)
       implicit none
 c

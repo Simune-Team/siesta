@@ -106,6 +106,8 @@
 
       call xml_NewElement(xf,"pseudo")
       call my_add_attribute(xf,"version","0.6")
+      call my_add_attribute(xf,"energy_unit","hartree")
+      call my_add_attribute(xf,"length_unit","bohr")
 
 
       call xml_NewElement(xf,"provenance")
@@ -152,15 +154,14 @@
 
 
         call xml_NewElement(xf,"grid")
-          call my_add_attribute(xf,"units",gridunits)
           call my_add_attribute(xf,"npts",gridnpoint)
 
          ! This is an optional element
-         call xml_NewElement(xf,"grid-description")
+         call xml_NewElement(xf,"grid-annotation")
             call my_add_attribute(xf,"type",'log')
             call my_add_attribute(xf,"scale",str(a))
             call my_add_attribute(xf,"step",str(b))
-          call xml_EndElement(xf,"grid-description")
+          call xml_EndElement(xf,"grid-annotation")
 
           call xml_NewElement(xf,"grid-data")
             call xml_AddArray(xf,r(2:nr))
@@ -168,7 +169,6 @@
         call xml_EndElement(xf,"grid")
 
         call xml_NewElement(xf,"semilocal")
-          call my_add_attribute(xf,"units","rydberg")
           call my_add_attribute(xf,"format","rV")
           call my_add_attribute(xf,"npots-major",str(npotd))
           call my_add_attribute(xf,"npots-minor",str(npotu))
@@ -187,7 +187,7 @@
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
-               call xml_AddArray(xf,viod(ivps,2:nr))
+               call xml_AddArray(xf, 0.5d0 * viod(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"vps")
@@ -207,7 +207,7 @@
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf,viou(ivps,2:nr))
+                 call xml_AddArray(xf, 0.5d0 * viou(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"vps")
@@ -224,7 +224,7 @@
         pswfd: do i = 1, nshells_stored
            call xml_NewElement(xf,"pswf")
              call my_add_attribute(xf,"n",str(n_pswf(i)))
-             call my_add_attribute(xf,"l",str(l_pswf(i)))
+             call my_add_attribute(xf,"l",il(l_pswf(i)+1))
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")
@@ -264,17 +264,20 @@ c$$$        enddo pswfu
           call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"valence-charge")
 
-        call xml_NewElement(xf,"pseudocore-charge")
-          call my_add_attribute(xf,"matching-radius",str(rc_core))
-          call my_add_attribute(xf,"number-of-continuous-derivatives",
-     $                             str(n_of_continuous_derivs))
-          call xml_NewElement(xf,"radfunc")
+        if (coreattrib(1:3) .eq. "yes") then
 
-            call xml_NewElement(xf,"data")
-              call xml_AddArray(xf,cdc(2:nr))
-            call xml_EndElement(xf,"data")
-          call xml_EndElement(xf,"radfunc")
-        call xml_EndElement(xf,"pseudocore-charge")
+           call xml_NewElement(xf,"pseudocore-charge")
+           call my_add_attribute(xf,"matching-radius",str(rc_core))
+           call my_add_attribute(xf,"number-of-continuous-derivatives",
+     $                               str(n_of_continuous_derivs))
+           call xml_NewElement(xf,"radfunc")
+
+           call xml_NewElement(xf,"data")
+           call xml_AddArray(xf,cdc(2:nr))
+           call xml_EndElement(xf,"data")
+           call xml_EndElement(xf,"radfunc")
+           call xml_EndElement(xf,"pseudocore-charge")
+        endif
 
         call xml_EndElement(xf,"pseudo")
       call xml_Close(xf)

@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+July 14, 2014  Alberto Garcia           trunk-462--ncps-31
+Hartree,bohr units. Optional core-corrs. Fix bug in pswf storage
+
+The mandatory units are hartree and bohr, as specified in the
+top 'pseudo' element.
+
+The pseudocore-charge element is not present if there are no
+core corrections.
+
+Change the name of 'grid-description' to 'grid-annotation'.
+
+Fix bug in the determination of what is a 'down' channel.
+
+modified:
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
 July 14, 2014  Alberto Garcia           trunk-462--ncps-30
 Store and save all valence pseudo-wfns
 
