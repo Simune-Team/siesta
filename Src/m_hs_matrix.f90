@@ -1296,7 +1296,7 @@ contains
   !   xij(:,ind) = ucell(:,1) * tm(1) + ucell(:,2) * tm(2) + ucell(:,3) * tm(3) + xa(:,iaorb(jo))-xa(:,iaorb(io))
   ! to create the full xij array...
   subroutine supercell_offsets(ucell,na_u, no_u,maxnh, &
-       lasto, xa, numh, listhptr, listh, xij, n_s, offsets, indxs)
+       lasto, xa, numh, listhptr, listh, xij, nsc, offsets)
     use precision, only : dp
     use geom_helper, only : ucorb, iaorb
     use cellSubs, only : reclat
@@ -1313,27 +1313,27 @@ contains
     integer, intent(in)  :: numh(no_u), listhptr(no_u)
     integer, intent(in)  :: listh(maxnh)
     real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)  :: nsc(3) ! Number of supercells in ea
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    integer, intent(inout) :: n_s ! Number of supercells (no_s/no_u) + padding
-    integer, intent(out) :: offsets(3,n_s)
-    integer, intent(out) :: indxs(maxnh)
+    integer, intent(out) :: offsets(3,product(nsc))
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
     logical :: set
     integer :: io, j, ind, ia, ja, is, tm(3), cs
     real(dp) :: xijo(3), rcell(3,3)
+    integer :: hnsc(3)
+
+    ! Half the number of supercells
+    hnsc(:) = nsc(:) / 2
 
     ! Initialize the offsets
     offsets(:,:) = 0
     
     ! Prepare the cell to calculate the index of the atom
     call reclat(ucell,rcell,0) ! Without 2*Pi
-
-    ! current super-cell index
-    cs = 1
 
     do io = 1 , no_u
        ia = iaorb(io,lasto)
@@ -1342,50 +1342,34 @@ contains
           ind = listhptr(io) + j
           ja = iaorb(ucorb(listh(ind),no_u),lasto)
 
+          ! the supercell index
+          is = (listh(ind) - 1)/no_u + 1
+
           xijo(:) = xij(:,ind) - ( xa(:,ja) - xa(:,ia) )
 
           tm(:) = nint( matmul(xijo,rcell) )
 
-          set = .false.
-          do is = 1 , cs
-             if ( all(tm == offsets(:,is)) ) then
-                indxs(ind) = is
-                set = .true.
-                exit
-             end if
-          end do
+          ! Correct super-cell coordinate
+          if ( tm(1) >  hnsc(1) ) tm(1) = tm(1) - nsc(1)
+          if ( tm(1) < -hnsc(1) ) tm(1) = tm(1) + nsc(1)
+          if ( tm(2) >  hnsc(2) ) tm(2) = tm(2) - nsc(2)
+          if ( tm(2) < -hnsc(2) ) tm(2) = tm(2) + nsc(2)
+          if ( tm(3) >  hnsc(3) ) tm(3) = tm(3) - nsc(3)
+          if ( tm(3) < -hnsc(3) ) tm(3) = tm(3) + nsc(3)
 
-          if ( .not. set ) then
-             cs = cs + 1
-             if ( cs > n_s ) return
-             if ( cs <= n_s ) then
-                offsets(:,cs) = tm
-                indxs(ind) = cs
-             end if
+          if ( any(tm(:) /= offsets(:,is)) .and. any(offsets(:,is)/=0) ) then
+             write(*,'(a,3(tr1,i6))')'r,c',io,listh(ind)
+             write(*,'(a,i3,tr1,3(tr1,i3),tr3,3(tr1,i3))') 'is, tm',is, tm, offsets(:,is)
+             write(*,'(a,2(tr1,i3),6(tr1,f10.5))') 'ia, ja',ia, ja,xijo(:)-&
+                  ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3)
+             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xa(:,(is-1)*na_u +ja)-xa(:,ia)
+             call die('Error')
+          else
+             offsets(:,is) = tm(:)
           end if
-
-!          if ( any(tm /= offsets(:,is)) .and. any(offsets(:,is)/=0) ) then
-!             write(*,'(i3,tr1,3(tr1,i3),tr3,3(tr1,i3))') is, tm, offsets(:,is)
-!             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xijo(:)-&
-! !                 ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3)
-!             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xa(:,(is-1)*na_u +ja)-xa(:,ia)
-!             write(*,'(a,3(tr1,i6))')'r,c',io,listh(ind), ind
-!             if ( any(abs(xijo(:)-&
-!                  ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3))> 1.e-5) ) then
-!                write(*,'(a,6(tr1,f10.5))') 'HERERE',xijo(:)
-!             end if
-!
-!             !call die('Error in supercell setup. Same supercell matrix have different &
-!             !     &positions.')
-!          else
-!             offsets(:,is) = tm(:)
-!          end if
-
 
        end do
     end do
-
-    n_s = cs
 
   end subroutine supercell_offsets
 

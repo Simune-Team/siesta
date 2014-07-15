@@ -160,7 +160,6 @@ contains
           call delete(Elecs(i))
           
        end do
-!call die('')
     else
 
        do i = 1 , N_Elec

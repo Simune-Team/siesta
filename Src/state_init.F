@@ -319,7 +319,7 @@
 !     them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
      &        .true., Gamma, ts_Gamma_file,
-     &        ucell, na_u, no_l, no_u, no_s, maxnh, nspin,
+     &        ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin,
      &        ts_kscell_file, ts_kdispl_file,
      &        xa, lasto, 
      &        numh, listhptr, listh, xijo, indxuo, 

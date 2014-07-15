@@ -175,7 +175,7 @@
          if ( idyn.eq.6 ) then
             fname = fname_TSHS(slabel,ts_istep,ia1,.false.)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, na_u, no_l, no_u, no_s, maxnh, nspin, 
+     &           ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin, 
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto, 
      &           numh, listhptr, listh, xijo, indxuo, H, S, Ef,
@@ -183,7 +183,7 @@
          else
             fname = fname_TSHS(slabel,0,0,.false.)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, na_u, no_l, no_u, no_s, maxnh, nspin,
+     &           ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin,
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto, 
      &           numh, listhptr, listh, xijo, indxuo, H, S, Ef,

@@ -435,8 +435,8 @@ contains
 ! * LOCAL variables      *
 ! ************************
     integer :: iu, version, n_s
-    integer :: ispin,i,j, all_I(8), ind, io, ia, ja, tm(3)
-    integer, allocatable :: indxs(:), offsets(:,:)
+    integer :: ispin,i,j, all_I(8), ind, io, ia, ja, tm(3), is
+    integer, allocatable :: offsets(:,:)
     logical :: lBcast, exist
 #ifdef MPI
     integer :: MPIerror
@@ -452,9 +452,7 @@ contains
 
     ! Determine whether to broadcast afterwards
     lBcast = .false.
-    if ( present(Bcast) ) then
-       lBcast = Bcast
-    end if
+    if ( present(Bcast) ) lBcast = Bcast
 
     ! Get file version
     version = tshs_version(filename)
@@ -569,10 +567,10 @@ contains
              do i = 1 , no_u
                 read(iu) (xij(j,listhptr(i)+1:listhptr(i)+numh(i)),j=1,3)
              end do
-          else if ( version == 1 ) then
 
-             allocate(indxs(maxnh))
-             read(iu) n_s, indxs
+          else if ( version == 1 ) then
+             
+             n_s = no_s / no_u
              allocate(offsets(3,n_s))
              read(iu) offsets
 
@@ -582,7 +580,9 @@ contains
                    ind = listhptr(io) + j
                    ja = iaorb(ucorb(listh(ind),no_u),lasto)
 
-                   tm(:) = offsets(:,indxs(ind))
+                   is = (listh(ind)-1)/no_u + 1
+                   tm(:) = offsets(:,is)
+
                    xij(:,ind) = ucell(:,1) * tm(1) &
                         + ucell(:,2) * tm(2) &
                         + ucell(:,3) * tm(3) &
@@ -592,7 +592,7 @@ contains
              end do
    
              ! clean-up
-             deallocate(offsets,indxs)
+             deallocate(offsets)
 
           end if
        end if
@@ -681,7 +681,7 @@ contains
 
   subroutine ts_write_TSHS(filename, &
        onlyS, Gamma, TSGamma, &
-       ucell, na_u, no_l, no_u, no_s, maxnh, nspin,  &
+       ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin,  &
        kscell, kdispl, &
        xa, lasto, &
        numh, listhptr, listh, xij, indxuo, &
@@ -747,7 +747,7 @@ contains
     logical, intent(in) :: onlyS
     logical, intent(in) :: Gamma, TSGamma
     real(dp), intent(in) :: ucell(3,3)
-    integer, intent(in) :: na_u, no_l, no_u, no_s, maxnh, nspin
+    integer, intent(in) :: nsc(3), na_u, no_l, no_u, no_s, maxnh, nspin
     real(dp), intent(in) :: xa(3,na_u)
     integer, intent(in) :: numh(no_l), listhptr(no_l)
     integer, intent(in) :: listh(maxnh)
@@ -767,7 +767,7 @@ contains
     integer :: iu
     integer :: ispin, i, n_s
     integer :: maxnhg
-    integer, allocatable :: offsets(:,:), indxs(:)
+    integer, allocatable :: offsets(:,:)
 #ifdef MPI
     integer,  allocatable :: numhg(:), listhptrg(:), listhg(:)
     real(dp), allocatable :: xijg(:,:), Mg(:)
@@ -784,6 +784,7 @@ contains
     ! equal no_s / no_u, but this seems not to be the case.
     n_s = no_s / no_u 
     if ( mod(no_s,no_u) /= 0 ) call die('Error in supercell orbitals')
+    if ( n_s /= product(nsc) ) call die('Error in supercell orbitals')
 
 #ifdef MPI
     call glob_sparse_arrays(no_l,no_u,no_s,maxnh, &
@@ -801,24 +802,14 @@ contains
 #endif
 
     if ( .not. Gamma ) then
-       allocate(indxs(maxnhg))
-       i  = n_s
-       iu = n_s
-       do while ( iu == n_s )
-          if ( allocated(offsets) ) deallocate(offsets)
-          allocate(offsets(3,n_s))
+       allocate(offsets(3,n_s))
 #ifdef MPI
-          call supercell_offsets(ucell, na_u, no_u, maxnhg, &
-               lasto, xa, numhg, listhptrg, listhg, xijg, n_s, offsets, indxs)
+       call supercell_offsets(ucell, na_u, no_u, maxnhg, &
+            lasto, xa, numhg, listhptrg, listhg, xijg, nsc, offsets)
 #else
-          call supercell_offsets(ucell, na_u, no_u, maxnhg, &
-               lasto, xa, numh, listhptr, listh, xij, n_s, offsets, indxs)
+       call supercell_offsets(ucell, na_u, no_u, maxnhg, &
+            lasto, xa, numh , listhptr , listh , xij , nsc, offsets)
 #endif
-          if ( iu == n_s ) then
-             n_s = n_s + i
-             iu  = n_s
-          end if
-       end do
     end if
 
     if ( IONode ) then
@@ -901,8 +892,7 @@ contains
     if ( IONode ) then
 
        if ( .not. Gamma ) then
-          write(iu) n_s, indxs
-          write(iu) offsets(:,1:n_s)
+          write(iu) offsets
        end if
 
        ! Close file
@@ -917,7 +907,7 @@ contains
 #endif
 
     if ( .not. Gamma ) then
-       deallocate(offsets,indxs)
+       deallocate(offsets)
     end if
 
 #ifdef TRANSIESTA_DEBUG

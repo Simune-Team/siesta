@@ -572,8 +572,6 @@ kpoint_pdos.o: find_kgrid.o minvec.o parallel.o precision.o siesta_options.o
 kpoint_pdos.o: sys.o units.o
 ksv.o: alloc.o atmfuncs.o densematrix.o ksvinit.o parallel.o precision.o sys.o
 ksvinit.o: alloc.o parallel.o precision.o sys.o
-lib_dm_sparse.o: class_Sparsity.o lib_system.o
-lib_system.o: class_Sparsity.o
 listsc.o: alloc.o
 local_DOS.o: atomlist.o dhscf.o files.o kpoint_grid.o m_energies.o m_eo.o
 local_DOS.o: m_forces.o m_gamma.o m_ntm.o m_spin.o parallel.o siesta_geom.o
@@ -734,12 +732,12 @@ m_ts_mumpsk.o: m_ts_dm_update.o m_ts_elec_se.o m_ts_electype.o m_ts_gf.o
 m_ts_mumpsk.o: m_ts_kpoints.o m_ts_method.o m_ts_mumps_init.o m_ts_mumps_scat.o
 m_ts_mumpsk.o: m_ts_options.o m_ts_sparse.o m_ts_sparse_helper.o m_ts_weight.o
 m_ts_mumpsk.o: parallel.o precision.o units.o
-m_ts_options.o: alloc.o files.o m_bandwidth.o m_monitor.o m_ts_cctype.o
-m_ts_options.o: m_ts_charge.o m_ts_chem_pot.o m_ts_contour.o m_ts_contour_eq.o
-m_ts_options.o: m_ts_contour_neq.o m_ts_electype.o m_ts_global_vars.o m_ts_io.o
-m_ts_options.o: m_ts_io_contour.o m_ts_method.o m_ts_mumps_init.o m_ts_tdir.o
-m_ts_options.o: m_ts_weight.o parallel.o precision.o siesta_options.o sys.o
-m_ts_options.o: units.o
+m_ts_options.o: alloc.o files.o intrinsic_missing.o m_bandwidth.o m_monitor.o
+m_ts_options.o: m_ts_cctype.o m_ts_charge.o m_ts_chem_pot.o m_ts_contour.o
+m_ts_options.o: m_ts_contour_eq.o m_ts_contour_neq.o m_ts_electype.o
+m_ts_options.o: m_ts_global_vars.o m_ts_io.o m_ts_io_contour.o m_ts_method.o
+m_ts_options.o: m_ts_mumps_init.o m_ts_tdir.o m_ts_weight.o parallel.o
+m_ts_options.o: precision.o siesta_options.o sys.o units.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
 m_ts_sparse.o: intrinsic_missing.o m_bandwidth.o m_glob_sparse.o m_ts_debug.o
@@ -1012,7 +1010,6 @@ class_zspdata1d.o: class_SpData1D.o
 class_zspdata2d.o: class_SpData2D.o
 class_ztrimat.o: class_TriMat.o
 diagmemory.o: memoryinfo.o
-lib_dm.o: lib_dm_sparse.o
 listsc_module.o: listsc.o
 m_bessph.o: bessph.o
 m_born_charge.o: born_charge.o

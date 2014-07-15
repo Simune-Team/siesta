@@ -36,12 +36,15 @@ program tshs2tshs
   ! not really part of TSHS anymore
   integer, allocatable :: iza(:)
   ! *********************************************
+  integer :: nsc(3)
   
   force = .false.
   IONode = .true.
   Node = 0
   Nodes = 1
 
+  ! If not gamma, then this will most likely fail...
+  nsc = 1
   ! Default version out file to be 0 (old format)
   vout = 0
 
@@ -66,6 +69,16 @@ program tshs2tshs
         fileout = arg
      case ( '-h', '--help', '-help' )
         call help
+     case ( '-sA' , '-sB' , '-sC' )
+        iarg = iarg + 1
+        call get_command_argument(iarg,arg)
+        if (      arg(3:3) == 'A' ) then
+           read(arg,'(i10)') nsc(1)
+        else if ( arg(3:3) == 'B' ) then
+           read(arg,'(i10)') nsc(2)
+        else if ( arg(3:3) == 'C' ) then
+           read(arg,'(i10)') nsc(3)
+        end if
      case default
         if ( arg(1:1) == '-' ) then
            write(0,'(a)') 'Either of the two errors has been encountered for the option "'//trim(arg)//'":'
@@ -112,7 +125,7 @@ program tshs2tshs
   vin = TSHS_version(filein)
 
   select case ( vin )
-  case ( 0, 1)
+  case ( 0, 1 )
      ! Do nothing
   case default
      write(0,'(a)') 'Version not recognized by this program, please update...'
@@ -123,7 +136,7 @@ program tshs2tshs
   end select
 
   select case ( vout )
-  case ( 0, 1)
+  case ( 0, 1 )
      ! Do nothing
   case default
      write(0,'(a)') 'Version not recognized by this program, please update...'
@@ -150,15 +163,11 @@ program tshs2tshs
        numh, listhptr, listh, xij , indxuo, &
        H, S, Ef, Qtot, Temp, istep, ia1)
 
-  ! Allocate for iza
-  if ( vout == 0 ) then
-     allocate(iza(na_u))
-     iza = 0
-  end if
-
   write(*,'(a)') 'Writing to '//trim(fileout)
 
   if ( vout == 0 ) then
+     allocate(iza(na_u))
+     iza = 0
      call write_TSHS_0(fileout, &
           onlyS, Gamma, TSGamma, &
           ucell, na_u, no_l, no_u, no_s, maxnh, nspin,  &
@@ -166,21 +175,20 @@ program tshs2tshs
           xa, iza, lasto, &
           numh, listhptr, listh, xij, indxuo, &
           H, S, Ef, Qtot, Temp, istep, ia1)
+     deallocate(iza)
   else if ( vout == 1 ) then
+     ! Hopefully nsc is correct
+     write(0,'(a)') 'If this fails, try forcing the supercell with -s[ABC]'
      call ts_write_tshs(fileout, onlyS, Gamma, TSGamma, &
-          ucell, na_u, no_l, no_u, no_s, maxnh, nspin, &
+          ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin, &
           kscell, kdispl, &
           xa, lasto, &
           numh, listhptr, listh, xij, indxuo, H, S, Ef, &
           Qtot, Temp, istep, ia1)
   end if
 
-  if ( vout == 0 ) then
-     deallocate(iza)
-  end if
-
   deallocate(xa,numh,listhptr,listh)
-  deallocate(xij,indxuo,lasto,H,S,iza)
+  deallocate(xij,indxuo,lasto,H,S)
   write(*,'(a)') 'File written...'
 
 contains
@@ -200,7 +208,11 @@ contains
     write(0,'(a)') '  -v|--version <integer>:'
     write(0,'(a)') '          defines the output version of the TSHS file:'
     write(0,'(a)') '            -v 0 is the old TSHS format'
-    write(0,'(a)') '            -v 1 is a newer TSHS format'
+    write(0,'(a)') '            -v >0 is a newer TSHS format'
+    write(0,'(a)') '  -sA|-sB|-sC <integer> > 0:'
+    write(0,'(a)') '          defines the number of supercell repetitions of the TSHS file:'
+    write(0,'(a)') '            -sA 1 means a supercell repetition 0 in the first lattice vector'
+    write(0,'(a)') '               You can read of the supercell of in the output of SIESTA'
     write(0,'(a)') '  -o|--out <filename>:'
     write(0,'(a)') '          The output file name (must not exist)'
     write(0,'(a)') ' -h|--help : this help'

@@ -646,10 +646,10 @@ contains
        write(*,'(/,2a)') "Creating Green's function file for: ",trim(name(El))
 
        ktmp(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * Rep(El) &
-            * El%no_used ** 2 / 1000._dp ** 2
+            * El%no_used ** 2 / 1000000._dp
        ! Correct estimated file-size
        if ( pre_expand ) ktmp(1) = ktmp(1) * Rep(El)
-       if ( ktmp(1) > 2050._dp ) then
+       if ( ktmp(1) > 2000._dp ) then
           ktmp(1) = ktmp(1) / 1000._dp
           write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' GB'
        else
@@ -729,7 +729,8 @@ contains
     call memory('A','Z',nS * nq * 4,'create_Green')
 
     ! Prepare for the inversion
-    call init_mat_inversion(no_X)
+    i = max(no_X,nuo_E)
+    call init_mat_inversion(i)
 
     ! Reset bulk DOS
     if ( CalcDOS ) then

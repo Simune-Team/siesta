@@ -50,7 +50,11 @@ contains
        lmethod = MI_IN_PLACE_LAPACK
     end if
 
-    if ( Npiv < no ) call die('Pivoting arrays not initialized')
+    if ( Npiv < no ) then
+       write(0,'(a,i0)') 'Current pivoting array size: ',Npiv
+       write(0,'(a,i0)') 'Wanted pivoting array size : ',no
+       call die('Pivoting arrays not initialized')
+    end if
 
     ! Initialize the error
     if ( present(ierr) ) ierr = 0
@@ -329,7 +333,11 @@ contains
   subroutine clear_mat_inversion()
     use alloc, only: de_alloc
     N_level = N_level - 1
-    if ( N_level <= 0 ) then
+    if ( N_level < 0 ) then
+       N_level = 0
+       Npiv = 0
+       ! array is already de-allocated
+    else if ( N_level == 0 ) then
        N_level = 0 ! ensure that the level is zero
        Npiv = 0
        ! Deallocate the pivoting array

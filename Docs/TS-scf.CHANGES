@@ -1,4 +1,39 @@
 ----------------------------------------------------
+July 14, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-163
+Bugfix for used-atoms < na, further reduced TSHS size
+
+* By moving xijo to correct super-cell coordinates we 
+  can fully reduce the size of TSHS to the mininum 
+  size. We now completely rely on the supercell coordinate.
+  
+  When converting from old to newer format we have some troubles
+  setting the correct super-cell connection. However, the
+  user can read these of in the output of the simulation.
+  Or just guess. :)
+
+* Corrected a bug for used-atoms were a pivoting array 
+  was not allocated to the appropriate size.
+
+* Added WARNING for the user if any buffer atoms exist
+  and are "close" to one of the electrodes.
+  We define close as 12 Bohr.
+  If any atom in the electrode is close to any one buffer atom
+  it will HIGHLY suggest the user to enable DM-update [cross-terms|all]
+
+modified:
+  Src/Makefile
+  Src/final_H_f_stress.F
+  Src/m_hs_matrix.f90
+  Src/m_mat_invert.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/state_init.F
+  Src/ts_init.F90
+  Util/TS/tshs2tshs/m_ts_io_version.f90
+  Util/TS/tshs2tshs/tshs2tshs.f90
+
+----------------------------------------------------
 July 7, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-162
 Made repetition the preferred electrode usage
 

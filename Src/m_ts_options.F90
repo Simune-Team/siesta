@@ -69,6 +69,7 @@ contains
     use fdf, only : leqi
     use parallel, only: IOnode, Nodes
     use units, only: eV, Ang, Kelvin
+    use intrinsic_missing, only : VNORM
 
     use m_ts_cctype
     use m_ts_global_vars, only : TSmode, ts_istep
@@ -87,7 +88,7 @@ contains
 #ifdef MUMPS
     use m_ts_mumps_init, only : MUMPS_mem, MUMPS_ordering, MUMPS_block
 #endif
-    
+
     use m_monitor
     use m_bandwidth
 
@@ -611,7 +612,6 @@ contains
        call read_contour_options( N_Elec, Elecs, N_mu, mus, kT, IsVolt, Volt )
     end if
 
-    ! read in buffer information
     if ( TSMode ) then
        ! initialize regions of the electrodes and device
        ! the number of LCAO orbitals on each atom will not change
@@ -870,12 +870,33 @@ contains
                   &Be careful here.'
           end if
 
+          ! if any buffer atoms exist, we should suggest to the user
+          ! to use TS.Elec.<elec> [DM-update cross-terms|all]
+          ! in case any buffer atoms are too close
+          err = .false.
+          do j = 1 , na_u
+             if ( atom_type(j) /= TYP_BUFFER ) cycle
+             do idx = 0 , TotUsedAtoms(Elecs(i)) - 1
+                ! Proximity of 12 Bohr enables this check
+                err = vnorm(xa(:,Elecs(i)%idx_a+idx)-xa(:,j)) < 12._dp
+                if ( err ) exit
+             end do
+             if ( err ) exit
+          end do
+          if ( err .and. Elecs(i)%DM_update == 0 ) then
+             ! some buffer atoms are close to this electrode
+             ! Advice to use dm_update
+             write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' is &
+                  &likely terminated by buffer atoms. It is HIGHLY recommended to add this:', &
+                  '  TS.Elec.'//trim(Name(Elecs(i)))//' DM-update [cross-terms|all]'
+          end if
+
        end do
 
-       if ( N_Elec /= 2 .and. any(Elecs(:)%DM_update /= 2) ) then
-          write(*,'(a,/,a)') 'Consider updating all elements when doing &
+       if ( N_Elec /= 2 .and. any(Elecs(:)%DM_update == 0) ) then
+          write(*,'(a,/,a)') 'Consider updating more elements when doing &
                &N-electrode calculations. The charge conservation typically &
-               &increases.','  Enable by: TS.Elecs.DM.Update all'
+               &increases.','  TS.Elecs.DM.Update [cross-terms|all]'
        end if
 
     end if
