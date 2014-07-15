@@ -1,4 +1,18 @@
 ------------------------------------------------------------
+July 15, 2014  Alberto Garcia           trunk-462--ncps-32
+Include r=0 in grid. Remove factor of r from rV and rR
+
+Make the presence of r=0 mandatory for the grid, and store V and R
+without a factor of r. This avoids extrapolations by client programs.
+
+The valence and pseudo-core charges still contain implicit factors
+of 4pi*r^2.
+
+modified:
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
 July 14, 2014  Alberto Garcia           trunk-462--ncps-31
 Hartree,bohr units. Optional core-corrs. Fix bug in pswf storage
 

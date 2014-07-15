@@ -23,10 +23,10 @@
       character*4      :: polattrib, relattrib, coreattrib
       character*10     :: ray(6)
       character*30 xcfuntype, xcfunparam
-      character*30 gridtype, gridunits, gridscale, gridstep, gridnpoint
-      character*30 slwfnunits, slwfnformat, slwfndown, slwfnup
+      character*30 gridtype, gridunits, gridscale, gridstep
+
       integer                        :: ivps, ip, i
-      double precision, allocatable   :: chval(:)
+      double precision, allocatable   :: chval(:), f(:)
 
       double precision                :: total_valence_charge
 !
@@ -34,6 +34,9 @@
       character(len=132) :: line
 
       type(xc_id_t) :: xc_id
+
+
+      allocate(f(1:nr))
 
 ! Digest and dump the information about the exchange and correlation functional
 
@@ -76,17 +79,8 @@
       gridscale   = str(a)
       gridstep    = str(b)
       ! Note that in ATOM r(1) = 0.
-      ! Since the grid does not include r=0, we have nr-1 points,
-      ! and the first one corresponds to r(2) in ATOM, that is,
-      ! to the first non-zero point.
-      ! (this is a convention...)
-      gridnpoint  = str(nr-1)
-      
 
-! Digest and dump the information about the pseudowave functions
-      slwfnformat = 'u_n,l (r) = r*R_n,l (r)'
-      slwfndown  = str(npotd)
-      slwfnup    = str(npotu)
+      
 
 ! Allocate and define the valence charge density
       allocate(chval(1:nr))
@@ -96,6 +90,7 @@
       do ip = 2, nr
         chval(ip) = (cdd(ip)+cdu(ip))
       enddo
+      chval(1) = 0.0d0
                                                                             
 
 ! ---------------------------------------------------------------------
@@ -136,7 +131,7 @@
         call xml_NewElement(xf,"header")
           call my_add_attribute(xf,"symbol",nameat)
           call my_add_attribute(xf,"atomic-number",str(znuc))
-          call my_add_attribute(xf,"zval",str(zion))
+          call my_add_attribute(xf,"z-pseudo",str(zion))
           call my_add_attribute(xf,"flavor",ray(3)//ray(4))
           call my_add_attribute(xf,"relativistic",relattrib)
           call my_add_attribute(xf,"polarized",polattrib)
@@ -154,22 +149,23 @@
 
 
         call xml_NewElement(xf,"grid")
-          call my_add_attribute(xf,"npts",gridnpoint)
+          call my_add_attribute(xf,"npts",str(nr))
 
          ! This is an optional element
          call xml_NewElement(xf,"grid-annotation")
             call my_add_attribute(xf,"type",'log')
             call my_add_attribute(xf,"scale",str(a))
             call my_add_attribute(xf,"step",str(b))
+            call my_add_attribute(xf,"first-is-zero","yes")
           call xml_EndElement(xf,"grid-annotation")
 
           call xml_NewElement(xf,"grid-data")
-            call xml_AddArray(xf,r(2:nr))
+            call xml_AddArray(xf,r(1:nr))
           call xml_EndElement(xf,"grid-data")
         call xml_EndElement(xf,"grid")
 
-        call xml_NewElement(xf,"semilocal")
-          call my_add_attribute(xf,"format","rV")
+        call xml_NewElement(xf,"semilocal-potentials")
+          call my_add_attribute(xf,"format","V")
           call my_add_attribute(xf,"npots-major",str(npotd))
           call my_add_attribute(xf,"npots-minor",str(npotu))
   
@@ -187,7 +183,9 @@
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
-               call xml_AddArray(xf, 0.5d0 * viod(ivps,2:nr))
+                 call remove_r(viod(ivps,:),r(:),f(:))
+                 call xml_AddArray(xf, 0.5d0 * f(1:nr))
+!               call xml_AddArray(xf, 0.5d0 * viod(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"vps")
@@ -207,16 +205,18 @@
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf, 0.5d0 * viou(ivps,2:nr))
+                 call remove_r(viou(ivps,:),r(:),f(:))
+                 call xml_AddArray(xf, 0.5d0 * f(1:nr))
+!                 call xml_AddArray(xf, 0.5d0 * viou(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"vps")
         enddo vpsu
-        call xml_EndElement(xf,"semilocal")
+        call xml_EndElement(xf,"semilocal-potentials")
 
 ! Dump of the pseudowave functions
         call xml_NewElement(xf,"pseudo-wave-functions")
-          call my_add_attribute(xf,"format","rR")
+          call my_add_attribute(xf,"format","R")
           call my_add_attribute(xf,"npswfs",str(nshells_stored))
   
 ! Down pseudowave function follows
@@ -259,7 +259,7 @@ c$$$        enddo pswfu
           call xml_NewElement(xf,"radfunc")
 
             call xml_NewElement(xf,"data")
-              call xml_AddArray(xf,chval(2:nr))
+            call xml_AddArray(xf,chval(1:nr))
             call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"valence-charge")
@@ -273,7 +273,8 @@ c$$$        enddo pswfu
            call xml_NewElement(xf,"radfunc")
 
            call xml_NewElement(xf,"data")
-           call xml_AddArray(xf,cdc(2:nr))
+           cdc(1) = 0.0d0
+           call xml_AddArray(xf,cdc(1:nr))
            call xml_EndElement(xf,"data")
            call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"pseudocore-charge")
@@ -370,6 +371,44 @@ c$$$        enddo pswfu
 
        call xml_AddAttribute(xf,name,trim(value))
       end subroutine my_add_attribute
+
+      subroutine remove_r(rf,r,f)
+      ! Removes a factor of r from rf to get f
+      ! At the same time, it extrapolates to zero (r(1))
+
+      double precision, intent(in)  :: rf(:), r(:)
+      double precision, intent(out) :: f(:)
+      
+      integer i
+      double precision :: r2
+
+      do i = 2, nr
+         f(i) = rf(i)/r(i)
+      enddo
+
+      r2 = r(2)/(r(3)-r(2))
+      f(1) = f(2) - (f(3)-f(2))*r2
+
+      end subroutine remove_r
+
+      subroutine remove_r2(rf,r,f)
+      ! Removes a factor of r**2 from rf to get f
+      ! At the same time, it extrapolates to zero (r(1))
+
+      double precision, intent(in)  :: rf(:), r(:)
+      double precision, intent(out) :: f(:)
+      
+      integer i
+      double precision :: r2
+
+      do i = 2, nr
+         f(i) = rf(i)/(r(i)*r(i))
+      enddo
+
+      r2 = r(2)/(r(3)-r(2))
+      f(1) = f(2) - (f(3)-f(2))*r2
+
+      end subroutine remove_r2
 
       end subroutine pseudoXMLnew
 

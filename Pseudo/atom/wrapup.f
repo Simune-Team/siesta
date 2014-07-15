@@ -635,9 +635,12 @@ c
             nshells_stored = nshells_stored + 1
             n_pswf(nshells_stored) = no(i)
             l_pswf(nshells_stored) = lo(i)
-            do j = 1, nr
-               pswf(nshells_stored,j) = wfn(j)
+            do j = 2, nr
+               pswf(nshells_stored,j) = wfn(j)/r(j)
             enddo
+            pswf(nshells_stored,1) =
+     $           extrapol(pswf(nshells_stored,2:3),r(2:3))
+            print *, "wfn: ", lo(i), pswf(nshells_stored,1)
          endif
  885  continue
 c
@@ -784,7 +787,21 @@ c
 c
       return
 c
-      end
+      CONTAINS
+
+      function extrapol(f,r) result(val)
+      ! extrapolate quadratically to zero
+      double precision, intent(in) :: f(2:3), r(2:3)
+      double precision             :: val
+
+      double precision :: r2
+
+      r2 = r(2)/(r(3)-r(2))
+      val = f(2) - (f(3)-f(2))*r2
+
+      end function extrapol
+
+      end subroutine wrapup
 
       logical function down_channel(i)
       integer, intent(in) :: i
@@ -812,6 +829,8 @@ c
       cutoff_function = exp(-5.d0*r)
 
       end
+
+
 
 
 
