@@ -641,19 +641,29 @@ contains
 
     ! Notice that we multiply with -i to move Gf.Gamma.Gf^\dagger
     ! to the negative imaginary part
+    ! This means that we do not need to create different
+    ! routines for the equilibrium density and the non-equilibrium
+    ! density
 
     ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
     if ( has_correct_weight ) then
        ! the gauss-fermi contour has the "correct" weight already...
        W = -k * cw%w(c%idx(3),1) * dcmplx(0._dp,-1._dp)
-    else
+    else if ( isLeft ) then
+       ! This weight will always be negative due to the sorting
+       ! of the chemical potentials
        W =  k * cw%w(c%idx(3),1) * &
             nf(E, &
             nEq_ID(ID)%seg%mu1%mu, &
             nEq_ID(ID)%seg%mu2%mu, kT) * dcmplx(0._dp,-1._dp)
+    else
+       ! This weight will always be positive due to the sorting
+       ! of the chemical potentials
+       W =  k * cw%w(c%idx(3),1) * &
+            nf(E, &
+            nEq_ID(ID)%seg%mu2%mu, &
+            nEq_ID(ID)%seg%mu1%mu, kT) * dcmplx(0._dp,-1._dp)
     end if
-
-    if ( .not. isLeft ) W = - W
 
     if ( isLeft ) then
        ZW = E * W * nEq_ID(ID)%seg%mu2%N_el
@@ -1121,8 +1131,10 @@ contains
     open( unit, file=fname, status='unknown' )
     write(unit,'(a)') '# Contour path for the non-equilibrium part'
     write(unit,'(a)') '# Segment between following chemical potentials:'
+    write(unit,'(a,3(tr1,a))') '#',trim(seg%mu1%name),'and',trim(seg%mu2%name)
     write(unit,'(a,2(tr1,f10.5),tr1,a)') '#',seg%mu1%mu/eV,seg%mu2%mu/eV,'eV'
-    write(unit,'(a,a12,3(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','Re(w)','Im(w)'
+
+    write(unit,'(a,a12,2(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','w'
 
     cidx%idx(1) = CONTOUR_NEQ_TAIL
     if ( seg%tail_io(1) /= 0 ) then
@@ -1169,7 +1181,11 @@ contains
        cidx%e = c%c(i)
        cidx%idx(3) = i
        call cseq2weight_neq(cidx,kT,seg,W)
-       write(unit,'(4(e13.6,tr1))') c%c(i) / eV, W
+       if ( abs(aimag(W)) > 1.e-10_dp ) then
+          call die('Error in the imaginary weight of &
+               a non-equilibrium integration point.')
+       end if
+       write(unit,'(3(e13.6,tr1))') c%c(i) / eV, real(W,dp)
     end do
 
   end subroutine io_contour_c
@@ -1182,6 +1198,5 @@ contains
     call print_contour_neq_block('TS')
     call die(msg)
   end subroutine neq_die
-    
     
 end module m_ts_contour_neq

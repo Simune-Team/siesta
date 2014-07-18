@@ -1,4 +1,24 @@
 ----------------------------------------------------
+July 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-164
+Created max/min column when finding BTD format
+
+* When creating the BTD format we continuously calculated
+  the max/min columns of each orbital.
+  Instead we now calculate these once and pass the array
+  around where needed.
+  This should speed up the BTD finding algorithm for large systems
+
+* Added some comments for the non-equilibrium contours so that	
+  it is easier to figure out what is going on.
+
+* The non-equilibrium contours now only prints out the real-value of the
+  weight (it is never imaginary as we are not in the complex plane!)
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_contour_neq.f90
+
+----------------------------------------------------
 July 14, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-163
 Bugfix for used-atoms < na, further reduced TSHS size
 

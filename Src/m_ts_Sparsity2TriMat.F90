@@ -67,48 +67,55 @@ contains
     integer, pointer :: n_part(:)
     ! Local variables
     integer, pointer :: guess_part(:) => null()
-    integer :: i, guess_parts
+    integer, pointer :: mm_col(:,:) => null()
+    integer :: i, j, no_u, no, guess_parts
     logical :: copy_first
 #ifdef MPI
     integer :: MPIerror
 #endif
 
-    if ( nrows_g(sp) <= 3 ) then
+    no_u = nrows_g(sp)
+    no   = no_u - no_Buf
+    if ( no_u <= 3 ) then
        call die('Erroneous sparsity pattern, only 3 orbitals')
     end if
 
     ! Establish a guess on the partition of the tri-diagonal 
     ! matrix...
-    call re_alloc(guess_part, 1, nrows_g(sp), &
+    call re_alloc(guess_part, 1, no, &
          routine='tsSp2TM', name='guess_part')
-    call re_alloc(n_part    , 1, nrows_g(sp), &
+    call re_alloc(n_part    , 1, no, &
          routine='tsSp2TM', name='n_part')
     guess_part(:) = 0
 
+    ! create array containing max-min for each ts-orbital
+    call re_alloc(mm_col  , 1, 2, 1, no, &
+         routine='tsSp2TM', name='mm_col')
+    do i = 1 , no
+       mm_col(1,i) = min_col(sp,i)
+       mm_col(2,i) = max_col(sp,i)
+    end do
+
     ! We initialize to the standard 3-tri-diagonal matrix
-    call set_3TriMat(nrows_g(sp),parts,n_part)
+    call set_3TriMat(no_u,parts,n_part)
     ! If the first one happens to be the best partition, 
     ! but non-valid, we need to make sure to overwrite it
-    copy_first = ( ts_valid_tri(sp,parts, n_part) /= VALID ) 
-
-    ! TODO
-    ! create array containing max-min for each orbital
-    ! this will speed up this routine greatly!!!!
+    copy_first = ( ts_valid_tri(no,mm_col,parts, n_part) /= VALID ) 
     
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
     ! below could be optimized)
-    do i = 2 , nrows_g(sp) / 10 , Nodes
+    do i = 2 , no_u / 5 , Nodes
 
        ! Make new guess...
-       call guess_TriMat(sp,i,guess_parts,guess_part)
+       call guess_TriMat(sp,no,mm_col,i,guess_parts,guess_part)
 
        ! If not valid tri-pattern, simply jump...
-       if ( ts_valid_tri(sp,guess_parts, guess_part) /= VALID ) cycle
+       if ( ts_valid_tri(no,mm_col,guess_parts, guess_part) /= VALID ) cycle
 
        call full_even_out_parts(opt_TriMat_method, &
-            sp,guess_parts,guess_part)
+            sp,no,mm_col,guess_parts,guess_part)
 
        if ( copy_first ) then
           ! ensure to copy it over (the initial one was not valid)
@@ -162,7 +169,7 @@ contains
        end if
        call re_alloc(n_part, 1, 3, routine='tsSp2TM',name='n_part')
        call die('Not yet implemented')
-       call set_3TriMat(nrows_g(sp),parts,n_part)
+       call set_3TriMat(no_u,parts,n_part)
 
     end if
 
@@ -173,12 +180,11 @@ contains
     ! even out the partitions.
     ! The most probable thing is that the electrodes are not
     ! contained in the first two parts.
-    if ( ts_valid_tri(sp, parts, n_part) /= VALID ) then
-       i = nrows_g(sp) - no_Buf
-       write(*,'(a,i0)') 'TranSIESTA system size: ',i
+    i = ts_valid_tri(no,mm_col,parts, n_part)
+    if ( i /= VALID ) then
+       write(*,'(a,i0)') 'TranSIESTA system size: ',no
        write(*,'(a,i0)') 'Current parts: ',parts
        write(*,'(10000000(tr1,i0))') n_part
-       i = ts_valid_tri(sp, parts, n_part)
        select case ( i )
        case ( NONVALID_SIZE )
           write(*,'(a)') 'The size is not valid.'
@@ -192,6 +198,8 @@ contains
        call die('Contact the developers. (missing implementation). &
             &You appear to have a special form of electrode.')
     end if
+
+    call de_alloc(mm_col,routine='tsSp2TM',name='mm_col')
 
   contains 
 
@@ -250,12 +258,13 @@ contains
 
   end subroutine ts_Sparsity2TriMat
 
-  subroutine guess_TriMat(sp,first_part,parts,n_part)
+  subroutine guess_TriMat(sp,no,mm_col,first_part,parts,n_part)
     use class_Sparsity
     use alloc, only: re_alloc
     use m_ts_method, only : no_Buf
 
     type(Sparsity), intent(inout) :: sp
+    integer, intent(in) :: no, mm_col(2,no)
     integer, intent(in) :: first_part
     integer, intent(out) :: parts
     integer, pointer :: n_part(:)
@@ -263,18 +272,18 @@ contains
     ! Local variables
     integer :: N
 
-    if ( first_part >= nrows_g(sp) - no_Buf ) &
+    if ( first_part >= no ) &
          call die('Not allowed to do 1 tri-diagonal part')
 
     parts = 1
     n_part(1) = first_part
     N = n_part(1)
-    do while ( N < nrows_g(sp) - no_Buf )
+    do while ( N < no )
        parts = parts + 1
        if ( parts > size(n_part) ) then
           call die('Size error when guessing the tri-mat size')
        end if
-       call guess_next_part_size(sp, parts, parts, n_part)
+       call guess_next_part_size(sp, no, mm_col, parts, parts, n_part)
        N = N + n_part(parts)
     end do
 
@@ -337,10 +346,11 @@ contains
   ! searching for the size of the matrix that matches that of the previous 
   ! part.
   ! We save it in n_part(part)
-  subroutine guess_next_part_size(sp,part,parts,n_part)
+  subroutine guess_next_part_size(sp,no,mm_col,part,parts,n_part)
     use class_Sparsity
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
+    integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
     integer, intent(in) :: part, parts
     integer, intent(inout) :: n_part(parts)
@@ -362,7 +372,7 @@ contains
        ! this is the # of elements from the RHS of the 'part-1'
        ! part of the tridiagonal matrix and out to the last element of
        ! this row...
-       mcol = max_col(sp,i) - eRow
+       mcol = mm_col(2,i) - eRow
        if ( n_part(part) < mcol ) then
           n_part(part) = mcol
        end if
@@ -370,12 +380,13 @@ contains
 
   end subroutine guess_next_part_size
 
-  subroutine full_even_out_parts(method, sp,parts,n_part)
+  subroutine full_even_out_parts(method,sp,no,mm_col,parts,n_part)
     use class_Sparsity
     use m_ts_tri_scat, only : ts_needed_mem
     integer, intent(in) :: method ! the method used for creating the parts
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
+    integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
     integer, intent(in) :: parts
     integer, intent(in out) :: n_part(parts)
@@ -390,7 +401,7 @@ contains
           call ts_needed_mem(parts,n_part,o_mem)
           do i = 1 , parts
              mem_part(:) = n_part(:)
-             call even_out_parts(sp, parts, n_part, i)
+             call even_out_parts(sp, no, mm_col, parts, n_part, i)
              call ts_needed_mem(parts,n_part,n_mem)
              if ( n_mem > o_mem ) then
                 ! copy back
@@ -409,7 +420,7 @@ contains
           do i = 1 , parts
              idx = maxloc(mem_part,dim=1)
              mem_part(idx) = 0
-             call even_out_parts(sp, parts, n_part, idx)
+             call even_out_parts(sp, no, mm_col, parts, n_part, idx)
           end do
           if ( maxval(abs(o_part-n_part)) == 0 ) exit
        end do
@@ -418,10 +429,11 @@ contains
 
   end subroutine full_even_out_parts
 
-  subroutine even_out_parts(sp,parts,n_part, n)
+  subroutine even_out_parts(sp,no,mm_col,parts,n_part, n)
     use class_Sparsity
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
+    integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
     integer, intent(in) :: parts
     integer, intent(in out) :: n_part(parts)
@@ -466,14 +478,14 @@ contains
           ! 1. if you wish to shrink it left, then:
           !    the first row must not have any elements
           !    extending into the right part
-          if ( max_col(sp,sRow) <= eRow ) then
+          if ( mm_col(2,sRow) <= eRow ) then
              call even_if_larger(sRow,n_part(n),n_part(n-1))
           end if
 
           ! 2. if you wish to shrink it right, then:
           !    the last row must not have any elements
           !    extending into the left part
-          if ( sRow <= min_col(sp,eRow) ) then
+          if ( sRow <= mm_col(1,eRow) ) then
              call even_if_larger(eRow,n_part(n),n_part(n+1))
           end if
 
@@ -509,15 +521,12 @@ contains
     integer, pointer :: l_col(:)
     call attach(sp,list_col=l_col,nrows_g=nr)
     srow = ts2s_orb(row)
-    max_col = -1
+    max_col = row
     do ptr = list_ptr(sp,srow) + 1 , list_ptr(sp,srow) + n_col(sp,srow)
        j = ucorb(l_col(ptr),nr)
        if ( orb_type(j) == TYP_BUFFER ) cycle
        max_col = max(max_col,j - orb_offset(j))
     end do
-    ! Check the ts-region
-    if ( max_col < 1 .or. nr - no_Buf < max_col ) &
-         call die('Error in TS-sparsity pattern')
   end function max_col
 
   function min_col(sp,row)
@@ -533,19 +542,16 @@ contains
     integer, pointer :: l_col(:)
     call attach(sp,list_col=l_col,nrows_g=nr)
     srow = ts2s_orb(row)
-    min_col = huge(1)
+    min_col = row
     do ptr = list_ptr(sp,srow) + 1 , list_ptr(sp,srow) + n_col(sp,srow)
        j = ucorb(l_col(ptr),nr)
        if ( orb_type(j) == TYP_BUFFER ) cycle
        min_col = min(min_col,j - orb_offset(j))
     end do
-    if ( min_col < 1 .or. nr - no_Buf < min_col ) &
-         call die('Error in TS-sparsity pattern')
   end function min_col
 
-  function valid_tri(sp,parts,n_part) result(val) 
-    use class_Sparsity
-    type(Sparsity), intent(inout) :: sp
+  function valid_tri(no,mm_col,parts,n_part) result(val) 
+    integer, intent(in) :: no, mm_col(2,no)
     integer, intent(in) :: parts, n_part(parts)
     integer :: val
     ! Local variables
@@ -558,7 +564,7 @@ contains
     ! Easy check, if the number of rows
     ! does not sum up to the total number of rows.
     ! Then it must be invalid...
-    if ( N /= nrows_g(sp) - no_Buf ) then
+    if ( N /= no ) then
        val = NONVALID_SIZE
        return
     end if
@@ -575,23 +581,23 @@ contains
     Nm1 = 1
     Np1 = n_part(1)
     do i = 1 , parts
-
+       
        if ( i < parts ) then
           ! Update the size of the part after this
           Np1 = Np1 + n_part(i+1)
        end if
-
+       
        do ir = N , N + n_part(i) - 1
-          if ( Nm1 > min_col(sp,ir) .or. &
-               max_col(sp,ir) > Np1 ) then
+          if ( mm_col(1,ir) < Nm1 .or. &
+               mm_col(2,ir) > Np1 ) then
              val = - ir 
              return
           end if
        end do
-
+       
        ! Update loop
        N = N + n_part(i)
-
+       
        if ( i > 1 ) then
           ! Update the previous part
           Nm1 = Nm1 + n_part(i-1)
@@ -603,11 +609,10 @@ contains
   ! Validation routine for the tri-diagonal splitting
   ! with a Transiesta tri-diagonal matrix.
   ! It will first check for the electrode size
-  function ts_valid_tri(sp,parts,n_part) result(val)
-    use class_Sparsity
+  function ts_valid_tri(no,mm_col,parts,n_part) result(val)
     use m_ts_electype
     use m_ts_options, only: N_Elec, Elecs
-    type(Sparsity), intent(inout) :: sp
+    integer, intent(in) :: no, mm_col(2,no)
     integer, intent(in) :: parts, n_part(parts)
     integer :: val
     integer :: i, idx1, idx2, j
@@ -628,7 +633,7 @@ contains
        end do
     end do
 
-    val = valid_tri(sp,parts,n_part)
+    val = valid_tri(no,mm_col,parts,n_part)
     if ( val /= VALID ) return
     
   end function ts_valid_tri
