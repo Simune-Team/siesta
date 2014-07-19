@@ -1,4 +1,37 @@
 ----------------------------------------------------
+July 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-165
+Finalized new TSHS format
+
+* The xijo correction is now done by correcting listh
+  We calculate the number of supercells by finding
+  the supercells from the xij array.
+  We then construct xij from the offsets and the
+  changed listh.
+  listh in a TSHS file now corresponds to
+  separate supercell coordinates. No two 
+  supercells are located in the same transfer matrix
+  coordinate (even though they can be equivalent by 
+  symmetry reasons).
+  I have deleted the indxuo array from the files.
+  It has never provided any useful information as
+  it can easily be regenerated.
+  
+  I thank Jose Soler for valuable information regarding
+  the supercell implementation.
+
+  This new format is extremely reduced.
+
+  Implemented the new file format in tshs2tshs.
+  
+modified:
+  Src/m_hs_matrix.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_io.F90
+  Util/TS/tshs2tshs/Makefile
+  Util/TS/tshs2tshs/m_ts_io_version.f90
+  Util/TS/tshs2tshs/tshs2tshs.f90
+
+----------------------------------------------------
 July 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-164
 Created max/min column when finding BTD format
 

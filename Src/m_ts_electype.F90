@@ -700,9 +700,9 @@ contains
     real(dp) :: temp, kdispl(3), Qtot, Ef
     
     ! Sparsity pattern
-    integer, pointer :: numh(:), listhptr(:), listh(:), indxuo(:)
+    integer, pointer :: numh(:), listhptr(:), listh(:)
     real(dp), pointer :: H(:,:), S(:), xij(:,:), t2D(:,:), t1D(:)
-    integer :: n_nzs
+    integer :: n_nzs, nsc(3)
 
     type(OrbitalDistribution) :: fdist
 
@@ -715,11 +715,11 @@ contains
     if ( leqi(fN(fL-4:fL),'.TSHS') ) then
        call ts_read_tshs(fN, &
             onlyS, Gamma_file, TSGamma, &
-            this%ucell, this%na_u, this%no_u, &
+            this%ucell, nsc, this%na_u, this%no_u, &
             this%no_u, this%no_s, n_nzs, this%nspin,  &
             kscell, kdispl, &
             this%xa, this%lasto, &
-            numh, listhptr, listh, xij, indxuo, &
+            numh, listhptr, listh, xij, &
             H, S, Ef, &
             Qtot, Temp, & ! Qtot, Temp
             istep, ia1, &
@@ -728,8 +728,6 @@ contains
        call die('Could not infer the file type of the &
             &electrode file: '//trim(fN))
     end if
-    deallocate(indxuo)
-    call memory('D','I',this%na_u+this%no_s,'iohs')
 
     call newSparsity(this%sp,this%no_u,this%no_u, &
          n_nzs, numh, listhptr, listh, "Electrode "//trim(fN))
@@ -1146,8 +1144,7 @@ contains
     else
        
        call ts_read_TSHS_opt(this%HSfile, &
-            Gamma=Gamma, &
-            Bcast=.true.)
+            Gamma=Gamma, Bcast=.true.)
 
     end if
 

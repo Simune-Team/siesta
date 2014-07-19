@@ -7,11 +7,12 @@ program tshs2tshs
   use m_hs_matrix
   use m_ts_io
   use m_ts_io_version
+  use geom_helper, only : ucorb
 
   implicit none
 
   ! strings used to print out energies...
-  character(len=500) :: filein, fileout, arg
+  character(len=500) :: filein, fileout, arg, tmp
   integer :: vin, vout
 
   integer :: iarg, narg
@@ -21,12 +22,11 @@ program tshs2tshs
   logical :: onlyS
   logical :: Gamma, TSGamma
   real(dp) :: ucell(3,3)
-  integer :: na_u, no_l, no_u, no_s, maxnh, nspin
+  integer :: na_u, no_l, no_u, no_s, maxnh, nspin,nsc(3)
   real(dp), pointer :: xa(:,:) ! (3,na_u)
   integer, pointer :: numh(:), listhptr(:) ! (no_u)
   integer, pointer :: listh(:) !(maxnh)
   real(dp), pointer :: xij(:,:) ! (3,maxnh)
-  integer, pointer :: indxuo(:) ! (no_s)
   integer, pointer :: lasto(:) ! (0:na_u) 
   real(dp), pointer :: H(:,:), S(:) !(maxnh,nspin),(maxnh)
   integer :: kscell(3,3)
@@ -36,7 +36,8 @@ program tshs2tshs
   ! not really part of TSHS anymore
   integer, allocatable :: iza(:)
   ! *********************************************
-  integer :: nsc(3)
+  integer :: n_nsc(3), i
+  integer, allocatable :: indxuo(:) ! (no_s) 
   
   force = .false.
   IONode = .true.
@@ -44,7 +45,7 @@ program tshs2tshs
   Nodes = 1
 
   ! If not gamma, then this will most likely fail...
-  nsc = 1
+  n_nsc = 1
   ! Default version out file to be 0 (old format)
   vout = 0
 
@@ -71,13 +72,13 @@ program tshs2tshs
         call help
      case ( '-sA' , '-sB' , '-sC' )
         iarg = iarg + 1
-        call get_command_argument(iarg,arg)
+        call get_command_argument(iarg,tmp)
         if (      arg(3:3) == 'A' ) then
-           read(arg,'(i10)') nsc(1)
+           read(tmp,'(i10)') n_nsc(1)
         else if ( arg(3:3) == 'B' ) then
-           read(arg,'(i10)') nsc(2)
+           read(tmp,'(i10)') n_nsc(2)
         else if ( arg(3:3) == 'C' ) then
-           read(arg,'(i10)') nsc(3)
+           read(tmp,'(i10)') n_nsc(3)
         end if
      case default
         if ( arg(1:1) == '-' ) then
@@ -157,12 +158,19 @@ program tshs2tshs
 
   ! Read in TSHS
   call ts_read_TSHS(filein,onlyS,Gamma,TSGamma, &
-       ucell, na_u, no_l, no_u, no_s, maxnh, nspin, &
+       ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin, &
        kscell, kdispl, &
        xa, lasto, &
-       numh, listhptr, listh, xij , indxuo, &
+       numh, listhptr, listh, xij , &
        H, S, Ef, Qtot, Temp, istep, ia1)
+  if ( all(nsc == 0) ) then
+     nsc = n_nsc
+  end if
 
+  allocate(indxuo(no_s))
+  do i = 1 , no_s
+     indxuo(i) = ucorb(i,no_u)
+  end do
   write(*,'(a)') 'Writing to '//trim(fileout)
 
   if ( vout == 0 ) then
@@ -173,12 +181,20 @@ program tshs2tshs
           ucell, na_u, no_l, no_u, no_s, maxnh, nspin,  &
           kscell, kdispl, &
           xa, iza, lasto, &
-          numh, listhptr, listh, xij, indxuo, &
+          numh, listhptr, listh, xij, &
           H, S, Ef, Qtot, Temp, istep, ia1)
      deallocate(iza)
   else if ( vout == 1 ) then
      ! Hopefully nsc is correct
-     write(0,'(a)') 'If this fails, try forcing the supercell with -s[ABC]'
+     write(*,'(a)') 'If this fails, try forcing the supercell with -s[ABC]'
+     i = no_s / no_u
+     write(*,'(a,i0)') 'Hint, total supercells: ',i
+     if ( product(nsc) /= i ) then
+        write(*,'(a)') 'You are trying a different number &
+             &of supercells, please do not do that...'
+        write(*,'(a,3(tr1,i0),a,i0)') 'nsc(3) = ',nsc,'. prod = ',product(nsc)
+        stop 'Stopping!'
+     end if
      call ts_write_tshs(fileout, onlyS, Gamma, TSGamma, &
           ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin, &
           kscell, kdispl, &
@@ -187,9 +203,10 @@ program tshs2tshs
           Qtot, Temp, istep, ia1)
   end if
 
+  deallocate(indxuo)
   deallocate(xa,numh,listhptr,listh)
-  deallocate(xij,indxuo,lasto,H,S)
-  write(*,'(a)') 'File written...'
+  deallocate(xij,lasto,H,S)
+  write(*,'(a)') 'File written.'
 
 contains
   

@@ -164,7 +164,10 @@ module m_hs_matrix
   public :: matrix_rem_left_right
   public :: matrix_symmetrize
   public :: set_HS_available_transfers
-  public :: supercell_offsets
+  public :: nsc_to_offsets
+  public :: offset2idx
+  public :: list_col_correct
+
 
   integer, parameter, public :: TRANSFER_ALL = -999999
 
@@ -1079,26 +1082,24 @@ contains
     
   end subroutine set_HS_transfermatrix_2d
 
-  subroutine set_HS_available_transfers(Gamma,ucell,na_u,no_u,no_s,maxnh, &
-       xij,numh,listhptr,listh,xa,iaorb,transfer_cell)
+  subroutine set_HS_available_transfers(ucell,na_u,xa,lasto,no_u,maxnh, &
+       xij,numh,listhptr,listh,transfer_cell)
     use precision, only : dp
-    use geom_helper, only : ucorb
+    use geom_helper, only : ucorb, iaorb
     use cellSubs, only : reclat
 
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical, intent(in)  :: Gamma ! Is it a Gamma calculation?
     real(dp), intent(in) :: ucell(3,3) ! The unit cell of system
     integer, intent(in)  :: na_u ! Unit cell atoms
+    real(dp), intent(in) :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
+    integer, intent(in)  :: lasto(0:na_u) ! last orbital number of equivalent atom
     integer, intent(in)  :: no_u ! Unit cell orbitals
-    integer, intent(in)  :: no_s ! Total orbitals
     integer, intent(in)  :: maxnh ! Hamiltonian size
     real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
     integer, intent(in)  :: numh(no_u),listhptr(no_u)
     integer, intent(in)  :: listh(maxnh)
-    real(dp), intent(in) :: xa(3,na_u) ! Atomic coordinates (needed for RemZConnection & RemUCellDistances)
-    integer, intent(in)  :: iaorb(no_u) ! The equivalent atomic index for a given orbital (needed for RemUCellDistances)
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -1109,21 +1110,22 @@ contains
 ! ***********************
     real(dp) :: recell(3,3)
     real(dp) :: xijo(3), xc
+    integer :: ia, ja
     integer :: i,j,iuo,juo,ind
 
     ! Initialize the transfer cell to:
     transfer_cell(:,:) = 0
 
-    if ( Gamma ) return
-
     ! Prepare the cell to calculate the index of the atom
     call reclat(ucell,recell,0) ! Without 2*Pi
     
     do iuo = 1 , no_u
+       ia = iaorb(iuo,lasto)
        do j = 1 , numh(iuo)
           ind = listhptr(iuo) + j
           juo = ucorb(listh(ind),no_u)
-          xijo(:) = xij(:,ind)-(xa(:,iaorb(juo))-xa(:,iaorb(iuo)))
+          ja = iaorb(juo,lasto)
+          xijo(:) = xij(:,ind) - ( xa(:,ja)-xa(:,ia) )
           ! Loop over directions
           do i = 1 , 3 
              ! recell is already without 2*Pi
@@ -1291,12 +1293,66 @@ contains
 
   end subroutine matrix_symmetrize_2d
 
+  subroutine nsc_to_offsets(lnsc,offsets)
+    ! Number of supercells in each direction
+    integer, intent(in) :: lnsc(3)
+    ! index of offsets
+    integer, pointer :: offsets(:,:)
+
+    ! ** local variables
+    integer :: n_s
+    integer :: ia, ib, ic, is
+
+    nullify(offsets)
+
+    n_s = product(lnsc)
+    allocate(offsets(3,n_s))
+
+    ! Create offsets
+    is = 0
+    do ic = -lnsc(3)/2 , lnsc(3)/2
+    do ib = -lnsc(2)/2 , lnsc(2)/2
+    do ia = -lnsc(1)/2 , lnsc(1)/2
+       is = offset2idx(lnsc,(/ia,ib,ic/))
+       offsets(1,is) = ia
+       offsets(2,is) = ib
+       offsets(3,is) = ic
+    end do
+    end do
+    end do
+    
+  end subroutine nsc_to_offsets
+
+  ! From lnsc we calculate the supercell index
+  function offset2idx(lnsc,tm) result(idx)
+    integer, intent(in) :: lnsc(3), tm(3)
+    integer :: idx
+    integer :: ia, ib, ic
+    
+    idx = 1
+    if ( all(tm == 0) ) return
+
+    do ic = -lnsc(3)/2 , lnsc(3)/2
+    do ib = -lnsc(2)/2 , lnsc(2)/2
+    do ia = -lnsc(1)/2 , lnsc(1)/2
+       if ( ia == ib .and. ia == ic .and. ia == 0 ) cycle
+       idx = idx + 1
+       if ( tm(1) == ia .and. &
+            tm(2) == ib .and. &
+            tm(3) == ic ) return
+    end do
+    end do
+    end do
+    idx = 0
+
+  end function offset2idx
+
   ! Create an index array containing the unit-cell expansions
   ! This means we can do this:
   !   xij(:,ind) = ucell(:,1) * tm(1) + ucell(:,2) * tm(2) + ucell(:,3) * tm(3) + xa(:,iaorb(jo))-xa(:,iaorb(io))
   ! to create the full xij array...
-  subroutine supercell_offsets(ucell,na_u, no_u,maxnh, &
-       lasto, xa, numh, listhptr, listh, xij, nsc, offsets)
+  subroutine list_col_correct(ucell,na_u, no_u,maxnh, &
+       lasto, xa, numh, listhptr, listh, xij, lnsc)
     use precision, only : dp
     use geom_helper, only : ucorb, iaorb
     use cellSubs, only : reclat
@@ -1311,67 +1367,57 @@ contains
     integer, intent(in)  :: lasto(0:na_u) ! Last orbital of atom
     real(dp), intent(in) :: xa(3,na_u) ! atom positions
     integer, intent(in)  :: numh(no_u), listhptr(no_u)
-    integer, intent(in)  :: listh(maxnh)
+    ! We correct the indices here to conform with the corrected offsets
+    integer, intent(inout)  :: listh(maxnh)
     real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    integer, intent(in)  :: nsc(3) ! Number of supercells in ea
-! ***********************
-! * OUTPUT variables    *
-! ***********************
-    integer, intent(out) :: offsets(3,product(nsc))
+    ! Number of supercells in each direction ** MUST be corrected using nsc_to_offests
+    integer, intent(in)  :: lnsc(3) ! Number of supercells in each direction
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    logical :: set
-    integer :: io, j, ind, ia, ja, is, tm(3), cs
-    real(dp) :: xijo(3), rcell(3,3)
-    integer :: hnsc(3)
-
-    ! Half the number of supercells
-    hnsc(:) = nsc(:) / 2
-
-    ! Initialize the offsets
-    offsets(:,:) = 0
+    integer :: io, jo, j, ind, ia, ja, is, tm(3)
+    real(dp) :: xijo(3), rcell(3,3), err
     
     ! Prepare the cell to calculate the index of the atom
     call reclat(ucell,rcell,0) ! Without 2*Pi
 
+    !err = 0._dp
     do io = 1 , no_u
        ia = iaorb(io,lasto)
        do j = 1 , numh(io)
 
           ind = listhptr(io) + j
-          ja = iaorb(ucorb(listh(ind),no_u),lasto)
-
-          ! the supercell index
-          is = (listh(ind) - 1)/no_u + 1
+          jo = ucorb(listh(ind),no_u)
+          ja = iaorb(jo,lasto)
 
           xijo(:) = xij(:,ind) - ( xa(:,ja) - xa(:,ia) )
-
           tm(:) = nint( matmul(xijo,rcell) )
 
-          ! Correct super-cell coordinate
-          if ( tm(1) >  hnsc(1) ) tm(1) = tm(1) - nsc(1)
-          if ( tm(1) < -hnsc(1) ) tm(1) = tm(1) + nsc(1)
-          if ( tm(2) >  hnsc(2) ) tm(2) = tm(2) - nsc(2)
-          if ( tm(2) < -hnsc(2) ) tm(2) = tm(2) + nsc(2)
-          if ( tm(3) >  hnsc(3) ) tm(3) = tm(3) - nsc(3)
-          if ( tm(3) < -hnsc(3) ) tm(3) = tm(3) + nsc(3)
+          ! get supercell index
+          is = offset2idx(lnsc,tm) - 1
 
-          if ( any(tm(:) /= offsets(:,is)) .and. any(offsets(:,is)/=0) ) then
-             write(*,'(a,3(tr1,i6))')'r,c',io,listh(ind)
-             write(*,'(a,i3,tr1,3(tr1,i3),tr3,3(tr1,i3))') 'is, tm',is, tm, offsets(:,is)
-             write(*,'(a,2(tr1,i3),6(tr1,f10.5))') 'ia, ja',ia, ja,xijo(:)-&
-                  ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3)
-             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xa(:,(is-1)*na_u +ja)-xa(:,ia)
-             call die('Error')
-          else
-             offsets(:,is) = tm(:)
+          if ( is < 0 ) then
+             ! Index not found
+             call die('Error in index, possible shifting')
           end if
+
+          ! Correct index
+          listh(ind) = is * no_u + jo
+
+          ! The error on this conversion
+          ! tends to be on the order of 1e-14
+          ! xijo = ucell(:,1) * tm(1) &
+          !      + ucell(:,2) * tm(2) &
+          !      + ucell(:,3) * tm(3) &
+          !      + xa(:,ja) - xa(:,ia)
+          ! err = max(maxval(abs(xijo - xij(:,ind))),err)
+          ! This error can be "important" when
+          ! calculating self-energies
 
        end do
     end do
 
-  end subroutine supercell_offsets
+  end subroutine list_col_correct
 
 end module m_hs_matrix
   

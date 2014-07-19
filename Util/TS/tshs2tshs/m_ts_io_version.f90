@@ -10,10 +10,12 @@ contains
        ucell, na_u, no_l, no_u, no_s, maxnh, nspin,  &
        kscell, kdispl, &
        xa, iza, lasto, &
-       numh, listhptr, listh, xij, indxuo, &
+       numh, listhptr, listh, xij, &
        H, S, Ef, &
        Qtot, Temp, &
        istep, ia1)
+
+    use geom_helper, only : ucorb
 
 ! **********************
 ! * INPUT variables    *
@@ -28,7 +30,6 @@ contains
     integer, intent(in) :: numh(no_l), listhptr(no_l)
     integer, intent(in) :: listh(maxnh)
     real(dp), intent(in) :: xij(3,maxnh)
-    integer, intent(in) :: indxuo(no_s)
     integer, intent(in) :: lasto(0:na_u)
     real(dp), intent(in) :: H(maxnh,nspin), S(maxnh)
     real(dp), intent(in) :: Ef
@@ -40,6 +41,7 @@ contains
 ! ************************
 ! * LOCAL variables      *
 ! ************************
+    integer :: indxuo(no_s)
     integer :: iu
     integer :: ispin, i,j
 
@@ -69,6 +71,9 @@ contains
     write(iu) lasto
     
     if ( .not. Gamma ) then
+       do i = 1 , no_s
+          indxuo(i) = ucorb(i,no_u)
+       end do
        write(iu) indxuo
     endif
 

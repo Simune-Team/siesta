@@ -16,7 +16,7 @@ module m_ts_io
 contains
 
   subroutine ts_read_TSHS_opt(TSHS,DUMMY,na_u,no_u,no_s,nspin,maxnh, &
-       xa, ucell, Qtot, Temp, Ef, &
+       xa, ucell, nsc, Qtot, Temp, Ef, &
        Gamma,Gamma_TS,kscell,kdispl,OnlyS,lasto, &
        Bcast)
 #ifdef MPI
@@ -31,7 +31,7 @@ contains
 ! * OUTPUT variables    *
 ! *********************** 
     integer, optional :: DUMMY ! MUST NEVER BE PASSED
-    integer, intent(out), optional :: na_u, no_u, no_s, nspin, maxnh, lasto(:), kscell(3,3)
+    integer, intent(out), optional :: na_u, no_u, no_s, nspin, maxnh, lasto(:), kscell(3,3), nsc(3)
     real(dp), intent(out), optional :: xa(:,:), ucell(3,3), Qtot, Temp, Ef, kdispl(3)
     logical, intent(out), optional :: Gamma, Gamma_TS, OnlyS
     logical, intent(in), optional :: Bcast
@@ -39,7 +39,7 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer :: uTSHS, tmp(5), version, tkscell(3,3)
+    integer :: uTSHS, tmp(5), version, tkscell(3,3), tnsc(3)
     real(dp), allocatable :: txa(:,:)
     real(dp) :: rtmp(3), tucell(3,3)
     logical :: fGamma, bool(3)
@@ -81,9 +81,12 @@ contains
           read(uTSHS) txa
           read(uTSHS) ! iza
           read(uTSHS) tucell
+          tnsc = 0
        else if ( version == 1 ) then
+          read(uTSHS) tnsc ! corrected nsc
           read(uTSHS) tucell, txa
        end if
+       if ( present(nsc) ) nsc = tnsc
        if ( present(ucell) ) ucell = tucell
        if ( present(xa) )    xa    = txa
        if ( version == 0 ) then
@@ -132,7 +135,7 @@ contains
           read(uTSHS) ! lasto
        end if
 
-       if ( .not. fGamma ) then
+       if ( version == 0 .and. .not. fGamma ) then
           read(uTSHS) ! indxuo
        end if
 
@@ -175,6 +178,8 @@ contains
          call MPI_Bcast(nspin,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     if ( present(maxnh) ) &
          call MPI_Bcast(maxnh,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(nsc) ) &
+         call MPI_Bcast(nsc,3,MPI_Integer,0,MPI_Comm_World,MPIerror)
     if ( present(xa) ) &
          call MPI_Bcast(xa(1,1),3*tmp(1),MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
     if ( present(ucell) ) &
@@ -200,59 +205,62 @@ contains
 #else
 
     ! this should be more than enough...
-    buffer_size = 8 * (tmp(1) * 6 + 100)
+    buffer_size = 8 * (tmp(1) * 6 + 103)
     allocate(buffer(buffer_size))
     ! position of data in buffer...
     ipos = 0
 
 
     if ( IONode ) then
-       if ( present(na_u) ) &
+       if ( present(na_u) ) & !  4
             call MPI_Pack(na_u,1,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(no_u) ) &
+       if ( present(no_u) ) & !  4
             call MPI_Pack(no_u,1,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(no_s) ) &
+       if ( present(no_s) ) & !  4
             call MPI_Pack(no_s,1,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(nspin) ) &
+       if ( present(nspin) ) & !  4
             call MPI_Pack(nspin,1,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(maxnh) ) &
+       if ( present(maxnh) ) & !  4
             call MPI_Pack(maxnh,1,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(xa) ) &
+       if ( present(xa) ) &    ! 8 * 3 * na_u
             call MPI_Pack(xa(1,1),3*tmp(1),MPI_Double_Precision, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(ucell) ) &
+       if ( present(ucell) ) & ! 8 * 3 * 3
             call MPI_Pack(ucell(1,1),9,MPI_Double_Precision, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(Gamma) ) &
+       if ( present(nsc) ) &   ! 4
+            call MPI_Pack(nsc(1),3,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Gamma) ) & ! 4
             call MPI_Pack(Gamma,1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(kscell) ) &
+       if ( present(kscell) ) &! 4 * 3 * 3
             call MPI_Pack(kscell(1,1),9,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(kdispl) ) &
+       if ( present(kdispl) ) &! 8 * 3
             call MPI_Pack(kdispl(1),3,MPI_Double_Precision, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(OnlyS) ) &
+       if ( present(OnlyS) ) & ! 4
             call MPI_Pack(OnlyS,1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(Gamma_TS) ) &
+       if ( present(Gamma_TS) ) &! 4
             call MPI_Pack(Gamma_TS,1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(lasto) ) &
+       if ( present(lasto) ) & ! 4 * (na_u+1)
             call MPI_Pack(lasto(1),tmp(1)+1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(Qtot) ) &
+       if ( present(Qtot) ) &  ! 8
             call MPI_Pack(Qtot,1,MPI_Double_Precision, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(Temp) ) &
+       if ( present(Temp) ) &  ! 8
             call MPI_Pack(Temp,1,MPI_Double_Precision, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(Ef) ) &
+       if ( present(Ef) ) &    ! 8
             call MPI_Pack(Ef,1,MPI_Double_Precision, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
 
@@ -294,6 +302,10 @@ contains
        if ( present(ucell) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
             ucell(1,1),9,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(nsc) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            nsc(1),3,MPI_Integer, &
             MPI_Comm_World, MPIerror)
        if ( present(Gamma) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
@@ -341,11 +353,11 @@ contains
 
   end subroutine ts_read_TSHS_opt
 
-  subroutine ts_read_TSHS(filename, &
-       onlyS, Gamma, TSGamma, ucell, na_u, no_l, no_u, no_s, maxnh, nspin,  &
+  subroutine ts_read_TSHS(filename, onlyS, Gamma, TSGamma, &
+       ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin,  &
        kscell, kdispl, &
        xa, lasto, &
-       numh, listhptr, listh, xij, indxuo, &
+       numh, listhptr, listh, xij, &
        H, S, Ef, &
        Qtot, Temp, &
        istep, ia1, &
@@ -371,7 +383,6 @@ contains
 ! integer no_u                : Number of basis orbitals per unit cell
 ! integer no_s                : Number of basis orbitals per supercell
 ! integer Enspin              : Spin polarization (1 or 2)
-! integer indxuo(no_s)        : Index of orbitals in supercell
 ! integer maxnh               : First dimension of listh, H, S and
 !                               second of xij
 ! integer numh(nuo)           : Number of nonzero elements of each row
@@ -413,12 +424,11 @@ contains
     logical, intent(out) :: onlyS
     logical, intent(out) :: Gamma, TSGamma
     real(dp), intent(out) :: ucell(3,3)
-    integer, intent(out) :: na_u, no_l, no_u, no_s, maxnh, nspin
+    integer, intent(out) :: na_u, no_l, no_u, no_s, maxnh, nspin, nsc(3)
     real(dp), pointer, intent(out) :: xa(:,:) ! (3,na_u)
     integer, pointer, intent(out) :: numh(:), listhptr(:) ! (no_u)
     integer, pointer, intent(out) :: listh(:) !(maxnh)
     real(dp), pointer, intent(out) :: xij(:,:) ! (3,maxnh)
-    integer, pointer, intent(out) :: indxuo(:) ! (no_s)
     integer, pointer, intent(out) :: lasto(:) ! (0:na_u) 
     real(dp), pointer, intent(out) :: H(:,:), S(:) !(maxnh,nspin),(maxnh)
     real(dp), intent(out) :: Ef
@@ -437,6 +447,7 @@ contains
     integer :: iu, version, n_s
     integer :: ispin,i,j, all_I(8), ind, io, ia, ja, tm(3), is
     integer, allocatable :: offsets(:,:)
+    integer, allocatable :: indxuo(:)
     logical :: lBcast, exist
 #ifdef MPI
     integer :: MPIerror
@@ -448,7 +459,7 @@ contains
     call write_debug( 'PRE ts_io_read' )
 #endif
 
-    nullify(xa,lasto,indxuo,numh,listhptr,listh,S,H,xij)
+    nullify(xa,lasto,numh,listhptr,listh,S,H,xij)
 
     ! Determine whether to broadcast afterwards
     lBcast = .false.
@@ -456,6 +467,8 @@ contains
 
     ! Get file version
     version = tshs_version(filename)
+
+    nsc(:)  = 0
 
     if ( IONode ) then
        select case ( version )
@@ -478,7 +491,7 @@ contains
           read(iu) version
        end if
        read(iu) na_u, no_u, no_s, nspin, maxnh
-          
+       
        no_l = no_u
        
        ! Read Geometry information
@@ -490,6 +503,7 @@ contains
           read(iu) ! iza
           read(iu) ucell
        else if ( version == 1 ) then
+          read(iu) nsc ! original nsc, and the corrected nsc
           read(iu) ucell, xa
        end if
 
@@ -511,11 +525,15 @@ contains
        call memory('A','I',1+na_u,'iohs')
        read(iu) lasto
 
-       if ( .not. Gamma ) then
-          allocate(indxuo(1:no_s))
-          call memory('A','I',no_s,'iohs')
+       if ( version == 0 ) then
+          allocate(indxuo(no_s))
           read(iu) indxuo
-       endif
+          do i = 1 , no_s
+             if ( indxuo(i) /= ucorb(i,no_u) ) &
+                  call die('Error in indxuo, not recognized')
+          end do
+          deallocate(indxuo)
+       end if
 
        allocate(numh(no_u))
        call memory('A','I',no_u,'iohs')
@@ -570,8 +588,9 @@ contains
 
           else if ( version == 1 ) then
              
+             ! Number of supercells
              n_s = no_s / no_u
-             allocate(offsets(3,n_s))
+             allocate(offsets(3,0:n_s-1))
              read(iu) offsets
 
              do io = 1 , no_u
@@ -580,7 +599,7 @@ contains
                    ind = listhptr(io) + j
                    ja = iaorb(ucorb(listh(ind),no_u),lasto)
 
-                   is = (listh(ind)-1)/no_u + 1
+                   is = ( listh(ind) - 1 ) / no_u
                    tm(:) = offsets(:,is)
 
                    xij(:,ind) = ucell(:,1) * tm(1) &
@@ -616,6 +635,7 @@ contains
        call MPI_Bcast(Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(TSGamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(Qtot,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+       call MPI_Bcast(nsc,3,MPI_Integer,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(Temp,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(Ef,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(ucell(1,1),9,MPI_Double_Precision,0, &
@@ -626,9 +646,7 @@ contains
 
        if ( .not. IONode ) then
           if ( .not. Gamma ) then 
-! they behave as dummy arrays in case of Gamma == .true.
-             allocate(indxuo(no_s))
-             call memory('A','I',no_s,'iohs')
+             ! they behave as dummy arrays in case of Gamma == .true.
              allocate(xij(3,maxnh))
              call memory('A','D',maxnh*3,'iohs')
           end if
@@ -651,7 +669,6 @@ contains
        end if
        call MPI_Bcast(xa(1,1),3*na_u,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
        if ( .not. Gamma ) then
-          call MPI_Bcast(indxuo,no_s,MPI_Integer,0, MPI_Comm_World,MPIerror)
           call MPI_Bcast(xij(1,1),3*maxnh,MPI_Double_Precision,0, &
                MPI_Comm_World,MPIerror)
        end if
@@ -734,7 +751,9 @@ contains
 ! TSS End
 ! *********************************************************************
 
-    use m_hs_matrix, only : supercell_offsets
+    use m_hs_matrix, only : nsc_to_offsets, offset2idx, list_col_correct
+    use m_hs_matrix, only : set_HS_available_transfers
+    use geom_helper, only : ucorb
 
 #ifdef MPI
     use m_glob_sparse
@@ -767,9 +786,11 @@ contains
     integer :: iu
     integer :: ispin, i, n_s
     integer :: maxnhg
-    integer, allocatable :: offsets(:,:)
+    integer :: lnsc(3), lno_s, tms(2,3)
+    integer, pointer :: offsets(:,:)
+    integer, allocatable :: listhg(:)
 #ifdef MPI
-    integer,  allocatable :: numhg(:), listhptrg(:), listhg(:)
+    integer,  allocatable :: numhg(:), listhptrg(:)
     real(dp), allocatable :: xijg(:,:), Mg(:)
 #endif
 
@@ -783,13 +804,23 @@ contains
     ! with system. I had suspected that n_s ALWAYS would 
     ! equal no_s / no_u, but this seems not to be the case.
     n_s = no_s / no_u 
-    if ( mod(no_s,no_u) /= 0 ) call die('Error in supercell orbitals')
-    if ( n_s /= product(nsc) ) call die('Error in supercell orbitals')
+    if ( mod(no_s,no_u) /= 0 ) call die('Error in supercell orbitals, no_s')
+    if ( n_s /= product(nsc) ) call die('Error in supercell orbitals, nsc')
+
+    ! Check that indxuo is constructed in a sane format
+    do i = 1 , no_s
+       if ( indxuo(i) /= ucorb(i,no_u) ) &
+            call die('Error in indxuo, could not understand the format, &
+            &please consult the developers.')
+    end do
 
 #ifdef MPI
     call glob_sparse_arrays(no_l,no_u,no_s,maxnh, &
          numh ,listhptr ,listh ,xij , Gamma,&
          numhg,listhptrg,maxnhg,listhg,xijg)
+
+    call set_HS_available_transfers(ucell,na_u,xa,lasto,no_u,maxnhg, &
+         xijg,numhg,listhptrg,listhg,tms)
 
     allocate(Mg(maxnhg))
     call memory('A','D',maxnhg,'globArrays')
@@ -798,19 +829,33 @@ contains
          maxnh,  numh , listhptr , S , &
          maxnhg, numhg, listhptrg, Mg)
 #else
+
+    call set_HS_available_transfers(ucell,na_u,xa,lasto,no_u,maxnh, &
+         xij,numh,listhptr,listh,tms)
+
     maxnhg = maxnh
+    allocate(listhg(maxnhg))
+    listhg = listh
 #endif
 
-    if ( .not. Gamma ) then
-       allocate(offsets(3,n_s))
+    ! Calculate new supercells
+    do i = 1 , 3
+       lnsc(i) = 2 * maxval(abs(tms(:,i))) + 1
+    end do
+    lno_s = product(lnsc) * no_u
+
+    ! Always calculate offsets
+    ! If lnsc is then 1, then fine! :)
+    call nsc_to_offsets(lnsc,offsets)
+
+    ! Correct the listhg array
 #ifdef MPI
-       call supercell_offsets(ucell, na_u, no_u, maxnhg, &
-            lasto, xa, numhg, listhptrg, listhg, xijg, nsc, offsets)
+    call list_col_correct(ucell,na_u, no_u,maxnhg, &
+         lasto, xa, numhg, listhptrg, listhg, xijg, lnsc)
 #else
-       call supercell_offsets(ucell, na_u, no_u, maxnhg, &
-            lasto, xa, numh , listhptr , listh , xij , nsc, offsets)
+    call list_col_correct(ucell,na_u, no_u,maxnhg, &
+         lasto, xa, numh, listhptr, listhg, xij, lnsc)
 #endif
-    end if
 
     if ( IONode ) then
 
@@ -822,7 +867,8 @@ contains
        write(iu) 1 ! This is version one of the file format
 
        ! Write Dimensions Information
-       write(iu) na_u, no_u, no_s, nspin, maxnhg
+       write(iu) na_u, no_u, lno_s, nspin, maxnhg
+       write(iu) lnsc ! The "corrected" supercells
        
        ! Write Geometry information
        write(iu) ucell, xa
@@ -839,10 +885,6 @@ contains
 
        write(iu) lasto
 
-       if ( .not. Gamma ) then
-          write(iu) indxuo
-       endif
-
 #ifdef MPI
        write(iu) numhg
 #else
@@ -854,7 +896,7 @@ contains
 #ifdef MPI
           write(iu) listhg(listhptrg(i)+1:listhptrg(i)+numhg(i))
 #else
-          write(iu) listh(listhptr(i)+1:listhptr(i)+numh(i))
+          write(iu) listhg(listhptr(i)+1:listhptr(i)+numh(i))
 #endif
        end do
 
@@ -904,12 +946,12 @@ contains
     call glob_sparse_arrays_dealloc(no_u, Gamma, &
          maxnhg, numhg, listhptrg, listhg, xijg)
     call glob_sparse_matrix_dealloc(maxnhg, Mg)
+#else
+    deallocate(listhg)
 #endif
 
-    if ( .not. Gamma ) then
-       deallocate(offsets)
-    end if
-
+    deallocate(offsets)
+       
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS ts_io_write' )
 #endif
