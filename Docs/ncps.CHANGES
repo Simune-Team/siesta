@@ -1,4 +1,25 @@
 ------------------------------------------------------------
+July 22, 2014  Alberto Garcia           trunk-462--ncps-33
+Remove factor of r*r in val and core charges. Update lib and clients
+
+The valence and pseudo-core charges do not contain implicit factors
+of r^2. Some strange numerical noise is apparent.
+
+The PS library has been updated significantly. Updated the example client
+in Util/PseudoOperator.
+
+Some rough edges remain (units?)
+
+modified:
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/wrapup.f
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_ncps_xmlreader.F90
+
+------------------------------------------------------------
 July 15, 2014  Alberto Garcia           trunk-462--ncps-32
 Include r=0 in grid. Remove factor of r from rV and rR
 

@@ -1,6 +1,6 @@
 module m_ncps_parsing_helpers
 !
-!  This module reads a pseudopotential file written in XML.
+!  This module reads a pseudopotential file written in XML (PSML format)
 !  A full example of the building up of a data structure using
 !  the SAX paradigm.
 !
@@ -12,6 +12,8 @@ module m_ncps_parsing_helpers
 #endif
 
  use m_ncps_xml_ps_t        ! Data types
+
+implicit none
 
 private
 
@@ -41,33 +43,40 @@ public  :: begin_element, end_element, pcdata_chunk
 !    in Abinit falls in this category: psxml is a pointer
 !    associated to "pseudo", and cleaned after use.
 !
-type(xml_ps_t), pointer, public, save :: pseudo => null()
+type(ps_t), pointer, public, save :: pseudo => null()
 
-
+!**AG**
+! Make sure that this is provided by the user
 private :: die
 
-logical, private  :: in_vps = .false. , in_radfunc = .false.
-logical, private  :: in_semilocal = .false. , in_header = .false.
-logical, private  :: in_coreCharge = .false. , in_data = .false.
-logical, private  :: in_grid_data = .false. , in_grid = .false.
-logical, private  :: in_valenceCharge = .false.
-logical, private  :: in_pseudowavefun = .false. , in_pswf = .false.
-logical, private  :: need_explicit_grid_data
-logical, private  :: got_explicit_grid_data
+logical, private, save  :: in_vps = .false. , in_radfunc = .false.
+logical, private, save  :: in_config_val = .false.
+logical, private, save  :: in_semilocal = .false. , in_header = .false.
+logical, private, save  :: in_coreCharge = .false. , in_data = .false.
+logical, private, save  :: in_grid_data = .false. , in_grid = .false.
+logical, private, save  :: in_valenceCharge = .false.
+logical, private, save  :: in_provenance = .false.
+logical, private, save  :: in_valence_config = .false.
+logical, private, save  :: in_pseudowavefun = .false. , in_pswf = .false.
+logical, private, save  :: got_explicit_grid_data
 
 integer, private, save  :: ndata, ndata_grid
 
 integer, parameter, private    :: dp = selected_real_kind(14)
-real(dp), private, save :: zval_generation
+real(dp), private, save        :: zval_generation
 
 type(grid_t), private, save, pointer  :: grid => null()
 !
 ! Pointers to make it easier to manage the data
 !
-type(header_t), private, pointer   :: hp => null()
-type(vps_t), private, pointer      :: pp => null()
-type(pswf_t), private, pointer     :: pw => null()
-type(radfunc_t), private, pointer  :: rp => null()
+type(provenance_t), private, pointer      :: pp => null()
+type(header_t), private, pointer          :: hp => null()
+type(config_val_t), private, pointer      :: cp => null()
+type(pswfs_t), private, pointer           :: wfp => null()
+type(semilocal_t), private, pointer       :: slp => null()
+type(valence_charge_t), private, pointer  :: valp => null()
+type(core_charge_t), private, pointer     :: corep => null()
+type(radfunc_t), private, pointer         :: rp => null()
 
 #ifndef XMLF90
 !
@@ -98,67 +107,67 @@ type(dictionary_t), intent(in)  :: attributes
 character(len=100)  :: value
 integer             :: status
 
+integer             :: i
+
 print *, "Element: ", trim(name)
 
 select case(name)
 
-      case ("pseudo")
+      case ("psml")
 
          if (.not. associated(pseudo)) then
             allocate(pseudo)
          endif
 
-         pseudo%npots  = 0
-         pseudo%npswfs = 0
+         call get_value(attributes,"version",value,status)
+         if (value /= "0.7") then
+            call die("Can only work with PSML version 0.7 files")
+         endif
 
-!         call get_value(attributes,"version",value,status)
-!         if (value == "0.5") then
-!            print *, "Processing a PSEUDO version 0.5 XML file"
-!            pseudo%npots  = 0
-!            pseudo%npswfs = 0
-!            global_grid%npts = 0
-!         else
-!            print *, "Can only work with PSEUDO version 0.5 XML files"
-!            STOP
-!         endif
+      case ("provenance")
+         in_provenance = .true.
+         pp => pseudo%provenance
+
+         call get_value(attributes,"creator",pp%creator,status)
+         if (status /= 0 ) pp%creator="unknown"
+
+         call get_value(attributes,"date",pp%date,status)
+         if (status /= 0 ) pp%date="unknown"
 
       case ("header")
          in_header = .true.
          hp => pseudo%header
          
-         call get_value(attributes,"symbol",hp%symbol,status)
-         if (status /= 0 ) call die("Cannot determine atomic symbol")
+         call get_value(attributes,"atomic-label",hp%atomic_label,status)
+         if (status /= 0 ) call die("Cannot determine atomic-label")
 
-         call get_value(attributes,"zval",value,status)
-         if (status /= 0 ) call die("Cannot determine zval")
-         read(unit=value,fmt=*) hp%zval
+         call get_value(attributes,"z-pseudo",value,status)
+         if (status /= 0 ) call die("Cannot determine z-pseudo")
+         read(unit=value,fmt=*) hp%zpseudo
 
          call get_value(attributes,"atomic-number",value,status)
          if (status /= 0 ) call die("Cannot determine atomic number")
          read(unit=value,fmt=*) hp%z
 
-         call get_value(attributes,"xc-libxc-string", &
-                        hp%xc_libxc_string,status)
-!         if (status /= 0 ) &
-!            call die("Cannot determine xc-libxc-string ")
-
-         call get_value(attributes,"xc-libxc-code",value,status)
-!         if (status /= 0 ) call die("Cannot determine xc-libxc-code ")
-!         read(unit=value,fmt=*) hp%xc_libxc_code
-
-        call get_value(attributes,"xc-functional-parametrization", &
-                        hp%xcfunctionalparametrization,status)
+         call get_value(attributes,"xc-libxc-exchange", &
+                        hp%xc_libxc_exchange,status)
          if (status /= 0 ) &
-            call die("Cannot determine xc-functional-parametrization ")
+            call die("Cannot determine xc-libxc-exchange ")
 
-         call get_value(attributes,"creator",hp%creator,status)
-         if (status /= 0 ) hp%creator="unknown"
+         call get_value(attributes,"xc-libxc-correlation", &
+                        hp%xc_libxc_correlation,status)
+         if (status /= 0 ) &
+            call die("Cannot determine xc-libxc-correlation ")
 
-         call get_value(attributes,"date",hp%date,status)
-         if (status /= 0 ) hp%date="unknown"
+         hp%xc_functional = ""
+         call get_value(attributes,"xc-functional", &
+                        hp%xc_functional,status)
+!         if (status /= 0 ) &
+!            call die("Cannot determine xc-functional")
+
 
          call get_value(attributes,"flavor",hp%flavor,status)
-         if (status /= 0 ) hp%flavor="unknown"
+         if (status /= 0 ) hp%flavor="ATTEND"
 
          call get_value(attributes,"relativistic",value,status)
          if (status /= 0 ) value = "no"
@@ -167,37 +176,99 @@ select case(name)
          call get_value(attributes,"polarized",value,status)
          if (status /= 0 ) value = "no"
          hp%polarized = (value == "yes")
+         if (hp%polarized .and. hp%relativistic) then
+            call die("Cannot be polarized and relativistic at the same time")
+         endif
 
          call get_value(attributes,"core-corrections", &
                                     hp%core_corrections,status)
-         if (status /= 0 ) hp%core_corrections = "nc"
+         if (status /= 0 ) hp%core_corrections = "no"
+
+      case ("valence-configuration")
+         in_valence_config = .true.
+
+         pseudo%config_val%nshells = 0
+         call get_value(attributes,"total-valence-charge",value,status)
+         if (status /= 0 ) call die("Cannot determine total-valence-charge")
+         read(unit=value,fmt=*) pseudo%config_val%total_charge
+
+      case ("shell")
+
+         if (in_valence_config) then
+            cp => pseudo%config_val
+!         else if (in_core_config) then
+!            cp => pseudo%config_core
+         else
+            call die("Orphan <shell> element")
+         endif
+
+         cp%nshells = cp%nshells + 1
+         call get_value(attributes,"l",cp%l(cp%nshells),status)
+         if (status /= 0 ) call die("Cannot determine l for shell")
+
+         call get_value(attributes,"n",value,status)
+         if (status /= 0 ) call die("Cannot determine n for shell")
+         read(unit=value,fmt=*) cp%n(cp%nshells)
+
+         call get_value(attributes,"occupation",value,status)
+         if (status /= 0 ) call die("Cannot determine occupation for shell")
+         read(unit=value,fmt=*) cp%occ(cp%nshells)
+
+         call get_value(attributes,"occupation-up",value,status)
+         if (status == 0 ) then
+            read(unit=value,fmt=*) cp%occ_up(cp%nshells)
+         endif
+         call get_value(attributes,"occupation-down",value,status)
+         if (status == 0 ) then
+            read(unit=value,fmt=*) cp%occ_down(cp%nshells)
+         endif
 
       case ("vps")
          in_vps = .true.
+         if (.not. in_semilocal) call die("Orphan <vps> element")
 
-         pseudo%npots = pseudo%npots + 1
-         pp => pseudo%pot(pseudo%npots)
-         rp => pp%V                       ! Pointer to radial function
+         slp => pseudo%semilocal
+         slp%npots = slp%npots + 1
+         i = slp%npots
+         rp => slp%V(i)
 
-         call get_value(attributes,"l",pp%l,status)
+         call get_value(attributes,"l",slp%l(i),status)
          if (status /= 0 ) call die("Cannot determine l for Vps")
 
-         call get_value(attributes,"principal-n",value,status)
+         call get_value(attributes,"n",value,status)
          if (status /= 0 ) call die("Cannot determine n for Vps")
-         read(unit=value,fmt=*) pp%n
+         read(unit=value,fmt=*) slp%n(i)
 
-         call get_value(attributes,"cutoff",value,status)
-         if (status /= 0 ) call die("Cannot determine cutoff for Vps")
-         read(unit=value,fmt=*) pp%cutoff
+         call get_value(attributes,"rc",value,status)
+         if (status /= 0 ) call die("Cannot determine rc for Vps")
+         read(unit=value,fmt=*) slp%rc(i)
 
-         call get_value(attributes,"occupation",value,status)
-         if (status /= 0 ) call die("Cannot determine occupation for Vps")
-         read(unit=value,fmt=*) pp%occupation
-         zval_generation = zval_generation + pp%occupation
+         call get_value(attributes,"set",slp%set(i),status)
+         if (status /= 0 ) call die("Cannot determine set for Vps")
 
-         call get_value(attributes,"spin",value,status)
-         if (status /= 0 ) call die("Cannot determine spin for Vps")
-         read(unit=value,fmt=*) pp%spin
+         call get_value(attributes,"flavor",slp%flavor(i),status)
+         if (status /= 0 ) call die("Cannot determine flavor for Vps")
+
+      case ("pswf")
+
+         if (.not. in_pseudowavefun) call die("Orphan <pswf> element")
+         in_pswf = .true.
+
+         wfp => pseudo%pswfs
+         wfp%npswfs = wfp%npswfs + 1
+         i = wfp%npswfs
+         rp => wfp%Phi(i)
+
+         call get_value(attributes,"l",wfp%l(i),status)
+         if (status /= 0 ) call die("Cannot determine l for PSwf")
+                                                                              
+         call get_value(attributes,"n",value,status)
+         if (status /= 0 ) call die("Cannot determine n for PSwf")
+         read(unit=value,fmt=*) wfp%n(i)
+
+         call get_value(attributes,"set",value,status)
+         if (status /= 0 ) call die("Cannot determine set for PSwf")
+         read(unit=value,fmt=*) wfp%set(i)
 
       case ("grid")
          in_grid = .true.
@@ -210,31 +281,9 @@ select case(name)
          if (status /= 0 ) call die("Cannot determine grid npts")
          read(unit=value,fmt=*) grid%npts
 
-         call get_value(attributes,"type",grid%type,status)
-         ! Only "log" for now?
-         if (status /= 0 ) then
-            ! call die("Cannot determine grid type")
-            need_explicit_grid_data = .true.
-         endif
-
-         call get_value(attributes,"scale",value,status)
-         if (status /= 0 ) then
-            ! maybe fallback to demanding this (as it is
-            ! currently the default, expected by clients
-            ! such as Abinit)
-            ! call die("Cannot determine grid scale")
-            need_explicit_grid_data = .true.
-         else
-            read(unit=value,fmt=*) grid%scale
-         endif
-
-         call get_value(attributes,"step",value,status)
-         if (status /= 0 ) then
-            !call die("Cannot determine grid step")
-            need_explicit_grid_data = .true.
-         else
-            read(unit=value,fmt=*) grid%step
-         endif
+         ! This attribute is optional
+         call get_value(attributes,"annotation",grid%annotation,status)
+         if (status /= 0 ) grid%annotation=""
 
          !
          ! In this way we allow for a private grid for each radfunc,
@@ -242,7 +291,7 @@ select case(name)
          !
          if (in_radfunc) then
             if (associated(rp%grid)) then
-               call die("psxml: Two grids specified for a radfunc")
+               call die("psml: Two grids specified for a radfunc")
             endif
             rp%grid => grid
          else
@@ -251,7 +300,7 @@ select case(name)
             ! it could be useful to allow these "regional" grids)
 
             if (associated(pseudo%global_grid)) then
-               call die("psxml: Two global grids specified")
+               call die("psml: Two global grids specified")
             endif
             !print *, "Found global grid"
             pseudo%global_grid => grid
@@ -273,7 +322,7 @@ select case(name)
          allocate(rp%data(rp%grid%npts))
          ndata = 0             ! To start the build up
 
-      case ("grid_data")
+      case ("grid-data")
          if (.not. in_grid) call die("Grid_data element outside grid element")
          in_grid_data = .true.
          got_explicit_grid_data = .true.
@@ -286,49 +335,54 @@ select case(name)
 
       case ("pseudocore-charge")
          in_coreCharge = .true.
-         rp => pseudo%core_charge
+         corep => pseudo%core_charge
+         rp => corep%rho_core
+
+         call get_value(attributes,"matching-radius",value,status)
+         if (status /= 0 ) call die("Cannot determine radius for pseudocore")
+         read(unit=value,fmt=*) corep%rcore
+                                                                              
+         call get_value(attributes,"number-of-continuous-derivatives", &
+                                   value,status)
+         if (status /= 0 )  &
+               call die("Cannot determine n-cont-derivs for pseudocore")
+         read(unit=value,fmt=*) corep%n_cont_derivs
 
       case ("valence-charge")
          in_valenceCharge = .true.
-         rp => pseudo%valence_charge
+         valp => pseudo%valence_charge
+         rp => valp%rho_val
 
-      case ("semilocal")
+         call get_value(attributes,"total-charge",value,status)
+         if (status /= 0 ) call die("Cannot determine total valence charge")
+         read(unit=value,fmt=*) valp%total_charge
+                                                                              
+      case ("semilocal-potentials")
          in_semilocal = .true.
-         zval_generation = 0.0_dp
+         slp => pseudo%semilocal
+         slp%npots = 0
 
-         call get_value(attributes,"npots-down",value,status)
-         if (status /= 0 ) call die("Cannot determine npots-down")
-         read(unit=value,fmt=*) pseudo%npots_down
+         call get_value(attributes,"npots-major",value,status)
+         if (status /= 0 ) call die("Cannot determine npots-major")
+         read(unit=value,fmt=*) slp%npots_major
 
-         call get_value(attributes,"npots-up",value,status)
-         if (status /= 0 ) call die("Cannot determine npots-up")
-         read(unit=value,fmt=*) pseudo%npots_up
+         call get_value(attributes,"npots-minor",value,status)
+         if (status /= 0 ) call die("Cannot determine npots-minor")
+         read(unit=value,fmt=*) slp%npots_minor
 
-         call get_value(attributes,"format",value,status)
-         if (status /= 0 ) call die("Cannot determine potential format")
-         pseudo%header%rV = (trim(value) == "r*V")
-
-      case ("pseudowave-functions")
+      case ("pseudo-wave-functions")
          in_pseudowavefun = .true. 
 
-      case ("pswf")
-         in_pswf = .true.
+         wfp => pseudo%pswfs
+         wfp%npswfs = 0
 
-         pseudo%npswfs = pseudo%npswfs + 1
+         call get_value(attributes,"npswfs-major",value,status)
+         if (status /= 0 ) call die("Cannot determine npswfs-major")
+         read(unit=value,fmt=*) wfp%npswfs_major
 
-         pw => pseudo%pswf(pseudo%npswfs)
-         rp => pw%V                       ! Pointer to radial function
-
-         call get_value(attributes,"l",pw%l,status)
-         if (status /= 0 ) call die("Cannot determine l for PSwf")
-                                                                              
-         call get_value(attributes,"principal-n",value,status)
-         if (status /= 0 ) call die("Cannot determine n for PSwf")
-         read(unit=value,fmt=*) pw%n
-
-         call get_value(attributes,"spin",value,status)
-         if (status /= 0 ) call die("Cannot determine spin for PSwf")
-         read(unit=value,fmt=*) pw%spin
+         call get_value(attributes,"npswfs-minor",value,status)
+         if (status /= 0 ) call die("Cannot determine npswfs-minor")
+         read(unit=value,fmt=*) wfp%npswfs_minor
 
 end select
 
@@ -345,12 +399,11 @@ character(len=*), intent(in)    :: localName
 
 character(len=*), intent(in)     :: name
 
-integer :: i
+integer :: i, nmajor, nminor
+
+print *, "-- end Element: ", trim(name)
 
 select case(name)
-
-      case ("vps")
-         in_vps = .false.
 
       case ("radfunc")
          in_radfunc = .false.
@@ -361,27 +414,9 @@ select case(name)
       case ("grid")
          in_grid = .false.
          !
-         if (need_explicit_grid_data) then
-            if (got_explicit_grid_data) then
-               need_explicit_grid_data = .false.
-            else
-               call die("Need explicit grid data!")
-            endif
-         else
-            ! Now we need to *generate* the data
-            if (grid%npts == 0) call die("Grid npts attribute faulty")
-            print *, "Allocating and computing grid data..."
-            allocate(grid%grid_data(grid%npts))
-            do i = 1, grid%npts
-               ! possible units handling
-               grid%grid_data(i) = grid%scale * &
-!                    (exp(grid%step*(i-1)) - 1)
-! Note that the first element is not r=0...
-                    (exp(grid%step*(i)) - 1)
-            enddo
-
+         if (.not. got_explicit_grid_data) then
+            call die("Need explicit grid data!")
          endif
-
 
       case ("data")
       !
@@ -393,7 +428,7 @@ select case(name)
             call die("npts mismatch in radfunc data")
          endif
 
-      case ("grid_data")
+      case ("grid-data")
       !
       ! We are done filling up the grid data
       ! Check that we got the advertised number of items
@@ -402,6 +437,7 @@ select case(name)
          if (ndata_grid /= size(grid%grid_data)) then
             call die("npts mismatch in grid")
          endif
+         print *, "Got grid data: ", got_explicit_grid_data
 
       case ("pseudocore-charge")
          in_coreCharge = .false.
@@ -409,20 +445,78 @@ select case(name)
       case ("valence-charge")
          in_valenceCharge = .false.
 
-      case ("semilocal")
+      case ("semilocal-potentials")
          in_semilocal = .false.
-         ! Note that this only takes into account
-         ! the populations of the pseudized levels
-         ! (as in the traditional "ionic" semicore cases in ATOM)
-         pseudo%header%gen_zval = zval_generation
 
-      case ("pseudowave-functions")
+         ! Generate indexes
+
+         slp => pseudo%semilocal
+
+         nmajor = 0
+         nminor = 0
+         do i = 1, slp%npots
+            if (slp%set(i) == "major") then
+               nmajor = nmajor + 1
+               slp%major(nmajor) = i
+            else if (slp%set(i) == "minor") then
+               nminor = nminor + 1
+               slp%minor(nminor) = i
+            else
+               call die("wrong set in potential")
+            endif
+         enddo
+
+         if (nmajor /= slp%npots_major) then
+            call die("wrong number of major potentials")
+         endif
+         if (nminor /= slp%npots_minor) then
+            call die("wrong number of minor potentials")
+         endif
+               
+      case ("vps")
+         in_vps = .false.
+
+      case ("pseudo-wave-functions")
          in_pseudowavefun = .false. 
+
+         ! Generate indexes
+
+         wfp => pseudo%pswfs
+
+         nmajor = 0
+         nminor = 0
+         do i = 1, wfp%npswfs
+            if (wfp%set(i) == "major") then
+               nmajor = nmajor + 1
+               wfp%major(nmajor) = i
+            else if (wfp%set(i) == "minor") then
+               nminor = nminor + 1
+               wfp%minor(nminor) = i
+            else
+               call die("wrong set in pseudo-wave-function")
+            endif
+         enddo
+
+         if (nmajor /= wfp%npswfs_major) then
+            call die("wrong number of major pswfs")
+         endif
+         if (nminor /= wfp%npswfs_minor) then
+            call die("wrong number of minor pswfs")
+         endif
 
       case ("pswf")
          in_pswf = .false.
 
-      case ("pseudo")
+      case ("valence-configuration")
+         in_config_val = .false.
+
+      case ("provenance")
+         in_provenance = .false.
+
+      case ("header")
+         in_header = .false.
+
+      case ("psml")
 !         call dump_pseudo(pseudo)
 
 end select

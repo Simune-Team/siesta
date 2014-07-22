@@ -31,7 +31,7 @@
       double precision                :: total_valence_charge
 !
       integer :: stat
-      character(len=132) :: line
+      character(len=132) :: line, msg
 
       type(xc_id_t) :: xc_id
 
@@ -79,7 +79,6 @@
       gridscale   = str(a)
       gridstep    = str(b)
       ! Note that in ATOM r(1) = 0.
-
       
 
 ! Allocate and define the valence charge density
@@ -90,8 +89,6 @@
       do ip = 2, nr
         chval(ip) = (cdd(ip)+cdu(ip))
       enddo
-      chval(1) = 0.0d0
-                                                                            
 
 ! ---------------------------------------------------------------------
                                                                                
@@ -99,8 +96,8 @@
 
       call xml_AddXMLDeclaration(xf,"UTF-8")
 
-      call xml_NewElement(xf,"pseudo")
-      call my_add_attribute(xf,"version","0.6")
+      call xml_NewElement(xf,"psml")
+      call my_add_attribute(xf,"version","0.7")
       call my_add_attribute(xf,"energy_unit","hartree")
       call my_add_attribute(xf,"length_unit","bohr")
 
@@ -129,17 +126,20 @@
       call xml_EndElement(xf,"provenance")
 
         call xml_NewElement(xf,"header")
-          call my_add_attribute(xf,"symbol",nameat)
+          call my_add_attribute(xf,"atomic-label",nameat)
           call my_add_attribute(xf,"atomic-number",str(znuc))
           call my_add_attribute(xf,"z-pseudo",str(zion))
           call my_add_attribute(xf,"flavor",ray(3)//ray(4))
           call my_add_attribute(xf,"relativistic",relattrib)
           call my_add_attribute(xf,"polarized",polattrib)
           call my_add_attribute(xf,"core-corrections",coreattrib)
-          call my_add_attribute(xf,"xc-functional-type",
-     $                              xc_id%siestaxc_type)
-          call my_add_attribute(xf,"xc-functional-authors",
-     $                              xc_id%siestaxc_authors)
+ 
+           write(msg,"(2(a,':',a,'/'))") "siesta-xc-type",
+     $                                      trim(xc_id%siestaxc_type),
+     $                                      "siesta-xc-authors",
+     $                                      trim(xc_id%siestaxc_authors)
+          call my_add_attribute(xf,"xc-functional",trim(msg))
+
           call my_add_attribute(xf,"xc-libxc-exchange",xc_id%libxc_x)
           call my_add_attribute(xf,"xc-libxc-correlation",xc_id%libxc_c)
           !
@@ -150,14 +150,10 @@
 
         call xml_NewElement(xf,"grid")
           call my_add_attribute(xf,"npts",str(nr))
-
-         ! This is an optional element
-         call xml_NewElement(xf,"grid-annotation")
-            call my_add_attribute(xf,"type",'log')
-            call my_add_attribute(xf,"scale",str(a))
-            call my_add_attribute(xf,"step",str(b))
-            call my_add_attribute(xf,"first-is-zero","yes")
-          call xml_EndElement(xf,"grid-annotation")
+          write(msg,"(3(a,':',a,'/'))")  "type","log",
+     $                                   "scale",trim(gridscale),
+     $                                   "step",trim(gridstep)
+         call my_add_attribute(xf,"annotation",trim(msg))
 
           call xml_NewElement(xf,"grid-data")
             call xml_AddArray(xf,r(1:nr))
@@ -165,7 +161,6 @@
         call xml_EndElement(xf,"grid")
 
         call xml_NewElement(xf,"semilocal-potentials")
-          call my_add_attribute(xf,"format","V")
           call my_add_attribute(xf,"npots-major",str(npotd))
           call my_add_attribute(xf,"npots-minor",str(npotu))
   
@@ -178,7 +173,7 @@
              call my_add_attribute(xf,"set","major")
              call my_add_attribute(xf,"n",str(no(indd(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
-             call my_add_attribute(xf,"cutoff",str(rc(ivps)))
+             call my_add_attribute(xf,"rc",str(rc(ivps)))
              call my_add_attribute(xf,"flavor",ray(3)//ray(4))
 
              call xml_NewElement(xf,"radfunc")
@@ -199,7 +194,7 @@
              call my_add_attribute(xf,"set","minor")
              call my_add_attribute(xf,"n",str(no(indu(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
-             call my_add_attribute(xf,"cutoff",str(rc(ivps)))
+             call my_add_attribute(xf,"rc",str(rc(ivps)))
              call my_add_attribute(xf,"flavor",ray(3)//ray(4))
 
              call xml_NewElement(xf,"radfunc")
@@ -216,41 +211,26 @@
 
 ! Dump of the pseudowave functions
         call xml_NewElement(xf,"pseudo-wave-functions")
-          call my_add_attribute(xf,"format","R")
           call my_add_attribute(xf,"npswfs",str(nshells_stored))
+          call my_add_attribute(xf,"npswfs-major",str(nshells_stored))
+          call my_add_attribute(xf,"npswfs-minor",str(0))
   
-! Down pseudowave function follows
-
+        ! We only write the "test" wavefunctions ("major" = "average")
         pswfd: do i = 1, nshells_stored
            call xml_NewElement(xf,"pswf")
              call my_add_attribute(xf,"n",str(n_pswf(i)))
              call my_add_attribute(xf,"l",il(l_pswf(i)+1))
+             call my_add_attribute(xf,"set","major")
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf,pswf(i,2:nr))
+                 call remove_r(pswf(i,2:nr),r(:),f(:))
+                 call xml_AddArray(xf,force_underflow(f(1:nr)))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"pswf")
         enddo pswfd
 
-c$$$! Up pseudowavefunction follows
-c$$$
-c$$$       pswfu: do ivps = 1, lmax
-c$$$           if (indu(ivps) .eq. 0) cycle
-c$$$           call xml_NewElement(xf,"pswf")
-c$$$             call my_add_attribute(xf,"principal-n",str(no(indu(ivps))))
-c$$$             call my_add_attribute(xf,"l",il(ivps))
-c$$$             call my_add_attribute(xf,"spin","+1")
-c$$$
-c$$$             call xml_NewElement(xf,"radfunc")
-c$$$
-c$$$               call xml_NewElement(xf,"data")
-c$$$                 call xml_AddArray(xf,pswfnru(ivps,2:nr))
-c$$$               call xml_EndElement(xf,"data")
-c$$$             call xml_EndElement(xf,"radfunc")
-c$$$           call xml_EndElement(xf,"pswf")
-c$$$        enddo pswfu
         call xml_EndElement(xf,"pseudo-wave-functions")
 
         call xml_NewElement(xf,"valence-charge")
@@ -259,7 +239,8 @@ c$$$        enddo pswfu
           call xml_NewElement(xf,"radfunc")
 
             call xml_NewElement(xf,"data")
-            call xml_AddArray(xf,chval(1:nr))
+            call remove_r2(chval(2:nr),r(:),f(:))
+            call xml_AddArray(xf,force_underflow(f(1:nr)))
             call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"valence-charge")
@@ -273,14 +254,14 @@ c$$$        enddo pswfu
            call xml_NewElement(xf,"radfunc")
 
            call xml_NewElement(xf,"data")
-           cdc(1) = 0.0d0
-           call xml_AddArray(xf,cdc(1:nr))
+            call remove_r2(cdc(2:nr),r(:),f(:))
+            call xml_AddArray(xf,force_underflow(f(1:nr)))
            call xml_EndElement(xf,"data")
            call xml_EndElement(xf,"radfunc")
            call xml_EndElement(xf,"pseudocore-charge")
         endif
 
-        call xml_EndElement(xf,"pseudo")
+        call xml_EndElement(xf,"psml")
       call xml_Close(xf)
 
       deallocate(chval)
@@ -409,6 +390,21 @@ c$$$        enddo pswfu
       f(1) = f(2) - (f(3)-f(2))*r2
 
       end subroutine remove_r2
+
+      pure elemental function force_underflow(x)
+      double precision, intent(in) ::  x
+      double precision  force_underflow
+C
+C     Avoid very small numbers that might need a three-character
+C     exponent field in formatted output
+C      
+      if (abs(x) .lt. 1.0d-99) then
+         force_underflow = 0.0d0
+      else
+         force_underflow = x
+      endif
+
+      end function force_underflow
 
       end subroutine pseudoXMLnew
 

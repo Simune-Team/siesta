@@ -69,7 +69,7 @@
 !
         subroutine pseudo_read_xml(fname,p,reparametrize,a,b,rmax)
 
-        use m_ncps_xml_ps_t, only: xml_ps_t, xml_ps_destroy
+        use m_ncps_xml_ps_t, only: ps_t, ps_destroy
         use m_ncps_xmlreader, only: ncps_xmlreader
         use m_ncps_translators, only: ncps_xml2froyen_new
 
@@ -80,11 +80,11 @@
         real(dp), intent(in), optional :: b
         real(dp), intent(in), optional :: rmax
 
-        type(xml_ps_t), pointer        :: psxml=>null()
+        type(ps_t), pointer        :: ps=>null()
 
-        call ncps_xmlreader(fname,psxml)
-        call ncps_xml2froyen_new(psxml,p,reparametrize,a,b,rmax)
-        call xml_ps_destroy(psxml)
+        call ncps_xmlreader(fname,ps)
+        call ncps_xml2froyen_new(ps,p,reparametrize,a,b,rmax)
+        call ps_destroy(ps)
 
         end subroutine pseudo_read_xml
 !----

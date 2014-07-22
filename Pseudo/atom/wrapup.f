@@ -636,11 +636,8 @@ c
             n_pswf(nshells_stored) = no(i)
             l_pswf(nshells_stored) = lo(i)
             do j = 2, nr
-               pswf(nshells_stored,j) = wfn(j)/r(j)
+               pswf(nshells_stored,j) = wfn(j)
             enddo
-            pswf(nshells_stored,1) =
-     $           extrapol(pswf(nshells_stored,2:3),r(2:3))
-            print *, "wfn: ", lo(i), pswf(nshells_stored,1)
          endif
  885  continue
 c

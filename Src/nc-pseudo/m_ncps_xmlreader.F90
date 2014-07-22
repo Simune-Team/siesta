@@ -4,9 +4,9 @@ module m_ncps_xmlreader
 
   CONTAINS
 
-  subroutine ncps_xmlreader(fname,psxml)
+  subroutine ncps_xmlreader(fname,ps)
 
-  use m_ncps_xml_ps_t,        only: xml_ps_t, xml_ps_destroy, dump_pseudo
+  use m_ncps_xml_ps_t,        only: ps_t, ps_destroy!, dump_pseudo
   use m_ncps_parsing_helpers, only: begin_element, end_element, pcdata_chunk
   use m_ncps_parsing_helpers, only: pseudo
 
@@ -18,13 +18,13 @@ module m_ncps_xmlreader
   implicit none 
 
   character(len=*), intent(in) :: fname
-  type(xml_ps_t), pointer      :: psxml
+  type(ps_t), pointer          :: ps
 
   type(xml_t)                     :: fxml
   integer :: iostat
 
-  if (associated(psxml)) then
-     call xml_ps_destroy(psxml)
+  if (associated(ps)) then
+     call ps_destroy(ps)
   endif
 
 #ifdef XMLF90
@@ -39,8 +39,8 @@ module m_ncps_xmlreader
                   characters_handler=pcdata_chunk) 
 #endif
 
- psxml => pseudo
- call dump_pseudo(pseudo,6)
+ ps => pseudo
+! call dump_pseudo(pseudo,6)
 
 end subroutine ncps_xmlreader
 end module m_ncps_xmlreader

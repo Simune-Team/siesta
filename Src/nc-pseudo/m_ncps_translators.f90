@@ -8,7 +8,7 @@ module m_ncps_translators
 
 CONTAINS
 
-  subroutine ncps_xml2froyen_new( psxml, p, new_grid, a, b, rmax )
+  subroutine ncps_xml2froyen_new( ps, p, new_grid, a, b, rmax )
 
 ! Translate the more complete xml-adapted data structure 
 ! into the 'Froyen' ps type used in Atom and Siesta.
@@ -19,7 +19,7 @@ CONTAINS
 ! a new grid, or if the grid in the file is not logarithmic.
 !
 
-        use m_ncps_xml_ps_t  !,     only: xml_ps_t
+        use m_ncps_xml_ps_t  !,     only: ps_t
         use m_ncps_froyen_ps_t,  only: froyen_ps_t
 
         implicit none 
@@ -27,7 +27,7 @@ CONTAINS
         integer, parameter  :: dp = selected_real_kind(14)
 
 
-        type(xml_ps_t), intent(in)           :: psxml
+        type(ps_t), intent(in)               :: ps
         type(froyen_ps_t), intent(inout)     :: p
         logical, intent(in), optional        :: new_grid 
         real(dp), intent(in), optional       :: a
@@ -36,10 +36,10 @@ CONTAINS
 
 
         logical          :: want_new_grid
-        integer          :: position, i, il, ir, l, n
+        integer          :: position, i, il, ir, l, n, nval_shells
         character(len=1) :: ispp, lshell
         logical          :: polarized
-        real(dp)         :: zeld(0:4), zelu(0:4)
+        real(dp)         :: zeld, zelu, occupation
         real(dp)         :: r2, rc, rmax_grid, znuc
         character(len=64):: xc_string
         character(len=40):: method_string
@@ -47,22 +47,22 @@ CONTAINS
                          sym = (/ "s", "p", "d", "f", "g" /)
 
         ! These are the "current" ATOM parameters
-        ! There is another set which is turned on by the UCB_COMPAT flag in ATOM
+        ! There is another set turned on by the UCB_COMPAT flag in ATOM
         real(dp), parameter :: aa_def = 6.0_dp
         real(dp), parameter :: bb_def = 80.0_dp    ! UCB_COMPAT: 40.0
         real(dp), parameter :: rmax_def = 120.0_dp ! UCB_COMPAT: 80.0
 
 
-        p%name = psxmlAtomicSymbol(psxml)
-        p%zval         = psxmlPseudoZval(psxml)
-        znuc           = psxmlAtomicNumber(psxml)
+        p%name = ps_AtomicSymbol(ps)
+        p%zval         = ps_ZPseudo(ps)
+        znuc           = ps_AtomicNumber(ps)
         ! This needs to be generalized
-        p%gen_zval     = psxmlGenerationZval(psxml)
+        p%gen_zval     = ps_GenerationZval(ps)
         
 !
 !       Need to include "universal" codes, such as those in LibXC
 !
-        xc_string = psxmlXCFunctional(psxml)
+        xc_string = ps_XCFunctional(ps)
 
         select case(xc_string)
           case('Ceperley-Alder')
@@ -95,12 +95,12 @@ CONTAINS
 !       Note that most (all?) formats include only "scalar-relativistic" plus
 !       maybe spin-orbit components, but never "polarized" pseudos.
 !
-        if (psxmlIsRelativistic(psxml)) then
+        if (ps_IsRelativistic(ps)) then
            p%irel    = 'rel'
            ispp      = 'r'
            polarized = .false.
         else
-           if (psxmlIsSpinPolarized(psxml)) then
+           if (ps_IsSpinPolarized(ps)) then
               p%irel    = 'isp'
               ispp      = 's'
               polarized = .true.
@@ -111,15 +111,15 @@ CONTAINS
            end if
         endif
 
-        if (psxmlHasCoreCorrections(psxml)) then
+        if (ps_HasCoreCorrections(ps)) then
             p%nicore = 'pcec'
          else
             p%nicore = 'nc'
          endif
 
 !
-!       Grid handling. Make sure that we cover the case in which
-!       the file does not use a logarithmic grid.
+!       Grid handling. We do not assume that the file
+!       uses a logarithmic grid.
 !
         want_new_grid = .false.
         if (present(new_grid)) then
@@ -129,18 +129,13 @@ CONTAINS
         if (want_new_grid) then
            if (.not. present(a)) call die("new grid: a not present")
            if (.not. present(b)) call die("new grid: b not present")
-           if (present(rmax)) then
-              rmax_grid = rmax
-              if (rmax == 0.0_dp) rmax_grid = psxmlGridRmax(psxml)
-           else
-              rmax_grid = psxmlGridRmax(psxml)
-           endif
+           if (.not. present(rmax)) call die("new grid: rmax not present")
+           rmax_grid = rmax
            p%a = a
            p%b = b
            p%nr = nint(log(rmax_grid/b+1.0d0)/a)
 
         else
-           if (.not. psxmlHasGlobalLogGrid(psxml)) then
               print *, "Using ATOM defaults for log grid..."
               ! use the ATOM defaults 
               ! Note that a and b are interchanged...
@@ -148,22 +143,15 @@ CONTAINS
               p%b = exp(-aa_def)/znuc
               rmax_grid = rmax_def
               p%nr = nint(log(rmax_grid/(p%b)+1.0d0)/(p%a))
-              ! call die("Do not have logarithmic grid...")
-           else
-              p%nr = psxmlGridNpoints(psxml)
-              p%a  = psxmlLogGridStep(psxml)
-              p%b  = psxmlLogGridScale(psxml)
-           endif
-           
         endif
 
-        p%method(1)    = psxmlCreator(psxml)
-        p%method(2)    = psxmlDate(psxml)
-        method_string = psxmlPseudoFlavor(psxml)
+        p%method(1)    = ps_Creator(ps)
+        p%method(2)    = ps_Date(ps)
+        method_string = ps_PseudoFlavor(ps)
         read(method_string,'(4a10)') (p%method(i),i=3,6) 
 
-        p%npotu        = psxmlPotentialsUp(psxml)
-        p%npotd        = psxmlPotentialsDown(psxml)
+        p%npotd        = ps_NPotentials(ps)
+        p%npotu        = ps_NPotentials(ps,set="minor")
 
 ! Allocate the radial variables and semilocal potentials
 
@@ -197,60 +185,80 @@ CONTAINS
 ! Translate the valence charge density and the pseudo-core charge density,
 ! and define the value at the first point of the logarithmic grid
 
-        if (psxmlHasCoreCorrections(psxml)) then
+        if (ps_HasCoreCorrections(ps)) then
            do ir = 2, p%nrval
-              p%chcore(ir) = psxmlEvaluateCoreCharge(psxml,p%r(ir))
+              p%chcore(ir) = ps_EvaluateCoreCharge(ps,p%r(ir))
+              p%chcore(ir) = p%chcore(ir) * (p%r(ir))**2
            enddo
         else
            p%chcore(2:p%nrval) = 0.0_dp
         endif
 
         do ir = 2, p%nrval
-           p%chval(ir) = psxmlEvaluateValenceCharge(psxml,p%r(ir))
+           p%chval(ir) = ps_EvaluateValenceCharge(ps,p%r(ir))
+           p%chval(ir) = p%chval(ir) * (p%r(ir))**2
         enddo
         r2=p%r(2)/(p%r(3)-p%r(2))
         p%chcore(1) = p%chcore(2) - r2*(p%chcore(3)-p%chcore(2))
         p%chval(1) = p%chval(2) - r2*(p%chval(3)-p%chval(2))
 ! ---
 
-        zeld(:) = 0.0d0
-        zelu(:) = 0.0d0
 
         do il = 1, p%npotd
-          p%ldown(il) = psxmlPotAngMomentum(psxml,"d",il)
-          zeld(p%ldown(il)) = psxmlOccupation(psxml,"d",il)
+          p%ldown(il) = ps_PotentialL(ps,il)
           do ir = 2, p%nrval
              p%vdown(il,ir) = p%r(ir) * &
-                           psxmlEvaluatePotential(psxml,"d",il,p%r(ir))
+                           ps_EvaluatePotential(ps,il,p%r(ir))
+             p%vdown(il,ir) = p%vdown(il,ir) * 2.0_dp   ! rydberg
+
           enddo
           p%vdown(il,1) = p%vdown(il,2) - r2*(p%vdown(il,3)-p%vdown(il,2))
         enddo
 
         do il = 1, p%npotu
-           p%lup(il) = psxmlPotAngMomentum(psxml,"u",il)
-           zelu(p%lup(il)) = psxmlOccupation(psxml,"u",il)
+           p%lup(il) = ps_PotentialL(ps,il,set="minor")
            do ir = 2, p%nrval
               p%vup(il,ir) = p%r(ir) * &
-                          psxmlEvaluatePotential(psxml,"u",il,p%r(ir))
+                          ps_EvaluatePotential(ps,il,p%r(ir),set="minor")
+              p%vup(il,ir) = p%vup(il,ir) * 2.0_dp   ! rydberg
            enddo
           p%vup(il,1) = p%vup(il,2) - r2*(p%vup(il,3)-p%vup(il,2))
         enddo
 
         ! Encode generation configuration and cutoffs
+
+        nval_shells = ps_NValenceShells(ps)
         p%text = ' '
         position = 1
         do il = 1, p%npotd
-           n = psxmlPrincipalN(psxml,"d",il)
-           l = psxmlPotAngMomentum(psxml,"d",il)
-           rc = psxmlGenerationCutoff(psxml,"d",il)
+           n = ps_PotentialN(ps,il)
+           l = ps_PotentialL(ps,il)
+           rc = ps_PotentialRc(ps,il)
+
            if ( .not. polarized) then
+              occupation = 0.0_dp
+              do i = 1, nval_shells
+                 if (ps_ValenceShellL(ps,i) == l) then
+                    occupation = ps_ValenceShellOccupation(ps,i)
+                    exit
+                 endif
+              enddo
               write(p%text(position:),9070)     &
-                   n, sym(l), zeld(l)+zelu(l),ispp, rc
+                   n, sym(l), occupation, ispp, rc
  9070         format(i1,a1,f5.2,a1,' r=',f5.2,'/')
               position = position + 17
            else
+              zeld = 0.0_dp
+              zelu = 0.0_dp
+              do i = 1, nval_shells
+                 if (ps_ValenceShellL(ps,i) == l) then
+                    zeld = ps_ValenceShellOccupation(ps,i,channel="d")
+                    zelu = ps_ValenceShellOccupation(ps,i,channel="u")
+                    exit
+                 endif
+              enddo
               write(p%text(position:),9090)    &
-                   n, sym(l), zeld(l),zelu(l),ispp, rc
+                   n, sym(l), zeld,zelu,ispp, rc
  9090         format(i1,a1,f4.2,',',f4.2,a1,f4.2,'/')
               position = position + 17
            end if

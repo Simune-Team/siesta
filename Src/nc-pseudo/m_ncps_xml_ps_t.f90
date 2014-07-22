@@ -10,7 +10,7 @@ module m_ncps_xml_ps_t
 !
 ! In order for this module will hide completely the implementation of
 ! the parsing of the XML file and the later querying of the data
-! structures, the psxml_t type should be made private. But then all the
+! structures, the ps_t type should be made private. But then all the
 ! accessors and the parsing helpers should reside in this module too, making
 ! it quite big.
 !
@@ -20,137 +20,180 @@ module m_ncps_xml_ps_t
 implicit none
 
 integer, parameter, private    :: MAXN_POTS = 8
+integer, parameter, private    :: MAXN_SHELLS = 8
+integer, parameter, private    :: MAXN_WFNS = 8
 integer, parameter, private    :: dp = selected_real_kind(14)
 !
 !-----------------------------------------------------------
+type, public :: provenance_t
+        character(len=40)       :: creator
+        character(len=30)       :: date
+end type provenance_t
+!------
+type, public :: header_t
+        character(len=30)       :: atomic_label    ! generalized symbol
+        real(kind=dp)           :: z  ! atomic number (might be non-integer)
+        real(kind=dp)           :: zpseudo ! Z - ncore-electrons
+        character(len=50)       :: flavor
+        logical                 :: relativistic
+        logical                 :: polarized
+        character(len=50)       :: xc_libxc_exchange ! LibXC string
+        character(len=50)       :: xc_libxc_correlation ! LibXC string
+        ! Generator's own terminology for XC 
+        ! Could be something like "type:LDA//authors:PZ"
+        character(len=80)       :: xc_functional
+        !
+        character(len=4)        :: core_corrections
+end type header_t
+!------
+type, public :: config_val_t
+      integer                          :: nshells
+      real(kind=dp)                    :: total_charge
+      integer, dimension(MAXN_SHELLS)  :: n
+      character(len=1), dimension(MAXN_SHELLS) :: l
+      real(dp), dimension(MAXN_SHELLS) :: occ
+      real(dp), dimension(MAXN_SHELLS) :: occ_up
+      real(dp), dimension(MAXN_SHELLS) :: occ_down
+end type config_val_t
+!------
 type, public :: grid_t
 !
-!     It should be possible to represent both log and linear
-!     grids with a few parameters here.
 !     Note that the preferred option is to have explicit grid data.
 !
-      character(len=20)              :: type
-      real(kind=dp)                  :: scale
-      real(kind=dp)                  :: step 
       integer                        :: npts = 0
       real(dp), pointer              :: grid_data(:) => null()
+      character(len=80)              :: annotation
 end type grid_t      
 !
 type, public :: radfunc_t
       type(grid_t), pointer                   :: grid => null()
       real(kind=dp), dimension(:), pointer    :: data => null()
 end type radfunc_t      
-      
-type, public :: vps_t
-      character(len=1)               :: l
-      integer                        :: n
-      integer                        :: spin
-      real(kind=dp)                  :: occupation
-      real(kind=dp)                  :: cutoff
-      type(radfunc_t)                :: V
-end type vps_t
+!
+type, public :: semilocal_t
+      integer                          :: npots
+      integer                          :: npots_major
+      integer                          :: npots_minor
+      integer, dimension(MAXN_POTS)           :: n
+      character(len=1), dimension(MAXN_POTS)  :: l
+      character(len=5), dimension(MAXN_POTS)  :: set
+      character(len=40), dimension(MAXN_POTS) :: flavor
+      real(dp), dimension(MAXN_POTS)          :: rc
+      type(radfunc_t), dimension(MAXN_POTS)   :: V
+      !
+      ! indexes
+      integer, dimension(MAXN_POTS)           :: major
+      integer, dimension(MAXN_POTS)           :: minor
+end type semilocal_t
 
-type, public :: pswf_t
-      character(len=1)               :: l
-      integer                        :: n
-      integer                        :: spin
-      type(radfunc_t)                :: V
-end type pswf_t
+type, public :: pswfs_t
+      character(len=40)                :: format
+      integer                          :: npswfs
+      integer                          :: npswfs_major
+      integer                          :: npswfs_minor
+      integer, dimension(MAXN_WFNS)           :: n
+      character(len=1), dimension(MAXN_WFNS)  :: l
+      character(len=5), dimension(MAXN_WFNS)  :: set
+      type(radfunc_t), dimension(MAXN_WFNS)   :: Phi
+      !
+      ! indexes
+      integer, dimension(MAXN_WFNS)           :: major
+      integer, dimension(MAXN_WFNS)           :: minor
+end type pswfs_t
 
-type, public :: header_t
-        character(len=2)        :: symbol
-        real(kind=dp)           :: z         ! atomic number (might be non-integer)
-        real(kind=dp)           :: zval
-        real(kind=dp)           :: gen_zval  ! Valence charge at generation
-        character(len=10)       :: creator
-        character(len=10)       :: date
-        character(len=40)       :: flavor
-        logical                 :: relativistic
-        logical                 :: polarized
-        character(len=80)       :: xc_libxc_string ! LibXC string
-        integer                 :: xc_libxc_code   ! LibXC numerical code
-        ! Generator's own terminology for XC 
-        character(len=30)       :: xcfunctionaltype
-        character(len=30)       :: xcfunctionalparametrization
-        !
-        character(len=4)        :: core_corrections
-        logical                 :: rV
-end type header_t
+type, public :: valence_charge_t
+      real(dp)        :: total_charge
+      type(radfunc_t) :: rho_val
+end type valence_charge_t
 
-type, public :: xml_ps_t
+type, public :: core_charge_t
+      integer         :: n_cont_derivs
+      real(dp)        :: rcore
+      type(radfunc_t) :: rho_core
+end type core_charge_t
+
+
+type, public :: ps_t
+      type(provenance_t)                 :: provenance
       type(header_t)                     :: header
-      integer                            :: npots 
-      integer                            :: npswfs
-      integer                            :: npots_down
-      integer                            :: npots_up 
+      type(config_val_t)                 :: config_val
       type(grid_t), pointer              :: global_grid => null()
-      type(vps_t), dimension(MAXN_POTS)  :: pot
-      type(pswf_t), dimension(MAXN_POTS) :: pswf
-      type(radfunc_t)                    :: core_charge
-      type(radfunc_t)                    :: valence_charge
-   end type xml_ps_t
+      type(semilocal_t)                  :: semilocal
+      type(pswfs_t)                      :: pswfs
+      !
+      type(valence_charge_t)             :: valence_charge
+      type(core_charge_t)                :: core_charge
+
+   end type ps_t
 
 !
-public  :: xml_ps_destroy
-public  :: dump_pseudo           ! For initial debugging
+public  :: ps_destroy
+!public  :: dump_pseudo           ! For initial debugging
 !
 
 ! Accessor list
-public :: psxmlEvaluateValenceCharge
-public :: psxmlEvaluateCoreCharge
-public :: psxmlAtomicSymbol
-public :: psxmlAtomicNumber
-public :: psxmlCreator
-public :: psxmlDate
-public :: psxmlPseudoFlavor
-public :: psxmlPseudoZval
-public :: psxmlGenerationZval
-public :: psxmlXCLibXCCode
-public :: psxmlXCLibXCString
-public :: psxmlXCFunctional
-public :: psxmlXCFunctionalType
-public :: psxmlIsRelativistic
-public :: psxmlIsSpinPolarized
-public :: psxmlHasCoreCorrections
-public :: psxmlHasGlobalLogGrid
-public :: psxmlGridNpoints
-public :: psxmlLogGridStep
-public :: psxmlLogGridScale
-public :: psxmlGridRmax
-public :: psxmlPotentialsUp
-public :: psxmlPotentialsDown
-public :: psxmlPotAngMomentum
-public :: psxmlOccupation
-public :: psxmlGenerationCutoff
-public :: psxmlPrincipalN
-public :: psxmlEvaluatePotential
-public :: psxmlEvaluatePseudoOrbital
+public :: ps_AtomicSymbol
+public :: ps_AtomicLabel
+public :: ps_AtomicNumber
+public :: ps_ZPseudo
+public :: ps_GenerationZval
+
+public :: ps_Creator
+public :: ps_Date
+
+public :: ps_PseudoFlavor
+public :: ps_XCLibXCExchange
+public :: ps_XCLibXCCorrelation
+public :: ps_XCFunctional
+
+public :: ps_IsRelativistic
+public :: ps_IsSpinPolarized
+public :: ps_HasCoreCorrections
+
+public :: ps_NValenceShells
+public :: ps_ValenceShellL
+public :: ps_ValenceShellN
+public :: ps_ValenceShellOccupation
+
+public :: ps_NPotentials
+public :: ps_PotentialL
+public :: ps_PotentialN
+public :: ps_PotentialRc
+
+public :: ps_NPseudoWfs
+public :: ps_PseudoWfL
+public :: ps_PseudoWfN
+
+public :: ps_EvaluatePotential
+public :: ps_EvaluatePseudoWf
+public :: ps_EvaluateValenceCharge
+public :: ps_EvaluateCoreCharge
 
 CONTAINS !===============================================
 
-subroutine xml_ps_destroy(p)
-type(xml_ps_t), pointer :: p
+subroutine ps_destroy(ps)
+type(ps_t), pointer :: ps
 
 integer :: i
 
-if (.not. associated(p)) RETURN
+if (.not. associated(ps)) RETURN
 
-if (associated(p%global_grid)) then
-   call destroy_grid(p%global_grid)
+if (associated(ps%global_grid)) then
+   call destroy_grid(ps%global_grid)
 endif
-do i = 1, p%npots
-   call destroy_radfunc(p%pot(i)%V)
+do i = 1, ps%semilocal%npots
+   call destroy_radfunc(ps%semilocal%V(i))
 enddo
-do i = 1, p%npswfs
-   call destroy_radfunc(p%pswf(i)%V)
+do i = 1, ps%pswfs%npswfs
+   call destroy_radfunc(ps%pswfs%Phi(i))
 enddo
-call destroy_radfunc(p%valence_charge)
-call destroy_radfunc(p%core_charge)
+call destroy_radfunc(ps%valence_charge%rho_val)
+call destroy_radfunc(ps%core_charge%rho_core)
 
-deallocate(p)
-p => null()
+deallocate(ps)
+ps => null()
 
-end subroutine xml_ps_destroy
+end subroutine ps_destroy
 
 subroutine destroy_radfunc(rp)
 type(radfunc_t) :: rp
@@ -176,345 +219,385 @@ end subroutine destroy_grid
 
 !========================================================
 
-function psxmlEvaluateValenceCharge(p,r,debug) result(val)
-type(xml_ps_t), intent(in) :: p
-real(dp), intent(in)       :: r
-logical, intent(in), optional :: debug
-real(dp)                   :: val
+function ps_NValenceShells(ps) result(nshells)
+type(ps_t), intent(in) :: ps
+integer                :: nshells
 
-val = eval_radfunc(p%valence_charge,r,debug)
-end function psxmlEvaluateValenceCharge
+nshells = ps%config_val%nshells
 
-function psxmlEvaluateCoreCharge(p,r,debug) result(val)
-type(xml_ps_t), intent(in) :: p
-real(dp), intent(in)       :: r
-logical, intent(in), optional :: debug
-real(dp)                   :: val
+end function ps_NValenceShells
 
-val = eval_radfunc(p%core_charge,r,debug)
-end function psxmlEvaluateCoreCharge
+function ps_ValenceShellL(ps,i) result(l)
+type(ps_t), intent(in) :: ps
+integer, intent(in)    :: i
+integer                :: l
+
+character(len=1), dimension(0:4) :: sym = (/ "s", "p", "d", "f", "g" /)
+character(len=1) :: str
+
+if (i > ps%config_val%nshells) then
+   call die("Attempt to get l for non-existing shell")
+endif
+str = ps%config_val%l(i)
 !
-function psxmlAtomicSymbol(psxml) result(name)
-type(xml_ps_t), intent(in) :: psxml
-character(len=2) :: name
-name = psxml%header%symbol
-end function psxmlAtomicSymbol
-!
-function psxmlAtomicNumber(psxml) result(z)
-type(xml_ps_t), intent(in) :: psxml
-real(dp) :: z
- z = psxml%header%z
-end function psxmlAtomicNumber
-!
-function psxmlCreator(psxml) result(name)
-type(xml_ps_t), intent(in) :: psxml
-character(len=len_trim(psxml%header%creator)) :: name
-name = trim(psxml%header%creator)
-end function psxmlCreator
-!
-function psxmlDate(psxml) result(str)
-type(xml_ps_t), intent(in) :: psxml
-character(len=len_trim(psxml%header%date)) :: str
-str = trim(psxml%header%date)
-end function psxmlDate
-!
-function psxmlPseudoFlavor(psxml) result(str)
-type(xml_ps_t), intent(in) :: psxml
-character(len=len_trim(psxml%header%flavor)) :: str
-str = trim(psxml%header%flavor)
-end function psxmlPseudoFlavor
-!
-function psxmlPseudoZval(psxml) result(zval)
-type(xml_ps_t), intent(in) :: psxml
-real(dp)                   :: zval
-zval = psxml%header%zval
-end function psxmlPseudoZval
-!
-function psxmlGenerationZval(psxml) result(zval)
-type(xml_ps_t), intent(in) :: psxml
-real(dp)                   :: zval
-zval = psxml%header%gen_zval
-end function psxmlGenerationZval
-!
-function psxmlXCLibXCString(psxml) result(xc_string)
-type(xml_ps_t), intent(in) :: psxml
-character(len=len_trim(psxml%header%xc_libxc_string)) :: xc_string
-xc_string = trim(psxml%header%xc_libxc_string)
-end function psxmlXCLibXCString
-!
-function psxmlXCLibXCCode(psxml) result(xc_code)
-type(xml_ps_t), intent(in) :: psxml
-integer  :: xc_code
-xc_code = psxml%header%xc_libxc_code
-end function psxmlXCLibXCCode
-!
-function psxmlXCFunctional(psxml) result(xc_string)
-type(xml_ps_t), intent(in) :: psxml
-character(len=len_trim(psxml%header%xcfunctionalparametrization)) :: xc_string
-xc_string = trim(psxml%header%xcfunctionalparametrization)
-end function psxmlXCFunctional
-!
-function psxmlXCFunctionalType(psxml) result(xc_type)
-type(xml_ps_t), intent(in) :: psxml
-character(len=len_trim(psxml%header%xcfunctionaltype)) :: xc_type
-xc_type = trim(psxml%header%xcfunctionaltype)
-end function psxmlXCFunctionalType
-!
-function psxmlIsRelativistic(psxml) result(rel)
-type(xml_ps_t), intent(in) :: psxml
-logical                    :: rel
-rel = psxml%header%relativistic
-end function psxmlIsRelativistic
-!
-function psxmlIsSpinPolarized(psxml) result(pol)
-type(xml_ps_t), intent(in) :: psxml
-logical                    :: pol
-pol = psxml%header%polarized
-end function psxmlIsSpinPolarized
-!
-function psxmlHasCoreCorrections(psxml) result(cc)
-type(xml_ps_t), intent(in) :: psxml
-logical                    :: cc
-cc = (psxml%header%core_corrections == "yes")
-end function psxmlHasCoreCorrections
-!
-function psxmlHasGlobalLogGrid(psxml) result(log_grid)
-type(xml_ps_t), intent(in) :: psxml
-logical                    :: log_grid
-! to be fixed: use a global grid...
-if (.not.(associated(psxml%global_grid))) then
-   log_grid = .false.
+do l = 0,4
+   if (str == sym(l)) RETURN
+enddo
+call die("Wrong l symbol in valence shell")
+
+end function ps_ValenceShellL
+
+function ps_ValenceShellN(ps,i) result(n)
+type(ps_t), intent(in) :: ps
+integer, intent(in)    :: i
+integer                :: n
+
+if (i > ps%config_val%nshells) then
+   call die("Attempt to get n for non-existing shell")
+endif
+n = ps%config_val%n(i)
+
+end function ps_ValenceShellN
+
+function ps_ValenceShellOccupation(ps,i,channel) result(occ)
+type(ps_t), intent(in) :: ps
+integer, intent(in)    :: i
+character(len=1), intent(in), optional :: channel
+real(dp)                :: occ
+
+if (i > ps%config_val%nshells) then
+   call die("Attempt to get occupation for non-existing shell")
+endif
+if (present(channel)) then
+   if (ps_IsSpinPolarized(ps)) then
+      if (channel == "u") then
+         occ = ps%config_val%occ_up(i)
+      else if (channel == "d") then
+         occ = ps%config_val%occ_down(i)
+      else
+         call die("Wrong channel in ValShellOccupation")
+      endif
+   else
+      call die("Cannot speficy channel in ValShellOccupation")
+   endif
 else
-   log_grid = (psxml%global_grid%type == "log")
+   occ = ps%config_val%occ(i)
 endif
-end function psxmlHasGlobalLogGrid
 
-function psxmlGridNpoints(psxml) result(npts)
-type(xml_ps_t), intent(in) :: psxml
-integer                    :: npts
-
-if (.not.(associated(psxml%global_grid))) then
-   call die("Do not have global grid to get npts...")
-endif
-npts = psxml%global_grid%npts
-end function psxmlGridNpoints
+end function ps_ValenceShellOccupation
 !
-function psxmlLogGridStep(psxml) result(step)
-type(xml_ps_t), intent(in) :: psxml
-real(dp)                   :: step
+!-------------------------------------------------------
+function ps_EvaluateValenceCharge(ps,r,debug) result(val)
+type(ps_t), intent(in) :: ps
+real(dp), intent(in)       :: r
+logical, intent(in), optional :: debug
+real(dp)                   :: val
 
-if (.not. psxmlHasGlobalLogGrid(psxml)) then
-   call die("Do not have global log grid to get step...")
-endif
-step = psxml%global_grid%step
-end function psxmlLogGridStep
+val = eval_radfunc(ps%valence_charge%rho_val,r,debug)
+end function ps_EvaluateValenceCharge
+
+function ps_EvaluateCoreCharge(ps,r,debug) result(val)
+type(ps_t), intent(in) :: ps
+real(dp), intent(in)       :: r
+logical, intent(in), optional :: debug
+real(dp)                   :: val
+
+val = eval_radfunc(ps%core_charge%rho_core,r,debug)
+end function ps_EvaluateCoreCharge
 !
-function psxmlLogGridScale(psxml) result(scale)
-type(xml_ps_t), intent(in) :: psxml
-real(dp)                   :: scale
-
-if (.not. psxmlHasGlobalLogGrid(psxml)) then
-   call die("Do not have global log grid to get scale...")
-endif
-scale = psxml%global_grid%scale
-end function psxmlLogGridScale
+function ps_AtomicSymbol(ps) result(name)
+type(ps_t), intent(in) :: ps
+character(len=2) :: name
+name = ps%header%atomic_label(1:2)
+end function ps_AtomicSymbol
 !
-function psxmlGridRmax(psxml) result(rmax)
-type(xml_ps_t), intent(in) :: psxml
-real(dp)                   :: rmax
-
-integer :: npts
-
-! We should make sure that there is a global grid...
-! Perhaps this should be the maximum rmax among all 
-! possible grids...
-
-npts = psxml%global_grid%npts
-rmax = psxml%global_grid%grid_data(npts)
-end function psxmlGridRmax
+function ps_AtomicLabel(ps) result(name)
+type(ps_t), intent(in) :: ps
+character(len=len_trim(ps%header%atomic_label)) :: name
+name = trim(ps%header%atomic_label)
+end function ps_AtomicLabel
 !
-function psxmlPotentialsUp(psxml) result(n)
-type(xml_ps_t), intent(in) :: psxml
+function ps_AtomicNumber(ps) result(z)
+type(ps_t), intent(in) :: ps
+real(dp) :: z
+ z = ps%header%z
+end function ps_AtomicNumber
+!
+function ps_Creator(ps) result(name)
+type(ps_t), intent(in) :: ps
+character(len=len_trim(ps%provenance%creator)) :: name
+name = trim(ps%provenance%creator)
+end function ps_Creator
+!
+function ps_Date(ps) result(str)
+type(ps_t), intent(in) :: ps
+character(len=len_trim(ps%provenance%date)) :: str
+str = trim(ps%provenance%date)
+end function ps_Date
+!
+!**AG** Generalize to accept an index argument for potential
+function ps_PseudoFlavor(ps) result(str)
+type(ps_t), intent(in) :: ps
+character(len=len_trim(ps%header%flavor)) :: str
+str = trim(ps%header%flavor)
+end function ps_PseudoFlavor
+!
+function ps_ZPseudo(ps) result(zpseudo)
+type(ps_t), intent(in) :: ps
+real(dp)                   :: zpseudo
+zpseudo = ps%header%zpseudo
+end function ps_ZPseudo
+!
+function ps_GenerationZval(ps) result(zval)
+type(ps_t), intent(in) :: ps
+real(dp)                   :: zval
+zval = ps%config_val%total_charge
+end function ps_GenerationZval
+!
+function ps_XCLibXCExchange(ps) result(xc_string)
+type(ps_t), intent(in) :: ps
+character(len=len_trim(ps%header%xc_libxc_exchange)) :: xc_string
+xc_string = trim(ps%header%xc_libxc_exchange)
+end function ps_XCLibXCExchange
+!
+function ps_XCLibXCCorrelation(ps) result(xc_string)
+type(ps_t), intent(in) :: ps
+character(len=len_trim(ps%header%xc_libxc_correlation)) :: xc_string
+xc_string = trim(ps%header%xc_libxc_correlation)
+end function ps_XCLibXCCorrelation
+!
+function ps_XCFunctional(ps) result(xc_string)
+type(ps_t), intent(in) :: ps
+character(len=len_trim(ps%header%xc_functional)) :: xc_string
+xc_string = trim(ps%header%xc_functional)
+end function ps_XCFunctional
+!
+function ps_IsRelativistic(ps) result(rel)
+type(ps_t), intent(in) :: ps
+logical                    :: rel
+rel = ps%header%relativistic
+end function ps_IsRelativistic
+!
+function ps_IsSpinPolarized(ps) result(pol)
+type(ps_t), intent(in) :: ps
+logical                    :: pol
+pol = ps%header%polarized
+end function ps_IsSpinPolarized
+!
+function ps_HasCoreCorrections(ps) result(cc)
+type(ps_t), intent(in) :: ps
+logical                    :: cc
+cc = (ps%header%core_corrections == "yes")
+end function ps_HasCoreCorrections
+!
+function ps_NPotentials(ps,set) result(n)
+type(ps_t), intent(in) :: ps
+character(len=5), intent(in), optional :: set
 integer                    :: n
-n = psxml%npots_up
-end function psxmlPotentialsUp
+
+logical major
+
+major = .true.
+
+if (present(set)) then
+   if (set == "minor") then
+      major = .false.
+   endif
+endif
+
+if (major) then
+   n = ps%semilocal%npots_major
+else
+   n = ps%semilocal%npots_minor
+endif
+   
+end function ps_NPotentials
 !
-function psxmlPotentialsDown(psxml) result(n)
-type(xml_ps_t), intent(in) :: psxml
-integer                    :: n
-n = psxml%npots_down
-end function psxmlPotentialsDown
-!
-function psxmlPotAngMomentum(psxml,ud,i) result(l)
-type(xml_ps_t), intent(in) :: psxml
-character, intent(in)      :: ud
+function ps_PotentialL(ps,i,set) result(l)
+type(ps_t), intent(in) :: ps
 integer,   intent(in)      :: i
+character(len=5), intent(in), optional :: set
 integer                    :: l
 
 character(len=1), dimension(0:4) :: sym = (/ "s", "p", "d", "f", "g" /)
-integer :: ndown
 character(len=1) :: str
 
-ndown = psxmlPotentialsDown(psxml)
+integer :: idx
 
-select case(ud)
-   case ( "u", "U")
-      if (i > psxmlPotentialsUp(psxml)) then
-         call die("attempt to get l from non-existing Up potential")
-      endif
-      str = psxml%pot(ndown+i)%l
-   case ( "d", "D")
-      if (i > ndown) then
-         call die("attempt to get l from non-existing Down potential")
-      endif
-      str = psxml%pot(i)%l
-end select
+idx = ps_GetPotentialIndex(ps,i,set)
+str = ps%semilocal%l(idx)
 !
 do l = 0,4
    if (str == sym(l)) RETURN
 enddo
 call die("Wrong l symbol in potential")
 
-end function psxmlPotAngMomentum
+end function ps_PotentialL
 !
-function psxmlOccupation(psxml,ud,i) result(zo)
-type(xml_ps_t), intent(in) :: psxml
-character, intent(in)      :: ud
+function ps_PotentialRc(ps,i,set) result(rc)
+type(ps_t), intent(in) :: ps
 integer,   intent(in)      :: i
-real(dp)                   :: zo
-
-integer :: ndown
-
-ndown = psxmlPotentialsDown(psxml)
-
-select case(ud)
-   case ( "u", "U")
-      if (i > psxmlPotentialsUp(psxml)) then
-         call die("attempt to get occupation from non-existing Up potential")
-      endif
-      zo = psxml%pot(ndown+i)%occupation
-   case ( "d", "D")
-      if (i > ndown) then
-         call die("attempt to get l from non-existing Down potential")
-      endif
-      zo = psxml%pot(i)%occupation
-end select
-end function psxmlOccupation
-!
-function psxmlGenerationCutoff(psxml,ud,i) result(rc)
-type(xml_ps_t), intent(in) :: psxml
-character, intent(in)      :: ud
-integer,   intent(in)      :: i
+character(len=5), intent(in), optional :: set
 real(dp)                   :: rc
 
-integer :: ndown
+integer :: idx
 
-ndown = psxmlPotentialsDown(psxml)
+idx = ps_GetPotentialIndex(ps,i,set)
+rc = ps%semilocal%rc(idx)
 
-select case(ud)
-   case ( "u", "U")
-      if (i > psxmlPotentialsUp(psxml)) then
-         call die("attempt to get cutoff from non-existing Up potential")
-      endif
-      rc = psxml%pot(ndown+i)%cutoff
-   case ( "d", "D")
-      if (i > ndown) then
-         call die("attempt to get cutoff from non-existing Down potential")
-      endif
-      rc = psxml%pot(i)%cutoff
-end select
-end function psxmlGenerationCutoff
+end function ps_PotentialRc
 !
-function psxmlPrincipalN(psxml,ud,i) result(n)
-type(xml_ps_t), intent(in) :: psxml
-character, intent(in)      :: ud
+function ps_PotentialN(ps,i,set) result(n)
+type(ps_t), intent(in) :: ps
 integer,   intent(in)      :: i
+character(len=5), intent(in), optional :: set
 integer                    :: n
 
-integer :: ndown
+integer :: idx
 
-ndown = psxmlPotentialsDown(psxml)
+idx = ps_GetPotentialIndex(ps,i,set)
+n = ps%semilocal%n(idx)
 
-select case(ud)
-   case ( "u", "U")
-      if (i > psxmlPotentialsUp(psxml)) then
-         call die("attempt to get n from non-existing Up potential")
-      endif
-      n = psxml%pot(ndown+i)%n
-   case ( "d", "D")
-      if (i > ndown) then
-         call die("attempt to get n from non-existing Down potential")
-      endif
-      n = psxml%pot(i)%n
-end select
-end function psxmlPrincipalN
+end function ps_PotentialN
 !
-function psxmlEvaluatePotential(psxml,ud,i,r,debug) result(val)
-type(xml_ps_t), intent(in) :: psxml
-character, intent(in)      :: ud
+function ps_EvaluatePotential(ps,i,r,set,debug) result(val)
+type(ps_t), intent(in) :: ps
 integer,   intent(in)      :: i
 real(dp),  intent(in)      :: r
+character(len=5), intent(in), optional :: set
 logical, intent(in), optional :: debug
 real(dp)                   :: val
 
+integer :: idx
 
-integer :: ndown
-real(dp), parameter :: tiny = 1.0e-8_dp
-real(dp) :: reff
-logical :: hasRfactor
+idx = ps_GetPotentialIndex(ps,i,set)
+val = eval_radfunc(ps%semilocal%V(idx),r, debug)
 
-ndown = psxml%npots_down
-hasRfactor = psxml%header%rV
+end function ps_EvaluatePotential
 
-reff = r
-if (r == 0.0_dp) then
-   reff = tiny
+function ps_GetPotentialIndex(ps,i,set) result(idx)
+type(ps_t), intent(in)                 :: ps
+integer,   intent(in)                  :: i
+character(len=5), intent(in), optional :: set
+integer                                :: idx
+
+logical major
+
+if (i > ps_NPotentials(ps,set)) then
+     call die("attempt to get index for non-existing potential")
 endif
 
-select case(ud)
-   case ( "u", "U")
-      if (i > psxmlPotentialsUp(psxml)) then
-         call die("attempt to evaluate non-existing Up potential")
-      endif
-      val = eval_radfunc(psxml%pot(ndown+i)%V,reff)
-   case ( "d", "D")
-      if (i > ndown) then
-         call die("attempt to get n from non-existing Down potential")
-      endif
-      val = eval_radfunc(psxml%pot(i)%V,reff)
-end select
+major = .true.
+if (present(set)) then
+   if (set == "minor") then
+      major = .false.
+   endif
+endif
 
-if (hasRfactor)   val = val / reff
+if (major) then
+   idx = ps%semilocal%major(i)
+else
+   idx = ps%semilocal%minor(i)
+endif
+end function ps_GetPotentialIndex
 
-end function psxmlEvaluatePotential
+function ps_NPseudoWfs(ps,set) result(n)
+type(ps_t), intent(in) :: ps
+character(len=5), intent(in), optional :: set
+integer                    :: n
+
+logical major
+
+major = .true.
+
+if (present(set)) then
+   if (set == "minor") then
+      major = .false.
+   endif
+endif
+
+if (major) then
+   n = ps%pswfs%npswfs_major
+else
+   n = ps%pswfs%npswfs_minor
+endif
+   
+end function ps_NPseudoWfs
+
+function ps_GetPswfIndex(ps,i,set) result(idx)
+type(ps_t), intent(in)                 :: ps
+integer,   intent(in)                  :: i
+character(len=5), intent(in), optional :: set
+integer                                :: idx
+
+logical major
+
+if (i > ps_NPseudoWfs(ps,set)) then
+     call die("attempt to get index for non-existing pswf")
+endif
+
+major = .true.
+if (present(set)) then
+   if (set == "minor") then
+      major = .false.
+   endif
+endif
+
+if (major) then
+   idx = ps%pswfs%major(i)
+else
+   idx = ps%pswfs%minor(i)
+endif
+end function ps_GetPswfIndex
 !
-function psxmlEvaluatePseudoOrbital(psxml,ud,i,r,debug) result(val)
-type(xml_ps_t), intent(in) :: psxml
-character, intent(in)      :: ud
+function ps_PseudoWfL(ps,i,set) result(l)
+type(ps_t), intent(in) :: ps
+integer,   intent(in)      :: i
+character(len=5), intent(in), optional :: set
+integer                    :: l
+
+character(len=1), dimension(0:4) :: sym = (/ "s", "p", "d", "f", "g" /)
+character(len=1) :: str
+
+integer :: idx
+
+idx = ps_GetPswfIndex(ps,i,set)
+str = ps%pswfs%l(idx)
+!
+do l = 0,4
+   if (str == sym(l)) RETURN
+enddo
+call die("Wrong l symbol in pswf")
+
+end function ps_PseudoWfL
+!
+function ps_PseudoWfN(ps,i,set) result(n)
+type(ps_t), intent(in) :: ps
+integer,   intent(in)      :: i
+character(len=5), intent(in), optional :: set
+integer                    :: n
+
+integer :: idx
+
+idx = ps_GetPswfIndex(ps,i,set)
+n = ps%pswfs%n(idx)
+
+end function ps_PseudoWfN
+!
+function ps_EvaluatePseudoWf(ps,i,r,set,debug) result(val)
+type(ps_t), intent(in) :: ps
 integer,   intent(in)      :: i
 real(dp),  intent(in)      :: r
+character(len=5), intent(in), optional :: set
 logical, intent(in), optional :: debug
 real(dp)                   :: val
 
+integer :: idx
 
-integer :: ndown
+idx = ps_GetPswfIndex(ps,i,set)
+val = eval_radfunc(ps%pswfs%Phi(idx),r,debug)
 
-ndown = psxml%npots_down
-
-select case(ud)
-   case ( "u", "U")
-      if (i > psxmlPotentialsUp(psxml)) then
-         call die("attempt to evaluate non-existing Up pswf")
-      endif
-      val = eval_radfunc(psxml%pswf(ndown+i)%V,r)
-   case ( "d", "D")
-      if (i > ndown) then
-         call die("attempt to get n from non-existing Down pswf")
-      endif
-      val = eval_radfunc(psxml%pswf(i)%V,r)
-end select
-
-end function psxmlEvaluatePseudoOrbital
+end function ps_EvaluatePseudoWf
 
 !====================================================
 function eval_radfunc(f,r,debug) result(val)
@@ -523,7 +606,6 @@ real(dp), intent(in)      :: r
 real(dp)                  :: val
 logical, intent(in), optional :: debug
 
-logical :: remove_r
 real(dp), pointer :: x(:) => null(), y(:) => null()
 
 x => f%grid%grid_data(:)
@@ -610,58 +692,58 @@ end subroutine interpolate
 
 
 
-subroutine dump_pseudo(pseudo,lun)
-  type(xml_ps_t), intent(in), target   :: pseudo
-  integer, intent(in)                  :: lun
-
-integer  :: i
-type(vps_t), pointer :: pp
-type(pswf_t), pointer :: pw
-type(radfunc_t), pointer :: rp
-
-real(dp), parameter :: rsmall = 1.e-3_dp
-
-write(lun,*) "---PSEUDO data:"
-
-      if (associated(pseudo%global_grid)) then
-         write(lun,*) "global grid data: ",  &
-           pseudo%global_grid%npts
-      endif
-         
-do i = 1, pseudo%npots
-      pp =>  pseudo%pot(i)
-      rp =>  pseudo%pot(i)%V
-      write(lun,*) "VPS ", i, " angular momentum: ", pp%l
-      write(lun,*) "                 n: ", pp%n
-      write(lun,*) "                 occupation: ", pp%occupation
-      write(lun,*) "                 cutoff: ", pp%cutoff
-      write(lun,*) "                 spin: ", pp%spin
-      write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
-      write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)/rsmall
-enddo
-do i = 1, pseudo%npswfs
-      pw =>  pseudo%pswf(i)
-      rp =>  pseudo%pswf(i)%V
-      write(lun,*) "PSWF ", i, " angular momentum: ", pw%l
-      write(lun,*) "                 n: ", pw%n
-      write(lun,*) "                 spin: ", pw%spin
-      write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
-      write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
-enddo
-
-
-rp => pseudo%valence_charge
-write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
-write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
-
-if (associated(pseudo%core_charge%data)) then
-   write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
-   write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
-endif
-
-write(lun,*) "---------------------- Done with Dump_pseudo"
-
-end subroutine dump_pseudo
+!!$subroutine dump_pseudo(pseudo,lun)
+!!$  type(ps_t), intent(in), target   :: pseudo
+!!$  integer, intent(in)                  :: lun
+!!$
+!!$integer  :: i
+!!$type(vps_t), pointer :: pp
+!!$type(pswf_t), pointer :: pw
+!!$type(radfunc_t), pointer :: rp
+!!$
+!!$real(dp), parameter :: rsmall = 1.e-3_dp
+!!$
+!!$write(lun,*) "---PSEUDO data:"
+!!$
+!!$      if (associated(pseudo%global_grid)) then
+!!$         write(lun,*) "global grid data: ",  &
+!!$           pseudo%global_grid%npts
+!!$      endif
+!!$         
+!!$do i = 1, pseudo%semilocal%npots
+!!$      pp =>  pseudo%semilocal
+!!$      rp =>  pseudo%semilocal%V(i)
+!!$      write(lun,*) "VPS ", i, " angular momentum: ", pp%l
+!!$      write(lun,*) "                 n: ", pp%n
+!!$      write(lun,*) "                 occupation: ", pp%occupation
+!!$      write(lun,*) "                 rc: ", pp%rc
+!!$      write(lun,*) "                 spin: ", pp%spin
+!!$      write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
+!!$      write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)/rsmall
+!!$enddo
+!!$do i = 1, pseudo%npswfs
+!!$      pw =>  pseudo%pswf(i)
+!!$      rp =>  pseudo%pswf(i)%V
+!!$      write(lun,*) "PSWF ", i, " angular momentum: ", pw%l
+!!$      write(lun,*) "                 n: ", pw%n
+!!$      write(lun,*) "                 spin: ", pw%spin
+!!$      write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
+!!$      write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
+!!$enddo
+!!$
+!!$
+!!$rp => pseudo%valence_charge
+!!$write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
+!!$write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
+!!$
+!!$if (associated(pseudo%core_charge%data)) then
+!!$   write(lun,*) "grid data: ", rp%grid%npts, rp%data(1)
+!!$   write(lun,*) "value at r=0: ", eval_radfunc(rp,rsmall)
+!!$endif
+!!$
+!!$write(lun,*) "---------------------- Done with Dump_pseudo"
+!!$
+!!$end subroutine dump_pseudo
 
       SUBROUTINE POLINT(XA,YA,N,X,Y,DY) 
 !*****************************************************************
