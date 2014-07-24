@@ -1,6 +1,6 @@
 
 
-      subroutine pseudoXMLnew( ray, npotd, npotu, zion, zratio )
+      subroutine write_psml( ray, npotd, npotu, zion )
 
       use flib_wxml
       use m_xcnames
@@ -18,14 +18,14 @@
       type(xmlf_t) :: xf
 
       integer npotd, npotu
-      double precision  :: zion, zratio
+      double precision  :: zion
 
       character*4      :: polattrib, relattrib, coreattrib
       character*10     :: ray(6)
       character*30 xcfuntype, xcfunparam
       character*30 gridtype, gridunits, gridscale, gridstep
 
-      integer                        :: ivps, ip, i
+      integer                         :: ivps, ip, i
       double precision, allocatable   :: chval(:), f(:)
 
       double precision                :: total_valence_charge
@@ -405,7 +405,7 @@ C
 
       end function force_underflow
 
-      end subroutine pseudoXMLnew
+      end subroutine write_psml
 
 
 

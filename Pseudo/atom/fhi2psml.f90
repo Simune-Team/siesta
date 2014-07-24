@@ -1,9 +1,10 @@
-program fhi2xml
+program fhi2psml
 
   ! Reads fort.X files from FHIPP98 and generates
-  ! a PSXML file
+  ! a PSML file
 
   ! Alberto Garcia, May 23, 2014
+  ! Alberto Garcia, July 24, 2014
 
   use flib_wxml
 
@@ -16,10 +17,13 @@ program fhi2xml
   integer   :: i, j, npts, i_dummy, stat
   real(dp)  :: rho, rhop, rhopp, dummy
   real(dp)  :: znuc, zion, rcore, v
+  real(dp)  :: total_valence_charge
   real(dp), allocatable :: r(:), chval(:), chcore(:)
-  real(dp), allocatable :: rvps(:,:), pswfs(:,:)
+  real(dp), allocatable :: vps(:,:), pswfs(:,:)
+  real(dp), allocatable :: vps_raw(:)
 
   character(len=100)    :: line, fname
+  character(len=100)    :: msg
   character*4      :: polattrib, relattrib, coreattrib
   character*1      :: pscode, char_dummy
   character(len=2) :: nameat
@@ -54,7 +58,7 @@ program fhi2xml
   open(unit=20,file="fort.25",form="formatted")
   do i = 1, npts
      read(20,*) r(i), rho, rhop, rhopp
-     chval(i) = rho*r(i)*r(i)
+     chval(i) = rho
   enddo
 
 
@@ -62,12 +66,17 @@ program fhi2xml
 
   call xml_AddXMLDeclaration(xf,"UTF-8")
 
-  call xml_NewElement(xf,"pseudo")
+  call xml_NewElement(xf,"psml")
+  call my_add_attribute(xf,"version","0.7")
+  call my_add_attribute(xf,"energy_unit","hartree")
+  call my_add_attribute(xf,"length_unit","bohr")
 
   call xml_NewElement(xf,"provenance")
   call my_add_attribute(xf,"creator","FHIPP98-2003")
-  call my_add_attribute(xf,"translator","fhi2xml v0.1")
-  call xml_NewElement(xf,"fort.20")
+  call my_add_attribute(xf,"translator","fhi2psml v0.2")
+  call my_add_attribute(xf,"date","01-01-01")
+  call xml_NewElement(xf,"input-file")
+  call my_add_attribute(xf,"name","fort.20")
   open(1,file="fort.20",form="formatted",status="old", &
        position="rewind",action="read")
   do
@@ -76,9 +85,10 @@ program fhi2xml
      call xml_AddPcData(xf,trim(line),line_feed=.true.)
   enddo
   close(1)
-  call xml_EndElement(xf,"fort.20")
+  call xml_EndElement(xf,"input-file")
   !
-  call xml_NewElement(xf,"fort.22")
+  call xml_NewElement(xf,"input-file")
+  call my_add_attribute(xf,"name","fort.22")
   open(1,file="fort.22",form="formatted",status="old", &
        position="rewind",action="read")
   do
@@ -87,11 +97,8 @@ program fhi2xml
      call xml_AddPcData(xf,trim(line),line_feed=.true.)
   enddo
   close(1)
-  call xml_EndElement(xf,"fort.22")
-
+  call xml_EndElement(xf,"input-file")
   call xml_EndElement(xf,"provenance")
-
-  print *, "Done provenance"
 
   open(1,file="fort.20",form="formatted",status="old", &
        position="rewind",action="read")
@@ -114,6 +121,7 @@ program fhi2xml
      allocate (fup(norbs),fdown(norbs))
   endif
 
+  total_valence_charge = 0.0_dp
   ncp = ncore + 1
   do i = 1, norbs
      if (polarized) then
@@ -121,6 +129,9 @@ program fhi2xml
         f(i) = fup(i) + fdown(i)
      else
         read(1,*) n(i), l(i), f(i)
+     endif
+     if (i > ncore) then
+        total_valence_charge =   total_valence_charge + f(i)
      endif
   enddo
   read(1,*) lmax, pscode
@@ -133,7 +144,8 @@ program fhi2xml
      zion = zion + f(i)
   enddo
 
-  call xml_NewElement(xf,"ps-generation-configuration")
+  call xml_NewElement(xf,"valence-configuration")
+  call my_add_attribute(xf,"total-valence-charge", str(total_valence_charge))
   do i = ncp, norbs
      if (f(i) .lt. 1.0e-10_dp) cycle
      call xml_NewElement(xf,"shell")
@@ -146,7 +158,7 @@ program fhi2xml
      endif
      call xml_EndElement(xf,"shell")
   enddo
-  call xml_EndElement(xf,"ps-generation-configuration")
+  call xml_EndElement(xf,"valence-configuration")
           
   npots = lmax + 1
   allocate (rc(npots), ll(npots), nn(npots), ff(npots))
@@ -181,7 +193,6 @@ program fhi2xml
   case ("t","T")
      psflavor ="Troullier-Martins"
   end select
-
   !
   !
   if (nonrel) then
@@ -276,31 +287,32 @@ program fhi2xml
 
   !
   !
-
-
   call xml_NewElement(xf,"header")
-  call my_add_attribute(xf,"symbol",nameat)
+  call my_add_attribute(xf,"atomic-label",nameat)
   call my_add_attribute(xf,"atomic-number",str(znuc))
-  call my_add_attribute(xf,"zval",str(zion))
-  call my_add_attribute(xf,"creator","FHIPP98-2003")
-  call my_add_attribute(xf,"date","01-01-01")
+  call my_add_attribute(xf,"z-pseudo",str(zion))
   call my_add_attribute(xf,"flavor",psflavor)
   call my_add_attribute(xf,"relativistic",relattrib)
   call my_add_attribute(xf,"polarized",polattrib)
   call my_add_attribute(xf,"core-corrections",coreattrib)
-  call my_add_attribute(xf,"xc-functional-type",xcfuntype)
-  call my_add_attribute(xf,"xc-functional-parametrization", &
-       xcfunparam)
+  call my_add_attribute(xf,"xc-functional",trim(xcfuntype)//trim(xcfunparam))
+  call my_add_attribute(xf,"xc-libxc-exchange","TBA")
+  call my_add_attribute(xf,"xc-libxc-correlation","TBA")
   call xml_EndElement(xf,"header")
 
   call xml_NewElement(xf,"grid")
   call my_add_attribute(xf,"npts",str(npts))
-  call xml_NewElement(xf,"grid_data")
+  write(msg,"(3(a,':',a,'--'))")  "type","fhi",          &
+                                 "r_1",trim(str(r(1))),       &
+                                 "factor",trim(str(r(2)/r(1)))
+  call my_add_attribute(xf,"annotation",trim(msg))
+  call xml_NewElement(xf,"grid-data")
   call xml_AddArray(xf,r(1:npts))
-  call xml_EndElement(xf,"grid_data")
+  call xml_EndElement(xf,"grid-data")
   call xml_EndElement(xf,"grid")
 
-  allocate (rvps(npts,npots), pswfs(npts,npots))
+  allocate (vps(npts,npots), pswfs(npts,npots))
+  allocate (vps_raw(npts))
   do i = 1, npots
 
      write(fname,"(a,i2)") "fort.", 40 + i - 1
@@ -308,54 +320,53 @@ program fhi2xml
      read(1,*) char_dummy, i_dummy, dummy, ll(i), rc(i)
      do j = 1, npts
         read(1,fmt=*,iostat=stat) i_dummy, dummy, pswfs(j,i), v
-        ! make it rV and in rydberg units
-        rvps(j,i) = 2.0_dp* v * r(j)
+        ! keep it as V and in hartree units
+        !*** Need to cut off the non-coulomb tail!!!
+        vps_raw(j) =  v 
+        ! remove factor of r
+        pswfs(j,i) =  pswfs(j,i) / r(j)
         if (stat /=0) stop "reading ps, vps"
      enddo
      close(1)
+     vps(:,i) = vps_raw(:)
+!     call cutoff_tail(r(:),vps_raw(:),zion,vps(:,i))
   enddo
 
-  call xml_NewElement(xf,"semilocal")
-  call my_add_attribute(xf,"units","Rydberg")
-  call my_add_attribute(xf,"format","r*V")
-  call my_add_attribute(xf,"npots-down",str(npots))
-  call my_add_attribute(xf,"npots-up","0")
-
+  call xml_NewElement(xf,"semilocal-potentials")
+  call my_add_attribute(xf,"npots-major",str(npots))
+  call my_add_attribute(xf,"npots-minor","0")
   !         
 
   vpsd: do i = 1, npots
      call xml_NewElement(xf,"vps")
-     call my_add_attribute(xf,"principal-n",str(nn(i)))
+     call my_add_attribute(xf,"set","major")
+     call my_add_attribute(xf,"n",str(nn(i)))
      call my_add_attribute(xf,"l",lsymb(ll(i)))
-     call my_add_attribute(xf,"cutoff",str(rc(i)))
-     call my_add_attribute(xf,"occupation",str(ff(i)))
-     call my_add_attribute(xf,"spin","-1")
-
+     call my_add_attribute(xf,"rc",str(rc(i)))
+     call my_add_attribute(xf,"flavor",psflavor)
 
      call xml_NewElement(xf,"radfunc")
      call xml_NewElement(xf,"data")
-     call xml_AddArray(xf,rvps(1:npts,i))
+     call xml_AddArray(xf,vps(1:npts,i))
      call xml_EndElement(xf,"data")
      call xml_EndElement(xf,"radfunc")
      call xml_EndElement(xf,"vps")
   enddo vpsd
-  call xml_EndElement(xf,"semilocal")
+  call xml_EndElement(xf,"semilocal-potentials")
 
   ! Dump of the pseudowave functions
-  call xml_NewElement(xf,"pseudowave-functions")
-  call my_add_attribute(xf,"units","none")
-  call my_add_attribute(xf,"format","?")
-  call my_add_attribute(xf,"n-pseudowave-functions-down", &
-       str(npots))
-  call my_add_attribute(xf,"n-pseudowave-functions-up","0")
+  call xml_NewElement(xf,"pseudo-wave-functions")
+  call my_add_attribute(xf,"npswfs",str(npots))
+  call my_add_attribute(xf,"npswfs-major",str(npots))
+  call my_add_attribute(xf,"npswfs-minor","0")
 
   ! Down pseudowave function follows
 
   pswfd: do i = 1, npots
      call xml_NewElement(xf,"pswf")
-     call my_add_attribute(xf,"principal-n",str(nn(i)))
+     call my_add_attribute(xf,"n",str(nn(i)))
      call my_add_attribute(xf,"l",lsymb(ll(i)))
-     call my_add_attribute(xf,"spin","-1")
+     call my_add_attribute(xf,"set","major")
 
      call xml_NewElement(xf,"radfunc")
 
@@ -365,9 +376,11 @@ program fhi2xml
      call xml_EndElement(xf,"radfunc")
      call xml_EndElement(xf,"pswf")
   enddo pswfd
-  call xml_EndElement(xf,"pseudowave-functions")
+  call xml_EndElement(xf,"pseudo-wave-functions")
 
   call xml_NewElement(xf,"valence-charge")
+  call my_add_attribute(xf,"total-charge",  &
+                      str(total_valence_charge))
   call xml_NewElement(xf,"radfunc")
 
   call xml_NewElement(xf,"data")
@@ -381,11 +394,14 @@ program fhi2xml
      open(unit=1,file="fort.27",form="formatted")
      do i = 1, npts
         read(1,*) dummy, rho, rhop, rhopp
-        chcore(i) = rho*r(i)*r(i)
+        chcore(i) = rho
      enddo
      close(1)
 
      call xml_NewElement(xf,"pseudocore-charge")
+     call my_add_attribute(xf,"matching-radius",str(rcore))  
+     call my_add_attribute(xf,"number-of-continuous-derivatives", &
+                                    str(2)) ! ****
      call xml_NewElement(xf,"radfunc")
 
      call xml_NewElement(xf,"data")
@@ -396,12 +412,12 @@ program fhi2xml
      deallocate(chcore)
   endif
 
-  call xml_EndElement(xf,"pseudo")
+  call xml_EndElement(xf,"psml")
 
 
   call xml_Close(xf)
 
-  deallocate(chval,r,rvps,pswfs)
+  deallocate(chval,r,vps,pswfs)
 
    CONTAINS
 
@@ -446,4 +462,90 @@ program fhi2xml
 
       END function symbol
 
-   end program fhi2xml
+      subroutine add_zero_r(f,r,f0)
+      ! Adds an r=0 element to a grid function f0, extrapolating
+
+      double precision, intent(in)  :: f(:), r(:)
+      double precision, intent(out) :: f0(:)
+      
+      integer i
+      double precision :: r2
+
+      do i = 2, npts
+         f0(i) = f(i-1)
+      enddo
+      r2 = r(1)/(r(2)-r(1))
+      f0(1) = f(2) - (f(3)-f(2))*r2
+
+    end subroutine add_zero_r
+
+    subroutine cutoff_tail(r,f,Z,fp)
+      ! cuts off the non-coulombic tail of a pseudopotential
+      ! one has to be careful and determine a safe area, avoiding
+      ! early crossings and large-r mis-behavior
+
+      real(dp), intent(in) :: r(:)
+      real(dp), intent(in) :: f(:)
+      real(dp), intent(in) :: Z
+      real(dp), intent(out) :: fp(:)
+
+      real(dp), parameter :: tolerance = 1.0e-4_dp
+
+      integer :: n, j, jcut, nf, nflat
+      real(dp) :: fcut, vp2z
+      logical :: in_flat_region(size(r))
+
+      n = size(r)
+
+      fp(:) = f(:)
+
+      in_flat_region(:) = .false.
+      do j = 1, n
+         vp2z = r(j)*f(j) + Z
+         in_flat_region(j) = (abs(vp2z) .lt. tolerance)
+      enddo
+      nflat = 0
+      do j=1,n
+         if (in_flat_region(j)) nflat = nflat + 1
+      enddo
+      print *, "nflat: ", nflat
+
+      if (nflat < 20) then
+         print *, "Only ", nflat, " points below tolerance..."
+         stop
+      endif
+      ! Choose a point safely into the flat region
+      nf = 0
+      do j = 1, n
+         if (in_flat_region(j)) then
+            nf = nf + 1
+         endif
+         if (nf > 5) then
+            jcut = j
+            exit
+         endif
+      enddo
+      print *, "jcut: ", jcut
+         
+!      ...
+!           Default cutoff function: f(r)=exp(-5*(r-r_cut)). It damps
+!           down the residual of rV+2*Zion.
+!           Should be made smoother... Vps ends up with a kink at rcut.
+!           Maybe use one of the Vanderbilt generalized gaussians.
+
+            do  j = jcut, n
+               fcut = cutoff_function(r(j)-r(jcut))
+               fp(j) = (-Z + fcut*(r(j)*f(j)+Z))/r(j)
+            enddo
+       end subroutine cutoff_tail
+
+      function cutoff_function(r) result(x)
+
+        real(dp), intent(in) :: r
+        real(dp)             :: x
+
+        x = exp(-5.0_dp*r)
+
+      end function cutoff_function
+
+    end program fhi2psml

@@ -1,4 +1,25 @@
 ------------------------------------------------------------
+July 24, 2014  Alberto Garcia           trunk-462--ncps-35
+Updated fhi2psml. Fix max_range issue in evaluator.
+
+Updated the translator from the fhi98pp output to PSML v0.7.
+Still missing: addition of r=0 to the grid and data.
+
+Attempts to evaluate functions beyond the range of their grids
+will result in the asymptotic values being returned (-Z/r for
+pseudopotentials and 0 or pswfs, rho_val, and rho_core).
+
+renamed:
+  Pseudo/atom/fhi2xml.f90 => Pseudo/atom/fhi2psml.f90
+  Pseudo/atom/pseudoXMLnew.f => Pseudo/atom/write_psml.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/wrapup.f
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Pseudo/atom/fhi2psml.f90
+  Pseudo/atom/write_psml.f
+
+------------------------------------------------------------
 July 24, 2014  Alberto Garcia           trunk-462--ncps-34
 Fix bug in r or r^2 removal. Move valence-configuration element. Some docs
 

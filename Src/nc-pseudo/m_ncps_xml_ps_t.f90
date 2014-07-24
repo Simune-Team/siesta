@@ -331,7 +331,11 @@ real(dp), intent(in)       :: r
 logical, intent(in), optional :: debug
 real(dp)                   :: val
 
-val = eval_radfunc(ps%valence_charge%rho_val,r,debug)
+if (r > max_range(ps%valence_charge%rho_val)) then
+   val = 0.0_dp
+else
+   val = eval_radfunc(ps%valence_charge%rho_val,r,debug)
+endif
 end function ps_EvaluateValenceCharge
 
 function ps_EvaluateCoreCharge(ps,r,debug) result(val)
@@ -340,7 +344,11 @@ real(dp), intent(in)       :: r
 logical, intent(in), optional :: debug
 real(dp)                   :: val
 
-val = eval_radfunc(ps%core_charge%rho_core,r,debug)
+if (r > max_range(ps%core_charge%rho_core)) then
+   val = 0.0_dp
+else
+   val = eval_radfunc(ps%core_charge%rho_core,r,debug)
+endif
 end function ps_EvaluateCoreCharge
 !
 function ps_AtomicSymbol(ps) result(name)
@@ -509,7 +517,11 @@ real(dp)                   :: val
 integer :: idx
 
 idx = ps_GetPotentialIndex(ps,i,set)
-val = eval_radfunc(ps%semilocal%V(idx),r, debug)
+if (r> max_range(ps%semilocal%V(idx))) then
+   val = - ps_ZPseudo(ps)/r
+else
+   val = eval_radfunc(ps%semilocal%V(idx),r, debug)
+endif
 
 end function ps_EvaluatePotential
 
@@ -633,11 +645,26 @@ real(dp)                   :: val
 integer :: idx
 
 idx = ps_GetPswfIndex(ps,i,set)
-val = eval_radfunc(ps%pswfs%Phi(idx),r,debug)
+if (r> max_range(ps%pswfs%Phi(idx))) then
+   val = 0.0_dp
+else
+   val = eval_radfunc(ps%pswfs%Phi(idx),r,debug)
+endif
 
 end function ps_EvaluatePseudoWf
 
 !====================================================
+!> @brief Maximum radius in a radfunc's grid
+function max_range(f) result(range)
+type(radfunc_t), intent(in) :: f
+real(dp)                  :: range
+
+integer :: npts
+
+npts = f%grid%npts
+range = f%grid%grid_data(npts)
+end function max_range
+!----------
 function eval_radfunc(f,r,debug) result(val)
 type(radfunc_t), intent(in) :: f
 real(dp), intent(in)      :: r
