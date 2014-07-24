@@ -1,3 +1,7 @@
+!> @brief Consolidates the reading of all allowable types of ps files
+!! (vps, psf, psml)
+!> @author Alberto Garcia
+
       module m_ncps_reader
 
       use m_ncps_froyen_ps_t,    only: pseudopotential_t => froyen_ps_t
@@ -52,7 +56,7 @@
                  call pseudo_reparametrize(p,a,b,label,rmax)
               endif
            else
-              fname = trim(label) // '.xml'
+              fname = trim(label) // '.psml'
               inquire(file=fname, exist=found)
               if (found) then
                  call pseudo_read_xml(fname,p,reparametrize,a,b,rmax)
@@ -63,8 +67,7 @@
               endif
            endif
         endif
-!        if (write_ion_plot_files)
-!     $       call pseudo_dump(trim(label) // ".psdump",p)
+        call pseudo_dump(trim(label) // ".psdump",p)
         end subroutine pseudo_read
 !
         subroutine pseudo_read_xml(fname,p,reparametrize,a,b,rmax)
@@ -88,4 +91,27 @@
 
         end subroutine pseudo_read_xml
 !----
+        subroutine pseudo_dump(fname,p)
+!
+!       Column-oriented output
+!
+        character(len=*), intent(in) :: fname
+        type(pseudopotential_t), intent(in)     :: p
+
+        integer io_ps, i, j
+
+        call io_assign(io_ps)
+        open(io_ps,file=fname,form='formatted',status='unknown',
+     $       action="write",position="rewind")
+        write(6,'(3a)') 'Dumping pseudopotential information ',
+     $       'in formatted form in ', trim(fname)
+
+ 9040    format(i4,7es20.9)
+         do j = 1, p%nrval
+            write(io_ps,9040) j, p%r(j), (p%vdown(i,j),i=1,p%npotd),
+     $                        p%chval(j), p%chcore(j)
+         enddo
+         call io_close(io_ps)
+         end subroutine pseudo_dump
+
       end module m_ncps_reader

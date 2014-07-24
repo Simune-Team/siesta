@@ -143,10 +143,9 @@
           call my_add_attribute(xf,"xc-libxc-exchange",xc_id%libxc_x)
           call my_add_attribute(xf,"xc-libxc-correlation",xc_id%libxc_c)
           !
-          call do_configuration(total_valence_charge)
-          !
         call xml_EndElement(xf,"header")
 
+        call do_configuration(total_valence_charge)
 
         call xml_NewElement(xf,"grid")
           call my_add_attribute(xf,"npts",str(nr))
@@ -224,7 +223,7 @@
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")
-                 call remove_r(pswf(i,2:nr),r(:),f(:))
+                 call remove_r(pswf(i,:),r(:),f(:))
                  call xml_AddArray(xf,force_underflow(f(1:nr)))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
@@ -239,7 +238,7 @@
           call xml_NewElement(xf,"radfunc")
 
             call xml_NewElement(xf,"data")
-            call remove_r2(chval(2:nr),r(:),f(:))
+            call remove_r2(chval(:),r(:),f(:))
             call xml_AddArray(xf,force_underflow(f(1:nr)))
             call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"radfunc")
@@ -254,7 +253,7 @@
            call xml_NewElement(xf,"radfunc")
 
            call xml_NewElement(xf,"data")
-            call remove_r2(cdc(2:nr),r(:),f(:))
+            call remove_r2(cdc(:),r(:),f(:))
             call xml_AddArray(xf,force_underflow(f(1:nr)))
            call xml_EndElement(xf,"data")
            call xml_EndElement(xf,"radfunc")

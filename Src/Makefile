@@ -127,7 +127,7 @@ OBJS =  automatic_cell.o atom_options.o \
         atmfuncs.o listsc.o memoryinfo.o m_memory.o sorting.o \
         atomlist.o atm_types.o old_atmfuncs.o radial.o \
         alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
-        basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
+        basis_types.o xml.o basis_specs.o basis_io.o\
         onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
         electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
@@ -647,7 +647,6 @@ projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o

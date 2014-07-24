@@ -1,13 +1,15 @@
+!> @brief Data structures and functions to handle
+!> the PSML pseudopotential format.
+!> @author Alberto Garcia
+!
+!> @detail The PSML library will eventually have three sections:
+!>
+!> A. Definition of data structures.
+!> B. Accessors for pseudopotential information and evaluation
+!> C. Parsing helpers
+
 module m_ncps_xml_ps_t
-!
-! Data structures and functions to handle the XML pseudopotential format.
-!
-! The PSML library will eventually have three sections:
-!
-! A. Definition of data structures.
-! B. Accessors for pseudopotential information and evaluation
-! C. Parsing helpers
-!
+! 
 ! In order for this module will hide completely the implementation of
 ! the parsing of the XML file and the later querying of the data
 ! structures, the ps_t type should be made private. But then all the
@@ -113,6 +115,9 @@ type, public :: core_charge_t
 end type core_charge_t
 
 
+!> @brief Main derived type to hold the PSML information
+!> @author Alberto Garcia
+!> @todo It could be used also by psf and vps readers
 type, public :: ps_t
       type(provenance_t)                 :: provenance
       type(header_t)                     :: header
@@ -170,7 +175,10 @@ public :: ps_EvaluateValenceCharge
 public :: ps_EvaluateCoreCharge
 
 CONTAINS !===============================================
-
+!> @brief Cleans and deallocates the ps object
+!> @author Alberto Garcia
+!> @date March-July 2014
+!> @detail ps is a pointer, and not a "value". This is confusing
 subroutine ps_destroy(ps)
 type(ps_t), pointer :: ps
 
@@ -219,6 +227,11 @@ end subroutine destroy_grid
 
 !========================================================
 
+!> @brief Returns the number of non-empty valence shells
+!> in the ps generation configuration
+!> @author Alberto Garcia
+!> @date 2014
+!> @param ps is a handle to the psml information
 function ps_NValenceShells(ps) result(nshells)
 type(ps_t), intent(in) :: ps
 integer                :: nshells
@@ -227,6 +240,13 @@ nshells = ps%config_val%nshells
 
 end function ps_NValenceShells
 
+!> @brief Returns the angular momentum of the i'th valence shell
+!> in the ps generation configuration
+!> @author Alberto Garcia
+!> @date 2014
+!> @param ps is a handle to the psml information
+!> @param i is the index of the shell
+!> @note i should be within range
 function ps_ValenceShellL(ps,i) result(l)
 type(ps_t), intent(in) :: ps
 integer, intent(in)    :: i
@@ -247,6 +267,13 @@ call die("Wrong l symbol in valence shell")
 
 end function ps_ValenceShellL
 
+!> @brief Returns the principal quantum number of the i'th valence shell
+!> in the ps generation configuration
+!> @author Alberto Garcia
+!> @date 2014
+!> @param ps is a handle to the psml information
+!> @param i is the index of the shell
+!> @note i should be within range
 function ps_ValenceShellN(ps,i) result(n)
 type(ps_t), intent(in) :: ps
 integer, intent(in)    :: i
@@ -259,6 +286,17 @@ n = ps%config_val%n(i)
 
 end function ps_ValenceShellN
 
+!> @brief Returns the occupation of the i'th valence shell
+!> in the ps generation configuration
+!> @author Alberto Garcia
+!> @date 2014
+!> @param ps is a handle to the psml information
+!> @param i is the index of the shell
+!> @param channel is an optional parameter for spin-polarized 
+!> calculations ("u" or "d"). 
+!> @note i should be within range
+!> @note If "channel" is present, the occupation returned
+!> corresponds to the given channel
 function ps_ValenceShellOccupation(ps,i,channel) result(occ)
 type(ps_t), intent(in) :: ps
 integer, intent(in)    :: i

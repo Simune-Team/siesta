@@ -1,4 +1,21 @@
 ------------------------------------------------------------
+July 24, 2014  Alberto Garcia           trunk-462--ncps-34
+Fix bug in r or r^2 removal. Move valence-configuration element. Some docs
+
+Fixed an off-by-one error in some of the calls to remove the r or r**2 factors.
+
+Siesta can now read V 0.7 PSML files.
+
+Initial stages of psml documentation with Doxygen.
+
+modified:
+  Pseudo/atom/pseudoXMLnew.f
+  Src/Makefile
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_psml.F90
+
+------------------------------------------------------------
 July 22, 2014  Alberto Garcia           trunk-462--ncps-33
 Remove factor of r*r in val and core charges. Update lib and clients
 
