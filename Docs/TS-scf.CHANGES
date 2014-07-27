@@ -1,4 +1,18 @@
 ----------------------------------------------------
+July 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-166
+Bugfix, no GF creation with onlyS
+
+* When doing onlyS calculations we were 
+  still creating the green's functions (which does
+  not make any sense).
+  We now check that the onlyS variable and skip any electrode
+  dependencies with onlyS
+  
+modified:
+  Src/m_ts_options.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 July 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-165
 Finalized new TSHS format
 

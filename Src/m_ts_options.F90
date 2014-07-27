@@ -134,7 +134,7 @@ contains
        call die('Stopping code')
     end if
 
-    if ( .not. TSmode ) then
+    if ( onlyS .or. .not. TSmode ) then
        if ( IONode ) then
           write(*,1) 'Save H and S matrices', saveTSHS
           write(*,1) 'Save S and quit (onlyS)', onlyS
