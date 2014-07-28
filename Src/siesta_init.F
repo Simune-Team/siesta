@@ -75,6 +75,7 @@
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
+
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
 C     Initialise MPI and set processor number
@@ -363,13 +364,12 @@ C     Initialise MPI and set processor number
       if (gamma) then
         nsc(1:3) = 1
       else
-        do i=1,3
+        ! Discussion with Jose-Soler we get this size ! NPA
+        do i = 1 , 3
           veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-          nsc(i) = ceiling( 2 * rmaxh / veclen )
-        enddo
-        if (.not. naiveauxcell)
-     &    call check_sc_factors( ucell, nsc, 2*rmaxh )
-      endif
+          nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
+        end do
+      end if
 
       mscell = 0.0_dp
       do i = 1, 3

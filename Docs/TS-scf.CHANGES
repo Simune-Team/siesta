@@ -1,4 +1,25 @@
 ----------------------------------------------------
+July 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-167
+Implemented Jose Soler suggestion about xijo
+
+* Implemented the "correct" supercell counts for siesta 
+  which nearly always counts too large a supercell.
+  TODO apply a correction which takes into account
+  the minimum position along vectors and the maximum
+  position along vectors, then calculate their overlap.
+
+* Corrected tshs2tshs to also handle this.
+
+modified:
+  Src/m_hs_matrix.f90
+  Src/m_ts_io.F90
+  Src/siesta_init.F
+  Util/Grimme/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/TS/tshs2tshs/tshs2tshs.f90
+
+----------------------------------------------------
 July 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-166
 Bugfix, no GF creation with onlyS
 

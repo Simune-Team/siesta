@@ -12,7 +12,6 @@ dep:
 	sfmakedepend --depend=obj  --modext=o \
 	  *.f90 \
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 $(VPATH)/*.T90
-	@sed -i -e "/^m_ts_io.o:/s/m_glob_sparse.o//" Makefile
 
 
 ARCH_MAKE=../../../$(OBJDIR)/arch.make
@@ -365,7 +364,7 @@ m_ts_gf.o: m_ts_electype.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
 m_ts_hartree.o: intrinsic_missing.o m_ts_electype.o m_ts_mesh.o m_ts_tdir.o
 m_ts_hartree.o: parallel.o precision.o sys.o
-m_ts_io.o: geom_helper.o  m_hs_matrix.o parallel.o precision.o
+m_ts_io.o: geom_helper.o m_glob_sparse.o m_hs_matrix.o parallel.o precision.o
 m_ts_io.o: sys.o
 m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
@@ -633,7 +632,7 @@ write_subs.o: m_steps.o m_stress.o m_ts_global_vars.o parallel.o precision.o
 write_subs.o: siesta_cml.o siesta_geom.o siesta_options.o units.o zmatrix.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o kpoint_grid.o
 writewave.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o units.o
-xc.o: alloc.o bsc_xcmod.o precision.o sys.
+xc.o: alloc.o bsc_xcmod.o precision.o sys.o
 xml.o: precision.o
 zm_broyden_optim.o: alloc.o m_broyddj_nocomm.o parallel.o precision.o sys.o
 zm_broyden_optim.o: units.o zmatrix.o
@@ -641,8 +640,8 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 m_ts_io_version.o: geom_helper.o precision.o
-tshs2tshs.o: f2kcli.o m_hs_matrix.o m_ts_io.o m_ts_io_version.o parallel.o
-tshs2tshs.o: precision.o units.o
+tshs2tshs.o: f2kcli.o geom_helper.o m_hs_matrix.o m_ts_io.o m_ts_io_version.o
+tshs2tshs.o: parallel.o precision.o units.o
 band.o: bands.o
 class_cdata1d.o: class_Data1D.o
 class_cdata2d.o: class_Data2D.o

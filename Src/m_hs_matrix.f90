@@ -167,7 +167,7 @@ module m_hs_matrix
   public :: nsc_to_offsets
   public :: offset2idx
   public :: list_col_correct
-
+  public :: supercell_offsets
 
   integer, parameter, public :: TRANSFER_ALL = -999999
 
@@ -1418,6 +1418,78 @@ contains
     end do
 
   end subroutine list_col_correct
+
+  ! Create an index array containing the unit-cell expansions
+  ! This means we can do this:
+  !   xij(:,ind) = ucell(:,1) * tm(1) + ucell(:,2) * tm(2) + ucell(:,3) * tm(3) + xa(:,iaorb(jo))-xa(:,iaorb(io))
+  ! to create the full xij array...
+  subroutine supercell_offsets(ucell,na_u, no_u,maxnh, &
+       lasto, xa, numh, listhptr, listh, xij, nsc, offsets)
+    use precision, only : dp
+    use geom_helper, only : ucorb, iaorb
+    use cellSubs, only : reclat
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    real(dp), intent(in) :: ucell(3,3) ! The unit cell of system
+    integer, intent(in)  :: na_u ! Unit cell atoms
+    integer, intent(in)  :: no_u ! Unit cell orbitals
+    integer, intent(in)  :: maxnh ! Hamiltonian size
+    integer, intent(in)  :: lasto(0:na_u) ! Last orbital of atom
+    real(dp), intent(in) :: xa(3,na_u) ! atom positions
+    integer, intent(in)  :: numh(no_u), listhptr(no_u)
+    integer, intent(in)  :: listh(maxnh)
+    real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
+    integer, intent(in)  :: nsc(3) ! Number of supercells in each direction
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    integer, intent(out) :: offsets(3,0:product(nsc)-1)
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer :: io, j, ind, ia, ja, is, tm(3)
+    real(dp) :: xijo(3), rcell(3,3)
+
+    ! Initialize the offsets
+    offsets(:,:) = 0
+    
+    ! Prepare the cell to calculate the index of the atom
+    call reclat(ucell,rcell,0) ! Without 2*Pi
+
+    do io = 1 , no_u
+
+       ia = iaorb(io,lasto)
+       ind = listhptr(io)
+
+       do j = 1 , numh(io)
+
+          ind = ind + 1
+          ja = iaorb(ucorb(listh(ind),no_u),lasto)
+
+          ! the supercell index (counting from zero)
+          is = (listh(ind) - 1)/no_u
+
+          xijo(:) = xij(:,ind) - ( xa(:,ja) - xa(:,ia) )
+
+          tm(:) = nint( matmul(xijo,rcell) )
+
+          if ( any(tm(:) /= offsets(:,is)) .and. any(offsets(:,is)/=0) ) then
+             write(*,'(a,3(tr1,i6))')'r,c',io,listh(ind)
+             write(*,'(a,i3,tr1,3(tr1,i3),tr3,3(tr1,i3))') 'is, tm',is, tm, offsets(:,is)
+             write(*,'(a,2(tr1,i3),6(tr1,f10.5))') 'ia, ja',ia, ja,xijo(:)-&
+                  ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3)
+             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xa(:,(is-1)*na_u +ja)-xa(:,ia)
+             call die('Error')
+          else
+             offsets(:,is) = tm(:)
+          end if
+
+       end do
+    end do
+
+  end subroutine supercell_offsets
 
 end module m_hs_matrix
   

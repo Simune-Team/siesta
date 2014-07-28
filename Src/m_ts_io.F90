@@ -751,7 +751,7 @@ contains
 ! TSS End
 ! *********************************************************************
 
-    use m_hs_matrix, only : nsc_to_offsets, offset2idx, list_col_correct
+    use m_hs_matrix, only : supercell_offsets
     use m_hs_matrix, only : set_HS_available_transfers
     use geom_helper, only : ucorb
 
@@ -786,11 +786,9 @@ contains
     integer :: iu
     integer :: ispin, i, n_s
     integer :: maxnhg
-    integer :: lnsc(3), lno_s, tms(2,3)
-    integer, pointer :: offsets(:,:)
-    integer, allocatable :: listhg(:)
+    integer, allocatable :: offsets(:,:)
 #ifdef MPI
-    integer,  allocatable :: numhg(:), listhptrg(:)
+    integer,  allocatable :: numhg(:), listhptrg(:), listhg(:)
     real(dp), allocatable :: xijg(:,:), Mg(:)
 #endif
 
@@ -814,13 +812,12 @@ contains
             &please consult the developers.')
     end do
 
+    allocate(offsets(3,n_s))
+
 #ifdef MPI
     call glob_sparse_arrays(no_l,no_u,no_s,maxnh, &
          numh ,listhptr ,listh ,xij , Gamma,&
          numhg,listhptrg,maxnhg,listhg,xijg)
-
-    call set_HS_available_transfers(ucell,na_u,xa,lasto,no_u,maxnhg, &
-         xijg,numhg,listhptrg,listhg,tms)
 
     allocate(Mg(maxnhg))
     call memory('A','D',maxnhg,'globArrays')
@@ -828,33 +825,15 @@ contains
     call glob_sparse_matrix(no_l,no_u,no_s, &
          maxnh,  numh , listhptr , S , &
          maxnhg, numhg, listhptrg, Mg)
+
+    call supercell_offsets(ucell,na_u,no_u,maxnhg, &
+         lasto, xa, numhg, listhptrg, listhg, xijg, nsc, offsets)
+
 #else
-
-    call set_HS_available_transfers(ucell,na_u,xa,lasto,no_u,maxnh, &
-         xij,numh,listhptr,listh,tms)
-
     maxnhg = maxnh
-    allocate(listhg(maxnhg))
-    listhg = listh
-#endif
 
-    ! Calculate new supercells
-    do i = 1 , 3
-       lnsc(i) = 2 * maxval(abs(tms(:,i))) + 1
-    end do
-    lno_s = product(lnsc) * no_u
-
-    ! Always calculate offsets
-    ! If lnsc is then 1, then fine! :)
-    call nsc_to_offsets(lnsc,offsets)
-
-    ! Correct the listhg array
-#ifdef MPI
-    call list_col_correct(ucell,na_u, no_u,maxnhg, &
-         lasto, xa, numhg, listhptrg, listhg, xijg, lnsc)
-#else
-    call list_col_correct(ucell,na_u, no_u,maxnhg, &
-         lasto, xa, numh, listhptr, listhg, xij, lnsc)
+    call supercell_offsets(ucell,na_u,no_u,maxnh, &
+         lasto, xa, numh, listhptr, listh, xij, nsc, offsets)
 #endif
 
     if ( IONode ) then
@@ -867,8 +846,8 @@ contains
        write(iu) 1 ! This is version one of the file format
 
        ! Write Dimensions Information
-       write(iu) na_u, no_u, lno_s, nspin, maxnhg
-       write(iu) lnsc ! The "corrected" supercells
+       write(iu) na_u, no_u, no_s, nspin, maxnhg
+       write(iu) nsc
        
        ! Write Geometry information
        write(iu) ucell, xa
@@ -896,7 +875,7 @@ contains
 #ifdef MPI
           write(iu) listhg(listhptrg(i)+1:listhptrg(i)+numhg(i))
 #else
-          write(iu) listhg(listhptr(i)+1:listhptr(i)+numh(i))
+          write(iu) listh(listhptr(i)+1:listhptr(i)+numh(i))
 #endif
        end do
 
@@ -946,8 +925,6 @@ contains
     call glob_sparse_arrays_dealloc(no_u, Gamma, &
          maxnhg, numhg, listhptrg, listhg, xijg)
     call glob_sparse_matrix_dealloc(maxnhg, Mg)
-#else
-    deallocate(listhg)
 #endif
 
     deallocate(offsets)
