@@ -646,11 +646,11 @@ contains
        write(*,'(/,2a)') "Creating Green's function file for: ",trim(name(El))
 
        ktmp(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * Rep(El) &
-            * El%no_used ** 2 / 1000000._dp
+            * El%no_used ** 2 / 1024._dp ** 2
        ! Correct estimated file-size
        if ( pre_expand ) ktmp(1) = ktmp(1) * Rep(El)
-       if ( ktmp(1) > 2000._dp ) then
-          ktmp(1) = ktmp(1) / 1000._dp
+       if ( ktmp(1) > 2001._dp ) then
+          ktmp(1) = ktmp(1) / 1024._dp
           write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' GB'
        else
           write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' MB'

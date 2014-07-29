@@ -418,7 +418,7 @@ contains
     mem = tmp_mem
 #endif
 
-    mem = mem / 1000._dp ** 2
+    mem = mem / 1024._dp ** 2
     if ( IONode ) then
        write(*,'(/,a,f10.2,a)') &
             'transiesta: Memory usage of sparse arrays and electrodes (static): ', &
@@ -440,7 +440,7 @@ contains
        do i = 1 , N_tri_part - 1
           mem = mem + tri_parts(i)*( tri_parts(i) + 2 * tri_parts(i+1) )
        end do
-       mem = (mem * 2 + padding + worksize ) * 16._dp / 1000._dp ** 2
+       mem = (mem * 2 + padding + worksize ) * 16._dp / 1024._dp ** 2
        if ( IONode ) &
             write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of tri-diagonal matrices: ', &
@@ -458,7 +458,7 @@ contains
        else
           mem = mem + i * (i-no_E)
        end if
-       mem = mem * 16._dp / 1000._dp ** 2
+       mem = mem * 16._dp / 1024._dp ** 2
        if ( IONode ) &
             write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of full matrices: ', &

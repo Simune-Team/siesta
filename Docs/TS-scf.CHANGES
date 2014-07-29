@@ -1,4 +1,16 @@
 ----------------------------------------------------
+July 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-171
+Memory estimation bugfix
+
+* One really should use 1024 and not 1000.
+  At least for IO file size estimation (the majory
+  of file systems uses 1024).
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 July 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-170
 Bugfix for makefiles make dep with T90 files
 
