@@ -132,7 +132,7 @@ contains
 
     type(OrbitalDistribution) :: dit
     type(Sparsity) :: tmpSp1, tmpSp2
-    integer :: iEl, idx, no, io, jo, ind, nr, ioff
+    integer :: iEl, idx, no, io, ind, nr, ioff
     integer, pointer :: l_ptr(:),l_ncol(:), l_col(:)
 
 #ifdef MPI
@@ -255,7 +255,7 @@ contains
     integer, intent(in) :: no_u_TS, nzs, N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
     complex(dp), pointer :: Gf(:)
-    integer :: iEl, no, io, j, nr, ind
+    integer :: io, j, nr, ind
     integer, pointer :: l_ptr(:), l_ncol(:), l_col(:)
 
     ! Create the index 
@@ -298,7 +298,7 @@ contains
     integer, intent(in) :: no_u_TS, N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
     complex(dp), pointer :: Gf(:)
-    integer :: iEl, no, i, j, io, jo, ind
+    integer :: iEl, no, i, j, io, ind
 
     ! We only need a partial size of the Green's function
     no = sum(TotUsedOrbs(Elecs))

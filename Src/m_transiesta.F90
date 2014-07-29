@@ -370,6 +370,7 @@ contains
 
     logical, intent(in) :: ts_Gamma ! transiesta Gamma
     integer :: i, f, no_E
+    integer :: padding, worksize
     real(dp) :: mem, tmp_mem
 #ifdef MPI
     integer :: MPIerror
@@ -429,17 +430,17 @@ contains
        ! Calculate size of the tri-diagonal matrix
        if ( IsVolt ) then
           call GFGGF_needed_worksize(N_tri_part,tri_parts, &
-               N_Elec, Elecs, i)
-          mem = max(0,i)
+               N_Elec, Elecs, padding, worksize)
        else
-          mem = 0
+          padding = 0
+          worksize = 0
        end if
 
-       mem = mem + tri_parts(N_tri_part)**2
+       mem = tri_parts(N_tri_part) ** 2
        do i = 1 , N_tri_part - 1
           mem = mem + tri_parts(i)*( tri_parts(i) + 2 * tri_parts(i+1) )
        end do
-       mem = mem * 16._dp * 2 / 1000._dp ** 2
+       mem = (mem * 2 + padding + worksize ) * 16._dp / 1000._dp ** 2
        if ( IONode ) &
             write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of tri-diagonal matrices: ', &

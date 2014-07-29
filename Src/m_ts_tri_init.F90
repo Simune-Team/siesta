@@ -25,11 +25,9 @@ module m_ts_tri_init
   ! arrays for containing the tri-diagonal matrix part sizes
   integer, pointer, save :: tri_parts(:) => null()
   integer, save :: N_tri_part = 0
-  integer, save :: GFGGF_size = 0
 
   public :: ts_tri_init
   public :: N_tri_part, tri_parts
-  public :: GFGGF_size
 
   private
   
@@ -62,6 +60,7 @@ contains
 
     integer :: idx, no
     integer :: i, els, no_u_TS
+    integer :: padding, worksize
     
     no_u_TS = nrows_g(ts_sp_uc) - no_Buf
 
@@ -97,8 +96,7 @@ contains
     ! This will create and even out the parts
     if ( associated(tri_parts) ) &
          call de_alloc(tri_parts, &
-         routine='tsSp2TM', &
-         name='n_part')
+         routine='tsSp2TM', name='n_part')
 
     N_tri_part = 0
     nullify(tri_parts)
@@ -132,16 +130,11 @@ contains
 
     if ( .not. IsVolt ) return
 
-    ! Check whether we can use one of the diagonal blocks of the 
-    ! matrix to create the work-array...
+    ! Get the padding for the array to hold the entire column
     call GFGGF_needed_worksize(N_tri_part,tri_parts, &
-         N_Elec, Elecs, GFGGF_size)
+         N_Elec, Elecs, padding, worksize)
     if ( IONode ) then
-       if ( GFGGF_size < 0 ) then
-          write(*,'(a)') 'transiesta: Work-array need not be allocated'
-       else
-          write(*,'(a,i0)') 'transiesta: Work-array will be allocated, size: ',GFGGF_size
-       end if
+       write(*,'(a,i0)') 'transiesta: Padding + work size: ',padding + worksize
     end if
 
     ! Check that we can contain the full column

@@ -54,7 +54,6 @@ contains
 #endif
     use alloc, only : re_alloc, de_alloc
     use m_ts_electype
-    use m_ts_options, only : N_Elec, Elecs
     use m_ts_options, only : opt_TriMat_method
     use m_ts_options, only : IsVolt
 
@@ -68,7 +67,7 @@ contains
     ! Local variables
     integer, pointer :: guess_part(:) => null()
     integer, pointer :: mm_col(:,:) => null()
-    integer :: i, j, no_u, no, guess_parts
+    integer :: i, no_u, no, guess_parts
     logical :: copy_first
 #ifdef MPI
     integer :: MPIerror
@@ -261,7 +260,6 @@ contains
   subroutine guess_TriMat(sp,no,mm_col,first_part,parts,n_part)
     use class_Sparsity
     use alloc, only: re_alloc
-    use m_ts_method, only : no_Buf
 
     type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: no, mm_col(2,no)
@@ -532,7 +530,6 @@ contains
   function min_col(sp,row)
     use class_Sparsity
     use geom_helper, only : UCORB
-    use m_ts_method, only : no_Buf
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! the row which we will check for (in TranSIESTA counting)

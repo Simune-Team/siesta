@@ -496,7 +496,7 @@ contains
     integer, intent(in)  :: eM_i,eM_j
 
     if ( IONode ) then
-       write(*,'(a,2(tr1,a,''('',i5,'','',i5,'')'',a,g10.5e1))') &
+       write(*,'(a,2(tr1,a,''('',i5,'','',i6,'')'',a,g10.5e1))') &
             trim(a), &
             'DM_out', eM_i,eM_j,' = ',DM, &
             ', d_ij', eM_i,eM_j,' = ',eM

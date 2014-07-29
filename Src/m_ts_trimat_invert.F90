@@ -30,7 +30,6 @@ module m_ts_trimat_invert
   use m_trimat_invert, only : calc_Xn_div_Cn_p1, calc_Yn_div_Bn_m1
   use m_trimat_invert, only : Xn_div_Cn_p1, Yn_div_Bn_m1
   
-
   implicit none
 
   private
@@ -102,6 +101,10 @@ contains
        call calc_Yn_div_Bn_m1(M,Minv, n, Mpinv, sNm1**2 )
     end do
 
+    ! At this point the status is:
+    !   - M contains the original matrix
+    !   - Minv contains all Xn/Cn+1 and Yn/Bn-1 in all parts
+
     ! We calculate all the required Mnn
     ! Here it is permissable to overwrite the old A
     off = 0
@@ -126,6 +129,13 @@ contains
        end do
        off = off + nrows_g(M,n)
     end do
+
+    ! At this point we have calculated the 
+    !  Mnn matrices for the overlapping regions for the
+    !  electrodes.
+    ! This is now saved in Minv.
+    ! Minv contains all information to calculate
+    ! all Gf columns
 
     call timer('V_TM_Pinv',2)
 
@@ -223,7 +233,7 @@ contains
        eIdxF =  eColF    * sN
 
        ! get placement of the diagonal block in the column
-       call TriMat_Bias_idxs(M,no,n,sIdxT,eIdxT)
+       call TriMat_Bias_idxs(Minv,no,n,sIdxT,eIdxT)
        Mpinv => z(sIdxT:eIdxT)
 
        ! get the placement in the inversed column
@@ -317,10 +327,10 @@ contains
        Yn => Yn_div_Bn_m1(M,n+1)
 
        ! Get Mm+1n
-       call TriMat_Bias_idxs(M,no,n+1,sIdxF,eIdxF)
+       call TriMat_Bias_idxs(Minv,no,n+1,sIdxF,eIdxF)
        Mp    => z(sIdxF:eIdxF)
        ! Get Mmn
-       call TriMat_Bias_idxs(M,no,n,sIdxF,eIdxF)
+       call TriMat_Bias_idxs(Minv,no,n,sIdxF,eIdxF)
        Mpinv => z(sIdxF:eIdxF)
 
        call zgemm('N','N',sN,no,sNp1, &
@@ -339,16 +349,20 @@ contains
        Xn => Xn_div_Cn_p1(M,n-1)
        
        ! Get Mm-1n
-       call TriMat_Bias_idxs(M,no,n-1,sIdxF,eIdxF)
+       call TriMat_Bias_idxs(Minv,no,n-1,sIdxF,eIdxF)
        Mp    => z(sIdxF:eIdxF)
        ! Get Mmn
-       call TriMat_Bias_idxs(M,no,n,sIdxF,eIdxF)
+       call TriMat_Bias_idxs(Minv,no,n,sIdxF,eIdxF)
        Mpinv => z(sIdxF:eIdxF)
        
        call zgemm('N','N',sN,no,sNm1, &
             zm1, Xn, sN, Mp(1),sNm1,z0, Mpinv(1),sN)
        
     end do
+
+    ! At this point the total 
+    ! inverted column is placed at the beginning of
+    ! the tri-mat inversion.
 
     call timer('V_TM_inv',2)
 
@@ -366,16 +380,16 @@ contains
     integer, intent(out) :: sIdx, eIdx
     integer :: cum
 
-    ! the size of the partition
-    cum = 0
-    ! we are requesting the first column,
+    cum = nrows_g(M,p)
+
+    ! we are requesting the last column,
     ! hence we order the matrix in from the
     ! beginning...
-    do eIdx = 1 , p - 1
+    do eIdx = p + 1 , parts(M)
        cum = cum + nrows_g(M,eIdx)
     end do
     ! This is the number of elements already occupied
-    sIdx = no * cum + 1
+    sIdx = elements(M) - no * cum + 1
     eIdx = sIdx + no * nrows_g(M,p) - 1
 
   end subroutine TriMat_Bias_idxs

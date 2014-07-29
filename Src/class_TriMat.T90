@@ -157,13 +157,14 @@
     el = size(this%data%mat)
   end function elements_TriMat
   
-  subroutine newTriMatFromDimensions(this,parts,tri_nrows,name)
+  subroutine newTriMatFromDimensions(this,parts,tri_nrows,name,padding)
     ! This could be implemented also as an assignment 
     ! (see below)
 
     type(TYPE_NAME), intent(inout)  :: this
     integer,         intent(in)     :: parts, tri_nrows(parts)
     character(len=*), intent(in), optional  :: name
+    integer, intent(in), optional :: padding ! padd the elements with this much
 
     integer :: i,n
     integer :: stat
@@ -221,6 +222,9 @@
     do i = 1 , parts - 1
        n = n + tri_nrows(i)*( tri_nrows(i) + 2*tri_nrows(i+1) )
     end do
+    if ( present(padding) ) then
+       n = n + padding
+    end if
        
     ! Allocate the full tri-diagonal matrix
     call re_alloc(this%data%mat,1,n, &
@@ -355,7 +359,6 @@
     p(:) = VAR_INIT
 
   end subroutine initializeTriMat
-
 
 #undef TYPE_NAME
 #undef STR_TYPE_NAME

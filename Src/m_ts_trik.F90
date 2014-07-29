@@ -34,7 +34,7 @@ module m_ts_trik
   use m_ts_weight, only : TS_W_K_HALF_CORRELATED
   use m_ts_weight, only : TS_W_K_UNCORRELATED
 
-  use m_ts_tri_init, only : N_tri_part, tri_parts, GFGGF_size
+  use m_ts_tri_init, only : N_tri_part, tri_parts
 
   use m_ts_method, only : orb_offset, no_Buf
   
@@ -144,6 +144,7 @@ contains
 ! ************************************************************
 
 ! ****************** Electrode variables *********************
+    integer :: padding, GFGGF_size ! with IsVolt we need padding and work-array
     complex(dp), pointer :: GFGGF_work(:) => null()
 ! ************************************************************
 
@@ -181,7 +182,16 @@ contains
 
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require this...
-    call newzTriMat(zwork_tri,N_tri_part,tri_parts,'GFinv')
+    if ( IsVolt ) then
+       call GFGGF_needed_worksize(N_tri_part,tri_parts, &
+            N_Elec, Elecs, padding, GFGGF_size)
+    else
+       padding = 0
+       GFGGF_size = 0
+    end if
+    call newzTriMat(zwork_tri,N_tri_part,tri_parts,'GFinv', &
+         padding=padding)
+    nzwork = elements(zwork_tri)
 
     ! Initialize the tri-diagonal inversion routine
     call init_TriMat_inversion(zwork_tri)
@@ -190,7 +200,6 @@ contains
     end if
 
     call newzTriMat(GF_tri,N_tri_part,tri_parts,'GF')
-    nzwork = elements(zwork_tri)
 
     ! initialize the matrix inversion tool
     call init_mat_inversion(maxval(tri_parts))
@@ -253,7 +262,6 @@ contains
     call newDistribution(no_u,-1           ,fdist,name='TS-fake dist')
 #endif
     
-
     ! The Hamiltonian and overlap matrices (in Gamma calculations
     ! we will not have any phases, hence, it makes no sense to
     ! have the arrays in complex)
@@ -284,13 +292,7 @@ contains
     if ( IsVolt ) then
        ! we need only allocate one work-array for
        ! Gf.G.Gf^\dagger
-       if ( GFGGF_size < 0 ) then
-          ! The diagonal block can be used without 
-          ! destroying any data.
-          GFGGF_work => val(GF_tri,-GFGGF_size,-GFGGF_size)
-       else
-          call re_alloc(GFGGF_work,1,GFGGF_size,routine='transiesta')
-       end if
+       call re_alloc(GFGGF_work,1,GFGGF_size,routine='transiesta')
     end if
 
     ! start the itterators
@@ -339,12 +341,6 @@ contains
        ! ***************
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
-       no = no_u_TS
-       do iEl = 1 , N_Elec
-          if ( Elecs(iEl)%DM_update == 0 ) then
-             no = no - TotUsedOrbs(Elecs(iEl))
-          end if
-       end do
        iE = 0
        cE = Eq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
        do while ( cE%exist )
@@ -512,10 +508,10 @@ contains
              call invert_BiasTriMat_col(GF_tri,zwork_tri, &
                   Elecs(iEl), calc_parts)
 
+#ifdef TS_DEV
              ! offset and number of orbitals
              no = TotUsedOrbs(Elecs(iEl))
 
-#ifdef TS_DEV
              idx = 0
              do iid = 1 , N_tri_part
                 write(io) tri_parts(iid),no
@@ -525,7 +521,7 @@ contains
 #endif
              
              call GF_Gamma_GF(zwork_tri, Elecs(iEl), calc_parts, &
-                  size(GFGGF_work), GFGGF_work)
+                  GFGGF_size, GFGGF_work)
 
              do iID = 1 , N_nEq_ID
                 
@@ -634,9 +630,7 @@ contains
     call clear_TriMat_inversion()
     if ( IsVolt ) then
        call clear_BiasTriMat_inversion()
-       if ( GFGGF_size > 0 ) then
-          call de_alloc(GFGGF_work, routine='transiesta')
-       end if
+       call de_alloc(GFGGF_work, routine='transiesta')
     end if
     call clear_mat_inversion()
 

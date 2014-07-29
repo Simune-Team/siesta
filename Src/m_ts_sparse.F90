@@ -767,8 +767,7 @@ contains
     integer :: ptr
     integer :: na_b, nrg
     integer :: io, ia, iab, iab2, iac, co1, co2
-    integer :: in_elec1, in_elec2, N_buff
-    integer :: afrom, ato
+    integer :: in_elec1, in_elec2
 
     ! Retrieve the lists
     call attach(sp,list_col=l_col,n_col=ncol,nrows_g=nrg)

@@ -58,19 +58,17 @@ contains
 ! * OUTPUT variables  *
 ! *********************
     integer, intent(in) :: nwork
-    complex(dp), intent(inout), target :: work(nwork)
+    complex(dp), intent(inout) :: work(nwork)
 
     ! local variables
-    complex(dp), pointer :: fGf(:), Gf(:), GGG(:), oW(:)
-    integer :: nr, np, no, tn
+    complex(dp), pointer :: fGf(:), Gf(:), GGG(:)
+    integer :: nr, np, no
     integer :: sIdx, eIdx
-    integer :: last_eIdx
     integer :: ip, cp, n
     integer :: sN, sNc
 
     integer :: lsPart, lePart
     integer :: BsPart, BePart
-    logical :: tWork
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE GFGammaGF' )
@@ -108,64 +106,23 @@ contains
 
     if ( nwork < ip ) &
          call die('Work size not big enough')
-    oW => work(:)
-    
-    ! to track the last overwrite place
-    tn = elements(Gf_tri) + 1
-    ! Correct for non-counted elements
-    do n = np , lePart + 1 , -1
-       sN = nrows_g(Gf_tri,n)
-       BsPart = max(n-1,lsPart)
-       BePart = min(n+1,lePart)
-       do cp = BePart , BsPart , -1
-          sNc = nrows_g(Gf_tri,cp)
-          tn = tn - sNc * sN
-       end do
-    end do
 
-    ! Keep track of movement of data
-    tWork = .true.
+    do n = lsPart , lePart
 
-    do n = lePart , lsPart , -1
-
-       ! Calculate the \Gamma Gf^\dagger sPart,1
+       ! Calculate the \Gamma Gf^\dagger n,1
        sN = nrows_g(Gf_tri,n)
 
        ! correct to the quantities that is available
        BsPart = max(n-1,lsPart)
        BePart = min(n+1,lePart)
 
-       if ( .not. calc_parts(n) ) then
-          ! skip unneeded elements, and update
-          ! counter
-          do cp = BePart , BsPart , -1
-             sNc = nrows_g(Gf_tri,cp)
-             tn = tn - sNc * sN
-          end do
-          cycle
-       end if
+       if ( .not. calc_parts(n) ) cycle
 
-       ! Notice that we check that the Gamma.Gf^\dagger
-       ! is still in the same elements (i.e. oW is only
-       ! made a smaller array)
-       ! (see work-array shift down in tWork check
-       if ( size(oW) < no * sN ) then
-          write(*,'(a,2(tr1,i0))') 'Sizes:',size(oW),no*sN
-          call die('Something went wrong with calculating &
-               &the maximum work size')
-       end if
-
-       if ( tWork ) then
-          ! find the index of the thing that we don't want
-          ! to overwrite...
-          call TriMat_Bias_idxs(Gf_tri,no,BePart,sIdx,last_eIdx)
-       end if
-       
        call TriMat_Bias_idxs(Gf_tri,no,n,sIdx,eIdx)
        ! obtain the Gf in the respective column
        Gf => fGf(sIdx:eIdx)
        call zgemm('T','C',no,sN,no, z1, El%Gamma, no, &
-            Gf, sN, z0, oW, no)
+            Gf, sN, z0, work, no)
        
        ! Now we are ready to perform the multiplication
        ! for the requested region
@@ -174,41 +131,13 @@ contains
        write(*,'(a,2(tr1,i0),a,2(tr1,i0))')'GfGGf at:',BsPart,ip,' --',BePart,ip
 #endif
        
-       ! this will populate in decreasing column major order
-       do cp = BePart , BsPart , -1
-
-          sNc = nrows_g(Gf_tri,cp)
-          
-          ! Update the index of which we will update last
-          tn = tn - sNc * sN
+       ! this will populate in ascending column major order
+       do cp = BsPart , BePart
 
           ! skip unneeded elements
           if ( .not. calc_parts(cp) ) cycle
 
-          if ( tWork ) then
-             
-             if ( tn <= last_eIdx ) then
-                ! transfer remaining data
-                ! to the work-array to not overwrite data
-
-                ! Retrieve Gf block
-                call TriMat_Bias_idxs(Gf_tri,no,max(cp,n),sIdx,eIdx)
-             
-                ! copy over the elements in the end
-                work(nwork-eIdx+1:nwork) = fGf(1:eIdx)
-                ! point to the new place of the Gf-column
-                fGf => work(nwork-eIdx+1:nwork)
-
-                ! restrict work-array to be the remaining size
-                ! lets us check that what we do is correct
-                oW => work(1:nwork-eIdx)
-                
-                ! Don't copy data anymore
-                tWork = .false.
-                
-             end if
-
-          end if
+          sNc = nrows_g(Gf_tri,cp)
 
           ! Retrieve Gf block
           call TriMat_Bias_idxs(Gf_tri,no,cp,sIdx,eIdx)
@@ -220,12 +149,12 @@ contains
           ! We need only do the product in the closest
           ! regions (we don't have information anywhere else)
           call zgemm('N','N', sNc, sN, no, z1, &
-               Gf, sNc, oW, no, z0, GGG, sNc)
+               Gf, sNc, work, no, z0, GGG, sNc)
           
        end do
        
     end do
-    
+       
     call timer('GFGGF',2)
 
 #ifdef TRANSIESTA_DEBUG
@@ -235,139 +164,76 @@ contains
   end subroutine GF_Gamma_GF
 
   subroutine GFGGF_needed_worksize(N_tri_part, tri_parts, &
-       N_Elec, Elecs, worksize)
+       N_Elec, Elecs, padding, worksize)
     use m_ts_electype
     integer, intent(in) :: N_tri_part
     integer, intent(in) :: tri_parts(N_tri_part)
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-    integer, intent(out) :: worksize
+    integer, intent(out) :: padding, worksize
 
-    integer :: n, idx, sIdx, eIdx, tn
-
-    integer :: sN, sNc
-    integer :: cp, scp, ecp
-
-    logical :: hasEl
-
-    integer :: no_max, max_n
+    integer :: els, n, tn, io
+    integer :: no_max, cur_n
 
     ! calculate the maximum electrode size
     no_max = maxval(TotUsedOrbs(Elecs))
-    
-    ! find at which point they will cross...
-    tn = tri_parts(N_tri_part)**2
+
+    ! We just need to find the maximum overlap of
+    ! two regions.
+    ! This will give the "pushed" number of elements
+    ! that is required to prevent overwriting two
+    ! quantities.
+    ! At minimum this will most likely be the size
+    ! of the last two parts due to that being calculated
+    ! last.
+
+    els = tri_parts(N_tri_part)**2
+    worksize = tri_parts(N_tri_part)
     do n = 1 , N_tri_part - 1
-       tn = tn + tri_parts(n)*( tri_parts(n) + 2 * tri_parts(n+1) )
+       els = els + tri_parts(n)*( tri_parts(n) + 2 * tri_parts(n+1) )
+       worksize = max(worksize,tri_parts(n))
     end do
+    worksize = worksize * no_max
 
-    tn = tn + 1
+    ! subtract total column size
+    ! to get the first matrix element of the current processing
+    ! block (with an index shift of 1, so actually previous element
+    ! of what is needed)
+    tn = els - sum(tri_parts(1:n) * no_max)
 
-    find: do n = N_tri_part , 1 , - 1
-
-       sN = tri_parts(n)
-
-       scp = max(1 ,n-1)
-       ecp = min(N_tri_part,n+1)
-
-       ! find the index of the thing that we do not want
-       ! to overwrite...
-       call TriMat_Bias_idxs(N_tri_part, tri_parts, &
-            no_max,ecp,sIdx,eIdx)
-       
-       do cp = ecp , scp , -1
-
-          ! Update the index of which we will update last
-          sNc = tri_parts(cp)
-          tn  = tn - sNc * sN
-
-          if ( tn <= eIdx ) then
-             max_n = max(cp,n)
-             exit find
-          end if
-          
-       end do
-
-    end do find
-    
-    ! first calculate the naive worksize
-    sN = 0
-    do n = 1 , max_n
-       sN = max(sN,tri_parts(n))
-    end do
-    sNc = sN
-    do n = max_n + 1 , N_tri_part
-       sN = max(sN,tri_parts(n))
-    end do
-
-    ! Update the index
-    call TriMat_Bias_idxs(N_tri_part, tri_parts, &
-         no_max,max_n,sIdx,eIdx)
-
-    ! the worksize must be the
-    ! maximum matrix created by the zgemm-routines
-    ! plus the size of the remaining elements
-    tn   = no_max * sN
-    sIdx = no_max * sNc + eIdx
-    worksize = max(tn, sIdx)
-
-    ! Check whether we can utilize a diagonal
-    ! block from the tri-diagonal matrix which is
-    ! not entering any of the electrodes.
-    ! If able, we can reduce the memory needed!
-    sNc = 0
-    idx = 0
+    cur_n = 0
+    io = 1
     do n = 1 , N_tri_part
-       hasEl = .false.
-       sN = tri_parts(n)
-       do cp = sNc + 1 , sNc + sN
-          if ( any(OrbInElec(Elecs,cp)) ) then
-             hasEl = .true.
-             exit
-          end if
-       end do
 
-       if ( .not. hasEl ) then
-          if ( worksize <= sN ** 2 ) then
-             idx = n
-          end if
+       if ( 1 < n ) &
+            cur_n = cur_n + tri_parts(n-1) * tri_parts(n)
+       cur_n = cur_n + tri_parts(n) ** 2
+       if ( n < N_tri_part ) &
+            cur_n = cur_n + tri_parts(n) * tri_parts(n+1)
+       
+       if ( cur_n > tn ) then
+          ! we have an overlap, calculate overlap
+          ! and correct tn
+          ! With ">" we do not need to correct the tn initialization
+          ! of element - 1 as noted above
+          padding = cur_n - tn
+          ! We correct the starting index of tn
+          tn = tn + padding
        end if
-       ! update the next columns
-       sNc = sNc + sN
+       
+       ! we need to retain the column block
+       ! for the next block...
+       ! in that way we can still multiply the previous
+       ! block with the current block.
+       if ( n > 1 ) then
+          tn = tn + tri_parts(n-1) * no_max
+       end if
+
     end do
+    tn = tn + tri_parts(N_tri_part) * no_max
 
-    ! tell transiesta to point to this diagonal
-    ! block in the tri-diagonal matrix instead of allocating
-    if ( idx > 0 ) worksize = -idx
-
-  contains
-    
-    ! We will partition the system by:
-    ! 1. nrows_g(tri,1) x no
-    ! 2. nrows_g(tri,2) x no
-    ! ...
-    subroutine TriMat_Bias_idxs(N_tri_part,tri_parts,no,p,sIdx,eIdx)
-      integer, intent(in) :: N_tri_part
-      integer, intent(in) :: tri_parts(N_tri_part)
-      ! no is the number of orbitals we wish to take out
-      ! p is the part that we wish to point to
-      integer, intent(in) :: no, p
-      integer, intent(out) :: sIdx, eIdx
-      integer :: cum
-      
-      ! the size of the partition
-      cum = 0
-      ! we are requesting the first column,
-       ! hence we order the matrix in from the
-       ! beginning...
-      do eIdx = 1 , p - 1
-         cum = cum + tri_parts(eIdx)
-      end do
-      ! This is the number of elements already occupied
-      sIdx = no * cum + 1
-      eIdx = sIdx + no * tri_parts(p) - 1
-      
-    end subroutine TriMat_Bias_idxs
+    ! the padding must be the excess size we have appended to the matrix
+    padding = tn - els
 
   end subroutine GFGGF_needed_worksize
 
@@ -378,7 +244,7 @@ contains
     integer, intent(in) :: tri_parts(N_tri_part)
     integer, intent(out) :: worksize
 
-    integer :: n
+    integer :: pad, n
 
     ! find at which point they will cross...
     worksize = tri_parts(N_tri_part)**2
@@ -391,8 +257,8 @@ contains
 
     if ( IsVolt ) then
        call GFGGF_needed_worksize(N_tri_part, tri_parts, &
-            N_Elec, Elecs, n)
-       worksize = max(0,n) + worksize
+            N_Elec, Elecs, pad, n)
+       worksize = worksize + pad + n
     end if
     
   end subroutine ts_needed_mem

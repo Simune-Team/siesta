@@ -1,4 +1,48 @@
 ----------------------------------------------------
+July 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-169
+Memory reduction + speed up for BTD bias calculations
+
+* The method for calculating the Gf.G.Gf product has
+  been reworked with memory in question.
+  We now estimate the least (still the easiest method)
+  amount of memory used by padding the tri-diagonal
+  matrix with extra memory to allow for containing the 
+  entire column AND simultaneously updating the 
+  tri-diagonal entries.
+  This means that the size of the padding will 
+  minimum be the size of the last 2 parts.
+  Nevertheless it proves to drastically reduce
+  the memory required as we do not need to copy over 
+  everything at the moment of a single element crossing.
+  
+  It is now based on the mininum memory while calculating
+  the next column.
+
+  ( NOTE to further devs:
+  The best way to do this is to utilize all
+  memory in the central tri-diagonal blocks of Mnn which
+  at the moment is not utilized AT ALL)
+
+* The notice of the dm-out error for bias calculations
+  has been given an extra digit for denoting the supercell.
+  This is needed due to the new algorithm which consequently
+  overestimates the supercell size.
+
+modified:
+  Src/class_TriMat.T90
+  Src/m_transiesta.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Src/m_ts_voltage.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 July 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-168
 Bugfix for version initialization
 

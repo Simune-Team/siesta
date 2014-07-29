@@ -228,7 +228,7 @@ contains
 
   subroutine get_elec_indices(na_u, xa, iElL, iElR)
     use m_ts_electype
-    use m_ts_options, only : N_Elec, Elecs
+    use m_ts_options, only : Elecs
     
 ! ***********************
 ! * INPUT variables     *
