@@ -975,6 +975,8 @@ contains
     
     external :: io_assign, io_close
 
+    ! Initialize
+    version = -1
     if ( .not. IONode ) return
 
     ! Open file

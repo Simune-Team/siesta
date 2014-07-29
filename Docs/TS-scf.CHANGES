@@ -1,4 +1,15 @@
 ----------------------------------------------------
+July 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-168
+Bugfix for version initialization
+
+* ts_io did not initialize version number
+  As this version string is not communicated for
+  non-IO nodes we need to initialize.
+
+modified:
+  Src/m_ts_io.F90
+
+----------------------------------------------------
 July 28, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-167
 Implemented Jose Soler suggestion about xijo
 
