@@ -43,6 +43,7 @@ dep:
         fi
 	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//;\
 		/^m_ts_io.o:/s/m_tbt_kpoints.o//" Makefile
+	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
 
 include arch.make
 

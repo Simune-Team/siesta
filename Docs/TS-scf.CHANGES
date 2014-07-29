@@ -1,4 +1,29 @@
 ----------------------------------------------------
+July 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-170
+Bugfix for makefiles make dep with T90 files
+
+* The dependency scheme for T90 files was not complete.
+  We now insert a fix which should correct this.
+
+* Moved transport direction to also exist for regular
+  transiesta runs.
+  This means that electrodes can be designated a transport direction.
+  At the moment this is not used for anything.
+  Yet, in the future it could be a nice way
+  to tell transiesta that this is an electrode and how to
+  check that it is correct.
+  
+modified:
+  Src/Makefile
+  Src/class_Fstack_Pair_Geometry_SpData2D.F90
+  Src/class_Pair_Geometry_SpData2D.F90
+  Src/m_trimat_invert.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 July 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-169
 Memory reduction + speed up for BTD bias calculations
 

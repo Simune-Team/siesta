@@ -12,7 +12,7 @@ dep:
 	sfmakedepend --depend=obj  --modext=o \
 	  *.f90 \
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 $(VPATH)/*.T90
-
+	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
 
 ARCH_MAKE=../../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
@@ -101,19 +101,19 @@ chemical.o: parallel.o precision.o sys.o
 chempot.o: alloc.o mneighb.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
 chkgmx.o: cellsubs.o minvec.o precision.o sys.o
-class_Data1D.T90.o: alloc.o
-class_Data2D.T90.o: alloc.o
+class_Data1D.o: alloc.o
+class_Data2D.o: alloc.o
 class_Fstack_Pair_Geometry_SpData2D.o: class_Pair_Geometry_SpData2D.o
 class_Geometry.o: alloc.o
 class_Pair_Geometry_SpData2D.o: class_Geometry.o class_SpData2D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o
-class_SpData1D.T90.o: class_OrbitalDistribution.o class_Sparsity.o
+class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
-class_SpData2D.T90.o: class_OrbitalDistribution.o class_Sparsity.o
+class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: alloc.o
-class_TriMat.T90.o: alloc.o
+class_TriMat.o: alloc.o
 coceri.o: files.o periodic_table.o precision.o
 compute_EKS_Harris.o: atomlist.o class_SpData2D.o dhscf.o m_dipol.o
 compute_EKS_Harris.o: m_energies.o m_mpi_utils.o m_ntm.o m_spin.o precision.o

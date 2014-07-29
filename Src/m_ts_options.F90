@@ -128,25 +128,6 @@ contains
     saveTSHS = fdf_get('TS.SaveHS',.true.)
     onlyS    = fdf_get('TS.onlyS',.false.)
 
-    if ( SaveTSHS .and. FixSpin ) then
-       write(*,*) 'Fixed spin not possible with Transiesta!'
-       write(*,*) 'Electrodes with fixed spin is not possible with Transiesta !'
-       call die('Stopping code')
-    end if
-
-    if ( onlyS .or. .not. TSmode ) then
-       if ( IONode ) then
-          write(*,1) 'Save H and S matrices', saveTSHS
-          write(*,1) 'Save S and quit (onlyS)', onlyS
-          write(*,11) repeat('*', 62)
-          write(*,*)
-       end if
-       return
-    end if
-
-    ! Read in the mixing for the transiesta cycles
-    ts_wmix = fdf_get('TS.MixingWeight',wmix)
-    
     ! Read in the transport direction
     chars = fdf_get('TS.TransportDirection','c')
     if ( leqi(chars,'a') .or. leqi(chars,'a1') ) then
@@ -161,6 +142,27 @@ contains
        call die('Transport direction not in [a|b|c|A1|A2|A3|none]')
     end if
 
+    if ( SaveTSHS .and. FixSpin ) then
+       write(*,*) 'Fixed spin not possible with Transiesta!'
+       write(*,*) 'Electrodes with fixed spin is not possible with Transiesta !'
+       call die('Stopping code')
+    end if
+
+    if ( onlyS .or. .not. TSmode ) then
+       if ( IONode ) then
+          write(*,1) 'Save H and S matrices', saveTSHS
+          write(*,1) 'Save S and quit (onlyS)', onlyS
+          write(chars,'(a,i0)') 'A',ts_tdir
+          write(*,10) 'Transport along unit-cell vector',trim(chars)
+          write(*,11) repeat('*', 62)
+          write(*,*)
+       end if
+       return
+    end if
+
+    ! Read in the mixing for the transiesta cycles
+    ts_wmix = fdf_get('TS.MixingWeight',wmix)
+    
     ! Read in information about the voltage placement.
     chars = fdf_get('TS.HartreePotential.Position','central')
     VoltageInC = .true.
@@ -647,8 +649,12 @@ contains
           write(*,10)'Bandwidth algorithm',trim(chars)
        end if
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'
-       write(chars,'(a,i0)') 'A',ts_tdir
-       write(*,10) 'Transport along unit-cell vector',trim(chars)
+       if ( ts_tdir < 1 ) then
+          write(*,11) 'Transport individually selected for electrodes'
+       else
+          write(chars,'(a,i0)') 'A',ts_tdir
+          write(*,10) 'Transport along unit-cell vector',trim(chars)
+       end if
        if ( ts_method == TS_SPARSITY ) then
           write(*,10)'Solution method', 'Sparsity pattern'
        else if ( ts_method == TS_SPARSITY_TRI ) then

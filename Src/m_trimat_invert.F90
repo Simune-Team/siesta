@@ -42,8 +42,12 @@
 !       Xn/Cn+1 from [ePart+1:Parts]
 !   2. the upper tri-parts of the inverted tri-matrix contains
 !       Yn/Bn-1 from [1:sPart-1]
-!   3. the A(1,1)         is retained IFF sPart > 1 
-!   4. the A(Parts,Parts) is retained IFF ePart < Parts
+!   3. the lower tri-parts of the tri-matrix to be inverted contains
+!       Xn/Cn+1 from [sPart:ePart]
+!   4. the upper tri-parts of the tri-matrix to be inverted contains
+!       Yn/Bn-1 from [sPart:ePart]
+!   5. the A(1:sPart-1,1:sPart-1)         is retained IFF sPart > 1 
+!   6. the A(ePart+1:Parts,ePart+1:Parts) is retained IFF ePart < Parts
 
 module m_trimat_invert
   

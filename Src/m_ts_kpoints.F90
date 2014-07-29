@@ -16,7 +16,6 @@ module m_ts_kpoints
   private
   save
 
-
 !===================== K-POINT RELATED VARIABLES ============================== 
 !==============================================================================
 ! Contains data structures and routines to deal with the kpoint-grid
@@ -61,9 +60,6 @@ module m_ts_kpoints
   public :: ts_write_k_points
 
 contains
-
-
-!-----------------------------------------------------------------------
 
   subroutine setup_ts_scf_kscell( cell, firm_displ , Elecs )
 
@@ -156,6 +152,8 @@ contains
        
        expansion_factor = 1
        do j = 1,3
+          ! We cannot create the kscell for the transport direction
+          if ( j == ts_TDIR ) cycle
           factor(j,1:3) = 0
           vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
           factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
@@ -163,12 +161,15 @@ contains
        enddo
        ! Generate actual supercell skeleton
        ts_kscell = matmul(ctransf, factor)
-         ! Avoid confusing permutations
-         ! Defer implementation to avoid diffs with reference version
-         !!if (expansion_factor == 1) then
-         !!   kscell = unit_matrix
-         !!endif
-    endif
+       
+       ! If the user does not specify the k-points
+       ! we set the transport direction to have 50
+       ! k-points
+       if ( ts_tdir > 0 ) then
+          ts_kscell(ts_tdir,ts_tdir) = 50
+       end if
+
+    end if
 
     ! In case of TSmode we have a transiesta run.
     ! This means that we truncate the k-points in the transport direction.
