@@ -53,6 +53,7 @@ module geom_helper
   public :: iaorb
   public :: cell_abc
   public :: cell_d, cell_a, cell_b, cell_c
+  public :: xa_in_cell
 
 contains
 
@@ -199,5 +200,28 @@ contains
     if ( c(2) > c(1) .and. c(2) > c(3) ) dir = 2
     if ( c(3) > c(1) .and. c(3) > c(2) ) dir = 3
   end function cell_v_dir
+
+! shift an atomic coordinate to lie inside the cell
+! This enables direct comparisons between different atomic 
+! coordinates as they will be lying comparatively.
+  function xa_in_cell(rcell,ucell, xa) result(uxa)
+! *********************
+! * INPUT variables   *
+! *********************
+    real(dp), intent(in) :: rcell(3,3), ucell(3,3), xa(3)
+! *********************
+! * OUTPUT variables  *
+! *********************
+    real(dp) :: uxa(3)
+
+    ! Local variables
+    integer :: n
+    n = floor(sum(xa*rcell(:,1)))
+    uxa(:) =  xa(:) - n * ucell(:,1)
+    n = floor(sum(xa*rcell(:,2)))
+    uxa(:) = uxa(:) - n * ucell(:,2)
+    n = floor(sum(xa*rcell(:,3)))
+    uxa(:) = uxa(:) - n * ucell(:,3)
+  end function xa_in_cell
 
 end module geom_helper

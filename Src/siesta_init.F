@@ -32,7 +32,7 @@
       use m_iostruct,         only: write_struct, read_struct
       use zmatrix,            only: lUseZmatrix
       use zmatrix,            only: write_canonical_ucell_and_Zmatrix
-      use m_check_supercell,  only: check_sc_factors
+      use m_supercell,        only: exact_sc_size
       use files,              only: slabel
       use siesta_cmlsubs,     only: siesta_cml_init
       use m_timestamp,        only: timestamp
@@ -369,6 +369,8 @@ C     Initialise MPI and set processor number
           veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
           nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
         end do
+        if ( .not. naiveauxcell ) 
+     &       call exact_sc_size(rmaxh,ucell,na_u,xa,nsc)
       end if
 
       mscell = 0.0_dp

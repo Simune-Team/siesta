@@ -25,8 +25,8 @@
       use alloc,             only: re_alloc, de_alloc, alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
-      use m_check_supercell, only: check_sc_factors
-      use siesta_cml,   only: cml_p, cmlStartStep, mainXML
+      use m_supercell,       only: exact_sc_size
+      use siesta_cml,        only: cml_p, cmlStartStep, mainXML
       use zmatrix,           only: lUseZmatrix, write_zmatrix
       use m_energies,        only: Emad
       use write_subs
@@ -172,12 +172,12 @@
         else if (fixauxcell) then
            nsc(1:3) = nscold(1:3)
         else
-           do i=1,3
+           do i = 1 , 3
               veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-              nsc(i) = ceiling( 2 * rmaxh / veclen )
-           enddo
-           if (.not. naiveauxcell)
-     &         call check_sc_factors(ucell,nsc,2*rmaxh)
+              nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
+           end do
+           if ( .not. naiveauxcell )
+     &         call exact_sc_size(rmaxh,ucell,na_u,xa,nsc)
         endif
 
         mscell = 0.0_dp

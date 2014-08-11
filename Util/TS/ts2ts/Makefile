@@ -255,7 +255,6 @@ m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o m_fdf_global.o parallel.o precision.o sys.o
 m_broyden_mixing.o: alloc.o m_broyddj.o m_mpi_utils.o parallel.o precision.o
 m_cell.o: precision.o siesta_geom.o units.o
-m_check_supercell.o: minvec.o parallel.o precision.o
 m_diagon.o: precision.o
 m_dipol.o: precision.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
@@ -305,6 +304,7 @@ m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
+m_supercell.o: geom_helper.o intrinsic_missing.o precision.o
 m_svd.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 m_transiesta.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
@@ -581,9 +581,9 @@ siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o
 siesta_init.o: class_Fstack_Pair_Geometry_SpData2D.o densematrix.o files.o
 siesta_init.o: fixed.o ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o
-siesta_init.o: m_check_supercell.o m_energies.o m_eo.o m_forces.o m_gamma.o
-siesta_init.o: m_iostruct.o m_mpi_utils.o m_new_dm.o m_rmaxh.o m_spin.o
-siesta_init.o: m_steps.o m_timer.o m_wallclock.o metaforce.o
+siesta_init.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
+siesta_init.o: m_mpi_utils.o m_new_dm.o m_rmaxh.o m_spin.o m_steps.o
+siesta_init.o: m_supercell.o m_timer.o m_wallclock.o metaforce.o
 siesta_init.o: molecularmechanics.o object_debug.o parallel.o parallelsubs.o
 siesta_init.o: phonon.o projected_DOS.o siesta_cmlsubs.o siesta_geom.o
 siesta_init.o: siesta_options.o sparse_matrices.o struct_init.o sys.o
@@ -609,8 +609,8 @@ state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
 state_analysis.o: write_subs.o zmatrix.o
 state_init.o: alloc.o atomlist.o class_SpData2D.o class_Sparsity.o
 state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
-state_init.o: kpoint_grid.o m_check_supercell.o m_energies.o m_eo.o m_gamma.o
-state_init.o: m_mpi_utils.o m_new_dm.o m_pulay.o m_rmaxh.o m_spin.o m_steps.o
+state_init.o: kpoint_grid.o m_energies.o m_eo.o m_gamma.o m_mpi_utils.o
+state_init.o: m_new_dm.o m_pulay.o m_rmaxh.o m_spin.o m_steps.o m_supercell.o
 state_init.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_options.o
 state_init.o: m_ts_sparse.o m_ts_tri_init.o overlap.o parallel.o
 state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
