@@ -1,4 +1,31 @@
 ----------------------------------------------------
+August 12, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-172
+  Changed supercell calculation to capture slaps etc.
+  
+  * We now explicitly calculate the super-cell size.
+    We do this in m_supercell.
+    The algorithm is extremely naive and simple.
+    Loop on all connections from the unit-cell to the
+    neighbouring supercell. 
+    And calculate the maximum supercell extend that is required
+    to reach this atom again.
+  
+    This will correctly capture slap calculations where the previous
+    algorithm would just add 3 supercells.
+  
+  removed:
+    Src/m_check_supercell.f
+  added:
+    Src/m_supercell.f90
+  modified:
+    Src/Makefile
+    Src/geom_helper.f90
+    Src/siesta_init.F
+    Src/state_init.F
+    Util/TS/ts2ts/Makefile
+    Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 July 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-171
 Memory estimation bugfix
 
