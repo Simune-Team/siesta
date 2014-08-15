@@ -1309,7 +1309,6 @@ contains
     allocate(offsets(3,n_s))
 
     ! Create offsets
-    is = 0
     do ic = -lnsc(3)/2 , lnsc(3)/2
     do ib = -lnsc(2)/2 , lnsc(2)/2
     do ia = -lnsc(1)/2 , lnsc(1)/2
@@ -1328,14 +1327,11 @@ contains
     integer, intent(in) :: lnsc(3), tm(3)
     integer :: idx
     integer :: ia, ib, ic
-    
-    idx = 1
-    if ( all(tm == 0) ) return
 
+    idx = 0
     do ic = -lnsc(3)/2 , lnsc(3)/2
     do ib = -lnsc(2)/2 , lnsc(2)/2
     do ia = -lnsc(1)/2 , lnsc(1)/2
-       if ( ia == ib .and. ia == ic .and. ia == 0 ) cycle
        idx = idx + 1
        if ( tm(1) == ia .and. &
             tm(2) == ib .and. &

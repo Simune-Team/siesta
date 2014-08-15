@@ -1,4 +1,16 @@
 ----------------------------------------------------
+August 15, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-172
+Changed supercell indices when converting read
+
+* The supercells are now ordered according to a rigid
+  loop and the unit-cell is not centered at the first
+  index. I think this is better.
+
+modified:
+  Src/m_hs_matrix.f90
+  Src/m_ts_io.F90
+
+----------------------------------------------------
 July 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-171
 Memory estimation bugfix
 

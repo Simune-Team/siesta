@@ -54,21 +54,21 @@ contains
     if ( present(DUMMY) ) call die('ts_read_TSHS_opt: Arguments has to be &
          &named. Please correct sources.')
 
-    version = tshs_version(tshs)
-
     if ( IONode ) then
+
+       version = tshs_version(tshs)
 
        select case ( version )
        case ( 0 , 1 )
           ! do nothing
        case default
-          call die('Unsupported TSHS version file')
+          call die('Unsupported TSHS version file [0,1]')
        end select
 
        call io_assign(uTSHS)
        open(file=trim(TSHS),unit=uTSHS,form='unformatted')
        if ( version /= 0 ) then
-          read(uTSHS) ! version number
+          read(uTSHS) version
        end if
        read(uTSHS) tmp(1:5) !na_u, no_u, no_s, Enspin, maxnh
        allocate(txa(3,tmp(1)))
@@ -126,6 +126,8 @@ contains
           if ( present(Qtot) ) Qtot = rtmp(2)
           if ( present(Temp) ) Temp = rtmp(3)
        end if
+
+       ! These quantities are not needed
        read(uTSHS) ! istep, ia1
 
        if ( present(lasto) ) then
@@ -424,7 +426,7 @@ contains
     logical, intent(out) :: onlyS
     logical, intent(out) :: Gamma, TSGamma
     real(dp), intent(out) :: ucell(3,3)
-    integer, intent(out) :: na_u, no_l, no_u, no_s, maxnh, nspin, nsc(3)
+    integer, intent(out) :: nsc(3), na_u, no_l, no_u, no_s, maxnh, nspin
     real(dp), pointer, intent(out) :: xa(:,:) ! (3,na_u)
     integer, pointer, intent(out) :: numh(:), listhptr(:) ! (no_u)
     integer, pointer, intent(out) :: listh(:) !(maxnh)
@@ -445,8 +447,9 @@ contains
 ! * LOCAL variables      *
 ! ************************
     integer :: iu, version, n_s
-    integer :: ispin,i,j, all_I(8), ind, io, ia, ja, tm(3), is
-    integer, allocatable :: offsets(:,:)
+    integer :: ispin,i,j, all_I(8), ind, io, ia, ja, is
+    integer, pointer :: tm(:)
+    integer, allocatable, target :: offsets(:,:)
     integer, allocatable :: indxuo(:)
     logical :: lBcast, exist
 #ifdef MPI
@@ -465,17 +468,18 @@ contains
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
 
-    ! Get file version
-    version = tshs_version(filename)
-
     nsc(:)  = 0
 
     if ( IONode ) then
+
+       ! Get file version
+       version = tshs_version(filename)
+
        select case ( version )
        case ( 0 , 1 )
           ! do nothing
        case default
-          call die('Unsupported TSHS version file')
+          call die('Unsupported TSHS version file [0,1]')
        end select
        inquire(file=filename,exist=exist)
        if ( .not. exist ) then
@@ -488,7 +492,7 @@ contains
        
        ! Read Dimensions Information
        if ( version /= 0 ) then
-          read(iu) version
+          read(iu) ! version
        end if
        read(iu) na_u, no_u, no_s, nspin, maxnh
        
@@ -526,6 +530,8 @@ contains
        read(iu) lasto
 
        if ( version == 0 ) then
+          ! We check that the format of the supercell indices
+          ! are consistent with the general formalism
           allocate(indxuo(no_s))
           read(iu) indxuo
           do i = 1 , no_s
@@ -600,7 +606,7 @@ contains
                    ja = iaorb(ucorb(listh(ind),no_u),lasto)
 
                    is = ( listh(ind) - 1 ) / no_u
-                   tm(:) = offsets(:,is)
+                   tm => offsets(:,is)
 
                    xij(:,ind) = ucell(:,1) * tm(1) &
                         + ucell(:,2) * tm(2) &
@@ -843,7 +849,7 @@ contains
        open( iu, file=filename, form='unformatted', status='unknown' )
 
        ! Write file version
-       write(iu) 1 ! This is version one of the file format
+       write(iu) 1 ! This is version ONE of the file format
 
        ! Write Dimensions Information
        write(iu) na_u, no_u, no_s, nspin, maxnhg
