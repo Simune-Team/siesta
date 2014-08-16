@@ -1,4 +1,13 @@
 ----------------------------------------------------
+August 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-176
+Bugfix for self-energy calculation
+
+* The wrong k.R was used for the calculation of the self-energy
+  
+modified:
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 August 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-175
 Bugfix for k-points when doing in-core SE calculation
 

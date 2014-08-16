@@ -1313,7 +1313,7 @@ contains
           else
              do i = 1 , 3 
                 if ( i == t_dir ) cycle
-                kqxij = kqxij + k(i) * xij00(i,ind)
+                kqxij = kqxij + k(i) * xij01(i,ind)
              end do
           end if
 
