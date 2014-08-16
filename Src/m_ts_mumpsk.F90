@@ -254,11 +254,11 @@ contains
                tsup_sp_uc, Calc_Forces)
        end if
 
-       ! Include spin factor and 1/\pi
+       ! Include spin factor and 1/(2\pi)
        kpt(:) = ts_kpoint(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(Ucell,kpt,bkpt,1)
-       kw = 1._dp / Pi * ts_kweight(ikpt)
+       kw = 0.5_dp / Pi * ts_kweight(ikpt)
        if ( nspin == 1 ) kw = kw * 2._dp
 
        write(mum%ICNTL(1),'(/,/,a,i0,a,3(tr1,g10.4),/,/)') &

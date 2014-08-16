@@ -157,7 +157,7 @@ contains
     integer :: lnr, lio, lind, io, ind, nr, jo
     integer :: rin, rind
     logical :: save_weight, hasEDM
-    real(dp) :: kx, kw(D_dim2)
+    real(dp) :: kw(D_dim2)
     complex(dp) :: ph
 
     if ( (.not. initialized(spDM)) .or. (.not. initialized(spuDM)) ) return
@@ -225,11 +225,10 @@ contains
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist
 
-             kx = k(1) * xij(1,pnt(lind)) + &
-                  k(2) * xij(2,pnt(lind)) + &
-                  k(3) * xij(3,pnt(lind))
-
-             ph = cdexp(dcmplx(0._dp,-kx))
+             ph = cdexp(dcmplx(0._dp, - &
+                  k(1) * xij(1,pnt(lind)) - &
+                  k(2) * xij(2,pnt(lind)) - &
+                  k(3) * xij(3,pnt(lind))))
 
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
@@ -259,13 +258,12 @@ contains
              rind = up_ptr(io)
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist
-
-             kx = k(1) * xij(1,pnt(lind)) + &
-                  k(2) * xij(2,pnt(lind)) + &
-                  k(3) * xij(3,pnt(lind))
-
-             ph = cdexp(dcmplx(0._dp,-kx))
-
+             
+             ph = cdexp(dcmplx(0._dp, - &
+                  k(1) * xij(1,pnt(lind)) - &
+                  k(2) * xij(2,pnt(lind)) - &
+                  k(3) * xij(3,pnt(lind))))
+             
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + aimag( ph*zDu(ind,1:D_dim2) )
@@ -290,20 +288,19 @@ contains
              rind = up_ptr(io)
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist
-
-             kx = k(1) * xij(1,pnt(lind)) + &
-                  k(2) * xij(2,pnt(lind)) + &
-                  k(3) * xij(3,pnt(lind))
-
-             ph = 0.5_dp * cdexp(dcmplx(0._dp,-kx))
-
+             
              rin  = up_ptr(jo)
              rind = rin + SFIND(up_col(rin+1:rin+up_ncol(jo)),io)
              if ( rind <= rin ) &
                   call die('ERROR: Conjugated symmetrization point does not exist')
 
+             ph = cdexp(dcmplx(0._dp, - &
+                  k(1) * xij(1,pnt(lind)) - &
+                  k(2) * xij(2,pnt(lind)) - &
+                  k(3) * xij(3,pnt(lind))))
+
              ! This integration is this:
-             ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A)/2 dE
+             ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A) dE
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
                   aimag( ph*(zDu(ind,1:D_dim2) - conjg(zDu(rind,1:D_dim2))) )
              if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
@@ -346,8 +343,7 @@ contains
     integer, pointer :: up_ncol(:), up_ptr(:), up_col(:)
     real(dp), pointer :: dD(:,:), dE(:,:)
     real(dp), pointer :: dDu(:,:), dEu(:,:)
-    integer :: lnr, lio, lind, io, ind, nr, jo
-    integer :: rind
+    integer :: lnr, lio, lind, io, ind, nr, jo, rind
     logical :: hasEDM
 
     if ( (.not. initialized(spDM)) .or. (.not. initialized(spuDM)) ) return
@@ -506,8 +502,7 @@ contains
 
     lUpSpGlobal = .false.
     if ( present(UpSpGlobal) ) lUpSpGlobal = UpSpGlobal
-
-
+    
     if ( .not. lUpSpGlobal ) then
 
     if ( lnr /= nrows(s) ) &
@@ -649,7 +644,6 @@ contains
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
     complex(dp), pointer :: zD(:,:), zE(:,:)
     complex(dp) :: ph
-    real(dp) :: kx
     integer :: lio, io, jo, ind, nr
     integer :: lnr, lind, rin, rind
     logical :: hasEDM
@@ -706,10 +700,6 @@ contains
           ind = rind + SFIND(lup_col(rind+1:rind+lup_ncol(io)),jo)
           if ( ind <= rind ) cycle ! The element does not exist
           
-          kx = k(1) * xij(1,lind) + &
-               k(2) * xij(2,lind) + &
-               k(3) * xij(3,lind)
-          
           ! The fact that we have a SYMMETRIC
           ! update region makes this *tricky* part easy...
           rin  = lup_ptr(jo)
@@ -721,11 +711,12 @@ contains
           
           ! The integration is this:
           ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
-          ! NOTE that weightDMC removes the daggered Gf^R\Gamma Gf^A
-          ph = 0.5_dp * cdexp(dcmplx(0._dp,-kx))
+          ph = cdexp(dcmplx(0._dp, - &
+               k(1) * xij(1,lind) - &
+               k(2) * xij(2,lind) - &
+               k(3) * xij(3,lind)))
           
-          DM(lind)  = DM(lind)  + aimag( ph*(zD(ind,1) - conjg(zD(rind,1))) )
-          
+          DM(lind) = DM(lind) + aimag( ph*(zD(ind,1) - conjg(zD(rind,1))) )
           if ( hasEDM ) &
                EDM(lind) = EDM(lind) + aimag( ph*(zE(ind,1) - conjg(zE(rind,1))) )
 

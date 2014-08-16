@@ -332,7 +332,6 @@ contains
        call timer('TS_HS',2)
 #endif
 
-
 #ifdef TRANSIESTA_TIMING
        call timer('TS_EQ',1)
 #endif

@@ -1,4 +1,21 @@
 ----------------------------------------------------
+August 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-174
+Bugfix for weights of non-equilibrium contribution
+
+* The non-equilibrium contribution was a factor of
+  2 too high. 
+  The bugfix means a slightly faster convergence,
+  for obvious reasons.
+
+modified:
+  Src/m_ts_dm_update.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+
+----------------------------------------------------
 August 15, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-173
 Changed supercell indices when converting read
 

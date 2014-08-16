@@ -113,7 +113,7 @@ contains
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! obtain the full sparsity unit-cell
-    sp_k   => spar    (SpArrH)
+    sp_k => spar(SpArrH)
     call attach(sp_k, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
     call init_val(SpArrH)
@@ -161,9 +161,8 @@ contains
           ! is SORTED!
           ! Thus it will only work for UC sparsity patterns.
           ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+kn),jo)
-! TODO, do we really need to check here?
-!          if ( ind_k <= k_ptr(io) ) &
-!               call die('Could not find k-point index')
+          ! if ( ind_k <= k_ptr(io) ) &
+          ! call die('Could not find k-point index')
           if ( ind_k <= k_ptr(io) ) cycle
 
           ph = cdexp(dcmplx(0._dp, &
@@ -418,9 +417,8 @@ contains
           ! of the full unit cell
           ind_k = k_ptr(io)
           ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+k_ncol(io)),jo)
-! TODO, do we really need to check here
-!          if ( ind_k <= k_ptr(io) ) &
-!               call die('Could not find k-point index')
+          ! if ( ind_k <= k_ptr(io) ) &
+          ! call die('Could not find k-point index')
           if ( ind_k <= k_ptr(io) ) cycle
 
           ! Todo, as this is a Gamma-calculation
@@ -434,7 +432,6 @@ contains
 
     end do
      
-
 #ifdef MPI
     ! Note that dH => val(SpArrH)
     ! Note that dS => val(SpArrS)
