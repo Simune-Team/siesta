@@ -154,7 +154,7 @@ contains
     integer :: iEl, iID, ia
     integer :: iE, imu, io, idx
     integer :: no, no_u_TS
-    real(dp), parameter :: kpt(3) = (/0._dp,0._dp,0._dp/)
+    real(dp), parameter :: bkpt(3) = (/0._dp,0._dp,0._dp/)
 ! ************************************************************
 
 #ifdef TRANSIESTA_DEBUG
@@ -348,7 +348,7 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(ispin, 1, kpt, &
+          call read_next_GS(ispin, 1, bkpt, &
                cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec
@@ -449,7 +449,7 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(ispin, 1, kpt, &
+          call read_next_GS(ispin, 1, bkpt, &
                cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec

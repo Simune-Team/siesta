@@ -385,7 +385,7 @@ contains
 
 
   ! Subroutine for reading in both the left and right next energy point
-  subroutine read_next_GS(ispin,ikpt, kpt, cE, &
+  subroutine read_next_GS(ispin,ikpt, bkpt, cE, &
        NElecs, uGF, Elecs, &
        nzwork, zwork, RemUCellDistance, reread, &
        forward )
@@ -402,7 +402,7 @@ contains
     use m_ts_electrode, only: calc_next_GS_Elec
       
     integer, intent(in) :: ispin, ikpt
-    real(dp), intent(in) :: kpt(3)
+    real(dp), intent(in) :: bkpt(3)
     type(ts_c_idx), intent(in) :: cE
     integer, intent(in) :: NElecs, uGF(NElecs)
     type(Elec), intent(inout) :: Elecs(NElecs)
@@ -467,7 +467,7 @@ contains
           ! the electrode already have the correct 
           ! variables which decides whether it is
           ! RemUCellDistance or not!
-          call calc_next_GS_Elec(Elecs(i),ispin,kpt,cE%e, &
+          call calc_next_GS_Elec(Elecs(i),ispin,bkpt,cE%e, &
                nzwork, zwork, RemUCellDistance)
        end if
     end do

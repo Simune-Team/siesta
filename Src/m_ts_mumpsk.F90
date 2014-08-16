@@ -305,7 +305,7 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(ispin, ikpt, kpt, &
+          call read_next_GS(ispin, ikpt, bkpt, &
                cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec
@@ -431,7 +431,7 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(ispin, ikpt, kpt, &
+          call read_next_GS(ispin, ikpt, bkpt, &
                cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, .false., forward = .false. )
           do iEl = 1 , N_Elec

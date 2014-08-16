@@ -1,4 +1,22 @@
 ----------------------------------------------------
+August 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-175
+Bugfix for k-points when doing in-core SE calculation
+
+* The k-points for in-core calculations of the self-energy
+  was erroneously calculated.
+  The k-points was not in reciprocal units before transferring
+  them to the new k-point
+
+modified:
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+
+----------------------------------------------------
 August 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-174
 Bugfix for weights of non-equilibrium contribution
 
