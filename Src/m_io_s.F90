@@ -36,7 +36,7 @@ contains
   ! the sparsity pattern as supplied (this implies Bcast = .true.)
   ! Else if Bcast is true it will b-cast the sparsity 
   ! pattern fully.
-  subroutine io_read_Sp(iu, no, sp, name, dit, Bcast)
+  subroutine io_read_Sp(iu, no, sp, tag, dit, Bcast)
 
     ! File handle
     integer, intent(in) :: iu
@@ -44,8 +44,8 @@ contains
     integer, intent(in) :: no
     ! Sparsity pattern
     type(Sparsity), intent(inout) :: sp
-    ! The name of the sparsity pattern
-    character(len=*), intent(in) :: name
+    ! The tag of the sparsity pattern
+    character(len=*), intent(in) :: tag
     ! distribution if needed to be b-cast in a non-global
     ! fashion
     type(OrbitalDistribution), intent(inout), optional :: dit
@@ -112,7 +112,7 @@ contains
 
     ! Create the sparsity pattern
     call newSparsity(sp,no,no, &
-         n_nzs, ncol, l_ptr, l_col, trim(name))
+         n_nzs, ncol, l_ptr, l_col, trim(tag))
 
     call de_alloc(ncol)
     call de_alloc(l_ptr)
@@ -120,7 +120,7 @@ contains
     
   end subroutine io_read_Sp
 
-  subroutine io_read_d1D(iu, sp, dSp1D, name, dit, Bcast)
+  subroutine io_read_d1D(iu, sp, dSp1D, tag, dit, Bcast)
 
     use class_dSpData1D
 
@@ -130,8 +130,8 @@ contains
     type(Sparsity), intent(inout) :: sp
     ! Data array with sparsity pattern
     type(dSpData1D), intent(inout) :: dSp1D
-    ! The name of the sparsity pattern
-    character(len=*), intent(in) :: name
+    ! The tag of the sparsity pattern
+    character(len=*), intent(in) :: tag
     ! distribution if needed to be b-cast in a non-global
     ! fashion
     type(OrbitalDistribution), intent(inout), optional :: dit
@@ -156,7 +156,7 @@ contains
     call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,nnzs=n_nzs)
 
     if ( ldit ) then
-       call newdSpData1D(sp,dit,dSp1D,name=trim(name))
+       call newdSpData1D(sp,dit,dSp1D,name=trim(tag))
        if ( lno /= no ) then
           ! We have a problem... We haven't made
           ! this routine distribute the data yet...
@@ -169,7 +169,7 @@ contains
 #else
        call newDistribution(no,-1           ,fdit,name='Fake dist')
 #endif
-       call newdSpData1D(sp,fdit,dSp1D,name=trim(name))
+       call newdSpData1D(sp,fdit,dSp1D,name=trim(tag))
     end if
 
     a => val(dSp1D)
@@ -195,9 +195,9 @@ contains
 
   end subroutine io_read_d1D
 
-  subroutine io_read_d2D(iu, sp, dSp2D, dim2, name, &
+  subroutine io_read_d2D(iu, sp, dSp2D, dim2, tag, &
        sparsity_dim, dit, Bcast)
-
+    
     use class_dSpData2D
 
     ! File handle
@@ -208,8 +208,8 @@ contains
     type(dSpData2D), intent(inout) :: dSp2D
     ! The non-sparse dimension
     integer, intent(in) :: dim2
-    ! The name of the sparsity pattern
-    character(len=*), intent(in) :: name
+    ! The tag of the sparsity pattern
+    character(len=*), intent(in) :: tag
     ! This denotes the sparsity dimension (either 1 or 2)
     integer, intent(in), optional :: sparsity_dim
     ! distribution if needed to be b-cast in a non-global
@@ -240,7 +240,7 @@ contains
     call attach(sp,nrows=lno, nrows_g=no, n_col=ncol,nnzs=n_nzs)
 
     if ( ldit ) then
-       call newdSpData2D(sp,dim2,dit,dSp2D,name=trim(name), &
+       call newdSpData2D(sp,dim2,dit,dSp2D,name=trim(tag), &
             sparsity_dim=sp_dim)
        if ( lno /= no ) then
           ! We have a problem... We haven't made
@@ -254,7 +254,7 @@ contains
 #else
        call newDistribution(no,-1           ,fdit,name='Fake dist')
 #endif
-       call newdSpData2D(sp,dim2,fdit,dSp2D,name=trim(name), &
+       call newdSpData2D(sp,dim2,fdit,dSp2D,name=trim(tag), &
             sparsity_dim=sp_dim)
     end if
 

@@ -1,4 +1,16 @@
 ----------------------------------------------------
+August 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-178
+Name changes in m_io_s
+
+* Intel compiler is not so happy about variables
+  with same name as 'use'd module routines. 
+  Changed "name" to "tag"
+
+modified:
+  Src/m_io_s.F90
+  Src/m_ts_io.F90
+
+----------------------------------------------------
 August 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-177
 Fully implemented the sc_off arrays
 

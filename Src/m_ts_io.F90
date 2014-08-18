@@ -360,7 +360,7 @@ contains
        xa, lasto, &
        sp, H, S, isc_off, &
        Ef, Qtot, Temp, &
-       istep, ia1, name, &
+       istep, ia1, tag, &
        Bcast)
 
 ! *********************************************************************
@@ -442,7 +442,7 @@ contains
     ! These have to be set before entrance (makes it possible to read
     ! in FCrun TSHS files...)
     integer, intent(out) :: istep, ia1
-    character(len=*), intent(in), optional :: name
+    character(len=*), intent(in), optional :: tag
     ! If true it will broadcast every information within the code...
     logical, intent(in), optional :: Bcast
     
@@ -456,7 +456,7 @@ contains
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer, allocatable :: indxuo(:)
     real(dp), pointer :: lxij(:,:)
-    character(len=250) :: lname
+    character(len=250) :: ltag
     logical :: lBcast, exist
 #ifdef MPI
     integer :: all_I(0:9)
@@ -471,8 +471,8 @@ contains
 
     nullify(xa,lasto,ncol,l_ptr,l_col,isc_off)
 
-    lname = trim(filename)
-    if ( present(name) ) lname = trim(name)
+    ltag = trim(filename)
+    if ( present(tag) ) ltag = trim(tag)
 
     ! Determine whether to broadcast afterwards
     lBcast = .false.
@@ -624,24 +624,24 @@ contains
 
        ! Create the sparsity pattern
        call newSparsity(sp,no_u,no_u, &
-            n_nzs, ncol, l_ptr, l_col, trim(lname))
+            n_nzs, ncol, l_ptr, l_col, trim(ltag))
 
        deallocate(ncol,l_ptr,l_col)
        nullify(ncol,l_ptr,l_col)
 
     else if ( version == 1 ) then
-       call io_read_Sp(iu,no_u,sp,name=trim(lname),Bcast=Bcast)
+       call io_read_Sp(iu,no_u,sp,tag=trim(ltag),Bcast=Bcast)
     end if
 
     ! Read in S
-    call io_read_d1D(iu,sp,S,trim(lname)//': S',Bcast=Bcast)
+    call io_read_d1D(iu,sp,S,trim(ltag)//': S',Bcast=Bcast)
 
     ! Utilize the same distribution for the others
     dit => dist(S)
 
     if ( .not. onlyS ) then
        ! Read in H
-       call io_read_d2D(iu,sp,H,nspin,trim(lname)//': H',Bcast=Bcast,dit=dit)
+       call io_read_d2D(iu,sp,H,nspin,trim(ltag)//': H',Bcast=Bcast,dit=dit)
     end if
 
     if ( .not. Gamma ) then
