@@ -1,4 +1,15 @@
 ----------------------------------------------------
+August 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-179
+Fixed calculations of iterations used in SE-calculation
+
+* Showing the iterations used was only averaging for the last
+  k-point, q-point. We now do the correct mean and std.
+  We take all iterations into account.
+
+modified:
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 August 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-178
 Name changes in m_io_s
 

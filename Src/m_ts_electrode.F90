@@ -589,7 +589,7 @@ contains
     complex(dp) :: ZEnergy, zDOS
 
     ! In order to print information about the recursize algorithm
-    integer, allocatable :: iters(:,:)
+    integer, allocatable :: iters(:,:,:,:)
     real(dp) :: i_mean, i_std
 
     integer :: uGF
@@ -811,11 +811,12 @@ contains
 #endif
 
     ! prepare the iteration counter
-    allocate(iters(NEn,2))
+    allocate(iters(nq,NEn,nkpnt,2))
     if ( IONode ) then
        ! TODO when adding new surface-Green's functions schemes, please update here
        write(*,'(1x,a)') 'Lopez Sancho, Lopez Sancho & Rubio recursive &
             &surface self-energy calculation...'
+       write(*,'(1x,a,i0)') 'Total self-energy calculations: ',nq*NEn*nkpnt
     end if
 
     ! start up the iterators
@@ -827,7 +828,7 @@ contains
        
        if ( itt_stepped(it2,1) ) then
           ! Number of iterations
-          iters(:,:) = 0
+          iters(:,:,:,:) = 0
        end if
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
@@ -944,7 +945,7 @@ contains
                 if ( CalcDOS ) then
                    call SSR_sGreen_DOS(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
                         zDOS,9*nS,zwork, &
-                        iterations=iters(iEn,1), final_invert = final_invert)
+                        iterations=iters(iqpt,iEn,ikpt,1), final_invert = final_invert)
                    
                    ! We also average the k-points.
                    ZBulkDOS(iEn,ispin) = ZBulkDOS(iEn,ispin) + &
@@ -953,7 +954,7 @@ contains
                 else
                    call SSR_sGreen_NoDos(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
                         8*nS,zwork, &
-                        iterations=iters(iEn,1), final_invert = final_invert)
+                        iterations=iters(iqpt,iEn,ikpt,1), final_invert = final_invert)
                    
                 end if
                   
@@ -1050,23 +1051,28 @@ contains
 
        if ( itt_last(it2,2) ) then
 #ifdef MPI
-          call MPI_Reduce(iters(1,1), iters(1,2), NEn, MPI_Integer, MPI_Sum, &
-               0, MPI_Comm_World, MPIerror)
+          call MPI_Reduce(iters(1,1,1,1), iters(1,1,1,2), nq*NEn*nkpnt, &
+               MPI_Integer, MPI_Sum, 0, MPI_Comm_World, MPIerror)
 #else
-          iters(:,2) = iters(:,1)
+          iters(:,:,:,2) = iters(:,:,:,1)
 #endif
           if ( IONode ) then
-             i_mean = sum(iters(:,2)) / real(NEn,dp)
+             i_mean = sum(iters(:,:,:,2)) / real(nq*NEn*nkpnt,dp)
              i_std = 0._dp
+             do j = 1 , nkpnt
              do i = 1 , NEn
-                i_std = i_std + ( iters(i,2) - i_mean ) ** 2
+             do iqpt = 1 , nq
+                i_std = i_std + ( iters(iqpt,i,j,2) - i_mean ) ** 2
              end do
-             i_std = sqrt(i_std/real(NEn,dp))
+             end do
+             end do
+             i_std = sqrt(i_std/real(NEn*nq*nkpnt,dp))
              ! TODO if new surface-Green's function scheme is implemented, fix here
              write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
                   &Mean/std iterations: ', i_mean             , i_std
              write(*,'(1x,a,i10,'' / '',i10)')     'Lopez Sancho, Lopez Sancho & Rubio: &
-                  &Min/Max iterations : ', minval(iters(:,2)) , maxval(iters(:,2))
+                  &Min/Max iterations : ', minval(iters(:,:,:,2)) , maxval(iters(:,:,:,2))
+             
           end if
        end if
 
