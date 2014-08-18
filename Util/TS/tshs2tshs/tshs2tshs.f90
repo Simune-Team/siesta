@@ -4,15 +4,19 @@ program tshs2tshs
   use units
   use parallel
   use precision, only : dp
-  use m_hs_matrix
+  use m_sparse
   use m_ts_io
   use m_ts_io_version
   use geom_helper, only : ucorb
+  use class_Sparsity
+  use class_OrbitalDistribution
+  use class_dSpData1D
+  use class_dSpData2D
 
   implicit none
 
   ! strings used to print out energies...
-  character(len=500) :: filein, fileout, arg, tmp
+  character(len=500) :: filein, fileout, arg
   integer :: vin, vout
 
   integer :: iarg, narg
@@ -22,13 +26,16 @@ program tshs2tshs
   logical :: onlyS
   logical :: Gamma, TSGamma
   real(dp) :: ucell(3,3)
-  integer :: na_u, no_l, no_u, no_s, maxnh, nspin,nsc(3)
+  integer :: na_u, no_l, no_u, no_s, n_nzs, nspin, nsc(3)
   real(dp), pointer :: xa(:,:) ! (3,na_u)
-  integer, pointer :: numh(:), listhptr(:) ! (no_u)
-  integer, pointer :: listh(:) !(maxnh)
-  real(dp), pointer :: xij(:,:) ! (3,maxnh)
   integer, pointer :: lasto(:) ! (0:na_u) 
-  real(dp), pointer :: H(:,:), S(:) !(maxnh,nspin),(maxnh)
+  integer, pointer :: ncol(:), l_ptr(:), l_col(:) ! (no_u)
+  real(dp), pointer :: xij(:,:) => null()! (3,n_nzs)
+  integer, pointer :: isc_off(:,:) => null()
+  type(Sparsity) :: sp
+  type(dSpData2D) :: dH
+  type(dSpData1D) :: dS
+  real(dp), pointer :: H(:,:), S(:) !(n_nzs,nspin),(n_nzs)
   integer :: kscell(3,3)
   real(dp) :: kdispl(3)
   real(dp) :: Ef, Qtot, Temp
@@ -36,8 +43,8 @@ program tshs2tshs
   ! not really part of TSHS anymore
   integer, allocatable :: iza(:)
   ! *********************************************
-  logical :: changed
-  integer :: i, j, tms(2,3)
+  type(OrbitalDistribution), pointer :: dit
+  integer :: i, n_s
   integer, allocatable :: indxuo(:) ! (no_s) 
   
   force = .false.
@@ -146,12 +153,27 @@ program tshs2tshs
   write(*,'(a)') 'Reading in '//trim(filein)
 
   ! Read in TSHS
-  call ts_read_TSHS(filein,onlyS,Gamma,TSGamma, &
-       ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin, &
+  call ts_read_tshs(filein, &
+       onlyS, Gamma, TSGamma, &
+       ucell, nsc, na_u, no_u, nspin,  &
        kscell, kdispl, &
        xa, lasto, &
-       numh, listhptr, listh, xij , &
-       H, S, Ef, Qtot, Temp, istep, ia1)
+       sp, dH, dS, isc_off, &
+       Ef, Qtot, Temp, &
+       istep, ia1)
+  ! calculate known sets
+  no_l = no_u
+  n_s = product(nsc)
+  no_s = n_s * no_u
+  n_nzs = nnzs(sp)
+  dit => dist(dS) ! S always exists
+  if ( .not. onlyS ) H => val(dH)
+  S => val(dS)
+
+  call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+  ! Create the xij array
+  call offset_xij(ucell,n_s,isc_off,na_u,xa,lasto,dit,sp,xij)
 
   write(*,'(a)') 'Writing to '//trim(fileout)
 
@@ -161,37 +183,14 @@ program tshs2tshs
      iza(:) = 0
      call write_TSHS_0(fileout, &
           onlyS, Gamma, TSGamma, &
-          ucell, na_u, no_l, no_u, no_s, maxnh, nspin,  &
+          ucell, na_u, no_l, no_u, no_s, n_nzs, nspin,  &
           kscell, kdispl, &
           xa, iza, lasto, &
-          numh, listhptr, listh, xij, &
+          ncol, l_ptr, l_col, xij, &
           H, S, Ef, Qtot, Temp, istep, ia1)
      deallocate(iza)
 
   else if ( vout == 1 ) then
-
-     call set_HS_available_transfers(ucell,na_u,xa,lasto,no_u,maxnh, &
-          xij,numh,listhptr,listh,tms)
-     
-     ! Calculate new supercells
-     changed = .false.
-     do i = 1 , 3
-        j = 2 * maxval(abs(tms(:,i))) + 1
-        ! We only change if the supercells are bigger
-        ! Else we expect it to be constructed correctly :)
-        if ( j > nsc(i) ) then
-           changed = .true.
-           nsc(i) = j
-        end if
-     end do
-     if ( changed ) then
-        write(0,'(a)') 'Changed supercells as information was not provided in file.'
-        write(0,'(a)') ' *** This is just a formality it does not change anything *** '
-        no_s = product(nsc) * no_u
-
-        call list_col_correct(ucell, na_u, no_u,maxnh, &
-             lasto, xa, numh, listhptr, listh, xij, nsc)
-     end if
 
      allocate(indxuo(no_s))
      do i = 1 , no_s
@@ -199,19 +198,22 @@ program tshs2tshs
      end do
 
      call ts_write_tshs(fileout, onlyS, Gamma, TSGamma, &
-          ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin, &
+          ucell, nsc, na_u, no_l, no_u, no_s, n_nzs, nspin, &
           kscell, kdispl, &
           xa, lasto, &
-          numh, listhptr, listh, xij, indxuo, H, S, Ef, &
+          ncol, l_ptr, l_col, xij, indxuo, H, S, Ef, &
           Qtot, Temp, istep, ia1)
 
      deallocate(indxuo)
 
   end if
 
-  deallocate(xa,numh,listhptr,listh)
-  deallocate(xij,lasto,S)
-  if ( .not. onlyS ) deallocate(H)
+  if ( .not. onlyS ) call delete(dH)
+  call delete(dS)
+  call delete(sp)
+
+  deallocate(xa)
+  deallocate(xij,lasto)
 
   write(*,'(a)') trim(fileout)//' written.'
 
@@ -229,7 +231,7 @@ contains
   subroutine help()
     write(0,'(a)') 'Helps converting an old TranSIESTA input to the new format'
     write(0,'(a)') 'Options:'
-    write(0,'(a)') '  -v|--version <integer>:'
+    write(0,'(a)') '  -v|--version [0,1]:'
     write(0,'(a)') '          defines the output version of the TSHS file:'
     write(0,'(a)') '            -v 0 is the old TSHS format'
     write(0,'(a)') '            -v >0 is a newer TSHS format'

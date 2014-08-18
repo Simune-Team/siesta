@@ -1,4 +1,121 @@
 ----------------------------------------------------
+August 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-177
+Fully implemented the sc_off arrays
+
+* Reverted commit 615, it was an erroneous commit.
+
+* The xij array has been fully superseeded by only using 
+  the offset array. This means a small speed increase, but
+  is obviously intended for TBTrans.
+  It also has other advantages, the electrodes need not
+  the xij arrays which are the arrays which takes up the
+  most space.
+
+  This means that the list_col array now handles the offsets
+  for the supercell k.R phase. 
+  
+  NOTE: ideally all xij arrays can be deleted before entering
+  transiesta, and recreated afterwards to limit memory usage.
+  For 5.000.000 non-zero elements this totals a memory 
+  consumption of 8 * 3 * 5M / 1024 ** 2 = 114 MB
+  (Of course distributed)
+
+* The IO routines has been fully restructured which means
+  a memory reduction, and speed increase as b-cast is now
+  changed to send/recv to the ionode.
+  We utilize ISSend and Recv as we know the local
+  buffer is not changing (thus no buffers are needed
+  and all sends are returned immediately, still synchronous :))
+
+* Utility tshs2tshs has followed the update.
+
+* Added a generic sparse reader.
+  It reads 3 different kind of input in a file:
+  
+  io_read_Sp -> reads a sparsity pattern:
+    read(iu) ncol
+    read(iu) l_col
+    create l_ptr
+    
+    It does so with regards of b-casting if requested.
+    
+  io_read_d1D -> reads a 1D data segment in the file:
+    do i = 1 , no
+      read(iu) A(l_ptr(i)+1:l_ptr(i)+ncol(i))
+    end do
+    it is also distributed if requested
+
+  io_read_d2D -> reads a 2D data segment in the file:
+    This routine takes into account the two possible
+    variants, sparsity_dim == 1 or sparsity_dim == 2.
+
+    sparsity_dim == 1:
+
+    do idim = 1 , dim2
+      do i = 1 , no
+        read(iu) A(l_ptr(i)+1:l_ptr(i)+ncol(i),idim)
+      end do
+    end do
+
+    sparsity_dim == 2:
+
+    do i = 1 , no
+      read(iu) A(1:dim2,l_ptr(i)+1:l_ptr(i)+ncol(i))
+    end do
+
+    it is also distributed if requested
+
+  In d[12]D reads we immediately assign the sparsity pattern
+  and a distribution. Currently this reading can only handle
+  non-distributed distributions. 
+
+  Yet its usage can be immediately employed else where in the code.
+
+  For TSHS reading S, H and xij, now becomes:
+
+    call io_read_Sp(iu,no_u,sp,name=trim(lname),Bcast=Bcast)
+    call io_read_d1D(iu,sp,S,'S',Bcast=Bcast)
+    dit => dist(S) ! same distribution for the next read in stuff.
+    call io_read_d2D(iu,sp,H,nspin,'H',Bcast=Bcast,dit=dit)
+    call io_read_d2D(iu,sp,xij,3,'xij',sparsity_dim=2,dit=dit, Bcast=Bcast)
+
+  pretty no?
+  I think this method is more general than readSpData2D
+
+added:
+  Src/m_io_s.F90
+  Src/m_sparse.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/create_Sparsity_SC.F90
+  Src/geom_helper.f90
+  Src/m_hs_matrix.f90
+  Src/m_transiesta.F90
+  Src/m_ts_dm_update.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_io.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_weight.F90
+  Src/state_init.F
+  Src/ts_init.F90
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/TS/tshs2tshs/tshs2tshs.f90
+
+----------------------------------------------------
 August 16, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-176
 Bugfix for self-energy calculation
 

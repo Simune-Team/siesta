@@ -341,8 +341,8 @@ contains
        ! ***************
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
-       iE = 0
-       cE = Eq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+       iE = Nodes - Node
+       cE = Eq_E(iE,step=Nodes) ! we read them backwards
        do while ( cE%exist )
 
           ! *******************
@@ -389,7 +389,7 @@ contains
 
           ! step energy-point
           iE = iE + Nodes
-          cE = Eq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+          cE = Eq_E(iE,step=Nodes) ! we read them backwards
        end do
 
 #ifdef TRANSIESTA_TIMING
@@ -440,10 +440,16 @@ contains
        ! *******************
        ! * NON-EQUILIBRIUM *
        ! *******************
+
+       ! We have the definition of: Gamma = i(\Sigma - \Sigma^\dagger)
+       ! (not with one half)
+       ! Hence we need to half the contribution for the non-equilibrium
+       kw = 0.5_dp * kw
+
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
-       iE = 0
-       cE = nEq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+       iE = Nodes - Node
+       cE = nEq_E(iE,step=Nodes) ! we read them backwards
        do while ( cE%exist )
 
           ! *******************
@@ -537,7 +543,7 @@ contains
 
           ! step energy-point
           iE = iE + Nodes
-          cE = nEq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+          cE = nEq_E(iE,step=Nodes) ! we read them backwards
        end do
 
 #ifdef TRANSIESTA_TIMING

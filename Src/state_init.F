@@ -335,7 +335,8 @@
 
          ! Force the creation of the full sparsity pattern
          call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
-     &        block_dist, sparse_pattern, na_u, lasto)
+     &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
+     &        maxnh, xijo)
 
          ! create the tri-diagonal matrix
          call ts_tri_init()

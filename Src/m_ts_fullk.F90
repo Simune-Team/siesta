@@ -78,7 +78,7 @@ contains
        ucell, nspin, na_u, lasto, &
        sp_dist, sparse_pattern, &
        no_u, n_nzs, &
-       Hs, Ss, xij, DM, EDM, Ef, kT)
+       Hs, Ss, DM, EDM, Ef, kT)
 
     use units, only : Pi, eV
     use parallel, only : Node, Nodes, IONode
@@ -107,10 +107,9 @@ contains
 
     use m_ts_options, only : IsVolt
 
-    use m_ts_sparse, only : ts_sp_uc
-    use m_ts_sparse, only : tsup_sp_uc
-    use m_ts_sparse, only : ltsup_sp_sc
-    use m_ts_sparse, only : ltsup_sc_pnt
+    use m_ts_sparse, only : ts_sp_uc, tsup_sp_uc
+    use m_ts_sparse, only : ltsup_sp_sc, ltsup_sc_pnt
+    use m_ts_sparse, only : sc_off
 
     use m_ts_cctype
     use m_ts_contour,     only : has_cE
@@ -139,7 +138,7 @@ contains
     type(Sparsity), intent(inout) :: sparse_pattern
     integer, intent(in)  :: no_u
     integer, intent(in)  :: n_nzs
-    real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs), xij(3,n_nzs)
+    real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
     real(dp), intent(in) :: Ef, kT
 
@@ -148,7 +147,7 @@ contains
 ! ************************************************************
 
 ! ******************* Computational arrays *******************
-    integer :: nzwork
+    integer :: nzwork, n_s
     complex(dp), allocatable, target :: zwork(:), GF(:)
 
     ! A local orbital distribution class (this is "fake")
@@ -184,6 +183,9 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE transiesta mem' )
 #endif
+
+    ! Number of supercells
+    n_s = size(sc_off,dim=2)
 
     ! Number of orbitals in TranSIESTA
     no_u_TS = no_u - no_Buf
@@ -304,7 +306,7 @@ contains
        ! Include spin factor and 1/(2\pi)
        kpt(:) = ts_kpoint(:,ikpt)
        ! create the k-point in reciprocal space
-       call kpoint_convert(Ucell,kpt,bkpt,1)
+       call kpoint_convert(ucell,kpt,bkpt,1)
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
        if ( nspin == 1 ) kw = kw * 2._dp
 
@@ -315,8 +317,8 @@ contains
        ! Work-arrays are for MPI distribution...
        call create_HS(sp_dist,sparse_pattern, &
             Ef, &
-            N_Elec, Elecs, no_u, & ! electrodes, SIESTA size
-            n_nzs, Hs(:,ispin), Ss, xij, &
+            N_Elec, Elecs, no_u, n_s, & ! electrodes, SIESTA size
+            n_nzs, Hs(:,ispin), Ss, sc_off, &
             spH, spS, kpt, &
             nzwork, zwork)
 
@@ -340,8 +342,8 @@ contains
              no = no - TotUsedOrbs(Elecs(iEl))
           end if
        end do
-       iE = 0
-       cE = Eq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+       iE = Nodes - Node
+       cE = Eq_E(iE,step=Nodes) ! we read them backwards
        do while ( cE%exist )
 
           ! *******************
@@ -412,7 +414,7 @@ close(io)
 
           ! step energy-point
           iE = iE + Nodes
-          cE = Eq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+          cE = Eq_E(iE,step=Nodes) ! we read them backwards
        end do
 
 #ifdef TRANSIESTA_TIMING
@@ -432,7 +434,7 @@ close(io)
        if ( .not. IsVolt ) then
           call update_zDM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin) ,  spuDM, Ef, &
-               EDM(:,ispin), spuEDM, kpt, xij)
+               EDM(:,ispin), spuEDM, kpt, n_s, sc_off)
 
           ! The remaining code segment only deals with 
           ! bias integration... So we skip instantly
@@ -462,7 +464,7 @@ close(io)
        ! transfer equilibrium data to local sparsity arrays
        call add_k_DM(spDM, spuDM, N_mu, &
             spEDM, spuEDM, N_mu, &
-            n_nzs, xij, kpt, ipnt=ltsup_sc_pnt, non_Eq = .false. )
+            n_s, sc_off, kpt, non_Eq = .false. )
 
 #ifdef TRANSIESTA_TIMING
        call timer('TS_NEQ',1)
@@ -473,8 +475,8 @@ close(io)
        ! *******************
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
-       iE = 0
-       cE = nEq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+       iE = Nodes - Node
+       cE = nEq_E(iE,step=Nodes) ! we read them backwards
        do while ( cE%exist )
 
           ! *******************
@@ -549,7 +551,7 @@ close(io)
 
           ! step energy-point
           iE = iE + Nodes
-          cE = nEq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+          cE = nEq_E(iE,step=Nodes) ! we read them backwards
        end do
 
 #ifdef TRANSIESTA_TIMING
@@ -575,7 +577,7 @@ close(io)
        ! 3. add the density to the real arrays
        call add_k_DM(spDMneq, spuDM, N_nEq_id, &
             spEDM, spuEDM, N_mu, &
-            n_nzs, xij, kpt, ipnt=ltsup_sc_pnt, non_Eq = .true. )
+            n_s, sc_off, kpt, non_Eq = .true. )
 
        if ( TS_W_K_METHOD == TS_W_K_UNCORRELATED ) then
           call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &

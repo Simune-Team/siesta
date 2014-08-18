@@ -17,8 +17,9 @@ contains
 
   subroutine ts_read_TSHS_opt(TSHS,DUMMY,na_u,no_u,no_s,nspin,maxnh, &
        xa, ucell, nsc, Qtot, Temp, Ef, &
-       Gamma,Gamma_TS,kscell,kdispl,OnlyS,lasto, &
+       Gamma,Gamma_TS,kscell,kdispl,onlyS,lasto, &
        Bcast)
+
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -33,16 +34,17 @@ contains
     integer, optional :: DUMMY ! MUST NEVER BE PASSED
     integer, intent(out), optional :: na_u, no_u, no_s, nspin, maxnh, lasto(:), kscell(3,3), nsc(3)
     real(dp), intent(out), optional :: xa(:,:), ucell(3,3), Qtot, Temp, Ef, kdispl(3)
-    logical, intent(out), optional :: Gamma, Gamma_TS, OnlyS
+    logical, intent(out), optional :: Gamma, Gamma_TS, onlyS
     logical, intent(in), optional :: Bcast
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer :: uTSHS, tmp(5), version, tkscell(3,3), tnsc(3)
+    integer :: lna_u, lno_u, lno_s, lnspin, ln_nzs
+    integer :: uTSHS, version, tkscell(3,3), tnsc(3)
     real(dp), allocatable :: txa(:,:)
     real(dp) :: rtmp(3), tucell(3,3)
-    logical :: fGamma, bool(3)
+    logical :: fGamma, bool(3), lonlyS
 #ifdef MPI
     integer :: buffer_size, ipos
     character(len=1), allocatable :: buffer(:)
@@ -70,13 +72,13 @@ contains
        if ( version /= 0 ) then
           read(uTSHS) version
        end if
-       read(uTSHS) tmp(1:5) !na_u, no_u, no_s, Enspin, maxnh
-       allocate(txa(3,tmp(1)))
-       if ( present(na_u) ) na_u = tmp(1)
-       if ( present(no_u) ) no_u = tmp(2)
-       if ( present(no_s) ) no_s = tmp(3)
-       if ( present(nspin) ) nspin = tmp(4)
-       if ( present(maxnh) ) maxnh = tmp(5)
+       read(uTSHS) lna_u,lno_u,lno_s,lnspin,ln_nzs
+       allocate(txa(3,lna_u))
+       if ( present(na_u) ) na_u = lna_u
+       if ( present(no_u) ) no_u = lno_u
+       if ( present(no_s) ) no_s = lno_s
+       if ( present(nspin) ) nspin = lnspin
+       if ( present(maxnh) ) maxnh = ln_nzs
        if ( version == 0 ) then
           read(uTSHS) txa
           read(uTSHS) ! iza
@@ -92,11 +94,8 @@ contains
        if ( version == 0 ) then
           read(uTSHS) fGamma ! SIESTA_Gamma
           if ( present(Gamma) ) Gamma = fGamma
-          if ( present(OnlyS) ) then
-             read(uTSHS) OnlyS
-          else
-             read(uTSHS) ! OnlyS
-          end if
+          read(uTSHS) lonlyS
+          if ( present(OnlyS) ) onlys = lonlyS
           
           if ( present(Gamma_TS) ) then
              read(uTSHS) Gamma_TS
@@ -114,10 +113,10 @@ contains
              read(uTSHS) ! ts_kdispl_file  
           end if
        else if ( version == 1 ) then
-          read(uTSHS) fGamma, bool(1:2)
+          read(uTSHS) fGamma, bool(1), lonlyS
           if ( present(Gamma) ) Gamma = fGamma
           if ( present(Gamma_TS) ) Gamma_TS = bool(1)
-          if ( present(OnlyS) ) OnlyS = bool(2)
+          if ( present(OnlyS) ) OnlyS = lonlyS
           read(uTSHS) tkscell, rtmp
           if ( present(kscell) ) kscell = tkscell
           if ( present(kdispl) ) kdispl = rtmp
@@ -131,7 +130,7 @@ contains
        read(uTSHS) ! istep, ia1
 
        if ( present(lasto) ) then
-          if ( size(lasto) /= tmp(1)+1 ) call die('ts_read_TSHS: Wrong size of lasto')
+          if ( size(lasto) /= lna_u+1 ) call die('ts_read_TSHS: Wrong size of lasto')
           read(uTSHS) lasto
        else
           read(uTSHS) ! lasto
@@ -154,7 +153,7 @@ contains
              read(uTSHS) ! Ef
           end if
        end if
-       
+
        deallocate(txa)
        call io_close(uTSHS)
 
@@ -167,7 +166,7 @@ contains
     end if
 
     ! Broadcast na_u (for easy reference)
-    call MPI_Bcast(tmp(1),1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    call MPI_Bcast(lna_u,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
 
 #ifdef MPI_OLD
     if ( present(na_u) ) &
@@ -183,7 +182,7 @@ contains
     if ( present(nsc) ) &
          call MPI_Bcast(nsc,3,MPI_Integer,0,MPI_Comm_World,MPIerror)
     if ( present(xa) ) &
-         call MPI_Bcast(xa(1,1),3*tmp(1),MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+         call MPI_Bcast(xa(1,1),3*lna_u,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
     if ( present(ucell) ) &
          call MPI_Bcast(ucell(1,1),9,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
     if ( present(Gamma) ) &
@@ -197,7 +196,7 @@ contains
     if ( present(kdispl) ) &
          call MPI_Bcast(kdispl,3,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
     if ( present(lasto) ) &
-         call MPI_Bcast(lasto(1),tmp(1)+1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+         call MPI_Bcast(lasto(1),lna_u+1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     if ( present(Qtot) ) &
          call MPI_Bcast(Qtot,1,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
     if ( present(Temp) ) &
@@ -207,11 +206,10 @@ contains
 #else
 
     ! this should be more than enough...
-    buffer_size = 8 * (tmp(1) * 6 + 103)
+    buffer_size = 8 * (lna_u * 6 + 103)
     allocate(buffer(buffer_size))
     ! position of data in buffer...
     ipos = 0
-
 
     if ( IONode ) then
        if ( present(na_u) ) & !  4
@@ -230,7 +228,7 @@ contains
             call MPI_Pack(maxnh,1,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
        if ( present(xa) ) &    ! 8 * 3 * na_u
-            call MPI_Pack(xa(1,1),3*tmp(1),MPI_Double_Precision, &
+            call MPI_Pack(xa(1,1),3*lna_u,MPI_Double_Precision, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
        if ( present(ucell) ) & ! 8 * 3 * 3
             call MPI_Pack(ucell(1,1),9,MPI_Double_Precision, &
@@ -254,7 +252,7 @@ contains
             call MPI_Pack(Gamma_TS,1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
        if ( present(lasto) ) & ! 4 * (na_u+1)
-            call MPI_Pack(lasto(1),tmp(1)+1,MPI_Logical, &
+            call MPI_Pack(lasto(1),lna_u+1,MPI_Logical, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
        if ( present(Qtot) ) &  ! 8
             call MPI_Pack(Qtot,1,MPI_Double_Precision, &
@@ -299,7 +297,7 @@ contains
             MPI_Comm_World, MPIerror)
        if ( present(xa) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
-            xa(1,1),3*tmp(1),MPI_Double_Precision, &
+            xa(1,1),3*lna_u,MPI_Double_Precision, &
             MPI_Comm_World, MPIerror)
        if ( present(ucell) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
@@ -331,7 +329,7 @@ contains
             MPI_Comm_World, MPIerror)
        if ( present(lasto) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
-            lasto(1),tmp(1)+1,MPI_Logical, &
+            lasto(1),lna_u+1,MPI_Logical, &
             MPI_Comm_World, MPIerror)
        if ( present(Qtot) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
@@ -355,14 +353,14 @@ contains
 
   end subroutine ts_read_TSHS_opt
 
-  subroutine ts_read_TSHS(filename, onlyS, Gamma, TSGamma, &
-       ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin,  &
+  subroutine ts_read_TSHS(filename, &
+       onlyS, Gamma, TSGamma, &
+       ucell, nsc, na_u, no_u, nspin,  &
        kscell, kdispl, &
        xa, lasto, &
-       numh, listhptr, listh, xij, &
-       H, S, Ef, &
-       Qtot, Temp, &
-       istep, ia1, &
+       sp, H, S, isc_off, &
+       Ef, Qtot, Temp, &
+       istep, ia1, name, &
        Bcast)
 
 ! *********************************************************************
@@ -385,8 +383,7 @@ contains
 ! integer no_u                : Number of basis orbitals per unit cell
 ! integer no_s                : Number of basis orbitals per supercell
 ! integer Enspin              : Spin polarization (1 or 2)
-! integer maxnh               : First dimension of listh, H, S and
-!                               second of xij
+! integer n_nzs               : First dimension of listh, H, S and
 ! integer numh(nuo)           : Number of nonzero elements of each row
 !                               of hamiltonian matrix
 ! integer listhptr(nuo)       : Pointer to the start of each row (-1)
@@ -397,7 +394,7 @@ contains
 ! real*8  S(maxnh)            : Overlap in sparse form
 ! real*8  qtot                : Total number of electrons
 ! real*8  temp                : Electronic temperature for Fermi smearing
-! real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
+! real*8  xij(3,maxnh),isc_off : Vectors between orbital centers (sparse)
 !                               (not read/written if only gamma point)
 ! TSS Begin
 ! ********************* ADDED ARGUMENTS FOR TRANSIESTA ****************
@@ -415,7 +412,14 @@ contains
 #ifdef MPI
     use mpi_siesta
 #endif
+    use alloc, only : re_alloc
     use geom_helper,  only : iaorb, ucorb
+    use m_io_s
+    use class_Sparsity
+    use class_OrbitalDistribution
+    use class_dSpData1D
+    use class_dSpData2D
+    use m_sparse, only : list_col_correct, xij_offset, calc_nsc
 
     implicit none
 
@@ -423,36 +427,39 @@ contains
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: filename
-    logical, intent(out) :: onlyS
-    logical, intent(out) :: Gamma, TSGamma
+    logical, intent(out) :: onlyS, Gamma, TSGamma
     real(dp), intent(out) :: ucell(3,3)
-    integer, intent(out) :: nsc(3), na_u, no_l, no_u, no_s, maxnh, nspin
-    real(dp), pointer, intent(out) :: xa(:,:) ! (3,na_u)
-    integer, pointer, intent(out) :: numh(:), listhptr(:) ! (no_u)
-    integer, pointer, intent(out) :: listh(:) !(maxnh)
-    real(dp), pointer, intent(out) :: xij(:,:) ! (3,maxnh)
-    integer, pointer, intent(out) :: lasto(:) ! (0:na_u) 
-    real(dp), pointer, intent(out) :: H(:,:), S(:) !(maxnh,nspin),(maxnh)
-    real(dp), intent(out) :: Ef
+    integer, intent(out) :: nsc(3), na_u, no_u, nspin
     integer, intent(out) :: kscell(3,3)
     real(dp), intent(out) :: kdispl(3)
-    real(dp), intent(out) :: Qtot,Temp
+    real(dp), pointer, intent(out) :: xa(:,:)
+    integer, pointer, intent(out) :: lasto(:) ! (0:na_u) 
+    type(Sparsity), intent(inout) :: sp
+    type(dSpData2D), intent(inout) :: H
+    type(dSpData1D), intent(inout) :: S
+    integer, pointer, intent(out) :: isc_off(:,:)
+    real(dp), intent(out) :: Ef, Qtot,Temp
     ! These have to be set before entrance (makes it possible to read
-    ! in FCrun TSHS files...
+    ! in FCrun TSHS files...)
     integer, intent(out) :: istep, ia1
+    character(len=*), intent(in), optional :: name
     ! If true it will broadcast every information within the code...
-    logical, optional, intent(in) :: Bcast
+    logical, intent(in), optional :: Bcast
     
 ! ************************
 ! * LOCAL variables      *
 ! ************************
-    integer :: iu, version, n_s
-    integer :: ispin,i,j, all_I(8), ind, io, ia, ja, is
-    integer, pointer :: tm(:)
-    integer, allocatable, target :: offsets(:,:)
+    type(OrbitalDistribution), pointer :: dit
+    type(dSpData2D) :: xij
+    integer :: iu, version, no_s, n_s, n_nzs
+    integer :: i, j, ind
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer, allocatable :: indxuo(:)
+    real(dp), pointer :: lxij(:,:)
+    character(len=250) :: lname
     logical :: lBcast, exist
 #ifdef MPI
+    integer :: all_I(0:9)
     integer :: MPIerror
 #endif
 
@@ -462,13 +469,16 @@ contains
     call write_debug( 'PRE ts_io_read' )
 #endif
 
-    nullify(xa,lasto,numh,listhptr,listh,S,H,xij)
+    nullify(xa,lasto,ncol,l_ptr,l_col,isc_off)
+
+    lname = trim(filename)
+    if ( present(name) ) lname = trim(name)
 
     ! Determine whether to broadcast afterwards
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
 
-    nsc(:)  = 0
+    nsc(:) = 0
 
     if ( IONode ) then
 
@@ -494,9 +504,7 @@ contains
        if ( version /= 0 ) then
           read(iu) ! version
        end if
-       read(iu) na_u, no_u, no_s, nspin, maxnh
-       
-       no_l = no_u
+       read(iu) na_u, no_u, no_s, nspin, n_nzs
        
        ! Read Geometry information
        allocate(xa(3,na_u)) 
@@ -541,160 +549,170 @@ contains
           deallocate(indxuo)
        end if
 
-       allocate(numh(no_u))
-       call memory('A','I',no_u,'iohs')
-       read(iu) numh
-
-       call memory('A','I',no_u,'iohs')
-       allocate(listhptr(no_u))
-       listhptr(1) = 0
-       do i = 2 , no_u
-          listhptr(i) = listhptr(i-1) + numh(i-1)
-       end do
-
-       if ( version == 0 ) then
-          ! Read Electronic Structure Information
-          read(iu) Qtot,Temp
-          read(iu) Ef
-       end if
-
-       ! Read listh
-       allocate(listh(maxnh))
-       call memory('A','I',maxnh,'iohs')
-       do i = 1 , no_u
-          read(iu) listh(listhptr(i)+1:listhptr(i)+numh(i))
-       end do
-
-       ! Read Overlap matrix
-       allocate(S(maxnh))
-       call memory('A','D',maxnh,'iohs')
-       do i = 1 , no_u
-          read(iu) S(listhptr(i)+1:listhptr(i)+numh(i))
-       end do
-
-       if ( .not. onlyS ) then
-          allocate(H(maxnh,nspin))
-          call memory('A','D',maxnh*nspin,'iohs')
-          do ispin = 1 , nspin	 
-             do i = 1 , no_u
-                read(iu) H(listhptr(i)+1:listhptr(i)+numh(i),ispin)
-             end do
-          end do
-       end if  ! onlyS
-
-       if ( .not. Gamma ) then
-
-          allocate(xij(3,maxnh))
-          call memory('A','D',3*maxnh,'iohs')
-
-          if ( version == 0 ) then
-             do i = 1 , no_u
-                read(iu) (xij(j,listhptr(i)+1:listhptr(i)+numh(i)),j=1,3)
-             end do
-
-          else if ( version == 1 ) then
-             
-             ! Number of supercells
-             n_s = no_s / no_u
-             allocate(offsets(3,0:n_s-1))
-             read(iu) offsets
-
-             do io = 1 , no_u
-                ia = iaorb(io,lasto)
-                do j = 1 , numh(io)
-                   ind = listhptr(io) + j
-                   ja = iaorb(ucorb(listh(ind),no_u),lasto)
-
-                   is = ( listh(ind) - 1 ) / no_u
-                   tm => offsets(:,is)
-
-                   xij(:,ind) = ucell(:,1) * tm(1) &
-                        + ucell(:,2) * tm(2) &
-                        + ucell(:,3) * tm(3) &
-                        + xa(:,ja) - xa(:,ia)
-
-                end do
-             end do
-   
-             ! clean-up
-             deallocate(offsets)
-
-          end if
-       end if
-
-       ! Close file
-       call io_close( iu )
     end if
 
-    if ( lBcast ) then
 #ifdef MPI
-       all_I(1:8) = (/na_u, no_l, no_u, no_s, maxnh, nspin,istep,ia1 /)
-       call MPI_Bcast(all_I,8,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( lBcast ) then
+       ! Bcast initial sizes
+       all_I(0:9) = (/version,na_u,no_u,nspin,n_nzs,nsc(1),nsc(2),nsc(3),istep,ia1/)
+       call MPI_Bcast(all_I(0),10,MPI_Integer,0,MPI_Comm_World,MPIerror)
+       version = all_I(0)
        na_u = all_I(1)
-       no_l = all_I(2)
-       no_u = all_I(3)
-       no_s = all_I(4)
-       maxnh = all_I(5)
-       nspin = all_I(6)
-       istep = all_I(7)
-       ia1 = all_I(8)
-       call MPI_Bcast(Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(TSGamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(Qtot,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(nsc,3,MPI_Integer,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(Temp,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(Ef,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+       no_u = all_I(2)
+       nspin = all_I(3)
+       n_nzs = all_I(4)
+       nsc(1) = all_I(5)
+       nsc(2) = all_I(6)
+       nsc(3) = all_I(7)
+       istep = all_I(8)
+       ia1 = all_I(9)
        call MPI_Bcast(ucell(1,1),9,MPI_Double_Precision,0, &
             MPI_Comm_World,MPIerror)
+       call MPI_Bcast(Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(TSGamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(onlyS,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(kscell(1,1),9,MPI_Integer,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(kdispl(1),3,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(onlyS,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
 
        if ( .not. IONode ) then
-          if ( .not. Gamma ) then 
-             ! they behave as dummy arrays in case of Gamma == .true.
-             allocate(xij(3,maxnh))
-             call memory('A','D',maxnh*3,'iohs')
-          end if
           allocate(xa(3,na_u))
           call memory('A','D',3*na_u,'iohs')
           allocate(lasto(0:na_u))
           call memory('A','I',1+na_u,'iohs')
-          allocate(numh(no_u))
-          call memory('A','I',no_u,'iohs')
-          allocate(listhptr(no_u))
-          call memory('A','I',no_u,'iohs')
-          allocate(listh(maxnh))
-          call memory('A','I',maxnh,'iohs')
-          if ( .not. onlyS ) then
-             allocate(H(maxnh,nspin))
-             call memory('A','D',maxnh*nspin,'iohs')
-          end if
-          allocate(S(maxnh))
-          call memory('A','D',maxnh,'iohs')
        end if
        call MPI_Bcast(xa(1,1),3*na_u,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
-       if ( .not. Gamma ) then
-          call MPI_Bcast(xij(1,1),3*maxnh,MPI_Double_Precision,0, &
-               MPI_Comm_World,MPIerror)
-       end if
        call MPI_Bcast(lasto(0),1+na_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(numh,no_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(listh,maxnh,MPI_Integer,0, MPI_Comm_World,MPIerror)
-       if ( .not. onlyS ) then
-          call MPI_Bcast(H(1,1),maxnh*nspin,MPI_Double_Precision,0, &
-               MPI_Comm_World,MPIerror)
-       end if
-       call MPI_Bcast(S,maxnh,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+
+    end if
 #endif
+
+    if ( version == 0 ) then
+
+       nullify(ncol,l_col)
+       allocate(ncol(no_u),l_col(n_nzs))
+
+       if ( IONode ) then
+          
+          read(iu) ncol
+
+          ! Read Electronic Structure Information
+          read(iu) Qtot,Temp
+          read(iu) Ef
+          
+          j = 0
+          do i = 1 , no_u
+             read(iu) l_col(j+1:j+ncol(i))
+             j = j + ncol(i)
+          end do
+
+       end if
+
+#ifdef MPI
+       if ( lBcast ) then
+          call MPI_Bcast(ncol,no_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
+          call MPI_Bcast(l_col,n_nzs,MPI_Integer,0, MPI_Comm_World,MPIerror)
+       end if
+#endif
+
+       nullify(l_ptr)
+       allocate(l_ptr(no_u))
+       
+       l_ptr(1) = 0
+       do i = 2 , no_u
+          l_ptr(i) = l_ptr(i-1) + ncol(i-1)
+       end do
+
+       ! Create the sparsity pattern
+       call newSparsity(sp,no_u,no_u, &
+            n_nzs, ncol, l_ptr, l_col, trim(lname))
+
+       deallocate(ncol,l_ptr,l_col)
+       nullify(ncol,l_ptr,l_col)
+
+    else if ( version == 1 ) then
+       call io_read_Sp(iu,no_u,sp,name=trim(lname),Bcast=Bcast)
     end if
 
-    if ( .not. IONode ) then
-       listhptr(1) = 0
-       do i = 2 , no_u
-          listhptr(i) = listhptr(i-1) + numh(i-1)
-       end do
+    ! Read in S
+    call io_read_d1D(iu,sp,S,trim(lname)//': S',Bcast=Bcast)
+
+    ! Utilize the same distribution for the others
+    dit => dist(S)
+
+    if ( .not. onlyS ) then
+       ! Read in H
+       call io_read_d2D(iu,sp,H,nspin,trim(lname)//': H',Bcast=Bcast,dit=dit)
     end if
+
+    if ( .not. Gamma ) then
+
+       if ( version == 0 ) then
+          call io_read_d2D(iu,sp,xij,3,'xij',sparsity_dim=2, &
+               dit=dit, Bcast=Bcast)
+
+          call attach(sp,n_col=ncol)
+          lxij => val(xij)
+
+          ! A stupid "bug" in the very old TRANSIESTA code
+          ! was transposing the xij array before writing... sigh...
+          ind = 0
+          do i = 1 , no_u
+             lxij(:,ind+1:ind+ncol(i)) = transpose( &
+                  reshape(lxij(:,ind+1:ind+ncol(i)), (/ncol(i),3/)))
+             ind = ind + ncol(i)
+          end do
+
+          call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+          ! We do not need (MUST NOT) do bcast the routines:
+          !   calc_nsc, list_col_correct, xij_offset
+          ! They are duplicated on all nodes, hence b-casting
+          ! will introduce wrong columns...
+          call calc_nsc(ucell,na_u,xa,lasto,no_u,no_u,n_nzs, &
+               ncol,l_ptr,l_col,lxij,nsc) 
+
+          ! Ensure that list_col is correctly formatted (not always
+          ! needed, but for consistency)
+          call list_col_correct(ucell,na_u, no_u,no_u,n_nzs, &
+               lasto, xa, ncol,l_ptr,l_col,lxij,nsc)
+          
+          call xij_offset(ucell,nsc,na_u,xa,lasto, &
+               dit,sp,n_nzs,lxij,isc_off)
+
+          ! We do not need the xij array anymore... :)
+          call delete(xij)
+
+       else if ( version == 1 ) then
+             
+          ! Number of supercells
+          n_s = product(nsc)
+          call re_alloc(isc_off,1,3,1,n_s)
+
+          if ( IONode ) then
+             read(iu) isc_off
+          end if
+#ifdef MPI
+          if ( lBcast ) then
+             call MPI_Bcast(isc_off(1,1),3*n_s, MPI_Integer, 0, &
+                  MPI_Comm_World,MPIerror)
+          end if
+#endif
+
+       end if
+    end if
+
+    if ( IONode ) then
+       ! Close file
+       call io_close( iu )
+    end if
+
+#ifdef MPI
+    if ( lBcast ) then
+       call MPI_Bcast(Qtot,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+       call MPI_Bcast(Temp,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+       call MPI_Bcast(Ef,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+    end if
+#endif
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS ts_io_read' )
@@ -704,10 +722,10 @@ contains
 
   subroutine ts_write_TSHS(filename, &
        onlyS, Gamma, TSGamma, &
-       ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin,  &
+       ucell, nsc, na_u, no_l, no_u, no_s, n_nzs, nspin,  &
        kscell, kdispl, &
        xa, lasto, &
-       numh, listhptr, listh, xij, indxuo, &
+       ncol, l_ptr, l_col, xij, indxuo, &
        H, S, Ef, &
        Qtot, Temp, &
        istep, ia1)
@@ -733,19 +751,19 @@ contains
 ! integer no_s                : Number of basis orbitals per supercell
 ! integer Enspin              : Spin polarization (1 or 2)
 ! integer indxuo(no_s)        : Index of orbitals in supercell
-! integer maxnh               : First dimension of listh, H, S and
+! integer n_nzs               : First dimension of l_col, H, S and
 !                               second of xij
-! integer numh(nuo)           : Number of nonzero elements of each row
+! integer ncol(nuo)           : Number of nonzero elements of each row
 !                               of hamiltonian matrix
-! integer listhptr(nuo)       : Pointer to the start of each row (-1)
+! integer l_ptr(nuo)       : Pointer to the start of each row (-1)
 !                               of hamiltonian matrix
-! integer listh(maxnh)        : Nonzero hamiltonian-matrix element column
+! integer l_col(n_nzs)        : Nonzero hamiltonian-matrix element column
 !                               indexes for each matrix row
-! real*8  H(maxnh,Enspin)     : Hamiltonian in sparse form
-! real*8  S(maxnh)            : Overlap in sparse form
+! real*8  H(n_nzs,Enspin)     : Hamiltonian in sparse form
+! real*8  S(n_nzs)            : Overlap in sparse form
 ! real*8  qtot                : Total number of electrons
 ! real*8  temp                : Electronic temperature for Fermi smearing
-! real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
+! real*8  xij(3,n_nzs)        : Vectors between orbital centers (sparse)
 !                               (not read/written if only gamma point)
 ! TSS Begin
 ! ********************* ADDED ARGUMENTS FOR TRANSIESTA ****************
@@ -757,12 +775,14 @@ contains
 ! TSS End
 ! *********************************************************************
 
-    use m_hs_matrix, only : supercell_offsets
-    use m_hs_matrix, only : set_HS_available_transfers
     use geom_helper, only : ucorb
+    use m_sparse, only : xij_offset
 
 #ifdef MPI
-    use m_glob_sparse
+    use parallel, only : IONode, Node, Nodes
+    use mpi_siesta
+    use m_glob_sparse, only : glob_sparse_numh
+    use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
 #endif
 
 ! **********************
@@ -772,14 +792,14 @@ contains
     logical, intent(in) :: onlyS
     logical, intent(in) :: Gamma, TSGamma
     real(dp), intent(in) :: ucell(3,3)
-    integer, intent(in) :: nsc(3), na_u, no_l, no_u, no_s, maxnh, nspin
+    integer, intent(in) :: nsc(3), na_u, no_l, no_u, no_s, n_nzs, nspin
     real(dp), intent(in) :: xa(3,na_u)
-    integer, intent(in) :: numh(no_l), listhptr(no_l)
-    integer, intent(in) :: listh(maxnh)
-    real(dp), intent(in) :: xij(3,maxnh)
+    integer, intent(in) :: ncol(no_l), l_ptr(no_l)
+    integer, intent(in) :: l_col(n_nzs)
+    real(dp), intent(in) :: xij(3,n_nzs)
     integer, intent(in) :: indxuo(no_s)
     integer, intent(in) :: lasto(0:na_u)
-    real(dp), intent(in) :: H(maxnh,nspin), S(maxnh)
+    real(dp), intent(in) :: H(n_nzs,nspin), S(n_nzs)
     real(dp), intent(in) :: Ef
     integer, intent(in) :: kscell(3,3)
     real(dp), intent(in) :: kdispl(3)
@@ -791,11 +811,13 @@ contains
 ! ************************
     integer :: iu
     integer :: ispin, i, n_s
-    integer :: maxnhg
-    integer, allocatable :: offsets(:,:)
+    integer :: n_nzsg
+    integer, pointer :: isc_off(:,:) => null()
 #ifdef MPI
-    integer,  allocatable :: numhg(:), listhptrg(:), listhg(:)
-    real(dp), allocatable :: xijg(:,:), Mg(:)
+    integer :: BNode, li, n_max
+    integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
+    integer,  allocatable :: ncolg(:), buf(:)
+    real(dp), allocatable :: Mg(:)
 #endif
 
     external :: io_assign, io_close
@@ -818,28 +840,26 @@ contains
             &please consult the developers.')
     end do
 
-    allocate(offsets(3,n_s))
-
 #ifdef MPI
-    call glob_sparse_arrays(no_l,no_u,no_s,maxnh, &
-         numh ,listhptr ,listh ,xij , Gamma,&
-         numhg,listhptrg,maxnhg,listhg,xijg)
+    ! Create globalized ncolg
+    call glob_sparse_numh(no_l,no_u,ncol,ncolg)
 
-    allocate(Mg(maxnhg))
-    call memory('A','D',maxnhg,'globArrays')
+    ! get total number of non-zero elements
+    call MPI_AllReduce(n_nzs,n_nzsg,1,MPI_Integer, MPI_SUM, &
+         MPI_Comm_World,MPIerror)
 
-    call glob_sparse_matrix(no_l,no_u,no_s, &
-         maxnh,  numh , listhptr , S , &
-         maxnhg, numhg, listhptrg, Mg)
-
-    call supercell_offsets(ucell,na_u,no_u,maxnhg, &
-         lasto, xa, numhg, listhptrg, listhg, xijg, nsc, offsets)
+    ! Get supercell indices from xij
+    ! I do not trust the sequence in SIESTA routines
+    ! Until SIESTA has a firm definition of supercell creations
+    ! this is calculated explicitly.
+    call xij_offset(ucell,nsc,na_u,xa,lasto, &
+         no_l,no_u,n_nzs, ncol,l_ptr,l_col,xij,isc_off,Bcast=.true.)
 
 #else
-    maxnhg = maxnh
+    n_nzsg = n_nzs
 
-    call supercell_offsets(ucell,na_u,no_u,maxnh, &
-         lasto, xa, numh, listhptr, listh, xij, nsc, offsets)
+    call xij_offset(ucell,nsc,na_u,xa,lasto, &
+         no_l,no_u,n_nzs, ncol,l_ptr,l_col,xij,isc_off)
 #endif
 
     if ( IONode ) then
@@ -852,7 +872,7 @@ contains
        write(iu) 1 ! This is version ONE of the file format
 
        ! Write Dimensions Information
-       write(iu) na_u, no_u, no_s, nspin, maxnhg
+       write(iu) na_u, no_u, no_s, nspin, n_nzsg
        write(iu) nsc
        
        ! Write Geometry information
@@ -871,55 +891,118 @@ contains
        write(iu) lasto
 
 #ifdef MPI
-       write(iu) numhg
+       write(iu) ncolg
+       n_max = maxval(ncolg)
+       ! Allocate for recieving arrays
+       allocate(buf(n_max))
+       allocate(Mg(n_max))
 #else
-       write(iu) numh
+       write(iu) ncol
 #endif
-
-       ! Write listh
-       do i = 1 , no_u
-#ifdef MPI
-          write(iu) listhg(listhptrg(i)+1:listhptrg(i)+numhg(i))
-#else
-          write(iu) listh(listhptr(i)+1:listhptr(i)+numh(i))
-#endif
-       end do
-
-       ! Write Overlap matrix
-       do i = 1 , no_u
-#ifdef MPI
-          write(iu) Mg(listhptrg(i)+1:listhptrg(i)+numhg(i))
-#else
-          write(iu) S(listhptr(i)+1:listhptr(i)+numh(i))
-#endif
-       end do
 
     end if
+
+    ! Write l_col
+    do i = 1 , no_u
+#ifdef MPI
+       call WhichNodeOrb(i,Nodes,BNode)
+       if ( Node == BNode ) then
+          call GlobalToLocalOrb(i,Node,Nodes,li)
+          if ( li == 0 ) call die('Error in sparse pattern, l_col')
+       end if
+       if ( IONode ) then
+          if ( Node == BNode ) then
+             write(iu) l_col(l_ptr(li)+1:l_ptr(li)+ncol(li))
+          else
+             call MPI_Recv( buf(1) , ncolg(i), MPI_Integer, &
+                  BNode, i, MPI_Comm_World, MPIstatus, MPIerror )
+             write(iu) buf(1:ncolg(i))
+          end if
+       else if ( Node == BNode ) then
+          call MPI_ISSend( l_col(l_ptr(li)+1) , ncol(li), MPI_Integer, &
+               0, i, MPI_Comm_World, MPIreq, MPIerror)
+          ! We do not need to wait, the recieving part will terminate
+          ! accordingly
+       end if
+#else
+       write(iu) l_col(l_ptr(i)+1:l_ptr(i)+ncol(i))
+#endif
+    end do
+#ifdef MPI
+    if ( .not. IONode ) then
+       ! Wait for the last one to not send
+       ! to messages with the same tag...
+       call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+    end if
+#endif
+
+    ! Write Overlap matrix
+    do i = 1 , no_u
+#ifdef MPI
+       call WhichNodeOrb(i,Nodes,BNode)
+       if ( Node == BNode ) then
+          call GlobalToLocalOrb(i,Node,Nodes,li)
+          if ( li == 0 ) call die('Error in sparse pattern, S')
+       end if
+       if ( IONode ) then
+          if ( Node == BNode ) then
+             write(iu) S(l_ptr(li)+1:l_ptr(li)+ncol(li))
+          else
+             call MPI_Recv( Mg(1) , ncolg(i), MPI_Double_Precision, &
+                  BNode, i, MPI_Comm_World, MPIstatus, MPIerror )
+             write(iu) Mg(1:ncolg(i))
+          end if
+       else if ( Node == BNode ) then
+          ! We do not need to wait, the recieving part will terminate
+          ! accordingly
+          call MPI_ISSend( S(l_ptr(li)+1) , ncol(li), MPI_Double_Precision, &
+               0, i, MPI_Comm_World, MPIreq, MPIerror)
+       end if
+#else
+       write(iu) S(l_ptr(i)+1:l_ptr(i)+ncol(i))
+#endif
+    end do
+#ifdef MPI
+    if ( .not. IONode ) then
+       call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+    end if
+#endif
     
     if ( .not. onlyS ) then
        ! Write Hamiltonian 
        do ispin = 1 , nspin 
+          do i = 1 , no_u
 #ifdef MPI
-          call glob_sparse_matrix(no_l,no_u,no_s, &
-               maxnh,  numh , listhptr , H(:,ispin), &
-               maxnhg, numhg, listhptrg, Mg)
-#endif
-          if ( IONode ) then
-             do i = 1 , no_u
-#ifdef MPI
-                write(iu) Mg(listhptrg(i)+1:listhptrg(i)+numhg(i))
+             call WhichNodeOrb(i,Nodes,BNode)
+             if ( Node == BNode ) then
+                call GlobalToLocalOrb(i,Node,Nodes,li)
+                if ( li == 0 ) call die('Error in sparse pattern, H')
+             end if
+             if ( IONode ) then
+                if ( Node == BNode ) then
+                   write(iu) H(l_ptr(li)+1:l_ptr(li)+ncol(li),ispin)
+                else
+                   call MPI_Recv( Mg(1) , ncolg(i), MPI_Double_Precision, &
+                        BNode, i+ispin*no_u, MPI_Comm_World, MPIstatus, MPIerror )
+                   write(iu) Mg(1:ncolg(i))
+                end if
+             else if ( Node == BNode ) then
+                ! We do not need to wait, the recieving part will terminate
+                ! accordingly
+                call MPI_ISSend( H(l_ptr(li)+1,ispin) , ncol(li), MPI_Double_Precision, &
+                     0, i+ispin*no_u, MPI_Comm_World, MPIreq, MPIerror)
+             end if
 #else
-                write(iu) H(listhptr(i)+1:listhptr(i)+numh(i),ispin)
+             write(iu) H(l_ptr(i)+1:l_ptr(i)+ncol(i),ispin)
 #endif
-             end do
-          end if
+          end do
        end do
     end if  ! onlyS
 
     if ( IONode ) then
 
        if ( .not. Gamma ) then
-          write(iu) offsets
+          write(iu) isc_off
        end if
 
        ! Close file
@@ -928,13 +1011,13 @@ contains
     end if
 
 #ifdef MPI
-    call glob_sparse_arrays_dealloc(no_u, Gamma, &
-         maxnhg, numhg, listhptrg, listhg, xijg)
-    call glob_sparse_matrix_dealloc(maxnhg, Mg)
+    call memory('D','I',no_u,'globArrays')
+    deallocate(ncolg)
+    if ( IONode ) deallocate(buf,Mg)
 #endif
 
-    deallocate(offsets)
-       
+    deallocate(isc_off)
+
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS ts_io_write' )
 #endif
@@ -977,7 +1060,7 @@ contains
     character(len=*), intent(in) :: fname
     integer :: version
     integer :: iu
-    integer :: na_u, no_u, no_s, nspin, maxnh, err
+    integer :: na_u, no_u, no_s, nspin, n_nzs, err
     
     external :: io_assign, io_close
 
@@ -989,7 +1072,7 @@ contains
     call io_assign( iu )
     open( iu, file=fname, form='unformatted', status='unknown' )
 
-    read(iu,iostat=err) na_u, no_u, no_s, nspin, maxnh
+    read(iu,iostat=err) na_u, no_u, no_s, nspin, n_nzs
     if ( err == 0 ) then
        ! we can successfully read 5 integers
        version = 0

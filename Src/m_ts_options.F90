@@ -31,8 +31,6 @@ module m_ts_options
                                        ! SCF. This is useful when you already have a converged
                                        ! siesta DM
 
-  ! Whether we should remove the inner-cell distances
-  logical :: RemUCellDistance = .false.
   ! Flag to control whether we should update the forces (i.e. calculate energy-density matrix)
   logical :: Calc_Forces = .true.
 
@@ -78,6 +76,10 @@ contains
     use m_ts_contour
     use m_ts_contour_eq,  only : N_Eq_E
     use m_ts_contour_neq, only : N_nEq_E
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+    use m_ts_contour_eq,  only : Eq_E, ID2idx, c2weight_eq
+    use m_ts_contour_neq, only : nEq_E, N_nEq_ID, c2weight_neq, ID2mu, nEq_ID
+#endif
 
     use m_ts_io_contour
     use m_ts_method
@@ -109,6 +111,12 @@ contains
     logical :: err
     character(len=200) :: c, chars
     integer :: i, j, idx, idx1, idx2
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+    integer, allocatable :: ID_mu(:)
+    real(dp), allocatable :: rnID(:), rn(:), rw(:)
+    type(ts_c_idx) :: cE
+    complex(dp) :: W, ZW
+#endif
 
     type(ts_mu) :: tmp_mu
     ! External routines
@@ -932,7 +940,71 @@ contains
     do i = 1 , N_Elec
        call print_elec(Elecs(i),na_u,xa)
     end do
-    
+
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+    if ( IONode ) then
+       allocate(ID_mu(N_nEq_ID))
+       allocate(rnID(N_nEq_ID),rw(N_mu),rn(N_mu))
+       do i = 1 , N_nEq_ID
+          ID_mu(i) = ID2mu(i)
+          rnID(i) = i
+       end do
+       write(*,'(a)') 'Equilibrium:'
+       tmp = .5_dp / 3.14159265358979323846_dp
+       i = 1
+       cE = Eq_E(i,step=1) ! we read them backwards
+       do while ( cE%exist ) 
+          
+          do j = 1 , N_mu
+             if ( cE%fake ) cycle
+             call ID2idx(cE,mus(j)%ID,idx)
+             if ( idx < 1 ) cycle
+             call c2weight_eq(cE,idx, tmp, W ,ZW)
+
+             write(*,'(i2,tr1,a10,2(tr1,i2),4(tr1,f10.5))') &
+                  i,trim(mus(j)%name),mus(j)%ID,idx,W,ZW / eV
+          end do
+          i = i + 1
+          cE = Eq_E(i,step=1)
+       end do
+
+       write(*,'(a)') 'Non-equilibrium:'
+       i = 1
+       cE = nEq_E(i,step=1) ! we read them backwards
+       do while ( cE%exist ) 
+          
+          do j = 1 , N_Elec
+             if ( cE%fake ) cycle
+             if ( .not. has_cE(cE,iEl=j) ) cycle
+
+             do idx1 = 1 , N_nEq_ID
+                if ( .not. has_cE(cE,iEl=j,ineq=idx1) ) cycle
+                
+                call c2weight_neq(cE,kT,j,idx1, tmp,W,idx,ZW)
+
+                write(*,'(i2,tr1,a10,2(tr1,i2),4(tr1,f10.5))') &
+                     i,trim(Elecs(j)%name),mus(idx)%ID,idx1,W,ZW / eV
+             end do
+          end do
+
+          i = i + 1
+          cE = nEq_E(i,step=1)
+       end do
+       write(*,'(a)') 'DM_neq: '
+       do i = 1 , N_nEq_ID
+          write(*,'(2(a10,tr1),f10.5)') &
+               trim(Elecs(nEq_ID(i)%iEl)%name),trim(mus(nEq_ID(i)%imu)%name),rnID(i)
+       end do
+       call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu,rnID,rn,rw)
+       write(*,'(a)') 'Contrib and weights: '
+       do i = 1 , N_mu
+          write(*,'(a10,2(tr1,f10.5))') trim(mus(i)%name),rn(i),rw(i)
+       end do
+       !call die('Stopping on request! Debugging WEIGHTS!!!')
+    end if
+#endif
+
+
 1   format('ts_options: ',a,t53,'=',4x,l1)
 5   format('ts_options: ',a,t53,'=',i5,a)
 20  format('ts_options: ',a,t53,'= ',i0,' -- ',i0)

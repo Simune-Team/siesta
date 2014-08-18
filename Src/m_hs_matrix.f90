@@ -134,6 +134,8 @@ module m_hs_matrix
 ! 
 ! NOTICE that a call to matrix_symmetrize is almost always needed!
 ! EVEN in the case of the transfer matrix.
+  
+  use precision, only : dp
  
   implicit none
 
@@ -164,10 +166,6 @@ module m_hs_matrix
   public :: matrix_rem_left_right
   public :: matrix_symmetrize
   public :: set_HS_available_transfers
-  public :: nsc_to_offsets
-  public :: offset2idx
-  public :: list_col_correct
-  public :: supercell_offsets
 
   integer, parameter, public :: TRANSFER_ALL = -999999
 
@@ -183,7 +181,6 @@ contains
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        xa,iaorb,lasto, &
        RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
-    use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
     use geom_helper, only : ucorb
@@ -451,7 +448,6 @@ contains
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        xa,iaorb,lasto, &
        RemZConnection,RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
-    use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
     use geom_helper, only : ucorb
@@ -718,7 +714,6 @@ contains
        k,transfer_cell,HkT,SkT,xa,iaorb, &
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
-    use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
     use geom_helper, only : ucorb
@@ -904,7 +899,6 @@ contains
        k,transfer_cell,HkT,SkT,xa,iaorb,&
        DUMMY, & ! Ensures that the programmer makes EXPLICIT keywork passing
        RemUCellDistances,RemNFirstOrbitals,RemNLastOrbitals)
-    use precision, only : dp
     use sys,       only : die 
     use alloc,     only : re_alloc
     use geom_helper, only : ucorb
@@ -1084,7 +1078,6 @@ contains
 
   subroutine set_HS_available_transfers(ucell,na_u,xa,lasto,no_u,maxnh, &
        xij,numh,listhptr,listh,transfer_cell)
-    use precision, only : dp
     use geom_helper, only : ucorb, iaorb
     use cellSubs, only : reclat
 
@@ -1141,43 +1134,7 @@ contains
   ! Routine for removing left right overlaps of certain regions.
   ! Is used to fully remove the connection between left and right
   ! states in the Hamiltonian
-  subroutine matrix_rem_left_right_1d(no_tot,Hk,Sk,no_L,no_R)
-    use precision, only : dp
-
-! **************************
-! * INPUT variables        *
-! **************************
-    integer, intent(in)        :: no_tot, no_L, no_R
-
-! **************************
-! * OUTPUT variables       *
-! **************************
-    complex(dp), intent(inout) :: Hk(no_tot*no_tot), Sk(no_tot*no_tot)
-
-! **************************
-! * LOCAL variables        *
-! **************************
-    integer :: i,j
-
-    ! If nothing is to be removed return immidiately...
-    if ( no_L == 0 .or. no_R == 0 ) return
-
-    do j = no_tot - no_R + 1 , no_tot
-       do i = 1 , no_L
-          Hk(i+(j-1)*no_tot) = dcmplx(0.d0,0.d0)
-          Sk(i+(j-1)*no_tot) = dcmplx(0.d0,0.d0)
-          Hk(j+(i-1)*no_tot) = dcmplx(0.d0,0.d0)
-          Sk(j+(i-1)*no_tot) = dcmplx(0.d0,0.d0)
-       end do
-    end do
-
-  end subroutine matrix_rem_left_right_1d
-
-  ! Routine for removing left right overlaps of certain regions.
-  ! Is used to fully remove the connection between left and right
-  ! states in the Hamiltonian
   subroutine matrix_rem_left_right_2d(no_tot,Hk,Sk,no_L,no_R)
-    use precision, only : dp
 
 ! **************************
 ! * INPUT variables        *
@@ -1208,54 +1165,15 @@ contains
 
   end subroutine matrix_rem_left_right_2d
 
-
-
-  subroutine matrix_symmetrize_1d(no_tot,Hk,Sk,Ef)
-    use precision, only : dp
-
-! **************************
-! * INPUT variables        *
-! **************************
-    integer, intent(in)        :: no_tot
-    real(dp), intent(in)       :: Ef
-
-! **************************
-! * OUTPUT variables       *
-! **************************
+  subroutine matrix_rem_left_right_1d(no_tot,Hk,Sk,no_L,no_R)
+    integer, intent(in)        :: no_tot, no_L, no_R
     complex(dp), intent(inout) :: Hk(no_tot*no_tot), Sk(no_tot*no_tot)
-    
-! **************************
-! * LOCAL variables        *
-! **************************
-    integer :: i,j,iuo,juo
-
-    do i = 1,no_tot
-       do j = 1,i-1
-          iuo = i + no_tot*(j-1)
-          juo = j + no_tot*(i-1)
-
-          Sk(juo) = 0.5d0*( Sk(juo) + dconjg(Sk(iuo)) )
-          Sk(iuo) =  dconjg(Sk(juo))
-          
-          Hk(juo) = 0.5d0*( Hk(juo) + dconjg(Hk(iuo)) ) &
-               - Ef*Sk(juo)
-          Hk(iuo) =  dconjg(Hk(juo))
-          
-       end do
-       iuo = i + no_tot*(i-1)
-       Sk(iuo)=Sk(iuo) - dcmplx(0d0,dimag(Sk(iuo)) )
-       
-       Hk(iuo)=Hk(iuo) - dcmplx(0d0,dimag(Hk(iuo)) ) &
-            - Ef*Sk(iuo) 
-    end do
-
-  end subroutine matrix_symmetrize_1d
-
+    call matrix_rem_left_right_2d(no_tot,Hk,Sk,no_L,no_R)
+  end subroutine matrix_rem_left_right_1d
 
 
   ! Routine for symmetrizing and shifting the matrix Ef
   subroutine matrix_symmetrize_2d(no_tot,Hk,Sk,Ef)
-    use precision, only : dp
 
 ! **************************
 ! * INPUT variables        *
@@ -1293,199 +1211,12 @@ contains
 
   end subroutine matrix_symmetrize_2d
 
-  subroutine nsc_to_offsets(lnsc,offsets)
-    ! Number of supercells in each direction
-    integer, intent(in) :: lnsc(3)
-    ! index of offsets
-    integer, pointer :: offsets(:,:)
-
-    ! ** local variables
-    integer :: n_s
-    integer :: ia, ib, ic, is
-
-    nullify(offsets)
-
-    n_s = product(lnsc)
-    allocate(offsets(3,n_s))
-
-    ! Create offsets
-    do ic = -lnsc(3)/2 , lnsc(3)/2
-    do ib = -lnsc(2)/2 , lnsc(2)/2
-    do ia = -lnsc(1)/2 , lnsc(1)/2
-       is = offset2idx(lnsc,(/ia,ib,ic/))
-       offsets(1,is) = ia
-       offsets(2,is) = ib
-       offsets(3,is) = ic
-    end do
-    end do
-    end do
-    
-  end subroutine nsc_to_offsets
-
-  ! From lnsc we calculate the supercell index
-  function offset2idx(lnsc,tm) result(idx)
-    integer, intent(in) :: lnsc(3), tm(3)
-    integer :: idx
-    integer :: ia, ib, ic
-
-    idx = 0
-    do ic = -lnsc(3)/2 , lnsc(3)/2
-    do ib = -lnsc(2)/2 , lnsc(2)/2
-    do ia = -lnsc(1)/2 , lnsc(1)/2
-       idx = idx + 1
-       if ( tm(1) == ia .and. &
-            tm(2) == ib .and. &
-            tm(3) == ic ) return
-    end do
-    end do
-    end do
-    idx = 0
-
-  end function offset2idx
-
-  ! Create an index array containing the unit-cell expansions
-  ! This means we can do this:
-  !   xij(:,ind) = ucell(:,1) * tm(1) + ucell(:,2) * tm(2) + ucell(:,3) * tm(3) + xa(:,iaorb(jo))-xa(:,iaorb(io))
-  ! to create the full xij array...
-  subroutine list_col_correct(ucell,na_u, no_u,maxnh, &
-       lasto, xa, numh, listhptr, listh, xij, lnsc)
-    use precision, only : dp
-    use geom_helper, only : ucorb, iaorb
-    use cellSubs, only : reclat
-
-! ***********************
-! * INPUT variables     *
-! ***********************
-    real(dp), intent(in) :: ucell(3,3) ! The unit cell of system
-    integer, intent(in)  :: na_u ! Unit cell atoms
-    integer, intent(in)  :: no_u ! Unit cell orbitals
-    integer, intent(in)  :: maxnh ! Hamiltonian size
-    integer, intent(in)  :: lasto(0:na_u) ! Last orbital of atom
-    real(dp), intent(in) :: xa(3,na_u) ! atom positions
-    integer, intent(in)  :: numh(no_u), listhptr(no_u)
-    ! We correct the indices here to conform with the corrected offsets
-    integer, intent(inout)  :: listh(maxnh)
-    real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    ! Number of supercells in each direction ** MUST be corrected using nsc_to_offests
-    integer, intent(in)  :: lnsc(3) ! Number of supercells in each direction
-! ***********************
-! * LOCAL variables     *
-! ***********************
-    integer :: io, jo, j, ind, ia, ja, is, tm(3)
-    real(dp) :: xijo(3), rcell(3,3), err
-    
-    ! Prepare the cell to calculate the index of the atom
-    call reclat(ucell,rcell,0) ! Without 2*Pi
-
-    !err = 0._dp
-    do io = 1 , no_u
-       ia = iaorb(io,lasto)
-       do j = 1 , numh(io)
-
-          ind = listhptr(io) + j
-          jo = ucorb(listh(ind),no_u)
-          ja = iaorb(jo,lasto)
-
-          xijo(:) = xij(:,ind) - ( xa(:,ja) - xa(:,ia) )
-          tm(:) = nint( matmul(xijo,rcell) )
-
-          ! get supercell index
-          is = offset2idx(lnsc,tm) - 1
-
-          if ( is < 0 ) then
-             ! Index not found
-             call die('Error in index, possible shifting')
-          end if
-
-          ! Correct index
-          listh(ind) = is * no_u + jo
-
-          ! The error on this conversion
-          ! tends to be on the order of 1e-14
-          ! xijo = ucell(:,1) * tm(1) &
-          !      + ucell(:,2) * tm(2) &
-          !      + ucell(:,3) * tm(3) &
-          !      + xa(:,ja) - xa(:,ia)
-          ! err = max(maxval(abs(xijo - xij(:,ind))),err)
-          ! This error can be "important" when
-          ! calculating self-energies
-
-       end do
-    end do
-
-  end subroutine list_col_correct
-
-  ! Create an index array containing the unit-cell expansions
-  ! This means we can do this:
-  !   xij(:,ind) = ucell(:,1) * tm(1) + ucell(:,2) * tm(2) + ucell(:,3) * tm(3) + xa(:,iaorb(jo))-xa(:,iaorb(io))
-  ! to create the full xij array...
-  subroutine supercell_offsets(ucell,na_u, no_u,maxnh, &
-       lasto, xa, numh, listhptr, listh, xij, nsc, offsets)
-    use precision, only : dp
-    use geom_helper, only : ucorb, iaorb
-    use cellSubs, only : reclat
-
-! ***********************
-! * INPUT variables     *
-! ***********************
-    real(dp), intent(in) :: ucell(3,3) ! The unit cell of system
-    integer, intent(in)  :: na_u ! Unit cell atoms
-    integer, intent(in)  :: no_u ! Unit cell orbitals
-    integer, intent(in)  :: maxnh ! Hamiltonian size
-    integer, intent(in)  :: lasto(0:na_u) ! Last orbital of atom
-    real(dp), intent(in) :: xa(3,na_u) ! atom positions
-    integer, intent(in)  :: numh(no_u), listhptr(no_u)
-    integer, intent(in)  :: listh(maxnh)
-    real(dp), intent(in) :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    integer, intent(in)  :: nsc(3) ! Number of supercells in each direction
-! ***********************
-! * OUTPUT variables    *
-! ***********************
-    integer, intent(out) :: offsets(3,0:product(nsc)-1)
-! ***********************
-! * LOCAL variables     *
-! ***********************
-    integer :: io, j, ind, ia, ja, is, tm(3)
-    real(dp) :: xijo(3), rcell(3,3)
-
-    ! Initialize the offsets
-    offsets(:,:) = 0
-    
-    ! Prepare the cell to calculate the index of the atom
-    call reclat(ucell,rcell,0) ! Without 2*Pi
-
-    do io = 1 , no_u
-
-       ia = iaorb(io,lasto)
-       ind = listhptr(io)
-
-       do j = 1 , numh(io)
-
-          ind = ind + 1
-          ja = iaorb(ucorb(listh(ind),no_u),lasto)
-
-          ! the supercell index (counting from zero)
-          is = (listh(ind) - 1)/no_u
-
-          xijo(:) = xij(:,ind) - ( xa(:,ja) - xa(:,ia) )
-
-          tm(:) = nint( matmul(xijo,rcell) )
-
-          if ( any(tm(:) /= offsets(:,is)) .and. any(offsets(:,is)/=0) ) then
-             write(*,'(a,3(tr1,i6))')'r,c',io,listh(ind)
-             write(*,'(a,i3,tr1,3(tr1,i3),tr3,3(tr1,i3))') 'is, tm',is, tm, offsets(:,is)
-             write(*,'(a,2(tr1,i3),6(tr1,f10.5))') 'ia, ja',ia, ja,xijo(:)-&
-                  ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3)
-             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xa(:,(is-1)*na_u +ja)-xa(:,ia)
-             call die('Error')
-          else
-             offsets(:,is) = tm(:)
-          end if
-
-       end do
-    end do
-
-  end subroutine supercell_offsets
+  subroutine matrix_symmetrize_1d(no_tot,Hk,Sk,Ef)
+    integer, intent(in)        :: no_tot
+    real(dp), intent(in)       :: Ef
+    complex(dp), intent(inout) :: Hk(no_tot*no_tot), Sk(no_tot*no_tot)
+    call matrix_symmetrize_2d(no_tot,Hk(1),Sk(1),Ef)
+  end subroutine matrix_symmetrize_1d
 
 end module m_hs_matrix
   

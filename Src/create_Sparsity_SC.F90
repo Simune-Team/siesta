@@ -28,7 +28,7 @@ contains
        DUMMY, &
        MASK, & ! 1. option
        UC, &   ! 2. option
-       TM,ucell,lasto,xa,xij) ! 3. option
+       TM,ucell,lasto,xa,xij,isc_off) ! 3. option
     use class_Sparsity
 
     ! The matrix which contains the supercell.
@@ -68,6 +68,9 @@ contains
     ! *NOTE* This is necessary if one requests a TM matrix
     real(dp), intent(in), optional :: xij(:,:)
 
+    ! Supply the super-cell offset array
+    integer, intent(in), optional :: isc_off(:,:)
+
     ! We need space to create the new sparsity pattern:
     integer :: n_rows, n_rows_g, n_nzs
     integer, allocatable :: num(:), listptr(:), list(:)
@@ -95,7 +98,7 @@ contains
                &pattern.')
        end if
     end if
-      
+
     ! Save the rows ( this is the same for all cases)
     ! Even for TM which typically have 0 entries
     ! in some rows. However, it provides the full information.
@@ -114,7 +117,8 @@ contains
     do ir = 1 , n_rows
        call sparsity_row_entries(in,ir,n=num(ir), &
             MASK=MASK, &
-            UC=UC,TM=TM,ucell=ucell,lasto=lasto,xa=xa,xij=xij)
+            UC=UC,TM=TM,ucell=ucell,lasto=lasto,xa=xa,xij=xij, &
+            isc_off=isc_off)
        ! Update list pointer
        if ( ir > 1 ) &
             listptr(ir) = listptr(ir-1) + num(ir-1)
@@ -138,7 +142,8 @@ contains
        if ( num(ir) > 0 ) then
           call sparsity_row_entries(in,ir,n=num(ir),entries=entries, &
                MASK=MASK, &
-               UC=UC,TM=TM,ucell=ucell,lasto=lasto,xa=xa,xij=xij)
+               UC=UC,TM=TM,ucell=ucell,lasto=lasto,xa=xa,xij=xij, &
+               isc_off=isc_off)
           ! Step to the element corresponding to the pointer
           iu = listptr(ir)
           ! Update all the entries
@@ -192,7 +197,8 @@ contains
   subroutine sparsity_row_entries(sp,row,n,entries, &
        DUMMY, &
        MASK, &
-       UC,TM,ucell,lasto,xa,xij)
+       UC,TM,ucell,lasto,xa,xij, &
+       isc_off)
     use class_Sparsity
 
     type(Sparsity), intent(in out) :: sp
@@ -229,6 +235,9 @@ contains
     ! Supply the xij matrix
     real(dp), intent(in), optional :: xij(:,:)
 
+    ! Supply the offset matrix
+    integer, intent(in), optional :: isc_off(:,:)
+
     ! Check the input
     if ( present(UC) ) then
        if ( UC ) then
@@ -240,12 +249,17 @@ contains
     
     if ( present(TM) ) then
        ! Check consistency in call
-       if ( .not. present(ucell) ) call die('TM creation needs ucell')
-       if ( .not. present(lasto) ) call die('TM creation needs lasto')
-       if ( .not. present(xa) ) call die('TM creation needs xa')
-       if ( .not. present(xij) ) call die('TM creation needs xij')
-       call sparsity_row_entries_TM(sp,row,TM,ucell,lasto,xa,xij, &
-            n=n,entries=entries)
+       if ( present(isc_off) ) then
+          call sparsity_row_entries_TM_off(sp,row,TM,isc_off, &
+               n=n,entries=entries)
+       else
+          if ( .not. present(ucell) ) call die('TM creation needs ucell')
+          if ( .not. present(lasto) ) call die('TM creation needs lasto')
+          if ( .not. present(xa) ) call die('TM creation needs xa')
+          if ( .not. present(xij) ) call die('TM creation needs xij')
+          call sparsity_row_entries_TM(sp,row,TM,ucell,lasto,xa,xij, &
+               n=n,entries=entries)
+       end if
        return
     end if
 
@@ -277,7 +291,7 @@ contains
     integer, pointer :: l_col(:)
     ! We probably need this for safety reasons
     integer, allocatable :: vals(:)
-    integer :: ncol, ptr, i, j, no_e, nr
+    integer :: ncol, ptr, i, no_e, nr
 
     ! Retrieve the pointer providing the index of the columns
     ncol  =  n_col   (sp,row)
@@ -332,7 +346,6 @@ contains
   end subroutine sparsity_row_entries_UC
 
 
-
   ! Handles sparsity row entry counts when
   ! requesting TM
   subroutine sparsity_row_entries_TM(sp,row, & 
@@ -365,12 +378,11 @@ contains
     integer, intent(in out), optional :: n
     integer, intent(out), optional :: entries(:)
 
-
-! Local variables...
+    ! Local variables...
     real(dp) :: recell(3,3)
     integer, pointer :: l_col(:) => null()
     integer :: iar
-    integer :: ncol, ptr, i,j, no_e, nr, t(3)
+    integer :: ncol, ptr, i,j, no_e, t(3)
 
     call attach(sp,nrows=i,nrows_g=j)
     if ( i /= j ) then
@@ -421,8 +433,6 @@ contains
     end if
 
     if ( present(entries) ) then
-       ! We need the number of rows (i.e. no_u)
-       nr = nrows_g(sp)
        j = 0
        do i = ptr+1 , ptr+ncol
           t = cell_abc(recell, &
@@ -449,6 +459,102 @@ contains
     
   end subroutine sparsity_row_entries_TM
 
+  ! Handles sparsity row entry counts when
+  ! requesting TM
+  subroutine sparsity_row_entries_TM_off(sp,row, & 
+       TM,isc_off,&
+       n,entries)
+    use class_Sparsity
+    use intrinsic_missing, only : SORT
+    use geom_helper
+
+    type(Sparsity), intent(in out) :: sp
+    integer, intent(in)            :: row
+
+    ! TM stands for Transfer Matrix
+    ! It enables to retrieve the coupling between the UC and the requested
+    ! it tells which TM we retieve (x,y,z) (can be negative as well)
+    integer, intent(in) :: TM(3)
+
+    ! Supply the sc_off 
+    integer, intent(in) :: isc_off(:,:)
+
+    integer, intent(in out), optional :: n
+    integer, intent(out), optional :: entries(:)
+
+    ! Local variables...
+    integer, pointer :: l_col(:) => null()
+    integer :: is
+    integer :: ncol, ptr, i,j, no_e, nr, t(3)
+
+    call attach(sp,nrows=i,nrows_g=nr)
+    if ( i /= nr ) then
+       call die('Creating TM sparsity pattern requires correct &
+            &atomic placement. You must not use a distributed &
+            &sparsity pattern.')
+    end if
+
+    ! Retrieve the pointer providing the index of the columns
+    ncol  =  n_col   (sp,row)
+    ptr   =  list_ptr(sp,row)
+    l_col => list_col(sp)
+
+    ! If the user requests the entries
+    ! Then a previous call to this routine must have been
+    ! performed (where entries was NOT present)
+    if ( present(n) .and. present(entries) ) then
+       no_e = n
+    end if
+
+    ! To retrieve the number of elements in
+    ! a transfer matrix element then
+    ! we do the following
+    if ( .not. present(entries) ) then
+       no_e = 0
+       ! Retrieve the data pointer value.
+       ! By doing this, we explicitly assume that the
+       ! sparsity pattern of xij and *in* are the same! 
+       ! TODO, check this in the beginning of the routine!
+       do i = ptr+1 , ptr+ncol
+          is = (l_col(i)-1)/nr + 1
+          t = isc_off(:,is)
+          if ( (TM(1) == TM_ALL .or. TM(1) == t(1)) .and. &
+               (TM(2) == TM_ALL .or. TM(2) == t(2)) .and. &
+               (TM(3) == TM_ALL .or. TM(3) == t(3)) ) then
+             no_e = no_e + 1
+          end if
+       end do
+    end if
+    
+    if ( present(n) .and. .not. present(entries) ) then
+       n = no_e
+    end if
+
+    if ( present(entries) ) then
+       j = 0
+       do i = ptr+1 , ptr+ncol
+          is = (l_col(i)-1)/nr + 1
+          t = isc_off(:,is)
+          if ( (TM(1) == TM_ALL .or. TM(1) == t(1)) .and. &
+               (TM(2) == TM_ALL .or. TM(2) == t(2)) .and. &
+               (TM(3) == TM_ALL .or. TM(3) == t(3)) ) then
+
+             j = j + 1
+             entries(j) = l_col(i)
+          end if
+       end do
+       ! lets sort the entries !
+       entries(1:j) = SORT(entries(1:j))
+
+       ! We need to check that the entries in fact does
+       ! match the requested number of entries.
+       if ( j /= no_e ) then
+          call die('TM count of the entries does not match')
+       end if
+    end if
+    
+  end subroutine sparsity_row_entries_TM_off
+
 
   ! This subroutine handles the desimation of the sparsity
   ! pattern in regards of a MASK
@@ -468,7 +574,7 @@ contains
     integer, intent(out), optional :: entries(:)
 
     integer, pointer :: l_col(:) => null()
-    integer :: ncol, ptr, i, j, no_e, sub_count
+    integer :: ncol, ptr, i, j, no_e
 
     ! Retrieve the pointer providing the index of the columns
     ncol  =  n_col   (sp,row)

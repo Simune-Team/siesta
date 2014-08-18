@@ -51,6 +51,9 @@ module geom_helper
   ! It does the same thing
   public :: ucorb, ucatom
   public :: iaorb
+  interface cell_abc
+     module procedure :: cell_abc_ij, cell_abc_c
+  end interface cell_abc
   public :: cell_abc
   public :: cell_d, cell_a, cell_b, cell_c
   public :: xa_in_cell
@@ -104,7 +107,7 @@ contains
   end function iaorb
 
 
-  pure function cell_abc(recell,xai,xaj,xij) result(nnn)
+  pure function cell_abc_ij(recell,xai,xaj,xij) result(nnn)
 ! *********************
 ! * INPUT variables   *
 ! *********************
@@ -121,7 +124,24 @@ contains
     nnn(2) = nint(sum(xd*recell(:,2)))
     nnn(3) = nint(sum(xd*recell(:,3)))
 
-  end function cell_abc
+  end function cell_abc_ij
+
+  pure function cell_abc_c(recell,xR) result(nnn)
+! *********************
+! * INPUT variables   *
+! *********************
+    real(dp), intent(in) :: recell(3,3) ! the reciprocal cell, WITHOUT 2Pi!!
+    real(dp), intent(in) :: xR(3)
+! *********************
+! * OUTPUT variables  *
+! *********************
+    integer :: nnn(3)
+    ! The actual length between two atomic centered orbitals:
+    nnn(1) = nint(sum(xR*recell(:,1)))
+    nnn(2) = nint(sum(xR*recell(:,2)))
+    nnn(3) = nint(sum(xR*recell(:,3)))
+
+  end function cell_abc_c
 
 
   pure function cell_a(recell,xai,xaj,xij) result(n)
@@ -133,7 +153,7 @@ contains
 ! *********************
 ! * OUTPUT variables  *
 ! *********************
-    integer  :: n
+    integer :: n
     n = cell_d(recell,xai,xaj,xij,1)
   end function cell_a
 
@@ -146,7 +166,7 @@ contains
 ! *********************
 ! * OUTPUT variables  *
 ! *********************
-    integer  :: n
+    integer :: n
     n = cell_d(recell,xai,xaj,xij,2)
   end function cell_b
 
@@ -159,7 +179,7 @@ contains
 ! *********************
 ! * OUTPUT variables  *
 ! *********************
-    integer  :: n
+    integer :: n
     n = cell_d(recell,xai,xaj,xij,3)
   end function cell_c
 

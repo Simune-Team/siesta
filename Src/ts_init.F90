@@ -152,12 +152,11 @@ contains
        do i = 1 , N_Elec
 
           ! initialize the electrode for Green's function calculation
-          call init_Electrode_HS(Elecs(i),RemUCellDistance)
+          call init_Electrode_HS(Elecs(i))
 
           call do_Green(Elecs(i), &
                ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
-               RemUCellDistance, Elecs_xa_Eps, &
-               .false.)
+               Elecs_xa_Eps, .false. )
           
           ! clean-up
           call delete(Elecs(i))

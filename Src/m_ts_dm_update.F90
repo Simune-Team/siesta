@@ -108,12 +108,10 @@ contains
   ! the weighting which is performed here.
 
   subroutine add_k_DM(spDM,spuDM,D_dim2, spEDM, spuEDM, E_dim2, &
-       n_nzs,xij,k,ipnt, &
-       non_Eq,spW)
+       n_s,sc_off,k, non_Eq,spW)
 
     use class_OrbitalDistribution
     use class_Sparsity
-    use class_iSpData1D
     use class_dSpData2D
     use class_zSpData2D
     use geom_helper, only : UCORB
@@ -131,13 +129,9 @@ contains
     integer, intent(in) :: D_dim2, E_dim2
     ! The k-point
     real(dp), intent(in) :: k(3)
-    ! The orbitals distances (in the local SIESTA sparsity pattern)
-    integer, intent(in) :: n_nzs
-    real(dp), intent(in) :: xij(3,n_nzs)
-    ! The pointer from xij -> spar(spDM).
-    ! I.e. a pointer from the local update sparsity to the local sparsity
-    ! (only needed to refrain from creating a duplicate xij array)
-    type(iSpData1D), intent(inout) :: ipnt
+    ! The supercell offsets
+    integer, intent(in) :: n_s
+    real(dp), intent(in) :: sc_off(3,0:n_s-1)
 
     ! If the sparsity-weight is provided we will do this:
     ! DM = DM + DMu
@@ -151,7 +145,6 @@ contains
     type(Sparsity), pointer :: l_s, up_s
     integer, pointer :: l_ncol(:) , l_ptr(:) , l_col(:)
     integer, pointer :: up_ncol(:), up_ptr(:), up_col(:)
-    integer, pointer :: pnt(:)
     real(dp), pointer :: dD(:,:) , dE(:,:), dW(:,:)
     complex(dp), pointer :: zDu(:,:), zEu(:,:)
     integer :: lnr, lio, lind, io, ind, nr, jo
@@ -188,9 +181,6 @@ contains
        end if
     end if
 
-    ! The pointer
-    pnt  => val(ipnt)
-
     ! If the weight-array is clear, then save to that.
     save_weight = present(spW)
     if ( save_weight ) then
@@ -225,10 +215,11 @@ contains
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist
 
+             jo = (l_col(lind)-1) / nr
              ph = cdexp(dcmplx(0._dp, - &
-                  k(1) * xij(1,pnt(lind)) - &
-                  k(2) * xij(2,pnt(lind)) - &
-                  k(3) * xij(3,pnt(lind))))
+                  k(1) * sc_off(1,jo) - &
+                  k(2) * sc_off(2,jo) - &
+                  k(3) * sc_off(3,jo)))
 
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
@@ -259,10 +250,11 @@ contains
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist
              
+             jo = (l_col(lind)-1) / nr
              ph = cdexp(dcmplx(0._dp, - &
-                  k(1) * xij(1,pnt(lind)) - &
-                  k(2) * xij(2,pnt(lind)) - &
-                  k(3) * xij(3,pnt(lind))))
+                  k(1) * sc_off(1,jo) - &
+                  k(2) * sc_off(2,jo) - &
+                  k(3) * sc_off(3,jo)))
              
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
@@ -294,10 +286,11 @@ contains
              if ( rind <= rin ) &
                   call die('ERROR: Conjugated symmetrization point does not exist')
 
+             jo = (l_col(lind)-1) / nr
              ph = cdexp(dcmplx(0._dp, - &
-                  k(1) * xij(1,pnt(lind)) - &
-                  k(2) * xij(2,pnt(lind)) - &
-                  k(3) * xij(3,pnt(lind))))
+                  k(1) * sc_off(1,jo) - &
+                  k(2) * sc_off(2,jo) - &
+                  k(3) * sc_off(3,jo)))
 
              ! This integration is this:
              ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A) dE
@@ -453,16 +446,13 @@ contains
     real(dp), intent(inout) :: EDM(n_nzs)
     ! Updated sparsity arrays (they contain the current integration)
     type(dSpData2D), intent(inout) :: spEDM
-    ! The pointer from xij -> spar(spDM).
     ! I.e. a pointer from the local update sparsity to the local sparsity
-    ! (only needed to refrain from creating a duplicate xij array)
     type(iSpData1D), intent(in), optional :: ipnt
     ! Whether the update sparsity pattern is a global update sparsity pattern
     logical, intent(in), optional :: UpSpGlobal
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
-    type(OrbitalDistribution), pointer :: orb_dit
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
     integer, pointer :: pnt(:)
@@ -532,7 +522,7 @@ contains
           end do
        end do
        
-    else       
+    else 
 
        ! This loop is across the local rows...
        do io = 1 , lnr
@@ -615,7 +605,7 @@ contains
   ! Hence we don't have any sparsity patterns with local sparsity patterns
   ! that is dealing with this routine (hence we do need the index_local_to_global)
   subroutine update_zDM(dit,sp,n_nzs,DM,spDM, Ef, &
-       EDM,spEDM, k, xij)
+       EDM,spEDM, k, n_s, sc_off)
     use class_OrbitalDistribution
     use class_Sparsity
     use class_zSpData2D
@@ -635,8 +625,9 @@ contains
     real(dp), intent(in) :: Ef
     ! The k-point...
     real(dp), intent(in) :: k(3)
-    ! The orbital distances
-    real(dp), intent(in) :: xij(3,n_nzs)
+    ! The supercell offset
+    integer, intent(in) :: n_s
+    real(dp), intent(in) :: sc_off(3,0:n_s-1)
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
@@ -711,10 +702,11 @@ contains
           
           ! The integration is this:
           ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
+          jo = (l_col(lind)-1) / nr
           ph = cdexp(dcmplx(0._dp, - &
-               k(1) * xij(1,lind) - &
-               k(2) * xij(2,lind) - &
-               k(3) * xij(3,lind)))
+               k(1) * sc_off(1,jo) - &
+               k(2) * sc_off(2,jo) - &
+               k(3) * sc_off(3,jo)))
           
           DM(lind) = DM(lind) + aimag( ph*(zD(ind,1) - conjg(zD(rind,1))) )
           if ( hasEDM ) &

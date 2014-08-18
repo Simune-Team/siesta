@@ -38,48 +38,14 @@ module m_ts_mumpsg
   private
   
 contains
-
-! ##################################################################
-! ##                                                              ##       
-! ##                       "TRANSIESTA"                           ##
-! ##                                                              ##       
-! ##          Non-equilibrium Density Matrix Subroutine           ##
-! ##                   to be called from SIESTA                   ##
-! ##                                                              ## 
-! ## Originally:                By                                ##
-! ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
-! ##               Kurt Stokbro, ks@mic.dtu.dk                    ## 
-! ##               Mikroelektronik Centret (MIC)                  ##
-! ##           Technical University of Denmark (DTU)              ##
-! ##                                                              ##
-! ## Currently:                 By                                ##
-! ##           Nick Papior Andersen, nickpapior@gmail.com         ##
-! ##           Technical University of Denmark (DTU)              ##
-! ##                                                              ##
-! ## This code has been fully re-created to conform with the      ##
-! ## sparsity patterns in SIESTA. Thus the memory requirements    ##
-! ## has been greatly reduced.                                    ##
-! ##                                                              ##
-! ##################################################################
-!
-!
-! Tight-binding density-matrix/transport program for the SIESTA
-! package.
-! Copyright by Mads Brandbyge, 1999, 2000, 2001, 2002.
-! Copyright by Nick Papior Andersen, 2013.
-! The use of this program is allowed for not-for-profit research only.
-! Copy or disemination of all or part of this package is not
-! permitted without prior and explicit authorization by the authors.
-!
   
   subroutine ts_mumpsg(N_Elec,Elecs, &
-       nq,uGF, &
-       nspin, na_u, lasto, &
+       nq, uGF, nspin, na_u, lasto, &
        sp_dist, sparse_pattern, &
        no_u, n_nzs, &
        Hs, Ss, DM, EDM, Ef, kT)
 
-    use units, only : Pi, eV
+    use units, only : eV, Pi
     use parallel, only : Node, Nodes, IONode
 #ifdef MPI
     use mpi_siesta
@@ -169,11 +135,11 @@ contains
     type(itt1) :: Sp
     integer, pointer :: ispin
     integer :: iEl, iID, up_nzs
-    integer :: iE, imu, io, idx
+    integer :: iE, imu, idx
 ! ************************************************************
 
 ! ******************* Miscalleneous variables ****************
-    integer :: ierr, no_u_TS, off, no
+    integer :: no_u_TS, off, no
     real(dp), parameter :: bkpt(3) = (/0._dp,0._dp,0._dp/)
 ! ************************************************************
 
@@ -325,8 +291,8 @@ contains
              no = no - TotUsedOrbs(Elecs(iEl))
           end if
        end do
-       iE = 0
-       cE = Eq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+       iE = Nodes - Node
+       cE = Eq_E(iE,step=Nodes) ! we read them backwards
        do while ( cE%exist )
 
           ! *******************
@@ -388,7 +354,7 @@ contains
 
           ! step energy-point
           iE = iE + Nodes
-          cE = Eq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+          cE = Eq_E(iE,step=Nodes) ! we read them backwards
        end do
 
 #ifdef TRANSIESTA_TIMING
@@ -441,10 +407,16 @@ contains
        ! *******************
        ! * NON-EQUILIBRIUM *
        ! *******************
+
+       ! We have the definition of: Gamma = i(\Sigma - \Sigma^\dagger)
+       ! (not with one half)
+       ! Hence we need to half the contribution for the non-equilibrium
+       kw = 0.5_dp * kw
+
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
-       iE = 0
-       cE = nEq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+       iE = Nodes - Node
+       cE = nEq_E(iE,step=Nodes) ! we read them backwards
        do while ( cE%exist )
 
           ! *******************
@@ -514,7 +486,7 @@ contains
 
           ! step energy-point
           iE = iE + Nodes
-          cE = nEq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+          cE = nEq_E(iE,step=Nodes) ! we read them backwards
        end do
 
 #ifdef TRANSIESTA_TIMING

@@ -49,8 +49,8 @@ contains
   subroutine ts_trik(N_Elec,Elecs, &
        nq, uGF, ucell, nspin, na_u, lasto, &
        sp_dist, sparse_pattern, &
-       no_u,  n_nzs, &
-       Hs, Ss, xij, DM, EDM, Ef, kT)
+       no_u, n_nzs, &
+       Hs, Ss, DM, EDM, Ef, kT)
 
     use units, only : Pi
     use parallel, only : Node, Nodes, IONode
@@ -81,10 +81,9 @@ contains
 
     use m_ts_options, only : IsVolt
 
-    use m_ts_sparse, only : ts_sp_uc
-    use m_ts_sparse, only : tsup_sp_uc
-    use m_ts_sparse, only : ltsup_sp_sc
-    use m_ts_sparse, only : ltsup_sc_pnt
+    use m_ts_sparse, only : ts_sp_uc, tsup_sp_uc
+    use m_ts_sparse, only : ltsup_sp_sc, ltsup_sc_pnt
+    use m_ts_sparse, only : sc_off
 
     use m_ts_cctype
     use m_ts_contour,     only : has_cE
@@ -119,12 +118,12 @@ contains
     type(Sparsity), intent(inout) :: sparse_pattern
     integer, intent(in)  :: no_u
     integer, intent(in)  :: n_nzs
-    real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs), xij(3,n_nzs)
+    real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
     real(dp), intent(in) :: Ef, kT
 
 ! ******************* Computational arrays *******************
-    integer :: nzwork
+    integer :: nzwork, n_s
     complex(dp), pointer :: zwork(:)
     type(zTriMat) :: zwork_tri, GF_tri
     ! A local orbital distribution class (this is "fake")
@@ -158,7 +157,7 @@ contains
 ! ******************** Loop variables ************************
     type(itt2) :: SpKp
     integer, pointer :: ispin, ikpt
-    integer :: iEl, iID, up_nzs, ia
+    integer :: iEl, iID, ia
     integer :: iE, imu, io, idx
     integer :: no, no_u_TS
 ! ************************************************************
@@ -166,6 +165,9 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE transiesta mem' )
 #endif
+
+    ! Number of supercells
+    n_s = size(sc_off,dim=2)
 
     ! Number of orbitals in TranSIESTA
     no_u_TS = no_u - no_Buf
@@ -311,7 +313,7 @@ contains
        ! Include spin factor and 1/(2\pi)
        kpt(:) = ts_kpoint(:,ikpt)
        ! create the k-point in reciprocal space
-       call kpoint_convert(Ucell,kpt,bkpt,1)
+       call kpoint_convert(ucell,kpt,bkpt,1)
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
        if ( nspin == 1 ) kw = kw * 2._dp
        
@@ -322,8 +324,8 @@ contains
        ! Work-arrays are for MPI distribution...
        call create_HS(sp_dist,sparse_pattern, &
             Ef, &
-            N_Elec, Elecs, no_u, & ! electrodes, SIESTA size
-            n_nzs, Hs(:,ispin), Ss, xij, &
+            N_Elec, Elecs, no_u, n_s, & ! electrodes, SIESTA size
+            n_nzs, Hs(:,ispin), Ss, sc_off, &
             spH, spS, kpt, &
             nzwork, zwork)
 
@@ -341,8 +343,8 @@ contains
        ! ***************
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
-       iE = 0
-       cE = Eq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+       iE = Nodes - Node
+       cE = Eq_E(iE,step=Nodes) ! we read them backwards
        do while ( cE%exist )
 
           ! *******************
@@ -389,7 +391,7 @@ contains
 
           ! step energy-point
           iE = iE + Nodes
-          cE = Eq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+          cE = Eq_E(iE,step=Nodes) ! we read them backwards
        end do
 
 #ifdef TRANSIESTA_TIMING
@@ -409,7 +411,7 @@ contains
        if ( .not. IsVolt ) then
           call update_zDM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin), spuDM, Ef, &
-               EDM(:,ispin), spuEDM, kpt, xij)
+               EDM(:,ispin), spuEDM, kpt, n_s, sc_off)
 
           ! The remaining code segment only deals with 
           ! bias integration... So we skip instantly
@@ -438,7 +440,7 @@ contains
        ! transfer data to local sparsity arrays
        call add_k_DM(spDM, spuDM, N_mu, &
             spEDM, spuEDM, N_mu, &
-            n_nzs, xij, kpt, ipnt=ltsup_sc_pnt, non_Eq = .false. )
+            n_s, sc_off, kpt, non_Eq = .false. )
 
 #ifdef TRANSIESTA_TIMING
        call timer('TS_NEQ',1)
@@ -449,8 +451,8 @@ contains
        ! *******************
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
-       iE = 0
-       cE = nEq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+       iE = Nodes - Node
+       cE = nEq_E(iE,step=Nodes) ! we read them backwards
        do while ( cE%exist )
 
           ! *******************
@@ -522,12 +524,20 @@ contains
              
              call GF_Gamma_GF(zwork_tri, Elecs(iEl), calc_parts, &
                   GFGGF_size, GFGGF_work)
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+             print '(a7,tr1,i3,2(tr1,f10.5),tr5,2(tr1,f10.5))', &
+                  trim(Elecs(iEl)%name),iE,zwork(index(zwork_tri,28,28)),cE%e
+#endif 
 
              do iID = 1 , N_nEq_ID
                 
                 if ( .not. has_cE(cE,iEl=iEl,ineq=iID) ) cycle
                 
                 call c2weight_neq(cE,kT,iEl,iID, kw,W,imu,ZW)
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+                print '(a20,2(tr1,i3),2(tr1,e12.5))', &
+                     trim(Elecs(iEl)%name),iID,imu,W
+#endif 
 
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      zwork_tri, &
@@ -543,7 +553,7 @@ contains
 
           ! step energy-point
           iE = iE + Nodes
-          cE = nEq_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
+          cE = nEq_E(iE,step=Nodes) ! we read them backwards
        end do
 
 #ifdef TRANSIESTA_TIMING
@@ -569,13 +579,16 @@ contains
        ! 3. add the density to the real arrays
        call add_k_DM(spDMneq, spuDM, N_nEq_id, &
             spEDM, spuEDM, N_mu, &
-            n_nzs, xij, kpt, ipnt=ltsup_sc_pnt, non_Eq = .true. )
+            n_s, sc_off, kpt, non_Eq = .true. )
 
        if ( TS_W_K_METHOD == TS_W_K_UNCORRELATED ) then
           call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
                spDM, spDMneq, spEDM, &
                nonEq_IsWeight = .false.)
           
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+          call die('')
+#endif
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin), spDM, Ef=Ef, &
                EDM=EDM(:,ispin), spEDM=spEDM, ipnt=ltsup_sc_pnt)

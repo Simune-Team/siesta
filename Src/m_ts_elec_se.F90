@@ -22,8 +22,7 @@ module m_ts_elec_se
 
 contains
 
-  subroutine UC_expansion(cE,El,nwork,work, &
-       non_Eq)
+  subroutine UC_expansion(cE,El,nwork,work, non_Eq)
 ! ********************
 ! * INPUT variables  *
 ! ********************
@@ -58,17 +57,14 @@ contains
 
     if ( lnon_Eq ) then
        call UC_expansion_Sigma_GammaT(cE%e, &
-            nou,no,El, &
-            El%na_used,El%lasto_used,nq, &
+            nou,no,El, nq, &
             El%HA,El%SA,El%GA,El%Sigma,El%Gamma,nwork,work)
     else
        if ( El%Bulk ) then
-          call UC_expansion_Sigma_Bulk(nou,no,El, &
-               El%na_used,El%lasto_used,nq, &
+          call UC_expansion_Sigma_Bulk(nou,no,El, nq, &
                El%HA,El%SA,El%GA,El%Sigma,nwork,work)
        else
-          call UC_expansion_Sigma(cE%e,nou,no,El, &
-               El%na_used,El%lasto_used,nq, &
+          call UC_expansion_Sigma(cE%e,nou,no,El, nq, &
                El%HA,El%SA,El%GA,El%Sigma,nwork,work)
        end if
     end if
@@ -78,7 +74,7 @@ contains
   end subroutine UC_expansion
 
   subroutine UC_expansion_Sigma_Bulk(no_u,no_s,El, &
-       na_u,lasto,nq,H,S,GS,Sigma,nwork,work)
+       nq,H,S,GS,Sigma,nwork,work)
     use intrinsic_missing, only : EYE
     use units, only : Pi
 ! ********************
@@ -86,7 +82,6 @@ contains
 ! ********************
     integer,  intent(in) :: no_u, no_s
     type(Elec), intent(in) :: El
-    integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
     complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
@@ -116,7 +111,7 @@ contains
     else
 
        call update_UC_expansion_A(no_u,no_s,El, &
-            na_u,lasto,nq,GS,nwork,work(1,1))
+            El%na_used,El%lasto_used,nq,GS,nwork,work(1,1))
        
        call EYE(no_s,Sigma)
 
@@ -131,7 +126,7 @@ contains
 
 
   subroutine UC_expansion_Sigma(ZEnergy,no_u,no_s,El, &
-       na_u,lasto,nq,H,S,GS,Sigma,nwork,work)
+       nq,H,S,GS,Sigma,nwork,work)
     use intrinsic_missing, only : EYE
 ! ********************
 ! * INPUT variables  *
@@ -139,7 +134,6 @@ contains
     complex(dp), intent(in) :: ZEnergy
     integer,  intent(in) :: no_u, no_s
     type(Elec), intent(in) :: El
-    integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
     complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
@@ -162,7 +156,7 @@ contains
          &too small')
        
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
-         na_u,lasto,nq,H,S,GS,nwork,work(1,1,1))
+         El%na_used,El%lasto_used,nq,H,S,GS,nwork,work(1,1,1))
 
     if ( nq == 1 ) then
 
@@ -191,7 +185,7 @@ contains
   end subroutine UC_expansion_Sigma
 
   subroutine UC_expansion_Sigma_GammaT(ZEnergy,no_u,no_s,El, &
-       na_u,lasto,nq,H,S,GS,Sigma,GammaT,nwork,work)
+       nq,H,S,GS,Sigma,GammaT,nwork,work)
     use intrinsic_missing, only: EYE
 ! ********************
 ! * INPUT variables  *
@@ -199,7 +193,6 @@ contains
     complex(dp), intent(in) :: ZEnergy
     integer,  intent(in) :: no_u, no_s
     type(Elec), intent(in) :: El
-    integer,  intent(in) :: na_u,lasto(0:na_u)
     integer,  intent(in) :: nq
     complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
     complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
@@ -214,7 +207,7 @@ contains
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-    complex(dp), parameter :: zihalf = dcmplx(0._dp,0.5_dp)
+    complex(dp), parameter :: zi = dcmplx(0._dp,1._dp)
     integer :: ierr
     integer :: io,jo
     integer :: ipvt(no_s)
@@ -224,7 +217,7 @@ contains
          &too small')
 
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
-         na_u,lasto,nq,H,S,GS,nwork,work(1,1,1))
+         El%na_used,El%lasto_used,nq,H,S,GS,nwork,work(1,1,1))
 
     if ( nq == 1 ) then
 
@@ -255,15 +248,15 @@ contains
        end do
 
        ! Do
-       ! \Gamma = i ( \Sigma - \Sigma^\dagger)/2
+       ! \Gamma = i ( \Sigma - \Sigma^\dagger)
        do jo = 1 , no_s
           do io = 1 , jo - 1
-             GammaT(jo,io) = zihalf * ( &
+             GammaT(jo,io) = zi * ( &
                   work(io,jo,1)-dconjg(work(jo,io,1)) )
-             GammaT(io,jo) = zihalf * ( &
+             GammaT(io,jo) = zi * ( &
                   work(jo,io,1)-dconjg(work(io,jo,1)) )
           end do
-          GammaT(jo,jo) = zihalf * ( &
+          GammaT(jo,jo) = zi * ( &
                work(jo,jo,1)-dconjg(work(jo,jo,1)) )
        end do
 
@@ -278,15 +271,15 @@ contains
        end do
 
        ! Do
-       ! \Gamma = i ( \Sigma - \Sigma^\dagger)/2
+       ! \Gamma = i ( \Sigma - \Sigma^\dagger)
        do jo = 1 , no_s
           do io = 1 , jo - 1
-             GammaT(jo,io) = zihalf * ( &
+             GammaT(jo,io) = zi * ( &
                   Sigma(io,jo)-dconjg(Sigma(jo,io)) )
-             GammaT(io,jo) = zihalf * ( &
+             GammaT(io,jo) = zi * ( &
                   Sigma(jo,io)-dconjg(Sigma(io,jo)) )
           end do
-          GammaT(jo,jo) = zihalf * ( &
+          GammaT(jo,jo) = zi * ( &
                Sigma(jo,jo)-dconjg(Sigma(jo,jo)) )
        end do
 
@@ -316,10 +309,8 @@ contains
     integer :: iq
     integer :: iow,iau,ia3,ia2,ia1,iuo
     integer :: jow,jau,ja3,ja2,ja1,juo
-    complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2.0_dp * Pi)
-    complex(dp), parameter :: zPi2  = dcmplx(0._dp, 2.0_dp * Pi)
     complex(dp) :: ph
-    real(dp) :: qmPi(3,nq), wq
+    real(dp) :: qPi(3,nq), wq
 
     if ( nq == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
@@ -332,7 +323,7 @@ contains
     else
 
        do iq = 1 , nq 
-          qmPi(1:3,iq) = - 2._dp * Pi * q_exp(El,iq)
+          qPi(1:3,iq) = 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
        end do
        wq = 1._dp / real(nq,dp)
 
@@ -355,7 +346,7 @@ contains
             do ja2 = 1 , El%RepA2
             do ja1 = 1 , El%RepA1
               ph = wq * cdexp(dcmplx(0._dp, &
-                   (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
+                   (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau)
                 jow = jow + 1
                 
@@ -387,7 +378,7 @@ contains
              do ja2 = 1 , El%RepA2
              do ja1 = 1 , El%RepA1
                ph = wq * cdexp(dcmplx(0._dp, &
-                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
+                    (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)
                   jow = jow + 1
                   
@@ -433,10 +424,8 @@ contains
     integer :: iq
     integer :: iow,iau,ia3,ia2,ia1,iuo
     integer :: jow,jau,ja3,ja2,ja1,juo
-    complex(dp), parameter :: zmPi2 = dcmplx(0._dp,-2.0_dp * Pi)
-    complex(dp), parameter :: zPi2  = dcmplx(0._dp, 2.0_dp * Pi)
     complex(dp) :: ph
-    real(dp) :: qmPi(3,nq), wq
+    real(dp) :: qPi(3,nq), wq
 
     if ( nq == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
@@ -446,7 +435,7 @@ contains
     else
 
        do iq = 1 , nq 
-          qmPi(1:3,iq) = - 2._dp * Pi * q_exp(El,iq)
+          qPi(1:3,iq) = 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
        end do
        wq = 1._dp / real(nq,dp)
 
@@ -468,8 +457,8 @@ contains
             do ja3 = 1 , El%RepA3
             do ja2 = 1 , El%RepA2
             do ja1 = 1 , El%RepA1
-              ph = wq * cdexp(dcmplx(0._dp, &
-                   (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
+               ph = wq * cdexp(dcmplx(0._dp, &
+                    (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau)
                 jow = jow + 1
                 
@@ -499,7 +488,7 @@ contains
              do ja2 = 1 , El%RepA2
              do ja1 = 1 , El%RepA1
                ph = wq * cdexp(dcmplx(0._dp, &
-                    (ia1-ja1)*qmPi(1,iq) + (ia2-ja2)*qmPi(2,iq) + (ia3-ja3)*qmPi(3,iq) ) )
+                    (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)
                   jow = jow + 1
                   

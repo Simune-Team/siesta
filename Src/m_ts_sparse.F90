@@ -56,6 +56,9 @@ module m_ts_sparse
   ! TODO: check how much speed we gain from not searching in the sparsity pattern
   type(iSpData1D), save :: ltsup_sc_pnt
 
+  ! The offsets for the supercells
+  real(dp), pointer, save :: sc_off(:,:) => null()
+
 #ifdef MPI
   ! The reduction of the calculated sparse patterns of the Green's function
   ! at non-zero bias.
@@ -79,7 +82,7 @@ contains
 ! update, etc.
   subroutine ts_sparse_init(slabel, &
        IsVolt, N_Elec, Elecs, &
-       block_dist,sparse_pattern,na_u,lasto)
+       ucell, nsc, na_u,xa,lasto, block_dist,sparse_pattern, n_nzs, xij)
 
     use class_OrbitalDistribution
 
@@ -89,6 +92,7 @@ contains
 #endif 
     use parallel, only: IONode
 
+    use m_sparse, only : xij_offset
     use m_ts_electype
     use m_ts_method
 #ifdef TRANSIESTA_DEBUG
@@ -104,14 +108,24 @@ contains
     logical, intent(in) :: IsVolt ! bias calculation
     integer, intent(in) :: N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
+    ! Unit cell
+    real(dp), intent(in) :: ucell(3,3)
+    ! Number of super-cells in each direction
+    integer, intent(in) :: nsc(3)
+    ! Number of atoms in the unit-cell
+    integer, intent(in) :: na_u
+    ! Atomic coordinates
+    real(dp), intent(in) :: xa(3,na_u)
+    ! Last orbital of the equivalent unit-cell atom
+    integer, intent(in) :: lasto(0:na_u)
     ! The distribution for the sparsity-pattern
     type(OrbitalDistribution), intent(inout) :: block_dist
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sparse_pattern
-    ! Number of atoms in the unit-cell
-    integer, intent(in) :: na_u
-    ! Last orbital of the equivalent unit-cell atom
-    integer, intent(in) :: lasto(0:na_u)
+    ! number of non-zero elements in H
+    integer, intent(in) :: n_nzs
+    ! vectors from i-J
+    real(dp), intent(in) :: xij(3,n_nzs)
 
 ! **********************
 ! * LOCAL variables    *
@@ -120,6 +134,7 @@ contains
     ! Temporary arrays for knowing the electrode size
     logical :: bool
     integer :: no_u_TS
+    integer, pointer :: isc_off(:,:) => null()
 
     ! Number of orbitals in TranSIESTA
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
@@ -129,6 +144,13 @@ contains
        call die("The contact region size is &
             &smaller than the electrode size. Please correct.")
     end if
+
+    ! Create the ts-offsets
+    call xij_offset(ucell,nsc, na_u,xa,lasto, &
+         block_dist,sparse_pattern,n_nzs,xij,isc_off,Bcast=.true.)
+    call re_alloc(sc_off,1,3,1,size(isc_off,dim=2))
+    sc_off = matmul(ucell,isc_off)
+    deallocate(isc_off)
 
     if ( IsVolt ) then 
 
@@ -261,7 +283,6 @@ contains
 #endif
 
   end subroutine ts_sparse_init
-
 
 ! Returns the global sparsity pattern for the transiesta region
 ! Note that this will automatically detect whether there are

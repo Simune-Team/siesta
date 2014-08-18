@@ -43,8 +43,7 @@ contains
 
   subroutine do_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
-       RemUCellDistance,xa_EPS, &
-       CalcDOS)
+       xa_EPS, CalcDOS )
     
     use parallel  , only : IONode
     use sys ,       only : die
@@ -68,7 +67,6 @@ contains
     integer, intent(in)           :: nkpnt ! Number of k-points
     real(dp), intent(in)          :: kpoint(3,nkpnt) ! k-points
     real(dp), intent(in)          :: kweight(nkpnt) ! weights of kpoints
-    logical, intent(in)           :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
     real(dp), intent(in)          :: xa_Eps ! coordinate precision check
     real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
     logical, intent(in)           :: CalcDOS
@@ -76,7 +74,6 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    complex(dp), allocatable :: ZBulkDOS(:,:) ! DOS at energy points
     integer :: uGF, i, iE, NEn
     logical :: errorGF, exist, cReUseGF
     complex(dp), allocatable :: ce(:)
@@ -138,7 +135,6 @@ contains
 
        call create_Green(El, &
             ucell,nkpnt,kpoint,kweight, &
-            RemUCellDistance, &
             NEn,ce)
 
     else
@@ -156,7 +152,7 @@ contains
           call check_Green(uGF,El, &
                ucell,nkpnt,kpoint,kweight, &
                NEn, ce, &
-               RemUCellDistance, xa_Eps, errorGF)
+               xa_Eps, errorGF)
           
           write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
           
@@ -387,7 +383,7 @@ contains
   ! Subroutine for reading in both the left and right next energy point
   subroutine read_next_GS(ispin,ikpt, bkpt, cE, &
        NElecs, uGF, Elecs, &
-       nzwork, zwork, RemUCellDistance, reread, &
+       nzwork, zwork, reread, &
        forward )
 
     use parallel, only : Node, IONode
@@ -408,7 +404,6 @@ contains
     type(Elec), intent(inout) :: Elecs(NElecs)
     integer, intent(in) :: nzwork
     complex(dp), intent(inout), target :: zwork(nzwork)
-    logical, intent(in) :: RemUCellDistance
     logical, intent(in), optional :: reread, forward
 
     integer :: NEReqs, i, j
@@ -460,15 +455,17 @@ contains
     ! that!
     do i = 1 , NElecs
        if ( Elecs(i)%out_of_core ) then
+          ! Set k-point for calculating expansion
+          Elecs(i)%bkpt_cur = bkpt
           call read_next_GS_Elec(uGF(i), NEReqs, &
                ikpt, Elecs(i), cE, &
                nzwork, zwork, forward = forward)
        else
-          ! the electrode already have the correct 
-          ! variables which decides whether it is
-          ! RemUCellDistance or not!
+          ! This routine will automatically check
+          ! (and SET) the k-point for the electrode.
+          ! This is necessary for the expansion to work.
           call calc_next_GS_Elec(Elecs(i),ispin,bkpt,cE%e, &
-               nzwork, zwork, RemUCellDistance)
+               nzwork, zwork)
        end if
     end do
 
@@ -487,7 +484,7 @@ contains
 ! ## Changed to only read header by Nick P. Andersen              ##
 ! ##    will only check against integer information and Ef shift. ##
 ! ##################################################################
-  subroutine read_Green(funit,El,c_nkpar,c_NEn, c_RemUCell)
+  subroutine read_Green(funit,El,c_nkpar,c_NEn)
     
     use parallel,  only : IONode
     use sys ,      only : die
@@ -497,15 +494,14 @@ contains
     use mpi_siesta, only: MPI_integer
 #endif
     use m_ts_electype
-    real(dp) , parameter :: EPS = 1d-7
+    real(dp) , parameter :: EPS = 1.e-7_dp
     
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
     integer, intent(in)  :: funit ! unit of gf-file
     type(Elec), intent(in) :: El
-    integer, intent(in)  :: c_nkpar,c_NEn
-    logical, intent(in)  :: c_RemUCell
+    integer, intent(in)  :: c_nkpar, c_NEn
 
 ! ***********************
 ! * LOCAL variables     *
@@ -515,7 +511,7 @@ contains
     integer :: nspin,nkpar,na,no,NA1,NA2,NA3,NEn
     real(dp) :: mu ! The Fermi energy shift due to a voltage
     real(dp) :: ucell(3,3)
-    logical :: errorGf , RemUCell, pre_expand
+    logical :: errorGf , pre_expand
 
     ! we should only read if the GF-should exist
     if ( .not. El%out_of_core ) return
@@ -539,25 +535,10 @@ contains
        read(funit) NA1,NA2,NA3,pre_expand
        read(funit) mu
        ! read contour information
-       read(funit) RemUCell
        read(funit) nkpar
        read(funit) ! kpoints, kweight
        read(funit) NEn
        read(funit)! ce
-
-       ! Check unit cell distances..
-       if ( RemUCell .neqv. c_RemUCell ) then
-          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
-          if ( RemUCell ) then
-             write(*,*)"The GF file has no inner unit cell distances. You have requested &
-               &that they are preserved!"
-          else
-             write(*,*)"The GF file has inner unit cell distances. You have requested &
-               &that they are not preserved!"
-          end if
-          write(*,'(2(a,l2))')"Found: ",RemUCell,", expected: ",c_RemUCell
-          errorGF = .true.
-       end if
 
        ! Check Fermi shift
        if ( dabs(El%mu%mu-mu) > EPS ) then
@@ -643,7 +624,7 @@ contains
   subroutine check_Green(funit,El, &
        c_ucell,c_nkpar,c_kpar,c_wkpar, &
        c_NEn,c_ce, &
-       c_RemUCell, xa_Eps, errorGF)
+       xa_Eps, errorGF)
 
     use units,     only: Ang
     use m_ts_cctype
@@ -664,7 +645,6 @@ contains
 ! Energy point on the contour used 
     integer, intent(in)        :: c_NEn
     complex(dp), intent(in)    :: c_ce(c_NEn)
-    logical, intent(in)        :: c_RemUCell ! Should the Green's function file have the inner cell distances or not?
     real(dp), intent(in)       :: xa_Eps
 ! ***********************
 ! * OUTPUT variables    *
@@ -692,7 +672,7 @@ contains
     integer :: iEn
     integer :: i, j, ia
     real(dp) :: ktmp(3), kpt(3)
-    logical :: localErrorGf, eXa, RemUCell, pre_expand
+    logical :: localErrorGf, eXa, pre_expand
 
     ! we should only read if the GF-should exist
     if ( .not. El%out_of_core ) return
@@ -805,20 +785,10 @@ contains
 
 
     ! Read in general information about the context
-    read(funit) RemUCell
     read(funit) nkpar
     allocate(kpar(3,nkpar),wkpar(nkpar))
     read(funit) kpar,wkpar
 
-    if ( RemUCell .neqv. c_RemUCell ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
-       if ( RemUCell ) then
-          write(*,*)"The GF file has no inner unit cell distances. You have requested &
-               &that they are preserved!"
-          write(*,'(2(a,l2))')"Found: ",RemUCell,", expected: ",c_RemUCell
-       end if
-       localErrorGf = .true.
-    end if
     if ( c_nkpar /= nkpar ) then
        write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of k-points is wrong!"

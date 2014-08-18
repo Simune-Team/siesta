@@ -91,7 +91,7 @@
       else if (TSrun) then
 
          call transiesta(TSiscf,nspin, block_dist, sparse_pattern,
-     &        Gamma, ucell, no_u, na_u, lasto, xa, maxnh,
+     &        Gamma, ucell, nsc, no_u, na_u, lasto, xa, maxnh,
      &        xijo, H, S, Dscf, Escf, Ef, temp, Qtot)
 
          Ecorrec = 0._dp

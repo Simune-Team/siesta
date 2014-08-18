@@ -49,8 +49,8 @@ contains
    ! k-point Hamiltonian.
   subroutine create_HS_kpt(dit,sp, &
        Ef, &
-       N_Elec, Elecs, no_u, &
-       maxnh, H, S, xij, SpArrH, SpArrS, k, &
+       N_Elec, Elecs, no_u, n_s, &
+       n_nzs, H, S, sc_off, SpArrH, SpArrS, k, &
        nwork, work)
 
     use parallel, only : Node
@@ -68,20 +68,20 @@ contains
 ! *********************
     ! the distribution that the H and S live under
     type(OrbitalDistribution), intent(inout) :: dit
-    ! The (local) sparsity pattern that H, S and xij lives by
+    ! The (local) sparsity pattern that H, S lives by
     type(Sparsity), intent(inout) :: sp
     ! Fermi-level
     real(dp), intent(in) :: Ef
     ! The electrodes
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-    integer, intent(in) :: no_u
+    integer, intent(in) :: no_u, n_s
     ! The number of elements in the sparse arrays
-    integer, intent(in) :: maxnh
+    integer, intent(in) :: n_nzs
     ! The hamiltonian and overlap sparse matrices 
-    real(dp), intent(in) :: H(maxnh),S(maxnh)
-    ! The orbital distance array
-    real(dp), intent(in) :: xij(3,maxnh)
+    real(dp), intent(in) :: H(n_nzs),S(n_nzs)
+    ! The supercell offsets
+    real(dp), intent(in) :: sc_off(3,0:n_s-1)
     ! The arrays we will save in...
     type(zSpData1D), intent(inout) :: SpArrH, SpArrS
     ! The k-point we will create
@@ -165,13 +165,13 @@ contains
           ! call die('Could not find k-point index')
           if ( ind_k <= k_ptr(io) ) cycle
 
+          jo = (l_col(ind)-1) / no_u
           ph = cdexp(dcmplx(0._dp, &
-               k(1) * xij(1,ind) + &
-               k(2) * xij(2,ind) + &
-               k(3) * xij(3,ind)) )
+               k(1) * sc_off(1,jo) + &
+               k(2) * sc_off(2,jo) + &
+               k(3) * sc_off(3,jo)))
           
           zH(ind_k) = zH(ind_k) + H(ind) * ph
-          
           zS(ind_k) = zS(ind_k) + S(ind) * ph
 
        end do
@@ -290,7 +290,7 @@ contains
           if ( rind <= rin ) &
                call die('ERROR symmetrization orbital does not &
                &exist.')
-
+          
           ! Symmetrize (notice that this is *transposed*)
           ! See prep_GF
           zS(rind) = 0.5_dp * ( zS(ind) + dconjg(zS(rind)) )
@@ -316,7 +316,7 @@ contains
   subroutine create_HS_Gamma(dit,sp, &
        Ef, &
        N_Elec, Elecs, no_u, &
-       maxnh, H, S, SpArrH, SpArrS, &
+       n_nzs, H, S, SpArrH, SpArrS, &
        nwork, work)
 
     use parallel, only : Node
@@ -334,7 +334,7 @@ contains
 ! *********************
     ! the distribution that the H and S live under
     type(OrbitalDistribution), intent(inout) :: dit
-    ! The (local) sparsity pattern that H, S and xij lives by
+    ! The (local) sparsity pattern that H, S lives by
     type(Sparsity), intent(inout) :: sp
     ! Fermi-level
     real(dp), intent(in) :: Ef
@@ -343,9 +343,9 @@ contains
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: no_u
     ! The number of elements in the sparse arrays
-    integer, intent(in) :: maxnh
+    integer, intent(in) :: n_nzs
     ! The hamiltonian and overlap sparse matrices 
-    real(dp), intent(in) :: H(maxnh),S(maxnh)
+    real(dp), intent(in) :: H(n_nzs),S(n_nzs)
     ! The arrays we will save in... these are the entire TS-region sparsity
     type(dSpData1D), intent(inout) :: SpArrH, SpArrS
     ! we pass a work array
@@ -548,8 +548,8 @@ contains
                &exist.')
 
           ! Symmetrize
-          dS(ind)  = 0.5_dp * ( dS(ind) + dS(rind) )
-          dH(ind)  = 0.5_dp * ( dH(ind) + dH(rind) ) &
+          dS(ind) = 0.5_dp * ( dS(ind) + dS(rind) )
+          dH(ind) = 0.5_dp * ( dH(ind) + dH(rind) ) &
                - E_Ef(jEl) * dS(ind)
 
           ! we have a real Matrix

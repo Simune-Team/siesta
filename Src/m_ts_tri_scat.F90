@@ -51,7 +51,7 @@ contains
 ! *********************
     ! The Green's function column
     type(zTriMat), intent(inout) :: Gf_tri
-    type(Elec), intent(in) :: El ! contains: i (Sigma - Sigma^dagger)/2 ^T
+    type(Elec), intent(in) :: El ! contains: i (Sigma - Sigma^dagger) ^T
     logical, intent(in) :: calc_parts(:)
 
 ! *********************

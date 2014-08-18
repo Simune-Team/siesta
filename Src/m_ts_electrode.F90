@@ -518,7 +518,6 @@ contains
 
   subroutine create_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
-       RemUCellDistance, &
        NEn,ce, &
        ZBulkDOS)
 
@@ -552,7 +551,6 @@ contains
     integer, intent(in)           :: nkpnt ! Number of k-points
     real(dp),intent(in)           :: kpoint(3,nkpnt) ! k-points
     real(dp),intent(in)           :: kweight(nkpnt) ! weights of kpoints
-    logical, intent(in)           :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
     real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
     integer, intent(in)           :: NEn ! Number of energy points
     complex(dp), intent(in)       :: ce(NEn) ! the energy points
@@ -567,10 +565,10 @@ contains
 ! ***********************
     ! Array for holding converted k-points
     real(dp), allocatable :: kE(:,:)
-    real(dp) :: kpt(3), qpt(3), ktmp(3), wq
+    real(dp) :: kpt(3), qpt(3), bkpt(3), wq
     
     ! Dimensions
-    integer :: nq, nspin
+    integer :: nq, nspin, n_s
     integer :: nuo_E, nS, nuou_E, nuS, no_X, n_X
 
     ! Electrode transfer and hamiltonian matrix
@@ -580,6 +578,7 @@ contains
     complex(dp), pointer :: S01(:) => null()
     complex(dp), pointer :: zwork(:) => null()
     complex(dp), pointer :: zHS(:) => null()
+    real(dp), allocatable :: sc_off(:,:)
 
     ! Expanded arrays
     complex(dp), pointer :: X(:) => null()
@@ -642,18 +641,23 @@ contains
     n_X  = no_X ** 2
     pre_expand = El%pre_expand .and. nq > 1
 
+    ! Calculate offsets
+    n_s = size(El%isc_off,dim=2)
+    allocate(sc_off(3,n_s))
+    sc_off = matmul(El%ucell,El%isc_off)
+    
     if (IONode) then
        write(*,'(/,2a)') "Creating Green's function file for: ",trim(name(El))
 
-       ktmp(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * Rep(El) &
+       bkpt(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * Rep(El) &
             * El%no_used ** 2 / 1024._dp ** 2
        ! Correct estimated file-size
-       if ( pre_expand ) ktmp(1) = ktmp(1) * Rep(El)
-       if ( ktmp(1) > 2001._dp ) then
-          ktmp(1) = ktmp(1) / 1024._dp
-          write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' GB'
+       if ( pre_expand ) bkpt(1) = bkpt(1) * Rep(El)
+       if ( bkpt(1) > 2001._dp ) then
+          bkpt(1) = bkpt(1) / 1024._dp
+          write(*,'(a,f10.3,a)') 'Estimated file size: ',bkpt(1),' GB'
        else
-          write(*,'(a,f10.3,a)') 'Estimated file size: ',ktmp(1),' MB'
+          write(*,'(a,f10.3,a)') 'Estimated file size: ',bkpt(1),' MB'
        end if
 
        write(*,*) "Electrodes with transport k-points &
@@ -662,11 +666,11 @@ contains
           ! From CONTACT to electrode k-point
           ! First convert to units of reciprocal vectors
           ! Then convert to 1/Bohr in the electrode unit cell coordinates
-          call kpoint_convert(ucell,kpoint(:,i),ktmp,1)
-          if ( El%RepA1 > 1 ) ktmp(1) = ktmp(1)/real(El%RepA1,dp)
-          if ( El%RepA2 > 1 ) ktmp(2) = ktmp(2)/real(El%RepA2,dp)
-          if ( El%RepA3 > 1 ) ktmp(3) = ktmp(3)/real(El%RepA3,dp)
-          call kpoint_convert(El%ucell,ktmp,kpt,-1)
+          call kpoint_convert(ucell,kpoint(:,i),bkpt,1)
+          if ( El%RepA1 > 1 ) bkpt(1) = bkpt(1)/real(El%RepA1,dp)
+          if ( El%RepA2 > 1 ) bkpt(2) = bkpt(2)/real(El%RepA2,dp)
+          if ( El%RepA3 > 1 ) bkpt(3) = bkpt(3)/real(El%RepA3,dp)
+          call kpoint_convert(El%ucell,bkpt,kpt,-1)
           write(*,'(i4,2x,4(E14.5))') i, kpt,kweight(i)
        end do
 
@@ -753,7 +757,6 @@ contains
        write(uGF) El%mu%mu
 
        ! Write out explicit information about this content
-       write(uGF) RemUCellDistance
        write(uGF) nkpnt
        ! Notice that we write the k-points for the ELECTRODE
        ! Do a conversion here
@@ -761,12 +764,12 @@ contains
        call memory('A','D',nkpnt*3,'create_green')
        do i = 1 , nkpnt
           ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-          call kpoint_convert(ucell,kpoint(:,i),ktmp,1)
-          ktmp(1) = ktmp(1)/real(El%RepA1,dp)
-          ktmp(2) = ktmp(2)/real(El%RepA2,dp)
-          ktmp(3) = ktmp(3)/real(El%RepA3,dp)
+          call kpoint_convert(ucell,kpoint(:,i),bkpt,1)
+          bkpt(1) = bkpt(1)/real(El%RepA1,dp)
+          bkpt(2) = bkpt(2)/real(El%RepA2,dp)
+          bkpt(3) = bkpt(3)/real(El%RepA3,dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
-          call kpoint_convert(El%ucell,ktmp,kE(:,i),-1)
+          call kpoint_convert(El%ucell,bkpt,kE(:,i),-1)
        end do
        write(uGF) kE,kweight
        call memory('D','D',nkpnt*3,'create_green')
@@ -828,12 +831,13 @@ contains
        end if
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-       call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
-       ktmp(1) = ktmp(1)/real(El%RepA1,dp)
-       ktmp(2) = ktmp(2)/real(El%RepA2,dp)
-       ktmp(3) = ktmp(3)/real(El%RepA3,dp)
+       call kpoint_convert(ucell,kpoint(:,ikpt),bkpt,1)
+       bkpt(1) = bkpt(1)/real(El%RepA1,dp)
+       bkpt(2) = bkpt(2)/real(El%RepA2,dp)
+       bkpt(3) = bkpt(3)/real(El%RepA3,dp)
+       El%bkpt_cur = bkpt
        ! Convert back to reciprocal units (to electrode)
-       call kpoint_convert(El%ucell,ktmp,kpt,-1)
+       call kpoint_convert(El%ucell,bkpt,kpt,-1)
        
        ! loop over the repeated cell...
        HSq_loop: do iqpt = 1 , nq
@@ -848,13 +852,9 @@ contains
           call kpoint_convert(El%ucell,q_exp(El,iqpt),qpt,-1)
 
           ! Setup the transfer matrix and the intra cell at the k-point and q-point
-          if ( RemUCellDistance ) then
-             call die('Not working yet')
-          end if
-
           ! Calculate transfer matrices @Ef (including the chemical potential)
-          call set_electrode_HS_Transfer(ispin, El, kpt, qpt, &
-               nS, H00,S00,H01,S01, RemUCellDistance=RemUCellDistance)
+          call set_electrode_HS_Transfer(ispin, El, n_s,sc_off,kpt, qpt, &
+               nS, H00,S00,H01,S01)
 
           i = (iqpt-1)*nuS
           if ( nuo_E /= nuou_E ) then
@@ -1150,29 +1150,28 @@ contains
     
   end subroutine create_Green
 
-  subroutine init_Electrode_HS(El,RemUCellDistance)
+  subroutine init_Electrode_HS(El)
     use m_ts_electype
     use class_Sparsity
     use class_dSpData1D
     use class_dSpData2D
 
     type(Elec), intent(inout) :: El
-    logical, intent(in) :: RemUCellDistance
     
     ! Read-in and create the corresponding transfer-matrices
     call delete(El) ! ensure clean electrode
     call read_Elec(El,Bcast=.true.)
 
-    if ( .not. initialized(El%xij) ) then
+    if ( .not. associated(El%isc_off) ) then
        call die('An electrode file needs to be a non-Gamma calculation. &
-            &Ensure at least two k-points in the T-direction.')
+            &Ensure good periodicity in the T-direction.')
     end if
 
     ! print out the precision of the electrode (whether it extends
     ! beyond first principal layer)
     call check_Connectivity(El)
     
-    call create_sp2sp01(El,calc_xijo=Rep(El)/=1 .or. RemUCellDistance)
+    call create_sp2sp01(El)
     ! Clean-up, we will not need these!
     ! we should not be very memory hungry now, but just in case...
     call delete(El%H)
@@ -1183,12 +1182,7 @@ contains
        call die('An electrode file must contain the Hamiltonian')
     end if
 
-    call delete(El%xij)
     call delete(El%sp)
-    if ( RemUCellDistance ) then
-       call delete(El%xij00)
-       call delete(El%xij01)
-    end if
 
   end subroutine init_Electrode_HS
 
@@ -1197,7 +1191,8 @@ contains
 ! Create the Hamiltonian for the electrode as well
 ! as creating the transfer matrix.
 !**********
-  subroutine set_electrode_HS_Transfer(ispin,El,k,q,nS,Hk,Sk,Hk_T,Sk_T,RemUCellDistance)
+  subroutine set_electrode_HS_Transfer(ispin,El,n_s,sc_off,k,q, &
+       nS,Hk,Sk,Hk_T,Sk_T)
     use sys, only : die
     use precision, only : dp
     use m_ts_electype
@@ -1211,6 +1206,8 @@ contains
 ! ***********************
     integer, intent(in)    :: ispin, nS
     type(Elec), intent(inout) :: El
+    integer, intent(in) :: n_s
+    real(dp), intent(in) :: sc_off(3,0:n_s-1)
     real(dp), intent(in)   :: k(3)   ! k-point in [1/Bohr]
     real(dp), intent(in)   :: q(3)   ! expansion k-point in [1/Bohr]
 ! ***********************
@@ -1218,25 +1215,24 @@ contains
 ! ***********************
     complex(dp), dimension(nS) :: Hk,Sk,Hk_T,Sk_T
 
-    logical, intent(in), optional :: RemUCellDistance
-
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
     integer :: no_u
-    real(dp) :: kqxij, Ef
-    complex(dp) :: cphase
-    integer :: i,j,iuo,juo,ind
-    integer, pointer :: ncol00(:), l_ptr00(:),l_col00(:)
-    integer, pointer :: ncol01(:), l_ptr01(:),l_col01(:)
-    real(dp), pointer :: xij00(:,:), xij01(:,:), xijo00(:,:), xijo01(:,:) 
+    real(dp) :: kq(3), kqsc, Ef
+    complex(dp) :: ph
+    integer :: i, j, iuo, juo, ind, is
+    integer, pointer :: ncol00(:), l_ptr00(:), l_col00(:)
+    integer, pointer :: ncol01(:), l_ptr01(:), l_col01(:)
     real(dp), pointer :: H00(:,:) , S00(:), H01(:,:), S01(:)
     integer :: t_dir
-    logical :: has_o
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE elec_HS_Transfer' )
 #endif
+
+    ! The sum of k and q
+    kq = k + q
 
     t_dir = El%t_dir
     ! we need to subtract as the below code shifts to Ef
@@ -1253,18 +1249,6 @@ contains
     H01 => val(El%H01)
     S00 => val(El%S00)
     S01 => val(El%S01)
-    if ( RemUCellDistance ) then
-       xij00 => val(El%xijo00)
-       xij01 => val(El%xijo01)
-    else
-       xij00 => val(El%xij00)
-       xij01 => val(El%xij01)
-    end if
-    has_o = initialized(El%xijo00)
-    if ( has_o ) then
-       xijo00 => val(El%xijo00)
-       xijo01 => val(El%xijo01)
-    end if
 
     ! Initialize arrays
     do i = 1, nS
@@ -1279,49 +1263,37 @@ contains
        ! Create 00
        do j = 1 , ncol00(iuo)
           ind = l_ptr00(iuo) + j
-          juo = Ucorb(l_col00(ind),no_u)
-          kqxij = 0._dp
-          if ( has_o ) then
-             do i = 1 , 3 
-                if ( i == t_dir ) cycle
-                kqxij = kqxij + k(i) * xij00(i,ind) + q(i) * xijo00(i,ind)
-             end do
-          else
-             do i = 1 , 3 
-                if ( i == t_dir ) cycle
-                kqxij = kqxij + k(i) * xij00(i,ind)
-             end do
-          end if
+          juo = ucorb(l_col00(ind),no_u)
+          is = (l_col00(ind)-1) / no_u
+          kqsc = 0._dp
+          do i = 1 , 3 
+             if ( i == t_dir ) cycle
+             kqsc = kqsc + kq(i) * sc_off(i,is)
+          end do
 
-          cphase = cdexp(dcmplx(0._dp,kqxij) )
+          ph = cdexp(dcmplx(0._dp,kqsc))
           
           i = iuo+(juo-1)*no_u
-          Hk(i) = Hk(i) + H00(ind,ispin) * cphase
-          Sk(i) = Sk(i) + S00(ind)       * cphase
+          Hk(i) = Hk(i) + H00(ind,ispin) * ph
+          Sk(i) = Sk(i) + S00(ind)       * ph
        enddo
 
        ! Create 01
        do j = 1 , ncol01(iuo)
           ind = l_ptr01(iuo) + j
           juo = ucorb(l_col01(ind),no_u)
-          kqxij = 0._dp
-          if ( has_o ) then
-             do i = 1 , 3 
-                if ( i == t_dir ) cycle
-                kqxij = kqxij + k(i) * xij01(i,ind) + q(i) * xijo01(i,ind)
-             end do
-          else
-             do i = 1 , 3 
-                if ( i == t_dir ) cycle
-                kqxij = kqxij + k(i) * xij01(i,ind)
-             end do
-          end if
+          is = (l_col01(ind)-1) / no_u
+          kqsc = 0._dp
+          do i = 1 , 3 
+             if ( i == t_dir ) cycle
+             kqsc = kqsc + kq(i) * sc_off(i,is)
+          end do
 
-          cphase = cdexp(dcmplx(0._dp,kqxij) )
+          ph = cdexp(dcmplx(0._dp,kqsc))
           
           i = iuo+(juo-1)*no_u
-          Hk_T(i) = Hk_T(i) + H01(ind,ispin) * cphase
-          Sk_T(i) = Sk_T(i) + S01(ind)       * cphase
+          Hk_T(i) = Hk_T(i) + H01(ind,ispin) * ph
+          Sk_T(i) = Sk_T(i) + S01(ind)       * ph
        end do
     end do
 
@@ -1358,8 +1330,7 @@ contains
 
   end subroutine set_electrode_HS_Transfer
 
-  subroutine calc_next_GS_Elec(El,ispin,bkpt,Z,nzwork,in_zwork, &
-       RemUCellDistance)
+  subroutine calc_next_GS_Elec(El,ispin,bkpt,Z,nzwork,in_zwork)
     use precision,  only : dp
 
     use m_ts_electype
@@ -1380,7 +1351,6 @@ contains
     complex(dp), intent(in) :: Z
     integer, intent(in) :: nzwork
     complex(dp), intent(inout), target :: in_zwork(nzwork)
-    logical, intent(in) :: RemUCellDistance
 
 ! ***********************
 ! * LOCAL variables     *
@@ -1400,6 +1370,7 @@ contains
     complex(dp), pointer :: S01(:) => null()
     complex(dp), pointer :: zwork(:) => null()
     complex(dp), pointer :: zHS(:) => null()
+    real(dp), allocatable :: sc_off(:,:)
 
     ! Green's function variables
     complex(dp), pointer :: GS(:)
@@ -1407,7 +1378,7 @@ contains
     ! size requirement
     integer :: size_req(2)
     ! Counters
-    integer :: i, ios, jos, ioe, joe, off
+    integer :: i, ios, jos, ioe, joe, off, n_s
     logical :: is_left, final_invert
     logical :: zHS_allocated
     logical :: same_k
@@ -1429,6 +1400,10 @@ contains
     ! We also need to invert to get the contribution in the
     final_invert = nq /= 1 .or. nuo_E /= nuou_E
     nuouT_E = TotUsedOrbs(El)
+
+    n_s = size(El%isc_off,dim=2)
+    allocate(sc_off(3,n_s))
+    sc_off = matmul(El%ucell,El%isc_off)
 
     ! whether we already have the H and S set correctly, 
     ! update accordingly
@@ -1504,10 +1479,6 @@ contains
 
     end if
 
-    if ( RemUCellDistance ) then
-       call die('Not working yet')
-    end if
-
     call init_mat_inversion(nuo_E)
 
     ! prepare the indices for the Gamma array
@@ -1533,8 +1504,8 @@ contains
        call kpoint_convert(El%ucell,q_exp(El,iqpt),qpt,-1)
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
-       call set_electrode_HS_Transfer(ispin, El, kpt, qpt, &
-            nS, H00,S00,H01,S01, RemUCellDistance=RemUCellDistance)
+       call set_electrode_HS_Transfer(ispin, El, n_s,sc_off,kpt, qpt, &
+            nS, H00,S00,H01,S01)
        
        ! create the offset for the "left" electrode
        off = nuo_E - nuou_E + 1

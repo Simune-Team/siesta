@@ -1,6 +1,6 @@
 OBJDIR=Obj
 
-.SUFFIXES: .f .F .o .a  .f90 .F90
+.SUFFIXES: .f .F .o .a .f90 .F90
 
 VPATH:=$(shell pwd)/../../../Src
 
@@ -30,13 +30,22 @@ INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 
 SYSOBJ=$(SYS).o
 
-# Note that machine-specific files are now in top Src directory.
+# systematic siesta files
 OBJS = precision.o f2kcli.o parallel.o \
-          alloc.o pxf.o units.o sys.o die.o \
+        alloc.o pxf.o units.o sys.o die.o \
 	memory.o memoryinfo.o m_io.o io.o \
-	m_hs_matrix.o intrinsic_missing.o geom_helper.o cellsubs.o \
-	m_ts_io.o \
-	$(SYSOBJ)
+	m_sparse.o intrinsic_missing.o geom_helper.o cellsubs.o \
+	m_io_s.o m_ts_io.o 
+
+# Add class objects
+OBJS += m_uuid.o object_debug.o \
+	class_Sparsity.o class_OrbitalDistribution.o \
+	class_Data1D.o class_Data2D.o \
+	class_SpData1D.o class_SpData2D.o
+
+# Add sys object
+OBJS += $(SYSOBJ)
+
 
 OBJS += m_ts_io_version.o
 OBJS += tshs2tshs.o
@@ -265,6 +274,8 @@ m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
 m_integrate.o: precision.o
 m_io.o: sys.o
+m_io_s.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_io_s.o: class_Sparsity.o parallel.o precision.o
 m_iodm.o: alloc.o files.o m_mpi_utils.o parallel.o parallelsubs.o precision.o
 m_iodm.o: sys.o
 m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
@@ -291,6 +302,8 @@ m_pulay.o: alloc.o atomlist.o m_spin.o m_svd.o parallel.o precision.o
 m_pulay.o: siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
 m_rmaxh.o: precision.o
+m_sparse.o: alloc.o cellsubs.o class_OrbitalDistribution.o class_Sparsity.o
+m_sparse.o: geom_helper.o parallel.o parallelsubs.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_supercell.o: geom_helper.o intrinsic_missing.o precision.o
@@ -364,8 +377,9 @@ m_ts_gf.o: m_ts_electype.o parallel.o precision.o sys.o units.o
 m_ts_global_vars.o: precision.o
 m_ts_hartree.o: intrinsic_missing.o m_ts_electype.o m_ts_mesh.o m_ts_tdir.o
 m_ts_hartree.o: parallel.o precision.o sys.o
-m_ts_io.o: geom_helper.o m_glob_sparse.o m_hs_matrix.o parallel.o precision.o
-m_ts_io.o: sys.o
+m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_glob_sparse.o
+m_ts_io.o: m_io_s.o m_sparse.o parallel.o parallelsubs.o precision.o sys.o
 m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: alloc.o files.o m_mpi_utils.o m_ts_global_vars.o parallel.o
@@ -403,8 +417,9 @@ m_ts_options.o: m_ts_mumps_init.o m_ts_tdir.o m_ts_weight.o parallel.o
 m_ts_options.o: precision.o siesta_options.o sys.o units.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
-m_ts_sparse.o: intrinsic_missing.o m_bandwidth.o m_glob_sparse.o m_ts_debug.o
-m_ts_sparse.o: m_ts_electype.o m_ts_method.o m_ts_tdir.o parallel.o precision.o
+m_ts_sparse.o: intrinsic_missing.o m_bandwidth.o m_glob_sparse.o m_sparse.o
+m_ts_sparse.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_tdir.o
+m_ts_sparse.o: parallel.o precision.o
 m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse_helper.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
 m_ts_sparse_helper.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
@@ -640,8 +655,9 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 m_ts_io_version.o: geom_helper.o precision.o
-tshs2tshs.o: f2kcli.o geom_helper.o m_hs_matrix.o m_ts_io.o m_ts_io_version.o
-tshs2tshs.o: parallel.o precision.o units.o
+tshs2tshs.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+tshs2tshs.o: class_Sparsity.o f2kcli.o geom_helper.o m_sparse.o m_ts_io.o
+tshs2tshs.o: m_ts_io_version.o parallel.o precision.o units.o
 band.o: bands.o
 class_cdata1d.o: class_Data1D.o
 class_cdata2d.o: class_Data2D.o

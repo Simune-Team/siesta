@@ -426,6 +426,14 @@ contains
                 end do
              end do
              
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+             lio = index_local_to_global(dit,io,Node)
+             if ( lio == ucorb(jo,ng) .and. lio == 28 ) then
+                print '(2(a7,3(tr1,f10.5)))','Left',DM(ind,1),neq(1),w(1), &
+                     'Right',DM(ind,2),neq(2),w(2)
+             end if
+#endif
+
              DM(ind,1) = w(1) * ( DM(ind,1) + neq(1) )
              if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
              do mu_i = 2 , N_mu

@@ -92,7 +92,7 @@ module m_ts_electype
      ! In case of 'out_of_core == .false.' we can reduce the number of operations
      ! by skipping the copying of H00, S00. Hence we need to compare when the 
      ! k-point changes...
-     real(dp), pointer :: bkpt_cur(:) => null()
+     real(dp) :: bkpt_cur(3)
      ! If the user requests to assign different "spill-in fermi-level" 
      ! we allow that
      real(dp) :: Ef_frac_CT = 0._dp
@@ -111,16 +111,15 @@ module m_ts_electype
      type(Sparsity)  :: sp
      type(dSpData2D) :: H, xij
      type(dSpData1D) :: S
+     ! Supercell offsets
+     integer, pointer :: isc_off(:,:) => null()
      ! --- --- completed the content of the TSHS file
      ! Below we create the content for the self-energy creation
      ! Notice that we can save some elements simply by extracting the 0-1 connections
      ! for large systems this is a non-negligeble part of the memory...
-     type(Sparsity)  :: sp00
-     type(dSpData2D) :: H00, xij00, xijo00
-     type(dSpData1D) :: S00
-     type(Sparsity)  :: sp01
-     type(dSpData2D) :: H01, xij01, xijo01
-     type(dSpData1D) :: S01
+     type(Sparsity)  :: sp00, sp01
+     type(dSpData2D) :: H00, H01
+     type(dSpData1D) :: S00, S01
 
      ! These arrays are used to construct the full Hamiltonian and overlap and Green's function
      complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:,:)
@@ -697,14 +696,10 @@ contains
     character(len=200) :: fN
     integer :: fL, kscell(3,3), istep, ia1
     logical :: onlyS, Gamma_file, TSGamma, lio
-    real(dp) :: temp, kdispl(3), Qtot, Ef
+    real(dp) :: Temp, kdispl(3), Qtot, Ef
     
     ! Sparsity pattern
-    integer, pointer :: numh(:), listhptr(:), listh(:)
-    real(dp), pointer :: H(:,:), S(:), xij(:,:), t2D(:,:), t1D(:)
-    integer :: n_nzs, nsc(3)
-
-    type(OrbitalDistribution) :: fdist
+    integer :: nsc(3)
 
     lio = .true.
     if ( present(io) ) lio = io
@@ -715,13 +710,11 @@ contains
     if ( leqi(fN(fL-4:fL),'.TSHS') ) then
        call ts_read_tshs(fN, &
             onlyS, Gamma_file, TSGamma, &
-            this%ucell, nsc, this%na_u, this%no_u, &
-            this%no_u, this%no_s, n_nzs, this%nspin,  &
+            this%ucell, nsc, this%na_u, this%no_u, this%nspin,  &
             kscell, kdispl, &
             this%xa, this%lasto, &
-            numh, listhptr, listh, xij, &
-            H, S, Ef, &
-            Qtot, Temp, & ! Qtot, Temp
+            this%sp, this%H, this%S, this%isc_off, &
+            Ef, Qtot, Temp, &
             istep, ia1, &
             Bcast=Bcast)
     else
@@ -729,48 +722,11 @@ contains
             &electrode file: '//trim(fN))
     end if
 
-    call newSparsity(this%sp,this%no_u,this%no_u, &
-         n_nzs, numh, listhptr, listh, "Electrode "//trim(fN))
-
-    ! Create the Fake distribution
-    ! The Block-size is the number of orbitals, i.e. all on the first processor
-    ! Notice that we DO need it to be the SIESTA size.
-#ifdef MPI
-    call newDistribution(this%no_u,MPI_Comm_Self,fdist,name='TS-fake dist')
-#else
-    call newDistribution(this%no_u,-1           ,fdist,name='TS-fake dist')
-#endif
-
-    ! Create containers
-    call newdSpData2D(this%sp,this%nspin,fdist,this%H,name='E spH')
-    call newdSpData1D(this%sp,fdist,this%S,name='E spS')
-
-    ! Copy data
-    t2D => val(this%H)
-    t2D(:,:) = H(:,:)
-    t1D => val(this%S)
-    t1D(:) = S(:)
-
-    ! clean-up
-    deallocate(H,S)
-    call memory('D','D',n_nzs*(this%nspin+1),'iohs')
-
-    ! copy xij
-    call newdSpData2D(this%sp,3,fdist,this%xij,name='E spxij', &
-         sparsity_dim=2)
-    t2D => val(this%xij)
-    t2D = xij
-    deallocate(xij)
-    call memory('D','D',n_nzs*3,'iohs')
-
-    deallocate(numh,listhptr,listh)
-    call memory('D','I',this%no_u*2+n_nzs,'iohs')
-
     if ( IONode .and. lio ) call print_type(this%sp)
 
   end subroutine read_Elec
 
-  subroutine create_sp2sp01(this,calc_xijo,IO)
+  subroutine create_sp2sp01(this,IO)
 
     use parallel, only : IONode, Node
 
@@ -783,13 +739,10 @@ contains
 #endif
 
     type(Elec), intent(inout) :: this
-    logical, intent(in), optional :: calc_xijo
     logical, intent(in), optional :: io
 
-    logical :: lcalc_xijo, lio
+    logical :: lio
 
-    real(dp), pointer :: xij(:,:), xij00(:,:), xij01(:,:)
-    real(dp), pointer :: xijo00(:,:), xijo01(:,:)
     real(dp), pointer :: H(:,:), H00(:,:), H01(:,:)
     real(dp), pointer :: S(:), S00(:), S01(:)
     type(OrbitalDistribution), pointer :: fdist
@@ -804,25 +757,22 @@ contains
     integer, pointer :: ptr01(:)  => null()
     integer, pointer :: col01(:)  => null()
 
-    integer :: no_l, i, iio, j, ind, ind00, ind01, ia, ja
+    integer :: no_l, i, iio, j, ind, ind00, ind01, ia
     integer :: tm(3)
 
     ! Retrieve distribution
     fdist => dist(this%H)
 
-    lcalc_xijo = .false.
-    if ( present(calc_xijo) ) lcalc_xijo = calc_xijo
     lio = .true.
     if ( present(io) ) lio = io
 
-    H   => val(this%H)
-    S   => val(this%S)
-    xij => val(this%xij)
+    H => val(this%H)
+    S => val(this%S)
     tm(:)          = TM_ALL
     tm(this%t_dir) = 0
     call crtSparsity_SC(this%sp,this%sp00, &
          TM=tm, ucell=this%ucell, &
-         lasto=this%lasto, xa=this%xa, xij=xij)
+         isc_off=this%isc_off)
 
     ! Notice that we create the correct electrode transfer hamiltonian...
     if ( this%inf_dir == INF_NEGATIVE ) then
@@ -834,7 +784,7 @@ contains
     end if
     call crtSparsity_SC(this%sp,this%sp01, &
          TM=tm, ucell=this%ucell, &
-         lasto=this%lasto, xa=this%xa, xij=xij)
+         isc_off=this%isc_off)
     
     ! create data
     call newdSpData2D(this%sp00,this%nspin,fdist,this%H00,name='E spH00')
@@ -845,21 +795,6 @@ contains
     S00 => val(this%S00)
     call newdSpData1D(this%sp01,fdist,this%S01,name='E spS01')
     S01 => val(this%S01)
-    call newdSpData2D(this%sp00,3,fdist,this%xij00,name='E spxij00', &
-         sparsity_dim=2)
-    xij00 => val(this%xij00)
-    call newdSpData2D(this%sp01,3,fdist,this%xij01,name='E spxij01', &
-         sparsity_dim=2)
-    xij01 => val(this%xij01)
-
-    if ( lcalc_xijo ) then
-       call newdSpData2D(this%sp00,3,fdist,this%xijo00,name='E spxijo00', &
-            sparsity_dim=2)
-       xijo00 => val(this%xijo00)
-       call newdSpData2D(this%sp01,3,fdist,this%xijo01,name='E spxijo01', &
-            sparsity_dim=2)
-       xijo01 => val(this%xijo01)
-    end if
 
     call attach(this%sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l)
@@ -892,15 +827,9 @@ contains
              ! the same entry they represent
              if ( col00(ind00) == l_col(ind) ) then
 
-                H00(ind00,:)   = H(ind,:)
-                S00(ind00)     = S(ind)
-                xij00(:,ind00) = xij(:,ind)
-                
-                if ( lcalc_xijo ) then
-                   ja = iaorb(col00(ind00),this%lasto)
-                   xijo00(:,ind00) = xij(:,ind) - &
-                        (this%xa(:,ja) - this%xa(:,ia))
-                end if
+                H00(ind00,:) = H(ind,:)
+                S00(ind00)   = S(ind)
+
                 exit idx00
              end if
 
@@ -921,15 +850,9 @@ contains
              ! the same entry they represent
              if ( col01(ind01) == l_col(ind) ) then
 
-                H01(ind01,:)   = H(ind,:)
-                S01(ind01)     = S(ind)
-                xij01(:,ind01) = xij(:,ind)
+                H01(ind01,:) = H(ind,:)
+                S01(ind01)   = S(ind)
 
-                if ( lcalc_xijo ) then
-                   ja = iaorb(col01(ind01),this%lasto)
-                   xijo01(:,ind01) = xij(:,ind) - &
-                        (this%xa(:,ja) - this%xa(:,ia))
-                end if
                 exit idx01
              end if
              
@@ -950,22 +873,16 @@ contains
 
     call delete(this%H)
     call delete(this%S)
-    call delete(this%xij)
     call delete(this%H00)
     call delete(this%H01)
     call delete(this%S00)
     call delete(this%S01)
-    call delete(this%xij00)
-    call delete(this%xij01)
-    call delete(this%xijo00)
-    call delete(this%xijo01)
     call delete(this%sp00)
     call delete(this%sp01)
     call delete(this%sp)
     if ( associated(this%xa) ) deallocate(this%xa)
     if ( associated(this%lasto) ) deallocate(this%lasto)
-    if ( associated(this%bkpt_cur) ) deallocate(this%bkpt_cur)
-    nullify(this%xa,this%lasto,this%bkpt_cur)
+    nullify(this%xa,this%lasto)
     !if ( associated(this%xa_used) ) deallocate(this%xa_used)
     !if ( associated(this%lasto_used) ) deallocate(this%lasto_used)
     !nullify(this%xa_used,this%lasto_used)
@@ -1203,7 +1120,6 @@ contains
 
     real(dp), pointer :: H(:,:)
     real(dp), pointer :: S(:)
-    real(dp), pointer :: xij(:,:)
     type(OrbitalDistribution), pointer :: fdist
     type(Sparsity) :: sp02
 
@@ -1227,7 +1143,6 @@ contains
     end if
     H   => val(this%H)
     S   => val(this%S)
-    xij => val(this%xij)
 
     tm(:) = TM_ALL
     if ( this%inf_dir == INF_POSITIVE ) then
@@ -1235,9 +1150,8 @@ contains
     else
        tm(this%t_dir) = -2
     end if
-    call crtSparsity_SC(this%sp,sp02, &
-         TM=tm, ucell=this%ucell, lasto=this%lasto, &
-         xa=this%xa, xij=xij)
+    call crtSparsity_SC(this%sp,sp02, TM=tm, &
+         ucell=this%ucell, isc_off=this%isc_off)
 
     call attach(this%sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
