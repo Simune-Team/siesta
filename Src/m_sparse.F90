@@ -272,6 +272,7 @@ contains
        block_dist,sp,n_nzs,xij,isc_off,Bcast)
     
     use cellSubs, only : reclat
+    use intrinsic_missing, only : VNORM
     use class_OrbitalDistribution
     use class_Sparsity
     use alloc
@@ -366,12 +367,13 @@ contains
           tm(:) = nint( matmul(xijo,rcell) )
 
           if ( any(tm(:) /= isc_off(:,is)) .and. any(isc_off(:,is)/=0) ) then
-             write(*,'(a,3(tr1,i6))')'r,c',io,l_col(ind)
-             write(*,'(a,i3,tr1,3(tr1,i3),tr3,3(tr1,i3))') 'is, tm',is, tm, isc_off(:,is)
-             write(*,'(a,2(tr1,i3),6(tr1,f10.5))') 'ia, ja',ia, ja,xijo(:)-&
-                  ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3)
-             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xa(:,(is-1)*na_u +ja)-xa(:,ia)
-             call die('Error')
+             write(*,'(2(a10,2(tr1,i6)))')'r,C',io,l_col(ind),'ia,ja',ia,ja
+             write(*,'(a,i3,2(tr2,3(tr1,i3)))') 'is, tm, old_tm: ',is, tm, isc_off(:,is)
+             write(*,'(a,4(tr1,f10.5))') 'xij - ucell*tm, |V|: ',xijo(:) - &
+                  ucell(:,1) * tm(1) - ucell(:,2) * tm(2) - ucell(:,3) * tm(3), vnorm(xijo)
+             write(*,'(2(a10,3(tr1,f10.5)))') 'xijo: ',xijo(:), &
+                  'ucell: ',ucell(:,1) * tm(1) + ucell(:,2) * tm(2) + ucell(:,3) * tm(3)
+             call die('Error on transfer matrix indices...')
           else
              isc_off(:,is) = tm(:)
           end if
@@ -417,6 +419,7 @@ contains
        no_l,no_u,n_nzs,ncol,l_ptr,l_col,xij,isc_off,Bcast)
     
     use cellSubs, only : reclat
+    use intrinsic_missing, only : VNORM
     use alloc
 #ifdef MPI
     use parallelsubs, only : LocalToGlobalOrb
@@ -502,12 +505,13 @@ contains
           tm(:) = nint( matmul(xijo,rcell) )
 
           if ( any(tm(:) /= isc_off(:,is)) .and. any(isc_off(:,is)/=0) ) then
-             write(*,'(a,3(tr1,i6))')'r,c',io,l_col(ind)
-             write(*,'(a,i3,tr1,3(tr1,i3),tr3,3(tr1,i3))') 'is, tm',is, tm, isc_off(:,is)
-             write(*,'(a,2(tr1,i3),6(tr1,f10.5))') 'ia, ja',ia, ja,xijo(:)-&
-                  ucell(:,1)*tm(1)-ucell(:,2)*tm(2)-ucell(:,3)*tm(3)
-             write(*,'(2(tr1,i3),6(tr1,f10.5))') ia, ja,xijo(:),xa(:,(is-1)*na_u +ja)-xa(:,ia)
-             call die('Error')
+             write(*,'(2(a10,2(tr1,i6)))')'r,C',io,l_col(ind),'ia,ja',ia,ja
+             write(*,'(a,i3,2(tr2,3(tr1,i3)))') 'is, tm, old_tm: ',is, tm, isc_off(:,is)
+             write(*,'(a,4(tr1,f10.5))') 'xij - ucell*tm, |V|: ',xijo(:) - &
+                  ucell(:,1) * tm(1) - ucell(:,2) * tm(2) - ucell(:,3) * tm(3), vnorm(xijo)
+             write(*,'(2(a10,3(tr1,f10.5)))') 'xijo: ',xijo(:), &
+                  'ucell: ',ucell(:,1) * tm(1) + ucell(:,2) * tm(2) + ucell(:,3) * tm(3)
+             call die('Error on transfer matrix indices...')
           else
              isc_off(:,is) = tm(:)
           end if

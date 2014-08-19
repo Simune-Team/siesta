@@ -35,8 +35,9 @@ contains
     integer,  intent(inout) :: nsc(3)
 
     ! Local variables
-    integer :: xyz, ia, ja, tnsc(3)
-    real(dp) :: recell(3,3), xa1(3), v1(3), v2(3)
+    integer :: xyz, ia, ja, tnsc(3), idiag
+    real(dp) :: recell(3,3), xa1(3), v1(3), v2(3), ucdiag(3)
+    logical :: on_boundary
 
     call reclat(ucell,recell,0) ! do not add 2 Pi
 
@@ -49,6 +50,7 @@ contains
     do ia = 1 , na_u
        xa1(:) = xa_in_cell(recell,ucell,xa(:,ia))
        do ja = ia , na_u
+          on_boundary = (ia == ja)
 
           ! Vector between atoms
           v1(:) =  xa_in_cell(recell,ucell,xa(:,ja)) - xa1(:)
@@ -58,14 +60,60 @@ contains
              ! from i -> J
              v2(:) = v1(:) + ucell(:,xyz)
              ! update the nsc quantity based on this vector
-             call update_nsc(rmaxh,ucell(:,xyz),v2,tnsc(xyz))
+             call update_nsc(rmaxh,ucell(:,xyz),v2,on_boundary,tnsc(xyz))
 
              ! from j -> I
              v2(:) = -v1(:) + ucell(:,xyz)
              ! update the nsc quantity based on this vector
-             call update_nsc(rmaxh,ucell(:,xyz),v2,tnsc(xyz))
+             call update_nsc(rmaxh,ucell(:,xyz),v2,on_boundary,tnsc(xyz))
 
+             ! Possibly track the diagonal path when
+             ! having skewed unit-cells. Specifically if 
+             ! |ucell(:,1)|,|ucell(:,2)| > |ucell(:,1) + ucell(:,2)|
+             ! Thus we should track the diagonal of each direction
+
+             if ( xyz == 3 ) cycle
+             do idiag = xyz + 1 , 3
+                
+                ! get the diagonal unit-cell direction
+                ucdiag(:) = ucell(:,xyz) + ucell(:,idiag)
+
+                ! from i -> J
+                v2(:) = v1(:) + ucdiag(:)
+                ! update the nsc quantity based on this vector (note that
+                ! the diagonal now takes two into account
+                call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(xyz))
+                call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(idiag))
+
+                ! from j -> I
+                v2(:) = -v1(:) + ucdiag(:)
+                ! update the nsc quantity based on this vector (note that
+                ! the diagonal now takes two into account
+                call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(xyz))
+                call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(idiag))
+
+             end do
+                
           end do
+
+          ! Do the last diagonal unit-cell direction (a+b+c)
+          ucdiag(:) = ucell(:,1) + ucell(:,2) + ucell(:,3)
+          
+          ! from i -> J
+          v2(:) = v1(:) + ucdiag(:)
+          ! update the nsc quantity based on this vector (note that
+          ! the diagonal now takes two into account
+          call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(1))
+          call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(2))
+          call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(3))
+
+          ! from j -> I
+          v2(:) = -v1(:) + ucdiag(:)
+          ! update the nsc quantity based on this vector (note that
+          ! the diagonal now takes two into account
+          call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(1))
+          call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(2))
+          call update_nsc(rmaxh,ucdiag,v2,on_boundary,tnsc(3))
 
        end do
     end do
@@ -75,10 +123,11 @@ contains
 
   contains
 
-    subroutine update_nsc(rmaxh,vcell,v,nsc)
+    subroutine update_nsc(rmaxh,vcell,v,on_boundary,nsc)
       real(dp), intent(in) :: rmaxh
       real(dp), intent(in) :: vcell(3)
       real(dp), intent(inout) :: v(3)
+      logical, intent(in) :: on_boundary
       integer, intent(inout) :: nsc
       real(dp), parameter :: EPS = 1.e-8_dp
       real(dp) :: vl
@@ -107,10 +156,23 @@ contains
       ! naive auxillary cell as the naive calculation
       ! must take into account the two atoms lying on the
       ! boundary. But this is direct interaction! :)
-      n = max(1,n - 1)
+      if ( .not. on_boundary ) then
+         ! TODO, I think this should ALWAYS be n-1
+         ! Yet a case example of unit cell:
+         ! Unit cell vectors (Ang):
+         !        1.414210   -2.449490    0.000000
+         !        1.414210    2.449490    0.000000
+         !        0.000000    0.000000    6.928200
+         ! yields the wrong supercell indices if using n-1
+         ! I think maybe the hsparse takes too many non-zero elements?
+         ! Or are there some additional corrections for the
+         ! orbital range I do not know of?
+         n = max(1,n - 1)
+      end if
 
       ! UC + n cells on both sides
-      nsc = max(1 + 2 * n , nsc)
+      n = 1 + 2 * n
+      if ( n > nsc ) nsc = n
 
     end subroutine update_nsc
     

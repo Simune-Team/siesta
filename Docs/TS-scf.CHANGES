@@ -1,4 +1,20 @@
 ----------------------------------------------------
+August 19, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-180
+Supercell calculation update
+
+* Sometimes the supercell calculation was
+  erroneous. We have now corrected it to also pass
+  a simple test (FCC-111 surface).
+  It would be *much* better to calculate explicitly
+  the used supercells in an array, there might
+  be many "empty" supercells due to the diagonal
+  entries.
+
+modified:
+  Src/m_sparse.F90
+  Src/m_supercell.f90
+
+----------------------------------------------------
 August 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-179
 Fixed calculations of iterations used in SE-calculation
 
