@@ -52,7 +52,7 @@ module geom_helper
   public :: ucorb, ucatom
   public :: iaorb
   interface cell_abc
-     module procedure :: cell_abc_ij, cell_abc_c
+     module procedure cell_abc_ij, cell_abc_c
   end interface cell_abc
   public :: cell_abc
   public :: cell_d, cell_a, cell_b, cell_c

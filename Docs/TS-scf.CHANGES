@@ -1,4 +1,16 @@
 ----------------------------------------------------
+August 20, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-182
+Compilation fix for old gnu compilers
+
+* The old compilers does not allow "::" in module procedure
+  statements.
+  Removed
+
+modified:
+  Src/geom_helper.f90
+  Src/m_sparse.F90
+
+----------------------------------------------------
 August 20, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-181
 Added writing to the m_io_s module
 

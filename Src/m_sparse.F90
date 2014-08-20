@@ -28,14 +28,12 @@ module m_sparse
   public :: list_col_correct
 
   interface xij_offset
-     module procedure :: xij_offset_sp
-     module procedure :: xij_offset_direct
+     module procedure xij_offset_sp, xij_offset_direct
   end interface xij_offset
   public :: xij_offset
 
   interface offset_xij
-     module procedure :: offset_xij_sp
-     module procedure :: offset_xij_direct
+     module procedure offset_xij_sp, offset_xij_direct
   end interface offset_xij
   public :: offset_xij
 
