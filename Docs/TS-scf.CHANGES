@@ -1,4 +1,15 @@
 ----------------------------------------------------
+August 20, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-181
+Added writing to the m_io_s module
+
+* Added writing sparsity pattern, dSp1D and dSp2D data
+  to the module.
+  This is mainly intended for future use.
+
+modified:
+  Src/m_io_s.F90
+
+----------------------------------------------------
 August 19, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-180
 Supercell calculation update
 
