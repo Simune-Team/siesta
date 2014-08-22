@@ -51,9 +51,7 @@ module m_ts_weight
   ! Method: 1)
   integer, parameter :: TS_W_K_CORRELATED = 1
   ! Method: 2)
-  integer, parameter :: TS_W_K_HALF_CORRELATED = 2
-  ! Method: 3)
-  integer, parameter :: TS_W_K_UNCORRELATED = 3
+  integer, parameter :: TS_W_K_UNCORRELATED = 2
 
   ! General weighting method
   ! 1) orb-orb weighting

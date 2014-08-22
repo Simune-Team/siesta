@@ -31,7 +31,6 @@ module m_ts_trik
   use m_ts_weight, only : weight_DM
   use m_ts_weight, only : TS_W_K_METHOD
   use m_ts_weight, only : TS_W_K_CORRELATED
-  use m_ts_weight, only : TS_W_K_HALF_CORRELATED
   use m_ts_weight, only : TS_W_K_UNCORRELATED
 
   use m_ts_tri_init, only : N_tri_part, tri_parts
@@ -592,8 +591,6 @@ contains
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin), spDM, Ef=Ef, &
                EDM=EDM(:,ispin), spEDM=spEDM, ipnt=ltsup_sc_pnt)
-       else if ( TS_W_K_METHOD == TS_W_K_HALF_CORRELATED ) then
-          call die('not functioning yet')
        else if ( itt_last(SpKp,2) ) then ! TS_W_K_METHOD == TS_W_K_CORRELATED
           call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
                spDM, spDMneq, spEDM, &

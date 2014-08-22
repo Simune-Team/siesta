@@ -377,7 +377,8 @@ contains
        else if ( leqi(c,'all') ) then
           Elecs(:)%DM_update = 2
        else
-          call die('TS.Elecs.DM.Update: unrecognized option: '//trim(c))
+          call die('TS.Elecs.DM.Update [none,cross-terms,all]: &
+               &unrecognized option: '//trim(c))
        end if
     end if
 
@@ -551,7 +552,7 @@ contains
     if ( N_Elec > 2 .and. IsVolt ) call die('Several electrodes and bias does not work')
     if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_update > 0) ) then
        call die('transiesta relaxation is only allowed if you also &
-            &update the cross terms, please set: TS.Elecs.DM.CrossTerms T')
+            &update the cross terms, please set: TS.Elecs.DM.Update cross-terms')
     end if
     if ( Nmove > 0 .and. .not. Calc_Forces ) then
        call die('transiesta relaxation is based on calculating the forces, &
@@ -562,9 +563,6 @@ contains
     chars = fdf_get('TS.Weight.k.Method','correlated')
     if ( leqi(chars,'correlated') ) then
        TS_W_K_METHOD = TS_W_K_CORRELATED
-    else if ( leqi(chars,'half-correlated') ) then
-       TS_W_K_METHOD = TS_W_K_HALF_CORRELATED
-       call die('Currently not functioning')
     else if ( leqi(chars,'uncorrelated') ) then
        TS_W_K_METHOD = TS_W_K_UNCORRELATED
     else
@@ -607,15 +605,6 @@ contains
        call die('Unrecognized option for TS.Weight.Method &
             &must be [[un]correlated+|][orb-orb|tr-atom-[atom|orb]|sum-atom-[atom|orb]]')
     end if
-    if ( TS_W_METHOD /= TS_W_ORB_ORB ) then
-       ! We do not allow to do the half-correlated,
-       if ( TS_W_K_METHOD == TS_W_K_HALF_CORRELATED ) then
-          call die('The uncorrelated weighting does not work &
-               &with trace-weighting of the density matrix.')
-       end if
-       
-    end if
-
 
     ! read in contour options
     if ( TSmode ) then
@@ -716,8 +705,6 @@ contains
           select case ( TS_W_K_METHOD ) 
           case ( TS_W_K_CORRELATED )
              write(*,10) trim(chars),'Correlated k-points'
-          case ( TS_W_K_HALF_CORRELATED )
-             write(*,10) trim(chars),'Half-correlated'
           case ( TS_W_K_UNCORRELATED )
              write(*,10) trim(chars),'Uncorrelated k-points'
           end select

@@ -1,4 +1,23 @@
 ----------------------------------------------------
+August 22, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-183
+Bugfix for changed supercell, kill job
+
+* The HALF correlated weighting has been removed.
+  It is not implemented and probably should not be.
+
+* Added a killing of the job when the number of 
+  supercell orbitals has changed. This is a precaution
+  as the supercell calculation has changed.
+
+modified:
+  Src/m_ts_fullk.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_weight.F90
+  Src/restructSpData2D.F90
+
+----------------------------------------------------
 August 20, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-182
 Compilation fix for old gnu compilers
 

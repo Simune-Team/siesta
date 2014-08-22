@@ -64,6 +64,12 @@
       maxval_j_in = maxval(list_in(1:size_in))
       maxval_j_out = maxval(list_out(1:size_out))
 
+      if ( maxval_j_in /= maxval_j_out ) then
+         call die('Supercell has changed from a read &
+              &in structure. I do not dare to continue... &
+              &Full restart is required.')
+      end if
+
       ! Maximum "column" index
       max_col = max(maxval_j_in, maxval_j_out)
       allocate(aux(1:max_col))
