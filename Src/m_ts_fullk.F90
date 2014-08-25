@@ -580,16 +580,14 @@ close(io)
 
        if ( TS_W_K_METHOD == TS_W_K_UNCORRELATED ) then
           call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
-               spDM, spDMneq, spEDM, &
-               nonEq_IsWeight = .false.)
+               spDM, spDMneq, spEDM, n_s, sc_off)
           
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin), spDM, Ef=Ef, &
                EDM=EDM(:,ispin), spEDM=spEDM, ipnt=ltsup_sc_pnt)
        else if ( itt_last(SpKp,2) ) then ! TS_W_K_METHOD == TS_W_K_CORRELATED
           call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
-               spDM, spDMneq, spEDM, &
-               nonEq_IsWeight = .false.)
+               spDM, spDMneq, spEDM, n_s, sc_off)
           
           call update_DM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin), spDM, Ef=Ef, &

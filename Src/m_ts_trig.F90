@@ -74,10 +74,9 @@ contains
 
     use m_ts_options, only : IsVolt
 
-    use m_ts_sparse, only : ts_sp_uc
-    use m_ts_sparse, only : tsup_sp_uc
-    use m_ts_sparse, only : ltsup_sp_sc
-    use m_ts_sparse, only : ltsup_sc_pnt
+    use m_ts_sparse, only : ts_sp_uc, tsup_sp_uc
+    use m_ts_sparse, only : ltsup_sp_sc, ltsup_sc_pnt
+    use m_ts_sparse, only : sc_off
 
     use m_ts_cctype
     use m_ts_contour,     only : has_cE
@@ -116,7 +115,7 @@ contains
     real(dp), intent(in) :: Ef, kT
 
 ! ******************* Computational arrays *******************
-    integer :: ndwork, nzwork
+    integer :: ndwork, nzwork, n_s
     real(dp), pointer :: dwork(:,:)
     complex(dp), pointer :: zwork(:)
     type(zTriMat) :: zwork_tri, GF_tri
@@ -160,6 +159,10 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE transiesta mem' )
 #endif
+
+    ! Number of supercells (even though its gamma we
+    ! can have different schemes...)
+    n_s = size(sc_off,dim=2)
 
     ! Number of orbitals in TranSIESTA
     no_u_TS = no_u - no_Buf
@@ -571,8 +574,7 @@ contains
             spEDM=spEDM,  spuEDM=spuEDM, E_dim2=N_mu)
        
        call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
-            spDM, spDMneq, spEDM, &
-            nonEq_IsWeight = .false.)
+            spDM, spDMneq, spEDM, n_s, sc_off)
        
        call update_DM(sp_dist,sparse_pattern, n_nzs, &
             DM(:,ispin), spDM, Ef=Ef, &

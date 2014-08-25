@@ -80,7 +80,6 @@ module m_ts_contour_neq
   public :: nEq_E
   public :: has_cE_neq
   public :: c2weight_neq
-  public :: ID2mult
   public :: ID2mu
 
   private
@@ -717,23 +716,6 @@ contains
     integer :: imu
     imu = nEq_ID(ID)%imu
   end function ID2mu
-
-  ! returns the multiplicity of the segment ID
-  ! If there are several electrodes in the opposing chemical
-  ! potential we need a multiplicity factor equal to the number of electrodes
-  ! at that chemical potential
-  function ID2mult(ID) result(mult)
-    integer, intent(in) :: ID
-    real(dp) :: mult
-    mult = 1._dp
-    if (      nEq_ID(ID)%seg%mu1%ID == nEq_ID(ID)%imu ) then
-       mult = nEq_ID(ID)%seg%mu1%N_El
-    else if ( nEq_ID(ID)%seg%mu2%ID == nEq_ID(ID)%imu ) then
-       mult = nEq_ID(ID)%seg%mu2%N_El
-    else
-       call die('ID2mult: Error in code')
-    end if
-  end function ID2mult
 
   subroutine contour_line(c,kT,Eta)
     use m_integrate

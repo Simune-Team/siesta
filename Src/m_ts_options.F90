@@ -982,7 +982,7 @@ contains
           write(*,'(2(a10,tr1),f10.5)') &
                trim(Elecs(nEq_ID(i)%iEl)%name),trim(mus(nEq_ID(i)%imu)%name),rnID(i)
        end do
-       call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu,rnID,rn,rw)
+       call calc_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu,rnID,rn,rw)
        write(*,'(a)') 'Contrib and weights: '
        do i = 1 , N_mu
           write(*,'(a10,2(tr1,f10.5))') trim(mus(i)%name),rn(i),rw(i)

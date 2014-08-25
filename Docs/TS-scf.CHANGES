@@ -1,4 +1,30 @@
 ----------------------------------------------------
+August 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-185
+Reverted Saha papers weighting algorithm
+
+* My calculation shows that Saha papers weighting algorithm is
+  not the correct one (albeit they reduce to the same weight for	
+  N_Elec == 2).
+  It is also easier to handle.
+
+  The multiplicity of any electrode is not needed.
+
+  Fully removed the non-equilibrium weighting mechanism
+  for k-correlated densities. Not necessary with yet another
+  method.
+
+modified:
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 August 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-184
 Bugfix for oversubscription of nodes
 

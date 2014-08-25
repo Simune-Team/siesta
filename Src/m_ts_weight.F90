@@ -28,13 +28,7 @@
 !   this will assume that the k-point correction terms are correlated in some way
 
 ! 2)
-!   do a single weight, assuming that each k-point correction term is uncorrelated
-!     w_L = \sum_k \Delta_L^2(k)
-!     w_R = \sum_k \Delta_R^2(k)
-!   this will assume that the k-point correction terms are iid's (independent identically distributed)
-
-! 3)
-!   do a weight for each k, this is the same as 2), but we increase the k-point weight
+!   do a weight for each k
 !     w_L^k = \Delta_L^2(k)
 !     w_R^k = \Delta_R^2(k)
 !   this will actually save us more memory, as we don't need the full sum of the k-points.
@@ -78,10 +72,8 @@ module m_ts_weight
 
 contains
 
-
   subroutine weight_DM(N_Elec,Elecs,N_mu, na_u, lasto, &
-       spDM, spDMneq, spEDM, &
-       nonEq_IsWeight)
+       spDM, spDMneq, spEDM, n_s, sc_off)
     
 #ifdef MPI
     use mpi_siesta
@@ -94,7 +86,7 @@ contains
     use m_ts_electype
     use m_ts_contour_neq, only : N_nEq_ID, ID2mu
     use geom_helper, only : iaorb, ucorb
-
+    
     implicit none
 
 ! *********************
@@ -110,30 +102,30 @@ contains
     type(dSpData2D), intent(inout) :: spDMneq
     ! Estimates of EDM
     type(dSpData2D), intent(inout) :: spEDM
-    ! Determine whether DMneq already is the weight for the
-    ! current weighting scheme
-    logical, intent(in), optional :: nonEq_IsWeight
+    ! Number of supercells
+    integer, intent(in) :: n_s
+    ! the offsets
+    real(dp), intent(in) :: sc_off(3,0:n_s-1)
 
 ! *********************
 ! * LOCAL variables   *
 ! *********************
     real(dp) :: w(N_mu), neq(N_mu)
+    real(dp), parameter :: EPS = 1.e-4_dp
     
     ! arrays for looping in the sparsity pattern
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
     real(dp), pointer :: DM(:,:), DMneq(:,:), EDM(:,:)
-    integer,  pointer :: l_ncol(:)
-    integer,  pointer :: l_ptr(:)
-    integer,  pointer :: l_col(:)
+    integer,  pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer :: nr
-    integer :: io, jo, ind, j
+    integer :: io, jo, ind, j, is
     integer :: mu_i, mu_j
     integer, allocatable :: ID_mu(:)
     ! For error estimation
     integer  :: eM_i,eM_j
     real(dp) :: eM, DMe, ee, ee_i, tmp
-    logical :: l_nonEq_IsWeight, hasEDM, is_correlated, is_trace
+    logical :: hasEDM, is_correlated, is_trace
     ! collecting the error contribution for each atom
     real(dp), allocatable :: atom_w(:,:), atom_neq(:,:)
     integer :: ng, lio, ia1, ia2, ia, TS_W
@@ -145,12 +137,6 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE weightDM' )
 #endif
-    
-    l_nonEq_IsWeight = .false.
-    if ( present(nonEq_IsWeight) ) l_nonEq_IsWeight = nonEq_IsWeight
-    if ( l_nonEq_IsWeight .and. TS_W_METHOD /= TS_W_ORB_ORB ) then
-       call die('Not implemented yet... Programming error')
-    end if
 
     ! TODO Enforce that sparsity is the same
     ! (however, we know that they are the same)
@@ -176,285 +162,244 @@ contains
     eM  = 0._dp
     DMe = 0._dp
 
-    if ( l_nonEq_IsWeight ) then
-    
-       do io = 1 , nr
+    ! Is the data correlated
+    is_correlated = TS_W_METHOD >= TS_W_CORRELATED
+    TS_W = TS_W_METHOD
+    if ( is_correlated ) TS_W = TS_W - TS_W_CORRELATED
+
+    if ( TS_W /= TS_W_ORB_ORB ) then
+       ! we are doing weighting per trace/sum of each atom
+
+       ! this will not be that large an array... :)
+       allocate(atom_neq(N_nEq_ID,na_u))
+       atom_neq(:,:) = 0._dp
+
+       ! determine whether it is trace or sum
+       select case ( TS_W )
+       case ( TS_W_SUM_ATOM_ATOM , TS_W_SUM_ATOM_ORB )
+          is_trace = .false.
+       case ( TS_W_TR_ATOM_ATOM , TS_W_TR_ATOM_ORB )
+          is_trace = .true.
+       case default
+          call die('Error in weights: determine trace')
+       end select
+
+       do lio = 1 , nr
+
           ! We are in a buffer region...
-          if ( l_ncol(io) == 0 ) cycle
-          do j = 1 , l_ncol(io)
-
-             ind = l_ptr(io) + j
-             ! Retrieve the connecting orbital
-             jo = l_col(ind)
-
-             call get_weight(N_Elec,N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),w)
-
-             ! Do error estimation (capture before update)
-             ee = 0._dp
-             do mu_i = 1 , N_mu - 1
-                ee_i = DM(ind,mu_i)
-                do mu_j = mu_i + 1 , N_mu
-                   tmp = ee_i - DM(ind,mu_j)
-                   if ( abs(tmp) > abs(ee) ) ee = tmp
-                end do
-             end do
+          if ( l_ncol(lio) == 0 ) cycle
+          io = index_local_to_global(dit,lio,Node)
+          
+          ia = iaorb(io,lasto) ! atom-index
+          
+          lio_connect: do j = 1 , l_ncol(lio)
              
-             DM(ind,1)  = w(1) * ( DM(ind,1) )
-             if ( hasEDM ) EDM(ind,1) = w(1) *  EDM(ind,1)
-             do mu_i = 2 , N_mu
-                DM(ind,1)  = DM(ind,1) + &
-                     w(mu_i) * DM(ind,mu_i)
-                if ( hasEDM ) EDM(ind,1) = EDM(ind,1) + &
-                     w(mu_i) * EDM(ind,mu_i)
-             end do
+             ind = l_ptr(lio) + j
+             
+             if ( .not. is_Trace ) then ! TS_W == TS_W_SUM_ATOM_?
+                
+                ia2 = iaorb(l_col(ind),lasto)
+                ! Only allow the same atom to contribute
+                if ( ia2 /= ia ) cycle lio_connect
 
-             if ( abs(ee) > abs(eM) ) then
-                eM   = ee
-                eM_i = io
-                eM_j = jo
-                DMe = DM(ind,1)
+             else ! TS_W == TS_W_TR_ATOM_?
+                   
+                ! This is a SC sparsity pattern
+
+                ! Only allow the diagonal entry of
+                ! the density matrix
+                is = (l_col(ind)-1) / ng
+                ! Check the unit-cell offset
+                if ( sum(abs(sc_off(:,is))) > EPS ) cycle lio_connect
+                
              end if
 
-          end do
+             if ( is_correlated ) then
+                atom_neq(:,ia) = atom_neq(:,ia) + DMneq(ind,:)
+             else
+                atom_neq(:,ia) = atom_neq(:,ia) + DMneq(ind,:) ** 2
+             end if
+             
+          end do lio_connect
        end do
-
-    else
-
-       ! Is the data correlated
-       is_correlated = TS_W_METHOD >= TS_W_CORRELATED
-       TS_W = TS_W_METHOD
-       if ( is_correlated ) TS_W = TS_W - TS_W_CORRELATED
-
-       if ( TS_W /= TS_W_ORB_ORB ) then
-          ! we are doing weighting per trace/sum of each atom
-
-          ! this will not be that large an array... :)
-          allocate(atom_neq(N_nEq_ID,na_u))
-          atom_neq(:,:) = 0._dp
-
-          ! determine whether it is trace or sum
-          select case ( TS_W )
-          case ( TS_W_SUM_ATOM_ATOM , TS_W_SUM_ATOM_ORB )
-             is_trace = .false.
-          case ( TS_W_TR_ATOM_ATOM , TS_W_TR_ATOM_ORB )
-             is_trace = .true.
-          case default
-             call die('Error in weights: determine trace')
-          end select
-
-          do lio = 1 , nr
-
-             ! We are in a buffer region...
-             if ( l_ncol(lio) == 0 ) cycle
-             io = index_local_to_global(dit,lio,Node)
-
-             ia = iaorb(io,lasto) ! atom-index
-
-             lio_connect: do j = 1 , l_ncol(lio)
-                
-                ind = l_ptr(lio) + j
-                
-                if ( .not. is_Trace ) then ! TS_W == TS_W_SUM_ATOM_?
-                   
-                   ia2 = iaorb(l_col(ind),lasto)
-                   ! Only allow the same atom to contribute
-                   if ( ia2 /= ia ) cycle lio_connect
-
-                else ! TS_W == TS_W_TR_ATOM_?
-                   
-                   ! This is a SC sparsity pattern
-
-                   ! Only allow the diagonal entry of
-                   ! the density matrix
-                   if ( l_col(ind) /= io ) cycle lio_connect
-
-                end if
-
-                if ( is_correlated ) then
-                   atom_neq(:,ia) = atom_neq(:,ia) + DMneq(ind,:)
-                else
-                   atom_neq(:,ia) = atom_neq(:,ia) + DMneq(ind,:) ** 2
-                end if
-
-             end do lio_connect
-          end do
-
+       
 #ifdef MPI
-          allocate(atom_w(N_nEq_ID,na_u))
-          ! We need to reduce the things
-          call MPI_AllReduce(atom_neq(1,1),atom_w(1,1),N_nEq_ID*na_u, &
-               MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
-          if ( is_correlated ) then
-             atom_neq(:,:) = atom_w(:,:) ** 2
-          else
-             atom_neq(:,:) = atom_w(:,:)
-          end if
-          deallocate(atom_w)
-#else
-          if ( is_correlated ) then
-             atom_neq(:,:) = atom_neq(:,:) ** 2
-          end if
-#endif
-
-          ! in case of Bulk or DM_update /= update all we
-          ! can set the equivalent atom_w to 2 * maximum value
-          ! This will force the nearest electrode to contribute the
-          ! most. :)
-          if ( N_Elec > 2 ) then
-             call die('Check this code segment')
-          end if
-          tmp = maxval(atom_neq)
-          allocate(atom_w(N_mu,na_u))
-          do ia = 1 , na_u
-             do io = 1 , N_Elec
-                ! If we DO NOT use bulk electrodes we
-                ! do have access to the diagonal correction
-                ! contribution. Hence we only overwrite the electrode
-                ! weight if Elec%Bulk
-                if ( (.not. Elecs(io)%Bulk) .and. Elecs(io)%DM_update /= 2 ) cycle
-                ! if we are not in the electrode we do not correct weight
-                if ( .not. AtomInElec(Elecs(io),ia) ) cycle
-                ! in case of sum with the off-diagonal terms we have to sum (otherwise it should be (:,ia) = tmp ; (mu%ID,ia) = 0._dp) 
-                atom_neq(:,ia) = atom_neq(:,ia) + tmp
-                atom_neq(Elecs(io)%mu%ID,ia) = atom_neq(Elecs(io)%mu%ID,ia) - tmp
-             end do
-
-             ! Calculate weights for this atom
-             call get_contrib(N_Elec,N_mu,N_nEq_ID,ID_mu, &
-                  atom_neq(:,ia), atom_w(:,ia) )
-             !if (node==0) &
-             !     write(*,'(a,i2,2(tr1,g10.5))')'W: ', ia,atom_w(:,ia)
-
-          end do
-
-          ! clean up
-          deallocate(atom_neq)
-
+       allocate(atom_w(N_nEq_ID,na_u))
+       ! We need to reduce the things
+       call MPI_AllReduce(atom_neq(1,1),atom_w(1,1),N_nEq_ID*na_u, &
+            MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
+       if ( is_correlated ) then
+          atom_neq(:,:) = atom_w(:,:) ** 2
+       else
+          atom_neq(:,:) = atom_w(:,:)
        end if
-
-       do io = 1 , nr
-          ! We are in a buffer region...
-          if ( l_ncol(io) == 0 ) cycle
-
-          ! Update the weight of the row-atom
-          if ( TS_W /= TS_W_ORB_ORB ) then
-             ! Calculate the weight of the atom corresponding to this
-             ! orbital
-             lio = index_local_to_global(dit,io,Node)
-             ia1 = iaorb(lio,lasto)
-          end if
-
-          do j = 1 , l_ncol(io)
-
-             ind = l_ptr(io) + j
-             ! Retrieve the connecting orbital
-             jo = l_col(ind)
-
-             if ( TS_W == TS_W_ORB_ORB ) then
-
-                ! Get the non-equilibrium contribution and the weight associated
-                call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
-                     DMneq(ind,:),neq,w)
-
-             else ! we have weight per atom "somewhere"
-
-                ! To compare the weights... For DEBUGging purposes...
-                !call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
-                !     DMneq(ind,:),neq,w)
-                !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wi: ', ia1,ia2,w
-                
-                ! Re-calculate the weight for special weighting...
-                ia2 = iaorb(jo,lasto)
-
-                ! [[ this is the geometric mean method...
-                ! This should probably be used as the geometric mean
-                ! retains the tendency of the data, however I am not 
-                ! quite sure of its arguments...
-                ! For test:
-                ! A1:    [ 0.95  0.05 ]   # weight 1
-                ! A2:    [ 0.5   0.5  ]   # weight 2
-                ! GM-N:  [ 0.813 0.187]   # geometric mean of weights
-                ! AM-N:  [ 0.725 0.275]   # arithmetic mean of weights
-
-                w = sqrt(atom_w(:,ia1) * atom_w(:,ia2))
-                   
-                ! geometric mean does not retain normalization
-                w = w / sum(w) 
-                ! ]]
-
-                ! [[ arithmetic mean
-                ! the mean value between the atomic weights
-                ! will be used as the actual weight
-                ! w = (atom_w(:,ia1) + atom_w(:,ia2)) * 0.5_dp
-                ! ]] 
-
-                select case ( TS_W )                   
-                case ( TS_W_TR_ATOM_ATOM , TS_W_SUM_ATOM_ATOM )
-
-                   ! do nothing...
-
-                case ( TS_W_TR_ATOM_ORB , TS_W_SUM_ATOM_ORB )
-                   
-                   ! this ensures that the atomic weights are
-                   ! both taken into account, as well as the orb-orb
-                   call get_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
-                        DMneq(ind,:) ** 2, neq(:) )
-
-                   ! see above for arguments
-                   w = sqrt(w(:) * neq(:))
-                   w = w / sum(w) 
-
-                case default
-                   call die('Error in weights...')
-                end select
-
-                ! Get the non-equilibrium contribution
-                call get_neq(N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq)
-
-                !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wt: ', ia1,ia2,w,sum(w)
-             end if
-             
-             ! Do error estimation (capture before update)
-             ee = 0._dp
-             do mu_i = 1 , N_mu - 1
-                ee_i = DM(ind,mu_i) + neq(mu_i)
-                do mu_j = mu_i + 1 , N_mu
-                   tmp = ee_i - DM(ind,mu_j) - neq(mu_j)
-                   if ( abs(tmp) > abs(ee) ) ee = tmp
-                end do
-             end do
-             
-#ifdef TRANSIESTA_WEIGHT_DEBUG
-             lio = index_local_to_global(dit,io,Node)
-             if ( lio == ucorb(jo,ng) .and. lio == 28 ) then
-                print '(2(a7,3(tr1,f10.5)))','Left',DM(ind,1),neq(1),w(1), &
-                     'Right',DM(ind,2),neq(2),w(2)
-             end if
+       deallocate(atom_w)
+#else
+       if ( is_correlated ) then
+          atom_neq(:,:) = atom_neq(:,:) ** 2
+       end if
 #endif
 
-             DM(ind,1) = w(1) * ( DM(ind,1) + neq(1) )
-             if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
-             do mu_i = 2 , N_mu
-                DM(ind,1) = DM(ind,1) + &
-                     w(mu_i) * ( DM(ind,mu_i) + neq(mu_i) )
-                if ( hasEDM ) EDM(ind,1) = EDM(ind,1) + &
-                     w(mu_i) * EDM(ind,mu_i)
-             end do
+       ! in case of Bulk or DM_update /= update all we
+       ! can set the equivalent atom_w to 2 * maximum value
+       ! This will force the nearest electrode to contribute the
+       ! most. :)
+       if ( N_Elec > 2 ) then
+          call die('Check this code segment')
+       end if
+       tmp = maxval(atom_neq)
+       allocate(atom_w(N_mu,na_u))
+       do ia = 1 , na_u
+          do io = 1 , N_Elec
+             ! If we DO NOT use bulk electrodes we
+             ! do have access to the diagonal correction
+             ! contribution. Hence we only overwrite the electrode
+             ! weight if Elec%Bulk
+             if ( (.not. Elecs(io)%Bulk) .and. Elecs(io)%DM_update /= 2 ) cycle
+             ! if we are not in the electrode we do not correct weight
+             if ( .not. AtomInElec(Elecs(io),ia) ) cycle
+             ! in case of sum with the off-diagonal terms we have to sum (otherwise it should be (:,ia) = tmp ; (mu%ID,ia) = 0._dp) 
+             atom_w(:,ia) = 0._dp
+             atom_w(Elecs(io)%mu%ID,ia) = 1._dp
 
-             if ( abs(ee) > abs(eM) ) then
-                eM   = ee
-                eM_i = io
-                eM_j = jo
-                DMe = DM(ind,1)
-             end if
-
+             cycle
+             
           end do
+
+          ! Calculate weights for this atom
+          call calc_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+               atom_neq(:,ia), atom_w(:,ia) )
+          !if (node==0) &
+          !     write(*,'(a,i2,2(tr1,g10.5))')'W: ', ia,atom_w(:,ia)
+
        end do
 
+       ! clean up
+       deallocate(atom_neq)
+       
+    end if
+    
+    do io = 1 , nr
+       ! We are in a buffer region...
+       if ( l_ncol(io) == 0 ) cycle
+       
+       ! Update the weight of the row-atom
        if ( TS_W /= TS_W_ORB_ORB ) then
-          deallocate(atom_w)
+          ! Calculate the weight of the atom corresponding to this
+          ! orbital
+          lio = index_local_to_global(dit,io,Node)
+          ia1 = iaorb(lio,lasto)
        end if
+       
+       do j = 1 , l_ncol(io)
+          
+          ind = l_ptr(io) + j
+          ! Retrieve the connecting orbital
+          jo = l_col(ind)
+          
+          if ( TS_W == TS_W_ORB_ORB ) then
 
+             ! Get the non-equilibrium contribution and the weight associated
+             call calc_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+                  DMneq(ind,:),neq,w)
+             
+          else ! we have weight per atom "somewhere"
+
+             ! To compare the weights... For DEBUGging purposes...
+             !call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+             !     DMneq(ind,:),neq,w)
+             !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wi: ', ia1,ia2,w
+             
+             ! Re-calculate the weight for special weighting...
+             ia2 = iaorb(jo,lasto)
+
+             ! [[ this is the geometric mean method...
+             ! This should probably be used as the geometric mean
+             ! retains the tendency of the data, however I am not 
+             ! quite sure of its arguments...
+             ! For test:
+             ! A1:    [ 0.95  0.05 ]   # weight 1
+             ! A2:    [ 0.5   0.5  ]   # weight 2
+             ! GM-N:  [ 0.813 0.187]   # geometric mean of weights
+             ! AM-N:  [ 0.725 0.275]   # arithmetic mean of weights
+             
+             w = sqrt(atom_w(:,ia1) * atom_w(:,ia2))
+             
+             ! geometric mean does not retain normalization
+             w = w / sum(w) 
+             ! ]]
+             
+             ! [[ arithmetic mean
+             ! the mean value between the atomic weights
+             ! will be used as the actual weight
+             ! w = (atom_w(:,ia1) + atom_w(:,ia2)) * 0.5_dp
+             ! ]] 
+             
+             select case ( TS_W )                   
+             case ( TS_W_TR_ATOM_ATOM , TS_W_SUM_ATOM_ATOM )
+                
+                ! do nothing...
+                
+             case ( TS_W_TR_ATOM_ORB , TS_W_SUM_ATOM_ORB )
+                   
+                ! this ensures that the atomic weights are
+                ! both taken into account, as well as the orb-orb
+                call calc_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+                     DMneq(ind,:) ** 2, neq(:) )
+                
+                ! see above for arguments
+                w = sqrt(w(:) * neq(:))
+                w = w / sum(w) 
+                
+             case default
+                call die('Error in weights...')
+             end select
+             
+             ! Get the non-equilibrium contribution
+             call calc_neq(N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq)
+             
+             !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wt: ', ia1,ia2,w,sum(w)
+          end if
+             
+          ! Do error estimation (capture before update)
+          ee = 0._dp
+          do mu_i = 1 , N_mu - 1
+             ee_i = DM(ind,mu_i) + neq(mu_i)
+             do mu_j = mu_i + 1 , N_mu
+                tmp = ee_i - DM(ind,mu_j) - neq(mu_j)
+                if ( abs(tmp) > abs(ee) ) ee = tmp
+             end do
+          end do
+          
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+          lio = index_local_to_global(dit,io,Node)
+          if ( lio == ucorb(jo,ng) .and. lio == 28 ) then
+             print '(2(a7,3(tr1,f10.5)))','Left',DM(ind,1),neq(1),w(1), &
+                  'Right',DM(ind,2),neq(2),w(2)
+          end if
+#endif
+          
+          DM(ind,1) = w(1) * ( DM(ind,1) + neq(1) )
+          if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
+          do mu_i = 2 , N_mu
+             DM(ind,1) = DM(ind,1) + &
+                  w(mu_i) * ( DM(ind,mu_i) + neq(mu_i) )
+             if ( hasEDM ) EDM(ind,1) = EDM(ind,1) + &
+                  w(mu_i) * EDM(ind,mu_i)
+          end do
+
+          if ( abs(ee) > abs(eM) ) then
+             eM   = ee
+             eM_i = io
+             eM_j = jo
+             DMe = DM(ind,1)
+          end if
+
+       end do
+    end do
+
+    if ( TS_W /= TS_W_ORB_ORB ) then
+       deallocate(atom_w)
     end if
 
     deallocate(ID_mu)
@@ -511,119 +456,104 @@ contains
   end subroutine print_error_estimate
 
 
-  ! Calculate the weight for a given set of variances
-  subroutine get_weight(N_El,N_mu,N_id,ID_mu,w_ID,w)
-    use m_ts_contour_neq, only : ID2mu, ID2mult
+  ! Calculate the theta values
+  subroutine calc_theta(N_El,N_mu,N_id,ID_mu,w_ID,theta)
+    use m_ts_contour_neq, only : ID2mu
+    integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
+    real(dp), intent(in)  :: w_ID(N_id)
+    real(dp), intent(out) :: theta(N_mu)
+    integer :: ID
+
+    ! TODO check that this is correct for several electrodes
+    theta(:) = 0._dp
+    do ID = 1 , N_id
+       theta(ID_mu(ID)) = theta(ID_mu(ID)) + w_ID(ID)
+    end do
+
+  end subroutine calc_theta
+
+  ! Calculate the theta values
+  subroutine calc_weight(N_El,N_mu,N_id,ID_mu,w_ID,w)
+    use m_ts_contour_neq, only : ID2mu
     integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: w(N_mu)
-    integer :: mu_i, mu, ID
-    real(dp) :: total, tmp
+    real(dp) :: theta(N_mu), tmp
+    integer :: i
 
-    ! TODO check that this is correct for several electrodes
-    total  = 0._dp
-    w(:)   = 0._dp
-    do ID = 1 , N_id
-       mu = ID_mu(ID)
-       tmp = w_ID(ID) * ID2mult(ID)
-       total = total + tmp
-       do mu_i = 1 , N_mu
-          if ( mu_i == mu ) cycle
-          w(mu_i) = w(mu_i) + tmp
-       end do
+    call calc_theta(N_El,N_mu,N_id,ID_mu,w_ID,theta)
+
+    w(:) = product(theta)
+    do i = 1 , N_mu
+       if ( theta(i) > 0._dp ) then
+          w(i) = w(i) / theta(i)
+       else
+          w(i) = 0._dp
+       end if
     end do
 
-    total = total * ( N_El - 1 )
-    
-    if ( total > 0._dp ) then
-       w(:) = w(:) / total
+    ! The denominator
+    tmp = sum(w)
+    if ( tmp == 0._dp ) then
+       w = 1._dp / real(N_mu,dp)
     else
-       w = 1._dp / N_mu
+       w = w / tmp
     end if
 
-  end subroutine get_weight
+  end subroutine calc_weight
 
-  ! Calculate the contribution of weight for a given set of neq
-  subroutine get_contrib(N_El,N_mu,N_id,ID_mu,w_ID,w)
-    use m_ts_contour_neq, only : ID2mu, ID2mult
-    integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
-    real(dp), intent(in)  :: w_ID(N_id)
-    real(dp), intent(out) :: w(N_mu)
-    integer :: mu_i, mu, ID
-    real(dp) :: total, tmp
-
-    ! TODO check that this is correct for several electrodes
-    total  = 0._dp
-    w(:)   = 0._dp
-    do ID = 1 , N_id
-       mu = ID_mu(ID)
-       tmp = w_ID(ID) * ID2mult(ID)
-       total = total + tmp
-       do mu_i = 1 , N_mu
-          if ( mu_i == mu ) cycle
-          w(mu_i) = w(mu_i) + tmp
-       end do
-    end do
-
-    if ( total <= 0._dp ) then
-       w = 1._dp / N_mu
-    end if
-
-  end subroutine get_contrib
-  
   ! Calculate both the non-equilibrium contribution
   ! and the weight associated with those points
-  subroutine get_neq_weight(N_El,N_mu,N_id,ID_mu,neq_ID,neq,w)
-    use m_ts_contour_neq, only : ID2mu, ID2mult
+  subroutine calc_neq_weight(N_El,N_mu,N_id,ID_mu,neq_ID,neq,w)
+    use m_ts_contour_neq, only : ID2mu
     integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
     real(dp), intent(out) :: w(N_mu)
-    integer :: mu_i, ID, mu
-    real(dp) :: total, tmp, mult
+    integer :: i
+    real(dp) :: tmp
 
     ! TODO check that this is correct for several electrodes
-    total  = 0._dp
-    neq(:) = 0._dp
-    w(:)   = 0._dp
-    do ID = 1 , N_id
-       mu   = ID2mu(ID)
-       mult = ID2mult(ID)
-       neq(mu) = neq(mu) + neq_ID(ID) * mult
-       tmp = neq_ID(ID) ** 2 * mult
-       total = total + tmp
-       do mu_i = 1 , N_mu
-          if ( mu == mu_i ) cycle
-          w(mu_i) = w(mu_i) + tmp
-       end do
+    call calc_theta(N_El,N_mu,N_id,ID_mu,neq_ID**2,neq)
+    w(:) = product(neq)
+    do i = 1 , N_mu
+       if ( neq(i) > 0._dp ) then
+          w(i) = w(i) / neq(i)
+       else
+          w(i) = 0._dp
+       end if
     end do
 
-    total = total * ( N_El - 1 )
-
-    if ( total > 0._dp ) then
-       w(:) = w(:) / total
+    ! The denominator
+    tmp = sum(w)
+    if ( tmp == 0._dp ) then
+       w = 1._dp / real(N_mu,dp)
     else
-       w = 1._dp / N_mu
+       w = w / tmp
     end if
 
-  end subroutine get_neq_weight
+    neq(:) = 0._dp
+    do i = 1 , N_id
+       neq(ID2mu(i)) = neq(ID2mu(i)) + neq_ID(i)
+    end do
+
+  end subroutine calc_neq_weight
 
   ! Calculate both the non-equilibrium contribution
   ! and the weight associated with those points
-  subroutine get_neq(N_mu,N_id,ID_mu,neq_ID,neq)
-    use m_ts_contour_neq, only : ID2mu, ID2mult
+  subroutine calc_neq(N_mu,N_id,ID_mu,neq_ID,neq)
+    use m_ts_contour_neq, only : ID2mu
     integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
-    integer :: ID, mu
+    integer :: ID
 
     ! TODO check that this is correct for several electrodes
     neq(:) = 0._dp
     do ID = 1 , N_id
-       mu      = ID2mu(ID)
-       neq(mu) = neq(mu) + neq_ID(ID) * ID2mult(ID)
+       neq(ID2mu(ID)) = neq(ID2mu(ID)) + neq_ID(ID)
     end do
 
-  end subroutine get_neq
+  end subroutine calc_neq
 
 end module m_ts_weight
