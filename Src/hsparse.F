@@ -305,6 +305,13 @@ C     Find optimum value for nlhmax
       endif     
 
       nlhmax = nlh
+      ! I suspect that having nlhmax == 1 will result in errors
+      ! It would be much better to not allow this "oversubscription".
+      if ( nlhmax < 1 ) then
+         call die('Sparse pattern is oversubscribed with nodes, 
+     &please reduce number of nodes.')
+      end if
+
 C     (re)allocate listh, but do not shrink, as it might
 C     be used for DM extrapolation
 C     using information from different geometries.

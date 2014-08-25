@@ -157,6 +157,7 @@ contains
 #ifdef MPI
        ! Allocate the full ncol
        allocate(buf(no))
+       MPIerror = MPI_Success - 1
           
        do gio = 1 , no
           BNode = node_handling_element(dit,gio)
@@ -175,7 +176,7 @@ contains
           end if
        end do
 
-       if ( .not. Node == 0 ) then
+       if ( .not. Node == 0 .and. MPIerror /= MPI_Success - 1) then
           ! Wait for the last one to not send
           ! to messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
@@ -214,6 +215,7 @@ contains
           nullify(buf)
           allocate(buf(max_n))
        end if
+       MPIerror = MPI_Success - 1
 
        ! Loop size
        do gio = 1 , no
@@ -239,7 +241,7 @@ contains
        
        if ( Node == 0 ) then
           deallocate(buf)
-       else
+       else if ( MPIerror /= MPI_Success - 1 ) then
           ! Wait for the last one to not send
           ! to messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
@@ -374,6 +376,7 @@ contains
        if ( Node == 0 ) then
           allocate(buf(max_n))
        end if
+       MPIerror = MPI_Success - 1
 
        ! Loop size
        do gio = 1 , no
@@ -400,7 +403,7 @@ contains
 
        if ( Node == 0 ) then
           deallocate(buf)
-       else
+       else if ( MPIerror /= MPI_Success - 1 ) then
           ! Wait for the last one to not send
           ! to messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
@@ -564,6 +567,7 @@ contains
        if ( Node == 0 ) then
           allocate(buf(max_n*dim2))
        end if
+       MPIerror = MPI_Success - 1
 
        ! Loop size
     if ( sp_dim == 1 ) then
@@ -584,7 +588,7 @@ contains
                 call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                      BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
                 if ( MPIerror /= MPI_Success ) &
-                     call die('Error in code: io_write_dSp1D')
+                     call die('Error in code (1): io_write_dSp2D')
                 call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
                 write(iu) buf(1:io)
              end if
@@ -608,7 +612,7 @@ contains
              call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
-                  call die('Error in code: io_write_dSp1D')
+                  call die('Error in code (2): io_write_dSp2D')
              call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
              write(iu) buf(1:io)
           end if
@@ -618,13 +622,13 @@ contains
     
        if ( Node == 0 ) then
           deallocate(buf)
-       else
+       else if ( MPIerror /= MPI_Success - 1 ) then
           ! Wait for the last one to not send
           ! to messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end if
 #else
-       call die('Error in io_write_d1D')
+       call die('Error in io_write_d2D')
 #endif
     else
        

@@ -902,6 +902,10 @@ contains
 
     end if
 
+#ifdef MPI
+    MPIerror = MPI_Success - 1
+#endif
+
     ! Write l_col
     do i = 1 , no_u
 #ifdef MPI
@@ -929,11 +933,13 @@ contains
 #endif
     end do
 #ifdef MPI
-    if ( .not. IONode ) then
+    if ( .not. IONode .and. MPIerror /= MPI_Success - 1 ) then
        ! Wait for the last one to not send
        ! to messages with the same tag...
        call MPI_Wait(MPIreq,MPIstatus,MPIerror)
     end if
+
+    MPIerror = MPI_Success - 1
 #endif
 
     ! Write Overlap matrix
@@ -963,9 +969,10 @@ contains
 #endif
     end do
 #ifdef MPI
-    if ( .not. IONode ) then
+    if ( .not. IONode .and. MPIerror /= MPI_Success - 1 ) then
        call MPI_Wait(MPIreq,MPIstatus,MPIerror)
     end if
+    MPIerror = MPI_Success - 1
 #endif
     
     if ( .not. onlyS ) then
@@ -997,6 +1004,11 @@ contains
 #endif
           end do
        end do
+#ifdef MPI
+       if ( .not. IONode .and. MPIerror /= MPI_Success - 1 ) then
+          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+       end if
+#endif
     end if  ! onlyS
 
     if ( IONode ) then

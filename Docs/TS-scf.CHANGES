@@ -1,4 +1,21 @@
 ----------------------------------------------------
+August 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-184
+Bugfix for oversubscription of nodes
+
+* Instantiated a kill statement if one processor is carrying
+  0 non-zero elements in the sparse pattern. Several places in the
+  code is this not checked for and could behave badly.
+
+* Instantiated tests to assure that the MPI_Wait is only called
+  if the request is set. This is done using the MPIerror code
+  as I do not know the range of requests. 
+
+modified:
+  Src/hsparse.F
+  Src/m_io_s.F90
+  Src/m_ts_io.F90
+
+----------------------------------------------------
 August 22, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-183
 Bugfix for changed supercell, kill job
 
