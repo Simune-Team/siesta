@@ -1,12 +1,12 @@
-!> @brief Data structures and functions to handle
-!> the PSML pseudopotential format.
+!> Data structures and functions to handle the PSML pseudopotential format.
+!!
+!! The PSML library will eventually have three sections:
+!!
+!! A. Definition of data structures.
+!! B. Accessors for pseudopotential information and evaluation
+!! C. Parsing helpers
 !> @author Alberto Garcia
 !
-!> @detail The PSML library will eventually have three sections:
-!>
-!> A. Definition of data structures.
-!> B. Accessors for pseudopotential information and evaluation
-!> C. Parsing helpers
 
 module m_ncps_xml_ps_t
 ! 
@@ -33,19 +33,19 @@ type, public :: provenance_t
 end type provenance_t
 !------
 type, public :: header_t
-        character(len=30)       :: atomic_label    ! generalized symbol
-        real(kind=dp)           :: z  ! atomic number (might be non-integer)
-        real(kind=dp)           :: zpseudo ! Z - ncore-electrons
-        character(len=50)       :: flavor
-        logical                 :: relativistic
-        logical                 :: polarized
-        character(len=50)       :: xc_libxc_exchange ! LibXC string
-        character(len=50)       :: xc_libxc_correlation ! LibXC string
-        ! Generator's own terminology for XC 
-        ! Could be something like "type:LDA//authors:PZ"
+        character(len=30)       :: atomic_label    !< generalized symbol
+        real(kind=dp)           :: z  !< atomic number (might be non-integer)
+        real(kind=dp)           :: zpseudo !< Z - ncore-electrons
+        character(len=50)       :: flavor  !< pseudization method
+        logical                 :: relativistic !< is relativistic?
+        logical                 :: polarized !< is spin_polarized?
+        character(len=50)       :: xc_libxc_exchange !< LibXC string for X
+        character(len=50)       :: xc_libxc_correlation !< LibXC string for C
+        !> Generator's own terminology for XC 
+        !! Could be something like "type:LDA//authors:PZ"
         character(len=80)       :: xc_functional
         !
-        character(len=4)        :: core_corrections
+        character(len=4)        :: core_corrections !< are there NLCC's?
 end type header_t
 !------
 type, public :: config_val_t

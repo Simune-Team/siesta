@@ -143,9 +143,13 @@
           call my_add_attribute(xf,"xc-libxc-exchange",xc_id%libxc_x)
           call my_add_attribute(xf,"xc-libxc-correlation",xc_id%libxc_c)
           !
+
+        ! This is a child element of <header> for now, as
+        ! implied in the psml paper.
+        call do_configuration(total_valence_charge)
+
         call xml_EndElement(xf,"header")
 
-        call do_configuration(total_valence_charge)
 
         call xml_NewElement(xf,"grid")
           call my_add_attribute(xf,"npts",str(nr))
@@ -250,6 +254,13 @@
            call my_add_attribute(xf,"matching-radius",str(rc_core))
            call my_add_attribute(xf,"number-of-continuous-derivatives",
      $                               str(n_of_continuous_derivs))
+           if (n_of_continuous_derivs == 1) then
+              call my_add_attribute(xf,"annotation",
+     $             "original Froyen-Cohen-Louie method")
+           else
+              call my_add_attribute(xf,"annotation",
+     $             "three-parameter Martins method")
+           endif
            call xml_NewElement(xf,"radfunc")
 
            call xml_NewElement(xf,"data")

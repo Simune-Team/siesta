@@ -144,21 +144,6 @@ program fhi2psml
      zion = zion + f(i)
   enddo
 
-  call xml_NewElement(xf,"valence-configuration")
-  call my_add_attribute(xf,"total-valence-charge", str(total_valence_charge))
-  do i = ncp, norbs
-     if (f(i) .lt. 1.0e-10_dp) cycle
-     call xml_NewElement(xf,"shell")
-     call my_add_attribute(xf,"n",str(n(i)))
-     call my_add_attribute(xf,"l",lsymb(l(i)))
-     call my_add_attribute(xf,"occupation",str(f(i)))
-     if (polarized) then
-        call my_add_attribute(xf,"occupation-down",str(fdown(i)))
-        call my_add_attribute(xf,"occupation-up",str(fup(i)))
-     endif
-     call xml_EndElement(xf,"shell")
-  enddo
-  call xml_EndElement(xf,"valence-configuration")
           
   npots = lmax + 1
   allocate (rc(npots), ll(npots), nn(npots), ff(npots))
@@ -298,6 +283,9 @@ program fhi2psml
   call my_add_attribute(xf,"xc-functional",trim(xcfuntype)//trim(xcfunparam))
   call my_add_attribute(xf,"xc-libxc-exchange","TBA")
   call my_add_attribute(xf,"xc-libxc-correlation","TBA")
+
+  !
+  call do_configuration()
   call xml_EndElement(xf,"header")
 
   call xml_NewElement(xf,"grid")
@@ -402,6 +390,8 @@ program fhi2psml
      call my_add_attribute(xf,"matching-radius",str(rcore))  
      call my_add_attribute(xf,"number-of-continuous-derivatives", &
                                     str(2)) ! ****
+     call my_add_attribute(xf,"annotation",  &
+                  "not sure about fhipp core pseudization yet")
      call xml_NewElement(xf,"radfunc")
 
      call xml_NewElement(xf,"data")
@@ -420,6 +410,25 @@ program fhi2psml
   deallocate(chval,r,vps,pswfs)
 
    CONTAINS
+
+  subroutine do_configuration()
+
+  call xml_NewElement(xf,"valence-configuration")
+  call my_add_attribute(xf,"total-valence-charge", str(total_valence_charge))
+  do i = ncp, norbs
+     if (f(i) .lt. 1.0e-10_dp) cycle
+     call xml_NewElement(xf,"shell")
+     call my_add_attribute(xf,"n",str(n(i)))
+     call my_add_attribute(xf,"l",lsymb(l(i)))
+     call my_add_attribute(xf,"occupation",str(f(i)))
+     if (polarized) then
+        call my_add_attribute(xf,"occupation-down",str(fdown(i)))
+        call my_add_attribute(xf,"occupation-up",str(fup(i)))
+     endif
+     call xml_EndElement(xf,"shell")
+  enddo
+  call xml_EndElement(xf,"valence-configuration")
+end subroutine do_configuration
 
      subroutine my_add_attribute(xf,name,value)
        type(xmlf_t), intent(inout)   :: xf

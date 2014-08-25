@@ -1,3 +1,11 @@
+!> An example of the use of the PSML processing library
+!!
+!! Siesta uses internally the old "Froyen" ps structure. This module provides
+!! the functionality to fill that structure using calls to the PSML 
+!! processing library.
+!!
+!> @author Alberto Garcia
+!
 module m_ncps_translators
 
   public :: ncps_xml2froyen_new
@@ -16,10 +24,11 @@ CONTAINS
 ! the XML file. For this,
 !
 ! p%nr, p%a, and p%b should be set on entry if we want
-! a new grid, or if the grid in the file is not logarithmic.
+! a new grid. By default, a logarithmic grid with the
+! vanilla ATOM parameters is used.
 !
 
-        use m_ncps_xml_ps_t  !,     only: ps_t
+        use m_ncps_xml_ps_t  
         use m_ncps_froyen_ps_t,  only: froyen_ps_t
 
         implicit none 
@@ -59,7 +68,7 @@ CONTAINS
         ! This needs to be generalized
         p%gen_zval     = ps_GenerationZval(ps)
         
-!
+!       To be completed!!
 !       Need to include "universal" codes, such as those in LibXC
 !
         xc_string = ps_XCFunctional(ps)
@@ -198,6 +207,11 @@ CONTAINS
            p%chval(ir) = ps_EvaluateValenceCharge(ps,p%r(ir))
            p%chval(ir) = p%chval(ir) * (p%r(ir))**2
         enddo
+
+        ! This is no longer necessary
+        ! We can directly evaluate the PSML radfuncs at r=0
+        ! without an explicit extrapolation
+
         r2=p%r(2)/(p%r(3)-p%r(2))
         p%chcore(1) = p%chcore(2) - r2*(p%chcore(3)-p%chcore(2))
         p%chval(1) = p%chval(2) - r2*(p%chval(3)-p%chval(2))
