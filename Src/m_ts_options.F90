@@ -586,7 +586,7 @@ contains
           TS_W_METHOD = 0 ! non-correlated
        else
           call die('Unrecognized second option for TS.Weight.Method &
-               &must be [[un]correlated+][orb-orb|tr-atom-atom|sum-atom-atom]')
+               &must be [[un]correlated+][orb-orb|tr-atom-atom|sum-atom-atom|mean]')
        end if
        chars = chars(i+1:)
     end if
@@ -601,9 +601,11 @@ contains
        TS_W_METHOD = TS_W_METHOD + TS_W_SUM_ATOM_ATOM 
     else if ( leqi(chars,'sum-atom-orb') ) then
        TS_W_METHOD = TS_W_METHOD + TS_W_SUM_ATOM_ORB
+    else if ( leqi(chars,'mean') ) then
+       TS_W_METHOD = TS_W_MEAN
     else
        call die('Unrecognized option for TS.Weight.Method &
-            &must be [[un]correlated+|][orb-orb|tr-atom-[atom|orb]|sum-atom-[atom|orb]]')
+            &must be [[un]correlated+|][orb-orb|tr-atom-[atom|orb]|sum-atom-[atom|orb]|mean]')
     end if
 
     ! read in contour options
@@ -697,9 +699,11 @@ contains
              write(*,10) trim(chars),'Correlated Sum[atom]-orb'
           case ( TS_W_SUM_ATOM_ORB )
              write(*,10) trim(chars),'Uncorrelated Sum[atom]-orb'
+          case ( TS_W_MEAN )
+             write(*,10) trim(chars),'Algebraic mean'
           case default
              ! This is an easy place for cathing mistakes
-             call die('Error in code, this should never occur.')
+             call die('Error in code, weighting method unrecognized.')
           end select
           chars = 'Non-equilibrium contour weight k-method'
           select case ( TS_W_K_METHOD ) 

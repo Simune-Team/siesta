@@ -58,7 +58,9 @@ module m_ts_weight
   integer, parameter :: TS_W_TR_ATOM_ORB = 4
   ! 5) atom-orb weighting using the sum of the nEq DM
   integer, parameter :: TS_W_SUM_ATOM_ORB = 5
-  
+  ! 6) Simple mean of contributions
+  integer, parameter :: TS_W_MEAN = 6
+
   ! The general weighting can be:
   !   UNCORRELATED or CORRELATED
   ! The correlated is the default
@@ -167,7 +169,7 @@ contains
     TS_W = TS_W_METHOD
     if ( is_correlated ) TS_W = TS_W - TS_W_CORRELATED
 
-    if ( TS_W /= TS_W_ORB_ORB ) then
+    if ( TS_W /= TS_W_ORB_ORB .and. TS_W /= TS_W_MEAN ) then
        ! we are doing weighting per trace/sum of each atom
 
        ! this will not be that large an array... :)
@@ -249,7 +251,7 @@ contains
        end if
        tmp = maxval(atom_neq)
        allocate(atom_w(N_mu,na_u))
-       do ia = 1 , na_u
+       l_atom: do ia = 1 , na_u
           do io = 1 , N_Elec
              ! If we DO NOT use bulk electrodes we
              ! do have access to the diagonal correction
@@ -262,51 +264,67 @@ contains
              atom_w(:,ia) = 0._dp
              atom_w(Elecs(io)%mu%ID,ia) = 1._dp
 
-             cycle
+             !if (node==0) &
+             !     write(*,'(a,i2,2(tr1,g10.5))')'W: ', ia,atom_w(:,ia)
+
+             cycle l_atom
              
           end do
 
           ! Calculate weights for this atom
-          call calc_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+          call calc_weight(N_mu,N_nEq_ID,ID_mu, &
                atom_neq(:,ia), atom_w(:,ia) )
           !if (node==0) &
-          !     write(*,'(a,i2,2(tr1,g10.5))')'W: ', ia,atom_w(:,ia)
+          !     write(*,'(a,i2,4(tr1,g10.5))')'W: ', ia,atom_w(:,ia),atom_neq(:,ia)
 
-       end do
+       end do l_atom
 
        ! clean up
        deallocate(atom_neq)
        
     end if
+
+    if ( TS_W == TS_W_MEAN ) then
+       ! The weight will always be divided
+       w(:) = 1._dp / real(N_mu,dp)
+    end if
     
-    do io = 1 , nr
+    do lio = 1 , nr
        ! We are in a buffer region...
-       if ( l_ncol(io) == 0 ) cycle
+       if ( l_ncol(lio) == 0 ) cycle
+
+       ! The global orbital
+       io = index_local_to_global(dit,lio,Node)
        
        ! Update the weight of the row-atom
        if ( TS_W /= TS_W_ORB_ORB ) then
           ! Calculate the weight of the atom corresponding to this
           ! orbital
-          lio = index_local_to_global(dit,io,Node)
-          ia1 = iaorb(lio,lasto)
+          ia1 = iaorb(io,lasto)
        end if
        
-       do j = 1 , l_ncol(io)
+       do j = 1 , l_ncol(lio)
           
-          ind = l_ptr(io) + j
+          ind = l_ptr(lio) + j
           ! Retrieve the connecting orbital
           jo = l_col(ind)
           
           if ( TS_W == TS_W_ORB_ORB ) then
 
              ! Get the non-equilibrium contribution and the weight associated
-             call calc_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+             call calc_neq_weight(N_mu,N_nEq_ID,ID_mu, &
                   DMneq(ind,:),neq,w)
-             
+
+          else if ( TS_W == TS_W_MEAN ) then
+
+             ! "w" already set
+             ! Get the non-equilibrium contribution
+             call calc_neq(N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq)
+
           else ! we have weight per atom "somewhere"
 
              ! To compare the weights... For DEBUGging purposes...
-             !call get_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+             !call get_neq_weight(N_mu,N_nEq_ID,ID_mu, &
              !     DMneq(ind,:),neq,w)
              !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wi: ', ia1,ia2,w
              
@@ -344,7 +362,7 @@ contains
                    
                 ! this ensures that the atomic weights are
                 ! both taken into account, as well as the orb-orb
-                call calc_weight(N_Elec,N_mu,N_nEq_ID,ID_mu, &
+                call calc_weight(N_mu,N_nEq_ID,ID_mu, &
                      DMneq(ind,:) ** 2, neq(:) )
                 
                 ! see above for arguments
@@ -372,8 +390,7 @@ contains
           end do
           
 #ifdef TRANSIESTA_WEIGHT_DEBUG
-          lio = index_local_to_global(dit,io,Node)
-          if ( lio == ucorb(jo,ng) .and. lio == 28 ) then
+          if ( io == ucorb(jo,ng) .and. io == 28 ) then
              print '(2(a7,3(tr1,f10.5)))','Left',DM(ind,1),neq(1),w(1), &
                   'Right',DM(ind,2),neq(2),w(2)
           end if
@@ -398,7 +415,7 @@ contains
        end do
     end do
 
-    if ( TS_W /= TS_W_ORB_ORB ) then
+    if ( TS_W /= TS_W_ORB_ORB .and. TS_W /= TS_W_MEAN ) then
        deallocate(atom_w)
     end if
 
@@ -407,23 +424,23 @@ contains
 #ifdef MPI
     ! remove pointer
     nullify(DM,EDM)
-    allocate(DM(Nodes,4),EDM(Nodes,4))
+    allocate(DM(4,Nodes),EDM(4,Nodes))
 
     io = Node + 1
     ! Initialize
     DM(:,:)  = 0._dp
-    DM(io,1) = eM
-    DM(io,2) = real(index_local_to_global(dit,eM_i,Node),dp)
-    DM(io,3) = real(eM_j,dp)
-    DM(io,4) = DMe
+    DM(1,io) = eM
+    DM(2,io) = real(eM_i,dp)
+    DM(3,io) = real(eM_j,dp)
+    DM(4,io) = DMe
     call MPI_Reduce(DM(1,1),EDM(1,1),4*Nodes, &
          MPI_Double_Precision, MPI_Sum, 0, MPI_Comm_World, MPIerror)
     if ( IONode ) then
-       io   = maxloc(abs(EDM(:,1)),1)
-       eM   = EDM(io,1)
-       eM_i = nint(EDM(io,2))
-       eM_j = nint(EDM(io,3))
-       DMe  = EDM(io,4)
+       io   = maxloc(abs(EDM(1,:)),1)
+       eM   = EDM(1,io)
+       eM_i = nint(EDM(2,io))
+       eM_j = nint(EDM(3,io))
+       DMe  = EDM(4,io)
     endif
     deallocate(DM,EDM)
 #endif
@@ -457,9 +474,8 @@ contains
 
 
   ! Calculate the theta values
-  subroutine calc_theta(N_El,N_mu,N_id,ID_mu,w_ID,theta)
-    use m_ts_contour_neq, only : ID2mu
-    integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
+  subroutine calc_theta(N_mu,N_id,ID_mu,w_ID,theta)
+    integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: theta(N_mu)
     integer :: ID
@@ -473,15 +489,14 @@ contains
   end subroutine calc_theta
 
   ! Calculate the theta values
-  subroutine calc_weight(N_El,N_mu,N_id,ID_mu,w_ID,w)
-    use m_ts_contour_neq, only : ID2mu
-    integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
+  subroutine calc_weight(N_mu,N_id,ID_mu,w_ID,w)
+    integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: w(N_mu)
     real(dp) :: theta(N_mu), tmp
     integer :: i
 
-    call calc_theta(N_El,N_mu,N_id,ID_mu,w_ID,theta)
+    call calc_theta(N_mu,N_id,ID_mu,w_ID,theta)
 
     w(:) = product(theta)
     do i = 1 , N_mu
@@ -504,9 +519,8 @@ contains
 
   ! Calculate both the non-equilibrium contribution
   ! and the weight associated with those points
-  subroutine calc_neq_weight(N_El,N_mu,N_id,ID_mu,neq_ID,neq,w)
-    use m_ts_contour_neq, only : ID2mu
-    integer,  intent(in)  :: N_El, N_mu, N_id, ID_mu(N_id)
+  subroutine calc_neq_weight(N_mu,N_id,ID_mu,neq_ID,neq,w)
+    integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
     real(dp), intent(out) :: w(N_mu)
@@ -514,7 +528,7 @@ contains
     real(dp) :: tmp
 
     ! TODO check that this is correct for several electrodes
-    call calc_theta(N_El,N_mu,N_id,ID_mu,neq_ID**2,neq)
+    call calc_theta(N_mu,N_id,ID_mu,neq_ID**2,neq)
     w(:) = product(neq)
     do i = 1 , N_mu
        if ( neq(i) > 0._dp ) then
@@ -534,7 +548,7 @@ contains
 
     neq(:) = 0._dp
     do i = 1 , N_id
-       neq(ID2mu(i)) = neq(ID2mu(i)) + neq_ID(i)
+       neq(ID_mu(i)) = neq(ID_mu(i)) + neq_ID(i)
     end do
 
   end subroutine calc_neq_weight
@@ -542,7 +556,6 @@ contains
   ! Calculate both the non-equilibrium contribution
   ! and the weight associated with those points
   subroutine calc_neq(N_mu,N_id,ID_mu,neq_ID,neq)
-    use m_ts_contour_neq, only : ID2mu
     integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
@@ -551,7 +564,7 @@ contains
     ! TODO check that this is correct for several electrodes
     neq(:) = 0._dp
     do ID = 1 , N_id
-       neq(ID2mu(ID)) = neq(ID2mu(ID)) + neq_ID(ID)
+       neq(ID_mu(ID)) = neq(ID_mu(ID)) + neq_ID(ID)
     end do
 
   end subroutine calc_neq

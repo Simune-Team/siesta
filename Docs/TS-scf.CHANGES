@@ -1,4 +1,21 @@
 ----------------------------------------------------
+August 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-186
+Added new weighting mechanism, removed unneeded arguments
+
+* Removed unneeded arguments for number of electrodes
+  in several weighting routines.
+  This means a deletion of a routine in m_ts_countour_neq.
+  
+* The new weighting method is a simple mean which seams
+  to behave similarly with the orb-orb weighting.
+  This "assumes" a very good convergence for all parts of
+  the integral.
+
+modified:
+  Src/m_ts_options.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 August 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-185
 Reverted Saha papers weighting algorithm
 
