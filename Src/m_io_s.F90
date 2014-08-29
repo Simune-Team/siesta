@@ -8,7 +8,6 @@
 ! SIESTA io-module
 module m_io_s
 
-  use alloc
   use class_OrbitalDistribution
   use class_Sparsity
   use precision, only : sp, dp
@@ -58,66 +57,195 @@ contains
     integer, pointer :: l_ptr(:) => null()
     integer, pointer :: l_col(:) => null()
 
-    integer :: io, n_nzs, ind
+    integer :: io, n_nzs, ind, nl
     logical :: ldit, lBcast
+    integer, pointer :: buf(:) => null()
 #ifdef MPI
-    integer :: MPIerror
+    integer, pointer :: buf2(:) => null()
+    integer :: gio, max_n
+    integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq, BNode
 #endif
 
+#ifdef MPI
     ldit = present(dit)
+#else
+    ldit = .false.
+#endif
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
 
-    ! Allocate arrays
-    call re_alloc(ncol,1,no)
-    call re_alloc(l_ptr,1,no)
-
     if ( IONode ) then
 
-       read(iu) ncol
-       n_nzs = sum(ncol)
-       call re_alloc(l_col,1,n_nzs)
-       ind = 0
-       do io = 1 , no
-          read(iu) l_col(ind+1:ind+ncol(io))
-          ind = ind + ncol(io)
-       end do
+       allocate(buf(no))
+
+       ! First read in number of non-zero 
+       ! entries per orbital
+       read(iu) buf
+
+#ifdef MPI
+       max_n = maxval(buf)
+#endif
 
     end if
+
+    nl = no
 
     ! If a distribution is present, then do something
 #ifdef MPI
     if ( ldit ) then
-       call die('Not implemented yet!')
-    else if ( lBcast ) then
-       ! Bcast everything
-       call MPI_Bcast(ncol(1),no,MPI_Integer,0,MPI_Comm_World, &
-            MPIError)
-       l_ptr(1) = 0
-       do io = 2 , no
-          l_ptr(io) = l_ptr(io-1) + ncol(io-1)
+
+       nl = 0
+       ! First count number of local entries
+       do gio = 1 , no
+          BNode = node_handling_element(dit,gio)
+          if ( BNode == Node ) nl = nl + 1
        end do
-       n_nzs = l_ptr(no) + ncol(no)
-       if ( .not. IONode ) call re_alloc(l_col,1,n_nzs)
-       call MPI_Bcast(l_col(1),n_nzs,MPI_Integer,0,MPI_Comm_World, &
+
+       ! allocate room for the number of columns in
+       ! each row
+       allocate(ncol(nl))
+       MPIerror = MPI_Success - 1
+
+       ! distribute it
+       do gio = 1 , no
+          BNode = node_handling_element(dit,gio)
+
+          if ( BNode == Node ) then
+             ! We have the node, get the local orbital
+             io = index_global_to_local(dit,gio,Node)
+             if ( Node == 0 ) then
+                ncol(io) = buf(gio)
+             else
+                call MPI_Recv( ncol(io) , 1, MPI_Integer, &
+                     0, gio, MPI_Comm_World, MPIstatus, MPIerror )
+             end if
+          else if ( Node == 0 ) then
+             call MPI_ISSend( buf(gio) , 1, MPI_Integer, &
+                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror)
+          end if
+          
+       end do
+
+       if ( IONode .and. MPIerror /= MPI_Success - 1 ) then
+          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+       end if
+
+    else if ( lBcast ) then
+
+       ! Everything should be b-casted
+       if ( IONode ) then
+          ncol => buf
+       else
+          allocate(ncol(nl))
+       end if
+       
+       ! Bcast everything
+       call MPI_Bcast(ncol(1),nl,MPI_Integer,0,MPI_Comm_World, &
             MPIError)
+       
     else if ( .not. IONode ) then
+       ! no distribution, no b-cast.
+       ! The sparsity pattern will only exist on the IONode
        return ! the sparsity pattern will not be created then...
     end if
 #else
+    ! Point to the buffer
+    ncol => buf
+#endif
+
+    ! Allocate pointer
+    allocate(l_ptr(nl))
+    
     l_ptr(1) = 0
-    do io = 2 , no
+    do io = 2 , nl
        l_ptr(io) = l_ptr(io-1) + ncol(io-1)
     end do
+    
+    ! Number of local non-zero elements
+    ! (also works for any bcast methods)
+    n_nzs = l_ptr(nl) + ncol(nl)
+
+    ! Allocate space
+    allocate(l_col(n_nzs))
+
+#ifdef MPI
+    if ( ldit ) then
+       
+       ! We have a distributed read
+       if ( IONode ) then
+          allocate(buf2(max_n))
+       end if
+
+       MPIerror = MPI_Success - 1
+
+       ! read in columns
+       ind = 0
+       do gio = 1 , no
+          BNode = node_handling_element(dit,gio)
+          
+          if ( BNode == Node ) then
+
+             ! We have the node, get the local orbital
+             io = index_global_to_local(dit,gio,Node)
+             if ( Node == 0 ) then
+                read(iu) l_col(ind+1:ind+ncol(io))
+             else
+                ! No need to block the receive...
+                call MPI_IRecv( l_col(ind+1) , ncol(io), MPI_Integer, &
+                     0, gio, MPI_Comm_World, MPIreq, MPIerror )
+             end if
+
+             ind = ind + ncol(io)
+
+          else if ( Node == 0 ) then
+
+             read(iu) buf2(1:buf(gio))
+             call MPI_Send( buf2(1) , buf(gio), MPI_Integer, &
+                  BNode, gio, MPI_Comm_World, MPIerror)
+
+          end if
+          
+       end do
+
+       if ( IONode ) then
+          deallocate(buf,buf2)
+       else if ( MPIerror /= MPI_Success - 1 ) then
+          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+       end if
+
+    else if ( lBcast ) then
+
+       if ( IONode ) then
+          
+          ind = 0
+          do gio = 1 , no
+             read(iu) l_col(ind+1:ind+ncol(gio))
+             ind = ind + ncol(gio)
+          end do
+
+       end if
+
+       ! Bcast
+       call MPI_Bcast(l_col(1),n_nzs,MPI_Integer,0,MPI_Comm_World, &
+            MPIError)
+
+    end if
+
+#else
+    
+    ind = 0
+    do io = 1 , no
+       read(iu) l_col(ind+1:ind+ncol(io))
+       ind = ind + ncol(io)
+    end do
+
 #endif
 
     ! Create the sparsity pattern
-    call newSparsity(sp,no,no, &
+    call newSparsity(sp,nl,no, &
          n_nzs, ncol, l_ptr, l_col, trim(tag))
-
-    call de_alloc(ncol)
-    call de_alloc(l_ptr)
-    call de_alloc(l_col)
+    
+    deallocate(ncol,l_ptr,l_col)
     
   end subroutine io_read_Sp
 
@@ -135,22 +263,20 @@ contains
 
     ! Local variables for reading the values
     integer, pointer :: buf(:) => null()
-    integer, pointer :: ncol(:) => null(), l_ptr(:) => null(), l_col(:) => null()
+    integer, pointer :: ncol(:) => null(), l_col(:) => null()
 
-    integer :: gio, lno, no, io, max_n
+    integer :: lno, no, io, max_n, ind
     logical :: ldit
 #ifdef MPI
+    integer :: gio
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
 #endif
 
     ! Get the sparsity sizes
-    call attach(sp,n_col=ncol, list_ptr=l_ptr, list_col=l_col, &
-         nrows=lno,nrows_g=no)
+    call attach(sp,n_col=ncol, list_col=l_col, nrows=lno,nrows_g=no)
 
     ldit = present(dit)
-    if ( ldit ) then
-       ldit = .not. lno == no
-    end if
+    if ( ldit ) ldit = lno /= no
 
     if ( ldit ) then
 
@@ -182,7 +308,7 @@ contains
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end if
 #else
-       call die('Error in code: io_write_Sp')
+       buf => ncol
 #endif
 
     else
@@ -201,14 +327,15 @@ contains
 
     end if
 
+#ifdef MPI
     if ( ldit ) then
        deallocate(buf)
     end if
-
-    ! Write the list_col array
-    if ( ldit ) then
+#endif
 
 #ifdef MPI
+    ! Write the list_col array
+    if ( ldit ) then
 
        ! The ionode now has the maximum retrieved array
        if ( Node == 0 ) then
@@ -218,17 +345,19 @@ contains
        MPIerror = MPI_Success - 1
 
        ! Loop size
+       ind = 0
        do gio = 1 , no
           BNode = node_handling_element(dit,gio)
           
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
-                write(iu) l_col(l_ptr(io)+1:l_ptr(io)+ncol(io))
+                write(iu) l_col(ind+1:ind+ncol(io))
              else
-                call MPI_ISSend( l_col(l_ptr(io)+1) , ncol(io), &
+                call MPI_ISSend( l_col(ind+1) , ncol(io), &
                      MPI_Integer, 0, gio, MPI_Comm_World, MPIreq, MPIerror)
              end if
+             ind = ind + ncol(io)
           else if ( Node == 0 ) then
              call MPI_Recv( buf(1) , max_n, MPI_Integer, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
@@ -246,16 +375,24 @@ contains
           ! to messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end if
-#else
-       call die('Error in io_write_Sp')
-#endif
     else
 
+       ind = 0
        do io = 1 , no
-          write(iu) l_col(l_ptr(io)+1:l_ptr(io)+ncol(io))
+          write(iu) l_col(ind+1:ind+ncol(io))
+          ind = ind + ncol(io)
        end do
        
     end if
+
+#else
+    
+    ind = 0
+    do io = 1 , no
+       write(iu) l_col(ind+1:ind+ncol(io))
+       ind = ind + ncol(io)
+    end do
+#endif
     
   end subroutine io_write_Sp
 
@@ -284,8 +421,11 @@ contains
 
     integer :: io, lno, no, ind, n_nzs
     logical :: ldit, lBcast
+    integer, pointer :: ibuf(:) => null()
 #ifdef MPI
-    integer :: MPIerror
+    real(dp), pointer :: buf(:) => null()
+    integer :: max_n, gio
+    integer :: MPIerror, BNode, MPIreq, MPIstatus(MPI_STATUS_SIZE)
 #endif
 
     ldit = present(dit)
@@ -293,14 +433,38 @@ contains
     if ( present(Bcast) ) lBcast = Bcast
 
     call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,nnzs=n_nzs)
+    ldit = .not. lno == no
 
     if ( ldit ) then
        call newdSpData1D(sp,dit,dSp1D,name=trim(tag))
-       if ( lno /= no ) then
-          ! We have a problem... We haven't made
-          ! this routine distribute the data yet...
-          call die('Not implemented yet!')
+       
+       if ( lno == no ) then
+          ibuf => ncol
+       else
+#ifdef MPI
+          allocate(ibuf(no))
+
+          do gio = 1 , no
+             BNode = node_handling_element(dit,gio)
+             
+             if ( Node == BNode ) then
+                io = index_global_to_local(dit,gio,Node)
+                if ( Node == 0 ) then
+                   ibuf(gio) = ncol(io)
+                else
+                   call MPI_ISSend( ncol(io) , 1, MPI_Integer, &
+                        0, gio, MPI_Comm_World, MPIreq, MPIerror)
+                end if
+             else if ( Node == 0 ) then
+                call MPI_Recv( ibuf(gio) , 1, MPI_Integer, &
+                     BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+             end if
+          end do
+#else
+          call die('Error in distribution, io_read_d1D')
+#endif
        end if
+
     else
        ! Create the Fake distribution
 #ifdef MPI
@@ -313,17 +477,58 @@ contains
 
     a => val(dSp1D)
 
-    if ( IONode ) then
+    if ( ldit ) then
+#ifdef MPI
+       
+       ! Allocate the maximum number of entries
+       if ( IONode ) then
+          max_n = maxval(ibuf)
+          allocate(buf(max_n))
+       end if
+       MPIerror = MPI_Success - 1
+
+       ! Loop size
        ind = 0
-       do io = 1 , no
-          read(iu) a(ind+1:ind+ncol(io))
-          ind = ind + ncol(io)
+       do gio = 1 , no
+          BNode = node_handling_element(dit,gio)
+          
+          if ( Node == BNode ) then
+             io = index_global_to_local(dit,gio,Node)
+             if ( Node == 0 ) then
+                read(iu) a(ind+1:ind+ncol(io))
+             else
+                call MPI_IRecv( a(ind+1) , ncol(io), MPI_Double_Precision, &
+                     0, gio, MPI_Comm_World, MPIreq, MPIerror)
+             end if
+             ind = ind + ncol(io)
+          else if ( Node == 0 ) then
+             read(iu) buf(1:ibuf(gio))
+             call MPI_Send( buf(1) , ibuf(gio) , MPI_Double_Precision, &
+                  BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+          end if
        end do
+
+       if ( Node /= 0 .and. MPIerror /= MPI_Success - 1 ) then
+          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+       end if
+#else
+       call die('Error in distribution for, io_read_d1D')
+#endif
+    else
+
+       if ( IONode ) then
+          ind = 0
+          do io = 1 , no
+             read(iu) a(ind+1:ind+ncol(io))
+             ind = ind + ncol(io)
+          end do
+       end if
+
     end if
 
     ! If a distribution is present, then do something
 #ifdef MPI
-    if ( ldit .or. lBcast ) then
+    if ( lBcast ) then
        call MPI_Bcast(a(1),n_nzs,MPI_Double_Precision, &
             0, MPI_Comm_World, MPIError)
     
@@ -346,18 +551,20 @@ contains
     ! Local variables for reading the values
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
-    real(dp), pointer :: a(:) => null(), buf(:) => null()
-    integer, pointer :: ncol(:) => null(), l_ptr(:) => null()
+    real(dp), pointer :: a(:) => null()
+    integer, pointer :: ncol(:) => null()
 
-    integer :: gio, io, lno, no, max_n
+    integer :: io, lno, no, ind
     logical :: ldit
 #ifdef MPI
+    real(dp), pointer :: buf(:) => null()
+    integer :: gio, max_n
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
 #endif
 
     dit => dist(dSp1D)
     sp => spar(dSp1D)
-    call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,list_ptr=l_ptr)
+    call attach(sp,nrows=lno,nrows_g=no, n_col=ncol)
 
     ldit = .not. lno == no
 
@@ -379,17 +586,19 @@ contains
        MPIerror = MPI_Success - 1
 
        ! Loop size
+       ind = 0
        do gio = 1 , no
           BNode = node_handling_element(dit,gio)
           
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
-                write(iu) a(l_ptr(io)+1:l_ptr(io)+ncol(io))
+                write(iu) a(ind+1:ind+ncol(io))
              else
-                call MPI_ISSend( a(l_ptr(io)+1) , ncol(io), &
+                call MPI_ISSend( a(ind+1) , ncol(io), &
                      MPI_Double_Precision, 0, gio, MPI_Comm_World, MPIreq, MPIerror)
              end if
+             ind = ind + ncol(io)
           else if ( Node == 0 ) then
              call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
@@ -400,7 +609,6 @@ contains
           end if
        end do
        
-
        if ( Node == 0 ) then
           deallocate(buf)
        else if ( MPIerror /= MPI_Success - 1 ) then
@@ -413,8 +621,10 @@ contains
 #endif
     else
 
+       ind = 0
        do io = 1 , no
-          write(iu) a(l_ptr(io)+1:l_ptr(io)+ncol(io))
+          write(iu) a(ind+1:ind+ncol(io))
+          ind = ind + ncol(io)
        end do
        
     end if
@@ -447,13 +657,15 @@ contains
     ! Local variables for reading the values
     type(OrbitalDistribution) :: fdit
     real(dp), pointer :: a(:,:) => null()
-    integer, pointer :: ncol(:) => null()
+    integer, pointer :: ncol(:) => null(), ibuf(:) => null()
 
     integer :: io, lno, no, s, ind, n_nzs
     integer :: sp_dim
     logical :: ldit, lBcast
 #ifdef MPI
-    integer :: MPIerror
+    real(dp), pointer :: buf(:) => null()
+    integer :: gio, max_n
+    integer :: MPIerror, BNode, MPIreq, MPIstatus(MPI_STATUS_SIZE)
 #endif
 
     ldit = present(dit)
@@ -464,15 +676,39 @@ contains
     if ( present(sparsity_dim) ) sp_dim = sparsity_dim
 
     call attach(sp,nrows=lno, nrows_g=no, n_col=ncol,nnzs=n_nzs)
+    ldit = .not. lno == no
 
     if ( ldit ) then
        call newdSpData2D(sp,dim2,dit,dSp2D,name=trim(tag), &
             sparsity_dim=sp_dim)
-       if ( lno /= no ) then
-          ! We have a problem... We haven't made
-          ! this routine distribute the data yet...
-          call die('Not implemented yet!')
+
+       if ( lno == no ) then
+          ibuf => ncol
+       else
+#ifdef MPI
+          allocate(ibuf(no))
+
+          do gio = 1 , no
+             BNode = node_handling_element(dit,gio)
+             
+             if ( Node == BNode ) then
+                io = index_global_to_local(dit,gio,Node)
+                if ( Node == 0 ) then
+                   ibuf(gio) = ncol(io)
+                else
+                   call MPI_ISSend( ncol(io) , 1, MPI_Integer, &
+                        0, gio, MPI_Comm_World, MPIreq, MPIerror)
+                end if
+             else if ( Node == 0 ) then
+                call MPI_Recv( ibuf(gio) , 1, MPI_Integer, &
+                     BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+             end if
+          end do
+#else
+          call die('Error in distribution, io_read_d2D')
+#endif
        end if
+
     else
        ! Create the Fake distribution
 #ifdef MPI
@@ -486,27 +722,100 @@ contains
 
     a => val(dSp2D)
 
-    if ( IONode ) then
-       if ( sp_dim == 2 ) then ! collapsed IO
-          ind = 0
-          do io = 1 , no
-             read(iu) (a(1:dim2,ind+s),s=1,ncol(io))
+    if ( ldit ) then
+
+#ifdef MPI
+       ! Allocate maximum number of entries
+       if ( IONode ) then
+          max_n = maxval(ibuf)
+          allocate(buf(max_n*dim2))
+       end if
+       MPIerror = MPI_Success - 1
+
+    if ( sp_dim == 2 ) then ! collapsed IO
+       ! Loop size
+       ind = 0
+       do gio = 1 , no
+          BNode = node_handling_element(dit,gio)
+          
+          if ( Node == BNode ) then
+             io = index_global_to_local(dit,gio,Node)
+             if ( Node == 0 ) then
+                read(iu) a(1:dim2,ind+1:ind+ncol(io))
+             else
+                call MPI_IRecv( a(1,ind+1) , dim2*ncol(io), MPI_Double_Precision, &
+                     0, gio, MPI_Comm_World, MPIreq, MPIerror)
+             end if
              ind = ind + ncol(io)
+          else if ( Node == 0 ) then
+             read(iu) buf(1:ibuf(gio)*dim2)
+             call MPI_Send( buf(1) , ibuf(gio)*dim2 , MPI_Double_Precision, &
+                  BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+          end if
+       end do
+
+       if ( Node /= 0 .and. MPIerror /= MPI_Success - 1 ) then
+          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+       end if
+
+    else ! non-collapsed IO
+
+       do s = 1 , dim2
+          ind = 0
+          do gio = 1 , no
+             BNode = node_handling_element(dit,gio)
+             
+             if ( Node == BNode ) then
+                io = index_global_to_local(dit,gio,Node)
+                if ( Node == 0 ) then
+                   read(iu) a(ind+1:ind+ncol(io),s)
+                else
+                   call MPI_IRecv( a(ind+1,s) , ncol(io), MPI_Double_Precision, &
+                        0, gio, MPI_Comm_World, MPIreq, MPIerror)
+                end if
+                ind = ind + ncol(io)
+             else if ( Node == 0 ) then
+                read(iu) buf(1:ibuf(gio))
+                call MPI_Send( buf(1) , ibuf(gio) , MPI_Double_Precision, &
+                     BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+             end if
           end do
-       else ! non-collapsed IO
-          do s = 1 , dim2 
+
+          if ( Node /= 0 .and. MPIerror /= MPI_Success - 1 ) then
+             call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+          end if
+
+       end do
+
+    end if
+
+#else
+       call die('Error in distribution for, io_read_d2D')
+#endif
+    else
+       
+       if ( IONode ) then
+          if ( sp_dim == 2 ) then ! collapsed IO
              ind = 0
              do io = 1 , no
-                read(iu) a(ind+1:ind+ncol(io),s)
+                read(iu) (a(1:dim2,ind+s),s=1,ncol(io))
                 ind = ind + ncol(io)
              end do
-          end do
+          else ! non-collapsed IO
+             do s = 1 , dim2 
+                ind = 0
+                do io = 1 , no
+                   read(iu) a(ind+1:ind+ncol(io),s)
+                   ind = ind + ncol(io)
+                end do
+             end do
+          end if
        end if
     end if
 
     ! If a distribution is present, then do something
 #ifdef MPI
-    if ( ldit .or. lBcast ) then
+    if ( lBcast ) then
        call MPI_Bcast(a(1,1),dim2*n_nzs,MPI_Double_Precision, &
             0, MPI_Comm_World, MPIError)
     else if ( .not. IONode ) then
@@ -528,20 +837,21 @@ contains
     ! Local variables for reading the values
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
-    real(dp), pointer :: a(:,:) => null(), buf(:) => null()
-    integer, pointer :: ncol(:) => null(), l_ptr(:) => null()
+    real(dp), pointer :: a(:,:) => null()
+    integer, pointer :: ncol(:) => null()
 
-    integer :: gio, io, lno, no, max_n
+    integer :: io, lno, no, ind
     integer :: id2, dim2, sp_dim, n_nzs
     logical :: ldit
 #ifdef MPI
+    real(dp), pointer :: buf(:) => null()
+    integer :: gio, max_n
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
 #endif
 
     dit => dist(dSp2D)
     sp => spar(dSp2D)
-    call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,list_ptr=l_ptr, &
-         nnzs=n_nzs)
+    call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,nnzs=n_nzs)
     
     ldit = .not. lno == no
     
@@ -573,17 +883,19 @@ contains
     if ( sp_dim == 1 ) then
 
        do id2 = 1 , dim2
+          ind = 0
           do gio = 1 , no
              BNode = node_handling_element(dit,gio)
              
              if ( Node == BNode ) then
                 io = index_global_to_local(dit,gio,Node)
                 if ( Node == 0 ) then
-                   write(iu) a(l_ptr(io)+1:l_ptr(io)+ncol(io),id2)
+                   write(iu) a(ind+1:ind+ncol(io),id2)
                 else
-                   call MPI_ISSend( a(l_ptr(io)+1,id2) , ncol(io), &
+                   call MPI_ISSend( a(ind+1,id2) , ncol(io), &
                         MPI_Double_Precision, 0, gio, MPI_Comm_World, MPIreq, MPIerror)
                 end if
+                ind = ind + ncol(io)
              else if ( Node == 0 ) then
                 call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                      BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
@@ -597,17 +909,19 @@ contains
 
     else
        
+       ind = 0
        do gio = 1 , no
           BNode = node_handling_element(dit,gio)
           
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
-                write(iu) a(1:dim2,l_ptr(io)+1:l_ptr(io)+ncol(io))
+                write(iu) a(1:dim2,ind+1:ind+ncol(io))
              else
-                call MPI_ISSend( a(1,l_ptr(io)+1) , dim2*ncol(io), &
+                call MPI_ISSend( a(1,ind+1) , dim2*ncol(io), &
                      MPI_Double_Precision, 0, gio, MPI_Comm_World, MPIreq, MPIerror)
              end if
+             ind = ind + ncol(io)
           else if ( Node == 0 ) then
              call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
@@ -634,13 +948,17 @@ contains
        
        if ( sp_dim == 1 ) then
           do id2 = 1 , dim2
+             ind = 0
              do io = 1 , no
-                write(iu) a(l_ptr(io)+1:l_ptr(io)+ncol(io),id2)
+                write(iu) a(ind+1:ind+ncol(io),id2)
+                ind = ind + ncol(io)
              end do
           end do
        else
+          ind = 0
           do io = 1 , no
-             write(iu) a(1:dim2,l_ptr(io)+1:l_ptr(io)+ncol(io))
+             write(iu) a(1:dim2,ind+1:ind+ncol(io))
+             ind = ind + ncol(io)
           end do
        end if
        

@@ -1,4 +1,15 @@
 ----------------------------------------------------
+August 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-187
+Finalized m_io_s to handle distributions (in-line)
+
+* By limiting the memory while reading we should be 
+  able to reduce CPU time when reading/writing TSHS
+  files.
+
+modified:
+  Src/m_io_s.F90
+
+----------------------------------------------------
 August 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-186
 Added new weighting mechanism, removed unneeded arguments
 
