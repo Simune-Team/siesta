@@ -115,9 +115,13 @@ select case(name)
 
       case ("psml")
 
-         if (.not. associated(pseudo)) then
-            allocate(pseudo)
-         endif
+         ! Allocate unconditionally, as
+         ! we must avoid re-using a previous
+         ! version (say, when dealing with
+         ! two or more elements)
+
+         allocate(pseudo)
+
 
          call get_value(attributes,"version",value,status)
          if (value /= "0.7") then

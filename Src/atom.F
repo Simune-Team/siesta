@@ -1797,9 +1797,12 @@ C
      .                  nrval,l,a,b,nnode,nprin,
      .                  elocal1,g)
 
-          if (eigenl.gt.elocal1) then
-            write(6,"(a,i3)")
-     .        'GHOST: WARNING: Ghost state for L =', l
+!          if (eigenl.gt.elocal1) then
+          if (above_significatively(eigenl,elocal1)) then
+            write(6,"(a,i3,/,a,g20.10,/,a,2g20.10)")
+     .           'GHOST: WARNING: Ghost state for L =', l,
+     .           ' dkbcos: ', dkbcos,
+     .           ' eigenl, eigenl - elocal1: ', eigenl, eigenl - elocal1
             ighost=1
           else
             write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
@@ -1813,9 +1816,12 @@ C
      .                  nrval,l,a,b,nnode,nprin,
      .                  elocal2,g)
 
-          if (eigenl.gt.elocal2) then
-            write(6,"(a,i3)")
-     .           'GHOST: WARNING: Ghost state for L =', l
+!          if (eigenl.gt.elocal2) then
+          if (above_significatively(eigenl,elocal2)) then
+            write(6,"(a,i3,/,a,g20.10,/,a,2g20.10)")
+     .           'GHOST: WARNING: Ghost state for L =', l,
+     .           ' dkbcos: ', dkbcos,
+     .           ' eigenl, eigenl - elocal2: ', eigenl, eigenl - elocal2
             ighost=1
           else
             write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
@@ -1829,6 +1835,21 @@ C
 
 c     write(6,*) 'GHOST: Ground state vlocal for L=',l,elocal1
 c     write(6,*) 'GHOST: First excited state for L=',l,elocal2
+
+        CONTAINS
+
+        function above_significatively(x,y) result (gt)
+        real(dp), intent(in) :: x, y
+        logical              :: gt
+
+        ! Request that x is "well over" y in case of noise.
+        ! This is an "absolute noise" for now.
+
+        real(dp), parameter :: eps = 1.e-8_dp
+
+        gt = (x .gt. y + eps)
+
+        end function above_significatively
 
         end subroutine ghost
 

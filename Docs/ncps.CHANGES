@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+September 1, 2014  Alberto Garcia       trunk-462--ncps-37
+Refine ghost check. Allocate unconditionally psml structure in parser
+
+In some cases the ghost check is too strict, triggering a warning and
+stopping the program when the eigenvalues tested are equal within
+numerical noise. This happens particularly for some unbound
+channels. The program now accepts a "noise range" as valid.
+
+The auxiliary structure 'pseudo' in the psml parser was not given
+fresh storage for calls beyond the first, leading to errors.
+
+modified:
+  Src/atom.F
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+
+------------------------------------------------------------
 August 25, 2014  Alberto Garcia         trunk-462--ncps-36
 Some doxygen annotations. Move val_config back into header
 
