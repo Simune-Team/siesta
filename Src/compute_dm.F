@@ -92,7 +92,7 @@
 
          call transiesta(TSiscf,nspin, block_dist, sparse_pattern,
      &        Gamma, ucell, nsc, no_u, na_u, lasto, xa, maxnh,
-     &        xijo, H, S, Dscf, Escf, Ef, temp, Qtot)
+     &        xijo, H, S, Dscf, Escf, Ef, temp, Qtot, .false. )
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp

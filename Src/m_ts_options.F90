@@ -265,15 +265,22 @@ contains
        TS_RHOCORR_METHOD = 0
     else if ( leqi(chars,'b') .or. leqi(chars,'buffer') ) then
        TS_RHOCORR_METHOD = TS_RHOCORR_BUFFER
-    !else if ( leqi(chars,'up') .or. leqi(chars,'update') ) then
-    !   TS_RHOCORR_METHOD = TS_RHOCORR_UPDATE
+    else if ( leqi(chars,'fermi') ) then
+       TS_RHOCORR_METHOD = TS_RHOCORR_FERMI
     end if
-    TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',.75_dp)
-    if ( TS_RHOCORR_FACTOR < 0.0_dp .or. &
-         1.0_dp < TS_RHOCORR_FACTOR) then
-       call die("Charge correction factor must be in the range [0;1]")
+    TS_RHOCORR_FERMI_TOLERANCE = &
+         fdf_get('TS.ChargeCorrection.Fermi.Tolerance',0.01_dp)
+    ! Factor for charge-correction
+    TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',0.75_dp)
+    if ( TS_RHOCORR_METHOD == TS_RHOCORR_BUFFER ) then
+       if ( 1.0_dp < TS_RHOCORR_FACTOR ) then
+          call die("Charge correction factor must be in the range [0;1]")
+       endif
+    end if
+    if ( TS_RHOCORR_FACTOR < 0.0_dp ) then
+       call die("Charge correction factor must be larger than 0")
     endif
-    
+
     ! whether to calculate the forces or not (default calculate everything)
     Calc_Forces = fdf_get('TS.Forces',.true.)
 
@@ -729,6 +736,11 @@ contains
                   &atoms exist.')
           end if
           write(*,8)'Charge correction factor',TS_RHOCORR_FACTOR
+       else if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then ! Correct fermi-lever
+          write(*,10)'Charge correction','Fermi-level'
+          write(*,8)'Charge correction tolerance',TS_RHOCORR_FERMI_TOLERANCE
+          write(*,8)'Charge correction factor',TS_RHOCORR_FACTOR
+
        end if
        write(*,10)'          >> Electrodes << '
        do i = 1 , size(Elecs)

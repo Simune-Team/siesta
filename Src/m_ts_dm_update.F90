@@ -108,7 +108,7 @@ contains
   ! the weighting which is performed here.
 
   subroutine add_k_DM(spDM,spuDM,D_dim2, spEDM, spuEDM, E_dim2, &
-       n_s,sc_off,k, non_Eq,spW)
+       n_s,sc_off,k, non_Eq)
 
     use class_OrbitalDistribution
     use class_Sparsity
@@ -132,24 +132,18 @@ contains
     ! The supercell offsets
     integer, intent(in) :: n_s
     real(dp), intent(in) :: sc_off(3,0:n_s-1)
-
-    ! If the sparsity-weight is provided we will do this:
-    ! DM = DM + DMu
-    ! spW = DMu ** 2
-    ! It MUST meen that we do TS_W_UNCORRELATED (see m_ts_weight)
     logical, intent(in), optional :: non_Eq
-    type(dSpData2D), intent(inout), optional :: spW
 
     ! Arrays needed for looping the sparsity
     type(OrbitalDistribution), pointer :: dit
     type(Sparsity), pointer :: l_s, up_s
     integer, pointer :: l_ncol(:) , l_ptr(:) , l_col(:)
     integer, pointer :: up_ncol(:), up_ptr(:), up_col(:)
-    real(dp), pointer :: dD(:,:) , dE(:,:), dW(:,:)
+    real(dp), pointer :: dD(:,:) , dE(:,:)
     complex(dp), pointer :: zDu(:,:), zEu(:,:)
     integer :: lnr, lio, lind, io, ind, nr, jo
     integer :: rin, rind
-    logical :: save_weight, hasEDM
+    logical :: hasEDM
     real(dp) :: kw(D_dim2)
     complex(dp) :: ph
 
@@ -181,60 +175,13 @@ contains
        end if
     end if
 
-    ! If the weight-array is clear, then save to that.
-    save_weight = present(spW)
-    if ( save_weight ) then
-       ! We also need to capture the k-point weight
-       dW => val(spW)
-    end if
-     
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
     
     if ( nr /= nrows(up_s) ) call die('The sparsity format is not as &
          &expected.')
 
-    if ( save_weight .and. .not. non_Eq ) call die('Cannot save weight &
-         &if not a non-equilibrium density')
-    
-    ! primary option (if we need to save the weight, then it must be 
-    
-    if ( save_weight ) then
-       
-       do lio = 1 , lnr
-
-          if ( l_ncol(lio) == 0 ) cycle
-          io = index_local_to_global(dit,lio,Node)
-          if ( up_ncol(io) == 0 ) cycle
-
-          do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
-             
-             jo = UCORB(l_col(lind),nr)
-             
-             rind = up_ptr(io)
-             ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
-             if ( ind <= rind ) cycle ! The element does not exist
-
-             jo = (l_col(lind)-1) / nr
-             ph = cdexp(dcmplx(0._dp, - &
-                  k(1) * sc_off(1,jo) - &
-                  k(2) * sc_off(2,jo) - &
-                  k(3) * sc_off(3,jo)))
-
-             ! The integration is this:
-             ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
-             kw = aimag( ph*zDu(ind,1:D_dim2) )
-             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + kw
-             if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
-                  aimag( ph*zEu(ind,1:D_dim2) )
-
-             ! Sum up the weight here
-             dW(lind,1:D_dim2) = dW(lind,1:D_dim2) + kw ** 2
-
-          end do
-       end do
-
-    else if ( non_Eq ) then
+    if ( non_Eq ) then
 
        do lio = 1 , lnr
 

@@ -1,4 +1,55 @@
 ----------------------------------------------------
+September 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-188
+Added a new charge correction method which alters the Fermi level
+
+* Instead of regarding the charge as "incorrect" (bad integration), 
+  we regard the integration perfect and instead attribute the 
+  missing/excess charge to a mis-alignment of the Fermi-level.
+  In case of equilibrium this can be thought of as a normal Fermi-level
+  shift, for non-equilibrium it is imposed as a shifting of the 
+  electronic states in the junction.
+  Remember that the Fermi-level is not a well-defined quantity
+  for non-equilibrium.
+
+* Added an interpolation algorithm:
+
+  m_interpolate.f90
+  
+  It can do linear interpolation and a cubic spline
+  interpolation.
+
+  The advantage of this algorithm is that it does not
+  require any sorting of the input, it calculates
+  a pivoting array for aligning the quantities correctly.
+
+  I have currently tested this on cos/sin functions in
+  the range -.1 : 2*\pi + .1
+  with points evaluated in the range 0 : 2*\pi.
+  (remark we use linear extrapolation for out-of range
+   points)
+  
+  It is not the fastest algorithm but provides the requirement
+  that we need.
+  For the Fermi-level interpolation we utilize this new module.
+
+added:
+  Src/m_interpolate.f90
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/compute_dm.F
+  Src/m_transiesta.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_dm_update.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/siesta_forces.F
+  Src/ts_init.F90
+
+----------------------------------------------------
 August 29, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-187
 Finalized m_io_s to handle distributions (in-line)
 

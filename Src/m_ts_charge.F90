@@ -33,7 +33,8 @@ module m_ts_charge
   ! Method parameters for the charge-correction
   integer, save :: TS_RHOCORR_METHOD = 0
   integer, parameter :: TS_RHOCORR_BUFFER = 1
-  integer, parameter :: TS_RHOCORR_UPDATE = 2
+  integer, parameter :: TS_RHOCORR_FERMI = 2
+  real(dp), save :: TS_RHOCORR_FERMI_TOLERANCE = 0.01
   real(dp), save :: TS_RHOCORR_FACTOR = 0.75_dp
 
   private :: dp
@@ -41,7 +42,7 @@ module m_ts_charge
 contains
 
   ! Retrive the mulliken charges in each region of the transiesta setup
-  subroutine ts_get_charges(N_Elec,dit, sp, nspin, n_nzs, DM, S, Q)
+  subroutine ts_get_charges(N_Elec,dit, sp, nspin, n_nzs, DM, S, Q, Qtot)
 
     use m_ts_method
     use parallel, only : Node
@@ -65,13 +66,14 @@ contains
     ! The density matrix and overlap
     real(dp), intent(in) :: DM(n_nzs,nspin), S(n_nzs)
     ! The charge in the regions
-    real(dp), intent(out) :: Q(0:1+1+N_Elec*2, nspin)
-
+    real(dp), intent(out), optional :: Q(0:1+1+N_Elec*2, nspin), Qtot
+    
 ! **********************
 ! * LOCAL variables    *
 ! **********************
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer :: no_lo, no_u, lio, io, ind, jo, ir, jr, r
+    real(dp) :: Qtmp(0:1+1+N_Elec*2, nspin)
 #ifdef MPI
     real(dp) :: tmp(0:1+1+N_Elec*2, nspin)
     integer :: MPIerror
@@ -83,11 +85,7 @@ contains
          nrows=no_lo,nrows_g=no_u)
     
     ! Initialize charges
-#ifdef MPI
-    tmp(:,:) = 0._dp
-#else
-    Q(:,:)   = 0._dp
-#endif
+    Qtmp(:,:) = 0._dp
 
     do lio = 1 , no_lo
 
@@ -117,22 +115,27 @@ contains
           else
              r = 0 ! other
           end if
-#ifdef MPI
-          tmp(r,:) = tmp(r,:) + DM(ind,:) * S(ind)
-#else
-          Q(r,:) = Q(r,:) + DM(ind,:) * S(ind)
-#endif
+          Qtmp(r,:) = Qtmp(r,:) + DM(ind,:) * S(ind)
        end do
     end do
 
 #ifdef MPI
-    call MPI_AllReduce(tmp(0,1),Q(0,1),size(tmp), &
+    call MPI_AllReduce(Qtmp(0,1),tmp(0,1),size(Qtmp), &
          MPI_Double_Precision,MPI_SUM, MPI_Comm_World,MPIerror)
+    if ( present(Q) ) then
+       Q = tmp
+    else if ( present(Qtot) ) then
+       Qtot = sum(tmp)
+    end if
+#else
+    if ( present(Q) ) then
+       Q = Qtmp
+    else if ( present(Qtot) ) then
+       Qtot = sum(Qtmp)
+    end if
 #endif
 
   end subroutine ts_get_charges
-
-    
 
   ! A subroutine for printing out the charge distribution in the cell
   ! it will currently only handle the full charge distribution, and
@@ -176,7 +179,7 @@ contains
 
     allocate(Q(0:2+N_Elec*2,nspin))
 
-    call ts_get_charges(N_Elec,dit, sp, nspin, n_nzs, DM, S, Q)
+    call ts_get_charges(N_Elec,dit, sp, nspin, n_nzs, DM, S, Q = Q)
          
     ! it will only be the IONode which will write out...
     if ( .not. IONode ) return
@@ -278,6 +281,115 @@ contains
 
   end subroutine ts_charge_correct
 
+  subroutine ts_charge_correct_Fermi(dit,sp,nspin,n_nzs,DM,S,Qtot, &
+       spDM,Efermi,converged)
+
+    use parallel, only : IONode
+    use units, only : eV
+    use class_OrbitalDistribution
+    use class_Sparsity
+    use class_dSpData2D
+#ifdef MPI
+    use mpi_siesta
+#endif
+
+    type(OrbitalDistribution), intent(inout) :: dit
+    ! SIESTA local sparse pattern (not changed)
+    type(Sparsity), intent(inout) :: sp
+    ! Number of non-zero elements
+    integer, intent(in) :: nspin, n_nzs
+    ! The density matrices and overlap
+    real(dp), intent(in) :: DM(n_nzs,nspin), S(n_nzs)
+    ! The a single energy-point contribution from which
+    ! we calculate the differential contribution to the Fermi-level
+    type(dSpData2D), intent(inout) :: spDM
+    real(dp), intent(in) :: Qtot
+    real(dp), intent(inout) :: Efermi
+    logical, intent(out) :: converged
+
+! ******************* Local arrays *******************
+    type(Sparsity), pointer :: t_sp
+    real(dp), pointer :: tDM(:,:)
+    real(dp) :: Q(2)
+    integer :: lio, lnr, ind, tind, ispin
+    integer, pointer :: l_ptr(:), l_ncol(:), l_col(:)
+    integer, pointer :: t_ptr(:), t_ncol(:), t_col(:)
+#ifdef MPI
+    real(dp) :: Qtmp(2)
+    integer :: MPIerror
+#endif
+
+    ! Populate the arrays
+    call attach(sp, &
+         n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=lnr)
+    t_sp => spar(spDM)
+    call attach(t_sp, &
+         n_col=t_ncol,list_ptr=t_ptr,list_col=t_col, &
+         nrows=lio)
+    if ( lio /= lnr ) call die('Error in sparsity patterns')
+    tDM => val(spDM)
+
+    ! Calculate charge @Fermi level
+    Q(:) = 0._dp
+    do lio = 1 , lnr
+       
+       if ( l_ncol(lio) == 0 ) cycle
+       
+       do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+
+          ! The current charge in the Density matrix
+          do ispin = 1 , nspin
+             Q(1) = Q(1) + DM(ind,ispin) * S(ind)
+          end do
+
+          if ( t_ncol(lio) == 0 ) cycle
+
+          do tind = t_ptr(lio) + 1 , t_ptr(lio) + t_ncol(lio)
+             
+             if ( t_col(tind) /= l_col(ind) ) cycle
+
+             ! the calculated charge @Fermi-level
+             Q(2) = Q(2) + tDM(tind,1) * S(ind)
+
+          end do
+
+       end do
+       
+    end do
+
+#ifdef MPI
+    Qtmp(:) = Q(:)
+    call MPI_AllReduce(Qtmp, Q, 2, MPI_Double_Precision, &
+         MPI_Sum, MPI_Comm_World, MPIerror)
+#endif
+    
+    ! The additional charge
+    Q(1) = Q(1) - Qtot
+    if ( abs(Q(1)) < TS_RHOCORR_FERMI_TOLERANCE ) then
+       converged = .true.
+       if ( IONode ) &
+            write(*,'(a,e10.3)') 'transiesta: Fermi-level correction converged @dQ: ',Q(1)
+       return
+    end if
+
+    ! We have not converged
+    converged = .false.
+    
+    ! Now we have the difference in Q
+    ! Correct the Fermi level so that a change dE DM would 
+    ! account for the missing/excess charge.
+    ! dE * DM@(Ef) = dQ => dE = dQ / DM@(Ef)
+    Q(2) = Q(1) / Q(2) * TS_RHOCORR_FACTOR
+    ! As the energy filling must increase for positive
+    ! shifting of the Fermi-level we subtract as Q(2) is 
+    ! a positive number (for additional charge)
+    Efermi = Efermi - Q(2)
+    if ( IONode ) then
+       write(*,'(a,e10.3)') 'transiesta: Fermi-level correction: ',Q(2) / eV
+    end if
+
+  end subroutine ts_charge_correct_Fermi
 
   subroutine ts_charge_correct_buffer(N_Elec,Elecs, &
        dit, sp, nspin, n_nzs, DM, EDM, S, Qtot)
@@ -321,7 +433,7 @@ contains
 
     allocate(Q(0:2+N_Elec*2,nspin))
     
-    call ts_get_charges(N_Elec, dit, sp, nspin, n_nzs, DM, S, Q)
+    call ts_get_charges(N_Elec, dit, sp, nspin, n_nzs, DM, S, Q = Q)
 
     ! Retrieve information about the sparsity pattern
     call attach(sp, &

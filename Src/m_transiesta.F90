@@ -49,8 +49,9 @@ contains
        sp_dist, sparse_pattern, &
        Gamma, ucell, nsc, no_u, na_u, lasto, xa, n_nzs, &
        xij, H, S, DM, EDM, Ef, kT, &
-       Qtot)
+       Qtot, Fermi_correct)
 
+    use units, only : eV
     use alloc, only : re_alloc, de_alloc
 
     use parallel, only : IONode
@@ -71,6 +72,7 @@ contains
     use m_ts_charge
     
     use m_ts_gf, only : read_Green
+    use m_interpolate
 
 ! ********************
 ! * INPUT variables  *
@@ -88,7 +90,9 @@ contains
     real(dp), intent(in) :: xij(3,n_nzs)
     real(dp), intent(in) :: H(n_nzs,nspin), S(n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
-    real(dp), intent(in) :: Ef, kT, Qtot
+    real(dp), intent(in) :: kT, Qtot
+    real(dp), intent(inout) :: Ef
+    logical, intent(in) :: Fermi_correct
 
 ! ******************** IO descriptors ************************
     integer, allocatable :: uGF(:)
@@ -100,6 +104,12 @@ contains
 
 ! * local variables
     integer :: iEl, NEn, no_used, no_used2
+    logical :: converged
+    ! In case of Fermi-correction, we save the previous steps
+    ! and do a spline interpolation... :)
+    integer :: N_F, i_F, ioerr
+    real(dp), pointer :: Q_Ef(:,:) => null()
+    real(dp) :: tmp
 
     ! Open GF files...
     ! Read-in header of Green's functions
@@ -113,7 +123,10 @@ contains
 
        call timer('TS_init',1)
 
-       call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, &
+       ! For the fermi-correction, we need the 
+       ! local sparsity pattern...
+       converged = IsVolt .or. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
+       call ts_sparse_init(slabel,converged, N_Elec, Elecs, &
             ucell, nsc, na_u, xa, lasto, sp_dist, sparse_pattern, n_nzs, xij)
 
        if ( ts_method == TS_SPARSITY_TRI ) then
@@ -147,23 +160,7 @@ contains
     uGF(:) = -1
     do iEl = 1 , N_Elec
 
-       if ( Elecs(iEl)%out_of_core ) then
-
-          if ( IONode ) then
-             call io_assign(uGF(iEl))
-             open(file=Elecs(iEl)%GFfile,unit=uGF(iEl),form='unformatted')
-          end if
-
-          call read_Green(uGF(iEl),Elecs(iEl), ts_nkpnt, NEn )
-
-       else
-
-          ! prepare the electrode to create the surface self-energy
-          call init_Electrode_HS(Elecs(iEl))
-
-       end if
        nq(iEl) = Rep(Elecs(iEl))
-
 
        ! Allocate the electrode quantities
        nullify(Elecs(iEl)%HA,Elecs(iEl)%SA,Elecs(iEl)%Gamma)
@@ -202,79 +199,207 @@ contains
        if ( .not. Elecs(iEl)%pre_expand ) no_used2 = Elecs(iEl)%no_used
        Elecs(iEl)%GA => Elecs(iEl)%Gamma(1:no_used,1:no_used2)
 
-       ! Initialize kpoints
-       Elecs(iEl)%bkpt_cur(:) = huge(1._dp)
     end do
 
-    if ( ts_method == TS_SPARSITY ) then
-       if ( ts_Gamma ) then
-          call ts_fullg(N_Elec,Elecs, &
-               nq, uGF, nspin, na_u, lasto, &
-               sp_dist, sparse_pattern, &
-               no_u, n_nzs, &
-               H, S, DM, EDM, Ef, kT)
-       else
-          call ts_fullk(N_Elec,Elecs, &
-               nq, uGF, &
-               ucell, nspin, na_u, lasto, &
-               sp_dist, sparse_pattern, &
-               no_u, n_nzs, &
-               H, S, DM, EDM, Ef, kT)
-       end if
-    else if ( ts_method == TS_SPARSITY_TRI ) then
-       if ( ts_Gamma ) then
-          call ts_trig(N_Elec,Elecs, &
-               nq, uGF, nspin, na_u, lasto, &
-               sp_dist, sparse_pattern, &
-               no_u, n_nzs, &
-               H, S, DM, EDM, Ef, kT)
-       else
-          call ts_trik(N_Elec,Elecs, &
-               nq, uGF, &
-               ucell, nspin, na_u, lasto, &
-               sp_dist, sparse_pattern, &
-               no_u, n_nzs, &
-               H, S, DM, EDM, Ef, kT)
-       end if
-#ifdef MUMPS
-    else if ( ts_method == TS_SPARSITY_MUMPS ) then
-       if ( ts_Gamma ) then
-          call ts_mumpsg(N_Elec,Elecs, &
-               nq, uGF, nspin, na_u, lasto, &
-               sp_dist, sparse_pattern, &
-               no_u, n_nzs, &
-               H, S, DM, EDM, Ef, kT)
-       else
-          call ts_mumpsk(N_Elec,Elecs, &
-               nq, uGF, &
-               ucell, nspin, na_u, lasto, &
-               sp_dist, sparse_pattern, &
-               no_u, n_nzs, &
-               H, S, DM, EDM, Ef, kT)
-       end if
-#endif
-    else
-
-       call die('Error in code')
+    ! start calculation
+    converged = .false.
+    if ( Fermi_correct ) then
+       ! Allocate for interpolation
+       N_F = 10
+       i_F = 0
+       call re_alloc(Q_Ef,1,N_F,1,2)
     end if
 
-!***********************
-!     Close Files
-!***********************
-    if ( IONode ) then
-       do iEl = 1 , N_Elec
-          if ( Elecs(iEl)%out_of_core ) then
-             call io_close(uGF(iEl))
+    do while ( .not. converged ) 
+
+       call open_GF(N_Elec,Elecs,uGF,NEn,.false.)
+       
+       if ( ts_method == TS_SPARSITY ) then
+          if ( ts_Gamma ) then
+             call ts_fullg(N_Elec,Elecs, &
+                  nq, uGF, nspin, na_u, lasto, &
+                  sp_dist, sparse_pattern, &
+                  no_u, n_nzs, &
+                  H, S, DM, EDM, Ef, kT)
           else
-             ! clean-up
-             call delete(Elecs(iEl))
+             call ts_fullk(N_Elec,Elecs, &
+                  nq, uGF, &
+                  ucell, nspin, na_u, lasto, &
+                  sp_dist, sparse_pattern, &
+                  no_u, n_nzs, &
+                  H, S, DM, EDM, Ef, kT)
           end if
+       else if ( ts_method == TS_SPARSITY_TRI ) then
+          if ( ts_Gamma ) then
+             call ts_trig(N_Elec,Elecs, &
+                  nq, uGF, nspin, na_u, lasto, &
+                  sp_dist, sparse_pattern, &
+                  no_u, n_nzs, &
+                  H, S, DM, EDM, Ef, kT)
+          else
+             call ts_trik(N_Elec,Elecs, &
+                  nq, uGF, &
+                  ucell, nspin, na_u, lasto, &
+                  sp_dist, sparse_pattern, &
+                  no_u, n_nzs, &
+                  H, S, DM, EDM, Ef, kT)
+          end if
+#ifdef MUMPS
+       else if ( ts_method == TS_SPARSITY_MUMPS ) then
+          if ( ts_Gamma ) then
+             call ts_mumpsg(N_Elec,Elecs, &
+                  nq, uGF, nspin, na_u, lasto, &
+                  sp_dist, sparse_pattern, &
+                  no_u, n_nzs, &
+                  H, S, DM, EDM, Ef, kT)
+          else
+             call ts_mumpsk(N_Elec,Elecs, &
+                  nq, uGF, &
+                  ucell, nspin, na_u, lasto, &
+                  sp_dist, sparse_pattern, &
+                  no_u, n_nzs, &
+                  H, S, DM, EDM, Ef, kT)
+          end if
+#endif
+       else
+
+          call die('Error in code')
+       end if
+
+       if ( Fermi_correct ) then
+
+          do iEl = 1 , N_Elec
+             if ( IONode .and. Elecs(iEl)%out_of_core ) then
+                call io_close(uGF(iEl))
+             end if
+          end do
+
+          i_F = i_F + 1
+          if ( N_F < i_F ) then
+             N_F = N_F + 10
+             call re_alloc(Q_Ef,1,N_F,1,2,copy=.true.)
+          end if
+
+          ! Save current fermi level and charge
+          call ts_get_charges(N_Elec, sp_dist, sparse_pattern, &
+               nspin, n_nzs, DM, S, Qtot = Q_Ef(i_F,1) )
+          Q_Ef(i_F,2) = Ef
+
+          call open_GF(N_Elec,Elecs,uGF,1,.true.)
+          
+          if ( ts_method == TS_SPARSITY ) then
+!             if ( ts_Gamma ) then
+!                call ts_fullg_Fermi(N_Elec,Elecs, &
+!                     nq, uGF, nspin, na_u, lasto, &
+!                     sp_dist, sparse_pattern, &
+!                     no_u, n_nzs, &
+!                     H, S, DM, Ef, kT, Qtot)
+!             else
+!                call ts_fullk_Fermi(N_Elec,Elecs, &
+!                     nq, uGF, &
+!                     ucell, nspin, na_u, lasto, &
+!                     sp_dist, sparse_pattern, &
+!                     no_u, n_nzs, &
+!                     H, S, DM, Ef, kT, Qtot)
+!             end if
+             call die('Currently this correction &
+                  &does not function with sparse')
+          else if ( ts_method == TS_SPARSITY_TRI ) then
+             if ( ts_Gamma ) then
+                call ts_trig_Fermi(N_Elec,Elecs, &
+                     nq, uGF, nspin, na_u, lasto, &
+                     sp_dist, sparse_pattern, &
+                     no_u, n_nzs, &
+                     H, S, DM, Ef, kT, Qtot, converged)
+             else
+                call ts_trik_Fermi(N_Elec,Elecs, &
+                     nq, uGF, &
+                     ucell, nspin, na_u, lasto, &
+                     sp_dist, sparse_pattern, &
+                     no_u, n_nzs, &
+                     H, S, DM, Ef, kT, Qtot, converged)
+             end if
+#ifdef MUMPS
+          else if ( ts_method == TS_SPARSITY_MUMPS ) then
+!             if ( ts_Gamma ) then
+!                call ts_mumpsg_Fermi(N_Elec,Elecs, &
+!                     nq, uGF, nspin, na_u, lasto, &
+!                     sp_dist, sparse_pattern, &
+!                     no_u, n_nzs, &
+!                     H, S, DM, Ef, kT, Qtot)
+!             else
+!                call ts_mumpsk_Fermi(N_Elec,Elecs, &
+!                     nq, uGF, &
+!                     ucell, nspin, na_u, lasto, &
+!                     sp_dist, sparse_pattern, &
+!                     no_u, n_nzs, &
+!                     H, S, DM, Ef, kT, Qtot)
+!             end if
+             call die('Currently this correction &
+                  &does not function with mumps')
+#endif
+          else
+             
+             call die('Error in code')
+          end if
+
+          ! In case we have accumulated 2 or more
+          ! points, we revert to a spline interpolation
+          ! For 2 points it becomes a linear interpolation
+          if ( i_F >= 2 ) then
+             tmp = Ef
+             call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
+             if ( IONode ) then
+                write(*,'(2(a,e11.4))') 'transiesta: dEf(eV). Spline: ',(Q_Ef(i_F,2)-Ef)/eV, &
+                     ' dQ: ', (Q_Ef(i_F,2)-tmp)/eV
+             end if
+          end if
+
+       else
+          
+          ! If no Fermi-correction, we are converged
+          converged = .true.
+
+       end if
+
+    end do
+
+    if ( IONode .and. Fermi_correct ) then
+       ! After converge we write out the convergence
+       call io_assign(iEl)
+       inquire(file='TS_FERMI', exist=converged)
+       if ( converged ) then
+          open(unit=iEl,file='TS_FERMI',position='append',form='formatted', &
+               status='old',iostat=ioerr)
+       else
+          open(unit=iEl,file='TS_FERMI',form='formatted', &
+               status='new')
+       end if
+       N_F = i_F
+       write(iEl,'(/,a,i0,/)') '# TSiscf = ',TSiscf
+       do i_F = 1 , N_F
+          write(iEl,'(2(tr1,e15.6))') Q_Ef(i_F,2),Q_Ef(i_F,1)
        end do
+       call io_close(iEl)
     end if
-    
-!***********************
-!     Clean up electrodes
-!***********************
+    if ( Fermi_correct ) then
+       call de_alloc(Q_Ef)
+    end if
+
+    !***********************
+    !     Close Files
+    !***********************
+    do iEl = 1 , N_Elec
+       if ( Elecs(iEl)%out_of_core ) then
+          if ( IONode ) call io_close(uGF(iEl))
+       else
+          call delete(Elecs(iEl))
+       end if
+    end do
+
+    !***********************
+    !  Clean up electrodes
+    !***********************
     do iEl = 1 , N_Elec
        call de_alloc(Elecs(iEl)%HA,routine='transiesta')
        call de_alloc(Elecs(iEl)%SA,routine='transiesta')
@@ -307,6 +432,9 @@ contains
       use class_dSpData2D
       use alloc, only : re_alloc
       type(Elec), intent(inout) :: El
+      
+      ! If already initialized, return immediately
+      if ( initialized(El%sp) ) return
 
       ! Read-in and create the corresponding transfer-matrices
       call delete(El) ! ensure clean electrode
@@ -332,7 +460,56 @@ contains
       call delete(El%sp)
 
     end subroutine init_Electrode_HS
-  
+
+    subroutine open_GF(N_Elec,Elecs,uGF,NEn,Fermi_correct)
+      integer, intent(in) :: N_Elec
+      type(Elec), intent(inout) :: Elecs(N_Elec)
+      integer, intent(out) :: uGF(N_Elec)
+      integer, intent(in) :: NEn
+      logical, intent(in) :: Fermi_correct
+
+      ! Local variables
+      integer :: iEl
+      
+      do iEl = 1 , N_Elec
+
+         ! Initialize k-points
+         Elecs(iEl)%bkpt_cur(:) = huge(1._dp)
+
+         if ( .not. Fermi_correct ) then
+            if ( Elecs(iEl)%out_of_core ) then
+               
+               if ( IONode ) then
+                  call io_assign(uGF(iEl))
+                  open(file=Elecs(iEl)%GFfile,unit=uGF(iEl),form='unformatted')
+               end if
+               
+            else
+
+               ! prepare the electrode to create the surface self-energy
+               call init_Electrode_HS(Elecs(iEl))
+               
+            end if
+         else
+
+            if ( Elecs(iEl)%out_of_core ) then
+               if ( IONode ) then
+                  call io_assign(uGF(iEl))
+                  open(file=trim(Elecs(iEl)%GFfile)//'-Fermi', &
+                       unit=uGF(iEl),form='unformatted')
+               end if
+            end if
+            
+         end if
+
+         if ( Elecs(iEl)%out_of_core ) then
+            call read_Green(uGF(iEl),Elecs(iEl), ts_nkpnt, NEn )
+         end if
+         
+      end do
+      
+    end subroutine open_GF
+
   end subroutine transiesta
 
   subroutine ts_print_memory(ts_Gamma)

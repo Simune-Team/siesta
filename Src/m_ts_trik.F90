@@ -39,7 +39,7 @@ module m_ts_trik
   
   implicit none
 
-  public :: ts_trik
+  public :: ts_trik, ts_trik_Fermi
 
   private
   
@@ -647,6 +647,254 @@ contains
 #endif
 
   end subroutine ts_trik
+
+  subroutine ts_trik_Fermi(N_Elec,Elecs, &
+       nq, uGF, ucell, nspin, na_u, lasto, &
+       sp_dist, sparse_pattern, &
+       no_u, n_nzs, &
+       Hs, Ss, DM, Ef, kT, Qtot, converged)
+
+    use units, only : Pi
+    use parallel, only : Node, Nodes, IONode
+
+#ifdef MPI
+    use mpi_siesta
+#endif
+
+    use alloc, only : re_alloc, de_alloc
+
+    use class_OrbitalDistribution
+    use class_Sparsity
+    use class_zSpData1D
+    use class_dSpData2D
+    use class_zSpData2D
+    use class_zTriMat
+
+    use m_ts_electype
+    ! Self-energy read
+    use m_ts_gf
+    ! Self-energy expansion
+    use m_ts_elec_se
+
+    use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
+
+    use m_ts_sparse, only : ts_sp_uc, tsup_sp_uc
+    use m_ts_sparse, only : ltsup_sp_sc, sc_off
+
+    use m_ts_charge
+
+    use m_ts_cctype
+    use m_ts_contour_eq, only : Eq_Eta
+
+    use m_iterator
+    use m_mat_invert
+
+    use m_trimat_invert
+
+    use m_ts_tri_scat, only : has_full_part
+
+#ifdef TRANSIESTA_DEBUG
+    use m_ts_debug
+#endif
+
+! ********************
+! * INPUT variables  *
+! ********************
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(inout) :: Elecs(N_Elec)
+    integer, intent(in) :: nq(N_Elec), uGF(N_Elec)
+    real(dp), intent(in) :: ucell(3,3)
+    integer, intent(in) :: nspin, na_u, lasto(0:na_u)
+    type(OrbitalDistribution), intent(inout) :: sp_dist
+    type(Sparsity), intent(inout) :: sparse_pattern
+    integer, intent(in)  :: no_u
+    integer, intent(in)  :: n_nzs
+    real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs)
+    real(dp), intent(inout) :: DM(n_nzs,nspin)
+    real(dp), intent(in) :: kT, Qtot
+    real(dp), intent(inout) :: Ef
+    logical, intent(out) :: converged
+
+! ******************* Computational arrays *******************
+    integer :: nzwork, n_s
+    complex(dp), pointer :: zwork(:)
+    type(zTriMat) :: zwork_tri, GF_tri
+    ! A local orbital distribution class (this is "fake")
+    type(OrbitalDistribution) :: fdist
+    ! The Hamiltonian and overlap sparse matrices
+    type(zSpData1D) :: spH, spS
+    ! local sparsity pattern in local SC pattern
+    type(dSpData2D) :: spDM, spEDM ! EDM for dummy argument
+    ! The different sparse matrices that will surmount to the integral
+    ! These two lines are in global update sparsity pattern (UC)
+    type(zSpData2D) ::  spuDM, spuEDM ! EDM for dummy argument
+    ! To figure out which parts of the tri-diagonal blocks we need
+    ! to calculate
+    logical, pointer :: calc_parts(:) => null()
+! ************************************************************
+
+! ******************* Computational variables ****************
+    type(ts_c_idx) :: cE
+    real(dp) :: kw, kpt(3), bkpt(3)
+    complex(dp), pointer :: zDM(:,:)
+    complex(dp) :: W
+! ************************************************************
+
+! ******************** Loop variables ************************
+    type(itt2) :: SpKp
+    integer, pointer :: ispin, ikpt
+    integer :: ia, iEl, io, idx
+    integer :: no, no_u_TS
+#ifdef MPI
+    integer :: MPIerror
+#endif
+! ************************************************************
+
+    ! Number of supercells
+    n_s = size(sc_off,dim=2)
+    no_u_TS = no_u - no_Buf
+
+    call newzTriMat(zwork_tri,N_tri_part,tri_parts,'GFinv')
+    nzwork = elements(zwork_tri)
+
+    call init_TriMat_inversion(zwork_tri)
+
+    call newzTriMat(GF_tri,N_tri_part,tri_parts,'GF')
+
+    call init_mat_inversion(maxval(tri_parts))
+
+    call re_alloc(calc_parts,1,N_tri_part)
+    calc_parts(:) = .true.
+
+    no = 0
+    zwork => val(GF_tri)
+    do iEl = 1 , N_Elec
+
+       io = TotUsedOrbs(Elecs(iEl))
+       Elecs(iEl)%Sigma => zwork(no+1:no+io**2)
+       no = no + io ** 2
+
+       if ( Elecs(iEl)%DM_update /= 0 ) cycle
+
+       io  = Elecs(iEl)%idx_o
+       io  = io - orb_offset(io)
+       idx = io + TotUsedOrbs(Elecs(iEl)) - 1
+
+       do ia = 1 , N_tri_part
+          if ( has_full_part(N_tri_part,tri_parts,ia,io,idx) ) then
+             calc_parts(ia) = .false.
+          end if
+       end do
+    end do
+
+    zwork => val(zwork_tri)
+
+#ifdef MPI
+    call newDistribution(no_u,MPI_Comm_Self,fdist,name='TS-fake dist')
+#else
+    call newDistribution(no_u,-1           ,fdist,name='TS-fake dist')
+#endif
+    
+    call newzSpData1D(ts_sp_uc,fdist,spH,name='TS spH')
+    call newzSpData1D(ts_sp_uc,fdist,spS,name='TS spS')
+
+    call newzSpData2D(tsup_sp_uc,1,fdist, spuDM, name='TS spuDM')
+    zDM => val(spuDM)
+    call newdSpData2D(ltsup_sp_sc,1, sp_dist,spDM   ,name='TS spDM')
+    
+    call itt_init  (SpKp,end1=nspin,end2=ts_nkpnt)
+    call itt_attach(SpKp,cur1=ispin,cur2=ikpt)
+    
+    call init_val(spDM)
+    do while ( .not. itt_step(SpKp) )
+
+       kpt(:) = ts_kpoint(:,ikpt)
+       call kpoint_convert(ucell,kpt,bkpt,1)
+       kw = 0.5_dp / Pi * ts_kweight(ikpt)
+       if ( nspin == 1 ) kw = kw * 2._dp
+       
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_HS',1)
+#endif
+
+       call create_HS(sp_dist,sparse_pattern, &
+            Ef, &
+            N_Elec, Elecs, no_u, n_s, & ! electrodes, SIESTA size
+            n_nzs, Hs(:,ispin), Ss, sc_off, &
+            spH, spS, kpt, &
+            nzwork, zwork)
+
+#ifdef TRANSIESTA_TIMING
+       call timer('TS_HS',2)
+#endif
+
+       call init_val(spuDM)
+       cE%exist = .true.
+       cE%fake  = .true.
+       cE%e = dcmplx(0._dp, Eq_eta)
+       cE%idx = 1
+       if ( Node == Nodes - 1 ) cE%fake = .false.
+
+       call read_next_GS(ispin, ikpt, bkpt, &
+            cE, N_Elec, uGF, Elecs, &
+            nzwork, zwork, .false., forward = .false. )
+       do iEl = 1 , N_Elec
+          call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
+               non_Eq = .false. )
+       end do
+       
+       call prepare_invGF(cE, no_u_TS, zwork_tri, &
+            N_Elec, Elecs, &
+            spH=spH , spS=spS)
+       
+       if ( .not. cE%fake ) then
+          call invert_TriMat(zwork_tri,GF_tri,calc_parts)
+       end if
+          
+       W  = dcmplx(kw,0._dp)
+       call add_DM( spuDM, W, spuEDM, W, &
+            GF_tri, N_Elec, Elecs, DMidx=1)
+
+#ifdef MPI
+       call timer('TS_comm',1)
+       io = size(zDM)
+       call MPI_Bcast(zDM(1,1),io,MPI_Double_Complex, &
+            Nodes - 1, MPI_Comm_World,MPIerror)
+       call timer('TS_comm',2)
+#endif
+
+       call add_k_DM(spDM, spuDM, 1, &
+            spEDM, spuEDM, 1, &
+            n_s, sc_off, kpt, non_Eq = .false. )
+
+    end do ! spin, k-point
+
+    call itt_destroy(SpKp)
+
+#ifdef TRANSIESTA_DEBUG
+    write(*,*) 'Completed TRANSIESTA - CHARGE'
+#endif
+
+    call ts_charge_correct_Fermi(sp_dist, sparse_pattern, &
+         nspin, n_nzs, DM, Ss, Qtot, spDM, Ef, converged)
+    
+    call de_alloc(calc_parts)
+
+    call delete(zwork_tri)
+    call delete(GF_tri)
+
+    call delete(spH)
+    call delete(spS)
+
+    call delete(spuDM)
+    call delete(spDM)
+
+    call delete(fdist)
+
+    call clear_TriMat_inversion()
+    call clear_mat_inversion()
+
+  end subroutine ts_trik_Fermi
   
   subroutine add_DM(DM, DMfact, EDM, EDMfact, &
        GF_tri, &

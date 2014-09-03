@@ -34,7 +34,7 @@ contains
     use parallel, only : IONode
     use files, only : slabel
 
-    use m_ts_gf,        only : do_Green
+    use m_ts_gf,        only : do_Green, do_Green_Fermi
     use m_ts_electrode, only : init_Electrode_HS
     
     use m_ts_kpoints, only : setup_ts_kpoint_grid
@@ -44,6 +44,7 @@ contains
     use m_ts_electype
     use m_ts_options ! Just everything (easier)
     use m_ts_method
+    use m_ts_charge
 
     use m_ts_global_vars, only : TSmode, TSinit
     use siesta_options, only : isolve, SOLVE_TRANSI, Nmove
@@ -157,6 +158,14 @@ contains
           call do_Green(Elecs(i), &
                ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
                Elecs_xa_Eps, .false. )
+
+          if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+             
+             call do_Green_Fermi(kT, Elecs(i), &
+                  ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
+                  Elecs_xa_Eps, .false. )
+
+          end if
           
           ! clean-up
           call delete(Elecs(i))

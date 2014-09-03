@@ -34,7 +34,9 @@ module m_ts_GF
 
   implicit none
 
-  public :: do_Green, read_Green, check_Green
+  public :: do_Green, do_Green_Fermi
+  public :: read_Green, check_Green
+
   public :: read_next_GS
 
   private
@@ -175,6 +177,131 @@ contains
 #endif
 
   end subroutine do_Green
+
+  subroutine do_Green_Fermi(kT, El, &
+       ucell,nkpnt,kpoint,kweight, &
+       xa_EPS, CalcDOS )
+    
+    use parallel  , only : IONode
+    use sys ,       only : die
+    use units,      only : Pi
+#ifdef MPI
+    use mpi_siesta, only : MPI_Comm_World
+    use mpi_siesta, only : MPI_Bcast, MPI_Integer, MPI_Logical
+#endif
+    use m_ts_electype
+    use m_ts_electrode, only : create_Green
+    use m_ts_contour_eq, only : Eq_Eta
+
+    implicit none
+    
+! ***********************
+! * INPUT variables     *
+! ***********************
+    real(dp), intent(in)          :: kT
+    type(Elec), intent(inout)     :: El
+    integer, intent(in)           :: nkpnt ! Number of k-points
+    real(dp), intent(in)          :: kpoint(3,nkpnt) ! k-points
+    real(dp), intent(in)          :: kweight(nkpnt) ! weights of kpoints
+    real(dp), intent(in)          :: xa_Eps ! coordinate precision check
+    real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
+    logical, intent(in)           :: CalcDOS
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer :: uGF
+    logical :: errorGF, exist, cReUseGF
+    complex(dp) :: ce(1)
+    character(len=FILE_LEN) :: GFfile
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    ! fast exit if the Gf-file should not be created
+    ! i.e. this means the calculation of the self-energy is
+    ! performed in every iteration
+    if ( .not. El%out_of_core ) return
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE do_Green_Fermi' )
+#endif
+
+    GFfile = trim(El%GFfile)
+    El%GFfile = trim(GFfile)//'-Fermi'
+    
+    ! check the file for existance
+    inquire(file=trim(El%GFfile),exist=exist)
+    
+    cReUseGF = El%ReUseGf
+    ! If it does not find the file, calculate the GF
+    if ( exist ) then
+       if (IONode ) then
+          write(*,*) "Electrode Green's function file: '"//&
+               trim(El%GFfile)//"' already exist."
+          if ( .not. cReUseGF ) then
+             write(*,*)"Green's function file '"//&
+                  trim(El%GFfile)//"' is requested overwritten."
+          end if
+       end if
+    else
+       cReUseGF = .false.
+    end if
+
+#ifdef MPI
+    call MPI_Bcast(cReUseGF,1,MPI_Logical,0, &
+         MPI_Comm_World,MPIerror)
+#endif
+   
+    errorGF = .false.
+
+    ! We use the "first" pole of the 
+    ce(1) = dcmplx(0._dp, Eq_Eta)
+
+    ! We return if we should not calculate it
+    if ( .not. cReUseGF ) then
+
+       call create_Green(El, &
+            ucell,nkpnt,kpoint,kweight,1,ce)
+
+    else
+
+       ! Check that the Green's functions are correct!
+       ! This is needed as create_Green returns if user requests not to
+       ! overwrite an already existing file.
+       ! This check will read in the number of orbitals and atoms in the
+       ! electrode surface Green's function.
+       ! Check the GF file
+       if ( IONode ) then
+          call io_assign(uGF)
+          open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
+          
+          call check_Green(uGF,El, &
+               ucell,nkpnt,kpoint,kweight, &
+               1, ce, &
+               xa_Eps, errorGF)
+          
+          write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
+          
+          call io_close(uGF)
+       endif
+
+    end if
+
+!     Check the error in the GF file
+#ifdef MPI
+    call MPI_Bcast(errorGF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+#endif
+    if ( errorGF ) &
+         call die("Error in GFfile: "//trim(El%GFfile)//". Please move or delete")
+
+    El%GFfile = GFfile
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS do_Green_Fermi' )
+#endif
+
+  end subroutine do_Green_Fermi
 
 
 ! ##################################################################

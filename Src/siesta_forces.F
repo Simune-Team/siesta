@@ -44,13 +44,22 @@
       use write_subs,            only: siesta_write_forces
       use write_subs,            only: siesta_write_stress_pressure
 #ifdef TRANSIESTA
+      use m_ts_options, only : N_Elec
       use m_ts_method
       use m_ts_global_vars,      only: TSmode, ts_istep, TSrun, TSiscf
-      use siesta_geom,           only: na_u
-      use atomlist,              only: lasto
+      use siesta_geom,           only: nsc, na_u, xa, ucell
+      use atomlist,              only: no_u, lasto, Qtot
       use sparse_matrices,       only: sparse_pattern, block_dist
-      use sparse_matrices,       only: S, maxnh
+      use sparse_matrices,       only: Escf, S, maxnh, xijo
       use m_spin,                only: nspin
+      use m_ts_charge, only : ts_get_charges
+      use m_ts_charge,           only: TS_RHOCORR_METHOD
+      use m_ts_charge,           only: TS_RHOCORR_FERMI
+      use m_ts_charge,           only: TS_RHOCORR_FERMI_TOLERANCE
+      use m_transiesta,          only: transiesta
+      use kpoint_grid, only : gamma_scf
+      use m_energies, only : Ef
+      use siesta_options, only : temp
 #endif /* TRANSIESTA */
 
       implicit none
@@ -63,6 +72,9 @@
       real(dp)           :: E_Harris, E_KS_Good
       real(dp)           :: dDmax, dHmax
       real(dp), allocatable :: Hsave(:,:), fa_old(:,:)
+#ifdef TRANSIESTA
+      real(dp) :: Qcur
+#endif
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
@@ -145,6 +157,32 @@
      $            min_nscf
            endif
         endif
+
+#ifdef TRANSIESTA
+        ! In case the user has requested a Fermi-level correction
+        ! Then we start by correcting the fermi-level
+        if ( TSrun .and. SCFconverged .and.
+     &       TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+
+           call ts_get_charges(N_Elec, block_dist, sparse_pattern,
+     &          nspin, maxnh, Dscf, S, Qtot = Qcur )
+           
+           if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
+              
+              ! Call transiesta with fermi-correct
+              call transiesta(TSiscf,nspin, 
+     &             block_dist, sparse_pattern, Gamma_Scf, ucell, nsc,
+     &             no_u, na_u, lasto, xa, maxnh, xijo, H, S, Dscf, Escf,
+     &             Ef, Temp, Qtot, .true.)
+           
+              ! We will not have not converged as we have just
+              ! changed the Fermi-level
+              SCFconverged = .false.
+
+           end if
+           
+        end if
+#endif
 
         if (SCFconverged) then
            if (ionode) then

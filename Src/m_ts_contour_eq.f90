@@ -87,7 +87,7 @@ contains
     call fdf_obsolete('TS.ComplexContour.NPoles')
 
     ! broadening
-    Eq_Eta = fdf_get('TS.Contours.Eq.Eta',0._dp,'Ry')
+    Eq_Eta = fdf_get('TS.Contours.Eq.Eta',0.00001_dp*eV,'Ry')
     if ( Eq_Eta < 0._dp) call die('ERROR: Eq_Eta < 0, we do not allow &
          &for using the advanced Greens function, please correct.')
     
