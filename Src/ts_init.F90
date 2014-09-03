@@ -68,6 +68,7 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
+    logical :: exist
     integer :: i, ia
     integer :: nC, nTS
 
@@ -148,6 +149,18 @@ contains
     call ts_show_regions(ucell,na_u,xa,N_Elec,Elecs)
 
     if ( .not. TS_Analyze ) then
+
+       if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI &
+            .and. IONode ) then
+          ! Delete the TS_FERMI file (enables
+          ! reading it in and improve on the convergence)
+          inquire(file='TS_FERMI',exist=exist)
+          if ( exist ) then
+             i = 23455
+             open(unit=i,file='TS_FERMI')
+             close(i,status='delete')
+          end if
+       end if
 
        ! GF generation:
        do i = 1 , N_Elec

@@ -1,4 +1,29 @@
 ----------------------------------------------------
+September 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-189
+Correction for dEf routines
+
+* The dEf correction was calculating the linear 
+  correction at each optimization, yet this
+  was not needed (only at the first calculation).
+
+  We rely on the spline interpolation afterwards and
+  do not need to calculate the linear contribution.
+
+* Bugfix for IO-closing.
+
+* Also delete the TS_FERMI file on start
+  TODO implement a charge correction based on the first
+  entry for each segment.
+  This requires reading in the entire file, yet
+  will most likely be extrapolation (and hence
+  a crude overestimation on the first shot).
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_charge.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 September 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-188
 Added a new charge correction method which alters the Fermi level
 

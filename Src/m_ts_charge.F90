@@ -369,7 +369,7 @@ contains
     if ( abs(Q(1)) < TS_RHOCORR_FERMI_TOLERANCE ) then
        converged = .true.
        if ( IONode ) &
-            write(*,'(a,e10.3)') 'transiesta: Fermi-level correction converged @dQ: ',Q(1)
+            write(*,'(a,e10.3)') 'transiesta: Fermi-level correction converged dQ: ',Q(1)
        return
     end if
 
@@ -386,7 +386,7 @@ contains
     ! a positive number (for additional charge)
     Efermi = Efermi - Q(2)
     if ( IONode ) then
-       write(*,'(a,e10.3)') 'transiesta: Fermi-level correction: ',Q(2) / eV
+       write(*,'(a,e11.4,a)') 'transiesta: constant dEf = ',-Q(2)/eV,' eV'
     end if
 
   end subroutine ts_charge_correct_Fermi

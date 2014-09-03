@@ -109,7 +109,6 @@ contains
     ! and do a spline interpolation... :)
     integer :: N_F, i_F, ioerr
     real(dp), pointer :: Q_Ef(:,:) => null()
-    real(dp) :: tmp
 
     ! Open GF files...
     ! Read-in header of Green's functions
@@ -266,13 +265,14 @@ contains
           call die('Error in code')
        end if
 
+       ! Close files
+       do iEl = 1 , N_Elec
+          if ( IONode .and. Elecs(iEl)%out_of_core ) then
+             call io_close(uGF(iEl))
+          end if
+       end do
+       
        if ( Fermi_correct ) then
-
-          do iEl = 1 , N_Elec
-             if ( IONode .and. Elecs(iEl)%out_of_core ) then
-                call io_close(uGF(iEl))
-             end if
-          end do
 
           i_F = i_F + 1
           if ( N_F < i_F ) then
@@ -284,6 +284,8 @@ contains
           call ts_get_charges(N_Elec, sp_dist, sparse_pattern, &
                nspin, n_nzs, DM, S, Qtot = Q_Ef(i_F,1) )
           Q_Ef(i_F,2) = Ef
+
+          if ( i_F < 2 ) then
 
           call open_GF(N_Elec,Elecs,uGF,1,.true.)
           
@@ -343,16 +345,27 @@ contains
              call die('Error in code')
           end if
 
-          ! In case we have accumulated 2 or more
-          ! points, we revert to a spline interpolation
-          ! For 2 points it becomes a linear interpolation
-          if ( i_F >= 2 ) then
-             tmp = Ef
+          ! Close files
+          do iEl = 1 , N_Elec
+             if ( IONode .and. Elecs(iEl)%out_of_core ) then
+                call io_close(uGF(iEl))
+             end if
+          end do
+
+          else
+
+             ! In case we have accumulated 2 or more points
              call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
              if ( IONode ) then
-                write(*,'(2(a,e11.4))') 'transiesta: dEf(eV). Spline: ',(Q_Ef(i_F,2)-Ef)/eV, &
-                     ' dQ: ', (Q_Ef(i_F,2)-tmp)/eV
+                write(*,'(a,e11.4,a)') 'transiesta: cubic spline. dEf = ', &
+                     (Ef-Q_Ef(i_F,2))/eV, ' eV'
              end if
+
+             ! Even if we have converged we allow the interpolation
+             ! to do a final step. If dQ is very small it should be very
+             ! close to the found value.
+             converged = abs(Q_Ef(i_F,1) - Qtot) < TS_RHOCORR_FERMI_TOLERANCE
+
           end if
 
        else
@@ -387,12 +400,10 @@ contains
     end if
 
     !***********************
-    !     Close Files
+    !       Clean up
     !***********************
     do iEl = 1 , N_Elec
-       if ( Elecs(iEl)%out_of_core ) then
-          if ( IONode ) call io_close(uGF(iEl))
-       else
+       if ( .not. Elecs(iEl)%out_of_core ) then
           call delete(Elecs(iEl))
        end if
     end do
