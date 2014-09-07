@@ -1,4 +1,29 @@
 ----------------------------------------------------
+September 7, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-190
+Gamma bugfix, and dEf only printing dQ
+
+* When doing Gamma calculations we still used
+  the xijo array, (to create the sc_off array).
+  This has now been superseeded.
+  We allocate a "dummy" sc_off with size 1 
+  and then all phases will be generated from this.
+
+  (TODO: an analysis shows that the sparse matrix does
+  not shrink in size when changing a k-point to a Gamma
+  point sampling. This must mean that the possible reduction
+  has not been introduced.)
+
+* The TS_FERMI now contains the dEf dQ which makes it easier
+  to check (no need to remember how many charges we have, 
+  it prints the difference.
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_io.F90
+  Src/m_ts_sparse.F90
+  Src/state_init.F
+
+----------------------------------------------------
 September 3, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-189
 Correction for dEf routines
 

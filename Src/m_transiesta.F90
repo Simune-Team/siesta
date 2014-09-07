@@ -126,7 +126,8 @@ contains
        ! local sparsity pattern...
        converged = IsVolt .or. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
        call ts_sparse_init(slabel,converged, N_Elec, Elecs, &
-            ucell, nsc, na_u, xa, lasto, sp_dist, sparse_pattern, n_nzs, xij)
+            ucell, nsc, na_u, xa, lasto, sp_dist, sparse_pattern, Gamma, &
+            n_nzs, xij)
 
        if ( ts_method == TS_SPARSITY_TRI ) then
           ! initialize the tri-diagonal partition
@@ -378,6 +379,7 @@ contains
     end do
 
     if ( IONode .and. Fermi_correct ) then
+
        ! After converge we write out the convergence
        call io_assign(iEl)
        inquire(file='TS_FERMI', exist=converged)
@@ -391,9 +393,10 @@ contains
        N_F = i_F
        write(iEl,'(/,a,i0,/)') '# TSiscf = ',TSiscf
        do i_F = 1 , N_F
-          write(iEl,'(2(tr1,e15.6))') Q_Ef(i_F,2),Q_Ef(i_F,1)
+          write(iEl,'(2(tr1,e15.6))') Q_Ef(i_F,2),Q_Ef(i_F,1) - Qtot
        end do
        call io_close(iEl)
+
     end if
     if ( Fermi_correct ) then
        call de_alloc(Q_Ef)

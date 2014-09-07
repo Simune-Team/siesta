@@ -82,7 +82,8 @@ contains
 ! update, etc.
   subroutine ts_sparse_init(slabel, &
        IsVolt, N_Elec, Elecs, &
-       ucell, nsc, na_u,xa,lasto, block_dist,sparse_pattern, n_nzs, xij)
+       ucell, nsc, na_u,xa,lasto, block_dist,sparse_pattern, Gamma, &
+       n_nzs, xij)
 
     use class_OrbitalDistribution
 
@@ -122,7 +123,9 @@ contains
     type(OrbitalDistribution), intent(inout) :: block_dist
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sparse_pattern
-    ! number of non-zero elements in H
+    ! Whether we have xij or not
+    logical, intent(in) :: Gamma
+    ! number of non-zero elements in xij
     integer, intent(in) :: n_nzs
     ! vectors from i-J
     real(dp), intent(in) :: xij(3,n_nzs)
@@ -146,11 +149,17 @@ contains
     end if
 
     ! Create the ts-offsets
-    call xij_offset(ucell,nsc, na_u,xa,lasto, &
-         block_dist,sparse_pattern,n_nzs,xij,isc_off,Bcast=.true.)
-    call re_alloc(sc_off,1,3,1,size(isc_off,dim=2))
-    sc_off = matmul(ucell,isc_off)
-    deallocate(isc_off)
+    if ( Gamma ) then
+       ! Initialize the sc_off array
+       call re_alloc(sc_off,1,3,1,1)
+       sc_off = 0._dp
+    else
+       call xij_offset(ucell,nsc, na_u,xa,lasto, &
+            block_dist,sparse_pattern,n_nzs,xij,isc_off,Bcast=.true.)
+       call re_alloc(sc_off,1,3,1,size(isc_off,dim=2))
+       sc_off = matmul(ucell,isc_off)
+       deallocate(isc_off)
+    end if
 
     if ( IsVolt ) then 
 

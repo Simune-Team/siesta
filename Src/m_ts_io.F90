@@ -852,14 +852,17 @@ contains
     ! I do not trust the sequence in SIESTA routines
     ! Until SIESTA has a firm definition of supercell creations
     ! this is calculated explicitly.
-    call xij_offset(ucell,nsc,na_u,xa,lasto, &
-         no_l,no_u,n_nzs, ncol,l_ptr,l_col,xij,isc_off,Bcast=.true.)
-
+    if ( .not. Gamma ) then
+       call xij_offset(ucell,nsc,na_u,xa,lasto, &
+            no_l,no_u,n_nzs, ncol,l_ptr,l_col,xij,isc_off,Bcast=.true.)
+    end if
 #else
     n_nzsg = n_nzs
 
-    call xij_offset(ucell,nsc,na_u,xa,lasto, &
-         no_l,no_u,n_nzs, ncol,l_ptr,l_col,xij,isc_off)
+    if ( .not. Gamma ) then
+       call xij_offset(ucell,nsc,na_u,xa,lasto, &
+            no_l,no_u,n_nzs, ncol,l_ptr,l_col,xij,isc_off)
+    end if
 #endif
 
     if ( IONode ) then
@@ -1028,7 +1031,9 @@ contains
     if ( IONode ) deallocate(buf,Mg)
 #endif
 
-    deallocate(isc_off)
+    if ( .not. Gamma ) then
+       deallocate(isc_off)
+    end if
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS ts_io_write' )
