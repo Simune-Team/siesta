@@ -477,12 +477,18 @@ contains
 
     ! Populate the electrodes in the chemical potential type
     do i = 1 , N_Elec
+       err = .true.
        do j = 1 , N_mu
           if ( associated(Elecs(i)%mu,target=mus(j)) ) then
              call chem_pot_add_Elec(mus(j),i)
+             err = .false.
              exit
           end if
        end do
+       if ( err ) then
+          call die('We could not attribute a chemical potential &
+               &to electrode: '//trim(Elecs(i)%name))
+       end if
     end do
 
     ! check that all electrodes and chemical potentials are paired in

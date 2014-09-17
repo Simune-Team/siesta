@@ -681,11 +681,13 @@ contains
             El%no_u,El%no_used
 
        ! We show them in units of Bohr**-1
-       write(*,'(a)') ' q-points for expanding electrode (Bohr**-1):'
-       do i = 1 , nq
-          call kpoint_convert(El%ucell,q_exp(El,i),qpt,-1)
-          write(*,'(i4,2x,4(E14.5))') i,qpt,wq
-       end do
+       if ( nq > 1 ) then
+          write(*,'(a)') ' q-points for expanding electrode (Bohr**-1):'
+          do i = 1 , nq
+             call kpoint_convert(El%ucell,q_exp(El,i),qpt,-1)
+             write(*,'(i4,2x,4(E14.5))') i,qpt,wq
+          end do
+       end if
        write(*,'(a,f14.5,1x,a)') &
             " Fermi level shift in electrode (chemical potential) : ",El%mu%mu/eV,' eV'
     end if

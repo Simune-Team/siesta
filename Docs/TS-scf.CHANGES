@@ -1,4 +1,17 @@
 ----------------------------------------------------
+September 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-192
+Bugfix for restructData, removed writing q for nq == 1
+
+* An offset was not taken into account in restructSpData2D
+
+* When nq == 1 we do not write out the expansion q-points.
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_options.F90
+  Src/restructSpData2D.F90
+
+----------------------------------------------------
 September 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-191
 New IO routines for sparse format, speed increase
 

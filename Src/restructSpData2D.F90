@@ -63,9 +63,9 @@
 
       ! We need to check the maximum supercell...
       maxval_j_in  = (maxval(list_in(1:size_in))-1)/nrows_g(SpMin)
-      maxval_j_in  = maxval_j_in * nrows_g(SpMin)
+      maxval_j_in  = ( maxval_j_in + 1 ) * nrows_g(SpMin)
       maxval_j_out = (maxval(list_out(1:size_out))-1)/nrows_g(sp_out)
-      maxval_j_out = maxval_j_out * nrows_g(sp_out)
+      maxval_j_out = ( maxval_j_out + 1 ) * nrows_g(sp_out)
 
       if ( maxval_j_in /= maxval_j_out ) then
          ! Print out the different values
@@ -110,7 +110,7 @@
       deallocate(aux)
 
       call newdSpData2D(sp_out,a2d_out,dist(SpMin), &
-                         SpMout,name="Re-structured SpM")
+           SpMout,name="Re-structured SpM")
 
       call delete(a2d_out)
 
