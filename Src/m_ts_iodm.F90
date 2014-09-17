@@ -52,6 +52,7 @@ contains
     type(Sparsity) :: sp
     logical :: exists
     integer :: iu, no_u, two(2)
+    integer, pointer :: gncol(:) => null()
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -103,16 +104,18 @@ contains
     end if
     
     ! Read in the sparsity pattern (distributed)
-    call io_read_Sp(iu, no_u, sp, 'temp-ts-IO', dit)
+    call io_read_Sp(iu, no_u, sp, 'temp-ts-IO', dit, gncol=gncol)
 
     ! Read DM
-    call io_read_d2D(iu,sp,DM ,nspin,'ts-iodm',dit=dit)
+    call io_read_d2D(iu,sp,DM ,nspin,'ts-iodm',dit=dit, gncol=gncol)
 
     ! Read EDM
-    call io_read_d2D(iu,sp,EDM,nspin,'ts-iodm',dit=dit)
+    call io_read_d2D(iu,sp,EDM,nspin,'ts-iodm',dit=dit, gncol=gncol)
 
     ! Clean-up
     call delete(sp)
+
+    deallocate(gncol)
 
     ! Read Ef and close
     if ( Node == 0 ) then
@@ -147,6 +150,7 @@ contains
 ! ************************
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
+    integer, pointer :: gncol(:) => null()
     integer :: no_u
     integer :: iu
 
@@ -170,13 +174,15 @@ contains
     end if
 
     ! Write sparsity pattern...
-    call io_write_Sp(iu,sp,dit=dit)
+    call io_write_Sp(iu,sp,dit=dit, gncol=gncol)
 
     ! Write density matrix
-    call io_write_d2D(iu, DM )
+    call io_write_d2D(iu, DM , gncol=gncol)
 
     ! Write energy density matrix
-    call io_write_d2D(iu, EDM)
+    call io_write_d2D(iu, EDM, gncol=gncol)
+
+    deallocate(gncol)
 
     ! Write Ef and close
     if ( Node == 0 ) then

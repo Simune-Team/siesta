@@ -478,6 +478,8 @@ contains
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
 
+    ! Many variables are needed initialization due
+    ! to compiletime unawareness
     nsc(:) = 0
 
     if ( IONode ) then

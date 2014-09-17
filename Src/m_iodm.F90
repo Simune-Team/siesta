@@ -49,6 +49,7 @@ contains
     type(Sparsity) :: sp
     logical :: exists
     integer :: iu, no_u, two(2)
+    integer, pointer :: gncol(:) => null()
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -76,6 +77,7 @@ contains
             form='unformatted', status='old' )
        rewind(iu)
        read(iu) two
+
     end if
 
 #ifdef MPI
@@ -100,13 +102,17 @@ contains
     end if
 
     ! Read in the sparsity pattern (distributed)
-    call io_read_Sp(iu, no_u, sp, 'temp-IO', dit)
+    call io_read_Sp(iu, no_u, sp, 'temp-IO', dit, gncol=gncol)
 
     ! Read DM
-    call io_read_d2D(iu,sp,DM,nspin,'iodm',dit=dit)
+    call io_read_d2D(iu,sp,DM,nspin,'iodm',dit=dit, gncol=gncol)
 
     ! Clean-up (sp is not fully deleted, it just only resides in DM)
     call delete(sp)
+
+    ! All have this allocated (Node == 0 have just a larger
+    ! one...)
+    deallocate(gncol)
 
     ! Close
     if ( Node == 0 ) then
@@ -133,6 +139,7 @@ contains
 ! ************************
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
+    integer, pointer :: gncol(:) => null()
     integer :: no_u
     integer :: iu
 
@@ -156,10 +163,12 @@ contains
     end if
 
     ! Write sparsity pattern...
-    call io_write_Sp(iu,sp,dit=dit)
+    call io_write_Sp(iu,sp,dit=dit,gncol=gncol)
 
     ! Write density matrix
-    call io_write_d2D(iu,DM)
+    call io_write_d2D(iu,DM,gncol=gncol)
+
+    deallocate(gncol)
 
     ! Close
     if ( Node == 0 ) then

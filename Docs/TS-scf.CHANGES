@@ -1,4 +1,25 @@
 ----------------------------------------------------
+September 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-194
+Implemented block read/write to DM/TSDE files
+
+* My routines have been altered for doing block
+  recv/sends which greatly enhances the speed!
+  Reading is now extremely fast.
+  Writing is approximately twice as fast
+  on 12 cores.
+
+  I think this should compete very nicely with the
+  blocking m_matio routines.
+
+  TODO search for memory leaks...
+
+modified:
+  Src/m_io_s.F90
+  Src/m_iodm.F90
+  Src/m_ts_io.F90
+  Src/m_ts_iodm.F90
+
+----------------------------------------------------
 September 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-193
 Added my IO to DM, full capacity reached
 

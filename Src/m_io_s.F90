@@ -24,12 +24,162 @@ module m_io_s
 
   private
 
+  public :: Node_Sp_gncol
   public :: io_read_Sp
   public :: io_read_d1D, io_read_d2D
   public :: io_write_Sp
   public :: io_write_d1D, io_write_d2D
 
 contains
+
+  ! Returns a consecutive number of contributions
+  ! starting from the specified index
+  function count_consecutive(dit,n_t,idx) result(n)
+    type(OrbitalDistribution), intent(in) :: dit
+    integer, intent(in) :: n_t, idx
+    integer :: n
+    ! Local variables
+    integer :: cur_node, i
+
+    n = 1
+    cur_node = node_handling_element(dit,idx)
+    do i = idx + 1 , n_t
+       ! if the idx is not present, just return
+       if ( cur_node /= node_handling_element(dit,i) ) return
+       n = n + 1
+    end do
+
+  end function count_consecutive
+
+  function count_consecutive_sum(dit,n_t,nidx,idx) result(n)
+    type(OrbitalDistribution), intent(in) :: dit
+    integer, intent(in) :: n_t, nidx(n_t), idx
+    integer :: n
+
+    n = count_consecutive(dit,n_t,idx)
+    n = sum(nidx(idx:idx-1+n))
+
+  end function count_consecutive_sum
+
+  function max_consecutive(dit,n_t) result(n)
+    type(OrbitalDistribution), intent(in) :: dit
+    integer, intent(in) :: n_t
+    integer :: n
+    ! Local variables
+    integer :: i, cur_n
+
+    i = 1
+    n = 0
+    do while ( i <= n_t )
+       
+       ! Count number of consecutive numbers
+       cur_n = count_consecutive(dit,n_t,i)
+       if ( cur_n > n ) then
+          n = cur_n
+       end if
+
+       ! Step counter
+       i = i + cur_n
+
+    end do
+    
+  end function max_consecutive
+
+  function max_consecutive_sum(dit,n_t,nidx) result(n)
+    type(OrbitalDistribution), intent(in) :: dit
+    integer, intent(in) :: n_t, nidx(n_t)
+    integer :: n
+    ! Local variables
+    integer :: i, cur_n, tmp
+
+    i = 1
+    n = 0
+    do while ( i <= n_t )
+       
+       ! Count number of consecutive numbers
+       cur_n = count_consecutive(dit,n_t,i)
+       tmp = sum(nidx(i:i-1+cur_n))
+       if ( tmp > n ) then
+          n = tmp
+       end if
+
+       ! Step counter
+       i = i + cur_n
+
+    end do
+    
+  end function max_consecutive_sum
+
+  subroutine Node_Sp_gncol(lNode,sp,dit,no,gcol)
+    integer, intent(in) :: lNode
+    type(Sparsity), intent(inout) :: sp
+    type(OrbitalDistribution), intent(in) :: dit
+    integer, intent(in) :: no
+    integer, pointer:: gcol(:)
+
+    integer, pointer :: ncol(:)
+    integer :: gio, n, i, io
+#ifdef MPI
+    integer, allocatable :: buf(:)
+    integer :: BNode, MPIerror, MPIreq, MPIstatus(MPI_STATUS_SIZE)
+#endif
+    
+    ! grab ncol
+    call attach(sp,n_col=ncol)
+
+#ifndef MPI
+    if ( size(gcol) /= no ) then
+       call die('Error in setup...')
+    end if
+    gcol = ncol
+#else
+    if ( Node == lNode ) then
+       if ( size(gcol) /= no ) then
+          call die('Error in setup...')
+       end if
+       allocate(buf(no))
+       buf(:) = MPI_REQUEST_NULL
+    else
+       MPIreq = MPI_REQUEST_NULL
+    end if
+          
+    gio = 1
+    do while ( gio <= no )
+          
+       BNode = node_handling_element(dit,gio)
+
+       ! Get number of consecutive orbitals
+       n = count_consecutive(dit,no,gio)
+       
+       if ( Node == BNode ) then
+          io = index_global_to_local(dit,gio,Node)
+          if ( Node == lNode ) then
+             gcol(gio:gio-1+n) = ncol(io:io-1+n)
+          else
+             call MPI_ISSend( ncol(io) , n, MPI_Integer, &
+                  lNode, gio, MPI_Comm_World, MPIreq, MPIerror)
+          end if
+       else if ( Node == lNode ) then
+          call MPI_IRecv( gcol(gio) , n, MPI_Integer, &
+               BNode, gio, MPI_Comm_World, buf(gio), MPIerror )
+       end if
+       gio = gio + n
+    end do
+
+    if ( Node == lNode ) then
+       do gio = 1 , no
+          call MPI_Wait(buf(gio),MPIstatus,MPIerror)
+       end do
+       deallocate(buf)
+    else
+       ! Wait for the last one to not send
+       ! two messages with the same tag...
+       call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+    end if
+#endif
+    
+  end subroutine Node_Sp_gncol
+    
 
   ! Reads in a sparsity pattern at the
   ! current position in the file (iu)
@@ -39,7 +189,7 @@ contains
   ! the sparsity pattern as supplied (this implies Bcast = .true.)
   ! Else if Bcast is true it will b-cast the sparsity 
   ! pattern fully.
-  subroutine io_read_Sp(iu, no, sp, tag, dit, Bcast)
+  subroutine io_read_Sp(iu, no, sp, tag, dit, Bcast, gncol)
 
     ! File handle
     integer, intent(in) :: iu
@@ -54,17 +204,18 @@ contains
     type(OrbitalDistribution), intent(in), optional :: dit
     ! Bcast the values?
     logical, intent(in), optional :: Bcast
+    integer, pointer, optional :: gncol(:) => null()
 
     ! Local variables for reading the values
     integer, pointer :: ncol(:) => null()
     integer, pointer :: l_ptr(:) => null()
     integer, pointer :: l_col(:) => null()
 
-    integer :: io, n_nzs, ind, nl
+    integer :: io, n_nzs, ind, nl, n, i
     logical :: ldit, lBcast
-    integer, pointer :: buf(:) => null()
+    integer, pointer :: lncol(:) => null()
 #ifdef MPI
-    integer, allocatable :: buf2(:)
+    integer, allocatable :: buf(:)
     integer :: gio, max_n
     integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq, BNode
 #endif
@@ -77,16 +228,31 @@ contains
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
 
+    if ( present(gncol) ) then
+       if ( .not. associated(gncol) ) then
+          if ( Node == 0 ) then
+             allocate(gncol(no))
+          else
+             allocate(gncol(1)) ! dummy assign
+          end if
+       end if
+       lncol => gncol
+    end if
+
     if ( Node == 0 ) then
 
-       allocate(buf(no))
+       if ( .not. present(gncol) ) then
+          allocate(lncol(no))
+       end if
 
        ! First read in number of non-zero 
        ! entries per orbital
-       read(iu) buf
+       read(iu) lncol
 
 #ifdef MPI
-       max_n = maxval(buf)
+       if ( ldit ) then
+          max_n = max_consecutive_sum(dit,no,lncol)
+       end if
 #endif
 
     end if
@@ -97,8 +263,8 @@ contains
 #ifdef MPI
     if ( ldit ) then
 
-       nl = 0
        ! First count number of local entries
+       nl = 0
        do gio = 1 , no
           BNode = node_handling_element(dit,gio)
           if ( BNode == Node ) nl = nl + 1
@@ -109,62 +275,76 @@ contains
        allocate(ncol(nl))
        ! allocate all requests
        if ( Node /= 0 ) then
-          allocate(buf2(no))
-          buf2(:) = MPI_REQUEST_NULL
+          allocate(buf(no))
+          buf(:) = MPI_REQUEST_NULL
        else 
           MPIreq = MPI_REQUEST_NULL
        end if
 
-       ! distribute it
-       do gio = 1 , no
+       ! Distribute it
+       gio = 1
+       do while ( gio <= no ) 
+
           BNode = node_handling_element(dit,gio)
 
+          ! Get number of consecutive orbitals
+          ! belong to the same node...
+          n = count_consecutive(dit,no,gio)
+
           if ( BNode == Node ) then
-             ! We have the node, get the local orbital
+
              io = index_global_to_local(dit,gio,Node)
+
              if ( Node == 0 ) then
-                ncol(io) = buf(gio)
+                ncol(io:io-1+n) = lncol(gio:gio-1+n)
              else
-                call MPI_IRecv( ncol(io) , 1, MPI_Integer, &
-                     0, gio, MPI_Comm_World, buf2(gio), MPIerror )
+                call MPI_IRecv( ncol(io) , n, MPI_Integer, &
+                     0, gio, MPI_Comm_World, buf(gio), MPIerror )
              end if
+
           else if ( Node == 0 ) then
-             call MPI_ISSend( buf(gio) , 1, MPI_Integer, &
+
+             call MPI_ISSend( lncol(gio) , n, MPI_Integer, &
                   BNode, gio, MPI_Comm_World, MPIreq, MPIerror)
+
           end if
-          
+
+          gio = gio + n
+
        end do
 
        if ( Node == 0 ) then
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        else
           do gio = 1 , no
-             call MPI_Wait(buf2(gio),MPIstatus,MPIerror)
+             call MPI_Wait(buf(gio),MPIstatus,MPIerror)
           end do
-          deallocate(buf2)
+          deallocate(buf)
        end if
 
     else if ( lBcast ) then
 
        ! Everything should be b-casted
        if ( Node == 0 ) then
-          ncol => buf
+          ncol => lncol
        else
           allocate(ncol(nl))
        end if
        
        ! Bcast everything
-       call MPI_Bcast(ncol(1),nl,MPI_Integer,0,MPI_Comm_World, &
-            MPIError)
+       call MPI_Bcast(ncol(1),nl,MPI_Integer, &
+            0,MPI_Comm_World,MPIError)
        
-    else if ( Node /= 0 ) then
+    else if ( Node == 0 ) then
+       ncol => lncol
+    else ! if ( Node /= 0 ) then
        ! no distribution, no b-cast.
        ! The sparsity pattern will only exist on the IONode
        return ! the sparsity pattern will not be created then...
     end if
 #else
     ! Point to the buffer
-    ncol => buf
+    ncol => lncol
 #endif
 
     ! Allocate pointer
@@ -187,47 +367,66 @@ contains
        
        ! We have a distributed read
        if ( Node == 0 ) then
-          allocate(buf2(max_n))
+          allocate(buf(max_n))
        end if
 
        MPIreq = MPI_REQUEST_NULL
 
-       ! read in columns
+       ! Read in columns
        ind = 0
-       do gio = 1 , no
+       gio = 1
+       do while ( gio <= no ) 
+
           BNode = node_handling_element(dit,gio)
-          
+
+          ! Get number of consecutive orbitals
+          ! belong to the same node...
+          n = count_consecutive(dit,no,gio)
+
           if ( BNode == Node ) then
 
-             ! We have the node, get the local orbital
+             ! Get the local orbital
              io = index_global_to_local(dit,gio,Node)
-             if ( Node == 0 ) then
-                read(iu) l_col(ind+1:ind+ncol(io))
-             else
-                ! No need to block the receive...
-                call MPI_IRecv( l_col(ind+1) , ncol(io), MPI_Integer, &
-                     0, gio, MPI_Comm_World, MPIreq, MPIerror )
-             end if
 
-             ind = ind + ncol(io)
+             if ( Node == 0 ) then
+
+                do i = io , io - 1 + n
+                   read(iu) l_col(ind+1:ind+ncol(i))
+                   ind = ind + ncol(i)
+                end do
+
+             else
+
+                ! count the number of received entities
+                i = sum(ncol(io:io-1+n))
+                call MPI_IRecv( l_col(ind+1) , i, MPI_Integer, &
+                     0, gio, MPI_Comm_World, MPIreq, MPIerror )
+                ind = ind + i
+                
+             end if
 
           else if ( Node == 0 ) then
 
-             ! We wait just before reading the next quantity...
-             ! (the first wait will immediately return as there
-             ! is no request (MPI_REQUEST_NULL))
              call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-             read(iu) buf2(1:buf(gio))
-             call MPI_ISSend( buf2(1) , buf(gio), MPI_Integer, &
-                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror)
+             i = 0
+             do io = gio , gio - 1 + n
+                read(iu) buf(i+1:i+lncol(io))
+                i = i + lncol(io)
+             end do
 
+             call MPI_ISSend( buf(1) , i, MPI_Integer, &
+                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror)
+             
           end if
-          
+
+          gio = gio + n
+
        end do
 
        call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        if ( Node == 0 ) then
-          deallocate(buf,buf2)
+          deallocate(buf)
+          if ( .not. present(gncol) ) deallocate(lncol)
        end if
 
     else if ( lBcast ) then
@@ -243,8 +442,8 @@ contains
        end if
 
        ! Bcast
-       call MPI_Bcast(l_col(1),n_nzs,MPI_Integer,0,MPI_Comm_World, &
-            MPIError)
+       call MPI_Bcast(l_col(1),n_nzs,MPI_Integer, &
+            0,MPI_Comm_World,MPIError)
 
     end if
 
@@ -261,7 +460,7 @@ contains
     ! Create the sparsity pattern
     call newSparsity(sp,nl,no, &
          n_nzs, ncol, l_ptr, l_col, trim(tag))
-    
+
     deallocate(ncol,l_ptr,l_col)
     
   end subroutine io_read_Sp
@@ -269,7 +468,7 @@ contains
   ! Writes a sparsity pattern at the
   ! current position in the file (iu)
   ! If dist is supplied it will write a distributed sparsity pattern
-  subroutine io_write_Sp(iu, sp, dit)
+  subroutine io_write_Sp(iu, sp, dit, gncol)
 
     ! File handle
     integer, intent(in) :: iu
@@ -277,15 +476,16 @@ contains
     type(Sparsity), intent(inout) :: sp
     ! distribution
     type(OrbitalDistribution), intent(inout), optional :: dit
+    integer, pointer, optional :: gncol(:) => null()
 
     ! Local variables for reading the values
-    integer, pointer :: buf(:) => null()
-    integer, pointer :: ncol(:) => null(), l_col(:) => null()
+    integer, pointer :: lncol(:) => null()
+    integer, pointer :: ncol(:), l_col(:) => null()
 
-    integer :: lno, no, io, max_n, ind
+    integer :: lno, no, io, max_n, ind, n, i
     logical :: ldit
 #ifdef MPI
-    integer, allocatable :: buf2(:)
+    integer, allocatable :: buf(:)
     integer :: gio
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
 #endif
@@ -299,70 +499,44 @@ contains
     if ( ldit ) then
 
 #ifdef MPI
-       ! Allocate the full ncol
-       allocate(buf(no))
+       if ( present(gncol) ) then
+          if ( .not. associated(gncol) ) then
 
-       if ( Node == 0 ) then
-          allocate(buf2(no))
-          buf2(:) = MPI_REQUEST_NULL
-       else
-          MPIreq = MPI_REQUEST_NULL
-       end if
-          
-       do gio = 1 , no
-          BNode = node_handling_element(dit,gio)
-          
-          if ( Node == BNode ) then
-             io = index_global_to_local(dit,gio,Node)
-             if ( Node == 0 ) then
-                buf(gio) = ncol(io)
-             else
-                call MPI_ISSend( ncol(io) , 1, MPI_Integer, &
-                     0, gio, MPI_Comm_World, MPIreq, MPIerror)
-             end if
-          else if ( Node == 0 ) then
-             call MPI_IRecv( buf(gio) , 1, MPI_Integer, &
-                  BNode, gio, MPI_Comm_World, buf2(gio), MPIerror )
+          ! Allocate the full ncol
+          if ( Node == 0 ) then
+             allocate(gncol(no))
+          else
+             allocate(gncol(1))
           end if
-       end do
+       
+          ! globalize it... (I would rather not do this.. but
+          ! currently it is the only way...)
+          call Node_Sp_gncol(0,sp,dit,no,gncol)
 
-       if ( Node == 0 ) then
-          do gio = 1 , no
-             call MPI_Wait(buf2(gio),MPIstatus,MPIerror)
-          end do
-          deallocate(buf2)
+          end if
+          lncol => gncol
        else
-          ! Wait for the last one to not send
-          ! two messages with the same tag...
-          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+          allocate(lncol(no))
+          call Node_Sp_gncol(0,sp,dit,no,lncol)
        end if
+
 #else
        call die('Error in code, non-full contained sp')
 #endif
 
-    else
-       
-       buf => ncol
-       
     end if
     
     if ( Node == 0 ) then
        
-       write(iu) buf
+       write(iu) lncol
 
        ! Retrive the maximum number of non-zero
        ! elements in each row
-       max_n = maxval(buf)
+       if ( ldit ) then
+          max_n = max_consecutive_sum(dit,no,lncol)
+       end if
 
     end if
-
-#ifdef MPI
-    if ( ldit ) then
-       deallocate(buf)
-    end if
-#endif
-
-    nullify(buf)
 
 #ifdef MPI
     ! Write the list_col array
@@ -372,34 +546,47 @@ contains
        if ( Node == 0 ) then
           allocate(buf(max_n))
        end if
-       MPIerror = MPI_Success - 1
+       MPIreq = MPI_REQUEST_NULL
 
        ! Loop size
        ind = 0
-       do gio = 1 , no
+       gio = 1 
+       do while ( gio <= no )
           BNode = node_handling_element(dit,gio)
+
+          ! Get number of consecutive orbitals
+          n = count_consecutive(dit,no,gio)
           
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
-                write(iu) l_col(ind+1:ind+ncol(io))
+                do i = io , io - 1 + n
+                   write(iu) l_col(ind+1:ind+ncol(i))
+                   ind = ind + ncol(i)
+                end do
              else
-                call MPI_ISSend( l_col(ind+1) , ncol(io), &
-                     MPI_Integer, 0, gio, MPI_Comm_World, MPIreq, MPIerror)
+                i = sum(ncol(io:io-1+n))
+                call MPI_ISSend( l_col(ind+1) , i, MPI_Integer, &
+                     0, gio, MPI_Comm_World, MPIreq, MPIerror)
              end if
-             ind = ind + ncol(io)
           else if ( Node == 0 ) then
              call MPI_Recv( buf(1) , max_n, MPI_Integer, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
                   call die('Error in code: io_write_Sp')
-             call MPI_Get_Count(MPIstatus, MPI_Integer, io, MPIerror)
-             write(iu) buf(1:io)
+             i = 0
+             do io = gio , gio - 1 + n
+                write(iu) buf(i+1:i+lncol(io))
+                i = i + lncol(io)
+             end do
+
           end if
+          gio = gio + n
        end do
        
        if ( Node == 0 ) then
           deallocate(buf)
+          if ( .not. present(gncol) ) deallocate(lncol)
        else
           ! Wait for the last one to not send
           ! two messages with the same tag...
@@ -409,8 +596,8 @@ contains
 
        ind = 0
        do io = 1 , no
-          write(iu) l_col(ind+1:ind+ncol(io))
-          ind = ind + ncol(io)
+          write(iu) l_col(ind+1:ind+lncol(io))
+          ind = ind + lncol(io)
        end do
        
     end if
@@ -419,14 +606,15 @@ contains
     
     ind = 0
     do io = 1 , no
-       write(iu) l_col(ind+1:ind+ncol(io))
-       ind = ind + ncol(io)
+       write(iu) l_col(ind+1:ind+lncol(io))
+       ind = ind + lncol(io)
     end do
+
 #endif
     
   end subroutine io_write_Sp
 
-  subroutine io_read_d1D(iu, sp, dSp1D, tag, dit, Bcast)
+  subroutine io_read_d1D(iu, sp, dSp1D, tag, dit, Bcast, gncol)
 
     use class_dSpData1D
 
@@ -443,17 +631,16 @@ contains
     type(OrbitalDistribution), intent(in), optional :: dit
     ! Bcast the values?
     logical, intent(in), optional :: Bcast
+    integer, pointer, optional :: gncol(:)
 
     ! Local variables for reading the values
     type(OrbitalDistribution) :: fdit
     real(dp), pointer :: a(:) => null()
-    integer, pointer :: ncol(:) => null()
+    integer, pointer :: lncol(:) => null(), ncol(:)
 
-    integer :: io, lno, no, ind, n_nzs
+    integer :: io, lno, no, ind, n_nzs, n, i
     logical :: ldit, lBcast
-    integer, pointer :: ibuf(:) => null()
 #ifdef MPI
-    integer, allocatable :: ibuf2(:)
     real(dp), allocatable :: buf(:)
     integer :: max_n, gio
     integer :: MPIerror, BNode, MPIreq, MPIstatus(MPI_STATUS_SIZE)
@@ -464,54 +651,35 @@ contains
     if ( present(Bcast) ) lBcast = Bcast
 
     call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,nnzs=n_nzs)
-    ldit = .not. lno == no
+    if ( ldit ) ldit = lno /= no
 
     if ( ldit ) then
        call newdSpData1D(sp,dit,dSp1D,name=trim(tag))
        
-       if ( lno == no ) then
-          ibuf => ncol
-       else
 #ifdef MPI
-          allocate(ibuf(no))
-          if ( Node == 0 ) then
-             allocate(ibuf2(no))
-             ibuf2(:) = MPI_REQUEST_NULL
-          else
-             MPIreq = MPI_REQUEST_NULL
-          end if
-          
-          do gio = 1 , no
-             BNode = node_handling_element(dit,gio)
-             
-             if ( Node == BNode ) then
-                io = index_global_to_local(dit,gio,Node)
-                if ( Node == 0 ) then
-                   ibuf(gio) = ncol(io)
-                else
-                   call MPI_ISSend( ncol(io) , 1, MPI_Integer, &
-                        0, gio, MPI_Comm_World, MPIreq, MPIerror)
-                end if
-             else if ( Node == 0 ) then
-                call MPI_IRecv( ibuf(gio) , 1, MPI_Integer, &
-                     BNode, gio, MPI_Comm_World, ibuf2(gio), MPIerror )
-             end if
-          end do
+       if ( present(gncol) ) then
+          if ( .not. associated(gncol) ) then
 
-          ! Wait for the last one to not send
-          ! two messages with the same tag...
+          ! Allocate the full ncol
           if ( Node == 0 ) then
-             do gio = 1 , no
-                call MPI_Wait(ibuf2(gio),MPIstatus,MPIerror)
-             end do
-             deallocate(ibuf2)
+             allocate(gncol(no))
           else
-             call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+             allocate(gncol(1))
           end if
-#else
-          call die('Error in distribution, io_read_d1D')
-#endif
+       
+          ! globalize it... (I would rather not do this.. but
+          ! currently it is the only way...)
+          call Node_Sp_gncol(0,sp,dit,no,gncol)
+
+          end if
+          lncol => gncol
+       else
+          allocate(lncol(no))
+          call Node_Sp_gncol(0,sp,dit,no,lncol)
        end if
+#else
+       call die('Error in distribution, io_read_d1D')
+#endif
 
     else
        ! Create the Fake distribution
@@ -530,36 +698,69 @@ contains
        
        ! Allocate the maximum number of entries
        if ( Node == 0 ) then
-          max_n = maxval(ibuf)
+          max_n = max_consecutive_sum(dit,no,lncol)
           allocate(buf(max_n))
        end if
        MPIreq = MPI_REQUEST_NULL
 
        ! Loop size
        ind = 0
-       do gio = 1 , no
+       gio = 1 
+       do while ( gio <= no )
           BNode = node_handling_element(dit,gio)
-          
-          if ( Node == BNode ) then
+
+          ! Get number of consecutive orbitals
+          ! belong to the same node...
+          n = count_consecutive(dit,no,gio)
+
+          if ( BNode == Node ) then
+
+             ! Get the local orbital
              io = index_global_to_local(dit,gio,Node)
+
              if ( Node == 0 ) then
-                read(iu) a(ind+1:ind+ncol(io))
+
+                do i = io , io - 1 + n
+                   read(iu) a(ind+1:ind+ncol(i))
+                   ind = ind + ncol(i)
+                end do
+
              else
-                call MPI_IRecv( a(ind+1) , ncol(io), MPI_Double_Precision, &
-                     0, gio, MPI_Comm_World, MPIreq, MPIerror)
+
+                ! count the number of received entities
+                i = sum(ncol(io:io-1+n))
+                call MPI_IRecv( a(ind+1) , i, MPI_Double_Precision, &
+                     0, gio, MPI_Comm_World, MPIreq, MPIerror )
+                ind = ind + i
+                
              end if
-             ind = ind + ncol(io)
+             
           else if ( Node == 0 ) then
+
              call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-             read(iu) buf(1:ibuf(gio))
-             call MPI_ISSend( buf(1) , ibuf(gio) , MPI_Double_Precision, &
-                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror )
+             i = 0
+             do io = gio , gio - 1 + n
+                read(iu) buf(i+1:i+lncol(io))
+                i = i + lncol(io)
+             end do
+
+             call MPI_ISSend( buf(1) , i, MPI_Double_Precision, &
+                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror)
+             
           end if
+
+          gio = gio + n
+
        end do
 
+       ! This completes all send/recv (simply
+       ! because we have a wait...)
        call MPI_Wait(MPIreq,MPIstatus,MPIerror)
 
-       deallocate(ibuf)
+       if ( Node == 0 ) then
+          deallocate(buf)
+          if ( .not. present(gncol) ) deallocate(lncol)
+       end if
 #else
        call die('Error in distribution for, io_read_d1D')
 #endif
@@ -588,7 +789,7 @@ contains
 
   end subroutine io_read_d1D
 
-  subroutine io_write_d1D(iu, dSp1D)
+  subroutine io_write_d1D(iu, dSp1D, gncol)
 
     use class_dSpData1D
 
@@ -596,14 +797,15 @@ contains
     integer, intent(in) :: iu
     ! Data array with sparsity pattern (and an attached distribution)
     type(dSpData1D), intent(inout) :: dSp1D
+    integer, pointer, optional :: gncol(:)
 
     ! Local variables for reading the values
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
     real(dp), pointer :: a(:) => null()
-    integer, pointer :: ncol(:) => null()
+    integer, pointer :: lncol(:) => null(), ncol(:)
 
-    integer :: io, lno, no, ind
+    integer :: io, lno, no, ind, n, i
     logical :: ldit
 #ifdef MPI
     real(dp), allocatable :: buf(:)
@@ -613,7 +815,7 @@ contains
 
     dit => dist(dSp1D)
     sp => spar(dSp1D)
-    call attach(sp,nrows=lno,nrows_g=no, n_col=ncol)
+    call attach(sp,nrows=lno,nrows_g=no,n_col=ncol)
 
     ! If they are different we should 
     ! use the distribution setting
@@ -623,52 +825,85 @@ contains
     a => val(dSp1D)
 
     if ( ldit ) then
-       
-#ifdef MPI
-       ! Get the maximum size of the array
-       io = maxval(ncol)
-       call MPI_Reduce(io,max_n,1,MPI_Integer, &
-            MPI_Max, 0, MPI_Comm_World, MPIerror)
 
+#ifdef MPI
+       nullify(lncol)
+       if ( present(gncol) ) then
+          if ( .not. associated(gncol) ) then
+
+          ! Allocate the full ncol
+          if ( Node == 0 ) then
+             allocate(gncol(no))
+          else
+             allocate(gncol(1))
+          end if
+       
+          ! globalize it... (I would rather not do this.. but
+          ! currently it is the only way...)
+          call Node_Sp_gncol(0,sp,dit,no,gncol)
+
+          end if
+          lncol => gncol
+       else
+          allocate(lncol(no))
+          call Node_Sp_gncol(0,sp,dit,no,lncol)
+       end if
+#else
+       call die('Error in distribution, io_write_d1D')
+#endif
+
+#ifdef MPI
        ! The ionode now has the maximum retrieved array
        if ( Node == 0 ) then
+          max_n = max_consecutive_sum(dit,no,lncol)
           allocate(buf(max_n))
        end if
        MPIreq = MPI_REQUEST_NULL
 
-       ! Loop size
+       ! Write the data...
        ind = 0
-       do gio = 1 , no
+       gio = 1
+       do while ( gio <= no )
           BNode = node_handling_element(dit,gio)
+          
+          ! Get number of consecutive orbitals
+          n = count_consecutive(dit,no,gio)
           
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
-                write(iu) a(ind+1:ind+ncol(io))
+                do i = io , io - 1 + n
+                   write(iu) a(ind+1:ind+ncol(i))
+                   ind = ind + ncol(i)
+                end do
              else
-                call MPI_ISSend( a(ind+1) , ncol(io), &
-                     MPI_Double_Precision, 0, gio, MPI_Comm_World, MPIreq, MPIerror)
+                i = sum(ncol(io:io-1+n))
+                call MPI_ISSend( a(ind+1) , i, MPI_Double_Precision, &
+                     0, gio, MPI_Comm_World, MPIreq, MPIerror)
              end if
-             ind = ind + ncol(io)
           else if ( Node == 0 ) then
              call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
                   call die('Error in code: io_write_dSp1D')
-             call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
-             write(iu) buf(1:io)
+             i = 0
+             do io = gio , gio - 1 + n
+                write(iu) buf(i+1:i+lncol(io))
+                i = i + lncol(io)
+             end do
+             
           end if
+          gio = gio + n
        end do
-       
+          
        if ( Node == 0 ) then
           deallocate(buf)
+          if ( .not. present(gncol) ) deallocate(lncol)
        else
           ! Wait for the last one to not send
           ! two messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end if
-#else
-       call die('Error in io_write_d1D')
 #endif
     else
 
@@ -683,7 +918,7 @@ contains
   end subroutine io_write_d1D
 
   subroutine io_read_d2D(iu, sp, dSp2D, dim2, tag, &
-       sparsity_dim, dit, Bcast)
+       sparsity_dim, dit, Bcast, gncol)
     
     use class_dSpData2D
 
@@ -704,18 +939,17 @@ contains
     type(OrbitalDistribution), intent(in), optional :: dit
     ! Bcast the values?
     logical, intent(in), optional :: Bcast
+    integer, pointer, optional :: gncol(:) => null()
 
     ! Local variables for reading the values
     type(OrbitalDistribution) :: fdit
     real(dp), pointer :: a(:,:) => null()
-    integer, pointer :: ncol(:) => null()
-    integer, pointer :: ibuf(:) => null()
+    integer, pointer :: lncol(:) => null(), ncol(:)
 
-    integer :: io, lno, no, s, ind, n_nzs
+    integer :: io, lno, no, s, ind, n_nzs, n, i
     integer :: sp_dim
     logical :: ldit, lBcast
 #ifdef MPI
-    integer, allocatable :: ibuf2(:)
     real(dp), allocatable :: buf(:)
     integer :: gio, max_n
     integer :: MPIerror, BNode, MPIreq, MPIstatus(MPI_STATUS_SIZE)
@@ -729,54 +963,36 @@ contains
     if ( present(sparsity_dim) ) sp_dim = sparsity_dim
 
     call attach(sp,nrows=lno, nrows_g=no, n_col=ncol,nnzs=n_nzs)
-    ldit = .not. lno == no
+    if ( ldit ) ldit = lno /= no
 
     if ( ldit ) then
        call newdSpData2D(sp,dim2,dit,dSp2D,name=trim(tag), &
             sparsity_dim=sp_dim)
 
-       if ( lno == no ) then
-          ibuf => ncol
-       else
 #ifdef MPI
-          allocate(ibuf(no))
+       if ( present(gncol) ) then
+          if ( .not. associated(gncol) ) then
+
+          ! Allocate the full ncol
           if ( Node == 0 ) then
-             allocate(ibuf2(no))
-             ibuf2(:) = MPI_REQUEST_NULL
+             allocate(gncol(no))
           else
-             MPIreq = MPI_REQUEST_NULL
+             allocate(gncol(1))
           end if
+       
+          ! globalize it... (I would rather not do this.. but
+          ! currently it is the only way...)
+          call Node_Sp_gncol(0,sp,dit,no,gncol)
 
-          do gio = 1 , no
-             BNode = node_handling_element(dit,gio)
-             
-             if ( Node == BNode ) then
-                io = index_global_to_local(dit,gio,Node)
-                if ( Node == 0 ) then
-                   ibuf(gio) = ncol(io)
-                else
-                   call MPI_ISSend( ncol(io) , 1, MPI_Integer, &
-                        0, gio, MPI_Comm_World, MPIreq, MPIerror)
-                end if
-             else if ( Node == 0 ) then
-                call MPI_IRecv( ibuf(gio) , 1, MPI_Integer, &
-                     BNode, gio, MPI_Comm_World, ibuf2(gio), MPIerror )
-             end if
-          end do
-
-          if ( Node == 0 ) then
-             do gio = 1 , no
-                call MPI_Wait(ibuf2(gio),MPIstatus,MPIerror)
-             end do
-             deallocate(ibuf2)
-          else
-             call MPI_Wait(MPIreq,MPIstatus,MPIerror)
           end if
-
-#else
-          call die('Error in distribution, io_read_d2D')
-#endif
+          lncol => gncol
+       else
+          allocate(lncol(no))
+          call Node_Sp_gncol(0,sp,dit,no,lncol)
        end if
+#else
+       call die('Error in distribution, io_read_d2D')
+#endif
 
     else
        ! Create the Fake distribution
@@ -796,67 +1012,104 @@ contains
 #ifdef MPI
        ! Allocate maximum number of entries
        if ( Node == 0 ) then
-          max_n = maxval(ibuf)
-          allocate(buf(max_n*dim2))
+          max_n = max_consecutive_sum(dit,no,lncol)
        end if
        MPIreq = MPI_REQUEST_NULL
 
     if ( sp_dim == 2 ) then ! collapsed IO
-       ! Loop size
+
+       if ( Node == 0 ) then
+          allocate(buf(max_n*dim2))
+       end if
+
+       ! Read sparse blocks and distribute
        ind = 0
-       do gio = 1 , no
+       gio = 1 
+       do while ( gio <= no )
           BNode = node_handling_element(dit,gio)
-          
-          if ( Node == BNode ) then
+          ! Get number of consecutive orbitals
+          ! belong to the same node...
+          n = count_consecutive(dit,no,gio)
+          if ( BNode == Node ) then
+             ! Get the local orbital
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
-                read(iu) a(1:dim2,ind+1:ind+ncol(io))
+                do i = io , io - 1 + n
+                   read(iu) a(1:dim2,ind+1:ind+ncol(i))
+                   ind = ind + ncol(i)
+                end do
              else
-                call MPI_IRecv( a(1,ind+1) , dim2*ncol(io), MPI_Double_Precision, &
-                     0, gio, MPI_Comm_World, MPIreq, MPIerror)
+                ! count the number of received entities
+                i = sum(ncol(io:io-1+n))
+                call MPI_IRecv( a(1,ind+1) ,dim2*i, MPI_Double_Precision, &
+                     0, gio, MPI_Comm_World, MPIreq, MPIerror )
+                ind = ind + i
              end if
-             ind = ind + ncol(io)
           else if ( Node == 0 ) then
              call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-             read(iu) buf(1:ibuf(gio)*dim2)
-             call MPI_ISSend( buf(1) , ibuf(gio)*dim2 , MPI_Double_Precision, &
-                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror )
+             i = 0
+             do io = gio , gio - 1 + n
+                read(iu) buf(i+1:i+dim2*lncol(io))
+                i = i + dim2*lncol(io)
+             end do
+             call MPI_ISSend( buf(1) , i, MPI_Double_Precision, &
+                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror)
           end if
+          gio = gio + n
        end do
 
        call MPI_Wait(MPIreq,MPIstatus,MPIerror)
 
     else ! non-collapsed IO
 
+       if ( Node == 0 ) then
+          allocate(buf(max_n))
+       end if
+
        do s = 1 , dim2
           ind = 0
-          do gio = 1 , no
+          gio = 1 
+          do while ( gio <= no )
              BNode = node_handling_element(dit,gio)
-             
-             if ( Node == BNode ) then
+             ! Get number of consecutive orbitals
+             ! belong to the same node...
+             n = count_consecutive(dit,no,gio)
+             if ( BNode == Node ) then
+                ! Get the local orbital
                 io = index_global_to_local(dit,gio,Node)
                 if ( Node == 0 ) then
-                   read(iu) a(ind+1:ind+ncol(io),s)
+                   do i = io , io - 1 + n
+                      read(iu) a(ind+1:ind+ncol(i),s)
+                      ind = ind + ncol(i)
+                   end do
                 else
-                   call MPI_IRecv( a(ind+1,s) , ncol(io), MPI_Double_Precision, &
-                        0, gio, MPI_Comm_World, MPIreq, MPIerror)
+                   ! count the number of received entities
+                   i = sum(ncol(io:io-1+n))
+                   call MPI_IRecv( a(ind+1,s) ,i, MPI_Double_Precision, &
+                        0, gio, MPI_Comm_World, MPIreq, MPIerror )
+                   ind = ind + i
                 end if
-                ind = ind + ncol(io)
              else if ( Node == 0 ) then
                 call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-                read(iu) buf(1:ibuf(gio))
-                call MPI_ISSend( buf(1) , ibuf(gio) , MPI_Double_Precision, &
-                     BNode, gio, MPI_Comm_World, MPIreq, MPIerror )
+                i = 0
+                do io = gio , gio - 1 + n
+                   read(iu) buf(i+1:i+lncol(io))
+                   i = i + lncol(io)
+                end do
+                call MPI_ISSend( buf(1) , i, MPI_Double_Precision, &
+                     BNode, gio, MPI_Comm_World, MPIreq, MPIerror)
              end if
+             gio = gio + n
           end do
-
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-
        end do
 
-       deallocate(ibuf)
-
     end if
+
+       if ( Node == 0 ) then
+          deallocate(buf)
+          if ( .not. present(gncol) ) deallocate(lncol)
+       end if
 
 #else
        call die('Error in distribution for, io_read_d2D')
@@ -867,7 +1120,7 @@ contains
           if ( sp_dim == 2 ) then ! collapsed IO
              ind = 0
              do io = 1 , no
-                read(iu) (a(1:dim2,ind+s),s=1,ncol(io))
+                read(iu) a(1:dim2,ind+1:ind+ncol(io))
                 ind = ind + ncol(io)
              end do
           else ! non-collapsed IO
@@ -894,7 +1147,7 @@ contains
 
   end subroutine io_read_d2D
 
-  subroutine io_write_d2D(iu, dSp2D)
+  subroutine io_write_d2D(iu, dSp2D, gncol)
 
     use class_dSpData2D
 
@@ -902,15 +1155,16 @@ contains
     integer, intent(in) :: iu
     ! Data array with sparsity pattern (and an attached distribution)
     type(dSpData2D), intent(inout) :: dSp2D
+    integer, pointer, optional :: gncol(:) => null()
 
     ! Local variables for reading the values
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
     real(dp), pointer :: a(:,:) => null()
-    integer, pointer :: ncol(:) => null()
+    integer, pointer :: lncol(:) => null(), ncol(:)
 
     integer :: io, lno, no, ind
-    integer :: id2, dim2, sp_dim, n_nzs
+    integer :: s, dim2, sp_dim, n_nzs, n, i
     logical :: ldit
 #ifdef MPI
     real(dp), allocatable :: buf(:)
@@ -935,12 +1189,37 @@ contains
     end if
 
     if ( ldit ) then
+
+#ifdef MPI
+       nullify(lncol)
+       if ( present(gncol) ) then
+          if ( .not. associated(gncol) ) then
+
+          ! Allocate the full ncol
+          if ( Node == 0 ) then
+             allocate(gncol(no))
+          else
+             allocate(gncol(1))
+          end if
+       
+          ! globalize it... (I would rather not do this.. but
+          ! currently it is the only way...)
+          call Node_Sp_gncol(0,sp,dit,no,gncol)
+
+          end if
+          lncol => gncol
+       else
+          allocate(lncol(no))
+          call Node_Sp_gncol(0,sp,dit,no,lncol)
+       end if
+#else
+       call die('Error in distribution, io_write_d2D')
+#endif
        
 #ifdef MPI
-       ! Get the maximum size of the array
-       io = maxval(ncol)
-       call MPI_Reduce(io,max_n,1,MPI_Integer, &
-            MPI_Max, 0, MPI_Comm_World, MPIerror)
+       if ( Node == 0 ) then
+          max_n = max_consecutive_sum(dit,no,lncol)
+       end if
 
        MPIreq = MPI_REQUEST_NULL
 
@@ -952,31 +1231,46 @@ contains
           allocate(buf(max_n))
        end if
 
-       do id2 = 1 , dim2
+       do s = 1 , dim2
+
+          ! Write the data...
           ind = 0
-          do gio = 1 , no
+          gio = 1
+          do while ( gio <= no )
              BNode = node_handling_element(dit,gio)
+          
+             ! Get number of consecutive orbitals
+             n = count_consecutive(dit,no,gio)
              
              if ( Node == BNode ) then
                 io = index_global_to_local(dit,gio,Node)
                 if ( Node == 0 ) then
-                   write(iu) a(ind+1:ind+ncol(io),id2)
+                   do i = io , io - 1 + n
+                      write(iu) a(ind+1:ind+ncol(i),s)
+                      ind = ind + ncol(i)
+                   end do
                 else
-                   call MPI_ISSend( a(ind+1,id2) , ncol(io), &
-                        MPI_Double_Precision, 0, gio, MPI_Comm_World, MPIreq, MPIerror)
+                   i = sum(ncol(io:io-1+n))
+                   call MPI_ISSend( a(ind+1,s) , i, MPI_Double_Precision, &
+                        0, gio, MPI_Comm_World, MPIreq, MPIerror)
                 end if
-                ind = ind + ncol(io)
              else if ( Node == 0 ) then
                 call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                      BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
                 if ( MPIerror /= MPI_Success ) &
-                     call die('Error in code (1): io_write_dSp2D')
-                call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
-                write(iu) buf(1:io)
+                     call die('Error in code: io_write_dSp2D')
+                i = 0
+                do io = gio , gio - 1 + n
+                   write(iu) buf(i+1:i+lncol(io))
+                   i = i + lncol(io)
+                end do
+             
              end if
-          end do ! gio
+             gio = gio + n
+          end do
+
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-       end do ! id2
+       end do
 
     else
 
@@ -985,32 +1279,45 @@ contains
        end if
        
        ind = 0
-       do gio = 1 , no
+       gio = 1
+       do while ( gio <= no )
           BNode = node_handling_element(dit,gio)
+          
+          ! Get number of consecutive orbitals
+          n = count_consecutive(dit,no,gio)
           
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
-                write(iu) a(1:dim2,ind+1:ind+ncol(io))
+                do i = io , io - 1 + n
+                   write(iu) a(1:dim2,ind+1:ind+ncol(i))
+                   ind = ind + ncol(i)
+                end do
              else
-                call MPI_ISSend( a(1,ind+1) , dim2*ncol(io), &
-                     MPI_Double_Precision, 0, gio, MPI_Comm_World, MPIreq, MPIerror)
+                i = sum(ncol(io:io-1+n))
+                call MPI_ISSend( a(1,ind+1) , dim2*i, MPI_Double_Precision, &
+                     0, gio, MPI_Comm_World, MPIreq, MPIerror)
              end if
-             ind = ind + ncol(io)
           else if ( Node == 0 ) then
              call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
-                  call die('Error in code (2): io_write_dSp2D')
-             call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
-             write(iu) buf(1:io)
+                  call die('Error in code: io_write_dSp2D')
+             i = 0
+             do io = gio , gio - 1 + n
+                write(iu) buf(i+1:i+dim2*lncol(io))
+                i = i + lncol(io)
+             end do
+             
           end if
+          gio = gio + n
        end do
 
     end if
     
        if ( Node == 0 ) then
           deallocate(buf)
+          if ( .not. present(gncol) ) deallocate(lncol)
        else
           ! Wait for the last one to not send
           ! two messages with the same tag...
@@ -1022,10 +1329,10 @@ contains
     else
        
        if ( sp_dim == 1 ) then
-          do id2 = 1 , dim2
+          do s = 1 , dim2
              ind = 0
              do io = 1 , no
-                write(iu) a(ind+1:ind+ncol(io),id2)
+                write(iu) a(ind+1:ind+ncol(io),s)
                 ind = ind + ncol(io)
              end do
           end do
