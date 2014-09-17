@@ -1,4 +1,15 @@
 ----------------------------------------------------
+September 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-195
+Bugfix for pointer in m_io_s
+
+* I accidentially left the gncol 
+  in a state of => null() when passing
+  it to the routine.
+
+modified:
+  Src/m_io_s.F90
+
+----------------------------------------------------
 September 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-194
 Implemented block read/write to DM/TSDE files
 

@@ -204,7 +204,7 @@ contains
     type(OrbitalDistribution), intent(in), optional :: dit
     ! Bcast the values?
     logical, intent(in), optional :: Bcast
-    integer, pointer, optional :: gncol(:) => null()
+    integer, pointer, optional :: gncol(:)
 
     ! Local variables for reading the values
     integer, pointer :: ncol(:) => null()
@@ -476,7 +476,7 @@ contains
     type(Sparsity), intent(inout) :: sp
     ! distribution
     type(OrbitalDistribution), intent(inout), optional :: dit
-    integer, pointer, optional :: gncol(:) => null()
+    integer, pointer, optional :: gncol(:)
 
     ! Local variables for reading the values
     integer, pointer :: lncol(:) => null()
@@ -939,7 +939,7 @@ contains
     type(OrbitalDistribution), intent(in), optional :: dit
     ! Bcast the values?
     logical, intent(in), optional :: Bcast
-    integer, pointer, optional :: gncol(:) => null()
+    integer, pointer, optional :: gncol(:)
 
     ! Local variables for reading the values
     type(OrbitalDistribution) :: fdit
@@ -1155,7 +1155,7 @@ contains
     integer, intent(in) :: iu
     ! Data array with sparsity pattern (and an attached distribution)
     type(dSpData2D), intent(inout) :: dSp2D
-    integer, pointer, optional :: gncol(:) => null()
+    integer, pointer, optional :: gncol(:)
 
     ! Local variables for reading the values
     type(Sparsity), pointer :: sp
