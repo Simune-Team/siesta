@@ -59,6 +59,12 @@ MODULE siesta_options
   logical :: do_pdos       ! Compute the projected density of states?
   logical :: writedm       ! Write file with density matrix?
   logical :: writedm_cdf   ! Write file with density matrix in netCDF form?
+#ifdef NCDF_4
+  logical :: write_cdf     ! Write file with all information attached
+  integer :: cdf_comp_lvl  ! The compression level of the Netcdf-4 file
+  logical :: cdf_w_parallel  ! Allows writing NetCDF files in parallel
+  logical :: cdf_r_parallel  ! Allows reading NetCDF files in parallel, parallel read does not impose the same requirements as w_parallel
+#endif
   logical :: writedm_cdf_history   ! Write file with SCF history of DM in netCDF form?
   logical :: writedmhs_cdf ! Write file with DM_in, H, DM_out, and S in netCDF form?
   logical :: writedmhs_cdf_history   ! Write file with SCF history in netCDF form?
@@ -1572,6 +1578,23 @@ MODULE siesta_options
     writef                = fdf_get( 'WriteForces', outlng )
     writedm               = fdf_get( 'WriteDM', .true. )
     writedm_cdf           = fdf_get('WriteDM.NetCDF', .false. )
+#ifdef NCDF_4
+    write_cdf             = fdf_get('CDF.Save', .false. )
+    ! No compression is by far the fastest
+    cdf_comp_lvl          = fdf_get('CDF.Compress', 0 )
+    cdf_w_parallel        = fdf_get('CDF.Write.Parallel', .false. )
+#ifndef NCDF_PARALLEL
+    ! If not compiled with NCDF_PARALLEL, we do not
+    ! allow parallel writes.....!!!!
+    cdf_w_parallel = .false.
+#endif
+    if ( cdf_w_parallel ) then
+       ! Doing parallel writes does not allow
+       ! compression (the offset cannot be calculated)
+       cdf_comp_lvl = 0
+    end if
+    cdf_r_parallel        = fdf_get('CDF.Read.Parallel', .false. )
+#endif
     writedm_cdf_history   = fdf_get('WriteDM.History.NetCDF', .false. )
     writedmhs_cdf         = fdf_get('WriteDMHS.NetCDF', .false. )
     writedmhs_cdf_history = fdf_get('WriteDMHS.History.NetCDF', .false.)

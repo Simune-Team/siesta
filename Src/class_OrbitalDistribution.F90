@@ -70,6 +70,7 @@
   public :: newDistribution
   public :: num_local_elements, node_handling_element
   public :: index_local_to_global, index_global_to_local
+  public :: global_offset
   public :: print_type
 
   interface newDistribution
@@ -343,6 +344,44 @@
 
       end function node_handling_element
 
+   function global_offset(this,count) result(off)
+#ifdef MPI
+     use mpi_siesta, only: MPI_COMM_Self, MPI_Integer, MPI_STATUS_SIZE
+#endif
+     type(OrbitalDistribution), intent(in)  :: this
+     integer, intent(in)                    :: count
+     integer                                :: off
+
+#ifdef MPI
+     integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE)
+     integer :: tmp
+#endif
+
+     ! Default offset
+     off = 0
+     if (this%data%blocksize == 0) then
+        return
+#ifdef MPI
+     else if ( this%data%Comm == MPI_Comm_Self ) then ! globalized local distribution
+        return
+     else  ! block-cyclic distribution
+
+        ! We do a round-robin to calculate the offsets
+        if ( this%data%node > 0 ) then
+           call MPI_Recv( off , 1, MPI_Integer, &
+                this%data%node-1, 1000, this%data%comm, MPIstatus, MPIerror )
+        end if
+        if ( this%data%node < this%data%nodes - 1 ) then
+           tmp = off + count
+           call MPI_Send( tmp , 1, MPI_Integer, &
+                this%data%node+1, 1000, this%data%comm, MPIstatus, MPIerror )
+        end if
+        
+#endif
+     end if
+
+   end function global_offset
+   
       subroutine printOrbitalDistribution(this)
         type(OrbitalDistribution), intent(in) :: this
 

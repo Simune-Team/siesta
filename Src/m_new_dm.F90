@@ -214,8 +214,8 @@
       use class_dData2D
       use m_readSpData2D, only: readdSpData2D
 #ifdef TRANSIESTA
-      use sparse_matrices, only : EDM, Escf
-      use m_ts_iodm, only       : ts_init_dm
+      use sparse_matrices, only : EDM_2D, Escf
+      use m_ts_iodm, only       : ts_init_dm, read_ts_dm
       use m_energies, only: ef  ! Transiesta uses the EF obtained in a initial SIESTA run
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
@@ -233,7 +233,7 @@
       real(dp)          Datm(no_u)
 
       type(dSpData2D), intent(inout)      :: DMnew
-      type(Sparsity), intent(in) :: sparse_pattern
+      type(Sparsity), intent(inout) :: sparse_pattern
       type(OrbitalDistribution), intent(in) :: block_dist
 
 ! ---------------------------------------------------------------------
@@ -250,6 +250,9 @@
       type(dSpData2D)                :: EDMread
       real(dp)                       :: tmp 
 #endif
+#ifdef TIMING_IO
+      integer :: i
+#endif
 
 ! Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
@@ -259,15 +262,33 @@
       if (try_dm_from_file) then
          if (TSmode) then
             if (ionode) print *, "Attempting to read DM,EDM from TSDE file..."
-            call readdSpData2D(trim(slabel)//".TSDE",   &
-                 DMread,tsde_found,block_dist,EDMread,ef)
-            !
+#ifdef TIMING_IO
+            call timer('IO-R-TS-DE',1)
+            do i = 1 , 100
+#endif
+            call read_ts_DM(slabel,nspin,block_dist,sparse_pattern, &
+                 DMread, EDMread, Ef, tsde_found )
+#ifdef TIMING_IO
+            end do
+            call timer('IO-R-TS-DE',2)
+            call timer('IO-R-TS-DE',3)
+#endif
+
             call ts_init_dm(tsde_found)
-            !
+
             if (.not. tsde_found) then
                if (ionode) print *, "Attempting to read DM from file (TSmode)"
+#ifdef TIMING_IO
+            call timer('IO-R-DM',1)
+            do i = 1 , 100
+#endif
                call readdSpData2D(trim(slabel)//".DM",   &
                     DMread,dm_found,block_dist)
+#ifdef TIMING_IO
+            end do
+            call timer('IO-R-DM',2)
+            call timer('IO-R-DM',3)
+#endif
             endif
             dm_found = (tsde_found .or. dm_found)
 
@@ -288,8 +309,17 @@
          else  ! Not TSmode
 
             if (ionode) print *, "Attempting to read DM from file..."
+#ifdef TIMING_IO
+            call timer('IO-R-DM',1)
+            do i = 1 , 100
+#endif
             call readdSpData2D(trim(slabel)//".DM",   &
                  DMread,dm_found,block_dist)
+#ifdef TIMING_IO
+            end do
+            call timer('IO-R-DM',2)
+            call timer('IO-R-DM',3)
+#endif
 
          endif
       endif
@@ -297,8 +327,17 @@
       dm_found = .false.
       if (try_dm_from_file) then
          if (ionode) print *, "Attempting to read DM from file..."
+#ifdef TIMING_IO
+            call timer('IO-R-DM',1)
+            do i = 1 , 100
+#endif
          call readdSpData2D(trim(slabel)//".DM",   &
                            DMread,dm_found,block_dist)
+#ifdef TIMING_IO
+            end do
+            call timer('IO-R-DM',2)
+            call timer('IO-R-DM',3)
+#endif
       endif
 #endif
 
@@ -360,10 +399,10 @@
 #ifdef TRANSIESTA
        if (dm_found) then
           if (tsde_found) then
-             call restructdSpData2D(EDMread,sparse_pattern,EDM)
+             call restructdSpData2D(EDMread,sparse_pattern,EDM_2D)
              if (ionode) print *, "EDMread after reading file:"
              if (ionode) call print_type(EDMread)
-             Escf => val(EDM)
+             Escf => val(EDM_2D)
 
              ! Correct the mixing weight for transiesta
              ! we have read in a TSDE file

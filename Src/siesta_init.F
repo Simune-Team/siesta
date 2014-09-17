@@ -65,6 +65,10 @@
       use m_ts_init, only : ts_init
 #endif
 
+#if defined(CDF) && defined(NCDF_4)
+      use nf_ncdf
+#endif
+
       implicit none
 
 #ifdef MPI
@@ -102,6 +106,9 @@ C     Initialise MPI and set processor number
       call write_debug( 'PRE siesta_init' )
 #endif
       IOnode = (Node .eq. 0)
+#if defined(CDF) && defined(NCDF_4)
+      call ncdf_IONode( IONode )
+#endif
 
 !     Print version information
       if (IOnode) then

@@ -6,11 +6,11 @@
       subroutine setup_hamiltonian( iscf )
       USE m_normalize_dm, only: normalize_dm
       USE siesta_options
-      use sparse_matrices, only: H_kin, H_vkb
+      use sparse_matrices, only: H_kin, H_vkb_1D
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H, Hold, S
       use sparse_matrices, only: Dscf, Escf, xijo
-      use class_dSpData2D,  only: val
+      use class_dSpData1D,  only: val
 
       use siesta_geom
       use atmfuncs, only: uion
@@ -52,7 +52,7 @@
       integer             :: ihmat   ! Calc. hamiltonian? 0=>no, 1=>yes
       real(dp)            :: g2max
 
-      real(dp), pointer   :: H_vkb_val(:,:)
+      real(dp), pointer   :: H_vkb_val(:)
 
 !------------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
@@ -81,11 +81,11 @@
 
       ! Initialize Hamiltonian with the non-SCF part...................
 
-      H_vkb_val => val(H_vkb)
+      H_vkb_val => val(H_vkb_1D)
       do ispin = 1,nspin
         if (ispin .le. 2) then
           do io = 1,maxnh
-            H(io,ispin) = H_kin(io) + H_vkb_val(io,1)
+            H(io,ispin) = H_kin(io) + H_vkb_val(io)
           enddo
         else
           do io = 1,maxnh
@@ -102,7 +102,7 @@
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
-          Enl = Enl + H_vkb_val(io,1) * Dscf(io,ispin)
+          Enl = Enl + H_vkb_val(io) * Dscf(io,ispin)
         enddo
       enddo
 #ifdef MPI

@@ -11,12 +11,13 @@ module m_io_s
   use class_OrbitalDistribution
   use class_Sparsity
   use precision, only : sp, dp
-  use parallel, only : IONode, Node, Nodes
+  use parallel, only : Node
 #ifdef MPI
   use mpi_siesta, only : MPI_Bcast, MPI_AllReduce, MPI_Sum, MPI_Max
   use mpi_siesta, only : MPI_Comm_World, MPI_Comm_Self
   use mpi_siesta, only : MPI_Integer, MPI_Double_Precision
   use mpi_siesta, only : MPI_Success, MPI_Status_Size
+  use mpi_siesta, only : MPI_REQUEST_NULL
 #endif
 
   implicit none 
@@ -25,6 +26,8 @@ module m_io_s
 
   public :: io_read_Sp
   public :: io_read_d1D, io_read_d2D
+  public :: io_write_Sp
+  public :: io_write_d1D, io_write_d2D
 
 contains
 
@@ -48,7 +51,7 @@ contains
     character(len=*), intent(in) :: tag
     ! distribution if needed to be b-cast in a non-global
     ! fashion
-    type(OrbitalDistribution), intent(inout), optional :: dit
+    type(OrbitalDistribution), intent(in), optional :: dit
     ! Bcast the values?
     logical, intent(in), optional :: Bcast
 
@@ -61,7 +64,7 @@ contains
     logical :: ldit, lBcast
     integer, pointer :: buf(:) => null()
 #ifdef MPI
-    integer, pointer :: buf2(:) => null()
+    integer, allocatable :: buf2(:)
     integer :: gio, max_n
     integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq, BNode
 #endif
@@ -74,7 +77,7 @@ contains
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
 
-    if ( IONode ) then
+    if ( Node == 0 ) then
 
        allocate(buf(no))
 
@@ -104,7 +107,13 @@ contains
        ! allocate room for the number of columns in
        ! each row
        allocate(ncol(nl))
-       MPIerror = MPI_Success - 1
+       ! allocate all requests
+       if ( Node /= 0 ) then
+          allocate(buf2(no))
+          buf2(:) = MPI_REQUEST_NULL
+       else 
+          MPIreq = MPI_REQUEST_NULL
+       end if
 
        ! distribute it
        do gio = 1 , no
@@ -116,8 +125,8 @@ contains
              if ( Node == 0 ) then
                 ncol(io) = buf(gio)
              else
-                call MPI_Recv( ncol(io) , 1, MPI_Integer, &
-                     0, gio, MPI_Comm_World, MPIstatus, MPIerror )
+                call MPI_IRecv( ncol(io) , 1, MPI_Integer, &
+                     0, gio, MPI_Comm_World, buf2(gio), MPIerror )
              end if
           else if ( Node == 0 ) then
              call MPI_ISSend( buf(gio) , 1, MPI_Integer, &
@@ -126,14 +135,19 @@ contains
           
        end do
 
-       if ( IONode .and. MPIerror /= MPI_Success - 1 ) then
+       if ( Node == 0 ) then
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+       else
+          do gio = 1 , no
+             call MPI_Wait(buf2(gio),MPIstatus,MPIerror)
+          end do
+          deallocate(buf2)
        end if
 
     else if ( lBcast ) then
 
        ! Everything should be b-casted
-       if ( IONode ) then
+       if ( Node == 0 ) then
           ncol => buf
        else
           allocate(ncol(nl))
@@ -143,7 +157,7 @@ contains
        call MPI_Bcast(ncol(1),nl,MPI_Integer,0,MPI_Comm_World, &
             MPIError)
        
-    else if ( .not. IONode ) then
+    else if ( Node /= 0 ) then
        ! no distribution, no b-cast.
        ! The sparsity pattern will only exist on the IONode
        return ! the sparsity pattern will not be created then...
@@ -172,11 +186,11 @@ contains
     if ( ldit ) then
        
        ! We have a distributed read
-       if ( IONode ) then
+       if ( Node == 0 ) then
           allocate(buf2(max_n))
        end if
 
-       MPIerror = MPI_Success - 1
+       MPIreq = MPI_REQUEST_NULL
 
        ! read in columns
        ind = 0
@@ -199,23 +213,26 @@ contains
 
           else if ( Node == 0 ) then
 
+             ! We wait just before reading the next quantity...
+             ! (the first wait will immediately return as there
+             ! is no request (MPI_REQUEST_NULL))
+             call MPI_Wait(MPIreq,MPIstatus,MPIerror)
              read(iu) buf2(1:buf(gio))
-             call MPI_Send( buf2(1) , buf(gio), MPI_Integer, &
-                  BNode, gio, MPI_Comm_World, MPIerror)
+             call MPI_ISSend( buf2(1) , buf(gio), MPI_Integer, &
+                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror)
 
           end if
           
        end do
 
-       if ( IONode ) then
+       call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+       if ( Node == 0 ) then
           deallocate(buf,buf2)
-       else if ( MPIerror /= MPI_Success - 1 ) then
-          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end if
 
     else if ( lBcast ) then
 
-       if ( IONode ) then
+       if ( Node == 0 ) then
           
           ind = 0
           do gio = 1 , no
@@ -268,6 +285,7 @@ contains
     integer :: lno, no, io, max_n, ind
     logical :: ldit
 #ifdef MPI
+    integer, allocatable :: buf2(:)
     integer :: gio
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
 #endif
@@ -283,7 +301,13 @@ contains
 #ifdef MPI
        ! Allocate the full ncol
        allocate(buf(no))
-       MPIerror = MPI_Success - 1
+
+       if ( Node == 0 ) then
+          allocate(buf2(no))
+          buf2(:) = MPI_REQUEST_NULL
+       else
+          MPIreq = MPI_REQUEST_NULL
+       end if
           
        do gio = 1 , no
           BNode = node_handling_element(dit,gio)
@@ -297,18 +321,23 @@ contains
                      0, gio, MPI_Comm_World, MPIreq, MPIerror)
              end if
           else if ( Node == 0 ) then
-             call MPI_Recv( buf(gio) , 1, MPI_Integer, &
-                  BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+             call MPI_IRecv( buf(gio) , 1, MPI_Integer, &
+                  BNode, gio, MPI_Comm_World, buf2(gio), MPIerror )
           end if
        end do
 
-       if ( .not. Node == 0 .and. MPIerror /= MPI_Success - 1) then
+       if ( Node == 0 ) then
+          do gio = 1 , no
+             call MPI_Wait(buf2(gio),MPIstatus,MPIerror)
+          end do
+          deallocate(buf2)
+       else
           ! Wait for the last one to not send
-          ! to messages with the same tag...
+          ! two messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end if
 #else
-       buf => ncol
+       call die('Error in code, non-full contained sp')
 #endif
 
     else
@@ -333,13 +362,14 @@ contains
     end if
 #endif
 
+    nullify(buf)
+
 #ifdef MPI
     ! Write the list_col array
     if ( ldit ) then
 
        ! The ionode now has the maximum retrieved array
        if ( Node == 0 ) then
-          nullify(buf)
           allocate(buf(max_n))
        end if
        MPIerror = MPI_Success - 1
@@ -370,9 +400,9 @@ contains
        
        if ( Node == 0 ) then
           deallocate(buf)
-       else if ( MPIerror /= MPI_Success - 1 ) then
+       else
           ! Wait for the last one to not send
-          ! to messages with the same tag...
+          ! two messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end if
     else
@@ -410,7 +440,7 @@ contains
     character(len=*), intent(in) :: tag
     ! distribution if needed to be b-cast in a non-global
     ! fashion
-    type(OrbitalDistribution), intent(inout), optional :: dit
+    type(OrbitalDistribution), intent(in), optional :: dit
     ! Bcast the values?
     logical, intent(in), optional :: Bcast
 
@@ -423,7 +453,8 @@ contains
     logical :: ldit, lBcast
     integer, pointer :: ibuf(:) => null()
 #ifdef MPI
-    real(dp), pointer :: buf(:) => null()
+    integer, allocatable :: ibuf2(:)
+    real(dp), allocatable :: buf(:)
     integer :: max_n, gio
     integer :: MPIerror, BNode, MPIreq, MPIstatus(MPI_STATUS_SIZE)
 #endif
@@ -443,7 +474,13 @@ contains
        else
 #ifdef MPI
           allocate(ibuf(no))
-
+          if ( Node == 0 ) then
+             allocate(ibuf2(no))
+             ibuf2(:) = MPI_REQUEST_NULL
+          else
+             MPIreq = MPI_REQUEST_NULL
+          end if
+          
           do gio = 1 , no
              BNode = node_handling_element(dit,gio)
              
@@ -456,10 +493,21 @@ contains
                         0, gio, MPI_Comm_World, MPIreq, MPIerror)
                 end if
              else if ( Node == 0 ) then
-                call MPI_Recv( ibuf(gio) , 1, MPI_Integer, &
-                     BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+                call MPI_IRecv( ibuf(gio) , 1, MPI_Integer, &
+                     BNode, gio, MPI_Comm_World, ibuf2(gio), MPIerror )
              end if
           end do
+
+          ! Wait for the last one to not send
+          ! two messages with the same tag...
+          if ( Node == 0 ) then
+             do gio = 1 , no
+                call MPI_Wait(ibuf2(gio),MPIstatus,MPIerror)
+             end do
+             deallocate(ibuf2)
+          else
+             call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+          end if
 #else
           call die('Error in distribution, io_read_d1D')
 #endif
@@ -481,11 +529,11 @@ contains
 #ifdef MPI
        
        ! Allocate the maximum number of entries
-       if ( IONode ) then
+       if ( Node == 0 ) then
           max_n = maxval(ibuf)
           allocate(buf(max_n))
        end if
-       MPIerror = MPI_Success - 1
+       MPIreq = MPI_REQUEST_NULL
 
        ! Loop size
        ind = 0
@@ -502,21 +550,22 @@ contains
              end if
              ind = ind + ncol(io)
           else if ( Node == 0 ) then
+             call MPI_Wait(MPIreq,MPIstatus,MPIerror)
              read(iu) buf(1:ibuf(gio))
-             call MPI_Send( buf(1) , ibuf(gio) , MPI_Double_Precision, &
-                  BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+             call MPI_ISSend( buf(1) , ibuf(gio) , MPI_Double_Precision, &
+                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror )
           end if
        end do
 
-       if ( Node /= 0 .and. MPIerror /= MPI_Success - 1 ) then
-          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-       end if
+       call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+
+       deallocate(ibuf)
 #else
        call die('Error in distribution for, io_read_d1D')
 #endif
     else
 
-       if ( IONode ) then
+       if ( Node == 0 ) then
           ind = 0
           do io = 1 , no
              read(iu) a(ind+1:ind+ncol(io))
@@ -532,7 +581,7 @@ contains
        call MPI_Bcast(a(1),n_nzs,MPI_Double_Precision, &
             0, MPI_Comm_World, MPIError)
     
-    else if ( .not. IONode ) then
+    else if ( Node /= 0 ) then
        return ! the sparsity pattern will not be created then...
     end if
 #endif
@@ -557,7 +606,7 @@ contains
     integer :: io, lno, no, ind
     logical :: ldit
 #ifdef MPI
-    real(dp), pointer :: buf(:) => null()
+    real(dp), allocatable :: buf(:)
     integer :: gio, max_n
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
 #endif
@@ -566,7 +615,9 @@ contains
     sp => spar(dSp1D)
     call attach(sp,nrows=lno,nrows_g=no, n_col=ncol)
 
-    ldit = .not. lno == no
+    ! If they are different we should 
+    ! use the distribution setting
+    ldit = lno /= no
 
     ! Retrieve data
     a => val(dSp1D)
@@ -583,7 +634,7 @@ contains
        if ( Node == 0 ) then
           allocate(buf(max_n))
        end if
-       MPIerror = MPI_Success - 1
+       MPIreq = MPI_REQUEST_NULL
 
        ! Loop size
        ind = 0
@@ -611,9 +662,9 @@ contains
        
        if ( Node == 0 ) then
           deallocate(buf)
-       else if ( MPIerror /= MPI_Success - 1 ) then
+       else
           ! Wait for the last one to not send
-          ! to messages with the same tag...
+          ! two messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end if
 #else
@@ -646,24 +697,26 @@ contains
     integer, intent(in) :: dim2
     ! The tag of the sparsity pattern
     character(len=*), intent(in) :: tag
-    ! This denotes the sparsity dimension (either 1 or 2)
+    ! This denotes the sparsity dimension (either 1 or 2) 1=default
     integer, intent(in), optional :: sparsity_dim
     ! distribution if needed to be b-cast in a non-global
     ! fashion
-    type(OrbitalDistribution), intent(inout), optional :: dit
+    type(OrbitalDistribution), intent(in), optional :: dit
     ! Bcast the values?
     logical, intent(in), optional :: Bcast
 
     ! Local variables for reading the values
     type(OrbitalDistribution) :: fdit
     real(dp), pointer :: a(:,:) => null()
-    integer, pointer :: ncol(:) => null(), ibuf(:) => null()
+    integer, pointer :: ncol(:) => null()
+    integer, pointer :: ibuf(:) => null()
 
     integer :: io, lno, no, s, ind, n_nzs
     integer :: sp_dim
     logical :: ldit, lBcast
 #ifdef MPI
-    real(dp), pointer :: buf(:) => null()
+    integer, allocatable :: ibuf2(:)
+    real(dp), allocatable :: buf(:)
     integer :: gio, max_n
     integer :: MPIerror, BNode, MPIreq, MPIstatus(MPI_STATUS_SIZE)
 #endif
@@ -687,6 +740,12 @@ contains
        else
 #ifdef MPI
           allocate(ibuf(no))
+          if ( Node == 0 ) then
+             allocate(ibuf2(no))
+             ibuf2(:) = MPI_REQUEST_NULL
+          else
+             MPIreq = MPI_REQUEST_NULL
+          end if
 
           do gio = 1 , no
              BNode = node_handling_element(dit,gio)
@@ -700,10 +759,20 @@ contains
                         0, gio, MPI_Comm_World, MPIreq, MPIerror)
                 end if
              else if ( Node == 0 ) then
-                call MPI_Recv( ibuf(gio) , 1, MPI_Integer, &
-                     BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+                call MPI_IRecv( ibuf(gio) , 1, MPI_Integer, &
+                     BNode, gio, MPI_Comm_World, ibuf2(gio), MPIerror )
              end if
           end do
+
+          if ( Node == 0 ) then
+             do gio = 1 , no
+                call MPI_Wait(ibuf2(gio),MPIstatus,MPIerror)
+             end do
+             deallocate(ibuf2)
+          else
+             call MPI_Wait(MPIreq,MPIstatus,MPIerror)
+          end if
+
 #else
           call die('Error in distribution, io_read_d2D')
 #endif
@@ -726,11 +795,11 @@ contains
 
 #ifdef MPI
        ! Allocate maximum number of entries
-       if ( IONode ) then
+       if ( Node == 0 ) then
           max_n = maxval(ibuf)
           allocate(buf(max_n*dim2))
        end if
-       MPIerror = MPI_Success - 1
+       MPIreq = MPI_REQUEST_NULL
 
     if ( sp_dim == 2 ) then ! collapsed IO
        ! Loop size
@@ -748,15 +817,14 @@ contains
              end if
              ind = ind + ncol(io)
           else if ( Node == 0 ) then
+             call MPI_Wait(MPIreq,MPIstatus,MPIerror)
              read(iu) buf(1:ibuf(gio)*dim2)
-             call MPI_Send( buf(1) , ibuf(gio)*dim2 , MPI_Double_Precision, &
-                  BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+             call MPI_ISSend( buf(1) , ibuf(gio)*dim2 , MPI_Double_Precision, &
+                  BNode, gio, MPI_Comm_World, MPIreq, MPIerror )
           end if
        end do
 
-       if ( Node /= 0 .and. MPIerror /= MPI_Success - 1 ) then
-          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-       end if
+       call MPI_Wait(MPIreq,MPIstatus,MPIerror)
 
     else ! non-collapsed IO
 
@@ -775,17 +843,18 @@ contains
                 end if
                 ind = ind + ncol(io)
              else if ( Node == 0 ) then
+                call MPI_Wait(MPIreq,MPIstatus,MPIerror)
                 read(iu) buf(1:ibuf(gio))
-                call MPI_Send( buf(1) , ibuf(gio) , MPI_Double_Precision, &
-                     BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
+                call MPI_ISSend( buf(1) , ibuf(gio) , MPI_Double_Precision, &
+                     BNode, gio, MPI_Comm_World, MPIreq, MPIerror )
              end if
           end do
 
-          if ( Node /= 0 .and. MPIerror /= MPI_Success - 1 ) then
-             call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-          end if
+          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
 
        end do
+
+       deallocate(ibuf)
 
     end if
 
@@ -794,7 +863,7 @@ contains
 #endif
     else
        
-       if ( IONode ) then
+       if ( Node == 0 ) then
           if ( sp_dim == 2 ) then ! collapsed IO
              ind = 0
              do io = 1 , no
@@ -818,7 +887,7 @@ contains
     if ( lBcast ) then
        call MPI_Bcast(a(1,1),dim2*n_nzs,MPI_Double_Precision, &
             0, MPI_Comm_World, MPIError)
-    else if ( .not. IONode ) then
+    else if ( Node /= 0 ) then
        return ! the sparsity pattern will not be created then...
     end if
 #endif
@@ -844,7 +913,7 @@ contains
     integer :: id2, dim2, sp_dim, n_nzs
     logical :: ldit
 #ifdef MPI
-    real(dp), pointer :: buf(:) => null()
+    real(dp), allocatable :: buf(:)
     integer :: gio, max_n
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
 #endif
@@ -853,7 +922,7 @@ contains
     sp => spar(dSp2D)
     call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,nnzs=n_nzs)
     
-    ldit = .not. lno == no
+    ldit = lno /= no
     
     ! Retrieve data
     a => val(dSp2D)
@@ -873,14 +942,15 @@ contains
        call MPI_Reduce(io,max_n,1,MPI_Integer, &
             MPI_Max, 0, MPI_Comm_World, MPIerror)
 
-       ! The ionode now has the maximum retrieved array
-       if ( Node == 0 ) then
-          allocate(buf(max_n*dim2))
-       end if
-       MPIerror = MPI_Success - 1
+       MPIreq = MPI_REQUEST_NULL
 
        ! Loop size
     if ( sp_dim == 1 ) then
+
+       ! The ionode now has the maximum retrieved array
+       if ( Node == 0 ) then
+          allocate(buf(max_n))
+       end if
 
        do id2 = 1 , dim2
           ind = 0
@@ -905,9 +975,14 @@ contains
                 write(iu) buf(1:io)
              end if
           end do ! gio
+          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end do ! id2
 
     else
+
+       if ( Node == 0 ) then
+          allocate(buf(max_n*dim2))
+       end if
        
        ind = 0
        do gio = 1 , no
@@ -936,9 +1011,9 @@ contains
     
        if ( Node == 0 ) then
           deallocate(buf)
-       else if ( MPIerror /= MPI_Success - 1 ) then
+       else
           ! Wait for the last one to not send
-          ! to messages with the same tag...
+          ! two messages with the same tag...
           call MPI_Wait(MPIreq,MPIstatus,MPIerror)
        end if
 #else

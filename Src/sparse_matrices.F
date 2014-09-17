@@ -1,5 +1,6 @@
       MODULE sparse_matrices
       use precision
+      use class_dSpData1D
       use class_dSpData2D
       use class_Sparsity
       use class_OrbitalDistribution
@@ -12,7 +13,7 @@
       integer :: maxnh = 10 
 
       integer, pointer :: listh(:), listhptr(:),
-     &                    numh(:), numhold(:)
+     &                    numh(:)
 
       real(dp), pointer :: Dold(:,:), Dscf(:,:), 
      &                     Escf(:,:), H(:,:),
@@ -27,12 +28,13 @@
 
       !
       !  New interface data
-      type(Sparsity), save                :: sparse_pattern
-      type(dSpData2D), save                :: H_vkb, DM, EDM
+      type(Sparsity),  save :: sparse_pattern
+      type(dSpData1D), save :: S_1D, H_vkb_1D
+      type(dSpData2D), save :: DM_2D, EDM_2D, xij_2D, H_2D
       type(Fstack_Pair_Geometry_dSpData2D), save :: DM_history
 
       ! Orbital distribution descriptor
-      type(OrbitalDistribution), save     :: block_dist
+      type(OrbitalDistribution), save :: block_dist
 
       CONTAINS
 
@@ -40,24 +42,23 @@
       use alloc,           only : de_alloc
       implicit none
 
-      call de_alloc( listh,       'listh',       'sparseMat' )
-      call de_alloc( listhptr,    'listhptr',    'sparseMat' )
-      call de_alloc( numh,        'numh',        'sparseMat' )
-      call de_alloc( numhold,     'numhold',     'sparseMat' )
+      !call de_alloc( listh,       'listh',       'sparseMat' )
+      !call de_alloc( listhptr,    'listhptr',    'sparseMat' )
+      !call de_alloc( numh,        'numh',        'sparseMat' )
 
       call de_alloc( Dold,        'Dold',        'sparseMat' )
 !      call de_alloc( Dscf,        'Dscf',        'sparseMat' )
-      call delete(DM)
 !      call de_alloc( Escf,        'Escf',        'sparseMat' )
-      call delete(EDM)
-      call de_alloc( H,           'H',           'sparseMat' )
+      call delete( DM_2D ) ; nullify(Dscf)
+      call delete( EDM_2D ) ; nullify(Escf)
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
-      call delete(H_vkb)
-      call de_alloc( xijo,        'xijo',        'sparseMat' )
-      call de_alloc( S,           'S',           'sparseMat' )
-      call delete(sparse_pattern)
-      call delete(DM_history)
-      call delete(block_dist)
+      call delete( H_vkb_1D )
+      call delete( S_1D ) ; nullify(S)
+      call delete( xij_2D ) ; nullify(xijo)
+      call delete( H_2D ) ; nullify(H)
+      call delete( sparse_pattern )
+      call delete( DM_history )
+      call delete( block_dist )
 
       end subroutine resetSparseMatrices
 

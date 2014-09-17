@@ -21,10 +21,16 @@
       use sparse_matrices,      only:  Dscf
 #ifdef CDF
       use iodm_netcdf,          only:  write_dm_netcdf
+#ifdef NCDF_4
+      use dictionary
+      use siesta_options, only:  write_cdf
+      use m_ncdf_io, only : cdf_save_state
+#endif
 #endif
 #ifdef TRANSIESTA
+      use files, only : slabel
       use siesta_options,       only:  idyn, writedm
-      use sparse_matrices,      only:  Escf
+      use sparse_matrices,      only:  Escf, DM_2D, EDM_2D
       use m_steps,              only:  istp
       use m_ts_iodm,            only:  write_ts_dm
       use m_ts_global_vars,     only:  TSrun
@@ -32,6 +38,15 @@
 #endif
 
       character(len=*), intent(in)   :: id
+#ifdef CDF
+#ifdef NCDF_4
+      type(dict) :: dic_save
+#endif
+#endif
+#ifdef TIMING_IO
+      integer :: i
+#endif
+
 
 #ifdef CDF
 !     Save density matrix on disk, after mixing, to
@@ -43,10 +58,34 @@
          call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
      &                         overwrite=.true. )
       endif
+#ifdef NCDF_4
+      if ( write_cdf ) then
+
+         dic_save = ('Ef'.kv.1)//('nsc'.kv.1)//('cell'.kv.1)
+         dic_save = dic_save//('xa'.kv.1)//('S'.kv.1)
+         dic_save = dic_save//('xij'.kv.1)//('DM'.kv.1)
+         dic_save = dic_save//('EDM'.kv.1)
+         dic_save = dic_save//('sp'.kv.1) ! in case it has changed
+
+         if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+            if (istp.eq.1)
+     &           call cdf_save_state('SIESTA.nc',dic_save)
+         else
+            call cdf_save_state('SIESTA.nc',dic_save)
+         end if
+
+         call delete(dic_save)
+
+      end if
+#endif
 #endif
     
 #ifndef TRANSIESTA
       if (writedm) then
+#ifdef TIMING_IO
+         call timer('IO-W-DM',1)
+         do i = 1 , 100
+#endif
         if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
           if (istp.eq.1)
      &    call write_dm (maxnh, no_l, nspin,
@@ -55,11 +94,20 @@
           call write_dm (maxnh, no_l, nspin,
      &               numh, listhptr, listh, Dscf)
         endif
+#ifdef TIMING_IO
+      end do
+      call timer('IO-W-DM',2)
+      call timer('IO-W-DM',3)
+#endif
       endif ! writedm
 #else /* TRANSIESTA */
 ! TSS Begin
       if (writedm) then
         if (.not.TSrun) then   !TSS save Dscf
+#ifdef TIMING_IO
+         call timer('IO-W-DM',1)
+         do i = 1 , 100
+#endif
           if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
             if (istp.eq.1)
      &        call write_dm( maxnh, no_l, nspin, numh,
@@ -67,19 +115,31 @@
           else
             call write_dm( maxnh, no_l, nspin, numh,
      &                     listhptr, listh, Dscf)
-          endif
+          end if
+#ifdef TIMING_IO
+      end do
+      call timer('IO-W-DM',2)
+      call timer('IO-W-DM',3)
+#endif
         else
 !         TSS write DscfE
+#ifdef TIMING_IO
+         call timer('IO-W-TS-DE',1)
+         do i = 1 , 100
+#endif
              if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
                if (istp .eq.1)
-     .           call write_ts_dm (maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf, Escf,ef)
+     &               call write_ts_dm(slabel, nspin, DM_2D, EDM_2D, Ef)
              else
-                call write_ts_dm (maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf, Escf,ef)
-             endif            ! idyn.eq.6
-        endif ! TSrun
-      endif ! writedm
+                call write_ts_dm(slabel, nspin, DM_2D, EDM_2D, Ef)
+             end if 
+#ifdef TIMING_IO
+      end do
+      call timer('IO-W-TS-DE',2)
+      call timer('IO-W-TS-DE',3)
+#endif
+        end if ! TSrun
+      end if ! writedm
 #endif /* TRANSIESTA */
       end subroutine save_density_matrix
 

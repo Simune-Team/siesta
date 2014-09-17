@@ -22,11 +22,11 @@ CONTAINS
       use precision,       only: dp
       use fdf,             only: fdf_get
       use siesta_options,  only: g2cut
-      use sparse_matrices, only: H_kin, H_vkb
+      use sparse_matrices, only: H_kin, H_vkb_1D
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H
       use sparse_matrices, only: Dscf, Dold
-      use class_dSpData2D,  only: val
+      use class_dSpData1D,  only: val
       use m_dhscf,         only: dhscf
       use m_energies
       use atomlist,        only: no_u, iaorb, iphkb, qtot, indxuo, datm,   &
@@ -45,7 +45,7 @@ CONTAINS
       real(dp), intent(out) :: E_KS_Good
 
       integer               :: ihmat, ifa, istr, ispin, io
-      real(dp), pointer     :: H_vkb_val(:,:)
+      real(dp), pointer     :: H_vkb_val(:)
 #ifdef MPI
       real(dp) :: buffer1
 #endif
@@ -125,13 +125,13 @@ CONTAINS
 
 !     Compute Tr[H_0*DM_out] = Ekin + Enl with DM_out
 
-      H_vkb_val => val(H_vkb)
+      H_vkb_val => val(H_vkb_1D)
       Ekin = 0.0_dp
       Enl  = 0.0_dp
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
-          Enl  = Enl  + H_vkb_val(io,1)* Dscf(io,ispin)
+          Enl  = Enl  + H_vkb_val(io)* Dscf(io,ispin)
         enddo
       enddo
 #ifdef MPI

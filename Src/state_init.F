@@ -13,15 +13,16 @@
 
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Hold
-      use sparse_matrices, only: xijo, H, S, H_kin
+      use sparse_matrices, only: xijo, H, S_1D, S, H_kin
+      use sparse_matrices, only: H_2D, xij_2D
       use sparse_matrices, only: sparse_pattern, block_dist
-      use sparse_matrices, only: H_vkb, DM, EDM, DM_history
+      use sparse_matrices, only: H_vkb_1D, DM_2D, EDM_2D, DM_history
 
       use siesta_geom
-      use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
+      use atomlist,          only: iphorb, iphkb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
      &                             lasto, superc, rmaxv, indxuo,
-     &                             no_l, iza
+     &                             no_l
       use alloc,             only: re_alloc, de_alloc, alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
@@ -57,9 +58,14 @@
 #ifdef CDF
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
+#ifdef NCDF_4
+      use m_ncdf_io, only : cdf_init_file, cdf_save_settings
+#endif
 #endif
       use class_Sparsity
+      use class_dSpData1D
       use class_dSpData2D
+      use class_dData2D
 
       implicit none
 
@@ -80,14 +86,12 @@
       integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
       real(dp),             pointer :: dummyH(:,:)
-!     SIESTA External
-      character(len=label_length+5) :: PASTE
-
 #endif
-
+      
       character(len=256)            :: oname
 
-      type(dSpData2D)        :: DMnew
+      type(dData2D) :: tmp_2D
+
 
 !------------------------------------------------------------------- BEGIN
       call timer( 'IterMD', 1 )
@@ -221,12 +225,27 @@
 !     Check if any two atoms are unreasonably close
       call proximity_check(rmax)
 
+      ! Ensure sparsity pattern is empty
+      call delete(sparse_pattern)
+      ! sadly deleting the sparse pattern does not necessarily
+      ! mean that the arrays are de-associated.
+      ! Remember that the reference counter could (in MD)
+      ! be higher than 1, hence we need to create "fake"
+      ! containers and let the new<class> delete the old
+      ! sparsity pattern
+      nullify(numh,listhptr,listh)
+      allocate(numh(no_l),listhptr(no_l))
+      ! We do not need to allocate listh
+      ! that will be allocated in hsparse
+
 !     List of nonzero Hamiltonian matrix elements
 !     and, if applicable,  vectors between orbital centers
 
 !     Listh and xijo are allocated inside hsparse
 !     Note: We always generate xijo now, for COOP and other
 !           analyses.
+      call delete(xij_2D) ! as xijo will be reallocated
+      nullify(xijo)
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma,
      $                 set_xijo=.true., folding=folding1)
@@ -263,16 +282,29 @@
       write(oname,"(a,i0)") "sparsity for geom step ", istep
       call newSparsity(sparse_pattern,no_l,no_u,
      $                 maxnh,numh,listhptr,listh,oname)
+      ! make numh, listhptr, listh point to the sparsity pattern
+      deallocate(numh,listhptr,listh)
+      call attach(sparse_pattern,n_col=numh,list_ptr=listhptr,
+     &     list_col=listh)
+
+      ! Copy over xijo array (we can first do it here... :( )
+      call newdData2D(tmp_2D,xijo,'xijo')
+      deallocate(xijo)
+      write(oname,"(a,i0)") "xijo in state_init at geom step ", istep
+      call newdSpData2D(sparse_pattern,tmp_2D,block_dist,xij_2D, 
+     &     name=oname)
+      call delete(tmp_2D) ! decrement container...
+      xijo => val(xij_2D)
 
       write(oname,"(a,i0)") "H_vkb in state_init at geom step ", istep
-      call newdSpData2D(sparse_pattern,1,block_dist,H_vkb,name=oname)
-      if (ionode) call print_type(H_vkb)
+      call newdSpData1D(sparse_pattern,block_dist,H_vkb_1D,name=oname)
+      if (ionode) call print_type(H_vkb_1D)
 
       write(oname,"(a,i0)") "EDM in state_init at geom step ", istep
-      call newdSpData2D(sparse_pattern,nspin,block_dist,EDM,name=oname)
-      if (ionode) call print_type(EDM)
-      Escf => val(EDM)
-
+      call newdSpData2D(sparse_pattern,nspin,block_dist,EDM_2D,
+     &     name=oname)
+      if (ionode) call print_type(EDM_2D)
+      Escf => val(EDM_2D)
 
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .     routine='state_init',copy=.false.,shrink=.true.)
@@ -281,12 +313,17 @@
 
       
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
-      call re_alloc( H, 1, maxnh, 1, nspin, 'H',
-     .              routine='state_init',shrink=.true.,copy=.false.)
+      write(oname,"(a,i0)") "H in state_init at geom step ", istep
+      call newdSpData2D(sparse_pattern,nspin,block_dist,H_2D,name=oname)
+      if (ionode) call print_type(H_2D)
+      H => val(H_2D)
       call re_alloc(H_kin,1,maxnh,name='H_kin',routine='state_init',
      &              shrink=.true., copy=.false. )
-      call re_alloc(S,1,maxnh,name='S',routine='state_init',
-     .              copy=.false.,shrink=.true.)
+
+      write(oname,"(a,i0)") "S in state_init at geom step ", istep
+      call newdSpData1D(sparse_pattern,block_dist,S_1D,name=oname)
+      if (ionode) call print_type(S_1D)
+      S => val(S_1D)
 
 !     Find overlap matrix 
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
@@ -294,8 +331,8 @@
 
 !     Initialize density matrix
 
-      call new_dm( auxchanged,DM_history,DM)
-      Dscf => val(DM)
+      call new_dm( auxchanged,DM_history,DM_2D )
+      Dscf => val(DM_2D)
       !if (ionode) print *, "DM after new_dm:"
       !if (ionode) call print_type(DM)
 
@@ -319,11 +356,11 @@
 !     them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
      &        .true., Gamma, ts_Gamma_file,
-     &        ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin,
+     &        ucell, nsc, na_u, no_s, nspin,
      &        ts_kscell_file, ts_kdispl_file,
      &        xa, lasto, 
-     &        numh, listhptr, listh, xijo, indxuo, 
-     &        S, S, dummyEf,dummyQtot, Temp,0,0)
+     &        H_2D, S_1D, xij_2D, indxuo, 
+     &        dummyEf, dummyQtot, Temp,0,0)
         call bye( 'Save overlap matrix and exit' ) ! Exit siesta   ! MPN 
       endif                                                        ! MPN
 
@@ -382,6 +419,18 @@
      &                              s,
      &                              istep)
       endif
+#ifdef NCDF_4
+      if ( write_cdf ) then
+
+         ! Initialize the file...
+         call cdf_init_file('SIESTA.nc', 
+     &        writmd .and. fincoor > 1 )
+
+         ! Save the settings
+         call cdf_save_settings('SIESTA.nc')
+         
+      end if
+#endif
 #endif
       call timer( 'STinit', 2 )
 #ifdef DEBUG

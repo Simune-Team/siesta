@@ -300,7 +300,6 @@
         call die('SCF did not converge in maximum number of steps.')
       endif
 
-
       ! Save DM for further analysis offline
       call save_density_matrix("dmout")
 

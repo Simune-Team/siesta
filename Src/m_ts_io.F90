@@ -722,12 +722,11 @@ contains
 
   subroutine ts_write_TSHS(filename, &
        onlyS, Gamma, TSGamma, &
-       ucell, nsc, na_u, no_l, no_u, no_s, n_nzs, nspin,  &
+       ucell, nsc, na_u, no_s, nspin,  &
        kscell, kdispl, &
        xa, lasto, &
-       ncol, l_ptr, l_col, xij, indxuo, &
-       H, S, Ef, &
-       Qtot, Temp, &
+       H2D, S1D, xij2D, indxuo, &
+       Ef, Qtot, Temp, &
        istep, ia1)
 
 ! *********************************************************************
@@ -775,14 +774,17 @@ contains
 ! TSS End
 ! *********************************************************************
 
+    use class_Sparsity
+    use class_OrbitalDistribution
+    use class_dSpData1D
+    use class_dSpData2D
     use geom_helper, only : ucorb
     use m_sparse, only : xij_offset
 
+    use m_io_s, only: io_write_Sp, io_write_d1D, io_write_d2D
 #ifdef MPI
     use parallel, only : IONode, Node, Nodes
     use mpi_siesta
-    use m_glob_sparse, only : glob_sparse_numh
-    use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
 #endif
 
 ! **********************
@@ -792,32 +794,31 @@ contains
     logical, intent(in) :: onlyS
     logical, intent(in) :: Gamma, TSGamma
     real(dp), intent(in) :: ucell(3,3)
-    integer, intent(in) :: nsc(3), na_u, no_l, no_u, no_s, n_nzs, nspin
-    real(dp), intent(in) :: xa(3,na_u)
-    integer, intent(in) :: ncol(no_l), l_ptr(no_l)
-    integer, intent(in) :: l_col(n_nzs)
-    real(dp), intent(in) :: xij(3,n_nzs)
-    integer, intent(in) :: indxuo(no_s)
-    integer, intent(in) :: lasto(0:na_u)
-    real(dp), intent(in) :: H(n_nzs,nspin), S(n_nzs)
-    real(dp), intent(in) :: Ef
     integer, intent(in) :: kscell(3,3)
     real(dp), intent(in) :: kdispl(3)
+    integer, intent(in) :: nsc(3), na_u, no_s, nspin
+    real(dp), intent(in) :: xa(3,na_u)
+    type(dSpData2D), intent(inout) :: H2D, xij2D
+    type(dSpData1D), intent(inout) :: S1D
+    integer, intent(in) :: indxuo(no_s)
+    integer, intent(in) :: lasto(0:na_u)
+    real(dp), intent(in) :: Ef
     real(dp), intent(in) :: Qtot, Temp
     integer, intent(in) :: istep, ia1
     
 ! ************************
 ! * LOCAL variables      *
 ! ************************
-    integer :: iu
+    type(OrbitalDistribution), pointer :: dit
+    type(Sparsity), pointer :: sp
+    integer :: iu, no_l, no_u, n_nzs
     integer :: ispin, i, n_s
     integer :: n_nzsg
     integer, pointer :: isc_off(:,:) => null()
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    real(dp), pointer :: tmp1D(:), tmp2D(:,:)
 #ifdef MPI
-    integer :: BNode, li, n_max
     integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
-    integer,  allocatable :: ncolg(:), buf(:)
-    real(dp), allocatable :: Mg(:)
 #endif
 
     external :: io_assign, io_close
@@ -825,6 +826,12 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE ts_io_write' )
 #endif
+
+    ! Gather sparse pattern
+    dit => dist(H2D)
+    sp => spar(H2D)
+    call attach(sp,nrows=no_l,nrows_g=no_u,nnzs=n_nzs, &
+         n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! This setting is (I am afraid) not constant
     ! with system. I had suspected that n_s ALWAYS would 
@@ -840,12 +847,11 @@ contains
             &please consult the developers.')
     end do
 
-#ifdef MPI
-    ! Create globalized ncolg
-    call glob_sparse_numh(no_l,no_u,ncol,ncolg)
+    tmp2D => val(xij2D)
 
+#ifdef MPI
     ! get total number of non-zero elements
-    call MPI_AllReduce(n_nzs,n_nzsg,1,MPI_Integer, MPI_SUM, &
+    call MPI_Reduce(n_nzs,n_nzsg,1,MPI_Integer, MPI_SUM, 0, &
          MPI_Comm_World,MPIerror)
 
     ! Get supercell indices from xij
@@ -854,14 +860,14 @@ contains
     ! this is calculated explicitly.
     if ( .not. Gamma ) then
        call xij_offset(ucell,nsc,na_u,xa,lasto, &
-            no_l,no_u,n_nzs, ncol,l_ptr,l_col,xij,isc_off,Bcast=.true.)
+            no_l,no_u,n_nzs, ncol,l_ptr,l_col,tmp2D,isc_off,Bcast=.true.)
     end if
 #else
     n_nzsg = n_nzs
 
     if ( .not. Gamma ) then
        call xij_offset(ucell,nsc,na_u,xa,lasto, &
-            no_l,no_u,n_nzs, ncol,l_ptr,l_col,xij,isc_off)
+            no_l,no_u,n_nzs, ncol,l_ptr,l_col,tmp2D,isc_off)
     end if
 #endif
 
@@ -893,126 +899,20 @@ contains
 
        write(iu) lasto
 
-#ifdef MPI
-       write(iu) ncolg
-       n_max = maxval(ncolg)
-       ! Allocate for recieving arrays
-       allocate(buf(n_max))
-       allocate(Mg(n_max))
-#else
-       write(iu) ncol
-#endif
-
     end if
 
-#ifdef MPI
-    MPIerror = MPI_Success - 1
-#endif
+    ! Write out sparsity pattern
+    call io_write_Sp(iu,sp,dit)
 
-    ! Write l_col
-    do i = 1 , no_u
-#ifdef MPI
-       call WhichNodeOrb(i,Nodes,BNode)
-       if ( Node == BNode ) then
-          call GlobalToLocalOrb(i,Node,Nodes,li)
-          if ( li == 0 ) call die('Error in sparse pattern, l_col')
-       end if
-       if ( IONode ) then
-          if ( Node == BNode ) then
-             write(iu) l_col(l_ptr(li)+1:l_ptr(li)+ncol(li))
-          else
-             call MPI_Recv( buf(1) , ncolg(i), MPI_Integer, &
-                  BNode, i, MPI_Comm_World, MPIstatus, MPIerror )
-             write(iu) buf(1:ncolg(i))
-          end if
-       else if ( Node == BNode ) then
-          call MPI_ISSend( l_col(l_ptr(li)+1) , ncol(li), MPI_Integer, &
-               0, i, MPI_Comm_World, MPIreq, MPIerror)
-          ! We do not need to wait, the recieving part will terminate
-          ! accordingly
-       end if
-#else
-       write(iu) l_col(l_ptr(i)+1:l_ptr(i)+ncol(i))
-#endif
-    end do
-#ifdef MPI
-    if ( .not. IONode .and. MPIerror /= MPI_Success - 1 ) then
-       ! Wait for the last one to not send
-       ! to messages with the same tag...
-       call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-    end if
+    ! Write overlap matrix
+    call io_write_d1D(iu,S1D)
 
-    MPIerror = MPI_Success - 1
-#endif
-
-    ! Write Overlap matrix
-    do i = 1 , no_u
-#ifdef MPI
-       call WhichNodeOrb(i,Nodes,BNode)
-       if ( Node == BNode ) then
-          call GlobalToLocalOrb(i,Node,Nodes,li)
-          if ( li == 0 ) call die('Error in sparse pattern, S')
-       end if
-       if ( IONode ) then
-          if ( Node == BNode ) then
-             write(iu) S(l_ptr(li)+1:l_ptr(li)+ncol(li))
-          else
-             call MPI_Recv( Mg(1) , ncolg(i), MPI_Double_Precision, &
-                  BNode, i, MPI_Comm_World, MPIstatus, MPIerror )
-             write(iu) Mg(1:ncolg(i))
-          end if
-       else if ( Node == BNode ) then
-          ! We do not need to wait, the recieving part will terminate
-          ! accordingly
-          call MPI_ISSend( S(l_ptr(li)+1) , ncol(li), MPI_Double_Precision, &
-               0, i, MPI_Comm_World, MPIreq, MPIerror)
-       end if
-#else
-       write(iu) S(l_ptr(i)+1:l_ptr(i)+ncol(i))
-#endif
-    end do
-#ifdef MPI
-    if ( .not. IONode .and. MPIerror /= MPI_Success - 1 ) then
-       call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-    end if
-    MPIerror = MPI_Success - 1
-#endif
-    
     if ( .not. onlyS ) then
-       ! Write Hamiltonian 
-       do ispin = 1 , nspin 
-          do i = 1 , no_u
-#ifdef MPI
-             call WhichNodeOrb(i,Nodes,BNode)
-             if ( Node == BNode ) then
-                call GlobalToLocalOrb(i,Node,Nodes,li)
-                if ( li == 0 ) call die('Error in sparse pattern, H')
-             end if
-             if ( IONode ) then
-                if ( Node == BNode ) then
-                   write(iu) H(l_ptr(li)+1:l_ptr(li)+ncol(li),ispin)
-                else
-                   call MPI_Recv( Mg(1) , ncolg(i), MPI_Double_Precision, &
-                        BNode, i+ispin*no_u, MPI_Comm_World, MPIstatus, MPIerror )
-                   write(iu) Mg(1:ncolg(i))
-                end if
-             else if ( Node == BNode ) then
-                ! We do not need to wait, the recieving part will terminate
-                ! accordingly
-                call MPI_ISSend( H(l_ptr(li)+1,ispin) , ncol(li), MPI_Double_Precision, &
-                     0, i+ispin*no_u, MPI_Comm_World, MPIreq, MPIerror)
-             end if
-#else
-             write(iu) H(l_ptr(i)+1:l_ptr(i)+ncol(i),ispin)
-#endif
-          end do
-       end do
-#ifdef MPI
-       if ( .not. IONode .and. MPIerror /= MPI_Success - 1 ) then
-          call MPI_Wait(MPIreq,MPIstatus,MPIerror)
-       end if
-#endif
-    end if  ! onlyS
+
+       ! Write Hamiltonian
+       call io_write_d2D(iu,H2D)
+
+    end if
 
     if ( IONode ) then
 
@@ -1024,12 +924,6 @@ contains
        call io_close( iu )
 
     end if
-
-#ifdef MPI
-    call memory('D','I',no_u,'globArrays')
-    deallocate(ncolg)
-    if ( IONode ) deallocate(buf,Mg)
-#endif
 
     if ( .not. Gamma ) then
        deallocate(isc_off)

@@ -35,6 +35,12 @@
       use m_mpi_utils, only: globalize_sum
 #endif
       use parallel, only: IOnode
+#ifdef CDF
+#ifdef NCDF_4
+      use dictionary
+      use m_ncdf_io
+#endif
+#endif
 #ifdef TRANSIESTA
 ! TSS Begin
       use files,        only : slabel, label_length
@@ -58,10 +64,13 @@
       real(dp)              :: buffer1
 #endif
 #ifdef TRANSIESTA
-!     TSS Begin
       character(len=label_length+13) :: fname
-!     TSS End
-#endif /* TRANSIESTA */
+#endif
+#ifdef CDF
+#ifdef NCDF_4
+      type(dict) :: dic_save
+#endif
+#endif
 !------------------------------------------------------------------------- BEGIN
 
 !     Normalize density matrix to exact charge
@@ -169,25 +178,34 @@
      &        maxnh, numh, listhptr, listh, H, S, qtot,
      &        temp, xijo)
       endif
+#ifdef CDF
+#ifdef NCDF_4
+      if ( write_cdf ) then
+         dic_save = ('H'.kv..true.)
+         call cdf_save_state('SIESTA.nc',dic_save)
+         call delete(dic_save)
+      end if
+#endif
+#endif
 #ifdef TRANSIESTA
 ! TSS Begin
       if (savetshs) then
          if ( idyn.eq.6 ) then
             fname = fname_TSHS(slabel,ts_istep,ia1,.false.)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin, 
+     &           ucell, nsc, na_u, no_s, nspin, 
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto, 
-     &           numh, listhptr, listh, xijo, indxuo, H, S, Ef,
-     &           Qtot, Temp, ts_istep, ia1)
+     &           H_2D, S_1D, xij_2D, indxuo,
+     &           Ef, Qtot, Temp, ts_istep, ia1)
          else
             fname = fname_TSHS(slabel,0,0,.false.)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, nsc, na_u, no_l, no_u, no_s, maxnh, nspin,
+     &           ucell, nsc, na_u, no_s, nspin,
      &           ts_kscell, ts_kdispl, 
-     &           xa, lasto, 
-     &           numh, listhptr, listh, xijo, indxuo, H, S, Ef,
-     &           Qtot, Temp,        0,   0)
+     &           xa, lasto,
+     &           H_2D, S_1D, xij_2D, indxuo,
+     &           Ef, Qtot, Temp,        0,   0)
          end if
       endif
 ! TSS End

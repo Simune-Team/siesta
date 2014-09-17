@@ -9,7 +9,7 @@ C     Computes non-self-consistent part of the Hamiltonian
 C     and initializes data structures on the grid.
       
       USE siesta_options,  only: g2cut
-      use sparse_matrices, only: H_kin, H_vkb
+      use sparse_matrices, only: H_kin, H_vkb_1D
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use siesta_geom
       use atmfuncs, only: uion
@@ -27,7 +27,7 @@ C     and initializes data structures on the grid.
       use m_ntm
       use m_spin,         only: nspin
       use alloc, only: re_alloc, de_alloc
-      use class_dSpData2D, only: val
+      use class_dSpData1D, only: val
 
       implicit none
       real(dp) :: dummy_stress(3,3), dummy_fa(1,1), dummy_dm(1,1)
@@ -35,7 +35,7 @@ C     and initializes data structures on the grid.
       integer  :: ia, is, local_nspin
       real(dp) :: g2max
 
-      real(dp), pointer :: H_vkb_val(:,:)
+      real(dp), pointer :: H_vkb_val(:)
 
 !---------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
@@ -92,8 +92,8 @@ C     Non-local-pseudop:  matrix elements only
       local_nspin = 1   ! We will not touch Dscf, and H_vkb does
                         ! not depend on spin
 
-      H_vkb_val => val(H_vkb)
-      H_vkb_val(:,:) = 0.0_dp
+      H_vkb_val => val(H_vkb_1D)
+      H_vkb_val(:) = 0.0_dp
       call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
      &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &            numh, listhptr, listh, numh, listhptr, listh, 

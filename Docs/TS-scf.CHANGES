@@ -1,4 +1,156 @@
 ----------------------------------------------------
+September 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-191
+New IO routines for sparse format, speed increase
+
+* IO performance was limited by a lot of blocking
+  send/recv and a new implementation was deemed necessary.
+  Currently I am testing this new IO with only transiesta
+  routines so that I can assure its correctness.
+  
+  Example for reading a sparse formatted with distribution
+  attached:
+   Old: Reading a row of content and doing a blocking send
+        AND a blocking receive.
+   New: All receiving ends post ALL their receive msgs,
+        the IONode reads through the file and posts the
+        send in a non-blocking fashion (with blocking before
+	next read).
+        As all receives are posted there is literally no 
+	overhead here and the speedup is huge.
+	For 2 processors reading is 4 times faster and
+   	writing is 2 times faster.
+	I will test this on my 12 core machine to assert 
+	the speedup.
+
+* To check IO speed I have added -DTIMING_IO as a possibility
+  of checking the speed.
+  It runs all IO routines 100 times and will immediately print 
+  out the timing.
+
+* All sparse arrays have moved to the class_<> types.
+  I have generalized their names to incorporate their size,
+  i.e. :
+    H => H_2D
+    DM => DM_2D
+    S => S_1D
+  etc.
+  This meant a few things that needed editing, but it works.
+  
+  TODO: Check for memory leaks, especially in MD simulations.
+
+* I have implemented a standard solution with my ncdf library.
+  Currently extra flags are required for it to work, so it 
+  is a work in progress.
+  It however works for Netcdf4 files, with and without compression.
+  A basic file will have this CDL:
+
+netcdf SIESTA {
+dimensions:
+	one = 1 ;
+	spin = 1 ;
+	na_u = 10 ;
+	nnzs = 109330 ;
+	no_u = 90 ;
+	no_s = 21870 ;
+	xyz = 3 ;
+variables:
+	int nsc(xyz) ;
+		nsc:info = "Number of supercells" ;
+	int lasto(na_u) ;
+		lasto:info = "Last orbital of equivalent atom" ;
+	int n_col(no_u) ;
+		n_col:info = "Number of non-zero elements per row" ;
+	int list_col(nnzs) ;
+		list_col:info = "Supercell column indices in the sparse format" ;
+	double Ef(one) ;
+		Ef:info = "Fermi level" ;
+		Ef:unit = "Ry" ;
+	double xa(na_u, xyz) ;
+		xa:info = "Atomic coordinates" ;
+		xa:unit = "Bohr" ;
+	double cell(xyz, xyz) ;
+		cell:info = "Unit cell" ;
+		cell:unit = "Bohr" ;
+	double fa(na_u, xyz) ;
+		fa:info = "Atomic forces" ;
+		fa:unit = "Ry/Bohr" ;
+	double stress(xyz, xyz) ;
+		stress:info = "Cell stress" ;
+		stress:unit = "Ry/Bohr**3" ;
+group: MD {
+  variables:
+  ... if doing MD simulation.
+} // group MD
+
+group: MATRIX {
+  variables:
+  	double S(nnzs) ;
+  		S:info = "Overlap matrix" ;
+  	double DM(spin, nnzs) ;
+  		DM:info = "Density matrix" ;
+  	double EDM(spin, nnzs) ;
+  		EDM:info = "Energy density matrix" ;
+  		EDM:unit = "Ry" ;
+  	double H(spin, nnzs) ;
+  		H:info = "Hamiltonian" ;
+  		H:unit = "Ry" ;
+  	double xij(nnzs, xyz) ;
+  		xij:info = "Distance between orbital i and j" ;
+  		xij:unit = "Bohr" ;
+  } // group MATRIX
+
+group: SETTINGS {
+  variables:
+  	double DMTolerance(one) ;
+  		DMTolerance:info = "Tolerance for converging the density matrix" ;
+  	double HTolerance(one) ;
+  		HTolerance:info = "Tolerance for converging the Hamiltonian" ;
+  	double NetCharge(one) ;
+  		NetCharge:info = "Net charge of the system" ;
+  	double MixingWeight(one) ;
+  		MixingWeight:info = "Mixing weight" ;
+  	int BZ(xyz, xyz) ;
+  		BZ:info = "Grid used for the Brillouin zone integration" ;
+  	double BZ_displ(xyz) ;
+  		BZ_displ:info = "Grid used for the Brillouin zone integration" ;
+  		BZ_displ:unit = "b**-1" ;
+  	double ElectronicTemperature(one) ;
+  		ElectronicTemperature:info = "Temperature for electrons" ;
+  		ElectronicTemperature:unit = "Ry" ;
+  	double MeshCutoff(one) ;
+  		MeshCutoff:info = "Mesh cutoff for real space grid" ;
+  		MeshCutoff:unit = "Ry" ;
+  } // group SETTINGS
+}
+
+  
+removed:
+  Src/m_ts_iodm.F
+added:
+  Src/m_ncdf_io.F90
+  Src/m_ts_iodm.F90
+modified:
+  Src/Makefile
+  Src/class_OrbitalDistribution.F90
+  Src/compute_EKS_Harris.F90
+  Src/final_H_f_stress.F
+  Src/kpoint_grid.F90
+  Src/m_io_s.F90
+  Src/m_new_dm.F90
+  Src/m_ts_io.F90
+  Src/restructSpData2D.F90
+  Src/save_density_matrix.F
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/write_md_record.F
+
+----------------------------------------------------
 September 7, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-190
 Gamma bugfix, and dEf only printing dQ
 

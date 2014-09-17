@@ -61,10 +61,15 @@
       size_in = nnzs(SpMin)
       size_out = nnzs(sp_out)
 
-      maxval_j_in = maxval(list_in(1:size_in))
-      maxval_j_out = maxval(list_out(1:size_out))
+      ! We need to check the maximum supercell...
+      maxval_j_in  = (maxval(list_in(1:size_in))-1)/nrows_g(SpMin)
+      maxval_j_in  = maxval_j_in * nrows_g(SpMin)
+      maxval_j_out = (maxval(list_out(1:size_out))-1)/nrows_g(sp_out)
+      maxval_j_out = maxval_j_out * nrows_g(sp_out)
 
       if ( maxval_j_in /= maxval_j_out ) then
+         ! Print out the different values
+         print *,'in, out',maxval_j_in,maxval_j_out
          call die('Supercell has changed from a read &
               &in structure. I do not dare to continue... &
               &Full restart is required.')
