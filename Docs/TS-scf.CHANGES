@@ -1,4 +1,22 @@
 ----------------------------------------------------
+September 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-193
+Added my IO to DM, full capacity reached
+
+* The DM files are now also read/written by my routines.
+  Speeds up execution when dealing with large systems.
+
+removed:
+  Src/m_iodm.F
+  Src/readSpData2D.F90
+added:
+  Src/m_iodm.F90
+modified:
+  Src/Makefile
+  Src/m_new_dm.F90
+  Src/m_ts_iodm.F90
+  Src/save_density_matrix.F
+
+----------------------------------------------------
 September 17, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-192
 Bugfix for restructData, removed writing q for nq == 1
 

@@ -12,13 +12,14 @@
       use precision,            only:  dp
       use sparse_matrices,      only:  maxnh, numh
       use sparse_matrices,      only:  listh, listhptr
+      use files, only : slabel
       use m_iodm,               only:  write_dm
       use m_spin,               only:  nspin
       use atomlist,             only:  no_l
       use siesta_options,       only:  writedm, writedm_cdf
       use siesta_options,       only:  writedm_cdf_history
       use m_steps,              only:  istp
-      use sparse_matrices,      only:  Dscf
+      use sparse_matrices,      only:  Dscf, DM_2D
 #ifdef CDF
       use iodm_netcdf,          only:  write_dm_netcdf
 #ifdef NCDF_4
@@ -28,13 +29,12 @@
 #endif
 #endif
 #ifdef TRANSIESTA
-      use files, only : slabel
       use siesta_options,       only:  idyn, writedm
-      use sparse_matrices,      only:  Escf, DM_2D, EDM_2D
+      use sparse_matrices,      only:  EDM_2D
       use m_steps,              only:  istp
       use m_ts_iodm,            only:  write_ts_dm
       use m_ts_global_vars,     only:  TSrun
-      use m_energies,           only:  ef
+      use m_energies,           only:  Ef
 #endif
 
       character(len=*), intent(in)   :: id
@@ -88,12 +88,10 @@
 #endif
         if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
           if (istp.eq.1)
-     &    call write_dm (maxnh, no_l, nspin,
-     &               numh, listhptr, listh, Dscf)
+     &          call write_dm(slabel, nspin, DM_2D)
         else
-          call write_dm (maxnh, no_l, nspin,
-     &               numh, listhptr, listh, Dscf)
-        endif
+           call write_dm(slabel, nspin, DM_2D)
+        end if
 #ifdef TIMING_IO
       end do
       call timer('IO-W-DM',2)
@@ -110,11 +108,9 @@
 #endif
           if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
             if (istp.eq.1)
-     &        call write_dm( maxnh, no_l, nspin, numh,
-     &                       listhptr, listh, Dscf )
+     &            call write_dm(slabel, nspin, DM_2D)
           else
-            call write_dm( maxnh, no_l, nspin, numh,
-     &                     listhptr, listh, Dscf)
+             call write_dm(slabel, nspin, DM_2D)
           end if
 #ifdef TIMING_IO
       end do

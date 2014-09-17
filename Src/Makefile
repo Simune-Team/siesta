@@ -156,7 +156,7 @@ OBJS =  automatic_cell.o atom_options.o \
         class_OrbitalDistribution.o \
         compute_EKS_Harris.o compute_max_diff.o \
         save_density_matrix.o  \
-        readSpData2D.o restructSpData2D.o extrapolateSpData2D.o \
+        restructSpData2D.o extrapolateSpData2D.o \
         class_Geometry.o class_Pair_Geometry_SpData2D.o \
 	class_TriMat.o m_trimat_invert.o \
 	class_Fstack_Pair_Geometry_SpData2D.o \
@@ -469,7 +469,6 @@ compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o
 coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o zmatrix.o
-coor_elec.o: m_ts_electype.o precision.o
 coxmol.o: files.o periodic_table.o precision.o
 create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 create_Sparsity_Union.o: class_OrbitalDistribution.o class_Sparsity.o
@@ -603,7 +602,6 @@ m_fire_para.o: m_mpi_utils.o parallel.o precision.o
 m_forces.o: precision.o
 m_getopts.o: f2kcli.o
 m_glob_sparse.o: parallel.o parallelsubs.o precision.o
-m_handle_sparse.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o
 m_hs_matrix.o: alloc.o cellsubs.o geom_helper.o precision.o sys.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
@@ -611,8 +609,8 @@ m_integrate.o: precision.o
 m_io.o: sys.o
 m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_io_s.o: class_Sparsity.o parallel.o precision.o
-m_iodm.o: alloc.o files.o m_mpi_utils.o parallel.o parallelsubs.o precision.o
-m_iodm.o: sys.o
+m_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
+m_iodm.o: m_io_s.o parallel.o
 m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
@@ -630,11 +628,11 @@ m_ncdf_io.o: timestamp.o
 m_new_dm.o: alloc.o atomlist.o class_Data2D.o
 m_new_dm.o: class_Fstack_Pair_Geometry_SpData2D.o class_Geometry.o
 m_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpData2D.o
-m_new_dm.o: class_SpData2D.o class_Sparsity.o files.o m_energies.o
+m_new_dm.o: class_SpData2D.o class_Sparsity.o files.o m_energies.o m_iodm.o
 m_new_dm.o: m_mpi_utils.o m_spin.o m_steps.o m_svd.o m_ts_global_vars.o
 m_new_dm.o: m_ts_iodm.o m_ts_options.o parallel.o parallelsubs.o parsing.o
-m_new_dm.o: precision.o readSpData2D.o siesta_geom.o siesta_options.o
-m_new_dm.o: sparse_matrices.o sys.o units.o
+m_new_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+m_new_dm.o: units.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
@@ -866,8 +864,6 @@ pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
-readSpData2D.o: class_Data2D.o class_OrbitalDistribution.o class_SpData2D.o
-readSpData2D.o: class_Sparsity.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
@@ -1050,7 +1046,6 @@ m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
 m_denmat.o: denmat.o
 m_dhscf.o: dhscf.o
-m_dm_sparse.o: m_handle_sparse.o
 m_dnaefs.o: dnaefs.o
 m_doping_uniform.o: doping_uniform.o
 m_dynamics.o: dynamics.o
@@ -1088,7 +1083,6 @@ m_post_scf_work.o: post_scf_work.o
 m_projected_dos.o: projected_DOS.o
 m_proximity_check.o: proximity_check.o
 m_radfft.o: radfft.o
-m_readspdata2d.o: readSpData2D.o
 m_save_density_matrix.o: save_density_matrix.o
 m_scf_options.o: m_options.o
 m_setup_h0.o: setup_H0.o

@@ -7,32 +7,30 @@
 !     
 !     Use of this software constitutes agreement with the full conditions
 !     given in the SIESTA license, as signed by all legitimate users.
-!    
+!     
+! This module has been rewritten to conform to Nick Papior Andersens IO routines
+! It has also been coded by Nick Papior Andersen
+module m_iodm
 
-! Fully created by Nick Papior Andersen to conform with the io_s
-! library.
-module m_ts_iodm
-  
-  use precision, only: dp
   use parallel, only : Node
-  
+
   use class_Sparsity
   use class_OrbitalDistribution
   use class_dSpData2D
+
   use m_io_s
-  
+
   implicit none
   
   private
-  public :: ts_init_dm
-  public :: write_ts_dm, read_ts_dm
+  public :: write_dm, read_dm
 
 contains
-  
-  subroutine read_ts_dm( slabel, nspin, dit, sp_def, DM, EDM, Ef, found )
+        
+  subroutine read_dm ( slabel, nspin, dit, sp_def, DM, found )
 
 #ifdef MPI
-  use mpi_siesta
+    use mpi_siesta
 #endif
 
 ! **********************
@@ -42,8 +40,7 @@ contains
     integer, intent(in) :: nspin
     type(OrbitalDistribution), intent(in) :: dit
     type(Sparsity), intent(inout) :: sp_def
-    type(dSpData2D), intent(inout) :: DM, EDM
-    real(dp), intent(inout) :: Ef
+    type(dSpData2D), intent(inout) :: DM
     logical, intent(out) :: found
 
 ! ************************
@@ -59,7 +56,7 @@ contains
     external :: io_assign, io_close
 
     if ( Node == 0 ) then
-       inquire(file=trim(slabel)//'.TSDE', exist=exists)
+       inquire(file=trim(slabel)//'.DM', exist=exists)
     end if
 
 #ifdef MPI
@@ -73,9 +70,9 @@ contains
     call attach(sp_def,nrows_g=no_u)
 
     if ( Node == 0 ) then
-       write(*,'(/,a)') 'ts_iodm: Reading Density Matrix from files'
+       write(*,'(/,a)') 'iodm: Reading Density Matrix from files'
        call io_assign(iu)
-       open( iu, file=trim(slabel)//'.TSDE', &
+       open( iu, file=trim(slabel)//'.DM', &
             form='unformatted', status='old' )
        rewind(iu)
        read(iu) two
@@ -89,10 +86,10 @@ contains
     if ( no_u /= two(1) .or. nspin /= two(2) ) then
        if ( Node == 0 ) then
           write(*,"(a,i6,/,a)") &
-               "WARNING: Wrong number of orbitals in TSDE file: ",two(1), &
+               "WARNING: Wrong number of orbitals in DM file: ",two(1), &
                "WARNING: Falling back to atomic initialization of DM."
           write(0,"(a,i6,/,a)") &
-               "WARNING: Wrong number of orbitals in TSDE file: ",two(1), &
+               "WARNING: Wrong number of orbitals in DM file: ",two(1), &
                "WARNING: Falling back to atomic initialization of DM."
           call io_close(iu)
        endif
@@ -101,46 +98,35 @@ contains
 
        return
     end if
-    
+
     ! Read in the sparsity pattern (distributed)
-    call io_read_Sp(iu, no_u, sp, 'temp-ts-IO', dit)
+    call io_read_Sp(iu, no_u, sp, 'temp-IO', dit)
 
     ! Read DM
-    call io_read_d2D(iu,sp,DM ,nspin,'ts-iodm',dit=dit)
+    call io_read_d2D(iu,sp,DM,nspin,'iodm',dit=dit)
 
-    ! Read EDM
-    call io_read_d2D(iu,sp,EDM,nspin,'ts-iodm',dit=dit)
-
-    ! Clean-up
+    ! Clean-up (sp is not fully deleted, it just only resides in DM)
     call delete(sp)
 
-    ! Read Ef and close
+    ! Close
     if ( Node == 0 ) then
-
-       read(iu) Ef
 
        call io_close(iu)
 
     end if
 
-#ifdef MPI
-    call MPI_BCast(Ef,1,MPI_Double_Precision,0, &
-         MPI_Comm_World, MPIerror)
-#endif
-
     found = .true.
     
-  end subroutine read_ts_dm
-
-  subroutine write_ts_dm(slabel,nspin, DM, EDM, Ef )
+  end subroutine read_dm
+  
+  subroutine write_dm(slabel, nspin, DM )
     
 ! **********************
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: slabel
     integer, intent(in) :: nspin
-    type(dSpData2D), intent(inout) :: DM, EDM
-    real(dp), intent(in) :: Ef
+    type(dSpData2D), intent(inout) :: DM
     
 ! ************************
 ! * LOCAL variables      *
@@ -151,7 +137,7 @@ contains
     integer :: iu
 
     external :: io_assign, io_close
-
+    
     ! Gather sparse pattern
     dit => dist(DM)
     sp => spar(DM)
@@ -161,7 +147,7 @@ contains
 
        ! Open file
        call io_assign( iu )
-       open( iu, file=trim(slabel)//'.TSDE', &
+       open( iu, file=trim(slabel)//'.DM', &
             form='unformatted', status='unknown' )
        rewind(iu)
        
@@ -173,48 +159,15 @@ contains
     call io_write_Sp(iu,sp,dit=dit)
 
     ! Write density matrix
-    call io_write_d2D(iu, DM )
+    call io_write_d2D(iu,DM)
 
-    ! Write energy density matrix
-    call io_write_d2D(iu, EDM)
-
-    ! Write Ef and close
+    ! Close
     if ( Node == 0 ) then
-       
-       write(iu) Ef
        
        call io_close(iu)
        
     end if
     
-  end subroutine write_ts_dm
-  
-  subroutine ts_init_dm(found)
-    
-    use m_ts_global_vars, only : TSinit, TSrun
-    
-    logical, intent(in) :: found
-    
-    if( .not. found )  then ! not a TS continuation run
-       TSinit = .true.  ! start to converge a diagon run
-       TSrun  = .false.
-       
-       if ( Node == 0 ) then
-          write(*,'(a)') 'TRANSIESTA: No TS-DensityMatrix file found'
-          write(*,'(a)') 'TRANSIESTA: Initialization runs using diagon'
-       end if
-    else
-       TSinit = .false.
-       TSrun  = .true.
-       
-       if ( Node == 0 ) then
-          write(*,'(a,/)') 'TRANSIESTA: Continuation run'
-          write(*,'(a)') '                     ************************'
-          write(*,'(a)') '                     *   TRANSIESTA BEGIN   *'
-          write(*,'(a)') '                     ************************'
-       end if
-    end if !found TSDM-file
-    
-  end subroutine ts_init_dm
-  
-end module m_ts_iodm
+  end subroutine write_dm
+
+end module m_iodm

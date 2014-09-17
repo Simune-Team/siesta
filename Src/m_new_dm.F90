@@ -212,7 +212,7 @@
       use class_dSpData2D
       use class_OrbitalDistribution
       use class_dData2D
-      use m_readSpData2D, only: readdSpData2D
+      use m_iodm, only : read_dm
 #ifdef TRANSIESTA
       use sparse_matrices, only : EDM_2D, Escf
       use m_ts_iodm, only       : ts_init_dm, read_ts_dm
@@ -266,7 +266,7 @@
             call timer('IO-R-TS-DE',1)
             do i = 1 , 100
 #endif
-            call read_ts_DM(slabel,nspin,block_dist,sparse_pattern, &
+            call read_ts_dm(slabel,nspin,block_dist,sparse_pattern, &
                  DMread, EDMread, Ef, tsde_found )
 #ifdef TIMING_IO
             end do
@@ -282,8 +282,8 @@
             call timer('IO-R-DM',1)
             do i = 1 , 100
 #endif
-               call readdSpData2D(trim(slabel)//".DM",   &
-                    DMread,dm_found,block_dist)
+               call read_dm(slabel,nspin,block_dist,sparse_pattern, &
+                    DMread, dm_found )
 #ifdef TIMING_IO
             end do
             call timer('IO-R-DM',2)
@@ -313,8 +313,8 @@
             call timer('IO-R-DM',1)
             do i = 1 , 100
 #endif
-            call readdSpData2D(trim(slabel)//".DM",   &
-                 DMread,dm_found,block_dist)
+            call read_dm(slabel,nspin,block_dist,sparse_pattern, &
+                 DMread, dm_found )
 #ifdef TIMING_IO
             end do
             call timer('IO-R-DM',2)
@@ -331,8 +331,8 @@
             call timer('IO-R-DM',1)
             do i = 1 , 100
 #endif
-         call readdSpData2D(trim(slabel)//".DM",   &
-                           DMread,dm_found,block_dist)
+            call read_dm(slabel,nspin,block_dist,sparse_pattern, &
+                 DMread, dm_found )
 #ifdef TIMING_IO
             end do
             call timer('IO-R-DM',2)
