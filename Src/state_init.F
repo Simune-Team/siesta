@@ -329,8 +329,7 @@
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
-!     Initialize density matrix
-
+      ! Initialize density matrix
       call new_dm( auxchanged,DM_history,DM_2D )
       Dscf => val(DM_2D)
       !if (ionode) print *, "DM after new_dm:"

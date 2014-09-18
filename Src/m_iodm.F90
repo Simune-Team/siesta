@@ -27,7 +27,7 @@ module m_iodm
 
 contains
         
-  subroutine read_dm ( slabel, nspin, dit, sp_def, DM, found )
+  subroutine read_dm( slabel, nspin, dit, sp_def, DM, found )
 
 #ifdef MPI
     use mpi_siesta
@@ -38,7 +38,7 @@ contains
 ! **********************
     character(len=*), intent(in) :: slabel
     integer, intent(in) :: nspin
-    type(OrbitalDistribution), intent(in) :: dit
+    type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp_def
     type(dSpData2D), intent(inout) :: DM
     logical, intent(out) :: found
@@ -49,7 +49,7 @@ contains
     type(Sparsity) :: sp
     logical :: exists
     integer :: iu, no_u, two(2)
-    integer, pointer :: gncol(:) => null()
+    integer, allocatable, target :: gncol(:)
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -101,11 +101,14 @@ contains
        return
     end if
 
+    allocate(gncol(no_u))
+    gncol(1) = 1
+    
     ! Read in the sparsity pattern (distributed)
-    call io_read_Sp(iu, no_u, sp, 'temp-IO', dit, gncol=gncol)
+    call io_read_Sp(iu, no_u, sp, 'temp-IO',dit=dit, gncol=gncol)
 
     ! Read DM
-    call io_read_d2D(iu,sp,DM,nspin,'iodm',dit=dit, gncol=gncol)
+    call io_read_d2D(iu,sp,DM,nspin,'iodm' ,dit=dit, gncol=gncol)
 
     ! Clean-up (sp is not fully deleted, it just only resides in DM)
     call delete(sp)
@@ -139,7 +142,7 @@ contains
 ! ************************
     type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
-    integer, pointer :: gncol(:) => null()
+    integer, allocatable, target :: gncol(:)
     integer :: no_u
     integer :: iu
 
@@ -161,6 +164,9 @@ contains
        write(iu) no_u, nspin
 
     end if
+
+    allocate(gncol(no_u))
+    gncol(1) = -1
 
     ! Write sparsity pattern...
     call io_write_Sp(iu,sp,dit=dit,gncol=gncol)

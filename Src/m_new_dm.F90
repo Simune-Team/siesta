@@ -215,7 +215,7 @@
       use m_iodm, only : read_dm
 #ifdef TRANSIESTA
       use sparse_matrices, only : EDM_2D, Escf
-      use m_ts_iodm, only       : ts_init_dm, read_ts_dm
+      use m_ts_iodm
       use m_energies, only: ef  ! Transiesta uses the EF obtained in a initial SIESTA run
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
@@ -234,7 +234,7 @@
 
       type(dSpData2D), intent(inout)      :: DMnew
       type(Sparsity), intent(inout) :: sparse_pattern
-      type(OrbitalDistribution), intent(in) :: block_dist
+      type(OrbitalDistribution), intent(inout) :: block_dist
 
 ! ---------------------------------------------------------------------
 
@@ -382,10 +382,10 @@
         listhptr => list_ptr(sparse_pattern)
         listh    => list_col(sparse_pattern)
 	
-        call   fill_dscf_from_atom_info(Datm, Dscf,              &
-                        numh, listhptr, listh, lasto,         &
-                        no_u, na_u, no_l, nspin,     &
-                        iaorb, inspn)
+        call fill_dscf_from_atom_info(Datm, Dscf, &
+             numh, listhptr, listh, lasto, &
+             no_u, na_u, no_l, nspin, &
+             iaorb, inspn)
 
         call newdSpData2D(sparse_pattern,dm_a2d,block_dist,DMnew,  &
                          "(DM initialized from atoms)")

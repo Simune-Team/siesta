@@ -57,7 +57,7 @@
     if (associated(a2d_data%val)) then
         call de_alloc( a2d_data%val, &
             name="val "//trim(a2d_data%name),routine=STR_TYPE_NAME)	
-    endif
+    end if
   end subroutine delete_Data
   
   
@@ -68,8 +68,6 @@
     type(TYPE_NAME), intent(inout) :: this
     integer, intent(in)            :: n, m
     character(len=*), intent(in), optional  :: name
-
-    integer :: stat
 
     ! We release the previous incarnation
     ! This means that we relinquish access to the previous

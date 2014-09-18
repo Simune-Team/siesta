@@ -872,7 +872,7 @@ remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
 reord.o: alloc.o precision.o
 restructSpData2D.o: class_Data2D.o class_OrbitalDistribution.o class_SpData2D.o
-restructSpData2D.o: class_Sparsity.o
+restructSpData2D.o: class_Sparsity.o parallel.o
 rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o

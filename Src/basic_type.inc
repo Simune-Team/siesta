@@ -99,7 +99,7 @@ CONTAINS
     endif
 
     ! This is important to use the correct initialized functions
-    this%data => null()
+    nullify(this%data)
 
   end subroutine delete_
 

@@ -1,7 +1,7 @@
 module m_ts_io
 
   use precision, only : dp
-  use parallel, only : IONode
+  use parallel, only : Node
 
   implicit none
 
@@ -56,7 +56,7 @@ contains
     if ( present(DUMMY) ) call die('ts_read_TSHS_opt: Arguments has to be &
          &named. Please correct sources.')
 
-    if ( IONode ) then
+    if ( Node == 0 ) then
 
        version = tshs_version(tshs)
 
@@ -211,7 +211,7 @@ contains
     ! position of data in buffer...
     ipos = 0
 
-    if ( IONode ) then
+    if ( Node == 0 ) then
        if ( present(na_u) ) & !  4
             call MPI_Pack(na_u,1,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
@@ -274,7 +274,7 @@ contains
     call MPI_Bcast(buffer,buffer_size,MPI_Packed, &
          0, MPI_Comm_World, MPIerror)
 
-    if ( .not. IONode ) then
+    if ( Node /= 0 ) then
        if ( present(na_u) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
             na_u,1,MPI_Integer, &
@@ -482,7 +482,7 @@ contains
     ! to compiletime unawareness
     nsc(:) = 0
 
-    if ( IONode ) then
+    if ( Node == 0 ) then
 
        ! Get file version
        version = tshs_version(filename)
@@ -556,7 +556,9 @@ contains
 #ifdef MPI
     if ( lBcast ) then
        ! Bcast initial sizes
-       all_I(0:9) = (/version,na_u,no_u,nspin,n_nzs,nsc(1),nsc(2),nsc(3),istep,ia1/)
+       if ( Node == 0 ) then
+          all_I(0:9) = (/version,na_u,no_u,nspin,n_nzs,nsc(1),nsc(2),nsc(3),istep,ia1/)
+       end if
        call MPI_Bcast(all_I(0),10,MPI_Integer,0,MPI_Comm_World,MPIerror)
        version = all_I(0)
        na_u = all_I(1)
@@ -576,7 +578,7 @@ contains
        call MPI_Bcast(kscell(1,1),9,MPI_Integer,0,MPI_Comm_World,MPIerror)
        call MPI_Bcast(kdispl(1),3,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
 
-       if ( .not. IONode ) then
+       if ( Node /= 0 ) then
           allocate(xa(3,na_u))
           call memory('A','D',3*na_u,'iohs')
           allocate(lasto(0:na_u))
@@ -593,7 +595,7 @@ contains
        nullify(ncol,l_col)
        allocate(ncol(no_u),l_col(n_nzs))
 
-       if ( IONode ) then
+       if ( Node == 0 ) then
           
           read(iu) ncol
 
@@ -690,7 +692,7 @@ contains
           n_s = product(nsc)
           call re_alloc(isc_off,1,3,1,n_s)
 
-          if ( IONode ) then
+          if ( Node == 0 ) then
              read(iu) isc_off
           end if
 #ifdef MPI
@@ -703,7 +705,7 @@ contains
        end if
     end if
 
-    if ( IONode ) then
+    if ( Node == 0 ) then
        ! Close file
        call io_close( iu )
     end if
@@ -785,7 +787,6 @@ contains
 
     use m_io_s, only: io_write_Sp, io_write_d1D, io_write_d2D
 #ifdef MPI
-    use parallel, only : IONode, Node, Nodes
     use mpi_siesta
 #endif
 
@@ -814,13 +815,14 @@ contains
     type(OrbitalDistribution), pointer :: dit
     type(Sparsity), pointer :: sp
     integer :: iu, no_l, no_u, n_nzs
-    integer :: ispin, i, n_s
+    integer :: i, n_s
     integer :: n_nzsg
+    integer, allocatable, target :: gncol(:)
     integer, pointer :: isc_off(:,:) => null()
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
-    real(dp), pointer :: tmp1D(:), tmp2D(:,:)
+    real(dp), pointer :: tmp2D(:,:)
 #ifdef MPI
-    integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
+    integer :: MPIerror
 #endif
 
     external :: io_assign, io_close
@@ -873,7 +875,7 @@ contains
     end if
 #endif
 
-    if ( IONode ) then
+    if ( Node == 0 ) then
 
        ! Open file
        call io_assign( iu )
@@ -903,20 +905,25 @@ contains
 
     end if
 
+    allocate(gncol(no_u))
+    gncol(1) = -1
+
     ! Write out sparsity pattern
-    call io_write_Sp(iu,sp,dit)
+    call io_write_Sp(iu,sp,dit,gncol=gncol)
 
     ! Write overlap matrix
-    call io_write_d1D(iu,S1D)
+    call io_write_d1D(iu,S1D,gncol=gncol)
 
     if ( .not. onlyS ) then
 
        ! Write Hamiltonian
-       call io_write_d2D(iu,H2D)
+       call io_write_d2D(iu,H2D,gncol=gncol)
 
     end if
 
-    if ( IONode ) then
+    deallocate(gncol)
+
+    if ( Node == 0 ) then
 
        if ( .not. Gamma ) then
           write(iu) isc_off
@@ -979,7 +986,7 @@ contains
 
     ! Initialize
     version = -1
-    if ( .not. IONode ) return
+    if ( Node /= 0 ) return
 
     ! Open file
     call io_assign( iu )

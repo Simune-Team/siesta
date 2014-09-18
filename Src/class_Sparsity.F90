@@ -29,7 +29,6 @@ module class_Sparsity
     integer, pointer   :: n_col(:)     =>null() ! Nonzero cols of each row
     integer, pointer   :: list_col(:)  =>null() ! Index of nonzero columns
     integer, pointer   :: list_ptr(:)  =>null() ! First element of each row
-    logical            :: initialized = .false.
   end type Sparsity_
 
   ! This is a wrapper type to be passed around
@@ -96,13 +95,12 @@ module class_Sparsity
 
   subroutine delete_Data(spdata)
     type(Sparsity_) :: spdata
-    if (.not. spdata%initialized) RETURN
     call de_alloc( spdata%n_col,   &
          name="n_col " // trim(spdata%name),routine="Sparsity")	
     call de_alloc( spdata%list_ptr,   &
          name="list_ptr " // trim(spdata%name),routine="Sparsity")	
     call de_alloc( spdata%list_col,   &
-         name="list_col " // trim(spdata%name),routine="Sparsity")	
+         name="list_col " // trim(spdata%name),routine="Sparsity") 
   end subroutine delete_Data
 
 !--------------------------------------------------------------------    
@@ -164,8 +162,6 @@ module class_Sparsity
     call re_alloc(sp%data%list_col,1,nnzs, &
          name="list_col " // trim(sp%data%name),routine="Sparsity")	
     sp%data%list_col(1:nnzs) = list(1:nnzs)
-
-    sp%data%initialized = .true.   
 
     call tag_new_object(sp)
 

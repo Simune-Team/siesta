@@ -54,10 +54,10 @@
 
   subroutine delete_Data(a1d_data)
     type(TYPE_NAME_) :: a1d_data
-    if (associated(a1d_data%val)) then
-       call de_alloc( a1d_data%val, &
+    if ( associated(a1d_data%val) ) then
+       call de_alloc( a1d_data%val, & 
             name="val "//trim(a1d_data%name),routine=STR_TYPE_NAME)	
-    endif
+    end if
   end subroutine delete_Data
   
   

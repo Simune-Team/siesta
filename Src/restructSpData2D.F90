@@ -1,9 +1,12 @@
  subroutine restructdSpData2D(SpMin,sp_out,SpMout)
 
+   use parallel, only : Node
    use class_dSpData2D
    use class_dData2D
    use class_Sparsity
    use class_OrbitalDistribution
+
+   implicit none
 
    type(dSpData2D), intent(in)    :: SpMin
    type(Sparsity), intent(in)    :: sp_out
@@ -29,7 +32,7 @@
       integer, parameter :: dp = selected_real_kind(10,100)
 
       integer :: i, in, ind, j, k, dim2, size_in, size_out
-      integer :: maxval_j_old, maxval_j_out, max_col
+      integer :: maxval_j_old, maxval_j_out, maxval_j_in, max_col
 
       type(dData2D)  :: a2d_out
 
@@ -57,8 +60,11 @@
       listptr_out => list_ptr(sp_out)
       list_in => list_col(SpMin)
       list_out => list_col(sp_out)
+      !print *, &
+      !     maxval(abs(n_col_in-n_col_out)), &
+      !     maxval(abs(list_in-list_out)),node,nnzs(SpMin),nnzs(sp_out)
 
-      size_in = nnzs(SpMin)
+      size_in  = nnzs(SpMin)
       size_out = nnzs(sp_out)
 
       ! We need to check the maximum supercell...
@@ -79,8 +85,8 @@
       max_col = max(maxval_j_in, maxval_j_out)
       allocate(aux(1:max_col))
 
-      a_in  => val(SpMin)
-      dim2 = size(a_in, dim=2)
+      a_in => val(SpMin)
+      dim2 = size(a_in,dim=2)
 
       call newdData2D(a2d_out,size_out,dim2,"(new in restruct)")
 

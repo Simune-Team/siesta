@@ -45,8 +45,6 @@
      !                   If the distribution is not block-cyclic,
      !                   we need explicit information
      !
-     ! Have 
-     logical                         :: initialized_general_dist = .false.
      !
      ! Just for sanity: number of global elements (see function num_local_elements)
      ! This will have to be set at the time of filling in the arrays
@@ -67,7 +65,7 @@
      type(OrbitalDistribution_), pointer :: data => null()
   end type OrbitalDistribution
 
-  public :: newDistribution
+  public :: newDistribution, comm
   public :: num_local_elements, node_handling_element
   public :: index_local_to_global, index_global_to_local
   public :: global_offset
@@ -81,19 +79,26 @@
      module procedure printOrbitalDistribution
   end interface
 
+  interface comm
+     module procedure comm_
+  end interface
+
 !==================================== 
 #define TYPE_NAME OrbitalDistribution
 #include "basic_type.inc"
 !==================================== 
 
-     subroutine delete_Data(spdata)
-      type(OrbitalDistribution_) :: spdata
-      if (.not. spdata%initialized_general_dist) RETURN
-      deallocate( spdata%nroc_proc)
-      deallocate( spdata%nl2g)
-      deallocate( spdata%ng2l)
-      deallocate( spdata%ng2p)
-     end subroutine delete_Data
+  subroutine delete_Data(spdata)
+    type(OrbitalDistribution_) :: spdata
+    if ( associated(spdata%nroc_proc) ) &
+         deallocate( spdata%nroc_proc)
+    if ( associated(spdata%nl2g) ) &
+         deallocate( spdata%nl2g)
+    if ( associated(spdata%ng2l) ) &
+         deallocate( spdata%ng2l)
+    if ( associated(spdata%ng2p) ) &
+         deallocate( spdata%ng2p)
+  end subroutine delete_Data
 
   subroutine newBlockCyclicDistribution(Blocksize,Comm,this,name)
      !........................................
@@ -381,6 +386,14 @@
      end if
 
    end function global_offset
+
+   ! Returns the communicator assigned to this
+   ! distribution
+   function comm_(this) result(comm)
+     type(OrbitalDistribution), intent(in) :: this
+     integer :: comm
+     comm = this%data%comm
+   end function comm_
    
       subroutine printOrbitalDistribution(this)
         type(OrbitalDistribution), intent(in) :: this
