@@ -554,7 +554,7 @@ contains
   end subroutine xij_offset_direct
 
   subroutine offset_xij_sp(ucell,n_s,isc_off, na_u,xa,lasto, &
-       block_dist,sp,xij,Bcast)
+       block_dist,sp,n_nzs,xij,Bcast)
     
     use class_OrbitalDistribution
     use class_Sparsity
@@ -579,18 +579,19 @@ contains
     type(OrbitalDistribution), intent(inout) :: block_dist
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sp
+    integer, intent(in) :: n_nzs
     logical, intent(in), optional :: Bcast
 ! **********************
 ! * OUTPUT variables   *
 ! **********************
-    real(dp), pointer :: xij(:,:)
+    real(dp), intent(out) :: xij(3,n_nzs)
 
 ! **********************
 ! * LOCAL variables    *
 ! **********************
     logical :: lBcast
     integer :: tm(3), is
-    integer :: no_l, no_u, n_nzs
+    integer :: no_l, no_u
     integer :: lio, io, ind, ia, ja
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
 
@@ -599,10 +600,7 @@ contains
 
     ! Attach to the sparsity pattern
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=no_l,nrows_g=no_u,nnzs=n_nzs)
-
-    ! Calculate the xij array
-    call re_alloc(xij,1,3,1,n_nzs)
+         nrows=no_l,nrows_g=no_u)
 
     do lio = 1 , no_l
 
@@ -662,11 +660,11 @@ contains
     ! The sparsity pattern
     integer, intent(in) :: no_l, no_u, n_nzs, ncol(no_l), l_ptr(no_l), l_col(n_nzs)
     ! vectors from i-J
-    real(dp), pointer :: xij(:,:)
     logical, intent(in), optional :: Bcast
 ! **********************
 ! * OUTPUT variables   *
 ! **********************
+    real(dp), intent(out) :: xij(3,n_nzs)
 
 ! **********************
 ! * LOCAL variables    *
@@ -677,9 +675,6 @@ contains
 
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
-
-    ! Calculate the xij array
-    call re_alloc(xij,1,3,1,n_nzs)
 
     do lio = 1 , no_l
 

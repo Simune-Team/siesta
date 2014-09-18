@@ -1,4 +1,15 @@
 ----------------------------------------------------
+September 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-198
+Changed the offset_xij routines to not allocate
+
+* Allocating outside offset_xij allows using the
+  class_<> objects for the xij array.
+
+modified:
+  Src/m_sparse.F90
+  Util/TS/tshs2tshs/tshs2tshs.f90
+
+----------------------------------------------------
 September 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-197
 Updated tshs2tshs to also conform with new io
 

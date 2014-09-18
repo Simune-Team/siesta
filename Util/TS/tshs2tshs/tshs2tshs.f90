@@ -161,27 +161,24 @@ program tshs2tshs
        sp, dH, dS, isc_off, &
        Ef, Qtot, Temp, &
        istep, ia1)
+
   ! calculate known sets
   no_l = no_u
   n_s = product(nsc)
   no_s = n_s * no_u
   n_nzs = nnzs(sp)
   dit => dist(dS) ! S always exists
+  if ( .not. onlyS ) H => val(dH)
+  S => val(dS)
 
   call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
-  ! Create the xij array
-  call offset_xij(ucell,n_s,isc_off,na_u,xa,lasto,dit,sp,xij)
-
-  ! Create dxij and copy over content
+  ! Create dxij
   call newdSpData2D(sp,3,dit,dxij,'xij',sparsity_dim=2)
-  H => val(dxij)
-  H = xij
-  deallocate(xij)
   xij => val(dxij)
 
-  if ( .not. onlyS ) H => val(dH)
-  S => val(dS)
+  ! Create the xij array
+  call offset_xij(ucell,n_s,isc_off,na_u,xa,lasto,dit,sp,n_nzs,xij)
 
   write(*,'(a)') 'Writing to '//trim(fileout)
 
