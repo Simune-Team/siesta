@@ -33,7 +33,7 @@ program tshs2tshs
   real(dp), pointer :: xij(:,:) => null()! (3,n_nzs)
   integer, pointer :: isc_off(:,:) => null()
   type(Sparsity) :: sp
-  type(dSpData2D) :: dH
+  type(dSpData2D) :: dH, dxij
   type(dSpData1D) :: dS
   real(dp), pointer :: H(:,:), S(:) !(n_nzs,nspin),(n_nzs)
   integer :: kscell(3,3)
@@ -167,13 +167,21 @@ program tshs2tshs
   no_s = n_s * no_u
   n_nzs = nnzs(sp)
   dit => dist(dS) ! S always exists
-  if ( .not. onlyS ) H => val(dH)
-  S => val(dS)
 
   call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
   ! Create the xij array
   call offset_xij(ucell,n_s,isc_off,na_u,xa,lasto,dit,sp,xij)
+
+  ! Create dxij and copy over content
+  call newdSpData2D(sp,3,dit,dxij,'xij',sparsity_dim=2)
+  H => val(dxij)
+  H = xij
+  deallocate(xij)
+  xij => val(dxij)
+
+  if ( .not. onlyS ) H => val(dH)
+  S => val(dS)
 
   write(*,'(a)') 'Writing to '//trim(fileout)
 
@@ -198,11 +206,11 @@ program tshs2tshs
      end do
 
      call ts_write_tshs(fileout, onlyS, Gamma, TSGamma, &
-          ucell, nsc, na_u, no_l, no_u, no_s, n_nzs, nspin, &
+          ucell, nsc, na_u, no_s, nspin, &
           kscell, kdispl, &
           xa, lasto, &
-          ncol, l_ptr, l_col, xij, indxuo, H, S, Ef, &
-          Qtot, Temp, istep, ia1)
+          dH,dS,dxij,indxuo, &
+          Ef, Qtot, Temp, istep, ia1)
 
      deallocate(indxuo)
 
@@ -210,10 +218,10 @@ program tshs2tshs
 
   if ( .not. onlyS ) call delete(dH)
   call delete(dS)
+  call delete(dxij)
   call delete(sp)
 
-  deallocate(xa)
-  deallocate(xij,lasto)
+  deallocate(xa,lasto)
 
   write(*,'(a)') trim(fileout)//' written.'
 

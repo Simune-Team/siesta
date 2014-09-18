@@ -1,4 +1,14 @@
 ----------------------------------------------------
+September 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-197
+Updated tshs2tshs to also conform with new io
+
+modified:
+  Util/Grimme/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/TS/tshs2tshs/tshs2tshs.f90
+
+----------------------------------------------------
 September 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-196
 Restrained the send/recv messages
 
