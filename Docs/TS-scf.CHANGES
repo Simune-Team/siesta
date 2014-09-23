@@ -1,4 +1,15 @@
 ----------------------------------------------------
+September 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-200
+Name change of TSDE in Elec block
+
+* Changed from DE to TSDE in elec block,
+  this is more intuitive.
+
+modified:
+  Src/m_ts_electype.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 September 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-199
 Allowed starting with transiesta, add DM-bulk
 

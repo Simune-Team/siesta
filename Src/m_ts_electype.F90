@@ -62,7 +62,7 @@ module m_ts_electype
   end type geo_plane_delta
 
   type :: Elec
-     character(len=FILE_LEN) :: HSfile = ' ', GFfile  = ' ', DEfile = ' '
+     character(len=FILE_LEN) :: HSfile = ' ', DEfile = ' ', GFfile  = ' '
      character(len=NAME_LEN) :: Name   = ' '
      ! These variables are relative to the big system
      integer :: idx_a = 0, idx_o = 0
@@ -410,9 +410,9 @@ contains
           ! and still suspects a non-Gamma calculation
           this%kcell_check = fdf_bboolean(pline,1,after=1)
 
-       else if ( leqi(ln,'DE') .or. &
-            leqi(ln,'DE-file') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('DE name not supplied')
+       else if ( leqi(ln,'TSDE') .or. &
+            leqi(ln,'TSDE-file') ) then
+          if ( fdf_bnnames(pline) < 2 ) call die('TSDE name not supplied')
           this%DEfile = trim(fdf_bnames(pline,2))
 
        else

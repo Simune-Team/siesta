@@ -970,7 +970,7 @@ contains
              write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' TSDE &
                   &file cannot be located in: '//trim(Elecs(i)%DEfile)//'.', &
                   '  Please add TS.DE.Save T to the electrode calculation or &
-                  &specify the exact file position using ''DE-file'' in the&
+                  &specify the exact file position using ''TSDE-file'' in the&
                   & Elec block.'
           end if
           
