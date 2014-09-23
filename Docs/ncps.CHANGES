@@ -1,4 +1,50 @@
 ------------------------------------------------------------
+September 23, 2014  Alberto Garcia       trunk-462--ncps-38
+Major overhaul of psml support
+
+* Support for new <exchange-correlation> element including
+full libxc interoperability and optional annotations.
+
+* New tables in SiestaXC for libxc-siestaxc-atom translation.
+
+* Split of the ncps library into "ncps" (moved to Src) and "psml".
+
+* Many other cosmetic changes.
+
+removed:
+  Pseudo/atom/SiestaXC/
+  Pseudo/atom/SiestaXC/.dummy_directory
+  Src/nc-pseudo/flib_spline.f90
+added:
+  Src/SiestaXC/m_libxc_list.F90
+  Src/SiestaXC/m_libxc_sxc_translation.F90
+  Src/SiestaXC/m_siestaxc_list.F90
+  Src/psml/assoc_list.f90
+renamed:
+  Src/nc-pseudo/ => Src/psml/
+  Src/nc-pseudo/m_ncps.f90 => Src/m_ncps.f90
+  Src/nc-pseudo/m_ncps_froyen_ps_t.f90 => Src/m_ncps_froyen_ps_t.f90
+  Src/nc-pseudo/m_ncps_froyen_reader.f => Src/m_ncps_froyen_reader.f
+  Src/nc-pseudo/m_ncps_reader.f => Src/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_translators.f90 => Src/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_writers.f90 => Src/m_ncps_writers.f90
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/velect.f
+  Pseudo/atom/write_psml.f
+  Src/MPI/Makefile
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaxc.F90
+  Src/flib_spline.f90
+  Src/psml/m_ncps_parsing_helpers.F90
+  Src/psml/m_ncps_xml_ps_t.f90
+  Src/psml/makefile
+  Src/m_ncps.f90
+  Src/m_ncps_reader.f
+  Src/m_ncps_translators.f90
+
+------------------------------------------------------------
 September 1, 2014  Alberto Garcia       trunk-462--ncps-37
 Refine ghost check. Allocate unconditionally psml structure in parser
 

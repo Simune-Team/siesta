@@ -57,10 +57,12 @@ logical, private, save  :: in_grid_data = .false. , in_grid = .false.
 logical, private, save  :: in_valenceCharge = .false.
 logical, private, save  :: in_provenance = .false.
 logical, private, save  :: in_valence_config = .false.
+logical, private, save  :: in_xc = .false., in_libxc_info = .false.
 logical, private, save  :: in_pseudowavefun = .false. , in_pswf = .false.
 logical, private, save  :: got_explicit_grid_data
 
 integer, private, save  :: ndata, ndata_grid
+integer, private, save  :: n_funct
 
 integer, parameter, private    :: dp = selected_real_kind(14)
 real(dp), private, save        :: zval_generation
@@ -72,6 +74,7 @@ type(grid_t), private, save, pointer  :: grid => null()
 type(provenance_t), private, pointer      :: pp => null()
 type(header_t), private, pointer          :: hp => null()
 type(config_val_t), private, pointer      :: cp => null()
+type(xc_t), private, pointer              :: xp => null()
 type(pswfs_t), private, pointer           :: wfp => null()
 type(semilocal_t), private, pointer       :: slp => null()
 type(valence_charge_t), private, pointer  :: valp => null()
@@ -109,7 +112,7 @@ integer             :: status
 
 integer             :: i
 
-print *, "Element: ", trim(name)
+!print *, "Element: ", trim(name)
 
 select case(name)
 
@@ -134,7 +137,7 @@ select case(name)
 
          call get_value(attributes,"creator",pp%creator,status)
          if (status /= 0 ) pp%creator="unknown"
-
+ 
          call get_value(attributes,"date",pp%date,status)
          if (status /= 0 ) pp%date="unknown"
 
@@ -153,23 +156,6 @@ select case(name)
          if (status /= 0 ) call die("Cannot determine atomic number")
          read(unit=value,fmt=*) hp%z
 
-         call get_value(attributes,"xc-libxc-exchange", &
-                        hp%xc_libxc_exchange,status)
-         if (status /= 0 ) &
-            call die("Cannot determine xc-libxc-exchange ")
-
-         call get_value(attributes,"xc-libxc-correlation", &
-                        hp%xc_libxc_correlation,status)
-         if (status /= 0 ) &
-            call die("Cannot determine xc-libxc-correlation ")
-
-         hp%xc_functional = ""
-         call get_value(attributes,"xc-functional", &
-                        hp%xc_functional,status)
-!         if (status /= 0 ) &
-!            call die("Cannot determine xc-functional")
-
-
          call get_value(attributes,"flavor",hp%flavor,status)
          if (status /= 0 ) hp%flavor="ATTEND"
 
@@ -187,6 +173,35 @@ select case(name)
          call get_value(attributes,"core-corrections", &
                                     hp%core_corrections,status)
          if (status /= 0 ) hp%core_corrections = "no"
+
+      case ("exchange-correlation")
+         in_xc = .true.
+         xp => pseudo%xc_info
+
+      case ("libxc-info")
+         if (.not. in_xc) call die("Orphan <libxc-info>")
+         in_libxc_info = .true.
+         call get_value(attributes,"number-of-functionals", &
+                                    value,status)
+         if (status /= 0 ) call die("Error reading number of libxc functs")
+         read(unit=value,fmt=*)  xp%n_functs_libxc 
+         if (xp%n_functs_libxc /= 2 ) then
+            call die("Non-conventional number of libxc functionals")
+         endif
+         n_funct = 0
+
+      case ("functional")
+         if (.not. in_libxc_info) call die("Orphan <functional>")
+         n_funct = n_funct + 1
+         if (n_funct > 2) call die("Too many libxc functionals")
+
+         call get_value(attributes,"name", &
+                                    xp%libxc_name(n_funct),status)
+         if (status /= 0 ) call die("Error reading libxc name")
+
+         call get_value(attributes,"id", value, status)
+         if (status /= 0 ) call die("Error reading libxc id")
+         read(unit=value,fmt=*)  xp%libxc_id(n_funct) 
 
       case ("valence-configuration")
          in_valence_config = .true.
@@ -285,9 +300,9 @@ select case(name)
          if (status /= 0 ) call die("Cannot determine grid npts")
          read(unit=value,fmt=*) grid%npts
 
-         ! This attribute is optional
-         call get_value(attributes,"annotation",grid%annotation,status)
-         if (status /= 0 ) grid%annotation=""
+!!         ! This attribute is optional
+!!         call get_value(attributes,"annotation",grid%annotation,status)
+!!         if (status /= 0 ) grid%annotation=""
 
          !
          ! In this way we allow for a private grid for each radfunc,
@@ -388,6 +403,16 @@ select case(name)
          if (status /= 0 ) call die("Cannot determine npswfs-minor")
          read(unit=value,fmt=*) wfp%npswfs_minor
 
+      case ("annotation")
+         if (in_grid) then
+            call save_annotation(attributes,grid%annotation)
+         else if (in_xc) then
+            call save_annotation(attributes,xp%annotation)
+         else
+            call die("unknown <annotation> element")
+         endif
+                  
+
 end select
 
 end subroutine begin_element
@@ -405,7 +430,7 @@ character(len=*), intent(in)     :: name
 
 integer :: i, nmajor, nminor
 
-print *, "-- end Element: ", trim(name)
+!print *, "-- end Element: ", trim(name)
 
 select case(name)
 
@@ -441,7 +466,7 @@ select case(name)
          if (ndata_grid /= size(grid%grid_data)) then
             call die("npts mismatch in grid")
          endif
-         print *, "Got grid data: ", got_explicit_grid_data
+!         print *, "Got grid data: ", got_explicit_grid_data
 
       case ("pseudocore-charge")
          in_coreCharge = .false.
@@ -514,6 +539,12 @@ select case(name)
       case ("valence-configuration")
          in_config_val = .false.
 
+      case ("exchange-correlation")
+         in_xc = .false.
+
+      case ("libxc-info")
+         in_libxc_info = .false.
+
       case ("provenance")
          in_provenance = .false.
 
@@ -548,8 +579,8 @@ else if (in_header) then
       !
       ! There should not be any pcdata in header in this version...
 
-      print *, "Header data:"
-      print *, trim(chunk)
+!      print *, "Header data:"
+!      print *, trim(chunk)
 
 endif
 
@@ -734,6 +765,32 @@ enddo
 
 end subroutine token_analysis
 #endif
+
+     ! Annotations are encoded as an association list
+     ! in a couple of arrays
+     ! ( (key "value") (key "value") ...)
+     ! 
+     subroutine save_annotation(atts,annotation)
+       use assoc_list, ps_annotation_t => assoc_list_t
+
+       type(dictionary_t), intent(in) :: atts
+       type(ps_annotation_t), intent(out) :: annotation
+       
+       integer :: n, i, status
+       character(len=50) :: key, value
+
+       n = len(atts)
+       call assoc_list_init(annotation,n,status)
+       if (status /= 0) call die("Failed to init annotation object")
+       do i = 1, n
+          call get_key(atts,i,key,status)
+          if (status /= 0) call die("cannot get key in atts dict")
+          call get_value(atts,i,value,status)
+          if (status /= 0) call die("cannot get value in atts dict")
+          call assoc_list_insert(annotation,key,value,status)
+          if (status /= 0) call die("Failed to insert annotation pair")
+       enddo
+     end subroutine save_annotation
 
 end module m_ncps_parsing_helpers
 

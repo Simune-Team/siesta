@@ -72,7 +72,7 @@ XC=libSiestaXC.a
 XC_MAKEFILE=$(TOP_LEVEL)/SiestaXC/makefile
 XC_INCFLAGS:=-I $(TOP_LEVEL)/SiestaXC ##$(INCFLAGS)
 $(XC): 
-	(cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
+	(mkdir -p SiestaXC; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
                           "FC=$(FC)" "VPATH_ROOT=$(TOP_LEVEL)" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(XC_INCFLAGS)" \
@@ -91,8 +91,7 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
         genrhs.o  logder.o ode.o denplot.o scilib.o  recipes.o \
 	compat_params.o  pcc_exp.o  change_valence.o pswf_store.o \
 	coreq.o get_unit.o gauleg.o divdif.o symbols.o \
-        prversion.o pseudoXML.o write_psml.o pxf.o force_underflow.o dsolv2_single.o dsolv2_save_wf.o \
-        m_xcnames.o
+        prversion.o pseudoXML.o write_psml.o pxf.o force_underflow.o dsolv2_single.o dsolv2_save_wf.o
 #
 OBJS= $(MAIN_OBJS) 
 #
@@ -109,7 +108,7 @@ fhi2psml: $(WXML) fhi2psml.o
 #
 clean:	
 	rm -f *.o *.mod atm *.a
-	(cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
+	test -d SiestaXC && (cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
                        "ARCH_MAKE=../$(ARCH_MAKE)" clean)
 	(cd wxml ; $(MAKE) clean)
 #
@@ -154,5 +153,4 @@ wf.o: param.h orbital.h radial.h energy.h ion.h elecpot.h
 wrapup.o: param.h corecorr.h orbital.h radial.h energy.h version.h elecpot.h
 wrapup.o: charge.h compat.h pseudowave.h ion.h
 write_psml.o: charge.h param.h corecorr.h orbital.h radial.h pseudowave.h ion.h
-write_psml.o: m_xcnames.o
 wtrans.o: plot.h

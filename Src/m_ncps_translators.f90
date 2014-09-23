@@ -28,8 +28,10 @@ CONTAINS
 ! vanilla ATOM parameters is used.
 !
 
-        use m_ncps_xml_ps_t  
+        use m_psml
         use m_ncps_froyen_ps_t,  only: froyen_ps_t
+        use SiestaXC, only: xc_id_t, get_xc_id_from_libxc
+        use SiestaXC, only: xc_id_to_string
 
         implicit none 
 
@@ -54,6 +56,8 @@ CONTAINS
         character(len=40):: method_string
         character(len=1), dimension(0:4) :: &
                          sym = (/ "s", "p", "d", "f", "g" /)
+        integer          :: libxc_ids(2)
+        integer          :: status
 
         ! These are the "current" ATOM parameters
         ! There is another set turned on by the UCB_COMPAT flag in ATOM
@@ -61,6 +65,7 @@ CONTAINS
         real(dp), parameter :: bb_def = 80.0_dp    ! UCB_COMPAT: 40.0
         real(dp), parameter :: rmax_def = 120.0_dp ! UCB_COMPAT: 80.0
 
+        type(xc_id_t)                        :: xc_id
 
         p%name = ps_AtomicSymbol(ps)
         p%zval         = ps_ZPseudo(ps)
@@ -71,35 +76,22 @@ CONTAINS
 !       To be completed!!
 !       Need to include "universal" codes, such as those in LibXC
 !
-        xc_string = ps_XCFunctional(ps)
-
-        select case(xc_string)
-          case('Ceperley-Alder')
-             p%icorr = 'ca'
-          case('Wigner')
-             p%icorr = 'wi'
-          case('Hedin-Lundqvist')
-             p%icorr = 'hl'
-          case('Gunnarson-Lundqvist')
-             p%icorr = 'gl'
-          case('von Barth-Hedin')
-             p%icorr = 'bh'
-          case('Perdew-Burke-Ernzerhof')
-             p%icorr = 'pb'
-          case('RPBE - Hammer et al')
-             p%icorr = 'rp'
-          case('revPBE Zhang+Yang')
-             p%icorr = 'rv'
-          case('Becke-Lee-Yang-Parr')
-             p%icorr = 'bl'
-          case('Dion-et-al')
-             p%icorr = 'vw'
-          case('Wu-Cohen')
-             p%icorr = 'wc'
-          case('Perdew-Burke-Ernzerhof-solid')
-             p%icorr = 'ps'
-        end select
-
+        libxc_ids = ps_LibxcIdArray(ps)
+        call get_xc_id_from_libxc(libxc_ids,xc_id,status)
+        if (status == 0) then
+           write(6,"(a,2i4)") "Using libxc ids: ", libxc_ids(:)
+           write(6,"(a)") trim(xc_id_to_string(xc_id))
+           p%icorr = xc_id%atom_id
+        else
+           ! Fall back to querying a possible XC annotation
+           call ps_getAnnotationValue(ps_XCAnnotation(ps),  &
+                                      "atom-xc-code",p%icorr,status)
+           if (status == 0) then
+              write(6,"(a)") "Atom-xc-code from annotation: " // p%icorr
+           else
+              call die("Cannot get atom-xc code")
+           endif
+        endif
 !
 !       Note that most (all?) formats include only "scalar-relativistic" plus
 !       maybe spin-orbit components, but never "polarized" pseudos.

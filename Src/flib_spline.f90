@@ -2,8 +2,12 @@ module flib_spline
 !
 ! Spline interpolation, based on code in "Numerical Recipes"
 !
-use precision, only: dp, sp
+
 implicit none
+
+integer, parameter, private :: dp = selected_real_kind(14,100)
+integer, parameter, private :: sp = selected_real_kind(5,10)
+
 private
 
 public :: generate_spline

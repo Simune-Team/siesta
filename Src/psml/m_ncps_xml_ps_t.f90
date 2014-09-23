@@ -9,6 +9,9 @@
 !
 
 module m_ncps_xml_ps_t
+
+use assoc_list, only: ps_annotation_t => assoc_list_t
+
 ! 
 ! In order for this module will hide completely the implementation of
 ! the parsing of the XML file and the later querying of the data
@@ -27,6 +30,7 @@ integer, parameter, private    :: MAXN_WFNS = 8
 integer, parameter, private    :: dp = selected_real_kind(14)
 !
 !-----------------------------------------------------------
+
 type, public :: provenance_t
         character(len=40)       :: creator
         character(len=30)       :: date
@@ -39,11 +43,6 @@ type, public :: header_t
         character(len=50)       :: flavor  !< pseudization method
         logical                 :: relativistic !< is relativistic?
         logical                 :: polarized !< is spin_polarized?
-        character(len=50)       :: xc_libxc_exchange !< LibXC string for X
-        character(len=50)       :: xc_libxc_correlation !< LibXC string for C
-        !> Generator's own terminology for XC 
-        !! Could be something like "type:LDA//authors:PZ"
-        character(len=80)       :: xc_functional
         !
         character(len=4)        :: core_corrections !< are there NLCC's?
 end type header_t
@@ -58,13 +57,20 @@ type, public :: config_val_t
       real(dp), dimension(MAXN_SHELLS) :: occ_down
 end type config_val_t
 !------
+type, public :: xc_t
+        integer                         :: n_functs_libxc = 0
+        character(len=50)               :: libxc_name(2)
+        integer                         :: libxc_id(2)
+        type(ps_annotation_t)           :: annotation
+end type xc_t
+!------
 type, public :: grid_t
 !
 !     Note that the preferred option is to have explicit grid data.
 !
       integer                        :: npts = 0
       real(dp), pointer              :: grid_data(:) => null()
-      character(len=80)              :: annotation
+      type(ps_annotation_t)          :: annotation
 end type grid_t      
 !
 type, public :: radfunc_t
@@ -122,6 +128,7 @@ type, public :: ps_t
       type(provenance_t)                 :: provenance
       type(header_t)                     :: header
       type(config_val_t)                 :: config_val
+      type(xc_t)                         :: xc_info
       type(grid_t), pointer              :: global_grid => null()
       type(semilocal_t)                  :: semilocal
       type(pswfs_t)                      :: pswfs
@@ -147,9 +154,12 @@ public :: ps_Creator
 public :: ps_Date
 
 public :: ps_PseudoFlavor
-public :: ps_XCLibXCExchange
-public :: ps_XCLibXCCorrelation
-public :: ps_XCFunctional
+public :: ps_NLibxcFunctionals
+public :: ps_LibxcName
+public :: ps_LibxcId
+public :: ps_LibxcIdArray
+public :: ps_ValidLibxc
+public :: ps_XCAnnotation
 
 public :: ps_IsRelativistic
 public :: ps_IsSpinPolarized
@@ -173,6 +183,8 @@ public :: ps_EvaluatePotential
 public :: ps_EvaluatePseudoWf
 public :: ps_EvaluateValenceCharge
 public :: ps_EvaluateCoreCharge
+
+public :: ps_GetAnnotationValue
 
 CONTAINS !===============================================
 !> @brief Cleans and deallocates the ps object
@@ -400,23 +412,72 @@ real(dp)                   :: zval
 zval = ps%config_val%total_charge
 end function ps_GenerationZval
 !
-function ps_XCLibXCExchange(ps) result(xc_string)
+function ps_NLibxcFunctionals(ps) result(xc_n)
 type(ps_t), intent(in) :: ps
-character(len=len_trim(ps%header%xc_libxc_exchange)) :: xc_string
-xc_string = trim(ps%header%xc_libxc_exchange)
-end function ps_XCLibXCExchange
+integer                :: xc_n
+
+xc_n =  ps%xc_info%n_functs_libxc 
+end function ps_NLibxcFunctionals
 !
-function ps_XCLibXCCorrelation(ps) result(xc_string)
+function ps_LibxcName(ps,i) result(xc_name)
 type(ps_t), intent(in) :: ps
-character(len=len_trim(ps%header%xc_libxc_correlation)) :: xc_string
-xc_string = trim(ps%header%xc_libxc_correlation)
-end function ps_XCLibXCCorrelation
+integer, intent(in)    :: i
+character(len=50)      :: xc_name
+
+if ( i > ps%xc_info%n_functs_libxc ) then
+   call die("Index error in libxc functional")
+endif
+xc_name = ps%xc_info%libxc_name(i)
+end function ps_LibxcName
 !
-function ps_XCFunctional(ps) result(xc_string)
+function ps_LibxcId(ps,i) result(xc_id)
 type(ps_t), intent(in) :: ps
-character(len=len_trim(ps%header%xc_functional)) :: xc_string
-xc_string = trim(ps%header%xc_functional)
-end function ps_XCFunctional
+integer, intent(in)    :: i
+integer                :: xc_id
+
+if ( i > ps%xc_info%n_functs_libxc ) then
+   call die("Index error in libxc functional")
+endif
+xc_id = ps%xc_info%libxc_id(i)
+end function ps_LibxcId
+!
+function ps_LibxcIdArray(ps) result(xc_id_array)
+type(ps_t), intent(in) :: ps
+integer                :: xc_id_array(2)
+
+xc_id_array(:) = ps%xc_info%libxc_id(:)
+end function ps_LibxcIdArray
+!
+function ps_ValidLibxc(ps) result(libxc_ok)
+type(ps_t), intent(in) :: ps
+logical                :: libxc_ok
+
+integer    :: xc_id_array(2)
+
+xc_id_array(:) = ps_LibxcIdArray(ps)
+libxc_ok = .true.
+if (any (xc_id_array(:) <= 0)) then
+   libxc_ok = .false.
+endif
+end function ps_ValidLibxc
+!
+function ps_XCAnnotation(ps) result(xc_annotation)
+type(ps_t), intent(in) :: ps
+type(ps_annotation_t)  :: xc_annotation
+xc_annotation = ps%xc_info%annotation
+end function ps_XCAnnotation
+!
+subroutine ps_GetAnnotationValue(annotation,key,value,stat)
+use assoc_list, only: ps_annotation_t =>assoc_list_t, assoc_list_get_value
+type(ps_annotation_t)  :: annotation
+character(len=*), intent(in)  :: key
+character(len=*), intent(out) :: value
+integer, intent(out)          :: stat
+
+call assoc_list_get_value(annotation,key,value,stat)
+
+end subroutine ps_GetAnnotationValue
+
 !
 function ps_IsRelativistic(ps) result(rel)
 type(ps_t), intent(in) :: ps
@@ -680,6 +741,7 @@ call interpolate(x,y,r,val,debug)
 
 end function eval_radfunc
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine interpolate(x,y,r,val,debug)
 real(dp), intent(in) :: x(:), y(:)
 real(dp), intent(in) :: r
@@ -870,7 +932,7 @@ end subroutine interpolate
       END SUBROUTINE POLINT
 
 !
-      FUNCTION at_number(SYMBOL) result(z)
+      FUNCTION atomic_number(SYMBOL) result(z)
 
 ! Given the atomic symbol, it returns the atomic number
 ! Based on code by J. Soler
@@ -899,7 +961,7 @@ end subroutine interpolate
      enddo
      call die("Cannot find atomic number for " // symbol)
         
-   end FUNCTION at_number
+   end FUNCTION atomic_number
 
 end module m_ncps_xml_ps_t
 

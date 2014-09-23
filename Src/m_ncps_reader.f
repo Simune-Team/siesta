@@ -26,7 +26,7 @@
 
 !       PS information can be in a .vps file (unformatted)
 !       or in a .psf file (formatted)
-!       or in a .xml file 
+!       or in a .psml file 
 
         character(len=40) fname
         logical found, reparametrize
@@ -59,7 +59,7 @@
               fname = trim(label) // '.psml'
               inquire(file=fname, exist=found)
               if (found) then
-                 call pseudo_read_xml(fname,p,reparametrize,a,b,rmax)
+                 call pseudo_read_psml(fname,p,reparametrize,a,b,rmax)
               else
                  write(6,'(/,2a,a20,/)') 'read_pseudo: ERROR: ',
      .                'Pseudopotential file not found: ', fname
@@ -70,10 +70,9 @@
         call pseudo_dump(trim(label) // ".psdump",p)
         end subroutine pseudo_read
 !
-        subroutine pseudo_read_xml(fname,p,reparametrize,a,b,rmax)
+        subroutine pseudo_read_psml(fname,p,reparametrize,a,b,rmax)
 
-        use m_ncps_xml_ps_t, only: ps_t, ps_destroy
-        use m_ncps_xmlreader, only: ncps_xmlreader
+        use m_psml, only: ps_t, ps_destroy, psml_reader
         use m_ncps_translators, only: ncps_xml2froyen_new
 
         character(len=*), intent(in)              :: fname
@@ -85,11 +84,11 @@
 
         type(ps_t), pointer        :: ps=>null()
 
-        call ncps_xmlreader(fname,ps)
+        call psml_reader(fname,ps)
         call ncps_xml2froyen_new(ps,p,reparametrize,a,b,rmax)
         call ps_destroy(ps)
 
-        end subroutine pseudo_read_xml
+        end subroutine pseudo_read_psml
 !----
         subroutine pseudo_dump(fname,p)
 !

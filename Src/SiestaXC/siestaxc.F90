@@ -721,6 +721,13 @@ MODULE siestaXC
   USE mesh3d,   only: myMeshBox            ! Get my processor mesh box
   USE mesh3d,   only: setMeshDistr         ! Set a distribution of mesh
                                            ! points over parallel processors
+
+  use m_libxc_sxc_translation, only: xc_id_t, xc_id_to_string
+  use m_libxc_sxc_translation, only: get_xc_id_from_atom_id
+  use m_libxc_sxc_translation, only: get_xc_id_from_siestaxc
+  use m_libxc_sxc_translation, only: get_xc_id_from_libxc
+  use m_libxc_sxc_translation, only: xc_is_not_lda, xc_nfuncs_libxc
+
   PUBLIC
 
 END MODULE siestaXC

@@ -3,7 +3,8 @@
       subroutine write_psml( ray, npotd, npotu, zion )
 
       use flib_wxml
-      use m_xcnames
+      use SiestaXC, only: xc_id_t, get_xc_id_from_atom_id
+      use SiestaXC, only: xc_nfuncs_libxc
 
       implicit none
 
@@ -15,7 +16,8 @@
       include 'pseudowave.h'
       include 'corecorr.h'
 
-      type(xmlf_t) :: xf
+      type(xmlf_t)  :: xf
+      type(xc_id_t) :: xc_id
 
       integer npotd, npotu
       double precision  :: zion
@@ -32,9 +34,6 @@
 !
       integer :: stat
       character(len=132) :: line, msg
-
-      type(xc_id_t) :: xc_id
-
 
       allocate(f(1:nr))
 
@@ -134,14 +133,30 @@
           call my_add_attribute(xf,"polarized",polattrib)
           call my_add_attribute(xf,"core-corrections",coreattrib)
  
-           write(msg,"(2(a,':',a,'/'))") "siesta-xc-type",
-     $                                      trim(xc_id%siestaxc_type),
-     $                                      "siesta-xc-authors",
-     $                                      trim(xc_id%siestaxc_authors)
-          call my_add_attribute(xf,"xc-functional",trim(msg))
+          call xml_NewElement(xf,"exchange-correlation")
+          call xml_NewElement(xf,"annotation")
+          call my_add_attribute(xf,"atom-xc-code",icorr)
+          call my_add_attribute(xf,"siesta-xc-type",
+     $                          trim(xc_id%siestaxc_id%family))
+          call my_add_attribute(xf,"siesta-xc-authors",
+     $                          trim(xc_id%siestaxc_id%authors))
+          call xml_EndElement(xf,"annotation")
 
-          call my_add_attribute(xf,"xc-libxc-exchange",xc_id%libxc_x)
-          call my_add_attribute(xf,"xc-libxc-correlation",xc_id%libxc_c)
+          call xml_NewElement(xf,"libxc-info")
+          call my_add_attribute(xf,"number-of-functionals",
+     $                          str(xc_nfuncs_libxc(xc_id)))
+           do i = 1, xc_nfuncs_libxc(xc_id)
+              call xml_NewElement(xf,"functional")
+               call my_add_attribute(xf,"name",
+     $                      trim(xc_id%libxc_id(i)%name))
+               call my_add_attribute(xf,"type",
+     $                      trim(xc_id%libxc_id(i)%xc_kind%str))
+               call my_add_attribute(xf,"id",
+     $                      str(xc_id%libxc_id(i)%code))
+              call xml_EndElement(xf,"functional")
+           enddo
+          call xml_EndElement(xf,"libxc-info")
+          call xml_EndElement(xf,"exchange-correlation")
           !
 
         ! This is a child element of <header> for now, as

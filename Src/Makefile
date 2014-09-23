@@ -160,7 +160,9 @@ OBJS =  automatic_cell.o atom_options.o \
         die.o m_dminim.o m_zminim.o m_svd.o compute_max_diff.o \
         save_density_matrix.o \
         m_rhog.o rhofft.o m_diis.o compute_energies.o \
-        class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o
+        class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o\
+	m_ncps_reader.o m_ncps_translators.o m_ncps.o m_ncps_froyen_reader.o\
+        m_ncps_writers.o m_ncps_froyen_ps_t.o
 #--------------------------------------------------------------
 
 INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
@@ -174,9 +176,9 @@ $(XMLPARSER):
 	(cd xmlparser ; $(MAKE) VPATH="$(VPATH)/xmlparser" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
-NCPS=libncps.a
-$(NCPS): 
-	(cd nc-pseudo ; $(MAKE) VPATH="$(VPATH)/nc-pseudo" \
+PSML=libpsml.a
+$(PSML): 
+	(cd psml ; $(MAKE) VPATH="$(VPATH)/psml" \
 	MAIN_OBJDIR="$(MAIN_OBJDIR)" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
@@ -263,10 +265,10 @@ check-siesta:
 #
 siesta: check-siesta what version \
                 $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-                $(NCPS) $(COMP_LIBS) $(ALL_OBJS) 
+                $(PSML) $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML)  \
-               $(XC) $(NCPS) $(XMLPARSER) $(MPI_INTERFACE) \
+               $(XC) $(PSML) $(XMLPARSER) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) $(LIBS) 
 #
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
@@ -295,11 +297,11 @@ check-ts:
 #
 transiesta: check-ts what version \
             $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
-            $(WXML) $(XMLPARSER) $(NCPS) \
+            $(WXML) $(XMLPARSER) $(PSML) \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
-               $(WXML) $(XMLPARSER) $(NCPS) \
+               $(WXML) $(XMLPARSER) $(PSML) \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) $(LIBS)
 #
@@ -314,7 +316,7 @@ clean:
 	(cd fdf ; $(MAKE) clean)
 	@if [ -d FoX ] ; then (cd FoX ; touch arch.make ; $(MAKE) distclean) ; fi
 	(cd xmlparser ; $(MAKE) clean)
-	(cd nc-pseudo ; $(MAKE) clean)
+	(cd psml ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
@@ -328,8 +330,8 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: m_filter.o m_recipes.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: sys.o
+atom.o: m_filter.o m_ncps.o m_recipes.o old_atmfuncs.o periodic_table.o
+atom.o: precision.o sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -338,9 +340,10 @@ bands.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o m_gamma.o
 bands.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o writewave.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o radial.o sys.o xml.o
-basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o sys.o
-basis_types.o: alloc.o atmparams.o precision.o sys.o
+basis_io.o: m_ncps.o precision.o radial.o sys.o xml.o
+basis_specs.o: basis_types.o chemical.o m_ncps.o periodic_table.o precision.o
+basis_specs.o: sys.o
+basis_types.o: alloc.o atmparams.o m_ncps.o precision.o sys.o
 bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o m_recipes.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
@@ -449,7 +452,6 @@ find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
 fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o precision.o
-flib_spline.o: precision.o
 forhar.o: alloc.o mesh.o moremeshsubs.o parallel.o precision.o
 fsiesta_mpi.o: precision.o siesta_analysis.o siesta_end.o siesta_forces.o
 fsiesta_mpi.o: siesta_init.o siesta_master.o siesta_move.o sys.o
@@ -535,6 +537,13 @@ m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
+m_ncps.o: m_ncps_froyen_ps_t.o m_ncps_reader.o m_ncps_translators.o
+m_ncps.o: m_ncps_writers.o
+m_ncps_froyen_reader.o: flib_spline.o m_ncps_froyen_ps_t.o
+m_ncps_reader.o: m_ncps_froyen_ps_t.o m_ncps_froyen_reader.o
+m_ncps_reader.o: m_ncps_translators.o
+m_ncps_translators.o: m_ncps_froyen_ps_t.o
+m_ncps_writers.o: m_ncps_froyen_ps_t.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
@@ -647,6 +656,7 @@ projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
+pseudopotential.o: atom_options.o flib_spline.o m_ncps.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
