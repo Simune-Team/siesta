@@ -20,6 +20,7 @@
       use atomlist,             only:  no_l
       use siesta_options,       only:  writedm, writedm_cdf
       use siesta_options,       only:  writedm_cdf_history
+      use siesta_options,       only:  idyn
       use m_steps,              only:  istp
       use sparse_matrices,      only:  Dscf, DM_2D
 #ifdef CDF
@@ -31,7 +32,6 @@
 #endif
 #endif
 #ifdef TRANSIESTA
-      use siesta_options,       only:  idyn, writedm
       use sparse_matrices,      only:  EDM_2D
       use m_steps,              only:  istp
       use m_ts_iodm,            only:  write_ts_dm

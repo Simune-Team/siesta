@@ -304,8 +304,8 @@ m_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpData2D.o
 m_new_dm.o: class_SpData2D.o class_Sparsity.o files.o m_energies.o m_iodm.o
 m_new_dm.o: m_mpi_utils.o m_spin.o m_steps.o m_svd.o m_ts_electype.o
 m_new_dm.o: m_ts_global_vars.o m_ts_iodm.o m_ts_method.o m_ts_options.o
-m_new_dm.o: m_ts_sparse.o parallel.o parallelsubs.o parsing.o precision.o
-m_new_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
+m_new_dm.o: parallel.o parallelsubs.o parsing.o precision.o siesta_geom.o
+m_new_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o

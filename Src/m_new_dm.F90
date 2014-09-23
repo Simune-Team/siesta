@@ -77,7 +77,6 @@
 
 #ifdef TRANSIESTA
       use sparse_matrices,  only: EDM_2D
-      use m_ts_sparse, only : ts_Reset_D_C
       use m_ts_global_vars,only: TSmode
       use m_ts_electype, only : copy_DM
       use m_ts_options, only : N_Elec, Elecs, DM_bulk
