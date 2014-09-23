@@ -726,10 +726,10 @@ contains
 
   subroutine ts_write_TSHS(filename, &
        onlyS, Gamma, TSGamma, &
-       ucell, nsc, na_u, no_s, nspin,  &
+       ucell, nsc, isc_off, na_u, no_s, nspin,  &
        kscell, kdispl, &
        xa, lasto, &
-       H2D, S1D, xij2D, indxuo, &
+       H2D, S1D, indxuo, &
        Ef, Qtot, Temp, &
        istep, ia1)
 
@@ -800,8 +800,9 @@ contains
     integer, intent(in) :: kscell(3,3)
     real(dp), intent(in) :: kdispl(3)
     integer, intent(in) :: nsc(3), na_u, no_s, nspin
+    integer, intent(in) :: isc_off(3,product(nsc))
     real(dp), intent(in) :: xa(3,na_u)
-    type(dSpData2D), intent(inout) :: H2D, xij2D
+    type(dSpData2D), intent(inout) :: H2D
     type(dSpData1D), intent(inout) :: S1D
     integer, intent(in) :: indxuo(no_s)
     integer, intent(in) :: lasto(0:na_u)
@@ -818,9 +819,7 @@ contains
     integer :: i, n_s
     integer :: n_nzsg
     integer, allocatable, target :: gncol(:)
-    integer, pointer :: isc_off(:,:) => null()
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
-    real(dp), pointer :: tmp2D(:,:)
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -851,28 +850,12 @@ contains
             &please consult the developers.')
     end do
 
-    tmp2D => val(xij2D)
-
 #ifdef MPI
     ! get total number of non-zero elements
     call MPI_Reduce(n_nzs,n_nzsg,1,MPI_Integer, MPI_SUM, 0, &
          MPI_Comm_World,MPIerror)
-
-    ! Get supercell indices from xij
-    ! I do not trust the sequence in SIESTA routines
-    ! Until SIESTA has a firm definition of supercell creations
-    ! this is calculated explicitly.
-    if ( .not. Gamma ) then
-       call xij_offset(ucell,nsc,na_u,xa,lasto, &
-            no_l,no_u,n_nzs, ncol,l_ptr,l_col,tmp2D,isc_off,Bcast=.true.)
-    end if
 #else
     n_nzsg = n_nzs
-
-    if ( .not. Gamma ) then
-       call xij_offset(ucell,nsc,na_u,xa,lasto, &
-            no_l,no_u,n_nzs, ncol,l_ptr,l_col,tmp2D,isc_off)
-    end if
 #endif
 
     if ( Node == 0 ) then
@@ -932,10 +915,6 @@ contains
        ! Close file
        call io_close( iu )
 
-    end if
-
-    if ( .not. Gamma ) then
-       deallocate(isc_off)
     end if
 
 #ifdef TRANSIESTA_DEBUG

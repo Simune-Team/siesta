@@ -633,7 +633,7 @@ contains
     nuou_E = El%no_used
     nuS    = nuou_E ** 2
     ! create expansion q-points (weight of q-points)
-    nq     = Rep(El)
+    nq     = product(El%Rep)
     wq     = 1._dp / real(nq,dp)
     ! We also need to invert to get the contribution in the
     final_invert = nq /= 1 .or. nuo_E /= nuou_E
@@ -649,10 +649,10 @@ contains
     if (IONode) then
        write(*,'(/,2a)') "Creating Green's function file for: ",trim(name(El))
 
-       bkpt(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * Rep(El) &
+       bkpt(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * nq &
             * El%no_used ** 2 / 1024._dp ** 2
        ! Correct estimated file-size
-       if ( pre_expand ) bkpt(1) = bkpt(1) * Rep(El)
+       if ( pre_expand ) bkpt(1) = bkpt(1) * nq
        if ( bkpt(1) > 2001._dp ) then
           bkpt(1) = bkpt(1) / 1024._dp
           write(*,'(a,f10.3,a)') 'Estimated file size: ',bkpt(1),' GB'
@@ -667,9 +667,7 @@ contains
           ! First convert to units of reciprocal vectors
           ! Then convert to 1/Bohr in the electrode unit cell coordinates
           call kpoint_convert(ucell,kpoint(:,i),bkpt,1)
-          if ( El%RepA1 > 1 ) bkpt(1) = bkpt(1)/real(El%RepA1,dp)
-          if ( El%RepA2 > 1 ) bkpt(2) = bkpt(2)/real(El%RepA2,dp)
-          if ( El%RepA3 > 1 ) bkpt(3) = bkpt(3)/real(El%RepA3,dp)
+          where (El%Rep > 1 ) bkpt = bkpt/real(El%Rep,dp)
           call kpoint_convert(El%ucell,bkpt,kpt,-1)
           write(*,'(i4,2x,4(E14.5))') i, kpt,kweight(i)
        end do
@@ -755,7 +753,7 @@ contains
        write(uGF) El%nspin, El%ucell
        write(uGF) El%na_used,El%no_used
        write(uGF) El%xa_used, El%lasto_used
-       write(uGF) El%RepA1,El%RepA2,El%RepA3,El%pre_expand
+       write(uGF) El%Rep(:),El%pre_expand
        write(uGF) El%mu%mu
 
        ! Write out explicit information about this content
@@ -767,9 +765,7 @@ contains
        do i = 1 , nkpnt
           ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
           call kpoint_convert(ucell,kpoint(:,i),bkpt,1)
-          bkpt(1) = bkpt(1)/real(El%RepA1,dp)
-          bkpt(2) = bkpt(2)/real(El%RepA2,dp)
-          bkpt(3) = bkpt(3)/real(El%RepA3,dp)
+          where (El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
           call kpoint_convert(El%ucell,bkpt,kE(:,i),-1)
        end do
@@ -835,9 +831,7 @@ contains
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
        call kpoint_convert(ucell,kpoint(:,ikpt),bkpt,1)
-       bkpt(1) = bkpt(1)/real(El%RepA1,dp)
-       bkpt(2) = bkpt(2)/real(El%RepA2,dp)
-       bkpt(3) = bkpt(3)/real(El%RepA3,dp)
+       where (El%Rep > 1 ) bkpt = bkpt/real(El%Rep,dp)
        El%bkpt_cur = bkpt
        ! Convert back to reciprocal units (to electrode)
        call kpoint_convert(El%ucell,bkpt,kpt,-1)
@@ -1404,7 +1398,7 @@ contains
     nuou_E = El%no_used
     nuS    = nuou_E ** 2
     ! create expansion q-points (weight of q-points)
-    nq     = Rep(El)
+    nq     = product(El%Rep)
     ! We also need to invert to get the contribution in the
     final_invert = nq /= 1 .or. nuo_E /= nuou_E
     nuouT_E = TotUsedOrbs(El)

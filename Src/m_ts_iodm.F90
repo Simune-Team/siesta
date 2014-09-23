@@ -29,7 +29,8 @@ module m_ts_iodm
 
 contains
   
-  subroutine read_ts_dm( slabel, nspin, dit, sp_def, DM, EDM, Ef, found )
+  subroutine read_ts_dm( slabel, nspin, dit, no_u, DM, EDM, Ef, found ,&
+       Bcast)
 
 #ifdef MPI
   use mpi_siesta
@@ -41,17 +42,18 @@ contains
     character(len=*), intent(in) :: slabel
     integer, intent(in) :: nspin
     type(OrbitalDistribution), intent(inout) :: dit
-    type(Sparsity), intent(inout) :: sp_def
+    integer, intent(in) :: no_u
     type(dSpData2D), intent(inout) :: DM, EDM
     real(dp), intent(inout) :: Ef
     logical, intent(out) :: found
+    logical, intent(in), optional :: Bcast
 
 ! ************************
 ! * LOCAL variables      *
 ! ************************
     type(Sparsity) :: sp
-    logical :: exists
-    integer :: iu, no_u, two(2)
+    logical :: exists, lBcast
+    integer :: iu, two(2)
     integer, allocatable, target :: gncol(:)
 #ifdef MPI
     integer :: MPIerror
@@ -63,6 +65,9 @@ contains
        inquire(file=trim(slabel)//'.TSDE', exist=exists)
     end if
 
+    lBcast = .false.
+    if ( present(Bcast) ) lBcast = Bcast
+
 #ifdef MPI
     call MPI_Bcast(exists,1,MPI_Logical,0, &
          MPI_Comm_World,MPIerror)
@@ -71,10 +76,7 @@ contains
     found = .false.
     if ( .not. exists ) return
 
-    call attach(sp_def,nrows_g=no_u)
-
     if ( Node == 0 ) then
-       write(*,'(/,a)') 'ts_iodm: Reading Density Matrix from files'
        call io_assign(iu)
        open( iu, file=trim(slabel)//'.TSDE', &
             form='unformatted', status='old' )
@@ -107,13 +109,26 @@ contains
     gncol(1) = 1
     
     ! Read in the sparsity pattern (distributed)
-    call io_read_Sp(iu, no_u, sp, 'temp-ts-IO',dit=dit, gncol=gncol)
+    if ( lBcast ) then
+       call io_read_Sp(iu, no_u, sp, 'temp-ts-IO',gncol=gncol, Bcast=Bcast)
+    else
+       call io_read_Sp(iu, no_u, sp, 'temp-ts-IO',dit=dit, gncol=gncol)
+    end if
+
 
     ! Read DM
-    call io_read_d2D(iu,sp,DM ,nspin,'ts-iodm',dit=dit, gncol=gncol)
+    if ( lBcast ) then
+       call io_read_d2D(iu,sp,DM ,nspin,'ts-iodm',gncol=gncol, Bcast=Bcast)
+    else
+       call io_read_d2D(iu,sp,DM ,nspin,'ts-iodm',dit=dit, gncol=gncol)
+    end if
 
     ! Read EDM
-    call io_read_d2D(iu,sp,EDM,nspin,'ts-iodm',dit=dit, gncol=gncol)
+    if ( lBcast ) then
+       call io_read_d2D(iu,sp,EDM,nspin,'ts-iodm',gncol=gncol, Bcast=Bcast)
+    else
+       call io_read_d2D(iu,sp,EDM,nspin,'ts-iodm',dit=dit, gncol=gncol)
+    end if
 
     ! Clean-up
     call delete(sp)
@@ -206,6 +221,7 @@ contains
     use m_ts_global_vars, only : TSinit, TSrun
     
     logical, intent(in) :: found
+    real(dp) :: tmp
     
     if( .not. found )  then ! not a TS continuation run
        TSinit = .true.  ! start to converge a diagon run
@@ -215,6 +231,7 @@ contains
           write(*,'(a)') 'TRANSIESTA: No TS-DensityMatrix file found'
           write(*,'(a)') 'TRANSIESTA: Initialization runs using diagon'
        end if
+
     else
        TSinit = .false.
        TSrun  = .true.

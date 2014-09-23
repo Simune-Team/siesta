@@ -15,6 +15,7 @@ module m_io_s
 #ifdef MPI
   use mpi_siesta, only : MPI_Bcast, MPI_AllReduce, MPI_Sum, MPI_Max
   use mpi_siesta, only : MPI_Comm_World, MPI_Comm_Self
+  use mpi_siesta, only : MPI_Send, MPI_Recv
   use mpi_siesta, only : MPI_Integer, MPI_Double_Precision
   use mpi_siesta, only : MPI_Success, MPI_Status_Size
   use mpi_siesta, only : MPI_REQUEST_NULL
@@ -410,7 +411,7 @@ contains
              end do
 
              call MPI_Send( buf(1) , i, MPI_Integer, &
-                  BNode, ib, MPI_Comm_World, MPIstatus, MPIerror)
+                  BNode, ib, MPI_Comm_World, MPIerror)
              
           end if
 
@@ -460,8 +461,12 @@ contains
     call newSparsity(sp,nl,no, &
          n_nzs, ncol, l_ptr, l_col, trim(tag))
 
-    deallocate(ncol,l_ptr,l_col)
-    
+    if ( lBcast ) then
+       deallocate(l_ptr,l_col)
+    else
+       deallocate(ncol,l_ptr,l_col)
+    end if
+
   end subroutine io_read_Sp
 
   ! Writes a sparsity pattern at the
@@ -732,7 +737,7 @@ contains
              end do
 
              call MPI_Send( buf(1) , i, MPI_Double_Precision, &
-                  BNode, ib, MPI_Comm_World, MPIstatus, MPIerror)
+                  BNode, ib, MPI_Comm_World, MPIerror)
              
           end if
 
@@ -1031,7 +1036,7 @@ contains
                 i = i + dim2*lncol(io)
              end do
              call MPI_Send( buf(1) , i, MPI_Double_Precision, &
-                  BNode, ib, MPI_Comm_World, MPIstatus, MPIerror)
+                  BNode, ib, MPI_Comm_World, MPIerror)
           end if
           gio = gio + n
        end do
@@ -1080,7 +1085,7 @@ contains
                    i = i + lncol(io)
                 end do
                 call MPI_Send( buf(1) , i, MPI_Double_Precision, &
-                     BNode, ib, MPI_Comm_World, MPIstatus, MPIerror)
+                     BNode, ib, MPI_Comm_World, MPIerror)
              end if
              gio = gio + n
           end do

@@ -21,6 +21,8 @@ MODULE siesta_geom
 
   ! Diagonal elements of supercell (it is a diagonal matrix)
   integer :: nsc(3) = 1
+  ! The super-cell offsets
+  integer, pointer :: isc_off(:,:) => null()
    
   ! Previous diagonal elements of supercell
   integer :: nscold(3) = 0

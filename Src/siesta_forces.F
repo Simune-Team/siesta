@@ -47,7 +47,7 @@
       use m_ts_options, only : N_Elec
       use m_ts_method
       use m_ts_global_vars,      only: TSmode, ts_istep, TSrun, TSiscf
-      use siesta_geom,           only: nsc, na_u, xa, ucell
+      use siesta_geom,           only: nsc, na_u, xa, ucell, isc_off
       use atomlist,              only: no_u, lasto, Qtot
       use sparse_matrices,       only: sparse_pattern, block_dist
       use sparse_matrices,       only: Escf, S, maxnh, xijo
@@ -60,6 +60,7 @@
       use kpoint_grid, only : gamma_scf
       use m_energies, only : Ef
       use siesta_options, only : temp
+      use m_pulay,           only: init_pulay_arrays
 #endif /* TRANSIESTA */
 
       implicit none
@@ -168,12 +169,15 @@
      &          nspin, maxnh, Dscf, S, Qtot = Qcur )
            
            if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
+
+              ! First we reset the pulay arrays
+              call init_pulay_arrays()
               
               ! Call transiesta with fermi-correct
               call transiesta(TSiscf,nspin, 
      &             block_dist, sparse_pattern, Gamma_Scf, ucell, nsc,
-     &             no_u, na_u, lasto, xa, maxnh, xijo, H, S, Dscf, Escf,
-     &             Ef, Temp, Qtot, .true.)
+     &             isc_off, no_u, na_u, lasto, xa, maxnh, H, S,
+     &             Dscf, Escf, Ef, Temp, Qtot, .true.) 
            
               ! We will not have not converged as we have just
               ! changed the Fermi-level
@@ -369,7 +373,7 @@
       ! the Broyden mixing and the Fire-mixing does
       ! not need to initialize, that is done implicitly
 
-      if(IONode) then
+      if ( IONode ) then
          write(6,'(/a)')
      &'                          ************************       '
          write(6,'(a)')

@@ -64,7 +64,7 @@
       subroutine  new_dm( auxchanged, DM_history, DMnew)
 
       USE siesta_options
-      use siesta_geom,      only: xa, na_u
+      use siesta_geom,      only: ucell, xa, na_u, isc_off, nsc
       use sparse_matrices,  only: sparse_pattern, block_dist
       use atomlist,         only: datm, iaorb, lasto, no_u, no_l
       use m_steps,          only: istp
@@ -74,6 +74,16 @@
       use class_Sparsity
       use class_Pair_Geometry_dSpData2D
       use class_Fstack_Pair_Geometry_dSpData2D
+
+#ifdef TRANSIESTA
+      use sparse_matrices,  only: EDM_2D
+      use m_ts_sparse, only : ts_Reset_D_C
+      use m_ts_global_vars,only: TSmode
+      use m_ts_electype, only : copy_DM
+      use m_ts_options, only : N_Elec, Elecs, DM_bulk
+      use m_ts_method
+      use m_energies, only: Ef
+#endif
 
       implicit none
 
@@ -86,6 +96,14 @@
       logical :: dminit     ! Initialize density matrix?
       logical :: try_to_read_from_file
       integer :: n_dms_in_history, n_depth
+
+#ifdef TRANSIESTA
+      real(dp), pointer :: DM(:,:), EDM(:,:)
+      integer :: iElec
+      integer :: na_a
+      integer, allocatable :: allowed_a(:)
+      logical :: set_Ef
+#endif
 
       if (IOnode) then
          write(6,"(a,i5)") "New_DM. Step: ", istp
@@ -176,6 +194,78 @@
 
       endif
 
+#ifdef TRANSIESTA
+      ! In case of traniesta and DM_bulk
+      ! we already here set the density matrix to its bulk values
+      if ( TSmode .and. DM_bulk > 0 .and. DMinit ) then
+         ! In transiesta we can always initialize
+         ! the density matrix with the bulk-values
+         ! so as to "fix" the density in the leads
+
+         ! If the Fermi-level has not been
+         ! set, we initialize it to the mean of the
+         ! electrode chemical potentials
+         set_Ef = abs(Ef) < 0.00001_dp 
+         if ( IONode ) then
+            write(*,'(/,a)') 'transiesta: Will read in bulk &
+                 &density matrices for electrodes'
+            if ( set_Ef ) then
+               write(*,'(a)') &
+                    'transiesta: Will average Fermi-level of electrodes'
+            end if
+         end if
+
+         na_a = 0
+         do iElec = 1 , na_u
+            if ( .not. a_isDev(iElec) ) na_a = na_a + 1
+         end do
+         allocate(allowed_a(na_a))
+         na_a = 0 
+         do iElec = 1 , na_u
+            if ( .not. a_isDev(iElec) ) then
+               na_a = na_a + 1
+               allowed_a(na_a) = iElec
+            end if
+         end do
+          
+         do iElec = 1 , N_Elec
+             
+            if ( IONode ) then
+               write(*,'(/,a)') 'transiesta: Reading in electrode TSDE: '//&
+                    trim(Elecs(iElec)%Name)
+            end if
+
+            ! Copy over the DM in the lead
+            ! Notice that the EDM matrix that is copied over
+            ! will be equivalent at Ef == 0
+            call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
+                 ucell,DMnew,EDM_2D, na_a, allowed_a)
+
+            ! We shift the mean by one fraction of the electrode
+            ! Typically we see that the fermi-level rises a bit
+            ! as soon as you go "off-bulk", whence we 
+            ! do this by adding one "ficticious" electrode.
+            if ( set_Ef ) Ef = Ef + Elecs(iElec)%Ef / real(N_Elec+1,dp)
+            
+         end do
+
+         ! Clean-up
+         deallocate(allowed_a)
+
+         if ( IONode ) then
+            write(*,*) ! new-line
+         end if
+
+         ! The electrode EDM is aligned at Ef == 0
+         ! We need to align the energy matrix
+         iElec = nnzs(sparse_pattern) * nspin
+         DM  => val(DMnew)
+         EDM => val(EDM_2D)
+         call daxpy(iElec,Ef,DM(1,1),1,EDM(1,1),1)
+
+      end if
+#endif
+
       END subroutine new_dm
 
 !====================================================================
@@ -220,8 +310,8 @@
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
                                 ! stored in the TSDE file.
-      use m_ts_global_vars,only: TSmode
-      use m_ts_options,   only : ImmediateTSmode, ts_wmix
+      use m_ts_global_vars,only: TSmode, TSinit, TSrun
+      use m_ts_options,   only : TS_scf_mode, ts_wmix
       use siesta_options, only : wmix
 #endif /* TRANSIESTA */
 
@@ -266,7 +356,7 @@
             call timer('IO-R-TS-DE',1)
             do i = 1 , 100
 #endif
-            call read_ts_dm(slabel,nspin,block_dist,sparse_pattern, &
+            call read_ts_dm(slabel,nspin,block_dist,no_u, &
                  DMread, EDMread, Ef, tsde_found )
 #ifdef TIMING_IO
             end do
@@ -291,21 +381,7 @@
 #endif
             endif
             dm_found = (tsde_found .or. dm_found)
-
-            ! if the user requests to start the transiesta SCF immediately.
-            ! We will allow this if a DM file is found.
-            !
-            if ( dm_found .and. ImmediateTSmode .and. &
-                 .not. tsde_found .and. .FALSE. ) then
-               ! We need a way to ensure a correct Escf for the transiesta
-               ! i.e. we should read in the E scf in some way as well
-               ! Otherwise the energies are incorrect.
-               ! So for now this will not be used
-               ! We will not reset tsde_found as that will
-               ! mess up the Escf array (see further down)
-               call ts_init_dm(.true.)
-            end if
-
+            
          else  ! Not TSmode
 
             if (ionode) print *, "Attempting to read DM from file..."
@@ -323,6 +399,23 @@
 
          endif
       endif
+
+      ! if the user requests to start the transiesta SCF immediately.
+      ! We will allow this if the electrodes
+      ! can read in the DM files
+      if ( TS_scf_mode == 1 .and. TSinit ) then
+         call ts_init_dm(.true.)
+      end if
+
+      if ( TSrun ) then
+         ! Correct the mixing weight for transiesta
+         ! we have read in a TSDE file
+         tmp     = wmix
+         wmix    = ts_wmix
+         ts_wmix = tmp
+
+      end if
+
 #else
       dm_found = .false.
       if (try_dm_from_file) then

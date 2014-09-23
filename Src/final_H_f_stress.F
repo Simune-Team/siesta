@@ -45,7 +45,7 @@
 ! TSS Begin
       use files,        only : slabel, label_length
       use m_ts_global_vars, only : TSrun, ts_istep
-      use m_ts_options, only : savetshs
+      use m_ts_options, only : TS_HS_save
       use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
       use m_ts_io,      only : ts_write_TSHS,fname_TSHS
 ! TSS End
@@ -189,22 +189,22 @@
 #endif
 #ifdef TRANSIESTA
 ! TSS Begin
-      if (savetshs) then
+      if (TS_HS_save) then
          if ( idyn.eq.6 ) then
             fname = fname_TSHS(slabel,ts_istep,ia1,.false.)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, nsc, na_u, no_s, nspin, 
+     &           ucell, nsc, isc_off, na_u, no_s, nspin, 
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto, 
-     &           H_2D, S_1D, xij_2D, indxuo,
+     &           H_2D, S_1D, indxuo,
      &           Ef, Qtot, Temp, ts_istep, ia1)
          else
             fname = fname_TSHS(slabel,0,0,.false.)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
-     &           ucell, nsc, na_u, no_s, nspin,
+     &           ucell, nsc, isc_off, na_u, no_s, nspin,
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto,
-     &           H_2D, S_1D, xij_2D, indxuo,
+     &           H_2D, S_1D, indxuo,
      &           Ef, Qtot, Temp,        0,   0)
          end if
       endif

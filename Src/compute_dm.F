@@ -31,6 +31,8 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : TSmode, TSiscf, TSinit, TSrun
       use m_transiesta,     only : transiesta
+      use m_ts_options, only : DM_bulk, N_Elec, Elecs
+      use m_ts_electype, only : copy_DM
 #endif /* TRANSIESTA */
       implicit none
 !     Input variables
@@ -41,6 +43,9 @@
                              ! calculation of Harris forces. e1>e2 to
                              ! signal that we do not want DOS weights
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
+#ifdef TRANSIESTA
+      integer :: iElec
+#endif
 #ifdef MPI
       real(dp)            :: buffer1
 #endif
@@ -91,8 +96,8 @@
       else if (TSrun) then
 
          call transiesta(TSiscf,nspin, block_dist, sparse_pattern,
-     &        Gamma, ucell, nsc, no_u, na_u, lasto, xa, maxnh,
-     &        xijo, H, S, Dscf, Escf, Ef, temp, Qtot, .false. )
+     &        Gamma, ucell, nsc, isc_off, no_u, na_u, lasto, xa, maxnh,
+     &        H, S, Dscf, Escf, Ef, temp, Qtot, .false. )
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp
@@ -101,6 +106,7 @@
       else
         call die('siesta: ERROR: wrong solution method')
       endif
+
 
 ! ..................
 #ifdef CDF

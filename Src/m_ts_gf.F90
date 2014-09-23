@@ -380,11 +380,11 @@ contains
        iNodeStep = -1
     end if
 
-    read_Size = El%no_used ** 2 * Rep(El) ! no_GS * no_GS * nq
+    read_Size = El%no_used ** 2 * product(El%Rep) ! no_GS * no_GS * nq
     if ( El%pre_expand ) then
        ! if a pre-expansion has been performed we 
        ! correct the size
-       read_Size = read_Size * Rep(El)
+       read_Size = read_Size * product(El%Rep)
     end if
 
     ! Check if the number of energy points requested are 
@@ -635,7 +635,7 @@ contains
 ! ***********************
     character(len=FILE_LEN) :: curGFfile  ! Name of the GF file
 
-    integer :: nspin,nkpar,na,no,NA1,NA2,NA3,NEn
+    integer :: nspin,nkpar,na,no,fReps(3),NEn
     real(dp) :: mu ! The Fermi energy shift due to a voltage
     real(dp) :: ucell(3,3)
     logical :: errorGf , pre_expand
@@ -659,7 +659,7 @@ contains
        read(funit) nspin, ucell
        read(funit) na, no ! used atoms and used orbitals
        read(funit) ! xa, lasto
-       read(funit) NA1,NA2,NA3,pre_expand
+       read(funit) fReps(:),pre_expand
        read(funit) mu
        ! read contour information
        read(funit) nkpar
@@ -691,7 +691,7 @@ contains
        end if
 
        ! Check # of q-points
-       if (Rep(El) .ne. NA1*NA2*NA3) then
+       if ( any(El%Rep /= fReps) ) then
           write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: unexpected no. q-points'
           errorGF = .true.
@@ -719,7 +719,7 @@ contains
           errorGF = .true.
        end if
 
-       if ( Rep(El) > 1 ) then
+       if ( product(El%Rep) > 1 ) then
           if ( pre_expand .neqv. El%pre_expand ) then
              write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
              write(*,*) 'read_Green: ERROR: pre-expanded is not expected'
@@ -784,7 +784,7 @@ contains
 ! ***********************
     real(dp) :: mu ! The energy shift in the Fermi energy
     integer :: nspin, na, no, nkpar ! spin, # of atoms, # of orbs, # k-points
-    integer :: NA1,NA2,NA3 ! # repetitions in x, # repetitions in y
+    integer :: fReps(3) ! # repetitions in x, # repetitions in y
     real(dp), allocatable :: xa(:,:) ! electrode atomic coordinates
     integer, allocatable :: lasto(:) ! the electrode orbitals of the atoms
     real(dp), allocatable :: kpar(:,:) ! k-points
@@ -821,7 +821,7 @@ contains
     read(funit) na,no
     allocate(xa(3,na),lasto(na+1))
     read(funit) xa,lasto
-    read(funit) NA1,NA2,NA3,pre_expand
+    read(funit) fReps(:),pre_expand
     read(funit) mu
 
     if ( El%nspin /= nspin ) then
@@ -887,15 +887,15 @@ contains
     end if
     deallocate(lasto)
 
-    if ( El%RepA1/=NA1 .or. El%RepA2/=NA2 .or. El%RepA3/=NA3 ) then
+    if ( any(El%Rep(:)/=fReps(:)) ) then
        write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
        write(*,*)"Number of repetitions is wrong!"
-       write(*,'(2(a,i3))') "Found NA1: ",NA1,", expected NA1: ",El%RepA1
-       write(*,'(2(a,i3))') "Found NA2: ",NA2,", expected NA2: ",El%RepA2
-       write(*,'(2(a,i3))') "Found NA3: ",NA3,", expected NA3: ",El%RepA3
+       write(*,'(2(a,i3))') "Found RepA1: ",fReps(1),", expected: ",El%Rep(1)
+       write(*,'(2(a,i3))') "Found RepA2: ",fReps(2),", expected: ",El%Rep(2)
+       write(*,'(2(a,i3))') "Found RepA3: ",fReps(3),", expected: ",El%Rep(3)
        localErrorGf = .true.
     end if
-    if ( Rep(El) > 1 ) then
+    if ( product(El%Rep) > 1 ) then
        if ( pre_expand .neqv. El%pre_expand ) then
           write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*)"Expecting a pre-expanded self-energy!"
@@ -930,9 +930,9 @@ contains
        ! The advantage of this is that the GF files can be re-used for
        ! the same system with different lengths between the electrode layers.
        call kpoint_convert(ucell,kpar(:,i),ktmp,1)
-       ktmp(1) = ktmp(1) * real(NA1,dp)
-       ktmp(2) = ktmp(2) * real(NA2,dp)
-       ktmp(3) = ktmp(3) * real(NA3,dp)
+       ktmp(1) = ktmp(1) * real(fReps(1),dp)
+       ktmp(2) = ktmp(2) * real(fReps(2),dp)
+       ktmp(3) = ktmp(3) * real(fReps(3),dp)
        call kpoint_convert(c_ucell,ktmp,kpt,-1)
        if ( dabs(c_kpar(1,i)-kpt(1)) > EPS .or. &
             dabs(c_kpar(2,i)-kpt(2)) > EPS .or. &
@@ -940,9 +940,9 @@ contains
           write(*,*)"k-points are not the same:"
           do j = 1 , min(c_nkpar,nkpar)
              call kpoint_convert(ucell,kpar(:,i),ktmp,1)
-             ktmp(1) = ktmp(1) * real(NA1,dp)
-             ktmp(2) = ktmp(2) * real(NA2,dp)
-             ktmp(3) = ktmp(3) * real(NA3,dp)
+             ktmp(1) = ktmp(1) * real(fReps(1),dp)
+             ktmp(2) = ktmp(2) * real(fReps(2),dp)
+             ktmp(3) = ktmp(3) * real(fReps(3),dp)
              call kpoint_convert(c_ucell,ktmp,kpt,-1)
              write(*,'(3f12.5,a,3f12.5)') c_kpar(:,j),'  :  ',kpt(:)
           end do

@@ -14,7 +14,8 @@ module m_ts_options
   save
 
   ! Controls to save the TSHS file
-  logical  :: SaveTSHS = .true. 
+  logical :: TS_HS_save = .true.
+  logical :: TS_DE_save = .false.
   ! whether we should only save the overlap matricx
   logical  :: onlyS = .false. 
   ! whether we will use the bias-contour
@@ -26,10 +27,12 @@ module m_ts_options
   type(Elec), allocatable, target :: Elecs(:)
   integer :: N_mu = 0
   type(ts_mu), allocatable, target :: mus(:)
-  
-  logical :: ImmediateTSmode = .false. ! will determine to immediately start the transiesta
-                                       ! SCF. This is useful when you already have a converged
-                                       ! siesta DM
+
+  ! Controls how the initial guess for the density matrix will be formed
+  ! Either it can be 'diagon' == 0, or 'transiesta' == 1 where the 
+  ! latter is reading in the electrode DM and EDM
+  integer :: TS_scf_mode = 0
+  integer :: DM_bulk = 0
 
   ! Flag to control whether we should update the forces (i.e. calculate energy-density matrix)
   logical :: Calc_Forces = .true.
@@ -133,8 +136,9 @@ contains
 
     ! Read in general values that should be used in the electrode generation
     ! I.e. these FDF-parameters are used for diagon runs with transiesta
-    saveTSHS = fdf_get('TS.SaveHS',.true.)
-    onlyS    = fdf_get('TS.onlyS',.false.)
+    TS_HS_save = fdf_get('TS.HS.Save',.true.)
+    TS_DE_save = fdf_get('TS.DE.Save',.false.)
+    onlyS      = fdf_get('TS.onlyS',.false.)
 
     ! Read in the transport direction
     chars = fdf_get('TS.TransportDirection','c')
@@ -150,7 +154,7 @@ contains
        call die('Transport direction not in [a|b|c|A1|A2|A3|none]')
     end if
 
-    if ( SaveTSHS .and. FixSpin ) then
+    if ( TS_HS_save .and. FixSpin ) then
        write(*,*) 'Fixed spin not possible with Transiesta!'
        write(*,*) 'Electrodes with fixed spin is not possible with Transiesta !'
        call die('Stopping code')
@@ -158,7 +162,8 @@ contains
 
     if ( onlyS .or. .not. TSmode ) then
        if ( IONode ) then
-          write(*,1) 'Save H and S matrices', saveTSHS
+          write(*,1) 'Save H and S matrices', TS_HS_save
+          write(*,1) 'Save DM and EDM matrices', TS_DE_save
           write(*,1) 'Save S and quit (onlyS)', onlyS
           write(chars,'(a,i0)') 'A',ts_tdir
           write(*,10) 'Transport along unit-cell vector',trim(chars)
@@ -220,7 +225,22 @@ contains
 
 
     ! currently this does not work
-    !ImmediateTSmode = fdf_get('TS.SCFImmediate',.false.)
+    chars = fdf_get('SCF.Initialize','diagon')
+    if ( leqi(chars,'diagon') ) then
+       TS_scf_mode = 0
+    else if ( leqi(chars,'transiesta') ) then
+       TS_scf_mode = 1
+    end if
+
+    ! Whether we should always set the DM to bulk
+    ! values (by reading in from electrode DM)
+    chars = fdf_get('TS.Elecs.DM.Bulk','none')
+    DM_bulk = 0
+    if ( leqi(chars,'init') ) then
+       DM_bulk = 1
+    !else if ( leqi(chars,'scf') ) then
+    !   DM_bulk = 2
+    end if
 
     chars = fdf_get('TS.TriMat.Optimize','speed')
     if ( leqi(chars,'speed') ) then
@@ -416,6 +436,14 @@ contains
        Elecs(i)%idx_o = lasto(Elecs(i)%idx_a-1)+1
 
     end do
+
+    ! Check that we can actually start directly in transiesta
+    if ( TS_scf_mode == 1 ) then ! TS-start
+       if ( .not. all(Elecs(:)%DM_update >= 1) ) then
+          call die('Requesting immediate start, yet we do not update &
+               &cross-terms.')
+       end if
+    end if
 
     ! Check that the current transport direction is "aligned"
     ! TODO when we can deal with arbitrary electrodes this should be altered
@@ -639,7 +667,7 @@ contains
     call fdf_obsolete('TS.NKVoltScale')
 
     if (IONode .and. TSmode ) then
-       write(*,1) 'Save H and S matrices', saveTSHS
+       write(*,1) 'Save H and S matrices', TS_HS_save
        if ( TS_Analyze ) then
           write(*,11)'Will analyze bandwidth of LCAO sparse matrix and quit'
           chars = ''
@@ -683,7 +711,19 @@ contains
 #endif
        end if
        write(*,8) 'TranSIESTA SCF cycle mixing weight',ts_wmix
-       write(*,1) 'Start TS-SCF cycle immediately', ImmediateTSmode
+
+       select case ( TS_scf_mode )
+       case ( 0 )
+          write(*,10) 'Initialize DM by','diagon'
+       case ( 1 )
+          write(*,10) 'Initialize DM by','transiesta'
+       end select
+       select case ( DM_bulk ) 
+       case ( 0 ) 
+          write(*,11) 'DM for electrodes will not be used'
+       case ( 1 )
+          write(*,11) 'DM for electrodes will be initialized to bulk'
+       end select
        if ( IsVolt ) then
           write(*,6) 'Voltage', Volt/eV,'Volts'
           if ( VoltageInC ) then
@@ -759,8 +799,7 @@ contains
           end if
           write(*,10) '  Electrode TSHS file', trim(Elecs(i)%HSfile)
           write(*,5)  '  # atoms used in electrode', Elecs(i)%na_used
-          write(*,15) '  Electrode repetition [A1 x A2 x A3]', &
-               Elecs(i)%RepA1,Elecs(i)%RepA2,Elecs(i)%RepA3
+          write(*,15) '  Electrode repetition [A1 x A2 x A3]', Elecs(i)%Rep(:)
           if ( Elecs(i)%t_dir == 1 ) then
              chars = 'A1'
           else if ( Elecs(i)%t_dir == 2 ) then
@@ -778,7 +817,7 @@ contains
           end if
           write(*,7)  '  Chemical shift', Elecs(i)%mu%mu/eV,'eV'
           write(*,1)  '  Bulk values in electrode', Elecs(i)%Bulk
-          if ( Rep(Elecs(i)) > 1 ) then
+          if ( product(Elecs(i)%Rep) > 1 ) then
              write(*,1)  '  Pre-expansion to reduce computation', Elecs(i)%pre_expand
           end if
           if ( Elecs(i)%DM_update == 0 ) then
@@ -868,6 +907,16 @@ contains
           end if
        end if
 
+       ! If the user has requested to initialize using transiesta
+       ! and the user does not utilize the bulk DM, they should be
+       ! warned
+       if ( TS_scf_mode == 1 .and. DM_bulk == 0 ) then
+          write(*,'(a)') 'You are not initializing the electrode DM/EDM. &
+               &This may result in very wrong electrostatic potentials close to &
+               &the electrode/device boundary region.'
+       end if
+          
+
        ! warn the user about suspicous work regarding the electrodes
        do i = 1 , N_Elec
 
@@ -914,6 +963,17 @@ contains
                   '  TS.Elec.'//trim(Name(Elecs(i)))//' DM-update [cross-terms|all]'
           end if
 
+          ! In case DM_bulk is requested we assert that the file exists
+          inquire(file=Elecs(i)%DEfile,exist=err)
+          err = .not. err
+          if ( DM_bulk == 1 .and. err ) then
+             write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' TSDE &
+                  &file cannot be located in: '//trim(Elecs(i)%DEfile)//'.', &
+                  '  Please add TS.DE.Save T to the electrode calculation or &
+                  &specify the exact file position using ''DE-file'' in the&
+                  & Elec block.'
+          end if
+          
        end do
 
        if ( N_Elec /= 2 .and. any(Elecs(:)%DM_update == 0) ) then

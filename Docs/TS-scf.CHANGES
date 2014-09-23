@@ -1,4 +1,123 @@
 ----------------------------------------------------
+September 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-199
+Allowed starting with transiesta, add DM-bulk
+
+* Changed:
+    TS.SaveTSHS
+  to
+    TS.HS.Save
+  in order to comply with the new wording:
+    TS.DE.Save
+  note that the latter only has meaning for electrodes.
+
+* I have added a code to enable the substitution of the
+  bulk density matrix for electrode regions.
+  This seems like is the best idea as the electrostatic
+  potential in the leads will be "equivalent" to a real
+  bulk example. 
+  We read in the density matrix and copies the data
+  based on coordinates and atomic orbital indexing.
+
+  This code could be used in other instances if one wishes
+  to interpolate a much larger structure from a single 
+  run. 
+  An example: 
+     UC - graphene:
+  -> huge graphene flake, 
+     simply repeat the density matrix to this huge
+     graphene flake
+
+  In transiesta this is handled by an additional flag
+  for the electrode:
+    TS.DE.Save T
+  which enables the saving of the density and energy
+  density matrices in the TSDE format.
+
+  In the TS calculation a few flags are needed,
+  as they can be done in different ways.
+    SCF.Initialize diagon|transiesta
+  decides whether it should initialize using
+  a diagon run or using transiesta.
+  TODO: Here we could add differenc schemes for
+        defining generic expansions of the DM
+        from previous runs.
+
+    TS.Elecs.DM.Bulk init
+  tells transiesta that the density matrices
+  for the electrodes will be bulk, in case
+  SCF.Initialize diagon and a TSDE file
+  exists it will overwrite the DM in the 
+  electrode region (thus one can test this method
+  by first doing a diagon relaxation, then add
+  the above flag and restart.
+
+  If you initialize using transiesta the Fermi-level
+  will be very wrong, hence you are almost ALWAYS
+  required to add this flag:
+    TS.ChargeCorrection fermi
+
+* The charge-correction Fermi has improved in that
+  it can utilize the previous estimations to interpolate
+  a better guess for the Fermi-level.
+  It can now converge in 4 x 4 tries :)
+  Before it could easily take as long as 4 x 100 tries.
+
+* Bugfix for chargecorrection.
+  When the fermi-level is changed we need
+  to shift the energy-density matrix along as otherwise
+  will the energy around the atoms in the electrodes not
+  be "following the potential".
+  This seems to stabilize a lot of the problems.
+
+* Bug-fix for broad-casting in io_s module.
+  Also MPI_Send/Recv had a wrong interface at certain
+  points in the io_s code.
+
+* Created a generic variable isc_off in siesta_geom
+  which handles the supercell geometry.
+
+* Changed the RepA[1-3] variable to an array,
+  shortens some of the code.
+
+* For Gamma calculations one still has a supercell (connections)
+  hence I now calculate nsc for Gamma calculations unless
+  naive-auxillary cell is used.
+  However, calculating nsc is necessary for copying the DM
+  from an electrode.
+
+* Changed the interface for write_TSHS so that it only
+  uses the isc_off array (it need not the xij array).
+  Also corrected in tshs2tshs utility.
+
+added:
+  Src/m_handle_sparse.F90
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/m_io_s.F90
+  Src/m_new_dm.F90
+  Src/m_sparse.F90
+  Src/m_transiesta.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_io.F90
+  Src/m_ts_iodm.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/save_density_matrix.F
+  Src/siesta_forces.F
+  Src/siesta_geom.F90
+  Src/siesta_init.F
+  Src/state_init.F
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/TS/tshs2tshs/tshs2tshs.f90
+
+----------------------------------------------------
 September 18, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-198
 Changed the offset_xij routines to not allocate
 

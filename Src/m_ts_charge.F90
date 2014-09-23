@@ -391,6 +391,143 @@ contains
 
   end subroutine ts_charge_correct_Fermi
 
+  subroutine ts_charge_correct_Fermi_file(Ef)
+
+    use parallel, only : Node
+    use units, only : eV
+    use m_interpolate
+#ifdef MPI
+    use mpi_siesta
+#endif
+    ! We read in the TS_FERMI file and estimates the
+    ! fermi level by interpolating the largest and 
+    ! smallest charges for each iterations Fermi level
+    real(dp), intent(inout) :: Ef
+
+    integer :: iu, ioerr, i
+    real(dp) :: Ef_min, Ef_max
+    real(dp), allocatable :: cur(:,:), Q_Ef(:,:,:), first_Q(:)
+    integer :: N, max_itt, tmp
+    character(len=2) :: char2
+
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    ! First we need to read in the entire 
+    ! file and figure out the highest number of iterations
+    ! performed.
+    if ( Node == 0 ) then
+
+       max_itt = 0
+       N = 0
+       ! open file
+       call io_assign(iu)
+       open(unit=iu,file='TS_FERMI',form='formatted', &
+            status='old',iostat=ioerr)
+       if ( ioerr /= 0 ) then
+          call die('The file has not been created, this should not happen')
+       end if
+       rewind(iu)
+       
+       ! Read in the size
+       do while ( ioerr /= -1 ) 
+          N = N + 1
+          read(iu,*) ! # TSiscf line
+          read(iu,'(a2,i15)')char2,tmp
+          max_itt = max(max_itt,tmp)
+          do i = 1 , tmp
+             read(iu,*) ! data line
+          end do
+          read(iu,*,iostat=ioerr) ! empty line
+       end do
+
+       ! If only one data point is present,
+       ! we cannot do anything...
+       if ( N > 1 ) then
+
+       allocate(first_Q(N))
+       allocate(cur(2,max_itt))
+       allocate(Q_Ef(N,2,2))
+
+       ! Rewind and read data
+       rewind(iu)
+       ioerr = 0
+       ! Read in the data and move it to Q_Ef
+       N = 0
+       do while ( ioerr /= -1 ) 
+          N = N + 1
+          read(iu,*) ! # TSiscf line
+          read(iu,'(a2,i15)') char2,tmp
+          do i = 1 , tmp
+             read(iu,'(2e16.6)') cur(:,i)
+             ! Gather the converged charge... (before interp)
+             if ( i == 1 ) first_Q(N) = cur(2,i)
+             cur(1,i) = cur(1,i) * eV
+          end do
+          i = maxval(minloc(cur(2,1:tmp)))
+          Q_Ef(N,:,1) = cur(:,i)
+          i = maxval(maxloc(cur(2,1:tmp)))
+          Q_Ef(N,:,2) = cur(:,i)
+          read(iu,*,iostat=ioerr) ! empty line
+       end do
+       deallocate(cur)
+
+       ! We now have all the peaks calculated previously...
+       ! Interpolate!
+       call interp_spline(N,Q_Ef(1:N,2,1),Q_Ef(1:N,1,1),0._dp,Ef_min)
+       call interp_spline(N,Q_Ef(1:N,2,2),Q_Ef(1:N,1,2),0._dp,Ef_max)
+
+       ! We first discard the interpolation that is 
+       ! clearly wrong. I.e. the one that decides the wrong
+       ! direction, this only makes sense
+       ! if all previous tries in estimating the fermi-level
+       ! has the same tendency. I.e. if we always have excess charge
+       ! then we should use this scheme.
+       if ( all(first_Q > 0._dp) ) then
+          ! We always have too much charge
+          ! If their guesses are clearly wrong, we simply
+          ! use the interpolated fermi-level, we need
+          ! more iterations to clear out this mess
+          if ( Ef_max - Ef > 0._dp ) Ef_max = Ef
+          if ( Ef_min - Ef > 0._dp ) Ef_min = Ef
+       else if ( all(first_Q < 0._dp) ) then
+          if ( Ef_max - Ef < 0._dp ) Ef_max = Ef
+          if ( Ef_min - Ef < 0._dp ) Ef_min = Ef
+       end if
+
+       ! we take the minimum deviating one... :)
+       ! We do not tempt our souls to the Fermi-god...
+       if ( abs(Ef_min - Ef) > abs(Ef_max - Ef) ) then
+          Ef_min = Ef
+          Ef = Ef + TS_RHOCORR_FACTOR * (Ef_max-Ef)
+       else
+          Ef_max = Ef
+          Ef = Ef + TS_RHOCORR_FACTOR * (Ef_min-Ef)
+          Ef_min = Ef_max
+       end if
+
+       ! If we change the fermi-level, just print-out to the user
+       if ( abs(Ef_min - Ef) > 0.000001_dp ) then
+          write(*,'(a,e11.4,a)') 'transiesta: Consecutive spline. dEf = ', &
+               (Ef-Ef_min)/eV, ' eV'
+       end if
+
+       deallocate(Q_Ef,first_Q)
+
+       end if
+
+       call io_close(iu)
+
+    end if
+
+#ifdef MPI
+    call MPI_Bcast(Ef,1,MPI_Double_Precision, &
+         0,MPI_Comm_World, MPIerror)
+#endif
+
+  end subroutine ts_charge_correct_Fermi_file
+
   subroutine ts_charge_correct_buffer(N_Elec,Elecs, &
        dit, sp, nspin, n_nzs, DM, EDM, S, Qtot)
 

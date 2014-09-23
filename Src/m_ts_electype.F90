@@ -31,7 +31,7 @@ module m_ts_electype
   public :: Elec, Name
   public :: TotUsedAtoms, TotUsedOrbs
   public :: AtomInElec, OrbInElec
-  public :: Rep, q_exp
+  public :: q_exp
 
   public :: fdf_nElec, fdf_elec
 
@@ -44,6 +44,8 @@ module m_ts_electype
   public :: in_basal_Elec
 
   public :: operator(.eq.)
+
+  public :: copy_DM
 
   ! 300 chars for a full path should be fine
   integer, parameter, public :: FILE_LEN = 300
@@ -60,7 +62,7 @@ module m_ts_electype
   end type geo_plane_delta
 
   type :: Elec
-     character(len=FILE_LEN) :: HSfile = ' ', GFfile  = ' '
+     character(len=FILE_LEN) :: HSfile = ' ', GFfile  = ' ', DEfile = ' '
      character(len=NAME_LEN) :: Name   = ' '
      ! These variables are relative to the big system
      integer :: idx_a = 0, idx_o = 0
@@ -69,7 +71,7 @@ module m_ts_electype
      ! orbitals used
      integer :: no_used = 0
      ! repetitions
-     integer :: RepA1 = 1, RepA2 = 1, RepA3 = 1
+     integer :: Rep(3) = 1
      ! Preexpand before saving Gf
      logical :: pre_expand = .true.
      ! chemical potential of the electrode
@@ -93,15 +95,15 @@ module m_ts_electype
      ! by skipping the copying of H00, S00. Hence we need to compare when the 
      ! k-point changes...
      real(dp) :: bkpt_cur(3)
-     ! If the user requests to assign different "spill-in fermi-level" 
-     ! we allow that
-     real(dp) :: Ef_frac_CT = 0._dp
      ! Used xa and lasto
      real(dp), pointer :: xa_used(:,:) => null()
      integer,  pointer :: lasto_used(:) => null()
 
-     ! Advanced
+     ! Advanced stuff...
      logical :: kcell_check = .true.
+     ! If the user requests to assign different "spill-in fermi-level" 
+     ! we allow that
+     real(dp) :: Ef_frac_CT = 0._dp
 
      ! ---v--- Below we have the content of the TSHS file
      integer  :: nspin = 0, na_u = 0, no_u = 0, no_s = 0
@@ -109,7 +111,7 @@ module m_ts_electype
      real(dp), pointer :: xa(:,:) => null()
      integer,  pointer :: lasto(:) => null()
      type(Sparsity)  :: sp
-     type(dSpData2D) :: H, xij
+     type(dSpData2D) :: H
      type(dSpData1D) :: S
      ! Supercell offsets
      integer, pointer :: isc_off(:,:) => null()
@@ -195,7 +197,7 @@ contains
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    logical :: info(5)
+    logical :: info(5), exists
     integer :: i, j
     integer :: idx_a 
 
@@ -372,26 +374,26 @@ contains
             leqi(ln,'replicate-a1') .or. leqi(ln,'rep-a1') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Repetition A1 is not supplied')
-          this%RepA1 = fdf_bintegers(pline,1)
+          this%Rep(1) = fdf_bintegers(pline,1)
 
        else if ( leqi(ln,'replicate-b') .or. leqi(ln,'rep-b') .or. &
             leqi(ln,'replicate-a2') .or. leqi(ln,'rep-a2') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Repetition A2 is not supplied')
-          this%RepA2 = fdf_bintegers(pline,1)
+          this%Rep(2) = fdf_bintegers(pline,1)
 
        else if ( leqi(ln,'replicate-c') .or. leqi(ln,'rep-c') .or. &
             leqi(ln,'replicate-a3') .or. leqi(ln,'rep-a3') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Repetition A3 is not supplied')
-          this%RepA3 = fdf_bintegers(pline,1)
+          this%Rep(3) = fdf_bintegers(pline,1)
 
        else if ( leqi(ln,'replicate') .or. leqi(ln,'rep') ) then
           if ( fdf_bnintegers(pline) < 3 ) &
                call die('Repetition for all directions are not supplied <A1> <A2> <A3>')
-          this%RepA1 = fdf_bintegers(pline,1)
-          this%RepA2 = fdf_bintegers(pline,2)
-          this%RepA3 = fdf_bintegers(pline,3)
+          this%Rep(1) = fdf_bintegers(pline,1)
+          this%Rep(2) = fdf_bintegers(pline,2)
+          this%Rep(3) = fdf_bintegers(pline,3)
 
        else if ( leqi(ln,'out-of-core') ) then
 
@@ -408,6 +410,11 @@ contains
           ! and still suspects a non-Gamma calculation
           this%kcell_check = fdf_bboolean(pline,1,after=1)
 
+       else if ( leqi(ln,'DE') .or. &
+            leqi(ln,'DE-file') ) then
+          if ( fdf_bnnames(pline) < 2 ) call die('DE name not supplied')
+          this%DEfile = trim(fdf_bnames(pline,2))
+
        else
 
           ! we should always die in case something non-understandable 
@@ -420,7 +427,7 @@ contains
 
     end do
     
-    if ( this%RepA1 < 1 .or. this%RepA2 < 1 .or. this%RepA3 < 1 ) &
+    if ( any(this%Rep(:) < 1) ) &
          call die("Repetition in "//trim(name)//" electrode must be >= 1.")
 
     if ( .not. all(info(1:4)) ) then
@@ -489,23 +496,10 @@ contains
     deallocate(this%xa,this%lasto)
 
     ! Check that the repetition is not in the transport-direction
-    select case ( this%t_dir )
-    case ( 1 )
-       if ( this%RepA1 /= 1 ) then
-          call die('Repetition in the transport direction &
-               &is not allowed.')
-       end if
-    case ( 2 )
-       if ( this%RepA2 /= 1 ) then
-          call die('Repetition in the transport direction &
-               &is not allowed.')
-       end if
-    case ( 3 )
-       if ( this%RepA3 /= 1 ) then
-          call die('Repetition in the transport direction &
-               &is not allowed.')
-       end if
-    end select
+    if ( this%Rep(this%t_dir) /= 1 ) then
+       call die('Repetition in the transport direction &
+            &is not allowed.')
+    end if
 
     ! if the electrode does not use a bulk electrode we need to update
     ! the cross-terms
@@ -523,6 +517,12 @@ contains
     ! if the user has specified text for the electrode position
     if ( idx_a == -1 ) then
        this%idx_a = this%idx_a + 1 - TotUsedAtoms(this)
+    end if
+
+    ! In case the user has not supplied a DM file for the
+    ! electrode we might as well try and guess one... :)
+    if ( len_trim(this%DEfile) == 0 ) then
+       this%DEfile = this%HSfile(1:len_trim(this%HSfile)-4)//'TSDE'
     end if
 
   end function fdf_Elec
@@ -565,9 +565,9 @@ contains
     if (present(no_u)) this%no_u = no_u
     if (present(no_s)) this%no_s = no_s
     if (present(no_used)) this%no_used = no_used
-    if (present(RepA1)) this%RepA1 = RepA1
-    if (present(RepA2)) this%RepA2 = RepA2
-    if (present(RepA3)) this%RepA3 = RepA3
+    if (present(RepA1)) this%Rep(1) = RepA1
+    if (present(RepA2)) this%Rep(2) = RepA2
+    if (present(RepA3)) this%Rep(3) = RepA3
 
   end subroutine assign
   
@@ -580,22 +580,16 @@ contains
   elemental function TotUsedAtoms(this) result(val)
     type(Elec), intent(in) :: this
     integer :: val
-    val = this%na_used * Rep(this)
+    val = this%na_used * product(this%Rep)
   end function TotUsedAtoms
-
-  elemental function Rep(this) result(val)
-    type(Elec), intent(in) :: this
-    integer :: val
-    val = this%RepA1 * this%RepA2 * this%RepA3
-  end function Rep
 
   pure function q_exp_all(this,i,j,k) result(q)
     type(Elec), intent(in) :: this
     integer, intent(in) :: i,j,k
     real(dp) :: q(3)
-    q(1) = 1._dp*(i-1) / real(this%RepA1,dp)
-    q(2) = 1._dp*(j-1) / real(this%RepA2,dp)
-    q(3) = 1._dp*(k-1) / real(this%RepA3,dp)
+    q(1) = 1._dp*(i-1) / real(this%Rep(1),dp)
+    q(2) = 1._dp*(j-1) / real(this%Rep(2),dp)
+    q(3) = 1._dp*(k-1) / real(this%Rep(3),dp)
   end function q_exp_all
 
   pure function q_exp(this,idx) result(q)
@@ -603,9 +597,9 @@ contains
     integer, intent(in) :: idx
     real(dp) :: q(3)
     integer :: i,j,k,ii
-    i =     this%RepA1
-    j = i * this%RepA2
-    k = j * this%RepA3
+    i =     this%Rep(1)
+    j = i * this%Rep(2)
+    k = j * this%Rep(3)
     if ( idx <= i ) then
        q = q_exp_all(this,idx,1,1)
     else if ( idx <= j ) then
@@ -630,7 +624,7 @@ contains
   elemental function TotUsedOrbs(this) result(val)
     type(Elec), intent(in) :: this
     integer :: val
-    val = this%no_used * Rep(this)
+    val = this%no_used * product(this%Rep)
   end function TotUsedOrbs
 
   elemental function OrbInElec(this,io) result(in)
@@ -933,9 +927,9 @@ contains
     iaa = this%idx_a
     do ia = 1 , this%na_used
        
-       do k = 0 , this%RepA3 - 1
-       do j = 0 , this%RepA2 - 1
-       do i = 0 , this%RepA1 - 1
+       do k = 0 , this%Rep(3) - 1
+       do j = 0 , this%Rep(2) - 1
+       do i = 0 , this%Rep(1) - 1
           ! Calculate repetition vector
           cur_xa(1) = sum(cell(1,:)*(/i,j,k/))
           cur_xa(2) = sum(cell(2,:)*(/i,j,k/))
@@ -979,9 +973,9 @@ contains
           write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
           iaa = this%idx_a
           do ia = 1 , this%na_used
-             do k=0,this%RepA3-1
-             do j=0,this%RepA2-1
-             do i=0,this%RepA1-1
+             do k=0,this%Rep(3)-1
+             do j=0,this%Rep(2)-1
+             do i=0,this%Rep(1)-1
                 write(*,'(t2,3(tr1,f20.10))') &
                      (this_xa(1,ia)+xa_o(1)+sum(cell(1,:)*(/i,j,k/)))/Ang, &
                      (this_xa(2,ia)+xa_o(2)+sum(cell(2,:)*(/i,j,k/)))/Ang, &
@@ -1016,14 +1010,7 @@ contains
        ! not be either (the repetition will only increase the number of
        ! k-points, hence the above)
        do j = 1 , 3
-          select case ( j ) 
-          case ( 1 ) 
-             k = this%RepA1
-          case ( 2 )
-             k = this%RepA2
-          case ( 3 )
-             k = this%RepA3
-          end select
+          k= this%Rep(j)
           if ( j == this%t_dir ) cycle
           do i = 1 , 3
              if ( i == this%t_dir ) cycle
@@ -1050,9 +1037,9 @@ contains
              write(*,'(3(i4,tr1),f8.4)') (kcell(i,j),i=1,3),kdispl(j)
           end do
           write(*,'(a)') 'Electrode file k-grid should be:'
-          this_kcell(:,1) = kcell(:,1) * this%RepA1
-          this_kcell(:,2) = kcell(:,2) * this%RepA2
-          this_kcell(:,3) = kcell(:,3) * this%RepA3
+          this_kcell(:,1) = kcell(:,1) * this%Rep(1)
+          this_kcell(:,2) = kcell(:,2) * this%Rep(2)
+          this_kcell(:,3) = kcell(:,3) * this%Rep(3)
           do j = 1 , 3
              write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(j)
           end do
@@ -1257,9 +1244,9 @@ contains
 
     iaa = this%idx_a
     do ia = 1 , this%na_used
-       do k = 0 , this%RepA3 - 1
-       do j = 0 , this%RepA2 - 1
-       do i = 0 , this%RepA1 - 1
+       do k = 0 , this%Rep(3) - 1
+       do j = 0 , this%Rep(2) - 1
+       do i = 0 , this%Rep(1) - 1
           tmp(1) = this_xa(1,ia)-this_xa_o(1)+sum(ucell(1,:)*(/i,j,k/))
           tmp(2) = this_xa(2,ia)-this_xa_o(2)+sum(ucell(2,:)*(/i,j,k/))
           tmp(3) = this_xa(3,ia)-this_xa_o(3)+sum(ucell(3,:)*(/i,j,k/))
@@ -1276,4 +1263,54 @@ contains
 
   end subroutine print_Elec
 
+  subroutine copy_DM(this,na_u,xa,lasto,nsc,isc_off,cell,DM_2D, EDM_2D, &
+       na_a, allowed)
+    use m_handle_sparse
+    use m_ts_iodm
+    ! We will copy over the density matrix and "fix it in the leads
+    type(Elec), intent(inout) :: this
+    integer, intent(in) :: na_u, lasto(0:na_u), nsc(3), isc_off(3,product(nsc))
+    real(dp), intent(in) :: xa(3,na_u), cell(3,3)
+    type(dSpData2D), intent(inout) :: DM_2D, EDM_2D
+    integer, intent(in) :: na_a, allowed(na_a)
+
+    type(OrbitalDistribution) :: fake_dit
+    type(dSpData2D) :: f_DM_2D, f_EDM_2D
+    real(dp), pointer :: DM(:,:), EDM(:,:)
+    real(dp) :: tmp, Ef
+    integer :: i
+    logical :: found
+
+    if ( this%na_used /= this%na_u ) then
+       call die('Currently you cannot copy a non-full sparsity pattern...')
+    end if
+    
+    i = len_trim(this%DEfile)
+    call read_ts_dm( this%DEfile(1:i-5), this%nspin, fake_dit, &
+         this%no_u, f_DM_2D, f_EDM_2d, Ef, found , &
+         Bcast = .true.)
+    if ( .not. found ) call die('Could not read file: '//trim(this%DEfile))
+
+    ! Shift the energy matrix to the chemical potential :)
+    i = nnzs(f_DM_2D) * this%nspin
+    DM  => val(f_DM_2D)
+    EDM => val(f_EDM_2D)
+    tmp = -( Ef + this%mu%mu )
+    call daxpy(i,tmp,DM(1,1),1,EDM(1,1),1)
+
+    call expand_spd2spd_2D(this%na_used,this%lasto_used,this%xa_used,f_DM_2D,&
+         this%ucell, this%Rep, size(this%isc_off,dim=2), this%isc_off, &
+         na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, &
+         print = .true., allowed_a = allowed)
+
+    call expand_spd2spd_2D(this%na_used,this%lasto_used,this%xa_used,f_EDM_2D,&
+         this%ucell, this%Rep, size(this%isc_off,dim=2), this%isc_off, &
+         na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, &
+         allowed_a = allowed)
+
+    call delete(f_EDM_2D)
+    call delete(f_DM_2D)
+
+  end subroutine copy_DM
+  
 end module m_ts_electype

@@ -1,4 +1,6 @@
       module m_save_density_matrix
+
+      implicit none
       public :: save_density_matrix
 
       CONTAINS
@@ -34,6 +36,7 @@
       use m_steps,              only:  istp
       use m_ts_iodm,            only:  write_ts_dm
       use m_ts_global_vars,     only:  TSrun
+      use m_ts_options,         only:  TS_DE_save
       use m_energies,           only:  Ef
 #endif
 
@@ -135,6 +138,9 @@
       call timer('IO-W-TS-DE',3)
 #endif
         end if ! TSrun
+        if ( TS_DE_save ) then
+           call write_ts_dm(slabel, nspin, DM_2D, EDM_2D, Ef)
+        end if
       end if ! writedm
 #endif /* TRANSIESTA */
       end subroutine save_density_matrix

@@ -43,12 +43,15 @@
       use m_mpi_utils,       only: globalize_max
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
 
+      use m_sparse, only : xij_offset
+
 #ifdef TRANSIESTA
+      use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
       use m_ts_options, only : onlyS!, UseBulk
       use m_ts_options, only : TS_Analyze, TS_bandwidth_algo
       use m_ts_options, only : N_Elec, Elecs, IsVolt
       use m_ts_electype
-      use m_ts_global_vars, only: TSrun
+      use m_ts_global_vars, only: TSrun, TSmode
       use sys, only : bye
       use m_ts_io, only : fname_TSHS, ts_write_tshs
       use m_ts_sparse, only : ts_sparse_init, ts_sp_uc, ts_Optimize
@@ -86,6 +89,7 @@
       integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
       real(dp),             pointer :: dummyH(:,:)
+      logical :: exist
 #endif
       
       character(len=256)            :: oname
@@ -173,6 +177,8 @@
 !       Find required supercell
         if (gamma) then
            nsc(1:3) = 1
+           if ( .not. naiveauxcell )
+     &          call exact_sc_size(rmaxh,ucell,na_u,xa,nsc)
         else if (fixauxcell) then
            nsc(1:3) = nscold(1:3)
         else
@@ -187,7 +193,7 @@
         mscell = 0.0_dp
         do i = 1, 3
            mscell(i,i) = nsc(i)
-           if (nsc(i).ne.nscold(i)) auxchanged = .true.
+           if (nsc(i) /= nscold(i)) auxchanged = .true.
            nscold(i) = nsc(i)
         enddo
 
@@ -329,6 +335,16 @@
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
+      if ( gamma .and. naiveauxcell ) then
+         ! Here we create the super-cell offsets
+         call re_alloc(isc_off,1,3,1,1)
+         isc_off(:,:) = 0
+      else
+         call xij_offset(ucell,nsc, na_u,xa,lasto, 
+     &        block_dist,sparse_pattern,maxnh,xijo,isc_off,
+     &        Bcast=.true.)
+      end if
+
       ! Initialize density matrix
       call new_dm( auxchanged,DM_history,DM_2D )
       Dscf => val(DM_2D)
@@ -355,10 +371,10 @@
 !     them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
      &        .true., Gamma, ts_Gamma_file,
-     &        ucell, nsc, na_u, no_s, nspin,
+     &        ucell, nsc, isc_off, na_u, no_s, nspin,
      &        ts_kscell_file, ts_kdispl_file,
      &        xa, lasto, 
-     &        H_2D, S_1D, xij_2D, indxuo, 
+     &        H_2D, S_1D, indxuo, 
      &        dummyEf, dummyQtot, Temp,0,0)
         call bye( 'Save overlap matrix and exit' ) ! Exit siesta   ! MPN 
       endif                                                        ! MPN
@@ -372,7 +388,7 @@
          ! Force the creation of the full sparsity pattern
          call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
      &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
-     &        Gamma, maxnh, xijo)
+     &        Gamma, isc_off)
 
          ! create the tri-diagonal matrix
          call ts_tri_init()
@@ -390,6 +406,20 @@
          ! Bye also waits for all processors
          call bye('transiesta analyzation performed')
       end if
+
+      ! In case the user is requesting a Fermi-correction
+      ! we need to delete the TS_FERMI file after each iteration
+      if ( TSmode .and. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
+     &     .and. IONode ) then
+          ! Delete the TS_FERMI file (enables
+          ! reading it in and improve on the convergence)
+          inquire(file='TS_FERMI',exist=exist)
+          if ( exist ) then
+             i = 23455
+             open(unit=i,file='TS_FERMI')
+             close(i,status='delete')
+          end if
+       end if
       
 #endif /* TRANSIESTA */
 

@@ -47,8 +47,8 @@ contains
 
   subroutine transiesta(TSiscf,nspin, &
        sp_dist, sparse_pattern, &
-       Gamma, ucell, nsc, no_u, na_u, lasto, xa, n_nzs, &
-       xij, H, S, DM, EDM, Ef, kT, &
+       Gamma, ucell, nsc, isc_off, no_u, na_u, lasto, xa, n_nzs, &
+       H, S, DM, EDM, Ef, kT, &
        Qtot, Fermi_correct)
 
     use units, only : eV
@@ -84,10 +84,10 @@ contains
     logical, intent(in)  :: Gamma
     real(dp), intent(in) :: ucell(3,3)
     integer, intent(in)  :: nsc(3), no_u, na_u
+    integer, intent(in) :: isc_off(3,product(nsc))
     integer, intent(in)  :: lasto(0:na_u)
     real(dp), intent(in) :: xa(3,na_u)
     integer, intent(in)  :: n_nzs
-    real(dp), intent(in) :: xij(3,n_nzs)
     real(dp), intent(in) :: H(n_nzs,nspin), S(n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
     real(dp), intent(in) :: kT, Qtot
@@ -109,6 +109,7 @@ contains
     ! and do a spline interpolation... :)
     integer :: N_F, i_F, ioerr
     real(dp), pointer :: Q_Ef(:,:) => null()
+    real(dp), pointer :: mm_Q_Ef(:,:,:) => null()
 
     ! Open GF files...
     ! Read-in header of Green's functions
@@ -127,7 +128,7 @@ contains
        converged = IsVolt .or. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
        call ts_sparse_init(slabel,converged, N_Elec, Elecs, &
             ucell, nsc, na_u, xa, lasto, sp_dist, sparse_pattern, Gamma, &
-            n_nzs, xij)
+            isc_off)
 
        if ( ts_method == TS_SPARSITY_TRI ) then
           ! initialize the tri-diagonal partition
@@ -160,7 +161,7 @@ contains
     uGF(:) = -1
     do iEl = 1 , N_Elec
 
-       nq(iEl) = Rep(Elecs(iEl))
+       nq(iEl) = product(Elecs(iEl)%Rep)
 
        ! Allocate the electrode quantities
        nullify(Elecs(iEl)%HA,Elecs(iEl)%SA,Elecs(iEl)%Gamma)
@@ -204,10 +205,16 @@ contains
     ! start calculation
     converged = .false.
     if ( Fermi_correct ) then
+
+       ! we will utilize the old Fermi-level to correct the 
+       ! EDM matrix (just in case the 
+       ! electrode region elements are not taken care of)
+
        ! Allocate for interpolation
        N_F = 10
        i_F = 0
        call re_alloc(Q_Ef,1,N_F,1,2)
+
     end if
 
     do while ( .not. converged ) 
@@ -386,20 +393,36 @@ contains
        if ( converged ) then
           open(unit=iEl,file='TS_FERMI',position='append',form='formatted', &
                status='old',iostat=ioerr)
+          write(iEl,'(/,a,i0)') '# TSiscf = ',TSiscf
        else
           open(unit=iEl,file='TS_FERMI',form='formatted', &
                status='new')
+          write(iEl,'(a,i0)') '# TSiscf = ',TSiscf
        end if
        N_F = i_F
-       write(iEl,'(/,a,i0,/)') '# TSiscf = ',TSiscf
+       write(iEl,'(a,i0)')'# ',N_F ! Number of iterations
        do i_F = 1 , N_F
-          write(iEl,'(2(tr1,e15.6))') Q_Ef(i_F,2),Q_Ef(i_F,1) - Qtot
+          write(iEl,'(2(tr1,e15.6))') Q_Ef(i_F,2)/eV,Q_Ef(i_F,1) - Qtot
        end do
+
        call io_close(iEl)
 
     end if
     if ( Fermi_correct ) then
+
+       ! Guess-stimate the actual Fermi-shift
+       ! typically will the above be "too" little
+       ! So we interpolate between all previous 
+       ! estimations for this geometry...
+       call ts_charge_correct_Fermi_file(Ef)
+
+       ! We have now calculated the new Ef
+       ! We shift it EDM to the correct level
+       Q_Ef(1,2) = Ef - Q_Ef(1,2)
+       call daxpy(n_nzs*nspin,Q_Ef(1,2),DM(1,1),1,EDM(1,1),1)
+
        call de_alloc(Q_Ef)
+
     end if
 
     !***********************
@@ -580,7 +603,7 @@ contains
     tmp_mem = 0._dp
     do i = 1 , N_Elec
        f = 1
-       if ( Elecs(i)%pre_expand ) f = Rep(Elecs(i))
+       if ( Elecs(i)%pre_expand ) f = product(Elecs(i)%Rep)
        if ( IsVolt ) then
           tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2
           tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) ** 2

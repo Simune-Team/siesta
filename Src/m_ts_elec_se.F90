@@ -46,7 +46,7 @@ contains
 
     nou = El%no_used
     no  = TotUsedOrbs(El)
-    nq  = Rep(El)
+    nq  = product(El%Rep)
     if ( El%pre_expand .and. nq > 1 ) then
        nou = no
        nq = 1
@@ -335,16 +335,16 @@ contains
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia3 = 1 , El%RepA3
-        do ia2 = 1 , El%RepA2
-        do ia1 = 1 , El%RepA1
+        do ia3 = 1 , El%Rep(3)
+        do ia2 = 1 , El%Rep(2)
+        do ia1 = 1 , El%Rep(1)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja3 = 1 , El%RepA3
-            do ja2 = 1 , El%RepA2
-            do ja1 = 1 , El%RepA1
+            do ja3 = 1 , El%Rep(3)
+            do ja2 = 1 , El%Rep(2)
+            do ja1 = 1 , El%Rep(1)
               ph = wq * cdexp(dcmplx(0._dp, &
                    (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau)
@@ -367,16 +367,16 @@ contains
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia3 = 1 , El%RepA3
-         do ia2 = 1 , El%RepA2
-         do ia1 = 1 , El%RepA1
+         do ia3 = 1 , El%Rep(3)
+         do ia2 = 1 , El%Rep(2)
+         do ia1 = 1 , El%Rep(1)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja3 = 1 , El%RepA3
-             do ja2 = 1 , El%RepA2
-             do ja1 = 1 , El%RepA1
+             do ja3 = 1 , El%Rep(3)
+             do ja2 = 1 , El%Rep(2)
+             do ja1 = 1 , El%Rep(1)
                ph = wq * cdexp(dcmplx(0._dp, &
                     (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)
@@ -447,16 +447,16 @@ contains
        iq = 1
        iow = 0
        do iau = 1 , na_u
-        do ia3 = 1 , El%RepA3
-        do ia2 = 1 , El%RepA2
-        do ia1 = 1 , El%RepA1
+        do ia3 = 1 , El%Rep(3)
+        do ia2 = 1 , El%Rep(2)
+        do ia1 = 1 , El%Rep(1)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
            jow = 0
            do jau = 1 , na_u
-            do ja3 = 1 , El%RepA3
-            do ja2 = 1 , El%RepA2
-            do ja1 = 1 , El%RepA1
+            do ja3 = 1 , El%Rep(3)
+            do ja2 = 1 , El%Rep(2)
+            do ja1 = 1 , El%Rep(1)
                ph = wq * cdexp(dcmplx(0._dp, &
                     (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
               do juo = 1 + lasto(jau-1) , lasto(jau)
@@ -477,16 +477,16 @@ contains
        do iq = 2 , nq
         iow = 0
         do iau = 1 , na_u
-         do ia3 = 1 , El%RepA3
-         do ia2 = 1 , El%RepA2
-         do ia1 = 1 , El%RepA1
+         do ia3 = 1 , El%Rep(3)
+         do ia2 = 1 , El%Rep(2)
+         do ia1 = 1 , El%Rep(1)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
             jow = 0
             do jau = 1 , na_u
-             do ja3 = 1 , El%RepA3
-             do ja2 = 1 , El%RepA2
-             do ja1 = 1 , El%RepA1
+             do ja3 = 1 , El%Rep(3)
+             do ja2 = 1 , El%Rep(2)
+             do ja1 = 1 , El%Rep(1)
                ph = wq * cdexp(dcmplx(0._dp, &
                     (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)

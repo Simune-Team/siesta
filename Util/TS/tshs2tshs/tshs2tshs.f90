@@ -173,16 +173,16 @@ program tshs2tshs
 
   call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
-  ! Create dxij
-  call newdSpData2D(sp,3,dit,dxij,'xij',sparsity_dim=2)
-  xij => val(dxij)
-
-  ! Create the xij array
-  call offset_xij(ucell,n_s,isc_off,na_u,xa,lasto,dit,sp,n_nzs,xij)
-
   write(*,'(a)') 'Writing to '//trim(fileout)
 
   if ( vout == 0 ) then
+
+     ! Create dxij
+     call newdSpData2D(sp,3,dit,dxij,'xij',sparsity_dim=2)
+     xij => val(dxij)
+     
+     ! Create the xij array
+     call offset_xij(ucell,n_s,isc_off,na_u,xa,lasto,dit,sp,n_nzs,xij)
 
      allocate(iza(na_u))
      iza(:) = 0
@@ -195,6 +195,8 @@ program tshs2tshs
           H, S, Ef, Qtot, Temp, istep, ia1)
      deallocate(iza)
 
+     call delete(dxij)
+
   else if ( vout == 1 ) then
 
      allocate(indxuo(no_s))
@@ -203,10 +205,10 @@ program tshs2tshs
      end do
 
      call ts_write_tshs(fileout, onlyS, Gamma, TSGamma, &
-          ucell, nsc, na_u, no_s, nspin, &
+          ucell, nsc, isc_off, na_u, no_s, nspin, &
           kscell, kdispl, &
           xa, lasto, &
-          dH,dS,dxij,indxuo, &
+          dH, dS, indxuo, &
           Ef, Qtot, Temp, istep, ia1)
 
      deallocate(indxuo)
@@ -215,7 +217,6 @@ program tshs2tshs
 
   if ( .not. onlyS ) call delete(dH)
   call delete(dS)
-  call delete(dxij)
   call delete(sp)
 
   deallocate(xa,lasto)

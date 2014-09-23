@@ -257,8 +257,6 @@ contains
           !      + ucell(:,3) * tm(3) &
           !      + xa(:,ja) - xa(:,ia)
           ! err = max(maxval(abs(xijo - xij(:,ind))),err)
-          ! This error could be "important" when
-          ! calculating self-energies
 
        end do
     end do

@@ -83,7 +83,7 @@ contains
   subroutine ts_sparse_init(slabel, &
        IsVolt, N_Elec, Elecs, &
        ucell, nsc, na_u,xa,lasto, block_dist,sparse_pattern, Gamma, &
-       n_nzs, xij)
+       isc_off)
 
     use class_OrbitalDistribution
 
@@ -93,7 +93,6 @@ contains
 #endif 
     use parallel, only: IONode
 
-    use m_sparse, only : xij_offset
     use m_ts_electype
     use m_ts_method
 #ifdef TRANSIESTA_DEBUG
@@ -125,10 +124,8 @@ contains
     type(Sparsity), intent(inout) :: sparse_pattern
     ! Whether we have xij or not
     logical, intent(in) :: Gamma
-    ! number of non-zero elements in xij
-    integer, intent(in) :: n_nzs
-    ! vectors from i-J
-    real(dp), intent(in) :: xij(3,n_nzs)
+    ! supercell indices
+    integer, intent(in) :: isc_off(3,product(nsc))
 
 ! **********************
 ! * LOCAL variables    *
@@ -137,7 +134,6 @@ contains
     ! Temporary arrays for knowing the electrode size
     logical :: bool
     integer :: no_u_TS
-    integer, pointer :: isc_off(:,:) => null()
 
     ! Number of orbitals in TranSIESTA
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
@@ -152,13 +148,10 @@ contains
     if ( Gamma ) then
        ! Initialize the sc_off array
        call re_alloc(sc_off,1,3,1,1)
-       sc_off = 0._dp
+       sc_off(:,:) = 0._dp
     else
-       call xij_offset(ucell,nsc, na_u,xa,lasto, &
-            block_dist,sparse_pattern,n_nzs,xij,isc_off,Bcast=.true.)
-       call re_alloc(sc_off,1,3,1,size(isc_off,dim=2))
-       sc_off = matmul(ucell,isc_off)
-       deallocate(isc_off)
+       call re_alloc(sc_off,1,3,1,product(nsc))
+       sc_off(:,:) = matmul(ucell,isc_off)
     end if
 
     if ( IsVolt ) then 
@@ -762,6 +755,81 @@ contains
 
 
   end subroutine ts_Sparsity_Subset_pointer
+
+#ifdef NOT_USED
+  ! Resets all degrees of freedom in the
+  ! matrix for elements belonging to the central
+  ! region AND the cross-terms with the electrodes
+  subroutine ts_Reset_D_C(D2)
+
+    use parallel, only : Node
+    use class_OrbitalDistribution
+    use class_dSpData2D
+    use m_ts_method
+! **********************
+! * INPUT variables    *
+! **********************
+    type(dSpData2D), intent(inout) :: D2
+
+! **********************
+! * LOCAL variables    *
+! **********************
+    type(OrbitalDistribution), pointer :: dit
+    type(Sparsity), pointer :: sp
+    ! to globalize from the local sparsity pattern (SIESTA)
+    ! and afterwards used as the looping mechanisms
+    ! to create the mask for creating the UC transiesta pattern
+    integer, pointer :: l_ncol(:) => null()
+    integer, pointer :: l_ptr(:) => null()
+    integer, pointer :: l_col(:) => null()
+    real(dp), pointer :: a2(:,:)
+
+    ! Also used in non-MPI (to reduce dublicate code)
+    integer :: no_l, no_u
+
+    ! Loop-counters
+    integer :: io, ic, ind
+    integer :: ict, jct
+
+    dit => dist(D2)
+    sp  => spar(D2)
+    a2  => val(D2)
+
+    call attach(sp,nrows=no_l,nrows_g=no_u)
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+
+    do io = 1 , no_l
+
+       ! Shift out of the buffer region
+       ic = index_local_to_global(dit,io,Node)
+
+       ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
+       ict = orb_type(ic)
+       if ( ict == TYP_BUFFER ) cycle
+
+       ! Loop the index of the pointer array
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+
+          ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
+          ! note, that we have already *checked* ic
+          jct = orb_type(l_col(ind))
+          if ( jct == TYP_BUFFER ) cycle
+
+          ! Do not reset diagonal and cross terms
+          ! between electrodes
+          if ( ict > 0 .and. jct > 0 ) cycle
+          ! Do not reset in device 
+          if ( ict == TYP_DEVICE .and. jct == TYP_DEVICE ) cycle
+
+          ! Reset !
+          a2(ind,:) = 0._dp
+
+       end do
+
+    end do
+
+  end subroutine ts_Reset_D_C
+#endif
 
   subroutine ts_Optimize(sp,N_Elec, Elecs,na_u,lasto,xa, algorithm)
     ! We return the pivoting indexes for the atoms
