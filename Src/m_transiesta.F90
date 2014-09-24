@@ -364,6 +364,11 @@ contains
 
              ! In case we have accumulated 2 or more points
              call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
+
+             ! Truncate to the maximum allowed change in Fermi-level
+             call ts_qc_Fermi_truncate(Q_Ef(i_F,2),TS_RHOCORR_FERMI_MAX, &
+                  Ef)
+
              if ( IONode ) then
                 write(*,'(a,e11.4,a)') 'transiesta: cubic spline. dEf = ', &
                      (Ef-Q_Ef(i_F,2))/eV, ' eV'
@@ -414,7 +419,7 @@ contains
        ! typically will the above be "too" little
        ! So we interpolate between all previous 
        ! estimations for this geometry...
-       call ts_charge_correct_Fermi_file(Ef)
+       call ts_qc_Fermi_file(Ef)
 
        ! We have now calculated the new Ef
        ! We shift it EDM to the correct level
@@ -448,7 +453,7 @@ contains
     ! We do the charge correction of the transiesta
     ! computation here (notice that the routine will automatically
     ! return if no charge-correction is requested)
-    call ts_charge_correct(N_Elec,Elecs, sp_dist, &
+    call ts_qc(N_Elec,Elecs, sp_dist, &
          sparse_pattern, nspin, n_nzs, DM, EDM, S, Qtot, &
          TS_RHOCORR_METHOD)
 

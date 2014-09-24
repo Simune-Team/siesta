@@ -1,4 +1,20 @@
 ----------------------------------------------------
+September 24, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-202
+Fermi-correction for in-band calculations bugfix
+
+* In case the Fermi-level lies in between two bands
+  we will HEAVILY overestimate the changed Fermi-level.
+  In this case we assign a maximum allowed change of the 
+  Fermi level.
+
+modified:modified:
+  Src/Makefile
+  Src/m_new_dm.F90
+  Src/save_density_matrix.F
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 September 23, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-201
 Bugfix for module usage in m_new_dm
 

@@ -65,7 +65,8 @@
      type(OrbitalDistribution_), pointer :: data => null()
   end type OrbitalDistribution
 
-  public :: newDistribution, comm
+  public :: newDistribution
+  public :: dist_comm, dist_node, dist_nodes
   public :: num_local_elements, node_handling_element
   public :: index_local_to_global, index_global_to_local
   public :: global_offset
@@ -79,8 +80,14 @@
      module procedure printOrbitalDistribution
   end interface
 
-  interface comm
+  interface dist_comm
      module procedure comm_
+  end interface
+  interface dist_node
+     module procedure dist_node_
+  end interface
+  interface dist_nodes
+     module procedure dist_nodes_
   end interface
 
 !==================================== 
@@ -186,20 +193,35 @@
       endif
       end function num_local_elements
 
+      function dist_node_(this) result(node)
+        type(OrbitalDistribution), intent(in) :: this
+        integer :: node
+        node = this%data%node
+      end function dist_node_
+      function dist_nodes_(this) result(nodes)
+        type(OrbitalDistribution), intent(in) :: this
+        integer :: nodes
+        nodes = this%data%nodes
+      end function dist_nodes_
+
    function index_local_to_global(this,il,Node) result(ig)
 #ifdef MPI
      use mpi_siesta, only: MPI_COMM_Self
 #endif
      type(OrbitalDistribution), intent(in)  :: this
      integer, intent(in)                    :: il
-     integer, intent(in)                    :: Node
+     integer, intent(in), optional          :: Node
      integer                                :: ig
 
+     integer :: lNode
      integer :: LBlock, LEle
+
+     lNode = this%data%node
+     if ( present(Node) ) lNode = Node
 
      if (this%data%blocksize == 0) then
         ! Not a block-cyclic distribution
-        if (Node /= this%data%node) then
+        if (lNode /= this%data%node) then
            call die("Cannot figure out ig if Node/=my_proc")
            ig = -1
         endif
@@ -231,10 +253,11 @@
           !  Substract local base line to find element number within the block
           LEle = il - LBlock*this%data%blocksize
           !  Calculate global index
-          ig = (LBlock*this%data%nodes + Node)*this%data%blocksize + LEle
+          ig = (LBlock*this%data%nodes + lNode)*this%data%blocksize + LEle
 
       endif
       end function index_local_to_global
+
 
    function index_global_to_local(this,ig,Node) result(il)
 #ifdef MPI
@@ -242,14 +265,20 @@
 #endif
      type(OrbitalDistribution), intent(in)  :: this
      integer, intent(in)                    :: ig
-     integer, intent(in)                    :: Node
+     ! In case Node is not supplied we expect it to request its
+     ! own index
+     integer, intent(in), optional          :: Node
      integer                                :: il
 
+     integer :: lNode
      integer :: LBlock, LEle, GBlock, OrbCheck
+
+     lNode = this%data%node
+     if ( present(Node) ) lNode = Node
 
      if (this%data%blocksize == 0) then
         ! Not a block-cyclic distribution
-        if (Node /= this%data%node) then
+        if (lNode /= this%data%node) then
            call die("Cannot figure out il if Node/=my_proc")
            il = -1
         endif
@@ -289,13 +318,13 @@
           !  Substract global base line to find element number within the block
           LEle = ig - GBlock*this%data%blocksize
           !  Find the block number on the local node
-          LBlock = ((GBlock - Node)/this%data%nodes)
+          LBlock = ((GBlock - lNode)/this%data%nodes)
           !  Generate the local orbital pointer based on the local block number
           il = LEle + LBlock*this%data%blocksize
           !  Check that this is consistent - if it is not then this
           !  local orbital is not on this node and so we return 0
           !  to indicate this.
-          OrbCheck = (LBlock*this%data%nodes + Node)*this%data%blocksize + LEle
+          OrbCheck = (LBlock*this%data%nodes + lNode)*this%data%blocksize + LEle
           if (OrbCheck.ne.ig) il = 0
       endif
 

@@ -861,7 +861,7 @@ contains
     write(*,*) 'Completed TRANSIESTA SCF'
 #endif
 
-    call ts_charge_correct_Fermi(sp_dist, sparse_pattern, &
+    call ts_qc_Fermi(sp_dist, sparse_pattern, &
          nspin, n_nzs, DM, Ss, Qtot, spDM, Ef, converged)
 
     call de_alloc(calc_parts)

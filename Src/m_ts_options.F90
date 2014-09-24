@@ -300,6 +300,8 @@ contains
     if ( TS_RHOCORR_FACTOR < 0.0_dp ) then
        call die("Charge correction factor must be larger than 0")
     endif
+    ! Truncation of fermi-level change (default 1.5 eV)
+    TS_RHOCORR_FERMI_MAX = fdf_get('TS.ChargeCorrection.Fermi.Max',0.1102471_dp,'Ry')
 
     ! whether to calculate the forces or not (default calculate everything)
     Calc_Forces = fdf_get('TS.Forces',.true.)
@@ -786,7 +788,8 @@ contains
           write(*,10)'Charge correction','Fermi-level'
           write(*,8)'Charge correction tolerance',TS_RHOCORR_FERMI_TOLERANCE
           write(*,8)'Charge correction factor',TS_RHOCORR_FACTOR
-
+          write(*,7)'Max change in Fermi-level allowed', &
+               TS_RHOCORR_FERMI_MAX / eV,'eV'
        end if
        write(*,10)'          >> Electrodes << '
        do i = 1 , size(Elecs)

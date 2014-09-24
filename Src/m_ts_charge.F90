@@ -29,12 +29,12 @@ module m_ts_charge
   integer, parameter :: TS_INFO_FULL = 0
   integer, parameter :: TS_INFO_SCF = 1
 
-
   ! Method parameters for the charge-correction
   integer, save :: TS_RHOCORR_METHOD = 0
   integer, parameter :: TS_RHOCORR_BUFFER = 1
   integer, parameter :: TS_RHOCORR_FERMI = 2
-  real(dp), save :: TS_RHOCORR_FERMI_TOLERANCE = 0.01
+  real(dp), save :: TS_RHOCORR_FERMI_TOLERANCE = 0.01_dp
+  real(dp), save :: TS_RHOCORR_FERMI_MAX = 0.1102471_dp ! 1.5 eV
   real(dp), save :: TS_RHOCORR_FACTOR = 0.75_dp
 
   private :: dp
@@ -249,7 +249,7 @@ contains
     
   end subroutine ts_print_charges
 
-  subroutine ts_charge_correct(N_Elec,Elecs, &
+  subroutine ts_qc(N_Elec,Elecs, &
        dit, sp, nspin, n_nzs, DM, EDM, S, Qtot, &
        method)
 
@@ -275,13 +275,13 @@ contains
     integer, intent(in) :: method
 
     if ( method == TS_RHOCORR_BUFFER ) then
-       call ts_charge_correct_buffer(N_Elec,Elecs, &
+       call ts_qc_buffer(N_Elec,Elecs, &
             dit, sp, nspin, n_nzs, DM, EDM, S, Qtot)
     end if
 
-  end subroutine ts_charge_correct
+  end subroutine ts_qc
 
-  subroutine ts_charge_correct_Fermi(dit,sp,nspin,n_nzs,DM,S,Qtot, &
+  subroutine ts_qc_Fermi(dit,sp,nspin,n_nzs,DM,S,Qtot, &
        spDM,Efermi,converged)
 
     use parallel, only : IONode
@@ -381,6 +381,13 @@ contains
     ! account for the missing/excess charge.
     ! dE * DM@(Ef) = dQ => dE = dQ / DM@(Ef)
     Q(2) = Q(1) / Q(2) * TS_RHOCORR_FACTOR
+
+    ! If Ef lies in the middle of bands we will have no DOS
+    ! right at the Fermi level.
+    ! If this is the case we truncate the change in Fermi-level
+    ! to the maximum allowed shift...
+    call ts_qc_Fermi_truncate(0._dp,TS_RHOCORR_FERMI_MAX,Q(2))
+
     ! As the energy filling must increase for positive
     ! shifting of the Fermi-level we subtract as Q(2) is 
     ! a positive number (for additional charge)
@@ -389,9 +396,9 @@ contains
        write(*,'(a,e11.4,a)') 'transiesta: constant dEf = ',-Q(2)/eV,' eV'
     end if
 
-  end subroutine ts_charge_correct_Fermi
+  end subroutine ts_qc_Fermi
 
-  subroutine ts_charge_correct_Fermi_file(Ef)
+  subroutine ts_qc_Fermi_file(Ef)
 
     use parallel, only : Node
     use units, only : eV
@@ -500,12 +507,15 @@ contains
        ! We do not tempt our souls to the Fermi-god...
        if ( abs(Ef_min - Ef) > abs(Ef_max - Ef) ) then
           Ef_min = Ef
-          Ef = Ef + TS_RHOCORR_FACTOR * (Ef_max-Ef)
+          Ef = Ef + TS_RHOCORR_FACTOR * ( Ef_max - Ef )
        else
           Ef_max = Ef
-          Ef = Ef + TS_RHOCORR_FACTOR * (Ef_min-Ef)
+          Ef = Ef + TS_RHOCORR_FACTOR * ( Ef_min - Ef )
           Ef_min = Ef_max
        end if
+
+       ! Truncate to the maximum allowed difference
+       call ts_qc_Fermi_truncate(Ef_min,TS_RHOCORR_FERMI_MAX,Ef)
 
        ! If we change the fermi-level, just print-out to the user
        if ( abs(Ef_min - Ef) > 0.000001_dp ) then
@@ -526,9 +536,23 @@ contains
          0,MPI_Comm_World, MPIerror)
 #endif
 
-  end subroutine ts_charge_correct_Fermi_file
+  end subroutine ts_qc_Fermi_file
 
-  subroutine ts_charge_correct_buffer(N_Elec,Elecs, &
+  subroutine ts_qc_Fermi_truncate(Ef,max_diff,Ef_new)
+    real(dp), intent(in) :: Ef, max_diff
+    real(dp), intent(inout) :: Ef_new
+
+    if ( abs(Ef_new - Ef) > max_diff ) then
+       if ( Ef_new - Ef > 0._dp ) then
+          Ef_new =   max_diff + Ef
+       else
+          Ef_new = - max_diff + Ef
+       end if
+    end if
+
+  end subroutine ts_qc_Fermi_truncate
+
+  subroutine ts_qc_buffer(N_Elec,Elecs, &
        dit, sp, nspin, n_nzs, DM, EDM, S, Qtot)
 
     use m_ts_electype
@@ -623,6 +647,6 @@ contains
        
     end do
 
-  end subroutine ts_charge_correct_buffer
+  end subroutine ts_qc_buffer
 
 end module m_ts_charge
