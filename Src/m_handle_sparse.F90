@@ -52,9 +52,9 @@ contains
     integer, pointer :: i_ptr(:), i_ncol(:), i_col(:)
     ! loop variables for the sparsity patterns
     integer :: ia_i, io_i, i_i, iat, io_o, lio_o, i_o
-    integer :: i_s, i, no_o, no_i, i1, i2, i3, at_end
+    integer :: i_s, i, ao, no_o, no_i, i1, i2, i3, at_end
     integer :: orb_i, orb_o
-    integer :: copied
+    integer :: copy(2)
 
     real(dp) :: xc_i(3), xc_o(3), xj_i(3), xj_o(3)
     real(dp), pointer :: a_i(:,:), a_o(:,:)
@@ -100,7 +100,7 @@ contains
     ! Loop on all equivalent atoms
     iat = at - 1
     ! We count number of copied data
-    copied = 0
+    copy(:) = 0
     
     ! We loop over the input SP which we will copy
     do ia_i = 1 , na_i
@@ -147,11 +147,11 @@ contains
         ! First we figure out which atomic position this
         ! corresponds to:
         i_s = (o_col(i_o)-1)/no_o + 1
-        i = iaorb(o_col(i_o),lasto_o)
-        orb_o = ucorb(o_col(i_o),no_o) - lasto_o(i-1)
+        ao = iaorb(o_col(i_o),lasto_o)
+        orb_o = ucorb(o_col(i_o),no_o) - lasto_o(ao-1)
         ! Do not allow overwriting DM outside of region.
-        if ( .not. any(i==lallow) ) cycle
-        xj_o(:) = xa_o(:,i) - xa_o(:,at) + &
+        if ( .not. any(ao==lallow) ) cycle
+        xj_o(:) = xa_o(:,ao) - xa_o(:,at) + &
              cell_o(:,1) * sc_off_o(1,i_s) + &
              cell_o(:,2) * sc_off_o(2,i_s) + &
              cell_o(:,3) * sc_off_o(3,i_s)        
@@ -183,7 +183,11 @@ contains
            ! WUHUU, we have the equivalent atom and equivalent
            ! orbital connection. We copy data now!
 
-           copied = copied + 1
+           if ( at <= ao .and. ao <= at_end ) then
+              copy(1) = copy(1) + 1 ! diagonal contribution
+           else
+              copy(2) = copy(2) + 1 ! off-diagonal contribution
+           end if
 
            a_o(i_o,:) = a_i(i_i,:)
 
@@ -202,29 +206,36 @@ contains
     if ( .not. present(print) ) return
     if ( .not. print ) return
 
-    i = copied
+    io_i = copy(1)
+    io_o = copy(2)
     if ( Node == 0 ) then
-       write(*,'(a,2(i0,a))') 'Expanding ',copied,' elements on node ',0
+       write(*,'(a,''[ '',i0,'', '',i0,'']'',a,i0)') &
+            'Expanding ',copy,' elements on node ',0
     end if
-
+    
 #ifdef MPI
-    do iat = 1 , Nodes - 1
-       if ( Node == 0 ) then
-          call MPI_Recv(copied,1,MPI_Integer, &
-               iat, 0, MPI_Comm_World, MPIstatus, MPIerror)
-          write(*,'(a,2(i0,a))') 'Expanding ',copied,' elements on node ',iat
-          i = i + copied
-       else
-          call MPI_Send( copied , 1, MPI_Integer, &
-               0, 0, MPI_Comm_World, MPIerror)
-       end if
-    end do
-#endif
-
     if ( Node == 0 ) then
-       write(*,'(a,i0,a)') 'Expanding in total ',i,' elements.'
+       do iat = 1 , Nodes - 1
+          call MPI_Recv(copy,2,MPI_Integer, &
+               iat, 0, MPI_Comm_World, MPIstatus, MPIerror)
+          write(*,'(a,''[ '',i0,'', '',i0,'']'',a,i0)') &
+               'Expanding ',copy,' elements on node ',iat
+          io_i = io_i + copy(1)
+          io_o = io_o + copy(2)
+       end do
+    else
+       call MPI_Send( copy , 2, MPI_Integer, &
+            0, 0, MPI_Comm_World, MPIerror)
     end if
- 
+#endif
+    
+    if ( Node == 0 ) then
+       copy(1) = io_i
+       copy(2) = io_o
+       write(*,'(a,''[ '',i0,'', '',i0,'']'',a)') &
+            'Expanded in total ',copy,' elements.'
+    end if
+    
   end subroutine expand_spd2spd_2D
 
 end module m_handle_sparse

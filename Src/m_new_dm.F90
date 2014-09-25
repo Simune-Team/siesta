@@ -230,7 +230,7 @@
          do iElec = 1 , N_Elec
              
             if ( IONode ) then
-               write(*,'(/,a)') 'transiesta: Reading in electrode TSDE: '//&
+               write(*,'(/,a)') 'transiesta: Reading in electrode TSDE for '//&
                     trim(Elecs(iElec)%Name)
             end if
 

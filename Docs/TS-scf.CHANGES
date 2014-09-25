@@ -1,4 +1,16 @@
 ----------------------------------------------------
+September 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-203
+information printing had a slight error
+
+* The repetition of the DM printed the "wrong" counts.
+  I have corrected and added a printing of the
+  [ diagonal, off-diagonal] updates in the routine
+
+modified:
+  Src/m_handle_sparse.F90
+  Src/m_new_dm.F90
+
+----------------------------------------------------
 September 24, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-202
 Fermi-correction for in-band calculations bugfix
 
