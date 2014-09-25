@@ -11,31 +11,33 @@ ARCH_MAKE_DEFAULT=../arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
 #
+#
+OBJFILES= m_psml_core.o \
+          m_psml_parsing_helpers.o m_psml_reader.o \
+          assoc_list.o external_interfaces.o m_interpolation.o\
+          m_psml.o
+#
 # Choice of XML parsers.
 #
-# First, check whether -DXMLF90 is already an option in the arch.make
-# 
-ifneq (,$(findstring DXMLF90,$(FPPFLAGS)))
- INCFLAGS:= $(INCFLAGS) -I../xmlparser
-else
-#
+
+ifneq (,$(findstring DPSML_USE_FOX,$(FPPFLAGS)))
+# If the user has put -DPSML_USE_FOX in the arch.make...
+
+ifeq ($(strip $(FOX_ROOT)),)
 # If FoX is not available as an external library
 # (which would include the sax parser), then
 # fall back to using XMLF90 in the Siesta distribution
-# 
-ifeq ($(strip $(FOX_ROOT)),)
- FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-DXMLF90
+ FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UPSML_USE_FOX
  INCFLAGS:= $(INCFLAGS) -I../xmlparser
 else
  include ../Mk/FoX.mk
- # This adds the proper string to INCFLAGS
+ OBJFILES:=$(OBJFILES) fox_extra.o
+ m_psml_parsing_helpers.o: fox_extra.o
 endif
+else
+# The user has not requested FoX
+ INCFLAGS:= $(INCFLAGS) -I../xmlparser
 endif
-#
-OBJFILES= m_ncps_xml_ps_t.o \
-          m_ncps_parsing_helpers.o m_ncps_xmlreader.o \
-          assoc_list.o\
-          m_psml.o
 #
 libpsml.a: $(OBJFILES)
 	$(AR) $(ARFLAGS_EXTRA) cru libpsml.a $(OBJFILES)
@@ -49,7 +51,8 @@ dep:
 clean:
 	rm -f *.o *.*d *.a
 # DO NOT DELETE THIS LINE - used by make depend
-m_ncps_parsing_helpers.o: m_ncps_xml_ps_t.o assoc_list.o
-m_ncps_xmlreader.o: m_ncps_parsing_helpers.o m_ncps_xml_ps_t.o
-m_ncps_xml_ps_t.o: assoc_list.o
-m_psml.o: m_ncps_xml_ps_t.o m_ncps_xmlreader.o
+m_interpolation.o: external_interfaces.o
+m_psml_core.o: assoc_list.o external_interfaces.o m_interpolation.o
+m_psml_parsing_helpers.o: assoc_list.o external_interfaces.o 
+m_psml_parsing_helpers.o: m_psml_core.o
+m_psml_reader.o: m_psml_core.o m_psml_parsing_helpers.o

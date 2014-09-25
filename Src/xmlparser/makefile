@@ -6,7 +6,7 @@ include ../arch.make
 #
 OBJFILES= m_debug.o m_buffer.o m_elstack.o m_dictionary.o m_io.o \
           m_reader.o m_converters.o m_charset.o  m_entities.o \
-          m_xml_error.o  m_fsm.o  m_xml_parser.o flib_sax.o
+          m_xml_error.o  m_fsm.o  m_xml_parser.o xmlf90_sax.o
 
 DOM_OBJ_FILES= flib_dom.o \
           m_dom_attribute.o m_dom_element.o m_dom_node.o m_dom_types.o \
@@ -44,5 +44,5 @@ m_fsm.o: m_buffer.o m_dictionary.o m_charset.o m_entities.o m_elstack.o
 m_xml_error.o: m_elstack.o
 m_xml_parser.o: m_buffer.o m_elstack.o m_reader.o m_fsm.o m_dictionary.o \
                 m_debug.o m_xml_error.o
-flib_sax.o:  m_dictionary.o m_xml_parser.o m_converters.o m_xml_error.o
+xmlf90_sax.o:  m_dictionary.o m_xml_parser.o m_converters.o m_xml_error.o
 

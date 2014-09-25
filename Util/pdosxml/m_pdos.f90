@@ -10,7 +10,7 @@
 !
 module m_pdos
 !
-use flib_sax
+use xmlf90_sax
 use m_orbital_chooser
 
 private

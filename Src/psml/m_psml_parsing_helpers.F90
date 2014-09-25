@@ -1,17 +1,11 @@
-module m_ncps_parsing_helpers
+module m_psml_parsing_helpers
 !
 !  This module reads a pseudopotential file written in XML (PSML format)
 !  A full example of the building up of a data structure using
 !  the SAX paradigm.
 !
-#ifdef XMLF90
- use flib_sax
-#else
-!! use FoX_common, only: get_value=>getValue
- use FoX_sax
-#endif
-
- use m_ncps_xml_ps_t        ! Data types
+ use m_psml_core                   ! For data types
+ use external_interfaces, only: die
 
 implicit none
 
@@ -45,10 +39,6 @@ public  :: begin_element, end_element, pcdata_chunk
 !
 type(ps_t), pointer, public, save :: pseudo => null()
 
-!**AG**
-! Make sure that this is provided by the user
-private :: die
-
 logical, private, save  :: in_vps = .false. , in_radfunc = .false.
 logical, private, save  :: in_config_val = .false.
 logical, private, save  :: in_semilocal = .false. , in_header = .false.
@@ -81,26 +71,16 @@ type(valence_charge_t), private, pointer  :: valp => null()
 type(core_charge_t), private, pointer     :: corep => null()
 type(radfunc_t), private, pointer         :: rp => null()
 
-#ifndef XMLF90
-!
-! Helper routines taken from xmlf90
-
-public :: build_data_array
-
-interface build_data_array
-      module procedure build_data_array_real_sp,  &
-                       build_data_array_real_dp,  &
-                       build_data_array_integer
-end interface
-#endif
-
 CONTAINS  !===========================================================
 
 !----------------------------------------------------------------------
-#ifdef XMLF90
+#ifndef PSML_USE_FOX
 subroutine begin_element(name,attributes)
+use xmlf90_sax, only: dictionary_t, get_value
 #else
 subroutine begin_element(namespaceURI,localName,name,attributes)
+use Fox_sax, only: dictionary_t
+use fox_extra, only: get_value=>get_value_by_key
 character(len=*), intent(in)    :: namespaceURI
 character(len=*), intent(in)    :: localName
 #endif
@@ -418,7 +398,7 @@ end select
 end subroutine begin_element
 !----------------------------------------------------------------------
 
-#ifdef XMLF90
+#ifndef PSML_USE_FOX
 subroutine end_element(name)
 #else
 subroutine end_element(namespaceURI,localName,name)
@@ -560,6 +540,11 @@ end subroutine end_element
 !----------------------------------------------------------------------
 
 subroutine pcdata_chunk(chunk)
+#ifdef PSML_USE_FOX
+  use fox_extra, only: build_data_array
+#else
+  use xmlf90_sax, only: build_data_array
+#endif
 character(len=*), intent(in) :: chunk
 
 if (len_trim(chunk) == 0) RETURN     ! skip empty chunk
@@ -587,192 +572,18 @@ endif
 end subroutine pcdata_chunk
 !----------------------------------------------------------------------
 
-      ! To be bypassed by the global "die" of a client program
-      ! Use interface mechanism as in newer versions of Siesta
-      !
-      subroutine die(str)
-      character(len=*), intent(in), optional   :: str
-      if (present(str)) then
-         write(unit=0,fmt="(a)") trim(str)
-      endif
-      write(unit=0,fmt="(a)") "Stopping Program"
-      stop
-      end subroutine die
-
-#ifndef XMLF90
-      subroutine get_value(dict,attr,value,status)
-        use FoX_common, only: getValue
-        type(dictionary_t), intent(in) :: dict
-        character(len=*), intent(in)   :: attr
-        character(len=*), intent(out)  :: value
-        integer, intent(out)           :: status
-
-        status = 0
-        value = getValue(dict,attr)
-        if (value == "") status = 1
-      end subroutine get_value
-
-! (Copy of "m_converters.f90" in the xmlf90 distribution...)
-!
-! Takes a string and turns it into useful data structures,
-! such as numerical arrays.
-!
-! NOTE: The string must contain *homogeneous* data, i.e.: all real numbers,
-! all integers, etc.
-!
-
-!---------------------------------------------------------------
-subroutine build_data_array_real_dp(str,x,n)
-integer, parameter  :: dp = selected_real_kind(14)
-!
-character(len=*), intent(in)                ::  str
-real(kind=dp), dimension(:), intent(inout)  ::    x
-integer, intent(inout)                      ::    n
-
-integer                            :: ntokens, status, last_pos
-character(len=len(str))  :: s
-
-s = str
-call token_analysis(s,ntokens,last_pos)
-!if (debug) print *, "ntokens, last_pos ", ntokens, last_pos
-!if (debug) print *, s
-if ((n + ntokens) > size(x)) STOP "data array full"
-read(unit=s(1:last_pos),fmt=*,iostat=status) x(n+1:n+ntokens)
-if (status /= 0) STOP "real conversion error"
-n = n + ntokens
-
-end subroutine build_data_array_real_dp
-!---------------------------------------------------------------
-
-subroutine build_data_array_real_sp(str,x,n)
-integer, parameter  :: sp = selected_real_kind(6)
-!
-character(len=*), intent(in)                :: str
-real(kind=sp), dimension(:), intent(inout)  ::    x
-integer, intent(inout)                      ::    n
-
-integer                            :: ntokens, status, last_pos
-character(len=len(str))  :: s
-
-s = str
-call token_analysis(s,ntokens,last_pos)
-!if (debug) print *, "ntokens, last_pos ", ntokens, last_pos
-!if (debug) print *, s
-if ((n + ntokens) > size(x)) STOP "data array full"
-read(unit=s(1:last_pos),fmt=*,iostat=status) x(n+1:n+ntokens)
-if (status /= 0) STOP "real conversion error"
-n = n + ntokens
-
-end subroutine build_data_array_real_sp
-
-!---------------------------------------------------------------
-subroutine build_data_array_integer(str,x,n)
-integer, parameter  :: sp = selected_real_kind(14)
-!
-character(len=*), intent(in)                :: str
-integer, dimension(:), intent(inout)        ::    x
-integer, intent(inout)                      ::    n
-
-integer                            :: ntokens, status, last_pos
-character(len=len(str))  :: s
-
-s = str
-call token_analysis(s,ntokens,last_pos)
-!if (debug) print *, "ntokens, last_pos ", ntokens, last_pos
-!if (debug) print *, s
-if ((n + ntokens) > size(x)) STOP "data array full"
-read(unit=s(1:last_pos),fmt=*,iostat=status) x(n+1:n+ntokens)
-if (status /= 0) STOP "integer conversion error"
-n = n + ntokens
-
-end subroutine build_data_array_integer
-
-
-!==================================================================
-
-function is_separator(c) result(sep)
-character(len=1), intent(in)          :: c
-logical                               :: sep
-
- sep = ((c == char(32)) .or. (c == char(10))             &
-         .or. (c == char(9)) .or. (c == char(13)))
-
-end function is_separator
-!----------------------------------------------------------------
-function is_CR_or_LF(c) result(res)
-character(len=1), intent(in)          :: c
-logical                               :: res
-
- res = ((c == char(10)) .or. (c == char(13)))
-
-end function is_CR_or_LF
-
-!==================================================================
-
-subroutine token_analysis(str,ntokens,last_pos)
-!
-character(len=*), intent(inout)          :: str
-integer, intent(out)                     :: ntokens, last_pos
-!
-!
-! Checks the contents of a string and finds the number of tokens it contains
-! The standard separator is generalized whitespace (space, tab, CR, or LF)
-! It also returns the last useful position in the string (excluding
-! separator characters which are not blanks, and thus not caught by the
-! (len_)trim fortran intrinsic). This is necessary to perform list-directed
-! I/O in the string as an internal file.
-! 
-! Also, replace on the fly CR and LF by blanks. This is necessary if
-! str spans more than one record. In that case, internal reads only 
-! look at the first record. 
-! -- ** Compiler limits on size of internal record??
-!
-integer           :: i, str_length
-logical           :: in_token
-character(len=1)  :: c
-
-in_token = .false.
-ntokens = 0
-last_pos = 0
-
-str_length = len_trim(str)
-!print *, "string length: ", str_length
-
-do i = 1, str_length
-      c = str(i:i)
-
-      if (in_token) then
-         if (is_separator(c)) then
-            in_token = .false.
-            if (is_CR_or_LF(c)) str(i:i) = " "
-         else
-            last_pos = i
-         endif
-
-      else   ! not in token
-         
-         if (is_separator(c)) then
-            if (is_CR_or_LF(c)) str(i:i) = " "
-            ! do nothing
-         else
-            in_token = .true.
-            last_pos = i
-            ntokens = ntokens + 1
-         endif
-      endif
-enddo
-!print *, "ntokens, last_pos: ", ntokens, last_pos
-
-end subroutine token_analysis
-#endif
-
      ! Annotations are encoded as an association list
      ! in a couple of arrays
      ! ( (key "value") (key "value") ...)
      ! 
-     subroutine save_annotation(atts,annotation)
-       use assoc_list, ps_annotation_t => assoc_list_t
-
+subroutine save_annotation(atts,annotation)
+  use assoc_list, ps_annotation_t => assoc_list_t
+#ifdef PSML_USE_FOX
+  use Fox_common, only: dictionary_t, len=>getLength
+  use fox_extra, only: get_value=>get_value_by_index, get_key
+#else
+  use xmlf90_sax, only: dictionary_t, get_value, get_key, len
+#endif
        type(dictionary_t), intent(in) :: atts
        type(ps_annotation_t), intent(out) :: annotation
        
@@ -792,7 +603,7 @@ end subroutine token_analysis
        enddo
      end subroutine save_annotation
 
-end module m_ncps_parsing_helpers
+end module m_psml_parsing_helpers
 
 
 

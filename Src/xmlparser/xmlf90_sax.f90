@@ -1,4 +1,4 @@
-module flib_sax
+module xmlf90_sax
 
 !
 ! Stub module to gather all the functionality needed by the user
@@ -15,5 +15,5 @@ use m_xml_error
 
 public
 
-end module flib_sax
+end module xmlf90_sax
 

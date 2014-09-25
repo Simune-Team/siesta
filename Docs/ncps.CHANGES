@@ -1,4 +1,38 @@
 ------------------------------------------------------------
+September 25, 2014  Alberto Garcia       trunk-462--ncps-39
+Re-packaging of PSML support
+
+* New names for files.
+
+* Split-off functionality: m_interpolation, fox_extra,
+  external_interfaces...
+
+* The built-in xmlf90-sax library (name change from flib_sax) is used
+  by default, unless -DPSML_USE_FOX is defined. Note that the FoX sax
+  parser is very slow.
+
+added:
+  Src/psml/external_interfaces.f90
+  Src/psml/fox_extra.f90
+  Src/psml/m_interpolation.F90
+renamed:
+  Src/psml/m_ncps_parsing_helpers.F90 => Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_ncps_xml_ps_t.f90 => Src/psml/m_psml_core.f90
+  Src/psml/m_ncps_xmlreader.F90 => Src/psml/m_psml_reader.F90
+  Src/xmlparser/flib_sax.f90 => Src/xmlparser/xmlf90_sax.f90
+modified:
+  Src/psml/m_psml.F90
+  Src/psml/makefile
+  Src/xmlparser/makefile
+  Util/pdosxml/m_pdos.f90
+  Util/pdosxml/pdosxml.f90
+  Util/pseudo-xml/README
+  Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_psml_core.f90
+  Src/psml/m_psml_reader.F90
+  Src/xmlparser/xmlf90_sax.f90
+
+------------------------------------------------------------
 September 23, 2014  Alberto Garcia       trunk-462--ncps-38
 Major overhaul of psml support
 
