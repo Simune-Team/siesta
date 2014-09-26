@@ -1,4 +1,47 @@
 ----------------------------------------------------
+September 26, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-204
+Bugfix for gamma and supercell, added generic Bulk DM init
+
+* The user has full control over the supercell, hence
+  we do not need to forcefully create the 	
+  correct supercell for gamma calculations.
+
+  However, if a user want to initialize the electrode
+  bulk-density we need the auxilliary cell as the cell connections
+  are calculated using the isc_off array.
+
+* Initialization of the DM is now done in two different ways
+  according to the situation.
+  
+  1) If the DM is initialized from atomically filled orbitals
+     we are allowed to initialize the cross-terms with the
+     device region. (and hence improves the convergence, 
+     considerably)
+  2) If the DM is read from a file we only allow writing to
+     the elements that belong to the electrodes and buffers.
+
+* Changed print-out of tri-diagonal partitioning, the lines
+  could easily be excessively long.
+
+* Assures nullification of sparse pattern arrays
+  after resetSparseMatrices
+
+modified:
+  Src/Makefile
+  Src/m_handle_sparse.F90
+  Src/m_iodm.F90
+  Src/m_new_dm.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_iodm.F90
+  Src/m_ts_tri_init.F90
+  Src/save_density_matrix.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 September 25, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-203
 information printing had a slight error
 

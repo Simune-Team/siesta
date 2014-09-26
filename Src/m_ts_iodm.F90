@@ -29,7 +29,7 @@ module m_ts_iodm
 
 contains
   
-  subroutine read_ts_dm( slabel, nspin, dit, no_u, DM, EDM, Ef, found ,&
+  subroutine read_ts_dm( file, nspin, dit, no_u, DM, EDM, Ef, found ,&
        Bcast)
 
 #ifdef MPI
@@ -39,7 +39,7 @@ contains
 ! **********************
 ! * INPUT variables    *
 ! **********************
-    character(len=*), intent(in) :: slabel
+    character(len=*), intent(in) :: file
     integer, intent(in) :: nspin
     type(OrbitalDistribution), intent(inout) :: dit
     integer, intent(in) :: no_u
@@ -52,6 +52,7 @@ contains
 ! * LOCAL variables      *
 ! ************************
     type(Sparsity) :: sp
+    character(len=500) :: fn
     logical :: exists, lBcast
     integer :: iu, two(2)
     integer, allocatable, target :: gncol(:)
@@ -62,7 +63,7 @@ contains
     external :: io_assign, io_close
 
     if ( Node == 0 ) then
-       inquire(file=trim(slabel)//'.TSDE', exist=exists)
+       inquire(file=file, exist=exists)
     end if
 
     lBcast = .false.
@@ -72,14 +73,15 @@ contains
     call MPI_Bcast(exists,1,MPI_Logical,0, &
          MPI_Comm_World,MPIerror)
 #endif
+
+    fn = 'IO-TSDE: '//trim(file)
     
     found = .false.
     if ( .not. exists ) return
 
     if ( Node == 0 ) then
        call io_assign(iu)
-       open( iu, file=trim(slabel)//'.TSDE', &
-            form='unformatted', status='old' )
+       open( iu, file=file, form='unformatted', status='old' )
        rewind(iu)
        read(iu) two
     end if
@@ -110,24 +112,23 @@ contains
     
     ! Read in the sparsity pattern (distributed)
     if ( lBcast ) then
-       call io_read_Sp(iu, no_u, sp, 'temp-ts-IO',gncol=gncol, Bcast=Bcast)
+       call io_read_Sp(iu, no_u, sp, trim(fn), gncol=gncol, Bcast=Bcast)
     else
-       call io_read_Sp(iu, no_u, sp, 'temp-ts-IO',dit=dit, gncol=gncol)
+       call io_read_Sp(iu, no_u, sp, trim(fn), dit=dit, gncol=gncol)
     end if
-
 
     ! Read DM
     if ( lBcast ) then
-       call io_read_d2D(iu,sp,DM ,nspin,'ts-iodm',gncol=gncol, Bcast=Bcast)
+       call io_read_d2D(iu,sp,DM ,nspin, trim(fn), gncol=gncol, Bcast=Bcast)
     else
-       call io_read_d2D(iu,sp,DM ,nspin,'ts-iodm',dit=dit, gncol=gncol)
+       call io_read_d2D(iu,sp,DM ,nspin, trim(fn), dit=dit, gncol=gncol)
     end if
 
     ! Read EDM
     if ( lBcast ) then
-       call io_read_d2D(iu,sp,EDM,nspin,'ts-iodm',gncol=gncol, Bcast=Bcast)
+       call io_read_d2D(iu,sp,EDM,nspin, trim(fn), gncol=gncol, Bcast=Bcast)
     else
-       call io_read_d2D(iu,sp,EDM,nspin,'ts-iodm',dit=dit, gncol=gncol)
+       call io_read_d2D(iu,sp,EDM,nspin, trim(fn), dit=dit, gncol=gncol)
     end if
 
     ! Clean-up
@@ -153,12 +154,12 @@ contains
     
   end subroutine read_ts_dm
 
-  subroutine write_ts_dm(slabel,nspin, DM, EDM, Ef )
+  subroutine write_ts_dm(file,nspin, DM, EDM, Ef )
     
 ! **********************
 ! * INPUT variables    *
 ! **********************
-    character(len=*), intent(in) :: slabel
+    character(len=*), intent(in) :: file
     integer, intent(in) :: nspin
     type(dSpData2D), intent(inout) :: DM, EDM
     real(dp), intent(in) :: Ef
@@ -183,8 +184,7 @@ contains
 
        ! Open file
        call io_assign( iu )
-       open( iu, file=trim(slabel)//'.TSDE', &
-            form='unformatted', status='unknown' )
+       open( iu, file=file, form='unformatted', status='unknown' )
        rewind(iu)
        
        write(iu) no_u, nspin

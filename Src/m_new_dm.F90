@@ -61,7 +61,7 @@
 
 !=====================================================================
 
-      subroutine  new_dm( auxchanged, DM_history, DMnew)
+      subroutine  new_dm( auxchanged, DM_history, DMnew, EDMnew)
 
       USE siesta_options
       use siesta_geom,      only: ucell, xa, na_u, isc_off, nsc
@@ -69,6 +69,7 @@
       use atomlist,         only: datm, iaorb, lasto, no_u, no_l
       use m_steps,          only: istp
       use m_spin,   only: nspin
+      use m_handle_sparse, only : bulk_expand
 
       use class_dSpData2D
       use class_Sparsity
@@ -76,7 +77,6 @@
       use class_Fstack_Pair_Geometry_dSpData2D
 
 #ifdef TRANSIESTA
-      use sparse_matrices,  only: EDM_2D
       use m_ts_global_vars,only: TSmode
       use m_ts_electype, only : copy_DM
       use m_ts_options, only : N_Elec, Elecs, DM_bulk
@@ -88,18 +88,19 @@
 
       logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
       type(Fstack_Pair_Geometry_dSpData2D), intent(inout)      :: DM_history
-      type(dSpData2D), intent(inout)   :: DMnew
+      type(dSpData2D), intent(inout)   :: DMnew, EDMnew
 
 !     Local variables
 
       logical :: dminit     ! Initialize density matrix?
       logical :: try_to_read_from_file
       integer :: n_dms_in_history, n_depth
+      integer :: init_method
 
 #ifdef TRANSIESTA
       real(dp), pointer :: DM(:,:), EDM(:,:)
       integer :: iElec
-      integer :: na_a
+      integer :: na_a, na_dev
       integer, allocatable :: allowed_a(:)
       logical :: set_Ef
 #endif
@@ -171,11 +172,11 @@
             write(6,"(a)") "Initializing Density Matrix..."
          endif
 
-         call initdm(Datm, DMnew, sparse_pattern, block_dist,   &
-                     lasto, no_u,                       &
-                     no_l, nspin, na_u,           &
-                     iaorb, inspn,                             &
-                     try_to_read_from_file)
+         call initdm(Datm, DMnew, EDMnew, sparse_pattern, block_dist, &
+                     lasto, no_u, &
+                     no_l, nspin, na_u, &
+                     iaorb, inspn, &
+                     try_to_read_from_file, init_method)
 
       else    ! not initializing the DM
 
@@ -191,7 +192,19 @@
          if (ionode)  print "(a)", "New DM after history re-use:"
          if (ionode)  call print_type(DMnew)
 
+         ! Defines the initialiazation to be re-using
+         init_method = -1
+
       endif
+
+      if ( init_method == 0 ) then
+         ! In case we have initialized from atomic fillings
+         ! we allow the user to supply different files for
+         ! starting the calculation in a state of bulk 
+         ! calculations
+         call bulk_expand(na_u,xa,lasto,ucell,nsc,isc_off,DMnew)
+      end if
+
 
 #ifdef TRANSIESTA
       ! In case of traniesta and DM_bulk
@@ -214,18 +227,29 @@
             end if
          end if
 
-         na_a = 0
-         do iElec = 1 , na_u
-            if ( .not. a_isDev(iElec) ) na_a = na_a + 1
-         end do
-         allocate(allowed_a(na_a))
-         na_a = 0 
-         do iElec = 1 , na_u
-            if ( .not. a_isDev(iElec) ) then
-               na_a = na_a + 1
-               allowed_a(na_a) = iElec
-            end if
-         end do
+
+         if ( init_method == 0 ) then
+            ! We are starting from atomic-filled orbitals
+            ! We are now allowed to overwrite everything!
+            na_a = na_u
+            allocate(allowed_a(na_a))
+            do iElec = 1 , na_a
+               allowed_a(iElec) = iElec
+            end do
+         else
+            na_a   = 0
+            do iElec = 1 , na_u
+               if ( .not. a_isDev(iElec) ) na_a   = na_a   + 1
+            end do
+            allocate(allowed_a(na_a))
+            na_a = 0 
+            do iElec = 1 , na_u
+               if ( .not. a_isDev(iElec) ) then
+                  na_a = na_a + 1
+                  allowed_a(na_a) = iElec
+               end if
+            end do
+         end if
           
          do iElec = 1 , N_Elec
              
@@ -238,13 +262,17 @@
             ! Notice that the EDM matrix that is copied over
             ! will be equivalent at Ef == 0
             call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
-                 ucell,DMnew,EDM_2D, na_a, allowed_a)
+                 ucell,DMnew,EDMnew, na_a, allowed_a)
 
             ! We shift the mean by one fraction of the electrode
             ! Typically we see that the fermi-level rises a bit
             ! as soon as you go "off-bulk", whence we 
             ! do this by adding one "ficticious" electrode.
-            if ( set_Ef ) Ef = Ef + Elecs(iElec)%Ef / real(N_Elec+1,dp)
+            ! Estimate fraction of electrode fermi-level
+            ! by the number of atoms...
+            if ( set_Ef ) then
+               Ef = Ef + Elecs(iElec)%Ef / real(N_Elec+1,dp)
+            end if
             
          end do
 
@@ -259,7 +287,7 @@
          ! We need to align the energy matrix
          iElec = nnzs(sparse_pattern) * nspin
          DM  => val(DMnew)
-         EDM => val(EDM_2D)
+         EDM => val(EDMnew)
          call daxpy(iElec,Ef,DM(1,1),1,EDM(1,1),1)
 
       end if
@@ -269,11 +297,11 @@
 
 !====================================================================
 
-      subroutine initdm(Datm, DMnew, sparse_pattern, block_dist, &
+      subroutine initdm(Datm, DMnew, EDMnew, sparse_pattern, block_dist, &
                         lasto, no_u,                              &
                         no_l, nspin, na_u,     &
                         iaorb, inspn,                              &
-                        try_dm_from_file)
+                        try_dm_from_file, init_method)
 
 ! Density matrix initialization
 !
@@ -303,7 +331,6 @@
       use class_dData2D
       use m_iodm, only : read_dm
 #ifdef TRANSIESTA
-      use sparse_matrices, only : EDM_2D, Escf
       use m_ts_iodm
       use m_energies, only: ef  ! Transiesta uses the EF obtained in a initial SIESTA run
                                 ! to place the electrodes and scattering region energy
@@ -321,9 +348,10 @@
       integer           lasto(0:na_u), iaorb(no_u)
       real(dp)          Datm(no_u)
 
-      type(dSpData2D), intent(inout)      :: DMnew
+      type(dSpData2D), intent(inout)      :: DMnew, EDMnew
       type(Sparsity), intent(inout) :: sparse_pattern
       type(OrbitalDistribution), intent(inout) :: block_dist
+      integer, intent(out) :: init_method
 
 ! ---------------------------------------------------------------------
 
@@ -355,7 +383,7 @@
             call timer('IO-R-TS-DE',1)
             do i = 1 , 100
 #endif
-            call read_ts_dm(slabel,nspin,block_dist,no_u, &
+            call read_ts_dm(trim(slabel)//'.TSDE',nspin,block_dist,no_u, &
                  DMread, EDMread, Ef, tsde_found )
 #ifdef TIMING_IO
             end do
@@ -371,7 +399,7 @@
             call timer('IO-R-DM',1)
             do i = 1 , 100
 #endif
-               call read_dm(slabel,nspin,block_dist,sparse_pattern, &
+               call read_dm(trim(slabel)//'.DM',nspin,block_dist,no_u, &
                     DMread, dm_found )
 #ifdef TIMING_IO
             end do
@@ -379,6 +407,11 @@
             call timer('IO-R-DM',3)
 #endif
             endif
+            if ( tsde_found ) then
+               init_method = 2
+            else if ( dm_found ) then
+               init_method = 1
+            end if
             dm_found = (tsde_found .or. dm_found)
             
          else  ! Not TSmode
@@ -388,13 +421,16 @@
             call timer('IO-R-DM',1)
             do i = 1 , 100
 #endif
-            call read_dm(slabel,nspin,block_dist,sparse_pattern, &
+            call read_dm(trim(slabel)//'.DM',nspin,block_dist,no_u, &
                  DMread, dm_found )
 #ifdef TIMING_IO
             end do
             call timer('IO-R-DM',2)
             call timer('IO-R-DM',3)
 #endif
+            if ( dm_found ) then
+               init_method = 1
+            end if
 
          endif
       endif
@@ -407,6 +443,7 @@
       end if
 
       if ( TSrun ) then
+
          ! Correct the mixing weight for transiesta
          ! we have read in a TSDE file
          tmp     = wmix
@@ -423,13 +460,16 @@
             call timer('IO-R-DM',1)
             do i = 1 , 100
 #endif
-            call read_dm(slabel,nspin,block_dist,sparse_pattern, &
+            call read_dm(trim(slabel)//'.DM',nspin,block_dist,no_u, &
                  DMread, dm_found )
 #ifdef TIMING_IO
             end do
             call timer('IO-R-DM',2)
             call timer('IO-R-DM',3)
 #endif
+            if ( dm_found ) then
+               init_method = 1
+            end if
       endif
 #endif
 
@@ -468,8 +508,8 @@
 
       else
 
-	call newdData2D(dm_a2d,nnzs(sparse_pattern),nspin,"(DMatomic)")
-	Dscf => val(dm_a2d)
+	call newdData2D(DM_a2D,nnzs(sparse_pattern),nspin,"(DMatomic)")
+	Dscf     => val(DM_a2d)
         numh     => n_col(sparse_pattern)
         listhptr => list_ptr(sparse_pattern)
         listh    => list_col(sparse_pattern)
@@ -485,16 +525,18 @@
         if (ionode) print *, "DMnew after filling with atomic data:"
         if (ionode) call print_type(DMnew)
 
+        ! The initialization method is the atomic filling...
+        init_method = 0
+
        endif
 
        ! Energy-density matrix
 #ifdef TRANSIESTA
        if (dm_found) then
           if (tsde_found) then
-             call restructdSpData2D(EDMread,sparse_pattern,EDM_2D)
+             call restructdSpData2D(EDMread,sparse_pattern,EDMnew)
              if (ionode) print *, "EDMread after reading file:"
              if (ionode) call print_type(EDMread)
-             Escf => val(EDM_2D)
 
              ! Correct the mixing weight for transiesta
              ! we have read in a TSDE file
@@ -503,10 +545,10 @@
              ts_wmix = tmp
           else
              ! Escf remains associated to old EDM
-          endif
+          end if
        else
           ! Escf remains associated to old EDM
-       endif
+       end if
 #else
        ! Escf remains associated to old EDM
 #endif           
@@ -514,7 +556,7 @@
        ! Put deletes here to avoid complicating the logic
        call delete(DMread)
 #ifdef TRANSIESTA
-       call delete(EDMread)  
+       call delete(EDMread)
 #endif
 
       end subroutine initdm

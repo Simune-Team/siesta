@@ -1285,8 +1285,7 @@ contains
        call die('Currently you cannot copy a non-full sparsity pattern...')
     end if
     
-    i = len_trim(this%DEfile)
-    call read_ts_dm( this%DEfile(1:i-5), this%nspin, fake_dit, &
+    call read_ts_dm( this%DEfile, this%nspin, fake_dit, &
          this%no_u, f_DM_2D, f_EDM_2d, Ef, found , &
          Bcast = .true.)
     if ( .not. found ) call die('Could not read file: '//trim(this%DEfile))

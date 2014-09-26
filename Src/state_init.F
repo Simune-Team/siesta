@@ -177,8 +177,6 @@
 !       Find required supercell
         if (gamma) then
            nsc(1:3) = 1
-           if ( .not. naiveauxcell )
-     &          call exact_sc_size(rmaxh,ucell,na_u,xa,nsc)
         else if (fixauxcell) then
            nsc(1:3) = nscold(1:3)
         else
@@ -335,7 +333,7 @@
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
-      if ( gamma .and. naiveauxcell ) then
+      if ( gamma ) then
          ! Here we create the super-cell offsets
          call re_alloc(isc_off,1,3,1,1)
          isc_off(:,:) = 0
@@ -346,8 +344,9 @@
       end if
 
       ! Initialize density matrix
-      call new_dm( auxchanged,DM_history,DM_2D )
+      call new_dm( auxchanged,DM_history,DM_2D,EDM_2D )
       Dscf => val(DM_2D)
+      Escf => val(EDM_2D)
       !if (ionode) print *, "DM after new_dm:"
       !if (ionode) call print_type(DM)
 

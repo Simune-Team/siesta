@@ -91,9 +91,9 @@
 #endif
         if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
           if (istp.eq.1)
-     &          call write_dm(slabel, nspin, DM_2D)
+     &          call write_dm(trim(slabel)//'.DM', nspin, DM_2D)
         else
-           call write_dm(slabel, nspin, DM_2D)
+           call write_dm(trim(slabel)//'.DM', nspin, DM_2D)
         end if
 #ifdef TIMING_IO
       end do
@@ -111,9 +111,9 @@
 #endif
           if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
             if (istp.eq.1)
-     &            call write_dm(slabel, nspin, DM_2D)
+     &            call write_dm(trim(slabel)//'.DM', nspin, DM_2D)
           else
-             call write_dm(slabel, nspin, DM_2D)
+             call write_dm(trim(slabel)//'.DM', nspin, DM_2D)
           end if
 #ifdef TIMING_IO
       end do
@@ -128,9 +128,11 @@
 #endif
              if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
                if (istp .eq.1)
-     &               call write_ts_dm(slabel, nspin, DM_2D, EDM_2D, Ef)
+     &               call write_ts_dm(trim(slabel)//'.TSDE', nspin,
+     &               DM_2D, EDM_2D, Ef)
              else
-                call write_ts_dm(slabel, nspin, DM_2D, EDM_2D, Ef)
+                call write_ts_dm(trim(slabel)//'.TSDE', nspin,
+     &               DM_2D, EDM_2D, Ef)
              end if 
 #ifdef TIMING_IO
       end do
@@ -139,7 +141,8 @@
 #endif
         end if ! TSrun
         if ( TS_DE_save ) then
-           call write_ts_dm(slabel, nspin, DM_2D, EDM_2D, Ef)
+           call write_ts_dm(trim(slabel)//'.TSDE', nspin,
+     &          DM_2D, EDM_2D, Ef)
         end if
       end if ! writedm
 #endif /* TRANSIESTA */

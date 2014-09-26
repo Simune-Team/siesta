@@ -371,8 +371,6 @@ C     Initialise MPI and set processor number
 !     supercell can only overlap once
       if (gamma) then
         nsc(1:3) = 1
-        if ( .not. naiveauxcell ) 
-     &       call exact_sc_size(rmaxh,ucell,na_u,xa,nsc)
       else
         ! Discussion with Jose-Soler we get this size ! NPA
         do i = 1 , 3

@@ -27,7 +27,7 @@ module m_iodm
 
 contains
         
-  subroutine read_dm( slabel, nspin, dit, sp_def, DM, found )
+  subroutine read_dm( file, nspin, dit, no_u, DM, found , Bcast )
 
 #ifdef MPI
     use mpi_siesta
@@ -36,19 +36,21 @@ contains
 ! **********************
 ! * INPUT variables    *
 ! **********************
-    character(len=*), intent(in) :: slabel
+    character(len=*), intent(in) :: file
     integer, intent(in) :: nspin
     type(OrbitalDistribution), intent(inout) :: dit
-    type(Sparsity), intent(inout) :: sp_def
+    integer, intent(in) :: no_u
     type(dSpData2D), intent(inout) :: DM
     logical, intent(out) :: found
+    logical, intent(in), optional :: Bcast
 
 ! ************************
 ! * LOCAL variables      *
 ! ************************
     type(Sparsity) :: sp
-    logical :: exists
-    integer :: iu, no_u, two(2)
+    character(len=500) :: fn
+    logical :: exists, lBcast
+    integer :: iu, two(2)
     integer, allocatable, target :: gncol(:)
 #ifdef MPI
     integer :: MPIerror
@@ -57,27 +59,27 @@ contains
     external :: io_assign, io_close
 
     if ( Node == 0 ) then
-       inquire(file=trim(slabel)//'.DM', exist=exists)
+       inquire(file=file, exist=exists)
     end if
+
+    lBcast = .false.
+    if ( present(Bcast) ) lBcast = Bcast
 
 #ifdef MPI
     call MPI_Bcast(exists,1,MPI_Logical,0, &
          MPI_Comm_World,MPIerror)
 #endif
+
+    fn = 'IO-DM: '//trim(file)
     
     found = .false.
     if ( .not. exists ) return
 
-    call attach(sp_def,nrows_g=no_u)
-
     if ( Node == 0 ) then
-       write(*,'(/,a)') 'iodm: Reading Density Matrix from files'
        call io_assign(iu)
-       open( iu, file=trim(slabel)//'.DM', &
-            form='unformatted', status='old' )
+       open( iu, file=file, form='unformatted', status='old' )
        rewind(iu)
        read(iu) two
-
     end if
 
 #ifdef MPI
@@ -105,10 +107,18 @@ contains
     gncol(1) = 1
     
     ! Read in the sparsity pattern (distributed)
-    call io_read_Sp(iu, no_u, sp, 'temp-IO',dit=dit, gncol=gncol)
+    if ( lBcast ) then
+       call io_read_Sp(iu, no_u, sp, trim(fn), gncol=gncol, Bcast=Bcast)
+    else
+       call io_read_Sp(iu, no_u, sp, trim(fn), dit=dit, gncol=gncol)
+    end if
 
     ! Read DM
-    call io_read_d2D(iu,sp,DM,nspin,'iodm' ,dit=dit, gncol=gncol)
+    if ( lBcast ) then
+       call io_read_d2D(iu,sp,DM ,nspin, trim(fn), gncol=gncol, Bcast=Bcast)
+    else
+       call io_read_d2D(iu,sp,DM ,nspin, trim(fn), dit=dit, gncol=gncol)
+    end if
 
     ! Clean-up (sp is not fully deleted, it just only resides in DM)
     call delete(sp)
@@ -128,12 +138,12 @@ contains
     
   end subroutine read_dm
   
-  subroutine write_dm(slabel, nspin, DM )
+  subroutine write_dm(file, nspin, DM )
     
 ! **********************
 ! * INPUT variables    *
 ! **********************
-    character(len=*), intent(in) :: slabel
+    character(len=*), intent(in) :: file
     integer, intent(in) :: nspin
     type(dSpData2D), intent(inout) :: DM
     
@@ -157,7 +167,7 @@ contains
 
        ! Open file
        call io_assign( iu )
-       open( iu, file=trim(slabel)//'.DM', &
+       open( iu, file=file, &
             form='unformatted', status='unknown' )
        rewind(iu)
        

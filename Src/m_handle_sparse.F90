@@ -17,6 +17,156 @@ module m_handle_sparse
 
 contains
 
+  subroutine bulk_expand(na_u,xa,lasto,cell,nsc,isc_off,DM_2D)
+    use fdf
+    use class_dSpData1D
+    use m_iodm, only : read_DM
+    use m_ts_io, only : ts_read_TSHS
+
+    ! The input parameters that govern the simulation
+    integer, intent(in) :: na_u, lasto(0:na_u)
+    real(dp), intent(in) :: xa(3,na_u), cell(3,3)
+    integer, intent(in) :: nsc(3), isc_off(3,product(nsc))
+    ! The two arrays that will be needed
+    type(dSpData2D), intent(inout) :: DM_2D
+
+    ! dummy arrays
+    type(OrbitalDistribution) :: fake_dit
+    type(Sparsity)  :: fsp
+    type(dSpData1D) :: tmp_1D
+    type(dSpData2D) :: fDM_2D
+    real(dp) :: fcell(3,3), fkdispl(3), fEf, fQtot, fTemp
+    real(dp), pointer :: fxa(:,:) => null()
+    integer :: fnsc(3), fna_u, fno_u, fnspin, fkscell(3,3), at, Rep(3), fn_s
+    integer, pointer :: flasto(:) => null(), fisc_off(:,:) => null()
+
+    integer :: allowed(na_u), itmp
+    character(len=400) :: HSfile, DMfile, ln
+    logical :: d_log
+    type(block_fdf) :: bfdf
+    type(parsed_line), pointer :: pline => null()
+
+    ! If the block does not exist, we might as well return
+    if ( .not. fdf_block('DM.Init.Bulk',bfdf) ) return
+
+    ! Using this method we allow all interactions to be
+    ! initialized (default)
+    do at = 1 , na_u
+       allowed(at) = at
+    end do
+
+    ! Read in each segment and copy data!
+    do while ( fdf_bline(bfdf,pline) )
+       if ( fdf_bnnames(pline) == 0 ) cycle ! skip empty lines
+
+       ! Get the name of the segment that we will copy
+       ln = ' '
+       ln = fdf_bnames(pline,1)
+       
+       ! we search for the fdf-flags
+       HSfile = ' '
+       HSfile = fdf_get('DM.Init.Bulk.Segment.'//trim(ln),'NONE')
+       ! Now we have all required information
+       if ( .not. file_exists(HSfile) ) then
+          write(*,*) trim(HSfile)
+          call die('You at least need to supply the TSHS file for &
+               &bulk segment '//trim(ln)//'.')
+       end if
+
+       ! Get the repetitions
+       Rep(1) = fdf_get('DM.Init.Bulk.Segment.'//trim(ln)//'.Rep.A1',1)
+       Rep(2) = fdf_get('DM.Init.Bulk.Segment.'//trim(ln)//'.Rep.A2',1)
+       Rep(3) = fdf_get('DM.Init.Bulk.Segment.'//trim(ln)//'.Rep.A3',1)
+
+       ! We first try and guess the DM file
+       at = len_trim(HSfile)
+       DMfile = fdf_get('DM.Init.Bulk.Segment.'//trim(ln)//'.DM', &
+            HSfile(1:at-4)//'DM')
+       if ( .not. file_exists(DMfile) ) then
+          DMfile = fdf_get('DM.Init.Bulk.Segment.'//trim(ln)//'.DM', &
+               HSfile(1:at-4)//'TSDE')
+       end if
+       if ( .not. file_exists(DMfile) ) then
+          call die('DM file could not be found, have you supplied an &
+               erroneous path?')
+       end if
+
+       ! Get the starting atom we need to copy into!
+       at = fdf_get('DM.Init.Bulk.Segment.'//trim(ln)//'.Atom',0)
+       if ( at == 0 ) then
+          call die('You need to supply the starting atom for the &
+               &copy operation!')
+       end if
+
+       ! We have gathered all needed information!
+
+       ! We require a TSHS file as that file contains
+       ! all necessary information.
+       call ts_read_TSHS(HSfile, &
+            d_log, d_log, d_log, &
+            fcell, fnsc, fna_u, fno_u, fnspin,  &
+            fkscell, fkdispl, &
+            fxa, flasto, &
+            fsp, fDM_2D, tmp_1D, fisc_off, &
+            fEf, fQtot, fTemp, &
+            itmp, itmp, &
+            Bcast=.true.)
+       fn_s = product(fnsc)
+
+       ! Clean-up, we do not need the Hamilton and overlap
+       call delete(fDM_2D)
+       call delete(tmp_1D)
+       call delete(fsp)
+
+       ! Luckily is the TSDE and the DM file
+       ! exactly the same, except that TSDE has an extra EDM and Ef
+       ! at the end, we do not care about that! :)
+       ! read in DM file
+
+       call read_DM( DMfile, fnspin, fake_dit, fno_u, &
+            fDM_2D, d_log , & ! we have already checked that it exists
+            Bcast = .true.)
+       if ( .not. d_log ) then
+          call die('Something went wrong')
+       end if
+
+       call expand_spd2spd_2D(fna_u,flasto,fxa,fDM_2D,&
+            fcell, Rep, fn_s, fisc_off, &
+            na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, at, &
+            print = .true., allowed_a = allowed)
+
+       ! De-allocate before reading the next thing...
+       call delete(fDM_2D)
+       deallocate(fxa) ; nullify(fxa)
+       deallocate(flasto) ; nullify(flasto)
+       deallocate(fisc_off) ; nullify(fisc_off)
+
+    end do
+
+  contains
+    
+    function file_exists(file) result(exist)
+      use parallel, only : Node
+#ifdef MPI
+      use mpi_siesta, only : MPI_Bcast, MPI_Comm_World, MPI_Logical
+#endif
+      character(len=*), intent(in) :: file
+      logical :: exist
+#ifdef MPI
+      integer :: MPIerror
+#endif
+      ! Now we have all required information
+      if ( Node == 0 ) then
+         inquire(file=file, exist=exist)
+      end if
+#ifdef MPI
+      call MPI_Bcast(exist,1,MPI_Logical, 0, &
+           MPI_Comm_World, MPIerror)
+#endif
+    end function file_exists
+
+  end subroutine bulk_expand
+
   subroutine expand_spd2spd_2D(na_i,lasto_i,xa_i,in,&
        cell_i, rep_i, n_s_i, sc_off_i, &
        na_o,xa_o,lasto_o,out,cell_o,n_s_o,sc_off_o, at, &
@@ -110,18 +260,39 @@ contains
      i1_loop: do i1 = 0 , rep_i(1) - 1
 
       ! The expanded atomic position
-      xc_i(:) = xa_i(:,ia_i) - xa_i(:,1) + &
-           cell_i(:,1)*i1+cell_i(:,2)*i2+cell_i(:,3)*i3
+      if ( na_i == 1 ) then
+         xc_i(:) = xa_i(:,ia_i)
+         ! As we only compare one atom, we will
+         ! compare atomic distances instead of coordinates
+         ! in the below loop. Hence, we need not expand
+         ! the cell!
+      else
+         xc_i(:) = xa_i(:,ia_i) - xa_i(:,1) + &
+              cell_i(:,1)*i1+cell_i(:,2)*i2+cell_i(:,3)*i3
+      end if
 
       ! Step atom index in out-put array
       iat = iat + 1
 
-      xc_o(:) = xa_o(:,iat) - xa_o(:,at)
+      if ( na_i == 1 ) then
+         xc_o(:) = xa_o(:,iat)
+      else
+         xc_o(:) = xa_o(:,iat) - xa_o(:,at)
+      end if
       
-      if ( maxval(abs(xc_o - xc_i)) > xa_EPS ) then
-         print *,'ia',ia_i,'matching',iat,xc_o-xc_i
+      if ( maxval(abs(xc_o - xc_i)) > xa_EPS .and. na_i > 1 ) then
+         print *,'ia',ia_i,'matching',iat,xc_o-xc_i,i1,i2,i3
          call die('Atomic coordinates does not coincide, &
               &have you employed correct ordering for expansion A1->A2->A3?')
+      end if
+
+      ! Check that the number of orbitals is the same
+      if ( lasto_i(ia_i) - lasto_i(ia_i-1) /= &
+           lasto_o(iat) - lasto_o(iat-1) ) then
+         write(*,*) 'ia',ia_i,' has',lasto_i(ia_i) - lasto_i(ia_i-1), &
+              'ca',iat,' has',lasto_o(iat) - lasto_o(iat-1), &
+              ' orbitals'
+         call die('Not the same atom! Please correct')
       end if
 
       ! loop over the orbitals of this atom
@@ -151,10 +322,15 @@ contains
         orb_o = ucorb(o_col(i_o),no_o) - lasto_o(ao-1)
         ! Do not allow overwriting DM outside of region.
         if ( .not. any(ao==lallow) ) cycle
-        xj_o(:) = xa_o(:,ao) - xa_o(:,at) + &
+        if ( na_i == 1 ) then
+           xj_o(:) = xa_o(:,ao) - xc_o(:)
+        else
+           xj_o(:) = xa_o(:,ao) - xa_o(:,at)
+        end if
+        xj_o(:) = xj_o(:) + &
              cell_o(:,1) * sc_off_o(1,i_s) + &
              cell_o(:,2) * sc_off_o(2,i_s) + &
-             cell_o(:,3) * sc_off_o(3,i_s)        
+             cell_o(:,3) * sc_off_o(3,i_s) 
  
         ! Now we need to figure out all the orbitals
         ! that has the same meaning in both sparsity patterns
@@ -170,8 +346,14 @@ contains
            ! orbital center, so we check the orbital
            ! index to be the same as well...
            if ( orb_i /= orb_o ) cycle
-           
-           xj_i(:) = xa_i(:,i) - xa_i(:,1) + &
+
+           ! for na_i == 1, we will always find 'i = iaorb(i_col(i_i)...) == 1'
+           if ( na_i == 1 ) then
+              xj_i(:) = xa_i(:,i) - xc_i
+           else
+              xj_i(:) = xa_i(:,i) - xa_i(:,1) 
+           end if
+           xj_i(:) = xj_i(:) + &
                 cell_i(:,1) * sc_off_i(1,i_s) + &
                 cell_i(:,2) * sc_off_i(2,i_s) + &
                 cell_i(:,3) * sc_off_i(3,i_s) + &
@@ -209,8 +391,8 @@ contains
     io_i = copy(1)
     io_o = copy(2)
     if ( Node == 0 ) then
-       write(*,'(a,''[ '',i0,'', '',i0,'']'',a,i0)') &
-            'Expanding ',copy,' elements on node ',0
+       !write(*,'(a,''[ '',i0,'', '',i0,'']'',a,i0)') &
+       !     'Expanding ',copy,' elements on node ',0
     end if
     
 #ifdef MPI
@@ -218,8 +400,8 @@ contains
        do iat = 1 , Nodes - 1
           call MPI_Recv(copy,2,MPI_Integer, &
                iat, 0, MPI_Comm_World, MPIstatus, MPIerror)
-          write(*,'(a,''[ '',i0,'', '',i0,'']'',a,i0)') &
-               'Expanding ',copy,' elements on node ',iat
+          !write(*,'(a,''[ '',i0,'', '',i0,'']'',a,i0)') &
+          !     'Expanding ',copy,' elements on node ',iat
           io_i = io_i + copy(1)
           io_o = io_o + copy(2)
        end do

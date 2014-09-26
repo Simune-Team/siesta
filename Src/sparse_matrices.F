@@ -42,21 +42,15 @@
       use alloc,           only : de_alloc
       implicit none
 
-      !call de_alloc( listh,       'listh',       'sparseMat' )
-      !call de_alloc( listhptr,    'listhptr',    'sparseMat' )
-      !call de_alloc( numh,        'numh',        'sparseMat' )
-
-      call de_alloc( Dold,        'Dold',        'sparseMat' )
-!      call de_alloc( Dscf,        'Dscf',        'sparseMat' )
-!      call de_alloc( Escf,        'Escf',        'sparseMat' )
+      call de_alloc( Dold, 'Dold', 'sparseMat' )
       call delete( DM_2D ) ; nullify(Dscf)
       call delete( EDM_2D ) ; nullify(Escf)
-      call de_alloc( H_kin,       'H_kin',       'sparseMat' )
+      call de_alloc( H_kin, 'H_kin', 'sparseMat' )
       call delete( H_vkb_1D )
       call delete( S_1D ) ; nullify(S)
       call delete( xij_2D ) ; nullify(xijo)
       call delete( H_2D ) ; nullify(H)
-      call delete( sparse_pattern )
+      call delete( sparse_pattern ) ; nullify(numh,listhptr,listh)
       call delete( DM_history )
       call delete( block_dist )
 

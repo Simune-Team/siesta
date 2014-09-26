@@ -121,9 +121,15 @@ contains
        write(*,'(a)') 'transiesta: Established a near-optimal partition &
             &for the tri-diagonal matrix.'
        write(*,'(a)') 'transiesta: Size of the partitions:'
-       do i = 1 , N_tri_part
-          write(*,'(tr15,i3,'':'',tr1,i6)') i,tri_parts(i)
+
+       write(*,'(tr2,a)',advance='no') '['
+       do i = 1 , N_tri_part - 1
+          write(*,'(tr1,i0,a)',advance='no') tri_parts(i),', '
+          if ( mod(i,8) == 0 ) then ! partition in blocks of 8
+             write(*,'(/,tr3)',advance='no') !
+          end if
        end do
+       write(*,'(tr1,i0,a)') tri_parts(N_tri_part),' ]'
        write(*,'(a,i0,a,i0)') 'transiesta: Matrix elements in tri / full: ', &
             els,' / ',nrows_g(ts_sp_uc)**2
     end if
