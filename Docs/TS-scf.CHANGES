@@ -1,4 +1,15 @@
 ----------------------------------------------------
+September 26, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-205
+Bugfix for linking in SIESTA
+
+* Initializing from bulk requires a TSHS file,
+  however, the m_ts_io.o file was not linked against
+  SIESTA. It is now added.
+
+modified:
+  Src/Makefile
+
+----------------------------------------------------
 September 26, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-204
 Bugfix for gamma and supercell, added generic Bulk DM init
 

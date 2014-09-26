@@ -318,9 +318,12 @@ siesta: check-siesta what version \
 
 #------------------------------------------------------------------------
 #----------------------------------------------------------------------------
+# TranSIESTA objects needed for siesta
+OBJS += m_ts_io.o
+
 # TranSIESTA...
 TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux.o m_ts_kpoints.o \
-         m_ts_iodm.o m_ts_io.o \
+         m_ts_iodm.o \
          m_ts_electrode.o m_ts_gf.o \
 	 m_ts_cctype.o ts_init.o ts_show_regions.o m_ts_electype.o \
 	 m_ts_method.o m_ts_elec_se.o \
