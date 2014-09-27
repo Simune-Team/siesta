@@ -821,7 +821,13 @@ contains
           write(*,7)  '  Chemical shift', Elecs(i)%mu%mu/eV,'eV'
           write(*,1)  '  Bulk values in electrode', Elecs(i)%Bulk
           if ( product(Elecs(i)%Rep) > 1 ) then
-             write(*,1)  '  Pre-expansion to reduce computation', Elecs(i)%pre_expand
+             if ( Elecs(i)%pre_expand == 0 ) then
+                write(*,10)  '  Pre-expansion to reduce computation', 'none'
+             else if ( Elecs(i)%pre_expand == 1 ) then
+                write(*,10)  '  Pre-expansion to reduce computation', 'GS'
+             else
+                write(*,10)  '  Pre-expansion to reduce computation', 'GS, H, S'
+             end if
           end if
           if ( Elecs(i)%DM_update == 0 ) then
              write(*,11)  '  Cross-terms is not updated'

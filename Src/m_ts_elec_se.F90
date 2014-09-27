@@ -47,7 +47,7 @@ contains
     nou = El%no_used
     no  = TotUsedOrbs(El)
     nq  = product(El%Rep)
-    if ( El%pre_expand .and. nq > 1 ) then
+    if ( El%pre_expand > 0 .and. nq > 1 ) then
        nou = no
        nq = 1
     end if
@@ -243,7 +243,7 @@ contains
        ! \Sigma = Z*S - H - \Sigma_bulk
        do jo = 1 , no_s
           do io = 1 , no_s
-             work(io,jo,1) = work(io,jo,2) - Sigma(io,jo)
+             work(io,jo,2) = work(io,jo,2) - Sigma(io,jo)
           end do
        end do
 
@@ -252,12 +252,12 @@ contains
        do jo = 1 , no_s
           do io = 1 , jo - 1
              GammaT(jo,io) = zi * ( &
-                  work(io,jo,1)-dconjg(work(jo,io,1)) )
+                  work(io,jo,2)-dconjg(work(jo,io,2)) )
              GammaT(io,jo) = zi * ( &
-                  work(jo,io,1)-dconjg(work(io,jo,1)) )
+                  work(jo,io,2)-dconjg(work(io,jo,2)) )
           end do
           GammaT(jo,jo) = zi * ( &
-               work(jo,jo,1)-dconjg(work(jo,jo,1)) )
+               work(jo,jo,2)-dconjg(work(jo,jo,2)) )
        end do
 
     else
@@ -315,10 +315,25 @@ contains
     if ( nq == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
-       ! We do not need to copy over GS, as it is
-       ! used correctly
-       !work(:,:,1) = GS(:,:,1)
-       work(:,:,2) = ZEnergy * S(:,:,1) - H(:,:,1)
+       ! In case the pre-expansion is not done on H, S
+       if ( El%pre_expand == 1 .and. product(El%Rep) > 1 ) then
+
+          iuo = El%no_used
+          work(:,1:iuo,1) = ZEnergy * S(:,1:iuo,1) - H(:,1:iuo,1)
+          
+          iq = product(El%Rep)
+          call update_UC_expansion_A(iuo,no_s,El,na_u,lasto,&
+               iq,work(1,1,1),nwork,work(1,1,2))
+          
+       else
+
+          ! We do not need to copy over GS, as it is
+          ! used correctly
+       
+          !work(:,:,1) = GS(:,:,1)
+          work(:,:,2) = ZEnergy * S(:,:,1) - H(:,:,1)
+
+       end if
 
     else
 

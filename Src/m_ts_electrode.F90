@@ -639,7 +639,7 @@ contains
     final_invert = nq /= 1 .or. nuo_E /= nuou_E
     no_X = nuou_E * nq
     n_X  = no_X ** 2
-    pre_expand = El%pre_expand .and. nq > 1
+    pre_expand = El%pre_expand > 0 .and. nq > 1
 
     ! Calculate offsets
     n_s = size(El%isc_off,dim=2)
@@ -651,6 +651,12 @@ contains
 
        bkpt(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * nq &
             * El%no_used ** 2 / 1024._dp ** 2
+       if ( pre_expand .and. El%pre_expand == 1 ) then
+          bkpt(1) = 16._dp * El%nspin * nkpnt * 2 &
+               * El%no_used ** 2 / 1024._dp ** 2
+          bkpt(1) = bkpt(1) + 16._dp * El%nspin * nkpnt * NEn * nq &
+               * El%no_used ** 2 / 1024._dp ** 2
+       end if
        ! Correct estimated file-size
        if ( pre_expand ) bkpt(1) = bkpt(1) * nq
        if ( bkpt(1) > 2001._dp ) then
@@ -882,7 +888,7 @@ contains
        if ( IONode ) then
           write(uGF) ikpt, 1, ce(1) ! k-point and energy point
           if ( nuo_E /= nuou_E ) then
-             if ( pre_expand ) then
+             if ( pre_expand .and. El%pre_expand > 1 ) then
                 call update_UC_expansion_A(nuou_E,no_X,El, &
                      El%na_used,El%lasto_used,nq,Hq,n_X,X)
                 write(uGF) X
@@ -896,7 +902,7 @@ contains
           else
              H00 => zHS(      1:nq*nS  )
              S00 => zHS(nq*nS+1:nq*nS*2)
-             if ( pre_expand ) then
+             if ( pre_expand .and. El%pre_expand > 1 ) then
                 call update_UC_expansion_A(nuo_E,no_X,El, &
                      El%na_used,El%lasto_used,nq,H00,n_X,X)
                 write(uGF) X

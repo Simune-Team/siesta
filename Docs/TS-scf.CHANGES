@@ -1,4 +1,27 @@
 ----------------------------------------------------
+September 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-206
+Allowed reduction of memory usage for repetition
+
+* Now pre-expansions comes in 3 variants
+   1. No expansion (least memory requirement,
+      highest computational time)
+   2. Expansion of GS matrix. Good balance
+      between memory and efficiency. H, S
+      are expanded at every loop, but they are
+      easily expanded
+   3. Expansion of everything, requires the 
+      most amount of memory, but also takes
+      the least time. (DEFAULT)
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 September 26, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-205
 Bugfix for linking in SIESTA
 

@@ -353,7 +353,7 @@ contains
 ! * LOCAL variables   *
 ! *********************
     real(dp), parameter :: EPS = 1.d-7
-    integer :: read_Size
+    integer :: read_Size, read_Size_HS
 
 #ifdef MPI
     integer :: MPIerror, Request, Status(MPI_Status_Size)
@@ -380,11 +380,14 @@ contains
        iNodeStep = -1
     end if
 
-    read_Size = El%no_used ** 2 * product(El%Rep) ! no_GS * no_GS * nq
-    if ( El%pre_expand ) then
+    read_Size_HS = El%no_used ** 2 * product(El%Rep) ! no_GS * no_GS * nq
+    if ( El%pre_expand > 0 ) then
        ! if a pre-expansion has been performed we 
        ! correct the size
-       read_Size = read_Size * product(El%Rep)
+       read_Size = read_Size_HS * product(El%Rep)
+    end if
+    if ( El%pre_expand > 1 ) then
+       read_Size_HS = read_Size
     end if
 
     ! Check if the number of energy points requested are 
@@ -470,9 +473,9 @@ contains
           end if
 
 #ifdef MPI
-          call MPI_Bcast(El%HA(1,1,1),read_Size,MPI_Double_Complex, &
+          call MPI_Bcast(El%HA(1,1,1),read_Size_HS,MPI_Double_Complex, &
                0,MPI_Comm_World,MPIerror)
-          call MPI_Bcast(El%SA(1,1,1),read_Size,MPI_Double_Complex, &
+          call MPI_Bcast(El%SA(1,1,1),read_Size_HS,MPI_Double_Complex, &
                0,MPI_Comm_World,MPIerror)
 #endif
        end if 
@@ -635,10 +638,10 @@ contains
 ! ***********************
     character(len=FILE_LEN) :: curGFfile  ! Name of the GF file
 
-    integer :: nspin,nkpar,na,no,fReps(3),NEn
+    integer :: nspin,nkpar,na,no,fReps(3),NEn, pre_expand
     real(dp) :: mu ! The Fermi energy shift due to a voltage
     real(dp) :: ucell(3,3)
-    logical :: errorGf , pre_expand
+    logical :: errorGf
 
     ! we should only read if the GF-should exist
     if ( .not. El%out_of_core ) return
@@ -720,9 +723,9 @@ contains
        end if
 
        if ( product(El%Rep) > 1 ) then
-          if ( pre_expand .neqv. El%pre_expand ) then
+          if ( pre_expand /= El%pre_expand ) then
              write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
-             write(*,*) 'read_Green: ERROR: pre-expanded is not expected'
+             write(*,*) 'read_Green: ERROR: pre-expansion not consistent'
              errorGF = .true.
           end if
        end if
@@ -796,10 +799,10 @@ contains
 ! Helpers..
     character(FILE_LEN) :: curGFfile
     real(dp) :: ucell(3,3)
-    integer :: iEn
+    integer :: iEn, pre_expand
     integer :: i, j, ia
     real(dp) :: ktmp(3), kpt(3)
-    logical :: localErrorGf, eXa, pre_expand
+    logical :: localErrorGf, eXa
 
     ! we should only read if the GF-should exist
     if ( .not. El%out_of_core ) return
@@ -896,7 +899,7 @@ contains
        localErrorGf = .true.
     end if
     if ( product(El%Rep) > 1 ) then
-       if ( pre_expand .neqv. El%pre_expand ) then
+       if ( pre_expand /= El%pre_expand ) then
           write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
           write(*,*)"Expecting a pre-expanded self-energy!"
           localErrorGf = .true.

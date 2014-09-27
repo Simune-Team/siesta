@@ -72,13 +72,15 @@ module m_ts_electype
      integer :: no_used = 0
      ! repetitions
      integer :: Rep(3) = 1
-     ! Preexpand before saving Gf
-     logical :: pre_expand = .true.
+     ! Pre-expand before saving Gf (we default to all)
+     ! In this way will the user 
+     integer :: pre_expand = 2
      ! chemical potential of the electrode
      type(ts_mu), pointer :: mu => null()
      ! infinity direction
      integer :: inf_dir = INF_NEGATIVE
      ! transport direction (determines H01)
+     ! And is considered with respect to the electrode direction...
      integer :: t_dir = 3 
      ! whether the electrode should be bulk
      logical :: Bulk = .true.
@@ -320,7 +322,21 @@ contains
           this%Bulk = fdf_bboolean(pline,1,after=1)
 
        else if ( leqi(ln,'pre-expand') ) then
-          this%pre_expand = fdf_bboolean(pline,1,after=1)
+          tmp = fdf_bnames(pline,2)
+          if ( leqi(tmp,'all') .or. leqi(tmp,'everything') ) then
+             ! We expand H, S and GS before writing...
+             this%pre_expand = 2
+          else if ( leqi(tmp,'Green') .or. &
+               leqi(tmp,'surface') ) then
+             ! We expand only the surface Green's function
+             this%pre_expand = 1
+          else if ( leqi(tmp,'none') ) then
+             ! We do not expand anything
+             this%pre_expand = 0
+          else
+             call die('Error in option ''pre-expand'', please &
+                  &correct!')
+          end if
 
        else if ( leqi(ln,'calculate-band-bottom') ) then
           this%BandBottom = fdf_bboolean(pline,1,after=1)

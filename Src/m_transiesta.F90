@@ -143,6 +143,14 @@ contains
 
        if ( .not. Calc_Forces .and. IONode ) then
           write(*,'(a)') 'transiesta: *** Notice that the forces are NOT updated ***'
+          write(*,'(a)') 'transiesta: *** Will set the forces to zero ***'
+       end if
+       if ( .not. Calc_Forces ) then
+          if ( IONode ) then
+             write(*,'(a)') 'transiesta: *** The forces are NOT updated ***'
+             write(*,'(a)') 'transiesta: ***  Will set the forces to 0  ***'
+          end if
+          EDM(:,:) = 0._dp
        end if
 
        call timer('TS_init',2)
@@ -170,10 +178,12 @@ contains
 
        ! Allocate the non-repeated hamiltonian and overlaps...
        no_used = Elecs(iEl)%no_used
-       if ( Elecs(iEl)%pre_expand ) then
+       if ( Elecs(iEl)%pre_expand > 1 ) then ! > 1 also expand H, S before writing
           no_used = TotUsedOrbs(Elecs(iEl))
           nq(iEl) = 1
        end if
+       ! If we using bulk electrodes, we need not the Hamiltonian, 
+       ! nor the overlap...
        call re_alloc(Elecs(iEl)%HA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
        call re_alloc(Elecs(iEl)%SA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
 
@@ -183,7 +193,7 @@ contains
           no_used2 = no_used
        else 
           ! This is only for having space for GA
-          if ( Elecs(iEl)%pre_expand ) then
+          if ( Elecs(iEl)%pre_expand > 0 ) then
              no_used2 = no_used
           else
              no_used2 = Elecs(iEl)%no_used
@@ -197,7 +207,7 @@ contains
        ! When the UC_expansion_Sigma_GammaT is called:
        ! first the GAA is "emptied" of information and then
        ! Gamma is filled.
-       if ( .not. Elecs(iEl)%pre_expand ) no_used2 = Elecs(iEl)%no_used
+       if ( Elecs(iEl)%pre_expand == 0 ) no_used2 = Elecs(iEl)%no_used
        Elecs(iEl)%GA => Elecs(iEl)%Gamma(1:no_used,1:no_used2)
 
     end do
@@ -608,13 +618,17 @@ contains
     tmp_mem = 0._dp
     do i = 1 , N_Elec
        f = 1
-       if ( Elecs(i)%pre_expand ) f = product(Elecs(i)%Rep)
        if ( IsVolt ) then
-          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2
-          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) ** 2
+          if ( Elecs(i)%pre_expand > 1 ) f = product(Elecs(i)%Rep)
+          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2 !H,S
+          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) ** 2 ! GS/Gamma
        else
-          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 3
+          if ( Elecs(i)%pre_expand > 1 ) f = product(Elecs(i)%Rep) ! H,S
+          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2
+          if ( Elecs(i)%pre_expand > 0 ) f = product(Elecs(i)%Rep) ! GS
+          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used
        end if
+       
     end do
     mem = mem + tmp_mem * 16._dp
 
