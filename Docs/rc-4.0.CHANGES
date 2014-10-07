@@ -1,6 +1,17 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2014-10-07  9:40:00 GMT                                 rc-4.0-pl-2
+Fix 'clean' rule in  MPI Makefile
+
+The interface library libmpi_f90.a was not removed when issuing a
+'make clean', possibly leading to strange errors if the MPI
+compilation environment was later changed.
+
+modified:
+  Src/MPI/Makefile
+
+----------------------------------------------------------------------
 2014-10-07  9:35:00 GMT                                 rc-4.0-pl-1
 Fix shortcomings in reading of empirical potential block
 
