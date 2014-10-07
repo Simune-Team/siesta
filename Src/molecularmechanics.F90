@@ -16,15 +16,13 @@
 
       private
 
-      integer, parameter    :: maxMMpot = 10
-      integer, save         :: nMMpot = 0
-      integer, save         :: nMMpotptr(2,maxMMpot)
-      integer, save         :: nMMpottype(maxMMpot)
-      logical, save         :: PotentialsPresent = .false.
-      real(dp), save        :: MMcutoff
-      real(dp), save        :: s6_grimme
-      real(dp), save        :: d_grimme
-      real(dp), save        :: MMpotpar(6,maxMMpot)
+      integer, save           :: nMMpot = 0
+      integer, pointer, save  :: nMMpotptr(:,:) => null() ! (2,maxMMpot)
+      integer, pointer, save  :: nMMpottype(:)  => null() ! (maxMMpot)
+      real(dp), save          :: MMcutoff
+      real(dp), save          :: s6_grimme
+      real(dp), save          :: d_grimme
+      real(dp), pointer, save :: MMpotpar(:,:) => null() ! (6,maxMMpot)
 
       public :: inittwobody, twobody
 
@@ -32,7 +30,6 @@
 
       subroutine inittwobody()
       use fdf
-      use units,   only : eV, Ang
       use sys,     only : die
       use parallel,only : Node
       character(len=80)  :: potential
@@ -40,6 +37,7 @@
       real(dp), parameter   :: s6_grimme_default = 1.66_dp    ! Fit by Roberto Peverati for DZ basis sets
 
       character(len=80)  :: scale
+      integer            :: maxMMpot
       integer            :: ni
       integer            :: nn
       integer            :: nr
@@ -49,42 +47,31 @@
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
-#ifdef DEBUG
-      call write_debug( '  PRE inittwobody' )
-#endif
-!     Allocation of arrays formerly done here moved
-!     to top of module, as they are really static for now
-      MMpotpar(1:6,1:maxMMpot) = 0.0_dp
+      ! initialize all the arrays, and allocate them dynamically.
+      call prep_arrays()
+      ! capture the size of the potential arrays
+      maxMMpot = nMMpot
 
 !     Get potential cutoff
       MMcutoff = fdf_physical('MM.Cutoff',30.0d0,'Bohr')
 
 !     Set MM units of energy for potential parameters
       scale = fdf_string( 'MM.UnitsEnergy','eV' )
-      if (scale.eq.'eV') then
-        Escale = eV
-      else
-        Escale = 1.0_dp
-      endif
+      ! this will allow arbitrary energy conversions
+      Escale = fdf_convfac(scale,'Ry')
       scale = fdf_string( 'MM.UnitsDistance','Ang' )
-      if (scale.eq.'Ang') then
-        Dscale = Ang
-      else
-        Dscale = 1.0_dp
-      endif
+      ! this will allow arbitrary length conversions
+      Dscale = fdf_convfac(scale,'Bohr')
 
 !     Read in data from block
-      nMMpot = 0
-      PotentialsPresent = fdf_block('MM.Potentials',bfdf)
-      if (PotentialsPresent) then
+      nMMpot = 0 ! reset to count the actual number of potentials
+      if (fdf_block('MM.Potentials',bfdf)) then
         if (Node.eq.0) then
           write(6,"(a)") "Reading two-body potentials"
         endif
 
-        do 
-
-!         Read and parse data line
-          if (.not. fdf_bline(bfdf,pline)) exit
+!       Read and parse data line
+        do while ( fdf_bline(bfdf,pline) )
 
           nn = fdf_bnnames(pline)
           ni = fdf_bnintegers(pline)
@@ -95,7 +82,7 @@
             if (leqi(potential,'C6')) then
               nMMpot = nMMpot + 1
               if (nMMpot .gt. maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
+                call die('MM: Too many MM potentials - something went wrong!')
               endif
               nMMpottype(nMMpot) = 1
               if (ni .lt. 2) then
@@ -103,8 +90,10 @@
               endif
               nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
               nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "C6 - two-body potential between ", &
-                    fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              if (node == 0) then
+                  write(6,"(a,i3,a,i3)") "C6 - two-body potential between ", &
+                  fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+               endif
               if (nr .ge. 2) then
 !               C6 : Parameter one is C6 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
@@ -118,7 +107,7 @@
             elseif (leqi(potential,'C8')) then
               nMMpot = nMMpot + 1
               if (nMMpot .gt. maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
+                call die('MM: Too many MM potentials - something went wrong!')
               endif
               nMMpottype(nMMpot) = 2
               if (ni .lt. 2) then
@@ -141,7 +130,7 @@
             elseif (leqi(potential,'C10')) then
               nMMpot = nMMpot + 1
               if (nMMpot .gt. maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
+                call die('MM: Too many MM potentials - something went wrong!')
               endif
               nMMpottype(nMMpot) = 3
               if (ni .lt. 2) then
@@ -164,7 +153,7 @@
             elseif (leqi(potential,'HARM')) then
               nMMpot = nMMpot + 1
               if (nMMpot .gt. maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
+                call die('MM: Too many MM potentials - something went wrong!')
               endif
               nMMpottype(nMMpot) = 4
               if (ni .lt. 2) then
@@ -187,7 +176,7 @@
             elseif (leqi(potential,'Grimme')) then
               nMMpot = nMMpot + 1
               if (nMMpot.gt.maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
+                call die('MM: Too many MM potentials - something went wrong!')
               endif
               nMMpottype(nMMpot) = 5
               if (ni.lt.2) then
@@ -221,9 +210,49 @@
 
         if (Node .eq. 0)  call plot_functions()
       endif
-#ifdef DEBUG
-      call write_debug( '  POS inittwobody' )
-#endif
+
+      contains 
+        
+        ! dynamically create the arrays to allow 
+        ! arbitrary number of potentials attached.
+        subroutine prep_arrays()
+          use alloc, only : re_alloc
+          type(block_fdf)            :: bfdf
+          type(parsed_line), pointer :: pline
+          integer :: nn,ni,nr
+          character(len=80) :: potential
+
+          ! the global number of potentials
+          nMMpot = 0
+          if ( .not. fdf_block('MM.Potentials',bfdf) ) return
+          do while ( fdf_bline(bfdf,pline) )
+             
+             ! ensure that we can read the content
+             nn = fdf_bnnames(pline)
+             potential = fdf_bnames(pline,1)
+             ! we have a potential line... 
+             ! note that if it an invalid line, this will 
+             ! assert that we have (allocated potentials) > (actual potentials)
+             if ( nn > 0 ) nMMpot = nMMpot + 1
+
+          end do
+
+          if ( nMMpot == 0 ) return
+
+          ! allocate them
+          call re_alloc(nMMpotptr , 1 , 2 , 1 , nMMpot, &
+               'nMMpotptr','twobody')
+          call re_alloc(nMMpottype , 1 , nMMpot, &
+               'nMMpottype','twobody')
+          call re_alloc(MMpotpar , 1 , 6 , 1 , nMMpot, &
+               'nMMpotpar','twobody')
+          ! initialize them to zero
+          nMMpotptr = 0 ! ensures that we don't accidentally assign wrong potential to a species
+          nMMpottype = 0
+          MMpotpar = 0._dp
+
+        end subroutine prep_arrays
+
       end subroutine inittwobody
 
       subroutine twobody( na, xa, isa, cell, emm, ifa, fa, istr, stress )
@@ -329,14 +358,8 @@
       real(dp)                :: mm_stress(3,3)
       integer                 :: jx
 
-      if (.not. PotentialsPresent) return
-
 !     Start timer
       call timer('MolMec', 1 )
-
-!     Allocate workspace arrays
-      nullify(lvalidpot)
-      call re_alloc( lvalidpot, 1, nMMpot, 'lvalidpot', 'twobody' )
 
 !     Initialise energy and mm_stress
       emm = 0.0_dp
@@ -354,6 +377,16 @@
         vol = volcel(cell)
         rvol = 1.0_dp/vol
       endif
+
+      ! quick return if no potentials are present
+      if ( nMMpot == 0 ) then
+         call timer('MolMec',2)
+         return
+      end if
+
+!     Allocate workspace arrays
+      nullify(lvalidpot)
+      call re_alloc( lvalidpot, 1, nMMpot, 'lvalidpot', 'twobody' )
 
 !     Loop over first atom
       do i = 1,na
@@ -655,7 +688,7 @@
 !     Print and add MM contribution to stress
 !
       if (istr.ne.0) then
-        if (Node .eq. 0 .and. PotentialsPresent)  then
+        if (Node .eq. 0 .and. nMMpot > 0)  then
           write(6,'(/,a,6f12.2)')  'MM-Stress (kbar):',   &
                (mm_stress(jx,jx)/kbar,jx=1,3),            &
                 mm_stress(1,2)/kbar,                      &

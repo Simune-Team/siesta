@@ -1,0 +1,14 @@
+** CHANGES (fixes only) on rc-4.0 branch
+
+----------------------------------------------------------------------
+2014-10-07  9:35:00 GMT                                 rc-4.0-pl-1
+Fix shortcomings in reading of empirical potential block
+
+* The number of potential lines is now arbitrary.
+* Units handling has been improved, to allow arbitrary
+  length and energy units.
+
+(Nick P. Andersen)
+
+modified:
+  Src/molecularmechanics.F90
