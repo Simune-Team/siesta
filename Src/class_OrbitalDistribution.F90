@@ -173,7 +173,7 @@
          ! call newDistribution(nrows_g(sp),MPI_Comm_Self,dit)
          ! TODO Talk with Alberto about adding: "lproc = this%data%nodes - MOD(proc,this%data%nodes)"
          if ( nels /= this%data%blocksize ) &
-              call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
+              call die('Contact Nick Papior Andersen, nickpapior@gmail.com nel')
          nl = this%data%blocksize
 #endif
       else  ! block-cyclic distribution
@@ -238,7 +238,7 @@
          ! is 
          ! call newDistribution(nrows_g(sp),MPI_Comm_Self,dit)
          if ( il > this%data%blocksize ) &
-              call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
+              call die('Contact Nick Papior Andersen, nickpapior@gmail.com l2g')
 
          ig = il
 #endif
@@ -298,7 +298,7 @@
          ! is 
          ! call newDistribution(nrows_g(sp),MPI_Comm_Self,dit)
          if ( ig > this%data%blocksize ) &
-              call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
+              call die('Contact Nick Papior Andersen, nickpapior@gmail.com g2l')
 
          il = ig
 #endif
@@ -358,7 +358,7 @@
          ! is 
          ! call newDistribution(nrows_g(sp),MPI_Comm_Self,dit)
          if ( ig > this%data%blocksize ) &
-              call die('Contact Nick Papior Andersen, nickpapior@gmail.com')
+              call die('Contact Nick Papior Andersen, nickpapior@gmail.com nhe')
 
          proc = this%data%node
 #endif

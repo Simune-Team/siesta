@@ -676,6 +676,8 @@ contains
        call newDistribution(no,-1           ,fdit,name='Fake dist')
 #endif
        call newdSpData1D(sp,fdit,dSp1D,name=trim(tag))
+       ! Clean up the distribution again
+       call delete(fdit)
     end if
 
     a => val(dSp1D)

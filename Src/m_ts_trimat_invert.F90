@@ -54,7 +54,7 @@ module m_ts_trimat_invert
 
 contains
 
-  subroutine invert_BiasTriMat_prep(M,Minv, N_Elec,Elecs, has_El)
+  subroutine invert_BiasTriMat_prep(M,Minv, N_Elec,Elecs, has_El, all_nn)
     use m_mat_invert
     use m_ts_electype
     use m_ts_method, only : orb_offset
@@ -63,6 +63,7 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     logical, intent(in) :: has_El(N_Elec)
+    logical, intent(in), optional :: all_nn
 
     complex(dp), pointer :: Mpinv(:)
 
@@ -105,6 +106,18 @@ contains
     !   - M contains the original matrix
     !   - Minv contains all Xn/Cn+1 and Yn/Bn-1 in all parts
 
+    piv_initialized = .false.
+    if ( present(all_nn) ) piv_initialized = all_nn
+
+    if ( piv_initialized ) then
+       
+       ! We need to calculate all Mnn
+       do n = 1 , np
+          call calc_Mnn_inv(M,Minv,n)
+       end do
+
+    else
+
     ! We calculate all the required Mnn
     ! Here it is permissable to overwrite the old A
     off = 0
@@ -129,6 +142,8 @@ contains
        end do
        off = off + nrows_g(M,n)
     end do
+
+    end if
 
     ! At this point we have calculated the 
     !  Mnn matrices for the overlapping regions for the

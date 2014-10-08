@@ -9,7 +9,7 @@ C     Computes non-self-consistent part of the Hamiltonian
 C     and initializes data structures on the grid.
       
       USE siesta_options,  only: g2cut
-      use sparse_matrices, only: H_kin, H_vkb_1D
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use siesta_geom
       use atmfuncs, only: uion
@@ -35,7 +35,7 @@ C     and initializes data structures on the grid.
       integer  :: ia, is, local_nspin
       real(dp) :: g2max
 
-      real(dp), pointer :: H_vkb_val(:)
+      real(dp), pointer :: H_val(:)
 
 !---------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
@@ -79,27 +79,28 @@ C     Add on force field contribution to energy
 !     Kinetic: matrix elements only
       local_nspin = 1   ! We will not touch Dscf, and H_kin does
                         ! not depend on spin
-      H_kin(:) = 0.0_dp
+      H_val => val(H_kin_1D)
+      H_val(:) = 0.0_dp
       call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
      &             local_nspin,
      &             dummy_dm, dummy_E, dummy_fa, dummy_stress,
-     &             H_kin,
+     &             H_val,
      &             matrix_elements_only=.true.) 
 
 C     Non-local-pseudop:  matrix elements only
       local_nspin = 1   ! We will not touch Dscf, and H_vkb does
                         ! not depend on spin
 
-      H_vkb_val => val(H_vkb_1D)
-      H_vkb_val(:) = 0.0_dp
+      H_val => val(H_vkb_1D)
+      H_val(:) = 0.0_dp
       call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
      &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &            numh, listhptr, listh, numh, listhptr, listh, 
      &            local_nspin,
      &            dummy_dm, dummy_E, dummy_fa, dummy_stress,
-     &            H_vkb_val,
+     &            H_val,
      &            matrix_elements_only=.true.) 
 
 

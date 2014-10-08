@@ -15,6 +15,7 @@
 module m_ts_tri_scat
 
   use precision, only : dp
+  use m_ts_method
 
   implicit none
 
@@ -24,6 +25,7 @@ module m_ts_tri_scat
   public :: GFGGF_needed_worksize
   public :: ts_needed_mem
   public :: has_full_part
+  public :: insert_Self_Energies
 
   ! Used for BLAS calls (local variables)
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -278,5 +280,42 @@ contains
          io + tri_parts(i) - 1 <= io2
 
   end function has_full_part
+
+  ! Generic routine for inserting the self-energies in the 
+  ! tri-diagonal matrices
+  subroutine insert_Self_Energies(no_u, Gfinv_tri, El)
+    use m_ts_electype
+    use class_zTriMat
+    integer, intent(in) :: no_u
+    type(zTriMat), intent(inout) :: GFinv_tri
+    type(Elec), intent(in) :: El
+
+    complex(dp), pointer :: Gfinv(:)
+    integer :: no, off, i, j, ii, idx
+    
+    no = TotUsedOrbs(El)
+    off = El%idx_o - orb_offset(El%idx_o) - 1
+    Gfinv => val(GFinv_tri)
+
+    ii = 0
+    if ( El%Bulk ) then
+       do j = 1 , no
+          do i = 1 , no
+             idx = index(GFinv_tri,i+off,j+off)
+             ii = ii + 1
+             Gfinv(idx) = El%Sigma(ii)
+          end do
+       end do
+    else
+       do j = 1 , no
+          do i = 1 , no
+             idx = index(GFinv_tri,i+off,j+off)
+             ii = ii + 1
+             Gfinv(idx) = Gfinv(idx) - El%Sigma(ii)
+          end do
+       end do
+    end if
+    
+  end subroutine insert_Self_Energies
 
 end module m_ts_tri_scat

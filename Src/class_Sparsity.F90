@@ -11,6 +11,7 @@ module class_Sparsity
   public :: ncols, ncols_g
   public :: n_row, n_col
   public :: nnzs, list_ptr, list_col
+  public :: equivalent
 
   character(len=*), parameter :: mod_name= __FILE__
 
@@ -58,6 +59,10 @@ module class_Sparsity
 
   interface attach
      module procedure attachSparsity
+  end interface
+
+  interface equivalent
+     module procedure equivalentSparsity
   end interface
 
   interface n_col
@@ -266,6 +271,39 @@ module class_Sparsity
     if ( present(nnzs) ) nnzs = nnzsSparsity(this)
 
   end subroutine attachSparsity
+
+  function equivalentSparsity(sp1,sp2) result(equivalent)
+    type(Sparsity), intent(inout) :: sp1, sp2
+    logical :: equivalent
+    integer, pointer :: ncol1(:), l_col1(:), ncol2(:), l_col2(:)
+    integer :: lno1, lno2, no1, no2
+
+    equivalent = same(sp1,sp2)
+    if ( equivalent ) return
+    if ( initialized(sp1) ) then
+       if (.not. initialized(sp2) ) return
+    else if ( initialized(sp2) ) then
+       if (.not. initialized(sp1) ) return
+    end if
+    ! If they are the same object, immediately return
+    ! with true
+    equivalent = sp1%data%id == sp2%data%id
+    if ( equivalent ) return
+
+    ! Both are initialized
+    call attach(sp1,nrows=lno1,nrows_g=no1, &
+         n_col = ncol1, list_col = l_col1 )
+    call attach(sp2,nrows=lno2,nrows_g=no2, &
+         n_col = ncol2, list_col = l_col2 )
+    equivalent = lno1 == lno2
+    if ( .not. equivalent ) return
+    equivalent = no1 == no2
+    if ( .not. equivalent ) return
+    equivalent = all(ncol1 == ncol2)
+    if ( .not. equivalent ) return
+    equivalent = all(l_col1 == l_col2)
+
+  end function equivalentSparsity
 
   subroutine printSparsity(sp)
     type(Sparsity), intent(in) :: sp

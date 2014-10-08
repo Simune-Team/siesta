@@ -781,10 +781,11 @@ contains
   ! 2.) Set the method to be equilibrium/non-equilibrium/transport
   ! 3.) Calculate number of points if dE specified
   ! 4.) Checks whether the contours are connected
-  subroutine ts_fix_contour(cur,next,prev)
+  subroutine ts_fix_contour(cur,next,prev,connected)
     use fdf, only : leqi
     type(ts_c_io), intent(inout) :: cur
     type(ts_c_io), intent(inout), optional :: next, prev
+    logical, intent(out), optional :: connected
 
     ! we need this to "look ahead"
     if ( present(next) ) then
@@ -817,6 +818,10 @@ contains
     ! we can compare bounds
     if ( present(prev) ) then
        if ( abs(cur%a - prev%b) > 1.e-8_dp ) then
+          if ( present(connected) ) then
+             connected = .false.
+             return
+          end if
           call die('Contour: '//trim(prev%name)//' and '//trim(cur%name)// &
                ' are not connected.')
        end if
@@ -824,6 +829,10 @@ contains
     
     if ( present(next) ) then
        if ( abs(next%a - cur%b) > 1.e-8_dp ) then
+          if ( present(connected) ) then
+             connected = .false.
+             return
+          end if
           call die('Contour: '//trim(cur%name)//' and '//trim(next%name)// &
                ' are not connected.')
        end if

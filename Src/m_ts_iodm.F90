@@ -24,12 +24,11 @@ module m_ts_iodm
   implicit none
   
   private
-  public :: ts_init_dm
   public :: write_ts_dm, read_ts_dm
 
 contains
   
-  subroutine read_ts_dm( file, nspin, dit, no_u, DM, EDM, Ef, found ,&
+  subroutine read_ts_dm( file, nspin, dit, no_u, DM, EDM, Ef, found , &
        Bcast)
 
 #ifdef MPI
@@ -215,35 +214,5 @@ contains
     end if
     
   end subroutine write_ts_dm
-  
-  subroutine ts_init_dm(found)
-    
-    use m_ts_global_vars, only : TSinit, TSrun
-    
-    logical, intent(in) :: found
-    real(dp) :: tmp
-    
-    if( .not. found )  then ! not a TS continuation run
-       TSinit = .true.  ! start to converge a diagon run
-       TSrun  = .false.
-       
-       if ( Node == 0 ) then
-          write(*,'(a)') 'TRANSIESTA: No TS-DensityMatrix file found'
-          write(*,'(a)') 'TRANSIESTA: Initialization runs using diagon'
-       end if
-
-    else
-       TSinit = .false.
-       TSrun  = .true.
-       
-       if ( Node == 0 ) then
-          write(*,'(a,/)') 'TRANSIESTA: Continuation run'
-          write(*,'(a)') '                     ************************'
-          write(*,'(a)') '                     *   TRANSIESTA BEGIN   *'
-          write(*,'(a)') '                     ************************'
-       end if
-    end if !found TSDM-file
-    
-  end subroutine ts_init_dm
   
 end module m_ts_iodm

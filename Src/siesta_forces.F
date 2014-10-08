@@ -340,13 +340,26 @@
       subroutine init_transiesta_switch()
 
       use precision,             only: dp
-      use siesta_options,        only: fire_mix, wmix, broyden_maxit
-      use m_ts_global_vars,      only: TSinit, TSrun
-      use m_ts_options,          only: ts_wmix
-      use m_pulay,               only: init_pulay_arrays
       use parallel,              only: IONode
+      use class_dSpData2D
+      use siesta_options,        only: fire_mix, wmix, broyden_maxit
+
+      use sparse_matrices, only : DM_2D, EDM_2D
+      use atomlist, only: no_u, lasto
+      use siesta_geom, only: nsc, isc_off, na_u, xa, ucell
+      use m_pulay,               only: init_pulay_arrays
+      use m_energies, only : Ef
+
+      use m_ts_global_vars,      only: TSinit, TSrun
+      use m_ts_method
+      use m_ts_options,          only: N_Elec, Elecs
+      use m_ts_options,          only: ts_wmix, DM_bulk
+      use m_ts_electype
 
       real(dp) :: tmp
+      integer :: iEl, na_a
+      integer, allocatable :: allowed_a(:)
+      real(dp), pointer :: DM(:,:), EDM(:,:)
 
       ! We're  done with the initial diagon run
       ! Now we start the TRANSIESTA (Green's Functions) run
@@ -375,11 +388,69 @@
 
       if ( IONode ) then
          write(6,'(/a)')
-     &'                          ************************       '
+     &'                          ************************'
          write(6,'(a)')
-     &'                          *   TRANSIESTA BEGIN   *       '
+     &'                          *   TRANSIESTA BEGIN   *'
          write(6,'(a)')
-     &'                          ************************       '
+     &'                          ************************'
+      end if
+
+      ! In case of transiesta and DM_bulk.
+      ! In case we ask for initialization of the DM in bulk
+      ! we read in the DM files from the electrodes and 
+      ! initialize the bulk to those values
+      if ( DM_bulk > 0 ) then
+         
+         if ( IONode ) then
+            write(*,'(/,2a)') 'transiesta: ',
+     &           'Initializing bulk DM in electrodes.'
+         end if
+         
+         na_a = 0
+         do iEl = 1 , na_u
+            if ( .not. a_isDev(iEl) ) na_a = na_a + 1
+         end do
+         allocate(allowed_a(na_a))
+         na_a = 0 
+         do iEl = 1 , na_u
+            ! We allow the buffer atoms as well (this will even out the
+            ! potential around the back of the electrode)
+            if ( .not. a_isDev(iEl) ) then
+               na_a = na_a + 1
+               allowed_a(na_a) = iEl
+            end if
+         end do
+          
+         do iEl = 1 , N_Elec
+             
+            if ( IONode ) then
+               write(*,'(/,2a)') 'transiesta: ',
+     &              'Reading in electrode TSDE for '//
+     &              trim(Elecs(iEl)%Name)
+            end if
+
+            ! Copy over the DM in the lead
+            ! Notice that the EDM matrix that is copied over
+            ! will be equivalent at Ef == 0
+            call copy_DM(Elecs(iEl),na_u,xa,lasto,nsc,isc_off, 
+     &           ucell, DM_2D, EDM_2D, na_a, allowed_a)
+
+         end do
+
+         ! Clean-up
+         deallocate(allowed_a)
+
+         if ( IONode ) then
+            write(*,*) ! new-line
+         end if
+
+         ! The electrode EDM is aligned at Ef == 0
+         ! We need to align the energy matrix
+         DM  => val(DM_2D)
+         EDM => val(EDM_2D)
+         iEl = size(DM)
+         call daxpy(iEl,Ef,DM(1,1),1,EDM(1,1),1)
+
       end if
 
       end subroutine init_transiesta_switch

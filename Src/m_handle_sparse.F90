@@ -33,6 +33,7 @@ contains
     ! dummy arrays
     type(OrbitalDistribution) :: fake_dit
     type(Sparsity)  :: fsp
+    type(Sparsity), pointer :: psp
     type(dSpData1D) :: tmp_1D
     type(dSpData2D) :: fDM_2D
     real(dp) :: fcell(3,3), fkdispl(3), fEf, fQtot, fTemp
@@ -48,6 +49,10 @@ contains
 
     ! If the block does not exist, we might as well return
     if ( .not. fdf_block('DM.Init.Bulk',bfdf) ) return
+
+    if ( Node == 0 ) then
+       write(*,'(/,a)') 'siesta: Initializing DM from bulk.'
+    end if
 
     ! Using this method we allow all interactions to be
     ! initialized (default)
@@ -116,9 +121,8 @@ contains
        ! Clean-up, we do not need the Hamilton and overlap
        call delete(fDM_2D)
        call delete(tmp_1D)
-       call delete(fsp)
 
-       ! Luckily is the TSDE and the DM file
+       ! Luckily, the TSDE and the DM file
        ! exactly the same, except that TSDE has an extra EDM and Ef
        ! at the end, we do not care about that! :)
        ! read in DM file
@@ -126,12 +130,15 @@ contains
        call read_DM( DMfile, fnspin, fake_dit, fno_u, &
             fDM_2D, d_log , & ! we have already checked that it exists
             Bcast = .true.)
+       psp => spar(fDM_2D)
+       psp = fsp
+       call delete(fsp)
        if ( .not. d_log ) then
           call die('Something went wrong')
        end if
 
        call expand_spd2spd_2D(fna_u,flasto,fxa,fDM_2D,&
-            fcell, Rep, fn_s, fisc_off, &
+            fcell, Rep, (/1,1,1/), fn_s, fisc_off, &
             na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, at, &
             print = .true., allowed_a = allowed)
 
@@ -142,6 +149,8 @@ contains
        deallocate(fisc_off) ; nullify(fisc_off)
 
     end do
+
+    if ( Node == 0 ) write(*,*) ! new-line
 
   contains
     
@@ -168,7 +177,7 @@ contains
   end subroutine bulk_expand
 
   subroutine expand_spd2spd_2D(na_i,lasto_i,xa_i,in,&
-       cell_i, rep_i, n_s_i, sc_off_i, &
+       cell_i, orep_i, irep_i, n_s_i, sc_off_i, &
        na_o,xa_o,lasto_o,out,cell_o,n_s_o,sc_off_o, at, &
        print, allowed_a)
 
@@ -176,7 +185,7 @@ contains
     use mpi_siesta
 #endif
 
-    integer, intent(in) :: na_i, lasto_i(0:na_i), rep_i(3)
+    integer, intent(in) :: na_i, lasto_i(0:na_i), orep_i(3), irep_i(3)
     real(dp), intent(in) :: xa_i(3,na_i), cell_i(3,3)
     integer, intent(in) :: n_s_i, sc_off_i(3,n_s_i)
     ! The density matrices that describes two
@@ -202,7 +211,8 @@ contains
     integer, pointer :: i_ptr(:), i_ncol(:), i_col(:)
     ! loop variables for the sparsity patterns
     integer :: ia_i, io_i, i_i, iat, io_o, lio_o, i_o
-    integer :: i_s, i, ao, no_o, no_i, i1, i2, i3, at_end
+    integer :: i_s, i, ao, no_o, no_i, at_end, lat
+    integer :: i1, i2, i3, o1, o2, o3
     integer :: orb_i, orb_o
     integer :: copy(2)
 
@@ -216,7 +226,9 @@ contains
     integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
 
-    i = at - 1 + product(rep_i) * na_i
+    o1 = product(orep_i)
+    i1 = product(irep_i)
+    i = at - 1 + o1 * i1 * na_i
     if ( i > na_o ) then
        call die('Requested expansion region too large.')
     end if
@@ -227,8 +239,8 @@ contains
        lallow(:) = allowed_a(:)
     else
        ! We only allow copying the diagonal entries
-       allocate(lallow(product(rep_i)*na_i))
-       do i = 1 , product(rep_i) * na_i
+       allocate(lallow(o1 * i1 * na_i))
+       do i = 1 , o1 * i1 * na_i
           lallow(i) = at + i - 1
        end do
     end if
@@ -245,19 +257,26 @@ contains
     call attach(sp_o,n_col=o_ncol, list_ptr=o_ptr, list_col=o_col, &
          nrows_g=no_o)
 
-    at_end = at + na_i * product(rep_i) - 1
+    lat    = at
+    at_end = at - 1 
 
     ! Loop on all equivalent atoms
     iat = at - 1
     ! We count number of copied data
     copy(:) = 0
+
+    o3_loop: do o3 = 0 , orep_i(3) - 1
+    o2_loop: do o2 = 0 , orep_i(2) - 1
+    o1_loop: do o1 = 0 , orep_i(1) - 1
+
+    at_end = at_end + product(irep_i) * na_i
     
     ! We loop over the input SP which we will copy
     do ia_i = 1 , na_i
 
-     i3_loop: do i3 = 0 , rep_i(3) - 1
-     i2_loop: do i2 = 0 , rep_i(2) - 1
-     i1_loop: do i1 = 0 , rep_i(1) - 1
+     i3_loop: do i3 = 0 , irep_i(3) - 1
+     i2_loop: do i2 = 0 , irep_i(2) - 1
+     i1_loop: do i1 = 0 , irep_i(1) - 1
 
       ! The expanded atomic position
       if ( na_i == 1 ) then
@@ -277,7 +296,7 @@ contains
       if ( na_i == 1 ) then
          xc_o(:) = xa_o(:,iat)
       else
-         xc_o(:) = xa_o(:,iat) - xa_o(:,at)
+         xc_o(:) = xa_o(:,iat) - xa_o(:,lat)
       end if
       
       if ( maxval(abs(xc_o - xc_i)) > xa_EPS .and. na_i > 1 ) then
@@ -325,7 +344,7 @@ contains
         if ( na_i == 1 ) then
            xj_o(:) = xa_o(:,ao) - xc_o(:)
         else
-           xj_o(:) = xa_o(:,ao) - xa_o(:,at)
+           xj_o(:) = xa_o(:,ao) - xa_o(:,lat)
         end if
         xj_o(:) = xj_o(:) + &
              cell_o(:,1) * sc_off_o(1,i_s) + &
@@ -365,7 +384,7 @@ contains
            ! WUHUU, we have the equivalent atom and equivalent
            ! orbital connection. We copy data now!
 
-           if ( at <= ao .and. ao <= at_end ) then
+           if ( lat <= ao .and. ao <= at_end ) then
               copy(1) = copy(1) + 1 ! diagonal contribution
            else
               copy(2) = copy(2) + 1 ! off-diagonal contribution
@@ -382,6 +401,12 @@ contains
      end do i3_loop
 
     end do
+
+    lat = lat + product(irep_i) * na_i
+
+    end do o1_loop
+    end do o2_loop
+    end do o3_loop
 
     deallocate(lallow)
 

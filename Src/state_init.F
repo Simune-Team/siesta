@@ -13,7 +13,7 @@
 
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Hold
-      use sparse_matrices, only: xijo, H, S_1D, S, H_kin
+      use sparse_matrices, only: xijo, H, S_1D, S, H_kin_1D
       use sparse_matrices, only: H_2D, xij_2D
       use sparse_matrices, only: sparse_pattern, block_dist
       use sparse_matrices, only: H_vkb_1D, DM_2D, EDM_2D, DM_history
@@ -315,14 +315,15 @@
       call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
      .     routine='state_init',copy=.false.,shrink=.true.)
 
-      
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       write(oname,"(a,i0)") "H in state_init at geom step ", istep
       call newdSpData2D(sparse_pattern,nspin,block_dist,H_2D,name=oname)
       if (ionode) call print_type(H_2D)
       H => val(H_2D)
-      call re_alloc(H_kin,1,maxnh,name='H_kin',routine='state_init',
-     &              shrink=.true., copy=.false. )
+
+      write(oname,"(a,i0)") "H_kin in state_init at geom step ", istep
+      call newdSpData1D(sparse_pattern,block_dist,H_kin_1D,name=oname)
+      if (ionode) call print_type(H_kin_1D)
 
       write(oname,"(a,i0)") "S in state_init at geom step ", istep
       call newdSpData1D(sparse_pattern,block_dist,S_1D,name=oname)
@@ -333,13 +334,13 @@
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
-      if ( gamma ) then
+      if ( Gamma ) then
          ! Here we create the super-cell offsets
          call re_alloc(isc_off,1,3,1,1)
          isc_off(:,:) = 0
       else
          call xij_offset(ucell,nsc, na_u,xa,lasto, 
-     &        block_dist,sparse_pattern,maxnh,xijo,isc_off,
+     &        xij_2D, isc_off,
      &        Bcast=.true.)
       end if
 

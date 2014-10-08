@@ -105,7 +105,7 @@ contains
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
     ! below could be optimized)
-    do i = 2 , no_u / 5 , Nodes
+    do i = 2 , no_u / 4 , Nodes
 
        ! Make new guess...
        call guess_TriMat(sp,no,mm_col,i,guess_parts,guess_part)
@@ -115,6 +115,10 @@ contains
 
        call full_even_out_parts(opt_TriMat_method, &
             sp,no,mm_col,guess_parts,guess_part)
+
+       if ( ts_valid_tri(no,mm_col,guess_parts, guess_part) /= VALID ) then
+          call die('error on evening out... Programming error.')
+       end if
 
        if ( copy_first ) then
           ! ensure to copy it over (the initial one was not valid)
@@ -376,6 +380,12 @@ contains
        end if
     end do
 
+    ! In case there is actually no connection, we should
+    ! force the next-part to be 1!
+    if ( n_part(part) == 0 ) then
+       n_part(part) = 1
+    end if
+
   end subroutine guess_next_part_size
 
   subroutine full_even_out_parts(method,sp,no,mm_col,parts,n_part)
@@ -443,6 +453,35 @@ contains
 
     if ( parts < 2 ) call die('You cannot use tri-diagonalization &
          &without having at least 2 parts')
+
+    if ( parts == 2 ) then
+
+       copy_n_part = 0
+       
+       do while ( n_part(n) - copy_n_part /= 0 )
+          
+          ! Copy the current partition so that we can check in the
+          ! next iteration...
+          copy_n_part = n_part(n)
+
+          if ( n == 1 ) then
+             ! If we have the first part we can always shrink it
+             call even_if_larger(eRow,n_part(n+1),n_part(n),sign= 1)
+          else if ( n == parts ) then
+             ! If we have the last part we can always shrink it
+             call even_if_larger(sRow,n_part(n-1),n_part(n),sign=-1)
+          end if
+       end do
+
+       return
+
+    end if
+
+    ! We do not allow to diminish the edges
+    ! This is because we need additional checks of their
+    ! regions, hence, we let the central parts partition out
+    ! the regions
+    if ( n == 1 .or. n == parts ) return
     
     copy_n_part = n_part(n) + 1
 
@@ -464,41 +503,33 @@ contains
        ! this will require the two electrodes parts to be larger
        ! than the other parts...
 
-       if ( n == 1 ) then
-          ! If we have the first part we can always shrink it
-          call even_if_larger(sRow,n_part(n),n_part(n+1))
-       else if ( n == parts ) then
-          ! If we have the last part we can always shrink it
-          call even_if_larger(eRow,n_part(n),n_part(n-1))
-       else
-          ! all middle parts have some requirements:
+       ! all middle parts have some requirements:
           
-          ! 1. if you wish to shrink it left, then:
-          !    the first row must not have any elements
-          !    extending into the right part
-          if ( mm_col(2,sRow) <= eRow ) then
-             call even_if_larger(sRow,n_part(n),n_part(n-1))
-          end if
-
-          ! 2. if you wish to shrink it right, then:
-          !    the last row must not have any elements
-          !    extending into the left part
-          if ( sRow <= mm_col(1,eRow) ) then
-             call even_if_larger(eRow,n_part(n),n_part(n+1))
-          end if
-
+       ! 1. if you wish to shrink it left, then:
+       !    the first row must not have any elements
+       !    extending into the right part
+       if ( mm_col(2,sRow) <= eRow ) then
+          call even_if_larger(sRow,n_part(n),n_part(n-1),sign=1)
        end if
 
+       ! 2. if you wish to shrink it right, then:
+       !    the last row must not have any elements
+       !    extending into the left part
+       if ( sRow <= mm_col(1,eRow) ) then
+          call even_if_larger(eRow,n_part(n),n_part(n+1),sign=-1)
+       end if
+       
     end do
 
   contains
 
-    subroutine even_if_larger(Row,p1,p2)
+    subroutine even_if_larger(Row,p1,p2,sign)
+      integer, intent(in) :: sign
       integer , intent(inout) :: Row, p1, p2
       if ( p1 > p2 ) then
          p1 = p1 - 1
          p2 = p2 + 1
-         Row = Row + 1
+         Row = Row + sign * 1
       end if
     end subroutine even_if_larger
 

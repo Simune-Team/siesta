@@ -384,14 +384,14 @@ contains
     integer :: sN, sNm1, sNm1SQ, sNm2, ierr
 
     if ( n < 2 .or. parts(M) < n .or. parts(M) /= parts(Minv) ) then
-       call die('Could not calculate Xn on these matrices')
+       call die('Could not calculate Yn on these matrices')
     end if
     ! Collect all matrix sizes for this step...
     sN     = nrows_g(M,n)
     sNm1   = nrows_g(M,n-1)
     sNm1SQ = sNm1 ** 2
     if ( nz < sNm1SQ ) then
-       call die('Work array in Xn calculation not sufficiently &
+       call die('Work array in Yn calculation not sufficiently &
             &big.')
     end if
 

@@ -1,4 +1,6 @@
 module m_ts_method
+
+  use m_region
   
   implicit none
 
@@ -34,6 +36,9 @@ module m_ts_method
   integer, pointer, private :: ts_o_type(:) => null()
   integer, pointer, private :: ts_a_offset(:) => null()
   integer, pointer, private :: ts_o_offset(:) => null()
+
+  type(tRegion) :: r_oBuf ! the buffer region
+  type(tRegion) :: r_oDev ! the device region
 
 contains
 
@@ -138,10 +143,31 @@ contains
     ! Update counting buffers
     na_Buf = 0
     no_Buf = 0
+    i = 0
     do ia = 1 , na_u
-       if ( atom_type(ia) /= TYP_BUFFER ) cycle
-       na_Buf = na_Buf + 1
-       no_Buf = no_Buf + lasto(ia) - lasto(ia-1)
+       select case ( atom_type(ia) )
+       case ( TYP_DEVICE ) 
+          i = i + lasto(ia) - lasto(ia-1)
+       case ( TYP_BUFFER ) 
+          na_Buf = na_Buf + 1
+          no_Buf = no_Buf + lasto(ia) - lasto(ia-1)
+       end select
+    end do
+
+    ! Create the buffer region
+    call region_range(r_oBuf,1,no_Buf)
+    call region_range(r_oDev,1,i)
+    ia  = 0
+    ia1 = 0
+    do i = 1 , ts_no_u
+       select case ( orb_type(i) )
+       case ( TYP_BUFFER ) 
+          ia = ia + 1
+          r_oBuf%r(ia) = i
+       case ( TYP_DEVICE ) 
+          ia1 = ia1 + 1
+          r_oDev%r(ia1) = i
+       end select
     end do
 
   contains

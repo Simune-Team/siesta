@@ -109,7 +109,6 @@ contains
     ! and do a spline interpolation... :)
     integer :: N_F, i_F, ioerr
     real(dp), pointer :: Q_Ef(:,:) => null()
-    real(dp), pointer :: mm_Q_Ef(:,:,:) => null()
 
     ! Open GF files...
     ! Read-in header of Green's functions

@@ -1,4 +1,139 @@
 ----------------------------------------------------
+September 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-207
+Bugfix for non-optimal electrodes
+
+* A remnent from the first version left the
+  Hamiltonian and update sparsity patterns to
+  include terms that cross the periodic cell
+  and the opposite electrode.
+  This could potentially lead to erroneous
+  results.
+
+* Added "spar_dim" for the SpData2D class
+  to easily check the sparsity pattern dimension.
+
+* Added an equivalent function to determine whether to
+  sparsity patterns where exactly the same, be
+  it ID or value wise.
+
+* Changed the H_kin to the class_dSpData1D along side
+  all other arrays.
+
+* Expanding the DM from an electrode needed to be done
+  with the correct sparsity pattern and supercell
+  indices. This we can "only" do by reading in the 
+  TSHS, correcting the xij array/nsc/list_col and then
+  expand.
+  We try to make sure every array is deallocated,
+  or left in the same state as before the expansion
+  took place.
+
+* Expansion in SIESTA is now being performed more
+  stringently, i.e. the repetition is "per-cell"
+  and not as an electrode would see it.
+  Hence, repetitions are saught as 
+   do irep = ...
+      do expand
+      step atom
+   end do
+  
+* The initialization of the electrode DM is now 
+  only being performed in these 3 situations:
+
+  1) when the diagon has finished
+  and we start on transiesta.
+  or 
+  2) if we force it to start from transiesta
+  or
+  3) if we start from a TSDE
+
+* Bugfix for block-tri-diagonal determination
+  In certain cases could it lead to erroneous
+  BTD format (however, it would have been captured)
+  It can now not create any erroneous BTD format.
+
+* Clarified that the Gamma's in elec_se are being
+  saved in transposed format (as NetLIB BLAS is much
+  faster when having the first matrix using the 'T'
+  product.
+
+* Cleaned up code in various places.
+
+* Bugfix for reading the version of TSHS files.
+
+* Added the m_region code to transiesta
+  
+  This code will be the basis of tbtrans
+  (and possibly later the pivoting of transiesta).
+
+  It basically is a module to handle lists of orbitals
+  that refer to sparsity patterns.
+
+  Using this generic module it is extremely easy to
+  handle sparsity patterns.
+  
+  Say you want to remove all orbitals that connect to
+  atom 1 and 2. This you can accomblish using this:
+
+   call region_range(r,1,lasto(2))
+   call Sp_remove_region(dist,sp_in,r,sp_out)
+
+  In tbtrans this is a very handy module as it leverages
+  a lot of handling of pivot tables.
+
+  It also enables the processing of sorting regions.
+  
+* A code to help m_region is m_sparsity_handling
+  which probably should be combined in a more generic
+  way.
+  I currently do not have time, but these modules could
+  be the basis of a sparsity library for general purposes.
+
+added:
+  Src/m_region.F90
+  Src/m_sparsity_handling.F90
+modified:
+  Src/Makefile
+  Src/class_OrbitalDistribution.F90
+  Src/class_SpData2D.T90
+  Src/class_Sparsity.F90
+  Src/compute_EKS_Harris.F90
+  Src/compute_dm.F
+  Src/create_Sparsity_Union.F90
+  Src/m_handle_sparse.F90
+  Src/m_io_s.F90
+  Src/m_new_dm.F90
+  Src/m_sparse.F90
+  Src/m_transiesta.F90
+  Src/m_trimat_invert.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_debug.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_global_vars.f90
+  Src/m_ts_io.F90
+  Src/m_ts_io_ctype.f90
+  Src/m_ts_iodm.F90
+  Src/m_ts_method.f90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/TS/tshs2tshs/tshs2tshs.f90
+
+----------------------------------------------------
 September 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-206
 Allowed reduction of memory usage for repetition
 

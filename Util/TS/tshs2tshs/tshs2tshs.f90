@@ -179,13 +179,13 @@ program tshs2tshs
 
      ! Create dxij
      call newdSpData2D(sp,3,dit,dxij,'xij',sparsity_dim=2)
-     xij => val(dxij)
      
      ! Create the xij array
-     call offset_xij(ucell,n_s,isc_off,na_u,xa,lasto,dit,sp,n_nzs,xij)
+     call offset_xij(ucell,n_s,isc_off,na_u,xa,lasto,dxij)
 
      allocate(iza(na_u))
      iza(:) = 0
+     xij => val(dxij)
      call write_TSHS_0(fileout, &
           onlyS, Gamma, TSGamma, &
           ucell, na_u, no_l, no_u, no_s, n_nzs, nspin,  &

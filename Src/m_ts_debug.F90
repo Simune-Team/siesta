@@ -117,25 +117,31 @@ contains
 #endif
     integer, intent(in) :: u
     type(Sparsity), intent(inout) :: sp
-    integer :: io,jo,j,ind
+    integer :: io,jo,j,ind, no, no_u
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    character(len=20) :: f
 
-    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=no,nrows_g=no_u)
 
-    write(u,'(i5)') nrows(sp)
-    ind = 0
+    write(f,'(a,i0)') 'SP.',u
+    open(unit=5555,file=trim(f),form='formatted')
 
-    do io = 1 , nrows(sp)
+    write(5555,'(i5)') no
+
+    do io = 1 , no
        if ( l_ncol(io) == 0 ) cycle
        do j = 1 , l_ncol(io)
           ind = l_ptr(io) + j
-          jo = UCORB(l_col(ind),nrows(sp))
-          write(u,'(3(tr1,i5))') io,jo,1
+          jo = UCORB(l_col(ind),no_u)
+          write(5555,'(2(i7,tr1),i1)') io,jo,1
        end do
     end do
     if ( ind /= nnzs(sp) ) then
        call die('Have not looped through all things')
     end if
+
+    close(5555)
 
 #ifdef MPI
     call MPI_Barrier(MPI_Comm_World,io)

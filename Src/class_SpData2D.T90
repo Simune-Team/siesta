@@ -8,7 +8,7 @@
 
   public :: val, spar, dist, init_val
   public :: nrows, nrows_g, nnzs, n_col, list_ptr, list_col
-  public :: print_type
+  public :: print_type, spar_dim
   public :: NEW_TYPE
 
   integer, parameter :: sp = selected_real_kind(5,10)
@@ -73,7 +73,11 @@
   interface list_col
      module procedure list_colSpData
   end interface
-  
+
+  interface spar_dim
+     module procedure spar_dimSpData
+  end interface
+
   interface print_type
      module procedure printSpData
   end interface print_type
@@ -238,6 +242,23 @@
    p => list_col(this%data%sp)
  end function list_colSpData
  
+
+ function spar_dimSpData(this) result(dim)
+   type(TYPE_NAME), intent(in) :: this
+   integer :: dim
+ 
+   dim = 0
+   if ( .not. initialized(this) ) return
+
+   ! Check which dimension is the sparsity dimension
+   if ( nnzs(this) == size(this%data%a%data%val,dim=1) ) then
+      dim = 1
+   else 
+      dim = 2
+   end if
+
+ end function spar_dimSpData 
+
  subroutine printSpData(this)
    type(TYPE_NAME), intent(in)  :: this
 

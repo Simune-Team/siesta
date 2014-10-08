@@ -55,6 +55,10 @@ contains
 
     use m_ts_tri_scat, only : GFGGF_needed_worksize
 
+#ifdef TRANSIESTA_DEBUG
+    use m_ts_debug
+#endif
+
     type(OrbitalDistribution) :: dit
     type(Sparsity) :: tmpSp1, tmpSp2
 
@@ -95,8 +99,12 @@ contains
 
     ! This will create and even out the parts
     if ( associated(tri_parts) ) &
-         call de_alloc(tri_parts, &
-         routine='tsSp2TM', name='n_part')
+         call de_alloc(tri_parts, routine='tsSp2TM', name='n_part')
+
+#ifdef TRANSIESTA_DEBUG
+    if(IONode)write(*,*)'Created TS-tri + elecs (4000)'
+    call sp_to_file(4000,tmpSp2)
+#endif
 
     N_tri_part = 0
     nullify(tri_parts)

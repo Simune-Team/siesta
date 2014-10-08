@@ -484,6 +484,11 @@ contains
 
     if ( Node == 0 ) then
 
+       inquire(file=filename,exist=exist)
+       if ( .not. exist ) then
+          call die('ERROR: Could not read '//trim(filename)//'.')
+       end if
+
        ! Get file version
        version = tshs_version(filename)
 
@@ -493,10 +498,6 @@ contains
        case default
           call die('Unsupported TSHS version file [0,1]')
        end select
-       inquire(file=filename,exist=exist)
-       if ( .not. exist ) then
-          call die('ERROR: Could not read '//trim(filename)//'.')
-       end if
 
        ! Open file
        call io_assign( iu )
@@ -666,22 +667,17 @@ contains
              ind = ind + ncol(i)
           end do
 
-          call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
-
           ! We do not need (MUST NOT) do bcast the routines:
           !   calc_nsc, list_col_correct, xij_offset
           ! They are duplicated on all nodes, hence b-casting
           ! will introduce wrong columns...
-          call calc_nsc(ucell,na_u,xa,lasto,no_u,no_u,n_nzs, &
-               ncol,l_ptr,l_col,lxij,nsc) 
+          call calc_nsc(ucell,na_u,xa,lasto,xij,nsc) 
 
           ! Ensure that list_col is correctly formatted (not always
           ! needed, but for consistency)
-          call list_col_correct(ucell,na_u, no_u,no_u,n_nzs, &
-               lasto, xa, ncol,l_ptr,l_col,lxij,nsc)
+          call list_col_correct(ucell,nsc,na_u,xa,lasto,xij)
           
-          call xij_offset(ucell,nsc,na_u,xa,lasto, &
-               dit,sp,n_nzs,lxij,isc_off)
+          call xij_offset(ucell,nsc,na_u,xa,lasto,xij,isc_off)
 
           ! We do not need the xij array anymore... :)
           call delete(xij)

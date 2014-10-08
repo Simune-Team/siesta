@@ -130,6 +130,10 @@ module m_ts_electype
      ! Arrays needed to partition the scattering matrix and self-energies
      ! Notice that Gamma should "ALWAYS" contain the transposed
      complex(dp), pointer :: Gamma(:,:), Sigma(:)
+#ifdef TBTRANS
+     ! The size of the down-folded self-energy
+     integer :: no_dwn
+#endif
 
      ! The basal plane of the electrode
      type(geo_plane_delta) :: p
@@ -587,10 +591,10 @@ contains
 
   end subroutine assign
   
-  elemental function Name_(this)
+  elemental function Name_(this) result(name)
     type(Elec), intent(in) :: this
-    character(len=NAME_LEN) :: Name_
-    Name_ = this%Name
+    character(len=NAME_LEN) :: Name
+    name = this%name
   end function Name_
 
   elemental function TotUsedAtoms(this) result(val)
@@ -757,15 +761,9 @@ contains
     real(dp), pointer :: S(:), S00(:), S01(:)
     type(OrbitalDistribution), pointer :: fdist
 
-    integer, pointer :: l_ncol(:) => null()
-    integer, pointer :: l_ptr(:)  => null()
-    integer, pointer :: l_col(:)  => null()
-    integer, pointer :: ncol00(:) => null()
-    integer, pointer :: ptr00(:)  => null()
-    integer, pointer :: col00(:)  => null()
-    integer, pointer :: ncol01(:) => null()
-    integer, pointer :: ptr01(:)  => null()
-    integer, pointer :: col01(:)  => null()
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: ncol00(:), ptr00(:), col00(:)
+    integer, pointer :: ncol01(:), ptr01(:), col01(:)
 
     integer :: no_l, i, iio, j, ind, ind00, ind01, ia
     integer :: tm(3)
@@ -1144,8 +1142,8 @@ contains
     if ( .not. initialized(this%H) ) then
        call die('check_connectivity: Error in code')
     end if
-    H   => val(this%H)
-    S   => val(this%S)
+    H => val(this%H)
+    S => val(this%S)
 
     tm(:) = TM_ALL
     if ( this%inf_dir == INF_POSITIVE ) then
@@ -1291,37 +1289,63 @@ contains
     integer, intent(in) :: na_a, allowed(na_a)
 
     type(OrbitalDistribution) :: fake_dit
+    type(Sparsity), pointer :: sp
     type(dSpData2D) :: f_DM_2D, f_EDM_2D
     real(dp), pointer :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
     integer :: i
-    logical :: found
+    logical :: found, alloc(3)
 
     if ( this%na_used /= this%na_u ) then
        call die('Currently you cannot copy a non-full sparsity pattern...')
     end if
-    
+
+    ! Check and see if we should de-allocate
+    alloc(1) = associated(this%xa)
+    alloc(2) = associated(this%lasto)
+    alloc(3) = associated(this%isc_off)
+
+    ! We *must* read in the isc_off array
+    call read_Elec(this, Bcast=.true., io=.false.)
+
     call read_ts_dm( this%DEfile, this%nspin, fake_dit, &
-         this%no_u, f_DM_2D, f_EDM_2d, Ef, found , &
-         Bcast = .true.)
+         this%no_u, f_DM_2D, f_EDM_2D, Ef, found, &
+         Bcast = .true. )
+    sp => spar(f_DM_2D)
+    sp = this%sp
+    sp => spar(f_EDM_2D)
+    sp = this%sp
     if ( .not. found ) call die('Could not read file: '//trim(this%DEfile))
 
+    if ( .not. alloc(1) ) deallocate(this%xa) ; nullify(this%xa)
+    if ( .not. alloc(2) ) deallocate(this%lasto) ; nullify(this%lasto)
+
+    ! We must delete the additional arrays read in
+    call delete(this%sp)
+    call delete(this%H)
+    call delete(this%S)
+
+    ! TODO, there is some memory that could be leaking with the
+    ! electrode arrays.
+
     ! Shift the energy matrix to the chemical potential :)
-    i = nnzs(f_DM_2D) * this%nspin
     DM  => val(f_DM_2D)
     EDM => val(f_EDM_2D)
+    i = size(DM)
     tmp = -( Ef + this%mu%mu )
     call daxpy(i,tmp,DM(1,1),1,EDM(1,1),1)
 
     call expand_spd2spd_2D(this%na_used,this%lasto_used,this%xa_used,f_DM_2D,&
-         this%ucell, this%Rep, size(this%isc_off,dim=2), this%isc_off, &
+         this%ucell, (/1,1,1/), this%Rep, size(this%isc_off,dim=2), this%isc_off, &
          na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, &
          print = .true., allowed_a = allowed)
 
     call expand_spd2spd_2D(this%na_used,this%lasto_used,this%xa_used,f_EDM_2D,&
-         this%ucell, this%Rep, size(this%isc_off,dim=2), this%isc_off, &
+         this%ucell, (/1,1,1/), this%Rep, size(this%isc_off,dim=2), this%isc_off, &
          na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, &
          allowed_a = allowed)
+
+    if ( .not. alloc(3) ) deallocate(this%isc_off) ; nullify(this%isc_off)
 
     call delete(f_EDM_2D)
     call delete(f_DM_2D)

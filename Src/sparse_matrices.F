@@ -8,12 +8,10 @@
 
       implicit none
 
-
 !     Max. number of nonzero H matrix elements    
       integer :: maxnh = 10 
 
-      integer, pointer :: listh(:), listhptr(:),
-     &                    numh(:)
+      integer, pointer :: listh(:), listhptr(:), numh(:)
 
       real(dp), pointer :: Dold(:,:), Dscf(:,:), 
      &                     Escf(:,:), H(:,:),
@@ -24,12 +22,11 @@
 
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
-      real(dp), pointer    :: H_kin(:) => null()
+      type(dSpData1D), save :: H_vkb_1D, H_kin_1D
 
-      !
       !  New interface data
       type(Sparsity),  save :: sparse_pattern
-      type(dSpData1D), save :: S_1D, H_vkb_1D
+      type(dSpData1D), save :: S_1D
       type(dSpData2D), save :: DM_2D, EDM_2D, xij_2D, H_2D
       type(Fstack_Pair_Geometry_dSpData2D), save :: DM_history
 
@@ -45,7 +42,7 @@
       call de_alloc( Dold, 'Dold', 'sparseMat' )
       call delete( DM_2D ) ; nullify(Dscf)
       call delete( EDM_2D ) ; nullify(Escf)
-      call de_alloc( H_kin, 'H_kin', 'sparseMat' )
+      call delete( H_kin_1D )
       call delete( H_vkb_1D )
       call delete( S_1D ) ; nullify(S)
       call delete( xij_2D ) ; nullify(xijo)

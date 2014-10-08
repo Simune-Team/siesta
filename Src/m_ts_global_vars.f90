@@ -10,7 +10,7 @@
 
 module m_ts_global_vars
   
-  use precision, only : dp
+  implicit none
   
   save
 
@@ -24,5 +24,41 @@ module m_ts_global_vars
   logical :: TSinit = .false. , TSrun = .false.
 
   integer :: ts_istep ! FC step in phonon calculation
+
+contains
+
+  subroutine ts_method_init( start )
+
+    use parallel, only : Node
+    
+    logical, intent(in) :: start
+
+    if ( start ) then
+
+       ! We will immediately start Transiesta
+       TSinit = .false.
+       TSrun  = .true.
+       
+       if ( Node == 0 ) then
+          write(*,'(a,/)') 'transiesta: Starting immediately'
+          write(*,'(a)') '                     ************************'
+          write(*,'(a)') '                     *   TRANSIESTA BEGIN   *'
+          write(*,'(a)') '                     ************************'
+       end if
+
+    else
+
+       ! Tell transiesta to initialize the Hamiltonian with siesta
+
+       TSinit = .true.
+       TSrun  = .false.
+       
+       if ( Node == 0 ) then
+          write(*,'(a)') 'transiesta: Initialization run using siesta'
+       end if
+
+    end if
+    
+  end subroutine ts_method_init
 
 end module m_ts_global_vars

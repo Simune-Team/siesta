@@ -248,7 +248,7 @@ contains
        end do
 
        ! Do
-       ! \Gamma = i ( \Sigma - \Sigma^\dagger)
+       ! \Gamma ^ T = i ( \Sigma - \Sigma^\dagger)
        do jo = 1 , no_s
           do io = 1 , jo - 1
              GammaT(jo,io) = zi * ( &
@@ -271,7 +271,7 @@ contains
        end do
 
        ! Do
-       ! \Gamma = i ( \Sigma - \Sigma^\dagger)
+       ! \Gamma ^ T = i ( \Sigma - \Sigma^\dagger)
        do jo = 1 , no_s
           do io = 1 , jo - 1
              GammaT(jo,io) = zi * ( &

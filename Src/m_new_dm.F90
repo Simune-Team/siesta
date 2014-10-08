@@ -77,7 +77,7 @@
       use class_Fstack_Pair_Geometry_dSpData2D
 
 #ifdef TRANSIESTA
-      use m_ts_global_vars,only: TSmode
+      use m_ts_global_vars,only: TSrun
       use m_ts_electype, only : copy_DM
       use m_ts_options, only : N_Elec, Elecs, DM_bulk
       use m_ts_method
@@ -205,11 +205,10 @@
          call bulk_expand(na_u,xa,lasto,ucell,nsc,isc_off,DMnew)
       end if
 
-
 #ifdef TRANSIESTA
-      ! In case of traniesta and DM_bulk
+      ! In case of transiesta and DM_bulk
       ! we already here set the density matrix to its bulk values
-      if ( TSmode .and. DM_bulk > 0 .and. DMinit ) then
+      if ( TSrun .and. DM_bulk > 0 .and. DMinit ) then
          ! In transiesta we can always initialize
          ! the density matrix with the bulk-values
          ! so as to "fix" the density in the leads
@@ -226,7 +225,6 @@
                     'transiesta: Will average Fermi-level of electrodes'
             end if
          end if
-
 
          if ( init_method == 0 ) then
             ! We are starting from atomic-filled orbitals
@@ -336,7 +334,7 @@
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
                                 ! stored in the TSDE file.
-      use m_ts_global_vars,only: TSmode, TSinit, TSrun
+      use m_ts_global_vars,only: ts_method_init, TSmode, TSinit, TSrun
       use m_ts_options,   only : TS_scf_mode, ts_wmix
       use siesta_options, only : wmix
 #endif /* TRANSIESTA */
@@ -391,7 +389,7 @@
             call timer('IO-R-TS-DE',3)
 #endif
 
-            call ts_init_dm(tsde_found)
+            call ts_method_init( TSDE_found )
 
             if (.not. tsde_found) then
                if (ionode) print *, "Attempting to read DM from file (TSmode)"
@@ -439,7 +437,7 @@
       ! We will allow this if the electrodes
       ! can read in the DM files
       if ( TS_scf_mode == 1 .and. TSinit ) then
-         call ts_init_dm(.true.)
+         call ts_method_init( .true. )
       end if
 
       if ( TSrun ) then

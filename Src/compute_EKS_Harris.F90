@@ -22,7 +22,7 @@ CONTAINS
       use precision,       only: dp
       use fdf,             only: fdf_get
       use siesta_options,  only: g2cut
-      use sparse_matrices, only: H_kin, H_vkb_1D
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H
       use sparse_matrices, only: Dscf, Dold
@@ -45,7 +45,7 @@ CONTAINS
       real(dp), intent(out) :: E_KS_Good
 
       integer               :: ihmat, ifa, istr, ispin, io
-      real(dp), pointer     :: H_vkb_val(:)
+      real(dp), pointer     :: H_vkb(:), H_kin(:)
 #ifdef MPI
       real(dp) :: buffer1
 #endif
@@ -53,7 +53,6 @@ CONTAINS
       real(dp) :: const, Escf_out
       real(dp) :: dummy_stress(3,3), dummy_fa(1,1)
       real(dp) :: dummy_E, g2max, dummy_H(1,1)
-
 
 !     Compute the band-structure energy and the correction for E_Harris
 
@@ -125,13 +124,14 @@ CONTAINS
 
 !     Compute Tr[H_0*DM_out] = Ekin + Enl with DM_out
 
-      H_vkb_val => val(H_vkb_1D)
+      H_kin => val(H_kin_1D)
+      H_vkb => val(H_vkb_1D)
       Ekin = 0.0_dp
       Enl  = 0.0_dp
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
-          Enl  = Enl  + H_vkb_val(io)* Dscf(io,ispin)
+          Enl  = Enl  + H_vkb(io) * Dscf(io,ispin)
         enddo
       enddo
 #ifdef MPI

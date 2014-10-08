@@ -110,10 +110,10 @@ contains
 ! *******************
 ! * LOCAL variables *
 ! *******************
-    real(dp) :: tmp
+    real(dp) :: tmp, rcell(3,3)
     logical :: err
     character(len=200) :: c, chars
-    integer :: i, j, idx, idx1, idx2
+    integer :: i, j, idx, idx1, idx2, isc(3)
 #ifdef TRANSIESTA_WEIGHT_DEBUG
     integer, allocatable :: ID_mu(:)
     real(dp), allocatable :: rnID(:), rn(:), rw(:)
@@ -337,7 +337,7 @@ contains
     end do
 
     ! notice that this does not have the same meaning... 
-    call fdf_deprecated('TS.UpdateDMCROnly','TS.Elecs.DM.CrossTerms')
+    call fdf_deprecated('TS.UpdateDMCROnly','TS.Elecs.DM.Update')
     call fdf_deprecated('TS.UseBulk','TS.Elecs.Bulk')
 
     ! Read in the chemical potentials
@@ -383,6 +383,12 @@ contains
     ! Hence we use this as an error-check (also for N_Elec == 1)
     if ( N_Elec /= 2 ) then
        ts_tdir = - N_Elec
+    else
+       if ( Elecs(1)%t_dir /= Elecs(2)%t_dir ) then
+          ! In case we have a skewed transport direction
+          ! we have some restrictions...
+          ts_tdir = - N_Elec
+       end if
     end if
 
     ! Setup default parameters for the electrodes
@@ -989,6 +995,49 @@ contains
           write(*,'(a,/,a)') 'Consider updating more elements when doing &
                &N-electrode calculations. The charge conservation typically &
                &increases.','  TS.Elecs.DM.Update [cross-terms|all]'
+       end if
+
+       ! Calculate the reciprocal cell WITHOUT 2*Pi
+       call reclat(ucell,rcell,0)
+
+       err = .false.
+       do i = 1 , na_u
+
+          ! We need to check that all device/electrode
+          ! atoms are inside the unit-cell
+          ! This is the "easiest" way to figure out whether
+          ! we have cross-terms that stems from a periodic 
+          ! cell.
+          isc(1) = floor(sum(xa(:,i)*rcell(:,1)))
+          isc(2) = floor(sum(xa(:,i)*rcell(:,2)))
+          isc(3) = floor(sum(xa(:,i)*rcell(:,3)))
+          if ( ts_tdir > 0 ) then
+             ! In case of a uni-directional transport direction
+             ! we can easily figure out the connections
+             if ( isc(ts_tdir) /= 0 ) then
+                write(*,'(a,i0,a,3(tr1,i0))') &
+                     'Atom ',i,' lies outside of unit-cell, in supercell: ', &
+                     isc
+                err = .true.
+             end if
+          else
+             if ( any(isc /= 0) ) then
+                write(*,'(a,i0,a,3(tr1,i0))') &
+                     'Atom ',i,' lies outside of unit-cell, in supercell: ', &
+                     isc
+                err = .true.
+             end if
+          end if
+
+       end do
+
+       if ( err ) then
+          write(*,'(a)') 'We do not allow this as we cannot separate &
+               &periodic connections from open-boundary connections.'
+          write(*,'(a)') 'As a pre-caution we request that atoms are situated &
+               &inside the unit-cell for easier handling.'
+          write(*,'(a)') 'Please move all atoms inside of the unit-cell...'
+          call die('Please see output...')
        end if
 
     end if

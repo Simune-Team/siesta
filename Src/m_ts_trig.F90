@@ -976,6 +976,7 @@ contains
     use class_dSpData1D
     use class_zTriMat
     use m_ts_electype
+    use m_ts_tri_scat, only : insert_Self_Energies
     use m_ts_cctype, only : ts_c_idx
 
     ! the current energy point
@@ -1036,39 +1037,4 @@ contains
 
   end subroutine prepare_invGF
    
-  subroutine insert_Self_Energies(no_u, Gfinv_tri, El)
-    use m_ts_electype
-    use class_zTriMat
-    integer, intent(in) :: no_u
-    type(zTriMat), intent(inout) :: GFinv_tri
-    type(Elec), intent(in) :: El
-
-    complex(dp), pointer :: Gfinv(:)
-    integer :: no, off, i, j, ii, idx
-    
-    no = TotUsedOrbs(El)
-    off = El%idx_o - orb_offset(El%idx_o) - 1
-    Gfinv => val(GFinv_tri)
-
-    ii = 0
-    if ( El%Bulk ) then
-       do j = 1 , no
-          do i = 1 , no
-             idx = index(GFinv_tri,i+off,j+off)
-             ii = ii + 1
-             Gfinv(idx) = El%Sigma(ii)
-          end do
-       end do
-    else
-       do j = 1 , no
-          do i = 1 , no
-             idx = index(GFinv_tri,i+off,j+off)
-             ii = ii + 1
-             Gfinv(idx) = Gfinv(idx) - El%Sigma(ii)
-          end do
-       end do
-    end if
-    
-  end subroutine insert_Self_Energies
-
 end module m_ts_trig

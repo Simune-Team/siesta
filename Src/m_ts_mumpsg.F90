@@ -555,11 +555,11 @@ contains
     call delete(fdist)
 
     ! Deallocate user data
-    deallocate( mum%IRN )
-    deallocate( mum%JCN )
-    deallocate( mum%A )
-    deallocate( mum%IRHS_PTR )
-    deallocate( mum%IRHS_SPARSE )
+    deallocate( mum%IRN ) ; nullify( mum%IRN )
+    deallocate( mum%JCN ) ; nullify( mum%JCN )
+    deallocate( mum%A ) ; nullify( mum%A )
+    deallocate( mum%IRHS_PTR ) ; nullify( mum%IRHS_PTR )
+    deallocate( mum%IRHS_SPARSE ) ; nullify( mum%IRHS_SPARSE )
     deallocate( Gf ) ! mum%RHS_SPARSE is => GF
     nullify( mum%RHS_SPARSE )
     ! retain IO, killing makes a last print-out

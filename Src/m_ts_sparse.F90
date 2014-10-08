@@ -99,8 +99,10 @@ contains
     use m_ts_debug
     use parallel, only: Node
 #endif
-!    use m_monitor
+    use m_region
+    use m_sparsity_handling
 
+!    use m_monitor
 ! **********************
 ! * INPUT variables    *
 ! **********************
@@ -131,9 +133,13 @@ contains
 ! * LOCAL variables    *
 ! **********************
     type(OrbitalDistribution) :: dit
+    ! We create a temporary sparsity pattern which removes
+    ! all cross-connections across the electrode transport direction.
+    type(Sparsity) :: tmp_sp
+    type(tRegion) :: r_oE(N_Elec), r_tmp1, r_tmp2
     ! Temporary arrays for knowing the electrode size
     logical :: bool
-    integer :: no_u_TS
+    integer :: no_u_TS, iEl, i
 
     ! Number of orbitals in TranSIESTA
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
@@ -154,13 +160,81 @@ contains
        sc_off(:,:) = matmul(ucell,isc_off)
     end if
 
+    ! Some of the routines does the exact same thing, however,
+    ! here we do it to ensure that any terms crossing the unit-cell
+    ! boundary are removed.
+    if ( no_Buf > 0 ) then
+       ! Remove buffer atoms...
+       call Sp_remove_region(block_dist,sparse_pattern,r_oBuf,tmp_sp)
+    else
+       tmp_sp = sparse_pattern
+    end if
+
+#ifdef TRANSIESTA_DEBUG
+    if(IONode)write(*,*)'As is sparsity pattern (20)'
+    call sp_to_file(20+Node,sparse_pattern)
+#endif
+
+    ! Remove all electrode to other side connections
+    ! this only has effect when we cross 
+    do iEl = 1 , N_Elec
+
+       ! Create electrode region
+       call region_range(r_oE(iEl), Elecs(iEl)%idx_o, &
+            Elecs(iEl)%idx_o+TotUsedOrbs(Elecs(iEl))-1)
+
+       ! Remove the connections that cross the boundary
+       ! starting from this electrode
+       call region_connect(r_oE(iEl), block_dist, tmp_sp, r_tmp1)
+       call region_union(r_oE(iEl), r_tmp1, r_tmp2)
+
+       ! Remove connections from this electrode across the boundary...
+       call Sp_remove_crossterms(block_dist,tmp_sp,product(nsc),isc_off, &
+            Elecs(iEl)%t_dir, &
+            tmp_sp, r = r_tmp2)
+
+#ifdef TRANSIESTA_DEBUG
+       if(IONode)write(*,*)'Created TS-NO Cross (50)'
+       call sp_to_file(40+Node+10*iEl,tmp_sp)
+#endif
+
+    end do
+
+    if ( IONode .and. Gamma ) then
+       write(*,'(a,a)')'transiesta: ',&
+            'We cannot assure cross-boundary connections in Gamma calculations.'
+       write(*,'(a,a)')'transiesta: ',&
+            'Ensure that the electrode says: Principal cell is perfect'
+    end if
+
+    do iEl = 1 , N_Elec - 1
+       call region_delete(r_tmp1)
+       call region_delete(r_tmp2)
+       do i = iEl + 1 , N_Elec
+          call region_copy(r_tmp2,r_tmp1)
+          call region_union(r_oE(i),r_tmp1,r_tmp2)
+       end do
+       call Sp_remove_region2region(block_dist,tmp_sp,r_oE(iEl),r_tmp2,tmp_sp)
+
+    end do
+    call region_delete(r_tmp1)
+    call region_delete(r_tmp2)
+    do iEl = 1 , N_Elec
+       call region_delete(r_oE(iEl))
+    end do
+
+#ifdef TRANSIESTA_DEBUG
+    if(IONode)write(*,*)'Created TS-NO ELEC Cross (90)'
+    call sp_to_file(90+Node,tmp_sp)
+#endif
+
     if ( IsVolt ) then 
 
        ! Create the update region (a direct subset of the local sparsity pattern)
        ! Hence it is still a local sparsity pattern.
-       call ts_Sparsity_Update(block_dist,sparse_pattern, N_Elec, Elecs, &
+       call ts_Sparsity_Update(block_dist,tmp_sp, N_Elec, Elecs, &
             ltsup_sp_sc)
-
+       
        ! assign distribution array
        !call ts_init_distribution(block_dist,sparse_pattern)
        
@@ -178,11 +252,12 @@ contains
        ! to the local siesta sparsity
        call ts_Sparsity_Subset_pointer(block_dist,sparse_pattern,ltsup_sp_sc, &
             ltsup_sc_pnt)
+
     end if
 
     ! Create the global transiesta H(k), S(k) sparsity pattern
-    call ts_Sparsity_Global(block_dist,sparse_pattern, &
-         nnzs(sparse_pattern), N_Elec, Elecs, &
+    call ts_Sparsity_Global(block_dist,tmp_sp, &
+         N_Elec, Elecs, &
          ts_sp_uc)
 
     ! The update sparsity pattern can be simplied to the H,S sparsity
@@ -215,13 +290,16 @@ contains
 #endif
 
     if ( bool ) then
+
        tsup_sp_uc = ts_sp_uc
        if ( IONode ) then
           write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern.'
           write(*,'(a)') 'TranSIESTA global update sparsity pattern same as H,S'
           call print_type(ts_sp_uc)
        end if
+
     else
+
        ! Create the update region (a direct subset of ts_sp_uc)
        call ts_Sparsity_Update(dit,ts_sp_uc, N_Elec, Elecs, &
             tsup_sp_uc)
@@ -230,6 +308,7 @@ contains
           write(*,'(/,a)') 'Created the TranSIESTA global update sparsity pattern:'
           call print_type(tsup_sp_uc)
        end if
+
     end if
 
     ! Read in the monitor lists...
@@ -284,6 +363,9 @@ contains
     call sp_to_file(200+Node,tsup_sp_uc)
 #endif
 
+    ! Clean-up
+    call delete(tmp_sp)
+
   end subroutine ts_sparse_init
 
 ! Returns the global sparsity pattern for the transiesta region
@@ -291,9 +373,8 @@ contains
 ! cross connections from left-right, AND remove any
 ! z-connections (less orbitals to move about, and they should
 ! not exist).
-  subroutine ts_Sparsity_Global(block_dist,s_sp,n_nzs, &
-       N_Elec, Elecs, &
-       ts_sp)
+  subroutine ts_Sparsity_Global(block_dist,s_sp, &
+       N_Elec, Elecs, ts_sp)
 
     use parallel, only : IONode
 #ifdef MPI
@@ -316,8 +397,6 @@ contains
     type(OrbitalDistribution), intent(inout) :: block_dist
     ! Sparsity patterns of SIESTA (local)
     type(Sparsity), intent(inout) :: s_sp
-    ! The number of non-zeroes in the sparsity pattern (local)
-    integer, intent(in) :: n_nzs
     ! All the electrodes
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -345,20 +424,20 @@ contains
 #endif
 
     ! Also used in non-MPI (to reduce dublicate code)
-    integer :: no_local, no_u, uc_n_nzs, n_nzsg
+    integer :: no_l, no_u, uc_n_nzs, n_nzsg
 
     ! search logical to determine the update region...
     logical, allocatable :: l_HS(:)
 
     ! Loop-counters
-    integer :: j ,io, jo, ind
+    integer :: io, jo, ind
     integer :: iot, jot
     logical :: UseBulk
 
     ! Initialize
     call delete(ts_sp)
 
-    call attach(s_sp,nrows=no_local,nrows_g=no_u)
+    call attach(s_sp,nrows=no_l,nrows_g=no_u)
 
     ! Create the (local) SIESTA-UC sparsity...
 #ifdef MPI
@@ -372,9 +451,9 @@ contains
 #ifdef MPI
     ! point to the local (SIESTA-UC) sparsity pattern arrays
     call attach(sp_global,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
-    call glob_sparse_numh(no_local,no_u,l_ncol,l_ncolg)
+    call glob_sparse_numh(no_l,no_u,l_ncol,l_ncolg)
     call glob_sparse_listhptr(no_u,l_ncolg,l_ptrg)
-    call glob_sparse_listh(no_local,no_u, uc_n_nzs, &
+    call glob_sparse_listh(no_l,no_u, uc_n_nzs, &
          l_ncol , l_ptr , l_col , &
          l_ncolg, l_ptrg, n_nzsg, l_colg)
 
@@ -382,7 +461,7 @@ contains
     call delete(sp_global)
     
     ! Create the globalized UC sparsity pattern
-    call newSparsity(sp_uc,no_u, no_u, &
+    call newSparsity(sp_uc, no_u, no_u, &
          n_nzsg, l_ncolg, l_ptrg, l_colg, &
          name='SIESTA UC sparsity')
     
@@ -422,11 +501,8 @@ contains
        iot = orb_type(io)
        if ( iot == TYP_BUFFER ) cycle
 
-       ! Loop number of entries in the row...
-       do j = 1 , l_ncol(io)
-
-          ! The index in the pointer array is retrieved
-          ind = l_ptr(io) + j
+       ! The index in the pointer array is retrieved
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
           
           ! The unit-cell column index (remember we are looping a UC SP)
           jo = l_col(ind)
@@ -528,7 +604,7 @@ contains
     integer, pointer :: l_col(:) => null()
 
     ! Also used in non-MPI (to reduce dublicate code)
-    integer :: no_local, no_u, n_nzs
+    integer :: no_l, no_u, n_nzs
 
     ! search logical to determine the update region...
     logical, allocatable :: lup_DM(:)
@@ -536,7 +612,7 @@ contains
     logical :: UseBulk, DM_CrossTerms
 
     ! Loop-counters
-    integer :: io, ic, ind
+    integer :: lio, io, ind
     integer :: ict, jct
     
     ! Logical for determining the region
@@ -545,7 +621,7 @@ contains
     ! Initialize the tsup
     call delete(tsup_sp)
 
-    call attach(s_sp,nrows=no_local,nrows_g=no_u,nnzs=n_nzs)
+    call attach(s_sp,nrows=no_l,nrows_g=no_u,nnzs=n_nzs)
 
     ! allocate space for the MASK to create the TranSIESTA UPDATE region
     allocate(lup_DM(n_nzs))
@@ -559,20 +635,20 @@ contains
 
     ! We do not need to check the buffer regions...
     ! We know they will do NOTHING! :)
-    do io = 1 , no_local
+    do lio = 1 , no_l
 
        ! Shift out of the buffer region
-       ic = index_local_to_global(dit,io,Node)
+       io = index_local_to_global(dit,lio,Node)
 
        ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-       ict = orb_type(ic)
+       ict = orb_type(io)
        if ( ict == TYP_BUFFER ) cycle
 
        ! Loop the index of the pointer array
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+       do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
           ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-          ! note, that we have already *checked* ic
+          ! note, that we have already *checked* io
           jct = orb_type(l_col(ind))
           if ( jct == TYP_BUFFER ) cycle
 
@@ -599,7 +675,7 @@ contains
 
           ! We check whether it is electrode-connections. 
           ! If, so, they are not used in transiesta:
-          if      ( all((/ict,jct/) > 0) ) then
+          if      ( ict > 0 .and. jct > 0 ) then
              ! Remove connections between electrodes
              ! but maintain same electrode updates if not usebulk
              if ( ict == jct .and. .not. UseBulk ) then
@@ -620,10 +696,10 @@ contains
              ! between the central and the electrodes (the self-energies are the
              ! same)
              ! This will also remove any electrode terms
-             
+                
              i_in_C = ict == TYP_DEVICE
              j_in_C = jct == TYP_DEVICE
-
+             
              if ( DM_CrossTerms ) then
                 ! the user has requested to also update cross-terms
                 lup_DM(ind) = i_in_C .or.  j_in_C
@@ -633,7 +709,6 @@ contains
              end if
 
           else
-
              ! If not UseBulk the full Hamiltonian and the 
              ! self-energy terms are used.
              ! Hence, everything in the left-central-right
@@ -643,7 +718,7 @@ contains
              lup_DM(ind) = .true.
              ! It makes no sense to ususe UpdateDMCR in case of not using UseBulk
              ! as we update something that is not used...
-
+             
           end if
 
        end do
@@ -656,16 +731,15 @@ contains
             &junction leads to tunneling.'
        write(*,*) 'WARNING: Transiesta will disregard these &
             &cross-terms'
-       write(*,*) 'WARNING: Consider increasing the junction &
-            &in the z-direction.'
+       write(*,*) 'WARNING: Consider increasing the electrodes &
+            &in the transport-direction.'
        write(0,*) 'WARNING: Cross connections across the &
             &junction leads to tunneling.'
        write(0,*) 'WARNING: Transiesta will disregard these &
             &cross-terms'
-       write(0,*) 'WARNING: Consider increasing the junction &
-            &in the z-direction.'
+       write(0,*) 'WARNING: Consider increasing the electrodes &
+            &in the transport-direction.'
     end if
-
 
     ! We now have a MASK of the actual needed TranSIESTA sparsity pattern
     ! We create the TranSIESTA sparsity pattern
@@ -694,12 +768,8 @@ contains
 ! **********************
 ! * LOCAL variables    *
 ! **********************
-    integer, pointer :: l_ncol(:)   => null()
-    integer, pointer :: l_ptr(:)    => null()
-    integer, pointer :: l_col(:)    => null()
-    integer, pointer :: sub_ncol(:) => null()
-    integer, pointer :: sub_ptr(:)  => null()
-    integer, pointer :: sub_col(:)  => null()
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: sub_ncol(:), sub_ptr(:), sub_col(:)
     integer, pointer :: pnt(:)      => null()
 
     integer :: no_l, io, j, sub_ind, ind
@@ -752,7 +822,6 @@ contains
             &sparsity pattern. Are you surely having the correct &
             &sparsity?')
     end if
-
 
   end subroutine ts_Sparsity_Subset_pointer
 
@@ -1125,7 +1194,7 @@ contains
     integer, pointer :: l_col(:) => null()
     integer, allocatable :: tmp(:)
 
-    integer :: io, jo, ind, no_local, no_u, N
+    integer :: io, jo, ind, no_l, no_u, N
 
     integer :: MPIerror
 
@@ -1135,17 +1204,17 @@ contains
     d_dist = 0
 
     call attach(sparse_pattern,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=no_local, nrows_g=no_u)
+         nrows=no_l, nrows_g=no_u)
     ! Assign starting / ending
     d_dist(Node,1) = index_local_to_global(dit,1,Node)
-    d_dist(Node,2) = index_local_to_global(dit,no_local,Node)
+    d_dist(Node,2) = index_local_to_global(dit,no_l,Node)
 
     ! allocate space to capture content
     N = maxval(l_ncol)
     allocate(tmp(N))
     ! find the local update size
     N = 0
-    do io = 1 , no_local
+    do io = 1 , no_l
 
        ind = l_ptr(io)
        jo  = l_ncol(io)
