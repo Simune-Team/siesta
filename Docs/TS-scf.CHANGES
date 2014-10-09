@@ -1,5 +1,12 @@
 ----------------------------------------------------
-September 27, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-207
+October 9, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-208
+Bugfix for Makefile
+
+modified:
+  Src/Makefile
+
+----------------------------------------------------
+October 8, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-207
 Bugfix for non-optimal electrodes
 
 * A remnent from the first version left the

@@ -174,6 +174,9 @@ OBJS += m_gauss_fermi_17.o
 OBJS += m_integrate.o m_interpolate.o m_mat_invert.o m_monitor.o m_bandwidth.o
 OBJS += m_iterator.o
 
+# Region objects
+OBJS += m_region.o m_sparsity_handling.o
+
 # IO-modules
 OBJS += m_ncdf_io.o
 
@@ -329,9 +332,6 @@ TS_OBJS= m_ts_global_vars.o m_ts_options.o m_ts_aux.o m_ts_kpoints.o \
 	 m_ts_method.o m_ts_elec_se.o \
 	 m_ts_debug.o m_ts_tdir.o \
 	 m_ts_chem_pot.o m_transiesta.o m_ts_mesh.o m_ts_hartree.o m_ts_voltage.o
-
-# Region objects
-TS_OBJS += m_region.o m_sparsity_handling.o
 
 # contour objects
 TS_OBJS += m_ts_contour_eq.o m_ts_contour_neq.o m_ts_io_ctype.o \
