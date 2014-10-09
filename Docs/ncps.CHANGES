@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+October 9, 2014  Alberto Garcia       trunk-462--ncps-42
+Close psml file after parsing
+
++experimental opaque handle file
+
+added:
+  Src/psml/m_psml_user.F90
+modified:
+  Src/psml/m_psml_reader.F90
+
+------------------------------------------------------------
 October 9, 2014  Alberto Garcia       trunk-462--ncps-41
 Make the ps handle into a normal variable, not a pointer
 

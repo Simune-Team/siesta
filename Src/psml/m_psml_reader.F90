@@ -11,9 +11,9 @@ module m_psml_reader
   use m_psml_parsing_helpers, only: pseudo
 
 #ifdef PSML_USE_FOX
-  use FoX_sax,           only: xml_t, open_xml_file, parse
+  use FoX_sax,           only: xml_t, open_xml_file, close_xml_t, parse
 #else
-  use xmlf90_sax,        only: xml_t, open_xmlfile, xml_parse
+  use xmlf90_sax,        only: xml_t, open_xmlfile, xml_parse, close_xmlfile
 #endif
 
   implicit none 
@@ -37,10 +37,12 @@ module m_psml_reader
  call parse(fxml, startElement_handler=begin_element, &
                   endElement_handler=end_element,     &
                   characters_handler=pcdata_chunk) 
+ call close_xml_t(fxml)
 #else
  call open_xmlfile(fname,fxml,iostat)
  if (iostat /=0) call die("Cannot open XML file")
  call xml_parse(fxml, begin_element,end_element,pcdata_chunk,verbose=.false.)
+ call close_xmlfile(fxml)
 #endif
 
  ! Clean up association of module pointer
