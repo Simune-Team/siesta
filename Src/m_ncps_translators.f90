@@ -84,7 +84,7 @@ CONTAINS
            p%icorr = xc_id%atom_id
         else
            ! Fall back to querying a possible XC annotation
-           call ps_getAnnotationValue(ps_XCAnnotation(ps),  &
+           call get_annotation_value(ps_XCAnnotation(ps),  &
                                       "atom-xc-code",p%icorr,status)
            if (status == 0) then
               write(6,"(a)") "Atom-xc-code from annotation: " // p%icorr
@@ -122,6 +122,18 @@ CONTAINS
 !       Grid handling. We do not assume that the file
 !       uses a logarithmic grid.
 !
+!       Example of annotation processing
+!!$        grid_annotation = ps_GridAnnotation(ps)
+!!$        nitems = nitems_annotation(grid_annotation)
+!!$        if (nitems /= 0) then
+!!$           print *, "-- Grid annotation:"
+!!$        endif
+!!$        do i = 1, nitems
+!!$           call get_annotation_key(grid_annotation,i,key,stat)
+!!$           call get_annotation_value(grid_annotation,key,value,stat)
+!!$           print *, trim(key), ":", trim(value)
+!!$        enddo
+!!$
         want_new_grid = .false.
         if (present(new_grid)) then
            want_new_grid = new_grid
@@ -136,7 +148,8 @@ CONTAINS
            p%b = b
            p%nr = nint(log(rmax_grid/b+1.0d0)/a)
 
-        else
+        !! else if  we want to check for grid annotations...
+        else 
               print *, "Using ATOM defaults for log grid..."
               ! use the ATOM defaults 
               ! Note that a and b are interchanged...

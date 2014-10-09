@@ -6,13 +6,16 @@ module assoc_list
 !-----------------------------------------------------------
 type, public :: assoc_list_t
   private
-  integer                              :: nslots
-  integer                              :: nitems
+  integer                              :: nslots = 0
+  integer                              :: nitems = 0
   character(len=50), allocatable       :: key(:)
   character(len=50), allocatable       :: value(:)
 end type assoc_list_t
 
+type(assoc_list_t), public :: EMPTY_ASSOC_LIST 
+
 public :: assoc_list_init
+public :: assoc_list_reset
 public :: assoc_list_insert
 public :: assoc_list_nitems
 public :: assoc_list_get_key
@@ -36,6 +39,20 @@ integer, intent(out)              :: stat
   allocate(a%key(n),a%value(n),stat=stat)
 
 end subroutine assoc_list_init
+
+subroutine assoc_list_reset(a)
+type(assoc_list_t), intent(inout) :: a
+
+  if (allocated(a%key)) then
+     deallocate(a%key)
+  endif
+  if (allocated(a%value)) then
+     deallocate(a%value)
+  endif
+  a%nslots = 0
+  a%nitems = 0
+
+end subroutine assoc_list_reset
 
 subroutine assoc_list_insert(a,key,value,stat)
 type(assoc_list_t), intent(inout) :: a

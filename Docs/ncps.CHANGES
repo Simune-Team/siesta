@@ -1,4 +1,18 @@
 ------------------------------------------------------------
+October 9, 2014  Alberto Garcia       trunk-462--ncps-40
+Generalize annotation support
+
+* Introduced annotations in the new format for grids.
+* Export assoc_list symbols directly in m_psml for client's use.
+
+modified:
+  Pseudo/atom/write_psml.f
+  Src/m_ncps_translators.f90
+  Src/psml/assoc_list.f90
+  Src/psml/m_psml.F90
+  Src/psml/m_psml_core.f90
+
+------------------------------------------------------------
 September 25, 2014  Alberto Garcia       trunk-462--ncps-39
 Re-packaging of PSML support
 

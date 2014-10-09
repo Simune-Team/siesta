@@ -168,10 +168,12 @@
 
         call xml_NewElement(xf,"grid")
           call my_add_attribute(xf,"npts",str(nr))
-          write(msg,"(3(a,':',a,'/'))")  "type","log",
-     $                                   "scale",trim(gridscale),
-     $                                   "step",trim(gridstep)
-         call my_add_attribute(xf,"annotation",trim(msg))
+          call xml_NewElement(xf,"annotation")
+           call my_add_attribute(xf,"type","log")
+           call my_add_attribute(xf,"scale",trim(gridscale))
+           call my_add_attribute(xf,"step",trim(gridstep))
+          call xml_EndElement(xf,"annotation")
+
 
           call xml_NewElement(xf,"grid-data")
             call xml_AddArray(xf,r(1:nr))
@@ -269,13 +271,16 @@
            call my_add_attribute(xf,"matching-radius",str(rc_core))
            call my_add_attribute(xf,"number-of-continuous-derivatives",
      $                               str(n_of_continuous_derivs))
+           call xml_NewElement(xf,"annotation")
            if (n_of_continuous_derivs == 1) then
-              call my_add_attribute(xf,"annotation",
-     $             "original Froyen-Cohen-Louie method")
+              call my_add_attribute(xf,"method",
+     $             "Original Louie-Froyen-Cohen")
            else
-              call my_add_attribute(xf,"annotation",
-     $             "three-parameter Martins method")
+              call my_add_attribute(xf,"method",
+     $             "Three-parameter Martins")
            endif
+           call xml_EndElement(xf,"annotation")
+
            call xml_NewElement(xf,"radfunc")
 
            call xml_NewElement(xf,"data")
@@ -315,7 +320,7 @@
          lp = lo(i) + 1
          occ_down = zo(i)
          occ_up   = 0.0_dp
-         if (split_shell(lp)) then
+         if (is_split_shell(lp)) then
             i = i + 1
             occ_up = zo(i)
          endif
@@ -325,7 +330,7 @@
          call my_add_attribute(xf,"n",str(no(i)))
          call my_add_attribute(xf,"l",il(lp))
          call my_add_attribute(xf,"occupation",str(occupation))
-         if (polarized .and. split_shell(lp)) then
+         if (polarized .and. is_split_shell(lp)) then
             call my_add_attribute(xf,"occupation-down",str(occ_down))
             call my_add_attribute(xf,"occupation-up",str(occ_up))
          endif
@@ -350,7 +355,7 @@
          lp = lo(i) + 1
          occ_down = zo(i)
          occ_up   = 0.0_dp
-         if (split_shell(lp)) then
+         if (is_split_shell(lp)) then
             i = i + 1
             occ_up = zo(i)
          endif
@@ -358,17 +363,17 @@
       enddo
       end subroutine get_total_valence_charge
 
-      logical function split_shell(lp)
+      logical function is_split_shell(lp)
       integer, intent(in) :: lp
 
 
-      split_shell = .false.
+      is_split_shell = .false.
       if (polarized) then
-         split_shell = .true.
+         is_split_shell = .true.
       else if (relativistic) then
-         if (lp /= 1) split_shell = .true.
+         if (lp /= 1) is_split_shell = .true.
       endif
-      end function split_shell
+      end function is_split_shell
          
       subroutine my_add_attribute(xf,name,value)
       type(xmlf_t), intent(inout)   :: xf

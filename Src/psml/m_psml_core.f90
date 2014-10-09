@@ -11,6 +11,8 @@
 module m_psml_core
 
 use assoc_list, only: ps_annotation_t => assoc_list_t
+use assoc_list, only: EMPTY_ANNOTATION => EMPTY_ASSOC_LIST
+
 use external_interfaces, only: die
 
 ! 
@@ -71,7 +73,7 @@ type, public :: grid_t
 !
       integer                        :: npts = 0
       real(dp), pointer              :: grid_data(:) => null()
-      type(ps_annotation_t)          :: annotation
+      type(ps_annotation_t)          :: annotation 
 end type grid_t      
 !
 type, public :: radfunc_t
@@ -184,8 +186,7 @@ public :: ps_EvaluatePotential
 public :: ps_EvaluatePseudoWf
 public :: ps_EvaluateValenceCharge
 public :: ps_EvaluateCoreCharge
-
-public :: ps_GetAnnotationValue
+public :: ps_GridAnnotation
 
 CONTAINS !===============================================
 !> @brief Cleans and deallocates the ps object
@@ -468,17 +469,14 @@ type(ps_annotation_t)  :: xc_annotation
 xc_annotation = ps%xc_info%annotation
 end function ps_XCAnnotation
 !
-subroutine ps_GetAnnotationValue(annotation,key,value,stat)
-use assoc_list, only: ps_annotation_t =>assoc_list_t, assoc_list_get_value
-type(ps_annotation_t)  :: annotation
-character(len=*), intent(in)  :: key
-character(len=*), intent(out) :: value
-integer, intent(out)          :: stat
-
-call assoc_list_get_value(annotation,key,value,stat)
-
-end subroutine ps_GetAnnotationValue
-
+function ps_GridAnnotation(ps) result(grid_annotation)
+type(ps_t), intent(in) :: ps
+type(ps_annotation_t)  :: grid_annotation
+if (.not. associated(ps%global_grid)) then
+   grid_annotation = EMPTY_ANNOTATION
+endif
+grid_annotation = ps%global_grid%annotation
+end function ps_GridAnnotation
 !
 function ps_IsRelativistic(ps) result(rel)
 type(ps_t), intent(in) :: ps
