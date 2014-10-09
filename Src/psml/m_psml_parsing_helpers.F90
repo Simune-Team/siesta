@@ -31,13 +31,16 @@ public  :: begin_element, end_element, pcdata_chunk
 !    with a (default) "begin_Document" handler, or by 
 !    "begin_Element" after checking for association.
 !    This is the cleanest option, as the caller might want
-!    to keep several instances alive at the same time.
+!    to keep several instances alive at the same time...
+!    (... but this should be handled by the user)
 ! -- If "pseudo" here is a normal variable, it should also
 !    be "cleaned" before the next use. The current usage
 !    in Abinit falls in this category: psxml is a pointer
 !    associated to "pseudo", and cleaned after use.
 !
-type(ps_t), pointer, public, save :: pseudo => null()
+!    We implement the first option now
+
+type(ps_t), pointer, public, save :: pseudo => null() 
 
 logical, private, save  :: in_vps = .false. , in_radfunc = .false.
 logical, private, save  :: in_config_val = .false.
@@ -98,13 +101,11 @@ select case(name)
 
       case ("psml")
 
-         ! Allocate unconditionally, as
-         ! we must avoid re-using a previous
-         ! version (say, when dealing with
-         ! two or more elements)
+         ! Make sure that pseudo is pointing to something
 
-         allocate(pseudo)
-
+         if (.not. associated(pseudo)) then
+            call die("ps_t object not initialized by client")
+         endif
 
          call get_value(attributes,"version",value,status)
          if (value /= "0.7") then

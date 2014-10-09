@@ -82,7 +82,7 @@ type, public :: radfunc_t
 end type radfunc_t      
 !
 type, public :: semilocal_t
-      integer                          :: npots
+      integer                          :: npots = 0
       integer                          :: npots_major
       integer                          :: npots_minor
       integer, dimension(MAXN_POTS)           :: n
@@ -99,7 +99,7 @@ end type semilocal_t
 
 type, public :: pswfs_t
       character(len=40)                :: format
-      integer                          :: npswfs
+      integer                          :: npswfs = 0
       integer                          :: npswfs_major
       integer                          :: npswfs_minor
       integer, dimension(MAXN_WFNS)           :: n
@@ -141,6 +141,7 @@ type, public :: ps_t
 
    end type ps_t
 
+   
 !
 public  :: ps_destroy
 !public  :: dump_pseudo           ! For initial debugging
@@ -189,20 +190,21 @@ public :: ps_EvaluateCoreCharge
 public :: ps_GridAnnotation
 
 CONTAINS !===============================================
-!> @brief Cleans and deallocates the ps object
+!> @brief Cleans the ps object
 !> @author Alberto Garcia
 !> @date March-July 2014
-!> @detail ps is a pointer, and not a "value". This is confusing
 subroutine ps_destroy(ps)
-type(ps_t), pointer :: ps
+type(ps_t)     :: ps
 
 integer :: i
-
-if (.not. associated(ps)) RETURN
 
 if (associated(ps%global_grid)) then
    call destroy_grid(ps%global_grid)
 endif
+!
+! Note that freshly declared objects must have
+! npots = 0 and npswfs = 0 !
+!
 do i = 1, ps%semilocal%npots
    call destroy_radfunc(ps%semilocal%V(i))
 enddo
@@ -211,9 +213,6 @@ do i = 1, ps%pswfs%npswfs
 enddo
 call destroy_radfunc(ps%valence_charge%rho_val)
 call destroy_radfunc(ps%core_charge%rho_core)
-
-deallocate(ps)
-ps => null()
 
 end subroutine ps_destroy
 

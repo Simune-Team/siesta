@@ -82,7 +82,9 @@
         real(dp), intent(in), optional :: b
         real(dp), intent(in), optional :: rmax
 
-        type(ps_t), pointer        :: ps=>null()
+        ! Use the target attribute as per the standard
+        ! warning about dangling association...
+        type(ps_t), target   :: ps
 
         call psml_reader(fname,ps)
         call ncps_xml2froyen_new(ps,p,reparametrize,a,b,rmax)

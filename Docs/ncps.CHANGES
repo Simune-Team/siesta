@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+October 9, 2014  Alberto Garcia       trunk-462--ncps-41
+Make the ps handle into a normal variable, not a pointer
+
+Change the relationship pseudo <-> ps from pointer to
+pointee. This is more clear and can be extended to
+totally opaque handles plus a store, for C interoperability.
+The "target" attribute is still necessary for the declaration
+in the user program, until opaque handles are implemented.
+
+modified:
+  Src/m_ncps_reader.f
+  Src/psml/m_psml_core.f90
+  Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_psml_reader.F90
+
+------------------------------------------------------------
 October 9, 2014  Alberto Garcia       trunk-462--ncps-40
 Generalize annotation support
 

@@ -19,14 +19,17 @@ module m_psml_reader
   implicit none 
 
   character(len=*), intent(in) :: fname
-  type(ps_t), pointer          :: ps
+  type(ps_t), target           :: ps
 
   type(xml_t)                     :: fxml
   integer :: iostat
 
-  if (associated(ps)) then
-     call ps_destroy(ps)
-  endif
+  ! Clean the object's internal data
+  call ps_destroy(ps)
+
+  ! Associate module pointer, so that the parsed data
+  ! is written to ps
+  pseudo => ps
 
 #ifdef PSML_USE_FOX
  call open_xml_file(fxml,fname,iostat)
@@ -40,7 +43,8 @@ module m_psml_reader
  call xml_parse(fxml, begin_element,end_element,pcdata_chunk,verbose=.false.)
 #endif
 
- ps => pseudo
+ ! Clean up association of module pointer
+ pseudo => null()
 
 end subroutine psml_reader
 end module m_psml_reader
