@@ -14,8 +14,8 @@
       use m_ksv
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
-      USE m_pexsi_local_DOS, only: pexsi_local_DOS
-      USE m_pexsi_DOS, only: pexsi_DOS
+!      USE m_pexsi_local_DOS, only: pexsi_local_DOS
+!      USE m_pexsi_DOS, only: pexsi_DOS
       USE siesta_options
       use sparse_matrices, only: maxnh, listh, listhptr, numh
       use sparse_matrices, only: H, S, Dscf, Dold, Eold, xijo
@@ -91,8 +91,8 @@
       endif
 
       if (fdf_get("PEXSI.DOS",.false.)) then
-         call pexsi_DOS(no_u, no_l, nspin,
-     $        maxnh, numh, listhptr, listh, H, S, qtot, ef)
+!         call pexsi_DOS(no_u, no_l, nspin,
+!     $        maxnh, numh, listhptr, listh, H, S, qtot, ef)
       endif
 
       ! section done by Siesta subset of nodes
@@ -391,7 +391,7 @@ C     Find local density of states
       endif ! SIESTA_worker
 
       if (fdf_get("PEXSI.LocalDOS",.false.)) then
-         call pexsi_local_DOS()
+!         call pexsi_local_DOS()
       endif
 
       if (SIESTA_worker) call timer("Analysis",2)

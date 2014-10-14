@@ -1,0 +1,27 @@
+--------------------------------------------------------------
+October 14, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-1
+Simple KSDFT driver from new interface
+
+Proof of concept.
+No plan reuse.
+No optimization of initial bracket during the SCF loop.
+
+removed:
+  Src/m_pexsi_interface.f90
+added:
+  Docs/pexsi-v0.7.CHANGES
+  Src/Sys/macosx-pexsi.make
+  Src/f_ppexsi_interface.f90
+  Src/m_pexsi_driver.F90
+  Tests/si64-pexsi/
+  Tests/si64-pexsi/makefile
+  Tests/si64-pexsi/si64-pexsi.fdf
+  Tests/si64-pexsi/si64-pexsi.pseudos
+renamed:
+  Src/m_pexsi_dos.F90 => Src/m_pexsi_dos.F90_old
+  Src/m_pexsi_local_dos.F90 => Src/m_pexsi_local_dos.F90_old
+  Src/m_pexsi_solver.F90 => Src/m_pexsi_solver.F90_old
+modified:
+  Src/Makefile
+  Src/siesta_analysis.F
+
