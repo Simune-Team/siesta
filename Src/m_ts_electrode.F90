@@ -48,6 +48,7 @@ contains
 ! ***************** OUTPUT *********************************************
 ! complex(dp) GS      : Surface Green's function of the electrode
 ! **********************************************************************
+    use m_pivot_array, only : ipiv
     use m_mat_invert
     use precision, only: dp
 
@@ -82,8 +83,6 @@ contains
 
     real(dp) :: ro
 
-    ! on the stack...
-    integer :: ipvt(no)
     complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,gb
     complex(dp), dimension(:), pointer :: gsL,gsR
 
@@ -163,7 +162,7 @@ contains
 
 ! rh =  rh1^(-1)*rh
 ! rh =  t0
-       call zgesv(no, no2, w, no, ipvt, rh, no, ierr)
+       call zgesv(no, no2, w, no, ipiv, rh, no, ierr)
 
        if ( ierr /= 0 ) then
           write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
@@ -314,6 +313,7 @@ contains
 ! ***************** OUTPUT *********************************************
 ! complex(dp) GS      : Surface Green's function of the electrode
 ! **********************************************************************
+    use m_pivot_array, only : ipiv
     use m_mat_invert
     use precision, only: dp
 
@@ -347,8 +347,6 @@ contains
 
     real(dp) :: ro
 
-    ! on the stack...
-    integer :: ipvt(no)
     complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,gb
 
 #ifdef TRANSIESTA_DEBUG
@@ -418,7 +416,7 @@ contains
 
 ! rh =  rh1^(-1)*rh
 ! rh =  t0
-       call zgesv(no, no2, w, no, ipvt, rh, no, ierr)
+       call zgesv(no, no2, w, no, ipiv, rh, no, ierr)
 
        if ( ierr /= 0 ) then
           write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
@@ -527,7 +525,7 @@ contains
     use sys ,       only : die
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World
-    use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
+    use mpi_siesta, only : MPI_Bcast
     use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_integer
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
     use mpi_siesta, only : MPI_double_complex
@@ -1386,7 +1384,7 @@ contains
     ! size requirement
     integer :: size_req(2)
     ! Counters
-    integer :: i, ios, jos, ioe, joe, off, n_s
+    integer :: i, ios, ioe, off, n_s
     logical :: is_left, final_invert
     logical :: zHS_allocated
     logical :: same_k
@@ -1418,6 +1416,9 @@ contains
     ! it will save a bit of time, but not much
     same_k = sum(abs(bkpt - El%bkpt_cur)) < 1.e-10_dp
     if ( .not. same_k ) El%bkpt_cur = bkpt
+    ! In case we do not need the hamiltonian
+    ! This will be the case for non-bias points and when using bulk electrode
+    if ( .not. same_k ) same_k = .not. associated(El%HA)
 
     ! Convert back to reciprocal units (to electrode)
     call kpoint_convert(El%ucell,bkpt,kpt,-1)
@@ -1491,22 +1492,10 @@ contains
 
     ! prepare the indices for the Gamma array
     ios = 1
-    jos = 1
-    ioe = 0
-    joe = 1
+    ioe = nuS 
 
     ! loop over the repeated cell...
     q_loop: do iqpt = 1 , nq
-
-       ! correct indices of Gamma-array
-       do i = 1 , nuS
-          if ( ioe == nuouT_E ) then
-             ioe = 1
-             joe = joe + 1
-          else
-             ioe = ioe + 1
-          end if
-       end do
 
        ! init qpoint in reciprocal lattice vectors
        call kpoint_convert(El%ucell,q_exp(El,iqpt),qpt,-1)
@@ -1531,26 +1520,20 @@ contains
 
        ! Copy over surface Green's function
        ! first we need to determine the correct placement
-       call copy_over(is_left,nuo_E,GS,nuou_E,El%GA(ios:ioe,jos:joe),off)
+       call copy_over(is_left,nuo_E,GS,nuou_E,El%GA(ios:ioe),off)
 
        ! we need to invert back as we don't need to
        ! expand. And the algorithm expects it to be in correct format
        if ( nq == 1 .and. nuo_E /= nuou_E ) then
-          call mat_invert(El%GA(ios:ioe,jos:joe),zwork(1:nuS),&
+          call mat_invert(El%GA(ios:ioe),zwork(1:nuS),&
                nuou_E, &
                MI_IN_PLACE_LAPACK)
              
        end if
 
        ! correct indices of Gamma-array
-       ios = ioe
-       jos = joe
-       if ( ios < nuouT_E ) then
-          ios = ios + 1
-       else
-          ios = 1
-          jos = jos + 1
-       end if
+       ios = ios + nuS
+       ioe = ioe + nuS
 
     end do q_loop
 

@@ -106,8 +106,10 @@ contains
        ip = max(ip,no * nrows_g(Gf_tri,n))
     end do
 
-    if ( nwork < ip ) &
-         call die('Work size not big enough')
+    if ( nwork < ip ) then
+       print *,nwork,ip
+       call die('Work size not big enough')
+    end if
 
     do n = lsPart , lePart
 
@@ -130,7 +132,7 @@ contains
        ! for the requested region
 
 #ifdef TRANSIESTA_DEBUG
-       write(*,'(a,2(tr1,i0),a,2(tr1,i0))')'GfGGf at:',BsPart,ip,' --',BePart,ip
+       write(*,'(a,2(tr1,i0),a,2(tr1,i0))')'GfGGf at:',BsPart,n,' --',BePart,n
 #endif
        
        ! this will populate in ascending column major order
@@ -166,19 +168,14 @@ contains
   end subroutine GF_Gamma_GF
 
   subroutine GFGGF_needed_worksize(N_tri_part, tri_parts, &
-       N_Elec, Elecs, padding, worksize)
-    use m_ts_electype
+       no_max, padding, worksize)
     integer, intent(in) :: N_tri_part
     integer, intent(in) :: tri_parts(N_tri_part)
-    integer, intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
+    integer, intent(in) :: no_max
     integer, intent(out) :: padding, worksize
 
     integer :: els, n, tn, io
-    integer :: no_max, cur_n
-
-    ! calculate the maximum electrode size
-    no_max = maxval(TotUsedOrbs(Elecs))
+    integer :: cur_n
 
     ! We just need to find the maximum overlap of
     ! two regions.
@@ -239,14 +236,16 @@ contains
 
   end subroutine GFGGF_needed_worksize
 
-  subroutine ts_needed_mem(N_tri_part, tri_parts, worksize)
+  subroutine ts_needed_mem(IsVolt, N_Elec, Elecs, N_tri_part, tri_parts, worksize)
     use m_ts_electype
-    use m_ts_options, only : N_Elec, Elecs, IsVolt
+    logical, intent(in) :: IsVolt
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: N_tri_part
     integer, intent(in) :: tri_parts(N_tri_part)
     integer, intent(out) :: worksize
 
-    integer :: pad, n
+    integer :: pad, n, no
 
     ! find at which point they will cross...
     worksize = tri_parts(N_tri_part)**2
@@ -258,8 +257,9 @@ contains
     worksize = worksize * 2
 
     if ( IsVolt ) then
+       no = maxval(TotUsedOrbs(Elecs(:)))
        call GFGGF_needed_worksize(N_tri_part, tri_parts, &
-            N_Elec, Elecs, pad, n)
+            no, pad, n)
        worksize = worksize + pad + n
     end if
     

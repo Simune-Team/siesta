@@ -179,10 +179,12 @@ contains
     end do
      
 #ifdef MPI
-    ! Note that zH => val(SpArrH)
-    ! Note that zS => val(SpArrS)
-    call AllReduce_SpData(SpArrH,nwork,work)
-    call AllReduce_SpData(SpArrS,nwork,work)
+    if ( dist_nodes(dit) > 1 ) then
+       ! Note that zH => val(SpArrH)
+       ! Note that zS => val(SpArrS)
+       call AllReduce_SpData(SpArrH,nwork,work)
+       call AllReduce_SpData(SpArrS,nwork,work)
+    end if
 #endif
 
     ! We symmetrize AND shift

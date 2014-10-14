@@ -1,6 +1,9 @@
 module m_mat_invert
   
   use precision, only : dp
+  use m_pivot_array, only : Npiv, ipiv
+  use m_pivot_array, only : init_mat_inversion => init_pivot
+  use m_pivot_array, only : clear_mat_inversion => clear_pivot
   
   implicit none
 
@@ -22,10 +25,6 @@ module m_mat_invert
 
   ! The maximum dimensionality of the problem before we turn to a direct inversion algorithm
   integer :: N_MAX = 40
-  integer, save :: Npiv = 0
-  integer, save, pointer :: ipiv(:) => null()
-  ! controls whether the pivoting array should be de-allocated
-  integer, save :: N_level = 0
 
   ! Used for BLAS calls (local variables)
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -105,7 +104,7 @@ contains
     integer, intent(out), optional :: ierr
 
     complex(dp), pointer :: A1(:), C2(:), B1(:), A2(:)
-    complex(dp), pointer :: X1(:), Y2(:), t1(:), t2(:)
+    complex(dp), pointer :: t1(:), t2(:)
     integer :: sA1, eA1, sC2, eC2
     integer :: sB1, eB1, sA2, eA2
     integer :: n1, n2, i1, i2, idx, i, j
@@ -312,38 +311,5 @@ contains
     end do
 
   end subroutine mat_invert_recursive
-
-
-  ! We initialize the pivoting array for rotating the inversion
-  subroutine init_mat_inversion(n)
-    use alloc, only : re_alloc
-    integer, intent(in) :: n
-    N_level = N_level + 1
-
-    if ( n > Npiv ) then
-       Npiv = n
-
-      ! Allocate space for the pivoting array
-       call re_alloc(ipiv,1, Npiv, copy = .false. , &
-            name="mat_piv",routine='MatInversion')
-    end if
-       
-  end subroutine init_mat_inversion
-
-  subroutine clear_mat_inversion()
-    use alloc, only: de_alloc
-    N_level = N_level - 1
-    if ( N_level < 0 ) then
-       N_level = 0
-       Npiv = 0
-       ! array is already de-allocated
-    else if ( N_level == 0 ) then
-       N_level = 0 ! ensure that the level is zero
-       Npiv = 0
-       ! Deallocate the pivoting array
-       call de_alloc(ipiv, &
-            name="mat_piv",routine='MatInversion')
-    end if
-  end subroutine clear_mat_inversion
 
 end module m_mat_invert

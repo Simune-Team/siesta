@@ -25,21 +25,16 @@ module m_ts_trimat_invert
 
   use precision, only : dp
   use class_zTrimat
-  use m_trimat_invert, only : attach2piv
   use m_trimat_invert, only : calc_Mnn_inv
   use m_trimat_invert, only : calc_Xn_div_Cn_p1, calc_Yn_div_Bn_m1
   use m_trimat_invert, only : Xn_div_Cn_p1, Yn_div_Bn_m1
+
+  use m_pivot_array, only : Npiv, ipiv, init_pivot
+  use m_pivot_array, only : clear_BiasTriMat_inversion => clear_pivot 
   
   implicit none
 
   private
-
-  ! Current size of the pivoting arrays
-  integer, save          :: Npiv = 0
-  ! The pivoting array
-  integer, save, pointer :: ipiv(:) => null()
-  ! determines whether it is attached, or created
-  logical, save          :: attached = .false.
 
   ! Used for BLAS calls (local variables)
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -62,7 +57,7 @@ contains
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-    logical, intent(in) :: has_El(N_Elec)
+    logical, intent(in), optional :: has_El(N_Elec)
     logical, intent(in), optional :: all_nn
 
     complex(dp), pointer :: Mpinv(:)
@@ -116,7 +111,7 @@ contains
           call calc_Mnn_inv(M,Minv,n)
        end do
 
-    else
+    else if ( present(has_El) ) then
 
     ! We calculate all the required Mnn
     ! Here it is permissable to overwrite the old A
@@ -142,6 +137,10 @@ contains
        end do
        off = off + nrows_g(M,n)
     end do
+
+    else 
+       
+       call die('Erroneous option, either has_El or all_nn')
 
     end if
 
@@ -211,9 +210,9 @@ contains
 
     sPart = which_part(M,idx_o)
     ePart = which_part(M,idx_o+no-1)
-    if ( sPart < 1 ) call die('Error in the Bias inversion')
+    if ( sPart < 1 ) call die('Error in the Bias inversion, sPart')
     if ( ePart - sPart + 1 > 2 ) call die('Error in trimat partition')
-    if ( ePart > parts(M) ) call die('Error in the Bias inversion')
+    if ( ePart > parts(M) ) call die('Error in the Bias inversion, ePart')
 
     ! Point to the matrices
     z => val(Minv)
@@ -376,7 +375,7 @@ contains
     end do
 
     ! At this point the total 
-    ! inverted column is placed at the beginning of
+    ! inverted column is placed at the end of
     ! the tri-mat inversion.
 
     call timer('V_TM_inv',2)
@@ -483,44 +482,19 @@ contains
 
   ! We initialize the pivoting array for rotating the inversion
   subroutine init_BiasTriMat_inversion(M)
-    use alloc, only : re_alloc
     type(zTriMat), intent(in) :: M
-    integer :: i
+    integer :: i, N
 
-    call clear_BiasTriMat_inversion()
-    Npiv = 0
+    N = 0
     do i = 1 , parts(M)
-       if ( nrows_g(M,i) > Npiv ) then
-          Npiv = nrows_g(M,i)
+       if ( nrows_g(M,i) > N ) then
+          N = nrows_g(M,i)
        end if
     end do
-    call attach2piv(Npiv,ipiv,i)
-    attached = .true.
 
-    if ( i /= 0 ) then
-       attached = .false.
-       ! Allocate space for the pivoting array
-       call re_alloc(ipiv,1, Npiv, &
-            name="TriMat_piv",routine='TriMatInversion')
-    end if
+    call init_pivot(N)
 
   end subroutine init_BiasTriMat_inversion
-
-  subroutine clear_BiasTriMat_inversion()
-    use alloc, only: de_alloc
-    if ( Npiv == 0 ) return
-
-    Npiv = 0
-    if ( attached ) then
-       nullify(ipiv)
-       attached = .false.
-    else
-       ! Deallocate the pivoting array
-       call de_alloc(ipiv, &
-            name="TriMat_piv",routine='TriMatInversion')
-    end if
-
-  end subroutine clear_BiasTriMat_inversion
 
 end module m_ts_trimat_invert
     

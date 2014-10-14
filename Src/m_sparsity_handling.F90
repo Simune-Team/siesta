@@ -511,6 +511,91 @@ contains
     
   end subroutine Sp_remove_region2region
 
+  subroutine Sp_to_Spglobal(dit,in,out)
+
+#ifdef MPI
+    use mpi_siesta
+#endif
+
+    type(OrbitalDistribution), intent(in) :: dit
+    ! The sparsity that needs to be globalized
+    type(Sparsity), intent(inout) :: in
+    ! The globalized sparsity pattern
+    type(Sparsity), intent(inout) :: out
+
+    integer :: lio, io, no_l, no_u, n_nzs, n_nzsg, Bn, ind, lind
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, allocatable :: ncol(:), n_ptr(:), col(:)
+    integer :: Node, comm
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    if ( dist_nodes(dit) == 1 ) then
+       out = in
+       return
+    end if
+
+#ifndef MPI
+    call die('Error in this, you are using non-MPI &
+         &yet have a distribution... Weird')
+#else
+
+    Node = dist_node(dit)
+    comm = dist_comm(dit)
+    
+    call attach(in ,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=no_l,nrows_g=no_u,nnzs=n_nzs)
+
+    ! Grab number of non-zero elements
+    call MPI_AllReduce(n_nzs,n_nzsg, 1, MPI_Integer, MPI_SUM, &
+         comm,MPIerror)
+
+    allocate(ncol(no_u),n_ptr(no_u),col(n_nzsg))
+
+    n_ptr(1) = 0
+    ind = 0
+    do io = 1 , no_u
+
+       Bn = node_handling_element(dit,io)
+       if ( Node == Bn ) then
+          lio = index_global_to_local(dit,io)
+          ncol(io) = l_ncol(lio)
+       end if
+
+       ! First grab number of non-zero elements
+       call MPI_Bcast(ncol(io),1,MPI_Integer, &
+            Bn, comm,MPIerror)
+
+       ! Then b-cast the number of elements
+       if ( Node == Bn ) then
+          lind = l_ptr(lio)
+          col(ind+1:ind+ncol(io)) = l_col(lind+1:lind+l_ncol(lio))
+       end if
+
+       call MPI_Bcast(col(ind+1),ncol(io),MPI_Integer, &
+            Bn, comm, MPIerror)
+
+       ! Update index-pointer
+       ind = ind + ncol(io)
+
+       if ( io > 1 ) then
+          n_ptr(io) = n_ptr(io-1) + ncol(io-1)
+       end if
+
+    end do
+
+    if ( ind /= n_nzsg ) then
+       call die('Error in sparsity pattern globalization')
+    end if
+
+    call newSparsity(out,no_u,no_u,n_nzsg,ncol,n_ptr,col, &
+         name='Global ('//name(in)//')')
+    
+#endif
+
+  end subroutine Sp_to_Spglobal
+
   subroutine dSpData1D_to_Sp(A,out,B)
 
     ! the sparse data that needs to be transferred

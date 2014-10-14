@@ -323,7 +323,7 @@ contains
     use m_ts_cctype
 
 #ifdef MPI
-    use mpi_siesta, only : MPI_Bcast, MPI_Isend, MPI_Irecv
+    use mpi_siesta, only : MPI_Bcast, MPI_Send, MPI_Recv
     use mpi_siesta, only : MPI_Sum, MPI_Integer, MPI_Double_Complex
     use mpi_siesta, only : MPI_Status_Size, MPI_Comm_World
 #endif
@@ -356,7 +356,7 @@ contains
     integer :: read_Size, read_Size_HS
 
 #ifdef MPI
-    integer :: MPIerror, Request, Status(MPI_Status_Size)
+    integer :: MPIerror, Status(MPI_Status_Size)
 #endif
 
     complex(dp) :: ZE_cur
@@ -431,13 +431,11 @@ contains
           ! do nothing
        else if ( Node == iNode ) then
           ! recieve from the host node
-          call MPI_iRecv(ZE_cur,1,MPI_Double_Complex,    0,iNode, &
-               MPI_Comm_World,Request,MPIerror)
-          call MPI_Wait(Request,Status,MPIerror)
+          call MPI_Recv(ZE_cur,1,MPI_Double_Complex,    0,iNode, &
+               MPI_Comm_World,Status,MPIerror)
        else if ( IONode ) then
-          call MPI_iSend(ZE_cur,1,MPI_Double_Complex,iNode,iNode, &
-               MPI_Comm_World,Request,MPIerror)
-          call MPI_Wait(Request,Status,MPIerror)
+          call MPI_Send(ZE_cur,1,MPI_Double_Complex,iNode,iNode, &
+               MPI_Comm_World,MPIerror)
        end if
 #endif
 
@@ -468,15 +466,22 @@ contains
 
           ! read in the electrode Hamiltonian and overlap...
           if ( IONode ) then
-             read(uGF) El%HA
-             read(uGF) El%SA
+             if ( associated(El%HA) ) then
+                read(uGF) El%HA
+                read(uGF) El%SA
+             else
+                read(uGF) !El%HA
+                read(uGF) !El%SA
+             end if
           end if
 
 #ifdef MPI
+          if ( associated(El%HA) ) then
           call MPI_Bcast(El%HA(1,1,1),read_Size_HS,MPI_Double_Complex, &
                0,MPI_Comm_World,MPIerror)
           call MPI_Bcast(El%SA(1,1,1),read_Size_HS,MPI_Double_Complex, &
                0,MPI_Comm_World,MPIerror)
+          end if
 #endif
        end if 
 
@@ -491,13 +496,11 @@ contains
 
           read(uGF) work(1:read_Size)
           
-          call MPI_ISend(work(1),read_Size,MPI_Double_Complex, &
-               iNode,1,MPI_Comm_World,Request,MPIerror) 
-          call MPI_Wait(Request,Status,MPIerror)
+          call MPI_Send(work(1),read_Size,MPI_Double_Complex, &
+               iNode,1,MPI_Comm_World,MPIerror) 
        else if ( Node ==  iNode ) then
-          call MPI_IRecv(El%GA(1,1),read_Size,MPI_Double_Complex, &
-               0    ,1,MPI_Comm_World,Request,MPIerror)
-          call MPI_Wait(Request,Status,MPIerror)
+          call MPI_Recv(El%GA(1),read_Size,MPI_Double_Complex, &
+               0    ,1,MPI_Comm_World,Status,MPIerror)
        end if
 #endif
 
@@ -540,7 +543,9 @@ contains
 #ifdef MPI
     integer :: MPIerror
 #endif
+    type(ts_c_idx) :: c
 
+    c = cE
     ! save the current weight of the point
     ! This is where we include the factor-of-two for spin and
     ! and the (1/Pi) from DM = Im[G]/Pi
@@ -584,17 +589,21 @@ contains
     ! of doing the same "repetition" expansion twice, we can live with
     ! that!
     do i = 1 , NElecs
+#ifdef TBTRANS
+       ! We add the complex energy for the electrode
+       c%e = dcmplx(real(cE%e,dp),Elecs(i)%E_imag)
+#endif
        if ( Elecs(i)%out_of_core ) then
           ! Set k-point for calculating expansion
           Elecs(i)%bkpt_cur = bkpt
           call read_next_GS_Elec(uGF(i), NEReqs, &
-               ikpt, Elecs(i), cE, &
+               ikpt, Elecs(i), c, &
                nzwork, zwork, forward = forward)
        else
           ! This routine will automatically check
           ! (and SET) the k-point for the electrode.
           ! This is necessary for the expansion to work.
-          call calc_next_GS_Elec(Elecs(i),ispin,bkpt,cE%e, &
+          call calc_next_GS_Elec(Elecs(i),ispin,bkpt,c%e, &
                nzwork, zwork)
        end if
     end do
@@ -651,7 +660,6 @@ contains
 #endif
 
     errorGF = .false.
-
     
     io_read: if ( IONode ) then
 

@@ -181,10 +181,13 @@ contains
           no_used = TotUsedOrbs(Elecs(iEl))
           nq(iEl) = 1
        end if
-       ! If we using bulk electrodes, we need not the Hamiltonian, 
-       ! nor the overlap...
-       call re_alloc(Elecs(iEl)%HA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
-       call re_alloc(Elecs(iEl)%SA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
+
+       if ( IsVolt .or. .not. Elecs(iEl)%Bulk ) then
+          ! If we using bulk electrodes, we need not the Hamiltonian, 
+          ! nor the overlap...
+          call re_alloc(Elecs(iEl)%HA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
+          call re_alloc(Elecs(iEl)%SA,1,no_used,1,no_used,1,nq(iEl),routine='transiesta')
+       end if
 
        no_used = TotUsedOrbs(Elecs(iEl))
        if ( IsVolt ) then
@@ -198,7 +201,7 @@ contains
              no_used2 = Elecs(iEl)%no_used
           end if
        end if
-       call re_alloc(Elecs(iEl)%Gamma,1,no_used,1,no_used2,routine='transiesta')
+       call re_alloc(Elecs(iEl)%Gamma,1,no_used*no_used2,routine='transiesta')
 
        ! This seems stupid, however, we never use the expansion array and
        ! GammaT at the same time. Hence it will be safe
@@ -207,7 +210,7 @@ contains
        ! first the GAA is "emptied" of information and then
        ! Gamma is filled.
        if ( Elecs(iEl)%pre_expand == 0 ) no_used2 = Elecs(iEl)%no_used
-       Elecs(iEl)%GA => Elecs(iEl)%Gamma(1:no_used,1:no_used2)
+       Elecs(iEl)%GA => Elecs(iEl)%Gamma(1:no_used*no_used2)
 
     end do
 
@@ -452,8 +455,10 @@ contains
     !  Clean up electrodes
     !***********************
     do iEl = 1 , N_Elec
-       call de_alloc(Elecs(iEl)%HA,routine='transiesta')
-       call de_alloc(Elecs(iEl)%SA,routine='transiesta')
+       if ( associated(Elecs(iEl)%HA) ) then
+          call de_alloc(Elecs(iEl)%HA,routine='transiesta')
+          call de_alloc(Elecs(iEl)%SA,routine='transiesta')
+       end if
        call de_alloc(Elecs(iEl)%Gamma,routine='transiesta')
     end do
 
@@ -622,8 +627,10 @@ contains
           tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2 !H,S
           tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) ** 2 ! GS/Gamma
        else
-          if ( Elecs(i)%pre_expand > 1 ) f = product(Elecs(i)%Rep) ! H,S
-          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2
+          if ( .not. Elecs(i)%Bulk ) then
+             if ( Elecs(i)%pre_expand > 1 ) f = product(Elecs(i)%Rep) ! H,S
+             tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2
+          end if
           if ( Elecs(i)%pre_expand > 0 ) f = product(Elecs(i)%Rep) ! GS
           tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used
        end if
@@ -647,9 +654,10 @@ contains
     if ( ts_method == TS_SPARSITY_TRI ) then
 
        ! Calculate size of the tri-diagonal matrix
+       i = maxval(TotUsedOrbs(Elecs(:)))
        if ( IsVolt ) then
           call GFGGF_needed_worksize(N_tri_part,tri_parts, &
-               N_Elec, Elecs, padding, worksize)
+               i, padding, worksize)
        else
           padding = 0
           worksize = 0

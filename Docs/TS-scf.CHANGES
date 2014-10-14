@@ -1,4 +1,113 @@
 ----------------------------------------------------
+October 14, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-209
+Update for preparing merging tbtrans
+
+* Added procedures in the m_iterator module
+  to calculate the current step reached, and 
+  also to return how many total steps that are required.
+  This is used to control how far one have gotten in a loop
+
+* Create a generic pivot_array module
+  to contain pivoting array. 
+  Nearly all transiesta routines have converted
+  to this pivoting array module.
+  It reduces the overhead of allocating pivoting
+  arrays on the stack all the time.
+  Could possibly be introduced other places.
+
+  It has a built in counter to retain the number
+  of times it has been called.
+  Only at full reduction of this variable will
+  the pivoting array be deallocated and the pivoting amount
+  reset. (Else we needed to save the history)
+
+* MPI routines in m_region did not fully function
+  with the intention they were built for.
+  The mpi routines have been fixed.
+
+* Reduced the need for the glob_sparse module
+  as it was tedious to use.
+  I have completely removed it.
+
+* In case transiesta was doing Bulk electrodes
+  and IsVolt == .false.
+  we could reduce the need for allocating the
+  Hamiltonian and the overlap in the electrodes.
+  This will further reduce memory requirement
+  for non-bias calculations.
+
+* The Gamma array in the electrode type has been
+  converted to a 1D array. This conforms better with the
+  routines in transiesta/tbtrans.
+  This meant a reduced complexity of the Gamma saving in the
+  ts_electrode module.
+
+* Changed a few interfaces in sparsity2trimat to help
+  tbtrans utilise the same routines.
+
+* Changed a few things for the electrode type
+  - Added tbt-E-imag flag, only to be read by tbtrans
+  - Added a prefix input for the options to help 
+    create application aware options for tbtrans
+  - Removed bandbottom calculation, this should be
+    the users responsibility.
+  - Changed the printing of electrode settings
+    to be fully situated in the electype code.
+    This is easier to handle and it makes sense
+    as the transiesta/tbtrans options are fully
+    decoupled from this.
+
+* Changed a few IRecv/ISend to regular Send/Recv
+  as it did not make sense to do other wise.
+
+* Changed the default DM-update option
+  to update the cross-terms.
+  This has been a long-lasting option
+  that is safer to have like this.
+
+* Added a flag to compile siesta in a testing
+  environment for IO.
+  Alberto suggested that writing in block-size orbital
+  ranges would greatly speedup IO.
+  Indeed this is the case.
+  To test this compile using: 
+    DEFS += -DTEST_IO
+  which will do 3 different settings.
+   1) My message passing method
+   2) Alberto's method of block-size passing
+      while retaining compatibility
+   3) Alberto's method of block-size writing
+
+added:
+  Src/m_matio.F90
+  Src/m_pivot_array.f90
+  Src/m_test_io.F90
+modified:
+  Src/Makefile
+  Src/m_io_s.F90
+  Src/m_iterator.f90
+  Src/m_mat_invert.F90
+  Src/m_region.F90
+  Src/m_sparsity_handling.F90
+  Src/m_transiesta.F90
+  Src/m_trimat_invert.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Src/state_init.F
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 October 9, 2014 -- Nick P. Andersen     trunk-432-scf-40--ts-scf-208
 Bugfix for Makefile
 

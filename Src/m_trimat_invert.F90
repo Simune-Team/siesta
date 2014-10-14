@@ -53,16 +53,13 @@ module m_trimat_invert
   
   use class_zTriMat
   use precision, only: dp
+  use m_pivot_array, only : Npiv, ipiv, init_pivot
+  use m_pivot_array, only : clear_TriMat_inversion => clear_pivot 
 
   implicit none
 
   private
   private :: dp
-
-  ! Current size of the pivoting arrays
-  integer, private, save          :: Npiv = 0
-  ! The pivoting array
-  integer, private, save, pointer :: ipiv(:) => null()
 
   ! Used for BLAS calls (local variables)
   complex(dp), private, parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -72,7 +69,6 @@ module m_trimat_invert
   public :: invert_TriMat
   public :: init_TriMat_inversion
   public :: clear_TriMat_inversion
-  public :: attach2piv
 
   ! For those inclined to do other things
   ! than simply inverting the matrix... :)
@@ -86,22 +82,10 @@ module m_trimat_invert
 
 contains
 
-  subroutine attach2piv(Npiv_in,ipiv_in,err)
-    integer, intent(in) :: Npiv_in
-    integer, pointer :: ipiv_in(:)
-    integer, intent(out) :: err
-    if ( Npiv_in > Npiv ) then
-       err = 1
-       return
-    end if
-    ipiv_in => ipiv
-    err = 0
-  end subroutine attach2piv
-
   subroutine invert_TriMat(M,Minv,calc_parts)
     type(zTriMat), intent(inout) :: M, Minv
     logical, intent(in), optional :: calc_parts(:)
-    complex(dp), pointer :: Mpinv(:), Mp(:), XYn(:), CB(:)
+    complex(dp), pointer :: Mpinv(:)
     integer :: lsPart, lePart
     integer :: sNm1, sNp1, n
     logical :: piv_initialized
@@ -200,7 +184,7 @@ contains
     ! Local variables
     complex(dp), pointer :: Mp(:), Mpinv(:)
     complex(dp), pointer :: Xn(:), Yn(:), Cn(:), Bn(:)
-    integer :: sNm1, sN, sNp1, ierr
+    integer :: sNm1, sN, sNp1
 
     if ( 1 < n )        sNm1 = nrows_g(M,n-1)
                         sN   = nrows_g(M,n)
@@ -433,29 +417,19 @@ contains
 
   ! We initialize the pivoting array for rotating the inversion
   subroutine init_TriMat_inversion(M)
-    use alloc, only : re_alloc
     type(zTriMat), intent(in) :: M
-    integer :: i
-    Npiv = 0
+    integer :: i, N
+
+    N = 0
     do i = 1 , parts(M)
-       if ( nrows_g(M,i) > Npiv ) then
-          Npiv = nrows_g(M,i)
+       if ( nrows_g(M,i) > N ) then
+          N = nrows_g(M,i)
        end if
     end do
 
-    ! Allocate space for the pivoting array
-    call re_alloc(ipiv,1, Npiv, &
-         name="TriMat_piv",routine='TriMatInversion')
+    call init_pivot(N)
 
   end subroutine init_TriMat_inversion
-
-  subroutine clear_TriMat_inversion()
-    use alloc, only: de_alloc
-    Npiv = 0
-    ! Deallocate the pivoting array
-    call de_alloc(ipiv, &
-         name="TriMat_piv",routine='TriMatInversion')
-  end subroutine clear_TriMat_inversion
 
 end module m_trimat_invert
     

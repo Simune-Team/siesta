@@ -60,6 +60,9 @@ module m_iterator
   public :: itt_stepped
   public :: itt_destroy
 
+  public :: itt_cur_step
+  public :: itt_steps
+
   interface itt_init
      module procedure init_itt1
      module procedure init_itt2, init_itt2_of_itt1
@@ -114,6 +117,18 @@ module m_iterator
      module procedure destroy_itt1, destroy_itt2
      module procedure destroy_itt3, destroy_itt4
      module procedure destroy_itt5
+  end interface
+
+  interface itt_cur_step
+     module procedure cur_step_itt1, cur_step_itt2
+     module procedure cur_step_itt3, cur_step_itt4
+     module procedure cur_step_itt5
+  end interface
+
+  interface itt_steps
+     module procedure steps_itt1, steps_itt2
+     module procedure steps_itt3, steps_itt4
+     module procedure steps_itt5
   end interface
 
   interface fitt_step
@@ -235,6 +250,32 @@ contains
     call sitt_step(this)
     done = itt_done(this)
   end function f_step_itt1
+
+  pure function cur_step_itt1(this) result(cur_step)
+    type(itt1), intent(in) :: this
+    integer :: cur_step
+    if ( itt_done(this) ) then
+       cur_step = this%end - this%start + 1
+       if ( cur_step > this%start ) &
+            cur_step = cur_step / this%step
+    else if ( this%stepped ) then
+       cur_step = this%cur - this%start + 1
+       if ( cur_step > this%start ) &
+            cur_step = cur_step / this%step
+    else
+       cur_step = 0
+    end if
+  end function cur_step_itt1
+
+  pure function steps_itt1(this) result(steps)
+    type(itt1), intent(in) :: this
+    integer :: steps
+    steps = this%end - this%start + 1
+    if ( steps > 1 ) then ! correct number of steps by the stepping
+       steps = steps / this%step
+    end if
+  end function steps_itt1
+
   
 
 
@@ -374,6 +415,23 @@ contains
        stepped = this%it2%stepped
     end if
   end function stepped_itt2
+
+  pure function cur_step_itt2(this) result(cur_step)
+    type(itt2), intent(in) :: this
+    integer :: cur_step
+    cur_step = itt_cur_step(this%it1)
+    if ( cur_step > 1 ) then
+       cur_step = itt_steps(this%it2) * (cur_step-1) + itt_cur_step(this%it2)
+    else
+       cur_step = itt_cur_step(this%it2)
+    end if
+  end function cur_step_itt2
+
+  pure function steps_itt2(this) result(steps)
+    type(itt2), intent(in) :: this
+    integer :: steps
+    steps = itt_steps(this%it2) * itt_steps(this%it1)
+  end function steps_itt2
 
 
 
@@ -521,6 +579,23 @@ contains
        stepped = this%it2%it2%stepped
     end if
   end function stepped_itt3
+
+  pure function cur_step_itt3(this) result(cur_step)
+    type(itt3), intent(in) :: this
+    integer :: cur_step
+    cur_step = itt_cur_step(this%it1)
+    if ( cur_step > 1 ) then
+       cur_step = itt_steps(this%it2) * (cur_step-1) + itt_cur_step(this%it2)
+    else
+       cur_step = itt_cur_step(this%it2)
+    end if
+  end function cur_step_itt3
+
+  pure function steps_itt3(this) result(steps)
+    type(itt3), intent(in) :: this
+    integer :: steps
+    steps = itt_steps(this%it2) * itt_steps(this%it1)
+  end function steps_itt3
 
 
 
@@ -682,6 +757,23 @@ contains
        stepped = this%it3%it2%stepped
     end if
   end function stepped_itt4
+
+  pure function cur_step_itt4(this) result(cur_step)
+    type(itt4), intent(in) :: this
+    integer :: cur_step
+    cur_step = itt_cur_step(this%it1)
+    if ( cur_step > 1 ) then
+       cur_step = itt_steps(this%it3) * (cur_step-1) + itt_cur_step(this%it3)
+    else
+       cur_step = itt_cur_step(this%it3)
+    end if
+  end function cur_step_itt4
+
+  pure function steps_itt4(this) result(steps)
+    type(itt4), intent(in) :: this
+    integer :: steps
+    steps = itt_steps(this%it3) * itt_steps(this%it1)
+  end function steps_itt4
 
 
 
@@ -852,5 +944,22 @@ contains
        stepped = this%it3%it2%it2%stepped
     end if
   end function stepped_itt5
+
+  pure function cur_step_itt5(this) result(cur_step)
+    type(itt5), intent(in) :: this
+    integer :: cur_step
+    cur_step = itt_cur_step(this%it1)
+    if ( cur_step > 1 ) then
+       cur_step = itt_steps(this%it3) * (cur_step-1) + itt_cur_step(this%it3)
+    else
+       cur_step = itt_cur_step(this%it3)
+    end if
+  end function cur_step_itt5
+
+  pure function steps_itt5(this) result(steps)
+    type(itt5), intent(in) :: this
+    integer :: steps
+    steps = itt_steps(this%it3) * itt_steps(this%it1)
+  end function steps_itt5
 
 end module m_iterator

@@ -207,6 +207,7 @@ contains
   contains 
 
     recursive subroutine select_better(method, parts,n_part, guess_parts, guess_part)
+      use m_ts_options, only: N_Elec, Elecs, IsVolt
       use m_ts_tri_scat, only : ts_needed_mem
 
       integer, intent(in)    :: method
@@ -237,8 +238,8 @@ contains
          ! We optimize for memory, i.e. we check for number of elements
          ! in this regard we also check whether we should allocate
          ! a work-array in case of bias calculations.
-         call ts_needed_mem(guess_parts,guess_part, guess_work)
-         call ts_needed_mem(parts, n_part, part_work)
+         call ts_needed_mem(IsVolt, N_Elec, Elecs, guess_parts,guess_part, guess_work)
+         call ts_needed_mem(IsVolt, N_Elec, Elecs, parts, n_part, part_work)
          
          copy = part_work > guess_work
          if ( .not. copy ) then
@@ -390,6 +391,7 @@ contains
 
   subroutine full_even_out_parts(method,sp,no,mm_col,parts,n_part)
     use class_Sparsity
+    use m_ts_options, only : IsVolt, N_Elec, Elecs
     use m_ts_tri_scat, only : ts_needed_mem
     integer, intent(in) :: method ! the method used for creating the parts
     ! The sparsity pattern
@@ -406,11 +408,11 @@ contains
        
        do
           o_part(:) = n_part(:)
-          call ts_needed_mem(parts,n_part,o_mem)
+          call ts_needed_mem(IsVolt, N_Elec, Elecs, parts,n_part,o_mem)
           do i = 1 , parts
              mem_part(:) = n_part(:)
              call even_out_parts(sp, no, mm_col, parts, n_part, i)
-             call ts_needed_mem(parts,n_part,n_mem)
+             call ts_needed_mem(IsVolt, N_Elec, Elecs, parts,n_part,n_mem)
              if ( n_mem > o_mem ) then
                 ! copy back
                 n_part(:) = mem_part(:)

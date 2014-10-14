@@ -378,13 +378,14 @@ contains
 
     use parallel, only : IONode
 #ifdef MPI
-    use m_glob_sparse
     use mpi_siesta
 #endif
     use class_OrbitalDistribution
     use create_Sparsity_SC
     use m_ts_electype
     use m_ts_method
+    use m_sparsity_handling
+
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
     use parallel, only: Node
@@ -394,7 +395,7 @@ contains
 ! * INPUT variables    *
 ! **********************
     ! The SIESTA distribution of the sparsity pattern
-    type(OrbitalDistribution), intent(inout) :: block_dist
+    type(OrbitalDistribution), intent(in) :: block_dist
     ! Sparsity patterns of SIESTA (local)
     type(Sparsity), intent(inout) :: s_sp
     ! All the electrodes
@@ -416,12 +417,6 @@ contains
     integer, pointer :: l_ncol(:) => null()
     integer, pointer :: l_ptr(:) => null()
     integer, pointer :: l_col(:) => null()
-#ifdef MPI
-    ! to create the global sparsity pattern (TranSIESTA)
-    integer, allocatable :: l_ncolg(:)
-    integer, allocatable :: l_ptrg(:)
-    integer, allocatable :: l_colg(:)
-#endif
 
     ! Also used in non-MPI (to reduce dublicate code)
     integer :: no_l, no_u, uc_n_nzs, n_nzsg
@@ -443,32 +438,16 @@ contains
 #ifdef MPI
     call crtSparsity_SC(s_sp,sp_global, UC=.TRUE.)
     uc_n_nzs = nnzs(sp_global)
-#else
-    call crtSparsity_SC(s_sp,sp_uc    , UC=.TRUE.)
-    uc_n_nzs = nnzs(sp_uc)
-#endif
 
-#ifdef MPI
     ! point to the local (SIESTA-UC) sparsity pattern arrays
-    call attach(sp_global,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
-    call glob_sparse_numh(no_l,no_u,l_ncol,l_ncolg)
-    call glob_sparse_listhptr(no_u,l_ncolg,l_ptrg)
-    call glob_sparse_listh(no_l,no_u, uc_n_nzs, &
-         l_ncol , l_ptr , l_col , &
-         l_ncolg, l_ptrg, n_nzsg, l_colg)
+    call Sp_to_Spglobal(block_dist,sp_global,sp_uc)
 
     ! Delete the local UC sparsity pattern
     call delete(sp_global)
-    
-    ! Create the globalized UC sparsity pattern
-    call newSparsity(sp_uc, no_u, no_u, &
-         n_nzsg, l_ncolg, l_ptrg, l_colg, &
-         name='SIESTA UC sparsity')
-    
-    ! Deallocate the arrays which we do not need
-    deallocate(l_ncolg,l_ptrg,l_colg)
-    call memory('D','I',no_u*2+n_nzsg,'globArrays')
 
+#else
+    call crtSparsity_SC(s_sp,sp_uc    , UC=.TRUE.)
+    uc_n_nzs = nnzs(sp_uc)
 #endif
 
 #ifdef TRANSIESTA_DEBUG

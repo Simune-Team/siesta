@@ -184,8 +184,9 @@ contains
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require this...
     if ( IsVolt ) then
+       io = maxval(TotUsedOrbs(Elecs(:)))
        call GFGGF_needed_worksize(N_tri_part,tri_parts, &
-            N_Elec, Elecs, padding, GFGGF_size)
+            io, padding, GFGGF_size)
     else
        padding = 0
        GFGGF_size = 0

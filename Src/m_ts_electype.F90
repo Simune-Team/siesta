@@ -5,6 +5,7 @@ module m_ts_electype
   use class_Sparsity
   use class_dSpData1D
   use class_dSpData2D
+  use m_region
 
   use m_ts_chem_pot, only : ts_mu, name
 
@@ -38,6 +39,7 @@ module m_ts_electype
   public :: assign, read_Elec
   public :: create_sp2sp01
   public :: print_Elec
+  public :: print_settings
   public :: check_Elec, check_connectivity
   public :: delete
 
@@ -88,7 +90,6 @@ module m_ts_electype
                               ! == 0 means no update
                               ! == 1 means update cross-terms
                               ! == 2 means update everything (no matter Bulk)
-     logical :: BandBottom = .false.
      ! whether to re-calculate the GF-file
      logical :: ReUseGF = .false. 
      ! Create a GF-file or re-calculate the self-energies everytime
@@ -126,13 +127,20 @@ module m_ts_electype
      type(dSpData1D) :: S00, S01
 
      ! These arrays are used to construct the full Hamiltonian and overlap and Green's function
-     complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:,:)
+     complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:)
      ! Arrays needed to partition the scattering matrix and self-energies
      ! Notice that Gamma should "ALWAYS" contain the transposed
-     complex(dp), pointer :: Gamma(:,:), Sigma(:)
+     complex(dp), pointer :: Gamma(:), Sigma(:)
 #ifdef TBTRANS
      ! The size of the down-folded self-energy
      integer :: no_dwn
+     ! The index of the down-folded self-energy
+     integer :: idx_o_dwn
+     ! The region of the down-folded region
+     type(tRegion) :: o_inD
+
+     ! The imaginary part in the electrode
+     real(dp) :: E_imag = 7.3498067e-7_dp ! corresponds to 0.00001 eV
 #endif
 
      ! The basal plane of the electrode
@@ -190,20 +198,23 @@ contains
 
   end function fdf_nElec
 
-  function fdf_Elec(prefix,slabel,this,N_mu,mus) result(found)
+  function fdf_Elec(prefix,slabel,this,N_mu,mus,name_prefix) result(found)
     use fdf
     use m_ts_io, only : ts_read_TSHS_opt
+    use m_ts_io_ctype, only : pline_E_parse
 
     character(len=*), intent(in) :: prefix,slabel
     type(Elec), intent(inout) :: this
     integer, intent(in) :: N_mu
     type(ts_mu), intent(in), target :: mus(N_mu)
+    character(len=*), intent(in), optional :: name_prefix
+
     logical :: found
 
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    logical :: info(5), exists
+    logical :: info(5)
     integer :: i, j
     integer :: idx_a 
 
@@ -217,7 +228,11 @@ contains
     idx_a = 0
 
     ! We default a lot of the options
-    this%GFfile = trim(slabel)//'.'//trim(prefix)//'GF'//trim(name)
+    if ( present(name_prefix) ) then
+       this%GFfile = trim(slabel)//'.'//trim(name_prefix)//'GF'//trim(name)
+    else
+       this%GFfile = trim(slabel)//'.'//trim(prefix)//'GF'//trim(name)
+    end if
     this%na_used = -1
     
     do while ( fdf_bline(bfdf,pline) )
@@ -342,9 +357,6 @@ contains
                   &correct!')
           end if
 
-       else if ( leqi(ln,'calculate-band-bottom') ) then
-          this%BandBottom = fdf_bboolean(pline,1,after=1)
-
        else if ( leqi(ln,'DM-update') ) then
           if ( fdf_bnnames(pline) < 2 ) &
                call die('Update scheme not supplied')
@@ -434,6 +446,24 @@ contains
             leqi(ln,'TSDE-file') ) then
           if ( fdf_bnnames(pline) < 2 ) call die('TSDE name not supplied')
           this%DEfile = trim(fdf_bnames(pline,2))
+
+#ifdef TBTRANS
+       else if ( leqi(ln,'tbt-E-imag') ) then
+
+          call pline_E_parse(pline,1,ln, &
+               val = this%E_imag, before=3)
+          print *,this%E_imag
+          if ( this%E_imag < 0._dp ) then
+             call die('We do not allow the advanced Greens function &
+                  &to be calculated. Please ensure a positive imaginary &
+                  &part of the energy.')
+          end if
+
+#else
+       else if ( leqi(ln(1:3),'tbt') ) then
+          ! by-pass
+          ! All options that are meant for tbtrans are discarded :)
+#endif
 
        else
 
@@ -537,6 +567,13 @@ contains
     ! if the user has specified text for the electrode position
     if ( idx_a == -1 ) then
        this%idx_a = this%idx_a + 1 - TotUsedAtoms(this)
+    end if
+
+    ! For in-core calculations of the Self-energy,
+    ! the pre-expansion does not make sense.
+    ! Hence, we immediately set it to 0
+    if ( .not. this%out_of_core ) then
+       this%pre_expand = 0
     end if
 
     ! In case the user has not supplied a DM file for the
@@ -1351,5 +1388,89 @@ contains
     call delete(f_DM_2D)
 
   end subroutine copy_DM
+
+
+  subroutine print_settings(this,prefix)
+    use units, only : eV
+    use parallel, only : Node
+    type(Elec), intent(in) :: this
+    character(len=*), intent(in) :: prefix
+
+    character(len=100) :: chars
+    character(len=60) :: f1, f5, f20, f6, f7, f8, f9, f10, f11, f15
+
+    if ( Node /= 0 ) return
+    
+    ! Write out the settings
+    ! First create the different out-put options
+    f1  = '('''//trim(prefix)//': '',a,t53,''='',4x,l1)'
+    f5  = '('''//trim(prefix)//': '',a,t53,''='',i5,a)'
+    f20 = '('''//trim(prefix)//': '',a,t53,''='',i0,'' -- '',i0)'
+    f6  = '('''//trim(prefix)//': '',a,t53,''='',f10.4,tr1,a)'
+    f7  = '('''//trim(prefix)//': '',a,t53,''='',f12.6,tr1,a)'
+    f8  = '('''//trim(prefix)//': '',a,t53,''='',f10.4)'
+    f9  = '('''//trim(prefix)//': '',a,t53,''='',e12.4,tr1,a)'
+    f10 = '('''//trim(prefix)//': '',a,t53,''='',4x,a)'
+    f11 = '('''//trim(prefix)//': '',a)'
+    f15 = '('''//trim(prefix)//': '',a,t53,''= '',2(i0,'' x ''),i0)'
+
+    write(*,f11) '>> '//trim(name(this))
+    if ( this%out_of_core ) then
+       write(*,f10) '  GF file', trim(this%GFfile)
+       write(*,f1)  '  Reuse existing GF-file', this%ReUseGF
+    else
+       write(*,f11)  '  In-core GF'
+    end if
+    write(*,f10) '  Electrode TSHS file', trim(this%HSfile)
+    write(*,f5)  '  # atoms used in electrode', this%na_used
+    write(*,f15) '  Electrode repetition [A1 x A2 x A3]', this%Rep(:)
+    write(*,f20) '  Position in geometry', this%idx_a, &
+         this%idx_a + TotUsedAtoms(this) - 1
+    if ( this%t_dir == 1 ) then
+       chars = 'A1'
+    else if ( this%t_dir == 2 ) then
+       chars = 'A2'
+    else if ( this%t_dir == 3 ) then
+       chars = 'A3'
+    end if
+    write(*,f10) '  Transport direction for electrode', trim(chars)
+    if ( this%inf_dir == INF_POSITIVE ) then
+       chars = 'position wrt. '//trim(chars)
+    else
+       chars = 'negative wrt. '//trim(chars)
+    end if
+    write(*,f10) '  Semi-infinite direction for electrode', trim(chars)
+    write(*,f7)  '  Chemical shift', this%mu%mu/eV,'eV'
+    write(*,f1)  '  Bulk values in electrode', this%Bulk
+    if ( product(this%Rep) > 1 .and. this%out_of_core ) then
+       if ( this%pre_expand == 0 ) then
+          chars = 'none'
+       else if ( this%pre_expand == 1 ) then
+          chars = 'GS'
+       else
+          chars = 'H, S, GS'
+       end if
+       write(*,f10)  '  Pre-expansion to reduce computation', trim(chars)
+    end if
+#ifndef TBTRANS
+    if ( this%DM_update == 0 ) then
+       write(*,f11)  '  Cross-terms is not updated'
+    else if ( this%DM_update == 1 ) then
+       write(*,f11)  '  Cross-terms is updated'
+    else if ( this%DM_update == 2 ) then
+       write(*,f11)  '  Cross-terms and electrode region is updated'
+    end if
+#endif
+    if ( abs(this%mu%mu) > 1.e-10_dp ) then
+       write(*,f8)  '  Hamiltonian E-C Ef fractional shift', this%Ef_frac_CT
+    end if
+    if ( .not. this%kcell_check ) then
+       write(*,f11)  '  Will NOT check the kgrid-cell! Ensure sampling!'
+    end if
+#ifdef TBTRANS
+    write(*,f9)  '  Electrode imaginary Eta', this%E_imag/eV,' eV'
+#endif
+
+  end subroutine print_settings
   
 end module m_ts_electype

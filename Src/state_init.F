@@ -69,6 +69,9 @@
       use class_dSpData1D
       use class_dSpData2D
       use class_dData2D
+#ifdef TEST_IO
+      use m_test_io
+#endif
 
       implicit none
 
@@ -363,12 +366,17 @@
 !     Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
 
+#ifdef TEST_IO
+      ! We test the io-performance here
+      call time_io(nspin,H_2D)
+#endif
+
 #ifdef TRANSIESTA
 !     If onlyS, Save overlap matrix and exit                       ! MPN
       if (onlyS) then           ! MPN 
          fname = fname_TSHS(slabel,0,0,.true.)
-! We include H as S, well-knowing that we only write one of
-!     them, there is no need to allocate space for no reason!
+         ! We include H as S, well-knowing that we only write one of
+         ! them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
      &        .true., Gamma, ts_Gamma_file,
      &        ucell, nsc, isc_off, na_u, no_s, nspin,

@@ -558,10 +558,16 @@ contains
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
+#ifdef TEST_IO
+                i = sum(ncol(io:io-1+n))
+                write(iu) l_col(ind+1:ind+i)
+                ind = ind + i
+#else
                 do i = io , io - 1 + n
                    write(iu) l_col(ind+1:ind+ncol(i))
                    ind = ind + ncol(i)
                 end do
+#endif
              else
                 i = sum(ncol(io:io-1+n))
                 call MPI_ISSend( l_col(ind+1) , i, MPI_Integer, &
@@ -573,11 +579,16 @@ contains
                   BNode, ib, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
                   call die('Error in code: io_write_Sp')
+#ifdef TEST_IO
+             i = sum(lncol(gio:gio-1+n))
+             write(iu) buf(1:i)
+#else
              i = 0
              do io = gio , gio - 1 + n
                 write(iu) buf(i+1:i+lncol(io))
                 i = i + lncol(io)
              end do
+#endif
 
           end if
           gio = gio + n
@@ -860,10 +871,16 @@ contains
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
+#ifdef TEST_IO
+                i = sum(ncol(io:io-1+n))
+                write(iu) a(ind+1:ind+i)
+                ind = ind + i
+#else
                 do i = io , io - 1 + n
                    write(iu) a(ind+1:ind+ncol(i))
                    ind = ind + ncol(i)
                 end do
+#endif
              else
                 i = sum(ncol(io:io-1+n))
                 call MPI_ISSend( a(ind+1) , i, MPI_Double_Precision, &
@@ -875,11 +892,16 @@ contains
                   BNode, ib, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
                   call die('Error in code: io_write_dSp1D')
+#ifdef TEST_IO
+             i = sum(lncol(gio:gio-1+n))
+             write(iu) buf(1:i)
+#else
              i = 0
              do io = gio , gio - 1 + n
                 write(iu) buf(i+1:i+lncol(io))
                 i = i + lncol(io)
              end do
+#endif
              
           end if
           gio = gio + n
@@ -1231,10 +1253,16 @@ contains
              if ( Node == BNode ) then
                 io = index_global_to_local(dit,gio,Node)
                 if ( Node == 0 ) then
+#ifdef TEST_IO
+                   i = sum(ncol(io:io-1+n))
+                   write(iu) a(ind+1:ind+i,s)
+                   ind = ind + i
+#else
                    do i = io , io - 1 + n
                       write(iu) a(ind+1:ind+ncol(i),s)
                       ind = ind + ncol(i)
                    end do
+#endif
                 else
                    i = sum(ncol(io:io-1+n))
                    call MPI_ISSend( a(ind+1,s) , i, MPI_Double_Precision, &
@@ -1246,11 +1274,16 @@ contains
                      BNode, ib, MPI_Comm_World, MPIstatus, MPIerror )
                 if ( MPIerror /= MPI_Success ) &
                      call die('Error in code: io_write_dSp2D')
+#ifdef TEST_IO
+                i = sum(lncol(gio:gio-1+n))
+                write(iu) buf(1:i)
+#else
                 i = 0
                 do io = gio , gio - 1 + n
                    write(iu) buf(i+1:i+lncol(io))
                    i = i + lncol(io)
                 end do
+#endif
              
              end if
              gio = gio + n
@@ -1281,10 +1314,16 @@ contains
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
+#ifdef TEST_IO
+                i = sum(ncol(io:io-1+n))
+                write(iu) a(1:dim2,ind+1:ind+i)
+                ind = ind + i
+#else
                 do i = io , io - 1 + n
                    write(iu) a(1:dim2,ind+1:ind+ncol(i))
                    ind = ind + ncol(i)
                 end do
+#endif
              else
                 i = sum(ncol(io:io-1+n))
                 call MPI_ISSend( a(1,ind+1) , dim2*i, MPI_Double_Precision, &
@@ -1296,11 +1335,16 @@ contains
                   BNode, ib, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
                   call die('Error in code: io_write_dSp2D')
+#ifdef TEST_IO
+             i = sum(lncol(gio:gio-1+n))
+             write(iu) buf(1:i)
+#else
              i = 0
              do io = gio , gio - 1 + n
                 write(iu) buf(i+1:i+dim2*lncol(io))
                 i = i + lncol(io)
              end do
+#endif
              
           end if
           gio = gio + n

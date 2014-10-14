@@ -46,6 +46,10 @@ module m_region
   public :: region_print
   public :: region_copy
   public :: in_region, region_pivot
+#ifdef MPI
+  public :: region_MPI_union
+  public :: region_MPI_Bcast
+#endif
 
   ! Sorting methods for the regions
   integer, parameter, public :: R_SORT_MAX_FRONT = 1
@@ -374,10 +378,15 @@ contains
     integer, allocatable :: n_c(:), cur_con(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 #ifdef MPI
+    integer :: comm
     integer :: MPIerror
 #endif
 
     if ( r%n == 0 ) return
+
+#ifdef MPI
+    comm = dist_comm(dit)
+#endif
 
     ! Attach to the sparsity pattern...
     call attach(sp,nrows_g=no_u, &
@@ -438,9 +447,11 @@ contains
        end do
 
 #ifdef MPI
-       call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
-            MPI_MAX, MPI_Comm_World, MPIerror)
-       n_c(1:sr%n) = cur_con(1:sr%n)
+       if ( dist_nodes(dit) > 1 ) then
+          call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
+               MPI_MAX, comm, MPIerror)
+          n_c(1:sr%n) = cur_con(1:sr%n)
+       end if
 #endif
 
     case ( R_SORT_MAX_BACK ) 
@@ -487,9 +498,11 @@ contains
        end do
 
 #ifdef MPI
-       call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
-            MPI_MAX, MPI_Comm_World, MPIerror)
-       n_c(1:sr%n) = cur_con(1:sr%n)
+       if ( dist_nodes(dit) > 1 ) then
+          call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
+               MPI_MAX, comm, MPIerror)
+          n_c(1:sr%n) = cur_con(1:sr%n)
+       end if
 #endif
 
        ! We now reverse the values as we then control that the one
@@ -619,7 +632,7 @@ contains
   end subroutine region_union
 
   subroutine region_insert_list(r,n,list,rout,idx)
-    type(tRegion), intent(inout) :: r
+    type(tRegion), intent(in) :: r
     integer, intent(in) :: n, list(n)
     type(tRegion), intent(inout) :: rout
     ! The place of insertion
@@ -633,7 +646,7 @@ contains
   ! Inserts a region in another region.
   subroutine region_insert_region(r,rin,rout,idx)
     ! The region we wish to insert in
-    type(tRegion), intent(inout) :: r
+    type(tRegion), intent(in) :: r
     type(tRegion), intent(in) :: rin
     type(tRegion), intent(inout) :: rout
     ! The place of insertion
@@ -919,7 +932,7 @@ contains
     lseq_max = 7
     if ( present(seq_max) ) lseq_max = seq_max
 
-    write(*,'(a,a)') 'Region: ',trim(r%name)
+    write(*,'(a,i0,2a)') 'Region (',r%n,'): ',trim(r%name)
     write(*,'(tr2,a)',advance='no') '['
     do i = 1 , r%n - 1
        write(*,'(tr1,i0,a)',advance='no') r%r(i),', '
@@ -1017,6 +1030,24 @@ contains
     deallocate(rd)
 
   end subroutine region_MPI_union
+
+  subroutine region_MPI_Bcast(r,Bnode,Comm)
+    use mpi_siesta, only : MPI_Bcast, MPI_Integer
+    type(tRegion), intent(inout) :: r
+    integer, intent(in) :: Bnode, Comm
+    
+    integer :: Node
+    integer :: MPIerror
+
+    call MPI_Comm_Rank(Comm,Node,MPIerror)
+
+    call MPI_Bcast(r%n,1,MPI_Integer, Bnode, comm, MPIerror)
+    if ( Node /= Bnode ) then
+       allocate(r%r(r%n))
+    end if
+    call MPI_Bcast(r%r(1),r%n,MPI_Integer, Bnode, comm, MPIerror)
+
+  end subroutine region_MPI_Bcast
 
 #endif
   

@@ -223,7 +223,6 @@ contains
     end if
 #endif
 
-
     ! currently this does not work
     chars = fdf_get('SCF.Initialize','diagon')
     if ( leqi(chars,'diagon') ) then
@@ -320,7 +319,6 @@ contains
     ! the title of the green's functions are now non-generic
     call fdf_obsolete('TS.GFTitle')
 
-
     ! The regular options for describing the electrodes can not be 
     ! used anymore...
     do i = 1 , 2
@@ -404,7 +402,7 @@ contains
        Elecs(:)%DM_update = 2
     else
        ! default to not update the cross-terms
-       c = fdf_get('TS.Elecs.DM.Update','none')
+       c = fdf_get('TS.Elecs.DM.Update','cross-terms')
        if ( leqi(c,'none') ) then
           Elecs(:)%DM_update = 0
        else if ( leqi(c,'cross-terms') ) then
@@ -412,14 +410,13 @@ contains
        else if ( leqi(c,'all') ) then
           Elecs(:)%DM_update = 2
        else
-          call die('TS.Elecs.DM.Update [none,cross-terms,all]: &
+          call die('TS.Elecs.DM.Update [cross-terms,none,all]: &
                &unrecognized option: '//trim(c))
        end if
     end if
 
     ! We default to not calculate the band-bottom...
     ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
-    Elecs(:)%BandBottom = fdf_get('TS.Elecs.BandBottom', .false.)
     ! whether or not the electrodes should be re-instantiated
     call fdf_deprecated('TS.CalcGF','TS.Elecs.GF.ReUse')
     call fdf_deprecated('TS.ReUseGF','TS.Elecs.GF.ReUse')
@@ -799,55 +796,7 @@ contains
        end if
        write(*,10)'          >> Electrodes << '
        do i = 1 , size(Elecs)
-          write(*,11) '>> '//trim(name(Elecs(i)))
-          if ( Elecs(i)%out_of_core ) then
-             write(*,10) '  GF file', trim(Elecs(i)%GFfile)
-             write(*,1)  '  Reuse existing GF-file', Elecs(i)%ReUseGF
-          else
-             write(*,11)  '  In-core GF'
-          end if
-          write(*,10) '  Electrode TSHS file', trim(Elecs(i)%HSfile)
-          write(*,5)  '  # atoms used in electrode', Elecs(i)%na_used
-          write(*,15) '  Electrode repetition [A1 x A2 x A3]', Elecs(i)%Rep(:)
-          if ( Elecs(i)%t_dir == 1 ) then
-             chars = 'A1'
-          else if ( Elecs(i)%t_dir == 2 ) then
-             chars = 'A2'
-          else if ( Elecs(i)%t_dir == 3 ) then
-             chars = 'A3'
-          end if
-          j = Elecs(i)%idx_a
-          write(*,20) '  Position in geometry', j, j + TotUsedAtoms(Elecs(i)) - 1
-          write(*,10) '  Transport direction for electrode', trim(chars)
-          if ( Elecs(i)%inf_dir == INF_POSITIVE ) then
-          write(*,10) '  Semi-infinite direction for electrode', 'positive wrt. '//trim(chars)
-          else
-          write(*,10) '  Semi-infinite direction for electrode', 'negative wrt. '//trim(chars)
-          end if
-          write(*,7)  '  Chemical shift', Elecs(i)%mu%mu/eV,'eV'
-          write(*,1)  '  Bulk values in electrode', Elecs(i)%Bulk
-          if ( product(Elecs(i)%Rep) > 1 ) then
-             if ( Elecs(i)%pre_expand == 0 ) then
-                write(*,10)  '  Pre-expansion to reduce computation', 'none'
-             else if ( Elecs(i)%pre_expand == 1 ) then
-                write(*,10)  '  Pre-expansion to reduce computation', 'GS'
-             else
-                write(*,10)  '  Pre-expansion to reduce computation', 'GS, H, S'
-             end if
-          end if
-          if ( Elecs(i)%DM_update == 0 ) then
-             write(*,11)  '  Cross-terms is not updated'
-          else if ( Elecs(i)%DM_update == 1 ) then
-             write(*,11)  '  Cross-terms is updated'
-          else if ( Elecs(i)%DM_update == 2 ) then
-             write(*,11)  '  Cross-terms and electrode region is updated'
-          end if
-          write(*,1)  '  Calc. valence band-bottom eigenvalue', Elecs(i)%BandBottom
-          if ( IsVolt ) &
-               write(*,8)  '  Hamiltonian E-C Ef fractional shift', Elecs(i)%Ef_frac_CT
-          if ( .not. Elecs(i)%kcell_check ) then
-             write(*,11)  '  Will NOT check the kgrid-cell! Ensure sampling!'
-          end if
+          call print_settings(Elecs(i),'ts_options')
        end do
 
        ! Print the contour information

@@ -145,8 +145,9 @@ contains
     if ( .not. IsVolt ) return
 
     ! Get the padding for the array to hold the entire column
+    i = maxval(TotUsedOrbs(Elecs(:)))
     call GFGGF_needed_worksize(N_tri_part,tri_parts, &
-         N_Elec, Elecs, padding, worksize)
+         i, padding, worksize)
     if ( IONode ) then
        write(*,'(a,i0)') 'transiesta: Padding + work size: ',padding + worksize
     end if
