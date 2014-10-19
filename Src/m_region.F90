@@ -87,6 +87,10 @@ contains
     type(tRegion), intent(in) :: r
     integer, intent(in) :: i
     logical :: in
+    if ( r%n == 0 ) then
+       in = .false.
+       return
+    end if
     in = any(i == r%r)
   end function in_region
 
@@ -205,7 +209,9 @@ contains
 
     ! Default the err region to be the r-region
     err => r%r
-    if ( present(except) ) err => except%r
+    if ( present(except) ) then
+       if ( except%n > 0 ) err => except%r
+    end if
 
     rt = 0
     it = 0
@@ -873,19 +879,17 @@ contains
 
     ! ** local variables
     integer :: io, ia, na, a
-    integer, allocatable :: ca(:)
+    integer :: ca(na_u)
     character(len=R_NAME_LEN) :: tmp
 
     ! The maximum number of atoms in the orbital region
-    na = or%n / minval(lasto(1:na_u)-lasto(0:na_u-1)) + 1
-    allocate(ca(na))
     ia = 1
     ca(1) = iaorb(or%r(1),lasto)
     do io = 2 , or%n
        a = iaorb(or%r(io),lasto)
        if ( any(a == ca(1:ia)) ) cycle
        ia = ia + 1
-       if ( ia > na ) call die('Error in program')
+       if ( ia > na_u ) call die('Error in program')
        ca(ia) = a
     end do
     na = ia
@@ -897,29 +901,49 @@ contains
 
   end subroutine region_Orb2Atom
 
-  ! Creates the folded to orbitals by considering
+  ! Whether any element exists in the other one.
   function region_overlaps(r1,r2) result(overlap)
     ! the regions we wish to find the union of
     type(tRegion), intent(in) :: r1, r2
     logical :: overlap
 
     ! ** local variables
-    integer :: i
+    integer :: i, n
 
     overlap = .false.
 
     if ( r1%n == 0 ) return
     if ( r2%n == 0 ) return
 
-    do i = 1 , r1%n
+    n = min(r1%n,r2%n)
+    do i = 1 , n
        
-       if ( any(r1%r(i) == r2%r(:)) ) then
+       if ( in_region(r2,r1%r(i)) ) then
+          overlap = .true. 
+          return
+       end if
+
+       if ( in_region(r1,r2%r(i)) ) then
           overlap = .true. 
           return
        end if
 
     end do
-    overlap = .false.
+    if ( r1%n > r2%n ) then
+       do i = n + 1 , r1%n
+          if ( in_region(r2,r1%r(i)) ) then
+             overlap = .true. 
+             return
+          end if
+       end do
+    else if ( r2%n > r1%n ) then
+       do i = n + 1 , r2%n
+          if ( in_region(r1,r2%r(i)) ) then
+             overlap = .true. 
+             return
+          end if
+       end do
+    end if
 
   end function region_overlaps
 

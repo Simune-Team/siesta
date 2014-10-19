@@ -309,7 +309,7 @@ contains
     integer :: iq
     integer :: iow,iau,ia3,ia2,ia1,iuo
     integer :: jow,jau,ja3,ja2,ja1,juo
-    complex(dp) :: ph
+    complex(dp) :: ph, phZ
     real(dp) :: qPi(3,nq), wq
 
     if ( nq == 1 ) then
@@ -338,16 +338,17 @@ contains
     else
 
        do iq = 1 , nq 
-          qPi(1:3,iq) = 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
+          qPi(1:3,iq) = - 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
        end do
-       wq = 1._dp / real(nq,dp)
+
+       ! Save some multiplications :)
+       wq = log(1._dp / real(nq,dp))
 
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
        ! surface Green's function
-       iq = 1
        iow = 0
        do iau = 1 , na_u
         do ia3 = 1 , El%Rep(3)
@@ -360,14 +361,17 @@ contains
             do ja3 = 1 , El%Rep(3)
             do ja2 = 1 , El%Rep(2)
             do ja1 = 1 , El%Rep(1)
-              ph = wq * cdexp(dcmplx(0._dp, &
-                   (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
+              ! The weight 1 / nq is calculated
+              ! intrinsically using the relation x = e^(log(x))
+              ph = cdexp(dcmplx(wq, &
+                    (ia1-ja1)*qPi(1,1) + (ia2-ja2)*qPi(2,1) + (ia3-ja3)*qPi(3,1) ) )
+              phZ = ph * ZEnergy
               do juo = 1 + lasto(jau-1) , lasto(jau)
-                jow = jow + 1
+               jow = jow + 1
                 
-                work(jow,iow,1) = ph * GS(juo,iuo,iq)
+               work(jow,iow,1) = ph * GS(juo,iuo,1)
                 
-                work(jow,iow,2) = ph * (ZEnergy*S(juo,iuo,iq)-H(juo,iuo,iq))
+               work(jow,iow,2) = phZ * S(juo,iuo,1) - ph * H(juo,iuo,1)
                 
               end do !juo
             end do !ja1
@@ -392,15 +396,18 @@ contains
              do ja3 = 1 , El%Rep(3)
              do ja2 = 1 , El%Rep(2)
              do ja1 = 1 , El%Rep(1)
-               ph = wq * cdexp(dcmplx(0._dp, &
-                    (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
+               ! The weight 1 / nq is calculated
+               ! intrinsically using the relation x = e^(log(x))
+               ph = cdexp(dcmplx(wq, &
+                    (ia1-ja1)*qPi(1,iq) + (ia2-ja2)*qPi(2,iq) + (ia3-ja3)*qPi(3,iq) ) )
+               phZ = ph * ZEnergy
                do juo = 1 + lasto(jau-1) , lasto(jau)
                   jow = jow + 1
                   
                   work(jow,iow,1) = work(jow,iow,1) + ph * GS(juo,iuo,iq)
    
-                  work(jow,iow,2) = work(jow,iow,2) + ph * &
-                       (ZEnergy*S(juo,iuo,iq)-H(juo,iuo,iq))
+                  work(jow,iow,2) = work(jow,iow,2) + &
+                       phZ * S(juo,iuo,iq) - ph * H(juo,iuo,iq)
    
                end do !juo
              end do !ja1
@@ -450,16 +457,17 @@ contains
     else
 
        do iq = 1 , nq 
-          qPi(1:3,iq) = 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
+          qPi(1:3,iq) = - 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
        end do
-       wq = 1._dp / real(nq,dp)
+
+       ! Save some multiplications
+       wq = log(1._dp / real(nq,dp))
 
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
        ! surface Green's function
-       iq = 1
        iow = 0
        do iau = 1 , na_u
         do ia3 = 1 , El%Rep(3)
@@ -472,14 +480,16 @@ contains
             do ja3 = 1 , El%Rep(3)
             do ja2 = 1 , El%Rep(2)
             do ja1 = 1 , El%Rep(1)
-               ph = wq * cdexp(dcmplx(0._dp, &
-                    (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
-              do juo = 1 + lasto(jau-1) , lasto(jau)
-                jow = jow + 1
+             ! The weight 1 / nq is calculated
+             ! intrinsically using the relation x = e^(log(x))
+             ph = cdexp(dcmplx(wq, &
+                  (ia1-ja1)*qPi(1,1) + (ia2-ja2)*qPi(2,1) + (ia3-ja3)*qPi(3,1) ) )
+             do juo = 1 + lasto(jau-1) , lasto(jau)
+               jow = jow + 1
                 
-                work(jow,iow) = ph * A(juo,iuo,iq)
+               work(jow,iow) = ph * A(juo,iuo,1)
                 
-              end do !juo
+             end do !juo
             end do !ja1
             end do !ja2
             end do !ja3
@@ -502,8 +512,10 @@ contains
              do ja3 = 1 , El%Rep(3)
              do ja2 = 1 , El%Rep(2)
              do ja1 = 1 , El%Rep(1)
-               ph = wq * cdexp(dcmplx(0._dp, &
-                    (ja1-ia1)*qPi(1,iq) + (ja2-ia2)*qPi(2,iq) + (ja3-ia3)*qPi(3,iq) ) )
+               ! The weight 1 / nq is calculated
+               ! intrinsically using the relation x = e^(log(x))
+               ph = cdexp(dcmplx(wq, &
+                    (ia1-ja1)*qPi(1,iq) + (ia2-ja2)*qPi(2,iq) + (ia3-ja3)*qPi(3,iq) ) )
                do juo = 1 + lasto(jau-1) , lasto(jau)
                   jow = jow + 1
                   

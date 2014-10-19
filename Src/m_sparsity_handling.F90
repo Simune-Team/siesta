@@ -770,7 +770,7 @@ contains
     type(A2D) :: array(N)
 
     integer :: io, i, j, n_nzs, sp_dim, dim2
-    real(dp) :: y(N), y0
+    real(dp) :: y(N)
 
 
     ! prep the array assignments...
@@ -790,6 +790,7 @@ contains
 
     ! figure out the sparsity dimension
     do j = 1 , dim2
+
        do io = 1 , n_nzs
           
           ! Copy over 
@@ -797,12 +798,11 @@ contains
              y(i) = array(i)%v(io,j)
           end do
 
-          call interp_spline(N,x,y,x0,y0)
-             
-          ! Copy over...
-          array(1)%v(io,j) = y0
+          call interp_spline(N,x,y,x0, &
+               array(1)%v(io,j))
           
        end do
+
     end do
     
   end subroutine dSpData2D_interp

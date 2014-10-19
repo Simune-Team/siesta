@@ -1,4 +1,174 @@
 ----------------------------------------------------
+October 19, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-210
+Update for preparing merging tbtrans [2]
+
+* Unused variables have been removed in these modules:
+   - class_Sparsity
+   - class_SpData2D
+   - class_TriMat
+   - m_integrate
+   - m_sparsity_handling
+   - m_ts_sparse_helper
+
+* Initializing using bulk DM matrices from other
+  calculations now allow to only take partial 
+  segments. This is handy if having a similar
+  "interface" segment with different molecules, etc.
+
+  Added clarification why normalization is not needed.
+
+  When copying from/to a non-supercell calculation
+  cross boundary copying is tricky, we note to the 
+  user that this is difficult and that they should
+  be cautionous.
+
+* Bugfix for m_region, handling regions with 
+  zero elements might still pose some problems.
+
+* Change in how Eta is recognized for equilibrium and
+  non-equilibrium.
+  
+  We have completely removed the Eta in the
+  equilibrium contours. They had no real physical
+  meaning other than smearing out the entire DOS
+  which in the Eq. case should be easy to handle.
+
+  (Note to DEVS, maybe this can be introduced
+   for certain cases of smearing out everything)
+
+  In non-equilibrium the eta can now be selectively
+  placed on each electrode.
+  This means that one can play with "toy" models of
+  electrodes which easily can be put in the WBA
+  by adding a high enough Eta.
+  Also, we initialize the Eta in the device region to
+  0. 
+  TS.Contours.nEq.Eta has the meaning of a global
+  Eta value (as previously), but it is defaulted
+  to 0, while the electrodes Eta now are 
+  defaulted to the old value.
+  Controlling the Eta value for electrodes are
+  done using the 'Eta' flag in the 'Elec' block.
+  It must NOT be 0.
+
+  This Eta value is also used for the Fermi-level
+  correction.
+  
+* Re-inserted the Simpson, Boole and mid integration
+  scheme for the circle contour.
+
+* Error handling of dis-connected contours have been
+  improved.
+
+* Removed timing the ts_GS routine. It is called 
+  extensively in tbtrans, and timing is just
+  a bottle-neck.
+
+* When we check the electrode in transiesta
+  we now print a warning if the transport-vector
+  is not fully parallel to a single cell-vector.
+  
+* The basal-plane of the electrodes are now shifted
+  0.5 bohr to not take the mean of a potential field
+  right through an atom.
+  This will most likely annoy some calculations
+  as the basal-plane _HAS_ to be contained in the
+  unit-cell.
+
+* Removed erroneous check for controlling placement
+  of electrodes inside unit cell.
+  trunk-432-scf-40--ts-scf-207
+
+  This is not needed, the only requirement is
+  that everything is "connected" from one atom and forward.
+
+  This is not being checked, and probably should.
+  However, this makes no sense for a system setup.
+  So I don't think this problem "should" occur :)
+
+* Corrected spelling errors in printing options.
+
+* Corrected the removal of cross terms crossing cell-boundaries
+  by projecting the electrode transport vector to the 
+  cell vectors before removal.
+
+* Removed m_glob_sparse and TBTrans_rep.
+
+* Tri-matrix recognition had some bugs with electrodes
+  lying on the edge of the blocks. This has been fixed
+  along side with a feature bug which made the search
+  space for tri-diagonal matrices sub-optimal for
+  large number of processors.
+  
+  Searching for BTD formats now searches correctly by
+  checking with the first partition size in a consecutive
+  manner. However, for large systems this might not introduce
+  any changes. 
+
+  Cleaned up the code and removed quite a bit of sparsity
+  pattern references. 
+
+* Bugfix for non GF files repeated cells and k-point.
+  When using ucell R.k we need the repetition using a different
+  k-point to correctly expand using Bloch.
+  This has been fixed and checked for several cases.	
+  
+* Saved a bunch of multiplications of wq in cases of 
+  repeated cells.
+  Instead of doing wq * ph * A(iq) + ... + wq * ph * A(nq)
+  we can add the weight into the phase using the real part of the
+  exponential.
+  This is because:
+    wq * e^(i k.R) = e^(ln(wq)+i k.R)
+  using the simple relation: x = e^ln(x)
+
+removed:
+  Src/m_glob_sparse.F90
+  Util/TBTrans_rep/
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/atompdos.F90
+  Util/TBTrans_rep/coop.F90
+  Util/TBTrans_rep/m_lowdin.f90
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_kpoints.F90
+  Util/TBTrans_rep/m_tbt_options.F90
+  Util/TBTrans_rep/m_tbt_out.f90
+  Util/TBTrans_rep/tbt_init.F90
+  Util/TBTrans_rep/tbt_reinit.F90
+  Util/TBTrans_rep/tbtrans.F90
+  Util/TBTrans_rep/transmission.f90
+  Util/TBTrans_rep/tt_eig.f90
+modified:
+  Src/Makefile
+  Src/class_SpData2D.T90
+  Src/class_Sparsity.F90
+  Src/class_TriMat.T90
+  Src/m_handle_sparse.F90
+  Src/m_integrate.f90
+  Src/m_new_dm.F90
+  Src/m_region.F90
+  Src/m_sparsity_handling.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_io_ctype.f90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/siesta_forces.F
+  Util/Grimme/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 October 14, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-209
 Update for preparing merging tbtrans
 

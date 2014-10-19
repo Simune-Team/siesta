@@ -35,7 +35,7 @@ module m_ts_io_ctype
      ! (text-form)
      character(len=c_N) :: cd = ' '
      ! Number of points in the grid
-     integer :: N
+     integer :: N = 0
      ! (text-form)
      character(len=c_N) :: cN = ' '
      ! the integration method (g-legendre etc.)
@@ -787,6 +787,8 @@ contains
     type(ts_c_io), intent(inout), optional :: next, prev
     logical, intent(out), optional :: connected
 
+    if ( present(connected) ) connected = .true.
+
     ! we need this to "look ahead"
     if ( present(next) ) then
        if ( leqi(next%ca,'prev') .or. leqi(next%ca,'previous') ) then
@@ -820,10 +822,7 @@ contains
        if ( abs(cur%a - prev%b) > 1.e-8_dp ) then
           if ( present(connected) ) then
              connected = .false.
-             return
           end if
-          call die('Contour: '//trim(prev%name)//' and '//trim(cur%name)// &
-               ' are not connected.')
        end if
     end if
     
@@ -831,13 +830,10 @@ contains
        if ( abs(next%a - cur%b) > 1.e-8_dp ) then
           if ( present(connected) ) then
              connected = .false.
-             return
           end if
-          call die('Contour: '//trim(cur%name)//' and '//trim(next%name)// &
-               ' are not connected.')
        end if
     end if
-    
+
     ! at this point both boundaries MUST exist
     if ( len_trim(cur%cd) > 0 .and. len_trim(cur%cN) == 0 ) then
        cur%N = nint(abs(cur%b - cur%a)/cur%d)

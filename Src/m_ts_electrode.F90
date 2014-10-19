@@ -93,7 +93,7 @@ contains
     ! Initialize counter
     if ( present(iterations) ) iterations = 0
 
-    call timer('ts_GS',1)
+!    call timer('ts_GS',1)
 
     nom1 = no - 1
     no2  = 2 * no
@@ -262,7 +262,7 @@ contains
        end if
     end if
 
-    call timer('ts_GS',2)
+!    call timer('ts_GS',2)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS surface_Green' )
@@ -356,7 +356,7 @@ contains
     ! Initialize counter
     if ( present(iterations) ) iterations = 0
 
-    call timer('ts_GS',1)
+!    call timer('ts_GS',1)
 
     nom1 = no - 1
     no2  = 2 * no
@@ -462,7 +462,7 @@ contains
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
-    call timer('ts_GS',2)
+!    call timer('ts_GS',2)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS surface_Green' )
@@ -563,7 +563,7 @@ contains
 ! ***********************
     ! Array for holding converted k-points
     real(dp), allocatable :: kE(:,:)
-    real(dp) :: kpt(3), qpt(3), bkpt(3), wq
+    real(dp) :: bkpt(3), kpt(3), kq(3), wq
     
     ! Dimensions
     integer :: nq, nspin, n_s
@@ -671,7 +671,7 @@ contains
           ! First convert to units of reciprocal vectors
           ! Then convert to 1/Bohr in the electrode unit cell coordinates
           call kpoint_convert(ucell,kpoint(:,i),bkpt,1)
-          where (El%Rep > 1 ) bkpt = bkpt/real(El%Rep,dp)
+          where (El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
           call kpoint_convert(El%ucell,bkpt,kpt,-1)
           write(*,'(i4,2x,4(E14.5))') i, kpt,kweight(i)
        end do
@@ -686,8 +686,8 @@ contains
        if ( nq > 1 ) then
           write(*,'(a)') ' q-points for expanding electrode (Bohr**-1):'
           do i = 1 , nq
-             call kpoint_convert(El%ucell,q_exp(El,i),qpt,-1)
-             write(*,'(i4,2x,4(E14.5))') i,qpt,wq
+             call kpoint_convert(El%ucell,q_exp(El,i),kpt,-1)
+             write(*,'(i4,2x,4(E14.5))') i,kpt,wq
           end do
        end if
        write(*,'(a,f14.5,1x,a)') &
@@ -835,10 +835,9 @@ contains
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
        call kpoint_convert(ucell,kpoint(:,ikpt),bkpt,1)
-       where (El%Rep > 1 ) bkpt = bkpt/real(El%Rep,dp)
+       where (El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
+       ! We need to save the k-point for the "expanded" super-cell
        El%bkpt_cur = bkpt
-       ! Convert back to reciprocal units (to electrode)
-       call kpoint_convert(El%ucell,bkpt,kpt,-1)
        
        ! loop over the repeated cell...
        HSq_loop: do iqpt = 1 , nq
@@ -850,11 +849,12 @@ contains
           S01 => zHS((3*nq+iqpt-1)*nS+1:(3*nq+iqpt)*nS)
 
           ! init qpoint in reciprocal lattice vectors
-          call kpoint_convert(El%ucell,q_exp(El,iqpt),qpt,-1)
+          kpt = bkpt(:) + q_exp(El,iqpt)
+          call kpoint_convert(El%ucell,kpt,kq,-1)
 
           ! Setup the transfer matrix and the intra cell at the k-point and q-point
           ! Calculate transfer matrices @Ef (including the chemical potential)
-          call set_electrode_HS_Transfer(ispin, El, n_s,sc_off,kpt, qpt, &
+          call set_electrode_HS_Transfer(ispin, El, n_s,sc_off, kq, &
                nS, H00,S00,H01,S01)
 
           i = (iqpt-1)*nuS
@@ -1197,7 +1197,7 @@ contains
 ! Create the Hamiltonian for the electrode as well
 ! as creating the transfer matrix.
 !**********
-  subroutine set_electrode_HS_Transfer(ispin,El,n_s,sc_off,k,q, &
+  subroutine set_electrode_HS_Transfer(ispin,El,n_s,sc_off,kq, &
        nS,Hk,Sk,Hk_T,Sk_T)
     use sys, only : die
     use precision, only : dp
@@ -1214,8 +1214,7 @@ contains
     type(Elec), intent(inout) :: El
     integer, intent(in) :: n_s
     real(dp), intent(in) :: sc_off(3,0:n_s-1)
-    real(dp), intent(in)   :: k(3)   ! k-point in [1/Bohr]
-    real(dp), intent(in)   :: q(3)   ! expansion k-point in [1/Bohr]
+    real(dp), intent(in)   :: kq(3)   ! k + q-point in [1/Bohr]
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -1225,7 +1224,7 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer :: no_u
-    real(dp) :: kq(3), kqsc, Ef
+    real(dp) :: kqsc, Ef
     complex(dp) :: ph
     integer :: i, j, iuo, juo, ind, is
     integer, pointer :: ncol00(:), l_ptr00(:), l_col00(:)
@@ -1236,9 +1235,6 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE elec_HS_Transfer' )
 #endif
-
-    ! The sum of k and q
-    kq = k + q
 
     t_dir = El%t_dir
     ! we need to subtract as the below code shifts to Ef
@@ -1336,7 +1332,7 @@ contains
 
   end subroutine set_electrode_HS_Transfer
 
-  subroutine calc_next_GS_Elec(El,ispin,bkpt,Z,nzwork,in_zwork)
+  subroutine calc_next_GS_Elec(El,ispin,dbkpt,Z,nzwork,in_zwork)
     use precision,  only : dp
 
     use m_ts_electype
@@ -1353,7 +1349,7 @@ contains
 ! ***********************
     type(Elec), intent(inout) :: El
     integer, intent(in) :: ispin
-    real(dp), intent(in) :: bkpt(3)
+    real(dp), intent(in) :: dbkpt(3) ! the device k-point in reciprocal units
     complex(dp), intent(in) :: Z
     integer, intent(in) :: nzwork
     complex(dp), intent(inout), target :: in_zwork(nzwork)
@@ -1363,7 +1359,7 @@ contains
 ! ***********************
 
     integer  :: iqpt
-    real(dp) :: kpt(3), qpt(3)
+    real(dp) :: bkpt(3), kpt(3), kq(3)
     
     ! Dimensions
     integer :: nq
@@ -1410,18 +1406,20 @@ contains
     n_s = size(El%isc_off,dim=2)
     allocate(sc_off(3,n_s))
     sc_off = matmul(El%ucell,El%isc_off)
+    
+    ! As the input bigger k-point is for the unit-cell of the device
+    ! we need to transfer it to the "expanded" supercell
+    bkpt = dbkpt
+    where ( El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
 
     ! whether we already have the H and S set correctly, 
     ! update accordingly
     ! it will save a bit of time, but not much
-    same_k = sum(abs(bkpt - El%bkpt_cur)) < 1.e-10_dp
+    same_k = sum(abs(bkpt - El%bkpt_cur)) < 1.e-8_dp
     if ( .not. same_k ) El%bkpt_cur = bkpt
     ! In case we do not need the hamiltonian
     ! This will be the case for non-bias points and when using bulk electrode
     if ( .not. same_k ) same_k = .not. associated(El%HA)
-
-    ! Convert back to reciprocal units (to electrode)
-    call kpoint_convert(El%ucell,bkpt,kpt,-1)
 
     ! determine whether there is room enough
     size_req(1) = (4 + 1) * nS
@@ -1494,19 +1492,20 @@ contains
     ios = 1
     ioe = nuS 
 
+    ! create the offset to be used for copying over elements
+    off = nuo_E - nuou_E + 1
+
     ! loop over the repeated cell...
     q_loop: do iqpt = 1 , nq
 
        ! init qpoint in reciprocal lattice vectors
-       call kpoint_convert(El%ucell,q_exp(El,iqpt),qpt,-1)
+       kpt(:) = bkpt(:) + q_exp(El,iqpt)
+       call kpoint_convert(El%ucell,kpt,kq,-1)
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
-       call set_electrode_HS_Transfer(ispin, El, n_s,sc_off,kpt, qpt, &
+       call set_electrode_HS_Transfer(ispin, El, n_s,sc_off,kq, &
             nS, H00,S00,H01,S01)
        
-       ! create the offset for the "left" electrode
-       off = nuo_E - nuou_E + 1
-
        if ( .not. same_k ) then
           ! we only need to copy over the data if we don't already have it calculated
           call copy_over(is_left,nuo_E,H00,nuou_E,El%HA(:,:,iqpt),off)

@@ -201,7 +201,6 @@ contains
   end subroutine create_HS_kpt
 
   subroutine symmetrize_HS_kpt(N_Elec, Elecs, Ef,SpArrH, SpArrS)
-    use parallel, only : Node
     use class_Sparsity
     use class_zSpData1D
 
@@ -456,7 +455,6 @@ contains
   end subroutine create_HS_Gamma
 
   subroutine symmetrize_HS_Gamma(N_elec, Elecs, Ef, SpArrH, SpArrS)
-    use parallel, only : Node
     use class_Sparsity
     use class_dSpData1D
 

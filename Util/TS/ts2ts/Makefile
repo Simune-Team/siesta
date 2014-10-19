@@ -272,7 +272,6 @@ m_fire_mixing.o: precision.o
 m_fire_para.o: m_mpi_utils.o parallel.o precision.o
 m_forces.o: precision.o
 m_getopts.o: f2kcli.o
-m_glob_sparse.o: parallel.o parallelsubs.o precision.o
 m_handle_sparse.o: class_OrbitalDistribution.o class_SpData1D.o
 m_handle_sparse.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_iodm.o
 m_handle_sparse.o: m_ts_io.o parallel.o precision.o
@@ -437,9 +436,9 @@ m_ts_mumpsk.o: parallel.o precision.o units.o
 m_ts_options.o: alloc.o files.o intrinsic_missing.o m_bandwidth.o m_monitor.o
 m_ts_options.o: m_ts_cctype.o m_ts_charge.o m_ts_chem_pot.o m_ts_contour.o
 m_ts_options.o: m_ts_contour_eq.o m_ts_contour_neq.o m_ts_electype.o
-m_ts_options.o: m_ts_global_vars.o m_ts_io.o m_ts_io_contour.o m_ts_method.o
-m_ts_options.o: m_ts_mumps_init.o m_ts_tdir.o m_ts_weight.o parallel.o
-m_ts_options.o: precision.o siesta_options.o sys.o units.o
+m_ts_options.o: m_ts_global_vars.o m_ts_hartree.o m_ts_io.o m_ts_io_contour.o
+m_ts_options.o: m_ts_method.o m_ts_mumps_init.o m_ts_tdir.o m_ts_weight.o
+m_ts_options.o: parallel.o precision.o siesta_options.o sys.o units.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
 m_ts_sparse.o: geom_helper.o intrinsic_missing.o m_bandwidth.o m_region.o

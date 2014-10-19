@@ -111,8 +111,8 @@ contains
     end if
 
     ! broadening
-    nEq_Eta = fdf_get('TS.Contours.nEq.Eta',0.00001_dp*eV,'Ry')
-    if ( nEq_Eta <= 0._dp ) call die('ERROR: nEq_Eta <= 0, we do not allow &
+    nEq_Eta = fdf_get('TS.Contours.nEq.Eta',0._dp*eV,'Ry')
+    if ( nEq_Eta < 0._dp ) call die('ERROR: nEq_Eta < 0, we do not allow &
          &for using the advanced Greens function, please correct.')
 
     ! We only allow the user to either use the old input format, or the new
@@ -414,6 +414,7 @@ contains
       type(ts_c_io), pointer :: nEq_io(:)
 
       ! Local variables
+      logical :: connected
       integer :: i, j
       character(len=C_N_NAME_LEN), allocatable :: tmp(:)
 
@@ -449,14 +450,20 @@ contains
 
       do i = 1 , N_nEq - 1
          if ( i == 1 ) then
-            call ts_fix_contour(nEq_io(i), next=nEq_io(i+1) )
-         else if ( i == N_nEq ) then
-            call ts_fix_contour(nEq_io(i), prev=nEq_io(i-1) )
+            call ts_fix_contour(nEq_io(i), next=nEq_io(i+1), &
+                 connected = connected )
          else
             call ts_fix_contour(nEq_io(i), &
-                 prev=nEq_io(i-1), next=nEq_io(i+1))
+                 prev=nEq_io(i-1), next=nEq_io(i+1), &
+                 connected = connected )
+         end if
+         if ( .not. connected ) then
+            call die('Contour: '//trim(nEq_io(i)%name)// &
+                 ' and '//trim(nEq_io(i+1)%name)//' are not connected.')
          end if
       end do
+      ! The fix_contour checks and corrects the neighbouring 
+      ! contours.
       call ts_fix_contour(nEq_io(N_nEq))
 
       ! setup the contour

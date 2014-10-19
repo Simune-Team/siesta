@@ -163,7 +163,7 @@ contains
        select case ( orb_type(i) )
        case ( TYP_BUFFER ) 
           ia = ia + 1
-          r_oBuf%r(ia) = i
+          r_oBuf%r(ia)  = i
        case ( TYP_DEVICE ) 
           ia1 = ia1 + 1
           r_oDev%r(ia1) = i

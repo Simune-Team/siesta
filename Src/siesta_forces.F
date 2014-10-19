@@ -448,7 +448,7 @@
          ! We need to align the energy matrix
          DM  => val(DM_2D)
          EDM => val(EDM_2D)
-         iEl = size(DM)
+         iEl =  size(DM)
          call daxpy(iEl,Ef,DM(1,1),1,EDM(1,1),1)
 
       end if

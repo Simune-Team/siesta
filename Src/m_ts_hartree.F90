@@ -29,6 +29,7 @@ module m_ts_hartree
   implicit none
   
   private
+  save
 
   ! The idea is to have sub routines in this module to do
   ! various Hartree potential fixes
@@ -38,10 +39,15 @@ module m_ts_hartree
   ! The electrode that provides the basin of the constant potential
   type(Elec), pointer :: El => null()
 
+  ! Whether we should employ the electrode
+  ! basal plane or not
+  logical, public :: elec_basal_plane = .false.
+
 contains
 
   subroutine ts_init_hartree_fix(ucell,na_u,xa,meshG,nsm, N_Elec, Elecs)
 
+    use units, only : Ang
     use intrinsic_missing, only: VNORM
     use m_ts_mesh, only : meshl, offset_i, offset_r, dMesh, dL
     use parallel, only : IONode
@@ -70,7 +76,7 @@ contains
 #endif
 
     ! We now were to put the Hartree correction 
-    if ( ts_tdir > 0 ) return
+    if ( .not. elec_basal_plane ) return
 
     ! Easy determination of largest basal plane of electrodes
     area = -1._dp
@@ -78,8 +84,8 @@ contains
        tmp = VOLCEL(Elecs(iE)%ucell)
        tmp = tmp / VNORM(Elecs(iE)%ucell(:,Elecs(iE)%t_dir))
        if ( tmp > area ) then
-          area = tmp
-          El => Elecs(iE)
+          area =  tmp
+          El   => Elecs(iE)
        end if
     end do
 
@@ -108,6 +114,15 @@ contains
        write(*,*)
        write(*,'(3a)')   'transiesta: Using electrode: ',trim(El%Name),' for Hartree correction'
        write(*,'(a,i0)') 'transiesta: Number of points used: ',nlp
+       if ( nlp == 0 ) then
+          write(*,'(a)') 'transiesta: Basal plane of electrode '// &
+               trim(El%name)//' might be outside of &
+               &unit cell.'
+          write(*,'(a)') 'transiesta: Please move structure so this point is &
+               inside unit cell (Ang):'
+          write(*,'(a,3(tr1,f13.5))') 'transiesta: Point (Ang):',&
+               El%p%c/Ang
+       end if
        write(*,*)
     end if
 
@@ -197,7 +212,23 @@ contains
     nlp   = 0
     imesh = 0
 
-    if ( ts_tdir == 1 ) then
+    if ( elec_basal_plane ) then
+       ! This is an electrode averaging...
+       do i3 = 0 , meshl(3) - 1
+          llZ(:) = offset_r(:) + i3*dL(:,3)
+          do i2 = 0 , meshl(2) - 1
+             llYZ(:) = i2*dL(:,2) + llZ(:)
+             do i1 = 0 , meshl(1) - 1
+                ll(:) = i1*dL(:,1) + llYZ(:)
+                imesh = imesh + 1
+                if ( in_basal_Elec(El%p,ll,dMesh) ) then
+                   nlp  = nlp + 1
+                   Vtot = Vtot + Vscf(imesh)
+                end if
+             end do
+          end do
+       end do
+    else if ( ts_tdir == 1 ) then
        do i3 = 1 , meshl(3)
           do i2 = 1 , meshl(2)
              i10 = offset_i(1) - 1
@@ -240,21 +271,7 @@ contains
           end do
        end do
     else
-       ! This is an electrode averaging...
-       do i3 = 0 , meshl(3) - 1
-          llZ(:) = offset_r(:) + i3*dL(:,3)
-          do i2 = 0 , meshl(2) - 1
-             llYZ(:) = i2*dL(:,2) + llZ(:)
-             do i1 = 0 , meshl(1) - 1
-                ll(:) = i1*dL(:,1) + llYZ(:)
-                imesh = imesh + 1
-                if ( in_basal_Elec(El%p,ll,dMesh) ) then
-                   nlp  = nlp + 1
-                   Vtot = Vtot + Vscf(imesh)
-                end if
-             end do
-          end do
-       end do
+       call die('Something went extremely wrong...Hartree Fix')
     end if
 
 #ifdef MPI

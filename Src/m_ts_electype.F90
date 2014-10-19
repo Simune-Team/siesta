@@ -131,6 +131,10 @@ module m_ts_electype
      ! Arrays needed to partition the scattering matrix and self-energies
      ! Notice that Gamma should "ALWAYS" contain the transposed
      complex(dp), pointer :: Gamma(:), Sigma(:)
+
+     ! The imaginary part in the electrode
+     real(dp) :: Eta = 7.3498067e-7_dp ! corresponds to 0.00001 eV
+
 #ifdef TBTRANS
      ! The size of the down-folded self-energy
      integer :: no_dwn
@@ -139,8 +143,6 @@ module m_ts_electype
      ! The region of the down-folded region
      type(tRegion) :: o_inD
 
-     ! The imaginary part in the electrode
-     real(dp) :: E_imag = 7.3498067e-7_dp ! corresponds to 0.00001 eV
 #endif
 
      ! The basal plane of the electrode
@@ -448,16 +450,22 @@ contains
           this%DEfile = trim(fdf_bnames(pline,2))
 
 #ifdef TBTRANS
-       else if ( leqi(ln,'tbt-E-imag') ) then
-
+       else if ( leqi(ln,'tbt-Eta') .or. leqi(ln,'Eta') ) then
+#else
+       else if ( leqi(ln,'Eta') ) then
+#endif
           call pline_E_parse(pline,1,ln, &
-               val = this%E_imag, before=3)
-          print *,this%E_imag
-          if ( this%E_imag < 0._dp ) then
-             call die('We do not allow the advanced Greens function &
-                  &to be calculated. Please ensure a positive imaginary &
-                  &part of the energy.')
-          end if
+               val = this%Eta, before=3)
+
+#ifdef TBTRANS
+       else if ( leqi(ln,'tbt-GF') .or. &
+            leqi(ln,'tbt-GF-file') ) then
+          if ( fdf_bnnames(pline) < 2 ) call die('tbt-GF-file not supplied')
+          this%GFfile = trim(fdf_bnames(pline,2))
+
+       else if ( leqi(ln,'tbt-GF-ReUse') ) then
+
+          this%ReUseGF = fdf_bboolean(pline,1,after=1)
 
 #else
        else if ( leqi(ln(1:3),'tbt') ) then
@@ -489,6 +497,12 @@ contains
        call die('You have not supplied all electrode information')
     end if
 
+    if ( this%Eta <= 0._dp ) then
+       call die('We do not allow the advanced Greens function &
+            &to be calculated. Please ensure a positive imaginary &
+            &part of the energy (non-zero).')
+    end if
+    
     inquire(file=trim(this%HSfile), exist=info(1))
     if ( .not. info(1) ) then
        call die("Electrode file does not exist. &
@@ -939,7 +953,7 @@ contains
   subroutine check_Elec(this,nspin,ucell,na_u,xa,lasto,xa_EPS, &
        kcell,kdispl)
 
-    use intrinsic_missing, only : VNORM, SPC_PROJ
+    use intrinsic_missing, only : VNORM, SPC_PROJ, VEC_PROJ
     use parallel, only : IONode
     use units, only : Ang
     use m_ts_io, only : ts_read_TSHS_opt
@@ -960,7 +974,7 @@ contains
     integer :: i,j,k, ia, iaa, this_kcell(3,3)
     logical :: er, this_er, Gamma
     real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
-    real(dp) :: max_xa(3), cur_xa(3)
+    real(dp) :: max_xa(3), cur_xa(3), p(3), contrib
     real(dp), pointer :: this_xa(:,:)
 
 #ifdef MPI
@@ -1120,6 +1134,35 @@ contains
             &Please correct accordingly.")
     end if
 
+    ! Print out a warning if the electrode uses several cell-vectors
+    p = SPC_PROJ(ucell,this%ucell(:,this%t_dir))
+    j = 0
+    do i = 1 , 3 
+
+       ! project the unit-cell vector onto each cell component
+       contrib = VNORM(VEC_PROJ(ucell(:,i),p))
+
+       ! If the contribution in this cell direction is too
+       ! small we consider it not to be important.
+       ! TODO this might in certain skewed examples be a bad choice.
+       if ( contrib < 1.e-6_dp ) cycle
+       j = j + 1
+    end do
+    if ( j > 1 .and. IONode ) then
+       ! The electrode uses more than one cell-vector
+       ! to describe the transport direction.
+       write(*,'(a)')' *** Electrode '//trim(this%name)//' has the transport direction'
+       write(*,'(a,i0)')'     aligning with ',j,' cell vectors.'
+       write(*,'(a)')'     Responsibility has been relieved of transiesta/tbtrans!'
+    end if
+
+    ! The cell-vector along the transport direction.
+    p = this%ucell(:,this%t_dir)
+    ! We add a vector with length 0.5 Ang
+    ! to the vector, to do the averaging 
+    ! not on-top of an electrode atom.
+    p = p / VNORM(p) * 0.5_dp * Ang
+    
     ! Create the basal plane of the electrode
     ! Decide which end of the electrode we use
     ! TODO, correct for systems not having the last electrode atom
@@ -1127,8 +1170,10 @@ contains
     if ( this%inf_dir == INF_POSITIVE ) then
        ! We need to utilize the last atom
        this%p%c = xa(:,this%idx_a+this%na_used-1)
+       this%p%c = this%p%c + p ! add vector
     else
        this%p%c = xa(:,this%idx_a)
+       this%p%c = this%p%c - p ! subtract vector
     end if
     
     ! Normal vector to electrode transport direction
@@ -1317,6 +1362,7 @@ contains
   subroutine copy_DM(this,na_u,xa,lasto,nsc,isc_off,cell,DM_2D, EDM_2D, &
        na_a, allowed)
     use m_handle_sparse
+    use m_iodm
     use m_ts_iodm
     ! We will copy over the density matrix and "fix it in the leads
     type(Elec), intent(inout) :: this
@@ -1331,11 +1377,7 @@ contains
     real(dp), pointer :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
     integer :: i
-    logical :: found, alloc(3)
-
-    if ( this%na_used /= this%na_u ) then
-       call die('Currently you cannot copy a non-full sparsity pattern...')
-    end if
+    logical :: found, alloc(3), is_TSDE
 
     ! Check and see if we should de-allocate
     alloc(1) = associated(this%xa)
@@ -1345,17 +1387,28 @@ contains
     ! We *must* read in the isc_off array
     call read_Elec(this, Bcast=.true., io=.false.)
 
-    call read_ts_dm( this%DEfile, this%nspin, fake_dit, &
-         this%no_u, f_DM_2D, f_EDM_2D, Ef, found, &
-         Bcast = .true. )
-    sp => spar(f_DM_2D)
-    sp = this%sp
-    sp => spar(f_EDM_2D)
-    sp = this%sp
+    i = len_trim(this%DEfile)
+    is_TSDE = ( this%DEfile(i-3:i) == 'TSDE' )
+    if ( is_TSDE ) then
+       call read_ts_dm( this%DEfile, this%nspin, fake_dit, &
+            this%no_u, f_DM_2D, f_EDM_2D, Ef, found, &
+            Bcast = .true. )
+    else
+       call read_dm( this%DEfile, this%nspin, fake_dit, &
+            this%no_u, f_DM_2D, found, &
+            Bcast = .true. )
+    end if
     if ( .not. found ) call die('Could not read file: '//trim(this%DEfile))
-
-    if ( .not. alloc(1) ) deallocate(this%xa) ; nullify(this%xa)
-    if ( .not. alloc(2) ) deallocate(this%lasto) ; nullify(this%lasto)
+    sp => spar(f_DM_2D)
+    if ( .not. equivalent(sp,this%sp) ) then
+       call die('Bulk electrode expansion, read in sparsity pattern, &
+            &does not match the TSHS sparsity pattern.')
+    end if
+    sp = this%sp
+    if ( is_TSDE ) then
+       sp => spar(f_EDM_2D)
+       sp = this%sp
+    end if
 
     ! We must delete the additional arrays read in
     call delete(this%sp)
@@ -1365,26 +1418,44 @@ contains
     ! TODO, there is some memory that could be leaking with the
     ! electrode arrays.
 
-    ! Shift the energy matrix to the chemical potential :)
-    DM  => val(f_DM_2D)
-    EDM => val(f_EDM_2D)
-    i = size(DM)
-    tmp = -( Ef + this%mu%mu )
-    call daxpy(i,tmp,DM(1,1),1,EDM(1,1),1)
+    if ( is_TSDE ) then
+       ! Shift the energy matrix to the chemical potential :)
+       DM  => val(f_DM_2D)
+       EDM => val(f_EDM_2D)
+       i = size(DM)
+       tmp = -( Ef + this%mu%mu )
+       call daxpy(i,tmp,DM(1,1),1,EDM(1,1),1)
+    end if
 
-    call expand_spd2spd_2D(this%na_used,this%lasto_used,this%xa_used,f_DM_2D,&
-         this%ucell, (/1,1,1/), this%Rep, size(this%isc_off,dim=2), this%isc_off, &
+    if ( this%inf_dir == INF_POSITIVE ) then
+       i = 1
+    else
+       i = this%na_u - this%na_used + 1
+    end if
+
+    call expand_spd2spd_2D(i,this%na_used, &
+         this%na_u,this%lasto,this%xa,f_DM_2D,&
+         this%ucell, (/1,1,1/), this%Rep, &
+         size(this%isc_off,dim=2), this%isc_off, &
          na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, &
          print = .true., allowed_a = allowed)
 
-    call expand_spd2spd_2D(this%na_used,this%lasto_used,this%xa_used,f_EDM_2D,&
-         this%ucell, (/1,1,1/), this%Rep, size(this%isc_off,dim=2), this%isc_off, &
-         na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, &
-         allowed_a = allowed)
-
+    if ( is_TSDE ) then
+       call expand_spd2spd_2D(i,this%na_used, &
+            this%na_u,this%lasto,this%xa,f_EDM_2D, &
+            this%ucell, (/1,1,1/), this%Rep, &
+            size(this%isc_off,dim=2), this%isc_off, &
+            na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, &
+            allowed_a = allowed)
+    end if
+       
+    if ( .not. alloc(1) ) deallocate(this%xa) ; nullify(this%xa)
+    if ( .not. alloc(2) ) deallocate(this%lasto) ; nullify(this%lasto)
     if ( .not. alloc(3) ) deallocate(this%isc_off) ; nullify(this%isc_off)
 
-    call delete(f_EDM_2D)
+    if ( is_TSDE ) then
+       call delete(f_EDM_2D)
+    end if
     call delete(f_DM_2D)
 
   end subroutine copy_DM
@@ -1405,7 +1476,7 @@ contains
     ! First create the different out-put options
     f1  = '('''//trim(prefix)//': '',a,t53,''='',4x,l1)'
     f5  = '('''//trim(prefix)//': '',a,t53,''='',i5,a)'
-    f20 = '('''//trim(prefix)//': '',a,t53,''='',i0,'' -- '',i0)'
+    f20 = '('''//trim(prefix)//': '',a,t53,''= '',i0,'' -- '',i0)'
     f6  = '('''//trim(prefix)//': '',a,t53,''='',f10.4,tr1,a)'
     f7  = '('''//trim(prefix)//': '',a,t53,''='',f12.6,tr1,a)'
     f8  = '('''//trim(prefix)//': '',a,t53,''='',f10.4)'
@@ -1454,11 +1525,11 @@ contains
     end if
 #ifndef TBTRANS
     if ( this%DM_update == 0 ) then
-       write(*,f11)  '  Cross-terms is not updated'
+       write(*,f11)  '  Cross-terms are not updated'
     else if ( this%DM_update == 1 ) then
-       write(*,f11)  '  Cross-terms is updated'
+       write(*,f11)  '  Cross-terms are updated'
     else if ( this%DM_update == 2 ) then
-       write(*,f11)  '  Cross-terms and electrode region is updated'
+       write(*,f11)  '  Cross-terms and electrode region are updated'
     end if
 #endif
     if ( abs(this%mu%mu) > 1.e-10_dp ) then
@@ -1467,9 +1538,7 @@ contains
     if ( .not. this%kcell_check ) then
        write(*,f11)  '  Will NOT check the kgrid-cell! Ensure sampling!'
     end if
-#ifdef TBTRANS
-    write(*,f9)  '  Electrode imaginary Eta', this%E_imag/eV,' eV'
-#endif
+    write(*,f9)  '  Electrode imaginary Eta', this%Eta/eV,' eV'
 
   end subroutine print_settings
   

@@ -104,8 +104,6 @@
     type(OrbitalDistribution),  intent(in) :: dist
     character(len=*), intent(in), optional :: name
 
-    integer :: error
-    
     call init(this)
     
     this%data%sp = sp
@@ -132,8 +130,6 @@
     character(len=*), intent(in), optional :: name
     integer, intent(in), optional         :: sparsity_dim
     
-    integer :: error
-
     call init(this)
     this%data%sp = sp
     this%data%dist = dist

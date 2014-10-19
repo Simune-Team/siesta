@@ -105,18 +105,20 @@ contains
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
     ! below could be optimized)
-    do i = 2 , no_u / 4 , Nodes
+    do i = 2 + Node , no / 4 , Nodes
 
        ! Make new guess...
-       call guess_TriMat(sp,no,mm_col,i,guess_parts,guess_part)
+       call guess_TriMat(no,mm_col,i,guess_parts,guess_part)
 
        ! If not valid tri-pattern, simply jump...
        if ( ts_valid_tri(no,mm_col,guess_parts, guess_part) /= VALID ) cycle
-
        call full_even_out_parts(opt_TriMat_method, &
-            sp,no,mm_col,guess_parts,guess_part)
+            no,mm_col,guess_parts,guess_part)
 
+       
        if ( ts_valid_tri(no,mm_col,guess_parts, guess_part) /= VALID ) then
+          print *,guess_parts,guess_part(1:guess_parts)
+          print *,ts_valid_tri(no,mm_col,guess_parts, guess_part)
           call die('error on evening out... Programming error.')
        end if
 
@@ -262,15 +264,11 @@ contains
 
   end subroutine ts_Sparsity2TriMat
 
-  subroutine guess_TriMat(sp,no,mm_col,first_part,parts,n_part)
-    use class_Sparsity
-    use alloc, only: re_alloc
-
-    type(Sparsity), intent(inout) :: sp
+  subroutine guess_TriMat(no,mm_col,first_part,parts,n_part)
     integer, intent(in) :: no, mm_col(2,no)
     integer, intent(in) :: first_part
     integer, intent(out) :: parts
-    integer, pointer :: n_part(:)
+    integer, intent(out) :: n_part(:)
 
     ! Local variables
     integer :: N
@@ -286,7 +284,7 @@ contains
        if ( parts > size(n_part) ) then
           call die('Size error when guessing the tri-mat size')
        end if
-       call guess_next_part_size(sp, no, mm_col, parts, parts, n_part)
+       call guess_next_part_size(no, mm_col, parts, parts, n_part)
        N = N + n_part(parts)
     end do
 
@@ -349,10 +347,7 @@ contains
   ! searching for the size of the matrix that matches that of the previous 
   ! part.
   ! We save it in n_part(part)
-  subroutine guess_next_part_size(sp,no,mm_col,part,parts,n_part)
-    use class_Sparsity
-    ! The sparsity pattern
-    type(Sparsity), intent(inout) :: sp
+  subroutine guess_next_part_size(no,mm_col,part,parts,n_part)
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
     integer, intent(in) :: part, parts
@@ -363,11 +358,12 @@ contains
     ! We are now checking a future part
     ! Hence we must ensure that the size is what
     ! is up to the last parts size, and thats it...
-    sRow = 1
-    do i = 1 , part - 2
-       sRow = sRow + n_part(i)
+    eRow = 0
+    do i = 1 , part - 1
+       eRow = eRow + n_part(i)
     end do
-    eRow = sRow + n_part(part-1) - 1
+    sRow = eRow - n_part(part-1) + 1
+
     ! We will check in between the above selected rows and find the 
     ! difference in size...
     n_part(part) = 0
@@ -389,17 +385,14 @@ contains
 
   end subroutine guess_next_part_size
 
-  subroutine full_even_out_parts(method,sp,no,mm_col,parts,n_part)
-    use class_Sparsity
+  subroutine full_even_out_parts(method,no,mm_col,parts,n_part)
     use m_ts_options, only : IsVolt, N_Elec, Elecs
     use m_ts_tri_scat, only : ts_needed_mem
     integer, intent(in) :: method ! the method used for creating the parts
-    ! The sparsity pattern
-    type(Sparsity), intent(inout) :: sp
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
     integer, intent(in) :: parts
-    integer, intent(in out) :: n_part(parts)
+    integer, intent(inout) :: n_part(parts)
     ! Local variables
     integer :: o_part(parts), mem_part(parts) , i, o_mem, n_mem, idx
 
@@ -411,7 +404,7 @@ contains
           call ts_needed_mem(IsVolt, N_Elec, Elecs, parts,n_part,o_mem)
           do i = 1 , parts
              mem_part(:) = n_part(:)
-             call even_out_parts(sp, no, mm_col, parts, n_part, i)
+             call even_out_parts(no, mm_col, parts, n_part, i)
              call ts_needed_mem(IsVolt, N_Elec, Elecs, parts,n_part,n_mem)
              if ( n_mem > o_mem ) then
                 ! copy back
@@ -424,14 +417,15 @@ contains
     else
 
        do
-          o_part(:) = n_part(:)
+          o_part(:)   = n_part(:)
           mem_part(:) = n_part(:)
           ! Even out from the largest one first
           do i = 1 , parts
              idx = maxloc(mem_part,dim=1)
              mem_part(idx) = 0
-             call even_out_parts(sp, no, mm_col, parts, n_part, idx)
+             call even_out_parts(no, mm_col, parts, n_part, idx)
           end do
+          
           if ( maxval(abs(o_part-n_part)) == 0 ) exit
        end do
 
@@ -439,14 +433,11 @@ contains
 
   end subroutine full_even_out_parts
 
-  subroutine even_out_parts(sp,no,mm_col,parts,n_part, n)
-    use class_Sparsity
-    ! The sparsity pattern
-    type(Sparsity), intent(inout) :: sp
+  subroutine even_out_parts(no,mm_col,parts,n_part, n)
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
     integer, intent(in) :: parts
-    integer, intent(in out) :: n_part(parts)
+    integer, intent(inout) :: n_part(parts)
     integer, intent(in) :: n
     ! Local variables
     integer :: copy_n_part
@@ -459,7 +450,8 @@ contains
     if ( parts == 2 ) then
 
        copy_n_part = 0
-       
+       i = 0
+
        do while ( n_part(n) - copy_n_part /= 0 )
           
           ! Copy the current partition so that we can check in the
@@ -468,10 +460,10 @@ contains
 
           if ( n == 1 ) then
              ! If we have the first part we can always shrink it
-             call even_if_larger(eRow,n_part(n+1),n_part(n),sign= 1)
+             call even_if_larger(i,n_part(n),n_part(n+1),sign= 1)
           else if ( n == parts ) then
              ! If we have the last part we can always shrink it
-             call even_if_larger(sRow,n_part(n-1),n_part(n),sign=-1)
+             call even_if_larger(i,n_part(n),n_part(n-1),sign=-1)
           end if
        end do
 
@@ -484,9 +476,8 @@ contains
     ! regions, hence, we let the central parts partition out
     ! the regions
     if ( n == 1 .or. n == parts ) return
-    
-    copy_n_part = n_part(n) + 1
 
+    ! We calculate the min/max rows in the blocks
     sRow = 1
     do i = 1 , n - 1
        sRow = sRow + n_part(i)
@@ -495,6 +486,7 @@ contains
 
     ! We will continue to shift columns around
     ! until we do not shift columns any more...
+    copy_n_part = 0
     do while ( n_part(n) - copy_n_part /= 0 )
 
        ! Copy the current partition so that we can check in the
@@ -511,7 +503,7 @@ contains
        !    the first row must not have any elements
        !    extending into the right part
        if ( mm_col(2,sRow) <= eRow ) then
-          call even_if_larger(sRow,n_part(n),n_part(n-1),sign=1)
+          call even_if_larger(sRow,n_part(n),n_part(n-1),sign= 1)
        end if
 
        ! 2. if you wish to shrink it right, then:
@@ -520,7 +512,7 @@ contains
        if ( sRow <= mm_col(1,eRow) ) then
           call even_if_larger(eRow,n_part(n),n_part(n+1),sign=-1)
        end if
-       
+
     end do
 
   contains
@@ -531,7 +523,7 @@ contains
       if ( p1 > p2 ) then
          p1 = p1 - 1
          p2 = p2 + 1
-         Row = Row + sign * 1
+         Row = Row + sign
       end if
     end subroutine even_if_larger
 
@@ -645,16 +637,25 @@ contains
     integer, intent(in) :: no, mm_col(2,no)
     integer, intent(in) :: parts, n_part(parts)
     integer :: val
-    integer :: i, idx1, idx2, j
+    integer :: i, idx1, idx2, j, c_no
 
+   
     do i = 1 , N_Elec
        j = Elecs(i)%idx_o
+       ! Start orbital index
        idx1 = j - orb_offset(j)
+       ! End orbital index
+       idx2 = idx1 + TotUsedOrbs(Elecs(i)) - 1
 
+       c_no = 0
        do j = 1 , parts - 1
-          idx2 = idx1 - sum(n_part(1:j))
-          if ( 0 <= idx2 ) then
-             if ( idx2 + TotUsedOrbs(Elecs(i)) < n_part(j+1) ) then
+          ! this is the last orbital in this part
+          c_no = c_no + n_part(j)
+          if ( idx1 <= c_no ) then
+             ! The electrode starts in this region
+             ! We check that it does not extend beyond the 
+             ! next part.
+             if ( c_no + n_part(j+1) < idx2 ) then
                 val = NONVALID_TS_ELECTRODE
                 return
              end if

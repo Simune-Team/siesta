@@ -167,7 +167,6 @@
     integer, intent(in), optional :: padding ! padd the elements with this much
 
     integer :: i,n
-    integer :: stat
 
     ! We release the previous incarnation
     ! This means that we relinquish access to the previous
@@ -286,7 +285,6 @@
     type(TYPE_NAME), intent(in) :: this
     integer, intent(in)  :: i_g
     integer, intent(out) :: part, i_p
-    integer :: cum
 
     if ( i_g <= this%data%tri_crows(1) ) then
        part = 1

@@ -129,7 +129,8 @@ contains
     iE = N_Eq_E()
     do i = 1 , N_nEq_E()
        c = nEq_E(i)
-       ce(iE+i) = c%e
+       ! We utilize the eta value for the electrode
+       ce(iE+i) = dcmplx(real(c%e,dp),El%Eta)
     end do
        
     ! We return if we should not calculate it
@@ -191,7 +192,6 @@ contains
 #endif
     use m_ts_electype
     use m_ts_electrode, only : create_Green
-    use m_ts_contour_eq, only : Eq_Eta
 
     implicit none
     
@@ -256,7 +256,7 @@ contains
     errorGF = .false.
 
     ! We use the "first" pole of the 
-    ce(1) = dcmplx(0._dp, Eq_Eta)
+    ce(1) = dcmplx(0._dp, El%Eta)
 
     ! We return if we should not calculate it
     if ( .not. cReUseGF ) then
@@ -589,13 +589,20 @@ contains
     ! of doing the same "repetition" expansion twice, we can live with
     ! that!
     do i = 1 , NElecs
-#ifdef TBTRANS
-       ! We add the complex energy for the electrode
-       c%e = dcmplx(real(cE%e,dp),Elecs(i)%E_imag)
-#endif
+       ! If the index for the contour is negative
+       ! It means that we are dealing with a Fermi
+       ! charge correction
+       ! If it is different from 1 we do not have an equilibrium contour
+       if ( c%idx(1) /= 1 ) then
+          ! In this case the energy is the eta value of the electrode
+          c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
+       end if
        if ( Elecs(i)%out_of_core ) then
           ! Set k-point for calculating expansion
           Elecs(i)%bkpt_cur = bkpt
+          ! Transfer the k-point to the "expanded" supercell
+          where ( Elecs(i)%Rep > 1 ) &
+               Elecs(i)%bkpt_cur = bkpt / Elecs(i)%Rep
           call read_next_GS_Elec(uGF(i), NEReqs, &
                ikpt, Elecs(i), c, &
                nzwork, zwork, forward = forward)
@@ -941,9 +948,7 @@ contains
        ! The advantage of this is that the GF files can be re-used for
        ! the same system with different lengths between the electrode layers.
        call kpoint_convert(ucell,kpar(:,i),ktmp,1)
-       ktmp(1) = ktmp(1) * real(fReps(1),dp)
-       ktmp(2) = ktmp(2) * real(fReps(2),dp)
-       ktmp(3) = ktmp(3) * real(fReps(3),dp)
+       ktmp(:) = ktmp(:) * real(fReps(:),dp)
        call kpoint_convert(c_ucell,ktmp,kpt,-1)
        if ( dabs(c_kpar(1,i)-kpt(1)) > EPS .or. &
             dabs(c_kpar(2,i)-kpt(2)) > EPS .or. &
@@ -951,9 +956,7 @@ contains
           write(*,*)"k-points are not the same:"
           do j = 1 , min(c_nkpar,nkpar)
              call kpoint_convert(ucell,kpar(:,i),ktmp,1)
-             ktmp(1) = ktmp(1) * real(fReps(1),dp)
-             ktmp(2) = ktmp(2) * real(fReps(2),dp)
-             ktmp(3) = ktmp(3) * real(fReps(3),dp)
+             ktmp(:) = ktmp(:) * real(fReps(:),dp)
              call kpoint_convert(c_ucell,ktmp,kpt,-1)
              write(*,'(3f12.5,a,3f12.5)') c_kpar(:,j),'  :  ',kpt(:)
           end do

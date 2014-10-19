@@ -35,9 +35,6 @@ module m_ts_contour_eq
   type(ts_c_io), pointer, save, public :: Eq_io(:) => null()
   type(ts_cw)  , pointer, save, public :: Eq_c(:) => null()
 
-  ! The contour specific variables
-  real(dp), save, public :: Eq_Eta
-
   ! The contours for the equilibrium density are attributed a fruitful discussion with
   ! Hans Skriver. Previously the routine names reflected his contribution.
   ! However, for programming clarity we have employed a different naming scheme.
@@ -86,11 +83,6 @@ contains
 
     call fdf_obsolete('TS.ComplexContour.NPoles')
 
-    ! broadening
-    Eq_Eta = fdf_get('TS.Contours.Eq.Eta',0.00001_dp*eV,'Ry')
-    if ( Eq_Eta < 0._dp) call die('ERROR: Eq_Eta < 0, we do not allow &
-         &for using the advanced Greens function, please correct.')
-    
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input
     do i = 1 , N_mu
@@ -338,7 +330,7 @@ contains
     
     do i = 1 , N_mu
 
-       call setup_Eq_contour(mus(i),kT,Eq_Eta)
+       call setup_Eq_contour(mus(i),kT)
        
     end do
 
@@ -379,9 +371,9 @@ contains
 
   ! This routine assures that we have setup all the 
   ! equilibrium contours for the passed electrode
-  subroutine setup_Eq_contour(mu,kT,Eta)
+  subroutine setup_Eq_contour(mu,kT)
     type(ts_mu), intent(in) :: mu
-    real(dp), intent(in) :: kT, Eta
+    real(dp), intent(in) :: kT
 
     ! Local variables
     integer :: i, idx
@@ -395,7 +387,7 @@ contains
     call mu_circle_bounds(mu,a,b)
 
     ! Calculate the circle entries
-    call calc_Circle(a,b,mu%N_poles,kT,Eta,R,cR,lift)
+    call calc_Circle(a,b,mu%N_poles,kT,R,cR,lift)
 
     do i = 1 , Eq_segs(mu)
        
@@ -403,7 +395,7 @@ contains
 
        if ( leqi(Eq_c(idx)%c_io%part,'circle') ) then
 
-          call contour_Circle(Eq_c(idx),mu,kT,R,cR,Eta)
+          call contour_Circle(Eq_c(idx),mu,kT,R,cR)
 
        else if ( leqi(Eq_c(idx)%c_io%part,'line') ) then
 
@@ -416,7 +408,7 @@ contains
        else if ( leqi(Eq_c(idx)%c_io%part,'pole') ) then
 
           ! the poles all have the same weight (Pi*kT*2)
-          call contour_poles(Eq_c(idx),Eq_c(idx)%c_io%d,kT,Eta)
+          call contour_poles(Eq_c(idx),Eq_c(idx)%c_io%d,kT)
 
        else
           
@@ -429,27 +421,24 @@ contains
     
   contains
 
-    subroutine calc_Circle(a,b,N_poles,kT,Eta,R,cR,lift)
+    subroutine calc_Circle(a,b,N_poles,kT,R,cR,lift)
       use units, only : Pi
       real(dp), intent(in)  :: a,b ! the circle bounds
       integer, intent(in) :: N_poles ! number of poles the 'b' point is lifted
-      real(dp), intent(in) :: kT, Eta ! the imaginary part lifted
+      real(dp), intent(in) :: kT
       real(dp), intent(out) :: R, cR, lift ! the radius, center(real)
       
       ! local variables
       real(dp) :: alpha
 
       lift = Pi * kT * (2._dp*(N_poles-1)+1._dp)
-      do while ( lift < Eta )
-         lift = lift + 2._dp * Pi * kT
-      end do
       lift = lift + Pi * kT
       ! this means that we place the line contour right in the middle of two poles!
 
       cR = b - a
       ! the angle between the axis and the line from the start
       ! of the circle to the end of the circle contour
-      alpha = datan( (lift - Eta) / cR )
+      alpha = datan( lift / cR )
     
       ! the radius can be calculated using two triangles in the circle
       ! there is no need to use the cosine-relations
@@ -514,12 +503,12 @@ contains
     
   end subroutine c2weight_eq
 
-  subroutine contour_Circle(c,mu,kT,R,cR,Eta)
+  subroutine contour_Circle(c,mu,kT,R,cR)
     use m_integrate
     use m_gauss_quad
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
-    real(dp), intent(in) :: kT, R, cR, Eta
+    real(dp), intent(in) :: kT, R, cR
 
     ! local variables
     character(len=c_N) :: tmpC
@@ -615,6 +604,14 @@ contains
 
        call Booles_Simpson_38_3_rule(c%c_io%N, ce, cw, a, b)
 
+    case ( CC_SIMP_MIX )
+       
+       call Simpson_38_3_rule(c%c_io%N,ce,cw,a,b)
+
+    case ( CC_MID )
+       
+       call Mid_Rule(c%c_io%N,ce,cw,a,b)
+
     case default
        call die('Unknown method for the circle integral, please correct')
     end select
@@ -629,10 +626,10 @@ contains
        ztmp = R * cdexp(dcmplx(0._dp,ce(i)))
 
        if ( set_c ) then
-          c%c(i) = dcmplx(cR,Eta) + ztmp
+          c%c(i) = dcmplx(cR,0._dp) + ztmp
        else
-          if ( abs(c%c(i) - (dcmplx(cR,Eta) + ztmp) ) > 1.e-10_dp ) then
-             print *,c%c(i),dcmplx(cR,Eta) + ztmp
+          if ( abs(c%c(i) - (dcmplx(cR,0._dp) + ztmp) ) > 1.e-10_dp ) then
+             print *,c%c(i),dcmplx(cR,0._dp) + ztmp
              call die('contours does not match')
           end if
        end if
@@ -681,7 +678,9 @@ contains
 
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
-    real(dp), intent(in) :: kT, Eta
+    real(dp), intent(in) :: kT
+    ! The lifting into the complex plane
+    real(dp), intent(in) :: Eta
 
     ! local variables
     character(len=c_N) :: tmpC
@@ -826,7 +825,9 @@ contains
 
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
-    real(dp), intent(in) :: kT, Eta
+    real(dp), intent(in) :: kT
+    ! This describes the lifting of the tail integral into the complex plane
+    real(dp), intent(in) :: Eta
 
     ! local variables
     integer :: idx, offset, infinity
@@ -920,7 +921,7 @@ contains
 
 
   ! The residuals of the fermi-function at a real-energy
-  subroutine contour_poles(c, E, kT, Eta)
+  subroutine contour_poles(c, E, kT)
     
     use precision, only : dp
     use units, only : Pi
@@ -935,7 +936,6 @@ contains
 ! ***********************
     real(dp), intent(in) :: E    ! at energy
     real(dp), intent(in) :: kT   ! temperature in Ry
-    real(dp), intent(in) :: Eta  ! The lift of the equilibrium contour
 
 ! ***********************
 ! * LOCAL variables     *
@@ -947,11 +947,6 @@ contains
     ! Residuals
     do i = 1 , c%c_io%N
        c%c(i) = dcmplx(E , Pi * kT * (2._dp*(i-1)+1._dp))
-    end do
-
-    ! correct the imaginary 
-    do while ( aimag(c%c(1)) < Eta ) 
-       c%c(:) = c%c(:) + dcmplx(0._dp,2._dp*Pi*kT)
     end do
 
   end subroutine contour_poles
@@ -1051,7 +1046,6 @@ contains
     end do
 
     write(*,opt_n) '          >> Equilibrium contour << '
-    write(*,opt_g_u) 'Equilibrium Greens function Eta',Eq_Eta/eV,'eV'
     do i = 1 , N_eq
        if ( .not. leqi(eq_io(i)%part,'pole') ) then
           chars = '  '//trim(eq_io(i)%part)

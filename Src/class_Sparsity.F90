@@ -123,8 +123,6 @@ module class_Sparsity
     character(len=*), intent(in)  :: name
     integer, intent(in), optional :: ncols, ncols_g
 
-    integer :: stat
-
    ! We release the previous incarnation
    ! This means that we relinquish access to the previous
    ! memory location. It will be deallocated when nobody

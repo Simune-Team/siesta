@@ -67,7 +67,6 @@ contains
     real(dp), parameter :: S_38_E = 6480._dp ** .2_dp
     real(dp), parameter :: S_3_E  = 2880._dp ** .2_dp
 
-    real(dp) :: bE, s38E, s3E
     real(dp) :: D, mD, curA, curB
     integer :: i, j, mBo, m38
 

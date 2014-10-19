@@ -198,11 +198,15 @@
       endif
 
       if ( init_method == 0 ) then
+
          ! In case we have initialized from atomic fillings
          ! we allow the user to supply different files for
          ! starting the calculation in a state of bulk 
          ! calculations
          call bulk_expand(na_u,xa,lasto,ucell,nsc,isc_off,DMnew)
+
+         ! Note that normalization is performed later
+
       end if
 
 #ifdef TRANSIESTA

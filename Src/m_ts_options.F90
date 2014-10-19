@@ -89,6 +89,7 @@ contains
     use m_ts_weight
     use m_ts_charge
     use m_ts_tdir
+    use m_ts_hartree, only: elec_basal_plane
 
 #ifdef MUMPS
     use m_ts_mumps_init, only : MUMPS_mem, MUMPS_ordering, MUMPS_block
@@ -381,11 +382,13 @@ contains
     ! Hence we use this as an error-check (also for N_Elec == 1)
     if ( N_Elec /= 2 ) then
        ts_tdir = - N_Elec
+       elec_basal_plane = .true.
     else
        if ( Elecs(1)%t_dir /= Elecs(2)%t_dir ) then
           ! In case we have a skewed transport direction
           ! we have some restrictions...
           ts_tdir = - N_Elec
+          elec_basal_plane = .true.
        end if
     end if
 
@@ -396,7 +399,8 @@ contains
     ! Currently the transport direction for all electrodes is the default
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
-    Elecs(:)%t_dir = ts_tdir
+    Elecs(:)%Eta = fdf_get('TS.Contours.nEq.Eta',0.00001_dp*eV,'Ry')
+    Elecs(:)%Eta = fdf_get('TS.Elecs.Eta',Elecs(1)%Eta)
     Elecs(:)%Bulk  = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     if ( .not. Elecs(1)%Bulk ) then
        Elecs(:)%DM_update = 2
@@ -462,6 +466,15 @@ contains
                &transport direction. Only use one direction for &
                the semi-infinite leads.')
        end if
+    end if
+
+    ! The user can selectively decide how the Hartree-fix
+    ! is applied
+    ! In case the transport direction is "fixed" in two terminal
+    ! setups, we can still force it to use the basal plane of the 
+    ! electrodes
+    if ( ts_tdir > 0 ) then
+       elec_basal_plane = fdf_get('TS.HartreePotential.BasalPlane',.false.)
     end if
 
     if ( .not. IsVolt ) then
@@ -857,7 +870,7 @@ contains
        ! Check that the atoms are placed correctly in the unit-cell
        ! The Hartree potential correction will only be put correctly 
        ! when the atoms are sorted by z and starting from z == 0
-       if ( IsVolt .and. .not. VoltageInC ) then
+       if ( IsVolt .and. .not. VoltageInC .and. ts_tdir > 0 ) then
           tmp = minval(xa(ts_tdir,:)) / Ang
           ! below -.5 or above .5 Ang from the bottom of the unit-cell
           if ( tmp < -.5_dp .or. .5_dp < tmp ) then
@@ -879,7 +892,6 @@ contains
                &This may result in very wrong electrostatic potentials close to &
                &the electrode/device boundary region.'
        end if
-          
 
        ! warn the user about suspicous work regarding the electrodes
        do i = 1 , N_Elec
@@ -944,49 +956,6 @@ contains
           write(*,'(a,/,a)') 'Consider updating more elements when doing &
                &N-electrode calculations. The charge conservation typically &
                &increases.','  TS.Elecs.DM.Update [cross-terms|all]'
-       end if
-
-       ! Calculate the reciprocal cell WITHOUT 2*Pi
-       call reclat(ucell,rcell,0)
-
-       err = .false.
-       do i = 1 , na_u
-
-          ! We need to check that all device/electrode
-          ! atoms are inside the unit-cell
-          ! This is the "easiest" way to figure out whether
-          ! we have cross-terms that stems from a periodic 
-          ! cell.
-          isc(1) = floor(sum(xa(:,i)*rcell(:,1)))
-          isc(2) = floor(sum(xa(:,i)*rcell(:,2)))
-          isc(3) = floor(sum(xa(:,i)*rcell(:,3)))
-          if ( ts_tdir > 0 ) then
-             ! In case of a uni-directional transport direction
-             ! we can easily figure out the connections
-             if ( isc(ts_tdir) /= 0 ) then
-                write(*,'(a,i0,a,3(tr1,i0))') &
-                     'Atom ',i,' lies outside of unit-cell, in supercell: ', &
-                     isc
-                err = .true.
-             end if
-          else
-             if ( any(isc /= 0) ) then
-                write(*,'(a,i0,a,3(tr1,i0))') &
-                     'Atom ',i,' lies outside of unit-cell, in supercell: ', &
-                     isc
-                err = .true.
-             end if
-          end if
-
-       end do
-
-       if ( err ) then
-          write(*,'(a)') 'We do not allow this as we cannot separate &
-               &periodic connections from open-boundary connections.'
-          write(*,'(a)') 'As a pre-caution we request that atoms are situated &
-               &inside the unit-cell for easier handling.'
-          write(*,'(a)') 'Please move all atoms inside of the unit-cell...'
-          call die('Please see output...')
        end if
 
     end if

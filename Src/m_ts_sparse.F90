@@ -93,6 +93,8 @@ contains
 #endif 
     use parallel, only: IONode
 
+    use intrinsic_missing, only : SPC_PROJ, VEC_PROJ, VNORM
+
     use m_ts_electype
     use m_ts_method
 #ifdef TRANSIESTA_DEBUG
@@ -140,6 +142,7 @@ contains
     ! Temporary arrays for knowing the electrode size
     logical :: bool
     integer :: no_u_TS, iEl, i
+    real(dp) :: p(3), contrib
 
     ! Number of orbitals in TranSIESTA
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
@@ -188,10 +191,26 @@ contains
        call region_connect(r_oE(iEl), block_dist, tmp_sp, r_tmp1)
        call region_union(r_oE(iEl), r_tmp1, r_tmp2)
 
-       ! Remove connections from this electrode across the boundary...
-       call Sp_remove_crossterms(block_dist,tmp_sp,product(nsc),isc_off, &
-            Elecs(iEl)%t_dir, &
-            tmp_sp, r = r_tmp2)
+       ! Calculate the transport direction in the device cell.
+       p = SPC_PROJ(ucell,Elecs(iEl)%ucell(:,Elecs(iEl)%t_dir))
+
+       ! Loop over cell vectors
+       do i = 1 , 3 
+
+          ! project the unit-cell vector onto each cell component
+          contrib = VNORM(VEC_PROJ(ucell(:,i),p))
+
+          ! If the contribution in this cell direction is too
+          ! small we consider it not to be important.
+          ! TODO this might in certain skewed examples be a bad choice.
+          if ( contrib < 1.e-6_dp ) cycle
+
+          ! Remove connections from this electrode across the boundary...
+          call Sp_remove_crossterms(block_dist,tmp_sp,product(nsc),isc_off, &
+               i, &
+               tmp_sp, r = r_tmp2)
+
+       end do
 
 #ifdef TRANSIESTA_DEBUG
        if(IONode)write(*,*)'Created TS-NO Cross (50)'
@@ -381,6 +400,7 @@ contains
     use mpi_siesta
 #endif
     use class_OrbitalDistribution
+    use intrinsic_missing, only : SORT
     use create_Sparsity_SC
     use m_ts_electype
     use m_ts_method
@@ -537,6 +557,14 @@ contains
     ! We now have a MASK of the actual needed TranSIESTA sparsity pattern
     ! We create the TranSIESTA sparsity pattern
     call crtSparsity_SC(sp_uc,ts_sp,MASK=l_HS)
+
+    ! Ensure that it is sorted
+    call attach(ts_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    do io = 1 , no_u
+       if ( l_ncol(io) == 0 ) cycle
+       ind = l_ptr(io)
+       l_col(ind+1:ind+l_ncol(io)) = SORT(l_col(ind+1:ind+l_ncol(io)))
+    end do
 
     ! clean-up
     deallocate(l_HS)

@@ -663,7 +663,6 @@ contains
     use m_ts_charge
 
     use m_ts_cctype
-    use m_ts_contour_eq, only : Eq_Eta
 
     use m_iterator
     use m_mat_invert
@@ -818,8 +817,9 @@ contains
        call init_val(spuDM)
        cE%exist = .true.
        cE%fake  = .true.
-       cE%e = dcmplx(0._dp, Eq_eta)
+       cE%e = dcmplx(0._dp, 0._dp)
        cE%idx = 1
+       cE%idx(1) = 0 ! Signals a fermi-contour
        if ( Node == Nodes - 1 ) cE%fake = .false.
 
        call read_next_GS(ispin, 1, bkpt, &
