@@ -1,4 +1,20 @@
 ------------------------------------------------------------
+2014-10-20   Alberto Garcia trunk-462--radfunc-5--wannier-4
+Sync to trunk-462
+
+Improved MPI version of siesta as a subroutine (J.M.Soler)
+%files added to Util/JobList options (J.M.Soler)
+New GGA and VDW functionals (M.Fritz & J.M.Soler)
+Fix bug when reading spin-polarized deformation charge
+Fixes and new features in fdf
+Fix printed charges for transiesta in spin-polarized case
+Bug fixes and feature changes in charge-density mixing
+Charge-density mixing
+Allow the handling of ghosts of synthetic atoms
+Added a simple ps-->inp converter for ATOM
+Fixed a wrong threshold for the bias for transiesta runs
+
+------------------------------------------------------------
 2013-12-09   Alberto Garcia trunk-451--radfunc-5--wannier-4
 Sync to trunk-451
 
@@ -15,5 +31,3 @@ Sync to trunk-451
  Cosmetic fixes to please Cray compi...
  Avoid allocation of auxiliary index arrays in...
  Siesta as subroutine using MPI. Vydrov-Va...
-
-

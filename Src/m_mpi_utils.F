@@ -14,7 +14,7 @@
       use sys, only: die
 #ifdef MPI
       use mpi_siesta, only : MPI_Comm_World, MPI_integer, MPI_logical
-      use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_character
+      use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_Min, MPI_character
       use mpi_siesta, only : MPI_Double_Precision, MPI_Real
       use mpi_siesta, only : MPI_AllReduce, MPI_Bcast
       use mpi_siesta, only : MPI_Lor
@@ -24,10 +24,13 @@
       implicit none
 #endif
       public :: globalize_max, globalize_sum, broadcast
-      public :: globalize_or
+      public :: globalize_or, globalize_min
       private
       interface globalize_max
         module procedure globalize_max_dp, globalize_max_int
+      end interface
+      interface globalize_min
+        module procedure globalize_min_dp, globalize_min_int
       end interface
       interface globalize_sum
         module procedure globalize_sum_dp, globalize_sum_int
@@ -244,6 +247,30 @@
      $            MPI_max,MPI_Comm_World,MPIerror)
 #endif
        end subroutine Globalize_max_int
+
+      subroutine Globalize_min_dp(local,global)
+      real(dp), intent(in) :: local
+      real(dp), intent(out) :: global
+
+#ifndef MPI
+           global = local
+#else
+           call MPI_AllReduce(local,global,1,MPI_double_precision,
+     $            MPI_min,MPI_Comm_World,MPIerror)
+#endif
+       end subroutine Globalize_min_dp
+
+      subroutine Globalize_min_int(local,global)
+      integer, intent(in) :: local
+      integer, intent(out) :: global
+
+#ifndef MPI
+           global = local
+#else
+           call MPI_AllReduce(local,global,1,MPI_integer,
+     $            MPI_min,MPI_Comm_World,MPIerror)
+#endif
+       end subroutine Globalize_min_int
 
       end module m_mpi_utils
 

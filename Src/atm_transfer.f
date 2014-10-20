@@ -73,7 +73,9 @@
          if (spp%z.eq.-100) then
             spp%symbol = 'BS'
          else
-            spp%symbol = symbol(abs(spp%z))
+            ! The function 'symbol' knows how to deal
+            ! with (ghost) synthetics
+            spp%symbol = symbol(spp%z)
          endif
          spp%zval  = zvalfis(is)
          spp%mass  = massfis(is)

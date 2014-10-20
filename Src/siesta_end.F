@@ -27,6 +27,7 @@
       use meshphi,         only : resetMeshPhi
       use meshdscf,        only : resetDscfPointers
       use m_dscfcomm,      only : resetdscfComm
+      use m_rhog,          only : resetRhog
 
       implicit none
 
@@ -47,6 +48,7 @@
       call reset_bands( )
       call resetMeshPhi( )
       call resetDscfPointers( )
+      call resetRhog()
 
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )

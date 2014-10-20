@@ -134,7 +134,6 @@
       Eharrs  = 0.0_dp
       Eions   = 0.0_dp
       Ekinion = 0.0_dp
-      Elast   = 0.0_dp
       Emad    = 0.0_dp
       Emeta   = 0.0_dp
       Emm     = 0.0_dp
@@ -192,7 +191,7 @@
       call broadcast_basis( )
 
       call register_rfs()
-      call test_register()
+!     call test_register()
 
       atmonly = fdf_get( 'Atom-Setup-Only', .false. )
       if (atmonly) call bye( 'End of atom setup' )
