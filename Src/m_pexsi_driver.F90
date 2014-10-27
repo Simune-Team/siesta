@@ -31,6 +31,7 @@ CONTAINS
 #endif
 use f_ppexsi_interface
 use iso_c_binding
+use m_pexsi, only: plan, pexsi_initialize_scfloop
 
 #ifdef TRACING_SOLVEONLY
       use extrae_module
@@ -53,13 +54,9 @@ use iso_c_binding
     call die("PEXSI needs MPI")
 #else
 
-integer(c_intptr_t) :: plan
+!integer(c_intptr_t) :: plan
 type(f_ppexsi_options) :: options
 
-integer :: numProcRow
-integer :: numProcCol
-integer :: outputFileIndex
- 
 integer :: numTotalPEXSIIter
 integer :: numTotalInertiaIter
 real(dp) :: totalEnergyH
@@ -438,32 +435,14 @@ if (mpirank==0) write(6,"(a,f10.2)") &
 !
 two_kT = 2.0_dp * pexsi_temperature
 
-!                                                                               
-!  New interface.                                                               
-!  I assume that numProcRow*numProcCol = npPerPole                              
-!                                                                               
-numProcRow = sqrt(dble(npPerPole))
-numProcCol = numProcRow
-
-if ((numProcRow * numProcCol) /= npPerPole) then
-  call die("not perfect square")
+!                                                                             
+!  New interface.
+if (iscf == 1) then
+   call pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
 endif
+!                                                                             
 
-outputFileIndex = mpirank
-
-plan = f_ppexsi_plan_initialize(&
-      World_Comm,&
-      numProcRow,&
-      numProcCol,&
-      outputFileIndex,&
-      info) 
-
-if (mpirank == 0) then
-   print *, "Info in plan_initialize: ", info
-endif
-
-call f_ppexsi_set_default_options(&
-  options )
+call f_ppexsi_set_default_options( options )
 
 options%muMin0   = muMin0
 options%muMax0   = muMax0
@@ -477,6 +456,7 @@ options%numElectronPEXSITolerance = PEXSINumElectronTolerance
 options%isInertiaCount = 1
 options%ordering = ordering
 options%npSymbFact = npSymbFact
+options%verbosity = 1
 
 call f_ppexsi_load_real_symmetric_hs_matrix(&
       plan,&
@@ -496,6 +476,23 @@ if (mpirank == 0) then
    print *, "Info in load_real_sym_hs_matrix: ", info
 endif
 
+if (iscf == 1) then
+   call f_ppexsi_symbolic_factorize_real_symmetric_matrix(&
+        plan, &
+        options,&
+        info)
+   if (mpirank == 0) then
+      print *, "Info in real symb_fact in iscf==1: ", info
+   endif
+   call f_ppexsi_symbolic_factorize_complex_symmetric_matrix(&
+        plan, &
+        options,&
+        info)
+   if (mpirank == 0) then
+      print *, "Info in complex symb_fact in iscf==1: ", info
+   endif
+endif
+options%isSymbolicFactorize = 0 ! We do not need it anymore
 !
 !  do actual solve
 !
@@ -663,7 +660,9 @@ call delete(dist2)
 
 ! Step 3. Clean up */
 
-call f_ppexsi_plan_finalize( plan, info )
+! We cannot finalize now if we are going to reuse
+! the plan in subsequent iterations...
+! We need an extra module to take care of this
 
 if (PEXSI_worker) then
    call MPI_Comm_Free(PEXSI_Comm, ierr)

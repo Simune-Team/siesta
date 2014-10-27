@@ -40,6 +40,8 @@
       use m_compute_energies, only: compute_energies
       use m_mpi_utils, only: broadcast
       use fdf
+      use m_pexsi, only: pexsi_finalize_scfloop
+
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
@@ -94,6 +96,9 @@
 !     Start of SCF loop
       iscf  = 0
       if (SIESTA_worker) call setup_H0()
+!      if (pexsi) then
+!         call pexsi_initialize_scfloop()
+!      endif
       if (ionode) call memory_snapshot("after setup_H0")
 
       DO 
@@ -207,6 +212,10 @@
        if (last_step) EXIT
 
       ENDDO
+
+      if (isolve == SOLVE_PEXSI) then
+         call pexsi_finalize_scfloop()
+      endif
 
       if (.not. SIESTA_worker) RETURN
 

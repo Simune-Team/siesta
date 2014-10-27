@@ -155,7 +155,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	vacuum_level.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
-        die.o m_pexsi_driver.o \
+        die.o m_pexsi.o m_pexsi_driver.o \
         m_comm.o m_transfers.o m_redist_spmatrix.o \
         compute_max_diff.o \
         save_density_matrix.o\
@@ -597,9 +597,10 @@ m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
+m_pexsi.o: f_ppexsi_interface.o precision.o
 m_pexsi_driver.o: alloc.o class_Dist.o extrae_module.o f_ppexsi_interface.o
-m_pexsi_driver.o: m_mpi_utils.o m_redist_spmatrix.o parallel.o precision.o
-m_pexsi_driver.o: siesta_options.o units.o
+m_pexsi_driver.o: m_mpi_utils.o m_pexsi.o m_redist_spmatrix.o parallel.o
+m_pexsi_driver.o: precision.o siesta_options.o units.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
@@ -770,8 +771,8 @@ siesta_end.o: meshphi.o moremeshsubs.o parallel.o siesta_cml.o siesta_cmlsubs.o
 siesta_end.o: siesta_master.o sparse_matrices.o timestamp.o
 siesta_forces.o: atomlist.o compute_dm.o compute_energies.o compute_max_diff.o
 siesta_forces.o: final_H_f_stress.o m_convergence.o m_energies.o m_forces.o
-siesta_forces.o: m_iodm.o m_mpi_utils.o m_pexsi_driver.o m_pulay.o m_rhog.o
-siesta_forces.o: m_spin.o m_steps.o m_stress.o m_ts_global_vars.o
+siesta_forces.o: m_iodm.o m_mpi_utils.o m_pexsi.o m_pexsi_driver.o m_pulay.o
+siesta_forces.o: m_rhog.o m_spin.o m_steps.o m_stress.o m_ts_global_vars.o
 siesta_forces.o: m_ts_options.o mixer.o parallel.o post_scf_work.o
 siesta_forces.o: save_density_matrix.o scfconvergence_test.o setup_H0.o
 siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_geom.o siesta_master.o

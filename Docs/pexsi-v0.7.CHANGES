@@ -1,4 +1,20 @@
 --------------------------------------------------------------
+October 27, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-2
+Reuse plan in simple KSDFT driver
+
+Store the 'plan' in a new m_pexsi module, and 
+initialize and finalize as needed.
+
+Still no optimization of initial bracket during the SCF loop.
+
+added:
+  Src/m_pexsi.f90
+modified:
+  Src/Makefile
+  Src/m_pexsi_driver.F90
+  Src/siesta_forces.F
+
+--------------------------------------------------------------
 October 14, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-1
 Simple KSDFT driver from new interface
 
