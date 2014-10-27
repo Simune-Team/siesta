@@ -158,14 +158,14 @@ program ts2ts
      ! Write block
      call sblock('TS.Atoms.Buffer')
      if ( NBufL > 1 ) then
-        write(*,'(tr2,a,i0,a,i0)') 'position from ',1,' to ',NBufL
+        write(*,'(tr2,a,i0,a,i0)') 'atom from ',1,' to ',NBufL
      else if ( NBufL == 1 ) then
-        write(*,'(tr2,a,i0,a,i0)') 'position 1'
+        write(*,'(tr2,a,i0,a,i0)') 'atom 1'
      end if
      if ( NBufR > 1 ) then
-        write(*,'(tr2,a,i0,a,i0)') 'position from ',-NBufR,' to ',-1
+        write(*,'(tr2,a,i0,a,i0)') 'atom from ',-NBufR,' to ',-1
      else if ( NBufR == 1 ) then
-        write(*,'(tr2,a,i0,a,i0)') 'position -1'
+        write(*,'(tr2,a,i0,a,i0)') 'atom -1'
      end if
      call eblock('TS.Atoms.Buffer')
      call nl()

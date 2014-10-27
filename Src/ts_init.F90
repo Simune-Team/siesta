@@ -34,6 +34,8 @@ contains
     use parallel, only : IONode
     use files, only : slabel
 
+    use m_io_s, only : file_exist
+
     use m_ts_gf,        only : do_Green, do_Green_Fermi
     use m_ts_electrode, only : init_Electrode_HS
     
@@ -68,7 +70,6 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    logical :: exist
     integer :: i, ia
     integer :: nC, nTS
 
@@ -154,8 +155,7 @@ contains
             .and. IONode ) then
           ! Delete the TS_FERMI file (enables
           ! reading it in and improve on the convergence)
-          inquire(file='TS_FERMI',exist=exist)
-          if ( exist ) then
+          if ( file_exist('TS_FERMI') ) then
              i = 23455
              open(unit=i,file='TS_FERMI')
              close(i,status='delete')

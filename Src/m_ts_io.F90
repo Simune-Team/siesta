@@ -482,9 +482,10 @@ contains
     ! to compiletime unawareness
     nsc(:) = 0
 
+    exist = file_exist(filename, Bcast = Bcast )
+
     if ( Node == 0 ) then
 
-       inquire(file=filename,exist=exist)
        if ( .not. exist ) then
           call die('ERROR: Could not read '//trim(filename)//'.')
        end if

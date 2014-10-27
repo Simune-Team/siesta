@@ -31,6 +31,10 @@ module m_io_s
   public :: io_write_Sp
   public :: io_write_d1D, io_write_d2D
 
+  ! To check file-existance
+  ! It also allows b-casting the existance.
+  public :: file_exist
+
 contains
 
   ! Returns a consecutive number of contributions
@@ -1384,6 +1388,46 @@ contains
     end if
     
   end subroutine io_write_d2D
+  
+  function file_exist(file,Bcast,Comm) result(exist)
+#ifdef MPI
+    use mpi_siesta, only : MPI_Comm_Rank
+    use mpi_siesta, only : MPI_Bcast, MPI_Comm_World, MPI_Logical
+#endif
+    character(len=*), intent(in) :: file
+    logical, intent(in), optional :: Bcast ! whether it should be b-casted
+    integer, intent(in), optional :: Comm ! the communicator (default World)
+    logical :: exist
+    integer :: Rank
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    Rank = 0
+#ifdef MPI
+    if ( present(Comm) ) then
+       call MPI_Comm_Rank( Comm , Rank, MPIerror )
+    end if
+#endif
+    
+    ! Now we have all required information
+    if ( Rank == 0 ) then
+       inquire(file=file, exist=exist)
+    end if
+
+#ifdef MPI
+    if ( present(Bcast) ) then
+       if ( present(Comm) ) then
+          call MPI_Bcast(exist,1,MPI_Logical, 0, &
+               Comm, MPIerror)
+       else
+          call MPI_Bcast(exist,1,MPI_Logical, 0, &
+               MPI_Comm_World, MPIerror)
+       end if
+    end if
+#endif
+
+  end function file_exist
 
 end module m_io_s
   

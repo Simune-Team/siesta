@@ -53,6 +53,7 @@ contains
     use mpi_siesta, only : MPI_Comm_World
     use mpi_siesta, only : MPI_Bcast, MPI_Integer, MPI_Logical
 #endif
+    use m_io_s, only : file_exist
     use m_ts_cctype
     use m_ts_electype
     use m_ts_electrode, only : create_Green
@@ -93,11 +94,11 @@ contains
     call write_debug( 'PRE do_Green' )
 #endif
     
-! check the file for existance
-    inquire(file=trim(El%GFfile),exist=exist)
+    ! check the file for existance
+    exist = file_exist(El%GFfile, Bcast = .true. )
     
     cReUseGF = El%ReUseGf
-! If it does not find the file, calculate the GF
+    ! If it does not find the file, calculate the GF
     if ( exist ) then
        if (IONode ) then
           write(*,*) "Electrode Green's function file: '"//&
@@ -111,11 +112,6 @@ contains
        cReUseGF = .false.
     end if
 
-#ifdef MPI
-    call MPI_Bcast(cReUseGF,1,MPI_Logical,0, &
-         MPI_Comm_World,MPIerror)
-#endif
-   
     errorGF = .false.
 
     ! we need to create all the contours
@@ -190,6 +186,7 @@ contains
     use mpi_siesta, only : MPI_Comm_World
     use mpi_siesta, only : MPI_Bcast, MPI_Integer, MPI_Logical
 #endif
+    use m_io_s, only : file_exist
     use m_ts_electype
     use m_ts_electrode, only : create_Green
 
@@ -231,7 +228,7 @@ contains
     El%GFfile = trim(GFfile)//'-Fermi'
     
     ! check the file for existance
-    inquire(file=trim(El%GFfile),exist=exist)
+    exist = file_exist(El%GFfile, Bcast = .true. )
     
     cReUseGF = El%ReUseGf
     ! If it does not find the file, calculate the GF
@@ -248,11 +245,6 @@ contains
        cReUseGF = .false.
     end if
 
-#ifdef MPI
-    call MPI_Bcast(cReUseGF,1,MPI_Logical,0, &
-         MPI_Comm_World,MPIerror)
-#endif
-   
     errorGF = .false.
 
     ! We use the "first" pole of the 

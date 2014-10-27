@@ -43,6 +43,12 @@ module m_ts_sparse_helper
   end interface 
   public :: create_HS
 
+  interface create_U
+     module procedure create_Gamma_U
+     module procedure create_kpt_U
+  end interface 
+  public :: create_U
+
 contains
 
    ! Helper routine to create and distribute the sparse 
@@ -312,6 +318,7 @@ contains
 
   end subroutine symmetrize_HS_kpt
 
+
   ! Helper routine to create and distribute the sparse 
   ! k-point Hamiltonian.
   subroutine create_HS_Gamma(dit,sp, &
@@ -421,10 +428,6 @@ contains
           ! if ( ind_k <= k_ptr(io) ) &
           ! call die('Could not find k-point index')
           if ( ind_k <= k_ptr(io) ) cycle
-
-          ! Todo, as this is a Gamma-calculation
-          ! we probably should NOT do 'dH = dH + H'
-          ! rather 'dH = H'
 
           dH(ind_k) = dH(ind_k) + H(ind)
           dS(ind_k) = dS(ind_k) + S(ind)
@@ -561,6 +564,200 @@ contains
     
   end subroutine symmetrize_HS_Gamma
 
+
+  ! Helper routine to create and distribute an upper
+  ! tri-angular matrix of the hamiltonian in a specified
+  ! region.
+  subroutine create_Gamma_U(dit,sp, &
+       no, r, &
+       n_nzs, A, A_UT)
+
+    use parallel, only : Node
+    use class_OrbitalDistribution
+    use class_Sparsity
+
+    use m_region
+
+    use geom_helper,       only : UCORB
+
+! *********************
+! * INPUT variables   *
+! *********************
+    ! the distribution that the H and S live under
+    type(OrbitalDistribution), intent(inout) :: dit
+    ! The (local) sparsity pattern that H, S lives by
+    type(Sparsity), intent(inout) :: sp
+    ! Number of orbitals that form this array
+    integer, intent(in) :: no
+    ! The region that we wish to create the UT matrix in
+    type(tRegion), intent(in) :: r
+    ! The number of elements in the sparse arrays
+    integer, intent(in) :: n_nzs
+    real(dp), intent(in) :: A(n_nzs)
+    ! The UT format matrix
+    real(dp), intent(out) :: A_UT(no*(no+1)/2)
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    ! Create loop-variables for doing stuff
+    integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
+    integer :: no_l, no_u, lio, io, ind, jo, i, idx
+    
+    ! Create all the local sparsity super-cell
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=no_l,nrows_g=no_u)
+
+    A_UT(:) = 0._dp
+
+    ! Loop over region orbitals
+    do i = 1 , no
+       
+       ! Global orbital
+       io = r%r(i)
+       ! obtain the global index of the orbital.
+       lio = index_global_to_local(dit,io)
+       if ( lio <= 0 ) cycle
+       
+       ! if there is no contribution in this row
+       if ( l_ncol(lio) == 0 ) cycle
+
+       ! Loop number of entries in the row... (in the index frame)
+       do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+
+          ! as the local sparsity pattern is a super-cell pattern,
+          ! we need to check the unit-cell orbital
+          ! The unit-cell column index
+          jo = UCORB(l_col(ind),no_u)
+
+          ! If the orbital is not in the region, we skip it
+          jo = region_pivot(r,jo)
+          if ( jo <= 0  ) cycle
+
+          ! Calculate position
+          ! For Gamma, we do not need the complex conjugate...
+          if ( i > jo ) then
+             idx = jo + (i -1)*i /2
+             A_UT(idx) = A_UT(idx) + 0.5_dp * A(ind)
+          else if ( i < jo ) then
+             idx = i  + (jo-1)*jo/2
+             A_UT(idx) = A_UT(idx) + 0.5_dp * A(ind)
+          else
+             idx = i  + (jo-1)*jo/2
+             A_UT(idx) = A_UT(idx) +          A(ind)
+          end if
+
+       end do
+
+    end do
+     
+  end subroutine create_Gamma_U
+
+  ! Helper routine to create and distribute an upper
+  ! tri-angular matrix of the hamiltonian in a specified
+  ! region.
+  subroutine create_kpt_U(dit,sp, &
+       no, r, &
+       n_nzs, n_s, A, sc_off, A_UT, k)
+
+    use parallel, only : Node
+    use class_OrbitalDistribution
+    use class_Sparsity
+
+    use m_region
+
+    use geom_helper,       only : UCORB
+
+! *********************
+! * INPUT variables   *
+! *********************
+    ! the distribution that the H and S live under
+    type(OrbitalDistribution), intent(inout) :: dit
+    ! The (local) sparsity pattern that H, S lives by
+    type(Sparsity), intent(inout) :: sp
+    ! Number of orbitals that form this array
+    integer, intent(in) :: no
+    ! The region that we wish to create the UT matrix in
+    type(tRegion), intent(in) :: r
+    ! The number of elements in the sparse arrays
+    integer, intent(in) :: n_nzs, n_s
+    real(dp), intent(in) :: A(n_nzs), sc_off(3,0:n_s-1)
+    ! The k-point we will create
+    real(dp), intent(in) :: k(3)
+    ! The UT format matrix
+    complex(dp), intent(out) :: A_UT(no*(no+1)/2)
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    ! Create loop-variables for doing stuff
+    integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
+    integer :: no_l, no_u, lio, io, ind, jo, i, idx, is
+    complex(dp) :: ph
+    real(dp) :: w
+    
+    ! Create all the local sparsity super-cell
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=no_l,nrows_g=no_u)
+
+    A_UT(:) = dcmplx(0._dp,0._dp)
+    w = log(0.5)
+
+    ! Loop over region orbitals
+    do i = 1 , no
+       
+       ! Global orbital
+       io = r%r(i)
+       ! obtain the global index of the orbital.
+       lio = index_global_to_local(dit,io)
+       if ( lio <= 0 ) cycle
+       
+       ! if there is no contribution in this row
+       if ( l_ncol(lio) == 0 ) cycle
+
+       ! Loop number of entries in the row... (in the index frame)
+       do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+
+          ! as the local sparsity pattern is a super-cell pattern,
+          ! we need to check the unit-cell orbital
+          ! The unit-cell column index
+          jo = UCORB(l_col(ind),no_u)
+
+          ! If the orbital is not in the region, we skip it
+          jo = region_pivot(r,jo)
+          if ( jo <= 0  ) cycle
+
+          is = (l_col(ind)-1)/no_u
+
+          ! Calculate position
+          if ( i > jo ) then
+             ph = cdexp(dcmplx(w, - &
+                  k(1) * sc_off(1,is) - &
+                  k(2) * sc_off(2,is) - &
+                  k(3) * sc_off(3,is)))
+             idx = jo + (i - 1)* i/2
+          else if ( i < jo ) then
+             ph = cdexp(dcmplx(w, &
+                  k(1) * sc_off(1,is) + &
+                  k(2) * sc_off(2,is) + &
+                  k(3) * sc_off(3,is)))
+             idx = i  + (jo-1)*jo/2
+          else
+             ! diagonal elements are not "double" counted
+             ph = cdexp(dcmplx(0._dp, &
+                  k(1) * sc_off(1,is) + &
+                  k(2) * sc_off(2,is) + &
+                  k(3) * sc_off(3,is)))
+             idx = i  + (jo-1)*jo/2
+          end if
+
+          A_UT(idx) = A_UT(idx) + ph * A(ind)
+
+       end do
+
+    end do
+     
+  end subroutine create_kpt_U
 
 
 ! ************************************************

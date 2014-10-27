@@ -61,9 +61,7 @@ contains
 
     external :: io_assign, io_close
 
-    if ( Node == 0 ) then
-       inquire(file=file, exist=exists)
-    end if
+    exists = file_exist(file, Bcast = Bcast )
 
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast

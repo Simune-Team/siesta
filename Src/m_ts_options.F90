@@ -72,6 +72,8 @@ contains
     use units, only: eV, Ang, Kelvin
     use intrinsic_missing, only : VNORM
 
+    use m_io_s, only : file_exist
+
     use m_ts_cctype
     use m_ts_global_vars, only : TSmode, ts_istep
     use m_ts_io, only : ts_read_TSHS_opt
@@ -940,7 +942,7 @@ contains
           end if
 
           ! In case DM_bulk is requested we assert that the file exists
-          inquire(file=Elecs(i)%DEfile,exist=err)
+          err = file_exist(Elecs(i)%DEfile)
           err = .not. err
           if ( DM_bulk == 1 .and. err ) then
              write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' TSDE &

@@ -142,7 +142,6 @@ module m_ts_electype
      integer :: idx_o_dwn
      ! The region of the down-folded region
      type(tRegion) :: o_inD
-
 #endif
 
      ! The basal plane of the electrode
@@ -202,6 +201,7 @@ contains
 
   function fdf_Elec(prefix,slabel,this,N_mu,mus,name_prefix) result(found)
     use fdf
+    use m_io_s, only : file_exist
     use m_ts_io, only : ts_read_TSHS_opt
     use m_ts_io_ctype, only : pline_E_parse
 
@@ -503,8 +503,7 @@ contains
             &part of the energy (non-zero).')
     end if
     
-    inquire(file=trim(this%HSfile), exist=info(1))
-    if ( .not. info(1) ) then
+    if ( .not. file_exist(this%HSfile, Bcast = .true.) ) then
        call die("Electrode file does not exist. &
             &Please create electrode '"//trim(this%HSfile)//"' first.")
     end if

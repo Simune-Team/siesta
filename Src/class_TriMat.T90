@@ -63,7 +63,7 @@
   public :: NEW_TYPE, print_type, init_val
 
   public :: val
-  public :: index
+  public :: index, part_index
   public :: nrows_g
   public :: parts, which_part
   public :: elements

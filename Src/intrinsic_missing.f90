@@ -916,28 +916,24 @@ contains
   end subroutine EYE_zp_1D
     
 
-  ! Projections from one direction onto 3D space
+  ! Projections from one direction onto ND space
   pure function SPC_PROJ_sp(space,vin) result(vout)
-    real(sp), intent(in) :: space(3,3), vin(3)
-    real(sp) :: vout(3)
-    real(sp) :: tmp(3)
-    tmp = space(:,1) / VNORM(space(:,1))
-    vout(1) = sum(vin * tmp)
-    tmp = space(:,2) / VNORM(space(:,2))
-    vout(2) = sum(vin * tmp)
-    tmp = space(:,3) / VNORM(space(:,3))
-    vout(3) = sum(vin * tmp)
+    real(sp), intent(in) :: space(:,:), vin(:)
+    real(sp) :: vout(size(vin)), tmp(size(vin))
+    integer :: i
+    do i = 1 , size(vin)
+       tmp = space(:,i) / VNORM(space(:,i))
+       vout(i) = sum( vin * tmp )
+    end do
   end function SPC_PROJ_sp
   pure function SPC_PROJ_dp(space,vin) result(vout)
-    real(dp), intent(in) :: space(3,3), vin(3)
-    real(dp) :: vout(3)
-    real(dp) :: tmp(3)
-    tmp = space(:,1) / VNORM(space(:,1))
-    vout(1) = sum(vin * tmp)
-    tmp = space(:,2) / VNORM(space(:,2))
-    vout(2) = sum(vin * tmp)
-    tmp = space(:,3) / VNORM(space(:,3))
-    vout(3) = sum(vin * tmp)
+    real(dp), intent(in) :: space(:,:), vin(:)
+    real(dp) :: vout(size(vin)), tmp(size(vin))
+    integer :: i
+    do i = 1 , size(vin)
+       tmp = space(:,i) / VNORM(space(:,i))
+       vout(i) = sum( vin * tmp )
+    end do
   end function SPC_PROJ_dp
 
 

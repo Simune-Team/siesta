@@ -7,6 +7,7 @@
 
       subroutine state_init( istep )
       use Kpoint_grid,       only: setup_Kpoint_grid, maxk
+      use m_io_s,            only: file_exist
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
@@ -92,7 +93,6 @@
       integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
       real(dp),             pointer :: dummyH(:,:)
-      logical :: exist
 #endif
       
       character(len=256)            :: oname
@@ -421,8 +421,7 @@
      &     .and. IONode ) then
           ! Delete the TS_FERMI file (enables
           ! reading it in and improve on the convergence)
-          inquire(file='TS_FERMI',exist=exist)
-          if ( exist ) then
+          if ( file_exist('TS_FERMI') ) then
              i = 23455
              open(unit=i,file='TS_FERMI')
              close(i,status='delete')

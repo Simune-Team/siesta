@@ -20,6 +20,7 @@ contains
   subroutine bulk_expand(na_u,xa,lasto,cell,nsc,isc_off,DM_2D)
     use fdf
     use class_dSpData1D
+    use m_io_s, only : file_exist
     use m_iodm, only : read_DM
     use m_ts_io, only : ts_read_TSHS
 
@@ -78,7 +79,7 @@ contains
        HSfile = ' '
        HSfile = fdf_get('DM.Init.Bulk.'//trim(ln),'NONE')
        ! Now we have all required information
-       if ( .not. file_exists(HSfile) ) then
+       if ( .not. file_exist(HSfile, Bcast = .true. ) ) then
           write(*,*) trim(HSfile)
           call die('You at least need to supply the TSHS file for &
                &bulk segment '//trim(ln)//'.')
@@ -96,11 +97,11 @@ contains
        at = len_trim(HSfile)
        DMfile = fdf_get('DM.Init.Bulk.'//trim(ln)//'.DM', &
             HSfile(1:at-4)//'DM')
-       if ( .not. file_exists(DMfile) ) then
+       if ( .not. file_exist(DMfile, Bcast = .true.) ) then
           DMfile = fdf_get('DM.Init.Bulk.'//trim(ln)//'.DM', &
                HSfile(1:at-4)//'TSDE')
        end if
-       if ( .not. file_exists(DMfile) ) then
+       if ( .not. file_exist(DMfile, Bcast = .true. ) ) then
           call die('DM file could not be found, have you supplied an &
                erroneous path?')
        end if
@@ -184,28 +185,6 @@ contains
 
     end do
     if ( Node == 0 ) write(*,*) ! new-line
-
-  contains
-    
-    function file_exists(file) result(exist)
-      use parallel, only : Node
-#ifdef MPI
-      use mpi_siesta, only : MPI_Bcast, MPI_Comm_World, MPI_Logical
-#endif
-      character(len=*), intent(in) :: file
-      logical :: exist
-#ifdef MPI
-      integer :: MPIerror
-#endif
-      ! Now we have all required information
-      if ( Node == 0 ) then
-         inquire(file=file, exist=exist)
-      end if
-#ifdef MPI
-      call MPI_Bcast(exist,1,MPI_Logical, 0, &
-           MPI_Comm_World, MPIerror)
-#endif
-    end function file_exists
 
   end subroutine bulk_expand
 

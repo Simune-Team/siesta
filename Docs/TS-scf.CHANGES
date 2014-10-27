@@ -1,4 +1,63 @@
 ----------------------------------------------------
+October 27, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-211
+Update for preparing merging of tbtrans [3]
+
+* Made part_index from class_TriMat global to
+  query the part for a specific index.
+  This makes it possible to easily determine
+  the part-index of an orbital.
+
+* Made SPC_PROJ generic for N-dimensional space.
+
+* Converted my parts of the code to utilise the 
+   file_exist 
+  routine.
+  It is general enough to be used several other places.
+  I have placed this general function in m_io_s.
+  It can be called:
+    file_exist(fname, <Bcast = .true.|.false.> , &
+                      <Comm = MPI_Comm_World> )
+  which with Bcast b-cast the result to the communicator.
+
+* Small bugfix in the region for creating/deleting a list.
+  It now does so correctly if it already was empty.
+  
+* Changed "position" from buffer atoms to "atom"
+  this makes MUCH more sense.
+  This will also be the standard for tbtrans.
+  It is shorter, more concise and has a clear intent.
+
+* Added a sparse method to create a tri-angular upper
+  matrix in Gamma/k-point for a sparse pattern.
+  This could possibly be used elsewhere (cdiag!!!)
+  for speeding up diagonalization routines.
+  I have not checked but I would suspect it to be slightly
+  faster. Nevertheless it reduces memory requirements 
+  substantially.
+
+modified:
+  Src/Makefile
+  Src/class_TriMat.T90
+  Src/intrinsic_missing.f90
+  Src/m_handle_sparse.F90
+  Src/m_io_s.F90
+  Src/m_ncdf_io.F90
+  Src/m_region.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_io.F90
+  Src/m_ts_iodm.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse_helper.F90
+  Src/state_init.F
+  Src/ts_init.F90
+  Util/Grimme/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/ts2ts/ts2ts.f90
+  Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 October 19, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-210
 Update for preparing merging tbtrans [2]
 

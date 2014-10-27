@@ -95,7 +95,7 @@ contains
        if ( fdf_bnnames(pline) == 0 ) cycle
        
        g = fdf_bnames(pline,1)
-       if ( leqi(g,'position') ) then
+       if ( leqi(g,'atom') ) then
           ! we have a position
           if ( fdf_bnnames(pline) == 1 ) then
              do i = 1 , fdf_bnintegers(pline)
@@ -107,21 +107,35 @@ contains
              g = fdf_bnames(pline,2)
              if ( .not. leqi(g,'from') ) then
                 call die('Error in block '//bName//': &
-                     &position from <int> to <int> is ill formatted')
+                     &atom from <int> to <int> is ill formatted')
              end if
              g = fdf_bnames(pline,3)
-             if ( .not. leqi(g,'to') ) then
-                call die('Error in block '//bName//': &
-                     &position from <int> to <int> is ill formatted')
-             end if
              if ( fdf_bnintegers(pline) < 2 ) then
                 call die('Error in block '//bName//': &
-                     &position from <int> to <int> is ill formatted')
+                     &atom from <int> to <int> is ill formatted')
              end if
              ia1 = fdf_bintegers(pline,1)
              if (ia1 < 0) ia1 = na_u + ia1 + 1
              ia2 = fdf_bintegers(pline,2)
-             if (ia2 < 0) ia2 = na_u + ia2 + 1
+             if ( leqi(g,'to') ) then
+                if ( ia2 < 0 ) ia2 = na_u + ia2 + 1
+                if ( ia2 < ia1 ) then
+                   call die('from <> to <> needs to be ascending.')
+                end if
+             else if ( leqi(g,'plus') ) then
+                ia2 = ia1 + ia2 - 1
+             else if ( leqi(g,'minus') ) then
+                ia3 = ia1
+                ia1 = ia1 - ia2 + 1
+                ia2 = ia3
+             else
+                call die('Unrecognized designator of ending atom, &
+                     [to, plus, minus] accepted.')
+             end if
+             if ( ia1 < 1 ) call die('Unrecognized atom, too low')
+             if ( na_u < ia1 ) call die('Unrecognized atom, too high')
+             if ( ia2 < 1 ) call die('Unrecognized atom, too low')
+             if ( na_u < ia2 ) call die('Unrecognized atom, too high')
              ia3 = 1
              if ( fdf_bnintegers(pline) > 2 ) then
                 ia3 = abs(fdf_bnintegers(pline,3))

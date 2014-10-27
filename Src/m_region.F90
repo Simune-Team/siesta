@@ -100,18 +100,30 @@ contains
   subroutine region_copy(from,to)
     type(tRegion), intent(in) :: from
     type(tRegion), intent(inout) :: to
-    call region_list(to,from%n,from%r,name=from%name)
+    if ( from%n == 0 ) then
+       call region_delete(to)
+       to%name = from%name
+    else
+       call region_list(to,from%n,from%r,name=from%name)
+    end if
   end subroutine region_copy
 
   ! Fully deletes a region (irrespective of it's current state)
-  subroutine region_delete(r)
-    type(tRegion), intent(inout) :: r
-    r%name = ' '
-    r%n = 0
-    if ( associated(r%r) ) then
-       deallocate(r%r)
+  recursive subroutine region_delete(r,r1,r2,r3,r4)
+    type(tRegion), intent(inout), optional :: r,r1,r2,r3,r4
+    if ( present(r) ) then
+       r%name = ' '
+       r%n = 0
+       if ( associated(r%r) ) then
+          deallocate(r%r)
+       end if
+       nullify(r%r)
+    else
+       call region_delete(r=r1)
+       call region_delete(r=r2)
+       call region_delete(r=r3)
+       call region_delete(r=r4)
     end if
-    nullify(r%r)
   end subroutine region_delete
 
   ! Allows removing certain elements from a region.
@@ -229,7 +241,7 @@ contains
           jo = ucorb(l_col(ind),no_u)
 
           ! Ensure that it is not a folding to the same region
-          if ( any(jo == r%r) ) cycle
+          if ( in_region(r,jo) ) cycle
           if ( any(jo == err) ) cycle ! in case er has been provided
 
           if ( it == 0 ) then
@@ -296,7 +308,7 @@ contains
              jo = ucorb(l_col(ind),no_u)
 
              ! Ensure that it is not a folding to the same region
-             if ( any(jo == r%r) ) cycle
+             if ( in_region(r,jo) ) cycle
              if ( any(jo == err) ) cycle ! in case er has been provided
 
              if ( it == 0 ) then
@@ -581,7 +593,7 @@ contains
 
     do i = 1 , r1%n
        
-       if ( .not. any(r1%r(i) == r2%r) ) cycle
+       if ( .not. in_region(r2,r1%r(i)) ) cycle
        it = it + 1
        ct(it) = r1%r(i)
 
@@ -721,7 +733,7 @@ contains
     it = 0
     do i = 1 , r1%n
        
-       if ( any(r1%r(i) == r2%r) ) cycle
+       if ( in_region(r2,r1%r(i)) ) cycle
 
        it = it + 1
        ct(it) = r1%r(i)

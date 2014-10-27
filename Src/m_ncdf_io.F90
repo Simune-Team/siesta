@@ -38,6 +38,7 @@ contains
 
   subroutine cdf_init_file(fname,is_md)
     use class_Sparsity
+    use m_io_s, only : file_exist
     use dictionary
     use files, only : slabel
     use m_gamma, only : Gamma
@@ -64,7 +65,7 @@ contains
     integer :: MPIerror
 #endif
 
-    inquire(file=fname,exist=exists)
+    exists = file_exist(fname, Bcast = .true. )
 
     if ( exists ) then
 
