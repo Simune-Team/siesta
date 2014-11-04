@@ -1,4 +1,17 @@
 --------------------------------------------------------------
+November 4, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-3
+Use heuristics for re-use of inertia-count brackets
+
+Take some code from the old version to provide heuristics for the
+optimization of initial brackets during the SCF loop. So far only
+the inertia-count stage is treated.
+
+Re-organized the code into internal subroutines for clarity.
+
+modified:
+  Src/m_pexsi_driver.F90
+
+--------------------------------------------------------------
 October 27, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-2
 Reuse plan in simple KSDFT driver
 

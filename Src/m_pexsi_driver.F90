@@ -1,11 +1,14 @@
 module m_pexsi_solver
     use precision, only  : dp
 
+  implicit none
+
   public :: pexsi_solver
 
   real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
                               ! which is used in the heuristics for N_el tolerance
   public :: prevDmax
+
 
 CONTAINS
 
@@ -54,7 +57,6 @@ use m_pexsi, only: plan, pexsi_initialize_scfloop
     call die("PEXSI needs MPI")
 #else
 
-!integer(c_intptr_t) :: plan
 type(f_ppexsi_options) :: options
 
 integer :: numTotalPEXSIIter
@@ -69,22 +71,13 @@ real(dp) :: totalFreeEnergy
 
     integer :: ispin, maxnhtot, ih, nnzold, i, pexsiFlag
 
-    integer  :: ordering, isInertiaCount, numInertiaCounts, numMinICountShifts, numNodesTotal
-    integer  :: muIter
-    real(dp) :: muZeroT
+    integer  :: isInertiaCount, numInertiaCounts
 
-    real(dp), save :: mu
-    real(dp), save :: muMin0, muMax0
+    real(dp), save :: muMin0, muMax0, mu
     real(dp), save :: muMinInertia, muMaxInertia
-    real(dp), save :: muLowerEdge, muUpperEdge
-    real(dp), save :: muSolverInput, muMinSolverInput, muMaxSolverInput
     real(dp), save :: previous_pexsi_temperature
-
-    real(dp)       :: safe_width_ic, safe_width_solver
-    real(dp)       :: safe_dDmax_NoInertia, safe_dDmax_Ef_inertia
-    real(dp)       :: safe_dDmax_Ef_solver
-    logical        :: do_inertia_count
     logical, save  :: first_call = .true.
+
     real(dp)       :: bs_energy, eBandH, on_the_fly_tolerance
 
     integer        :: info, infomax
@@ -103,34 +96,19 @@ real(dp), pointer, dimension(:) :: muList=>null(), &
                                    numElectronDrvList=>null(), &
                                    shiftList=>null(), inertiaList=>null()
 logical  :: PEXSI_worker
-integer  :: numPole, nptsInertia
-real(dp) :: temperature, numElectronExact, numElectron, gap, deltaE
-real(dp) :: muInertia
-real(dp) :: muMinPEXSI, muMaxPEXSI
-integer  :: muMaxIter
+real(dp) :: temperature, numElectronExact, numElectron
 integer  :: npPerPole
-integer  :: npSymbFact
 integer  :: mpirank, ierr
 integer  :: isSIdentity
-integer  :: inertiaMaxIter, inertiaIter, inertiaMaxNumExpertRounds
-logical  :: inertiaExpertDriver
-logical  :: use_annealing
-real(dp) :: annealing_preconditioner, temp_factor
-real(dp) :: annealing_target_factor
+
 real(dp) :: pexsi_temperature, two_kT
-real(dp) :: inertiaNumElectronTolerance, &
-            inertiaMinNumElectronTolerance, &
-            inertiaEnergyTolerance, &
-            inertiaMuTolerance, &
-            PEXSINumElectronToleranceMin, &
+
+real(dp) :: PEXSINumElectronToleranceMin, &
             PEXSINumElectronToleranceMax, &
             PEXSINumElectronTolerance
-real(dp) :: lateral_expansion_solver, lateral_expansion_inertia
 real(dp) :: free_bs_energy
 
 !------------
-
-real(dp) :: buffer1
 
 external         :: timer
 character(len=6) :: msg
@@ -174,9 +152,6 @@ call MPI_Comm_create(World_Comm, PEXSI_Group,&
 
 PEXSI_worker = (mpirank < npPerPole)
 
-! Number of processors for symbolic factorization
-! Only relevant for PARMETIS/PT_SCOTCH
-npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
 
 
 pbs = norbs/npPerPole
@@ -245,26 +220,11 @@ endif ! PEXSI worker
 call memory_all("after setting up H+S for PEXSI",World_comm)
 
 
-isSIdentity = 0
-
-numPole          = fdf_get("PEXSI.num-poles",20)
-gap              = fdf_get("PEXSI.gap",0.0_dp,"Ry")
-
-! deltaE is in theory the spectrum width, but in practice can be much smaller
-! than | E_max - mu |.  It is found that deltaE that is slightly bigger
-! than  | E_min - mu | is usually good enough.
-deltaE           = fdf_get("PEXSI.delta-E",3.0_dp,"Ry")
-
-
 ! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
-PEXSINumElectronToleranceMin = fdf_get("PEXSI.num-electron-tolerance-lower-bound",0.01_dp)
-PEXSINumElectronToleranceMax = fdf_get("PEXSI.num-electron-tolerance-upper-bound",0.5_dp)
-! muMaxIter should be 1 or 2 later when combined with SCF.
-muMaxIter        = fdf_get("PEXSI.mu-max-iter",10)
-
-! How to expand the intervals in case of need.
-lateral_expansion_solver = fdf_get("PEXSI.lateral-expansion-solver",1.0_dp*eV,"Ry")
-lateral_expansion_inertia = fdf_get("PEXSI.lateral-expansion-inertia",3.0_dp*eV,"Ry")
+PEXSINumElectronToleranceMin =  &
+         fdf_get("PEXSI.num-electron-tolerance-lower-bound",0.01_dp)
+PEXSINumElectronToleranceMax =  &
+         fdf_get("PEXSI.num-electron-tolerance-upper-bound",0.5_dp)
 
 
 ! Initial guess of chemical potential and containing interval
@@ -296,86 +256,8 @@ else
                                         on_the_fly_tolerance)
 endif
 
-! Arrays for reporting back information about the PEXSI iterations
-call re_alloc(muList,1,muMaxIter,"muList","pexsi_solver")
-call re_alloc(numElectronList,1,muMaxIter,"numElectronList","pexsi_solver")
-call re_alloc(numElectronDrvList,1,muMaxIter,"numElectronDrvList","pexsi_solver")
-
 !-----------------------------------------------------------------------------
-! Use inertia counts?
-isInertiaCount = fdf_get("PEXSI.inertia-count",1)
-! For how many scf steps?
-numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
 
-
-! Maximum number of iterations for computing the inertia
-! in a given scf step (until a proper bracket is obtained)
-inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
-
-! Call the inertia-count routine one step at a time, and perform
-! convergence checks in the caller. Note that "inertiaMaxIter" will
-! still be honored, in the sense that the total number of rounds will
-! be capped by it.
-
-inertiaExpertDriver = fdf_get("PEXSI.inertia-expert-driver",.false.)
-if (inertiaExpertDriver) then
-   inertiaMaxNumExpertRounds  = inertiaMaxIter
-   inertiaMaxIter = 1
-endif
-
-! Stop inertia count if Ne(muMax) - Ne(muMin) < inertiaNumElectronTolerance
-! This is the only stopping criterion available in non-expert mode
-! Note that this number should grow with the size of the system
-
-inertiaNumElectronTolerance = fdf_get("PEXSI.inertia-num-electron-tolerance",20)
-
-! If the electron tolerance is too low the bracketting will not work.
-! Set a minimum tolerance 
-inertiaMinNumElectronTolerance = fdf_get("PEXSI.inertia-min-num-electron-tolerance",10)
-
-inertiaNumElectronTolerance = max(inertiaNumElectronTolerance,inertiaMinNumElectronTolerance)
-
-
-! Stop inertia count if (muMax - muMin) < inertiaEnergyTolerance
-! Useful for metals only. By default, use a very small tolerance to deactivate this
-! criterion. Reasonable values otherwise might be 0.1-0.2 eV.
-!
-inertiaEnergyTolerance = fdf_get("PEXSI.inertia-energy-tolerance",1.0e-5_dp*eV,"Ry")
-
-! Stop inertia count if mu has not changed much from iteration to iteration.
-! By default, use a very small tolerance to deactivate this
-! criterion. Reasonable values otherwise might be 0.1-0.2 eV.
-!
-inertiaMuTolerance = fdf_get("PEXSI.inertia-mu-tolerance",1.0e-8_dp*eV,"Ry")
-
-! Since we use the processor teams corresponding to the different poles, 
-! the number of points in the energy interval should be a multiple
-! of numNodesTotal/npPerPole.
-! We can avoid serializing the calculations if we use only the
-! available teams in a single step, subject to a minimum number:
-
-! Minimum number of sampling points for inertia counts
-numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
-
-call mpi_comm_size( World_Comm, numNodesTotal, ierr )
-nptsInertia = numNodesTotal/npPerPole
-do
-   if (nptsInertia < numMinICountShifts) then
-      nptsInertia = nptsInertia + numNodesTotal/npPerPole
-   else
-      exit
-   endif
-enddo
-
-! Arrays for reporting back information about the integrated DOS
-! computed by the inertia count method.
-call re_alloc(shiftList,1,nptsInertia,"shiftList","pexsi_solver")
-call re_alloc(inertiaList,1,nptsInertia,"inertiaList","pexsi_solver")
-
-! Ordering flag:
-!   1: Use METIS
-!   0: Use PARMETIS/PTSCOTCH
-ordering = fdf_get("PEXSI.ordering",1)
 !
 ! Broadcast these to the whole processor set, just in case
 ! (They were set only by the Siesta workers)
@@ -386,50 +268,7 @@ call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
 call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
 call MPI_Bcast(delta_Ef,1,MPI_double_precision,0,World_Comm,ierr)
 !
-safe_width_ic = fdf_get("PEXSI.safe-width-ic-bracket",4.0_dp*eV,"Ry")
-safe_width_solver = fdf_get("PEXSI.safe-width-solver-bracket",2.0_dp*eV,"Ry")
-safe_dDmax_NoInertia = fdf_get("PEXSI.safe-dDmax-no-inertia",0.05)
-safe_dDmax_Ef_Inertia = fdf_get("PEXSI.safe-dDmax-ef-inertia",0.1)
-safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
-
-use_annealing = fdf_get("PEXSI.use-annealing",.false.)
-if (use_annealing) then
-   annealing_preconditioner = fdf_get("PEXSI.annealing-preconditioner",1.0_dp)
-!   By default, the temperature goes to the target at a level 10 times dDtol
-   annealing_target_factor = fdf_get("PEXSI.annealing-target-factor",10.0_dp)
-
-   if (scf_step > 1 ) then
-
-      ! Examples for target_factor = 10, dDtol=0.0001:
-      ! prevDmax=0.1, preconditioner=1, factor=3
-      ! prevDmax=0.1, preconditioner=2, factor=5
-      ! prevDmax=0.1, preconditioner=3, factor=7
-      ! prevDmax<=0.001, factor = 1
-      ! prevDmax<0.001, factor = 1
-
-      temp_factor = (log10(prevDmax/(annealing_target_factor*dDtol)))
-      temp_factor = 1 + annealing_preconditioner * max(0.0_dp, temp_factor)
-
-      pexsi_temperature = temp_factor * temperature
-      if (pexsi_temperature > previous_pexsi_temperature) then
-         if (mpirank==0) write(6,"(a,f10.2)") &
-              "Will not raise PEXSI temperature to: ", &
-              pexsi_temperature/Kelvin
-         pexsi_temperature = previous_pexsi_temperature
-      endif
-      previous_pexsi_temperature = pexsi_temperature
-   else
-      ! No heuristics for now for first step
-      previous_pexsi_temperature = huge(1.0_dp)
-      pexsi_temperature = temperature
-      !   Keep in mind for the future if modifying T at the 1st step
-      !      previous_pexsi_temperature = pexsi_temperature
-   endif
-else
-      pexsi_temperature = temperature
-endif
-if (mpirank==0) write(6,"(a,f10.2)") &
-     "Current PEXSI temperature (K): ", pexsi_temperature/Kelvin
+call get_current_temperature(pexsi_temperature)
 !
 !  Set guard smearing for later use
 !
@@ -440,24 +279,38 @@ two_kT = 2.0_dp * pexsi_temperature
 if (iscf == 1) then
    call pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
 endif
-!                                                                             
-
+!
 call f_ppexsi_set_default_options( options )
+
+options%muPEXSISafeGuard = fdf_get("PEXSI.mu-pexsi-safeguard",0.05_dp,"Ry")
+options%maxPEXSIIter = fdf_get("PEXSI.mu-max-iter",10)
+
+isSIdentity = 0
+
+options%numPole  = fdf_get("PEXSI.num-poles",40)
+options%gap      = fdf_get("PEXSI.gap",0.0_dp,"Ry")
+
+! deltaE is in theory the spectrum width, but in practice can be much smaller
+! than | E_max - mu |.  It is found that deltaE that is slightly bigger
+! than  | E_min - mu | is usually good enough.
+options%deltaE     = fdf_get("PEXSI.delta-E",3.0_dp,"Ry") ! Lin: 10 Ry...
+
+! Ordering flag:
+!   1: Use METIS
+!   0: Use PARMETIS/PTSCOTCH
+options%ordering = fdf_get("PEXSI.ordering",1)
+
+! Number of processors for symbolic factorization
+! Only relevant for PARMETIS/PT_SCOTCH
+options%npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
+
+options%verbosity = fdf_get("PEXSI.verbosity",1)
 
 options%muMin0   = muMin0
 options%muMax0   = muMax0
-options%deltaE   = deltaE
-options%gap      = gap
-options%numPole  = numPole
-options%temperature = temperature
-options%muPEXSISafeGuard = 0.2d0
+options%temperature = pexsi_temperature
 options%numElectronPEXSITolerance = PEXSINumElectronTolerance
-!!options%muInertiaTolerance = inertiaMuTolerance
-options%isInertiaCount = 1
-options%ordering = ordering
-options%npSymbFact = npSymbFact
-options%verbosity = 1
-
+!
 call f_ppexsi_load_real_symmetric_hs_matrix(&
       plan,&
       options,&
@@ -477,6 +330,7 @@ if (mpirank == 0) then
 endif
 
 if (iscf == 1) then
+   ! This is only needed for inertia-counting
    call f_ppexsi_symbolic_factorize_real_symmetric_matrix(&
         plan, &
         options,&
@@ -484,6 +338,7 @@ if (iscf == 1) then
    if (mpirank == 0) then
       print *, "Info in real symb_fact in iscf==1: ", info
    endif
+
    call f_ppexsi_symbolic_factorize_complex_symmetric_matrix(&
         plan, &
         options,&
@@ -498,16 +353,54 @@ options%isSymbolicFactorize = 0 ! We do not need it anymore
 !
 call timer("pexsi-solver", 1)
 
+! Use inertia counts?
+isInertiaCount = fdf_get("PEXSI.inertia-count",1)
+! For how many scf steps?
+numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
+
+if (need_inertia_counting()) then
+   options%isInertiaCount = 1
+   ! Stop inertia count if mu has not changed much from iteration to iteration.
+   options%muInertiaTolerance =  &
+             fdf_get("PEXSI.inertia-mu-tolerance",0.05_dp,"Ry")
+   ! One-sided expansion of interval if correct mu falls outside it
+   options%muInertiaExpansion =  &
+             fdf_get("PEXSI.lateral-expansion-inertia",3.0_dp*eV,"Ry") 
+
+   call get_bracket_for_inertia_count( )  
+   options%muMin0 = muMin0
+   options%muMax0 = muMax0
+   if (mpirank == 0) then
+     write (6,"(a,2f9.4,a)") 'Calling inertiaCount: [', &
+                                      muMin0/eV, muMax0/eV, "] (eV)"
+   endif
+
+else
+   ! Will call the PEXSI solver directly
+   options%isInertiaCount = 0
+   call get_bracket_for_solver()
+   options%muMin0 = muMin0
+   options%muMax0 = muMax0
+   if(mpirank == 0) then
+     write (6,"(a,2f9.4,a,f9.4,a,f9.5)") 'Calling solver directly (eV): [', &
+                                      muMin0/eV, &
+                                      muMax0/eV, &
+                                     "] prev. mu: ", mu/eV, &
+                                     ' Tol: ', PEXSINumElectronTolerance
+   endif
+
+endif
+      
 call f_ppexsi_dft_driver(&
   plan,&
-  options,&
-  numElectronExact,&
-  mu,&
-  numElectron,&
-  muMinInertia,&
-  muMaxInertia,&
-  numTotalInertiaIter,&
-  numTotalPEXSIIter,&
+  options,&    ! includes muMin0, muMax0
+  numElectronExact,& ! in
+  mu,&             ! out
+  numElectron,&    ! out
+  muMinInertia,&   ! out
+  muMaxInertia,&   ! out
+  numTotalInertiaIter,&  ! out
+  numTotalPEXSIIter,&    ! out
   info)
 
 if( info .ne. 0 ) then
@@ -526,12 +419,15 @@ if( PEXSI_worker ) then
     totalFreeEnergy,&
     info)
 
-  if( mpirank == 0 ) then
-    write(*,*) "Output from the main program."
-    write(*,*) "Total energy (H*DM)         = ", totalEnergyH
-    write(*,*) "Total energy (S*EDM)        = ", totalEnergyS
-    write(*,*) "Total free energy           = ", totalFreeEnergy
-  endif
+!!$  ! These are the "band-structure" (free)-energies  
+!!$  if( mpirank == 0 ) then
+!!$    write(*,*) "Output from the main program."
+!!$    write(*,*) "Total energy (H*DM)         = ", totalEnergyH
+!!$    write(*,*) "Total energy (S*EDM)        = ", totalEnergyS
+!!$    ! This is computed as the trace of (S*FDM)     
+!!$    write(*,*) "Total free energy           = ", totalFreeEnergy
+!!$  endif
+
 endif
 
 !------------ End of solver step
@@ -539,35 +435,20 @@ endif
    if (mpirank == 0) then
       write(6,"(a,i3)") " #&s Number of solver iterations: ", numTotalPEXSIIter
       write(6,"(a,i3)") " #&s Number of inertia iterations: ", numTotalInertiaIter
+      write(6,"(a,f12.4)") " #&s muMinInertia: ", muMinInertia
+      write(6,"(a,f12.4)") " #&s muMaxInertia: ", muMaxInertia
       write(6,"(a,f12.5,f12.4,2x,a2)") "mu, N_e:", mu/eV, &
               numElectron, "&s"
    endif
 
 if (PEXSI_worker) then
 
-   free_bs_energy = 0.0_dp
-   bs_energy = 0.0_dp
-   eBandH = 0.0_dp
-   do i = 1,nnzLocal
-      free_bs_energy = free_bs_energy + SnzvalLocal(i) * &
-           ( FDMnzvalLocal(i) )
-      bs_energy = bs_energy + SnzvalLocal(i) * &
-           ( EDMnzvalLocal(i) )
-      eBandH = eBandH + HnzvalLocal(i) * &
-           ( DMnzvalLocal(i) )
-   enddo
+   free_bs_energy = totalFreeEnergy
+   bs_energy = totalEnergyS
+   eBandH = totalEnergyH
 
    call de_alloc(FDMnzvalLocal,"FDMnzvalLocal","pexsi_solver")
    call de_alloc(colPtrLocal,"colPtrLocal","pexsi_solver")
-
-   ! These operations in PEXSI group now
-   call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_comm )
-   ! Note that FDM has an extra term: -mu*N
-   free_bs_energy = buffer1 + mu*numElectron
-   call globalize_sum( bs_energy, buffer1, comm=PEXSI_comm )
-   bs_energy = buffer1
-   call globalize_sum( eBandH, buffer1, comm=PEXSI_comm )
-   eBandH = buffer1
 
    if( mpirank == 0 ) then
       write(*, *) "mu (eV)       = ", mu/eV
@@ -584,6 +465,13 @@ if (PEXSI_worker) then
    endif
 
    ef = mu
+   ! Note that we use the S*EDM version of the band-structure energy
+   ! to estimate the entropy, by comparing it to S*FDM This looks
+   ! consistent, but note that the EDM is not used in Siesta to
+   ! estimate the total energy, only the DM (via the density) (that
+   ! is, the XC and Hartree correction terms to Ebs going into Etot
+   ! are estimated using the DM)
+
    Entropy = - (free_bs_energy - bs_energy) / temp
 
    call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","pexsi_solver")
@@ -733,6 +621,166 @@ if (mpirank==0) write(6,"(a,f10.2)") &
      "Current PEXSI solver tolerance: ", tolerance
 
 end subroutine get_on_the_fly_tolerance
+
+!------------------------------------------------------------------
+! This function will determine whether an initial inertia-counting
+! stage is needed, based on user input and the level of convergence
+!
+! Variables used through host association for now:
+!
+!      isInertiaCount
+!      numInertiaCounts
+!      scf_step
+!      prevDmax, safe_dDmax_NoInertia
+!
+! Some logging output is done, so this function is not pure.
+
+function need_inertia_counting() result(do_inertia_count)
+logical :: do_inertia_count
+
+real(dp) :: safe_dDmax_NoInertia
+
+safe_dDmax_NoInertia = fdf_get("PEXSI.safe-dDmax-no-inertia",0.05)
+
+do_inertia_count = .false.
+
+if (isInertiaCount .ne. 0) then
+  if (scf_step .le. numInertiaCounts) then
+     if (mpirank == 0) write(6,"(a,i4)") "&o Inertia-count step scf_step<numIC \
+", scf_step
+     do_inertia_count = .true.
+  endif
+  if (numInertiaCounts < 0) then
+     if (scf_step <= -numInertiaCounts) then
+        if (mpirank == 0) write(6,"(a,i4)") "&o Inertia-count step scf_step<-nu\
+mIC ", scf_step
+        do_inertia_count = .true.
+     else if (prevDmax > safe_dDmax_NoInertia) then
+        if (mpirank == 0) write(6,"(a,i4)") "&o Inertia-count step as prevDmax \
+> safe_Dmax ", scf_step
+        do_inertia_count = .true.
+     endif
+  endif
+endif
+end function need_inertia_counting
+
+!---------------------------------------------------------------
+!  Chooses the proper interval for the call to the driver
+!  in case we need a stage of inertia counting  
+!
+subroutine get_bracket_for_inertia_count()
+
+ real(dp)       :: safe_width_ic
+ real(dp)       :: safe_dDmax_Ef_inertia
+
+ safe_width_ic = fdf_get("PEXSI.safe-width-ic-bracket",4.0_dp*eV,"Ry")
+ safe_dDmax_Ef_Inertia = fdf_get("PEXSI.safe-dDmax-ef-inertia",0.1)
+
+ ! Proper bracketing                                                           
+ if (scf_step > 1) then
+   if (prevDmax < safe_dDmax_Ef_inertia) then
+      ! Shift brackets using estimate of Ef change from previous iteration      
+      !                                                                         
+      if (mpirank == 0) write(6,"(a)") "&o Inertia-count bracket shifted by Delta_Ef"
+      ! This might be risky, if the final interval of the previous iteration    
+      ! is too narrow. We should broaden it by o(kT)                            
+      ! The usefulness of delta_Ef is thus debatable...                         
+
+      muMin0 = muMinInertia + delta_Ef - two_kT
+      muMax0 = muMaxInertia + delta_Ef + two_kT
+   else
+      ! Use a large enough interval around the previous estimation of           
+      ! mu (the gap edges are not available...)  
+      if (mpirank == 0) write(6,"(a)") "&o Inertia-count safe bracket"
+!      muMin0 = min(muLowerEdge - 0.5*safe_width_ic, muMinInertia)
+      muMin0 = min(mu - 0.5*safe_width_ic, muMinInertia)
+!      muMax0 = max(muUpperEdge + 0.5*safe_width_ic, muMaxInertia)
+      muMax0 = max(mu + 0.5*safe_width_ic, muMaxInertia)
+   endif
+ endif
+end subroutine get_bracket_for_inertia_count
+
+subroutine get_bracket_for_solver()
+
+    real(dp)       :: safe_width_solver
+    real(dp)       :: safe_dDmax_Ef_solver
+
+safe_width_solver = fdf_get("PEXSI.safe-width-solver-bracket",2.0_dp*eV,"Ry")
+safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
+
+! Do nothing for now
+! Set muMin0 and muMax0 according to the position of mu, if available
+
+!!$  if (scf_step > 1) then
+!!$     if (prevDmax < safe_dDmax_Ef_solver) then
+!!$      ! Shift brackets using estimate of Ef change from previous iteration
+!!$        if (mpirank == 0) write(6,"(a)") "&o Solver bracket shifted by delta_Ef"
+!!$           muSolverInput = mu + delta_Ef
+!!$           muMinSolverInput = muMinSolverInput + delta_Ef
+!!$           muMaxSolverInput = muMaxSolverInput + delta_Ef
+!!$        else
+!!$           if (mpirank == 0) write(6,"(a)") "&o Safe Solver bracket"
+!!$           muSolverInput = mu
+!!$           muMinSolverInput = min(mu - 0.5*safe_width_solver, muMinSolverInput)
+!!$           muMaxSolverInput = max(mu + 0.5*safe_width_solver, muMaxSolverInput)
+!!$        endif
+!!$     else
+!!$        if (mpirank == 0) write(6,"(a)") "&o Solver bracket from initial values"
+!!$        muSolverInput = mu
+!!$        muMinSolverInput = muMin0
+!!$        muMaxSolverInput = muMax0
+!!$     endif
+end subroutine get_bracket_for_solver
+!------------------------------------------------------
+! If using the "annealing" feature, this routine computes
+! the current temperature to use in the PEXSI solver
+!
+subroutine get_current_temperature(pexsi_temperature)
+  real(dp), intent(out) :: pexsi_temperature
+
+ logical  :: use_annealing
+ real(dp) :: annealing_preconditioner, temp_factor
+ real(dp) :: annealing_target_factor
+
+ use_annealing = fdf_get("PEXSI.use-annealing",.false.)
+ if (use_annealing) then
+   annealing_preconditioner = fdf_get("PEXSI.annealing-preconditioner",1.0_dp)
+!   By default, the temperature goes to the target at a level 10 times dDtol
+   annealing_target_factor = fdf_get("PEXSI.annealing-target-factor",10.0_dp)
+
+   if (scf_step > 1 ) then
+
+      ! Examples for target_factor = 10, dDtol=0.0001:
+      ! prevDmax=0.1, preconditioner=1, factor=3
+      ! prevDmax=0.1, preconditioner=2, factor=5
+      ! prevDmax=0.1, preconditioner=3, factor=7
+      ! prevDmax<=0.001, factor = 1
+      ! prevDmax<0.001, factor = 1
+
+      temp_factor = (log10(prevDmax/(annealing_target_factor*dDtol)))
+      temp_factor = 1 + annealing_preconditioner * max(0.0_dp, temp_factor)
+
+      pexsi_temperature = temp_factor * temperature
+      if (pexsi_temperature > previous_pexsi_temperature) then
+         if (mpirank==0) write(6,"(a,f10.2)") &
+              "Will not raise PEXSI temperature to: ", &
+              pexsi_temperature/Kelvin
+         pexsi_temperature = previous_pexsi_temperature
+      endif
+      previous_pexsi_temperature = pexsi_temperature
+   else
+      ! No heuristics for now for first step
+      previous_pexsi_temperature = huge(1.0_dp)
+      pexsi_temperature = temperature
+      !   Keep in mind for the future if modifying T at the 1st step
+      !      previous_pexsi_temperature = pexsi_temperature
+   endif
+else
+      pexsi_temperature = temperature
+endif
+if (mpirank==0) write(6,"(a,f10.2)") &
+     "Current PEXSI temperature (K): ", pexsi_temperature/Kelvin
+end subroutine get_current_temperature
 
 end subroutine pexsi_solver
 
