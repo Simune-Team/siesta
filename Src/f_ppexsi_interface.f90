@@ -74,6 +74,7 @@ type, bind(C) :: f_ppexsi_options
   integer(c_int)         :: maxPEXSIIter
   real(c_double)         :: muMin0
   real(c_double)         :: muMax0
+  real(c_double)         :: mu0
   real(c_double)         :: muInertiaTolerance
   real(c_double)         :: muInertiaExpansion
   real(c_double)         :: muPEXSISafeGuard

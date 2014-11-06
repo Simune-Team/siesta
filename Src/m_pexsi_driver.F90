@@ -231,10 +231,10 @@ PEXSINumElectronToleranceMax =  &
 ! When using inertia counts, this interval can be wide.
 ! Note that mu, muMin0 and muMax0 are saved variables
 if (first_call) then
-   mu = fdf_get("PEXSI.mu",-0.60_dp,"Ry")
    ! Lower/Upper bound for the chemical potential.
    muMin0           = fdf_get("PEXSI.mu-min",-1.0_dp,"Ry")
    muMax0           = fdf_get("PEXSI.mu-max", 0.0_dp,"Ry")
+   mu = fdf_get("PEXSI.mu",-0.60_dp,"Ry")
 
    ! start with largest tolerance
    ! (except if overriden by user)
@@ -306,8 +306,6 @@ options%npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
 
 options%verbosity = fdf_get("PEXSI.verbosity",1)
 
-options%muMin0   = muMin0
-options%muMax0   = muMax0
 options%temperature = pexsi_temperature
 options%numElectronPEXSITolerance = PEXSINumElectronTolerance
 !
@@ -381,6 +379,7 @@ else
    call get_bracket_for_solver()
    options%muMin0 = muMin0
    options%muMax0 = muMax0
+   options%mu0       = mu
    if(mpirank == 0) then
      write (6,"(a,2f9.4,a,f9.4,a,f9.5)") 'Calling solver directly (eV): [', &
                                       muMin0/eV, &
@@ -709,27 +708,14 @@ safe_width_solver = fdf_get("PEXSI.safe-width-solver-bracket",2.0_dp*eV,"Ry")
 safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
 
 ! Do nothing for now
-! Set muMin0 and muMax0 according to the position of mu, if available
+! No setting of  muMin0 and muMax0 yet, pending clarification of flow
 
-!!$  if (scf_step > 1) then
-!!$     if (prevDmax < safe_dDmax_Ef_solver) then
-!!$      ! Shift brackets using estimate of Ef change from previous iteration
-!!$        if (mpirank == 0) write(6,"(a)") "&o Solver bracket shifted by delta_Ef"
-!!$           muSolverInput = mu + delta_Ef
-!!$           muMinSolverInput = muMinSolverInput + delta_Ef
-!!$           muMaxSolverInput = muMaxSolverInput + delta_Ef
-!!$        else
-!!$           if (mpirank == 0) write(6,"(a)") "&o Safe Solver bracket"
-!!$           muSolverInput = mu
-!!$           muMinSolverInput = min(mu - 0.5*safe_width_solver, muMinSolverInput)
-!!$           muMaxSolverInput = max(mu + 0.5*safe_width_solver, muMaxSolverInput)
-!!$        endif
-!!$     else
-!!$        if (mpirank == 0) write(6,"(a)") "&o Solver bracket from initial values"
-!!$        muSolverInput = mu
-!!$        muMinSolverInput = muMin0
-!!$        muMaxSolverInput = muMax0
-!!$     endif
+  if (scf_step > 1) then
+     if (prevDmax < safe_dDmax_Ef_solver) then
+        if (mpirank == 0) write(6,"(a)") "&o Solver mu shifted by delta_Ef"
+        mu = mu + delta_Ef
+     endif
+  endif
 end subroutine get_bracket_for_solver
 !------------------------------------------------------
 ! If using the "annealing" feature, this routine computes

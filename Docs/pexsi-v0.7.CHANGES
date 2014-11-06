@@ -1,4 +1,16 @@
 --------------------------------------------------------------
+November 6, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-4
+Add a new 'options' field for mu0, to initialize the solver.
+
+The heuristics for the 'solver-only' calls have to be revised,
+since there is in principle no need for a bracket, but a 
+fall-back to inertia-counting is possible.
+
+modified:
+  Src/f_ppexsi_interface.f90
+  Src/m_pexsi_driver.F90
+
+--------------------------------------------------------------
 November 4, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-3
 Use heuristics for re-use of inertia-count brackets
 
