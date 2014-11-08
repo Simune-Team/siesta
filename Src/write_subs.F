@@ -65,7 +65,7 @@
       use units
       use m_energies, only: FreeE
       use m_stress, only: stress, kin_stress, mstress, cstress, tstress
-      use m_forces,   only: fa   ! This does not really belong here  
+      use m_forces,   only: fa, cfa   ! This does not really belong here  
 
       implicit none
 
@@ -189,7 +189,7 @@
 
         ! Write Force Constant matrix if FC calculation ...
         case(6)
-          call ofc(fa,dx,na_u)
+          call ofc(cfa,dx,na_u)
         case(7)
 !          call phonon_write_forces(fa,na_u,ucell,istep)
            if (IOnode) write(*,*) 'phonon suport deactivated'
@@ -627,7 +627,7 @@
           write(6,'(i6,3f12.6)')(ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
         endif
         ! Always write forces to .FA file
-        call iofa( na_u, fa )
+        call iofa( na_u, cfa )
 
         write(6,'(40("-"),/,a6,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
         write(6,'(40("-"),/,a6, f12.6)') 'Max',fmax*Ang/eV

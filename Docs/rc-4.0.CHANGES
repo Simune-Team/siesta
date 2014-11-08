@@ -1,6 +1,20 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2014-11-08                                              rc-4.0-pl-3
+Fix output to show constrained forces
+
+* Changed the calling of the iofa and ofc routines inside write_subs,
+  so that the forces with constraints are written to file in each case
+  instead of the uncorrected forces. 
+
+(Fabiano Corsetti)
+
+modified:
+  Src/write_subs.F
+
+
+----------------------------------------------------------------------
 2014-10-07  9:40:00 GMT                                 rc-4.0-pl-2
 Fix 'clean' rule in  MPI Makefile
 
