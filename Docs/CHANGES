@@ -6,6 +6,39 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-11-08  16:30:00 GMT                                     trunk-464
+Merge fixes from rc-4.0: constr. forces, MPI compilation, mm.potentials
+
+-- Fabiano Corsetti: Fix output to show constrained forces
+
+* Changed the calling of the iofa and ofc routines inside write_subs,
+  so that the forces with constraints are written to file in each case
+  instead of the uncorrected forces. 
+
+modified:
+  Src/write_subs.F
+
+
+-- Alberto Garcia:   Fix 'clean' rule in  MPI Makefile
+
+The interface library libmpi_f90.a was not removed when issuing a
+'make clean', possibly leading to strange errors if the MPI
+compilation environment was later changed.
+
+modified:
+  Src/MPI/Makefile
+
+-- Nick P Andersen:  Fix shortcomings in reading of empirical potential block
+
+* The number of potential lines is now arbitrary.
+* Units handling has been improved, to allow arbitrary
+  length and energy units.
+
+modified:
+  Src/molecularmechanics.F90
+
+
+-----------------------------------------------------------------------
 2014-11-08  16:15:00 GMT                                     trunk-463
 Added restart file for smooth continuation of annealing runs
 
