@@ -6,6 +6,26 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-11-08  16:15:00 GMT                                     trunk-463
+Added restart file for smooth continuation of annealing runs
+
+* Added the writing and reading of an .ANNEAL_RESTART file, along the
+  same lines of the .VERLET_RESTART file. This fixes a small problem
+  for restarting annealing calculations when a continuous smooth run
+  is desired.
+
+(Fabiano Corsetti)
+
+added:
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+modified:
+  Docs/siesta.tex
+  Src/dynamics.f
+
+-----------------------------------------------------------------------
 2014-05-29  12:40:00 GMT                                     trunk-462
 Improved MPI version of siesta as a subroutine (J.M.Soler)
 
