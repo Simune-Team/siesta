@@ -1,4 +1,69 @@
 ----------------------------------------------------
+November 9, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-212
+Added OpenMP support in SIESTA
+
+* Several routines have recieved attention 
+  with regards of OpenMP implementation.
+  
+  In particular:
+    - dhscf
+      Many grid operations could easily
+      be performed in threaded environments.
+    - diagg
+      Creation of the Hamilton can be threaded
+    - diagk
+      Creation of the Hamilton can be threaded
+    - diagkp
+      Creation of the Hamilton can be threaded
+    - m_timer
+      Timing needs to be refined when dealing
+      with OpenMP.
+      instead of the intrinsic cpu_time,
+      we use omp_get_wtime which does not
+      over count thread timing.
+    - Several class objects have gotten
+      OpenMP in the initialization routines.
+ 
+* Format for FDF code (not important)
+
+* Leveraged some operations in the poisson
+  solver.
+
+* When running in threadded mode we also
+  print out the number of threads at run-time.
+
+* Changed rhoofd.F to rhoofd.F90 and re-programmed
+  the OpenMP routine.
+  Previously I could not get the results to be
+  consistent.
+  With this implementation it should be correct.
+
+* Changed vmat.F to vmat.F90 and re-programmed
+  the OpenMP routine.
+  Previously I could not get the results to be
+  consistent.
+  With this implementation it should be correct.
+
+removed:
+  Src/rhoofd.F
+  Src/vmat.F
+added:
+  Src/rhoofd.F90
+  Src/vmat.F90
+modified:
+  Src/class_Data1D.T90
+  Src/class_Data2D.T90
+  Src/class_TriMat.T90
+  Src/dhscf.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/diagkp.F
+  Src/fdf/fdf.F90
+  Src/m_timer.F90
+  Src/poison.F
+  Src/siesta_init.F
+
+----------------------------------------------------
 October 27, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-211
 Update for preparing merging of tbtrans [3]
 

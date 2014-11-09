@@ -1855,7 +1855,7 @@ MODULE fdf
 
       RETURN
 
-      CONTAINS
+    CONTAINS
 
       logical function is_true(valstr)  result(a)
       character(len=*), intent(in) :: valstr

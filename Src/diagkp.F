@@ -231,6 +231,9 @@ C     Create new distribution of H and S
 C Find eigenvalues .........................................
       do ik = 1+Node,nk,Nodes
         do ispin = 1,nspin
+!$OMP parallel default(shared), 
+!$OMP&private(iuo,juo,io,j,ind,jo,kxij,ckxij,skxij)
+!$OMP do collapse(2)
           do iuo = 1,nuog
             do juo = 1,nuotot
               Saux(1,juo,iuo) = 0.0d0
@@ -239,6 +242,8 @@ C Find eigenvalues .........................................
               Haux(2,juo,iuo) = 0.0d0
             enddo
           enddo
+!$OMP end do
+!$OMP do
           do io = 1,nuog
             do j = 1,numhg(io)
               ind = listhptrg(io) + j
@@ -257,6 +262,8 @@ C Note : sign of complex part changed to match change in order of iuo/juo
               Haux(2,juo,iuo) = Haux(2,juo,iuo) - Hnew(ind,ispin)*skxij
             enddo
           enddo
+!$OMP end do nowait
+!$OMP end parallel
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,eo(1,ispin,ik),psi,
      &               0,iscf,ierror)
           if (ierror.ne.0) then
@@ -293,11 +300,14 @@ C Find new Fermi energy and occupation weights ........................
      &             temp, qtot, qo, ef, Entropy )
       endif
 
+!$OMP parallel default(shared), private(t,ik,ispin,io)
+
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
 *       e1 = e1 - ef
 *       e2 = e2 - ef
         t = max( temp, 1.d-6 )
+!$OMP do collapse(3)
         do ik = 1,nk
           do ispin = 1,nspin
             do io = 1,nuotot
@@ -307,11 +317,16 @@ C Find weights for local density of states ............................
             enddo
           enddo
         enddo
+!$OMP end do nowait
       endif
       
 C New density and energy-density matrices of unit-cell orbitals .......
+!$OMP workshare
       Dnewloc(1:maxnhg,1:nspin) = 0.0d0
       Enewloc(1:maxnhg,1:nspin) = 0.0d0
+!$OMP end workshare
+
+!$OMP end parallel
 
       do ik = 1+Node,nk,Nodes
         do ispin = 1,nspin
@@ -326,8 +341,14 @@ C Find maximum eigenvector that is required for this k point and spin
           enddo
 
 C Find eigenvectors 
+!$OMP parallel default(shared), 
+!$OMP&private(io,j,ind,jo,iuo,juo,kxij,ckxij,skxij)
+
+!$OMP workshare
           Saux = 0.0d0
           Haux = 0.0d0
+!$OMP end workshare
+!$OMP do
           do io = 1,nuog
             do j = 1,numhg(io)
               ind = listhptrg(io) + j
@@ -345,6 +366,8 @@ C Find eigenvectors
               Haux(2,juo,iuo) = Haux(2,juo,iuo) - Hnew(ind,ispin)*skxij
             enddo
           enddo
+!$OMP end do nowait
+!$OMP end parallel 
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
      &               neigneeded,iscf,ierror)
 
@@ -353,8 +376,14 @@ C Check error flag and take appropriate action
             call die('Terminating due to failed diagonalisation')
           elseif (ierror.lt.0) then
 C Repeat diagonalisation with increased memory to handle clustering
+!$OMP parallel default(shared), 
+!$OMP&private(io,j,ind,jo,iuo,juo,kxij,ckxij,skxij)
+
+!$OMP workshare
             Saux = 0.0d0
             Haux = 0.0d0
+!$OMP end workshare
+!$OMP do
             do io = 1,nuog
               do j = 1,numhg(io)
                 ind = listhptrg(io) + j
@@ -372,6 +401,8 @@ C Repeat diagonalisation with increased memory to handle clustering
                 Haux(2,juo,iuo) = Haux(2,juo,iuo) -Hnew(ind,ispin)*skxij
               enddo
             enddo
+!$OMP end do nowait
+!$OMP end parallel
             call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
      &                 neigneeded,iscf,ierror)
           endif
@@ -385,19 +416,28 @@ C Repeat diagonalisation with increased memory to handle clustering
 !     .                 aux,psi,.false.)
 !          endif
 
+!$OMP parallel default(shared), 
+!$OMP&private(ie,qe,j,ee,iuo,juo,io,ind,jo,kxij,ckxij,skxij),
+!$OMP&private(pipj1,pipj2)
+
 C Add contribution to density matrices of unit-cell orbitals
+!$OMP workshare
           Dk = 0.0d0
           Ek = 0.0d0
+!$OMP end workshare
 
 C Global operation to form new density matrix
           do ie = 1,nuotot
             qe = qo(ie,ispin,ik)
             if (abs(qe).gt.occtol) then
+!$OMP do
               do j = 1,nuotot
                 aux(1,j) = psi(1,j,ie)
                 aux(2,j) = psi(2,j,ie)
               enddo
+!$OMP end do
               ee = qo(ie,ispin,ik) * eo(ie,ispin,ik)
+!$OMP do collapse(2)
               do iuo = 1,nuog
                 do juo = 1,nuotot
                   pipj1 = aux(1,iuo) * aux(1,juo) +
@@ -410,8 +450,10 @@ C Global operation to form new density matrix
                   Ek(2,juo,iuo) = Ek(2,juo,iuo) + ee * pipj2
                 enddo
               enddo
+!$OMP end do
             endif
           enddo
+!$OMP do
           do io = 1,nuog
             iuo = indxuo(io)
             do j = 1,numhg(io)
@@ -429,9 +471,13 @@ C Global operation to form new density matrix
      &          Ek(1,juo,iuo)*ckxij - Ek(2,juo,iuo)*skxij
             enddo
           enddo
+!$OMP end do
+
+!$OMP end parallel
 
         enddo
       enddo
+
 
       do io = 1,nuog
         call WhichNodeOrb(io,Nodes,BNode)

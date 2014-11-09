@@ -139,12 +139,14 @@ C Solve eigenvalue problem
       do ispin = 1,nspin
         call timer( 'r-eigvec', 1 )
         call timer( 'r-buildHS', 1 )
-        do io = 1,nuo
-          do jo = 1,nuotot
-            Saux(jo,io) = 0.0d0
-            Haux(jo,io) = 0.0d0
-          enddo
-        enddo
+!$OMP parallel default(shared), private(io,j,ind,jo)
+
+!$OMP workshare
+        Saux(:,:) = 0.0d0
+        Haux(:,:) = 0.0d0
+!$OMP end workshare
+
+!$OMP do
         do io = 1,nuo
           do j = 1,numh(io)
             ind = listhptr(io) + j
@@ -153,6 +155,8 @@ C Solve eigenvalue problem
             Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
           enddo
         enddo
+!$OMP end do nowait
+!$OMP end parallel
         call timer( 'r-buildHS', 2 )
         call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
      &              psi(1,1,ispin), neigwanted, iscf, ierror )
@@ -164,12 +168,14 @@ C Check error flag and take appropriate action
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
 C Repeat diagonalisation with increased memory to handle clustering
-          do io = 1,nuo
-            do jo = 1,nuotot
-              Saux(jo,io) = 0.0d0
-              Haux(jo,io) = 0.0d0
-            enddo
-          enddo
+!$OMP parallel default(shared), private(io,j,ind,jo)
+
+!$OMP workshare
+          Saux(:,:) = 0.0d0
+          Haux(:,:) = 0.0d0
+!$OMP end workshare
+
+!$OMP do
           do io = 1,nuo
             do j = 1,numh(io)
               ind = listhptr(io) + j
@@ -178,6 +184,8 @@ C Repeat diagonalisation with increased memory to handle clustering
               Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
             enddo
           enddo
+!$OMP end do nowait
+!$OMP end parallel
           call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
      &                psi(1,1,ispin), nuotot, iscf, ierror )
         endif
@@ -203,12 +211,15 @@ C Find new Fermi energy and occupation weights ........................
      &               temp, qtot, qo, ef, Entropy )
       endif
 
+!$OMP parallel default(shared), private(t,rt,ispin,io,nd)
+
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
 *       e1 = e1 - ef
 *       e2 = e2 - ef
         t = max( temp, 1.d-6 )
         rt = 1.0d0/t
+!$OMP do collapse(2)
         do ispin = 1,nspin
           do io = 1,nuotot
             qo(io,ispin) = ( stepf((eo(io,ispin)-e2)*rt) -
@@ -216,14 +227,18 @@ C Find weights for local density of states ............................
      &                       2.0d0/dble(nspin)
           enddo
         enddo
+!$OMP end do
       endif
       
       if (nuo.gt.0) then
 C New density and energy-density matrices of unit-cell orbitals .......
         nd = listdptr(nuo) + numd(nuo)
+!$OMP workshare
         Dnew(1:nd,1:nspin) = 0.0d0
         Enew(1:nd,1:nspin) = 0.0d0
+!$OMP end workshare
       endif
+!$OMP end parallel
 
       call timer( 'r-buildD', 1 )
 C Global operation to form new density matrix
@@ -267,9 +282,8 @@ C Global operation to form new density matrix
               qe = qo(ie,ispin)
               if (abs(qe).gt.occtol) then
                 paux => PSI_TMP(mm+1:mm+nuotot)
-                ee  = qe*eo(ie,ispin)
                 qei = qe*paux(iio)
-                eei = ee*paux(iio)
+                eei = qei*eo(ie,ispin)
                 do j = 1,numd(io)
                   ind = listdptr(io) + j
                   jo  = listd(ind)

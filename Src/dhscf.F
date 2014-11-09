@@ -754,6 +754,8 @@ C     Work arrays
      &                         Totchar(:), fsrc(:), fdst(:),
      &                         rhoatm_quad(:) => null(),
      &                         DRho_quad(:,:) => null()
+      ! Temporary reciprocal spin quantity
+      real(grid_p) :: rnsd
 #ifdef BSC_CELLXC
       real(grid_p), pointer :: Vscf_gga(:,:), DRho_gga(:,:)
 #endif /* BSC_CELLXC */
@@ -804,7 +806,12 @@ C     Allocate memory for DRho using the UNIFORM data distribution
       call re_alloc( DRho, 1, ntpl, 1, nspin, 'DRho','dhscf' )
 
 C Find number of diagonal spin values
-      nsd = min( nspin, 2 )
+      nsd  = min( nspin, 2 )
+      if ( nsd == 1 ) then
+         rnsd = 1._grid_p
+      else
+         rnsd = 1._grid_p / nsd
+      end if
 
 C ----------------------------------------------------------------------
 C Find SCF electron density at mesh points. Store it in array DRho
@@ -939,16 +946,23 @@ C       Save diffuse ionic charge
 C       Save total (ionic+electronic) charge 
         if ( filetoch .ne. ' ') then
            call re_alloc( Totchar, 1, ntpl, 'Totchar', 'dhscf' )
-        
-          do ip= 1, ntpl
-            Totchar(ip) = 0.0_grid_p
-          enddo
-          do ispin = 1,nsd
-            do ip= 1, ntpl
-              Totchar(ip) = Totchar(ip) +  Chlocal(ip)/nsd +
-     &                      DRho(ip,ispin)
-            enddo
-          enddo
+
+!$OMP parallel default(shared), private(ip,ispin)
+!$OMP do
+           do ip= 1, ntpl
+              Totchar(ip) = Chlocal(ip) + DRho(ip,1)
+           enddo
+!$OMP end do
+           if ( nsd > 1 ) then
+           do ispin = 2,nsd
+!$OMP do
+              do ip= 1, ntpl
+                 Totchar(ip) = Totchar(ip) + DRho(ip,ispin)
+              enddo
+!$OMP end do
+           enddo
+           end if 
+!$OMP end parallel
 
           call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
           call write_grid_netcdf( cell, ntm, 1, ntpl,
@@ -969,11 +983,14 @@ C ----------------------------------------------------------------------
 C Find difference between selfconsistent and atomic densities
 
       !Both DRho and rhoatm are using a UNIFORM, sequential form
+!$OMP parallel do default(shared), private(ispin,ip),
+!$OMP&collapse(2)
       do ispin = 1,nsd
         do ip = 1,ntpl
-          DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip)/nsd
+          DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) * rnsd
         enddo
       enddo
+!$OMP end parallel do
 
 C ----------------------------------------------------------------------
 C Save electron density difference
@@ -986,11 +1003,13 @@ C ----------------------------------------------------------------------
 
 C Transform spin density into sum and difference
       if (nsd .eq. 2) then
+!$OMP parallel do default(shared), private(rhotot,ip)
         do ip = 1,ntpl
           rhotot     = DRho(ip,1) + DRho(ip,2)
           DRho(ip,2) = DRho(ip,2) - DRho(ip,1)
           DRho(ip,1) = rhotot
         enddo
+!$OMP end parallel do
       endif
 
 C Add a background charge to neutralize the net charge, to
@@ -1057,10 +1076,14 @@ C     Find electrostatic (Hartree) energy of full SCF electron density
 C     using the original data distribution 
 C ----------------------------------------------------------------------
       Uatm = Uharrs
-      Uscf = Uatm + DUscf
+      Uscf = 0._dp
+!$OMP parallel do default(shared), private(ip), 
+!$OMP&reduction(+:Uscf)
       do ip = 1, ntpl
-        Uscf = Uscf + dvol * Vscf(ip,1) * rhoatm(ip)
+        Uscf = Uscf + Vscf(ip,1) * rhoatm(ip)
       enddo
+!$OMP end parallel do
+      Uscf = Uscf * dVol + Uatm + DUscf
 
 C Call doping with 'task=1' to remove background charge added previously
 C The extra charge thus only affects the Hartree energy and potential,
@@ -1074,12 +1097,16 @@ C Add neutral-atom potential to Vscf
 C ----------------------------------------------------------------------
       Enaatm = 0.0_dp
       Enascf = 0.0_dp
+!$OMP parallel do default(shared), private(ip),
+!$OMP&reduction(+:Enaatm,Enascf)
       do ip = 1, ntpl
-        Enaatm     = Enaatm + dvol*Vna(ip)*rhoatm(ip)
-        Enascf     = Enascf + dvol*Vna(ip)*
-     &               (rhoatm(ip) + DRho(ip,1))
+        Enaatm     = Enaatm + Vna(ip) * rhoatm(ip)
+        Enascf     = Enascf + Vna(ip) * DRho(ip,1)
         Vscf(ip,1) = Vscf(ip,1) + Vna(ip)
       enddo
+!$OMP end parallel do
+      Enaatm = Enaatm * dVol
+      Enascf = Enaatm + Enascf * dVol
 
 C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
@@ -1131,11 +1158,13 @@ C ----------------------------------------------------------------------
 
 C Get back spin density from sum and difference
       if (nsd .eq. 2) then
+!$OMP parallel do default(shared), private(ip,rhotot)
         do ip = 1, ntpl
           rhotot     = DRho(ip,1)
-          DRho(ip,1) = 0.5_dp*(rhotot - DRho(ip,2))
-          DRho(ip,2) = 0.5_dp*(rhotot + DRho(ip,2))
+          DRho(ip,1) = 0.5_dp * (rhotot - DRho(ip,2))
+          DRho(ip,2) = 0.5_dp * (rhotot + DRho(ip,2))
         enddo
+!$OMP end parallel do
       endif
 
 C ----------------------------------------------------------------------
@@ -1154,22 +1183,39 @@ C ----------------------------------------------------------------------
 C Exchange-correlation energy
 C ----------------------------------------------------------------------
       call re_alloc( Vaux, 1, ntpl, 'Vaux', 'dhscf' )
+!$OMP parallel default(shared), private(ip,ispin)
+
+!$OMP do
       do ip= 1, ntpl
         Vaux(ip) = Vscf(ip,1)
       enddo
+!$OMP end do nowait
 
-      do ispin = 1,nsd
-        do ip= 1, ntpl
-          DRho(ip,ispin) = DRho(ip,ispin) +
-     &                     rhoatm(ip)/nsd
-        enddo
-        if (npcc .eq. 1) then
+      if (npcc .eq. 1) then
+         
+!$OMP do collapse(2)
+       do ispin = 1,nsd
           do ip= 1, ntpl
-            DRho(ip,ispin) = DRho(ip,ispin) +
-     &                       rhopcc(ip)/nsd
+             DRho(ip,ispin) = DRho(ip,ispin) +
+     &            (rhopcc(ip)+rhoatm(ip)) * rnsd
           enddo
-        endif
-      enddo
+       enddo
+!$OMP end do
+
+      else
+
+!$OMP do collapse(2)
+       do ispin = 1,nsd
+          do ip= 1, ntpl
+             DRho(ip,ispin) = DRho(ip,ispin) +
+     &            rhoatm(ip) * rnsd
+          enddo
+       enddo
+!$OMP end do
+
+      end if
+
+!$OMP end parallel
 
 !     Everything now is in UNIFORM, sequential form
 #ifdef BSC_CELLXC
@@ -1215,21 +1261,32 @@ C ----------------------------------------------------------------------
       call de_alloc( Vscf_gga, 'Vscf_gga', 'dhscf' )
 #endif /* BSC_CELLXC */
 
-      Exc = Ex + Ec
+      Exc =  Ex +  Ec
       Dxc = DEx + DEc
 
 !     Vscf contains only Vxc, and is UNIFORM and sequential
 !     Now we add up the other contributions to it, at 
 !     the same time that we get DRho back to true DeltaRho form
+!$OMP parallel default(shared), private(ip,ispin)
       do ispin = 1,nsd
-        do ip = 1,ntpl
-          DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) / nsd
-          if (npcc .eq. 1) then
-            DRho(ip,ispin) = DRho(ip,ispin) - rhopcc(ip)/nsd
-          endif
-          Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
-        enddo
+        if (npcc .eq. 1) then
+!$OMP do
+           do ip = 1,ntpl
+              DRho(ip,ispin) = DRho(ip,ispin) - 
+     &             (rhoatm(ip)+rhopcc(ip)) * rnsd
+              Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
+           enddo
+!$OMP end do
+        else
+!$OMP do
+           do ip = 1,ntpl
+              DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) * rnsd
+              Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
+           enddo
+!$OMP end do
+        endif
       enddo
+!$OMP end parallel
 #ifndef BSC_CELLXC
       stress = stress + stressXC
 #endif /* ! BSC_CELLXC */
@@ -1249,11 +1306,11 @@ C ----------------------------------------------------------------------
 
       if (filevt/=' ' .or. filevh/=' ') then
         forall(ispin=1:nsd) 
-     .    DRho(:,ispin) = DRho(:,ispin) + rhoatm(:) / nsd
+     .    DRho(:,ispin) = DRho(:,ispin) + rhoatm(:) * rnsd
         call vacuum_level( ntpl, nspin, DRho, Vscf, 
      .                     np_vac, Vmax_vac, Vmean_vac )
         forall(ispin=1:nsd) 
-     .    DRho(:,ispin) = DRho(:,ispin) - rhoatm(:) / nsd
+     .    DRho(:,ispin) = DRho(:,ispin) - rhoatm(:) * rnsd
         if (np_vac>0 .and. Node==0) print'(/,a,2f12.6,a)', 
      .    'dhscf: Vacuum level (max, mean) =', 
      .    Vmax_vac/eV, Vmean_vac/eV, ' eV'
@@ -1382,11 +1439,13 @@ C       Find contribution of partial-core-correction
 
 C       Transform spin density into sum and difference
         if (nsd .eq. 2) then
+!$OMP parallel do default(shared), private(rhotot,ip)
           do ip = 1,ntpl
             rhotot     = DRho(ip,1) + DRho(ip,2)
             DRho(ip,2) = DRho(ip,2) - DRho(ip,1)
             DRho(ip,1) = rhotot
           enddo
+!$OMP end parallel do
         endif
 
 C       Find contribution of neutral-atom potential

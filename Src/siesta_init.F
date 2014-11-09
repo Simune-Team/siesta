@@ -60,7 +60,6 @@
 #ifdef MPI
       use mpi_siesta
 #endif
-
 #ifdef TRANSIESTA
       use m_ts_init, only : ts_init
 #endif
@@ -79,6 +78,7 @@
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
+!$    integer :: omp_get_num_threads
 
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
@@ -115,15 +115,24 @@ C     Initialise MPI and set processor number
         call prversion()
 #ifdef MPI
         if (Nodes.gt.1) then
-          write(6,'(/,a,i4,a)')
+          write(6,'(/,a,i0,a)')
      &        '* Running on ', Nodes, ' nodes in parallel'
         else
-          write(6,'(/,a,i4,a)')
+          write(6,'(/,a)')
      &        '* Running in serial mode with MPI'
         endif
 #else
-        write(6,'(/,a,i4,a)')
+        write(6,'(/,a)')
      &        '* Running in serial mode'
+#endif
+#ifdef TRANSIESTA
+!$OMP parallel
+!$OMP master
+!$    write(*,'(a,i0,a)')
+!$   &    '* Running TranSIESTA using ',
+!$   &    omp_get_num_threads(),' OpenMP threads.'
+!$OMP end master
+!$OMP end parallel
 #endif
          call timestamp('Start of run')
          call wallclock('Start of run')

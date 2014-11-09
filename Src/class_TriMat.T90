@@ -354,7 +354,9 @@
 #endif
     
     p => val(this)
+!$OMP parallel workshare
     p(:) = VAR_INIT
+!$OMP end parallel workshare
 
   end subroutine initializeTriMat
 

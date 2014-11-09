@@ -61,7 +61,7 @@ C     Local variables
      &                         J3min, J3max, J2L, J3L, NRemY, NRemZ,
      &                         BlockSizeY, BlockSizeZ
       real(dp)              :: C, B(3,3), DU, G(3), G2, G2MAX, 
-     &                         PI, VG, VOLUME
+     &                         PI, VG, VOLUME, PI8
       real(grid_p), pointer :: CG(:,:)
       real(dp),   parameter :: K0(3)= (/ 0.0, 0.0, 0.0 /), TINY= 1.0e-15
 #ifdef MPI
@@ -119,7 +119,8 @@ C     Work out processor grid dimensions
       Pz = Node - (Py - 1)*ProcessorZ + 1
 
 C     Multiply by 8*PI/G2 to get the potential
-      PI = 4.0_dp * atan(1.0_dp)
+      PI  = 4.0_dp * atan(1.0_dp)
+      PI8 = PI * 8._dp
       U = 0.0_dp
       NG2 = Mesh(2)
       NG3 = Mesh(3)
@@ -137,12 +138,14 @@ C     Multiply by 8*PI/G2 to get the potential
       J3max = min(J3max,NG3-1)
 
       do J3 = J3min,J3max
+        J3L = J3 - J3min 
         if (J3.gt.NG3/2) then
           I3 = J3 - NG3
         else
           I3 = J3
         endif
         do J2 = J2min,J2max
+          J2L = J2 - J2min 
           if (J2.gt.NG2/2) then
             I2 = J2 - NG2
           else
@@ -158,11 +161,9 @@ C     Multiply by 8*PI/G2 to get the potential
             G(2)= B(2,1) * I1 + B(2,2) * I2 + B(2,3) * I3
             G(3)= B(3,1) * I1 + B(3,2) * I2 + B(3,3) * I3
             G2 = G(1)**2 + G(2)**2 + G(3)**2
-            J2L = J2 - J2min 
-            J3L = J3 - J3min 
             J = 1 + J1 + N1 * J2L + N1 * N2 * J3L
             if (G2.LT.G2MAX .AND. G2.GT.TINY) then
-              VG = 8.0_dp * PI / G2
+              VG = PI8 / G2
               DU = VG * ( CG(1,J)**2 + CG(2,J)**2 )
               U = U + DU
               C = 2.0_dp * DU / G2
