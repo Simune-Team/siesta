@@ -118,21 +118,27 @@ contains
     gsL => zwork(i+1:i+nosq) 
     gsR => GS
 
+!$OMP parallel default(shared), private(i)
 
 ! gb    =   Z*S00-H00
 ! alpha = -(Z*S01-H01)
+!$OMP do
     do i = 1 , nosq
        gb(i)    = ZE * S00(i) - H00(i)
        alpha(i) = H01(i) - ZE * S01(i)
     end do
+!$OMP end do
 
 ! gs  = Z*S00-H00
+!$OMP do
     do i = 1 , nosq
        gsL(i) = gb(i)
        gsR(i) = gb(i)
     end do
+!$OMP end do nowait
 
 ! beta = -(Z*S10-H10)
+!$OMP do private(j,ic,i,ic2)
     do j = 1 , no
        ic = no * (j-1)
        do i = 1 , no
@@ -140,6 +146,9 @@ contains
           beta(ic+i) = dconjg(H01(ic2)) - ZE * dconjg(S01(ic2))
        end do
     end do
+!$OMP end do nowait
+
+!$OMP end parallel
 
     ! Initialize loop
     ro = accur + 1._dp
@@ -150,15 +159,23 @@ contains
        if ( present(iterations) ) &
             iterations = iterations + 1
 
+!$OMP parallel default(shared), private(i)
+
 ! rh = -(Z*S01-H01) ,j<no
 ! rh = -(Z*S10-H10) ,j>no
+!$OMP do
        do i = 1, nosq
           rh(i)       = alpha(i)
           rh(nosq+i)  = beta(i)
        end do
+!$OMP end do nowait
 
 ! w = Z*S00-H00
+!$OMP workshare
        w(:) = gb(:)
+!$OMP end workshare nowait
+
+!$OMP end parallel
 
 ! rh =  rh1^(-1)*rh
 ! rh =  t0
@@ -173,20 +190,44 @@ contains
        call switch_alpha_beta_rh1(as_first)
 
 ! alpha = -(Z*S01-H01)*t0
-       call zgemm('N','N',no,no,no,z_1,rh1(1),no,rh(1),no,z_0,alpha,no)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_1,rh1(1),no,rh(1),no,z_0,alpha,no)
 ! beta  = -(Z*S10-H10)*t0 ??
-       call zgemm('N','N',no,no,no,z_1,rh1(nosq+1),no,rh(nosq+1),no,z_0,beta,no)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_1,rh1(nosq+1),no,rh(nosq+1),no,z_0,beta,no)
 
 ! ba    = (Z*S10-H10)*t0b
-       call zgemm('N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_0,w,no)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_0,w,no)
+!$OMP parallel do default(shared), private(i)
        do i = 1 , nosq
           gb(i)  = gb(i) + w(i)
           gsL(i) = gsL(i) + w(i)
        end do
+!$OMP end parallel do
 
 ! ab    = (Z*S01-H01)*t0
-       call zgemm('N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
        ro = -1._dp
+!$OMP parallel do default(shared), private(i), &
+!$OMP&reduction(max:ro)
        do i = 1 , nosq
           gb(i)  = gb(i) + w(i)
           gsR(i) = gsR(i) + w(i)
@@ -194,13 +235,16 @@ contains
           ! also update the criteria
           ro = max(ro,abs(w(i)))
        end do
+!$OMP end parallel do
        
     end do
 
     if ( present(final_invert) ) then
        ! If we do not need to invert it, save it for later.
        if ( .not. final_invert ) then
+!$OMP parallel workshare
           rh1(1:nosq) = GS(:)
+!$OMP end parallel workshare
        end if
     end if
 
@@ -229,24 +273,61 @@ contains
     end if
 
     ! We now calculate the density of states...
+!$OMP parallel do default(shared), private(i) 
     do i = 1 , nosq
        alpha(i) = H01(i) -        ZE  * S01(i)
        ! notice, we utilize the relation (H10-z*S10) = (H01-conjg(z)*S01)^H
        beta(i)  = H01(i) - dconjg(ZE) * S01(i)
     end do
+!$OMP end parallel do
 
     i = 1
     j = nosq + 1 
     ! zDOS = Tr{ G_b * S00 + 
     !            G_l * (H01 - E * S01 ) * G_b * S10 +
     !            G_r * (H10 - E * S10 ) * G_b * S01   }
-    call zgemm('N','N',no,no,no,z_1,gsL  ,no,alpha,no,z_0,w    ,no)
-    call zgemm('N','N',no,no,no,z_1,w    ,no,gb   ,no,z_0,rh(i),no)
-    call zgemm('C','N',no,no,no,z_1,beta ,no,gb   ,no,z_0,w    ,no)
-    call zgemm('N','N',no,no,no,z_1,gsR  ,no,w    ,no,z_0,rh(j),no)
-    call zgemm('N','N',no,no,no,z_1,gb   ,no,s00  ,no,z_0,w    ,no)
-    call zgemm('N','C',no,no,no,z_1,rh(i),no,s01  ,no,z_1,w    ,no)
-    call zgemm('N','N',no,no,no,z_1,rh(j),no,s01  ,no,z_1,w    ,no)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',no,no,no,z_1,gsL  ,no,alpha,no,z_0,w    ,no)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',no,no,no,z_1,w    ,no,gb   ,no,z_0,rh(i),no)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'C','N',no,no,no,z_1,beta ,no,gb   ,no,z_0,w    ,no)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',no,no,no,z_1,gsR  ,no,w    ,no,z_0,rh(j),no)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',no,no,no,z_1,gb   ,no,s00  ,no,z_0,w    ,no)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','C',no,no,no,z_1,rh(i),no,s01  ,no,z_1,w    ,no)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',no,no,no,z_1,rh(j),no,s01  ,no,z_1,w    ,no)
 
     zDOS = 0.0_dp
     do j = 0 , nom1
@@ -258,7 +339,9 @@ contains
     if ( present(final_invert) ) then
        ! If we do not need to invert it, return the value
        if ( .not. final_invert ) then
+!$OMP parallel workshare
           GS(:) = rh1(1:nosq)
+!$OMP end parallel workshare
        end if
     end if
 
@@ -377,16 +460,21 @@ contains
     i = i + nosq
     gb => zwork(i+1:i+nosq) 
 
+!$OMP parallel default(shared), private(i)
+
 ! gb    =   Z*S00-H00
 ! alpha = -(Z*S01-H01)
 ! gs  = Z*S00-H00
+!$OMP do 
     do i = 1 , nosq
        gb(i)    = ZE * S00(i) - H00(i)
        GS(i)    = gb(i)
        alpha(i) = H01(i) - ZE * S01(i)
     end do
+!$OMP end do nowait
 
 ! beta = -(Z*S10-H10)
+!$OMP do private(j,ic,ic2)
     do j = 1 , no
        ic = no * (j-1) + 1
        do i = 0 , nom1
@@ -394,6 +482,9 @@ contains
           beta(ic+i) = dconjg(H01(ic2)) - ZE * dconjg(S01(ic2))
        end do
     end do
+!$OMP end do
+
+!$OMP end parallel
 
     ! Initialize loop
     ro = accur + 1._dp
@@ -404,15 +495,23 @@ contains
        if ( present(iterations) ) &
             iterations = iterations + 1
 
+!$OMP parallel default(shared), private(i)
+
 ! rh = -(Z*S01-H01) ,j<no
 ! rh = -(Z*S10-H10) ,j>no
+!$OMP do
        do i = 1, nosq
           rh(i)      = alpha(i)
           rh(nosq+i) = beta(i)
        end do
+!$OMP end do nowait
 
 ! w = Z*S00-H00
+!$OMP workshare
        w(:) = gb(:)
+!$OMP end workshare nowait
+
+!$OMP end parallel
 
 ! rh =  rh1^(-1)*rh
 ! rh =  t0
@@ -427,17 +526,39 @@ contains
        call switch_alpha_beta_rh1(as_first)
 
 ! alpha = -(Z*S01-H01)*t0
-       call zgemm('N','N',no,no,no,z_1,rh1(1),no,rh(1),no,z_0,alpha,no)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_1,rh1(1),no,rh(1),no,z_0,alpha,no)
 ! beta  = -(Z*S10-H10)*t0 ??
-       call zgemm('N','N',no,no,no,z_1,rh1(nosq+1),no,rh(nosq+1),no,z_0,beta,no)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_1,rh1(nosq+1),no,rh(nosq+1),no,z_0,beta,no)
 
 ! gb = gb + [ba    = (Z*S10-H10)*t0b]
-       call zgemm('N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_1,gb,no)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_1,gb,no)
 
 ! ab    = (Z*S01-H01)*t0
-       call zgemm('N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
 
        ro = -1._dp
+!$OMP parallel do default(shared), private(i), &
+!$OMP&reduction(max:ro)
        do i = 1 , nosq
           gb(i) = gb(i) + w(i)
           gs(i) = gs(i) + w(i)
@@ -445,6 +566,7 @@ contains
           ! also do the accuracy calculation
           ro = max(ro,abs(w(i)))
        end do
+!$OMP end parallel do
 
     end do
 
@@ -525,7 +647,6 @@ contains
     use sys ,       only : die
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World
-    use mpi_siesta, only : MPI_Bcast
     use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_integer
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
     use mpi_siesta, only : MPI_double_complex
@@ -830,7 +951,9 @@ contains
        
        if ( itt_stepped(it2,1) ) then
           ! Number of iterations
+!$OMP parallel workshare
           iters(:,:,:,:) = 0
+!$OMP end parallel workshare
        end if
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
@@ -1059,6 +1182,9 @@ contains
           if ( IONode ) then
              i_mean = sum(iters(:,:,:,2)) / real(nq*NEn*nkpnt,dp)
              i_std = 0._dp
+!$OMP parallel do default(shared), &
+!$OMP&private(j,i,iqpt), collapse(3), &
+!$OMP&reduction(+:i_std)
              do j = 1 , nkpnt
              do i = 1 , NEn
              do iqpt = 1 , nq
@@ -1066,6 +1192,7 @@ contains
              end do
              end do
              end do
+!$OMP end parallel do
              i_std = sqrt(i_std/real(NEn*nq*nkpnt,dp))
              ! TODO if new surface-Green's function scheme is implemented, fix here
              write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
@@ -1252,14 +1379,20 @@ contains
     S00 => val(El%S00)
     S01 => val(El%S01)
 
+!$OMP parallel default(shared), private(i)
+
     ! Initialize arrays
+!$OMP do
     do i = 1, nS
        Hk(i)   = dcmplx(0._dp,0._dp)
        Sk(i)   = dcmplx(0._dp,0._dp)
        Hk_T(i) = dcmplx(0._dp,0._dp)
        Sk_T(i) = dcmplx(0._dp,0._dp)
     enddo
+!$OMP end do
 
+! We will not have any data-race condition here
+!$OMP do private(iuo,j,ind,juo,is,kqsc,ph)
     do iuo = 1 , no_u
 
        ! Create 00
@@ -1297,9 +1430,13 @@ contains
           Hk_T(i) = Hk_T(i) + H01(ind,ispin) * ph
           Sk_T(i) = Sk_T(i) + S01(ind)       * ph
        end do
+
     end do
+!$OMP end do
 
     ! Symmetrize 00 and make EF the energy-zero
+! We will not have any data-race condition here
+!$OMP do private(iuo,j,juo)
     do iuo = 1,no_u
        do juo = 1,iuo-1
           i = iuo+(juo-1)*no_u
@@ -1325,6 +1462,9 @@ contains
        ! Transfer matrix
        Hk_T(i) = Hk_T(i) - Ef * Sk_T(i)
     end do
+!$OMP end do nowait
+
+!$OMP end parallel
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS elec_HS_Transfer' )
@@ -1555,18 +1695,24 @@ contains
       if ( is_left ) then
          ! Left, we use the last orbitals
          ioff = 1 - off
+!$OMP parallel do default(shared), &
+!$OMP&private(j,i), collapse(2)
          do j = off , fS
             do i = off , fS
                to(ioff+i,ioff+j) = from(i,j)
             end do
          end do
+!$OMP end parallel do
       else
          ! Right, the first orbitals
+!$OMP parallel do default(shared), &
+!$OMP&private(j,i), collapse(2)
          do j = 1 , tS
             do i = 1 , tS
                to(i,j) = from(i,j)
             end do
          end do
+!$OMP end parallel do
       end if
 
     end subroutine copy_over

@@ -18,6 +18,38 @@
 ! * broadcasting values.                         *
 ! ************************************************
 
+! Creating a Hamiltonian/Overlap matrix at a specified k-point
+! in a global UC sparsity pattern is enabled using these routines:
+
+!  - create_HS
+!    1. accepts a distributed matrix
+!    2. requires the output matrix to be globalized in the sense
+!       that the sparsity pattern is a UC sparsity pattern
+!       NO dublicate entries. 
+!       REQUIREMENT: each row MUST be sorted in column index
+!    3. Creates the transposed matrix in the output matrix
+!       A simple argument is that any traversal in the sparsity
+!       pattern will be faster if it is following fortran order.
+!       This reduces cache-misses
+!    4. The matrix is forced Hermitian
+!  - create_U
+!    1. accepts a globalized sparsity pattern of a matrix
+!    2. Creates a matrix in Upper Triangular form
+!       which directly can be inserted in LAPACK [dz]spgvd/[dz]spev
+!       routines.
+!    3. Symmetrization is not enforced by this routine
+!  - create_Full
+!    1. accepts a globalized sparsity pattern of a matrix
+!    2. creates the full matrix (with all the zeroes) which can
+!       be directly used for BLAS/LAPACK matrix operations
+!    3. Symmetrization is not enforced by this routine
+
+!  - AllReduce_SpData
+!    1. Accepts a matrix which will be reduced in the
+!       MPI_Comm_World communicator.
+!    2. It takes a work-array as an additional argument
+!       (however we should consider the MPI_INPLACE)
+
 module m_ts_sparse_helper
 
   use precision, only : dp
@@ -48,6 +80,12 @@ module m_ts_sparse_helper
      module procedure create_kpt_U
   end interface 
   public :: create_U
+
+  interface create_Full
+     module procedure create_Gamma_Full
+     module procedure create_kpt_Full
+  end interface 
+  public :: create_Full
 
 contains
 
@@ -122,19 +160,27 @@ contains
     sp_k => spar(SpArrH)
     call attach(sp_k, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
-    call init_val(SpArrH)
-    call init_val(SpArrS)
     ! obtain the value arrays...
     zH => val(SpArrH)
     zS => val(SpArrS)
 
+!$OMP parallel default(shared), &
+!$OMP&private(lio,io,kn,ind,jo,ind_k,ph)
+
+!$OMP workshare
+    zH(:) = dcmplx(0._dp,0._dp)
+    zS(:) = dcmplx(0._dp,0._dp)
+!$OMP end workshare
+
+! No data race condition as each processor takes a separate row
+!$OMP do 
     do lio = 1 , no_l
 
        ! obtain the global index of the orbital.
        io = index_local_to_global(dit,lio,Node)
        kn = k_ncol(io)
        ! if there is no contribution in this row
-       if ( kn == 0 ) cycle
+       if ( kn /= 0 ) then
 
        ! The io orbitals are in the range [1;no_u_TS]
        ! This should be redundant as it is catched by kn==0
@@ -182,7 +228,11 @@ contains
 
        end do
 
+       end if
+
     end do
+!$OMP end do nowait
+!$OMP end parallel
      
 #ifdef MPI
     if ( dist_nodes(dit) > 1 ) then
@@ -231,6 +281,7 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: zH(:), zS(:)
+    complex(dp) :: t
     integer :: iEl, jEl, nr, io, ind, jo, rin, rind
     real(dp) :: E_Ef(0:N_Elec)
 
@@ -250,13 +301,16 @@ contains
     zS => val(SpArrS)
 
     ! This loop is across the local rows...
+! No data race condition as each processor takes a separate row
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iEl,jEl,ind,jo,rin,rind)
     do io = 1 , nr
 
        ! Quickly go past the empty regions... (we have nothing to update)
-       if ( l_ncol(io) == 0 ) cycle
+       if ( l_ncol(io) /= 0 ) then
 
        iEl = orb_type(io)
-       if ( iEl == TYP_BUFFER ) cycle ! this means a buffer row
+       if ( iEl /= TYP_BUFFER ) then ! this means a buffer row
        jEl = 0
 
        ! Now we loop across the update region
@@ -297,8 +351,19 @@ contains
           if ( rind <= rin ) &
                call die('ERROR symmetrization orbital does not &
                &exist.')
-          
-          ! Symmetrize (notice that this is *transposed*)
+
+#ifdef TS_BROKEN_TRS
+          ! (notice that we transpose here!)
+          t = zS(rind)
+          zS(rind) = zS(ind)
+          zS(ind)  = t
+
+          t = zH(rind)
+          zH(rind) = zH(ind) - E_Ef(jEl) * zS(rind)
+          zH(ind)  = t - E_Ef(jEl) * zS(ind)
+
+#else
+          ! Symmetrize (notice that we transpose here!)
           ! See prep_GF
           zS(rind) = 0.5_dp * ( zS(ind) + dconjg(zS(rind)) )
           zS(ind)  = dconjg(zS(rind))
@@ -312,9 +377,15 @@ contains
              zS(ind) = dreal(zS(ind))
              zH(ind) = dreal(zH(ind))
           end if
+#endif
                       
        end do
+
+       end if
+       end if
+
     end do
+!$OMP end parallel do
 
   end subroutine symmetrize_HS_kpt
 
@@ -382,22 +453,29 @@ contains
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! obtain the full sparsity unit-cell
-    sp_G   => spar(SpArrH)
+    sp_G => spar(SpArrH)
     call attach(sp_G, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
-    ! initialize to 0
-    call init_val(SpArrH)
-    call init_val(SpArrS)
     ! obtain the value arrays...
     dH => val(SpArrH)
     dS => val(SpArrS)
 
+!$OMP parallel default(shared), &
+!$OMP&private(lio,io,ind,jo,ind_k)
+
+    ! initialize to 0
+!$OMP workshare
+    dH(:) = 0._dp
+    dS(:) = 0._dp
+!$OMP end workshare
+
+!$OMP do 
     do lio = 1 , no_l
 
        ! obtain the global index of the orbital.
        io = index_local_to_global(dit,lio,Node)
        ! if there is no contribution in this row
-       if ( k_ncol(io) == 0 ) cycle
+       if ( k_ncol(io) /= 0 ) then
 
        ! The io orbitals are in the range [1;no_u]
        if ( orb_type(io) == TYP_BUFFER ) then
@@ -434,7 +512,11 @@ contains
 
        end do
 
+       end if
+
     end do
+!$OMP end do nowait
+!$OMP end parallel
      
 #ifdef MPI
     ! Note that dH => val(SpArrH)
@@ -482,7 +564,7 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
     real(dp), pointer :: dH(:), dS(:)
-    real(dp) :: E_Ef(0:N_Elec)
+    real(dp) :: E_Ef(0:N_Elec), t
     integer :: iEl, jEl, nr, io, ind, jo, rin, rind
    
     ! create the overlap electrode fermi-level
@@ -502,13 +584,15 @@ contains
     dS => val(SpArrS)
 
     ! This loop is across the local rows...
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iEl,jEl,ind,jo,rin,rind)
     do io = 1 , nr
 
        ! Quickly go past the empty regions... (we have nothing to update)
-       if ( l_ncol(io) == 0 ) cycle
+       if ( l_ncol(io) /= 0 ) then
 
        iEl = orb_type(io)
-       if ( iEl == TYP_BUFFER ) cycle ! this means a buffer row
+       if ( iEl /= TYP_BUFFER ) then ! this means a buffer row
        jEl = 0
 
        ! Now we loop across the update region
@@ -550,7 +634,16 @@ contains
                call die('ERROR symmetrization orbital does not &
                &exist.')
 
-          ! Symmetrize
+#ifdef TS_BROKEN_TRS
+          t = dS(rind)
+          dS(rind) = dS(ind)
+          dS(ind) = t
+          
+          t = dH(rind)
+          dH(rind) = dH(ind) - E_Ef(jEl) * dS(rind)
+          dH(ind)  = t - E_Ef(jEl) * dS(ind)
+#else
+          ! Symmetrize (for Gamma, transposed is the same!)
           dS(ind) = 0.5_dp * ( dS(ind) + dS(rind) )
           dH(ind) = 0.5_dp * ( dH(ind) + dH(rind) ) &
                - E_Ef(jEl) * dS(ind)
@@ -558,9 +651,14 @@ contains
           ! we have a real Matrix
           dH(rind) = dH(ind)
           dS(rind) = dS(ind)
-          
+#endif          
        end do
+
+       end if
+       end if
+
     end do
+!$OMP end parallel do
     
   end subroutine symmetrize_HS_Gamma
 
@@ -572,7 +670,6 @@ contains
        no, r, &
        n_nzs, A, A_UT)
 
-    use parallel, only : Node
     use class_OrbitalDistribution
     use class_Sparsity
 
@@ -608,19 +705,24 @@ contains
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
 
+!$OMP parallel default(shared), private(i,io,lio,ind,jo,idx)
+
+!$OMP workshare
     A_UT(:) = 0._dp
+!$OMP end workshare
 
     ! Loop over region orbitals
+!$OMP do
     do i = 1 , no
        
        ! Global orbital
        io = r%r(i)
        ! obtain the global index of the orbital.
        lio = index_global_to_local(dit,io)
-       if ( lio <= 0 ) cycle
+       if ( lio > 0 ) then
        
        ! if there is no contribution in this row
-       if ( l_ncol(lio) == 0 ) cycle
+       if ( l_ncol(lio) > 0 ) then
 
        ! Loop number of entries in the row... (in the index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -638,20 +740,118 @@ contains
           ! For Gamma, we do not need the complex conjugate...
           if ( i > jo ) then
              idx = jo + (i -1)*i /2
+!$OMP atomic
              A_UT(idx) = A_UT(idx) + 0.5_dp * A(ind)
           else if ( i < jo ) then
              idx = i  + (jo-1)*jo/2
+!$OMP atomic
              A_UT(idx) = A_UT(idx) + 0.5_dp * A(ind)
           else
              idx = i  + (jo-1)*jo/2
+!$OMP atomic
              A_UT(idx) = A_UT(idx) +          A(ind)
           end if
 
        end do
 
+       end if
+       end if
+
     end do
+!$OMP end do nowait
+
+!$OMP end parallel
      
   end subroutine create_Gamma_U
+
+  ! Helper routine to create and distribute an upper
+  ! tri-angular matrix of the hamiltonian in a specified
+  ! region.
+  subroutine create_Gamma_Full(dit,sp, &
+       no, r, &
+       n_nzs, A, A_full)
+
+    use class_OrbitalDistribution
+    use class_Sparsity
+
+    use m_region
+
+    use geom_helper,       only : UCORB
+
+! *********************
+! * INPUT variables   *
+! *********************
+    ! the distribution that the H and S live under
+    type(OrbitalDistribution), intent(inout) :: dit
+    ! The (local) sparsity pattern that H, S lives by
+    type(Sparsity), intent(inout) :: sp
+    ! Number of orbitals that form this array
+    integer, intent(in) :: no
+    ! The region that we wish to create the UT matrix in
+    type(tRegion), intent(in) :: r
+    ! The number of elements in the sparse arrays
+    integer, intent(in) :: n_nzs
+    real(dp), intent(in) :: A(n_nzs)
+    ! The matrix
+    real(dp), intent(out) :: A_full(no,no)
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    ! Create loop-variables for doing stuff
+    integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
+    integer :: no_l, no_u, lio, io, ind, jo, i
+    
+    ! Create all the local sparsity super-cell
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=no_l,nrows_g=no_u)
+
+!$OMP parallel default(shared), private(i,io,lio,ind,jo)
+
+!$OMP workshare
+    A_full(:,:) = 0._dp
+!$OMP end workshare
+
+    ! Loop over region orbitals
+!$OMP do
+    do i = 1 , no
+       
+       ! Global orbital
+       io = r%r(i)
+       ! obtain the global index of the orbital.
+       lio = index_global_to_local(dit,io)
+       if ( lio > 0 ) then
+       
+       ! if there is no contribution in this row
+       if ( l_ncol(lio) > 0 ) then
+
+       ! Loop number of entries in the row... (in the index frame)
+       do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+
+          ! as the local sparsity pattern is a super-cell pattern,
+          ! we need to check the unit-cell orbital
+          ! The unit-cell column index
+          jo = UCORB(l_col(ind),no_u)
+
+          ! If the orbital is not in the region, we skip it
+          jo = region_pivot(r,jo)
+          if ( jo <= 0  ) cycle
+
+          ! Calculate position
+          ! For Gamma, we do not need the complex conjugate...
+          A_full(jo,io) = A_full(jo,io) + A(ind)
+
+       end do
+
+       end if
+       end if
+
+    end do
+!$OMP end do nowait
+
+!$OMP end parallel
+     
+  end subroutine create_Gamma_Full
 
   ! Helper routine to create and distribute an upper
   ! tri-angular matrix of the hamiltonian in a specified
@@ -660,7 +860,6 @@ contains
        no, r, &
        n_nzs, n_s, A, sc_off, A_UT, k)
 
-    use parallel, only : Node
     use class_OrbitalDistribution
     use class_Sparsity
 
@@ -700,20 +899,26 @@ contains
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
 
+!$OMP parallel default(shared), &
+!$OMP&private(i,io,lio,ind,jo,is,ph,idx,w)
+
+!$OMP workshare
     A_UT(:) = dcmplx(0._dp,0._dp)
+!$OMP end workshare
     w = log(0.5)
 
     ! Loop over region orbitals
+!$OMP do
     do i = 1 , no
        
        ! Global orbital
        io = r%r(i)
        ! obtain the global index of the orbital.
        lio = index_global_to_local(dit,io)
-       if ( lio <= 0 ) cycle
+       if ( lio > 0 ) then
        
        ! if there is no contribution in this row
-       if ( l_ncol(lio) == 0 ) cycle
+       if ( l_ncol(lio) > 0 ) then
 
        ! Loop number of entries in the row... (in the index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -751,13 +956,117 @@ contains
              idx = i  + (jo-1)*jo/2
           end if
 
+!$OMP atomic
           A_UT(idx) = A_UT(idx) + ph * A(ind)
 
        end do
 
+       end if
+       end if
+
     end do
+!$OMP end do nowait
+
+!$OMP end parallel
      
   end subroutine create_kpt_U
+
+  ! Helper routine to create and distribute an upper
+  ! tri-angular matrix of the hamiltonian in a specified
+  ! region.
+  subroutine create_kpt_full(dit,sp, &
+       no, r, &
+       n_nzs, n_s, A, sc_off, A_full, k)
+
+    use class_OrbitalDistribution
+    use class_Sparsity
+
+    use m_region
+
+    use geom_helper,       only : UCORB
+
+! *********************
+! * INPUT variables   *
+! *********************
+    ! the distribution that the H and S live under
+    type(OrbitalDistribution), intent(inout) :: dit
+    ! The (local) sparsity pattern that H, S lives by
+    type(Sparsity), intent(inout) :: sp
+    ! Number of orbitals that form this array
+    integer, intent(in) :: no
+    ! The region that we wish to create the UT matrix in
+    type(tRegion), intent(in) :: r
+    ! The number of elements in the sparse arrays
+    integer, intent(in) :: n_nzs, n_s
+    real(dp), intent(in) :: A(n_nzs), sc_off(3,0:n_s-1)
+    ! The k-point we will create
+    real(dp), intent(in) :: k(3)
+    ! The UT format matrix
+    complex(dp), intent(out) :: A_full(no,no)
+
+! *********************
+! * LOCAL variables   *
+! *********************
+    ! Create loop-variables for doing stuff
+    integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
+    integer :: no_l, no_u, lio, io, ind, jo, i, is
+    complex(dp) :: ph
+    
+    ! Create all the local sparsity super-cell
+    call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows=no_l,nrows_g=no_u)
+
+!$OMP parallel default(shared), &
+!$OMP&private(i,io,lio,ind,jo,is,ph)
+
+!$OMP workshare
+    A_full(:,:) = dcmplx(0._dp,0._dp)
+!$OMP end workshare
+
+    ! Loop over region orbitals
+!$OMP do
+    do i = 1 , no
+       
+       ! Global orbital
+       io = r%r(i)
+       ! obtain the global index of the orbital.
+       lio = index_global_to_local(dit,io)
+       if ( lio > 0 ) then
+       
+       ! if there is no contribution in this row
+       if ( l_ncol(lio) > 0 ) then
+
+       ! Loop number of entries in the row... (in the index frame)
+       do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+
+          ! as the local sparsity pattern is a super-cell pattern,
+          ! we need to check the unit-cell orbital
+          ! The unit-cell column index
+          jo = UCORB(l_col(ind),no_u)
+
+          ! If the orbital is not in the region, we skip it
+          jo = region_pivot(r,jo)
+          if ( jo <= 0  ) cycle
+
+          is = (l_col(ind)-1)/no_u
+
+          ph = cdexp(dcmplx(0._dp, &
+               k(1) * sc_off(1,is) + &
+               k(2) * sc_off(2,is) + &
+               k(3) * sc_off(3,is)))
+          A_full(io,jo) = A_full(io,jo) + ph * A(ind)
+
+       end do
+
+       end if
+       end if
+
+    end do
+!$OMP end do nowait
+
+!$OMP end parallel
+     
+  end subroutine create_kpt_full
 
 
 ! ************************************************
@@ -778,13 +1087,17 @@ contains
     integer :: MPIerror, i
     i = 0
     do while ( i + nwork <= nnzs ) 
+!$OMP parallel workshare default(shared)
        work(1:nwork) = arr(i+1:i+nwork)
+!$OMP end parallel workshare
        call MPI_AllReduce(work(1),arr(i+1),nwork, &
             MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
        i = i + nwork
     end do
     if ( i < nnzs ) then
+!$OMP parallel workshare default(shared)
        work(1:nnzs-i) = arr(i+1:nnzs)
+!$OMP end parallel workshare
        call MPI_AllReduce(work(1),arr(i+1),nnzs-i, &
             MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
     end if
@@ -831,13 +1144,17 @@ contains
     integer :: MPIerror, i
     i = 0
     do while ( i + nwork <= nnzs ) 
+!$OMP parallel workshare default(shared)
        work(1:nwork) = arr(i+1:i+nwork)
+!$OMP end parallel workshare
        call MPI_AllReduce(work(1),arr(i+1),nwork, &
             MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
        i = i + nwork
     end do
     if ( i < nnzs ) then
+!$OMP parallel workshare default(shared)
        work(1:nnzs-i) = arr(i+1:nnzs)
+!$OMP end parallel workshare
        call MPI_AllReduce(work(1),arr(i+1),nnzs-i, &
             MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
     end if

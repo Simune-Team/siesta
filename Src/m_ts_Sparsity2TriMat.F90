@@ -105,7 +105,7 @@ contains
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
     ! below could be optimized)
-    do i = 2 + Node , no / 4 , Nodes
+    do i = 2 + Node , no / 2 , Nodes
 
        ! Make new guess...
        call guess_TriMat(no,mm_col,i,guess_parts,guess_part)
@@ -228,12 +228,7 @@ contains
       ! If the method of optimization is memory:
       if ( method == 0 ) then
 
-         if ( guess_parts == parts ) then
-            copy = faster_parts(parts,n_part,guess_part)
-         end if
-         ! This will take the correct value of true for the above check
-         ! and this
-         copy = copy .or. guess_parts > parts
+         copy = faster_parts(parts,n_part,guess_parts,guess_part)
 
       else if ( method == 1 ) then
 
@@ -301,44 +296,51 @@ contains
     end do
   end function calc_nnzs
 
-  function faster_parts(parts,n_part,guess_part) result(faster)
+  function faster_parts(np,n_part,ng,guess_part) result(faster)
     use precision, only: dp, i8b
-    integer, intent(in) :: parts
-    integer, intent(in) :: n_part(parts)
-    integer, intent(in) :: guess_part(parts)
+    integer, intent(in) :: np, n_part(np)
+    integer, intent(in) :: ng, guess_part(ng)
 
-    integer :: i, diff
-    integer(i8b) :: guess_N, part_N
+    integer :: i
+    integer(i8b) :: guess_N, part_N, diff
     logical :: faster
 
-    ! the faster must be the one with lowest total elemental
-    ! operations
-    guess_N = guess_part(1) ** 3
-    part_N  = n_part(1)     ** 3
-    diff = part_N - guess_N
-    do i = 2 , parts - 1
+    ! We estimate the fastest algorithm
+    ! by the number of operations the matrices make
+    faster = ( ng > np )
+    if ( np > ng ) return
+    if ( faster ) return
 
-       ! we suspect that inverting the matrix scales
-       ! as the minor matrix inversions/solves
-       ! I.e. we do not count the matrix multiplications
-
-       guess_N =           guess_part(i) * guess_part(i-1) ** 2
-       guess_N = guess_N + guess_part(i) ** 3
-       guess_N = guess_N + guess_part(i) * guess_part(i+1) ** 2
-
-       part_N  =           n_part(i)     * n_part(i-1)     ** 2
-       part_N  = part_N  + n_part(i)     ** 3
-       part_N  = part_N  + n_part(i)     * n_part(i+1)     ** 2
-
+    diff = 0
+    do i = 1 , max(np,ng)
+       part_N = 0
+       if ( i < np ) then
+          part_N = 5 * n_part(i) ** 3 / 3
+          part_N = part_N + ( 5 * n_part(i) ** 2 / 3 + 4 * n_part(i+1) ) * n_part(i)
+       end if
+       guess_N = 0
+       if ( i < ng ) then
+          guess_N = 5 * guess_part(i) ** 3 / 3
+          guess_N = guess_N + ( 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i+1) ) * guess_part(i)
+       end if
        diff = diff + part_N - guess_N
 
-    end do
-    guess_N = guess_part(parts) ** 3
-    part_N  = n_part(parts)     ** 3
-    
-    diff = diff + part_N - guess_N
+       if ( i == 1 ) cycle
 
-    faster = diff > 0
+       part_N = 0
+       if ( i <= np ) then
+          part_N = 5 * n_part(i) ** 3 / 3
+          part_N = part_N + ( 5 * n_part(i) ** 2 / 3 + 4 * n_part(i-1) ) * n_part(i)
+       end if
+       guess_N = 0
+       if ( i <= ng ) then
+          guess_N = 5 * guess_part(i) ** 3 / 3
+          guess_N = guess_N + ( 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i-1) ) * guess_part(i)
+       end if
+       diff = diff + part_N - guess_N
+    end do
+
+    faster = (diff > 0)
 
   end function faster_parts
 

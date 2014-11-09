@@ -136,10 +136,6 @@ module m_ts_electype
      real(dp) :: Eta = 7.3498067e-7_dp ! corresponds to 0.00001 eV
 
 #ifdef TBTRANS
-     ! The size of the down-folded self-energy
-     integer :: no_dwn
-     ! The index of the down-folded self-energy
-     integer :: idx_o_dwn
      ! The region of the down-folded region
      type(tRegion) :: o_inD
 #endif
@@ -187,6 +183,9 @@ contains
        if ( fdf_bnnames(pline) == 0 ) cycle
        n = n + 1 
        this_n(n)%Name = trim(fdf_bnames(pline,1))
+       if ( index(this_n(n)%name,'.') > 0 ) then
+          call die('Electrodes cannot be named with .!')
+       end if
        if ( n > 1 ) then
           ! Check that no name is the same
           do i = 1 , n - 1 
@@ -711,7 +710,7 @@ contains
     in = this%idx_a <= ia .and. ia < (this%idx_a + TotUsedAtoms(this))
   end function AtomInElec
 
-  function in_basal_elec(plane,ll,d) result(has)
+  pure function in_basal_elec(plane,ll,d) result(has)
     type(geo_plane_delta), intent(in) :: plane
     real(dp), intent(in) :: ll(3), d(3)
     logical :: has

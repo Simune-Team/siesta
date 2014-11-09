@@ -186,10 +186,13 @@ contains
           call die('Error in weights: determine trace')
        end select
 
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,ia,j,ind,ia2,is), &
+!$OMP&reduction(+:atom_neq)
        do lio = 1 , nr
 
           ! We are in a buffer region...
-          if ( l_ncol(lio) == 0 ) cycle
+          if ( l_ncol(lio) /= 0 ) then
           io = index_local_to_global(dit,lio,Node)
           
           ia = iaorb(io,lasto) ! atom-index
@@ -223,7 +226,9 @@ contains
              end if
              
           end do lio_connect
+          end if
        end do
+!$OMP end parallel do
        
 #ifdef MPI
        allocate(atom_w(N_nEq_ID,na_u))
@@ -289,9 +294,14 @@ contains
        w(:) = 1._dp / real(N_mu,dp)
     end if
     
+! DM is accessed individually, so we will never have a data race
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,ia1,ia2,j,ind,jo,neq), &
+!$OMP&private(ee,mu_i,ee_i,mu_j,tmp), &
+!$OMP&firstprivate(w)
     do lio = 1 , nr
        ! We are in a buffer region...
-       if ( l_ncol(lio) == 0 ) cycle
+       if ( l_ncol(lio) /= 0 ) then
 
        ! The global orbital
        io = index_local_to_global(dit,lio,Node)
@@ -406,14 +416,18 @@ contains
           end do
 
           if ( abs(ee) > abs(eM) ) then
+!$OMP critical
              eM   = ee
              eM_i = io
              eM_j = jo
              DMe = DM(ind,1)
+!$OMP end critical
           end if
 
        end do
+       end if
     end do
+!$OMP end parallel do
 
     if ( TS_W /= TS_W_ORB_ORB .and. TS_W /= TS_W_MEAN ) then
        deallocate(atom_w)
@@ -474,7 +488,7 @@ contains
 
 
   ! Calculate the theta values
-  subroutine calc_theta(N_mu,N_id,ID_mu,w_ID,theta)
+  pure subroutine calc_theta(N_mu,N_id,ID_mu,w_ID,theta)
     integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: theta(N_mu)
@@ -489,7 +503,7 @@ contains
   end subroutine calc_theta
 
   ! Calculate the theta values
-  subroutine calc_weight(N_mu,N_id,ID_mu,w_ID,w)
+  pure subroutine calc_weight(N_mu,N_id,ID_mu,w_ID,w)
     integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: w(N_mu)
@@ -519,7 +533,7 @@ contains
 
   ! Calculate both the non-equilibrium contribution
   ! and the weight associated with those points
-  subroutine calc_neq_weight(N_mu,N_id,ID_mu,neq_ID,neq,w)
+  pure subroutine calc_neq_weight(N_mu,N_id,ID_mu,neq_ID,neq,w)
     integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
@@ -555,7 +569,7 @@ contains
 
   ! Calculate both the non-equilibrium contribution
   ! and the weight associated with those points
-  subroutine calc_neq(N_mu,N_id,ID_mu,neq_ID,neq)
+  pure subroutine calc_neq(N_mu,N_id,ID_mu,neq_ID,neq)
     integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)

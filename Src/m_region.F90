@@ -959,21 +959,25 @@ contains
 
   end function region_overlaps
 
-  subroutine region_print(r, seq_max)
+  subroutine region_print(r, seq_max, indent)
     type(tRegion), intent(in) :: r
-    integer, intent(in), optional :: seq_max
+    integer, intent(in), optional :: seq_max, indent
  
+    character(len=5) :: fmt
     integer :: i, lseq_max
 
     lseq_max = 7
     if ( present(seq_max) ) lseq_max = seq_max
 
-    write(*,'(a,i0,2a)') 'Region (',r%n,'): ',trim(r%name)
-    write(*,'(tr2,a)',advance='no') '['
+    fmt = ' '
+    if ( present(indent) ) write(fmt,'(a,i0,a)')'tr',indent,','
+    
+    write(*,'('//fmt//'a,i0,2a)') 'Region (',r%n,'): ',trim(r%name)
+    write(*,'('//fmt//'tr2,a)',advance='no') '['
     do i = 1 , r%n - 1
        write(*,'(tr1,i0,a)',advance='no') r%r(i),', '
        if ( mod(i,lseq_max) == 0 ) then
-          write(*,'(/,tr3)',advance='no')
+          write(*,'(/,'//fmt//'tr3)',advance='no')
        end if
     end do
     if ( r%n > 0 ) then

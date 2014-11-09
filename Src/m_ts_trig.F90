@@ -524,7 +524,8 @@ contains
              end do
 #endif
              
-             call GF_Gamma_GF(zwork_tri, Elecs(iEl), calc_parts, &
+             io = TotUsedOrbs(Elecs(iEl))
+             call GF_Gamma_GF(zwork_tri, Elecs(iEl), io, calc_parts, &
                   GFGGF_size, GFGGF_work)
 
              do iID = 1 , N_nEq_ID
@@ -931,8 +932,12 @@ contains
 
     if ( hasEDM ) then
 
+! We will never loop the same element twice
+! This is UC sparsity pattern
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,idx) 
        do io = 1 , nr
-          if ( l_ncol(io) == 0 ) cycle
+          if ( l_ncol(io) /= 0 ) then
 
           ! The update region equivalent GF part
           iu = io - orb_offset(io)
@@ -945,12 +950,18 @@ contains
              E(ind,i2) = E(ind,i2) - dimag( GF(idx) * EDMfact )
              
           end do
+          
+          end if
+
        end do
+!$OMP end parallel do
 
     else
 
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,idx) 
        do io = 1 , nr
-          if ( l_ncol(io) == 0 ) cycle
+          if ( l_ncol(io) /= 0 ) then
 
           ! The update region equivalent GF part
           iu = io - orb_offset(io)
@@ -962,7 +973,9 @@ contains
              D(ind,i1) = D(ind,i1) - dimag( GF(idx) * DMfact  )
              
           end do
+          end if
        end do
+!$OMP end parallel do
 
     end if
 
@@ -1010,15 +1023,20 @@ contains
 
     Gfinv  => val(Gfinv_tri)
 
+!$OMP parallel default(shared), private(io,iu,ind,idx)
+
     ! Initialize
+!$OMP workshare
     GFinv(:) = dcmplx(0._dp,0._dp)
+!$OMP end workshare
 
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
+!$OMP do
     do io = 1, nr
 
-       if ( l_ncol(io) == 0 ) cycle
+       if ( l_ncol(io) /= 0 ) then
 
        iu = io - orb_offset(io)
 
@@ -1030,11 +1048,15 @@ contains
 
           GFinv(idx) = Z * S(ind) - H(ind)
        end do
+       end if
     end do
+!$OMP end do
 
     do io = 1 , N_Elec
-       call insert_Self_Energies(no_u, Gfinv_tri, Elecs(io))
+       call insert_Self_Energies(no_u, Gfinv_tri, Gfinv, Elecs(io))
     end do
+
+!$OMP end parallel
 
   end subroutine prepare_invGF
    

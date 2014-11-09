@@ -264,7 +264,10 @@ contains
 
        if ( eIdxT - sIdxT /= eIdxF - sIdxF ) & 
             call die('Error in determining column')
+!$OMP parallel workshare default(shared)
        Mpinv(sIdxT:eIdxT) = Mp(sIdxF:eIdxF)
+!$OMP end parallel workshare
+
 
        if ( sPart == ePart ) cycle ! we have everything! :)
 
@@ -285,7 +288,12 @@ contains
           ! placement of the inverted matrix
           Mp => val(M,n+1,n+1)
 
-          call zgemm('N','N',sN,sNc,sNp1, &
+#ifdef USE_GEMM3M
+          call zgemm3m( &
+#else
+          call zgemm( &
+#endif
+               'N','N',sN,sNc,sNp1, &
                zm1, Yn, sN, Mp(1),sNp1,z0, Mpinv(eIdxT+1),sN)
 
        else if ( n == ePart ) then
@@ -299,7 +307,12 @@ contains
           Mp => val(M,n-1,n-1)
           s = sNm1 ** 2
 
-          call zgemm('N','N',sN,sNc,sNm1, &
+#ifdef USE_GEMM3M
+          call zgemm3m( &
+#else
+          call zgemm( &
+#endif
+               'N','N',sN,sNc,sNm1, &
                zm1, Xn, sN, Mp(s-sNm1*sNc+1),sNm1,z0, Mpinv(1),sN)
 
        end if
@@ -347,7 +360,12 @@ contains
        call TriMat_Bias_idxs(Minv,no,n,sIdxF,eIdxF)
        Mpinv => z(sIdxF:eIdxF)
 
-       call zgemm('N','N',sN,no,sNp1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,no,sNp1, &
             zm1, Yn, sN, Mp(1),sNp1,z0, Mpinv(1),sN)
        
     end do
@@ -369,7 +387,12 @@ contains
        call TriMat_Bias_idxs(Minv,no,n,sIdxF,eIdxF)
        Mpinv => z(sIdxF:eIdxF)
        
-       call zgemm('N','N',sN,no,sNm1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,no,sNm1, &
             zm1, Xn, sN, Mp(1),sNm1,z0, Mpinv(1),sN)
        
     end do
@@ -435,7 +458,12 @@ contains
        ! The C2 array
        Cn => val(M,n,n+1)
        ! Calculate: A1 - X1
-       call zgemm('N','N',sN,sN,sNp1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,sN,sNp1, &
             zm1, Cn,sN, Xn,sNp1,z1, Mp,sN)
 
     else if ( n == parts(M) ) then
@@ -445,7 +473,12 @@ contains
        ! The Bn-1 array
        Bn => val(M,n,n-1)
        ! Calculate: An - Yn
-       call zgemm('N','N',sN,sN,sNm1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,sN,sNm1, &
             zm1, Bn,sN, Yn,sNm1,z1, Mp,sN)
 
     else
@@ -454,24 +487,41 @@ contains
        ! The Cn+1 array
        Cn => val(M,n,n+1)
        ! Calculate: An - Xn
-       call zgemm('N','N',sN,sN,sNp1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,sN,sNp1, &
             zm1, Cn,sN, Xn,sNp1,z1, Mp,sN)
        ! Retrieve the Yn/Bn-1 array
        Yn => Yn_div_Bn_m1(Minv,n)
        ! The Bn-1 array
        Bn => val(M,n,n-1)
        ! Calculate: An - Xn - Yn
-       call zgemm('N','N',sN,sN,sNm1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,sN,sNm1, &
             zm1, Bn,sN, Yn,sNm1,z1, Mp,sN)
   
     end if
 
     ! Retrieve the position in the inverted matrix
     Mpinv => val(Minv,n,n)
+!$OMP parallel default(shared), private(i)
+!$OMP workshare
     Mpinv((sCol-1)*sN+1:eCol*sN) = dcmplx(0._dp,0._dp)
+!$OMP end workshare
+!$OMP do
     do i = sCol - 1 , eCol - 1
        Mpinv(i * sN + i + 1) = dcmplx(1._dp,0._dp)
     end do
+!$OMP end do nowait
+!$OMP end parallel 
+
     i = eCol - sCol + 1
     call zgesv(sN,i,Mp,sN,ipiv,Mpinv((sCol-1)*sN+1),sN,ierr)
     if ( ierr /= 0 ) then

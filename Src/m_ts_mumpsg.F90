@@ -644,6 +644,8 @@ contains
 
     if ( hasEDM ) then
        
+!$OMP parallel do default(shared), &
+!$OMP&private(ir,jo,ind,io,Hn,ind_H)
        do ir = 1 , mum%NRHS
              
           ! this is column index
@@ -665,9 +667,12 @@ contains
              
           end do
        end do
+!$OMP end parallel do
        
     else
 
+!$OMP parallel do default(shared), &
+!$OMP&private(ir,jo,ind,io,Hn,ind_H)
        do ir = 1 , mum%NRHS
           jo = ts2s_orb(ir)
           do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
@@ -679,6 +684,7 @@ contains
              D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
           end do
        end do
+!$OMP end parallel do
 
     end if
 
@@ -688,6 +694,8 @@ contains
 
     if ( hasEDM ) then
 
+!$OMP parallel do default(shared), &
+!$OMP&private(ind,io,jo,Hn,ind_H)
        do ind = 1 , mum%NZ ! looping A
           
           ! collect the two indices
@@ -700,25 +708,32 @@ contains
           ! Requires that l_col is sorted
           ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
                     
-          if ( ind_H == l_ptr(io) ) cycle ! this occurs as mum%A contains
-                                          ! the electrode as well
+          if ( ind_H /= l_ptr(io) ) then ! this occurs as mum%A contains
+                                         ! the electrode as well
           
           D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
           E(ind_H,i2) = E(ind_H,i2) - dimag( GF(ind) * EDMfact )
+
+          end if
              
        end do
+!$OMP end parallel do
        
     else
 
+!$OMP parallel do default(shared), &
+!$OMP&private(ind,io,jo,Hn,ind_H)
        do ind = 1 , mum%NZ
           io = ts2s_orb(mum%JCN(ind))
           jo = ts2s_orb(mum%IRN(ind))
           Hn    = l_ncol(io)
           ind_H = l_ptr(io)
           ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
-          if ( ind_H == l_ptr(io) ) cycle
-          D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
+          if ( ind_H /= l_ptr(io) ) then
+             D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
+          end if
        end do
+!$OMP end parallel do
 
     end if
 
@@ -768,32 +783,44 @@ contains
     l_col  => list_col(sp)
 
     ! Initialize
-    iG => mum%A
-    iG = 0._dp ! possibly this is not needed...
+    iG => mum%A(:)
 
+!$OMP parallel default(shared), private(ind,io,jo,Hn,ind_H)
+
+!$OMP workshare
+    iG(:) = 0._dp ! possibly this is not needed...
+!$OMP end workshare
+
+!$OMP do
     do ind = 1, mum%NZ
 
        io = ts2s_orb(mum%JCN(ind))
        jo = ts2s_orb(mum%IRN(ind))
 
        Hn = l_ncol(io)
-       if ( Hn == 0 ) cycle
+       if ( Hn /= 0 ) then
 
        ind_H = l_ptr(io)
        ! Requires that l_col is sorted
        ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
 
-       if ( ind_H == l_ptr(io) ) cycle
+       if ( ind_H /= l_ptr(io) ) then
        
-       ! Notice that we transpose S and H back here
-       ! See symmetrize_HS_Gamma (H is hermitian)
-       iG(ind) = Z * S(ind_H) - H(ind_H)
+          ! Notice that we transpose S and H back here
+          ! See symmetrize_HS_Gamma (H is hermitian)
+          iG(ind) = Z * S(ind_H) - H(ind_H)
+
+       end if
+       end if
 
     end do
+!$OMP end do
 
     do io = 1 , N_Elec
        call insert_Self_Energies(mum, Elecs(io))
     end do
+
+!$OMP end parallel
 
   end subroutine prepare_invGF
    

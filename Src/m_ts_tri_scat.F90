@@ -38,7 +38,7 @@ contains
   ! overwrite the old half-inverted matrix, that would mean
   ! that we need to do the full calculation for each electrode
   ! (which can be quite time-consuming!)
-  subroutine GF_Gamma_GF(Gf_tri, El, calc_parts, nwork, work)
+  subroutine GF_Gamma_GF(Gf_tri, El, no, calc_parts, nwork, work)
 
     use alloc, only : re_alloc, de_alloc
 
@@ -54,6 +54,7 @@ contains
     ! The Green's function column
     type(zTriMat), intent(inout) :: Gf_tri
     type(Elec), intent(in) :: El ! contains: i (Sigma - Sigma^dagger) ^T
+    integer, intent(in) :: no ! The dimension of i (Sigma - Sigma^dagger) ^T
     logical, intent(in) :: calc_parts(:)
 
 ! *********************
@@ -64,7 +65,7 @@ contains
 
     ! local variables
     complex(dp), pointer :: fGf(:), Gf(:), GGG(:)
-    integer :: nr, np, no
+    integer :: nr, np
     integer :: sIdx, eIdx
     integer :: ip, cp, n
     integer :: sN, sNc
@@ -80,7 +81,6 @@ contains
 
     ! tri-diagonal parts information
     nr = nrows_g(Gf_tri)
-    no = TotUsedOrbs(El)
     np = parts(Gf_tri)
 
     ! Which parts are needed
@@ -125,7 +125,12 @@ contains
        call TriMat_Bias_idxs(Gf_tri,no,n,sIdx,eIdx)
        ! obtain the Gf in the respective column
        Gf => fGf(sIdx:eIdx)
-       call zgemm('T','C',no,sN,no, z1, El%Gamma, no, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'T','C',no,sN,no, z1, El%Gamma, no, &
             Gf, sN, z0, work, no)
        
        ! Now we are ready to perform the multiplication
@@ -152,7 +157,12 @@ contains
 
           ! We need only do the product in the closest
           ! regions (we don't have information anywhere else)
-          call zgemm('N','N', sNc, sN, no, z1, &
+#ifdef USE_GEMM3M
+          call zgemm3m( &
+#else
+          call zgemm( &
+#endif
+               'N','N', sNc, sN, no, z1, &
                Gf, sNc, work, no, z0, GGG, sNc)
           
        end do
@@ -283,37 +293,39 @@ contains
 
   ! Generic routine for inserting the self-energies in the 
   ! tri-diagonal matrices
-  subroutine insert_Self_Energies(no_u, Gfinv_tri, El)
+  subroutine insert_Self_Energies(no_u, Gfinv_tri, Gfinv, El)
     use m_ts_electype
     use class_zTriMat
     integer, intent(in) :: no_u
     type(zTriMat), intent(inout) :: GFinv_tri
+    complex(dp), intent(inout) :: Gfinv(:)
     type(Elec), intent(in) :: El
 
-    complex(dp), pointer :: Gfinv(:)
     integer :: no, off, i, j, ii, idx
     
     no = TotUsedOrbs(El)
     off = El%idx_o - orb_offset(El%idx_o) - 1
-    Gfinv => val(GFinv_tri)
 
-    ii = 0
     if ( El%Bulk ) then
-       do j = 1 , no
+!$OMP do private(j,i,idx,ii)
+       do j = 0 , no - 1
+          ii = j * no
           do i = 1 , no
-             idx = index(GFinv_tri,i+off,j+off)
-             ii = ii + 1
-             Gfinv(idx) = El%Sigma(ii)
+             idx = index(GFinv_tri,i+off,j+1+off)
+             Gfinv(idx) = El%Sigma(ii+i)
           end do
        end do
+!$OMP end do nowait
     else
-       do j = 1 , no
+!$OMP do private(j,i,idx,ii)
+       do j = 0 , no - 1
+          ii = j * no
           do i = 1 , no
-             idx = index(GFinv_tri,i+off,j+off)
-             ii = ii + 1
-             Gfinv(idx) = Gfinv(idx) - El%Sigma(ii)
+             idx = index(GFinv_tri,i+off,j+1+off)
+             Gfinv(idx) = Gfinv(idx) - El%Sigma(ii+i)
           end do
        end do
+!$OMP end do nowait
     end if
     
   end subroutine insert_Self_Energies

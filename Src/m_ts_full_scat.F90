@@ -27,6 +27,7 @@ module m_ts_full_scat
   public :: calc_GF_Bias
   public :: calc_GF_Part
   public :: GF_Gamma_GF
+  public :: insert_Self_Energies
 
 contains
 
@@ -89,13 +90,23 @@ contains
        ind = no_u_TS * no * iB + 1
        
        ! Do Gamma.Gf^\dagger
-       call zgemm('T','T',no,no,no,z1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'T','T',no,no,no,z1, &
             El%Gamma, no, &
             GGG(ind), no, &
             z0, work,no)
        
        ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
-       call zgemm('N','N',no_u_TS,no,no,z1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no_u_TS,no,no,z1, &
             Gf(1,1), no_u_TS, &
             work   ,      no, &
             z0, GGG(ind),no_u_TS)
@@ -118,13 +129,23 @@ contains
        ind = no_u_TS * no * NB + 1
 
        ! Do Gamma.Gf^\dagger
-       call zgemm('T','T',no,iB,no,z1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'T','T',no,iB,no,z1, &
             El%Gamma, no, &
             GGG(ind), iB, &
             z0, work,no)
        
        ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
-       call zgemm('N','N',no_u_TS,iB,no,z1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no_u_TS,iB,no,z1, &
             Gf(1,1), no_u_TS, &
             work   ,      no, &
             z0, GGG(ind),no_u_TS)
@@ -384,5 +405,41 @@ subroutine my_symmetrize(N,M)
 #endif
 
   end subroutine calc_GF_Part
+
+  subroutine insert_Self_Energies(no_u, Gfinv, El)
+    use m_ts_method, only : orb_offset
+    integer, intent(in) :: no_u
+    complex(dp), intent(in out) :: GFinv(no_u,no_u)
+    type(Elec), intent(in) :: El
+    
+    integer :: i, j, ii, jj, iii, off, no
+    
+    no = TotUsedOrbs(El)
+    off = El%idx_o - orb_offset(El%idx_o) - 1
+    
+    if ( El%Bulk ) then
+!$OMP do private(j,jj,i,ii)
+       do j = 0 , no - 1
+          jj = off + j + 1
+          ii = j * no
+          do i = 1 , no
+             Gfinv(off+i,jj) = El%Sigma(ii+i)
+          end do
+       end do
+!$OMP end do nowait
+    else
+!$OMP do private(j,jj,i,ii,iii)
+       do j = 0 , no - 1
+          iii = j * no
+          jj = off + j + 1
+          do i = 1 , no
+             ii  = off + i
+             Gfinv(ii,jj) = Gfinv(ii,jj) - El%Sigma(iii+i) 
+          end do
+       end do
+!$OMP end do nowait
+    end if
+
+  end subroutine insert_Self_Energies
 
 end module m_ts_full_scat

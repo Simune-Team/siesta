@@ -119,7 +119,7 @@ contains
 
 ! ROTATE a point around origo with some angle \theta
 ! This is a purely plane rotation
-  subroutine ROTATE_2D(v,theta)
+  pure subroutine ROTATE_2D(v,theta)
     real(dp), intent(inout) :: v(2)
     real(dp), intent(in) :: theta
     real(dp) :: rmT(2,2), vv(2)
@@ -134,7 +134,7 @@ contains
 
   end subroutine ROTATE_2D
 
-  subroutine ROTATE_3D(v,theta,dir)
+  pure subroutine ROTATE_3D(v,theta,dir)
     real(dp), intent(inout) :: v(3)
     real(dp), intent(in) :: theta
     integer, intent(in) :: dir
@@ -287,7 +287,7 @@ contains
 ! This sorting routine has been optimized for consecutive segments
 ! in the original array, hence, sorting on arrays with:
 !   [1,2,3,4,25,26,27,28,15,16,17] are VERY fast!
-  function SORT(array) result(SO)
+  pure function SORT(array) result(SO)
     integer, intent(in) :: array(:)
     integer :: SO(ubound(array,dim=1))
     integer :: i,j,DA,h,FM

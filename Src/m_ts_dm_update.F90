@@ -183,11 +183,14 @@ contains
 
     if ( non_Eq ) then
 
+! No data race will occur, sparsity pattern only tranversed once
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,lind,jo,rind,ind,ph)
        do lio = 1 , lnr
 
-          if ( l_ncol(lio) == 0 ) cycle
+          if ( l_ncol(lio) /= 0 ) then
           io = index_local_to_global(dit,lio,Node)
-          if ( up_ncol(io) == 0 ) cycle
+          if ( up_ncol(io) /= 0 ) then
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
              
@@ -210,15 +213,22 @@ contains
                   aimag( ph*zEu(ind,1:D_dim2) )
 
           end do
+
+          end if
+          end if
+
        end do
+!$OMP end parallel do
 
     else
 
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,lind,jo,rin,rind,ind,ph)
        do lio = 1 , lnr
 
-          if ( l_ncol(lio) == 0 ) cycle
+          if ( l_ncol(lio) /= 0 ) then
           io = index_local_to_global(dit,lio,Node)
-          if ( up_ncol(io) == 0 ) cycle
+          if ( up_ncol(io) /= 0 ) then
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
              
@@ -228,10 +238,12 @@ contains
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist
              
+#ifdef TS_BROKEN_TRS
              rin  = up_ptr(jo)
              rind = rin + SFIND(up_col(rin+1:rin+up_ncol(jo)),io)
              if ( rind <= rin ) &
                   call die('ERROR: Conjugated symmetrization point does not exist')
+#endif
 
              jo = (l_col(lind)-1) / nr
              ph = cdexp(dcmplx(0._dp, - &
@@ -239,15 +251,29 @@ contains
                   k(2) * sc_off(2,jo) - &
                   k(3) * sc_off(3,jo)))
 
+#ifdef TS_BROKEN_TRS
              ! This integration is this:
              ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A) dE
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
                   aimag( ph*(zDu(ind,1:D_dim2) - conjg(zDu(rind,1:D_dim2))) )
              if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
                   aimag( ph*(zEu(ind,1:D_dim2) - conjg(zEu(rind,1:D_dim2))) )
+#else
+             ! This integration is this:
+             ! \rho = e^{-i.k.R} \int Gf^R dE
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
+                  aimag( ph * zDu(ind,1:D_dim2) )
+             if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
+                  aimag( ph * zEu(ind,1:D_dim2) )
+#endif
 
           end do
+
+          end if
+          end if
+
        end do
+!$OMP end parallel do
 
     end if
 
@@ -321,11 +347,14 @@ contains
          &expected.')
 
     if ( hasEDM ) then
+
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,lind,jo,rind,ind)
        do lio = 1 , lnr
 
-          if ( l_ncol(lio) == 0 ) cycle
+          if ( l_ncol(lio) /= 0 ) then
           io = index_local_to_global(dit,lio,Node)
-          if ( up_ncol(io) == 0 ) cycle
+          if ( up_ncol(io) /= 0 ) then
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
@@ -341,13 +370,21 @@ contains
              dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + dEu(ind,1:E_dim2)
              
           end do
+
+          end if
+          end if
+
        end do
+!$OMP end parallel do
     else
+! No data race condition will ever be encountered
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,lind,jo,rind,ind)
        do lio = 1 , lnr
 
-          if ( l_ncol(lio) == 0 ) cycle
+          if ( l_ncol(lio) /= 0 ) then
           io = index_local_to_global(dit,lio,Node)
-          if ( up_ncol(io) == 0 ) cycle
+          if ( up_ncol(io) /= 0 ) then
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
@@ -360,7 +397,12 @@ contains
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + dDu(ind,1:D_dim2)
              
           end do
+
+          end if
+          end if
+
        end do
+!$OMP end parallel do
     end if
 
   end subroutine add_Gamma_DM
@@ -451,10 +493,13 @@ contains
        pnt => val(ipnt)
 
        ! This loop is across the local rows...
+! No data race will occur
+!$OMP parallel do default(shared), &
+!$OMP&private(io,uind,ind)
        do io = 1 , lnr
 
           ! Quickly go past the empty regions... (we have nothing to update)
-          if ( lup_ncol(io) == 0 ) cycle
+          if ( lup_ncol(io) /= 0 ) then
 
           ! Do a loop in the local update sparsity pattern...
           ! The local sparsity pattern is more "spread", hence
@@ -467,15 +512,21 @@ contains
              if ( hasEDM ) EDM(ind) = EDM(ind) + dE(uind,1)
              
           end do
+
+          end if
        end do
+!$OMP end parallel do
        
     else 
 
        ! This loop is across the local rows...
+! no data race will occur
+!$OMP parallel do default(shared), &
+!$OMP&private(io,uind,jo,ind)
        do io = 1 , lnr
 
           ! Quickly go past the empty regions... (we have nothing to update)
-          if ( lup_ncol(io) == 0 ) cycle
+          if ( lup_ncol(io) /= 0 ) then
 
           ! Do a loop in the local update sparsity pattern...
           ! The local sparsity pattern is more "spread", hence
@@ -501,7 +552,9 @@ contains
              if ( hasEDM ) EDM(ind) = EDM(ind) + dE(uind,1)
              
           end do
+          end if
        end do
+!$OMP end parallel do
     end if
 
     else
@@ -512,13 +565,16 @@ contains
        ! The global sparsity pattern is not in supercell format
 
        ! This loop is across the local rows...
+! We will never have a data race here (it is on local sparsity pattern)
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,lind,ljo,ind)
        do lio = 1 , lnr
 
           ! obtain the global index of the local orbital.
           io = index_local_to_global(dit,lio,Node)
 
           ! Quickly go past the empty regions... (we have nothing to update)
-          if ( lup_ncol(io) == 0 ) cycle
+          if ( lup_ncol(io) /= 0 ) then
 
           ! Do a loop in the local sparsity pattern...
           ! The local sparsity pattern is more "spread", hence
@@ -542,7 +598,10 @@ contains
              if ( hasEDM ) EDM(lind) = EDM(lind) + dE(ind,1)
              
           end do
+          
+          end if
        end do
+!$OMP end parallel do
 
     end if
 
@@ -615,13 +674,16 @@ contains
          &expected.')
      
     ! This loop is across the local rows...
+! No data race will occur
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,lind,jo,rind,ind,rin,ph)
     do lio = 1 , lnr
 
        ! obtain the global index of the local orbital.
        io = index_local_to_global(dit,lio,Node)
 
        ! Quickly go past the empty regions... (we have nothing to update)
-       if ( lup_ncol(io) == 0 ) cycle
+       if ( lup_ncol(io) /= 0 ) then
 
        ! Do a loop in the local sparsity pattern...
        ! The local sparsity pattern is more "spread", hence
@@ -638,6 +700,7 @@ contains
           ind = rind + SFIND(lup_col(rind+1:rind+lup_ncol(io)),jo)
           if ( ind <= rind ) cycle ! The element does not exist
           
+#ifdef TS_BROKEN_TRS
           ! The fact that we have a SYMMETRIC
           ! update region makes this *tricky* part easy...
           rin  = lup_ptr(jo)
@@ -646,21 +709,35 @@ contains
           ! We do a check, just to be sure...
           if ( rind <= rin ) &
                call die('ERROR: Conjugated symmetrization point does not exist')
+#endif
           
           ! The integration is this:
+#ifdef TS_BROKEN_TRS    
           ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
+#else
+          ! \rho = e^{-i.k.R} [ \int Gf^R dE + \int Gf^R\Gamma Gf^A dE ]
+#endif
           jo = (l_col(lind)-1) / nr
           ph = cdexp(dcmplx(0._dp, - &
                k(1) * sc_off(1,jo) - &
                k(2) * sc_off(2,jo) - &
                k(3) * sc_off(3,jo)))
-          
+      
+#ifdef TS_BROKEN_TRS    
           DM(lind) = DM(lind) + aimag( ph*(zD(ind,1) - conjg(zD(rind,1))) )
           if ( hasEDM ) &
                EDM(lind) = EDM(lind) + aimag( ph*(zE(ind,1) - conjg(zE(rind,1))) )
+#else
+          DM(lind) = DM(lind) + aimag( ph * zD(ind,1) )
+          if ( hasEDM ) &
+               EDM(lind) = EDM(lind) + aimag( ph * zE(ind,1) )
+#endif
 
        end do
+
+       end if
     end do
+!$OMP end parallel do
 
   end subroutine update_zDM
 
@@ -698,13 +775,15 @@ contains
     if ( Calc_Forces ) then
      
        ! This loop is across the local rows...
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,jo,ind,lind)
        do lio = 1 , lnr
 
           ! obtain the global index of the local orbital.
           io = index_local_to_global(dit,lio,Node)
 
           ! Quickly go past the empty regions... (we have nothing to update)
-          if ( lup_ncol(io) == 0 ) cycle
+          if ( lup_ncol(io) /= 0 ) then
 
           ! Now we loop across the update region
           ! This one must *per definition* have less elements.
@@ -728,12 +807,16 @@ contains
                 
              end do
           end do
+          end if
        end do
+!$OMP end parallel do
 
     else
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,jo,ind,lind)
        do lio = 1 , lnr
           io = index_local_to_global(dit,lio,Node)
-          if ( lup_ncol(io) == 0 ) cycle
+          if ( lup_ncol(io) /= 0 ) then
           do ind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
              jo = lup_col(ind)
              do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -741,7 +824,9 @@ contains
                      DM(lind) = 0._dp
              end do
           end do
+          end if
        end do
+!$OMP end parallel do
     end if
     
   end subroutine init_DM

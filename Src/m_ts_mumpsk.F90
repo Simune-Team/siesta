@@ -259,7 +259,11 @@ contains
        kpt(:) = ts_kpoint(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(ucell,kpt,bkpt,1)
+#ifdef TS_BROKEN_TRS
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
+#else
+       kw = 1._dp  / Pi * ts_kweight(ikpt)
+#endif
        if ( nspin == 1 ) kw = kw * 2._dp
 
        write(mum%ICNTL(1),'(/,/,a,i0,a,3(tr1,g10.4),/,/)') &
@@ -423,6 +427,14 @@ contains
        ! *******************
        ! * NON-EQUILIBRIUM *
        ! *******************
+
+#ifndef TS_BROKEN_TRS
+       ! We have the definition of: Gamma = i(\Sigma - \Sigma^\dagger)
+       ! (not with one half)
+       ! Hence we need to half the contribution for the non-equilibrium
+       kw = 0.5_dp * kw
+#endif
+
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
        iE = Nodes - Node
@@ -658,6 +670,8 @@ contains
 
     if ( hasEDM ) then
        
+!$OMP parallel do default(shared), &
+!$OMP&private(ir,jo,ind,io,Hn,ind_H)
        do ir = 1 , mum%NRHS
              
           ! this is column index
@@ -679,9 +693,12 @@ contains
              
           end do
        end do
+!$OMP end parallel do
        
     else
 
+!$OMP parallel do default(shared), &
+!$OMP&private(ir,jo,ind,io,Hn,ind_H)
        do ir = 1 , mum%NRHS
           jo = ts2s_orb(ir)
           do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
@@ -693,6 +710,7 @@ contains
              D(ind_H,i1) = D(ind_H,i1) - GF(ind) * DMfact
           end do
        end do
+!$OMP end parallel do
 
     end if
 
@@ -702,6 +720,8 @@ contains
 
     if ( hasEDM ) then
 
+!$OMP parallel do default(shared), &
+!$OMP&private(ind,io,jo,Hn,ind_H)
        do ind = 1 , mum%NZ ! looping A
           
           ! collect the two indices
@@ -714,25 +734,32 @@ contains
           ! Requires that l_col is sorted
           ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
                     
-          if ( ind_H == l_ptr(io) ) cycle ! this occurs as mum%A contains
+          if ( ind_H /= l_ptr(io) ) then  ! this occurs as mum%A contains
                                           ! the electrode as well
           
           D(ind_H,i1) = D(ind_H,i1) - GF(ind) * DMfact
           E(ind_H,i2) = E(ind_H,i2) - GF(ind) * EDMfact
              
+          end if
+
        end do
+!$OMP end parallel do
        
     else
 
+!$OMP parallel do default(shared), &
+!$OMP&private(ind,io,jo,Hn,ind_H)
        do ind = 1 , mum%NZ
           io = ts2s_orb(mum%JCN(ind))
           jo = ts2s_orb(mum%IRN(ind))
           Hn    = l_ncol(io)
           ind_H = l_ptr(io)
           ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
-          if ( ind_H == l_ptr(io) ) cycle
-          D(ind_H,i1) = D(ind_H,i1) - GF(ind) * DMfact
+          if ( ind_H /= l_ptr(io) ) then
+             D(ind_H,i1) = D(ind_H,i1) - GF(ind) * DMfact
+          end if
        end do
+!$OMP end parallel do
 
     end if
 
@@ -781,32 +808,43 @@ contains
     l_col  => list_col(sp)
 
     ! Initialize
-    iG => mum%A
-    iG = 0._dp ! possibly this is not needed...
+    iG => mum%A(:)
+!$OMP parallel default(shared), private(ind,io,jo,Hn,ind_H)
 
+!$OMP workshare
+    iG(:) = 0._dp ! possibly this is not needed...
+!$OMP end workshare
+
+!$OMP do
     do ind = 1, mum%NZ
 
        io = ts2s_orb(mum%JCN(ind))
        jo = ts2s_orb(mum%IRN(ind))
 
        Hn = l_ncol(io)
-       if ( Hn == 0 ) cycle
+       if ( Hn /= 0 ) then
 
        ind_H = l_ptr(io)
        ! Requires that l_col is sorted
        ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
 
-       if ( ind_H == l_ptr(io) ) cycle
+       if ( ind_H /= l_ptr(io) ) then
        
        ! Notice that we transpose S and H back here
        ! See symmetrize_HS_Gamma (H is hermitian)
        iG(ind) = Z * S(ind_H) - H(ind_H)
 
+       end if
+       end if
+
     end do
+!$OMP end do
 
     do io = 1 , N_Elec
        call insert_Self_Energies(mum, Elecs(io))
     end do
+
+!$OMP end parallel
 
   end subroutine prepare_invGF
    

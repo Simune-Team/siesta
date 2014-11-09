@@ -173,9 +173,11 @@ contains
     allocate( mum%JCN ( mum%NZ ) )
     allocate( mum%A   ( mum%NZ ) )
 
+!$OMP parallel do default(shared), &
+!$OMP&private(io,ioff,ind)
     do io = 1, nr
 
-       if ( l_ncol(io) == 0 ) cycle
+       if ( l_ncol(io) /= 0 ) then
        
        ioff = orb_offset(io)
        
@@ -185,7 +187,10 @@ contains
           mum%IRN(ind) = l_col(ind) - orb_offset(l_col(ind))
 
        end do
+
+       end if
     end do
+!$OMP end parallel do
 
     call delete(tmpSp2)
 
@@ -264,21 +269,33 @@ contains
 
     call allocate_mum(mum,nzs,N_Elec,Elecs,GF)
 
+!$OMP parallel default(shared), &
+!$OMP&private(io,j,ind)
+
     ! TODO, this requires that the sparsity pattern is symmetric
     ! Which it always is!
+!$OMP workshare
     mum%IRHS_PTR(:) = 1 
+!$OMP end workshare
 
+!$OMP do
     do io = 1 , nr
-       if ( orb_type(io) == TYP_BUFFER ) cycle
+       if ( orb_type(io) /= TYP_BUFFER ) then
        mum%IRHS_PTR(io-orb_offset(io)) = l_ptr(io) + 1
-       if ( l_ncol(io) == 0 ) cycle ! no entries
+       if ( l_ncol(io) /= 0 ) then ! no entries
        ! Create the row-index
        do j = 1 , l_ncol(io)
           ind = l_ptr(io) + j
           mum%IRHS_SPARSE(ind) = l_col(ind) - orb_offset(l_col(ind))
        end do
 
+       end if
+       end if
+
     end do
+!$OMP end do nowait
+
+!$OMP end parallel
     mum%IRHS_PTR(no_u_TS+1) = nzs + 1
 
     if ( ind /= mum%NZ_RHS ) then
@@ -334,33 +351,38 @@ contains
     include 'zmumps_struc.h'
     type(zMUMPS_STRUC), intent(inout) :: mum
     type(Elec), intent(in) :: El
-    complex(dp), pointer :: iG(:)
 
     integer :: off, ii, no, ind, iso, jso
-
-    iG => mum%A(:)
 
     no = TotUsedOrbs(El)
     off = El%idx_o - 1
 
     if ( El%Bulk ) then
+!$OMP do private(ind,jso,iso,ii)
        do ind = 1 , mum%NZ
           jso = ts2s_orb(mum%JCN(ind))
-          if ( .not. OrbInElec(El,jso) ) cycle
+          if ( OrbInElec(El,jso) ) then 
           iso = ts2s_orb(mum%IRN(ind))
-          if ( .not. OrbInElec(El,iso) ) cycle
-          ii = (jso - El%idx_o ) * no + iso - off
-          iG(ind) = El%Sigma(ii)
+          if ( OrbInElec(El,iso) ) then
+             ii = (jso - El%idx_o ) * no + iso - off
+             mum%A(ind) = El%Sigma(ii)
+          end if
+          end if
        end do
+!$OMP end do nowait
     else
+!$OMP do private(ind,jso,iso,ii)
        do ind = 1 , mum%NZ
           jso = ts2s_orb(mum%JCN(ind))
-          if ( .not. OrbInElec(El,jso) ) cycle
+          if ( OrbInElec(El,jso) ) then
           iso = ts2s_orb(mum%IRN(ind))
-          if ( .not. OrbInElec(El,iso) ) cycle
-          ii = (jso - El%idx_o ) * no + iso - off
-          iG(ind) = iG(ind) - El%Sigma(ii)
+          if ( OrbInElec(El,iso) ) then
+             ii = (jso - El%idx_o ) * no + iso - off
+             mum%A(ind) = mum%A(ind) - El%Sigma(ii)
+          end if
+          end if
        end do
+!$OMP end do nowait
     end if
 
   end subroutine insert_Self_Energies

@@ -1,4 +1,137 @@
 ----------------------------------------------------
+November 9, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-213
+Added OpenMP support in TranSIESTA, added GEMM_3M
+
+* Fixed pure statements in intrinsic routines
+
+* Added the possibility to utilize
+    [sdcz]gemm3m 
+  routines when performing matrix multiplications
+  in transiesta and related routines.
+
+  gemm3m is using 3 multiplications and 5 additions
+  instead of 5 multiplications and 3 additions.
+  There are no down-sides that I am aware of.
+  Performance increase can be expected.
+  To utilize these routines compile with:
+   -DUSE_GEMM3M
+  and it will compile with gemm3m routines.
+
+* Allowed regions to print with indention.
+
+* Added OpenMP in these files:
+   Src/m_sparsity_handling.F90
+   Src/m_trimat_invert.F90
+   Src/m_ts_charge.F90
+   Src/m_ts_dm_update.F90
+   Src/m_ts_elec_se.F90
+   Src/m_ts_electrode.F90
+   Src/m_ts_fullg.F90
+   Src/m_ts_fullk.F90
+   Src/m_ts_hartree.F90
+   Src/m_ts_mumps_init.F90
+   Src/m_ts_mumpsg.F90
+   Src/m_ts_mumpsk.F90
+   Src/m_ts_sparse.F90
+   Src/m_ts_sparse_helper.F90
+   Src/m_ts_tri_scat.F90
+   Src/m_ts_trig.F90
+   Src/m_ts_trik.F90
+   Src/m_ts_trimat_invert.F90
+   Src/m_ts_weight.F90
+
+* Changed algorithm for determining the fastest
+  tri-diagonal matrix.
+  Now we better approximate the number of elemental
+  operations performed via this:
+    Ax=B
+  takes 5*n**3/3 + n*m*4 basic operations.
+  Again, this is only approximate.
+  However, this diverges the memory and 
+  speed algorithms more as they now typically yield
+  different partitions.
+  
+  Searching the space of possible partitions
+  is now performed in parallel.
+
+* Fully implemented the TRS approximation.
+
+  In TRS G^R - G^A really is: 2G^R
+  Hence we apply this approximation.
+  For now the old way is saved and can be
+  turned on using:
+   -DTS_BROKEN_TRS
+  They should yield identical results.
+
+* Disallowed '.' in electrode names.
+  Removed unneeded variables in the electrode.
+
+* Generalized insert_Self_Energies for the full
+  matrix solver. It now resides in
+  m_ts_full_scat.F90
+
+* Added explanation of several routines in
+  m_ts_sparse_helper.F90
+  Here is the snippet:
+
+    - create_HS
+      1. accepts a distributed matrix
+      2. requires the output matrix to be globalized in the sense
+         that the sparsity pattern is a UC sparsity pattern
+         NO dublicate entries. 
+         REQUIREMENT: each row MUST be sorted in column index
+      3. Creates the transposed matrix in the output matrix
+         A simple argument is that any traversal in the sparsity
+         pattern will be faster if it is following fortran order.
+         This reduces cache-misses
+      4. The matrix is forced Hermitian
+    - create_U
+      1. accepts a globalized sparsity pattern of a matrix
+      2. Creates a matrix in Upper Triangular form
+         which directly can be inserted in LAPACK [dz]spgvd/[dz]spev
+         routines.
+      3. Symmetrization is not enforced by this routine
+    - create_Full
+      1. accepts a globalized sparsity pattern of a matrix
+      2. creates the full matrix (with all the zeroes) which can
+         be directly used for BLAS/LAPACK matrix operations
+      3. Symmetrization is not enforced by this routine
+
+modified:
+  Src/Makefile
+  Src/intrinsic_missing.f90
+  Src/m_mat_invert.F90
+  Src/m_region.F90
+  Src/m_sparsity_handling.F90
+  Src/m_trimat_invert.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_debug.F90
+  Src/m_ts_dm_update.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_mumps_scat.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Src/m_ts_weight.F90
+  Util/Grimme/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 November 9, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-212
 Added OpenMP support in SIESTA
 

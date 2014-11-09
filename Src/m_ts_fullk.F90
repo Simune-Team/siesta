@@ -306,7 +306,11 @@ contains
        kpt(:) = ts_kpoint(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(ucell,kpt,bkpt,1)
+#ifdef TS_BROKEN_TRS
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
+#else
+       kw = 1._dp  / Pi * ts_kweight(ikpt)
+#endif
        if ( nspin == 1 ) kw = kw * 2._dp
 
 #ifdef TRANSIESTA_TIMING
@@ -472,6 +476,14 @@ close(io)
        ! *******************
        ! * NON-EQUILIBRIUM *
        ! *******************
+
+#ifndef TS_BROKEN_TRS
+       ! We have the definition of: Gamma = i(\Sigma - \Sigma^\dagger)
+       ! (not with one half)
+       ! Hence we need to half the contribution for the non-equilibrium
+       kw = 0.5_dp * kw
+#endif
+
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
        iE = Nodes - Node
@@ -696,9 +708,11 @@ close(io)
     if ( hasEDM ) then
        if ( lh_off ) then
 
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,ju)
           do io = 1 , nr
              ! Quickly go past the buffer atoms...
-             if ( l_ncol(io) == 0 ) cycle
+             if ( l_ncol(io) /= 0 ) then
 
              ! The update region equivalent GF part
              iu = io - orb_offset(io)
@@ -712,26 +726,35 @@ close(io)
                 E(ind,i2) = E(ind,i2) - GF(iu,ju) * EDMfact
                 
              end do
+
+             end if
           end do
+!$OMP end parallel do
      
        else
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,ju)
           do io = 1 , nr
-             if ( l_ncol(io) == 0 ) cycle
+             if ( l_ncol(io) /= 0 ) then
              iu = io - orb_offset(io)
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                 ju = l_col(ind) - orb_offset(l_col(ind))
                 D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
                 E(ind,i2) = E(ind,i2) - GF(iu,ju) * EDMfact
              end do
+             end if
           end do
+!$OMP end parallel do
 
        end if
     else
 
        if ( lh_off ) then
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,ju)
           do io = 1 , nr
              ! Quickly go past the buffer atoms...
-             if ( l_ncol(io) == 0 ) cycle
+             if ( l_ncol(io) /= 0 ) then
 
              ! The update region equivalent GF part
              iu = io - orb_offset(io)
@@ -744,17 +767,23 @@ close(io)
                 D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
                 
              end do
+             end if
           end do
+!$OMP end parallel do
 
        else
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,ju)
           do io = 1 , nr
-             if ( l_ncol(io) == 0 ) cycle
+             if ( l_ncol(io) /= 0 ) then
              iu = io - orb_offset(io)
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                 ju = l_col(ind) - orb_offset(l_col(ind))
                 D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
              end do
+             end if
           end do
+!$OMP end parallel do
 
        end if
     end if
@@ -783,8 +812,9 @@ close(io)
     use m_ts_electype
     use m_ts_cctype, only : ts_c_idx
 #ifdef TS_DEV
-use parallel,only:ionode
+    use parallel,only:ionode
 #endif
+    use m_ts_full_scat, only : insert_Self_Energies
 
     ! the current energy point
     type(ts_c_idx), intent(in) :: cE
@@ -855,15 +885,20 @@ integer :: i
     end if
 #endif
 
+!$OMP parallel default(shared), private(io,ioff,iu,ind)
+
     ! Initialize
+!$OMP workshare
     GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+!$OMP end workshare
 
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
+!$OMP do
     do io = 1, nr
 
-       if ( l_ncol(io) == 0 ) cycle
+       if ( l_ncol(io) /= 0 ) then
 
        ioff = orb_offset(io)
        iu = (io - ioff - 1) * no_u
@@ -877,46 +912,16 @@ integer :: i
           GFinv(iu+l_col(ind)-ioff) = Z * S(ind) - H(ind)
 
        end do
+       end if
     end do
+!$OMP end do
 
     do io = 1 , N_Elec
        call insert_Self_Energies(no_u, Gfinv, Elecs(io))
     end do
 
+!$OMP end parallel
+
   end subroutine prepare_invGF
    
-  subroutine insert_Self_Energies(no_u, Gfinv, El)
-    use m_ts_electype
-    integer, intent(in) :: no_u
-    complex(dp), intent(in out) :: GFinv(no_u,no_u)
-    type(Elec), intent(in) :: El
-
-    integer :: i, j, ii, jj, iii, off, no
-
-    no = TotUsedOrbs(El)
-    off = El%idx_o - orb_offset(El%idx_o) - 1
-
-    if ( El%Bulk ) then
-       ii = 0
-       do j = 1 , no
-          jj = off + j
-          do i = 1 , no
-             ii = ii + 1
-             Gfinv(off+i,jj) = El%Sigma(ii)
-          end do
-       end do
-    else
-       iii = 0
-       do j = 1 , no
-          jj = off + j
-          do i = 1 , no
-             ii  = off + i
-             iii = iii + 1
-             Gfinv(ii,jj) = Gfinv(ii,jj) - El%Sigma(iii) 
-          end do
-       end do
-    end if
-
-  end subroutine insert_Self_Energies
-
 end module m_ts_fullk

@@ -180,19 +180,21 @@ contains
     end if
 
     allocate(num(no_l))
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,ind,is)
     do lio = 1 , no_l
 
        ! Initialize sparsity to 0 entries
        num(lio) = 0
 
-       if ( l_ncol(lio) == 0 ) cycle
+       if ( l_ncol(lio) /= 0 ) then
 
        io = index_local_to_global(dit,lio)
        if ( .not. in_region(rin,io) ) then
           ! we are not asked to remove these cross-terms
           num(lio) = l_ncol(lio)
-          cycle
-       end if
+
+       else
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
@@ -207,8 +209,12 @@ contains
           num(lio) = num(lio) + 1
           
        end do
+
+       end if
+       end if
        
     end do
+!$OMP end parallel do
 
     ! Create listptr
     allocate(listptr(no_l))
@@ -293,16 +299,18 @@ contains
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     allocate(num(no_l))
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,ind,jo)
     do lio = 1 , no_l
 
        ! Initialize sparsity to 0 entries
        num(lio) = 0
 
-       if ( l_ncol(lio) == 0 ) cycle
+       if ( l_ncol(lio) /= 0 ) then
 
        io = index_local_to_global(dit,lio)
 
-       if ( in_region(rr,io) ) cycle
+       if ( .not. in_region(rr,io) ) then
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
           
@@ -313,8 +321,12 @@ contains
           num(lio) = num(lio) + 1
           
        end do
+
+       end if
+       end if
        
     end do
+!$OMP end parallel do
 
     ! Create listptr
     allocate(listptr(no_l))
@@ -417,12 +429,14 @@ contains
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     allocate(num(no_l))
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,ridx,ind,jo)
     do lio = 1 , no_l
 
        ! Initialize sparsity to 0 entries
        num(lio) = 0
 
-       if ( l_ncol(lio) == 0 ) cycle
+       if ( l_ncol(lio) /= 0 ) then
 
        io = index_local_to_global(dit,lio)
 
@@ -431,9 +445,11 @@ contains
        else if ( in_region(r2,io) ) then
           ridx = 2
        else
+          ridx = 0
           num(lio) = l_ncol(lio)
-          cycle
        end if
+
+       if ( ridx /= 0 ) then
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
           
@@ -453,7 +469,11 @@ contains
           
        end do
        
+       end if
+       end if
+
     end do
+!$OMP end parallel do
 
     ! Create listptr
     allocate(listptr(no_l))
@@ -632,11 +652,14 @@ contains
        call die('Error in reduced sparsity pattern')
     end if
     
-    nind = 0
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,lind,rind,nind)
     do lio = 1 , lnr
+
+       nind = 0
        
-       if ( l_ncol(lio) == 0 ) cycle
-       if ( n_ncol(lio) == 0 ) cycle
+       if ( l_ncol(lio) /= 0 ) then
+       if ( n_ncol(lio) /= 0 ) then
        
        do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
           
@@ -651,11 +674,15 @@ contains
        end do
 
        ! Check that copying goes as planned
-       if ( nind /= n_ptr(lio) + n_ncol(lio) ) then
+       if ( nind /= n_ncol(lio) ) then
           call die('Error in sparsity copying')
+       end if
+
+       end if
        end if
        
     end do
+!$OMP end parallel do
 
     ! copy over data
     call newdSpData1D(out,dat,dit,B,trim(name(A))//' reduced')
@@ -710,11 +737,14 @@ contains
        call die('Error in reduced sparsity pattern')
     end if
     
-    nind = 0
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,lind,rind,nind)
     do lio = 1 , lnr
+
+       nind = 0
        
-       if ( l_ncol(lio) == 0 ) cycle
-       if ( n_ncol(lio) == 0 ) cycle
+       if ( l_ncol(lio) /= 0 ) then
+       if ( n_ncol(lio) /= 0 ) then
        
        select case ( d )
        case ( 1 )
@@ -742,11 +772,15 @@ contains
        end select
 
        ! Check that copying goes as planned
-       if ( nind /= n_ptr(lio) + n_ncol(lio) ) then
+       if ( nind /= n_ncol(lio) ) then
           call die('Error in sparsity copying')
+       end if
+
+       end if
        end if
        
     end do
+!$OMP end parallel do
 
     ! copy over data
     call newdSpData2D(out,dat,dit,B,trim(name(A))//' reduced')
@@ -789,6 +823,8 @@ contains
     n_nzs = nnzs(A_2Ds(1))
 
     ! figure out the sparsity dimension
+!$OMP parallel do default(shared), &
+!$OMP&private(j,io,i,y), collapse(2)
     do j = 1 , dim2
 
        do io = 1 , n_nzs
@@ -804,6 +840,7 @@ contains
        end do
 
     end do
+!$OMP end parallel do
     
   end subroutine dSpData2D_interp
 

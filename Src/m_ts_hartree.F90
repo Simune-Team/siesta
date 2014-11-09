@@ -91,6 +91,9 @@ contains
 
     ! We check that we actually process something...
     nlp = 0
+!$OMP parallel do default(shared), &
+!$OMP&private(i3,i2,i1,llZ,llYZ,ll), &
+!$OMP&reduction(+:nlp)
     do i3 = 0 , meshl(3) - 1
        llZ(:) = offset_r(:) + i3*dL(:,3)
        do i2 = 0 , meshl(2) - 1
@@ -103,6 +106,7 @@ contains
           end do
        end do
     end do
+!$OMP end parallel do
 
 #ifdef MPI
     call MPI_AllReduce(nlp,i1,1,MPI_integer,MPI_Sum, &
@@ -291,7 +295,9 @@ contains
     Vav = Vtot / real(nlp,dp)
     
     ! Align potential
+!$OMP parallel workshare
     Vscf(1:ntpl) = Vscf(1:ntpl) - Vav
+!$OMP end parallel workshare
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS TS_VH_fix' )

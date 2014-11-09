@@ -229,7 +229,12 @@ contains
     ! Calculate: A1 - X1
     ! Copy over A1 array
     t2 => M(sB1:eB1) ! this is X1/C2
-    call zgemm('N','N',n1,n1,n2, &
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',n1,n1,n2, &
          zm1, C2,n1, t2,n2,z1, A1,n1)
 
     t1 => M(sA1:eA1)
@@ -255,7 +260,12 @@ contains
     ! Calculate: A2 - Y2
     ! Copy over A2 array
     t2 => M(sC2:eC2) ! this is Y2/B1
-    call zgemm('N','N',n2,n2,n1, &
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',n2,n2,n1, &
          zm1, B1,n2, t2,n1,z1, A2,n2)
 
     t1 => M(sA2:eA2)
@@ -268,14 +278,24 @@ contains
     ! Do matrix-multiplication
     ! Calculate: X1/C2 * M11
     t1 => M(sB1:eB1) ! this is X1/C2
-    call zgemm('N','N',n2,n1,n1, &
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',n2,n1,n1, &
          zm1, t1,n2, A1,n1,z0, B1,n2)
 
     ! Calculate the off-diagonal arrays
     ! Do matrix-multiplication
     ! Calculate: Y2/B1 * M22
     t1 => M(sC2:eC2) ! this is Y2/B1
-    call zgemm('N','N',n1,n2,n2, &
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',n1,n2,n2, &
          zm1, t1,n1, A2,n2,z0, C2,n1)
 
     ! Copy back the result

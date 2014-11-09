@@ -106,7 +106,9 @@ contains
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
        ! When no repetition we save it "as is"
+!$OMP parallel workshare
        Sigma(:,:) = GS(:,:,1)
+!$OMP end parallel workshare
 
     else
 
@@ -161,7 +163,9 @@ contains
     if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
+!$OMP parallel workshare
        Sigma(:,:) = GS(:,:,1)
+!$OMP end parallel workshare
 
     else
        call EYE(no_s,Sigma)
@@ -176,11 +180,14 @@ contains
 
     ! Do:
     ! \Sigma = Z*S - H - \Sigma_bulk
+!$OMP parallel do default(shared), &
+!$OMP&private(io,jo), collapse(2)
     do jo = 1 , no_s
        do io = 1 , no_s
           Sigma(io,jo) = work(io,jo,2) - Sigma(io,jo)
        end do
     end do
+!$OMP end parallel do
 
   end subroutine UC_expansion_Sigma
 
@@ -222,7 +229,9 @@ contains
     if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
+!$OMP parallel workshare
        Sigma(:,:) = GS(:,:,1)
+!$OMP end parallel workshare
        
     else
 
@@ -237,18 +246,23 @@ contains
 
     end if
 
+!$OMP parallel default(shared) private(io,jo)
+
     if ( El%Bulk ) then
 
        ! Do:
        ! \Sigma = Z*S - H - \Sigma_bulk
+!$OMP do collapse(2)
        do jo = 1 , no_s
           do io = 1 , no_s
              work(io,jo,2) = work(io,jo,2) - Sigma(io,jo)
           end do
        end do
+!$OMP end do
 
        ! Do
        ! \Gamma ^ T = i ( \Sigma - \Sigma^\dagger)
+!$OMP do
        do jo = 1 , no_s
           do io = 1 , jo - 1
              GammaT(jo,io) = zi * ( &
@@ -259,19 +273,23 @@ contains
           GammaT(jo,jo) = zi * ( &
                work(jo,jo,2)-dconjg(work(jo,jo,2)) )
        end do
+!$OMP end do nowait
 
     else
        
        ! Do:
        ! \Sigma = Z*S - H - \Sigma_bulk
+!$OMP do collapse(2)
        do jo = 1 , no_s
           do io = 1 , no_s
              Sigma(io,jo) = work(io,jo,2) - Sigma(io,jo)
           end do
        end do
+!$OMP end do 
 
        ! Do
        ! \Gamma ^ T = i ( \Sigma - \Sigma^\dagger)
+!$OMP do 
        do jo = 1 , no_s
           do io = 1 , jo - 1
              GammaT(jo,io) = zi * ( &
@@ -282,8 +300,11 @@ contains
           GammaT(jo,jo) = zi * ( &
                Sigma(jo,jo)-dconjg(Sigma(jo,jo)) )
        end do
+!$OMP end do
 
     end if
+
+!$OMP end parallel 
 
   end subroutine UC_expansion_Sigma_GammaT
 
@@ -319,7 +340,9 @@ contains
        if ( El%pre_expand == 1 .and. product(El%Rep) > 1 ) then
 
           iuo = El%no_used
+!$OMP parallel workshare
           work(:,1:iuo,1) = ZEnergy * S(:,1:iuo,1) - H(:,1:iuo,1)
+!$OMP end parallel workshare
           
           iq = product(El%Rep)
           call update_UC_expansion_A(iuo,no_s,El,na_u,lasto,&
@@ -330,8 +353,10 @@ contains
           ! We do not need to copy over GS, as it is
           ! used correctly
        
+!$OMP parallel workshare
           !work(:,:,1) = GS(:,:,1)
           work(:,:,2) = ZEnergy * S(:,:,1) - H(:,:,1)
+!$OMP end parallel workshare
 
        end if
 

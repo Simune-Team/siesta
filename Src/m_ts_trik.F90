@@ -315,7 +315,11 @@ contains
        kpt(:) = ts_kpoint(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(ucell,kpt,bkpt,1)
+#ifdef TS_BROKEN_TRS
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
+#else
+       kw = 1._dp  / Pi * ts_kweight(ikpt)
+#endif
        if ( nspin == 1 ) kw = kw * 2._dp
        
 #ifdef TRANSIESTA_TIMING
@@ -450,6 +454,14 @@ contains
        ! *******************
        ! * NON-EQUILIBRIUM *
        ! *******************
+
+#ifndef TS_BROKEN_TRS
+       ! We have the definition of: Gamma = i(\Sigma - \Sigma^\dagger)
+       ! (not with one half)
+       ! Hence we need to half the contribution for the non-equilibrium
+       kw = 0.5_dp * kw
+#endif
+
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
        iE = Nodes - Node
@@ -523,7 +535,8 @@ contains
              end do
 #endif
              
-             call GF_Gamma_GF(zwork_tri, Elecs(iEl), calc_parts, &
+             io = TotUsedOrbs(Elecs(iEl))
+             call GF_Gamma_GF(zwork_tri, Elecs(iEl), io, calc_parts, &
                   GFGGF_size, GFGGF_work)
 #ifdef TRANSIESTA_WEIGHT_DEBUG
              print '(a7,tr1,i3,2(tr1,f10.5),tr5,2(tr1,f10.5))', &
@@ -811,7 +824,11 @@ contains
 
        kpt(:) = ts_kpoint(:,ikpt)
        call kpoint_convert(ucell,kpt,bkpt,1)
+#ifdef TS_BROKEN_TRS
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
+#else
+       kw = 1._dp  / Pi * ts_kweight(ikpt)
+#endif
        if ( nspin == 1 ) kw = kw * 2._dp
        
 #ifdef TRANSIESTA_TIMING
@@ -946,8 +963,10 @@ contains
 
     if ( hasEDM ) then
 
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,idx)
        do io = 1 , nr
-          if ( l_ncol(io) == 0 ) cycle
+          if ( l_ncol(io) /= 0 ) then
 
           ! The update region equivalent GF part
           iu = io - orb_offset(io)
@@ -960,12 +979,16 @@ contains
              E(ind,i2) = E(ind,i2) - GF(idx) * EDMfact
              
           end do
+          end if
        end do
+!$OMP end parallel do
 
     else
 
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,idx)
        do io = 1 , nr
-          if ( l_ncol(io) == 0 ) cycle
+          if ( l_ncol(io) /= 0 ) then
 
           ! The update region equivalent GF part
           iu = io - orb_offset(io)
@@ -977,7 +1000,9 @@ contains
              D(ind,i1) = D(ind,i1) - GF(idx) * DMfact
              
           end do
+          end if
        end do
+!$OMP end parallel do
 
     end if
 
@@ -1025,14 +1050,19 @@ contains
 
     Gfinv  => val(Gfinv_tri)
 
+!$OMP parallel default(shared), private(io,iu,ind,idx)
+
     ! Initialize
+!$OMP workshare
     GFinv(:) = dcmplx(0._dp,0._dp)
+!$OMP end workshare
 
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
+!$OMP do 
     do io = 1, nr
-       if ( l_ncol(io) == 0 ) cycle
+       if ( l_ncol(io) /= 0 ) then
 
        iu = io - orb_offset(io)
 
@@ -1044,11 +1074,15 @@ contains
 
           GFinv(idx) = Z * S(ind) - H(ind)
        end do
+       end if
     end do
+!$OMP end do
 
     do io = 1 , N_Elec
-       call insert_Self_Energies(no_u, Gfinv_tri, Elecs(io))
+       call insert_Self_Energies(no_u, Gfinv_tri, Gfinv, Elecs(io))
     end do
+
+!$OMP end parallel
 
   end subroutine prepare_invGF
    

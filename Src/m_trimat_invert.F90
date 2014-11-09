@@ -199,7 +199,12 @@ contains
        ! The C2 array
        Cn => val(M,n,n+1)
        ! Calculate: A1 - X1
-       call zgemm('N','N',sN,sN,sNp1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,sN,sNp1, &
             zm1, Cn,sN, Xn,sNp1,z1, Mp,sN)
 
     else if ( n == parts(M) ) then
@@ -209,7 +214,12 @@ contains
        ! The Bn-1 array
        Bn => val(M,n,n-1)
        ! Calculate: An - Yn
-       call zgemm('N','N',sN,sN,sNm1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,sN,sNm1, &
             zm1, Bn,sN, Yn,sNm1,z1, Mp,sN)
 
     else
@@ -218,14 +228,24 @@ contains
        ! The Cn+1 array
        Cn => val(M,n,n+1)
        ! Calculate: An - Xn
-       call zgemm('N','N',sN,sN,sNp1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,sN,sNp1, &
             zm1, Cn,sN, Xn,sNp1,z1, Mp,sN)
        ! Retrieve the Yn/Bn-1 array
        Yn => Yn_div_Bn_m1(Minv,n)
        ! The Bn-1 array
        Bn => val(M,n,n-1)
        ! Calculate: An - Xn - Yn
-       call zgemm('N','N',sN,sN,sNm1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sN,sN,sNm1, &
             zm1, Bn,sN, Yn,sNm1,z1, Mp,sN)
   
     end if
@@ -256,11 +276,18 @@ contains
     ! Copy over Xn/Cn+1
     Xn    => Xn_div_Cn_p1(M   ,n)
     Mpinv => Xn_div_Cn_p1(Minv,n)
+!$OMP parallel workshare default(shared)
     Xn(:) =  Mpinv(:)
+!$OMP end parallel workshare
     ! Do matrix-multiplication
     Mp    => val(Minv,n,n)
     ! Calculate: Xn/Cn+1 * Mnn
-    call zgemm('N','N',sNp1,sN,sN, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+         'N','N',sNp1,sN,sN, &
          zm1, Xn,sNp1, Mp,sN,z0, Mpinv,sNp1)
 
   end subroutine calc_Mnp1n_inv
@@ -284,11 +311,18 @@ contains
     ! Copy over Yn/Bn-1
     Yn    => Yn_div_Bn_m1(M   ,n)
     Mpinv => Yn_div_Bn_m1(Minv,n)
+!$OMP parallel workshare default(shared)
     Yn(:) =  Mpinv(:)
+!$OMP end parallel workshare
     ! Do matrix-multiplication
     Mp     => val(Minv,n,n)
     ! Calculate: Yn/Bn-1 * Mnn
-    call zgemm('N','N',sNm1,sN,sN, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+         'N','N',sNm1,sN,sN, &
          zm1, Yn,sNm1, Mp,sN,z0, Mpinv,sNm1)
           
   end subroutine calc_Mnm1n_inv
@@ -320,14 +354,16 @@ contains
     end if
 
     ! Copy over the Bn array
-    ztmp  => val(M   ,n+1,n)
+    Cnp2 => val(M   ,n+1,n)
     ! This is where the inverted matrix will be located 
-    Xn    => Xn_div_Cn_p1(Minv,n)
-    Xn(:) =  ztmp(:)
-
+    Xn   => Xn_div_Cn_p1(Minv,n)
     ! Copy over the An+1 array
-    ztmp            => val(M,n+1,n+1)
-    zwork(1:sNp1SQ) =  ztmp(:)
+    ztmp => val(M,n+1,n+1)
+
+!$OMP parallel workshare default(shared)
+    Xn(:)           = Cnp2(:)
+    zwork(1:sNp1SQ) = ztmp(:)
+!$OMP end parallel workshare
 
     ! If we should calculate X_N-1 then X_N == 0
     if ( n < parts(M) - 1 ) then
@@ -338,7 +374,12 @@ contains
        ! Retrieve the Cn+2 array
        Cnp2 => val(M,n+1,n+2)
        ! Calculate: An+1 - Xn+1
-       call zgemm('N','N',sNp1,sNp1,sNp2, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sNp1,sNp1,sNp2, &
             zm1, Cnp2,sNp1, ztmp,sNp2,z1, zwork,sNp1)
     end if
 
@@ -380,14 +421,16 @@ contains
     end if
 
     ! Copy over the Cn array
-    ztmp  => val(M   ,n-1,n)
+    Bnm2 => val(M   ,n-1,n)
     ! This is where the inverted matrix will be located 
-    Yn    => Yn_div_Bn_m1(Minv,n)
-    Yn(:) =  ztmp(:)
-
+    Yn   => Yn_div_Bn_m1(Minv,n)
     ! Copy over the An-1 array
-    ztmp            => val(M,n-1,n-1)
-    zwork(1:sNm1SQ) =  ztmp(:)
+    ztmp => val(M,n-1,n-1)
+
+!$OMP parallel workshare default(shared)
+    Yn(:)           = Bnm2(:)
+    zwork(1:sNm1SQ) = ztmp(:)
+!$OMP end parallel workshare
 
     ! If we should calculate Y_2 then Y_1 == 0
     if ( 2 < n ) then
@@ -398,7 +441,12 @@ contains
        ! Retrieve the Bn-2 array
        Bnm2 => val(M,n-1,n-2)
        ! Calculate: An-1 - Yn-1
-       call zgemm('N','N',sNm1,sNm1,sNm2, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',sNm1,sNm1,sNm2, &
             zm1, Bnm2,sNm1, ztmp,sNm2,z1, zwork,sNm1)
     end if
 

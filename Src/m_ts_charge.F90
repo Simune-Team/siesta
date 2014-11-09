@@ -87,6 +87,9 @@ contains
     ! Initialize charges
     Qtmp(:,:) = 0._dp
 
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,ir,ind,jo,jr,r), &
+!$OMP&reduction(+:Qtmp)
     do lio = 1 , no_lo
 
        ! obtain the global index of the orbital.
@@ -118,6 +121,7 @@ contains
           Qtmp(r,:) = Qtmp(r,:) + DM(ind,:) * S(ind)
        end do
     end do
+!$OMP end parallel do
 
 #ifdef MPI
     call MPI_AllReduce(Qtmp(0,1),tmp(0,1),size(Qtmp), &
@@ -332,9 +336,12 @@ contains
 
     ! Calculate charge @Fermi level
     Q(:) = 0._dp
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,ind,ispin,tind), &
+!$OMP&reduction(+:Q)
     do lio = 1 , lnr
        
-       if ( l_ncol(lio) == 0 ) cycle
+       if ( l_ncol(lio) /= 0 ) then
        
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
@@ -355,8 +362,11 @@ contains
           end do
 
        end do
+
+       end if
        
     end do
+!$OMP end parallel do
 
 #ifdef MPI
     Qtmp(:) = Q(:)

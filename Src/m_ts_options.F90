@@ -960,6 +960,10 @@ contains
                &increases.','  TS.Elecs.DM.Update [cross-terms|all]'
        end if
 
+#ifdef TS_BROKEN_TRS
+       write(*,'(a)')'The current broken TRS implementation still assumes G^A=G^R^\dagger'
+#endif
+
     end if
 
     if ( IONode ) then

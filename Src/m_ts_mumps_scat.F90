@@ -91,13 +91,23 @@ contains
        ! as that fits with the siesta sparsity pattern
        
        ! Do Gf.Gamma for these rows
-       call zgemm('N','T',SB,no,no,z1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','T',SB,no,no,z1, &
             rows(1)    , SB, &
             El%Gamma   , no, &
             z0, ztmp(1), SB)
 
        ! Calculate the Gf.Gamma.Gf^\dagger product for the entire rows
-       call zgemm('N','C',SB,no_u_TS,no,z1, &
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','C',SB,no_u_TS,no,z1, &
             ztmp(1),      SB, &
             Gf(1,1), no_u_TS, &
             z0, rows(1),  SB)

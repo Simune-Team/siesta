@@ -495,10 +495,12 @@ contains
 
     ! We do not need to check the buffer regions...
     ! We know they will do NOTHING! :)
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iot,ind,jo,jot,UseBulk)
     do io = 1 , no_u
 
        iot = orb_type(io)
-       if ( iot == TYP_BUFFER ) cycle
+       if ( iot /= TYP_BUFFER ) then
 
        ! The index in the pointer array is retrieved
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
@@ -552,7 +554,10 @@ contains
 
        end do
 
+       end if
+
     end do
+!$OMP end parallel do
 
     ! We now have a MASK of the actual needed TranSIESTA sparsity pattern
     ! We create the TranSIESTA sparsity pattern
@@ -560,11 +565,14 @@ contains
 
     ! Ensure that it is sorted
     call attach(ts_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+!$OMP parallel do default(shared), private(io,ind)
     do io = 1 , no_u
-       if ( l_ncol(io) == 0 ) cycle
+       if ( l_ncol(io) /= 0 ) then
        ind = l_ptr(io)
        l_col(ind+1:ind+l_ncol(io)) = SORT(l_col(ind+1:ind+l_ncol(io)))
+       end if
     end do
+!$OMP end parallel do
 
     ! clean-up
     deallocate(l_HS)
@@ -642,6 +650,9 @@ contains
 
     ! We do not need to check the buffer regions...
     ! We know they will do NOTHING! :)
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,ict,jct,ind,UseBulk,DM_CrossTerms), &
+!$OMP&private(i_in_C,j_in_C)
     do lio = 1 , no_l
 
        ! Shift out of the buffer region
@@ -649,7 +660,7 @@ contains
 
        ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
        ict = orb_type(io)
-       if ( ict == TYP_BUFFER ) cycle
+       if ( ict /= TYP_BUFFER ) then
 
        ! Loop the index of the pointer array
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -730,7 +741,10 @@ contains
 
        end do
 
+       end if
+
     end do
+!$OMP end parallel do
 
     ! Tell the user about inner-cell connections
     if ( IONode .and. direct_LR ) then
@@ -796,6 +810,8 @@ contains
     pnt(:) = 0
 
     ! Loop in the subset sparsity pattern
+!$OMP parallel do default(shared), &
+!$OMP&private(io,j,sub_ind,ind)
     do io = 1 , no_l
 
        ! Loop number of entries in the row...
@@ -817,6 +833,7 @@ contains
           end do super_idx
        end do
     end do
+!$OMP end parallel do
 
     if ( any(pnt(:) == 0) ) then
        call die('An index could not be located in the super-set &

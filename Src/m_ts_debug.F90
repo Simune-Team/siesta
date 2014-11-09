@@ -91,7 +91,7 @@ contains
     integer, intent(inout) :: iu
     integer, intent(in) :: no
     complex(dp), intent(in) :: GF(no,no)
-    integer :: i,j, p, np, n,idx
+    integer :: i,j 
     
     do j = 1 , no
        do i = 1 , no
