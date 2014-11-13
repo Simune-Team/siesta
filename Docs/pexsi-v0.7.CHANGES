@@ -1,4 +1,14 @@
 --------------------------------------------------------------
+November 13, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-5
+Provide a safe bracket around mu for the solver
+
+Revised the heuristics for the 'solver-only' calls to add a bracket
+in case a fall-back to inertia-counting is needed.
+
+modified:
+  Src/m_pexsi_driver.F90
+
+--------------------------------------------------------------
 November 6, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-4
 Add a new 'options' field for mu0, to initialize the solver.
 

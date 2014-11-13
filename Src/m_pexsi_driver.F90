@@ -402,6 +402,9 @@ call f_ppexsi_dft_driver(&
   numTotalPEXSIIter,&    ! out
   info)
 
+!! AG
+!  if (numElectron not near numElectronExact) ...
+
 if( info .ne. 0 ) then
 	call mpi_finalize( ierr )
 	call exit(info)
@@ -696,6 +699,8 @@ subroutine get_bracket_for_inertia_count()
 !      muMax0 = max(muUpperEdge + 0.5*safe_width_ic, muMaxInertia)
       muMax0 = max(mu + 0.5*safe_width_ic, muMaxInertia)
    endif
+ else
+    if (mpirank == 0) write(6,"(a)") "&o Inertia-count called with iscf=1 parameters"
  endif
 end subroutine get_bracket_for_inertia_count
 
@@ -715,6 +720,14 @@ safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
         if (mpirank == 0) write(6,"(a)") "&o Solver mu shifted by delta_Ef"
         mu = mu + delta_Ef
      endif
+     ! Always provide a safe bracket around mu, in case we need to fallback
+     ! to executing a cycle of inertia-counting
+     if (mpirank == 0) write(6,"(a)") "&o Safe solver bracket around mu"
+     muMin0 = mu - safe_width_solver
+     muMax0 = mu + safe_width_solver
+  else
+     if (mpirank == 0) write(6,"(a)") "&o Solver called with iscf=1 parameters"
+     ! do nothing. Keep mu, muMin0 and muMax0 as they are inherited
   endif
 end subroutine get_bracket_for_solver
 !------------------------------------------------------
