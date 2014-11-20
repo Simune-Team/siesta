@@ -1,4 +1,17 @@
 ----------------------------------------------------
+November 20, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-217
+Bugfix for ifort compiler
+
+* Ifort compiler does not allow interfaced
+  functions and variables to be named the same.
+  Nor does it allow modules to be named the same as 
+  functions.
+  Hence a few corrections has been made.
+
+modified:
+  Src/m_ncdf_io.F90
+
+----------------------------------------------------
 November 20, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-216
 Added first commit of TBtrans
 

@@ -11,7 +11,7 @@ module m_ncdf_io
 #ifdef NCDF_4
   use variable
   use dictionary
-  use nf_ncdf
+  use nf_ncdf, ncdf_parallel => parallel
 #endif
 #ifdef MPI
   use mpi_siesta
@@ -51,7 +51,7 @@ contains
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN, SOLVE_TRANSI
     use m_timestamp, only: datestring
 #ifdef TRANSIESTA
-    use m_ts_electype
+    use m_ts_electype, elec_name => name
     use m_ts_options, only : Volt, N_Elec, Elecs
 #endif
 
@@ -67,7 +67,7 @@ contains
 #ifdef TRANSIESTA
     integer, allocatable :: ibuf(:)
 #endif
-    logical :: exists, same
+    logical :: exists
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -622,13 +622,13 @@ contains
 
   end subroutine cdf_w_Sp
 
-  subroutine cdf_w_d1D(ncdf,name,dSp1D)
+  subroutine cdf_w_d1D(ncdf,vname,dSp1D)
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData1D
 
     type(hNCDF), intent(inout) :: ncdf
-    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: vname
     type(dSpData1D), intent(inout) :: dSp1D
 
     ! Local variables
@@ -653,13 +653,13 @@ contains
     
     if ( parallel_io(ncdf) ) then
 
-       call ncdf_par_access(ncdf,name=name,access=NF90_COLLECTIVE)
+       call ncdf_par_access(ncdf,name=vname,access=NF90_COLLECTIVE)
 
        ! Calculate the processors offset
        gind = global_offset(dit,n_nzs)
 
        ! we write it using MPI
-       call ncdf_put_var(ncdf,name,a,start=(/gind+1/), &
+       call ncdf_put_var(ncdf,vname,a,start=(/gind+1/), &
             count=(/n_nzs/))
 
     else
@@ -682,7 +682,7 @@ contains
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
-                call ncdf_put_var(ncdf,name,a(ind+1:ind+ncol(io)), &
+                call ncdf_put_var(ncdf,vname,a(ind+1:ind+ncol(io)), &
                      count=(/ncol(io)/),start=(/gind/))
                 gind = gind + ncol(io)
              else
@@ -696,27 +696,27 @@ contains
              if ( MPIerror /= MPI_Success ) &
                   call die('Error in code: ncdf_write_d1D')
              call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
-             call ncdf_put_var(ncdf,name,buf(1:io), &
+             call ncdf_put_var(ncdf,vname,buf(1:io), &
                   count=(/io/),start=(/gind/))
              gind = gind + io
           end if
        end do
 
 #else
-       call ncdf_put_var(ncdf,trim(name),a)
+       call ncdf_put_var(ncdf,trim(vname),a)
 #endif
 
     end if
     
   end subroutine cdf_w_d1D
 
-  subroutine cdf_w_d2D(ncdf,name,dSp2D)
+  subroutine cdf_w_d2D(ncdf,vname,dSp2D)
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData2D
 
     type(hNCDF), intent(inout) :: ncdf
-    character(len=*), intent(in) :: name
+    character(len=*), intent(in) :: vname
     type(dSpData2D), intent(inout) :: dSp2D
 
     ! Local variables
@@ -750,18 +750,18 @@ contains
 
     if ( parallel_io(ncdf) ) then
 
-       call ncdf_par_access(ncdf,name=name,access=NF90_COLLECTIVE)
+       call ncdf_par_access(ncdf,name=vname,access=NF90_COLLECTIVE)
 
        ! we write it using MPI
        gind = global_offset(dit,n_nzs)
 
        if ( sp_dim == 1 ) then
           do io = 1 , dim2
-             call ncdf_put_var(ncdf,trim(name),a(:,io), &
+             call ncdf_put_var(ncdf,trim(vname),a(:,io), &
                   start=(/gind+1,io/), count=(/n_nzs/))
           end do
        else
-          call ncdf_put_var(ncdf,trim(name),a,start=(/1,gind+1/), &
+          call ncdf_put_var(ncdf,trim(vname),a,start=(/1,gind+1/), &
                count=(/dim2,n_nzs/))
        end if
 
@@ -789,7 +789,7 @@ contains
              if ( Node == BNode ) then
                 io = index_global_to_local(dit,gio,Node)
                 if ( Node == 0 ) then
-                   call ncdf_put_var(ncdf,trim(name),a(ind+1:ind+ncol(io),id2), &
+                   call ncdf_put_var(ncdf,trim(vname),a(ind+1:ind+ncol(io),id2), &
                         count=(/ncol(io)/),start=(/gind,id2/))
                    gind = gind + ncol(io)
                 else
@@ -804,7 +804,7 @@ contains
                 if ( MPIerror /= MPI_Success ) &
                      call die('Error in code (1): ncdf_write_d2D')
                 call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
-                call ncdf_put_var(ncdf,trim(name),buf(1:io), &
+                call ncdf_put_var(ncdf,trim(vname),buf(1:io), &
                      count=(/io/),start=(/gind,id2/))
                 gind = gind + io
              end if
@@ -821,7 +821,7 @@ contains
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
              if ( Node == 0 ) then
-                call ncdf_put_var(ncdf,trim(name),a(1:dim2,ind+1:ind+ncol(io)), &
+                call ncdf_put_var(ncdf,trim(vname),a(1:dim2,ind+1:ind+ncol(io)), &
                      count=(/dim2,ncol(io)/),start=(/1,gind/))
                 gind = gind + ncol(io)
              else
@@ -836,7 +836,7 @@ contains
                   call die('Error in code: ncdf_write_d2D')
              call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
              io = io / dim2
-             call ncdf_put_var(ncdf,trim(name),reshape(buf(1:io*dim2),(/dim2,io/)), &
+             call ncdf_put_var(ncdf,trim(vname),reshape(buf(1:io*dim2),(/dim2,io/)), &
                   count=(/dim2,io/),start=(/1,gind/))
              gind = gind + io
           end if
@@ -844,7 +844,7 @@ contains
 
     end if
 #else
-       call ncdf_put_var(ncdf,trim(name),a)
+       call ncdf_put_var(ncdf,trim(vname),a)
 #endif
 
     end if
