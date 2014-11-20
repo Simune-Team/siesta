@@ -38,7 +38,7 @@ dep:
 	sfmakedepend --depend=obj --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
-	sfmakedepend --depend=obj  --modext=o \
+	sfmakedepend --depend=obj --modext=o \
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 ; \
         fi
 	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//;\
@@ -137,7 +137,7 @@ OBJS =  automatic_cell.o atom_options.o \
         final_H_f_stress.o \
         debugmpi.o qsort.o \
         m_dscfcomm.o schecomm.o moremeshsubs.o \
-        domain_decom.o printmatrix.o  mmio.o pspltm1.o lenstr.o \
+        domain_decom.o printmatrix.o mmio.o pspltm1.o lenstr.o \
         setup_ordern_indexes.o\
         m_iodm.o \
 	m_filter.o \

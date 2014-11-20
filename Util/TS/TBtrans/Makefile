@@ -1,131 +1,192 @@
-#
-# Makefile for Ordejon-Lorente STM program
-#
-# The idea is to use the code in the top Src directory as much as possible.
-# This is achieved by the VPATH directive below.
-# Other points to note, until we switch to a better building system:
-#
-#  The arch.make file is supposed to be in $(OBJDIR). This is normally
-#  the top Obj, but if you are using architecture-dependent build directories
-#  you might want to change this. (If you do not understand this, you do not
-#  need to change anything. Power users can do "make OBJDIR=Whatever".)
-#
-#  If your main Siesta build used an mpi compiler, you might need to
-#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
-#  in the mpi libraries even if we explicitly undefine MPI below.
-#  
-#------------- NOTE
-# Special needs for the use of FFTW
-# You must set these symbols properly, either here or 
-# (better) in your top arch.make
-#
-#FFTW_ROOT=$(HOME)/lib/fftw-ifort
-#FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
-#FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3
-#-----------------------------------------
-#
-OBJDIR=Obj
+
+# Makefile for tbtrans
 
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 
-VPATH:=$(shell pwd)/../../../../Src
+# Please see note about Linear-Algebra libraries below
 
-default: what stm
+default: what tbtrans 
 
-dep:
-	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90 \
-		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90
-
-ARCH_MAKE=../../../../$(OBJDIR)/arch.make
+VPATH:=$(shell pwd)/../../../Src
+OBJDIR=Obj
+ARCH_MAKE=../../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
+# Set the default non-mpi routines
+FC_DEFAULT := $(FC)
+FC_SERIAL  ?= $(FC_DEFAULT)
 
-FC_DEFAULT:=$(FC)
-FC_SERIAL?=$(FC_DEFAULT)
-FC:=$(FC_SERIAL)         # Make it non-recursive
+# For removing any -ipo compilation in sub directories...
+# Later compilers are also having this enabled, and it lets you
+# specify what to not be used in libraries.
+# This is so because inter-procedural compilation should NOT be performed in
+# libraries (it removes names when a routine can be fully moved into others)
+IPO_FLAG?= -ipo
 
-DEFS:=$(DEFS) $(DEFS_PREFIX) -UMPI $(DEFS_PREFIX) -UCDF
-FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX) -UMPI $(DEFS_PREFIX) -UCDF
-
-#
-# Uncomment the following line for debugging support
-#
-#FFLAGS=$(FFLAGS_DEBUG)
+SIESTA_SYS=$(SIESTA_ARCH)
 
 what:
 	@echo
-	@echo "Compilation architecture to be used: ${SIESTA_ARCH}"
-	@echo "If this is not what you want, create the right"
-	@echo "arch.make file using the models in Sys"
+	@echo "Compilation architecture to be used: $(SIESTA_SYS)"
+	@echo "If that is not what you want, give the correct"
+	@echo "value to the variable SIESTA_SYS in your shell environment."
+	@echo $(COMMENTS)
 	@echo
-	@echo "Hit ^C to abort..."
-	@if [ -z "$(FFTW_LIBS)" ] ; then \
-           echo "You must set the FFTW symbols in your arch.make" ; \
-           false ; \
-        fi
-	@sleep 2
 
 SYSOBJ=$(SYS).o
 
-# Note that machine-specific files are now in top Src directory.
+SIESTA_OBJS= precision.o sys.o m_io.o alloc.o memoryinfo.o memory.o pxf.o \
+             moreParallelSubs.o m_walltime.o m_timer.o timer.o m_mpi_utils.o \
+             m_fdf_global.o paste.o reclat.o idiag.o minvec.o \
+             parallel.o io.o files.o cellsubs.o sorting.o \
+	     kpoint_convert.o timestamp.o m_wallclock.o cdiag.o m_spin.o \
+	     zheevds.o debugmpi.o find_kgrid.o
 
-OBJS_STM = atompla.o  \
-        bessph.o chkdim.o dismin.o \
-	dot.o fftw3_mymod.o extrapolate.o \
-        io.o iodm.o itochar.o length.o \
-        mainstm.o matvect.o memory.o \
-	neighb.o paste.o pxf.o \
-	m_recipes.o radfft.o ranger.o \
-        readstm.o readwaves.o \
-        redata.o  reinitstm.o stm.o \
-	vacpot.o volcel.o wrout.o 
-
-INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
-
-# Use the makefile in Src/fdf and all the sources there.
-
-FDF=libfdf.a
-FDF_MAKEFILE=$(VPATH)/fdf/makefile
-FDF_INCFLAGS:=-I$(VPATH)/fdf $(INCFLAGS)
-$(FDF): 
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" \
-		"VPATH=$(VPATH)/fdf" \
-		"FPPFLAGS=$(FPPFLAGS)" \
-		"ARCH_MAKE=../$(ARCH_MAKE)" \
-		"INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
-
-# This is crude but will have to do for now.
-# Note : precision must be the first module
-
-MOD_OBJS = precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
-        atmparams.o atom_options.o atmfuncs.o atm_types.o \
-        radial.o spher_harm.o
-
-MOD_OBJS += die.o m_uuid.o object_debug.o class_Sparsity.o \
+# Add specific class objects
+SIESTA_OBJS += die.o m_uuid.o object_debug.o class_Sparsity.o \
         class_OrbitalDistribution.o \
 	class_SpData1D.o class_SpData2D.o \
-	class_Data1D.o class_Data2D.o \
-        class_Geometry.o class_Pair_Geometry_SpData2D.o \
-	class_Fstack_Pair_Geometry_SpData2D.o \
-	sparse_matrices.o
+	class_Data1D.o class_Data2D.o
 
-MOD_OBJS += basis_io.o basis_types.o domain_decom.o
-MOD_OBJS += schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o
-MOD_OBJS += files.o flib_spline.o pseudopotential.o chemical.o xml.o
+# Some of NPA modules
+SIESTA_OBJS += intrinsic_missing.o geom_helper.o m_io_s.o m_sparse.o
+SIESTA_OBJS += m_handle_sparse.o m_iodm.o
+SIESTA_OBJS += m_integrate.o m_interpolate.o m_mat_invert.o m_bandwidth.o
+SIESTA_OBJS += m_iterator.o
+SIESTA_OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
+SIESTA_OBJS += m_region.o m_sparsity_handling.o m_pivot_array.o
+
+# The needed transiesta objects
+TS_OBJS  = m_ts_electype.o m_ts_method.o m_ts_chem_pot.o
+TS_OBJS += m_ts_electrode.o m_ts_elec_se.o m_ts_gf.o
+TS_OBJS += m_ts_cctype.o m_ts_sparse_helper.o
+TS_OBJS += m_ts_io.o m_ts_iodm.o m_ts_io_ctype.o m_ts_debug.o class_TriMat.o
+TS_OBJS += m_ts_io_contour.o m_gauss_quad.o
+
+# These could be left out, however, there are dependencies
+TS_OBJS += m_ts_contour_eq.o m_ts_contour_neq.o
+TS_OBJS += m_gauss_fermi_inf.o m_gauss_fermi_30.o m_gauss_fermi_28.o
+TS_OBJS += m_gauss_fermi_26.o m_gauss_fermi_24.o m_gauss_fermi_22.o
+TS_OBJS += m_gauss_fermi_20.o m_gauss_fermi_19.o m_gauss_fermi_18.o
+TS_OBJS += m_gauss_fermi_17.o m_ts_aux.o
+
+# The block-tri-diagonal matrix routines
+TS_OBJS += m_ts_tri_scat.o m_trimat_invert.o m_ts_trimat_invert.o
+
+# For creating the global-unit-cell sparsity pattern
+TS_OBJS += m_ts_sparse.o m_ts_tdir.o
+
+TBTOBJS  = $(SIESTA_OBJS) $(TS_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA)
+
+# Add extra objects
+TBTOJBS += fdf_extra.o
+# Add generic tbtrans routines
+TBTOBJS += tbt_init.o tbt_end.o tbt_reinit.o m_tbt_hs.o m_tbt_regions.o
+TBTOBJS += m_tbt_options.o m_tbt_sparsity2trimat.o m_tbt_tri_init.o
+TBTOBJS += m_tbt_contour.o m_tbt_kpoint.o m_tbt_gf.o
+
+# Different solution methods
+TBTOBJS += m_tbtrans.o m_tbt_trik.o m_tbt_tri_scat.o m_tbt_trimat_invert.o
+TBTOBJS += m_tbt_proj.o
+
+# The saving methods
+TBTOBJS += m_tbt_sigma_save.o m_tbt_save.o
+
+# Specific extensions for FDF file
+TBTOBJS += fdf_extra.o
+
+# The main program
+TBTOBJS += tbtrans.o
+
+# Interfaces to libraries
+FDF=libfdf.a
+FDF_MAKEFILE=$(VPATH)/fdf/makefile
+FDF_INCFLAGS:=-I$(VPATH)/fdf -I../MPI $(INCFLAGS)
+$(FDF): 
+	-mkdir -p fdf
+	(cd fdf ; \
+	$(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+	"ARCH_MAKE=../$(ARCH_MAKE)" \
+	"INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module)
+
+MPI_MAKEFILE=$(VPATH)/MPI/Makefile
+$(MPI_INTERFACE): 
+	-mkdir -p MPI
+	(cd MPI ; \
+	$(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
+	"MAKEFILES=$(MPI_MAKEFILE)" "ARCH_MAKE=../$(ARCH_MAKE)" \
+	"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module_built)
 
 
-COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
-ALL_OBJS_STM=$(MOD_OBJS) $(COM_OBJS_STM)
+#######################
+#  TS-TBT libs:
+#
+# Libraries used by transiesta and tbtrans
+# They are currently supplied by this distribution
+# All rights reserved for the author of these libraries.
+# Author: Nick Papior Andersen
 
-stm: $(FDF) $(ALL_OBJS_STM)
-	$(FC) -o stm \
-	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF) $(FFTW_LIBS) 
+# This library can be found at:
+#  https://github.com/zerothi/fvar
+FVAR=libvardict.a
+FVAR_MAKEFILE=$(VPATH)/fvar/Makefile
+$(FVAR): 
+	-mkdir -p fvar
+	(cd fvar ; $(MAKE) -f $(FVAR_MAKEFILE) \
+		"VPATH=$(VPATH)/fvar" \
+		"FC=$(FC_SERIAL)" \
+		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
+		"FPPFLAGS=$(FPPFLAGS) -UMPI" \
+		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
+	@cp -p fvar/*.*d ./
+	cp fvar/$(FVAR) ./
 
-clean:
+# This library can be found at:
+#  https://github.com/zerothi/ncdf
+NCDF=libncdf.a
+NCDF_MAKEFILE=$(VPATH)/NCDF/src/Makefile
+$(NCDF): $(FVAR)
+	-mkdir -p NCDF/src
+	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) \
+		"VPATH=$(VPATH)/NCDF/src" "LIBVARDICT=$(FVAR)" \
+		"DIR_FVAR=$(VPATH)/fvar" \
+		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
+		"FPPFLAGS=$(FPPFLAGS)" \
+		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
+	@cp -p NCDF/src/*.*d ./
+	cp NCDF/src/$(NCDF) ./
+
+#######################
+
+
+# We append the -DTBTRANS as some special routines
+# which could take advantage of this preprocessing flag
+tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
+#tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DUSE_GEMM3M
+#tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DDIVIDE_AND_CONQUER
+# If the user only wants to compile against NetCDF-4 for tbtrans
+tbtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
+tbtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(TBTOBJS) $(SYSOBJ)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
+              $(TBTOBJS) $(MPI_INTERFACE)  \
+              $(FDF) $(COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
+
+clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f stm *.o  *.a
-	rm -f *.mod
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	-rm -f tbtrans *.o *.a *.mod
+	-rm -rf ./fdf
+	-rm -rf ./MPI
+	-rm -rf ./fvar
+	-rm -rf ./NCDF
+
+# Dependencies
+dep:
+	-sfmakedepend --depend=obj --modext=o \
+		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
+		*.f90 *.F90 *.f *.F
+
+# Assert that FDF is compiled on before hand
+$(TBTOBJS): $(FDF)
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
@@ -747,12 +808,74 @@ zm_broyden_optim.o: units.o zmatrix.o
 zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
-atompla.o: sys.o
-extrapolate.o: fftw3_mymod.o precision.o
-mainstm.o: basis_io.o listsc.o parallel.o precision.o
-ranger.o: precision.o
-stm.o: atmfuncs.o chemical.o precision.o
-vacpot.o: precision.o
+fdf_extra.o: m_region.o
+m_tbt_contour.o: m_gauss_quad.o m_integrate.o m_ts_aux.o m_ts_cctype.o
+m_tbt_contour.o: m_ts_chem_pot.o m_ts_electype.o m_ts_io_contour.o
+m_tbt_contour.o: m_ts_io_ctype.o parallel.o precision.o units.o
+m_tbt_gf.o: m_io_s.o m_tbt_contour.o m_ts_cctype.o m_ts_electrode.o
+m_tbt_gf.o: m_ts_electype.o m_ts_gf.o parallel.o precision.o sys.o
+m_tbt_hs.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_tbt_hs.o: class_Sparsity.o files.o m_handle_sparse.o m_interpolate.o
+m_tbt_hs.o: m_sparsity_handling.o m_ts_io.o m_ts_io_ctype.o precision.o
+m_tbt_kpoint.o: files.o find_kgrid.o intrinsic_missing.o m_ts_electype.o
+m_tbt_kpoint.o: parallel.o precision.o sys.o
+m_tbt_options.o: files.o m_tbt_contour.o m_tbt_save.o m_tbt_sigma_save.o
+m_tbt_options.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_electype.o m_ts_method.o
+m_tbt_options.o: parallel.o precision.o units.o
+m_tbt_proj.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
+m_tbt_proj.o: class_SpData2D.o class_Sparsity.o fdf_extra.o intrinsic_missing.o
+m_tbt_proj.o: m_io_s.o m_region.o m_tbt_hs.o m_tbt_save.o m_ts_electype.o
+m_tbt_proj.o: m_ts_sparse_helper.o parallel.o precision.o timestamp.o units.o
+m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
+m_tbt_regions.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
+m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_sparse.o
+m_tbt_regions.o: parallel.o
+m_tbt_saint.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o m_tbt_hs.o
+m_tbt_saint.o: precision.o
+m_tbt_save.o: files.o m_interpolate.o m_io_s.o m_region.o m_tbt_hs.o
+m_tbt_save.o: m_ts_electype.o parallel.o precision.o timestamp.o units.o
+m_tbt_sigma_save.o: m_io_s.o m_region.o m_tbt_hs.o m_tbt_save.o m_ts_electype.o
+m_tbt_sigma_save.o: parallel.o timestamp.o units.o
+m_tbt_sparsity2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
+m_tbt_sparsity2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
+m_tbt_sparsity2trimat.o: m_tbt_options.o m_ts_electype.o parallel.o precision.o
+m_tbt_tri_init.o: class_OrbitalDistribution.o class_Sparsity.o
+m_tbt_tri_init.o: create_Sparsity_Union.o m_region.o m_sparsity_handling.o
+m_tbt_tri_init.o: m_tbt_options.o m_tbt_regions.o m_tbt_sparsity2trimat.o
+m_tbt_tri_init.o: m_ts_debug.o m_ts_electype.o parallel.o precision.o
+m_tbt_tri_scat.o: alloc.o class_SpData1D.o class_Sparsity.o class_TriMat.o
+m_tbt_tri_scat.o: m_region.o m_tbt_proj.o m_ts_electype.o m_ts_tri_scat.o
+m_tbt_tri_scat.o: m_ts_trimat_invert.o precision.o units.o
+m_tbt_trik.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_tbt_trik.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o class_TriMat.o
+m_tbt_trik.o: m_iterator.o m_mat_invert.o m_pivot_array.o m_region.o
+m_tbt_trik.o: m_tbt_contour.o m_tbt_gf.o m_tbt_hs.o m_tbt_kpoint.o
+m_tbt_trik.o: m_tbt_options.o m_tbt_proj.o m_tbt_regions.o m_tbt_save.o
+m_tbt_trik.o: m_tbt_sigma_save.o m_tbt_tri_init.o m_tbt_tri_scat.o
+m_tbt_trik.o: m_tbt_trimat_invert.o m_timer.o m_trimat_invert.o m_ts_cctype.o
+m_tbt_trik.o: m_ts_elec_se.o m_ts_electype.o m_ts_sparse_helper.o parallel.o
+m_tbt_trik.o: precision.o units.o
+m_tbt_trimat_invert.o: class_TriMat.o m_region.o m_trimat_invert.o
+m_tbt_trimat_invert.o: m_ts_trimat_invert.o precision.o
+m_tbtrans.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
+m_tbtrans.o: class_SpData2D.o class_Sparsity.o m_tbt_contour.o m_tbt_hs.o
+m_tbtrans.o: m_tbt_kpoint.o m_tbt_options.o m_tbt_proj.o m_tbt_regions.o
+m_tbtrans.o: m_tbt_save.o m_tbt_sigma_save.o m_tbt_tri_init.o m_tbt_trik.o
+m_tbtrans.o: m_ts_electype.o m_ts_gf.o parallel.o precision.o units.o
+new_proj.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
+new_proj.o: class_SpData2D.o class_Sparsity.o fdf_extra.o intrinsic_missing.o
+new_proj.o: m_io_s.o m_region.o m_tbt_hs.o m_tbt_save.o m_ts_electype.o
+new_proj.o: m_ts_sparse_helper.o parallel.o precision.o timestamp.o units.o
+tbt_end.o: alloc.o m_wallclock.o parallel.o timestamp.o
+tbt_init.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o files.o
+tbt_init.o: m_sparsity_handling.o m_spin.o m_tbt_contour.o m_tbt_gf.o
+tbt_init.o: m_tbt_hs.o m_tbt_kpoint.o m_tbt_options.o m_tbt_proj.o
+tbt_init.o: m_tbt_regions.o m_tbt_save.o m_timer.o m_ts_electrode.o
+tbt_init.o: m_ts_electype.o m_wallclock.o parallel.o precision.o sys.o
+tbt_init.o: timestamp.o
+tbt_reinit.o: parallel.o
+tbtrans.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o m_tbt_hs.o
+tbtrans.o: m_tbt_options.o m_tbt_regions.o m_tbtrans.o
 band.o: bands.o
 class_cdata1d.o: class_Data1D.o
 class_cdata2d.o: class_Data2D.o
@@ -852,6 +975,8 @@ m_siesta_move.o: siesta_move.o
 m_state_analysis.o: state_analysis.o
 m_state_init.o: state_init.o
 m_struct_init.o: struct_init.o
+m_tbt_projt.o: new_proj.o
+m_tbt_region2trimat.o: m_tbt_sparsity2trimat.o
 m_timestamp.o: timestamp.o
 m_ts_init.o: ts_init.o
 m_vmat.o: vmat.o

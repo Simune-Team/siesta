@@ -1,95 +1,65 @@
 ----------------------------------------------------
-November 20, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-215
-Added fvar and NCDF to the repository
+November 20, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-216
+Added first commit of TBtrans
 
-* Added fvar library
+* Added initial commit of tbtrans.
+  There are too many options to account for in this
+  short commit message.
 
-  This is currently version: 0.18
-  taken from: https://github.com/zerothi/fvar/releases
+  Suffice to say that it has these properties:
+   - much faster
+   - handles N-dimensionality very nicely
+   - allows calculation of many more quantities than
+     any previous version of TBtrans
 
-  This library has two components:
-   1. A generic variable which can contain ANY
-      data that one wishes to save.
+* A lot of bugfixes for various makefiles:
+   COOP
+   Denchar
+   STM/ol-stm
+   WFS
+  some of them are now compilable again
+  after having being defunct for quite some time.
 
-   2. A generic type of dictionary.
-      This can contain ANY type of values based
-      on a character based key value.
-
-  This library has been fully developed by:
-    Nick Papior Andersen
-  with valuable input from Alberto Garcia.
-  I would like to acknowledge:
-   J.L.Schonfelder
-  for creating a string type that is used for character
-  types in the generic variable library.
-
-  Also Alberto Garcia is acknowledged for inputs!
-
-* Added a generic NetCDF library
-
-  This is currently version: 0.22
-  taken from: https://github.com/zerothi/ncdf/releases
-
-  This library enables _very_ easy mangling of NetCDF files
-  without tracking dimension/variable ID's.
-  Everything is now character based.
-
-* Added additional info for the build_all.sh script.
 
 added:
-  Src/NCDF/
-  Src/NCDF/Makefile
-  Src/NCDF/src/
-  Src/NCDF/src/Makefile
-  Src/NCDF/src/ncdf.sh
-  Src/NCDF/src/ncdf_att_inc.inc
-  Src/NCDF/src/ncdf_var_inc.inc
-  Src/NCDF/src/nf_ncdf.F90
-  Src/NCDF/src/settings.inc
-  Src/NCDF/test/
-  Src/NCDF/test/Makefile
-  Src/NCDF/test/test_ncdf.F90
-  Src/NCDF/test/tst_ncdf_3.F90
-  Src/NCDF/test/tst_ncdf_4.F90
-  Src/NCDF/test/tst_ncdf_att.F90
-  Src/NCDF/test/tst_ncdf_crt.F90
-  Src/NCDF/test/tst_ncdf_utils.F90
-  Src/fvar/
-  Src/fvar/Makefile
-  Src/fvar/dict_funcs_inc.inc
-  Src/fvar/dictionary.F90
-  Src/fvar/dictionary.sh
-  Src/fvar/iso_var_str.f90
-  Src/fvar/settings.inc
-  Src/fvar/settings.sh
-  Src/fvar/setup.sh
-  Src/fvar/test/
-  Src/fvar/test/Makefile
-  Src/fvar/test/tst_char.F90
-  Src/fvar/test/tst_dict.F90
-  Src/fvar/test/tst_dict_dict.F90
-  Src/fvar/test/tst_dict_long.F90
-  Src/fvar/test/tst_dict_mem1.F90
-  Src/fvar/test/tst_dict_mem2.F90
-  Src/fvar/test/tst_dict_mem3.F90
-  Src/fvar/test/tst_dict_overwrite.F90
-  Src/fvar/test/tst_dict_remove.F90
-  Src/fvar/test/tst_dp.F90
-  Src/fvar/test/tst_mem.F90
-  Src/fvar/test/tst_simple.F90
-  Src/fvar/test/tst_sp.F90
-  Src/fvar/test/tst_type.F90
-  Src/fvar/test/tst_utils.F90
-  Src/fvar/var.sh
-  Src/fvar/var_funcs_inc.inc
-  Src/fvar/variable.F90
+  Util/TS/TBtrans/
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/fdf_extra.F90
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_gf.F90
+  Util/TS/TBtrans/m_tbt_hs.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TBtrans/m_tbt_sparsity2trimat.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbt_trimat_invert.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+  Util/TS/TBtrans/tbt_data.py
+  Util/TS/TBtrans/tbt_end.F90
+  Util/TS/TBtrans/tbt_init.F90
+  Util/TS/TBtrans/tbt_reinit.F90
+  Util/TS/TBtrans/tbtrans.F90
 modified:
   Src/Makefile
-  Util/Grimme/Makefile
-  Util/TS/ts2ts/Makefile
-  Util/TS/tshs2tshs/Makefile
-  Util/build_all.sh*
-  Util/clean_all.sh*
+  Src/class_Geometry.F90
+  Src/class_OrbitalDistribution.F90
+  Src/class_Sparsity.F90
+  Src/iodm.F
+  Util/COOP/Makefile
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/ol-stm/Src/atompla.f
+  Util/STM/ol-stm/Src/readstm.f
+  Util/STM/ol-stm/Src/reinitstm.f
+  Util/TS/README
+  Util/WFS/makefile
 
 ----------------------------------------------------
 November 20, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-214

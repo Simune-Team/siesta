@@ -111,7 +111,9 @@ C External procedures
 ! Therefore, on all steps after the first, the 
 
 C Find file name
+#ifdef IO_TIMING
       call timer( 'iodm', 1 )
+#endif
       if (ionode) then
         if (frstme) then
           fmto = fdf_boolean('DM.FormattedFiles', .false.)
@@ -486,5 +488,7 @@ C Write density matrix
 C Deallocate local buffer array for globalised numd
       call de_alloc( numdg, 'numdg', 'iodm' )
 
+#ifdef IO_TIMING
       call timer( 'iodm', 2 )
+#endif
       end subroutine iodm

@@ -24,7 +24,7 @@
   
   implicit none
 
-  character(len=*), parameter :: mod_name=__FILE__
+  character(len=*), parameter :: mod_name="class_OrbitalDistribution"
 
   type OrbitalDistribution_
      integer              :: refCount = 0

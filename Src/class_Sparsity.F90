@@ -13,7 +13,7 @@ module class_Sparsity
   public :: nnzs, list_ptr, list_col
   public :: equivalent
 
-  character(len=*), parameter :: mod_name= __FILE__
+  character(len=*), parameter :: mod_name= "class_Sparsity"
 
   ! This is the "meat" of the type
   !

@@ -1,0 +1,3065 @@
+
+module m_tbt_proj
+
+  ! We here implement a feature to calculate a projection
+  ! The equations are the following:
+
+  ! \lambda_i, v_i = diag(H\lambda = S)
+  ! , where \lambda_i, v_i is the i'th eigen-value, eigen-vector pair.
+
+  ! To calculate the projection states we do:
+  ! p_i = S^{1/2} * v_i / sqrt(S^{1/2} * v_i,(S^{1/2} * v_i)^*)
+  ! ( note: ^* is conjugate, not dagger)
+  ! The projector is then:
+  !   P_i = p_i * p_i^\dagger 
+  ! i.e. we get a full matrix by doing the outer product of these vectors
+
+  ! In the following we designate a projection by the name
+  ! of "molecule".
+
+  use precision, only : dp
+  use m_region
+  use m_ts_electype
+  use m_tbt_save, only : tNodeE
+#ifdef NCDF_4
+  use nf_ncdf, only : NF90_MAX_NAME
+#endif
+  implicit none
+
+  private
+
+#ifdef NCDF_4
+  ! Default to not do any kind of projections
+  integer, save :: N_mol = 0
+
+  ! An example input format for projection.
+  ! %block TBT.Proj
+  !   mol-1
+  !   mol-2
+  !  ...
+  !   etc
+  ! %endblock TBT.Proj
+    
+  ! Then we create all those projection files
+  ! %block TBT.Proj.mol-1
+  !   # Several lists of atoms "concatenates" the regions.
+  !   atom from <> to <>
+  !   atom from <> to <>
+  !   proj <Name>
+  !     # We note the Fermi-level as the 0th level. 
+  !     #   (for different biases, the level alignment might change :( )
+  !     # Several lines will concatenate.
+  !     # So the below lines will only be the HOMO-1, HOMO, LUMO and LUMO+1
+  !     level from -2 to -1 # HOMO-1 and HOMO
+  !     level from 1 to 2   # LUMO and LUMO+1
+  !     level from -2 to 2  # HOMO-1, HOMO, LUMO and LUMO+1
+  !     level 1             # LUMO 
+  !   end [proj|]
+  !   ... more proj <Name> blocks, if needed
+  ! %endblock TBT.Proj.mol-1
+
+  integer, parameter :: PROJ_NAME_LEN = 30
+
+  type :: tProjMol
+     ! Name of the "molecule"
+     character(len=PROJ_NAME_LEN) :: name
+     ! Whether this projection is k-resolved
+     logical :: Gamma = .true., DOS = .true.
+     ! Region containing the atoms, orbitals
+     type(tRegion) :: atom, orb, pvt
+     ! An array of used projections for this "molecule"
+     ! The region contains the levels that constitute a single projection
+     type(tRegion), allocatable :: proj(:)
+     ! The actual projection state for a single level
+     ! Instead of saving N times (orb%n,orb%n) we need only saving N times orb%n vectors
+     type(tRegion) :: lvls
+     complex(dp), allocatable :: p(:,:)
+  end type tProjMol
+  type(tProjMol), allocatable :: mols(:)
+
+  ! When ever we do a projection we will also calculate
+  ! to the full projection
+  type :: tProjElec
+     ! The index of the molecule that we project on
+     type(Elec), pointer :: El => null()
+     type(tProjMol), pointer :: mol => null()
+     integer :: idx = 0 ! An index of zero means that it is "all"
+     ! The projection of this projection onto the electrode Gamma
+     complex(dp), allocatable :: bGk(:,:)
+  end type tProjElec
+  ! We have an array of all the different projections
+  integer, save :: N_proj_E
+  type(tProjElec), allocatable, target :: proj_E(:)
+  public :: tProjElec
+
+  type :: tProjT
+     ! The projector "left" electrode
+     type(tProjElec), pointer :: L
+     type(tProjT), pointer :: R(:)
+     !type(tProjElec), pointer :: R(:)
+  end type tProjT
+  integer, save :: N_proj_T
+  type(tProjT), allocatable :: proj_T(:)
+
+  public :: N_mol, mols
+  public :: N_proj_T, proj_T
+  public :: N_proj_E, proj_E
+  public :: init_proj
+  public :: init_proj_T
+  public :: proj_print
+  public :: init_Proj_save
+  public :: proj_update
+  public :: proj_Mt_mix, proj_bMtk
+  public :: proj_cdf_save
+  public :: proj_cdf_save_bgammak
+  public :: proj_cdf_save_S_D
+  public :: proj_cdf2ascii
+
+#endif
+
+contains
+
+#ifdef NCDF_4
+  
+  subroutine init_proj( na_u , lasto , r_aDev , r_oDev, save_DATA )
+    
+    use parallel, only : Node
+    use fdf
+    use fdf_extra
+    use intrinsic_missing, only: SORT
+
+    use dictionary
+
+    integer, intent(in) :: na_u
+    integer, intent(in) :: lasto(0:na_u)
+    type(tRegion), intent(in) :: r_aDev, r_oDev
+    type(dict), intent(inout) :: save_DATA
+
+    ! Local variables
+    type(block_fdf) :: bfdf
+    type(parsed_line), pointer :: pline
+    integer :: N_proj, N, n_orb
+    integer :: im, ip, io, i
+    character(len=PROJ_NAME_LEN) :: char, name
+    type(tRegion) :: r_tmp, r_tmp2
+    logical :: ltmp
+
+    ! Count number of molecules
+    N_mol = 0
+
+    ! If the projection block exists
+    ! it means the user is requesting projections.
+    if ( .not. fdf_defined('TBT.Projs') ) return
+
+    if ( .not. fdf_block('TBT.Projs',bfdf) ) then
+       call die('TBT.Proj is not a block, please correct')
+    end if
+
+    ! Whether we should assert and calculate
+    ! all transmission amplitudes for the projections
+    ltmp = fdf_get('TBT.T.Elecs.All.Projs', ('T-all'.in.save_DATA) )
+    if ( ltmp ) then
+       save_DATA = save_DATA // ('proj-T-all'.kv.1)
+    end if
+    ltmp = fdf_get('TBT.R.Projs', ('T-reflect'.in.save_DATA) )
+    if ( ltmp ) then
+       save_DATA = save_DATA // ('proj-T-reflect'.kv.1)
+    end if
+    ltmp = fdf_get('TBT.Projs.Only', .false. )
+    if ( ltmp ) then
+       save_DATA = save_DATA // ('proj-only'.kv.1)
+    end if
+
+    ! Should we calculate DOS of spectral function
+    ltmp = fdf_get('TBT.DOS.A.Projs',('DOS-A'.in.save_DATA))
+    if ( ltmp ) then
+       save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
+    end if
+
+    ! First read in the molecules
+    do while ( fdf_bline(bfdf,pline) )
+       ! skip empty line
+       if ( fdf_bnnames(pline) == 0 ) cycle
+       N_mol = N_mol + 1
+    end do
+    allocate(mols(N_mol))
+    
+    ! rewind to read again
+    call fdf_brewind(bfdf)
+
+    ! Retrieve the names
+    im = 0
+    do while ( fdf_bline(bfdf,pline) )
+       ! empty line
+       if ( fdf_bnnames(pline) == 0 ) cycle
+       im = im + 1
+       mols(im)%name = fdf_bnames(pline,1)
+       if ( index(mols(im)%name,'.') > 0 ) then
+          call die('Molecules cannot be named with .!')
+       end if
+    end do
+    
+    ! Read in the data
+    do im = 1 , N_mol
+
+       name = mols(im)%name
+
+       ! Open the block of the molecule
+       if ( .not. fdf_block('TBT.Proj.'//trim(name),bfdf) ) then
+          call die('Projection '//trim(name)//' has not been defined.')
+       end if
+
+       ! Reset number of projections for this molecule.
+       N_proj = 0
+       N      = 0
+
+       ! We read it line by line and count the number of projections
+       do while ( fdf_bline(bfdf,pline) ) 
+          if ( fdf_bnnames(pline) == 0 ) cycle
+          char = fdf_bnames(pline,1)
+          if ( leqi(char,'proj') ) then
+             ! We have a projection
+             N_proj = N_proj + 1
+          else if ( leqi(char,'end') ) then
+             ! easy way to check that they are also finished
+             N = N - 1
+             ! If they are not aligned
+             ! then they must be malplaced
+             if ( - N /= N_proj ) then
+                call die('Error in projection block, &
+                     &a projection has prematurely ended, correct input.')
+             end if
+             
+          else if ( leqi(char,'atom') ) then
+
+             ! Add the atom to the list
+             call fdf_brange(pline,r_tmp,1,na_u)
+             call region_copy(mols(im)%atom,r_tmp2)
+             call region_union(r_tmp2,r_tmp,mols(im)%atom)
+
+          else if ( leqi(char,'Gamma') ) then
+             
+             ! Get whether the molecule should be treated in a
+             ! Gamma-consideration
+             mols(im)%Gamma = fdf_bboolean(pline,1,after=1)
+
+          else if ( leqi(char,'DOS') .and. N_proj == N ) then
+
+             ! The N_proj == N assures that we are not 
+             ! inside a proj block
+             
+             mols(im)%DOS = fdf_bboolean(pline,1,after=1)
+
+          end if
+       end do
+       call region_delete(r_tmp,r_tmp2)
+       if ( N_proj == 0 ) then
+          call die('Error in projection block, &
+               &you have not specified any projections.')
+       end if
+       if ( - N /= N_proj ) then
+          call die('Error in projection block, &
+               &all projections has not been ended correctly.')
+       end if
+       if ( mols(im)%atom%n == 0 ) then
+          call die('Number of atoms in projection is zero, this is not &
+               &allowed.')
+       end if
+
+       ! Convert the molecule to orbitals
+       mols(im)%atom%r = SORT(mols(im)%atom%r) ! sort it!
+       mols(im)%atom%name = 'Atoms'
+       ! We check that the projection is completely contained
+       ! in the device region, if not then a projection of 
+       ! eigenstates does not really make sense...
+       call region_union(r_aDev,mols(im)%atom,r_tmp)
+       if ( r_tmp%n /= r_aDev%n ) then
+          call die('Molecule not fully contained in the device &
+               &region, please correct input')
+       end if
+       call region_delete(r_tmp)
+
+       call region_Atom2Orb(mols(im)%atom,na_u,lasto,mols(im)%orb)
+       mols(im)%orb%name = 'Orbitals'
+
+       ! Save number of orbitals in molecule
+       n_orb = mols(im)%orb%n
+
+       ! Sort the orbitals according to the device region
+       call region_copy(mols(im)%orb,mols(im)%pvt)
+       ip = 0
+       do i = 1 , r_oDev%n
+          if ( 0 < region_pivot(mols(im)%pvt,r_oDev%r(i)) ) then
+             ip = ip + 1
+             mols(im)%orb%r(ip) = r_oDev%r(i)
+          end if
+       end do
+       if ( ip /= n_orb ) call die('Error in orbitals sorting')
+
+       ! Create the pivot table
+       mols(im)%pvt%r(:) = region_pivot(r_oDev,mols(im)%orb%r(:))
+
+       ! Re-read, and then we read in the projections... :)
+       call fdf_brewind(bfdf)
+
+       ! Allocate all projections and read them in...
+       allocate(mols(im)%proj(N_proj))
+
+       ! Initialize levels 
+       call region_delete(mols(im)%lvls)
+
+       ip = 0
+       do while ( fdf_bline(bfdf,pline) ) 
+          if ( fdf_bnnames(pline) == 0 ) cycle
+          char = fdf_bnames(pline,1)
+          if ( leqi(char,'proj') ) then
+             ! We have a projection
+             if ( fdf_bnnames(pline) < 2 ) then
+                call die('Name for projection has not been provided.')
+             end if
+
+             ip = ip + 1
+
+             ! Save the name
+             name = fdf_bnames(pline,2)
+             if ( index(name,'.') > 0 ) then
+                call die('Projections cannot be named with .!')
+             end if
+
+             ! Read in the projection
+             do while ( fdf_bline(bfdf,pline) ) 
+
+                if ( fdf_bnnames(pline) == 0 ) cycle
+                char = fdf_bnames(pline,1)
+                if ( leqi(char,'end') ) then
+                   ! We have ended this level, exit so that we can 
+                   ! read the next one
+                   exit
+
+                else if ( leqi(char,'level') ) then
+
+                   ! We do not know whether all levels
+                   ! are below/above the Fermi level.
+                   call fdf_brange(pline,r_tmp,-n_orb,n_orb)
+                   call region_copy(mols(im)%proj(ip),r_tmp2)
+                   call region_union(r_tmp2,r_tmp,mols(im)%proj(ip))
+
+                end if
+
+             end do
+
+             ! Remove 0 (Ef) from the levels
+             call region_range(r_tmp,0,0)
+             call region_complement(mols(im)%proj(ip),r_tmp,r_tmp2)
+             call region_copy(r_tmp2,mols(im)%proj(ip))
+             call region_delete(r_tmp,r_tmp2)
+
+             ! A projection has to have at least one projection state
+             if ( mols(im)%proj(ip)%n < 1 ) then
+                call die('A projection went wrong, it MUST have at least &
+                     &one state assigned, the Fermi-level (0) is not a &
+                     &well-defined state.')
+             end if
+
+             ! Sort the levels
+             mols(im)%proj(ip)%r = SORT(mols(im)%proj(ip)%r)
+
+             ! Save the name to the levels
+             mols(im)%proj(ip)%name = name
+
+             ! Create union of all levels 
+             call region_union(mols(im)%lvls,mols(im)%proj(ip),r_tmp)
+             call region_copy(r_tmp,mols(im)%lvls)
+
+          end if
+
+       end do ! loop on reading in projections
+
+       ! We have now completed reading in all projections.
+
+       ! Allocate |> for all unique levels
+       allocate(mols(im)%p(n_orb,mols(im)%lvls%n))
+       ! Sort the levels
+       mols(im)%lvls%r = SORT(mols(im)%lvls%r)
+
+    end do
+
+    call region_delete(r_tmp,r_tmp2)
+    
+  end subroutine init_proj
+
+  subroutine proj_print( N_Elec, Elecs )
+
+    use parallel, only : Node
+    use fdf, only : leqi
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    
+    integer :: im, ip
+    integer :: it, iE
+    integer :: ipt, idx
+    logical :: first_P
+    type(Elec), pointer :: El_L, El
+    type(tProjMol), pointer :: mol
+    type(tRegion) :: r_tmp
+    logical, allocatable :: checked(:,:)
+
+    if ( Node /= 0 ) return
+    if ( N_mol == 0 ) return
+
+    ! Lets first print out the projections
+
+    write(*,'(/,a)')'tbtrans: Projection molecules:'
+
+    do im = 1 , N_mol
+
+       ! A molecule MUST not be named the same 
+       ! as an electrode!
+       do iE = 1 , N_Elec
+          if ( leqi(mols(im)%name,Elecs(iE)%name) ) then
+             call die('Molecules and electrodes &
+                  &must NOT be named the same. Please differ names!')
+          end if
+       end do
+       
+       write(*,'(2a)')' - Molecule ',trim(mols(im)%name)
+       if ( mols(im)%Gamma ) then
+          write(*,'(a)')'   Gamma projection: True'
+       else
+          write(*,'(a)')'   Gamma projection: False'
+       end if
+       if ( mols(im)%DOS ) then
+          write(*,'(a)')'   DOS projection: True'
+       else
+          write(*,'(a)')'   DOS projection: False'
+       end if
+       call region_print(mols(im)%atom, seq_max = 8 , indent = 3)
+       write(*,'(a)') '  * Different projections:'
+       do ip = 1 , size(mols(im)%proj)
+          
+          call region_print(mols(im)%proj(ip), &
+               seq_max = 12 , indent = 5)
+
+          do iE = 1 , N_Elec
+             if ( leqi(mols(im)%proj(ip)%name,Elecs(iE)%name) ) then
+                call die('Molecule projections and electrodes &
+                     &must NOT be named the same. Please differ names!')
+             end if
+          end do
+
+          ! Figure out if the permutation exists...
+          do it = 1 , N_proj_T
+             do iE = 1 , N_Elec
+                if ( ProjElec_same(proj_T(it)%L,Elecs(iE),mols(im),ip) ) then
+                   write(*,'(tr6,2a,''.T -> ['')',advance='no') '- ',trim(Elecs(iE)%name)
+
+                   ! We loop the RHS here
+                   if ( size(proj_T(it)%R) > 0 ) then
+                      do ipt = 1 , size(proj_T(it)%R)
+                         El => proj_T(it)%R(ipt)%L%El
+                         if ( ipt > 1 ) write(*,'(a)',advance='no') ','
+                         if ( mod(ipt,4) == 0 ) write(*,'(/,tr10)',advance='no')
+                         if ( proj_T(it)%R(ipt)%L%idx > 0 ) then
+                            mol => proj_T(it)%R(ipt)%L%mol
+                            idx = proj_T(it)%R(ipt)%L%idx 
+                            write(*,'(tr1,2(a,''.''),a)',advance='no') trim(El%name), &
+                                 trim(mol%name), trim(mol%proj(idx)%name)
+                         else
+                            write(*,'(tr1,a)',advance='no') trim(El%name)
+                         end if
+                            
+                      end do
+                      write(*,'(a)') ']'
+                   end if
+                end if
+             end do
+          end do
+       end do
+       
+       write(*,*) ! new-line
+       
+    end do
+
+    ! Print all pristine, to right projections
+    first_P = .true.
+    do it = 1 , N_proj_T
+       if ( proj_T(it)%L%idx == 0 ) then
+          if ( first_P ) then
+             write(*,'(a)') '*  Full Gamma_L to projection states'
+             first_P = .false.
+          end if
+
+          El_L => proj_T(it)%L%El
+          ! We have a single L-projection
+          write(*,'(tr1,2a,''.T -> ['')',advance='no') '- ', trim(El_L%name)
+
+          ! We loop the RHS here
+          if ( size(proj_T(it)%R) > 0 ) then
+             do ipt = 1 , size(proj_T(it)%R)
+                El => proj_T(it)%R(ipt)%L%El
+                if ( ipt > 1 ) write(*,'(a)',advance='no') ','
+                if ( proj_T(it)%R(ipt)%L%idx > 0 ) then
+                   mol => proj_T(it)%R(ipt)%L%mol
+                   idx = proj_T(it)%R(ipt)%L%idx 
+                   write(*,'(tr1,2(a,''.''),a)',advance='no') trim(El%name), &
+                        trim(mol%name), trim(mol%proj(idx)%name)
+                else
+                   write(*,'(2a)')'Pure transport from: '//trim(El_L%name)//' to ',&
+                        trim(El%name)
+                   call die('Erroneous projection, this is NOT a projection')
+                end if
+             end do
+             write(*,'(a)') ']'
+          else
+             write(*,'(a)')'Pure transport from: '//trim(El_L%name)//' to nothing.'
+             call die('Erroneous projection, this is NOT a projection')
+          end if
+       end if
+    end do
+    
+    write(*,*) ! New-line
+
+    ! Here we check that all projections match the electrode
+    ! they are projected on
+    ! A transport projection on molecular states
+    ! ONLY has meaning if the scattering states
+    ! lives fully on the molecular states.
+    ! Hence the union of the molecule and scattering state
+    ! MUST equal that of the molecule
+    allocate(checked(N_mol,N_Elec))
+    checked(:,:) = .false.
+    do it = 1 , N_proj_T
+       do iE = 1 , N_Elec
+          if ( all(checked(:,iE)) ) cycle
+          do im = 1 , N_mol
+             if ( checked(im,iE) ) cycle
+             ! We can only check a projection which
+             ! actually projects...
+             if ( proj_T(it)%L%idx > 0 ) then
+             ! if the electrode is the same
+             if ( ProjElec_same(proj_T(it)%L, &
+                  Elecs(iE),mols(im),proj_T(it)%L%idx) ) then
+                ! The Left is the same
+                call region_union(mols(im)%orb,Elecs(iE)%o_inD,r_tmp)
+                if ( r_tmp%n /= mols(im)%orb%n ) then
+                   ! The overlap region does not fully co-incide
+                   ! with the molecule region.
+                   ! Hence the projection is erroneuos
+                   call print_proj(proj_T(it)%L)
+                   call die('The scattering states are not fully &
+                        &encapsulated on a projection. This is not allowed.')
+                end if
+                checked(im,iE) = .true.
+             end if
+             end if
+
+             do ip = 1 , size(proj_T(it)%R)
+                if ( proj_T(it)%R(ip)%L%idx <= 0 ) cycle
+                ! if the electrode is the same
+                if ( ProjElec_same(proj_T(it)%R(ip)%L, &
+                     Elecs(iE),mols(im),proj_T(it)%R(ip)%L%idx) ) then
+                   call region_union(mols(im)%orb,Elecs(iE)%o_inD,r_tmp)
+                   if ( r_tmp%n /= mols(im)%orb%n ) then
+                   ! The overlap region does not fully co-incide
+                   ! with the molecule region.
+                   ! Hence the projection is erroneuos
+                      call print_proj(proj_T(it)%R(ip)%L)
+                      call die('The scattering states are not fully &
+                           &encapsulated on a projection. This is not allowed.')
+                   end if
+                end if
+                checked(im,iE) = .true.
+             end do
+          end do
+       end do
+    end do
+
+    call region_delete(r_tmp)
+
+  end subroutine proj_print
+
+  subroutine init_proj_T( N_Elec, Elecs , save_DATA )
+
+    use fdf
+    use parallel, only : Node
+    use dictionary
+
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    type(dict), intent(inout) :: save_DATA
+
+    character(len=100) :: char
+    type(block_fdf) :: bfdf
+    type(parsed_line), pointer :: pline
+    integer :: ipt, ip, iE_p, im_p, ip_p, iE_c, im_c, ip_c, it, iE
+
+    ! Local reading block to accomodate several permutations
+    ! of the projections
+    ! Currently we "only" allow 5000 permutations
+    ! of projections.
+    ! For 4 molecules with 
+    integer, parameter :: N_PE = 5000
+    type(tProjElec) :: tmp_tPE(N_PE)
+    integer :: itmp
+    logical :: all_T, reflect, any_skipped
+    logical :: checked
+
+    N_proj_T = 0
+    N_proj_E = 0
+    ! if there are no molecules, we return immediately
+    if ( N_mol == 0 ) return
+
+    ! If the projection block exists
+    ! it means the user is requesting projections.
+    if ( .not. fdf_defined('TBT.Projs.T') ) return
+
+    if ( .not. fdf_block('TBT.Projs.T',bfdf) ) then
+       call die('TBT.Projs.T is not a block, please correct')
+    end if
+
+    ! Whether we should calculate all T?
+    all_T = ('proj-T-all'.in.save_DATA)
+    reflect = ('proj-T-reflect'.in.save_DATA)
+    any_skipped = .false.
+    ! Now all_T determines which projections we will utilize
+    ! The regular electrode loop runs:
+    ! do iEl = 1 , N_Elec
+    !   do jEl = 1 , N_Elec
+    !     if ( .not. all_T .and. jEl <= iEl ) cycle
+    !   end do
+    ! end do
+    ! Hence for cases where not all are calculated
+    ! Wheter we should reject any electrodes in the 
+
+    ! First read in number of T-projections
+    do while ( fdf_bline(bfdf,pline) )
+
+       ! skip empty line
+       if ( fdf_bnnames(pline) == 0 ) cycle
+       char = fdf_bnames(pline,1)
+       if ( .not. leqi(char,'from') ) cycle
+       if ( fdf_bnnames(pline) < 2 ) then
+          call die('Error in TBT.Projection.T block, from <projection> needed.')
+       end if
+
+       ! Count number of LHS projections
+       char = fdf_bnames(pline,2)
+
+       ! Calculate number of projections that is requested
+       call parse_T(N_Elec,Elecs,N_mol,mols,char,iE_p,im_p,ip_p)
+
+       ! In case we do not calculate all projections.
+       ! Then we should not take the last electrode
+       if ( (.not. all_T) .and. iE_p == N_Elec ) then
+          if ( Node == 0 ) then
+             if ( .not. any_skipped ) write(*,*) ! newline
+             any_skipped = .true.
+             write(*,'(a)')'tbtrans: Projection "from '//trim(char)//'" has &
+                  &been silently rejected.'
+          end if
+          cycle ! all these projections will be skipped
+       end if
+
+       ! Check that the -> are all calculated
+       itmp = 0
+       do while ( fdf_bline(bfdf,pline) )
+
+          ! Skip empty lines
+          if ( fdf_bnnames(pline) == 0 ) cycle
+          char = fdf_bnames(pline,1)
+          if ( leqi(char,'end') ) exit
+          
+          call parse_T(N_Elec,Elecs,N_mol,mols,char,iE_c,im_c,ip_c)
+          
+          ! we do not allow equal projections (this is actually
+          ! no projection)
+          if ( ip_p == 0 .and. ip_c == 0 ) cycle
+
+          checked = .false.
+          if ( all_T ) then
+             if ( iE_c /= iE_p ) checked = .true.
+          else if ( iE_p < iE_c ) then
+             checked = .true.
+          end if
+          
+          if ( reflect .and. iE_c == iE_p ) checked = .true.
+          
+          if ( checked ) then
+             itmp = 1 ! assert that it will be runned
+             
+             ! Add all the left projections, if they do not exist already
+             if ( N_proj_E == 0 ) then
+                if ( ip_c < 0 ) then
+                   N_proj_E = N_proj_E + 1
+                   call init_perm(tmp_tPE(N_proj_E),Elecs(iE_c),mols(im_c),-ip_c)
+                else
+                   do ip = 1 , ip_c
+                      N_proj_E = N_proj_E + 1
+                      call init_perm(tmp_tPE(N_proj_E),Elecs(iE_c),mols(im_c),ip)
+                   end do
+                end if
+             else if ( ip_c < 0 .and. N_proj_E > 0 ) then
+                if ( pElec_exist(N_proj_E,tmp_tPE,Elecs(iE_c),mols(im_c),-ip_c)>0 ) cycle
+                N_proj_E = N_proj_E + 1
+                call init_perm(tmp_tPE(N_proj_E),Elecs(iE_c),mols(im_c),-ip_c)
+             else if ( ip_c > 0 .and. N_proj_E > 0 ) then
+                do ip = 1 , ip_c
+                   if ( pElec_exist(N_proj_E,tmp_tPE,Elecs(iE_c),mols(im_c),ip)>0 ) cycle
+                   N_proj_E = N_proj_E + 1
+                   call init_perm(tmp_tPE(N_proj_E),Elecs(iE_c),mols(im_c),ip)
+                end do
+             end if
+             
+          end if
+          
+       end do
+
+       if ( ip_p == 0 .and. itmp == 0 ) then
+          call init_perm(tmp_tPE(1),Elecs(iE_p),mols(im_p),ip_p)
+          call init_perm(tmp_tPE(2),Elecs(iE_c),mols(im_c),ip_c)
+          call print_proj(tmp_tPE(1))
+          call print_proj(tmp_tPE(2))
+
+          call die('Error in input, a non-projected from has no &
+               &viable to projections. Please ensure your input is &
+               &correct.')
+       end if
+       if ( itmp == 0 ) cycle
+
+       ! Add all the left projections, if they do not exist already
+       ! We first do it here to capture the user doing 
+       ! something wrong... (i.e. create Left -> Right, i.e. no projection)
+       if ( N_proj_E == 0 ) then
+          if ( ip_p < 0 ) then
+             N_proj_E = N_proj_E + 1
+             call init_perm(tmp_tPE(N_proj_E),Elecs(iE_p),mols(im_p),-ip_p)
+          else
+             do ip = 1 , ip_p
+                N_proj_E = N_proj_E + 1
+                call init_perm(tmp_tPE(N_proj_E),Elecs(iE_p),mols(im_p),ip)
+             end do
+          end if
+       else if ( ip_p < 0 .and. N_proj_E > 0 ) then
+          if ( pElec_exist(N_proj_E,tmp_tPE,Elecs(iE_p),mols(im_p),-ip_p)>0 ) cycle
+          N_proj_E = N_proj_E + 1
+          call init_perm(tmp_tPE(N_proj_E),Elecs(iE_p),mols(im_p),-ip_p)
+       else if ( ip_p > 0 .and. N_proj_E > 0 ) then
+          do ip = 1 , ip_p
+             if ( pElec_exist(N_proj_E,tmp_tPE,Elecs(iE_p),mols(im_p),ip)>0 ) cycle
+             N_proj_E = N_proj_E + 1
+             call init_perm(tmp_tPE(N_proj_E),Elecs(iE_p),mols(im_p),ip)
+          end do
+       end if
+       
+       ! number of LHS projections
+       N_proj_T = N_proj_T + max(1,ip_p) ! ip_p will for ONE projection be the negative index
+
+    end do
+    
+    call fdf_brewind(bfdf)
+
+    if ( N_proj_T == 0 .or. N_proj_E == 0 ) then
+       call die('The projection block was ill-formatted &
+            &or all projections has been rejected. Check input.')
+    end if
+
+    ! Actually read them in...
+    allocate(proj_T(N_proj_T),proj_E(N_proj_E))
+
+    ! Copy over the different projections saved in tmp_pE
+    do it = 1 , N_proj_E
+
+       proj_E(it)%El  => tmp_tPE(it)%El
+       proj_E(it)%mol => tmp_tPE(it)%mol
+       proj_E(it)%idx =  tmp_tPE(it)%idx
+
+       ! Just to be sure
+       if ( proj_E(it)%idx == 0 ) then
+          call die('Error in setting up the projections, &
+               &please contact nickpapior@gmail.com')
+       end if
+
+       ipt = proj_E(it)%mol%proj(proj_E(it)%idx)%n
+       allocate(proj_E(it)%bGk(ipt,ipt))
+
+    end do
+    
+    ipt = 0
+    ! Start reading
+    do while ( fdf_bline(bfdf,pline) )
+       ! Skip empty lines
+       if ( fdf_bnnames(pline) == 0 ) cycle
+       
+       char = fdf_bnames(pline,1)
+       if ( leqi(char,'from') ) then
+          ! We have started a new T-projection 
+
+          char = fdf_bnames(pline,2)
+          
+          ! Parse the parent designation (hence _p)
+          call parse_T(N_Elec,Elecs,N_mol,mols,char,iE_p,im_p,ip_p)
+
+          if ( .not. all_T .and. iE_p == N_Elec ) then
+             ! quick skip till the end
+             do while ( fdf_bline(bfdf,pline) ) 
+                if ( fdf_bnnames(pline) == 0 ) cycle
+                char = fdf_bnames(pline,1)
+                if ( leqi(char,'end') ) exit
+             end do
+             cycle
+          end if
+
+          ! Check that no previous permutations has been created
+          if ( ipt > 0 ) then
+             if ( ip_p > 0 ) then
+                ! this means that all projections of one molecule
+                ! is used
+                do ip = 1 , ip_p
+                   if ( perm_exist(ipt,proj_T(1:ipt), &
+                        Elecs(iE_p),mols(im_p),ip) ) then
+                      call init_perm(tmp_tPE(1),Elecs(iE_p),mols(im_p),ip)
+                      write(*,'(2a)')'tbtrans: Projection from: '//trim(char), &
+                           ' already created via this construct:'
+                      call print_proj(tmp_tPE(1))
+                      call die('from permutation already created')
+                   end if
+                end do
+             else
+                if ( perm_exist(ipt,proj_T(1:ipt), &
+                     Elecs(iE_p),mols(im_p),-ip_p) ) then
+                   call init_perm(tmp_tPE(1),Elecs(iE_p),mols(im_p),-ip_p)
+                   write(*,'(2a)')'tbtrans: Projection from: '//trim(char), &
+                        ' already created via this construct:'
+                   call print_proj(tmp_tPE(1))
+                   call die('from permutation already created')
+                end if
+             end if
+          end if
+
+          ! Now we need to figure out the number of attached permutations
+          ! This turns out to be a little bit difficult due to the 
+          ! possibility of individual lines
+          ! The best thing to do is to read in this block and incrementally 
+          ! attach them to individually to each of the previous ones.
+          itmp = 0
+          ! Parse the child designation (hence _c)
+          do while ( fdf_bline(bfdf,pline) )
+
+             ! Skip empty lines
+             if ( fdf_bnnames(pline) == 0 ) cycle
+             char = fdf_bnames(pline,1)
+             if ( leqi(char,'end') ) exit
+             
+             ! We must have a RHS projection
+             ! Parse the parent designation (hence _p)
+             call parse_T(N_Elec,Elecs,N_mol,mols,char,iE_c,im_c,ip_c)
+
+             ! If we do not calculate the transmission
+             ! to this one, then skip the projection
+             if ( ((.not. all_T) .and. iE_c < iE_p) .or. &
+                  ((.not. reflect) .and. iE_c == iE_p) ) then
+                if ( Node == 0 ) then
+                   if ( .not. any_skipped ) write(*,*) ! newline
+                   any_skipped = .true.
+                   write(*,'(a)')'tbtrans: Projection "from '//&
+                        trim(Elecs(iE_p)%name)// &
+                        ' to '//trim(char)//'" has been silently rejected.'
+                end if
+                cycle
+             end if
+
+             ! Check that the permutations are not previously defined
+             if ( itmp > 0 ) then
+                do it = 1 , itmp
+                   if ( ip_c < 0 ) then
+                      if ( ProjElec_same(tmp_tPE(it), &
+                           Elecs(iE_c),mols(im_c), -ip_c) ) then
+                         write(*,*)'tbtrans: Projection already existing:'
+                         call print_proj(tmp_tPE(it))
+                         call die('Projection already existing')
+                      end if
+                   else
+                      do ip = 1 , ip_c
+                         if ( ProjElec_same(tmp_tPE(it), &
+                              Elecs(iE_c),mols(im_c), ip) ) then
+                            write(*,*)'tbtrans: Projection already existing...'
+                            call print_proj(tmp_tPE(it))
+                            call die('Projection already existing')
+                         end if
+                      end do
+                   end if
+                end do
+             end if
+
+             ! Add all permutations of this one to the list
+             if ( ip_c <= 0 ) then
+                itmp = itmp + 1
+                if ( itmp > N_PE ) then
+                   write(*,*) 'You must truly have MANY projections? :)'
+                   call die('Unrealistic high number of projections &
+                        &please edit file m_tbt_proj.F90 (increase N_PE)')
+                end if
+                ! The easy case (one projection)
+                call init_perm(tmp_tPE(itmp),Elecs(iE_c),mols(im_c),-ip_c)
+             else
+                do ip = 1 , ip_c
+                   itmp = itmp + 1
+                   if ( itmp > N_PE ) then
+                      write(*,*) 'You must truly have MANY projections? :)'
+                      call die('Unrealistic high number of projections &
+                           &please edit file m_tbt_proj.F90 (increase N_PE)')
+                   end if
+                   call init_perm(tmp_tPE(itmp),Elecs(iE_c),mols(im_c),ip)
+                end do
+             end if
+
+          end do
+
+          ! In case we have found no RHS permutations
+          ! Then immediately skip it...
+          if ( itmp == 0 ) cycle
+
+          ! Now we should add the LHS projection
+          if ( ip_p <= 0 ) then
+             ipt = ipt + 1
+
+             ! Create LHS link
+             if ( ip_p == 0 ) then
+                nullify(proj_T(ipt)%L)
+                allocate(proj_T(ipt)%L)
+                call init_perm(proj_T(ipt)%L,Elecs(iE_p),mols(im_p),-ip_p)
+             else
+                iE = pElec_exist(N_proj_E,proj_E,Elecs(iE_p),mols(im_p),-ip_p)
+                if ( iE == 0 ) call die('Error in programming, tbt_proj [1]')
+                proj_T(ipt)%L => proj_E(iE)
+             end if
+
+             ! Add the RHS projection permutations
+             nullify(proj_T(ipt)%R)
+             allocate(proj_T(ipt)%R(itmp))
+             do it = 1 , itmp
+                iE = pElec_exist(N_proj_E,proj_E, &
+                     tmp_tPE(it)%El,tmp_tPE(it)%mol,tmp_tPE(it)%idx)
+                if ( iE == 0 ) then
+                   ! We must have a pure projection
+                   nullify(proj_T(ipt)%R(it)%L)
+                   allocate(proj_T(ipt)%R(it)%L)
+                   proj_T(ipt)%R(it)%L%El  => tmp_tPE(it)%El
+                   proj_T(ipt)%R(it)%L%idx =  tmp_tPE(it)%idx
+                else
+                   proj_T(ipt)%R(it)%L => proj_E(iE)
+                end if
+             end do
+
+          else
+             do ip = 1 , ip_p
+                ipt = ipt + 1
+
+                ! Create link to LHS
+                iE = pElec_exist(N_proj_E,proj_E,Elecs(iE_p),mols(im_p),ip)
+                if ( it == 0 ) call die('Error in programming, tbt_proj [2]')
+                proj_T(ipt)%L => proj_E(iE)
+                
+                nullify(proj_T(ipt)%R)
+                allocate(proj_T(ipt)%R(itmp))
+                do it = 1 , itmp
+                   iE = pElec_exist(N_proj_E,proj_E, &
+                        tmp_tPE(it)%El,tmp_tPE(it)%mol,tmp_tPE(it)%idx)
+                   if ( iE == 0 ) then
+                      ! We must have a pure projection
+                      nullify(proj_T(ipt)%R(it)%L)
+                      allocate(proj_T(ipt)%R(it)%L)
+                      proj_T(ipt)%R(it)%L%El  => tmp_tPE(it)%El
+                      proj_T(ipt)%R(it)%L%idx =  tmp_tPE(it)%idx
+                   else
+                      proj_T(ipt)%R(it)%L => proj_E(iE)
+                   end if
+                end do
+             end do
+          end if
+          
+       end if
+
+    end do
+
+    if ( Node == 0 .and. any_skipped ) then
+       write(*,'(a)') 'tbtrans: Check manual for allowing all projections'
+    end if
+
+  contains
+
+    ! This subroutine calculates the number of projections
+    ! that is attached to the projection
+    ! Say:
+    !   M1.P1
+    !   M1.P2
+    !  'E1.M1' will result in 2 projections
+    !  'E1.M1.P1' will result in 1 projection.
+    subroutine parse_T(N_Elec,Elecs,N_mol,mols,EMP,iE,im,N_p)
+      integer, intent(in) :: N_Elec
+      type(Elec), intent(in) :: Elecs(N_Elec)
+      integer, intent(in) :: N_mol
+      type(tProjMol), intent(in) :: mols(N_mol)
+      character(len=*), intent(in) :: EMP
+      integer, intent(out) :: iE, im, N_p
+      character(len=100) :: E, M, P
+      
+      integer :: ip, idot, i
+
+      ! We only have a single designation, 
+      ! which is a non-projected one
+      ! The index indicates that it is a "full" identity(1) projection
+      im  = 1 ! just to not fuck up wrong molecule pointer
+      N_p = 0
+      
+      idot = index(EMP,'.') ! we know it must exist
+      if ( idot > 0 ) then
+         E = EMP(1:idot-1)
+      else
+         E = trim(EMP)
+      end if
+      ! Find electrode index
+      do iE = 1 , N_Elec
+         if ( leqi(E,Elecs(iE)%name) ) exit
+      end do
+      if ( iE > N_Elec ) then
+         write(*,*)'tbtrans: Could not recognize electrode designation in TBT.Proj.T block'
+         write(*,*)'tbtrans: The electrode named '//trim(E)//' could not be found.'
+         call die('Error in input')
+      end if
+      if ( idot < 1 ) return
+
+      im = 0
+      M = EMP(idot+1:)
+      idot = index(M,'.')
+      ! if idot is 0 we use all projections of molecule M
+      ! else, we have a finer designation
+      if ( idot > 0 ) then
+         P = M(idot+1:)
+         if ( len_trim(P) == 0 ) then
+            call die('TBT.Projs.T projection not designated in: '//trim(EMP))
+         end if
+         M = M(1:idot-1)
+         ! Ensure that the projection exists, else die
+         do im = 1 , N_mol
+            if ( leqi(M,mols(im)%name) ) then
+               i = size(mols(im)%proj)
+               N_p = 0
+               do ip = 1 , i
+                  if ( leqi(P,mols(im)%proj(ip)%name) ) then
+                     ! We have a match (we return the index)
+                     N_p = - ip
+                     return
+                  end if
+               end do
+            end if
+         end do
+      else
+         do im = 1 , N_mol
+            if ( leqi(M,mols(im)%name) ) then
+               N_p = size(mols(im)%proj)
+               return
+            end if
+         end do
+      end if
+
+      call die('Could not parse input: '//trim(EMP)//' some &
+           &molecules/projections does not exist.')
+      
+    end subroutine parse_T
+
+    function pElec_exist(N_E,pE,El,mol,ip_p) result(iE)
+      integer, intent(in) :: N_E
+      type(tProjElec), intent(in) :: pE(N_E)
+      type(Elec), intent(in) :: El
+      type(tProjMol), intent(in) :: mol
+      integer, intent(in) :: ip_p
+      integer :: iE
+      logical :: exist
+
+      do iE = 1 , N_E
+         exist = ProjElec_same(pE(iE),El,mol,ip_p) 
+         if ( exist ) return
+      end do
+      iE = 0
+      
+    end function pElec_exist
+
+    function perm_exist(N_p,proj_T,El,mol,ip_p) result(exist)
+      integer, intent(in) :: N_p
+      type(tProjT), intent(in) :: proj_T(N_p)
+      type(Elec), intent(in) :: El
+      type(tProjMol), intent(in) :: mol
+      integer, intent(in) :: ip_p
+      logical :: exist
+      integer :: ip
+
+      do ip = 1 , N_p
+         exist = ProjElec_same(proj_T(ip)%L,El,mol,ip_p) 
+         if ( exist ) return
+      end do
+      
+    end function perm_exist
+
+    subroutine init_perm(pTE,El,mol,idx)
+      type(tProjElec), intent(inout) :: pTE
+      type(Elec), target :: El
+      type(tProjMol), target :: mol
+      integer, intent(in) :: idx
+      pTE%El => El
+      if ( idx == 0 ) then
+         nullify(pTE%mol)
+      else
+         pTE%mol => mol
+      end if
+      pTE%idx = idx
+    end subroutine init_perm
+
+  end subroutine init_proj_T
+
+  subroutine print_proj(tPE)
+    type(tProjElec), intent(in) :: tPE
+    write(*,'(a)') trim(proj_T_name(tPE))
+  end subroutine print_proj
+
+  function proj_T_name(tPE) result(name)
+    type(tProjElec), intent(in) :: tPE
+    character(len=NF90_MAX_NAME) :: name
+    if ( tPE%idx > 0 ) then
+       name = trim(tPE%mol%name) // '.'
+       name = trim(name) // trim(tPE%mol%proj(tPE%idx)%name) // '.'
+    else
+       name = ' '
+    end if
+    name = trim(name) // trim(tPE%El%name)
+  end function proj_T_name
+
+
+  function ProjElec_same(pTE,El,mol,ip_p) result(exist)
+    type(tProjElec), intent(in) :: pTE
+    type(Elec), intent(in) :: El
+    type(tProjMol), intent(in) :: mol
+    integer, intent(in) :: ip_p
+    logical :: exist
+    
+    exist = ( pTE%El%name == El%name ) 
+    if ( exist .and. ip_p > 0 .and. pTE%idx > 0 ) then
+       ! We can check whether the molecule is the same
+       exist = ( pTE%mol%name == mol%name )
+    end if
+    if ( exist ) then
+       ! We can check whether the projection exists
+       exist = ( pTE%idx == ip_p )
+    end if
+    
+  end function ProjElec_same
+  
+  ! We only allow Gamma-point projections.
+  subroutine init_Proj_save( fname, TSHS , r, ispin, N_Elec, Elecs, &
+       nkpt, kpt, wkpt, NE , r_Buf, save_DATA )
+
+    use parallel, only : Node, Nodes
+    use units, only: eV
+    use fdf, only : fdf_get
+
+    use class_dSpData1D
+    use class_dSpData2D
+
+    use intrinsic_missing, only : VNORM
+    use m_io_s, only : file_exist
+
+    use dictionary
+    use nf_ncdf
+    use m_timestamp, only : datestring
+#ifdef MPI
+    use mpi_siesta, only: MPI_Bcast, MPI_Logical, MPI_Comm_World
+    use mpi_siesta, only: MPI_Send, MPI_Recv, MPI_Status_Size
+    use mpi_siesta, only: MPI_Double_Precision, MPI_Double_Complex
+#endif
+    use m_tbt_hs, only : tTSHS
+
+    character(len=*), intent(in) :: fname
+    type(tTSHS), intent(inout) :: TSHS
+    type(tRegion), intent(in) :: r
+    integer, intent(in) :: ispin
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    integer, intent(in) :: nkpt, NE
+    real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
+    type(tRegion), intent(in) :: r_Buf
+    type(dict), intent(in) :: save_DATA
+
+    type(hNCDF) :: ncdf, grp, grp2, grp3
+    integer :: no, im, Np, ip, i, ik, iN, iE
+    integer :: it, ipt
+    logical :: exist, is_same, isGamma, save_state
+    type(dict) :: dic
+    character(len=NF90_MAX_NAME) :: tmp
+    ! Create allocatables, they are easier to maintain
+    integer :: iEf, mol_nkpt
+    real(dp), allocatable :: eig(:)
+    real(dp), allocatable :: rv(:,:), rS_sq(:,:)
+    complex(dp), allocatable :: zv(:,:), zS_sq(:,:)
+#ifdef MPI
+    integer :: MPIerror, status(MPI_STATUS_SIZE)
+#endif
+    
+    ! There is nothing to initialize
+    if ( N_mol == 0 ) return
+
+    exist = file_exist(fname, Bcast = .true. )
+
+    ! This allows to easily change between algorithms.
+    isGamma = all(TSHS%nsc(:) == 1)
+    if ( isGamma ) then
+       ! We cannot create a k-point resolved projection
+       ! using a Gamma-point calculation
+       mols(:)%Gamma = .true.
+    end if
+
+    if ( exist ) then
+       
+       ! We just make sure the indices are correct
+       ! We do not assure the projections
+       ! This will actually allow the user to replace
+       ! their own projections if they want.
+
+       call ncdf_open(ncdf,fname,mode=NF90_NOWRITE)
+
+       dic = ('no_u'.kv. TSHS%no_u)//('na_u'.kv. TSHS%na_u )
+       dic = dic //('no_d'.kv.r%n)
+       if ( r_Buf%n > 0 ) then
+          dic = dic // ('na_b'.kv.r_Buf%n)
+       end if
+       call ncdf_assert(ncdf,is_same,dims=dic)
+       call check(dic,is_same,'Dimensions in the PROJ.nc file does not conform &
+            &to the current simulation.')
+
+       ! Check the variables
+       dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) )
+       dic = dic // ('xa'.kvp. TSHS%xa) // ('cell'.kvp.TSHS%cell)
+       dic = dic // ('pivot'.kvp.r%r)
+       call ncdf_assert(ncdf,is_same,vars=dic, d_EPS = 1.e-4_dp )
+       call check(dic,is_same,'lasto, xa or cell in the PROJ.nc file does &
+            &not conform to the current simulation.',.false.)
+
+       if ( .not. isGamma ) then
+          ! Check the k-points
+          allocate(rv(3,nkpt))
+          do i = 1 , nkpt
+             call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
+          end do
+          dic = ('kpt'.kvp.rv) // ('wkpt'.kvp. wkpt)
+          call ncdf_assert(ncdf,is_same,vars=dic, d_EPS = 1.e-7_dp )
+          if ( .not. is_same ) then
+             call die('k-points or k-weights are not the same')
+          end if
+          call delete(dic,dealloc = .false. )
+          deallocate(rv)
+       end if
+
+       ! We check each molecule in the projection file
+       do im = 1 , N_mol
+
+          call ncdf_open_grp(ncdf,mols(im)%name,grp)
+
+          ! Check number of atoms in projection,
+          ! and confirm number of projections.
+          ! *** Currently we do not allow extending
+          !     the projection file. ***
+          dic = ('na'.kv.mols(im)%atom%n) // ('no'.kv.mols(im)%orb%n)
+          call ncdf_assert(grp,is_same,dims = dic )
+          call check(dic,is_same,'Projection atoms, orbitals and/or number of &
+               &projections does not conform to the current simulation.')
+
+          ! Check that the projection atoms and levels are the is_same
+          ! we have another group for each lvl
+          dic = ('atom'.kvp.mols(im)%atom%r)//('orb'.kvp.mols(im)%orb%r)
+          call ncdf_assert(grp,is_same,vars = dic )
+          call check(dic,is_same,'Projection atom list &
+                  &does not conform to the current simulation.',.false.)
+
+          ! The variable 'eig' have to be present,
+          ! We do not save the wave-function. 
+          ! If we had 1000 k-points and a huge molecule, the file
+          ! would be immense. We only save the state in the projection
+          dic = ('eig'.kv.1)
+          call ncdf_assert(grp,is_same,has_vars=dic)
+          call check(dic,is_same,'Projection eigen values &
+                  &does not exist in the current simulation.')
+          
+          ! Loop all groups
+          Np = size(mols(im)%proj)
+          do ip = 1 , Np
+             
+             call ncdf_open_grp(grp,mols(im)%proj(ip)%name,grp2)
+
+             dic = ('nlvl'.kv.mols(im)%proj(ip)%n)
+             call ncdf_assert(grp2,is_same,dims = dic )
+             call check(dic,is_same,'Projection levels does not &
+                  &conform to the current simulation.')
+             
+             ! Check the levels
+             dic = ('lvl'.kvp.mols(im)%proj(ip)%r)
+             call ncdf_assert(grp2,is_same,vars = dic )
+             call check(dic,is_same,'Projection level list &
+                  &does not conform to the current simulation.',.false.)
+             
+          end do
+          
+       end do
+
+       call ncdf_close(ncdf)
+
+       if ( Node == 0 ) then
+          write(*,'(a)') 'tbtrans: Projection tables are re-used from the &
+               &TBT.Proj.nc file.'
+       end if
+
+       call die('Currently the re-usage of the projection files does not work')
+
+       return
+
+    end if
+
+    ! The projection file does not exist.
+    ! We need to create it.
+    if ( Node == 0 ) then
+       write(*,'(/,a)') 'tbtrans: Initializing projection molecules...'
+    end if
+    
+    ! For easiness we do not parallelize this
+    ! Typically molecules are also much smaller
+    ! and needs only one diagonalization
+    ! If needed, we could diagonalize one molecule per processor,
+    ! then collect. However, more than often this will probably
+    ! be restricted to one molecule.
+    no = fdf_get('TBT.CDF.Compress',0)
+    no = fdf_get('TBT.Proj.CDF.Compress',no)
+    if ( no < 0 ) no = 0
+    if ( 9 < no ) no = 9
+
+    call ncdf_create(ncdf,fname,mode = NF90_NETCDF4 , &
+         compress_lvl = no )
+
+    ! Save the current system size
+    call ncdf_def_dim(ncdf,'no_u',TSHS%no_u)
+    call ncdf_def_dim(ncdf,'na_u',TSHS%na_u)
+    call ncdf_def_dim(ncdf,'xyz',3)
+    call ncdf_def_dim(ncdf,'one',1)
+    call ncdf_def_dim(ncdf,'no_d',r%n)
+    call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED)
+    call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
+    if ( r_Buf%n > 0 ) then
+       call ncdf_def_dim(ncdf,'na_b',r_Buf%n)
+    end if
+
+    dic = ('source'.kv.'TBtrans projection')
+
+    tmp = datestring()
+    dic = dic//('date'.kv.tmp(1:10))
+    dic = dic//('info'.kv.'State levels are wrt. HOMO=-1,Ef=0,LUMO=1')
+    if ( all(TSHS%nsc(:) == 1) ) then
+       dic = dic // ('Gamma'.kv.'true')
+    else
+       dic = dic // ('Gamma'.kv.'false')
+    end if
+    if ( TSHS%nspin > 1 ) then
+       if ( ispin == 1 ) then
+          dic = dic // ('spin'.kv.'UP')
+       else
+          dic = dic // ('spin'.kv.'DOWN')
+       end if
+    end if
+    call ncdf_put_gatt(ncdf, atts = dic )
+    call delete(dic)
+
+    ! Create all the variables needed to save the states
+    dic = ('info'.kv.'Last orbitals of the equivalent atom')
+    call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
+         atts = dic)
+    dic = dic//('info'.kv.'Unit cell')//('unit'.kv.'Bohr')
+    call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
+         atts = dic)
+    dic = dic//('info'.kv.'Atomic coordinates')
+    call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
+         atts = dic)
+    call delete(dic)
+
+    dic = dic//('info'.kv.'Device region orbital pivot table')
+    call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
+         atts = dic)
+
+    if ( r_Buf%n > 0 ) then
+       dic = dic//('info'.kv.'Buffer atoms')
+       call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
+            atts = dic)
+    end if
+
+    if ( .not. isGamma ) then
+
+       dic = ('info'.kv.'k point weights')
+       call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
+            atts = dic)
+       dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
+       call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
+            atts = dic)
+
+    end if
+
+    dic = dic//('info'.kv.'Energy points')//('unit'.kv.'Ry')
+    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
+         atts = dic)
+    call delete(dic)
+
+    call ncdf_put_var(ncdf,'pivot',r%r)
+    call ncdf_put_var(ncdf,'cell',TSHS%cell)
+    call ncdf_put_var(ncdf,'xa',TSHS%xa)
+    call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
+    if ( r_Buf%n > 0 ) then
+       call ncdf_put_var(ncdf,'a_buf',r_Buf%r)
+    end if
+
+    ! Save all k-points
+    ! Even though they are in an unlimited dimension,
+    ! we save them instantly.
+    ! This ensures that a continuation can check for 
+    ! the same k-points in the same go.
+    if ( .not. isGamma ) then
+       
+       allocate(rv(3,nkpt))
+       do i = 1 , nkpt
+          call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
+       end do
+       call ncdf_put_var(ncdf,'kpt',rv)
+       call ncdf_put_var(ncdf,'wkpt',wkpt)
+       deallocate(rv)
+
+    end if
+
+    do im = 1 , N_mol
+
+       ! Whether this molecule is Gamma-calculated
+       isGamma = mols(im)%Gamma
+       if ( isGamma ) then
+          mol_nkpt = 1
+       else
+          mol_nkpt = nkpt
+       end if
+       ! Correct for parallel execution
+       if ( mod(mol_nkpt,Nodes) > 0 ) then
+          mol_nkpt = mol_nkpt + Nodes - mod(mol_nkpt,Nodes)
+       end if
+
+       if ( Node == 0 ) then
+          write(*,'(2a)') 'tbtrans: Calculating eigenvalues and |> of molecule: ', &
+               trim(mols(im)%name)
+       end if
+
+       ! Whether the full states are to be saved
+       save_state = fdf_get('TBT.Proj.'//trim(mols(im)%name)//'.State',.false.)
+
+       ! # of orbitals for this molecule
+       no = mols(im)%orb%n
+       call ncdf_def_grp(ncdf,trim(mols(im)%name),grp)
+
+       ! Define the molecule
+       call ncdf_def_dim(grp,'na',mols(im)%atom%n)
+       call ncdf_def_dim(grp,'no',mols(im)%orb%n)
+       ! the different number of projection levels 
+       ! must equal the # of states
+       call ncdf_def_dim(grp,'nlvl',mols(im)%lvls%n)
+
+       ! A list the used projections
+       dic = ('info'.kv.'Unique projections')
+       call ncdf_def_var(grp,'lvl',NF90_INT,(/'nlvl'/),atts=dic)
+       call ncdf_put_var(grp,'lvl',mols(im)%lvls%r)
+
+       dic = ('info'.kv.'e_i|> for unique projections')
+       if ( isGamma ) then
+          call ncdf_def_var(grp,'state',NF90_DOUBLE,(/'no  ','nlvl'/),atts=dic)
+       else
+          call ncdf_def_var(grp,'state',NF90_DOUBLE_COMPLEX, &
+               (/'no  ','nlvl','nkpt'/),atts=dic)
+       end if
+
+       ! Define variables to contain the molecule
+       dic = ('info'.kv.'Molecule atoms')
+       call ncdf_def_var(grp,'atom',NF90_INT,(/'na'/),atts=dic)
+       call ncdf_put_var(grp,'atom',mols(im)%atom%r)
+       dic = dic//('info'.kv.'Molecule orbitals')
+       call ncdf_def_var(grp,'orb',NF90_INT,(/'no'/),atts=dic)
+       call ncdf_put_var(grp,'orb',mols(im)%orb%r)
+       dic = dic//('info'.kv.'State e_i|> for all i')
+       if ( save_state ) then
+          if ( isGamma ) then
+             call ncdf_def_var(grp,'states',NF90_DOUBLE,(/'no','no'/),atts=dic)
+          else
+             call ncdf_def_var(grp,'states',NF90_DOUBLE_COMPLEX, &
+                  (/'no  ','no  ','nkpt'/),atts=dic)
+          end if
+       end if
+       dic = dic//('info'.kv.'Eigenvalues')//('unit'.kv.'Ry')
+       if ( isGamma ) then
+          call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no'/),atts=dic)
+       else
+          call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no  ','nkpt'/),atts=dic)
+       end if
+       call delete(dic)
+
+       ! If the projection should save the DOS
+       ! add the DOS
+       if ( mols(im)%DOS ) then
+
+          ! Save the diagonal |><| overlap variable
+          !dic = dic//('info'.kv.'Single projected diagonal overlap matrix')
+          !call ncdf_def_var(grp,'kb_SD',NF90_DOUBLE_COMPLEX,(/'no  ','nlvl','nkpt'/), atts = dic)
+
+          !dic = dic//('info'.kv.'<|Gf|> / Pi')
+          !call ncdf_def_var(grp,'bGfk',NF90_DOUBLE_COMPLEX,(/'nlvl','ne  ','nkpt'/), atts = dic)
+
+          ! Create the DOS variable (actually just kb_SD * bGfk)
+          !dic = dic//('info'.kv.'Single projected density of states <|Gf|>kb_SD')
+          !call ncdf_def_var(grp,'DOS',NF90_DOUBLE,(/'no  ','nlvl','ne  ','nkpt'/), atts = dic)
+          
+       end if
+       
+       ! Number of projections on this molecule...
+       Np = size(mols(im)%proj)
+
+       ! Create the projections
+       do ip = 1 , Np
+
+          call ncdf_def_grp(grp,mols(im)%proj(ip)%name,grp2)
+          call ncdf_def_dim(grp2,'nlvl',mols(im)%proj(ip)%n)
+          
+          dic = dic//('info'.kv.'State levels associated with this projection')
+          call ncdf_def_var(grp2,'lvl',NF90_INT,(/'nlvl'/), atts = dic)
+          call ncdf_put_var(grp2,'lvl',mols(im)%proj(ip)%r)
+
+          ! Save the diagonal |><| overlap variable
+          !dic = dic//('info'.kv.'Projected diagonal overlap matrix')
+          !call ncdf_def_var(grp2,'kb_SD',NF90_DOUBLE_COMPLEX,(/'no  ','nkpt'/), atts = dic)
+
+          !dic = dic//('info'.kv.'<|Gf|>')
+          !call ncdf_def_var(grp2,'bGfk',NF90_DOUBLE_COMPLEX,(/'ne  ','nkpt'/), atts = dic)
+
+          ! Create the DOS variable (actually just kb_SD * bGfk)
+          !dic = dic//('info'.kv.'Projected density of states <|Gf|>kb_SD')
+          !call ncdf_def_var(grp2,'DOS',NF90_DOUBLE,(/'no  ','ne  ','nkpt'/), atts = dic)
+
+          ! Loop all transport stuff and create the variables
+          ! needed
+          Elec_p: do iE = 1 , N_Elec
+             do it = 1 , N_proj_T
+                if ( ProjElec_same(proj_T(it)%L, &
+                     Elecs(iE),mols(im),ip) ) then
+                   ! we have transport from this electrode molecular projection
+                   call ncdf_def_grp(grp2,trim(Elecs(iE)%name),grp3)
+
+                   if ( 'proj-DOS-A' .in. save_DATA ) then
+                      dic = dic//('info'.kv.'Spectral function density of states')
+                      call ncdf_def_var(grp3,'ADOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
+                           atts = dic, chunks = (/r%n,1,1/))
+                   end if
+
+                   
+                   dic = dic//('info'.kv.'Transmission')
+
+                   ! Now we create all transport related quantities
+                   do ipt = 1 , size(proj_T(it)%R)
+
+                      ! Create the transport to
+                      tmp = proj_T_name(proj_T(it)%R(ipt)%L)
+                      if ( proj_T(it)%R(ipt)%L%El == Elecs(iE) ) then
+                         tmp = trim(tmp)//'.R'
+                      else
+                         tmp = trim(tmp)//'.T'
+                      end if
+                      
+                      call ncdf_def_var(grp3,tmp,NF90_DOUBLE, (/'ne  ','nkpt'/), &
+                           atts = dic)
+                      
+                   end do
+                   
+                   ! this electrode will only occur once
+                   cycle Elec_p
+
+                end if
+             end do
+          end do Elec_p
+
+       end do
+       call delete(dic)
+
+       ! Allocate space for calculating the Eigen-values of
+       ! the MPSH
+       allocate(eig(no))
+       if ( isGamma ) then 
+          allocate(rS_sq(no,no),rv(no,no))
+       else
+          allocate(zS_sq(no,no),zv(no,no))
+       end if
+       
+    ikpt: do ik = 1 + Node , mol_nkpt , Nodes
+
+       if ( isGamma ) then 
+          ! We know that ik == mol_nkpt == 1
+          call calc_sqrt_S_Gamma(TSHS,mols(im)%orb,rS_sq)
+       else if ( ik <= nkpt ) then
+          call calc_sqrt_S_kpt(TSHS,mols(im)%orb,zS_sq,kpt(:,ik))
+       end if
+          
+       if ( isGamma ) then
+          call calc_Eig_Gamma(TSHS,mols(im)%orb,eig,rv)
+          call norm_eigenstate_Gamma(mols(im)%orb%n,rv,rS_sq)
+       else if ( ik <= nkpt ) then
+          call calc_Eig_kpt(TSHS,mols(im)%orb,eig,zv,kpt(:,ik))
+          call norm_eigenstate_kpt(mols(im)%orb%n,zv,zS_sq)
+       end if
+          
+       ! figure out the Ef level
+       do iEf = 1 , no 
+          if ( eig(iEf) > 0._dp ) exit
+       end do
+       ! iEf now contains the index of the LUMO lvl
+
+       ! Create attribute to contain the index of the LUMO level
+       dic = ('HOMO_index'.kv.iEf-1)
+       call ncdf_put_gatt(grp,atts=dic)
+       call delete(dic)
+
+       ! Save the eigen-values
+       if ( isGamma ) then
+          call ncdf_put_var(grp,'eig',eig)
+       else
+
+          call ncdf_put_var(grp,'eig',eig,start=(/1,ik/))
+#ifdef MPI
+          if ( Node == 0 ) then
+             ! The eigen-values
+          do iN = 1 , Nodes - 1
+             if ( ik + iN > nkpt ) exit
+             call MPI_Recv(eig,no,MPI_Double_Precision,iN,iN, &
+                  MPI_Comm_World,status,MPIerror)
+             call ncdf_put_var(grp,'eig',eig,start=(/1,ik+iN/))
+          end do
+          else if ( ik <= nkpt ) then
+             call MPI_Send(eig,no,MPI_Double_Precision,0,Node, &
+                  MPI_Comm_World,MPIerror)
+          end if
+#endif
+       end if
+
+       ! Copy over state levels
+       Np = mols(im)%lvls%n
+       do ip = 1 , Np
+
+          ! Calculate the index for the state
+          i = mols(im)%lvls%r(ip)
+          if ( i > 0 ) then
+             ! We are asking for LU<>+i
+             i = iEf - 1 + i
+          else
+             i = iEf + i
+          end if
+          ! Check that the state actually exists
+          if ( i < 1 .or. no < i ) then
+             write(*,'(a)')'tbtrans: Molecule projection eigenvalues:'
+             do i = 1 , no
+                if ( i < iEf ) then
+                   write(*,'(a,tr1,i4,tr1,e12.5)')'Eigenvalue: ', &
+                        i-iEf,eig(i)/eV
+                else
+                   write(*,'(a,tr1,i4,tr1,e12.5)')'Eigenvalue: ', &
+                        i-iEf+1,eig(i)/eV
+                end if
+             end do
+             call die('Requested levels for projections does not exist, &
+                  &please check eigenvalues before proceeding...')
+          end if
+
+          if ( isGamma ) then
+             rS_sq(:,ip) = rv(:,i)
+          else
+             zS_sq(:,ip) = zv(:,i)
+          end if
+
+       end do
+
+       ! Save states
+       if ( isGamma ) then
+          call ncdf_put_var(grp,'state',rS_sq(:,1:Np), &
+               start=(/1,1/))
+       else
+          call ncdf_put_var(grp,'state',zS_sq(:,1:Np), &
+               start=(/1,1,ik/))
+#ifdef MPI
+          if ( Node == 0 ) then
+             do iN = 1 , Nodes - 1
+                if ( ik + iN > nkpt ) exit
+                call MPI_Recv(zS_sq(1,1),no*Np,MPI_Double_Complex,iN,iN, &
+                     MPI_Comm_World,status,MPIerror)
+                call ncdf_put_var(grp,'state',zS_sq(:,1:Np), &
+                     start=(/1,1,ik+iN/))
+             end do
+          else if ( ik <= nkpt ) then
+             call MPI_Send(zS_sq(1,1),no*Np,MPI_Double_Complex,0,Node, &
+                  MPI_Comm_World,MPIerror)
+          end if
+#endif
+          
+       end if
+       
+       ! Save the states
+       if ( save_state ) then
+          if ( isGamma ) then
+             call ncdf_put_var(grp,'states',rv)
+          else
+             call ncdf_put_var(grp,'states',zv,start=(/1,1,ik/))
+#ifdef MPI
+             if ( Node == 0 ) then
+             do iN = 1 , Nodes - 1
+                if ( ik + iN > nkpt ) exit
+                call MPI_Recv(zv(1,1),no*no,MPI_Double_Complex,iN,iN, &
+                     MPI_Comm_World,status,MPIerror)
+                call ncdf_put_var(grp,'states',zv,start=(/1,1,ik+iN/))
+             end do
+             else if ( ik <= nkpt ) then
+                call MPI_Send(zv(1,1),no*no,MPI_Double_Complex,0,Node, &
+                     MPI_Comm_World,MPIerror)
+             end if
+#endif
+          end if
+       end if
+       
+    end do ikpt
+
+       if ( isGamma ) then
+          deallocate(rS_sq,rv)
+       else
+          deallocate(zS_sq,zv)
+       end if
+       deallocate(eig)
+       
+    end do 
+
+    ! Loop on all electrode projections
+    dic = dic//('info'.kv.'Projected scattering state <i|Gam|j>')
+    do it = 1 , N_proj_E
+      
+       call ncdf_open_grp(ncdf,trim(proj_E(it)%mol%name),grp)
+       call ncdf_open_grp(grp,trim(proj_E(it)%mol%proj(proj_E(it)%idx)%name), &
+            grp2)
+       ! Append electrode name to create variable
+       tmp = trim(proj_E(it)%El%name)//'.bGk'
+       
+       call ncdf_def_var(grp2,tmp,NF90_DOUBLE_COMPLEX, &
+            (/'nlvl','nlvl','ne  ','nkpt'/), atts = dic)
+
+    end do
+
+    ! At this point we still need to add the "non-projected"
+    ! LHS projections.
+    dic = dic//('info'.kv.'Transmission')
+    do it = 1 , N_proj_T
+       if ( proj_T(it)%L%idx == 0 ) then
+          ! We have a simple projection
+          ! Create electrode group
+          call ncdf_def_grp(ncdf,proj_T(it)%L%El%name,grp)
+
+          ! Now we create all transport related quantities
+          do ipt = 1 , size(proj_T(it)%R)
+
+             ! Create the transport to
+             tmp = proj_T_name(proj_T(it)%R(ipt)%L)
+             if ( proj_T(it)%R(ipt)%L%El == proj_T(it)%L%El ) then
+                tmp = trim(tmp)//'.R'
+             else
+                tmp = trim(tmp)//'.T'
+             end if
+             
+             call ncdf_def_var(grp,tmp,NF90_DOUBLE, (/'ne  ','nkpt'/), &
+                  atts = dic)
+             
+          end do
+
+       end if
+    end do
+       
+    call delete(dic)
+    
+    call ncdf_close(ncdf)
+
+    if ( Node == 0 ) then
+       write(*,'(a)') 'tbtrans: Please ensure the projection eigenvalues &
+            &are aligned as you suspect.'
+       write(*,'(a)') 'tbtrans: Molecular states hybridize in proximity &
+            &and energy levels might shift.'
+    end if
+
+  contains
+    
+    subroutine check(dic,same,msg,dealloc)
+      type(dict), intent(inout) :: dic
+      logical, intent(inout) :: same
+      character(len=*), intent(in) :: msg
+      logical, intent(in), optional :: dealloc
+      integer :: i
+      call delete(dic,dealloc=dealloc)
+#ifdef MPI
+      call MPI_Bcast(same,1,MPI_Logical,0, &
+           MPI_Comm_World, i)
+#endif
+      if ( .not. same ) then
+         call die(msg)
+      end if
+    end subroutine check
+
+  end subroutine init_Proj_save
+
+  subroutine proj_cdf_save(fname, ikpt, nE, N_proj_T, proj_T, pDOS, T, &
+       save_DATA)
+    
+    use parallel, only : Node, Nodes
+
+    use dictionary
+    use nf_ncdf
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
+    use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
+    use mpi_siesta, only : MPI_Integer, MPI_STATUS_SIZE
+    use mpi_siesta, only : Mpi_double_precision
+#endif
+    use m_ts_electype
+
+    character(len=*), intent(in) :: fname
+    integer, intent(in) :: ikpt
+    type(tNodeE), intent(in) :: nE
+    integer, intent(in) :: N_proj_T
+    type(tProjT), intent(in) :: proj_T(N_proj_T)
+    real(dp), intent(in) :: pDOS(:,:,:)
+    real(dp), intent(in) :: T(:,:)
+    type(dict), intent(in) :: save_DATA
+
+    type(hNCDF) :: ncdf, gmol, gproj, gEl
+    integer :: ipt, ip, ir
+    real(dp) :: rE
+    character(len=NF90_MAX_NAME) :: cmol, cproj, ctmp
+#ifdef MPI
+    integer :: iN, NDOS, NT
+    real(dp), allocatable :: rDOS(:), rT(:,:)
+    integer :: MPIerror, status(MPI_STATUS_SIZE)
+#endif
+
+#ifdef MPI
+    if ( Nodes > 1 ) then
+       NT = size(T,dim=1)
+       allocate(rT(NT,Nodes-1))
+       NDOS = size(pDOS,dim=1)
+       allocate(rDOS(NDOS))
+    end if
+#endif
+
+    ! Open the netcdf file
+    call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+
+    cmol  = ' '
+    cproj = ' '
+    do ipt = 1 , N_proj_T
+
+       ! We this is the same as a non-projected
+       ! spectral function, hence we skip it...
+       ip = proj_T(ipt)%L%idx
+       if ( ip == 0 ) then
+
+          ! Pristine left hand side scattering states
+          call ncdf_open_grp(ncdf,proj_T(ipt)%L%El%name,gEl)
+
+       else
+
+          if ( cmol /= proj_T(ipt)%L%mol%name ) then
+             cmol = proj_T(ipt)%L%mol%name
+             call ncdf_open_grp(ncdf,cmol,gmol)
+             cproj = ' ' ! forces the projection to be read in
+          end if
+          if ( cproj /= proj_T(ipt)%L%mol%proj(ip)%name ) then
+             cproj = proj_T(ipt)%L%mol%proj(ip)%name
+             call ncdf_open_grp(gmol,cproj,gproj)
+          end if
+
+          call ncdf_open_grp(gproj,proj_T(ipt)%L%El%name,gEl)
+
+          ! We save the DOS calculated from the spectral function
+          if ( 'proj-DOS-A' .in. save_DATA ) then
+             
+             call save_DOS(gEl,'ADOS',ikpt,nE,pDOS(:,2,ipt))
+             
+          end if
+
+       end if
+
+#ifdef MPI
+       if ( Node == 0 ) then
+          do iN = 1 , Nodes - 1
+             if ( nE%iE(iN) > 0 ) then
+                call MPI_Recv(rT(1,iN),NT,Mpi_double_precision, &
+                     iN, iN, Mpi_comm_world,status,MPIerror)
+             end if
+          end do
+       else if ( nE%iE(Node) > 0 ) then
+          call MPI_Send(T(1,ipt),NT,Mpi_double_precision, &
+               0, Node, Mpi_comm_world,MPIerror)
+       end if
+#endif
+
+       ! Loop different -> terminal transports
+       do ip = 1 , size(proj_T(ipt)%R)
+          ! Create name
+          ctmp = proj_T_name(proj_T(ipt)%R(ip)%L)
+          if ( proj_T(ipt)%R(ip)%L%El == proj_T(ipt)%L%El ) then
+             ctmp = trim(ctmp)//'.R'
+          else
+             ctmp = trim(ctmp)//'.T'
+          end if
+
+          if ( nE%iE(Node) > 0 ) then
+             call ncdf_put_var(gEl,ctmp,T(ip,ipt),start = (/nE%iE(Node),ikpt/) )
+          end if
+
+          do iN = 1 , Nodes - 1
+             if ( nE%iE(iN) > 0 ) then
+                call ncdf_put_var(gEl,ctmp,rT(ip,iN),start = (/nE%iE(iN),ikpt/) )
+             end if
+          end do
+       
+       end do
+
+    end do
+
+    call ncdf_close(ncdf)
+       
+#ifdef MPI
+    if ( allocated(rDOS) ) deallocate(rDOS)
+    if ( allocated(rT) ) deallocate(rT)
+#endif
+
+  contains
+
+    subroutine save_DOS(grp,var,ikpt,nE,DOS)
+      type(hNCDF), intent(inout) :: grp
+      character(len=*), intent(in) :: var
+      integer, intent(in) :: ikpt
+      type(tNodeE), intent(in) :: nE
+      real(dp), intent(in) :: DOS(:)
+
+      if ( nE%iE(Node) > 0 ) then
+         call ncdf_put_var(grp,var,DOS,start = (/1,nE%iE(Node),ikpt/) )
+      end if
+      
+#ifdef MPI
+      if ( Node == 0 ) then
+         do iN = 1 , Nodes - 1
+            if ( nE%iE(iN) <= 0 ) cycle
+            call MPI_Recv(rDOS,NDOS,Mpi_double_precision,iN,iN, &
+                 Mpi_comm_world,status,MPIerror)
+            call ncdf_put_var(grp,var,rDOS,start = (/1,nE%iE(iN),ikpt/) )
+         end do
+      else if ( nE%iE(Node) > 0 ) then
+         call MPI_Send(DOS,NDOS,Mpi_double_precision,0,Node, &
+              Mpi_comm_world,MPIerror)
+      end if
+#endif
+
+    end subroutine save_DOS
+
+  end subroutine proj_cdf_save
+
+  subroutine calc_sqrt_S_Gamma(TSHS,orb,S_sq)
+    use class_dSpData1D
+    use m_ts_sparse_helper, only : create_U
+    use m_tbt_hs, only : tTSHS
+    type(tTSHS), intent(inout) :: TSHS
+    type(tRegion), intent(in) :: orb
+    real(dp), intent(out) :: S_sq(orb%n,orb%n)
+
+    ! Local variables
+    integer :: no, n_nzs, i, j, info
+    real(dp), pointer :: S(:)
+    real(dp), allocatable :: eig(:), v(:,:), S_UT(:), work(:)
+
+    no = orb%n
+    S => val(TSHS%S_1D)
+    n_nzs = size(S)
+
+    allocate(eig(no))
+    allocate(v(no,no))
+    allocate(work(3*no)) ! real-work
+    allocate(S_UT(no*no))
+
+    call create_U(TSHS%dit, TSHS%sp, no, orb, &
+         n_nzs,S,S_UT)
+
+    ! Diagonalize overlap matrix
+    call dspev('V','U',no,S_UT,eig,v,no,work,info)
+    if ( info /= 0 ) then
+       write(*,*) 'INFO = ',info,' when diagonalizing Gamma overlap matrix'
+    end if
+
+    ! There are faster ways of doing this, but let's play safe for
+    ! now. The overlap matrix is a positive definite matrix,
+    ! hence all eigenvalues are positive.
+    ! This "check" ensures that this is enforced.
+    if ( any(eig < 0._dp) ) then
+       write(*,'(3a,e12.5)')'tbtrans: Projection ',trim(orb%name), &
+            ' is not completely positive definite, lowest eig of S: ', &
+            minval(eig)
+    end if
+    where ( eig < 0.0_dp )
+       eig = 0._dp
+    elsewhere
+       eig = dsqrt(eig)
+    end where
+
+    ! Calculate S^(1/2)
+    ! Calculate v.sqrt(eig)
+    j = 1
+    do i = 1 , no
+       S_UT(j:j+no-1) = v(:,i) * eig(i)
+       j = j + no
+    end do
+    
+    ! Calculate v.sqrt(eig).v^\dagger = S^(1/2)
+    call dgemm('N','T',no,no,no,1._dp, &
+         S_UT,no, v,no, &
+         0._dp,S_sq,no)
+    
+    deallocate(eig,v,work,S_UT)
+
+  end subroutine calc_sqrt_S_Gamma
+
+  subroutine calc_Eig_Gamma(TSHS,orb,eig,state)
+    use class_dSpData1D
+    use class_dSpData2D
+    use m_ts_sparse_helper, only : create_U
+    use m_tbt_hs, only : tTSHS
+    type(tTSHS), intent(inout) :: TSHS
+    type(tRegion), intent(in) :: orb
+    real(dp), intent(out) :: eig(orb%n), state(orb%n,orb%n)
+
+    integer :: no, lwork, liwork, info
+    integer :: i, j, n_nzs
+    real(dp), pointer :: H(:,:), S(:)
+    real(dp), allocatable :: H_UT(:), S_UT(:), work(:)
+#ifdef DIVIDE_AND_CONQUER
+    integer, allocatable :: iwork(:)
+#endif
+
+    no = orb%n
+
+    ! Re-create H_UT, S_UT in UT format
+    allocate(H_UT(no*(no+1)/2),S_UT(no*(no+1)/2))
+
+#ifdef DIVIDE_AND_CONQUER
+    ! Do a work-size query
+    call dspgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+         S_UT(1), -1, liwork, -1, info)
+    lwork = max(no,nint(S_UT(1)))
+    allocate(work(lwork))
+    allocate(iwork(liwork))
+#endif
+
+    S => val(TSHS%S_1D)
+    n_nzs = size(S)
+    call create_U(TSHS%dit,TSHS%sp, no, orb, &
+         n_nzs,S,S_UT)
+    H => val(TSHS%H_2D)
+    call create_U(TSHS%dit,TSHS%sp, no, orb, &
+         n_nzs,H(:,1),H_UT)
+
+#ifdef DIVIDE_AND_CONQUER
+    call dspgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+         work, lwork, iwork, liwork, info)
+#else
+    allocate(work(3*no))
+    call dspgv(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+         work, info)
+#endif
+
+    deallocate(H_UT,S_UT)
+    if ( info /= 0 ) then
+       call die('Error in Gamma diagonalization of molecule, H, S')
+    end if
+#ifdef DIVIDE_AND_CONQUER
+    deallocate(iwork)
+#endif
+
+    ! Sort the eigen-values AND vectors (they most probably
+    ! are sorted)
+    do i = 1 , no - 1
+       ! find minimun eigen-value in non-sorted region
+       j = i + minloc(eig(i+1:no),1)
+       ! check whether we should switch
+       if ( eig(i) > eig(j) ) then
+          ! switch wf_eigenvalue
+          work(1)    = eig(j)
+          eig(j)     = eig(i)
+          eig(i)     = work(1)
+          ! switch eigenvector
+          work(1:no) = state(:,j)
+          state(:,j) = state(:,i)
+          state(:,i) = work(1:no)
+       end if
+    end do
+
+    !print *,'P0',state(1:4,122)
+
+    deallocate(work)
+
+  end subroutine calc_Eig_Gamma
+
+  subroutine norm_eigenstate_Gamma(no,state,S_sq)
+    use intrinsic_missing, only : VNORM
+    integer, intent(in) :: no
+    real(dp), intent(inout) :: state(no,no)
+    real(dp), intent(in) :: S_sq(no,no)
+    real(dp) :: work(no)
+    integer :: i
+    
+    do i = 1 , no
+
+       ! Normalize eigenvectors and create orthogonal basis
+       call dgemm('N','N',no,1,no,1._dp, &
+            S_sq,no, state(1,i),no, &
+            0._dp, work(1), no)
+       state(:,i) = work(1:no) / VNORM(work(1:no))
+
+    end do
+    
+  end subroutine norm_eigenstate_Gamma
+
+
+  subroutine calc_sqrt_S_kpt(TSHS,orb,S_sq,kpt)
+    use class_dSpData1D
+    use m_ts_sparse_helper, only : create_U
+    use m_tbt_hs, only : tTSHS
+    type(tTSHS), intent(inout) :: TSHS
+    type(tRegion), intent(in) :: orb
+    complex(dp), intent(out) :: S_sq(orb%n,orb%n)
+    real(dp), intent(in) :: kpt(3)
+
+    ! Local variables
+    integer :: no, n_nzs, i, j, info
+    real(dp), pointer :: S(:)
+    real(dp), allocatable :: eig(:), rwork(:)
+    complex(dp), allocatable :: v(:,:), S_UT(:), work(:)
+
+    no = orb%n
+    S => val(TSHS%S_1D)
+    n_nzs = size(S)
+
+    allocate(eig(no))
+    allocate(v(no,no))
+    allocate(rwork(3*no)) ! real-work
+    allocate(work(2*no))
+    allocate(S_UT(no*no))
+    
+    call create_U(TSHS%dit, TSHS%sp, no, orb, &
+         n_nzs,product(TSHS%nsc),S,TSHS%sc_off,S_UT, kpt)
+
+    ! Diagonalize overlap matrix
+    call zhpev('V','U',no,S_UT,eig,v,no,work,rwork,info)
+    if ( info /= 0 ) then
+       write(*,*) 'INFO = ',info,' when diagonalizing kpt overlap matrix'
+    end if
+
+    ! There are faster ways of doing this, but let's play safe for
+    ! now. The overlap matrix is a positive definite matrix,
+    ! hence all eigenvalues are positive.
+    ! This "check" ensures that this is enforced.
+    if ( any(eig < 0._dp) ) then
+       write(*,'(3a,e12.5)')'tbtrans: Projection ',trim(orb%name), &
+            ' is not completely positive definite, lowest eig of S: ', &
+            minval(eig)
+    end if
+    where ( eig < 0.0_dp )
+       eig = 0._dp
+    elsewhere
+       eig = dsqrt(eig)
+    end where
+
+    ! Calculate S^(1/2)
+    ! Calculate v.sqrt(eig)
+    j = 1
+    do i = 1 , no
+       S_UT(j:j+no-1) = v(:,i) * eig(i)
+       j = j + no
+    end do
+    
+    ! Calculate v.sqrt(eig).v^\dagger = S^(1/2)
+    call zgemm('N','C',no,no,no,dcmplx(1._dp,0._dp), &
+         S_UT,no,v,no, &
+         dcmplx(0._dp,0._dp),S_sq,no)
+
+    deallocate(eig,v,work,rwork,S_UT)
+
+  end subroutine calc_sqrt_S_kpt
+
+  subroutine calc_Eig_kpt(TSHS,orb,eig,state,kpt)
+    use class_dSpData1D
+    use class_dSpData2D
+    use m_ts_sparse_helper, only : create_U
+    use m_tbt_hs, only : tTSHS
+
+    type(tTSHS), intent(inout) :: TSHS
+    type(tRegion), intent(in) :: orb
+    real(dp), intent(out) :: eig(orb%n)
+    complex(dp), intent(out) :: state(orb%n,orb%n)
+    real(dp), intent(in) :: kpt(3)
+
+    integer :: no, lwork, lrwork, liwork, info
+    integer :: i, j, n_nzs
+    real(dp), pointer :: H(:,:), S(:)
+    real(dp), allocatable :: rwork(:)
+    complex(dp), allocatable :: H_UT(:), S_UT(:), work(:)
+#ifdef DIVIDE_AND_CONQUER
+    integer, allocatable :: iwork(:)
+#endif
+
+    no = orb%n
+
+    ! Re-create H_UT, S_UT in UT format
+    allocate(H_UT(no*(no+1)/2),S_UT(no*(no+1)/2))
+
+#ifdef DIVIDE_AND_CONQUER
+    ! Do a work-size query
+    call zhpgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+         S_UT(1), -1, eig, -1, liwork, -1, info)
+    lwork = max(no,nint(real(S_UT(1),dp)))
+    allocate(work(lwork))
+    lrwork = nint(eig(1))
+    allocate(rwork(lrwork))
+    allocate(iwork(liwork))
+#endif
+
+    S => val(TSHS%S_1D)
+    n_nzs = size(S)
+    call create_U(TSHS%dit,TSHS%sp, no, orb, &
+         n_nzs,product(TSHS%nsc),S,TSHS%sc_off,S_UT, &
+         kpt)
+    H => val(TSHS%H_2D)
+    call create_U(TSHS%dit,TSHS%sp, no, orb, &
+         n_nzs,product(TSHS%nsc),H(:,1),TSHS%sc_off,H_UT, &
+         kpt)
+
+#ifdef DIVIDE_AND_CONQUER
+    call zhpgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+         work, lwork, rwork, lrwork, iwork, liwork, info)
+#else
+    allocate(work(2*no),rwork(3*no))
+    call zhpgv(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+         work, rwork, info)
+#endif
+
+    deallocate(H_UT,S_UT)
+    if ( info /= 0 ) then
+       call die('Error in k-point diagonalization of molecule, H, S')
+    end if
+#ifdef DIVIDE_AND_CONQUER
+    deallocate(iwork)
+#endif
+
+    ! Sort the eigen-values AND vectors (they most probably
+    ! are sorted)
+    do i = 1 , no - 1
+       ! find minimun eigen-value in non-sorted region
+       j = i + minloc(eig(i+1:no),1)
+       ! check whether we should switch
+       if ( eig(i) > eig(j) ) then
+          ! switch wf_eigenvalue
+          rwork(1)   = eig(j)
+          eig(j)     = eig(i)
+          eig(i)     = rwork(1)
+          ! switch eigenvector
+          work(1:no) = state(:,j)
+          state(:,j) = state(:,i)
+          state(:,i) = work(1:no)
+       end if
+    end do
+    
+    deallocate(work,rwork)
+
+  end subroutine calc_Eig_kpt
+
+  subroutine norm_eigenstate_kpt(no,state,S_sq)
+    use intrinsic_missing, only : VNORM
+    integer, intent(in) :: no
+    complex(dp), intent(inout) :: state(no,no)
+    complex(dp), intent(in) :: S_sq(no,no)
+    complex(dp) :: work(no)
+    integer :: i
+    
+    do i = 1 , no
+
+       ! Normalize eigenvectors and create orthogonal basis
+       call zgemm('N','N',no,1,no,dcmplx(1._dp,0._dp), &
+            S_sq,no, state(1,i),no, &
+            dcmplx(0._dp,0._dp), work(1), no)
+       state(:,i) = work(1:no) / VNORM(work(1:no))
+
+    end do
+    
+  end subroutine norm_eigenstate_kpt
+   
+  
+  ! Returns the projection state for the designated
+  ! molecule projection.
+  subroutine proj_update(fname,N_mol,mols,ikpt)
+    use nf_ncdf
+#ifdef MPI
+    use mpi_siesta, only: MPI_Bcast
+    use mpi_siesta, only: MPI_Double_Complex, MPI_Comm_World
+#endif
+
+    character(len=*), intent(in) :: fname
+    integer, intent(in) :: N_mol
+    type(tProjMol), intent(inout) :: mols(N_mol)
+    integer, intent(in) :: ikpt
+
+    ! Local variables
+    type(hNCDF) :: ncdf, grp
+    logical :: exist
+    integer :: no, im
+    real(dp), allocatable :: rp(:,:)
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    ! Quick escape if possible...
+    ! If we are trying to read in the projections
+    ! for all k-points subsequent to the first
+    ! one AND all the projection states are Gamma
+    ! projections. Then the states are all
+    ! already read in and we do not need
+    ! to do anything here...
+    if ( ikpt > 1 ) then
+       exist = .true.
+       do im = 1 , N_mol 
+          exist = exist .and. mols(im)%Gamma
+       end do
+       if ( exist ) return
+    end if
+
+    call ncdf_open(ncdf,fname,mode=NF90_NOWRITE)
+
+    do im = 1 , N_mol
+
+       ! We quickly skip this molecule if it is 
+       ! a Gamma-projection and the k-point
+       ! is higher than 0
+       if ( mols(im)%Gamma .and. ikpt > 1 ) cycle
+
+       ! Open the corresponding projection group
+       call ncdf_open_grp(ncdf,mols(im)%name,grp)
+
+       ! Get size of projection
+       no = mols(im)%orb%n
+
+       if ( mols(im)%Gamma ) then
+          ! Read in from Gamma file
+          allocate(rp(no,mols(im)%lvls%n))
+          call ncdf_get_var(grp,'state',rp)
+          mols(im)%p = rp
+          deallocate(rp)
+       else
+          call ncdf_get_var(grp,'state',mols(im)%p,start=(/1,1,ikpt/))
+       end if
+
+#ifdef MPI
+       ! B-cast information
+       no = no * mols(im)%lvls%n
+       call MPI_Bcast(mols(im)%p(1,1),no, &
+            MPI_Double_Complex, 0, MPI_Comm_World, MPIerror)
+#endif
+
+    end do
+
+    call ncdf_close(ncdf)
+
+  end subroutine proj_update
+
+  ! Returns the projection state for the designated
+  ! molecule projection.
+  subroutine proj_cdf_save_S_D(fname,N_mol,mols,ikpt,S_1D,nwork,zwork)
+    use class_OrbitalDistribution
+    use class_Sparsity
+    use class_zSpData1D
+
+    use parallel, only : Node, Nodes
+
+    use nf_ncdf
+#ifdef MPI
+    use mpi_siesta, only: MPI_Send, MPI_Recv, MPI_Get_Count
+    use mpi_siesta, only: MPI_STATUS_SIZE
+    use mpi_siesta, only: MPI_Double_Complex, MPI_Comm_World
+#endif
+
+    character(len=*), intent(in) :: fname
+    integer, intent(in) :: N_mol
+    type(tProjMol), intent(inout) :: mols(N_mol)
+    integer, intent(in) :: ikpt
+    type(zSpData1D), intent(inout) :: S_1D
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout) :: zwork(nwork)
+
+    ! Local variables
+    type(hNCDF) :: ncdf, grp, grp2
+    integer :: no, Np, Npl, im, poff, Ns, Nsl, soff
+    complex(dp), allocatable :: zD(:,:), zP(:,:)
+
+    type(OrbitalDistribution), pointer :: dit
+    type(Sparsity), pointer :: sp
+    complex(dp), pointer :: M(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer :: i, io, lio, ind, j, ip
+
+#ifdef MPI
+    integer :: MPIerror, status(MPI_STATUS_SIZE)
+#endif
+
+    ! Assert nwork to be of good size
+    no = maxval(mols(:)%orb%n)
+    im = 1
+    do i = 1 , N_mol
+       im = max(im,size(mols(i)%proj) + 1)
+    end do
+    if ( no ** 2 * (im/Nodes) > nwork ) then
+       call die('Work size for projections too small, do you &
+            &have an excessive amount of projections?')
+    end if
+
+    ! Get data
+    dit => dist(S_1D)
+    sp  => spar(S_1D)
+    M   => val (S_1D)
+
+    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    ! Open the file for writing
+    call ncdf_open(ncdf,fname, mode = NF90_WRITE)
+
+    do im = 1 , N_mol
+
+       ! If we are not asked to calculate the DOS
+       ! we can easily skip this calculation.
+       if ( .not. mols(im)%DOS ) cycle
+
+       ! open the group
+       call ncdf_open_grp(ncdf,mols(im)%name,grp)
+
+       ! Size of the current projections
+       no = mols(im)%orb%n
+       Np = mols(im)%lvls%n
+       Ns = size(mols(im)%proj)
+
+#ifdef MPI
+       ! The level projections
+       Npl = Np / Nodes
+       ! The offset of the current node
+       poff = Npl * Node
+       ! Correct each node
+       if ( Npl * Nodes + Node < Np ) then
+          Npl = Npl + 1
+          ! all previous nodes have also added a calculating unit
+          poff = poff + Node
+       else if ( Npl * Nodes < Np ) then
+          ! the offset of this node (which do not it self
+          ! get any more calculations) are the missing ones
+          poff = poff + Np - Npl * Nodes
+       end if
+       ! Do the same for the state projections
+       Nsl = Ns / Nodes
+       soff = Nsl * Node
+       if ( Nsl * Nodes + Node < Ns ) then
+          Nsl = Nsl + 1
+          soff = soff + Node
+       else if ( Nsl * Nodes < Ns ) then
+          soff = soff + Ns - Nsl * Nodes
+       end if
+#else
+       ! Not strictly needed, but for clarity in the sequential version
+       Npl = Np
+       poff = 0
+       Nsl = Ns
+       soff = 0
+#endif
+
+       ! We pre-calculate all state projections that will be calculated
+       ! on this node (note these are full matrices ordered
+       ! for fastest access
+       ! They are ordered:
+       !   [1: no*Nsl] = [|1>_1<1|,|2>_1<2|,...]
+       !   [no*Nsl+1:] = [|1>_2<1|,|2>_2<2|,...]
+       ! etc.
+       ! This is how we access them later down...
+       do i = 1 , mols(im)%orb%n
+          do ip = 1 , Nsl
+             j = ((i-1)*Nsl+ip-1) * no + 1
+             call proj_state_bra(mols(im),mols(im)%proj(soff+ip), &
+                  i, zwork(j:j+no-1) )
+          end do
+       end do
+
+       ! Allocate size for the level and state projections
+       allocate(zD(no,Npl),zP(no,Nsl))
+
+!$OMP parallel do default(shared), private(ip,i,io,lio,ind,j)
+       do i = 1 , mols(im)%orb%n
+
+          ! Initialize |><| value
+          zD(i,:) = dcmplx(0._dp,0._dp)
+          zP(i,:) = dcmplx(0._dp,0._dp)
+          io = mols(im)%orb%r(i)
+          lio = index_global_to_local(dit,io)
+          
+          ! Calculate <| M
+          do ind = l_ptr(lio) + 1 , l_ptr(lio) + ncol(lio)
+             j = region_pivot(mols(im)%orb,l_col(ind))
+             if ( j == 0 ) cycle
+             ! this is per level in the system
+             do ip = 1 , Npl
+                zD(i,ip) = zD(i,ip) + dconjg(mols(im)%p(j,poff+ip)) * M(ind)
+             end do
+             ! this is per projection calculating |\sum>_i<\sum| M
+             j = ((i-1)*Nsl+ip-1)*no+j
+             do ip = 1 , Nsl
+                zP(i,ip) = zP(i,ip) + zwork(j) * M(ind)
+             end do
+          end do
+          
+          ! Calculate remaining |> and take the trace
+          do ip = 1 , Npl
+             zD(i,ip) = mols(im)%p(i,poff+ip) * zD(i,ip)
+          end do
+
+       end do
+!$OMP end parallel do
+
+       ! Save the diagonal of the projection S
+       call ncdf_put_var(grp,'kb_SD',zD,start=(/1,1,ikpt/))
+#ifdef MPI
+       if ( Node == 0 ) then
+          ! Offset for master node
+          poff = Npl + 1
+          do i = 1 , Nodes - 1
+             if ( poff > Np ) exit
+             ! We know that the master node ALWAYS have more or 
+             ! an equal amount of processing states. Hence we can re-use
+             ! the array
+             call MPI_Recv(zD(1,1),no*Npl,MPI_Double_Complex,i,i, &
+                  MPI_Comm_World, status, MPIerror)
+             call MPI_Get_Count(status,MPI_Double_Complex,ind,MPIerror)
+             ! calculate remote Npl
+             j = ind / no
+             call ncdf_put_var(grp,'kb_SD',zD(:,1:j),start=(/1,poff,ikpt/))
+             poff = poff + j
+          end do
+       else if ( Npl > 0 ) then
+          call MPI_Send(zD(1,1),no*Npl,MPI_Double_Complex,0,Node, &
+               MPI_Comm_World, MPIerror)
+       end if
+#endif
+
+       if ( Node == 0 ) then
+
+          ! Save projected overlaps of full states
+          i = 0
+          soff = 0
+          do ip = 1 , Ns
+
+             call ncdf_open_grp(grp,mols(im)%proj(ip)%name,grp2)
+             
+             ! Save the diagonal of the projection S
+             call ncdf_put_var(grp2,'kb_SD',zP(:,soff+ip),start=(/1,ikpt/))
+#ifdef MPI
+             ! If there are no more projections on the master
+             ! we receive the next batch
+             if ( soff + ip == Nsl .and. ip < Ns ) then
+                ! Calculate zP offset
+                soff = - ip 
+                ! step processor
+                i = i + 1
+                ! Get next segment
+                call MPI_Recv(zP(1,1),no*Nsl,MPI_Double_Complex,i,i, &
+                     MPI_Comm_World, status, MPIerror)
+                call MPI_Get_Count(status,MPI_Double_Complex,ind,MPIerror)
+                ! calculate remote Nsl
+                Nsl = ind / no
+             end if
+#endif
+
+          end do
+
+#ifdef MPI
+       else if ( Nsl > 0 ) then
+          call MPI_Send(zP(1,1),no*Nsl,MPI_Double_Complex,0,Node, &
+               MPI_Comm_World, MPIerror)
+#endif
+       end if
+       
+       deallocate(zD,zP)
+
+    end do
+
+    call ncdf_close(ncdf)
+
+  end subroutine proj_cdf_save_S_D
+
+  ! Save <|Gamma|>
+  subroutine proj_cdf_save_bGammak(fname,N_proj_E,proj_E,ikpt,nE)
+    use class_OrbitalDistribution
+    use class_Sparsity
+    use class_zSpData1D
+
+    use parallel, only : Node, Nodes
+
+    use nf_ncdf
+#ifdef MPI
+    use mpi_siesta, only: MPI_Send, MPI_Recv, MPI_Get_Count
+    use mpi_siesta, only: MPI_STATUS_SIZE, MPI_STATUSES_IGNORE
+    use mpi_siesta, only: MPI_REQUEST_NULL
+    use mpi_siesta, only: MPI_Double_Complex, MPI_Comm_World
+#endif
+
+    character(len=*), intent(in) :: fname
+    integer, intent(in) :: N_proj_E
+    type(tProjElec), intent(inout) :: proj_E(N_proj_E)
+    integer, intent(in) :: ikpt
+    type(tNodeE), intent(in) :: nE
+
+    ! Local variables
+    type(hNCDF) :: ncdf, gmol, gproj
+    integer :: iE, ip, nl
+    character(len=NF90_MAX_NAME) :: cmol, cproj, ctmp
+#ifdef MPI
+    integer :: reqs(N_proj_E)
+    complex(dp), allocatable :: tmp(:)
+    integer :: MPIerror, Status(MPI_STATUS_SIZE), iN
+#endif
+
+    ! Open the file for writing
+    call ncdf_open(ncdf,fname, mode = NF90_WRITE)
+
+    ! Find the maximum number of levels
+    nl = 0
+    do iE = 1 , N_proj_E
+       nl = max(nl,proj_E(iE)%mol%proj(proj_E(iE)%idx)%n)
+    end do
+    allocate(tmp(nl*nl))
+
+    cmol  = ' '
+    cproj = ' '
+    do iE = 1 , N_proj_E
+
+       ip = proj_E(iE)%idx
+
+       ! Number of levels on this projection
+       nl = proj_E(iE)%mol%proj(ip)%n
+
+#ifdef MPI
+       if ( Node /= 0 ) then
+          reqs(iE) = MPI_REQUEST_NULL
+       end if
+#endif
+
+       if ( cmol /= proj_E(iE)%mol%name ) then
+          cmol = proj_E(iE)%mol%name
+          call ncdf_open_grp(ncdf,cmol,gmol)
+          cproj = ' ' ! forces the projection to be read in
+       end if
+       if ( cproj /= proj_E(iE)%mol%proj(ip)%name ) then
+          cproj = proj_E(iE)%mol%proj(ip)%name
+          call ncdf_open_grp(gmol,cproj,gproj)
+       end if
+
+       ctmp = trim(proj_E(iE)%El%name)//'.bGk'
+       ! Now we can save the data
+       if ( nE%iE(Node) > 0 ) then
+          call ncdf_put_var(gproj,ctmp,proj_E(iE)%bGk, &
+               start = (/1,1,nE%iE(Node),ikpt/) )
+       end if
+#ifdef MPI
+       if ( Node == 0 ) then
+          do iN = 1 , Nodes - 1
+             if ( nE%iE(iN) <= 0 ) cycle
+             call MPI_Recv(tmp,nl*nl,Mpi_double_complex, &
+                  iN, iN, Mpi_comm_world,status,MPIerror)
+             call ncdf_put_var(gproj,ctmp,reshape(tmp,(/nl,nl/)), &
+                  start = (/1,1,nE%iE(iN),ikpt/) )
+          end do
+       else if ( nE%iE(Node) > 0 ) then
+          call MPI_ISend(proj_E(iE)%bGk,nl*nl,Mpi_double_complex, &
+               0, Node, Mpi_comm_world,reqs(iE),MPIerror)
+       end if
+#endif
+
+    end do
+
+#ifdef MPI
+    if ( Node /= 0 ) then
+       call MPI_WaitAll(N_proj_E,reqs(1),MPI_STATUSES_IGNORE,MPIerror)
+    end if
+#endif
+
+    call ncdf_close(ncdf)
+
+  end subroutine proj_cdf_save_bGammak
+
+  subroutine proj_cdf2ascii(fname,N_proj_T,proj_T,save_DATA)
+    use parallel, only : Node
+    
+    use units, only : eV
+    use variable
+    use dictionary
+
+    use m_timestamp, only : datestring
+    use nf_ncdf
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD
+#endif
+    use m_ts_electype
+
+    character(len=*), intent(in) :: fname
+    integer, intent(in) :: N_proj_T
+    type(tProjT), intent(in) :: proj_T(N_proj_T)
+    type(dict), intent(in) :: save_DATA
+
+  end subroutine proj_cdf2ascii
+
+  subroutine proj_Mt_mix(mol,ip,Mt,bGk)
+    type(tProjMol), intent(in) :: mol
+    integer, intent(in) :: ip ! projection index
+    complex(dp), intent(out) :: Mt(mol%orb%n,mol%orb%n)
+    complex(dp), intent(in) :: bGk(mol%proj(ip)%n,mol%proj(ip)%n)
+    complex(dp) :: p(mol%orb%n), tmp(mol%orb%n)
+    integer :: il, i, j
+
+    if ( ip == 0 ) then
+       call die('Error in programming, proj_Mt_mix')
+    end if
+
+    ! loop over number of levels associated with
+    ! this projection
+    do j = 1 , mol%proj(ip)%n
+
+       p(:) = dcmplx(0._dp,0._dp)
+       do i = 1 , mol%proj(ip)%n
+          il = region_pivot(mol%lvls,mol%proj(ip)%r(i))
+          ! Create summation <i|Gam|j> * |i>
+          p(:) = p(:) + bGk(i,j) * mol%p(:,il)
+       end do
+       
+       ! Do last product <i|Gam|j> * |i> <j|
+       ! and take the transpose
+       il = region_pivot(mol%lvls,mol%proj(ip)%r(j))
+       tmp = dconjg(mol%p(:,il))
+       if ( j == 1 ) then
+          do i = 1 , mol%orb%n
+             Mt(:,i) = p(i) * tmp(:)
+          end do
+       else
+          do i = 1 , mol%orb%n
+             Mt(:,i) = Mt(:,i) + p(i) * tmp(:)
+          end do
+       end if
+
+    end do
+    
+  end subroutine proj_Mt_mix
+
+  ! Projects the projection state onto a transposed matrix
+  subroutine proj_bMtk(mol,ip,orb,Mt,bMk,nwork,work)
+    type(tProjMol), intent(in) :: mol
+    integer, intent(in) :: ip ! projection index
+    type(tRegion), intent(in) :: orb ! The orbitals of the current matrix
+    complex(dp), intent(in) :: Mt(orb%n,orb%n)
+    complex(dp), intent(out) :: bMk(mol%proj(ip)%n,mol%proj(ip)%n)
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout), target :: work(nwork)
+    complex(dp), pointer :: tmp(:), pl(:)
+    integer :: il, i, j
+    complex(dp), external :: zdotc
+
+    if ( ip == 0 ) then
+       call die('Error in programming, proj_bMtk')
+    end if
+    if ( nwork < orb%n*(1+mol%proj(ip)%n) ) then
+       call die('Projection proj_bMtk, not enough work space.')
+    end if
+
+    do i = 1 , mol%proj(ip)%n
+       il = region_pivot(mol%lvls,mol%proj(ip)%r(i))
+       ! point to the |>
+       pl => work((i-1)*orb%n+1:i*orb%n)
+       call proj_sort(orb,mol,il,pl)
+    end do
+    i = mol%proj(ip)%n + 1
+    tmp => work((i-1)*orb%n+1:i*orb%n)
+
+    ! |j>
+    do j = 1 , mol%proj(ip)%n
+
+       pl => work((j-1)*orb%n+1:j*orb%n)
+
+       ! Note that Mt is a transposed matrix, hence this will work
+       call zgemv('N',orb%n,orb%n,dcmplx(1._dp,0._dp),Mt(1,1),orb%n, &
+            pl,1,dcmplx(0._dp,0._dp),tmp,1)
+
+       ! <i|
+       do i = 1 , mol%proj(ip)%n
+          pl => work((i-1)*orb%n+1:i*orb%n)
+          bMk(i,j) = zdotc(orb%n,pl,1,tmp,1)
+       end do
+
+    end do
+
+  end subroutine proj_bMtk
+
+  ! Calculates the projection vector for
+  ! the projection levels
+  ! |1>_j * <1| + |2>_j * <2|  for all states in the projector
+  subroutine proj_state_bra(mol,proj,j,p)
+    type(tProjMol), intent(in) :: mol
+    type(tRegion), intent(in) :: proj
+    integer, intent(in) :: j ! column j (corresponds to the index of p)
+    complex(dp), intent(out) :: p(mol%orb%n)
+
+    integer :: i, ip
+    
+    p(:) = dcmplx(0._dp,0._dp)
+    do ip = 1 , proj%n
+       ! Get index of state
+       i = region_pivot(mol%lvls,proj%r(ip))
+       !         add |ip>_j <ip|
+       p(:) = p(:) + mol%p(j,i) * dconjg(mol%p(:,i))
+    end do
+    
+  end subroutine proj_state_bra
+
+  ! Takes a consecutive projection and sorts
+  ! it to a region:
+  ! Consider a projection on the orbitals:
+  !   [1,2,3,4]
+  ! consider now a region made up of orbitals in this order:
+  !   [2,4,1]
+  ! then this will return the projection:
+  !   [2,4,1]
+  ! The region MUST be a subset of the molecule orbitals
+  subroutine proj_sort(r,mol,il,psort)
+    ! The region on which we wish to create
+    ! an aligned projector.
+    type(tRegion), intent(in) :: r
+    ! The molecule
+    type(tProjMol), intent(in) :: mol
+    ! The level that we want to create the ket of
+    integer, intent(in) :: il
+    ! The full projector aligned to the requested projector
+    complex(dp), intent(out) :: psort(r%n)
+
+    ! Local variables
+    integer :: i, j
+    
+    do i = 1 , r%n
+       ! Copy over the projector to the assigned index
+       psort(i) = mol%p(region_pivot(mol%orb,r%r(i)),il)
+    end do
+    
+  end subroutine proj_sort
+
+
+
+
+
+! These functions are currently not being used
+
+#ifdef NOT_USED
+  ! Takes a consecutive projection and aligns
+  ! it to a region:
+  ! Consider a projection on the orbitals:
+  !   [1,2,3,4]
+  ! consider now a region made up of orbitals in this order:
+  !   [2,5,4,1,3,6,7]
+  ! then this will return the projection:
+  !   [2,<zero>,4,1,3,<zero>,,<zero>]
+  subroutine proj_align(p,im,r,palign)
+    ! The initial projection
+    complex(dp), intent(in) :: p(:)
+    ! the index of the projection.
+    integer :: im
+    ! The region on which we wish to create
+    ! an aligned projector.
+    type(tRegion), intent(in) :: r
+    ! The full projector aligned to the requested projector
+    complex(dp), intent(out) :: palign(r%n)
+
+    ! Local variables
+    integer :: i
+    
+    ! Initialize to zero, the projector
+    ! on non-assigned orbitals are ZERO!
+    palign(:) = dcmplx(0._dp,0._dp)
+
+    do i = 1 , mols(im)%orb%n
+       ! Copy over the projector to the assigned index
+       palign(region_pivot(r,mols(im)%orb%r(i))) = p(i)
+    end do
+
+  end subroutine proj_align
+
+  ! Takes a consecutive projection and sorts
+  ! it to a region:
+  ! Consider a projection on the orbitals:
+  !   [1,2,3,4]
+  ! consider now a region made up of orbitals in this order:
+  !   [2,5,4,1,3,6,7]
+  ! then this will return the projection:
+  !   [2,4,1,3]
+  subroutine proj_sort(p,im,r,psort)
+    ! The initial projection
+    complex(dp), intent(in) :: p(:)
+    ! the index of the projection.
+    integer :: im
+    ! The region on which we wish to create
+    ! an aligned projector.
+    type(tRegion), intent(in) :: r
+    ! The full projector aligned to the requested projector
+    complex(dp), intent(out) :: psort(:)
+
+    ! Local variables
+    integer :: i, j
+    
+    ! Initialize to zero, the projector
+    ! on non-assigned orbitals are ZERO!
+    psort(:) = dcmplx(0._dp,0._dp)
+
+    j = 0
+    do i = 1 , r%n
+       if ( .not. in_region(mols(im)%orb,r%r(i)) ) cycle
+       ! Copy over the projector to the assigned index
+       j = j + 1
+       psort(j) = p(region_pivot(mols(im)%orb,r%r(i)))
+    end do
+    
+  end subroutine proj_sort
+
+  ! Does O = O + <P | M | P> and returns the scalar
+  ! representing the coefficient (we call it the 
+  ! projection overlap)
+  ! Instead of doing many full matrix matrix products
+  ! we can make due with a very simple scalar
+  ! calculation and then an expansion of the 
+  ! projection.
+  ! This routine can take into account "sub" matrices
+  ! in the sense that off-diagonal and diagonal 
+  ! elements can be calculated efficiently by tracking
+  ! the off-sets
+  subroutine proj_overlap(n1,n2,M,o1,o2,no,p,O)
+    integer, intent(in) :: n1,n2,o1,o2,no
+    complex(dp), intent(in) :: M(n1,n2), p(no)
+    complex(dp), intent(inout) :: O
+    complex(dp) :: tmp(n1)
+    complex(dp), external :: zdotc
+
+    ! First do: M |P>
+    call zgemv('N',n1,n2,dcmplx(1._dp,0._dp), &
+         M,n1,p(o2+1),1,dcmplx(0._dp,0._dp),tmp,1)
+    
+    ! complete: <P| M |P> (zdotc is |P>^* . M |P> == <P|M|P>)
+    O = O + zdotc(n1,p(o1+1),1,tmp,1)
+    
+  end subroutine proj_overlap
+
+  ! Does |> = |> + M | P> and returns the ket
+  subroutine proj_ket(n1,n2,M,p,ket)
+    integer, intent(in) :: n1,n2
+    complex(dp), intent(in) :: M(n1,n2), p(n2)
+    complex(dp), intent(inout) :: ket(n1)
+
+    call zgemv('N',n1,n2,dcmplx(1._dp,0._dp), &
+         M,n1,p,1,dcmplx(1._dp,0._dp),ket,1)
+    
+  end subroutine proj_ket
+
+  ! Calculates the projection vector for
+  ! the projection levels
+  ! |1> * <1|_j + |2> * <2|_j  for all states in the projector
+  subroutine proj_state_ket(mol,proj,j,p)
+    type(tProjMol), intent(in) :: mol
+    type(tRegion), intent(in) :: proj
+    complex(dp), intent(out) :: p(mol%orb%n)
+    integer, intent(in) :: j ! column j (corresponds to the index of p)
+
+    integer :: i, ip
+    
+    p = dcmplx(0._dp,0._dp)
+    do ip = 1 , proj%n
+       ! Get index of state
+       i = region_pivot(mol%lvls,proj%r(ip))
+       !         add |ip> <ip|_j
+       p(:) = p(:) + mol%p(:,i) * dconjg(mol%p(j,i))
+    end do
+    
+  end subroutine proj_state_ket
+
+
+  ! Creates the projection matrix by supplying 
+  ! a molecule and the projection index
+  subroutine proj_matrix(mol,ip,M)
+    type(tProjMol), intent(in) :: mol
+    integer, intent(in) :: ip ! projection index
+    complex(dp), intent(out) :: M(mol%orb%n**2)
+    integer :: il, no, i
+#ifndef GEMM_PROJ
+    integer :: j
+#endif
+
+    if ( ip == 0 ) then
+       call die('Error in programming, proj_matrix')
+    end if
+
+    no = mol%orb%n
+#ifndef GEMM_PROJ
+
+    il = region_pivot(mol%lvls,mol%proj(ip)%r(1))
+    do i = 1 , no
+       M((i-1)*no+1:i*no) = mol%p(:,il) * dconjg(mol%p(i,il))
+    end do
+    do j = 2 , mol%proj(ip)%n
+       il = region_pivot(mol%lvls,mol%proj(ip)%r(j))
+       do i = 1 , no
+          M((i-1)*no+1:i*no) = M((i-1)*no+1:i*no) + &
+               mol%p(:,il) * dconjg(mol%p(i,il))
+       end do
+    end do
+
+#else
+    ! Perform |P> <P| (gemm3m will not do a huge difference here...)
+
+    il = region_pivot(mol%lvls,mol%proj(ip)%r(1))
+    call zgemm('N','C',no,no,1,dcmplx(1._dp,0._dp), &
+         mol%p(:,il),no,mol%p(:,il),no,dcmplx(0._dp,0._dp),M,no)
+    do i = 2 , mol%proj(ip)%n
+       il = region_pivot(mol%lvls,mol%proj(ip)%r(i))
+       call zgemm('N','C',no,no,1,dcmplx(1._dp,0._dp), &
+            mol%p(:,il),no,mol%p(:,il),no,dcmplx(1._dp,0._dp),M,no)
+    end do
+
+#endif
+    
+  end subroutine proj_matrix
+
+#endif
+  
+#endif
+
+end module m_tbt_proj

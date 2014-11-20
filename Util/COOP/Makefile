@@ -53,18 +53,14 @@ clean:
 	rm -f *.o *.mod mprop  dm_creator
 
 # DO NOT DELETE THIS LINE - used by make depend
-dm_creator.o: io_hs.o iodm_netcdf.o main_vars.o
+dm_creator.o: io_hs.o iodm_netcdf.o main_vars.o subs.o
+fat.o: io_hs.o main_vars.o orbital_set.o read_curves.o
 io.o: sys_local.o
-io_hs.o: main_vars.o precision.o
-iodm.o: precision.o sys_local.o
-iodm_netcdf.o: precision.o sys_local.o
-m_getopts.o: f2kcli.o
-main_vars.o: m_getopts.o precision.o subs.o units.o
-mprop.o: io_hs.o main_vars.o orbital_set.o read_curves.o
-old_dm.o: io_hs.o iodm_netcdf.o main_vars.o orbital_set.o
+io_hs.o: main_vars.o
+iodm_netcdf.o: sys_local.o
+main_vars.o: m_getopts.o subs.o units.o
+mprop.o: io_hs.o main_vars.o orbital_set.o read_curves.o subs.o
 orbital_set.o: main_vars.o subs.o
-read_curves.o: orbital_set.o precision.o
-subs.o: precision.o
-units.o: precision.o
-write_dm.o: precision.o sys_local.o
-fat.o: mprop.o
+read_curves.o: orbital_set.o
+write_dm.o: sys_local.o
+sys.o: sys_local.o

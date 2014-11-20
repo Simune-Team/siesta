@@ -4,7 +4,7 @@ module class_Geometry
 
   implicit none
 
-  character(len=*), parameter :: mod_name=__FILE__
+  character(len=*), parameter :: mod_name="class_Geometry"
 
   integer, parameter :: dp = selected_real_kind(10,100)
 

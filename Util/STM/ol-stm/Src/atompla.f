@@ -10,7 +10,6 @@ C Modified by P. Ordejon to include 3D capability; June 2003
 C **********************************************************************
 
       USE FDF
-      USE PARSE
       USE SYS
 
       IMPLICIT NONE
@@ -50,7 +49,7 @@ C **********************************************************************
      .  ATINPLA
 
       TYPE(PARSED_LINE), POINTER :: P
-      TYPE(BLOCK), POINTER       :: BP
+      TYPE(BLOCK_fdf), POINTER       :: BP
 
       EXTERNAL 
      .  MATVECT
@@ -74,15 +73,12 @@ C Read fdf data block 'Denchar.AtomsInPlane' ---------------------------
         IF ( .NOT. FDF_BLOCK('Denchar.AtomsInPlane',BP) )  GOTO 2000
 
         LOOP: DO
-          IF (.NOT. FDF_BLINE(BP,LINE)) EXIT LOOP
-          P=>DIGEST(LINE)
-          IF (.NOT. MATCH(P,"I") ) 
+          IF (.NOT. FDF_BLINE(BP,p)) EXIT LOOP
+          IF (.NOT. fdf_bmatch(P,"I") ) 
      .         CALL DIE("Wrong format in Denchar.AtomsInPlane")
           NATINPLA = NATINPLA + 1
-          INDICES(NATINPLA) = INTEGERS(P,1) 
-          CALL DESTROY(P)
+          INDICES(NATINPLA) = fdf_bintegers(P,1) 
         ENDDO LOOP
-        CALL DESTROY(BP) 
  2000   CONTINUE
 
       ELSE IF (IDIMEN .EQ. 3) THEN

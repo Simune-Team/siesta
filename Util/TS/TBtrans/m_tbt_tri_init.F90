@@ -1,0 +1,260 @@
+!
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996- .
+!
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+! This code segment has been fully created by:
+! Nick Papior Andersen, 2014, nickpapior@gmail.com
+! Please conctact the author, prior to re-using this code.
+
+! This particular solution method relies on solving the GF
+! with the tri-diagonalization routine.
+! This will leverage memory usage and also the execution time.
+
+module m_tbt_tri_init
+
+  use precision, only : dp
+  use m_region
+
+  implicit none
+
+  public :: tbt_tri_init
+
+  type(tRegion), allocatable, target :: ElTri(:)
+  type(tRegion) :: DevTri
+  public :: ElTri, DevTri
+  public :: fold_elements, tri_elements
+
+  private
+  
+contains
+
+  subroutine tbt_tri_init_elec( dit , sp )
+
+    use parallel, only : Node, Nodes
+    use class_OrbitalDistribution
+    use class_Sparsity
+    use create_Sparsity_Union
+
+    use m_ts_electype
+#ifdef MPI
+    use mpi_siesta
+#endif
+#ifdef TRANSIESTA_DEBUG
+    use m_ts_debug
+#endif
+
+    use m_sparsity_handling
+    use m_tbt_options, only : N_Elec, Elecs
+    use m_tbt_regions
+    use m_tbt_region2trimat
+
+    type(OrbitalDistribution), intent(inout) :: dit
+    type(Sparsity), intent(inout) :: sp
+
+    type(Sparsity) :: tmpSp1, tmpSp2
+    integer :: i, iEl
+
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    call timer('tri-init-elec',1)
+
+    ! This works as creating a new sparsity deletes the previous
+    ! and as it is referenced several times it will not be actually
+    ! deleted...
+    allocate(ElTri(N_Elec))
+    do i = 1 + Node , N_Elec , Nodes
+
+       ! Retain region
+       call Sp_retain_region(dit,sp,r_oElpD(i),tmpSp2)
+
+       ! Add the self-energy of the electrode (in its original position)
+       call crtSparsity_Union_region(dit,tmpSp2, r_oEl_alone(i),tmpSp1)
+       call delete(tmpSp2)
+
+#ifdef TRANSIESTA_DEBUG
+       open(file='ELEC_'//trim(Elecs(i)%name)//'_SP',unit=1400,form='formatted')
+       call sp_to_file(1400,tmpSp1)
+       close(1400)
+#endif
+
+       ! Create tri-diagonal parts for this electrode
+       call tbt_region2TriMat(dit,tmpSp1,r_oElpD(i), &
+            ElTri(i)%n, ElTri(i)%r, last_eq = Elecs(i)%o_inD%n, &
+            par = .false. )
+       call delete(tmpSp1)
+
+    end do
+
+    do i = 1 , Nodes
+       ! We pass those processors which have no
+       ! electrodes assigned
+       if ( i > N_Elec ) exit
+
+       ! The i'th processor has the following electrodes
+       do iEl = i , N_Elec , Nodes
+          
+          ! Set the name 
+          ElTri(iEl)%name = '[TRI] '//trim(Elecs(iEl)%name)
+       
+#ifdef MPI
+          call MPI_Bcast(ElTri(iEl)%n,1,MPI_Integer, &
+               i-1,MPI_Comm_World,MPIerror)
+          if ( Node /= i-1 ) then
+             allocate(ElTri(iEl)%r(ElTri(iEl)%n))
+          end if
+          call MPI_Bcast(ElTri(iEl)%r,ElTri(iEl)%n,MPI_Integer, &
+               i-1,MPI_Comm_World,MPIerror)
+#endif
+
+       end do
+
+    end do
+
+    call timer('tri-init-elec',2)
+    
+  end subroutine tbt_tri_init_elec
+
+  subroutine tbt_tri_init( dit , sp , proj )
+
+    use parallel, only : IONode, Node
+    use class_OrbitalDistribution
+    use class_Sparsity
+    use create_Sparsity_Union
+
+    use m_ts_electype
+#ifdef MPI
+    use mpi_siesta
+#endif
+#ifdef TRANSIESTA_DEBUG
+    use m_ts_debug
+#endif
+
+    use m_sparsity_handling
+    use m_tbt_options, only : N_Elec, Elecs
+    use m_tbt_regions
+    use m_tbt_region2trimat
+
+    type(OrbitalDistribution), intent(inout) :: dit
+    type(Sparsity), intent(inout) :: sp
+    ! An array of additional projection regions
+    ! which determines the projection of a molecule
+    ! onto seperate regions
+    type(tRegion), intent(in), optional :: proj(:)
+
+    type(Sparsity) :: tmpSp1, tmpSp2
+    integer :: i
+
+    call timer('tri-init',1)
+
+    ! Copy over sparsity pattern
+    tmpSp1 = sp
+    
+    do i = 1 , N_Elec
+
+       ! Add the self-energy of the electrode in the projected position
+       ! of the "device" region.
+       if ( mod(i,2) == 1 ) then
+          call crtSparsity_Union_region(dit,tmpSp1,Elecs(i)%o_inD,tmpSp2)
+       else
+          call crtSparsity_Union_region(dit,tmpSp2,Elecs(i)%o_inD,tmpSp1)
+       end if
+
+    end do
+    if ( mod(N_Elec,2) == 1 ) then
+       tmpSp1 = tmpSp2
+    end if
+    call delete(tmpSp2)
+
+    ! We have now already added the projected position of the
+    ! self-energies. Create the tri-diagonal matrices
+    ! for the electrode down-folding regions
+    call tbt_tri_init_elec( dit , tmpSp1 )
+
+    if ( present(proj) ) then
+       do i = 1 , size(proj)
+
+          ! Add the self-energy of the electrode in the projected position
+          ! of the "device" region.
+          call crtSparsity_Union_region(dit,tmpSp1,proj(i),tmpSp2)
+          tmpSp1 = tmpSp2
+          
+       end do
+       call delete(tmpSp2)
+    end if
+
+    ! Create the device region sparsity pattern by removing everything
+    ! else....
+    call Sp_retain_region(dit,tmpSp1,r_oDev,tmpSp2)
+    call delete(tmpSp1)
+
+#ifdef TRANSIESTA_DEBUG
+    open(file='DEV_FULL_SP',unit=1400,form='formatted')
+    call sp_to_file(1400,tmpSp2)
+    close(1400)
+#endif
+
+    if ( IONode ) &
+         write(*,'(/,a)') 'tbtrans: Determining an optimal tri-matrix...'
+    call region_delete(DevTri)
+
+    ! Create tri-diagonal parts for this one...
+    call tbt_region2TriMat(dit,tmpSp2,r_oDev, DevTri%n, DevTri%r, &
+         last_eq = 0)
+    call delete(tmpSp2) ! clean up
+
+    DevTri%name = '[TRI] device region'
+
+    if ( Node == 0 ) then
+       ! Print out stuff
+       call region_print(DevTri)
+       do i = 1 , N_Elec
+          call region_print(ElTri(i))
+       end do
+    end if
+
+    call timer('tri-init',2)
+
+  end subroutine tbt_tri_init
+
+  function tri_elements(N_tri,tri) result(elem)
+    integer, intent(in) :: N_tri, tri(N_tri)
+    integer :: elem, i
+
+    elem = tri(N_tri)**2
+    do i = 1 , N_tri - 1
+       elem = elem + tri(i)*( tri(i) + 2 * tri(i+1) )
+    end do
+    
+  end function tri_elements
+
+  function fold_elements(N_tri,tri) result(elem)
+    integer, intent(in) :: N_tri, tri(N_tri)
+    integer :: elem, i, tmp
+
+    if ( N_tri == 2 ) then
+       elem = tri(1)**2
+       elem = elem + tri(1)*( tri(1) + 2 * tri(2) )
+       elem = elem + tri(2) ** 2
+       return
+    end if
+
+    elem = 0
+    tmp = 0
+    do i = 1 , N_tri - 1
+       tmp = tri(i)**2
+       tmp = tmp + tri(i)*( tri(i) + 2 * tri(i+1) )
+       tmp = tmp + tri(i+1) ** 2
+       elem = max(elem,tmp)
+    end do
+
+  end function fold_elements
+
+end module m_tbt_tri_init

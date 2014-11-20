@@ -25,6 +25,9 @@ These programs has been developed by:
   calculating the transmission and other quatities from the 
   TSHS files output from TranSIESTA.
 
+  Note the additional utility: tbt_data.py
+  which allows easy extraction of the data from the NetCDF files.
+
 - ts2ts
   A small utility which takes an old input file for TranSIESTA
   and converts it into the new input format.
