@@ -35,7 +35,7 @@ aclocal.m4: $(M4_FILES)
 
 dep:
 	-if [ $(VPATH) = "." ] ; then \
-	sfmakedepend --depend=obj  --modext=o \
+	sfmakedepend --depend=obj --modext=o \
                               *.f *.f90 *.F *.F90 ; \
         else \
 	sfmakedepend --depend=obj  --modext=o \
@@ -255,6 +255,40 @@ $(FDF):
 		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 
+#######################
+#  TS-TBT libs:
+#
+# Libraries used by transiesta and tbtrans
+# They are currently supplied by this distribution
+# All rights reserved for the author of these libraries.
+# Author: Nick Papior Andersen
+
+# This library can be found at:
+#  https://github.com/zerothi/fvar
+FVAR=libvardict.a
+$(FVAR): 
+	(cd fvar ; $(MAKE) "VPATH=$(VPATH)/fvar" \
+	            "FC=$(FC_SERIAL)" \
+		    "ARCH_MAKE=$(PWD)/arch.make" \
+		    "FPPFLAGS=$(FPPFLAGS) -UMPI" \
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
+	@cp -p fvar/*.*d ./
+	cp fvar/$(FVAR) ./
+
+# This library can be found at:
+#  https://github.com/zerothi/ncdf
+NCDF=libncdf.a
+$(NCDF): $(FVAR)
+	(cd NCDF ; $(MAKE) "VPATH=$(VPATH)/NCDF" \
+		"LIBVARDICT=$(FVAR)" \
+		"DIR_FVAR=$(VPATH)/fvar" \
+		"ARCH_MAKE=$(PWD)/arch.make" \
+		"FPPFLAGS=$(FPPFLAGS)" \
+		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
+	@cp -p NCDF/src/*.*d ./
+	cp NCDF/src/$(NCDF) ./
+
+#######################
 
 # Routines using fdf calls.
 dhscf.o iolwf.o  grdsam.o : $(FDF)
@@ -640,8 +674,8 @@ m_mpi_utils.o: precision.o sys.o
 m_ncdf_io.o: atomlist.o class_OrbitalDistribution.o class_SpData1D.o
 m_ncdf_io.o: class_SpData2D.o class_Sparsity.o files.o kpoint_grid.o
 m_ncdf_io.o: m_energies.o m_forces.o m_gamma.o m_io_s.o m_kinetic.o m_spin.o
-m_ncdf_io.o: parallel.o precision.o siesta_geom.o siesta_options.o
-m_ncdf_io.o: sparse_matrices.o timestamp.o
+m_ncdf_io.o: m_stress.o m_ts_electype.o m_ts_options.o parallel.o precision.o
+m_ncdf_io.o: siesta_geom.o siesta_options.o sparse_matrices.o timestamp.o
 m_new_dm.o: alloc.o atomlist.o class_Data2D.o
 m_new_dm.o: class_Fstack_Pair_Geometry_SpData2D.o class_Geometry.o
 m_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpData2D.o
