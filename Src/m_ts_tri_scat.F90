@@ -27,11 +27,6 @@ module m_ts_tri_scat
   public :: has_full_part
   public :: insert_Self_Energies
 
-  ! Used for BLAS calls (local variables)
-  complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
-  complex(dp), parameter :: z1  = dcmplx( 1._dp, 0._dp)
-  complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
-
 contains
 
   ! The problem of this routine is that we wish not to
@@ -62,6 +57,10 @@ contains
 ! *********************
     integer, intent(in) :: nwork
     complex(dp), intent(inout) :: work(nwork)
+
+    complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
+    complex(dp), parameter :: z1  = dcmplx( 1._dp, 0._dp)
+    complex(dp), parameter :: zi  = dcmplx( 0._dp, 1._dp)
 
     ! local variables
     complex(dp), pointer :: fGf(:), Gf(:), GGG(:)
@@ -130,7 +129,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'T','C',no,sN,no, z1, El%Gamma, no, &
+            'T','C',no,sN,no, zi, El%Gamma, no, &
             Gf, sN, z0, work, no)
        
        ! Now we are ready to perform the multiplication

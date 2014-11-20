@@ -175,13 +175,13 @@
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
       if (savehs) then
          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
-     &        maxnh, numh, listhptr, listh, H, S, qtot,
-     &        temp, xijo)
+     &        maxnh, numh, listhptr, listh, H, S, Qtot,
+     &        Temp, xijo)
       endif
 #ifdef CDF
 #ifdef NCDF_4
       if ( write_cdf ) then
-         dic_save = ('H'.kv..true.)
+         dic_save = ('H'.kv.1)//('fa'.kv.1)//('stress'.kv.1)
          call cdf_save_state('SIESTA.nc',dic_save)
          call delete(dic_save)
       end if

@@ -261,17 +261,14 @@ contains
 !$OMP end do
 
        ! Do
-       ! \Gamma ^ T = i ( \Sigma - \Sigma^\dagger)
+       ! \Gamma ^ T = \Sigma - \Sigma^\dagger
 !$OMP do
        do jo = 1 , no_s
           do io = 1 , jo - 1
-             GammaT(jo,io) = zi * ( &
-                  work(io,jo,2)-dconjg(work(jo,io,2)) )
-             GammaT(io,jo) = zi * ( &
-                  work(jo,io,2)-dconjg(work(io,jo,2)) )
+             GammaT(jo,io) = work(io,jo,2)-dconjg(work(jo,io,2))
+             GammaT(io,jo) = work(jo,io,2)-dconjg(work(io,jo,2))
           end do
-          GammaT(jo,jo) = zi * ( &
-               work(jo,jo,2)-dconjg(work(jo,jo,2)) )
+          GammaT(jo,jo) = work(jo,jo,2)-dconjg(work(jo,jo,2))
        end do
 !$OMP end do nowait
 
@@ -288,19 +285,16 @@ contains
 !$OMP end do 
 
        ! Do
-       ! \Gamma ^ T = i ( \Sigma - \Sigma^\dagger)
+       ! \Gamma ^ T = \Sigma - \Sigma^\dagger
 !$OMP do 
        do jo = 1 , no_s
           do io = 1 , jo - 1
-             GammaT(jo,io) = zi * ( &
-                  Sigma(io,jo)-dconjg(Sigma(jo,io)) )
-             GammaT(io,jo) = zi * ( &
-                  Sigma(jo,io)-dconjg(Sigma(io,jo)) )
+             GammaT(jo,io) = Sigma(io,jo)-dconjg(Sigma(jo,io))
+             GammaT(io,jo) = Sigma(jo,io)-dconjg(Sigma(io,jo))
           end do
-          GammaT(jo,jo) = zi * ( &
-               Sigma(jo,jo)-dconjg(Sigma(jo,jo)) )
+          GammaT(jo,jo) = Sigma(jo,jo)-dconjg(Sigma(jo,jo))
        end do
-!$OMP end do
+!$OMP end do nowait
 
     end if
 

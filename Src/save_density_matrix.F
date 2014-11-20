@@ -64,18 +64,9 @@
 #ifdef NCDF_4
       if ( write_cdf ) then
 
-         dic_save = ('Ef'.kv.1)//('nsc'.kv.1)//('cell'.kv.1)
-         dic_save = dic_save//('xa'.kv.1)//('S'.kv.1)
-         dic_save = dic_save//('xij'.kv.1)//('DM'.kv.1)
-         dic_save = dic_save//('EDM'.kv.1)
-         dic_save = dic_save//('sp'.kv.1) ! in case it has changed
-
-         if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
-            if (istp.eq.1)
-     &           call cdf_save_state('SIESTA.nc',dic_save)
-         else
-            call cdf_save_state('SIESTA.nc',dic_save)
-         end if
+         dic_save = ('Ef'.kv.1)
+         dic_save = dic_save//('DM'.kv.1)//('EDM'.kv.1)
+         call cdf_save_state('SIESTA.nc',dic_save)
 
          call delete(dic_save)
 

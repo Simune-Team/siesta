@@ -46,7 +46,7 @@ contains
 
     integer :: allowed(na_u), itmp, s_na, c_na
     character(len=400) :: HSfile, DMfile, ln
-    logical :: d_log
+    logical :: d_log1, d_log2, d_log3
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
 
@@ -122,14 +122,14 @@ contains
        ! We require a TSHS file as that file contains
        ! all necessary information.
        call ts_read_TSHS(HSfile, &
-            d_log, d_log, d_log, &
+            d_log1, d_log2, d_log3, &
             fcell, fnsc, fna_u, fno_u, fnspin,  &
             fkscell, fkdispl, &
             fxa, flasto, &
             fsp, fDM_2D, tmp_1D, fisc_off, &
             fEf, fQtot, fTemp, &
             itmp, itmp, &
-            Bcast=.true.)
+            Bcast= .true. )
        fn_s = product(fnsc)
 
        ! Clean-up, we do not need the Hamilton and overlap
@@ -154,12 +154,12 @@ contains
        ! read in DM file
 
        call read_DM( DMfile, fnspin, fake_dit, fno_u, &
-            fDM_2D, d_log , & ! we have already checked that it exists
+            fDM_2D, d_log1 , & ! we have already checked that it exists
             Bcast = .true.)
        psp => spar(fDM_2D)
        psp = fsp
        call delete(fsp)
-       if ( .not. d_log ) then
+       if ( .not. d_log1 ) then
           call die('Something went wrong, file not found?')
        end if
 
@@ -436,5 +436,63 @@ contains
     end if
     
   end subroutine expand_spd2spd_2D
+
+
+  subroutine reduce_spin_size(ispin,H_2D,S_1D,Ef)
+    use class_dSpData1D
+    integer, intent(in) :: ispin
+    type(dSpData2D), intent(inout) :: H_2D
+    type(dSpData1D), intent(inout), optional :: S_1D
+    real(dp), intent(in), optional :: Ef
+    type(dSpData2D) :: tmp
+    
+    type(OrbitalDistribution), pointer :: dit
+    type(Sparsity), pointer :: sp
+    
+    integer :: dim_spin
+    real(dp), pointer :: H_orig(:,:), H_new(:,:), S_orig(:)
+
+    ! we also shift to the Fermi level
+    H_orig => val(H_2D)
+    if ( present(S_1D) ) then
+       S_orig => val(S_1D)
+    end if
+
+    ! In case there only is one spin channel
+    if ( spar_dim(H_2D) == 1 ) then
+       dim_spin = 2
+    else
+       dim_spin = 1
+    end if
+    if ( size(H_orig,dim=dim_spin) == 1 ) then
+       if ( present(Ef) .and. present(S_1D) ) then
+!$OMP parallel workshare
+          H_orig(:,1) = H_orig(:,1) - Ef * S_orig(:)
+!$OMP end parallel workshare
+       end if
+    else
+
+       ! The sparsity pattern associated with the Hamiltonian
+       dit => dist(H_2D)
+       sp => spar(H_2D)
+       call newdSpData2D(sp,1,dit,tmp)
+       H_new => val(tmp)
+       if ( present(Ef) .and. present(S_1D) ) then
+!$OMP parallel workshare
+          H_new(:,1) = H_orig(:,ispin) - Ef * S_orig(:)
+!$OMP end parallel workshare
+       else
+!$OMP parallel workshare
+          H_new(:,1) = H_orig(:,ispin)
+!$OMP end parallel workshare
+       end if
+
+       ! Copy/delete/clean to the old array
+       H_2D = tmp
+       call delete(tmp)
+
+    end if
+    
+  end subroutine reduce_spin_size
 
 end module m_handle_sparse

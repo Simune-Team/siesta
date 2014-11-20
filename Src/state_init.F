@@ -63,7 +63,9 @@
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #ifdef NCDF_4
+      use dictionary
       use m_ncdf_io, only : cdf_init_file, cdf_save_settings
+      use m_ncdf_io, only : cdf_save_state
 #endif
 #endif
       use class_Sparsity
@@ -93,6 +95,9 @@
       integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
       real(dp),             pointer :: dummyH(:,:)
+#endif
+#ifdef NCDF_4
+      type(dict) :: dic_save
 #endif
       
       character(len=256)            :: oname
@@ -459,11 +464,16 @@
       if ( write_cdf ) then
 
          ! Initialize the file...
-         call cdf_init_file('SIESTA.nc', 
-     &        writmd .and. fincoor > 1 )
+         call cdf_init_file('SIESTA.nc',.false.)
 
          ! Save the settings
          call cdf_save_settings('SIESTA.nc')
+
+         dic_save = ('S'.kv.1)//('sp'.kv.1)
+         dic_save = dic_save//('nsc'.kv.1)//('xij'.kv.1)
+         dic_save = dic_save//('xa'.kv.1)//('cell'.kv.1)
+         call cdf_save_state('SIESTA.nc',dic_save)
+         call delete(dic_save)
          
       end if
 #endif

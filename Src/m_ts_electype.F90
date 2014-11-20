@@ -29,7 +29,7 @@ module m_ts_electype
      module procedure equal_str_el
   end interface
 
-  public :: Elec, Name
+  public :: Elec, Name, Elec_idx
   public :: TotUsedAtoms, TotUsedOrbs
   public :: AtomInElec, OrbInElec
   public :: q_exp
@@ -128,8 +128,11 @@ module m_ts_electype
 
      ! These arrays are used to construct the full Hamiltonian and overlap and Green's function
      complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:)
+
      ! Arrays needed to partition the scattering matrix and self-energies
-     ! Notice that Gamma should "ALWAYS" contain the transposed
+
+     ! Gamma is actually this: (Sigma - Sigma^\dagger) ^ T
+     ! and NOT: i (Sigma - Sigma^\dagger)
      complex(dp), pointer :: Gamma(:), Sigma(:)
 
      ! The imaginary part in the electrode
@@ -428,7 +431,12 @@ contains
           this%Rep(2) = fdf_bintegers(pline,2)
           this%Rep(3) = fdf_bintegers(pline,3)
 
+#ifdef TBTRANS
+       else if ( leqi(ln,'tbt.out-of-core') .or. &
+            leqi(ln,'out-of-core') ) then
+#else
        else if ( leqi(ln,'out-of-core') ) then
+#endif
 
           this%out_of_core = fdf_bboolean(pline,1,after=1)
 
@@ -449,7 +457,7 @@ contains
           this%DEfile = trim(fdf_bnames(pline,2))
 
 #ifdef TBTRANS
-       else if ( leqi(ln,'tbt-Eta') .or. leqi(ln,'Eta') ) then
+       else if ( leqi(ln,'tbt.Eta') .or. leqi(ln,'Eta') ) then
 #else
        else if ( leqi(ln,'Eta') ) then
 #endif
@@ -457,12 +465,12 @@ contains
                val = this%Eta, before=3)
 
 #ifdef TBTRANS
-       else if ( leqi(ln,'tbt-GF') .or. &
-            leqi(ln,'tbt-GF-file') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('tbt-GF-file not supplied')
+       else if ( leqi(ln,'tbt.GF') .or. &
+            leqi(ln,'tbt.GF-file') ) then
+          if ( fdf_bnnames(pline) < 2 ) call die('tbt.GF-file not supplied')
           this%GFfile = trim(fdf_bnames(pline,2))
 
-       else if ( leqi(ln,'tbt-GF-ReUse') ) then
+       else if ( leqi(ln,'tbt.GF-ReUse') ) then
 
           this%ReUseGF = fdf_bboolean(pline,1,after=1)
 
@@ -591,7 +599,17 @@ contains
     ! In case the user has not supplied a DM file for the
     ! electrode we might as well try and guess one... :)
     if ( len_trim(this%DEfile) == 0 ) then
-       this%DEfile = this%HSfile(1:len_trim(this%HSfile)-4)//'TSDE'
+       i = len_trim(this%HSfile)
+#ifdef NCDF_4
+       ! If the TSHS file is a netcdf file we re-use it
+       if ( this%HSfile(i-1:i) == 'nc' ) then
+          this%DEfile = this%HSfile
+       else
+          this%DEfile = this%HSfile(1:i-4)//'TSDE'
+       end if
+#else
+       this%DEfile = this%HSfile(1:i-4)//'TSDE'
+#endif
     end if
 
   end function fdf_Elec
@@ -599,21 +617,21 @@ contains
   function equal_el_el(this1,this2) result(equal)
     type(Elec), intent(in) :: this1, this2
     logical :: equal
-    equal = this1%name == this2%name
+    equal = trim(this1%name) == trim(this2%name)
   end function equal_el_el
 
   function equal_el_str(this,str) result(equal)
     type(Elec), intent(in) :: this
     character(len=*), intent(in) :: str
     logical :: equal
-    equal = this%name == trim(str)
+    equal = trim(this%name) == trim(str)
   end function equal_el_str
 
   function equal_str_el(str,this) result(equal)
     character(len=*), intent(in) :: str
     type(Elec), intent(in) :: this
     logical :: equal
-    equal = this%name == trim(str)
+    equal = trim(this%name) == trim(str)
   end function equal_str_el
 
   subroutine assign(this,D,HSfile,GFfile, &
@@ -742,19 +760,21 @@ contains
 
   end function in_basal_elec
 
-  subroutine read_Elec(this,Bcast,io)
+  subroutine read_Elec(this,Bcast,io,ispin)
     use fdf
     use parallel
     use class_OrbitalDistribution
 
+    use m_handle_sparse, only : reduce_spin_size
     use m_ts_io
 #ifdef MPI
     use mpi_siesta
 #endif
 
     type(Elec), intent(inout) :: this
-    logical, intent(in), optional :: Bcast
-    logical, intent(in), optional :: io
+    logical, intent(in), optional :: Bcast ! Bcast information
+    logical, intent(in), optional :: IO ! Write to STD-out
+    integer, intent(in), optional :: ispin ! select one spin-channel
 
     character(len=200) :: fN
     integer :: fL, kscell(3,3), istep, ia1
@@ -783,6 +803,13 @@ contains
     else
        call die('Could not infer the file type of the &
             &electrode file: '//trim(fN))
+    end if
+
+    if ( present(ispin) ) then
+       if ( ispin > 0 ) then
+          call reduce_spin_size(ispin,this%H)
+          this%nspin = 1
+       end if
     end if
 
     if ( IONode .and. lio ) call print_type(this%sp)
@@ -1539,5 +1566,15 @@ contains
     write(*,f9)  '  Electrode imaginary Eta', this%Eta/eV,' eV'
 
   end subroutine print_settings
+
+  function Elec_idx(N_Elec,Elecs,El) result(idx)
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec), El
+    integer :: idx
+    do idx = 1 , N_Elec
+       if ( Elecs(idx) == El ) return
+    end do
+    idx = 0
+  end function Elec_idx
   
 end module m_ts_electype

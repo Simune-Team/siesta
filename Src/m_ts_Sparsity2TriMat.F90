@@ -300,28 +300,25 @@ contains
     use precision, only: dp, i8b
     integer, intent(in) :: np, n_part(np)
     integer, intent(in) :: ng, guess_part(ng)
+    logical :: faster
 
     integer :: i
     integer(i8b) :: guess_N, part_N, diff
-    logical :: faster
 
     ! We estimate the fastest algorithm
     ! by the number of operations the matrices make
-    faster = ( ng > np )
-    if ( np > ng ) return
-    if ( faster ) return
 
     diff = 0
     do i = 1 , max(np,ng)
        part_N = 0
        if ( i < np ) then
-          part_N = 5 * n_part(i) ** 3 / 3
-          part_N = part_N + ( 5 * n_part(i) ** 2 / 3 + 4 * n_part(i+1) ) * n_part(i)
+          part_N = 2 * 5 * n_part(i) ** 2 / 3 + 4 * n_part(i+1)
+          part_N = part_N * n_part(i)
        end if
        guess_N = 0
        if ( i < ng ) then
-          guess_N = 5 * guess_part(i) ** 3 / 3
-          guess_N = guess_N + ( 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i+1) ) * guess_part(i)
+          guess_N = 2 * 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i+1) 
+          guess_N = guess_N * guess_part(i)
        end if
        diff = diff + part_N - guess_N
 
@@ -329,13 +326,13 @@ contains
 
        part_N = 0
        if ( i <= np ) then
-          part_N = 5 * n_part(i) ** 3 / 3
-          part_N = part_N + ( 5 * n_part(i) ** 2 / 3 + 4 * n_part(i-1) ) * n_part(i)
+          part_N = 2 * 5 * n_part(i) ** 2 / 3 + 4 * n_part(i-1) 
+          part_N = part_N * n_part(i)
        end if
        guess_N = 0
        if ( i <= ng ) then
-          guess_N = 5 * guess_part(i) ** 3 / 3
-          guess_N = guess_N + ( 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i-1) ) * guess_part(i)
+          guess_N = 2 * 5 * guess_part(i) ** 2 / 3 + 4 * guess_part(i-1)
+          guess_N = guess_N * guess_part(i)
        end if
        diff = diff + part_N - guess_N
     end do

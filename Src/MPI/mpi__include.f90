@@ -32,7 +32,6 @@
         public :: mpi_packed
 #endif
         public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
-        public :: mpi_status_size
         public :: mpi_comm_world
         public :: mpi_comm_self
 
@@ -73,7 +72,8 @@
         public :: MPI_KEYVAL_INVALID
 
         ! MPI_status
-        !public :: MPI_STATUS_SIZE
+        public :: MPI_STATUS_SIZE
+        public :: MPI_STATUSES_IGNORE
         public :: MPI_SOURCE
         public :: MPI_TAG
         public :: MPI_ERROR

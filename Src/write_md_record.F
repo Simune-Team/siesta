@@ -49,7 +49,7 @@
 #ifdef CDF
 #ifdef NCDF_4
         if (writmd .and. fincoor > 1 ) then
-           call cdf_save_md('SIESTA.nc')
+           !call cdf_save_md('SIESTA.nc')
         end if
 #endif
 #endif

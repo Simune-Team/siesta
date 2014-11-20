@@ -66,6 +66,7 @@ contains
 ! *********************
     complex(dp), parameter :: z0 = dcmplx(0._dp, 0._dp)
     complex(dp), parameter :: z1 = dcmplx(1._dp, 0._dp)
+    complex(dp), parameter :: zi = dcmplx(0._dp, 1._dp)
 
     integer :: i, NB, ind, iB
 
@@ -95,7 +96,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'T','T',no,no,no,z1, &
+            'T','T',no,no,no,zi, &
             El%Gamma, no, &
             GGG(ind), no, &
             z0, work,no)
@@ -134,7 +135,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'T','T',no,iB,no,z1, &
+            'T','T',no,iB,no,zi, &
             El%Gamma, no, &
             GGG(ind), iB, &
             z0, work,no)

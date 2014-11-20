@@ -1,4 +1,65 @@
 ----------------------------------------------------
+November 20, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-214
+Update for preparing merging of tbtrans [4]
+
+* Added MPI_STATUSES_IGNORE to the mpi interface
+
+* Added saving of other variables to the SIESTA.nc
+  file.
+  Now fa, stress and Qtot are also saved.
+
+  The MD writing has for now been disabled.
+  The sparsity pattern cannot be assured constant.
+
+* Bugfix for bulk-initialization from Gamma
+  calculations.
+
+* Added generic routine for reducing a matrix to only one spin
+  channel.
+  [m_handle_sparse]
+  call reduce_spin_size(ispin,H_2D,S_1D,Ef)
+
+  will retain the spin-index ispin and
+  if S and Ef is provided the values will be shifted 
+  according to:
+    H(:,ispin) = H(:,ispin) - Ef * S(:)
+
+* Bugfixes for the ncdf_io routine. Not optimal yet, but
+  it should be a good base to start off from.
+
+* Changed the scattering states for the electrodes
+  to be Sigma - Sigma^\dagger.
+  This will limit the i multiplication when creating the
+  Gamma functions.
+  As far as I know will BLAS always multiply with alpha
+  in zgemm, hence we put it there instead of 1.
+
+* Enabled several keys for the electrodes to work with tbt.<flag> flags.
+
+* Possible bugfix for reading in a Gamma calculation TSHS file.
+  Now the isc_off is always allocated. And for Gamma it is zero.
+  
+modified:
+  Src/MPI/mpi__include.f90
+  Src/final_H_f_stress.F
+  Src/m_handle_sparse.F90
+  Src/m_ncdf_io.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_io.F90
+  Src/m_ts_mumps_scat.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri_scat.F90
+  Src/obj_setup.sh
+  Src/save_density_matrix.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/state_init.F
+  Src/write_md_record.F
+
+----------------------------------------------------
 November 9, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-213
 Added OpenMP support in TranSIESTA, added GEMM_3M
 

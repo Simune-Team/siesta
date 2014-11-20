@@ -48,6 +48,7 @@ contains
 ! *********************
     complex(dp), parameter :: z0 = dcmplx(0._dp, 0._dp)
     complex(dp), parameter :: z1 = dcmplx(1._dp, 0._dp)
+    complex(dp), parameter :: zi = dcmplx(0._dp, 1._dp)
 
     complex(dp), pointer :: rows(:), ztmp(:)
     integer :: io, jo, ind, indG, SB, CB
@@ -96,7 +97,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'N','T',SB,no,no,z1, &
+            'N','T',SB,no,no,zi, &
             rows(1)    , SB, &
             El%Gamma   , no, &
             z0, ztmp(1), SB)

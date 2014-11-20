@@ -432,12 +432,12 @@ contains
     integer, intent(out) :: nsc(3), na_u, no_u, nspin
     integer, intent(out) :: kscell(3,3)
     real(dp), intent(out) :: kdispl(3)
-    real(dp), pointer, intent(out) :: xa(:,:)
-    integer, pointer, intent(out) :: lasto(:) ! (0:na_u) 
+    real(dp), pointer :: xa(:,:)
+    integer, pointer :: lasto(:) ! (0:na_u) 
     type(Sparsity), intent(inout) :: sp
     type(dSpData2D), intent(inout) :: H
     type(dSpData1D), intent(inout) :: S
-    integer, pointer, intent(out) :: isc_off(:,:)
+    integer, pointer :: isc_off(:,:)
     real(dp), intent(out) :: Ef, Qtot,Temp
     ! These have to be set before entrance (makes it possible to read
     ! in FCrun TSHS files...)
@@ -700,6 +700,13 @@ contains
 #endif
 
        end if
+    else
+
+       ! Number of supercells
+       n_s = product(nsc)
+       call re_alloc(isc_off,1,3,1,n_s)
+       isc_off(:,:) = 0
+
     end if
 
     if ( Node == 0 ) then

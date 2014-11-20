@@ -1587,6 +1587,10 @@ MODULE siesta_options
     ! If not compiled with NCDF_PARALLEL, we do not
     ! allow parallel writes.....!!!!
     cdf_w_parallel = .false.
+#else
+    ! Currently all routines are not correctly handling parallel
+    ! IO
+    cdf_w_parallel = .false.
 #endif
     if ( cdf_w_parallel ) then
        ! Doing parallel writes does not allow

@@ -734,20 +734,20 @@ contains
 
           ! If the orbital is not in the region, we skip it
           jo = region_pivot(r,jo)
-          if ( jo <= 0  ) cycle
+          if ( jo <= 0 ) cycle
 
           ! Calculate position
           ! For Gamma, we do not need the complex conjugate...
           if ( i > jo ) then
-             idx = jo + (i -1)*i /2
+             idx = jo + ( i-1)* i/2
 !$OMP atomic
              A_UT(idx) = A_UT(idx) + 0.5_dp * A(ind)
           else if ( i < jo ) then
-             idx = i  + (jo-1)*jo/2
+             idx =  i + (jo-1)*jo/2
 !$OMP atomic
              A_UT(idx) = A_UT(idx) + 0.5_dp * A(ind)
           else
-             idx = i  + (jo-1)*jo/2
+             idx =  i + (jo-1)*jo/2
 !$OMP atomic
              A_UT(idx) = A_UT(idx) +          A(ind)
           end if
