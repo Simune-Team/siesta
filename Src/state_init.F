@@ -150,6 +150,14 @@
           call bonds( ucell, na_u, isa, xa,
      &                rmax_bonds, trim(slabel)// ".BONDS" )
 
+       case (9)
+          if ( istep == 0 ) then
+             write(6,'(t24,a,i7)')'Explicit coord. initialization'
+          else
+             write(6,'(t24,a,i7)')'Explicit coord. step =',istep
+          end if
+          if (cml_p) call cmlStartStep(mainXML, type='ECS', index=istep)
+
         end select
         write(6,'(2a)') '                        ',
      &                    '=============================='

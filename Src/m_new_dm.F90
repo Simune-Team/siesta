@@ -141,7 +141,7 @@
       else
          if ((idyn .eq. 6)             &   ! Force Constants
               .and. usesavedm .and. writedm)  dminit = .true.
-         if ((idyn .eq. 7)             &   ! Phonon series (writedm??)
+         if ((idyn .eq. 7).or.(idyn==9)&   ! Phonon series (writedm??)
                .and. usesavedm)  dminit = .true.
       endif
 

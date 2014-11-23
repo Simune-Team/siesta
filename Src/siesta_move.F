@@ -34,6 +34,9 @@
       use m_steps
       use m_kinetic
       use m_forces
+#ifdef NCDF_4
+      use m_exp_coord, only : exp_coord_next
+#endif
 
       implicit none
 
@@ -239,6 +242,18 @@
           if (volcel(ucell) < 1.0e-8_dp) then
             call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
           endif
+#ifdef NCDF_4
+       case (9)
+          ! Save the md-record
+          call write_md_record( istep )
+          if ( istep < fincoor ) then
+             call exp_coord_next( istep + 1 , na_u, xa)
+          end if
+          ! Force the velocity to zero to not move the 
+          ! atoms
+          va = 0._dp
+          goto 60
+#endif
       end select
 
       if (IOnode) then

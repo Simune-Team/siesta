@@ -262,6 +262,7 @@ m_efield.o: atmfuncs.o mesh.o parallel.o precision.o siesta_cml.o siesta_geom.o
 m_efield.o: sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
+m_exp_coord.o: files.o parallel.o precision.o units.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_filter.o: bessph.o m_recipes.o radfft.o sorting.o
 m_fire.o: parallel.o precision.o
@@ -622,9 +623,10 @@ siesta_init.o: siesta_options.o sparse_matrices.o struct_init.o sys.o
 siesta_init.o: timestamp.o ts_init.o writewave.o zmatrix.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
-siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
-siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
-siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
+siesta_move.o: m_energies.o m_exp_coord.o m_forces.o m_kinetic.o m_steps.o
+siesta_move.o: m_stress.o parallel.o phonon.o siesta_cml.o siesta_geom.o
+siesta_move.o: siesta_options.o sys.o write_subs.o zm_broyden_optim.o
+siesta_move.o: zm_fire_optim.o zmatrix.o
 siesta_options.o: files.o memoryinfo.o parallel.o precision.o siesta_cml.o
 siesta_options.o: sys.o units.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpData2D.o
@@ -650,8 +652,9 @@ state_init.o: m_ts_sparse.o m_ts_tri_init.o overlap.o parallel.o
 state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
 state_init.o: sparse_matrices.o sys.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
-struct_init.o: m_iostruct.o m_mpi_utils.o parallel.o periodic_table.o
-struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
+struct_init.o: m_exp_coord.o m_iostruct.o m_mpi_utils.o m_steps.o parallel.o
+struct_init.o: periodic_table.o siesta_cml.o siesta_geom.o siesta_options.o
+struct_init.o: zmatrix.o
 sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o

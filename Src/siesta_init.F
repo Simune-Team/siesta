@@ -418,6 +418,19 @@ C     Initialise MPI and set processor number
       else if (idyn .eq. 8) then
         inicoor = 0
         fincoor = huge(1)
+#ifdef NCDF_4
+      else if (idyn == 9) then
+         if ( IONode ) then
+            write(*,'(/,a)')'expcoord: '//repeat('*',69)
+            write(*,'(a,i0)')
+     &           'expcoord: Currently reached coordinate step = ',
+     &           inicoor
+            write(*,'(a,i0)')
+     &           'expcoord: Final coordinate step = ',
+     &           fincoor
+            write(*,'(a,/)')'expcoord: '//repeat('*',69)
+         end if
+#endif
       else
         call die( 'siesta: wrong idyn' )
       endif

@@ -1,4 +1,35 @@
 ----------------------------------------------------
+November 23, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-219
+Added explicit coordinate
+
+* Added explicit coordinate to the code
+  This allows one to do
+  MD.TypeOfRun explicit
+
+added:
+  Src/m_exp_coord.F90
+modified:
+  Src/Makefile
+  Src/m_new_dm.F90
+  Src/save_density_matrix.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/state_init.F
+  Src/struct_init.F
+  Src/write_subs.F
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 November 23, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-218
 Speedup for tbtrans
 

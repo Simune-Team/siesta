@@ -256,6 +256,9 @@ MODULE siesta_options
 !                             6 = Force constants
 !                             7 = Forces for PHONON program
 !                             8 = Force evaluation
+#ifdef NCDF_4
+!                             9 = Explicit evaluation
+#endif
 ! integer istart           : Initial time step for MD
 ! integer ifinal           : Final time step for MD
 ! integer nmove            : Number of CG steps in CG optimization
@@ -1115,6 +1118,11 @@ MODULE siesta_options
       idyn = 7
     else if (leqi(dyntyp,'forces')) then
       idyn = 8
+#ifdef NCDF_4
+    else if (leqi(dyntyp,'explicit')) then
+      idyn = 9
+      
+#endif
     else
       call die('Invalid Option selected - value of MD.TypeOfRun not recognised')
     endif
@@ -1267,6 +1275,15 @@ MODULE siesta_options
                                 name  = 'MD.TypeOfRun',     &
                                 value = 'Force Evaluation' )
         endif
+#ifdef NCDF_4
+      case(9)
+        write(6,2) 'redata: Dynamics option                  =     Explicit'
+        if (cml_p) then
+          call cmlAddParameter( xf    = mainXML,            &
+                                name  = 'MD.TypeOfRun',     &
+                                value = 'Explicit' )
+        endif
+#endif
       end select
     endif
 
@@ -1528,6 +1545,7 @@ MODULE siesta_options
                     .or. (idyn==5 .and. ianneal==1)           &
                     .and. (idyn/=1) .and. (idyn/=2)           &
                     .and. (idyn/=6) .and. (idyn/=7)           &
+                    .and. (idyn/=9) &
                     .and. (.not. (idyn==5 .and. ianneal/=1) )
 
     want_spatial_decomposition = fdf_get('UseSpatialDecomposition', .false.)

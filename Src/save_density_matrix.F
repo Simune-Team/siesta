@@ -80,7 +80,7 @@
          call timer('IO-W-DM',1)
          do i = 1 , 100
 #endif
-        if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+        if ((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn.eq.9)) then
           if (istp.eq.1)
      &          call write_dm(trim(slabel)//'.DM', nspin, DM_2D)
         else
@@ -100,7 +100,7 @@
          call timer('IO-W-DM',1)
          do i = 1 , 100
 #endif
-          if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+          if ((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn==9)) then
             if (istp.eq.1)
      &            call write_dm(trim(slabel)//'.DM', nspin, DM_2D)
           else
@@ -117,7 +117,7 @@
          call timer('IO-W-TS-DE',1)
          do i = 1 , 100
 #endif
-             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+             if ((idyn .eq. 6) .or. (idyn .eq. 7).or.(idyn==9)) then
                if (istp .eq.1)
      &               call write_ts_dm(trim(slabel)//'.TSDE', nspin,
      &               DM_2D, EDM_2D, Ef)

@@ -21,6 +21,12 @@
       use files,          only : slabel
       use zmatrix,        only : lUseZmatrix
       use parallel,       only : IOnode
+#ifdef NCDF_4
+      use m_steps, only : inicoor, fincoor
+      use m_exp_coord, only : read_exp_coord_options
+      use m_exp_coord, only : exp_coord_init
+      use m_exp_coord, only : exp_coord_next
+#endif
 
       implicit none
 
@@ -83,6 +89,17 @@
       endif
 
 ! Read cell shape and atomic positions from a former run ..............
+#ifdef NCDF_4
+      dummy_str = fdf_get('MD.TypeOfRun','none')
+      if ( leqi(dummy_str,'explicit') ) then
+         ! Read in file name
+         call read_exp_coord_options( )
+         call exp_coord_init(slabel,na_u,inicoor,fincoor)
+         if ( inicoor > 0 ) then
+            call exp_coord_next(inicoor,na_u,xa)
+         end if
+      end if
+#endif
       foundxv = .false.
       if (usesavexv) then
         call ioxv('read', ucell, vcell, na_u, isa, iza, xa, va, foundxv)

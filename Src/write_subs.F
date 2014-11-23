@@ -115,7 +115,7 @@
 
       ! Output depends on dynamics option
         select case (idyn)
-        case(0:5,8)
+        case(0:5,8,9)
           if (idyn==0 .and. (.not.varcel)) then
             continue
           else
