@@ -88,7 +88,7 @@ TBTOBJS += m_tbt_contour.o m_tbt_kpoint.o m_tbt_gf.o
 
 # Different solution methods
 TBTOBJS += m_tbtrans.o m_tbt_trik.o m_tbt_tri_scat.o m_tbt_trimat_invert.o
-TBTOBJS += m_tbt_proj.o
+TBTOBJS += m_tbt_proj.o m_tbt_diag.o
 
 # The saving methods
 TBTOBJS += m_tbt_sigma_save.o m_tbt_save.o
@@ -818,6 +818,9 @@ fdf_extra.o: m_region.o
 m_tbt_contour.o: m_gauss_quad.o m_integrate.o m_ts_aux.o m_ts_cctype.o
 m_tbt_contour.o: m_ts_chem_pot.o m_ts_electype.o m_ts_io_contour.o
 m_tbt_contour.o: m_ts_io_ctype.o parallel.o precision.o units.o
+m_tbt_diag.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_tbt_diag.o: class_Sparsity.o intrinsic_missing.o m_region.o
+m_tbt_diag.o: m_ts_sparse_helper.o precision.o
 m_tbt_gf.o: m_io_s.o m_tbt_contour.o m_ts_cctype.o m_ts_electrode.o
 m_tbt_gf.o: m_ts_electype.o m_ts_gf.o parallel.o precision.o sys.o
 m_tbt_hs.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
@@ -830,9 +833,9 @@ m_tbt_options.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_electype.o m_ts_method.o
 m_tbt_options.o: parallel.o precision.o units.o
 m_tbt_proj.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
 m_tbt_proj.o: class_SpData2D.o class_Sparsity.o fdf_extra.o intrinsic_missing.o
-m_tbt_proj.o: m_io_s.o m_ncdf_io.o m_region.o m_tbt_hs.o m_tbt_save.o
-m_tbt_proj.o: m_ts_electype.o m_ts_sparse_helper.o parallel.o precision.o
-m_tbt_proj.o: timestamp.o units.o
+m_tbt_proj.o: m_io_s.o m_ncdf_io.o m_region.o m_tbt_diag.o m_tbt_hs.o
+m_tbt_proj.o: m_tbt_save.o m_ts_electype.o parallel.o precision.o timestamp.o
+m_tbt_proj.o: units.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_regions.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
 m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_sparse.o

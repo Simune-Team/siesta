@@ -1,4 +1,22 @@
 ----------------------------------------------------
+November 23, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-220
+Divided code for diagonalization of H in TBT
+
+* Diagonalization for the Hamiltonian when
+  projecting the molecule in tbtrans
+  has been separated into two modules.
+
+  Now diagonalization is in a generic module.
+
+  m_tbt_diag
+
+added:
+  Util/TS/TBtrans/m_tbt_diag.F90
+modified:
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
 November 23, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-219
 Added explicit coordinate
 
