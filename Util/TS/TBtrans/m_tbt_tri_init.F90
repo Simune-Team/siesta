@@ -214,9 +214,9 @@ contains
 
     if ( Node == 0 ) then
        ! Print out stuff
-       call region_print(DevTri)
+       call region_print(DevTri, seq_max = 10 )
        do i = 1 , N_Elec
-          call region_print(ElTri(i))
+          call region_print(ElTri(i), seq_max = 10 )
        end do
     end if
 

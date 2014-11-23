@@ -34,6 +34,9 @@ module m_tbt_tri_scat
   ! From ts_tri_scat
   public :: GF_Gamma_GF
   public :: GFGGF_needed_worksize
+#ifdef NCDF_4
+  public :: orb_current
+#endif
 
   ! Used for BLAS calls (local variables)
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
@@ -50,6 +53,7 @@ contains
   ! all Yn/Bn-1 and all Xn/Cn+1
   ! This lets us calculate all entries
   subroutine GF_DOS(r,Gf_tri,S_1D,DOS,nwork,work)
+    use intrinsic_missing, only : SFIND
     use class_zTriMat
     use class_Sparsity
     use class_zSpData1D
@@ -125,10 +129,10 @@ contains
              ! overlap matrix
              ! REMEMBER, S is transposed!
              ! Hence we do not need conjg :)
-             do ind = l_ptr(jo) + 1 , l_ptr(jo) + ncol(jo)
-                i = region_pivot(r,l_col(ind)) - off1
-                if ( i    <= 0 ) cycle
-                if ( no_i <  i ) cycle
+             do i = 1 , no_i
+                ind = SFIND(l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo)),r%r(off1+i))
+                if ( ind == 0 ) cycle
+                ind = l_ptr(jo) + ind
                 DOS(off2+j) = DOS(off2+j) - dimag( Gf(ii+i) * S(ind) )
              end do
           end do
@@ -293,19 +297,18 @@ contains
 
 !$OMP parallel do default(shared), private(j,ii,jo,ind,i,ip,im,iD)
           do j = 1 , step_o
-
              ii = (j-1) * no_i
-             iD = off2+i_o+j-1
+             iD = off2 + j
              jo = r%r(iD)
              ! get the equivalent one in the
              ! overlap matrix
              ! REMEMBER, S is transposed!
              ! Hence we do not need conjg :)
-             do ind = l_ptr(jo) + 1 , l_ptr(jo) + ncol(jo)
-                i = region_pivot(r,l_col(ind)) - off1
-                if ( i <= 0 ) cycle
-                if ( no_i < i ) cycle
-                DOS(iD) = DOS(iD) - dimag( S(ind) * Gf(ii+i) )
+             do i = 1 , no_i
+                ind = SFIND(l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo)),r%r(off1+i))
+                if ( ind == 0 ) cycle
+                ind = l_ptr(jo) + ind
+                DOS(iD) = DOS(iD) - dimag( Gf(ii+i) * S(ind) )
              end do
           end do
 !$OMP end parallel do
@@ -348,6 +351,7 @@ contains
   ! A simple routine to calculate the DOS
   ! from a full calculated spectral function
   subroutine A_DOS(r,A_tri,S_1D,DOS)
+    use intrinsic_missing, only : SFIND
     use class_zTriMat
     use class_Sparsity
     use class_zSpData1D
@@ -399,10 +403,10 @@ contains
              ! overlap matrix
              ! REMEMBER, S is transposed!
              ! Hence we are doing it correctly
-             do ind = l_ptr(jo) + 1 , l_ptr(jo) + ncol(jo)
-                i = region_pivot(r,l_col(ind)) - off1
-                if ( i    <= 0 ) cycle
-                if ( no_i <  i ) cycle
+             do i = 1 , no_i
+                ind = SFIND(l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo)),r%r(off1+i))
+                if ( ind == 0 ) cycle
+                ind = l_ptr(jo) + ind
                 DOS(off2+j) = DOS(off2+j) + dreal( A(ii+i) * S(ind) )
              end do
           end do
@@ -560,13 +564,12 @@ contains
   ! It takes the spectral function and multiplies it with
   ! the scattering matrix of the down-projected self-energy
   ! and calculates the transmission.
-  subroutine A_Gamma(A_tri,El,rpivot,T)
+  subroutine A_Gamma(A_tri,El,T)
 
     use class_zTriMat
 
     type(zTriMat), intent(inout) :: A_tri ! Spectral function
     type(Elec), intent(in) :: El
-    type(tRegion), intent(in) :: rpivot
     real(dp), intent(out) :: T
 
     complex(dp), pointer :: A(:)
@@ -585,7 +588,7 @@ contains
     ! arrays meant that we could not assure the consecutive 
     ! memory layout in the tri-diagonal case.
 
-    n = rpivot%n
+    n = El%inDpvt%n
 !$OMP parallel do default(shared), &
 !$OMP&private(j,scat,i), reduction(-:T)
     do j = 1 , n
@@ -594,13 +597,91 @@ contains
           ! This algorithm requires El%Gamma to be transposed (and not
           ! with factor i),
           ! see: m_elec_se
-          T = T - aimag( A(index(A_tri,rpivot%r(i),rpivot%r(j))) * &
+          T = T - aimag( A(index(A_tri,El%inDpvt%r(i),El%inDpvt%r(j))) * &
                El%Gamma(scat+i) )
        end do
     end do
 !$OMP end parallel do
 
   end subroutine A_Gamma
+
+#ifdef NCDF_4
+  subroutine orb_current(cE,spH,spS,A_tri,r,orb_J)
+
+    use class_Sparsity
+    use class_zSpData1D
+    use class_dSpData1D
+    use class_zTriMat
+    use m_ts_cctype, only : ts_c_idx
+    use intrinsic_missing, only : SFIND
+
+    type(ts_c_idx), intent(in) :: cE
+    type(zSpData1D), intent(inout) :: spH, spS
+    type(zTriMat), intent(inout) :: A_tri
+    type(tRegion), intent(in) :: r
+    type(dSpData1D), intent(inout) :: orb_J
+
+    type(Sparsity), pointer :: i_sp
+    integer, pointer :: i_ncol(:), i_ptr(:), i_col(:)
+    type(Sparsity), pointer :: sp
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+
+    complex(dp) :: Z
+    complex(dp), pointer :: H(:), S(:)
+    complex(dp), pointer :: A(:)
+    real(dp), pointer :: J(:)
+    integer :: io, iu, ind, iind, idx, ju
+
+    if ( cE%fake ) return
+
+    Z = cE%e
+
+    sp => spar(spH)
+    H  => val (spH)
+    S  => val (spS)
+    call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
+
+    i_sp => spar(orb_J)
+    J    => val (orb_J)
+    call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
+
+    A => val(A_tri)
+
+    ! Initialize
+!$OMP parralel do default(shared), private(iu,io,ju,iind,ind,idx)
+    do iu = 1, r%n
+       io = r%r(iu)
+       if ( i_ncol(io) /= 0 ) then
+
+       J(i_ptr(io)+1:i_ptr(io)+i_ncol(io)) = 0._dp
+
+       ! Loop on entries here...
+       do ju = 1 , r%n
+          iind = SFIND(i_col(i_ptr(io)+1:i_ptr(io)+i_ncol(io)),r%r(ju))
+          if ( iind == 0 ) cycle
+          iind = i_ptr(io) + iind
+
+          ! Check if the orbital exists in the region
+          ! We are dealing with a UC sparsity pattern.
+          ! this wil ALWAYS be non-zero, note that 
+          ! the device region is a subset of the full sparsity
+          ! pattern
+          ind = l_ptr(io) + &
+               SFIND(l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io)),i_col(iind))
+
+          ! Notice that H and S are transposed
+          idx = index(A_tri,ju,iu)
+          
+          ! Jnm = Hmn * Im[A_nm]
+          J(iind) = ( H(ind) - Z * S(ind) ) * aimag( A(idx) ) 
+       end do
+
+       end if
+    end do
+!$OMP end parallel do
+
+  end subroutine orb_current
+#endif
 
   subroutine insert_Self_energy(El,r,off1,n1,off2,n2,M)
 
@@ -686,16 +767,17 @@ contains
     ! A down-folded self-energy, this
     ! is always considered to be "non-bulk" as
     ! we have it downfolded.
+
 !$OMP do private(j,ii,je,i,ie,idx)
     do j = 1 , no
        ii = (j-1)*no
        ! grab the index in the full tri-diagonal matrix
-       je = region_pivot(r,El%o_inD%r(j))
+       je = El%inDpvt%r(j)
        do i = 1 , no
-          ie = region_pivot(r,El%o_inD%r(i))
+          ie = El%inDpvt%r(i)
           
           idx = index(GFinv_tri,ie,je)
-
+          
           Gfinv(idx) = Gfinv(idx) - El%Sigma(ii+i)
           
        end do

@@ -289,6 +289,12 @@ contains
        save_DATA = save_DATA // ('DOS-A'.kv.1)
     end if
 
+    ! Should we calculate DOS of spectral function
+    ltmp = fdf_get('TBT.Orb.Current',.false.)
+    if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
+       save_DATA = save_DATA // ('orb-current'.kv.1)
+    end if
+
     !i = fdf_get('TBT.T.Eig',0)
     if ( i > 0 ) then
        ! currently not working
@@ -325,7 +331,7 @@ contains
 
     end if
 
-#ifdef NCDF
+#ifdef NCDF_4
     call init_Sigma_options( save_DATA )
 #endif
     call init_save_options( )

@@ -76,7 +76,7 @@ contains
     call write_debug( 'PRE GFGammaGF' )
 #endif
 
-    call timer("GFGGF",1)
+!    call timer("GFGGF",1)
 
     ! tri-diagonal parts information
     nr = nrows_g(Gf_tri)
@@ -100,26 +100,20 @@ contains
     ! Capture the full elements
     fGf => val(Gf_tri)
 
-    ip = 0
     do n = lsPart , lePart
-       ip = max(ip,no * nrows_g(Gf_tri,n))
-    end do
 
-    if ( nwork < ip ) then
-       print *,nwork,ip
-       call die('Work size not big enough')
-    end if
-
-    do n = lsPart , lePart
+       if ( .not. calc_parts(n) ) cycle
 
        ! Calculate the \Gamma Gf^\dagger n,1
        sN = nrows_g(Gf_tri,n)
+       if ( nwork < sN * no ) then
+          print *,nwork,sN*no
+          call die('Work size not big enough')
+       end if
 
        ! correct to the quantities that is available
        BsPart = max(n-1,lsPart)
        BePart = min(n+1,lePart)
-
-       if ( .not. calc_parts(n) ) cycle
 
        call TriMat_Bias_idxs(Gf_tri,no,n,sIdx,eIdx)
        ! obtain the Gf in the respective column
@@ -168,7 +162,7 @@ contains
        
     end do
        
-    call timer('GFGGF',2)
+!    call timer('GFGGF',2)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS GFGammaGF' )

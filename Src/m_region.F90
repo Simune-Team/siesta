@@ -975,7 +975,7 @@ contains
     write(*,'('//fmt//'a,i0,2a)') 'Region (',r%n,'): ',trim(r%name)
     write(*,'('//fmt//'tr2,a)',advance='no') '['
     do i = 1 , r%n - 1
-       write(*,'(tr1,i0,a)',advance='no') r%r(i),', '
+       write(*,'(tr1,i0,a)',advance='no') r%r(i),','
        if ( mod(i,lseq_max) == 0 ) then
           write(*,'(/,'//fmt//'tr3)',advance='no')
        end if

@@ -123,7 +123,7 @@ class TBTFile(object):
         g = self.nc # just a reference copy
         if tree:
             for t in tree:
-                g = g.groups[t]
+                if t: g = g.groups[t]
         return self._kavg(np.array(g.variables[var]),k_avg)
 
     def elecs(self):
@@ -217,13 +217,20 @@ class TBTProjFile(TBTFile):
 
     def elecs(self,mol,proj):
         """ Return all projections of this molecule """
+        if proj is None: return [mol]
         return list(self.nc.groups[mol].groups[proj].groups.keys())
 
     def iter_T(self,mol,proj,El,k_avg=True):
         """ Returns an iterable of different transmissions """
-        for var in self.nc.groups[mol].groups[proj].groups[El].variables.keys():
+        if proj is None:
+            grp = self.nc.groups[El]
+            tree = [El]
+        else:
+            grp = self.nc.groups[mol].groups[proj].groups[El]
+            tree = [mol,proj,El]
+        for var in grp.variables.keys():
             if var.endswith('.T') or var.endswith('.R'):
-                yield var,self._get_Data(var,tree=[mol,proj,El],k_avg=k_avg)
+                yield var,self._get_Data(var,tree=tree,k_avg=k_avg)
 
     def ADOS(self,mol,proj,El,k_avg=True):
         """ Returns the spectral function DOS from the molecule, projection and electrode """
@@ -315,6 +322,7 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
         projs = [args.projection.split('.')[1]]
     except:
         projs = Tf.projs(mol)
+    if len(projs) == 0: projs = [None]
 
     # We start by printing out the eigenvalues if requested
     if args.eigs:
@@ -339,7 +347,8 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
         for El in Tf.elecs(mol,proj):
 
             # LHS name
-            LHS = mol + '.' + proj + '.' + El
+            LHS = El
+            if proj: LHS += '.' + mol + '.' + proj
 
             # Read in DOS
             try:
@@ -358,7 +367,6 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
                 fname = args.prefix+'.TBT.'+LHS+'_'+RHS+'.'+args.suffix
                 print('Saving transmission data in: '+fname)
                 save_txt(fname,E,T=T,ADOS=ADOS,fmt = args.fmt, kpt=args.kpt)
-
 
 def process_tbt(args,Tf,k_idx,orbs):
     """ Processes the TBT.nc file """
@@ -416,6 +424,7 @@ def save_txt(file,E,T=None,DOS=None,ADOS=None,fmt='13.5e',kpt=None):
     if not ADOS is None: 
         l.append(ADOS)
         header += ' ' + 'Spec.DOS'.rjust(cl)
+    if len(l) == 1: return # this is only the energy grid
     # Append date of file-creation to the file.
     header += '\nDate: '+_TODAY
     if kpt is None:

@@ -38,7 +38,7 @@
 #ifdef CDF
 #ifdef NCDF_4
       use dictionary
-      use m_ncdf_io
+      use m_ncdf_siesta
 #endif
 #endif
 #ifdef TRANSIESTA

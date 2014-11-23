@@ -568,8 +568,8 @@ contains
 !$OMP parallel do default(shared), private(io,ind)
     do io = 1 , no_u
        if ( l_ncol(io) /= 0 ) then
-       ind = l_ptr(io)
-       l_col(ind+1:ind+l_ncol(io)) = SORT(l_col(ind+1:ind+l_ncol(io)))
+          ind = l_ptr(io)
+          l_col(ind+1:ind+l_ncol(io)) = SORT(l_col(ind+1:ind+l_ncol(io)))
        end if
     end do
 !$OMP end parallel do

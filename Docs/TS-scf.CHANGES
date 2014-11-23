@@ -1,4 +1,68 @@
 ----------------------------------------------------
+November 23, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-218
+Speedup for tbtrans
+
+* Searching for the sparsity indices was extremely
+  slow. We now utilise the search function SFIND
+  to double the performance! 
+  Simply by searching instead of simple look-ups!
+
+* Redid the projection, instead of projecting <i|Gam|j> per
+  projection we do it once for all unique projections.
+  Thus we save double calculations.
+  The code has also been made more clear.
+
+* Enabled bond-currents.
+  Both for projected and non-projected regions.
+  It takes up a-lot of disk-space, so compression 
+  is handy here. 
+  
+* Divided ncdf_io into two modules.
+  - A generic ncdf_io routine to write to netcdf files
+  - A ncdf_siesta module to handle specific siesta write
+
+* Added dep_all.sh script in the utility folder
+  to easily re-create all dependencies.
+
+removed:
+  Util/Gen-basis/fdf/
+  Util/VCA/fdf/
+  Util/Vibra/Src/fdf/
+modified:
+  Src/Makefile
+  Src/final_H_f_stress.F
+  Src/m_ncdf_io.F90
+  Src/m_region.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri_scat.F90
+  Src/save_density_matrix.F
+  Src/state_init.F
+  Src/write_md_record.F
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/Optimizer/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+  Util/TS/TBtrans/tbt_data.py
+  Util/TS/TBtrans/tbt_init.F90
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 November 20, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-217
 Bugfix for ifort compiler
 

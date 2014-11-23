@@ -11,7 +11,7 @@
 #ifdef CDF
         use md_out,     only: md_netcdf
 #ifdef NCDF_4
-        use m_ncdf_io, only : cdf_save_md
+        use m_ncdf_siesta, only : cdf_save_md
 #endif
 #endif
 

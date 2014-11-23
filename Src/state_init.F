@@ -64,8 +64,8 @@
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #ifdef NCDF_4
       use dictionary
-      use m_ncdf_io, only : cdf_init_file, cdf_save_settings
-      use m_ncdf_io, only : cdf_save_state
+      use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
+      use m_ncdf_siesta, only : cdf_save_state
 #endif
 #endif
       use class_Sparsity

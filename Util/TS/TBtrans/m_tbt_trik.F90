@@ -27,7 +27,7 @@ module m_tbt_trik
   use m_ts_sparse_helper, only : create_HS
 
   use m_tbt_hs
-  use m_tbt_regions, only : sp_uc, r_aDev
+  use m_tbt_regions, only : sp_uc, sp_dev, r_aDev
   use m_tbt_regions, only : r_oDev, r_oEl_alone, r_oElpD
   use m_tbt_regions, only : r_aBuf
   use m_tbt_tri_init, only : ElTri, DevTri
@@ -54,6 +54,7 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
     use class_zSpData1D
+    use class_dSpData1D
     use class_dSpData2D
     use class_zSpData2D
     use class_zTriMat
@@ -95,10 +96,12 @@ contains
 #ifdef NCDF_4
     ! The projections
     use m_tbt_proj, only : N_mol, mols, N_proj_T, proj_T
-    use m_tbt_proj, only : N_proj_E, proj_E, tProjElec
+    use m_tbt_proj, only : N_proj_ME, proj_ME, tLvlMolEl
+    use m_tbt_proj, only : proj_LME_assoc
     use m_tbt_proj, only : proj_update, proj_cdf_save_S_D
     use m_tbt_proj, only : proj_bMtk, proj_cdf_save_bGammak
     use m_tbt_proj, only : proj_Mt_mix, proj_cdf_save
+    use m_tbt_proj, only : proj_cdf_save_J
 #endif
 
 ! ********************
@@ -141,9 +144,10 @@ contains
     ! Matrix. This will take a little time, but it should
     ! be rather fast.
     type(Elec) :: El_p
-    type(tProjElec), pointer :: p_E
+    type(tLvlMolEl), pointer :: p_E
     real(dp), allocatable :: pDOS(:,:,:)
     real(dp), allocatable :: bTk(:,:)
+    type(dSpData1D) :: orb_J
 #endif
 ! ************************************************************
 
@@ -152,8 +156,6 @@ contains
     complex(dp), pointer :: GFGGF_work(:) => null()
     integer :: TT_size ! For the quadrouple product
     complex(dp), pointer :: TT_work(:) => null()
-    ! The pivoting tables for the down-folded region
-    type(tRegion) :: Dev2Gamma(N_Elec)
 ! ************************************************************
 
 ! ******************* Computational variables ****************
@@ -172,7 +174,7 @@ contains
     type(itt1) :: Kp
     integer :: N_E
     integer, pointer :: ikpt
-    integer :: iEl, jEl, ip, it, ipt
+    integer :: iEl, jEl, it, ipt
     integer :: iE, iE_N
     integer :: no, io
     integer :: pad_LHS, pad_RHS
@@ -195,19 +197,10 @@ contains
     ! Then we allocated the maximum projection
     nullify(El_p%Sigma)
     El_p%no_used = 0
-    if ( N_proj_T > 0 ) then
+    if ( N_proj_ME > 0 ) then
        no = 0
-       io = 0
-       do it = 1 , N_proj_T
-          if ( proj_T(it)%L%idx > 0 ) then
-             no = max(no,proj_T(it)%L%mol%orb%n)
-          end if
-          io = max(io,size(proj_T(it)%R))
-          do ip = 1 , size(proj_T(it)%R)
-             if ( proj_T(it)%R(ip)%L%idx > 0 ) then
-                no = max(no,proj_T(it)%R(ip)%L%mol%orb%n)
-             end if
-          end do
+       do it = 1 , N_proj_ME
+          no = max(no,proj_ME(it)%mol%orb%n)
        end do
        El_p%no_used = no
        if ( no == 0 ) then
@@ -220,6 +213,11 @@ contains
        ! reduce the size of Gamma by using pointers
        ! This will leverage MANY copies around the code!
 
+       ! Count maximum number of RHS projections
+       io = 0
+       do it = 1 , N_proj_T
+          io = max(io,size(proj_T(it)%R))
+       end do
        ! We allocate data segment for retaining all information
        ! We need to save bGammak, T->N_Elec
        ! In this data array we save 3 quantities:
@@ -258,16 +256,9 @@ contains
     ! down-folded scattering states (Gamma_L -> Gamma_DL)
     no = maxval(Elecs(:)%o_inD%n)
 #ifdef NCDF_4
-    if ( N_proj_T > 0 ) then
-       do it = 1 , N_proj_T
-          if ( proj_T(it)%L%idx > 0 ) then
-             no = max(no,proj_T(it)%L%mol%orb%n)
-          end if
-          do io = 1 , size(proj_T(it)%R)
-             if ( proj_T(it)%R(io)%L%idx > 0 ) then
-                no = max(no,proj_T(it)%R(io)%L%mol%orb%n)
-             end if
-          end do
+    if ( N_proj_ME > 0 ) then
+       do it = 1 , N_proj_ME
+          no = max(no,proj_ME(it)%mol%orb%n)
        end do
     end if
 #endif
@@ -379,12 +370,6 @@ contains
 
        ! we have already allocated the H,S, Gamma arrays.
 
-       ! Calculate the pivoting arrays for the down-folded
-       ! scattering matrices.
-       call region_range(Dev2Gamma(iEl),1,Elecs(iEl)%o_inD%n)
-       ! Correct the placements
-       Dev2Gamma(iEl)%r(:) = region_pivot(r_oDev,Elecs(iEl)%o_inD%r(:))
-
     end do
 
     ! Create the Fake distribution
@@ -433,6 +418,13 @@ contains
        end do
 
     end if
+
+#ifdef NCDF_4
+    if ( ('orb-current'.in.save_DATA) .or. &
+         ('proj-orb-current'.in.save_DATA) ) then
+       call newdSpData1D(sp_dev,fdist,orb_J,name='TBT orb_J')
+    end if
+#endif
 
     ! start the itterators
     call itt_init  (Kp,end=nkpnt)
@@ -624,16 +616,16 @@ contains
 #endif
 
 #ifdef NCDF_4
-          if ( N_proj_E > 0 ) then
+          if ( N_proj_ME > 0 ) then
 
              call timer('Proj-Gam',1)
 
-             do ipt = 1 , N_proj_E
+             do ipt = 1 , N_proj_ME
                 
-                io = proj_E(ipt)%El%o_inD%n ** 2
-                call proj_bMtk(proj_E(ipt)%mol,proj_E(ipt)%idx, &
-                     proj_E(ipt)%El%o_inD,proj_E(ipt)%El%Gamma(1:io), &
-                     proj_E(ipt)%bGk,nzwork,zwork)
+                io = proj_ME(ipt)%El%o_inD%n ** 2
+                call proj_bMtk(proj_ME(ipt)%mol, &
+                     proj_ME(ipt)%El%o_inD,proj_ME(ipt)%El%Gamma(1:io), &
+                     proj_ME(ipt)%bGk,nzwork,zwork)
 
 !                print '(i0,tr3,2(a,''.''),a,t30,5(f20.15,e20.6))', &
 !                     ipt,trim(proj_E(ipt)%El%name),trim(proj_E(ipt)%mol%name), &
@@ -646,7 +638,7 @@ contains
              call cdf_save_E(cdf_fname_proj,nE)
              
              ! Save the projected values
-             call proj_cdf_save_bGammak(cdf_fname_proj,N_proj_E,proj_E, &
+             call proj_cdf_save_bGammak(cdf_fname_proj,N_proj_ME,proj_ME, &
                   ikpt,nE)
 
              call timer('Proj-Gam',2)
@@ -734,6 +726,20 @@ contains
                    call A_DOS(r_oDev,zwork_tri,spS,DOS(:,1+iEl))
                    if ( TSHS%nspin == 1 ) DOS(:,1+iEl) = 2._dp * DOS(:,1+iEl)
                 end if
+
+#ifdef NCDF_4
+                if ( 'orb-current' .in. save_DATA ) then
+
+                   call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
+
+                   ! We need to save it immediately, we
+                   ! do not want to have several arrays in the
+                   ! memory
+                   call state_cdf_save_J(cdf_fname, ikpt, nE, Elecs(iEl), &
+                        orb_J, save_DATA)
+
+                end if
+#endif
              end if
              
              do jEl = 1 , N_Elec
@@ -759,7 +765,7 @@ contains
                 ! the block spectral function
 
                 if ( .not. cE%fake ) then
-                   call A_Gamma(zwork_tri,Elecs(jEl),Dev2Gamma(jEl),T(jEl,iEl))
+                   call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
                 end if
                 
              end do
@@ -800,27 +806,28 @@ contains
             ! * Column Gf    *
             ! ****************
 
-            p_E => proj_T(ipt)%L
+            call proj_LME_assoc(p_E,proj_T(ipt)%L)
             if ( p_E%idx > 0 ) then
 
-               no = p_E%mol%orb%n
+               no = p_E%ME%mol%orb%n
                ! We have a Left projection
                ! Insert pointer
                El_p%Gamma => El_p%Sigma(:)
                ! Here we re-create the projection matrix that replaces
                ! the scattering state
-               call proj_Mt_mix(p_E%mol,p_E%idx,El_p%Gamma, p_E%bGk)
+               call proj_Mt_mix(p_E%ME%mol,p_E%idx,El_p%Gamma, p_E%ME%bGk)
 
                call invert_BiasTriMat_col(GF_tri,zwork_tri, &
-                    r_oDev, p_E%mol%orb)
+                    r_oDev, p_E%ME%mol%orb)
 
             else
                
-               no = p_E%El%o_inD%n
-               El_p%Gamma => p_E%El%Gamma(:)
+               iEl = -p_E%idx
+               no = Elecs(iEl)%o_inD%n
+               El_p%Gamma => Elecs(iEl)%Gamma(:)
 
                call invert_BiasTriMat_col(GF_tri,zwork_tri, &
-                    r_oDev, p_E%El%o_inD)
+                    r_oDev, Elecs(iEl)%o_inD)
 
             end if
 
@@ -832,30 +839,43 @@ contains
                ! Calculate the DOS from the spectral function
                call A_DOS(r_oDev,zwork_tri,spS,pDOS(:,2,ipt))
                if ( TSHS%nspin == 1 ) pDOS(:,2,ipt) = 2._dp * pDOS(:,2,ipt)
+
+#ifdef NCDF_4
+                if ( 'proj-orb-current' .in. save_DATA ) then
+
+                   call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
+
+                   ! We need to save it immediately, we
+                   ! do not want to have several arrays in the
+                   ! memory
+                   call proj_cdf_save_J(cdf_fname, ikpt, nE, proj_T(ipt)%L, &
+                        orb_J, save_DATA)
+
+                end if
+#endif
+               
             end if
 
             ! Loop on RHS projections
             do jEl = 1 , size(proj_T(ipt)%R)
 
-               p_E => proj_T(ipt)%R(jEl)%L
+               call proj_LME_assoc(p_E,proj_T(ipt)%R(jEl))
 
                ! Re-create the projection electrode
                if ( p_E%idx > 0 ) then
 
                   El_p%Gamma => El_p%Sigma(:)
-                  call proj_Mt_mix(p_E%mol,p_E%idx, El_p%Gamma, p_E%bGk)
+                  El_p%inDpvt%n = p_E%ME%mol%pvt%n
+                  El_p%inDpvt%r => p_E%ME%mol%pvt%r
+                  call proj_Mt_mix(p_E%ME%mol,p_E%idx, El_p%Gamma, p_E%ME%bGk)
                   
-                  call A_Gamma(zwork_tri,El_p,p_E%mol%pvt, &
-                       bTk(jEl,ipt))
+                  call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
                   
                else
+                  
+                  iEl = -p_E%idx
 
-                  do iEl = 1 , N_Elec
-                     if ( p_E%El == Elecs(iEl) ) exit
-                  end do
-
-                  call A_Gamma(zwork_tri,Elecs(iEl),Dev2Gamma(iEl), &
-                       bTk(jEl,ipt))
+                  call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))
 
                end if
 
@@ -886,7 +906,8 @@ contains
 
           ! Save the projections
           if ( N_proj_T > 0 ) then
-             call proj_cdf_save(cdf_fname_proj,ikpt,nE,N_proj_T,proj_T, &
+             call proj_cdf_save(cdf_fname_proj,N_Elec,Elecs, &
+                  ikpt,nE,N_proj_T,proj_T, &
                   pDOS, bTk, save_DATA )
           end if
 #endif
@@ -956,6 +977,8 @@ contains
        deallocate(bTk,pDOS)
     end if
 
+    call delete(orb_J)
+
 #ifdef CONTINUATION_NOT_WORKING
     ! The index look-up array
     deallocate(calculated_E)
@@ -999,6 +1022,7 @@ contains
     use class_zTriMat
     use m_ts_cctype, only : ts_c_idx
     use m_tbt_tri_scat, only : insert_Self_Energy_Dev
+    use intrinsic_missing, only : SFIND
 
     ! the current energy point
     type(ts_c_idx), intent(in) :: cE
@@ -1046,19 +1070,21 @@ contains
        if ( l_ncol(io) /= 0 ) then
 
        ! Loop on entries here...
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
+       do ju = 1 , r%n
 
           ! Check if the orbital exists in the region
           ! We are dealing with a UC sparsity pattern.
-          ju = region_pivot(r,l_col(ind))
-          if ( ju == 0 ) cycle ! it does not exist
-          
+          ind = SFIND(l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)),r%r(ju))
+          if ( ind == 0 ) cycle
+          ind = l_ptr(io) + ind
+
           ! Notice that we transpose back here...
           ! See symmetrize_HS_kpt
           idx = index(Gfinv_tri,ju,iu)
           
           GFinv(idx) = Z * S(ind) - H(ind)
        end do
+
        end if
     end do
 !$OMP end do
@@ -1219,6 +1245,7 @@ contains
     use class_Sparsity
     use class_zSpData1D
     use m_tbt_tri_scat, only : insert_Self_Energy
+    use intrinsic_missing, only : SFIND
 
     ! the current energy point
     complex(dp), intent(in) :: Z
@@ -1246,26 +1273,24 @@ contains
 
 !$OMP parallel default(shared), private(iu,io,ind,ju)
 
-    ! Initialize to 0
-!$OMP workshare
-    M(:,:) = dcmplx(0._dp,0._dp)
-!$OMP end workshare
-
     ! We will only loop in the region
 !$OMP do
     do iu = 1 , n2
        io = r%r(off2+iu) ! get the orbital in the sparsity pattern
+
+       ! Initialize to zero
+       M(:,iu) = dcmplx(0._dp,0._dp)
+
        if ( l_ncol(io) /= 0 ) then
 
        ! Loop on entries here...
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
+       do ju = 1 , n1
 
           ! Check if the orbital exists in the region
-          ! We know that our H, S sparsity pattern is in
-          ! UC format, hence, no l_col values are beyond no_u
-          ju = region_pivot(r,l_col(ind)) - off1
-          if ( ju <  1 ) cycle ! it does not exist
-          if ( n1 < ju ) cycle ! it does not exist
+          ! We are dealing with a UC sparsity pattern.
+          ind = SFIND(l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)),r%r(off1+ju))
+          if ( ind == 0 ) cycle
+          ind = l_ptr(io) + ind
 
           ! Notice that we transpose back here...
           ! See symmetrize_HS_kpt

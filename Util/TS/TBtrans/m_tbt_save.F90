@@ -20,6 +20,7 @@ module m_tbt_save
   public :: cdf_get_kpt_idx
   public :: cdf_save_E
   public :: state_cdf_save
+  public :: state_cdf_save_J
   public :: state_cdf_save_kpt
   public :: state_cdf2ascii
 #else
@@ -104,7 +105,7 @@ contains
 #ifdef NCDF_4
   subroutine init_cdf_save(fname,TSHS,r,ispin,N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE, &
-       r_Buf, &
+       r_Buf, sp_dev, &
        save_DATA ) 
 
     use parallel, only : Node
@@ -113,13 +114,17 @@ contains
 
     use dictionary
     use nf_ncdf
+    use m_ncdf_io, only : cdf_w_Sp
     use m_timestamp, only : datestring
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Integer, MPI_Logical
+    use mpi_siesta, only : MPI_Comm_Self
 #endif
     use m_tbt_hs, only : tTSHS
     use m_ts_electype
     use m_region
+    use class_OrbitalDistribution
+    use class_Sparsity
 
     ! The file-name
     character(len=*), intent(in) :: fname
@@ -137,14 +142,17 @@ contains
     integer, intent(in) :: NE
     ! In case the system has some buffer atoms.
     type(tRegion), intent(in) :: r_Buf
+    ! The device sparsity pattern
+    type(Sparsity), intent(inout) :: sp_dev
     ! Options read from tbt_options
     type(dict), intent(in) :: save_DATA
 
     character(len=50) :: tmp
     type(hNCDF) :: ncdf, grp
     type(dict) :: dic
-    logical :: exist, same, isGamma
-    integer :: iEl, jEl, i
+    logical :: exist, sme, isGamma
+    integer :: iEl, jEl, i, nnzs_dev
+    type(OrbitalDistribution) :: fdit
     real(dp), allocatable :: r2(:,:)
 #ifdef MPI
     integer :: MPIerror
@@ -167,13 +175,13 @@ contains
        if ( r_Buf%n > 0 ) then
           dic = dic // ('na_b'.kv. r_Buf%n)
        end if
-       call ncdf_assert(ncdf,same,dims=dic)
+       call ncdf_assert(ncdf,sme,dims=dic)
        call delete(dic)
 #ifdef MPI
-       call MPI_Bcast(same,1,MPI_Logical,0, &
+       call MPI_Bcast(sme,1,MPI_Logical,0, &
             MPI_Comm_World,MPIerror)
 #endif
-       if ( .not. same ) then
+       if ( .not. sme ) then
           call die('Dimensions in the TBT.nc file does not conform &
                &to the current simulation.')
        end if
@@ -185,13 +193,13 @@ contains
        if ( r_Buf%n > 0 )then
           dic = dic // ('a_buf'.kvp.r_Buf%r )
        end if
-       call ncdf_assert(ncdf,same,vars=dic, d_EPS = 1.e-4_dp )
+       call ncdf_assert(ncdf,sme,vars=dic, d_EPS = 1.e-4_dp )
        call delete(dic,dealloc=.false.) ! we have them pointing...
 #ifdef MPI
-       call MPI_Bcast(same,1,MPI_Logical,0, &
+       call MPI_Bcast(sme,1,MPI_Logical,0, &
             MPI_Comm_World,MPIerror)
 #endif
-       if ( .not. same ) then
+       if ( .not. sme ) then
           call die('pivot, lasto, xa or a_buf in the TBT.nc file does &
                &not conform to the current simulation.')
        end if
@@ -203,8 +211,8 @@ contains
              call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
           end do
           dic = ('kpt'.kvp.r2) // ('wkpt'.kvp. wkpt)
-          call ncdf_assert(ncdf,same,vars=dic, d_EPS = 1.e-7_dp )
-          if ( .not. same ) then
+          call ncdf_assert(ncdf,sme,vars=dic, d_EPS = 1.e-7_dp )
+          if ( .not. sme ) then
              call die('k-points or k-weights are not the same')
           end if
           call delete(dic,dealloc = .false. )
@@ -214,7 +222,7 @@ contains
        call ncdf_close(ncdf)
        
        ! The file has exactly the same content..
-       if ( same ) then
+       if ( sme ) then
 
           ! We just need to set the weights to ensure
           ! unity weight.
@@ -374,6 +382,35 @@ contains
        deallocate(r2)
     end if
 
+    if ( initialized(sp_dev) ) then
+       ! In case we need to save the device sparsity pattern
+       ! Create dimensions
+       nnzs_dev = nnzs(sp_dev)
+       call ncdf_def_dim(ncdf,'nnzs',nnzs_dev)
+
+       call delete(dic)
+
+       dic = ('info'.kv.'Number of non-zero elements per row')
+       call ncdf_def_var(ncdf,'n_col',NF90_INT,(/'no_u'/), &
+            compress_lvl=compress_lvl,atts=dic)
+
+       dic = dic//('info'.kv. &
+            'Supercell column indices in the sparse format ')
+       call ncdf_def_var(ncdf,'list_col',NF90_INT,(/'nnzs'/), &
+            compress_lvl=compress_lvl,atts=dic)
+
+#ifdef MPI
+       call newDistribution(TSHS%no_u,MPI_Comm_Self,fdit,name='TBT-fake dist')
+#else
+       call newDistribution(TSHS%no_u,-1           ,fdit,name='TBT-fake dist')
+#endif
+
+       call cdf_w_Sp(ncdf,fdit,sp_dev)
+       call delete(fdit)
+       call delete(dic)
+
+    end if
+
     do iEl = 1 , N_Elec
 
        if ( iEl == N_Elec ) then
@@ -397,6 +434,14 @@ contains
        call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
 
        call delete(dic)
+
+       if ( 'orb-current' .in. save_DATA ) then
+          dic = ('info'.kv.'Orbital current')
+          
+          call ncdf_def_var(grp,'J',NF90_DOUBLE,(/'nnzs','ne  ','nkpt'/), &
+               atts = dic)
+          
+       end if
        
        tmp = trim(Elecs(iEl)%name)
        do jEl = 1 , N_Elec
@@ -806,6 +851,80 @@ contains
     end subroutine save_DOS
 
   end subroutine state_cdf_save
+
+  subroutine state_cdf_save_J(fname, ikpt, nE, El, orb_J, save_DATA)
+    
+    use parallel, only : Node, Nodes
+    use class_dSpData1D
+
+    use dictionary
+    use nf_ncdf
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD
+    use mpi_siesta, only : MPI_Send, MPI_Recv
+    use mpi_siesta, only : MPI_STATUS_SIZE
+    use mpi_siesta, only : Mpi_double_precision
+#endif
+    use m_ts_electype
+
+    character(len=*), intent(in) :: fname
+    integer, intent(in) :: ikpt
+    type(tNodeE), intent(in) :: nE
+    type(Elec), intent(in) :: El
+    type(dSpData1D), intent(inout) :: orb_J
+    type(dict), intent(in) :: save_DATA
+
+    type(hNCDF) :: ncdf, grp
+    integer :: nnzs_dev
+    real(dp), pointer :: J(:)
+#ifdef MPI
+    integer :: iN
+    integer :: MPIerror, status(MPI_STATUS_SIZE)
+#endif
+
+    ! Open the netcdf file
+#ifdef NCDF_PARALLEL
+    if ( save_parallel ) then
+       call ncdf_open(ncdf,fname, mode=NF90_WRITE, &
+            comm = MPI_COMM_WORLD )
+    else
+#endif
+       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+#ifdef NCDF_PARALLEL
+    end if
+#endif
+
+    J => val(orb_J)
+    nnzs_dev = size(J)
+    ! We save the orbital current
+    
+    call ncdf_open_grp(ncdf,trim(El%name),grp)
+
+    ! Save the current
+    if ( nE%iE(Node) > 0 ) then
+       call ncdf_put_var(grp,'J',J,start = (/1,nE%iE(Node),ikpt/) )
+    end if
+
+#ifdef MPI
+    if ( .not. save_parallel ) then
+       if ( Node == 0 ) then
+          do iN = 1 , Nodes - 1
+             if ( nE%iE(iN) > 0 ) then
+                call MPI_Recv(J,nnzs_dev,Mpi_double_precision, &
+                     iN, iN, Mpi_comm_world,status,MPIerror)
+                call ncdf_put_var(grp,'J',J,start = (/1,nE%iE(iN),ikpt/) )
+             end if
+          end do
+       else if ( nE%iE(Node) > 0 ) then
+          call MPI_Send(J(1),nnzs_dev,Mpi_double_precision, &
+               0, Node, Mpi_comm_world,MPIerror)
+       end if
+    end if
+#endif
+       
+    call ncdf_close(ncdf)
+       
+  end subroutine state_cdf_save_J
 
   subroutine state_cdf_save_kpt(fname,ikpt)
 

@@ -188,6 +188,8 @@ subroutine tbt_init()
        TSHS%dit,tmp_sp, &
        product(TSHS%nsc),TSHS%isc_off)
 
+  call tbt_region_options( save_DATA )
+
   ! Change the data 
   call dSpData1D_to_Sp(TSHS%S_1D,tmp_sp,tmp_1D)
   TSHS%S_1D = tmp_1D

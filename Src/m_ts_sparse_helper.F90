@@ -281,7 +281,9 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: zH(:), zS(:)
+#ifdef TS_BROKEN_TRS
     complex(dp) :: t
+#endif
     integer :: iEl, jEl, nr, io, ind, jo, rin, rind
     real(dp) :: E_Ef(0:N_Elec)
 
@@ -564,7 +566,10 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
     real(dp), pointer :: dH(:), dS(:)
-    real(dp) :: E_Ef(0:N_Elec), t
+    real(dp) :: E_Ef(0:N_Elec)
+#ifdef TS_BROKEN_TRS
+    real(dp) :: t
+#endif
     integer :: iEl, jEl, nr, io, ind, jo, rin, rind
    
     ! create the overlap electrode fermi-level

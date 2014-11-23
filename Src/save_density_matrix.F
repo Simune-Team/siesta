@@ -28,7 +28,7 @@
 #ifdef NCDF_4
       use dictionary
       use siesta_options, only:  write_cdf
-      use m_ncdf_io, only : cdf_save_state
+      use m_ncdf_siesta, only : cdf_save_state
 #endif
 #endif
 #ifdef TRANSIESTA

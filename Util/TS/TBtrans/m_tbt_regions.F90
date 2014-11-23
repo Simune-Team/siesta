@@ -19,6 +19,9 @@ module m_tbt_regions
   ! matrices. In principle this could be made obsolete.
   type(Sparsity) :: sp_uc ! TBT-GLOBAL (UC)
 
+  ! The UC sparsity pattern in the device region
+  type(Sparsity) :: sp_dev
+
   ! the different regions that becomes the electrodes
   type(tRegion), allocatable, target :: r_aEl_alone(:), r_oEl_alone(:)
 
@@ -486,6 +489,10 @@ contains
           
        end do
 
+       ! create the pivoting table
+       call region_copy(Elecs(iEl)%o_inD,Elecs(iEl)%inDpvt)
+       Elecs(iEl)%inDpvt%r(:) = region_pivot(r_oDev,Elecs(iEl)%o_inD%r(:))
+
        ! Copy this information to the ElpD
        i = r_oElpD(iEl)%n
        if ( ia1 /= Elecs(iEl)%o_inD%n ) &
@@ -512,6 +519,39 @@ contains
     end if
     
   end subroutine tbt_init_regions
+
+  subroutine tbt_region_options( save_DATA )
+    use dictionary
+#ifdef MPI
+    use mpi_siesta, only : MPI_Comm_Self
+#endif
+    use m_sparsity_handling, only : Sp_retain_region
+
+    type(dict), intent(in) :: save_DATA
+    type(OrbitalDistribution) :: fdit
+
+    integer :: no_u
+
+    ! Make sure to initialize the device region
+    ! sparsity pattern
+    call delete(sp_dev)
+#ifdef NCDF_4
+    if ( 'orb-current' .in. save_DATA ) then
+
+       call attach(sp_uc,nrows_g=no_u)
+#ifdef MPI
+       call newDistribution(no_u,MPI_Comm_Self,fdit,name='TBT-fake dist')
+#else
+       call newDistribution(no_u,-1           ,fdit,name='TBT-fake dist')
+#endif
+
+       call Sp_retain_region(fdit,sp_uc,r_oDev,sp_dev)
+       call delete(fdit)
+
+    end if
+#endif
+
+  end subroutine tbt_region_options
 
   subroutine tbt_init_kregions(dit,sp, na_u, lasto, nsc, isc_off)
     
@@ -559,14 +599,14 @@ contains
 
     ! Print out the buffer regions
     if ( r_aBuf%n > 0 ) then
-       call region_print(r_aBuf, seq_max = 10 )
-       !call region_print(r_oBuf, seq_max = 8 )
+       call region_print(r_aBuf, seq_max = 12 )
+       !call region_print(r_oBuf, seq_max = 10 )
     end if
 
     ! Print out the device region
     write(*,'(a,i0)')'tbtrans: # of device region orbitals: ',r_oDev%n
-    call region_print(r_aDev, seq_max = 10 )
-    !call region_print(r_oDev, seq_max = 8 )
+    call region_print(r_aDev, seq_max = 12 )
+    !call region_print(r_oDev, seq_max = 10 )
 
     ! Print out all the electrodes + their projection region
     do iEl = 1 , N_Elec
@@ -575,12 +615,12 @@ contains
             ' scattering orbitals: ',Elecs(iEl)%o_inD%n
        write(*,'(3a,i0)')'tbtrans: # of ',trim(Elecs(iEl)%name), &
             ' down-folding orbitals: ',r_oElpD(iEl)%n
-       call region_print(r_aEl  (iEl) , seq_max = 10 )
-       !call region_print(r_oEl  (iEl) , seq_max = 8 )
-       call region_print(r_aElpD(iEl) , seq_max = 10 )
-       !call region_print(r_oElpD(iEl) , seq_max = 8 )
-       !call region_print(r_aElinD(iEl), seq_max = 10 )
-       !call region_print(r_oElinD(iEl), seq_max = 8 )
+       call region_print(r_aEl  (iEl) , seq_max = 12 )
+       !call region_print(r_oEl  (iEl) , seq_max = 10 )
+       call region_print(r_aElpD(iEl) , seq_max = 12 )
+       !call region_print(r_oElpD(iEl) , seq_max = 10 )
+       !call region_print(r_aElinD(iEl), seq_max = 12 )
+       !call region_print(r_oElinD(iEl), seq_max = 10 )
     end do
 
   end subroutine tbt_print_regions

@@ -140,7 +140,7 @@ module m_ts_electype
 
 #ifdef TBTRANS
      ! The region of the down-folded region
-     type(tRegion) :: o_inD
+     type(tRegion) :: o_inD, inDpvt
 #endif
 
      ! The basal plane of the electrode
@@ -358,7 +358,7 @@ contains
              this%pre_expand = 0
           else
              call die('Error in option ''pre-expand'', please &
-                  &correct!')
+                  &correct. Must be: [all|everything,Green|Surface,none]!')
           end if
 
        else if ( leqi(ln,'DM-update') ) then

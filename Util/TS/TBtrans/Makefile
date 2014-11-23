@@ -55,6 +55,7 @@ SIESTA_OBJS += m_integrate.o m_interpolate.o m_mat_invert.o m_bandwidth.o
 SIESTA_OBJS += m_iterator.o
 SIESTA_OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
 SIESTA_OBJS += m_region.o m_sparsity_handling.o m_pivot_array.o
+SIESTA_OBJS += m_ncdf_io.o
 
 # The needed transiesta objects
 TS_OBJS  = m_ts_electype.o m_ts_method.o m_ts_chem_pot.o
@@ -316,7 +317,7 @@ fft.o: sys.o
 fft1d.o: parallel.o precision.o sys.o
 final_H_f_stress.o: alloc.o atmfuncs.o atomlist.o dnaefs.o files.o grdsam.o
 final_H_f_stress.o: kinefsm.o m_dipol.o m_energies.o m_forces.o m_gamma.o
-final_H_f_stress.o: m_hsx.o m_mpi_utils.o m_ncdf_io.o m_ntm.o m_spin.o
+final_H_f_stress.o: m_hsx.o m_mpi_utils.o m_ncdf_siesta.o m_ntm.o m_spin.o
 final_H_f_stress.o: m_steps.o m_stress.o m_ts_global_vars.o m_ts_io.o
 final_H_f_stress.o: m_ts_kpoints.o m_ts_options.o metaforce.o
 final_H_f_stress.o: molecularmechanics.o naefs.o nlefsm.o normalize_dm.o
@@ -416,11 +417,13 @@ m_memory.o: memoryinfo.o parallel.o sys.o
 m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_monitor.o: parallel.o precision.o
 m_mpi_utils.o: precision.o sys.o
-m_ncdf_io.o: atomlist.o class_OrbitalDistribution.o class_SpData1D.o
-m_ncdf_io.o: class_SpData2D.o class_Sparsity.o files.o kpoint_grid.o
-m_ncdf_io.o: m_energies.o m_forces.o m_gamma.o m_io_s.o m_kinetic.o m_spin.o
-m_ncdf_io.o: m_stress.o m_ts_electype.o m_ts_options.o parallel.o precision.o
-m_ncdf_io.o: siesta_geom.o siesta_options.o sparse_matrices.o timestamp.o
+m_ncdf_io.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+m_ncdf_io.o: class_Sparsity.o m_io_s.o parallel.o precision.o
+m_ncdf_siesta.o: atomlist.o class_Sparsity.o files.o kpoint_grid.o m_energies.o
+m_ncdf_siesta.o: m_forces.o m_gamma.o m_io_s.o m_kinetic.o m_ncdf_io.o m_spin.o
+m_ncdf_siesta.o: m_stress.o m_ts_electype.o m_ts_options.o parallel.o
+m_ncdf_siesta.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
+m_ncdf_siesta.o: timestamp.o
 m_new_dm.o: alloc.o atomlist.o class_Data2D.o
 m_new_dm.o: class_Fstack_Pair_Geometry_SpData2D.o class_Geometry.o
 m_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpData2D.o
@@ -689,7 +692,7 @@ rhoofd.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o
 rhoofdsp.o: meshdscf.o meshphi.o precision.o sys.o
 save_density_matrix.o: atomlist.o files.o iodm_netcdf.o m_energies.o m_iodm.o
-save_density_matrix.o: m_ncdf_io.o m_spin.o m_steps.o m_ts_global_vars.o
+save_density_matrix.o: m_ncdf_siesta.o m_spin.o m_steps.o m_ts_global_vars.o
 save_density_matrix.o: m_ts_iodm.o m_ts_options.o precision.o siesta_options.o
 save_density_matrix.o: sparse_matrices.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
@@ -764,13 +767,13 @@ state_analysis.o: write_subs.o zmatrix.o
 state_init.o: alloc.o atomlist.o class_Data2D.o class_SpData1D.o
 state_init.o: class_SpData2D.o class_Sparsity.o domain_decom.o files.o
 state_init.o: hsparse.o iodm_netcdf.o iodmhs_netcdf.o kpoint_grid.o
-state_init.o: m_energies.o m_eo.o m_gamma.o m_io_s.o m_mpi_utils.o m_ncdf_io.o
-state_init.o: m_new_dm.o m_pulay.o m_rmaxh.o m_sparse.o m_spin.o m_steps.o
-state_init.o: m_supercell.o m_test_io.o m_ts_charge.o m_ts_electype.o
-state_init.o: m_ts_global_vars.o m_ts_io.o m_ts_options.o m_ts_sparse.o
-state_init.o: m_ts_tri_init.o overlap.o parallel.o proximity_check.o
-state_init.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
-state_init.o: sys.o write_subs.o zmatrix.o
+state_init.o: m_energies.o m_eo.o m_gamma.o m_io_s.o m_mpi_utils.o
+state_init.o: m_ncdf_siesta.o m_new_dm.o m_pulay.o m_rmaxh.o m_sparse.o
+state_init.o: m_spin.o m_steps.o m_supercell.o m_test_io.o m_ts_charge.o
+state_init.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_options.o
+state_init.o: m_ts_sparse.o m_ts_tri_init.o overlap.o parallel.o
+state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
+state_init.o: sparse_matrices.o sys.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_iostruct.o m_mpi_utils.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
@@ -791,8 +794,8 @@ vmat.o: meshphi.o parallel.o parallelsubs.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
 vmatsp.o: meshphi.o precision.o
 vmb.o: fixed.o parallel.o precision.o sys.o
-write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_ncdf_io.o m_steps.o
-write_md_record.o: m_stress.o md_out.o parallel.o siesta_geom.o
+write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_ncdf_siesta.o
+write_md_record.o: m_steps.o m_stress.o md_out.o parallel.o siesta_geom.o
 write_md_record.o: siesta_options.o
 write_orb_indx.o: atmfuncs.o cellsubs.o files.o precision.o
 write_raw_efs.o: atmfuncs.o atomlist.o precision.o siesta_geom.o
@@ -824,16 +827,19 @@ m_tbt_options.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_electype.o m_ts_method.o
 m_tbt_options.o: parallel.o precision.o units.o
 m_tbt_proj.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
 m_tbt_proj.o: class_SpData2D.o class_Sparsity.o fdf_extra.o intrinsic_missing.o
-m_tbt_proj.o: m_io_s.o m_region.o m_tbt_hs.o m_tbt_save.o m_ts_electype.o
-m_tbt_proj.o: m_ts_sparse_helper.o parallel.o precision.o timestamp.o units.o
+m_tbt_proj.o: m_io_s.o m_ncdf_io.o m_region.o m_tbt_hs.o m_tbt_save.o
+m_tbt_proj.o: m_ts_electype.o m_ts_sparse_helper.o parallel.o precision.o
+m_tbt_proj.o: timestamp.o units.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_regions.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
 m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_sparse.o
 m_tbt_regions.o: parallel.o
 m_tbt_saint.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o m_tbt_hs.o
 m_tbt_saint.o: precision.o
-m_tbt_save.o: files.o m_interpolate.o m_io_s.o m_region.o m_tbt_hs.o
-m_tbt_save.o: m_ts_electype.o parallel.o precision.o timestamp.o units.o
+m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
+m_tbt_save.o: files.o m_interpolate.o m_io_s.o m_ncdf_io.o m_region.o
+m_tbt_save.o: m_tbt_hs.o m_ts_electype.o parallel.o precision.o timestamp.o
+m_tbt_save.o: units.o
 m_tbt_sigma_save.o: m_io_s.o m_region.o m_tbt_hs.o m_tbt_save.o m_ts_electype.o
 m_tbt_sigma_save.o: parallel.o timestamp.o units.o
 m_tbt_sparsity2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
@@ -843,18 +849,19 @@ m_tbt_tri_init.o: class_OrbitalDistribution.o class_Sparsity.o
 m_tbt_tri_init.o: create_Sparsity_Union.o m_region.o m_sparsity_handling.o
 m_tbt_tri_init.o: m_tbt_options.o m_tbt_regions.o m_tbt_sparsity2trimat.o
 m_tbt_tri_init.o: m_ts_debug.o m_ts_electype.o parallel.o precision.o
-m_tbt_tri_scat.o: alloc.o class_SpData1D.o class_Sparsity.o class_TriMat.o
-m_tbt_tri_scat.o: m_region.o m_tbt_proj.o m_ts_electype.o m_ts_tri_scat.o
+m_tbt_tri_scat.o: alloc.o class_SpData1D.o class_SpData1D.o class_Sparsity.o
+m_tbt_tri_scat.o: class_TriMat.o intrinsic_missing.o m_region.o m_tbt_proj.o
+m_tbt_tri_scat.o: m_ts_cctype.o m_ts_electype.o m_ts_tri_scat.o
 m_tbt_tri_scat.o: m_ts_trimat_invert.o precision.o units.o
 m_tbt_trik.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
-m_tbt_trik.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o class_TriMat.o
-m_tbt_trik.o: m_iterator.o m_mat_invert.o m_pivot_array.o m_region.o
-m_tbt_trik.o: m_tbt_contour.o m_tbt_gf.o m_tbt_hs.o m_tbt_kpoint.o
-m_tbt_trik.o: m_tbt_options.o m_tbt_proj.o m_tbt_regions.o m_tbt_save.o
-m_tbt_trik.o: m_tbt_sigma_save.o m_tbt_tri_init.o m_tbt_tri_scat.o
-m_tbt_trik.o: m_tbt_trimat_invert.o m_timer.o m_trimat_invert.o m_ts_cctype.o
-m_tbt_trik.o: m_ts_elec_se.o m_ts_electype.o m_ts_sparse_helper.o parallel.o
-m_tbt_trik.o: precision.o units.o
+m_tbt_trik.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
+m_tbt_trik.o: class_Sparsity.o class_TriMat.o intrinsic_missing.o m_iterator.o
+m_tbt_trik.o: m_mat_invert.o m_pivot_array.o m_region.o m_tbt_contour.o
+m_tbt_trik.o: m_tbt_gf.o m_tbt_hs.o m_tbt_kpoint.o m_tbt_options.o m_tbt_proj.o
+m_tbt_trik.o: m_tbt_regions.o m_tbt_save.o m_tbt_sigma_save.o m_tbt_tri_init.o
+m_tbt_trik.o: m_tbt_tri_scat.o m_tbt_trimat_invert.o m_timer.o
+m_tbt_trik.o: m_trimat_invert.o m_ts_cctype.o m_ts_elec_se.o m_ts_electype.o
+m_tbt_trik.o: m_ts_sparse_helper.o parallel.o precision.o units.o
 m_tbt_trimat_invert.o: class_TriMat.o m_region.o m_trimat_invert.o
 m_tbt_trimat_invert.o: m_ts_trimat_invert.o precision.o
 m_tbtrans.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
