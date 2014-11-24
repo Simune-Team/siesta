@@ -192,7 +192,7 @@ contains
     if ( ltmp ) then
        save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
     end if
-    ltmp = fdf_get('TBT.Orb.Current.Projs', .false. )
+    ltmp = fdf_get('TBT.Current.Orb.Projs', .false. )
     if ( ltmp .and. ('proj-DOS-A'.in.save_DATA) ) then
        save_DATA = save_DATA // ('proj-orb-current'.kv.1)
     end if

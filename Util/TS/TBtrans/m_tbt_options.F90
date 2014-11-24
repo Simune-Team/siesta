@@ -284,7 +284,7 @@ contains
     end if
 
     ! Should we calculate DOS of spectral function
-    ltmp = fdf_get('TBT.Orb.Current',.false.)
+    ltmp = fdf_get('TBT.Current.Orb', .false. )
     if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
        save_DATA = save_DATA // ('orb-current'.kv.1)
     end if
