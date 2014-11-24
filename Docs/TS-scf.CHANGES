@@ -1,4 +1,17 @@
 ----------------------------------------------------
+November 24, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-223
+Bugfix for serial compilation
+
+* Bugfix for tbtrans and transiesta to be
+  able to compile in serial.
+
+modified:
+  Src/m_ncdf_io.F90
+  Src/m_ncdf_siesta.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+
+----------------------------------------------------
 November 24, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-222
 Changed name for orbital current
 

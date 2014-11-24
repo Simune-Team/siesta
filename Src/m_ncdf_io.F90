@@ -62,7 +62,7 @@ contains
        g_nzs = n_nzs
     end if
 #else
-    g_nzs = nnzs(sparse_pattern)
+    g_nzs = nnzs(sp)
 #endif
 
     ! Read dimension nnzs

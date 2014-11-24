@@ -376,10 +376,10 @@ contains
     type(Elec), intent(in) :: Elecs(N_Elec)
 
     type(hNCDF) :: ncdf, grp
-    integer :: iEl, i
+    integer :: iEl, i, iN
 #ifdef MPI
     complex(dp), allocatable :: Sigma(:)
-    integer :: MPIerror, iN, status(MPI_STATUS_SIZE)
+    integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
     if ( .not. sigma_save ) return
@@ -414,9 +414,8 @@ contains
           i = max(i,Elecs(iEl)%o_inD%n)
        end do
        allocate(Sigma(i**2))
-#endif
-
     end if
+#endif
 
     do iEl = 1 , N_Elec
        

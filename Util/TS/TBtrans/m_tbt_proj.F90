@@ -1991,11 +1991,11 @@ contains
     type(dict), intent(in) :: save_DATA
 
     type(hNCDF) :: ncdf, gmol, gproj, gEl
-    integer :: ipt, ip, iE, i
+    integer :: ipt, ip, iE, i, iN
     character(len=NF90_MAX_NAME) :: cmol, cproj, ctmp
     logical :: same_E
 #ifdef MPI
-    integer :: iN, NDOS, NT
+    integer :: NDOS, NT
     real(dp), allocatable :: rDOS(:), rT(:,:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
@@ -2092,11 +2092,13 @@ contains
              call ncdf_put_var(gEl,ctmp,T(ip,ipt),start = (/nE%iE(Node),ikpt/) )
           end if
 
+#ifdef MPI
           do iN = 1 , Nodes - 1
              if ( nE%iE(iN) > 0 ) then
                 call ncdf_put_var(gEl,ctmp,rT(ip,iN),start = (/nE%iE(iN),ikpt/) )
              end if
           end do
+#endif
        
        end do
 

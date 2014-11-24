@@ -73,6 +73,7 @@ contains
 
     ! We always re-write the file...
 
+#ifdef MPI
     if ( Nodes > 1 .and. cdf_w_parallel ) then
        call ncdf_create(ncdf,fname,&
             mode=NF90_MPIIO, parallel = .true., &
@@ -82,11 +83,13 @@ contains
        ! parallel writes are not allowed with compression
        ! Offset positions are not well defined.
     else
+#endif
        call ncdf_create(ncdf,fname,&
             mode=NF90_NETCDF4, overwrite=.true., &
             compress_lvl=cdf_comp_lvl)
-       
+#ifdef MPI 
     end if
+#endif
 
 #ifdef MPI
     tmp = nnzs(sparse_pattern)
@@ -363,14 +366,18 @@ contains
     type(hNCDF) :: ncdf, grp
 
     ! We just open it (prepending)
+#ifdef MPI
     if ( Nodes > 1 .and. cdf_w_parallel ) then
        call ncdf_open(ncdf,fname, groupname='SETTINGS', &
             mode=ior(NF90_WRITE,NF90_MPIIO), parallel = .true., &
             comm=MPI_Comm_World)
     else
+#endif
        call ncdf_open(ncdf,fname, groupname='SETTINGS', &
             mode=ior(NF90_WRITE,NF90_NETCDF4))
+#ifdef MPI
     end if
+#endif
 
     ! Write settings in settings group
     call ncdf_redef(ncdf)
@@ -412,13 +419,17 @@ contains
     call timer('CDF',1)
 
     ! We just open it (prepending)
+#ifdef MPI
     if ( Nodes > 1 .and. cdf_w_parallel ) then
        call ncdf_open(ncdf,fname, &
             mode=ior(NF90_WRITE,NF90_MPIIO), parallel = .true., &
             comm=MPI_Comm_World)
     else
+#endif
        call ncdf_open(ncdf,fname,mode=ior(NF90_WRITE,NF90_NETCDF4))
+#ifdef MPI
     end if
+#endif
 
     ! Add attribute of current Fermi-level
     if ( ('Ef' .in. dic_save) .and. Node == 0 ) &
