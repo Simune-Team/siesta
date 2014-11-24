@@ -277,6 +277,10 @@
             end if
             
          end do
+         
+         if ( set_Ef ) then
+            Ef = fdf_get('TS.Fermi.Initial',Ef,'Ry')
+         end if
 
          ! Clean-up
          deallocate(allowed_a)

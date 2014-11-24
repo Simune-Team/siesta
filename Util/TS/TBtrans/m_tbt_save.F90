@@ -951,7 +951,7 @@ contains
 
   ! Routine for reading in the TBT.nc file
   ! and convert it to regular transmission files.
-  subroutine state_cdf2ascii(fname,N_Elec,Elecs,save_DATA)
+  subroutine state_cdf2ascii(fname,nspin,ispin,N_Elec,Elecs,save_DATA)
     use parallel, only : Node
 
     use units, only : eV
@@ -968,6 +968,7 @@ contains
     use m_ts_electype
 
     character(len=*), intent(in) :: fname
+    integer, intent(in) :: nspin, ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     type(dict), intent(in) :: save_DATA
@@ -976,8 +977,7 @@ contains
     type(hNCDF) :: ncdf, grp
     logical :: exist
     integer :: iEl, jEl
-    integer :: nspin, ispin, NE, nkpt, no_d
-    type(var) :: avar
+    integer :: NE, nkpt, no_d
     real(dp), allocatable :: rkpt(:,:), rwkpt(:)
     real(dp), allocatable :: rE(:)
     real(dp), allocatable :: r2(:,:), r3(:,:,:)
@@ -1021,27 +1021,6 @@ contains
        rwkpt = 1._dp
     end if
 
-    ! Check if we are dealing with a spin setup
-    call ncdf_inq_gatt(ncdf,'spin',exist=exist)
-    char = ' '
-    if ( exist ) then
-       call ncdf_get_gatt(ncdf,'spin',avar)
-       call assign(avar,char) ! if this fails... it is formatted errorneously
-       call delete(avar)
-
-       nspin = 2
-       if ( char == 'UP' ) then
-          ispin = 1
-       else
-          ! it must be down
-          ispin = 2
-       end if
-
-    else
-       nspin = 1
-       ispin = 1
-    end if
-    
     if ( 'DOS-Gf' .in. save_DATA ) then
 
        ! Get DOS

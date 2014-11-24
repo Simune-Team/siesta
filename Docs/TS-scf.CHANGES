@@ -1,4 +1,23 @@
 ----------------------------------------------------
+November 24, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-221
+Bugfix for spin calculations in TBT
+
+* Added TS.Fermi.Initial to let the user
+  set the Fermi-level in case of initialising
+  the DM.
+
+* Projection DOS is now not printed out.
+  It is currently not implemented.
+
+modified:
+  Src/m_new_dm.F90
+  Src/m_ts_options.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 November 23, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-220
 Divided code for diagonalization of H in TBT
 

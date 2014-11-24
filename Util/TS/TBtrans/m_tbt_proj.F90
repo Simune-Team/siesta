@@ -458,11 +458,13 @@ contains
        else
           write(*,'(a)')'   Gamma projection: False'
        end if
-       if ( mols(im)%DOS ) then
-          write(*,'(a)')'   DOS projection: True'
-       else
-          write(*,'(a)')'   DOS projection: False'
-       end if
+       ! Currently the Gf DOS projection is not implemented,
+       ! hence, we do not write it out...
+       !if ( mols(im)%DOS ) then
+       !   write(*,'(a)')'   DOS projection: True'
+       !else
+       !   write(*,'(a)')'   DOS projection: False'
+       !end if
        call region_print(mols(im)%atom, seq_max = 8 , indent = 3)
        write(*,'(a)') '  * Different projections:'
        do ip = 1 , size(mols(im)%proj)

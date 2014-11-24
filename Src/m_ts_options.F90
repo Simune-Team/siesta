@@ -230,13 +230,15 @@ contains
     chars = fdf_get('SCF.Initialize','diagon')
     if ( leqi(chars,'diagon') ) then
        TS_scf_mode = 0
+       chars = 'none'
     else if ( leqi(chars,'transiesta') ) then
        TS_scf_mode = 1
+       chars = 'init'
     end if
 
     ! Whether we should always set the DM to bulk
     ! values (by reading in from electrode DM)
-    chars = fdf_get('TS.Elecs.DM.Bulk','none')
+    chars = fdf_get('TS.Elecs.DM.Bulk',trim(chars))
     DM_bulk = 0
     if ( leqi(chars,'init') ) then
        DM_bulk = 1

@@ -577,7 +577,9 @@ contains
           ! *******************
           ! * prep Sigma      *
           ! *******************
-          call read_next_GS(ispin, ikpt, bkpt, &
+          ! We have reduced the electrode sizes to only one spin-channel
+          ! Hence, it will ALWAYS be the first index
+          call read_next_GS(1, ikpt, bkpt, &
                cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, .false., forward = .false. )
 
@@ -626,11 +628,6 @@ contains
                 call proj_bMtk(proj_ME(ipt)%mol, &
                      proj_ME(ipt)%El%o_inD,proj_ME(ipt)%El%Gamma(1:io), &
                      proj_ME(ipt)%bGk,nzwork,zwork)
-
-!                print '(i0,tr3,2(a,''.''),a,t30,5(f20.15,e20.6))', &
-!                     ipt,trim(proj_E(ipt)%El%name),trim(proj_E(ipt)%mol%name), &
-!                     trim(proj_E(ipt)%mol%proj(proj_E(ipt)%idx)%name), &
-!                     proj_E(ipt)%bGk,sum(proj_E(ipt)%El%Gamma(1:io))
 
              end do
 
@@ -879,27 +876,6 @@ contains
 
                end if
 
-!               if ( proj_T(ipt)%L%idx > 0 ) then
-!               if ( p_E%idx > 0 ) then
-!                  print '(f10.4,2(tr3,2(a,''.''),a),t50,f20.15)', real(cE%E,dp)/eV,&
-!                       trim(proj_T(ipt)%L%El%name),trim(proj_T(ipt)%L%mol%name), &
-!                       trim(proj_T(ipt)%L%mol%proj(proj_T(ipt)%L%idx)%name), &
-!                       trim(p_E%El%name),trim(p_E%mol%name), &
-!                       trim(p_E%mol%proj(p_E%idx)%name), bTk(jEl,ipt)
-!               else
-!                  print '(f10.4,tr3,2(a,''.''),a,tr3,a,t50,f20.15)', real(cE%E,dp)/eV,&
-!                       trim(proj_T(ipt)%L%El%name),trim(proj_T(ipt)%L%mol%name), &
-!                       trim(proj_T(ipt)%L%mol%proj(proj_T(ipt)%L%idx)%name), &
-!                       trim(p_E%El%name), bTk(jEl,ipt)
-!               end if
-!               else
-!                  print '(f10.4,tr3,a,tr3,2(a,''.''),a,t50,f20.15)', real(cE%E,dp)/eV,&
-!                       trim(proj_T(ipt)%L%El%name), &
-!                       trim(p_E%El%name),trim(p_E%mol%name), &
-!                       trim(p_E%mol%proj(p_E%idx)%name), bTk(jEl,ipt)
-!
-!               end if
-
             end do
 
           end do ! projections loop
@@ -959,6 +935,8 @@ contains
 ! CLEAN UP
 !***********************
 
+    deallocate(nE%iE,nE%E)
+
     deallocate(DOS)
     call de_alloc(calc_parts)
 
@@ -1003,7 +981,7 @@ contains
     ! conversion of the TBT.nc file to the regular txt files
     ! We should have plenty of memory to do this.
     if ( ('proj-only'.nin.save_DATA).and.('Sigma-only'.nin.save_DATA) ) then
-       call state_cdf2ascii(cdf_fname,N_Elec,Elecs,save_DATA)
+       call state_cdf2ascii(cdf_fname,TSHS%nspin,ispin,N_Elec,Elecs,save_DATA)
     end if
 #else
     call end_save(iounits,N_Elec,save_DATA)

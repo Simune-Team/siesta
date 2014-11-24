@@ -42,12 +42,6 @@ module m_tbt_options
   ! But saves IO at each energy point.
 !  integer :: N_io_step = 1
 
-  ! Which spin-index should we calculate?
-  ! Two options,
-  ! [0] == all
-  ! [idx] == only that one...
-  integer :: nspin_idx = 0
-
   ! If the energy-contour is not perfectly divisable by the number of nodes then adjust
   integer :: opt_TriMat_method = 0 ! Optimization method for determining the best tri-diagonal matrix split
   ! 0  == We optimize for speed
@@ -319,10 +313,10 @@ contains
        end if
        write(*,1) 'Calc. T between all electrodes',('T-all'.in.save_DATA)
        write(*,1) 'Calc. "reflection"',('T-reflect'.in.save_DATA)
-       if ( nspin_idx == 0 ) then
+       if ( spin_idx == 0 ) then
           write(*,11) 'Calculate for all spin-channels'
        else
-          write(*,11) 'Only calculate for spin-channel',nspin_idx
+          write(*,11) 'Only calculate for spin-channel',spin_idx
        end if
        write(*,10)'          >> Electrodes << '
        do i = 1 , size(Elecs)
