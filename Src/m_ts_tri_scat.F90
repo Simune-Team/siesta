@@ -295,10 +295,9 @@ contains
 
   ! Generic routine for inserting the self-energies in the 
   ! tri-diagonal matrices
-  subroutine insert_Self_Energies(no_u, Gfinv_tri, Gfinv, El)
+  subroutine insert_Self_Energies(Gfinv_tri, Gfinv, El)
     use m_ts_electype
     use class_zTriMat
-    integer, intent(in) :: no_u
     type(zTriMat), intent(inout) :: GFinv_tri
     complex(dp), intent(inout) :: Gfinv(:)
     type(Elec), intent(in) :: El

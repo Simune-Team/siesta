@@ -366,7 +366,7 @@ contains
           ! *******************
           ! * prep GF^-1      *
           ! *******************
-          call prepare_invGF(cE, no_u_TS, zwork_tri, &
+          call prepare_invGF(cE, zwork_tri, &
                N_Elec, Elecs, &
                spH=spH , spS=spS)
 
@@ -417,7 +417,7 @@ contains
           call update_zDM(sp_dist,sparse_pattern, n_nzs, &
                DM(:,ispin), spuDM, Ef, &
                EDM(:,ispin), spuEDM, kpt, n_s, sc_off)
-
+          
           ! The remaining code segment only deals with 
           ! bias integration... So we skip instantly
 
@@ -482,7 +482,7 @@ contains
           ! *******************
           ! * prep GF^-1      *
           ! *******************
-          call prepare_invGF(cE, no_u_TS, zwork_tri, &
+          call prepare_invGF(cE, zwork_tri, &
                N_Elec, Elecs, &
                spH =spH , spS =spS)
           
@@ -862,7 +862,7 @@ contains
                non_Eq = .false. )
        end do
        
-       call prepare_invGF(cE, no_u_TS, zwork_tri, &
+       call prepare_invGF(cE, zwork_tri, &
             N_Elec, Elecs, &
             spH=spH , spS=spS)
        
@@ -1010,7 +1010,7 @@ contains
 
   ! creation of the GF^{-1}.
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
-  subroutine prepare_invGF(cE, no_u,GFinv_tri, &
+  subroutine prepare_invGF(cE, GFinv_tri, &
        N_Elec, Elecs, spH, spS)
 
     use class_Sparsity
@@ -1022,7 +1022,6 @@ contains
 
     ! the current energy point
     type(ts_c_idx), intent(in) :: cE
-    integer, intent(in) :: no_u
     type(zTriMat), intent(inout) :: GFinv_tri
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -1048,7 +1047,7 @@ contains
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col, &
          nrows_g=nr)
 
-    Gfinv  => val(Gfinv_tri)
+    Gfinv => val(Gfinv_tri)
 
 !$OMP parallel default(shared), private(io,iu,ind,idx)
 
@@ -1079,7 +1078,7 @@ contains
 !$OMP end do
 
     do io = 1 , N_Elec
-       call insert_Self_Energies(no_u, Gfinv_tri, Gfinv, Elecs(io))
+       call insert_Self_Energies(Gfinv_tri, Gfinv, Elecs(io))
     end do
 
 !$OMP end parallel

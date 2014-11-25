@@ -363,7 +363,7 @@ contains
 
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no_l,no_u,nnzs,num,listptr,list, &
-         name='Truncated '//trim(name(in)), &
+         name='T '//trim(name(in)), &
          ncols=ncols(in),ncols_g=ncols_g(in))
 
     ! Clean up

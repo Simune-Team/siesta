@@ -1,4 +1,15 @@
 ----------------------------------------------------
+November 25, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-226
+Removed unneeded variables in transiesta routines
+
+modified:
+  Src/m_sparsity_handling.F90
+  Src/m_ts_options.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+
+----------------------------------------------------
 November 25, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-225
 Changed a few defaults for transiesta
 
