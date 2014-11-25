@@ -32,7 +32,6 @@ contains
   
 ! Used modules
     use parallel, only : IONode
-    use files, only : slabel
 
     use m_io_s, only : file_exist
 

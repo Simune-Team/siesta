@@ -574,6 +574,10 @@ contains
 
           end if
 
+#ifdef TBTRANS_TIMING
+          call timer('read-GS',1)
+#endif
+
           ! *******************
           ! * prep Sigma      *
           ! *******************
@@ -582,6 +586,10 @@ contains
           call read_next_GS(1, ikpt, bkpt, &
                cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, .false., forward = .false. )
+
+#ifdef TBTRANS_TIMING
+          call timer('read-GS',2)
+#endif
 
 #ifdef NCDF_4
 #ifdef CONTINUATION_NOT_WORKING
@@ -783,6 +791,9 @@ contains
 
 
 #ifdef NCDF_4
+
+          call timer('T-proj',1)
+
           ! Calculate the projections
           do ipt = 1 , N_proj_T
 
@@ -879,6 +890,8 @@ contains
             end do
 
           end do ! projections loop
+
+          call timer('T-proj',2)
 
           ! Save the projections
           if ( N_proj_T > 0 ) then

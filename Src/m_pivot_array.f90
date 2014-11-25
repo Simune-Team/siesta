@@ -3,7 +3,6 @@ module m_pivot_array
   implicit none
 
   public
-  save
 
   ! Current size of the pivoting arrays
   integer, save          :: Npiv = 0

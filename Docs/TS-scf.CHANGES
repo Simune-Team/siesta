@@ -1,4 +1,43 @@
 ----------------------------------------------------
+November 25, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-224
+Added timings for tbtrans
+
+* Removed some unused variables in:
+  - m_timer
+  - m_ts_dm_update
+  - m_ts_fullk
+  - m_ts_trig
+  - m_ts_trik
+
+* Made sure the energy used in the orbital current 
+  is the real part (not the imaginary part)
+
+* Added timings to nearly all tbtrans routines.
+  This enables a very fine timing report to see where
+  the time is mostly spent.
+
+  NOTE: I am not timing the saving routines, thus any
+  "missing" time is spent in the IO routines.
+
+* Made sparsity pattern names a lot smaller
+
+modified:
+  Src/create_Sparsity_SC.F90
+  Src/create_Sparsity_Union.F90
+  Src/m_pivot_array.f90
+  Src/m_sparsity_handling.F90
+  Src/m_timer.F90
+  Src/m_ts_dm_update.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/ts_init.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 November 24, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-223
 Bugfix for serial compilation
 

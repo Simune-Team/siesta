@@ -72,6 +72,10 @@ contains
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
 
+#ifdef TBTRANS_TIMING
+    call timer('GF-DOS',1)
+#endif
+
     S  => val(S_1D)
     sp => spar(S_1D)
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
@@ -146,6 +150,10 @@ contains
     end do
 
     DOS(:) = DOS(:) / Pi
+
+#ifdef TBTRANS_TIMING
+    call timer('GF-DOS',2)
+#endif
 
   end subroutine GF_DOS
 
@@ -368,6 +376,10 @@ contains
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
 
+#ifdef TBTRANS_TIMING
+    call timer('A-DOS',1)
+#endif
+
     S  => val(S_1D)
     sp => spar(S_1D)
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
@@ -421,6 +433,10 @@ contains
 
     ! The spectral function has a factor two
     DOS(:) = DOS(:) / (2._dp * Pi)
+
+#ifdef TBTRANS_TIMING
+    call timer('A-DOS',2)
+#endif
 
   end subroutine A_DOS
 
@@ -575,6 +591,10 @@ contains
     complex(dp), pointer :: A(:)
     integer :: i, j, scat, n
 
+#ifdef TBTRANS_TIMING
+    call timer('A-Gamma',1)
+#endif
+
     A => val(A_tri)
 
     ! Initialize the transmission.
@@ -603,6 +623,10 @@ contains
     end do
 !$OMP end parallel do
 
+#ifdef TBTRANS_TIMING
+    call timer('A-Gamma',2)
+#endif
+
   end subroutine A_Gamma
 
 #ifdef NCDF_4
@@ -626,7 +650,7 @@ contains
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 
-    complex(dp) :: Z
+    real(dp) :: E
     complex(dp), pointer :: H(:), S(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
@@ -634,7 +658,11 @@ contains
 
     if ( cE%fake ) return
 
-    Z = cE%e
+#ifdef TBTRANS_TIMING
+    call timer('orb-current',1)
+#endif
+
+    E = real(cE%e,dp)
 
     sp => spar(spH)
     H  => val (spH)
@@ -648,7 +676,7 @@ contains
     A => val(A_tri)
 
     ! Initialize
-!$OMP parralel do default(shared), private(iu,io,ju,iind,ind,idx)
+!$OMP parallel do default(shared), private(iu,io,ju,iind,ind,idx)
     do iu = 1, r%n
        io = r%r(iu)
        if ( i_ncol(io) /= 0 ) then
@@ -673,12 +701,16 @@ contains
           idx = index(A_tri,ju,iu)
           
           ! Jnm = Hmn * Im[A_nm]
-          J(iind) = ( H(ind) - Z * S(ind) ) * aimag( A(idx) ) 
+          J(iind) = ( H(ind) - E * S(ind) ) * aimag( A(idx) ) 
        end do
 
        end if
     end do
 !$OMP end parallel do
+
+#ifdef TBTRANS_TIMING
+    call timer('orb-current',2)
+#endif
 
   end subroutine orb_current
 #endif
@@ -695,6 +727,10 @@ contains
 
     ! local variables
     integer :: j, je, i, ie, no
+
+#ifdef TBTRANS_TIMING
+    call timer('insert-SE',1)
+#endif
 
 !$OMP single
     El%idx_o = El%idx_o - 1
@@ -747,7 +783,12 @@ contains
     El%idx_o = El%idx_o + 1
 !$OMP end single ! IMPLICIT BARRIER
 
+#ifdef TBTRANS_TIMING
+    call timer('insert-SE',2)
+#endif
+
   end subroutine insert_Self_energy
+
 
   subroutine insert_Self_energy_Dev(Gfinv_tri,Gfinv,El,r)
 
@@ -761,6 +802,10 @@ contains
 
     ! local variables
     integer :: j, je, i, ie, ii, idx, no
+
+#ifdef TBTRANS_TIMING
+    call timer('insert-SED',1)
+#endif
 
     no = El%o_inD%n
 
@@ -783,6 +828,10 @@ contains
        end do
     end do
 !$OMP end do nowait
+
+#ifdef TBTRANS_TIMING
+    call timer('insert-SED',2)
+#endif
 
   end subroutine insert_Self_energy_Dev
 

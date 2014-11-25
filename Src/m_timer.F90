@@ -269,12 +269,12 @@ subroutine print_report( prog )   ! Write a report of counted times
 #ifndef _OPENMP
   real    :: treal                 ! Single precision to call cpu_time
 #endif
-  real(dp):: dtime, myCalTime, progCalTime, progComTime, progTotTime
+  real(dp):: myCalTime, progCalTime, progComTime, progTotTime
   real(dp):: timeNow, totalCalTime, totalComTime, totalTime
-  real(dp):: wallTime, wallTime1
+  real(dp):: wallTime
   integer :: busyNode, totalComCalls, iProg, iu, jProg
-  integer :: node, nodes, nProgsWriterNode, progCalls, rootNode, writerNode
-  logical :: found, opened, withinMPI
+  integer :: node, nProgsWriterNode, progCalls, writerNode
+  logical :: found, opened
 #ifdef MPI
   integer:: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPItag
 #endif

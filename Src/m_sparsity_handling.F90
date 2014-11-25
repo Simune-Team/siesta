@@ -523,7 +523,7 @@ contains
 
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no_l,no_u,nnzs,num,listptr,list, &
-         name='Truncated '//trim(name(in)), &
+         name='T '//trim(name(in)), &
          ncols=ncols(in),ncols_g=ncols_g(in))
 
     ! Clean up
@@ -610,7 +610,7 @@ contains
     end if
 
     call newSparsity(out,no_u,no_u,n_nzsg,ncol,n_ptr,col, &
-         name='Global ('//name(in)//')')
+         name='G ('//name(in)//')')
     
 #endif
 

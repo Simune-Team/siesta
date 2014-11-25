@@ -161,7 +161,7 @@ contains
     ! Thus we simply check for existence of options
     if ( present(MASK) ) then
        call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
-            name='(MASK-ed region of: '//name(in)//')', &
+            name='(M of: '//name(in)//')', &
             ncols=ncols(in),ncols_g=ncols_g(in))
     else if ( present(TM) ) then
        do i = 1 , 3
@@ -173,12 +173,12 @@ contains
        end do
        cTM(9:) = ' '
        call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
-            name='(TM region ['//trim(cTM)//'] of: '//name(in)//')', &
+            name='(TM ['//trim(cTM)//'] of: '//name(in)//')', &
             ncols=ncols(in),ncols_g=nrows_g(in))
     else if ( present(UC) ) then
        if ( UC ) then
           call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
-               name='(UC sparsity of: '//name(in)//')', &
+               name='(UC of: '//name(in)//')', &
                ncols=ncols(in),ncols_g=nrows_g(in))
        else
           ! THIS SHOULD NEVER HAPPEN (the dependency check

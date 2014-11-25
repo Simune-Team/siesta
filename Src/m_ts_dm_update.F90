@@ -144,7 +144,6 @@ contains
     integer :: lnr, lio, lind, io, ind, nr, jo
     integer :: rin, rind
     logical :: hasEDM
-    real(dp) :: kw(D_dim2)
     complex(dp) :: ph
 
     if ( (.not. initialized(spDM)) .or. (.not. initialized(spuDM)) ) return

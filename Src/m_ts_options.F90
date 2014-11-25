@@ -875,7 +875,13 @@ contains
        ! The Hartree potential correction will only be put correctly 
        ! when the atoms are sorted by z and starting from z == 0
        if ( IsVolt .and. .not. VoltageInC .and. ts_tdir > 0 ) then
-          tmp = minval(xa(ts_tdir,:)) / Ang
+          tmp = huge(1._dp)
+          do i = 1 , na_u
+             if ( atom_type(i) /= TYP_BUFFER ) then
+                tmp = min(tmp,xa(ts_tdir,i))
+             end if
+          end do
+          tmp = tmp / Ang
           ! below -.5 or above .5 Ang from the bottom of the unit-cell
           if ( tmp < -.5_dp .or. .5_dp < tmp ) then
              write(*,*) &

@@ -52,7 +52,7 @@ contains
        Hs, Ss, DM, EDM, Ef, kT)
 
     use units, only : Pi
-    use parallel, only : Node, Nodes, IONode
+    use parallel, only : Node, Nodes
 
 #ifdef MPI
     use mpi_siesta
@@ -670,7 +670,7 @@ contains
        Hs, Ss, DM, Ef, kT, Qtot, converged)
 
     use units, only : Pi
-    use parallel, only : Node, Nodes, IONode
+    use parallel, only : Node, Nodes
 
 #ifdef MPI
     use mpi_siesta
