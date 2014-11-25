@@ -39,6 +39,7 @@ contains
 
   subroutine tbt_read_contour_options(N_Elec,Elecs,N_mu,mus, kT)
 
+    use parallel, only : Node
     use units, only : eV
     use fdf
     use m_ts_electype
@@ -50,7 +51,7 @@ contains
     type(ts_mu), intent(in), target :: mus(N_mu)
     real(dp), intent(in) :: kT
     
-    real(dp) :: Volt
+    real(dp) :: Volt, tmp
 
     ! broadening
     tbt_Eta = fdf_get('TBT.Contours.Eta',0._dp,'Ry')
@@ -63,8 +64,13 @@ contains
     ! Bias-window setup
     call my_setup('Window',N_tbt,tbt_c,tbt_io)
     
-    Volt = fdf_get('TS.Voltage',0._dp,'Ry')
-    Volt = fdf_get('TBT.Voltage',Volt,'Ry')
+    tmp = fdf_get('TS.Voltage',0._dp,'Ry')
+    Volt = fdf_get('TBT.Voltage',tmp,'Ry')
+    if ( abs(tmp-Volt) > 1.e-5_dp .and. Node == 0 ) then
+       write(*,'(a)') '*** WARNING: transiesta and tbtrans bias &
+            &not equivalent!'
+       write(*,'(a)') '*** WARNING: Be sure to use an interpolation scheme!'
+    end if
 
     if ( N_tbt < 1 ) then
 
@@ -83,15 +89,15 @@ contains
        allocate(tbt_io(N_tbt),tbt_c(N_tbt))
        tbt_c(1)%c_io => tbt_io(1)
        tbt_io(1)%part = 'line'
-       tbt_io(1)%name = 'neq-1'
+       tbt_io(1)%name = 'neq'
        tbt_io(1)%ca = '-|V|/2 - 5. kT'
-       tbt_io(1)%a  = -abs(Volt) * .5_dp - 5 * kT
+       tbt_io(1)%a  = -abs(Volt) * .5_dp - 5._dp * kT
        tbt_io(1)%cb = '|V|/2 + 5. kT'
-       tbt_io(1)%b  =  abs(Volt) * .5_dp + 5 * kT
+       tbt_io(1)%b  =  abs(Volt) * .5_dp + 5._dp * kT
        ! number of points
        tbt_io(1)%cd = '0.01 eV'
        tbt_io(1)%d = 0.01_dp * eV
-       tbt_io(1)%method = 'simpson-mix'
+       tbt_io(1)%method = 'mid-rule'
        call ts_fix_contour(tbt_io(1))
 
        ! setup the contour
@@ -106,7 +112,6 @@ contains
   contains 
 
     subroutine my_setup(suffix,N_tbt,tbt_c,tbt_io)
-      use parallel, only : Node
       character(len=*), intent(in) :: suffix
       integer, intent(inout) :: N_tbt
       type(ts_cw), pointer :: tbt_c(:)

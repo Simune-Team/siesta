@@ -403,9 +403,9 @@ contains
     ! Currently the transport direction for all electrodes is the default
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
-    Elecs(:)%Eta = fdf_get('TS.Contours.nEq.Eta',0.00001_dp*eV,'Ry')
-    Elecs(:)%Eta = fdf_get('TS.Elecs.Eta',Elecs(1)%Eta)
-    Elecs(:)%Bulk  = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
+    Elecs(:)%Eta  = fdf_get('TS.Contours.nEq.Eta',0.00001_dp*eV,'Ry')
+    Elecs(:)%Eta  = fdf_get('TS.Elecs.Eta',Elecs(1)%Eta,'Ry')
+    Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     if ( .not. Elecs(1)%Bulk ) then
        Elecs(:)%DM_update = 2
     else

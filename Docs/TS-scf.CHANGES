@@ -1,4 +1,31 @@
 ----------------------------------------------------
+November 25, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-225
+Changed a few defaults for transiesta
+
+* The eta value on the non-equilibrium
+  contour now only exists in the electrodes.
+  Just as in tbtrans.
+  Hence, the user _is_ forced to use the device
+  eta if needed.
+
+* If the bias for tbtrans and transiesta does
+  not match, then a WARNING message is printed.
+  This is merely to bring attention to the
+  user that interpolation is required.
+
+* Added tbtrans transfer from old to new using the ts2ts
+  program.
+
+* The default tbtrans eta value is now the TS.Elecs.Eta
+  value.
+
+modified:
+  Src/m_ts_options.F90
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/ts2ts/ts2ts.f90
+
+----------------------------------------------------
 November 25, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-224
 Added timings for tbtrans
 

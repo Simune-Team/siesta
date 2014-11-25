@@ -12,10 +12,10 @@ program ts2ts
 
   ! strings used to print out energies...
   integer, parameter :: N_char = 50
-  character(len=N_char) :: c_CCEmin, c_GFEta, c_Volt, c_dVolt
+  character(len=N_char) :: c_CCEmin, c_GFEta, c_Volt, c_dVolt, c_TBTmin, c_TBTmax, c_TBTdE
   
-  real(dp) :: CCEmin, GFEta, Volt
-  integer :: Nline, Ncircle, Npol, Nvolt
+  real(dp) :: CCEmin, GFEta, Volt, TBTmin, TBTmax
+  integer :: Nline, Ncircle, Npol, Nvolt, Npoints
 
   logical :: IsVolt, Bulk, UpdateDMCR, ReUse
 
@@ -220,7 +220,7 @@ program ts2ts
   call nl
 
   ! Now we need to write out the non-equilibrium contour...
-  write(*,'(a,a)')'TS.Contours.nEq.Eta ',c_GFEta
+  write(*,'(a,a)')'TS.Elecs.Eta ',c_GFEta
   call sblock('TS.Contours.Bias.Window')
   write(*,'(tr2,a)') 'neq'
   call eblock('TS.Contours.Bias.Window')
@@ -246,6 +246,38 @@ program ts2ts
   call eblock('TS.Contours.Bias.tail')
   call wcont('Bias.Tail.neq-tail','tail','simpson-mix', &
        '0. kT','12. kT',cD=c_dVolt)
+
+
+  ! Read in any tbtrans stuff...
+  TBTmin = fdf_get('TS.TBT.Emin',-1._dp*eV,'Ry')
+  call e2a(TBTmin,c_TBTmin)
+  TBTmax = fdf_get('TS.TBT.Emax',1._dp*eV,'Ry')
+  call e2a(TBTmax,c_TBTmax)
+  Npoints = fdf_get('TS.TBT.Npoints',100)
+  call assert(Npoints > 0, 'Points on the tbtrans contour has to be larger than 0')
+  call e2a(abs(TBTmax-TBTmin)/Npoints,c_TBTdE,force_eV=.true.)
+  GFEta   = fdf_get('TS.TBT.Eta',0.000001_dp,'Ry')
+  call e2a(GFEta,c_GFEta,prec=10,force_eV=.false.)
+
+  ! Print out the TBTrans options
+  call nl
+  call nl
+  write(*,'(a)') '# TBtrans options'
+  call nl
+  write(*,'(a,a)')'TBT.Elecs.Eta ',c_GFEta
+  call sblock('TBT.Contours.Window')
+  write(*,'(tr2,a)') 'neq'
+  call eblock('TBT.Contours.Window')
+
+  call nl
+  call wcont('Window.neq','line','mid-rule', &
+       c_TBTmin,c_TBTmax,cD=c_TBTdE,prefix='TBT')
+
+  call nl
+  write(*,'(a)') '# It is adviced to define a device region of'
+  write(*,'(a)') '# particular interest'
+  write(0,'(a)') '# It is adviced to define a device region of'
+  write(0,'(a)') '# particular interest'
 
 contains
   
@@ -388,11 +420,15 @@ contains
     call eblock('TS.Elec.'//trim(name))
   end subroutine welec
 
-  subroutine wcont(name,part,method,cEmin, cEmax,N,cD)
+  subroutine wcont(name,part,method,cEmin, cEmax,N,cD,prefix)
     character(len=*), intent(in) :: name, part, method, cEmin, cEmax
     integer, intent(in), optional :: N
-    character(len=*), intent(in), optional :: cD
-    call sblock('TS.Contour.'//trim(name))
+    character(len=*), intent(in), optional :: cD, prefix
+    if ( present(prefix) ) then
+       call sblock(trim(prefix)//'.Contour.'//trim(name))
+    else
+       call sblock('TS.Contour.'//trim(name))
+    end if
     write(*,'(tr2,2a)')'part ',trim(part)
     write(*,'(tr2,4(tr1,a))')'from',trim(cEmin),'to',trim(cEmax)
     if ( present(N) )then
@@ -401,7 +437,11 @@ contains
        write(*,'(tr4,2a)')'delta ',trim(cD)
     end if
     write(*,'(tr4,2(tr1,a))')'method',trim(method)
-    call eblock('TS.Contour.'//trim(name))
+    if ( present(prefix) ) then
+       call eblock(trim(prefix)//'.Contour.'//trim(name))
+    else
+       call eblock('TS.Contour.'//trim(name))
+    end if
   end subroutine wcont
 
   subroutine assert(bool,msg)

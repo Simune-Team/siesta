@@ -158,12 +158,14 @@ contains
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
     Elecs(:)%Bulk  = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
+    Elecs(:)%Bulk  = fdf_get('TBT.Elecs.Bulk',Elecs(1)%Bulk)
 
     ! We default to not calculate the band-bottom...
     ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
     Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF.ReUse',.true.)
     Elecs(:)%ReUseGF = fdf_get('TBT.Elecs.GF.ReUse',Elecs(1)%ReUseGF)
-    Elecs(:)%Eta     = fdf_get('TBT.Elecs.Eta',0.00001*eV,'Ry')
+    Elecs(:)%Eta     = fdf_get('TS.Elecs.Eta',0.00001*eV,'Ry')
+    Elecs(:)%Eta     = fdf_get('TBT.Elecs.Eta',Elecs(1)%Eta,'Ry')
 
     ! whether all calculations should be performed
     ! "out-of-core" i.e. whether the GF files should be created or not
