@@ -1,4 +1,19 @@
 --------------------------------------------------------------
+November 26, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-6
+Re-implement DOS calculation
+
+Use call to the raw inertia-count routine.
+Do not try to re-use the plan, as it would complicate
+the program flow.
+
+renamed:
+  Src/m_pexsi_dos.F90_old => Src/m_pexsi_dos.F90
+modified:
+  Src/Makefile
+  Src/siesta_analysis.F
+  Src/m_pexsi_dos.F90
+
+--------------------------------------------------------------
 November 13, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-5
 Provide a safe bracket around mu for the solver
 

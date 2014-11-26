@@ -23,8 +23,15 @@ CONTAINS
     use mpi_siesta
 #endif
 
-    use m_pexsi_interface, only: f_ppexsi_raw_inertiacount_interface
-
+    use iso_c_binding
+    use f_ppexsi_interface, only: f_ppexsi_options
+    use f_ppexsi_interface, only: f_ppexsi_plan_finalize
+    use f_ppexsi_interface, only: f_ppexsi_plan_initialize
+    use f_ppexsi_interface, only: f_ppexsi_inertia_count_real_symmetric_matrix
+    use f_ppexsi_interface, only: f_ppexsi_load_real_symmetric_hs_matrix
+    use f_ppexsi_interface, only: f_ppexsi_set_default_options
+    use f_ppexsi_interface, &
+          only: f_ppexsi_symbolic_factorize_real_symmetric_matrix
 
     implicit          none
 
@@ -46,10 +53,10 @@ CONTAINS
     integer  :: ordering, numNodesTotal
 
 
-    real(dp)   :: e1, e2
+    real(dp)   :: e1, e2, delta
     integer    :: j, ncalls, npoints, lun
     real(dp), allocatable :: edos(:)
-    integer,  allocatable :: intdos(:)
+    real(dp),  allocatable :: intdos(:)
     real(dp)   :: emin, emax, deltaE
 
     integer        :: info, infomax
@@ -68,6 +75,11 @@ integer  :: npSymbFact
 integer  :: mpirank, ierr
 integer  :: isSIdentity
 logical  :: ef_reference
+
+type(f_ppexsi_options) :: options
+integer(c_intptr_t)    :: plan
+  integer :: numProcRow, numProcCol
+  integer :: outputFileIndex
 
 
 !------------
@@ -109,10 +121,27 @@ call MPI_Comm_create(World_Comm, PEXSI_Group,&
 
 PEXSI_worker = (mpirank < npPerPole)
 
-! Number of processors for symbolic factorization
-! Only relevant for PARMETIS/PT_SCOTCH
-npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
+! -- Prepare plan
+numProcRow = sqrt(dble(npPerPole))
+numProcCol = numProcRow
 
+if ((numProcRow * numProcCol) /= npPerPole) then
+  call die("not perfect square")
+endif
+
+outputFileIndex = mpirank
+
+   plan = f_ppexsi_plan_initialize(&
+      World_Comm,&
+      numProcRow,&
+      numProcCol,&
+      outputFileIndex,&
+      info) 
+
+if (mpirank == 0) then
+   print *, "Info in plan_initialize: ", info
+endif
+! -- 
 
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
@@ -175,10 +204,6 @@ isSIdentity = 0
 call mpi_comm_size( World_Comm, numNodesTotal, ierr )
 nShifts = numNodesTotal/npPerPole
 
-! Ordering flag:
-!   1: Use METIS
-!   0: Use PARMETIS/PTSCOTCH
-ordering = fdf_get("PEXSI.ordering",1)
 !
 ! Broadcast these to the whole processor set, just in case
 ! (They were set only by the Siesta workers)
@@ -211,36 +236,61 @@ call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
                     emin/eV, ",", emax/eV, "] (eV)", &
                     " Nshifts: ", npoints
     endif
-    call timer("pexsi-raw-inertia-ct", 1)
 
-    call f_ppexsi_raw_inertiacount_interface(&
-         ! input parameters
-        nrows,&
-        nnz,&
-        nnzLocal,&
-        numColLocal,&
-        colptrLocal,&
-        rowindLocal,&
-        HnzvalLocal,&
-        isSIdentity,&
-        SnzvalLocal,&
-        emin,&
-        emax,&
-        npoints,&
-        ordering,&
-        npPerPole,&
-        npSymbFact,&
-        World_Comm,&        
-        ! output parameters
-        edos,&
-        intdos,&
+call f_ppexsi_set_default_options( options )
+! Ordering flag:
+!   1: Use METIS
+!   0: Use PARMETIS/PTSCOTCH
+options%ordering = fdf_get("PEXSI.ordering",1)
+
+! Number of processors for symbolic factorization
+! Only relevant for PARMETIS/PT_SCOTCH
+options%npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
+
+options%verbosity = fdf_get("PEXSI.verbosity",1)
+
+call f_ppexsi_load_real_symmetric_hs_matrix(&
+      plan,&
+      options,&
+      nrows,&
+      nnz,&
+      nnzLocal,&
+      numColLocal,&
+      colptrLocal,&
+      rowindLocal,&
+      HnzvalLocal,&
+      isSIdentity,&
+      SnzvalLocal,&
+      info) 
+
+if (mpirank == 0) then
+   print *, "Info in load_real_sym_hs_matrix: ", info
+endif
+
+   call f_ppexsi_symbolic_factorize_real_symmetric_matrix(&
+        plan, &
+        options,&
         info)
+   if (mpirank == 0) then
+      print *, "Info in real symb_fact in iscf==1: ", info
+   endif
 
+    
+    delta = (emax-emin)/(npoints-1)
+    do j = 1, npoints
+       edos(j) = emin + (j-1)*delta
+    enddo
+
+    call timer("pexsi-raw-inertia-ct", 1)
+    call f_ppexsi_inertia_count_real_symmetric_matrix(&
+      plan,&
+      options,&
+      npoints,&
+      edos,&
+      intdos,&
+      info) 
 
     call timer("pexsi-raw-inertia-ct", 2)
-
-    call globalize_max(info,infomax,comm=World_Comm)
-    info = infomax
 
     if(mpirank == 0) then
        if (info /= 0) then
@@ -259,7 +309,7 @@ call MPI_Bcast(ef,1,MPI_double_precision,0,World_Comm,ierr)
     write(lun,"(2f15.6,i6,a)") ef/eV, qtot, npoints, &
                             "# (Ef, qtot, npoints) / npoints lines: E(eV), IntDos(E)"
     do j=1,npoints
-       write(lun,"(f15.6,i15)") edos(j)/eV, intdos(j)
+       write(lun,"(f15.6,f15.2)") edos(j)/eV, intdos(j)
     enddo
  endif
 
@@ -272,6 +322,8 @@ deallocate(edos,intdos)
 
 call delete(dist1)
 call delete(dist2)
+
+call f_ppexsi_plan_finalize( plan, info )
 
 if (PEXSI_worker) then
 

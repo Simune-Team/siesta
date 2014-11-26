@@ -155,7 +155,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	vacuum_level.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
-        die.o m_pexsi.o m_pexsi_driver.o \
+        die.o m_pexsi.o m_pexsi_driver.o m_pexsi_dos.o \
         m_comm.o m_transfers.o m_redist_spmatrix.o \
         compute_max_diff.o \
         save_density_matrix.o\
@@ -598,6 +598,8 @@ m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_pexsi.o: f_ppexsi_interface.o precision.o
+m_pexsi_dos.o: alloc.o class_Dist.o f_ppexsi_interface.o m_mpi_utils.o
+m_pexsi_dos.o: m_redist_spmatrix.o parallel.o precision.o units.o
 m_pexsi_driver.o: alloc.o class_Dist.o extrae_module.o f_ppexsi_interface.o
 m_pexsi_driver.o: m_mpi_utils.o m_pexsi.o m_redist_spmatrix.o parallel.o
 m_pexsi_driver.o: precision.o siesta_options.o units.o
@@ -760,10 +762,10 @@ siesta.o: siesta_move.o
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
 siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
 siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iodm.o
-siesta_analysis.o: m_mpi_utils.o m_ntm.o m_partial_charges.o m_spin.o m_steps.o
-siesta_analysis.o: parallel.o projected_DOS.o siesta_cml.o siesta_geom.o
-siesta_analysis.o: siesta_options.o sparse_matrices.o write_subs.o writewave.o
-siesta_analysis.o: zmatrix.o
+siesta_analysis.o: m_mpi_utils.o m_ntm.o m_partial_charges.o m_pexsi_dos.o
+siesta_analysis.o: m_spin.o m_steps.o parallel.o projected_DOS.o siesta_cml.o
+siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o
+siesta_analysis.o: write_subs.o writewave.o zmatrix.o
 siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o 
 siesta_end.o: alloc.o bands.o densematrix.o extrae_eventllist.o fixed.o
 siesta_end.o: m_dscfcomm.o m_pulay.o m_rhog.o m_wallclock.o meshdscf.o
