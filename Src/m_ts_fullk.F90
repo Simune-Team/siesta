@@ -306,11 +306,7 @@ contains
        kpt(:) = ts_kpoint(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(ucell,kpt,bkpt,1)
-#ifdef TS_BROKEN_TRS
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
-#else
-       kw = 1._dp  / Pi * ts_kweight(ikpt)
-#endif
        if ( nspin == 1 ) kw = kw * 2._dp
 
 #ifdef TRANSIESTA_TIMING
@@ -476,13 +472,6 @@ close(io)
        ! *******************
        ! * NON-EQUILIBRIUM *
        ! *******************
-
-#ifndef TS_BROKEN_TRS
-       ! We have the definition of: Gamma = i(\Sigma - \Sigma^\dagger)
-       ! (not with one half)
-       ! Hence we need to half the contribution for the non-equilibrium
-       kw = 0.5_dp * kw
-#endif
 
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)

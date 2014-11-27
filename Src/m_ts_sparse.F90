@@ -159,7 +159,8 @@ contains
        call re_alloc(sc_off,1,3,1,1)
        sc_off(:,:) = 0._dp
     else
-       call re_alloc(sc_off,1,3,1,product(nsc))
+       i = product(nsc)
+       call re_alloc(sc_off,1,3,1,i)
        sc_off(:,:) = matmul(ucell,isc_off)
     end if
 
@@ -176,6 +177,8 @@ contains
 #ifdef TRANSIESTA_DEBUG
     if(IONode)write(*,*)'As is sparsity pattern (20)'
     call sp_to_file(20+Node,sparse_pattern)
+    if(IONode)write(*,*)'NO buffec is sparsity pattern (25)'
+    call sp_to_file(25+Node,tmp_sp)
 #endif
 
     ! Remove all electrode to other side connections

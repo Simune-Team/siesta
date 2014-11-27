@@ -281,9 +281,6 @@ contains
     type(Sparsity), pointer :: s
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: zH(:), zS(:)
-#ifdef TS_BROKEN_TRS
-    complex(dp) :: t
-#endif
     integer :: iEl, jEl, nr, io, ind, jo, rin, rind
     real(dp) :: E_Ef(0:N_Elec)
 
@@ -354,17 +351,6 @@ contains
                call die('ERROR symmetrization orbital does not &
                &exist.')
 
-#ifdef TS_BROKEN_TRS
-          ! (notice that we transpose here!)
-          t = zS(rind)
-          zS(rind) = zS(ind)
-          zS(ind)  = t
-
-          t = zH(rind)
-          zH(rind) = zH(ind) - E_Ef(jEl) * zS(rind)
-          zH(ind)  = t - E_Ef(jEl) * zS(ind)
-
-#else
           ! Symmetrize (notice that we transpose here!)
           ! See prep_GF
           zS(rind) = 0.5_dp * ( zS(ind) + dconjg(zS(rind)) )
@@ -379,7 +365,6 @@ contains
              zS(ind) = dreal(zS(ind))
              zH(ind) = dreal(zH(ind))
           end if
-#endif
                       
        end do
 
@@ -567,9 +552,6 @@ contains
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
     real(dp), pointer :: dH(:), dS(:)
     real(dp) :: E_Ef(0:N_Elec)
-#ifdef TS_BROKEN_TRS
-    real(dp) :: t
-#endif
     integer :: iEl, jEl, nr, io, ind, jo, rin, rind
    
     ! create the overlap electrode fermi-level
@@ -639,15 +621,6 @@ contains
                call die('ERROR symmetrization orbital does not &
                &exist.')
 
-#ifdef TS_BROKEN_TRS
-          t = dS(rind)
-          dS(rind) = dS(ind)
-          dS(ind) = t
-          
-          t = dH(rind)
-          dH(rind) = dH(ind) - E_Ef(jEl) * dS(rind)
-          dH(ind)  = t - E_Ef(jEl) * dS(ind)
-#else
           ! Symmetrize (for Gamma, transposed is the same!)
           dS(ind) = 0.5_dp * ( dS(ind) + dS(rind) )
           dH(ind) = 0.5_dp * ( dH(ind) + dH(rind) ) &
@@ -656,7 +629,7 @@ contains
           ! we have a real Matrix
           dH(rind) = dH(ind)
           dS(rind) = dS(ind)
-#endif          
+
        end do
 
        end if

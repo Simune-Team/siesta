@@ -237,12 +237,10 @@ contains
              ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
              if ( ind <= rind ) cycle ! The element does not exist
              
-#ifdef TS_BROKEN_TRS
              rin  = up_ptr(jo)
              rind = rin + SFIND(up_col(rin+1:rin+up_ncol(jo)),io)
              if ( rind <= rin ) &
                   call die('ERROR: Conjugated symmetrization point does not exist')
-#endif
 
              jo = (l_col(lind)-1) / nr
              ph = cdexp(dcmplx(0._dp, - &
@@ -250,21 +248,12 @@ contains
                   k(2) * sc_off(2,jo) - &
                   k(3) * sc_off(3,jo)))
 
-#ifdef TS_BROKEN_TRS
              ! This integration is this:
              ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A) dE
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
                   aimag( ph*(zDu(ind,1:D_dim2) - conjg(zDu(rind,1:D_dim2))) )
              if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
                   aimag( ph*(zEu(ind,1:D_dim2) - conjg(zEu(rind,1:D_dim2))) )
-#else
-             ! This integration is this:
-             ! \rho = e^{-i.k.R} \int Gf^R dE
-             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
-                  aimag( ph * zDu(ind,1:D_dim2) )
-             if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
-                  aimag( ph * zEu(ind,1:D_dim2) )
-#endif
 
           end do
 
@@ -699,7 +688,6 @@ contains
           ind = rind + SFIND(lup_col(rind+1:rind+lup_ncol(io)),jo)
           if ( ind <= rind ) cycle ! The element does not exist
           
-#ifdef TS_BROKEN_TRS
           ! The fact that we have a SYMMETRIC
           ! update region makes this *tricky* part easy...
           rin  = lup_ptr(jo)
@@ -708,29 +696,18 @@ contains
           ! We do a check, just to be sure...
           if ( rind <= rin ) &
                call die('ERROR: Conjugated symmetrization point does not exist')
-#endif
           
           ! The integration is this:
-#ifdef TS_BROKEN_TRS    
           ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
-#else
-          ! \rho = e^{-i.k.R} [ \int Gf^R dE + \int Gf^R\Gamma Gf^A dE ]
-#endif
           jo = (l_col(lind)-1) / nr
           ph = cdexp(dcmplx(0._dp, - &
                k(1) * sc_off(1,jo) - &
                k(2) * sc_off(2,jo) - &
                k(3) * sc_off(3,jo)))
       
-#ifdef TS_BROKEN_TRS    
           DM(lind) = DM(lind) + aimag( ph*(zD(ind,1) - conjg(zD(rind,1))) )
           if ( hasEDM ) &
                EDM(lind) = EDM(lind) + aimag( ph*(zE(ind,1) - conjg(zE(rind,1))) )
-#else
-          DM(lind) = DM(lind) + aimag( ph * zD(ind,1) )
-          if ( hasEDM ) &
-               EDM(lind) = EDM(lind) + aimag( ph * zE(ind,1) )
-#endif
 
        end do
 

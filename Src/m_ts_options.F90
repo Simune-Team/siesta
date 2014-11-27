@@ -453,8 +453,9 @@ contains
     ! Check that we can actually start directly in transiesta
     if ( TS_scf_mode == 1 ) then ! TS-start
        if ( .not. all(Elecs(:)%DM_update >= 1) ) then
-          call die('Requesting immediate start, yet we do not update &
-               &cross-terms.')
+          write(*,*)'WARNING: Responsibility is now on your side'
+          write(*,*)'WARNING: Requesting immediate start, yet we &
+               &do not update cross-terms.'
        end if
     end if
 
@@ -967,13 +968,6 @@ contains
                &N-electrode calculations. The charge conservation typically &
                &increases.','  TS.Elecs.DM.Update [cross-terms|all]'
        end if
-
-#ifdef TS_BROKEN_TRS
-       if ( IsVolt ) then
-          write(*,'(a)')'The current broken TRS implementation &
-               &still assumes G^A=G^R^\dagger'
-       end if
-#endif
 
     end if
 

@@ -314,6 +314,8 @@
     
     call part_index(this,c,p_c,i_c)
     call part_index(this,r,p_r,i_r)
+!    if ( p_c == 0 ) print *,'pc'
+!    if ( p_r == 0 ) print *,'pr'
 
     n = this%data%tri_cidx(p_c) - 1 + i_r
 

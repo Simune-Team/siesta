@@ -264,7 +264,7 @@ contains
 
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no_l,no_u,nnzs,num,listptr,list, &
-         name='Truncated '//trim(name(in)), &
+         name='T '//trim(name(in)), &
          ncols=ncols(in),ncols_g=ncols_g(in))
 
     call region_delete(rin)
@@ -588,13 +588,15 @@ contains
             Bn, comm,MPIerror)
 
        ! Then b-cast the number of elements
-       if ( Node == Bn ) then
+       if ( Node == Bn .and. ncol(io) > 0 ) then
           lind = l_ptr(lio)
           col(ind+1:ind+ncol(io)) = l_col(lind+1:lind+l_ncol(lio))
        end if
 
-       call MPI_Bcast(col(ind+1),ncol(io),MPI_Integer, &
-            Bn, comm, MPIerror)
+       if ( ncol(io) > 0 ) then
+          call MPI_Bcast(col(ind+1),ncol(io),MPI_Integer, &
+               Bn, comm, MPIerror)
+       end if
 
        ! Update index-pointer
        ind = ind + ncol(io)

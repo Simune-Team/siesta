@@ -64,7 +64,7 @@ contains
     real(dp),   intent(in) :: xa(3,na_u)
     integer,    intent(in) :: meshG(3), nsm
     integer,    intent(in) :: N_Elec
-    type(Elec), intent(in), target :: Elecs(N_Elec)
+    type(Elec), intent(inout), target :: Elecs(N_Elec)
 
     integer :: iE
     real(dp) :: area, tmp

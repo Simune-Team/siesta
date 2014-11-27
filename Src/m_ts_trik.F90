@@ -158,7 +158,7 @@ contains
     integer, pointer :: ispin, ikpt
     integer :: iEl, iID, ia
     integer :: iE, imu, io, idx
-    integer :: no, no_u_TS
+    integer :: no
 ! ************************************************************
 
 #ifdef TRANSIESTA_DEBUG
@@ -167,9 +167,6 @@ contains
 
     ! Number of supercells
     n_s = size(sc_off,dim=2)
-
-    ! Number of orbitals in TranSIESTA
-    no_u_TS = no_u - no_Buf
 
     ! We do need the full GF AND a single work array to handle the
     ! left-hand side of the inversion...
@@ -225,9 +222,9 @@ contains
        ! it is required that prepare_GF_inv is called
        ! immediately (which it is)
        ! Hence the GF must NOT be used in between these two calls!
-       io = TotUsedOrbs(Elecs(iEl))
-       Elecs(iEl)%Sigma => zwork(no+1:no+io**2)
-       no = no + io ** 2
+       io = TotUsedOrbs(Elecs(iEl)) ** 2
+       Elecs(iEl)%Sigma => zwork(no+1:no+io)
+       no = no + io
 
        ! if we need the cross-terms we can not skip the blocks
        ! that are fully inside the electrode
@@ -315,11 +312,7 @@ contains
        kpt(:) = ts_kpoint(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(ucell,kpt,bkpt,1)
-#ifdef TS_BROKEN_TRS
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
-#else
-       kw = 1._dp  / Pi * ts_kweight(ikpt)
-#endif
        if ( nspin == 1 ) kw = kw * 2._dp
        
 #ifdef TRANSIESTA_TIMING
@@ -454,13 +447,6 @@ contains
        ! *******************
        ! * NON-EQUILIBRIUM *
        ! *******************
-
-#ifndef TS_BROKEN_TRS
-       ! We have the definition of: Gamma = i(\Sigma - \Sigma^\dagger)
-       ! (not with one half)
-       ! Hence we need to half the contribution for the non-equilibrium
-       kw = 0.5_dp * kw
-#endif
 
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
@@ -662,6 +648,7 @@ contains
 #endif
 
   end subroutine ts_trik
+                        
 
   subroutine ts_trik_Fermi(N_Elec,Elecs, &
        nq, uGF, ucell, nspin, na_u, lasto, &
@@ -758,7 +745,7 @@ contains
     type(itt2) :: SpKp
     integer, pointer :: ispin, ikpt
     integer :: ia, iEl, io, idx
-    integer :: no, no_u_TS
+    integer :: no
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -766,7 +753,6 @@ contains
 
     ! Number of supercells
     n_s = size(sc_off,dim=2)
-    no_u_TS = no_u - no_Buf
 
     call newzTriMat(zwork_tri,N_tri_part,tri_parts,'GFinv')
     nzwork = elements(zwork_tri)
@@ -824,11 +810,7 @@ contains
 
        kpt(:) = ts_kpoint(:,ikpt)
        call kpoint_convert(ucell,kpt,bkpt,1)
-#ifdef TS_BROKEN_TRS
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
-#else
-       kw = 1._dp  / Pi * ts_kweight(ikpt)
-#endif
        if ( nspin == 1 ) kw = kw * 2._dp
        
 #ifdef TRANSIESTA_TIMING
@@ -945,7 +927,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: D(:,:), E(:,:)
     complex(dp), pointer :: Gf(:)
-    integer :: io, ind, nr, iu, idx, i1, i2
+    integer :: io, ind, nr, iu, idx, i1, i2, ju
     logical :: hasEDM
 
     s  => spar(DM)
@@ -973,7 +955,8 @@ contains
           
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
              
-             idx = index(Gf_tri,iu,l_col(ind) - orb_offset(l_col(ind)))
+             ju = l_col(ind) - orb_offset(l_col(ind))
+             idx = index(Gf_tri,iu,ju)
              
              D(ind,i1) = D(ind,i1) - GF(idx) * DMfact
              E(ind,i2) = E(ind,i2) - GF(idx) * EDMfact
@@ -994,8 +977,9 @@ contains
           iu = io - orb_offset(io)
           
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-             
-             idx = index(Gf_tri,iu,l_col(ind) - orb_offset(l_col(ind)))
+
+             ju = l_col(ind) - orb_offset(l_col(ind))
+             idx = index(Gf_tri,iu,ju)
              
              D(ind,i1) = D(ind,i1) - GF(idx) * DMfact
              
@@ -1034,7 +1018,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: H(:), S(:)
     complex(dp), pointer :: Gfinv(:)
-    integer :: io, iu, ind, idx, nr
+    integer :: io, iu, ind, idx, nr, ju
 
     if ( cE%fake ) return
 
@@ -1069,7 +1053,8 @@ contains
 
           ! Notice that we transpose back here...
           ! See symmetrize_HS_kpt
-          idx = index(Gfinv_tri,l_col(ind)-orb_offset(l_col(ind)),iu)
+          ju = l_col(ind) - orb_offset(l_col(ind))
+          idx = index(Gfinv_tri,ju,iu)
 
           GFinv(idx) = Z * S(ind) - H(ind)
        end do
