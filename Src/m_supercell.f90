@@ -24,7 +24,6 @@ contains
 
   subroutine exact_sc_size(rmaxh,ucell,na_u,xa,nsc)
     use intrinsic_missing, only : VNORM
-    use geom_helper, only : xa_in_cell
     ! Calculates the exact size required to encompass all super-cells
     ! This is a brute force calculation which is over the top, yet
     ! it is effictive in reducing the super-cell to the minimum basis
@@ -36,7 +35,7 @@ contains
 
     ! Local variables
     integer :: xyz, ia, ja, tnsc(3), idiag
-    real(dp) :: recell(3,3), xa1(3), v1(3), v2(3), ucdiag(3)
+    real(dp) :: recell(3,3), v1(3), v2(3), ucdiag(3)
     logical :: on_boundary
 
     call reclat(ucell,recell,0) ! do not add 2 Pi
@@ -48,12 +47,11 @@ contains
     ! that will be connected by the least 
     ! length across the first cell boundary
     do ia = 1 , na_u
-       xa1(:) = xa_in_cell(recell,ucell,xa(:,ia))
        do ja = ia , na_u
           on_boundary = (ia == ja)
 
           ! Vector between atoms
-          v1(:) =  xa_in_cell(recell,ucell,xa(:,ja)) - xa1(:)
+          v1(:) = xa(:,ja) - xa(:,ia)
 
           do xyz = 1 , 3
 

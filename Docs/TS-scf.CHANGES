@@ -1,4 +1,21 @@
 ----------------------------------------------------
+November 28, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-227
+Bugfix for supercell calculation for negative coord
+
+* When the user has a mixture of out-of unit-cell
+  and in-of unit-cell coordinates the supercell
+  calculation was erroneous.
+  The calculation "should" only be the inside
+  calculation. 
+  This has been corrected.
+
+  This also corrects a bug for an obscure structure
+  sent by Mads Engelund. 
+  
+modified:
+  Src/m_supercell.f90
+
+----------------------------------------------------
 November 25, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-226
 Removed unneeded variables in transiesta routines
 
