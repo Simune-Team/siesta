@@ -188,7 +188,9 @@ contains
     end do
 
     do ib = 1 , nb
-       call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+      if ( buf(ib) /= MPI_REQUEST_NULL ) then
+        call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+      end if
     end do
     deallocate(buf)
 #endif
@@ -315,7 +317,9 @@ contains
        end do
 
        do ib = 1 , nb
-          call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+         if ( buf(ib) /= MPI_REQUEST_NULL ) then
+           call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+         end if
        end do
        deallocate(buf)
 
@@ -427,7 +431,9 @@ contains
           if ( .not. present(gncol) ) deallocate(lncol)
        else
           do ib = 1 , nb
-             call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            if ( buf(ib) /= MPI_REQUEST_NULL ) then
+              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            end if
           end do
        end if
        deallocate(buf)
@@ -601,7 +607,9 @@ contains
        if ( .not. present(gncol) ) deallocate(lncol)
        if ( Node /= 0 ) then
           do ib = 1 , nb
-             call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            if ( buf(ib) /= MPI_REQUEST_NULL ) then
+              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            end if
           end do
        end if
        deallocate(buf)
@@ -765,7 +773,9 @@ contains
        if ( .not. present(gncol) ) deallocate(lncol)
        if ( Node /= 0 ) then
           do ib = 1 , nb
-             call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            if ( buf(ib) /= MPI_REQUEST_NULL ) then
+              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            end if
           end do
        end if
        deallocate(buf)
@@ -916,7 +926,9 @@ contains
           ! Wait for the last one to not send
           ! two messages with the same tag...
           do ib = 1 , nb
-             call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            if ( buf(ib) /= MPI_REQUEST_NULL ) then
+              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            end if
           end do
        end if
        deallocate(buf)
@@ -1071,7 +1083,9 @@ contains
 
        if ( Node /= 0 ) then
           do ib = 1 , nb
-             call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            if ( buf(ib) /= MPI_REQUEST_NULL ) then
+              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            end if
           end do
        end if
 
@@ -1119,7 +1133,9 @@ contains
           end do
           if ( Node /= 0 ) then
              do ib = 1 , nb
-                call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+               if ( buf(ib) /= MPI_REQUEST_NULL ) then
+                 call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+               end if
              end do
           end if
        end do
@@ -1294,7 +1310,9 @@ contains
           end do
           if ( Node /= 0 ) then
              do ib = 1 , nb
-                call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+               if ( buf(ib) /= MPI_REQUEST_NULL ) then
+                 call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+               end if
              end do
           end if
        end do
@@ -1356,7 +1374,9 @@ contains
 
        if ( Node /= 0 ) then
           do ib = 1 , nb
-             call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            if ( buf(ib) /= MPI_REQUEST_NULL ) then
+              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
+            end if
           end do
        end if
        

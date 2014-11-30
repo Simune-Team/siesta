@@ -46,7 +46,7 @@ contains
     integer, allocatable :: buf(:)
     integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n
 #ifdef MPI
-    integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
+    integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
     integer :: n_nnzs, g_nzs
 
@@ -119,8 +119,6 @@ contains
        ! Write list_col
 #ifdef MPI
 
-       MPIreq = MPI_REQUEST_NULL
-
        ! Loop size
        ind = 0
        gind = 1
@@ -180,7 +178,7 @@ contains
     real(dp), allocatable :: buf(:)
 
 #ifdef MPI
-    integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
+    integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
 
     dit => dist(dSp1D)
@@ -211,8 +209,6 @@ contains
        if ( Node == 0 ) then
           allocate(buf(max_n))
        end if
-
-       MPIreq = MPI_REQUEST_NULL
 
        ind = 0
        gind = 1
@@ -269,7 +265,7 @@ contains
     real(dp), allocatable :: buf(:)
 
 #ifdef MPI
-    integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE), MPIreq
+    integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
 
     dit => dist(dSp2D)
@@ -315,8 +311,6 @@ contains
        if ( Node == 0 ) then
           allocate(buf(max_n))
        end if
-
-       MPIreq = MPI_REQUEST_NULL
 
     if ( sp_dim == 1 ) then
 

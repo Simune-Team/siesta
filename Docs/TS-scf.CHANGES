@@ -1,4 +1,20 @@
 ----------------------------------------------------
+November 30, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-228
+Possible bugfix for non-standard MPI libraries
+
+* Certain MPI libraries cannot handle an 
+   MPI_WAIT with a MPI_REQUEST_NULL request
+  handle.
+  Hence, we now test for this on each instance.
+
+  I think this is bad practice, but it may be 
+  required for certain libraries.
+
+modified:
+  Src/m_io_s.F90
+  Src/m_ncdf_io.F90
+
+----------------------------------------------------
 November 28, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-227
 Bugfix for supercell calculation for negative coord
 
