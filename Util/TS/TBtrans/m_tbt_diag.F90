@@ -149,6 +149,12 @@ contains
 
     deallocate(H_UT,S_UT)
     if ( info /= 0 ) then
+       write(*,'(a)')'Error in diagonalization of molecule, H,S'
+#ifdef DIVIDE_AND_CONQUER
+       write(*,'(a,i0)')'LAPACK (dspgvd) error message: ',info
+#else
+       write(*,'(a,i0)')'LAPACK (dspgv) error message: ',info
+#endif
        call die('Error in Gamma diagonalization of molecule, H, S')
     end if
 #ifdef DIVIDE_AND_CONQUER
@@ -326,6 +332,12 @@ contains
 
     deallocate(H_UT,S_UT)
     if ( info /= 0 ) then
+       write(*,'(a)')'Error in diagonalization of molecule, H,S'
+#ifdef DIVIDE_AND_CONQUER
+       write(*,'(a,i0)')'LAPACK (zhpgvd) error message: ',info
+#else
+       write(*,'(a,i0)')'LAPACK (zhpgv) error message: ',info
+#endif
        call die('Error in k-point diagonalization of molecule, H, S')
     end if
 #ifdef DIVIDE_AND_CONQUER

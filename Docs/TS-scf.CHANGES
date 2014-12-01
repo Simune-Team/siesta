@@ -1,4 +1,14 @@
 ----------------------------------------------------
+December 1, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-229
+Added error message if diagonalization errors out tbt_diag
+
+* Added print-out of error message if diagonalization
+  fails.
+
+modified:
+  Util/TS/TBtrans/m_tbt_diag.F90
+
+----------------------------------------------------
 November 30, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-228
 Possible bugfix for non-standard MPI libraries
 
