@@ -451,7 +451,7 @@ m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
 m_sparsity_handling.o: m_interpolate.o m_region.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
-m_supercell.o: geom_helper.o intrinsic_missing.o precision.o
+m_supercell.o: intrinsic_missing.o precision.o
 m_svd.o: precision.o
 m_test_io.o: class_SpData2D.o class_Sparsity.o m_iodm.o m_matio.o parallel.o
 m_test_io.o: precision.o
@@ -783,10 +783,9 @@ struct_init.o: zmatrix.o
 sys.o: parallel.o
 timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_init.o: files.o fixed.o m_io_s.o m_ts_cctype.o m_ts_charge.o
-ts_init.o: m_ts_electrode.o m_ts_electype.o m_ts_gf.o m_ts_global_vars.o
-ts_init.o: m_ts_kpoints.o m_ts_method.o m_ts_options.o parallel.o
-ts_init.o: siesta_options.o
+ts_init.o: fixed.o m_io_s.o m_ts_cctype.o m_ts_charge.o m_ts_electrode.o
+ts_init.o: m_ts_electype.o m_ts_gf.o m_ts_global_vars.o m_ts_kpoints.o
+ts_init.o: m_ts_method.o m_ts_options.o parallel.o siesta_options.o
 ts_show_regions.o: m_ts_electype.o m_ts_method.o parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o
@@ -840,8 +839,6 @@ m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_regions.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
 m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_sparse.o
 m_tbt_regions.o: parallel.o
-m_tbt_saint.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o m_tbt_hs.o
-m_tbt_saint.o: precision.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_io_s.o m_ncdf_io.o m_region.o
 m_tbt_save.o: m_tbt_hs.o m_ts_electype.o parallel.o precision.o timestamp.o
@@ -877,8 +874,8 @@ m_tbtrans.o: m_tbt_save.o m_tbt_sigma_save.o m_tbt_tri_init.o m_tbt_trik.o
 m_tbtrans.o: m_ts_electype.o m_ts_gf.o parallel.o precision.o units.o
 tbt_end.o: alloc.o m_wallclock.o parallel.o timestamp.o
 tbt_init.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o files.o
-tbt_init.o: m_sparsity_handling.o m_spin.o m_tbt_contour.o m_tbt_gf.o
-tbt_init.o: m_tbt_hs.o m_tbt_kpoint.o m_tbt_options.o m_tbt_proj.o
+tbt_init.o: m_sparsity_handling.o m_spin.o m_tbt_contour.o m_tbt_diag.o
+tbt_init.o: m_tbt_gf.o m_tbt_hs.o m_tbt_kpoint.o m_tbt_options.o m_tbt_proj.o
 tbt_init.o: m_tbt_regions.o m_tbt_save.o m_timer.o m_ts_electrode.o
 tbt_init.o: m_ts_electype.o m_wallclock.o parallel.o precision.o sys.o
 tbt_init.o: timestamp.o

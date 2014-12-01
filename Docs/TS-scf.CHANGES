@@ -1,4 +1,18 @@
 ----------------------------------------------------
+December 1, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-230
+Enabled user control of DvDAConq for molecule diagonalization
+
+* Tbtrans was diagonializing the molecule Hamiltonian.
+
+  Now the user can decide whether it should be the divide
+  and conquer algorithm or not.
+
+modified:
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_diag.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 December 1, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-229
 Added error message if diagonalization errors out tbt_diag
 

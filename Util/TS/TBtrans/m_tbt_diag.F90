@@ -28,11 +28,23 @@ module m_tbt_diag
      module procedure norm_eigenstate_kpt
   end interface norm_Eigenstate
 
+  public :: init_diag
   public :: calc_sqrt_S
   public :: calc_Eig
   public :: norm_Eigenstate
 
+  logical, save :: use_DC = .false.
+
 contains
+
+  subroutine init_diag( )
+    use fdf
+
+    ! Let the user decide whether to use divide and conquer
+    ! or not...
+    use_DC = fdf_get('TBT.DivideAndConquer',.false.)
+
+  end subroutine init_diag
 
   subroutine calc_sqrt_S_Gamma(spS,orb,S_sq)
     use m_ts_sparse_helper, only : create_U
@@ -46,24 +58,44 @@ contains
     integer :: no, n_nzs, i, j, info
     real(dp), pointer :: S(:)
     real(dp), allocatable :: eig(:), v(:,:), S_UT(:), work(:)
+    integer :: lwork, liwork
+    integer, allocatable :: iwork(:)
 
-    no = orb%n
+    no  =  orb%n
     dit => dist(spS)
-    sp => spar(spS)
-    S => val(spS)
+    sp  => spar(spS)
+    S   => val( spS)
     n_nzs = size(S)
 
     allocate(eig(no))
     allocate(v(no,no))
-    allocate(work(3*no)) ! real-work
     allocate(S_UT(no*no))
+    lwork = 3*no
+    if ( use_DC ) then
+       ! work-size query
+       call dspevd('V','U',no,S_UT,eig,v,no,eig,-1,liwork,-1,info)
+       lwork = max(no,nint(eig(1)))
+       allocate(iwork(liwork))
+    end if
+    allocate(work(lwork)) ! real-work
 
     call create_U(dit, sp, no, orb, n_nzs,S, S_UT)
 
     ! Diagonalize overlap matrix
-    call dspev('V','U',no,S_UT,eig,v,no,work,info)
+    if ( use_DC ) then
+       call dspevd('V','U',no,S_UT,eig,v,no,work,lwork,iwork,liwork,info)
+       deallocate(iwork)
+    else       
+       call dspev('V','U',no,S_UT,eig,v,no,work,info)
+    end if
     if ( info /= 0 ) then
-       write(*,*) 'INFO = ',info,' when diagonalizing Gamma overlap matrix'
+       write(*,'(a)')'Error in diagonalization of molecule, S'
+       if ( use_DC ) then
+          write(*,'(a,i0)')'LAPACK (dspevd) error message: ',info
+       else
+          write(*,'(a,i0)')'LAPACK (dspev) error message: ',info
+       end if
+       call die('Error in Gamma diagonalization of molecule, S')
     end if
 
     ! There are faster ways of doing this, but let's play safe for
@@ -111,55 +143,52 @@ contains
     integer :: i, j, n_nzs
     real(dp), pointer :: H(:,:), S(:)
     real(dp), allocatable :: H_UT(:), S_UT(:), work(:)
-#ifdef DIVIDE_AND_CONQUER
     integer :: lwork, liwork
     integer, allocatable :: iwork(:)
-#endif
 
     no = orb%n
 
     ! Re-create H_UT, S_UT in UT format
     allocate(H_UT(no*(no+1)/2),S_UT(no*(no+1)/2))
 
-#ifdef DIVIDE_AND_CONQUER
-    ! Do a work-size query
-    call dspgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
-         S_UT(1), -1, liwork, -1, info)
-    lwork = max(no,nint(S_UT(1)))
+    lwork = 3 * no
+    if ( use_DC ) then
+       ! Do a work-size query
+       call dspgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+            S_UT(1), -1, liwork, -1, info)
+       lwork = max(no,nint(S_UT(1)))
+       allocate(iwork(liwork))
+    end if
     allocate(work(lwork))
-    allocate(iwork(liwork))
-#endif
 
     dit => dist(spH)
-    sp => spar(spH)
-    S => val(spS)
+    sp  => spar(spH)
+    S   => val( spS)
     n_nzs = size(S)
     call create_U(dit, sp, no, orb, n_nzs, S, S_UT)
-    H => val(spH)
+    H   => val( spH)
     call create_U(dit, sp, no, orb, n_nzs, H(:,1), H_UT)
 
-#ifdef DIVIDE_AND_CONQUER
-    call dspgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
-         work, lwork, iwork, liwork, info)
-#else
-    allocate(work(3*no))
-    call dspgv(1,'V','U', no, H_UT, S_UT, eig, state, no, &
-         work, info)
-#endif
+    if ( use_DC ) then
+       call dspgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+            work, lwork, iwork, liwork, info)
+       deallocate(iwork)
+    else
+       call dspgv(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+            work, info)
+    end if
 
     deallocate(H_UT,S_UT)
+
     if ( info /= 0 ) then
-       write(*,'(a)')'Error in diagonalization of molecule, H,S'
-#ifdef DIVIDE_AND_CONQUER
-       write(*,'(a,i0)')'LAPACK (dspgvd) error message: ',info
-#else
-       write(*,'(a,i0)')'LAPACK (dspgv) error message: ',info
-#endif
+       write(*,'(a)')'Error in diagonalization of molecule, H, S'
+       if ( use_DC ) then
+          write(*,'(a,i0)')'LAPACK (dspgvd) error message: ',info
+       else
+          write(*,'(a,i0)')'LAPACK (dspgv) error message: ',info
+       end if
        call die('Error in Gamma diagonalization of molecule, H, S')
     end if
-#ifdef DIVIDE_AND_CONQUER
-    deallocate(iwork)
-#endif
 
     ! Sort the eigen-values AND vectors (they most probably
     ! are sorted)
@@ -220,25 +249,49 @@ contains
     real(dp), pointer :: S(:)
     real(dp), allocatable :: eig(:), rwork(:)
     complex(dp), allocatable :: v(:,:), S_UT(:), work(:)
+    integer :: lrwork, lwork, liwork
+    integer, allocatable :: iwork(:)
 
-    no = orb%n
+    no  = orb%n
     dit => dist(spS)
-    sp => spar(spS)
-    S => val(spS)
+    sp  => spar(spS)
+    S   => val( spS)
     n_nzs = size(S)
 
     allocate(eig(no))
     allocate(v(no,no))
-    allocate(rwork(3*no)) ! real-work
-    allocate(work(2*no))
     allocate(S_UT(no*no))
+    lrwork = 3 * no
+    lwork  = 2 * no
+    if ( use_DC ) then
+       ! work-size query
+       call zhpevd('V','U',no,S_UT,eig,v,no,S_UT,-1, &
+            eig,-1, liwork, -1, info)
+       lwork  = nint(real(S_UT(1),dp))
+       lrwork = nint(eig(1))
+       allocate(iwork(liwork))
+    end if
+    allocate(rwork(lrwork)) ! real-work
+    allocate(work(lwork))
     
     call create_U(dit, sp, no, orb, n_nzs, nsc, S, sc_off, S_UT, kpt)
 
     ! Diagonalize overlap matrix
-    call zhpev('V','U',no,S_UT,eig,v,no,work,rwork,info)
+    if ( use_DC ) then
+       call zhpevd('V','U',no,S_UT,eig,v,no,work,lwork, &
+            rwork, lrwork, iwork, liwork, info)
+       deallocate(iwork)
+    else
+       call zhpev('V','U',no,S_UT,eig,v,no,work,rwork,info)
+    end if
     if ( info /= 0 ) then
-       write(*,*) 'INFO = ',info,' when diagonalizing kpt overlap matrix'
+       write(*,'(a)')'Error in diagonalization of molecule, S'
+       if ( use_DC ) then
+          write(*,'(a,i0)')'LAPACK (zhpevd) error message: ',info
+       else
+          write(*,'(a,i0)')'LAPACK (zhpev) error message: ',info
+       end if
+       call die('Error in k-point diagonalization of molecule, S')
     end if
 
     ! There are faster ways of doing this, but let's play safe for
@@ -292,57 +345,55 @@ contains
     real(dp), pointer :: H(:,:), S(:)
     real(dp), allocatable :: rwork(:)
     complex(dp), allocatable :: H_UT(:), S_UT(:), work(:)
-#ifdef DIVIDE_AND_CONQUER
-    integer :: lwork, lrwork
+    integer :: lwork, lrwork, liwork
     integer, allocatable :: iwork(:)
-#endif
 
     no = orb%n
 
     ! Re-create H_UT, S_UT in UT format
     allocate(H_UT(no*(no+1)/2),S_UT(no*(no+1)/2))
 
-#ifdef DIVIDE_AND_CONQUER
-    ! Do a work-size query
-    call zhpgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
-         S_UT(1), -1, eig, -1, liwork, -1, info)
-    lwork = max(no,nint(real(S_UT(1),dp)))
+    lwork  = 2 * no
+    lrwork = 3 * no
+    if ( use_DC ) then
+       ! work-size query
+       call zhpgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+            S_UT(1), -1, eig, -1, liwork, -1, info)
+       lwork = max(no,nint(real(S_UT(1),dp)))
+       lrwork = nint(eig(1))
+       allocate(iwork(liwork))
+    end if
     allocate(work(lwork))
-    lrwork = nint(eig(1))
     allocate(rwork(lrwork))
-    allocate(iwork(liwork))
-#endif
 
     dit => dist(spH)
-    sp => spar(spH)
-    S => val(spS)
+    sp  => spar(spH)
+    S   => val( spS)
     n_nzs = size(S)
     call create_U(dit, sp, no, orb, n_nzs, nsc, S, sc_off,S_UT, kpt)
-    H => val(spH)
+    H   => val( spH)
     call create_U(dit, sp, no, orb, n_nzs, nsc, H(:,1), sc_off,H_UT, kpt)
 
-#ifdef DIVIDE_AND_CONQUER
-    call zhpgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
-         work, lwork, rwork, lrwork, iwork, liwork, info)
-#else
-    allocate(work(2*no),rwork(3*no))
-    call zhpgv(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+    if ( use_DC ) then
+       call zhpgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+            work, lwork, rwork, lrwork, iwork, liwork, info)
+       deallocate(iwork)
+    else
+       call zhpgv(1,'V','U', no, H_UT, S_UT, eig, state, no, &
          work, rwork, info)
-#endif
+    end if
 
     deallocate(H_UT,S_UT)
+
     if ( info /= 0 ) then
        write(*,'(a)')'Error in diagonalization of molecule, H,S'
-#ifdef DIVIDE_AND_CONQUER
-       write(*,'(a,i0)')'LAPACK (zhpgvd) error message: ',info
-#else
-       write(*,'(a,i0)')'LAPACK (zhpgv) error message: ',info
-#endif
+       if ( use_DC ) then
+          write(*,'(a,i0)')'LAPACK (zhpgvd) error message: ',info
+       else
+          write(*,'(a,i0)')'LAPACK (zhpgv) error message: ',info
+       end if
        call die('Error in k-point diagonalization of molecule, H, S')
     end if
-#ifdef DIVIDE_AND_CONQUER
-    deallocate(iwork)
-#endif
 
     ! Sort the eigen-values AND vectors (they most probably
     ! are sorted)
