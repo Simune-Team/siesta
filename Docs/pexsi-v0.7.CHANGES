@@ -1,4 +1,16 @@
 --------------------------------------------------------------
+December 1, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-7
+Fix formatting problems in long source lines
+
+Some lines included backslashes that confused some compilers.  Other
+long lines in the PEXSI modules have now been split to fit within the
+classic 80 columns.
+
+modified:
+  Src/m_pexsi_dos.F90
+  Src/m_pexsi_driver.F90
+
+-------------------------------------------------------------
 November 26, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-6
 Re-implement DOS calculation
 

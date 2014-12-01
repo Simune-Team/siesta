@@ -6,13 +6,14 @@ module m_pexsi_solver
   public :: pexsi_solver
 
   real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
-                              ! which is used in the heuristics for N_el tolerance
+                              ! used in the heuristics for N_el tolerance
   public :: prevDmax
 
 
 CONTAINS
 
-! This version uses separate distributions for Siesta (setup_H et al) and PEXSI.
+! This version uses separate distributions for Siesta 
+! (setup_H et al) and PEXSI.
 ! It uses the simple KSDFT driver
 !
   subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
@@ -434,14 +435,14 @@ endif
 
 !------------ End of solver step
 
-   if (mpirank == 0) then
-      write(6,"(a,i3)") " #&s Number of solver iterations: ", numTotalPEXSIIter
-      write(6,"(a,i3)") " #&s Number of inertia iterations: ", numTotalInertiaIter
-      write(6,"(a,f12.4)") " #&s muMinInertia: ", muMinInertia
-      write(6,"(a,f12.4)") " #&s muMaxInertia: ", muMaxInertia
-      write(6,"(a,f12.5,f12.4,2x,a2)") "mu, N_e:", mu/eV, &
-              numElectron, "&s"
-   endif
+if (mpirank == 0) then
+  write(6,"(a,i3)") " #&s Number of solver iterations: ", numTotalPEXSIIter
+  write(6,"(a,i3)") " #&s Number of inertia iterations: ", numTotalInertiaIter
+  write(6,"(a,f12.4)") " #&s muMinInertia: ", muMinInertia
+  write(6,"(a,f12.4)") " #&s muMaxInertia: ", muMaxInertia
+  write(6,"(a,f12.5,f12.4,2x,a2)") "mu, N_e:", mu/eV, &
+                                    numElectron, "&s"
+endif
 
 if (PEXSI_worker) then
 
@@ -508,7 +509,8 @@ if (PEXSI_worker) then
    nullify(m2%vals(1)%data)    ! formerly pointing to DM
    nullify(m2%vals(2)%data)    ! formerly pointing to EDM
    deallocate(m2%vals)
-   call de_alloc(m2%numcols,"m2%numcols","pexsi_solver") ! allocated in the direct transfer
+    ! allocated in the direct transfer
+   call de_alloc(m2%numcols,"m2%numcols","pexsi_solver")
    call de_alloc(m2%cols,   "m2%cols",   "pexsi_solver")
 endif
 
@@ -533,7 +535,8 @@ if (SIESTA_worker) then
    call de_alloc(m1%vals(1)%data,"m1%vals(1)%data","pexsi_solver")
    call de_alloc(m1%vals(2)%data,"m1%vals(2)%data","pexsi_solver")
    deallocate(m1%vals)
-   call de_alloc(m1%numcols,"m1%numcols","pexsi_solver") ! allocated in the direct transfer
+   ! allocated in the direct transfer
+   call de_alloc(m1%numcols,"m1%numcols","pexsi_solver") 
    call de_alloc(m1%cols,   "m1%cols",   "pexsi_solver")
 
    call timer("pexsi-solver", 2)
@@ -648,18 +651,18 @@ do_inertia_count = .false.
 
 if (isInertiaCount .ne. 0) then
   if (scf_step .le. numInertiaCounts) then
-     if (mpirank == 0) write(6,"(a,i4)") "&o Inertia-count step scf_step<numIC \
-", scf_step
+     if (mpirank == 0) write(6,"(a,i4)")  &
+      "&o Inertia-count step scf_step<numIC", scf_step
      do_inertia_count = .true.
   endif
   if (numInertiaCounts < 0) then
      if (scf_step <= -numInertiaCounts) then
-        if (mpirank == 0) write(6,"(a,i4)") "&o Inertia-count step scf_step<-nu\
-mIC ", scf_step
+        if (mpirank == 0) write(6,"(a,i4)") &
+         "&o Inertia-count step scf_step<-numIC ", scf_step
         do_inertia_count = .true.
      else if (prevDmax > safe_dDmax_NoInertia) then
-        if (mpirank == 0) write(6,"(a,i4)") "&o Inertia-count step as prevDmax \
-> safe_Dmax ", scf_step
+        if (mpirank == 0) write(6,"(a,i4)") &
+           "&o Inertia-count step as prevDmax > safe_Dmax ", scf_step
         do_inertia_count = .true.
      endif
   endif
@@ -681,17 +684,18 @@ subroutine get_bracket_for_inertia_count()
  ! Proper bracketing                                                           
  if (scf_step > 1) then
    if (prevDmax < safe_dDmax_Ef_inertia) then
-      ! Shift brackets using estimate of Ef change from previous iteration      
-      !                                                                         
-      if (mpirank == 0) write(6,"(a)") "&o Inertia-count bracket shifted by Delta_Ef"
-      ! This might be risky, if the final interval of the previous iteration    
-      ! is too narrow. We should broaden it by o(kT)                            
-      ! The usefulness of delta_Ef is thus debatable...                         
+      ! Shift brackets using estimate of Ef change from previous iteration 
+      !                                                                    
+      if (mpirank == 0) write(6,"(a)") &
+         "&o Inertia-count bracket shifted by Delta_Ef"
+      ! This might be risky, if the final interval of the previous iteration   
+      ! is too narrow. We should broaden it by o(kT)                           
+      ! The usefulness of delta_Ef is thus debatable...                        
 
       muMin0 = muMinInertia + delta_Ef - two_kT
       muMax0 = muMaxInertia + delta_Ef + two_kT
    else
-      ! Use a large enough interval around the previous estimation of           
+      ! Use a large enough interval around the previous estimation of   
       ! mu (the gap edges are not available...)  
       if (mpirank == 0) write(6,"(a)") "&o Inertia-count safe bracket"
 !      muMin0 = min(muLowerEdge - 0.5*safe_width_ic, muMinInertia)
@@ -700,7 +704,8 @@ subroutine get_bracket_for_inertia_count()
       muMax0 = max(mu + 0.5*safe_width_ic, muMaxInertia)
    endif
  else
-    if (mpirank == 0) write(6,"(a)") "&o Inertia-count called with iscf=1 parameters"
+    if (mpirank == 0) write(6,"(a)") &
+       "&o Inertia-count called with iscf=1 parameters"
  endif
 end subroutine get_bracket_for_inertia_count
 

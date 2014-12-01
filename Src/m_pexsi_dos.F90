@@ -5,7 +5,8 @@ module m_pexsi_DOS
 
 CONTAINS
 
-! This version uses separate distributions for Siesta (setup_H et al) and PEXSI.
+! This version uses separate distributions 
+! for Siesta (setup_H et al) and PEXSI.
 !
   subroutine pexsi_DOS(no_u, no_l, nspin,  &
        maxnh, numh, listhptr, listh, H, S, qtot, ef)
@@ -307,7 +308,7 @@ endif
     open(unit=lun,file="PEXSI_INTDOS",form="formatted",status="unknown", &
          position="rewind",action="write")
     write(lun,"(2f15.6,i6,a)") ef/eV, qtot, npoints, &
-                            "# (Ef, qtot, npoints) / npoints lines: E(eV), IntDos(E)"
+                "# (Ef, qtot, npoints) / npoints lines: E(eV), IntDos(E)"
     do j=1,npoints
        write(lun,"(f15.6,f15.2)") edos(j)/eV, intdos(j)
     enddo
