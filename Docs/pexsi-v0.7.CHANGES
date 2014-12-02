@@ -1,4 +1,30 @@
 --------------------------------------------------------------
+December 2, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-8
+Re-implemented the local DOS feature
+
+Used the selected-inversion interface.
+The number of processors per pole for this operation can
+be independently specified by
+
+   PEXSI.LocalDOS.npPerPole  N
+
+In the absence of this line, the value of PEXSI.npPerPole is used.
+
+NOTE: Due to the extra call to dhscf to convert the reduced DM to the
+LDOS (which is a "charge density" at the desired energy), the file
+Rho.grid.nc is overwritten with the LDOS information. There is
+currently no way to avoid this. The file can be re-generated from the
+SystemLabel.RHO file after the Siesta run using the Util/Grid/grid2cdf
+program.
+
+renamed:
+  Src/m_pexsi_local_dos.F90_old => Src/m_pexsi_local_dos.F90
+modified:
+  Src/Makefile
+  Src/siesta_analysis.F
+  Src/m_pexsi_local_dos.F90
+
+--------------------------------------------------------------
 December 1, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-7
 Fix formatting problems in long source lines
 

@@ -17,7 +17,6 @@
       use fdf
       use files,          only : slabel     
       use files,          only : filesOut_t ! type for output file names
-      use files,          only : label_length            
       use parallel,       only:  SIESTA_worker
       use m_ntm
       use m_forces,       only: fa
@@ -27,8 +26,6 @@
       use m_dhscf,        only: dhscf
 
       implicit none
-
-      character(len=label_length+5), external :: paste
 
       integer   :: dummy_iscf = 1
       real(dp)  :: dummy_str(3,3), dummy_strl(3,3)  ! for dhscf call
@@ -55,7 +52,7 @@
 
       if (SIESTA_worker) then
          !Find the LDOS in the real space mesh
-         filesOut%rho = paste( slabel, '.LDSI' )
+         filesOut%rho = trim(slabel) // '.LDSI'
          g2max = g2cut
          call dhscf( nspin, no_s, iaorb, iphorb, no_l, &
                    no_u, na_u, na_s, isa, xa_last, indxua,  &
@@ -77,7 +74,7 @@
 
       use precision, only  : dp
       use fdf
-      use units,       only: eV
+      use units,       only: eV, pi
       use sys,         only: die
       use m_mpi_utils, only: globalize_max, broadcast
       use parallel, only   : SIESTA_worker, BlockSize
@@ -88,7 +85,15 @@
 #ifdef MPI
     use mpi_siesta
 #endif
-    use m_pexsi_interface, only: f_ppexsi_localdos_interface
+    use iso_c_binding
+    use f_ppexsi_interface, only: f_ppexsi_options
+    use f_ppexsi_interface, only: f_ppexsi_plan_finalize
+    use f_ppexsi_interface, only: f_ppexsi_plan_initialize
+    use f_ppexsi_interface, only: f_ppexsi_selinv_complex_symmetric_matrix
+    use f_ppexsi_interface, only: f_ppexsi_load_real_symmetric_hs_matrix
+    use f_ppexsi_interface, only: f_ppexsi_set_default_options
+    use f_ppexsi_interface, &
+          only: f_ppexsi_symbolic_factorize_complex_symmetric_matrix
 
     implicit          none
 
@@ -119,14 +124,21 @@ integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
 real(dp), pointer, dimension(:) :: &
         HnzvalLocal=>null(), SnzvalLocal=>null(),  &
         DMnzvalLocal => null()
+real(dp), pointer, dimension(:) :: AnzvalLocal => null()
+real(dp), pointer, dimension(:) :: AinvnzvalLocal => null()
+!
+integer  :: loc
 !
 integer  :: mpirank, ierr
 integer  :: isSIdentity
 !------------
+type(f_ppexsi_options) :: options
+integer(c_intptr_t)    :: plan
+  integer :: numProcRow, numProcCol
+  integer :: outputFileIndex
 
 external         :: timer
 character(len=6) :: msg
-
 
 
 #ifndef MPI
@@ -153,6 +165,8 @@ call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
 ! Group and Communicator for first-pole team of PEXSI workers
 !
 npPerPole  = fdf_get("PEXSI.np-per-pole",4)
+npPerPole  = fdf_get("PEXSI.LocalDOS.np-per-pole",npPerPole)
+
 call MPI_Comm_Group(World_Comm, World_Group, Ierr)
 call MPI_Group_incl(World_Group, npPerPole,   &
                     (/ (i,i=0,npPerPole-1) /),&
@@ -161,10 +175,6 @@ call MPI_Comm_create(World_Comm, PEXSI_Group,&
                      PEXSI_Comm, Ierr)
 
 PEXSI_worker = (mpirank < npPerPole)
-
-! Number of processors for symbolic factorization
-! Only relevant for PARMETIS/PT_SCOTCH
-npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
 
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
@@ -215,53 +225,117 @@ if (PEXSI_worker) then
 
   call re_alloc(DMnzvalLocal,1,nnzLocal,"DMnzvalLocal","pexsi_ldos")
 
+! -- Prepare plan, only for PEXSI_group nodes...
+  numProcRow = sqrt(dble(npPerPole))
+  numProcCol = numProcRow
+
+  if ((numProcRow * numProcCol) /= npPerPole) then
+     call die("not perfect square")
+  endif
+
+  outputFileIndex = mpirank
+
+  plan = f_ppexsi_plan_initialize(&
+      PEXSI_Comm,&
+      numProcRow,&
+      numProcCol,&
+      outputFileIndex,&
+      info) 
+
+  if (mpirank == 0) then
+     print *, "Info in plan_initialize: ", info
+  endif
+! -- 
   isSIdentity = 0
-
-  ! Ordering flag
-  ordering = fdf_get("PEXSI.ordering",1)
 !
-! No need to broadcast these to the whole processor set.
-! (They were set by the PEXSI workers, which are the only
-!  ones making the interface call)
-!
-!call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
-!call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
+  call f_ppexsi_set_default_options( options )
+  ! Ordering flag:
+  !   1: Use METIS
+  !   0: Use PARMETIS/PTSCOTCH
+  options%ordering = fdf_get("PEXSI.ordering",1)
+  ! Number of processors for symbolic factorization
+  ! Only relevant for PARMETIS/PT_SCOTCH
+  options%npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
+  options%verbosity = fdf_get("PEXSI.verbosity",1)
 
-   if(mpirank == 0) then
-     write(6,"(a,f16.5,f10.5)") 'Calling PEXSI LDOS routine. Energy and broadening (eV) ', &
-                  energy/eV, broadening/eV
-   endif 
+  call f_ppexsi_load_real_symmetric_hs_matrix(&
+      plan,&
+      options,&
+      nrows,&
+      nnz,&
+      nnzLocal,&
+      numColLocal,&
+      colptrLocal,&
+      rowindLocal,&
+      HnzvalLocal,&
+      isSIdentity,&
+      SnzvalLocal,&
+      info) 
 
-! (Note that only the first-pole team does this)
+  if (mpirank == 0) then
+     print *, "Info in load_real_sym_hs_matrix: ", info
+  endif
 
-	call f_ppexsi_localdos_interface(&
-		nrows,&
-		nnz,&
-		nnzLocal,&
-		numColLocal,&
-		colptrLocal,&
-		rowindLocal,&
-		HnzvalLocal,&
-		isSIdentity,&
-		SnzvalLocal,&
-		Energy,&
-		Broadening,&
-		ordering,&
-                npSymbFact,&
-		PEXSI_Comm,&
-		DMnzvalLocal,&   ! LDOS/ partial DM
-		info)
+  ! This is a bit ambiguous, as we have loaded a "symmetric" matrix
+  ! (actually H and S), but I believe that inside (and in the plan)
+  ! specifically complex structures are handled and filled in.
 
-  ! Make sure that all processors report info=1 when any of them
-  ! raises it...
-  ! This should be done inside the routine
-   call globalize_max(info,infomax,comm=PEXSI_comm)
-   info = infomax
+  call f_ppexsi_symbolic_factorize_complex_symmetric_matrix(&
+        plan, &
+        options,&
+        info)
+  if (mpirank == 0) then
+     print *, "Info in complex symb_fact in iscf==1: ", info
+  endif
 
-   if (info /= 0) then
-      write(msg,"(i6)") info 
-      call die("Error in pexsi LDOS routine. Info: " // msg)
-   endif
+  if(mpirank == 0) then
+     write(6,"(a,f16.5,f10.5)") &
+          'Calling PEXSI LDOS routine. Energy and broadening (eV) ', &
+          energy/eV, broadening/eV
+     write(6,"(a,i4)") &
+          'Processors working on selected inversion: ', npPerPole
+  endif
+
+  ! (Note that only the first-pole team does this)
+
+    call timer("pexsi-ldos-selinv", 1)
+
+    ! Build AnzvalLocal as H-zS, where z=(E,broadening), and treat
+    ! it as a one-dimensional real array with 2*nnzlocal entries
+
+    call re_alloc(AnzvalLocal,1,2*nnzLocal,"AnzvalLocal","pexsi_ldos")
+    call re_alloc(AinvnzvalLocal,1,2*nnzLocal,"AinvnzvalLocal","pexsi_ldos")
+
+    loc = 1
+    do i = 1, nnzLocal
+       AnzvalLocal(loc) = Hnzvallocal(i) - energy*Snzvallocal(i)
+       AnzvalLocal(loc+1) =  - broadening*Snzvallocal(i)
+       loc = loc + 2
+    enddo
+
+    call f_ppexsi_selinv_complex_symmetric_matrix(&
+      plan,&
+      options,&
+      AnzvalLocal,&
+      AinvnzvalLocal,&
+      info) 
+
+    ! Get DMnzvalLocal as 1/pi * Imag(Ainv...)
+
+    loc = 1
+    do i = 1, nnzLocal
+       DMnzvalLocal(i) = (1.0_dp/pi) * AinvnzvalLocal(loc+1)
+       loc = loc + 2
+    enddo
+    call de_alloc(AnzvalLocal,"AnzvalLocal","pexsi_ldos")
+    call de_alloc(AinvnzvalLocal,"AinvnzvalLocal","pexsi_ldos")
+
+    call timer("pexsi-ldos-selinv", 2)
+
+    if (info /= 0) then
+       write(msg,"(i6)") info 
+       call die("Error in pexsi LDOS routine. Info: " // msg)
+    endif
 
    call de_alloc(colPtrLocal,"colPtrLocal","pexsi_ldos")
 
@@ -318,7 +392,10 @@ endif
 
 call delete(dist1)
 call delete(dist2)
+
+
 if (PEXSI_worker) then
+   call f_ppexsi_plan_finalize( plan, info )
    call MPI_Comm_Free(PEXSI_Comm, ierr)
    call MPI_Group_Free(PEXSI_Group, ierr)
 endif
