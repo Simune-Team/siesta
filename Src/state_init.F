@@ -62,11 +62,6 @@
 #ifdef CDF
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
-#ifdef NCDF_4
-      use dictionary
-      use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
-      use m_ncdf_siesta, only : cdf_save_state
-#endif
 #endif
       use class_Sparsity
       use class_dSpData1D
@@ -95,9 +90,6 @@
       integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
       real(dp),             pointer :: dummyH(:,:)
-#endif
-#ifdef NCDF_4
-      type(dict) :: dic_save
 #endif
       
       character(len=256)            :: oname
@@ -435,7 +427,8 @@
           ! Delete the TS_FERMI file (enables
           ! reading it in and improve on the convergence)
           if ( file_exist('TS_FERMI') ) then
-             i = 23455
+             i = 23455 ! this should just not be used any were...
+             ! Delete the file...
              open(unit=i,file='TS_FERMI')
              close(i,status='delete')
           end if
@@ -468,23 +461,6 @@
      &                              s,
      &                              istep)
       endif
-#ifdef NCDF_4
-      if ( write_cdf ) then
-
-         ! Initialize the file...
-         call cdf_init_file('SIESTA.nc',.false.)
-
-         ! Save the settings
-         call cdf_save_settings('SIESTA.nc')
-
-         dic_save = ('S'.kv.1)//('sp'.kv.1)
-         dic_save = dic_save//('nsc'.kv.1)//('xij'.kv.1)
-         dic_save = dic_save//('xa'.kv.1)//('cell'.kv.1)
-         call cdf_save_state('SIESTA.nc',dic_save)
-         call delete(dic_save)
-         
-      end if
-#endif
 #endif
       call timer( 'STinit', 2 )
 #ifdef DEBUG

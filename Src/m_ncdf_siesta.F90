@@ -8,6 +8,7 @@ module m_ncdf_siesta
 
   use precision, only : sp, dp, grid_p
   use parallel, only : Node, Nodes
+  use siesta_options, only: cdf_comp_lvl, cdf_w_parallel
 #ifdef NCDF_4
   use variable
   use dictionary
@@ -28,6 +29,7 @@ module m_ncdf_siesta
   public :: cdf_save_settings
   public :: cdf_save_md
   public :: cdf_save_state
+  public :: cdf_save_grid
 
 #endif
 
@@ -42,12 +44,15 @@ contains
     use files, only : slabel
     use m_gamma, only : Gamma
     use atomlist, only: no_u, no_s, lasto, Qtot
-    use siesta_geom, only: na_u
+    use siesta_geom, only: na_u, nsc
     use sparse_matrices, only: sparse_pattern
     use m_spin, only : nspin
-    use siesta_options, only: cdf_comp_lvl, cdf_w_parallel
+    use m_ntm, only : ntm
     use siesta_options, only: sname, isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN, SOLVE_TRANSI
+    use siesta_options, only: savrho, savdrh, savevh, savevna
+    use siesta_options, only: savevt, savepsch, savetoch
+    use siesta_options, only: save_initial_charge_density
     use m_timestamp, only: datestring
 #ifdef TRANSIESTA
     use m_ts_electype, elec_name => name
@@ -103,12 +108,13 @@ contains
     ! necessary
     d = ('DIMna_u'.kv.na_u)//('DIMno_u'.kv.no_u)
     d = d//('DIMno_s'.kv.no_s)//('DIMspin'.kv.nspin)
-    d = d//('DIMxyz'.kv. 3) // ('DIMone'.kv. 1)
+    d = d//('DIMxyz'.kv. 3) // ('DIMn_s'.kv. product(nsc))
+    d = d// ('DIMone'.kv. 1)
     call ncdf_crt(ncdf,d)
     call delete(d)
     
     ! Create all necessary containers...
-    dic = ('info'.kv.'Number of supercells') 
+    dic = ('info'.kv.'Number of supercells in each unit-cell direction') 
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
          atts=dic)
 
@@ -145,6 +151,10 @@ contains
     call ncdf_def_grp(ncdf,'SPARSE',grp)
 
     call ncdf_def_dim(grp,'nnzs',n_nzs)
+
+    dic = dic//('info'.kv.'Index of supercell coordinates')
+    call ncdf_def_var(grp,'isc_off',NF90_INT,(/'xyz','n_s'/), &
+         compress_lvl=0,atts=dic)
 
     dic = dic//('info'.kv.'Number of non-zero elements per row')
     call ncdf_def_var(grp,'n_col',NF90_INT,(/'no_u'/), &
@@ -184,6 +194,75 @@ contains
     end if
     
     ! Delete the dictionary
+    call delete(dic)
+
+    ! Create grid group
+    call ncdf_def_grp(ncdf,'GRID',grp)
+
+    d = ('DIMnx'.kv.ntm(1))//('DIMny'.kv.ntm(2))
+    d = d//('DIMnz'.kv.ntm(3))
+    call ncdf_crt(grp,d)
+
+    ! Create the grid functions...
+
+    ! all grids are using the grid_p precision
+    if ( grid_p == dp ) then
+       i = NF90_DOUBLE
+    else
+       i = NF90_FLOAT
+    end if
+    
+    if ( save_initial_charge_density ) then
+       dic = ('info'.kv.'Initial charge density')
+       call ncdf_def_var(grp,'RhoInit',i,(/'nx  ','ny  ','nz  ','spin'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic)
+    end if
+
+    if ( savrho ) then
+       dic = dic//('info'.kv.'Charge density')
+       call ncdf_def_var(grp,'Rho',i,(/'nx  ','ny  ','nz  ','spin'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic)
+    end if
+
+    if ( savepsch ) then
+       dic = dic//('info'.kv.'Diffuse ionic charge')
+       call ncdf_def_var(grp,'Chlocal',i,(/'nx','ny','nz'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic)
+    end if
+
+    if ( savetoch ) then
+       dic = dic//('info'.kv.'Total charge')
+       call ncdf_def_var(grp,'RhoTot',i,(/'nx','ny','nz'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic)
+    end if
+
+    if ( savdrh ) then
+       dic = dic//('info'.kv.'Density difference')
+       call ncdf_def_var(grp,'RhoDelta',i,(/'nx  ','ny  ','nz  ','spin'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic)
+    end if
+
+    ! The remaining grids have unit Ry
+    dic = dic//('unit'.kv.'Ry')
+
+    if ( savevna ) then
+       dic = dic//('info'.kv.'Neutral atom potential')
+       call ncdf_def_var(grp,'Vna',i,(/'nx','ny','nz'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic)
+    end if
+
+    if ( savevh ) then
+       dic = dic//('info'.kv.'Electrostatic potential')
+       call ncdf_def_var(grp,'Vh',i,(/'nx','ny','nz'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic)
+    end if
+
+    if ( savevt ) then
+       dic = dic//('info'.kv.'Total potential')
+       call ncdf_def_var(grp,'Vt',i,(/'nx  ','ny  ','nz  ','spin'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic)
+    end if
+
     call delete(dic)
 
     call ncdf_def_grp(ncdf,'SETTINGS',grp)
@@ -308,7 +387,6 @@ contains
     if ( isolve == SOLVE_TRANSI ) then
        ! Save all information about the transiesta method
        call ncdf_def_grp(ncdf,'TRANSIESTA',grp)
-
        
        ! Add all the electrodes
        do iEl = 1 , N_Elec
@@ -339,7 +417,7 @@ contains
        
        end do
 
-       dic = dic//('info'.kv.'Bias')//('unit'.kv.'Ry')
+       dic = dic//('info'.kv.'Applied voltage')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'Volt',NF90_DOUBLE,(/'one'/), &
             compress_lvl=0,atts=dic) ! do not compress unlimited D
 
@@ -405,7 +483,8 @@ contains
     use m_energies, only: Ef
     use atomlist, only : Qtot
     use siesta_options, only : cdf_w_parallel
-    use siesta_geom, only: na_u, ucell, xa, va, nsc
+    use siesta_geom, only: na_u, ucell, xa, va
+    use siesta_geom, only: nsc, isc_off
     use sparse_matrices, only: sparse_pattern, block_dist
     use sparse_matrices, only: S_1D, DM_2D, EDM_2D, xij_2D, H_2D
     use m_stress, only : stress
@@ -453,6 +532,8 @@ contains
     ! Sparsity format
     call ncdf_open_grp(ncdf,'SPARSE',grp)
 
+    if ( 'isc_off'.in. dic_save) &
+         call ncdf_put_var(grp,'isc_off',isc_off)
     if ( 'sp' .in. dic_save ) &
          call cdf_w_Sp(grp,block_dist,sparse_pattern)
     if ( 'S' .in. dic_save ) &
@@ -473,6 +554,48 @@ contains
     call timer('CDF',2)
 
   end subroutine cdf_save_state
+
+  subroutine cdf_save_grid(fname,name,nspin,mesh,lnpt,grid)
+
+    character(len=*), intent(in) :: fname, name
+    integer, intent(in) :: nspin, mesh(3), lnpt
+    real(grid_p), intent(in) :: grid(lnpt,nspin)
+
+    type(hNCDF) :: ncdf, grp
+    integer :: is
+
+    call timer('CDF-grid',1)
+
+    ! We just open it (prepending)
+#ifdef MPI
+    if ( Nodes > 1 .and. cdf_w_parallel ) then
+       call ncdf_open(ncdf,fname, &
+            mode=ior(NF90_WRITE,NF90_MPIIO), parallel = .true., &
+            comm=MPI_Comm_World)
+    else
+#endif
+       call ncdf_open(ncdf,fname,mode=ior(NF90_WRITE,NF90_NETCDF4))
+#ifdef MPI
+    end if
+#endif
+
+    call ncdf_open_grp(ncdf,'GRID',grp)
+
+    ! Save the grid
+    if ( nspin > 1 ) then
+       do is = 1 , nspin 
+          call cdf_w_grid(grp,name,mesh,lnpt,grid,idx=is)
+       end do
+    else
+       call cdf_w_grid(grp,name,mesh,lnpt,grid)
+    end if
+
+    call ncdf_close(ncdf)
+
+    call timer('CDF-grid',2)
+
+  end subroutine cdf_save_grid
+        
 
   subroutine cdf_save_md(fname)
     use dictionary

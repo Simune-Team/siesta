@@ -86,6 +86,9 @@
       use meshdscf,       only : createLocalDscfPointers
 
       use iogrid_netcdf, only: set_box_limits
+#ifdef NCDF_4
+      use m_ncdf_io, only : cdf_init_mesh
+#endif
 #ifdef BSC_CELLXC
       use cellxc_mod,     only : setGGA
 #endif /* BSC_CELLXC */
@@ -224,6 +227,11 @@ C ----------------------------------------------------------------------
 !     Setup box descriptors for each processor,
 !     held in module iogrid_netcdf
       call set_box_limits( ntm, nsm )
+      
+#ifdef NCDF_4
+      ! Initialize the box for each node...
+      call cdf_init_mesh( ntm, nsm )
+#endif
 
 C     Stop time counter for mesh initialization
       call timer( 'DHSCF1', 2 )
@@ -630,7 +638,10 @@ C     Modules
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
       use m_doping_uniform,       only: doping_active, doping_uniform
-
+#ifdef NCDF_4
+      use siesta_options, only: write_cdf
+      use m_ncdf_siesta, only: cdf_save_grid
+#endif
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode, TSrun
       use m_ts_options, only: IsVolt
@@ -797,9 +808,18 @@ C ----------------------------------------------------------------------
 C-------------------------------------------------------------------------
       if (savevna) then
         ! Uniform dist, sequential form
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid('SIESTA.nc','Vna',1,ntm,ntpl,Vna)
+        else
+           call write_rho( trim(slabel)// ".VNA",
+     &          cell, ntm, nsm, ntpl, 1, Vna)
+        end if
+#else
         call write_rho( trim(slabel)// ".VNA",
-     &                  cell, ntm, nsm, ntpl, 1, Vna)
+     &       cell, ntm, nsm, ntpl, 1, Vna)
         call write_grid_netcdf( cell, ntm, 1, ntpl, Vna, "Vna")
+#endif
       endif
 
 C     Allocate memory for DRho using the UNIFORM data distribution
@@ -870,11 +890,21 @@ C       Set the UNIFORM distribution again and copy DRho to it
         call de_alloc( DRho_par, 'DRho_par','dhscf' )
 !
         if (save_initial_charge_density) then 
-           call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
-     $              nspin, DRho)
-           call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
-     $               "RhoInit")
-           call bye("STOP after producing RHO_INIT from input DM")
+#ifdef NCDF_4
+          if ( write_cdf ) then
+             call cdf_save_grid('SIESTA.nc','RhoInit',nspin,ntm,ntpl,
+     &            DRho)
+          else
+             call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
+     $            nspin, DRho)
+          end if
+#else
+          call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
+     $         nspin, DRho)
+          call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
+     $         "RhoInit")
+#endif
+          call bye("STOP after producing RHO_INIT from input DM")
         endif
 
       endif
@@ -920,8 +950,17 @@ C Save electron density
 C ----------------------------------------------------------------------
       if (filrho .ne. ' ') then
         !  DRho is already using a uniform, sequential form
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid('SIESTA.nc','Rho',nspin,ntm,ntpl,
+     &          DRho)
+        else
+           call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, DRho )
+        end if
+#else
         call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, DRho )
         call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "Rho")
+#endif
       endif
 C ----------------------------------------------------------------------
 C Save the diffuse ionic charge and/or the total (ionic+electronic) charge
@@ -938,9 +977,18 @@ C       Find diffuse ionic charge on mesh
       
 C       Save diffuse ionic charge 
         if (filepsch .ne. ' ') then
+#ifdef NCDF_4
+          if ( write_cdf ) then
+             call cdf_save_grid('SIESTA.nc','Chlocal',1,ntm,ntpl, 
+     &            Chlocal)
+          else
+             call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, Chlocal)
+          end if
+#else
           call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, Chlocal)
           call write_grid_netcdf( cell, ntm, 1, ntpl,
-     &                            Chlocal, 'Chlocal' )
+     &         Chlocal, 'Chlocal' )
+#endif
         endif
 
 C       Save total (ionic+electronic) charge 
@@ -964,9 +1012,18 @@ C       Save total (ionic+electronic) charge
            end if 
 !$OMP end parallel
 
+#ifdef NCDF_4
+          if ( write_cdf ) then
+             call cdf_save_grid('SIESTA.nc','RhoTot',1,ntm,ntpl,
+     &            TotChar)
+          else
+             call write_rho(filetoch,cell,ntm,nsm,ntpl,1,Totchar)
+          end if
+#else
           call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
           call write_grid_netcdf( cell, ntm, 1, ntpl,
-     &                            Totchar, "TotalCharge")
+     &         Totchar, "TotalCharge")
+#endif
           call de_alloc( Totchar, 'Totchar', 'dhscf' )
         endif 
         call de_alloc( Chlocal, 'Chlocal', 'dhscf' )
@@ -996,9 +1053,18 @@ C ----------------------------------------------------------------------
 C Save electron density difference
 C ----------------------------------------------------------------------
       if (fildrh .ne. ' ') then
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid('SIESTA.nc','RhoDelta',nspin,ntm,ntpl,
+     &          DRho)
+        else
+           call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, DRho )
+        end if
+#else
         call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, DRho )
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
-     &                          DRho, "DeltaRho")
+     &       DRho, "DeltaRho")
+#endif
       endif
 
 C Transform spin density into sum and difference
@@ -1151,9 +1217,18 @@ C     Save electrostatic potential
 C ----------------------------------------------------------------------
       if (filevh .ne. ' ') then
         ! Note that only the first spin component is used
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid('SIESTA.nc','Vh',1,ntm,ntpl,
+     &          Vscf)
+        else
+           call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf )
+        end if
+#else
         call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf )
         call write_grid_netcdf( cell, ntm, 1, ntpl,
-     &                          Vscf, "ElectrostaticPotential")
+     &       Vscf, "ElectrostaticPotential")
+#endif
       endif
 
 C Get back spin density from sum and difference
@@ -1295,9 +1370,18 @@ C ----------------------------------------------------------------------
 C     Save total potential
 C ----------------------------------------------------------------------
       if (filevt .ne. ' ') then
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid('SIESTA.nc','Vt',nspin,ntm,ntpl,
+     &          Vscf)
+        else 
+           call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, Vscf )
+        end if
+#else
         call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, Vscf )
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
-     &                          Vscf, "TotalPotential")
+     &       Vscf, "TotalPotential")
+#endif
       endif
 
 C ----------------------------------------------------------------------

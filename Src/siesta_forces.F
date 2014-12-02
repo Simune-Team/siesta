@@ -43,6 +43,12 @@
       use units,                 only: eV, Ang
       use write_subs,            only: siesta_write_forces
       use write_subs,            only: siesta_write_stress_pressure
+#ifdef NCDF_4
+      use dictionary
+      use siesta_options, only : write_cdf
+      use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
+      use m_ncdf_siesta, only : cdf_save_state
+#endif
 #ifdef TRANSIESTA
       use m_ts_options, only : N_Elec
       use m_ts_method
@@ -75,6 +81,9 @@
       real(dp), allocatable :: Hsave(:,:), fa_old(:,:)
 #ifdef TRANSIESTA
       real(dp) :: Qcur
+#endif
+#ifdef NCDF_4
+      type(dict) :: d_sav
 #endif
 
 #ifdef TRANSIESTA
@@ -117,6 +126,26 @@
       if (nscf <= 0)  call die(" *** nscf <= 0.... ")
 
       call setup_H0()
+
+#ifdef NCDF_4
+      ! Initialize the SIESTA.nc file
+      if ( write_cdf ) then
+
+         ! Initialize the file...
+         call cdf_init_file('SIESTA.nc',.false.)
+
+         ! Save the settings
+         call cdf_save_settings('SIESTA.nc')
+
+         d_sav = ('S'.kv.1)//('sp'.kv.1)
+         d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)
+         d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
+         d_sav = d_sav//('isc_off'.kv.1)
+         call cdf_save_state('SIESTA.nc',d_sav)
+         call delete(d_sav)
+         
+      end if
+#endif
 
       ! Beginning of SCF loop
 

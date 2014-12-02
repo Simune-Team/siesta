@@ -35,7 +35,6 @@ subroutine tbt_init()
   use m_tbt_contour
   use m_tbt_gf
   use m_tbt_save
-  use m_tbt_diag, only : init_diag
   use m_tbt_proj
 
   use m_sparsity_handling
@@ -202,9 +201,6 @@ subroutine tbt_init()
   call delete(tmp_sp)
 
   call tbt_print_regions(N_Elec, Elecs)
-
-  ! Initialize the diagonalization method.
-  call init_diag( )
 
 #ifdef NCDF_4
   ! Initialize the projections here.

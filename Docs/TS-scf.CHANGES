@@ -1,4 +1,59 @@
 ----------------------------------------------------
+December 2, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-231
+Added grid-functions to the single NetCDF file
+
+* Added all possible grid information to our
+  single SIESTA.nc file.
+
+  When the user requests to save to a single file
+  we do not save any other files. 
+  This will limit the time spent on writing to the disk
+  and should be good enough. 
+
+  The compression for the file is very nice to have and
+  can greatly limit the space taken up by the file.
+  
+  Consider deleting, and re-creating the file
+  for MD runs, it might fail for MD runs when the
+  sparsity pattern change.
+
+  Also saves the isc_off to enable the full
+  usage of the sparsity pattern.
+
+  The precision of the saved grid is in the precision
+  they reside. Hence the default is a better precision
+  than previously. Consider letting the user allow
+  a smaller precision.
+
+* Enabled the user to decide on the diagonalization routine
+  used in tbtrans when diagonalizing the molecule.
+    TBT.DivideAndConquer T|F
+  It will also print out what it uses.
+  Added several print-outs when the diagonalization
+  errors out.
+
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/m_ncdf_io.F90
+  Src/m_ncdf_siesta.F90
+  Src/siesta_forces.F
+  Src/state_init.F
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_diag.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/tbt_init.F90
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 December 1, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-230
 Enabled user control of DvDAConq for molecule diagonalization
 

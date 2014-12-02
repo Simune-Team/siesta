@@ -6,7 +6,7 @@
 
 module m_ncdf_io
 
-  use precision, only : sp, dp
+  use precision, only : sp, dp, grid_p
   use parallel, only : Node, Nodes
 #ifdef NCDF_4
   use variable
@@ -22,15 +22,102 @@ module m_ncdf_io
   private
 
 #ifdef NCDF_4
+  public :: cdf_init_mesh
+  public :: cdf_w_grid
 
   public :: cdf_w_sp
   public :: cdf_w_d1D, cdf_w_d2D
 
 #endif
 
+  ! Create the type to hold the mesh distribution data
+  type :: tMeshDist
+     private
+     ! number of mesh divisions in each axis
+     integer :: m(3)
+     ! mesh box bounds of each node in each direction
+            ! box(1,iAxis,iNode)=lower bounds
+            ! box(2,iAxis,iNode)=upper bounds
+     integer, allocatable :: box(:,:,:)
+  end type tMeshDist
+  type(tMeshDist), save :: distr
+
 contains
 
 #ifdef NCDF_4
+
+  subroutine cdf_init_mesh(mesh,nsm)
+    
+    use parallel, ProcY => ProcessorY
+
+    ! mesh divisions (fine points), number of fine points per big points
+    integer, intent(in) :: mesh(3), nsm
+
+    ! Local quantities
+    integer :: nm(3), nmesh, ntot
+    integer :: ProcZ, blocY, blocZ, nremY, nremZ
+    integer :: dimX, dimY, dimZ
+    integer :: PP, iniY, iniZ, PY, PZ
+
+    if ( .not. allocated(distr%box) ) then
+       allocate(distr%box(2,3,0:Nodes-1))
+    end if
+    
+    nm(1:3) = mesh(1:3) / nsm
+    nmesh = product(mesh)
+    distr%m(1:3) = mesh(1:3)
+    
+    ProcZ = Nodes/ProcY
+    
+    blocY = nm(2)/ProcY
+    nremY = nm(2) - blocY*ProcY
+    blocZ = nm(3)/ProcZ
+    nremZ = nm(3) - blocZ*ProcZ
+
+    dimX = nm(1) * nsm
+    
+    ntot = 0
+    
+    PP   = 0
+    iniY = 1
+    do PY = 1, ProcY
+       
+       dimY = blocY
+       if ( PY <= nremY ) dimY = dimY + 1  ! Add extra points starting from the first nodes
+       dimY = dimY * nsm                 ! For fine points
+       
+        iniZ = 1
+        do PZ = 1, ProcZ
+           dimZ = blocZ
+           if ( PZ <= nremZ ) dimZ = dimZ + 1
+           dimZ = dimZ*nsm                 ! For fine points
+           
+           distr%box(1,1,PP) = 1
+           distr%box(2,1,PP) = dimX
+           distr%box(1,2,PP) = iniY
+           distr%box(2,2,PP) = iniY + dimY - 1
+           distr%box(1,3,PP) = iniZ
+           distr%box(2,3,PP) = iniZ + dimZ - 1
+
+           ntot = ntot + dimX * dimY * dimZ
+           
+           iniZ = iniZ + dimZ
+           PP   = PP + 1
+           
+        end do
+
+        iniY = iniY + dimY
+
+     end do
+     
+     if (ntot /= nmesh) then
+        if (Node == 0) then
+           write(6,*) "Nominal npt: ", nmesh, " /= assigned npt:", ntot
+        end if
+        call die()
+     end if
+     
+  end subroutine cdf_init_mesh
 
   subroutine cdf_w_Sp(ncdf,dit,sp)
     use m_io_s,only : Node_Sp_gncol
@@ -385,6 +472,111 @@ contains
     
   end subroutine cdf_w_d2D
   
+  subroutine cdf_w_grid(ncdf,name,mesh,lnpt,grid,idx)
+
+    type(hNCDF), intent(inout) :: ncdf
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: mesh(3), lnpt
+    real(grid_p), intent(in) :: grid(lnpt)
+    integer, intent(in), optional :: idx
+
+#ifdef MPI
+    integer :: MPIstat(MPI_STATUS_SIZE)
+    integer :: MPIerror, mnpt
+    integer :: lb(3), nel(3), iN, inpt
+    real(grid_p), allocatable :: gb(:)
+#endif
+
+#ifdef MPI
+
+    if ( parallel_io(ncdf) ) then
+
+       ! Ensure collective writing
+       call ncdf_par_access(ncdf,name=name,access=NF90_COLLECTIVE)
+
+       lb(:)  = distr%box(1,:,Node)
+       nel(:) = distr%box(2,:,Node) - lb(:) + 1
+
+       if ( present(idx) ) then
+          call ncdf_put_var(ncdf,name,grid, &
+               start=(/lb(1),lb(2),lb(3),idx/), &
+               count=(/nel(1),nel(2),nel(3),1/) )          
+       else
+          call ncdf_put_var(ncdf,name,grid, start=lb, count=nel )
+       end if
+   
+    else
+
+       mnpt = 0
+       do iN = 0 , Nodes - 1
+          nel(:) = distr%box(2,:,iN) - distr%box(1,:,iN) + 1
+          mnpt = max(mnpt,product(nel))
+       end do
+    
+       ! The main node can safely write the data...
+       if ( Node == 0 ) then
+          
+          allocate(gb(mnpt))
+          
+          ! First save it's own data
+          lb(:) = distr%box(1,:,0) 
+          nel(:) = distr%box(2,:,0) - distr%box(1,:,0) + 1
+          
+          if ( present(idx) ) then
+             call ncdf_put_var(ncdf,name,grid, &
+                  start=(/lb(1),lb(2),lb(3),idx/), &
+                  count=(/nel(1),nel(2),nel(3),1/) )
+          else
+             call ncdf_put_var(ncdf,name,grid, &
+                  start=lb, count=nel )
+          end if
+
+          ! Loop on the remaining nodes
+          do iN = 1 , Nodes - 1
+
+             ! we retrieve data from the iN'th node.
+             call MPI_Recv(gb,mnpt,MPI_grid_real,iN,iN, &
+                  MPI_Comm_World,MPIstat, MPIerror)
+             
+             ! Just make sure we only pass the correct size
+             call MPI_Get_Count(MPIstat, MPI_Grid_Real, inpt, MPIerror)
+             
+             lb(:) = distr%box(1,:,iN) 
+             nel(:) = distr%box(2,:,iN) - lb(:) + 1
+             if ( inpt /= product(nel) ) then
+                call die('Error when receiving the distributed &
+                     &grid data for writing to the NetCDF file.')
+             end if
+             
+             if ( present(idx) ) then
+                call ncdf_put_var(ncdf,name,gb(1:inpt), &
+                     start=(/lb(1),lb(2),lb(3),idx/), &
+                     count=(/nel(1),nel(2),nel(3),1/) )
+             else
+                call ncdf_put_var(ncdf,name,gb(1:inpt), &
+                     start=lb, count=nel )
+             end if
+          
+          end do
+          
+          deallocate(gb)
+       else
+          call MPI_Send(grid,lnpt,MPI_grid_real,0, &
+               Node,MPI_Comm_World,MPIerror)
+       end if
+       
+    end if
+
+#else
+    if ( present(idx) ) then
+       call ncdf_put_var(ncdf,name,grid,start=(/1,1,1,idx/))
+    else
+       call ncdf_put_var(ncdf,name,grid)
+    end if
+#endif
+  
+  end subroutine cdf_w_grid
+
 #else
   subroutine dummy()
     !pass

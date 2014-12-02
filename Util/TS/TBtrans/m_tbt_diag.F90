@@ -39,10 +39,14 @@ contains
 
   subroutine init_diag( )
     use fdf
+    use parallel, only : Node
 
     ! Let the user decide whether to use divide and conquer
     ! or not...
     use_DC = fdf_get('TBT.DivideAndConquer',.false.)
+    if ( Node == 0 ) then
+       write(*,'(a,t53,''='',tr4,l1)')'tbt_options: Divide and conquer diagonalization',use_DC
+    end if
 
   end subroutine init_diag
 

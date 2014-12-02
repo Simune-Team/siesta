@@ -72,6 +72,7 @@ contains
 #ifdef NCDF_4
     use m_tbt_sigma_save
 #endif
+    use m_tbt_diag, only : init_diag
     use m_ts_method
 
     use m_ts_cctype
@@ -326,6 +327,9 @@ contains
        end do
 
     end if
+
+    ! Initialize the diagonalization method.
+    call init_diag( )
 
 #ifdef NCDF_4
     call init_Sigma_options( save_DATA )
