@@ -8,8 +8,8 @@ module m_ncdf_siesta
 
   use precision, only : sp, dp, grid_p
   use parallel, only : Node, Nodes
-  use siesta_options, only: cdf_comp_lvl, cdf_w_parallel
 #ifdef NCDF_4
+  use siesta_options, only: cdf_comp_lvl, cdf_w_parallel
   use variable
   use dictionary
   use nf_ncdf, ncdf_parallel => parallel
@@ -568,7 +568,6 @@ contains
     use m_gamma, only : Gamma
     use m_energies, only: Ef
     use atomlist, only : Qtot
-    use siesta_options, only : cdf_w_parallel
     use siesta_geom, only: na_u, ucell, xa, va
     use siesta_geom, only: nsc, isc_off
     use sparse_matrices, only: sparse_pattern, block_dist

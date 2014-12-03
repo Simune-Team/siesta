@@ -677,9 +677,9 @@ m_ncdf_io.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_ncdf_io.o: class_Sparsity.o m_io_s.o parallel.o precision.o
 m_ncdf_siesta.o: atomlist.o class_Sparsity.o files.o kpoint_grid.o m_energies.o
 m_ncdf_siesta.o: m_forces.o m_gamma.o m_io_s.o m_kinetic.o m_ncdf_io.o m_ntm.o
-m_ncdf_siesta.o: m_spin.o m_stress.o m_ts_electype.o m_ts_options.o parallel.o
-m_ncdf_siesta.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
-m_ncdf_siesta.o: timestamp.o
+m_ncdf_siesta.o: m_spin.o m_stress.o m_ts_electype.o m_ts_kpoints.o
+m_ncdf_siesta.o: m_ts_options.o parallel.o precision.o siesta_geom.o
+m_ncdf_siesta.o: siesta_options.o sparse_matrices.o timestamp.o
 m_new_dm.o: alloc.o atomlist.o class_Data2D.o
 m_new_dm.o: class_Fstack_Pair_Geometry_SpData2D.o class_Geometry.o
 m_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpData2D.o

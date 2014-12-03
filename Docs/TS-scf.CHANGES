@@ -1,4 +1,14 @@
 ----------------------------------------------------
+December 3, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-233
+Bugfix for makefile
+
+* Compilation of ncdf_siesta needed a correction.
+
+modified:
+  Src/Makefile
+  Src/m_ncdf_siesta.F90
+
+----------------------------------------------------
 December 3, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-232
 Fixes for the SIESTA.nc file
 
