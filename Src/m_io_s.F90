@@ -35,6 +35,11 @@ module m_io_s
   ! It also allows b-casting the existance.
   public :: file_exist
 
+  ! The counting functions
+  public :: count_blocks
+  public :: count_consecutive, count_consecutive_sum
+  public :: max_consecutive, max_consecutive_sum
+
 contains
 
   ! Returns a consecutive number of contributions

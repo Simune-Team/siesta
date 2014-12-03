@@ -8,6 +8,7 @@ module m_ncdf_io
 
   use precision, only : sp, dp, grid_p
   use parallel, only : Node, Nodes
+  use m_io_s, only: max_consecutive_sum
 #ifdef NCDF_4
   use variable
   use dictionary
@@ -120,7 +121,7 @@ contains
   end subroutine cdf_init_mesh
 
   subroutine cdf_w_Sp(ncdf,dit,sp)
-    use m_io_s,only : Node_Sp_gncol
+    use m_io_s,only : Node_Sp_gncol, count_consecutive
     use class_OrbitalDistribution
     use class_Sparsity
   
@@ -160,28 +161,50 @@ contains
     
     if ( parallel_io(ncdf) ) then
 
-       print *,'Here:',node,' this isformatted erroneously'
-
-       ! Calculate the offset for the global
-       ! partitioning
-       gind = global_offset(dit,no_l)
-
        ! we write it using MPI
-       call ncdf_par_access(ncdf,name='n_col',access=NF90_COLLECTIVE)
-       call ncdf_put_var(ncdf,'n_col',ncol,start=(/gind+1/), &
-            count=(/no_l/))
-
-       gind = global_offset(dit,n_nnzs)
-
-       ! we write it using MPI
+       call ncdf_par_access(ncdf,name='n_col',access=NF90_INDEPENDENT)
        call ncdf_par_access(ncdf,name='list_col',access=NF90_COLLECTIVE)
-       call ncdf_put_var(ncdf,'list_col',l_col,start=(/gind+1/), &
-            count=(/n_nzs/))
 
-    else if ( no_l == no_u ) then
+       allocate(buf(no_u))
+       call Node_Sp_gncol(0,sp,dit,no_u,buf)
+#ifdef MPI
+       ! Globalize n_col
+       call MPI_Bcast(buf,no_u,MPI_Integer,0,MPI_Comm_World,MPIerror)
+#endif
+       if ( Node == 0 ) then
+          call ncdf_put_var(ncdf,'n_col',buf)
+       end if
 
-       call ncdf_put_var(ncdf,'n_col',ncol)
-       call ncdf_put_var(ncdf,'list_col',l_col)
+       ind = 1
+       do io = 1 , no_l
+
+          ! We loop on each segment until no more
+          ! segment exists
+          ! Get the current inset point
+          gio = index_local_to_global(dit,io)
+
+          if ( gio > 1 ) then
+             gind = sum(buf(1:gio-1)) + 1
+          else
+             gind = 1
+          end if
+
+          ! count number of orbitals in this block
+          max_n = count_consecutive(dit,no_u,gio)
+          
+          ! Figure out how many this corresponds to in the 
+          ! list_col array
+          max_n = sum(ncol(io:io+max_n-1))
+          
+          call ncdf_put_var(ncdf,'list_col',l_col(ind:ind+max_n-1), &
+               start=(/gind/), count=(/max_n/) )
+
+          ! Update index
+          ind = ind + max_n
+
+       end do
+
+       deallocate(buf)
 
     else
 
@@ -189,22 +212,14 @@ contains
        allocate(buf(no_u))
        call Node_Sp_gncol(0,sp,dit,no_u,buf)
        call ncdf_put_var(ncdf,'n_col',buf)
-#else
-       call ncdf_put_var(ncdf,'n_col',ncol)
-#endif
 
        if ( Node == 0 ) then
-#ifdef MPI
           max_n = maxval(buf)
           deallocate(buf)
-#else
-          max_n = maxval(ncol)
-#endif
           allocate(buf(max_n))
        end if
 
        ! Write list_col
-#ifdef MPI
 
        ! Loop size
        ind = 0
@@ -240,6 +255,7 @@ contains
        end if
 
 #else
+       call ncdf_put_var(ncdf,'n_col',ncol)
        call ncdf_put_var(ncdf,'list_col',l_col)
 #endif
 
@@ -248,6 +264,7 @@ contains
   end subroutine cdf_w_Sp
 
   subroutine cdf_w_d1D(ncdf,vname,dSp1D)
+    use m_io_s,only : Node_Sp_gncol, count_consecutive
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData1D
@@ -261,6 +278,7 @@ contains
     type(Sparsity), pointer :: sp
     integer, pointer :: ncol(:), l_col(:)
     integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n
+    integer, allocatable :: gcol(:)
     real(dp), pointer :: a(:)
     real(dp), allocatable :: buf(:)
 
@@ -275,17 +293,48 @@ contains
          n_col=ncol,list_col=l_col,nnzs=n_nzs)
 
     a => val(dSp1D)
-    
+
     if ( parallel_io(ncdf) ) then
 
        call ncdf_par_access(ncdf,name=vname,access=NF90_COLLECTIVE)
 
-       ! Calculate the processors offset
-       gind = global_offset(dit,n_nzs)
+       allocate(gcol(no_u))
+       call Node_Sp_gncol(0,sp,dit,no_u,gcol)
+#ifdef MPI
+       ! Globalize n_col
+       call MPI_Bcast(gcol,no_u,MPI_Integer,0,MPI_Comm_World,MPIerror)
+#endif
 
-       ! we write it using MPI
-       call ncdf_put_var(ncdf,vname,a,start=(/gind+1/), &
-            count=(/n_nzs/))
+       ind = 1
+       do io = 1 , no_l
+
+          ! We loop on each segment until no more
+          ! segment exists
+          ! Get the current inset point
+          gio = index_local_to_global(dit,io)
+
+          if ( gio > 1 ) then
+             gind = sum(gcol(1:gio-1)) + 1
+          else
+             gind = 1
+          end if
+
+          ! count number of orbitals in this block
+          max_n = count_consecutive(dit,no_u,gio)
+          
+          ! Figure out how many this corresponds to in the 
+          ! list_col array
+          max_n = sum(ncol(io:io+max_n-1))
+          
+          call ncdf_put_var(ncdf,vname,a(ind:ind+max_n-1), &
+               start=(/gind/), count=(/max_n/) )
+
+          ! Update index
+          ind = ind + max_n
+
+       end do
+
+       deallocate(gcol)
 
     else
 
@@ -334,6 +383,7 @@ contains
   end subroutine cdf_w_d1D
 
   subroutine cdf_w_d2D(ncdf,vname,dSp2D)
+    use m_io_s,only : Node_Sp_gncol, count_consecutive
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData2D
@@ -347,7 +397,8 @@ contains
     type(Sparsity), pointer :: sp
     integer, pointer :: ncol(:), l_col(:)
     integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n
-    integer :: id2, dim2, sp_dim
+    integer :: is, id2, dim2, sp_dim
+    integer, allocatable :: gcol(:)
     real(dp), pointer :: a(:,:)
     real(dp), allocatable :: buf(:)
 
@@ -375,18 +426,50 @@ contains
 
        call ncdf_par_access(ncdf,name=vname,access=NF90_COLLECTIVE)
 
-       ! we write it using MPI
-       gind = global_offset(dit,n_nzs)
+       allocate(gcol(no_u))
+       call Node_Sp_gncol(0,sp,dit,no_u,gcol)
+#ifdef MPI
+       ! Globalize n_col
+       call MPI_Bcast(gcol,no_u,MPI_Integer,0,MPI_Comm_World,MPIerror)
+#endif
 
+       ind = 1
+       do io = 1 , no_l
+
+          ! We loop on each segment until no more
+          ! segment exists
+          ! Get the current inset point
+          gio = index_local_to_global(dit,io)
+
+          if ( gio > 1 ) then
+             gind = sum(gcol(1:gio-1)) + 1
+          else
+             gind = 1
+          end if
+
+          ! count number of orbitals in this block
+          max_n = count_consecutive(dit,no_u,gio)
+          
+          ! Figure out how many this corresponds to in the 
+          ! list_col array
+          max_n = sum(ncol(io:io+max_n-1))
+          
        if ( sp_dim == 1 ) then
-          do io = 1 , dim2
-             call ncdf_put_var(ncdf,trim(vname),a(:,io), &
-                  start=(/gind+1,io/), count=(/n_nzs/))
+          do is = 1 , dim2
+             call ncdf_put_var(ncdf,vname,a(ind:ind+max_n-1,is), &
+                  start=(/gind,is/), count=(/max_n/))
           end do
        else
-          call ncdf_put_var(ncdf,trim(vname),a,start=(/1,gind+1/), &
-               count=(/dim2,n_nzs/))
+          call ncdf_put_var(ncdf,vname,a(:,ind:ind+max_n-1), &
+               start=(/1,gind/), count=(/dim2,max_n/) )
        end if
+
+          ! Update index
+          ind = ind + max_n
+
+       end do
+
+       deallocate(gcol)
 
     else
 

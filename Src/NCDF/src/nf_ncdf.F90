@@ -1857,10 +1857,11 @@ contains
     ! A NetCDF4 file still needs to define/redefine
     ! in collective manner, yet it is taken care of
     ! internally.
+    if ( this%define < 0 ) return
     if ( this%define == 1 ) return
     this%define = 1
     if ( .not. ncdf_participate(this) ) return
-    i = nf90_enddef(this%f_id)
+    i = nf90_enddef(this%id)
     if ( i == nf90_noerr ) return
     if ( i == nf90_enotindefine ) then
        ! we pass, the not-in-define mode
@@ -1884,10 +1885,11 @@ contains
     type(hNCDF), intent(inout) :: this
     integer :: i
     ! Already in define mode:
+    if ( this%define < 0 ) return
     if ( this%define == 0 ) return
     this%define = 0
     if ( .not. ncdf_participate(this) ) return
-    i = nf90_redef(this%f_id)
+    i = nf90_redef(this%id)
     if ( i == nf90_noerr ) return
     if ( i == nf90_eindefine ) then
        ! we pass, the in-define mode

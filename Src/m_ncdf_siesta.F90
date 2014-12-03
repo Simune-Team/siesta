@@ -38,6 +38,7 @@ contains
 #ifdef NCDF_4
 
   subroutine cdf_init_file(fname,is_md)
+    use fdf, only : fdf_get, leqi
     use class_Sparsity
     use m_io_s, only : file_exist
     use dictionary
@@ -77,16 +78,19 @@ contains
 #endif
 
     ! We always re-write the file...
-
 #ifdef MPI
     if ( Nodes > 1 .and. cdf_w_parallel ) then
-       call ncdf_create(ncdf,fname,&
-            mode=NF90_MPIIO, parallel = .true., &
-            overwrite = .true. , &
-            compress_lvl=cdf_comp_lvl, &
+       call ncdf_create(ncdf, fname,&
+            mode=NF90_MPIIO, &
+            parallel = .true., overwrite = .true. , &
             comm=MPI_Comm_World)
        ! parallel writes are not allowed with compression
        ! Offset positions are not well defined.
+       ! Only in case of COLLECTIVE operations
+       ! Currently problems arise when using the parallel version
+       ! I cannot reproduce this error using simple examples. 
+       ! I need to check this some more, it seems related
+       ! to optimizations
     else
 #endif
        call ncdf_create(ncdf,fname,&
@@ -103,6 +107,9 @@ contains
 #else
     n_nzs = nnzs(sparse_pattern)
 #endif
+
+    ! controls whether we should set the independent access
+    exists = .true.
     
     ! First we create all the dimensions
     ! necessary
@@ -116,37 +123,43 @@ contains
     ! Create all necessary containers...
     dic = ('info'.kv.'Number of supercells in each unit-cell direction') 
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Last orbital of equivalent atom')
     call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
     
     dic = dic//('info'.kv.'Total charge')
     call ncdf_def_var(ncdf,'Qtot',NF90_DOUBLE,(/'one'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Fermi level')//('unit'.kv.'Ry')
     call ncdf_def_var(ncdf,'Ef',NF90_DOUBLE,(/'one'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
     
     dic = dic//('info'.kv.'Atomic coordinates')//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
     
     dic = dic//('info'.kv.'Unit cell')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
     
     dic = dic//('info'.kv.'Atomic forces')//('unit'.kv.'Ry/Bohr')
     call ncdf_def_var(ncdf,'fa',NF90_DOUBLE,(/'xyz ','na_u'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
     
     dic = dic//('info'.kv.'Cell stress')//('unit'.kv.'Ry/Bohr**3')
     call ncdf_def_var(ncdf,'stress',NF90_DOUBLE,(/'xyz','xyz'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
+
     call delete(dic)
-    
+
+    if ( parallel_io(ncdf) .and. exists ) then
+       ! All are accessed independently
+       call ncdf_default(ncdf,access=NF90_INDEPENDENT)
+    end if
+
     ! Create matrix group
     call ncdf_def_grp(ncdf,'SPARSE',grp)
 
@@ -154,11 +167,11 @@ contains
 
     dic = dic//('info'.kv.'Index of supercell coordinates')
     call ncdf_def_var(grp,'isc_off',NF90_INT,(/'xyz','n_s'/), &
-         compress_lvl=0,atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Number of non-zero elements per row')
     call ncdf_def_var(grp,'n_col',NF90_INT,(/'no_u'/), &
-         compress_lvl=cdf_comp_lvl,atts=dic)
+         compress_lvl=0, atts=dic)
     
     dic = dic//('info'.kv. &
          'Supercell column indices in the sparse format ')
@@ -185,22 +198,30 @@ contains
 
     ! Even though I think we could do without, I add the
     ! xij array to the file
-    if ( .not. Gamma ) then
-       dic = dic//('info'.kv. &
-            'Distance between orbital i and j')
-       dic = dic//('unit'.kv.'Bohr')
-       call ncdf_def_var(grp,'xij',NF90_DOUBLE,(/'xyz ','nnzs'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+    ! Note that xij can be re-created using
+    !    nsc, isc_off and xa
+!    if ( .not. Gamma ) then
+!       dic = dic//('info'.kv. &
+!            'Distance between orbital i and j')
+!       dic = dic//('unit'.kv.'Bohr')
+!       call ncdf_def_var(grp,'xij',NF90_DOUBLE,(/'xyz ','nnzs'/), &
+!            compress_lvl=cdf_comp_lvl,atts=dic)
+!    end if
+
+    if ( parallel_io(grp) .and. exists ) then
+       ! nearly all sparse matrices are accessed collectively
+       call ncdf_default(grp,access=NF90_COLLECTIVE)
+       call ncdf_par_access(grp,name='isc_off',access=NF90_INDEPENDENT)
+       call ncdf_par_access(grp,name='n_col',access=NF90_INDEPENDENT)
     end if
-    
+
     ! Delete the dictionary
     call delete(dic)
 
     ! Create grid group
     call ncdf_def_grp(ncdf,'GRID',grp)
 
-    d = ('DIMnx'.kv.ntm(1))//('DIMny'.kv.ntm(2))
-    d = d//('DIMnz'.kv.ntm(3))
+    d = ('DIMnx'.kv.ntm(1))//('DIMny'.kv.ntm(2))//('DIMnz'.kv.ntm(3))
     call ncdf_crt(grp,d)
 
     ! Create the grid functions...
@@ -208,12 +229,17 @@ contains
     ! all grids are using the grid_p precision
     if ( grid_p == dp ) then
        i = NF90_DOUBLE
+       ! In case the user thinks the double precision
+       ! is needed, but only single precision
+       ! is needed saving, we allow that.
+       key = fdf_get('CDF.Grid.Precision','double')
+       if ( leqi(key,'single') ) i = NF90_FLOAT
     else
        i = NF90_FLOAT
     end if
     
     if ( save_initial_charge_density ) then
-       dic = ('info'.kv.'Initial charge density')
+       dic = dic//('info'.kv.'Initial charge density')
        call ncdf_def_var(grp,'RhoInit',i,(/'nx  ','ny  ','nz  ','spin'/), &
             compress_lvl=cdf_comp_lvl,atts=dic)
     end if
@@ -263,58 +289,57 @@ contains
             compress_lvl=cdf_comp_lvl,atts=dic)
     end if
 
+    if ( parallel_io(grp) .and. exists ) then
+       ! All grids are accessed collectively
+       call ncdf_default(grp,access=NF90_COLLECTIVE)
+    end if
+
     call delete(dic)
 
     call ncdf_def_grp(ncdf,'SETTINGS',grp)
 
     dic = ('info'.kv.'Tolerance for converging the density matrix')
     call ncdf_def_var(grp,'DMTolerance',NF90_DOUBLE,(/'one'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Tolerance for converging the Hamiltonian')
     call ncdf_def_var(grp,'HTolerance',NF90_DOUBLE,(/'one'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Net charge of the system')
     call ncdf_def_var(grp,'NetCharge',NF90_DOUBLE,(/'one'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Mixing weight')
     call ncdf_def_var(grp,'MixingWeight',NF90_DOUBLE,(/'one'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Grid used for the Brillouin zone integration')
     call ncdf_def_var(grp,'BZ',NF90_INT,(/'xyz','xyz'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Grid displacement used in Brillouin zone') &
          //('unit'.kv.'b**-1')
     call ncdf_def_var(grp,'BZ_displ',NF90_DOUBLE,(/'xyz'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Temperature for electrons')// &
          ('unit'.kv.'Ry')
     call ncdf_def_var(grp,'ElectronicTemperature',NF90_DOUBLE,(/'one'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Mesh cutoff for real space grid')
     call ncdf_def_var(grp,'MeshCutoff',NF90_DOUBLE,(/'one'/), &
-         atts=dic)
+         compress_lvl=0, atts=dic)
 
-    ! As enddef is collective
-    ! we force it know
-    call ncdf_enddef(ncdf)
+    if ( parallel_io(grp) .and. exists ) then
+       ! All are accessed independently
+       call ncdf_default(grp,access=NF90_INDEPENDENT)
+    end if
 
-    call ncdf_put_var(ncdf,'Qtot',Qtot)
-    ! Save lasto
-    call ncdf_put_var(ncdf,'lasto',lasto(1:na_u))
-    
     ! Create matrix group
     if ( is_MD ) then
 
-       ! ensure redefinition
-       call ncdf_redef(ncdf)
-       
        call ncdf_def_grp(ncdf,'MD',grp)
 
        ! Create arrays for containers
@@ -322,49 +347,100 @@ contains
 
        dic = ('info'.kv.'Temperature')//('unit'.kv.'K')
        call ncdf_def_var(grp,'T',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0,atts=dic) ! do not compress unlimited D
+            compress_lvl=0, atts=dic) ! do not compress unlimited D
 
        dic = dic//('info'.kv.'Kohn-Sham energy')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'E_KS',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0,atts=dic) ! do not compress unlimited D
+            compress_lvl=0, atts=dic) ! do not compress unlimited D
 
        dic = dic//('info'.kv.'Total energy')
        call ncdf_def_var(grp,'E_tot',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0,atts=dic) ! do not compress unlimited D
+            compress_lvl=0, atts=dic) ! do not compress unlimited D
 
        dic = dic//('info'.kv.'Kinetic energy')
        call ncdf_def_var(grp,'E_kin',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0,atts=dic) ! do not compress unlimited D
+            compress_lvl=0, atts=dic) ! do not compress unlimited D
 
        dic = dic//('info'.kv.'Fermi level')
        call ncdf_def_var(grp,'Ef',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0,atts=dic) ! do not compress unlimited D
+            compress_lvl=0, atts=dic) ! do not compress unlimited D
 
        dic = dic//('info'.kv.'Atomic coordinates')//('unit'.kv.'Bohr')
        call ncdf_def_var(grp,'xa',NF90_DOUBLE,(/'xyz ','na_u','MD  '/), &
-            compress_lvl=0,atts=dic) ! do not compress unlimited D
+            compress_lvl=0, atts=dic) ! do not compress unlimited D
 
        dic = dic//('info'.kv.'Atomic forces')//('unit'.kv.'Ry/Bohr')
        call ncdf_def_var(grp,'fa',NF90_DOUBLE,(/'xyz ','na_u','MD  '/), &
-            compress_lvl=0,atts=dic) ! do not compress unlimited D
+            compress_lvl=0, atts=dic) ! do not compress unlimited D
 
        dic = dic//('info'.kv.'Atomic velocities')//('unit'.kv.'Bohr/fs')
        call ncdf_def_var(grp,'va',NF90_DOUBLE,(/'xyz ','na_u','MD  '/), &
-            compress_lvl=0,atts=dic) ! do not compress unlimited D
+            compress_lvl=0, atts=dic) ! do not compress unlimited D
 
-       if ( parallel_io(grp) ) then
+       if ( parallel_io(grp) .and. exists ) then
           ! All are accessed independently
-          ! The sparse routines force them to be COLLECTIVE
           call ncdf_default(grp,access=NF90_INDEPENDENT)
        end if
-
-       ! end definition
-       call ncdf_enddef(ncdf)
 
     end if
 
     call delete(dic)
 
+#ifdef TRANSIESTA
+    if ( isolve == SOLVE_TRANSI ) then
+
+       ! Save all information about the transiesta method
+       call ncdf_def_grp(ncdf,'TRANSIESTA',grp)
+
+       dic = ('info'.kv.'Grid used for the Brillouin zone integration')
+       call ncdf_def_var(grp,'BZ',NF90_INT,(/'xyz','xyz'/), &
+            compress_lvl=0, atts=dic)
+
+       dic = dic//('info'.kv.'Grid displacement used in Brillouin zone') &
+            //('unit'.kv.'b**-1')
+       call ncdf_def_var(grp,'BZ_displ',NF90_DOUBLE,(/'xyz'/), &
+            compress_lvl=0, atts=dic)
+
+       dic = dic//('info'.kv.'Applied voltage')//('unit'.kv.'Ry')
+       call ncdf_def_var(grp,'Volt',NF90_DOUBLE,(/'one'/), &
+            compress_lvl=0,atts=dic)
+       call delete(dic)
+
+       if ( parallel_io(grp) .and. exists ) then
+          ! All are accessed independently
+          ! The sparse routines force them to be COLLECTIVE
+          call ncdf_default(grp,access=NF90_INDEPENDENT)
+       end if
+       
+       ! Add all the electrodes
+       do iEl = 1 , N_Elec
+          
+          call ncdf_def_grp(grp,trim(Elecs(iEl)%name),grp2)
+
+          tmp = TotUsedAtoms(Elecs(iEl))
+          call ncdf_def_dim(grp2,'na',tmp)
+
+          dic = ('info'.kv.'Atoms belonging to electrode')
+          call ncdf_def_var(grp2,'a_idx',NF90_INT,(/'na'/), &
+               compress_lvl=0,atts=dic)
+          
+          dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
+          call ncdf_def_var(grp2,'mu',NF90_DOUBLE,(/'one'/), &
+               compress_lvl=0,atts=dic)
+
+          call delete(dic)
+
+          if ( parallel_io(grp2) .and. exists ) then
+             call ncdf_default(grp2,access=NF90_INDEPENDENT)
+          end if
+
+       end do
+
+    end if
+
+#endif
+
+    ! Save all things necessary here
     dic = ('time'.kv.datestring())
     dic = dic//('name'.kv.trim(sname))
     dic = dic//('label'.kv.trim(slabel))
@@ -379,99 +455,109 @@ contains
 #endif
     end if
 
+    ! Attributes are collective
     call ncdf_put_gatt(ncdf,atts=dic)
 
     call delete(dic)
 
+    ! Save the total charge and lasto
+    if ( exists .and. Node == 0 ) then
+       call ncdf_put_var(ncdf,'Qtot',Qtot)
+       call ncdf_put_var(ncdf,'lasto',lasto(1:na_u))
+    else
+       call ncdf_put_var(ncdf,'Qtot',Qtot)
+       call ncdf_put_var(ncdf,'lasto',lasto(1:na_u))
+    end if
+
 #ifdef TRANSIESTA
     if ( isolve == SOLVE_TRANSI ) then
+
        ! Save all information about the transiesta method
-       call ncdf_def_grp(ncdf,'TRANSIESTA',grp)
+       call ncdf_open_grp(ncdf,'TRANSIESTA',grp)
+
+       if ( exists .and. Node == 0 ) then
+          call ncdf_put_var(grp,'Volt',Volt)
+       else
+          call ncdf_put_var(grp,'Volt',Volt)
+       end if
        
        ! Add all the electrodes
        do iEl = 1 , N_Elec
           
-          call ncdf_def_grp(grp,trim(Elecs(iEl)%name),grp2)
+          call ncdf_open_grp(grp,trim(Elecs(iEl)%name),grp2)
 
           tmp = TotUsedAtoms(Elecs(iEl))
-          call ncdf_def_dim(grp2,'na',tmp)
 
           allocate(ibuf(tmp))
           do i = 1 , tmp
              ibuf(i) = Elecs(iEl)%idx_a + i - 1
           end do
-          dic = dic//('info'.kv.'Atoms belonging to electrode')
-          call ncdf_def_var(grp2,'a_idx',NF90_INT,(/'na'/), &
-               compress_lvl=0,atts=dic) ! do not compress unlimited D
-          call ncdf_put_var(grp2,'a_idx',ibuf)
+          if ( exists .and. Node == 0 ) then
+             call ncdf_put_var(grp2,'a_idx',ibuf)
+          else
+             call ncdf_put_var(grp2,'a_idx',ibuf)
+          end if
           deallocate(ibuf)
           
-          
-          dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
-          call ncdf_def_var(grp2,'mu',NF90_DOUBLE,(/'one'/), &
-               compress_lvl=0,atts=dic) ! do not compress unlimited D
+          if ( exists .and. Node == 0 ) then
+             call ncdf_put_var(grp2,'mu',Elecs(iEl)%mu%mu)
+          else
+             call ncdf_put_var(grp2,'mu',Elecs(iEl)%mu%mu)
+          end if
 
-          call ncdf_put_var(grp2,'mu',Elecs(iEl)%mu%mu)
-
-          call delete(dic)
-       
        end do
 
-       dic = dic//('info'.kv.'Applied voltage')//('unit'.kv.'Ry')
-       call ncdf_def_var(grp,'Volt',NF90_DOUBLE,(/'one'/), &
-            compress_lvl=0,atts=dic) ! do not compress unlimited D
-
-       call ncdf_put_var(grp,'Volt',Volt)
-
     end if
-
-    call delete(dic)
 #endif
 
     ! Close the file
     call ncdf_close(ncdf)
-    
+
   end subroutine cdf_init_file
 
   subroutine cdf_save_settings(fname)
 
-    use kpoint_grid, only : kscell, kdispl
-    use siesta_options, only : cdf_w_parallel
-    use siesta_options, only : dDtol, dHtol, charnet, wmix, temp, g2cut
+    use kpoint_grid,    only: kscell, kdispl
+    use siesta_options, only: cdf_w_parallel
+    use siesta_options, only: dDtol, dHtol, charnet, wmix, temp, g2cut
+#ifdef TRANSIESTA
+    use siesta_options, only: isolve
+    use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN, SOLVE_TRANSI
+    use m_ts_kpoints,   only: ts_kscell, ts_kdispl
+#endif
 
     character(len=*), intent(in) :: fname
     
     type(hNCDF) :: ncdf, grp
 
     ! We just open it (prepending)
-#ifdef MPI
-    if ( Nodes > 1 .and. cdf_w_parallel ) then
-       call ncdf_open(ncdf,fname, groupname='SETTINGS', &
-            mode=ior(NF90_WRITE,NF90_MPIIO), parallel = .true., &
-            comm=MPI_Comm_World)
-    else
-#endif
-       call ncdf_open(ncdf,fname, groupname='SETTINGS', &
-            mode=ior(NF90_WRITE,NF90_NETCDF4))
-#ifdef MPI
-    end if
-#endif
+    call ncdf_open(ncdf,fname, &
+         mode=ior(NF90_WRITE,NF90_NETCDF4))
 
-    ! Write settings in settings group
-    call ncdf_redef(ncdf)
-    
+    call ncdf_open_grp(ncdf,'SETTINGS',grp)
+
     ! Save settings
-    call ncdf_put_var(ncdf,'BZ',kscell)
-    call ncdf_put_var(ncdf,'BZ_displ',kdispl)
-    call ncdf_put_var(ncdf,'DMTolerance',dDtol)
-    call ncdf_put_var(ncdf,'HTolerance',dHtol)
-    call ncdf_put_var(ncdf,'NetCharge',charnet)
-    call ncdf_put_var(ncdf,'MixingWeight',wmix)
-    call ncdf_put_var(ncdf,'ElectronicTemperature',Temp)
-    call ncdf_put_var(ncdf,'MeshCutoff',g2cut)
+    call ncdf_put_var(grp,'BZ',kscell)
+    call ncdf_put_var(grp,'BZ_displ',kdispl)
+    call ncdf_put_var(grp,'DMTolerance',dDtol)
+    call ncdf_put_var(grp,'HTolerance',dHtol)
+    call ncdf_put_var(grp,'NetCharge',charnet)
+    call ncdf_put_var(grp,'MixingWeight',wmix)
+    call ncdf_put_var(grp,'ElectronicTemperature',Temp)
+    call ncdf_put_var(grp,'MeshCutoff',g2cut)
 
     ! I suggest that all MD settings are 
     ! put in the MD-group
+
+#ifdef TRANSIESTA
+    if ( isolve == SOLVE_TRANSI ) then
+       call ncdf_open_grp(ncdf,'TRANSIESTA',grp)
+
+       call ncdf_put_var(grp,'BZ',ts_kscell)
+       call ncdf_put_var(grp,'BZ_displ',ts_kdispl)
+
+    end if
+#endif
 
     call ncdf_close(ncdf)
 
@@ -538,10 +624,10 @@ contains
          call cdf_w_Sp(grp,block_dist,sparse_pattern)
     if ( 'S' .in. dic_save ) &
          call cdf_w_d1D(grp,'S',S_1D)
-    if ( .not. Gamma .and. ('xij' .in. dic_save) ) then
+!    if ( .not. Gamma .and. ('xij' .in. dic_save) ) then
        ! Write the xij array, it will not change during SCF
-       call cdf_w_d2D(grp,'xij',xij_2D)
-    end if
+!       call cdf_w_d2D(grp,'xij',xij_2D)
+!    end if
     if ( 'H' .in. dic_save ) &
          call cdf_w_d2D(grp,'H',H_2D)
     if ( 'DM' .in. dic_save ) &
@@ -555,13 +641,13 @@ contains
 
   end subroutine cdf_save_state
 
-  subroutine cdf_save_grid(fname,name,nspin,mesh,lnpt,grid)
+  subroutine cdf_save_grid(fname,vname,nspin,mesh,lnpt,grid)
 
-    character(len=*), intent(in) :: fname, name
+    character(len=*), intent(in) :: fname, vname
     integer, intent(in) :: nspin, mesh(3), lnpt
     real(grid_p), intent(in) :: grid(lnpt,nspin)
 
-    type(hNCDF) :: ncdf, grp
+    type(hNCDF) :: ncdf
     integer :: is
 
     call timer('CDF-grid',1)
@@ -569,25 +655,24 @@ contains
     ! We just open it (prepending)
 #ifdef MPI
     if ( Nodes > 1 .and. cdf_w_parallel ) then
-       call ncdf_open(ncdf,fname, &
+       call ncdf_open(ncdf,fname, groupname='GRID', &
             mode=ior(NF90_WRITE,NF90_MPIIO), parallel = .true., &
             comm=MPI_Comm_World)
     else
 #endif
-       call ncdf_open(ncdf,fname,mode=ior(NF90_WRITE,NF90_NETCDF4))
+       call ncdf_open(ncdf,fname,groupname='GRID', &
+            mode=ior(NF90_WRITE,NF90_NETCDF4))
 #ifdef MPI
     end if
 #endif
 
-    call ncdf_open_grp(ncdf,'GRID',grp)
-
     ! Save the grid
     if ( nspin > 1 ) then
        do is = 1 , nspin 
-          call cdf_w_grid(grp,name,mesh,lnpt,grid,idx=is)
+          call cdf_w_grid(ncdf,vname,mesh,lnpt,grid(:,is),idx=is)
        end do
     else
-       call cdf_w_grid(grp,name,mesh,lnpt,grid)
+       call cdf_w_grid(ncdf,vname,mesh,lnpt,grid(:,1))
     end if
 
     call ncdf_close(ncdf)

@@ -1,4 +1,43 @@
 ----------------------------------------------------
+December 3, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-232
+Fixes for the SIESTA.nc file
+
+* Writing the SIESTA.nc file now does not save the
+  xij array. It can easily be recreated by using
+  isc_off, xa and list_col.
+
+  NOTE: See m_sparse
+
+* Added Brillouin zone sampling for transiesta
+  to figure out whether TS is "Gamma".
+
+* Parrallel IO _should_ in principle work,
+  however, there is some subtlety in the coding which makes
+  it stall. 
+  When inserting a print statement it continues with an error.
+  This seems compiler related, the small tests that have
+  basically the same structure does not exhibit this behaviour.
+
+* Streamlined options so that they are actually in-line with all 
+  other options.
+  
+  Put the format of the options into the format statements.
+
+* Removed global_offset from distribution, it only made sense
+  for block distributions and not round-robin block distributions
+  a is used in ScaLAPACK.
+
+modified:
+  Src/NCDF/src/nf_ncdf.F90
+  Src/class_OrbitalDistribution.F90
+  Src/m_io_s.F90
+  Src/m_ncdf_io.F90
+  Src/m_ncdf_siesta.F90
+  Src/m_spin.F90
+  Src/m_ts_options.F90
+  Src/siesta_options.F90
+
+----------------------------------------------------
 December 2, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-231
 Added grid-functions to the single NetCDF file
 

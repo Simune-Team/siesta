@@ -855,7 +855,7 @@ contains
        if ( ts_tdir == 0 ) then
           write(*,11) '*** TranSIESTA transport direction is arbitrary  ***'
        else if ( ts_tdir < 0 ) then
-          write(*,11) '*** TranSIESTA transport direction is individual ***'
+          write(*,11) '*** TranSIESTA transport directions are individual ***'
        end if
 
        ! Check that the unitcell does not extend into the transport direction

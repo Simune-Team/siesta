@@ -48,14 +48,16 @@ CONTAINS
     endif
 
     if (ionode) then
-       write(6,'(a,4x,l1)') 'redata: Non-Collinear-spin run           = ',NonCol
-       write(6,'(a,4x,l1)') 'redata: SpinPolarized (Up/Down) run      = ',SPpol
-       write(6,'(a,4x,i1)') 'redata: Number of spin components        = ',nspin
+       write(6,1) 'redata: Non-Collinear-spin run',NonCol
+       write(6,1) 'redata: SpinPolarized (Up/Down) run',SPpol
+       write(6,1) 'redata: Number of spin components',nspin
     end if
 
     nullify(efs,qs)
     call re_alloc(efs,1,nspin,name="efs",routine="init_spin")
     call re_alloc(qs,1,nspin,name="qs",routine="init_spin")
+
+1   format(a,t50,'= ',2x,l1)
 
   end subroutine init_spin
 
