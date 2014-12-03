@@ -309,8 +309,10 @@ endif
          position="rewind",action="write")
     write(lun,"(2f15.6,i6,a)") ef/eV, qtot, npoints, &
                 "# (Ef, qtot, npoints) / npoints lines: E(eV), IntDos(E)"
+    ! Note that the inertia count procedure counts the number of eigenvalues,
+    ! so we have to multiply by two to get the number of states
     do j=1,npoints
-       write(lun,"(f15.6,f15.2)") edos(j)/eV, intdos(j)
+       write(lun,"(f15.6,f15.2)") edos(j)/eV, 2*intdos(j)
     enddo
  endif
 
