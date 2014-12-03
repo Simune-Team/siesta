@@ -1,4 +1,25 @@
 ----------------------------------------------------
+December 3, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-234
+Made timings for communications more correct
+
+* Timing was very inaccurate for cases where the
+  number of energy points was not divisable with
+  the actual number of processors.
+
+* Small simplification when calculating the circle.
+
+  We _can_ create square contours!
+
+modified:
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+
+----------------------------------------------------
 December 3, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-233
 Bugfix for makefile
 

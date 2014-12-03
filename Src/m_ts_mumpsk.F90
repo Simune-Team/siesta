@@ -371,6 +371,7 @@ contains
 
 #ifdef MPI
        ! We need to reduce all the arrays
+       call MPI_Barrier(MPI_Comm_World,iE)
        call timer('TS_comm',1)
        call AllReduce_SpData(spuDM,nzwork,zwork,N_mu)
        if ( Calc_Forces ) then
@@ -507,6 +508,7 @@ contains
 
 #ifdef MPI
        ! We need to reduce all the arrays
+       call MPI_Barrier(MPI_Comm_World,iE)
        call timer('TS_comm',1)
        call AllReduce_SpData(spuDM, nzwork, zwork, N_nEq_id)
        if ( Calc_Forces ) then

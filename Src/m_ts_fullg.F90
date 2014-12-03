@@ -380,6 +380,7 @@ close(io)
 
 #ifdef MPI
        ! We need to reduce all the arrays
+       call MPI_Barrier(MPI_Comm_World,io)
        call timer('TS_comm',1)
        call my_full_G_reduce(spuDM,nzwork*2,zwork,N_mu)
        if ( Calc_Forces ) then
@@ -515,6 +516,7 @@ close(io)
 
 #ifdef MPI
        ! We need to reduce all the arrays
+       call MPI_Barrier(MPI_Comm_World,io)
        call timer('TS_comm',1)
        call my_full_G_reduce(spuDM, nzwork*2, zwork, N_nEq_id)
        if ( Calc_Forces ) then

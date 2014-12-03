@@ -439,7 +439,7 @@ contains
       ! the angle between the axis and the line from the start
       ! of the circle to the end of the circle contour
       alpha = datan( lift / cR )
-    
+
       ! the radius can be calculated using two triangles in the circle
       ! there is no need to use the cosine-relations
       R = .5_dp * cR / cos(alpha) ** 2
@@ -653,21 +653,19 @@ contains
       E = abs(cR - a)
 
       ! the integration angles
-      if ( E <  1.e-8_dp ) then
-         ! we are at the apex of the circle
-         angle = Pi * .5_dp
-      else if ( abs(E - R) <  1.e-8_dp ) then
+      if ( abs(E - R) <  1.e-8_dp ) then
          ! we are at the radius of the circle
          angle = Pi
       else
          angle = asin(E/R)
          ! correct for left/right side of radius
          if ( a < cR ) then
-            angle = angle + Pi * .5_dp
+            angle = Pi * 0.5_dp + angle
          else if ( a > cR ) then
-            angle = .5_dp * Pi - angle
+            angle = Pi * 0.5_dp - angle
          end if
       end if
+
     end subroutine calc_angle
 
   end subroutine contour_Circle
