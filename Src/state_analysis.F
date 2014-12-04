@@ -120,10 +120,12 @@
 !        Consider intramolecular pressure-removal as another
 !        kind of constraint
          call fixed( ucell, mstress, na_u, isa, amass, xa, fa,
-     &               cstress, cfa, ntcon )
+     &               cstress, cfa, ntcon , 
+     &               magnitude_usage = idyn==0 )
       else
          call fixed( ucell, stress, na_u, isa, amass, xa, fa,
-     &               cstress, cfa, ntcon )
+     &               cstress, cfa, ntcon ,
+     &               magnitude_usage = idyn==0 )
       endif
 
 !     Calculate and output Zmatrix forces

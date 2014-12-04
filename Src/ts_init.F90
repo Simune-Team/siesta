@@ -50,7 +50,7 @@ contains
     use m_ts_global_vars, only : TSmode, TSinit
     use siesta_options, only : isolve, SOLVE_TRANSI, Nmove
 
-    use m_fixed, only : is_fixed
+    use m_fixed, only : is_fixed, is_constr
 
     implicit none
 ! *********************
@@ -107,17 +107,17 @@ contains
     if ( fincoor - inicoor > 0 ) then
        ! check fix
        do ia = 1 , na_u
-          if ( a_isDev(ia) ) cycle ! we need only check buffer- and electrode-atoms
+          if ( .not. a_isBuffer(ia) ) cycle
           if ( .not. is_fixed(ia) ) then
-             call die('All buffer atoms and electrode atoms *MUST* be &
+             call die('All buffer atoms *MUST* be &
                   &fixed while doing transiesta geometry optimizations. &
-                  &Please correct left buffer.')
+                  &Please correct constraints on buffer atoms.')
           end if
        end do
        do i = 1 , N_Elec
           do ia = Elecs(i)%idx_a , Elecs(i)%idx_a + TotUsedAtoms(Elecs(i)) - 1
-             if ( .not. is_fixed(ia) ) then
-                call die('All buffer atoms and electrode atoms *MUST* be &
+             if ( .not. (is_fixed(ia).or.is_constr(ia,'mol')) ) then
+                call die('All electrode atoms *MUST* be &
                      &fixed while doing transiesta geometry optimizations. &
                      &Please correct electrodes.')
              end if

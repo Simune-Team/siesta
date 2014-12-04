@@ -436,7 +436,7 @@ for i in `seq 1 $_mus` ; do
     echo "%block TS.Contour.T-$mu"
     echo "  part tail"
     echo "   from prev to inf"
-    echo "     points 8"
+    echo "     points 10"
     echo "      method g-fermi"
     echo "%endblock TS.Contour.T-$mu"
 

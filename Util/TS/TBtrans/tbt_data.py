@@ -255,7 +255,7 @@ def main():
                    help='Print out eigs of used levels for the projection')
 
     p.add_argument('-a','--atom',default=None,action='append',type=str,
-                   help='Only save DOS for designated atoms, could be a list (several calls allowed)')
+                   help='Only save DOS for designated atoms, could be a list (several calls allowed) [1|1,2|1-3]')
     
     p.add_argument('--prefix',default='data',type=str,
                    help='The prefix for the data files when saving the data.')
@@ -281,10 +281,22 @@ def main():
     # Generate list of specified atoms
     atoms = []
     try:
+        # get atomic string: [1|1,2|1,2-3]
         lla = args.atom
         for la in lla:
-            a = list(map(int,la.split(',')))
-            atoms.append(a)
+            # First split per comma
+            ca = la.split(',')
+            for ra in ca:
+                tmp = ra.split('-')
+                if len(tmp) > 2: 
+                    print('Atom option not formatted correctly, will continue with all atoms.')
+                if len(tmp) > 1:
+                    ba, ea = tuple(map(int,tmp))
+                    a = range(ba,ea+1)
+                else:
+                    a = [int(tmp[0])]
+                # append the current atom selection
+                atoms.append(a)
     except: pass
 
     # We also remove dublicates by passing it through a set
@@ -339,7 +351,6 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
 
     # Normalize to number of orbitals in sub-space
     fac_DOS = 1. / len(orbs)
-    DOS = None
     
     for proj in projs:
 
@@ -354,7 +365,8 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
             try:
                 # Get ADOS and sum on designated orbitals
                 ADOS = np.sum(Tf.ADOS(mol,proj,El,k_avg=k_idx)[:,orbs],axis=-1) * fac_DOS
-            except: ADOS = None
+            except: 
+                ADOS = None
 
             fname = args.prefix+'.TBT.DOS.'+LHS
             save_txt(fname,E,ADOS=ADOS, fmt = args.fmt, kpt=args.kpt)
@@ -382,7 +394,8 @@ def process_tbt(args,Tf,k_idx,orbs):
     try:
         # Get DOS and sum on designated orbitals
         DOS = np.sum(Tf.DOS(k_avg=k_idx)[:,orbs],axis=-1) * fac_DOS
-    except: DOS = None
+    except: 
+        DOS = None
 
     # Save the DOS
     fname = args.prefix+'.TBT.DOS'
@@ -393,7 +406,8 @@ def process_tbt(args,Tf,k_idx,orbs):
         try:
             # Get ADOS and sum on designated orbitals
             ADOS = np.sum(Tf.ADOS(el1,k_avg=k_idx)[:,orbs],axis=-1) * fac_DOS
-        except: ADOS = None
+        except: 
+            ADOS = None
 
         fname = args.prefix+'.TBT.DOS.'+el1
         save_txt(fname,E,ADOS=ADOS, fmt = args.fmt, kpt=args.kpt)

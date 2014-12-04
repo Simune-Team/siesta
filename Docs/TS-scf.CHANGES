@@ -1,4 +1,56 @@
 ----------------------------------------------------
+December 4, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-235
+Newly implemented m_fixed, much easier to handle
+
+* Should now be able to handle constraints
+  in a better manner.
+  
+  For instance we can do:
+    molecule from 1 to 4
+  which will only move the molecule together as a whole.
+
+  Doing:
+    molecule from 1 to 4 1. 0. 0.
+  will only allow it moving along the x direction.
+  Which is a bit counter intuitive as the regular
+    position from 1 to 4 1. 0. 0.
+  means it cannot move in that direction.
+
+* Added ranges to tbtrans so that: 
+    tbt_data.py -a 1-10,5
+  works.
+
+* Moved fdf_extra.F90 from tbtrans directory to
+  siesta src.
+
+removed:
+  Src/fixed.F
+  Util/TS/TBtrans/fdf_extra.F90
+added:
+  Src/fdf_extra.F90
+  Src/m_fixed.F90
+modified:
+  Src/Makefile
+  Src/m_region.F90
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/state_analysis.F
+  Src/ts_init.F90
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/README
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/tbt_data.py
+  Util/TS/ts2ts/Makefile
+  Util/TS/tselecs.sh
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 December 3, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-234
 Made timings for communications more correct
 

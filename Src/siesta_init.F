@@ -46,7 +46,7 @@
       use m_forces 
       use m_eo
       use m_gamma
-      use m_fixed,            only: init_fixed
+      use m_fixed,            only: init_fixed, print_fixed
       use m_ioxv,             only: xv_file_read
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
@@ -444,6 +444,7 @@ C     Initialise MPI and set processor number
       ! initialize the fixed positions (we need to check whether the 
       ! fixed positions make sense)
       call init_fixed( na_u )
+      call print_fixed( )
       
 #ifdef TRANSIESTA
       call ts_init(wmix,temp,nspin,ucell,na_u,xa,lasto,no_u,

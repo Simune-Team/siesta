@@ -22,7 +22,7 @@ These programs has been developed by:
 
 - TBtrans
   this directory contains the TBtrans utility which is used for 
-  calculating the transmission and other quatities from the 
+  calculating the transmission and other quantities from the 
   TSHS files output from TranSIESTA.
 
   Note the additional utility: tbt_data.py

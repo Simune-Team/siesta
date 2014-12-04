@@ -1589,6 +1589,7 @@ MODULE siesta_options
     end if
     cdf_r_parallel = fdf_get('CDF.Read.Parallel', .false. )
 
+    if ( IONode ) then
     ! Write out
     write(*,1) 'redata: Write SIESTA.nc',write_cdf
     if ( write_cdf ) then
@@ -1599,6 +1600,7 @@ MODULE siesta_options
        if ( cdf_w_parallel ) then
           write(*,2) 'redata: Writes SIESTA.nc in parallel (possibly not working)'
        end if
+    end if
     end if
 #endif
     writedm_cdf_history   = fdf_get('WriteDM.History.NetCDF', .false. )
