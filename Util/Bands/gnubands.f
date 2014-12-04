@@ -23,7 +23,7 @@ c $Id: gnubands.f,v 1.2 1999/02/22 08:45:18 emilio Exp $
       implicit none
 
       integer           maxk, maxb, maxs
-      parameter         (maxk=1000, maxb=100, maxs=2)
+      parameter         (maxk=1000, maxb=200, maxs=2)
 
       integer           nk, nspin, nband, ik, is, ib
       double precision  e(maxb, maxs, maxk), k(maxk)

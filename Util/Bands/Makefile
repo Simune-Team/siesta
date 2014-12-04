@@ -15,7 +15,7 @@
 .SUFFIXES: .f .f90 .F .F90 .o
 #
 VPATH:=$(shell pwd)/../../Src
-OBJDIR=Obj
+OBJDIR=Obj/Intel
 #
 all: eigfat2plot new.gnubands gnubands
 #

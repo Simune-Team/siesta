@@ -144,7 +144,7 @@ subroutine writemmn( ispin )
 
   write(6,'(/,a)')  &
  &  'mmn: Overlap matrices between periodic part of wavefunctions'
-  write(6,'(a)')  &
+  write(6,'(a,/)')  &
  &  'mmn: written in ' // trim(seedname) // '.mmn file'
 
   return
@@ -221,7 +221,7 @@ subroutine writeamn( ispin )
   open( unit=amnunit, err=1992, file=amnfilename, status="replace", &
  &      iostat=eof)
 
-! The first line of the mmn file is a user comment
+! The first line of the amn file is a user comment
   write( unit=amnunit, fmt="(a38)", err=1992 )                      &
  &  "siesta2wannier90: Siesta for Wannier90"
 
@@ -364,7 +364,7 @@ end subroutine writeeig
 ! ------------------------------------------------------------------------------
 !
 
-subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
+subroutine writeunk( ispin )
 !
 ! Produces UNKXXXXX.X files which contain the periodic
 ! part of a Bloch function in the unit cell on a grid given by
@@ -390,7 +390,7 @@ subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
 ! Therefore, the diagonalizatinon routine cannot be called twice 
 ! for every k-point (an arbitrary phase factor can be added in 
 ! the different calls). For this reason, the subroutine writeunk
-! is called from Mmn with the wavefunctions as a parameter.
+! is called with the coefficients of the wavefunctins computed in diagonHk
 !
 ! Below is the paragraph of the Wannier90 User Guide relative to these files
 ! INPUT. Read if wannier_plot=.TRUE. and used to plot the MLWF. 
@@ -447,10 +447,6 @@ subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
   use atomlist,           only: indxuo        ! Index of equivalent orbital  
                                               !   in "u" cell
   use atomlist,           only: rmaxo         ! Maximum cutoff for atomic orb.
-  use atomlist,           only: no_l          ! Number of orbitals in local node
-                                              ! NOTE: When running in parallel,
-                                              !   this is core dependent
-                                              !   Sum_{cores} no_l = no_u
   use atomlist,           only: no_u          ! Number of orbitals in unit cell
                                               ! NOTE: When running in parallel,
                                               !   this is core independent
@@ -464,15 +460,40 @@ subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
   use m_siesta2wannier90, only: numincbands   ! Number of bands for 
                                               !   wannierization
                                               !   after excluding bands  
+  use m_siesta2wannier90, only: nincbands_loc ! Number of bands for 
+                                              !   wannierization
+                                              !   after excluding bands  
+                                              !   in the local node
+  use m_siesta2wannier90, only: numkpoints    ! Total number of k-points
+                                              !   for which the overlap of
+                                              !   the periodic part of the
+                                              !   wavefunct with a 
+                                              !   neighbour k-point will
+                                              !   be computed
+  use m_siesta2wannier90, only: kpointsfrac   ! List of k points relative
+                                              !   to the reciprocal 
+                                              !   lattice vectors.
+                                              !   First  index: component
+                                              !   Second index: k-point  
+                                              !      index in the list
+  use m_siesta2wannier90, only: coeffs        ! Coefficients of the
+                                              !   wavefunctions.
+                                              !   First  index: orbital
+                                              !   Second index: band
+                                              !   Third  index: k-point
+  use m_siesta2wannier90, only: blocksizeincbands ! Maximum number of bands
+                                              !   considered for wannierization
+                                              !   per node
   use m_ntm,              only: ntm           ! Number of integration mesh
                                               !   divisions of each cell vector
 #ifdef MPI
-  use parallelsubs,         only: GetNodeOrbs    ! Calculates the number of
+  use parallelsubs,       only: GetNodeOrbs      ! Calculates the number of
                                                  !   orbitals stored on the 
                                                  !   local Node.
-  use parallelsubs,         only: LocalToGlobalOrb ! Converts an orbital index
+  use parallelsubs,       only: LocalToGlobalOrb ! Converts an orbital index
                                                  !   in the local frame 
                                                  !   to the global frame
+  use parallel,           only: BlockSize        ! BlockSize
   use mpi_siesta
 #endif
 
@@ -483,17 +504,6 @@ subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
 ! Arguments of the subroutine
 !
   integer,  intent(in) :: ispin      ! Spin component
-  integer,  intent(in) :: ikpt       ! Index of the k-point
-  real(dp), intent(in) :: kvector(3) ! k-point vector for which the 
-                                     !   periodic part of the wave function
-                                     !   will be written in a file
-                                     !   between the projection function and the
-                                     !   eigenvector of the Hamiltonian will be
-                                     !   computed
-  integer,  intent(in) :: npsi       ! Dimension of psi
-                                     !   (depends on the local node)
-  real(dp), intent(in) :: psi(npsi)  ! Coefficients of the wave function at
-                                     !   k-point kvector
 
 
 ! This is copied from constants.f90 in Wannier90-1.1
@@ -535,6 +545,12 @@ subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
 !
 ! Variables related with the wave function
 !
+  real(dp)     :: kvector(3)   ! k-point vector for which the 
+                               !   periodic part of the wave function
+                               !   will be written in a file
+                               !   between the projection function and the
+                               !   eigenvector of the Hamiltonian will be
+                               !   computed
   integer      :: nincbands    ! Number of included bands for wannierization
   real(dp)     :: phi          ! Value of an atomic orbital at a point
   real(dp)     :: grphi(3)     ! Value of the gradient of an atomic orbital
@@ -550,6 +566,8 @@ subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
 ! periodic part of the wave functions at the point of the mesh
 #ifdef MPI
   integer     :: MPIerror
+  complex(dp), dimension(:,:),     pointer :: auxpsi ! Temporal array for the
+                                             !   the global reduction of psi   
   complex(dp), dimension(:,:,:,:), pointer :: auxloc ! Temporal array for the
                                              !   the global reduction of buffer
   complex(wannier90dp), pointer :: buffer(:,:,:,:)   ! Variable where the 
@@ -572,16 +590,17 @@ subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
 !
 ! Counters
 !
+  integer      :: ik           ! Counter for the loop on kpoints
   integer      :: ix           ! Counter for the loop on points along x
   integer      :: iy           ! Counter for the loop on points along y
   integer      :: iz           ! Counter for the loop on points along z
   integer      :: iband        ! Counter for the loop on bands
-  integer      :: iuo          ! Counter for the loop on atomic orbitals
+  integer      :: iband_global ! Global index of the band
   integer      :: io           ! Counter for the loop on atomic orbitals
 
 #ifdef MPI
-  integer      :: iband_global  ! Global index of the band
-  integer      :: nincbands_loc ! Number of wannierized bands per Node
+  integer      :: BlockSizeDiagon ! Value of the BlockSize used during
+                                  !    diagonalization
 #endif
 
 
@@ -600,24 +619,24 @@ subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
 !
 ! Read FDF tags
 !
-   unk_nx     = fdf_get( 'Siesta2Wannier90.UnkGrid1',      unk_nx_default     )
-   unk_ny     = fdf_get( 'Siesta2Wannier90.UnkGrid2',      unk_ny_default     )
-   unk_nz     = fdf_get( 'Siesta2Wannier90.UnkGrid3',      unk_nz_default     )
-   unk_format = fdf_get( 'Siesta2Wannier90.UnkGridBinary', unk_format_default )
+  unk_nx     = fdf_get( 'Siesta2Wannier90.UnkGrid1',      unk_nx_default     )
+  unk_ny     = fdf_get( 'Siesta2Wannier90.UnkGrid2',      unk_ny_default     )
+  unk_nz     = fdf_get( 'Siesta2Wannier90.UnkGrid3',      unk_nz_default     )
+  unk_format = fdf_get( 'Siesta2Wannier90.UnkGridBinary', unk_format_default )
 
 !! For debugging
 !   write(6,'(a,4i5)')'writeunk: Node, unk_nx, ny, nz =', &
 ! &                              Node, unk_nx, unk_ny, unk_nz
-!   write(6,'(a,4i5)')'writeunk: Node, no_u, no_l, npsi =', &
-! &                              Node, no_u, no_l, npsi
 !! End debugging
 
 ! Allocate memory for the buffer
   nullify(buffer)
 
 #ifdef MPI
-!   Compute the number of occupied bands stored on Node inode 
-    call GetNodeOrbs( nincbands, Node, Nodes, nincbands_loc )
+!!   For debugging
+!    write(6,'(a,3i5)')' writeunk: Node, nincbands, nincbands_loc = ', &
+! &                                Node, nincbands, nincbands_loc
+!!   End debugging
     call re_alloc( buffer,              &
  &                 1, nincbands,        &
  &                 1, unk_nx,           &
@@ -637,225 +656,279 @@ subroutine writeunk( ispin, ikpt, kvector, npsi, psi )
 ! Allocate memory related with a local variable where the coefficients 
 ! of the eigenvector at the k-point will be stored
   nullify( psiloc )
-  call re_alloc( psiloc, 1, no_u, 1, no_l, 'psiloc', 'writeunk' )
+  call re_alloc( psiloc, 1, no_u, 1, nincbands, 'psiloc', 'writeunk' )
 
-! Store the local bands in this node on a complex variable
-  iuo = 0
-  do iband = 1, no_l
-    do io = 1, no_u
-      psiloc(io,iband) = cmplx(psi(iuo+1), psi(iuo+2),kind=dp)
-      iuo = iuo + 2
-    enddo
-  enddo
+kpoints:                 &
+  do ik = 1, numkpoints
+!   Compute the wave vector in bohr^-1 for every vector in the list
+!   (done in the subroutine getkvector).
+!   Remember that kpointsfrac are read from the .nnkp file in reduced units, 
+!   so we have to multiply then by the reciprocal lattice vector.
+    call getkvector( kpointsfrac(:,ik), kvector )
 
-!
-! Initialize neighbour subroutine.
-! The reallocation of the different arrays is done within neighb,
-! in the call to the subroutine sizeup_neighbour_arrays
-!
-  nneig = 0
-  x0(:) = 0.0_dp
-  call mneighb( latvec, rmaxo, na_u, xa, 0, 0, nneig )
-  
+!   Initialize the local coefficient matrix for every k-point
+    psiloc(:,:) = cmplx(0.0_dp, 0.0_dp, kind=dp)
+
+#ifdef MPI
+!   Store the local bands in this node on a complex variable
+    do iband = 1, nincbands_loc
+      BlockSizeDiagon = BlockSize
+      BlockSize       = blocksizeincbands
+      call LocalToGlobalOrb( iband, Node, Nodes, iband_global )
+      BlockSize = BlockSizeDiagon
 !! For debugging
-!  write(6,'(a,f12.5,2x,i10)')    &
-!  write(6,*)    &
-! &  'writeunk: rmaxo, nneig = ', &
-! &      rmaxo, nneig
-!  do io = 1, 3
-!    write(6,'(a,3f15.10)') 'writeunk, latvec =', latvec(:,io)
-!  enddo
-!  do io = 1, na_u
-!    write(6,'(a,i5,3f15.10)') 'writeunk, ia, xa =', io, xa(:,io)
-!  enddo
+!      write(6,'(a,3i5)')' writeunk: Node, iband, iband_global = ', &
+! &                                  Node, iband, iband_global
 !! End debugging
 
-! Open the output file
-  if( IOnode ) then
-    write(unkfilename,"('UNK',i5.5,'.',i1)"), ikpt, ispin
-    call io_assign(unkfileunit)
-    if( .not. unk_format ) then
-      open( unit=unkfileunit, err=1992, file=unkfilename,          &
- &          status='replace', form='formatted', iostat=eof )
-    else
-      open( unit=unkfileunit, err=1992, file=unkfilename,          &
- &          status='replace', form='unformatted', iostat=eof )
-    endif
-  endif
+      do io = 1, no_u
+        psiloc(io,iband_global) = coeffs(io,iband,ik)
+      enddo
+    enddo
+!   Allocate workspace array for global reduction
+    nullify( auxpsi )
+    call re_alloc( auxpsi, 1, no_u, 1, nincbands,   &
+ &                 name='auxpsi', routine='writeunk' )
+!   Global reduction of auxpsi matrix
+    auxpsi(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
+    call MPI_AllReduce( psiloc(1,1), auxpsi(1,1),   &
+ &                      no_u*nincbands,             &
+ &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
+!   After this reduction, all the nodes know the coefficients of the
+!   wave function for the point ik, for all the bands and for all atomic
+!   orbitals
+    psiloc(:,:) = auxpsi(:,:)
+#else
+    do iband = 1, nincbands
+      do io = 1, no_u
+        psiloc(io,iband) = coeffs(io,iband,ik)
+      enddo
+    enddo
+#endif
 
-! Dump in the output file the number of points in the mesh, 
-! the index of the k-point and the number of occupied bands
-  if( IOnode ) then
-    if( .not. unk_format ) then
-      write(unkfileunit,'(5(i5,2x))') unk_nx, unk_ny, unk_nz, ikpt, nincbands
-    else
-      write(unkfileunit) unk_nx, unk_ny, unk_nz, ikpt, nincbands
+!
+!   Initialize neighbour subroutine.
+!   The reallocation of the different arrays is done within neighb,
+!   in the call to the subroutine sizeup_neighbour_arrays
+!
+    nneig = 0
+    x0(:) = 0.0_dp
+    call mneighb( latvec, rmaxo, na_u, xa, 0, 0, nneig )
+  
+!!   For debugging
+!    write(6,'(a,f12.5,2x,i10)')    &
+!    write(6,*)    &
+! &    'writeunk: rmaxo, nneig = ', &
+! &        rmaxo, nneig
+!    do io = 1, 3
+!      write(6,'(a,3f15.10)') 'writeunk, latvec =', latvec(:,io)
+!    enddo
+!    do io = 1, na_u
+!      write(6,'(a,i5,3f15.10)') 'writeunk, ia, xa =', io, xa(:,io)
+!    enddo
+!!   End debugging
+
+!   Open the output file
+    if( IOnode ) then
+      write(unkfilename,"('UNK',i5.5,'.',i1)"), ik, ispin
+      call io_assign(unkfileunit)
+      if( .not. unk_format ) then
+        open( unit=unkfileunit, err=1992, file=unkfilename,          &
+ &            status='replace', form='formatted', iostat=eof )
+      else
+        open( unit=unkfileunit, err=1992, file=unkfilename,          &
+ &            status='replace', form='unformatted', iostat=eof )
+      endif
     endif
-  endif
+
+!   Dump in the output file the number of points in the mesh, 
+!   the index of the k-point and the number of occupied bands
+    if( IOnode ) then
+      if( .not. unk_format ) then
+        write(unkfileunit,'(5(i5,2x))') unk_nx, unk_ny, unk_nz, ik, nincbands
+      else
+        write(unkfileunit) unk_nx, unk_ny, unk_nz, ik, nincbands
+      endif
+    endif
+
+!   For each k-point, initialize the buffer in all the nodes
+    buffer = cmplx(0.0_dp,0.0_dp,kind=dp)
 
 BAND_LOOP:                                                           &
 #ifdef MPI
-  do iband = 1, no_l
-#else
-  do iband = 1, nincbands
-#endif
-!!   For debugging
-!    write(6,'(a,2i5)')' writeunk, Node, iband = ', Node, iband
-!!   End debugging
-    do iz = 1, unk_nz
-      do iy = 1, unk_ny
-        do ix = 1, unk_nx
-          rvector(:) = ( latvec(:,1) * (ix-1) ) / unk_nx             &
- &                   + ( latvec(:,2) * (iy-1) ) / unk_ny             &
- &                   + ( latvec(:,3) * (iz-1) ) / unk_nz
-!!         For debugging
-!          write(6,'(a,5i4,6f12.5)') &
-! &          'ikpt, iband, iz, iy, ix, kvector, rvector = ', &
-! &           ikpt, iband, iz, iy, ix, kvector(:), rvector(:)
-!!         End debugging
-          periodicpart = cmplx(0.0_dp,0.0_dp,kind=dp)
-
-!         Find atoms within rmaxo sphere and store them in jan
-          x0(:) = rvector(:)
-          call mneighb( latvec, rmaxo, na_u, xa, 0, 0, nneig )
+    do iband = 1, nincbands_loc
+!     Identiy the global index of the local band          
+      BlockSizeDiagon = BlockSize
+      BlockSize       = blocksizeincbands
+      call LocalToGlobalOrb( iband, Node, Nodes, iband_global )
+      BlockSize = BlockSizeDiagon
 !! For debugging
-!          do ineig = 1, nneig
-!            write(6,'(a,i5,6f15.10)') &
-! &            'writeunk: jan, xij, r2ij = ', &
-! &            jan(ineig), xij(:,ineig), r2ij(ineig)
-!          enddo
+!      write(6,'(a,3i5)')' writeunk: Node, iband, iband_global = ', &
+! &                                  Node, iband, iband_global
 !! End debugging
+#else
+    do iband = 1, nincbands
+      iband_global = iband
+#endif
+!     For debugging
+!      write(6,'(a,2i5)')' writeunk, Node, iband = ', Node, iband
+!     End debugging
+      do iz = 1, unk_nz
+        do iy = 1, unk_ny
+          do ix = 1, unk_nx
+            rvector(:) = ( latvec(:,1) * (ix-1) ) / unk_nx             &
+ &                     + ( latvec(:,2) * (iy-1) ) / unk_ny             &
+ &                     + ( latvec(:,3) * (iz-1) ) / unk_nz
+!!           For debugging
+!            write(6,'(a,5i4,6f12.5)') &
+! &            'ik, iband, iz, iy, ix, kvector, rvector = ', &
+! &             ik, iband, iz, iy, ix, kvector(:), rvector(:)
+!!           End debugging
+            periodicpart = cmplx(0.0_dp,0.0_dp,kind=dp)
 
-          if ( nneig .gt. maxnna )                                     &
- &         call die('swan: insufficient array shapes; see neighb(..)')
-!         Loop over atoms in the list of non-vanishing atoms at a given point
-          do ineig = 1, nneig
-!           Identify the atomic index.
-!           In other subroutines, like overfsm, kinefsm, etc.
-!           mneighb is called for the supercell,
-!           with atom indices ranging from 1 to na_s (number atoms in supercell)
-!           Here, mneighb is called for the unit cell, and the
-!           indices of the atoms range from 1 to na_u (number atoms in unit cell
-!           If different periodic images of the same atom do not vanish
-!           at a given point, they appear in the list with the same
-!           index iatom. This is irrelevant for the purpouses of this subroutine
-            iatom   = jan(ineig)
-            ispecie = isa(iatom)
-!           The vector xij computed in mneighb has the origin at the
-!           mesh point. However, in the argument of the orbital,
-!           the origin is located at its center
-!           \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )
-!           We change the sign here.
-            rvectorarg(:) = -xij(:,ineig)
-!           Loop on all the orbitals of a given atom
-            do iorbital = lasto(iatom-1)+1, lasto(iatom)
-              iso = iphorb(iorbital)
-!             If the point is within the range of the orbital
-              if ( rcut(ispecie,iso)**2 .gt. r2ij(ineig) ) then
-                iorbital0 = indxuo(iorbital)
-!               Compute the phase
-!               e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
-!               We have to change the sign of rvectorarg again.
-                phase = -1.0_dp * dot_product(kvector,rvectorarg)
-                exponential = exp( phase * cmplx(0.0_dp,1.0_dp,kind=dp) )
-!               Compute the value of the orbital at the point
-!               \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )
-                call phiatm( ispecie, iso, rvectorarg, phi, grphi )
-!               Compute the sum that gives the periodic part of the orbital
-                periodicpart = periodicpart +                          &
-                  exponential * psiloc(iorbital0,iband) * phi
-              endif
-            enddo ! Enddo on orbitals that do not vanish
-          enddo ! Enddo on atoms that have orbitals that do not vanish 
+!           Find atoms within rmaxo sphere and store them in jan
+            x0(:) = rvector(:)
+            call mneighb( latvec, rmaxo, na_u, xa, 0, 0, nneig )
+!!   For debugging
+!            do ineig = 1, nneig
+!              write(6,'(a,i5,6f15.10)') &
+! &              'writeunk: jan, xij, r2ij = ', &
+! &              jan(ineig), xij(:,ineig), r2ij(ineig)
+!            enddo
+!!   End debugging
+
+            if ( nneig .gt. maxnna )                                     &
+ &           call die('swan: insufficient array shapes; see neighb(..)')
+!           Loop over atoms in the list of non-vanishing atoms at a given point
+            do ineig = 1, nneig
+!             Identify the atomic index.
+!             In other subroutines, like overfsm, kinefsm, etc.
+!             mneighb is called for the supercell,
+!             with atom indices ranging 
+!             from 1 to na_s (number atoms in supercell)
+!             Here, mneighb is called for the unit cell, and the
+!             indices of the atoms range 
+!             from 1 to na_u (number atoms in unit cell
+!             If different periodic images of the same atom do not vanish
+!             at a given point, they appear in the list with the same
+!             index iatom. This is irrelevant for the purpouses 
+!             of this subroutine
+              iatom   = jan(ineig)
+              ispecie = isa(iatom)
+!             The vector xij computed in mneighb has the origin at the
+!             mesh point. However, in the argument of the orbital,
+!             the origin is located at its center
+!             \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )
+!             We change the sign here.
+              rvectorarg(:) = -xij(:,ineig)
+!             Loop on all the orbitals of a given atom
+              do iorbital = lasto(iatom-1)+1, lasto(iatom)
+                iso = iphorb(iorbital)
+!               If the point is within the range of the orbital
+                if ( rcut(ispecie,iso)**2 .gt. r2ij(ineig) ) then
+                  iorbital0 = indxuo(iorbital)
+!                 Compute the phase
+!                 e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+!                 We have to change the sign of rvectorarg again.
+                  phase = -1.0_dp * dot_product(kvector,rvectorarg)
+                  exponential = exp( phase * cmplx(0.0_dp,1.0_dp,kind=dp) )
+!                 Compute the value of the orbital at the point
+!                 \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )
+                  call phiatm( ispecie, iso, rvectorarg, phi, grphi )
+!                 Compute the sum that gives the periodic part of the orbital
+                  periodicpart = periodicpart +                          &
+                    exponential * psiloc(iorbital0,iband_global) * phi
+                endif
+              enddo ! Enddo on orbitals that do not vanish
+            enddo ! Enddo on atoms that have orbitals that do not vanish 
 #ifdef MPI
-!         Identiy the global index of the local band          
-          call LocalToGlobalOrb( iband, Node, Nodes, iband_global )
-          if( iband_global .le. nincbands ) then
             buffer(iband_global,ix,iy,iz) = periodicpart
 !           Transform Bohr^(-3/2) to Ang^(-3/2)
             buffer(iband_global,ix,iy,iz) = &
- &            buffer(iband_global,ix,iy,iz) * 2.59775721_dp
-          endif
+ &             buffer(iband_global,ix,iy,iz) * 2.59775721_dp
 #else
-          buffer(ix,iy,iz) = periodicpart
-!         Transform Bohr^(-3/2) to Ang^(-3/2)
-          buffer(ix,iy,iz) = buffer(ix,iy,iz) * 2.59775721_dp
+            buffer(ix,iy,iz) = periodicpart
+!           Transform Bohr^(-3/2) to Ang^(-3/2)
+            buffer(ix,iy,iz) = buffer(ix,iy,iz) * 2.59775721_dp
 #endif
-!!          For debugging
-!           write(6,'(3i5,6f12.5)')ix, iy, iz, rvector(:), buffer(ix,iy,iz)
-!!          End debugging
-        enddo ! Enddo in ix
-      enddo ! Enddo in iy
-    enddo ! Enddo in iz
+!!            For debugging
+!             write(6,'(3i5,6f12.5)')ix, iy, iz, rvector(:), buffer(ix,iy,iz)
+!!            End debugging
+          enddo ! Enddo in ix
+        enddo ! Enddo in iy
+      enddo ! Enddo in iz
 
-!   Dump the buffer in the output file
+!     Dump the buffer in the output file
 !
 #ifndef MPI
+      if( IOnode ) then
+        if( .not. unk_format ) then
+          do iz = 1, unk_nz
+            do iy = 1, unk_ny
+              do ix = 1, unk_nx
+                write(unkfileunit,'(2f12.5)') &
+ &                real(buffer(ix,iy,iz)), aimag(buffer(ix,iy,iz))
+              enddo ! Enddo in ix
+            enddo ! Enddo in iy
+          enddo ! Enddo in iz
+        else
+          write(unkfileunit) & 
+ &          (((buffer(ix,iy,iz),ix=1,unk_nx),iy=1,unk_ny),iz=1,unk_nz)
+        endif
+      endif
+#endif
+
+    enddo  BAND_LOOP
+
+!   Global reduction is required because we need all the matrix buffer in IOnode
+!   (to dump it into a file),but the results for some of the bands might
+!   be computed in other nodes.
+#ifdef MPI
+!   Allocate workspace array for global reduction
+    nullify( auxloc )
+    call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
+ &                 name='auxloc', routine='writeunk' )
+!   Global reduction of auxloc matrix
+    auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
+    call MPI_AllReduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &
+ &                      nincbands*unk_nx*unk_ny*unk_nz,                    &
+ &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
+    buffer(:,:,:,:) = auxloc(:,:,:,:)
+
     if( IOnode ) then
       if( .not. unk_format ) then
-        do iz = 1, unk_nz
-          do iy = 1, unk_ny
-            do ix = 1, unk_nx
-              write(unkfileunit,'(2f12.5)') &
- &              real(buffer(ix,iy,iz)), aimag(buffer(ix,iy,iz))
-            enddo ! Enddo in ix
-          enddo ! Enddo in iy
-        enddo ! Enddo in iz
+        do iband = 1, nincbands
+          do iz = 1, unk_nz
+            do iy = 1, unk_ny
+              do ix = 1, unk_nx
+                write(unkfileunit,'(2f12.5)')   &
+ &                real(buffer(iband,ix,iy,iz)), aimag(buffer(iband,ix,iy,iz))
+              enddo ! Enddo in ix
+            enddo ! Enddo in iy
+          enddo ! Enddo in iz
+        enddo ! Enddo in bands
       else
-        write(unkfileunit) & 
- &        (((buffer(ix,iy,iz),ix=1,unk_nx),iy=1,unk_ny),iz=1,unk_nz)
+        do iband = 1, nincbands
+          write(unkfileunit)                                   & 
+ &          ((( buffer(iband,ix,iy,iz), ix = 1, unk_nx ),      &
+ &                                      iy = 1, unk_ny ),      & 
+ &                                      iz = 1, unk_nz )
+        enddo 
       endif
     endif
 #endif
 
-  enddo  BAND_LOOP
-
-! Global reduction is required because we need all the matrix buffer in IOnode
-! (to dump it into a file),but the results for some of the bands might
-! be computed in other nodes.
-#ifdef MPI
-! Allocate workspace array for global reduction
-  nullify( auxloc )
-  call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
- &               name='auxloc', routine='writeunk' )
-! Global reduction of auxloc matrix
-  auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
-  call MPI_AllReduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &
- &                    nincbands*unk_nx*unk_ny*unk_nz,                    &
- &                    MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
-  buffer(:,:,:,:) = auxloc(:,:,:,:)
-
-  if( IOnode ) then
-    if( .not. unk_format ) then
-      do iband = 1, nincbands
-        do iz = 1, unk_nz
-          do iy = 1, unk_ny
-            do ix = 1, unk_nx
-              write(unkfileunit,'(2f12.5)') &
- &              real(buffer(iband,ix,iy,iz)), aimag(buffer(iband,ix,iy,iz))
-            enddo ! Enddo in ix
-          enddo ! Enddo in iy
-        enddo ! Enddo in iz
-      enddo ! Enddo in bands
-    else
-      do iband = 1, nincbands
-        write(unkfileunit)                                   & 
- &        ((( buffer(iband,ix,iy,iz), ix = 1, unk_nx ),      &
- &                                    iy = 1, unk_ny ),      & 
- &                                    iz = 1, unk_nz )
-      enddo 
-    endif
-  endif
-#endif
-
 ! Close the output file
-  if( IOnode ) then
-    call io_close(unkfileunit)
-  endif
+    if( IOnode ) then
+      call io_close(unkfileunit)
+    endif
+
+  enddo kpoints
 
 ! Deallocate some of the variables
 #ifdef MPI
   call de_alloc( auxloc, name='auxloc', routine='writeunk' )
+  call de_alloc( auxpsi, name='auxpsi', routine='writeunk' )
 #endif
   call de_alloc( buffer, name='buffer', routine='writeunk' )
   call de_alloc( psiloc, name='psiloc', routine='writeunk' )

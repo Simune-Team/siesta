@@ -8,7 +8,7 @@ OBJDIR=Obj
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 default: all
-ARCH_MAKE=../../../$(OBJDIR)/arch.make
+ARCH_MAKE=../../../$(OBJDIR)/Intel/arch.make
 include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)

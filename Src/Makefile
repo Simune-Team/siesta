@@ -153,7 +153,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_trialorbitalclass.o siesta2wannier90.o m_planewavematrixvar.o \
 	delk.o m_planewavematrix.o m_digest_nnkp.o broadcast_projections.o \
 	compute_pw_matrix.o m_writedelk.o mmn.o m_noccbands.o amn.o \
-	m_overkkneig.o write_inp_wannier.o
+	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -345,7 +345,7 @@ alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 amn.o: alloc.o atmfuncs.o atomlist.o densematrix.o m_noccbands.o m_spin.o
 amn.o: m_trialorbitalclass.o matel_registry.o mneighb.o new_matel.o parallel.o
 amn.o: parallelsubs.o precision.o siesta2wannier90.o siesta_geom.o
-amn.o: sparse_matrices.o sys.o
+amn.o: sys.o diagonalizeHk.o
 arw.o: alloc.o parallel.o precision.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o
@@ -433,6 +433,9 @@ diagk_file.o: sys.o writewave.o
 diagkp.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagon.o: alloc.o densematrix.o m_diagon.o m_memory.o parallel.o parallelsubs.o
 diagon.o: precision.o siesta_options.o sys.o
+diagonalizeHk.o: precision.o densematrix.o m_spin.o atomlist.o alloc.o
+diagonalizeHk.o: sparse_matrices.o units.o siesta2wannier90.o
+diagonalizeHk.o: parallel.o parallelsubs.o
 diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
@@ -557,7 +560,7 @@ m_noccbands.o: alloc.o atmfuncs.o m_spin.o parallel.o precision.o siesta_geom.o
 m_noccbands.o: sys.o
 m_options.o: precision.o
 m_overkkneig.o: alloc.o atomlist.o parallel.o parallelsubs.o precision.o
-m_overkkneig.o: siesta_geom.o sparse_matrices.o
+m_overkkneig.o: siesta_geom.o sparse_matrices.o siesta2wannier90.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_planewavematrix.o: alloc.o atomlist.o dhscf.o m_dipol.o m_energies.o m_ntm.o
@@ -621,9 +624,9 @@ mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
 mixer.o: m_ts_global_vars.o m_ts_iodm.o m_ts_options.o parallel.o siesta_geom.o
 mixer.o: siesta_options.o sparse_matrices.o
-mmn.o: alloc.o atomlist.o densematrix.o m_digest_nnkp.o m_noccbands.o
+mmn.o: alloc.o atomlist.o m_digest_nnkp.o m_noccbands.o
 mmn.o: m_planewavematrixvar.o m_spin.o parallel.o precision.o siesta_options.o
-mmn.o: siesta2wannier90.o siesta_geom.o sparse_matrices.o sys.o units.o 
+mmn.o: siesta2wannier90.o siesta_geom.o sparse_matrices.o diagonalizeHk.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
@@ -723,7 +726,7 @@ show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
 siesta.o: alloc.o m_steps.o siesta_analysis.o siesta_end.o siesta_forces.o
 siesta.o: siesta_init.o siesta_move.o
 siesta2wannier90.o: files.o m_digest_nnkp.o m_spin.o m_trialorbitalclass.o
-siesta2wannier90.o: parallel.o precision.o sys.o
+siesta2wannier90.o: parallel.o precision.o sys.o siesta_options.o
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
 siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
 siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
@@ -791,6 +794,7 @@ vmatsp.o: meshphi.o precision.o
 vmb.o: fixed.o parallel.o precision.o sys.o
 write_inp_wannier.o: mneighb.o siesta2wannier90.o precision.o alloc.o parallel.o
 write_inp_wannier.o: siesta_geom.o atomlist.o atmfuncs.o m_ntm.o parallelsubs.o
+write_inp_wannier.o: write_inp_wannier.o
 write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_steps.o m_stress.o
 write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o
 write_orb_indx.o: atmfuncs.o cellsubs.o files.o precision.o

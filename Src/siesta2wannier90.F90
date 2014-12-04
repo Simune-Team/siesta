@@ -1,5 +1,13 @@
 module m_siesta2wannier90
 
+! OUTPUT: 
+! File called seedname.mmn, where the overlap matrices are written in 
+! the format required by Wannier90
+!
+! File called seedname.eig, where the eigenvalues of the Hamiltonian
+! at the required k-points are written according to the format required
+! by Wannier90.
+
   use precision, only : dp                   ! Real double precision type
   use parallel,  only : IOnode               ! Input/output node
   use parallel,  only : Node                 ! This process node
@@ -57,13 +65,6 @@ module m_siesta2wannier90
                              ! The vectors b that connect each mesh-point k
                              !   to its nearest neighbours
 !
-! Variables related with the projections with trial functions,
-! initial approximations to the MLWF
-!
-  integer  :: numproj        ! Total number of projection centers,
-                             !   equal to the number of MLWF
-  type(trialorbital), target, allocatable  :: projections(:)       
-!
 ! Variables related with the neighbours of the k-points
 !
   integer           :: nncount  
@@ -83,6 +84,13 @@ module m_siesta2wannier90
                              !   actual \vec{k} + \vec{b} that we need.
                              !   In reciprocal lattice units.
 !
+! Variables related with the projections with trial functions,
+! initial approximations to the MLWF
+!
+  integer  :: numproj        ! Total number of projection centers,
+                             !   equal to the number of MLWF
+  type(trialorbital), target, allocatable  :: projections(:)       
+!
 ! Variables related with the number of bands considered for wannierization
 !
   integer          :: numbands(2) ! Number of bands for wannierization
@@ -95,11 +103,34 @@ module m_siesta2wannier90
   integer          :: numincbands(2) 
                              ! Number of included bands in the calc. 
                              !   of the overlap and projection matrices.
+                             !   after excluding the bands
+  integer          :: nincbands_loc
+                             ! Number of included bands in the calc. 
+                             !   of the overlap and projection matrices.
+                             !   in the local Node
+  integer          :: blocksizeincbands ! Maximum number of bands
+                            !    considered for wannierization per node
+
   integer, pointer :: excludedbands(:)
                              ! Bands to be excluded
                              !   This variable is read from the .nnkp file
   logical, pointer :: isexcluded(:) ! Masks excluded bands
   integer, pointer :: isincluded(:) ! Masks included bands
+
+!
+! Variables related with the coefficients of the wavefunctions and
+! eigenvalues at the Wannier90 k-point mesh
+!
+  complex(dp), pointer :: coeffs(:,:,:)  ! Coefficients of the wavefunctions.
+                                         !   First  index: orbital
+                                         !   Second index: band
+                                         !   Third  index: k-point
+  real(dp),    pointer :: eo(:,:)        ! Eigenvalues of the Hamiltonian 
+                                         !   at the numkpoints introduced in
+                                         !   kpointsfrac 
+                                         !   First  index: band index
+                                         !   Second index: k-point index
+
 
 !
 ! Output matrices
@@ -119,11 +150,6 @@ module m_siesta2wannier90
  complex(dp), pointer :: Amnmat(:,:,:)   ! Projections of a trial function
                                          !   with a Bloch orbital
                                          !   <\psi_{m k}|g_n>
- real(dp),    pointer :: eo(:,:)         ! Eigenvalues of the Hamiltonian 
-                                         !   at the numkpoints introduced in
-                                         !   kpointsfrac 
-                                         !   First  index: band index
-                                         !   Second index: k-point index
 
 !
 ! Variables related with the input/output files
@@ -202,16 +228,21 @@ subroutine siesta2wannier90
 !   neighbours
     call compute_pw_matrix( nncount, bvectorsfrac )
 
+!   Compute the coefficients of the wavefunctions at the 
+!   k-points of the Wannier90 mesh
+    call diagonalizeHk( ispin )
+
 !   Compute the overlap between periodic parts of the wave functions
-    if( towritemmn .or. towriteamn .or. towriteeig ) call mmn( ispin )
+    if( towritemmn ) call mmn( ispin )
 
-!!   Compute the projections on the trial functions
-!    call amn( ispin )
+!   Compute the overlaps between Bloch states onto trial localized orbitals
+    if( towriteamn ) call amn( ispin )
 
-!!   For debugging
-!    write(6,*)' Node, Nodes, numproj_l = ', Node, Nodes, numproj_l
-!!   End debugging
+!   Compute the overlaps between Bloch states onto trial localized orbitals
+    if( towriteunk ) call writeunk( ispin )
 
+!   Write the eigenvalues in a file, in the format required by Wannier90
+    if( IOnode .and. towriteeig ) call writeeig( ispin )
 
 !   Compute the vectors that connect each mesh k-point to its nearest neighbours
 !! For debugging

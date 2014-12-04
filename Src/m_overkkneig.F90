@@ -1,11 +1,12 @@
   subroutine overkkneig( kvector, bvector, nuo, nuotot, psiatk, psinei,   &
- &                       maxnh, delkmat, nbandsocc, Mkb )
+ &                       maxnh, delkmat, nbandsocc_loc, nbandsocc, Mkb )
 
    
   use precision,            only: dp             ! Real double precision type
   use parallel,             only: Nodes          ! Total number of Nodes
   use parallel,             only: Node           ! Local Node
   use parallel,             only: IONode         ! Input/output node
+  use parallel,             only: BlockSize      ! BlockSize
   use atomlist,             only: iaorb          ! Pointer to atom to which
                                                  !   orbital belongs
   use atomlist,             only: indxuo         ! Index of equivalent orbital
@@ -20,6 +21,9 @@
   use sparse_matrices,      only: xijo           ! Vectors between orbital
                                                  !   centers (sparse)
   use siesta_geom,          only: xa             ! Atomic positions
+  use m_siesta2wannier90,   only: blocksizeincbands! Maximum number of bands
+                                                 !   considered for 
+                                                 !   wannierization per node
   use alloc,                only: re_alloc       ! Allocatation routines
   use alloc,                only: de_alloc       ! Deallocatation routines
 
@@ -50,7 +54,7 @@
                                                  !   Sum_{cores} no_l = no_u
   integer,     intent(in)  :: nuotot             ! Number of orbitals in the 
                                                  !   unit cell.
-  complex(dp), intent(in)  :: psiatk(nuo,nuotot) ! Coefficients of the 
+  complex(dp), intent(in)  :: psiatk(nuotot,nuo) ! Coefficients of the 
                                                  !    eigenvector at the k-point
                                                  !    First  index: orbital
                                                  !   Second index: band
@@ -60,11 +64,8 @@
                                                  !   First  index: orbital
                                                  !   Second index: band
 ! Note that, when running in parallel, the information known by each local node
-! is different for psiatk and psi:
-! For psiatk, each local node knows for all the bands the
-! no_l coefficients of the wave function. 
-! (actually, only the occupied bands do have non-zero values).
-! For psinei, each local node knows all the coefficients for the no_l bands
+! for psiatk, and psinei is: each local node knows all the coefficients
+! for only a few nuo bands.
   integer,     intent(in)  :: maxnh              ! Maximum number of orbitals
                                                  !   interacting
                                                  !   NOTE: In parallel runs,
@@ -72,6 +73,8 @@
                                                  !   node
   complex(dp), intent(in)  :: delkmat(maxnh)     ! Matrix elements of a plane
                                                  !   wave
+  integer,     intent(in)  :: nbandsocc_loc      ! Number of ocuppied bands 
+                                                 !   in the local node
   integer,     intent(in)  :: nbandsocc          ! Number of occupied bands
   complex(dp), intent(out) :: Mkb(nbandsocc,nbandsocc) 
                                                  ! Overlap matrix between the 
@@ -126,33 +129,28 @@
 #ifdef MPI
   integer     :: MPIerror
   integer     :: inode                           ! Counter for the loop on nodes
-  integer     :: nbands_max_loc                  ! Maximum number of bands that 
-                                                 !   will be stored on any node
-  integer     :: nbands_loc                      ! Number of bands on the local
-                                                 !   node
+  integer     :: norb_max_loc                    ! Maximum number of atomic 
+                                                 !   orbitals that will be 
+                                                 !   stored on any node
   integer     :: norb_loc                        ! Number of atomic orbitals
                                                  !   on the local node
   integer     :: moccband_global                 ! Global index of the 
                                                  !   occupied band
-  integer     :: nocc_loc                        ! Number of occupied states
-                                                 !   on the local node
-  integer     :: norb_max_loc                    ! Maximum number of atomic 
-                                                 !   orbitals that will be 
-                                                 !   stored on any node
-  complex(dp), dimension(:,:), pointer :: psitmp ! Temporal array used to 
-                                                 !   broadcast the coefficients
-                                                 !   of the wave function at the
-                                                 !   neighbour k-point to the
-                                                 !   rest of the nodes
-  complex(dp), dimension(:,:), pointer :: auxtmp ! Temporal array used to 
-  complex(dp), dimension(:,:), pointer :: aux2loc! 
-  integer     :: inu_global                      ! Global index of the atom orbi
-  integer     :: mband_global                    ! Global index of the band     
+  integer     :: noccband_global                 ! Global index of the 
+                                                 !   occupied band
+  integer     :: BlockSizeDiagon                 ! BlockSize used in the 
+                                                 !   diagonalization routines
+  complex(dp), dimension(:,:), pointer :: auxtmp ! Temporal arrays used to  
+  complex(dp), dimension(:,:), pointer :: aux2loc!   broadcast auxiliary
+                                                 !   matrices
 #endif
 
 
 ! Start time counter
   call timer( 'overkkneig', 1 )
+
+! Initialize Mkb
+  Mkb(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
 
 !!     For debugging
 !  write(6,'(a,i5,3f12.5)')    &           
@@ -163,8 +161,8 @@
 ! &  'overkkneig: Node, maxnh =', Node, maxnh
 !      if( Node .eq. 1 ) then
 !!      if( IOnode ) then
-!        do nband = 1, nuotot
-!          do imu = 1, nuo
+!        do nband = 1, nuo
+!          do imu = 1, nuotot
 !            write(6,'(a,2i5,2f12.5)')         &
 ! &            'overkkneig: nband, imu, coeff = ', imu, nband, psiatk(imu,nband)
 !          enddo 
@@ -187,7 +185,10 @@
 ! while the first index refer to the neighbour orbital (\nu) in the 
 ! previous notation.
   
-! Allocate local memory
+! Allocate local memory.
+! The second dimension of aux is equal to the number of orbitals
+! in the local node, nuo, since that is the maximum number of 
+! orbitals mu (in the previous equation) that can be computed locally
   nullify( aux )
   call re_alloc( aux, 1, nuotot, 1, nuo, name='aux', routine='overkkneig')
 
@@ -198,6 +199,10 @@
 !   Identify the global index of the orbital
 #ifdef MPI
     call LocalToGlobalOrb( imu, Node, Nodes, imu_global)
+!!   For debugging
+!    write(6,'(a,3i5)')' overkkneig: Node, imu, imu_global = ',  &
+! &                                  Node, imu, imu_global
+!!   End debugging
 #else
     imu_global = imu
 #endif
@@ -246,7 +251,7 @@
 !! For debugging
 !!  if( IOnode ) then
 !  if( Node .eq. 1 ) then
-!    do imu = 1, nuo
+!    do imu = 1, nuotot
 !      do inu = 1, nuotot
 !        write(6,'(a,3i5,2f12.5)')                   &
 ! &        'overkkneig: Node, imu, inu, aux = ',     &
@@ -267,13 +272,6 @@
   aux2(:,:)  = cmplx(0.0_dp,0.0_dp,kind=dp)
 
 #ifdef MPI
-! Compute the number of occupied bands stored on local node
-  call GetNodeOrbs( nbandsocc, Node, Nodes, nocc_loc )
-
-!! For debugging
-!  write(6,'(a,4i5)')'overkkneig: Node, nbandsocc, Nodes, nocc_loc = ', &
-! &               Node, nbandsocc, Nodes, nocc_loc
-!! End debugging
 
 ! Compute the number of bands stored on Node 0
 ! We assume that this is the maximum number of orbitals that will be stored
@@ -281,8 +279,8 @@
   call GetNodeOrbs( nuotot, 0, Nodes, norb_max_loc)
 
 !! For debugging
-!  write(6,'(a,4i5)')'overkkneig: Node, nuotot, Nodes, norb_max_loc = ', &
-! &               Node, nuotot, Nodes, norb_max_loc
+!  write(6,'(a,4i5)')' overkkneig: Node, nuotot, Nodes, norb_max_loc = ', &
+! &                                Node, nuotot, Nodes, norb_max_loc
 !! End debugging
 
 ! Allocate the temporal variable that will be used to broadcast
@@ -294,16 +292,17 @@
   nullify( auxtmp )
   call re_alloc( auxtmp, 1, nuotot, 1, norb_max_loc, &
  &               name='auxtmp', routine='overkkneig' )
+  auxtmp(:,:)  = cmplx(0.0_dp,0.0_dp,kind=dp)
 
 ! Loop on all the nodes:
 ! This is required because a given Node, for instance Node = 0,
 ! knows the coefficients of the wave function at a neighbour k-point
-! for all the atomic orbitals (mu = 1, nuotot), 
+! for all the atomic orbitals (mu = 1, nuotot),
 ! while it only knows the matrix aux for some of the matrix orbitals (mu=1,nuo).
 ! To compute the sum on mu we have to take to the Node = 0 the full
 ! aux matrix from the rest of the nodes.
 
-  do inode = 0, Nodes-1 
+  do inode = 0, Nodes-1
 
 !   Compute the number of occupied bands stored on Node inode 
     call GetNodeOrbs( nuotot, inode, Nodes, norb_loc )
@@ -316,15 +315,23 @@
         enddo
       enddo
     endif
+
 !   Broadcast the auxiliary matrix from node inode to all the other nodes
     call MPI_Bcast( auxtmp(1,1), nuotot*norb_loc, &
- &                  MPI_double_complex, inode, MPI_Comm_World, MPIerror ) 
+ &                  MPI_double_complex, inode, MPI_Comm_World, MPIerror )
 
 !   Loop on the occupied bands stored on the local node (Node)
-    do mband = 1, nocc_loc
+    do mband = 1, nbandsocc_loc
 
 !     Identify the global index of the occupied band
-      call LocalToGlobalOrb( mband, Node, Nodes, moccband_global)
+      BlockSizeDiagon = BlockSize
+      BlockSize       = blocksizeincbands
+      call LocalToGlobalOrb( mband, Node, Nodes, moccband_global )
+      BlockSize = BlockSizeDiagon
+!!   For debugging
+!        write(6,'(a,3i5)')' overkkisig: Node, mband, moccband_global = ', &
+! &                                      Node, mband, moccband_global
+!!   End debugging
 
 !     Loop on all the atomic orbitals of the unit cell
 !     As parallelized now, a given node knows
@@ -335,15 +342,15 @@
 !       Perform the sum on mu, following the notation of Eq. (5) in the 
 !       paper by D. Sanchez-Portal et al.
 !       Fundamental Physics for Ferroelectrics (AIP Conf. Proc. Vol 535) (2000)
-        do imu = 1, norb_loc 
+        do imu = 1, norb_loc
 !         Identify the global index of the occupied band
           call LocalToGlobalOrb( imu, inode, Nodes, imu_global )
           aux2(moccband_global,inu) = aux2(moccband_global,inu) +      &
- &          psinei(imu_global,mband) * auxtmp(inu,imu)
+ &            psinei(imu_global,mband) * auxtmp(inu,imu)
         enddo   ! End loop on the sumatory on mu
       enddo     ! End loop on atomic orbitals in the unit cell (nuotot)
     enddo       ! End loop on local occupied bands (mband)
-  enddo         ! End loop on nodes (inode) 
+  enddo         ! End loop on nodes (inode)
 
 ! Allocate workspace array for global reduction
   nullify( aux2loc )
@@ -368,7 +375,7 @@
 !! For debugging
 !  if( IOnode ) then
 !!  if( Node .eq. 1 ) then
-!    do nband = 1, nbandsocc
+!    do nband = 1, nuo
 !      do inu = 1, nuotot
 !        write(6,'(a,3i5,2f12.5)')                   &
 ! &        'overkkneig: Node, inu, nband, psinei = ',     &
@@ -386,13 +393,17 @@
 !  endif
 !! End debugging
 
-  do nband = 1, nbandsocc 
+  do nband = 1, nbandsocc_loc
     do mband = 1, nbandsocc
-      do inu = 1, nuo
+      do inu = 1, nuotot
 #ifdef MPI
-        call LocalToGlobalOrb( inu, Node, Nodes, inu_global )
-        Mkb(nband,mband) = Mkb(nband,mband) +    &
-          conjg(psiatk(inu,nband)) * aux2(mband,inu_global)
+!       Identify the global index of the occupied band
+        BlockSizeDiagon = BlockSize
+        BlockSize       = blocksizeincbands
+        call LocalToGlobalOrb( nband, Node, Nodes, noccband_global )
+        BlockSize = BlockSizeDiagon
+        Mkb(noccband_global,mband) = Mkb(noccband_global,mband) +    &
+          conjg(psiatk(inu,nband)) * aux2(mband,inu)
 #else
         Mkb(nband,mband) = Mkb(nband,mband) +    &
           conjg(psiatk(inu,nband)) * aux2(mband,inu)
@@ -416,8 +427,8 @@
 !! For debugging
 !  if( IOnode ) then
 !!  if( Node .eq. 1 ) then
-!    do inu = 1, nuo
-!      do nband = 1, nuotot
+!    do inu = 1, nuotot
+!      do nband = 1, nuo
 !        write(6,'(a,3i5,2f12.5)')                   &
 ! &        'overkkneig: Node, inu, nband, psiatk = ',     &
 ! &                     Node, inu, nband, psiatk(inu,nband)
@@ -436,9 +447,6 @@
 
   call de_alloc( aux,    name='aux'    )
   call de_alloc( aux2,   name='aux2'   )
-#ifdef MPI
-  call de_alloc( auxtmp, name='auxtmp' )
-#endif
 
 ! End time counter
   call timer( 'overkkneig', 2 )
