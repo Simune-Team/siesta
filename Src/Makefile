@@ -75,7 +75,7 @@ what:
 	@echo "Hit ^C to abort..."
 	@sleep 2
 #
-SYSOBJ=$(SYS).o pxf.o
+SYSOBJ=$(SYS).o pxf.o sockets.o fsockets.o # includes C socket library and F90 interface
 #
 # Note that machine-specific files are now in top Src directory.
 #
@@ -92,7 +92,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
-	iodmhs_netcdf.o iogrid_netcdf.o iolwf.o iozm.o ipack.o iopipes.o \
+	iodmhs_netcdf.o iogrid_netcdf.o iolwf.o iozm.o ipack.o iopipes.o iosockets.o \
 	iowfs_netcdf.o kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
 	madelung.o matel.o mesh.o meshphi.o meshdscf.o memory.o meshsubs.o metaforce.o \
         m_check_supercell.o mulliken.o minvec.o m_pulay.o naefs.o \
@@ -236,6 +236,9 @@ readsp.o eggbox.o iopipes.o : $(FDF)
 #
 atom.o basis_io.o basis_specs.o: $(FDF)
 #
+# C/Fortran sockets library 
+sockets.o: ../Src/sockets.c
+	$(CC) -c $<
 #
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 #
@@ -509,6 +512,7 @@ iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
 iopipes.o: parallel.o precision.o sys.o
+iosockets.o: sockets.o fsockets.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
 iozm.o: files.o parallel.o precision.o siesta_geom.o zmatrix.o
