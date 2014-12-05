@@ -1,4 +1,19 @@
 ----------------------------------------------------
+December 5, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-236
+Fixed m_fixed for molecule relaxations
+
+* Fixation of entire molecules in certain directions
+  now behave as expected.
+  I have only checked this for the CG method.
+
+* Added print-out of directional vector for 
+  fixation of directions.
+
+modified:
+  Src/m_fixed.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 December 4, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-235
 Newly implemented m_fixed, much easier to handle
 

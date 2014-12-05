@@ -10,9 +10,9 @@
 !
 
 ! This code has been re-coded by:
-!  Nick Papior Andersen to handle constrainst beyond the
-!  obvious.
-! Using cg optimization *should* work as it is done per 
+!  Nick Papior Andersen to handle other than standard constrainst.
+
+! Using CG/Broyden optimization *should* work as it is done per 
 ! force magnitude, and we correct for that.
 
 module m_fixed
@@ -48,7 +48,7 @@ module m_fixed
 
   ! Containers for fixations
   integer, save :: N_fix = 0
-  type(tFix), save, allocatable :: fixs(:)
+  type(tFix), allocatable, save :: fixs(:)
 
   ! Stress fixation
   real(dp), save :: xs(6) = 0._dp
@@ -205,7 +205,7 @@ contains
        namec = fixs(if)%type
        
        ! Select type of constraint
-       if ( namec == 'pos-fix' ) then
+       if ( namec == 'pos' ) then
 
           ! this is the easy one, all atoms should not move
           do i = 1 , N
@@ -218,9 +218,8 @@ contains
           ! we remove N * 3 degrees of freedom
           ntcon = ntcon + 3 * N
 
-       else if ( namec == 'pos' ) then
+       else if ( namec == 'pos-dir' ) then
           
-          ! not so straight forward constraint
           do i = 1 , N
 
              ia = fixs(if)%a(i)
@@ -237,37 +236,47 @@ contains
 
        else if ( namec == 'center' ) then
           
-          ! Calculate center of the molecule
-          ca(:) = 0._dp
+          ! Maintain the same center of the molecule
           cf(:) = 0._dp
-          am    = 0._dp
 
           ! we center the molecule by constraining the 
-          ! average acceleration to 0
+          ! average acceleration to 0 (for MD)
+          ! or by subtracting the average force for magnitude used forces
           do i = 1 , N
 
              ia = fixs(if)%a(i)
-             ca(:) = ca(:) + xa (:,ia)
-             cf(:) = cf(:) + cfa(:,ia)
-             am    = am + amass(ia)
+
+             if ( lmag_use ) then
+                cf(:) = cf(:) + cfa(:,ia)
+             else
+                cf(:) = cf(:) + cfa(:,ia) / amass(ia)
+             end if
 
           end do
+
+          ! This is the average force/acceleration
+          cf(:) = cf(:) / real(N,dp)
 
           ! fix for the correct direction, project onto the fixation vector
           do i = 1 , N
 
              ia = fixs(if)%a(i)
 
-             fxc = sum( cfa(:,ia) * cf(:) )
-
-             cfa(:,ia) = cfa(:,ia) - fxc * cf(:)
+             if ( lmag_use ) then
+                ! subtract the average force so that the net-force is zero.
+                cfa(:,ia) = cfa(:,ia) - cf(:)
+             else
+                cfa(:,ia) = cfa(:,ia) - cf(:) * amass(ia)
+             end if
 
           end do
 
           ! in principle we do not constrain anything, we just scale 
           ! the forces so that the center of the system will be the same.
-          
-          call die('Center of motion does not currently work')
+
+          if ( .not. lmag_use ) then
+             call die('Center of motion does not currently work')
+          end if
 
        else if ( namec == 'com' ) then
           
@@ -309,14 +318,21 @@ contains
 
           end do
 
+          if ( lmag_use ) then
+             ! use the average mass.
+             cf(:) = cf(:) / real(N,dp)
+          else
+             cf(:) = cf(:) / am
+          end if
+
           do i = 1 , N
 
              ia = fixs(if)%a(i)
              
              if ( lmag_use ) then
-                cfa(:,ia) = cf(:) / am
+                cfa(:,ia) = cf(:)
              else
-                cfa(:,ia) = cf(:) * amass(ia) / am
+                cfa(:,ia) = cf(:) * amass(ia)
              end if
 
           end do
@@ -325,7 +341,7 @@ contains
           ! constrained)
           ntcon = ntcon + ( N - 1 ) * 3
 
-       else if ( namec == 'mol-fix' ) then
+       else if ( namec == 'mol-dir' ) then
           
           ! Calculate total force on the molecule
           ! this is done using the center-of-force method
@@ -343,6 +359,14 @@ contains
 
           end do
 
+          if ( lmag_use ) then
+             ! use the average force
+             cf(:) = cf(:) / real(N,dp)
+          else
+             ! use the average mass
+             cf(:) = cf(:) / am
+          end if
+
           ! only set the molecular force in the
           ! specified direction, project onto the fixation vector
           fxc = sum(fixs(if)%fix(:) * cf(:))
@@ -353,14 +377,16 @@ contains
              ia = fixs(if)%a(i)
              
              if ( lmag_use ) then
-                cfa(:,ia) = cf(:) / am
+                cfa(:,ia) = cf(:)
              else
-                cfa(:,ia) = cf(:) * amass(ia) / am
+                cfa(:,ia) = cf(:) * amass(ia)
              end if
 
           end do
 
-          ntcon = ntcon + N - 1
+          ! we constrain N atoms to not move in one direction
+          ! hence we remove N degrees of freedom
+          ntcon = ntcon + N
          
        end if
        
@@ -379,6 +405,7 @@ contains
     use m_region
 
     integer :: if, i, N
+    character(len=70) :: name
 
     type(tRegion) :: r
 
@@ -406,7 +433,12 @@ contains
 
        call region_list(r,fixs(if)%n,fixs(if)%a)
        r%name = trim(fixs(if)%type)
-       call region_print(r,name='siesta: Constraint')
+       name = 'siesta: Constraint'
+       if ( index(r%name,'dir') > 0 ) then
+          ! the name should include the fixation vector
+          write(name,'(a,2(tr1,e10.4,'',''),tr1,e10.4,a)') 'siesta: Constraint v=[',fixs(if)%fix,']'
+       end if
+       call region_print(r, name = trim(name), seq_max = 12)
        
     end do
     call region_delete(r)
@@ -532,12 +564,12 @@ contains
           if ( N == 0 ) then
 
              ! We fix them
-             fixs(ifix)%type = 'pos-fix'
+             fixs(ifix)%type = 'pos'
 
           else if ( N == 3 ) then
 
              ! Fix the direction specified by the 3 reals
-             fixs(ifix)%type = 'pos'
+             fixs(ifix)%type = 'pos-dir'
              
              fixs(ifix)%fix(1) = fdf_breals(pline,1)
              fixs(ifix)%fix(2) = fdf_breals(pline,2)
@@ -549,7 +581,7 @@ contains
           else
 
              call die('You *must* specify 0 or 3 real values (not integers) &
-                  &to do a positional constrain.')
+                  &to do a constraint on atomic positions.')
 
           end if
              
@@ -584,7 +616,7 @@ contains
              ! Fix the direction specified by the 3 reals
              ! Once we have calculated the relative displacements
              ! we fix the movement by these reals
-             fixs(ifix)%type = 'mol-fix'
+             fixs(ifix)%type = 'mol-dir'
              
              fixs(ifix)%fix(1) = fdf_breals(pline,1)
              fixs(ifix)%fix(2) = fdf_breals(pline,2)
@@ -596,7 +628,7 @@ contains
           else
 
              call die('You *must* specify 0 or 3 real values (not integers) &
-                  &to do a positional constrain.')
+                  &to do a constraint on a molecule.')
 
           end if
 
@@ -664,7 +696,9 @@ contains
 
           if ( ia == fixs(if)%a(i) ) then
 
-             if ( fixs(if)%fix(1) == 1._dp ) then
+             if ( fixs(if)%type == 'pos' ) then
+                fi(:) = .true.
+             else if ( fixs(if)%fix(1) == 1._dp ) then
                 fi(1) = .true.
              else if ( fixs(if)%fix(2) == 1._dp ) then
                 fi(2) = .true.
