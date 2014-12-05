@@ -1,4 +1,34 @@
 ------------------------------------------------------------
+2014-12-05   Alberto Garcia trunk-462--radfunc-5--wannier-5
+Diagonalize H(k) only once in Wannier interface
+
+(Merge rev 440 from J. Junquera's branch)
+
+A bug has been corrected in the parallel version of the interface
+between Siesta and Wannier90.  The former version produced different
+results depending on the number of nodes used in the simulations.  It
+was related with the diagonalization of the Hamiltonian for every
+k-point at different places of the implementation. Everytime the
+Hamiltonian was diagonalized, a random phase for the wavefunctions was
+chosen, and this yielded inconsistent results in some cases.  Now, the
+Hamiltonian is diagonalized only once (in diagonalizeHk.F90
+subroutine) and then the wavefunctions stored in memory.
+
+NOTE: The extension of the eigenvalue file in the Wannier90 interface
+      has been changed to .eigW
+
+added:
+  Src/diagonalizeHk.F90
+modified:
+  Src/Makefile
+  Src/amn.F90
+  Src/m_overkkneig.F90
+  Src/mmn.F90
+  Src/reordpsi.F
+  Src/siesta2wannier90.F90
+  Src/write_inp_wannier.F90
+
+------------------------------------------------------------
 2014-10-20   Alberto Garcia trunk-462--radfunc-5--wannier-4
 Sync to trunk-462
 

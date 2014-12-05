@@ -162,7 +162,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_trialorbitalclass.o siesta2wannier90.o m_planewavematrixvar.o \
 	delk.o m_planewavematrix.o m_digest_nnkp.o broadcast_projections.o \
 	compute_pw_matrix.o m_writedelk.o mmn.o m_noccbands.o amn.o \
-	m_overkkneig.o write_inp_wannier.o
+	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -461,6 +461,9 @@ diagk_file.o: sys.o writewave.o
 diagkp.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagon.o: alloc.o densematrix.o m_diagon.o m_memory.o parallel.o parallelsubs.o
 diagon.o: precision.o siesta_options.o sys.o
+diagonalizeHk.o: alloc.o atomlist.o densematrix.o m_spin.o parallel.o
+diagonalizeHk.o: parallelsubs.o precision.o siesta2wannier90.o
+diagonalizeHk.o: sparse_matrices.o units.o
 diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
@@ -589,7 +592,7 @@ m_noccbands.o: alloc.o atmfuncs.o m_spin.o parallel.o precision.o siesta_geom.o
 m_noccbands.o: sys.o
 m_options.o: precision.o
 m_overkkneig.o: alloc.o atomlist.o parallel.o parallelsubs.o precision.o
-m_overkkneig.o: siesta_geom.o sparse_matrices.o
+m_overkkneig.o: siesta2wannier90.o siesta_geom.o sparse_matrices.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_planewavematrix.o: alloc.o atomlist.o dhscf.o files.o m_dipol.o m_energies.o
@@ -656,10 +659,9 @@ minvec.o: cellsubs.o precision.o sorting.o sys.o
 mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_pulay.o m_spin.o
 mixer.o: m_ts_global_vars.o parallel.o siesta_geom.o siesta_options.o
 mixer.o: sparse_matrices.o
-mmn.o: alloc.o atomlist.o densematrix.o m_digest_nnkp.o m_noccbands.o
-mmn.o: m_planewavematrixvar.o m_spin.o parallel.o precision.o
-mmn.o: siesta2wannier90.o siesta_geom.o siesta_options.o sparse_matrices.o
-mmn.o: units.o
+mmn.o: alloc.o atomlist.o m_digest_nnkp.o m_noccbands.o m_planewavematrixvar.o
+mmn.o: parallel.o precision.o siesta2wannier90.o siesta_geom.o
+mmn.o: sparse_matrices.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o

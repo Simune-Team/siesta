@@ -1,4 +1,4 @@
-subroutine amn( ik, kvector, nincbands, npsi, psi )
+subroutine amn( ispin )
 !
 !     In this subroutine we compute the overlaps between Bloch states
 !     onto trial localized orbitals
@@ -22,13 +22,8 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
 !     the format required by Wannier90
 !   
 !     BEHAVIOUR:
-!     The loop on k-points is performed outside this subroutine, in mmn.F90.
-!     This is due to the fact that the coefficients for the wave function
-!     at a given point k must be consistent between mmn.F90 and amn.F90.
-!     Since in every call to the diagonalization, an arbitrary phase can
-!     be introduced, the diagonalization has to be performed only once
-!     (in our case, in mmn.F90), and the coefficients are introduced
-!     in amn as arguments of the subroutine.
+!     The coefficients of the wave functions are introduced
+!     in amn thorugh the matrix coeffs, computed in diagonalizeHk
 !     
 !     PARALLELIZATION: 
 !     This subroutine is parallelized on the projectors, so each node
@@ -41,6 +36,7 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
   use parallel,           only: Nodes               ! Total number of Nodes
   use parallel,           only: Node                ! Local Node
   use parallel,           only: IONode              ! Input/output node
+  use parallel,           only: BlockSize           ! BlockSize
   use atomlist,           only: rmaxo               ! Max. cutoff atomic orbital
   use siesta_geom,        only: scell               ! Lattice vector of the
                                                     !   supercell in real space
@@ -50,7 +46,35 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
   use m_siesta2wannier90, only: latvec              ! Lattice vectors in real 
                                                     !   space
   use m_siesta2wannier90, only: numproj             ! Total number of projectors
+  use m_siesta2wannier90, only: numkpoints          ! Total number of k-points
+                                                    !   for which the overlap of
+                                                    !   the periodic part of the
+                                                    !   wavefunct with a 
+                                                    !   neighbour k-point will
+                                                    !   be computed
+  use m_siesta2wannier90, only: kpointsfrac         ! List of k points relative
+                                                    !   to the reciprocal 
+                                                    !   lattice vectors.
+                                                    !   First  index: component
+                                                    !   Second index: k-point  
+                                                    !      index in the list
   use m_siesta2wannier90, only: projections         ! Trial projection functions
+  use m_siesta2wannier90, only: numincbands         ! Number of bands for 
+                                                    !   wannierization
+                                                    !   after excluding bands  
+  use m_siesta2wannier90, only: nincbands_loc       ! Number of bands for 
+                                                    !   wannierization
+                                                    !   after excluding bands  
+                                                    !   in the local Node
+  use m_siesta2wannier90, only: blocksizeincbands   ! Maximum number of bands
+                                                    !   considered for 
+                                                    !   wannierization
+                                                    !   per node
+  use m_siesta2wannier90, only: coeffs              ! Coefficients of the
+                                                    !   wavefunctions.
+                                                    !   First  index: orbital
+                                                    !   Second index: band
+                                                    !   Third  index: k-point
   use m_siesta2wannier90, only: Amnmat              ! Matrix of the overlaps of 
                                                     !   trial projector funtions
                                                     !   with Eigenstates of the
@@ -69,13 +93,10 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
   use atmfuncs,           only: orb_gindex          ! Subroutine that gives
                                                     !   the global index of an
                                                     !   atomic orbital
+
 !
 ! Variables for the diagonalization
 !
-  use atomlist,           only: no_l         ! Number of orbitals in local node
-                                             ! NOTE: When running in parallel,
-                                             !   this is core dependent
-                                             !   Sum_{cores} no_l = no_u
   use atomlist,           only: no_u         ! Number of orbitals in unit cell
                                              ! NOTE: When running in parallel,
                                              !   this is core independent
@@ -101,6 +122,8 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
 
   implicit none
 
+  integer, intent(in)     :: ispin               ! Spin component
+
   type orbitallinkedlist
     real(dp),dimension(3)           :: center
     integer                         :: specie
@@ -109,25 +132,13 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
     type(orbitallinkedlist),pointer :: nextitem
   end type
 
-! Passed arguments
-  integer,  intent(in) :: ik         ! Index of the k-point
-  real(dp), intent(in) :: kvector(3) ! k-point vector for which the 
-                                     !   Overlap matrix 
-                                     !   between the projection function and the
-                                     !   eigenvector of the Hamiltonian will be
-                                     !   computed
-  integer,  intent(in) :: nincbands  ! Number of occupied bands
-  integer,  intent(in) :: npsi       ! Dimension of psi
-                                     !   (depends on the local node)
-  real(dp), intent(in) :: psi(npsi)  ! Coefficients of the wave function at
-                                     !   k-point kvector
 
 ! Local variables
+  integer  :: ik              ! Counter for loop on k-points
   integer  :: iproj           ! Counter for loop on projections
   integer  :: io              ! Counter for loop on orbital 
-  integer  :: iuo             ! Counter for loop on orbital 
-  integer  :: imu             ! Counter for loop on orbital 
   integer  :: iband           ! Counter for loop on bands
+  integer  :: nincbands       ! Number of bands for wannierization
   logical, save :: firsttime = .true. ! First time this subroutine is called?
   integer  :: gindex          ! Global index of the trial projector function
                               !   in the list of functions that will be
@@ -152,6 +163,8 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
                               !   the trial function and a given atomic orbital
   real(dp) :: phase           ! Product of the k-vector with the position
                               !   where the neighbour orbital is centered
+  real(dp) :: kvector(3)      ! k-point vector in the Wannier90 grid
+
 
   complex(dp), dimension(:,:), pointer :: psiloc ! Coefficients of the wave
                                              !   function (in complex format)
@@ -171,12 +184,10 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
                                              !   of a projector in the list of
                                              !   functions that will be
                                              !   evaluated by MATEL
-  integer     :: inode                       ! Counter for the loop on nodes
-  integer     :: nbands_loc                  ! Number of bands stored
-                                             !   on the local node
   integer     :: iband_global                ! Global index for a band
 #ifdef MPI
   integer     :: MPIerror
+  integer     :: BlockSizeDiagon
   complex(dp), dimension(:,:), pointer :: auxloc ! Temporal array for the
                                              !   the global reduction of Amnmat
 #endif 
@@ -186,10 +197,43 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
 ! Start time counter
   call timer( 'Amn', 1 )
 
+! Allocate memory related with the overlap matrix between the trial projection
+! function and the Hamiltonian eigenstate.
+! These matrices will depend on three indices (see paragraph after Eq. (16) 
+! of the review by
+! N. Marzari et al., Review of Modern Physics 84, 1419 (2012),
+! or Eq. (1.8) of the Wannier Users Guide, Version 1.2
+! $A_{m n}^{(\vec{k})} = 
+!    \langle \psi_{m \vec{k}} \vbar g_{n} \rangle =
+!    \sum_{\mu} \sum_{lcell} c_{\mu m}^{\ast} (\vec{k}) \times
+!    exp^{i \vec{k} \cdot \left( \tau_{\mu} + \vec{R}_{lcell} \right)} \times
+!    \langle \phi_{\mu} (\vec{r}-\tau_{\mu} - \vec{r}_{lcell} \vbar g_{n}\rangle
+! where $m$ runs between 1 and the number of bands considered for wannierization
+! $n$ runs between 1 and the number of projection functions, 
+! $\vec{k}$ runs over all the k-points in the first BZ where these matrices 
+! will be computed 
+
+  nincbands = numincbands( ispin )
+!! For debugging
+!  write(6,'(a,3i5)')' amn: Node, nincbands, nincbands_loc = ', &
+! &                         Node, nincbands, nincbands_loc
+!! End debugging
+
+  nullify( Amnmat )
+  call re_alloc( Amnmat,         &
+ &               1, nincbands,   &
+ &               1, numproj,     &
+ &               1, numkpoints,  &
+ &               'Amnmat',       &
+ &               'Amn'           )
+
+
 ! Allocate memory related with a local variable where the coefficients 
 ! of the eigenvector at the k-point will be stored
+! Only nincbands are retained for wannierization, that is why the
+! second argument is made equal to nincbands
   nullify( psiloc )
-  call re_alloc( psiloc, 1, no_u, 1, no_u, 'psiloc', 'Amn' )
+  call re_alloc( psiloc, 1, no_u, 1, nincbands, 'psiloc', 'Amn' )
 
 ! Assign a global index to the trial functions
 ! The same global index is assigned to a given trial function in all the nodes
@@ -203,151 +247,195 @@ subroutine amn( ik, kvector, nincbands, npsi, psi )
     firsttime = .false.
   endif
 
+kpoints:                 &
+  do ik = 1, numkpoints
+!   Compute the wave vector in bohr^-1 for every vector in the list
+!   (done in the subroutine getkvector).
+!   Remember that kpointsfrac are read from the .nnkp file in reduced units, 
+!   so we have to multiply then by the reciprocal lattice vector.
+    call getkvector( kpointsfrac(:,ik), kvector )
+
+!   Initialize the local coefficient matrix for every k-point
+    psiloc(:,:) = cmplx(0.0_dp, 0.0_dp, kind=dp)
+
+!!   For debugging
+!!    if( IOnode ) then
+!    if( Node .eq. 4 ) then
+!      do iband = 1, nincbands_loc
+!        write(6,'(a,i5,f12.5)')         &
+! &        'amn: iband, eo = ', iband, epsilon(iband)
+!        do io = 1, no_u
+!          write(6,'(a,2i5,2f12.5)')         &
+! &          'amn: io, iband, psi   = ', io, iband, coeffs(io,iband,ik)
+!        enddo 
+!      enddo 
+!    endif
+!!   End debugging
+
+#ifdef MPI
+!   Store the local bands in this node on a complex variable
+    do iband = 1, nincbands_loc
+      BlockSizeDiagon = BlockSize
+      BlockSize       = blocksizeincbands
+      call LocalToGlobalOrb( iband, Node, Nodes, iband_global )
+      BlockSize = BlockSizeDiagon
+!! For debugging
+!      write(6,'(a,3i5)')' amn: Node, iband, iband_global = ', &
+! &                             Node, iband, iband_global
+!! End debugging
+
+      do io = 1, no_u
+        psiloc(io,iband_global) = coeffs(io,iband,ik)
+      enddo
+
+!!     For debugging
+!!      if( IOnode ) then
+!      if( Node .eq. 4 ) then
+!        do io = 1, no_u
+!          write(6,'(a,4i5,2f12.5)')                   &
+! &          'amn: Node, io, iband, psiloc1 = ',       &
+! &                Node, io, iband, iband_global, psiloc(io,iband_global)
+!        enddo
+!      endif
+!!     End debugging
+    enddo
+!   Allocate workspace array for global reduction
+    nullify( auxloc )
+    call re_alloc( auxloc, 1, no_u, 1, nincbands,   &
+ &                 name='auxloc', routine='Amn' )
+!   Global reduction of auxloc matrix
+    auxloc(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
+    call MPI_AllReduce( psiloc(1,1), auxloc(1,1),   &
+ &                      no_u*nincbands,             &
+ &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
+!   After this reduction, all the nodes know the coefficients of the
+!   wave function for the point ik, for all the bands and for all atomic
+!   orbitals
+    psiloc(:,:) = auxloc(:,:)
+#else
+    do iband = 1, nincbands
+      do io = 1, no_u
+        psiloc(io,iband) = coeffs(io,iband,ik)
+      enddo
+    enddo
+#endif
+
 !! For debugging
 !!  if( IOnode ) then
-!  if( Node .eq. 3 ) then
-!    iuo = 0
-!    do iband = 1, no_l
-!!      write(6,'(a,i5,f12.5)')         &
-!! &      'amn: iband, eo = ', iband, epsilon(iband)
+!  if( Node .eq. 0 ) then
+!    do iband = 1, nincbands
 !      do io = 1, no_u
-!        write(6,'(a,i5,2f12.5)')         &
-! &        'amn: io, psi   = ', io, psi(iuo+1), psi(iuo+2)
-!        iuo = iuo + 2
-!      enddo 
-!    enddo 
+!        write(6,'(a,3i5,2f12.5)')                   &
+! &        'amn: Node, io, iband, psiloc = ',       &
+! &              Node, io, iband, psiloc(io,iband)
+!      enddo
+!    enddo
 !  endif
 !! End debugging
 
+
+!   Loop on the projections that will be computed in the local node
 #ifdef MPI
-! Store the local bands in this node on a complex variable
-  iuo = 0
-  do iband = 1, no_l
-    call LocalToGlobalOrb( iband, Node, Nodes, iband_global )
-    do io = 1, no_u
-      psiloc(io,iband_global) = cmplx(psi(iuo+1), psi(iuo+2),kind=dp)
-      iuo = iuo + 2
-    enddo
-  enddo
-! Allocate workspace array for global reduction
-  nullify( auxloc )
-  call re_alloc( auxloc, 1, no_u, 1, no_u,        &
- &               name='auxloc', routine='Amn' )
-! Global reduction of auxloc matrix
-  auxloc(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
-  call MPI_AllReduce( psiloc(1,1), auxloc(1,1),   &
- &                    no_u*no_u,                  &
- &                    MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
-! After this reduction, all the nodes know the coefficients of the
-! wave function for the point ik, for all the bands and for all atomic
-! orbitals
-  psiloc(:,:) = auxloc(:,:)
+    do iproj = 1+Node, numproj, Nodes
 #else
-  iuo = 0
-  do iband = 1, no_l
-    do io = 1, no_u
-      psiloc(io,iband) = cmplx(psi(iuo+1), psi(iuo+2),kind=dp)
-      iuo = iuo + 2
-    enddo
-  enddo
+    do iproj = 1, numproj
 #endif
+      indexproj = iproj
 
-! Loop on the projections that will be computed in the local node
-#ifdef MPI
-  do iproj = 1+Node, numproj, Nodes
-#else
-  do iproj = 1, numproj
-#endif
-    indexproj = iproj
+!     Find the global index of the projector in the list of radial functions
+!     that will be evaluated by MATEL
+      globalindexproj = projector_gindex(indexproj) 
 
-!   Find the global index of the projector in the list of radial functions
-!   that will be evaluated by MATEL
-    globalindexproj = projector_gindex(indexproj) 
-
-!   Find where the trial function is centered
-    trialcenter = projections(indexproj)%center
+!     Find where the trial function is centered
+      trialcenter = projections(indexproj)%center
   
-!   Find the cutoff radius of the trial function
-    trialrcut   = projections(indexproj)%rcut
-
-!!   For debugging
-!    write(6,'(a,4i5,4f12.5)')' ik, Node, iproj, indexproj = ',  &
-!                ik, Node, iproj, indexproj, trialcenter, trialrcut 
-!!   End debugging
-
-!   Find the atomic orbitals that ovelap with our radial orbital
-!   centered at trialcenter and with range trialrcut
-    item => get_overlapping_orbitals( scell, rmaxo, trialrcut, na_s, &
- &                                    xa, trialcenter )
-
-OrbitalQueue:                                                        &
-    do while (associated(item))
-      r12 = trialcenter - item%center
-      globalindexorbital = orb_gindex( item%specie, item%specieindex )
-      call new_matel('S',                & ! Compute the overlap
- &                   globalindexorbital, & ! Between orbital with globalinde
- &                   globalindexproj,    & ! And projector with globalindex
- &                   r12,                & 
- &                   overlap,            & 
- &                   gradient )
-
-      phase = -1.0_dp * dot_product( kvector, item%center )
-      exponential = exp( iu * phase )
+!     Find the cutoff radius of the trial function
+      trialrcut   = projections(indexproj)%rcut
 
 !!     For debugging
-!      write(6,'(/,a,2i5)')               &
-! &      'amn: Node, specie        = ', Node, item%specie
-!      write(6,'(a,2i5)')                 &
-! &      'amn: Node, specieindex   = ', Node, item%specieindex
-!      write(6,'(a,2i5)')                 &
-! &      'amn: Node, globalindex   = ', Node, item%globalindex
-!      write(6,'(a,2i5)')                 &
-! &      'amn: Node, globalindexorb= ', Node, globalindexorbital
-!      write(6,'(a,2i5)')                 &
-! &      'amn: Node, globalindexpro= ', Node, globalindexproj
-!      write(6,'(a,i5,3f12.5)')           &
-! &      'amn: Node, r12           = ', Node, r12
-!      write(6,'(a,i5,f12.5)')            &
-! &      'amn: Node, overlap       = ', Node, overlap
-!      write(6,'(a,i5,3f12.5)')           &
-! &      'amn: Node, gradient      = ', Node, gradient
+!      write(6,'(a,6i5,4f12.5)')' ik, Node, nincbands, nincbands_loc, iproj, indexproj = ',  &
+! &                ik, Node, nincbands, nincbands_loc, iproj,      &
+! &                indexproj, trialcenter, trialrcut 
 !!     End debugging
 
-!     Loop over occupied bands
+!     Find the atomic orbitals that ovelap with our radial orbital
+!     centered at trialcenter and with range trialrcut
+      item => get_overlapping_orbitals( scell, rmaxo, trialrcut, na_s, &
+ &                                      xa, trialcenter )
+
+OrbitalQueue:                                                        &
+      do while (associated(item))
+        r12 = trialcenter - item%center
+        globalindexorbital = orb_gindex( item%specie, item%specieindex )
+        call new_matel('S',                & ! Compute the overlap
+ &                     globalindexorbital, & ! Between orbital with globalinde
+ &                     globalindexproj,    & ! And projector with globalindex
+ &                     r12,                & 
+ &                     overlap,            & 
+ &                     gradient )
+
+        phase = -1.0_dp * dot_product( kvector, item%center )
+        exponential = exp( iu * phase )
+
+!!       For debugging
+!        write(6,'(/,a,2i5)')               &
+! &        'amn: Node, specie        = ', Node, item%specie
+!        write(6,'(a,2i5)')                 &
+! &        'amn: Node, specieindex   = ', Node, item%specieindex
+!        write(6,'(a,2i5)')                 &
+! &        'amn: Node, globalindex   = ', Node, item%globalindex
+!        write(6,'(a,2i5)')                 &
+! &        'amn: Node, globalindexorb= ', Node, globalindexorbital
+!        write(6,'(a,2i5)')                 &
+! &        'amn: Node, globalindexpro= ', Node, globalindexproj
+!        write(6,'(a,i5,3f12.5)')           &
+! &        'amn: Node, r12           = ', Node, r12
+!        write(6,'(a,i5,f12.5)')            &
+! &        'amn: Node, overlap       = ', Node, overlap
+!        write(6,'(a,i5,3f12.5)')           &
+! &        'amn: Node, gradient      = ', Node, gradient
+!!       End debugging
+
+!       Loop over occupied bands
 Band_loop:                                                           &
-      do iband = 1, nincbands
-        cstar = conjg( psiloc(item%globalindex,iband) )
-        Amnmat(iband,indexproj,ik) =      & 
- &        Amnmat(iband,indexproj,ik) +    &
- &        exponential * cstar * overlap
-      enddo Band_loop  ! End loop on the bands
+        do iband = 1, nincbands
+          cstar = conjg( psiloc(item%globalindex,iband) )
+          Amnmat(iband,indexproj,ik) =      & 
+ &          Amnmat(iband,indexproj,ik) +    &
+ &          exponential * cstar * overlap
+        enddo Band_loop  ! End loop on the bands
 
-      item => item%nextitem
-    enddo OrbitalQueue
+        item => item%nextitem
+      enddo OrbitalQueue
 
-  enddo   ! Loop on projections on the local node
+    enddo   ! Loop on projections on the local node
 
-! Global reduction is required because we need all the matrix Amnmat in IOnode
-! (to dump it into a file),but the results for some of the bands might
-! be computed in other nodes.
+!   Global reduction is required because we need all the matrix Amnmat in IOnode
+!   (to dump it into a file),but the results for some of the bands might
+!   be computed in other nodes.
 #ifdef MPI
-! Allocate workspace array for global reduction
-  nullify( auxloc )
-  call re_alloc( auxloc, 1, nincbands, 1, numproj,    &
- &               name='auxloc', routine='Amn' )
-! Global reduction of auxloc matrix
-  auxloc(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
-  call MPI_AllReduce( Amnmat(1,1,ik), auxloc(1,1),                       &
- &                    nincbands*numproj,                                 &
- &                    MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
-  Amnmat(:,:,ik) = auxloc(:,:)
+!   Allocate workspace array for global reduction
+    nullify( auxloc )
+    call re_alloc( auxloc, 1, nincbands, 1, numproj,    &
+ &                 name='auxloc', routine='Amn' )
+!   Global reduction of auxloc matrix
+    auxloc(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
+    call MPI_AllReduce( Amnmat(1,1,ik), auxloc(1,1),                       &
+ &                      nincbands*numproj,                                 &
+ &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
+    Amnmat(:,:,ik) = auxloc(:,:)
 #endif
+  enddo kpoints
 
 ! Deallocate some of the arrays
   call de_alloc( psiloc,  'psiloc',  'Amn' )
 #ifdef MPI
   call de_alloc( auxloc,  'auxloc',  'Amn' )
 #endif
+
+! Write the Amn overlap matrices in a file, in the format required
+! by Wannier90
+  if( IOnode ) call writeamn( ispin )
 
 ! End time counter
   call timer( 'Amn', 2 )
