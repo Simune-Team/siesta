@@ -244,6 +244,33 @@ class TBTProjFile(TBTFile):
         """ Returns the spectral function DOS from the molecule, projection and electrode """
         return self._get_Data('ADOS',tree=[mol,proj,El],k_avg=k_avg)
 
+# The user requests a specific set of atoms/orbitals
+import re
+# Compile the reg-exp we search for in the input
+re_a   = re.compile('[,]?([0-9-]+\[[0-9,-]+\]|[0-9-]+)[,]?')
+re_rng = re.compile('[,]?([0-9-]+)[,]?')
+
+def parse_rng(s):
+    """ Parses a string into a list of ranges 
+    This range can be formatted like this:
+      1,2,3-6
+    in which case it will return:
+      [1,2,3,4,5,6]
+    """
+    rng = []
+    for la in re_rng.findall(s):
+        # We accumulate a list of integers
+        tmp = la.split('-')
+        if len(tmp) > 2: 
+            print('Error in parsing: "'+s+'".')
+        elif len(tmp) > 1:
+            bo, eo = tuple(map(int,tmp))
+            rng.extend(range(bo,eo+1))
+        else:
+            rng.append(int(tmp[0]))
+
+    return rng
+
 def main():
 
     # We create all permutations of the available information
@@ -297,43 +324,19 @@ def main():
         # requests
         args.atom = ','.join(args.atom)
 
-        # The user requests a specific set of atoms/orbitals
-        import re
-        # Compile the reg-exp we search for in the input
-        re_a = re.compile('[,]?([0-9-]+\[[0-9,-]+\]|[0-9-]+)[,]?')
-
         for lla in re_a.findall(args.atom):
             # We accumulate a list of atoms and orbitals
             
             # First we split in []
-            o = []
             if '[' in lla:
                 t = lla.split('[')
-                a = t[0]
-                o = t[1].split(']')[0]
-                # decipher the orbitals
-                tmp = o.split('-')
-                if len(tmp) > 2: 
-                    print('Orbital option not formatted correctly, discards orbital in option "'+lla+'".')
-                elif len(tmp) > 1:
-                    bo, eo = tuple(map(int,tmp))
-                    o = range(bo,eo+1)
-                else:
-                    o = [int(tmp[0])]
+                a = parse_rng(t[0])
+                # parse the orbitals
+                o = parse_rng(t[1].split(']')[0])
             else:
-                a = lla
+                a = parse_rng(lla)
+                o = []
             
-            # decipher the atoms
-            tmp = a.split('-')
-            if len(tmp) > 2: 
-                print('Atom option not formatted correctly, discards option "'+lla+'".')
-                continue
-            if len(tmp) > 1:
-                ba, ea = tuple(map(int,tmp))
-                a = range(ba,ea+1)
-            else:
-                a = [int(tmp[0])]
-
             # Update a to only contain atoms in the device region
             a = [ia for ia in a if ia in dev_a]
             # in case the atom list is now empty

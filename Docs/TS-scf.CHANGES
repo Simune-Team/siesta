@@ -1,4 +1,11 @@
 ----------------------------------------------------
+December 8, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-238
+Bugfix for tbt_data and range specification
+
+modified:
+  Util/TS/TBtrans/tbt_data.py
+
+----------------------------------------------------
 December 8, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-237
 Added a_dev to netcdf files in tbtrans, added orbitals to tbt_data
 
