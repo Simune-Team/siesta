@@ -89,6 +89,11 @@ class TBTFile(object):
         return int(len(self.nc.dimensions['no_d']))
 
     @property
+    def a_dev(self):
+        """ Returns the atoms in the device region """
+        return np.array(self.nc.variables['a_dev'][:],np.int)
+
+    @property
     def pivot(self):
         """ Returns the pivot table """
         return self._get_Data('pivot')
@@ -112,11 +117,14 @@ class TBTFile(object):
     def atom2idx(self,atoms):
         """ Returns an array of integers corresponding 
         to the orbitals of the input atoms """
-        orbs = self.atom2orb(atoms)
+        return self.orb2idx(self.atom2orb(atoms))
+
+    def orb2idx(self,orbs):
+        """ Returns an array of integers corresponding 
+        to the orbitals of the input orbitals """
         # Locate the equivalent orbitals in
         # the pivot table and create an index variable
-        orbs = np.where(np.in1d(self.pivot,orbs))[0]
-        return orbs
+        return np.where(np.in1d(self.pivot,orbs))[0]
 
     def _get_Data(self,var,tree=[],k_avg=False):
         """ Generic routine for retrieving the data in a tree """
@@ -255,7 +263,7 @@ def main():
                    help='Print out eigs of used levels for the projection')
 
     p.add_argument('-a','--atom',default=None,action='append',type=str,
-                   help='Only save DOS for designated atoms, could be a list (several calls allowed) [1|1,2|1-3]')
+                   help='Only save DOS for designated atoms[orbs], could be a list/range (several calls allowed) [1|1,2|1-3|1[2]|1-3[2]]')
     
     p.add_argument('--prefix',default='data',type=str,
                    help='The prefix for the data files when saving the data.')
@@ -279,35 +287,83 @@ def main():
     print('Datafile '+args.netcdf+' created on: '+Tf.date())
 
     # Generate list of specified atoms
+    orbs  = []
     atoms = []
-    try:
-        # get atomic string: [1|1,2|1,2-3]
-        lla = args.atom
-        for la in lla:
-            # First split per comma
-            ca = la.split(',')
-            for ra in ca:
-                tmp = ra.split('-')
+    # we do not allow atoms out-side of the device region
+    dev_a = Tf.a_dev
+    if args.atom:
+
+        # Re-create a single line of comma separated
+        # requests
+        args.atom = ','.join(args.atom)
+
+        # The user requests a specific set of atoms/orbitals
+        import re
+        # Compile the reg-exp we search for in the input
+        re_a = re.compile('[,]?([0-9-]+\[[0-9,-]+\]|[0-9-]+)[,]?')
+
+        for lla in re_a.findall(args.atom):
+            # We accumulate a list of atoms and orbitals
+            
+            # First we split in []
+            o = []
+            if '[' in lla:
+                t = lla.split('[')
+                a = t[0]
+                o = t[1].split(']')[0]
+                # decipher the orbitals
+                tmp = o.split('-')
                 if len(tmp) > 2: 
-                    print('Atom option not formatted correctly, will continue with all atoms.')
-                if len(tmp) > 1:
-                    ba, ea = tuple(map(int,tmp))
-                    a = range(ba,ea+1)
+                    print('Orbital option not formatted correctly, discards orbital in option "'+lla+'".')
+                elif len(tmp) > 1:
+                    bo, eo = tuple(map(int,tmp))
+                    o = range(bo,eo+1)
                 else:
-                    a = [int(tmp[0])]
-                # append the current atom selection
-                atoms.append(a)
-    except: pass
+                    o = [int(tmp[0])]
+            else:
+                a = lla
+            
+            # decipher the atoms
+            tmp = a.split('-')
+            if len(tmp) > 2: 
+                print('Atom option not formatted correctly, discards option "'+lla+'".')
+                continue
+            if len(tmp) > 1:
+                ba, ea = tuple(map(int,tmp))
+                a = range(ba,ea+1)
+            else:
+                a = [int(tmp[0])]
+
+            # Update a to only contain atoms in the device region
+            a = [ia for ia in a if ia in dev_a]
+            # in case the atom list is now empty
+            if not a: continue
+
+            # Create list of atoms
+            atoms.append(a)
+
+            if o:
+                # we have only a subset of the orbitals
+                for ia in a:
+                    ob = Tf.atom2orb([ia])
+                    # we need to correct the python indices
+                    orbs.append(ob[np.array(o,np.int)-1].tolist())
+            else:
+                orbs.append(Tf.atom2orb(a).tolist())
 
     # We also remove dublicates by passing it through a set
     atoms = list(set(itertools.chain.from_iterable(atoms)))
-    if atoms:
+    orbs  = list(set(itertools.chain.from_iterable(orbs)))
+    if orbs:
         # Sort the atoms (for clarity), this has no effect otherwise
         atoms.sort()
         # Print out which atoms we project on
         print('Will project DOS onto atoms: ',atoms)
-        orbs = Tf.atom2idx(atoms)
+        del atoms
+        orbs.sort()
+        orbs = Tf.orb2idx(orbs)
     else:
+        print('Will project DOS onto all device atoms.')
         orbs = np.arange(Tf.no)
 
     k_idx = args.k_index

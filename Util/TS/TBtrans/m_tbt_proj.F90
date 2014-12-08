@@ -139,7 +139,7 @@ contains
     lhs => rhs
   end subroutine proj_LME_assoc
   
-  subroutine init_proj( na_u , lasto , r_aDev , r_oDev, save_DATA )
+  subroutine init_proj( na_u , lasto , a_Dev , o_Dev, save_DATA )
     
     use fdf
     use fdf_extra
@@ -149,7 +149,7 @@ contains
 
     integer, intent(in) :: na_u
     integer, intent(in) :: lasto(0:na_u)
-    type(tRegion), intent(in) :: r_aDev, r_oDev
+    type(tRegion), intent(in) :: a_Dev, o_Dev
     type(dict), intent(inout) :: save_DATA
 
     ! Local variables
@@ -293,8 +293,8 @@ contains
        ! We check that the projection is completely contained
        ! in the device region, if not then a projection of 
        ! eigenstates does not really make sense...
-       call region_union(r_aDev,mols(im)%atom,r_tmp)
-       if ( r_tmp%n /= r_aDev%n ) then
+       call region_union(a_Dev,mols(im)%atom,r_tmp)
+       if ( r_tmp%n /= a_Dev%n ) then
           call die('Molecule not fully contained in the device &
                &region, please correct input')
        end if
@@ -309,16 +309,16 @@ contains
        ! Sort the orbitals according to the device region
        call region_copy(mols(im)%orb,mols(im)%pvt)
        ip = 0
-       do i = 1 , r_oDev%n
-          if ( 0 < region_pivot(mols(im)%pvt,r_oDev%r(i)) ) then
+       do i = 1 , o_Dev%n
+          if ( 0 < region_pivot(mols(im)%pvt,o_Dev%r(i)) ) then
              ip = ip + 1
-             mols(im)%orb%r(ip) = r_oDev%r(i)
+             mols(im)%orb%r(ip) = o_Dev%r(i)
           end if
        end do
        if ( ip /= n_orb ) call die('Error in orbitals sorting')
 
        ! Create the pivot table
-       mols(im)%pvt%r(:) = region_pivot(r_oDev,mols(im)%orb%r(:))
+       mols(im)%pvt%r(:) = region_pivot(o_Dev,mols(im)%orb%r(:))
 
        ! Re-read, and then we read in the projections... :)
        call fdf_brewind(bfdf)
@@ -1225,7 +1225,7 @@ contains
   
   ! We only allow Gamma-point projections.
   subroutine init_Proj_save( fname, TSHS , r, ispin, N_Elec, Elecs, &
-       nkpt, kpt, wkpt, NE , r_Buf, sp_dev, save_DATA )
+       nkpt, kpt, wkpt, NE , a_Dev, a_Buf, sp_dev, save_DATA )
 
     use parallel, only : Node, Nodes
     use units, only: eV
@@ -1260,7 +1260,8 @@ contains
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: nkpt, NE
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
-    type(tRegion), intent(in) :: r_Buf
+    type(tRegion), intent(in) :: a_Dev
+    type(tRegion), intent(in) :: a_Buf
     type(Sparsity), intent(inout) :: sp_dev
     type(dict), intent(in) :: save_DATA
 
@@ -1306,9 +1307,9 @@ contains
        call ncdf_open(ncdf,fname,mode=NF90_NOWRITE)
 
        dic = ('no_u'.kv. TSHS%no_u)//('na_u'.kv. TSHS%na_u )
-       dic = dic //('no_d'.kv.r%n)
-       if ( r_Buf%n > 0 ) then
-          dic = dic // ('na_b'.kv.r_Buf%n)
+       dic = dic //('no_d'.kv.r%n) // ('na_d'.kv.a_Dev%n)
+       if ( a_Buf%n > 0 ) then
+          dic = dic // ('na_b'.kv.a_Buf%n)
        end if
        call ncdf_assert(ncdf,is_same,dims=dic)
        call check(dic,is_same,'Dimensions in the PROJ.nc file does not conform &
@@ -1317,7 +1318,10 @@ contains
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) )
        dic = dic // ('xa'.kvp. TSHS%xa) // ('cell'.kvp.TSHS%cell)
-       dic = dic // ('pivot'.kvp.r%r)
+       dic = dic // ('pivot'.kvp.r%r)//('a_dev'.kvp.a_Dev%r)
+       if ( a_Buf%n > 0 ) then
+          dic = dic // ('a_buf'.kvp.a_Buf%r)
+       end if
        call ncdf_assert(ncdf,is_same,vars=dic, d_EPS = 1.e-4_dp )
        call check(dic,is_same,'lasto, xa or cell in the PROJ.nc file does &
             &not conform to the current simulation.',.false.)
@@ -1433,11 +1437,12 @@ contains
     call ncdf_def_dim(ncdf,'na_u',TSHS%na_u)
     call ncdf_def_dim(ncdf,'xyz',3)
     call ncdf_def_dim(ncdf,'one',1)
+    call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
     call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED)
     call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
-    if ( r_Buf%n > 0 ) then
-       call ncdf_def_dim(ncdf,'na_b',r_Buf%n)
+    if ( a_Buf%n > 0 ) then
+       call ncdf_def_dim(ncdf,'na_b',a_Buf%n)
     end if
 
     dic = ('source'.kv.'TBtrans projection')
@@ -1476,8 +1481,12 @@ contains
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
-    if ( r_Buf%n > 0 ) then
-       dic = dic//('info'.kv.'Buffer atoms')
+    dic = dic//('info'.kv.'Index of device atoms')
+    call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
+         atts = dic)
+
+    if ( a_Buf%n > 0 ) then
+       dic = dic//('info'.kv.'Index of buffer atoms')
        call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
             atts = dic)
     end if
@@ -1502,8 +1511,9 @@ contains
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
-    if ( r_Buf%n > 0 ) then
-       call ncdf_put_var(ncdf,'a_buf',r_Buf%r)
+    call ncdf_put_var(ncdf,'a_dev',a_Dev%r)
+    if ( a_Buf%n > 0 ) then
+       call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if
 
     ! Save all k-points

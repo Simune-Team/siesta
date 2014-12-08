@@ -80,7 +80,7 @@ contains
   ! Save the self-energies of the electrodes and
   subroutine init_Sigma_save(fname, TSHS, r, ispin, N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE, &
-       r_Buf)
+       a_Dev, a_Buf)
 
     use parallel, only : Node
     use m_io_s, only : file_exist
@@ -108,8 +108,10 @@ contains
     integer, intent(in) :: nkpt
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
+    ! Device atoms
+    type(tRegion), intent(in) :: a_Dev
     ! Buffer atoms
-    type(tRegion), intent(in) :: r_Buf
+    type(tRegion), intent(in) :: a_Buf
 
     type(hNCDF) :: ncdf, grp
     type(dict) :: dic
@@ -137,8 +139,9 @@ contains
        dic = ('no_u'.kv.TSHS%no_u) // ('na_u'.kv.TSHS%na_u) // &
             ('nkpt'.kv.nkpt ) // ('no_d'.kv.r%n) // &
             ('ne'.kv. NE )
-       if ( r_Buf%n > 0 ) then
-          dic = dic // ('na_b'.kv.r_Buf%n)
+       dic = dic // ('na_d'.kv. a_Dev%n)
+       if ( a_Buf%n > 0 ) then
+          dic = dic // ('na_b'.kv.a_Buf%n)
        end if
        call ncdf_assert(ncdf,exist,dims=dic)
        call delete(dic)
@@ -167,9 +170,10 @@ contains
        ! Check the variables
        dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
             ('pivot'.kvp. r%r )
+       dic = dic // ('a_dev'.kvp.a_Dev%r )
        dic = dic // ('xa'.kvp. TSHS%xa)
-       if ( r_Buf%n > 0 )then
-          dic = dic // ('a_buf'.kvp.r_Buf%r )
+       if ( a_Buf%n > 0 )then
+          dic = dic // ('a_buf'.kvp.a_Buf%r )
        end if
        call ncdf_assert(ncdf,same,vars=dic, d_EPS = 1.e-4_dp )
        call delete(dic,dealloc=.false.) ! we have them pointing...
@@ -235,9 +239,10 @@ contains
     call ncdf_def_dim(ncdf,'xyz',3)
     call ncdf_def_dim(ncdf,'one',1)
     call ncdf_def_dim(ncdf,'ne',NE)
+    call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
-    if ( r_Buf%n > 0 ) then
-       call ncdf_def_dim(ncdf,'na_b',r_Buf%n) ! number of buffer-atoms
+    if ( a_Buf%n > 0 ) then
+       call ncdf_def_dim(ncdf,'na_b',a_Buf%n) ! number of buffer-atoms
     end if
 
     dic = ('source'.kv.'TBtrans')
@@ -277,7 +282,11 @@ contains
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
          atts = dic)
 
-    if ( r_Buf%n > 0 ) then
+    dic = dic//('info'.kv.'Index of device atoms')
+    call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
+         atts = dic)
+
+    if ( a_Buf%n > 0 ) then
        dic = dic//('info'.kv.'Index of buffer atoms')
        call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
             atts = dic)
@@ -304,8 +313,9 @@ contains
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
-    if ( r_Buf%n > 0 ) then
-       call ncdf_put_var(ncdf,'a_buf',r_Buf%r)
+    call ncdf_put_var(ncdf,'a_dev',a_Dev%r)
+    if ( a_Buf%n > 0 ) then
+       call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
     end if
 
     ! Save all k-points

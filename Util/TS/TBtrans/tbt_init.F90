@@ -75,6 +75,9 @@ subroutine tbt_init()
 #else
      write(*,'(a)') 'SERIAL version'
 #endif
+#ifdef USE_GEMM3M
+     write(*,'(a)') 'GEMM3M support'
+#endif
 #ifdef CDF
      write(*,'(a)') 'NetCDF support'
 #endif

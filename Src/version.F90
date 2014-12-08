@@ -70,6 +70,9 @@ write(6,'(a)') 'SERIAL version'
 #ifdef TRANSIESTA
 write(6,'(a)') 'TRANSIESTA support'
 #endif
+#ifdef USE_GEMM3M
+write(6,'(a)') 'GEMM3M support'
+#endif
 #ifdef CDF
 write(6,'(a)') 'NetCDF support'
 #endif

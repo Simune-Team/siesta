@@ -43,7 +43,7 @@ contains
     use m_tbt_kpoint, only : nkpnt, kpoint, kweight
     use m_tbt_options, only : save_DATA
     use m_tbt_options, only : cdf_fname, cdf_fname_sigma, cdf_fname_proj
-    use m_tbt_regions, only : r_aBuf, r_oDev, sp_dev
+    use m_tbt_regions, only : r_aDev, r_aBuf, r_oDev, sp_dev
 
     use m_tbt_save
     use m_tbt_proj, only : N_mol, mols, init_proj_save
@@ -188,16 +188,16 @@ contains
           ! Initialize data files
           call name_save( ispin, TSHS%nspin,cdf_fname, end = 'nc')
           call init_cdf_save(cdf_fname,TSHS,r_oDev,ispin,N_Elec, Elecs, &
-               nkpnt, kpoint, kweight, NEn, r_aBuf, sp_dev, save_DATA )
+               nkpnt, kpoint, kweight, NEn, r_aDev, r_aBuf, sp_dev, save_DATA )
        end if
        
        call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'Sigma.nc')
        call init_Sigma_save(cdf_fname_sigma,TSHS,r_oDev,ispin,N_Elec, Elecs, &
-            nkpnt, kpoint, kweight, NEn, r_aBuf )
+            nkpnt, kpoint, kweight, NEn, r_aDev, r_aBuf )
        
        call name_save( ispin, TSHS%nspin, cdf_fname_proj, end = 'Proj.nc' )
        call init_Proj_save( cdf_fname_proj, TSHS , r_oDev, ispin, N_Elec, Elecs, &
-            nkpnt, kpoint, kweight, NEn , r_aBuf, sp_dev, save_DATA )
+            nkpnt, kpoint, kweight, NEn , r_aDev, r_aBuf, sp_dev, save_DATA )
 #endif
 
        call tbt_trik(ispin,N_Elec, Elecs, TSHS, nq, uGF)

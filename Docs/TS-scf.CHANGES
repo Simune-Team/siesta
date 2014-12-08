@@ -1,4 +1,33 @@
 ----------------------------------------------------
+December 8, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-237
+Added a_dev to netcdf files in tbtrans, added orbitals to tbt_data
+
+* Saving the device atom indices in the netcdf files has been added
+  This makes it easier to figure out whether the requested device atoms
+  for atomic resolved DOS can be utilised.
+
+* Added orbital retrieval of DOS to tbt_data.py
+
+  If called with tbt_data.py -a 
+  one can now suffix the atoms by an orbital index/range.
+
+  Hence:
+    tbt_data.py -a 3-6[5-6]
+  will save the DOS for atoms 3 through 6 and only the 
+  5th and 6th orbital (in fortran indexing).
+  
+* Added print-out of GEMM3M support for siesta/tbtrans.
+
+modified:
+  Src/version.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+  Util/TS/TBtrans/tbt_data.py
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 December 5, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-236
 Fixed m_fixed for molecule relaxations
 
