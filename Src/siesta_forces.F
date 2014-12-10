@@ -132,12 +132,12 @@
       if ( write_cdf ) then
 
          ! Initialize the file...
-         call cdf_init_file('SIESTA.nc',.false.)
+         call cdf_init_file('SIESTA.nc',is_MD = .false.)
 
          ! Save the settings
          call cdf_save_settings('SIESTA.nc')
 
-         d_sav = ('S'.kv.1)//('sp'.kv.1)
+         d_sav = ('sp'.kv.1)//('S'.kv.1)
          d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)
          d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
          d_sav = d_sav//('isc_off'.kv.1)

@@ -15,14 +15,16 @@ module m_ts_io
 
 contains
 
-  subroutine ts_read_TSHS_opt(TSHS,DUMMY,na_u,no_u,no_s,nspin,maxnh, &
+  subroutine ts_read_TSHS_opt(TSHS,DUMMY,na_u,no_u,no_s,nspin,n_nzs, &
        xa, ucell, nsc, Qtot, Temp, Ef, &
        Gamma,Gamma_TS,kscell,kdispl,onlyS,lasto, &
        Bcast)
 
+    use m_io_s, only : file_exist
 #ifdef MPI
     use mpi_siesta
 #endif
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -32,7 +34,7 @@ contains
 ! * OUTPUT variables    *
 ! *********************** 
     integer, optional :: DUMMY ! MUST NEVER BE PASSED
-    integer, intent(out), optional :: na_u, no_u, no_s, nspin, maxnh, lasto(:), kscell(3,3), nsc(3)
+    integer, intent(out), optional :: na_u, no_u, no_s, nspin, n_nzs, lasto(:), kscell(3,3), nsc(3)
     real(dp), intent(out), optional :: xa(:,:), ucell(3,3), Qtot, Temp, Ef, kdispl(3)
     logical, intent(out), optional :: Gamma, Gamma_TS, onlyS
     logical, intent(in), optional :: Bcast
@@ -56,6 +58,25 @@ contains
     if ( present(DUMMY) ) call die('ts_read_TSHS_opt: Arguments has to be &
          &named. Please correct sources.')
 
+    if ( .not. file_exist(TSHS, Bcast = Bcast) ) then
+       call die('ERROR: Could not read '//trim(TSHS)//'.')
+    end if
+
+#ifdef NCDF_4
+    ! If it is a netcdf file we read from that
+    ! instead
+    lna_u = len_trim(TSHS)
+    if ( TSHS(lna_u-1:lna_u) == 'nc' ) then
+       call ts_read_TSHS_opt_nc(TSHS,na_u=na_u,no_u=no_u,no_s=no_s, &
+            nspin=nspin,n_nzs=n_nzs,xa=xa, ucell=ucell, &
+            nsc=nsc, Qtot=Qtot, Temp=Temp, Ef=Ef, &
+            Gamma=Gamma,Gamma_TS=Gamma_TS, &
+            kscell=kscell,kdispl=kdispl,onlyS=onlyS,lasto=lasto, &
+            Bcast = Bcast)
+       return
+    end if
+#endif
+
     if ( Node == 0 ) then
 
        version = tshs_version(tshs)
@@ -78,7 +99,7 @@ contains
        if ( present(no_u) ) no_u = lno_u
        if ( present(no_s) ) no_s = lno_s
        if ( present(nspin) ) nspin = lnspin
-       if ( present(maxnh) ) maxnh = ln_nzs
+       if ( present(n_nzs) ) n_nzs = ln_nzs
        if ( version == 0 ) then
           read(uTSHS) txa
           read(uTSHS) ! iza
@@ -177,8 +198,8 @@ contains
          call MPI_Bcast(no_s,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     if ( present(nspin) ) &
          call MPI_Bcast(nspin,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    if ( present(maxnh) ) &
-         call MPI_Bcast(maxnh,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    if ( present(n_nzs) ) &
+         call MPI_Bcast(n_nzs,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
     if ( present(nsc) ) &
          call MPI_Bcast(nsc,3,MPI_Integer,0,MPI_Comm_World,MPIerror)
     if ( present(xa) ) &
@@ -224,8 +245,8 @@ contains
        if ( present(nspin) ) & !  4
             call MPI_Pack(nspin,1,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
-       if ( present(maxnh) ) & !  4
-            call MPI_Pack(maxnh,1,MPI_Integer, &
+       if ( present(n_nzs) ) & !  4
+            call MPI_Pack(n_nzs,1,MPI_Integer, &
             buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
        if ( present(xa) ) &    ! 8 * 3 * na_u
             call MPI_Pack(xa(1,1),3*lna_u,MPI_Double_Precision, &
@@ -291,9 +312,9 @@ contains
             call MPI_UnPack(buffer,buffer_size,ipos, &
             nspin,1,MPI_Integer, &
             MPI_Comm_World, MPIerror)
-       if ( present(maxnh) ) &
+       if ( present(n_nzs) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
-            maxnh,1,MPI_Integer, &
+            n_nzs,1,MPI_Integer, &
             MPI_Comm_World, MPIerror)
        if ( present(xa) ) &
             call MPI_UnPack(buffer,buffer_size,ipos, &
@@ -353,6 +374,243 @@ contains
 
   end subroutine ts_read_TSHS_opt
 
+#ifdef NCDF_4
+
+  ! This is a routine for reading information from a 
+  ! siesta NetCDF-4 format file
+  subroutine ts_read_TSHS_opt_nc(TSHS,na_u,no_u,no_s,nspin,n_nzs, &
+       xa, ucell, nsc, Qtot, Temp, Ef, &
+       Gamma,Gamma_TS,kscell,kdispl,onlyS,lasto, &
+       Bcast)
+
+    use nf_ncdf, ncdf_parallel => parallel
+#ifdef MPI
+    use mpi_siesta
+#endif
+! ***********************
+! * INPUT variables     *
+! ***********************
+    character(len=*), intent(in) :: TSHS
+
+! ***********************
+! * OUTPUT variables    *
+! *********************** 
+    integer, intent(out), optional :: na_u, no_u, no_s, nspin, n_nzs, lasto(:), kscell(3,3), nsc(3)
+    real(dp), intent(out), optional :: xa(:,:), ucell(3,3), Qtot, Temp, Ef, kdispl(3)
+    logical, intent(out), optional :: Gamma, Gamma_TS, onlyS
+    logical, intent(in), optional :: Bcast
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    type(hNCDF) :: ncdf, grp
+    integer :: lna_u, tnsc(3)
+#ifdef MPI
+    integer :: buffer_size, ipos
+    character(len=1), allocatable :: buffer(:)
+    integer :: MPIerror
+#endif
+
+    if ( present(onlyS) ) onlyS = .false. 
+
+    call ncdf_open(ncdf,trim(TSHS),mode=NF90_NOWRITE)
+
+    ! Now we read in the things
+    call ncdf_inq_dim(ncdf,'na_u',len=lna_u)
+    if ( present(na_u) ) na_u = lna_u
+    if ( present(no_u) ) &
+         call ncdf_inq_dim(ncdf,'no_u',len=no_u)
+    if ( present(no_s) ) &
+         call ncdf_inq_dim(ncdf,'no_s',len=no_s)
+    if ( present(nspin) ) &
+         call ncdf_inq_dim(ncdf,'spin',len=nspin)
+    if ( present(xa) ) &
+         call ncdf_get_var(ncdf,'xa',xa)
+    if ( present(ucell) ) &
+         call ncdf_get_var(ncdf,'cell',ucell)
+    call ncdf_get_var(ncdf,'nsc',tnsc)
+    if ( present(nsc) ) nsc = tnsc
+    if ( present(Gamma) ) then
+       Gamma = sum(tnsc) == 1
+       if ( present(Gamma_TS) ) Gamma_TS = Gamma
+    end if
+    if ( present(Ef) ) &
+         call ncdf_get_var(ncdf,'Ef',Ef)
+    if ( present(Qtot) ) &
+         call ncdf_get_var(ncdf,'Qtot',Qtot)
+
+    if ( Node == 0 ) then
+       if ( present(lasto) ) then
+          if ( size(lasto) /= lna_u+1 ) call die('ts_read_TSHS: Wrong size of lasto')
+          lasto(1) = 0
+          call ncdf_get_var(ncdf,'lasto',lasto(2:lna_u+1))
+       end if
+    end if
+
+    if ( present(n_nzs) ) then
+       call ncdf_open_grp(ncdf,'SPARSE',grp)
+       call ncdf_get_var(grp,'nnzs',n_nzs)
+    end if
+
+    call ncdf_open_grp(ncdf,'SETTINGS',grp)
+    if ( present(Temp) ) &
+         call ncdf_get_var(grp,'ElectronicTemperature',Temp)
+    if ( present(kscell) ) &
+         call ncdf_get_var(grp,'BZ',kscell)
+    if ( present(kdispl) ) &
+         call ncdf_get_var(grp,'BZ_displ',kdispl)
+
+    call ncdf_close(ncdf)
+
+#ifdef MPI
+    if ( present(Bcast) ) then
+       ! if we do not request broadcasting, then return...
+       if ( .not. Bcast ) return
+    end if
+
+    ! Broadcast na_u (for easy reference)
+    call MPI_Bcast(lna_u,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+
+    ! this should be more than enough...
+    buffer_size = 8 * (lna_u * 6 + 103)
+    allocate(buffer(buffer_size))
+    ! position of data in buffer...
+    ipos = 0
+
+    if ( Node == 0 ) then
+       if ( present(na_u) ) & !  4
+            call MPI_Pack(na_u,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(no_u) ) & !  4
+            call MPI_Pack(no_u,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(no_s) ) & !  4
+            call MPI_Pack(no_s,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(nspin) ) & !  4
+            call MPI_Pack(nspin,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(n_nzs) ) & !  4
+            call MPI_Pack(n_nzs,1,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(xa) ) &    ! 8 * 3 * na_u
+            call MPI_Pack(xa(1,1),3*lna_u,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(ucell) ) & ! 8 * 3 * 3
+            call MPI_Pack(ucell(1,1),9,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(nsc) ) &   ! 4
+            call MPI_Pack(nsc(1),3,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Gamma) ) & ! 4
+            call MPI_Pack(Gamma,1,MPI_Logical, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(kscell) ) &! 4 * 3 * 3
+            call MPI_Pack(kscell(1,1),9,MPI_Integer, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(kdispl) ) &! 8 * 3
+            call MPI_Pack(kdispl(1),3,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Gamma_TS) ) &! 4
+            call MPI_Pack(Gamma_TS,1,MPI_Logical, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(lasto) ) & ! 4 * (na_u+1)
+            call MPI_Pack(lasto(1),lna_u+1,MPI_Logical, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Qtot) ) &  ! 8
+            call MPI_Pack(Qtot,1,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Temp) ) &  ! 8
+            call MPI_Pack(Temp,1,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+       if ( present(Ef) ) &    ! 8
+            call MPI_Pack(Ef,1,MPI_Double_Precision, &
+            buffer,buffer_size, ipos, MPI_Comm_World, MPIerror)
+
+       if ( ipos >= buffer_size .or. ipos < 0 .or. MPIerror /= MPI_Success ) then
+          call die('Error in estimating the buffer-size for the &
+               &TSHS reading. Please contact the developers')
+       end if
+
+    end if
+
+    call MPI_Bcast(buffer,buffer_size,MPI_Packed, &
+         0, MPI_Comm_World, MPIerror)
+
+    if ( Node /= 0 ) then
+       if ( present(na_u) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            na_u,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(no_u) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            no_u,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(no_s) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            no_s,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(nspin) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            nspin,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(n_nzs) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            n_nzs,1,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(xa) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            xa(1,1),3*lna_u,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(ucell) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            ucell(1,1),9,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(nsc) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            nsc(1),3,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Gamma) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Gamma,1,MPI_Logical, &
+            MPI_Comm_World, MPIerror)
+       if ( present(kscell) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            kscell(1,1),9,MPI_Integer, &
+            MPI_Comm_World, MPIerror)
+       if ( present(kdispl) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            kdispl(1),3,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Gamma_TS) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Gamma_TS,1,MPI_Logical, &
+            MPI_Comm_World, MPIerror)
+       if ( present(lasto) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            lasto(1),lna_u+1,MPI_Logical, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Qtot) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Qtot,1,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Temp) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Temp,1,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+       if ( present(Ef) ) &
+            call MPI_UnPack(buffer,buffer_size,ipos, &
+            Ef,1,MPI_Double_Precision, &
+            MPI_Comm_World, MPIerror)
+    end if       
+
+    deallocate(buffer)
+
+#endif
+
+  end subroutine ts_read_TSHS_opt_nc
+#endif
+
   subroutine ts_read_TSHS(filename, &
        onlyS, Gamma, TSGamma, &
        ucell, nsc, na_u, no_u, nspin,  &
@@ -388,13 +646,13 @@ contains
 !                               of hamiltonian matrix
 ! integer listhptr(nuo)       : Pointer to the start of each row (-1)
 !                               of hamiltonian matrix
-! integer listh(maxnh)        : Nonzero hamiltonian-matrix element column
+! integer listh(n_nzs)        : Nonzero hamiltonian-matrix element column
 !                               indexes for each matrix row
-! real*8  H(maxnh,Enspin)     : Hamiltonian in sparse form
-! real*8  S(maxnh)            : Overlap in sparse form
+! real*8  H(n_nzs,Enspin)     : Hamiltonian in sparse form
+! real*8  S(n_nzs)            : Overlap in sparse form
 ! real*8  qtot                : Total number of electrons
 ! real*8  temp                : Electronic temperature for Fermi smearing
-! real*8  xij(3,maxnh),isc_off : Vectors between orbital centers (sparse)
+! real*8  xij(3,n_nzs),isc_off : Vectors between orbital centers (sparse)
 !                               (not read/written if only gamma point)
 ! TSS Begin
 ! ********************* ADDED ARGUMENTS FOR TRANSIESTA ****************
@@ -464,6 +722,34 @@ contains
 #endif
 
     external :: io_assign, io_close
+
+    if ( .not. file_exist(filename, Bcast = Bcast ) ) then
+       call die('ERROR: Could not read '//trim(filename)//'.')
+    end if
+
+#ifdef NCDF_4
+    ! If it is a NetCDF file, we call the netCDF
+    ! routine
+    i = len_trim(filename)
+    if ( filename(i-1:i) == 'nc' ) then
+       call ts_read_TSHS_nc(filename, &
+       Gamma, TSGamma, &
+       ucell, nsc, na_u, no_u, nspin,  &
+       kscell, kdispl, &
+       xa, lasto, &
+       sp, H, S, isc_off, &
+       Ef, Qtot, Temp, &
+       tag = tag, Bcast = Bcast)
+
+       OnlyS = .false.
+       Temp = 0._dp
+       istep = 0
+       ia1 = 0
+
+       return
+
+    end if
+#endif
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE ts_io_read' )
@@ -727,6 +1013,157 @@ contains
 #endif
 
   end subroutine ts_read_TSHS
+
+#ifdef NCDF_4
+  subroutine ts_read_TSHS_nc(filename, &
+       Gamma, TSGamma, &
+       ucell, nsc, na_u, no_u, nspin,  &
+       kscell, kdispl, &
+       xa, lasto, &
+       sp, H, S, isc_off, &
+       Ef, Qtot, Temp, &
+       tag, Bcast)
+
+    use m_ncdf_io, only : cdf_r_Sp, cdf_r_d1D, cdf_r_d2D
+
+    use nf_ncdf, ncdf_parallel => parallel
+    use sys,          only : die
+#ifdef MPI
+    use mpi_siesta
+#endif
+    use alloc, only : re_alloc
+    use class_Sparsity
+    use class_OrbitalDistribution
+    use class_dSpData1D
+    use class_dSpData2D
+
+    implicit none
+
+! **********************
+! * INPUT variables    *
+! **********************
+    character(len=*), intent(in) :: filename
+    logical, intent(out) :: Gamma, TSGamma
+    real(dp), intent(out) :: ucell(3,3)
+    integer, intent(out) :: nsc(3), na_u, no_u, nspin
+    integer, intent(out) :: kscell(3,3)
+    real(dp), intent(out) :: kdispl(3)
+    real(dp), pointer :: xa(:,:)
+    integer, pointer :: lasto(:) ! (0:na_u) 
+    type(Sparsity), intent(inout) :: sp
+    type(dSpData2D), intent(inout) :: H
+    type(dSpData1D), intent(inout) :: S
+    integer, pointer :: isc_off(:,:)
+    real(dp), intent(out) :: Ef, Qtot,Temp
+    character(len=*), intent(in), optional :: tag
+    ! If true it will broadcast every information within the code...
+    logical, intent(in), optional :: Bcast
+    
+! ************************
+! * LOCAL variables      *
+! ************************
+    type(hNCDF) :: ncdf, grp
+    type(OrbitalDistribution), pointer :: dit
+    integer :: n_s
+    character(len=250) :: ltag
+    logical :: lBcast
+#ifdef MPI
+    integer :: all_I(6)
+    integer :: MPIerror
+#endif
+
+    nullify(xa,lasto,isc_off)
+
+    ltag = trim(filename)
+    if ( present(tag) ) ltag = trim(tag)
+
+    ! Determine whether to broadcast afterwards
+    lBcast = .false.
+    if ( present(Bcast) ) lBcast = Bcast
+
+    call ncdf_open(ncdf,filename,mode=NF90_NOWRITE)
+    
+    call ncdf_inq_dim(ncdf,'na_u',len=na_u)
+    call ncdf_inq_dim(ncdf,'no_u',len=no_u)
+    call ncdf_inq_dim(ncdf,'spin',len=nspin)
+    
+    call ncdf_get_var(ncdf,'nsc',nsc)
+    call ncdf_get_var(ncdf,'cell',ucell)
+    call ncdf_get_var(ncdf,'Ef',Ef)
+    call ncdf_get_var(ncdf,'Qtot',Qtot)
+
+    ! The Brillouin zone sampling for siesta
+    call ncdf_open_grp(ncdf,'SETTINGS',grp)
+    call ncdf_get_var(grp,'BZ',kscell)
+    call ncdf_get_var(grp,'BZ_displ',kdispl)
+    call ncdf_get_var(grp,'ElectronicTemperature',Temp)
+    Gamma   = ( n_s == 1 )
+    TSGamma = sum(kscell) == 1
+
+#ifdef MPI
+    if ( lBcast ) then
+       ! Bcast initial sizes
+       if ( Node == 0 ) then
+          all_I(1:6) = (/na_u,no_u,nspin,nsc(1),nsc(2),nsc(3)/)
+       end if
+       call MPI_Bcast(all_I(1),6,MPI_Integer,0,MPI_Comm_World,MPIerror)
+       na_u = all_I(1)
+       no_u = all_I(2)
+       nspin = all_I(3)
+       nsc(1) = all_I(4)
+       nsc(2) = all_I(5)
+       nsc(3) = all_I(6)
+       call MPI_Bcast(ucell(1,1),9,MPI_Double_Precision,0, &
+            MPI_Comm_World,MPIerror)
+       call MPI_Bcast(Gamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(TSGamma,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(kscell(1,1),9,MPI_Integer,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(kdispl(1),3,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(Ef,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+       call MPI_Bcast(Qtot,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+       call MPI_Bcast(Temp,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+    end if
+#endif
+    
+    if ( Node == 0 ) then
+       ! Read Geometry information
+       allocate(xa(3,na_u))
+       allocate(lasto(0:na_u))
+       lasto(0) = 0
+    end if
+    call ncdf_get_var(ncdf,'xa',xa)
+    call ncdf_get_var(ncdf,'lasto',lasto(1:na_u))
+
+    call ncdf_open_grp(ncdf,'SPARSE',grp)
+
+    ! Number of supercells
+    n_s = product(nsc)
+    call re_alloc(isc_off,1,3,1,n_s)
+    call ncdf_get_var(grp,'isc_off',isc_off)
+
+#ifdef MPI
+    if ( lBcast ) then
+       if ( Node /= 0 ) then
+          allocate(xa(3,na_u))
+          allocate(lasto(0:na_u))
+       end if
+       call MPI_Bcast(xa(1,1),3*na_u,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(lasto(0),1+na_u,MPI_Integer,0, MPI_Comm_World,MPIerror)
+       call MPI_Bcast(isc_off(1,1),3*n_s, MPI_Integer, 0, &
+            MPI_Comm_World,MPIerror)
+    end if
+#endif
+
+    call cdf_r_Sp(grp, no_u, sp, tag = trim(filename), Bcast = Bcast )
+    call cdf_r_d1D(grp, 'S', sp, S, tag = trim(filename)//': S', &
+         Bcast = Bcast , dit = dit )
+    call cdf_r_d2D(grp, 'H', sp, H, nspin, tag = trim(filename)//': H', &
+         Bcast = Bcast , dit = dit )
+             
+    call ncdf_close(ncdf)
+
+  end subroutine ts_read_TSHS_nc
+#endif
 
   subroutine ts_write_TSHS(filename, &
        onlyS, Gamma, TSGamma, &

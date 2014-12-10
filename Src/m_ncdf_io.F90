@@ -8,7 +8,12 @@ module m_ncdf_io
 
   use precision, only : sp, dp, grid_p
   use parallel, only : Node, Nodes
-  use m_io_s, only: max_consecutive_sum
+
+  use class_OrbitalDistribution
+  use class_Sparsity
+  use m_io_s, only: max_consecutive_sum, Node_Sp_gncol
+  use m_io_s, only: count_consecutive, count_blocks
+
 #ifdef NCDF_4
   use variable
   use dictionary
@@ -28,6 +33,9 @@ module m_ncdf_io
 
   public :: cdf_w_sp
   public :: cdf_w_d1D, cdf_w_d2D
+
+  public :: cdf_r_sp
+  public :: cdf_r_d1D, cdf_r_d2D
 
 #endif
 
@@ -121,9 +129,6 @@ contains
   end subroutine cdf_init_mesh
 
   subroutine cdf_w_Sp(ncdf,dit,sp)
-    use m_io_s,only : Node_Sp_gncol, count_consecutive
-    use class_OrbitalDistribution
-    use class_Sparsity
   
     type(hNCDF), intent(inout) :: ncdf
     type(OrbitalDistribution), intent(inout) :: dit
@@ -131,7 +136,7 @@ contains
 
     ! Local variables
     integer, pointer :: ncol(:), l_col(:)
-    integer, allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
     integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n
 #ifdef MPI
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
@@ -165,14 +170,14 @@ contains
        call ncdf_par_access(ncdf,name='n_col',access=NF90_INDEPENDENT)
        call ncdf_par_access(ncdf,name='list_col',access=NF90_COLLECTIVE)
 
-       allocate(buf(no_u))
-       call Node_Sp_gncol(0,sp,dit,no_u,buf)
+       allocate(ibuf(no_u))
+       call Node_Sp_gncol(0,sp,dit,no_u,ibuf)
 #ifdef MPI
        ! Globalize n_col
-       call MPI_Bcast(buf,no_u,MPI_Integer,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(ibuf,no_u,MPI_Integer,0,MPI_Comm_World,MPIerror)
 #endif
        if ( Node == 0 ) then
-          call ncdf_put_var(ncdf,'n_col',buf)
+          call ncdf_put_var(ncdf,'n_col',ibuf)
        end if
 
        ind = 1
@@ -184,7 +189,7 @@ contains
           gio = index_local_to_global(dit,io)
 
           if ( gio > 1 ) then
-             gind = sum(buf(1:gio-1)) + 1
+             gind = sum(ibuf(1:gio-1)) + 1
           else
              gind = 1
           end if
@@ -204,19 +209,19 @@ contains
 
        end do
 
-       deallocate(buf)
+       deallocate(ibuf)
 
     else
 
 #ifdef MPI
-       allocate(buf(no_u))
-       call Node_Sp_gncol(0,sp,dit,no_u,buf)
-       call ncdf_put_var(ncdf,'n_col',buf)
+       allocate(ibuf(no_u))
+       call Node_Sp_gncol(0,sp,dit,no_u,ibuf)
+       call ncdf_put_var(ncdf,'n_col',ibuf)
 
        if ( Node == 0 ) then
-          max_n = maxval(buf)
-          deallocate(buf)
-          allocate(buf(max_n))
+          max_n = maxval(ibuf)
+          deallocate(ibuf)
+          allocate(ibuf(max_n))
        end if
 
        ! Write list_col
@@ -239,19 +244,19 @@ contains
              end if
              ind = ind + ncol(io)
           else if ( Node == 0 ) then
-             call MPI_Recv( buf(1) , max_n, MPI_Integer, &
+             call MPI_Recv( ibuf(1) , max_n, MPI_Integer, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
                   call die('Error in code: ncdf_write_Sp')
              call MPI_Get_Count(MPIstatus, MPI_Integer, io, MPIerror)
-             call ncdf_put_var(ncdf,'list_col',buf(1:io), &
+             call ncdf_put_var(ncdf,'list_col',ibuf(1:io), &
                   count=(/io/),start=(/gind/))
              gind = gind + io
           end if
        end do
 
        if ( Node == 0 ) then
-          deallocate(buf)
+          deallocate(ibuf)
        end if
 
 #else
@@ -263,10 +268,286 @@ contains
 
   end subroutine cdf_w_Sp
 
+  ! Reads in a sparsity pattern at the
+  ! current position in the file (iu)
+  ! The sparsity pattern "sp" will be returned
+  ! as populated.
+  ! If dist is supplied it will distribute
+  ! the sparsity pattern as supplied (this implies Bcast = .true.)
+  ! Else if Bcast is true it will b-cast the sparsity 
+  ! pattern fully.
+  subroutine cdf_r_Sp(ncdf, no, sp, tag, dit, Bcast, gncol)
+
+    ! File handle
+    type(hNCDF), intent(inout) :: ncdf
+    ! Number of orbitals readed
+    integer, intent(in) :: no
+    ! Sparsity pattern
+    type(Sparsity), intent(inout) :: sp
+    ! The tag of the sparsity pattern
+    character(len=*), intent(in) :: tag
+    ! distribution if needed to be b-cast in a non-global
+    ! fashion
+    type(OrbitalDistribution), intent(inout), optional :: dit
+    ! Bcast the values?
+    logical, intent(in), optional :: Bcast
+    integer, intent(inout), target, optional :: gncol(no)
+
+    ! Local variables for reading the values
+    integer, pointer :: ncol(:) => null()
+    integer, pointer :: l_ptr(:) => null()
+    integer, pointer :: l_col(:) => null()
+
+    integer :: io, n_nzs, gind, ind, nl, n, i, nb, ib
+    logical :: ldit, lBcast
+    integer, pointer :: lncol(:) => null()
+#ifdef MPI
+    integer, allocatable :: ibuf(:)
+    integer :: gio, max_n
+    integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE), BNode
+#endif
+
+#ifdef MPI
+    ldit = present(dit)
+#else
+    ldit = .false.
+#endif
+    lBcast = .false.
+    if ( present(Bcast) ) lBcast = Bcast
+
+    if ( Node == 0 ) then
+
+       if ( present(gncol) ) then
+          lncol => gncol
+       else
+          allocate(lncol(no))
+       end if
+
+       ! First read in number of non-zero 
+       ! entries per orbital
+       call ncdf_get_var(ncdf,'n_col',lncol)
+
+    end if
+
+    nl = no
+
+    ! If a distribution is present, then do something
+#ifdef MPI
+    if ( ldit ) then
+
+       ! First count number of local entries
+       nl = 0
+       do gio = 1 , no
+          BNode = node_handling_element(dit,gio)
+          if ( BNode == Node ) nl = nl + 1
+       end do
+
+       ! allocate room for the number of columns in
+       ! each row
+       allocate(ncol(nl))
+
+       nb = count_blocks(dit,no)
+
+       ! allocate all requests
+       allocate(ibuf(nb))
+       ibuf(:) = MPI_REQUEST_NULL
+
+       ! Distribute it
+       gio = 1
+       ib = 0
+       do while ( gio <= no ) 
+          ib = ib + 1
+
+          BNode = node_handling_element(dit,gio)
+
+          ! Get number of consecutive orbitals
+          ! belong to the same node...
+          n = count_consecutive(dit,no,gio)
+
+          if ( BNode == Node ) then
+
+             io = index_global_to_local(dit,gio,Node)
+
+             if ( Node == 0 ) then
+                ncol(io:io-1+n) = lncol(gio:gio-1+n)
+             else
+                call MPI_IRecv( ncol(io) , n, MPI_Integer, &
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
+             end if
+
+          else if ( Node == 0 ) then
+
+             call MPI_ISSend( lncol(gio) , n, MPI_Integer, &
+                  BNode, ib, MPI_Comm_World, ibuf(ib), MPIerror)
+
+          end if
+
+          gio = gio + n
+
+       end do
+
+       do ib = 1 , nb
+          call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+       end do
+       deallocate(ibuf)
+
+    else if ( lBcast ) then
+
+       ! Everything should be b-casted
+       if ( Node == 0 ) then
+          ncol => lncol
+       else
+          allocate(ncol(nl))
+       end if
+       
+       ! Bcast everything
+       call MPI_Bcast(ncol(1),nl,MPI_Integer, &
+            0,MPI_Comm_World,MPIError)
+       
+    else if ( Node == 0 ) then
+       ncol => lncol
+    else ! if ( Node /= 0 ) then
+       ! no distribution, no b-cast.
+       ! The sparsity pattern will only exist on the IONode
+       return ! the sparsity pattern will not be created then...
+    end if
+#else
+    ! Point to the buffer
+    ncol => lncol
+#endif
+
+    ! Allocate pointer
+    allocate(l_ptr(nl))
+    
+    l_ptr(1) = 0
+    do io = 2 , nl
+       l_ptr(io) = l_ptr(io-1) + ncol(io-1)
+    end do
+    
+    ! Number of local non-zero elements
+    ! (also works for any bcast methods)
+    n_nzs = l_ptr(nl) + ncol(nl)
+
+    ! Allocate space
+    allocate(l_col(n_nzs))
+
+#ifdef MPI
+    if ( ldit ) then
+       
+       ! We have a distributed read
+       if ( Node == 0 ) then
+          max_n = max_consecutive_sum(dit,no,lncol)
+          allocate(ibuf(max_n))
+       else
+          allocate(ibuf(nb))
+          ibuf(:) = MPI_REQUEST_NULL
+       end if
+
+       ! Read in columns
+       gind = 1
+       ind = 0
+       gio = 1
+       ib = 0
+       do while ( gio <= no ) 
+          ib = ib + 1
+
+          BNode = node_handling_element(dit,gio)
+
+          ! Get number of consecutive orbitals
+          ! belong to the same node...
+          n = count_consecutive(dit,no,gio)
+
+          if ( BNode == Node ) then
+
+             ! Get the local orbital
+             io = index_global_to_local(dit,gio,Node)
+
+             if ( Node == 0 ) then
+
+                i = sum(ncol(io:io-1+n))
+                call ncdf_get_var(ncdf,'list_col', l_col(ind+1:ind+i), &
+                     start = (/gind/) , count = (/i/) )
+                ind  =  ind + i
+                gind = gind + i
+
+             else
+
+                ! count the number of received entities
+                i = sum(ncol(io:io-1+n))
+                call MPI_IRecv( l_col(ind+1) , i, MPI_Integer, &
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
+                ind = ind + i
+                
+             end if
+
+          else if ( Node == 0 ) then
+
+             i = sum(lncol(gio:gio-1+n))
+             call ncdf_get_var(ncdf,'list_col', ibuf(1:i), &
+                  start = (/gind/) , count = (/i/) )
+
+             call MPI_Send( ibuf(1) , i, MPI_Integer, &
+                  BNode, ib, MPI_Comm_World, MPIerror)
+
+             gind = gind + i
+             
+          end if
+
+          gio = gio + n
+
+       end do
+
+       if ( Node == 0 ) then
+          if ( .not. present(gncol) ) deallocate(lncol)
+       else
+          do ib = 1 , nb
+             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+          end do
+       end if
+       deallocate(ibuf)
+       
+    else if ( lBcast ) then
+
+       if ( Node == 0 ) then
+
+          ind = sum(ncol(1:no))
+          call ncdf_get_var(ncdf,'list_col',l_col(1:ind), &
+               count = (/ind/) )
+          if ( ind /= n_nzs ) then
+             call die('Error in reading sparsity pattern, &
+                  &size not equivalent.')
+          end if
+       end if
+
+       ! Bcast
+       call MPI_Bcast(l_col(1),n_nzs,MPI_Integer, &
+            0,MPI_Comm_World,MPIError)
+
+    else
+#endif
+
+       ind = sum(ncol(1:no))
+       call ncdf_get_var(ncdf,'list_col',l_col(1:ind), &
+            count = (/ind/) )
+
+#ifdef MPI       
+    end if
+#endif
+
+    ! Create the sparsity pattern
+    call newSparsity(sp,nl,no, &
+         n_nzs, ncol, l_ptr, l_col, trim(tag))
+
+    if ( lBcast ) then
+       deallocate(l_ptr,l_col)
+    else
+       deallocate(ncol,l_ptr,l_col)
+    end if
+
+  end subroutine cdf_r_Sp
+
   subroutine cdf_w_d1D(ncdf,vname,dSp1D)
-    use m_io_s,only : Node_Sp_gncol, count_consecutive
-    use class_OrbitalDistribution
-    use class_Sparsity
+
     use class_dSpData1D
 
     type(hNCDF), intent(inout) :: ncdf
@@ -382,10 +663,181 @@ contains
     
   end subroutine cdf_w_d1D
 
+  subroutine cdf_r_d1D(ncdf,vname,sp, dSp1D, tag, dit, Bcast, gncol)
+
+    use class_dSpData1D
+
+    type(hNCDF), intent(inout) :: ncdf
+    character(len=*), intent(in) :: vname
+    type(Sparsity), intent(inout) :: sp
+    type(dSpData1D), intent(inout) :: dSp1D
+    ! The tag of the data format
+    character(len=*), intent(in) :: tag
+
+    ! distribution if needed to be b-cast in a non-global
+    ! fashion
+    type(OrbitalDistribution), intent(in), optional :: dit
+    ! Bcast the values?
+    logical, intent(in), optional :: Bcast
+    integer, intent(inout), target, optional :: gncol(:)
+
+    ! Local variables for reading the values
+    type(OrbitalDistribution) :: fdit
+    real(dp), pointer :: a(:) => null()
+    integer, pointer :: lncol(:) => null(), ncol(:)
+
+    integer :: io, lno, no, gind, ind, n_nzs, n, i, nb, ib
+    logical :: ldit, lBcast
+#ifdef MPI
+    real(dp), allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
+    integer :: max_n, gio
+    integer :: MPIerror, BNode, MPIstatus(MPI_STATUS_SIZE)
+#endif
+
+    ldit = present(dit)
+    lBcast = .false.
+    if ( present(Bcast) ) lBcast = Bcast
+
+    call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,nnzs=n_nzs)
+    if ( ldit ) ldit = lno /= no
+
+
+    if ( ldit ) then
+       call newdSpData1D(sp,dit,dSp1D,name=trim(tag))
+       
+#ifdef MPI
+       if ( present(gncol) ) then
+          lncol => gncol
+       else
+          allocate(lncol(no))
+          lncol(1) = -1
+       end if
+       if ( lncol(1) < 0 ) then
+          call Node_Sp_gncol(0,sp,dit,no,lncol)
+       end if
+#else
+       call die('Error in distribution, cdf_r_d1D')
+#endif
+
+    else
+       ! Create the Fake distribution
+#ifdef MPI
+       call newDistribution(no,MPI_Comm_Self,fdit,name='Fake dist')
+#else
+       call newDistribution(no,-1           ,fdit,name='Fake dist')
+#endif
+       call newdSpData1D(sp,fdit,dSp1D,name=trim(tag))
+       ! Clean up the distribution again
+       call delete(fdit)
+    end if
+
+    a => val(dSp1D)
+
+    if ( ldit ) then
+#ifdef MPI
+
+       nb = count_blocks(dit,no)
+
+       ! Allocate the maximum number of entries
+       if ( Node == 0 ) then
+          max_n = max_consecutive_sum(dit,no,lncol)
+          allocate(buf(max_n))
+       else
+          allocate(ibuf(nb))
+          ibuf(:) = MPI_REQUEST_NULL
+       end if
+
+       ! Loop size
+       gind = 1
+       ind = 0
+       gio = 1 
+       ib = 0
+       do while ( gio <= no )
+          ib = ib + 1
+          BNode = node_handling_element(dit,gio)
+
+          ! Get number of consecutive orbitals
+          ! belong to the same node...
+          n = count_consecutive(dit,no,gio)
+
+          if ( BNode == Node ) then
+
+             ! Get the local orbital
+             io = index_global_to_local(dit,gio,Node)
+
+             if ( Node == 0 ) then
+
+                ! Count number of elements
+                i = sum(ncol(io:io-1+n))
+                call ncdf_get_var(ncdf,vname, &
+                     a(ind+1:ind+i),start=(/gind/),count=(/i/))
+                ind = ind + i
+                gind = gind + i
+
+             else
+
+                ! count the number of received entities
+                i = sum(ncol(io:io-1+n))
+                call MPI_IRecv( a(ind+1) , i, MPI_Double_Precision, &
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
+                ind = ind + i
+                
+             end if
+             
+          else if ( Node == 0 ) then
+             
+             i = sum(lncol(gio:gio-1+n))
+             call ncdf_get_var(ncdf,vname, &
+                  buf(1:i),start=(/gind/),count=(/i/))
+
+             call MPI_Send( buf(1) , i, MPI_Double_Precision, &
+                  BNode, ib, MPI_Comm_World, MPIerror)
+
+             gind = gind + i
+             
+          end if
+
+          gio = gio + n
+
+       end do
+
+       if ( .not. present(gncol) ) deallocate(lncol)
+       if ( Node == 0 ) then
+          deallocate(buf)
+       else
+          do ib = 1 , nb
+             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+          end do
+          deallocate(ibuf)
+       end if
+#else
+       call die('Error in distribution for, cdf_r_d1D')
+#endif
+    else
+
+       if ( Node == 0 ) then
+          i = sum(ncol(1:no))
+          call ncdf_get_var(ncdf,vname,a(:), count = (/i/) )
+       end if
+
+    end if
+
+    ! If a distribution is present, then do something
+#ifdef MPI
+    if ( lBcast ) then
+       call MPI_Bcast(a(1),n_nzs,MPI_Double_Precision, &
+            0, MPI_Comm_World, MPIError)
+    
+    else if ( Node /= 0 ) then
+       return ! the sparsity pattern will not be created then...
+    end if
+#endif
+    
+  end subroutine cdf_r_d1D
+
   subroutine cdf_w_d2D(ncdf,vname,dSp2D)
-    use m_io_s,only : Node_Sp_gncol, count_consecutive
-    use class_OrbitalDistribution
-    use class_Sparsity
+
     use class_dSpData2D
 
     type(hNCDF), intent(inout) :: ncdf
@@ -554,6 +1006,240 @@ contains
     end if
     
   end subroutine cdf_w_d2D
+
+  subroutine cdf_r_d2D(ncdf,vname, sp, dSp2D, dim2, tag, &
+       sparsity_dim, dit, Bcast, gncol)
+
+    use class_dSpData2D
+
+    ! File handle
+    type(hNCDF), intent(inout) :: ncdf
+    ! Variable name
+    character(len=*), intent(in) :: vname
+    ! Sparsity pattern
+    type(Sparsity), intent(inout) :: sp
+    ! Data array with sparsity pattern
+    type(dSpData2D), intent(inout) :: dSp2D
+    ! The non-sparse dimension
+    integer, intent(in) :: dim2
+    ! The tag of the sparsity pattern
+    character(len=*), intent(in) :: tag
+    ! This denotes the sparsity dimension (either 1 or 2) 1=default
+    integer, intent(in), optional :: sparsity_dim
+    ! distribution if needed to be b-cast in a non-global
+    ! fashion
+    type(OrbitalDistribution), intent(in), optional :: dit
+    ! Bcast the values?
+    logical, intent(in), optional :: Bcast
+    integer, intent(inout), target, optional :: gncol(:)
+
+    ! Local variables for reading the values
+    type(OrbitalDistribution) :: fdit
+    real(dp), pointer :: a(:,:) => null()
+    integer, pointer :: lncol(:) => null(), ncol(:)
+
+    integer :: io, lno, no, s, gind, ind, n_nzs, n, i, nb, ib
+    integer :: sp_dim
+    logical :: ldit, lBcast
+#ifdef MPI
+    real(dp), allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
+    integer :: gio, max_n
+    integer :: MPIerror, BNode, MPIstatus(MPI_STATUS_SIZE)
+#endif
+
+    ldit = present(dit)
+    lBcast = .false.
+    if ( present(Bcast) ) lBcast = Bcast
+
+    sp_dim = 1
+    if ( present(sparsity_dim) ) sp_dim = sparsity_dim
+
+    call attach(sp,nrows=lno, nrows_g=no, n_col=ncol,nnzs=n_nzs)
+    if ( ldit ) ldit = lno /= no
+
+    if ( ldit ) then
+       call newdSpData2D(sp,dim2,dit,dSp2D,name=trim(tag), &
+            sparsity_dim=sp_dim)
+
+#ifdef MPI
+       if ( present(gncol) ) then
+          lncol => gncol
+       else
+          allocate(lncol(no))
+          lncol(1) = -1
+       end if
+       if ( lncol(1) < 0 ) then
+          call Node_Sp_gncol(0,sp,dit,no,lncol)
+       end if
+#else
+       call die('Error in distribution, io_read_d2D')
+#endif
+
+    else
+       ! Create the Fake distribution
+#ifdef MPI
+       call newDistribution(no,MPI_Comm_Self,fdit,name='Fake dist')
+#else
+       call newDistribution(no,-1           ,fdit,name='Fake dist')
+#endif
+       call newdSpData2D(sp,dim2,fdit,dSp2D,name=trim(tag), &
+            sparsity_dim=sp_dim)
+    end if
+
+    a => val(dSp2D)
+
+    if ( ldit ) then
+
+#ifdef MPI
+
+       nb = count_blocks(dit,no)
+
+       ! Allocate maximum number of entries
+       if ( Node == 0 ) then
+          max_n = max_consecutive_sum(dit,no,lncol)
+       else
+          allocate(ibuf(nb))
+          ibuf(:) = MPI_REQUEST_NULL
+       end if
+
+    if ( sp_dim == 2 ) then ! collapsed IO
+
+       if ( Node == 0 ) then
+          allocate(buf(max_n*dim2))
+       end if
+
+       ! Read sparse blocks and distribute
+       gind = 1
+       ind = 0
+       gio = 1 
+       ib = 0
+       do while ( gio <= no )
+          ib = ib + 1
+          BNode = node_handling_element(dit,gio)
+          ! Get number of consecutive orbitals
+          ! belong to the same node...
+          n = count_consecutive(dit,no,gio)
+          if ( BNode == Node ) then
+             ! Get the local orbital
+             io = index_global_to_local(dit,gio,Node)
+             if ( Node == 0 ) then
+                i = sum(ncol(io:io-1+n))
+                call ncdf_get_var(ncdf,vname,a(1:dim2,ind+1:ind+i), &
+                     start = (/1,gind/) , count = (/dim2,i/) )
+                ind = ind + i
+                gind = gind + i
+             else
+                ! count the number of received entities
+                i = sum(ncol(io:io-1+n))
+                call MPI_IRecv( a(1,ind+1) ,dim2*i, MPI_Double_Precision, &
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
+                ind = ind + i
+             end if
+          else if ( Node == 0 ) then
+             i = sum(lncol(gio:gio-1+n))
+             call ncdf_get_var(ncdf,vname,buf(1:i), &
+                  start = (/1,gind/) , count = (/dim2,i/) )
+             call MPI_Send( buf(1) , i, MPI_Double_Precision, &
+                  BNode, ib, MPI_Comm_World, MPIerror)
+             gind = gind + i
+          end if
+          gio = gio + n
+       end do
+
+    else ! non-collapsed IO
+
+       if ( Node == 0 ) then
+          allocate(buf(max_n))
+       end if
+
+       do s = 1 , dim2
+          gind = 1
+          ind = 0
+          gio = 1 
+          ib = 0
+          do while ( gio <= no )
+             ib = ib + 1
+             BNode = node_handling_element(dit,gio)
+             ! Get number of consecutive orbitals
+             ! belong to the same node...
+             n = count_consecutive(dit,no,gio)
+             if ( BNode == Node ) then
+                ! Get the local orbital
+                io = index_global_to_local(dit,gio,Node)
+                if ( Node == 0 ) then
+                   i = sum(ncol(io:io-1+n))
+                   call ncdf_get_var(ncdf,vname,a(ind+1:ind+i,s), &
+                        start = (/gind,s/) , count = (/i/) )
+                   ind = ind + i
+                   gind = gind + i
+                else
+                   ! count the number of received entities
+                   i = sum(ncol(io:io-1+n))
+                   call MPI_IRecv( a(ind+1,s) ,i, MPI_Double_Precision, &
+                        0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
+                   ind = ind + i
+                end if
+             else if ( Node == 0 ) then
+                i = sum(lncol(gio:gio-1+n))
+                call ncdf_get_var(ncdf,vname,buf(1:i), &
+                     start = (/gind,s/) , count = (/i/) )
+                call MPI_Send( buf(1) , i, MPI_Double_Precision, &
+                     BNode, ib, MPI_Comm_World, MPIerror)
+                gind = gind + i
+             end if
+             gio = gio + n
+          end do
+
+          if ( Node /= 0 .and. s < dim2 ) then
+             do ib = 1 , nb
+                call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             end do
+          end if
+
+       end do
+
+    end if
+    
+       if ( Node == 0 ) then
+          deallocate(buf)
+       else
+          do ib = 1 , nb
+             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+          end do
+          deallocate(ibuf)
+       end if
+
+       if ( .not. present(gncol) ) deallocate(lncol)
+
+#else
+       call die('Error in distribution for, cdf_r_d2D')
+#endif
+    else if ( Node == 0 ) then
+
+       i = sum(ncol(1:no))
+       if ( sp_dim == 2 ) then ! collapsed IO
+          call ncdf_get_var(ncdf,vname,a(:,1:i), count = (/dim2,i/) )
+       else ! non-collapsed IO
+          do s = 1 , dim2 
+             call ncdf_get_var(ncdf,vname,a(1:i,s), &
+                  start = (/1,s/) , count = (/i/) )
+          end do
+       end if
+
+    end if
+
+    ! If a distribution is present, then do something
+#ifdef MPI
+    if ( lBcast ) then
+       call MPI_Bcast(a(1,1),dim2*n_nzs,MPI_Double_Precision, &
+            0, MPI_Comm_World, MPIError)
+    else if ( Node /= 0 ) then
+       return ! the sparsity pattern will not be created then...
+    end if
+#endif
+
+  end subroutine cdf_r_d2D
   
   subroutine cdf_w_grid(ncdf,name,mesh,lnpt,grid,idx)
 

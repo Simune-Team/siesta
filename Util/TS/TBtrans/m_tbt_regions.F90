@@ -343,6 +343,7 @@ contains
 
           ! we sort the newly attached region
           call region_sort(r_oEl(iEl), dit, sp, r_tmp, R_SORT_MAX_BACK )
+
        end do
 
        call region_delete(r_tmp,r_tmp2)
@@ -421,40 +422,57 @@ contains
     ! and the device region
 
     ! Re-create the device region from a sorting algorithm.
+    ! However, in cases where the user is sure that
+    ! the device region is correctly sorted 
+    ! then we need not re-sort it.
+    ! This seems like the best choice when looking
+    ! at TB models where number of connections is the same
     ia1 = r_oDev%n
-    call region_copy(r_oDev, r_Dev)
-    call region_list(r_oDev,1,Elecs(1)%o_inD%r(1:1))
+    if ( fdf_get('TBT.Atoms.Device.Sort',.true.) ) then
 
-    do while ( r_tmp%n /= 0 )
+       call region_copy(r_oDev, r_Dev)
 
-       ! Create the region that connects to the last part of the 
-       ! added orbitals
-       call region_connect(r_oDev, dit, sp, r_tmp, except = r_tmp3)
-
-       if ( r_tmp%n == 0 .and. ia1 /= r_oDev%n ) then
-          ! In case the connecting region is empty,
-          ! say for capacitors we need to force the next region.
-          ! In this case, we take some "random" orbital.
-          do i = 1 , r_Dev%n
-             if ( in_region(r_oDev,r_Dev%r(i)) ) cycle
-             call region_range(r_tmp,r_Dev%r(i),r_Dev%r(i))
-             exit
-          end do
-       end if
-       ! r_tmp contains the connecting region (except all dwn-folding regions)
-
-       ! Append the newly found region that is connecting out to the
-       ! full region
-       call region_union(r_oDev, r_tmp, r_tmp2)
-       call region_copy(r_tmp2,r_oDev)
-
-       ! we sort the newly attached region
-       call region_sort(r_oDev, dit, sp, r_tmp, R_SORT_MAX_BACK )
+       ! We select all the atoms from the left electrode
+       ! that connect into the device
+       ! This forces the initial search-pattern
+       ! to use the "electrode-surface" as an initial SP guess
+       ! Note that the connecting electrode orbitals are already
+       ! sorted wrt. back-connectivity
+       call region_copy(Elecs(1)%o_inD,r_oDev)
+       r_tmp%n = 1
        
-    end do
-    r_oDev%name = '[O]-device'
-    call region_delete(r_Dev)
+       do while ( r_tmp%n /= 0 )
 
+          ! Create the region that connects to the last part of the 
+          ! added orbitals
+          call region_connect(r_oDev, dit, sp, r_tmp, except = r_tmp3)
+          
+          if ( r_tmp%n == 0 .and. ia1 /= r_oDev%n ) then
+             ! In case the connecting region is empty,
+             ! say for capacitors we need to force the next region.
+             ! In this case, we take some "random" orbital.
+             do i = 1 , r_Dev%n
+                if ( in_region(r_oDev,r_Dev%r(i)) ) cycle
+                call region_range(r_tmp,r_Dev%r(i),r_Dev%r(i))
+                exit
+             end do
+          end if
+          ! r_tmp contains the connecting region (except all dwn-folding regions)
+
+          ! Append the newly found region that is connecting out to the
+          ! full region
+          call region_union(r_oDev, r_tmp, r_tmp2)
+          call region_copy(r_tmp2,r_oDev)
+          
+          ! we sort the newly attached region
+          call region_sort(r_oDev, dit, sp, r_tmp, R_SORT_MAX_BACK )
+          
+       end do
+
+       call region_delete(r_Dev)
+
+    end if
+    r_oDev%name = '[O]-device'
 
     ! Check that we have correctly re-captured the device region.
     if ( region_overlaps(r_oDev,r_tmp3) ) then

@@ -151,7 +151,7 @@ contains
     integer, pointer :: ncol(:)
     integer :: gio, n, io, nb, ib
 #ifdef MPI
-    integer, allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
     
@@ -164,8 +164,8 @@ contains
 #else
 
     nb = count_blocks(dit,no)
-    allocate(buf(nb))
-    buf(:) = MPI_REQUEST_NULL
+    allocate(ibuf(nb))
+    ibuf(:) = MPI_REQUEST_NULL
           
     gio = 1
     ib = 0
@@ -183,21 +183,19 @@ contains
              gcol(gio:gio-1+n) = ncol(io:io-1+n)
           else
              call MPI_ISSend( ncol(io) , n, MPI_Integer, &
-                  lNode, gio, MPI_Comm_World, buf(ib), MPIerror)
+                  lNode, gio, MPI_Comm_World, ibuf(ib), MPIerror)
           end if
        else if ( Node == lNode ) then
           call MPI_IRecv( gcol(gio) , n, MPI_Integer, &
-               BNode, gio, MPI_Comm_World, buf(ib), MPIerror )
+               BNode, gio, MPI_Comm_World, ibuf(ib), MPIerror )
        end if
        gio = gio + n
     end do
 
     do ib = 1 , nb
-      if ( buf(ib) /= MPI_REQUEST_NULL ) then
-        call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-      end if
+       call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
     end do
-    deallocate(buf)
+    deallocate(ibuf)
 #endif
     
   end subroutine Node_Sp_gncol
@@ -237,7 +235,7 @@ contains
     logical :: ldit, lBcast
     integer, pointer :: lncol(:) => null()
 #ifdef MPI
-    integer, allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
     integer :: gio, max_n
     integer :: MPIerror, MPIstatus(MPI_STATUS_SIZE), BNode
 #endif
@@ -284,8 +282,8 @@ contains
        nb = count_blocks(dit,no)
 
        ! allocate all requests
-       allocate(buf(nb))
-       buf(:) = MPI_REQUEST_NULL
+       allocate(ibuf(nb))
+       ibuf(:) = MPI_REQUEST_NULL
 
        ! Distribute it
        gio = 1
@@ -307,13 +305,13 @@ contains
                 ncol(io:io-1+n) = lncol(gio:gio-1+n)
              else
                 call MPI_IRecv( ncol(io) , n, MPI_Integer, &
-                     0, ib, MPI_Comm_World, buf(ib), MPIerror )
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
              end if
 
           else if ( Node == 0 ) then
 
              call MPI_ISSend( lncol(gio) , n, MPI_Integer, &
-                  BNode, ib, MPI_Comm_World, buf(ib), MPIerror)
+                  BNode, ib, MPI_Comm_World, ibuf(ib), MPIerror)
 
           end if
 
@@ -322,11 +320,9 @@ contains
        end do
 
        do ib = 1 , nb
-         if ( buf(ib) /= MPI_REQUEST_NULL ) then
-           call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-         end if
+          call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
        end do
-       deallocate(buf)
+       deallocate(ibuf)
 
     else if ( lBcast ) then
 
@@ -374,10 +370,10 @@ contains
        ! We have a distributed read
        if ( Node == 0 ) then
           max_n = max_consecutive_sum(dit,no,lncol)
-          allocate(buf(max_n))
+          allocate(ibuf(max_n))
        else
-          allocate(buf(nb))
-          buf(:) = MPI_REQUEST_NULL
+          allocate(ibuf(nb))
+          ibuf(:) = MPI_REQUEST_NULL
        end if
 
        ! Read in columns
@@ -410,7 +406,7 @@ contains
                 ! count the number of received entities
                 i = sum(ncol(io:io-1+n))
                 call MPI_IRecv( l_col(ind+1) , i, MPI_Integer, &
-                     0, ib, MPI_Comm_World, buf(ib), MPIerror )
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
                 ind = ind + i
                 
              end if
@@ -419,11 +415,11 @@ contains
 
              i = 0
              do io = gio , gio - 1 + n
-                read(iu) buf(i+1:i+lncol(io))
+                read(iu) ibuf(i+1:i+lncol(io))
                 i = i + lncol(io)
              end do
 
-             call MPI_Send( buf(1) , i, MPI_Integer, &
+             call MPI_Send( ibuf(1) , i, MPI_Integer, &
                   BNode, ib, MPI_Comm_World, MPIerror)
              
           end if
@@ -436,12 +432,10 @@ contains
           if ( .not. present(gncol) ) deallocate(lncol)
        else
           do ib = 1 , nb
-            if ( buf(ib) /= MPI_REQUEST_NULL ) then
-              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-            end if
+             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
        end if
-       deallocate(buf)
+       deallocate(ibuf)
        
     else if ( lBcast ) then
 
@@ -504,7 +498,7 @@ contains
     integer :: lno, no, io, max_n, ind, n, i, nb, ib
     logical :: ldit
 #ifdef MPI
-    integer, allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
     integer :: gio
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
@@ -553,10 +547,10 @@ contains
           ! Retrive the maximum number of non-zero
           ! elements in each row
           max_n = max_consecutive_sum(dit,no,lncol)
-          allocate(buf(max_n))
+          allocate(ibuf(max_n))
        else
-          allocate(buf(nb))
-          buf(:) = MPI_REQUEST_NULL
+          allocate(ibuf(nb))
+          ibuf(:) = MPI_REQUEST_NULL
        end if
 
        ! Loop size
@@ -586,21 +580,21 @@ contains
              else
                 i = sum(ncol(io:io-1+n))
                 call MPI_ISSend( l_col(ind+1) , i, MPI_Integer, &
-                     0, ib, MPI_Comm_World, buf(ib), MPIerror)
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror)
                 ind = ind + i
              end if
           else if ( Node == 0 ) then
-             call MPI_Recv( buf(1) , max_n, MPI_Integer, &
+             call MPI_Recv( ibuf(1) , max_n, MPI_Integer, &
                   BNode, ib, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
                   call die('Error in code: io_write_Sp')
 #ifdef TEST_IO
              i = sum(lncol(gio:gio-1+n))
-             write(iu) buf(1:i)
+             write(iu) ibuf(1:i)
 #else
              i = 0
              do io = gio , gio - 1 + n
-                write(iu) buf(i+1:i+lncol(io))
+                write(iu) ibuf(i+1:i+lncol(io))
                 i = i + lncol(io)
              end do
 #endif
@@ -612,12 +606,10 @@ contains
        if ( .not. present(gncol) ) deallocate(lncol)
        if ( Node /= 0 ) then
           do ib = 1 , nb
-            if ( buf(ib) /= MPI_REQUEST_NULL ) then
-              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-            end if
+             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
        end if
-       deallocate(buf)
+       deallocate(ibuf)
     else
 
        ind = 0
@@ -664,10 +656,11 @@ contains
     real(dp), pointer :: a(:) => null()
     integer, pointer :: lncol(:) => null(), ncol(:)
 
-    integer :: io, lno, no, ind, n_nzs, n, i, nb, ib
+    integer :: io, lno, no, gind, ind, n_nzs, n, i, j, nb, ib
     logical :: ldit, lBcast
 #ifdef MPI
     real(dp), allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
     integer :: max_n, gio
     integer :: MPIerror, BNode, MPIstatus(MPI_STATUS_SIZE)
 #endif
@@ -720,8 +713,8 @@ contains
           max_n = max_consecutive_sum(dit,no,lncol)
           allocate(buf(max_n))
        else
-          allocate(buf(nb))
-          buf(:) = MPI_REQUEST_NULL
+          allocate(ibuf(nb))
+          ibuf(:) = MPI_REQUEST_NULL
        end if
 
        ! Loop size
@@ -753,7 +746,7 @@ contains
                 ! count the number of received entities
                 i = sum(ncol(io:io-1+n))
                 call MPI_IRecv( a(ind+1) , i, MPI_Double_Precision, &
-                     0, ib, MPI_Comm_World, buf(ib), MPIerror )
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
                 ind = ind + i
                 
              end if
@@ -776,14 +769,14 @@ contains
        end do
 
        if ( .not. present(gncol) ) deallocate(lncol)
-       if ( Node /= 0 ) then
+       if ( Node == 0 ) then
+          deallocate(buf)
+       else
           do ib = 1 , nb
-            if ( buf(ib) /= MPI_REQUEST_NULL ) then
-              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-            end if
+             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
+          deallocate(ibuf)
        end if
-       deallocate(buf)
 #else
        call die('Error in distribution for, io_read_d1D')
 #endif
@@ -832,6 +825,7 @@ contains
     logical :: ldit
 #ifdef MPI
     real(dp), allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
     integer :: gio, max_n
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
@@ -872,8 +866,8 @@ contains
           max_n = max_consecutive_sum(dit,no,lncol)
           allocate(buf(max_n))
        else
-          allocate(buf(nb))
-          buf(:) = MPI_REQUEST_NULL
+          allocate(ibuf(nb))
+          ibuf(:) = MPI_REQUEST_NULL
        end if
 
        ! Write the data...
@@ -903,7 +897,7 @@ contains
              else
                 i = sum(ncol(io:io-1+n))
                 call MPI_ISSend( a(ind+1) , i, MPI_Double_Precision, &
-                     0, ib, MPI_Comm_World, buf(ib), MPIerror)
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror)
                 ind = ind + i
              end if
           else if ( Node == 0 ) then
@@ -927,16 +921,16 @@ contains
        end do
           
        if ( .not. present(gncol) ) deallocate(lncol)
-       if ( Node /= 0 ) then
+       if ( Node == 0 ) then
+          deallocate(buf)
+       else 
           ! Wait for the last one to not send
           ! two messages with the same tag...
           do ib = 1 , nb
-            if ( buf(ib) /= MPI_REQUEST_NULL ) then
-              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-            end if
+             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
+          deallocate(ibuf)
        end if
-       deallocate(buf)
 #endif
     else
 
@@ -984,6 +978,7 @@ contains
     logical :: ldit, lBcast
 #ifdef MPI
     real(dp), allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
     integer :: gio, max_n
     integer :: MPIerror, BNode, MPIstatus(MPI_STATUS_SIZE)
 #endif
@@ -1039,8 +1034,8 @@ contains
        if ( Node == 0 ) then
           max_n = max_consecutive_sum(dit,no,lncol)
        else
-          allocate(buf(nb))
-          buf(:) = MPI_REQUEST_NULL
+          allocate(ibuf(nb))
+          ibuf(:) = MPI_REQUEST_NULL
        end if
 
     if ( sp_dim == 2 ) then ! collapsed IO
@@ -1071,7 +1066,7 @@ contains
                 ! count the number of received entities
                 i = sum(ncol(io:io-1+n))
                 call MPI_IRecv( a(1,ind+1) ,dim2*i, MPI_Double_Precision, &
-                     0, ib, MPI_Comm_World, buf(ib), MPIerror )
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
                 ind = ind + i
              end if
           else if ( Node == 0 ) then
@@ -1085,14 +1080,6 @@ contains
           end if
           gio = gio + n
        end do
-
-       if ( Node /= 0 ) then
-          do ib = 1 , nb
-            if ( buf(ib) /= MPI_REQUEST_NULL ) then
-              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-            end if
-          end do
-       end if
 
     else ! non-collapsed IO
 
@@ -1122,7 +1109,7 @@ contains
                    ! count the number of received entities
                    i = sum(ncol(io:io-1+n))
                    call MPI_IRecv( a(ind+1,s) ,i, MPI_Double_Precision, &
-                        0, ib, MPI_Comm_World, buf(ib), MPIerror )
+                        0, ib, MPI_Comm_World, ibuf(ib), MPIerror )
                    ind = ind + i
                 end if
              else if ( Node == 0 ) then
@@ -1136,19 +1123,27 @@ contains
              end if
              gio = gio + n
           end do
-          if ( Node /= 0 ) then
+
+          if ( Node /= 0 .and. s < dim2 ) then
              do ib = 1 , nb
-               if ( buf(ib) /= MPI_REQUEST_NULL ) then
-                 call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-               end if
+                call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
              end do
           end if
+
        end do
 
     end if
+    
+       if ( Node == 0 ) then
+          deallocate(buf)
+       else
+          do ib = 1 , nb
+             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+          end do
+          deallocate(ibuf)
+       end if
 
        if ( .not. present(gncol) ) deallocate(lncol)
-       deallocate(buf)
 
 #else
        call die('Error in distribution for, io_read_d2D')
@@ -1206,6 +1201,7 @@ contains
     logical :: ldit
 #ifdef MPI
     real(dp), allocatable :: buf(:)
+    integer, allocatable :: ibuf(:)
     integer :: gio, max_n
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
@@ -1250,8 +1246,8 @@ contains
        if ( Node == 0 ) then
           max_n = max_consecutive_sum(dit,no,lncol)
        else
-          allocate(buf(nb))
-          buf(:) = MPI_REQUEST_NULL
+          allocate(ibuf(nb))
+          ibuf(:) = MPI_REQUEST_NULL
        end if
 
        ! Loop size
@@ -1291,7 +1287,7 @@ contains
                 else
                    i = sum(ncol(io:io-1+n))
                    call MPI_ISSend( a(ind+1,s) , i, MPI_Double_Precision, &
-                        0, ib, MPI_Comm_World, buf(ib), MPIerror)
+                        0, ib, MPI_Comm_World, ibuf(ib), MPIerror)
                    ind = ind + i
                 end if
              else if ( Node == 0 ) then
@@ -1313,11 +1309,9 @@ contains
              end if
              gio = gio + n
           end do
-          if ( Node /= 0 ) then
+          if ( Node /= 0 .and. s < dim2 ) then
              do ib = 1 , nb
-               if ( buf(ib) /= MPI_REQUEST_NULL ) then
-                 call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-               end if
+                call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
              end do
           end if
        end do
@@ -1354,7 +1348,7 @@ contains
              else
                 i = sum(ncol(io:io-1+n))
                 call MPI_ISSend( a(1,ind+1) , dim2*i, MPI_Double_Precision, &
-                     0, ib, MPI_Comm_World, buf(ib), MPIerror)
+                     0, ib, MPI_Comm_World, ibuf(ib), MPIerror)
                 ind = ind + i
              end if
           else if ( Node == 0 ) then
@@ -1377,18 +1371,17 @@ contains
           gio = gio + n
        end do
 
-       if ( Node /= 0 ) then
-          do ib = 1 , nb
-            if ( buf(ib) /= MPI_REQUEST_NULL ) then
-              call MPI_Wait(buf(ib),MPIstatus,MPIerror)
-            end if
-          end do
-       end if
-       
     end if
     
        if ( .not. present(gncol) ) deallocate(lncol)
-       deallocate(buf)
+       if ( Node == 0 ) then
+          deallocate(buf)
+       else
+          do ib = 1 , nb
+             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+          end do
+          deallocate(ibuf)
+       end if
 #else
        call die('Error in io_write_d2D')
 #endif

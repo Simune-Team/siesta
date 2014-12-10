@@ -113,10 +113,10 @@ contains
 ! *******************
 ! * LOCAL variables *
 ! *******************
-    real(dp) :: tmp, rcell(3,3)
+    real(dp) :: tmp
     logical :: err
     character(len=200) :: c, chars
-    integer :: i, j, idx, idx1, idx2, isc(3)
+    integer :: i, j, idx, idx1, idx2
 #ifdef TRANSIESTA_WEIGHT_DEBUG
     integer, allocatable :: ID_mu(:)
     real(dp), allocatable :: rnID(:), rn(:), rw(:)
@@ -444,8 +444,10 @@ contains
        if ( Elecs(i)%idx_a < 0 ) &
             Elecs(i)%idx_a = na_u + Elecs(i)%idx_a + 1
        if ( Elecs(i)%idx_a < 1 .or. &
-            na_u < Elecs(i)%idx_a ) &
-            call die("Electrode position does not exist")
+            na_u < Elecs(i)%idx_a ) then
+          print *,Elecs(i)%idx_a,na_u
+          call die("Electrode position does not exist")
+       end if
        Elecs(i)%idx_o = lasto(Elecs(i)%idx_a-1)+1
 
     end do

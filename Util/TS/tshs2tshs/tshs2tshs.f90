@@ -118,11 +118,17 @@ program tshs2tshs
      call help
   end if
 
-  ! get the input version
-  vin = TSHS_version(filein)
+  ! In case the file is a NetCDF file
+  i = len_trim(filein)
+  if ( filein(i-1:i) == 'nc' ) then
+     vin = -1 ! signals NCDF
+  else
+     ! get the input version
+     vin = TSHS_version(filein)
+  end if
 
   select case ( vin )
-  case ( 0, 1 )
+  case ( -1, 0, 1 )
      ! Do nothing
   case default
      write(0,'(a)') 'Version not recognized by this program, please update...'
@@ -236,6 +242,7 @@ contains
 
   subroutine help()
     write(0,'(a)') 'Helps converting an old TranSIESTA input to the new format'
+    write(0,'(a)') 'Can also read SIESTA.nc files (if compiled with NCDF_4)'
     write(0,'(a)') 'Options:'
     write(0,'(a)') '  -v|--version [0,1]:'
     write(0,'(a)') '          defines the output version of the TSHS file:'

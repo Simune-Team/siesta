@@ -53,6 +53,7 @@ contains
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN, SOLVE_TRANSI
     use siesta_options, only: savrho, savdrh, savevh, savevna
     use siesta_options, only: savevt, savepsch, savetoch
+    use siesta_options, only: savebader
     use siesta_options, only: save_initial_charge_density
     use m_timestamp, only: datestring
 #ifdef TRANSIESTA
@@ -66,7 +67,6 @@ contains
     ! Local variables
     type(hNCDF) :: ncdf, grp, grp2
     type(dict) :: dic, d
-    type(var) :: avar
     character(len=DICT_KEY_LENGTH) :: key
     integer :: n_nzs, tmp, iEl, i
 #ifdef TRANSIESTA
@@ -234,7 +234,10 @@ contains
        ! is needed saving, we allow that.
        key = fdf_get('CDF.Grid.Precision','double')
        if ( leqi(key,'single') ) i = NF90_FLOAT
+       if ( leqi(key,'float') )  i = NF90_FLOAT
     else
+       ! The grid is in single precision, so
+       ! we save it in that precision.
        i = NF90_FLOAT
     end if
     
@@ -263,8 +266,14 @@ contains
     end if
 
     if ( savdrh ) then
-       dic = dic//('info'.kv.'Density difference')
+       dic = dic//('info'.kv.'Density difference from atomic densities')
        call ncdf_def_var(grp,'RhoDelta',i,(/'nx  ','ny  ','nz  ','spin'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic)
+    end if
+
+    if ( savebader ) then
+       dic = dic//('info'.kv.'Bader charge')
+       call ncdf_def_var(grp,'RhoBader',i,(/'nx','ny','nz'/), &
             compress_lvl=cdf_comp_lvl,atts=dic)
     end if
 
@@ -659,7 +668,7 @@ contains
             comm=MPI_Comm_World)
     else
 #endif
-       call ncdf_open(ncdf,fname,groupname='GRID', &
+       call ncdf_open(ncdf,fname, groupname='GRID', &
             mode=ior(NF90_WRITE,NF90_NETCDF4))
 #ifdef MPI
     end if

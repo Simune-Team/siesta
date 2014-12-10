@@ -112,14 +112,14 @@ subroutine tbt_init()
 
   ! Set timer report file and threshold .............................
   threshold = fdf_get('timer_report_threshold', 0._dp)
-  call timer_report( file=trim(slabel)//'.tbt.times', &
+  call timer_report( file=trim(slabel)//'.TBT.times', &
        threshold=threshold )
 
   ! Set allocation report level .........................................
   ! variables level and threshold imported from module siesta_options
   level = fdf_get('alloc_report_level', 0)
   threshold = fdf_get('alloc_report_threshold', 0._dp)
-  call alloc_report( level=level, file=trim(slabel)//'_tbt.alloc', &
+  call alloc_report( level=level, file=trim(slabel)//'.TBT.alloc', &
        threshold=threshold, printNow=.false. )
 
 #ifdef NCDF_4

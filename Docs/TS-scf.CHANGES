@@ -1,4 +1,173 @@
 ----------------------------------------------------
+December 10, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-239
+Small bug-fixes and added TB backend for tbtrans
+
+* Using the NCDF_4 FPP flag did not allow writing 
+  the regular grid files.
+  This has been corrected.
+
+* Added Bader charge to the SIESTA.nc file.
+
+* Added reading routines to the m_ncdf_io module
+  so that retrieval of distributed variables in NetCDF files
+  is as easy as the m_io_s module.
+
+  Yes, it is extremely easy to read in any information in 
+  any type of NetCDF file.
+
+* The bug-report using the MPICH compiler from Mads Engelund and
+  Inigo is now thought to have dealt with the wrong type
+  of buffer.
+
+  I have corrected all buffers used for requests (in MPI) to be 
+  integers.
+  
+  TODO: Check that this does not break the MPICH compilation.
+
+* Enabled reading from the SIESTA.nc file, 
+  specifically this allows tbtrans to be runned using only
+  NetCDF files.
+
+* Saving the grid can be chosen with the precision specifier:
+    fdf: CDF.Grid.Precision double|single|float
+  The user is now informed of reduced precision if asked for.
+
+* Corrected spelling mistake for electype print-out
+
+* Added NetCDF reading of TSHS files.
+  The TSHS routines now diverts to the NetCDF routines
+  if the file ends on 'nc'
+
+* Small bugfix for Gamma calculations in tbtrans
+  The isc_off array _IS_ allocated in the ts_read_TSHS
+  routine.
+
+* Bugfix for device region creation in tbtrans.
+
+  Previously the device region was incrementally created
+  from the first electrode orbital connecting to the 
+  device region.
+  However, this is a very poor choice as very wide
+  systems will not take the sparsity pattern in 
+  a stringent manner.
+
+  Instead we start by the full electrode orbital space
+  that connects to the device.
+  This is MUCH better and should improve the tri-diagonality for
+  wide systems.
+
+  If the user thinks the device region is formatted correctly
+  (s)he can provide this fdf flag to use the orbitals "as-is"
+     TBT.Atoms.Device.Sort F
+
+* Added timing of the surface Green function creation/reading.
+  This enables the user to see the actual time being spent on the
+  transport equations, rather than the self-energies.
+
+  It turns out that a major part of the calculation time is spent
+  on creating the self energies.
+
+  This cries for better algorithms for the self-energy.
+  I am trying various things in my sids code.
+
+* Changed tbtrans auxiliary files _tbt.alloc and tbt.times
+  to TBT.alloc and TBT.times
+
+* The tshs2tshs should now also be capable of reading NetCDF
+  files if linked correctly.
+
+* Added a TB creation utility to easily create input files
+  which can be read by tbtrans.
+
+  I have created 3 python classes which together provides
+  a very powerful tool to create TB models using the
+  power of tbtrans.
+
+  Granted, it is not as easy to tweak calculation parameters.
+  However, it is a good way to broaden the scope of tbtrans
+  and also an easy way to let users use N-terminal approaches
+  in TB models. :)
+
+  I have added several examples of how to create a model.
+
+  In essence it is very simple:
+
+    # Create your basic unit-cell (each atom have one orbital)
+    GR_UC = TBT_Geom(xa=...,cell=...,dR=2.)
+    # Extend the system to a very large system
+    HUGE = GR_UC.repeat((0,40)).tile((1,60))
+    # Create TB model
+    HS = TBT_Model(HUGE)
+    # Create orbital ranges (this model has up to 3rd nearest neighbour)
+    dR = ( alat*0.5 , alat+0.1 , 2*sq3h*alat+0.1 , 2*alat+0.1 )
+    for ia in xrange(HUGE.na_u):
+        idx_a = HUGE.close_all(ia,dR=dR)
+        # Set TB parameters
+        HS[ia,idx_a[0]] = ( U, 1.)
+        HS[ia,idx_a[1]] = (t1, 0.)
+        HS[ia,idx_a[2]] = (t2, 0.)
+        HS[ia,idx_a[3]] = (t3, 0.)
+    # Create sparse format so it is easy to save
+    H, S = HS.tocsr()
+    # Create model that can write a NetCDF file for tbtrans
+    tb = TBT_TB(HUGE,H,S)
+    # Save it...
+    tb.save('HUGE_D_zz.nc')
+
+  boom you are done, you have just created a periodic
+  TB model of graphene with 9600 atoms... :)
+  Creating and calculating this from scratch takes about
+  10 minutes on 2 cores.
+  I have no clue as to whether this is fast or slow for TB
+  models, but as I invert the matrix (and do not do Lanchoz etc)
+  it might not be as fast as expected.
+  
+  Check the Util/TS/TB folder for examples.
+
+added:
+  Util/TS/TB/
+  Util/TS/TB/Examples/
+  Util/TS/TB/Examples/A_zz.fdf
+  Util/TS/TB/Examples/B_zz.fdf
+  Util/TS/TB/Examples/C_zz.fdf
+  Util/TS/TB/Examples/D_zz.fdf
+  Util/TS/TB/Examples/E_zz.fdf
+  Util/TS/TB/Examples/F_zz.fdf
+  Util/TS/TB/Examples/HOLE_D_zz.fdf
+  Util/TS/TB/Examples/HUGE_D_zz.fdf
+  Util/TS/TB/Examples/SQUARE.fdf
+  Util/TS/TB/Examples/TBT.fdf
+  Util/TS/TB/tbt_tb.py
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/m_io_s.F90
+  Src/m_ncdf_io.F90
+  Src/m_ncdf_siesta.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_io.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_hs.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/tbt_init.F90
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/TS/tshs2tshs/tshs2tshs.f90
+  Util/VCA/Makefile
+
+----------------------------------------------------
 December 8, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-238
 Bugfix for tbt_data and range specification
 

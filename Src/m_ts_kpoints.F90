@@ -82,7 +82,7 @@ contains
 
 !  Modules
 
-    use parallel,   only : IONode, Node
+    use parallel,   only : IONode
     use m_minvec,   only : minvec
     use fdf
     use sys,        only : die
@@ -104,9 +104,6 @@ contains
 
 ! Internal variables
     integer           i, j,  factor(3,3), expansion_factor
-#ifdef MPI
-    integer           MPIerror
-#endif
     real(dp)          scmin(3,3),  vmod, cutoff
     real(dp)          ctransf(3,3)
 
@@ -217,7 +214,6 @@ contains
     real(dp), intent(in)   :: ucell(3,3)
     type(Elec), intent(in), optional :: Elecs(:)
 
-    integer :: i
 #ifdef MPI
     integer :: MPIerror
 #endif

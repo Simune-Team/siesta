@@ -574,9 +574,7 @@ contains
 
           end if
 
-#ifdef TBTRANS_TIMING
           call timer('read-GS',1)
-#endif
 
           ! *******************
           ! * prep Sigma      *
@@ -587,9 +585,7 @@ contains
                cE, N_Elec, uGF, Elecs, &
                nzwork, zwork, .false., forward = .false. )
 
-#ifdef TBTRANS_TIMING
           call timer('read-GS',2)
-#endif
 
 #ifdef NCDF_4
 #ifdef CONTINUATION_NOT_WORKING

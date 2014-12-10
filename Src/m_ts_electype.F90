@@ -83,7 +83,9 @@ module m_ts_electype
      integer :: inf_dir = INF_NEGATIVE
      ! transport direction (determines H01)
      ! And is considered with respect to the electrode direction...
-     integer :: t_dir = 3 
+     !  t_dir is with respect to the electrode unit-cell
+     !  st_dir is with respect to the current simulation cell 
+     integer :: t_dir = 3 , st_dir = 3
      ! whether the electrode should be bulk
      logical :: Bulk = .true.
      integer :: DM_update = 0 ! This determines the update scheme for the crossterms
@@ -790,20 +792,15 @@ contains
     fN = trim(this%HSfile)
     ! We read in the information
     fL = len_trim(fN)
-    if ( leqi(fN(fL-4:fL),'.TSHS') ) then
-       call ts_read_tshs(fN, &
-            onlyS, Gamma_file, TSGamma, &
-            this%ucell, nsc, this%na_u, this%no_u, this%nspin,  &
-            kscell, kdispl, &
-            this%xa, this%lasto, &
-            this%sp, this%H, this%S, this%isc_off, &
-            Ef, Qtot, Temp, &
-            istep, ia1, &
-            Bcast=Bcast)
-    else
-       call die('Could not infer the file type of the &
-            &electrode file: '//trim(fN))
-    end if
+    call ts_read_tshs(fN, &
+         onlyS, Gamma_file, TSGamma, &
+         this%ucell, nsc, this%na_u, this%no_u, this%nspin,  &
+         kscell, kdispl, &
+         this%xa, this%lasto, &
+         this%sp, this%H, this%S, this%isc_off, &
+         Ef, Qtot, Temp, &
+         istep, ia1, &
+         Bcast=Bcast)
 
     if ( present(ispin) ) then
        if ( ispin > 0 ) then
@@ -1137,8 +1134,7 @@ contains
 
     else
        
-       call ts_read_TSHS_opt(this%HSfile, &
-            Gamma=Gamma, Bcast=.true.)
+       call ts_read_TSHS_opt(this%HSfile, Gamma=Gamma, Bcast=.true.)
 
     end if
 
@@ -1531,7 +1527,7 @@ contains
     end if
     write(*,f10) '  Transport direction for electrode', trim(chars)
     if ( this%inf_dir == INF_POSITIVE ) then
-       chars = 'position wrt. '//trim(chars)
+       chars = 'positive wrt. '//trim(chars)
     else
        chars = 'negative wrt. '//trim(chars)
     end if
@@ -1560,9 +1556,11 @@ contains
     if ( abs(this%mu%mu) > 1.e-10_dp ) then
        write(*,f8)  '  Hamiltonian E-C Ef fractional shift', this%Ef_frac_CT
     end if
+#ifndef TBTRANS
     if ( .not. this%kcell_check ) then
        write(*,f11)  '  Will NOT check the kgrid-cell! Ensure sampling!'
     end if
+#endif
     write(*,f9)  '  Electrode imaginary Eta', this%Eta/eV,' eV'
 
   end subroutine print_settings

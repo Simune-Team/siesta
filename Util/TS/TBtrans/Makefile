@@ -159,7 +159,6 @@ $(NCDF): $(FVAR)
 # which could take advantage of this preprocessing flag
 tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
 #tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DUSE_GEMM3M
-#tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DDIVIDE_AND_CONQUER
 # If the user only wants to compile against NetCDF-4 for tbtrans
 tbtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
 tbtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(TBTOBJS) $(SYSOBJ)
@@ -526,8 +525,8 @@ m_ts_global_vars.o: parallel.o
 m_ts_hartree.o: intrinsic_missing.o m_ts_electype.o m_ts_mesh.o m_ts_tdir.o
 m_ts_hartree.o: parallel.o precision.o sys.o units.o
 m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
-m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_sparse.o
-m_ts_io.o: parallel.o precision.o sys.o
+m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_ncdf_io.o
+m_ts_io.o: m_sparse.o parallel.o precision.o sys.o
 m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
@@ -835,6 +834,8 @@ m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_regions.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
 m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_sparse.o
 m_tbt_regions.o: parallel.o
+m_tbt_saint.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o m_tbt_diag.o
+m_tbt_saint.o: m_tbt_hs.o precision.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_io_s.o m_ncdf_io.o m_region.o
 m_tbt_save.o: m_tbt_hs.o m_ts_electype.o parallel.o precision.o timestamp.o

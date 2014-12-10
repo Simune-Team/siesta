@@ -469,8 +469,8 @@ m_ts_global_vars.o: parallel.o
 m_ts_hartree.o: intrinsic_missing.o m_ts_electype.o m_ts_mesh.o m_ts_tdir.o
 m_ts_hartree.o: parallel.o precision.o sys.o units.o
 m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
-m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_sparse.o
-m_ts_io.o: parallel.o precision.o sys.o
+m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_ncdf_io.o
+m_ts_io.o: m_sparse.o parallel.o precision.o sys.o
 m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o

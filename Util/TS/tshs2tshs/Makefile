@@ -1,9 +1,12 @@
-OBJDIR=Obj
-
 .SUFFIXES: .f .F .o .a .f90 .F90
 
 VPATH:=$(shell pwd)/../../../Src
-
+OBJDIR=Obj
+ARCH_MAKE=../../../$(OBJDIR)/arch.make
+include $(ARCH_MAKE)
+# Set the default non-mpi routines
+FC_DEFAULT  := $(FC)
+FC_SERIAL   ?= $(FC_DEFAULT)
 
 EXE = tshs2tshs
 default: $(EXE)
@@ -14,15 +17,13 @@ dep:
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 $(VPATH)/*.T90
 	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
 
-ARCH_MAKE=../../../$(OBJDIR)/arch.make
-include $(ARCH_MAKE)
+# Only because the NetCDF libraries could be parallel, in
+# which case we need the mpi-compiler :(
+# However, we still compile everything else as though it did not exist
+#FC:=$(FC_SERIAL)         # Make it non-recursive
 
-FC_DEFAULT:=$(FC)
-FC_SERIAL?=$(FC_DEFAULT)
-FC:=$(FC_SERIAL)         # Make it non-recursive
-
-DEFS:=$(DEFS_PREFIX) $(DEFS) $(DEFS_PREFIX) -UMPI
-FPPFLAGS:=$(DEFS_PREFIX) $(FPPFLAGS) $(DEFS_PREFIX) -UMPI
+DEFS:=$(DEFS_PREFIX) $(DEFS) $(DEFS_PREFIX) -UMPI -UNCDF_PARALLEL
+FPPFLAGS:=$(DEFS_PREFIX) $(FPPFLAGS) $(DEFS_PREFIX) -UMPI -UNCDF_PARALLEL
 INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 
 # Uncomment the following line for debugging support
@@ -35,7 +36,7 @@ OBJS = precision.o f2kcli.o parallel.o \
         alloc.o pxf.o units.o sys.o die.o \
 	memory.o memoryinfo.o m_io.o io.o \
 	m_sparse.o intrinsic_missing.o geom_helper.o cellsubs.o \
-	m_io_s.o m_ts_io.o 
+	m_io_s.o m_ncdf_io.o m_ts_io.o 
 
 # Add class objects
 OBJS += m_uuid.o object_debug.o \
@@ -46,17 +47,60 @@ OBJS += m_uuid.o object_debug.o \
 # Add sys object
 OBJS += $(SYSOBJ)
 
-
 OBJS += m_ts_io_version.o
 OBJS += tshs2tshs.o
 
+#######################
+#  TS-TBT libs:
+#
+# Libraries used by transiesta and tbtrans
+# They are currently supplied by this distribution
+# All rights reserved for the author of these libraries.
+# Author: Nick Papior Andersen
 
-$(EXE): $(OBJS)
-	$(FC) -o $(EXE) $(LDFLAGS) $(OBJS)
+# This library can be found at:
+#  https://github.com/zerothi/fvar
+FVAR=libvardict.a
+FVAR_MAKEFILE=$(VPATH)/fvar/Makefile
+$(FVAR): 
+	-mkdir -p fvar
+	(cd fvar ; $(MAKE) -f $(FVAR_MAKEFILE) \
+		"VPATH=$(VPATH)/fvar" \
+		"FC=$(FC_SERIAL)" \
+		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
+		"FPPFLAGS=$(FPPFLAGS)" \
+		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
+	@cp -p fvar/*.*d ./
+	cp fvar/$(FVAR) ./
+
+# This library can be found at:
+#  https://github.com/zerothi/ncdf
+NCDF=libncdf.a
+NCDF_MAKEFILE=$(VPATH)/NCDF/src/Makefile
+$(NCDF): COMP_LIBS += $(FVAR)
+$(NCDF): $(FVAR)
+	-mkdir -p NCDF/src
+	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) \
+		"VPATH=$(VPATH)/NCDF/src" "LIBVARDICT=$(FVAR)" \
+		"DIR_FVAR=$(VPATH)/fvar" \
+		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
+		"FPPFLAGS=$(FPPFLAGS)" \
+		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
+	@cp -p NCDF/src/*.*d ./
+	cp NCDF/src/$(NCDF) ./
+
+#######################
+
+$(EXE): COMP_LIBS += $(TSHS_COMP_LIBS)
+$(EXE): $(COMP_LIBS) $(OBJS)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $(EXE) \
+		$(OBJS) $(COMP_LIBS) $(LIBS)
 
 clean:
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f $(EXE) *.o  *.a *.mod
+	rm -f $(EXE) *.o *.a *.mod
+	-rm -rf ./fvar
+	-rm -rf ./NCDF
 
 
 # DO NOT DELETE THIS LINE - used by make depend
@@ -406,8 +450,8 @@ m_ts_global_vars.o: parallel.o
 m_ts_hartree.o: intrinsic_missing.o m_ts_electype.o m_ts_mesh.o m_ts_tdir.o
 m_ts_hartree.o: parallel.o precision.o sys.o units.o
 m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
-m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_sparse.o
-m_ts_io.o: parallel.o precision.o sys.o
+m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_ncdf_io.o
+m_ts_io.o: m_sparse.o parallel.o precision.o sys.o
 m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o

@@ -361,11 +361,6 @@ contains
            file%sp, file%H_2D, file%S_1D, file%isc_off, &
            Ef, Qtot, Temp, &
            istep, ia1, Bcast = .true. )
-      if ( Gamma ) then
-         ! isc_off is NOT allocated if Gamma
-         allocate(file%isc_off(3,1))
-         file%isc_off(:,:) = 0._dp
-      end if
 
       call reduce_spin_size(ispin,file%H_2D,file%S_1D,Ef)
 

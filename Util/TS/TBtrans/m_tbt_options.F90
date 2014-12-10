@@ -175,17 +175,21 @@ contains
 
     do i = 1 , N_Elec
        ! Default things that could be of importance
-       err = fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus)
-       if ( .not. err ) err = fdf_Elec('TS',slabel,Elecs(i),N_mu,mus,name_prefix='TBT')
-       if ( .not. err ) then
+       if ( fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus) ) then
+          ! success
+       else if ( fdf_Elec('TS',slabel,Elecs(i),N_mu,mus,name_prefix='TBT') ) then
+          ! success
+       else
           call die('Could not find electrode: '//trim(name(Elecs(i))))
        end if
        ! set the placement in orbitals
        if ( Elecs(i)%idx_a < 0 ) &
             Elecs(i)%idx_a = na_u + Elecs(i)%idx_a + 1
        if ( Elecs(i)%idx_a < 1 .or. &
-            na_u < Elecs(i)%idx_a ) &
-            call die("Electrode position does not exist")
+            na_u < Elecs(i)%idx_a ) then
+          print *,Elecs(i)%idx_a,na_u
+          call die("Electrode position does not exist")
+       end if
        Elecs(i)%idx_o = lasto(Elecs(i)%idx_a-1)+1
 
        ! we need to correct the GF file name in case of

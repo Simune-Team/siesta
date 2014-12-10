@@ -814,6 +814,7 @@ C-------------------------------------------------------------------------
         else
            call write_rho( trim(slabel)// ".VNA",
      &          cell, ntm, nsm, ntpl, 1, Vna)
+           call write_grid_netcdf( cell, ntm, 1, ntpl, Vna, "Vna")
         end if
 #else
         call write_rho( trim(slabel)// ".VNA",
@@ -897,6 +898,8 @@ C       Set the UNIFORM distribution again and copy DRho to it
           else
              call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
      $            nspin, DRho)
+             call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
+     $            "RhoInit")
           end if
 #else
           call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
@@ -956,6 +959,7 @@ C ----------------------------------------------------------------------
      &          DRho)
         else
            call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, DRho )
+           call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "Rho")
         end if
 #else
         call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, DRho )
@@ -983,6 +987,8 @@ C       Save diffuse ionic charge
      &            Chlocal)
           else
              call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, Chlocal)
+             call write_grid_netcdf( cell, ntm, 1, ntpl, Chlocal,
+     &            'Chlocal' )
           end if
 #else
           call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, Chlocal)
@@ -1018,6 +1024,8 @@ C       Save total (ionic+electronic) charge
      &            TotChar)
           else
              call write_rho(filetoch,cell,ntm,nsm,ntpl,1,Totchar)
+             call write_grid_netcdf( cell, ntm, 1, ntpl, Totchar, 
+     &            "TotalCharge")
           end if
 #else
           call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
@@ -1059,6 +1067,8 @@ C ----------------------------------------------------------------------
      &          DRho)
         else
            call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, DRho )
+           call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, 
+     &          "DeltaRho")
         end if
 #else
         call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, DRho )
@@ -1223,6 +1233,8 @@ C ----------------------------------------------------------------------
      &          Vscf)
         else
            call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf )
+           call write_grid_netcdf( cell, ntm, 1, ntpl, Vscf, 
+     &          "ElectrostaticPotential")
         end if
 #else
         call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf )
@@ -1376,6 +1388,8 @@ C ----------------------------------------------------------------------
      &          Vscf)
         else 
            call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, Vscf )
+           call write_grid_netcdf( cell, ntm, nspin, ntpl, Vscf, 
+     &          "TotalPotential")
         end if
 #else
         call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, Vscf )
@@ -1607,6 +1621,10 @@ C ----------------------------------------------------------------------
 
       subroutine save_bader_charge()
       use meshsubs, only: ModelCoreChargeOnMesh
+#ifdef NCDF_4
+      use siesta_options, only: write_cdf
+      use m_ncdf_siesta, only: cdf_save_grid
+#endif
       ! Auxiliary routine to output the Bader Charge
       !
       real(grid_p), pointer :: BaderCharge(:) => null()
@@ -1621,10 +1639,22 @@ C ----------------------------------------------------------------------
       do ispin = 1,nsd
          BaderCharge(1:ntpl) = BaderCharge(1:ntpl) + DRho(1:ntpl,ispin)
       enddo
+#ifdef NCDF_4
+      if ( write_cdf ) then
+         call cdf_save_grid('SIESTA.nc','RhoBader',1,ntm,ntpl,
+     &        BaderCharge)
+      else
+         call write_rho( trim(slabel)// ".BADER", cell,
+     $        ntm, nsm, ntpl, 1, BaderCharge )
+         call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $        BaderCharge, "BaderCharge")
+      end if
+#else
       call write_rho( trim(slabel)// ".BADER", cell,
      $     ntm, nsm, ntpl, 1, BaderCharge )
       call write_grid_netcdf( cell, ntm, 1, ntpl,
      $     BaderCharge, "BaderCharge")
+#endif
 
       call de_alloc( BaderCharge, name='BaderCharge' )
       end subroutine save_bader_charge
