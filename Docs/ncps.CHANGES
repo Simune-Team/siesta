@@ -1,4 +1,18 @@
 ------------------------------------------------------------
+December 11, 2014  Alberto Garcia       trunk-462--ncps-43
+Cosmetic changes in experimental opaque handle implementation
+
+The file Src/psml/m_psml_opaque.F90 now implements a proof-of-concept
+of an opaque interface, with handles dispatched from a store. This
+could be used to implement C interoperability. A similar approach could
+be used for annotations.
+
+renamed:
+  Src/psml/m_psml_user.F90 => Src/psml/m_psml_opaque.F90
+modified:
+  Src/psml/m_psml_opaque.F90
+
+------------------------------------------------------------
 October 9, 2014  Alberto Garcia       trunk-462--ncps-42
 Close psml file after parsing
 

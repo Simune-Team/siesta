@@ -1,12 +1,12 @@
-module m_psml_user
+module m_psml_opaque
 
-  use m_psml_core, only: ps_t
+  use m_psml_core
   use iso_c_binding
 
-   type, public, bind(c) :: psh_t
+   type, public, bind(c) :: psml_t
       private
       integer(c_int)   :: i = 0
-   end type psh_t
+   end type psml_t
 
    type, private :: ps_store_t
       integer                         :: nitems = 0
@@ -15,7 +15,8 @@ module m_psml_user
    end type ps_store_t
 
    public :: psml_reader
-   public :: ps_AtomicLabel
+   public :: psml_AtomicLabel
+   public :: psml_NValenceShells
 
    type(ps_store_t), target :: ps_store
 
@@ -23,43 +24,53 @@ module m_psml_user
 
    CONTAINS
 
-     function ps_AtomicLabel(psh) result(name)
-!       use m_psml_core, only: atomic_label=>ps_AtomicLabel
+     function psml_AtomicLabel(psml) result(name)
 
-       type(psh_t), intent(in) :: psh
+       type(psml_t), intent(in) :: psml
        character(len=20) :: name
 
-       type(ps_t), pointer :: ps
+       name = trim(ps_AtomicLabel(psml2ps(psml)))
 
-       ps => ps_store%p(psh%i)
-       name = trim(ps%header%atomic_label)
-     end function ps_AtomicLabel
+     end function psml_AtomicLabel
 !
+function psml_NValenceShells(psml) result(nshells)
+type(psml_t), intent(in) :: psml
+integer                :: nshells
 
-     subroutine psml_reader(fname,psh)
+nshells = ps_NValenceShells(psml2ps(psml))
+
+end function psml_NValenceShells
+
+function psml2ps(psml) result(ps)
+type(psml_t), intent(in) :: psml
+type(ps_t), pointer :: ps
+
+       ps => ps_store%p(psml%i)
+end function psml2ps
+
+     subroutine psml_reader(fname,psml)
        use m_psml_reader, reader=>psml_reader
 
        character(len=*), intent(in) :: fname
-       type(psh_t), intent(inout) :: psh
+       type(psml_t), intent(inout) :: psml
 
        type(ps_t), pointer :: ps
 
-       call get_free_slot(psh,ps)
+       call get_free_slot(psml,ps)
 
        call reader(fname,ps)
 
      end subroutine psml_reader
 
-
-       subroutine get_free_slot(psh,ps)
+       subroutine get_free_slot(psml,ps)
         use m_psml_core, only: ps_destroy
         
-         type(psh_t), intent(inout) :: psh
+         type(psml_t), intent(inout) :: psml
          type(ps_t), pointer :: ps
 
-         if (psh%i /= 0) then
+         if (psml%i /= 0) then
             ! handle has been used. Clean
-            ps => ps_store%p(psh%i)
+            ps => ps_store%p(psml%i)
             call ps_destroy(ps)
             RETURN
          endif
@@ -77,27 +88,32 @@ module m_psml_user
          endif
 
          ps => ps_store%p(nitems+1)
-         psh%i = nitems + 1
+         psml%i = nitems + 1
          ps_store%nitems = nitems + 1
          
 
        end subroutine get_free_slot
-end module m_psml_user
+end module m_psml_opaque
 
 #ifdef __TEST__
-program test_psh
-use m_psml_user
+program test_psml
+use m_psml_opaque
 
-type(psh_t) :: psh(5)
+implicit none
+
+type(psml_t) :: psml(5)
 character(len=8) :: label
+
+integer :: i, nshells
 
 do i = 1, 5
    print *, "iteration: ", i
-   call psml_reader("PSML",psh(i))
-   label = ps_AtomicLabel(psh(i))
-   print *, label
+   call psml_reader("PSML",psml(i))
+   label = psml_AtomicLabel(psml(i))
+   nshells = psml_NValenceShells(psml(i))
+   print *, label, nshells
 enddo
-end program test_psh
+end program test_psml
 
 subroutine die(str)
 character(len=*), optional :: str
