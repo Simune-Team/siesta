@@ -1,4 +1,13 @@
 ------------------------------------------------------------
+December 11, 2014  Alberto Garcia       trunk-462--ncps-44
+Update fhi2psml
+
+Add libxc section. Add r=0 point to grid magnitudes.
+
+modified:
+  Pseudo/atom/fhi2psml.f90
+
+------------------------------------------------------------
 December 11, 2014  Alberto Garcia       trunk-462--ncps-43
 Cosmetic changes in experimental opaque handle implementation
 

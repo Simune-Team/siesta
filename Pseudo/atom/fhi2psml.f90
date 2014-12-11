@@ -5,12 +5,15 @@ program fhi2psml
 
   ! Alberto Garcia, May 23, 2014
   ! Alberto Garcia, July 24, 2014
+  ! Alberto Garcia, December 11, 2014
 
-  use flib_wxml
-
+  use flib_wxml     ! To write XML files
+  use m_libxc_list  ! For ease of libxc handling
+                    ! The code lives in SiestaXC
   implicit none
 
   type(xmlf_t) :: xf
+  type(libxc_t) :: libxc_id(2)
 
   integer, parameter :: dp = selected_real_kind(10,100)
 
@@ -21,6 +24,7 @@ program fhi2psml
   real(dp), allocatable :: r(:), chval(:), chcore(:)
   real(dp), allocatable :: vps(:,:), pswfs(:,:)
   real(dp), allocatable :: vps_raw(:)
+  real(dp), allocatable :: r0(:), f0(:)
 
   character(len=100)    :: line, fname
   character(len=100)    :: msg
@@ -38,6 +42,7 @@ program fhi2psml
   integer, allocatable  :: nn(:), ll(:)
   real(dp), allocatable :: f(:), ff(:), rc(:)
   real(dp), allocatable :: fdown(:), fup(:)
+  integer :: nr
 
   logical :: tdopsp, nonrel, polarized, there_is_core, found
   !
@@ -106,8 +111,8 @@ program fhi2psml
   read(1,*) polarized
   close(1)
 
-  print *, "Done reading fort.20"
-  print *, "Polarized: ", polarized
+!  print *, "Done reading fort.20"
+!  print *, "Polarized: ", polarized
 
   open(1,file="fort.22",form="formatted",status="old", &
        position="rewind",action="read")
@@ -137,7 +142,7 @@ program fhi2psml
   read(1,*) lmax, pscode
   close(1)
 
-  print *, "Done reading fort.20"
+!  print *, "Done reading fort.20"
 
   zion = 0.0_dp
   do i = ncp, norbs
@@ -171,6 +176,7 @@ program fhi2psml
      endif
   enddo
 
+! Note that we cannot yet handle per-channel flavors...
 
   select case (pscode)
   case ("h","H")
@@ -198,78 +204,92 @@ program fhi2psml
      coreattrib = "no"
   endif
 
+  ! XC name handling
+
   select case(xc_code)
 
   case(1) 
      xcfuntype    = 'LDA'
      xcfunparam   = 'Wigner'
-
+     libxc_id = (/ XC_LDA_X, XC_LDA_C_WIGNER /)
   case(2) 
      xcfuntype    = 'LDA'
      xcfunparam   = 'Hedin-Lundqvist'
-
+     libxc_id = (/ XC_LDA_X, XC_LDA_C_HL /)
   case(3) 
      xcfuntype    = 'LDA'
      xcfunparam   = 'Ceperley-Alder PZ'
+     libxc_id = (/ XC_LDA_X, XC_LDA_C_PZ /)
 
   case(4) 
      xcfuntype    = 'GGA'
      xcfunparam   = 'Perdew-Wang 91'
+     libxc_id = (/ XC_GGA_X_PW91, XC_GGA_C_PW91 /)
 
   case(5) 
      xcfuntype    = 'GGA'
      xcfunparam   = 'Becke X, Perdew C'
+     libxc_id = (/ XC_GGA_X_B86, XC_GGA_C_PW91 /)  ! ????
 
   case(6) 
      xcfuntype    = 'GGA'
      xcfunparam   = 'Perdew-Burke-Ernzerhof'
+     libxc_id = (/ XC_GGA_X_PBE, XC_GGA_C_PBE /) 
 
   case(7) 
      xcfuntype    = 'LDA'
      xcfunparam   = 'Zhao/Parr'
+     libxc_id = (/ XC_LDA_X, XC_NOT_IMPL /) ! ???
 
   case(8) 
      xcfuntype    = 'LDA'
      xcfunparam   = 'Ceperley-Alder PW'
+     libxc_id = (/ XC_LDA_X, XC_LDA_C_PW /) 
 
   case(9) 
      xcfuntype    = 'GGA'
      xcfunparam   = 'Becke-Lee-Yang-Parr'
+     libxc_id = (/ XC_GGA_X_B86, XC_GGA_C_LYP /)
 
   case(10) 
      xcfuntype    = 'GGA'
      xcfunparam   = 'Perdew-Wang X Lee-Yang-Parr'
+     libxc_id = (/ XC_GGA_X_PW91, XC_GGA_C_LYP /)
 
   case(11) 
      xcfuntype    = 'LDA'
      xcfunparam   = 'Exchange only'
+     libxc_id = (/ XC_LDA_X, XC_EMPTY /) 
 
   case(12,13) 
      xcfuntype    = 'KLI'
      xcfunparam   = '-----'
+     libxc_id = (/ XC_NOT_IMPL, XC_NOT_IMPL /) 
 
   case(14) 
      xcfuntype    = 'GGA'
      xcfunparam   = 'RPBE - Hammer et al'
-
+     libxc_id = (/XC_GGA_X_RPBE, XC_GGA_C_PBE/)   
   case(15) 
      xcfuntype    = 'GGA'
      xcfunparam   = 'revPBE Zhang+Yang'
+     libxc_id = (/XC_GGA_X_PBE_R, XC_GGA_C_PBE/)
 
   case(16) 
      xcfuntype    = 'MGGA'
      xcfunparam   = 'Perdew/Kurth/Zupan/Blaha'
-
+     libxc_id = (/  XC_NOT_IMPL, XC_NOT_IMPL /)   ! No MGGAs in file yet
   case(17) 
      xcfuntype    = 'GGA'
      xcfunparam   = 'PBE X, LDA C'
+     libxc_id = (/XC_GGA_X_PBE, XC_LDA_C_PZ/)   
 
   case(18,19) 
      xcfuntype    = 'KLI'
      xcfunparam   = '-----'
+     libxc_id = (/  XC_NOT_IMPL, XC_NOT_IMPL /)   ! ???
 
   end select
-
   !
   !
   call xml_NewElement(xf,"header")
@@ -280,23 +300,53 @@ program fhi2psml
   call my_add_attribute(xf,"relativistic",relattrib)
   call my_add_attribute(xf,"polarized",polattrib)
   call my_add_attribute(xf,"core-corrections",coreattrib)
-  call my_add_attribute(xf,"xc-functional",trim(xcfuntype)//trim(xcfunparam))
-  call my_add_attribute(xf,"xc-libxc-exchange","TBA")
-  call my_add_attribute(xf,"xc-libxc-correlation","TBA")
+
+          call xml_NewElement(xf,"exchange-correlation")
+          call xml_NewElement(xf,"annotation")
+          call my_add_attribute(xf,"fhi98pp-xc-code",str(xc_code))
+          call my_add_attribute(xf,"fhi98pp-xc-type",trim(xcfuntype))
+          call my_add_attribute(xf,"fhi98pp-xc-authors",trim(xcfunparam))
+          call xml_EndElement(xf,"annotation")
+
+          call xml_NewElement(xf,"libxc-info")
+          call my_add_attribute(xf,"number-of-functionals","2")
+           do i = 1, 2
+              call xml_NewElement(xf,"functional")
+               call my_add_attribute(xf,"name",trim(libxc_id(i)%name))
+               call my_add_attribute(xf,"type",trim(libxc_id(i)%xc_kind%str))
+               call my_add_attribute(xf,"id",str(libxc_id(i)%code))
+              call xml_EndElement(xf,"functional")
+           enddo
+          call xml_EndElement(xf,"libxc-info")
+          call xml_EndElement(xf,"exchange-correlation")
+          !
 
   !
   call do_configuration()
   call xml_EndElement(xf,"header")
 
+  ! The first element of r is r1 (/=0)
+  ! The PSML format requires that r=0 is included in the data sets
+
+  nr = npts + 1
+  allocate(r0(nr))
+  call add_zero_r(r,r,r0)
+  r0(1) = 0.0_dp
+
   call xml_NewElement(xf,"grid")
-  call my_add_attribute(xf,"npts",str(npts))
-  write(msg,"(3(a,':',a,'--'))")  "type","fhi",          &
-                                 "r_1",trim(str(r(1))),       &
-                                 "factor",trim(str(r(2)/r(1)))
-  call my_add_attribute(xf,"annotation",trim(msg))
+  call my_add_attribute(xf,"npts",str(nr))
+
+  call xml_NewElement(xf,"annotation")
+  call my_add_attribute(xf,"type","fhi plus r=0")
+  call my_add_attribute(xf,"fhi98pp-npts",str(npts))
+  call my_add_attribute(xf,"fhi98pp-r1",trim(str(r(1))))
+  call my_add_attribute(xf,"fhi98pp-factor",trim(str(r(2)/r(1))))
+  call xml_EndElement(xf,"annotation")
+
   call xml_NewElement(xf,"grid-data")
-  call xml_AddArray(xf,r(1:npts))
+  call xml_AddArray(xf,r0(1:nr))
   call xml_EndElement(xf,"grid-data")
+
   call xml_EndElement(xf,"grid")
 
   allocate (vps(npts,npots), pswfs(npts,npots))
@@ -324,7 +374,7 @@ program fhi2psml
   call my_add_attribute(xf,"npots-major",str(npots))
   call my_add_attribute(xf,"npots-minor","0")
   !         
-
+  allocate(f0(nr))
   vpsd: do i = 1, npots
      call xml_NewElement(xf,"vps")
      call my_add_attribute(xf,"set","major")
@@ -335,7 +385,9 @@ program fhi2psml
 
      call xml_NewElement(xf,"radfunc")
      call xml_NewElement(xf,"data")
-     call xml_AddArray(xf,vps(1:npts,i))
+     call add_zero_r(vps(1:npts,i),r,f0)
+!     call xml_AddArray(xf,vps(1:npts,i))
+     call xml_AddArray(xf,f0(1:nr))
      call xml_EndElement(xf,"data")
      call xml_EndElement(xf,"radfunc")
      call xml_EndElement(xf,"vps")
@@ -359,7 +411,9 @@ program fhi2psml
      call xml_NewElement(xf,"radfunc")
 
      call xml_NewElement(xf,"data")
-     call xml_AddArray(xf,pswfs(1:npts,i))
+     call add_zero_r(pswfs(1:npts,i),r,f0)
+!     call xml_AddArray(xf,pswfs(1:npts,i))
+     call xml_AddArray(xf,f0(1:nr))
      call xml_EndElement(xf,"data")
      call xml_EndElement(xf,"radfunc")
      call xml_EndElement(xf,"pswf")
@@ -372,7 +426,9 @@ program fhi2psml
   call xml_NewElement(xf,"radfunc")
 
   call xml_NewElement(xf,"data")
-  call xml_AddArray(xf,chval(1:npts))
+  call add_zero_r(chval(1:npts),r,f0)
+!  call xml_AddArray(xf,chval(1:npts))
+  call xml_AddArray(xf,f0(1:nr))
   call xml_EndElement(xf,"data")
   call xml_EndElement(xf,"radfunc")
   call xml_EndElement(xf,"valence-charge")
@@ -395,7 +451,9 @@ program fhi2psml
      call xml_NewElement(xf,"radfunc")
 
      call xml_NewElement(xf,"data")
-     call xml_AddArray(xf,chcore(1:npts))
+     call add_zero_r(chcore(1:npts),r,f0)
+!     call xml_AddArray(xf,chcore(1:npts))
+     call xml_AddArray(xf,f0(1:nr))
      call xml_EndElement(xf,"data")
      call xml_EndElement(xf,"radfunc")
      call xml_EndElement(xf,"pseudocore-charge")
@@ -407,7 +465,7 @@ program fhi2psml
 
   call xml_Close(xf)
 
-  deallocate(chval,r,vps,pswfs)
+  deallocate(chval,r,vps,pswfs,f0,r0)
 
    CONTAINS
 
@@ -477,11 +535,13 @@ end subroutine do_configuration
       double precision, intent(in)  :: f(:), r(:)
       double precision, intent(out) :: f0(:)
       
-      integer i
+      integer i, npts
       double precision :: r2
 
-      do i = 2, npts
-         f0(i) = f(i-1)
+      npts = size(f)
+      if (size(f0) /= npts +1) stop "nr /= npts + 1 in add_zero_r"
+      do i = 1, npts
+         f0(i+1) = f(i)
       enddo
       r2 = r(1)/(r(2)-r(1))
       f0(1) = f(2) - (f(3)-f(2))*r2
@@ -517,7 +577,7 @@ end subroutine do_configuration
       do j=1,n
          if (in_flat_region(j)) nflat = nflat + 1
       enddo
-      print *, "nflat: ", nflat
+!      print *, "nflat: ", nflat
 
       if (nflat < 20) then
          print *, "Only ", nflat, " points below tolerance..."
