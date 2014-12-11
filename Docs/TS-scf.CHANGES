@@ -1,4 +1,31 @@
 ----------------------------------------------------
+December 11, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-240
+Speeded up TB model creation
+
+* Reverted from np.linalg.norm to simple calculation.
+  It is much faster.
+
+* Ensured that TB models can overwrite same hopping elements
+  so now the user has to be sure he is not destroying something.
+
+  Also speeded up the TB creation by allowing array assignments.
+
+  The most time is spent on finding nearest atoms, we could have
+  a sparsity pattern of the nearest atoms for each atom 
+  (calculated from dR) which would speed up the calculation
+  enourmously, however, that initial step might not be worth it.
+  As one does very few comparisons afterwards.
+
+  Added a max_connection which is manually calculated from dR,
+  or to speed things up (drastically) one should provide this number,
+  it need not be exact, just above or equal to the actual maximum 
+  number of connections.
+  
+modified:
+  Util/TS/TB/Examples/HUGE_D_zz.fdf
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 December 10, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-239
 Small bug-fixes and added TB backend for tbtrans
 
