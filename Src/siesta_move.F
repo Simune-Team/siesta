@@ -269,8 +269,23 @@
       ! NOTE that this means "the positions predicted for next step"
       ! and "the current velocities"
       if (idyn.ne.6 .and. idyn.ne.7 .and. idyn.ne.8) then
+
+      ! Saving XV file after the same number MD steps as TDWF and DM
+      ! is saved for a consistent start in case of TDDFT calculation
+
+
+         if(td_elec_dyn) then
+            if (mod(istep, tdednwrite).eq.0) then
+            call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va,
+     &             foundxv)
+            end if
+         else 
+
         call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
+  
+        end if    ! td_elec_dyn
+
         if (lUseZmatrix .and. (idyn.eq.0))
      .    call iozm('write',ucell,vcell,xa,foundzm)
         call siesta_write_positions()

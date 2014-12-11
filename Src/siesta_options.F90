@@ -90,13 +90,17 @@ MODULE siesta_options
   logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
  
 !Rafi Feb 17, 2014 
-  logical :: writetdwf   ! To write the wavefuctions at the end of SCF. These
-                         ! would serve as the initial states for time evolution
-                         ! of KS states in TD-DFT.
-  logical :: td_elec_dyn
-
-
-
+  logical :: writetdwf      ! To write the wavefuctions at the end of SCF. These
+                            ! would serve as the initial states for time evolution
+                            ! of KS states in TD-DFT.
+  logical :: td_elec_dyn    ! It might be redudant
+  integer :: itded          ! a TDDFT counterpart of iscf
+  integer :: ntded          ! Number of TDED steps in each MD iteration. 
+                            ! Or total number of TDED steps in an only electron calcuation
+                            ! (MD.FinalTimeStep = 1)  
+  integer  :: tdednwrite    ! Number steps after which .TDWF and .DM are saved for restarting.
+  real(dp) :: rstart_time   ! Restart time
+  real(dp) :: totime        ! Total time including the restart time mainly for plotting 
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
@@ -168,7 +172,8 @@ MODULE siesta_options
   integer,  parameter :: maxsav_default = 0
   integer,  parameter :: nscf_default = 50
   integer,  parameter :: ncgmax_default = 1000
-
+  integer,  parameter :: ntded_default  = 3 ! Sticking to Daneil's original convention 
+  integer,  parameter :: tdednwrite_default = 100
   real(dp), parameter :: wmix_default = 0.25_dp
   real(dp), parameter :: wmixkick_default = 0.5_dp
   real(dp), parameter :: dDtol_default = 1.0e-4_dp
@@ -1048,7 +1053,8 @@ MODULE siesta_options
 
 
 !TD-DFT options
-!Rafi           
+!Rafi      
+           td_elec_dyn = .false. 
            writetdwf = fdf_get('WriteInitialTDWF',.false.)
            if(writetdwf) then
              if (ionode) then
@@ -1057,18 +1063,15 @@ MODULE siesta_options
              endif
            endif
 
-
-           td_elec_dyn = fdf_get('tddft',.false.)
-           if(td_elec_dyn) then
-             if (ionode) then
-              write(6,1) 'redata: Time-dependent electron dynamics               &
-                              = ',td_elec_dyn
-             endif
-           endif
-
-!End - Rafi!
-
-
+          ntded  = fdf_get('TDED.Nsteps',ntded_default)
+          if (ionode) then
+            write(6,4) 'redata: Max. number of TDED Iter         = ',ntded
+          end if
+    
+          tdednwrite = fdf_get('TDED.Nwrite',tdednwrite_default)
+          if (ionode) then
+            write(6,4) 'redata: Write .TDWF and .DM after time steps= ',tdednwrite
+          end if
     ! Dynamics parameters ...
     varcel = fdf_get('MD.VariableCell', .false. )
 
@@ -1095,6 +1098,11 @@ MODULE siesta_options
       fire_optim = .true.
     else if (leqi(dyntyp,'verlet')) then
       idyn = 1
+    else if (leqi(dyntyp,'electrondynamics')) then    !TD-DFT, still follows verlet. Later idyn = 9
+      idyn = 1
+      td_elec_dyn = .true.
+      rstart_time = 0.00_dp
+      totime      = 0.00_dp
     else if (leqi(dyntyp,'nose')) then
       idyn = 2
     else if (leqi(dyntyp,'parrinellorahman')) then

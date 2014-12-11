@@ -14,7 +14,7 @@
      .                  maxo, numh, listhptr, listh, 
      .                  H, S, qtot,
      .                  gamma, xij, indxuo, nk, kpoint, wk,
-     .                  eo, qo, nuotot,ef)
+     .                  eo, qo, nuotot,ef, istpp)
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors,
 C for given Hamiltonian and Overlap matrices (including
@@ -96,7 +96,7 @@ c maz. added ClProj.
 
       integer
      .  maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin, nuotot,
-     . sumqo,ikmax,iomax,ioi,iof,ispinmax
+     . sumqo,ikmax,iomax,ioi,iof,ispinmax, istpp
 
       integer 
      .  indxuo(no), listh(maxnh), numh(*), 
@@ -555,7 +555,7 @@ C Free local arrays
 C If block on reading versus calculate wavefunctions   
       
 
-      call  iowavef('write',wavef,nuotot,nk,nspin)
+      call  iowavef('write',wavef,nuotot,nk,nspin,istpp)
 C Stop time counter ...................................................
       call timer( 'initwf', 2 )
 C .......................

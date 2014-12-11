@@ -519,9 +519,9 @@ C ....................
 
 CSave wavefunctions when required
 CZEB. write when wrttdfiles=true
-	if(wrttdfiles) then
-         call  iowavef('write',wavef,nuotot,nk,nspin)
-	end if
+C	if(wrttdfiles) then
+C         call  iowavef('write',wavef,nuotot,nk,nspin)
+C	end if
 
 
       end

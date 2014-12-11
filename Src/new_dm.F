@@ -125,13 +125,6 @@
       dminit = .false.
       try_to_read_from_file = usesavedm     ! As per defaults
 
-!Rafi - just to read the density for the first step.
-      if ((td_elec_dyn) .and. (istp .ne. 1)) then
-
-      try_to_read_from_file = .false.
-
-      end if
-
 
 
 !     Except if there are explicit instructions
@@ -334,7 +327,6 @@
       ! At this point DM conforms already to the current sparsity pattern.
 
       if (associated(DMsaved)) then
-
          if (IOnode) then
             write(6,"(a)") "Extrapolating Density Matrix..."
          endif
@@ -357,7 +349,7 @@
      $                              DMtmp(:,is), DMsaved(:,is) )
             enddo
             call de_alloc(DMtmp,name="DMtmp",routine="new_dm")
-
+         
          endif
 
          ! Extrapolate DM and update DMsaved
@@ -373,7 +365,6 @@
                DMsaved(i,ispin) = msave
             enddo
          enddo
-
       else    ! not associated(DMsaved)
 
          if (IOnode) then

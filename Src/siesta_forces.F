@@ -31,7 +31,6 @@
       use siesta_master, only: forcesToMaster ! Send forces to master prog
       use siesta_master, only: siesta_server  ! Is siesta a server?
      
-      use m_initwf,      only: initwf         ! Initiate TDDFT KS states
       use atomlist,      only: no_s, no_l, no_u, qtot, indxuo
       use m_spin,        only: nspin
       use m_gamma
@@ -43,6 +42,23 @@
      &                           listh, listhptr, S, xijo
       use m_save_density_matrix, only: save_density_matrix
       use m_compute_energies, only: compute_energies
+!tddft
+      use files,            only: slabel
+      use m_initwf,         only: initwf  
+      use wavefunctions
+      use atomlist,         only: indxua, rmaxo, lasto, iphorb
+      use sparse_matrices,  only: Escf, H_kin, H_vkb
+      use m_iodm,           only: read_dynamic_dm
+      use m_evolve,         only: evolve
+      use elec_dyn_options
+      use m_iodipol,       only: write_td_dipol
+      use m_overfsm,        only: overfsm
+      use siesta_geom,      only: na_s, xa, isa, scell
+      use m_energies
+      use m_final_H_f_stress,     only: final_H_f_stress
+! End tddft - Rafi
+
+
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : ts_istep
 #endif /* TRANSIESTA */
@@ -57,6 +73,14 @@
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
       double precision :: EF7
+!tddft
+      integer              :: ispn, nio, itd, istmove, mod_tded, mod_md
+      integer              :: istpp
+      logical              :: rstart, found
+      double precision     :: dt_tded
+      character*70, external  :: paste
+! End -tddft Rafi
+
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
@@ -64,6 +88,8 @@
 #endif /* TRANSIESTA */
       
 !---------------------------------------------------------------------- BEGIN
+
+
 
 !     Initialization tasks for a given geometry
       call state_init( istep )
@@ -84,6 +110,20 @@
       iscf  = 0
       call setup_H0()
 
+
+      
+      if (td_elec_dyn) then     !tddft
+      istmove = istep-1
+      call read_dynoptions ()
+      
+      call chgbasis(no_s, nspin, nspin, no_l, maxnh, maxnh,
+     &                no_u, numh, listhptr, listh,
+     &                numh, listhptr, listh, S,
+     &                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     &                Dscf, no_u,istmove)
+      
+      else 
+
       DO 
         ! Conditions of exit:
         !  -- At the top, to catch a non-positive nscf
@@ -97,7 +137,7 @@
         ! inherited
         first = (iscf == 1)
 #ifdef TRANSIESTA
-        !!     if (TSrun) first = .false.   ! for old (wrong) behavior
+        !!     if (TSrun) first = .false.   ! for old (wrong) behavior 
 #endif
 
         if (first) then
@@ -192,15 +232,15 @@
              !!!    H = Hold
          endif
       endif
-
+             !To write the initial wavefunctions to be used in a consequent TDDFT
+             ! run.
       if(writetdwf) then
-      write(6,*) 'Here you need to call initwf'
+              istpp = istep
       call initwf(no_s, nspin, nspin, no_l, maxnh, no_u,
      &            numh, listhptr, listh, H, S, qtot,
      &            gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     &            eo, qo, no_u, EF7)
+     &            eo, qo, no_u, EF7, istpp)
       end if
-
 
 
 !     End of standard SCF loop.
@@ -213,6 +253,73 @@
       ! If siesta is running as a subroutine, send forces to master program
       if (siesta_server) 
      &  call forcesToMaster( na_u, Etot, cfa, cstress )
+  
+      end if !tddft
+
+      if (td_elec_dyn) then
+      ! Read the initial wavefunctions. 
+      
+      IF (istep==1) THEN
+       call iowavef('read',wavef,no_u,nkpnt,nspin, istpp)
+       etotfile  =  paste( slabel, '.etot_vs_time'  )
+      ! istep=istpp
+      END IF 
+
+
+
+      DO itded = 1,ntded  !tddft loop
+ 
+      call setup_hamiltonian( itded )
+      dt_tded= dt/ntded
+      call evolve(no_s,nspin,nspin,no_l,maxnh,maxnh,no_u,
+     &            numh,listhptr,listh,numh,listhptr,listh,
+     &            H,S,eo,
+     &            gamma, xijo, indxuo,nkpnt,kpoint,kweight,
+     &            Dscf, Escf, no_u, dt_tded)
+
+! The total simulation time mainly for plotting
+       totime = (istep*dt - dt) + (itded*dt_tded) + rstart_time 
+
+      call compute_energies (itded)
+      call final_H_f_stress (itded)
+      call post_scf_work( itded )
+      call state_analysis( istep )
+      call ioetot(totime, Etot, istep)
+
+      call write_td_dipol(totime, istep) 
+
+      write(6,*)'E0      = ',E0/eV
+      write(6,*)'DEna    = ',DEna/eV
+      write(6,*)'DUscf   = ',DUscf/eV
+      write(6,*)'DUext   = ',DUext/eV
+      write(6,*)'Exc     = ',Exc/eV
+      write(6,*)'Ecorrec = ',Ecorrec/eV
+      write(6,*)'Emad    = ',Emad/eV
+
+! To save the TD-wavefunctions and Density matrix to restart
+!        mod_tded = mod(itded, tdednwrite)
+!
+!        if(mod_tded .eq. 0) then
+!            call iowavef('write',wavef,no_u,nkpnt,nspin, istep)
+!            call save_density_matrix("dmout")
+!        end if
+!
+        END DO !  itded
+
+! To save the TD-wavefunctions and Density matrix to restart
+        mod_md   = mod(istep, tdednwrite)
+
+        if(mod_md .eq. 0) then
+            call iowavef('write',wavef,no_u,nkpnt,nspin, istpp)
+            call save_density_matrix("dmout")
+        write(6,*) 'After saving .DM and .TDWF print &&&&  =',tdednwrite
+        end if
+
+
+      end if !    td_elec_dyn
+
+
+
 
 
 !------------------------------------------------------------------------ END

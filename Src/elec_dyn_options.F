@@ -4,6 +4,8 @@
        use precision
        use fdf
        use m_fdf_global
+       use siesta_options, only: totime, rstart_time
+       use m_steps 
 #ifdef MPI
        use mpi
 #endif
@@ -74,7 +76,7 @@ c maz. limit wall time
        CONTAINS
 
        subroutine read_dynoptions( )
- 
+       implicit none 
        integer node 
        character
      .   dyntyp*22, resp*22
@@ -176,9 +178,9 @@ c maz
        ntddftwrite_default=100
        Nelecsubsteps_default=1
        nstep_ion_move_default=20
-        call fdf_global_get(dyntyp,'MD.TypeOfRun',dyntyp_default)
-      if (leqi(dyntyp,'electrondynamics')) then
-          electrondynamics = .true.
+c       call fdf_global_get(dyntyp,'MD.TypeOfRun',dyntyp_default)
+c      if (leqi(dyntyp,'electrondynamics')) then
+C         electrondynamics = .true.
 C Number of electronic timesteps between ionic movements
           call fdf_global_get(nstep_ion_move,'MD.Nstep_ion_move',
      .      nstep_ion_move_default) 
@@ -191,8 +193,6 @@ C Number of "substeps" larger or equal than 1
           call fdf_global_get(EigenvsTime,'WriteEigenvsTime', .false. )
           call fdf_global_get(EtotvsTime,'WriteEtotvsTime',.true.) 
           call fdf_global_get(onlyelectrons,'MD.OnlyElectrons', .false.)
-          call fdf_global_get(ntddftwrite,'MD.NwriteTDWF', 
-     .        ntddftwrite_default)
           usesaveTDWF_default=.false.
           call fdf_global_get(usesaveTDWF,'MD.UseSaveTDWF',
      .         usesaveTDWF_default)
@@ -217,21 +217,23 @@ C Number of "substeps" larger or equal than 1
           endif
          endif
 
-      endif
+c      endif
 
       end subroutine read_dynoptions
 
 
 C Returns total simulations time
 C      double precision function tottime
-       function tottime(itimestep, initstep, timestep, restarttime)
+C       function tottime(itimestep, initstep, timestep, restarttime)
+C
+C       double precision tottime, timestep, restarttime
+C       integer itimestep, initstep
+C
+C       tottime= (itimestep-initstep)*timestep + restarttime 
+C       return 
+C       end function tottime
 
-       double precision tottime, timestep, restarttime
-       integer itimestep, initstep
 
-       tottime= (itimestep-initstep)*timestep + restarttime 
-       return 
-       end function tottime
 
      
        subroutine  iodipole (dipole,extfield,frstme)
@@ -249,47 +251,41 @@ C      double precision function tottime
       endif
       if(itimestep.gt.initstep) then 
        write(iu,'(4f15.6)') 
-     .    tottime(itimestep, initstep, timestep, restarttime),
+     .    totime,
      .    dipole(1),dipole(2), dipole(3)
       endif
       if(itimestep.eq.finalstep) call io_close(iu)
 
       end subroutine iodipole
 
-      subroutine ioetot(totime, etot)
+      subroutine ioetot(totime, etot, istp)
 
       double precision totime, etot, eV
       logical frstme
-      integer iu
+      integer iu, istp
       character*15 fform
       data frstme /.true./
       save frstme, iu, eV
-           
-       write(6,'(A15)') etotfile 
+       if(frstme) then
           call io_assign( iu )
           fform='formatted'
           open( iu, file=etotfile, form=fform,POSITION='APPEND',
-     .  status='unknown' )
-          
+     .         status='unknown' )
+          frstme = .false. 
           eV=1.d0 / 13.60580d0
-        
-
-
-        
-           write(iu,'(2f15.6)') 
+          write(iu, *) '# Time                Etot'
+       end if
+          write(iu,'(2f15.6)') 
      .         totime, etot/eV
        
 
-
-
-        
-       call io_close(iu)
+       if (istp .eq. fincoor) call io_close(iu)
 
       end subroutine ioetot 
  
-      subroutine ioeigenvalues (eigen,maxo,maxspn,nocc,nspin,nk)   
+      subroutine ioeigenvalues (eigen,maxo,maxspn,nocc,nspin,nk, istp)   
  
-      integer maxo, maxspn,nspin, nk
+      integer maxo, maxspn,nspin, nk, istp
       double precision eigen(maxo,maxspn,nk)
       double precision eV 
       integer nocc(nk,nspin)
@@ -299,7 +295,6 @@ C      double precision function tottime
       data frstme /.true./
       save frstme, iu, eV
        
-      if(EigenvsTime) then
         if(frstme) then
           call io_assign( iu )
           fform='formatted'
@@ -312,14 +307,11 @@ C      double precision function tottime
           frstme=.false.
         endif
          
-        if(itimestep.gt.initstep) then
            write(iu,'(11f12.5,/,(5x,10f12.5))') 
-     .        tottime(itimestep, initstep, timestep, restarttime),
+     .        totime,
      .        (((eigen(ie,ispin,ik)/eV,ie=1,nocc(ik,ispin)),
      .        ispin=1,nspin),ik=1,nk)
-        endif
-      endif 
-      if(itimestep.eq.finalstep) call io_close(iu)
+      if(istp.eq.fincoor) call io_close(iu)
 
       end subroutine ioeigenvalues
 

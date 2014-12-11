@@ -218,9 +218,9 @@ C	below is end do loop on spins.
 
 CSave wavefunctions when required
 CZEB. write when wrttdfiles=true
-	if(wrttdfiles) then
-         call  iowavef('write',wavef,nuotot,1,nspin)
-	end if
+C	if(wrttdfiles) then
+C        call  iowavef('write',wavef,nuotot,1,nspin)
+C	end if
 
 
 

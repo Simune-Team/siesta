@@ -158,8 +158,8 @@ OBJS =  automatic_cell.o atom_options.o \
         save_density_matrix.o \
         m_rhog.o rhofft.o m_diis.o compute_energies.o \
         class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o \
-	elec_dyn_options.o m_initwf.o wavefunctions.o siesta_tddft.o \
-	m_evolve.o evolk.o evolg.o
+	elec_dyn_options.o m_initwf.o wavefunctions.o \
+	m_evolve.o evolk.o evolg.o changebasis.o m_iodipol.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -239,6 +239,7 @@ readsp.o eggbox.o iopipes.o : $(FDF)
 atom.o basis_io.o basis_specs.o: $(FDF)
 evolk.o: $(FDF)
 evolg.o: $(FDF)
+changebasis.o: $(FDF)
 #
 #
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
@@ -459,7 +460,7 @@ domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
 domain_decom.o: sparse_matrices.o sys.o
 doping_uniform.o: alloc.o m_ntm.o mesh.o parallel.o precision.o sys.o
 dynamics.o: alloc.o atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o
-dynamics.o: precision.o sys.o units.o
+dynamics.o: precision.o sys.o units.o siesta_options.o
 egandd.o: alloc.o denmat.o ener3.o globalise.o gradient.o on_subs.o onmod.o
 egandd.o: onmod.o precision.o sys.o
 eggbox.o: parallel.o precision.o
@@ -721,7 +722,7 @@ setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
 siesta.o: alloc.o m_steps.o siesta_analysis.o siesta_end.o siesta_forces.o
-siesta.o: siesta_init.o siesta_move.o siesta_tddft.o
+siesta.o: siesta_init.o siesta_move.o 
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
 siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
 siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
@@ -733,18 +734,14 @@ siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_rhog.o m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o
 siesta_end.o: parallel.o siesta_cml.o siesta_cmlsubs.o siesta_master.o
 siesta_end.o: sparse_matrices.o timestamp.o
-elec_dyn_options.o: m_fdf_global.o
-wavefunctions.o: elec_dyn_options.o
+elec_dyn_options.o: m_fdf_global.o siesta_options.o m_steps.o
+wavefunctions.o: elec_dyn_options.o siesta_options.o
 m_initwf.o: elec_dyn_options.o wavefunctions.o fermid.o
 evolk.o: elec_dyn_options.o wavefunctions.o
 evolg.o: elec_dyn_options.o wavefunctions.o
 m_evolve.o: wavefunctions.o
-siesta_tddft.o: wavefunctions.o m_iodm.o m_state_init.o setup_H0.o
-siesta_tddft.o: m_evolve.o m_eo.o m_gamma.o m_energies.o units.o
-siesta_tddft.o: files.o sys.o siesta_options.o m_spin.o atomlist.o
-siesta_tddft.o: sparse_matrices.o m_eo.o m_gamma.o m_energies.o
-siesta_tddft.o: units.o m_compute_energies.o final_H_f_stress.o
-siesta_tddft.o: elec_dyn_options.o
+changebasis.o: wavefunctions.o densematrix.o
+m_iodipol.o: m_efield.o m_dipol.o m_steps.o
 siesta_forces.o: compute_dm.o compute_energies.o compute_max_diff.o
 siesta_forces.o: final_H_f_stress.o m_convergence.o m_energies.o m_forces.o
 siesta_forces.o: m_pulay.o m_rhog.o m_steps.o m_stress.o m_ts_global_vars.o
@@ -754,6 +751,8 @@ siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_geom.o siesta_master.o
 siesta_forces.o: siesta_options.o sparse_matrices.o state_analysis.o
 siesta_forces.o: state_init.o sys.o units.o write_subs.o
 siesta_forces.o: m_initwf.o atomlist.o m_spin.o m_gamma.o m_eo.o
+siesta_forces.o: files.o wavefunctions.o m_iodm.o m_evolve.o elec_dyn_options.o
+siesta_forces.o: m_overfsm.o m_iodipol.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o

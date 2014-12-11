@@ -42,7 +42,7 @@
        
        end subroutine alloc_wavef
    
-       subroutine iowavef(task,func,nuotot,nk,nspin)
+       subroutine iowavef(task,func,nuotot,nk,nspin,istpp)
 
        use parallel
        use fdf
@@ -50,13 +50,14 @@
        use mpi
 #endif
        use elec_dyn_options
-
+       use siesta_options, only: rstart_time, totime
        type (occ_wavef), intent(inout)  :: func
        integer, intent(in)  :: nuotot
        integer, intent(in)  :: nk
+       integer, intent(inout) :: istpp
        integer, intent(in)  :: nspin
        character*(*), intent(in):: task
-
+    
 C Internal variables and arrays
       character fname*33, sname*30, paste*33
       logical   exist1, frstme
@@ -105,13 +106,13 @@ C Find file name
            write(6,'(/,a)')
      .      'iowavef: file containing the KS orbitals not found'
            write(6,'(a)')
-     .      'iowavef: simulation can not be restarted'
+     .      'iowavef: simulation can not be started or restarted'
              stop 
           endif
           call io_assign(unit1)
           open( unit1, file=fname, form='unformatted',
      .      status='unknown' )
-          read(unit1) restarttime
+          read(unit1) istpp, rstart_time
           read(unit1) nuototread, nkread, nspinread
           if(nkread.ne.nk) stop 'iowavef: nk inconsistent '
           if(nuototread.ne.nuotot) stop 'iowavef: nuotot inconsistent ' 
@@ -159,7 +160,7 @@ C Find file name
           open( unit1, file=fname, form='unformatted',
      .      status='unknown' )
           rewind(unit1)
-          write(unit1) tottime(itimestep,initstep,timestep,restarttime)
+          write(unit1) istpp, totime
           write(unit1) nuotot,nk,nspin
           do ispin=1,nspin
               write(unit1) (func%nocck(ik,ispin), ik=1,nk)
