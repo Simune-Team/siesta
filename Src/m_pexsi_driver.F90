@@ -72,8 +72,6 @@ real(dp) :: totalFreeEnergy
 
     integer :: ispin, maxnhtot, ih, nnzold, i, pexsiFlag
 
-    integer  :: isInertiaCount, numInertiaCounts
-
     real(dp), save :: muMin0, muMax0, mu
     real(dp), save :: muMinInertia, muMaxInertia
     real(dp), save :: previous_pexsi_temperature
@@ -352,10 +350,6 @@ options%isSymbolicFactorize = 0 ! We do not need it anymore
 !
 call timer("pexsi-solver", 1)
 
-! Use inertia counts?
-isInertiaCount = fdf_get("PEXSI.inertia-count",1)
-! For how many scf steps?
-numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
 
 if (need_inertia_counting()) then
    options%isInertiaCount = 1
@@ -633,8 +627,6 @@ end subroutine get_on_the_fly_tolerance
 !
 ! Variables used through host association for now:
 !
-!      isInertiaCount
-!      numInertiaCounts
 !      scf_step
 !      prevDmax, safe_dDmax_NoInertia
 !
@@ -644,29 +636,45 @@ function need_inertia_counting() result(do_inertia_count)
 logical :: do_inertia_count
 
 real(dp) :: safe_dDmax_NoInertia
+integer  :: isInertiaCount, numInertiaCounts
+
+! Use inertia counts?
+! The use of this input variable is deprecated. Warn the user
+! only if there is a disagreement.
+
+isInertiaCount = fdf_get("PEXSI.inertia-count",-1)
+! For how many scf steps?
+numInertiaCounts = fdf_get("PEXSI.inertia-counts",3)
+
+if ((isInertiaCount == 0) .and. (numInertiaCounts > 0)) then 
+   if (mpirank == 0) write(6,"(a,i4)")  &
+        "Warning: Inertia-counts turned off by legacy parameter" // &
+        " PEXSI.inertia-count"
+   numInertiaCounts = 0
+endif
 
 safe_dDmax_NoInertia = fdf_get("PEXSI.safe-dDmax-no-inertia",0.05)
 
 do_inertia_count = .false.
 
-if (isInertiaCount .ne. 0) then
+if (numInertiaCounts > 0) then
   if (scf_step .le. numInertiaCounts) then
      if (mpirank == 0) write(6,"(a,i4)")  &
       "&o Inertia-count step scf_step<numIC", scf_step
      do_inertia_count = .true.
   endif
-  if (numInertiaCounts < 0) then
-     if (scf_step <= -numInertiaCounts) then
-        if (mpirank == 0) write(6,"(a,i4)") &
-         "&o Inertia-count step scf_step<-numIC ", scf_step
-        do_inertia_count = .true.
-     else if (prevDmax > safe_dDmax_NoInertia) then
-        if (mpirank == 0) write(6,"(a,i4)") &
+else  if (numInertiaCounts < 0) then
+   if (scf_step <= -numInertiaCounts) then
+      if (mpirank == 0) write(6,"(a,i4)") &
+           "&o Inertia-count step scf_step<-numIC ", scf_step
+      do_inertia_count = .true.
+   else if (prevDmax > safe_dDmax_NoInertia) then
+      if (mpirank == 0) write(6,"(a,i4)") &
            "&o Inertia-count step as prevDmax > safe_Dmax ", scf_step
-        do_inertia_count = .true.
-     endif
-  endif
+      do_inertia_count = .true.
+   endif
 endif
+
 end function need_inertia_counting
 
 !---------------------------------------------------------------
@@ -714,7 +722,7 @@ subroutine get_bracket_for_solver()
     real(dp)       :: safe_width_solver
     real(dp)       :: safe_dDmax_Ef_solver
 
-safe_width_solver = fdf_get("PEXSI.safe-width-solver-bracket",2.0_dp*eV,"Ry")
+safe_width_solver = fdf_get("PEXSI.safe-width-solver-bracket",4.0_dp*eV,"Ry")
 safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
 
 ! Do nothing for now
@@ -728,8 +736,8 @@ safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
      ! Always provide a safe bracket around mu, in case we need to fallback
      ! to executing a cycle of inertia-counting
      if (mpirank == 0) write(6,"(a)") "&o Safe solver bracket around mu"
-     muMin0 = mu - safe_width_solver
-     muMax0 = mu + safe_width_solver
+     muMin0 = mu - 0.5*safe_width_solver
+     muMax0 = mu + 0.5*safe_width_solver
   else
      if (mpirank == 0) write(6,"(a)") "&o Solver called with iscf=1 parameters"
      ! do nothing. Keep mu, muMin0 and muMax0 as they are inherited

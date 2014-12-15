@@ -32,7 +32,7 @@ MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=.      # Note . for no-op
 FPPFLAGS_MPI=-DMPI
 
-PEXSI_LIB=$(HOME)/lib/PEXSI/0.7.2/openmpi-1.8.1-gfortran-4.8.3/lib/libpexsi_osx_v0.7.2.a
+PEXSI_LIB=$(HOME)/lib/PEXSI/0.7.3/openmpi-1.8.1-gfortran-4.8.3/lib/libpexsi_osx_v0.7.3.a
 SUPERLU_LIB=$(HOME)/lib/SuperLU_DIST_3.3/lib/libsuperlu_dist_3.3.a
 PARMETIS_LIB=-L$(HOME)/lib/parmetis-4.0.2/lib -lparmetis
 METIS_LIB=-L$(HOME)/lib/metis/lib -lmetis
