@@ -129,7 +129,7 @@ real(dp), pointer, dimension(:) :: AinvnzvalLocal => null()
 !
 integer  :: loc
 !
-integer  :: mpirank, ierr
+integer  :: mpirank, mpisize,ierr
 integer  :: isSIdentity
 !------------
 type(f_ppexsi_options) :: options
@@ -159,6 +159,7 @@ call broadcast(norbs,comm=World_Comm)
 
 !  Find rank in global communicator
 call mpi_comm_rank( World_Comm, mpirank, ierr )
+call mpi_comm_size( World_Comm, mpisize, ierr )
 
 call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
 
@@ -166,6 +167,7 @@ call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
 !
 npPerPole  = fdf_get("PEXSI.np-per-pole",4)
 npPerPole  = fdf_get("PEXSI.LocalDOS.np-per-pole",npPerPole)
+if (npPerPole > mpisize) call die("PEXSI.np-per-pole in LDOS is too big for MPI size")
 
 call MPI_Comm_Group(World_Comm, World_Group, Ierr)
 call MPI_Group_incl(World_Group, npPerPole,   &
@@ -234,7 +236,10 @@ if (PEXSI_worker) then
   endif
 
   outputFileIndex = mpirank
-
+!
+! Note that we only use one pole's worth of processors in
+! the global PEXSI communicator
+!
   plan = f_ppexsi_plan_initialize(&
       PEXSI_Comm,&
       numProcRow,&
@@ -242,9 +247,7 @@ if (PEXSI_worker) then
       outputFileIndex,&
       info) 
 
-  if (mpirank == 0) then
-     print *, "Info in plan_initialize: ", info
-  endif
+call check_info(info,"plan_initialize in LDOS")
 ! -- 
   isSIdentity = 0
 !
@@ -272,9 +275,7 @@ if (PEXSI_worker) then
       SnzvalLocal,&
       info) 
 
-  if (mpirank == 0) then
-     print *, "Info in load_real_sym_hs_matrix: ", info
-  endif
+call check_info(info,"load_real_sym_hs_matrix in LDOS")
 
   ! This is a bit ambiguous, as we have loaded a "symmetric" matrix
   ! (actually H and S), but I believe that inside (and in the plan)
@@ -284,9 +285,7 @@ if (PEXSI_worker) then
         plan, &
         options,&
         info)
-  if (mpirank == 0) then
-     print *, "Info in complex symb_fact in iscf==1: ", info
-  endif
+  call check_info(info,"factorize complex matrix in LDOS")
 
   if(mpirank == 0) then
      write(6,"(a,f16.5,f10.5)") &
@@ -320,6 +319,8 @@ if (PEXSI_worker) then
       AinvnzvalLocal,&
       info) 
 
+    call check_info(info,"selinv complex matrix in LDOS")
+
     ! Get DMnzvalLocal as 1/pi * Imag(Ainv...)
 
     loc = 1
@@ -331,11 +332,6 @@ if (PEXSI_worker) then
     call de_alloc(AinvnzvalLocal,"AinvnzvalLocal","pexsi_ldos")
 
     call timer("pexsi-ldos-selinv", 2)
-
-    if (info /= 0) then
-       write(msg,"(i6)") info 
-       call die("Error in pexsi LDOS routine. Info: " // msg)
-    endif
 
    call de_alloc(colPtrLocal,"colPtrLocal","pexsi_ldos")
 
@@ -401,6 +397,21 @@ if (PEXSI_worker) then
 endif
 
 #endif ! mpi
+
+CONTAINS
+
+subroutine check_info(info,str)
+integer, intent(in) :: info
+character(len=*), intent(in) :: str
+
+    if(mpirank == 0) then
+       if (info /= 0) then
+          write(6,*) trim(str) // " info : ", info
+          call die("Error exit from " // trim(str) // " routine")
+       endif
+      call pxfflush(6)
+    endif	
+end subroutine check_info
 
 end subroutine get_LDOS_SI
 

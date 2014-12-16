@@ -60,7 +60,7 @@ CONTAINS
     real(dp),  allocatable :: intdos(:)
     real(dp)   :: emin, emax, deltaE
 
-    integer        :: info, infomax
+    integer    :: info
 
 !Lin variables
 integer :: nrows, nnz, nnzLocal, numColLocal
@@ -73,7 +73,7 @@ integer  :: nShifts
 
 integer  :: npPerPole
 integer  :: npSymbFact
-integer  :: mpirank, ierr
+integer  :: mpirank, mpisize, ierr
 integer  :: isSIdentity
 logical  :: ef_reference
 
@@ -107,12 +107,15 @@ call broadcast(norbs,comm=World_Comm)
 
 !  Find rank in global communicator
 call mpi_comm_rank( World_Comm, mpirank, ierr )
+call mpi_comm_size( World_Comm, mpisize, ierr )
 
 call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
 
 ! Group and Communicator for first-pole team of PEXSI workers
 !
 npPerPole  = fdf_get("PEXSI.np-per-pole",4)
+if (npPerPole > mpisize) call die("PEXSI.np-per-pole is too big for MPI size")
+
 call MPI_Comm_Group(World_Comm, World_Group, Ierr)
 call MPI_Group_incl(World_Group, npPerPole,   &
                     (/ (i,i=0,npPerPole-1) /),&
@@ -138,11 +141,7 @@ outputFileIndex = mpirank
       numProcCol,&
       outputFileIndex,&
       info) 
-
-if (mpirank == 0) then
-   print *, "Info in plan_initialize: ", info
-endif
-! -- 
+   call check_info(info,"plan_initialize in DOS")
 
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
@@ -264,17 +263,16 @@ call f_ppexsi_load_real_symmetric_hs_matrix(&
       SnzvalLocal,&
       info) 
 
-if (mpirank == 0) then
-   print *, "Info in load_real_sym_hs_matrix: ", info
-endif
+call check_info(info,"load_real_sym_hs_matrix in DOS")
 
+   call timer("pexsi-factorize-real", 1)
    call f_ppexsi_symbolic_factorize_real_symmetric_matrix(&
         plan, &
         options,&
         info)
-   if (mpirank == 0) then
-      print *, "Info in real symb_fact in iscf==1: ", info
-   endif
+   call check_info(info,"factorize real matrix in DOS")
+
+   call timer("pexsi-factorize-real", 2)
 
     
     delta = (emax-emin)/(npoints-1)
@@ -290,18 +288,9 @@ endif
       edos,&
       intdos,&
       info) 
+    call check_info(info,"inertia_count_real_symmetric_matrix in DOS")
 
     call timer("pexsi-raw-inertia-ct", 2)
-
-    if(mpirank == 0) then
-       if (info /= 0) then
-          write(6,*) "DOS call Info : ", info
-          call die("Error exit from raw-inertia-count routine")
-       endif
-      call pxfflush(6)
-    endif	
-    
-!    if(mpirank == 0) then
 
  if (mpirank == 0) then
     call io_assign(lun)
@@ -348,6 +337,20 @@ endif
 
 #endif 
 
+CONTAINS
+
+subroutine check_info(info,str)
+integer, intent(in) :: info
+character(len=*), intent(in) :: str
+
+    if(mpirank == 0) then
+       if (info /= 0) then
+          write(6,*) trim(str) // " info : ", info
+          call die("Error exit from " // trim(str) // " routine")
+       endif
+      call pxfflush(6)
+    endif	
+end subroutine check_info
 
 end subroutine pexsi_DOS
 end module m_pexsi_DOS

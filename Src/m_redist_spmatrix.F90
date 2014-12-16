@@ -173,7 +173,8 @@ CONTAINS
       integer, allocatable, dimension(:) :: p1, p2, isrc, idst
       integer :: ncomms
 
-      logical, save :: comms_not_printed = .true.
+      ! To turn on debug printing, set this to .true.
+      logical, save :: comms_not_printed = .false. 
 
       ! Find the communication needs for each orbital
       ! This information is replicated in every processor

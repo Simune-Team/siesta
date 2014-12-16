@@ -3761,6 +3761,16 @@ the selfconsistency has been achieved.
 
 {\it Default value:} {${\tt 10^{-4}}$}
 
+\item[{\bf DM.Normalization.Tolerance}] ({\it real}):
+\index{DM.Normalization.Tolerance@{\bf DM.Normalization.Tolerance}}
+Tolerance for unnormalized density matrices (typically the product of
+solvers such as PEXSI which have a built-in electron-count tolerance).
+If this tolerance is exceeded, the program stops. It is understood as a
+fractional tolerance. For example, the default will allow an excess or
+shorfall of 0.01 electrons in a 1000-electron system.
+
+{\it Default value:} {${\tt 10^{-5}}$}
+
 
 
 \item[{\bf DM.Require.Energy.Convergence}] ({\it logical}):
@@ -4318,6 +4328,7 @@ states.\index{density of states}
 \end{description}
 
 \subsubsection{Occupation of electronic states and Fermi level}
+\label{electronic-occupation}
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -4827,6 +4838,7 @@ printed but the program does not stop. Overrides {\bf UseSaveData}.
 \end{description}
 
 \subsection{The PEXSI solver}\label{SolverPEXSI}
+\index{PEXSI solver}
 
 The PEXSI solver is based on the combination of the pole expansion of
 the Fermi-Dirac function and the computation of only a selected
@@ -4852,25 +4864,30 @@ use of the ``simple Kohn-Sham driver'' interface in the PEXSI library
 control is planned for a future version.
 
 Note that the PEXSI solver can currently deal only with spinless 
-$\Gamma$-point calculations.
+$\Gamma$-point calculations. 
 
 The following is a brief description of the input-file parameters
-relevant to the workings of the PEXSI solver. For more background, the
-user is referred to the paper
+relevant to the workings of the PEXSI solver. For more background, 
+including a discussion of the conditions under which this solver is
+competitive, the user is referred to the paper
 
 Lin Lin, Alberto Garcia, Georg Huhs, Chao Yang, \\
-{\it {\sc Siesta}\-PEXSI: massively parallel method for efficient and
+{\it SIESTA-PEXSI: massively parallel method for efficient and
   accurate ab initio materials simulation without matrix diagonalization}, \\
 J. Phys.: Condens. Matter {\bf 26}, 305503 (2014).
-\url{doi:10.1088/0953-8984/26/30/305503} \\
+\url{http://doi.org/10.1088/0953-8984/26/30/305503} \\
 and references therein.
 
-Note that the technology involved in the PEXSI solver can also be used
+The technology involved in the PEXSI solver can also be used
 to compute densities of states and ``local densities of
 states''. These features are documented in this section and also
 linked to in the relevant general sections.
 
 \subsubsection{Pole handling}
+
+Note that the temperature for the Fermi-Dirac distribution which is
+pole-expanded is taken directly from the {\bf ElectronicTemperature}
+parameter (see Sec.~\ref{electronic-occupation}).
 
 \begin{description}
 \itemsep 10pt
@@ -4883,15 +4900,17 @@ Effective number of poles used to expand the Fermi-Dirac function.
 {\it Default value:} {\tt 40}
 
 \item[{\bf PEXSI.deltaE}] ({\it real energy}):
-\index{PEXSI.deltaE{\bf PEXSI.deltaE}}
+\index{PEXSI.deltaE@{\bf PEXSI.deltaE}}
 
-An estimate of the size of the spectrum of the Hamiltonian.
+An upper bound for the spectral radius of $S^{-1} H$. 
 
 {\it Default value:} {\tt 3 Ryd (??)}
 
+
 \item[{\bf PEXSI.gap}] ({\it real energy}):
 \index{PEXSI.gap@{\bf PEXSI.gap}}
-??
+
+Spectral gap. This can be set to be 0 in most cases. 
 
 {\it Default value:} {\tt 0 Ryd}
 
@@ -4951,7 +4970,7 @@ different places. A value of zero gives minimal information.
 \item In the SIESTA output file, a verbosity level of 1 and above will print
   lines (prefixed by '\&o') indicating the various heuristics used at
   each scf step. A verbosity level of 2 and above will print extra
-  information, including estimates of memory high-water marks.
+  information.
 \end{itemize}
 The design of the output logging is still in flux.
 
@@ -4965,7 +4984,7 @@ The design of the output logging is still in flux.
 \parsep 0pt
 
 \item[{\bf PEXSI.num-electron-tolerance}] ({\it real}):
-  \index{PEXSI.num-electron-tolerance{\bf PEXSI.num-electron-tolerance}} 
+  \index{PEXSI.num-electron-tolerance@{\bf PEXSI.num-electron-tolerance}} 
 %
 Tolerance in the number of electrons for the PEXSI solver. At each
 iteration of the solver, the number of electrons is computed as the
@@ -4978,14 +4997,14 @@ Options).
 {\it Default value:} {\tt $10^{-4}$}
 
 \item[{\bf PEXSI.num-electron-tolerance-lower-bound}] ({\it real}):
-  \index{PEXSI.num-electron-tolerance-lower-bound
+  \index{PEXSI.num-electron-tolerance-lower-bound@
         {\bf PEXSI.num-electron-tolerance-lower-bound}} 
 %
 (See next item.)
 {\it Default value:} {\tt 0.01}
 
 \item[{\bf PEXSI.num-electron-tolerance-upper-bound}] ({\it real}):
-  \index{PEXSI.num-electron-tolerance-upper-bound
+  \index{PEXSI.num-electron-tolerance-upper-bound@
         {\bf PEXSI.num-electron-tolerance-upper-bound}} 
 %
 The upper and lower bounds for the electron tolerance are used to
@@ -5006,17 +5025,27 @@ allows a finer degree of control of the tolerance update.
 
 
 \item[{\bf PEXSI.mu-max-iter}] ({\it integer}):
-  \index{PEXSI.mu-max-iter{\bf PEXSI.mu-max-iter}} 
+  \index{PEXSI.mu-max-iter@{\bf PEXSI.mu-max-iter}} 
 %
 Maximum number of iterations of the PEXSI solver. Note that in the
 ``simple driver'' implementation there is no fallback procedure if the
-solver fails to converge in this number of iterations (!).
+solver fails to converge in this number of iterations to the
+prescribed tolerance. In this case, the resulting density matrix might
+still be re-normalized, and the calculation able to continue, if the
+tolerance for non normalized DMs is not set too tight. For example,
+\begin{verbatim}
+# (true_no_electrons/no_electrons) - 1.0
+DM.NormalizationTolerance 1.0e-3  
+\end{verbatim}
+will allow a 0.1\% error in the number of electrons. For obvious
+reasons, this feature, which is also useful in connection with the 
+dynamic tolerance update, should not be abused.
 
 {\it Default value:} {\tt 10}
 
 
 \item[{\bf PEXSI.mu}] ({\it real energy}):
-  \index{PEXSI.mu{\bf PEXSI.mu}} 
+  \index{PEXSI.mu@{\bf PEXSI.mu}} 
 %
 The starting guess for the chemical potential for the PEXSI
 solver. Note that this value does not affect the initial $\mu$ bracket
@@ -5028,7 +5057,7 @@ this parameter is only relevant if there is no inertia-counting phase.
 {\it Default value:} {\tt -0.6 Ryd}
 
 \item[{\bf PEXSI.mu-pexsi-safeguard}] ({\it real energy}):
-  \index{PEXSI.mu-pexsi-safeguard{\bf PEXSI.mu-pexsi-safeguard}} 
+  \index{PEXSI.mu-pexsi-safeguard@{\bf PEXSI.mu-pexsi-safeguard}} 
 %
 The PEXSI solver uses Newton's method to update the estimate of $\mu$.
 If the attempted change in $\mu$ is larger than {\bf
@@ -5045,7 +5074,7 @@ phase of inertia-counting is started.
 \parsep 0pt
 
 \item[{\bf PEXSI.inertia-counts}] ({\it integer}):
-  \index{PEXSI.inertia-counts{\bf PEXSI.inertia-counts}} 
+  \index{PEXSI.inertia-counts@{\bf PEXSI.inertia-counts}} 
 %
 In a given scf step, the PEXSI procedure can optionally employ
 a $\mu$ bracket-refinement procedure based on
@@ -5070,7 +5099,7 @@ value of zero for {\bf PEXSI.inertia-counts}.
 {\it Default value:} {\tt 3}
 
 \item[{\bf PEXSI.mu-min}] ({\it real energy}):
-  \index{PEXSI.mu-min{\bf PEXSI.mu-min}} 
+  \index{PEXSI.mu-min@{\bf PEXSI.mu-min}} 
 %
 The lower bound of the initial range for $\mu$ used
 in the inertia-count refinement. In runs with multiple geometry
@@ -5081,7 +5110,7 @@ values of this parameter.
 {\it Default value:} {\tt -1.0 Ryd}
 
 \item[{\bf PEXSI.mu-max}] ({\it real energy}):
-  \index{PEXSI.mu-max{\bf PEXSI.mu-max}} 
+  \index{PEXSI.mu-max@{\bf PEXSI.mu-max}} 
 %
 The upper bound of the initial range for $\mu$ used
 in the inertia-count refinement. In runs with multiple geometry
@@ -5093,7 +5122,7 @@ values of this parameter.
 
 
 \item[{\bf PEXSI.safe-dDmax-no-inertia}] ({\it integer}):
-  \index{PEXSI.safe-dDmax-no-inertia{\bf PEXSI.safe-dDmax-no-inertia}} 
+  \index{PEXSI.safe-dDmax-no-inertia@{\bf PEXSI.safe-dDmax-no-inertia}} 
 %
 During the scf cycle, the variable conventionally called {\tt dDmax}
 monitors how far the cycle is from convergence. If {\bf
@@ -5109,7 +5138,7 @@ convergence (Hamiltonian, charge density...).
 {\it Default value:} {\tt 0.05} 
 
 \item[{\bf PEXSI.lateral-expansion-inertia}] ({\it real energy}):
-  \index{PEXSI.lateral-expansion-inertia{\bf PEXSI.lateral-expansion-inertia}} 
+  \index{PEXSI.lateral-expansion-inertia@{\bf PEXSI.lateral-expansion-inertia}} 
 %
 If the correct $\mu$ is outside the bracket provided to the
 inertia-counting phase, the bracket is expanded in the appropriate
@@ -5118,7 +5147,7 @@ direction(s) by this amoount.
 {\it Default value:} {\tt 3 eV}
 
 \item[{\bf PEXSI.inertia-mu-tolerance}] ({\it real energy}):
-  \index{PEXSI.inertia-mu-tolerance{\bf PEXSI.inertia-mu-tolerance}} 
+  \index{PEXSI.inertia-mu-tolerance@{\bf PEXSI.inertia-mu-tolerance}} 
 %
 When using the simple driver, the criterion for early termination of the
 inertia-counting phase is based on the size of the resulting bracket, and

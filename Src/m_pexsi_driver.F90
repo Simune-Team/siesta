@@ -79,7 +79,9 @@ real(dp) :: totalFreeEnergy
 
     real(dp)       :: bs_energy, eBandH, on_the_fly_tolerance
 
-    integer        :: info, infomax
+    integer        :: info
+    integer        :: verbosity
+    logical        :: write_ok
 
 !Lin variables
 integer :: nrows, nnz, nnzLocal, numColLocal
@@ -90,14 +92,10 @@ real(dp), pointer, dimension(:) :: &
         DMnzvalLocal => null() , EDMnzvalLocal => null(), &
         FDMnzvalLocal => null()
 !
-real(dp), pointer, dimension(:) :: muList=>null(), &
-                                   numElectronList=>null(), &
-                                   numElectronDrvList=>null(), &
-                                   shiftList=>null(), inertiaList=>null()
 logical  :: PEXSI_worker
 real(dp) :: temperature, numElectronExact, numElectron
 integer  :: npPerPole
-integer  :: mpirank, ierr
+integer  :: mpirank, mpisize, ierr
 integer  :: isSIdentity
 
 real(dp) :: pexsi_temperature, two_kT
@@ -110,7 +108,6 @@ real(dp) :: free_bs_energy
 !------------
 
 external         :: timer
-character(len=6) :: msg
 
 type(aux_matrix) :: m1, m2
 type(Dist)       :: dist1, dist2
@@ -136,12 +133,15 @@ call broadcast(dDtol,comm=World_Comm)
 
 !  Find rank in global communicator
 call mpi_comm_rank( World_Comm, mpirank, ierr )
+call mpi_comm_size( World_Comm, mpisize, ierr )
 
 call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
 
 ! Group and Communicator for first-pole team of PEXSI workers
 !
 npPerPole  = fdf_get("PEXSI.np-per-pole",4)
+if (npPerPole > mpisize) call die("PEXSI.np-per-pole is too big for MPI size")
+
 call MPI_Comm_Group(World_Comm, World_Group, Ierr)
 call MPI_Group_incl(World_Group, npPerPole,   &
                     (/ (i,i=0,npPerPole-1) /),&
@@ -150,8 +150,6 @@ call MPI_Comm_create(World_Comm, PEXSI_Group,&
                      PEXSI_Comm, Ierr)
 
 PEXSI_worker = (mpirank < npPerPole)
-
-
 
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
@@ -233,7 +231,7 @@ if (first_call) then
    ! Lower/Upper bound for the chemical potential.
    muMin0           = fdf_get("PEXSI.mu-min",-1.0_dp,"Ry")
    muMax0           = fdf_get("PEXSI.mu-max", 0.0_dp,"Ry")
-   mu = fdf_get("PEXSI.mu",-0.60_dp,"Ry")
+   mu               = fdf_get("PEXSI.mu",-0.60_dp,"Ry")
 
    ! start with largest tolerance
    ! (except if overriden by user)
@@ -303,7 +301,8 @@ options%ordering = fdf_get("PEXSI.ordering",1)
 ! Only relevant for PARMETIS/PT_SCOTCH
 options%npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
 
-options%verbosity = fdf_get("PEXSI.verbosity",1)
+verbosity = fdf_get("PEXSI.verbosity",1)
+options%verbosity = verbosity
 
 options%temperature = pexsi_temperature
 options%numElectronPEXSITolerance = PEXSINumElectronTolerance
@@ -322,9 +321,7 @@ call f_ppexsi_load_real_symmetric_hs_matrix(&
       SnzvalLocal,&
       info) 
 
-if (mpirank == 0) then
-   print *, "Info in load_real_sym_hs_matrix: ", info
-endif
+call check_info(info,"load_real_sym_hs_matrix")
 
 if (iscf == 1) then
    ! This is only needed for inertia-counting
@@ -332,24 +329,19 @@ if (iscf == 1) then
         plan, &
         options,&
         info)
-   if (mpirank == 0) then
-      print *, "Info in real symb_fact in iscf==1: ", info
-   endif
+   call check_info(info,"symbolic_factorize_real_symmetric_matrix")
 
    call f_ppexsi_symbolic_factorize_complex_symmetric_matrix(&
         plan, &
         options,&
         info)
-   if (mpirank == 0) then
-      print *, "Info in complex symb_fact in iscf==1: ", info
-   endif
+   call check_info(info,"symbolic_factorize_complex_symmetric_matrix")
 endif
 options%isSymbolicFactorize = 0 ! We do not need it anymore
 !
 !  do actual solve
 !
 call timer("pexsi-solver", 1)
-
 
 if (need_inertia_counting()) then
    options%isInertiaCount = 1
@@ -397,12 +389,14 @@ call f_ppexsi_dft_driver(&
   numTotalPEXSIIter,&    ! out
   info)
 
-!! AG
-!  if (numElectron not near numElectronExact) ...
+call check_info(info,"dft_driver")
 
-if( info .ne. 0 ) then
-	call mpi_finalize( ierr )
-	call exit(info)
+if (abs(numElectron-numElectronExact) > PEXSINumElectronTolerance) then
+   ! Might take another go, but for now just warn the user and rely on
+   ! the normalization of the DM to try to get the calculation going...
+   if(mpirank == 0) then
+      write(6,*) "PEXSI solver did not converge. DM normalization might work"
+   endif
 endif
 
 if( PEXSI_worker ) then
@@ -415,21 +409,13 @@ if( PEXSI_worker ) then
     totalEnergyS,&
     totalFreeEnergy,&
     info)
-
-!!$  ! These are the "band-structure" (free)-energies  
-!!$  if( mpirank == 0 ) then
-!!$    write(*,*) "Output from the main program."
-!!$    write(*,*) "Total energy (H*DM)         = ", totalEnergyH
-!!$    write(*,*) "Total energy (S*EDM)        = ", totalEnergyS
-!!$    ! This is computed as the trace of (S*FDM)     
-!!$    write(*,*) "Total free energy           = ", totalFreeEnergy
-!!$  endif
+  call check_info(info,"retrieve_real_symmetric_dft_matrix")
 
 endif
 
 !------------ End of solver step
 
-if (mpirank == 0) then
+if ((mpirank == 0) .and. (verbosity >= 1)) then
   write(6,"(a,i3)") " #&s Number of solver iterations: ", numTotalPEXSIIter
   write(6,"(a,i3)") " #&s Number of inertia iterations: ", numTotalInertiaIter
   write(6,"(a,f12.4)") " #&s muMinInertia: ", muMinInertia
@@ -447,18 +433,10 @@ if (PEXSI_worker) then
    call de_alloc(FDMnzvalLocal,"FDMnzvalLocal","pexsi_solver")
    call de_alloc(colPtrLocal,"colPtrLocal","pexsi_solver")
 
-   if( mpirank == 0 ) then
-      write(*, *) "mu (eV)       = ", mu/eV
-      write(*, *) "muMinInertia    = ", muMinInertia/eV
-      write(*, *) "muMaxInertia    = ", muMaxInertia/eV
-      write(*, *) "numElectron   = ", numElectron
-      write(*, *) "eBandS (eV) = ", bs_energy/eV
-      write(*, *) "eBandH (eV) = ", eBandH/eV
-      write(*, *) "freeBandEnergy (eV) = ", (free_bs_energy)/eV
-      write(*, *) "eBandS (Ry) = ", bs_energy
-      write(*, *) "eBandH (Ry) = ", eBandH
-      write(*, *) "freeBandEnergy (Ry) = ", (free_bs_energy)
-
+   if ((mpirank == 0) .and. (verbosity >= 2)) then
+      write(6, "(a,f12.4)") "#&s eBandS (eV) = ", bs_energy/eV
+      write(6,"(a,f12.4)") "#&s eBandH (eV) = ", eBandH/eV
+      write(6,"(a,f12.4)") "#&s freeBandEnergy (eV) = ", (free_bs_energy)/eV
    endif
 
    ef = mu
@@ -478,10 +456,6 @@ if (PEXSI_worker) then
    m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
 
 endif ! PEXSI_worker
-
-call de_alloc(muList,            "muList",            "pexsi_solver")
-call de_alloc(numElectronList,   "numElectronList",   "pexsi_solver")
-call de_alloc(numElectronDrvList,"numElectronDrvList","pexsi_solver")
 
 ! Prepare m1 to receive the results
 if (SIESTA_worker) then
@@ -538,9 +512,6 @@ if (SIESTA_worker) then
 
 endif
 
-
-call de_alloc(shiftList,"shiftList","pexsi_solver")
-call de_alloc(inertiaList,"shiftList","pexsi_solver")
 
 call delete(dist1)
 call delete(dist2)
@@ -657,19 +628,21 @@ safe_dDmax_NoInertia = fdf_get("PEXSI.safe-dDmax-no-inertia",0.05)
 
 do_inertia_count = .false.
 
+write_ok = ((mpirank == 0) .and. (verbosity >= 1))
+
 if (numInertiaCounts > 0) then
   if (scf_step .le. numInertiaCounts) then
-     if (mpirank == 0) write(6,"(a,i4)")  &
+     if (write_ok) write(6,"(a,i4)")  &
       "&o Inertia-count step scf_step<numIC", scf_step
      do_inertia_count = .true.
   endif
 else  if (numInertiaCounts < 0) then
    if (scf_step <= -numInertiaCounts) then
-      if (mpirank == 0) write(6,"(a,i4)") &
+      if (write_ok) write(6,"(a,i4)") &
            "&o Inertia-count step scf_step<-numIC ", scf_step
       do_inertia_count = .true.
    else if (prevDmax > safe_dDmax_NoInertia) then
-      if (mpirank == 0) write(6,"(a,i4)") &
+      if (write_ok) write(6,"(a,i4)") &
            "&o Inertia-count step as prevDmax > safe_Dmax ", scf_step
       do_inertia_count = .true.
    endif
@@ -689,12 +662,14 @@ subroutine get_bracket_for_inertia_count()
  safe_width_ic = fdf_get("PEXSI.safe-width-ic-bracket",4.0_dp*eV,"Ry")
  safe_dDmax_Ef_Inertia = fdf_get("PEXSI.safe-dDmax-ef-inertia",0.1)
 
+write_ok = ((mpirank == 0) .and. (verbosity >= 1))
+
  ! Proper bracketing                                                           
  if (scf_step > 1) then
    if (prevDmax < safe_dDmax_Ef_inertia) then
       ! Shift brackets using estimate of Ef change from previous iteration 
       !                                                                    
-      if (mpirank == 0) write(6,"(a)") &
+      if (write_ok) write(6,"(a)") &
          "&o Inertia-count bracket shifted by Delta_Ef"
       ! This might be risky, if the final interval of the previous iteration   
       ! is too narrow. We should broaden it by o(kT)                           
@@ -705,14 +680,14 @@ subroutine get_bracket_for_inertia_count()
    else
       ! Use a large enough interval around the previous estimation of   
       ! mu (the gap edges are not available...)  
-      if (mpirank == 0) write(6,"(a)") "&o Inertia-count safe bracket"
+      if (write_ok) write(6,"(a)") "&o Inertia-count safe bracket"
 !      muMin0 = min(muLowerEdge - 0.5*safe_width_ic, muMinInertia)
       muMin0 = min(mu - 0.5*safe_width_ic, muMinInertia)
 !      muMax0 = max(muUpperEdge + 0.5*safe_width_ic, muMaxInertia)
       muMax0 = max(mu + 0.5*safe_width_ic, muMaxInertia)
    endif
  else
-    if (mpirank == 0) write(6,"(a)") &
+    if (write_ok) write(6,"(a)") &
        "&o Inertia-count called with iscf=1 parameters"
  endif
 end subroutine get_bracket_for_inertia_count
@@ -725,21 +700,23 @@ subroutine get_bracket_for_solver()
 safe_width_solver = fdf_get("PEXSI.safe-width-solver-bracket",4.0_dp*eV,"Ry")
 safe_dDmax_Ef_solver = fdf_get("PEXSI.safe-dDmax-ef-solver",0.05)
 
+write_ok = ((mpirank == 0) .and. (verbosity >= 1))
+
 ! Do nothing for now
 ! No setting of  muMin0 and muMax0 yet, pending clarification of flow
 
   if (scf_step > 1) then
      if (prevDmax < safe_dDmax_Ef_solver) then
-        if (mpirank == 0) write(6,"(a)") "&o Solver mu shifted by delta_Ef"
+        if (write_ok) write(6,"(a)") "&o Solver mu shifted by delta_Ef"
         mu = mu + delta_Ef
      endif
      ! Always provide a safe bracket around mu, in case we need to fallback
      ! to executing a cycle of inertia-counting
-     if (mpirank == 0) write(6,"(a)") "&o Safe solver bracket around mu"
+     if (write_ok) write(6,"(a)") "&o Safe solver bracket around mu"
      muMin0 = mu - 0.5*safe_width_solver
      muMax0 = mu + 0.5*safe_width_solver
   else
-     if (mpirank == 0) write(6,"(a)") "&o Solver called with iscf=1 parameters"
+     if (write_ok) write(6,"(a)") "&o Solver called with iscf=1 parameters"
      ! do nothing. Keep mu, muMin0 and muMax0 as they are inherited
   endif
 end subroutine get_bracket_for_solver
@@ -793,6 +770,19 @@ endif
 if (mpirank==0) write(6,"(a,f10.2)") &
      "Current PEXSI temperature (K): ", pexsi_temperature/Kelvin
 end subroutine get_current_temperature
+
+subroutine check_info(info,str)
+integer, intent(in) :: info
+character(len=*), intent(in) :: str
+
+    if(mpirank == 0) then
+       if (info /= 0) then
+          write(6,*) trim(str) // " info : ", info
+          call die("Error exit from " // trim(str) // " routine")
+       endif
+      call pxfflush(6)
+    endif	
+end subroutine check_info
 
 end subroutine pexsi_solver
 

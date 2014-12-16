@@ -1,4 +1,19 @@
 ----------------------------------------------------------------
+December 16, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-11
+More documentation. Cosmetic changes in output
+
+Improve the documentation of some features. 
+Remove very low-level output and wrap other according to verbosity levels
+(work in progress).
+
+modified:
+  Docs/siesta.tex
+  Src/m_pexsi_dos.F90
+  Src/m_pexsi_driver.F90
+  Src/m_pexsi_local_dos.F90
+  Src/m_redist_spmatrix.F90
+
+----------------------------------------------------------------
 December 15, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-10
 Document the PEXSI features and update interface to v0.7.3
 
