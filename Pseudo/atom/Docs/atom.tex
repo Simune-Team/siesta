@@ -50,7 +50,7 @@
 \par\vspace{3cm}
 \hrulefill
 \par\vspace{3cm}
-{\Large {\bf Version 3.3.1, 18 June 2010}}
+{\Large {\bf Version 3.3.2, 29 May 2014}}
 \par\vspace{2cm}
 \hrulefill
 
@@ -763,37 +763,62 @@ The file itself is:
 
 	\item Chemical symbol of the nucleus (here {\tt Si}, obviously)
 	\item Exchange-correlation type. Here, {\tt ca} stands for
-          Ceperley-Alder. Other options are {\tt wi}
-          (Wigner), {\tt hl} (Hedin-Lundqvist), {\tt gl}
-          (Gunnarson-Lundqvist), and {\tt bh} (von Barth-Hedin). The
-          ``best'' LDA choice should be {\tt ca}.  It is also possible
-          to use a gradient-corrected functional: {\tt pb} indicates use
-          of the PBE scheme by Perdew, Burke, and Ernzerhof (PRL 77,
-          3865 (1996)),{\tt rp} indicates the RPBE
-          scheme by Hammer, Hansen, and Norskov, (PRB 59, 7413 (1999)),
-          {\tt rv} indicates the revPBE
-          scheme by Zhang and Yang, (PRL 80,890(1998)), 
-          {\tt wc} indicates the WC
-          scheme by Z. Wu and R.E. Cohen (PRB 73, 235116 (2006)),
-          {\tt bl} selects the BLYP (Becke-Lee-Yang-Parr) scheme,
-          {\tt am} indicates the AM05 scheme by R. Armiento and A.E. Mattsson 
-          (PRB 72, 085108 (2005), PRB 79, 155101 (2009)),
-          and {\tt ps} selects the PBEsol scheme by Perdew et al (PRL 100, 136406 (2008))
-          (see source file {\tt xc.f} for more details).
-          To use the van der Waals functional of M. Dion et al, PRL 92, 246401
-          (2004) (as implemented by G. Rom\'an-P\'erez and J. M. Soler,
-          PRL 103, 096102 (2009)), set the string to {\tt vw} or {\tt
-            vf}.
-          Another version of the vdW functional, that of Lee et
-          al. (arXiv:1003.5255v1 (2010)) (LMKLL) can be enabled by using
-          {\tt vl},
-          and the Klimes et al. parametrization (JPCM 22, 022201
-          (2009)) (KBM)
-          by using {\tt vk}.
-	  By default, the exchange-correlation energy and potential
-	  are computed using the Balb\'as-Martins-Soler package 
-	  (PRB 64, 165110 (2001)), except for
-	  the {\tt wi}, {\tt hl}, {\tt gl}, and {\tt bh} flavors. 
+          Ceperley-Alder. The options are:
+
+          Local density approximations (LDA):
+          \begin{itemize}
+            \item {\tt wi}: Wigner, PR 46, 1002 (1934)
+            \item {\tt hl}: Hedin and Lundqvist, J. Phys. C 4, 2064 (1971)
+            \item {\tt gl}: Gunnarson and Lundqvist, PRB 13, 4274 (1976)
+            \item {\tt bh}: von Barth and Hedin, J. Phys. C 5, 1629 (1972)
+            \item {\tt ca}: Ceperley-Alder, parametrized by Perdew and Zunger,
+                            PRB 23, 5075 (1981)
+            \item {\tt pw}: PW92 (Perdew and Wang, PRB, 45, 13244 (1992))
+                            (recommended LDA functional)
+          \end{itemize}
+
+          Generalized gradient approximations (GGA), implemented as 
+          Balb\'as, Martins, and Soler, PRB 64, 165110 (2001):
+          \begin{itemize}
+            \item {\tt pb}: PBE (Perdew, Burke, and Ernzerhof, 
+                                 PRL 77, 3865 (1996)) (recommended GGA)
+            \item {\tt wp}: PW91 (Perdew and Wang, JCP, 100, 1290 (1994))
+            \item {\tt rp}: RPBE (Hammer, Hansen, and Norskov, 
+                                  PRB 59, 7413 (1999))
+            \item {\tt rv}: revPBE (Zhang and Yang, PRL 80, 890 (1998)) 
+            \item {\tt ps}: PBEsol (Perdew et al, PRL 100, 136406 (2008))
+            \item {\tt wc}: WC (Wu and Cohen, PRB 73, 235116 (2006))
+            \item {\tt jo}: PBEJsJrLO. This and the next three functionals 
+                            are reparametrizations of the PBE functional by
+                            Pedroza et al, PRB 79, 201106 (2009) and
+                            Odashima et al, J. Chem. Theory Comp. 5, 798 (2009).
+                            Js and Jr refer to jellium surface energy and 
+                            jellium response, respectively.
+                            LO refers to Lieb-Oxford bound.
+                            Gx and Gc refer to gradient expansions for 
+                            exchange and correlation, respectively.
+                            HGE refers to the low-density limit of the
+                            homogeneous electron gas.
+            \item {\tt jh}: PBEJsJrHEG
+            \item {\tt go}: PBEGcGxLO
+            \item {\tt gh}: PBEGcGxHEG
+            \item {\tt am}: AM05 (Armiento and Mattsson 
+                                  PRB 72, 085108 (2005), PRB 79, 155101 (2009)),
+            \item {\tt bl}: BLYP (Becke, PRA 38, 3098 (1988) and
+                                  Lee, Yang, and Parr, PRB 37, 785 (1988))
+          \end{itemize}
+
+          Van der Waals (VDW) density functionals, implemented as 
+          Rom\'an-P\'erez and Soler, PRL 103, 096102 (2009):
+          \begin{itemize}
+            \item {\tt vw} or {\tt vf}: DRSLL (Dion et al, PRL 92, 246401 (2004))
+            \item {\tt vl}: LMKLL (Lee et al, PRB 82, 081101 (2010))
+            \item {\tt vk}: KBM (Klimes, Bowler, and Michaelides, 
+                                 JPCM 22, 022201 (2009))
+            \item {\tt vc}: C09 (Cooper, PRB 81, 161104 (2010))
+            \item {\tt vb}: BH (Berland and Hyldgaard, PRB 89, 035412 (2014))
+            \item {\tt vv}: VV (Vydrov and VanVoorhis, JCP 133, 244103 (2010))
+          \end{itemize}
    
 	\item The character {\tt r} next to {\tt ca} is a flag to perform the
           calculation relativistically, that is, solving the Dirac equation

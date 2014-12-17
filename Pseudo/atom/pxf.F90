@@ -68,7 +68,7 @@ subroutine pxfabort()
 
 #ifdef F2003
   interface
-    subroutine abort(), bind(c)
+    subroutine abort() bind(c)
     end subroutine abort
   end interface
   call abort()

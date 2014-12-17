@@ -1,3 +1,69 @@
+------------------------------------------------------------
+December 17, 2014  A. Garcia        trunk-464--pexsi-v0.7-12
+Sync to trunk-464. More documentation on sparse-matrix i/o.
+
+Improve the documentation of the new framework for H and DM output.
+Add Util/DensityMatrix/dmUnblock.F90
+
+464:  Merge fixes from rc-4.0: constr. forces, MPI compilation, mm.potentials
+463:  Added restart file for smooth continuation of annealing runs (F. Corsetti)
+462:  Improved MPI version of siesta as a subroutine (J.M.Soler)
+461:  %files added to Util/JobList options (J.M.Soler)
+460:  New GGA and VDW functionals (M.Fritz & J.M.Soler)
+
+added:
+  Docs/gga.CHANGES
+  Docs/rc-4.0.CHANGES
+  Src/SiestaXC/Testers/Reference/
+  Src/SiestaXC/Testers/test6.f90
+  Src/SiestaXC/Testers/test6.m
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+  Util/DensityMatrix/dmUnblock.F90
+  Util/JobList/Examples/Ice/dummyFile
+  Util/SiestaSubroutine/ProtoNEB/
+renamed:
+  Src/SiestaXC/Testers/test2.f90 => Src/SiestaXC/Testers/test2.F90
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/pxf.F90
+  Pseudo/atom/velect.f
+  Pseudo/atom/version.h
+  Src/MPI/Makefile
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/ldaxc.f
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+  Src/atom.F
+  Src/dynamics.f
+  Src/fsiesta_mpi.F90
+  Src/molecularmechanics.F90
+  Src/write_subs.F
+  Src/xc.f
+  Util/DensityMatrix/README
+  Util/DensityMatrix/makefile
+  Util/JobList/Examples/Ice/iceChecks.jobs
+  Util/JobList/README
+  Util/JobList/Src/jobList.f90
+  Util/SiestaSubroutine/README
+  Src/SiestaXC/Testers/test2.F90
+
+
 ----------------------------------------------------------------
 December 16, 2014  A. Garcia        trunk-459--pexsi-59--v0.7-11
 More documentation. Cosmetic changes in output

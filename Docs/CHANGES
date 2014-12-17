@@ -6,6 +6,153 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2014-11-08  16:30:00 GMT                                     trunk-464
+Merge fixes from rc-4.0: constr. forces, MPI compilation, mm.potentials
+
+-- Fabiano Corsetti: Fix output to show constrained forces
+
+* Changed the calling of the iofa and ofc routines inside write_subs,
+  so that the forces with constraints are written to file in each case
+  instead of the uncorrected forces. 
+
+modified:
+  Src/write_subs.F
+
+
+-- Alberto Garcia:   Fix 'clean' rule in  MPI Makefile
+
+The interface library libmpi_f90.a was not removed when issuing a
+'make clean', possibly leading to strange errors if the MPI
+compilation environment was later changed.
+
+modified:
+  Src/MPI/Makefile
+
+-- Nick P Andersen:  Fix shortcomings in reading of empirical potential block
+
+* The number of potential lines is now arbitrary.
+* Units handling has been improved, to allow arbitrary
+  length and energy units.
+
+modified:
+  Src/molecularmechanics.F90
+
+
+-----------------------------------------------------------------------
+2014-11-08  16:15:00 GMT                                     trunk-463
+Added restart file for smooth continuation of annealing runs
+
+* Added the writing and reading of an .ANNEAL_RESTART file, along the
+  same lines of the .VERLET_RESTART file. This fixes a small problem
+  for restarting annealing calculations when a continuous smooth run
+  is desired.
+
+(Fabiano Corsetti)
+
+added:
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+modified:
+  Docs/siesta.tex
+  Src/dynamics.f
+
+-----------------------------------------------------------------------
+2014-05-29  12:40:00 GMT                                     trunk-462
+Improved MPI version of siesta as a subroutine (J.M.Soler)
+
+* The MPI version of fsiesta now creates a directory for each siesta
+  process, and writes in it all output and continuation files
+
+* New example Util/SiestaSubroutine/ProtoNEB/
+
+added:
+  Util/SiestaSubroutine/ProtoNEB/
+  Util/SiestaSubroutine/ProtoNEB/NH3-point01.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point02.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point03.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3.fdf
+  Util/SiestaSubroutine/ProtoNEB/Src/
+  Util/SiestaSubroutine/ProtoNEB/Src/Makefile
+  Util/SiestaSubroutine/ProtoNEB/Src/protoNEB.F90
+modified:
+  Src/fsiesta_mpi.F90
+  Util/SiestaSubroutine/README
+
+-----------------------------------------------------------------------
+2014-05-29  10:45:00 GMT                                     trunk-461
+%files added to Util/JobList options (J.M.Soler)
+
+added:
+  Util/JobList/Examples/Ice/dummyFile
+modified:
+  Util/JobList/Examples/Ice/iceChecks.jobs
+  Util/JobList/README
+  Util/JobList/Src/jobList.f90
+
+-----------------------------------------------------------------------
+2014-05-29  10:30:00 GMT                                     trunk-460
+New GGA and VDW functionals (M.Fritz & J.M.Soler)
+
+* Added 4 GGA functionals by Capelle et al
+  Refs: L.S.Pedroza et al, PRB 79, 201106 (2009) and
+        M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+
+* Added 2 VDW-DF functionals of 
+        V.R.Cooper, PRB 81, 161104(R) (2010)
+        K. Berland and P. Hyldgaard, PRB 89, 035412 (2014)
+
+* Fixed PW91 and BLYP GGA functionals 
+
+* Corrected a minor bug in vdwxc.F90 (parameter nq->mq)
+
+* Updated and extended XC testers
+
+* Added some test outputs in SiestaXC/Testers/Reference
+
+* m_timer.F90 added to SIESTA_SRCS in SiestaXC/makefile
+
+(+ fix syntax error in Pseudo/atom/pxf.F90)
+(+ increase patch level in Pseudo/atom/version.h)
+
+added:
+  Docs/gga.CHANGES
+  Src/SiestaXC/Testers/Reference/
+  Src/SiestaXC/Testers/Reference/test1.out
+  Src/SiestaXC/Testers/Reference/test2.out
+  Src/SiestaXC/Testers/Reference/test3.out
+  Src/SiestaXC/Testers/Reference/test4.out
+  Src/SiestaXC/Testers/test6.f90
+  Src/SiestaXC/Testers/test6.m
+renamed:
+  Src/SiestaXC/Testers/test2.f90 => Src/SiestaXC/Testers/test2.F90
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/pxf.F90
+  Pseudo/atom/velect.f
+  Pseudo/atom/version.h
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/ldaxc.f
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+  Src/atom.F
+  Src/xc.f
+  Src/SiestaXC/Testers/test2.F90
+
+-----------------------------------------------------------------------
 2014-03-25  12:40:00 GMT                                     trunk-459
 Fix bug when reading spin-polarized deformation charge
 

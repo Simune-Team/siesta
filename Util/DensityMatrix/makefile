@@ -23,8 +23,8 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-default: dm2cdf cdf2dm dmbs2dm
-all: dm2cdf cdf2dm dmfilter dmbs2dm
+default: dm2cdf cdf2dm dmbs2dm dmUnblock
+all: dm2cdf cdf2dm dmfilter dmbs2dm dmUnblock
 #
 OBJDIR=Obj
 include ../../$(OBJDIR)/arch.make
@@ -46,6 +46,10 @@ dmbs2dm.o: $(OPT_OBJS)
 dmbs2dm: dmbs2dm.o $(OPT_OBJS)
 	$(FC) $(LDFLAGS) -o $@ dmbs2dm.o $(OPT_OBJS)
 #
+dmUnblock.o: $(OPT_OBJS)
+dmUnblock: dmUnblock.o $(OPT_OBJS)
+	$(FC) $(LDFLAGS) -o $@ dmUnblock.o $(OPT_OBJS)
+#
 dm2cdf: dm2cdf.o
 	$(FC) $(LDFLAGS) -o $@ dm2cdf.o  $(NETCDF_LIBS)
 #
@@ -56,10 +60,10 @@ dmfilter: dmfilter.o
 	$(FC) $(LDFLAGS) -o $@ dmfilter.o
 #
 clean: 
-	rm -f *.o dm2cdf cdf2dm dmfilter dmbs2dm *.o *.*d
+	rm -f *.o dm2cdf cdf2dm dmfilter dmbs2dm dmUnblock *.o *.*d
 #
 m_getopts.o: f2kcli.o
-new.gnubands.o: m_getopts.o f2kcli.o
+
 
 
 

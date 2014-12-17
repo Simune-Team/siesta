@@ -6,7 +6,7 @@ PROGRAM siestaXCtest1
   !   That the xc potentials Vx=dEx/dDens and Vc=dEc/dDens are always negative.
   !   That the (analytical) returned values dE/dDens and dE/dGrad(Dens) coincide
   !   with their numerical counterparts, calculated as finite differences.
-  ! J.M.Soler. Sept.2009
+  ! J.M.Soler. Sept.2009, May.2014
 
   ! Used module procedures and parameters
   USE siestaXC, only: dp
@@ -16,37 +16,42 @@ PROGRAM siestaXCtest1
   implicit none
 
   ! Tester parameters
-  integer, parameter:: irel    =  1      ! Relativistic? 0=>no, 1=>yes
-  integer, parameter:: nCalls  = 100      ! Number of calls to each routine
-  integer, parameter:: nfTot   = 12      ! Total number of functionals
-  integer, parameter:: nSpin   =  4      ! Number of spin components (1|2|4)
-  real(dp),parameter:: densMax = 0.1_dp  ! Upper limit to density value
-  real(dp),parameter:: gradMax = 0.5_dp  ! Upper limit to density gradient
-  real(dp),parameter:: deltaDens  = 1.e-6_dp  ! Finite diff. change
-  real(dp),parameter:: deltaGrad  = 1.e-6_dp  ! Finite diff. change
-  real(dp),parameter:: dEdDensTol = 1.e-6_dp  ! Tolerance for dE/dDens
-  real(dp),parameter:: dEdGradTol = 1.e-6_dp  ! Tolerance for dE/dGadDens
-  logical, parameter:: collinear  = .false.   ! Make grad(dens) collinear
-                                              ! with density?
-
+  integer, parameter:: irel   = 1       ! Relativistic? 0=>no, 1=>yes
+  integer, parameter:: nCalls = 100     ! Number of calls to each routine
+  integer, parameter:: nfTot  = 18      ! Total number of functionals
+  integer, parameter:: nSpin  = 4       ! Number of spin components (1|2|4)
+  real(dp),parameter:: kfMax  = 5.0_dp  ! Upper limit to Fermi wavevector
+  real(dp),parameter:: kgMax  = 5.0_dp  ! Upper limit to |grad(rho)|/rho
+  real(dp),parameter:: deltaLogDens = 1.e-6_dp ! Fract. finite diff. change
+  real(dp),parameter:: deltaLogGrad = 1.e-6_dp ! Fract. finite diff. change
+  real(dp),parameter:: dEdDensTol = 1.e-6_dp   ! Tolerance error for dE/dDens
+  real(dp),parameter:: dEdGradTol = 1.e-6_dp   ! Tol. error for dE/dGadDens
+  logical, parameter:: collinear  = .false.    ! Make grad(dens) collinear
+                                               ! with density?
   ! List of functionals to be tested
-!  integer, parameter:: nf = 12       ! Number of tested functionals
-!  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10,11,12/) ! Indexes from list
-  integer, parameter:: nf = 10        ! Skip problematic functionals
-  integer:: indexf(nf) = (/1,2,  4,5,6,  8,9,10,11,12/)
+!  integer, parameter:: nf = 1        ! Check a single functional
+!  integer:: indexf(nf) = (/7/)      ! Index of a functional below
+  integer, parameter:: nf = nfTot    ! Check all functionals
+  integer:: indexf(nf) = (/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18/)
 
   ! All functionals available
-  !                  1,       2,       3,       4,       5,   
-  !                  6,       7,       8,       9       10,
-  !                 11,      12
+  !                  1,           2,          3,           4,   
+  !                  5,           6,          7,           8, 
+  !                  9,          10,         11,          12,
+  !                 13,          14,         15,          16,
+  !                 17,          18
   character(len=3):: &
-    func(nfTot) = (/'LDA',   'LDA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA',   'GGA',   'GGA',   'GGA',    &
-                    'GGA',   'GGA' /)
-  character(len=6):: &
-    auth(nfTot) = (/'PZ    ','PW92  ','PW91  ','PBE   ','RPBE  ', &
-                    'revPBE','LYP   ','WC    ','PBESOL','AM05  ', &
-                    'PW86  ','B88   ' /) 
+    func(nfTot)=(/'LDA',       'LDA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA',       'GGA',       'GGA', &
+                  'GGA',       'GGA'       /)
+  character(len=10):: &
+    auth(nfTot)=(/'PZ        ','PW92      ','PW91      ','PBE       ', &
+                  'RPBE      ','revPBE    ','LYP       ','WC        ', &
+                  'PBEJsJrLO ','PBEJsJrHEG','PBEGcGxLO ','PBEGcGxHEG', &
+                  'PBESOL    ','AM05      ','PW86      ','B88       ', &
+                  'C09       ','BH        '/) 
 
   ! Tester variables and arrays
   complex(dp),parameter:: c0 = (0._dp,0._dp)  ! Complex zero
@@ -54,22 +59,25 @@ PROGRAM siestaXCtest1
   complex(dp),parameter:: ci = (0._dp,1._dp)  ! Complex i
   complex(dp):: densMat(2,2), gradDensMat(3,2,2), Imat(2,2), &
                 pauli(3,2,2), polDirMat(2,2)
-  real(dp):: epsC, epsX, dens(nSpin), &
-             dEcdDens(nSpin), dEcdGrad(3,nSpin), &
-             dExdDens(nSpin), dExdGrad(3,nSpin), densPol, densTot, &
+  real(dp):: dens(nSpin), dens0(nSpin), &
+             dEcdDens(nSpin),  dEcdGrad(3,nSpin), &
+             dExdDens(nSpin),  dExdGrad(3,nSpin), &
+             dEcdDens0(nSpin), dEcdGrad0(3,nSpin), &
+             dExdDens0(nSpin), dExdGrad0(3,nSpin), &
+             dEcdDensN(nSpin), dEcdGradN(3,nSpin), &
+             dExdDensN(nSpin), dExdGradN(3,nSpin), &
              dVxdDens(nSpin,nSpin), dVcdDens(nSpin,nSpin), &
-             Ec, Ex, gradDens(3,nSpin), gradDensPol(3), gradDensTot(3)
-  real(dp):: cosTheta, phi, pi, ran(6), sinTheta, theta
-  real(dp):: epsC0, epsX0, dens0(nSpin), gradDens0(3,nSpin)
-  real(dp):: dEcdDens0(nSpin), dEcdGrad0(3,nSpin), &
-             dExdDens0(nSpin), dExdGrad0(3,nSpin)
-  real(dp):: dEcdDensN(nSpin), dEcdGradN(3,nSpin), &
-             dExdDensN(nSpin), dExdGradN(3,nSpin)
+             gradDens(3,nSpin), gradDens0(3,nSpin), &
+             gradDensPol(3), gradDensTot(3)
+  real(dp):: cosTheta, deltaDens, deltaGrad, densPol, densTot, &
+             Ec, Ex, epsC, epsX, epsC0, epsX0, &
+             kFermi, phi, pi, ran(6), sinTheta, theta
   integer :: errorC, errorX, iCall, iDelta, iDeriv, iSpin, ix, &
-             jf, kf, mSpin, one, two, three, four
-  logical :: errorsFound
-  integer :: mySeed(8) = (/39302655,65443109,09887367,99836827, &
-                           70376268,32727926,46717826,35271017/)
+             jf, jSpin, kf, mSpin, one, two, three, four
+  logical :: errorsFound, printedDensity
+  integer :: mySeed(12) = (/39302655,65443109,09887367,99836827, &
+                            70376268,32727926,46717826,35271017, &
+                            63245609,89012831,78116893,10016273/)
 
   ! Initialize random seed
   call random_seed( put=mySeed )
@@ -91,22 +99,16 @@ PROGRAM siestaXCtest1
   four  = 4
   pi = acos(-1._dp)
 
-  ! Print header
-  print'(a4,a7,a3,2a6,3a15,a4)', &
-    'func', 'auth  ', 'xyz', 'iSpin', 'Ex|Ec', &
-    'deriv(anal)', 'deriv(num)', 'diff  ', 'err'
-
   ! Loop on calls with different densities
   errorsFound = .false.
   do iCall = 1,nCalls
+    printedDensity = .false.
 
-    ! Choose random density, but large enough for safe numerical derivatives
-    do ! density selection trial
-      call random_number( ran(1:2) )
-      densTot = densMax * ran(1)
-      densPol = densTot * ran(2)
-      if (densTot-densPol>10*deltaDens) exit ! density selection trial
-    end do
+    ! Choose random density
+    call random_number( ran(1:2) )
+    kFermi = kfMax * ran(1)
+    densTot = kFermi**3/3/pi**2
+    densPol = densTot * ran(2)
 !    densPol = 0                 ! Unpolarized, to compare with nSpin=1
     if (nSpin==1) then                   ! Non spin polarized
       dens0(one) = densTot
@@ -135,14 +137,14 @@ PROGRAM siestaXCtest1
     ! Choose random gradient of density
     do iSpin = 1,nSpin
       call random_number( ran(1:3) )
-      gradDens0(1:3,iSpin) = gradMax * (2*ran(1:3)-1)
+      gradDens0(1:3,iSpin) = densTot * kgMax * (2*ran(1:3)-1)
     end do
 
     ! Choose density gradient collinear with density itself
     if (nSpin==4 .and. collinear) then
       call random_number( ran(1:6) )
-      gradDensTot(1:3) = gradMax * (2*ran(1:3)-1)
-      gradDensPol(1:3) = gradMax * (2*ran(4:6)-1)
+      gradDensTot(1:3) = densTot * kgMax * (2*ran(1:3)-1)
+      gradDensPol(1:3) = densTot * kgMax * (2*ran(4:6)-1)
       do ix = 1,3
         gradDensMat(ix,:,:) = gradDensTot(ix)/2 * Imat(:,:) &
                             + gradDensPol(ix)/2 * polDirMat(:,:)
@@ -153,7 +155,7 @@ PROGRAM siestaXCtest1
       end do ! ix
     end if ! (nSpin==4)
 
-    ! Print density (matrix)
+    ! Print density matrix
 !    if (nSpin==4) then
 !      print'(a,/,(2f15.9,3x,2f15.9))', 'Density matrix =', &
 !        complex(dens0(one),0._dp), complex(dens0(three),dens0(four)), &
@@ -198,8 +200,10 @@ PROGRAM siestaXCtest1
           dens = dens0
           gradDens = gradDens0
           if (ix==0) then
+            deltaDens = dens0(iSpin) * deltaLogDens
             dens(iSpin) = dens0(iSpin) + iDelta * deltaDens
           else
+            deltaGrad = gradDens0(ix,iSpin)*deltaLogGrad
             gradDens(ix,iSpin) = gradDens0(ix,iSpin) + iDelta * deltaGrad
           end if
 
@@ -238,49 +242,54 @@ PROGRAM siestaXCtest1
         errorX = 0
         errorC = 0
         if (ix==0) then
+          if (nSpin<=2 .and. dExdDens0(iSpin)>0._dp) errorX=1
+          if (nSpin<=2 .and. dEcdDens0(iSpin)>0._dp) errorC=1
           if (abs(dExdDens0(iSpin)-dExdDensN(iSpin)) > dEdDensTol) errorX=2
           if (abs(dEcdDens0(iSpin)-dEcdDensN(iSpin)) > dEdDensTol) errorC=2
-          if (iSpin<=2 .and. dExdDens0(iSpin)>0._dp) errorX = 1
-          if (iSpin<=2 .and. dEcdDens0(iSpin)>0._dp) errorC = 1
         else
           if (abs(dExdGrad0(ix,iSpin)-dExdGradN(ix,iSpin))>dEdGradTol) errorX=3
           if (abs(dEcdGrad0(ix,iSpin)-dEcdGradN(ix,iSpin))>dEdGradTol) errorC=3
         end if
         if (errorX/=0 .or. errorC/=0) errorsFound = .true.
 
+        if ((iCall==1 .or. errorX/=0 .or. errorC/=0) .and. &
+            .not.printedDensity) then
+          print'(/,a6,a15,3x,a15)', 'iSpin', 'dens', 'gradDens'
+          print'(i6,f15.9,3x,3f15.9)', &
+            (jSpin, dens0(jSpin), gradDens0(:,jSpin), jSpin=1,nSpin)
+          printedDensity = .true.
+        endif
+
         ! Print comparison of analytical and numerical derivatives
         ! Do it only in first call, or if there is an error
+        if (iCall==1 .and. kf==1 .and. iDeriv==0) then   ! Print header
+          print'(/,a4,a13,a3,2a6,3a15,a4)', &
+            'func', 'auth  ', 'xyz', 'iSpin', 'Ex|Ec', &
+            'deriv(anal)', 'deriv(num)', 'diff  ', 'err'
+        endif
         if (ix==0) then
           if (iCall==1 .or. errorX/=0) &
-            print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
+            print'(a4,a13,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ex', &
               dExdDens0(iSpin), dExdDensN(iSpin), &
               abs(dExdDens0(iSpin)-dExdDensN(iSpin)), errorX
           if (iCall==1 .or. errorC/=0) &
-            print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
+            print'(a4,a13,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ec', &
               dEcdDens0(iSpin), dEcdDensN(iSpin), &
               abs(dEcdDens0(iSpin)-dEcdDensN(iSpin)), errorC
         else
           if (iCall==1 .or. errorX/=0) &
-            print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
+            print'(a4,a13,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ex', &
               dExdGrad0(ix,iSpin), dExdGradN(ix,iSpin), &
               abs(dExdGrad0(ix,iSpin)-dExdGradN(ix,iSpin)), errorX
           if (iCall==1 .or. errorC/=0) &
-            print'(a4,a7,i3,i6,a6,3f15.9,i4)', &
+            print'(a4,a13,i3,i6,a6,3f15.9,i4)', &
               func(jf), auth(jf), ix, iSpin, 'Ec', &
               dEcdGrad0(ix,iSpin), dEcdGradN(ix,iSpin), &
               abs(dEcdGrad0(ix,iSpin)-dEcdGradN(ix,iSpin)), errorC
         end if
-
-!       Print density and gradient in case of error
-!        if (errorX/=0 .or. errorC/=0) then
-!          print'(a,4f15.8)','    Dens=', dens0
-!          print'(a,4f15.8)','dDens/dx=', gradDens0(1,:)
-!          print'(a,4f15.8)','dDens/dy=', gradDens0(2,:)
-!          print'(a,4f15.8)','dDens/dz=', gradDens0(3,:)
-!        end if
 
       end do ! iDeriv
       if (iCall==1) print*, ' ' ! Separate functionals for better visualization

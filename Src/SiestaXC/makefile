@@ -20,7 +20,7 @@ module:  libSiestaXC.a
 SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  debugmpi.F \
              chkgmx.f fft1d.F  flib_spline.f90  \
              minvec.f m_io.f moreParallelSubs.F90 \
-             m_recipes.f timer_tree.F90 m_walltime.f90 parallel.F \
+             m_recipes.f m_timer.F90 timer_tree.F90 m_walltime.f90 parallel.F \
 	     precision.F pxf.F90 radfft.f sorting.f sys.F timer.f90 die.F
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
