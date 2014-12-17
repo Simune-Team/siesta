@@ -1,6 +1,7 @@
 # -----------------------------------------------------------------------------
-# Simple example for PEXSI
-# Cubic box of 64 Si atoms.
+# FDF for interstitial H in a cubic c-Si supercell with 64 atoms
+#
+# E. Artacho, April 1999
 # -----------------------------------------------------------------------------
 
 #-------
@@ -10,33 +11,44 @@ PEXSI.num-poles 40
 PEXSI.mu  -0.30 Ry
 
 PEXSI.num-electron-tolerance 1.0d-4
-PEXSI.mu-max-iter     5
+PEXSI.mu-max-iter     3
 DM.NormalizationTolerance 1.0d-3  # (true_no_electrons/no_electrons) - 1.0 
 
 PEXSI.ordering 1   # Note this ... apparently needed for small npPerPole
+PEXSI.verbosity 2
 #------
-MaxSCFIterations      10           # Maximum number of SCF iter
 #--------------
+PEXSI.DOS T
+PEXSI.LocalDOS T
+PEXSI.LocalDOS.np-per-pole 4
+PEXSI.LocalDOS.Energy -3.5141 eV
+PEXSI.LocalDOS.Broadening 0.05 eV
 
-Electronic.temperature 300.0
 
-WriteDMHS.NetCDF F
-WriteDM.NetCDF F
-WriteDM F
+WriteDMHS.NetCDF T
+WriteDM.NetCDF T
+WriteDM T
 
+SystemName          H in 64-atom silicon -- PEXSI solver
+SystemLabel         sih-pexsi
 
-SystemName          64-atom silicon -- PEXSI solver
-SystemLabel         si64-pexsi
-
-NumberOfAtoms       64
-NumberOfSpecies     1
+NumberOfAtoms       65
+NumberOfSpecies     2
 
 %block ChemicalSpeciesLabel
  1  14  Si
+ 2   1  H 
 %endblock ChemicalSpeciesLabel
 
-PAO.BasisSize       DZP
+PAO.BasisSize       SZP
 PAO.EnergyShift     300 meV
+
+%block PAO.Basis
+  H  1
+  0  1
+  0. 
+  0.8
+%endblock PAO.Basis
 
 LatticeConstant     5.430 Ang
 %block LatticeVectors
@@ -47,13 +59,13 @@ LatticeConstant     5.430 Ang
 
 MeshCutoff          40.0 Ry
 
+MaxSCFIterations    50  
 DM.MixingWeight      0.3 
-DM.NumberPulay       3  
+DM.NumberPulay       4  
 DM.Tolerance         1.d-3
+DM.UseSaveDM             
 
-DM.UseSaveDM         true
-DM.MixSCF1           false
-DM.NumberPulay        3
+ElectronicTemperature  25 meV  
 
 AtomicCoordinatesFormat  ScaledCartesian
 %block AtomicCoordinatesAndAtomicSpecies
@@ -121,4 +133,5 @@ AtomicCoordinatesFormat  ScaledCartesian
     1.750    1.250    1.750   1 #  Si 62 
     1.500    1.500    1.000   1 #  Si 63 
     1.750    1.750    1.250   1 #  Si 64 
+    1.125    1.125    1.125   2 #  H  65
 %endblock AtomicCoordinatesAndAtomicSpecies

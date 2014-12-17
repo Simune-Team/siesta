@@ -54,8 +54,9 @@ sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
               | tar -cf - --no-recursion -T- )   | ( cd ${destdir} ; tar xf -)
 #
 # Make a symbolic link for the reference output directory
+# (deactivated for now)
 #
-(cd ${destdir}/Tests ; ln -sf ${testdir}/Reference ./Reference)
+### (cd ${destdir}/Tests ; ln -sf ${testdir}/Reference ./Reference)
 #
 echo " *** Compilation setup done. "
 echo " *** Remember to copy an arch.make file or run configure as:"

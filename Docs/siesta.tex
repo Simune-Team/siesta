@@ -5014,6 +5014,24 @@ Spectral gap. This can be set to be 0 in most cases.
 \itemsep 10pt
 \parsep 0pt
 
+\item[{\bf MPI.Nprocs.SIESTA}] ({\it integer}):
+  \index{MPI.Nprocs.SIESTA@{\bf MPI.Nprocs.SIESTA}} 
+
+Specifies the number of MPI processes to be used in those parts of the
+program (such as Hamiltonian setup and computation of forces) which
+are outside of the PEXSI solver itself. This is needed in large-scale
+calculations, for which the number of processors that can be used by
+the PEXSI solver is much higher than those needed by other parts of
+the code.
+
+Note that when the PEXSI solver is not used, this parameter will
+simply reduce the number of processors actually used by all parts of
+the program, leaving the rest idle for the whole calculation. This
+will adversely affect the computing budget, so take care not to use
+this option in that case. 
+
+{\it Default value:} {\tt (the total number of available processors)}
+
 \item[{\bf PEXSI.np-per-pole}] ({\it integer}):
   \index{PEXSI.np-per-pole@{\bf PEXSI.np-per-pole}} 
 %

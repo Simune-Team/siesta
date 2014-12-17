@@ -1,4 +1,18 @@
 ------------------------------------------------------------
+December 17, 2014  A. Garcia        trunk-464--pexsi-v0.7-13
+Some more documentation. Update of PEXSI tests.
+
+added:
+  Tests/sih-pexsi/
+  Tests/sih-pexsi/makefile
+  Tests/sih-pexsi/sih-pexsi.fdf
+  Tests/sih-pexsi/sih-pexsi.pseudos
+modified:
+  Docs/siesta.tex
+  Src/obj_setup.sh
+  Tests/si64-pexsi/si64-pexsi.fdf
+
+------------------------------------------------------------
 December 17, 2014  A. Garcia        trunk-464--pexsi-v0.7-12
 Sync to trunk-464. More documentation on sparse-matrix i/o.
 
