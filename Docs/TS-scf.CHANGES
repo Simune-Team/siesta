@@ -1,4 +1,12 @@
 ----------------------------------------------------
+December 19, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-242
+Bugfix for compiling TBT without NCDF_4
+
+modified:
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 December 18, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-241
 TBT TB bugfix and various error messages
 

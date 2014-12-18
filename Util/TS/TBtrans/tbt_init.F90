@@ -36,7 +36,9 @@ subroutine tbt_init()
   use m_tbt_gf
   use m_tbt_save
   use m_tbt_proj
+#ifdef NCDF_4
   use m_tbt_dH, only : init_dH_options
+#endif
 
   use m_sparsity_handling
 

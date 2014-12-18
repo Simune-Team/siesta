@@ -111,8 +111,11 @@ module m_tbt_dH
   integer, save :: insert_algo = 0
 
   public :: tTBTdH, dH
+
+#ifdef NCDF_4
   public :: init_dH_options
   public :: read_next_dH, clean_dH
+#endif
   public :: add_zdH_TriMat, add_zdH_Mat
 
 contains
@@ -125,7 +128,7 @@ contains
     use fdf
     use m_io_s, only : file_exist
 
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 
 #ifdef MPI
     use mpi_siesta, only : MPI_Bcast, MPI_Comm_World
@@ -586,8 +589,8 @@ contains
 
       use class_Sparsity
       use class_OrbitalDistribution
-      use nf_ncdf
-      use m_ncdf_io,only : cdf_r_Sp
+      use nf_ncdf, ncdf_parallel => parallel
+      use m_ncdf_io, only : cdf_r_Sp
 
 #ifdef MPI
       use mpi_siesta, only : MPI_Send, MPI_Recv
