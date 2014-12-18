@@ -379,7 +379,9 @@
 #ifdef TRANSIESTA
 !     If onlyS, Save overlap matrix and exit                       ! MPN
       if (onlyS) then           ! MPN 
-         fname = fname_TSHS(slabel,0,0,.true.)
+         i = 0
+         ix = 0
+         fname = fname_TSHS(slabel,i,ix,.true.)
          ! We include H as S, well-knowing that we only write one of
          ! them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 

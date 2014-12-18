@@ -6,7 +6,7 @@ subroutine tbt_init()
   use fdf
   use sys, only : die
   use precision, only : dp
-  use parallel, only : parallel_init, Nodes, IONode
+  use parallel, only : parallel_init, Node, Nodes, IONode
   use parallel, only : ResetFirstCall, ParallelOverK
   use m_timer, only : timer_report
   use alloc, only   : alloc_report
@@ -36,6 +36,7 @@ subroutine tbt_init()
   use m_tbt_gf
   use m_tbt_save
   use m_tbt_proj
+  use m_tbt_dH, only : init_dH_options
 
   use m_sparsity_handling
 
@@ -149,6 +150,13 @@ subroutine tbt_init()
   ! Setup the k-points
   call setup_kpoint_grid( TSHS%cell, N_Elec, Elecs )
 
+  ! Check the electrode coordinates etc.
+  do iEl = 1 , N_Elec
+     call check_Elec(Elecs(iEl), TSHS%nspin, TSHS%cell, &
+          TSHS%na_u, TSHS%xa, TSHS%lasto, &
+          Elecs_xa_EPS)
+  end do
+
   ! We have the contour now, so we can create the GF files
   do iEl = 1 , N_Elec
 
@@ -193,6 +201,10 @@ subroutine tbt_init()
 
   call tbt_region_options( save_DATA )
 
+  if ( Node == 0 ) then
+     write(*,'(/,a,/)')'tbtrans: Reducing sparsity pattern...'
+  end if
+
   ! Change the data 
   call dSpData1D_to_Sp(TSHS%S_1D,tmp_sp,tmp_1D)
   TSHS%S_1D = tmp_1D
@@ -206,11 +218,15 @@ subroutine tbt_init()
   call tbt_print_regions(N_Elec, Elecs)
 
 #ifdef NCDF_4
+
+  call init_dH_options( )
+
   ! Initialize the projections here.
   call init_proj( TSHS%na_u , TSHS%lasto , r_aDev , r_oDev, save_DATA )
   call init_proj_T( N_Elec, Elecs , save_DATA )
 
   call proj_print( N_Elec, Elecs )
+
 #endif
 
   ! Now we have the sparsity patterns in the correct sparsity

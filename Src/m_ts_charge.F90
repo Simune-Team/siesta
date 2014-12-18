@@ -200,7 +200,7 @@ contains
                'Buffer                        [B]  :',Q(1,1), Q(1,2)
           end if
           write(*,'(a,2(f12.5,tr1))') &
-               'Device                        [C]  :',Q(2,1), Q(2,2)
+               'Device                        [D]  :',Q(2,1), Q(2,2)
           do i = 1 , N_Elec
              write(*,'(a,t31,a,i0,a,2(f12.5,tr1))') &
                   trim(name(Elecs(i))),'[E',i,'] :', &
@@ -220,7 +220,7 @@ contains
                'Buffer                        [B]  :',Q(1,1)
           end if
           write(*,'(a,f12.5)') &
-               'Device                        [C]  :',Q(2,1)
+               'Device                        [D]  :',Q(2,1)
           do i = 1 , N_Elec
              write(*,'(a,t31,a,i0,a,f12.5)') &
                trim(name(Elecs(i)))         ,'[E',i,'] :',Q(3+(i-1)*2,1)

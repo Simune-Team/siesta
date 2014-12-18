@@ -1,4 +1,175 @@
 ----------------------------------------------------
+December 18, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-241
+TBT TB bugfix and various error messages
+
+* Transiesta and tbtrans was not prepared to
+  handle 100000 size systems when optimising the 
+  tri-diagonal blocks.
+  This was due to several integer overflow's which
+  is now corrected by using a higher precision integer. (i8b)
+
+* FC runs using transiesta now writes the TSHS files in a 
+  MUCH cleaner way.
+
+  They are sorted according to the atom displaced and then
+  the 6 directions:
+
+  Hence Fcfirst/last will write these files:
+    <>_00000.TSHS
+    <>_00001-1.TSHS
+    <>_00001-2.TSHS
+    <>_00001-3.TSHS
+    <>_00001-4.TSHS
+    <>_00001-5.TSHS
+    <>_00001-6.TSHS
+    <>_00002-1.TSHS
+    <>_00002-2.TSHS
+    <>_00002-3.TSHS
+    <>_00002-4.TSHS
+    <>_00002-5.TSHS
+    <>_00002-6.TSHS
+
+  which is much cleaner _<atom move>-<index of movement: [-x,+x,-y,+y,-z,+z]>.
+
+  This currently works in the latest Inelastica version (without any change).
+
+  Furthermore this lets one easily do a continuation run in a single
+  folder by just changing FCfirst.
+
+  Note also that I have increased the integer room to handle above 999
+  atoms.
+
+* Added new molecule constraint by fixing the displacement according
+  to the maximum force on any single atom in the molecule.
+
+  This helps the molecule/electrode to not be so stable and let it conform to
+  the surroundings better.
+
+* Re-instantiated the check for NULL request in IO routines
+  This really does seem like a bug in the mpich code. :(
+
+  I.e. one cannot call:
+
+     call MPI_Wait(MPI_REQUEST_NULL,...)
+
+  without it stalling (only in mpich).
+
+* Allowed IO routines to read independently, hence all nodes
+  can actually read the same file, simultaneously, if visible of course.
+
+* Function file_exist can now return whether all
+  cores "sees" the file. This is an easy way to determine whether
+  the IO is eligible for doing parallel read/writes.
+
+  TBtrans can utilise reading in parallel.
+
+* Created a new region function to append instead of creating
+  a union. This will speed up creation of new regions as we
+  do check for dublicates.
+
+* Made region_overlaps faster by actually doing what it should.
+
+* Added new flag to limit the search space for creating the
+  best possible tri-diagonal matrix.
+
+* Spelling mistakes in transiesta electrode and charge designation.
+
+* The electrodes were never checked against having the same basis
+  size (n_orb per atom).
+  We now check this and dies if they are not the same.
+  
+  Previously the error message just showed up later.
+
+* TBTRANS:
+
+  - User can now determine verbosity in a limited range of 
+    sets of options. 
+
+      TBT.Verbosity 5
+
+    lower means less information.
+
+  - Also allowed the user to determine how often the percentage tracker
+    prints the ETA.
+      TBT.Progress 5
+  
+  - Added chunk-sizes for the TBT file. This is needed when compressing
+    as the chunks determines the size of the file. Also we only compress
+    the variables that become huge.
+    I also compress the 'T' variable with a chunk-size of 1, I think this
+    is redundant, but for now it is ok.
+
+  - Compression of nc files can now be controlled by the SIESTA flag
+      CDF.Compress 
+    as well, however the individual flags superseed the siesta value.
+
+* Added m_tbt_dH to the repo.
+
+  This highly advanced feature allows the user to have FULL control over
+  the calculation.
+
+  It is mainly intended to be used by TB people as it aids in the creation
+  of disorder by a single Hamiltonian and then a random created dH file.
+
+  As such dH is a "bad" choice of naming, as it allows complex values
+  as well.
+
+  It allows 4 levels of usage:
+   LVL-1:
+    read in the LEVEL-1 field of the dH file which contains
+    a sparsity pattern and a variable called dH.
+    This variable is the sparsity pattern that will be added to the
+    Hamiltonian in the inversion step.
+
+   LVL-2:
+    read in the LEVEL-2 field of the dH file.
+    However, this will only be used if the k-point of the equivalent variable
+    exists in this group.
+
+   LVL-3:
+    read in the LEVEL-3 field of the dH file.
+    However, this will only be used if the energy-point of the equivalent 
+    variable exists in this group.
+
+   LVL-4:
+    read in the LEVEL-4 field of the dH file.
+    However, this will only be used if the k-point and the energy-point
+    of the equivalent variable exists in this group.
+
+
+  If LVL-4 meets the requirements that will be preferred, hence
+  consider the usage to go from highest level to lowest.
+
+added:
+  Util/TS/TB/Examples/SQUARE_dH.fdf
+  Util/TS/TBtrans/m_tbt_dH.F90
+modified:
+  Src/class_Sparsity.F90
+  Src/final_H_f_stress.F
+  Src/intrinsic_missing.f90
+  Src/m_fixed.F90
+  Src/m_io_s.F90
+  Src/m_ncdf_io.F90
+  Src/m_region.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_io.F90
+  Src/m_ts_options.F90
+  Src/m_ts_tri_scat.F90
+  Src/state_init.F
+  Util/TS/TB/Examples/SQUARE.fdf
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TBtrans/m_tbt_sparsity2trimat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 December 11, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-240
 Speeded up TB model creation
 

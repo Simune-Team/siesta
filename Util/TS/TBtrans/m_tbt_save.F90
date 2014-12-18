@@ -74,7 +74,8 @@ contains
 #endif
     use fdf
 
-    compress_lvl = fdf_get('TBT.CDF.Compress',0)
+    compress_lvl = fdf_get('CDF.Compress',0)
+    compress_lvl = fdf_get('TBT.CDF.Compress',compress_lvl)
     if ( compress_lvl < 0 ) compress_lvl = 0
     if ( compress_lvl > 9 ) compress_lvl = 9
 #ifdef NCDF_PARALLEL
@@ -266,12 +267,10 @@ contains
             comm = MPI_COMM_WORLD, &
             parallel = .true. )
     else
-       call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true., &
-            compress_lvl = compress_lvl )
+       call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true.)
     end if
 #else
-    call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true., &
-         compress_lvl = compress_lvl )
+    call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true.)
 #endif
 
     ! Save the current system size
@@ -326,7 +325,7 @@ contains
     dic = dic//('info'.kv.'Atomic coordinates')
     dic = dic//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
-         atts = dic)
+         atts = dic , chunks = (/3, TSHS%na_u/) )
     call delete(dic)
 
     dic = ('info'.kv.'Device region orbital pivot table')
@@ -346,7 +345,7 @@ contains
     if ( 'DOS-Gf' .in. save_DATA ) then
        dic = dic//('info'.kv.'Density of states')
        call ncdf_def_var(ncdf,'DOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
-            atts = dic)
+            atts = dic , chunks = (/r%n,1,1/) , compress_lvl = compress_lvl )
     end if
 
     if ( .not. isGamma ) then
@@ -357,13 +356,13 @@ contains
        call delete(dic)
        dic = dic//('info'.kv.'k point weights')
        call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
-            atts = dic)
+            atts = dic , chunks = (/1/) )
 
     end if
 
     dic = dic//('info'.kv.'Energy points')//('unit'.kv.'Ry')
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
-         atts = dic)
+         atts = dic, chunks = (/1/) )
     call delete(dic)
 
     call ncdf_put_var(ncdf,'pivot',r%r)
@@ -405,7 +404,7 @@ contains
        dic = dic//('info'.kv. &
             'Supercell column indices in the sparse format ')
        call ncdf_def_var(ncdf,'list_col',NF90_INT,(/'nnzs'/), &
-            compress_lvl=compress_lvl,atts=dic)
+            compress_lvl=compress_lvl,atts=dic, chunks = (/nnzs_dev/) )
 
 #ifdef MPI
        call newDistribution(TSHS%no_u,MPI_Comm_Self,fdit,name='TBT-fake dist')
@@ -432,7 +431,7 @@ contains
        if ( 'DOS-A' .in. save_DATA ) then
           dic = ('info'.kv.'Spectral function density of states')
           call ncdf_def_var(grp,'ADOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
-               atts = dic, chunks = (/r%n,1,1/))
+               atts = dic, chunks = (/r%n,1,1/) , compress_lvl=compress_lvl)
        end if
 
        ! Save information about electrode
@@ -447,7 +446,7 @@ contains
           dic = ('info'.kv.'Orbital current')
           
           call ncdf_def_var(grp,'J',NF90_DOUBLE,(/'nnzs','ne  ','nkpt'/), &
-               atts = dic)
+               atts = dic , chunks = (/nnzs_dev/) , compress_lvl=compress_lvl)
           
        end if
        
@@ -462,7 +461,7 @@ contains
 
              dic = dic//('info'.kv.'Transmission')
              call ncdf_def_var(grp,trim(Elecs(jEl)%name)//'.T',NF90_DOUBLE,(/'ne  ','nkpt'/), &
-                  atts = dic)
+                  atts = dic , chunks = (/1/), compress_lvl = compress_lvl)
              
           else
 
@@ -470,7 +469,7 @@ contains
              ! and utilise this for saving the reflection.
              dic = dic//('info'.kv.'Reflection')
              call ncdf_def_var(grp,trim(tmp)//'.R',NF90_DOUBLE,(/'ne  ','nkpt'/), &
-                  atts = dic)
+                  atts = dic , chunks = (/1/), compress_lvl = compress_lvl)
 
           end if
           
@@ -715,6 +714,10 @@ contains
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
+#ifdef TBTRANS_TIMING
+    call timer('cdf-w-T',1)
+#endif
+
 #ifdef MPI
     if ( .not. save_parallel .and. Nodes > 1 ) then
        NDOS = size(DOS,dim=1)
@@ -825,6 +828,10 @@ contains
        
 #ifdef MPI
     if ( allocated(rDOS) ) deallocate(rDOS)
+#endif
+
+#ifdef TBTRANS_TIMING
+    call timer('cdf-w-T',2)
 #endif
 
   contains

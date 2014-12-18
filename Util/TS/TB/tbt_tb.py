@@ -90,43 +90,675 @@ from __future__ import print_function
 import copy, os, datetime
 import itertools as it
 import numpy as np
-import scipy.sparse as spar
 import netCDF4 as nc
 
-class TBT_TB(object):
+class SIESTA_UNITS(object):
     """
-    Tight-binding class for writing a NetCDF-4 file
-    readable by tbtrans
+    Object to retain all SIESTA relevant units
     """
-
     # constant fields for converting Ry/Bohr to eV/Ang
     # SIESTA/tbtrans requires Ry and Bohr
-    Ry   = 13.60580
+    Ry = 13.60580
     Bohr = 0.529177
 
-    def __init__(self,geom,H,S,Ef=0.):
+class TBT_Geom(SIESTA_UNITS):
+    """
+    A geometry object handling atomic coordinates
+    in a supercell
+    """
+    def __init__(self,cell,xa,dR=2.5,n_orb=1,update_sc=False):
         """
-        initializes the TB-object
+        Initializes a TB geometry which 
+        interactively updates the number of supercells
         """
-        self.geom = geom
-        if H.shape[0] != geom.no_u:
-            raise ValueError("You have passed an erroneous sparsity"+
-                             " pattern to the TB model")
-        self.H = H
-        self.no_u = int(self.H.shape[0])
-        self.H.sort_indices()
-        self.S = S
-        self.S.sort_indices()
-        self.Ef = Ef
+        self.cell = cell
+        self.xa = xa
+        self.na_u = len(xa)
+        if isinstance(n_orb,int):
+            # We have a fixed number of orbitals per
+            # atom
+            self.lasto = np.arange(self.na_u+1) * n_orb
+        else:
+            # The user have specified number of orbitals
+            # per atom, explicitly
+            self.lasto = np.cumsum(
+                np.append(np.array([0],np.int),np.asarray(n_orb,np.int)))
+        self.no_u = int(self.lasto[-1])
+        self.dR = dR
 
-    def save(self,fname='SIESTA.nc'):
+        # Force the calculation of the super-cells from an orbital
+        # range consideration
+        if update_sc: 
+            self.update_sc(dR=dR)
+        else:
+            # We force any TB method to be periodic
+            # with one supercell connection.
+            # Hence any reference will copy this down
+            self.update_sc(nsc=[1,1,1])
+
+        # In case the user wishes to speed
+        # up the calculation of the closest atoms
+        # we allow the user to define a "proximity"
+        # Which drastically can narrow the search space down
+        # by only looking at the ia-proximity:ia+proximity
+        # atoms.
+        self.proximity = None
+
+    @staticmethod
+    def SIESTA(fname):
+        """
+        Returns a geometry by reading a SIESTA.nc file
+        """
+        nf = nc.Dataset(fname,'r')
+        xa = nf.variables['xa'][:] * self.Bohr
+        cell = nf.variables['cell'][:] * self.Bohr
+        lasto = nf.variables['lasto'][:]
+        nsc = nf.variables['nsc'][:]
+        nf.close()
+        n_orb = np.diff(lasto)
+        n_orb = np.append(lasto[0],n_orb)
+        # Create new geometry
+        g = TBT_Geom(cell=cell,xa=xa,n_orb=n_orb)
+        g.update_sc(nsc=int(nsc / 2))
+        return g
+
+    def __init_new(self,cell,xa,n_orb,update_sc=False):
+        """
+        Internal routine to easily handle initialization
+        of a new geometry, however if the user
+        requests update_sc = False
+        we copy the nsc and isc_off from the local 
+        copy.
+        """
+        g = TBT_Geom(cell,xa,dR=self.dR,n_orb=n_orb,update_sc=update_sc)
+        if not update_sc:
+            g.nsc = np.copy(self.nsc)
+            g.isc_off = np.copy(self.isc_off)
+        return g
+
+    def update_sc(self,dR=None,nsc=None):
+        """ Re-calculates the super-cell based on maximal interaction range """
+        if dR is None:
+            # Just update the super-cell, this is
+            # if the user has changed the cell size
+            ddR = self.dR
+        else:
+            self.dR = dR
+            ddR = dR
+        if not nsc is None:
+            # The user put in the super-cell
+            self.nsc = np.copy(nsc) * 2 + 1
+        else:
+            nsc = np.zeros([3],np.int)
+            # loop over x-y-z directions
+            for d in [0,1,2]:
+                # create diagonal offset
+                sc = np.zeros([3],np.int)
+                # We need only check in the positive direction 
+                # after all, it is periodic
+                i = 0
+                while True:
+                    i += 1
+                    sc[d] = i
+                    for ia in xrange(self.na_u):
+                        if len(self.close_sc(ia,isc=sc,dR=ddR)) > 0:
+                            nsc[d] = i
+                            break
+                    # No interactions to auxiliary cell,
+                    # so break the search
+                    if nsc[d] < i: break
+            # We have now calculated the required size
+            # Re-set the nsc and the supercell indices
+            # (correct for super-cells)
+            self.nsc = nsc * 2 + 1
+
+        # This variable determines the supercell
+        self.isc_off = np.zeros([np.prod(self.nsc),3],np.int)
+
+        # We define the following ones like this:
+        x = range(-nsc[0],nsc[0]+1)
+        y = range(-nsc[1],nsc[1]+1)
+        z = range(-nsc[2],nsc[2]+1)
+        i = 0
+        for iz in z:
+            for iy in y:
+                for ix in x:
+                    if ix == 0 and iy == 0 and iz == 0:
+                        continue
+                    # Increment index
+                    i += 1
+                    # The offsets for the supercells in the
+                    # sparsity pattern
+                    self.isc_off[i,0] = ix
+                    self.isc_off[i,1] = iy
+                    self.isc_off[i,2] = iz
+
+    def xyz(self,fname=None,species='H'):
+        """
+        Creates an xyz file for showing in visual programs
+        """
+        if fname:
+            # In case the species is a string we expand it
+            if isinstance(species,str):
+                lbl = [species] * self.na_u
+            else:
+                lbl = species
+            with open(fname,'w') as fh:
+                fh.write(str(self.na_u)+'\n\n')
+                for ia in xrange(self.na_u):
+                    fh.write(lbl[ia]+' {0:.5f} {1:.5f} {2:.5f}\n'.format(*self.xa[ia,:]))
+
+    def copy(self):
+        """
+        Returns a copy of this Geometry
+        """
+        # Create a copy of this geometry
+        return self.__init_new(np.copy(self.cell),np.copy(self.xa),
+                               n_orb=np.diff(self.lasto))
+
+    def remove(self,idx_a,update_sc=False):
+        """
+        Removes the atoms corresponding to idx_a and returns a new geometry.
+        Indices passed *MUST* be unique.
+        """
+        xa = np.copy(self.xa)
+        # truncate atoms requested
+        idx = np.setdiff1d(np.arange(self.na_u),idx_a,assume_unique=True)
+        orbs = np.diff(self.lasto)[idx]
+        xa = xa[idx,:]
+        return self.__init_new(np.copy(self.cell),xa,
+                               n_orb=orbs,
+                               update_sc=update_sc)
+
+    def tile(self,*args,**kwargs):
+        """ 
+        Returns a geometry expanded in terms of the arguments
+
+        In contrast to self.repeat this takes the entire unit-cell
+        and repeats in blocks.
+        """
+        if len(args) == 0: return self.copy()
+        update_sc = False
+        if 'update_sc' in kwargs: update_sc = kwargs['update_sc']
+        cell = np.copy(self.cell)
+        for id, r in args: 
+            cell[id,:] *= r
+        # Pre-allocate geometry
+        # Start the repetition
+        xa = np.copy(self.xa)
+        orbs = np.diff(self.lasto) 
+        # Our first repetition *must* be with
+        # the later coordinate
+        ja = 0
+        frR = 1
+        toR = 1
+        for id, r in args:
+            toR *= r
+            # Copy the entire structure
+            xa = np.tile(xa,(r,1))
+            orbs = np.tile(orbs,(r,1))
+            # Single cell displacements
+            dx = np.dot(np.arange(r)[:,None],self.cell[id,:][None,:])
+            # Correct the unit-cell offsets
+            xa[ja:ja+self.na_u*toR,:] += np.repeat(dx,frR*self.na_u,axis=0)
+            frR *= r
+        # Create the geometry and return it
+        return self.__init_new(cell,xa,n_orb=orbs,update_sc=update_sc)
+
+    def repeat(self,*args,**kwargs):
+        """
+        Returns a geometry expanded in terms of the arguments
+        
+        The *args list must have the following format:
+          [(0,4),(1,3)]
+        which means:
+        1. loop over atoms in the geometry 'ia'
+        2. Repeat 'ia' atom 4 times along the first vector (python is 0 index based)
+        3. Repeat 'ia' atom 3 times along the second vector
+        
+        In essence is the expansion like this:
+        ja = 0
+        for ia in range(self.na_u):
+            for id,r in args:
+               for i in range(r):
+                  ja = ia + cell[id,:] * i
+        """
+        if len(args) == 0: return self.copy()
+        update_sc = False
+        if 'update_sc' in kwargs: update_sc = kwargs['update_sc']
+
+        # Figure out the size
+        R = 1
+        nsc = np.copy(self.nsc)
+        cell = np.copy(self.cell)
+        for id, r in args: 
+            cell[id,:] *= r
+            # When we repeat a cell we also remove some
+            # periodicity, this should take care of 
+            # this (but it will still hold the
+            # periodicity for simple structures)
+            if nsc[id] > 3: nsc[id] -= 2
+            R *= r
+        # Pre-allocate geometry
+        xa = np.zeros((self.na_u*R,3),np.float)
+        n_orb = np.diff(self.lasto)
+        orbs = np.zeros((xa.shape[0],),np.int)
+        # Start the repetition
+        ja = 0
+        for ia in xrange(self.na_u):
+            toR = 1
+            frR = 1
+            for id, r in args:
+                toR *= r
+                # Single atom displacements
+                dx = np.dot(np.arange(r)[:,None],self.cell[id,:][None,:])
+                # First copy the previous coordinates
+                xa[ja:ja+toR,:] = np.tile(xa[ja:ja+frR,:],(frR,1))
+                # We repeat the cell displacements
+                xa[ja:ja+toR,:] += np.repeat(dx,frR,axis=0)
+                frR *= r
+            # Add the basic atomic coordinate
+            xa[ja:ja+toR,:] += self.xa[ia,:]
+            orbs[ja:ja+toR] = n_orb[ia]
+            ja += toR
+        # Create the geometry and return it
+        return self.__init_new(cell,xa,n_orb=orbs,update_sc=update_sc)
+
+    def append(self,other,axis,update_sc=False):
+        """
+        Append other to self after axis:
+
+        Basically it does this:
+        
+          >> oxa = other.xa + self.cell[axis,:][None,:]
+          >> self.xa = np.append(self.xa,oxa)
+          >> self.cell[axis,:] += other.cell[axis,:]
+          >> self.lasto = np.append(self.lasto,other.lasto)
+
+        Note that the cell appended is only in the axis that
+        is appended, which means that the other cell directions
+        need not conform.
+        """
+        xa = np.append(self.xa,
+                       self.cell[axis,:][None,:] + other.xa,
+                       axis=0)
+        cell = np.copy(self.cell)
+        cell[axis,:] += other.cell[axis,:]
+        orbs = np.append(np.diff(self.lasto),np.diff(other.lasto))
+        return self.__init_new(cell,xa,n_orb=orbs,update_sc=update_sc)
+
+    def a2o(self,ia):
+        """
+        Returns an atomic index to the first orbital of said atom
+        This is particularly handy if you want to create
+        TB models with more than one orbital per atom.
+
+        Then assigning TB parameters look something like:
+        (here shown for two orbitals per atom)
+
+        # Only nearest neighbour interactions
+        dR = (.1, 2.)
+        for ia in xrange(self.na_u):
+            io = self.a2o(ia)
+            idx_a = HUGE.close_all(ia,dR=dR)
+            # first orbital on-site
+            HS[io+0,self.a2o(idx_a[0])+0] = (U1 ,   1. )
+            # second orbital on-site
+            HS[io+1,self.a2o(idx_a[0])+1] = (U2 ,   1. )
+            # orbital hopping to same orbital
+            HS[io+0,self.a2o(idx_a[1])+0] = (t11,   0. )
+            HS[io+1,self.a2o(idx_a[1])+1] = (t22,   0. )
+            # orbital hopping to differing orbital
+            HS[io+0,self.a2o(idx_a[1])+1] = (t12,   0. )
+            HS[io+1,self.a2o(idx_a[1])+0] = (t12,   0. )
+
+        """
+        return self.lasto[ia]
+
+    def coords(self,isc=[0,0,0],idx=None):
+        """
+        Returns the coordinates of the geometry in the specified
+        cell
+        """
+        offset = self.cell[0,:] * isc[0] + \
+            self.cell[1,:] * isc[1] + \
+            self.cell[2,:] * isc[2]
+        if idx is None:
+            return self.xa + offset[None,:]
+        else:
+            return self.xa[idx,:] + offset[None,:]
+
+    def sc_idx(self,isc):
+        """
+        Returns the geometry index for the supercell
+        corresponding to isc ([ix,iy,iz])
+        """
+        asc = np.asarray(isc,np.int)
+        for i in xrange(self.isc_off.shape[0]):
+            if np.all(self.isc_off[i,:] == asc): return i
+        raise Exception('Could not find supercell index')
+
+    def close_sc(self,xyz_ia,isc=[0,0,0],dR=None):
+        """
+        Returns all atoms that are within 'dR' of the atom 'ia'
+        seen from the unit-cell.
+
+        This allows one to easily create TB models
+
+        If dR has several elements it will return the indices:
+        in the ranges:
+           ( x <= dR[0] , dR[0] < x <= dR[1], dR[1] < x <= dR[2] )
+
+        This routine is the routine that by far takes the most
+        time, and the reason is simple, it does not take advantage
+        of the range of atoms, if we constructed a sparsity pattern
+        that only calculated wrt. atoms close it would be much faster.
+        """
+        if dR is None:
+            ddR = np.array((self.dR,),np.float)
+        else:
+            ddR = np.array((dR,),np.float).flatten()
+        ioff = 0
+        if isinstance(xyz_ia,int):
+            # Get atomic coordinate in principal cell
+            if self.proximity:
+                ioff = max(0,xyz_ia-self.proximity)
+                idx = np.arange(ioff,
+                                min(xyz_ia+self.proximity,self.na_u))
+                dxa = self.coords(isc=isc,idx = idx) - self.xa[xyz_ia,:][None,:]
+            else:
+                dxa = self.coords(isc=isc) - self.xa[xyz_ia,:][None,:]
+        else:
+            # The user has passed a coordinate
+            dxa = self.coords(isc=isc) - xyz_ia[None,:]
+
+        # Retrieve all atomic indices which are closer
+        # than our delta-R
+        # The linear algebra norm function could be used, but it
+        # has a lot of checks, hence we do it manually
+        #xaR = np.linalg.norm(dxa,axis=-1)
+        xaR = (dxa[:,0]**2+dxa[:,1]**2+dxa[:,2]**2) ** .5
+        del dxa # just because these arrays could be very big...
+        idx = np.where(xaR <= ddR[-1])[0]
+        if len(ddR) == 1:
+            # We only have one designation
+            return idx + ioff
+        if np.any(np.diff(ddR) < 0.):
+            raise ValueError('Proximity checks for several quantities '+ \
+                                 'at a time requires ascending dR values.')
+
+        # Reduce search space!
+        # The more neigbours you wish to find the faster this becomes
+        # We only do "one" heavy duty search,
+        # then we immediately reduce search space to this subspace
+        xaR = xaR[idx]
+        idx[:] += ioff
+        ix = [idx[np.where(xaR <= ddR[0])[0]]]
+        for i in range(1,len(ddR)):
+            # Search in the sub-space
+            # Notice that this sub-space reduction will never
+            # allow the same indice to be in two ranges (due to
+            # numerics)
+            tidx = np.where(np.logical_and(ddR[i-1] < xaR,xaR <= ddR[i]))[0]
+            ix.append(idx[tidx])
+        return ix
+
+    def close_all(self,xyz_ia,dR=None):
+        """
+        Returns supercell indices for all atoms connecting to 'ia'
+        (ia could be an integer, number of atom in the structure,
+        or a coordinate)
+        from within range 'dR'.
+        """
+        idx_a = None
+        for s in xrange(np.prod(self.nsc)):
+            no = s * self.na_u
+            idx = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR)
+            if isinstance(idx,list):
+                # we have a list of arrays
+                if idx_a is None:
+                    idx_a = [ix + no for ix in idx]
+                else:
+                    for i,ix in enumerate(idx):
+                        idx_a[i] = np.append(idx_a[i],ix + no)
+            elif len(idx) > 0:
+                # We can add it to the list
+                # We add the atomic offset for the supercell 
+                # index
+                if idx_a is None:
+                    idx_a = idx + s * self.na_u
+                else:
+                    idx_a = np.append(idx_a,idx+s*self.na_u)
+        return idx_a
+        
+
+class TBT_Model(SIESTA_UNITS):
+    """
+    A wrapper to create zero containing sparsity patterns
+    while easily implementing the symmetric sparsity pattern.
+    """
+    def __init__(self,geom,max_connection=None):
+        self.geom = geom
+        self.no_u = geom.no_u
+        no_s = geom.no_u * np.prod(geom.nsc)
+        # We first find the maximal number of connections per atom
+        max_n = 0
+        if max_connection:
+            max_n = max_connection
+        else:
+            # Determine maximum number of connections explicitly
+            for ia in xrange(geom.na_u):
+                idx = geom.close_all(ia)
+                max_n = max(max_n,len(idx))
+
+        self.max_n = max_n
+        self.reset()
+
+    def _reset_sp(self):
+        """ Reset the sparsity pattern """
+        # To increase performance of creating
+        # the TB parameters we fix the connections
+        # per orbital to the maximum number of
+        # connections, then later we truncate
+        # Hence our ncol keeps track of how many we actually have
+        self.ncol = np.zeros((self.no_u,),np.int)
+        self.ptr = np.cumsum(np.repeat(np.array([self.max_n],np.int),
+                             self.no_u+1)) - self.max_n
+        self.nnzs = 0
+        self.col = np.empty((self.ptr[-1],),np.int)
+
+        self._finalized = False
+
+    def reset(self,dtype=np.float):
+        """
+        This lets the HS size be set by the user
+        """
+        # I know that this is not the most efficient way to
+        # access a C-array, however, for constructing a
+        # sparse pattern, it should be faster if memory elements
+        # are closer... 
+        # Hence, this choice of having H and S like this
+
+        self._reset_sp()
+        # Initialize HS size
+        self.HS = np.empty((self.ptr[-1],2),dtype=dtype)
+
+    def finalize(self):
+        """ 
+        Disables the ability to extend this TB sparsity pattern
+        """
+        if self._finalized: return
+        self._finalized = True
+        ptr = self.ncol[0]
+        if np.unique(self.col[:ptr]).shape[0] != ptr:
+            raise ValueError('You cannot have two hoppings between '+
+                             'the same orbitals.')
+        if self.no_u > 1:
+            # We truncate all the connections
+            for io in xrange(1,self.no_u):
+                cptr = self.ptr[io]
+                # Update actual pointer position
+                self.ptr[io] = ptr
+                no = self.ncol[io]
+                self.col[ptr:ptr+no]  = self.col[cptr:cptr+no]
+                self.HS[ptr:ptr+no,:] = self.HS[cptr:cptr+no,:]
+                # we also assert no two connections
+                if np.unique(self.col[ptr:ptr+no]).shape[0] != no:
+                    raise ValueError('You cannot have two hoppings between '+
+                                     'the same orbitals.')
+                ptr += no
+        # Correcting the size of the pointer array
+        self.ptr[self.no_u] = ptr
+        if ptr != self.nnzs:
+            raise ValueError('Error in creating the TB parameter space')
+        # Truncate values to correct size
+        self.HS = self.HS[:self.nnzs,:]
+        self.col = self.col[:self.nnzs]
+        # Deleting the variable
+        # will error out in _setitem when
+        # it is referenced :)
+        del self.nnzs
+
+        # Sort the indices (THIS IS A REQUIREMENT!)
+        for io in xrange(self.no_u):
+            ptr = self.ptr[io]
+            no  = self.ncol[io]
+            # Sort the indices
+            si = np.argsort(self.col[ptr:ptr+no])
+            self.col[ptr:ptr+no]  = self.col[ptr+si]
+            self.HS[ptr:ptr+no,:] = self.HS[ptr+si,:]
+
+    def __setitem__(self,key,val):
+        """
+        Override set item for slicing operations and enables easy setting of TB parameters
+        in a sparse matrix
+
+        It does allow fancy slicing in both dimensions with limited usability
+        
+        Ok, it is not pretty, it is not fast, but it works!
+        """
+        # unpack index
+        i , j = key
+        if not isinstance(i,int):
+            # Recursively handle index,index = val
+            # designators.
+            if len(i) > 1: 
+                if len(i) != len(j):
+                    raise ValueError('Size of LHS and RHS are not equal, error on input [LHS,RHS]')
+                for ii,jj in zip(i,j):
+                    self[int(ii),jj] = val
+                return
+            i = int(i[0])
+        # step pointer of all above this
+        ptr  = self.ptr[i]
+        ncol = self.ncol[i]
+        jj = np.asarray([j]).flatten()
+        lj = jj.shape[0]
+        if ncol > 0:
+            # Checks whether any values in either array exists
+            idx = np.intersect1d(jj,self.col[ptr:ptr+ncol],assume_unique=True)
+        else:
+            idx = []
+        if len(idx) != 0:
+            
+            # Here we truncate jj to the "new" values,
+            # this allows us to both overwrite and add new values to the sparsity pattern
+            # (simultaneously)
+            jj = np.setdiff1d(jj, idx, assume_unique=True)
+            lj = jj.shape[0]
+
+            # the values corresponding to idx already exists, we overwrite that value
+            if isinstance(j,int):
+                ix = ptr + np.where(j == self.col[ptr:ptr+ncol])[0][0]
+                self.HS[ix,:] = val
+            else:
+                # remember that idx is the intersection values
+                for ij in idx:
+                    ix = ptr + np.where(ij == self.col[ptr:ptr+ncol])[0][0]
+                    self.HS[ix,:] = val
+
+            # if no new values are left we return immediately
+            if lj == 0: return
+
+        if self.col.shape[0] < self.nnzs + lj:
+            print('Shape. col '+str(self.col.shape[0]) + ' and non-zero elements '+str(self.nnzs))
+            raise ValueError('Have you changed the sparsity pattern while editing '+
+                             'the TB parameters? This is not allowed.\n'+
+                             'Or maybe you have initialized max_connection too small, try increasing it.')
+        # Step to the placement of the new values
+        ptr += ncol
+        # set current value
+        self.col[ptr:ptr+lj]  = jj
+        self.HS[ptr:ptr+lj,:] = val
+        self.ncol[i] += lj
+        # Increment number of non-zero elements
+        self.nnzs += lj
+
+    def tocsr(self):
+        """
+        Returns a csr sparse matrix for both the Hamiltonian
+        and the overlap matrix
+        """
+        try:
+            if self._finalized: pass
+        except:
+            self.finalize()
+        # Create csr sparse formats.
+        # We import here as the user might not want to
+        # rely on this feature.
+        import scipy.sparse as spar
+        if self.HS.shape[1] == 1:
+            return spar.csr_matrix((self.HS[:,0],self.col,self.ptr))
+        return (spar.csr_matrix((self.HS[:,0],self.col,self.ptr)), \
+                    spar.csr_matrix((self.HS[:,1],self.col,self.ptr)))
+
+    def _save_sparsity(self,nf,zlib=0):
+        """
+        Saves the sparsity format if it does not currently exist
+        in the file/group.
+        Else it will check that the quantitites are the same.
+        """
+        self.finalize()
+
+        cmp_lvl = zlib
+        z_lib = zlib > 0
+
+        if 'n_col' in nf.variables:
+            # Check that the sparsity is the same
+            if np.any(nf.variables['n_col'][:] != self.ncol):
+                raise ValueError('The sparsity pattern is not the same')
+            if np.any(nf.variables['list_col'][:] != self.col + 1):
+                raise ValueError('The sparsity pattern is not the same')
+        else:
+            # Create the sparsity pattern
+            if not 'nnzs' in nf.dimensions:
+                nf.createDimension('nnzs',self.col.shape[0])
+            
+            v = nf.createVariable('n_col','i4',('no_u',))
+            v.info = "Number of non-zero elements per row"
+            v[:] = self.ncol
+            v = nf.createVariable('list_col','i4',('nnzs',),
+                                  zlib=z_lib,complevel=cmp_lvl,
+                                  chunksizes=(len(self.col),))
+            
+            v.info = "Supercell column indices in the sparse format"
+            v[:] = self.col[:] + 1
+
+    def save(self,fname='SIESTA.nc',Ef=0.,zlib=0):
         """
         Saves the current information in the 'fname'
         to be ready to be read in by tbtrans
         """
+
+        self.finalize()
+
         if os.path.isfile(fname):
             raise Exception('File: '+fname+' already exists, we do not allow overwriting.')
-        nf = nc.Dataset(fname,'w')
+
+        nf = nc.Dataset(fname,'w',format='NETCDF4')
+
+        cmp_lvl = zlib
+        z_lib = zlib > 0
 
         # Create initial dimensions
         nf.createDimension('one',1)
@@ -158,16 +790,18 @@ class TBT_TB(object):
         nf.method = 'python'
 
         sp = nf.createGroup('SPARSE')
-        sp.createDimension('nnzs',self.H.getnnz())
+        self._save_sparsity(sp,zlib=zlib)
+
+        #sp.createDimension('nnzs',H.getnnz())
         v = sp.createVariable('isc_off','i4',('n_s','xyz'))
         v.info = "Index of supercell coordinates"
-        v = sp.createVariable('n_col','i4',('no_u',))
-        v.info = "Number of non-zero elements per row"
-        v = sp.createVariable('list_col','i4',('nnzs',))
-        v.info = "Supercell column indices in the sparse format"
-        v = sp.createVariable('S','f8',('nnzs',))
+        v = sp.createVariable('S','f8',('nnzs',),
+                              zlib=z_lib,complevel=cmp_lvl,
+                              chunksizes=(len(self.col),))
         v.info = "Overlap matrix"
-        v = sp.createVariable('H','f8',('spin','nnzs'))
+        v = sp.createVariable('H','f8',('spin','nnzs'),
+                              zlib=z_lib,complevel=cmp_lvl,
+                              chunksizes=(1,len(self.col)))
         v.info = "Hamiltonian"
         v.unit = "Ry"
 
@@ -188,24 +822,18 @@ class TBT_TB(object):
         # Save quantities
         nf.variables['nsc'][:] = self.geom.nsc
         nf.variables['lasto'][:] = self.geom.lasto[1:]
-        nf.variables['Ef'][:] = self.Ef / self.Ry
+        nf.variables['Ef'][:] = Ef / self.Ry
         nf.variables['Qtot'][:] = self.no_u
         
         nf.variables['xa'][:,:] = self.geom.xa[:,:] / self.Bohr
         nf.variables['cell'][:,:] = self.geom.cell[:,:] / self.Bohr
 
         # Get sparse format
-        ptr, ind = self.H.indptr,self.H.indices
-        ncol = np.diff(ptr)
         sp.variables['isc_off'][:] = self.geom.isc_off
-        sp.variables['n_col'][:] = ncol
-        sp.variables['list_col'][:] = ind[:] + 1 # get fortran indexing
 
         # Save data
-        sp.variables['H'][:] = self.H.data[:] / self.Ry
-        # currently we do not check whether the 
-        # sparsity patterns are the same, but they HAVE to be!
-        sp.variables['S'][:] = self.S.data[:]
+        sp.variables['H'][:] = self.HS[:,0] / self.Ry
+        sp.variables['S'][:] = self.HS[:,1]
 
         # Just to ensure that it is not a Gamma
         # point calculation
@@ -214,6 +842,203 @@ class TBT_TB(object):
 
         st.variables['ElectronicTemperature'][:] = 0.025 / self.Ry
 
+        nf.close()
+
+class TBT_dH(TBT_Model):
+    """
+    Specific class to create dH input's for tbtrans.
+    """
+    def reset(self,dtype=np.float):
+        """
+        This lets the HS size be set by the user
+        """
+        # I know that this is not the most efficient way to
+        # access a C-array, however, for constructing a
+        # sparse pattern, it should be faster if memory elements
+        # are closer... 
+        # Hence, this choice of having H and S like this
+
+        self._reset_sp()
+        # Initialize HS size
+        self.HS = np.empty((self.ptr[-1],1),dtype=dtype)
+
+    @staticmethod
+    def _add_lvl(nf,lvl=0):
+        """
+        Simply adds and returns a group if it does not
+        exist it will be created
+        """
+        slvl = 'LEVEL-'+str(lvl)
+        if not slvl in nf.groups:
+            gr = nf.createGroup(slvl)
+            if lvl in [2,4]:
+                gr.createDimension('nkpt',None)
+                v = gr.createVariable('kpt','f8',('nkpt','xyz'))
+                v.info = 'k-points for dH values'
+                v.unit = 'b**-1'
+            if lvl in [3,4]: 
+                gr.createDimension('ne',None)
+                v = gr.createVariable('E','f8',('ne',))
+                v.info = 'Energy points for dH values'
+                v.unit = 'Ry'
+        else:
+            gr = nf.groups[slvl]
+        return gr
+        
+    def save(self,fname,kpt=None,E=None,delete=False,zlib=0):
+        """
+        Simple routine for creating/saving dH file for input to tbtrans
+
+        Important input are kpt and E.
+        If none are provided it is a level 1.
+        If kpt is provided and E is not it is a level 2.
+        If E is provided and kpt is not it is a level 3.
+        If both are provided it is a level 4.
+
+        """
+        # Be sure to have the sparsity pattern shrunk to the correct size
+        self.finalize()
+
+        if os.path.isfile(fname) and not delete:
+            # The file already exists, so we append
+            nf = nc.Dataset(fname,'a')
+        else:
+            nf = nc.Dataset(fname,'w',format='NETCDF4')
+            nf.createDimension('xyz',3)
+            nf.createDimension('no_u',self.no_u)
+        
+        cmp_lvl = zlib
+        z_lib = zlib > 0
+    
+        # find level
+        if not kpt is None:
+            if not E is None:
+                # Level 4 
+                lvl = 4
+                dims = ('nkpt','ne','nnzs')
+                chk_size = (1,1,len(self.col))
+            else:
+                # Level 2
+                lvl = 2
+                dims = ('nkpt','nnzs')
+                chk_size = (1,len(self.col))
+        elif not E is None:
+            # Level 3
+            lvl = 3
+            dims = ('ne','nnzs')
+            chk_size = (1,len(self.col))
+        else:
+            # Level 1
+            lvl = 1
+            dims = ('nnzs',)
+            chk_size = (len(self.col),)
+
+        # Add level
+        glvl = self._add_lvl(nf,lvl)
+
+        E_warn = False
+        if lvl in [3,4]:
+            all_E = np.array(glvl.variables['E'][:]) * self.Ry
+
+            # Get energy index
+            iE = 0
+            if len(all_E) > 0:
+                iE = np.argmin(np.abs(all_E - E))
+                if abs(all_E[iE] - E) > 0.0001: # 0.1 meV accuracy...
+                    # We add a new index
+                    iE = len(all_E)
+                else:
+                    E_warn = True
+
+        k_warn = False
+        if lvl in [2,4]:
+            all_k = np.array(glvl.variables['kpt'][:])
+            
+            # Get k-point index
+            ik = 0
+            if len(all_k) > 0:
+                ik = np.argmin(np.sum(np.abs(all_k - kpt[None,:]),axis=-1))
+                if abs(np.sum(np.abs(all_k[ik,:] - kpt))) > 0.0001:
+                    # We add a new index
+                    ik = len(all_k)
+                else:
+                    k_warn = True
+                    
+        if lvl == 4 and k_warn and E_warn and False:
+            # As soon as we have put the second k-point and the first energy
+            # point, this warning will proceed...
+            # I.e. even though the variable has not been set, it will WARN
+            # Hence we out-comment this for now...
+            print('WARNING: Overwriting k-point {0} and energy point {1} correction.'.format(ik,iE))
+        elif lvl == 3 and E_warn:
+            print('WARNING: Overwriting energy point {0} correction.'.format(iE))
+        elif lvl == 2 and k_warn:
+            print('WARNING: Overwriting k-point {0} correction.'.format(ik))
+        
+        # Check that the sparsity pattern for the Hamiltonian
+        # matches the sparsity found in the file (if it exists)
+        self._save_sparsity(glvl,zlib=zlib)
+
+        # Save the Hamiltonian
+        # Check for data type
+        if np.iscomplexobj(self.HS):
+            # We have it complex denoted by the user
+            if not 'RedH' in glvl.variables:
+                rH = glvl.createVariable('RedH','f8',dims,
+                                         zlib=z_lib,complevel=cmp_lvl,
+                                         chunksizes=chk_size)
+                rH.info = 'Change in Hamiltonian'
+                rH.unit = 'Ry'
+                cH = glvl.createVariable('ImdH','f8',dims,
+                                         zlib=z_lib,complevel=cmp_lvl,
+                                         chunksizes=chk_size)
+                cH.info = 'Change in Hamiltonian'
+                cH.unit = 'Ry'
+            else: 
+                rH = glvl.variables['RedH']
+                cH = glvl.variables['ImdH']
+            # Save dH
+            if   1 == lvl:
+                rH[:] = self.HS[:,0].real / self.Ry
+                cH[:] = self.HS[:,0].imag / self.Ry
+            elif 2 == lvl:
+                glvl.variables['kpt'][ik,:] = kpt[:]
+                rH[ik,:] = self.HS[:,0].real / self.Ry
+                cH[ik,:] = self.HS[:,0].imag / self.Ry
+            elif 3 == lvl:
+                glvl.variables['E'][iE] = E / self.Ry
+                rH[iE,:] = self.HS[:,0].real / self.Ry
+                cH[iE,:] = self.HS[:,0].imag / self.Ry
+            elif 4 == lvl:
+                glvl.variables['kpt'][ik,:] = kpt[:]
+                glvl.variables['E'][iE] = E / self.Ry
+                rH[ik,iE,:] = self.HS[:,0].real / self.Ry
+                cH[ik,iE,:] = self.HS[:,0].imag / self.Ry
+        else:
+            # We have it complex denoted by the user
+            if not 'dH' in glvl.variables:
+                rH = glvl.createVariable('dH','f8',dims,
+                                         zlib=z_lib,complevel=cmp_lvl,
+                                         chunksizes=chk_size)
+                rH.info = 'Change in Hamiltonian'
+                rH.unit = 'Ry'
+            else: 
+                rH = glvl.variables['dH']
+            # Save dH
+            if   1 == lvl:
+                rH[:] = self.HS[:,0] / self.Ry
+            elif 2 == lvl:
+                glvl.variables['kpt'][ik,:] = kpt[:]
+                rH[ik,:] = self.HS[:,0] / self.Ry
+            elif 3 == lvl:
+                glvl.variables['E'][iE] = E / self.Ry
+                rH[iE,:] = self.HS[:,0] / self.Ry
+            elif 4 == lvl:
+                glvl.variables['kpt'][ik,:] = kpt[:]
+                glvl.variables['E'][iE] = E / self.Ry
+                rH[ik,iE,:] = self.HS[:,0] / self.Ry
+
+        # Cleanup
         nf.close()
 
 # According to 
@@ -276,493 +1101,37 @@ _TB_graphene['G'].update({
         'U'  : 0.   ,
         })
 
-class TBT_Geom(object):
-    """
-    A geometry object handling atomic coordinates
-    in a supercell
-    """
-    def __init__(self,cell,xa,dR=2.5,lasto=1):
-        """
-        Initializes a TB geometry which 
-        interactively updates the number of supercells
-        """
-        self.cell = cell
-        self.xa = xa
-        self.na_u = len(xa)
-        if isinstance(lasto,int):
-            # We have a fixed number of orbitals per
-            # atom
-            self.lasto = np.arange(self.na_u+1) * lasto
-        else:
-            # The user have specified number of orbitals
-            # per atom, explicitly
-            self.lasto = np.cumsum(
-                np.append(np.array([0],np.int),np.array(lasto,np.int)))
-        self.no_u = int(self.lasto[-1])
-
-        # Force the calculation of the super-cells from an orbital
-        # range consideration
-        self.update_sc(dR=dR)
-
-    def update_sc(self,dR=None):
-        """ Re-calculates the super-cell based on maximal interaction range """
-        if dR is None:
-            # Just update the super-cell, this is
-            # if the user has changed the cell size
-            ddR = self.dR
-        else:
-            self.dR = dR
-            ddR = dR
-
-        nsc = np.zeros([3],np.int)
-        # loop over x-y-z directions
-        for d in [0,1,2]:
-            # create diagonal offset
-            sc = np.zeros([3],np.int)
-            # We need only check in the positive direction 
-            # after all, it is periodic
-            i = 0
-            while True:
-                i += 1
-                sc[d] = i
-                for ia in xrange(self.na_u):
-                    if len(self.close_sc(ia,isc=sc,dR=ddR)) > 0:
-                        nsc[d] = i
-                        break
-                # No interactions to auxiliary cell,
-                # so break the search
-                if nsc[d] < i: break
-        # We have now calculated the required size
-        # Re-set the nsc and the supercell indices
-        # (correct for super-cells)
-        self.nsc = nsc * 2 + 1
-        # This variable determines the supercell
-        self.isc_off = np.zeros([np.prod(self.nsc),3],np.int)
-
-        # We define the following ones like this:
-        x = range(-nsc[0],nsc[0]+1)
-        y = range(-nsc[1],nsc[1]+1)
-        z = range(-nsc[2],nsc[2]+1)
-        i = 0
-        for iz in z:
-            for iy in y:
-                for ix in x:
-                    if ix == 0 and iy == 0 and iz == 0:
-                        continue
-                    # Increment index
-                    i += 1
-                    # The offsets for the supercells in the
-                    # sparsity pattern
-                    self.isc_off[i,0] = ix
-                    self.isc_off[i,1] = iy
-                    self.isc_off[i,2] = iz
-
-    def xyz(self,fname=None,species='H'):
-        """
-        Creates an xyz file for showing in visual programs
-        """
-        if fname:
-            # In case the species is a string we expand it
-            if isinstance(species,str):
-                lbl = [species] * self.na_u
-            else:
-                lbl = species
-            with open(fname,'w') as fh:
-                fh.write(str(self.na_u)+'\n\n')
-                for ia in xrange(self.na_u):
-                    fh.write(lbl[ia]+' {0:.5f} {1:.5f} {2:.5f}\n'.format(*self.xa[ia,:]))
-
-    def copy(self):
-        """
-        Returns a copy of this Geometry
-        """
-        # Create a copy of this geometry
-        return TBT_Geom(np.copy(self.cell),np.copy(self.xa),
-                        dR=self.dR,lasto=self.lasto[1])
-
-    def remove(self,idx_a):
-        """
-        Removes the atoms corresponding to idx_a and returns a new geometry.
-        Indices passed *MUST* be unique.
-        """
-        xa = np.copy(self.xa)
-        # truncate atoms requested
-        xa = xa[np.setdiff1d(np.arange(self.na_u),idx_a,assume_unique=True),:]
-        return TBT_Geom(np.copy(self.cell),xa,dR=self.dR,lasto=self.lasto[1])
-
-    def tile(self,*args):
-        """ 
-        Returns a geometry expanded in terms of the arguments
-
-        In contrast to self.repeat this takes the entire unit-cell
-        and repeats in blocks.
-        """
-        if len(args) == 0: return self.copy()
-        cell = np.copy(self.cell)
-        for id, r in args: 
-            cell[id,:] *= r
-        # Pre-allocate geometry
-        # Start the repetition
-        xa = np.copy(self.xa)
-        # Our first repetition *must* be with
-        # the later coordinate
-        ja = 0
-        frR = 1
-        toR = 1
-        for id, r in args:
-            toR *= r
-            # Copy the entire structure
-            xa = np.tile(xa,(r,1))
-            # Single cell displacements
-            dx = np.dot(np.arange(r)[:,None],self.cell[id,:][None,:])
-            # Correct the unit-cell offsets
-            xa[ja:ja+self.na_u*toR,:] += np.repeat(dx,frR*self.na_u,axis=0)
-            frR *= r
-        # Create the geometry and return it
-        return TBT_Geom(cell,xa,dR=self.dR,lasto=self.lasto[1])
-
-    def repeat(self,*args):
-        """
-        Returns a geometry expanded in terms of the arguments
-        
-        The *args list must have the following format:
-          [(0,4),(1,3)]
-        which means:
-        1. loop over atoms in the geometry 'ia'
-        2. Repeat 'ia' atom 4 times along the first vector (python is 0 index based)
-        3. Repeat 'ia' atom 3 times along the second vector
-        
-        In essence is the expansion like this:
-        ja = 0
-        for ia in range(self.na_u):
-            for id,r in args:
-               for i in range(r):
-                  ja = ia + cell[id,:] * i
-        """
-        if len(args) == 0: return self.copy()
-
-        # Figure out the size
-        R = 1
-        nsc = np.copy(self.nsc)
-        cell = np.copy(self.cell)
-        for id, r in args: 
-            cell[id,:] *= r
-            # When we repeat a cell we also remove some
-            # periodicity, this should take care of 
-            # this (but it will still hold the
-            # periodicity for simple structures)
-            if nsc[id] > 3: nsc[id] -= 2
-            R *= r
-        # Pre-allocate geometry
-        xa = np.zeros((self.na_u*R,3),np.float)
-        # Start the repetition
-        ja = 0
-        for ia in xrange(self.na_u):
-            toR = 1
-            frR = 1
-            for id, r in args:
-                toR *= r
-                # Single atom displacements
-                dx = np.dot(np.arange(r)[:,None],self.cell[id,:][None,:])
-                # First copy the previous coordinates
-                xa[ja:ja+toR,:] = np.tile(xa[ja:ja+frR,:],(frR,1))
-                # We repeat the cell displacements
-                xa[ja:ja+toR,:] += np.repeat(dx,frR,axis=0)
-                frR *= r
-            # Add the basic atomic coordinate
-            xa[ja:ja+toR,:] += self.xa[ia,:]
-            ja += toR
-        # Create the geometry and return it
-        return TBT_Geom(cell,xa,dR=self.dR,lasto=self.lasto[1])
-
-    def a2o(self,ia):
-        """
-        Returns an atomic index to the first orbital of said atom
-        This is particularly handy if you want to create
-        TB models with more than one orbital per atom.
-
-        Then assigning TB parameters look something like:
-        (here shown for two orbitals per atom)
-
-        # Only nearest neighbour interactions
-        dR = (.1, 2.)
-        for ia in xrange(self.na_u):
-            io = self.a2o(ia)
-            idx_a = HUGE.close_all(ia,dR=dR)
-            # first orbital on-site
-            HS[io+0,self.a2o(idx_a[0])+0] = (U1 ,   1. )
-            # second orbital on-site
-            HS[io+1,self.a2o(idx_a[0])+1] = (U2 ,   1. )
-            # orbital hopping to same orbital
-            HS[io+0,self.a2o(idx_a[1])+0] = (t11,   0. )
-            HS[io+1,self.a2o(idx_a[1])+1] = (t22,   0. )
-            # orbital hopping to differing orbital
-            HS[io+0,self.a2o(idx_a[1])+1] = (t12,   0. )
-            HS[io+1,self.a2o(idx_a[1])+0] = (t12,   0. )
-
-        """
-        return self.lasto[ia]
-
-    def coords(self,isc=[0,0,0]):
-        """
-        Returns the coordinates of the geometry in the specified
-        cell
-        """
-        offset = self.cell[0,:] * isc[0] + \
-            self.cell[1,:] * isc[1] + \
-            self.cell[2,:] * isc[2]
-        return self.xa + offset[None,:]
-
-    def sc_idx(self,isc):
-        """
-        Returns the geometry index for the supercell
-        corresponding to isc ([ix,iy,iz])
-        """
-        asc = np.asarray(isc,np.int)
-        for i in xrange(self.isc_off.shape[0]):
-            if np.all(self.isc_off[i,:] == asc): return i
-        raise Exception('Could not find supercell index')
-
-    def close_sc(self,xyz_ia,isc=[0,0,0],dR=None):
-        """
-        Returns all atoms that are within 'dR' of the atom 'ia'
-        seen from the unit-cell.
-
-        This allows one to easily create TB models
-
-        If dR has several elements it will return the indices:
-        in the ranges:
-           ( x <= dR[0] , dR[0] < x <= dR[1], dR[1] < x <= dR[2] )
-
-        This routine is the routine that by far takes the most
-        time, and the reason is simple, it does not take advantage
-        of the range of atoms, if we constructed a sparsity pattern
-        that only calculated wrt. atoms close it would be much faster.
-        """
-        if dR is None:
-            ddR = np.array((self.dR,),np.float)
-        else:
-            ddR = np.array((dR,),np.float).flatten()
-        if isinstance(xyz_ia,int):
-            # Get atomic coordinate in principal cell
-            dxa = self.coords(isc=isc) - self.xa[xyz_ia,:][None,:]
-        else:
-            # The user has passed a coordinate
-            dxa = self.coords(isc=isc) - xyz_ia[None,:]
-
-        # Retrieve all atomic indices which are closer
-        # than our delta-R
-        # The linear algebra norm function could be used, but it
-        # has a lot of checks, hence we do it manually
-        #xaR = np.linalg.norm(dxa,axis=-1)
-        xaR = (dxa[:,0]**2+dxa[:,1]**2+dxa[:,2]**2) ** .5
-        del dxa # just because these arrays could be very big...
-        idx = np.where(xaR <= ddR[0])[0]
-        if len(ddR) == 1:
-            # We only have one designation
-            return idx
-        idx = [idx]
-        for i in range(1,len(ddR)):
-            idx.append(np.where(np.logical_and(ddR[i-1] < xaR,xaR <= ddR[i]))[0])
-        return idx
-
-    def close_all(self,xyz_ia,dR=None):
-        """
-        Returns supercell indices for all atoms connecting to 'ia'
-        (ia could be an integer, number of atom in the structure,
-        or a coordinate)
-        from within range 'dR'.
-        """
-        if dR is None:
-            ddR = np.array((self.dR,),np.float)
-        else:
-            ddR = np.array((dR,),np.float).flatten()
-        idx_a = None
-        for s in xrange(np.prod(self.nsc)):
-            no = s * self.na_u
-            idx = self.close_sc(xyz_ia,self.isc_off[s,:],dR=ddR)
-            if isinstance(idx,list):
-                # we have a list of arrays
-                if idx_a is None:
-                    idx_a = [ix + no for ix in idx]
-                else:
-                    for i,ix in enumerate(idx):
-                        idx_a[i] = np.append(idx_a[i],ix + no)
-            elif len(idx) > 0:
-                # We can add it to the list
-                # We add the atomic offset for the supercell 
-                # index
-                if idx_a is None:
-                    idx_a = idx + s * self.na_u
-                else:
-                    idx_a = np.append(idx_a,idx+s*self.na_u)
-        return idx_a
-        
-
-class TBT_Model(object):
-    """
-    A wrapper to create zero containing sparsity patterns
-    while easily implementing the symmetric sparsity pattern.
-    """
-    def __init__(self,geom,max_connection=None):
-        self.geom = geom
-        self.no_u = geom.no_u
-        no_s = geom.no_u * np.prod(geom.nsc)
-        # We first find the maximal number of connections per atom
-        max_n = 0
-        if max_connection:
-            max_n = max_connection
-        else:
-            # Determine maximum number of connections explicitly
-            for ia in xrange(geom.na_u):
-                idx = geom.close_all(ia)
-                max_n = max(max_n,len(idx))
-        # To increase performance of creating
-        # the TB parameters we fix the connections
-        # per orbital to the maximum number of
-        # connections, then later we truncate
-        # Hence our ncol keeps track of how many we actually have
-        self.ncol = np.zeros((self.no_u,),np.int)
-        self.ptr = np.cumsum(np.repeat(np.array([max_n],np.int),
-                             self.no_u+1)) - max_n
-        self.nnzs = 0
-        max_n = self.ptr[-1]
-        self.col = np.empty((max_n,),np.int)
-        # I know that this is not the most efficient way to
-        # access a C-array, however, for constructing a
-        # sparse pattern, it should be faster if memory elements
-        # are closer... 
-        # Hence, this choice of having H and S like this
-        self.HS = np.empty((max_n,2),np.float)
-
-    def finalize(self):
-        """ 
-        Disables the ability to extend this TB sparsity pattern
-        """
-        self.finalized = True
-        ptr = self.ncol[0]
-        if np.unique(self.col[:ptr]).shape[0] != ptr:
-            raise ValueException('You cannot have two hoppings between '+
-                                 'the same orbitals.')
-        if self.no_u > 1:
-            # We truncate all the connections
-            for io in xrange(1,self.no_u):
-                cptr = self.ptr[io]
-                # Update actual pointer position
-                self.ptr[io] = ptr
-                no = self.ncol[io]
-                self.col[ptr:ptr+no]  = self.col[cptr:cptr+no]
-                self.HS[ptr:ptr+no,:] = self.HS[cptr:cptr+no,:]
-                # we also assert no two connections
-                if np.unique(self.col[ptr:ptr+no]).shape[0] != no:
-                    raise ValueException('You cannot have two hoppings between '+
-                                         'the same orbitals.')
-                ptr += no
-        # Correcting the size of the pointer array
-        self.ptr[self.no_u] = ptr
-        if ptr != self.nnzs:
-            raise ValueError('Error in creating the TB parameter space')
-        # Truncate values to correct size
-        self.HS = self.HS[:self.nnzs,:]
-        self.col = self.col[:self.nnzs]
-        # Deleting the variable
-        # will error out in _setitem when
-        # it is referenced :)
-        del self.nnzs
-
-    def __setitem__(self,key,val):
-        """
-        Override set item for slicing operations and enables easy setting of TB parameters
-        in a sparse matrix
-
-        It does not allow fancy slicing in the first dimension, but does allow in the second dimension
-        
-        Ok, it is not pretty, it is not fast, but it works!
-        """
-        # unpack index
-        i , j = key
-        # step pointer of all above this
-        ptr  = self.ptr[i]
-        ncol = self.ncol[i]
-        jj = np.asarray([j]).flatten()
-        lj = jj.shape[0]
-        if ncol > 0:
-            # Checks whether any values in either array exists
-            idx = np.intersect1d(jj,self.col[ptr:ptr+ncol],assume_unique=True)
-        else:
-            idx = []
-        if len(idx) != 0:
-
-            # Here we truncate jj to the "new" values,
-            # this allows us to both overwrite and add new values to the sparsity pattern
-            # (simultaneously)
-            jj = np.setdiff1d(jj, idx, assume_unique=True)
-            lj = jj.shape[0]
-
-            # the values corresponding to idx already exists, we overwrite that value
-            if isinstance(j,int):
-                ix = ptr + np.where(j == self.col[ptr:ptr+ncol])[0][0]
-                self.HS[ix,:] = val
-            else:
-                # remember that idx is the intersection values
-                for ij in idx:
-                    ix = ptr + np.where(ij == self.col[ptr:ptr+ncol])[0][0]
-                    self.HS[ix,:] = val
-
-            # if no new values are left we return immediately
-            if lj == 0: return
-
-        if self.col.shape[0] < self.nnzs + lj:
-            print('Shape. col '+str(self.col.shape[0]) + ' and non-zero elements '+str(self.nnzs))
-            raise ValueError('Have you changed the sparsity pattern while editing '+
-                             'the TB parameters? This is not allowed.\n'+
-                             'Or maybe you have initialized max_connection too small, try increasing it.')
-        # Step to the placement of the new values
-        ptr += ncol
-        # set current value
-        self.col[ptr:ptr+lj]  = jj
-        self.HS[ptr:ptr+lj,:] = val
-        self.ncol[i] += lj
-        # Increment number of non-zero elements
-        self.nnzs += lj
-        
-    def tocsr(self):
-        """
-        Returns a csr sparse matrix for both the Hamiltonian
-        and the overlap matrix
-        """
-        try:
-            if self.finalized: pass
-        except:
-            self.finalize()
-        # Create csr sparse formats
-        return (spar.csr_matrix((self.HS[:,0],self.col,self.ptr)), \
-            spar.csr_matrix((self.HS[:,1],self.col,self.ptr)))
-
 # Define a generic geometry for a square graphene unit-cell
 # To create any arbitrary unit-cell, simple use the repeat
 # function. :)
-sq3h  = 3.**.5 * 0.5
-GR_UC = TBT_Geom(xa=np.array([[ 0.,   0., 0.],
-                              [ 2.,   0., 0.],
-                              [0.5, sq3h, 0.],
-                              [1.5, sq3h, 0.] ],np.float),
-                 cell=np.array([[3.,     0.,  0.],
-                                [0., 2*sq3h,  0.],
-                                [0.,     0., 10.]],np.float),
-                 dR=2.05) # third nearest neighbour
+def graphene_uc(alat=1.42):
+    """
+    Returns a generic graphene unit-cell with user set lattice
+    parameter.
+    """
+    sq3h  = 3.**.5 * 0.5
+    gr = TBT_Geom(xa=np.array([[ 0.,   0., 0.],
+                               [ 2.,   0., 0.],
+                               [0.5, sq3h, 0.],
+                               [1.5, sq3h, 0.] ],np.float),
+                  cell=np.array([[3.,     0.,  0.],
+                                 [0., 2*sq3h,  0.],
+                                 [0.,     0., 10.]],np.float),
+                  dR=2.05) # third nearest neighbour
+    gr.xa   *= alat
+    gr.cell *= alat
+    gr.dR   *= alat
+    gr.update_sc()
+    return gr
 
-def TB_save(fname,Geom,TB = _TB_graphene['D'] ,alat=1.42):
+def TB_save(fname,Geom,TB = _TB_graphene['D'],alat=1.42):
     """ 
     Creates a TB SIESTA.nc file with a system of a geometry.
     It will automatically create a sparsity pattern based
     on the tight-binding parameter set provided through TB.
     """
 
-    # Correct the lattice vector with 
-    Geom.xa   *= alat
-    Geom.cell *= alat
-    Geom.dR   *= alat
+    sq3h  = 3.**.5 * 0.5
 
     # Print out the differences with respect to the first
     #print('dR from 0: ',np.linalg.norm(Geom.xa-Geom.xa[0,:][None,:],axis=-1))
@@ -803,13 +1172,8 @@ def TB_save(fname,Geom,TB = _TB_graphene['D'] ,alat=1.42):
         HS[ia,idx_a[3]] = nnn
 
     # This concludes the sparsity pattern
-    # and TB parameters for the graphene TB model.
-    # Convert to csr format
-    H, S = HS.tocsr()
-
-    # Save data file
-    tb = TBT_TB(Geom,H,S,Ef=TB['U'])
-    tb.save(fname)
+    # Save it
+    HS.save(fname,Ef=TB['U'])
 
 def TB_square():
     """
@@ -934,29 +1298,93 @@ def TB_square():
         TB_dev[ia,idx_a[0]] = (U ,1.)
         TB_dev[ia,idx_a[1]] = (t1,0.)
     # Now save the TB models to corresponding NetCDF-4 files
-    H, S = TB_el.tocsr()
-    tb_el = TBT_TB(el,H,S,Ef=0.)
-    tb_el.save('SQUARE_EL.nc')
-    H, S = TB_dev.tocsr()
-    tb_dev = TBT_TB(dev,H,S,Ef=0.)
-    tb_dev.save('SQUARE_DEV.nc')
-    
+    TB_el.save('SQUARE_EL.nc')
+    TB_dev.save('SQUARE_DEV.nc')
+
+
+    ############################
+    #    To showcase the dH    #
+    #    method introduced we  #
+    #  do these small changes  #
+    ############################
+    print('Setting up dH model for SQUARE calculation cell...')
+
+    # Create new TB model of sub-object TBT_dH
+    TB_dH = TBT_dH(dev)
+    # the dH method can be re-set several times
+    TB_dH.reset()
+
+    ########## LEVEL-1 ############
+    #       REAL correction       #
+    ###############################
+    for ia in xrange(dev.na_u):
+        TB_dH[ia,ia] = 0.1
+    TB_dH.save('SQUARE_dH.nc')
+
+    # Initialize the k-point for level 2 and 4
+    kpt = np.zeros((3,),np.float)
+
+    ########## LEVEL-2 ############
+    #      COMPLEX correction     #
+    #    5 k-points               #
+    ###############################
+    TB_dH.reset(dtype=np.complex)
+    for ik in xrange(5):
+        kpt[0] = ik * 0.5 / 4
+        if ik == 4: kpt[0] = (ik-1) * 0.5 / 4
+        for ia in xrange(dev.na_u):
+            TB_dH[ia,ia] = 0.1 + 1j*0.001 * ik
+        TB_dH.save('SQUARE_dH.nc',kpt=kpt)
+
+    ########## LEVEL-3 ############
+    #        REAL correction      #
+    #  100 energy-points          #
+    ###############################
+    TB_dH.reset()
+    for iE in xrange(100):
+        E = (iE-99.5)*0.025
+        for ia in xrange(dev.na_u):
+            TB_dH[ia,ia] = np.exp(-E**2) * 1e-1
+        TB_dH.save('SQUARE_dH.nc',E=E)
+
+    ########## LEVEL-4 ############
+    #      COMPLEX correction     #
+    #    5 k-points               #
+    #  100 energy-points          #
+    ###############################
+    TB_dH.reset(dtype=np.complex)
+    for ik in xrange(5):
+        kpt[0] = ik * 0.5 / 4
+        if ik == 4: kpt[0] = (ik-1) * 0.5 / 4
+        for iE in xrange(100):
+            E = (iE-49.5)*0.025
+            for ia in xrange(dev.na_u):
+                TB_dH[ia,ia] = 0.1 + 1j*np.exp(-E**2) * 1e-2
+            TB_dH.save('SQUARE_dH.nc',E=E,kpt=kpt)
+
+    # Done, the TB model for dH has now been saved with
+    # several different methods.
+    print('Done creating dH model permutations...')
+
 if __name__ == '__main__':
 
     # This example code produces several TB NetCDF-4 files
+    alat = 1.42
+    sq3h  = 3.**.5 * 0.5
+    GR_na_u = graphene_uc(alat).na_u
 
     # create the simple square hopping integral
     TB_square()
 
-    #TB_save('ELEC_zz.nc',GR_UC.copy())
+    #TB_save('ELEC_zz.nc',graphene_uc(alat))
     
     # We create all TB paramaters for a zz edge 
     # pristine graphene sample:
     for TB in ['A','B','C','D','E','F','G']:
         TB_save('ELEC_' + TB + '_zz.nc',
-                GR_UC.copy() , TB = _TB_graphene[TB])
+                graphene_uc(alat) , TB = _TB_graphene[TB], alat=alat)
         TB_save('DEV_'  + TB + '_zz.nc',
-                GR_UC.tile((1,5)) , TB = _TB_graphene[TB])
+                graphene_uc(alat).tile((1,5)) , TB = _TB_graphene[TB],alat=alat)
 
     # For the below examples we use the D set and a 
     # lattice constant of 1.42
@@ -965,21 +1393,16 @@ if __name__ == '__main__':
     nn   = np.array([TB['n1'],TB['s1']])
     nnn  = np.array([TB['n2'],TB['s2']])
     nnnn = np.array([TB['n3'],TB['s3']])
-    alat = 1.42
 
-    # Just for fun, create a graphene flake with a whole in it
-    # This is essentially an anti-dot lattice with pristine
-    # electrodes
+    # Just for fun, create a graphene flake with a hole in it
+    # This is essentially an anti-dot lattice with pristine electrodes
     Nx = 10 ; Ny = 30
-    print('Repeating graphene UC to flake with hole containing '+str(Nx*Ny*GR_UC.na_u)+' atoms...')
-    HOLE = GR_UC.repeat((0,Nx)).tile((1,Ny))
-    print('Correcting lattice parameters for graphene hole...')
-    HOLE.xa   *= alat
-    HOLE.cell *= alat
-    HOLE.dR   *= alat
+    print('Repeating graphene UC to flake with hole containing '+str(Nx*Ny*GR_na_u)+' atoms...')
+    HOLE = graphene_uc(alat).repeat((0,Nx)).tile((1,Ny))
+    HOLE.update_sc(nsc=[1,1,0])
     # Remove a hole in the structure
     # We take some atom in the middle of the structure
-    mid_atom = GR_UC.na_u * (Nx * Ny) / 2
+    mid_atom = GR_na_u * (Nx * Ny) / 2
     # Get all indices for all super-cell atoms within 12 angstrom
     idx_a = HOLE.close_all(mid_atom,dR=12.)
     # Convert to unit-cell atomic indices
@@ -998,9 +1421,7 @@ if __name__ == '__main__':
         HS[ia,idx_a[2]] = nnn
         HS[ia,idx_a[3]] = nnnn
     print('Converting to CSR sparsity format and saving NetCDF file...')
-    H , S = HS.tocsr()
-    tb = TBT_TB(HOLE,H,S,Ef=TB['U'])
-    tb.save('HOLE_D_zz.nc')
+    HS.save('HOLE_D_zz.nc',Ef=TB['U'])
 
     # Save an xyz file to let the user view the geometry
     HOLE.xyz('HOLE_zz.xyz',species='C')
@@ -1008,12 +1429,16 @@ if __name__ == '__main__':
     # Just for fun, create a HUGE graphene flake
     print('Starting time... '+str(datetime.datetime.now().time()))
     Nx = 40 ; Ny = 60
-    print('Repeating graphene UC to huge flake containing '+str(Nx*Ny*GR_UC.na_u)+' atoms...')
-    HUGE = GR_UC.repeat((0,Nx)).tile((1,Ny))
-    print('Correcting lattice parameters for graphene flake...')
-    HUGE.xa   *= alat
-    HUGE.cell *= alat
-    HUGE.dR   *= alat
+    print('Repeating graphene UC to huge flake containing '+str(Nx*Ny*GR_na_u)+' atoms...')
+    HUGE = graphene_uc(alat).repeat((0,Nx)).tile((1,Ny))
+    HUGE.update_sc(nsc=[1,1,0])
+    # This will reduce setup time, it only takes into consideration
+    # the closest atoms (in terms of index) corresponding to this
+    # "width". I.e. proximity = 10 means that close_all
+    # only takes these indices into consideration: 
+    #   xa[idx-10:idx+10,:]
+    # If in doubt, do not use this flag...
+    HUGE.proximity = Nx * GR_na_u * 2
     HS = TBT_Model(HUGE , max_connection = 20)
     dR = ( alat*0.5 , alat+0.1 , 2*sq3h*alat+0.1 , 2*alat+0.1 )
     print('Creating TB parameter Hamiltonian and overlap...')
@@ -1024,9 +1449,7 @@ if __name__ == '__main__':
         HS[ia,idx_a[2]] = nnn
         HS[ia,idx_a[3]] = nnnn
     print('Converting to CSR sparsity format and saving NetCDF file...')
-    H , S = HS.tocsr()
-    tb = TBT_TB(HUGE,H,S,Ef=TB['U'])
-    tb.save('HUGE_D_zz.nc')
+    HS.save('HUGE_D_zz.nc',Ef=TB['U'])
 
     HUGE.xyz('HUGE_zz.xyz',species='C')
 

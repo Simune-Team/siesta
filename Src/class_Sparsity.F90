@@ -315,8 +315,8 @@ module class_Sparsity
                 "  <sparsity:"//trim(sp%data%name), &
                 " nrows_g=", sp%data%nrows_g, &
                 " nrows=", sp%data%nrows, &
-                " sparsity=",real(sp%data%nnzs)/ &
-                (sp%data%nrows_g*sp%data%ncols_g), &
+                " sparsity=",real(sp%data%nnzs)/&
+                real(sp%data%nrows_g)/real(sp%data%ncols_g), &
                 " nnzs=",sp%data%nnzs,", refcount: ",  &
                 refcount(sp), ">"
   end subroutine printSparsity

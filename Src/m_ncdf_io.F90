@@ -247,7 +247,7 @@ contains
              call MPI_Recv( ibuf(1) , max_n, MPI_Integer, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
-                  call die('Error in code: ncdf_write_Sp')
+                  call die('Error in code: cdf_w_Sp')
              call MPI_Get_Count(MPIstatus, MPI_Integer, io, MPIerror)
              call ncdf_put_var(ncdf,'list_col',ibuf(1:io), &
                   count=(/io/),start=(/gind/))
@@ -299,7 +299,7 @@ contains
     integer, pointer :: l_col(:) => null()
 
     integer :: io, n_nzs, gind, ind, nl, n, i, nb, ib
-    logical :: ldit, lBcast
+    logical :: ldit, lBcast, lIO
     integer, pointer :: lncol(:) => null()
 #ifdef MPI
     integer, allocatable :: ibuf(:)
@@ -314,8 +314,10 @@ contains
 #endif
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
+    lIO = .not. (lBcast .or. ldit)
+    if ( .not. lIO ) lIO = (Node == 0)
 
-    if ( Node == 0 ) then
+    if ( lIO ) then
 
        if ( present(gncol) ) then
           lncol => gncol
@@ -387,7 +389,8 @@ contains
        end do
 
        do ib = 1 , nb
-          call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+          if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+               call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
        end do
        deallocate(ibuf)
 
@@ -404,12 +407,10 @@ contains
        call MPI_Bcast(ncol(1),nl,MPI_Integer, &
             0,MPI_Comm_World,MPIError)
        
-    else if ( Node == 0 ) then
+    else if ( lIO ) then
+
        ncol => lncol
-    else ! if ( Node /= 0 ) then
-       ! no distribution, no b-cast.
-       ! The sparsity pattern will only exist on the IONode
-       return ! the sparsity pattern will not be created then...
+
     end if
 #else
     ! Point to the buffer
@@ -501,7 +502,8 @@ contains
           if ( .not. present(gncol) ) deallocate(lncol)
        else
           do ib = 1 , nb
-             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                  call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
        end if
        deallocate(ibuf)
@@ -538,11 +540,11 @@ contains
     call newSparsity(sp,nl,no, &
          n_nzs, ncol, l_ptr, l_col, trim(tag))
 
-    if ( lBcast ) then
-       deallocate(l_ptr,l_col)
-    else
-       deallocate(ncol,l_ptr,l_col)
-    end if
+    ! de-allocate
+    deallocate(l_ptr,l_col)
+    if ( ldit ) deallocate(ncol)
+    if ( lBcast .and. Node /= 0 ) deallocate(ncol)
+    if ( lIO .and. .not. present(gncol) ) deallocate(lncol)
 
   end subroutine cdf_r_Sp
 
@@ -647,7 +649,7 @@ contains
              call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
-                  call die('Error in code: ncdf_write_d1D')
+                  call die('Error in code: cdf_w_d1D')
              call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
              call ncdf_put_var(ncdf,vname,buf(1:io), &
                   count=(/io/),start=(/gind/))
@@ -687,7 +689,7 @@ contains
     integer, pointer :: lncol(:) => null(), ncol(:)
 
     integer :: io, lno, no, gind, ind, n_nzs, n, i, nb, ib
-    logical :: ldit, lBcast
+    logical :: ldit, lBcast, lIO
 #ifdef MPI
     real(dp), allocatable :: buf(:)
     integer, allocatable :: ibuf(:)
@@ -698,6 +700,8 @@ contains
     ldit = present(dit)
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
+    lIO = .not. (lBcast .or. ldit)
+    if ( .not. lIO ) lIO = (Node == 0)
 
     call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,nnzs=n_nzs)
     if ( ldit ) ldit = lno /= no
@@ -807,30 +811,28 @@ contains
           deallocate(buf)
        else
           do ib = 1 , nb
-             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                  call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
           deallocate(ibuf)
        end if
 #else
        call die('Error in distribution for, cdf_r_d1D')
 #endif
-    else
+    else if ( lIO ) then
 
-       if ( Node == 0 ) then
-          i = sum(ncol(1:no))
-          call ncdf_get_var(ncdf,vname,a(:), count = (/i/) )
-       end if
+       i = sum(ncol(1:no))
+       call ncdf_get_var(ncdf,vname,a(:), count = (/i/) )
 
     end if
 
     ! If a distribution is present, then do something
 #ifdef MPI
     if ( lBcast ) then
+
        call MPI_Bcast(a(1),n_nzs,MPI_Double_Precision, &
             0, MPI_Comm_World, MPIError)
-    
-    else if ( Node /= 0 ) then
-       return ! the sparsity pattern will not be created then...
+
     end if
 #endif
     
@@ -958,7 +960,7 @@ contains
                 call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                      BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
                 if ( MPIerror /= MPI_Success ) &
-                     call die('Error in code (1): ncdf_write_d2D')
+                     call die('Error in code (1): cdf_w_d2D')
                 call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
                 call ncdf_put_var(ncdf,trim(vname),buf(1:io), &
                      count=(/io/),start=(/gind,id2/))
@@ -989,7 +991,7 @@ contains
              call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
-                  call die('Error in code: ncdf_write_d2D')
+                  call die('Error in code (2): cdf_w_d2D')
              call MPI_Get_Count(MPIstatus, MPI_Double_Precision, io, MPIerror)
              io = io / dim2
              call ncdf_put_var(ncdf,trim(vname),reshape(buf(1:io*dim2),(/dim2,io/)), &
@@ -1040,7 +1042,7 @@ contains
 
     integer :: io, lno, no, s, gind, ind, n_nzs, n, i, nb, ib
     integer :: sp_dim
-    logical :: ldit, lBcast
+    logical :: ldit, lBcast, lIO
 #ifdef MPI
     real(dp), allocatable :: buf(:)
     integer, allocatable :: ibuf(:)
@@ -1051,6 +1053,8 @@ contains
     ldit = present(dit)
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
+    lIO = .not. (lBcast .or. ldit)
+    if ( .not. lIO ) lIO = (Node == 0)
 
     sp_dim = 1
     if ( present(sparsity_dim) ) sp_dim = sparsity_dim
@@ -1073,7 +1077,7 @@ contains
           call Node_Sp_gncol(0,sp,dit,no,lncol)
        end if
 #else
-       call die('Error in distribution, io_read_d2D')
+       call die('Error in distribution, cdf_r_d2D')
 #endif
 
     else
@@ -1193,7 +1197,9 @@ contains
 
           if ( Node /= 0 .and. s < dim2 ) then
              do ib = 1 , nb
-                call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+                if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                     call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+                ibuf(ib) = MPI_REQUEST_NULL
              end do
           end if
 
@@ -1205,7 +1211,8 @@ contains
           deallocate(buf)
        else
           do ib = 1 , nb
-             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                  call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
           deallocate(ibuf)
        end if
@@ -1215,16 +1222,14 @@ contains
 #else
        call die('Error in distribution for, cdf_r_d2D')
 #endif
-    else if ( Node == 0 ) then
+    else if ( lIO ) then
 
        i = sum(ncol(1:no))
        if ( sp_dim == 2 ) then ! collapsed IO
           call ncdf_get_var(ncdf,vname,a(:,1:i), count = (/dim2,i/) )
        else ! non-collapsed IO
-          do s = 1 , dim2 
-             call ncdf_get_var(ncdf,vname,a(1:i,s), &
-                  start = (/1,s/) , count = (/i/) )
-          end do
+          call ncdf_get_var(ncdf,vname,a(1:i,:), &
+               start = (/1,1/) , count = (/i,dim2/) )
        end if
 
     end if
@@ -1232,10 +1237,10 @@ contains
     ! If a distribution is present, then do something
 #ifdef MPI
     if ( lBcast ) then
+
        call MPI_Bcast(a(1,1),dim2*n_nzs,MPI_Double_Precision, &
             0, MPI_Comm_World, MPIError)
-    else if ( Node /= 0 ) then
-       return ! the sparsity pattern will not be created then...
+
     end if
 #endif
 

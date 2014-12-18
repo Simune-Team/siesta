@@ -40,7 +40,8 @@ contains
     if ( sigma_save ) then
        sigma_mean_save = fdf_get('TBT.Sigma.CDF.Save.Mean',.false.)
     end if
-    compress_lvl = fdf_get('TBT.CDF.Compress',0)
+    compress_lvl = fdf_get('CDF.Compress',0)
+    compress_lvl = fdf_get('TBT.CDF.Compress',compress_lvl)
     compress_lvl = fdf_get('TBT.Sigma.CDF.Compress',compress_lvl)
     if ( compress_lvl < 0 ) compress_lvl = 0
     if ( compress_lvl > 9 ) compress_lvl = 9
@@ -224,12 +225,10 @@ contains
             comm = MPI_COMM_WORLD, &
             parallel = .true. )
     else
-       call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true., &
-            compress_lvl = compress_lvl )
+       call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true.)
     end if
 #else
-    call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true., &
-         compress_lvl = compress_lvl )
+    call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true.)
 #endif
 
     ! Save the current system size
@@ -352,7 +351,7 @@ contains
        ! Chunking greatly reduces IO cost
        i = Elecs(iEl)%o_inD%n
        call ncdf_def_var(grp,'Sigma',NF90_DOUBLE_COMPLEX, &
-            (/'no_e','no_e','ne  ','nkpt'/), &
+            (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = compress_lvl, &
             atts = dic , chunks = (/i,i,1,1/) )
        call delete(dic)
 
@@ -539,7 +538,7 @@ contains
        ! Chunking greatly reduces IO cost
        call ncdf_def_var(grp,'SigmaMean',NF90_DOUBLE_COMPLEX, &
             (/'no_e','no_e','ne  '/), chunks = (/no_e,no_e,1/) , &
-            atts = dic )
+            atts = dic ,compress_lvl = compress_lvl )
        call delete(dic)
 
        ! Allocate space for the self-energy mean

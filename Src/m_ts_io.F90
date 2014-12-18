@@ -1122,17 +1122,18 @@ contains
        call MPI_Bcast(Ef,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(Qtot,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
        call MPI_Bcast(Temp,1,MPI_Double_Precision,0, MPI_Comm_World,MPIerror)
+
     end if
 #endif
-    
+
     if ( Node == 0 ) then
        ! Read Geometry information
        allocate(xa(3,na_u))
        allocate(lasto(0:na_u))
+       call ncdf_get_var(ncdf,'xa',xa)
+       call ncdf_get_var(ncdf,'lasto',lasto(1:na_u))
        lasto(0) = 0
     end if
-    call ncdf_get_var(ncdf,'xa',xa)
-    call ncdf_get_var(ncdf,'lasto',lasto(1:na_u))
 
     call ncdf_open_grp(ncdf,'SPARSE',grp)
 
@@ -1366,7 +1367,7 @@ contains
 
   function fname_TSHS(slabel,istep,ia1,onlyS) result(fname)
     character(len=*), intent(in) :: slabel
-    integer, intent(in) :: istep, ia1
+    integer, intent(inout) :: istep, ia1
     logical, intent(in) :: onlyS
     character(len=255) :: fname
     integer :: fL
@@ -1377,8 +1378,20 @@ contains
     ! This is the criteria for not doing an FCrun
     ! There will never be an atom denoted by index 0
     if ( ia1 /= 0 ) then
-       write(fname,'(2i4)') ia1, istep
-       fname = trim(slabel)//fname(1:8)
+       if ( istep == 0 ) then
+          ! this is the "clean" FCrun
+          ia1 = 0
+          ! We need the extra 00000's to let python 
+          ! sort in a stringent way... :(
+          write(fname,'(a,i5.5)') '_',0
+       else
+          ia1 = (istep-mod(istep-1,6))/6+ia1
+          istep = mod(istep-1,6)+1
+          ! Be sure to have the python sorting working by adding
+          ! zeroes
+          write(fname,'(a,i5.5,a,i1)') '_',ia1,'-',istep
+       end if
+       fname = trim(slabel)//trim(fname)
     else
        fname = slabel
     end if

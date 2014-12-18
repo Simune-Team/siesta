@@ -141,6 +141,8 @@ contains
   subroutine fixed( cell, stress, na, isa, amass, xa, fa, cstress, cfa, ntcon , &
        magnitude_usage )
 
+    use intrinsic_missing, only : VNORM
+
     integer,  intent(in)  :: na, isa(na)
     real(dp), intent(in)  :: amass(na), cell(3,3), fa(3,na), stress(3,3), xa(3,na)
     integer, intent(out)  :: ntcon
@@ -388,6 +390,91 @@ contains
           ! hence we remove N degrees of freedom
           ntcon = ntcon + N
          
+       else if ( namec == 'mol-max' ) then
+          
+          ! Calculate total force on the molecule
+          ! this is done using the center-of-force method
+          cf(:) = 0._dp
+          am    = 0._dp
+          
+          do i = 1 , N
+             
+             ia = fixs(if)%a(i)
+
+             if ( VNORM(cfa(:,ia)) > VNORM(cf) ) then
+                cf(:) = cfa(:,ia)
+                am    = amass(ia)
+             end if
+
+          end do
+
+          if ( lmag_use ) then
+             ! do nothing, we have the max force
+          else
+             cf(:) = cf(:) / am
+          end if
+
+          do i = 1 , N
+
+             ia = fixs(if)%a(i)
+             
+             if ( lmag_use ) then
+                cfa(:,ia) = cf(:)
+             else
+                cfa(:,ia) = cf(:) * amass(ia)
+             end if
+
+          end do
+
+          ! we constrain (N - 1) * 3 degrees of freedom (only the relative positions are
+          ! constrained)
+          ntcon = ntcon + ( N - 1 ) * 3
+
+       else if ( namec == 'mol-max-dir' ) then
+          
+          ! Calculate total force on the molecule
+          ! this is done using the center-of-force method
+          cf(:) = 0._dp
+          am    = 0._dp
+          
+          ! not so straight forward constraint
+          do i = 1 , N
+             
+             ia = fixs(if)%a(i)
+
+             if ( VNORM(cfa(:,ia)) > VNORM(cf) ) then
+                cf(:) = cfa(:,ia)
+                am    = amass(ia)
+             end if
+          end do
+
+          if ( lmag_use ) then
+             ! do nothing, we have the max force
+          else
+             cf(:) = cf(:) / am
+          end if
+
+          ! only set the molecular force in the
+          ! specified direction, project onto the fixation vector
+          fxc = sum(fixs(if)%fix(:) * cf(:))
+          cf(:) = cf(:) - fxc * fixs(if)%fix(:)
+
+          do i = 1 , N
+
+             ia = fixs(if)%a(i)
+             
+             if ( lmag_use ) then
+                cfa(:,ia) = cf(:)
+             else
+                cfa(:,ia) = cf(:) * amass(ia)
+             end if
+
+          end do
+
+          ! we constrain N atoms to not move in one direction
+          ! hence we remove N degrees of freedom
+          ntcon = ntcon + N
+         
        end if
        
     end do
@@ -490,7 +577,7 @@ contains
        namec = fdf_bnames(pline,1)
 
        if ( leqi(namec,'position') .or. leqi(namec,'atom') .or. &
-            leqi(namec,'molecule') .or. &
+            leqi(namec,'molecule') .or. leqi(namec,'molecule-max') .or. &
             leqi(namec,'center') .or. &
             leqi(namec,'center-of-mass') ) then
 
@@ -617,6 +704,53 @@ contains
              ! Once we have calculated the relative displacements
              ! we fix the movement by these reals
              fixs(ifix)%type = 'mol-dir'
+             
+             fixs(ifix)%fix(1) = fdf_breals(pline,1)
+             fixs(ifix)%fix(2) = fdf_breals(pline,2)
+             fixs(ifix)%fix(3) = fdf_breals(pline,3)
+
+             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / &
+                  VNORM( fixs(ifix)%fix(:) )
+
+          else
+
+             call die('You *must* specify 0 or 3 real values (not integers) &
+                  &to do a constraint on a molecule.')
+
+          end if
+
+       else if ( leqi(namec,'molecule-max') ) then
+
+          ! We restrict the entire molecule to move "together"
+
+          ifix = ifix + 1
+
+          ! Create a list of atoms from this line
+          call fdf_brange(pline,rr,1,na)
+
+          fixs(ifix)%n = rr%n
+          allocate(fixs(ifix)%a(rr%n))
+          fixs(ifix)%a(:) = rr%r(:)
+
+          ! Clean-up
+          call region_delete(rr)
+
+          ! Here are two variants
+          ! If no reals exists on this line we will force
+          ! the atoms to move relative
+          N = fdf_bnreals(pline)
+          if ( N == 0 ) then
+
+             ! We just force the molecule to move together
+             ! i.e. the relative positions will be the same.
+             fixs(ifix)%type = 'mol-max'
+
+          else if ( N == 3 ) then
+
+             ! Fix the direction specified by the 3 reals
+             ! Once we have calculated the relative displacements
+             ! we fix the movement by these reals
+             fixs(ifix)%type = 'mol-max-dir'
              
              fixs(ifix)%fix(1) = fdf_breals(pline,1)
              fixs(ifix)%fix(2) = fdf_breals(pline,2)

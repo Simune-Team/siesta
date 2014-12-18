@@ -703,7 +703,10 @@ contains
        idx = DA
        return
     end if
-
+    
+    ! If it is size 1, we can immediately return,
+    ! we have already checked the first index
+    if ( DA == 1 ) return
 
     ! An *advanced* search algorithm...
 

@@ -66,7 +66,7 @@ contains
     complex(dp), pointer :: fGf(:), Gf(:), GGG(:)
     integer :: nr, np
     integer :: sIdx, eIdx
-    integer :: ip, cp, n
+    integer :: cp, n
     integer :: sN, sNc
 
     integer :: lsPart, lePart

@@ -27,6 +27,7 @@
 module m_tbt_region2TriMat
 
   ! Use regions...
+  use precision, only : dp, i8b
   use m_region
 
   implicit none
@@ -147,6 +148,7 @@ contains
     use class_Sparsity
     use create_Sparsity_Union
     use parallel, only : IONode, Node, Nodes
+    use fdf, only : fdf_get
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -172,7 +174,7 @@ contains
     ! Local variables
     integer, pointer :: guess_part(:) => null()
     integer, pointer :: mm_col(:,:) => null()
-    integer :: i, no, guess_parts
+    integer :: i, no, guess_parts, max_block
     ! In case of parallel
     integer :: guess_start, guess_step
     logical :: copy_first, lpar
@@ -232,12 +234,19 @@ contains
     ! If the first one happens to be the best partition, 
     ! but non-valid, we need to make sure to overwrite it
     copy_first = .false. ! currently TODO THIS COULD BE A PROBLEM
+
+    ! If the blocks are known by the user to not exceed a certain
+    ! size, then we can greatly reduce the guessing step
+    ! for huge systems
+    max_block = no / 4
+    max_block = fdf_get('TS.TriMat.Block.Max',max_block)
+    max_block = fdf_get('TBT.TriMat.Block.Max',max_block)
     
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
     ! below could be optimized)
-    do i = guess_start , no / 4 , guess_step
+    do i = guess_start , max_block , guess_step
 
        ! Make new guess...
        call guess_TriMat(no,mm_col,i,guess_parts,guess_part,last_eq)
@@ -472,19 +481,24 @@ contains
   function calc_nnzs(parts,n_part) result(nnzs)
     integer, intent(in) :: parts
     integer, intent(in) :: n_part(parts)
+    integer(i8b) :: i8_part(parts)
     integer :: nnzs
+    i8_part(:) = n_part(:)
     ! Calculate size of the tri-diagonal matrix
-    nnzs = sum(n_part(:)**2) + sum(n_part(1:parts-1)*n_part(2:parts))
+    nnzs = sum(i8_part(:)**2) + sum(i8_part(1:parts-1)*i8_part(2:parts))
   end function calc_nnzs
 
-  function faster_parts(np,n_part,ng,guess_part) result(faster)
-    use precision, only: dp, i8b
-    integer, intent(in) :: np, n_part(np)
-    integer, intent(in) :: ng, guess_part(ng)
+  function faster_parts(np,i4n_part,ng,i4g_part) result(faster)
+    integer, intent(in) :: np, i4n_part(np)
+    integer, intent(in) :: ng, i4g_part(ng)
     logical :: faster
 
     integer :: i
     integer(i8b) :: guess_N, part_N, diff
+    integer(i8b) :: n_part(np), guess_part(ng)
+
+    n_part(:) = i4n_part(:)
+    guess_part(:) = i4g_part(:)
 
     ! We estimate the fastest algorithm
     ! by the number of operations the matrices make

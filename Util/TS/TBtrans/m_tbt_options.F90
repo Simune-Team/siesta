@@ -52,6 +52,9 @@ module m_tbt_options
   ! * Should only be edited by experienced users *
   real(dp) :: Elecs_xa_EPS = 1.e-4_dp
 
+  ! Every 5% of the calculation progress it will print an estimation
+  integer :: percent_tracker = 5
+
 #ifdef NCDF_4
   ! Save file names for data files
   character(len=500), save :: cdf_fname = ' '
@@ -90,6 +93,9 @@ contains
 
     ! Read in the temperature
     kT = fdf_get('ElectronicTemperature',1.9e-3_dp,'Ry')
+
+    percent_tracker = fdf_get('TBT.Progress',5)
+    percent_tracker = max(1,percent_tracker)
 
     ! Reading the Transiesta solution method
     chars = fdf_get('TBT.SolutionMethod','tri')
@@ -140,8 +146,8 @@ contains
     end if
 
     ! To determine the same coordinate nature of the electrodes
-    Elecs_xa_EPS= fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
-    Elecs_xa_EPS= fdf_get('TBT.Elecs.Coord.Eps',Elecs_xa_EPS,'Bohr')
+    Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
+    Elecs_xa_EPS = fdf_get('TBT.Elecs.Coord.Eps',Elecs_xa_EPS,'Bohr')
 
     ! detect how many electrodes we have
     N_Elec = fdf_nElec('TBT',Elecs)

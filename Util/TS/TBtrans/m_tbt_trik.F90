@@ -69,7 +69,7 @@ contains
 
     use m_tbt_kpoint, only : nkpnt, kpoint, kweight
 
-    use m_tbt_options, only : save_DATA
+    use m_tbt_options, only : save_DATA, percent_tracker
 #ifdef NCDF_4
     use m_tbt_options, only : cdf_fname, cdf_fname_sigma, cdf_fname_proj
     use m_tbt_sigma_save
@@ -102,6 +102,7 @@ contains
     use m_tbt_proj, only : proj_bMtk, proj_cdf_save_bGammak
     use m_tbt_proj, only : proj_Mt_mix, proj_cdf_save
     use m_tbt_proj, only : proj_cdf_save_J
+    use m_tbt_dH, only : read_next_dH, clean_dH
 #endif
 
 ! ********************
@@ -238,9 +239,9 @@ contains
        pad_LHS = max(pad_LHS,fold_elements(ElTri(iEl)%n,ElTri(iEl)%r))
        ! In case we are doing in-core calculations, 
        ! we need a certain size for the electrode calculation.
-       ! Sadly this is "pretty" high.
+       ! Sadly this is "pretty" big.
        if ( .not. Elecs(iEl)%out_of_core ) then
-          pad_LHS = max(pad_LHS,TotUsedOrbs(Elecs(iEl))**2*8)
+          pad_LHS = max(pad_LHS,Elecs(iEl)%no_u**2*8)
        end if
     end do
 
@@ -549,8 +550,8 @@ contains
           jEl = (itt_cur_step(Kp) - 1) * N_E + iE
           iEl = itt_steps(Kp) * N_E
           io = int(100._dp*real(jEl,dp)/real(iEl,dp))
-          if ( io - last_progress_print >= 5 ) then
-             ! We have passed another 5% of calculation time
+          if ( io - last_progress_print >= percent_tracker ) then
+             ! We have passed another 'percent_tracker'% of calculation time
 
              ! save current progress in integer form
              last_progress_print = io
@@ -594,6 +595,11 @@ contains
           ! We first do it here due to the case of 
           if ( have_E ) cE%fake = .true.
 #endif
+#endif
+
+#ifdef NCDF_4
+          ! prepare dH
+          call read_next_dH(no,bkpt,nE)
 #endif
 
           call timer('SE-dwn',1)
@@ -959,6 +965,9 @@ contains
     call delete(zwork_tri)
 
 #ifdef NCDF_4
+
+    call clean_dH( )
+
     if ( N_proj_T > 0 ) then
        deallocate(El_p%Sigma)
        deallocate(bTk,pDOS)
@@ -1010,6 +1019,9 @@ contains
     use m_ts_cctype, only : ts_c_idx
     use m_tbt_tri_scat, only : insert_Self_Energy_Dev
     use intrinsic_missing, only : SFIND
+#ifdef NCDF_4
+    use m_tbt_dH, only : dH, add_zdH_TriMat
+#endif
 
     ! the current energy point
     type(ts_c_idx), intent(in) :: cE
@@ -1081,6 +1093,13 @@ contains
     end do
 
 !$OMP end parallel
+
+#ifdef NCDF_4
+    if ( dH%lvl > 0 ) then
+       ! Add dH
+       call add_zdH_TriMat(dH%dH, Gfinv_tri, r)
+    end if
+#endif
 
   end subroutine prepare_invGF
 
@@ -1234,6 +1253,10 @@ contains
     use m_tbt_tri_scat, only : insert_Self_Energy
     use intrinsic_missing, only : SFIND
 
+#ifdef NCDF_4
+    use m_tbt_dH, only : dH, add_zdH_Mat
+#endif
+
     ! the current energy point
     complex(dp), intent(in) :: Z
     ! Electrodes...
@@ -1291,6 +1314,13 @@ contains
     call insert_Self_Energy(El,r,off1,n1,off2,n2,M)
 
 !$OMP end parallel
+
+#ifdef NCDF_4
+    if ( dH%lvl > 0 ) then
+       ! Add dH
+       call add_zdH_Mat(dH%dH, r, off1,n1,off2,n2, M)
+    end if
+#endif
 
   end subroutine prep_HS
 

@@ -994,7 +994,7 @@ contains
 
     ! Local variables
     integer :: i,j,k, ia, iaa, this_kcell(3,3)
-    logical :: er, this_er, Gamma
+    logical :: ldie, er, Gamma
     real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
     real(dp) :: max_xa(3), cur_xa(3), p(3), contrib
     real(dp), pointer :: this_xa(:,:)
@@ -1003,7 +1003,7 @@ contains
     integer :: MPIerror
 #endif
 
-    er = .false.
+    ldie = .false.
 
     this_xa => this%xa_used
     xa_o(:) = xa(:,this%idx_a)
@@ -1012,6 +1012,7 @@ contains
 
     max_xa = 0._dp
     iaa = this%idx_a
+    er = .false.
     do ia = 1 , this%na_used
        
        do k = 0 , this%Rep(3) - 1
@@ -1036,6 +1037,8 @@ contains
        end do
        end do
     end do
+
+    ldie = ldie .or. er
 
     if ( er ) then
        
@@ -1076,17 +1079,60 @@ contains
      
     end if
 
+    iaa = this%idx_a
+    er = .false.
+    do ia = 1 , this%na_used
+       do k = 0 , this%Rep(3) - 1
+       do j = 0 , this%Rep(2) - 1
+       do i = 0 , this%Rep(1) - 1
+
+          ! Check number of orbitals for this electrode
+          ! atom
+          if ( lasto(iaa) - lasto(iaa-1) /= &
+               this%lasto_used(ia) - this%lasto_used(ia-1) ) then
+             er = .true.
+          end if
+
+          iaa = iaa + 1
+       end do
+       end do
+       end do
+    end do
+    
+    ldie = ldie .or. er
+    if ( er ) then
+       if ( IONode ) then
+          write(*,'(a)') "Number of orbitals per atom in the electrode does not match the system electrode"
+          write(*,'(a)') 'Have you changed your basis size?'
+          write(*,'(t3,3a20)') "ia system","n_orb_el","n_orb_sys"
+          iaa = this%idx_a
+          do ia = 1 , this%na_used
+             do k = 0 , this%Rep(3) - 1
+             do j = 0 , this%Rep(2) - 1
+             do i = 0 , this%Rep(1) - 1
+
+              ! Check number of orbitals for this electrode
+              ! atom
+                write(*,'(t3,3(i20))')iaa, &
+                     this%lasto_used(ia) - this%lasto_used(ia-1), &
+                     lasto(iaa) - lasto(iaa-1)
+                iaa = iaa + 1
+             end do
+             end do
+             end do
+          end do
+       end if
+
+    end if
+
     if ( nspin /= this%nspin ) then
        write(*,*)"ERROR: Electrode: "//trim(this%name)
        write(*,*) '  nspin=',nspin,' expected:', this%nspin
-       er = .true.
+       ldie = .true.
     end if
 
-    this_er = er
-
+    er = .false.
     if ( present(kcell) .and. this%kcell_check ) then
-
-       er = .false.
 
        call ts_read_TSHS_opt(this%HSfile, &
             kscell=this_kcell,kdispl=this_kdispl, &
@@ -1138,19 +1184,19 @@ contains
 
     end if
 
-    er = this_er .or. er
+    ldie = ldie .or. er
 
 #ifdef MPI
-    call MPI_Bcast(er,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+    call MPI_Bcast(ldie,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
 #endif
 
     if ( Gamma ) then
        write(*,*) 'Electrode : '//trim(this%name)//' is a Gamma-only calculation &
             &this is not feasible.'
-       er = .true.
+       ldie = .true.
     end if
 
-    if ( er ) then
+    if ( ldie ) then
        call die("The electrode does not conform with the system settings. &
             &Please correct accordingly.")
     end if

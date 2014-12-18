@@ -65,6 +65,7 @@
 #endif
 #ifdef TRANSIESTA
       character(len=label_length+13) :: fname
+      integer :: io_iadispl, io_istep
 #endif
 #ifdef CDF
 #ifdef NCDF_4
@@ -191,15 +192,19 @@
 ! TSS Begin
       if (TS_HS_save) then
          if ( idyn.eq.6 ) then
-            fname = fname_TSHS(slabel,ts_istep,ia1,.false.)
+            io_istep   = ts_istep
+            io_iadispl = ia1
+            fname = fname_TSHS(slabel,io_istep,io_iadispl,.false.)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
      &           ucell, nsc, isc_off, na_u, no_s, nspin, 
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto, 
      &           H_2D, S_1D, indxuo,
-     &           Ef, Qtot, Temp, ts_istep, ia1)
+     &           Ef, Qtot, Temp, io_istep, io_iadispl)
          else
-            fname = fname_TSHS(slabel,0,0,.false.)
+            io_istep = 0
+            io_iadispl = 0
+            fname = fname_TSHS(slabel,io_istep,io_iadispl,.false.)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
      &           ucell, nsc, isc_off, na_u, no_s, nspin,
      &           ts_kscell, ts_kdispl, 

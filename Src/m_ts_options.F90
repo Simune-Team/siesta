@@ -142,6 +142,7 @@ contains
     TS_HS_save = fdf_get('TS.HS.Save',.true.)
     TS_DE_save = fdf_get('TS.DE.Save',.false.)
     onlyS      = fdf_get('TS.onlyS',.false.)
+    onlyS      = fdf_get('TS.S.Save',onlyS)
 
     ! Read in the transport direction
     chars = fdf_get('TS.TransportDirection','c')

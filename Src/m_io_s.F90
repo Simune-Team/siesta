@@ -193,7 +193,8 @@ contains
     end do
 
     do ib = 1 , nb
-       call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+       if( ibuf(ib) /= MPI_REQUEST_NULL ) &
+            call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
     end do
     deallocate(ibuf)
 #endif
@@ -232,7 +233,7 @@ contains
     integer, pointer :: l_col(:) => null()
 
     integer :: io, n_nzs, ind, nl, n, i, nb, ib
-    logical :: ldit, lBcast
+    logical :: ldit, lBcast, lIO
     integer, pointer :: lncol(:) => null()
 #ifdef MPI
     integer, allocatable :: ibuf(:)
@@ -247,8 +248,11 @@ contains
 #endif
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
+    ! If one of them is provided, it will only be Node == 0
+    lIO = .not. (lBcast .or. ldit)
+    if ( .not. lIO ) lIO = (Node == 0)
 
-    if ( Node == 0 ) then
+    if ( lIO ) then
 
        if ( present(gncol) ) then
           lncol => gncol
@@ -320,7 +324,8 @@ contains
        end do
 
        do ib = 1 , nb
-          call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+          if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+               call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
        end do
        deallocate(ibuf)
 
@@ -337,12 +342,9 @@ contains
        call MPI_Bcast(ncol(1),nl,MPI_Integer, &
             0,MPI_Comm_World,MPIError)
        
-    else if ( Node == 0 ) then
+    else if ( lIO ) then
        ncol => lncol
-    else ! if ( Node /= 0 ) then
-       ! no distribution, no b-cast.
-       ! The sparsity pattern will only exist on the IONode
-       return ! the sparsity pattern will not be created then...
+
     end if
 #else
     ! Point to the buffer
@@ -432,7 +434,8 @@ contains
           if ( .not. present(gncol) ) deallocate(lncol)
        else
           do ib = 1 , nb
-             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                  call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
        end if
        deallocate(ibuf)
@@ -453,7 +456,7 @@ contains
        call MPI_Bcast(l_col(1),n_nzs,MPI_Integer, &
             0,MPI_Comm_World,MPIError)
 
-    else
+    else if ( lIO ) then
 #endif
 
        ind = 0
@@ -470,11 +473,11 @@ contains
     call newSparsity(sp,nl,no, &
          n_nzs, ncol, l_ptr, l_col, trim(tag))
 
-    if ( lBcast ) then
-       deallocate(l_ptr,l_col)
-    else
-       deallocate(ncol,l_ptr,l_col)
-    end if
+    ! de-allocate
+    deallocate(l_ptr,l_col)
+    if ( ldit ) deallocate(ncol)
+    if ( lBcast .and. Node /= 0 ) deallocate(ncol)
+    if ( lIO .and. .not. present(gncol) ) deallocate(lncol)
 
   end subroutine io_read_Sp
 
@@ -606,7 +609,8 @@ contains
        if ( .not. present(gncol) ) deallocate(lncol)
        if ( Node /= 0 ) then
           do ib = 1 , nb
-             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                  call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
        end if
        deallocate(ibuf)
@@ -629,7 +633,7 @@ contains
     end do
 
 #endif
-    
+
   end subroutine io_write_Sp
 
   subroutine io_read_d1D(iu, sp, dSp1D, tag, dit, Bcast, gncol)
@@ -656,8 +660,8 @@ contains
     real(dp), pointer :: a(:) => null()
     integer, pointer :: lncol(:) => null(), ncol(:)
 
-    integer :: io, lno, no, gind, ind, n_nzs, n, i, j, nb, ib
-    logical :: ldit, lBcast
+    integer :: io, lno, no, ind, n_nzs, n, i, nb, ib
+    logical :: ldit, lBcast, lIO
 #ifdef MPI
     real(dp), allocatable :: buf(:)
     integer, allocatable :: ibuf(:)
@@ -668,6 +672,9 @@ contains
     ldit = present(dit)
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
+    ! If one of them is provided, it will only be Node == 0
+    lIO = .not. (lBcast .or. ldit)
+    if ( .not. lIO ) lIO = (Node == 0)
 
     call attach(sp,nrows=lno,nrows_g=no, n_col=ncol,nnzs=n_nzs)
     if ( ldit ) ldit = lno /= no
@@ -773,33 +780,30 @@ contains
           deallocate(buf)
        else
           do ib = 1 , nb
-             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                  call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
           deallocate(ibuf)
        end if
 #else
        call die('Error in distribution for, io_read_d1D')
 #endif
-    else
+    else if ( lIO ) then
 
-       if ( Node == 0 ) then
-          ind = 0
-          do io = 1 , no
-             read(iu) a(ind+1:ind+ncol(io))
-             ind = ind + ncol(io)
-          end do
-       end if
+       ind = 0
+       do io = 1 , no
+          read(iu) a(ind+1:ind+ncol(io))
+          ind = ind + ncol(io)
+       end do
 
     end if
 
-    ! If a distribution is present, then do something
 #ifdef MPI
     if ( lBcast ) then
+
        call MPI_Bcast(a(1),n_nzs,MPI_Double_Precision, &
             0, MPI_Comm_World, MPIError)
-    
-    else if ( Node /= 0 ) then
-       return ! the sparsity pattern will not be created then...
+
     end if
 #endif
 
@@ -904,7 +908,7 @@ contains
              call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                   BNode, ib, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
-                  call die('Error in code: io_write_dSp1D')
+                  call die('Error in code: io_write_d1D')
 #ifdef TEST_IO
              i = sum(lncol(gio:gio-1+n))
              write(iu) buf(1:i)
@@ -927,7 +931,8 @@ contains
           ! Wait for the last one to not send
           ! two messages with the same tag...
           do ib = 1 , nb
-             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                  call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
           deallocate(ibuf)
        end if
@@ -975,7 +980,7 @@ contains
 
     integer :: io, lno, no, s, ind, n_nzs, n, i, nb, ib
     integer :: sp_dim
-    logical :: ldit, lBcast
+    logical :: ldit, lBcast, lIO
 #ifdef MPI
     real(dp), allocatable :: buf(:)
     integer, allocatable :: ibuf(:)
@@ -986,6 +991,9 @@ contains
     ldit = present(dit)
     lBcast = .false.
     if ( present(Bcast) ) lBcast = Bcast
+    ! If one of them is provided, it will only be Node == 0
+    lIO = .not. (lBcast .or. ldit)
+    if ( .not. lIO ) lIO = (Node == 0)
 
     sp_dim = 1
     if ( present(sparsity_dim) ) sp_dim = sparsity_dim
@@ -1126,7 +1134,9 @@ contains
 
           if ( Node /= 0 .and. s < dim2 ) then
              do ib = 1 , nb
-                call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+                if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                     call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+                ibuf(ib) = MPI_REQUEST_NULL
              end do
           end if
 
@@ -1138,7 +1148,8 @@ contains
           deallocate(buf)
        else
           do ib = 1 , nb
-             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                  call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
           deallocate(ibuf)
        end if
@@ -1148,7 +1159,7 @@ contains
 #else
        call die('Error in distribution for, io_read_d2D')
 #endif
-    else if ( Node == 0 ) then
+    else if ( lIO ) then
 
        if ( sp_dim == 2 ) then ! collapsed IO
           ind = 0
@@ -1171,10 +1182,10 @@ contains
     ! If a distribution is present, then do something
 #ifdef MPI
     if ( lBcast ) then
+
        call MPI_Bcast(a(1,1),dim2*n_nzs,MPI_Double_Precision, &
             0, MPI_Comm_World, MPIError)
-    else if ( Node /= 0 ) then
-       return ! the sparsity pattern will not be created then...
+
     end if
 #endif
 
@@ -1294,7 +1305,7 @@ contains
                 call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                      BNode, ib, MPI_Comm_World, MPIstatus, MPIerror )
                 if ( MPIerror /= MPI_Success ) &
-                     call die('Error in code: io_write_dSp2D')
+                     call die('Error in code (1): io_write_d2D')
 #ifdef TEST_IO
                 i = sum(lncol(gio:gio-1+n))
                 write(iu) buf(1:i)
@@ -1311,7 +1322,9 @@ contains
           end do
           if ( Node /= 0 .and. s < dim2 ) then
              do ib = 1 , nb
-                call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+                if ( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                     call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+                ibuf(ib) = MPI_REQUEST_NULL
              end do
           end if
        end do
@@ -1355,7 +1368,7 @@ contains
              call MPI_Recv( buf(1) , max_n, MPI_Double_Precision, &
                   BNode, ib, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
-                  call die('Error in code: io_write_dSp2D')
+                  call die('Error in code (2): io_write_d2D')
 #ifdef TEST_IO
              i = sum(lncol(gio:gio-1+n))
              write(iu) buf(1:i)
@@ -1378,7 +1391,8 @@ contains
           deallocate(buf)
        else
           do ib = 1 , nb
-             call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
+             if( ibuf(ib) /= MPI_REQUEST_NULL ) &
+                  call MPI_Wait(ibuf(ib),MPIstatus,MPIerror)
           end do
           deallocate(ibuf)
        end if
@@ -1407,41 +1421,58 @@ contains
     
   end subroutine io_write_d2D
   
-  function file_exist(file,Bcast,Comm) result(exist)
+  function file_exist(file,Bcast,Comm,all) result(exist)
 #ifdef MPI
-    use mpi_siesta, only : MPI_Comm_Rank
     use mpi_siesta, only : MPI_Bcast, MPI_Comm_World, MPI_Logical
+    use mpi_siesta, only : MPI_AllGather, MPI_Comm_Rank, MPI_Comm_Size
 #endif
     character(len=*), intent(in) :: file
     logical, intent(in), optional :: Bcast ! whether it should be b-casted
     integer, intent(in), optional :: Comm ! the communicator (default World)
+    logical, intent(in), optional :: all ! whether all Nodes sees the file
     logical :: exist
-    integer :: Rank
 #ifdef MPI
-    integer :: MPIerror
+    logical, allocatable :: nexist(:)
+    integer :: MPIerror, Com, Node, Nodes
 #endif
 
-    Rank = 0
-#ifdef MPI
-    if ( present(Comm) ) then
-       call MPI_Comm_Rank( Comm , Rank, MPIerror )
-    end if
-#endif
-    
     ! Now we have all required information
-    if ( Rank == 0 ) then
-       inquire(file=file, exist=exist)
-    end if
-
+    inquire(file=file, exist=exist)
+    
 #ifdef MPI
+    Com = MPI_Comm_World
+    if ( present(Comm) ) Com = Comm
+
     if ( present(Bcast) ) then
-       if ( present(Comm) ) then
-          call MPI_Bcast(exist,1,MPI_Logical, 0, &
-               Comm, MPIerror)
-       else
-          call MPI_Bcast(exist,1,MPI_Logical, 0, &
-               MPI_Comm_World, MPIerror)
-       end if
+     if ( Bcast ) then
+       
+        call MPI_Bcast(exist,1,MPI_Logical, 0, Com, MPIerror)
+       
+     end if
+
+    else if ( present(all) ) then
+
+     if ( all ) then
+
+        call MPI_Comm_Size( Com, Nodes, MPIerror )
+        call MPI_Comm_Rank( Com, Node , MPIerror )
+        Node = Node + 1
+        allocate( nexist(Nodes) )
+        nexist(Node) = exist
+        call MPI_AllGather(nexist(Node), 1, MPI_Logical, &
+             nexist(1), 1, MPI_Logical, Com, MPIerror )
+        ! I do not know whether my compiler is buggy,
+        ! but just this line will now compile,
+        ! which it really should:
+        !    exist = all( nexist(:) )
+        exist = nexist(1)
+        do Node = 2 , nodes
+           exist = exist .and. nexist(Node)
+        end do
+        deallocate(nexist)
+        
+     end if
+
     end if
 #endif
 
