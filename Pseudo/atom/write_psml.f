@@ -25,7 +25,6 @@
       character*4      :: polattrib, relattrib, coreattrib
       character*10     :: ray(6)
       character*30 xcfuntype, xcfunparam
-      character*30 gridtype, gridunits, gridscale, gridstep
 
       integer                         :: ivps, ip, i
       double precision, allocatable   :: chval(:), f(:)
@@ -72,13 +71,6 @@
 
       end select
 
-! Digest and dump the information about the grid
-      gridtype    = 'log'
-      gridunits   = 'bohr'
-      gridscale   = str(a)
-      gridstep    = str(b)
-      ! Note that in ATOM r(1) = 0.
-      
 
 ! Allocate and define the valence charge density
       allocate(chval(1:nr))
@@ -169,9 +161,11 @@
         call xml_NewElement(xf,"grid")
           call my_add_attribute(xf,"npts",str(nr))
           call xml_NewElement(xf,"annotation")
-           call my_add_attribute(xf,"type","log")
-           call my_add_attribute(xf,"scale",trim(gridscale))
-           call my_add_attribute(xf,"step",trim(gridstep))
+           call my_add_attribute(xf,"type","log-atom")
+           call my_add_attribute(xf,"nrval",str(nr))
+           !   r(i) = a*(exp(b*(i-1))-1)
+           call my_add_attribute(xf,"scale",str(a))
+           call my_add_attribute(xf,"step",str(b))
           call xml_EndElement(xf,"annotation")
 
 

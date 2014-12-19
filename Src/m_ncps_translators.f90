@@ -66,6 +66,10 @@ CONTAINS
         real(dp), parameter :: rmax_def = 120.0_dp ! UCB_COMPAT: 80.0
 
         type(xc_id_t)                        :: xc_id
+        type(ps_annotation_t)                :: grid_annotation
+        character(len=40)                    :: strvalue
+        logical                              :: log_grid_in_file
+        
 
         p%name = ps_AtomicSymbol(ps)
         p%zval         = ps_ZPseudo(ps)
@@ -117,23 +121,22 @@ CONTAINS
          else
             p%nicore = 'nc'
          endif
-
 !
 !       Grid handling. We do not assume that the file
 !       uses a logarithmic grid.
-!
-!       Example of annotation processing
-!!$        grid_annotation = ps_GridAnnotation(ps)
-!!$        nitems = nitems_annotation(grid_annotation)
-!!$        if (nitems /= 0) then
-!!$           print *, "-- Grid annotation:"
-!!$        endif
-!!$        do i = 1, nitems
-!!$           call get_annotation_key(grid_annotation,i,key,stat)
-!!$           call get_annotation_value(grid_annotation,key,value,stat)
-!!$           print *, trim(key), ":", trim(value)
-!!$        enddo
-!!$
+
+           ! We want to check for grid annotations, in case
+           ! the grid is already of the "atom" type
+
+         grid_annotation = ps_GridAnnotation(ps)
+         call get_annotation_value(grid_annotation,  &
+              "type",strvalue,status)
+
+         log_grid_in_file = .false.
+         if (status == 0) then
+            log_grid_in_file = (trim(strvalue) == "log-atom")
+         endif
+
         want_new_grid = .false.
         if (present(new_grid)) then
            want_new_grid = new_grid
@@ -147,16 +150,38 @@ CONTAINS
            p%a = a
            p%b = b
            p%nr = nint(log(rmax_grid/b+1.0d0)/a)
+           p%nrval = p%nr + 1  ! Count also r=0
 
-        !! else if  we want to check for grid annotations...
+        else if (log_grid_in_file) then
+           
+           print *, "Using ATOM log grid already in PSML file ..."
+
+           call get_annotation_value(grid_annotation,  &
+                                     "nrval",strvalue,status)
+           if (status /= 0) call die("Cannot read nrval")
+           read(strvalue,*) p%nrval
+
+              ! Note that a and b are interchanged in Siesta!
+           call get_annotation_value(grid_annotation,  &
+                                      "scale",strvalue,status)
+           if (status /= 0) call die("Cannot read log grid scale")
+           read(strvalue,*) p%b
+           call get_annotation_value(grid_annotation,  &
+                                      "step",strvalue,status)
+           if (status /= 0) call die("Cannot read log grid step")
+           read(strvalue,*) p%a
+
+           p%nr = p%nrval - 1  ! For backwards compatibility
+
         else 
               print *, "Using ATOM defaults for log grid..."
               ! use the ATOM defaults 
-              ! Note that a and b are interchanged...
+              ! Note that a and b are interchanged in Siesta!
               p%a = 1.0_dp / bb_def
               p%b = exp(-aa_def)/znuc
               rmax_grid = rmax_def
               p%nr = nint(log(rmax_grid/(p%b)+1.0d0)/(p%a))
+              p%nrval = p%nr + 1  ! Count also r=0
         endif
 
         p%method(1)    = ps_Creator(ps)
@@ -164,15 +189,11 @@ CONTAINS
         method_string = ps_PseudoFlavor(ps)
         read(method_string,'(4a10)') (p%method(i),i=3,6) 
 
-        p%npotd        = ps_NPotentials(ps)
+        p%npotd        = ps_NPotentials(ps,set="major")
         p%npotu        = ps_NPotentials(ps,set="minor")
 
 ! Allocate the radial variables and semilocal potentials
 
-        ! Note that p's functions start at r=0, whereas
-        ! the file's do not include r=0
-
-        p%nrval        = p%nr + 1
 
         allocate(p%r(1:p%nrval))
         allocate(p%chcore(1:p%nrval))
@@ -190,7 +211,8 @@ CONTAINS
 ! ---
 
 ! Calculate the points of the logarithmic radial grid 
-        ! The first point here (NOT in the files produced by ATOM) is r=0
+        ! The first point here (NOT in the classic files
+        ! produced by ATOM (vps,psf) is r=0
         do ir = 1, p%nrval
            p%r(ir) = p%b * (exp(p%a*(ir-1))-1)
         enddo

@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+December 19, 2014  Alberto Garcia       trunk-462--ncps-45
+Detect atom log grid if present in PSML file
+
+In m_ncps_translators, check the grid annotation in the PSML
+file and re-use the atom-generated grid if present.
+
+modified:
+  Pseudo/atom/write_psml.f
+  Src/m_ncps_translators.f90
+
+------------------------------------------------------------
 December 11, 2014  Alberto Garcia       trunk-462--ncps-44
 Update fhi2psml
 
