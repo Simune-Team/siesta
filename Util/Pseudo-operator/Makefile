@@ -1,5 +1,6 @@
 # Makefile for kbgen
 #
+.SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 .PHONY: ncps clean
@@ -15,43 +16,35 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/nc-pseudo # To pick up mod files
+INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/psml # To pick up mod files
+INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/SiestaXC # To pick up mod files
 #
 # If we have compiled libncps.a using XMLF90 instead of FoX,
 # use the appropriate library
 #
-# First, check whether -DXMLF90 is already an option in the arch.make
-# 
 FPPFLAGS:=$(FPPFLAGS) -DHAS_PSML_SUPPORT
 #
-ifneq (,$(findstring DXMLF90,$(FPPFLAGS)))
- LIBS= $(MAIN_OBJDIR)/libncps.a $(MAIN_OBJDIR)/libxmlparser.a
-else
-#
-# Check whether -DXMLF90 was added on-the-fly while compiling
-# libncps.a. This happens if FoX is not available as an external
-# library (which would include the sax parser), so we fall back to
-# using XMLF90 in the Siesta distribution
-#
-ifeq ($(strip $(FOX_ROOT)),)
-# FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-DXMLF90
-# INCFLAGS:= $(INCFLAGS) -I$(MAIN_OBJDIR)/xmlparser
- LIBS= $(MAIN_OBJDIR)/libncps.a $(MAIN_OBJDIR)/libxmlparser.a
-else
+ifneq (,$(findstring DPSML_USE_FOX,$(FPPFLAGS)))
  include $(MAIN_OBJDIR)/Mk/FoX.mk
- LIBS= $(MAIN_OBJDIR)/libncps.a $(FOX_LIBS) 
+ LIBS= $(MAIN_OBJDIR)/libpsml.a $(FOX_LIBS) 
+else
+#
+ LIBS= $(MAIN_OBJDIR)/libpsml.a $(MAIN_OBJDIR)/libxmlparser.a
 endif
-endif
+LIBS:= $(LIBS) -L$(MAIN_OBJDIR)/SiestaXC -l SiestaXC
 #
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS = precision.o  \
 	atmparams.o atom_options.o \
-	pseudooperator.o module_pseudo.o schrodinger.o arw.o xc.o\
+	pseudooperator.o module_pseudo.o schrodinger.o arw.o\
         local_die.o
 #
 #
-MOD_OBJS=
+MOD_OBJS=m_ncps.o m_ncps_froyen_ps_t.o	\
+         m_ncps_froyen_reader.o	m_ncps_reader.o \
+         m_ncps_translators.o m_ncps_writers.o
+#
 COM_OBJS=$(OBJS) 
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
@@ -59,11 +52,11 @@ $(COM_OBJS):
 #
 what:
 	echo "VPATH: " $(VPATH)
-pseudooperator:  ncps $(ALL_OBJS)
+pseudooperator:  psml $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o pseudooperator $(ALL_OBJS) $(LIBS)
 TEST_OBJS= semicore_info.o test_psml.o local_die.o
 #
-test_psml:  ncps $(TEST_OBJS)
+test_psml:  psml $(TEST_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o test_psml $(TEST_OBJS) $(LIBS)
 #
 arw.o:  precision.o 
@@ -71,14 +64,23 @@ module_pseudo.o: atmparams.o precision.o schrodinger.o
 pseudooperator.o: precision.o atmparams.o module_pseudo.o
 schrodinger.o: arw.o precision.o
 #
+m_ncps.o: m_ncps_froyen_ps_t.o m_ncps_reader.o m_ncps_translators.o
+m_ncps.o: m_ncps_writers.o
+m_ncps_froyen_reader.o: flib_spline.o m_ncps_froyen_ps_t.o
+m_ncps_reader.o: m_ncps_froyen_ps_t.o m_ncps_froyen_reader.o
+m_ncps_reader.o: m_ncps_translators.o
+m_ncps_translators.o: m_ncps_froyen_ps_t.o
+m_ncps_writers.o: m_ncps_froyen_ps_t.o
+
+#
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f pseudooperator *.o  *.a *.pcl *.pc *.mod
 	rm -f *.mod
 #
-ncps:
-	@echo "Making sure that the ncps library is compiled..."
-	(cd ../../$(OBJDIR)/nc-pseudo ; make "VPATH=$(VPATH)/nc-pseudo")
+psml:
+	@echo "Making sure that the psml library is compiled..."
+	(cd ../../$(OBJDIR)/psml ; make "VPATH=$(VPATH)/psml")
 #
 
 

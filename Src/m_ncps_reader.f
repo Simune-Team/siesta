@@ -101,7 +101,7 @@
 
         integer io_ps, i, j
 
-        call io_assign(io_ps)
+        call get_free_lun(io_ps)
         open(io_ps,file=fname,form='formatted',status='unknown',
      $       action="write",position="rewind")
         write(6,'(3a)') 'Dumping pseudopotential information ',
@@ -112,7 +112,28 @@
             write(io_ps,9040) j, p%r(j), (p%vdown(i,j),i=1,p%npotd),
      $                        p%chval(j), p%chcore(j)
          enddo
-         call io_close(io_ps)
+         close(io_ps)
          end subroutine pseudo_dump
+
+      subroutine get_free_lun(lun)
+      integer, intent(out) :: lun
+
+      interface
+         subroutine die(str)
+         character(len=*), intent(in), optional :: str
+         end subroutine die
+      end interface
+
+      logical :: used
+      integer :: iostat
+
+      do lun= 10,90
+         inquire(unit=lun, opened=used, iostat=iostat)
+         if (iostat .ne. 0) used = .true.
+         if (.not. used) return ! normal return with 'lun' value
+      enddo
+      call die("No luns available")
+
+      end subroutine get_free_lun
 
       end module m_ncps_reader

@@ -4,12 +4,15 @@
 ! 1. Read the pseudopotential files
 ! 2. Generate the local part and the Kleynman-Bylander projector
 !
+! Written by Javier Junquera using code from atom.F in Siesta.
+! Re-written by A. Garcia to use the PSML library
+!
 ! Input required:
 !
 !     The name of the file where the pseudopotential is stored 
-!        (here we assume that this name can be constructed from the systemlabel)
+!     (here we assume that this name can be constructed from the systemlabel)
 !     The angular momentum cutoff for KB non-local pseudopotential
-!        (here lmxkb)         
+!     (here lmxkb)         
 !     The number of KB projectors per angular momentum shell
 !     The reference energy for the calculation of the KB projectors
 !
@@ -19,9 +22,10 @@
 
       use precision,        only: dp
       use atmparams,        only: nrmax, nkbmx
-!      use pseudopotential,  only: pseudopotential_t, pseudo_read
       use m_ncps, only: pseudopotential_t => froyen_ps_t, pseudo_read
       use m_pseudooperator, only: radii_ps, vlocal1, vlocal2, KBgen
+      use SiestaXC, only: xc_id_t, get_xc_id_from_atom_id, setXC
+      use SiestaXC, only: atomxc
 
       implicit none
 
@@ -29,7 +33,7 @@
 !     INPUT VARIABLES REQUIRED TO GENERATE THE LOCAL PART AND KB PROJECTORS
 !     THEY MUST BE PROVIDED BY THE USER
 !  
-      character*2             :: systemlabel ! System label, used to identify
+      character(len=30)       :: systemlabel ! System label, used to identify
                                              !   the file where the pseudo is
                                              !   stored
       character*10            :: functl      ! Exchange and correlation function
@@ -47,8 +51,9 @@
 !
 !     DERIVED VARIABLE WHERE THE PSEUDO IS STORED
 !
-      type(pseudopotential_t), target   :: pseudopotential_read
-      type(pseudopotential_t), pointer  :: psr
+      type(pseudopotential_t) :: psr
+      type(xc_id_t)           :: xc_id
+      integer                 :: status
 
 !
 !     VARIABLES RELATED WITH THE RADIAL LOGARITHMIC GRID 
@@ -153,8 +158,8 @@
                                              !   generate the pseudopotential
                                              !   was relativistic (irelt = 1)
                                              !   or no relativistic (irelt = 0)
-      real(dp), allocatable    :: vxc(:)     ! Exchange and correlation potentil
-      real(dp)                 :: chgvps     ! Valence charge of the pseudoion 
+      real(dp), allocatable    :: vxc(:) ! Exchange and correlation potential
+!     ps%gen_zval                            ! Valence charge of the pseudoion 
                                              !   for which the pseudo was 
                                              !   generated in the ATM code
                                              !   (it might not correspond with 
@@ -198,24 +203,8 @@
       is          = 1
 !     Define the system label, used to identify the file where the pseudo is 
 !     stored (here systemlabel.psf or systemlabel.vps)
-      systemlabel = "Si"
-!     Define the exchange and correlation functional to be used
-!              'LDA' or 'LSD' => Local (spin) Density Approximation
-!                       'GGA' => Generalized Gradient Corrections
-!                                Uppercase is optional
-      functl      = "LDA"
-!     Define the parametrization desired:
-!     'CA' or 'PZ' => LSD Perdew & Zunger, PRB 23, 5075 (1981)
-!           'PW91' => GGA Perdew & Wang, JCP, 100, 1290 (1994)
-!           'PW92' => LSD Perdew & Wang, PRB, 45, 13244 (1992). This is
-!                     the local density limit of the next:
-!            'PBE' => GGA Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
-!           'RPBE' => GGA Hammer, Hansen & Norskov, PRB 59, 7413 (1999)
-!         'REVPBE' => GGA Zhang & Yang, PRL 80,890(1998)
-!            'LYP' => GGA Becke-Lee-Yang-Parr (see subroutine blypxc)
-!            'WC'  => GGA Wu-Cohen (see subroutine wcxc)
-!         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
-      author      = "PZ"
+      systemlabel = "Name"
+
 !     Define the angular momentum cutoff for Kleinman-Bylander nonlocal pseudopo
 !     In this example, we will expand up to the f-shell (l=3).
 !     Therefore, we will include (lmxkb + 1) shells
@@ -230,18 +219,10 @@
 !     Define the reference energies (in Ry) for the calculation of the KB proj.
       allocate( erefkb(nkbmx,0:lmxkb) )
       erefkb(:,:) = huge(1.0_dp)
-
 !
 !     READ THE PSEUDOPOTENTIAL FILE
-!     The pseudo is assumed to be in the file systemlabel.psf or systemlabel.vps
-!     It is read and stored in a variable of type pseudopotential_read,
-!     of type pseudopotential_t.
-!     This type of variable is defined in the pseudopotential module,
-!     file pseudopotential.F
 !
-      call pseudo_read( systemlabel, pseudopotential_read )
-      psr => pseudopotential_read
-
+      call pseudo_read( systemlabel, psr)
 !
 !     STORE IN LOCAL VARIABLES SOME OF THE PARAMETERS READ IN THE 
 !     PSEUDOPOTENTIAL, AND DEFINITION OF THE RADIAL LOGARITHMIC GRID
@@ -303,6 +284,16 @@
       nicore = psr%nicore
       irel   = psr%irel
 
+      call get_xc_id_from_atom_id(psr%icorr,xc_id,status)
+      if (status == 0) then
+         functl = xc_id%siestaxc_id%family
+         author = xc_id%siestaxc_id%authors
+      else
+         print *, "**** Cannot process XC info ***"
+         functl = "LDA"
+         author = "PZ"
+      endif
+      call setxc(1,(/functl/),(/author/),(/1.0_dp/),(/1.0_dp/))
 !
 !     COMPUTE THE LOCAL PART OF THE PSEUDOPOTENTIAL
 !
@@ -374,13 +365,15 @@
       allocate( rho(nrmax)    )
       allocate( auxrho(nrmax) )
       allocate( chcore(nrmax) )
-      chgvps = psr%gen_zval
 
 !     Read the valence charge density from the pseudo file
 !     and scale it if the ionic charge of the reference configuration
 !     is not the same as the nominal valence charge of the atom
+
+!     AG: What are we trying to achieve here?
+
       do ir = 1, nrval
-        rho(ir) = chgvps * psr%chval(ir)/zval
+        rho(ir) = psr%gen_zval * psr%chval(ir)/zval
       enddo
 
 !     Find the Hartree potential created by a radial electron density
@@ -411,7 +404,7 @@
       if (irel.eq.'rel') irelt=1
       if (irel.ne.'rel') irelt=0
 
-      call atomxc( functl, author, irelt, nrval, nrmax, rofi,
+      call atomxc( irelt, nrval, nrmax, rofi,
      .             1, auxrho, ex, ec, dx, dc, vxc )
 
 !     Add the exchange and correlation potential to the Hartree potential
@@ -435,26 +428,6 @@
       call KBgen( is, a, b, rofi, drdi, s,
      .            vps, vlocal, ve, nrval, Zval, lmxkb,
      .            nkbl, erefkb, nkb )
-
-!     For debugging
-!!     Check that the pseudopotential has been read
-!      write(6,*)" name         = ", psr%name
-!      write(6,*)" nr           = ", psr%nr
-!      write(6,*)" nrval        = ", psr%nrval
-!      write(6,*)" zval         = ", psr%zval
-!      write(6,*)" gen_zval     = ", psr%gen_zval
-!      write(6,*)" relativistic = ", psr%relativistic
-!      write(6,*)" correlation  = ", psr%correlation
-!      write(6,*)" icorr        = ", psr%icorr
-!      write(6,*)" irel         = ", psr%irel
-!      write(6,*)" nicore       = ", psr%nicore
-!      write(6,*)" a            = ", psr%a
-!      write(6,*)" b            = ", psr%b
-!      write(6,*)" method       = ", psr%method
-!      write(6,*)" text         = ", psr%text
-!      write(6,*)" npotu        = ", psr%npotu
-!      write(6,*)" npotd        = ", psr%npotd
-!     End debugging
 
       deallocate( rofi    )
       deallocate( drdi    )

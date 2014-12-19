@@ -1,4 +1,18 @@
 ------------------------------------------------------------
+December 19, 2014  Alberto Garcia       trunk-462--ncps-46
+Enhance 'pseudooperator' program
+
+The program in Util/Pseudooperator can now deal with any
+pseudopotential file, in .psf, .vps, or .psml format, creating
+the KB potentials (so far with nkbl=1 and with the default options).
+
+modified:
+  Src/m_ncps_reader.f
+  Src/m_ncps_translators.f90
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/pseudooperator.F
+
+------------------------------------------------------------
 December 19, 2014  Alberto Garcia       trunk-462--ncps-45
 Detect atom log grid if present in PSML file
 
