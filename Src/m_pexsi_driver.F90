@@ -299,7 +299,7 @@ options%ordering = fdf_get("PEXSI.ordering",1)
 
 ! Number of processors for symbolic factorization
 ! Only relevant for PARMETIS/PT_SCOTCH
-options%npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
+options%npSymbFact = fdf_get("PEXSI.np-symbfact",1)
 
 verbosity = fdf_get("PEXSI.verbosity",1)
 options%verbosity = verbosity
@@ -434,9 +434,9 @@ if (PEXSI_worker) then
    call de_alloc(colPtrLocal,"colPtrLocal","pexsi_solver")
 
    if ((mpirank == 0) .and. (verbosity >= 2)) then
-      write(6, "(a,f12.4)") "#&s eBandS (eV) = ", bs_energy/eV
-      write(6,"(a,f12.4)") "#&s eBandH (eV) = ", eBandH/eV
-      write(6,"(a,f12.4)") "#&s freeBandEnergy (eV) = ", (free_bs_energy)/eV
+      write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
+      write(6,"(a,f12.4)") "#&s Tr(H*DM) (eV) = ", eBandH/eV
+      write(6,"(a,f12.4)") "#&s Tr(S*FDM) (eV) = ", (free_bs_energy)/eV
    endif
 
    ef = mu

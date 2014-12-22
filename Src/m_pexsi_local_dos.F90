@@ -228,12 +228,7 @@ if (PEXSI_worker) then
   call re_alloc(DMnzvalLocal,1,nnzLocal,"DMnzvalLocal","pexsi_ldos")
 
 ! -- Prepare plan, only for PEXSI_group nodes...
-  numProcRow = sqrt(dble(npPerPole))
-  numProcCol = numProcRow
-
-  if ((numProcRow * numProcCol) /= npPerPole) then
-     call die("not perfect square")
-  endif
+  call get_row_col(npPerPole,numProcRow,numProcCol)
 
   outputFileIndex = mpirank
 !
@@ -258,7 +253,7 @@ call check_info(info,"plan_initialize in LDOS")
   options%ordering = fdf_get("PEXSI.ordering",1)
   ! Number of processors for symbolic factorization
   ! Only relevant for PARMETIS/PT_SCOTCH
-  options%npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
+  options%npSymbFact = fdf_get("PEXSI.np-symbfact",1)
   options%verbosity = fdf_get("PEXSI.verbosity",1)
 
   call f_ppexsi_load_real_symmetric_hs_matrix(&
@@ -414,5 +409,21 @@ character(len=*), intent(in) :: str
 end subroutine check_info
 
 end subroutine get_LDOS_SI
+
+subroutine get_row_col(np,nrow,ncol)
+integer, intent(in)  :: np
+integer, intent(out) :: nrow, ncol
+!
+! Finds the factors nrow and ncol such that nrow*ncol=np,
+! are as similar as possible, and nrow>=ncol.
+! For prime np, ncol=1, nrow=np.
+
+ncol  = floor(sqrt(dble(np)))
+do
+  nrow = np/ncol
+  if (nrow*ncol == np) exit
+  ncol = ncol - 1
+enddo
+end subroutine get_row_col
 
 END module m_pexsi_local_dos

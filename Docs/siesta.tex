@@ -4995,9 +4995,16 @@ Effective number of poles used to expand the Fermi-Dirac function.
 \item[{\bf PEXSI.deltaE}] ({\it real energy}):
 \index{PEXSI.deltaE@{\bf PEXSI.deltaE}}
 
-An upper bound for the spectral radius of $S^{-1} H$. 
+In principle {\bf PEXSI.deltaE} should be $E_{\max}-\mu$, where
+$E_{\max}$ is the largest eigenvalue for ($H$,$S$), and $\mu$ is the
+chemical potential.  However, due to the fast decay of the Fermi-Dirac
+function, {\bf PEXSI.deltaE} can often be chosen to be much lower.  In
+practice we set the default to be 3 Ryd.  This number should be set to
+be larger if the difference between Tr[H*DM] and Tr[S*EDM] (displayed
+in the output if {\bf PEXSI.verbosity} is at least 2) does not
+decrease with the increase of the number of poles.
 
-{\it Default value:} {\tt 3 Ryd (??)}
+{\it Default value:} {\tt 3 Ryd}
 
 
 \item[{\bf PEXSI.gap}] ({\it real energy}):
@@ -5047,27 +5054,37 @@ using the minimum value of this parameter which is compatible with the
 memory footprint. The additional parallelization over poles will be
 irrelevant for cost, but it will obviously affect the time to solution.
 
-NOTE: This number must be a perfect square (is this still true?)
+Internally, {\sc SIESTA} computes the processor grid parameters {\tt
+  nprow} and {\tt npcol} for the PEXSI library, with {\tt nprow} $>$=
+{\tt npcol}, and as similar as possible. So it is best to choose {\bf
+  PEXSI.np-per-pole} as the product of two similar numbers.
 
 {\it Default value:} {\tt 4}
+
+\item[{\bf PEXSI.ordering}] ({\it integer}):
+  \index{PEXSI.ordering@{\bf PEXSI.ordering}} 
+%
+For large matrices, symbolic factorization should be performed in
+parallel to reduce the wall clock time.  This can be done using
+ParMETIS/PT-Scotch by setting {\bf PEXSI.ordering} to 0.  However, we have
+been experiencing some instability problem of the symbolic
+factorization phase when ParMETIS/PT-Scotch is used.  In such case,
+for relatively small matrices one can either use the sequential METIS
+({\bf PEXSI.ordering} = 1) or set {\bf PEXSI.np-symbfact} to 1.
+
+{\it Default value:} {\tt 1}
 
 \item[{\bf PEXSI.np-symbfact}] ({\it integer}):
   \index{PEXSI.np-symbfact@{\bf PEXSI.np-symbfact}} 
 %
 Number of MPI processes used to perform the symbolic factorizations
 needed in the PEXSI procedure.
+A default value should be given to reduce the instability problem.
+From experience so far setting this to be 1 is most stable, but going
+beyond 64 does not usually improve much.  
 
-{\it Default value:} {\tt (the number of MPI processes per pole)}
+{\it Default value:} {\tt 1}
 
-\item[{\bf PEXSI.ordering}] ({\it integer}):
-  \index{PEXSI.ordering@{\bf PEXSI.ordering}} 
-%
-It determines the library to be used in the preliminary re-ordering
-involved in the matrix decompositions to minimize the fill-in.
-Possible values: 1: Use METIS (i.e., in serial mode); 0: Use
-PARMETIS/PTSCOTCH in parallel.
-
-{\it Default value:} {\tt 1 (why?)}
 
 \item[{\bf PEXSI.verbosity}] ({\it integer}):
   \index{PEXSI.verbosity@{\bf PEXSI.verbosity}} 
@@ -5077,7 +5094,11 @@ different places. A value of zero gives minimal information.
 %
 \begin{itemize}
 \item In the files logPEXSI[0-9]+, the verbosity level is interpreted
-  by the PEXSI library itself.
+  by the PEXSI library itself. In the latest version, when PEXSI is
+  compiled in RELEASE mode, only logPEXSI0 is given in the output.
+  This is because we have observed that simultaneous output for all
+  processors can have very significant cost for a large number of
+  processors ($>$10000).
 \item In the SIESTA output file, a verbosity level of 1 and above will print
   lines (prefixed by '\&o') indicating the various heuristics used at
   each scf step. A verbosity level of 2 and above will print extra
@@ -5102,8 +5123,7 @@ iteration of the solver, the number of electrons is computed as the
 trace of the density matrix times the overlap matrix, and compared
 with the total number of electrons in the system. This tolerance can
 be fixed, or dynamically determined as a function of the degree of
-convergence of the self-consistent-field loop (see Advanced PEXSI
-Options).
+convergence of the self-consistent-field loop.
 
 {\it Default value:} {\tt $10^{-4}$}
 
@@ -5151,6 +5171,11 @@ DM.NormalizationTolerance 1.0e-3
 will allow a 0.1\% error in the number of electrons. For obvious
 reasons, this feature, which is also useful in connection with the 
 dynamic tolerance update, should not be abused.
+
+If the parameters of the PEXSI solver are adjusted correctly
+(including a judicious use of inertia-counting to refine the $\mu$
+bracket), we should expect that the maximum number of solver
+iterations needed is around 3
 
 {\it Default value:} {\tt 10}
 

@@ -1,4 +1,25 @@
 ------------------------------------------------------------
+December 22, 2014  A. Garcia        trunk-464--pexsi-v0.7-14
+Clarifications in the manual. Non-square np-per-pole.
+
+Made some clarifications in the manual on the basis of feedback from
+Lin Lin.
+
+- The restriction of being a perfect square for np-per-pole has been lifted. 
+
+- New default of 1 for PEXSI.np-symbfact.
+
+- Clearer labeling for different ways of computing the band-structure
+  energy (displayed when verbosity >= 2)
+
+modified:
+  Docs/siesta.tex
+  Src/m_pexsi.f90
+  Src/m_pexsi_dos.F90
+  Src/m_pexsi_driver.F90
+  Src/m_pexsi_local_dos.F90
+
+------------------------------------------------------------
 December 17, 2014  A. Garcia        trunk-464--pexsi-v0.7-13
 Some more documentation. Update of PEXSI tests.
 

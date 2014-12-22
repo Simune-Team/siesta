@@ -126,12 +126,7 @@ call MPI_Comm_create(World_Comm, PEXSI_Group,&
 PEXSI_worker = (mpirank < npPerPole)
 
 ! -- Prepare plan
-numProcRow = sqrt(dble(npPerPole))
-numProcCol = numProcRow
-
-if ((numProcRow * numProcCol) /= npPerPole) then
-  call die("not perfect square")
-endif
+call get_row_col(npPerPole,numProcRow,numProcCol)
 
 outputFileIndex = mpirank
 
@@ -245,7 +240,7 @@ options%ordering = fdf_get("PEXSI.ordering",1)
 
 ! Number of processors for symbolic factorization
 ! Only relevant for PARMETIS/PT_SCOTCH
-options%npSymbFact = fdf_get("PEXSI.np-symbfact",npPerPole)
+options%npSymbFact = fdf_get("PEXSI.np-symbfact",1)
 
 options%verbosity = fdf_get("PEXSI.verbosity",1)
 
@@ -353,4 +348,21 @@ character(len=*), intent(in) :: str
 end subroutine check_info
 
 end subroutine pexsi_DOS
+
+subroutine get_row_col(np,nrow,ncol)
+integer, intent(in)  :: np
+integer, intent(out) :: nrow, ncol
+!
+! Finds the factors nrow and ncol such that nrow*ncol=np,
+! are as similar as possible, and nrow>=ncol.
+! For prime np, ncol=1, nrow=np.
+
+ncol  = floor(sqrt(dble(np)))
+do
+  nrow = np/ncol
+  if (nrow*ncol == np) exit
+  ncol = ncol - 1
+enddo
+end subroutine get_row_col
+
 end module m_pexsi_DOS

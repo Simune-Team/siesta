@@ -19,12 +19,7 @@ subroutine pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
   integer :: numProcRow, numProcCol
   integer :: outputFileIndex, info
 
-numProcRow = sqrt(dble(npPerPole))
-numProcCol = numProcRow
-
-if ((numProcRow * numProcCol) /= npPerPole) then
-  call die("not perfect square")
-endif
+call get_row_col(npPerPole,numProcRow,numProcCol)
 
 outputFileIndex = mpirank
 
@@ -52,5 +47,21 @@ subroutine pexsi_finalize_scfloop() ! mpirank)
 !     print *, "Info in plan_finalize: ", info
 !  endif
 end subroutine pexsi_finalize_scfloop
+
+subroutine get_row_col(np,nrow,ncol)
+integer, intent(in)  :: np
+integer, intent(out) :: nrow, ncol
+!
+! Finds the factors nrow and ncol such that nrow*ncol=np,
+! are as similar as possible, and nrow>=ncol.
+! For prime np, ncol=1, nrow=np.
+
+ncol  = floor(sqrt(dble(np)))
+do
+  nrow = np/ncol
+  if (nrow*ncol == np) exit
+  ncol = ncol - 1
+enddo
+end subroutine get_row_col
   
 end module m_pexsi
