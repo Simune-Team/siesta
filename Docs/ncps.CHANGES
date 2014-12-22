@@ -1,4 +1,18 @@
 ------------------------------------------------------------
+December 22, 2014  Alberto Garcia       trunk-462--ncps-47
+More enhancements to 'pseudooperator', renamed 'psop'
+
+Basic command-line interface and extension discovery.
+Output to XML, intended to be included in a generalized PSML.
+
+renamed:
+  Util/Pseudo-operator/pseudooperator.F => Util/Pseudo-operator/psop.f90
+modified:
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+
+------------------------------------------------------------
 December 19, 2014  Alberto Garcia       trunk-462--ncps-46
 Enhance 'pseudooperator' program
 

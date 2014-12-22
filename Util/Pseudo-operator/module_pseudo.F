@@ -448,7 +448,7 @@ C**** If third derivative fit
 
       subroutine KBgen( is, a, b, rofi, drdi, s, 
      .                  vps, vlocal, ve, nrval, Zval, lmxkb, 
-     .                  nkbl, erefkb, nkb )
+     .                  nkbl, erefkb, nkb, xf )
 
 !      use basis_specs, only: restricted_grid
 
@@ -461,6 +461,7 @@ C**** If third derivative fit
 !  Modified by DSP to allow more than one projector per l, July 1999.
 !  Separated in an independent module by JJ, April 2013.
 !
+      use flib_wxml
 
       implicit none
 
@@ -494,6 +495,8 @@ C**** If third derivative fit
                                             ! Reference energies for the 
                                             !  calculation of KB projectors
       integer, intent(out) :: nkb           ! Total number of KB projectors
+
+      type(xmlf_t), intent(inout) :: xf
 
 
 !     Internal variables
@@ -617,6 +620,17 @@ C**** If third derivative fit
 
           write(filename,"(a,i1,a,i1)")  "KBProj.", l, ".", ikb
           call file_out(nrc,rofi,proj,trim(filename)) 
+
+            call xml_NewElement(xf,"proj")
+            call my_add_attribute(xf,"l",str(l))
+            call my_add_attribute(xf,"n",str(ikb))
+            call my_add_attribute(xf,"ekb",str(ekb(ikb,l)))
+             call xml_NewElement(xf,"radfunc")
+               call xml_NewElement(xf,"data")
+                 call xml_AddArray(xf, 0.5d0 * proj(1:nrval))
+               call xml_EndElement(xf,"data")
+             call xml_EndElement(xf,"radfunc")
+            call xml_EndElement(xf,"proj")
 
 !!         Common block with the information about the  KB projectors
 !          call comKB(is, a, b, rofi, proj,
@@ -1110,5 +1124,14 @@ C     D. Sanchez-Portal, Aug. 1998
         call die("No luns available")
 
         end subroutine get_free_lun
+
+      subroutine my_add_attribute(xf,name,value)
+      use flib_wxml 
+      type(xmlf_t), intent(inout)   :: xf
+      character(len=*), intent(in)  :: name
+      character(len=*), intent(in)  :: value
+
+       call xml_AddAttribute(xf,name,trim(value))
+      end subroutine my_add_attribute
 
       end module m_pseudooperator

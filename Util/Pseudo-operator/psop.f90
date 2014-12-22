@@ -1,4 +1,4 @@
-      program pseudooperator
+      program psop
 
 ! Stand alone program to:
 ! 1. Read the pseudopotential files
@@ -26,6 +26,8 @@
       use m_pseudooperator, only: radii_ps, vlocal1, vlocal2, KBgen
       use SiestaXC, only: xc_id_t, get_xc_id_from_atom_id, setXC
       use SiestaXC, only: atomxc
+      use m_getopts
+      use flib_wxml
 
       implicit none
 
@@ -33,6 +35,8 @@
 !     INPUT VARIABLES REQUIRED TO GENERATE THE LOCAL PART AND KB PROJECTORS
 !     THEY MUST BE PROVIDED BY THE USER
 !  
+      character(len=200)      :: filename
+
       character(len=30)       :: systemlabel ! System label, used to identify
                                              !   the file where the pseudo is
                                              !   stored
@@ -53,6 +57,7 @@
 !
       type(pseudopotential_t) :: psr
       type(xc_id_t)           :: xc_id
+      type(xmlf_t)            :: xf
       integer                 :: status
 
 !
@@ -195,15 +200,51 @@
       real(dp)                 :: r2         ! Local variables
       integer                  :: nkb        ! Number of KB projectors
 
+      character(len=200) :: opt_arg, mflnm, ref_line
+      character(len=10)  :: opt_name 
+      integer :: nargs, iostat, n_opts, nlabels, iorb, ikb
+!
+!     Process options
+!
+      n_opts = 0
+      do
+         call getopts('h',opt_name,opt_arg,n_opts,iostat)
+         if (iostat /= 0) exit
+         select case(opt_name)
+           case ('h')
+            call manual()
+           case ('?',':')
+             write(0,*) "Invalid option: ", opt_arg(1:1)
+             write(0,*) "Usage: mprop [ -d ] [ -h ] MPROP_FILE_ROOT"
+             write(0,*) "Use -h option for manual"
+             STOP
+          end select
+       enddo
+
+       nargs = command_argument_count()
+       nlabels = nargs - n_opts + 1
+       if (nlabels /= 1)  then
+          write(0,*) "Usage: psop [ -h ] FILE"
+          write(0,*) "Use -h option for manual"
+          STOP
+       endif
+
+       call get_command_argument(n_opts,value=filename,status=iostat)
+       if (iostat /= 0) then
+          STOP "Cannot get filename"
+       endif
+
+!       write(0,*) "Filename: ", trim(filename)
+       call get_label(filename,systemlabel,status)
+       if (status /= 0) call die("Cannot get file extension")
+!       write(0,*) "Filename, label: ", trim(filename), trim(systemlabel)
+
       pi = dacos(-1.0_dp)
 !
 !     DEFINE THE INPUT VARIABLES:
 !     This must be done by the user before compiling and running the code
 !
       is          = 1
-!     Define the system label, used to identify the file where the pseudo is 
-!     stored (here systemlabel.psf or systemlabel.vps)
-      systemlabel = "Name"
 
 !     Define the angular momentum cutoff for Kleinman-Bylander nonlocal pseudopo
 !     In this example, we will expand up to the f-shell (l=3).
@@ -250,12 +291,6 @@
         rpb      = rpb * ea
       enddo
 
-!!     For debugging
-!      do ir = 1, nrval
-!        write(6,'(i5,3f20.12)') ir, rofi(ir), drdi(ir), s(ir)
-!      enddo
-!!     End debugging
-
 ! 
 !     STORE THE IONIC PSEUDOPOTENTIALS IN A LOCAL VARIABLE 
 !     Only the 'down' component is used
@@ -265,14 +300,14 @@
       do ndown = 1, lmxkb + 1
          l = psr%ldown(ndown)
          if( l .ne. ndown-1) then
-           write(6,'(a)')
-     .       'atom: Unexpected angular momentum  for pseudopotential'
-           write(6,'(a)')
-     .       'atom: Pseudopotential should be ordered by increasing l'
+           write(6,'(a)') &
+             'atom: Unexpected angular momentum  for pseudopotential'
+           write(6,'(a)') &
+             'atom: Pseudopotential should be ordered by increasing l'
          endif
          vps(1:nrval,l) = psr%vdown(ndown,1:nrval)
-!        The semilocal components of the pseudopotential are read in r*V format.
-!        Here we compute the pseudopotential part dividing by r.
+!       vps contains r*V...
+!       Here we compute the pseudopotential part dividing by r.
          do ir = 2, nrval
            vps(ir,l) = vps(ir,l) / rofi(ir)
          enddo
@@ -306,8 +341,8 @@
 !     asymptotic behaviour 2*Zval/r.
 !     For just one pseudopotential Rgauss is taken equal to Rgauss2
 !
-      call radii_ps( vps, rofi, Zval, nrval, lmxkb,
-     .               nrgauss, rgauss, rgauss2 )
+      call radii_ps( vps, rofi, Zval, nrval, lmxkb, &
+                    nrgauss, rgauss, rgauss2 )
 
 ! 
 !     Calculate local pseudopotential
@@ -324,30 +359,30 @@
 !       of the local potential, making it join the Vps's smoothly at rgauss.
 !
         write(6,'(/,a,f10.5)') 'atom: Estimated core radius ', rgauss2
-        if( nicore .eq. 'nc ')
-     .    write(6,'(/,2a)')'atom: Including non-local core corrections',
-     .                     ' could be a good idea'
+        if( nicore .eq. 'nc ') &
+         write(6,'(/,2a)')'atom: Including non-local core corrections', &
+                          ' could be a good idea'
 
 !       As all potentials are equal beyond rgauss, we can just use the
 !       s-potential here.
-        call vlocal2( Zval, nrval, a, rofi, drdi, s, vps(:,0),
-     .                nrgauss, vlocal, nchloc, chlocal )
+        call vlocal2( Zval, nrval, a, rofi, drdi, s, vps(:,0), &
+                     nrgauss, vlocal, nchloc, chlocal )
 
       else
 !       In this case the pseudopotential reach to asymptotic behaviour 2*Zval/r
 !       for a radius approximately equal to Rc. We build a generalized-gaussian
 !       "local charge density" and set Vlocal as the potential generated by
 !       it. Note that chlocal is negative.
-        call vlocal1( Zval, nrval, a, rofi, drdi, s, rgauss,
-     .                vlocal, nchloc, chlocal )
+        call vlocal1( Zval, nrval, a, rofi, drdi, s, rgauss, &
+                     vlocal, nchloc, chlocal )
       endif
 
 !
 ! Save local-pseudopotential charge
 ! 
       rchloc=rofi(nchloc)
-      write(6,'(2a,f10.5)') 'atom: Maximum radius for' ,
-     .  ' 4*pi*r*r*local-pseudopot. charge ',rchloc
+      write(6,'(2a,f10.5)') 'atom: Maximum radius for' , &
+       ' 4*pi*r*r*local-pseudopot. charge ',rchloc
 
 !!     For debugging
 !      do ir = 1, nrval
@@ -404,8 +439,8 @@
       if (irel.eq.'rel') irelt=1
       if (irel.ne.'rel') irelt=0
 
-      call atomxc( irelt, nrval, nrmax, rofi,
-     .             1, auxrho, ex, ec, dx, dc, vxc )
+      call atomxc( irelt, nrval, nrmax, rofi, &
+                   1, auxrho, ex, ec, dx, dc, vxc )
 
 !     Add the exchange and correlation potential to the Hartree potential
       ve(1:nrval) = ve(1:nrval) + vxc(1:nrval)
@@ -425,9 +460,50 @@
 !
 !     Calculation of the Kleinman-Bylander projector functions
 !
-      call KBgen( is, a, b, rofi, drdi, s,
-     .            vps, vlocal, ve, nrval, Zval, lmxkb,
-     .            nkbl, erefkb, nkb )
+
+      call xml_OpenFile("VNL",xf, indent=.false.)
+!
+!     Generate xml snippet
+!
+      call xml_NewElement(xf,"pseudopotential-operator")
+      call my_add_attribute(xf,"version","0.1")
+      call my_add_attribute(xf,"energy_unit","hartree")
+      call my_add_attribute(xf,"length_unit","bohr")
+
+        call xml_NewElement(xf,"grid")
+          call my_add_attribute(xf,"npts",str(nrval))
+          call xml_NewElement(xf,"annotation")
+           call my_add_attribute(xf,"type","log-atom")
+           call my_add_attribute(xf,"nrval",str(nrval))
+           !   r(i) = a*(exp(b*(i-1))-1)
+           call my_add_attribute(xf,"scale",str(b))
+           call my_add_attribute(xf,"step",str(a))
+          call xml_EndElement(xf,"annotation")
+
+
+          call xml_NewElement(xf,"grid-data")
+           call xml_AddArray(xf,rofi(1:nrval))
+          call xml_EndElement(xf,"grid-data")
+        call xml_EndElement(xf,"grid")
+
+        call xml_NewElement(xf,"local-potential")
+             call xml_NewElement(xf,"radfunc")
+               call xml_NewElement(xf,"data")
+                 call xml_AddArray(xf, 0.5d0 * vlocal(1:nrval))
+               call xml_EndElement(xf,"data")
+             call xml_EndElement(xf,"radfunc")
+        call xml_EndElement(xf,"local-potential")
+
+      call xml_NewElement(xf,"projectors")
+
+      call KBgen( is, a, b, rofi, drdi, s, &
+                 vps, vlocal, ve, nrval, Zval, lmxkb, &
+                 nkbl, erefkb, nkb, xf )
+
+      call xml_EndElement(xf,"projectors")
+
+      call xml_EndElement(xf,"pseudopotential-operator")
+      call xml_Close(xf)
 
       deallocate( rofi    )
       deallocate( drdi    )
@@ -442,4 +518,45 @@
       deallocate( erefkb  )
       deallocate( nkbl    )
 
-      end program pseudooperator
+CONTAINS
+  
+subroutine get_label(str,label,stat)
+ character(len=*), intent(in)   :: str
+ character(len=*), intent(out)  :: label
+ integer, intent(out)           :: stat
+
+ integer n, i, lo, hi
+
+ n = len_trim(str)
+ stat = -1
+ lo = 1
+ hi = -1
+ do i = n, 1, -1
+!    print *, "i, c:", i, "|",str(i:i),"|"
+    if (str(i:i) == ".") then
+       hi = i-1
+!       print *, "hi set to: ", hi
+       exit
+    endif
+ enddo
+
+ if (hi>=lo) then
+    stat = 0
+    label=str(lo:hi)
+ endif
+
+end subroutine get_label
+
+      subroutine my_add_attribute(xf,name,value)
+      type(xmlf_t), intent(inout)   :: xf
+      character(len=*), intent(in)  :: name
+      character(len=*), intent(in)  :: value
+
+       call xml_AddAttribute(xf,name,trim(value))
+      end subroutine my_add_attribute
+
+subroutine manual()
+  write(0,*) "Manual under construction"
+end subroutine manual
+
+end program psop
