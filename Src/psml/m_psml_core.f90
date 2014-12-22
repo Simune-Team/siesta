@@ -28,6 +28,7 @@ use external_interfaces, only: die
 implicit none
 
 integer, parameter, private    :: MAXN_POTS = 8
+integer, parameter, private    :: MAXN_PROJS = 16
 integer, parameter, private    :: MAXN_SHELLS = 8
 integer, parameter, private    :: MAXN_WFNS = 8
 integer, parameter, private    :: dp = selected_real_kind(14)
@@ -97,6 +98,32 @@ type, public :: semilocal_t
       integer, dimension(MAXN_POTS)           :: minor
 end type semilocal_t
 
+type, public :: psoperator_t
+   !
+   ! Optional private grid
+   !
+      type(grid_t), pointer                     :: grid => null()
+   !
+   ! Vlocal
+   !
+      type(radfunc_t)                          :: Vlocal
+      character(len=40)                        :: vlocal_kind
+   ! Projectors
+      integer                          :: nprojs = 0
+      integer                          :: nprojs_major = 0
+      integer                          :: nprojs_minor = 0
+      integer, dimension(MAXN_PROJS)           :: n
+      character(len=1), dimension(MAXN_PROJS)  :: l
+      character(len=5), dimension(MAXN_PROJS)  :: set
+      character(len=40), dimension(MAXN_PROJS) :: type
+      real(dp), dimension(MAXN_PROJS)          :: ekb
+      type(radfunc_t), dimension(MAXN_PROJS)   :: proj
+      !
+      ! indexes
+      integer, dimension(MAXN_PROJS)           :: major
+      integer, dimension(MAXN_PROJS)           :: minor
+end type psoperator_t
+
 type, public :: pswfs_t
       character(len=40)                :: format
       integer                          :: npswfs = 0
@@ -134,6 +161,7 @@ type, public :: ps_t
       type(xc_t)                         :: xc_info
       type(grid_t), pointer              :: global_grid => null()
       type(semilocal_t)                  :: semilocal
+      type(psoperator_t)                 :: psoperator
       type(pswfs_t)                      :: pswfs
       !
       type(valence_charge_t)             :: valence_charge
@@ -179,11 +207,18 @@ public :: ps_PotentialL
 public :: ps_PotentialN
 public :: ps_PotentialRc
 
+public :: ps_NProjectors
+public :: ps_ProjectorL
+public :: ps_ProjectorN
+public :: ps_ProjectorEkb
+
 public :: ps_NPseudoWfs
 public :: ps_PseudoWfL
 public :: ps_PseudoWfN
 
 public :: ps_EvaluatePotential
+public :: ps_EvaluateLocalPotential
+public :: ps_EvaluateProjector
 public :: ps_EvaluatePseudoWf
 public :: ps_EvaluateValenceCharge
 public :: ps_EvaluateCoreCharge
@@ -198,9 +233,6 @@ type(ps_t)     :: ps
 
 integer :: i
 
-if (associated(ps%global_grid)) then
-   call destroy_grid(ps%global_grid)
-endif
 !
 ! Note that freshly declared objects must have
 ! npots = 0 and npswfs = 0 !
@@ -208,11 +240,25 @@ endif
 do i = 1, ps%semilocal%npots
    call destroy_radfunc(ps%semilocal%V(i))
 enddo
+!
+do i = 1, ps%psoperator%nprojs
+   call destroy_radfunc(ps%psoperator%proj(i))
+enddo
+call destroy_radfunc(ps%psoperator%vlocal)
+if (associated(ps%psoperator%grid)) then
+   call destroy_grid(ps%psoperator%grid)
+endif
+!
 do i = 1, ps%pswfs%npswfs
    call destroy_radfunc(ps%pswfs%Phi(i))
 enddo
+!
 call destroy_radfunc(ps%valence_charge%rho_val)
 call destroy_radfunc(ps%core_charge%rho_core)
+!
+if (associated(ps%global_grid)) then
+   call destroy_grid(ps%global_grid)
+endif
 
 end subroutine ps_destroy
 
@@ -711,6 +757,139 @@ else
 endif
 
 end function ps_EvaluatePseudoWf
+!
+!====================================================
+! Pseudopotential operator (Vlocal, projectors)
+!
+function ps_EvaluateLocalPotential(ps,r,debug) result(val)
+type(ps_t), intent(in) :: ps
+real(dp), intent(in)       :: r
+logical, intent(in), optional :: debug
+real(dp)                   :: val
+
+if (r > max_range(ps%psoperator%Vlocal)) then
+   val = 0.0_dp
+else
+   val = eval_radfunc(ps%psoperator%Vlocal,r,debug)
+endif
+end function ps_EvaluateLocalPotential
+!
+!> @brief Number of projectors
+function ps_NProjectors(ps,set) result(n)
+type(ps_t), intent(in) :: ps
+character(len=5), intent(in), optional :: set
+integer                    :: n
+
+logical major
+
+major = .true.
+
+if (present(set)) then
+   if (set == "minor") then
+      major = .false.
+   endif
+endif
+
+if (major) then
+   n = ps%psoperator%nprojs_major
+else
+   n = ps%psoperator%nprojs_minor
+endif
+   
+end function ps_NProjectors
+!
+!
+function ps_ProjectorL(ps,i,set) result(l)
+type(ps_t), intent(in) :: ps
+integer,   intent(in)      :: i
+character(len=5), intent(in), optional :: set
+integer                    :: l
+
+character(len=1), dimension(0:4) :: sym = (/ "s", "p", "d", "f", "g" /)
+character(len=1) :: str
+
+integer :: idx
+
+idx = ps_GetProjectorIndex(ps,i,set)
+str = ps%psoperator%l(idx)
+!
+do l = 0,4
+   if (str == sym(l)) RETURN
+enddo
+call die("Wrong l symbol in potential")
+
+end function ps_ProjectorL
+!
+function ps_ProjectorEkb(ps,i,set) result(ekb)
+type(ps_t), intent(in) :: ps
+integer,   intent(in)      :: i
+character(len=5), intent(in), optional :: set
+real(dp)                   :: ekb
+
+integer :: idx
+
+idx = ps_GetProjectorIndex(ps,i,set)
+ekb = ps%psoperator%ekb(idx)
+
+end function ps_ProjectorEkb
+!
+function ps_ProjectorN(ps,i,set) result(n)
+type(ps_t), intent(in) :: ps
+integer,   intent(in)      :: i
+character(len=5), intent(in), optional :: set
+integer                    :: n
+
+integer :: idx
+
+idx = ps_GetProjectorIndex(ps,i,set)
+n = ps%psoperator%n(idx)
+
+end function ps_ProjectorN
+!
+function ps_EvaluateProjector(ps,i,r,set,debug) result(val)
+type(ps_t), intent(in) :: ps
+integer,   intent(in)      :: i
+real(dp),  intent(in)      :: r
+character(len=5), intent(in), optional :: set
+logical, intent(in), optional :: debug
+real(dp)                   :: val
+
+integer :: idx
+
+idx = ps_GetProjectorIndex(ps,i,set)
+if (r> max_range(ps%psoperator%proj(idx))) then
+   val = 0.0_dp
+else
+   val = eval_radfunc(ps%psoperator%proj(idx),r, debug)
+endif
+
+end function ps_EvaluateProjector
+
+function ps_GetProjectorIndex(ps,i,set) result(idx)
+type(ps_t), intent(in)                 :: ps
+integer,   intent(in)                  :: i
+character(len=5), intent(in), optional :: set
+integer                                :: idx
+
+logical major
+
+if (i > ps_NProjectors(ps,set)) then
+     call die("attempt to get index for non-existing projector")
+endif
+
+major = .true.
+if (present(set)) then
+   if (set == "minor") then
+      major = .false.
+   endif
+endif
+
+if (major) then
+   idx = ps%psoperator%major(i)
+else
+   idx = ps%psoperator%minor(i)
+endif
+end function ps_GetProjectorIndex
 
 !====================================================
 !> @brief Maximum radius in a radfunc's grid

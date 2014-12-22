@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+December 22, 2014  Alberto Garcia       trunk-462--ncps-48
+Extend PSML parser to deal with complete operator
+
+A new element <pseudopotential-operator> holds the local potential and
+generalized projectors. Accessor functions have been written, but no
+clients are ready yet.
+
+(Note that 'intent(out)' had to be added to the ps argument in
+psml_read, to avoid initialization bugs)
+
+modified:
+  Src/psml/m_psml_core.f90
+  Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_psml_reader.F90
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+
+------------------------------------------------------------
 December 22, 2014  Alberto Garcia       trunk-462--ncps-47
 More enhancements to 'pseudooperator', renamed 'psop'
 

@@ -487,11 +487,12 @@
         call xml_EndElement(xf,"grid")
 
         call xml_NewElement(xf,"local-potential")
-             call xml_NewElement(xf,"radfunc")
+            call my_add_attribute(xf,"kind","Siesta-vlocal")
+            call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
                  call xml_AddArray(xf, 0.5d0 * vlocal(1:nrval))
                call xml_EndElement(xf,"data")
-             call xml_EndElement(xf,"radfunc")
+            call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"local-potential")
 
       call xml_NewElement(xf,"projectors")

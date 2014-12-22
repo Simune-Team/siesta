@@ -18,8 +18,8 @@ module m_psml_reader
 
   implicit none 
 
-  character(len=*), intent(in) :: fname
-  type(ps_t), target           :: ps
+  character(len=*), intent(in)        :: fname
+  type(ps_t), intent(out), target     :: ps
 
   type(xml_t)                     :: fxml
   integer :: iostat

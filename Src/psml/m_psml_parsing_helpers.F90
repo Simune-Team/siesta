@@ -52,6 +52,8 @@ logical, private, save  :: in_provenance = .false.
 logical, private, save  :: in_valence_config = .false.
 logical, private, save  :: in_xc = .false., in_libxc_info = .false.
 logical, private, save  :: in_pseudowavefun = .false. , in_pswf = .false.
+logical, private, save  :: in_psoperator = .false. , in_projectors = .false.
+logical, private, save  :: in_proj = .false. , in_local_potential = .false.
 logical, private, save  :: got_explicit_grid_data
 
 integer, private, save  :: ndata, ndata_grid
@@ -70,6 +72,7 @@ type(config_val_t), private, pointer      :: cp => null()
 type(xc_t), private, pointer              :: xp => null()
 type(pswfs_t), private, pointer           :: wfp => null()
 type(semilocal_t), private, pointer       :: slp => null()
+type(psoperator_t), private, pointer      :: pop => null()
 type(valence_charge_t), private, pointer  :: valp => null()
 type(core_charge_t), private, pointer     :: corep => null()
 type(radfunc_t), private, pointer         :: rp => null()
@@ -249,6 +252,32 @@ select case(name)
          call get_value(attributes,"flavor",slp%flavor(i),status)
          if (status /= 0 ) call die("Cannot determine flavor for Vps")
 
+      case ("proj")
+         in_proj = .true.
+         if (.not. in_projectors) call die("Orphan <proj> element")
+
+         pop => pseudo%psoperator
+         pop%nprojs = pop%nprojs + 1
+         i = pop%nprojs
+         rp => pop%proj(i)
+
+         call get_value(attributes,"l",pop%l(i),status)
+         if (status /= 0 ) call die("Cannot determine l for proj")
+
+         call get_value(attributes,"n",value,status)
+         if (status /= 0 ) call die("Cannot determine n for proj")
+         read(unit=value,fmt=*) pop%n(i)
+
+         call get_value(attributes,"ekb",value,status)
+         if (status /= 0 ) call die("Cannot determine Ekb for proj")
+         read(unit=value,fmt=*) pop%ekb(i)
+
+         call get_value(attributes,"set",pop%set(i),status)
+         if (status /= 0 ) call die("Cannot determine set for proj")
+
+         call get_value(attributes,"type",pop%type(i),status)
+         if (status /= 0 ) call die("Cannot determine type of proj")
+
       case ("pswf")
 
          if (.not. in_pseudowavefun) call die("Orphan <pswf> element")
@@ -281,24 +310,31 @@ select case(name)
          if (status /= 0 ) call die("Cannot determine grid npts")
          read(unit=value,fmt=*) grid%npts
 
-!!         ! This attribute is optional
-!!         call get_value(attributes,"annotation",grid%annotation,status)
-!!         if (status /= 0 ) grid%annotation=""
-
          !
          ! In this way we allow for a private grid for each radfunc,
          ! or for a global grid specification
          !
          if (in_radfunc) then
+!            print *, "Found grid in radfunc"
             if (associated(rp%grid)) then
                call die("psml: Two grids specified for a radfunc")
             endif
             rp%grid => grid
-         else
-            ! We should really check that we are at the top level,
-            ! and not, say, at the semilocal or pswf level (although
-            ! it could be useful to allow these "regional" grids)
 
+         ! We check whether we are at the top level,
+         ! and not at a level that allows a "regional" grids
+
+         else if (in_psoperator) then
+
+            if (associated(pop%grid)) then
+               call die("psml: Two psoperator grids specified")
+            endif
+!            print *, "Found psoperator grid"
+            pop%grid => grid
+
+         else  ! We are at the top level
+
+!            print *, "Found grid at the top level"
             if (associated(pseudo%global_grid)) then
                call die("psml: Two global grids specified")
             endif
@@ -312,12 +348,19 @@ select case(name)
          endif
          in_data = .true.
          if (.not. associated(rp%grid)) then
-            if (associated(pseudo%global_grid)) then
-               rp%grid => pseudo%global_grid
-            else
-               call die("Cannot find grid data for radfunc")
+            ! Try regional and global grids...
+            if (in_psoperator) then
+               if (associated(pop%grid)) then
+                  rp%grid => pop%grid
+               endif
+            else ! try global
+               if (associated(pseudo%global_grid)) then
+                  rp%grid => pseudo%global_grid
+               endif
             endif
          endif
+         if (.not. associated(rp%grid)) &
+               call die("Cannot find grid data for radfunc")
          if (rp%grid%npts == 0) call die("Grid not specified correctly")
          allocate(rp%data(rp%grid%npts))
          ndata = 0             ! To start the build up
@@ -370,6 +413,23 @@ select case(name)
          if (status /= 0 ) call die("Cannot determine npots-minor")
          read(unit=value,fmt=*) slp%npots_minor
 
+      case ("pseudopotential-operator")
+         in_psoperator = .true.
+         pop => pseudo%psoperator
+
+      case ("projectors")
+         in_projectors = .true.
+         pop => pseudo%psoperator
+         pop%nprojs = 0
+
+      case ("local-potential")
+         in_local_potential = .true.
+         pop => pseudo%psoperator
+         rp => pop%vlocal
+
+         call get_value(attributes,"kind",pop%vlocal_kind,status)
+         if (status /= 0 ) call die("Cannot determine kind of vlocal")
+                                                                              
       case ("pseudo-wave-functions")
          in_pseudowavefun = .true. 
 
@@ -483,8 +543,40 @@ select case(name)
             call die("wrong number of minor potentials")
          endif
                
+      case ("pseudopotential-operator")
+         in_psoperator = .false.
+
+      case ("projectors")
+         in_projectors = .false.
+
+         ! Generate indexes
+
+         pop => pseudo%psoperator
+
+         nmajor = 0
+         nminor = 0
+         do i = 1, pop%nprojs
+            if (pop%set(i) == "major") then
+               nmajor = nmajor + 1
+               pop%major(nmajor) = i
+            else if (pop%set(i) == "minor") then
+               nminor = nminor + 1
+               pop%minor(nminor) = i
+            else
+               call die("wrong set in projector")
+            endif
+         enddo
+         pop%nprojs_major = nmajor
+         pop%nprojs_minor = nminor
+
       case ("vps")
          in_vps = .false.
+
+      case ("proj")
+         in_proj = .false.
+
+      case ("local-potential")
+         in_local_potential = .false.
 
       case ("pseudo-wave-functions")
          in_pseudowavefun = .false. 
