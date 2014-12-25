@@ -1247,7 +1247,8 @@ contains
     use mpi_siesta, only: MPI_Bcast, MPI_Logical, MPI_Comm_World
     use mpi_siesta, only: MPI_Send, MPI_Recv, MPI_Status_Size
     use mpi_siesta, only: MPI_Double_Precision, MPI_Double_Complex
-    use mpi_siesta, only: MPI_Comm_Self
+    use mpi_siesta, only: MPI_Comm_Self, MPI_Integer
+    use mpi_siesta, only: MPI_Barrier
 #endif
     use m_tbt_hs, only : tTSHS
     use m_tbt_diag
@@ -1397,6 +1398,13 @@ contains
           
        end do
 
+       ! The number of energy points must
+       ! not have been set
+       call ncdf_inq_dim(ncdf,'ne',len=iE)
+#ifdef MPI
+       call MPI_Bcast(iE,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+#endif
+
        call ncdf_close(ncdf)
 
        if ( Node == 0 ) then
@@ -1404,7 +1412,12 @@ contains
                &TBT.Proj.nc file.'
        end if
 
-       call die('Currently the re-usage of the projection files does not work')
+       if ( iE /= 0 ) then
+          print *,iE
+          call die('Currently the re-usage of the projection files only works &
+               &if it has not been set before. &
+               &I.e. no energy-points must be saved.')
+       end if
 
        return
 
@@ -1424,13 +1437,13 @@ contains
     ! If needed, we could diagonalize one molecule per processor,
     ! then collect. However, more than often this will probably
     ! be restricted to one molecule.
-    cmp_lvl = fdf_get('TBT.CDF.Compress',0)
+    cmp_lvl = fdf_get('CDF.Compress',0)
+    cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
     cmp_lvl = fdf_get('TBT.Proj.CDF.Compress',cmp_lvl)
-    if ( no < 0 ) no = 0
-    if ( 9 < no ) no = 9
+    if ( cmp_lvl < 0 ) cmp_lvl = 0
+    if ( 9 < cmp_lvl ) cmp_lvl = 9
 
-    call ncdf_create(ncdf,fname,mode = NF90_NETCDF4 , &
-         compress_lvl = cmp_lvl )
+    call ncdf_create(ncdf,fname,mode = NF90_NETCDF4 )
 
     ! Save the current system size
     call ncdf_def_dim(ncdf,'no_u',TSHS%no_u)
@@ -1544,12 +1557,12 @@ contains
 
        dic = ('info'.kv.'Number of non-zero elements per row')
        call ncdf_def_var(ncdf,'n_col',NF90_INT,(/'no_u'/), &
-            compress_lvl=cmp_lvl,atts=dic)
+            atts=dic)
 
        dic = dic//('info'.kv. &
             'Supercell column indices in the sparse format ')
        call ncdf_def_var(ncdf,'list_col',NF90_INT,(/'nnzs'/), &
-            compress_lvl=cmp_lvl,atts=dic)
+            compress_lvl=cmp_lvl,atts=dic , chunks = (/nnzs_dev/) )
 
 #ifdef MPI
        call newDistribution(TSHS%no_u,MPI_Comm_Self,fdit,name='TBT-fake dist')
@@ -1591,7 +1604,7 @@ contains
 
        ! Define the molecule
        call ncdf_def_dim(grp,'na',mols(im)%atom%n)
-       call ncdf_def_dim(grp,'no',mols(im)%orb%n)
+       call ncdf_def_dim(grp,'no',no)
        ! the different number of projection levels 
        ! must equal the # of states
        call ncdf_def_dim(grp,'nlvl',mols(im)%lvls%n)
@@ -1603,12 +1616,14 @@ contains
 
        dic = ('info'.kv.'e_i|> for unique projections')
        if ( isGamma ) then
-          call ncdf_def_var(grp,'state',NF90_DOUBLE,(/'no  ','nlvl'/),atts=dic)
+          call ncdf_def_var(grp,'state',NF90_DOUBLE,(/'no  ','nlvl'/),atts=dic , &
+               compress_lvl = cmp_lvl , chunks = (/no,mols(im)%lvls%n/) )
        else
           call ncdf_def_var(grp,'state',NF90_DOUBLE_COMPLEX, &
-               (/'no  ','nlvl','nkpt'/),atts=dic)
+               (/'no  ','nlvl','nkpt'/),atts=dic, &
+               compress_lvl = cmp_lvl , chunks = (/no,mols(im)%lvls%n,1/) ) 
        end if
-
+       
        ! Define variables to contain the molecule
        dic = ('info'.kv.'Molecule atoms')
        call ncdf_def_var(grp,'atom',NF90_INT,(/'na'/),atts=dic)
@@ -1619,17 +1634,22 @@ contains
        dic = dic//('info'.kv.'State e_i|> for all i')
        if ( save_state ) then
           if ( isGamma ) then
-             call ncdf_def_var(grp,'states',NF90_DOUBLE,(/'no','no'/),atts=dic)
+             call ncdf_def_var(grp,'states',NF90_DOUBLE,(/'no','no'/),atts=dic, &
+                  compress_lvl = cmp_lvl , chunks = (/no,no/) )
           else
              call ncdf_def_var(grp,'states',NF90_DOUBLE_COMPLEX, &
-                  (/'no  ','no  ','nkpt'/),atts=dic)
+                  (/'no  ','no  ','nkpt'/),atts=dic, &
+                  compress_lvl = cmp_lvl , chunks = (/no,no,1/) )
+
           end if
        end if
        dic = dic//('info'.kv.'Eigenvalues')//('unit'.kv.'Ry')
        if ( isGamma ) then
-          call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no'/),atts=dic)
+          call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no'/),atts=dic, &
+               compress_lvl = cmp_lvl , chunks = (/no/) )
        else
-          call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no  ','nkpt'/),atts=dic)
+          call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no  ','nkpt'/),atts=dic, &
+               compress_lvl = cmp_lvl , chunks = (/no,1/) )
        end if
        call delete(dic)
 
@@ -1691,14 +1711,16 @@ contains
                    if ( 'proj-DOS-A' .in. save_DATA ) then
                       dic = dic//('info'.kv.'Spectral function density of states')
                       call ncdf_def_var(grp3,'ADOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
-                           atts = dic, chunks = (/r%n,1,1/))
+                           atts = dic, &
+                           compress_lvl = cmp_lvl, chunks = (/r%n,1,1/))
                    end if
 
                    if ( 'proj-orb-current' .in. save_DATA ) then
                       dic = ('info'.kv.'Orbital current')
 
                       call ncdf_def_var(grp2,'J',NF90_DOUBLE,(/'nnzs'/), &
-                           atts = dic)
+                           atts = dic, compress_lvl = cmp_lvl , &
+                           chunks = (/nnzs_dev/) )
                       
                    end if
                    
@@ -1902,8 +1924,10 @@ contains
        ! Append electrode name to create variable
        tmp = trim(proj_ME(it)%El%name)//'.bGk'
        
+       i = proj_ME(it)%mol%lvls%n
        call ncdf_def_var(grp,tmp,NF90_DOUBLE_COMPLEX, &
-            (/'nlvl','nlvl','ne  ','nkpt'/), atts = dic)
+            (/'nlvl','nlvl','ne  ','nkpt'/), atts = dic, &
+            compress_lvl = cmp_lvl , chunks = (/i,i,1,1/) )
 
     end do
 
@@ -1951,7 +1975,19 @@ contains
             &and energy levels might shift.'
     end if
 
+#ifdef MPI
+    ! This ensures the timing is correct
+    ! AND that the below die command will not be 
+    ! executed prematurely.
+    call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+
     call timer('proj_init',2)
+
+    if ( fdf_get('TBT.Projs.Init',.false.) ) then
+       call die('You have requested to only initialize the &
+            &projection tables. We die by your request.')
+    end if
 
   contains
     

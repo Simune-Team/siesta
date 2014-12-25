@@ -74,14 +74,6 @@ contains
 
     if ( N_tbt < 1 ) then
 
-       ! We should default to the bias window!
-
-       if ( N_Elec /= 2 .or. N_mu /= 2 ) then
-          call die('When using other than 2 electrodes and &
-               &chemical potentials you are forced to setup &
-               &the input yourself.')
-       end if
-
        ! We create the default version
        ! *** NOTE requires an even splitting of the bias
        N_tbt = 1
@@ -90,10 +82,10 @@ contains
        tbt_c(1)%c_io => tbt_io(1)
        tbt_io(1)%part = 'line'
        tbt_io(1)%name = 'neq'
-       tbt_io(1)%ca = '-|V|/2 - 5. kT'
-       tbt_io(1)%a  = -abs(Volt) * .5_dp - 5._dp * kT
-       tbt_io(1)%cb = '|V|/2 + 5. kT'
-       tbt_io(1)%b  =  abs(Volt) * .5_dp + 5._dp * kT
+       tbt_io(1)%ca = '-2. eV'
+       tbt_io(1)%a  = - 2._dp * eV
+       tbt_io(1)%cb = '2. eV'
+       tbt_io(1)%b  =  2._dp * eV
        ! number of points
        tbt_io(1)%cd = '0.01 eV'
        tbt_io(1)%d = 0.01_dp * eV

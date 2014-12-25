@@ -1,4 +1,50 @@
 ----------------------------------------------------
+December 25, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-243
+Optimized NetCDF files + bugfixes
+
+* Compression for NetCDF files was sub-optimal.
+  We now compress per variable basis which means
+  that only the "big" variables will be compressed.
+
+  Also the chunk size is important for compressed
+  variables as the space will be allocated and compressed.
+  
+* Added atomic number specification when printing out
+  the atomic coordinates and their belongings.
+
+* TBtrans will now not die if the contour is not
+  given for N_Elec /= 2.
+  TBtrans does not care about the non-equilibrium contour.
+
+  Now it defaults to calculation in a -2:2 eV window
+  with 0.01 eV precision.
+
+* Added algorithm choice for dH in Tbtrans
+
+* Allowed re-use of the projection file for TBtrans
+  when the number of energy points already saved is zero.
+  This is to ensure that the user does not change
+  projection states while calculating certain energies.
+
+  With this TBT.Projs.Init is added to _only_ initialize
+  the projection tables.
+
+* Added a lot of documentation for tbt_tb.py
+
+modified:
+  Src/m_ncdf_siesta.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/ts_show_regions.f90
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TBtrans/tbt_data.py
+
+----------------------------------------------------
 December 19, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-242
 Bugfix for compiling TBT without NCDF_4
 

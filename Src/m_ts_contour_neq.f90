@@ -125,7 +125,7 @@ contains
        if ( N_Elec /= 2 .or. N_mu /= 2 ) then
           call die('When using other than 2 electrodes and &
                &chemical potentials you are forced to setup &
-               &the input yourself.')
+               &the contour input yourself.')
        end if
 
        ! We create the default version

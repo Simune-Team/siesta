@@ -168,7 +168,7 @@ contains
     ! Insertion algorithm (we default to the user having
     ! very few elements to change)
     insert_algo = 0
-    char = fdf_get('TBT.dH.Algoritm','sparse')
+    char = fdf_get('TBT.dH.Algorithm','sparse')
     if ( leqi(char,'sparse') ) then
        ! Will loop on the sparsity pattern
        insert_algo = 0

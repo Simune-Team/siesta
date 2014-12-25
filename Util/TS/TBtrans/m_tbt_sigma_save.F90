@@ -15,7 +15,7 @@ module m_tbt_sigma_save
   logical, save :: sigma_save      = .false.
   logical, save :: sigma_mean_save = .false.
   logical, save :: sigma_parallel  = .false.
-  integer, save :: compress_lvl    = 0
+  integer, save :: cmp_lvl    = 0
 
 #ifdef NCDF_4
   public :: init_Sigma_options
@@ -40,15 +40,15 @@ contains
     if ( sigma_save ) then
        sigma_mean_save = fdf_get('TBT.Sigma.CDF.Save.Mean',.false.)
     end if
-    compress_lvl = fdf_get('CDF.Compress',0)
-    compress_lvl = fdf_get('TBT.CDF.Compress',compress_lvl)
-    compress_lvl = fdf_get('TBT.Sigma.CDF.Compress',compress_lvl)
-    if ( compress_lvl < 0 ) compress_lvl = 0
-    if ( compress_lvl > 9 ) compress_lvl = 9
+    cmp_lvl = fdf_get('CDF.Compress',0)
+    cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
+    cmp_lvl = fdf_get('TBT.Sigma.CDF.Compress',cmp_lvl)
+    if ( cmp_lvl < 0 ) cmp_lvl = 0
+    if ( cmp_lvl > 9 ) cmp_lvl = 9
 #ifdef NCDF_PARALLEL
     sigma_parallel = fdf_get('TBT.Sigma.CDF.MPI',.false.)
     if ( sigma_parallel ) then
-       compress_lvl = 0
+       cmp_lvl = 0
     end if
 #endif
 
@@ -62,8 +62,8 @@ contains
        write(*,1)'Only calc down-folded self-energies', &
             ('Sigma-only'.in.save_DATA)
        if ( sigma_save ) then
-          if ( compress_lvl > 0 ) then
-             write(*,5)'Compression level of TBT.Sigma.nc files',compress_lvl
+          if ( cmp_lvl > 0 ) then
+             write(*,5)'Compression level of TBT.Sigma.nc files',cmp_lvl
           else
              write(*,11)'No compression level of TBT.Sigma.nc files'
           end if
@@ -351,7 +351,7 @@ contains
        ! Chunking greatly reduces IO cost
        i = Elecs(iEl)%o_inD%n
        call ncdf_def_var(grp,'Sigma',NF90_DOUBLE_COMPLEX, &
-            (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = compress_lvl, &
+            (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
             atts = dic , chunks = (/i,i,1,1/) )
        call delete(dic)
 
@@ -538,7 +538,7 @@ contains
        ! Chunking greatly reduces IO cost
        call ncdf_def_var(grp,'SigmaMean',NF90_DOUBLE_COMPLEX, &
             (/'no_e','no_e','ne  '/), chunks = (/no_e,no_e,1/) , &
-            atts = dic ,compress_lvl = compress_lvl )
+            atts = dic ,compress_lvl = cmp_lvl )
        call delete(dic)
 
        ! Allocate space for the self-energy mean

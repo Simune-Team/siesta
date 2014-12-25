@@ -42,9 +42,9 @@ subroutine ts_show_regions(ucell,na_u,xa,N_Elec,Elecs)
      case ( TYP_DEVICE )
         ia_mid = ia_mid - 1
         if ( ia_mid == 0 ) then
-           write(*,'(tr1,3(tr2,f12.7),tr8,a)') xa(:,ia)/Ang,'Device'
+           write(*,'(tr1,i5,tr2,3(tr2,f12.7),tr8,a)') ia,xa(:,ia)/Ang,'Device'
         else
-           write(*,'(tr1,3(tr2,f12.7))') xa(:,ia)/Ang
+           write(*,'(tr1,i5,tr2,3(tr2,f12.7))') ia,xa(:,ia)/Ang
         end if
         ia = ia + 1
      case default
@@ -76,24 +76,24 @@ contains
 
     if ( NA < 1 ) return
     mid = (NA+1) / 2
-    write(*,'(a)') repeat(marker,46)
+    write(*,'(tr7,a)') repeat(marker,46)
     do i = 1, NA
        if ( i == 1 .and. lfirst ) then
-          write(*,'(a1,3(tr2,f12.7),tr2,a1,tr1,a1)') &
-                  marker,xa(:,ia)/Ang,marker,first
+          write(*,'(tr1,i5,tr1,a1,3(tr2,f12.7),tr2,a1,tr1,a1)') &
+               ia,marker,xa(:,ia)/Ang,marker,first
        else if ( i == mid ) then
-          write(*,'(a1,3(tr2,f12.7),tr2,a1,tr5,a)') &
-               marker,xa(:,ia)/Ang,marker,trim(name)
+          write(*,'(tr1,i5,tr1,a1,3(tr2,f12.7),tr2,a1,tr5,a)') &
+               ia,marker,xa(:,ia)/Ang,marker,trim(name)
        else if ( i == NA .and. llast ) then
-          write(*,'(a1,3(tr2,f12.7),tr2,a1,tr1,a1)') &
-                  marker,xa(:,ia)/Ang,marker,last
+          write(*,'(tr1,i5,tr1,a1,3(tr2,f12.7),tr2,a1,tr1,a1)') &
+               ia,marker,xa(:,ia)/Ang,marker,last
        else
-          write(*,'(a1,3(tr2,f12.7),tr2,a1)') &
-               marker,xa(:,ia)/Ang,marker
+          write(*,'(tr1,i5,tr1,a1,3(tr2,f12.7),tr2,a1)') &
+               ia,marker,xa(:,ia)/Ang,marker
        end if
        ia = ia + 1
     end do
-    write(*,'(a)') repeat(marker,46)
+    write(*,'(tr7,a)') repeat(marker,46)
 
   end subroutine out_REGION
 

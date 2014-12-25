@@ -8,7 +8,7 @@ module m_tbt_save
 
   private
 
-  integer, save :: compress_lvl  = 0
+  integer, save :: cmp_lvl  = 0
   logical, save :: save_parallel = .false.
 
   public :: init_save_options
@@ -74,22 +74,22 @@ contains
 #endif
     use fdf
 
-    compress_lvl = fdf_get('CDF.Compress',0)
-    compress_lvl = fdf_get('TBT.CDF.Compress',compress_lvl)
-    if ( compress_lvl < 0 ) compress_lvl = 0
-    if ( compress_lvl > 9 ) compress_lvl = 9
+    cmp_lvl = fdf_get('CDF.Compress',0)
+    cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
+    if ( cmp_lvl < 0 ) cmp_lvl = 0
+    if ( cmp_lvl > 9 ) cmp_lvl = 9
 #ifdef NCDF_PARALLEL
     save_parallel = fdf_get('TBT.CDF.MPI',.false.)
     if ( save_parallel ) then
-       compress_lvl = 0
+       cmp_lvl = 0
     end if
 #endif
 
 #ifdef NCDF_4
     if ( Node == 0 ) then
 
-       if ( compress_lvl > 0 ) then
-          write(*,5) 'Compression level of TBT.nc files',compress_lvl
+       if ( cmp_lvl > 0 ) then
+          write(*,5) 'Compression level of TBT.nc files',cmp_lvl
        else
           write(*,11)'No compression of TBT.nc files'
        end if
@@ -345,7 +345,7 @@ contains
     if ( 'DOS-Gf' .in. save_DATA ) then
        dic = dic//('info'.kv.'Density of states')
        call ncdf_def_var(ncdf,'DOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
-            atts = dic , chunks = (/r%n,1,1/) , compress_lvl = compress_lvl )
+            atts = dic , chunks = (/r%n,1,1/) , compress_lvl = cmp_lvl )
     end if
 
     if ( .not. isGamma ) then
@@ -399,12 +399,12 @@ contains
 
        dic = ('info'.kv.'Number of non-zero elements per row')
        call ncdf_def_var(ncdf,'n_col',NF90_INT,(/'no_u'/), &
-            compress_lvl=compress_lvl,atts=dic)
+            compress_lvl=cmp_lvl,atts=dic)
 
        dic = dic//('info'.kv. &
             'Supercell column indices in the sparse format ')
        call ncdf_def_var(ncdf,'list_col',NF90_INT,(/'nnzs'/), &
-            compress_lvl=compress_lvl,atts=dic, chunks = (/nnzs_dev/) )
+            compress_lvl=cmp_lvl,atts=dic, chunks = (/nnzs_dev/) )
 
 #ifdef MPI
        call newDistribution(TSHS%no_u,MPI_Comm_Self,fdit,name='TBT-fake dist')
@@ -431,7 +431,7 @@ contains
        if ( 'DOS-A' .in. save_DATA ) then
           dic = ('info'.kv.'Spectral function density of states')
           call ncdf_def_var(grp,'ADOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
-               atts = dic, chunks = (/r%n,1,1/) , compress_lvl=compress_lvl)
+               atts = dic, chunks = (/r%n,1,1/) , compress_lvl=cmp_lvl)
        end if
 
        ! Save information about electrode
@@ -446,7 +446,7 @@ contains
           dic = ('info'.kv.'Orbital current')
           
           call ncdf_def_var(grp,'J',NF90_DOUBLE,(/'nnzs','ne  ','nkpt'/), &
-               atts = dic , chunks = (/nnzs_dev/) , compress_lvl=compress_lvl)
+               atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           
        end if
        
@@ -461,7 +461,7 @@ contains
 
              dic = dic//('info'.kv.'Transmission')
              call ncdf_def_var(grp,trim(Elecs(jEl)%name)//'.T',NF90_DOUBLE,(/'ne  ','nkpt'/), &
-                  atts = dic , chunks = (/1/), compress_lvl = compress_lvl)
+                  atts = dic , chunks = (/1/), compress_lvl = cmp_lvl)
              
           else
 
@@ -469,7 +469,7 @@ contains
              ! and utilise this for saving the reflection.
              dic = dic//('info'.kv.'Reflection')
              call ncdf_def_var(grp,trim(tmp)//'.R',NF90_DOUBLE,(/'ne  ','nkpt'/), &
-                  atts = dic , chunks = (/1/), compress_lvl = compress_lvl)
+                  atts = dic , chunks = (/1/), compress_lvl = cmp_lvl)
 
           end if
           

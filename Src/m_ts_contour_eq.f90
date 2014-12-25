@@ -171,7 +171,7 @@ contains
              ! N_mu == 1 :)
              call die('When using other than 2 electrodes and &
                   &chemical potentials you are forced to setup &
-                  &the input yourself.')
+                  &the contour input yourself.')
           end if
 
           ! this is a fake-contour, read it in

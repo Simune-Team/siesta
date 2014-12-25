@@ -377,6 +377,8 @@ def main():
             raise ValueError('Specified k-index does not exist. Please correct.')
         args.suffix = 'TRANS'
         args.kpt = Tf.kpt[k_idx,:].flatten()
+        print('Selected k-point [b]: [{0:.6f}, {1:.6f}, {2:.6f}]'.format(*args.kpt[:]))
+
     else:
         k_idx = True
         args.suffix = 'AVTRANS'

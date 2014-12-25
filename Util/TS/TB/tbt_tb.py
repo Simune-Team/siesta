@@ -103,16 +103,62 @@ class SIESTA_UNITS(object):
 
 class TBT_Geom(SIESTA_UNITS):
     """
-    A geometry object handling atomic coordinates
-    in a supercell
+    Geometry object handling atomic coordinates in a supercell
+    much like that of SIESTA.
+    
+    This geometry class is however not restricted to SIESTA as it 
+    is a general class to retain coordinates and the cell structure.
+    
+    All lengths are assumed to be in units of Angstrom.
+    
+    Parameters
+    ----------
+    cell  : array_like
+        cell vectors in a 3x3 matrix.
+        ``cell[i,:]`` is the cell vector along the i'th direction.
+    xa    : array_like
+        atomic coordinates in a Nx3 matrix.
+        ``xa[i,:]`` is the atomic coordinate of the i'th atom.
+        This atomic coordinate need not be inside the unit-cell.
+    dR    : (2.5) float, optional
+        The geometry's maximum orbital range. All orbitals are 
+        assumed localised on the atomic centers. 
+    n_orb : (1) integer/array_like, optional
+        Number of orbitals per atom. If a single integer
+        is supplied all atoms have the same number of orbitals,
+        whereas providing a array will set the number of orbitals
+        individually.
+    update_sc : (False), boolean, optional
+        If ``False`` it will initialise size of the super-cell to
+        be one connection in all directions.
+        If ``True`` it will calculate the super-cell size based
+        on ``dR``.
+
+    Attributes
+    ----------
+    cell : (3,3) ndarray
+        Cell vectors.
+    na_u : integer
+        Number of atoms.
+    xa   : (na_u,3) ndarray
+        Atomic coordinates.
+    lasto: (na_u+1) 
+        Last orbital of the equivalent atom (this is offset by one)
+        Hence ``lasto[0]`` is always ``0`` and ``lasto[1]`` is the
+        number of orbitals on the first atom.
+    no_u : integer
+        Total number of orbitals 
+    dR   : float
+        Maximum orbital range.
+    proximity: (None), integer
+        Limits the search space for large geometries when finding the
+        closests atoms.
+        ``proximity`` narrows the search to the ``+-proximity`` nearest atoms.
+        If ``None`` it will search all atoms.
     """
     def __init__(self,cell,xa,dR=2.5,n_orb=1,update_sc=False):
-        """
-        Initializes a TB geometry which 
-        interactively updates the number of supercells
-        """
-        self.cell = cell
-        self.xa = xa
+        self.cell = np.asarray(cell)
+        self.xa = np.asarray(xa)
         self.na_u = len(xa)
         if isinstance(n_orb,int):
             # We have a fixed number of orbitals per
@@ -146,14 +192,20 @@ class TBT_Geom(SIESTA_UNITS):
 
     @staticmethod
     def SIESTA(fname):
-        """
-        Returns a geometry by reading a SIESTA.nc file
+        """Creates a geometry from a SIESTA.nc file
+
+        Parameters
+        ----------
+        fname : (string)
+            A NetCDF filename from which the geometry will be read in.
+            It will read in the``xa``, ``cell``, ``lasto`` and ``nsc``
+            variables and return a geometry from those quantities.
         """
         nf = nc.Dataset(fname,'r')
-        xa = nf.variables['xa'][:] * self.Bohr
-        cell = nf.variables['cell'][:] * self.Bohr
-        lasto = nf.variables['lasto'][:]
-        nsc = nf.variables['nsc'][:]
+        xa = np.asarray(nf.variables['xa'][:]) * self.Bohr
+        cell = np.asarray(nf.variables['cell'][:]) * self.Bohr
+        lasto = np.asarray(nf.variables['lasto'][:])
+        nsc = np.asarray(nf.variables['nsc'][:])
         nf.close()
         n_orb = np.diff(lasto)
         n_orb = np.append(lasto[0],n_orb)
@@ -177,7 +229,21 @@ class TBT_Geom(SIESTA_UNITS):
         return g
 
     def update_sc(self,dR=None,nsc=None):
-        """ Re-calculates the super-cell based on maximal interaction range """
+        """ Updates the number of supercells
+
+        Parameters
+        ----------
+        dR   : (None), float
+            If provided the super-cell will be calculating based on the
+            atomic coordinates and the maximum orbital range.
+        nsc  : (None), array_like
+            If provided the super-cell will be forced to this size,
+            providing ``[1,1,1]`` tells the geometry that
+            interactions are connecting across one cell boundary.
+
+        If no parameters are given ``self.update_sc()`` will
+        use the saved ``self.dR`` size (as given when initialised).
+        """
         if dR is None:
             # Just update the super-cell, this is
             # if the user has changed the cell size
@@ -236,6 +302,16 @@ class TBT_Geom(SIESTA_UNITS):
     def xyz(self,fname=None,species='H'):
         """
         Creates an xyz file for showing in visual programs
+        
+        Parameters
+        ----------
+        fname : str 
+            Filename to save the xyz format in.
+        species : str/list
+            List of species for all the atoms.
+            If a ``str`` is passed the same specie is used
+            for all atoms, if a list is passed every atom has
+            its designated specie.
         """
         if fname:
             # In case the species is a string we expand it
@@ -250,7 +326,7 @@ class TBT_Geom(SIESTA_UNITS):
 
     def copy(self):
         """
-        Returns a copy of this Geometry
+        Returns a copy of the object.
         """
         # Create a copy of this geometry
         return self.__init_new(np.copy(self.cell),np.copy(self.xa),
@@ -258,8 +334,17 @@ class TBT_Geom(SIESTA_UNITS):
 
     def remove(self,idx_a,update_sc=False):
         """
-        Removes the atoms corresponding to idx_a and returns a new geometry.
+        Remove atoms from the geometry.
+
         Indices passed *MUST* be unique.
+
+        Parameters
+        ----------
+        idx_a  : array_like
+            indices of all atoms to be removed.
+        update_sc : (False), boolean, optional
+            Whether the super-cell size should be recalculated using
+            ``self.dR``.
         """
         xa = np.copy(self.xa)
         # truncate atoms requested
@@ -272,10 +357,39 @@ class TBT_Geom(SIESTA_UNITS):
 
     def tile(self,*args,**kwargs):
         """ 
-        Returns a geometry expanded in terms of the arguments
+        Returns a geometry tiled, i.e. copied.
 
-        In contrast to self.repeat this takes the entire unit-cell
-        and repeats in blocks.
+        The atomic indices are retained for the base structure.
+
+        Parameters
+        ----------
+        args  : (tuple) (int,int)
+             A tuple consisting of two integers:
+                 direction : 0, 1, 2 according to the cell-direction
+                 number of tiles: number of times the structure is 
+                                  repeated.
+        update_sc : (False), boolean, optional
+
+        Examples
+        --------
+        >>> geom = TBT_Geom(cell=[[1.,0,0],[0,1.,0.],[0,0,1.]],xa=[[0,0,0],[0.5,0,0]])
+        >>> g = geom.tile((0,2))
+        >>> print(g.xa)
+        [[ 0.   0.   0. ]
+         [ 0.5  0.   0. ]
+         [ 1.   0.   0. ]
+         [ 1.5  0.   0. ]]
+        >>> g = geom.tile((0,2),(1,2))
+        >>> print(g.xa)
+        [[ 0.   0.   0. ]
+         [ 0.5  0.   0. ]
+         [ 1.   0.   0. ]
+         [ 1.5  0.   0. ]
+         [ 0.   1.   0. ]
+         [ 0.5  1.   0. ]
+         [ 1.   1.   0. ]
+         [ 1.5  1.   0. ]]
+
         """
         if len(args) == 0: return self.copy()
         update_sc = False
@@ -307,21 +421,53 @@ class TBT_Geom(SIESTA_UNITS):
 
     def repeat(self,*args,**kwargs):
         """
-        Returns a geometry expanded in terms of the arguments
+        Returns a geometry repeated, i.e. copied in a special way.
+
+        The atomic indices are *NOT* retained for the base structure.
+
+        The expansion of the atoms are basically performed using this
+        algorithm:
+          ja = 0
+          for ia in range(self.na_u):
+              for id,r in args:
+                 for i in range(r):
+                    ja = ia + cell[id,:] * i
+
+        This method allows to utilise Bloch's theorem when creating
+        tight-binding parameter sets for TBtrans.
+
+        For single atom geometries this routine returns the same as
+        ``self.tile``.
         
-        The *args list must have the following format:
-          [(0,4),(1,3)]
-        which means:
-        1. loop over atoms in the geometry 'ia'
-        2. Repeat 'ia' atom 4 times along the first vector (python is 0 index based)
-        3. Repeat 'ia' atom 3 times along the second vector
-        
-        In essence is the expansion like this:
-        ja = 0
-        for ia in range(self.na_u):
-            for id,r in args:
-               for i in range(r):
-                  ja = ia + cell[id,:] * i
+        Parameters
+        ----------
+        args  : (tuple) (int,int)
+             A tuple consisting of two integers:
+                 direction : 0, 1, 2 according to the cell-direction
+                 number of tiles: number of times the structure is 
+                                  repeated.
+        update_sc : (False), boolean, optional
+
+        Examples
+        --------
+        >>> geom = TBT_Geom(cell=[[1.,0,0],[0,1.,0.],[0,0,1.]],xa=[[0,0,0],[0.5,0,0]])
+        >>> g = geom.repeat((0,2))
+        >>> print(g.xa)
+        [[ 0.   0.   0. ]
+         [ 1.   0.   0. ]
+         [ 0.5  0.   0. ]
+         [ 1.5  0.   0. ]]
+        >>> g = geom.repeat((0,2),(1,2))
+        >>> print(g.xa)
+        [[ 0.   0.   0. ]
+         [ 1.   0.   0. ]
+         [ 0.   1.   0. ]
+         [ 1.   1.   0. ]
+         [ 0.5  0.   0. ]
+         [ 1.5  0.   0. ]
+         [ 0.5  1.   0. ]
+         [ 1.5  1.   0. ]]
+
         """
         if len(args) == 0: return self.copy()
         update_sc = False
@@ -366,18 +512,31 @@ class TBT_Geom(SIESTA_UNITS):
 
     def append(self,other,axis,update_sc=False):
         """
-        Append other to self after axis:
+        Appends structure along ``axis``. This will automatically
+        add the ``self.cell[axis,:]`` to all atomic coordiates in the 
+        ``other`` structure before appending.
 
-        Basically it does this:
+        The basic algorithm is this:
         
-          >> oxa = other.xa + self.cell[axis,:][None,:]
-          >> self.xa = np.append(self.xa,oxa)
-          >> self.cell[axis,:] += other.cell[axis,:]
-          >> self.lasto = np.append(self.lasto,other.lasto)
+          >>> oxa = other.xa + self.cell[axis,:][None,:]
+          >>> self.xa = np.append(self.xa,oxa)
+          >>> self.cell[axis,:] += other.cell[axis,:]
+          >>> self.lasto = np.append(self.lasto,other.lasto)
 
-        Note that the cell appended is only in the axis that
+        NOTE: The cell appended is only in the axis that
         is appended, which means that the other cell directions
         need not conform.
+
+        Parameters
+        ----------
+        other : TBT_Geom
+            Other geometry class which needs to be appended
+        axis  : int
+            Cell direction to which the ``other`` geometry should be
+            appended.
+        update_sc : (False), boolean, optional
+            Whether the super-cell size should be re-calculated.
+
         """
         xa = np.append(self.xa,
                        self.cell[axis,:][None,:] + other.xa,
@@ -417,8 +576,24 @@ class TBT_Geom(SIESTA_UNITS):
 
     def coords(self,isc=[0,0,0],idx=None):
         """
-        Returns the coordinates of the geometry in the specified
-        cell
+        Returns the coordinates of a given super-cell.
+
+        Parameters
+        ----------
+        isc   : array_like
+            Returns the atomic coordinates shifted according to the integer
+            parts of the cell.
+        idx   : int/array_like
+            Only return the coordinates of these indices
+
+        Examples
+        --------
+        
+        >>> geom = TBT_Geom(cell=[[1.,0,0],[0,1.,0.],[0,0,1.]],xa=[[0,0,0],[0.5,0,0]])
+        >>> print(geom.coords(isc=[1,0,0])
+        [[ 1.   0.   0. ]
+         [ 1.5  0.   0. ]]
+
         """
         offset = self.cell[0,:] * isc[0] + \
             self.cell[1,:] * isc[1] + \
@@ -440,19 +615,35 @@ class TBT_Geom(SIESTA_UNITS):
 
     def close_sc(self,xyz_ia,isc=[0,0,0],dR=None):
         """
-        Returns all atoms that are within 'dR' of the atom 'ia'
-        seen from the unit-cell.
+        Calculates which atoms are close to some atom or point
+        in space, only returns so relative to a super-cell.
 
-        This allows one to easily create TB models
+        This returns a set of atomic indices which are within a 
+        sphere of radius ``dR``.
 
-        If dR has several elements it will return the indices:
+        If dR is a tuple/list/array it will return the indices:
         in the ranges:
            ( x <= dR[0] , dR[0] < x <= dR[1], dR[1] < x <= dR[2] )
 
-        This routine is the routine that by far takes the most
-        time, and the reason is simple, it does not take advantage
-        of the range of atoms, if we constructed a sparsity pattern
-        that only calculated wrt. atoms close it would be much faster.
+        NOTE: This routine can be made faster by setting the
+        ``self.proximity`` value.
+
+        Parameters
+        ----------
+        xyz_ia  : coordinate/index
+            Either a point in space or an index of an atom.
+            If an index is passed it is the equivalent of passing
+            the atomic coordinate ``self.close_sc(self.xa[xyz_ia,:])``.
+        isc     : ([0,0,0]), array_like, optional
+            The super-cell which the coordinates are checked in.
+        dR      : (None), float/tuple of float
+            The radii parameter to where the atomic connections are found.
+            If ``dR`` is an array it will return the indices:
+            in the ranges:
+               ``( x <= dR[0] , dR[0] < x <= dR[1], dR[1] < x <= dR[2] )``
+            If a single float it will return:
+               ``x <= dR``
+
         """
         if dR is None:
             ddR = np.array((self.dR,),np.float)
@@ -505,10 +696,29 @@ class TBT_Geom(SIESTA_UNITS):
 
     def close_all(self,xyz_ia,dR=None):
         """
-        Returns supercell indices for all atoms connecting to 'ia'
-        (ia could be an integer, number of atom in the structure,
-        or a coordinate)
-        from within range 'dR'.
+        Returns supercell atomic indices for all atoms connecting to ``xyz_ia``
+
+        This heavily relies on the ``self.close_sc`` method.
+
+        Note that if a connection is made in a neighbouring super-cell
+        then the atomic index is shifted by the super-cell index times
+        number of atoms.
+        This allows one to decipher super-cell atoms from unit-cell atoms.
+
+        Parameters
+        ----------
+        xyz_ia  : coordinate/index
+            Either a point in space or an index of an atom.
+            If an index is passed it is the equivalent of passing
+            the atomic coordinate ``self.close_sc(self.xa[xyz_ia,:])``.
+        dR      : (None), float/tuple of float
+            The radii parameter to where the atomic connections are found.
+            If ``dR`` is an array it will return the indices:
+            in the ranges:
+               ``( x <= dR[0] , dR[0] < x <= dR[1], dR[1] < x <= dR[2] )``
+            If a single float it will return:
+               ``x <= dR``
+
         """
         idx_a = None
         for s in xrange(np.prod(self.nsc)):
@@ -1153,10 +1363,10 @@ def TB_save(fname,Geom,TB = _TB_graphene['D'],alat=1.42):
 
     # Create tuple of connection ranges (this is for graphene)
     dR   = ( alat*0.5 , alat+0.1 , 2*sq3h*alat+0.1 , 2*alat+0.1 )
-    on   = np.array([TB['U'],1.])
-    nn   = np.array([TB['n1'],TB['s1']])
-    nnn  = np.array([TB['n2'],TB['s2']])
-    nnnn = np.array([TB['n3'],TB['s3']])
+    on   = (TB['U'] ,1.)
+    nn   = (TB['n1'],TB['s1'])
+    nnn  = (TB['n2'],TB['s2'])
+    nnnn = (TB['n3'],TB['s3'])
 
     # We add all hoppings
     for ia in xrange(Geom.na_u):
@@ -1251,6 +1461,8 @@ def TB_square():
     #     on-site , nearest neighbour
     dR = (  0.1   ,     1.1          )
     # NOTE, this below loop does EVERYTHING you did above!
+    on = (U ,1.)
+    nn = (t1,0.)
     for ia in xrange(el.na_u):
         idx_a = el.close_all(ia,dR=dR)
         # now idx_a is a list of two indices
@@ -1259,8 +1471,8 @@ def TB_square():
         #  idx_a[1] is an index list containing all atoms
         #           connection to 'ia' within 1.1 Ang
         # Hence we can set the hopping integrals like this
-        TB_el[ia,idx_a[0]] = ( U,1.)
-        TB_el[ia,idx_a[1]] = (t1,0.)
+        TB_el[ia,idx_a[0]] = on
+        TB_el[ia,idx_a[1]] = nn
 
     # Now we just do the same thing for the device
     for ia in xrange(dev.na_u):
@@ -1271,8 +1483,8 @@ def TB_square():
         #  idx_a[1] is an index list containing all atoms
         #           connection to 'ia' within 1.1 Ang
         # Hence we can set the hopping integrals like this
-        TB_dev[ia,idx_a[0]] = (U ,1.)
-        TB_dev[ia,idx_a[1]] = (t1,0.)
+        TB_dev[ia,idx_a[0]] = on
+        TB_dev[ia,idx_a[1]] = nn
         
     # And DONE, you have now created your first input for
     # tbtrans with a TB model of a square lattice
@@ -1290,13 +1502,13 @@ def TB_square():
     TB_el = TBT_Model(el)
     for ia in xrange(el.na_u):
         idx_a = el.close_all(ia,dR=dR)
-        TB_el[ia,idx_a[0]] = (U ,1.)
-        TB_el[ia,idx_a[1]] = (t1,0.)
+        TB_el[ia,idx_a[0]] = on
+        TB_el[ia,idx_a[1]] = nn
     TB_dev = TBT_Model(dev)
     for ia in xrange(dev.na_u):
         idx_a = dev.close_all(ia,dR=dR)
-        TB_dev[ia,idx_a[0]] = (U ,1.)
-        TB_dev[ia,idx_a[1]] = (t1,0.)
+        TB_dev[ia,idx_a[0]] = on
+        TB_dev[ia,idx_a[1]] = nn
     # Now save the TB models to corresponding NetCDF-4 files
     TB_el.save('SQUARE_EL.nc')
     TB_dev.save('SQUARE_DEV.nc')

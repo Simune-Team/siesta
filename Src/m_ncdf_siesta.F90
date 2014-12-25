@@ -68,7 +68,7 @@ contains
     type(hNCDF) :: ncdf, grp, grp2
     type(dict) :: dic, d
     character(len=DICT_KEY_LENGTH) :: key
-    integer :: n_nzs, tmp, iEl, i
+    integer :: n_nzs, tmp, iEl, i, chks(3)
 #ifdef TRANSIESTA
     integer, allocatable :: ibuf(:)
 #endif
@@ -94,8 +94,7 @@ contains
     else
 #endif
        call ncdf_create(ncdf,fname,&
-            mode=NF90_NETCDF4, overwrite=.true., &
-            compress_lvl=cdf_comp_lvl)
+            mode=NF90_NETCDF4, overwrite=.true.)
 #ifdef MPI 
     end if
 #endif
@@ -172,29 +171,31 @@ contains
     dic = dic//('info'.kv.'Number of non-zero elements per row')
     call ncdf_def_var(grp,'n_col',NF90_INT,(/'no_u'/), &
          compress_lvl=0, atts=dic)
+
+    chks = (/n_nzs,1,1/)
     
     dic = dic//('info'.kv. &
          'Supercell column indices in the sparse format ')
     call ncdf_def_var(grp,'list_col',NF90_INT,(/'nnzs'/), &
-         compress_lvl=cdf_comp_lvl,atts=dic)
-    
+         compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+
     ! Create the overlap matrix (we know it will not change)
     dic = ('info'.kv.'Overlap matrix')
     call ncdf_def_var(grp,'S',NF90_DOUBLE,(/'nnzs'/), &
-         compress_lvl=cdf_comp_lvl,atts=dic)
+         compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     
     dic = dic//('info'.kv.'Density matrix')
     call ncdf_def_var(grp,'DM',NF90_DOUBLE,(/'nnzs','spin'/), &
-         compress_lvl=cdf_comp_lvl,atts=dic)
+         compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
        
     dic = dic//('info'.kv.'Energy density matrix')
     dic = dic//('unit'.kv.'Ry')
     call ncdf_def_var(grp,'EDM',NF90_DOUBLE,(/'nnzs','spin'/), &
-         compress_lvl=cdf_comp_lvl,atts=dic)
+         compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     
     dic = dic//('info'.kv.'Hamiltonian')
     call ncdf_def_var(grp,'H',NF90_DOUBLE,(/'nnzs','spin'/), &
-         compress_lvl=cdf_comp_lvl,atts=dic)
+         compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
 
     ! Even though I think we could do without, I add the
     ! xij array to the file
@@ -240,41 +241,43 @@ contains
        ! we save it in that precision.
        i = NF90_FLOAT
     end if
+
+    chks = (/ntm(1),ntm(2),1/)
     
     if ( save_initial_charge_density ) then
        dic = dic//('info'.kv.'Initial charge density')
        call ncdf_def_var(grp,'RhoInit',i,(/'nx  ','ny  ','nz  ','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
     if ( savrho ) then
        dic = dic//('info'.kv.'Charge density')
        call ncdf_def_var(grp,'Rho',i,(/'nx  ','ny  ','nz  ','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
     if ( savepsch ) then
        dic = dic//('info'.kv.'Diffuse ionic charge')
        call ncdf_def_var(grp,'Chlocal',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
     if ( savetoch ) then
        dic = dic//('info'.kv.'Total charge')
        call ncdf_def_var(grp,'RhoTot',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
     if ( savdrh ) then
        dic = dic//('info'.kv.'Density difference from atomic densities')
        call ncdf_def_var(grp,'RhoDelta',i,(/'nx  ','ny  ','nz  ','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
     if ( savebader ) then
        dic = dic//('info'.kv.'Bader charge')
        call ncdf_def_var(grp,'RhoBader',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
     ! The remaining grids have unit Ry
@@ -283,19 +286,19 @@ contains
     if ( savevna ) then
        dic = dic//('info'.kv.'Neutral atom potential')
        call ncdf_def_var(grp,'Vna',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
     if ( savevh ) then
        dic = dic//('info'.kv.'Electrostatic potential')
        call ncdf_def_var(grp,'Vh',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
     if ( savevt ) then
        dic = dic//('info'.kv.'Total potential')
        call ncdf_def_var(grp,'Vt',i,(/'nx  ','ny  ','nz  ','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic)
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
     if ( parallel_io(grp) .and. exists ) then
