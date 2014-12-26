@@ -1,4 +1,11 @@
 ----------------------------------------------------
+December 26, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-244
+Added documentation for tbt_tb.py
+
+modified:
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 December 25, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-243
 Optimized NetCDF files + bugfixes
 

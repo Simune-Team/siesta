@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-# Should make it "backwards" compatible down to 2.6
 from __future__ import print_function
+# Should make it "backwards" compatible down to 2.6
 
 # This small utility can save a scipy sparse
 # matrix in a NetCDF-4 file readable by tbtrans
@@ -211,7 +211,7 @@ class TBT_Geom(SIESTA_UNITS):
         n_orb = np.append(lasto[0],n_orb)
         # Create new geometry
         g = TBT_Geom(cell=cell,xa=xa,n_orb=n_orb)
-        g.update_sc(nsc=int(nsc / 2))
+        g.update_sc(nsc=int((nsc-1) / 2))
         return g
 
     def __init_new(self,cell,xa,n_orb,update_sc=False):
@@ -438,6 +438,9 @@ class TBT_Geom(SIESTA_UNITS):
 
         For single atom geometries this routine returns the same as
         ``self.tile``.
+
+        It is adviced to only use this for electrode Bloch's theorem
+        purposes, ``self.tile`` is much faster.
         
         Parameters
         ----------
@@ -613,7 +616,7 @@ class TBT_Geom(SIESTA_UNITS):
             if np.all(self.isc_off[i,:] == asc): return i
         raise Exception('Could not find supercell index')
 
-    def close_sc(self,xyz_ia,isc=[0,0,0],dR=None):
+    def close_sc(self,xyz_ia,isc=[0,0,0],dR=None,idx=None):
         """
         Calculates which atoms are close to some atom or point
         in space, only returns so relative to a super-cell.
@@ -643,7 +646,9 @@ class TBT_Geom(SIESTA_UNITS):
                ``( x <= dR[0] , dR[0] < x <= dR[1], dR[1] < x <= dR[2] )``
             If a single float it will return:
                ``x <= dR``
-
+        idx     : (None), array_like
+            List of atoms that will be considered. This can
+            be used to only take out a certain atoms.
         """
         if dR is None:
             ddR = np.array((self.dR,),np.float)
@@ -654,14 +659,14 @@ class TBT_Geom(SIESTA_UNITS):
             # Get atomic coordinate in principal cell
             if self.proximity:
                 ioff = max(0,xyz_ia-self.proximity)
-                idx = np.arange(ioff,
-                                min(xyz_ia+self.proximity,self.na_u))
-                dxa = self.coords(isc=isc,idx = idx) - self.xa[xyz_ia,:][None,:]
+                dxi = np.arange(ioff,min(xyz_ia+self.proximity,self.na_u))
+                dxa = self.coords(isc=isc,idx=dxi) - self.xa[xyz_ia,:][None,:]
+                del dxi
             else:
-                dxa = self.coords(isc=isc) - self.xa[xyz_ia,:][None,:]
+                dxa = self.coords(isc=isc,idx=idx) - self.xa[xyz_ia,:][None,:]
         else:
             # The user has passed a coordinate
-            dxa = self.coords(isc=isc) - xyz_ia[None,:]
+            dxa = self.coords(isc=isc,idx=idx) - xyz_ia[None,:]
 
         # Retrieve all atomic indices which are closer
         # than our delta-R
@@ -670,10 +675,13 @@ class TBT_Geom(SIESTA_UNITS):
         #xaR = np.linalg.norm(dxa,axis=-1)
         xaR = (dxa[:,0]**2+dxa[:,1]**2+dxa[:,2]**2) ** .5
         del dxa # just because these arrays could be very big...
-        idx = np.where(xaR <= ddR[-1])[0]
+        ix = np.where(xaR <= ddR[-1])[0]
         if len(ddR) == 1:
             # We only have one designation
-            return idx + ioff
+            if idx is None:
+                return ix + ioff
+            else:
+                return idx[ix]
         if np.any(np.diff(ddR) < 0.):
             raise ValueError('Proximity checks for several quantities '+ \
                                  'at a time requires ascending dR values.')
@@ -682,19 +690,25 @@ class TBT_Geom(SIESTA_UNITS):
         # The more neigbours you wish to find the faster this becomes
         # We only do "one" heavy duty search,
         # then we immediately reduce search space to this subspace
-        xaR = xaR[idx]
-        idx[:] += ioff
-        ix = [idx[np.where(xaR <= ddR[0])[0]]]
+        xaR = xaR[ix]
+        ix[:] += ioff
+        if idx is None:
+            x = [ix[np.where(xaR <= ddR[0])[0]]]
+        else:
+            x = [idx[ix[np.where(xaR <= ddR[0])[0]]]]
         for i in range(1,len(ddR)):
             # Search in the sub-space
             # Notice that this sub-space reduction will never
             # allow the same indice to be in two ranges (due to
             # numerics)
             tidx = np.where(np.logical_and(ddR[i-1] < xaR,xaR <= ddR[i]))[0]
-            ix.append(idx[tidx])
-        return ix
+            if idx is None:
+                x.append(ix[tidx])
+            else:
+                x.append(idx[ix[tidx]])
+        return x
 
-    def close_all(self,xyz_ia,dR=None):
+    def close_all(self,xyz_ia,dR=None,idx=None):
         """
         Returns supercell atomic indices for all atoms connecting to ``xyz_ia``
 
@@ -718,39 +732,98 @@ class TBT_Geom(SIESTA_UNITS):
                ``( x <= dR[0] , dR[0] < x <= dR[1], dR[1] < x <= dR[2] )``
             If a single float it will return:
                ``x <= dR``
+        idx     : (None), array_like
+            List of indices for atoms that are to be considered
 
         """
         idx_a = None
         for s in xrange(np.prod(self.nsc)):
             no = s * self.na_u
-            idx = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR)
-            if isinstance(idx,list):
+            ix = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR,idx=idx)
+            if isinstance(ix,list):
                 # we have a list of arrays
                 if idx_a is None:
-                    idx_a = [ix + no for ix in idx]
+                    idx_a = [x + no for x in ix]
                 else:
-                    for i,ix in enumerate(idx):
-                        idx_a[i] = np.append(idx_a[i],ix + no)
-            elif len(idx) > 0:
+                    for i,x in enumerate(ix):
+                        idx_a[i] = np.append(idx_a[i],x + no)
+            elif len(ix) > 0:
                 # We can add it to the list
                 # We add the atomic offset for the supercell 
                 # index
                 if idx_a is None:
-                    idx_a = idx + s * self.na_u
+                    idx_a = ix + s * self.na_u
                 else:
-                    idx_a = np.append(idx_a,idx+s*self.na_u)
+                    idx_a = np.append(idx_a,ix+s*self.na_u)
         return idx_a
         
 
 class TBT_Model(SIESTA_UNITS):
     """
-    A wrapper to create zero containing sparsity patterns
-    while easily implementing the symmetric sparsity pattern.
+    Tight binding model handler to create a Hamiltonian
+    for arbitrary systems.
+
+    This heavily relies on the ``TBT_Geom`` class which initializes the
+    system size.
+
+    Parameters
+    ----------
+    geom            : TBT_Geom
+        The geometry that determines the tight-binding model to be
+        created.
+        From the geometry the number of orbitals etc. will be 
+        initialized.
+    max_connection  : (None), integer, optional
+        Sets the maximum number of connections for all atoms for the
+        pre-allocated sparsity pattern.
+
+        When ``None`` it will calculate the maxmimum number of
+        connections based on ``geom.dR`` and the interactions
+        in the cell.
+
+        For large systems calculating the mamximum number
+        of connections can take a lot of time.
+        You are encouraged to set this to some number, it only has effect
+        on the memory used for the basic sparsity pattern.
+
+        You can safely set this to a safely high number.
+
+    Attributes
+    ----------
+    geom : TBT_Geom
+        Class object which is the same as the passed geometry
+    max_n: integer
+        Maximum number of orbital connections, when creating
+        the sparsity pattern the pre-allocated Hamiltonian has
+        size ``max_n*self.geom.no_u``.
+    ncol : (no_u) ndarray
+        Number of connections for the i'th orbital.
+    ptr  : (no_u+1) ndarray
+        Pointer to the sparsity pattern where the i'th orbital indices
+        starts.
+    col  : (nnzs) ndarray
+        Column indices for the sparsity pattern:
+           >>> col[ptr[i]+0]
+        is the first matrix element that corresponds to the Hamiltonian
+        element ``H[i,col[ptr[i]+0]]``
+        Hence all connections to the i'th orbital can be found using this
+        loop:
+           >>> for j in range(ncol[i]):
+           >>>    H[i,col[ptr[i]+j] ...
+    HS   : (nnzs,2) ndarray
+        The Hamiltonian ([:,0]) and the overlap ([:,1]) matrix in sparse
+        format.
+        The full Hamiltonian can be created using ``ptr`` and ``col``.
+        It is saved in CSR format.
+        Note that the sparsity format is a non-square matrix, but rather
+        a matrix with ``self.geom.no_u`` rows and ``self.geom.no_u*np.prod(self.geom.nsc)`` columns.
+    nnzs : integer
+        Number of non-zero elements in the sparsity pattern.
+
     """
     def __init__(self,geom,max_connection=None):
         self.geom = geom
         self.no_u = geom.no_u
-        no_s = geom.no_u * np.prod(geom.nsc)
         # We first find the maximal number of connections per atom
         max_n = 0
         if max_connection:
@@ -771,17 +844,22 @@ class TBT_Model(SIESTA_UNITS):
         # per orbital to the maximum number of
         # connections, then later we truncate
         # Hence our ncol keeps track of how many we actually have
-        self.ncol = np.zeros((self.no_u,),np.int)
+        self.ncol = np.zeros((self.geom.no_u,),np.int)
         self.ptr = np.cumsum(np.repeat(np.array([self.max_n],np.int),
-                             self.no_u+1)) - self.max_n
-        self.nnzs = 0
+                             self.geom.no_u+1)) - self.max_n
+        self._nnzs = 0
         self.col = np.empty((self.ptr[-1],),np.int)
 
         self._finalized = False
 
     def reset(self,dtype=np.float):
         """
-        This lets the HS size be set by the user
+        The sparsity pattern is cleaned and every thing 
+        is reset. 
+
+        The object will be the same as if it had been
+        initialized with the same geometry as it were
+        created with.
         """
         # I know that this is not the most efficient way to
         # access a C-array, however, for constructing a
@@ -795,7 +873,10 @@ class TBT_Model(SIESTA_UNITS):
 
     def finalize(self):
         """ 
-        Disables the ability to extend this TB sparsity pattern
+        Finalizes the object so that no new sparse elements
+        can be added. 
+
+        Sparse elements can still be changed.
         """
         if self._finalized: return
         self._finalized = True
@@ -803,9 +884,9 @@ class TBT_Model(SIESTA_UNITS):
         if np.unique(self.col[:ptr]).shape[0] != ptr:
             raise ValueError('You cannot have two hoppings between '+
                              'the same orbitals.')
-        if self.no_u > 1:
+        if self.geom.no_u > 1:
             # We truncate all the connections
-            for io in xrange(1,self.no_u):
+            for io in xrange(1,self.geom.no_u):
                 cptr = self.ptr[io]
                 # Update actual pointer position
                 self.ptr[io] = ptr
@@ -818,19 +899,19 @@ class TBT_Model(SIESTA_UNITS):
                                      'the same orbitals.')
                 ptr += no
         # Correcting the size of the pointer array
-        self.ptr[self.no_u] = ptr
-        if ptr != self.nnzs:
+        self.ptr[self.geom.no_u] = ptr
+        if ptr != self._nnzs:
             raise ValueError('Error in creating the TB parameter space')
         # Truncate values to correct size
-        self.HS = self.HS[:self.nnzs,:]
-        self.col = self.col[:self.nnzs]
+        self.HS = self.HS[:self._nnzs,:]
+        self.col = self.col[:self._nnzs]
         # Deleting the variable
         # will error out in _setitem when
         # it is referenced :)
-        del self.nnzs
+        del self._nnzs
 
         # Sort the indices (THIS IS A REQUIREMENT!)
-        for io in xrange(self.no_u):
+        for io in xrange(self.geom.no_u):
             ptr = self.ptr[io]
             no  = self.ncol[io]
             # Sort the indices
@@ -890,8 +971,10 @@ class TBT_Model(SIESTA_UNITS):
             # if no new values are left we return immediately
             if lj == 0: return
 
-        if self.col.shape[0] < self.nnzs + lj:
-            print('Shape. col '+str(self.col.shape[0]) + ' and non-zero elements '+str(self.nnzs))
+        # As nnzs is deleted when the object has been finalized 
+        # this line should error out.
+        if self.col.shape[0] < self._nnzs + lj:
+            print('Shape. col '+str(self.col.shape[0]) + ' and non-zero elements '+str(self._nnzs))
             raise ValueError('Have you changed the sparsity pattern while editing '+
                              'the TB parameters? This is not allowed.\n'+
                              'Or maybe you have initialized max_connection too small, try increasing it.')
@@ -902,12 +985,21 @@ class TBT_Model(SIESTA_UNITS):
         self.HS[ptr:ptr+lj,:] = val
         self.ncol[i] += lj
         # Increment number of non-zero elements
-        self.nnzs += lj
+        self._nnzs += lj
+
+    @property
+    def nnzs(self):
+        """
+        Returns number of current non-zero elements.
+        """
+        return np.sum(self.ncol)
 
     def tocsr(self):
         """
-        Returns a csr sparse matrix for both the Hamiltonian
-        and the overlap matrix
+        Returns a CSR sparse matrix for both the Hamiltonian
+        and the overlap matrix using the scipy package.
+        
+        This method depends on scipy.
         """
         try:
             if self._finalized: pass
@@ -916,11 +1008,11 @@ class TBT_Model(SIESTA_UNITS):
         # Create csr sparse formats.
         # We import here as the user might not want to
         # rely on this feature.
-        import scipy.sparse as spar
+        from scipy.sparse import csr_matrix
         if self.HS.shape[1] == 1:
-            return spar.csr_matrix((self.HS[:,0],self.col,self.ptr))
-        return (spar.csr_matrix((self.HS[:,0],self.col,self.ptr)), \
-                    spar.csr_matrix((self.HS[:,1],self.col,self.ptr)))
+            return csr_matrix((self.HS[:,0],self.col,self.ptr))
+        return (csr_matrix((self.HS[:,0],self.col,self.ptr)), \
+                    csr_matrix((self.HS[:,1],self.col,self.ptr)))
 
     def _save_sparsity(self,nf,zlib=0):
         """
@@ -956,14 +1048,25 @@ class TBT_Model(SIESTA_UNITS):
 
     def save(self,fname='SIESTA.nc',Ef=0.,zlib=0):
         """
-        Saves the current information in the 'fname'
-        to be ready to be read in by tbtrans
+        Saves the current sparse Hamiltonian and overlap to a 
+        NetCDF file which is readable by TBtrans.
+
+        This routine will implicitly call ``self.finalize()``.
+
+        Parameters
+        ----------
+        fname : (SIESTA.nc) str
+            Filename to save the sparse information in.
+        Ef    : (0. eV) float
+            Fermi-level for the Hamiltonian
+        zlib  : (0) integer
+            Compression level of sparse elements, in range [0;9]
         """
 
         self.finalize()
 
         if os.path.isfile(fname):
-            raise Exception('File: '+fname+' already exists, we do not allow overwriting.')
+            raise Exception('File: '+fname+' already exists, we do not allow overwriting, please remove file manually.')
 
         nf = nc.Dataset(fname,'w',format='NETCDF4')
 
@@ -974,8 +1077,8 @@ class TBT_Model(SIESTA_UNITS):
         nf.createDimension('one',1)
         nf.createDimension('n_s',np.prod(self.geom.nsc))
         nf.createDimension('xyz',3)
-        nf.createDimension('no_s',np.prod(self.geom.nsc)*self.no_u)
-        nf.createDimension('no_u',self.no_u)
+        nf.createDimension('no_s',np.prod(self.geom.nsc)*self.geom.no_u)
+        nf.createDimension('no_u',self.geom.no_u)
         nf.createDimension('spin',1)
         nf.createDimension('na_u',self.geom.na_u)
 
@@ -1033,7 +1136,7 @@ class TBT_Model(SIESTA_UNITS):
         nf.variables['nsc'][:] = self.geom.nsc
         nf.variables['lasto'][:] = self.geom.lasto[1:]
         nf.variables['Ef'][:] = Ef / self.Ry
-        nf.variables['Qtot'][:] = self.no_u
+        nf.variables['Qtot'][:] = self.geom.no_u
         
         nf.variables['xa'][:,:] = self.geom.xa[:,:] / self.Bohr
         nf.variables['cell'][:,:] = self.geom.cell[:,:] / self.Bohr
@@ -1056,11 +1159,18 @@ class TBT_Model(SIESTA_UNITS):
 
 class TBT_dH(TBT_Model):
     """
-    Specific class to create dH input's for tbtrans.
+    Hamiltonian model to create a dH Hamiltonian for TBtrans.
+
+    This extends the class ``TBT_Model`` which contains a sparse
+    Hamiltonian.
+    
+    Every parameter and attribute is the same as ``TBT_Model``.
+
     """
     def reset(self,dtype=np.float):
         """
-        This lets the HS size be set by the user
+        Overrides the ``TBT_Model`` method as the overlap matrix
+        is not needed in the dH method for TBtrans.
         """
         # I know that this is not the most efficient way to
         # access a C-array, however, for constructing a
@@ -1097,14 +1207,35 @@ class TBT_dH(TBT_Model):
         
     def save(self,fname,kpt=None,E=None,delete=False,zlib=0):
         """
-        Simple routine for creating/saving dH file for input to tbtrans
+        Saves/adds dH setting for the an energy level and or
+        k-point.
 
-        Important input are kpt and E.
-        If none are provided it is a level 1.
-        If kpt is provided and E is not it is a level 2.
-        If E is provided and kpt is not it is a level 3.
-        If both are provided it is a level 4.
+        Parameters
+        ----------
+        fname  : str
+            Filename to save the dH matrices in.
+            If the file already exists it will append the
+            data to the file by use of the ``kpt`` and ``E``
+            parameters.
+        kpt    : (None) [3] array_like, optional
+            Saving the Hamiltonian for the k-point specified.
+            If this is not None and ``E`` is None it will save the dH as level 2.
+            If this is not None and ``E`` is not None it will save the dH as level 4
+        E      : (None) float, optional
+            Saving the Hamiltonian for the k-point specified.
+            If this is not None and ``kpt`` is None it will save the dH as level 3.
+            If this is not None and ``kpt`` is not None it will save the dH as level 4
+        zlib   : (0) integer, optional
+            When creating the filename, or a new level is added this denotes
+            the compression of the dH matrix.
+            This should be in the range [0;9] with 9 being the most compressed
+            format.
 
+        If both ``kpt`` and ``E`` are None it will save a level 1 dH.
+
+        If the settings (``E`` and ``kpt``) for the dH matrix already exists for 
+        the level it will overwrite the dH matrix.
+            
         """
         # Be sure to have the sparsity pattern shrunk to the correct size
         self.finalize()
@@ -1115,7 +1246,7 @@ class TBT_dH(TBT_Model):
         else:
             nf = nc.Dataset(fname,'w',format='NETCDF4')
             nf.createDimension('xyz',3)
-            nf.createDimension('no_u',self.no_u)
+            nf.createDimension('no_u',self.geom.no_u)
         
         cmp_lvl = zlib
         z_lib = zlib > 0
