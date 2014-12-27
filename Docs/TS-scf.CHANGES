@@ -52,6 +52,13 @@ modified:
   Util/TS/TBtrans/tbt_data.py
 
 ----------------------------------------------------
+December 19, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-243
+Communication bugfix for SiestaXC
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+----------------------------------------------------
 December 19, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-242
 Bugfix for compiling TBT without NCDF_4
 
