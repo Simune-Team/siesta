@@ -54,6 +54,7 @@ contains
     use mpi_siesta, only : MPI_Comm_World, MPI_Barrier
 #endif
 
+    use m_io_s, only : file_exist
     use intrinsic_missing, only : SPC_PROJ, VNORM, VEC_PROJ
     use m_ts_electype
     use m_ts_method, only : ts_init_regions
@@ -91,7 +92,7 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     character(len=50) :: g
-    integer :: i, ia, ia1, ia2, no_u
+    integer :: i, ia, ia1, ia2, no_u, iu
     type(tRegion) :: r_tmp, r_tmp2, r_tmp3, r_Dev
     real(dp) :: p(3), contrib
 
@@ -312,6 +313,17 @@ contains
     ! Create the global transiesta H(k), S(k) sparsity pattern
     call ts_Sparsity_Global(dit,sp, N_Elec, Elecs, sp_uc)
 
+    ! At this point we have reduced the sparsity
+    ! pattern to it's correct size.
+    ! Try and read in the regions
+    call tbt_read_regions(N_Elec,Elecs,na_u,lasto,no_u)
+    if ( r_oEl(1)%n > 0 ) then
+       ! We say that if the electrode orbitals are allocated
+       ! we have read in the file-information
+       call region_delete(r_tmp,r_tmp2,r_tmp3)
+       return
+    end if
+
     do iEl = 1 , N_Elec
 
        if ( mod(iEl-1,Nodes) /= Node ) cycle
@@ -354,8 +366,7 @@ contains
        ! Create the region that connects the electrode-followed
        ! region to the central region
        call region_connect(r_oEl(iEl), dit, sp, Elecs(iEl)%o_inD)
-       ! Append the newly found region that is connecting out to the
-       ! full region
+       ! Append the newly found region that is connecting out to the full region
        call region_append(r_oEl(iEl), Elecs(iEl)%o_inD, r_oElpD(iEl))
 
        ! We now know how many orbitals that we are down-folding the 
@@ -578,9 +589,216 @@ contains
 
     if ( Node == 0 ) then
        write(*,'(a)')'tbtrans: Done analyzing sparsity pattern...'
+
+       ! Write the information 
+       g = fdf_get('TBT.Region.File','DOESNOTEXIST')
+       if ( g /= 'DOESNOTEXIST' ) then
+
+       ! Create the file
+       call io_assign(iu)
+       open(file=trim(g),unit=iu,form='formatted')
+
+       ! write information about the system size
+       write(iu,'(4(i0,tr1))') na_u, no_u, N_Elec
+
+       ! if buffer atoms exists, we write them
+       write(iu,'(2(i0,tr1))') r_aBuf%n,r_oBuf%n
+       if ( r_aBuf%n > 0 ) then
+          ! write alone electrode, atoms and orbitals
+          write(iu,'(12(i0,tr1))') (r_aBuf%r(i),i=1,r_aBuf%n)
+          write(iu,'(12(i0,tr1))') (r_oBuf%r(i),i=1,r_oBuf%n)
+       end if
+             
+       ! Write out each electrode individually
+       do iEl = 1 , N_Elec
+
+          ! Write name
+          write(iu,'(a)') trim(Elecs(iEl)%name)
+          ! write number of atoms and orbitals
+          i = product(Elecs(iEl)%rep)
+          write(iu,'(2(i0,tr1))') Elecs(iEl)%na_used*i,Elecs(iEl)%no_used*i
+          ! write alone electrode, atoms and orbitals
+          write(iu,'(12(i0,tr1))') (r_aEl_alone(iEl)%r(i),i=1,r_aEl_alone(iEl)%n)
+          write(iu,'(12(i0,tr1))') (r_oEl_alone(iEl)%r(i),i=1,r_oEl_alone(iEl)%n)
+          write(iu,'(2(i0,tr1))') r_oEl(iEl)%n
+          write(iu,'(12(i0,tr1))') (r_oEl(iEl)%r(i),i=1,r_oEl(iEl)%n)
+          write(iu,'(2(i0,tr1))') Elecs(iEl)%o_inD%n
+          write(iu,'(12(i0,tr1))') (Elecs(iEl)%o_inD%r(i),i=1,Elecs(iEl)%o_inD%n)
+       end do
+             
+       write(iu,'(2(i0,tr1))') r_aDev%n,r_oDev%n
+       write(iu,'(12(i0,tr1))') (r_aDev%r(i),i=1,r_aDev%n)
+       write(iu,'(12(i0,tr1))') (r_oDev%r(i),i=1,r_oDev%n)
+       
+       call io_close(iu)
+
+       end if
+
     end if
     
   end subroutine tbt_init_regions
+
+  subroutine tbt_read_regions(N_Elec, Elecs, na_u, lasto, no_u)
+    use parallel, only : Node
+    use fdf
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD
+#endif
+
+    use m_ts_electype
+    use m_io_s, only : file_exist
+    use m_region
+
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(inout) :: Elecs(N_Elec)
+    integer, intent(in) :: na_u, lasto(0:na_u), no_u
+
+    ! Local variables
+    character(len=250) :: fname, g
+    integer :: iu, fa_u, fo_u, f_Elec
+    integer :: iEl, i, itmp(2)
+    type(tRegion) :: r
+
+    ! We try and see if a user file exists and then create all
+    ! regions.
+    fname = fdf_get('TBT.Region.File','DOESNOTEXIST')
+    if ( .not. file_exist(fname, Bcast = .true.) ) return
+
+    if ( Node == 0 ) then
+
+    write(*,'(a)')'tbtrans: Re-reading previously created regions...'
+
+    ! Read in the quantities
+    call io_assign(iu)
+    open(file=trim(fname),unit=iu,form='formatted')
+
+    ! write information about the system size
+    read(iu,*) fa_u, fo_u, f_Elec
+    if ( fa_u /= na_u ) &
+         call mdie('Error in number of atoms in full structure.')
+    if ( fo_u /= no_u ) &
+         call mdie('Error in number of orbitals in full structure.')
+    if ( f_Elec /= N_Elec ) &
+         call mdie('Error in number of electrodes.')
+
+    read(iu,*) itmp
+    if ( itmp(1) /= r_aBuf%n ) &
+         call mdie('Error in number of buffer atoms.')
+    if ( itmp(2) /= r_oBuf%n ) &
+         call mdie('Error in number of buffer orbitals.')
+    ! if buffer atoms exists, we write them
+    if ( itmp(1) > 0 ) then
+       call region_range(r,1,itmp(1))
+       ! write alone electrode, atoms and orbitals
+       read(iu,*) (r%r(i),i=1,r%n)
+       if ( any(r%r /= r_aBuf%r) ) &
+            call mdie('Buffer atoms not equivalent.')
+       call region_range(r,1,itmp(2))
+       read(iu,*) (r%r(i),i=1,r%n)
+       if ( any(r%r /= r_oBuf%r) ) &
+            call mdie('Buffer orbitals not equivalent.')
+    end if
+
+    ! Read each electrode individually
+    do iEl = 1 , N_Elec
+
+       ! read name
+       read(iu,*) g
+       if ( trim(g) /= trim(Elecs(iEl)%name) ) &
+            call mdie('Electrode name not the same.', &
+            'Read: '//trim(g)//' vs. fdf: '//trim(Elecs(iEl)%name))
+       
+       ! read number of atoms and orbitals
+       read(iu,*) itmp
+       i = product(Elecs(iEl)%rep)
+       if ( itmp(1) /= Elecs(iEl)%na_used * i ) &
+            call mdie('Electrode used atoms are not equivalent.', &
+            'Electrode: '//trim(g))
+       if ( itmp(2) /= Elecs(iEl)%no_used * i ) &
+            call mdie('Electrode used orbitals are not equivalent.', &
+            'Electrode: '//trim(g))
+
+       ! read alone electrode, atoms and orbitals
+       call region_range(r,1,r_aEl_alone(iEl)%n)
+       read(iu,*) (r%r(i),i=1,r%n)
+       if ( any(r%r /= r_aEl_alone(iEl)%r) ) &
+            call mdie('Electrode atom positions are not equivalent.', &
+            'Electrode: '//trim(g))
+       call region_range(r,1,r_oEl_alone(iEl)%n)
+       read(iu,*) (r%r(i),i=1,r%n)
+       if ( any(r%r /= r_oEl_alone(iEl)%r) ) &
+            call mdie('Electrode orbital positions are not equivalent.', &
+            'Electrode: '//trim(g))
+
+       read(iu,*) itmp(1)
+       call region_range(r_oEl(iEl),1,itmp(1))
+       read(iu,*) (r_oEl(iEl)%r(i),i=1,r_oEl(iEl)%n)
+
+       read(iu,*) itmp(1)
+       call region_range(Elecs(iEl)%o_inD,1,itmp(1))
+       read(iu,*) (Elecs(iEl)%o_inD%r(i),i=1,itmp(1))
+
+    end do
+
+    read(iu,*) itmp
+    ! Check that the device regions fit
+    if ( itmp(1) /= r_aDev%n ) &
+         call mdie('Device region atoms are not the same.', &
+         'Please delete file: '//trim(fname)//' or revert the device region block')
+    read(iu,*) (r_aDev%r(i),i=1,r_aDev%n)
+    call region_range(r_oDev,1,itmp(2))
+    read(iu,*) (r_oDev%r(i),i=1,r_oDev%n)
+
+    call io_close(iu)
+
+    call region_delete(r)
+
+    end if
+
+#ifdef MPI
+    do iEl = 1 , N_Elec
+       call region_MPI_Bcast(r_oEl(iEl),0,MPI_Comm_World)
+       call region_MPI_Bcast(Elecs(iEl)%o_inD,0,MPI_Comm_World)
+    end do
+    call region_MPI_Bcast(r_aDev,0,MPI_Comm_World)
+    call region_MPI_Bcast(r_oDev,0,MPI_Comm_World)
+#endif
+    r_aDev%name = '[A]-device'
+    r_oDev%name = '[O]-device'
+
+    do iEl = 1 , N_Elec
+
+       call region_Orb2Atom(r_oEl(iEl), na_u, lasto , r_aEl(iEl))
+       r_oEl(iEl)%name    = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
+       r_aEl(iEl)%name    = '[A]-'//trim(Elecs(iEl)%name)//' folding region'
+       call region_append(r_oEl(iEl), Elecs(iEl)%o_inD, r_oElpD(iEl))
+       r_oElpD(iEl)%name  = '[O]-'//trim(Elecs(iEl)%name)//' folding El + D'
+       call region_Orb2Atom(r_oElpD(iEl) , na_u, lasto, r_aElpD(iEl) )
+       r_aElpD(iEl)%name  = '[A]-'//trim(Elecs(iEl)%name)//' folding El + D'
+
+       call region_copy(Elecs(iEl)%o_inD,Elecs(iEl)%inDpvt)
+       Elecs(iEl)%inDpvt%r(:) = region_pivot(r_oDev,Elecs(iEl)%o_inD%r(:))
+
+    end do
+
+  contains
+
+    subroutine mdie(msg,amsg)
+      character(len=*), intent(in) :: msg
+      character(len=*), intent(in), optional :: amsg
+
+      write(*,'(a)') 'TBtrans will die due to erroneous reading of &
+           &the '//trim(fname)//' file.'
+      write(*,'(a)') 'This will happen if you change the device region &
+           &or the electrode positions.'
+      write(*,'(a)') 'The easiest thing is to delete the file: '//trim(fname)
+      if ( present(amsg) ) then
+         write(*,'(a)') amsg
+      end if
+      call die(msg)
+    end subroutine mdie
+
+  end subroutine tbt_read_regions
 
   subroutine tbt_region_options( save_DATA )
     use dictionary
@@ -663,8 +881,6 @@ contains
     if ( Node /= 0 ) return
 
     if ( verb < 3 ) return
-
-    write(*,*) ! new-line
 
     ! Print out the buffer regions
     if ( r_aBuf%n > 0 ) then

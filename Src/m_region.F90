@@ -9,7 +9,7 @@
 
 module m_region
   
-  use intrinsic_missing, only : uniqc
+  use intrinsic_missing, only : uniqc, sort, sfind
   use geom_helper, only : ucorb, iaorb
   use class_OrbitalDistribution
   use class_Sparsity
@@ -206,8 +206,8 @@ contains
     type(tRegion) :: tmp
 #endif
     integer :: i, j, io, jo, ind, no_l, no_u, it, rt
-    integer, allocatable :: ct(:), rr(:)
-    integer, pointer :: err(:)
+    integer, allocatable :: ct(:), rr(:), sr(:)
+    integer, allocatable :: ser(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 
     call attach(sp,nrows=no_l,nrows_g=no_u, &
@@ -216,13 +216,20 @@ contains
     ! ensure nullification of cr
     call region_delete(cr)
 
-    allocate(rr(r%n))
+    allocate(rr(r%n),sr(r%n))
+    ! In case r%n is extremely big we can with benefit &
+    ! search the region in a sorted array.
+    ! We sort it once, and search that array instead
+    ! This requires a slightly increased memory, but 
+    ! drastically improves performance.
+    sr(:) = SORT(r%r)
     allocate(ct(no_u-r%n))
 
-    ! Default the err region to be the r-region
-    err => r%r
     if ( present(except) ) then
-       if ( except%n > 0 ) err => except%r
+       if ( except%n > 0 ) then
+          allocate(ser(except%n))
+          ser(:) = sort(except%r(:))
+       end if
     end if
 
     rt = 0
@@ -241,9 +248,12 @@ contains
           jo = ucorb(l_col(ind),no_u)
 
           ! Ensure that it is not a folding to the same region
-          if ( in_region(r,jo) ) cycle
-          if ( any(jo == err) ) cycle ! in case er has been provided
-
+          ! SFIND is much faster than in_region
+          if ( SFIND(sr,jo) > 0 ) cycle
+          if ( allocated(ser) ) then
+             if ( SFIND(ser,jo) > 0 ) cycle ! in case er has been provided
+          end if
+          
           if ( it == 0 ) then
              it = it + 1
              ct(it) = jo
@@ -308,8 +318,10 @@ contains
              jo = ucorb(l_col(ind),no_u)
 
              ! Ensure that it is not a folding to the same region
-             if ( in_region(r,jo) ) cycle
-             if ( any(jo == err) ) cycle ! in case er has been provided
+             if ( SFIND(sr,jo) > 0 ) cycle
+             if ( allocated(ser) ) then
+                if ( SFIND(ser,jo) > 0 ) cycle ! in case er has been provided
+             end if
 
              if ( it == 0 ) then
                 it = it + 1
@@ -333,7 +345,8 @@ contains
     ! Copy the list over
     call region_list(cr,it,ct(1:it))
 
-    deallocate(ct)
+    deallocate(sr,ct)
+    if ( allocated(ser) ) deallocate(ser)
 
 #ifdef MPI
     call region_MPI_union(dit,cr)
@@ -657,7 +670,7 @@ contains
     type(tRegion), intent(inout) :: r
 
     ! ** local variables
-    integer :: i, it
+    integer :: it
     integer, allocatable :: ct(:)
 
     if ( r1%n == 0 ) then
@@ -1107,14 +1120,19 @@ contains
     type(tRegion), intent(inout) :: r
     integer, intent(in) :: Bnode, Comm
     
-    integer :: Node
+    integer :: Node, n
     integer :: MPIerror
 
     call MPI_Comm_Rank(Comm,Node,MPIerror)
 
-    call MPI_Bcast(r%n,1,MPI_Integer, Bnode, comm, MPIerror)
+    n = r%n
+    call MPI_Bcast(n,1,MPI_Integer, Bnode, comm, MPIerror)
+    if ( n == 0 ) return
     if ( Node /= Bnode ) then
-       allocate(r%r(r%n))
+       ! ensures that it is deleted!
+       call region_delete(r)
+       r%n = n
+       allocate(r%r(n))
     end if
     call MPI_Bcast(r%r(1),r%n,MPI_Integer, Bnode, comm, MPIerror)
 

@@ -62,6 +62,7 @@ contains
        if ( fdf_bnintegers(pline) > 2 ) then
           step = abs(fdf_bnintegers(pline,3))
        end if
+       if ( step == 0 ) call die('Stepping MUST be different from 0')
        if ( leqi(g,'to') ) then
           ! do nothing....
        else if ( leqi(g,'plus') ) then
@@ -79,7 +80,10 @@ contains
           call die('Error in range block: &
                &to <int> is above highest allowed value')
        end if
-       if ( i1 > i2 * step ) call die('Block range is not consecutive')
+       if ( (i1 < i2 .and. step < 0) .or. &
+            (i1 > i2 .and. step > 0) ) then
+          call die('Block range is not consecutive')
+       end if
        do i = i1 , i2 , step
           n = n + 1 
           list(n) = i

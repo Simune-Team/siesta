@@ -1,4 +1,28 @@
 ----------------------------------------------------
+December 28, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-246
+Bugfix and speeded up region_connect
+
+* region_connect was using extensive amounts
+  of in_region, which is extremely slow.
+  Instead we sort the arrays, and use my SFIND
+  algorithm to quickly figure out if the element
+  exist.
+  This meant a speedup in excess of 100 for analysing sparsity 
+  patterns in tbtrans.
+
+* Bugfix for fdf_extra, negative steps did not work.
+
+* Tbtrans can now re-read a previously analysed sparsity
+  pattern. This only has importance for extreme models with
+  +200000 orbitals.
+
+modified:
+  Src/fdf_extra.F90
+  Src/m_region.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 December 26, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-244
 Added documentation for tbt_tb.py
 

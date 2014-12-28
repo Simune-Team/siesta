@@ -997,7 +997,6 @@ contains
     real(dp), allocatable :: rE(:)
     real(dp), allocatable :: r2(:,:), r3(:,:,:)
     integer, allocatable :: pvt(:)
-    character(len=10) :: char
 
     ! In case we are doing something parallel, 
     ! we simply read in and write them in text based formats
