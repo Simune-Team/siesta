@@ -1,6 +1,18 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-01-07                                              rc-4.0-pl-4
+Fix MPI tag in SiestaXC/mesh3d
+
+* The variable Mpitag was not initialized, leading to problems whenever
+  its value was not zero or considered as MPI_ANY_TAG in a Recv operation.
+
+(Nick P. Andersen)
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+----------------------------------------------------------------------
 2014-11-08                                              rc-4.0-pl-3
 Fix output to show constrained forces
 

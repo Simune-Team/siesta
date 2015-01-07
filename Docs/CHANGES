@@ -6,6 +6,18 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-01-07  10:35:00 GMT                                     trunk-465
+Merge fix from rc-4.0: MPI tag in SiestaXC/mesh3d
+
+* The variable Mpitag was not initialized, leading to problems whenever
+  its value was not zero or considered as MPI_ANY_TAG in a Recv operation.
+
+(Nick P. Andersen)
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+-----------------------------------------------------------------------
 2014-11-08  16:30:00 GMT                                     trunk-464
 Merge fixes from rc-4.0: constr. forces, MPI compilation, mm.potentials
 
