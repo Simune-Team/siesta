@@ -27,20 +27,21 @@ FPPFLAGS:=$(FPPFLAGS) -DHAS_PSML_SUPPORT
 #
 ifneq (,$(findstring DPSML_USE_FOX,$(FPPFLAGS)))
  include $(MAIN_OBJDIR)/Mk/FoX.mk
- LIBS= $(MAIN_OBJDIR)/libpsml.a $(FOX_LIBS) 
+ LIBS_PSML= $(MAIN_OBJDIR)/libpsml.a $(FOX_LIBS) 
 else
 #
- LIBS= $(MAIN_OBJDIR)/libpsml.a $(MAIN_OBJDIR)/libxmlparser.a
+ LIBS_PSML= $(MAIN_OBJDIR)/libpsml.a $(MAIN_OBJDIR)/libxmlparser.a
 endif
-LIBS:= $(LIBS) -L$(MAIN_OBJDIR)/SiestaXC -l SiestaXC
-LIBS:= $(LIBS) -L$(MAIN_OBJDIR)/wxml -l wxml
+#
+LIBS_XC:= -L$(MAIN_OBJDIR)/SiestaXC -l SiestaXC
+LIBS_WXML:= -L$(MAIN_OBJDIR)/wxml -l wxml
 #
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS = precision.o  \
 	atmparams.o atom_options.o \
 	psop.o module_pseudo.o schrodinger.o arw.o\
-        local_die.o
+        local_die.o semicore_info_froyen.o
 #
 #
 MOD_OBJS=m_ncps.o m_ncps_froyen_ps_t.o	\
@@ -56,11 +57,14 @@ $(COM_OBJS):
 what:
 	echo "VPATH: " $(VPATH)
 psop:  psml wxml $(ALL_OBJS)
-	$(FC) $(FFLAGS) $(LDFLAGS) -o psop $(ALL_OBJS) $(LIBS)
-TEST_OBJS= semicore_info.o test_psml.o local_die.o
+	$(FC) $(FFLAGS) $(LDFLAGS) -o psop $(ALL_OBJS) \
+        $(LIBS_PSML) $(LIBS_XC) $(LIBS_WXML)
+
+#TEST_OBJS= semicore_info.o test_psml.o local_die.o
+TEST_OBJS= test_psml.o local_die.o m_getopts.o f2kcli.o
 #
 test_psml:  psml $(TEST_OBJS)
-	$(FC) $(FFLAGS) $(LDFLAGS) -o test_psml $(TEST_OBJS) $(LIBS)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o test_psml $(TEST_OBJS) $(LIBS_PSML) 
 #
 arw.o:  precision.o 
 module_pseudo.o: atmparams.o precision.o schrodinger.o 
@@ -74,7 +78,8 @@ m_ncps_reader.o: m_ncps_froyen_ps_t.o m_ncps_froyen_reader.o
 m_ncps_reader.o: m_ncps_translators.o
 m_ncps_translators.o: m_ncps_froyen_ps_t.o
 m_ncps_writers.o: m_ncps_froyen_ps_t.o
-psop.o: m_getopts.o
+psop.o: m_getopts.o semicore_info_froyen.o
+test_psml.o: m_getopts.o
 m_getopts.o: f2kcli.o
 #
 clean: 

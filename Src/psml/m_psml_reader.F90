@@ -4,11 +4,11 @@ module m_psml_reader
 
   CONTAINS
 
-  subroutine psml_reader(fname,ps)
+  subroutine psml_reader(fname,ps,debug)
 
   use m_psml_core,            only: ps_t, ps_destroy
   use m_psml_parsing_helpers, only: begin_element, end_element, pcdata_chunk
-  use m_psml_parsing_helpers, only: pseudo
+  use m_psml_parsing_helpers, only: pseudo, debug_parsing
 
 #ifdef PSML_USE_FOX
   use FoX_sax,           only: xml_t, open_xml_file, close_xml_t, parse
@@ -20,6 +20,7 @@ module m_psml_reader
 
   character(len=*), intent(in)        :: fname
   type(ps_t), intent(out), target     :: ps
+  logical, intent(in), optional       :: debug
 
   type(xml_t)                     :: fxml
   integer :: iostat
@@ -30,6 +31,11 @@ module m_psml_reader
   ! Associate module pointer, so that the parsed data
   ! is written to ps
   pseudo => ps
+  if (present(debug)) then
+     debug_parsing = debug
+  else
+     debug_parsing = .false.
+  endif
 
 #ifdef PSML_USE_FOX
  call open_xml_file(fxml,fname,iostat)

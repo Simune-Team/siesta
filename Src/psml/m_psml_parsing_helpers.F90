@@ -41,6 +41,7 @@ public  :: begin_element, end_element, pcdata_chunk
 !    We implement the first option now
 
 type(ps_t), pointer, public, save :: pseudo => null() 
+logical, public, save             :: debug_parsing = .false.
 
 logical, private, save  :: in_vps = .false. , in_radfunc = .false.
 logical, private, save  :: in_config_val = .false.
@@ -98,7 +99,7 @@ integer             :: status
 
 integer             :: i
 
-!print *, "Element: ", trim(name)
+if (debug_parsing) print *, "Element: ", trim(name)
 
 select case(name)
 
@@ -117,7 +118,11 @@ select case(name)
 
       case ("provenance")
          in_provenance = .true.
-         pp => pseudo%provenance
+         if (in_psoperator) then
+            pp => pseudo%psoperator%provenance
+         else
+            pp => pseudo%provenance
+         endif
 
          call get_value(attributes,"creator",pp%creator,status)
          if (status /= 0 ) pp%creator="unknown"
@@ -315,7 +320,7 @@ select case(name)
          ! or for a global grid specification
          !
          if (in_radfunc) then
-!            print *, "Found grid in radfunc"
+            if (debug_parsing) print *, "Found grid in radfunc"
             if (associated(rp%grid)) then
                call die("psml: Two grids specified for a radfunc")
             endif
@@ -329,16 +334,15 @@ select case(name)
             if (associated(pop%grid)) then
                call die("psml: Two psoperator grids specified")
             endif
-!            print *, "Found psoperator grid"
+            if (debug_parsing) print *, "Found psoperator grid"
             pop%grid => grid
 
          else  ! We are at the top level
 
-!            print *, "Found grid at the top level"
+            if (debug_parsing) print *, "Found grid at the top level"
             if (associated(pseudo%global_grid)) then
                call die("psml: Two global grids specified")
             endif
-            !print *, "Found global grid"
             pseudo%global_grid => grid
          endif
 
@@ -471,7 +475,7 @@ character(len=*), intent(in)     :: name
 
 integer :: i, nmajor, nminor
 
-!print *, "-- end Element: ", trim(name)
+if (debug_parsing) print *, "-- end Element: ", trim(name)
 
 select case(name)
 
@@ -507,7 +511,7 @@ select case(name)
          if (ndata_grid /= size(grid%grid_data)) then
             call die("npts mismatch in grid")
          endif
-!         print *, "Got grid data: ", got_explicit_grid_data
+         if (debug_parsing) print *, "Got grid data: ", got_explicit_grid_data
 
       case ("pseudocore-charge")
          in_coreCharge = .false.

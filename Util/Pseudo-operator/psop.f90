@@ -24,6 +24,7 @@
       use atmparams,        only: nrmax, nkbmx
       use m_ncps, only: pseudopotential_t => froyen_ps_t, pseudo_read
       use m_pseudooperator, only: radii_ps, vlocal1, vlocal2, KBgen
+      use m_semicore_info_froyen, only: get_n_semicore_shells
       use SiestaXC, only: xc_id_t, get_xc_id_from_atom_id, setXC
       use SiestaXC, only: atomxc
       use m_getopts
@@ -60,6 +61,8 @@
       type(xmlf_t)            :: xf
       integer                 :: status
 
+      integer  :: max_l_ps
+      integer  :: nsemic(0:3)
 !
 !     VARIABLES RELATED WITH THE RADIAL LOGARITHMIC GRID 
 !
@@ -246,20 +249,6 @@
 !
       is          = 1
 
-!     Define the angular momentum cutoff for Kleinman-Bylander nonlocal pseudopo
-!     In this example, we will expand up to the f-shell (l=3).
-!     Therefore, we will include (lmxkb + 1) shells
-!     l = 0 (s)
-!     l = 1 (p)
-!     l = 2 (d)
-!     l = 3 (f)
-      lmxkb       = 2
-!     Define the number of KB projectors for each angular momentum
-      allocate( nkbl(0:lmxkb) )
-      nkbl(:) = 1
-!     Define the reference energies (in Ry) for the calculation of the KB proj.
-      allocate( erefkb(nkbmx,0:lmxkb) )
-      erefkb(:,:) = huge(1.0_dp)
 !
 !     READ THE PSEUDOPOTENTIAL FILE
 !
@@ -291,6 +280,30 @@
         rpb      = rpb * ea
       enddo
 
+!     Define the angular momentum cutoff for Kleinman-Bylander nonlocal pseudopo
+!     In this example, we will expand up to the f-shell (l=3).
+!     Therefore, we will include (lmxkb + 1) shells
+!     l = 0 (s)
+!     l = 1 (p)
+!     l = 2 (d)
+!     l = 3 (f)
+
+!AG:  This should be configurable via the command line, and checked
+!     with the maximum l in the pseudo file...
+
+      max_l_ps = psr%ldown(psr%npotd)
+      lmxkb    = max_l_ps
+
+!     Define the number of KB projectors for each angular momentum
+!AG:  This should allow semicore-handling
+
+      allocate( nkbl(0:lmxkb) )
+      call get_n_semicore_shells(psr,nsemic)
+      nkbl(0:lmxkb) = 1 + nsemic(0:lmxkb)
+
+!     Define the reference energies (in Ry) for the calculation of the KB proj.
+      allocate( erefkb(nkbmx,0:lmxkb) )
+      erefkb(:,:) = huge(1.0_dp)
 ! 
 !     STORE THE IONIC PSEUDOPOTENTIALS IN A LOCAL VARIABLE 
 !     Only the 'down' component is used
@@ -470,6 +483,10 @@
       call my_add_attribute(xf,"energy_unit","hartree")
       call my_add_attribute(xf,"length_unit","bohr")
 
+        call xml_NewElement(xf,"provenance")
+          call my_add_attribute(xf,"creator","psop")
+        call xml_EndElement(xf,"provenance")
+
         call xml_NewElement(xf,"grid")
           call my_add_attribute(xf,"npts",str(nrval))
           call xml_NewElement(xf,"annotation")
@@ -490,7 +507,7 @@
             call my_add_attribute(xf,"kind","Siesta-vlocal")
             call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf, 0.5d0 * vlocal(1:nrval))
+                 call xml_AddArray(xf, 0.5_dp * vlocal(1:nrval))
                call xml_EndElement(xf,"data")
             call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"local-potential")

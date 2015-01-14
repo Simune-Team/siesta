@@ -1,4 +1,43 @@
 ------------------------------------------------------------
+January 14, 2014  Alberto Garcia        trunk-462--ncps-49
+Enhance psop and projector accessor functions
+
+* The KB generation program psop in Util/PseudoOperator has been enhanced to
+deal with shells with semicore states (to build multiple projectors), and to
+set automatically the maximum l for the projectors. It also generates a (simple
+for now) 'provenance' element under the 'pseudopotential-operator' element in
+the experimental VNL file (which is meant to be part of a PSML file).
+
+* The Ekb values are now output in Hartree to the VNL file.
+
+* The accessor functions for projectors and related information in m_psml_core
+have been modified to accept (l,n) as keys for the projectors, instead of 
+a more obscure correlative index.
+
+* The test_psml program has been updated.
+
+Still to do: 
+
+- Decide whether the core charge should be part of a "pseudo operator"
+element in the future. 
+- Provide command-line arguments to psop.
+- Provide a means to input reference energies for KB generation.
+- Provide more metadata about the kind of local potential generated.
+- Maybe allow the use of one of the V_l as local potential.
+- Write client code to allow Siesta to read fully NL pseudo info directly.
+
+added:
+  Util/Pseudo-operator/semicore_info_froyen.f90
+modified:
+  Src/psml/m_psml_core.f90
+  Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_psml_reader.F90
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+  Util/Pseudo-operator/test_psml.f90
+
+------------------------------------------------------------
 December 22, 2014  Alberto Garcia       trunk-462--ncps-48
 Extend PSML parser to deal with complete operator
 

@@ -36,8 +36,8 @@ integer, parameter, private    :: dp = selected_real_kind(14)
 !-----------------------------------------------------------
 
 type, public :: provenance_t
-        character(len=40)       :: creator
-        character(len=30)       :: date
+        character(len=40)       :: creator = "-----"
+        character(len=30)       :: date    = "-----"
 end type provenance_t
 !------
 type, public :: header_t
@@ -99,6 +99,10 @@ type, public :: semilocal_t
 end type semilocal_t
 
 type, public :: psoperator_t
+   !
+   ! Optional private grid
+   !
+      type(provenance_t)                        :: provenance
    !
    ! Optional private grid
    !
@@ -229,7 +233,7 @@ CONTAINS !===============================================
 !> @author Alberto Garcia
 !> @date March-July 2014
 subroutine ps_destroy(ps)
-type(ps_t)     :: ps
+type(ps_t), intent(inout)     :: ps
 
 integer :: i
 
@@ -774,7 +778,7 @@ else
 endif
 end function ps_EvaluateLocalPotential
 !
-!> @brief Number of projectors
+!> @brief Number of projectors in a set
 function ps_NProjectors(ps,set) result(n)
 type(ps_t), intent(in) :: ps
 character(len=5), intent(in), optional :: set
@@ -798,6 +802,24 @@ endif
    
 end function ps_NProjectors
 !
+!> @brief Number of projectors with given l
+function ps_NProjectorsL(ps,l,set) result(n)
+type(ps_t), intent(in) :: ps
+integer, intent(in)    :: l
+character(len=5), intent(in), optional :: set
+integer                    :: n
+
+integer :: n_in_set, i, l_i
+
+n_in_set = ps_NProjectors(ps,set)
+
+n = 0
+do i = 1, n_in_set
+  l_i = ps_ProjectorL(ps,i,set)
+  if (l_i == l) n = n + 1
+enddo
+
+end function ps_NProjectorsL
 !
 function ps_ProjectorL(ps,i,set) result(l)
 type(ps_t), intent(in) :: ps
@@ -820,15 +842,15 @@ call die("Wrong l symbol in potential")
 
 end function ps_ProjectorL
 !
-function ps_ProjectorEkb(ps,i,set) result(ekb)
+function ps_ProjectorEkb(ps,l,n,set) result(ekb)
 type(ps_t), intent(in) :: ps
-integer,   intent(in)      :: i
+integer,   intent(in)  :: l, n
 character(len=5), intent(in), optional :: set
 real(dp)                   :: ekb
 
 integer :: idx
 
-idx = ps_GetProjectorIndex(ps,i,set)
+idx = ps_GetProjectorIndexLN(ps,l,n,set)
 ekb = ps%psoperator%ekb(idx)
 
 end function ps_ProjectorEkb
@@ -846,9 +868,9 @@ n = ps%psoperator%n(idx)
 
 end function ps_ProjectorN
 !
-function ps_EvaluateProjector(ps,i,r,set,debug) result(val)
+function ps_EvaluateProjector(ps,l,n,r,set,debug) result(val)
 type(ps_t), intent(in) :: ps
-integer,   intent(in)      :: i
+integer,   intent(in)      :: l, n
 real(dp),  intent(in)      :: r
 character(len=5), intent(in), optional :: set
 logical, intent(in), optional :: debug
@@ -856,7 +878,7 @@ real(dp)                   :: val
 
 integer :: idx
 
-idx = ps_GetProjectorIndex(ps,i,set)
+idx = ps_GetProjectorIndexLN(ps,l,n,set)
 if (r> max_range(ps%psoperator%proj(idx))) then
    val = 0.0_dp
 else
@@ -865,6 +887,7 @@ endif
 
 end function ps_EvaluateProjector
 
+!
 function ps_GetProjectorIndex(ps,i,set) result(idx)
 type(ps_t), intent(in)                 :: ps
 integer,   intent(in)                  :: i
@@ -890,6 +913,31 @@ else
    idx = ps%psoperator%minor(i)
 endif
 end function ps_GetProjectorIndex
+
+function ps_GetProjectorIndexLN(ps,l,n,set) result(idx)
+type(ps_t), intent(in)                 :: ps
+integer,   intent(in)                  :: l, n
+character(len=5), intent(in), optional :: set
+integer                                :: idx
+
+integer :: n_in_set, l_i, n_i, i_match, i
+
+n_in_set = ps_NProjectors(ps,set) 
+i_match = 0
+do i = 1, n_in_set
+   l_i = ps_ProjectorL(ps,i,set)
+   n_i = ps_ProjectorN(ps,i,set)
+   if ((l_i==l) .and. (n_i==n)) then
+      i_match = i
+      exit
+   endif
+enddo
+if (i_match == 0) then
+   call die("No projector with l=" // str(l) //", n=" // str(n) // &
+            " in set " // trim(set))
+endif
+idx = ps_GetProjectorIndex(ps,i_match,set)
+end function ps_GetProjectorIndexLN
 
 !====================================================
 !> @brief Maximum radius in a radfunc's grid
@@ -951,6 +999,14 @@ end function eval_radfunc
      call die("Cannot find atomic number for " // symbol)
         
    end FUNCTION atomic_number
+
+   function str(i) result(s)
+     integer, intent(in) :: i
+     character(len=1)    :: s
+     
+     if (i>9) call die("Integer too big")
+     write(s,"(i1)") i
+   end function str
 
  end module m_psml_core
 
