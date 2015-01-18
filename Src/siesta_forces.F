@@ -47,7 +47,7 @@
       use dictionary
       use siesta_options, only : write_cdf
       use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
-      use m_ncdf_siesta, only : cdf_save_state
+      use m_ncdf_siesta, only : cdf_save_state, cdf_save_basis
 #endif
 #ifdef TRANSIESTA
       use m_ts_options, only : N_Elec
@@ -137,13 +137,16 @@
          ! Save the settings
          call cdf_save_settings('SIESTA.nc')
 
+         ! Save the basis set
+         call cdf_save_basis('SIESTA.nc')
+
          d_sav = ('sp'.kv.1)//('S'.kv.1)
          d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)
          d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
          d_sav = d_sav//('isc_off'.kv.1)
          call cdf_save_state('SIESTA.nc',d_sav)
          call delete(d_sav)
-         
+
       end if
 #endif
 

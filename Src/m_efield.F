@@ -255,7 +255,7 @@ c     vacuum region.
       real(grid_p), intent(inout)  ::  v(*)
 
       integer           i0(3), i1, i2, i3, ia, imesh,
-     $     is, iu, ix,
+     $     is, ix,
      .     j1, j2, j3, meshl(3),
      .     Xoffset, Yoffset, Zoffset, i30, i20, i10
 

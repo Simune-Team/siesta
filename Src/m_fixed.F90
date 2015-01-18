@@ -80,6 +80,9 @@ contains
   ! Written by J.M.Soler. Feb., 1998
   ! Modified by P. Ordejon to output the total number of constraints
   !    imposed.  June, 2003
+  ! Modified by Nick Papior Andersen for additional constraint types and
+  !    printing of explicite constraints.
+  !    January, 2015
   ! *********** INPUT ****************************************************
   ! real*8  cell(3,3)    : Lattice vectors
   ! real*8  stress( 3,3) : Stress tensor
@@ -502,7 +505,7 @@ contains
     write(*,*) ! newline
 
     if ( use_constr ) then
-       write(*,'(a)') 'siesta: Constraint (constr routine)'
+       write(*,'(a)') 'siesta: Constraints using custom constr routine'
     end if
 
     if ( any(xs /= 0._dp) ) then
@@ -623,7 +626,6 @@ contains
        else if ( leqi(namec,'routine') ) then
 
           use_constr = .true.
-
 
 
        ! ****** Now we only look at atomic specifications for constraints ******

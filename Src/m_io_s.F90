@@ -1444,6 +1444,7 @@ contains
     if ( present(Comm) ) Com = Comm
 
     if ( present(Bcast) ) then
+
      if ( Bcast ) then
        
         call MPI_Bcast(exist,1,MPI_Logical, 0, Com, MPIerror)
@@ -1466,7 +1467,7 @@ contains
         ! which it really should:
         !    exist = all( nexist(:) )
         exist = nexist(1)
-        do Node = 2 , nodes
+        do Node = 2 , Nodes
            exist = exist .and. nexist(Node)
         end do
         deallocate(nexist)

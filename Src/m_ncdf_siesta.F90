@@ -27,6 +27,7 @@ module m_ncdf_siesta
 
   public :: cdf_init_file
   public :: cdf_save_settings
+  public :: cdf_save_basis
   public :: cdf_save_md
   public :: cdf_save_state
   public :: cdf_save_grid
@@ -41,7 +42,6 @@ contains
     use fdf, only : fdf_get, leqi
     use class_Sparsity
     use m_io_s, only : file_exist
-    use dictionary
     use files, only : slabel
     use m_gamma, only : Gamma
     use atomlist, only: no_u, no_s, lasto, Qtot
@@ -65,10 +65,10 @@ contains
     logical, intent(in) :: is_md
 
     ! Local variables
-    type(hNCDF) :: ncdf, grp, grp2
+    type(hNCDF) :: ncdf, grp
     type(dict) :: dic, d
     character(len=DICT_KEY_LENGTH) :: key
-    integer :: n_nzs, tmp, iEl, i, chks(3)
+    integer :: n_nzs, tmp, i, chks(3)
 #ifdef TRANSIESTA
     integer, allocatable :: ibuf(:)
 #endif
@@ -577,13 +577,14 @@ contains
 
 
   subroutine cdf_save_state(fname,dic_save)
-    use m_gamma, only : Gamma
+!    use m_gamma, only : Gamma
     use m_energies, only: Ef
     use atomlist, only : Qtot
     use siesta_geom, only: na_u, ucell, xa, va
     use siesta_geom, only: nsc, isc_off
     use sparse_matrices, only: sparse_pattern, block_dist
-    use sparse_matrices, only: S_1D, DM_2D, EDM_2D, xij_2D, H_2D
+    use sparse_matrices, only: S_1D, DM_2D, EDM_2D, H_2D
+!    use sparse_matrices, only: xij_2D
     use m_stress, only : stress
     use m_forces, only: fa
 
@@ -691,10 +692,215 @@ contains
     call timer('CDF-grid',2)
 
   end subroutine cdf_save_grid
-        
+
+  subroutine cdf_save_basis(fname)
+
+    use siesta_geom, only: na_u, isa
+
+    use atmparams, only : nt => NTBMAX
+    use atm_types, only : species_info, species, nspecies
+    use radial, only : rad_func
+
+    character(len=*), intent(in) :: fname
+
+    ! Local variables
+    type(species_info), pointer :: spp
+    type(rad_func), pointer :: p
+
+    type(hNCDF) :: nf, ncdf, grp
+    type(dict) :: dic, d
+    character(len=DICT_KEY_LENGTH) :: key
+    type(var) :: v
+    integer :: is, i
+
+    ! Used for saving variables
+    integer :: no, nk
+    integer, allocatable :: aux(:)
+
+    ! Unluckily is the new basis saves only
+    ! saved on the IO node. 
+    ! No other node must therefore access this routine
+    if ( Node /= 0 ) return
+
+    call timer('CDF-basis',1)
+
+    call ncdf_open(nf,fname,mode=ior(NF90_WRITE,NF90_NETCDF4))
+
+    ! create the BASIS group
+    call ncdf_def_grp(nf,'BASIS',ncdf)
+
+    ! Create a list of the species associated with each atom
+    dic = ('info'.kv.'Basis of each atom by ID')
+    call ncdf_def_var(ncdf,'basis',NF90_INT,(/'na_u'/), atts= dic)
+    call delete(dic)
+    call ncdf_put_var(ncdf,'basis',isa(1:na_u))
+
+    do is = 1 , nspecies
+
+       ! Get current specie
+       spp => species(is)
+
+       ! Get array sizes
+       no = spp%n_orbnl
+       nk = spp%n_pjnl
+       if ( no == 0 .or. nk == 0 ) cycle
+
+       ! Create the group
+       call ncdf_def_grp(ncdf,trim(spp%label),grp)
+
+       call ncdf_def_dim(grp,'norbs',no)
+       call ncdf_def_dim(grp,'nkbs',nk)
+       call ncdf_def_dim(grp,'ntb',nt)
+
+       ! Save the orbital global attributes
+       dic = ('Element'.kv.trim(spp%symbol))
+       dic = dic//('Label'.kv.trim(spp%label))
+       dic = dic//('Atomic_number'.kv.spp%z)
+       dic = dic//('Valence_charge'.kv.spp%zval)
+       dic = dic//('Mass'.kv.spp%mass)
+       dic = dic//('Self_energy'.kv.spp%self_energy)
+       dic = dic//('Number_of_orbitals'.kv.spp%norbs)
+       dic = dic//('L_max_basis'.kv.spp%lmax_basis)
+       dic = dic//('Number_of_projectors'.kv.spp%nprojs)
+       dic = dic//('L_max_projs'.kv.spp%lmax_projs)
+       dic = dic//('ID'.kv.is)
+       call ncdf_put_gatt(grp,atts=dic)
+       call delete(dic)
+
+       ! Create all orbital variables...
+       dic = ('orbnl_l'.kv.NF90_INT)//('orbnl_n'.kv.NF90_INT)
+       dic = dic//('orbnl_z'.kv.NF90_INT)//('orbnl_ispol'.kv.NF90_INT)
+       dic = dic//('orbnl_pop'.kv.NF90_DOUBLE)//('cutoff'.kv.NF90_DOUBLE)
+       dic = dic//('delta'.kv.NF90_DOUBLE)
+       d = .first. dic
+       do while ( .not. (.empty. d) )
+          key = .key. d
+          v = .val. d
+          call assign(i,v)
+          call ncdf_def_var(grp,trim(key),i,(/'norbs'/), &
+               compress_lvl=0,chunks=(/no/))
+          d = .next. d
+       end do
+       call delete(dic)
+
+       ! Create all projector variables...
+       dic = ('pjnl_l'.kv.NF90_INT)//('pjnl_n'.kv.NF90_INT)
+       dic = dic//('pjnl_ekb'.kv.NF90_DOUBLE)
+       dic = dic//('kbcutoff'.kv.NF90_DOUBLE)//('kbdelta'.kv.NF90_DOUBLE)
+       d = .first. dic
+       do while ( .not. (.empty. d) )
+          key = .key. d
+          v = .val. d
+          call assign(i,v)
+          call ncdf_def_var(grp,trim(key),i,(/'nkbs'/), &
+               compress_lvl=0,chunks=(/nk/))
+          d = .next. d
+       end do
+       call delete(dic)
+       call delete(v)
+
+       ! Create orbital projector
+       call ncdf_def_var(grp,'orb',NF90_DOUBLE,(/'ntb  ','norbs'/), &
+            compress_lvl=cdf_comp_lvl,chunks=(/nt,1/))
+       
+       ! Local potential
+       dic = ('cutoff'.kv.spp%vna%cutoff) // &
+            ('delta'.kv.spp%vna%delta)
+       call ncdf_def_var(grp,'vna',NF90_DOUBLE, (/'ntb'/), atts=dic, &
+            compress_lvl=cdf_comp_lvl,chunks=(/nt/))
+
+       ! Local potential charge density
+       dic = dic//('cutoff'.kv.spp%chlocal%cutoff) // &
+            ('delta'.kv.spp%chlocal%delta)
+       call ncdf_def_var(grp,'chlocal',NF90_DOUBLE, (/'ntb'/), atts=dic, &
+            compress_lvl=cdf_comp_lvl,chunks=(/nt/))
+
+       ! Reduced local potential (rV+2*Zval)
+       dic = dic//('cutoff'.kv.spp%reduced_vlocal%cutoff) // &
+            ('delta'.kv.spp%reduced_vlocal%delta)
+       call ncdf_def_var(grp,'reduced_vlocal',NF90_DOUBLE, (/'ntb'/), atts=dic, &
+            compress_lvl=cdf_comp_lvl,chunks=(/nt/))
+
+       if ( spp%there_is_core ) then
+          ! Core charge, if it exists, the variable will be created
+          ! Hence, the old way of designating whether core is present
+          ! or not is removed.
+          ! I.e. no Core_flag [1|0] will be saved, Core_flag == .true. is 
+          ! apt if 'core' variable exists.
+          dic = dic//('cutoff'.kv.spp%core%cutoff) // &
+               ('delta'.kv.spp%core%delta)
+          call ncdf_def_var(grp,'core',NF90_DOUBLE, (/'ntb'/), atts=dic, &
+               compress_lvl=cdf_comp_lvl,chunks=(/nt/))
+
+       end if
+
+       call delete(dic)
+
+       ! Define the projector
+       call ncdf_def_var(grp,'proj',NF90_DOUBLE, (/'ntb ','nkbs'/), &
+            compress_lvl=cdf_comp_lvl,chunks=(/nt,1/))
+
+       ! Save all variables to the group
+
+       ! Save orbital
+       call ncdf_put_var(grp,'orbnl_l',spp%orbnl_l(1:no))
+       call ncdf_put_var(grp,'orbnl_n',spp%orbnl_n(1:no))
+       call ncdf_put_var(grp,'orbnl_z',spp%orbnl_z(1:no))
+
+       allocate(aux(no))
+       do i = 1, no
+          if ( spp%orbnl_ispol(i) ) then
+             aux(i) = 1
+          else
+             aux(i) = 0 
+          end if
+       end do
+       call ncdf_put_var(grp,'orbnl_ispol',aux(1:no))
+       deallocate(aux)
+       call ncdf_put_var(grp,'orbnl_pop',spp%orbnl_pop(1:no))
+
+       ! Save projector
+       call ncdf_put_var(grp,'pjnl_l',spp%pjnl_l(1:nk))
+       call ncdf_put_var(grp,'pjnl_n',spp%pjnl_n(1:nk))
+       call ncdf_put_var(grp,'pjnl_ekb',spp%pjnl_ekb(1:nk))
+
+       do i = 1, nk
+          p => spp%pjnl(i)
+          call ncdf_put_var(grp,'proj',p%f(1:nt),start=(/1,i/))
+          call ncdf_put_var(grp,'kbcutoff',p%cutoff,start=(/i/))
+          call ncdf_put_var(grp,'kbdelta',p%delta,start=(/i/))
+       end do
+
+       ! Local potential
+       call ncdf_put_var(grp,'vna',spp%vna%f(1:nt))
+
+       ! Local potential charge density
+       call ncdf_put_var(grp,'chlocal',spp%chlocal%f(1:nt))
+
+       ! Reduced local potential
+       call ncdf_put_var(grp,'reduced_vlocal',spp%reduced_vlocal%f(1:nt))
+
+       if ( spp%there_is_core ) then
+          ! Save core
+          call ncdf_put_var(grp,'core',spp%core%f(1:nt))
+       end if
+
+       do i = 1, no
+          p => spp%orbnl(i)
+          call ncdf_put_var(grp,'orb',p%f(1:nt),start=(/1,i/))
+          call ncdf_put_var(grp,'cutoff',p%cutoff,start=(/i/))
+          call ncdf_put_var(grp,'delta',p%delta,start=(/i/))
+       end do
+
+    end do
+
+    call ncdf_close(nf)
+
+    call timer('CDF-basis',2)
+
+  end subroutine cdf_save_basis
 
   subroutine cdf_save_md(fname)
-    use dictionary
     use siesta_geom, only: na_u, xa, va
     use m_forces, only: fa
     use m_energies, only: Etot, Ef, Ekinion

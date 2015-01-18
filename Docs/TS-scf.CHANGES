@@ -1,4 +1,24 @@
 ----------------------------------------------------
+January 18, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-247
+Added basis set to SIESTA.nc
+
+* All *.ion.nc files will now also be saved 
+  in SIESTA.nc if CDf.Save is .true.
+
+* Beautification in 
+  Src/m_efield.F
+  Src/m_fixed.F90
+  Src/m_io_s.F90
+
+modified:
+  Src/Makefile
+  Src/m_efield.F
+  Src/m_fixed.F90
+  Src/m_io_s.F90
+  Src/m_ncdf_siesta.F90
+  Src/siesta_forces.F
+
+----------------------------------------------------
 December 28, 2014 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-246
 Bugfix and speeded up region_connect
 
