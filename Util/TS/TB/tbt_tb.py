@@ -36,7 +36,7 @@ from __future__ import print_function
 #   With this call it is extremely easy to get nearest neighbours
 #   etc. from a simple geometry.
 #   You can repeat or tile the structure by these calls:
-#     new_Geom = TBT_Geom.tile((0,3),(2,2))
+#     new_Geom = TBT_Geom.tile(3,0).tile(2,2)
 #   which takes the geometry and repeats the entire structure
 #   3 times in the x-direction, then those repeated cells
 #   2 times in the z-direction. (thus the total size will be
@@ -355,7 +355,7 @@ class TBT_Geom(SIESTA_UNITS):
                                n_orb=orbs,
                                update_sc=update_sc)
 
-    def tile(self,*args,**kwargs):
+    def tile(self,reps,axis,update_sc=False):
         """ 
         Returns a geometry tiled, i.e. copied.
 
@@ -363,23 +363,21 @@ class TBT_Geom(SIESTA_UNITS):
 
         Parameters
         ----------
-        args  : (tuple) (int,int)
-             A tuple consisting of two integers:
-                 direction : 0, 1, 2 according to the cell-direction
-                 number of tiles: number of times the structure is 
-                                  repeated.
+        reps  : number of tiles (repetitions)
+        axis  : direction of tiling 
+                  0, 1, 2 according to the cell-direction
         update_sc : (False), boolean, optional
 
         Examples
         --------
         >>> geom = TBT_Geom(cell=[[1.,0,0],[0,1.,0.],[0,0,1.]],xa=[[0,0,0],[0.5,0,0]])
-        >>> g = geom.tile((0,2))
+        >>> g = geom.tile(2,0)
         >>> print(g.xa)
         [[ 0.   0.   0. ]
          [ 0.5  0.   0. ]
          [ 1.   0.   0. ]
          [ 1.5  0.   0. ]]
-        >>> g = geom.tile((0,2),(1,2))
+        >>> g = geom.tile(2,0).tile(2,1)
         >>> print(g.xa)
         [[ 0.   0.   0. ]
          [ 0.5  0.   0. ]
@@ -391,35 +389,25 @@ class TBT_Geom(SIESTA_UNITS):
          [ 1.5  1.   0. ]]
 
         """
-        if len(args) == 0: return self.copy()
-        update_sc = False
-        if 'update_sc' in kwargs: update_sc = kwargs['update_sc']
         cell = np.copy(self.cell)
-        for id, r in args: 
-            cell[id,:] *= r
+        cell[axis,:] *= reps
         # Pre-allocate geometry
         # Start the repetition
         xa = np.copy(self.xa)
         orbs = np.diff(self.lasto) 
         # Our first repetition *must* be with
         # the later coordinate
-        ja = 0
-        frR = 1
-        toR = 1
-        for id, r in args:
-            toR *= r
-            # Copy the entire structure
-            xa = np.tile(xa,(r,1))
-            orbs = np.tile(orbs,(r,1))
-            # Single cell displacements
-            dx = np.dot(np.arange(r)[:,None],self.cell[id,:][None,:])
-            # Correct the unit-cell offsets
-            xa[ja:ja+self.na_u*toR,:] += np.repeat(dx,frR*self.na_u,axis=0)
-            frR *= r
+        # Copy the entire structure
+        xa = np.tile(xa,(reps,1))
+        orbs = np.tile(orbs,(reps,1))
+        # Single cell displacements
+        dx = np.dot(np.arange(reps)[:,None],self.cell[axis,:][None,:])
+        # Correct the unit-cell offsets
+        xa[0:self.na_u*reps,:] += np.repeat(dx,self.na_u,axis=0)
         # Create the geometry and return it
         return self.__init_new(cell,xa,n_orb=orbs,update_sc=update_sc)
 
-    def repeat(self,*args,**kwargs):
+    def repeat(self,reps,axis,update_sc=False):
         """
         Returns a geometry repeated, i.e. copied in a special way.
 
@@ -436,31 +424,29 @@ class TBT_Geom(SIESTA_UNITS):
         This method allows to utilise Bloch's theorem when creating
         tight-binding parameter sets for TBtrans.
 
-        For single atom geometries this routine returns the same as
+        For geometries with a single atom this routine returns the same as
         ``self.tile``.
 
         It is adviced to only use this for electrode Bloch's theorem
-        purposes, ``self.tile`` is much faster.
+        purposes as ``self.tile`` is much faster.
         
         Parameters
         ----------
-        args  : (tuple) (int,int)
-             A tuple consisting of two integers:
-                 direction : 0, 1, 2 according to the cell-direction
-                 number of tiles: number of times the structure is 
-                                  repeated.
+        reps  : number of repetitions
+        axis  : direction of repetition
+                  0, 1, 2 according to the cell-direction
         update_sc : (False), boolean, optional
 
         Examples
         --------
         >>> geom = TBT_Geom(cell=[[1.,0,0],[0,1.,0.],[0,0,1.]],xa=[[0,0,0],[0.5,0,0]])
-        >>> g = geom.repeat((0,2))
+        >>> g = geom.repeat(2,0)
         >>> print(g.xa)
         [[ 0.   0.   0. ]
          [ 1.   0.   0. ]
          [ 0.5  0.   0. ]
          [ 1.5  0.   0. ]]
-        >>> g = geom.repeat((0,2),(1,2))
+        >>> g = geom.repeat(2,0).repeat(2,1)
         >>> print(g.xa)
         [[ 0.   0.   0. ]
          [ 1.   0.   0. ]
@@ -472,44 +458,23 @@ class TBT_Geom(SIESTA_UNITS):
          [ 1.5  1.   0. ]]
 
         """
-        if len(args) == 0: return self.copy()
-        update_sc = False
-        if 'update_sc' in kwargs: update_sc = kwargs['update_sc']
-
         # Figure out the size
-        R = 1
-        nsc = np.copy(self.nsc)
         cell = np.copy(self.cell)
-        for id, r in args: 
-            cell[id,:] *= r
-            # When we repeat a cell we also remove some
-            # periodicity, this should take care of 
-            # this (but it will still hold the
-            # periodicity for simple structures)
-            if nsc[id] > 3: nsc[id] -= 2
-            R *= r
+        cell[axis,:] *= reps
         # Pre-allocate geometry
-        xa = np.zeros((self.na_u*R,3),np.float)
+        xa = np.zeros((self.na_u*reps,3),np.float)
         n_orb = np.diff(self.lasto)
         orbs = np.zeros((xa.shape[0],),np.int)
         # Start the repetition
         ja = 0
         for ia in xrange(self.na_u):
-            toR = 1
-            frR = 1
-            for id, r in args:
-                toR *= r
-                # Single atom displacements
-                dx = np.dot(np.arange(r)[:,None],self.cell[id,:][None,:])
-                # First copy the previous coordinates
-                xa[ja:ja+toR,:] = np.tile(xa[ja:ja+frR,:],(frR,1))
-                # We repeat the cell displacements
-                xa[ja:ja+toR,:] += np.repeat(dx,frR,axis=0)
-                frR *= r
-            # Add the basic atomic coordinate
-            xa[ja:ja+toR,:] += self.xa[ia,:]
-            orbs[ja:ja+toR] = n_orb[ia]
-            ja += toR
+            # Single atom displacements
+            dx = np.dot(np.arange(reps)[:,None],self.cell[axis,:][None,:])
+            # First add the basic atomic coordinate,
+            # then add displacement for each repetition.
+            xa[ja:ja+reps,:] = self.xa[ia,:][None,:] + dx[:,:]
+            orbs[ja:ja+reps] = n_orb[ia]
+            ja += reps
         # Create the geometry and return it
         return self.__init_new(cell,xa,n_orb=orbs,update_sc=update_sc)
 
@@ -1534,10 +1499,10 @@ def TB_square():
     
     # Extend the square lattice to a
     # 2 by 1 electrode [x by y]
-    el  = SQ.repeat((0,2))
+    el  = SQ.repeat(2,axis=0)
     # Create the device by making 1 by 3 times the electrode
     # [ x by y ]
-    dev = el.tile((1,3))
+    dev = el.tile(3,axis=1)
     
     # Create the TB models
     TB_el  = TBT_Model(el)
@@ -1628,8 +1593,8 @@ def TB_square():
 
     # Here we correct the example to a wider system so it can be
     # run by tbtrans (it just needs to be [4 by 3]
-    el  = SQ.repeat((0,4))
-    dev = el.tile((1,3))
+    el  = SQ.repeat(4,axis=0)
+    dev = el.tile(3,axis=1)
     TB_el = TBT_Model(el)
     for ia in xrange(el.na_u):
         idx_a = el.close_all(ia,dR=dR)
@@ -1727,7 +1692,7 @@ if __name__ == '__main__':
         TB_save('ELEC_' + TB + '_zz.nc',
                 graphene_uc(alat) , TB = _TB_graphene[TB], alat=alat)
         TB_save('DEV_'  + TB + '_zz.nc',
-                graphene_uc(alat).tile((1,5)) , TB = _TB_graphene[TB],alat=alat)
+                graphene_uc(alat).tile(5,axis=1) , TB = _TB_graphene[TB],alat=alat)
 
     # For the below examples we use the D set and a 
     # lattice constant of 1.42
@@ -1741,7 +1706,7 @@ if __name__ == '__main__':
     # This is essentially an anti-dot lattice with pristine electrodes
     Nx = 10 ; Ny = 30
     print('Repeating graphene UC to flake with hole containing '+str(Nx*Ny*GR_na_u)+' atoms...')
-    HOLE = graphene_uc(alat).repeat((0,Nx)).tile((1,Ny))
+    HOLE = graphene_uc(alat).repeat(Nx,axis=0).tile(Ny,axis=1)
     HOLE.update_sc(nsc=[1,1,0])
     # Remove a hole in the structure
     # We take some atom in the middle of the structure
@@ -1773,7 +1738,7 @@ if __name__ == '__main__':
     print('Starting time... '+str(datetime.datetime.now().time()))
     Nx = 40 ; Ny = 60
     print('Repeating graphene UC to huge flake containing '+str(Nx*Ny*GR_na_u)+' atoms...')
-    HUGE = graphene_uc(alat).repeat((0,Nx)).tile((1,Ny))
+    HUGE = graphene_uc(alat).repeat(Nx,axis=0).tile(Ny,axis=1)
     HUGE.update_sc(nsc=[1,1,0])
     # This will reduce setup time, it only takes into consideration
     # the closest atoms (in terms of index) corresponding to this

@@ -1,4 +1,16 @@
 ----------------------------------------------------
+January 19, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-250
+Changed repeat/tile in TB python script
+
+* Made the repeat/tile functions more intuitive
+  from a user perspective.
+  They now also follow the numpy equivalent more
+  closely.
+
+modified:
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 January 19, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-249
 Added initial N-electrode Hartree potential
 
