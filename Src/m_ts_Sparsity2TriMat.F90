@@ -57,7 +57,6 @@ contains
     use alloc, only : re_alloc, de_alloc
     use m_ts_electype
     use m_ts_options, only : opt_TriMat_method
-    use m_ts_options, only : IsVolt
 
     ! the distribution
     type(OrbitalDistribution), intent(inout) :: dit

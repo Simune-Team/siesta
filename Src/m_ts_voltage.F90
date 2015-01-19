@@ -53,7 +53,9 @@ module m_ts_voltage
 contains
 
   subroutine ts_init_voltage(ucell,na_u,xa,meshG,nsm)
-    use m_ts_options, only : VoltageInC, Elecs
+    use parallel, only : IONode
+    use m_ts_options, only : VoltageInC, Elecs, Volt
+    use units, only : eV
 
 ! ***********************
 ! * INPUT variables     *
@@ -65,8 +67,16 @@ contains
 
     integer :: iElL, iElR
 
+    if ( IONode ) then
+       write(*,*)
+       write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias ', Volt/eV,'V'
+    end if
+
     if ( ts_tdir < 1 ) then
-       call die('Non-determined bias direction not implemented')
+       if ( IONode ) then
+          write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
+       end if
+       return
     end if
 
     ! set the left chemical potential
@@ -104,7 +114,11 @@ contains
     ! The indices for the full cell is set
     ! correctly to not have two routines doing the
     ! same
-    call ts_ramp_elec(ucell,ntpl,Vscf)
+    if ( ts_tdir > 0 ) then
+       call ts_ramp_elec(ucell,ntpl,Vscf)
+    else
+       call ts_elec_only(ntpl,Vscf)
+    end if
 
     call timer('ts_volt',2)
 
@@ -112,10 +126,9 @@ contains
 
 
   subroutine ts_ramp_elec(ucell, ntpl, Vscf)
-    use intrinsic_missing, only : VNORM
     use precision,    only : grid_p
     use m_ts_options, only : Volt
-    use m_ts_mesh,    only : meshl, offset_i, dMesh
+    use m_mesh_node,  only : meshl, offset_i
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -130,16 +143,10 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i1, i2, i3, idT, imesh
-    real(dp) :: Lvc, dLvc, dF
+    real(dp) :: dF
 
-    dLvc = dMesh(ts_tdir)
-    Lvc = VNORM(ucell(:,ts_tdir))
-
-    ! For the electrode the distance is only in between the indices
-    Lvc = dLvc * (right_elec_mesh_idx - left_elec_mesh_idx)
-
-    ! field in [0;Lvc]: v = e*x = f*index
-    dF = Volt * dLvc / Lvc
+    ! field in [0;end]: v = e*x = f*index
+    dF = Volt / real(right_elec_mesh_idx - left_elec_mesh_idx,dp)
 
     ! Find quantities in mesh coordinates
     if ( meshl(1) * meshl(2) * meshl(3) /= ntpl ) &
@@ -168,9 +175,9 @@ contains
                 
                 imesh = imesh + 1
                 Vscf(imesh) = Vscf(imesh) + left_V - dF*idT
-             enddo
-          enddo
-       enddo
+             end do
+          end do
+       end do
 
     else if ( ts_tdir == 2 ) then
 
@@ -192,9 +199,9 @@ contains
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
                 Vscf(imesh) = Vscf(imesh) + left_V - dF*idT
-             enddo
-          enddo
-       enddo
+             end do
+          end do
+       end do
        
     else
 
@@ -218,13 +225,75 @@ contains
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
                 Vscf(imesh) = Vscf(imesh) + left_V - dF*idT
-             enddo
-          enddo
-       enddo
+             end do
+          end do
+       end do
 
     end if
 
   end subroutine ts_ramp_elec
+
+  subroutine ts_elec_only(ntpl, Vscf)
+    use precision,    only : grid_p
+    use m_ts_options, only : N_Elec, Elecs
+    use m_mesh_node,  only : meshl, offset_r, dMesh, dL
+    use m_geom_box, only : voxel_in_box_delta
+! ***********************
+! * INPUT variables     *
+! ***********************
+    integer,       intent(in) :: ntpl
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    real(grid_p), intent(inout) :: Vscf(ntpl)
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer  :: ix, iy, iz, iEl, imesh
+    real(dp) :: llZ(3), llYZ(3), ll(3)
+#ifdef TRANSIESTA_BOX
+    integer, allocatable :: n_V(:)
+
+    allocate(n_V(N_Elec))
+    n_V = 0
+#endif
+
+    ! We do a loop in the local grid
+    imesh = 0
+    do iz = 0 , meshl(3) - 1
+       llZ(:) = offset_r(:) + iz*dL(:,3)
+       do iy = 0 , meshl(2) - 1
+          llYZ(:) = iy*dL(:,2) + llZ(:)
+          do ix = 0 , meshl(1) - 1
+             ! The lower-left corner of the current box
+             ll = ix*dL(:,1) + llYZ
+             imesh = imesh + 1
+
+             ! Count entries in each geometric object
+             do iEl = 1 , N_Elec
+                if ( voxel_in_box_delta(Elecs(iEl)%box, ll, dMesh) ) then
+#ifdef TRANSIESTA_BOX
+                   n_V(iEl) = n_V(iEl) + 1
+#endif
+                   Vscf(imesh) = Vscf(imesh) + Elecs(iEl)%mu%mu
+                end if
+             end do
+
+          end do
+       end do
+    end do
+
+#ifdef TRANSIESTA_BOX
+    print '(10(tr1,i8))',n_V,ntpl
+#endif
+
+    if ( imesh /= ntpl ) then
+       call die('Electrode bias did not loop on all points. Something &
+            &needs to be checked.')
+    end if
+
+  end subroutine ts_elec_only
 
   subroutine get_elec_indices(na_u, xa, iElL, iElR)
     use m_ts_electype
@@ -399,7 +468,6 @@ contains
     use intrinsic_missing, only : VNORM
     use parallel,     only : IONode
     use units,        only : eV
-    use m_ts_options, only : Volt
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -417,8 +485,6 @@ contains
     end do
 
     if ( IONode ) then
-       write(*,*)
-       write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias ', Volt/eV,'V'
        write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias @bottom ', left_V/eV,'V'
        write(*,'(a,3(f6.3,a))')'ts_voltage: In unit cell direction = {', &
             vcdir(1),',',vcdir(2),',',vcdir(3),'}'

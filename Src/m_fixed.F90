@@ -494,7 +494,7 @@ contains
     use parallel, only : Node
     use m_region
 
-    integer :: if, i, N
+    integer :: if
     character(len=70) :: name
 
     type(tRegion) :: r
@@ -539,10 +539,10 @@ contains
   
   subroutine init_fixed( na )
 
-    use parallel,   only : Node
     use fdf
     use fdf_extra
     use intrinsic_missing, only : VNORM
+    use parallel, only : IONode
 
     use m_region
 
@@ -586,7 +586,7 @@ contains
 
           ! All these names belong to atomic constraints
           N_fix = N_fix + 1
-
+          
        end if
 
     end do
@@ -805,6 +805,11 @@ contains
           call region_delete(rr)
 
           fixs(ifix)%type = 'center'
+
+       else if ( IONode ) then
+          
+          write(*,'(2a)') 'siesta: Unrecognized geometry &
+               &constraint: ',trim(namec)
 
        end if
 

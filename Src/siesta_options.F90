@@ -324,6 +324,9 @@ MODULE siesta_options
     use units,     only : eV
     use diagmemory,   only: memoryfactor
     use siesta_cml
+    use m_charge_add, only : read_charge_add
+    use m_hartree_add, only : read_hartree_add
+
     implicit none
     !----------------------------------------------------------- Input Variables
     integer, intent(in)  :: na, ns, nspin
@@ -1538,6 +1541,12 @@ MODULE siesta_options
     endif
 #endif
 #endif
+
+    ! We read in relevant data for ChargeGeometries block
+    call read_charge_add( nspin , charnet )
+
+    ! We read in the relevant data for HartreeGeometries block
+    call read_hartree_add( )
 
     ! Harris Forces?. Then DM.UseSaveDM should be false (use always
     ! Harris density in the first SCF step of each MD step), and

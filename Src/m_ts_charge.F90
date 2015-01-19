@@ -147,7 +147,7 @@ contains
   subroutine ts_print_charges(N_Elec,Elecs,dit, sp, &
        nspin, n_nzs, DM, S, &
        method)
-    use parallel, only : IONode, Node
+    use parallel, only : IONode
     use m_ts_electype
 #ifdef MPI
     use mpi_siesta

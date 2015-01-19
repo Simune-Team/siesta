@@ -49,7 +49,7 @@ contains
 
     use units, only : Ang
     use intrinsic_missing, only: VNORM
-    use m_ts_mesh, only : meshl, offset_i, offset_r, dMesh, dL
+    use m_mesh_node, only : meshl, offset_r, dMesh, dL
     use parallel, only : IONode
 #ifdef MPI
     use mpi_siesta, only : MPI_AllReduce, MPI_Sum
@@ -126,6 +126,8 @@ contains
                inside unit cell (Ang):'
           write(*,'(a,3(tr1,f13.5))') 'transiesta: Point (Ang):',&
                El%p%c/Ang
+          write(*,'(a)') 'transiesta: You can use %block AtomicCoordinatesOrigin'
+          write(*,'(a)') 'transiesta: to easily move the entire structure.'
        end if
        write(*,*)
     end if
@@ -190,7 +192,7 @@ contains
     use mpi_siesta, only : MPI_Comm_World, MPI_integer
     use mpi_siesta, only : MPI_double_precision
 #endif
-    use m_ts_mesh, only : meshl, offset_i, offset_r, dMesh, dL
+    use m_mesh_node, only : meshl, offset_i, offset_r, dMesh, dL
     
     integer     , intent(in)    :: ntpl
     real(grid_p), intent(inout) :: Vscf(ntpl)

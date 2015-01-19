@@ -1,4 +1,138 @@
 ----------------------------------------------------
+January 19, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-249
+Added initial N-electrode Hartree potential
+
+* Added geometries which can be used to specify
+  specific geometries in the simulation.
+
+  They can be used for definining these quantities:
+
+  - infinite planes 
+    defined by an intersection point and a normal vector
+  - square plane
+    defined by an origo and two vectors spanning the square
+  - coordinates
+    a list of coordinates
+  - box
+    defined by an origo and three vectores spanning the box
+
+  For the plane and the square three variants exists,
+   1) A delta-variant, the extend in the height is 0
+   2) An exponentially decaying height (with a cut-off height)
+   3) A Gaussian distributed height (with a cut-off height)
+  The coordinate form only has an exponential decaying extend
+  The box is only defined as a delta box.
+
+  Several routines exists to decipher whether any geometric position
+  is within any of these geometric structures.
+
+  These structures are defined in these files:
+    Src/m_geom_aux.f90
+    Src/m_geom_box.f90
+    Src/m_geom_coord.f90
+    Src/m_geom_objects.f90
+    Src/m_geom_plane.f90
+    Src/m_geom_square.f90
+
+* Added m_charge_add which uses the geometric objects
+  to add charge in specific regions of interest.
+
+  This is accomplished using the block:
+
+    %block Geometry.Charge
+
+  With this one can "move" charge from the atoms out to specific
+  regions, thus solving the Poisson equation using charge neutral
+  situations and yet having a "gate" like structure.
+
+  This works also with the transiesta method.
+
+* Added m_hartree_add which uses the geometric objects
+  to add an electrostatic potential in specific regions of interest.
+
+  This is accomplished using the block:
+
+    %block Geometry.Hartree
+
+  With this one can change the local potential in specific regions
+  of interest.
+
+* Added initial N-electrode Hartree potential to accomodate
+  initial N-electrode bias calculations.
+
+  This is based on the box geometric object.
+
+  Any bias on N-electrodes is performed by lifting a region
+  containing the electrode atoms, plus some buffer region,
+  by the amount of the chemical potential of that
+  electrode.
+
+  This seems to work ok for 2 electrodes as well.
+  It converges, however, several tests are required to ensure
+  the validity.
+
+  We use the geometric object (box) to achieve this easily.
+
+  NOTE: It is recommended to test this feature using the 2 electrode
+  setup.
+
+* The electrode will now print (in the settings) out the plane/box
+  used if they are needed.
+
+* Moved m_ts_mesh to m_mesh_node.
+
+  This module is extended and now contains all geometric
+  relevant information regarding the mesh.
+
+* Clean-up of variables in m_ts_gf.
+
+* The transport direction is now solely determined by
+  a projection of the electrode unit-cell semi-infinite direction
+  onto the unit-cell of the system.
+
+  If they do not coincide, transiesta will automatically
+  revert to an N-electrode bias setup, i.e. the boxed potential
+  placement.
+
+* Reduced memory used in dhscf for the electrostatic potential
+  when dealing with spin calculations.
+  
+  The Vscf was used instead of the auxilliary array which was
+  not needed.
+  Specifically Vscf is spin-dependent and Vaux is not.
+  Hence the spin-independent part is now calculated using
+  the Vaux array (this also saves an array copy).
+
+* Added user-information about un-recognized constraints found
+  in the GeometryConstraint block.
+
+
+    removed:
+  Src/m_ts_mesh.F90
+added:
+  Src/m_charge_add.F90
+  Src/m_geom_aux.f90
+  Src/m_geom_box.f90
+  Src/m_geom_coord.f90
+  Src/m_geom_objects.f90
+  Src/m_geom_plane.f90
+  Src/m_geom_square.f90
+  Src/m_hartree_add.F90
+  Src/m_mesh_node.F90
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/m_fixed.F90
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+  Src/siesta_options.F90
+  
+----------------------------------------------------
 January 19, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-248
 Changed intrinsic_missing to preprocess
 

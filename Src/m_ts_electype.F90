@@ -7,6 +7,10 @@ module m_ts_electype
   use class_dSpData2D
   use m_region
 
+  use m_geom_plane, only: geo_plane_delta
+  use m_geom_plane, only: in_basal_Elec => voxel_in_plane_delta
+  use m_geom_box, only: geo_box_delta
+
   use m_ts_chem_pot, only : ts_mu, name
 
   implicit none
@@ -40,6 +44,7 @@ module m_ts_electype
   public :: create_sp2sp01
   public :: print_Elec
   public :: print_settings
+  public :: init_Elec_sim
   public :: check_Elec, check_connectivity
   public :: delete
 
@@ -55,13 +60,6 @@ module m_ts_electype
 
   integer, parameter, public :: INF_NEGATIVE = 0 ! old 'left'
   integer, parameter, public :: INF_POSITIVE = 1 ! old 'right'
-
-  type :: geo_plane_delta
-     sequence
-     real(dp) :: c(3)
-     real(dp) :: n(3)
-     real(dp) :: d = 0._dp
-  end type geo_plane_delta
 
   type :: Elec
      character(len=FILE_LEN) :: HSfile = ' ', DEfile = ' ', GFfile  = ' '
@@ -133,7 +131,7 @@ module m_ts_electype
 
      ! Arrays needed to partition the scattering matrix and self-energies
 
-     ! Gamma is actually this: (Sigma - Sigma^\dagger) ^ T
+     ! Gamma stored is actually this: (Sigma - Sigma^\dagger) ^ T
      ! and NOT: i (Sigma - Sigma^\dagger)
      complex(dp), pointer :: Gamma(:), Sigma(:)
 
@@ -147,10 +145,12 @@ module m_ts_electype
 
      ! The basal plane of the electrode
      type(geo_plane_delta) :: p
+     ! A box containing all atoms of the electrode in the
+     ! simulation box
+     type(geo_box_delta) :: box
 
   end type Elec
   
-
 contains
 
   function fdf_nElec(prefix,this_n) result(n)
@@ -506,11 +506,13 @@ contains
        call die('You have not supplied all electrode information')
     end if
 
+#ifndef TBTRANS
     if ( this%Eta <= 0._dp ) then
-       call die('We do not allow the advanced Greens function &
+       call die('We do not allow the advanced Green function &
             &to be calculated. Please ensure a positive imaginary &
             &part of the energy (non-zero).')
     end if
+#endif
     
     if ( .not. file_exist(this%HSfile, Bcast = .true.) ) then
        call die("Electrode file does not exist. &
@@ -578,6 +580,7 @@ contains
     if ( .not. this%Bulk ) then
        this%DM_update = 2
     end if
+
                                  ! Same criteria as IsVolt
     if ( this%DM_update > 0 .or. abs(this%mu%mu) < 0.000000735_dp ) then
        ! when updating the cross-terms
@@ -615,6 +618,143 @@ contains
     end if
 
   end function fdf_Elec
+
+  ! Initialize variables for the electrode according
+  ! to the simulation variables
+  subroutine init_Elec_sim(this,cell,na_u,xa)
+
+    use parallel, only : IONode
+    use intrinsic_missing, only : VNORM, SPC_PROJ, VEC_PROJ
+
+    ! The electrode that needs to be processed
+    type(Elec), intent(inout) :: this
+    ! The simulation parameters.
+    ! Unit-cell of simulation cell
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+    
+    real(dp) :: p(3), max_xa(3), contrib, min_bond
+    integer :: i, j, n_cell, ia, na
+
+    ! First figure out the minimum bond-length
+    ia = this%idx_a
+    na = TotUsedAtoms(this)
+    if ( na == 1 ) then
+       call die('One atom electrodes are not allowed')
+    end if
+
+    min_bond = huge(1._dp)
+    do i = 1 , na - 1
+       p(:) = xa(:,ia-1+i)
+       do j = i + 1 , na
+          contrib = VNORM(xa(:,ia-1+j)-p)
+          if ( contrib < min_bond ) then
+             min_bond = contrib
+          end if
+       end do
+    end do
+    ! Take half the bond-length to get in between two atoms
+    min_bond = min_bond * 0.5_dp
+
+    ! Print out a warning if the electrode uses several cell-vectors
+    p = SPC_PROJ(cell,this%ucell(:,this%t_dir))
+    n_cell = 0
+    do i = 1 , 3 
+
+       ! project the unit-cell vector onto each cell component
+       contrib = VNORM(VEC_PROJ(cell(:,i),p))
+
+       ! If the contribution in this cell direction is too
+       ! small we consider it not to be important.
+       ! TODO this might in certain skewed examples be a bad choice.
+       if ( contrib < 1.e-6_dp ) cycle
+       n_cell = n_cell + 1
+    end do
+    if ( n_cell > 1 .and. IONode ) then
+       ! The electrode uses more than one cell-vector
+       ! to describe the transport direction.
+       write(*,'(a)')' *** Electrode '//trim(this%name)//' has the transport direction'
+       write(*,'(a,i0)')'     aligning with ',n_cell,' cell vectors.'
+       write(*,'(a)')'     Responsibility has been relieved of transiesta/tbtrans!'
+    end if
+
+    ! The cell-vector along the transport direction.
+    p = this%ucell(:,this%t_dir)
+    ! We add a vector with length of half the minimal bond length
+    ! to the vector, to do the averaging 
+    ! not on-top of an electrode atom.
+    p = p / VNORM(p) * min_bond
+    
+    ! Create the basal plane of the electrode
+    ! Decide which end of the electrode we use
+    ! TODO, correct for systems not having the last electrode atom
+    ! farthest from the device region (or correct intrinsically)
+    if ( this%inf_dir == INF_POSITIVE ) then
+       ! We need to utilize the last atom
+       this%p%c = xa(:,ia+na-1)
+       this%p%c = this%p%c + p ! add vector
+    else
+       this%p%c = xa(:,ia)
+       this%p%c = this%p%c - p ! subtract vector
+    end if
+    
+    ! Normal vector to electrode transport direction
+    this%p%n = SPC_PROJ(cell,this%ucell(:,this%t_dir))
+    this%p%n = this%p%n / VNORM(this%p%n) ! normalize
+
+    ! The distance parameter
+    this%p%d = sum( this%p%n(:)*this%p%c(:) )
+
+    ! Create the box cell for the electrode
+    ! This enables the Hartree correction for the 
+    ! electrode region
+    ! The box-cell will be extended by the bond-length
+    ! to make "as big as box as viable"
+    min_bond = min_bond * 2._dp ! re-scale to actual bond-length
+    do i = 1 , 3
+       ! Get the lower left corner of the electrode
+       p(i) = minval(xa(i,ia:ia+na-1))
+       ! The box extends back one bond-length in each direction.
+       p(i) = p(i) - min_bond
+       ! Get the maximum in each direction
+       ! In principle this should probably be the electrode
+       ! unit-cell vectors, however, for non-periodic electrodes
+       ! this might not be such a good choice.
+       ! The best thing would be to check the periodic directions,
+       ! and in those directions assign the vectors in those directions
+       ! always having the third vector equalling the cell transport
+       ! direction.
+       ! NOTE TODO : this is for now a "stupid" implementation.
+       max_xa(i) = maxval(xa(i,ia:ia+na-1))
+       max_xa(i) = max_xa(i) + min_bond
+       this%box%v(:,i) = 0._dp
+       this%box%v(i,i) = max_xa(i) - p(i)
+    end do
+    ! p now contains the origin of the box
+    this%box%c(:) = p(:)
+    ! For now the box vectors are defined using the unit-cell of
+    ! the electrode.
+    ! Note that we extend the unit-cell by the bond-length
+    ! We will really try to extend the box to be
+    ! as large as possible to retain the potential surrounding
+    ! the electrode as much as possible.
+    ! This is really important for periodic calculations
+    ! where it is necessary to have the lifting potential
+    ! in the entire box of the electrode
+    do i = 1 , 3
+       ! Remember that we start one bond-length "below"
+       ! and the unit-cell is always "one bond length" too
+       ! long (for periodic reasons)
+       p(:) = min_bond
+       ! Create a unit-vector along the unit-cell direction
+       max_xa(:) = this%ucell(:,i) / VNORM(this%ucell(:,i))
+       p(:) = VEC_PROJ(max_xa,p)
+       p(:) = this%ucell(:,i) + p(:)
+       this%box%v(:,i) = SPC_PROJ(cell,p)
+    end do
+
+  end subroutine init_Elec_sim
 
   function equal_el_el(this1,this2) result(equal)
     type(Elec), intent(in) :: this1, this2
@@ -729,38 +869,6 @@ contains
     logical :: in
     in = this%idx_a <= ia .and. ia < (this%idx_a + TotUsedAtoms(this))
   end function AtomInElec
-
-  pure function in_basal_elec(plane,ll,d) result(has)
-    type(geo_plane_delta), intent(in) :: plane
-    real(dp), intent(in) :: ll(3), d(3)
-    logical :: has
-    ! The positive and negative vertices
-    real(dp) :: pos(3), neg(3)
-
-    where ( plane%n >= 0._dp )
-       pos = ll + d
-       neg = ll
-    elsewhere
-       pos = ll
-       neg = ll + d
-    end where
-
-    has = .false.
-    ! We can then consider whether the vertices lie both outside
-    ! if not, we have an intersection.
-
-    ! The positive vertex lies on the left side of the plane, 
-    ! hence we know that it will not be crossing the plane
-    if ( plane%n(1)*pos(1)+plane%n(2)*pos(2)+plane%n(3)*pos(3) <  plane%d ) return
-
-    if ( plane%n(1)*neg(1)+plane%n(2)*neg(2)+plane%n(3)*neg(3) <= plane%d ) then
-       ! The positive vertex lies on the right side of the plane, 
-       ! This check ensures that the negative vertex lies on the left side
-       ! of the plane. Hence we have an intersection.
-       has = .true.
-    end if
-
-  end function in_basal_elec
 
   subroutine read_Elec(this,Bcast,io,ispin)
     use fdf
@@ -996,7 +1104,7 @@ contains
     integer :: i,j,k, ia, iaa, this_kcell(3,3)
     logical :: ldie, er, Gamma
     real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
-    real(dp) :: max_xa(3), cur_xa(3), p(3), contrib
+    real(dp) :: max_xa(3), cur_xa(3)
     real(dp), pointer :: this_xa(:,:)
 
 #ifdef MPI
@@ -1200,55 +1308,6 @@ contains
        call die("The electrode does not conform with the system settings. &
             &Please correct accordingly.")
     end if
-
-    ! Print out a warning if the electrode uses several cell-vectors
-    p = SPC_PROJ(ucell,this%ucell(:,this%t_dir))
-    j = 0
-    do i = 1 , 3 
-
-       ! project the unit-cell vector onto each cell component
-       contrib = VNORM(VEC_PROJ(ucell(:,i),p))
-
-       ! If the contribution in this cell direction is too
-       ! small we consider it not to be important.
-       ! TODO this might in certain skewed examples be a bad choice.
-       if ( contrib < 1.e-6_dp ) cycle
-       j = j + 1
-    end do
-    if ( j > 1 .and. IONode ) then
-       ! The electrode uses more than one cell-vector
-       ! to describe the transport direction.
-       write(*,'(a)')' *** Electrode '//trim(this%name)//' has the transport direction'
-       write(*,'(a,i0)')'     aligning with ',j,' cell vectors.'
-       write(*,'(a)')'     Responsibility has been relieved of transiesta/tbtrans!'
-    end if
-
-    ! The cell-vector along the transport direction.
-    p = this%ucell(:,this%t_dir)
-    ! We add a vector with length 0.5 Ang
-    ! to the vector, to do the averaging 
-    ! not on-top of an electrode atom.
-    p = p / VNORM(p) * 0.5_dp * Ang
-    
-    ! Create the basal plane of the electrode
-    ! Decide which end of the electrode we use
-    ! TODO, correct for systems not having the last electrode atom
-    ! farthest from the device region (or correct intrinsically)
-    if ( this%inf_dir == INF_POSITIVE ) then
-       ! We need to utilize the last atom
-       this%p%c = xa(:,this%idx_a+this%na_used-1)
-       this%p%c = this%p%c + p ! add vector
-    else
-       this%p%c = xa(:,this%idx_a)
-       this%p%c = this%p%c - p ! subtract vector
-    end if
-    
-    ! Normal vector to electrode transport direction
-    this%p%n = SPC_PROJ(ucell,this%ucell(:,this%t_dir))
-    this%p%n = this%p%n / vnorm(this%p%n) ! normalize
-
-    ! The distance parameter
-    this%p%d = sum(this%p%n(:)*this%p%c(:))
 
   end subroutine check_Elec
 
@@ -1528,20 +1587,22 @@ contains
   end subroutine copy_DM
 
 
-  subroutine print_settings(this,prefix)
-    use units, only : eV
+  subroutine print_settings(this,prefix,plane,box)
+    use units, only : eV, Ang
     use parallel, only : Node
     type(Elec), intent(in) :: this
     character(len=*), intent(in) :: prefix
+    logical, intent(in), optional :: plane, box
 
     character(len=100) :: chars
-    character(len=60) :: f1, f5, f20, f6, f7, f8, f9, f10, f11, f15
+    character(len=60) :: f1, f5, f20, f6, f7, f8, f9, f10, f11, f15, f3
 
     if ( Node /= 0 ) return
     
     ! Write out the settings
     ! First create the different out-put options
     f1  = '('''//trim(prefix)//': '',a,t53,''='',4x,l1)'
+    f3  = '('''//trim(prefix)//': '',a,t53,''= { '',2(e12.5,'','',tr1),e12.5,''}'',a)'
     f5  = '('''//trim(prefix)//': '',a,t53,''='',i5,a)'
     f20 = '('''//trim(prefix)//': '',a,t53,''= '',i0,'' -- '',i0)'
     f6  = '('''//trim(prefix)//': '',a,t53,''='',f10.4,tr1,a)'
@@ -1608,6 +1669,22 @@ contains
     end if
 #endif
     write(*,f9)  '  Electrode imaginary Eta', this%Eta/eV,' eV'
+    if ( present(plane) ) then
+    if ( plane ) then
+       write(*,f11) '  Hartree fix plane:'
+       write(*,f3)  '    plane origo',this%p%c / Ang, ' Ang'
+       write(*,f3)  '    plane normal vector',this%p%n
+    end if
+    end if
+    if ( present(box) ) then
+    if ( box ) then
+       write(*,f11) '  Hartree potential box:'
+       write(*,f3)  '    box origo',this%box%c / Ang, ' Ang'
+       write(*,f3)  '    box v1',this%box%v(:,1) / Ang, ' Ang'
+       write(*,f3)  '    box v2',this%box%v(:,2) / Ang, ' Ang'
+       write(*,f3)  '    box v3',this%box%v(:,3) / Ang, ' Ang'
+    end if
+    end if
 
   end subroutine print_settings
 

@@ -103,11 +103,15 @@
 #ifdef MPI
       use mpi_siesta
 #endif
+
+      use m_mesh_node,   only: init_mesh_node
+      use m_charge_add,  only: init_charge_add
+      use m_hartree_add, only: init_hartree_add
+
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode
       use m_ts_tdir,      only : ts_tdir
       use m_ts_options,   only : IsVolt, N_Elec, Elecs
-      use m_ts_mesh   ,   only : ts_init_mesh
       use m_ts_voltage,   only : ts_init_voltage
       use m_ts_hartree,   only : ts_init_hartree_fix
 #endif /* TRANSIESTA */
@@ -227,7 +231,16 @@ C ----------------------------------------------------------------------
 !     Setup box descriptors for each processor,
 !     held in module iogrid_netcdf
       call set_box_limits( ntm, nsm )
-      
+
+      ! Initialize information on local mesh for each node
+      call init_mesh_node( cell, ntm , meshLim , nsm )
+
+      ! Setup charge additions in the mesh
+      call init_charge_add(cell, ntm, nsm)
+
+      ! Setup Hartree additions in the mesh
+      call init_hartree_add(cell, ntm, nsm)
+
 #ifdef NCDF_4
       ! Initialize the box for each node...
       call cdf_init_mesh( ntm, nsm )
@@ -396,13 +409,6 @@ C ----------------------------------------------------------------------
       endif
 
 #ifdef TRANSIESTA
-      if (TSmode) then
-         ! Ensure the mesh is set to the UNIFORM
-         ! (not necessary as POISSON has just been called)
-
-         ! in case the mesh changes, we need this every time
-         call ts_init_mesh( cell, ntm , meshLim , nsm )
-      end if
       if (frstme) then
 !        Check if we need to add the potential 
 !        corresponding to the voltage-drop.
@@ -638,6 +644,10 @@ C     Modules
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
       use m_doping_uniform,       only: doping_active, doping_uniform
+      
+      use m_charge_add,   only: charge_add
+      use m_hartree_add,  only: hartree_add
+
 #ifdef NCDF_4
       use siesta_options, only: write_cdf
       use m_ncdf_siesta, only: cdf_save_grid
@@ -1092,9 +1102,12 @@ C Add a background charge to neutralize the net charge, to
 C model doped systems. It only adds the charge at points
 C where there are atoms (i.e., not in vacuum).          
 C First, call with 'task=0' to add background charge    
-
-        if (doping_active) call doping_uniform(cell,ntpl,0,
-     $                                         DRho(:,1),rhoatm)
+      if (doping_active) call doping_uniform(cell,ntpl,0,
+     $     DRho(:,1),rhoatm)
+      
+      ! Add doping in cell (from ChargeGeometries/Geometry.Charge)
+      ! Note that this routine will return immediately if no dopant is present
+      call charge_add('+',cell, ntpl, DRho(:,1) )
 
 C ----------------------------------------------------------------------
 C Calculate the dipole moment
@@ -1126,20 +1139,20 @@ C Orthogonalize dipole to bulk directions
       endif
 
 C ----------------------------------------------------------------------
-C     Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf
+C     Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vaux
 C ----------------------------------------------------------------------
 !     Solve Poisson's equation
-      call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf' )
+      call re_alloc( Vaux, 1, ntpl, 'Vaux', 'dhscf' )
 
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho,
-     &             DUscf, Vscf, DStres, nsm )
+     &             DUscf, Vaux, DStres, nsm )
 
-      ! Vscf is in the UNIFORM, sequential form, and only using
+      ! Vaux is in the UNIFORM, sequential form, and only using
       ! the first spin index
 
 #ifdef TRANSIESTA
       ! We require that even the SIESTA potential is "fixed"
-      if (TSmode) call ts_hartree_fix( ntpl , Vscf(:,1) )
+      if (TSmode) call ts_hartree_fix( ntpl , Vaux )
 #endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
@@ -1156,7 +1169,7 @@ C ----------------------------------------------------------------------
 !$OMP parallel do default(shared), private(ip), 
 !$OMP&reduction(+:Uscf)
       do ip = 1, ntpl
-        Uscf = Uscf + Vscf(ip,1) * rhoatm(ip)
+        Uscf = Uscf + Vaux(ip) * rhoatm(ip)
       enddo
 !$OMP end parallel do
       Uscf = Uscf * dVol + Uatm + DUscf
@@ -1164,21 +1177,24 @@ C ----------------------------------------------------------------------
 C Call doping with 'task=1' to remove background charge added previously
 C The extra charge thus only affects the Hartree energy and potential,
 C but not the contribution to Enascf ( = \Int_{Vna*\rho})
+      if (doping_active) call doping_uniform(cell,ntpl,1,
+     $     DRho(:,1),rhoatm)
 
-        if (doping_active) call doping_uniform(cell,ntpl,1,
-     $                                         DRho(:,1),rhoatm)
+      ! Remove doping in cell (from ChargeGeometries/Geometry.Charge)
+      ! Note that this routine will return immediately if no dopant is present
+      call charge_add('-',cell, ntpl, DRho(:,1) )
 
 C ----------------------------------------------------------------------
-C Add neutral-atom potential to Vscf
+C Add neutral-atom potential to Vaux
 C ----------------------------------------------------------------------
       Enaatm = 0.0_dp
       Enascf = 0.0_dp
 !$OMP parallel do default(shared), private(ip),
 !$OMP&reduction(+:Enaatm,Enascf)
       do ip = 1, ntpl
-        Enaatm     = Enaatm + Vna(ip) * rhoatm(ip)
-        Enascf     = Enascf + Vna(ip) * DRho(ip,1)
-        Vscf(ip,1) = Vscf(ip,1) + Vna(ip)
+        Enaatm   = Enaatm + Vna(ip) * rhoatm(ip)
+        Enascf   = Enascf + Vna(ip) * DRho(ip,1)
+        Vaux(ip) = Vaux(ip) + Vna(ip)
       enddo
 !$OMP end parallel do
       Enaatm = Enaatm * dVol
@@ -1187,7 +1203,6 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
-
       if (acting_efield) then
          if (dipole_correction) then
             field = get_field_from_dipole(dipol,cell)
@@ -1204,23 +1219,28 @@ C ----------------------------------------------------------------------
          ! This routine expects a sequential array,
          ! but it is distribution-blind
          call add_potential_from_field( field, cell, nua, isa, xa,
-     &                                  ntm, nsm, Vscf )
+     &                                  ntm, nsm, Vaux )
          DUext = - ddot(3,field,1,dipol,1)
       endif
 
 #ifdef TRANSIESTA
 ! ---------------------------------------------------------------------
-!     transiesta:
+!     Transiesta:
 !     add the potential corresponding to the (possible) voltage-drop.
-!     note that tsvoltage is not sharing the reord wih efield since
+!     note that ts_voltage is not sharing the reord wih efield since
 !     we should not encounter both at the same time.
 ! ---------------------------------------------------------------------
       if (TSmode.and.IsVolt.and.TSrun) then
          ! This routine expects a sequential array,
          ! in whatever distribution
-         call ts_voltage( cell, ntpl, Vscf(:,1) )
+         call ts_voltage( cell, ntpl, Vaux )
       endif
 #endif /* TRANSIESTA */
+
+! ----------------------------------------------------------------------
+! Add potential from user defined geometries (if present)
+! ----------------------------------------------------------------------
+      call hartree_add( cell, ntpl, Vaux )
 
 C ----------------------------------------------------------------------
 C     Save electrostatic potential
@@ -1230,16 +1250,16 @@ C ----------------------------------------------------------------------
 #ifdef NCDF_4
         if ( write_cdf ) then
            call cdf_save_grid('SIESTA.nc','Vh',1,ntm,ntpl,
-     &          Vscf)
+     &          Vaux)
         else
-           call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf )
-           call write_grid_netcdf( cell, ntm, 1, ntpl, Vscf, 
+           call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vaux )
+           call write_grid_netcdf( cell, ntm, 1, ntpl, Vaux, 
      &          "ElectrostaticPotential")
         end if
 #else
-        call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf )
+        call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vaux )
         call write_grid_netcdf( cell, ntm, 1, ntpl,
-     &       Vscf, "ElectrostaticPotential")
+     &       Vaux, "ElectrostaticPotential")
 #endif
       endif
 
@@ -1269,40 +1289,31 @@ C ----------------------------------------------------------------------
 #endif /* ! BSC_CELLXC */
 C Exchange-correlation energy
 C ----------------------------------------------------------------------
-      call re_alloc( Vaux, 1, ntpl, 'Vaux', 'dhscf' )
-!$OMP parallel default(shared), private(ip,ispin)
-
-!$OMP do
-      do ip= 1, ntpl
-        Vaux(ip) = Vscf(ip,1)
-      enddo
-!$OMP end do nowait
+      call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf' )
 
       if (npcc .eq. 1) then
          
-!$OMP do collapse(2)
+!$OMP parallel do default(shared), private(ip,ispin), collapse(2)
        do ispin = 1,nsd
           do ip= 1, ntpl
              DRho(ip,ispin) = DRho(ip,ispin) +
      &            (rhopcc(ip)+rhoatm(ip)) * rnsd
           enddo
        enddo
-!$OMP end do
+!$OMP end parallel do
 
       else
 
-!$OMP do collapse(2)
+!$OMP parallel do default(shared), private(ip,ispin), collapse(2)
        do ispin = 1,nsd
           do ip= 1, ntpl
              DRho(ip,ispin) = DRho(ip,ispin) +
      &            rhoatm(ip) * rnsd
           enddo
        enddo
-!$OMP end do
+!$OMP end parallel do
 
       end if
-
-!$OMP end parallel
 
 !     Everything now is in UNIFORM, sequential form
 #ifdef BSC_CELLXC

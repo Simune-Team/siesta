@@ -11,7 +11,7 @@
 ! This code segment has been improved or fully created by:
 ! Nick Papior Andersen, 2014, nickpapior@gmail.com
 !
-module m_ts_mesh
+module m_mesh_node
 
 ! Module for retaining information about the mesh.
 ! It is used by the Hartree module and the bias module.
@@ -25,20 +25,24 @@ module m_ts_mesh
 
   implicit none
 
+  public
+  save
+
   ! The offset for the current node
-  real(dp), save :: offset_r(3) = 0._dp
+  real(dp) :: offset_r(3) = 0._dp
   ! the voxel-vectors for each sub-mesh element
-  real(dp), save :: dL(3,3) = 0._dp
+  real(dp) :: dL(3,3) = 0._dp
   ! the voxel length along each direction
-  real(dp), save :: dMesh(3) = 0._dp
+  real(dp) :: dMesh(3) = 0._dp
 
   ! offsets for the local node
-  integer, save :: meshl(3) = 0
-  integer, save :: offset_i(3) = 0
+  integer :: meshl(3) = 0
+  integer :: offset_i(3) = 0
 
 contains
 
-  subroutine ts_init_mesh(ucell , meshG , meshLim , nsm)
+  subroutine init_mesh_node( ucell , meshG , meshLim , nsm)
+
     use intrinsic_missing, only : VNORM
     use parallel, only : Node, Nodes, ProcessorY
 
@@ -126,7 +130,7 @@ contains
           dimZ = blocZ
           if ( node_Z <= nremZ ) dimZ = dimZ + 1
           dimZ = dimZ * nsm ! For fine points
-           
+          
           if ( Node == cur_Node ) then
              ! Calculate the offset in the [YZ]-direction for the processor
              ! We know that iniX == 0, so no need, but we have it for
@@ -144,15 +148,81 @@ contains
 
     ! Find quantities in mesh coordinates
     meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
+    if ( ldimX /= meshl(1) ) &
+         call die('Incorrect number of A divisions found.')
     meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
+    if ( ldimY /= meshl(2) ) &
+         call die('Incorrect number of B divisions found.')
     meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
+    if ( ldimZ /= meshl(3) ) &
+         call die('Incorrect number of C divisions found.')
 
     ! Calculate starting point for grid
     offset_i(1) = (meshLim(1,1)-1)*nsm
     offset_i(2) = (meshLim(1,2)-1)*nsm
     offset_i(3) = (meshLim(1,3)-1)*nsm
 
-  end subroutine ts_init_mesh
+#ifdef MESH_DEBUG
+    ! We will print out information about the boxes that each processor
+    ! has..
+    if ( IONode ) then
+       write(*,'(t2,a)') 'Printing offsets and corners in Ang'
+    end if
+#ifdef MPI
+    do i = 0 , Nodes - 1
+       if ( Node == i ) then
+          if ( IONode ) then
+             ll = offset_r
+             ix = ldimX
+             iy = ldimY
+             iz = ldimZ
+          else
+             call MPI_Send(offset_r,3,MPI_Double_precision, &
+                  0,0,MPI_Comm_World,MPIerror)
+             call MPI_Send(ldimX,1,MPI_Integer, &
+                  0,1,MPI_Comm_World,MPIerror)
+             call MPI_Send(ldimY,1,MPI_Integer, &
+                  0,2,MPI_Comm_World,MPIerror)
+             call MPI_Send(ldimZ,1,MPI_Integer, &
+                  0,3,MPI_Comm_World,MPIerror)
+          end if
+       else if ( IONode ) then
+          call MPI_Recv(ll,3,MPI_Double_precision, &
+               i,0,MPI_Comm_World,status,MPIerror)
+          call MPI_Recv(ix,1,MPI_Integer, &
+               i,1,MPI_Comm_World,status,MPIerror)
+          call MPI_Recv(iy,1,MPI_Integer, &
+               i,2,MPI_Comm_World,status,MPIerror)
+          call MPI_Recv(iz,1,MPI_Integer, &
+               i,3,MPI_Comm_World,status,MPIerror)
+       end if
+       if ( IONode ) then
+          print *, ix,iy,iz
+          write(*,'(t3,a,3(tr1,f12.5))') &
+               'Lower-left:',ll(:)/Ang
+          write(*,'(t3,a,3(tr1,f12.5))') &
+               'Upper-x   :',(ll(:)+ix * dL(:,1))/Ang
+          write(*,'(t3,a,3(tr1,f12.5))') &
+               'Upper-y   :',(ll(:)+iy * dL(:,2))/Ang
+          write(*,'(t3,a,3(tr1,f12.5))') &
+               'Upper-z   :',(ll(:)+iz * dL(:,3))/Ang
+       end if
+    end do
+#else
+    if ( IONode ) then
+       write(*,'(t3,a,3(tr1,f12.5))') &
+            'Lower-left:',offset_r(:)/Ang
+       write(*,'(t3,a,3(tr1,f12.5))') &
+            'Upper-x   :',(offset_r(:)+ldimX * dL(:,1))/Ang
+       write(*,'(t3,a,3(tr1,f12.5))') &
+            'Upper-y   :',(offset_r(:)+ldimY * dL(:,2))/Ang
+       write(*,'(t3,a,3(tr1,f12.5))') &
+            'Upper-z   :',(offset_r(:)+ldimZ * dL(:,3))/Ang
+    end if
+#endif
+#endif
 
-end module m_ts_mesh
+  end subroutine init_mesh_node
+
+end module m_mesh_node
 

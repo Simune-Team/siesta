@@ -70,7 +70,7 @@ contains
     use fdf, only : leqi
     use parallel, only: IOnode, Nodes
     use units, only: eV, Ang, Kelvin
-    use intrinsic_missing, only : VNORM
+    use intrinsic_missing, only : VNORM, IDX_SPC_PROJ, EYE
 
     use m_io_s, only : file_exist
 
@@ -113,7 +113,7 @@ contains
 ! *******************
 ! * LOCAL variables *
 ! *******************
-    real(dp) :: tmp
+    real(dp) :: tmp, tmp33(3,3)
     logical :: err
     character(len=200) :: c, chars
     integer :: i, j, idx, idx1, idx2
@@ -144,20 +144,6 @@ contains
     onlyS      = fdf_get('TS.onlyS',.false.)
     onlyS      = fdf_get('TS.S.Save',onlyS)
 
-    ! Read in the transport direction
-    chars = fdf_get('TS.TransportDirection','c')
-    if ( leqi(chars,'a') .or. leqi(chars,'a1') ) then
-       ts_tdir = 1
-    else if ( leqi(chars,'b') .or. leqi(chars,'a2') ) then
-       ts_tdir = 2
-    else if ( leqi(chars,'c') .or. leqi(chars,'a3') ) then
-       ts_tdir = 3
-    else if ( leqi(chars,'none') ) then
-       ts_tdir = 0
-    else
-       call die('Transport direction not in [a|b|c|A1|A2|A3|none]')
-    end if
-
     if ( TS_HS_save .and. FixSpin ) then
        write(*,*) 'Fixed spin not possible with Transiesta!'
        write(*,*) 'Electrodes with fixed spin is not possible with Transiesta !'
@@ -169,8 +155,6 @@ contains
           write(*,1) 'Save H and S matrices', TS_HS_save
           write(*,1) 'Save DM and EDM matrices', TS_DE_save
           write(*,1) 'Save S and quit (onlyS)', onlyS
-          write(chars,'(a,i0)') 'A',ts_tdir
-          write(*,10) 'Transport along unit-cell vector',trim(chars)
           write(*,11) repeat('*', 62)
           write(*,*)
        end if
@@ -379,22 +363,9 @@ contains
           write(*,c) 'Single electrode calculations does not allow shifting the chemical potential.'
           write(*,c) 'You should do that by changing the states filled in the system.'
           write(*,c) 'Consult the manual of how to do this.'
+          call die('Please set the chemical potential to zero for your one electrode')
        end if
        IsVolt = .false.
-    end if
-
-    ! If many electrodes, no transport direction can be specified
-    ! Hence we use this as an error-check (also for N_Elec == 1)
-    if ( N_Elec /= 2 ) then
-       ts_tdir = - N_Elec
-       elec_basal_plane = .true.
-    else
-       if ( Elecs(1)%t_dir /= Elecs(2)%t_dir ) then
-          ! In case we have a skewed transport direction
-          ! we have some restrictions...
-          ts_tdir = - N_Elec
-          elec_basal_plane = .true.
-       end if
     end if
 
     ! Setup default parameters for the electrodes
@@ -441,6 +412,7 @@ contains
        if ( .not. fdf_Elec('TS',slabel,Elecs(i),N_mu,mus) ) then
           call die('Could not find electrode: '//trim(name(Elecs(i))))
        end if
+
        ! set the placement in orbitals
        if ( Elecs(i)%idx_a < 0 ) &
             Elecs(i)%idx_a = na_u + Elecs(i)%idx_a + 1
@@ -451,7 +423,29 @@ contains
        end if
        Elecs(i)%idx_o = lasto(Elecs(i)%idx_a-1)+1
 
+       call init_Elec_sim(Elecs(i),ucell,na_u,xa)
+
     end do
+
+    ! If many electrodes, no transport direction can be specified
+    ! Hence we use this as an error-check (also for N_Elec == 1)
+    if ( N_Elec /= 2 ) then
+       ts_tdir = - N_Elec
+    else
+       ! Retrieve the indices of the unit-cell directions
+       ! according to the electrode transport directions.
+       i = IDX_SPC_PROJ(ucell,Elecs(1)%ucell(:,Elecs(1)%t_dir))
+       j = IDX_SPC_PROJ(ucell,Elecs(2)%ucell(:,Elecs(2)%t_dir))
+
+       if ( i == j ) then
+          ! The transport direction for the electrodes are the same...
+          ts_tdir = i
+       else
+          ! In case we have a skewed transport direction
+          ! we have some restrictions...
+          ts_tdir = - N_Elec
+       end if
+    end if
 
     ! Check that we can actually start directly in transiesta
     if ( TS_scf_mode == 1 ) then ! TS-start
@@ -462,27 +456,29 @@ contains
        end if
     end if
 
-    ! Check that the current transport direction is "aligned"
-    ! TODO when we can deal with arbitrary electrodes this should be altered
-    if ( N_Elec == 2 ) then
-       ! For the moment we require that 2 electrodes have 
-       ! a well defined transport direction
-       if ( all(Elecs(1)%t_dir == Elecs(:)%t_dir) ) then
-          ts_tdir = Elecs(1)%t_dir
-       else
-          call die('Using 2 electrodes requires a well-defined &
-               &transport direction. Only use one direction for &
-               the semi-infinite leads.')
-       end if
-    end if
-
     ! The user can selectively decide how the Hartree-fix
     ! is applied
     ! In case the transport direction is "fixed" in two terminal
     ! setups, we can still force it to use the basal plane of the 
     ! electrodes
     if ( ts_tdir > 0 ) then
+       chars = fdf_get('TS.HartreePotential','ramp')
+       if ( leqi(chars,'ramp') ) then
+          ! do nothing
+       else if ( leqi(chars,'elec-box') ) then
+          ts_tdir = - N_Elec
+       else
+          call die('Error in specifying how the Hartree potential &
+               &should be placed. [ramp|elec-box]')
+       end if
+    end if
+
+    ! If the Hartree-potential is not a ramp, then we do not allow
+    ! fixing from one place
+    if ( ts_tdir > 0 ) then
        elec_basal_plane = fdf_get('TS.HartreePotential.BasalPlane',.false.)
+    else
+       elec_basal_plane = .true.
     end if
 
     if ( .not. IsVolt ) then
@@ -616,7 +612,6 @@ contains
     end if
 
     ! WILL WORK EVENTUALLY
-    if ( N_Elec > 2 .and. IsVolt ) call die('Several electrodes and bias does not work')
     if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_update > 0) ) then
        call die('transiesta relaxation is only allowed if you also &
             &update the cross terms, please set: TS.Elecs.DM.Update cross-terms')
@@ -717,9 +712,11 @@ contains
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'
        if ( ts_tdir < 1 ) then
           write(*,11) 'Transport individually selected for electrodes'
+          write(*,11) 'Hartree potential will be placed in electrode box'
        else
           write(chars,'(a,i0)') 'A',ts_tdir
           write(*,10) 'Transport along unit-cell vector',trim(chars)
+          write(*,11) 'Hartree potential will be placed in ramp'
        end if
        if ( ts_method == TS_SPARSITY ) then
           write(*,10)'Solution method', 'Sparsity pattern'
@@ -752,10 +749,14 @@ contains
        end select
        if ( IsVolt ) then
           write(*,6) 'Voltage', Volt/eV,'Volts'
-          if ( VoltageInC ) then
-             write(*,11) 'Voltage drop across central region'
+          if ( ts_tdir > 0 ) then
+             if ( VoltageInC ) then
+                write(*,11) 'Voltage drop across central region'
+             else
+                write(*,11) 'Voltage drop across entire cell'    
+             end if
           else
-             write(*,11) 'Voltage drop across entire cell'    
+             write(*,11) 'Voltage lifted locally on electrodes'    
           end if
 
           chars = 'Non-equilibrium contour weight method'
@@ -817,7 +818,9 @@ contains
        end if
        write(*,10)'          >> Electrodes << '
        do i = 1 , size(Elecs)
-          call print_settings(Elecs(i),'ts_options')
+          call print_settings(Elecs(i),'ts_options', &
+               plane = elec_basal_plane , &
+               box = ts_tdir < 1 .and. IsVolt )
        end do
 
        ! Print the contour information
@@ -855,10 +858,13 @@ contains
           write(*,11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
        end if
 
-       if ( ts_tdir == 0 ) then
-          write(*,11) '*** TranSIESTA transport direction is arbitrary  ***'
-       else if ( ts_tdir < 0 ) then
+       if ( ts_tdir < 0 ) then
           write(*,11) '*** TranSIESTA transport directions are individual ***'
+          if ( IsVolt ) then
+             write(*,11) '*** Please ensure electrode unit-cells are as confined as possible'
+             write(*,11) '    The initial guess for the potential profile is heavily influenced'
+             write(*,11) '    by the electrode unit-cells. ***'
+          end if
        end if
 
        ! Check that the unitcell does not extend into the transport direction
@@ -866,8 +872,9 @@ contains
           if ( i == ts_tdir .or. ts_tdir <= 0 ) cycle
           if ( abs(dot(ucell(:,i),ucell(:,ts_tdir),3)) > 1e-7_dp ) then
              write(*,*) &
-                  "ERROR: Unitcell has the electrode extend into the &
+                  "ERROR: Unit cell has the electrode extend into the &
                   &transport direction."
+             write(*,*) dot(ucell(:,i),ucell(:,ts_tdir),3)
              write(*,*) &
                   "Please change the geometry."
              call die("Electrodes extend into the transport direction. &
@@ -879,10 +886,12 @@ contains
        ! The Hartree potential correction will only be put correctly 
        ! when the atoms are sorted by z and starting from z == 0
        if ( IsVolt .and. .not. VoltageInC .and. ts_tdir > 0 ) then
+          call eye(3,tmp33)
+          j = IDX_SPC_PROJ(tmp33,ucell(:,ts_tdir))
           tmp = huge(1._dp)
           do i = 1 , na_u
              if ( atom_type(i) /= TYP_BUFFER ) then
-                tmp = min(tmp,xa(ts_tdir,i))
+                tmp = min(tmp,xa(j,i))
              end if
           end do
           tmp = tmp / Ang
@@ -892,7 +901,7 @@ contains
                   "ERROR: Atoms must be located within the primary unit-cell &
                   &and shifted to 0 when dealing with bias."
              write(*,'(a,g15.6,a)') &
-                  "Please shift your system in the z-direction by: ", &
+                  "Please shift your system in the transport-direction by: ", &
                   -tmp,' Ang'
              call die('System setup wrong, please see output')
           end if

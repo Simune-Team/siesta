@@ -507,11 +507,11 @@ contains
 
   ! Subroutine for reading in both the left and right next energy point
   subroutine read_next_GS(ispin,ikpt, bkpt, cE, &
-       NElecs, uGF, Elecs, &
+       N_Elec, uGF, Elecs, &
        nzwork, zwork, reread, &
        forward )
 
-    use parallel, only : Node, IONode
+    use parallel, only : IONode
 
 #ifdef MPI
     use mpi_siesta, only : MPI_AllReduce, MPI_Sum, MPI_Integer
@@ -525,8 +525,8 @@ contains
     integer, intent(in) :: ispin, ikpt
     real(dp), intent(in) :: bkpt(3)
     type(ts_c_idx), intent(in) :: cE
-    integer, intent(in) :: NElecs, uGF(NElecs)
-    type(Elec), intent(inout) :: Elecs(NElecs)
+    integer, intent(in) :: N_Elec, uGF(N_Elec)
+    type(Elec), intent(inout) :: Elecs(N_Elec)
     integer, intent(in) :: nzwork
     complex(dp), intent(inout), target :: zwork(nzwork)
     logical, intent(in), optional :: reread, forward
@@ -554,7 +554,7 @@ contains
 
     if ( present(reread) ) then
        if ( IONode .and. reread ) then
-          do j = 1 , NElecs
+          do j = 1 , N_Elec
              if ( .not. Elecs(j)%out_of_core ) cycle
              do i = 1 , NEReqs * 2
                 backspace(unit=uGF(j))
@@ -580,7 +580,7 @@ contains
     ! However, this will probably come at the expense 
     ! of doing the same "repetition" expansion twice, we can live with
     ! that!
-    do i = 1 , NElecs
+    do i = 1 , N_Elec
        ! If the index for the contour is negative
        ! It means that we are dealing with a Fermi
        ! charge correction
