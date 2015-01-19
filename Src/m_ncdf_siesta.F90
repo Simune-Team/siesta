@@ -65,10 +65,10 @@ contains
     logical, intent(in) :: is_md
 
     ! Local variables
-    type(hNCDF) :: ncdf, grp
+    type(hNCDF) :: ncdf, grp, grp2
     type(dict) :: dic, d
     character(len=DICT_KEY_LENGTH) :: key
-    integer :: n_nzs, tmp, i, chks(3)
+    integer :: n_nzs, tmp, i, chks(3), iEl
 #ifdef TRANSIESTA
     integer, allocatable :: ibuf(:)
 #endif
@@ -717,7 +717,7 @@ contains
     integer :: no, nk
     integer, allocatable :: aux(:)
 
-    ! Unluckily is the new basis saves only
+    ! Unluckily the new basis saves only
     ! saved on the IO node. 
     ! No other node must therefore access this routine
     if ( Node /= 0 ) return

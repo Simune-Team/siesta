@@ -27,19 +27,16 @@ module m_region
      ! The quantities in the region
      integer :: n = 0
      integer, pointer :: r(:) => null()
+     logical :: sorted = .false.
   end type tRegion
 
   public :: tRegion
   public :: region_delete
-  public :: region_connect
   public :: region_intersection
   public :: region_union, region_append
-  public :: region_complement
+  public :: region_union_complement, region_complement
   public :: region_range
   public :: region_list
-  public :: region_correct_atom
-  public :: region_atom2orb
-  public :: region_orb2atom
   public :: region_overlaps
   public :: region_sort
   public :: region_insert
@@ -50,6 +47,15 @@ module m_region
   public :: region_MPI_union
   public :: region_MPI_Bcast
 #endif
+
+  ! Regions which has to do with sparsity patterns
+  public :: region_sp_connect
+  public :: region_sp_sort
+
+  ! Regions which has to do with atoms/orbitals
+  public :: region_correct_atom
+  public :: region_atom2orb
+  public :: region_orb2atom
 
   ! Sorting methods for the regions
   integer, parameter, public :: R_SORT_MAX_FRONT = 1
@@ -84,6 +90,7 @@ contains
   ! Check whether an element exists in this region.
   ! Performs an easy check instead of doing it manually.
   elemental function in_region(r,i) result(in)
+    use intrinsic_missing, only : SFIND
     type(tRegion), intent(in) :: r
     integer, intent(in) :: i
     logical :: in
@@ -91,7 +98,11 @@ contains
        in = .false.
        return
     end if
-    in = any(i == r%r)
+    if ( r%sorted ) then
+       in = SFIND(r%r(:),i) > 0
+    else
+       in = any(i == r%r)
+    end if
   end function in_region
 
   ! Copies one region to another one
@@ -105,25 +116,20 @@ contains
        to%name = from%name
     else
        call region_list(to,from%n,from%r,name=from%name)
+       to%sorted = from%sorted
     end if
   end subroutine region_copy
 
   ! Fully deletes a region (irrespective of it's current state)
-  recursive subroutine region_delete(r,r1,r2,r3,r4)
-    type(tRegion), intent(inout), optional :: r,r1,r2,r3,r4
-    if ( present(r) ) then
-       r%name = ' '
-       r%n = 0
-       if ( associated(r%r) ) then
-          deallocate(r%r)
-       end if
-       nullify(r%r)
-    else
-       call region_delete(r=r1)
-       call region_delete(r=r2)
-       call region_delete(r=r3)
-       call region_delete(r=r4)
-    end if
+  recursive subroutine region_delete(r,r1,r2,r3,r4,r5)
+    type(tRegion), intent(inout) :: r
+    type(tRegion), intent(inout), optional :: r1,r2,r3,r4,r5
+    r%name = ' '
+    r%n = 0
+    if ( associated(r%r) ) deallocate(r%r)
+    nullify(r%r)
+    r%sorted = .false.
+    if ( present(r1) ) call region_delete(r1,r2,r3,r4,r5)
   end subroutine region_delete
 
   ! Allows removing certain elements from a region.
@@ -182,7 +188,7 @@ contains
   !      one is connecting out, the other does not, in that case would
   !      'connect_from' only contain one orbital.
   ! NOTE: It DOES work in parallel
-  subroutine region_connect(r,dit,sp,cr,except, connect_from, follow)
+  subroutine region_sp_connect(r,dit,sp,cr,except, connect_from, follow)
 
     ! the region we wish to find the connections to
     type(tRegion), intent(in) :: r
@@ -202,12 +208,9 @@ contains
     logical, intent(in), optional :: follow
 
     ! ** local variables
-#ifdef MPI
-    type(tRegion) :: tmp
-#endif
+    type(tRegion) :: tmp, tmp2
     integer :: i, j, io, jo, ind, no_l, no_u, it, rt
-    integer, allocatable :: ct(:), rr(:), sr(:)
-    integer, allocatable :: ser(:)
+    integer, allocatable :: ct(:), rr(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 
     call attach(sp,nrows=no_l,nrows_g=no_u, &
@@ -216,21 +219,25 @@ contains
     ! ensure nullification of cr
     call region_delete(cr)
 
-    allocate(rr(r%n),sr(r%n))
+    allocate(rr(r%n))
+    ! Exclude it's own region, (no connection back)
+    call region_copy(r,tmp)
+    allocate(ct(no_u-r%n))
+
+    if ( present(except) ) then
+       if ( except%n > 0 ) then
+          call region_copy(tmp,tmp2)
+          call region_insert(tmp2,except,tmp,0)
+          call region_delete(tmp2)
+       end if
+    end if
+
     ! In case r%n is extremely big we can with benefit &
     ! search the region in a sorted array.
     ! We sort it once, and search that array instead
     ! This requires a slightly increased memory, but 
     ! drastically improves performance.
-    sr(:) = SORT(r%r)
-    allocate(ct(no_u-r%n))
-
-    if ( present(except) ) then
-       if ( except%n > 0 ) then
-          allocate(ser(except%n))
-          ser(:) = sort(except%r(:))
-       end if
-    end if
+    call region_sort(tmp)
 
     rt = 0
     it = 0
@@ -248,11 +255,8 @@ contains
           jo = ucorb(l_col(ind),no_u)
 
           ! Ensure that it is not a folding to the same region
-          ! SFIND is much faster than in_region
-          if ( SFIND(sr,jo) > 0 ) cycle
-          if ( allocated(ser) ) then
-             if ( SFIND(ser,jo) > 0 ) cycle ! in case er has been provided
-          end if
+          ! tmp is sorted, hence it uses SFIND
+          if ( in_region(tmp,jo) ) cycle
           
           if ( it == 0 ) then
              it = it + 1
@@ -318,10 +322,7 @@ contains
              jo = ucorb(l_col(ind),no_u)
 
              ! Ensure that it is not a folding to the same region
-             if ( SFIND(sr,jo) > 0 ) cycle
-             if ( allocated(ser) ) then
-                if ( SFIND(ser,jo) > 0 ) cycle ! in case er has been provided
-             end if
+             if ( in_region(tmp,jo) ) cycle
 
              if ( it == 0 ) then
                 it = it + 1
@@ -345,8 +346,7 @@ contains
     ! Copy the list over
     call region_list(cr,it,ct(1:it))
 
-    deallocate(sr,ct)
-    if ( allocated(ser) ) deallocate(ser)
+    deallocate(ct)
 
 #ifdef MPI
     call region_MPI_union(dit,cr)
@@ -364,7 +364,7 @@ contains
 
     deallocate(rr)
 
-  end subroutine region_connect
+  end subroutine region_sp_connect
 
 
   ! This routine WORKS IN PARALLEL
@@ -384,7 +384,7 @@ contains
   !     I.e. we find the number of connection orbitals for all in 'sr' which 
   !     connects into region 'r'.
   !     We then place 
-  subroutine region_sort(r,dit,sp, sr, method)
+  subroutine region_sp_sort(r,dit,sp, sr, method)
 
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Integer
@@ -583,7 +583,7 @@ contains
 
     deallocate(n_c,cur_con)
 
-  end subroutine region_sort
+  end subroutine region_sp_sort
 
   ! Creates a region in terms of the INTERSECTION of two regions 
   subroutine region_intersection(r1,r2,ir)
@@ -766,6 +766,7 @@ contains
   end subroutine region_insert_region
 
   ! Creates a region in terms of the COMPLEMENT of two regions 
+  ! Hence it returns elements in r2 which are not in r1
   subroutine region_complement(r1,r2,cr)
     ! the regions we wish to operate on
     type(tRegion), intent(in) :: r1, r2
@@ -776,15 +777,23 @@ contains
     integer :: i, it
     integer, allocatable :: ct(:)
 
-    allocate(ct(r1%n))
+    if ( r1%n == 0 ) then
+       call region_copy(r2,cr)
+       return
+    end if
+    if ( r2%n == 0 ) then
+       call region_delete(cr)
+       return
+    end if
+
+    allocate(ct(r2%n))
 
     it = 0
-    do i = 1 , r1%n
-       
-       if ( in_region(r2,r1%r(i)) ) cycle
+    do i = 1 , r2%n
+       if ( in_region(r1,r2%r(i)) ) cycle
 
        it = it + 1
-       ct(it) = r1%r(i)
+       ct(it) = r2%r(i)
 
     end do
 
@@ -794,6 +803,53 @@ contains
     deallocate(ct)
 
   end subroutine region_complement
+
+  ! Creates a region in terms of the COMPLEMENT of two regions.
+  ! Hence it returns elements in r2 not in r1, AND the elements
+  ! in r1 not in r2
+  subroutine region_union_complement(r1,r2,cr)
+    ! the regions we wish to operate on
+    type(tRegion), intent(in) :: r1, r2
+    ! the complementary region
+    type(tRegion), intent(inout) :: cr
+
+    ! ** local variables
+    integer :: i, it
+    integer, allocatable :: ct(:)
+
+    if ( r1%n == 0 ) then
+       call region_copy(r2,cr)
+       return
+    end if
+    if ( r2%n == 0 ) then
+       call region_copy(r1,cr)
+       return
+    end if
+
+    allocate(ct(r1%n+r2%n))
+
+    it = 0
+    do i = 1 , r1%n
+       if ( in_region(r2,r1%r(i)) ) cycle
+
+       it = it + 1
+       ct(it) = r1%r(i)
+
+    end do
+    do i = 1 , r2%n
+       if ( in_region(r1,r2%r(i)) ) cycle
+
+       it = it + 1
+       ct(it) = r2%r(i)
+
+    end do
+
+    ! Copy the list over
+    call region_list(cr,it,ct(1:it))
+
+    deallocate(ct)
+
+  end subroutine region_union_complement
 
   ! Easy setup of a consecutive orbital range
   subroutine region_range(r,o1,o2)
@@ -835,6 +891,15 @@ contains
     if ( present(name) ) r%name = name
     
   end subroutine region_list
+
+  subroutine region_sort(r)
+    use intrinsic_missing, only : SORT
+    type(tRegion), intent(inout) :: r
+    if ( r%n > 0 ) then
+       r%r(:) = SORT(r%r(:))
+       r%sorted = .true.
+    end if
+  end subroutine region_sort
 
   subroutine region_correct_atom(r,na_u,lasto)
     ! Region which we want to extend with the atoms

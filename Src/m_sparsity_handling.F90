@@ -394,7 +394,7 @@ contains
     call region_range(full,1,no_u)
     
     ! create complement of rem_r
-    call region_complement(full,rr,rem_r)
+    call region_complement(rr,full,rem_r)
     ! clean-up
     call region_delete(full)
 

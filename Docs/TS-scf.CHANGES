@@ -1,4 +1,61 @@
 ----------------------------------------------------
+January 19, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-248
+Changed intrinsic_missing to preprocess
+
+* Added test-program for intrinsic_missing
+  which can be compiled by only compiling
+  intrinsic_missing with -DINTRINSIC_MISSING_TEST
+  
+  Added an IDX_SPC_PROJ which enables
+  finding the maximum contributing direction
+  of a vector in a space.
+
+* Changed kpoint_convert to be a little
+  faster and enabled the use of the direct
+  reciprocal cell, in case the routine
+  has to be called many times.
+  
+* Bugfix for 689 due to a removal of 2 variables
+  for m_ncdf_siesta for transiesta compilation.
+
+* m_region overhaul.
+
+  - Added a sorted flag to a region.
+    If it has been sorted and in_region is called
+    it will be using the SFIND algorithm to faster
+    check.
+    The sorted flag will only be set when region_sort
+    has been called.
+    Any copy, etc. does not retain sorted value.
+    For this to work I have added a region_sort 
+    routine.
+
+  - Changed names of functions relying on sparse
+    patterns to region_sp_*
+    
+  - Added a region_union_complement, which is the equivalent
+    of this:
+    call region_union_complement(r1,r2)
+    call region_union(r1,r2,r3)
+    call region_complement(r1,r3)
+
+  - Bugfix for region_delete.
+    It now behaves as expected.
+
+removed:
+  Src/intrinsic_missing.f90
+added:
+  Src/intrinsic_missing.F90
+modified:
+  Src/kpoint_convert.f90
+  Src/m_ncdf_siesta.F90
+  Src/m_region.F90
+  Src/m_sparsity_handling.F90
+  Src/m_ts_sparse.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 January 18, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-247
 Added basis set to SIESTA.nc
 

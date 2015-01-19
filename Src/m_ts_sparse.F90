@@ -191,7 +191,7 @@ contains
 
        ! Remove the connections that cross the boundary
        ! starting from this electrode
-       call region_connect(r_oE(iEl), block_dist, tmp_sp, r_tmp1)
+       call region_sp_connect(r_oE(iEl), block_dist, tmp_sp, r_tmp1)
        call region_union(r_oE(iEl), r_tmp1, r_tmp2)
 
        ! Calculate the transport direction in the device cell.
@@ -230,8 +230,7 @@ contains
     end if
 
     do iEl = 1 , N_Elec - 1
-       call region_delete(r_tmp1)
-       call region_delete(r_tmp2)
+       call region_delete(r_tmp1,r_tmp2)
        do i = iEl + 1 , N_Elec
           call region_copy(r_tmp2,r_tmp1)
           call region_union(r_oE(i),r_tmp1,r_tmp2)
@@ -239,8 +238,7 @@ contains
        call Sp_remove_region2region(block_dist,tmp_sp,r_oE(iEl),r_tmp2,tmp_sp)
 
     end do
-    call region_delete(r_tmp1)
-    call region_delete(r_tmp2)
+    call region_delete(r_tmp1,r_tmp2)
     do iEl = 1 , N_Elec
        call region_delete(r_oE(iEl))
     end do

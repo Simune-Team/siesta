@@ -98,21 +98,28 @@ module intrinsic_missing
   interface ROTATE
      module procedure ROTATE_2D
      module procedure ROTATE_3D
-  end interface ROTATE
-
-  ! Projection of 3D vector to 3D space
+  end interface
+  
+  ! Projection of N-D vector to N-D space
   public :: SPC_PROJ
   interface SPC_PROJ
      module procedure SPC_PROJ_sp
      module procedure SPC_PROJ_dp
-  end interface SPC_PROJ
+  end interface
 
-  ! Projection of a 3D vector onto 3D vector
+  ! Index of projection of N-D vector to N-D space
+  public :: IDX_SPC_PROJ
+  interface IDX_SPC_PROJ
+     module procedure IDX_SPC_PROJ_sp
+     module procedure IDX_SPC_PROJ_dp
+  end interface
+
+  ! Projection of a N-D vector onto N-D vector
   public :: VEC_PROJ
   interface VEC_PROJ
      module procedure VEC_PROJ_sp
      module procedure VEC_PROJ_dp
-  end interface VEC_PROJ
+  end interface
 
 contains
 
@@ -925,8 +932,8 @@ contains
     real(sp) :: vout(size(vin)), tmp(size(vin))
     integer :: i
     do i = 1 , size(vin)
-       tmp = space(:,i) / VNORM(space(:,i))
-       vout(i) = sum( vin * tmp )
+       tmp(:)  = space(:,i) / VNORM(space(:,i))
+       vout(i) = sum( vin(:) * tmp(:) )
     end do
   end function SPC_PROJ_sp
   pure function SPC_PROJ_dp(space,vin) result(vout)
@@ -934,10 +941,52 @@ contains
     real(dp) :: vout(size(vin)), tmp(size(vin))
     integer :: i
     do i = 1 , size(vin)
-       tmp = space(:,i) / VNORM(space(:,i))
-       vout(i) = sum( vin * tmp )
+       tmp(:)  = space(:,i) / VNORM(space(:,i))
+       vout(i) = sum( vin(:) * tmp(:) )
     end do
   end function SPC_PROJ_dp
+
+  pure function IDX_SPC_PROJ_sp(space,vin) result(idx)
+    real(sp), intent(in) :: space(:,:), vin(:)
+    integer :: idx
+    real(sp) :: cont(size(vin)), sp(size(vin)), tmp(size(vin))
+    integer :: i
+    idx = 1
+    ! Find the largest contributing space-vector
+    ! We can only compare from normalized vectors
+    ! or extremely long vectors with small contribution
+    ! might be too large for short vectors with large contribution.
+    sp(:)   = SPC_PROJ(space,vin)
+    sp(:)   = sp(:) / VNORM(sp)
+    tmp(:)  = space(:,1) / VNORM(space(:,1))
+    cont(1) = VNORM(VEC_PROJ(tmp,sp))
+    do i = 2 , size(vin)
+       tmp(:)  = space(:,i) / VNORM(space(:,i))
+       cont(i) = VNORM(VEC_PROJ(tmp,sp))
+       if ( cont(idx) < cont(i) ) then
+          idx = i
+       end if
+    end do
+  end function IDX_SPC_PROJ_sp
+
+  pure function IDX_SPC_PROJ_dp(space,vin) result(idx)
+    real(dp), intent(in) :: space(:,:), vin(:)
+    integer :: idx
+    real(dp) :: cont(size(vin)), sp(size(vin)), tmp(size(vin))
+    integer :: i
+    idx = 1
+    sp(:)   = SPC_PROJ(space,vin)
+    sp(:)   = sp(:) / VNORM(sp)
+    tmp(:)  = space(:,1) / VNORM(space(:,1))
+    cont(1) = VNORM(VEC_PROJ(tmp,sp))
+    do i = 2 , size(vin)
+       tmp(:)  = space(:,i) / VNORM(space(:,i))
+       cont(i) = VNORM(VEC_PROJ(tmp,sp))
+       if ( cont(idx) < cont(i) ) then
+          idx = i
+       end if
+    end do
+  end function IDX_SPC_PROJ_dp
 
 
   ! Projection of vector onto other vector
@@ -953,3 +1002,38 @@ contains
   end function VEC_PROJ_dp
 
 end module intrinsic_missing
+
+#ifdef INTRINSIC_MISSING_TEST
+program test
+  use intrinsic_missing
+
+  integer, parameter :: sp = selected_real_kind(5,10)
+  integer, parameter :: dp = selected_real_kind(10,100)
+  real(dp) :: cell(3,3), v(3)
+
+  integer :: list(10), i
+
+  cell(:,:) = 0._dp
+  cell(1,1) = 10._dp
+  cell(1,2) = 1._dp
+  cell(2,2) = 5._dp
+  cell(1,3) = 1._dp
+  cell(2,3) = 5._dp
+  cell(3,3) = 10._dp
+
+  v(:) = 0._dp
+  v(1) = 2._dp
+  print *,1,'==',IDX_SPC_PROJ(cell,v)
+  v(2) = 5._dp
+  print *,2,'==',IDX_SPC_PROJ(cell,v)
+  v(3) = 10._dp
+  print *,3,'==',IDX_SPC_PROJ(cell,v)
+  v(2) = v(1)
+  v(3) = 0._dp
+  print *,2,'==',IDX_SPC_PROJ(cell,v)
+  v(2) = v(1) / 10._dp
+  v(3) = 0._dp
+  print *,1,'==',IDX_SPC_PROJ(cell,v)
+
+end program test
+#endif

@@ -371,8 +371,8 @@ contains
 
              ! Remove 0 (Ef) from the levels
              call region_range(r_tmp,0,0)
-             call region_complement(mols(im)%proj(ip),r_tmp,r_tmp2)
-             call region_copy(r_tmp2,mols(im)%proj(ip))
+             call region_complement(r_tmp,mols(im)%proj(ip), &
+                  mols(im)%proj(ip))
              call region_delete(r_tmp,r_tmp2)
 
              ! A projection has to have at least one projection state
