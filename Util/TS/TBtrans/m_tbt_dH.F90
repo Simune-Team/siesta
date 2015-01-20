@@ -800,7 +800,7 @@ contains
 
     type(zSpData1D), intent(inout) :: zdH
     type(zTriMat), intent(inout) :: GFinv_tri
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
 
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
@@ -824,7 +824,7 @@ contains
 
           ! Loop on entries here...
           do ind = l_ptr(jo) + 1 , l_ptr(jo) + l_ncol(jo)
-             iu = region_pivot(r,l_col(ind))
+             iu = rgn_pivot(r,l_col(ind))
              
              idx = index(Gfinv_tri,ju,iu)
           
@@ -873,7 +873,7 @@ contains
 
     type(zSpData1D), intent(inout) :: zdH
     ! the region which describes the current segment of insertion
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The sizes and offsets of the matrix
     integer, intent(in) :: off1, n1, off2, n2
     complex(dp), intent(inout) :: M(n1,n2)
@@ -898,7 +898,7 @@ contains
           if ( l_ncol(jo) /= 0 ) then
 
           do ind = l_ptr(jo) + 1 , l_ptr(jo) + l_ncol(jo)
-             iu = region_pivot(r,l_col(ind)) - off2
+             iu = rgn_pivot(r,l_col(ind)) - off2
              if ( iu < 1 .or. n2 < iu ) cycle
              
              M(ju,iu) = M(ju,iu) - dH(ind)

@@ -419,7 +419,7 @@ contains
        do iEl = 1 , N_Elec
           do io = 1 , Elecs(iEl)%o_inD%n
              jEl = which_part(Gf_tri, &
-                  region_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
+                  rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
              calc_parts(jEl) = .true.
           end do
        end do
@@ -1087,7 +1087,7 @@ contains
     type(Elec), intent(inout) :: Elecs(N_Elec)
     ! The Hamiltonian and overlap sparse matrices
     type(zSpData1D), intent(inout) :: spH,  spS
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
 
     ! Local variables
     complex(dp) :: Z
@@ -1175,7 +1175,7 @@ contains
     ! The hamiltonian and overlap
     type(zSpData1D), intent(in) :: spH, spS
     ! The region of downfolding... (+ the region connecting to the device..)
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! number of parts that constitute the tri-diagonal region
     integer, intent(in) :: np
     ! parts associated
@@ -1321,7 +1321,7 @@ contains
     ! The Hamiltonian and overlap sparse matrices
     type(zSpData1D), intent(in) :: spH,  spS
     ! the region which describes the current segment of insertion
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The sizes and offsets of the matrix
     integer, intent(in) :: off1, n1, off2, n2
     complex(dp), intent(out) :: M(n1,n2)

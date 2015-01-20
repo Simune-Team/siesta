@@ -1,4 +1,37 @@
 ----------------------------------------------------
+January 20, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-252
+Changed function and type name of the m_region
+
+* Changed type name to tRgn
+
+* Changed all function names to
+   rgn_?
+
+modified:
+  Src/create_Sparsity_Union.F90
+  Src/fdf_extra.F90
+  Src/m_fixed.F90
+  Src/m_region.F90
+  Src/m_sparsity_handling.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_method.f90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/TBtrans/m_tbt_diag.F90
+  Util/TS/TBtrans/m_tbt_kregions.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TBtrans/m_tbt_sparsity2trimat.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbt_trimat_invert.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 January 20, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-251
 Added different k-regions and enabled easier kgrids
 

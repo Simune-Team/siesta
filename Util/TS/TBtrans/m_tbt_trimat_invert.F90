@@ -22,8 +22,8 @@ contains
     use m_region
 
     type(zTriMat), intent(inout) :: M, Minv
-    type(tRegion), intent(in) :: r
-    type(tRegion), intent(in) :: r_col
+    type(tRgn), intent(in) :: r
+    type(tRgn), intent(in) :: r_col
 
     complex(dp), pointer :: Mpinv(:), Mp(:)
     complex(dp), pointer :: XY(:)
@@ -39,7 +39,7 @@ contains
     integer :: sIdxF, eIdxF, sIdxT, eIdxT
     integer :: sN, n, in, s, sNo
     integer, allocatable :: cumsum(:)
-    type(tRegion) :: rB
+    type(tRgn) :: rB
 
     ! In this routine M should have been processed through invert_PrepTriMat
     ! So M contains all *needed* inv(Mnn) and all Xn/Cn+1 and Yn/Bn-1.
@@ -69,7 +69,7 @@ contains
     sPart = huge(1)
     ePart = 0
     do n = 1 , r_col%n
-       s = region_pivot(r,r_col%r(n))
+       s = rgn_pivot(r,r_col%r(n))
        sPart = min(sPart,which_part(M,s))
        ePart = max(ePart,which_part(M,s))
     end do
@@ -89,7 +89,7 @@ contains
     rB%n = 1
     do while ( i_Elec <= r_col%n ) 
 
-       idx_Elec = region_pivot(r,r_col%r(i_Elec))
+       idx_Elec = rgn_pivot(r,r_col%r(i_Elec))
 
        ! We start by copying over the Mnn in blocks
 
@@ -99,7 +99,7 @@ contains
        sN = nrows_g(M,n)
        ii = 0
        do
-          i = region_pivot(r,r_col%r(i_Elec+ii))
+          i = rgn_pivot(r,r_col%r(i_Elec+ii))
           ! In case it is not consecutive
           if ( i - idx_Elec /= ii ) exit
           ! In case the block changes, then
@@ -109,12 +109,12 @@ contains
           if ( i_Elec + ii > r_col%n ) exit
        end do
        ! The consecutive memory block is this size 'ii'
-       call region_list(rB,ii,r_col%r(i_Elec:i_Elec+ii-1))
+       call rgn_list(rB,ii,r_col%r(i_Elec:i_Elec+ii-1))
 
        ! Copy over this portion of the Mnn array
        
        ! Figure out which part we have Mnn in
-       i = region_pivot(r,rB%r(1))
+       i = rgn_pivot(r,rB%r(1))
        n = which_part(M,i)
 
        ! get placement of the diagonal block in the column
@@ -133,9 +133,9 @@ contains
        ! We now need to figure out the placement of the 
        ! Mnn part that we have already calculated.
        Mp => val(M,n,n)
-       i = region_pivot(r,rB%r(1))
+       i = rgn_pivot(r,rB%r(1))
        sIdxF = (i-cumsum(n)-1) * sN + 1
-       i = region_pivot(r,rB%r(rB%n))
+       i = rgn_pivot(r,rB%r(rB%n))
        eIdxF = (i-cumsum(n)) * sN
 
        ! Check that we have something correct...
@@ -277,7 +277,7 @@ contains
        
     end do
 
-    call region_delete(rB)
+    call rgn_delete(rB)
 
     ! At this point the total 
     ! inverted column is placed at the end of

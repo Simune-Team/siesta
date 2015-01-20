@@ -37,8 +37,8 @@ module m_ts_method
   integer, pointer, private :: ts_a_offset(:) => null()
   integer, pointer, private :: ts_o_offset(:) => null()
 
-  type(tRegion) :: r_oBuf ! the buffer region
-  type(tRegion) :: r_oDev ! the device region
+  type(tRgn) :: r_oBuf ! the buffer region
+  type(tRgn) :: r_oDev ! the device region
 
 contains
 
@@ -169,8 +169,8 @@ contains
     end do
 
     ! Create the buffer region
-    call region_range(r_oBuf,1,no_Buf)
-    call region_range(r_oDev,1,i)
+    call rgn_range(r_oBuf,1,no_Buf)
+    call rgn_range(r_oDev,1,i)
     ia  = 0
     ia1 = 0
     do i = 1 , ts_no_u

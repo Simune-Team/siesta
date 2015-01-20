@@ -262,7 +262,7 @@ contains
     ! The matrix which contains the unit cell.
     type(Sparsity), intent(in out) :: in
     ! The region we wish to append a bulk-state of
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! Maybe (in) is not needed, however, for this, it does't make a
     ! difference, everything is overwritten
     type(Sparsity), intent(in out) :: out
@@ -301,7 +301,7 @@ contains
     do lir = 1 , n_rows
        ! Retrieve the global row-index
        ir = index_local_to_global(dit,lir,Node)
-       if ( in_region(r,ir) ) then
+       if ( in_rgn(r,ir) ) then
           dense_inserted = .true.
           exit
        end if
@@ -328,7 +328,7 @@ contains
        ir = index_local_to_global(dit,lir,Node)
 
        ! The easy part is if we are not in the row containing the dense part
-       if ( .not. in_region(r,ir) ) then
+       if ( .not. in_rgn(r,ir) ) then
           num(lir) = ncol(lir)
        else
           ! We assume a block-cyclic distribution
@@ -341,7 +341,7 @@ contains
              ! we check whether the sparse element is
              ! outside the dense part (in that case we need
              ! to count it)
-             if ( .not. in_region(r,l_col(i)) ) then
+             if ( .not. in_rgn(r,l_col(i)) ) then
                 num(lir) = num(lir) + 1
              end if
           end do
@@ -387,7 +387,7 @@ contains
           do i = l_ptr(lir) + 1 , l_ptr(lir) + ncol(lir)
              ! When we are on either side of the dense part
              ! we simply copy the column index
-             if ( .not. in_region(r,l_col(i)) ) then
+             if ( .not. in_rgn(r,l_col(i)) ) then
                 j = j + 1
                 list(iu+j) = l_col(i)
              else if ( .not. dense_inserted ) then

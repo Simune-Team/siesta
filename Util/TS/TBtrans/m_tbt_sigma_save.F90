@@ -102,7 +102,7 @@ contains
     type(tTSHS), intent(in) :: TSHS
     ! The device region that we are checking
     ! This is the device regions pivot-table!
-    type(tRegion), intent(in) :: r 
+    type(tRgn), intent(in) :: r 
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -110,9 +110,9 @@ contains
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
     ! Device atoms
-    type(tRegion), intent(in) :: a_Dev
+    type(tRgn), intent(in) :: a_Dev
     ! Buffer atoms
-    type(tRegion), intent(in) :: a_Buf
+    type(tRgn), intent(in) :: a_Buf
 
     type(hNCDF) :: ncdf, grp
     type(dict) :: dic

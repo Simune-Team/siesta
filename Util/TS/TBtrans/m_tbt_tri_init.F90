@@ -25,8 +25,8 @@ module m_tbt_tri_init
 
   public :: tbt_tri_init
 
-  type(tRegion), allocatable, target :: ElTri(:)
-  type(tRegion) :: DevTri
+  type(tRgn), allocatable, target :: ElTri(:)
+  type(tRgn) :: DevTri
   public :: ElTri, DevTri
   public :: fold_elements, tri_elements
 
@@ -73,7 +73,7 @@ contains
     do i = 1 + Node , N_Elec , Nodes
 
        ! Retain region
-       call Sp_retain_region(dit,sp,r_oElpD(i),tmpSp2)
+       call Sp_retain_rgn(dit,sp,r_oElpD(i),tmpSp2)
 
        ! Add the self-energy of the electrode (in its original position)
        call crtSparsity_Union_region(dit,tmpSp2, r_oEl_alone(i),tmpSp1)
@@ -147,7 +147,7 @@ contains
     ! An array of additional projection regions
     ! which determines the projection of a molecule
     ! onto seperate regions
-    type(tRegion), intent(in), optional :: proj(:)
+    type(tRgn), intent(in), optional :: proj(:)
 
     type(Sparsity) :: tmpSp1, tmpSp2
     integer :: i
@@ -192,7 +192,7 @@ contains
 
     ! Create the device region sparsity pattern by removing everything
     ! else....
-    call Sp_retain_region(dit,tmpSp1,r_oDev,tmpSp2)
+    call Sp_retain_rgn(dit,tmpSp1,r_oDev,tmpSp2)
     call delete(tmpSp1)
 
 #ifdef TRANSIESTA_DEBUG
@@ -203,7 +203,7 @@ contains
 
     if ( IONode ) &
          write(*,'(/,a)') 'tbtrans: Determining an optimal tri-matrix...'
-    call region_delete(DevTri)
+    call rgn_delete(DevTri)
 
     ! Create tri-diagonal parts for this one...
     call tbt_region2TriMat(dit,tmpSp2,r_oDev, DevTri%n, DevTri%r, &
@@ -214,9 +214,9 @@ contains
 
     if ( Node == 0 ) then
        ! Print out stuff
-       call region_print(DevTri, seq_max = 10 )
+       call rgn_print(DevTri, seq_max = 10 )
        do i = 1 , N_Elec
-          call region_print(ElTri(i), seq_max = 10 )
+          call rgn_print(ElTri(i), seq_max = 10 )
        end do
     end if
 

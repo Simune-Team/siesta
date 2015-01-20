@@ -24,21 +24,21 @@ module m_tbt_regions
   type(Sparsity), public :: sp_dev
 
   ! the different regions that becomes the electrodes
-  type(tRegion), allocatable, target, public :: r_aEl_alone(:), r_oEl_alone(:)
+  type(tRgn), allocatable, target, public :: r_aEl_alone(:), r_oEl_alone(:)
 
   ! the different regions that connects to the equivalent
   ! electrodes.
   ! I.e. it is the regions that goes from the electrode
   ! and down to the central region (without any central
   ! region overlap)
-  type(tRegion), allocatable, target, public :: r_aEl(:)   , r_oEl(:)
-  type(tRegion), allocatable, target, public :: r_aElpD(:) , r_oElpD(:)
+  type(tRgn), allocatable, target, public :: r_aEl(:)   , r_oEl(:)
+  type(tRgn), allocatable, target, public :: r_aElpD(:) , r_oElpD(:)
 
   ! the device region (the calculated GF region)
-  type(tRegion), public :: r_aDev, r_oDev
+  type(tRgn), public :: r_aDev, r_oDev
 
   ! The buffer region, just for completeness
-  type(tRegion), public :: r_aBuf, r_oBuf
+  type(tRgn), public :: r_aBuf, r_oBuf
 
   public :: tbt_init_regions, tbt_read_regions
   public :: tbt_region_options
@@ -95,7 +95,7 @@ contains
     type(parsed_line), pointer :: pline => null()
     character(len=50) :: g
     integer :: i, ia, ia1, ia2, no_u, iu
-    type(tRegion) :: r_tmp, r_tmp2, r_tmp3, r_Dev
+    type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Dev
     real(dp) :: p(3), contrib
 
     no_u = lasto(na_u)
@@ -115,8 +115,8 @@ contains
           list_a(na) = ia
        end if
     end do
-    call region_list(r_aBuf,na,list_a, name = '[A]-buffer')
-    call region_Atom2Orb(r_aBuf,na_u,lasto,r_oBuf)
+    call rgn_list(r_aBuf,na,list_a, name = '[A]-buffer')
+    call rgn_Atom2Orb(r_aBuf,na_u,lasto,r_oBuf)
     r_oBuf%name = '[O]-buffer'
 
     ! Create the sparsity pattern and remove the buffer atoms...
@@ -139,16 +139,16 @@ contains
        ! Create electrode region
        ia1 = Elecs(iEl)%idx_a
        ia2 = ia1 - 1 + TotUsedAtoms(Elecs(iEl))
-       call region_range(r_aEl_alone(iEl), ia1, ia2)
+       call rgn_range(r_aEl_alone(iEl), ia1, ia2)
        r_aEl_alone(iEl)%name = '[A]-'//trim(Elecs(iEl)%name)
 
        ia1 = Elecs(iEl)%idx_o
        ia2 = ia1 - 1 + TotUsedOrbs(Elecs(iEl))
-       call region_range(r_oEl_alone(iEl),ia1,ia2)
+       call rgn_range(r_oEl_alone(iEl),ia1,ia2)
        r_oEl_alone(iEl)%name = '[O]-'//trim(Elecs(iEl)%name)
        
        ! Check that we have a legal region
-       if ( region_overlaps(r_aEl_alone(iEl),r_aBuf) ) then
+       if ( rgn_overlaps(r_aEl_alone(iEl),r_aBuf) ) then
           write(*,*)'Overlapping electrode: '//trim(Elecs(iEl)%name)
           call die('Buffer region overlaps with an electrode &
                &please correct your input!')
@@ -168,12 +168,12 @@ contains
           if ( leqi(g,'atom') ) then
              ! We can read in a range
              call fdf_brange(pline,r_tmp,1,na_u)
-             call region_union(r_aDev,r_tmp,r_aDev)
+             call rgn_union(r_aDev,r_tmp,r_aDev)
              
           end if
           
        end do
-       call region_delete(r_tmp)
+       call rgn_delete(r_tmp)
 
     else
        
@@ -187,7 +187,7 @@ contains
           end if
        end do
 
-       call region_list(r_aDev,na,list_a)
+       call rgn_list(r_aDev,na,list_a)
 
     end if
 
@@ -197,7 +197,7 @@ contains
     ! list_a(1:na) now contains the device region
 
     ! Create device region
-    call region_Atom2Orb(r_aDev,na_u,lasto,r_oDev)
+    call rgn_Atom2Orb(r_aDev,na_u,lasto,r_oDev)
 
     if ( Node == 0 ) then
        write(*,'(/,a)')'tbtrans: Analyzing electrode sparsity pattern to create optimal tri-diagonal blocks...'
@@ -208,10 +208,10 @@ contains
     if ( fdf_get('TBT.Atoms.Device.Connect',.false.) ) then
 
        ! TBTrans will truncate connections at electrode interfaces.
-       call region_sp_connect(r_oDev, dit, sp, r_tmp)
-       call region_append(r_oDev,r_tmp,r_oDev)
-       call region_delete(r_tmp)
-       call region_Orb2Atom(r_oDev,na_u,lasto,r_aDev)
+       call rgn_sp_connect(r_oDev, dit, sp, r_tmp)
+       call rgn_append(r_oDev,r_tmp,r_oDev)
+       call rgn_delete(r_tmp)
+       call rgn_Orb2Atom(r_oDev,na_u,lasto,r_aDev)
        ! Ensure that we do not have any atoms from the electrodes
        ! This will make it behave like the "old" tbtrans
        ! in that we do not correctly capture the DOS as S_C-El /= 0 
@@ -219,7 +219,7 @@ contains
        na = r_aDev%n
        ! We remove all "electrode" implicit regions
        do iEl = 1 , N_Elec
-          call region_complement(r_aEl_alone(iEl),r_aDev,r_aDev)
+          call rgn_complement(r_aEl_alone(iEl),r_aDev,r_aDev)
        end do
 
        if ( na /= r_aDev%n .and. Node == 0 ) then
@@ -230,7 +230,7 @@ contains
        ! In its current state we force the entire atoms
        ! to be in the orbital connection scheme (even though
        ! some orbitals might not connect...)
-       call region_Atom2Orb(r_aDev,na_u,lasto,r_oDev)
+       call rgn_Atom2Orb(r_aDev,na_u,lasto,r_oDev)
 
     end if
 
@@ -248,8 +248,8 @@ contains
 
        ! Remove the connections that cross the boundary
        ! starting from this electrode
-       call region_sp_connect(r_oEl_alone(iEl), dit, sp, r_tmp)
-       call region_union(r_oEl_alone(iEl), r_tmp, r_tmp2)
+       call rgn_sp_connect(r_oEl_alone(iEl), dit, sp, r_tmp)
+       call rgn_union(r_oEl_alone(iEl), r_tmp, r_tmp2)
 
        ! Calculate the transport direction in the device cell.
        p = SPC_PROJ(cell,Elecs(iEl)%ucell(:,Elecs(iEl)%t_dir))
@@ -275,7 +275,7 @@ contains
        sp%data%name = 'TBT-sparsity'
 
        ! Check that the device region does not overlap
-       if ( region_overlaps(r_aEl_alone(iEl),r_aDev) ) then
+       if ( rgn_overlaps(r_aEl_alone(iEl),r_aDev) ) then
           write(*,*)'Overlapping electrode: '//trim(Elecs(iEl)%name)
           call die('Device region overlaps with an electrode &
                &please correct your input!')
@@ -291,9 +291,9 @@ contains
        ! electrodes
        ! Step 1. build a unified region of all the following
        !         electrodes!
-       call region_delete(r_tmp)
+       call rgn_delete(r_tmp)
        do i = iEl + 1 , N_Elec
-          call region_append(r_tmp,r_oEl_alone(i),r_tmp)
+          call rgn_append(r_tmp,r_oEl_alone(i),r_tmp)
        end do
 
        ! First we update the sparsity pattern to remove any connections
@@ -322,7 +322,7 @@ contains
     if ( r_oEl(1)%n > 0 ) then
        ! We say that if the electrode orbitals are allocated
        ! we have read in the file-information
-       call region_delete(r_tmp,r_tmp2,r_tmp3)
+       call rgn_delete(r_tmp,r_tmp2,r_tmp3)
        return
     end if
 
@@ -332,18 +332,18 @@ contains
 
        ! Sort the regions according to the connections to
        ! the device...
-       call region_copy(r_oEl_alone(iEl), r_oEl(iEl))
+       call rgn_copy(r_oEl_alone(iEl), r_oEl(iEl))
 
        ! this is a sort of the electrode
        ! TODO, try without sorting the electrode...
-       call region_sp_sort(r_oEl(iEl), dit, sp, r_oEl_alone(iEl), R_SORT_MAX_FRONT )
+       call rgn_sp_sort(r_oEl(iEl), dit, sp, r_oEl_alone(iEl), R_SORT_MAX_FRONT )
 
        ! Create the region that connects out to the device
        do
 
           ! Create the region that connects to the last part of the 
           ! added orbitals
-          call region_sp_connect(r_oEl(iEl), dit, sp, r_tmp, except = r_oDev)
+          call rgn_sp_connect(r_oEl(iEl), dit, sp, r_tmp, except = r_oDev)
 
           ! If no additional orbitals are found, exit
           if ( r_tmp%n == 0 ) exit
@@ -352,24 +352,24 @@ contains
 
           ! Append the newly found region that is connecting out to the
           ! full region
-          call region_append(r_oEl(iEl), r_tmp, r_oEl(iEl))
+          call rgn_append(r_oEl(iEl), r_tmp, r_oEl(iEl))
 
           ! we sort the newly attached region
-          call region_sp_sort(r_oEl(iEl), dit, sp, r_tmp, R_SORT_MAX_BACK )
+          call rgn_sp_sort(r_oEl(iEl), dit, sp, r_tmp, R_SORT_MAX_BACK )
 
        end do
 
-       call region_delete(r_tmp)
+       call rgn_delete(r_tmp)
 
        ! This aligns the atoms in the same way the orbitals 
        ! introduce the atoms.
-       call region_Orb2Atom(r_oEl(iEl), na_u, lasto , r_aEl(iEl))
+       call rgn_Orb2Atom(r_oEl(iEl), na_u, lasto , r_aEl(iEl))
 
        ! Create the region that connects the electrode-followed
        ! region to the central region
-       call region_sp_connect(r_oEl(iEl), dit, sp, Elecs(iEl)%o_inD)
+       call rgn_sp_connect(r_oEl(iEl), dit, sp, Elecs(iEl)%o_inD)
        ! Append the newly found region that is connecting out to the full region
-       call region_append(r_oEl(iEl), Elecs(iEl)%o_inD, r_oElpD(iEl))
+       call rgn_append(r_oEl(iEl), Elecs(iEl)%o_inD, r_oElpD(iEl))
 
        ! We now know how many orbitals that we are down-folding the 
        ! electrode self-energy to
@@ -379,7 +379,7 @@ contains
        end if
 
        ! Create the atom equivalent regions
-       call region_Orb2Atom(r_oElpD(iEl) , na_u, lasto, r_aElpD(iEl) )
+       call rgn_Orb2Atom(r_oElpD(iEl) , na_u, lasto, r_aElpD(iEl) )
 
     end do
 
@@ -387,18 +387,18 @@ contains
 
 #ifdef MPI
        ! Bcast the region
-       call region_MPI_Bcast(r_oEl(iEl),mod(iEl-1,Nodes),MPI_Comm_World)
-       call region_MPI_Bcast(r_aEl(iEl),mod(iEl-1,Nodes),MPI_Comm_World)
-       call region_MPI_Bcast(Elecs(iEl)%o_inD,mod(iEl-1,Nodes),MPI_Comm_World)
-       call region_MPI_Bcast(r_oElpD(iEl),mod(iEl-1,Nodes),MPI_Comm_World)
-       call region_MPI_Bcast(r_aElpD(iEl),mod(iEl-1,Nodes),MPI_Comm_World)
+       call rgn_MPI_Bcast(r_oEl(iEl),mod(iEl-1,Nodes),MPI_Comm_World)
+       call rgn_MPI_Bcast(r_aEl(iEl),mod(iEl-1,Nodes),MPI_Comm_World)
+       call rgn_MPI_Bcast(Elecs(iEl)%o_inD,mod(iEl-1,Nodes),MPI_Comm_World)
+       call rgn_MPI_Bcast(r_oElpD(iEl),mod(iEl-1,Nodes),MPI_Comm_World)
+       call rgn_MPI_Bcast(r_aElpD(iEl),mod(iEl-1,Nodes),MPI_Comm_World)
 #endif
 
        if ( iEl > 1 ) then
        ! Check that the region does not overlap with any previous 
        ! electrode region...
        do i = 1 , iEl - 1
-          if ( region_overlaps(r_aEl(iEl),r_aEl(i)) ) then
+          if ( rgn_overlaps(r_aEl(iEl),r_aEl(i)) ) then
              call die('Electrode regions connect across the device region, &
                   &please increase your device region!')
           end if
@@ -413,7 +413,7 @@ contains
        
        ! Check that the electrode down-folded self-energy
        ! is fully contained
-       ia1 = minval(region_pivot(r_oDev,Elecs(iEl)%o_inD%r))
+       ia1 = minval(rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r))
        if ( ia1 <= 0 ) then
           call die('A downfolded region is not existing. Programming error')
        end if
@@ -425,8 +425,8 @@ contains
     end if
 
     ! We need the complement of the device region
-    call region_range(r_tmp,1,no_u)
-    call region_complement(r_oDev,r_tmp,r_tmp3)
+    call rgn_range(r_tmp,1,no_u)
+    call rgn_complement(r_oDev,r_tmp,r_tmp3)
     
     ! We sort the device region based on the
     ! first orbital that the electrode connects the most too.
@@ -443,7 +443,7 @@ contains
     ia1 = r_oDev%n
     if ( fdf_get('TBT.Atoms.Device.Sort',.true.) ) then
 
-       call region_copy(r_oDev, r_Dev)
+       call rgn_copy(r_oDev, r_Dev)
 
        ! We select all the atoms from the left electrode
        ! that connect into the device
@@ -451,13 +451,13 @@ contains
        ! to use the "electrode-surface" as an initial SP guess
        ! Note that the connecting electrode orbitals are already
        ! sorted wrt. back-connectivity
-       call region_copy(Elecs(1)%o_inD,r_oDev)
+       call rgn_copy(Elecs(1)%o_inD,r_oDev)
        
        do
 
           ! Create the region that connects to the last part of the 
           ! added orbitals
-          call region_sp_connect(r_oDev, dit, sp, r_tmp, except = r_tmp3)
+          call rgn_sp_connect(r_oDev, dit, sp, r_tmp, except = r_tmp3)
           
           if ( r_tmp%n == 0 .and. ia1 /= r_oDev%n ) then
 
@@ -465,8 +465,8 @@ contains
              ! say for capacitors we need to force the next region.
              ! In this case, we take some "random" orbital.
              do i = 1 , r_Dev%n
-                if ( in_region(r_oDev,r_Dev%r(i)) ) cycle
-                call region_range(r_tmp,r_Dev%r(i),r_Dev%r(i))
+                if ( in_rgn(r_oDev,r_Dev%r(i)) ) cycle
+                call rgn_range(r_tmp,r_Dev%r(i),r_Dev%r(i))
                 exit
              end do
 
@@ -478,20 +478,20 @@ contains
 
           ! Append the newly found region that is connecting out to the
           ! full region
-          call region_append(r_oDev, r_tmp, r_oDev)
+          call rgn_append(r_oDev, r_tmp, r_oDev)
           
           ! we sort the newly attached region
-          call region_sp_sort(r_oDev, dit, sp, r_tmp, R_SORT_MAX_BACK )
+          call rgn_sp_sort(r_oDev, dit, sp, r_tmp, R_SORT_MAX_BACK )
           
        end do
 
-       call region_delete(r_Dev)
+       call rgn_delete(r_Dev)
 
     end if
     r_oDev%name = '[O]-device'
 
     ! Check that we have correctly re-captured the device region.
-    if ( region_overlaps(r_oDev,r_tmp3) ) then
+    if ( rgn_overlaps(r_oDev,r_tmp3) ) then
        print *,'Overlapping regions...'
        call die('Error in programming')
     end if
@@ -501,7 +501,7 @@ contains
        call die('Error in number of orbitals...')
     end if
 
-    call region_Orb2Atom(r_oDev,na_u,lasto,r_aDev)
+    call rgn_Orb2Atom(r_oDev,na_u,lasto,r_aDev)
     r_aDev%name = '[A]-device'
 
     ! The down-folded region can "at-will" be sorted
@@ -510,13 +510,13 @@ contains
     ! memory layout.
     do iEl = 1 , N_Elec
        
-       call region_copy(Elecs(iEl)%o_inD,r_tmp2)
+       call rgn_copy(Elecs(iEl)%o_inD,r_tmp2)
 
        ! Loop on the device region and copy
        ! region, in order
        ia1 = 0
        do i = 1 , r_oDev%n
-          if ( .not. in_region(r_tmp2,r_oDev%r(i)) ) cycle
+          if ( .not. in_rgn(r_tmp2,r_oDev%r(i)) ) cycle
           
           ia1 = ia1 + 1
           Elecs(iEl)%o_inD%r(ia1) = r_oDev%r(i)
@@ -524,8 +524,8 @@ contains
        end do
 
        ! create the pivoting table
-       call region_copy(Elecs(iEl)%o_inD,Elecs(iEl)%inDpvt)
-       Elecs(iEl)%inDpvt%r(:) = region_pivot(r_oDev,Elecs(iEl)%o_inD%r(:))
+       call rgn_copy(Elecs(iEl)%o_inD,Elecs(iEl)%inDpvt)
+       Elecs(iEl)%inDpvt%r(:) = rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(:))
 
        ! Copy this information to the ElpD
        i = r_oElpD(iEl)%n
@@ -552,22 +552,22 @@ contains
           end do
           if ( i > no_u ) then
              ! find the overlapping orbitals
-             call region_union(r_oBuf,r_oDev,r_tmp)
+             call rgn_union(r_oBuf,r_oDev,r_tmp)
              do iEl = 1 , N_Elec
-                call region_union(r_tmp,r_oEl(iEl),r_tmp)
+                call rgn_union(r_tmp,r_oEl(iEl),r_tmp)
              end do
              r_tmp%name = 'Double counted orbitals'
-             call region_print(r_tmp)
+             call rgn_print(r_tmp)
           else
              ! find the missing orbitals
-             call region_range(r_tmp,1,no_u)
-             call region_complement(r_oBuf,r_tmp,r_tmp)
-             call region_complement(r_oDev,r_tmp,r_tmp)
+             call rgn_range(r_tmp,1,no_u)
+             call rgn_complement(r_oBuf,r_tmp,r_tmp)
+             call rgn_complement(r_oDev,r_tmp,r_tmp)
              do iEl = 1 , N_Elec
-                call region_complement(r_oEl(iEl),r_tmp,r_tmp)
+                call rgn_complement(r_oEl(iEl),r_tmp,r_tmp)
              end do
              r_tmp%name = 'Missing orbitals'
-             call region_print(r_tmp)
+             call rgn_print(r_tmp)
           end if
           write(*,'(a,2(tr1,i0))')'Total number of orbitals vs. counted:',no_u,i
 
@@ -587,7 +587,7 @@ contains
     end if
 
     ! Clean-up
-    call region_delete(r_tmp,r_tmp2,r_tmp3)
+    call rgn_delete(r_tmp,r_tmp2,r_tmp3)
 
     if ( Node == 0 ) then
        write(*,'(a)')'tbtrans: Done analyzing sparsity pattern...'
@@ -659,7 +659,7 @@ contains
     character(len=250) :: fname, g
     integer :: iu, fa_u, fo_u, f_Elec
     integer :: iEl, i, itmp(2)
-    type(tRegion) :: r
+    type(tRgn) :: r
 
     ! We try and see if a user file exists and then create all
     ! regions.
@@ -690,12 +690,12 @@ contains
          call mdie('Error in number of buffer orbitals.')
     ! if buffer atoms exists, we write them
     if ( itmp(1) > 0 ) then
-       call region_range(r,1,itmp(1))
+       call rgn_range(r,1,itmp(1))
        ! write alone electrode, atoms and orbitals
        read(iu,*) (r%r(i),i=1,r%n)
        if ( any(r%r /= r_aBuf%r) ) &
             call mdie('Buffer atoms not equivalent.')
-       call region_range(r,1,itmp(2))
+       call rgn_range(r,1,itmp(2))
        read(iu,*) (r%r(i),i=1,r%n)
        if ( any(r%r /= r_oBuf%r) ) &
             call mdie('Buffer orbitals not equivalent.')
@@ -721,23 +721,23 @@ contains
             'Electrode: '//trim(g))
 
        ! read alone electrode, atoms and orbitals
-       call region_range(r,1,r_aEl_alone(iEl)%n)
+       call rgn_range(r,1,r_aEl_alone(iEl)%n)
        read(iu,*) (r%r(i),i=1,r%n)
        if ( any(r%r /= r_aEl_alone(iEl)%r) ) &
             call mdie('Electrode atom positions are not equivalent.', &
             'Electrode: '//trim(g))
-       call region_range(r,1,r_oEl_alone(iEl)%n)
+       call rgn_range(r,1,r_oEl_alone(iEl)%n)
        read(iu,*) (r%r(i),i=1,r%n)
        if ( any(r%r /= r_oEl_alone(iEl)%r) ) &
             call mdie('Electrode orbital positions are not equivalent.', &
             'Electrode: '//trim(g))
 
        read(iu,*) itmp(1)
-       call region_range(r_oEl(iEl),1,itmp(1))
+       call rgn_range(r_oEl(iEl),1,itmp(1))
        read(iu,*) (r_oEl(iEl)%r(i),i=1,r_oEl(iEl)%n)
 
        read(iu,*) itmp(1)
-       call region_range(Elecs(iEl)%o_inD,1,itmp(1))
+       call rgn_range(Elecs(iEl)%o_inD,1,itmp(1))
        read(iu,*) (Elecs(iEl)%o_inD%r(i),i=1,itmp(1))
 
     end do
@@ -748,38 +748,38 @@ contains
          call mdie('Device region atoms are not the same.', &
          'Please delete file: '//trim(fname)//' or revert the device region block')
     read(iu,*) (r_aDev%r(i),i=1,r_aDev%n)
-    call region_range(r_oDev,1,itmp(2))
+    call rgn_range(r_oDev,1,itmp(2))
     read(iu,*) (r_oDev%r(i),i=1,r_oDev%n)
 
     call io_close(iu)
 
-    call region_delete(r)
+    call rgn_delete(r)
 
     end if
 
 #ifdef MPI
     do iEl = 1 , N_Elec
-       call region_MPI_Bcast(r_oEl(iEl),0,MPI_Comm_World)
-       call region_MPI_Bcast(Elecs(iEl)%o_inD,0,MPI_Comm_World)
+       call rgn_MPI_Bcast(r_oEl(iEl),0,MPI_Comm_World)
+       call rgn_MPI_Bcast(Elecs(iEl)%o_inD,0,MPI_Comm_World)
     end do
-    call region_MPI_Bcast(r_aDev,0,MPI_Comm_World)
-    call region_MPI_Bcast(r_oDev,0,MPI_Comm_World)
+    call rgn_MPI_Bcast(r_aDev,0,MPI_Comm_World)
+    call rgn_MPI_Bcast(r_oDev,0,MPI_Comm_World)
 #endif
     r_aDev%name = '[A]-device'
     r_oDev%name = '[O]-device'
 
     do iEl = 1 , N_Elec
 
-       call region_Orb2Atom(r_oEl(iEl), na_u, lasto , r_aEl(iEl))
+       call rgn_Orb2Atom(r_oEl(iEl), na_u, lasto , r_aEl(iEl))
        r_oEl(iEl)%name    = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
        r_aEl(iEl)%name    = '[A]-'//trim(Elecs(iEl)%name)//' folding region'
-       call region_append(r_oEl(iEl), Elecs(iEl)%o_inD, r_oElpD(iEl))
+       call rgn_append(r_oEl(iEl), Elecs(iEl)%o_inD, r_oElpD(iEl))
        r_oElpD(iEl)%name  = '[O]-'//trim(Elecs(iEl)%name)//' folding El + D'
-       call region_Orb2Atom(r_oElpD(iEl) , na_u, lasto, r_aElpD(iEl) )
+       call rgn_Orb2Atom(r_oElpD(iEl) , na_u, lasto, r_aElpD(iEl) )
        r_aElpD(iEl)%name  = '[A]-'//trim(Elecs(iEl)%name)//' folding El + D'
 
-       call region_copy(Elecs(iEl)%o_inD,Elecs(iEl)%inDpvt)
-       Elecs(iEl)%inDpvt%r(:) = region_pivot(r_oDev,Elecs(iEl)%o_inD%r(:))
+       call rgn_copy(Elecs(iEl)%o_inD,Elecs(iEl)%inDpvt)
+       Elecs(iEl)%inDpvt%r(:) = rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(:))
 
     end do
 
@@ -807,7 +807,7 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif
-    use m_sparsity_handling, only : Sp_retain_region
+    use m_sparsity_handling, only : Sp_retain_rgn
 
     type(dict), intent(in) :: save_DATA
     type(OrbitalDistribution) :: fdit
@@ -827,7 +827,7 @@ contains
        call newDistribution(no_u,-1           ,fdit,name='TBT-fake dist')
 #endif
 
-       call Sp_retain_region(fdit,sp_uc,r_oDev,sp_dev)
+       call Sp_retain_rgn(fdit,sp_uc,r_oDev,sp_dev)
        call delete(fdit)
 
     end if
@@ -844,7 +844,7 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer :: i, verb
-    type(tRegion) :: r
+    type(tRgn) :: r
 
     ! We define a verbosity, if below 5 do not print regions
     verb = fdf_get('TBT.Verbosity',5)
@@ -855,17 +855,17 @@ contains
 
     ! Print out the buffer regions
     if ( r_aBuf%n > 0 ) then
-       call region_print(r_aBuf, seq_max = 12 )
+       call rgn_print(r_aBuf, seq_max = 12 )
        if ( verb > 7 ) &
-            call region_print(r_oBuf, seq_max = 10 )
+            call rgn_print(r_oBuf, seq_max = 10 )
     end if
 
     ! Print out the device region
     write(*,'(a,i0)')'tbtrans: # of device region orbitals: ',r_oDev%n
     if ( verb > 4 ) &
-         call region_print(r_aDev, seq_max = 12 )
+         call rgn_print(r_aDev, seq_max = 12 )
     if ( verb > 7 ) &
-         call region_print(r_oDev, seq_max = 10 )
+         call rgn_print(r_oDev, seq_max = 10 )
 
     ! Print out all the electrodes + their projection region
     do i = 1 , N_Elec
@@ -875,22 +875,22 @@ contains
        write(*,'(3a,i0)')'tbtrans: # of ',trim(Elecs(i)%name), &
             ' down-folding orbitals: ',r_oElpD(i)%n
        if ( verb > 4 ) &
-            call region_print(r_aEl  (i) , seq_max = 12 )
+            call rgn_print(r_aEl  (i) , seq_max = 12 )
        if ( verb > 7 ) &
-            call region_print(r_oEl  (i) , seq_max = 10 )
+            call rgn_print(r_oEl  (i) , seq_max = 10 )
        if ( verb > 3 ) then
-          call region_union(r_aDev,r_aElpD(i),r)
+          call rgn_union(r_aDev,r_aElpD(i),r)
           r%name = '[A]-'//trim(Elecs(i)%name)//' folding in D'
-          call region_print(r, seq_max = 12 )
+          call rgn_print(r, seq_max = 12 )
        end if
        if ( verb > 7 ) then
-          call region_union(r_oDev,r_oElpD(i),r)
+          call rgn_union(r_oDev,r_oElpD(i),r)
           r%name = '[O]-'//trim(Elecs(i)%name)//' folding in D'
-          call region_print(r, seq_max = 10 )
+          call rgn_print(r, seq_max = 10 )
        end if
     end do
 
-    call region_delete(r)
+    call rgn_delete(r)
 
   end subroutine tbt_print_regions
 

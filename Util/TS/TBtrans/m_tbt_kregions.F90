@@ -10,7 +10,7 @@ module m_tbt_kregions
 
   type :: kRegion
      ! The atoms in this periodic region
-     type(tRegion) :: atm
+     type(tRgn) :: atm
      ! The current k-point
      integer :: ik
      ! A list of assigned k-points and weights
@@ -52,7 +52,7 @@ contains
     use m_tbt_kpoint, only : kpoint, kweight, read_kgrid
 
     ! The buffer region
-    type(tRegion), intent(in) :: r_aBuf
+    type(tRgn), intent(in) :: r_aBuf
     ! Number of electrodes
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -71,7 +71,7 @@ contains
 
     ! ** local variables
     logical :: TRS
-    type(tRegion) :: r1, r2
+    type(tRgn) :: r1, r2
     integer :: i, il, iEl
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
@@ -113,11 +113,11 @@ contains
     do iEl = 1 , N_Elec
        ! Create a region of this electrode atoms
        i = Elecs(iEl)%idx_a
-       call region_range(r1,i,i-1 + TotUsedAtoms(Elecs(iEl)) )
+       call rgn_range(r1,i,i-1 + TotUsedAtoms(Elecs(iEl)) )
        do il = 1 , n_k
           ! Check that the entire electrode exists in
           ! any one of the regions.
-          call region_union(r_k(il)%atm,r1,r2)
+          call rgn_union(r_k(il)%atm,r1,r2)
           ! if there is no overlap
           if ( r2%n == r_k(il)%atm%n + r1%n ) cycle
           ! if there is complete overlap
@@ -127,7 +127,7 @@ contains
           ! allowed.
           if ( IONode ) then
           do i = 1 , n_k
-             call region_print(r_k(i)%atm)
+             call rgn_print(r_k(i)%atm)
           end do
           write(*,*)'tbtrans: Periodicity regions are ill-formatted'
           write(*,*)'Each electrode MUST only be present in any one &
@@ -149,23 +149,23 @@ contains
     ! while allowing greater flexibility. 
     ! If the user does not want this, simply add all atoms
     ! to list
-    call region_copy(r_k(1)%atm,r1)
+    call rgn_copy(r_k(1)%atm,r1)
     do il = 2 , n_k
-       call region_append(r1,r_k(il)%atm,r1)
+       call rgn_append(r1,r_k(il)%atm,r1)
     end do
-    call region_range(r_k(0)%atm,1,na_u)
-    call region_complement(r1,r_k(0)%atm,r_k(0)%atm)
+    call rgn_range(r_k(0)%atm,1,na_u)
+    call rgn_complement(r1,r_k(0)%atm,r_k(0)%atm)
     ! Probably we should remove the buffer atoms
     r_k(0)%atm%name = 'Gamma region'
-    call region_delete(r1,r2)
+    call rgn_delete(r1,r2)
 
     ! Sort all regions (makes the setup of the Hamiltonian faster)
     do il = 0 , n_k
        if ( r_aBuf%n > 0 ) then
           ! Remove all buffer atoms
-          call region_complement(r_aBuf,r_k(il)%atm,r_k(il)%atm)
+          call rgn_complement(r_aBuf,r_k(il)%atm,r_k(il)%atm)
        end if
-       call region_sort(r_k(il)%atm)
+       call rgn_sort(r_k(il)%atm)
     end do
     
     ! The 0 region contains the kgrid used as "backend"
@@ -279,9 +279,9 @@ contains
     integer :: na
     integer, allocatable :: a_list(:)
     logical :: periodic
-    type(tRegion) :: rG, roG, r1, r2
+    type(tRgn) :: rG, roG, r1, r2
     integer :: i, io, il, ia
-    type(tRegion), allocatable :: rl(:)
+    type(tRgn), allocatable :: rl(:)
     integer, allocatable :: ilist(:)
 
     call attach(sp,nrows=no_l,nrows_g=no_u, &
@@ -305,28 +305,28 @@ contains
     end do
 
     ! Create list of Gamma atoms
-    call region_list(rG,na,a_list)
+    call rgn_list(rG,na,a_list)
     deallocate(a_list)
-    call region_sort(rG)
-    call region_Atom2Orb(rG,na_u,lasto,roG)
+    call rgn_sort(rG)
+    call rgn_Atom2Orb(rG,na_u,lasto,roG)
     
     ! For each atom not in the Gamma region we
     ! create a connection and figure out all regions where no
     ! interactions cross the Gamma region.
     n_k = 0
     do ia = 1 , na_u
-       if ( in_region(rG,ia) ) cycle
+       if ( in_rgn(rG,ia) ) cycle
 
        ! We have a new k-region
-       call region_range(r1,lasto(ia-1)+1,lasto(ia))
+       call rgn_range(r1,lasto(ia-1)+1,lasto(ia))
 
        do
 
-          call region_sp_connect(r1, dit, sp, r2, except = roG)
+          call rgn_sp_connect(r1, dit, sp, r2, except = roG)
 
           if ( r2%n == 0 ) exit
 
-          call region_append(r1,r2,r1)
+          call rgn_append(r1,r2,r1)
 
        end do
        ! in case no new region is found, quickly skip it
@@ -339,26 +339,26 @@ contains
        else
           allocate(rl(n_k))
           do i = 1 , n_k
-             call region_copy(r_k(i)%atm,rl(i))
+             call rgn_copy(r_k(i)%atm,rl(i))
           end do
           deallocate(r_k) ; allocate(r_k(0:n_k+1))
           do i = 1 , n_k
-             call region_copy(rl(i),r_k(i)%atm)
+             call rgn_copy(rl(i),r_k(i)%atm)
           end do
           deallocate(rl)
        end if
        n_k = n_k + 1
        
-       call region_Orb2Atom(r1,na_u,lasto,r_k(n_k)%atm)
-       call region_sort(r_k(n_k)%atm)
+       call rgn_Orb2Atom(r1,na_u,lasto,r_k(n_k)%atm)
+       call rgn_sort(r_k(n_k)%atm)
 
        ! To ensure that we do not create a region
        ! per-atom, we add the just found k-region to the
        ! Gamma-region. In this way we cannot create
        ! any two regions having the same atoms
-       call region_append(rG,r_k(n_k)%atm,rG)
-       call region_sort(rG)
-       call region_Atom2Orb(rG,na_u,lasto,roG)
+       call rgn_append(rG,r_k(n_k)%atm,rG)
+       call rgn_sort(rG)
+       call rgn_Atom2Orb(rG,na_u,lasto,roG)
 
     end do
 
@@ -383,7 +383,7 @@ contains
           end if
        end do
     end do
-    call region_delete(rG,roG,r1,r2)
+    call rgn_delete(rG,roG,r1,r2)
     deallocate(ilist)
 
   end subroutine crt_connect_k
@@ -403,7 +403,7 @@ contains
     integer, intent(in) :: na_u
 
     ! ** local variables
-    type(tRegion) :: r1
+    type(tRgn) :: r1
     integer :: i, il, ic
     type(parsed_line), pointer :: pline => null()
     character(len=50) :: g
@@ -475,13 +475,13 @@ contains
           
           ! We can read in a range
           call fdf_brange(pline,r1,1,na_u)
-          call region_union(r_k(il)%atm,r1,r_k(il)%atm)
+          call rgn_union(r_k(il)%atm,r1,r_k(il)%atm)
           r_k(il)%atm%name = trim(g)
           
        else
           
           call fdf_brange(pline,r1,1,na_u)
-          call region_union(r_k(ic)%atm,r1,r_k(ic)%atm)
+          call rgn_union(r_k(ic)%atm,r1,r_k(ic)%atm)
           r_k(ic)%atm%name = trim(g)
           
        end if
@@ -624,7 +624,7 @@ contains
        write(*,'(/,a)') 'tbtrans: k-regions print out, in the permutation order'
        write(*,'(/,a)') 'tbtrans: Gamma region'
        write(g,'(a,i0)') 'nkpt = ',1
-       call region_print(r_k(0)%atm, name = g , seq_max = 12 )
+       call rgn_print(r_k(0)%atm, name = g , seq_max = 12 )
        
        write(*,'(/,a)') 'tbtrans: k regions'
        nperm = size(r_k(0)%wkpt)
@@ -633,7 +633,7 @@ contains
           if ( associated(r_k(il)%off) ) then
              g = trim(g)//', offsets: '//trim(r_k(il)%off%atm%name)
           end if
-          call region_print(r_k(il)%atm, name = g , seq_max = 12 )
+          call rgn_print(r_k(il)%atm, name = g , seq_max = 12 )
           nperm = nperm * size(r_k(il)%wkpt)
        end do
     else

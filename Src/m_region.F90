@@ -9,8 +9,9 @@
 
 module m_region
   
-  use intrinsic_missing, only : uniqc, sort, sfind
-  use geom_helper, only : ucorb, iaorb
+  use intrinsic_missing, only : UNIQC, SORT, SFIND
+  use geom_helper, only : UCORB, IAORB
+
   use class_OrbitalDistribution
   use class_Sparsity
 
@@ -21,55 +22,55 @@ module m_region
   ! max length of region
   integer, parameter, public :: R_NAME_LEN = 50
 
-  type :: tRegion
+  type :: tRgn
      ! The name of the region
      character(len=R_NAME_LEN) :: name = ' '
      ! The quantities in the region
      integer :: n = 0
      integer, pointer :: r(:) => null()
      logical :: sorted = .false.
-  end type tRegion
+  end type tRgn
 
-  public :: tRegion
-  public :: region_delete
-  public :: region_intersection
-  public :: region_union, region_append
-  public :: region_union_complement, region_complement
-  public :: region_range
-  public :: region_list
-  public :: region_overlaps
-  public :: region_sort
-  public :: region_insert
-  public :: region_print
-  public :: region_copy
-  public :: in_region, region_pivot
+  public :: tRgn
+  public :: rgn_delete
+  public :: rgn_intersection
+  public :: rgn_union, rgn_append
+  public :: rgn_union_complement, rgn_complement
+  public :: rgn_range
+  public :: rgn_list
+  public :: rgn_overlaps
+  public :: rgn_sort
+  public :: rgn_insert
+  public :: rgn_print
+  public :: rgn_copy
+  public :: in_rgn, rgn_pivot
 #ifdef MPI
-  public :: region_MPI_union
-  public :: region_MPI_Bcast
+  public :: rgn_MPI_union
+  public :: rgn_MPI_Bcast
 #endif
 
   ! Regions which has to do with sparsity patterns
-  public :: region_sp_connect
-  public :: region_sp_sort
+  public :: rgn_sp_connect
+  public :: rgn_sp_sort
 
   ! Regions which has to do with atoms/orbitals
-  public :: region_correct_atom
-  public :: region_atom2orb
-  public :: region_orb2atom
+  public :: rgn_correct_atom
+  public :: rgn_atom2orb
+  public :: rgn_orb2atom
 
   ! Sorting methods for the regions
   integer, parameter, public :: R_SORT_MAX_FRONT = 1
   integer, parameter, public :: R_SORT_MAX_BACK = 2
 
-  interface region_remove
-     module procedure region_remove_region
-     module procedure region_remove_list
-  end interface region_remove
+  interface rgn_remove
+     module procedure rgn_remove_rgn
+     module procedure rgn_remove_list
+  end interface rgn_remove
 
-  interface region_insert
-     module procedure region_insert_region
-     module procedure region_insert_list
-  end interface region_insert
+  interface rgn_insert
+     module procedure rgn_insert_rgn
+     module procedure rgn_insert_list
+  end interface rgn_insert
 
 contains
 
@@ -77,21 +78,20 @@ contains
   ! We refer to this as the pivoting element.
   ! In general this is the same as doing:
   !   A(r%r == i)
-  elemental function region_pivot(r,i) result(idx)
-    type(tRegion), intent(in) :: r
+  elemental function rgn_pivot(r,i) result(idx)
+    type(tRgn), intent(in) :: r
     integer, intent(in) :: i
     integer :: idx
     do idx = 1 , r%n
        if ( r%r(idx) == i ) return
     end do
     idx = 0
-  end function region_pivot
+  end function rgn_pivot
 
   ! Check whether an element exists in this region.
   ! Performs an easy check instead of doing it manually.
-  elemental function in_region(r,i) result(in)
-    use intrinsic_missing, only : SFIND
-    type(tRegion), intent(in) :: r
+  elemental function in_rgn(r,i) result(in)
+    type(tRgn), intent(in) :: r
     integer, intent(in) :: i
     logical :: in
     if ( r%n == 0 ) then
@@ -103,50 +103,50 @@ contains
     else
        in = any(i == r%r)
     end if
-  end function in_region
+  end function in_rgn
 
   ! Copies one region to another one
   ! This emplies that the element 'to' is deleted before
   ! copy is performed.
-  subroutine region_copy(from,to)
-    type(tRegion), intent(in) :: from
-    type(tRegion), intent(inout) :: to
+  subroutine rgn_copy(from,to)
+    type(tRgn), intent(in) :: from
+    type(tRgn), intent(inout) :: to
     if ( from%n == 0 ) then
-       call region_delete(to)
+       call rgn_delete(to)
        to%name = from%name
     else
-       call region_list(to,from%n,from%r,name=from%name)
+       call rgn_list(to,from%n,from%r,name=from%name)
        to%sorted = from%sorted
     end if
-  end subroutine region_copy
+  end subroutine rgn_copy
 
   ! Fully deletes a region (irrespective of it's current state)
-  recursive subroutine region_delete(r,r1,r2,r3,r4,r5)
-    type(tRegion), intent(inout) :: r
-    type(tRegion), intent(inout), optional :: r1,r2,r3,r4,r5
+  recursive subroutine rgn_delete(r,r1,r2,r3,r4,r5)
+    type(tRgn), intent(inout) :: r
+    type(tRgn), intent(inout), optional :: r1,r2,r3,r4,r5
     r%name = ' '
     r%n = 0
     if ( associated(r%r) ) deallocate(r%r)
     nullify(r%r)
     r%sorted = .false.
-    if ( present(r1) ) call region_delete(r1,r2,r3,r4,r5)
-  end subroutine region_delete
+    if ( present(r1) ) call rgn_delete(r1,r2,r3,r4,r5)
+  end subroutine rgn_delete
 
   ! Allows removing certain elements from a region.
-  subroutine region_remove_list(r,n,list,rout)
-    type(tRegion), intent(in) :: r
-    type(tRegion), intent(inout) :: rout
+  subroutine rgn_remove_list(r,n,list,rout)
+    type(tRgn), intent(in) :: r
+    type(tRgn), intent(inout) :: rout
     integer, intent(in) :: n, list(n)
 
     integer :: i, ni
     integer, allocatable :: tmp_r(:)
 
     if ( n == 0 ) then
-       call region_copy(r,rout)
+       call rgn_copy(r,rout)
        return
     end if
 
-    call region_delete(rout)
+    call rgn_delete(rout)
     
     allocate(tmp_r(r%n))
     ni = 0
@@ -157,19 +157,19 @@ contains
        end if
     end do
 
-    call region_list(rout,ni,tmp_r(1:ni))
+    call rgn_list(rout,ni,tmp_r(1:ni))
 
     deallocate(tmp_r)
 
-  end subroutine region_remove_list
-  subroutine region_remove_region(r,rr,rout)
-    type(tRegion), intent(in) :: r
-    type(tRegion), intent(in) :: rr
-    type(tRegion), intent(inout) :: rout
+  end subroutine rgn_remove_list
+  subroutine rgn_remove_rgn(r,rr,rout)
+    type(tRgn), intent(in) :: r
+    type(tRgn), intent(in) :: rr
+    type(tRgn), intent(inout) :: rout
     
-    call region_remove_list(r,rr%n,rr%r,rout)
+    call rgn_remove_list(r,rr%n,rr%r,rout)
 
-  end subroutine region_remove_region
+  end subroutine rgn_remove_rgn
 
 
   ! Generates a new region which connects to 'r'
@@ -188,27 +188,27 @@ contains
   !      one is connecting out, the other does not, in that case would
   !      'connect_from' only contain one orbital.
   ! NOTE: It DOES work in parallel
-  subroutine region_sp_connect(r,dit,sp,cr,except, connect_from, follow)
+  subroutine rgn_sp_connect(r,dit,sp,cr,except, connect_from, follow)
 
     ! the region we wish to find the connections to
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The sparsity patterns distribution
     type(OrbitalDistribution), intent(in) :: dit
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! the connecting region
-    type(tRegion), intent(inout) :: cr
+    type(tRgn), intent(inout) :: cr
     ! a region which must not be crossed (exception region)
-    type(tRegion), intent(in), optional :: except
+    type(tRgn), intent(in), optional :: except
     ! a region which contains the orbitals that are 
     ! responsible for the connection
-    type(tRegion), intent(inout), optional :: connect_from
+    type(tRgn), intent(inout), optional :: connect_from
     ! Tell whether we should follow the connection
     ! or stop at the first iteration
     logical, intent(in), optional :: follow
 
     ! ** local variables
-    type(tRegion) :: tmp, tmp2
+    type(tRgn) :: tmp, tmp2
     integer :: i, j, io, jo, ind, no_l, no_u, it, rt
     integer, allocatable :: ct(:), rr(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
@@ -217,18 +217,18 @@ contains
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! ensure nullification of cr
-    call region_delete(cr)
+    call rgn_delete(cr)
 
     allocate(rr(r%n))
     ! Exclude it's own region, (no connection back)
-    call region_copy(r,tmp)
+    call rgn_copy(r,tmp)
     allocate(ct(no_u-r%n))
 
     if ( present(except) ) then
        if ( except%n > 0 ) then
-          call region_copy(tmp,tmp2)
-          call region_insert(tmp2,except,tmp,0)
-          call region_delete(tmp2)
+          call rgn_copy(tmp,tmp2)
+          call rgn_insert(tmp2,except,tmp,0)
+          call rgn_delete(tmp2)
        end if
     end if
 
@@ -237,7 +237,7 @@ contains
     ! We sort it once, and search that array instead
     ! This requires a slightly increased memory, but 
     ! drastically improves performance.
-    call region_sort(tmp)
+    call rgn_sort(tmp)
 
     rt = 0
     it = 0
@@ -256,7 +256,7 @@ contains
 
           ! Ensure that it is not a folding to the same region
           ! tmp is sorted, hence it uses SFIND
-          if ( in_region(tmp,jo) ) cycle
+          if ( in_rgn(tmp,jo) ) cycle
           
           if ( it == 0 ) then
              it = it + 1
@@ -287,19 +287,19 @@ contains
     ! and check for "follow"
 
     ! First we do the ct region
-    call region_list(tmp,it,ct)
-    call region_MPI_union(dit,tmp)
+    call rgn_list(tmp,it,ct)
+    call rgn_MPI_union(dit,tmp)
     it = tmp%n
     if ( it > 0 ) then
        ct(1:it) = tmp%r
     end if
-    call region_list(tmp,rt,rr)
-    call region_MPI_union(dit,tmp)
+    call rgn_list(tmp,rt,rr)
+    call rgn_MPI_union(dit,tmp)
     rt = tmp%n
     if ( rt > 0 ) then
        rr(1:rt) = tmp%r
     end if
-    call region_delete(tmp) ! clean-up
+    call rgn_delete(tmp) ! clean-up
 
 #endif
 
@@ -322,7 +322,7 @@ contains
              jo = ucorb(l_col(ind),no_u)
 
              ! Ensure that it is not a folding to the same region
-             if ( in_region(tmp,jo) ) cycle
+             if ( in_rgn(tmp,jo) ) cycle
 
              if ( it == 0 ) then
                 it = it + 1
@@ -344,27 +344,27 @@ contains
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
-    call region_list(cr,it,ct(1:it))
+    call rgn_list(cr,it,ct(1:it))
 
     deallocate(ct)
 
 #ifdef MPI
-    call region_MPI_union(dit,cr)
+    call rgn_MPI_union(dit,cr)
 #endif
 
     if ( present(connect_from) ) then
 
-       call region_list(connect_from,rt,rr(1:rt))
+       call rgn_list(connect_from,rt,rr(1:rt))
 
 #ifdef MPI
-       call region_MPI_union(dit,connect_from)
+       call rgn_MPI_union(dit,connect_from)
 #endif
 
     end if
 
     deallocate(rr)
 
-  end subroutine region_sp_connect
+  end subroutine rgn_sp_connect
 
 
   ! This routine WORKS IN PARALLEL
@@ -384,7 +384,7 @@ contains
   !     I.e. we find the number of connection orbitals for all in 'sr' which 
   !     connects into region 'r'.
   !     We then place 
-  subroutine region_sp_sort(r,dit,sp, sr, method)
+  subroutine rgn_sp_sort(r,dit,sp, sr, method)
 
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Integer
@@ -392,19 +392,19 @@ contains
 #endif
 
     ! the region we wish to find the connections to
-    type(tRegion), intent(inout) :: r
+    type(tRgn), intent(inout) :: r
     ! The sparsity patterns distribution
     type(OrbitalDistribution), intent(in) :: dit
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! the sorting region (i.e. the orbitals that are allowed
     ! to be pivoted)
-    type(tRegion), intent(inout) :: sr
+    type(tRgn), intent(inout) :: sr
     ! The method used for sorting
     integer, intent(in) :: method
 
     ! ** local variables
-    type(tRegion) :: r_tmp
+    type(tRgn) :: r_tmp
     integer :: no_u, i, io, ci, ind, jo, last_n, idx_max
     integer, allocatable :: n_c(:), cur_con(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
@@ -424,11 +424,11 @@ contains
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! First we ensure that the lists are the same
-    call region_intersection(r,sr,r_tmp)
+    call rgn_intersection(r,sr,r_tmp)
     if ( r_tmp%n /= sr%n ) then
        call die('The regions are not well-defined')
     end if
-    call region_delete(r_tmp)
+    call rgn_delete(r_tmp)
 
     ! Prepare the collection arrays
     allocate(n_c(sr%n))
@@ -460,7 +460,7 @@ contains
              jo = ucorb(l_col(ind),no_u)
              
              ! Ensure that it is not folding to the same region
-             if ( in_region(r,jo) ) cycle
+             if ( in_rgn(r,jo) ) cycle
 
              if ( ci == 0 ) then
                 ci = ci + 1
@@ -511,7 +511,7 @@ contains
              jo = ucorb(l_col(ind),no_u)
              
              ! Ensure that it is folding to the same region
-             if ( .not. in_region(r,jo) ) cycle
+             if ( .not. in_rgn(r,jo) ) cycle
 
              if ( ci == 0 ) then
                 ci = ci + 1
@@ -583,21 +583,21 @@ contains
 
     deallocate(n_c,cur_con)
 
-  end subroutine region_sp_sort
+  end subroutine rgn_sp_sort
 
   ! Creates a region in terms of the INTERSECTION of two regions 
-  subroutine region_intersection(r1,r2,ir)
+  subroutine rgn_intersection(r1,r2,ir)
     ! the regions we wish to operate on
-    type(tRegion), intent(in) :: r1, r2
+    type(tRgn), intent(in) :: r1, r2
     ! the intersection region
-    type(tRegion), intent(inout) :: ir
+    type(tRgn), intent(inout) :: ir
 
     ! ** local variables
     integer :: i, it
     integer, allocatable :: ct(:)
 
     if ( r1%n == 0 .or. r2%n == 0 ) then
-       call region_delete(ir)
+       call rgn_delete(ir)
        return
     end if
 
@@ -606,7 +606,7 @@ contains
 
     do i = 1 , r1%n
        
-       if ( .not. in_region(r2,r1%r(i)) ) cycle
+       if ( .not. in_rgn(r2,r1%r(i)) ) cycle
        it = it + 1
        ct(it) = r1%r(i)
 
@@ -614,28 +614,28 @@ contains
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
-    call region_list(ir,it,ct(1:it))
+    call rgn_list(ir,it,ct(1:it))
 
     deallocate(ct)
     
-  end subroutine region_intersection
+  end subroutine rgn_intersection
 
   ! Creates a region in terms of the UNION of two regions 
-  subroutine region_union(r1,r2,ur)
+  subroutine rgn_union(r1,r2,ur)
     ! the regions we wish to operate on
-    type(tRegion), intent(in) :: r1, r2
+    type(tRgn), intent(in) :: r1, r2
     ! the unified region
-    type(tRegion), intent(inout) :: ur
+    type(tRgn), intent(inout) :: ur
 
     ! ** local variables
     integer :: i, it
     integer, allocatable :: ct(:)
 
     if ( r1%n == 0 ) then
-       call region_copy(r2,ur)
+       call rgn_copy(r2,ur)
        return
     else if ( r2%n == 0 ) then
-       call region_copy(r1,ur)
+       call rgn_copy(r1,ur)
        return
     end if
 
@@ -656,28 +656,28 @@ contains
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
-    call region_list(ur,it,ct(1:it))
+    call rgn_list(ur,it,ct(1:it))
 
     deallocate(ct)
 
-  end subroutine region_union
+  end subroutine rgn_union
 
   ! Creates a region by appending them, no checks of dublicates
-  subroutine region_append(r1,r2,r)
+  subroutine rgn_append(r1,r2,r)
     ! the regions we wish to operate on
-    type(tRegion), intent(in) :: r1, r2
+    type(tRgn), intent(in) :: r1, r2
     ! the total region
-    type(tRegion), intent(inout) :: r
+    type(tRgn), intent(inout) :: r
 
     ! ** local variables
     integer :: it
     integer, allocatable :: ct(:)
 
     if ( r1%n == 0 ) then
-       call region_copy(r2,r)
+       call rgn_copy(r2,r)
        return
     else if ( r2%n == 0 ) then
-       call region_copy(r1,r)
+       call rgn_copy(r1,r)
        return
     end if
 
@@ -691,30 +691,30 @@ contains
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
-    call region_list(r,it,ct(1:it))
+    call rgn_list(r,it,ct(1:it))
 
     deallocate(ct)
 
-  end subroutine region_append
+  end subroutine rgn_append
 
-  subroutine region_insert_list(r,n,list,rout,idx)
-    type(tRegion), intent(in) :: r
+  subroutine rgn_insert_list(r,n,list,rout,idx)
+    type(tRgn), intent(in) :: r
     integer, intent(in) :: n, list(n)
-    type(tRegion), intent(inout) :: rout
+    type(tRgn), intent(inout) :: rout
     ! The place of insertion
     integer, intent(in) :: idx
-    type(tRegion) :: rtmp
-    call region_list(rtmp,n,list)
-    call region_insert_region(r,rtmp,rout,idx)
-    call region_delete(rtmp)
-  end subroutine region_insert_list
+    type(tRgn) :: rtmp
+    call rgn_list(rtmp,n,list)
+    call rgn_insert_rgn(r,rtmp,rout,idx)
+    call rgn_delete(rtmp)
+  end subroutine rgn_insert_list
 
   ! Inserts a region in another region.
-  subroutine region_insert_region(r,rin,rout,idx)
+  subroutine rgn_insert_rgn(r,rin,rout,idx)
     ! The region we wish to insert in
-    type(tRegion), intent(in) :: r
-    type(tRegion), intent(in) :: rin
-    type(tRegion), intent(inout) :: rout
+    type(tRgn), intent(in) :: r
+    type(tRgn), intent(in) :: rin
+    type(tRgn), intent(inout) :: rout
     ! The place of insertion
     !  [idx] at index in r%r ( after idx )
     ! hence, idx == 0 will be in the beginning.
@@ -727,10 +727,10 @@ contains
     if ( idx > r%n ) then
        call die('Error, index does not exist')
     else if ( idx == r%n ) then
-       call region_union(r,rin,rout)
+       call rgn_union(r,rin,rout)
        return
     else if ( idx <= 0 ) then
-       call region_union(rin,r,rout)
+       call rgn_union(rin,r,rout)
        return
     end if
 
@@ -741,48 +741,48 @@ contains
     ! First we need to find the first value before
     ! the list (in case it already exists)
     lidx = idx
-    do while ( in_region(rin,r%r(lidx)) )
+    do while ( in_rgn(rin,r%r(lidx)) )
        lidx = lidx - 1
        if ( lidx == 0 ) then
-          call region_union(rin,r,rout)
+          call rgn_union(rin,r,rout)
           return
        end if
     end do
 
     ! Grab value before removing potential duplicates
     i = r%r(lidx)
-    call region_remove(r,rin,rout)
+    call rgn_remove(r,rin,rout)
     ! Back-retrieve the new position
-    i = region_pivot(rout,i)
+    i = rgn_pivot(rout,i)
     if ( i == 0 ) call die('Error in algorithm')
     allocate(itmp(rout%n+rin%n))
     itmp(1:i) = rout%r(1:i)
     itmp(i+1:i+rin%n) = rin%r(:)
     j = i + rin%n + 1
     itmp(j:) = rout%r(i+1:)
-    call region_list(rout,size(itmp),itmp)
+    call rgn_list(rout,size(itmp),itmp)
     deallocate(itmp)
 
-  end subroutine region_insert_region
+  end subroutine rgn_insert_rgn
 
   ! Creates a region in terms of the COMPLEMENT of two regions 
   ! Hence it returns elements in r2 which are not in r1
-  subroutine region_complement(r1,r2,cr)
+  subroutine rgn_complement(r1,r2,cr)
     ! the regions we wish to operate on
-    type(tRegion), intent(in) :: r1, r2
+    type(tRgn), intent(in) :: r1, r2
     ! the complementary region
-    type(tRegion), intent(inout) :: cr
+    type(tRgn), intent(inout) :: cr
 
     ! ** local variables
     integer :: i, it
     integer, allocatable :: ct(:)
 
     if ( r1%n == 0 ) then
-       call region_copy(r2,cr)
+       call rgn_copy(r2,cr)
        return
     end if
     if ( r2%n == 0 ) then
-       call region_delete(cr)
+       call rgn_delete(cr)
        return
     end if
 
@@ -790,7 +790,7 @@ contains
 
     it = 0
     do i = 1 , r2%n
-       if ( in_region(r1,r2%r(i)) ) cycle
+       if ( in_rgn(r1,r2%r(i)) ) cycle
 
        it = it + 1
        ct(it) = r2%r(i)
@@ -798,31 +798,31 @@ contains
     end do
 
     ! Copy the list over
-    call region_list(cr,it,ct(1:it))
+    call rgn_list(cr,it,ct(1:it))
 
     deallocate(ct)
 
-  end subroutine region_complement
+  end subroutine rgn_complement
 
   ! Creates a region in terms of the COMPLEMENT of two regions.
   ! Hence it returns elements in r2 not in r1, AND the elements
   ! in r1 not in r2
-  subroutine region_union_complement(r1,r2,cr)
+  subroutine rgn_union_complement(r1,r2,cr)
     ! the regions we wish to operate on
-    type(tRegion), intent(in) :: r1, r2
+    type(tRgn), intent(in) :: r1, r2
     ! the complementary region
-    type(tRegion), intent(inout) :: cr
+    type(tRgn), intent(inout) :: cr
 
     ! ** local variables
     integer :: i, it
     integer, allocatable :: ct(:)
 
     if ( r1%n == 0 ) then
-       call region_copy(r2,cr)
+       call rgn_copy(r2,cr)
        return
     end if
     if ( r2%n == 0 ) then
-       call region_copy(r1,cr)
+       call rgn_copy(r1,cr)
        return
     end if
 
@@ -830,14 +830,14 @@ contains
 
     it = 0
     do i = 1 , r1%n
-       if ( in_region(r2,r1%r(i)) ) cycle
+       if ( in_rgn(r2,r1%r(i)) ) cycle
 
        it = it + 1
        ct(it) = r1%r(i)
 
     end do
     do i = 1 , r2%n
-       if ( in_region(r1,r2%r(i)) ) cycle
+       if ( in_rgn(r1,r2%r(i)) ) cycle
 
        it = it + 1
        ct(it) = r2%r(i)
@@ -845,21 +845,21 @@ contains
     end do
 
     ! Copy the list over
-    call region_list(cr,it,ct(1:it))
+    call rgn_list(cr,it,ct(1:it))
 
     deallocate(ct)
 
-  end subroutine region_union_complement
+  end subroutine rgn_union_complement
 
   ! Easy setup of a consecutive orbital range
-  subroutine region_range(r,o1,o2)
+  subroutine rgn_range(r,o1,o2)
     ! The region containing the range [o1;o2]
-    type(tRegion), intent(inout) :: r
+    type(tRgn), intent(inout) :: r
     ! The limits on the range
     integer, intent(in) :: o1, o2
     
     integer :: io
-    call region_delete(r)
+    call rgn_delete(r)
 
     r%n = abs(o2 - o1) + 1
     allocate(r%r(r%n))
@@ -873,16 +873,16 @@ contains
        end do
     end if
 
-  end subroutine region_range
+  end subroutine rgn_range
 
-  subroutine region_list(r,n,list,name)
+  subroutine rgn_list(r,n,list,name)
     ! Region to put list in
-    type(tRegion), intent(inout) :: r
+    type(tRgn), intent(inout) :: r
     ! list to copy over
     integer, intent(in) :: n, list(n)
     character(len=*), intent(in), optional :: name
 
-    call region_delete(r)
+    call rgn_delete(r)
     r%n = n
     if ( n > 0 ) then
        allocate(r%r(n))
@@ -890,21 +890,20 @@ contains
     end if
     if ( present(name) ) r%name = name
     
-  end subroutine region_list
+  end subroutine rgn_list
 
-  subroutine region_sort(r)
-    use intrinsic_missing, only : SORT
-    type(tRegion), intent(inout) :: r
+  subroutine rgn_sort(r)
+    type(tRgn), intent(inout) :: r
     if ( r%n > 0 ) then
        r%r(:) = SORT(r%r(:))
        r%sorted = .true.
     end if
-  end subroutine region_sort
+  end subroutine rgn_sort
 
-  subroutine region_correct_atom(r,na_u,lasto)
+  subroutine rgn_correct_atom(r,na_u,lasto)
     ! Region which we want to extend with the atoms
     ! that it already overlaps
-    type(tRegion), intent(inout) :: r
+    type(tRgn), intent(inout) :: r
     ! The last orbitals of each atom
     integer, intent(in) :: na_u, lasto(0:na_u)
 
@@ -938,7 +937,7 @@ contains
     ! to be sure we just depopulate the region
     ! and populate it with the correct orbitals
     tmp = r%name
-    call region_delete(r)
+    call rgn_delete(r)
     r%name = tmp
     r%n = no
     nullify(r%r)
@@ -953,15 +952,15 @@ contains
        end do
     end if
 
-  end subroutine region_correct_atom
+  end subroutine rgn_correct_atom
 
-  subroutine region_Atom2Orb(ar,na_u,lasto,or)
+  subroutine rgn_Atom2Orb(ar,na_u,lasto,or)
     ! Region which we want to extend with the atoms
     ! that it already overlaps
-    type(tRegion), intent(in) :: ar
+    type(tRgn), intent(in) :: ar
     ! The last orbitals of each atom
     integer, intent(in) :: na_u, lasto(0:na_u)
-    type(tRegion), intent(inout) :: or
+    type(tRgn), intent(inout) :: or
 
     ! ** local variables
     integer :: i, cr, no
@@ -977,7 +976,7 @@ contains
     ! to be sure we just depopulate the region
     ! and populate it with the correct orbitals
     tmp = or%name
-    call region_delete(or)
+    call rgn_delete(or)
     or%name = tmp
     or%n = no
     nullify(or%r)
@@ -992,15 +991,15 @@ contains
        end do
     end if
     
-  end subroutine region_Atom2Orb
+  end subroutine rgn_Atom2Orb
 
-  subroutine region_Orb2Atom(or,na_u,lasto,ar)
+  subroutine rgn_Orb2Atom(or,na_u,lasto,ar)
     ! The orbital region we wish to convert to an atomic
     ! region
-    type(tRegion), intent(in) :: or
+    type(tRgn), intent(in) :: or
     ! The last orbitals of each atom
     integer, intent(in) :: na_u, lasto(0:na_u)
-    type(tRegion), intent(inout) :: ar
+    type(tRgn), intent(inout) :: ar
 
     ! ** local variables
     integer :: io, ia, na, a
@@ -1022,14 +1021,14 @@ contains
     ! to be sure we just depopulate the region
     ! and populate it with the correct atoms
     tmp = ar%name
-    call region_list(ar,na,ca(1:na), name = tmp )
+    call rgn_list(ar,na,ca(1:na), name = tmp )
 
-  end subroutine region_Orb2Atom
+  end subroutine rgn_Orb2Atom
 
   ! Whether any element exists in the other one.
-  function region_overlaps(r1,r2) result(overlap)
+  function rgn_overlaps(r1,r2) result(overlap)
     ! the regions we wish to find the union of
-    type(tRegion), intent(in) :: r1, r2
+    type(tRgn), intent(in) :: r1, r2
     logical :: overlap
 
     ! ** local variables
@@ -1044,7 +1043,7 @@ contains
     if ( r1%n < r2%n ) then
        
        do i = 1 , r2%n
-          if ( in_region(r1,r2%r(i)) ) then
+          if ( in_rgn(r1,r2%r(i)) ) then
              overlap = .true. 
              return
           end if
@@ -1053,7 +1052,7 @@ contains
     else
 
        do i = 1 , r1%n
-          if ( in_region(r2,r1%r(i)) ) then
+          if ( in_rgn(r2,r1%r(i)) ) then
              overlap = .true. 
              return
           end if
@@ -1061,10 +1060,10 @@ contains
 
     end if
 
-  end function region_overlaps
+  end function rgn_overlaps
 
-  subroutine region_print(r, name, seq_max, indent)
-    type(tRegion), intent(in) :: r
+  subroutine rgn_print(r, name, seq_max, indent)
+    type(tRgn), intent(in) :: r
     character(len=*), intent(in), optional :: name
     integer, intent(in), optional :: seq_max, indent
  
@@ -1095,18 +1094,18 @@ contains
        write(*,'(tr1,a)') ' ]'
     end if
 
-  end subroutine region_print
+  end subroutine rgn_print
     
 
 #ifdef MPI
-  subroutine region_MPI_union(dit,r)
+  subroutine rgn_MPI_union(dit,r)
     use mpi_siesta, only : MPI_AllReduce, MPI_Integer, MPI_Sum
     use mpi_siesta, only : MPI_Bcast
     use mpi_siesta, only : MPI_Recv, MPI_Send, MPI_STATUS_SIZE
     use mpi_siesta, only : MPI_Get_Count
 
     type(OrbitalDistribution), intent(in) :: dit
-    type(tRegion), intent(inout) :: r
+    type(tRgn), intent(inout) :: r
     
     ! Our temporary region
     integer :: nt, ct, iN, it
@@ -1173,16 +1172,16 @@ contains
 
     ! Deallocate and copy the new array
     tmp = r%name
-    call region_list(r,nt,rd(1:nt),name=tmp)
+    call rgn_list(r,nt,rd(1:nt),name=tmp)
     
     ! Clean-up
     deallocate(rd)
 
-  end subroutine region_MPI_union
+  end subroutine rgn_MPI_union
 
-  subroutine region_MPI_Bcast(r,Bnode,Comm)
+  subroutine rgn_MPI_Bcast(r,Bnode,Comm)
     use mpi_siesta, only : MPI_Bcast, MPI_Integer
-    type(tRegion), intent(inout) :: r
+    type(tRgn), intent(inout) :: r
     integer, intent(in) :: Bnode, Comm
     
     integer :: Node, n
@@ -1195,13 +1194,13 @@ contains
     if ( n == 0 ) return
     if ( Node /= Bnode ) then
        ! ensures that it is deleted!
-       call region_delete(r)
+       call rgn_delete(r)
        r%n = n
        allocate(r%r(n))
     end if
     call MPI_Bcast(r%r(1),r%n,MPI_Integer, Bnode, comm, MPIerror)
 
-  end subroutine region_MPI_Bcast
+  end subroutine rgn_MPI_Bcast
 
 #endif
   

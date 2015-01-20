@@ -28,7 +28,7 @@ contains
 
   subroutine fdf_brange(pline,r,low,high)
     type(parsed_line), pointer :: pline
-    type(tRegion), intent(out) :: r
+    type(tRgn), intent(out) :: r
     ! Practically min/max for the region
     ! in question, however, it allows for 
     ! specifying negative numbers.
@@ -110,7 +110,7 @@ contains
        end if
     end do
 
-    call region_list(r,n,list)
+    call rgn_list(r,n,list)
     deallocate(list)
     
   contains

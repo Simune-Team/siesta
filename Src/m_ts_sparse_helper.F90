@@ -671,7 +671,7 @@ contains
     ! Number of orbitals that form this array
     integer, intent(in) :: no
     ! The region that we wish to create the UT matrix in
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The number of elements in the sparse arrays
     integer, intent(in) :: n_nzs
     real(dp), intent(in) :: A(n_nzs)
@@ -717,7 +717,7 @@ contains
           jo = UCORB(l_col(ind),no_u)
 
           ! If the orbital is not in the region, we skip it
-          jo = region_pivot(r,jo)
+          jo = rgn_pivot(r,jo)
           if ( jo <= 0 ) cycle
 
           ! Calculate position
@@ -772,7 +772,7 @@ contains
     ! Number of orbitals that form this array
     integer, intent(in) :: no
     ! The region that we wish to create the UT matrix in
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The number of elements in the sparse arrays
     integer, intent(in) :: n_nzs
     real(dp), intent(in) :: A(n_nzs)
@@ -818,7 +818,7 @@ contains
           jo = UCORB(l_col(ind),no_u)
 
           ! If the orbital is not in the region, we skip it
-          jo = region_pivot(r,jo)
+          jo = rgn_pivot(r,jo)
           if ( jo <= 0  ) cycle
 
           ! Calculate position
@@ -861,7 +861,7 @@ contains
     ! Number of orbitals that form this array
     integer, intent(in) :: no
     ! The region that we wish to create the UT matrix in
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The number of elements in the sparse arrays
     integer, intent(in) :: n_nzs, n_s
     real(dp), intent(in) :: A(n_nzs), sc_off(3,0:n_s-1)
@@ -913,7 +913,7 @@ contains
           jo = UCORB(l_col(ind),no_u)
 
           ! If the orbital is not in the region, we skip it
-          jo = region_pivot(r,jo)
+          jo = rgn_pivot(r,jo)
           if ( jo <= 0  ) cycle
 
           is = (l_col(ind)-1)/no_u
@@ -979,7 +979,7 @@ contains
     ! Number of orbitals that form this array
     integer, intent(in) :: no
     ! The region that we wish to create the UT matrix in
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The number of elements in the sparse arrays
     integer, intent(in) :: n_nzs, n_s
     real(dp), intent(in) :: A(n_nzs), sc_off(3,0:n_s-1)
@@ -1029,7 +1029,7 @@ contains
           jo = UCORB(l_col(ind),no_u)
 
           ! If the orbital is not in the region, we skip it
-          jo = region_pivot(r,jo)
+          jo = rgn_pivot(r,jo)
           if ( jo <= 0  ) cycle
 
           is = (l_col(ind)-1)/no_u

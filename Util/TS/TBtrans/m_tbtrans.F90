@@ -168,7 +168,7 @@ contains
        do iEl = 1 , N_Elec
           uGF(iEl) = -1
           do ils = 0 , n_k
-             if ( in_region(r_k(ils)%atm,Elecs(iEl)%idx_a) ) then
+             if ( in_rgn(r_k(ils)%atm,Elecs(iEl)%idx_a) ) then
                 uGF(iEl) = ils
                 exit
              end if

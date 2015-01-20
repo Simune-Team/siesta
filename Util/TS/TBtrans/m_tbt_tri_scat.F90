@@ -59,7 +59,7 @@ contains
     use class_zSpData1D
     use units, only : Pi
 
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     type(zTriMat), intent(inout) :: Gf_tri
     type(zSpData1D), intent(inout) :: S_1D
     real(dp), intent(out) :: DOS(r%n)
@@ -174,7 +174,7 @@ contains
 
     use m_tbt_proj
 
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     type(zTriMat), intent(inout) :: Gf_tri
     type(zSpData1D), intent(inout) :: S_1D
     integer, intent(in) :: N_mol
@@ -365,7 +365,7 @@ contains
     use class_zSpData1D
     use units, only : Pi
 
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     type(zTriMat), intent(inout) :: A_tri
     type(zSpData1D), intent(inout) :: S_1D
     real(dp), intent(out) :: DOS(r%n)
@@ -462,7 +462,7 @@ contains
 ! *********************
     ! The Green's function column (placed in the back of the array)
     type(zTriMat), intent(inout) :: Gf_tri
-    type(tRegion), intent(in) :: r ! The device region
+    type(tRgn), intent(in) :: r ! The device region
     type(Elec), intent(in) :: El  ! contains: i (Sigma - Sigma^dagger) ^T
     type(Elec), intent(in) :: El2 ! contains: i (Sigma - Sigma^dagger) ^T
 
@@ -526,11 +526,11 @@ contains
        ! Figure out if the indices are consecutive
        ! in the device region
        ! figure out the current part
-       ic = region_pivot(r,El2%o_inD%r(i2))
+       ic = rgn_pivot(r,El2%o_inD%r(i2))
        cp = which_part(Gf_tri,ic)
        e2 = i2
        do i = 1, no
-          j = region_pivot(r,El2%o_inD%r(i2+i))
+          j = rgn_pivot(r,El2%o_inD%r(i2+i))
           if ( ic + i /= j ) exit
           if ( cp /= which_part(Gf_tri,j) ) exit
           e2 = e2 + 1
@@ -642,7 +642,7 @@ contains
     type(ts_c_idx), intent(in) :: cE
     type(zSpData1D), intent(inout) :: spH, spS
     type(zTriMat), intent(inout) :: A_tri
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     type(dSpData1D), intent(inout) :: orb_J
 
     type(Sparsity), pointer :: i_sp
@@ -720,7 +720,7 @@ contains
     ! Electrodes...
     type(Elec), intent(inout) :: El
     ! the region which describes the current segment of insertion
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The sizes and offsets of the matrix
     integer, intent(in) :: off1, n1, off2, n2
     complex(dp), intent(inout) :: M(n1,n2)
@@ -798,7 +798,7 @@ contains
     complex(dp), intent(inout) :: Gfinv(:)
     type(Elec), intent(in) :: El
     ! the region which describes the current segment of insertion
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
 
     ! local variables
     integer :: j, je, i, ie, ii, idx, no

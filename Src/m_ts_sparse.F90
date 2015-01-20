@@ -138,7 +138,7 @@ contains
     ! We create a temporary sparsity pattern which removes
     ! all cross-connections across the electrode transport direction.
     type(Sparsity) :: tmp_sp
-    type(tRegion) :: r_oE(N_Elec), r_tmp1, r_tmp2
+    type(tRgn) :: r_oE(N_Elec), r_tmp1, r_tmp2
     ! Temporary arrays for knowing the electrode size
     logical :: bool
     integer :: no_u_TS, iEl, i
@@ -186,13 +186,13 @@ contains
     do iEl = 1 , N_Elec
 
        ! Create electrode region
-       call region_range(r_oE(iEl), Elecs(iEl)%idx_o, &
+       call rgn_range(r_oE(iEl), Elecs(iEl)%idx_o, &
             Elecs(iEl)%idx_o+TotUsedOrbs(Elecs(iEl))-1)
 
        ! Remove the connections that cross the boundary
        ! starting from this electrode
-       call region_sp_connect(r_oE(iEl), block_dist, tmp_sp, r_tmp1)
-       call region_union(r_oE(iEl), r_tmp1, r_tmp2)
+       call rgn_sp_connect(r_oE(iEl), block_dist, tmp_sp, r_tmp1)
+       call rgn_union(r_oE(iEl), r_tmp1, r_tmp2)
 
        ! Calculate the transport direction in the device cell.
        p = SPC_PROJ(ucell,Elecs(iEl)%ucell(:,Elecs(iEl)%t_dir))
@@ -230,17 +230,17 @@ contains
     end if
 
     do iEl = 1 , N_Elec - 1
-       call region_delete(r_tmp1,r_tmp2)
+       call rgn_delete(r_tmp1,r_tmp2)
        do i = iEl + 1 , N_Elec
-          call region_copy(r_tmp2,r_tmp1)
-          call region_union(r_oE(i),r_tmp1,r_tmp2)
+          call rgn_copy(r_tmp2,r_tmp1)
+          call rgn_union(r_oE(i),r_tmp1,r_tmp2)
        end do
        call Sp_remove_region2region(block_dist,tmp_sp,r_oE(iEl),r_tmp2,tmp_sp)
 
     end do
-    call region_delete(r_tmp1,r_tmp2)
+    call rgn_delete(r_tmp1,r_tmp2)
     do iEl = 1 , N_Elec
-       call region_delete(r_oE(iEl))
+       call rgn_delete(r_oE(iEl))
     end do
 
 #ifdef TRANSIESTA_DEBUG

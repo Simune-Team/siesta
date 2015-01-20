@@ -66,13 +66,13 @@ module m_tbt_proj
      ! Whether this projection is k-resolved
      logical :: Gamma = .true., DOS = .true.
      ! Region containing the atoms, orbitals
-     type(tRegion) :: atom, orb, pvt
+     type(tRgn) :: atom, orb, pvt
      ! An array of used projections for this "molecule"
      ! The region contains the levels that constitute a single projection
-     type(tRegion), allocatable :: proj(:)
+     type(tRgn), allocatable :: proj(:)
      ! The actual projection state for a single level
      ! Instead of saving N times (orb%n,orb%n) we need only saving N times orb%n vectors
-     type(tRegion) :: lvls
+     type(tRgn) :: lvls
      complex(dp), allocatable :: p(:,:)
   end type tProjMol
   type(tProjMol), allocatable :: mols(:)
@@ -149,7 +149,7 @@ contains
 
     integer, intent(in) :: na_u
     integer, intent(in) :: lasto(0:na_u)
-    type(tRegion), intent(in) :: a_Dev, o_Dev
+    type(tRgn), intent(in) :: a_Dev, o_Dev
     type(dict), intent(inout) :: save_DATA
 
     ! Local variables
@@ -158,7 +158,7 @@ contains
     integer :: N_proj, N, n_orb
     integer :: im, ip, i
     character(len=PROJ_NAME_LEN) :: char, name
-    type(tRegion) :: r_tmp, r_tmp2
+    type(tRgn) :: r_tmp, r_tmp2
     logical :: ltmp
 
     ! Count number of molecules
@@ -255,8 +255,8 @@ contains
 
              ! Add the atom to the list
              call fdf_brange(pline,r_tmp,1,na_u)
-             call region_copy(mols(im)%atom,r_tmp2)
-             call region_union(r_tmp2,r_tmp,mols(im)%atom)
+             call rgn_copy(mols(im)%atom,r_tmp2)
+             call rgn_union(r_tmp2,r_tmp,mols(im)%atom)
 
           else if ( leqi(char,'Gamma') ) then
              
@@ -273,7 +273,7 @@ contains
 
           end if
        end do
-       call region_delete(r_tmp,r_tmp2)
+       call rgn_delete(r_tmp,r_tmp2)
        if ( N_proj == 0 ) then
           call die('Error in projection block, &
                &you have not specified any projections.')
@@ -293,24 +293,24 @@ contains
        ! We check that the projection is completely contained
        ! in the device region, if not then a projection of 
        ! eigenstates does not really make sense...
-       call region_union(a_Dev,mols(im)%atom,r_tmp)
+       call rgn_union(a_Dev,mols(im)%atom,r_tmp)
        if ( r_tmp%n /= a_Dev%n ) then
           call die('Molecule not fully contained in the device &
                &region, please correct input')
        end if
-       call region_delete(r_tmp)
+       call rgn_delete(r_tmp)
 
-       call region_Atom2Orb(mols(im)%atom,na_u,lasto,mols(im)%orb)
+       call rgn_Atom2Orb(mols(im)%atom,na_u,lasto,mols(im)%orb)
        mols(im)%orb%name = 'Orbitals'
 
        ! Save number of orbitals in molecule
        n_orb = mols(im)%orb%n
 
        ! Sort the orbitals according to the device region
-       call region_copy(mols(im)%orb,mols(im)%pvt)
+       call rgn_copy(mols(im)%orb,mols(im)%pvt)
        ip = 0
        do i = 1 , o_Dev%n
-          if ( 0 < region_pivot(mols(im)%pvt,o_Dev%r(i)) ) then
+          if ( 0 < rgn_pivot(mols(im)%pvt,o_Dev%r(i)) ) then
              ip = ip + 1
              mols(im)%orb%r(ip) = o_Dev%r(i)
           end if
@@ -318,7 +318,7 @@ contains
        if ( ip /= n_orb ) call die('Error in orbitals sorting')
 
        ! Create the pivot table
-       mols(im)%pvt%r(:) = region_pivot(o_Dev,mols(im)%orb%r(:))
+       mols(im)%pvt%r(:) = rgn_pivot(o_Dev,mols(im)%orb%r(:))
 
        ! Re-read, and then we read in the projections... :)
        call fdf_brewind(bfdf)
@@ -327,7 +327,7 @@ contains
        allocate(mols(im)%proj(N_proj))
 
        ! Initialize levels 
-       call region_delete(mols(im)%lvls)
+       call rgn_delete(mols(im)%lvls)
 
        ip = 0
        do while ( fdf_bline(bfdf,pline) ) 
@@ -362,18 +362,18 @@ contains
                    ! We do not know whether all levels
                    ! are below/above the Fermi level.
                    call fdf_brange(pline,r_tmp,-n_orb,n_orb)
-                   call region_copy(mols(im)%proj(ip),r_tmp2)
-                   call region_union(r_tmp2,r_tmp,mols(im)%proj(ip))
+                   call rgn_copy(mols(im)%proj(ip),r_tmp2)
+                   call rgn_union(r_tmp2,r_tmp,mols(im)%proj(ip))
 
                 end if
 
              end do
 
              ! Remove 0 (Ef) from the levels
-             call region_range(r_tmp,0,0)
-             call region_complement(r_tmp,mols(im)%proj(ip), &
+             call rgn_range(r_tmp,0,0)
+             call rgn_complement(r_tmp,mols(im)%proj(ip), &
                   mols(im)%proj(ip))
-             call region_delete(r_tmp,r_tmp2)
+             call rgn_delete(r_tmp,r_tmp2)
 
              ! A projection has to have at least one projection state
              if ( mols(im)%proj(ip)%n < 1 ) then
@@ -389,8 +389,8 @@ contains
              mols(im)%proj(ip)%name = name
 
              ! Create union of all levels 
-             call region_union(mols(im)%lvls,mols(im)%proj(ip),r_tmp)
-             call region_copy(r_tmp,mols(im)%lvls)
+             call rgn_union(mols(im)%lvls,mols(im)%proj(ip),r_tmp)
+             call rgn_copy(r_tmp,mols(im)%lvls)
 
           end if
 
@@ -406,15 +406,15 @@ contains
        ! Take all projections and make them index based
        do ip = 1 , N_proj
 
-          call region_copy(mols(im)%proj(ip),r_tmp)
+          call rgn_copy(mols(im)%proj(ip),r_tmp)
 
-          mols(im)%proj(ip)%r(:) = region_pivot(mols(im)%lvls,r_tmp%r(:))
+          mols(im)%proj(ip)%r(:) = rgn_pivot(mols(im)%lvls,r_tmp%r(:))
 
        end do
 
     end do
 
-    call region_delete(r_tmp,r_tmp2)
+    call rgn_delete(r_tmp,r_tmp2)
     
   end subroutine init_proj
 
@@ -431,7 +431,7 @@ contains
     logical :: first_P
     type(Elec), pointer :: El_L, El
     type(tProjMol), pointer :: mol
-    type(tRegion) :: r_tmp
+    type(tRgn) :: r_tmp
     logical, allocatable :: checked(:,:)
 
     if ( Node /= 0 ) return
@@ -465,17 +465,17 @@ contains
        !else
        !   write(*,'(a)')'   DOS projection: False'
        !end if
-       call region_print(mols(im)%atom, seq_max = 8 , indent = 3)
+       call rgn_print(mols(im)%atom, seq_max = 8 , indent = 3)
        write(*,'(a)') '  * Different projections:'
        do ip = 1 , size(mols(im)%proj)
 
-          call region_copy(mols(im)%proj(ip),r_tmp)
+          call rgn_copy(mols(im)%proj(ip),r_tmp)
           do iE = 1 , r_tmp%n
              r_tmp%r(iE) = mols(im)%lvls%r(r_tmp%r(iE))
           end do
           
-          call region_print(r_tmp, seq_max = 12 , indent = 5)
-          call region_delete(r_tmp)
+          call rgn_print(r_tmp, seq_max = 12 , indent = 5)
+          call rgn_delete(r_tmp)
 
           do iE = 1 , N_Elec
              if ( leqi(mols(im)%proj(ip)%name,Elecs(iE)%name) ) then
@@ -580,7 +580,7 @@ contains
              if ( ProjMolEl_same(proj_T(it)%L, &
                   Elecs(iE),mols(im),proj_T(it)%L%idx) ) then
                 ! The Left is the same
-                call region_union(mols(im)%orb,Elecs(iE)%o_inD,r_tmp)
+                call rgn_union(mols(im)%orb,Elecs(iE)%o_inD,r_tmp)
                 if ( r_tmp%n /= mols(im)%orb%n ) then
                    ! The overlap region does not fully co-incide
                    ! with the molecule region.
@@ -598,7 +598,7 @@ contains
                 ! if the electrode is the same
                 if ( ProjMolEl_same(proj_T(it)%R(ip), &
                      Elecs(iE),mols(im),proj_T(it)%R(ip)%idx) ) then
-                   call region_union(mols(im)%orb,Elecs(iE)%o_inD,r_tmp)
+                   call rgn_union(mols(im)%orb,Elecs(iE)%o_inD,r_tmp)
                    if ( r_tmp%n /= mols(im)%orb%n ) then
                    ! The overlap region does not fully co-incide
                    ! with the molecule region.
@@ -614,7 +614,7 @@ contains
        end do
     end do
 
-    call region_delete(r_tmp)
+    call rgn_delete(r_tmp)
 
   end subroutine proj_print
 
@@ -1255,19 +1255,19 @@ contains
 
     character(len=*), intent(in) :: fname
     type(tTSHS), intent(inout) :: TSHS
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: nkpt, NE
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
-    type(tRegion), intent(in) :: a_Dev
-    type(tRegion), intent(in) :: a_Buf
+    type(tRgn), intent(in) :: a_Dev
+    type(tRgn), intent(in) :: a_Buf
     type(Sparsity), intent(inout) :: sp_dev
     type(dict), intent(in) :: save_DATA
 
     type(hNCDF) :: ncdf, grp, grp2, grp3
-    type(tRegion) :: r_tmp
+    type(tRgn) :: r_tmp
     integer :: cmp_lvl
     integer :: no, im, Np, ip, i, ik, iN, iE
     integer :: it, ipt
@@ -1383,7 +1383,7 @@ contains
              call check(dic,is_same,'Projection levels does not &
                   &conform to the current simulation.')
 
-             call region_copy(mols(im)%proj(ip),r_tmp)
+             call rgn_copy(mols(im)%proj(ip),r_tmp)
              do iE = 1 , r_tmp%n
                 r_tmp%r(iE) = mols(im)%lvls%r(r_tmp%r(iE))
              end do
@@ -1682,7 +1682,7 @@ contains
           dic = dic//('info'.kv.'State levels associated with this projection')
           call ncdf_def_var(grp2,'lvl',NF90_INT,(/'nlvl'/), atts = dic)
           ! Create the correct indices
-          call region_copy(mols(im)%proj(ip),r_tmp)
+          call rgn_copy(mols(im)%proj(ip),r_tmp)
           do iE = 1 , r_tmp%n
              r_tmp%r(iE) = mols(im)%lvls%r(r_tmp%r(iE))
           end do
@@ -1760,7 +1760,7 @@ contains
 
        end do
        call delete(dic)
-       call region_delete(r_tmp)
+       call rgn_delete(r_tmp)
 
        ! Allocate space for calculating the Eigen-values of
        ! the MPSH
@@ -2478,7 +2478,7 @@ contains
           
           ! Calculate <| M
           do ind = l_ptr(lio) + 1 , l_ptr(lio) + ncol(lio)
-             j = region_pivot(mols(im)%orb,l_col(ind))
+             j = rgn_pivot(mols(im)%orb,l_col(ind))
              if ( j == 0 ) cycle
              ! this is per level in the system
              do ip = 1 , Npl
@@ -2727,7 +2727,7 @@ contains
   ! Projects the projection state onto a transposed matrix
   subroutine proj_bMtk(mol,orb,Mt,bMk,nwork,work)
     type(tProjMol), intent(in) :: mol
-    type(tRegion), intent(in) :: orb ! The orbitals of the current matrix
+    type(tRgn), intent(in) :: orb ! The orbitals of the current matrix
     complex(dp), intent(in) :: Mt(orb%n,orb%n)
     complex(dp), intent(out) :: bMk(mol%lvls%n,mol%lvls%n)
     integer, intent(in) :: nwork
@@ -2772,7 +2772,7 @@ contains
   ! |1>_j * <1| + |2>_j * <2|  for all states in the projector
   subroutine proj_state_bra(mol,proj,j,p)
     type(tProjMol), intent(in) :: mol
-    type(tRegion), intent(in) :: proj
+    type(tRgn), intent(in) :: proj
     integer, intent(in) :: j ! column j (corresponds to the index of p)
     complex(dp), intent(out) :: p(mol%orb%n)
 
@@ -2799,7 +2799,7 @@ contains
   subroutine proj_sort(r,mol,il,psort)
     ! The region on which we wish to create
     ! an aligned projector.
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The molecule
     type(tProjMol), intent(in) :: mol
     ! The level that we want to create the ket of
@@ -2812,7 +2812,7 @@ contains
     
     do i = 1 , r%n
        ! Copy over the projector to the assigned index
-       psort(i) = mol%p(region_pivot(mol%orb,r%r(i)),il)
+       psort(i) = mol%p(rgn_pivot(mol%orb,r%r(i)),il)
     end do
     
   end subroutine proj_sort

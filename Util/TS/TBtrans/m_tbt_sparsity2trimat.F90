@@ -162,7 +162,7 @@ contains
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     ! The region that we will create a tri-diagonal matrix on.
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! The sizes of the parts in the tri-diagonal matrix
     integer, intent(out) :: parts
     integer, pointer :: n_part(:)
@@ -780,16 +780,16 @@ contains
     use geom_helper, only : UCORB
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! the row which we will check for (in TranSIESTA counting)
     integer, intent(in) :: row 
     ! The result
     integer :: max_col, ptr, nr, j
     integer, pointer :: l_col(:), l_ptr(:), ncol(:)
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col,nrows_g=nr)
-    max_col = region_pivot(r,row)
+    max_col = rgn_pivot(r,row)
     do ptr = l_ptr(row) + 1 , l_ptr(row) + ncol(row)
-       j = region_pivot(r,ucorb(l_col(ptr),nr))
+       j = rgn_pivot(r,ucorb(l_col(ptr),nr))
        if ( j > 0 ) then
           max_col = max(max_col,j)
        end if
@@ -801,16 +801,16 @@ contains
     use geom_helper, only : UCORB
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     ! the row which we will check for (in TranSIESTA counting)
     integer, intent(in) :: row
     ! The result
     integer :: min_col, ptr, nr, j
     integer, pointer :: l_col(:), l_ptr(:), ncol(:)
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col,nrows_g=nr)
-    min_col = region_pivot(r,row)
+    min_col = rgn_pivot(r,row)
     do ptr = l_ptr(row) + 1 , l_ptr(row) + ncol(row)
-       j = region_pivot(r,ucorb(l_col(ptr),nr))
+       j = rgn_pivot(r,ucorb(l_col(ptr),nr))
        if ( j > 0 ) then
           min_col = min(min_col,j)
        end if
@@ -819,7 +819,7 @@ contains
 
   function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val) 
     integer, intent(in) :: no, mm_col(2,no)
-    type(tRegion), intent(in) :: r
+    type(tRgn), intent(in) :: r
     integer, intent(in) :: parts, n_part(parts), last_eq
     integer :: val
     ! Local variables

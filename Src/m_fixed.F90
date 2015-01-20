@@ -497,7 +497,7 @@ contains
     integer :: if
     character(len=70) :: name
 
-    type(tRegion) :: r
+    type(tRgn) :: r
 
 
     if ( Node /= 0 ) return
@@ -521,17 +521,17 @@ contains
 
     do if = 1 , N_fix 
 
-       call region_list(r,fixs(if)%n,fixs(if)%a)
+       call rgn_list(r,fixs(if)%n,fixs(if)%a)
        r%name = trim(fixs(if)%type)
        name = 'siesta: Constraint'
        if ( index(r%name,'dir') > 0 ) then
           ! the name should include the fixation vector
           write(name,'(a,2(tr1,e10.4,'',''),tr1,e10.4,a)') 'siesta: Constraint v=[',fixs(if)%fix,']'
        end if
-       call region_print(r, name = trim(name), seq_max = 12)
+       call rgn_print(r, name = trim(name), seq_max = 12)
        
     end do
-    call region_delete(r)
+    call rgn_delete(r)
 
     write(*,*) ! newline
 
@@ -556,7 +556,7 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline
 
-    type(tRegion) :: rr
+    type(tRgn) :: rr
 
     ! Initialise stress constraints to unconstrained state
     xs(:) = 0._dp
@@ -642,7 +642,7 @@ contains
           fixs(ifix)%a(:) = rr%r(:)
 
           ! Clean-up
-          call region_delete(rr)
+          call rgn_delete(rr)
 
           ! Now read in the constraints if available
           
@@ -688,7 +688,7 @@ contains
           fixs(ifix)%a(:) = rr%r(:)
 
           ! Clean-up
-          call region_delete(rr)
+          call rgn_delete(rr)
 
           ! Here are two variants
           ! If no reals exists on this line we will force
@@ -735,7 +735,7 @@ contains
           fixs(ifix)%a(:) = rr%r(:)
 
           ! Clean-up
-          call region_delete(rr)
+          call rgn_delete(rr)
 
           ! Here are two variants
           ! If no reals exists on this line we will force
@@ -783,7 +783,7 @@ contains
           fixs(ifix)%a(:) = rr%r(:)
 
           ! Clean-up
-          call region_delete(rr)
+          call rgn_delete(rr)
 
           fixs(ifix)%type = 'com'
 
@@ -802,7 +802,7 @@ contains
           fixs(ifix)%a(:) = rr%r(:)
 
           ! Clean-up
-          call region_delete(rr)
+          call rgn_delete(rr)
 
           fixs(ifix)%type = 'center'
 

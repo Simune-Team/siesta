@@ -53,7 +53,7 @@ contains
   subroutine calc_sqrt_S_Gamma(spS,orb,S_sq)
     use m_ts_sparse_helper, only : create_U
     type(dSpData1D), intent(inout) :: spS
-    type(tRegion), intent(in) :: orb
+    type(tRgn), intent(in) :: orb
     real(dp), intent(out) :: S_sq(orb%n,orb%n)
 
     ! Local variables
@@ -138,7 +138,7 @@ contains
     use m_ts_sparse_helper, only : create_U
     type(dSpData2D), intent(inout) :: spH
     type(dSpData1D), intent(inout) :: spS
-    type(tRegion), intent(in) :: orb
+    type(tRgn), intent(in) :: orb
     real(dp), intent(out) :: eig(orb%n), state(orb%n,orb%n)
 
     type(OrbitalDistribution), pointer :: dit
@@ -242,7 +242,7 @@ contains
     type(dSpData1D), intent(inout) :: spS
     integer, intent(in) :: nsc
     real(dp), intent(in) :: sc_off(3,nsc)
-    type(tRegion), intent(in) :: orb
+    type(tRgn), intent(in) :: orb
     complex(dp), intent(out) :: S_sq(orb%n,orb%n)
     real(dp), intent(in) :: kpt(3)
 
@@ -337,7 +337,7 @@ contains
     type(dSpData1D), intent(inout) :: spS
     integer, intent(in) :: nsc
     real(dp), intent(in) :: sc_off(3,nsc)
-    type(tRegion), intent(in) :: orb
+    type(tRgn), intent(in) :: orb
     real(dp), intent(out) :: eig(orb%n)
     complex(dp), intent(out) :: state(orb%n,orb%n)
     real(dp), intent(in) :: kpt(3)

@@ -140,7 +140,7 @@ module m_ts_electype
 
 #ifdef TBTRANS
      ! The region of the down-folded region
-     type(tRegion) :: o_inD, inDpvt
+     type(tRgn) :: o_inD, inDpvt
 #endif
 
      ! The basal plane of the electrode

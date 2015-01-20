@@ -134,16 +134,16 @@ contains
     type(tTSHS), intent(in) :: TSHS
     ! The device region that we are checking
     ! This is the device regions pivot-table!
-    type(tRegion), intent(in) :: r 
+    type(tRgn), intent(in) :: r 
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: nkpt
     real(dp), intent(in), target :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
-    type(tRegion), intent(in) :: a_Dev
+    type(tRgn), intent(in) :: a_Dev
     ! In case the system has some buffer atoms.
-    type(tRegion), intent(in) :: a_Buf
+    type(tRgn), intent(in) :: a_Buf
     ! The device sparsity pattern
     type(Sparsity), intent(inout) :: sp_dev
     ! Options read from tbt_options

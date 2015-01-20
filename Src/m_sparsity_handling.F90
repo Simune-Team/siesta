@@ -155,7 +155,7 @@ contains
     ! The output sparsity pattern
     type(Sparsity), intent(inout) :: out
     ! The region that we restrict our limitation to
-    type(tRegion), intent(in), optional :: r
+    type(tRgn), intent(in), optional :: r
     
     ! ** local variables
     ! tssp variables
@@ -164,7 +164,7 @@ contains
     integer, allocatable :: num(:), listptr(:), list(:)
     integer :: lio, io, ind, indx, is
 
-    type(tRegion) :: rin
+    type(tRgn) :: rin
 
     ! set the connections to zero for the supplied atoms
     ! We do NOT reduce the sparsity row-size, ONLY the number of
@@ -174,9 +174,9 @@ contains
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     if ( present(r) ) then
-       call region_copy(r,rin)
+       call rgn_copy(r,rin)
     else
-       call region_range(rin,1,no_u)
+       call rgn_range(rin,1,no_u)
     end if
 
     allocate(num(no_l))
@@ -190,7 +190,7 @@ contains
        if ( l_ncol(lio) /= 0 ) then
 
        io = index_local_to_global(dit,lio)
-       if ( .not. in_region(rin,io) ) then
+       if ( .not. in_rgn(rin,io) ) then
           ! we are not asked to remove these cross-terms
           num(lio) = l_ncol(lio)
 
@@ -198,7 +198,7 @@ contains
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-          if ( in_region(rin,ucorb(l_col(ind),no_u)) ) then
+          if ( in_rgn(rin,ucorb(l_col(ind),no_u)) ) then
 
              is = (l_col(ind)-1)/no_u
              if ( isc_off(dir,is) /= 0 ) cycle
@@ -234,7 +234,7 @@ contains
        if ( num(lio) == 0 ) cycle
 
        io = index_local_to_global(dit,lio)
-       if ( .not. in_region(rin,io) ) then
+       if ( .not. in_rgn(rin,io) ) then
           ! we are not asked to remove these cross-terms
           ind = l_ptr(lio)
           list(indx+1:indx+l_ncol(lio)) = l_col(ind+1:ind+l_ncol(lio))
@@ -244,7 +244,7 @@ contains
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-          if ( in_region(rin,UCORB(l_col(ind),no_u)) ) then
+          if ( in_rgn(rin,UCORB(l_col(ind),no_u)) ) then
              
              is = (l_col(ind)-1)/no_u
              if ( isc_off(dir,is) /= 0 ) cycle
@@ -267,7 +267,7 @@ contains
          name='T '//trim(name(in)), &
          ncols=ncols(in),ncols_g=ncols_g(in))
 
-    call region_delete(rin)
+    call rgn_delete(rin)
     
     ! Clean up
     deallocate(num,listptr,list)
@@ -280,7 +280,7 @@ contains
     ! sparsity pattern to be reduced
     type(Sparsity), intent(inout) :: in
     ! The region we wish to remove
-    type(tRegion), intent(in) :: rr
+    type(tRgn), intent(in) :: rr
     ! The region of orbitals that will be removed
     type(Sparsity), intent(inout) :: out
     
@@ -310,12 +310,12 @@ contains
 
        io = index_local_to_global(dit,lio)
 
-       if ( .not. in_region(rr,io) ) then
+       if ( .not. in_rgn(rr,io) ) then
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
           
           jo = ucorb(l_col(ind),no_u)
-          if ( in_region(rr,jo) ) cycle
+          if ( in_rgn(rr,jo) ) cycle
        
           ! The orbital exists on the atom
           num(lio) = num(lio) + 1
@@ -343,12 +343,12 @@ contains
     do lio = 1 , no_l
 
        io = index_local_to_global(dit,lio)
-       if ( in_region(rr,io) ) cycle
+       if ( in_rgn(rr,io) ) cycle
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
           jo = ucorb(l_col(ind),no_u)
-          if ( in_region(rr,jo) ) cycle
+          if ( in_rgn(rr,jo) ) cycle
 
           indx = indx + 1
 
@@ -371,17 +371,17 @@ contains
     
   end subroutine Sp_remove_region
 
-  subroutine Sp_retain_region(dit,in,rr,out)
+  subroutine Sp_retain_rgn(dit,in,rr,out)
     ! The distribution this sparsity pattern lives in
     type(OrbitalDistribution), intent(in) :: dit
     ! sparsity pattern to be reduced
     type(Sparsity), intent(inout) :: in
     ! The region to retain
-    type(tRegion), intent(in) :: rr
+    type(tRgn), intent(in) :: rr
     ! The region of orbitals that will be removed
     type(Sparsity), intent(inout) :: out
     
-    type(tRegion) :: full, rem_r
+    type(tRgn) :: full, rem_r
     integer :: no_u
 
     call attach(in,nrows_g=no_u)
@@ -391,18 +391,18 @@ contains
     ! and then remove that!
     ! HOW genius! :)
 
-    call region_range(full,1,no_u)
+    call rgn_range(full,1,no_u)
     
     ! create complement of rem_r
-    call region_complement(rr,full,rem_r)
+    call rgn_complement(rr,full,rem_r)
     ! clean-up
-    call region_delete(full)
+    call rgn_delete(full)
 
     call Sp_remove_region(dit,in,rem_r,out)
 
-    call region_delete(rem_r)
+    call rgn_delete(rem_r)
     
-  end subroutine Sp_retain_region
+  end subroutine Sp_retain_rgn
 
   subroutine Sp_remove_region2region(dit,in,r1,r2,out)
     ! The distribution this sparsity pattern lives in
@@ -410,7 +410,7 @@ contains
     ! sparsity pattern to be reduced
     type(Sparsity), intent(inout) :: in
     ! The cross-terms "from" and "to", or "to" and "from"
-    type(tRegion), intent(in) :: r1, r2
+    type(tRgn), intent(in) :: r1, r2
     ! The region of orbitals that will be removed
     type(Sparsity), intent(inout) :: out
     
@@ -440,9 +440,9 @@ contains
 
        io = index_local_to_global(dit,lio)
 
-       if ( in_region(r1,io) ) then
+       if ( in_rgn(r1,io) ) then
           ridx = 1
-       else if ( in_region(r2,io) ) then
+       else if ( in_rgn(r2,io) ) then
           ridx = 2
        else
           ridx = 0
@@ -458,10 +458,10 @@ contains
              ! the i'th orbital is in region 1
              ! now if jo is in region 2 we have a match
              ! and remove that orbital connection
-             if ( in_region(r2,jo) ) cycle
+             if ( in_rgn(r2,jo) ) cycle
           else if ( ridx == 2 ) then
              jo = ucorb(l_col(ind),no_u)
-             if ( in_region(r1,jo) ) cycle
+             if ( in_rgn(r1,jo) ) cycle
           end if
        
           ! The orbital exists on the atom
@@ -490,9 +490,9 @@ contains
     do lio = 1 , no_l
 
        io = index_local_to_global(dit,lio)
-       if ( in_region(r1,io) ) then
+       if ( in_rgn(r1,io) ) then
           ridx = 1
-       else if ( in_region(r2,io) ) then
+       else if ( in_rgn(r2,io) ) then
           ridx = 2
        else
           ridx = 0
@@ -505,10 +505,10 @@ contains
              ! the i'th orbital is in region 1
              ! now if jo is in region 2 we have a match
              ! and remove that orbital connection
-             if ( in_region(r2,jo) ) cycle
+             if ( in_rgn(r2,jo) ) cycle
           else if ( ridx == 2 ) then
              jo = ucorb(l_col(ind),no_u)
-             if ( in_region(r1,jo) ) cycle
+             if ( in_rgn(r1,jo) ) cycle
           end if
 
           indx = indx + 1
