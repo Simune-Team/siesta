@@ -55,8 +55,10 @@ contains
 
     ! broadening
     tbt_Eta = fdf_get('TBT.Contours.Eta',0._dp,'Ry')
-    if ( tbt_Eta < 0._dp ) call die('ERROR: Eta < 0, we do not allow &
-         &for using the advanced Greens function, please correct.')
+    if ( tbt_Eta < 0._dp .and. Node == 0 ) then
+       write(*,'(a)')'*** NOTICE ***'
+       write(*,'(a)')'tbtrans will use the advanced Green function'
+    end if
 
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input

@@ -10,9 +10,21 @@ module fdf_extra
   
   private
   
+  public :: fdf_bnext
   public :: fdf_brange
   
 contains
+
+  function fdf_bnext(bfdf,pline) result(has)
+    type(block_fdf), intent(inout) :: bfdf
+    type(parsed_line), pointer :: pline
+    logical :: has
+    do 
+       has = fdf_bline(bfdf,pline)
+       if ( .not. has ) return
+       if ( fdf_bntokens(pline) > 0 ) return
+    end do
+  end function fdf_bnext
 
   subroutine fdf_brange(pline,r,low,high)
     type(parsed_line), pointer :: pline

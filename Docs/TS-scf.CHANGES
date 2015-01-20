@@ -1,4 +1,122 @@
 ----------------------------------------------------
+January 20, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-251
+Added different k-regions and enabled easier kgrids
+
+* Changed the way the k-grid blocks are 
+  used.
+
+  Every k-grid block can now has some additional
+  options:
+   - The grid does not need to specify the last
+     digit for the k-displacement.
+     It is now optional, defaulting to 0.
+   - Adding a line called "displacement"
+     enables direct specification of 3 digits
+     as a way to make it more clear
+   - Adding a line called "size" 
+     enables a rescaling of the k-grid zone
+     by reducing the size.
+     Thus one can easily make a MP grid 
+     in a narrow zone around the displacement
+     point. The weights will equally be scaled.
+   - Instead of using the TBT.k.File
+     A line called "list"
+     enables the direct input of the 
+     k-points in the fdf file.
+     It is formatted much like the TBT.k.File
+     like:
+       line <nkpt>
+         <kpt-1-A> <kpt-1-B> <kpt-1-C> [<wkpt-1>]
+         ...
+     the weight is optional, if the first line 
+     has weight, then all subsequent lines MUST have
+     the weight as well.
+     If it does not exist, they will have equal weights.
+
+* Enabled the calculation of transport
+  from k to k' in a very generic way.
+  
+  In principle you can do:
+   k1 -> k2 -> k3 -> ... -> kn
+  if you have n different periodic regions.
+
+  This enables a new type of investigation 
+  which have not been possible before.
+  
+  Initial tests does not indicate that it has
+  any importance.
+
+  One does this by creating different regions
+  of atoms using this block:
+
+   %block TBT.Atoms.k
+     A from 2 to 4
+     A from 7 to 8
+     B from 5 to 6
+   %endblock
+  note that each region is accumulative.
+
+  The first name is the name of that region.
+  For each region one can specify a MP grid by:
+    %block TBT.Atoms.k.A
+      <regular k-grid specification, following
+       the just added contribution>
+      offset B
+    %endblock
+  which tells TBtrans that each k-point in B will
+  be permutated using all the k-points in A.
+
+  Note that with three regions, you can have 2 offsets
+  enabling a very complex permutation tree.
+
+  You do not need to specify all kgrids, if not
+  specified it will default to the TBT.kgrid_Monkhorst_Pack
+  grid.
+
+  NOTE: currently the k-regions does not check whether the
+  regions are separated by non-periodic regions. Nor does
+  it check whether the regions actually contain any periodicity.
+  That will have to be up to the user.
+
+  The k-points for each region will be written out to
+  the files:
+    <syslabel>.TBT.<region-name>.BKP
+  to denote that they are written in reciprocal cell units [-.5;0.5]
+
+  This method requires the self-energies to be calculated on the fly.
+
+* Enabled the calculation of the transport using the advanced Green function.
+
+* Corrected the ETA for calculations with 2 spin channels.
+
+added:
+  Util/TS/TB/Examples/D_zz_size.fdf
+  Util/TS/TBtrans/m_tbt_kregions.F90
+  Util/TS/TBtrans/m_tbt_sparse_helper.F90
+modified:
+  Src/fdf_extra.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse_helper.F90
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+  Util/TS/TBtrans/tbt_init.F90
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 January 19, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-250
 Changed repeat/tile in TB python script
 

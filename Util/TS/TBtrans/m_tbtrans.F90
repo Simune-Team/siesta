@@ -32,11 +32,11 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
 
+    use m_region
+
     use m_tbt_contour
-    use m_tbt_kpoint, only : nkpnt
 
     use m_ts_electype
-
 
     use m_tbt_options, only : N_Elec, Elecs
 #ifdef NCDF_4
@@ -44,10 +44,13 @@ contains
     use m_tbt_options, only : save_DATA
     use m_tbt_options, only : cdf_fname, cdf_fname_sigma, cdf_fname_proj
     use m_tbt_regions, only : r_aDev, r_aBuf, r_oDev, sp_dev
+    use m_tbt_kregions, only : n_k, r_k, kregion_step, kregion_k
 
     use m_tbt_save
     use m_tbt_proj, only : N_mol, mols, init_proj_save
     use m_tbt_sigma_save, only : init_Sigma_save
+#else
+    use m_tbt_kpoint, only : nkpnt
 #endif
 
     use m_ts_gf, only : read_Green
@@ -67,9 +70,13 @@ contains
 ! ****************** Electrode variables *********************
     integer, allocatable :: nq(:)
 ! ************************************************************
+    ! Temporary variables
+    integer :: nkpt
+    real(dp), pointer :: kpt(:,:), wkpt(:)
+    real(dp) :: k(3)
 
 ! * local variables
-    integer :: iEl, NEn, no_used, no_used2, ispin, ils
+    integer :: iEl, NEn, no_used, no_used2, ispin, ils, i
 
     ! Total number of energy-points...
     NEn = N_TBT_E()
@@ -155,6 +162,23 @@ contains
     end do
 
     call open_GF(N_Elec,Elecs,uGF,nkpnt,NEn,spin_idx)
+    if ( n_k > 0 ) then
+       ! We initialize the region that belongs to
+       ! each electrode
+       do iEl = 1 , N_Elec
+          uGF(iEl) = -1
+          do ils = 0 , n_k
+             if ( in_region(r_k(ils)%atm,Elecs(iEl)%idx_a) ) then
+                uGF(iEl) = ils
+                exit
+             end if
+          end do
+          if ( uGF(iEl) == -1 ) then
+             call die('Error in setting up different k-regions, &
+                  &all electrodes are not fully contained.')
+          end if
+       end do
+    end if
     
     do ils = 1 , TSHS%nspin
 
@@ -181,6 +205,26 @@ contains
        end if
 
 #ifdef NCDF_4
+       if ( n_k == 0 ) then
+          nkpt =  nkpnt
+          kpt  => kpoint(:,:)
+          wkpt => kweight(:)
+       else
+          nullify(kpt,wkpt)
+          nkpt = 1
+          do i = 0 , n_k
+             nkpt = nkpt * size(r_k(i)%wkpt)
+          end do
+          allocate(kpt(3,nkpt),wkpt(nkpt))
+          r_k(:)%ik   = 1
+          r_k(n_k)%ik = 0
+          do i = 1 , nkpt
+             call kregion_step( )
+             call kregion_k(-1, k, w = wkpt(i) )
+             call kpoint_convert(TSHS%cell,k,kpt(:,i),1)
+          end do
+       end if
+
        ! If the user has requested only to calculate
        ! the projections, we do not initialize the cdf_fname
        if ( ('proj-only'.nin.save_DATA).and.('Sigma-only'.nin.save_DATA) ) then
@@ -188,16 +232,19 @@ contains
           ! Initialize data files
           call name_save( ispin, TSHS%nspin,cdf_fname, end = 'nc')
           call init_cdf_save(cdf_fname,TSHS,r_oDev,ispin,N_Elec, Elecs, &
-               nkpnt, kpoint, kweight, NEn, r_aDev, r_aBuf, sp_dev, save_DATA )
+               nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf, sp_dev, save_DATA )
        end if
        
        call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'Sigma.nc')
        call init_Sigma_save(cdf_fname_sigma,TSHS,r_oDev,ispin,N_Elec, Elecs, &
-            nkpnt, kpoint, kweight, NEn, r_aDev, r_aBuf )
+            nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf )
        
        call name_save( ispin, TSHS%nspin, cdf_fname_proj, end = 'Proj.nc' )
        call init_Proj_save( cdf_fname_proj, TSHS , r_oDev, ispin, N_Elec, Elecs, &
-            nkpnt, kpoint, kweight, NEn , r_aDev, r_aBuf, sp_dev, save_DATA )
+            nkpt, kpt, wkpt, NEn , r_aDev, r_aBuf, sp_dev, save_DATA )
+       if ( n_k /= 0 ) then
+          deallocate(kpt,wkpt)
+       end if
 #endif
 
        call tbt_trik(ispin,N_Elec, Elecs, TSHS, nq, uGF)

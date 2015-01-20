@@ -102,8 +102,13 @@ contains
     use m_tbt_proj, only : proj_bMtk, proj_cdf_save_bGammak
     use m_tbt_proj, only : proj_Mt_mix, proj_cdf_save
     use m_tbt_proj, only : proj_cdf_save_J
+
     use m_tbt_dH, only : read_next_dH, clean_dH
 #endif
+
+    use m_tbt_sparse_helper, only : create_region_HS
+    use m_tbt_kregions, only : n_k, r_k
+    use m_tbt_kregions, only : kregion_k, kregion_step, calc_GS_k
 
 ! ********************
 ! * INPUT variables  *
@@ -161,7 +166,8 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
-    real(dp) :: kpt(3), bkpt(3)
+    real(dp) :: kpt(3), bkpt(3), wkpt
+    integer :: n_kpt
 #ifdef NCDF_4
 #ifdef CONTINUATION_NOT_WORKING
     real(dp), allocatable :: calculated_E(:)
@@ -183,7 +189,7 @@ contains
 ! ************************************************************
 
 ! ******************** Timer variables ***********************
-    real(dp) :: loop_time
+    real(dp) :: loop_time, init_time
     integer  :: last_progress_print
 ! ************************************************************
 
@@ -427,8 +433,23 @@ contains
     end if
 #endif
 
+    ! Either we have the k-regions, or the regular k-grid
+    if ( n_k == 0 ) then
+       ! We have the regular k-grid
+       n_kpt = nkpnt
+    else
+       ! Calculate the permutations of the k-point regions
+       n_kpt = 1
+       do iEl = 0 , n_k
+          n_kpt = n_kpt * size(r_k(iEl)%wkpt)
+       end do
+       r_k(:)%ik = 1
+       r_k(n_k)%ik = 0
+
+    end if
+       
     ! start the itterators
-    call itt_init  (Kp,end=nkpnt)
+    call itt_init  (Kp,end=n_kpt)
     ! point to the index iterators
     call itt_attach(Kp,cur=ikpt)
 
@@ -450,12 +471,34 @@ contains
 
     ! The current progress is 0%
     last_progress_print = 0
+
+    ! In case we do several spin, then the estimated time
+    ! is wrong for the second run, hence we start and stop, and
+    ! record the initial time to take that into account
+    call timer_start('E-loop')
+    call timer_stop('E-loop')
+    call timer_get('E-loop',totTime=init_time)
     
     do while ( .not. itt_step(Kp) )
 
-       kpt(:) = kpoint(:,ikpt)
-       ! create the k-point in reciprocal space
-       call kpoint_convert(TSHS%cell,kpt,bkpt,1)
+       if ( n_k == 0 ) then
+
+          kpt(:) = kpoint(:,ikpt)
+          ! create the k-point in reciprocal space
+          call kpoint_convert(TSHS%cell,kpt,bkpt,1)
+          wkpt = kweight(ikpt)
+
+       else
+          
+          ! step the k-region
+          call kregion_step()
+
+          ! Get the k-point of the full region
+          call kregion_k(-1,bkpt,w=wkpt)
+
+          call kpoint_convert(TSHS%cell,bkpt,kpt,-1)
+
+       end if
 
 #ifdef NCDF_4
 #ifdef CONTINUATION_NOT_WORKING
@@ -465,7 +508,7 @@ contains
 
 #ifndef NCDF_4
        ! Step the k-points in the output files
-       call step_kpt_save(iounits,nkpnt,bkpt,kweight(ikpt),N_Elec, &
+       call step_kpt_save(iounits,n_kpt,bkpt,wkpt,N_Elec, &
             save_DATA)
 #endif
 
@@ -478,11 +521,19 @@ contains
 
        ! Work-arrays are for MPI distribution... (reductions)
        iE = size(S)
-       call create_HS(TSHS%dit, TSHS%sp, 0._dp, &
-            N_Elec, Elecs, TSHS%no_u, product(TSHS%nsc), &
-            iE,H(:,1), S(:), TSHS%sc_off, &
-            spH, spS, kpt, &
-            nmaxwork, maxwork) ! not used...
+       if ( n_k == 0 ) then
+          call create_HS(TSHS%dit, TSHS%sp, 0._dp, &
+               N_Elec, Elecs, TSHS%no_u, product(TSHS%nsc), &
+               iE,H(:,1), S(:), TSHS%sc_off, &
+               spH, spS, kpt, &
+               nmaxwork, maxwork) ! not used...
+       else
+          call create_region_HS(TSHS%dit,TSHS%sp, 0._dp, &
+               TSHS%cell, n_k, r_k, TSHS%na_u, TSHS%lasto, &
+               N_Elec, Elecs, TSHS%no_u, product(TSHS%nsc), &
+               iE, H(:,1), S(:), TSHS%sc_off, spH, spS, &
+               nmaxwork, maxwork)
+       end if
 
 #ifdef NCDF_4
        if ( N_mol > 0 ) then
@@ -559,8 +610,9 @@ contains
              ! Stop timer
              call timer_stop('E-loop')
 
-             ! Calculate time passed
+             ! Calculate time passed by correcting for the initial time
              call timer_get('E-loop',totTime=loop_time)
+             loop_time = loop_time - init_time
 
              if ( IONode ) then
                 loop_time = iEl * loop_time / (100._dp*real(jEl,dp))
@@ -582,9 +634,14 @@ contains
           ! *******************
           ! We have reduced the electrode sizes to only one spin-channel
           ! Hence, it will ALWAYS be the first index
-          call read_next_GS(1, ikpt, bkpt, &
-               cE, N_Elec, uGF, Elecs, &
-               nzwork, zwork, .false., forward = .false. )
+          if ( n_k == 0 ) then
+             call read_next_GS(1, ikpt, bkpt, &
+                  cE, N_Elec, uGF, Elecs, &
+                  nzwork, zwork, .false., forward = .false. )
+          else
+             call calc_GS_k(1, cE, N_Elec, Elecs, uGF, &
+                  nzwork, zwork)
+          end if
 
           call timer('read-GS',2)
 
@@ -625,9 +682,8 @@ contains
 #ifdef NCDF_4
           call state_Sigma_save(cdf_fname_Sigma, ikpt, nE, &
                N_Elec, Elecs)
-#endif
 
-#ifdef NCDF_4
+
           if ( N_proj_ME > 0 ) then
 
              call timer('Proj-Gam',1)
@@ -912,6 +968,7 @@ contains
 
              ! Calculate time passed
              call timer_get('E-loop',totTime=loop_time)
+             loop_time = loop_time - init_time
 
              if ( IONode ) then
                 iEl = itt_steps(Kp) * N_E

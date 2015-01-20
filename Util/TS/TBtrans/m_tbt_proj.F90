@@ -2664,7 +2664,6 @@ contains
   end subroutine proj_cdf_save_bGammak
 
   subroutine proj_cdf2ascii(fname,N_proj_T,proj_T,save_DATA)
-    use parallel, only : Node
     
     use units, only : eV
     use variable

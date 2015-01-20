@@ -30,6 +30,7 @@ subroutine tbt_init()
 
   use m_tbt_kpoint
   use m_tbt_regions
+  use m_tbt_kregions, only : tbt_init_kregions, tbt_print_kRegions
   use m_tbt_hs
   use m_tbt_options
   use m_tbt_contour
@@ -200,6 +201,9 @@ subroutine tbt_init()
   call tbt_init_regions(N_Elec,Elecs,TSHS%cell,TSHS%na_u,TSHS%lasto, &
        TSHS%dit,tmp_sp, &
        product(TSHS%nsc),TSHS%isc_off)
+  call tbt_init_kregions(r_aBuf,N_Elec,Elecs,TSHS%cell, &
+       TSHS%dit,tmp_sp,TSHS%na_u,TSHS%xa,TSHS%lasto, &
+       TSHS%nsc,TSHS%isc_off)
 
   call tbt_region_options( save_DATA )
 
@@ -218,6 +222,8 @@ subroutine tbt_init()
   call delete(tmp_sp)
 
   call tbt_print_regions(N_Elec, Elecs)
+
+  call tbt_print_kRegions( TSHS%cell )
 
 #ifdef NCDF_4
 

@@ -75,6 +75,12 @@ module m_ts_sparse_helper
   end interface 
   public :: create_HS
 
+  interface symmetrize_HS
+     module procedure symmetrize_HS_Gamma
+     module procedure symmetrize_HS_kpt
+  end interface 
+  public :: symmetrize_HS
+
   interface create_U
      module procedure create_Gamma_U
      module procedure create_kpt_U

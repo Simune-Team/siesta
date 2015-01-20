@@ -865,6 +865,28 @@ contains
              write(*,11) '    The initial guess for the potential profile is heavily influenced'
              write(*,11) '    by the electrode unit-cells. ***'
           end if
+       else if ( .not. elec_basal_plane ) then
+          ! The transport direction is well-defined
+          ! and the Hartree potential is fixed at the bottom of the
+          ! unit-cell of the A[ts_tdir] direction.
+          ! We will let the user know if any atoms co-incide with
+          ! the plane as that might hurt convergence a little.
+          ! First figure out the equivalent index of the transport
+          ! direction in the cartesian coordinate system.
+          call eye(3,tmp33)
+          idx = IDX_SPC_PROJ(tmp33,ucell(:,ts_tdir))
+          err = .false.
+          do i = 1 , na_u
+             ! If the distance is less than 0.5 Ang we have
+             ! the atomic core "close" to the Hartree fix plane
+             err = abs(xa(idx,i)) < 0.5_dp * Ang
+             if ( err ) exit
+          end do
+          if ( err ) then
+             write(*,'(a)')'transiesta: You can with benefit move all atoms &
+                  &in the transport direction by 0.5 Ang to remove atoms from &
+                  &the constant potential plane.'
+          end if
        end if
 
        ! Check that the unitcell does not extend into the transport direction

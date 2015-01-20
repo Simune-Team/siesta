@@ -7,121 +7,244 @@ module m_tbt_kpoint
   private
   save
 
-  logical, public   :: Gamma
-  integer, public   :: nkpnt             ! Total number of k-points
+  logical, public :: Gamma
+  integer, public :: nkpnt             ! Total number of k-points
 
   real(dp), pointer, public :: kweight(:) 
   real(dp), pointer, public :: kpoint(:,:)
 
-  integer,  public, dimension(3,3)  :: kscell = 0
-  real(dp), public, dimension(3)    :: kdispl = 0.0_dp
+  integer,  public :: kscell(3,3) = 0
+  real(dp), public :: kdispl(3) = 0.0_dp
 
-  public :: setup_kscell, setup_kpoint_grid
+  public :: setup_kpoint_grid
   public :: write_k_points
+  public :: read_kgrid
+  public :: tbt_iokp
 
 contains
 
-  subroutine setup_kscell( cell, N_Elec, Elecs )
+  subroutine read_kgrid(bName,N_Elec,Elecs,TRS,cell,kpt,wkpt, &
+       is_b, &
+       kcell,kdispl)
 
-! ***************** INPUT **********************************************
-! real*8  cell(3,3)  : Unit cell vectors in real space cell(ixyz,ivec)
-! ***************** OUTPUT *********************************************
-! logical firm_displ   : User-specified displacements (firm)?
-
-!   The relevant fdf labels are kgrid_cutoff and kgrid_Monkhorst_Pack.
-!   If both are present, kgrid_Monkhorst_Pack has priority. If none is
-!   present, the cutoff default is zero, producing only the gamma point.
-!   Examples of fdf data specifications:
-!     kgrid_cutoff  50. Bohr
-!     %block kgrid_Monkhorst_Pack  # Defines kscell and kdispl
-!     4  0  0   0.50               # (kscell(i,1),i=1,3), kdispl(1)
-!     0  4  0   0.50               # (kscell(i,2),i=1,3), kdispl(2)
-!     0  0  4   0.50               # (kscell(i,3),i=1,3), kdispl(3)
-!     %endblock kgrid_Monkhorst_Pack
-! **********************************************************************
-
+    use parallel, only : IONode
     use fdf
-    use sys,        only : die
+    use fdf_extra, only : fdf_bnext
+    use intrinsic_missing, only : EYE, VNORM, SPC_PROJ, VEC_PROJ
+    use units, only : Pi
+    use m_find_kgrid, only : find_kgrid
 
     use m_ts_electype
-    use intrinsic_missing, only : SPC_PROJ, VEC_PROJ, VNORM
-    
-    implicit          none
 
-    ! Passed variables
-    real(dp), intent(in) :: cell(3,3)
+    ! INPUT
+    character(len=*), intent(in) :: bName
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-
-    ! Local variables
-    integer :: i, j
-
-    ! For finding projected directions..
-    real(dp) :: p(3), contrib
+    ! Whether time-reversal symmetry applies
+    logical, intent(in) :: TRS
+    real(dp), intent(in) :: cell(3,3)
+    ! OUTPUT
+    real(dp), pointer :: kpt(:,:), wkpt(:)
+    logical, intent(in), optional :: is_b
+    ! Optional OUTPUT
+    integer, intent(out), optional :: kcell(3,3)
+    real(dp), intent(out), optional :: kdispl(3)
 
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
-    logical :: block_found
+    integer :: i, ik, nkpt, iEl
+    real(dp) :: rcell(3,3), displ(3), ksize(3), rtmp, p(3)
+    real(dp) :: contrib
+    integer :: kscell(3,3)
+    character(len=50) :: ctmp
 
-    block_found = fdf_block('TBT.kgrid_Monkhorst_Pack',bfdf)
-    if ( .not. block_found ) then
-       block_found = fdf_block('kgrid_Monkhorst_Pack',bfdf)
+    logical :: is_list
+
+    ! Initialize values
+    ksize(:) = 1._dp
+    displ(:) = 0._dp
+    kscell(:,:) = 0
+    kscell(1,1) = 1
+    kscell(2,2) = 1
+    kscell(3,3) = 1
+
+    ! If the block does not exist, simply 
+    ! create the Gamma-point
+    nullify(kpt,wkpt)
+
+    if ( .not. fdf_block(bName,bfdf) ) then
+       ! the block does not exist, hence the user
+       ! requests a Gamma-point.
+       allocate(kpt(3,1),wkpt(1))
+       kpt(:,:) = 0._dp
+       wkpt(:) = 1._dp
+       if ( present(kcell) ) kcell = kscell
+       if ( present(kdispl) ) kdispl = displ
+       return
     end if
 
-    if ( block_found ) then
+    ! Read in the blocks
+    ik = 0
+    is_list = .false.
+    do while ( fdf_bnext(bfdf,pline) )
+       
+       if ( fdf_bnnames(pline) > 0 ) then
 
-       do i = 1 , 3
+          ctmp = fdf_bnames(pline,1)
 
-          if ( fdf_bline(bfdf,pline) ) then
-             kscell(1,i) = fdf_bintegers(pline,1)
-             kscell(2,i) = fdf_bintegers(pline,2)
-             kscell(3,i) = fdf_bintegers(pline,3)
-             kdispl(i)   = fdf_breals(pline,1)
-          else
-             call die( 'setup_tbt_kscell: ERROR no data in' // &
-                  'kgrid_Monkhorst_Pack block' )
+          ! We have some kind of designation
+          if ( leqi(ctmp,'displacement') .or. &
+               leqi(ctmp,'displ') ) then
+
+             displ(1) = fdf_bvalues(pline,1)
+             displ(2) = fdf_bvalues(pline,2)
+             displ(3) = fdf_bvalues(pline,3)
+
+          else if ( leqi(ctmp,'size') ) then
+
+             ksize(1) = fdf_bvalues(pline,1)
+             ksize(2) = fdf_bvalues(pline,2)
+             ksize(3) = fdf_bvalues(pline,3)
+             if ( any(ksize > 1._dp) ) then
+                call die('The size of the Brillouin zone MUST be &
+                     &less than or equal to 1.')
+             end if
+
+          else if ( leqi(ctmp,'list') ) then
+
+             ! Get number of k-points
+             nkpt = fdf_bintegers(pline,1)
+             ! allocate for the k-points
+             allocate(kpt(3,nkpt),wkpt(nkpt))
+             ! reset all weights to be equal
+             wkpt(:) = 1._dp / real(nkpt,dp)
+             is_list = .false.
+             do ik = 1 , nkpt
+                if ( .not. fdf_bnext(bfdf,pline) ) &
+                     call die('Could not read correct number of k-points in list')
+
+                if ( ik == 1 .and. fdf_bnvalues(pline) > 3 ) is_list = .true.
+                kpt(1,ik) = fdf_bvalues(pline,1)
+                kpt(2,ik) = fdf_bvalues(pline,2)
+                kpt(3,ik) = fdf_bvalues(pline,3)
+
+                if ( is_list ) then
+                   if ( .not. fdf_bnvalues(pline) > 3 ) then
+                      call die('Could not read weight for k-point, &
+                           &either supply all, or none (which means equal weight)')
+                   end if
+                   wkpt(ik) = fdf_bvalues(pline,4)
+                end if
+
+             end do
+
+             ! This tells the remaining algorithm
+             ! to not create a Monkhorst-Pack grid.
+             is_list = .true.
+
           end if
 
+       else if ( fdf_bnintegers(pline) == 3 ) then
+
+          do ik = 1 , 3
+             kscell(1,ik) = fdf_bintegers(pline,1)
+             kscell(2,ik) = fdf_bintegers(pline,2)
+             kscell(3,ik) = fdf_bintegers(pline,3)
+             if ( fdf_bnvalues(pline) > 3 ) then
+                displ(ik) = fdf_bvalues(pline,4)
+             end if
+             ! To not error out of only 3 lines grids
+             if ( ik == 3 ) cycle
+             if ( .not. fdf_bnext(bfdf,pline) ) &
+                  call die('Could not read kgrid from block: '//trim(bName))
+          end do
+
+       end if
+
+    end do
+
+    if ( .not. is_list ) then
+
+       do iEl = 1 , N_Elec
+          ! project the electrode transport direction onto
+          ! the corresponding unit-cell direction
+          p = SPC_PROJ(cell,Elecs(iEl)%ucell(:,Elecs(iEl)%t_dir))
+          ! See which unitcell direction has the highest contribution
+          do i = 1 , 3 
+             ! project the unit-cell vector onto each cell component
+             contrib = VNORM(VEC_PROJ(cell(:,i),p))
+             if ( contrib > 1.e-7_dp ) then ! TODO electrode k-points
+                ! the contribution along this vector is too much
+                ! to disregard the elongation along this
+                ! direction.
+                ! We *MUST* kill all k-points in this direction
+                kscell(:,i) = 0
+                kscell(i,:) = 0
+                kscell(i,i) = 1
+                displ(i)   = 0._dp
+             end if
+          end do
+       end do
+
+       if ( present(kcell) ) kcell = kscell
+       if ( present(kdispl) ) kdispl = displ
+
+       call EYE(3, rcell, 2._dp * Pi)
+       call find_kgrid(rcell, kscell, displ, .true., &
+            TRS , &
+            nkpt, kpt, wkpt, rtmp)
+
+       ! Re-scale the k-points to the correct size
+       do ik = 1 , nkpt
+          kpt(:,ik) = kpt(:,ik) * ksize(:)
+       end do
+
+       ! Rescale the weights if the size of the
+       ! kgrid zone has been narrowed
+       ! This is simple, the basic size is 1.
+       ! hence if the size of the k-cell is 1/2
+       ! then the weights must also be 1/2
+       ! I.e. the size is the weight scale.
+       do ik = 1 , 3
+          ! we do not need to rescale if the number
+          ! of k-points in the i'th direction is
+          ! 1. (regardless of what the user says ;))
+          if ( kscell(ik,ik) == 1 ) cycle
+          wkpt(:) = wkpt(:) * ksize(ik)
        end do
 
     else
 
-       ! We only calculate the gamma point transport
-       kscell(:,:) = 0
-       do i = 1 , 3
-          kscell(i,i) = 1
+       ! Print out warning if the sum of the weights
+       ! does not equal 1
+       contrib = 0._dp
+       do ik = 1 , nkpt
+          contrib = contrib + wkpt(ik)
        end do
-       kdispl(:) = 0._dp
+
+       if ( IONode .and. abs(contrib - 1._dp) > 1.e-7_dp ) then
+          write(*,'(a)')'WARNING: Weights for k-points in &
+               & %block '//trim(bName)//' does not sum to 1.'
+       end if
 
     end if
 
-    do j = 1 , size(Elecs)
-       ! project the electrode transport direction onto
-       ! the corresponding unit-cell direction
-       p = SPC_PROJ(cell,Elecs(j)%ucell(:,Elecs(j)%t_dir))
-       ! See which unitcell direction has the highest contribution
-       do i = 1 , 3 
-          ! project the unit-cell vector onto each cell component
-          contrib = VNORM(VEC_PROJ(cell(:,i),p))
-          if ( contrib > 1.e-7_dp ) then ! TODO electrode k-points
-             ! the contribution along this vector is too much
-             ! to disregard the elongation along this
-             ! direction.
-             ! We *MUST* kill all k-points in this direction
-             kscell(:,i) = 0
-             kscell(i,:) = 0
-             kscell(i,i) = 1
-             kdispl(i)   = 0._dp
-          end if
-       end do
+    if ( present(is_b) ) then
+       if ( is_b ) return
+    end if
+
+    ! Transform the reciprocal units into length
+    call reclat(cell,rcell,1)
+    do ik = 1 , nkpt
+       ksize(:) = kpt(:,ik)
+       call kpoint_convert(rcell,ksize(:),kpt(:,ik),-2)
     end do
-    
-  end subroutine setup_kscell
+
+  end subroutine read_kgrid
   
   subroutine setup_kpoint_grid( cell , N_Elec, Elecs )
     
-    use fdf, only       : fdf_get, leqi
-    use m_find_kgrid, only : find_kgrid
+    use fdf, only       : fdf_get, leqi, block_fdf, fdf_block
     use parallel, only  : IONode
 
     use m_ts_electype
@@ -131,8 +254,9 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
 
-    real(dp) :: tmp, bkpt(3)
+    real(dp) :: bkpt(3)
     integer :: i
+    type(block_fdf) :: bfdf
     ! Whether we should apply time-reversal symmetry
     logical :: TRS
     character(len=250) :: user_kfile
@@ -160,27 +284,35 @@ contains
 
     else    
 
-       call setup_kscell(cell, N_Elec, Elecs)
-       
        TRS = .not. fdf_get('SpinSpiral',.false.)
        TRS = fdf_get('TBT.Symmetry.TimeReversal',TRS)
-       
-       call find_kgrid(cell, kscell, kdispl, .true., &
-            TRS, &
-            nkpnt, kpoint, kweight, tmp)
 
+       if ( fdf_block('TBT.kgrid_Monkhorst_Pack',bfdf) ) then
+          call read_kgrid('TBT.kgrid_Monkhorst_Pack', &
+               N_Elec,Elecs,TRS,cell,kpoint,kweight, &
+               kcell=kscell,kdispl=kdispl)
+       else
+          call read_kgrid('kgrid_Monkhorst_Pack', &
+               N_Elec,Elecs,TRS,cell,kpoint,kweight, &
+               kcell=kscell,kdispl=kdispl)
+       end if
+       nkpnt = size(kweight)
+       
     end if
     
     Gamma = (nkpnt == 1) .and. &
          dot_product(kpoint(:,1),kpoint(:,1)) < 1.0e-20_dp
     
-    if (IONode) call write_k_points()
+    call write_k_points()
     
   end subroutine setup_kpoint_grid
   
   subroutine write_k_points()
+    use parallel, only : IONode
     
     integer  :: ik, ix, i
+
+    if ( .not. IONode ) return 
     
     write(*,'(/,a)') 'tbtrans: k-point coordinates (Bohr**-1) and weights:'
     write(*,'(a,i4,3f12.6,3x,f12.6)') &
@@ -199,7 +331,7 @@ contains
 
   end subroutine write_k_points
   
-  subroutine tbt_iokp( nk, points, weight )
+  subroutine tbt_iokp( nk, points, weight , fend)
 ! *******************************************************************
 ! Saves tbtrans k-points (only writing) Bohr^-1
 ! Emilio Artacho, Feb. 1999
@@ -211,15 +343,22 @@ contains
 ! *******************************************************************
     use files, only : slabel
 
-    integer  :: nk
-    real(dp) :: points(3,nk), weight(nk)
+    integer, intent(in) :: nk
+    real(dp), intent(in) :: points(3,nk), weight(nk)
+    character(len=*), intent(in), optional :: fend
     external :: io_assign, io_close
 
 ! Internal 
     integer :: iu, ik, ix
 
     call io_assign( iu )
-    open( iu, file=trim(slabel)//'.TBTKP', form='formatted', status='unknown' ) 
+    if ( present(fend) ) then
+       open( iu, file=trim(slabel)//'.'//trim(fend), &
+            form='formatted', status='unknown' ) 
+    else
+       open( iu, file=trim(slabel)//'.TBTKP', &
+            form='formatted', status='unknown' ) 
+    end if
 
     write(iu,'(i6)') nk
     write(iu,'(i6,3f12.6,3x,f12.6)') &
@@ -232,6 +371,7 @@ contains
   ! The user can specify their own k-points
   subroutine tbt_iokp_read(fname,nkpt,kpt,wkpt)
     use parallel, only : Node
+    use m_io_s, only : file_exist
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -254,6 +394,12 @@ contains
     integer :: iu, ik, ix, stat
 
     if ( Node == 0 ) then
+       
+       if ( .not. file_exist(trim(fname)) ) then
+          call die('Could not locate file '//trim(fname)// &
+               ' please ensure that the file exists.')
+       end if
+
        call io_assign( iu )
        open( iu, file=trim(fname), form='formatted', status='old' ) 
 
@@ -281,7 +427,8 @@ contains
        end do
       
        if ( abs(wsum - 1._dp) > 1.e-7_dp ) then
-          call die('TBT user specified k-grid does not sum weights to 1.')
+          write(*,'(a)')'WARNING: Weights for user specified k-points does &
+               &not sum to 1.'
        end if
 
        call io_close( iu )
@@ -289,7 +436,8 @@ contains
     end if
 
 #ifdef MPI
-    call MPI_Bcast(nkpt,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
+    call MPI_Bcast(kpt(1,1),3*nkpt,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+    call MPI_Bcast(wkpt(1),nkpt,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
 #endif
 
   contains

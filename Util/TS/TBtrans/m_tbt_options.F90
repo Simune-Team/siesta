@@ -86,7 +86,7 @@ contains
     real(dp), intent(in) :: xa(3,na_u)
     integer, intent(in) :: lasto(0:na_u)
 
-    real(dp) :: Volt
+    real(dp) :: Volt, rtmp
     logical :: err, ltmp
     character(len=200) :: chars
     integer :: i, j
@@ -171,8 +171,9 @@ contains
     ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
     Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF.ReUse',.true.)
     Elecs(:)%ReUseGF = fdf_get('TBT.Elecs.GF.ReUse',Elecs(1)%ReUseGF)
-    Elecs(:)%Eta     = fdf_get('TS.Elecs.Eta',0.00001*eV,'Ry')
-    Elecs(:)%Eta     = fdf_get('TBT.Elecs.Eta',Elecs(1)%Eta,'Ry')
+    rtmp             = fdf_get('TS.Elecs.Eta',0.00001*eV,'Ry')
+    rtmp             = fdf_get('TBT.Elecs.Eta',rtmp,'Ry')
+    Elecs(:)%Eta = rtmp
 
     ! whether all calculations should be performed
     ! "out-of-core" i.e. whether the GF files should be created or not
@@ -208,7 +209,14 @@ contains
           ! We are using spin down
           Elecs(i)%GFfile = trim(Elecs(i)%GFfile)//'_DW'
        end select
-       
+
+       if ( (rtmp > 0._dp .and. Elecs(i)%Eta < 0._dp) .or. &
+            (rtmp < 0._dp .and. Elecs(i)%Eta > 0._dp) ) then
+          call die('All Eta must be either positive or negative &
+               &to ensure that the retarded or advanced self-energy &
+               &is exclusively calculated.')
+       end if
+
     end do
 
     ! Populate the electrodes in the chemical potential type

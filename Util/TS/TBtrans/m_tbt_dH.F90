@@ -585,7 +585,7 @@ contains
 
     subroutine sub_read_dH(dH, lvl, is_real, ik, iE)
 
-      use parallel, only : Node, Nodes
+      use parallel, only : Node
 
       use class_Sparsity
       use class_OrbitalDistribution
