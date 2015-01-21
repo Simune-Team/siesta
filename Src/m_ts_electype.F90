@@ -117,6 +117,7 @@ module m_ts_electype
      type(dSpData2D) :: H
      type(dSpData1D) :: S
      ! Supercell offsets
+     integer :: nsc(3)
      integer, pointer :: isc_off(:,:) => null()
      ! --- --- completed the content of the TSHS file
      ! Below we create the content for the self-energy creation
@@ -522,6 +523,7 @@ contains
     ! Read in the number of atoms in the HSfile
     call ts_read_TSHS_opt(this%HSfile,no_u=this%no_u,na_u=this%na_u, &
          nspin=this%nspin, Ef=this%Ef, ucell=this%ucell, Qtot=this%Qtot, &
+         nsc = this%nsc , &
          Bcast=.true.)
 
     allocate(this%xa(3,this%na_u),this%lasto(0:this%na_u))
@@ -730,6 +732,17 @@ contains
        max_xa(i) = max_xa(i) + min_bond
        this%box%v(:,i) = 0._dp
        this%box%v(i,i) = max_xa(i) - p(i)
+
+    end do
+    do i = 1 , 3
+       ! If there is no periodicity of the electrode in this
+       ! direction we move the center of the box by the 
+       ! unit-cell. This ensures that for non-periodic
+       ! cells, we still have an equal weight of the
+       ! lifting of the Hartree potential.
+       if ( this%nsc(i) == 1 ) then
+          p(:) = p(:) - 0.5_dp * this%ucell(:,i)
+       end if
     end do
     ! p now contains the origin of the box
     this%box%c(:) = p(:)
@@ -1562,7 +1575,7 @@ contains
     call expand_spd2spd_2D(i,this%na_used, &
          this%na_u,this%lasto,this%xa,f_DM_2D,&
          this%ucell, (/1,1,1/), this%Rep, &
-         size(this%isc_off,dim=2), this%isc_off, &
+         product(this%nsc), this%isc_off, &
          na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, &
          print = .true., allowed_a = allowed)
 
@@ -1570,7 +1583,7 @@ contains
        call expand_spd2spd_2D(i,this%na_used, &
             this%na_u,this%lasto,this%xa,f_EDM_2D, &
             this%ucell, (/1,1,1/), this%Rep, &
-            size(this%isc_off,dim=2), this%isc_off, &
+            product(this%nsc), this%isc_off, &
             na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, &
             allowed_a = allowed)
     end if

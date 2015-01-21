@@ -860,10 +860,16 @@ contains
 
        if ( ts_tdir < 0 ) then
           write(*,11) '*** TranSIESTA transport directions are individual ***'
+          write(*,11) '*** It is heavily adviced to have any electrodes with no &
+               &periodicity'
+          write(*,11) '    in the transverse directions be located as far from any &
+               &cell-boundaries'
+          write(*,11) '    as possible. This has to do with the electrostatic potential &
+               &correction. ***'
           if ( IsVolt ) then
-             write(*,11) '*** Please ensure electrode unit-cells are as confined as possible'
+             write(*,11) '*** Please ensure electrode unit-cells are as confined as possible.'
              write(*,11) '    The initial guess for the potential profile is heavily influenced'
-             write(*,11) '    by the electrode unit-cells. ***'
+             write(*,11) '    by the electrode unit-cell sizes! ***'
           end if
        else if ( .not. elec_basal_plane ) then
           ! The transport direction is well-defined
@@ -893,12 +899,10 @@ contains
        do i = 1 , 3
           if ( i == ts_tdir .or. ts_tdir <= 0 ) cycle
           if ( abs(dot(ucell(:,i),ucell(:,ts_tdir),3)) > 1e-7_dp ) then
-             write(*,*) &
-                  "ERROR: Unit cell has the electrode extend into the &
+             write(*,*) "ERROR: Unit cell has the electrode extend into the &
                   &transport direction."
              write(*,*) dot(ucell(:,i),ucell(:,ts_tdir),3)
-             write(*,*) &
-                  "Please change the geometry."
+             write(*,*) "Please change the geometry."
              call die("Electrodes extend into the transport direction. &
                   &Please change the geometry.")
           end if
@@ -922,9 +926,8 @@ contains
              write(*,*) &
                   "ERROR: Atoms must be located within the primary unit-cell &
                   &and shifted to 0 when dealing with bias."
-             write(*,'(a,g15.6,a)') &
-                  "Please shift your system in the transport-direction by: ", &
-                  -tmp,' Ang'
+             write(*,'(a,g15.6,a)') "Please shift your system in the &
+                  &transport-direction by: ", -tmp,' Ang'
              call die('System setup wrong, please see output')
           end if
        end if
@@ -943,8 +946,7 @@ contains
 
           if ( .not. Elecs(i)%Bulk ) then
              write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
-                  &not use bulk Hamiltonian. &
-                  &Be careful here.'
+                  &not use bulk Hamiltonian. Be careful here.'
           end if
 
           if ( Elecs(i)%DM_update == 0 ) then
@@ -1085,7 +1087,7 @@ contains
           write(*,'(2(a10,tr1),f10.5)') &
                trim(Elecs(nEq_ID(i)%iEl)%name),trim(mus(nEq_ID(i)%imu)%name),rnID(i)
        end do
-       call calc_neq_weight(N_Elec,N_mu,N_nEq_ID,ID_mu,rnID,rn,rw)
+       call calc_neq_weight(N_mu,N_nEq_ID,ID_mu,rnID,rn,rw)
        write(*,'(a)') 'Contrib and weights: '
        do i = 1 , N_mu
           write(*,'(a10,2(tr1,f10.5))') trim(mus(i)%name),rn(i),rw(i)

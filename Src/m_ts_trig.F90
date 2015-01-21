@@ -543,8 +543,7 @@ contains
           end do
 
 #ifdef TS_DEV
-          if ( .not. cE%fake ) &
-               close(io)
+          if ( .not. cE%fake ) close(io)
 #endif
 
           ! step energy-point

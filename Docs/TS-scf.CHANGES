@@ -1,4 +1,43 @@
 ----------------------------------------------------
+January 21, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-253
+Better Hartree potential for N-electrode bias
+
+* The Hartree box was not placed in the proper way when
+  the electrodes were non-periodic in some of the transverse
+  directions.
+
+  Now, if the electrode is non-periodic in any direction
+  the box origo is displaced by 1/2 the unit cell in that
+  direction.
+  With this the electrode unit-cell has a huge influence on
+  the electrostatic potential for N-electrodes.
+  Transiesta now prints out information regarding this
+  and advices the user to make the electrode unit-cell
+  as small as possible for non-periodic cells.
+
+  This helps the convergence of N-electrode bias calculations.
+
+* The doping_uniform routine can now take one optional argument
+  to add additional charge.
+
+  Later I think it could be nice to check whether transiesta
+  calculations should "assume" doping in the SCF according
+  to the excess charge.
+
+  However, it could also backfire and worsen the convergence
+  due to the electrostatic potential not being properly "fixed"
+
+  For now this is not possible.
+
+modified:
+  Src/doping_uniform.F
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+
+----------------------------------------------------
 January 20, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-252
 Changed function and type name of the m_region
 

@@ -63,7 +63,7 @@ module m_ts_contour_neq
      type(ts_nEq_seg), pointer :: seg => null()
   end type ts_nEq_id
   integer, save, public :: N_nEq_id = 0
-  type(ts_nEq_id), save, pointer :: nEq_ID(:) => null()
+  type(ts_nEq_id), save, pointer, public :: nEq_ID(:) => null()
 
   ! The contour specific variables
   real(dp), save, public :: nEq_Eta
