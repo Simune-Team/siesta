@@ -211,7 +211,7 @@ class TBT_Geom(SIESTA_UNITS):
         n_orb = np.append(lasto[0],n_orb)
         # Create new geometry
         g = TBT_Geom(cell=cell,xa=xa,n_orb=n_orb)
-        g.update_sc(nsc=int((nsc-1) / 2))
+        g.update_sc(nsc=int(nsc) // 2)
         return g
 
     def __init_new(self,cell,xa,n_orb,update_sc=False):
@@ -540,7 +540,7 @@ class TBT_Geom(SIESTA_UNITS):
             HS[io+1,self.a2o(idx_a[1])+0] = (t12,   0. )
 
         """
-        return self.lasto[ia]
+        return self.lasto[ia % self.na_u] + (ia // self.na_u) * self.no_u
 
     def coords(self,isc=[0,0,0],idx=None):
         """
@@ -1710,7 +1710,7 @@ if __name__ == '__main__':
     HOLE.update_sc(nsc=[1,1,0])
     # Remove a hole in the structure
     # We take some atom in the middle of the structure
-    mid_atom = GR_na_u * (Nx * Ny) / 2
+    mid_atom = GR_na_u * (Nx * Ny) // 2
     # Get all indices for all super-cell atoms within 12 angstrom
     idx_a = HOLE.close_all(mid_atom,dR=12.)
     # Convert to unit-cell atomic indices

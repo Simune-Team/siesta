@@ -1,4 +1,16 @@
 ----------------------------------------------------
+January 21, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-254
+Bugfix for a2o in tbt_tb.py
+
+* The conversion from atom to orbital was not
+  correct for supercell-atoms, nor for
+  systems which had more than one orbital
+  for any one atom.
+
+modified:
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 January 21, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-253
 Better Hartree potential for N-electrode bias
 
