@@ -85,7 +85,7 @@ contains
     ! Number of different k-regions
     integer, intent(in) :: n_k
     ! Different k-regions (0 is Gamma)
-    type(kRegion), intent(in), target :: r_k(0:n_k)
+    type(kRegion), intent(in) :: r_k(0:n_k)
     ! Number of atoms, and the last orbital per atom
     integer, intent(in) :: na_u, lasto(0:na_u)
     ! The electrodes
@@ -114,6 +114,7 @@ contains
     real(dp) :: bk(3), k(3), rcell(3,3)
     complex(dp), pointer :: zH(:), zS(:)
     complex(dp) :: ph
+    type(tRgn) :: ro
     type(Sparsity), pointer :: sp_k
     integer :: no_l, lio, io, ind, jo, ind_k, kn, ia, il
      
@@ -138,7 +139,7 @@ contains
     call reclat(cell,rcell,1)
 
 !$OMP parallel default(shared), &
-!$OMP&private(il,ia,io,lio,kn,ind,jo,ind_k,ph,bk,k)
+!$OMP&private(il,ia,io,lio,kn,ind,jo,ind_k,ph,bk,k,ro)
 
 !$OMP workshare
     zH(:) = dcmplx(0._dp,0._dp)
@@ -158,9 +159,11 @@ contains
           call kpoint_convert(rcell,bk,k,-2)
        end if
 
-!$OMP do collapse(2), schedule(dynamic)
-    do ia = 1 , r_k(il)%atm%n
-    do io = lasto(r_k(il)%atm%r(ia)-1) + 1 , lasto(r_k(il)%atm%r(ia))
+       ! Convert to orbital space
+       call rgn_Atom2Orb(r_k(il)%atm,na_u,lasto,ro)
+
+!$OMP do
+    do io = 1 , ro%n
 
        ! obtain the global index of the orbital.
        if ( orb_type(io) /= TYP_BUFFER ) then
@@ -216,7 +219,6 @@ contains
 
        end if
 
-    end do
     end do
 !$OMP end do nowait
     end do

@@ -1,4 +1,13 @@
 ----------------------------------------------------
+January 21, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-256
+Bugfix for OpenMP compilation of tbtrans
+
+* Ensured that tbtrans can be compiled using OpenMP
+
+modified:
+  Util/TS/TBtrans/m_tbt_sparse_helper.F90
+
+----------------------------------------------------
 January 21, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-255
 Message clarifications in tbtrans and small bugfix
 
