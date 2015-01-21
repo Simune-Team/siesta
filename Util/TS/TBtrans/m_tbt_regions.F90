@@ -168,6 +168,9 @@ contains
           if ( leqi(g,'atom') ) then
              ! We can read in a range
              call fdf_brange(pline,r_tmp,1,na_u)
+             if ( r_tmp%n == 0 ) &
+                  call die('Could not read in any atoms in line of &
+                  &TBT.Atoms.Device')
              call rgn_union(r_aDev,r_tmp,r_aDev)
              
           end if
@@ -209,6 +212,9 @@ contains
 
        ! TBTrans will truncate connections at electrode interfaces.
        call rgn_sp_connect(r_oDev, dit, sp, r_tmp)
+       if ( r_tmp%n == 0 ) &
+            call die('No orbitals connect to the specified device &
+            &region. This is not allowed.')
        call rgn_append(r_oDev,r_tmp,r_oDev)
        call rgn_delete(r_tmp)
        call rgn_Orb2Atom(r_oDev,na_u,lasto,r_aDev)
@@ -561,7 +567,9 @@ contains
           else
              ! find the missing orbitals
              call rgn_range(r_tmp,1,no_u)
-             call rgn_complement(r_oBuf,r_tmp,r_tmp)
+             if ( r_oBuf%n > 0 ) then
+                call rgn_complement(r_oBuf,r_tmp,r_tmp)
+             end if
              call rgn_complement(r_oDev,r_tmp,r_tmp)
              do iEl = 1 , N_Elec
                 call rgn_complement(r_oEl(iEl),r_tmp,r_tmp)

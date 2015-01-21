@@ -1,4 +1,16 @@
 ----------------------------------------------------
+January 21, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-255
+Message clarifications in tbtrans and small bugfix
+
+* Bugfix for k->kp calculations.
+
+* Better messages in tbtrans.
+
+modified:
+  Util/TS/TBtrans/m_tbt_kregions.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 January 21, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-254
 Bugfix for a2o in tbt_tb.py
 

@@ -81,14 +81,14 @@ contains
     n_k = 0 
 
     ! If the user does not request k->k', do not read in
-    if ( .not. fdf_get('TBT.Regions.k',.false.) ) return
+    if ( .not. fdf_get('TBT.Region.k',.false.) ) return
     if ( IONode ) write(*,*) ! new-line
 
      ! Warn the user about possible mis-use of regions
     if ( IONode ) then
        write(*,'(a)') 'tbtrans: WARNING'
-       write(*,'(a)') 'Using k-regions is not recommended unless &
-            &you really know what you are doing.'
+       write(*,'(a)') 'tbtrans: Using k-regions is not recommended &
+            &unless you really know what you are doing.'
        write(*,'(a)') 'tbtrans: WARNING'
     end if
 
@@ -106,6 +106,15 @@ contains
        call crt_connect_k(N_Elec, Elecs, &
             dit, sp, na_u, xa, lasto, nsc, isc_off)
     end if
+
+    ! Assert that the regions all have at least one
+    ! atom
+    do il = 1 , n_k
+       if ( r_k(il)%atm%n == 0 ) then
+          call die('Region: '//trim(r_k(il)%atm%name)//' &
+               &is empty, this is not allowed.')
+       end if
+    end do
 
     ! Assert that each electrode "only" exists in one
     ! periodicity region (we do not allow the user
@@ -156,7 +165,7 @@ contains
     call rgn_range(r_k(0)%atm,1,na_u)
     call rgn_complement(r1,r_k(0)%atm,r_k(0)%atm)
     ! Probably we should remove the buffer atoms
-    r_k(0)%atm%name = 'Gamma region'
+    r_k(0)%atm%name = 'default'
     call rgn_delete(r1,r2)
 
     ! Sort all regions (makes the setup of the Hamiltonian faster)
@@ -356,7 +365,8 @@ contains
        ! per-atom, we add the just found k-region to the
        ! Gamma-region. In this way we cannot create
        ! any two regions having the same atoms
-       call rgn_append(rG,r_k(n_k)%atm,rG)
+       call rgn_append(rG,r_k(n_k)%atm,r1)
+       call rgn_copy(r1,rG)
        call rgn_sort(rG)
        call rgn_Atom2Orb(rG,na_u,lasto,roG)
 
@@ -414,7 +424,11 @@ contains
 
     ! We assume that the user will never create more than
     ! the initial number of different k-regions plus 50
-    allocate(rlist(il+50))
+    do while ( fdf_bnext(bfdf,pline) ) 
+       il = il + 1
+    end do
+    allocate(rlist(il))
+    call fdf_brewind(bfdf)
     
     ! first count number of differently named regions
     n_k = 0
@@ -475,12 +489,16 @@ contains
           
           ! We can read in a range
           call fdf_brange(pline,r1,1,na_u)
+          if ( r1%n == 0 ) &
+               call die('Could not read in anything in k-regions')
           call rgn_union(r_k(il)%atm,r1,r_k(il)%atm)
           r_k(il)%atm%name = trim(g)
           
        else
           
           call fdf_brange(pline,r1,1,na_u)
+          if ( r1%n == 0 ) &
+               call die('Could not read in anything in k-regions')
           call rgn_union(r_k(ic)%atm,r1,r_k(ic)%atm)
           r_k(ic)%atm%name = trim(g)
           
@@ -626,7 +644,7 @@ contains
        write(g,'(a,i0)') 'nkpt = ',1
        call rgn_print(r_k(0)%atm, name = g , seq_max = 12 )
        
-       write(*,'(/,a)') 'tbtrans: k regions'
+       write(*,'(/,a)') 'tbtrans: k-regions'
        nperm = size(r_k(0)%wkpt)
        do il = 1 , n_k
           write(g,'(a,i0)') 'nkpt = ',size(r_k(il)%wkpt)
@@ -641,7 +659,11 @@ contains
        nperm = size(r_k(0)%wkpt)
        do il = 1 , n_k
           nperm = nperm * size(r_k(il)%wkpt)
-          write(*,'(2a)')'tbtrans: ',trim(r_k(il)%atm%name)
+          write(g,'(a,i0)') ', nkpt = ',size(r_k(il)%wkpt)
+          if ( associated(r_k(il)%off) ) then
+             g = trim(g)//', offsets: '//trim(r_k(il)%off%atm%name)
+          end if
+          write(*,'(3a)')'tbtrans: ',trim(r_k(il)%atm%name), trim(g)
        end do
     end if
        
