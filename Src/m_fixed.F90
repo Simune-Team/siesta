@@ -31,7 +31,7 @@ module m_fixed
 
   private
 
-  integer, parameter :: TYPE_LEN = 10
+  integer, parameter :: TYPE_LEN = 30
   type tFix
      ! Number of atoms belonging to this fix
      integer :: n = 0
