@@ -241,6 +241,11 @@ contains
     max_block = no / 4
     max_block = fdf_get('TS.TriMat.Block.Max',max_block)
     max_block = fdf_get('TBT.TriMat.Block.Max',max_block)
+    ! In case the orbitals of this region is much smaller than
+    ! max-block, then use the half the no
+    if ( max_block > no ) then
+       max_block = no / 2 
+    end if
     
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 

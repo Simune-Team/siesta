@@ -1,4 +1,18 @@
 ----------------------------------------------------
+January 22, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-259
+Bugfix for user Block.Max specification
+
+* On occasions where the user request a max-block size
+  larger than the number of orbitals in the region the algorithm
+  crashes (for good reason).
+  We now truncate at no / 2 if in any region the user requests
+  a too large block size
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+  Util/TS/TBtrans/m_tbt_sparsity2trimat.F90
+
+----------------------------------------------------
 January 22, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-258
 Bugfix name length of molecule-max in m_fixed
 
