@@ -1,4 +1,17 @@
 ----------------------------------------------------
+January 22, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-257
+Bugfix for k-regions
+
+* Bugfix which did not construct the full Hamiltonian
+  when using k-regions.
+
+* Enabled compilation of tbtrans without NCDF
+
+modified:
+  Util/TS/TBtrans/m_tbt_sparse_helper.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 January 21, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-256
 Bugfix for OpenMP compilation of tbtrans
 

@@ -116,13 +116,13 @@ contains
     complex(dp) :: ph
     type(tRgn) :: ro
     type(Sparsity), pointer :: sp_k
-    integer :: no_l, lio, io, ind, jo, ind_k, kn, ia, il
+    integer :: no_l, lio, io, ind, jo, ind_k, kn, i, il
      
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
     if ( no_u /= nrows_g(sp) ) then
        call die('Creating the k-&point matrix in &
-            &transiesta went wrong. Please TODO...')
+            &tbtrans went wrong. Please TODO...')
     end if
 
     ! Create all the local sparsity super-cell
@@ -139,7 +139,7 @@ contains
     call reclat(cell,rcell,1)
 
 !$OMP parallel default(shared), &
-!$OMP&private(il,ia,io,lio,kn,ind,jo,ind_k,ph,bk,k,ro)
+!$OMP&private(il,i,io,lio,kn,ind,jo,ind_k,ph,bk,k,ro)
 
 !$OMP workshare
     zH(:) = dcmplx(0._dp,0._dp)
@@ -163,8 +163,8 @@ contains
        call rgn_Atom2Orb(r_k(il)%atm,na_u,lasto,ro)
 
 !$OMP do
-    do io = 1 , ro%n
-
+    do i = 1 , ro%n
+       io = ro%r(i)
        ! obtain the global index of the orbital.
        if ( orb_type(io) /= TYP_BUFFER ) then
 
@@ -221,6 +221,9 @@ contains
 
     end do
 !$OMP end do nowait
+
+    call rgn_delete(ro)
+
     end do
 !$OMP end parallel
      
