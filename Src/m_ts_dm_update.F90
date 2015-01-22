@@ -208,8 +208,8 @@ contains
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + aimag( ph*zDu(ind,1:D_dim2) )
-             if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
-                  aimag( ph*zEu(ind,1:D_dim2) )
+             if ( hasEDM ) dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + &
+                  aimag( ph*zEu(ind,1:E_dim2) )
 
           end do
 
@@ -252,8 +252,8 @@ contains
              ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A) dE
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
                   aimag( ph*(zDu(ind,1:D_dim2) - conjg(zDu(rind,1:D_dim2))) )
-             if ( hasEDM ) dE(lind,1:D_dim2) = dE(lind,1:D_dim2) + &
-                  aimag( ph*(zEu(ind,1:D_dim2) - conjg(zEu(rind,1:D_dim2))) )
+             if ( hasEDM ) dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + &
+                  aimag( ph*(zEu(ind,1:E_dim2) - conjg(zEu(rind,1:E_dim2))) )
 
           end do
 

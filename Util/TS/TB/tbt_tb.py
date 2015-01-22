@@ -581,7 +581,7 @@ class TBT_Geom(SIESTA_UNITS):
             if np.all(self.isc_off[i,:] == asc): return i
         raise Exception('Could not find supercell index')
 
-    def close_sc(self,xyz_ia,isc=[0,0,0],dR=None,idx=None):
+    def close_sc(self,xyz_ia,isc=[0,0,0],dR=None,idx=None,ret_coord=False):
         """
         Calculates which atoms are close to some atom or point
         in space, only returns so relative to a super-cell.
@@ -598,40 +598,46 @@ class TBT_Geom(SIESTA_UNITS):
 
         Parameters
         ----------
-        xyz_ia  : coordinate/index
+        xyz_ia    : coordinate/index
             Either a point in space or an index of an atom.
             If an index is passed it is the equivalent of passing
             the atomic coordinate ``self.close_sc(self.xa[xyz_ia,:])``.
-        isc     : ([0,0,0]), array_like, optional
+        isc       : ([0,0,0]), array_like, optional
             The super-cell which the coordinates are checked in.
-        dR      : (None), float/tuple of float
+        dR        : (None), float/tuple of float
             The radii parameter to where the atomic connections are found.
             If ``dR`` is an array it will return the indices:
             in the ranges:
                ``( x <= dR[0] , dR[0] < x <= dR[1], dR[1] < x <= dR[2] )``
             If a single float it will return:
                ``x <= dR``
-        idx     : (None), array_like
+        idx       : (None), array_like
             List of atoms that will be considered. This can
             be used to only take out a certain atoms.
+        ret_coord : (False), boolean
+            If true this method will return the coordinates 
+            for each of the couplings.
         """
+
         if dR is None:
             ddR = np.array((self.dR,),np.float)
         else:
             ddR = np.array((dR,),np.float).flatten()
         ioff = 0
         if isinstance(xyz_ia,int):
+            off = self.xa[xyz_ia,:]
             # Get atomic coordinate in principal cell
             if self.proximity:
                 ioff = max(0,xyz_ia-self.proximity)
                 dxi = np.arange(ioff,min(xyz_ia+self.proximity,self.na_u))
-                dxa = self.coords(isc=isc,idx=dxi) - self.xa[xyz_ia,:][None,:]
+                dxa = self.coords(isc=isc,idx=dxi) - off[None,:]
                 del dxi
             else:
-                dxa = self.coords(isc=isc,idx=idx) - self.xa[xyz_ia,:][None,:]
+                dxa = self.coords(isc=isc,idx=idx) - off[None,:]
         else:
+            off = xyz_ia
             # The user has passed a coordinate
-            dxa = self.coords(isc=isc,idx=idx) - xyz_ia[None,:]
+            dxa = self.coords(isc=isc,idx=idx) - off[None,:]
 
         # Retrieve all atomic indices which are closer
         # than our delta-R
@@ -639,13 +645,19 @@ class TBT_Geom(SIESTA_UNITS):
         # has a lot of checks, hence we do it manually
         #xaR = np.linalg.norm(dxa,axis=-1)
         xaR = (dxa[:,0]**2+dxa[:,1]**2+dxa[:,2]**2) ** .5
-        del dxa # just because these arrays could be very big...
         ix = np.where(xaR <= ddR[-1])[0]
+        if ret_coord:
+            xa = dxa[ix,:] + off[None,:]
+        del dxa # just because these arrays could be very big...
         if len(ddR) == 1:
             # We only have one designation
             if idx is None:
+                if ret_coord:
+                    return ix + ioff, xa
                 return ix + ioff
             else:
+                if ret_coord:
+                    return idx[ix], xa
                 return idx[ix]
         if np.any(np.diff(ddR) < 0.):
             raise ValueError('Proximity checks for several quantities '+ \
@@ -657,23 +669,28 @@ class TBT_Geom(SIESTA_UNITS):
         # then we immediately reduce search space to this subspace
         xaR = xaR[ix]
         ix[:] += ioff
+        tidx = np.where(xaR <= ddR[0])[0]
+        if ret_coord:
+            xx = [xa[tidx]]
         if idx is None:
-            x = [ix[np.where(xaR <= ddR[0])[0]]]
+            x = [ix[tidx]]
         else:
-            x = [idx[ix[np.where(xaR <= ddR[0])[0]]]]
+            x = [idx[ix[tidx]]]
         for i in range(1,len(ddR)):
             # Search in the sub-space
             # Notice that this sub-space reduction will never
             # allow the same indice to be in two ranges (due to
             # numerics)
             tidx = np.where(np.logical_and(ddR[i-1] < xaR,xaR <= ddR[i]))[0]
+            if ret_coord: xx.append(xa[tidx])
             if idx is None:
                 x.append(ix[tidx])
             else:
                 x.append(idx[ix[tidx]])
+        if ret_coord: return x,xx
         return x
 
-    def close_all(self,xyz_ia,dR=None,idx=None):
+    def close_all(self,xyz_ia,dR=None,idx=None,ret_coord=False):
         """
         Returns supercell atomic indices for all atoms connecting to ``xyz_ia``
 
@@ -699,27 +716,46 @@ class TBT_Geom(SIESTA_UNITS):
                ``x <= dR``
         idx     : (None), array_like
             List of indices for atoms that are to be considered
-
+        ret_coord : (False), boolean
+            If true this method will return the coordinates 
+            for each of the couplings.
         """
+
         idx_a = None
+        xa = None
         for s in xrange(np.prod(self.nsc)):
-            no = s * self.na_u
-            ix = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR,idx=idx)
+            na = s * self.na_u
+            if ret_coord:
+                ix, xx = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR,idx=idx,ret_coord=True)
+            else:
+                ix = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR,idx=idx)
             if isinstance(ix,list):
                 # we have a list of arrays
                 if idx_a is None:
-                    idx_a = [x + no for x in ix]
+                    idx_a = [x + na for x in ix]
+                    if ret_coord: 
+                        xa = xx
                 else:
                     for i,x in enumerate(ix):
-                        idx_a[i] = np.append(idx_a[i],x + no)
+                        idx_a[i] = np.append(idx_a[i],x + na)
+                        if ret_coord: 
+                            xa[i] = np.append(xa[i],xx[i])
+                            xa[i].shape = (-1,3)
             elif len(ix) > 0:
                 # We can add it to the list
                 # We add the atomic offset for the supercell 
                 # index
                 if idx_a is None:
-                    idx_a = ix + s * self.na_u
+                    idx_a = ix + na
+                    if ret_coord: 
+                        xa = xx
                 else:
-                    idx_a = np.append(idx_a,ix+s*self.na_u)
+                    idx_a = np.append(idx_a,ix + na)
+                    if ret_coord: 
+                        xa = np.append(xa,xx)
+                        xa.shape = (-1,3)
+        if ret_coord: 
+            return idx_a,xa
         return idx_a
         
 
@@ -1721,6 +1757,11 @@ if __name__ == '__main__':
     HOLE = HOLE.remove(idx_a)
     HS = TBT_Model(HOLE, max_connection = 20)
     dR = ( alat*0.5 , alat+0.1 , 2*sq3h*alat+0.1 , 2*alat+0.1 )
+    idx_a,xa = HOLE.close_all(0,dR=dR,ret_coord=True)
+    print('List of on-site coords for atom 1:',idx_a[0])
+    print(xa[0])
+    print('List of nn coords for atom 1:',idx_a[1])
+    print(xa[1])
     print('Creating TB parameter Hamiltonian and overlap...')
     for ia in xrange(HOLE.na_u):
         idx_a = HOLE.close_all(ia,dR=dR)

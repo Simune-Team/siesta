@@ -1,4 +1,27 @@
 ----------------------------------------------------
+January 22, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-260
+Bugfix for bias calculations of N-electrodes
+
+* An index for EDM was erroneous for N-electrode
+  calculations with bias.
+  It is not a problem for N=2 calculations as the
+  indexing was consistent with the DM index.
+
+  It has been corrected.
+
+* Added the ability of the tbt_tb Geometry to return
+  the coordinates of the indices that are found using
+  close_sc and close_all.
+  This will let the user interact with the coordinates
+  how they wish in a much better way than before.
+
+modified:
+  Src/m_ts_dm_update.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 January 22, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-259
 Bugfix for user Block.Max specification
 

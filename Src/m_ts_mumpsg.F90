@@ -570,8 +570,7 @@ contains
     ! Destroy the instance (deallocate internal data structures)
     mum%JOB = -2
     call zMUMPS(mum)
-    call mum_err(mum, &
-         'Cleaning of MUMPS failed.')
+    call mum_err(mum, 'Cleaning of MUMPS failed.')
 
     ! close the file
     call io_close(no)
