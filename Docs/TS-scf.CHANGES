@@ -1,4 +1,12 @@
 ----------------------------------------------------
+January 23, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-262
+Forgot Node usage
+
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
 January 23, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-261
 Changed a few optional names for the projections of tbtrans
 

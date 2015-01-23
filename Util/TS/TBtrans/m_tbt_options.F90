@@ -68,7 +68,7 @@ contains
 
     use files, only : slabel
     use fdf
-    use parallel, only : Node
+    use parallel, only : IONode
     use units, only: eV, Ang, Kelvin
 
     use m_tbt_save
@@ -249,7 +249,7 @@ contains
 
     ! CHECK THIS (we could allow it by only checking the difference...)
     if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 1.e-9_dp ) then
-       if ( Node == 0 ) then
+       if ( IONode ) then
           write(*,'(a)') 'Chemical potentials [eV]:'
           do i = 1 , N_Elec
              write(*,'(a,f10.5,a)') trim(Name(Elecs(i)))//' at ',Elecs(i)%mu%mu/eV,' eV'
@@ -309,7 +309,7 @@ contains
     ltmp = fdf_get('TBT.Current.Orb', .false. )
     if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
        save_DATA = save_DATA // ('orb-current'.kv.1)
-    else if ( ltmp .and. Node == 0 ) then
+    else if ( ltmp .and. IONode ) then
        write(*,'(a)')'WARNING: Will not calculate the orbital currents, &
             &the spectral function needs to be calculated for this to &
             &apply.'
@@ -326,7 +326,7 @@ contains
 
     call tbt_read_contour_options(N_Elec, Elecs, N_mu, mus, kT)
 
-    if ( Node == 0 ) then
+    if ( IONode ) then
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'
        write(*,6) 'Voltage', Volt/eV,'Volts'
        write(*,1) 'Saving DOS from Greens function',('DOS-Gf'.in.save_DATA)
@@ -359,7 +359,7 @@ contains
 #endif
     call init_save_options( )
 
-    if ( Node == 0 ) then
+    if ( IONode ) then
        
        call print_contour_tbt_options( 'TBT' )
 

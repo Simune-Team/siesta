@@ -144,6 +144,7 @@ contains
     use fdf
     use fdf_extra
     use intrinsic_missing, only: SORT
+    use parallel, only : IONode 
 
     use dictionary
 
@@ -195,7 +196,7 @@ contains
     ltmp = fdf_get('TBT.Projs.Current.Orb', .false. )
     if ( ltmp .and. ('proj-DOS-A'.in.save_DATA) ) then
        save_DATA = save_DATA // ('proj-orb-current'.kv.1)
-    else if ( ltmp .and. Node == 0 ) then
+    else if ( ltmp .and. IONode ) then
        write(*,'(a)')'WARNING: Will not calculate the orbital currents &
             &of the projections, the spectral function needs to be &
             &calculated for this to apply.'
