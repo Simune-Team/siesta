@@ -174,11 +174,11 @@ contains
 
     ! Whether we should assert and calculate
     ! all transmission amplitudes for the projections
-    ltmp = fdf_get('TBT.T.Elecs.All.Projs', ('T-all'.in.save_DATA) )
+    ltmp = fdf_get('TBT.Projs.T.Elecs.All', ('T-all'.in.save_DATA) )
     if ( ltmp ) then
        save_DATA = save_DATA // ('proj-T-all'.kv.1)
     end if
-    ltmp = fdf_get('TBT.R.Projs', ('T-reflect'.in.save_DATA) )
+    ltmp = fdf_get('TBT.Projs.R', ('T-reflect'.in.save_DATA) )
     if ( ltmp ) then
        save_DATA = save_DATA // ('proj-T-reflect'.kv.1)
     end if
@@ -188,13 +188,17 @@ contains
     end if
 
     ! Should we calculate DOS of spectral function
-    ltmp = fdf_get('TBT.DOS.A.Projs',('DOS-A'.in.save_DATA))
+    ltmp = fdf_get('TBT.Projs.DOS.A',('DOS-A'.in.save_DATA))
     if ( ltmp ) then
        save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
     end if
-    ltmp = fdf_get('TBT.Current.Orb.Projs', .false. )
+    ltmp = fdf_get('TBT.Projs.Current.Orb', .false. )
     if ( ltmp .and. ('proj-DOS-A'.in.save_DATA) ) then
        save_DATA = save_DATA // ('proj-orb-current'.kv.1)
+    else if ( ltmp .and. Node == 0 ) then
+       write(*,'(a)')'WARNING: Will not calculate the orbital currents &
+            &of the projections, the spectral function needs to be &
+            &calculated for this to apply.'
     end if
 
     ! First read in the molecules

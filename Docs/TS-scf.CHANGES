@@ -1,4 +1,22 @@
 ----------------------------------------------------
+January 23, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-261
+Changed a few optional names for the projections of tbtrans
+
+* Added warnings about the orbital current not being calculated
+  if the spectral function is not calculated.
+  The user needs to explicitly set that option as well.
+
+* The options for the projections had the Projs as a suffix,
+  now it is a prefix which makes more sense.
+
+* A small bug could occur if the bias was specified using the 
+  TBT.Voltage and the TS.Voltage was different.
+  
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
 January 22, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-260
 Bugfix for bias calculations of N-electrodes
 

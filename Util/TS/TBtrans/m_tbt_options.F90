@@ -123,6 +123,7 @@ contains
 
     ! Read in the chemical potentials
     Volt = fdf_get('TS.Voltage',0._dp,'Ry')
+    Volt = fdf_get('TBT.Voltage',Volt,'Ry')
     N_mu = fdf_nmu('TBT',mus)
     if ( N_mu < 1 ) then
        N_mu = fdf_nmu('TS',mus)
@@ -308,6 +309,10 @@ contains
     ltmp = fdf_get('TBT.Current.Orb', .false. )
     if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
        save_DATA = save_DATA // ('orb-current'.kv.1)
+    else if ( ltmp .and. Node == 0 ) then
+       write(*,'(a)')'WARNING: Will not calculate the orbital currents, &
+            &the spectral function needs to be calculated for this to &
+            &apply.'
     end if
 
     !i = fdf_get('TBT.T.Eig',0)
