@@ -242,7 +242,7 @@ contains
     if ( present(final_invert) ) then
        ! If we do not need to invert it, save it for later.
        if ( .not. final_invert ) then
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
           rh1(1:nosq) = GS(:)
 !$OMP end parallel workshare
        end if
@@ -339,7 +339,7 @@ contains
     if ( present(final_invert) ) then
        ! If we do not need to invert it, return the value
        if ( .not. final_invert ) then
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
           GS(:) = rh1(1:nosq)
 !$OMP end parallel workshare
        end if
@@ -951,7 +951,7 @@ contains
        
        if ( itt_stepped(it2,1) ) then
           ! Number of iterations
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
           iters(:,:,:,:) = 0
 !$OMP end parallel workshare
        end if

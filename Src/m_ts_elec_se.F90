@@ -105,7 +105,7 @@ contains
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
        ! When no repetition we save it "as is"
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
        Sigma(:,:) = GS(:,:,1)
 !$OMP end parallel workshare
 
@@ -161,7 +161,7 @@ contains
     if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
        Sigma(:,:) = GS(:,:,1)
 !$OMP end parallel workshare
 
@@ -226,7 +226,7 @@ contains
     if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
        Sigma(:,:) = GS(:,:,1)
 !$OMP end parallel workshare
        
@@ -331,7 +331,7 @@ contains
        if ( El%pre_expand == 1 .and. product(El%Rep) > 1 ) then
 
           iuo = El%no_used
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
           work(:,1:iuo,1) = ZEnergy * S(:,1:iuo,1) - H(:,1:iuo,1)
 !$OMP end parallel workshare
           
@@ -344,7 +344,7 @@ contains
           ! We do not need to copy over GS, as it is
           ! used correctly
        
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
           !work(:,:,1) = GS(:,:,1)
           work(:,:,2) = ZEnergy * S(:,:,1) - H(:,:,1)
 !$OMP end parallel workshare

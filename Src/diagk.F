@@ -465,7 +465,7 @@ C Global operation to form new density matrix
       integer, intent(in) :: n
       real(dp), intent(out) :: a(n)
       real(dp), intent(in)  :: b(n)
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
       a(1:n) = b(1:n)
 !$OMP end parallel workshare
       end subroutine kludge_copy

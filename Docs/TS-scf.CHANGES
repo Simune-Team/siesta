@@ -1,4 +1,24 @@
 ----------------------------------------------------
+January 23, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-265
+Added missing default(shared) for OpenMP compilation
+
+* Several places were missing the default(shared)
+  statement for consistency.
+
+modified:
+  Src/class_Data1D.T90
+  Src/class_Data2D.T90
+  Src/class_TriMat.T90
+  Src/diagk.F
+  Src/m_handle_sparse.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_hartree.F90
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbt_trimat_invert.F90
+
+----------------------------------------------------
 January 23, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-264
 Bugfix for fvar for low level compilation optimizations
 

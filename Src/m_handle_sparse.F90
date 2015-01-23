@@ -466,7 +466,7 @@ contains
     end if
     if ( size(H_orig,dim=dim_spin) == 1 ) then
        if ( present(Ef) .and. present(S_1D) ) then
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
           H_orig(:,1) = H_orig(:,1) - Ef * S_orig(:)
 !$OMP end parallel workshare
        end if
@@ -478,11 +478,11 @@ contains
        call newdSpData2D(sp,1,dit,tmp)
        H_new => val(tmp)
        if ( present(Ef) .and. present(S_1D) ) then
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
           H_new(:,1) = H_orig(:,ispin) - Ef * S_orig(:)
 !$OMP end parallel workshare
        else
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
           H_new(:,1) = H_orig(:,ispin)
 !$OMP end parallel workshare
        end if

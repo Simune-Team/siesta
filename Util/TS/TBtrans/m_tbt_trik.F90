@@ -1237,7 +1237,7 @@ contains
        call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A)
 
        if ( ip > 2 ) then
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
          A(:) = A(:) - Y(:)
 !$OMP end parallel workshare
        end if

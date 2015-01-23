@@ -146,7 +146,7 @@ contains
             call die('Error in determining column')
 
        ! Copy over diagonal block
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
        Mpinv(sIdxT:eIdxT) = Mp(sIdxF:eIdxF)
 !$OMP end parallel workshare
 

@@ -356,7 +356,7 @@
 #endif
     
     p => val(this)
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
     p(:) = VAR_INIT
 !$OMP end parallel workshare
 

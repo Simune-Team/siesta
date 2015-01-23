@@ -297,7 +297,7 @@ contains
     Vav = Vtot / real(nlp,dp)
     
     ! Align potential
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
     Vscf(1:ntpl) = Vscf(1:ntpl) - Vav
 !$OMP end parallel workshare
 

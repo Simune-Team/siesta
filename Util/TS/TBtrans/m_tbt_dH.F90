@@ -682,7 +682,7 @@ contains
             call ncdf_get_var(grp,'dH',rH, start = start )
             call MPI_Bcast(rH,nnz,MPI_Double_Precision, 0, &
                  MPI_Comm_World, MPIerror)
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
             zH(:) = rH(:)
 !$OMP end parallel workshare
             deallocate(rH)
@@ -730,7 +730,7 @@ contains
       
       if ( is_real ) then
          call ncdf_get_var(grp,'dH',rH, start = start )
-!$OMP parallel workshare
+!$OMP parallel workshare default(shared)
          zH(:) = rH(:)
 !$OMP end parallel workshare
          deallocate(rH)
