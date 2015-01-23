@@ -58,14 +58,14 @@ contains
     if ( lnon_Eq ) then
        call UC_expansion_Sigma_GammaT(cE%e, &
             nou,no,El, nq, &
-            El%HA,El%SA,El%GA,El%Sigma,El%Gamma,nwork,work)
+            El%GA,El%Sigma,El%Gamma,nwork,work)
     else
        if ( El%Bulk ) then
           call UC_expansion_Sigma_Bulk(nou,no,El, nq, &
-               El%HA,El%SA,El%GA,El%Sigma,nwork,work)
+               El%GA,El%Sigma,nwork,work)
        else
           call UC_expansion_Sigma(cE%e,nou,no,El, nq, &
-               El%HA,El%SA,El%GA,El%Sigma,nwork,work)
+               El%GA,El%Sigma,nwork,work)
        end if
     end if
 
@@ -74,7 +74,7 @@ contains
   end subroutine UC_expansion
 
   subroutine UC_expansion_Sigma_Bulk(no_u,no_s,El, &
-       nq,H,S,GS,Sigma,nwork,work)
+       nq,GS,Sigma,nwork,work)
     use intrinsic_missing, only : EYE
     use units, only : Pi
 ! ********************
@@ -83,7 +83,6 @@ contains
     integer,  intent(in) :: no_u, no_s
     type(Elec), intent(in) :: El
     integer,  intent(in) :: nq
-    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
     complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
 ! ********************
 ! * OUTPUT variables *
@@ -128,7 +127,7 @@ contains
 
 
   subroutine UC_expansion_Sigma(ZEnergy,no_u,no_s,El, &
-       nq,H,S,GS,Sigma,nwork,work)
+       nq,GS,Sigma,nwork,work)
     use intrinsic_missing, only : EYE
 ! ********************
 ! * INPUT variables  *
@@ -137,7 +136,6 @@ contains
     integer,  intent(in) :: no_u, no_s
     type(Elec), intent(in) :: El
     integer,  intent(in) :: nq
-    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
     complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
 ! ********************
 ! * OUTPUT variables *
@@ -158,7 +156,7 @@ contains
          &too small')
        
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
-         El%na_used,El%lasto_used,nq,H,S,GS,nwork,work(1,1,1))
+         El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
 
     if ( nq == 1 ) then
 
@@ -192,7 +190,7 @@ contains
   end subroutine UC_expansion_Sigma
 
   subroutine UC_expansion_Sigma_GammaT(ZEnergy,no_u,no_s,El, &
-       nq,H,S,GS,Sigma,GammaT,nwork,work)
+       nq,GS,Sigma,GammaT,nwork,work)
     use intrinsic_missing, only: EYE
 ! ********************
 ! * INPUT variables  *
@@ -201,7 +199,6 @@ contains
     integer,  intent(in) :: no_u, no_s
     type(Elec), intent(in) :: El
     integer,  intent(in) :: nq
-    complex(dp), dimension(no_u,no_u,nq), intent(in) :: H, S
     complex(dp), dimension(no_u,no_u,nq), intent(inout) :: GS
 ! ********************
 ! * OUTPUT variables *
@@ -224,7 +221,7 @@ contains
          &too small')
 
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
-         El%na_used,El%lasto_used,nq,H,S,GS,nwork,work(1,1,1))
+         El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
 
     if ( nq == 1 ) then
 

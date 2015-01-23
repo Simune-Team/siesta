@@ -1097,8 +1097,6 @@ contains
     call ncdf_get_var(grp,'BZ',kscell)
     call ncdf_get_var(grp,'BZ_displ',kdispl)
     call ncdf_get_var(grp,'ElectronicTemperature',Temp)
-    Gamma   = ( n_s == 1 )
-    TSGamma = sum(kscell) == 1
 
 #ifdef MPI
     if ( lBcast ) then
@@ -1142,6 +1140,10 @@ contains
     call re_alloc(isc_off,1,3,1,n_s)
     call ncdf_get_var(grp,'isc_off',isc_off)
 
+    ! Calculate the Gamma and TSGamma
+    Gamma   = ( n_s == 1 )
+    TSGamma = sum(kscell) == 1
+
 #ifdef MPI
     if ( lBcast ) then
        if ( Node /= 0 ) then
@@ -1157,9 +1159,10 @@ contains
 
     call cdf_r_Sp(grp, no_u, sp, tag = trim(filename), Bcast = Bcast )
     call cdf_r_d1D(grp, 'S', sp, S, tag = trim(filename)//': S', &
-         Bcast = Bcast , dit = dit )
+         Bcast = Bcast )
+    dit => dist(S)
     call cdf_r_d2D(grp, 'H', sp, H, nspin, tag = trim(filename)//': H', &
-         Bcast = Bcast , dit = dit )
+         Bcast = Bcast, dit = dit )
              
     call ncdf_close(ncdf)
 

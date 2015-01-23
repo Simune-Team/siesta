@@ -1,4 +1,26 @@
 ----------------------------------------------------
+January 23, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-264
+Bugfix for fvar for low level compilation optimizations
+
+* The fvar library had difficulties handling intel
+  optimizations at low level.
+  This has been fixed.
+
+* Bugfix for reading the NetCDF file transiesta
+  file.
+  Several MPI calls were erroneously placed.
+
+* Removed unneeded variable passings in the electrode
+  self-energy expansion.
+
+modified:
+  Src/fvar/var.sh
+  Src/fvar/var_funcs_inc.inc
+  Src/fvar/variable.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_io.F90
+
+----------------------------------------------------
 January 23, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-263
 Greatly enhanced performance for large TB initialization
 
