@@ -203,8 +203,7 @@ contains
     call re_alloc(mm_col  , 1, 2, 1, no, &
          routine='tbtR2TM', name='mm_col')
     do i = 1 , no
-       mm_col(1,i) = min_col(sp,r,r%r(i))
-       mm_col(2,i) = max_col(sp,r,r%r(i))
+       mm_col(:,i) = minmax_col(sp,r,r%r(i))
        !print '(a,tr1,i5,tr3,2(tr1,i5),tr4,i0)','Orb: ',i,mm_col(:,i),no
     end do
 
@@ -780,7 +779,7 @@ contains
 ! Min and max column requires that the sparsity pattern
 ! supplied has already stripped off the buffer orbitals.
 ! Otherwise this will fail
-  function max_col(sp,r,row)
+  function minmax_col(sp,r,row)
     use class_Sparsity
     use geom_helper, only : UCORB
     ! The sparsity pattern
@@ -789,38 +788,18 @@ contains
     ! the row which we will check for (in TranSIESTA counting)
     integer, intent(in) :: row 
     ! The result
-    integer :: max_col, ptr, nr, j
+    integer :: minmax_col(2), ptr, nr, j
     integer, pointer :: l_col(:), l_ptr(:), ncol(:)
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col,nrows_g=nr)
-    max_col = rgn_pivot(r,row)
+    minmax_col(:) = rgn_pivot(r,row)
     do ptr = l_ptr(row) + 1 , l_ptr(row) + ncol(row)
        j = rgn_pivot(r,ucorb(l_col(ptr),nr))
        if ( j > 0 ) then
-          max_col = max(max_col,j)
+          if ( j < minmax_col(1) ) minmax_col(1) = j
+          if ( j > minmax_col(2) ) minmax_col(2) = j
        end if
     end do
-  end function max_col
-
-  function min_col(sp,r,row)
-    use class_Sparsity
-    use geom_helper, only : UCORB
-    ! The sparsity pattern
-    type(Sparsity), intent(inout) :: sp
-    type(tRgn), intent(in) :: r
-    ! the row which we will check for (in TranSIESTA counting)
-    integer, intent(in) :: row
-    ! The result
-    integer :: min_col, ptr, nr, j
-    integer, pointer :: l_col(:), l_ptr(:), ncol(:)
-    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col,nrows_g=nr)
-    min_col = rgn_pivot(r,row)
-    do ptr = l_ptr(row) + 1 , l_ptr(row) + ncol(row)
-       j = rgn_pivot(r,ucorb(l_col(ptr),nr))
-       if ( j > 0 ) then
-          min_col = min(min_col,j)
-       end if
-    end do
-  end function min_col
+  end function minmax_col
 
   function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val) 
     integer, intent(in) :: no, mm_col(2,no)

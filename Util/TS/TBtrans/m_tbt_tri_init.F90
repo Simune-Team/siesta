@@ -124,7 +124,7 @@ contains
 
   subroutine tbt_tri_init( dit , sp , proj )
 
-    use parallel, only : IONode, Node
+    use parallel, only : IONode
     use class_OrbitalDistribution
     use class_Sparsity
     use create_Sparsity_Union
@@ -154,6 +154,10 @@ contains
 
     call timer('tri-init',1)
 
+    if ( IONode ) then
+       write(*,'(/,a)')'tbtrans: Creating electrode tri-diagonal matrix blocks'
+    end if
+
     ! Copy over sparsity pattern
     tmpSp1 = sp
     
@@ -178,6 +182,10 @@ contains
     ! for the electrode down-folding regions
     call tbt_tri_init_elec( dit , tmpSp1 )
 
+    if ( IONode ) then
+       write(*,'(a)')'tbtrans: Creating device tri-diagonal matrix blocks'
+    end if
+
     if ( present(proj) ) then
        do i = 1 , size(proj)
 
@@ -201,8 +209,6 @@ contains
     close(1400)
 #endif
 
-    if ( IONode ) &
-         write(*,'(/,a)') 'tbtrans: Determining an optimal tri-matrix...'
     call rgn_delete(DevTri)
 
     ! Create tri-diagonal parts for this one...
@@ -212,7 +218,7 @@ contains
 
     DevTri%name = '[TRI] device region'
 
-    if ( Node == 0 ) then
+    if ( IONode ) then
        ! Print out stuff
        call rgn_print(DevTri, seq_max = 10 )
        do i = 1 , N_Elec

@@ -175,8 +175,10 @@ contains
 
     if ( present(r) ) then
        call rgn_copy(r,rin)
+       call rgn_sort(rin)
     else
        call rgn_range(rin,1,no_u)
+       rin%sorted = .true. ! we confirm it is sorted.
     end if
 
     allocate(num(no_l))
@@ -262,12 +264,12 @@ contains
        call die('Could not ensure sparsity pattern')
     end if
 
+    call rgn_delete(rin)
+
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no_l,no_u,nnzs,num,listptr,list, &
          name='T '//trim(name(in)), &
          ncols=ncols(in),ncols_g=ncols_g(in))
-
-    call rgn_delete(rin)
     
     ! Clean up
     deallocate(num,listptr,list)
@@ -290,6 +292,7 @@ contains
     integer :: no_l, no_u, nnzs
     integer, allocatable :: num(:), listptr(:), list(:)
     integer :: lio, io, ind, jo, indx
+    type(tRgn) :: sr
 
     ! set the connections to zero for the supplied atoms
     ! We do NOT reduce the sparsity row-size, ONLY the number of
@@ -297,6 +300,9 @@ contains
 
     call attach(in,nrows=no_l,nrows_g=no_u, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+
+    call rgn_copy(rr,sr)
+    call rgn_sort(sr)
 
     allocate(num(no_l))
 !$OMP parallel do default(shared), &
@@ -310,12 +316,12 @@ contains
 
        io = index_local_to_global(dit,lio)
 
-       if ( .not. in_rgn(rr,io) ) then
+       if ( .not. in_rgn(sr,io) ) then
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
           
           jo = ucorb(l_col(ind),no_u)
-          if ( in_rgn(rr,jo) ) cycle
+          if ( in_rgn(sr,jo) ) cycle
        
           ! The orbital exists on the atom
           num(lio) = num(lio) + 1
@@ -343,12 +349,12 @@ contains
     do lio = 1 , no_l
 
        io = index_local_to_global(dit,lio)
-       if ( in_rgn(rr,io) ) cycle
+       if ( in_rgn(sr,io) ) cycle
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
           jo = ucorb(l_col(ind),no_u)
-          if ( in_rgn(rr,jo) ) cycle
+          if ( in_rgn(sr,jo) ) cycle
 
           indx = indx + 1
 
@@ -360,6 +366,9 @@ contains
     if ( nnzs /= indx ) then
        call die('Could not ensure sparsity pattern')
     end if
+
+    ! Clean-up
+    call rgn_delete(sr)
 
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no_l,no_u,nnzs,num,listptr,list, &
@@ -420,6 +429,7 @@ contains
     integer :: no_l, no_u, nnzs
     integer, allocatable :: num(:), listptr(:), list(:)
     integer :: lio, io, ind, jo, indx, ridx
+    type(tRgn) :: sr1, sr2
 
     ! set the connections to zero for the supplied atoms
     ! We do NOT reduce the sparsity row-size, ONLY the number of
@@ -427,6 +437,10 @@ contains
 
     call attach(in,nrows=no_l,nrows_g=no_u, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    call rgn_copy(r1,sr1)
+    call rgn_copy(r2,sr2)
+    call rgn_sort(sr1)
+    call rgn_sort(sr2)
 
     allocate(num(no_l))
 !$OMP parallel do default(shared), &
@@ -440,9 +454,9 @@ contains
 
        io = index_local_to_global(dit,lio)
 
-       if ( in_rgn(r1,io) ) then
+       if ( in_rgn(sr1,io) ) then
           ridx = 1
-       else if ( in_rgn(r2,io) ) then
+       else if ( in_rgn(sr2,io) ) then
           ridx = 2
        else
           ridx = 0
@@ -458,10 +472,10 @@ contains
              ! the i'th orbital is in region 1
              ! now if jo is in region 2 we have a match
              ! and remove that orbital connection
-             if ( in_rgn(r2,jo) ) cycle
+             if ( in_rgn(sr2,jo) ) cycle
           else if ( ridx == 2 ) then
              jo = ucorb(l_col(ind),no_u)
-             if ( in_rgn(r1,jo) ) cycle
+             if ( in_rgn(sr1,jo) ) cycle
           end if
        
           ! The orbital exists on the atom
@@ -490,9 +504,9 @@ contains
     do lio = 1 , no_l
 
        io = index_local_to_global(dit,lio)
-       if ( in_rgn(r1,io) ) then
+       if ( in_rgn(sr1,io) ) then
           ridx = 1
-       else if ( in_rgn(r2,io) ) then
+       else if ( in_rgn(sr2,io) ) then
           ridx = 2
        else
           ridx = 0
@@ -505,10 +519,10 @@ contains
              ! the i'th orbital is in region 1
              ! now if jo is in region 2 we have a match
              ! and remove that orbital connection
-             if ( in_rgn(r2,jo) ) cycle
+             if ( in_rgn(sr2,jo) ) cycle
           else if ( ridx == 2 ) then
              jo = ucorb(l_col(ind),no_u)
-             if ( in_rgn(r1,jo) ) cycle
+             if ( in_rgn(sr1,jo) ) cycle
           end if
 
           indx = indx + 1
@@ -520,6 +534,9 @@ contains
     if ( nnzs /= indx ) then
        call die('Could not ensure sparsity pattern')
     end if
+
+    ! Clean-up sorted regions
+    call rgn_delete(sr1,sr2)
 
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no_l,no_u,nnzs,num,listptr,list, &

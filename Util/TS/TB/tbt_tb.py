@@ -428,7 +428,7 @@ class TBT_Geom(SIESTA_UNITS):
         ``self.tile``.
 
         It is adviced to only use this for electrode Bloch's theorem
-        purposes as ``self.tile`` is much faster.
+        purposes as ``self.tile`` is faster.
         
         Parameters
         ----------
@@ -465,11 +465,11 @@ class TBT_Geom(SIESTA_UNITS):
         xa = np.zeros((self.na_u*reps,3),np.float)
         n_orb = np.diff(self.lasto)
         orbs = np.zeros((xa.shape[0],),np.int)
+        dx = np.dot(np.arange(reps)[:,None],self.cell[axis,:][None,:])
         # Start the repetition
         ja = 0
         for ia in xrange(self.na_u):
             # Single atom displacements
-            dx = np.dot(np.arange(reps)[:,None],self.cell[axis,:][None,:])
             # First add the basic atomic coordinate,
             # then add displacement for each repetition.
             xa[ja:ja+reps,:] = self.xa[ia,:][None,:] + dx[:,:]

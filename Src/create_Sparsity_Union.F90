@@ -272,6 +272,7 @@ contains
     integer, allocatable :: num(:), listptr(:), list(:)
 
     integer :: lir,ir,i,iu,ptr,l,j
+    type(tRgn) :: sr
 
     ! Local variables...
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
@@ -295,13 +296,18 @@ contains
             &This is not enforced.')
     end if
 
+    ! When creating the sparsity, we search for the region
+    ! several times, this is slow if it isn't sorted.
+    call rgn_copy(r,sr)
+    call rgn_sort(sr)
+
     ! We first check whether the parts are contained in the sparsity
     ! pattern.
     dense_inserted = .false.
     do lir = 1 , n_rows
        ! Retrieve the global row-index
        ir = index_local_to_global(dit,lir,Node)
-       if ( in_rgn(r,ir) ) then
+       if ( in_rgn(sr,ir) ) then
           dense_inserted = .true.
           exit
        end if
@@ -310,6 +316,7 @@ contains
     ! if the dense part is not present, we can easily return
     if ( .not. dense_inserted ) then
        out = in
+       call rgn_delete(sr)
        return
     end if
 
@@ -328,20 +335,20 @@ contains
        ir = index_local_to_global(dit,lir,Node)
 
        ! The easy part is if we are not in the row containing the dense part
-       if ( .not. in_rgn(r,ir) ) then
+       if ( .not. in_rgn(sr,ir) ) then
           num(lir) = ncol(lir)
        else
           ! We assume a block-cyclic distribution
           ! Which means that the current row has the dense part
           ! We know all the dense elements, then we only need to
           ! count the non-dense
-          num(lir) = r%n
+          num(lir) = sr%n
           ! Retrieve the pointer to the original sparsity
           do i = l_ptr(lir) + 1 , l_ptr(lir) + ncol(lir)
              ! we check whether the sparse element is
              ! outside the dense part (in that case we need
              ! to count it)
-             if ( .not. in_rgn(r,l_col(i)) ) then
+             if ( .not. in_rgn(sr,l_col(i)) ) then
                 num(lir) = num(lir) + 1
              end if
           end do
@@ -387,7 +394,7 @@ contains
           do i = l_ptr(lir) + 1 , l_ptr(lir) + ncol(lir)
              ! When we are on either side of the dense part
              ! we simply copy the column index
-             if ( .not. in_rgn(r,l_col(i)) ) then
+             if ( .not. in_rgn(sr,l_col(i)) ) then
                 j = j + 1
                 list(iu+j) = l_col(i)
              else if ( .not. dense_inserted ) then
@@ -395,9 +402,9 @@ contains
                 ! we are within the dense part of the array
                 dense_inserted = .true.
                 ! insert the dense format
-                do l = 1 , r%n
+                do l = 1 , sr%n
                    j = j + 1
-                   list(iu+j) = r%r(l)
+                   list(iu+j) = sr%r(l)
                 end do
                 
              end if
@@ -409,9 +416,9 @@ contains
           ! back of the list arry with the dense matrix elements
           if ( .not. dense_inserted ) then
              ! insert the dense format
-             do l = 1 , r%n
+             do l = 1 , sr%n
                 j = j + 1
-                list(iu+j) = r%r(l)
+                list(iu+j) = sr%r(l)
              end do
           end if
           
@@ -422,6 +429,9 @@ contains
        end if
     end do
 
+    ! Clean-up sorted region
+    call rgn_delete(sr)
+
     call newSparsity(out,n_rows,n_rows_g,n_nzs,num,listptr,list, &
          name='(DU of: '//name(in)//')', &
          ncols=ncols(in),ncols_g=ncols_g(in))
@@ -430,7 +440,7 @@ contains
     ! are allocated.
     ! The newSparsity copies the values...
     deallocate(num,listptr,list)
-    
+
   end subroutine crtSparsity_Union_region
 
 end module create_Sparsity_Union

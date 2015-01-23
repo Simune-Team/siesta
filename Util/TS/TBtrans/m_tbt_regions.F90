@@ -517,6 +517,7 @@ contains
     do iEl = 1 , N_Elec
        
        call rgn_copy(Elecs(iEl)%o_inD,r_tmp2)
+       call rgn_sort(r_tmp2)
 
        ! Loop on the device region and copy
        ! region, in order
