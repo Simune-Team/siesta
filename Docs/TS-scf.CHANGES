@@ -1,4 +1,26 @@
 ----------------------------------------------------
+January 24, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-266
+Fully enabled OpenMP in expansion routines
+
+* The OpenMP expansion routine was not using 
+  OpenMP.
+  Now it is fully parallellized using the 
+  $TASK directive which enables difficult do
+  loops to be executed by constructing tasks
+  from a single core, then executing them.
+
+* Bugfix for TriMat.Block.Max
+  which did not take into consideration when the requesting
+  block size was as large as the block.
+  In that case it could not create two blocks and errored out.
+
+modified:
+  Src/m_ts_Sparsity2TriMat.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Util/TS/TBtrans/m_tbt_sparsity2trimat.F90
+
+----------------------------------------------------
 January 23, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-265
 Added missing default(shared) for OpenMP compilation
 

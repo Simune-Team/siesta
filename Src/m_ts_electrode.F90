@@ -330,9 +330,12 @@ contains
          'N','N',no,no,no,z_1,rh(j),no,s01  ,no,z_1,w    ,no)
 
     zDOS = 0.0_dp
+!$OMP parallel do default(shared), private(j), &
+!$OMP&reduction(+:zDOS)
     do j = 0 , nom1
        zDOS = zDOS + w(1+j*(no+1))
     end do
+!$OMP end parallel do
     ! Normalize DOS
     zDOS = zDOS / real(no,dp)
 

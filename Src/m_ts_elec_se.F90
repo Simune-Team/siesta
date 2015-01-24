@@ -94,7 +94,7 @@ contains
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-    integer :: ierr
+    integer :: ierr, io, jo
     integer :: ipvt(no_s)
 
     ! THis should never happen (work is TS-region!)
@@ -105,9 +105,13 @@ contains
        if ( no_u /= no_s ) call die('no_E/=no_s')
 
        ! When no repetition we save it "as is"
-!$OMP parallel workshare default(shared)
-       Sigma(:,:) = GS(:,:,1)
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(io,jo), collapse(2)
+       do jo = 1 , no_s
+          do io = 1 , no_s
+             Sigma(io,jo) = GS(io,jo,1)
+          end do
+       end do
+!$OMP end parallel do
 
     else
 
@@ -161,9 +165,13 @@ contains
     if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
-!$OMP parallel workshare default(shared)
-       Sigma(:,:) = GS(:,:,1)
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(io,jo), collapse(2)
+       do jo = 1 , no_s
+          do io = 1 , no_s
+             Sigma(io,jo) = GS(io,jo,1)
+          end do
+       end do
+!$OMP end parallel do
 
     else
        call EYE(no_s,Sigma)
@@ -178,8 +186,7 @@ contains
 
     ! Do:
     ! \Sigma = Z*S - H - \Sigma_bulk
-!$OMP parallel do default(shared), &
-!$OMP&private(io,jo), collapse(2)
+!$OMP parallel do default(shared), private(io,jo), collapse(2)
     do jo = 1 , no_s
        do io = 1 , no_s
           Sigma(io,jo) = work(io,jo,2) - Sigma(io,jo)
@@ -226,9 +233,13 @@ contains
     if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
-!$OMP parallel workshare default(shared)
-       Sigma(:,:) = GS(:,:,1)
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(io,jo), collapse(2)
+       do jo = 1 , no_s
+          do io = 1 , no_s
+             Sigma(io,jo) = GS(io,jo,1)
+          end do
+       end do
+!$OMP end parallel do
        
     else
 
@@ -330,13 +341,17 @@ contains
        ! In case the pre-expansion is not done on H, S
        if ( El%pre_expand == 1 .and. product(El%Rep) > 1 ) then
 
-          iuo = El%no_used
-!$OMP parallel workshare default(shared)
-          work(:,1:iuo,1) = ZEnergy * S(:,1:iuo,1) - H(:,1:iuo,1)
-!$OMP end parallel workshare
-          
+          iow = El%no_used
+!$OMP parallel do default(shared), private(iuo,juo), collapse(2)
+          do juo = 1 , iow
+             do iuo = 1 , no_s
+                work(iuo,juo,1) = ZEnergy * S(iuo,juo,1) - H(iuo,juo,1)
+             end do
+          end do
+!$OMP end parallel do
+
           iq = product(El%Rep)
-          call update_UC_expansion_A(iuo,no_s,El,na_u,lasto,&
+          call update_UC_expansion_A(iow,no_s,El,na_u,lasto,&
                iq,work(1,1,1),nwork,work(1,1,2))
           
        else
@@ -344,27 +359,39 @@ contains
           ! We do not need to copy over GS, as it is
           ! used correctly
        
-!$OMP parallel workshare default(shared)
-          !work(:,:,1) = GS(:,:,1)
-          work(:,:,2) = ZEnergy * S(:,:,1) - H(:,:,1)
-!$OMP end parallel workshare
+!$OMP parallel do default(shared), private(iuo,juo), collapse(2)
+          do juo = 1 , no_s
+             do iuo = 1 , no_s
+               !work(iuo,juo,1) = GS(iuo,juo,1)
+                work(iuo,juo,2) = ZEnergy * S(iuo,juo,1) - H(iuo,juo,1)
+             end do
+          end do
+!$OMP end parallel do
 
        end if
 
     else
-
-       do iq = 1 , nq 
-          qPi(1:3,iq) = - 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
-       end do
-
-       ! Save some multiplications :)
-       wq = log(1._dp / real(nq,dp))
 
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
        ! surface Green's function
+!$OMP parallel default(shared)
+
+!$OMP do private(iq)
+       do iq = 1 , nq 
+          qPi(1:3,iq) = - 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
+       end do
+!$OMP end do
+
+!$OMP master
+       ! Save some multiplications :)
+       wq = log(1._dp / real(nq,dp))
+!$OMP end master
+
+! Create the single execution for creating tasks
+!$OMP single
        iow = 0
        do iau = 1 , na_u
         do ia3 = 1 , El%Rep(3)
@@ -372,6 +399,8 @@ contains
         do ia1 = 1 , El%Rep(1)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
+!$OMP task firstprivate(iow,ia1,ia2,ia3,iuo), &
+!$OMP&private(jow,jau,ja1,ja2,ja3,ph,phZ,juo)
            jow = 0
            do jau = 1 , na_u
             do ja3 = 1 , El%Rep(3)
@@ -394,6 +423,7 @@ contains
             end do !ja2
             end do !ja3
            end do !jau
+!$OMP end task
           end do !iuo
         end do !ia1
         end do !ia2
@@ -407,6 +437,8 @@ contains
          do ia1 = 1 , El%Rep(1)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
+!$OMP task firstprivate(iq,iow,ia1,ia2,ia3,iuo), &
+!$OMP&private(jow,jau,ja1,ja2,ja3,ph,phZ,juo)
             jow = 0
             do jau = 1 , na_u
              do ja3 = 1 , El%Rep(3)
@@ -430,12 +462,17 @@ contains
              end do !ja2
              end do !ja3
             end do !jau
+!$OMP end task
            end do !iuo
          end do !ia1
          end do !ia2
          end do !ia3
         end do !iau
        end do !q-points
+
+!$OMP end single nowait
+
+!$OMP end parallel
 
     end if
 
@@ -472,18 +509,26 @@ contains
 
     else
 
-       do iq = 1 , nq 
-          qPi(1:3,iq) = - 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
-       end do
-
-       ! Save some multiplications
-       wq = log(1._dp / real(nq,dp))
-
        ! This is the crucial calcuation.
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
        ! surface Green's function
+!$OMP parallel default(shared)
+
+!$OMP do private(iq)
+       do iq = 1 , nq 
+          qPi(1:3,iq) = - 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
+       end do
+!$OMP end do
+
+!$OMP master
+       ! Save some multiplications
+       wq = log(1._dp / real(nq,dp))
+!$OMP end master
+
+! Create the single execution for creating tasks
+!$OMP single
        iow = 0
        do iau = 1 , na_u
         do ia3 = 1 , El%Rep(3)
@@ -491,6 +536,8 @@ contains
         do ia1 = 1 , El%Rep(1)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
+!$OMP task firstprivate(iow,ia1,ia2,ia3,iuo), &
+!$OMP&private(jow,jau,ja1,ja2,ja3,ph,juo)
            jow = 0
            do jau = 1 , na_u
             do ja3 = 1 , El%Rep(3)
@@ -510,6 +557,7 @@ contains
             end do !ja2
             end do !ja3
            end do !jau
+!$OMP end task
           end do !iuo
         end do !ia1
         end do !ia2
@@ -523,6 +571,8 @@ contains
          do ia1 = 1 , El%Rep(1)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
+!$OMP task firstprivate(iq,iow,ia1,ia2,ia3,iuo), &
+!$OMP&private(jow,jau,ja1,ja2,ja3,ph,juo)
             jow = 0
             do jau = 1 , na_u
              do ja3 = 1 , El%Rep(3)
@@ -542,12 +592,16 @@ contains
              end do !ja2
              end do !ja3
             end do !jau
+!$OMP end task
            end do !iuo
          end do !ia1
          end do !ia2
          end do !ia3
         end do !iau
        end do !q-points
+!$OMP end single nowait
+
+!$OMP end parallel
 
     end if
 
