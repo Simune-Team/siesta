@@ -14,6 +14,7 @@
       use siesta_options
       use timer_options,      only: use_tree_timer
       use sparse_matrices
+      use class_Fstack_Pair_Geometry_SpMatrix, only: new
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              iza, rmaxo, zvaltot, superc,
@@ -50,6 +51,8 @@
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
+      use m_new_dm,           only: get_allowed_history_depth
+      use m_object_debug,     only: set_object_debug_level
 #ifdef DEBUG_XC
       USE siestaXC, only: setDebugOutputUnit
 #endif /* DEBUG_XC */
@@ -63,12 +66,13 @@
 #endif
 
       implicit none
+
 #ifdef MPI
       logical :: initialized
       integer :: MPIerror  ! Return error code in MPI routines
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
-      integer :: i, is, ispin
+      integer :: i, is, ispin, n_dm_items
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
@@ -121,10 +125,10 @@
          call wallclock('Start of run')
       endif
 
-
+!
 !     Nullify arrays
       nullify(Haux,Saux,psi)
-      nullify(Dscf,Dold,Eold,Escf)
+      nullify(Dscf,Dold,Escf)
       nullify(listh)
       nullify(H,S)
       nullify(xijo)
@@ -147,7 +151,16 @@
 
 !     Initialise read .................................................
       call reinit( sname )
-
+!
+!     Set object debugging level
+!
+      call set_object_debug_level(0)
+      if (IONode) then
+         if (fdf_get('DebugObjects',.false.)) then
+            call set_object_debug_level(1)
+         endif
+      endif
+         
 !     Initialize CML (relies on reinit)
       call siesta_cml_init( )
 
@@ -214,7 +227,9 @@
       if (struct_only) then
          call bye('End of structure processing')
       endif
-      
+
+!-------------- Now we have the initial geometry
+!
 !     End of Initial Structure Processing
       if (Node.eq.0) then
         write(6,'(/,a,20("*"),a,28("*"))')
@@ -237,6 +252,11 @@
 
 !     Read simulation data
       call read_options( na_u, ns, nspin )
+
+      call get_allowed_history_depth(n_dm_items)
+      call new(DM_history,n_dm_items,"(DM history stack)")
+      if (ionode) print "(a,i0)", "Size of DM history Fstack: ",
+     $                            max_size(DM_history)
 
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
@@ -415,6 +435,7 @@
       call write_debug( 'POS siesta_init' )
 #endif
 !--------------------------------------------------------------------------- END
+      
       END subroutine siesta_init
 
       END MODULE m_siesta_init

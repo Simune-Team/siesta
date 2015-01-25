@@ -8,7 +8,9 @@
 
       USE m_final_H_f_stress, only: final_H_f_stress
       USE siesta_options
-      use sparse_matrices
+      use sparse_matrices, only: Dscf, Escf, Dold, maxnh
+      use sparse_matrices, only: H, S
+      use sparse_matrices, only: xijo, listh, listhptr, numh
       use siesta_geom
       use parallel, only: ionode
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u,
@@ -25,10 +27,14 @@
       use m_gamma
       implicit none
 
-      integer  :: iscf
+      integer, intent(in)  :: iscf
+
+      integer  :: io, is
       external :: plcharge
 
       call timer( 'PostSCF', 1 )
+!
+!     If converged, make one last iteration to find forces and stress
 
 !     If we use the minimization routine, the energy-density
 !     matrix is not calculated inside the SCF step, and
@@ -79,7 +85,10 @@
 
       call final_H_f_stress( iscf )
 
-!     Print energies
+      ! These energies are computed with a different DM from those in the
+      ! last SCF step, except if mixing the Hamiltonian, in which case they
+      ! are the same.
+
       DEna = Enascf - Enaatm
       Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec +
      &       Emad + Emm + Emeta
@@ -95,7 +104,6 @@
 !     everywhere.
 
       !! Eharrs = Etot + DEharr
-
       !
       ! Update the Free electronic energy with the new Etot
       ! and the latest entropy. This is not completely 

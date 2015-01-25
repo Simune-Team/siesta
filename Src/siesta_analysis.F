@@ -16,8 +16,7 @@
       USE m_local_DOS, only: local_DOS
       USE siesta_options
       use sparse_matrices, only: maxnh, listh, listhptr, numh
-      use sparse_matrices, only: H, S, Dscf, Dold, Eold, xijo
-      use sparse_matrices, only: Work=>H_kin  ! For scratch only!
+      use sparse_matrices, only: H, S, Dscf, xijo
       use siesta_geom
       use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
@@ -230,7 +229,8 @@
 
 !     Print program's energy decomposition and final forces
       if (IOnode) then
-        call siesta_write_energies( first=.false., iscf=0, dDmax=0.0_dp)
+        call siesta_write_energies( iscf=0, dDmax=0.0_dp,
+     $                                      dHmax=0.0_dp)
         call siesta_write_forces()
         call siesta_write_stress_pressure()
         call write_basis_enthalpy(FreeE,FreeEHarris)
@@ -307,22 +307,21 @@
 
 !     Calculation of the bulk polarization using the Berry phase
 !     formulas by King-Smith and Vanderbilt
-!     Attention Work is used as an auxiliary array
+
       if (nkpol.gt.0 .and. .not.bornz) then
         call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, ucell_last,
      &               no_u, no_l, no_s, nspin, qspin, 
      &               maxnh, nkpol, numh, listhptr, listh, 
-     &               H, S, Work, xijo, indxuo, isa, iphorb, 
+     &               H, S, xijo, indxuo, isa, iphorb, 
      &               iaorb, lasto, shape,
      &               nkpol,kpol,wgthpol, polR, polxyz ) 
       endif
 
 !     Calculation of the optical conductivity
-!     Attention Work, Eold, Dold are used as auxiliary arrays
+
       call optical(na_u, na_s, xa_last, scell_last, ucell_last,
      &             no_u, no_l, no_s, nspin, qspin,
-     &             maxnh, numh, listhptr, listh, H, S, Work,
-     &             Eold(1:maxnh,1), Dold(1:maxnh,1), xijo,
+     &             maxnh, numh, listhptr, listh, H, S, xijo,
      $             indxuo, ebk, ef, temp,
      &             isa, iphorb, iphKB, lasto, lastkb, shape )
 

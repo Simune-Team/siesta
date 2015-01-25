@@ -48,10 +48,9 @@
 !-------------------------------------------------------------- BEGIN
       call timer( 'compute_dm', 1 )
 
-! Save present density matrix ........................................
+! Save present DM here, instead of in setup_hamiltonian...
 
-      Dold(1:maxnh,1:nspin) = Dscf(1:maxnh,1:nspin)
-      Eold(1:maxnh,1:nspin) = Escf(1:maxnh,1:nspin)
+      Dold(:,:) = Dscf(:,:)
 
 !     Solve eigenvalue problem 
 
@@ -84,7 +83,6 @@
      &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
      &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
      &               beta, pmax, Dscf, Escf, Ecorrec, nspin, qs )
-        Ecorrec = 0.0_dp
         Entropy = 0.0_dp
       elseif (isolve .eq. SOLVE_MINIM) then
         if (nspin==4) call die('ERROR: Non-collinear spin calculations
@@ -124,7 +122,12 @@
      &       TSiscf,qtot)
         call timer('TS',2)
 
+        if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) 
+        if (TSiscf .eq. 1) call timer( 'TS', 3 ) 
+        if (TSiscf .eq. 1) call timer( 'TS_calc', 3 ) 
+
         Ecorrec = 0._dp
+        Entropy = 0.0_dp
 ! TSS End
 #endif /* TRANSIESTA */
       else

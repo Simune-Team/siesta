@@ -10,7 +10,7 @@
 !
       subroutine optical( nua, na, xa, scell, ucell, nuotot, nuo, no, 
      &                    nspin, qspin, maxnh, numh, 
-     &                    listhptr, listh, H, S, AuxSr, AuxSr2, AuxSr3,
+     &                    listhptr, listh, H, S, 
      &                    xijo, indxuo, ek, efermi, temp,
      &                    isa, iphorb, iphkb, lasto, lastkb, shape )
 C *********************************************************************
@@ -39,9 +39,6 @@ C                               column indexes for each matrix row
 C integer listhptr(nuo)       : Pointer to start of row in listh
 C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
-C real*8  AuxSr(maxnh)        : Auxiliar matrix (outside H0)
-C real*8  AuxSr2(maxnh)       : Auxiliar matrix (outside Eold)
-C real*8  AuxSr3(maxnh)       : Auxiliar matrix (outside Dold)
 C real*8  xijo(3,*)           : Vectors between orbital centers (sparse)
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
@@ -95,8 +92,7 @@ C     Passed variables
       integer           iphKB(*)
       real(dp)          ek(nuotot), qspin(2), H(maxnh,nspin), 
      &                  S(maxnh), xijo(3,*),
-     &                  ucell(3,3), efermi, temp, AuxSr(maxnh), 
-     &                  AuxSr2(maxnh),AuxSr3(maxnh), 
+     &                  ucell(3,3), efermi, temp,
      &                  scell(3,3), xa(3,na)
 
 C     Internal variables 
@@ -138,6 +134,10 @@ C     Internal variables
       character(len=12)             :: option
       character(len=1)              :: matrix
 
+      real(dp), pointer ::   AuxSr(:)=>null()   ! Auxiliary matrix 
+      real(dp), pointer ::   AuxSr2(:)=>null()   ! Auxiliary matrix 
+      real(dp), pointer ::   AuxSr3(:)=>null()   ! Auxiliary matrix 
+
       external          io_assign, io_close,
      &                  paste, volcel
 
@@ -146,6 +146,10 @@ C     Internal variables
 #endif
 C     Start time counter 
       call timer( 'optical', 1 )
+
+      call re_alloc( AuxSr, 1, maxnh,  'AuxSr', 'optical' )
+      call re_alloc( AuxSr2, 1, maxnh,  'AuxSr2', 'optical' )
+      call re_alloc( AuxSr3, 1, maxnh,  'AuxSr3', 'optical' )
 
 C     Initialise nbands to maximum number possible 
       nbands = nuotot
@@ -510,7 +514,7 @@ C         Find Wavefunctions
             call die('Optical: ERROR: incorrect value of nspin')
           endif
 
-C         Copy eigenvalues to an auxiliar array
+C         Copy eigenvalues to an auxiliary array
           efermiloc = efermi
           do iuo = 1,nuotot
             ekloc(iuo)=ek(iuo)
@@ -693,6 +697,9 @@ C     This is the only exit point
   999 continue
 
 C     Deallocate internal arrays
+      call de_alloc( AuxSr,     'AuxSr',     'optical' )
+      call de_alloc( AuxSr2,    'AuxSr2',    'optical' )
+      call de_alloc( AuxSr3,    'AuxSr3',    'optical' )
       call de_alloc( epsimg,    'epsimg',    'optical' )
       call de_alloc( intraband, 'intraband', 'optical' )
       call de_alloc( ekloc,     'ekloc',     'optical' )

@@ -44,7 +44,8 @@
 
       integer  :: iscf
       logical  :: first, last_step, SCFconverged
-      real(dp) :: dmax      ! Max. change in DM or H elements
+      real(dp) :: dDmax     ! Max. change in DM elements
+      real(dp) :: dHmax     ! Max. change in H elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
 
@@ -108,19 +109,32 @@
         if (mixH) then
            if ( first) call setup_hamiltonian( iscf )
            call compute_dm( iscf )
+           ! Maybe set Dold to zero if reading charge or H...
+           call compute_max_diff(Dold,Dscf,dDmax) ! Assuming we have Dold
            call setup_hamiltonian( iscf )
-           call compute_max_diff(Hold,H,dmax)
+           call compute_max_diff(Hold,H,dHmax)
         else 
            call setup_hamiltonian( iscf )
+           ! Maybe make sure that Hold = 0 at the beginning?
+           if (.not. first) call compute_max_diff(Hold,H,dHmax) 
            call compute_dm( iscf )
-           call compute_max_diff(Dold,Dscf,dmax)
+           call compute_max_diff(Dold,Dscf,dDmax)
         end if 
         call compute_energies(iscf)
         if (mix_charge) then
            call compute_charge_diff(drhog)
         endif
+        ! Note: For DM and H convergence checks. At this point: 
+        ! If mixing the DM:
+        !        Dscf=DM_out, Dold=DM_in(mixed), H=H_in, Hold=H_in(prev step)
+        !        dDmax=maxdiff(DM_out,DM_in)
+        !        dHmax=maxdiff(H_in - H_in(prev step))
+        ! If mixing the Hamiltonian:
+        !        Dscf=DM_out, Dold=DM_in, H=H_(DM_out), Hold=H_in(mixed)
+        !        dDmax=maxdiff(DM_out,DM_in)
+        !        dHmax=maxdiff(H(DM_out),H_in)
 
-        call scfconvergence_test( first, iscf, dmax,
+        call scfconvergence_test( first, iscf, dDmax, dHmax, 
      &                            conv_harris, conv_freeE,
      &                            SCFconverged )
 

@@ -3,7 +3,7 @@
       public :: scfconvergence_test
       CONTAINS
 
-      subroutine scfconvergence_test( first, iscf, dDmax,
+      subroutine scfconvergence_test( first, iscf, dDmax, dHmax,
      $                                conv_harris, conv_freeE,
      $                                converged)
       USE siesta_options
@@ -21,9 +21,16 @@
       integer :: iscf
       logical :: first
 
-      real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix or H
+      real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix
+      real(dp), intent(in) :: dHmax     ! Max. change in H
       type(converger_t), intent(inout)  :: conv_harris, conv_freeE
       logical, intent(out)              :: converged
+
+
+      logical :: default_DM_convergence
+      logical :: default_NoEnergy_convergence
+      logical :: is_Harris_conv, is_FreeEnergy_conv
+      logical :: is_H_conv, is_DM_conv, is_Delta_conv
 
 !------------------------------------------------------------------- BEGIN
 
@@ -34,7 +41,7 @@
 
       ! Print energies
       if (IOnode) then
-        call siesta_write_energies( first, iscf, dDmax )
+        call siesta_write_energies( iscf, dDmax, dHmax )
 
         if (harrisfun) then
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ',Eharrs/eV
@@ -52,61 +59,70 @@
         call wallclock("-------------- end of scf step")
       endif
 
-      converged = .false.
+      is_DM_conv = (dDmax.lt.dDtol)
+      is_H_conv =  (dHmax.lt.dHtol)
+      is_Harris_conv = is_converged(conv_harris)
+      is_FreeEnergy_conv = is_converged(conv_freeE)
 
-      if (require_energy_convergence) then
-         if (   dDmax.lt.dDtol
-     &        .and. is_converged(conv_freeE)) then
-            converged = .true.
-            if (IOnode) then
-              write(6,"(/,a)") "SCF Convergence by FreeE+dmax criteria"
-              if (mixH) then
-                 write(6,"(a,f14.8)") "max |H_out - H_in| (Ry): ",
-     $                                 dDmax/eV
-              else if (mix_charge) then
-                 write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
-              else
-                 write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
-              endif
+      default_DM_convergence =
+     $      (.not. require_hamiltonian_convergence)
+      default_NoEnergy_convergence =
+     $      (.not. require_energy_convergence)
+
+      is_Delta_conv = ((require_hamiltonian_convergence
+     $                  .and. is_H_conv) .or.
+     $                 (default_DM_convergence
+     $                  .and. is_DM_conv) ) 
+
+      converged = ( (require_harris_convergence
+     $               .and. is_Harris_conv) .or.
+     $              (require_energy_convergence
+     $               .and. is_FreeEnergy_conv 
+     $               .and. is_Delta_conv)  .or.
+     $              (default_NoEnergy_convergence
+     $               .and. is_Delta_conv)      )
+
+      if (converged .and. IOnode) then
+
+         if (require_harris_convergence) then
+            write(6,"(/,a)") "SCF Convergence by Harris criterion"
+            write(6,"(a,f14.8)") "|EH_i-EH_(i-1)| (eV) < ",
+     $           tolerance(conv_harris)/eV
+         endif
+      
+         if (require_hamiltonian_convergence) then
+            if (require_energy_convergence) then
+              write(6,"(/,a)") "SCF Convergence by FreeE+dHmax criteria"
+              write(6,"(a,f14.8)") "|FreeE_i-FreeE_(i-1)| (eV) < ",
+     $              tolerance(conv_freeE)/eV
+            else
+              write(6,"(/,a)") "SCF Convergence by dHmax criterion"
+            endif
+            write(6,"(a,f14.8)") "max |H_out - H_in| (eV): ", dHmax/eV
+         endif
+            
+         if (default_DM_convergence) then
+            if (require_energy_convergence) then
+              write(6,"(/,a)") "SCF Convergence by FreeE+dDmax criteria"
               write(6,"(a,f14.8)") "|FreeE_i-FreeE_(i-1)| (eV) < ",
      $                             tolerance(conv_freeE)/eV
-              call pxfflush(6)
+            else 
+              write(6,"(/,a)") "SCF Convergence by dDmax criteria"
             endif
-         endif
-      else if (require_harris_convergence) then
-         if (is_converged(conv_harris)) then
-            converged = .true.
-            if (IOnode) then
-               write(6,"(/,a)") "SCF Convergence by Harris criterion"
-               write(6,"(a,f14.8)") "|EH_i-EH_(i-1)| (eV) < ",
-     $                             tolerance(conv_harris)/eV
-               call pxfflush(6)
-            endif
-         endif
-      else
-        if (dDmax.lt.dDtol) then
-           converged = .true.
-           if (IOnode) then
-              write(6,"(/,a)") "SCF Convergence by dMax criterion"
-              if (mixH) then
-                 write(6,"(a,f14.8)") "max |H_out - H_in| (eV): ",
-     $                                 dDmax/eV
-              else if (mix_charge) then
-                 write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
-              else
-                 write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
-              endif
-              call pxfflush(6)
-           endif
-        endif
-      endif
-      if (converged) then
-         if (IOnode) then
-            write(6,"(a,i4,a)") "SCF cycle converged after ",
-     $           iscf," iterations"
-         endif
-      endif
 
+            if (mix_charge) then
+               write(6,"(a,f14.8)") "max |DM_i - DM_(i-1)|: ", dDmax
+            else
+               write(6,"(a,f14.8)") "max |DM_out - DM_in|: ", dDmax
+            endif
+         endif
+      
+         write(6,"(a,i4,a)") "SCF cycle converged after ",
+     $           iscf," iterations"
+
+         call pxfflush(6)
+
+      endif
 
 !---------------------------------------------------------------- END
       END subroutine scfconvergence_test

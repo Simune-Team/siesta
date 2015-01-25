@@ -10,6 +10,8 @@
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H, S, Hold
       use sparse_matrices, only: Dscf, Escf, xijo
+      use class_SpMatrix,  only: val
+
       use siesta_geom
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -38,6 +40,7 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
+
       implicit none
       integer, intent(in) :: iscf
       real(dp)            :: stressl(3,3)
@@ -53,22 +56,27 @@
       type(filesOut_t)    :: filesOut  ! blank output file names
       logical             :: use_rhog_in
 
+      real(dp), pointer   :: H_vkb_val(:,:)
+
 !------------------------------------------------------------------------- BEGIN
 
       call timer('setup_H',1)
 
 ! Save present H matrix
-      if(mixH) then
-         Hold(1:maxnh,1:nspin) = H(1:maxnh,1:nspin)
-      end if
+      do ispin = 1,nspin
+         do io = 1,maxnh
+            Hold(io,ispin) = H(io,ispin)
+         enddo
+      enddo
 
 
       ! Initialize Hamiltonian with the non-SCF part...................
 
+      H_vkb_val => val(H_vkb)
       do ispin = 1,nspin
         if (ispin .le. 2) then
           do io = 1,maxnh
-            H(io,ispin) = H_kin(io) + H_vkb(io)
+            H(io,ispin) = H_kin(io) + H_vkb_val(io,1)
           enddo
         else
           do io = 1,maxnh
@@ -91,7 +99,7 @@
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
-          Enl = Enl + H_vkb(io) * Dscf(io,ispin)
+          Enl = Enl + H_vkb_val(io,1) * Dscf(io,ispin)
         enddo
       enddo
 #ifdef MPI
@@ -133,7 +141,6 @@
 
       want_partial_charges = .false.
       call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
-
 !  It is wasteful to write over and over H and S, as there are
 !  no different files.
 ! Save Hamiltonian and overlap matrices ............................
@@ -151,6 +158,7 @@
          call timer( 'all', 2 )  ! New call to close the tree
          call timer( 'all', 3 )
          call bye("H-Setup-Only requested")
+         STOP
       endif
 
 !------------------------------------------------------------------------- END

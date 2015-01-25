@@ -66,6 +66,7 @@ C
       use alloc,           only : re_alloc, de_alloc
       use atomlist,        only : no_l
       use sparse_matrices, only : listhptr, numh, listh, xijo
+
       implicit none
 
       integer,           intent(in) :: na
@@ -77,7 +78,7 @@ C
       logical,           intent(in) :: negl
       integer,        intent(out)   :: nlhmax
       logical, intent(in)           :: gamma
-      logical, intent(in)     :: set_xijo
+      logical, intent(in)           :: set_xijo
       logical, intent(out)    :: folding
 
       external               timer

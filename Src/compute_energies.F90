@@ -162,8 +162,10 @@ CONTAINS
     subroutine compute_correct_EKS()
 
       use files, only : filesOut_t    ! derived type for output file names
+      use class_SpMatrix,  only: val
 
       type(filesOut_t)    :: filesOut  ! blank output file names
+      real(dp), pointer     :: H_vkb_val(:,:)
 
       ! Compute E_KS(DM_out)
 
@@ -193,12 +195,13 @@ CONTAINS
 
 !     Compute Tr[H_0*DM_out] = Ekin + Enl with DM_out
 
+      H_vkb_val => val(H_vkb)
       Ekin = 0.0_dp
       Enl  = 0.0_dp
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
-          Enl  = Enl  + H_vkb(io)* Dscf(io,ispin)
+          Enl  = Enl  + H_vkb_val(io,1)* Dscf(io,ispin)
         enddo
       enddo
 #ifdef MPI

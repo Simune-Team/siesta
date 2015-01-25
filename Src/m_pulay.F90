@@ -136,6 +136,7 @@ CONTAINS
     use sys,        only : die
     use alloc
     use siesta_options, only: avoid_first_after_kick
+    use fdf,        only : fdf_get
     use m_svd,      only : solve_with_svd
 #ifdef MPI
     use mpi_siesta
@@ -161,6 +162,8 @@ CONTAINS
     logical :: after_kick
     logical :: no_new_information
     logical :: debug_inverse = .false.
+
+!    logical, save :: kick_due = .false.
     integer :: rank
     !
 #ifdef MPI
@@ -419,6 +422,9 @@ CONTAINS
           coeff(1:maxmix-1) = 0.0_dp
           coeff(maxmix) = 1.0_dp
        endif
+          
+       ! Use a more sophisticated history of rank degradation...
+       !kick_due =  (rank < maxmix + 1)
     else
        call inverse(b,bi,maxmix+1,maxmix+1,info,debug_inverse)
        !
@@ -514,6 +520,8 @@ CONTAINS
     call de_alloc( b, name='b', routine="pulayx" )
     call de_alloc( bi, name="bi", routine="pulayx" )
     call de_alloc( coeff, name="coeff", routine="pulayx" )
+    call de_alloc( sigma, name="sigma", routine="pulayx" )
+    call de_alloc( beta, name="beta", routine="pulayx" )
     call de_alloc( buffer, name="buffer", routine="pulayx" )
     !
   CONTAINS

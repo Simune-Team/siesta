@@ -21,6 +21,12 @@
       use m_fixed,       only : fixed
       use sparse_matrices
       use siesta_geom
+
+      use class_Geometry,  only: newGeometry, Geometry, delete
+      use class_Pair_Geometry_SpMatrix, only: Pair_Geometry_SpMatrix
+      use class_Pair_Geometry_SpMatrix, only: new, delete
+      use class_Fstack_Pair_Geometry_SpMatrix, only: new
+
       USE siesta_options
       use m_stress
       use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
@@ -38,11 +44,28 @@
       external :: eggbox, mulliken
       real(dp), external :: volcel
 
+      character(len=256) :: msg
+      type(Pair_Geometry_SpMatrix)  :: pair
+      type(Geometry)                :: geom
+
 !------------------------------------------------------------------------- BEGIN
       call timer( 'STanaly', 1 )
 #ifdef DEBUG
       call write_debug( '  PRE state_analysis' )
 #endif
+
+      if (max_size(DM_history) > 0) then
+
+        ! Save (geom,DM) pair to history stack
+         write(msg,"(a,i0)") "step: ",istep
+         call newGeometry(geom,na_u,ucell,xa,isa,
+     $                 name="Geometry for " // msg)
+         call new(pair,geom,DM,name=" Pair geom,DM for " // msg)
+         call push(DM_history,pair)
+         call delete(pair)
+         call delete(geom)
+      endif
+
 !     Save structural information in crystallographic format,
 !     and canonical Zmatrix (if applicable) before moving the atoms
       if (cml_p) then

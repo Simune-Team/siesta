@@ -14,7 +14,7 @@
       subroutine KSV_pol( nua, na, xa, rmaxo, scell, ucell, nuotot,
      .                    nuo, no, nspin, qspin, maxnh, 
      .                    maxkpol, numh, listhptr, listh, H, S, 
-     .                    AuxSr, xijo, indxuo, isa, iphorb, iaorb, 
+     .                    xijo, indxuo, isa, iphorb, iaorb, 
      .                    lasto, shape, nkpol,kpol,
      .                    wgthpol, polR, polxyz )
 C *********************************************************************
@@ -44,7 +44,6 @@ C integer listh(maxnh)        : Nonzero hamiltonian-matrix element
 C                               column indexes for each matrix row
 C real*8  H(maxnh,spin)       : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
-C real*8  AuxSr(maxnh)        : Auxiliar matrix (outside H0)
 C real*8  xijo(3,maxnh)       : Vectors between orbital centers (sparse)
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
@@ -93,10 +92,9 @@ C
      .                  H(maxnh,nspin), kpol(3,maxkpol), 
      .                  S(maxnh), xijo(3,maxnh),
      .                  polR(3,nspin), polxyz(3,nspin), ucell(3,3),
-     .                  wgthpol(maxkpol), AuxSr(maxnh), 
+     .                  wgthpol(maxkpol),
      .                  scell(3,3), rmaxo,  xa(3,na)
 C *********************************************************************
-
 C Internal variables 
       real(dp)  ntote_real   !!** Needed to deal with synthetics
       integer
@@ -125,11 +123,14 @@ C Internal variables
       external          ddot, paste, volcel, reclat, memory
 
       real(dp), dimension(:), pointer :: psi1, psiprev
+      real(dp), pointer ::   AuxSr(:)=>null()   ! Auxiliar matrix 
 
       parameter (  tiny= 1.0d-8  )
 
 C Start time counter 
       call timer( 'KSV_pol', 1 )
+
+      call re_alloc( AuxSr, 1, maxnh,  'AuxSr', 'ksv_pol' )
 
 C Reading unit cell and calculate the reciprocal cell
       call reclat( ucell, rcell, 1 )
@@ -570,6 +571,7 @@ C This is the only exit point
   999 continue
 
 C Deallocate local memory
+      call de_alloc( AuxSr,   'AuxSr',   'KSV_pol' )
       call de_alloc( muo,     'muo',     'KSV_pol' )
       call de_alloc( ek,      'ek',      'KSV_pol' )
       call de_alloc( psi1,    'psi1',    'KSV_pol' )

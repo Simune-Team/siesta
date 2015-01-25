@@ -8,6 +8,7 @@ MODULE siesta_options
   logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
   logical :: mix_after_convergence ! Mix DM or H even after convergence
+  logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
@@ -21,7 +22,7 @@ MODULE siesta_options
   logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
   logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
-  logical :: mix           ! Mix first SCF step? Used in broyden_mixing
+  logical :: mix_first_scf_step ! Mix first SCF step? Used in broyden_mixing
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
@@ -73,6 +74,7 @@ MODULE siesta_options
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
   logical :: require_energy_convergence ! free Energy conv. to finish SCF iteration?
   logical :: require_harris_convergence ! to finish SCF iteration?
+  logical :: require_hamiltonian_convergence ! to finish SCF iteration?
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
   logical :: fire_optim    ! Use FIRE method to optimize geometry?
   logical :: struct_only   ! Output initial structure only?
@@ -86,7 +88,6 @@ MODULE siesta_options
   logical :: partial_charges_at_every_geometry
   logical :: partial_charges_at_every_scf_step
 
-  logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
   logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
 
   integer :: ia1           ! Atom index
@@ -98,6 +99,7 @@ MODULE siesta_options
   integer :: iquench       ! Quenching option, read in redata, used in dynamics routines
   integer :: isolve        ! Option to find density matrix: 0=>diag, 1=>order-N
   integer :: istart        ! First geommetry iteration step for certain types of dynamics
+  integer :: DM_history_depth   ! Number of previous density matrices used in extrapolation and reuse
   integer :: maxsav        ! Number of previous density matrices used in Pulay mixing
   integer :: broyden_maxit ! Max. iterations in Broyden geometry relaxation
   integer :: mullipop      ! Option for Mulliken population level of detail
@@ -121,6 +123,7 @@ MODULE siesta_options
   real(dp) :: dm_normalization_tol    ! Threshold for DM normalization mismatch error
   logical  :: normalize_dm_during_scf ! Whether we normalize the DM 
   real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
+  real(dp) :: dHtol         ! Tolerance in change of H elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
   real(dp) :: dx            ! Atomic displacement used to calculate Hessian matrix
   real(dp) :: dxmax         ! Max. atomic displacement allowed during geom. relaxation
@@ -154,7 +157,7 @@ MODULE siesta_options
   real(dp), parameter :: g2cut_default = 100.e0_dp
   real(dp), parameter :: temp_default  = 1.900e-3_dp 
 
-  logical, parameter  :: mixH_def = .false.
+  logical,  parameter :: mixH_def = .false.
 
   integer,  parameter :: maxsav_default = 0
   integer,  parameter :: nscf_default = 50
@@ -163,6 +166,7 @@ MODULE siesta_options
   real(dp), parameter :: wmix_default = 0.25_dp
   real(dp), parameter :: wmixkick_default = 0.5_dp
   real(dp), parameter :: dDtol_default = 1.0e-4_dp
+  real(dp), parameter :: dHtol_default = 1.0e-4_dp   ! 0.1 mRy
   real(dp), parameter :: Energy_tolerance_default = 1.0e-5_dp * eV  ! Free energy...
   real(dp), parameter :: Harris_tolerance_default = 1.0e-5_dp * eV
   real(dp), parameter :: occtol_default = 1.0e-12_dp
@@ -213,9 +217,10 @@ MODULE siesta_options
 !                            KB projectors)
 ! integer nscf             : Maximum number of SCF cycles per time step
 ! real*8 dDtol             : Maximum Density Matrix tolerance in SCF
+! real*8 dHtol             : Maximum Hamiltonian tolerance in SCF
 ! real*8 Energy_tolerance  : Maximum Total energy tolerance in SCF
 ! real*8 Harris_tolerance  : Maximum Harris energy tolerance in SCF
-! logical mix              : Perform mix in first SCF step
+! logical mix_first_scf_step            : Perform mix in first SCF step
 ! real*8 wmix              : Amount of output DM for new DM
 ! integer isolve           : Method of solution.  0   = Diagonalization
 !                                                 1   = Order-N
@@ -351,6 +356,9 @@ MODULE siesta_options
                            value=trim(slabel), dictref='siesta:slabel')
     endif
 
+    ! 
+    DM_history_depth = fdf_get('DM.HistoryDepth', 4)
+
     ! H setup only
     h_setup_only = fdf_get('HSetupOnly', .false.)
     if (ionode .and. h_setup_only) then
@@ -460,6 +468,7 @@ MODULE siesta_options
     !     Minimum/Maximum number of SCF iterations
     min_nscf = fdf_get('MinSCFIterations',0)
     nscf     = fdf_get('MaxSCFIterations',nscf_default)
+    nscf = max(nscf,min_nscf)
     SCFMustConverge = fdf_get('SCFMustConverge', .false.)
     if (ionode) then
       write(6,4) 'redata: Min. number of SCF Iter          = ',min_nscf
@@ -493,17 +502,18 @@ MODULE siesta_options
           endif
        endif
     endif
-    if (mixH) then
-       if (ionode) then
-          write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
-       endif
-    endif
     
+    if (ionode) then
+      write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
+    endif
+
     mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.true.)
+
     if (ionode) then
        write(6,1) 'redata: Mix DM or H after convergence    = ',  &
                   mix_after_convergence
     endif
+
 
     ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
     maxsav = fdf_get('DM.NumberPulay', maxsav_default)
@@ -541,16 +551,16 @@ MODULE siesta_options
     endif
 
     ! Mix density matrix on first SCF step
-    ! (mix)
-    mix = fdf_get('DM.MixSCF1',.false.)
+    ! (mix_first_scf_step)
+    mix_first_scf_step = fdf_get('DM.MixSCF1',.false.)
     !
     if (ionode) then
-      write(6,1) 'redata: Mix DM in first SCF step ?       = ',mix
+      write(6,1) 'redata: Mix DM in first SCF step ?       = ',mix_first_scf_step
     endif
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='DM.MixSCF1',   &
-                            value=mix, dictRef='siesta:mix' )
+                            value=mix_first_scf_step, dictRef='siesta:mix' )
     endif
 
     ! Use disk or memory to store intermediate Pulay mixing vectors
@@ -647,6 +657,32 @@ MODULE siesta_options
                             value=dDtol, dictRef='siesta:dDtol', &
                             units='siestaUnits:eAng_3' )
     endif
+
+    ! Require Hamiltonian convergence for achieving Self-Consistency?
+    require_hamiltonian_convergence = fdf_get('SCF.RequireHConvergence', &
+                                         .false.)
+    if (ionode) then
+      write(6,1) 'redata: Require H convergence for SCF      = ', &
+                  require_hamiltonian_convergence
+    endif
+
+    if (cml_p) then
+      call cmlAddParameter( xf=mainXML, name='SCF.RequireHConvergence', &
+                            value=require_hamiltonian_convergence,               &
+                            dictRef='siesta:ReqHConv' )
+    endif
+
+    ! Hamiltonian tolerance for achieving Self-Consistency
+    dHtol = fdf_get('SCF.H.Tolerance',dHtol_default, 'Ry')
+    if (ionode) then
+      write(6,7) 'redata: Hamiltonian Tolerance in SCF     = ', dHtol, ' Ry'
+    endif
+
+    if (cml_p) then
+      call cmlAddParameter( xf=mainXML, name='SCF.H.Tolerance',     &
+                            value=dHtol, dictRef='siesta:dHtol', &
+                            units='siestaUnits:Ry' )
+    endif
 !--------------------------------------
 
     ! Require Energy convergence for achieving Self-Consistency?
@@ -675,7 +711,6 @@ MODULE siesta_options
                             value=Energy_tolerance/eV, dictRef='siesta:dEtol', &
                             units="siestaUnits:eV" )
     endif
-
 !--------------------------------------
     ! Require Harris Energy convergence for achieving Self-Consistency?
     require_harris_convergence = fdf_get('DM.RequireHarrisConvergence', .false.)
@@ -1504,15 +1539,17 @@ MODULE siesta_options
     ! MaxSCFIter should be  2, in the second one the Harris 
     ! forces are computed. Also, should not exit if SCF did 
     ! not converge.
+    ! Also, it should not mix the DM, nor the Hamiltonian
     
     harrisfun = fdf_get('Harris_functional',.false.)
 
     if (harrisfun) then
-      usesavedm = .false.
+      usesavedm = .false.    ! Presumably we need an atomic reference,
+                             ! at least for the forces
       nscf      = 1  ! Note change from tradition, since siesta_forces        
                      ! now explicitly separates the "compute_forces"        
-                     ! phase from the rest of the scf cycle.          
-      mix       = .false.
+                     ! phase from the rest of the scf cycle.  
+      mix_first_scf_step  = .false.
       SCFMustConverge = .false.
     endif
 
@@ -1545,7 +1582,8 @@ MODULE siesta_options
     fdf_get('SCF.Read.Deformation.Charge.NetCDF', .false. )
 
     if (read_charge_cdf .or. read_deformation_charge_cdf) then
-       mix = .false.
+       ! We do not really have a faithful initial DM, so avoid mixing
+       mix_first_scf_step = .false.
     endif
 
     save_initial_charge_density = fdf_get(    &

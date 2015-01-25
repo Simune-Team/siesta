@@ -10,9 +10,13 @@
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
+
       use sparse_matrices, only: maxnh, numh, listh, listhptr
-      use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
-      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
+      use sparse_matrices, only: Dscf, Dold, Escf, Hold
+      use sparse_matrices, only: xijo, H, S, H_kin
+      use sparse_matrices, only: sparse_pattern, block_dist
+      use sparse_matrices, only: H_vkb, DM, EDM, DM_history
+
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -40,6 +44,7 @@
 
 #ifdef TRANSIESTA
       use m_ts_options, only : onlyS
+      use m_ts_global_vars, only: TSrun
       use sys, only : bye
       use m_ts_io, only : ts_iohs
       use files, only: slabel, label_length
@@ -48,6 +53,8 @@
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
+      use class_Sparsity
+      use class_SpMatrix
 
       implicit none
 
@@ -70,8 +77,14 @@
       real(dp),             pointer :: dummyH(:,:)
 !     SIESTA External
       character(len=label_length+5) :: PASTE
+
 #endif
-!------------------------------------------------------------------------- BEGIN
+
+      character(len=256)            :: name
+
+      type(SpMatrix)        :: DMnew
+
+!------------------------------------------------------------------- BEGIN
       call timer( 'IterMD', 1 )
 #ifdef DEBUG
       call write_debug( '  PRE state_init' )
@@ -242,26 +255,30 @@
          call setup_ordern_indexes(no_l, no_u, Nodes)
       endif
 
-      ! Note that the resizing of Dscf is done inside new_dm below
+      write(name,"(a,i0)") "sparsity for geom step ", istep
+      call newSparsity(sparse_pattern,no_l,no_u,
+     $                 maxnh,numh,listhptr,listh,name)
+
+      write(name,"(a,i0)") "H_vkb in state_init at geom step ", istep
+      call newSpMatrix(sparse_pattern,1,block_dist,H_vkb,name=name)
+      if (ionode) call print_type(H_vkb)
+
+      write(name,"(a,i0)") "EDM in state_init at geom step ", istep
+      call newSpMatrix(sparse_pattern,nspin,block_dist,EDM,name=name)
+      if (ionode) call print_type(EDM)
+      Escf => val(EDM)
+
+
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .     routine='state_init',copy=.false.,shrink=.true.)
-      call re_alloc( Eold, 1, maxnh, 1, nspin, 'Eold',
+      call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
      .     routine='state_init',copy=.false.,shrink=.true.)
-      call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
-     .     routine='state_init',copy=.false.,shrink=.true.)
-
-      if(mixH) then
-         call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
-     .     routine='state_init',copy=.false.,shrink=.true.)
-      end if
 
       
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc( H, 1, maxnh, 1, nspin, 'H',
      .              routine='state_init',shrink=.true.,copy=.false.)
       call re_alloc(H_kin,1,maxnh,name='H_kin',routine='state_init',
-     &              shrink=.true., copy=.false. )
-      call re_alloc(H_vkb,1,maxnh,name='H_vkb',routine='state_init',
      &              shrink=.true., copy=.false. )
       call re_alloc(S,1,maxnh,name='S',routine='state_init',
      .              copy=.false.,shrink=.true.)
@@ -271,8 +288,20 @@
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
 !     Initialize density matrix
-      ! The resizing of Dscf is done inside new_dm
-      call new_dm( auxchanged, numh, listhptr, listh, Dscf)
+
+      call new_dm( auxchanged,DM_history,DM)
+      Dscf => val(DM)
+      !if (ionode) print *, "DM after new_dm:"
+      !if (ionode) call print_type(DM)
+
+      ! Initialize energy-density matrix to zero for first call to overfsm
+#ifdef TRANSIESTA
+      ! Only part of Escf is updated in TS, so if it is put as zero here
+      ! a continuation run gives bad forces.
+      if(.not.TSrun) Escf(:,:) = 0.0_dp
+#else
+      Escf(:,:) = 0.0_dp
+#endif /* TRANSIESTA */
 
 !     Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()

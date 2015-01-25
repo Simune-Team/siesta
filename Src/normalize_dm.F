@@ -26,6 +26,9 @@
 #endif
 
 !     Normalize density matrix to exact charge
+!     Is this appropriate when there is folding
+!     of matrix elements?
+
       qsol = 0.0_dp
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
