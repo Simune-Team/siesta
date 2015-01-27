@@ -5,8 +5,9 @@ MODULE siesta_options
   implicit none
   PUBLIC
 
-  logical :: mixH          ! Mixing of the Hamiltoninan instead of DM
-  logical :: mix_after_convergence  ! Do one last mixing step after SCF convergence
+  logical :: mix_charge    ! New: mix fourier components of rho
+  logical :: mixH          ! Mix H instead of DM
+  logical :: mix_after_convergence ! Mix DM or H even after convergence
   logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
@@ -34,8 +35,9 @@ MODULE siesta_options
   logical :: savevh        ! Write file with Hartree electrostatic potential?
   logical :: savevna       ! Write file with neutral-atom potential?
   logical :: savevt        ! Write file with total effective potential?
-  logical :: savdrh        ! Write file with diff. between SCF and atomic density?
-  logical :: savrho        ! Write file with electron density?
+  logical :: savedrho      ! Write file with diff. between SCF and atomic density?
+  logical :: saverho       ! Write file with electron density?
+  logical :: saverhoxc     ! Write file with electron density including nonlinear core correction?
   logical :: savepsch      ! Write file with ionic (local pseudopotential) charge?
   logical :: savetoch      ! Write file with total charge?
   logical :: savebader     ! Write file with charge for Bader analysis?
@@ -76,8 +78,7 @@ MODULE siesta_options
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
-  logical :: require_energy_convergence ! to finish SCF iteration?
-  logical :: require_free_energy_convergence ! to finish SCF iteration?
+  logical :: require_energy_convergence ! free Energy conv. to finish SCF iteration?
   logical :: require_harris_convergence ! to finish SCF iteration?
   logical :: require_hamiltonian_convergence ! to finish SCF iteration?
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
@@ -93,7 +94,7 @@ MODULE siesta_options
   logical :: partial_charges_at_every_geometry
   logical :: partial_charges_at_every_scf_step
 
-
+  logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
@@ -116,15 +117,17 @@ MODULE siesta_options
   integer :: pmax          
   integer :: neigwanted    ! Wanted number of eigenstates (per k point)
   integer :: level          ! Option for allocation report level of detail
+  integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
+  integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
 
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
   real(dp) :: charnet       ! Net electric charge
-  real(dp) :: Energy_tolerance
+  real(dp) :: Energy_tolerance   ! Free-energy tolerance
   real(dp) :: Harris_tolerance
-  real(dp) :: freeEnergy_tolerance
   real(dp) :: rijmin        ! Min. permited interatomic distance without warning
-  real(dp) :: dm_normalization_tol   ! Threshold for DM normalization mismatch
+  real(dp) :: dm_normalization_tol    ! Threshold for DM normalization mismatch error
+  logical  :: normalize_dm_during_scf ! Whether we normalize the DM 
   real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
   real(dp) :: dHtol         ! Tolerance in change of H elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
@@ -161,6 +164,7 @@ MODULE siesta_options
   real(dp), parameter :: temp_default  = 1.900e-3_dp 
 
   logical,  parameter :: mixH_def = .false.
+
   integer,  parameter :: maxsav_default = 0
   integer,  parameter :: nscf_default = 50
   integer,  parameter :: ncgmax_default = 1000
@@ -169,9 +173,8 @@ MODULE siesta_options
   real(dp), parameter :: wmixkick_default = 0.5_dp
   real(dp), parameter :: dDtol_default = 1.0e-4_dp
   real(dp), parameter :: dHtol_default = 1.0e-4_dp   ! 0.1 mRy
-  real(dp), parameter :: Energy_tolerance_default = 1.0e-4_dp * eV
-  real(dp), parameter :: freeEnergy_tolerance_default = 1.0e-5_dp * eV
-  real(dp), parameter :: Harris_tolerance_default = 1.0e-4_dp * eV
+  real(dp), parameter :: Energy_tolerance_default = 1.0e-5_dp * eV  ! Free energy...
+  real(dp), parameter :: Harris_tolerance_default = 1.0e-5_dp * eV
   real(dp), parameter :: occtol_default = 1.0e-12_dp
   real(dp), parameter :: etol_default = 1.0e-8_dp
   real(dp), parameter :: rcoor_default = 9.5_dp
@@ -193,6 +196,7 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_DIAGON = 0
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2
+  integer,  parameter :: SOLVE_MINIM  = 3
 
       CONTAINS
 
@@ -221,13 +225,13 @@ MODULE siesta_options
 ! real*8 dDtol             : Maximum Density Matrix tolerance in SCF
 ! real*8 dHtol             : Maximum Hamiltonian tolerance in SCF
 ! real*8 Energy_tolerance  : Maximum Total energy tolerance in SCF
-! real*8 freeEnergy_tolerance  : Maximum Free energy tolerance in SCF
 ! real*8 Harris_tolerance  : Maximum Harris energy tolerance in SCF
 ! logical mix_first_scf_step            : Perform mix in first SCF step
 ! real*8 wmix              : Amount of output DM for new DM
 ! integer isolve           : Method of solution.  0   = Diagonalization
 !                                                 1   = Order-N
 !                                                 2   = Transiesta
+!                                                 3   = OMM
 ! real*8 temp              : Temperature for Fermi smearing (Ry)
 ! logical fixspin          : Fix the spin of the system?
 ! real*8  ts               : Total spin of the system
@@ -320,6 +324,7 @@ MODULE siesta_options
     use parallel,  only : IOnode, Nodes
     use fdf
     use files,     only : slabel
+    use files,     only : filesOut_t   ! derived type for output file names
     use sys
     use units,     only : eV
     use diagmemory,   only: memoryfactor
@@ -494,15 +499,28 @@ MODULE siesta_options
                             units="cmlUnits:countable")
     endif
 
-    mixH = fdf_get('MixHamiltonian',mixH_def)
-    mixH = fdf_get('TS.MixH',mixH)   ! Catch old-style keyword
     call fdf_deprecated('TS.MixH','MixHamiltonian') ! Prepare for obsoletion
+    mixH = fdf_get('TS.MixH',mixH_def) ! Catch old-style keyword (prefer new key)
+    mixH = fdf_get('MixHamiltonian',mixH)
+    mix_charge = fdf_get('MixCharge',.false.)
 
+    if (mix_charge) then
+       if (ionode) then
+          write(6,1) 'redata: Mix charge density rho_g         = ', mix_charge
+       endif
+       if (mixH) then
+          mixH = .false.
+          if (ionode) then
+             write(6,"(a)") 'redata: ***MixCharge takes precedence over MixH'
+          endif
+       endif
+    endif
+    
     if (ionode) then
       write(6,1) 'redata: Mix Hamiltonian instead of DM', mixH
     endif
 
-    mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.false.)
+    mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.true.)
 
     if (ionode) then
       write(6,1) 'redata: Mix after SCF convergence', mix_after_convergence
@@ -683,7 +701,7 @@ MODULE siesta_options
     require_energy_convergence = fdf_get('DM.RequireEnergyConvergence', &
                                          .false.)
     if (ionode) then
-      write(6,1) 'redata: Require Energy convergence for SCF', &
+      write(6,1) 'redata: Require (free) Energy convergence in SCF = ', &
                   require_energy_convergence
     endif
 
@@ -697,7 +715,7 @@ MODULE siesta_options
     Energy_tolerance = fdf_get('DM.EnergyTolerance',    &
                          Energy_tolerance_default, 'Ry' )
     if (ionode) then
-      write(6,7) 'redata: DM Energy tolerance for SCF', Energy_tolerance/eV, ' eV'
+      write(6,7) 'redata: DM (free)Energy tolerance for SCF = ', Energy_tolerance/eV, ' eV'
     endif
 
     if (cml_p) then
@@ -705,34 +723,6 @@ MODULE siesta_options
                             value=Energy_tolerance/eV, dictRef='siesta:dEtol', &
                             units="siestaUnits:eV" )
     endif
-
-    ! Require Free Energy convergence for achieving Self-Consistency?
-    require_free_energy_convergence = fdf_get('SCF.RequireFreeEnergyConvergence', &
-                                         .false.)
-    if (ionode) then
-      write(6,1) 'redata: Only Free Energy convergence SCF', &
-                  require_free_energy_convergence
-    endif
-
-    if (cml_p) then
-      call cmlAddParameter( xf=mainXML, name='SCF.RequireFreeEnergyConvergence', &
-                            value=require_free_energy_convergence,               &
-                            dictRef='siesta:ReqFreeEnergyConv' )
-    endif
-
-    ! Free Energy tolerance for achieving Self-Consistency
-    freeEnergy_tolerance = fdf_get('SCF.FreeEnergyTolerance',    &
-                         freeEnergy_tolerance_default, 'Ry' )
-    if (ionode) then
-      write(6,7) 'redata: Free Energy tol. for SCF', freeEnergy_tolerance/eV, ' eV'
-    endif
-
-    if (cml_p) then
-      call cmlAddParameter( xf=mainXML, name='DM.FreeEnergyTolerance', &
-                            value=freeEnergy_tolerance/eV, dictRef='siesta:dFreeEtol', &
-                            units="siestaUnits:eV" )
-    endif
-
 !--------------------------------------
     ! Require Harris Energy convergence for achieving Self-Consistency?
     require_harris_convergence = fdf_get('DM.RequireHarrisConvergence', .false.)
@@ -830,8 +820,17 @@ MODULE siesta_options
                   'together with nspin>2.  This is not allowed in '//&
                   'this version of siesta' )
       endif
+    else if (leqi(method,'omm')) then
+      isolve = SOLVE_MINIM
+      DaC    = .false.
+      call_diagon_default=fdf_integer('OMM.Diagon',0)
+      call_diagon_first_step=fdf_integer('OMM.DiagonFirstStep',call_diagon_default)
+      minim_calc_eigenvalues=fdf_boolean('OMM.Eigenvalues',.false.)
+      if (ionode) then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
+                            'Orbital Minimization Method'
+      endif
 #ifdef TRANSIESTA
-! TSS Begin
     else if (leqi(method,'transi')) then
       isolve = SOLVE_TRANSI
       if (ionode) then
@@ -843,7 +842,7 @@ MODULE siesta_options
 #ifdef TRANSIESTA
                 'Transiesta, '//&
 #endif
-                'OrderN, or Diagon' )
+                'OrderN, OMM, or Diagon' )
     endif
 
 #ifdef DEBUG
@@ -1560,7 +1559,9 @@ MODULE siesta_options
     if (harrisfun) then
       usesavedm = .false.    ! Presumably we need an atomic reference,
                              ! at least for the forces
-      nscf      = 1          ! Note change from tradition
+      nscf      = 1  ! Note change from tradition, since siesta_forces        
+                     ! now explicitly separates the "compute_forces"        
+                     ! phase from the rest of the scf cycle.  
       mix_first_scf_step  = .false.
       SCFMustConverge = .false.
     endif
@@ -1649,6 +1650,7 @@ MODULE siesta_options
     allow_dm_reuse         = fdf_get( 'DM.AllowReuse', .TRUE. )
     allow_dm_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
     dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
+    normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
     muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
     rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &
                                       1.0_dp, 'Bohr' )
@@ -1666,8 +1668,9 @@ MODULE siesta_options
 !
     write_coop = fdf_get('COOP.Write', .false.)
 !
-    savrho   = fdf_get( 'SaveRho', dumpcharge)
-    savdrh   = fdf_get( 'SaveDeltaRho',       .false. )
+    saverho  = fdf_get( 'SaveRho', dumpcharge)
+    savedrho = fdf_get( 'SaveDeltaRho',       .false. )
+    saverhoxc= fdf_get( 'SaveRhoXC', .false.)
     savevh   = fdf_get( 'SaveElectrostaticPotential', .false. )
     savevna  = fdf_get( 'SaveNeutralAtomPotential', .false. )
     savevt   = fdf_get( 'SaveTotalPotential', .false. )

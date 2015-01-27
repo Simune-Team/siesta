@@ -20,6 +20,6 @@ c
       character*60 version
       character*10 atom_id
       data version
-     $     /"ATM Version 3.3 (2008/09/13)"/
-      data atom_id /"ATM3.3"/
+     $     /"ATM Version 3.3.2 (2014/05/29)"/
+      data atom_id /"ATM3.3.2"/
 

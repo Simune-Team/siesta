@@ -66,8 +66,8 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
   real(grid_p), intent(out) :: rhoscf(nsp,np,nspin)
   external                  :: memory, timer
 !     Internal variables and arrays
-  integer, parameter :: minloc = 100, & ! Min buffer size for local copy of Dscf
-       maxoa = 100   ! Max # of orbitals per atom
+  integer, parameter :: minloc = 1000 ! Min buffer size for local copy of Dscf
+  integer, parameter :: maxoa  = 100  ! Max # of orbitals per atom
   logical :: ParallelLocal
   integer :: i, ia, ic, ii, ijl, il, imp, ind
   integer :: ispin, io, iop, ip, iphi, is

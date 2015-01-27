@@ -8,30 +8,34 @@
 
       implicit none
 
+      private
+
 !     Max. number of nonzero H matrix elements    
-      integer :: maxnh = 10 
+      integer, public :: maxnh = 10 
 
-      integer, pointer :: listh(:), listhptr(:), numh(:)
+      integer, public, pointer :: listh(:), listhptr(:), numh(:)
 
-      real(dp), pointer :: Dold(:,:), Dscf(:,:), 
-     &                     Escf(:,:), H(:,:),
-     &                     xijo(:,:), S(:)
+      real(dp), public, pointer :: Dold(:,:), Dscf(:,:), 
+     &                             Escf(:,:), H(:,:),
+     &                             xijo(:,:), S(:)
 
       ! Used to hold the "input" H when mixing the Hamiltonian
-      real(dp), dimension(:,:), pointer :: Hold => null()   
+      real(dp), dimension(:,:), public, pointer :: Hold => null()   
 
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
-      type(dSpData1D), save :: H_vkb_1D, H_kin_1D
+      type(dSpData1D), public, save :: H_vkb_1D, H_kin_1D
 
       !  New interface data
-      type(Sparsity),  save :: sparse_pattern
-      type(dSpData1D), save :: S_1D
-      type(dSpData2D), save :: DM_2D, EDM_2D, xij_2D, H_2D
-      type(Fstack_Pair_Geometry_dSpData2D), save :: DM_history
+      type(Sparsity), public, save :: sparse_pattern
+      type(dSpData1D), public, save :: S_1D
+      type(dSpData2D), public, save :: DM_2D, EDM_2D, xij_2D, H_2D
+      type(Fstack_Pair_Geometry_dSpData2D), public, save :: DM_history
 
       ! Orbital distribution descriptor
-      type(OrbitalDistribution), save :: block_dist
+      type(OrbitalDistribution), public, save :: block_dist
+
+      public :: resetSparseMatrices
 
       CONTAINS
 

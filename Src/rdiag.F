@@ -154,6 +154,15 @@ C*******************************************************************************
 C Initialise error flag
       ierror = 0
 
+! Trap n=1 case, which is not handled correctly otherwise (JMS 2011/07/19)
+      if (n==1) then
+        w(:) = 0._dp
+        w(1) = H(1,1) / S(1,1)
+        Z(:,:) = 0._dp
+        Z(1,1) = 1._dp / sqrt(S(1,1))
+        goto 1000   ! exit point
+      end if
+
 ! vl and vu are not currently used, but they must be initialized
       vl = 0
       vu = n
@@ -206,7 +215,11 @@ C Get Blacs context and initialise Blacs grid for main grid
         nprow = 1
         npcol = Nodes
         if (FirstCall) then
-          call blacs_get( -1, 0, ictxt )
+!         JMS: Changed to allow mpi_comm_world to be supplanted in MPI_siesta.
+!         The change has no effect otherwise, since blacs_get returns the
+!         true value of mpi_comm_world (usually zero) as ictxt
+!          call blacs_get( -1, 0, ictxt )   ! removed
+          ictxt = mpi_comm_world            ! added
           call blacs_gridinit( ictxt, 'C', nprow, npcol )
         endif
 
@@ -633,9 +646,6 @@ C*******************************************************************************
 C Common exit point 
   999 continue
 
-C Set first call flag to false
-      FirstCall = .false.
-
 C Deallocate workspace arrays
 #ifdef MPI
       if (associated(Zsave)) call de_alloc( Zsave, 'Zsave', 'rdiag' )
@@ -651,8 +661,14 @@ C Deallocate workspace arrays
       call de_alloc( iwork, 'iwork', 'rdiag' )
       call de_alloc( work, 'work', 'rdiag' )
 
+C  Exit point, excluding deallocations
+1000  continue
+
 C  Restore old allocation defaults
       call alloc_default( restore=oldDefaults )
+
+C Set first call flag to false
+      FirstCall = .false.
 
 C Stop time count
       call timer('rdiag',2)

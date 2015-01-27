@@ -597,7 +597,8 @@ subroutine set_mesh( n, x, xmin, xmax, a, dxndx1 )
     stop 'set_mesh: ERROR: unknown mesh_type'
   endif ! (mesh_type=='numerical')
 
-! Make sure that last point is exactly right
+! Make sure that first and last points are exactly right
+  if (.not.present(x)) xi(1) = x1
   if (present(xmax)) xi(n) = xmax
 
 ! Find auxiliary functions associated to the mesh

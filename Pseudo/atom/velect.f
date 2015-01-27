@@ -210,16 +210,24 @@ c
          r(1) = 0.0d0
 
          is_gga = (leqi(icorr,'pb')        ! PBE
-     $              .or. leqi(icorr,'bl')  ! BLYP
+     $              .or. leqi(icorr,'wp')  ! PW91
      $              .or. leqi(icorr,'rp')  ! RPBE
      $              .or. leqi(icorr,'rv')  ! revPBE
      $              .or. leqi(icorr,'wc')  ! WC (Wu-Cohen)
      $              .or. leqi(icorr,'ps')  ! PBEsol
+     $              .or. leqi(icorr,'jo')  ! PBEJsJrLO
+     $              .or. leqi(icorr,'jh')  ! PBEJsJrHEG
+     $              .or. leqi(icorr,'go')  ! PBEGcGxLO
+     $              .or. leqi(icorr,'gh')  ! PBEGcGxHEG
      $              .or. leqi(icorr,'am')  ! AM05
+     $              .or. leqi(icorr,'bl')  ! BLYP
      $              .or. leqi(icorr,'vf')  ! VDW-DRSLL
      $              .or. leqi(icorr,'vw')  ! Alias for VDW-DRSLL
      $              .or. leqi(icorr,'vl')  ! VDW-LMKLL -- Lee et al
-     $              .or. leqi(icorr,'vk')) ! VDW-KBM   -- Klimes et al
+     $              .or. leqi(icorr,'vk')  ! VDW-KBM   -- Klimes et al
+     $              .or. leqi(icorr,'vc')  ! VDW-C09   -- Cooper
+     $              .or. leqi(icorr,'vb')  ! VDW-BH -- Berland-Hyldgaard
+     $              .or. leqi(icorr,'vv')) ! VDW-VV -- Vydrov-VanVoorhis
 
          if (icorr .eq. 'ca') then
             call setxc(1,(/'LDA'/), (/'CA'/), (/1._dp/), (/1._dp/))
@@ -227,6 +235,8 @@ c
             call setxc(1,(/'LDA'/), (/'PW92'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'pb') then
             call setxc(1,(/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'wp') then
+            call setxc(1,(/'GGA'/), (/'PW91'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'rp') then
             call setxc(1,(/'GGA'/), (/'RPBE'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'rv') then
@@ -235,6 +245,14 @@ c
             call setxc(1,(/'GGA'/), (/'WC'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'ps') then
             call setxc(1,(/'GGA'/), (/'PBEsol'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'jo') then
+            call setxc(1,(/'GGA'/),(/'PBEJsJrLO'/),(/1._dp/),(/1._dp/))
+         elseif(icorr .eq. 'jh') then
+           call setxc(1,(/'GGA'/),(/'PBEJsJrHEG'/),(/1._dp/),(/1._dp/))
+         elseif(icorr .eq. 'go') then
+            call setxc(1,(/'GGA'/),(/'PBEGcGxLO'/),(/1._dp/),(/1._dp/))
+         elseif(icorr .eq. 'gh') then
+           call setxc(1,(/'GGA'/),(/'PBEGcGxHEG'/),(/1._dp/),(/1._dp/))
          elseif(icorr .eq. 'bl') then
             call setxc(1,(/'GGA'/), (/'LYP'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'am') then
@@ -245,8 +263,14 @@ c
             call setxc(1,(/'VDW'/), (/'LMKLL'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'vk') then
             call setxc(1,(/'VDW'/), (/'KBM'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'vc') then
+            call setxc(1,(/'VDW'/), (/'C09'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'vb') then
+            call setxc(1,(/'VDW'/), (/'BH'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'vv') then
+            call setxc(1,(/'VDW'/), (/'VV'/), (/1._dp/), (/1._dp/))
          else
-            stop 'XC'
+            stop 'XC ERROR: invalid functional label'
          endif
 
          call atomxc(relflag,nr,nrmax,r,nspin,dens,

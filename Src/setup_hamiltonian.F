@@ -4,11 +4,11 @@
       CONTAINS
 
       subroutine setup_hamiltonian( iscf )
-      USE m_normalize_dm, only: normalize_dm
+
       USE siesta_options
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: listh, listhptr, numh, maxnh
-      use sparse_matrices, only: H, Hold, S
+      use sparse_matrices, only: H, S, Hold
       use sparse_matrices, only: Dscf, Escf, xijo
       use class_dSpData1D,  only: val
 
@@ -32,6 +32,8 @@
       use m_hsx, only: write_hsx
       use sys, only: die, bye
       use m_partial_charges, only: want_partial_charges
+      use files, only : filesOut_t    ! derived type for output file names
+      use m_rhog, only: rhog_in, rhog
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -51,14 +53,15 @@
       integer             :: istr    ! Calc. stress?      0=>no, 1=>yes
       integer             :: ihmat   ! Calc. hamiltonian? 0=>no, 1=>yes
       real(dp)            :: g2max
+      type(filesOut_t)    :: filesOut  ! blank output file names
+      logical             :: use_rhog_in
 
       real(dp), pointer   :: H_vkb(:), H_kin(:)
 
 !------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( '  PRE setup_hamiltonian' )
-#endif
-      
+
+      call timer('setup_H',1)
+
 ! Save present H matrix
       do ispin = 1,nspin
          do io = 1,maxnh
@@ -66,18 +69,6 @@
          enddo
       enddo
 
-!     Normalize density matrix to exact charge
-!     Setup_hamiltonian is called before the density is printed out...
-#ifdef TRANSIESTA      
-      if (.not.TSrun ) call normalize_dm( first= (iscf==1) )
-#else
-      ! Normalize density matrix to exact charge, except if
-      ! we are just using the DM to generate the initial rho and exit
-      !
-      if (.not. save_initial_charge_density) then
-         call normalize_dm(first= (iscf==1))
-      endif
-#endif  /* TRANSIESTA */
 
       ! Initialize Hamiltonian with the non-SCF part...................
 
@@ -97,7 +88,13 @@
 ! ..................
 
 ! Non-SCF part of total energy .......................................
+! Note that these will be "impure" for a mixed Dscf
 
+! If mixing the charge, Dscf is the previous step's DM_out. Since
+! the "scf" components of the energy are computed with the (mixed)
+! charge, this introduces an inconsistency. In this case the energies
+! coming out of this routine need to be corrected.
+! 
       Ekin = 0.0_dp
       Enl = 0.0_dp
       do ispin = 1,min(nspin,2)
@@ -129,15 +126,22 @@
      $     .and. partial_charges_at_every_scf_step) then
          want_partial_charges = .true.
       endif
+      use_rhog_in =  (mix_charge .and. iscf > 1)
       call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
-     .            ntm, ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
+     .            ntm, ifa, istr, ihmat, filesOut,
      .            maxnh, numh, listhptr, listh, Dscf, Datm,
      .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .            Exc, Dxc, dipol, stress, fal, stressl)
+     .            Exc, Dxc, dipol, stress, fal, stressl,
+     .            use_rhog_in)
+
+      ! This statement will apply to iscf = 1, for example, when
+      ! we do not use rhog_in. Rhog here is always the charge used to
+      ! build H, that is, rhog_in.
+      if (mix_charge) rhog_in = rhog
+
       want_partial_charges = .false.
       call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
-
 !  It is wasteful to write over and over H and S, as there are
 !  no different files.
 ! Save Hamiltonian and overlap matrices ............................
@@ -149,16 +153,15 @@
      &                    temp, xijo)
         endif
 
-#ifdef DEBUG
-      call write_debug( '  POS setup_hamiltonian' )
-#endif
+      call timer('setup_H',2)
+
       if (h_setup_only) then
-         call timer( 'siesta', 2 )
+         call timer( 'all', 2 )  ! New call to close the tree
          call timer( 'all', 3 )
          call bye("H-Setup-Only requested")
          STOP
       endif
 
-!--------------------------------------------------------------------------- END
+!------------------------------------------------------------------------- END
       END subroutine setup_hamiltonian
       END module m_setup_hamiltonian

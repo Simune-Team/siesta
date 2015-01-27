@@ -6,6 +6,1075 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-01-07  10:35:00 GMT                                     trunk-465
+Merge fix from rc-4.0: MPI tag in SiestaXC/mesh3d
+
+* The variable Mpitag was not initialized, leading to problems whenever
+  its value was not zero or considered as MPI_ANY_TAG in a Recv operation.
+
+(Nick P. Andersen)
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+-----------------------------------------------------------------------
+2014-11-08  16:30:00 GMT                                     trunk-464
+Merge fixes from rc-4.0: constr. forces, MPI compilation, mm.potentials
+
+-- Fabiano Corsetti: Fix output to show constrained forces
+
+* Changed the calling of the iofa and ofc routines inside write_subs,
+  so that the forces with constraints are written to file in each case
+  instead of the uncorrected forces. 
+
+modified:
+  Src/write_subs.F
+
+
+-- Alberto Garcia:   Fix 'clean' rule in  MPI Makefile
+
+The interface library libmpi_f90.a was not removed when issuing a
+'make clean', possibly leading to strange errors if the MPI
+compilation environment was later changed.
+
+modified:
+  Src/MPI/Makefile
+
+-- Nick P Andersen:  Fix shortcomings in reading of empirical potential block
+
+* The number of potential lines is now arbitrary.
+* Units handling has been improved, to allow arbitrary
+  length and energy units.
+
+modified:
+  Src/molecularmechanics.F90
+
+
+-----------------------------------------------------------------------
+2014-11-08  16:15:00 GMT                                     trunk-463
+Added restart file for smooth continuation of annealing runs
+
+* Added the writing and reading of an .ANNEAL_RESTART file, along the
+  same lines of the .VERLET_RESTART file. This fixes a small problem
+  for restarting annealing calculations when a continuous smooth run
+  is desired.
+
+(Fabiano Corsetti)
+
+added:
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+modified:
+  Docs/siesta.tex
+  Src/dynamics.f
+
+-----------------------------------------------------------------------
+2014-05-29  12:40:00 GMT                                     trunk-462
+Improved MPI version of siesta as a subroutine (J.M.Soler)
+
+* The MPI version of fsiesta now creates a directory for each siesta
+  process, and writes in it all output and continuation files
+
+* New example Util/SiestaSubroutine/ProtoNEB/
+
+added:
+  Util/SiestaSubroutine/ProtoNEB/
+  Util/SiestaSubroutine/ProtoNEB/NH3-point01.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point02.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point03.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3.fdf
+  Util/SiestaSubroutine/ProtoNEB/Src/
+  Util/SiestaSubroutine/ProtoNEB/Src/Makefile
+  Util/SiestaSubroutine/ProtoNEB/Src/protoNEB.F90
+modified:
+  Src/fsiesta_mpi.F90
+  Util/SiestaSubroutine/README
+
+-----------------------------------------------------------------------
+2014-05-29  10:45:00 GMT                                     trunk-461
+%files added to Util/JobList options (J.M.Soler)
+
+added:
+  Util/JobList/Examples/Ice/dummyFile
+modified:
+  Util/JobList/Examples/Ice/iceChecks.jobs
+  Util/JobList/README
+  Util/JobList/Src/jobList.f90
+
+-----------------------------------------------------------------------
+2014-05-29  10:30:00 GMT                                     trunk-460
+New GGA and VDW functionals (M.Fritz & J.M.Soler)
+
+* Added 4 GGA functionals by Capelle et al
+  Refs: L.S.Pedroza et al, PRB 79, 201106 (2009) and
+        M.M.Odashima et al, J. Chem. Theory Comp. 5, 798 (2009)
+
+* Added 2 VDW-DF functionals of 
+        V.R.Cooper, PRB 81, 161104(R) (2010)
+        K. Berland and P. Hyldgaard, PRB 89, 035412 (2014)
+
+* Fixed PW91 and BLYP GGA functionals 
+
+* Corrected a minor bug in vdwxc.F90 (parameter nq->mq)
+
+* Updated and extended XC testers
+
+* Added some test outputs in SiestaXC/Testers/Reference
+
+* m_timer.F90 added to SIESTA_SRCS in SiestaXC/makefile
+
+(+ fix syntax error in Pseudo/atom/pxf.F90)
+(+ increase patch level in Pseudo/atom/version.h)
+
+added:
+  Docs/gga.CHANGES
+  Src/SiestaXC/Testers/Reference/
+  Src/SiestaXC/Testers/Reference/test1.out
+  Src/SiestaXC/Testers/Reference/test2.out
+  Src/SiestaXC/Testers/Reference/test3.out
+  Src/SiestaXC/Testers/Reference/test4.out
+  Src/SiestaXC/Testers/test6.f90
+  Src/SiestaXC/Testers/test6.m
+renamed:
+  Src/SiestaXC/Testers/test2.f90 => Src/SiestaXC/Testers/test2.F90
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/pxf.F90
+  Pseudo/atom/velect.f
+  Pseudo/atom/version.h
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/ldaxc.f
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+  Src/atom.F
+  Src/xc.f
+  Src/SiestaXC/Testers/test2.F90
+
+-----------------------------------------------------------------------
+2014-03-25  12:40:00 GMT                                     trunk-459
+Fix bug when reading spin-polarized deformation charge
+
+When reading a spin-polarized deformation charge (in netCDF form)
+the added atomic-superposition charge was too large by a factor of two.
+
+modified:
+  Src/dhscf.F
+
+-----------------------------------------------------------------------
+2014-03-05  09:15:00 GMT                                     trunk-458
+Fixes and new features in fdf
+
+* Fix handling of empty value for fdf_string
+
+When a line contains only a label, fdf_string incorrectly tried to
+read beyond the first token.  It has now been fixed, assigning an
+empty string to the function value.
+
+* Nullify fdf buffer pointer at declaration
+
+(+ fix the assignment of the name for the debug file)
+
+* New list functionality in fdf (Nick P Andersen)
+
+See Src/fdf/sample.F90 and sample.fdf for examples.
+
+* A more flexible fdf_init (JM Soler)
+
+The routine fdf_init can be called without arguments in the most
+common case when reading from standard input (unit 5). See the new
+code in fdf.F90 for details. Note that Siesta does not yet use the new
+possibilities.
+
+added:
+  Docs/fdf.CHANGES
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/fdf/sample.F90
+  Src/fdf/sample.fdf
+  version.info
+
+-----------------------------------------------------------------------
+2014-03-05  09:10:00 GMT                                     trunk-457
+Fix printed charges for transiesta in spin-polarized case
+
+* When using spin the shown charges were wrong, however, the computations
+  are correct.
+  The charges are now consistent.
+  (Thanks to Paula Abufager and Nicolas Lorente for pointing this out)
+  
+modified:
+  Src/m_ts_in_siesta.F
+
+-----------------------------------------------------------------------
+2014-02-20  11:30:00 GMT                                     trunk-456
+Bug fixes and feature changes in charge-density mixing
+
+* The criterion for participation of a node in the DIIS procedure was
+faulty.
+
+* For spin-polarized systems, the rho(G=0) components were not mixed,
+  as they should.
+
+* Several option labels have changed:
+
+The "old"  ThomasFermiK2  option has been renamed to
+
+SCF.Kerker.q0sq  [ physical energy ]
+
+The default remains 0.0 Ry, although the program now prints several
+possible heuristic values:
+
+- The actual Thomas-Fermi wavevector squared
+- The square of 2*pi/L, where L is the length of the longest cell vector.
+
+SCF.RhoG.DIIS.Cutoff  (physical energy)
+
+determines the sub-set of G vectors which will undergo the DIIS
+procedure.  Default: 9 Ry.
+
+SCF.RhoG.DIIS.Depth
+
+determines the maximum number of previous steps considered in the DIIS
+procedure. Default: 0
+
+SCF.RhoG.Metric.Preconditioner.Cutoff (physical energy)
+
+determines the value of "q1^2" in the weighing of the different G
+components in the scalar products among residuals in the DIIS
+procedure. Following the KF ansatz, this parameter is chosen so that
+the smallest (non-zero) G has a weight 20 times larger than that of
+the smallest G vector in the DIIS set.  Default: The KF prescription.
+
+SCF.DebugRhogMixing
+
+controls the level of debugging output in the mixing procedure
+(basically whether the first few stars worth of Fourier components are
+printed). Default: False.  Note that this feature will only display
+the components in the master node...
+
+* By default, the DIIS procedure uses a method based on
+  singular-value-decomposition to find the coefficients.  
+
+  To turn off SVD, use 'SCF.RhoG.DIIS.UseSVD F'
+
+  To modify the threshold for removal of small singular values (set by
+  default to a ratio of 1.0e-8 with respect to the maximum
+  sing. value) use 'SCF.RhoG.DIIS.RcondSVD <value>'
+
+  Use 'debug-diis T' to see debugging information. 
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_rhog.F90
+  Src/m_diis.F90
+  Tests/h2o-rhog-mixing/h2o-rhog-mixing.fdf
+
+-----------------------------------------------------------------------
+2014-02-10  09:40:00 GMT                                     trunk-455
+Charge-density mixing
+
+With the fdf option
+
+    MixCharge T
+
+the self-consistent-field convergence acceleration will be carried out
+by mixing the charge density (actually the Fourier-components of the
+charge). Both a simple Kerker-preconditioning and a DIIS procedure with
+a subset of the Fourier components are implemented.
+
+The implementation follows the ideas in Kresse+Furthmuller,
+Comp.Mat.Sci. 6, 15-50 (1996), KF in what follows).
+
+Relvant parameters:
+
+  ThomasFermiK2   (physical energy)
+
+determines the Thomas-Fermi wavevector squared (in Ry) featuring in
+the Kerker mixing, which is always performed on all components of
+rho(G), even those treated with the DIIS scheme. Default: 0 Ry.
+
+
+  RhoGMixingCutoff  (physical energy)
+
+determines the sub-set of G vectors which will undergo the DIIS
+procedure.  Only those with kinetic energies below this cutoff will be
+considered.  The optimal extrapolation of the rho(G) elements will be
+replaced in the fourier series before performing the Kerker
+mixing. Default: 9 Ry.
+
+  RhoG-DIIS-Depth
+
+determines the maximum number of previous steps considered in the DIIS
+procedure. Default: 0
+
+  RhoG-SP-Preconditioner-Cutoff (physical energy)
+
+determines the value of "q1^2" in the weighing of the different G
+components in the scalar products among residuals in the DIIS
+procedure. Following the KF ansatz, this parameter is chosen so that
+the smallest (non-zero) G has a weight 20 times larger than that of
+the smallest G vector in the DIIS set.  Default: The KF prescription.
+
+  DebugDIIS
+
+controls the level of debugging output in the DIIS procedure. Default:
+False.
+
+  DebugRhogMixing
+
+controls the level of debugging output in the mixing procedure
+(basically whether the first few stars worth of Fourier components are
+printed). Default: False.  Note that this feature will only display
+the components in the master node...
+
+  SCF.MixCharge.SCF1
+
+controls whether mixing is done in the first scf step. Default:
+false. (This seems to speed up convergence in some cases. More data is
+needed.)
+
+ The information about rhog_in and rhog_out in first scf iteration is
+not added to the DIIS history. This seems to improve the convergence.
+
+* Added h2o-rhog-mixing test
+
+Note that the default convergence criteria remains based on the
+differences in the density matrix, but in this case the differences
+are from step to step, not the more fundamental DM_out-DM_in. Perhaps
+some other criterion should be made the default (max |Delta rho(G)|,
+convergence of the free-energy...)
+
+Note that with charge mixing the Harris energy as it is currently
+computed in Siesta loses its meaning, since there is no "DM_in". The
+program prints zeroes in the Harris energy field.
+
+Note that the KS energy is correctly computed throughout the scf cycle,
+as there is an extra step for the calculation of the charge stemming from
+DM_out, which also updates the energies. Forces and final energies are
+correctly computed with the final DM_out, regardless of the setting of 
+the option for mixing after scf convergence.
+
+The program now prints a more accurate summary of the criterion used
+for scf cycle termination.
+
+Note that the criterion for total-energy convergence now uses the free
+electronic energy, which is the appropriate magnitude to monitor in
+the general case of possibly fractional occupancies.
+
+The mixing flavor should be made into a first-class option variable,
+instead of being encoded in two separate logicals (mix_charge,
+mixH)...
+
+The new code uses a circular stack implemented using a
+"reference-counting" paradigm.
+
+-----------------------------------------------------------------------
+2014-01-31  15:15:00 GMT                                     trunk-454
+Allow the handling of ghosts of synthetic atoms
+
+Species with "atomic number" < -200 are now correctly treated as
+ghosts of synthetic atoms.
+
+(Thanks to A. Vozny and A. Suarez)
+
+modified:
+  Docs/siesta.tex
+  Src/atm_transfer.f
+  Src/atom.f
+  Src/chemical.f
+  Src/periodic_table.f
+
+-----------------------------------------------------------------------
+2014-01-16  15:35:00 GMT                                     trunk-453
+Added a simple ps-->inp converter for ATOM
+
+This program is useful when the INP file is no longer available.
+
+It has a few limitations: note in particular that it cannot possibly
+reconstruct the partial core radius.
+
+(A. Garcia)
+
+added:
+  Pseudo/atom/Util/Ps2Inp/
+  Pseudo/atom/Util/Ps2Inp/die.F
+  Pseudo/atom/Util/Ps2Inp/flib_spline.f90
+  Pseudo/atom/Util/Ps2Inp/make_ps_input.f90
+  Pseudo/atom/Util/Ps2Inp/pseudopotential.f
+
+-----------------------------------------------------------------------
+2014-01-15  11:40:00 GMT                                     trunk-452
+Fixed a wrong threshold for the bias for transiesta runs
+
+* Due to a programming error, at low bias the Voltage was considered
+  to be too low at 0.1 V instead of at 10^(-4) V.
+  
+modified:
+  Src/m_ts_options.F90
+
+-----------------------------------------------------------------------
+2013-12-04  14:00:00 GMT                                     trunk-451
+Use electronic entropy from current SCF step. EHarris update fix.
+
+* The electronic entropy is computed (in 'compute_dm') once the
+  electronic structure is known. The -TS term in the electronic free
+  energy was previously computed using the information from the
+  previous SCF step (by having it added to Etot in
+  'setup_hamiltonian', using an intermediate variable). Now it is
+  added in 'scfconvergence_test' and it corresponds to the current SCF
+  step. (The last entropy computed in the scf cycle is also added to
+  the final Etot in 'post_scf_work'.) There is not much theoretical
+  justification for the previous choice, and the new one looks more
+  appropriate in general, and notably if E_KS(out) is computed (as
+  with H mixing).
+
+* The Harris energy update DEharr is computed in 'compute_dm', and
+  corresponds to Tr(H*(DM_out-DM_in)).
+  
+  In 'post_scf_work' there was a statement
+  
+        Eharrs = Etot + DEharr
+
+  Since this Etot is computed with DM_mixed (the DM predicted by
+  'mixer' for a hypothetical next SCF iteration) or with DM_out
+  (depending on whether a final mixing is done at the end of the
+  cycle) this value for Eharrs is suspect. This value was never
+  actually printed, since printing routines used 'Eharrs1', which is
+  the last value of Eharrs computed in the SCF cycle (set in
+  'scfconvergence_test'). To reproduce that behavior, the above
+  statement has been removed, and Eharris1 replaced by Eharrs
+  everywhere.
+
+* Added a message detailing which DM is used in 'post_scf_work',
+  and suggesting the use of "SCF.MixAfterConvergence F"
+
+modified:
+  Src/Makefile
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/local_DOS.F
+  Src/m_energies.F90
+  Src/post_scf_work.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_init.F
+  Src/write_md_record.F
+  Src/write_subs.F
+
+-----------------------------------------------------------------------
+2013-11-22  15:30:00 GMT                                     trunk-450
+Fix SiestaXC/mesh3d to avoid overflow of distributions and/or tasks
+
+(Thanks to Nick P. Andersen)
+
+Due to two bugs in mesh3d.F90, the number of mesh distributions 
+and/or communication tasks overflowed in some cases, specially
+when using vdW and a variable cell. Fixed.
+
+modified:
+  Src/SiestaXC/cellxc.F90 : improved output to debugXC
+  Src/SiestaXC/mesh3d.F90 : bug fixes + improved debugXC output
+
+-----------------------------------------------------------------------
+2013-11-15  15:20:00 GMT                                     trunk-449
+Fix Tbtrans runs at Gamma when using Transiesta k-point data
+
+(Thanks to Nick P. Andersen)
+
+When a calculation was performed with k-points in transiesta and a
+subsequent tbtrans calculation was performed ONLY at the Gamma point,
+the calculated transmission was wrong.
+
+This has now been fixed.
+
+modified:
+  Util/TBTrans_rep/tbtrans.F90
+
+-----------------------------------------------------------------------
+2013-10-31  19:30:00 GMT                                     trunk-448
+Minor fixes in XC library (JMS)
+
+- Due to roundoff errors, the first mesh point generated by mesh1d
+  might be slightly outside the given range. This has been fixed.
+- The maximum number of mesh distributions in mesh3d has been increased.
+- To reduce the executable file, the allocation of some large arrays in 
+  vdwxc.F90 and vv_vdwxc.F90 has changed from static to dynamic.
+- To avoid compiler warnings, some real-to-integer conversions in
+  vv_vdwxc.F90 have been changed from implicit to explicit.
+
+modified:
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh1d.f90
+  Src/SiestaXC/mesh3d.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+
+-----------------------------------------------------------------------
+2013-10-22  14:10:00 GMT                                     trunk-447
+Improve the estimation of the orbital distribution blocksize
+
+For small problems or a too-large number of processors (heuristically,
+when nprocs*24 > norbs), the estimation of the default blocksize for
+orbital distribution could lead to some processors being idle, or to a
+large imbalance in the distribution.
+
+This has been fixed. The imbalance (the ratio of maximum to minimum
+number of orbitals assigned to a processor) is now not larger than 2 for
+those badly designed runs.
+
+The imbalance is printed to the output file.
+
+(A. Garcia)
+
+modified:
+  Src/initparallel.F
+  Src/m_dminim.F90
+  Src/m_zminim.F90
+  Src/parallelsubs.F
+  Docs/siesta.tex
+
+-----------------------------------------------------------------------
+2013-10-16  12:30:00 GMT                                     trunk-446
+Output file names for dhscf packed in a derived type (JMS)
+
+   The file names passed to dhscf, for output densities and potentials 
+on the grid, have been packed into a derived type defined in files.f
+   Also, a new density file .RHOXC, with the density passed to cellxc
+(i.e. including the nonlocal core corrections), can be written by 
+activating SaveRhoXC in the .fdf file.
+   As a minor point, file .VNA was being written in every call to
+dhscf (provided that SaveNeutralAtomPotential was active). Now it is
+written only when dhscf is called by siesta_analysis, as the other
+output files.
+   
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/dhscf.F
+  Src/files.f
+  Src/grdsam.F
+  Src/local_DOS.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+
+-----------------------------------------------------------------------
+2013-09-30  10:30:00 GMT                                     trunk-445
+New mixing options and simplification of scf loop
+
+* If the option
+
+   MixHamiltonian T
+
+is used, the program will mix the Hamiltonian instead of the density
+matrix to achieve self-consistency.
+
+Note that the "dDmax" column in the output will reflect the changes in
+H, not in the DM.
+
+The Kohn-Sham energy will converge more uniformly, as it is computed
+using a DM_out, instead of a (mixed) DM_in.
+
+
+* Optionally avoid mixing DM or H after scf-convergence
+
+If the option
+
+   SCF.MixAfterConvergence F
+
+is used, the program will exit the scf loop without a final mixing.
+The DM coming out of the cycle will then be DM_out (regardless of
+whether we are mixing H or the DM).  The hamiltonian coming out of the
+cycle is H_out (generated with DM_out), but H_in ("Hold" in the code)
+is also kept if the option is set, so it could be reset if needed in
+the future.
+
+Not mixing after convergence will improve the quality of the final
+Kohn-Sham energy and forces in calculations that use DM mixing.
+The effect should be very small for well-converged calculations.
+
+The DM is saved during the scf cycle for restarting purposes (unless
+overridden by the user). If there is no mix after convergence, the
+final DM_out is saved.
+
+
+* A number of options have been added to control the behavior of the
+Pulay mixer:
+
+- Pulay mixing might kick in only after a specified number of history
+steps have been built up:
+
+    pulay_minimum_history = fdf_get("SCF.PulayMinimumHistory",2)
+
+- Pulay mixing might not work well if far from the fixed point. This
+option will avoid inserting the current X_in, X_out pair in the
+history stack if the maximum difference is above the specified number.
+
+    max_dmax_for_pulay = fdf_get("SCF.PulayDmaxRegion",1000.0_dp) 
+
+There is no effect by default.
+
+- The "damping" term applied after the DIIS minimization can be
+different from that used for linear mixing:
+
+    alpha_pulay = fdf_get("SCF.Pulay.Damping",-1.0_dp) 
+
+By default, alpha_pulay would be set to the linear-mixing parameter.
+
+- The damping of the DIIS-predicted X_in is done to avoid introducing
+linear dependencies into the Pulay history stack. Alternatively (or
+simultaneously) one can use the most recent X_in, X_out pair in a
+linear mixing step, and use a possibly different mixing
+parameter. This would be akin to a "kick", but without removing all
+the history information.
+
+    linear_mixing_after_pulay = fdf_get("SCF.LinearMixingAfterPulay",.false.)
+    alpha_after_pulay = fdf_get("SCF.MixingWeightAfterPulay",0.5_dp)
+
+- Instead of direct matrix inversion, the more robust SVD algorithm can
+be used to perform the DIIS extrapolation:
+
+    use_svd_in_pulay = fdf_get("SCF.Pulay.UseSVD",.false.)
+    debug_svd_in_pulay = fdf_get("SCF.Pulay.DebugSVD",.true.)
+    ! Note that 1.0e-6 seems too conservative
+    rcond_svd_pulay = fdf_get("SCF.Pulay.RcondSVD",1.0e-8_dp)
+
+
+* The loop logic in 'siesta_forces' has been revised to make it more
+clear, maintaining the old behavior with the exception of:
+
+- The maximum number of scf iterations is that set by the user,
+instead of one less, since the final forces phase is not counted as an
+iteration.
+
+- Upon the beginning of a GF TranSiesta run, when mixing H, the
+hamiltonian will be recomputed with the proper bias, instead of
+inheriting H from the previous normal Siesta initialization. 
+
+(+ The DM is now normalized in 'compute_dm' and 'new_dm')
+
+(+ replaced the "siesta:" prefix by "scf:" in the relevant scf cycle
+output)
+
+(+ changed the order of the monitor_forces_in_scf block, so that it is
+executed before mixing).
+
+
+added:
+  Src/compute_max_diff.F
+  Src/m_svd.F90
+  Src/save_density_matrix.F
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/compute_dm.F
+  Src/final_H_f_stress.F
+  Src/m_pulay.F90
+  Src/m_ts_global_vars.f90
+  Src/m_ts_options.F90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/normalize_dm.F
+  Src/post_scf_work.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_init.F
+  Src/write_subs.F
+
+-----------------------------------------------------------------------
+2013-08-28  10:30:00 GMT                                     trunk-444
+Bug fixes to the preconditioner in the OMM modules
+(Fabiano Corsetti)
+
+modified:
+  Docs/siesta.tex
+  Src/m_dminim.F90
+  Src/m_zminim.F90
+
+-----------------------------------------------------------------------
+2013-07-31  16:05:00 GMT                                     trunk-443
+Update to gnubands program
+                                                              
+(Nick P. Andersen)
+
+Added a fermi shift flag (-F), and energy range flags (-e -E) to
+specify in which range one needs the window. This energy range
+specification can be used at the same time as the band-index
+specification.
+
+Fixed a bug when printing for spin-polarized calculations.
+
+modified.
+  Util/Bands/new.gnubands.f90
+
+-----------------------------------------------------------------------
+2013-07-31  16:00:00 GMT                                     trunk-442
+Synch patch-logs from siesta-3.0 branch up to siesta-3.2 release
+
+Did a "merge" followed by a "revert ." to keep only the patch logs, to
+maintain the ability to merge fixes applied initially to the
+siesta-3.0 branch.
+
+(no changes)
+
+-----------------------------------------------------------------------
+2013-07-05  15:40:00 GMT                                     trunk-441
+Cosmetic fixes to please Cray compiler. Arch.make files for PRACE computers
+
+(Fabiano Corsetti)
+
+* Some cosmetic changes for Cray compiler.
+
+* Added some arch.make files for PRACE computers to Src/Sys
+
+added:
+  Src/Sys/arch.make.curie
+  Src/Sys/arch.make.fermi
+  Src/Sys/arch.make.hermit
+  Src/Sys/arch.make.juqueen
+  Src/Sys/arch.make.marenostrum
+  Src/Sys/arch.make.supermuc
+modified:
+  Src/m_partial_charges.F
+  Src/rhoofd.F
+  Src/vmat.F
+
+-----------------------------------------------------------------------
+2013-07-04  16:00:00 GMT                                     trunk-440
+Avoid allocation of auxiliary index arrays in the general case
+
+* Some auxiliary index arrays intended only for O(N) calculations were
+  allocated unconditionally. This has been fixed.
+
+modified:
+  Src/initparallel.F
+
+-----------------------------------------------------------------------
+2013-06-21  11:10:00 GMT                                     trunk-439
+Siesta as subroutine using MPI. Vydrov-VanVoorhis vdW functional
+
+(Implemented by Jose Soler)
+
+* Siesta as a subroutine using MPI.
+
+A new version of fsiesta (siesta forces as a subroutine) that uses MPI
+to keep different siesta jobs, with their corresponding memory
+allocations, separated as different MPI processes. Each siesta job can
+itself run in parallel using its own MPI communicator.
+
+See Util/SiestaSubroutine for more information.
+
+* Implementation of Vydrov-VanVoorhis (VV) vdW functional.
+
+Ref: O.A.Vydrov & T.vanVoorhis, JCP 133, 244103 (2010)
+Conditions have been added in vdwxc to trap the VV case, calling the 
+corresponding routines in vv_vdwxc, where most of the new code is.
+
+
+* Minor changes:
+
+Array copy in mesh3d expanded in do loops to circunvent an apparent
+compiler bug
+
+Incresed length of some character strings that hold file names
+
+Increased parameter minloc in rhoofd and vmat for better efficiency
+
+Two minor bugs corrected in vdwxc.f90
+
+vdw_exchng changed to vdw_localxc in m_vdwxc
+
+The coefficients for interpolation of phi(d1,d2) in the upper boundary
+of d1 and d2 have been corrected in vdwxc:bcucof. But since these
+boundary values may be never encountered, this correction is probably
+irrelevant.  Additionally, a couple of comments have been corrected,
+and the reference output of the graphite_vdw_df test has been updated.
+
+A trap has been added in rdiag and cdiag to handle the trivial
+eigenvalue problem for matrices of dimension one, which was not
+treated correctly by the LAPACK routines.
+
+Consistency of array names in calls to re_alloc and de_alloc
+
+added:
+  Src/SiestaXC/Testers/test2.m
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/Testers/test5.m
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/fsiesta_mpi.F90
+  Src/siesta_master.f90
+  Util/SiestaSubroutine/SimpleTest/
+  Util/SiestaSubroutine/SimpleTest/Src/
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/Src/phonons.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_mpi_parallel.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_serial.f90
+  Util/SiestaSubroutine/SimpleTest/h2o.fdf
+  Util/SiestaSubroutine/SimpleTest/h2o.out
+  Util/SiestaSubroutine/SimpleTest/test.sh
+renamed:
+  Src/fsiesta.F90 => Src/fsiesta_pipes.F90
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/velect.f
+  Src/MPI/mpi_siesta.f90
+  Src/Makefile
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test2.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/lib-00-README
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh3d.F90
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+  Src/atmfuncs.f
+  Src/cdiag.F
+  Src/fft.F
+  Src/m_timer.F90
+  Src/moreParallelSubs.F90
+  Src/new_dm.F
+  Src/pxf.F90
+  Src/rdiag.F
+  Src/reinit.F
+  Src/rhoofd.F
+  Src/setspatial.f
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/struct_init.F
+  Src/vmat.F
+  Tests/Reference/graphite_vdw_df.out
+  Tests/graphite_vdw_df/graphite_vdw_df.fdf
+  Util/SiestaSubroutine/README
+  Util/Vibra/Src/outbands.f
+  Util/Vibra/Src/vibrator.f
+  version.info
+  Src/fsiesta_pipes.F90
+
+
+-----------------------------------------------------------------------
+2013-06-10  14:20:00 GMT                                     trunk-438
+Bug fixes in constraints routine
+
+* Make sure that the atomic indices are in the correct range.
+
+* Add code to guarantee the enlargement of an array in the
+general case.
+
+(Thanks to Nick P. Andersen)
+
+modified:
+  Src/fixed.F
+
+-----------------------------------------------------------------------
+2013-06-10  14:10:00 GMT                                     trunk-437
+New option for KB projector generation (J. Junquera)
+
+With the option
+
+KB.New.Reference.Orbitals  T
+
+the routine to generate KB projectors will use slightly different
+parameters for the construction of the reference orbitals involved
+(Rmax=60 bohr both for integration and normalization).
+
+modified:
+  Docs/siesta.tex
+  Src/atom.F
+  Src/atom_options.F90
+
+-----------------------------------------------------------------------
+2013-06-05  13:00:00 GMT                                     trunk-436
+Charge confinement and filteret basis generation options
+
+Two experimental features related to basis-set generation:
+
+* Charge confinement feature for basis set generation
+(Emilio Artacho)
+
+Present soft confinement produces bad polarisation orbitals if the
+original atomic orbitals are unbound or very wide (automatic
+polarisation still gives too wide orbitals).
+
+A Q/r potential with Yukawa decay can now be added to the atomic and
+soft-confinement potentials. Soft-confinement sshould now be used only
+for the soft tail cutting with r_in ~ 0.9 r_c.
+
+See the manual for more details.
+
+* New 'filteret' basis-set scheme.  
+(Julian Gale)
+
+New options to use the filterets (functions appearing in the filtering
+mechanism proposed by Anglada and Soler) as a systematic basis
+set. The size of the basis set is controlled by the filter cut-off for
+the orbitals.  
+
+See the manual for more details.
+
+(Thanks to Tristana Sondon for help in merging)
+
+added:
+  Tests/Reference/chargeconf-h2o.out
+  Tests/Reference/h2o_filteret_basis.out
+  Tests/chargeconf-h2o/
+  Tests/chargeconf-h2o/chargeconf-h2o.fdf
+  Tests/chargeconf-h2o/chargeconf-h2o.pseudos
+  Tests/chargeconf-h2o/makefile
+  Tests/h2o_filteret_basis/
+  Tests/h2o_filteret_basis/h2o_filteret_basis.fdf
+  Tests/h2o_filteret_basis/h2o_filteret_basis.pseudos
+  Tests/h2o_filteret_basis/makefile
+modified:
+  Docs/siesta.tex
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atmparams.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/initatom.f
+  Src/m_filter.f90
+  Src/old_atmfuncs.f
+
+-----------------------------------------------------------------------
+2013-06-05  12:40:00 GMT                                     trunk-435
+Compilation fixes for tbtrans. Cosmetic changes
+
+The old symbol "DAT_double" was still being used in one of the
+routines of the new tbtrans program (in Util/TBTrans_rep).  References
+related to new timer_tree module were missing in both versions of
+tbtrans.
+
+In parallel operation, the "bye" routine now produces output only
+in the master node.
+
+In runs which are requested to end after the initial processing of
+the structure, XMOL output is produced if requested.
+
+modified:
+  Src/siesta_init.F
+  Src/sys.F
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/TBTrans_rep/m_tbt_iotshs.F90
+  Util/TBTrans_rep/m_tbt_read_tshs.F90
+
+-----------------------------------------------------------------------
+2013-03-31  19:00:00 GMT                                     trunk-434
+Experimental timer with call-tree awareness
+
+A new timer, based on wall time in the master node, and keeping track
+of the tree-structure of the timed sections, can be enabled by setting
+
+UseTreeTimer T
+
+in the fdf file.
+
+It works in tandem with the default timer, and it currently produces a
+report at the end of the output file in which the parent-child
+relationships are represented by simple indentation.
+
+Some new timing calls have been added in the code.
+
+added:
+  Src/die.F
+  Src/timer_tree.f90
+modified:
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/fft.F
+  Src/m_hsx.F
+  Src/m_iodm.F
+  Src/m_timer.F90
+  Src/m_walltime.f90
+  Src/matel.f
+  Src/molecularmechanics.F90
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/timer.F90
+
+
+-----------------------------------------------------------------------
+2013-03-26  12:35:00 GMT                                      trunk-433
+Implemented the non-O(N) version of the Ordejon-Mauri functional
+
+(Work by Fabiano Corsetti)
+
+* This re-implementation of Ordejon-Mauri will be referred to as the Orbital
+  Minimization Method (OMM); it is now a third available option for the keyword
+  SolutionMethod, alongside diagon and OrderN.
+* The OMM is not an O(N) functional at present, since no localization is imposed
+  on the trial orbitals; in future, it can be extended to include this option
+* The functional is contained in two new modules: m_dminim (double
+  precision routines) and m_zminim (double complex routines)
+* The modules works in serial with LAPACK, or in parallel with MPI and
+  ScaLAPACK
+* The double precision module (for Gamma point calculations) has the option of
+  using sparse matrix-dense matrix multiplications, with custom-coded algorithms
+  that interface between SIESTA's native sparse matrix scheme and (Sca)LAPACK's
+  dense matrix scheme
+* The SIESTA manual has been updated to include a list of all OMM-related
+  keywords, with detailed explanations and notes to the user
+
+added:
+  Docs/CHANGES.minim
+  Src/m_dminim.F90
+  Src/m_zminim.F90
+  Tests/OMM_h2o/
+  Tests/OMM_h2o/Makefile
+  Tests/OMM_h2o/OMM_h2o.fdf
+  Tests/OMM_h2o/OMM_h2o.pseudos
+  Tests/OMM_si/
+  Tests/OMM_si/Makefile
+  Tests/OMM_si/OMM_si.fdf
+  Tests/OMM_si/OMM_si.pseudos
+  Tests/Reference-xml/OMM_h2o.xml
+  Tests/Reference-xml/OMM_si.xml
+  Tests/Reference/OMM_h2o.out
+  Tests/Reference/OMM_si.out
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/compute_dm.F
+  Src/local_DOS.F
+  Src/post_scf_work.F
+  Src/projected_DOS.F
+  Src/siesta_analysis.F
+  Src/siesta_options.F90
+  Src/write_subs.F
+  Tests/Makefile
+
+-----------------------------------------------------------------------
 2013-01-24  14:30:00 GMT                                      trunk-432
 Export some MPI symbols explicitly. Remove obsolete symbols
 

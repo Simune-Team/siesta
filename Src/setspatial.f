@@ -135,8 +135,7 @@ C
 C  Allocate local workspace
 C
       nullify(xyzfrac)
-      call re_alloc(xyzfrac,1,3,1,na,name="xyzfrac",
-     $              routine="setspatial")
+      call re_alloc(xyzfrac,1,3,1,na,name="xyzfrac")
 C
       small = 0.000001d0
       degtorad = 4.0d0*atan(1.0d0)/180.0d0
@@ -294,10 +293,10 @@ C
 C
 C  Deallocate local workspace
 C
-      call de_alloc(xyzfrac,routine="setspatial")
-      call de_alloc(xinbox,routine="setspatial")
-      call de_alloc(yinbox,routine="setspatial")
-      call de_alloc(zinbox,routine="setspatial")
+      call de_alloc(xyzfrac,name='xyzfrac')
+      call de_alloc(xinbox,name='xinbox')
+      call de_alloc(yinbox,name='yinbox')
+      call de_alloc(zinbox,name='zinbox')
 C
       return
       end

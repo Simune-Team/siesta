@@ -25,7 +25,8 @@
       use class_Geometry,  only: newGeometry, Geometry, delete
       use class_Pair_Geometry_dSpData2D, only: Pair_Geometry_dSpData2D
       use class_Pair_Geometry_dSpData2D, only: new, delete
-      use class_Fstack_Pair_Geometry_dSpData2D, only: new
+      use class_Fstack_Pair_Geometry_dSpData2D, only: new, max_size
+      use class_Fstack_Pair_Geometry_dSpData2D, only: push
 
       USE siesta_options
       use m_stress

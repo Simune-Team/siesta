@@ -8,6 +8,11 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+! *******************************************************************
+! This file contains XC subroutines used when siesta is compiled with
+! option BSC_CELLXC. Otherwise, the SiestaXC library is used.
+! *******************************************************************
+
       subroutine atomxc( IREL, NR, MAXR, RMESH, nspin, Dens, 
      .                   EX, EC, DX, DC, VXC )
 

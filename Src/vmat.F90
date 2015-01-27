@@ -77,8 +77,8 @@ contains
     real(dp)                 :: dvol
     real(dp),         target :: Vs(nvmax,nspin)
 ! Internal variables and arrays
-    integer,       parameter :: minloc = 100, & ! Min buffer size
-         maxoa  = 100   ! Max # of orb/atom
+    integer, parameter :: minloc = 1000 ! Min buffer size
+    integer, parameter :: maxoa  = 100  ! Max # of orb/atom
     integer :: i, ia, ic, ii, ijl, il, imp, ind, iop
     integer :: ip, iphi, io, is, isp, ispin, iu, iul
     integer :: ix, j, jc, jl, last, lasta, lastop

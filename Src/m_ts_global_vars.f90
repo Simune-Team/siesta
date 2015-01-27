@@ -17,9 +17,6 @@ module m_ts_global_vars
   ! Whether transiesta is the solver
   logical :: TSmode = .false.
 
-  ! The current iteration in the SCF
-  integer :: TSiscf = 1
-
   ! Controls the change from diagon to transiesta solver
   logical :: TSinit = .false. , TSrun = .false.
 

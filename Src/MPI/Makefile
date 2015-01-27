@@ -49,6 +49,7 @@ libmpi_f90.a: mpi.o mpi__include.o Interfaces.o mpi_siesta.o timer_mpi.o
 clean:
 	@rm -f Interfaces.f90 *.o *.mod
 	@rm -f module_built *.uses kind_explorer
+	@rm -f libmpi_f90.a
 
 mpi_siesta.o: timer_mpi.o
 Interfaces.o: timer_mpi.o

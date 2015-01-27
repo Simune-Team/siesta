@@ -15,7 +15,6 @@
       use fdf
       use m_mpi_utils,    only : broadcast
       use periodic_table, only : symbol
-      use iopipes,        only : coordsfrompipe
       use m_iostruct,     only : read_struct
       use siesta_cml
       use files,          only : slabel
@@ -27,6 +26,10 @@
       use m_exp_coord, only : exp_coord_init
       use m_exp_coord, only : exp_coord_next
 #endif
+      use siesta_master,  only: coordsFromMaster  ! Get coords from master prog
+      use siesta_master,  only: setPropertyForMaster  ! Set a property to be
+                                                      ! sent to master program
+      use siesta_master,  only: siesta_server         ! Is siesta a server?
 
       implicit none
 
@@ -34,7 +37,7 @@
       external :: automatic_cell, bonds, iozm, shaper
       
       character(len=80) :: dummy_str
-      logical           :: Server_calculation, foundxv, foundzm
+      logical           :: foundxv, foundzm
       real(dp)          :: local_charnet
 
       real(dp):: bcell(3,3), tmp_cell(3,3)
@@ -151,12 +154,18 @@
       endif
 ! ..................
 
-! Read cell shape and atomic positions from driver program through pipe
-      dummy_str = fdf_get('MD.TypeOfRun',"none")
-      Server_calculation = (leqi(dummy_str,'forces'))
+! Find if siesta is a server of forces, unless we already know it .....
+      if (.not.siesta_server) then
+        dummy_str = fdf_get('MD.TypeOfRun',"none")
+        siesta_server = (leqi(dummy_str,'forces'))
+      end if
+! .....................
 
-      if (Server_calculation) then
-        call coordsFromPipe( na_u, xa, ucell )
+! Read cell shape and atomic positions from driver program
+      if (siesta_server) then
+        call setPropertyForMaster('atomic_numbers', 
+     .                             na_u, real(iza(:),dp), ' ')
+        call coordsFromMaster( na_u, xa, ucell )
       end if
 ! .....................
 

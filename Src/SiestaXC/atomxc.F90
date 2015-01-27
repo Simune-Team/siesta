@@ -125,9 +125,16 @@
 !             'WC' => GGA Wu-Cohen (see subroutine wcxc)
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
+!    'PBE(JsJrLO)' => GGA Reparametrizations of the PBE functional by
+!   'PBE(JsJrHEG)' => GGA   L.S.Pedroza et al, PRB 79, 201106 (2009) and
+!    'PBE(GcGxLO)' => GGA   M.M.Odashima et al, JCTC 5, 798 (2009)
+!   'PBE(GcGxHEG)' => GGA using 4 different combinations of criteria
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
-!          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
-!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2009)
+!          'LMKLL' => VDW K.Lee et al, PRB 82, 081101 (2010)
+!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2010)
+!            'C09' => VDW V.R. Cooper, PRB 81, 161104 (2010)
+!             'BH' => VDW K. Berland and Per Hyldgaard, PRB 89, 035412 (2014)
+!             'VV' => VDW Vydrov-VanVoorhis, JCP 133, 244103 (2010)
 ! *******************************************************************
 
 MODULE m_atomXC
@@ -157,7 +164,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   use mesh1d,  only: set_mesh      ! Sets a one-dimensional mesh
   use mesh1d,  only: set_interpolation  ! Sets the interpolation method
   use m_vdwxc, only: vdw_decusp    ! Cusp correction to VDW energy
-  use m_vdwxc, only: vdw_exchng    ! GGA exchange apropriate for vdW flavour
+  use m_vdwxc, only: vdw_localxc   ! Local LDA/GGA xc apropriate for vdW flavour
   use m_vdwxc, only: vdw_get_qmesh ! Returns q-mesh for VDW integrals
   use m_vdwxc, only: vdw_phi       ! Returns VDW functional kernel
   use m_vdwxc, only: vdw_set_kcut  ! Fixes k-cutoff in VDW integrals
@@ -214,6 +221,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   real(dp), parameter :: kcMin  = 20._dp   ! Bohr^-1
   real(dp), parameter :: kcMax  = 50._dp   ! Bohr^-1
   real(dp), parameter :: Dmin   = 1.e-9_dp ! Min density when estimating kc
+  real(dp), parameter :: Dcut   = 1.e-9_dp ! Min density for nonzero Vxc
 
 ! Fix the maximum number of functionals to be combined
   integer, parameter :: maxFunc = 10
@@ -250,6 +258,9 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 #ifdef DEBUG_XC
 !  real(dp):: q, dqdrho, dqdgrho(3)
 !  real(dp):: epsCtmp, dEcdDtmp(nSpin), dEcdGDtmp(3,nSpin)
+!   integer:: fileUnit
+!   logical:: fileOpened
+!   character(len=32):: fileName
 #endif /* DEBUG_XC */
 
 #ifdef DEBUG_XC
@@ -523,15 +534,9 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       ! derivatives with respect to density and density gradient
       if (VDWfunc) then
 
-        ! Exchange from GGA apropriate to vdW flafour
-        call vdw_exchng( irel, nSpin, D(:,ir), GD(:,:,ir), &
-                         epsX, dExdD, dExdGD )
-
-        ! Local correlation from PW92 LDA
-        ! Use Eaux and dEdDaux to avoid overwritting epsX and dExdD
-        call ldaxc( 'PW92', irel, nSpin, D(:,ir), Eaux, epsC,  &
-                    dEdDaux, dEcdD, dVxdD, dVcdD )
-        dEcdGD = 0.0_dp
+        ! Local exchange-corr. part from the apropriate LDA/GGA functional
+        call vdw_localxc( irel, nSpin, D(:,ir), GD(:,:,ir), epsX, epsC, &
+                          dExdD, dEcdD, dExdGD, dEcdGD )
 
 #ifdef DEBUG_XC
 !        ! Select only non local correlation energy and potential
@@ -624,6 +629,14 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     Vxc(1,is) = (4*Vxc(2,is) - Vxc(3,is)) / 3
   enddo ! is
 
+! Make Vxc=0 if VDWfunctl and Dens<Dcut, to avoid singularities
+  if (VDW) then
+    do ir = 1,nr
+      Dtot = sum(Dens(ir,1:ndSpin))
+      if (Dtot<Dcut) Vxc(ir,:) = 0
+    end do
+  end if ! (VDWfunctl)
+
 ! Divide by energy unit
   Ex = Ex / Eunit
   Ec = Ec / Eunit
@@ -664,6 +677,18 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
 #ifdef DEBUG_XC
 !  call timer_stop( myName )   ! Stop time counter
+#endif /* DEBUG_XC */
+
+#ifdef DEBUG_XC
+!  fileUnit = 57
+!  fileName = 'atomxc.vxc'
+!  inquire(file=fileName,opened=fileOpened)
+!  if (.not.fileOpened) open(unit=fileUnit,file=fileName)
+!  write(fileUnit,*) nr, nSpin
+!  do ir = 1,nr
+!    write(fileUnit,'(5e15.6)') &
+!      rmesh(ir), Dens(ir,1:nSpin), Vxc(ir,1:nSpin)
+!  end do
 #endif /* DEBUG_XC */
 
 end subroutine atomXC

@@ -1,4 +1,276 @@
 ----------------------------------------------------
+January 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-267
+Merging of trunk into ts-scf
+
+* m_rhog and m_diis where using the old Vector
+  classes.
+
+  I have modified the code to utilize the 
+  Data1D classes instead.
+
+* Added AR as a variable to the Makefile
+  ar is not always needed, particularly
+  are intel compilers needing of the xiar command 
+  as a replacement for ar, hence an env variable
+  is suitable.
+
+  I have added:
+     AR ?= ar
+  for easy setup, we should consider adding more
+  default env-variables by this method.
+  I do not think it would hurt.
+
+* Cleaned up the makefile objects, the objects
+  are now somewhat grouped into different parts.
+  They can be more grouped to clarify code structure/
+  dependency tree etc.
+
+* Made the class_*.T90 usable by several include
+  statements by adding undef in the end.
+  Otherwise the pre-processor errors out.
+
+* I have commented out the timer in MATEL, it served no
+  purpose other than slowing down due to overhead.
+
+* TSiscf is fully removed, it is not needed as iscf is
+  the same counter.
+
+* Reversed the TS.MixH and MixHamiltonian logic,
+  the latter should be preferred as TS.MixH is a 
+  deprecated variable.
+
+removed:
+  Obj/README
+added:
+  Docs/CHANGES.charconf
+  Docs/CHANGES.minim
+  Docs/MergeSparse.CHANGES
+  Docs/Mixing.CHANGES
+  Docs/atom-filt+qconf.CHANGES
+  Docs/fdf.CHANGES
+  Docs/gga.CHANGES
+  Docs/mixrho.CHANGES
+  Docs/rc-4.0.CHANGES
+  Docs/timing.CHANGES
+  Pseudo/atom/Util/Ps2Inp/
+  Pseudo/atom/Util/Ps2Inp/die.F
+  Pseudo/atom/Util/Ps2Inp/flib_spline.f90
+  Pseudo/atom/Util/Ps2Inp/make_ps_input.f90
+  Pseudo/atom/Util/Ps2Inp/pseudopotential.f
+  Src/Orphans/
+  Src/Orphans/new_dm.F
+  Src/SiestaXC/Testers/Reference/
+  Src/SiestaXC/Testers/Reference/test1.out
+  Src/SiestaXC/Testers/Reference/test2.out
+  Src/SiestaXC/Testers/Reference/test3.out
+  Src/SiestaXC/Testers/Reference/test4.out
+  Src/SiestaXC/Testers/test2.m
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/Testers/test5.m
+  Src/SiestaXC/Testers/test6.f90
+  Src/SiestaXC/Testers/test6.m
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/Sys/arch.make.curie
+  Src/Sys/arch.make.fermi
+  Src/Sys/arch.make.hermit
+  Src/Sys/arch.make.juqueen
+  Src/Sys/arch.make.marenostrum
+  Src/Sys/arch.make.supermuc
+  Src/class_Fstack_Pair_Data1D.F90
+  Src/class_Fstack_Pair_SpData1D.F90
+  Src/class_Pair_Data1D.F90
+  Src/class_Pair_SpData1D.F90
+  Src/compute_energies.F90
+  Src/compute_rhog.F
+  Src/die.F
+  Src/fsiesta_mpi.F90
+  Src/m_diis.F90
+  Src/m_dminim.F90
+  Src/m_rhog.F90
+  Src/m_zminim.F90
+  Src/rhofft.F
+  Src/scfconvergence_test.F
+  Src/siesta_master.f90
+  Src/timer_tree.f90
+  Tests/OMM_h2o/
+  Tests/OMM_h2o/Makefile
+  Tests/OMM_h2o/OMM_h2o.fdf
+  Tests/OMM_h2o/OMM_h2o.pseudos
+  Tests/OMM_si/
+  Tests/OMM_si/Makefile
+  Tests/OMM_si/OMM_si.fdf
+  Tests/OMM_si/OMM_si.pseudos
+  Tests/Reference-xml/OMM_h2o.xml
+  Tests/Reference-xml/OMM_si.xml
+  Tests/Reference/OMM_h2o.out
+  Tests/Reference/OMM_si.out
+  Tests/Reference/chargeconf-h2o.out
+  Tests/Reference/h2o_filteret_basis.out
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+  Tests/chargeconf-h2o/
+  Tests/chargeconf-h2o/chargeconf-h2o.fdf
+  Tests/chargeconf-h2o/chargeconf-h2o.pseudos
+  Tests/chargeconf-h2o/makefile
+  Tests/h2o-rhog-mixing/
+  Tests/h2o-rhog-mixing/h2o-rhog-mixing.fdf
+  Tests/h2o-rhog-mixing/h2o-rhog-mixing.pseudos
+  Tests/h2o-rhog-mixing/makefile
+  Tests/h2o_filteret_basis/
+  Tests/h2o_filteret_basis/h2o_filteret_basis.fdf
+  Tests/h2o_filteret_basis/h2o_filteret_basis.pseudos
+  Tests/h2o_filteret_basis/makefile
+  Util/JobList/Examples/Ice/dummyFile
+  Util/SiestaSubroutine/ProtoNEB/
+  Util/SiestaSubroutine/ProtoNEB/NH3-point01.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point02.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point03.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3.fdf
+  Util/SiestaSubroutine/ProtoNEB/Src/
+  Util/SiestaSubroutine/ProtoNEB/Src/Makefile
+  Util/SiestaSubroutine/ProtoNEB/Src/protoNEB.F90
+  Util/SiestaSubroutine/SimpleTest/
+  Util/SiestaSubroutine/SimpleTest/Src/
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/Src/phonons.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_mpi_parallel.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel.f90
+  Util/SiestaSubroutine/SimpleTest/Src/simple_serial.f90
+  Util/SiestaSubroutine/SimpleTest/h2o.fdf
+  Util/SiestaSubroutine/SimpleTest/h2o.out
+  Util/SiestaSubroutine/SimpleTest/test.sh
+renamed:
+  Src/SiestaXC/Testers/test2.f90 => Src/SiestaXC/Testers/test2.F90
+  Src/check_scf_convergence.F => Src/Orphans/check_scf_convergence.F
+  Src/compute_EKS_Harris.F90 => Src/Orphans/compute_EKS_Harris.F90
+  Src/fsiesta.F90 => Src/fsiesta_pipes.F90
+modified:
+  Docs/CHANGES
+  Docs/TS-scf.CHANGES
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/pxf.F90
+  Pseudo/atom/velect.f
+  Pseudo/atom/version.h
+  Src/Fstack.T90
+  Src/MPI/Makefile
+  Src/MPI/mpi_siesta.f90
+  Src/Makefile
+  Src/Pair.T90
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/ldaxc.f
+  Src/SiestaXC/lib-00-README
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh1d.f90
+  Src/SiestaXC/mesh3d.F90
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atmfuncs.f
+  Src/atmparams.f
+  Src/atom.F
+  Src/atom_options.F90
+  Src/basic_type.inc
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/born_charge.F
+  Src/cdiag.F
+  Src/chemical.f
+  Src/class_Data1D.F90
+  Src/class_SpData1D.F90
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/dynamics.f
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/fdf/sample.F90
+  Src/fdf/sample.fdf
+  Src/fft.F
+  Src/files.f
+  Src/final_H_f_stress.F
+  Src/grdsam.F
+  Src/initatom.f
+  Src/initparallel.F
+  Src/local_DOS.F
+  Src/m_convergence.f90
+  Src/m_energies.F90
+  Src/m_filter.f90
+  Src/m_hsx.F
+  Src/m_mpi_utils.F
+  Src/m_ncdf_siesta.F90
+  Src/m_partial_charges.F
+  Src/m_pulay.F90
+  Src/m_timer.F90
+  Src/m_ts_global_vars.f90
+  Src/m_walltime.f90
+  Src/matel.f
+  Src/mixer.F
+  Src/molecularmechanics.F90
+  Src/moreParallelSubs.F90
+  Src/normalize_dm.F
+  Src/old_atmfuncs.f
+  Src/parallelsubs.F
+  Src/periodic_table.f
+  Src/post_scf_work.F
+  Src/projected_DOS.F
+  Src/pxf.F90
+  Src/rdiag.F
+  Src/reinit.F
+  Src/rhoofd.F90
+  Src/setspatial.f
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/struct_init.F
+  Src/sys.F
+  Src/timer.F90
+  Src/vmat.F90
+  Src/write_md_record.F
+  Src/write_subs.F
+  Src/xc.f
+  Tests/Makefile
+  Tests/Reference/graphite_vdw_df.out
+  Tests/graphite_vdw_df/graphite_vdw_df.fdf
+  Util/Bands/new.gnubands.f90
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/JobList/Examples/Ice/iceChecks.jobs
+  Util/JobList/README
+  Util/JobList/Src/jobList.f90
+  Util/STM/ol-stm/Src/Makefile
+  Util/SiestaSubroutine/README
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+  Util/Vibra/Src/outbands.f
+  Util/Vibra/Src/vibrator.f
+  Src/SiestaXC/Testers/test2.F90
+  Src/fsiesta_pipes.F90
+
+----------------------------------------------------
 January 24, 2015 -- Nick P. Andersen    trunk-432-scf-40--ts-scf-266
 Fully enabled OpenMP in expansion routines
 

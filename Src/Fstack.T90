@@ -165,3 +165,6 @@ print "(a,i0)", "<refcount: ", this%data%refCount
 end subroutine print__
 
 !=========================== end of template
+
+#undef _T_
+#undef FSTACK_NAME

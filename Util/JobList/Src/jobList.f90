@@ -13,7 +13,8 @@ PRIVATE    ! nothing is declared public beyond this point
   character(len=*),parameter:: dataSuffix = '.fdf'
   character(len=*),parameter:: endSuffix = '.EIG'
   character(len=*),parameter:: file0Exit = '0_NORMAL_EXIT'
-  character(len=*),parameter:: copyFiles  = 'cp -f *.fdf *.psf queue.sh'//' '
+  character(len=*),parameter:: defaultFiles = &
+                                       '*.fdf *.vps *.psf *.ion queue.sh'
   character(len=*),parameter:: defaultQueue = &
                                        './siesta < $jobName.fdf > $jobName.out'
   character(len=*),parameter:: defaultRequest(1) = (/'energy'/)
@@ -66,7 +67,7 @@ subroutine countJobs( unit, nLists, nJobs, nCores )
   if (myDir(nc:nc) /= '/') myDir = myDir(1:nc) // '/'
 
   ! Scan the 'root' list (the whole file), specified by blank name
-  call scanList(unit,myDir,defaultQueue,defaultRequest,' ','count')
+  call scanList(unit,myDir,defaultQueue,defaultFiles,defaultRequest,' ','count')
 
   ! Copy number of jobs and lists to output variables
   if (present(nLists)) nLists = totLists
@@ -93,7 +94,7 @@ subroutine runJobs( unit )
   if (myDir(nc:nc) /= '/') myDir = myDir(1:nc) // '/'
 
   ! Scan the 'root' list (the whole file), specified by blank name
-  call scanList(unit,myDir,defaultQueue,defaultRequest,' ','run')
+  call scanList(unit,myDir,defaultQueue,defaultFiles,defaultRequest,' ','run')
 
 end subroutine runJobs
 
@@ -116,18 +117,20 @@ subroutine getResults( unit )
   if (myDir(nc:nc) /= '/') myDir = myDir(1:nc) // '/'
 
   ! Scan the 'root' list (the whole file), specified by blank name
-  call scanList(unit,myDir,defaultQueue,defaultRequest,' ','get')
+  call scanList(unit,myDir,defaultQueue,defaultFiles,defaultRequest,' ','get')
 
 end subroutine getResults
 
 !------------------------------------------------------------------------------
 
-recursive subroutine scanList( unit, dir, queue, request, listName, task )
+recursive subroutine scanList( unit, dir, queue, files, request, &
+                               listName, task )
 
   implicit none
   integer,         intent(in) :: unit       ! I/O unit of joblist file
   character(len=*),intent(in) :: dir        ! parent directory
   character(len=*),intent(in) :: queue      ! queuing statement
+  character(len=*),intent(in) :: files      ! required data files
   character(len=*),intent(in) :: request(:) ! requested results
   character(len=*),intent(in) :: listName   ! name of job list
   character(len=*),intent(in) :: task       ! ('count'|'run'|'get')
@@ -135,12 +138,12 @@ recursive subroutine scanList( unit, dir, queue, request, listName, task )
   character(len=1),parameter:: separator(1) = (/' '/)
   integer :: iCase, iLine, iostat, nCases, nCores, nResults, nWords, nJobs
   character(len=wl):: caseDir(maxJobs), caseName(maxJobs), caseType(maxJobs), &
-                       fileIn, fileOut, line, myDir, myRequest(maxWords), &
-                       myQueue, newList, words(maxWords)
+                       fileIn, fileOut, line, myDir, myFiles, myQueue, &
+                       myRequest(maxWords), newList, words(maxWords)
   real(dp):: results(maxWords)
   logical :: finished
 
-  ! Set the list directory
+  ! Set the list directory and copy data files to it
   if (listName==' ') then  ! this is the 'root' list (the whole file)
     myDir = dir
   else                     ! this is a genuine list of jobs
@@ -148,7 +151,8 @@ recursive subroutine scanList( unit, dir, queue, request, listName, task )
     ! Create a new directory for this list and copy files to it
     if (task=='run') then
       call system('mkdir -p ' // trim(myDir))
-      call system(copyFiles // trim(myDir) )
+      call system('cp -f ' // trim(files) // ' ' // trim(myDir) // &
+                  ' 2> /dev/null' )
       call chdir(trim(myDir))
     endif
   endif ! (listName==' ')
@@ -160,11 +164,12 @@ recursive subroutine scanList( unit, dir, queue, request, listName, task )
     totLists = 0            ! total number of job lists
   endif
 
-  ! Set my own copies of queue and request
+  ! Set my own copies of queue, files, and request
   nResults = count(request/=' ')
   myRequest = ' '
   myRequest(1:nResults) = request(1:nResults)
   myQueue = queue
+  myFiles = files
   call getCores(myQueue,jobCores)   ! get number of cores per job
 
   ! Loop on lines of datafile
@@ -198,6 +203,9 @@ recursive subroutine scanList( unit, dir, queue, request, listName, task )
       line = adjustl(line)
       myQueue = adjustl(line(7:))           ! remove '%queue' from line
       call getCores(myQueue,jobCores)
+    elseif (trim(words(1))=='%files') then  ! data files specification
+      line = adjustl(line)
+      myFiles = adjustl(line(7:))           ! remove '%files' from line
     elseif (trim(words(1))=='%result') then ! result-request especification
       myRequest = ' '
       myRequest(1:nWords-1) = words(2:nWords) ! exclude 1st word (it is %result)
@@ -207,7 +215,7 @@ recursive subroutine scanList( unit, dir, queue, request, listName, task )
       caseType(nCases) = 'list'
       caseName(nCases) = newList
       caseDir(nCases) = trim(myDir) // trim(newList) // '/'
-      call scanList(unit,myDir,myQueue,myRequest,newList,task)
+      call scanList(unit,myDir,myQueue,myFiles,myRequest,newList,task)
     elseif (words(1)=='%endlist') then      ! end of my list
       if (words(2)==listName) then
         finished = .true.
@@ -224,7 +232,7 @@ recursive subroutine scanList( unit, dir, queue, request, listName, task )
       caseType(nCases) = 'job'
       call nameJob( line, caseName(nCases) )
       caseDir(nCases) = trim(myDir) // trim(caseName(nCases)) // '/'
-      if (task=='run') call runOneJob(myDir,myQueue,line)
+      if (task=='run') call runOneJob(myDir,myQueue,myFiles,line)
     endif
 
   end do ! iLine
@@ -323,7 +331,7 @@ end subroutine nameJob
 
 !------------------------------------------------------------------------------
 
-subroutine runOneJob( dir, queue, jobLine )
+subroutine runOneJob( dir, queue, files, jobLine )
 
 ! Submits (queues) one job, specified by string 'jobLine' of specifications,
 ! using the 'queue' statement, within a job-specific subdirectory of 'dir'
@@ -333,6 +341,7 @@ subroutine runOneJob( dir, queue, jobLine )
   implicit none
   character(len=*),intent(in) :: dir       ! work directory
   character(len=*),intent(in) :: queue     ! queuing statement
+  character(len=*),intent(in) :: files     ! data files
   character(len=*),intent(in) :: jobLine   ! line of job specification
 
   character(len=1),parameter:: separator(1) = (/';'/)
@@ -347,7 +356,8 @@ subroutine runOneJob( dir, queue, jobLine )
   ! Create a new directory for this job and copy files to it
   jobDir = trim(dir) // trim(jobName) // '/'
   call system('mkdir -p ' // trim(jobDir))
-  call system(copyFiles//trim(jobDir))
+  call system('cp -f ' // trim(files) // ' ' // trim(jobDir) // &
+              ' 2> /dev/null')
 
   ! Parse job-specifications line
   myLine = jobLine

@@ -150,3 +150,9 @@ p => this%data%second
 end subroutine secondp__
 
 !=========================== end of template
+
+#undef PAIR_NAME
+#undef _T1_
+#undef _T2_
+
+

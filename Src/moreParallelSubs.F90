@@ -612,8 +612,8 @@ SUBROUTINE miscAllReduceInt( op, a0, b0, c0, d0, e0, f0, &
     n = n + m
   end if
 
-  call de_alloc( recvBuff )
-  call de_alloc( sendBuff )
+  call de_alloc( recvBuff, name=myName//'recvBuff' )
+  call de_alloc( sendBuff, name=myName//'sendBuff' )
 
 #endif
 
@@ -791,8 +791,8 @@ SUBROUTINE miscAllReduceDouble( op, a0, b0, c0, d0, e0, f0, &
     n = n + m
   end if
 
-  call de_alloc( recvBuff )
-  call de_alloc( sendBuff )
+  call de_alloc( recvBuff, name=myName//'recvBuff' )
+  call de_alloc( sendBuff, name=myName//'sendBuff' )
 
 #endif
 

@@ -88,6 +88,7 @@ C  Modules
 C
       use precision
       use fdf
+      use files,     only : filesOut_t    ! derived type for output file names
       use parallel,  only : Node
       use sys,       only : die
       use m_dhscf,   only : dhscf, dhscf_init
@@ -131,7 +132,7 @@ C Internal variables and arrays
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
-
+      type(filesOut_t)           :: filesOut  ! blank output file names
 
       !Saved variables:
       logical, save :: blread = .false.
@@ -218,7 +219,7 @@ c first (normal) call to DHSCF, ihmat=1 --------------------------------------
 
       call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
      &            na, isa, xa, indxua, ntm,
-     &            ifa, istr, 1, ' ', ' ', ' ', ' ', ' ', ' ',
+     &            ifa, istr, 1, filesOut,
      &            maxnd, numh, listhptr, listh, Dscf, Datm,
      &            maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &            Exc, Dxc, dipol, stress, fal, stressl)
@@ -307,7 +308,7 @@ c loop sampling on displacements making averages ----------------------------
 
           call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
      &                na, isa, xanew, indxua, ntm,
-     &                ifa, istr, 0, ' ', ' ', ' ', ' ', ' ', ' ',
+     &                ifa, istr, 0, filesOut,
      &                maxnd, numh, listhptr, listh, Dscf, Datm,
      &                maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf,
      &                DUext, Exc, Dxc, dipol, stress, fal, stressl)

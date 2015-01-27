@@ -63,6 +63,14 @@ module class_dSpData1D
 !========================
 end module class_dSpData1D
 
+module class_gSpData1D
+#ifdef GRID_SP
+  use class_sSpData1D, newgSpData1D => newsSpData1D, gSpData1D => sSpData1D
+#else
+  use class_dSpData1D, newgSpData1D => newdSpData1D, gSpData1D => dSpData1D
+#endif
+end module class_gSpData1D
+
 module class_cSpData1D
   use class_cData1D
 !========================

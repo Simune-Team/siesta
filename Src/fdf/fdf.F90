@@ -116,6 +116,7 @@ MODULE fdf
   USE parse, only: match
   USE parse, only: digest, blocks, endblocks, labels
   USE parse, only: destroy, setdebug, setlog, setmorphol
+  USE parse, only: nlists, lists
 
   USE parse, only: search
   USE parse, only: fdf_bsearch => search
@@ -138,6 +139,7 @@ MODULE fdf
   public :: fdf_integer, fdf_single, fdf_double
   public :: fdf_string, fdf_boolean
   public :: fdf_physical, fdf_convfac
+  public :: fdf_islist, fdf_list
 
 ! Returns the string associated with a mark line
   public :: fdf_getline
@@ -153,6 +155,7 @@ MODULE fdf
   public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
   public :: fdf_bintegers, fdf_breals, fdf_bvalues, fdf_bnames, fdf_btokens
   public :: fdf_bboolean
+  public :: fdf_bnlists, fdf_blists
 
 ! Match, search over blocks, and destroy block structure
   public :: fdf_bmatch, fdf_bsearch, fdf_substring_search
@@ -201,6 +204,10 @@ MODULE fdf
     module procedure nintegers
   end interface
 
+  interface fdf_bnlists
+    module procedure nlists
+  end interface
+
   interface fdf_bnreals
     module procedure nreals
   end interface
@@ -219,6 +226,10 @@ MODULE fdf
 
   interface fdf_bintegers
     module procedure integers
+  end interface
+
+  interface fdf_blists
+    module procedure lists
   end interface
 
   interface fdf_breals
@@ -260,6 +271,7 @@ MODULE fdf
                                      fdf_output  = .FALSE.
 
   integer(ip), parameter, private :: maxdepth   = 5
+  integer(ip), parameter, private :: maxFileNameLength = 300
   integer(ip), private            :: ndepth
   integer(ip), private            :: fdf_in(maxdepth)
   integer(ip), private            :: fdf_out, fdf_err, fdf_log
@@ -308,16 +320,18 @@ MODULE fdf
 !
 !   Initialization for fdf.
 !
-      SUBROUTINE fdf_init(filein, fileout)
+      SUBROUTINE fdf_init( fileInput, fileOutput, unitInput )
       implicit none
 !------------------------------------------------------------- Input Variables
-      character(len=*), intent(in) :: filein, fileout
+      character(len=*),optional,intent(in):: fileInput, fileOutput
+      integer,         optional,intent(in):: unitInput
 
 #ifndef FDF_DEBUG
 !------------------------------------------------------------- Local Variables
       integer(ip)  :: debug_level, output_level
 #endif
       character(len=256) :: filedebug
+      character(len=maxFileNameLength):: filein, fileout
 
 !----------------------------------------------------------------------- BEGIN
 !$OMP SINGLE
@@ -327,14 +341,17 @@ MODULE fdf
                  THIS_FILE, __LINE__, fdf_err)
       endif
 
-      filedebug = trim(fileout) // ".debug"
-
 #ifdef _MPI_
       call fdf_mpi_init()
 #endif
       call fdf_initdata()
 
       call io_geterr(fdf_err)
+
+      ! Set in/out file names, if fileInput and fileOutput are not present
+      call set_file_names( filein, fileout, &
+                           fileInput, fileOutput, unitInput )
+      filedebug = trim(fileout) // ".debug"
 
 #ifdef FDF_DEBUG
       ! To monitor the parsing and the build-up of the
@@ -371,6 +388,107 @@ MODULE fdf
       RETURN
 !------------------------------------------------------------------------- END
       END SUBROUTINE fdf_init
+
+
+      SUBROUTINE set_file_names( fileIn, fileOut, &
+                                 optFileIn, optFileOut, unitIn )
+      ! If present, copies input arguments optFileIn/Out to fileIn/Out.
+      ! If absent, generates In/Out file names. If unitIn is present, and it is
+      ! a named file, returns it as fileIn. If not, it copies input to a new
+      ! file and returns its name. If .not.present(unitIn) => unitIn=5.
+      ! If optFileIn is present, unitIn is ignored.
+      implicit none
+      character(len=*),intent(out):: &
+        fileIn,    &! Name of file to be used as input
+        fileOut     ! Name of file to be used as output
+      character(len=*),optional,intent(in):: &
+        optFileIn, &! Optional argument with input file name
+        optFileOut  ! Optional argument with output file name
+      integer,optional,intent(in):: &
+        unitIn      ! Optional input file unit (not used if present(optFileIn))
+
+      integer:: count, ierr, iostat, iu, iuIn
+      logical:: named, opened
+      character(len=300) line
+      character(len=maxFileNameLength) fileName
+
+!------------------------------------------------------------------------- BEGIN
+#ifdef _MPI_
+      if (rank==0) then
+#endif
+
+      ! Find a job-specific number
+      call system_clock( count )
+      count = mod(count,100000)
+
+      ! Set output file name
+      if (present(optFileOut)) then
+        if (len(trim(optFileOut)) > len(fileOut)) &
+          call die('FDF module: set_file_names', &
+                   'Parameter maxFileNameLength too small.' // &
+                   'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+        fileOut = optFileOut
+      else                  ! set a job-specific file name
+        write(fileOut,'(a,i5.5,a)') 'fdf_',count,'.log'
+      endif
+
+      ! Set input file
+      if (present(optFileIn)) then     ! just copy the file name
+        if (len(trim(optFileIn)) > len(fileIn)) &
+          call die('FDF module: set_file_names', &
+                   'Parameter maxFileNameLength too small.' // &
+                   'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+        fileIn = optFileIn
+      else                             ! find or set a file name
+
+        ! Find input file unit
+        if (present(unitIn)) then      ! use given unit (possibly 5)
+          iuIn = unitIn
+        else                           ! assume standard input
+          iuIn = 5
+        endif
+
+        ! Find file name associated with given unit
+        if (iuIn==5) then              ! no valid file name
+           fileName = ' '
+        else                           ! check if this is a named file
+          inquire(unit=iuIn,opened=opened)
+          if (opened) then
+            inquire(unit=iuIn,named=named)
+            if (named) then            ! inquire file name
+              inquire(unit=iuIn,name=fileName)
+            else                       ! no valid file name
+              fileName = ' '
+            endif ! (named)
+          else
+            call die('FDF module: set_file_names', 'Input unit not opened.' // &
+                     'Terminating.', THIS_FILE, __LINE__, fdf_err, rc=ierr)
+          endif ! (opened)
+        endif ! (iuIn==5)
+
+        ! Set input file name, possibly after copying input to it
+        if (fileName==' ') then                       ! not a valid file
+          write(fileIn,'(a,i5.5,a)') &
+            'INPUT_TMP_',count,'.fdf'                 ! new file's name
+          call io_assign(iu)                          ! new file's unit
+          open(iu,file=trim(fileIn),form='formatted') ! open new file
+          do
+            read(iuIn,iostat=iostat,fmt='(a)') line   ! read line from old unit
+            if (iostat/=0 ) exit
+            write(iu,'(a)') trim(line)                ! write line to new file
+          enddo
+          call io_close(iu)                           ! close new file
+        else                                          ! valid file
+          fileIn = fileName
+        endif ! (fileName=='stdin')
+
+      endif ! (present(optFileIn))
+
+#ifdef _MPI_
+      endif ! (rank==0)
+#endif
+!--------------------------------------------------------------------------- END
+      END SUBROUTINE set_file_names
 
 !
 !   Initialize MPI subsystem if the application calling/using FDF
@@ -611,9 +729,8 @@ MODULE fdf
       integer, intent(in)       :: reading_node         ! Node which contains the struct
 
 !--------------------------------------------------------------- Local Variables
-      character, pointer        :: bufferFDF(:)
+      character, pointer        :: bufferFDF(:) => null()
       integer(ip)               :: i, j, k, ierr, nlines
-      type(line_dlist), pointer :: mark
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -1612,7 +1729,7 @@ MODULE fdf
         do i= 1, ntokens
           tok = tokens(dlp%pline,i)
           id  = dlp%pline%id(i)
-          write(fdf_log,*) '  Token:', tok, '(', dlp%pline%id(i), ')'
+          write(fdf_log,*) '  Token:', trim(tok), '(', dlp%pline%id(i), ')'
         enddo
         dlp => dlp%next
       enddo
@@ -1668,6 +1785,100 @@ MODULE fdf
     END FUNCTION fdf_integer
 
 !
+!   Returns true or false whether or not the label 'label' is
+!   a list or not, you cannot get the line out from this routine
+!
+    FUNCTION fdf_islist(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_islist
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_islist', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+         ! if it is a list:
+         fdf_islist = match(mark%pline, 'la')
+         if (fdf_output) write(fdf_out,'(a,5x,l10)') label, fdf_islist
+      else
+         fdf_islist = .false.
+         if (fdf_output) write(fdf_out,'(a,5x,a)') label, '# not found as list'
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_islist
+
+!
+!   Returns a list with label 'label', or the default
+!   value if label is not found in the fdf file.
+!
+    SUBROUTINE fdf_list(label,ni,list,line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+      integer(ip)                         :: ni
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                         :: list(ni)
+      type(line_dlist), pointer, optional :: line
+      
+!--------------------------------------------------------------- Local Variables
+      character(80)                       :: msg
+      type(line_dlist), pointer           :: mark
+      integer(ip)                         :: lni, llist(1)
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_list', 'FDF subsystem not initialized', &
+              THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+         if (.not. match(mark%pline, 'la')) then
+            write(msg,*) 'no list value for ', label
+            call die('FDF module: fdf_list', msg, THIS_FILE, __LINE__, fdf_err)
+         endif
+
+         ! Retrieve length of list
+         lni = -1
+         call lists(mark%pline,1,lni,llist)
+         if ( ni <= 0 ) then
+            ! the user has requested size...
+            ni = lni
+         else
+            ! the list is not long enough
+            if ( ni < lni ) then
+               call die('FDF module: fdf_list', 'List container too small', &
+                    THIS_FILE, __LINE__, fdf_err)
+            end if
+            call lists(mark%pline,1,ni,list)
+         end if
+         
+         if (fdf_output) write(fdf_out,'(a,5x,i10)') label, lni
+      else
+         write(msg,*) 'no list value for ', label
+         call die('FDF module: fdf_list', msg, THIS_FILE, __LINE__, fdf_err)
+      endif
+      
+      if (PRESENT(line)) line = mark
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_list
+
+!
 !   Returns a string associated with label 'label', or the default
 !   string if label is not found in the fdf file.
 !   Optionally can return a pointer to the line found.
@@ -1693,10 +1904,16 @@ MODULE fdf
       endif
 
       if (fdf_locate(label, mark)) then
-        ! Get all the characters spanning the space from the second to
-        ! the last token
-        fdf_string = characters(mark%pline, ind_init=2, ind_final=-1)
-        if (fdf_output) write(fdf_out,'(a,5x,a)') label, fdf_string
+         if (ntokens(mark%pline) < 2) then
+            fdf_string = ""
+            if (fdf_output) write(fdf_out,'(a,5x,a)') label, &
+             "#  *** Set to empty string *** "
+         else
+            ! Get all the characters spanning the space from the second to
+            ! the last token
+            fdf_string = characters(mark%pline, ind_init=2, ind_final=-1)
+            if (fdf_output) write(fdf_out,'(a,5x,a)') label, fdf_string
+         endif
       else
         fdf_string = default
         if (fdf_output) write(fdf_out,'(a,5x,a,5x,a)') label, default, '# default value'
@@ -2325,13 +2542,14 @@ MODULE fdf
 !   Backspace to the previous physical line in the block
 !   returning .TRUE. while more lines exist in the block bfdf.
 !
-    FUNCTION fdf_bbackspace(bfdf)
+    FUNCTION fdf_bbackspace(bfdf,pline)
       implicit none
 !--------------------------------------------------------------- Input Variables
       type(block_fdf)            :: bfdf
 
 !-------------------------------------------------------------- Output Variables
       logical                    :: fdf_bbackspace
+      type(parsed_line), pointer, optional :: pline
 
 !--------------------------------------------------------------- Local Variables
       character(80)              :: strlabel
@@ -2380,6 +2598,8 @@ MODULE fdf
         if (fdf_output) write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
       endif
+
+      if ( present(pline) ) pline => bfdf%mark%pline
 
       RETURN
 !--------------------------------------------------------------------------- END
@@ -2634,7 +2854,7 @@ MODULE fdf
       use mpi_siesta
       implicit none
 !--------------------------------------------------------------- Local Variables
-      character, pointer        :: bufferFDF(:)
+      character, pointer        :: bufferFDF(:) => null()
       integer(ip)               :: i, j, k, ierr
       type(line_dlist), pointer :: mark
 
@@ -2687,7 +2907,7 @@ MODULE fdf
 
 !--------------------------------------------------------------- Local Variables
       integer(ip)        :: i, j, lun, ierr, nlines
-      character, pointer :: bufferFDF(:)
+      character, pointer :: bufferFDF(:) => null()
       character(len=10)  :: fmt
 !------------------------------------------------------------------------- BEGIN
       call MPI_Bcast(nlines, 1,                                         &

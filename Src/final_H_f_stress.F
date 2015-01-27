@@ -4,7 +4,7 @@
       CONTAINS
 
       subroutine final_H_f_stress( iscf )
-      USE m_normalize_dm, only: normalize_dm
+
       USE siesta_options
       use sparse_matrices
       use siesta_geom
@@ -35,6 +35,7 @@
       use m_mpi_utils, only: globalize_sum
 #endif
       use parallel, only: IOnode
+      use m_normalize_dm, only : normalize_dm
 #ifdef CDF
 #ifdef NCDF_4
       use dictionary
@@ -42,13 +43,11 @@
 #endif
 #endif
 #ifdef TRANSIESTA
-! TSS Begin
       use files,        only : slabel, label_length
       use m_ts_global_vars, only : TSrun, ts_istep
       use m_ts_options, only : TS_HS_save
       use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
       use m_ts_io,      only : ts_write_TSHS,fname_TSHS
-! TSS End
 #endif /* TRANSIESTA */
       implicit none
 
@@ -135,6 +134,10 @@
 !     Last call to dhscf and grid-cell sampling if requested
       ifa  = 1
       istr = 1
+
+      ! This will call dhscf with the final DM coming out of
+      ! the scf cycle
+
       call grdsam( nspin, no_s, iaorb, iphorb, 
      &             no_l, no_u, na_u, na_s, isa, xa, indxua,
      &             ucell, ntm, ifa, istr, maxnh,
@@ -143,6 +146,7 @@
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 !     Orthonormalization forces ...........................................
+!     **Note that this will re-calculate S also
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -189,7 +193,6 @@
 #endif
 #endif
 #ifdef TRANSIESTA
-! TSS Begin
       if (TS_HS_save) then
          if ( idyn.eq.6 ) then
             io_istep   = ts_istep
@@ -213,8 +216,7 @@
      &           Ef, Qtot, Temp,        0,   0)
          end if
       endif
-! TSS End
 #endif /* TRANSIESTA */
-!--------------------------------------------------------------------------- END
+!----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
       END module m_final_H_f_stress

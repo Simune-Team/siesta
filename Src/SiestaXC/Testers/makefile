@@ -12,7 +12,7 @@ VPATH=../../../Src/SiestaXC/Testers
 #
 INCFLAGS=-I../../MPI
 #
-default: test1 test2 test3 test4
+default: test1 test2 test3 test4 test5 test6
 #
 libSiestaXC.a: ../libSiestaXC.a
 	(cd .. ; $(MAKE) \
@@ -33,6 +33,12 @@ test3: libSiestaXC.a test3.o
 test4: libSiestaXC.a test4.o
 	$(FC) $(FFLAGS) $(DEFS) $(INCFLAGS) -o test4 test4.o -lSiestaXC -L.
 #
+test5: libSiestaXC.a test5.o
+	$(FC) $(FFLAGS) $(DEFS) $(INCFLAGS) -o test5 test5.o -lSiestaXC -L.
+#
+test6: libSiestaXC.a test6.o
+	$(FC) $(FFLAGS) $(DEFS) $(INCFLAGS) -o test6 test6.o -lSiestaXC -L.
+#
 clean:
-	rm -f *.o *.*d *.a test1 test2 test3 test4
+	rm -f *.o *.*d *.a test1 test2 test3 test4 test5 test6
 

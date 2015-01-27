@@ -51,8 +51,8 @@ contains
     use m_ntm, only : ntm
     use siesta_options, only: sname, isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN, SOLVE_TRANSI
-    use siesta_options, only: savrho, savdrh, savevh, savevna
-    use siesta_options, only: savevt, savepsch, savetoch
+    use siesta_options, only: saverho, savedrho, savevh, savevna
+    use siesta_options, only: savevt, savepsch, savetoch, saverhoxc
     use siesta_options, only: savebader
     use siesta_options, only: save_initial_charge_density
     use m_timestamp, only: datestring
@@ -250,7 +250,7 @@ contains
             compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
-    if ( savrho ) then
+    if ( saverho ) then
        dic = dic//('info'.kv.'Charge density')
        call ncdf_def_var(grp,'Rho',i,(/'nx  ','ny  ','nz  ','spin'/), &
             compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
@@ -268,9 +268,15 @@ contains
             compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
-    if ( savdrh ) then
+    if ( savedrho ) then
        dic = dic//('info'.kv.'Density difference from atomic densities')
        call ncdf_def_var(grp,'RhoDelta',i,(/'nx  ','ny  ','nz  ','spin'/), &
+            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    if ( saverhoxc ) then
+       dic = dic//('info'.kv.'Density used to calculate XC functional')
+       call ncdf_def_var(grp,'RhoXC',i,(/'nx  ','ny  ','nz  ','spin'/), &
             compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 

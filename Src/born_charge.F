@@ -6,6 +6,7 @@
       CONTAINS
       
       subroutine born_charge()
+      use precision
       use siesta_options, only:dx
       use sparse_matrices
       use parallel,       only: Node, Nodes, IOnode, ParallelOverK

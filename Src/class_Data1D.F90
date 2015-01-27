@@ -54,6 +54,14 @@ module class_dData1D
 !========================
 end module class_dData1D
 
+module class_gData1D
+#ifdef GRID_SP
+use class_sData1D, gData1D => sData1D, newgData1D => newsData1D
+#else
+use class_dData1D, gData1D => dData1D, newgData1D => newdData1D
+#endif
+end module class_gData1D
+
 module class_cData1D
 !========================
 #define TYPE_NAME cData1D

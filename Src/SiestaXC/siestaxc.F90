@@ -31,7 +31,7 @@
 ! External routines used:
 !   pxfflush  : force flush of buffered output to a file
 !
-! Modules used and waht they provide:
+! Modules used and what they provide:
 !   alloc      : (re)allocation utility routines
 !   cellsubs   : routines to find cell volume and reciprocal vectors
 !   debugXC    : routines to set and print a report for debugging XC library
@@ -52,6 +52,7 @@
 !   m_timer    : routines to find and print CPU times
 !   m_walltime : Wall-time routine
 !   m_vdwxc    : routines for the Van der Waals functional
+!   m_vv_vdwxc : routines for the Vydrov-VanVoorhis VdW functional
 !   mesh1D     : utilities to manipulate 1D meshes
 !   mesh3D     : routines to handle mesh arrays distributed among processors
 !   moreParallelSubs : utility routines to simplify some MPI communications
@@ -302,9 +303,16 @@
 !             'WC' => GGA Wu-Cohen (see subroutine wcxc)
 !         'PBESOL' => GGA Perdew et al, PRL, 100, 136406 (2008)
 !           'AM05' => GGA Mattsson & Armiento, PRB, 79, 155101 (2009)
+!      'PBEJsJrLO' => GGA Reparametrizations of the PBE functional by
+!     'PBEJsJrHEG' => GGA   L.S.Pedroza et al, PRB 79, 201106 (2009) and
+!      'PBEGcGxLO' => GGA   M.M.Odashima et al, JCTC 5, 798 (2009)
+!     'PBEGcGxHEG' => GGA using 4 different combinations of criteria
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
-!          'LMKLL' => VDW K.Lee et al, arXiv:1003.5255v1 (2010)
-!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2009)
+!          'LMKLL' => VDW K.Lee et al, PRB 82, 081101 (2010)
+!            'KBM' => VDW optB88-vdW of J.Klimes et al, JPCM 22, 022201 (2010)
+!            'C09' => VDW V.R. Cooper, PRB 81, 161104 (2010)
+!             'BH' => VDW K. Berland and Per Hyldgaard, PRB 89, 035412 (2014)
+!             'VV' => VDW Vydrov-VanVoorhis, JCP 133, 244103 (2010)
 !
 ! ------------------------ USAGE ----------------------------------------------
 !   use siestaXC, only: setXC

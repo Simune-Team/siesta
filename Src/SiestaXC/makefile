@@ -20,8 +20,8 @@ module:  libSiestaXC.a
 SIESTA_SRCS= alloc.F90 bessph.f cellsubs.f  debugmpi.F \
              chkgmx.f fft1d.F  flib_spline.f90  \
              minvec.f m_io.f moreParallelSubs.F90 \
-             m_recipes.f m_timer.F90 m_walltime.f90 parallel.F \
-	     precision.F pxf.F90 radfft.f sorting.f sys.F timer.f90 \
+             m_recipes.f m_timer.F90 timer_tree.F90 m_walltime.f90 parallel.F \
+	     precision.F pxf.F90 radfft.f sorting.f sys.F timer.f90 die.F \
              class_OrbitalDistribution.F90
 SIESTA_OBJS:= $(SIESTA_SRCS:.f=.o)
 SIESTA_OBJS:= $(SIESTA_OBJS:.F=.o)
@@ -32,7 +32,7 @@ SIESTA_SOURCES:=$(addprefix ../, $(SIESTA_SRCS))
 
 LOCAL_SRCS= atomxc.F90 cellxc.F90 debugxc.f90 ggaxc.f ldaxc.f \
             siestaxc.F90 vdwxc.F90 xcmod.f90  fft3d.F90 fftr.F90 \
-            mesh1d.f90 mesh3d.F90 am05.f90
+            mesh1d.f90 mesh3d.F90 am05.f90 vv_vdwxc.F90
 LOCAL_OBJS:= $(LOCAL_SRCS:.f=.o)
 LOCAL_OBJS:= $(LOCAL_OBJS:.F=.o)
 LOCAL_OBJS:= $(LOCAL_OBJS:.f90=.o)
@@ -99,8 +99,12 @@ parallel.o: class_OrbitalDistribution.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 siestaxc.o: atomxc.o cellxc.o mesh3d.o precision.o xcmod.o
 sys.o: parallel.o
-timer.o: sys.o m_timer.o
-vdwxc.o: debugxc.o flib_spline.o ggaxc.o ldaxc.o m_recipes.o mesh1d.o
-vdwxc.o: precision.o radfft.o
+siesta_options.o: parallel.o precision.o units.o
+timer.o: sys.o m_timer.o timer_tree.o 
+timer_tree.o: m_walltime.o
+vdwxc.o: alloc.o debugxc.o flib_spline.o ggaxc.o ldaxc.o m_recipes.o mesh1d.o
+vdwxc.o: precision.o radfft.o vv_vdwxc.o sys.o
+vv_vdwxc.o: alloc.o debugxc.o flib_spline.o m_recipes.o mesh1d.o
+vv_vdwxc.o: precision.o radfft.o sys.o
 xcmod.o: precision.o sys.o vdwxc.o
 

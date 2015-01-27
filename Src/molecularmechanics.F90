@@ -47,10 +47,6 @@
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
-#ifdef DEBUG
-      call write_debug( '  PRE inittwobody' )
-#endif
-
       ! initialize all the arrays, and allocate them dynamically.
       call prep_arrays()
       ! capture the size of the potential arrays
@@ -94,8 +90,10 @@
               endif
               nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
               nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "C6 - two-body potential between ", &
-                    fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              if (node == 0) then
+                  write(6,"(a,i3,a,i3)") "C6 - two-body potential between ", &
+                  fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+               endif
               if (nr .ge. 2) then
 !               C6 : Parameter one is C6 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
@@ -212,9 +210,6 @@
 
         if (Node .eq. 0)  call plot_functions()
       endif
-#ifdef DEBUG
-      call write_debug( '  POS inittwobody' )
-#endif
 
       contains 
         

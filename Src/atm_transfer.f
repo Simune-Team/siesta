@@ -73,7 +73,9 @@
          if (spp%z.eq.-100) then
             spp%symbol = 'BS'
          else
-            spp%symbol = symbol(abs(spp%z))
+            ! The function 'symbol' knows how to deal
+            ! with (ghost) synthetics
+            spp%symbol = symbol(spp%z)
          endif
          spp%zval  = zvalfis(is)
          spp%mass  = massfis(is)
@@ -82,6 +84,10 @@
 
          spp%lmax_basis = lomaxfis(is)
          spp%norbs = nofis(is)
+
+!        Check that number of orbitals is below maximum 
+         if (spp%norbs.gt.maxnorbs) 
+     .     call die("atm_transfer: Increase maxnorbs in atm_types.f")
 
          do io = 1,  spp%norbs
             spp%orb_n(io) = cnfigfio(is,io)  !! Not sure about this
