@@ -710,7 +710,7 @@ MODULE parse
                     ! Correct sign of stepper
                     if ( lR <= uR ) sR = abs(sR)
                     if ( uR <  lR ) sR = -abs(sR)
-                    if ( sR == ) 0 call die('PARSE module: lists', &
+                    if ( sR == 0 ) call die('PARSE module: lists', &
                          'Stepping a list cannot be stepped by 0', &
                          THIS_FILE, __LINE__ )
                     do iR = lR , uR, sR

@@ -1,4 +1,19 @@
 ----------------------------------------------------
+January 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-268
+Added total spin-charge print-out, bugfix in parse.F
+
+* ts-q now shows the total charge if two spins exists
+  Also ts.int EE has been changed to ts-EE.
+
+* A bugfix for parse.F where an if statement was 
+  obviously wrong.
+
+modified:
+  Src/fdf/parse.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 January 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-267
 Merging of trunk into ts-scf
 

@@ -459,7 +459,7 @@ contains
     deallocate(DM,EDM)
 #endif
 
-    call print_error_estimate(IONode,'ts: int. EE.:', &
+    call print_error_estimate(IONode,'ts-EE:', &
          eM,eM_i,eM_j,DMe)
 
 #ifdef TRANSIESTA_DEBUG

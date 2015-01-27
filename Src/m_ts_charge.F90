@@ -192,9 +192,9 @@ contains
 
        write(*,'(/,a)') 'transiesta: Charge distribution:'
        if ( nspin > 1 ) then
-          write(*,'(a,2(f12.5,tr1))') &
+          write(*,'(a,3(f12.5,tr1))') &
                'Total charge                  [Q]  :', &
-               sum(Q(:,1)),sum(Q(:,2))
+               sum(Q(:,1)),sum(Q(:,2)),sum(Q)
           if ( Q(1,1) > 0._dp .or. Q(1,2) > 0._dp ) then
              write(*,'(a,2(f12.5,tr1))') &
                'Buffer                        [B]  :',Q(1,1), Q(1,2)
@@ -238,13 +238,21 @@ contains
        do i = 1 , N_Elec
           write(*,'(1x,a8,i0,1x,a8,i0)',advance='no') 'E',i,'C',i
        end do
-       write(*,'(1x,a9)') 'Q'
+       if ( nspin == 2 ) then
+          write(*,'(2(1x,a9))') 'Q','Qtot'
+       else
+          write(*,'(1x,a9)') 'Q'
+       end if
        do ispin = 1 , nspin
           write(*,'(a,1x,f9.3)',advance='no') 'ts-q:', Q(2,ispin)
           do i = 1 , N_Elec
              write(*,'(2(1x,f9.3))',advance='no') Q(3+(i-1)*2,ispin),Q(4+(i-1)*2,ispin)
           end do
-          write(*,'(1x,f9.3)') sum(Q(:,ispin))
+          if ( ispin == 2 ) then
+             write(*,'(2(1x,f9.3))') sum(Q(:,ispin)),sum(Q)
+          else
+             write(*,'(1x,f9.3)') sum(Q(:,ispin))
+          end if
        end do
        
     end if
