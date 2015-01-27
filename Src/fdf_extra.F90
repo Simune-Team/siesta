@@ -42,13 +42,45 @@ contains
     allocate(list(high-low+1))
 
     n = 0
+    ! If lists exists, we use those
     if ( fdf_bnnames(pline) == 1 ) then
-       ! The input line is a simple list of integers
-       do j = 1 , fdf_bnintegers(pline)
-          i = fdf_bintegers(pline,j)
-          n = n + 1 
-          list(n) = correct(i,low,high)
-       end do
+
+       ! Get number of lists on current line
+       i2 = fdf_bnlists(pline)
+       if ( i2 > 1 ) call die('Error in list block, &
+            &we only allow single lists.')
+       if ( i2 == 1 ) then
+
+          ! Read in number of items
+          i1 = -1
+          call fdf_blists(pline,1,i1,list(n+1:))
+          if ( i1 + n > size(list) ) then
+             call die('Number of elements in block list &
+                  &is too many to fit the maximal range of the &
+                  &list. Please correct.')
+          end if
+          if ( i1 == 0 ) then
+             call die('A block list with zero elements is not &
+                  &allowed, please correct input.')
+          end if
+
+          ! Read in actual list
+          call fdf_blists(pline,1,i1,list(n+1:n+i1))
+
+          ! update n
+          n = n + i1
+          
+       else ! it is a regular line with separate numbers
+          
+          ! The input line is a simple list of integers
+          do j = 1 , fdf_bnintegers(pline)
+             i = fdf_bintegers(pline,j)
+             n = n + 1 
+             list(n) = correct(i,low,high)
+          end do
+
+       end if
+
     else if ( fdf_bnnames(pline) == 3 ) then
        g = fdf_bnames(pline,2)
        if ( .not. leqi(g,'from') ) then

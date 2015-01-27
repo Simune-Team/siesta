@@ -1,4 +1,18 @@
 ----------------------------------------------------
+January 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-269
+Added list reading of the fdf_extra routine.
+
+* Several places the fdf_extra brange routines are used
+  in the new transiesta code.
+  
+  And this will immediately expose the list functionality
+  to various parts enabling complex indice constructs.
+
+modified:
+  Src/fdf_extra.F90
+  Util/TS/TBtrans/Makefile
+
+----------------------------------------------------
 January 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-268
 Added total spin-charge print-out, bugfix in parse.F
 
