@@ -424,7 +424,9 @@ CONTAINS
 
     ! Read former matrices for mixing .........
     !
+!$OMP parallel workshare default(shared)
     dmnew(1:maxnd,1:nspin) = 0._dp
+!$OMP end parallel workshare
     do i = 1 , maxmix
        i0 = (i-1) * numel
        do is = 1 , nspin
@@ -440,7 +442,9 @@ CONTAINS
 !$OMP end parallel do
        end do
     end do
+!$OMP parallel workshare default(shared)
     dmold(1:maxnd,1:nspin) = dmnew(1:maxnd,1:nspin)
+!$OMP end parallel workshare
 
     if (linear_mixing_after_pulay) last_was_pulay = .true.
 
@@ -460,8 +464,7 @@ CONTAINS
 
       alp1m = 1._dp - alp
       do is = 1 , nspin
-!$OMP parallel do default(shared), &
-!$OMP&private(ind)
+!$OMP parallel do default(shared), private(ind)
          do ind = 1 , maxnd
             dmnew(ind,is) = &
                  alp1m * dmold(ind,is) + alp * dmnew(ind,is)

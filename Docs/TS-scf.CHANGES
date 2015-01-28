@@ -1,4 +1,11 @@
 ----------------------------------------------------
+January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-275
+Added OpenMP statements in m_pulay.F90
+
+modified:
+  Src/m_pulay.F90
+
+----------------------------------------------------
 January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-274
 Added OpenMP statements several places
 
