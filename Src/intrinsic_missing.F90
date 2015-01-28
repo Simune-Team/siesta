@@ -824,7 +824,7 @@ contains
   ! The reason for choosing a subroutine for these
   ! are the direct impact on memory for very large matrices.
   ! This ensures direct writes, instead of temporary eye-arrays...
-  pure subroutine EYE_i_2D(size,array,I)
+  subroutine EYE_i_2D(size,array,I)
     integer, intent(in) :: size
     integer, intent(out) :: array(size,size)
     integer, intent(in), optional :: I
@@ -840,7 +840,7 @@ contains
     end do
 !$OMP end parallel do
   end subroutine EYE_i_2D
-  pure subroutine EYE_sp_2D(size,array,I)
+  subroutine EYE_sp_2D(size,array,I)
     integer, intent(in) :: size
     real(sp), intent(out) :: array(size,size)
     real(sp), intent(in), optional :: I
@@ -857,7 +857,7 @@ contains
     end do
 !$OMP end parallel do
   end subroutine EYE_sp_2D
-  pure subroutine EYE_dp_2D(size,array,I)
+  subroutine EYE_dp_2D(size,array,I)
     integer, intent(in) :: size
     real(dp), intent(out) :: array(size,size)
     real(dp), intent(in), optional :: I
@@ -874,7 +874,7 @@ contains
     end do
 !$OMP end parallel do
   end subroutine EYE_dp_2D
-  pure subroutine EYE_cp_2D(size,array,I)
+  subroutine EYE_cp_2D(size,array,I)
     integer, intent(in) :: size
     complex(sp), intent(out) :: array(size,size)
     complex(sp), intent(in), optional :: I
@@ -891,7 +891,7 @@ contains
     end do
 !$OMP end parallel do
   end subroutine EYE_cp_2D
-  pure subroutine EYE_zp_2D(size,array,I)
+  subroutine EYE_zp_2D(size,array,I)
     integer, intent(in) :: size
     complex(dp), intent(out) :: array(size,size)
     complex(dp), intent(in), optional :: I
@@ -909,27 +909,27 @@ contains
 !$OMP end parallel do
   end subroutine EYE_zp_2D
 
-  pure subroutine EYE_i_1D(size,array)
+  subroutine EYE_i_1D(size,array)
     integer, intent(in) :: size
     integer, intent(out) :: array(size*size)
     call EYE_i_2D(size,array)
   end subroutine EYE_i_1D
-  pure subroutine EYE_sp_1D(size,array)
+  subroutine EYE_sp_1D(size,array)
     integer, intent(in) :: size
     real(sp), intent(out) :: array(size*size)
     call EYE_sp_2D(size,array)
   end subroutine EYE_sp_1D
-  pure subroutine EYE_dp_1D(size,array)
+  subroutine EYE_dp_1D(size,array)
     integer, intent(in) :: size
     real(dp), intent(out) :: array(size*size)
     call EYE_dp_2D(size,array)
   end subroutine EYE_dp_1D
-  pure subroutine EYE_cp_1D(size,array)
+  subroutine EYE_cp_1D(size,array)
     integer, intent(in) :: size
     complex(sp), intent(out) :: array(size*size)
     call EYE_cp_2D(size,array)
   end subroutine EYE_cp_1D
-  pure subroutine EYE_zp_1D(size,array)
+  subroutine EYE_zp_1D(size,array)
     integer, intent(in) :: size
     complex(dp), intent(out) :: array(size*size)
     call EYE_zp_2D(size,array)

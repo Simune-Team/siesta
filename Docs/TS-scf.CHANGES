@@ -1,4 +1,14 @@
 ----------------------------------------------------
+January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-276
+Changed EYE functions to regular subroutines
+
+* OpenMP constructs are "of"-course not allowed in pure/elemental
+  routines
+
+modified:
+  Src/intrinsic_missing.F90
+
+----------------------------------------------------
 January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-275
 Added OpenMP statements in m_pulay.F90
 
