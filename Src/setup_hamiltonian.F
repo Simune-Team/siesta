@@ -62,27 +62,38 @@
 
       call timer('setup_H',1)
 
+!$OMP parallel default(shared), private(ispin,io)
+
 ! Save present H matrix
+!$OMP do collapse(2)
       do ispin = 1,nspin
          do io = 1,maxnh
             Hold(io,ispin) = H(io,ispin)
          enddo
       enddo
+!$OMP end do
 
 
       ! Initialize Hamiltonian with the non-SCF part...................
 
+!$OMP single
       H_kin => val(H_kin_1D)
       H_vkb => val(H_vkb_1D)
+!$OMP end single ! keep wait
+
       do ispin = 1,nspin
         if (ispin .le. 2) then
+!$OMP do
           do io = 1,maxnh
             H(io,ispin) = H_kin(io) + H_vkb(io)
           enddo
+!$OMP end do nowait
         else
+!$OMP do
           do io = 1,maxnh
             H(io,ispin) = 0.0_dp
           enddo
+!$OMP end do nowait
         endif
       enddo          
 ! ..................
@@ -95,14 +106,20 @@
 ! charge, this introduces an inconsistency. In this case the energies
 ! coming out of this routine need to be corrected.
 ! 
+!$OMP single
       Ekin = 0.0_dp
       Enl = 0.0_dp
+!$OMP end single ! keep wait
+!$OMP do collapse(2), reduction(+:Ekin,Enl)
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
           Enl = Enl + H_vkb(io) * Dscf(io,ispin)
         enddo
       enddo
+!$OMP end do
+
+!$OMP end parallel
 #ifdef MPI
 ! Global reduction of Ekin and Enl
       call globalize_sum(Ekin,buffer1)

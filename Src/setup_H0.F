@@ -78,7 +78,9 @@ C     Add on force field contribution to energy
       local_nspin = 1   ! We will not touch Dscf, and H_kin does
                         ! not depend on spin
       H_val => val(H_kin_1D)
+!$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
+!$OMP end parallel workshare
       call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
@@ -92,7 +94,9 @@ C     Non-local-pseudop:  matrix elements only
                         ! not depend on spin
 
       H_val => val(H_vkb_1D)
+!$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
+!$OMP end parallel workshare
       call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
      &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &            numh, listhptr, listh, numh, listhptr, listh, 

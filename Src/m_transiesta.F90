@@ -149,7 +149,9 @@ contains
              write(*,'(a)') 'transiesta: *** The forces are NOT updated ***'
              write(*,'(a)') 'transiesta: ***  Will set the forces to 0  ***'
           end if
+!$OMP parallel workshare default(shared)
           EDM(:,:) = 0._dp
+!$OMP end parallel workshare
        end if
 
        call timer('TS_init',2)

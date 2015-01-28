@@ -124,7 +124,9 @@
 
     call re_alloc(this%data%val,1,n, &
         name="val "//trim(this%data%name),routine=STR_TYPE_NAME)	
+!$OMP parallel workshare default(shared)
     this%data%val(:) = val(:)
+!$OMP end parallel workshare
 
     call tag_new_object(this)
     

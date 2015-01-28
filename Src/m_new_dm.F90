@@ -788,16 +788,22 @@
             noncol = .false.
           endif
 
+!$OMP parallel default(shared)
+
 ! Initialize to 0
 
+!$OMP workshare
           Dscf(:,1:nspin) = 0.0_dp
+!$OMP end workshare
 
 ! Initialize all paramagnetic
 
+!$OMP single
           do ia = 1, na_u
             do io = lasto(ia-1) + 1, lasto(ia)
               call GlobalToLocalOrb(io,Node,Nodes,iio)
               if (iio.gt.0) then
+!$OMP task firstprivate(io,iio), private(in,ind,jo)
                 do in = 1, numh(iio)
                   ind = listhptr(iio)+in
                   jo = listh(ind)
@@ -806,12 +812,17 @@
                     Dscf(ind,2) = Dscf(ind,1)
                   endif
                 enddo
+!$OMP end task
               endif
             enddo
           enddo
+!$OMP end single nowait
+
+!$OMP taskwait
 
 ! Loop on atoms with spin
 
+!$OMP single
           do iat = 1, nat
             ia = atom(iat)
 
@@ -837,6 +848,8 @@
             do io = lasto(ia-1) + 1, lasto(ia)
               call GlobalToLocalOrb(io,Node,Nodes,iio)
               if (iio.gt.0) then
+!$OMP task firstprivate(iat,io,iio,rate), &
+!$OMP&private(qio,spio,in,ind,jo,costh,sinth,cosph,sinph)
                 qio = Datm(io)
                 spio = rate * min( Datm(io), 2.d0 - Datm(io) )
                 do in = 1, numh(iio)
@@ -861,10 +874,14 @@
                     endif
                   endif
                 enddo
+!$OMP end task
               endif
             enddo
 
           enddo
+!$OMP end single nowait
+
+!$OMP end parallel
 
 ! Deallocate local memory
           call de_alloc( atom, 'atom', 'initdm' )
@@ -876,12 +893,18 @@
 
         else
 
+!$OMP parallel default(shared)
+
 ! Initialize to 0
+!$OMP workshare
           Dscf(:,1:nspin) = 0.0d0
+!$OMP end workshare
 
 ! Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
+!$OMP single
           do io = 1, no_l
             call LocalToGlobalOrb(io,Node,Nodes,iio)
+!$OMP task firstprivate(io,iio), private(in,ind,jo,i1,i2)
             do in = 1,numh(io)
               ind = listhptr(io)+in
               jo = listh(ind)
@@ -911,7 +934,11 @@
                 endif
               endif
             enddo
+!$OMP end task
           enddo
+!$OMP end single nowait
+
+!$OMP end parallel
 
         endif
 
@@ -1040,7 +1067,9 @@
         ! Scratch array to accumulate the elements
         call newdData2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
         a => val(a_out)
+!$OMP parallel workshare default(shared)
         a(:,:) = 0.0_dp
+!$OMP end parallel workshare
 
         do i = 1, n
            pair => get_pointer(DM_history,i)
@@ -1050,7 +1079,9 @@
 !           endif
            call restructdSpData2D(dm,sparse_pattern,DMtmp)
            ai => val(DMtmp)
+!$OMP parallel workshare default(shared)
            a = a + c(i) * ai
+!$OMP end parallel workshare
         enddo
 
         call newdSpData2D(sparse_pattern,a_out,orb_dist, &

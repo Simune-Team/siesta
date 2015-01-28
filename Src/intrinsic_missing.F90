@@ -831,12 +831,14 @@ contains
     integer :: j, k, lI
     lI = 1
     if ( present(I) ) lI = I
+!$OMP parallel do default(shared), private(k,j)
     do k = 1 , size
        do j = 1 , size
           array(j,k) = 0
        end do
        array(k,k) = lI
     end do
+!$OMP end parallel do
   end subroutine EYE_i_2D
   pure subroutine EYE_sp_2D(size,array,I)
     integer, intent(in) :: size
@@ -846,12 +848,14 @@ contains
     integer :: j, k
     lI = 1._sp
     if ( present(I) ) lI = I
+!$OMP parallel do default(shared), private(k,j)
     do k = 1 , size
        do j = 1 , size
           array(j,k) = 0._sp
        end do
        array(k,k) = lI
     end do
+!$OMP end parallel do
   end subroutine EYE_sp_2D
   pure subroutine EYE_dp_2D(size,array,I)
     integer, intent(in) :: size
@@ -861,12 +865,14 @@ contains
     integer :: j, k
     lI = 1._dp
     if ( present(I) ) lI = I
+!$OMP parallel do default(shared), private(k,j)
     do k = 1 , size
        do j = 1 , size
           array(j,k) = 0._dp
        end do
        array(k,k) = lI
     end do
+!$OMP end parallel do
   end subroutine EYE_dp_2D
   pure subroutine EYE_cp_2D(size,array,I)
     integer, intent(in) :: size
@@ -876,12 +882,14 @@ contains
     integer :: j, k
     lI = cmplx(1._sp,0._sp)
     if ( present(I) ) lI = I
+!$OMP parallel do default(shared), private(k,j)
     do k = 1 , size
        do j = 1 , size
           array(j,k) = 0._sp
        end do
        array(k,k) = lI
     end do
+!$OMP end parallel do
   end subroutine EYE_cp_2D
   pure subroutine EYE_zp_2D(size,array,I)
     integer, intent(in) :: size
@@ -891,12 +899,14 @@ contains
     integer :: j, k
     lI = dcmplx(1._dp,0._dp)
     if ( present(I) ) lI = I
+!$OMP parallel do default(shared), private(k,j)
     do k = 1 , size
        do j = 1 , size
           array(j,k) = dcmplx(0._dp,0._dp)
        end do
        array(k,k) = lI
     end do
+!$OMP end parallel do
   end subroutine EYE_zp_2D
 
   pure subroutine EYE_i_1D(size,array)

@@ -1,4 +1,27 @@
 ----------------------------------------------------
+January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-274
+Added OpenMP statements several places
+
+* All files modified has received OpenMP statements
+  where applicable
+
+modified:
+  Src/basis_types.f
+  Src/class_Data1D.T90
+  Src/class_Data2D.T90
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/extrapolateSpData2D.F90
+  Src/intrinsic_missing.F90
+  Src/m_mat_invert.F90
+  Src/m_new_dm.F90
+  Src/m_transiesta.F90
+  Src/rhofft.F
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+
+----------------------------------------------------
 January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-273
 Redid m_pulay to be faster
 

@@ -279,9 +279,11 @@ C     partions for every processor in order to have a similar load
 C     in each of them.
       nullify( numphi )
       call re_alloc( numphi, 1, nmpl, 'numphi', 'dhscf_init' )
+!$OMP parallel do default(shared), private(i)
       do i= 1, nmpl
         numphi(i) = 0
       enddo
+!$OMP end parallel do
 
       call distriPhiOnMesh( nm, nmpl, norb, iaorb, iphorb,
      &                      isa, numphi )

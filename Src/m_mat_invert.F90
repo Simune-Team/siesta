@@ -180,9 +180,11 @@ contains
     
     ! Copy over A2 array
     t1 => M(sA2:eA2)
-    t1(:) = A2(:)
     t2 => M(sB1:eB1)
+!$OMP parallel workshare default(shared)
+    t1(:) = A2(:)
     t2(:) = B1(:)
+!$OMP end parallel workshare
     ! Calculate X1/C2 (store in B1 in original matrix)
     call zgesv(n2,n1,t1,n2,ipiv,t2,n2,i)
     if ( i /= 0 ) then
@@ -196,9 +198,11 @@ contains
 
     ! Copy over A1 array
     t1 => M(sA1:eA1)
-    t1(:) = A1(:)
     t2 => M(sC2:eC2)
+!$OMP parallel workshare default(shared)
+    t1(:) = A1(:)
     t2(:) = C2(:)
+!$OMP end parallel workshare
     ! Calculate Y2/B1
     call zgesv(n1,n2,t1,n1,ipiv,t2,n1,i)
     if ( i /= 0 ) then

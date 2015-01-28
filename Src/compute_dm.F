@@ -52,7 +52,9 @@
 
 ! Save present DM here, instead of in setup_hamiltonian...
 
+!$OMP parallel workshare default(shared)
       Dold(:,:) = Dscf(:,:)
+!$OMP end parallel workshare
 
 !     Solve eigenvalue problem 
 

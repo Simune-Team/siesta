@@ -17,7 +17,7 @@
       use m_post_scf_work
       use m_mixer
       use m_rhog,                only: mix_rhog, compute_charge_diff
-      USE siesta_options
+      use siesta_options
       use parallel,     only : IOnode
       use m_state_analysis
       use m_steps
@@ -40,7 +40,6 @@
       use write_subs,            only: siesta_write_stress_pressure
 #ifdef NCDF_4
       use dictionary
-      use siesta_options, only : write_cdf
       use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
       use m_ncdf_siesta, only : cdf_save_state, cdf_save_basis
 #endif
@@ -61,7 +60,6 @@
       use m_transiesta,          only: transiesta
       use kpoint_grid, only : gamma_scf
       use m_energies, only : Ef
-      use siesta_options, only : temp
       use m_pulay,           only: init_pulay_arrays
 #endif /* TRANSIESTA */
       implicit none
@@ -308,10 +306,14 @@
 
       allocate(fa_old(size(fa,dim=1),size(fa,dim=2)))
       allocate(Hsave(size(H,dim=1),size(H,dim=2)))
-      fa_old = fa
+!$OMP parallel workshare default(shared)
+      fa_old(:,:) = fa(:,:)
       Hsave(:,:) = H(:,:)
+!$OMP end parallel workshare
       call final_H_f_stress(iscf)
+!$OMP parallel workshare default(shared)
       H(:,:) = Hsave(:,:)
+!$OMP end parallel workshare
       if (ionode) then
          print *, "Max diff in force (eV/Ang): ",
      $        maxval(abs(fa-fa_old))*Ang/eV
@@ -367,7 +369,7 @@
       real(dp), pointer :: DM(:,:), EDM(:,:)
 
       ! We are done with the initial diagon run
-      ! Now we start the TRANSIESTA (Green Functions) run
+      ! Now we start the TRANSIESTA (Green functions) run
       if ( .not. TSmode ) return
       if ( .not. TSinit ) return
 
