@@ -225,10 +225,11 @@ contains
     integer :: i, j
     integer :: idx_a 
 
-    character(len=200) :: name, ln, tmp
+    character(len=200) :: bName, name, ln, tmp
 
     name = trim(this%name)
-    found = fdf_block(trim(prefix)//'.Elec.'//trim(name),bfdf)
+    bName = trim(prefix)//'.Elec.'//trim(name)
+    found = fdf_block(trim(bName),bfdf)
     if ( .not. found ) return
 
     info(:) = .false.
@@ -241,6 +242,21 @@ contains
        this%GFfile = trim(slabel)//'.'//trim(prefix)//'GF'//trim(name)
     end if
     this%na_used = -1
+
+    ! Allow the filename to be read in individually
+    name = trim(bName)//'.TSHS'
+    if ( fdf_defined(trim(name)) ) then
+       this%HSfile = trim(fdf_get(name,''))
+       info(1) = .true.
+    end if
+    name = trim(bName)//'.Rep.A1'
+    if ( fdf_defined(trim(name)) ) this%Rep(1) = fdf_get(name,1)
+    name = trim(bName)//'.Rep.A2'
+    if ( fdf_defined(trim(name)) ) this%Rep(2) = fdf_get(name,1)
+    name = trim(bName)//'.Rep.A3'
+    if ( fdf_defined(trim(name)) ) this%Rep(3) = fdf_get(name,1)
+    name = trim(bName)//'.GF'
+    if ( fdf_defined(trim(name)) ) this%GFfile = trim(fdf_get(name,''))
     
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle

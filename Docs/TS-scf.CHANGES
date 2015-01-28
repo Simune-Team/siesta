@@ -1,4 +1,26 @@
 ----------------------------------------------------
+January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-270
+Allowed TSHS files to be denoted outside the elec-block
+
+* Often when testing it can be useful to quickly change the
+  Hamiltonian for the electrode.
+
+  Hence instead of suppyling the Hamiltonian in the Elec block
+  one can denote it using:
+    TS.Elec.<elec-name>.TSHS <filename>
+  however, TSHS in the Elec block will have precedence.
+
+  As this can be considered specific to check between repeated
+  cells and non-repeated cells, these are also allowed outside:
+    TS.Elec.<elec-name>.Rep.A[1-3]
+    TS.Elec.<elec-name>.GF
+  to easily switch the relevant information of the changed 
+  electrode.
+
+modified:
+  Src/m_ts_electype.F90
+
+----------------------------------------------------
 January 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-269
 Added list reading of the fdf_extra routine.
 
