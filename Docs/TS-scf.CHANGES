@@ -1,4 +1,11 @@
 ----------------------------------------------------
+January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-272
+Corrected documentation of crt_Sparsity_TM
+
+modified:
+  Src/create_Sparsity_SC.F90
+
+----------------------------------------------------
 January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-271
 Updated logic in m_new_dm
 

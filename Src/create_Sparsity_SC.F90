@@ -47,8 +47,6 @@ contains
 
     ! Determines whether we wish to refer the sparsity
     ! to the unit-cell columns...
-    ! TODO * Probably this should be required if TM is specified?
-    ! For now we explicit force this to be true when TM is supplied
     logical, intent(in), optional :: UC
 
     ! TM stands for Transfer Matrix
@@ -215,8 +213,6 @@ contains
 
     ! Determines whether we wish to refer the sparsity
     ! to the unit-cell columns...
-    ! TODO * Probably this should be required if TM is specified?
-    ! For now we explicit force this to be true when TM is supplied
     logical, intent(in), optional :: UC
 
     ! TM stands for Transfer Matrix
@@ -512,9 +508,6 @@ contains
     if ( .not. present(entries) ) then
        no_e = 0
        ! Retrieve the data pointer value.
-       ! By doing this, we explicitly assume that the
-       ! sparsity pattern of xij and *in* are the same! 
-       ! TODO, check this in the beginning of the routine!
        do i = ptr+1 , ptr+ncol
           is = (l_col(i)-1)/nr + 1
           t = isc_off(:,is)
