@@ -1,4 +1,37 @@
 ----------------------------------------------------
+January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-271
+Updated logic in m_new_dm
+
+* Messeages where obscure and did not fully link with the
+  internal logic.
+  
+  A clean-up and removal of duplicated code provides
+  easier recognition of the logic behind reading the DM
+  /TSDE files.
+
+* When initializing the density matrix from electrodes,
+  or starting immediately in transiesta, the logic
+  of setting the Fermi-level has changed.
+
+  If the density matrices for the electrodes are set to
+  be bulk, then we print out information about that.
+
+  Only IFF the key TS.Fermi.Initial is not defined
+  will it print out whether the electrode Fermi-levels
+  are averaged.
+
+  Now, no matter what can you change the Fermi-level 
+  by using the key TS.Fermi.Initial, as long 
+  as you start a transiesta run immediately.
+  If a Fermi-level has been read in from a TSDE
+  file, it will inform the user of their variability.
+  This fits better with the logic of using that key.
+
+modified:
+  Src/m_new_dm.F90
+  Src/m_ts_global_vars.f90
+
+----------------------------------------------------
 January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-270
 Allowed TSHS files to be denoted outside the elec-block
 

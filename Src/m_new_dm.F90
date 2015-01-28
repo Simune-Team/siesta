@@ -47,7 +47,7 @@
       use precision, only: dp
       use alloc, only: re_alloc, de_alloc
       use parallel,  only: IOnode
-      use fdf,       only: fdf_get
+      use fdf,       only: fdf_get, fdf_defined
 
       implicit none
 
@@ -77,6 +77,7 @@
       use class_Fstack_Pair_Geometry_dSpData2D
 
 #ifdef TRANSIESTA
+      use units, only : eV
       use m_ts_global_vars,only: TSrun
       use m_ts_electype, only : copy_DM
       use m_ts_options, only : N_Elec, Elecs, DM_bulk
@@ -103,6 +104,7 @@
       integer :: na_a, na_dev
       integer, allocatable :: allowed_a(:)
       logical :: set_Ef
+      real(dp) :: old_Ef
 #endif
 
       if (IOnode) then
@@ -210,9 +212,8 @@
       end if
 
 #ifdef TRANSIESTA
-      ! In case of transiesta and DM_bulk
-      ! we already here set the density matrix to its bulk values
-      if ( TSrun .and. DM_bulk > 0 .and. DMinit ) then
+      ! In case we will immediately start a transiesta run
+      if ( TSrun .and. DMinit ) then
          ! In transiesta we can always initialize
          ! the density matrix with the bulk-values
          ! so as to "fix" the density in the leads
@@ -220,80 +221,97 @@
          ! If the Fermi-level has not been
          ! set, we initialize it to the mean of the
          ! electrode chemical potentials
-         set_Ef = abs(Ef) < 0.00001_dp 
-         if ( IONode ) then
-            write(*,'(/,a)') 'transiesta: Will read in bulk &
-                 &density matrices for electrodes'
-            if ( set_Ef ) then
-               write(*,'(a)') &
-                    'transiesta: Will average Fermi-level of electrodes'
-            end if
-         end if
+         if ( DM_bulk > 0 ) then
 
-         if ( init_method == 0 ) then
-            ! We are starting from atomic-filled orbitals
-            ! We are now allowed to overwrite everything!
-            na_a = na_u
-            allocate(allowed_a(na_a))
-            do iElec = 1 , na_a
-               allowed_a(iElec) = iElec
-            end do
-         else
-            na_a   = 0
-            do iElec = 1 , na_u
-               if ( .not. a_isDev(iElec) ) na_a   = na_a   + 1
-            end do
-            allocate(allowed_a(na_a))
-            na_a = 0 
-            do iElec = 1 , na_u
-               if ( .not. a_isDev(iElec) ) then
-                  na_a = na_a + 1
-                  allowed_a(na_a) = iElec
-               end if
-            end do
-         end if
-          
-         do iElec = 1 , N_Elec
-             
+            set_Ef = abs(Ef) < 0.00001_dp .and. &
+                 (.not. fdf_defined('TS.Fermi.Initial') ) 
             if ( IONode ) then
-               write(*,'(/,a)') 'transiesta: Reading in electrode TSDE for '//&
-                    trim(Elecs(iElec)%Name)
-            end if
-
-            ! Copy over the DM in the lead
-            ! Notice that the EDM matrix that is copied over
-            ! will be equivalent at Ef == 0
-            call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
-                 ucell,DMnew,EDMnew, na_a, allowed_a)
-
-            ! We shift the mean by one fraction of the electrode
-            ! Typically we see that the fermi-level rises a bit
-            ! as soon as you go "off-bulk", whence we 
-            ! do this by adding one "ficticious" electrode.
-            ! Estimate fraction of electrode fermi-level
-            ! by the number of atoms...
-            if ( set_Ef ) then
-               Ef = Ef + Elecs(iElec)%Ef / real(N_Elec+1,dp)
+               write(*,'(/,a)') 'transiesta: Will read in bulk &
+                    &density matrices for electrodes'
+               if ( set_Ef ) then
+                  write(*,'(a)') &
+                       'transiesta: Will average Fermi-levels of electrodes'
+               end if
             end if
             
-         end do
-         
-         if ( set_Ef ) then
-            Ef = fdf_get('TS.Fermi.Initial',Ef,'Ry')
+            if ( init_method == 0 ) then
+               ! We are starting from atomic-filled orbitals
+               ! We are now allowed to overwrite everything!
+               na_a = na_u
+               allocate(allowed_a(na_a))
+               do iElec = 1 , na_a
+                  allowed_a(iElec) = iElec
+               end do
+            else
+               na_a   = 0
+               do iElec = 1 , na_u
+                  if ( .not. a_isDev(iElec) ) na_a   = na_a   + 1
+               end do
+               allocate(allowed_a(na_a))
+               na_a = 0 
+               do iElec = 1 , na_u
+                  if ( .not. a_isDev(iElec) ) then
+                     na_a = na_a + 1
+                     allowed_a(na_a) = iElec
+                  end if
+               end do
+            end if
+          
+            do iElec = 1 , N_Elec
+               
+               if ( IONode ) then
+                  write(*,'(/,a)') 'transiesta: Reading in electrode TSDE for '//&
+                       trim(Elecs(iElec)%Name)
+               end if
+               
+               ! Copy over the DM in the lead
+               ! Notice that the EDM matrix that is copied over
+               ! will be equivalent at Ef == 0
+               call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
+                    ucell,DMnew,EDMnew, na_a, allowed_a)
+
+               ! We shift the mean by one fraction of the electrode
+               ! Typically we see that the fermi-level rises a bit
+               ! as soon as you go "off-bulk", whence we 
+               ! do this by adding one "ficticious" electrode.
+               ! Estimate fraction of electrode fermi-level
+               ! by the number of atoms...
+               if ( set_Ef ) then
+                  Ef = Ef + Elecs(iElec)%Ef / real(N_Elec+1,dp)
+               end if
+            
+            end do
+
+            ! Clean-up
+            deallocate(allowed_a)
+            
          end if
 
-         ! Clean-up
-         deallocate(allowed_a)
+         if ( fdf_defined('TS.Fermi.Initial') ) then
+            ! Write out some information regarding
+            ! how the Ef is set
 
-         if ( IONode ) then
+            old_Ef = Ef
+            Ef = fdf_get('TS.Fermi.Initial',Ef,'Ry')
+            
+            if ( IONode ) then
             write(*,*) ! new-line
+            if ( init_method < 2 ) then
+               write(*,'(a,f9.5,a)')'transiesta: Setting the Fermi-level to: ', &
+                    Ef / eV,' eV'
+            else if ( init_method == 2 ) then
+               write(*,'(a,2(f10.6,a))')'transiesta: Changing Fermi-level from -> to: ', &
+                    old_Ef / eV,' -> ',Ef / eV, ' eV'
+            end if
+            end if
+
          end if
 
          ! The electrode EDM is aligned at Ef == 0
          ! We need to align the energy matrix
-         iElec = nnzs(sparse_pattern) * nspin
-         DM  => val(DMnew)
-         EDM => val(EDMnew)
+         iElec =  nnzs(sparse_pattern) * nspin
+         DM    => val(DMnew)
+         EDM   => val(EDMnew)
          call daxpy(iElec,Ef,DM(1,1),1,EDM(1,1),1)
 
       end if
@@ -338,7 +356,7 @@
       use m_iodm, only : read_dm
 #ifdef TRANSIESTA
       use m_ts_iodm
-      use m_energies, only: ef  ! Transiesta uses the EF obtained in a initial SIESTA run
+      use m_energies, only: Ef  ! Transiesta uses the EF obtained in a initial SIESTA run
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
                                 ! stored in the TSDE file.
@@ -349,7 +367,7 @@
 
       implicit          none
 
-      logical           dm_found, inspn, try_dm_from_file
+      logical           DM_found, inspn, try_dm_from_file
       integer           no_l, na_u, no_u, nspin
       integer           lasto(0:na_u), iaorb(no_u)
       real(dp)          Datm(no_u)
@@ -369,7 +387,7 @@
       type(dSpData2D)                :: DMread
       type(dData2D)                  :: dm_a2d
 #ifdef TRANSIESTA
-      logical                        :: tsde_found
+      logical                        :: TSDE_found
       type(dSpData2D)                :: EDMread
       real(dp)                       :: tmp 
 #endif
@@ -379,119 +397,81 @@
 
 ! Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
+      DM_found   = .false.
 #ifdef TRANSIESTA
-      dm_found = .false.
-      tsde_found = .false.
-      if (try_dm_from_file) then
-         if (TSmode) then
-            if (ionode) print *, "Attempting to read DM,EDM from TSDE file..."
+      TSDE_found = .false.
+      if ( try_dm_from_file .and. TSmode ) then
+         if (IONode) write(*,'(a)',advance='no') &
+              'Attempting to read DM, EDM from TSDE file... '
+
 #ifdef TIMING_IO
-            call timer('IO-R-TS-DE',1)
-            do i = 1 , 100
+         call timer('IO-R-TS-DE',1)
+         do i = 1 , 100
 #endif
-            call read_ts_dm(trim(slabel)//'.TSDE',nspin,block_dist,no_u, &
-                 DMread, EDMread, Ef, tsde_found )
+         call read_ts_dm(trim(slabel)//'.TSDE',nspin,block_dist,no_u, &
+              DMread, EDMread, Ef, TSDE_found )
 #ifdef TIMING_IO
-            end do
-            call timer('IO-R-TS-DE',2)
-            call timer('IO-R-TS-DE',3)
+         end do
+         call timer('IO-R-TS-DE',2)
+         call timer('IO-R-TS-DE',3)
 #endif
-
-            call ts_method_init( TSDE_found )
-
-            if (.not. tsde_found) then
-               if (ionode) print *, "Attempting to read DM from file (TSmode)"
-#ifdef TIMING_IO
-            call timer('IO-R-DM',1)
-            do i = 1 , 100
-#endif
-               call read_dm(trim(slabel)//'.DM',nspin,block_dist,no_u, &
-                    DMread, dm_found )
-#ifdef TIMING_IO
-            end do
-            call timer('IO-R-DM',2)
-            call timer('IO-R-DM',3)
-#endif
-            endif
-            if ( tsde_found ) then
-               init_method = 2
-            else if ( dm_found ) then
-               init_method = 1
-            end if
-            dm_found = (tsde_found .or. dm_found)
-            
-         else  ! Not TSmode
-
-            if (ionode) print *, "Attempting to read DM from file..."
-#ifdef TIMING_IO
-            call timer('IO-R-DM',1)
-            do i = 1 , 100
-#endif
-            call read_dm(trim(slabel)//'.DM',nspin,block_dist,no_u, &
-                 DMread, dm_found )
-#ifdef TIMING_IO
-            end do
-            call timer('IO-R-DM',2)
-            call timer('IO-R-DM',3)
-#endif
-            if ( dm_found ) then
-               init_method = 1
-            end if
-
-         endif
-      endif
-
-      ! if the user requests to start the transiesta SCF immediately.
-      ! We will allow this if the electrodes
-      ! can read in the DM files
-      if ( TS_scf_mode == 1 .and. TSinit ) then
-         call ts_method_init( .true. )
-      end if
-
-      if ( TSrun ) then
-
-         ! Correct the mixing weight for transiesta
-         ! we have read in a TSDE file
-         tmp     = wmix
-         wmix    = ts_wmix
-         ts_wmix = tmp
+         if ( TSDE_found .and. IONode ) then
+            write(*,'(a)') 'Succeeded!'
+         else if ( IONode ) then
+            write(*,'(a)') 'Failed...'
+         end if
 
       end if
 
-#else
-      dm_found = .false.
-      if (try_dm_from_file) then
-         if (ionode) print *, "Attempting to read DM from file..."
+      ! Update init_method
+      if ( TSDE_found ) init_method = 2
+
+      ! In case TSDE is found, we set DM_found to be true
+      ! (prohibits the read of DM file)
+      DM_found = TSDE_found
+      
+#endif
+
+      if ( try_dm_from_file .and. .not. DM_found ) then
+         if (IONode) write(*,'(a)',advance='no') &
+              'Attempting to read DM from file... '
+
 #ifdef TIMING_IO
-            call timer('IO-R-DM',1)
-            do i = 1 , 100
+         call timer('IO-R-DM',1)
+         do i = 1 , 100
 #endif
-            call read_dm(trim(slabel)//'.DM',nspin,block_dist,no_u, &
-                 DMread, dm_found )
+         call read_dm(trim(slabel)//'.DM',nspin,block_dist,no_u, &
+              DMread, DM_found )
 #ifdef TIMING_IO
-            end do
-            call timer('IO-R-DM',2)
-            call timer('IO-R-DM',3)
+         end do
+         call timer('IO-R-DM',2)
+         call timer('IO-R-DM',3)
 #endif
-            if ( dm_found ) then
-               init_method = 1
-            end if
-      endif
-#endif
+
+         if ( DM_found .and. IONode ) then
+            write(*,'(a)') 'Succeeded!'
+         else if ( IONode ) then
+            write(*,'(a)') 'Failed...'
+         end if
+
+         ! Update init_method
+         if ( DM_found ) init_method = 1
+
+      end if
 
 ! If DM found, check and update, otherwise initialize with neutral atoms
 
-      if (dm_found) then
+      if ( DM_found ) then
         ! Various degrees of sanity checks
 
         nspin_read = size(val(DMread),dim=2)
         if (nspin_read /= Nspin) then
            if (IOnode) then
-              write(6,"(a,i6,/,a)")                   &
+              write(6,"(a,i0,/,a)")                   &
               "WARNING: Wrong nspin in DM file: ",  nspin_read,  &
               "WARNING: Falling back to atomic initialization of DM."
            endif
-           dm_found = .false.
+           DM_found = .false.
         endif
 
         if (nrows_g(DMread) /= nrows_g(sparse_pattern)) then
@@ -500,78 +480,100 @@
              "WARNING: Wrong number of orbs in DM file. ",     &
              "WARNING: Falling back to atomic initialization of DM."
            endif
-           dm_found = .false.
+           DM_found = .false.
         endif
 
       endif
+
+#ifdef TRANSIESTA
+      ! In case the sparsity pattern does not conform we update 
+      ! the TSDE_found, note that DM_found is a logic containing
+      ! information regarding the sparsity pattern
+      if ( TSDE_found ) TSDE_found = DM_found
+#endif
       
-      ! Density matrix
-      if (dm_found) then
+      ! Density matrix size checks
+      if ( DM_found ) then
 
-	call restructdSpData2D(DMread,sparse_pattern,DMnew)
-        if (ionode) print *, "DMread after reading file:"
-        if (ionode) call print_type(Dmread)
-
+         call restructdSpData2D(DMread,sparse_pattern,DMnew)
+         if (ionode) write(*,'(a)') "DM after reading file:"
+         if (ionode) call print_type(Dmread)
+         
       else
+         
+         call newdData2D(DM_a2D,nnzs(sparse_pattern),nspin,"(DMatomic)")
+         Dscf     => val(DM_a2d)
+         numh     => n_col(sparse_pattern)
+         listhptr => list_ptr(sparse_pattern)
+         listh    => list_col(sparse_pattern)
 
-	call newdData2D(DM_a2D,nnzs(sparse_pattern),nspin,"(DMatomic)")
-	Dscf     => val(DM_a2d)
-        numh     => n_col(sparse_pattern)
-        listhptr => list_ptr(sparse_pattern)
-        listh    => list_col(sparse_pattern)
-	
-        call fill_dscf_from_atom_info(Datm, Dscf, &
-             numh, listhptr, listh, lasto, &
-             no_u, na_u, no_l, nspin, &
-             iaorb, inspn)
+         call fill_dscf_from_atom_info(Datm, Dscf, &
+              numh, listhptr, listh, lasto, &
+              no_u, na_u, no_l, nspin, &
+              iaorb, inspn)
 
-        call newdSpData2D(sparse_pattern,dm_a2d,block_dist,DMnew,  &
-                         "(DM initialized from atoms)")
-        call delete(dm_a2d)
-        if (ionode) print *, "DMnew after filling with atomic data:"
-        if (ionode) call print_type(DMnew)
+         call newdSpData2D(sparse_pattern,dm_a2d,block_dist,DMnew,  &
+              "(DM initialized from atoms)")
+         call delete(dm_a2d)
+         if (ionode) write(*,'(a)') "DM after filling with atomic data:"
+         if (ionode) call print_type(DMnew)
 
-        ! The initialization method is the atomic filling...
-        init_method = 0
+         ! The initialization method is the atomic filling...
+         init_method = 0
 
-       endif
+      endif
 
-       ! Energy-density matrix
 #ifdef TRANSIESTA
-       if (dm_found) then
-          if (tsde_found) then
-             call restructdSpData2D(EDMread,sparse_pattern,EDMnew)
-             if (ionode) print *, "EDMread after reading file:"
-             if (ionode) call print_type(EDMread)
+      ! Energy-density matrix sparsity pattern is converted to
+      ! the new sparsity pattern if read in from TSDE
+      ! Else, it will remain associated to old EDM
+      if ( TSDE_found ) then
+         call restructdSpData2D(EDMread,sparse_pattern,EDMnew)
+         if (IONode) then
+            write(*,'(a)') "EDM after reading file:"
+            call print_type(EDMread)
+         end if
+      end if
+      
+      if ( TS_scf_mode == 1 .and. TSinit ) then
 
-             ! Correct the mixing weight for transiesta
-             ! we have read in a TSDE file
-             tmp     = wmix
-             wmix    = ts_wmix
-             ts_wmix = tmp
-          else
-             ! Escf remains associated to old EDM
-          end if
-       else
-          ! Escf remains associated to old EDM
-       end if
+         ! if the user requests to start the transiesta SCF immediately.
+         call ts_method_init( .true. )
+
+      else 
+
+         ! Print-out whether transiesta is starting, or siesta is starting
+         call ts_method_init( TSDE_found )
+
+      end if
+
+      if ( TSrun ) then
+
+         ! Correct the mixing weight
+         ! if we are in transiesta
+         tmp     = wmix
+         wmix    = ts_wmix
+         ts_wmix = tmp
+         
+      end if
+      
 #else
-       ! Escf remains associated to old EDM
-#endif           
-
-       ! Put deletes here to avoid complicating the logic
-       call delete(DMread)
-#ifdef TRANSIESTA
-       call delete(EDMread)
+      ! Energy-density matrix will remain associated to old EDM
 #endif
 
-      end subroutine initdm
+      ! Put deletes here to avoid complicating the logic
+      call delete(DMread)
+#ifdef TRANSIESTA
+      call delete(EDMread)
+#endif
+
+    end subroutine initdm
 
 !======================================================================
-      subroutine fill_dscf_from_atom_info(Datm, Dscf,              &
-                        numh, listhptr, listh, lasto,        &
-                        no_u,  na_u, no_l, nspin,     &
-                        iaorb, inspn)
+    subroutine fill_dscf_from_atom_info(Datm, Dscf,              &
+         numh, listhptr, listh, lasto,        &
+         no_u,  na_u, no_l, nspin,     &
+         iaorb, inspn)
 
 
 !      The DM is generated assuming atomic charging

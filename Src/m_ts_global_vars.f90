@@ -1,12 +1,3 @@
-!==========================================================================*
-!                                                                          *
-!  TRANSIESTA MODULE m_ts_global_vars : Declaration of the TS variables    *
-!  that are accessed in different parts of the code by using a:            *
-!      use m_ts_global_vars                                                *
-!  declaration, instead of passing as dummy arguments                      *  
-!                                                                          *
-!  Written by F.D.Novaes, Apr'10                                           *
-!==========================================================================*
 
 module m_ts_global_vars
   
@@ -26,9 +17,12 @@ contains
 
   subroutine ts_method_init( start )
 
-    use parallel, only : Node
+    use parallel, only : IONode
     
     logical, intent(in) :: start
+
+    ! If we are not in transiesta mode, return
+    if ( .not. TSmode ) return
 
     if ( start ) then
 
@@ -36,11 +30,11 @@ contains
        TSinit = .false.
        TSrun  = .true.
        
-       if ( Node == 0 ) then
-          write(*,'(a,/)') 'transiesta: Starting immediately'
-          write(*,'(a)') '                     ************************'
-          write(*,'(a)') '                     *   TRANSIESTA BEGIN   *'
-          write(*,'(a)') '                     ************************'
+       if ( IONode ) then
+          write(*,'(/a,/)')'transiesta: Starting immediately'
+          write(*,'(a)')   '                     ************************'
+          write(*,'(a)')   '                     *   TRANSIESTA BEGIN   *'
+          write(*,'(a,/)') '                     ************************'
        end if
 
     else
@@ -50,8 +44,8 @@ contains
        TSinit = .true.
        TSrun  = .false.
        
-       if ( Node == 0 ) then
-          write(*,'(a)') 'transiesta: Initialization run using siesta'
+       if ( IONode ) then
+          write(*,'(/,a,/)') 'transiesta: Initialization run using siesta'
        end if
 
     end if
