@@ -1,9 +1,11 @@
 module m_pulay
+
   use precision, only: dp
-  !
+
   implicit none
 
   private
+
   save
 
   real(dp), pointer  :: auxpul(:,:)  => null()
@@ -17,11 +19,11 @@ module m_pulay
   logical            :: use_svd_in_pulay = .false.
   logical            :: debug_svd_in_pulay = .true.
   real(dp)           :: rcond_svd_pulay = 1.0e-8_dp
-  !
+
   public :: pulayx, init_pulay_arrays, resetPulayArrays
-  !
+
 CONTAINS
-  !
+
   subroutine init_pulay_arrays()
     use siesta_options, only: maxsav
     use alloc
@@ -29,18 +31,16 @@ CONTAINS
     use m_spin, only: nspin
     use sparse_matrices, only: numh
     use fdf
-    !
-    implicit none
-    !
+
     integer :: ntmp, nauxpul
-    !
+
     n_records_saved = 0
 
     if (maxsav .le. 0) then
        ! No need for auxiliary arrays
     else
        nauxpul = sum(numh(1:no_l)) * nspin * maxsav
-       !
+
        call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",        &
             routine="pulay")
     endif
@@ -143,21 +143,19 @@ CONTAINS
     use mpi_siesta
     use m_mpi_utils, only: globalize_max
 #endif
-    !
-    implicit none
-    !
+
     integer , intent(in) ::  iscf,maxsav,maxnd, no_l,nkick,nspin
-    !
+
     integer , intent(in) :: numd(*),listdptr(*)
     logical, intent(in) ::  mix1
-    !
+
     real(dp), intent(in)    ::  alpha,alphakick
     real(dp), intent(inout) ::  dmnew(maxnd,nspin),dmold(maxnd,nspin)
     real(dp), intent(out)   :: dmax
-    !
-    !
+
     real(dp), pointer :: savedm(:), saveres(:)
-    !
+    real(dp), pointer :: res1(:), res2(:)
+
     ! Internal variables ....................................................
     integer :: i0,i,ii,in,is,isite,j,jj,numel,ind,info,maxmix
     logical :: after_kick
@@ -166,17 +164,16 @@ CONTAINS
 
 !    logical, save :: kick_due = .false.
     integer :: rank
-    !
+
 #ifdef MPI
     integer  MPIerror
     real(dp) :: buffer1
 #endif
-    !
+
     real(dp) ::   ssum
     real(dp), dimension(:,:), pointer ::  b, bi
     real(dp), dimension(:), pointer   ::  buffer
     real(dp), dimension(:), pointer   ::  coeff, sigma, rhs, beta
-    !
 
 #ifdef DEBUG_PULAY_INVERSE
     ! Typically, inversion problems in the DIIS procedure
@@ -217,15 +214,15 @@ CONTAINS
 
     !  Compute current maximum deviation ...........
     dmax = 0.0_dp
+!$OMP parallel do default(shared), &
+!$OMP&collapse(2), private(is,ind), reduction(max:dmax)
     do is = 1,nspin
-       do i = 1,no_l
-          do in = 1,numd(i)
-             ind = listdptr(i) + in
-             dmax = max(dmax, abs(dmnew(ind,is) - dmold(ind,is)))
-          enddo
-       enddo
+       do ind = 1 , maxnd
+          dmax = max(dmax, abs(dmnew(ind,is) - dmold(ind,is)))
+       end do
     enddo
-    ! .......
+!$OMP end parallel do
+
 #ifdef MPI
 !     Ensure that dmax is the same on all nodes for convergence test/output
       call globalize_max(dmax,buffer1)
@@ -254,7 +251,7 @@ CONTAINS
           RETURN
        endif
     endif
-    !
+
     ! Perform linear mixing if we do not have new information
     ! or not enough history
     ! (by default, 2, but it is settable by the user)
@@ -273,7 +270,7 @@ CONTAINS
        RETURN
 
     endif
-    !
+
     ! Perform linear mixing if iscf = N x nkick
     !
     if (nkick > 0 .AND. mod(iscf,nkick).eq.0) then
@@ -287,9 +284,8 @@ CONTAINS
        call linear_mixing(alphakick)
        RETURN
     endif
-    !
-    ! .......................
-    !
+
+
     ! Perform Pulay mixing if we have reached this point
     !
     ! sanity check
@@ -305,105 +301,81 @@ CONTAINS
     ! Allocate local arrays
     !
     nullify( b )
-    call re_alloc( b, 1, maxmix+1, 1, maxmix+1, name='b',           &
+    call re_alloc( b, 1, maxmix+1, 1, maxmix+1, name='b', &
          routine='pulayx' )
     nullify( bi )
-    call re_alloc( bi, 1, maxmix+1, 1, maxmix+1, name='bi',         &
+    call re_alloc( bi, 1, maxmix+1, 1, maxmix+1, name='bi', &
          routine='pulayx' )
     nullify( coeff )
-    call re_alloc( coeff, 1, maxmix, name='coeff',                &
+    call re_alloc( coeff, 1, maxmix, name='coeff', &
          routine='pulayx' )
     nullify( rhs )
-    call re_alloc( rhs, 1, maxmix+1, name='rhs',                &
+    call re_alloc( rhs, 1, maxmix+1, name='rhs', &
          routine='pulayx' )
     nullify( beta )
-    call re_alloc( beta, 1, maxmix+1, name='beta',                &
+    call re_alloc( beta, 1, maxmix+1, name='beta', &
          routine='pulayx' )
     nullify( sigma )
-    call re_alloc( sigma, 1, maxmix+1, name='sigma',                &
+    call re_alloc( sigma, 1, maxmix+1, name='sigma', &
          routine='pulayx' )
     nullify( buffer )
-    call re_alloc( buffer, 1, maxmix, name='buffer',                &
+    i = maxmix + 1
+    call re_alloc( buffer, 1, i*maxmix, name='buffer', &
          routine='pulayx' )
-    !
-    !
+
     !  calculate mixing coefficients
     !
-    !
-    do i=1,maxmix
+    do i = 1 , maxmix
+
+       ! Get i'th residual array
        i0 = (i-1) * numel
-       do is = 1,nspin
-          do ii = 1,no_l
-             do jj = 1,numd(ii)
-                ind = listdptr(ii) + jj
-                i0 = i0 + 1
-                dmnew(ind,is) = saveres(i0)
-             enddo
-          enddo
-       enddo
-       !
-       ! B(i,i) = dot_product(Res(i)*Res(i))
-       b(i,i) = 0.0_dp
-       ssum=0.0_dp
-       do is=1,nspin
-          do ii=1,no_l
-             do jj=1,numd(ii)
-                ind = listdptr(ii) + jj
-                ssum=ssum+dmnew(ind,is)*dmnew(ind,is)
-             enddo
-          enddo
-       enddo
-       b(i,i)=ssum
-       !
-       do j=1,i-1
+       res1 => saveres(i0+1:i0+numel)
 
+       do j = 1 , i
+
+          ! Get j'th residual array
           i0 = (j-1) * numel
-          do is = 1,nspin
-             do ii = 1,no_l
-                do jj = 1,numd(ii)
-                   ind = listdptr(ii) + jj
-                   i0 = i0 + 1
-                   dmold(ind,is) = saveres(i0)
-                enddo
-             enddo
-          enddo
+          res2 => saveres(i0+1:i0+numel)
+          
+          ! B(i,j) = B(j,i) = dot_product(Res(i)*Res(j))
+          ssum = 0.0_dp
+!$OMP parallel do default(shared), &
+!$OMP&private(ind), reduction(+:ssum)
+          do ind = 1 , numel
+             ssum = ssum + res1(ind) * res2(ind)
+          end do
+!$OMP end parallel do
+          b(i,j) = ssum
+          b(j,i) = ssum
 
-          !          ! B(i,j) = B(j,i) = dot_product(Res(i)*Res(j))
-
-          b(i,j)=0.0_dp
-          ssum=0.0_dp
-          do is=1,nspin
-             do ii=1,no_l
-                do jj=1,numd(ii)
-                   ind = listdptr(ii) + jj
-                   ssum=ssum+dmold(ind,is)*dmnew(ind,is)
-                enddo
-             enddo
-          enddo
-          b(i,j)=ssum
-          b(j,i)=ssum
-       enddo
+       end do
 
        ! Now extend the matrix with ones in an extra colum
        ! and row ...
-       b(i,maxmix+1)=1.0_dp
-       b(maxmix+1,i)=1.0_dp
-    enddo
-    !      ! ... except in the extra diagonal entry
-    b(maxmix+1,maxmix+1)=0.0_dp
-    !
+       b(i,maxmix+1) = 1.0_dp
+       b(maxmix+1,i) = 1.0_dp
+
+    end do
+    
+    ! ... except in the extra diagonal entry
+    b(maxmix+1,maxmix+1) = 0.0_dp
+
 #ifdef MPI
     ! Global operations, but only for the non-extended entries
-    do i=1,maxmix
-       call MPI_AllReduce(b(1:maxmix,i),buffer,maxmix,     &
-            MPI_double_precision,            &
-            MPI_sum,MPI_Comm_World,MPIerror)
-       do j=1,maxmix
-          b(j,i)=buffer(j)
-       enddo
-    enddo
+    i = maxmix + 1
+    call MPI_AllReduce(b(1,1),buffer(1),i*maxmix, &
+         MPI_double_precision, MPI_Sum, &
+         MPI_Comm_World,MPIerror)
+    i0 = 0
+    do j = 1 , maxmix
+       do i = 1 , maxmix
+          i0 = i0 + 1
+          b(i,j) = buffer(i0)
+       end do
+       i0 = i0 + 1 ! skipping non-extended entries
+    end do
 #endif
-    !
+
     if (use_svd_in_pulay) then
        rhs(1:maxmix) = 0.0_dp
        rhs(maxmix+1) = 1.0_dp
@@ -449,101 +421,57 @@ CONTAINS
        endif
 
     endif ! SVD
-    !
-    ! ........
-    !
+
     ! Read former matrices for mixing .........
-    dmnew(1:maxnd,1:nspin)=0.0_dp
-    do i=1,maxmix
-       i0 = (i-1) * numel
-       do is = 1,nspin
-          do ii = 1,no_l
-             do j = 1,numd(ii)
-                ind = listdptr(ii) + j
-                i0 = i0 + 1
-                dmold(ind,is) = savedm(i0)
-             enddo
-          enddo
-       enddo
-       !
-       do is=1,nspin
-          do ii=1,no_l
-             do j=1,numd(ii)
-                ind = listdptr(ii) + j
-                dmnew(ind,is)=dmnew(ind,is)+dmold(ind,is)*coeff(i)
-             enddo
-          enddo
-       enddo
-
-    enddo
     !
-    do i=1,maxmix
-
+    dmnew(1:maxnd,1:nspin) = 0._dp
+    do i = 1 , maxmix
        i0 = (i-1) * numel
-       do is = 1,nspin
-          do ii = 1,no_l
-             do j = 1,numd(ii)
-                ind = listdptr(ii) + j
-                i0 = i0 + 1
-                dmold(ind,is) = saveres(i0)
-             enddo
-          enddo
-       enddo
-
-       !
-       do is=1,nspin
-          do ii=1,no_l
-             do j=1,numd(ii)
-                ind = listdptr(ii) + j
-                dmnew(ind,is) = dmnew(ind,is)  +     &
-                     alpha_pulay*coeff(i)*dmold(ind,is)
-             enddo
-          enddo
-       enddo
-
-    enddo
+       do is = 1 , nspin
+          res1 => savedm (i0+1:i0+maxnd)
+          res2 => saveres(i0+1:i0+maxnd)
+          i0 = i0 + maxnd
+!$OMP parallel do default(shared), &
+!$OMP&private(ind)
+          do ind = 1 , maxnd
+             dmnew(ind,is) = dmnew(ind,is) + coeff(i) * &
+                  ( res1(ind) + alpha_pulay * res2(ind) )
+          end do
+!$OMP end parallel do
+       end do
+    end do
+    dmold(1:maxnd,1:nspin) = dmnew(1:maxnd,1:nspin)
 
     if (linear_mixing_after_pulay) last_was_pulay = .true.
 
-    !
-    ! Test in case processor has no orbitals.  ?????
-
-    if (no_l>0) then
-       do is=1,nspin
-          do ii=1,listdptr(no_l)+numd(no_l)   ! 1, maxnd
-             dmold(ii,is)=dmnew(ii,is)
-          enddo
-       enddo
-    endif
-
     ! Deallocate local arrays
-    !
     call de_alloc( b, name='b', routine="pulayx" )
     call de_alloc( bi, name="bi", routine="pulayx" )
     call de_alloc( coeff, name="coeff", routine="pulayx" )
     call de_alloc( sigma, name="sigma", routine="pulayx" )
     call de_alloc( beta, name="beta", routine="pulayx" )
     call de_alloc( buffer, name="buffer", routine="pulayx" )
-    !
+
   CONTAINS
 
+    subroutine linear_mixing(alp)
+      real(dp), intent(in) :: alp
+      real(dp) :: alp1m
 
-  subroutine linear_mixing(alp)
-    real(dp), intent(in) :: alp
+      alp1m = 1._dp - alp
+      do is = 1 , nspin
+!$OMP parallel do default(shared), &
+!$OMP&private(ind)
+         do ind = 1 , maxnd
+            dmnew(ind,is) = &
+                 alp1m * dmold(ind,is) + alp * dmnew(ind,is)
+            dmold(ind,is) = dmnew(ind,is)
+         end do
+!$OMP end parallel do
+      end do
 
-       do is = 1,nspin
-          do i = 1,no_l
-             do in = 1,numd(i)
-                ind = listdptr(i) + in
-                   dmnew(ind,is) =                                        &
-                        (1.0_dp-alp)*dmold(ind,is) + alp*dmnew(ind,is)
-                dmold(ind,is) = dmnew(ind,is)
-             enddo
-          enddo
-       enddo
-
-     end subroutine linear_mixing
-
+    end subroutine linear_mixing
+    
     subroutine WriteCurrentDinAndResidualInStore()
 
       ! The store is really a circular array of size maxsav. It is
@@ -565,16 +493,17 @@ CONTAINS
          ! for the different processors...
          ! ... that is why it is difficult to parallelize the on-file version
    
-         do is = 1,nspin
-            do i = 1,no_l
-               do j = 1,numd(i)
-                  i0 = i0 + 1
-                  savedm(i0) = dmold(listdptr(i)+j,is)
-                  saveres(i0) = dmnew(listdptr(i)+j,is) -                 &
-                       dmold(listdptr(i)+j,is)
-               enddo
-            enddo
-         enddo
+         do is = 1 , nspin
+            res1 => savedm(i0+1:i0+maxnd)
+            res2 => saveres(i0+1:i0+maxnd)
+            i0 = i0 + maxnd
+!$OMP parallel do default(shared), private(ind)
+            do ind = 1 , maxnd
+               res1(ind) = dmold(ind,is)
+               res2(ind) = dmnew(ind,is) - dmold(ind,is)
+            end do
+!$OMP end parallel do
+         end do
       endif
 
     end subroutine WriteCurrentDinAndResidualInStore

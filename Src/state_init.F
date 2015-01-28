@@ -356,16 +356,20 @@
       call new_dm( auxchanged,DM_history,DM_2D,EDM_2D )
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)
-      !if (ionode) print *, "DM after new_dm:"
-      !if (ionode) call print_type(DM)
 
       ! Initialize energy-density matrix to zero for first call to overfsm
 #ifdef TRANSIESTA
       ! Only part of Escf is updated in TS, so if it is put as zero here
       ! a continuation run gives bad forces.
-      if(.not.TSrun) Escf(:,:) = 0.0_dp
+      if(.not.TSrun) then
+!$OMP parallel workshare default(shared)
+         Escf(:,:) = 0.0_dp
+!$OMP end parallel workshare
+      end if
 #else
+!$OMP parallel workshare default(shared)
       Escf(:,:) = 0.0_dp
+!$OMP end parallel workshare
 #endif /* TRANSIESTA */
 
 !     Check for size of Pulay auxiliary matrices

@@ -1,4 +1,20 @@
 ----------------------------------------------------
+January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-273
+Redid m_pulay to be faster
+
+* The pulay mixing was copying elements a-lot!
+  Instead of copying elements around we are using them in-place.
+
+  The logic is thus much improved and it is easier to follow.
+  Subsequently it is much faster.
+
+* Added OpenMP statements in pulay and state_init code.
+
+modified:
+  Src/m_pulay.F90
+  Src/state_init.F
+
+----------------------------------------------------
 January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-272
 Corrected documentation of crt_Sparsity_TM
 
