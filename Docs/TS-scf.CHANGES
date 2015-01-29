@@ -1,4 +1,23 @@
 ----------------------------------------------------
+January 29, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-277
+Changed the message of moving the atoms due to Hartree plane
+
+* The moving of the atomic centers should be done with respect
+  to the bond length. 
+  This will improve the position of the Hartree plane and improve
+  convergence.
+
+* Added new variable in ts_tdir which contains the Cartesian direction
+  of the transport direction (if ts_tdir > 0).
+  Hence if one needs to compare the Cartesian coordinates of atoms
+  in the transport direction one needs:
+    xa(ts_tidx,ia)
+
+modified:
+  Src/m_ts_options.F90
+  Src/m_ts_tdir.f90
+
+----------------------------------------------------
 January 28, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-276
 Changed EYE functions to regular subroutines
 

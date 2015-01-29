@@ -113,7 +113,7 @@ contains
 ! *******************
 ! * LOCAL variables *
 ! *******************
-    real(dp) :: tmp, tmp33(3,3)
+    real(dp) :: tmp, tmp3(3), tmp33(3,3), min_bond_elec
     logical :: err
     character(len=200) :: c, chars
     integer :: i, j, idx, idx1, idx2
@@ -429,6 +429,7 @@ contains
 
     ! If many electrodes, no transport direction can be specified
     ! Hence we use this as an error-check (also for N_Elec == 1)
+    ts_tidx = 0 ! initialize the transport direction cartesian index
     if ( N_Elec /= 2 ) then
        ts_tdir = - N_Elec
     else
@@ -440,6 +441,11 @@ contains
        if ( i == j ) then
           ! The transport direction for the electrodes are the same...
           ts_tdir = i
+          
+          ! Calculate Cartesian transport index
+          call eye(3,tmp33)
+          ts_tidx = IDX_SPC_PROJ(tmp33,ucell(:,ts_tdir))
+
        else
           ! In case we have a skewed transport direction
           ! we have some restrictions...
@@ -858,6 +864,18 @@ contains
           write(*,11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
        end if
 
+       ! Calculate minimum electrode bond-length
+       err = .false.
+       min_bond_elec = huge(1._dp)
+       do j = 1 , na_u - 1
+          if ( .not. a_isElec(j) ) cycle
+          tmp3(:) = xa(:,j)
+          do i = j + 1 , na_u
+             if ( .not. a_isElec(i) ) cycle
+             min_bond_elec = min(min_bond_elec,VNORM(xa(:,i)-tmp3))
+          end do
+       end do
+
        if ( ts_tdir < 0 ) then
           write(*,11) '*** TranSIESTA transport directions are individual ***'
           write(*,11) '*** It is heavily adviced to have any electrodes with no &
@@ -877,20 +895,17 @@ contains
           ! unit-cell of the A[ts_tdir] direction.
           ! We will let the user know if any atoms co-incide with
           ! the plane as that might hurt convergence a little.
-          ! First figure out the equivalent index of the transport
-          ! direction in the cartesian coordinate system.
-          call eye(3,tmp33)
-          idx = IDX_SPC_PROJ(tmp33,ucell(:,ts_tdir))
-          err = .false.
+
+          ! If the distance is less than 0.5 of the minimal bond length we have
+          ! the atomic core "close" to the Hartree fix plane, notify the user of this
+          tmp = 0.5 * min_bond_elec
           do i = 1 , na_u
-             ! If the distance is less than 0.5 Ang we have
-             ! the atomic core "close" to the Hartree fix plane
-             err = abs(xa(idx,i)) < 0.5_dp * Ang
+             err = abs(xa(ts_tidx,i)) < tmp
              if ( err ) exit
           end do
           if ( err ) then
-             write(*,'(a)')'transiesta: You can with benefit move all atoms &
-                  &in the transport direction by 0.5 Ang to remove atoms from &
+             write(*,'(a,e10.4,a)')'transiesta: You can with benefit move all atoms &
+                  &in the transport direction by ',tmp/Ang,' Ang to remove atoms from &
                   &the constant potential plane.'
           end if
        end if
@@ -912,12 +927,10 @@ contains
        ! The Hartree potential correction will only be put correctly 
        ! when the atoms are sorted by z and starting from z == 0
        if ( IsVolt .and. .not. VoltageInC .and. ts_tdir > 0 ) then
-          call eye(3,tmp33)
-          j = IDX_SPC_PROJ(tmp33,ucell(:,ts_tdir))
           tmp = huge(1._dp)
           do i = 1 , na_u
              if ( atom_type(i) /= TYP_BUFFER ) then
-                tmp = min(tmp,xa(j,i))
+                tmp = min(tmp,xa(ts_tidx,i))
              end if
           end do
           tmp = tmp / Ang
