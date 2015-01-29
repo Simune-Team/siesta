@@ -238,10 +238,14 @@ contains
        call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'Sigma.nc')
        call init_Sigma_save(cdf_fname_sigma,TSHS,r_oDev,ispin,N_Elec, Elecs, &
             nkpt, kpt, wkpt, NEn, r_aDev, r_aBuf )
+
+       if ( ('Sigma-only'.nin.save_DATA) ) then
        
-       call name_save( ispin, TSHS%nspin, cdf_fname_proj, end = 'Proj.nc' )
-       call init_Proj_save( cdf_fname_proj, TSHS , r_oDev, ispin, N_Elec, Elecs, &
-            nkpt, kpt, wkpt, NEn , r_aDev, r_aBuf, sp_dev, save_DATA )
+          call name_save( ispin, TSHS%nspin, cdf_fname_proj, end = 'Proj.nc' )
+          call init_Proj_save( cdf_fname_proj, TSHS , r_oDev, ispin, N_Elec, Elecs, &
+               nkpt, kpt, wkpt, NEn , r_aDev, r_aBuf, sp_dev, save_DATA )
+       end if
+
        if ( n_k /= 0 ) then
           deallocate(kpt,wkpt)
        end if

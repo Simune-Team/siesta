@@ -711,8 +711,7 @@ contains
 
           ! Only calculate actual transmission if the user
           ! has requested so...
-          if ( ('Sigma-only'.nin.save_DATA) .or. &
-               ('proj-only'.in.save_DATA) ) then
+          if ( ('Sigma-only'.nin.save_DATA) ) then
 
           call timer('Gf-prep',1)
 

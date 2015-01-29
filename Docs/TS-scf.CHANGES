@@ -1,4 +1,18 @@
 ----------------------------------------------------
+January 29, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-279
+Bugfix in logic for tbtrans
+
+* If the user requests Sigma-only for calculations with
+  projections an error would occur.
+
+  This has been fixed.
+
+modified:
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 January 29, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-278
 Added calculation of angles between vectors to intrinsic_missing
 

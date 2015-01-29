@@ -165,6 +165,10 @@ contains
     ! Count number of molecules
     N_mol = 0
 
+    ! If the user has requested only to calculate the 
+    ! self-energies, we should not read in the projections.
+    if ( ('Sigma-only'.in.save_DATA) ) return
+
     ! If the projection block exists
     ! it means the user is requesting projections.
     if ( .not. fdf_defined('TBT.Projs') ) return
