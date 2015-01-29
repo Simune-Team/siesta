@@ -1,4 +1,16 @@
 ----------------------------------------------------
+January 29, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-278
+Added calculation of angles between vectors to intrinsic_missing
+
+* Calculation of angles between two vectors have been added.
+    ANGLE(v1,v2)
+  will return:
+    acos( sum(v1*v2) / ( norm(v1) + norm(v2) ) )
+
+modified:
+  Src/intrinsic_missing.F90
+
+----------------------------------------------------
 January 29, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-277
 Changed the message of moving the atoms due to Hartree plane
 

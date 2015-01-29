@@ -93,6 +93,13 @@ module intrinsic_missing
      module procedure EYE_cp_1D, EYE_zp_1D
   end interface
 
+  ! Calculate the angle between two vectors
+  public :: ANGLE
+  interface ANGLE
+     module procedure ANGLE_sp
+     module procedure ANGLE_dp
+  end interface
+
 ! Rotation of points
   public :: ROTATE
   interface ROTATE
@@ -665,6 +672,17 @@ contains
        norm(i) = VNORM(vec(:,i))
     end do
   end function VNORM_zp_2
+
+  pure function ANGLE_sp(v1,v2) result(ang)
+    real(sp), intent(in) :: v1(:), v2(:)
+    real(sp) :: ang
+    ang = acos( sum(v1 * v2) / (VNORM(v1)+VNORM(v2)) )
+  end function ANGLE_sp
+  pure function ANGLE_dp(v1,v2) result(ang)
+    real(dp), intent(in) :: v1(:), v2(:)
+    real(dp) :: ang
+    ang = acos( sum(v1 * v2) / (VNORM(v1)+VNORM(v2)) )
+  end function ANGLE_dp
 
 
 ! We add an algorithm for search for SORTED entries
