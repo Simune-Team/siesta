@@ -30,11 +30,14 @@ module m_ts_io_contour
 
 contains
 
-  subroutine write_e(str,val)
+  subroutine write_e(str,val,unit)
 
-    use units, only : eV
+    use units, only : eV, Kelvin
+
     character(len=*), intent(in) :: str
     real(dp), intent(in) :: val
+    character(len=*), intent(in), optional :: unit
+
     ! This is our definition of infinity....
     if ( abs(val) > 10000._dp ) then
        if ( val < 0._dp ) then
@@ -42,9 +45,20 @@ contains
        else
           write(*,opt_c) trim(str),' Infinity'
        end if
-    else
+    else if ( .not. present(unit) ) then
        write(*,opt_f_u) trim(str),val / eV,'eV'
+    else
+       if ( unit == 'eV' ) then
+          write(*,opt_f_u) trim(str),val / eV,'eV'
+       else if ( unit == 'Ry' ) then
+          write(*,opt_f_u) trim(str),val,'Ry'
+       else if ( unit == 'K' ) then
+          write(*,opt_f_u) trim(str),val/Kelvin,'K'
+       else
+          call die('Programming error, unknown unit')
+       end if
     end if
+
   end subroutine write_e
 
 end module m_ts_io_contour

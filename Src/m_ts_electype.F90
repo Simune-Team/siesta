@@ -1619,7 +1619,7 @@ contains
 
 
   subroutine print_settings(this,prefix,plane,box)
-    use units, only : eV, Ang
+    use units, only : eV, Ang, Kelvin
     use parallel, only : Node
     type(Elec), intent(in) :: this
     character(len=*), intent(in) :: prefix
@@ -1671,6 +1671,7 @@ contains
     end if
     write(*,f10) '  Semi-infinite direction for electrode', trim(chars)
     write(*,f7)  '  Chemical shift', this%mu%mu/eV,'eV'
+    write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin,'K'
     write(*,f1)  '  Bulk values in electrode', this%Bulk
     if ( product(this%Rep) > 1 .and. this%out_of_core ) then
        if ( this%pre_expand == 0 ) then

@@ -12,6 +12,7 @@ module m_ts_aux
      module procedure nf_z
      module procedure nf_d
      module procedure nf2
+     module procedure nf22
   end interface nf
   public :: nf
 
@@ -31,11 +32,20 @@ contains
 
   ! Double fermi function
   ! calculates
-  !   nF(E-E1) - nF(E-E2)
+  !   nF(E-E1) - nF(E-E2) at the same temperature [kT]
   elemental function nf2(E,E1,E2,kT) result(nf)
-    real(dp), intent(in) :: E, E1,E2,kT
+    real(dp), intent(in) :: E,E1,E2,kT
     real(dp) :: nf
-    nf = nf_d((E-E1)/kT) - nf_d((E-E2)/kT)
+    nf = nf22(E,E1,kT,E2,kT)
   end function nf2
+
+  ! Double fermi function
+  ! calculates
+  !   nF(E-E1,kT1) - nF(E-E2,kT2) at separate temperatures
+  elemental function nf22(E,E1,kT1,E2,kT2) result(nf)
+    real(dp), intent(in) :: E,E1,kT1,E2,kT2
+    real(dp) :: nf
+    nf = nf_d((E-E1)/kT1) - nf_d((E-E2)/kT2)
+  end function nf22
 
 end module m_ts_aux

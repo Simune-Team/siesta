@@ -530,7 +530,7 @@ contains
                 
                 if ( .not. has_cE_nEq(cE,iEl,iID) ) cycle
                 
-                call c2weight_nEq(cE,kT,iID,kw,W,imu,ZW)
+                call c2weight_nEq(cE,iID,kw,W,imu,ZW)
 #ifdef TRANSIESTA_WEIGHT_DEBUG
                 print '(a20,2(tr1,i3),2(tr1,e12.5))', &
                      trim(Elecs(iEl)%name),iID,imu,W

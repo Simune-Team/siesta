@@ -17,9 +17,11 @@ module m_ts_options
   logical :: TS_HS_save = .true.
   logical :: TS_DE_save = .false.
   ! whether we should only save the overlap matricx
-  logical  :: onlyS = .false. 
+  logical :: onlyS = .false. 
   ! whether we will use the bias-contour
-  logical  :: IsVolt = .false.
+  logical :: IsVolt = .false.
+  ! Whether the system has an electronic temperature gradient
+  logical :: has_T_gradient = .false.
   ! maximum difference between chemical potentials
   real(dp) :: Volt = 0._dp
   ! Electrodes and different chemical potentials
@@ -80,7 +82,7 @@ contains
 
     use m_ts_contour
     use m_ts_contour_eq,  only : N_Eq_E
-    use m_ts_contour_neq, only : N_nEq_E
+    use m_ts_contour_neq, only : N_nEq_E, contour_nEq_warnings
 #ifdef TRANSIESTA_WEIGHT_DEBUG
     use m_ts_contour_eq,  only : Eq_E, ID2idx, c2weight_eq
     use m_ts_contour_neq, only : nEq_E, N_nEq_ID, c2weight_neq, ID2mu, nEq_ID
@@ -331,16 +333,33 @@ contains
     ! Read in the chemical potentials
     N_mu = fdf_nmu('TS',mus)
     if ( N_mu < 1 ) then
-       N_mu = fdffake_mu(mus,Volt)
+       N_mu = fdffake_mu(mus,kT,Volt)
     else
        do i = 1 , N_mu
           ! Default things that could be of importance
-          if ( .not. fdf_mu('TS',mus(i),Volt) ) then
+          if ( .not. fdf_mu('TS',mus(i),kT,Volt) ) then
              call die('Could not find chemical potential: ' &
                   //trim(name(mus(i))))
           end if
        end do
     end if
+
+    ! We consider 10 Kelvin to be the minimum allowed
+    ! temperature difference of the leads.
+    tmp = 10._dp * Kelvin
+    has_T_gradient = .false.
+    do j = 1 , N_mu - 1
+       do i = j + 1 , N_mu
+          if ( abs(mus(i)%kT - mus(j)%kT) > tmp ) then
+             has_T_gradient = .true.
+             exit
+          end if
+       end do
+    end do
+    ! If there exists a temperature gradient
+    ! we are in non-equilibrium, hence we need the 
+    ! bias-setup no matter V
+    if ( has_T_gradient ) IsVolt = .true.
 
     ! To determine the same coordinate nature of the electrodes
     Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
@@ -519,9 +538,11 @@ contains
     ! We can now check whether two chemical potentials are the same
     ! We must do this after checking for the equilibrium case as we wish to
     ! allow users to retain all chemical potentials at 0 eV
+    tmp = 10._dp * Kelvin ! 10 kelvin separates two chemical potential
     do i = 1 , N_mu - 1
        do j = i + 1 , N_mu
-          if ( abs(mus(i)%mu - mus(j)%mu) < 0.00001_dp*eV ) then
+          if ( abs(mus(i)%mu - mus(j)%mu) < 0.00001_dp * eV .and. &
+               abs(mus(i)%kT - mus(j)%kT) <= tmp ) then
              call die('Two chemical potentials: '//trim(name(mus(i)))//' and ' &
                   //trim(name(mus(j)))//' are the same, in bias calculations this &
                   &is not allowed.')
@@ -762,6 +783,11 @@ contains
           else
              write(*,11) 'Voltage lifted locally on electrodes'    
           end if
+          if ( has_T_gradient ) then
+             write(*,11) 'Thermal non-equilibrium in electrode distributions' 
+          else
+             write(*,11) 'Thermal equilibrium in electrode distributions' 
+          end if
 
           chars = 'Non-equilibrium contour weight method'
           select case ( TS_W_METHOD )
@@ -848,14 +874,7 @@ contains
           end if
        end if
 
-       i = mod(N_nEq_E(), Nodes) ! get remaining part of equilibrium contour
-       if ( IONode .and. i /= 0 ) then
-          i = Nodes - i
-          write(*,'(a)')'Without loosing performance you can increase &
-               &the non-equilibrium integration precision.'
-          write(*,'(a,i0,a)')'You can add ',i,' more energy points in the &
-               &non-equilibrium contours, for FREE!'
-       end if
+       call contour_nEq_warnings()
 
        if ( .not. Calc_Forces ) then
           write(*,11) '***       TranSIESTA will NOT update forces       ***'
@@ -902,7 +921,7 @@ contains
              if ( err ) exit
           end do
           if ( err ) then
-             write(*,'(a,e10.4,a)')'transiesta: You can with benefit move all atoms &
+             write(*,'(a,e10.4,a)')'You can with benefit move all atoms &
                   &in the transport direction by ',tmp/Ang,' Ang to remove atoms from &
                   &the constant potential plane.'
           end if
@@ -1023,7 +1042,6 @@ contains
             ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
     end if
 
-
     if ( IONode ) then
        write(*,'(/,a,/)') '### Transiesta information for FDF-file START ###'
     end if
@@ -1037,7 +1055,7 @@ contains
     end if
 
     ! write out the contour
-    call io_contour(IsVolt, mus, kT, slabel)
+    call io_contour(IsVolt, mus, slabel)
 
     ! Print out the electrode coordinates
     do i = 1 , N_Elec
@@ -1083,7 +1101,7 @@ contains
              do idx1 = 1 , N_nEq_ID
                 if ( .not. has_cE(cE,iEl=j,ineq=idx1) ) cycle
                 
-                call c2weight_neq(cE,kT,j,idx1, tmp,W,idx,ZW)
+                call c2weight_neq(cE,j,idx1, tmp,W,idx,ZW)
 
                 write(*,'(i2,tr1,a10,2(tr1,i2),4(tr1,f10.5))') &
                      i,trim(Elecs(j)%name),mus(idx)%ID,idx1,W,ZW / eV

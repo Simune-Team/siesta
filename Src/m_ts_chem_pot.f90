@@ -33,6 +33,9 @@ module m_ts_chem_pot
      ! the chemical potential
      real(dp) :: mu = 0._dp
      character(len=20) :: cmu
+     ! the temperature associated with this chemical potential
+     real(dp) :: kT = 0._dp
+     character(len=20) :: ckT
      ! number of electrodes having this chemical potential
      integer  :: N_El = 0
      ! array of electrode indices (conforming with the Elecs-array)
@@ -127,11 +130,12 @@ contains
 
   end function fdf_nmu
 
-  function fdffake_mu(this_n,Volt) result(n)
+  function fdffake_mu(this_n,kT,Volt) result(n)
     use fdf
 
     type(ts_mu), intent(inout), allocatable :: this_n(:)
-    real(dp), intent(in) :: Volt
+    ! SIESTA temperature
+    real(dp), intent(in) :: kT, Volt
     integer :: n
     ! In case the user whishes to utilise the standard 
     ! transiesta setup we fake the chemical potentials
@@ -140,6 +144,10 @@ contains
 
     ! Read in number of poles
     this_n(:)%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
+
+    ! Set the temperature
+    this_n(:)%kT = kT
+    this_n(:)%ckT = ' '
 
     ! We star-mark the defaultet contours...
     ! this will let us construct them readily...
@@ -165,12 +173,14 @@ contains
 
   end function fdffake_mu
     
-  function fdf_mu(prefix,this, Volt) result(found)
+  function fdf_mu(prefix,this, kT, Volt) result(found)
     use fdf
     use m_ts_io_ctype, only: pline_E_parse
 
     character(len=*), intent(in) :: prefix
     type(ts_mu), intent(inout) :: this
+    ! The SIESTA Electronic temperature, NOT the chemical potential
+    real(dp), intent(in) :: kT
     real(dp), intent(in) :: Volt
     logical :: found
 
@@ -184,6 +194,10 @@ contains
     if ( .not. found ) return
 
     info(:) = .false.
+
+    ! Initialize the temperature for this chemical potential
+    this%kT  = kT
+    this%ckT = ' '
 
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
@@ -209,6 +223,14 @@ contains
           ! we automatically make room for one pole contour
           call read_contour_names('Equilibrium',this%Eq_seg,fakes=1)
           info(2) = .true.
+
+       else if ( leqi(ln,'temp') .or. leqi(ln,'kT') .or. &
+            leqi(ln,'Electronic.Temperature') .or. &
+            leqi(ln,'ElectronicTemperature') ) then
+          
+          call pline_E_parse(pline,1,ln, &
+               val = this%kT, kT = kT, before=3)
+          this%ckT = trim(ln)
 
        else if ( leqi(ln,'contour.eq.pole.n') ) then
 
@@ -362,11 +384,7 @@ contains
     type(ts_mu), intent(in) :: this
     type(ts_cw), intent(in) :: c 
     logical :: has
-    integer :: i
-    do i = 1 , Eq_segs(this)
-       has = this%Eq_seg(i) .eq. c%c_io%name
-       if ( has ) return
-    end do
+    has = hasCio(this,c%c_io)
   end function hasCeq
 
   elemental function name_(this) result(name)
@@ -425,6 +443,9 @@ contains
     if ( def_pole /= this%N_poles ) then
        write(*,'(t3,a,tr2,i0)') 'contour.eq.pole.n',this%N_poles
     end if
+    if ( len_trim(this%ckT) > 0 ) then
+       write(*,'(t3,2a)') 'Temp ',this%ckT
+    end if
     write(*,'(a,a)') '%endblock '//trim(prefix)//'.ChemPot.',trim(this%name)
     
   end subroutine print_mu_block
@@ -436,6 +457,8 @@ contains
     copy%N_poles = this%N_poles
     copy%mu      = this%mu
     copy%cmu     = this%cmu
+    copy%kT      = this%kT
+    copy%ckT     = this%ckT
     copy%N_El    = this%N_El
     allocate(copy%Eq_seg(size(this%Eq_seg)))
     copy%Eq_seg(:) = this%Eq_seg(:)

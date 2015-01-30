@@ -129,13 +129,13 @@ contains
        N_mu = fdf_nmu('TS',mus)
     end if
     if ( N_mu < 1 ) then
-       N_mu = fdffake_mu(mus,Volt)
+       N_mu = fdffake_mu(mus,kT,Volt)
     else
        do i = 1 , N_mu
           ! Default things that could be of importance
-          if ( fdf_mu('TBT',mus(i),Volt) ) then
+          if ( fdf_mu('TBT',mus(i),kT,Volt) ) then
              ! success
-          else if ( fdf_mu('TS',mus(i), Volt) ) then
+          else if ( fdf_mu('TS',mus(i),kT,Volt) ) then
              ! success
           else
              call die('Could not find chemical potential: ' &
@@ -324,7 +324,7 @@ contains
     ! Will stop after creating the GF files.
     stop_after_GS = fdf_get('TBT.Elecs.GF.Only',.false.)
 
-    call tbt_read_contour_options(N_Elec, Elecs, N_mu, mus, kT)
+    call tbt_read_contour_options(N_Elec, Elecs, N_mu, mus)
 
     if ( IONode ) then
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'

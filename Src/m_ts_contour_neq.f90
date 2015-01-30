@@ -72,6 +72,7 @@ module m_ts_contour_neq
      ! Min and Max energy allowed for this ID to contain
      ! an energy point
      real(dp) :: E(2)
+
   end type ts_nEq_ID
   integer, save, public :: N_nEq_id = 0
   type(ts_nEq_id), allocatable, save, public :: nEq_ID(:)
@@ -82,6 +83,7 @@ module m_ts_contour_neq
   public :: read_contour_neq_options
   public :: print_contour_neq_options
   public :: print_contour_neq_block
+  public :: contour_nEq_warnings
   public :: io_contour_neq
   public :: N_nEq_E
   public :: nEq_E
@@ -97,6 +99,7 @@ contains
 
     use units, only : eV
     use fdf
+
     use m_ts_electype
 
     ! only to gain access to the chemical shifts
@@ -104,10 +107,11 @@ contains
     type(Elec), intent(in), target :: Elecs(N_Elec)
     integer, intent(in) :: N_mu
     type(ts_mu), intent(in), target :: mus(N_mu)
+    ! This temperature is the SIESTA electronic temperature
     real(dp), intent(in) :: kT, Volt
     
     integer :: i, j, k, N, cur_mu
-    real(dp) :: min_E, max_E
+    real(dp) :: min_E, max_E, rtmp, rtmp2
     logical :: err
 
     ! Notify the user of obsolete keys.
@@ -162,10 +166,10 @@ contains
        ! Create the integrals
        nEq_io(1)%part = 'tail'
        nEq_io(1)%name = 'tail-low'
-       write(nEq_io(1)%ca,'(2(e12.5,a))') mus(j)%mu/eV, &
-            ' eV - ', cutoff_kT ,' kT'
-       nEq_io(1)%a  = mus(j)%mu - cutoff_kT * kT
-       write(nEq_io(1)%cb,'(e12.5,a)') mus(j)%mu/eV,' eV'
+       write(nEq_io(1)%ca,'(2(g12.5,a))') mus(j)%mu/eV, &
+            ' eV - ', cutoff_kT * mus(j)%kT / kT ,' kT'
+       nEq_io(1)%a  = mus(j)%mu - cutoff_kT * mus(j)%kT
+       write(nEq_io(1)%cb,'(g12.5,a)') mus(j)%mu/eV,' eV'
        nEq_io(1)%b  = mus(j)%mu
        nEq_io(1)%cd = '0.025 eV'
        nEq_io(1)%d = 0.025_dp * eV
@@ -173,11 +177,11 @@ contains
 
        nEq_io(3)%part = 'tail'
        nEq_io(3)%name = 'tail-high'
-       write(nEq_io(3)%ca,'(e12.5,a)') mus(k)%mu/eV,' eV'
+       write(nEq_io(3)%ca,'(g12.5,a)') mus(k)%mu/eV,' eV'
        nEq_io(3)%a  = mus(k)%mu
-       write(nEq_io(3)%cb,'(2(e12.5,a))') mus(k)%mu/eV, &
-            ' eV + ', cutoff_kT ,' kT'
-       nEq_io(3)%b  = mus(k)%mu + cutoff_kT * kT
+       write(nEq_io(3)%cb,'(2(g12.5,a))') mus(k)%mu/eV, &
+            ' eV + ', cutoff_kT * mus(k)%kT / kT ,' kT'
+       nEq_io(3)%b  = mus(k)%mu + cutoff_kT * mus(k)%kT
        nEq_io(3)%cd = '0.025 eV'
        nEq_io(3)%d = 0.025_dp * eV
        nEq_io(3)%method = 'simpson-mix'
@@ -201,7 +205,7 @@ contains
           ! setup the contour
           allocate(nEq_c(i)%c(nEq_c(i)%c_io%N),nEq_c(i)%w(nEq_c(i)%c_io%N,1))
 
-          call setup_nEq_contour(nEq_c(i), kT, nEq_Eta)
+          call setup_nEq_contour(nEq_c(i), nEq_Eta)
 
        end do
 
@@ -226,21 +230,23 @@ contains
     ! Check that no chemical potential lies more than cut-off from it
     err = .false.
     do i = 1 , N_mu
-       if ( min_E - (mus(i)%mu - cutoff_kT * kT) > 0.000001_dp ) then
+       rtmp = mus(i)%mu - cutoff_kT * mus(i)%kT
+       if ( min_E - rtmp > 0.000001_dp ) then
           err = .true.
           write(*,'(a)')'transiesta: Lowest energy and chemical potential &
                &'//trim(mus(i)%name)//' does not conform with Fermi-function &
                &cut-off [eV].'
-          write(*,'(a,e12.5)')'Specified cut-off: ',(mus(i)%mu - cutoff_kT * kT)/eV
-          write(*,'(a,e12.5)')'Minimum energy: ',min_E/eV
+          write(*,'(a,g12.5)')'Specified cut-off: ',rtmp/eV
+          write(*,'(a,g12.5)')'Minimum energy in bias contour: ',min_E/eV
        end if
-       if ( mus(i)%mu + cutoff_kT * kT - max_E > 0.000001_dp ) then
+       rtmp = mus(i)%mu + cutoff_kT * mus(i)%kT
+       if ( rtmp - max_E > 0.000001_dp ) then
           err = .true.
           write(*,'(a)')'transiesta: Highest energy and chemical potential &
                &'//trim(mus(i)%name)//' does not conform with Fermi-function &
                &cut-off [eV].'
-          write(*,'(a,e12.5)')'Specified cut-off: ',(mus(i)%mu + cutoff_kT * kT)/eV
-          write(*,'(a,e12.5)')'Maximum energy: ',max_E/eV
+          write(*,'(a,g12.5)')'Specified cut-off: ',rtmp/eV
+          write(*,'(a,g12.5)')'Maximum energy in bias contour: ',max_E/eV
        end if
     end do
     if ( err ) &
@@ -309,10 +315,16 @@ contains
     ! We add an extra 0.00001 eV to account for floating
     ! point accurracy
     do N = 1 , N_nEq_ID
-       min_E = min(nEq_ID(N)%mu%mu,nEq_ID(N)%El%mu%mu)
-       max_E = max(nEq_ID(N)%mu%mu,nEq_ID(N)%El%mu%mu)
-       nEq_ID(N)%E(1) = min_E - cutoff_kT * kT - 0.00001 * eV
-       nEq_ID(N)%E(2) = max_E + cutoff_kT * kT + 0.00001 * eV
+       ! Figure out the actual minimum/maximum 
+       ! by taking into account the cut-off Fermi function value
+       rtmp  = nEq_ID(N)%mu%mu    - cutoff_kT * nEq_ID(N)%mu%kT
+       rtmp2 = nEq_ID(N)%El%mu%mu - cutoff_kT * nEq_ID(N)%El%mu%kT
+       min_E = min(rtmp,rtmp2)
+       rtmp  = nEq_ID(N)%mu%mu    + cutoff_kT * nEq_ID(N)%mu%kT
+       rtmp2 = nEq_ID(N)%El%mu%mu + cutoff_kT * nEq_ID(N)%El%mu%kT
+       max_E = max(rtmp,rtmp2)
+       nEq_ID(N)%E(1) = min_E - 0.00001 * eV
+       nEq_ID(N)%E(2) = max_E + 0.00001 * eV
     end do
 
   contains 
@@ -390,7 +402,7 @@ contains
 
          ! allocate contour
          allocate(nEq_c(i)%c(nEq_c(i)%c_io%N),nEq_c(i)%w(nEq_c(i)%c_io%N,1))
-         call setup_nEq_contour(nEq_c(i), kT, nEq_Eta)
+         call setup_nEq_contour(nEq_c(i), nEq_Eta)
       end do
 
       if ( nEq_c(1)%c_io%a > nEq_c(N_nEq)%c_io%b ) then
@@ -402,21 +414,67 @@ contains
 
   end subroutine read_contour_neq_options
 
+  subroutine contour_nEq_warnings( ) 
+
+    use parallel, only : IONode, Nodes
+
+    integer :: i, imu, not_calc, N
+    complex(dp) :: W, ZW
+    type(ts_c_idx) :: cE
+    logical :: err
+
+    ! Print out a warning if there are any points that does not
+    ! contribute to any chemical potentials
+    not_calc = 0
+    do i = 1 , N_nEq_E()
+
+       ! Get the current energy point
+       cE = nEq_E(i)
+       
+       err = .false.
+       do N = 1 , N_nEq_ID
+          call c2weight_nEq(cE,N,1._dp,W,imu,ZW)
+          if ( imu > 0 ) err = .true.
+          if ( err ) exit
+       end do
+       if ( .not. err ) not_calc = not_calc + 1
+    end do
+    if ( IONode .and. not_calc > 0 ) then
+       write(*,'(a,i0,a)') &
+            '*** You have ',not_calc,' unused non-equilibrium contour &
+            &points which degrades performance considerably.'
+       write(*,'(a)') &
+            '    Consider correcting your nEq contours.'
+    end if
+
+    if ( IONode .and. not_calc == 0 ) then
+       i = mod(N_nEq_E(), Nodes) ! get remaining part of equilibrium contour
+       if ( IONode .and. i /= 0 ) then
+          i = Nodes - i
+          write(*,'(a)')'Without loosing performance you can increase &
+               &the non-equilibrium integration precision.'
+          write(*,'(a,i0,a)')'You can add ',i,' more energy points in the &
+               &non-equilibrium contours, for FREE!'
+       end if
+    end if
+
+  end subroutine contour_nEq_warnings
+
   ! This routine assures that we have setup all the 
   ! equilibrium contours for the passed electrode
-  subroutine setup_nEq_contour(c, kT, Eta)
+  subroutine setup_nEq_contour(c, Eta)
     type(ts_cw), intent(inout) :: c
-    real(dp), intent(in) :: kT, Eta
+    real(dp), intent(in) :: Eta
 
     if ( leqi(c%c_io%part,'line') ) then
        
-       call contour_line(c,kT,Eta)
+       call contour_line(c,Eta)
        
     else if ( leqi(c%c_io%part,'tail') ) then
 
        c%c_io%part = 'line'
        
-       call contour_line(c,kT,Eta)
+       call contour_line(c,Eta)
 
        c%c_io%part = 'tail'
 
@@ -441,10 +499,9 @@ contains
 
   end function has_cE_nEq
 
-  subroutine c2weight_nEq(c,kT,ID,k,W,imu,ZW)
+  subroutine c2weight_nEq(c,ID,k,W,imu,ZW)
     use m_ts_aux, only : nf
     type(ts_c_idx), intent(in) :: c
-    real(dp), intent(in) :: kT ! the temperature
     integer, intent(in) :: ID ! the non-equilibrium contour index
     real(dp), intent(in) :: k ! generic weight
     integer, intent(out) :: imu ! returns the equilibrium idx for EDM
@@ -479,8 +536,9 @@ contains
 
     ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
     W = k * cw%w(c%idx(3),1) * &
-         nf(E, nEq_ID(ID)%El%mu%mu, &
-         nEq_ID(ID)%mu%mu, kT ) * dcmplx(0._dp,-1._dp)
+         nf(E, &
+         nEq_ID(ID)%El%mu%mu, nEq_ID(ID)%El%mu%kT, &
+         nEq_ID(ID)%mu%mu, nEq_ID(ID)%mu%kT ) * dcmplx(0._dp,-1._dp)
 
     ZW = E * W
 
@@ -492,11 +550,11 @@ contains
     imu = nEq_ID(ID)%mu%ID
   end function ID2mu
 
-  subroutine contour_line(c,kT,Eta)
+  subroutine contour_line(c,Eta)
     use m_integrate
     use m_gauss_quad
     type(ts_cw), intent(inout) :: c
-    real(dp), intent(in) :: kT, Eta
+    real(dp), intent(in) :: Eta
 
     ! local variables
     character(len=c_N) :: tmpC
@@ -673,10 +731,9 @@ contains
     
   end subroutine print_contour_neq_options
 
-  subroutine io_contour_nEq(slabel,kT,suffix)
+  subroutine io_contour_nEq(slabel,suffix)
     use parallel, only : IONode
     character(len=*), intent(in) :: slabel
-    real(dp), intent(in) :: kT
     character(len=*), intent(in), optional :: suffix
 
 ! *********************
@@ -694,18 +751,17 @@ contains
        else
           write(tmp_suffix,'(a,i0)') 'TSCCNEQ-',i
        end if
-       call io_contour_nEq_ID(nEq_ID(i),kT,slabel,tmp_suffix)
+       call io_contour_nEq_ID(nEq_ID(i),slabel,tmp_suffix)
 
     end do
 
   end subroutine io_contour_nEq
 
 
-  subroutine io_contour_nEq_ID(nEq_ID,kT,slabel,suffix)
+  subroutine io_contour_nEq_ID(nEq_ID,slabel,suffix)
     use parallel, only : IONode
-    use units, only : eV
+    use units, only : eV, Kelvin
     type(ts_nEq_ID), intent(in) :: nEq_ID
-    real(dp), intent(in) :: kT
     character(len=*), intent(in) :: slabel
     character(len=*), intent(in) :: suffix
 
@@ -716,7 +772,7 @@ contains
     integer        :: i, unit
     type(ts_c_idx) :: c
     real(dp) :: m1, m2
-    character(len=20) :: cm1, cm2
+    character(len=20) :: cm1, cm2, kT1, kT2
     complex(dp) :: W, ZW
     integer :: imu
     
@@ -736,14 +792,17 @@ contains
     else
        write(cm1,'(a,g10.4)')'- ',m1
     end if
+    write(kT1,'(g10.4)') nEq_ID%El%mu%kT / Kelvin
     m2 = nEq_ID%mu%mu/eV
     if ( m2 < 0._dp ) then
        write(cm2,'(a,g10.4)')'+ ',-m2
     else
        write(cm2,'(a,g10.4)')'- ',m2
     end if
-    write(unit,'(6a)') '# Approximated Fermi function: ', &
-         'nF(E ', trim(cm1),' eV) - nF(E ',trim(cm2),' eV)'
+    write(kT2,'(g10.4)') nEq_ID%mu%kT / Kelvin
+    write(unit,'(a,/,9a)') '# Approximated Fermi function: ', &
+         '#   nF(E ', trim(cm1),' eV, ',trim(kT1),' K) &
+         &- nF(E ',trim(cm2),' eV, ',trim(kT2),' K)'
     write(unit,'(a,a12,2(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','w'
     
     do i = 1 , N_nEq_E()
@@ -752,7 +811,7 @@ contains
        c = nEq_E(i,1)
 
        ! Check if it exists on this ID
-       call c2weight_nEq(c,kT,nEq_ID%ID,1._dp,W,imu,ZW)
+       call c2weight_nEq(c,nEq_ID%ID,1._dp,W,imu,ZW)
        if ( imu < 1 ) cycle
 
        ! The weight has a factor of -i, hence we need to move that into a

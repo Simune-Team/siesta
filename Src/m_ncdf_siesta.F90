@@ -446,6 +446,10 @@ contains
           call ncdf_def_var(grp2,'mu',NF90_DOUBLE,(/'one'/), &
                compress_lvl=0,atts=dic)
 
+          dic = dic//('info'.kv.'Electronic temperature')//('unit'.kv.'Ry')
+          call ncdf_def_var(grp2,'kT',NF90_DOUBLE,(/'one'/), &
+               compress_lvl=0,atts=dic)
+
           call delete(dic)
 
           if ( parallel_io(grp2) .and. exists ) then
@@ -519,8 +523,10 @@ contains
           
           if ( exists .and. Node == 0 ) then
              call ncdf_put_var(grp2,'mu',Elecs(iEl)%mu%mu)
+             call ncdf_put_var(grp2,'kT',Elecs(iEl)%mu%kT)
           else
              call ncdf_put_var(grp2,'mu',Elecs(iEl)%mu%mu)
+             call ncdf_put_var(grp2,'kT',Elecs(iEl)%mu%kT)
           end if
 
        end do

@@ -1,4 +1,59 @@
 ----------------------------------------------------
+January 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-281
+Added temperature specification to chemical potentials
+
+* In the non-equilibrium state one can both consider
+  an electric field across a junction. 
+
+  But one can also assume that the two leads have different
+  equilibrium distributions, i.e. the temperature is 
+  different on the leads.
+
+  This commit introduces such a non-equilibrium case.
+
+  It is easily enabled using the chemical potential
+  block by adding this line:
+    Temp <temperature in energy>
+  but it can also be given in units of the SIESTA
+  temperature:
+    Temp 2 kT
+  
+  Enabling this feature meant that many routines regarding
+  the creation of the contours has been changed to reference
+  the kT variable of the ts_mu type.
+
+  Many places have gotten an extra print-out with the temperature
+  specification of the chemical potential (or the equilibirum 
+  contour poles)
+
+  The non-equilibrium due to different temperatures will only
+  kick in if the temperature difference is above 10 K
+  
+* Furthermore will this change also enable one 
+  to change the temperature when changing from
+  SIESTA to transiesta without having to restart the
+  calculation.
+
+modified:
+  Src/m_ncdf_siesta.F90
+  Src/m_ts_aux.F90
+  Src/m_ts_chem_pot.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_io_contour.f90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+
+----------------------------------------------------
 January 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-280
 Re-implemented the non-equilibrium contours
 

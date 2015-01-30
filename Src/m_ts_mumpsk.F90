@@ -484,7 +484,7 @@ contains
                 
                 if ( .not. has_cE_nEq(cE,iEl,iID) ) cycle
                 
-                call c2weight_neq(cE,kT,iID,kw,W,imu,ZW)
+                call c2weight_neq(cE,iID,kw,W,imu,ZW)
 
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      mum, &

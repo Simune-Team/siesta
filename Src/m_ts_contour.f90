@@ -42,19 +42,18 @@ module m_ts_contour
 
 contains
 
-  subroutine io_contour(IsVolt, mus, kT, slabel,suffix)
+  subroutine io_contour(IsVolt, mus, slabel,suffix)
     use m_ts_contour_eq, only : io_contour_Eq
     use m_ts_contour_neq, only : io_contour_nEq
     logical, intent(in) :: IsVolt
     type(ts_mu), intent(in) :: mus(:)
-    real(dp), intent(in) :: kT
     character(len=*), intent(in) :: slabel
     character(len=*), intent(in), optional :: suffix
 
     call io_contour_Eq(mus,slabel,suffix)
 
     if ( IsVolt ) then
-       call io_contour_nEq(slabel,kT,suffix)
+       call io_contour_nEq(slabel,suffix)
     end if
 
   end subroutine io_contour
@@ -67,10 +66,12 @@ contains
     type(Elec), intent(inout) :: Elecs(N_Elec)
     integer, intent(in) :: N_mu
     type(ts_mu), intent(inout) :: mus(N_mu)
+    ! SIESTA electronic temperature
+    real(dp), intent(in) :: kT
     logical, intent(in) :: IsVolt
-    real(dp), intent(in) :: kT, Volt
+    real(dp), intent(in) :: Volt
 
-    call read_contour_eq_options(N_mu,mus,kT,Volt)
+    call read_contour_eq_options(N_mu,mus,Volt)
 
     if ( IsVolt ) then
        call read_contour_neq_options(N_Elec,Elecs,N_mu,mus,kT,Volt)

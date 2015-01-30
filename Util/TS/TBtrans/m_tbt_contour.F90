@@ -37,7 +37,7 @@ module m_tbt_contour
 
 contains
 
-  subroutine tbt_read_contour_options(N_Elec,Elecs,N_mu,mus, kT)
+  subroutine tbt_read_contour_options(N_Elec,Elecs,N_mu,mus)
 
     use parallel, only : Node
     use units, only : eV
@@ -49,7 +49,6 @@ contains
     type(Elec), intent(in), target :: Elecs(N_Elec)
     integer, intent(in) :: N_mu
     type(ts_mu), intent(in), target :: mus(N_mu)
-    real(dp), intent(in) :: kT
     
     real(dp) :: Volt, tmp
 
@@ -64,7 +63,7 @@ contains
     ! per-electrode input
 
     ! Bias-window setup
-    call my_setup('Window',N_tbt,tbt_c,tbt_io)
+    call my_setup('Window',N_tbt,tbt_c,tbt_io,maxval(mus(:)%kT))
     
     tmp = fdf_get('TS.Voltage',0._dp,'Ry')
     Volt = fdf_get('TBT.Voltage',tmp,'Ry')
@@ -96,7 +95,7 @@ contains
 
        ! setup the contour
        allocate(tbt_c(1)%c(tbt_c(1)%c_io%N),tbt_c(1)%w(tbt_c(1)%c_io%N,1))
-       call setup_tbt_contour(tbt_c(1), kT, tbt_Eta)
+       call setup_tbt_contour(tbt_c(1), tbt_Eta)
 
     end if
 
@@ -105,11 +104,12 @@ contains
 
   contains 
 
-    subroutine my_setup(suffix,N_tbt,tbt_c,tbt_io)
+    subroutine my_setup(suffix,N_tbt,tbt_c,tbt_io,max_kT)
       character(len=*), intent(in) :: suffix
       integer, intent(inout) :: N_tbt
       type(ts_cw), pointer :: tbt_c(:)
       type(ts_c_io), pointer :: tbt_io(:)
+      real(dp), intent(in) :: max_kT
 
       ! Local variables
       integer :: i, j
@@ -141,7 +141,7 @@ contains
          ! assign pointer
          tbt_c(i)%c_io => tbt_io(i)
          ! read in the contour
-         call ts_read_contour_block('TBT',suffix,tmp(i),tbt_io(i), kT, Volt)
+         call ts_read_contour_block('TBT',suffix,tmp(i),tbt_io(i), max_kT, Volt)
 
       end do
       deallocate(tmp)
@@ -172,7 +172,7 @@ contains
 
          ! allocate contour
          allocate(tbt_c(i)%c(tbt_c(i)%c_io%N),tbt_c(i)%w(tbt_c(i)%c_io%N,1))
-         call setup_tbt_contour(tbt_c(i), kT, tbt_Eta)
+         call setup_tbt_contour(tbt_c(i), tbt_Eta)
 
       end do
 
@@ -183,13 +183,13 @@ contains
 
   ! This routine assures that we have setup all the 
   ! equilibrium contours for the passed electrode
-  subroutine setup_tbt_contour(c, kT, Eta)
+  subroutine setup_tbt_contour(c, Eta)
     type(ts_cw), intent(inout) :: c
-    real(dp), intent(in) :: kT, Eta
+    real(dp), intent(in) :: Eta
 
     if ( leqi(c%c_io%part,'line') ) then
        
-       call contour_line(c,kT,Eta)
+       call contour_line(c,Eta)
        
     else
        
@@ -200,11 +200,11 @@ contains
     
   end subroutine setup_tbt_contour
 
-  subroutine contour_line(c,kT,Eta)
+  subroutine contour_line(c,Eta)
     use m_integrate
     use m_gauss_quad
     type(ts_cw), intent(inout) :: c
-    real(dp), intent(in) :: kT, Eta
+    real(dp), intent(in) :: Eta
 
     ! local variables
     character(len=c_N) :: tmpC
@@ -383,10 +383,9 @@ contains
 
   end subroutine print_contour_tbt_options
 
-  subroutine io_contour_tbt(slabel,kT,suffix)
+  subroutine io_contour_tbt(slabel,suffix)
     use parallel, only : IONode
     character(len=*), intent(in) :: slabel
-    real(dp), intent(in) :: kT
     character(len=*), intent(in), optional :: suffix
 
 ! *********************
@@ -407,17 +406,16 @@ contains
     do i = 1 , N_tbt
        
        cidx%idx(2) = i
-       call io_contour_c(iu,kT,cidx)
+       call io_contour_c(iu,cidx)
        
     end do
 
   end subroutine io_contour_tbt
 
-  subroutine io_contour_c(iu,kT,cidx)
+  subroutine io_contour_c(iu,cidx)
     use units,    only : eV
     use m_ts_aux, only : nf
     integer, intent(in) :: iu
-    real(dp), intent(in) :: kT
     type(ts_c_idx), intent(inout) :: cidx
     type(ts_cw), pointer :: c
     integer :: i

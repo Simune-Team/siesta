@@ -64,16 +64,16 @@ module m_ts_contour_eq
 
 contains
 
-  subroutine read_contour_eq_options(N_mu, mus, kT, Volt)
+  subroutine read_contour_eq_options(N_mu, mus, Volt)
 
     use units, only : eV
     use fdf
 
     integer, intent(in)        :: N_mu
     type(ts_mu), intent(inout) :: mus(N_mu)
-    real(dp), intent(in)       :: kT, Volt
+    real(dp), intent(in)       :: Volt
 
-    integer :: i,j,k
+    integer :: i,j,k, c_mu
     integer :: N
     character(len=C_N_NAME_LEN), allocatable :: tmp(:), nContours(:)
     character(len=C_N_NAME_LEN) :: tmp_one
@@ -160,6 +160,26 @@ contains
     ! read in the equilibrium contours (the last will be the poles)
     do i = 1 , N - N_mu
 
+       ! Save the name of the contour (to be able to find the
+       ! associated chemical potential)
+       Eq_io(i)%name = nContours(i)
+
+       ! Get index of associated chemical potential
+       c_mu = 0
+       do j = 1 , N_mu
+          if ( hasC(mus(j),Eq_io(i)) ) then
+             c_mu = j
+             exit
+          end if
+       end do
+       if ( c_mu == 0 ) then
+          print *,Eq_io(i)%name
+          call die('Error in determining associated &
+            &chemical potential')
+       end if
+       ! Remove the name, it is needed to be ' '
+       Eq_io(i)%name = ' '
+
        tmp_one = nContours(i)
 
        ! read in the contour
@@ -167,7 +187,7 @@ contains
             .not. ts_exists_contour_block('TS','',tmp_one(2:)//' ') ) then
 
           if ( N_mu > 2 ) then
-             ! here we can have a zero bias case were 
+             ! here we can have a zero bias case where 
              ! N_mu == 1 :)
              call die('When using other than 2 electrodes and &
                   &chemical potentials you are forced to setup &
@@ -188,12 +208,12 @@ contains
                 Eq_io(i)%ca = '-3. Ry + V/2'
                 Eq_io(i)%a  = -3._dp + Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT + V/2'
-                Eq_io(i)%b  = -10._dp * kT + Volt * .5_dp
+                Eq_io(i)%b  = -10._dp * mus(c_mu)%kT + Volt * .5_dp
              else ! must be right
                 Eq_io(i)%ca = '-3. Ry - V/2'
                 Eq_io(i)%a  = -3._dp - Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT - V/2'
-                Eq_io(i)%b  = -10._dp * kT - Volt * .5_dp
+                Eq_io(i)%b  = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
              Eq_io(i)%method = 'g-legendre'
           else
@@ -202,16 +222,17 @@ contains
              Eq_io(i)%cN = '8'
              Eq_io(i)%ca = 'prev'
              if ( tmp_one(4:4) == 'l' ) then ! left
-                Eq_io(i)%a  = -10._dp * kT + Volt * .5_dp
+                Eq_io(i)%a  = -10._dp * mus(c_mu)%kT + Volt * .5_dp
              else ! must be right
-                Eq_io(i)%a  = -10._dp * kT - Volt * .5_dp
+                Eq_io(i)%a  = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
              Eq_io(i)%cb = 'inf'
              Eq_io(i)%b  = huge(1._dp)
              Eq_io(i)%method = 'g-fermi'
           end if
        else
-          call ts_read_contour_block('TS','',nContours(i),Eq_io(i), kT, Volt)
+          call ts_read_contour_block('TS','',nContours(i),Eq_io(i), &
+               mus(c_mu)%kT, Volt)
        end if
        
     end do
@@ -225,8 +246,8 @@ contains
        Eq_io(i)%part   = 'pole'
        Eq_io(i)%method = 'residual'
        Eq_io(i)%a = mus(j)%mu
-       Eq_io(i)%b = mus(j)%mu
-       Eq_io(i)%d = mus(j)%mu
+       Eq_io(i)%b = mus(j)%kT ! Save kT in the contour
+       Eq_io(i)%d = mus(j)%mu ! save the chemical potential here
        j = j + 1
            
     end do
@@ -247,7 +268,7 @@ contains
           call ts_fix_contour( Eq_io(cur), next=Eq_io(next) )
        end if
        call consecutive_types(Eq_io(cur),isCircle,isTail, &
-            mus(i)%mu, kT)
+            mus(i)%mu, mus(i)%kT)
           
        ! we should not check the pole (hence minus 2)
        do j = 2 , Eq_segs(mus(i)) - 2
@@ -257,7 +278,7 @@ contains
           call ts_fix_contour( Eq_io(cur), &
                prev=Eq_io(prev), next=Eq_io(next) )
           call consecutive_types(Eq_io(cur),isCircle,isTail, &
-               mus(i)%mu, kT)
+               mus(i)%mu, mus(i)%kT)
        end do
 
        ! don't check the pole
@@ -270,15 +291,16 @@ contains
 
        ! We also check that the circle lies 3 kT below the fermi level
        call consecutive_types(Eq_io(cur),isCircle,isTail, &
-            mus(i)%mu, kT)
+            mus(i)%mu, mus(i)%kT)
 
        ! check that the last contour actually lies on the RHS
        ! of the chemical potential, at least 10 kT across!
-       if ( Eq_io(cur)%b < mus(i)%mu + 10._dp * kT ) then
-          write(*,*) 'Energies are too close: ',Eq_io(cur)%b,mus(i)%mu + 10._dp * kT
+       if ( Eq_io(cur)%b < mus(i)%mu + 10._dp * mus(i)%kT ) then
+          print *,'Contour name: ',trim(Eq_io(cur)%name)
+          write(*,*) 'Energies are too close: ',Eq_io(cur)%b,mus(i)%mu + 10._dp * mus(i)%kT
           call eq_die('The last contour of the chemical potential: &
                &'//trim(Name(mus(i)))//' lies too close to the &
-               chemical potential. It must be at least 10kT from mu.')
+               chemical potential. It must be at least 10 kT from mu.')
        end if
 
     end do
@@ -330,7 +352,7 @@ contains
     
     do i = 1 , N_mu
 
-       call setup_Eq_contour(mus(i),kT)
+       call setup_Eq_contour(mus(i))
        
     end do
 
@@ -371,9 +393,8 @@ contains
 
   ! This routine assures that we have setup all the 
   ! equilibrium contours for the passed electrode
-  subroutine setup_Eq_contour(mu,kT)
+  subroutine setup_Eq_contour(mu)
     type(ts_mu), intent(in) :: mu
-    real(dp), intent(in) :: kT
 
     ! Local variables
     integer :: i, idx
@@ -387,7 +408,7 @@ contains
     call mu_circle_bounds(mu,a,b)
 
     ! Calculate the circle entries
-    call calc_Circle(a,b,mu%N_poles,kT,R,cR,lift)
+    call calc_Circle(a,b,mu%N_poles,mu%kT,R,cR,lift)
 
     do i = 1 , Eq_segs(mu)
        
@@ -395,20 +416,20 @@ contains
 
        if ( leqi(Eq_c(idx)%c_io%part,'circle') ) then
 
-          call contour_Circle(Eq_c(idx),mu,kT,R,cR)
+          call contour_Circle(Eq_c(idx),mu,R,cR)
 
        else if ( leqi(Eq_c(idx)%c_io%part,'line') ) then
 
-          call contour_line(Eq_c(idx),mu,kT,lift)
+          call contour_line(Eq_c(idx),mu,lift)
 
        else if ( leqi(Eq_c(idx)%c_io%part,'tail') ) then
 
-          call contour_tail(Eq_c(idx),mu,kT,lift)
+          call contour_tail(Eq_c(idx),mu,lift)
 
        else if ( leqi(Eq_c(idx)%c_io%part,'pole') ) then
 
           ! the poles all have the same weight (Pi*kT*2)
-          call contour_poles(Eq_c(idx),Eq_c(idx)%c_io%d,kT)
+          call contour_poles(Eq_c(idx),Eq_c(idx)%c_io%d,mu%kT)
 
        else
           
@@ -503,12 +524,12 @@ contains
     
   end subroutine c2weight_eq
 
-  subroutine contour_Circle(c,mu,kT,R,cR)
+  subroutine contour_Circle(c,mu,R,cR)
     use m_integrate
     use m_gauss_quad
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
-    real(dp), intent(in) :: kT, R, cR
+    real(dp), intent(in) :: R, cR
 
     ! local variables
     character(len=c_N) :: tmpC
@@ -635,7 +656,7 @@ contains
        end if
 
        ! Factor i, comes from Ed\theta=dE=iR e^{i\theta}
-       c%w(idx,i) = cw(i) * nf((dcmplx(cR,0._dp)+ztmp-mu%mu)/kT) &
+       c%w(idx,i) = cw(i) * nf((dcmplx(cR,0._dp)+ztmp-mu%mu)/mu%kT) &
             * dcmplx(0._dp,1._dp) * ztmp
 
     end do
@@ -670,13 +691,12 @@ contains
 
   end subroutine contour_Circle
 
-  subroutine contour_line(c,mu,kT,Eta)
+  subroutine contour_line(c,mu,Eta)
     use m_integrate
     use m_gauss_quad
 
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
-    real(dp), intent(in) :: kT
     ! The lifting into the complex plane
     real(dp), intent(in) :: Eta
 
@@ -799,8 +819,7 @@ contains
           end if
        end if
 
-       !TODO check that this is correct, we do it with respect to the chemical potential
-       c%w(idx,i) = cw(i) * nf((ce(i)-mu%mu)/kT)
+       c%w(idx,i) = cw(i) * nf((ce(i)-mu%mu)/mu%kT)
 
     end do
 
@@ -808,7 +827,7 @@ contains
     
   end subroutine contour_line
 
-  subroutine contour_tail(c,mu,kT,Eta)
+  subroutine contour_tail(c,mu,Eta)
     use m_gauss_fermi_inf
     use m_gauss_fermi_30
     use m_gauss_fermi_28
@@ -823,7 +842,6 @@ contains
 
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
-    real(dp), intent(in) :: kT
     ! This describes the lifting of the tail integral into the complex plane
     real(dp), intent(in) :: Eta
 
@@ -845,23 +863,23 @@ contains
     select case ( method(c%c_io) )
     case ( CC_G_NF_MIN:CC_G_NF_MAX )
 
-       offset = nint((c%c_io%a-mu%mu)/kT)
+       offset = nint((c%c_io%a-mu%mu)/mu%kT)
 
-       if ( abs(offset * kT - (c%c_io%a-mu%mu)) > 1.e-7_dp ) then
+       if ( abs(offset * mu%kT - (c%c_io%a-mu%mu)) > 1.e-7_dp ) then
           call die('The integer value of the kT offset for the &
                &Gauss-Fermi integral is not valid, please check input')
        end if
        if ( c%c_io%b < 0._dp ) then
-          if ( c%c_io%b < -30.5_dp * kT ) then
+          if ( c%c_io%b < -30.5_dp * mu%kT ) then
              infinity = huge(1)
           else
-             infinity = nint(abs(c%c_io%b-mu%mu)/kT)
+             infinity = nint(abs(c%c_io%b-mu%mu)/mu%kT)
           end if
        else
-          if ( c%c_io%b > 30.5_dp * kT ) then
+          if ( c%c_io%b > 30.5_dp * mu%kT ) then
              infinity = huge(1)
           else
-             infinity = nint(abs(c%c_io%b-mu%mu)/kT)
+             infinity = nint(abs(c%c_io%b-mu%mu)/mu%kT)
           end if
        end if
        if ( infinity > 30 ) infinity = huge(1)
@@ -895,8 +913,8 @@ contains
        ! we might as well correct the method
 
        ! the Gauss-Fermi quadrature is wrt. E'->E/kT
-       ce = ce * kT + mu%mu
-       cw = cw * kT
+       ce = ce * mu%kT + mu%mu
+       cw = cw * mu%kT
 
        call ID2idx(c,mu%ID,idx)
 
@@ -909,7 +927,7 @@ contains
        ! we revert so that we can actually use the line-integral
        c%c_io%part = 'line'
 
-       call contour_line(c,mu,kT,Eta)
+       call contour_line(c,mu,Eta)
 
     end select
 
@@ -1039,6 +1057,8 @@ contains
        if ( leqi(eq_io(i)%part,'pole') ) then
           chars = trim(eq_io(i)%part)
           call write_e('Pole chemical potential',eq_io(i)%d)
+          call write_e('Pole chemical potential temperature',eq_io(i)%b, &
+               unit = 'K')
           write(*,opt_int) '  Pole points',eq_io(i)%N
        end if
     end do
