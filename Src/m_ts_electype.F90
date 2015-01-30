@@ -62,6 +62,7 @@ module m_ts_electype
   integer, parameter, public :: INF_POSITIVE = 1 ! old 'right'
 
   type :: Elec
+     integer :: ID = 0
      character(len=FILE_LEN) :: HSfile = ' ', DEfile = ' ', GFfile  = ' '
      character(len=NAME_LEN) :: Name   = ' '
      ! These variables are relative to the big system
@@ -189,6 +190,7 @@ contains
        if ( fdf_bnnames(pline) == 0 ) cycle
        n = n + 1 
        this_n(n)%Name = trim(fdf_bnames(pline,1))
+       this_n(n)%ID = n
        if ( index(this_n(n)%name,'.') > 0 ) then
           call die('Electrodes cannot be named with .!')
        end if

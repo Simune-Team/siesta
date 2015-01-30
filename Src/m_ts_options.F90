@@ -339,13 +339,11 @@ contains
              call die('Could not find chemical potential: ' &
                   //trim(name(mus(i))))
           end if
-          ! Attach the ID
-          mus(i)%ID = i
        end do
     end if
 
     ! To determine the same coordinate nature of the electrodes
-    Elecs_xa_EPS= fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
+    Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
 
     ! detect how many electrodes we have
     N_Elec = fdf_nElec('TS',Elecs)

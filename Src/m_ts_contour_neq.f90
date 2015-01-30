@@ -9,7 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 ! This code segment has been fully created by:
-! Nick Papior Andersen, 2012, nickpapior@gmail.com
+! Nick Papior Andersen, 2015, nickpapior@gmail.com
 
 module m_ts_contour_neq
 
@@ -33,52 +33,59 @@ module m_ts_contour_neq
   ! Antti-Pekka Jauho. 
 
   ! For further attributions see the original paper by Brandbyge, et. al, 2002: DOI: 10.1103/PhysRevB.65.165401
+  
+  ! The non-equilibrium contour IO-segments
+  integer, save, public :: N_nEq
+  type(ts_c_io), pointer, save, public :: nEq_io(:) => null()
+  type(ts_cw)  , pointer, save, public :: nEq_c(:) => null()
 
-  ! Contour path
-  integer, save, public :: N_nEq, N_nEq_tail
-  type(ts_c_io),  pointer, save, public :: nEq_io(:) => null(), nEq_tail_io(:) => null()
-  type(ts_cw), pointer, save, public :: nEq_c(:) => null(), nEq_tail_c(:) => null()
-  ! this is the actual tail integral read in from the options.
-  ! it is merely a placeholder before we revert to the nEq_tail array
-  integer, save, private :: N_tail
-  type(ts_c_io),  save, pointer, private :: tail_io(:) => null()
-  type(ts_cw), save, pointer, private :: tail_c(:) => null()
-
-  ! type to contain the information about each contour element.
-  type :: ts_nEq_seg
-     type(ts_mu), pointer :: mu1 => null(), mu2 => null()
-     ! the indices for the nEq_io contours so that we don't look them up each time
-     integer, allocatable :: io(:)
-     ! the indices for the tail_io contours so that we don't look them up each time
-     ! we always have two tails in any one segment
-     integer :: tail_io(2) = 0
-  end type ts_nEq_seg
-  integer, save, public :: N_nEq_segs = 0
-  type(ts_nEq_seg), save, pointer :: nEq_segs(:) => null()
-
-  type :: ts_nEq_id
-     integer :: ID = 0
-     integer :: imu = 0
-     integer :: iEl = 0
-     type(ts_nEq_seg), pointer :: seg => null()
-  end type ts_nEq_id
-  integer, save, public :: N_nEq_id = 0
-  type(ts_nEq_id), save, pointer, public :: nEq_ID(:) => null()
+  ! Instead of defining several separate contours for
+  ! each part, we define the bias window contour and
+  ! define a cut-off radius in units of kT to determine
+  ! the range of the Fermi-functions.
+  ! It is not allowed to be less than 5 kT
+  real(dp), save, public :: cutoff_kT = 5._dp
 
   ! The contour specific variables
-  real(dp), save, public :: nEq_Eta
+  real(dp), save, public :: nEq_Eta = 0._dp
+
+  ! A table type for containing the ID's of different
+  ! segments
+  type :: ts_nEq_ID
+     ! This corresponds to this correction:
+     !   \Delta = G * \Gamma_El * G^\dagger * \
+     !        ( nF(E - El_\mu) - nF(E - \mu) )
+     ! And hence this correction belongs to the \mu equilibrium
+     ! contour.
+
+     ! The index of the equilibrium chemical
+     ! potential that this contour ID has correction
+     ! contributions for
+     type(ts_mu), pointer :: mu => null()
+     ! The index for the electrode attached to this
+     ! integration quantity
+     type(Elec), pointer :: El => null()
+     ! The index associated with the non-equilibrium 
+     ! array index as calculated in the tri|full|mumps[gk] routines
+     integer :: ID = 0
+
+     ! Min and Max energy allowed for this ID to contain
+     ! an energy point
+     real(dp) :: E(2)
+  end type ts_nEq_ID
+  integer, save, public :: N_nEq_id = 0
+  type(ts_nEq_id), allocatable, save, public :: nEq_ID(:)
 
   ! this is heavily linked with the CONTOUR_EQ from m_ts_contour_eq
   integer, parameter, public :: CONTOUR_NEQ = 2
-  integer, parameter, public :: CONTOUR_NEQ_TAIL = 3
 
   public :: read_contour_neq_options
   public :: print_contour_neq_options
   public :: print_contour_neq_block
   public :: io_contour_neq
-  public :: N_nEq_E, N_nEq_window_E, N_nEq_tail_E
+  public :: N_nEq_E
   public :: nEq_E
-  public :: has_cE_neq
+  public :: has_cE_nEq
   public :: c2weight_neq
   public :: ID2mu
 
@@ -86,7 +93,7 @@ module m_ts_contour_neq
 
 contains
 
-  subroutine read_contour_neq_options(N_Elec,Elecs,N_mu,mus, kT, Volt)
+  subroutine read_contour_neq_options(N_Elec,Elecs,N_mu,mus,kT,Volt)
 
     use units, only : eV
     use fdf
@@ -99,10 +106,11 @@ contains
     type(ts_mu), intent(in), target :: mus(N_mu)
     real(dp), intent(in) :: kT, Volt
     
-    integer :: i, j, k, N, cur_mu, left, right
-    integer, allocatable :: mus_tail(:)
+    integer :: i, j, k, N, cur_mu
+    real(dp) :: min_E, max_E
+    logical :: err
 
-
+    ! Notify the user of obsolete keys.
     call fdf_obsolete('TS.biasContour.Eta')
 
     ! check that we in-fact have a bias calculation
@@ -110,16 +118,25 @@ contains
        call die('Something has gone wrong. We can only find one chemical potential')
     end if
 
-    ! broadening
-    nEq_Eta = fdf_get('TS.Contours.nEq.Eta',0._dp*eV,'Ry')
+    ! broadening defaults to the electrodes Eta values and their
+    ! propagation. However, the user can denote an eta value in the 
+    ! device region as well.
+    nEq_Eta = fdf_get('TS.Contours.nEq.Eta',0._dp,'Ry')
     if ( nEq_Eta < 0._dp ) call die('ERROR: nEq_Eta < 0, we do not allow &
          &for using the advanced Greens function, please correct.')
+
+    ! Temperature cut-off for the tail integrals
+    cutoff_kT = fdf_get('TS.Contours.nEq.Fermi.Cutoff',5._dp)
+    if ( cutoff_kT < 5._dp ) then
+       call die('The cutoff must be larger than or equal to 5 as the &
+            &Fermi-function still has a weight at Ef + 5 kT.')
+    end if
 
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input
 
     ! Bias-window setup
-    call my_setup('Bias.Window',N_nEq,nEq_c,nEq_io)
+    call my_setup('nEq',N_nEq,nEq_c,nEq_io)
     if ( N_nEq < 1 ) then
 
        if ( N_Elec /= 2 .or. N_mu /= 2 ) then
@@ -128,140 +145,122 @@ contains
                &the contour input yourself.')
        end if
 
+       ! Get the lowest chemical potential
+       if ( mus(1)%mu < mus(2)%mu ) then
+          j = 1
+          k = 2
+       else
+          j = 2
+          k = 1
+       end if
+
        ! We create the default version
-       ! *** NOTE requires an even splitting of the bias
-       N_nEq = 1
+       N_nEq = 3
        nullify(nEq_io,nEq_c)
        allocate(nEq_io(N_nEq),nEq_c(N_nEq))
-       nEq_c(1)%c_io => nEq_io(1)
-       nEq_io(1)%part = 'line'
-       nEq_io(1)%name = 'neq-1'
-       nEq_io(1)%ca = '-|V|/2'
-       nEq_io(1)%a  = -abs(Volt) * .5_dp
-       nEq_io(1)%cb = '|V|/2'
-       nEq_io(1)%b  =  abs(Volt) * .5_dp
-       ! number of points
-       nEq_io(1)%cd = '0.01 eV'
-       nEq_io(1)%d = 0.01_dp * eV
+
+       ! Create the integrals
+       nEq_io(1)%part = 'tail'
+       nEq_io(1)%name = 'tail-low'
+       write(nEq_io(1)%ca,'(2(e12.5,a))') mus(j)%mu/eV, &
+            ' eV - ', cutoff_kT ,' kT'
+       nEq_io(1)%a  = mus(j)%mu - cutoff_kT * kT
+       write(nEq_io(1)%cb,'(e12.5,a)') mus(j)%mu/eV,' eV'
+       nEq_io(1)%b  = mus(j)%mu
+       nEq_io(1)%cd = '0.025 eV'
+       nEq_io(1)%d = 0.025_dp * eV
        nEq_io(1)%method = 'simpson-mix'
-       call ts_fix_contour(nEq_io(1))
 
-       ! setup the contour
-       allocate(nEq_c(1)%c(nEq_c(1)%c_io%N),nEq_c(1)%w(nEq_c(1)%c_io%N,1))
-       call setup_nEq_contour(nEq_c(1), kT, nEq_Eta)
+       nEq_io(3)%part = 'tail'
+       nEq_io(3)%name = 'tail-high'
+       write(nEq_io(3)%ca,'(e12.5,a)') mus(k)%mu/eV,' eV'
+       nEq_io(3)%a  = mus(k)%mu
+       write(nEq_io(3)%cb,'(2(e12.5,a))') mus(k)%mu/eV, &
+            ' eV + ', cutoff_kT ,' kT'
+       nEq_io(3)%b  = mus(k)%mu + cutoff_kT * kT
+       nEq_io(3)%cd = '0.025 eV'
+       nEq_io(3)%d = 0.025_dp * eV
+       nEq_io(3)%method = 'simpson-mix'
 
-    end if
+       nEq_io(2)%part = 'line'
+       nEq_io(2)%name = 'neq'
+       nEq_io(2)%ca = nEq_io(1)%cb
+       nEq_io(2)%a  = nEq_io(1)%b
+       nEq_io(2)%cb = nEq_io(3)%ca
+       nEq_io(2)%b  = nEq_io(3)%a
+       nEq_io(2)%cd = '0.01 eV'
+       nEq_io(2)%d = 0.01_dp * eV
+       nEq_io(2)%method = 'simpson-mix'
 
-    ! Here we setup the tail integral
-    call my_setup('Bias.Tail',N_tail,tail_c,tail_io)
-    if ( N_tail > 1 ) &
-         call die('You can currently only use one tail integral')
-    if ( N_tail < 1 ) then
+       do i = 1 , N_nEq
+          nEq_c(i)%c_io => nEq_io(i)
+      
+          ! Fix the contours checking for their consistency
+          call ts_fix_contour(nEq_io(i))
 
-       if ( N_Elec /= 2 .or. N_mu /= 2 ) then
-          call die('When using other than 2 electrodes and &
-               &chemical potentials you are forced to setup &
-               &the input yourself.')
-       end if
+          ! setup the contour
+          allocate(nEq_c(i)%c(nEq_c(i)%c_io%N),nEq_c(i)%w(nEq_c(i)%c_io%N,1))
 
-       ! We create the default version
-       ! *** NOTE requires an even splitting of the bias
-       ! We create the default version
-       ! *** NOTE requires an even splitting of the bias
-       N_tail = 1
-       nullify(tail_c,tail_io)
-       allocate(tail_io(N_tail),tail_c(N_tail))
-       tail_c(1)%c_io => tail_io(1)
-       tail_io(1)%part = 'tail'
-       tail_io(1)%name = 'neq-tail'
-       tail_io(1)%ca = '0. kT'
-       tail_io(1)%a  = 0._dp
-       tail_io(1)%cb = '12 kT'
-       tail_io(1)%b  =  12._dp * kT
-       ! number of points
-       tail_io(1)%cd = '0.01 eV'
-       tail_io(1)%d =   0.01_dp * eV
-       tail_io(1)%method = 'simpson-mix'
-       call ts_fix_contour(tail_io(1))
+          call setup_nEq_contour(nEq_c(i), kT, nEq_Eta)
 
-       ! setup the contour
-       allocate(tail_c(1)%c(tail_c(1)%c_io%N),tail_c(1)%w(tail_c(1)%c_io%N,1))
-       call setup_nEq_contour(tail_c(1), kT, nEq_Eta)
+       end do
 
     end if
-    if ( tail_io(N_tail)%b < 10._dp * kT ) then
-       call neq_die('The tail integrals used for the non-equilibrium tails &
-            &are too close to the chemical potential. It must be at least &
-            &10kT from mu.')
-    end if
 
-    ! Create all the different tail segments
-    ! We have one tail in both ends and two tails for each middle segment
-    ! We also check whether the tail integral fits in any of the contours
-    N_nEq_tail = 2 + (N_mu - 2) * 2
-    allocate(nEq_tail_io(N_nEq_tail))
-    allocate(nEq_tail_c(N_nEq_tail))
-    allocate(mus_tail(N_mu))
-    mus_tail = 0
-    j = 1
+    ! At this point we have created all contours
+    ! We need to check that the cut-off is obeyed.
+    ! We check this by finding the max and min energy.
+    min_E = huge(1._dp)
+    max_E = -huge(1._dp)
+    do i = 1 , N_nEq
+       do j = 1 , nEq_c(i)%c_io%N
+          if ( real(nEq_c(i)%c(j),dp) < min_E ) then
+             min_E = real(nEq_c(i)%c(j),dp)
+          end if
+          if ( max_E < real(nEq_c(i)%c(j),dp) ) then
+             max_E = real(nEq_c(i)%c(j),dp)
+          end if
+       end do
+    end do
+
+    ! Check that no chemical potential lies more than cut-off from it
+    err = .false.
     do i = 1 , N_mu
-       ! this should check that we are at an edge chemical potential
-       if ( abs(minval(mus(:)%mu) - mus(i)%mu) < mu_same ) then
-          mus_tail(i) = fits_left(mus(i),tail_io)
-
-          call copy(tail_io(1),nEq_tail_io(j)) ! TODO N_tail > 1
-          call assign_set_E(nEq_tail_c(j),nEq_tail_io(j), &
-               tail_c(1),tail_io(:),mus(i), reverse = .true. ) ! TODO N_tail > 1
-          j = j + 1
-
-       else if ( abs(maxval(mus(:)%mu) - mus(i)%mu) < mu_same ) then
-          mus_tail(i) = fits_right(mus(i),tail_io)
-
-          call copy(tail_io(1),nEq_tail_io(j)) ! TODO N_tail > 1
-          call assign_set_E(nEq_tail_c(j),nEq_tail_io(j), & 
-               tail_c(1), tail_io(:), mus(i), reverse = .false. )
-          j = j + 1
-
-       else
-          ! we are in a middle chemical potential
-          mus_tail(i) = min(fits_left(mus(i),tail_io),fits_right(mus(i),tail_io))
-
-          ! we need both the left and right tail
-          call copy(tail_io(1),nEq_tail_io(j)) ! TODO N_tail > 1
-          call assign_set_E(nEq_tail_c(j),nEq_tail_io(j), & 
-               tail_c(1), tail_io(:), mus(i), reverse= .true.)
-          j = j + 1
-
-          call copy(tail_io(1),nEq_tail_io(j)) ! TODO N_tail > 1
-          call assign_set_E(nEq_tail_c(j),nEq_tail_io(j), & 
-               tail_c(1), tail_io(:), mus(i), reverse=.false.)
-          j = j + 1
-
+       if ( min_E - (mus(i)%mu - cutoff_kT * kT) > 0.000001_dp ) then
+          err = .true.
+          write(*,'(a)')'transiesta: Lowest energy and chemical potential &
+               &'//trim(mus(i)%name)//' does not conform with Fermi-function &
+               &cut-off [eV].'
+          write(*,'(a,e12.5)')'Specified cut-off: ',(mus(i)%mu - cutoff_kT * kT)/eV
+          write(*,'(a,e12.5)')'Minimum energy: ',min_E/eV
+       end if
+       if ( mus(i)%mu + cutoff_kT * kT - max_E > 0.000001_dp ) then
+          err = .true.
+          write(*,'(a)')'transiesta: Highest energy and chemical potential &
+               &'//trim(mus(i)%name)//' does not conform with Fermi-function &
+               &cut-off [eV].'
+          write(*,'(a,e12.5)')'Specified cut-off: ',(mus(i)%mu + cutoff_kT * kT)/eV
+          write(*,'(a,e12.5)')'Maximum energy: ',max_E/eV
        end if
     end do
-    ! check that a tail can be placed at all segments
-    if ( any(mus_tail == 0) ) then
-       call neq_die('No real axis contour tail fits with your chemical potentials')
-    end if
-    deallocate(mus_tail)
+    if ( err ) &
+         call neq_die('The energy grid is not fulfilling the requirements &
+         &please see the output.')
 
-
-    ! Allocate all the segments, this comes from simple permutation rules
     ! 2 chemical potentials => 1 segment
     ! 3 chemical potentials => 3 segments
     ! 4 chemical potentials => 6 segments, etc.
-    N_nEq_segs = 0 ! count
-    do j = N_mu - 1 , 1 , -1
-       N_nEq_segs = N_nEq_segs + j
-    end do
-    allocate(nEq_segs(N_nEq_segs))
+    !N_nEq_segs = 0 ! count
+    !do j = N_mu - 1 , 1 , -1
+    !   N_nEq_segs = N_nEq_segs + j
+    !end do
 
     ! count the number of non-equilibrium segments concerning the
     ! electrodes density matrix update
     ! 2 electrodes, 2 mu => 2
     ! 3 electrodes, 2 mu => 3
     ! 4 electrodes, 2 mu => 4
-    ! 5 electrodes, 2 mu => 5
+    ! 5 electrodes, 2 mu => 5 , etc.
     ! 3 electrodes, 3 mu => 6
     ! 6 electrodes, 2 mu => 6
     ! 7 electrodes, 2 mu => 7
@@ -271,141 +270,52 @@ contains
     ! etc.
     ! For each chemical potential we need the contribution
     ! from each other electrode with different chemical potential
-    N_nEq_id = 0
+    N_nEq_ID = 0
     do i = 1 , N_mu
-       N_nEq_id = N_nEq_id + N_Elec - mus(i)%N_El
+       N_nEq_ID = N_nEq_ID + N_Elec - mus(i)%N_El
     end do
-    if ( N_nEq_id < 1 ) then
-       call neq_die('Could not find any non-equilibrium segments. &
-            &Please correct.')
+    if ( N_nEq_ID < 2 ) then
+       call neq_die('Could not find enough non-equilibrium segments. &
+            &Please correct/could be a bug...')
     end if
-    allocate(nEq_id(N_nEq_id))
-    
 
-    ! populate the segments by their chemical potentials
-    N_nEq_id = 0
+    allocate(nEq_ID(N_nEq_ID))
+    ! Create all ID's
     cur_mu = 1
-    do i = 1 , N_mu - 1
-       do j = i + 1 , N_mu
-          ! the chemical potentials in the segments
-          ! must be sorted! Otherwise the weights are incorrect
-          if ( mus(i)%mu < mus(j)%mu ) then
-             nEq_segs(cur_mu)%mu1 => mus(i) ! smallest
-             nEq_segs(cur_mu)%mu2 => mus(j) ! biggest
-          else
-             nEq_segs(cur_mu)%mu1 => mus(j) ! smallest
-             nEq_segs(cur_mu)%mu2 => mus(i) ! biggest
-          end if
-
-          ! create the ID's
-          call add_ID(nEq_id,N_nEq_id,nEq_segs(cur_mu))
-                   
-          ! we need to find the tail contours that fit
-          left  = fits_left(nEq_segs(cur_mu)%mu1,tail_io)
-          right = fits_right(nEq_segs(cur_mu)%mu2,tail_io)
-          !print *,nEq_segs(cur_mu)%mu1,left,right,nEq_segs(cur_mu)%mu2
-          if ( left == 0 .or. right == 0 ) &
-               call neq_die('Ensure that the tail integrals lower bound fits with &
-               &a break at every chemical potential. This will ensure correct &
-               &partitioning.')
-          if ( left > right ) &
-               call neq_die('The contours have not been sorted properly, please &
-               &contact the developers')
-
-          ! Allocate the pointers to the non-equilibrium contours
-          N = abs(left-right) + 1
-          allocate(nEq_segs(cur_mu)%io(N))
-          do k = left , right
-             nEq_segs(cur_mu)%io(k-left+1) = k
+    N = 0 ! current reached ID
+    do j = 1 , N_mu - 1
+       do i = j + 1 , N_mu 
+          do k = 1 , mus(i)%N_El 
+             N = N + 1 
+             nEq_ID(N)%ID = N
+             nEq_ID(N)%mu => mus(j)
+             nEq_ID(N)%El => Elecs(mus(i)%El(k))
           end do
-          nEq_segs(cur_mu)%tail_io(:) = 0
-          do k = 1 , N_nEq_tail
-             if ( abs(nEq_io(nEq_segs(cur_mu)%io(1))%a - nEq_tail_io(k)%b) < mu_same ) then
-                nEq_segs(cur_mu)%tail_io(1) = k
-             end if
-             if ( abs(nEq_io(nEq_segs(cur_mu)%io(N))%b - nEq_tail_io(k)%a) < mu_same ) then
-                nEq_segs(cur_mu)%tail_io(2) = k
-             end if
+          do k = 1 , mus(j)%N_El 
+             N = N + 1 
+             nEq_ID(N)%ID = N
+             nEq_ID(N)%mu => mus(i)
+             nEq_ID(N)%El => Elecs(mus(j)%El(k))
           end do
-          if ( any(nEq_segs(cur_mu)%tail_io == 0) ) then
-             call neq_die('Could not find all tails')
-          end if
-
-          cur_mu = cur_mu + 1
        end do
     end do
-    if ( N_nEq_id /= size(nEq_id) ) &
-         call neq_die('Error in code')
+    if ( N /= N_nEq_ID ) then
+       call die('Could not find all available non-equilibrium &
+            &IDs, bug in code')
+    end if
 
-    ! TODO correct empty cycles, i.e. if two line contours are neighbours 
-    ! then we have overlying energy points...
+    ! Update the min/max energies allowed
+    ! to contain any contour elements for each ID
+    ! We add an extra 0.00001 eV to account for floating
+    ! point accurracy
+    do N = 1 , N_nEq_ID
+       min_E = min(nEq_ID(N)%mu%mu,nEq_ID(N)%El%mu%mu)
+       max_E = max(nEq_ID(N)%mu%mu,nEq_ID(N)%El%mu%mu)
+       nEq_ID(N)%E(1) = min_E - cutoff_kT * kT - 0.00001 * eV
+       nEq_ID(N)%E(2) = max_E + cutoff_kT * kT + 0.00001 * eV
+    end do
 
   contains 
-
-    subroutine assign_set_E(c,c_io,c_from,c_io_from,mu,reverse)
-      type(ts_cw), intent(inout) :: c
-      type(ts_c_io), target :: c_io
-      type(ts_c_io) :: c_io_from(:)
-      type(ts_cw), intent(in) :: c_from
-      type(ts_mu), intent(in) :: mu
-      logical, intent(in), optional :: reverse
-      logical :: lreverse
-      integer :: i, j
-      ! assign
-      c%c_io => c_io
-
-      lreverse = .false.!mu%mu < 0._dp
-      if ( present(reverse) ) lreverse = reverse
-
-      ! correct the end points
-      if ( lreverse ) then
-         ! we are the lower tail (so reverse it)
-         c_io%a = -c_io_from(size(c_io_from))%b + mu%mu
-         c_io%b = -c_io_from(1)%a               + mu%mu
-      else
-         c_io%a =  c_io_from(1)%a               + mu%mu
-         c_io%b =  c_io_from(size(c_io_from))%b + mu%mu
-      end if
-
-      ! create the contours
-      allocate(c%c(c_io%N),c%w(c_io%N,1))
-      if ( lreverse ) then
-         do j = c_io%N , 1 , -1
-            i = c_io%N - j + 1
-            c%c(i) = dcmplx(-dreal(c_from%c(j)),dimag(c_from%c(j))) + mu%mu
-            c%w(i,1) = c_from%w(j,1)
-         end do
-      else
-         do i = 1 , c_io%N
-            c%c(i)   = c_from%c(i) + mu%mu
-            c%w(i,1) = c_from%w(i,1)
-         end do
-      end if
-    end subroutine assign_set_E
-
-    function fits_left(mu,tail_io) result(i)
-      type(ts_mu), intent(in) :: mu
-      type(ts_c_io), intent(in) :: tail_io(:)
-      integer :: i
-      do i = 1 , N_nEq
-         if ( abs(mu%mu - nEq_io(i)%a - tail_io(1)%a) < mu_same ) then
-            return
-         end if
-      end do
-      i = 0
-    end function fits_left
-
-    function fits_right(mu,tail_io) result(i)
-      type(ts_mu), intent(in) :: mu
-      type(ts_c_io), intent(in) :: tail_io(:)
-      integer :: i
-      do i = 1 , N_nEq
-         if ( abs(nEq_io(i)%b - mu%mu - tail_io(1)%a) < mu_same ) then
-            return
-         end if
-      end do
-      i = 0
-    end function fits_right
 
     subroutine my_setup(suffix,N_nEq,nEq_c,nEq_io)
       character(len=*), intent(in) :: suffix
@@ -464,7 +374,11 @@ contains
       end do
       ! The fix_contour checks and corrects the neighbouring 
       ! contours.
-      call ts_fix_contour(nEq_io(N_nEq))
+      if ( N_nEq > 1 ) then
+         call ts_fix_contour(nEq_io(N_nEq),prev=nEq_io(N_nEq-1))
+      else
+         call ts_fix_contour(nEq_io(N_nEq))
+      end if
 
       ! setup the contour
       do i = 1 , N_nEq
@@ -486,35 +400,6 @@ contains
 
     end subroutine my_setup
 
-    subroutine add_ID(nEq_id,ID,nEq_seg)
-      type(ts_nEq_id), intent(in out) :: nEq_id(:)
-      integer, intent(inout) :: ID
-      type(ts_nEq_seg), target :: nEq_seg
-      integer :: i
-      do i = 1 , nEq_seg%mu1%N_El
-         ID = ID + 1
-         if ( size(nEq_id) < ID ) then
-            call die('Error in parsing number of non-equilibrium &
-                 &electrode contributions')
-         end if
-         nEq_id(ID)%ID  = ID
-         nEq_id(ID)%iEl = nEq_seg%mu1%el(i)
-         nEq_id(ID)%imu = nEq_seg%mu2%ID
-         nEq_id(ID)%seg => nEq_seg
-      end do
-      do i = 1 , nEq_seg%mu2%N_El
-         ID = ID + 1
-         if ( size(nEq_id) < ID ) then
-            call die('Error in parsing number of non-equilibrium &
-                 &electrode contributions')
-         end if
-         nEq_id(ID)%ID  = ID
-         nEq_id(ID)%iEl = nEq_seg%mu2%el(i)
-         nEq_id(ID)%imu = nEq_seg%mu1%ID
-         nEq_id(ID)%seg => nEq_seg
-      end do
-    end subroutine add_ID
-
   end subroutine read_contour_neq_options
 
   ! This routine assures that we have setup all the 
@@ -528,8 +413,12 @@ contains
        call contour_line(c,kT,Eta)
        
     else if ( leqi(c%c_io%part,'tail') ) then
+
+       c%c_io%part = 'line'
        
-       call contour_tail(c,kT,Eta)
+       call contour_line(c,kT,Eta)
+
+       c%c_io%part = 'tail'
 
     else
        
@@ -540,110 +429,47 @@ contains
     
   end subroutine setup_nEq_contour
 
-  function has_cE_neq(cE,iEl,ID) result(has)
+  function has_cE_nEq(cE,iEl,ID) result(has)
     type(ts_c_idx), intent(in) :: cE
-    integer, intent(in), optional :: iEl, ID
+    integer, intent(in) :: iEl, ID
     logical :: has
-    integer :: i
     has = .false.
     if ( cE%fake ) return
-    if ( cE%idx(1) /= CONTOUR_NEQ .and. &
-         cE%idx(1) /= CONTOUR_NEQ_TAIL ) return
+    if ( cE%idx(1) /= CONTOUR_NEQ ) return
     
-    if ( present(ID) .and. present(iEl) ) then
-       has = nEq_ID(ID)%iEl == iEl
+    has = nEq_ID(ID)%El%ID == iEl
 
-    else if ( present(iEl) ) then
-       
-       select case ( cE%idx(1) ) 
-       case ( CONTOUR_NEQ )
-          do i = 1 , N_nEq_segs
-             if ( seg_has_c(nEq_segs(i), cE%idx(2)) ) then
-                has = has .or. seg_has_El(nEq_segs(i), iEl)
-             end if
-          end do
-       case ( CONTOUR_NEQ_TAIL ) 
-          do i = 1 , N_nEq_segs
-             if ( seg_has_tail_c(nEq_segs(i), cE%idx(2)) ) then
-                has = has .or. seg_has_El(nEq_segs(i), iEl)
-             end if
-          end do
-       end select
-       
-    end if
+  end function has_cE_nEq
 
-  contains
-    
-    function seg_has_c(seg,i_c) result(has)
-      type(ts_nEq_seg), intent(in) :: seg ! a segment that needs to be tested for 
-                                          ! part
-      integer, intent(in) :: i_c          ! the index of the part in the list of parts
-      logical :: has
-      has = allocated(seg%io)
-      if ( has ) has = any(i_c == seg%io)
-    end function seg_has_c
-
-    function seg_has_tail_c(seg,i_c) result(has)
-      type(ts_nEq_seg), intent(in) :: seg ! a segment that needs to be tested for 
-                                          ! part
-      integer, intent(in) :: i_c          ! the index of the part in the list of parts
-      logical :: has
-      has = any(i_c == seg%tail_io)
-    end function seg_has_tail_c
-
-    function seg_has_El(seg,iEl) result(has)
-      type(ts_nEq_seg), intent(in) :: seg
-      integer, intent(in) :: iEl
-      logical :: has
-      has = hasEl(seg%mu1,iEl)
-      if ( has ) return
-      has = hasEl(seg%mu2,iEl)
-    end function seg_has_El
-
-  end function has_cE_neq
-
-
-  subroutine c2weight_neq(c,kT,iEl,ID, k,W,imu,ZW)
+  subroutine c2weight_nEq(c,kT,ID,k,W,imu,ZW)
     use m_ts_aux, only : nf
     type(ts_c_idx), intent(in) :: c
     real(dp), intent(in) :: kT ! the temperature
-    integer, intent(in) :: iEl, ID ! the electrode index (wrt. Elecs-array)
+    integer, intent(in) :: ID ! the non-equilibrium contour index
     real(dp), intent(in) :: k ! generic weight
-    integer, intent(out) :: imu
+    integer, intent(out) :: imu ! returns the equilibrium idx for EDM
     complex(dp), intent(out) :: W, ZW ! the weight returned
     ! local variables
     real(dp) :: E
-    logical :: has_correct_weight, isLeft
-    integer :: i
     type(ts_cw), pointer :: cw
 
-    if ( .not. has_cE_neq(c,iEl,ID) ) then
-       W  = 0._dp
-       ZW = 0._dp
-       return
-    end if
+    imu = 0
+    W  = 0._dp
+    ZW = 0._dp
 
-    has_correct_weight = .false.
-    if ( c%idx(1) == CONTOUR_NEQ ) then
-       cw => nEq_c(c%idx(2))
-    else if ( c%idx(1) == CONTOUR_NEQ_TAIL ) then
-       cw => nEq_tail_c(c%idx(2))
-       has_correct_weight = &
-            any(method(cw%c_io) == (/(i,i=CC_G_NF_MIN,CC_G_NF_MAX)/)) 
-    else
-       print *,c%idx
-       call die('c2weight_neq: Error in code')
-    end if
+    ! Get the contour points and weights
+    cw => nEq_c(c%idx(2))
 
+    ! Retrieve the real energy of the contour index
     E = real(cw%c(c%idx(3)),dp)
 
-    imu = nEq_ID(ID)%imu
-    isLeft = hasEl(nEq_ID(ID)%seg%mu1,iEl)
-    if ( .not. isLeft ) then
-       if ( .not. hasEl(nEq_ID(ID)%seg%mu2,iEl) ) then
-          call die('c2weight_neq: Error in code')
-       end if
-    end if
+    ! We need to check that the energy is within the cutoff
+    ! range of kT from either chemical potentials
+    if ( E < nEq_ID(ID)%E(1) ) return
+    if ( nEq_ID(ID)%E(2) < E ) return
+
+    ! Update the equilibrium contribution ID
+    imu = nEq_ID(ID)%mu%ID
 
     ! Notice that we multiply with -i to move Gf.Gamma.Gf^\dagger
     ! to the negative imaginary part
@@ -652,76 +478,18 @@ contains
     ! density
 
     ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
-    if ( has_correct_weight ) then
-       ! the gauss-fermi contour has the "correct" weight already...
-       W = -k * cw%w(c%idx(3),1) * dcmplx(0._dp,-1._dp)
-    else if ( isLeft ) then
-       ! This weight will always be negative due to the sorting
-       ! of the chemical potentials
-       W =  k * cw%w(c%idx(3),1) * &
-            nf(E, &
-            nEq_ID(ID)%seg%mu1%mu, &
-            nEq_ID(ID)%seg%mu2%mu, kT) * dcmplx(0._dp,-1._dp)
-    else
-       ! This weight will always be positive due to the sorting
-       ! of the chemical potentials
-       W =  k * cw%w(c%idx(3),1) * &
-            nf(E, &
-            nEq_ID(ID)%seg%mu2%mu, &
-            nEq_ID(ID)%seg%mu1%mu, kT) * dcmplx(0._dp,-1._dp)
-    end if
+    W = k * cw%w(c%idx(3),1) * &
+         nf(E, nEq_ID(ID)%El%mu%mu, &
+         nEq_ID(ID)%mu%mu, kT ) * dcmplx(0._dp,-1._dp)
 
-    if ( isLeft ) then
-       ZW = E * W * nEq_ID(ID)%seg%mu2%N_el
-    else
-       ZW = E * W * nEq_ID(ID)%seg%mu1%N_el
-    end if
+    ZW = E * W
 
-  end subroutine c2weight_neq
-
-  subroutine cseq2weight_neq(c,kT,seg,W)
-    use m_ts_aux, only : nf
-    type(ts_c_idx), intent(in) :: c
-    real(dp), intent(in) :: kT ! the temperature
-    type(ts_nEq_seg), intent(in) :: seg
-    complex(dp), intent(out) :: W
-    ! local variables
-    real(dp) :: E
-    type(ts_cw), pointer :: cw
-    logical :: has_correct_weight
-    integer :: i
-
-    has_correct_weight = .false.
-    if ( c%idx(1) == CONTOUR_NEQ ) then
-       cw => nEq_c(c%idx(2))
-    else if ( c%idx(1) == CONTOUR_NEQ_TAIL ) then
-       cw => nEq_tail_c(c%idx(2))
-       has_correct_weight = &
-            any(method(cw%c_io) == (/(i,i=CC_G_NF_MIN,CC_G_NF_MAX)/)) 
-    else
-       call die('cseq2weight_neq: Error in code')
-    end if
-
-    E = real(cw%c(c%idx(3)),dp)
-
-    if ( has_correct_weight ) then
-       ! the gauss-fermi contour has the "correct" weight already...
-       W =  cw%w(c%idx(3),1)
-    else
-       ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
-       ! We use this to get the positive weight (the mu's are sorted in descending order)
-       W =  cw%w(c%idx(3),1) * &
-            nf(E, &
-            seg%mu2%mu, &
-            seg%mu1%mu, kT)
-    end if
-    
-  end subroutine cseq2weight_neq
+  end subroutine c2weight_nEq
 
   function ID2mu(ID) result(imu)
     integer, intent(in) :: ID
     integer :: imu
-    imu = nEq_ID(ID)%imu
+    imu = nEq_ID(ID)%mu%ID
   end function ID2mu
 
   subroutine contour_line(c,kT,Eta)
@@ -794,109 +562,6 @@ contains
     
   end subroutine contour_line
 
-  subroutine contour_tail(c,kT,Eta)
-    use m_gauss_fermi_inf
-    use m_gauss_fermi_30
-    use m_gauss_fermi_28
-    use m_gauss_fermi_26
-    use m_gauss_fermi_24
-    use m_gauss_fermi_22
-    use m_gauss_fermi_20
-    use m_gauss_fermi_19
-    use m_gauss_fermi_18
-    use m_gauss_fermi_17
-    type(ts_cw), intent(inout) :: c
-    real(dp), intent(in) :: kT, Eta
-
-    ! local variables
-    integer :: ioffset, infinity
-    real(dp) :: a,b
-    real(dp), allocatable :: ce(:), cw(:)
-
-    if ( .not. leqi(c%c_io%part,'tail') ) &
-         call die('Contour is not a tail contour')
-
-    if ( c%c_io%N < 1 ) then
-       call die('Contour: '//trim(c%c_io%Name)//' has &
-            an errorneous number of points.')
-    end if
-
-    ! get bounds
-    a = c%c_io%a
-    b = c%c_io%b
-
-    if ( b < 0._dp ) then
-       call die('The non-equilbrium tail contours can only be &
-            &defined with respect to the Fermi-level')
-    end if
-
-    allocate(ce(c%c_io%N))
-    allocate(cw(c%c_io%N))
-    
-    select case ( method(c%c_io%method) )
-    case ( CC_G_NF_MIN:CC_G_NF_MAX )
-
-       ! calculate the offset
-       ioffset = nint(a/kT)
-       if ( abs(ioffset * kT - a) > 1.e-7_dp ) then
-          call die('The integer value of the kT offset for the &
-               &Gauss-Fermi tail integral is not valid, please check input')
-       end if
-       if ( b > 30.5_dp * kT ) then
-          infinity = huge(1)
-       else
-          infinity = nint(b/kT)
-       end if
-       if ( infinity > 30 ) infinity = huge(1)
-       
-       ! calculate the offset from the energy chemical potential tail
-       select case ( infinity )
-       case ( huge(1) )
-          call GaussFermi_inf(ioffset,c%c_io%N,ce,cw)
-       case ( 30 )
-          call GaussFermi_30(ioffset,c%c_io%N,ce,cw)
-       case ( 28 )
-          call GaussFermi_28(ioffset,c%c_io%N,ce,cw)
-       case ( 26 ) 
-          call GaussFermi_26(ioffset,c%c_io%N,ce,cw)
-       case ( 24 ) 
-          call GaussFermi_24(ioffset,c%c_io%N,ce,cw)
-       case ( 22 )
-          call GaussFermi_22(ioffset,c%c_io%N,ce,cw)
-       case ( 20 )
-          call GaussFermi_20(ioffset,c%c_io%N,ce,cw)
-       case ( 19 )
-          call GaussFermi_19(ioffset,c%c_io%N,ce,cw)
-       case ( 18 )
-          call GaussFermi_18(ioffset,c%c_io%N,ce,cw)
-       case ( 17 )
-          call GaussFermi_17(ioffset,c%c_io%N,ce,cw)
-       case default
-          call die('Unknown tail integral ending')
-       end select
-
-       ! correct for the Gauss-Fermi unit-transformation
-       ce = ce * kT
-       cw = cw * kT
-
-       ! move over the weights and the contour values
-       c%c = dcmplx(ce,Eta)
-       c%w(:,1) = dcmplx(cw,0._dp)
-
-    case default
-
-       ! we revert so that we can actually use the line-integral
-       c%c_io%part = 'line'
-
-       call contour_line(c,kT,Eta)
-
-    end select
-
-    deallocate(ce,cw)
-
-  end subroutine contour_tail
-
-
   function nEq_E(id,step) result(c)
     integer, intent(in) :: id
     integer, intent(in), optional :: step
@@ -905,11 +570,8 @@ contains
     lstep = 1
     if ( present(step) ) lstep = step
     PN = N_nEq_E()
-    if ( id <= PN ) then
-       c = get_c(id)
-       return
-    end if
-    c = get_c(-1)
+    c = get_c(id)
+    if ( id <= PN ) return
     i = MOD(PN,lstep)
     if ( i /= 0 ) PN = PN + lstep - i
     if ( id <= PN ) then
@@ -945,44 +607,15 @@ contains
        end if
     end do
 
-    do j = 1 , N_nEq_tail ! number of contours
-       if ( iE + nEq_tail_c(j)%c_io%N < id ) then
-          iE = iE + nEq_tail_c(j)%c_io%N
-          cycle
-       end if
-       i = id - iE
-       if ( i <= nEq_tail_c(j)%c_io%N ) then
-          c%exist = .true.
-          c%e     = nEq_tail_c(j)%c(i)
-          c%idx(1) = 3 ! designates the tail non-equilibrium contours
-          c%idx(2) = j ! designates the index of the tail non-equilibrium contour
-          c%idx(3) = i ! is the index of the tail non-equilibrium contour
-          return
-       end if
-    end do
-
   end function get_c
 
   function N_nEq_E() result(N)
-    integer :: N
-    N = N_nEq_window_E() + N_nEq_tail_E()
-  end function N_nEq_E
-
-  function N_nEq_window_E() result(N)
     integer :: N, i
     N = 0
     do i = 1 , N_nEq
        N = N + size(nEq_c(i)%c)
     end do
-  end function N_nEq_window_E
-
-  function N_nEq_tail_E() result(N)
-    integer :: N, i
-    N = 0
-    do i = 1 , N_nEq_tail
-       N = N + size(nEq_tail_c(i)%c)
-    end do
-  end function N_nEq_tail_E
+  end function N_nEq_E
 
   subroutine print_contour_neq_block(prefix)
     use parallel, only : IONode
@@ -991,27 +624,17 @@ contains
     integer :: i
 
     if ( IONode ) then
-       write(*,'(2a)') '%block ',trim(prefix)//'.Contours.Bias.Window'
+       write(*,'(2a)') '%block ',trim(prefix)//'.Contours.nEq'
        do i = 1 , N_nEq
           write(*,'(tr4,a)') trim(nEq_io(i)%name)
        end do
-       write(*,'(2a,/)') '%endblock ',trim(prefix)//'.Contours.Bias.Window'
+       write(*,'(2a,/)') '%endblock ',trim(prefix)//'.Contours.nEq'
     end if
 
     do i = 1 , N_nEq
-       call ts_print_contour_block(trim(prefix)//'.Contour.Bias.Window.',nEq_io(i))
+       call ts_print_contour_block(trim(prefix)//'.Contour.nEq.',nEq_io(i))
     end do
 
-    if ( IONode ) then
-       write(*,'(/,2a)') '%block ',trim(prefix)//'.Contours.Bias.Tail'
-       do i = 1 , N_tail
-          write(*,'(tr4,a)') trim(tail_io(i)%name)
-       end do
-       write(*,'(2a,/)') '%endblock ',trim(prefix)//'.Contours.Bias.Tail'
-    end if
-    do i = 1 , N_tail
-       call ts_print_contour_block(trim(prefix)//'.Contour.Bias.Tail.',tail_io(i))
-    end do
   end subroutine print_contour_neq_block
 
 
@@ -1031,10 +654,11 @@ contains
     
     write(*,opt_n) '        >> non-Equilibrium contour << '
     write(*,opt_g_u) 'non-Equilibrium Greens function Eta',nEq_Eta/eV,'eV'
+    write(*,opt_g_u) 'Fermi-function cut-off',cutoff_kT,'kT'
     do i = 1 , N_nEq
        chars = '  '//trim(nEq_io(i)%part)
        write(*,opt_c) 'Contour name',trim(prefix)// &
-            '.Contour.Bias.Window.'//trim(neq_io(i)%name)
+            '.Contour.nEq.'//trim(neq_io(i)%name)
        call write_e(trim(chars)//' contour E_min',neq_io(i)%a)
        call write_e(trim(chars)//' contour E_max',neq_io(i)%b)
        write(*,opt_int) trim(chars)//' contour points',neq_io(i)%N
@@ -1046,30 +670,10 @@ contains
           opt => opt%next
        end do
     end do
-
-    write(*,opt_n) '       > non-Equilibrium tail contour <'
-    do i = 1 , N_neq_tail
-       chars = '  '//trim(neq_tail_io(i)%part)
-       !write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.Bias.Tail.'//trim(neq_tail_io(i)%name)
-       call write_e(trim(chars)//' contour E_min',neq_tail_io(i)%a)
-       call write_e(trim(chars)//' contour E_max',neq_tail_io(i)%b)
-       write(*,opt_int) trim(chars)//' contour points',neq_tail_io(i)%N
-       write(*,opt_c) trim(chars)//' contour method', &
-            trim(longmethod2str(neq_tail_io(i)))
-       opt => neq_tail_io(i)%opt
-       do while ( associated(opt) )
-          if ( len_trim(opt%val) > 0 ) then
-             write(*,opt_cc) '   Option for contour method',trim(opt%opt),trim(opt%val)
-          else
-             write(*,opt_c)  '   Option for contour method',trim(opt%opt)
-          end if
-          opt => opt%next
-       end do
-    end do
-
+    
   end subroutine print_contour_neq_options
 
-  subroutine io_contour_neq(slabel,kT,suffix)
+  subroutine io_contour_nEq(slabel,kT,suffix)
     use parallel, only : IONode
     character(len=*), intent(in) :: slabel
     real(dp), intent(in) :: kT
@@ -1083,25 +687,25 @@ contains
 
     if ( .not. IONode ) return
 
-    do i = 1 , N_nEq_segs
+    do i = 1 , N_nEq_ID
        
        if ( present(suffix) ) then
           write(tmp_suffix,'(a,i0)') trim(suffix)//'-',i
        else
           write(tmp_suffix,'(a,i0)') 'TSCCNEQ-',i
        end if
-       call io_contour_neq_seg(kT,nEq_segs(i),slabel,tmp_suffix)
-       
+       call io_contour_nEq_ID(nEq_ID(i),kT,slabel,tmp_suffix)
+
     end do
 
-  end subroutine io_contour_neq
+  end subroutine io_contour_nEq
 
 
-  subroutine io_contour_neq_seg(kT,seg,slabel,suffix)
+  subroutine io_contour_nEq_ID(nEq_ID,kT,slabel,suffix)
     use parallel, only : IONode
     use units, only : eV
+    type(ts_nEq_ID), intent(in) :: nEq_ID
     real(dp), intent(in) :: kT
-    type(ts_nEq_seg), intent(in) :: seg
     character(len=*), intent(in) :: slabel
     character(len=*), intent(in) :: suffix
 
@@ -1110,7 +714,11 @@ contains
 ! *********************
     character(len=200) :: fname
     integer        :: i, unit
-    type(ts_c_idx) :: cidx
+    type(ts_c_idx) :: c
+    real(dp) :: m1, m2
+    character(len=20) :: cm1, cm2
+    complex(dp) :: W, ZW
+    integer :: imu
     
     if ( .not. IONode ) return
     
@@ -1119,65 +727,44 @@ contains
     call io_assign( unit )
     open( unit, file=fname, status='unknown' )
     write(unit,'(a)') '# Contour path for the non-equilibrium part'
-    write(unit,'(a)') '# Segment between following chemical potentials:'
-    write(unit,'(a,3(tr1,a))') '#',trim(seg%mu1%name),'and',trim(seg%mu2%name)
-    write(unit,'(a,2(tr1,f10.5),tr1,a)') '#',seg%mu1%mu/eV,seg%mu2%mu/eV,'eV'
-
-    write(unit,'(a,a12,2(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','w'
-
-    cidx%idx(1) = CONTOUR_NEQ_TAIL
-    if ( seg%tail_io(1) /= 0 ) then
-       cidx%idx(2) = seg%tail_io(1)
-       call io_contour_c(unit,kT,seg,cidx)
+    write(unit,'(2a)')'# Correction for chemical potential ',trim(nEq_ID%mu%name)
+    write(unit,'(2a)')'# Scattering states coming from ',trim(nEq_ID%El%name)
+    
+    m1 = nEq_ID%El%mu%mu/eV
+    if ( m1 < 0._dp ) then
+       write(cm1,'(a,g10.4)')'+ ',-m1
+    else
+       write(cm1,'(a,g10.4)')'- ',m1
     end if
+    m2 = nEq_ID%mu%mu/eV
+    if ( m2 < 0._dp ) then
+       write(cm2,'(a,g10.4)')'+ ',-m2
+    else
+       write(cm2,'(a,g10.4)')'- ',m2
+    end if
+    write(unit,'(6a)') '# Approximated Fermi function: ', &
+         'nF(E ', trim(cm1),' eV) - nF(E ',trim(cm2),' eV)'
+    write(unit,'(a,a12,2(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','w'
+    
+    do i = 1 , N_nEq_E()
 
-    cidx%idx(1) = CONTOUR_NEQ
-    do i = 1 , size(seg%io)
-       cidx%idx(2) = seg%io(i)
-       call io_contour_c(unit,kT,seg,cidx)
+       ! Retrieve energy-point
+       c = nEq_E(i,1)
+
+       ! Check if it exists on this ID
+       call c2weight_nEq(c,kT,nEq_ID%ID,1._dp,W,imu,ZW)
+       if ( imu < 1 ) cycle
+
+       ! The weight has a factor of -i, hence we need to move that into a
+       ! real quantity
+       write(unit,'(3(e13.6,tr1))') nEq_c(c%idx(2))%c(c%idx(3)) / eV, &
+            real(dcmplx(0._dp,1._dp)*W,dp)
+       
     end do
 
-    cidx%idx(1) = CONTOUR_NEQ_TAIL
-    if ( seg%tail_io(2) /= 0 ) then
-       cidx%idx(2) = seg%tail_io(2)
-       call io_contour_c(unit,kT,seg,cidx)
-    end if
-    
     call io_close( unit )
 
-  end subroutine io_contour_neq_seg
-
-  subroutine io_contour_c(unit,kT,seg,cidx)
-    use units,    only : eV
-    use m_ts_aux, only : nf
-    integer, intent(in) :: unit
-    real(dp), intent(in) :: kT
-    type(ts_nEq_seg), intent(in) :: seg
-    type(ts_c_idx), intent(inout) :: cidx
-    type(ts_cw), pointer :: c
-    integer :: i
-    complex(dp) :: W
-
-    if ( cidx%idx(1) == CONTOUR_NEQ ) then
-       c => nEq_c(cidx%idx(2))
-    else if ( cidx%idx(1) == CONTOUR_NEQ_TAIL ) then
-       c => nEq_tail_c(cidx%idx(2))
-    else
-       call die('io_contour_c: Error in code')
-    end if
-
-    do i = 1 , size(c%c)
-       cidx%e = c%c(i)
-       cidx%idx(3) = i
-       call cseq2weight_neq(cidx,kT,seg,W)
-       if ( abs(aimag(W)) > 1.e-10_dp ) then
-          call die('Error in the imaginary weight of &
-               a non-equilibrium integration point.')
-       end if
-       write(unit,'(3(e13.6,tr1))') c%c(i) / eV, real(W,dp)
-    end do
-
-  end subroutine io_contour_c
+  end subroutine io_contour_nEq_ID
 
   subroutine neq_die(msg)
     character(len=*), intent(in) :: msg
@@ -1186,6 +773,7 @@ contains
     call print_contour_neq_options('TS')
     call print_contour_neq_block('TS')
     call die(msg)
+
   end subroutine neq_die
     
 end module m_ts_contour_neq

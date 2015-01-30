@@ -27,7 +27,6 @@ module m_ts_contour
 
   use m_ts_contour_eq,  only : CONTOUR_EQ
   use m_ts_contour_neq, only : CONTOUR_NEQ
-  use m_ts_contour_neq, only : CONTOUR_NEQ_TAIL
 
   use precision, only : dp
 
@@ -40,48 +39,22 @@ module m_ts_contour
   public :: print_contour_block
   public :: io_contour
   public :: sort_contour
-  public :: has_cE
 
 contains
 
-  function has_cE(c,D,iEl,imu,ineq) result(has)
-    use m_ts_contour_eq,  only : ID2idx
-    use m_ts_contour_neq, only : has_cE_neq
-    type(ts_c_idx), intent(in) :: c
-    character, intent(in), optional :: D
-    integer, intent(in), optional :: iEl, imu, ineq
-    logical :: has
-    integer :: idx
-    if ( present(D) ) call die('Error in code... Please correct.')
-    has = .false.
-    select case ( c%idx(1) ) 
-    case ( CONTOUR_EQ )
-       if ( .not. present(imu) ) &
-            call die('Error in code... Please correct.')
-       call ID2idx(c,imu,idx)
-       has = idx > 0
-    case ( CONTOUR_NEQ , CONTOUR_NEQ_TAIL )
-       has = has_cE_neq(c,iEl=iEl,ID=ineq)
-
-    case default
-       call die('Error in contour setup')
-    end select
-    
-  end function has_cE
-
   subroutine io_contour(IsVolt, mus, kT, slabel,suffix)
-    use m_ts_contour_eq, only : io_contour_eq
-    use m_ts_contour_neq, only : io_contour_neq
+    use m_ts_contour_eq, only : io_contour_Eq
+    use m_ts_contour_neq, only : io_contour_nEq
     logical, intent(in) :: IsVolt
     type(ts_mu), intent(in) :: mus(:)
     real(dp), intent(in) :: kT
     character(len=*), intent(in) :: slabel
     character(len=*), intent(in), optional :: suffix
 
-    call io_contour_eq(mus,slabel,suffix)
+    call io_contour_Eq(mus,slabel,suffix)
 
     if ( IsVolt ) then
-       call io_contour_neq(slabel,kT,suffix)
+       call io_contour_nEq(slabel,kT,suffix)
     end if
 
   end subroutine io_contour

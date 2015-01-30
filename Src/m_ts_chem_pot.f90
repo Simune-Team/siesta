@@ -102,6 +102,7 @@ contains
     end do
 
     allocate(this_n(n))
+    this_n(:)%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
 
     ! rewind to read again
     call fdf_brewind(bfdf)
@@ -110,7 +111,10 @@ contains
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
        n = n + 1 
+       ! Attach the name
        this_n(n)%Name = trim(fdf_bnames(pline,1))
+       ! Save the ID of the chemical potential
+       this_n(n)%ID = n
        if ( n > 1 ) then
           ! Check that no name is the same
           do i = 1 , n - 1 
@@ -180,7 +184,6 @@ contains
     if ( .not. found ) return
 
     info(:) = .false.
-    this%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
 
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle

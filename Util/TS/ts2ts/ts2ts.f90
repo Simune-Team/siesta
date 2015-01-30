@@ -150,7 +150,7 @@ program ts2ts
   ReUse      = fdf_get('TS.ReUseGF',ReUse)
 
   ! Start to write out the information...
-  write(*,'(a,a)')'TS.Voltage ',c_Volt
+  write(*,'(a,a)')'TS.Voltage ',trim(c_Volt)
   call nl
 
   ! Start with writing out the buffer atoms:
@@ -220,10 +220,10 @@ program ts2ts
   call nl
 
   ! Now we need to write out the non-equilibrium contour...
-  write(*,'(a,a)')'TS.Elecs.Eta ',c_GFEta
-  call sblock('TS.Contours.Bias.Window')
+  write(*,'(a,a)')'TS.Elecs.Eta ',trim(c_GFEta)
+  call sblock('TS.Contours.nEq')
   write(*,'(tr2,a)') 'neq'
-  call eblock('TS.Contours.Bias.Window')
+  call eblock('TS.Contours.nEq')
 
   ! Now we better tell the user that delta 0.01 eV is
   ! the best thing!
@@ -238,20 +238,14 @@ program ts2ts
      write(*,'(a)') '# Consider changing the below "delta <E>" to 0.01 eV.'
 
   end if
-  call wcont('Bias.Window.neq','line','simpson-mix', &
-       '-|V|/2','|V|/2',cD=c_dVolt)
+  call wcont('nEq.neq','line','simpson-mix', &
+       '-|V|/2 - 5 kT','|V|/2 + 5 kT',cD=c_dVolt)
   call nl
-  call sblock('TS.Contours.Bias.Tail')
-  write(*,'(tr2,a)') 'neq-tail'
-  call eblock('TS.Contours.Bias.tail')
-  call wcont('Bias.Tail.neq-tail','tail','simpson-mix', &
-       '0. kT','12. kT',cD=c_dVolt)
-
 
   ! Read in any tbtrans stuff...
-  TBTmin = fdf_get('TS.TBT.Emin',-1._dp*eV,'Ry')
+  TBTmin = fdf_get('TS.TBT.Emin',-2._dp*eV,'Ry')
   call e2a(TBTmin,c_TBTmin)
-  TBTmax = fdf_get('TS.TBT.Emax',1._dp*eV,'Ry')
+  TBTmax = fdf_get('TS.TBT.Emax',2._dp*eV,'Ry')
   call e2a(TBTmax,c_TBTmax)
   Npoints = fdf_get('TS.TBT.Npoints',100)
   call assert(Npoints > 0, 'Points on the tbtrans contour has to be larger than 0')
@@ -264,7 +258,7 @@ program ts2ts
   call nl
   write(*,'(a)') '# TBtrans options'
   call nl
-  write(*,'(a,a)')'TBT.Elecs.Eta ',c_GFEta
+  write(*,'(a,a)')'TBT.Elecs.Eta ',trim(c_GFEta)
   call sblock('TBT.Contours.Window')
   write(*,'(tr2,a)') 'neq'
   call eblock('TBT.Contours.Window')
@@ -304,12 +298,10 @@ contains
     if ( present(force_eV) ) then
        if ( force_eV ) then
           N_eV = N_Ry + 1
-       else
-          N_Ry = N_eV + 1
        end if
     end if
     write(ctmp,'(a,i0,a,i0,a)')'(f',lprec+5,'.',lprec,',tr1,a)'
-    if ( N_eV > N_Ry ) then
+    if ( N_eV >= N_Ry ) then
        ! correct
        if ( abs(e/eV - nint(e/eV)) < cr .and. abs(e/eV) > cr ) then
           tmp = nint(e / eV)
@@ -326,7 +318,7 @@ contains
        end if
        write(a,ctmp) tmp,'Ry'
     end if
-    if ( ccount0(a) > lprec ) then
+    if ( ccount0(a) > lprec .and. abs(e) > 0.000001_dp ) then
        write(0,'(a)')'###'
        write(0,'(2a)')'### Please check your input, a number might be interpreted as 0: ',trim(a)
        write(a,'(g20.10,a)') e,' Ry'

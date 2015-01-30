@@ -739,12 +739,12 @@ contains
     ! Start by writing out the block beginning
     write(*,'(a,a)') '%block ',trim(name)
 
-    write(*,'(2a)') 'part ',trim(c%part)
+    write(*,'(2a)') '  part ',trim(c%part)
 
     ! move to third column...
     write(*,'(t3)',advance='no')
       
-    write(*,'(4a)') 'from ',trim(c%ca),' to ',trim(c%cb)
+    write(*,'(4a)') '   from ',trim(c%ca),' to ',trim(c%cb)
 
     if ( len_trim(c%cd) /= 0 ) then
        ! we have delta designation
@@ -794,8 +794,10 @@ contains
        if ( leqi(next%ca,'prev') .or. leqi(next%ca,'previous') ) then
           next%a = cur%b
           if ( leqi(cur%cb,'next') ) then
+             write(*,'(a)') 'Current contour have next: '//trim(cur%name)
+             write(*,'(a)') 'Next contour have prev: '//trim(next%name)
              call die('Connecting two contours by next and prev is invalid. &
-                  &An explicit value is needed.')
+                  &An explicit value is needed in one of the places.')
           end if
        end if
     end if
@@ -804,8 +806,9 @@ contains
        if ( present(next) ) then
           cur%b = next%a
        else
-          call die('The contour segment is not &
-               &attached to a following segment.')
+          write(*,'(a)') 'Erroneous contour: '//trim(cur%name)
+          call die('The contour segment is not attached &
+               &to a following segment (next does not exist).')
        end if
     end if
 
@@ -813,7 +816,9 @@ contains
        if ( present(prev) ) then
           cur%a = prev%b
        else
-          call die('The contour is not fully connected')
+          write(*,'(a)') 'Erroneous contour: '//trim(cur%name)
+          call die('The contour segment is not attached &
+               &to a previous segment (prev does not exist).')
        end if
     end if
 

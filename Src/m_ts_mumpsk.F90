@@ -81,9 +81,8 @@ contains
     use m_ts_sparse, only : sc_off
 
     use m_ts_cctype
-    use m_ts_contour,     only : has_cE
     use m_ts_contour_eq,  only : Eq_E, ID2idx, c2weight_eq
-    use m_ts_contour_neq, only : nEq_E
+    use m_ts_contour_neq, only : nEq_E, has_cE_nEq
     use m_ts_contour_neq, only : N_nEq_ID, c2weight_neq
     
     use m_iterator
@@ -477,17 +476,15 @@ contains
              ! step to the next electrode position
              off = off + no
 
-             if ( .not. has_cE(cE,iEl=iEl) ) cycle
-
              ! *notice* we correct the Gf index for the column
              call GF_Gamma_GF(Elecs(iEl), mum, no_u_TS, no, &
                   Gf(no_u_TS*(off-no)+1:))
 
              do iID = 1 , N_nEq_ID
                 
-                if ( .not. has_cE(cE,iEl=iEl,ineq=iID) ) cycle
+                if ( .not. has_cE_nEq(cE,iEl,iID) ) cycle
                 
-                call c2weight_neq(cE,kT,iEl,iID, kw,W,imu,ZW)
+                call c2weight_neq(cE,kT,iID,kw,W,imu,ZW)
 
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      mum, &

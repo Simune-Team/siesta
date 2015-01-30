@@ -71,9 +71,8 @@ contains
     use m_ts_sparse, only : sc_off
 
     use m_ts_cctype
-    use m_ts_contour,     only : has_cE
     use m_ts_contour_eq,  only : Eq_E, ID2idx, c2weight_eq
-    use m_ts_contour_neq, only : nEq_E
+    use m_ts_contour_neq, only : nEq_E, has_cE_nEq
     use m_ts_contour_neq, only : N_nEq_ID, c2weight_neq
     
     use m_iterator
@@ -480,8 +479,6 @@ close(io)
           do iEl = 1 , N_Elec
              if ( cE%fake ) cycle ! in case we implement an MPI communication solution
 
-             if ( .not. has_cE(cE,iEl=iEl) ) cycle
-
              ! offset and number of orbitals
              no = TotUsedOrbs(Elecs(iEl))
 
@@ -493,9 +490,9 @@ close(io)
                 
              do iID = 1 , N_nEq_ID
                 
-                if ( .not. has_cE(cE,iEl=iEl,ineq=iID) ) cycle
+                if ( .not. has_cE_nEq(cE,iEl,iID) ) cycle
                 
-                call c2weight_neq(cE,kT,iEl,iID, kw,W,imu,ZW)
+                call c2weight_neq(cE,kT,iID,kw,W,imu,ZW)
 
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      no_u_TS, no_u_TS, zwork, &

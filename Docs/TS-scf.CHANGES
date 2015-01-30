@@ -1,4 +1,89 @@
 ----------------------------------------------------
+January 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-280
+Re-implemented the non-equilibrium contours
+
+* The non-equilibrium contour input was too stringent and 
+  too clumsy.
+
+  Instead of "appending" tails on different segments
+  we instead rely on the user to describe the total window.
+
+  The contribution from each chemical potential will
+  be controlled via a temperature cut-off which is defaulted to
+  (and must not be less than) 5.
+  
+  Via: 
+       TS.Contours.nEq.Fermi.Cutoff <real>
+  the user can control how the Fermi function *MUST* behave.
+  The user need not provide the non-equilibrium contour as it
+  should be setup correctly.
+  
+  This cleared a lot of unnecessary code in the m_ts_contour_neq.f90
+  file, and also cleared some logic in the calculation of the weights.
+
+  The current implementation removes the possibility to create
+  Gauss-Fermi quadrature on the tails.
+  This is not a big sacrifice as quadrature on the bias contour
+  is a "bad" choice!
+
+  Comments about the non-equilibrium contour type also
+  clarifies each ID segment.
+
+* The new method reduces the number of integration points with N-electrode
+  bias calculations as all energy points can be re-used.
+
+* A write-out of each correction term integration path is done instead of
+  only the positive of the two.
+  This enables better debugging and lets the user more clearly see 
+  what goes on.
+
+* The default integration is now in three segments with lower 
+  precision in the tails of the Fermi function.
+  However, the user can freely create a single contour:
+
+   %block TS.Contours.nEq
+     neq
+   %endblock
+   %block TS.Contours.nEq
+     neq
+   %endblock
+   %block TS.Contour.nEq.neq
+     part line
+      from -|V|/2 - 5 kT to |V|/2 + 5 kT
+       delta 0.01 eV
+        method simpson-mix
+   %endblock TS.Contour.nEq.neq
+
+  which is easier to "grasp" but has more points were not needed.
+
+* Checks:
+
+  I have checked for tri/full/mumps methods to assert
+  that the logic and results are retained.
+
+  I have checked the above code on an N-terminal setup as well.
+
+* Updated dependencies (not showed in modified list)
+
+modified:
+  Src/m_ts_cctype.f90
+  Src/m_ts_chem_pot.f90
+  Src/m_ts_contour.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_io_ctype.f90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Util/TS/ts2ts/ts2ts.f90
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 January 29, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-279
 Bugfix in logic for tbtrans
 

@@ -34,7 +34,7 @@ module m_ts_cctype
      logical     :: fake  = .false.
      complex(dp) :: e ! the energy for the curve
      ! contains:
-     ! (1) : whether this is eq,noneq,noneq-tail
+     ! (1) : whether this is eq,noneq
      ! (2) : index of the io contour
      ! (3) : index of the point in the io(2)'th contour-array
      integer     :: idx(3) 

@@ -444,61 +444,62 @@ done
 
 echo ""
 if [ $print_c -eq 1 ]; then
-    echo "MSG: You may need to correct the TS.Contours.Bias.Window for signs of bias" >&2
+    echo "MSG: You may need to correct the TS.Contours.nEq for signs of bias" >&2
     echo "MSG: The energies must be in increasing order (you may use |V|/2 to designate absolute values)" >&2
 fi
 # Create the non-equilbrium contour
-echo "%block TS.Contours.Bias.Window"
+echo "%block TS.Contours.nEq"
 for i in `seq 1 $_mus` ; do
     [ $i -eq $_mus ] && continue
     echo "  neq-$i"
 done
-echo "%endblock TS.Contours.Bias.Window"
+echo "%endblock TS.Contours.nEq"
 
 # Create array of chemical potentials sorted
 mus=()
 j=1
 for i in `seq $_mus -1 1` ; do
     tmp="$(get_opt -mu$i-mu 1)"
-    tmp=${tmp//|V|/V}
-    tmp=${tmp//V/|V|}
+    tmp=${tmp//\|V\|/V}
+    tmp=${tmp//V/\|V\|}
     mus[$j]=$(mu_e_correct $tmp)
     let j++
 done
 
 
 # Create the contours
+if [ $print_c -eq 1 ] && [ $_mus -gt 2 ]; then
+    echo "MSG: You can do with a single contour line in the bias window" >&2
+    echo "MSG: Use the lowest bias to the highest bias." >&2
+    echo "MSG: Here we supply as many different parts as there are chemical potentials" >&2
+fi
 i=1
-echo "%block TS.Contour.Bias.Window.neq-$i"
+echo "%block TS.Contour.nEq.neq-$i"
 echo "  part line"
 j=$((i+1))
-echo "   from ${mus[$i]} to ${mus[$j]}"
+if [ $j -eq $_mus ]; then
+    echo "   from ${mus[$i]} - 5 kT to ${mus[$j]} + 5 kT"
+else
+    echo "   from ${mus[$i]} - 5 kT to ${mus[$j]}"
+fi
 echo "     delta $de eV"
 echo "      method simpson-mix"
-echo "%endblock TS.Contour.Bias.Window.neq-$i"
+echo "%endblock TS.Contour.nEq.neq-$i"
 
 # Sort all chemical potentials
 for i in `seq 3 $((_mus))` ; do
     # Create the contours
-    echo "%block TS.Contour.Bias.Window.neq-$((i-1))"
+    echo "%block TS.Contour.nEq.neq-$((i-1))"
     echo "  part line"
-    echo "   from prev to ${mus[$i]}"
+    if [ $i -eq $_mus ]; then
+	echo "   from prev to ${mus[$i]} + 5 kT"
+    else
+	echo "   from prev to ${mus[$i]}"
+    fi
     echo "     delta $de eV"
     echo "      method simpson-mix"
-    echo "%endblock TS.Contour.Bias.Window.neq-$((i-1))"
+    echo "%endblock TS.Contour.nEq.neq-$((i-1))"
 done
-
-echo ""
-echo "%block TS.Contours.Bias.Tail"
-echo "   neq-tail"
-echo "%endblock TS.Contours.Bias.Tail"
-
-echo "%block TS.Contour.Bias.Tail.neq-tail"
-echo "  part tail"
-echo "   from 0. kT to 12. kT"
-echo "     delta 0.01 eV"
-echo "      method simpson-mix"
-echo "%endblock TS.Contour.Bias.Tail.neq-tail"
 
 fi
 

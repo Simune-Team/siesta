@@ -251,7 +251,6 @@ subroutine my_symmetrize(N,M)
     
     use precision, only: dp
 
-    use m_ts_contour, only : has_cE
     use m_ts_method, only : orb_offset
 
     implicit none 
@@ -285,11 +284,7 @@ subroutine my_symmetrize(N,M)
 
     call timer('GFTB',1) 
 
-    no = 0
-    do iEl = 1, N_Elec
-       if ( has_cE(cE,iEl=iEl) ) &
-            no = no + TotUsedOrbs(Elecs(iEl))
-    end do
+    no = sum(TotUsedOrbs(Elecs(:)))
     if ( no == 0 ) call die('GFB: Error in contour setup')
     if ( no * no_u_TS > size(GF) ) &
          call die('GFB: Wrong size of Greens function')
@@ -299,7 +294,6 @@ subroutine my_symmetrize(N,M)
 
     o = 0
     do iEl = 1 , N_Elec
-       if ( .not. has_cE(cE,iEl=iEl) ) cycle
        i = Elecs(iEl)%idx_o
        off_row = i - orb_offset(i) - 1
        do i = 1 , TotUsedOrbs(Elecs(iEl))
