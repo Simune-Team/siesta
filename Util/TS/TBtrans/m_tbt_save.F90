@@ -439,6 +439,10 @@ contains
        call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
             atts = dic)
        call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
+       dic = dic//('info'.kv.'Electronic temperature')
+       call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
 
        call delete(dic)
 

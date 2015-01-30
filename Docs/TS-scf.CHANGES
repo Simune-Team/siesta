@@ -1,4 +1,19 @@
 ----------------------------------------------------
+January 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-282
+Added temperature saving to tbtrans
+
+* The temperature is now also saved in tbtrans
+  NetCDF file.
+
+  However, as the "last" electrode is not defaulted
+  to be saved we cannot save all of them.
+
+  Consider adding the "missing" electrode group any-way.
+
+modified:
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 January 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-281
 Added temperature specification to chemical potentials
 
