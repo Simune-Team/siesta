@@ -1,4 +1,14 @@
 ----------------------------------------------------
+February 1, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-284
+Bugfix for reading a zero sparsity pattern
+
+* ncdf_io errored out if it asks to read zero
+  elements.
+
+modified:
+  Src/m_ncdf_io.F90
+
+----------------------------------------------------
 February 1, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-283
 Used atom graph partitioning to get exact SC
 

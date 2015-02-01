@@ -234,7 +234,7 @@ contains
 
           if ( Node == BNode ) then
              io = index_global_to_local(dit,gio,Node)
-             if ( Node == 0 ) then
+             if ( Node == 0 .and. ncol(io) > 0 ) then
                 call ncdf_put_var(ncdf,'list_col',l_col(ind+1:ind+ncol(io)), &
                      count=(/ncol(io)/),start=(/gind/))
                 gind = gind + ncol(io)
