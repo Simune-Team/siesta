@@ -526,7 +526,8 @@ contains
        name = 'siesta: Constraint'
        if ( index(r%name,'dir') > 0 ) then
           ! the name should include the fixation vector
-          write(name,'(a,2(tr1,e10.4,'',''),tr1,e10.4,a)') 'siesta: Constraint v=[',fixs(if)%fix,']'
+          write(name,'(a,2(tr1,g10.4,'',''),tr1,g10.4,a)') &
+               'siesta: Constraint v=[',fixs(if)%fix,']'
        end if
        call rgn_print(r, name = trim(name), seq_max = 12)
        

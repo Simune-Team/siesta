@@ -63,7 +63,7 @@ contains
 
     ! Read in the number of coordinates in the explicit coordinates...
     call ncdf_open(ncdf,trim(expcoordFile))
-    call ncdf_inq_dim(ncdf,'ncoord',len=fincoor)
+    call ncdf_inq_dim(ncdf,'n',len=fincoor)
     
     ! Next we read in the start of the simulation coordinate
     ! Initialize the initial coord to 0 
@@ -206,13 +206,12 @@ contains
 ! ***************************************
   subroutine read_exp_coord_options()
     use fdf
-    logical :: exist
+    use m_io_s, only : file_exist
     ! Get the Name of the NetCDF file which holds the coordinates
     expCoordFile = fdf_get('MD.ExpCoord.File','COORDS.nc')
 
     ! Ensure that the coordinate file does in fact exist...
-    inquire(file=trim(expCoordFile),exist=exist)
-    if ( IONode .and. .not. exist ) then
+    if ( IONode .and. .not. file_exist(expCoordFile) ) then
        call die('File: '//trim(expCoordFile)//' does not exist. Please create a &
             &compliant coordinate file.')
     end if

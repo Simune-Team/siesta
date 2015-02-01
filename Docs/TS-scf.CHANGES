@@ -1,4 +1,14 @@
 ----------------------------------------------------
+February 1, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-285
+Beautification
+
+modified:
+  Src/Makefile
+  Src/geom_helper.f90
+  Src/m_exp_coord.F90
+  Src/m_fixed.F90
+
+----------------------------------------------------
 February 1, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-284
 Bugfix for reading a zero sparsity pattern
 

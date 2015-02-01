@@ -71,6 +71,9 @@ contains
 ! *********************
     integer :: ia, iiorb, na
 
+    ! Could just do:
+    ! ia = SFIND(lasto,iorb,NEAREST=+1) - 1
+
     ! retrieve number of atoms
     na = ubound(lasto,dim=1)-1
 
