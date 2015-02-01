@@ -119,7 +119,7 @@ module class_Sparsity
 
     integer, intent(in)           :: nrows, nrows_g, nnzs
     integer, intent(in)           :: num(:), listptr(:)
-    integer, intent(in)           :: list(:)
+    integer, intent(in), optional :: list(:)
     character(len=*), intent(in)  :: name
     integer, intent(in), optional :: ncols, ncols_g
 
@@ -163,8 +163,12 @@ module class_Sparsity
     endif
 
     call re_alloc(sp%data%list_col,1,nnzs, &
-         name="list_col " // trim(sp%data%name),routine="Sparsity")	
-    sp%data%list_col(1:nnzs) = list(1:nnzs)
+         name="list_col " // trim(sp%data%name),routine="Sparsity")
+    if ( present(list) ) then
+       sp%data%list_col(1:nnzs) = list(1:nnzs)
+    else
+       sp%data%list_col(1:nnzs) = 0
+    end if
 
     call tag_new_object(sp)
 

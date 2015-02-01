@@ -33,7 +33,7 @@
       use m_iostruct,         only: write_struct, read_struct
       use zmatrix,            only: lUseZmatrix
       use zmatrix,            only: write_canonical_ucell_and_Zmatrix
-      use m_supercell,        only: exact_sc_size
+      use m_supercell,        only: exact_sc_ag
       use files,              only: slabel
       use siesta_cmlsubs,     only: siesta_cml_init
       use m_timestamp,        only: timestamp
@@ -400,7 +400,7 @@
           nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
         end do
         if ( .not. naiveauxcell ) 
-     &       call exact_sc_size(rmaxh,ucell,na_u,xa,nsc)
+     &       call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
       end if
 
       mscell = 0.0_dp

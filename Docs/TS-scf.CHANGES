@@ -1,4 +1,39 @@
 ----------------------------------------------------
+February 1, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-283
+Used atom graph partitioning to get exact SC
+
+* Using code provided by Alberto Garcia
+  the super-cell size is now explicitly calculated
+  using the interaction graph of all atoms.
+
+  This will always work as the supercell is inherently 
+  calculated from overlaps. 
+
+  It also takes into account the difference between
+  using KB projectors or not.
+
+* Made Node argument in num_local_elements
+  in OrbitalDistribution optional, defaulting to
+  itself.
+
+* Made list argument when creating a new sparsity
+  pattern optional. This enables one to prepare
+  a sparsity pattern, and then fill it.
+
+added:
+  Src/atom_graph.F90
+renamed:
+  Src/m_supercell.f90 => Src/m_supercell.F90
+modified:
+  Src/Makefile
+  Src/class_OrbitalDistribution.F90
+  Src/class_Sparsity.F90
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/state_init.F
+  Src/m_supercell.F90
+
+----------------------------------------------------
 January 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-282
 Added temperature saving to tbtrans
 

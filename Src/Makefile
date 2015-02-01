@@ -192,6 +192,9 @@ OBJS += m_gauss_fermi_17.o
 OBJS += m_integrate.o m_interpolate.o m_mat_invert.o m_monitor.o m_bandwidth.o
 OBJS += m_iterator.o m_pivot_array.o
 
+# Super-cell calculations/information modules
+OBJS += atom_graph.o
+
 # Geometry modules
 OBJS += m_geom_aux.o m_geom_objects.o
 OBJS += m_geom_box.o m_geom_coord.o m_geom_square.o m_geom_plane.o
@@ -468,6 +471,10 @@ atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: m_filter.o m_recipes.o old_atmfuncs.o periodic_table.o precision.o
 atom.o: pseudopotential.o sys.o
+atom_graph.o: alloc.o atm_types.o atmfuncs.o class_OrbitalDistribution.o
+atom_graph.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
+atom_graph.o: class_Sparsity.o intrinsic_missing.o mneighb.o precision.o
+atom_graph.o: sorting.o sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -769,7 +776,8 @@ m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
 m_sparsity_handling.o: m_interpolate.o m_region.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
-m_supercell.o: intrinsic_missing.o precision.o
+m_supercell.o: atom_graph.o class_OrbitalDistribution.o intrinsic_missing.o
+m_supercell.o: parallel.o parallelsubs.o precision.o
 m_svd.o: precision.o
 m_test_io.o: class_SpData2D.o class_Sparsity.o m_iodm.o m_matio.o parallel.o
 m_test_io.o: precision.o

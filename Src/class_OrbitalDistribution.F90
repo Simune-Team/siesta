@@ -147,10 +147,17 @@
 #endif
      type(OrbitalDistribution), intent(in)  :: this
      integer, intent(in)                    :: nels
-     integer, intent(in)                    :: Node
+     integer, intent(in), optional          :: Node
      integer                                :: nl
 
+     integer :: lNode
      integer :: Remainder, MinPerNode, RemainderBlocks
+     
+     if ( present(Node) ) then
+        lNode = Node
+     else
+        lNode = this%data%Node
+     end if
 
      if (this%data%blocksize == 0) then
         ! Not a block-cyclic distribution
@@ -162,7 +169,7 @@
            call die("Dist arrays not setup")
            nl = -1
         endif
-        nl = this%data%nroc_proc(Node)
+        nl = this%data%nroc_proc(lNode)
 #ifdef MPI
       else if ( this%data%Comm == MPI_Comm_Self ) then ! globalized local distribution
 
@@ -186,8 +193,8 @@
           RemainderBlocks = Remainder / this%data%blocksize
           Remainder = Remainder - RemainderBlocks * this%data%blocksize
           nl = MinPerNode*this%data%blocksize
-          if (Node.lt.RemainderBlocks) nl = nl + this%data%blocksize
-          if (Node.eq.RemainderBlocks) nl = nl + Remainder
+          if (lNode.lt.RemainderBlocks) nl = nl + this%data%blocksize
+          if (lNode.eq.RemainderBlocks) nl = nl + Remainder
 
       endif
       end function num_local_elements

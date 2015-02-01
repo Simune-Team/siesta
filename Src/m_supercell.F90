@@ -18,6 +18,7 @@ module m_supercell
   implicit none
   
   public :: exact_sc_size
+  public :: exact_sc_ag
   private
   
 contains
@@ -175,5 +176,81 @@ contains
     end subroutine update_nsc
     
   end subroutine exact_sc_size
+
+  ! Calculate the exact super-cell size based on the
+  ! atomic connection graph.
+  ! This routine calculates the exact overlap of the atoms,
+  ! thus the calculated super-cell size will be exact
+  subroutine exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+
+    use atom_graph
+
+#ifdef MPI
+    use class_OrbitalDistribution
+    use parallel, only : Nodes
+    use parallelsubs, only : set_blocksizedefault
+    use mpi_siesta
+#endif
+
+    ! Whether the KB projectors are taken into account or neglected
+    logical, intent(in) :: negl
+    real(dp), intent(in) :: ucell(3,3)
+    integer, intent(in) :: na_u
+    integer, intent(in) :: isa(na_u)
+    real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(out) :: nsc(3)
+
+    ! Calculate the atomic graph
+    type(tAtomGraph) :: ag
+    type(OrbitalDistribution) :: dit
+    integer, pointer :: sc(:,:)
+    integer :: ia, na_l, n_nzs
+
+#ifdef MPI
+    call set_blocksizedefault(Nodes,na_u,ia)
+    call newDistribution(ia,MPI_Comm_World,dit,name='AG-dist')
+    na_l = num_local_elements(dit,na_u)
+    call atom_graph_generate( negl, ucell, na_u, isa, xa, ag, dit , &
+         set_xijo = .false. )
+#else
+    na_l = na_u
+    call atom_graph_generate( negl, ucell, na_u, isa, xa, ag , &
+         set_xijo = .false. )
+#endif
+
+    ! Extract the largest super-cell index from the sc variable.
+    n_nzs = nnzs(ag%sc_2D)
+    sc => val(ag%sc_2D)
+
+    ! Find the biggest supercell
+    nsc(:) = 0
+    do ia = 1 , n_nzs
+       if ( abs(sc(1,ia)) > nsc(1) ) nsc(1) = abs(sc(1,ia))
+       if ( abs(sc(2,ia)) > nsc(2) ) nsc(2) = abs(sc(2,ia))
+       if ( abs(sc(3,ia)) > nsc(3) ) nsc(3) = abs(sc(3,ia))
+    end do
+
+    ! DEBUG
+    !call atom_graph_print(ag,na_u,isa,xa)
+
+    ! Clean-up
+    call delete(ag)
+
+#ifdef MPI
+    ! Reduce the nsc
+    nullify(sc) ; allocate(sc(3,1))
+    call MPI_AllReduce(nsc(1),sc(1,1),3,MPI_Integer,MPI_MAX, &
+         MPI_Comm_World, ia)
+    nsc(:) = sc(:,1)
+    deallocate(sc)
+    call delete(dit)
+#endif
+
+    ! nsc now contains the maximum supercell in each of the
+    ! cell directions.
+    ! Hence, the correct number of super-cells is:
+    nsc(:) = nsc(:) * 2 + 1
+
+  end subroutine exact_sc_ag
   
 end module m_supercell

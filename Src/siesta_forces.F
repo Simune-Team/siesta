@@ -68,13 +68,11 @@
 
       integer            :: iscf
       logical            :: first, last_step
-      logical            :: SCFconverged, ts_will_continue
-      real(dp)           :: E_Harris, E_KS_Good
+      logical            :: SCFconverged
       real(dp) :: dDmax     ! Max. change in DM elements
       real(dp) :: dHmax     ! Max. change in H elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
-      real(dp), allocatable :: Hsave(:,:), fa_old(:,:)
 #ifdef TRANSIESTA
       real(dp) :: Qcur
 #endif
@@ -141,7 +139,9 @@
 
         ! Note implications for TranSiesta when mixing H
         ! Now H will be recomputed instead of simply being
-        ! inherited
+        ! inherited, however, this is required as the 
+        ! if we have bias calculations as the electric
+        ! field across the junction needs to be present.
         first = (iscf == 1)
 
         if ( first ) then

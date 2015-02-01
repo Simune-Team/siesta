@@ -27,7 +27,7 @@
       use alloc,             only: re_alloc, de_alloc, alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
-      use m_supercell,       only: exact_sc_size
+      use m_supercell,       only: exact_sc_ag
       use siesta_cml,        only: cml_p, cmlStartStep, mainXML
       use zmatrix,           only: lUseZmatrix, write_zmatrix
       use m_energies,        only: Emad
@@ -89,7 +89,6 @@
       character(len=label_length+6) :: fname
       integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
-      real(dp),             pointer :: dummyH(:,:)
 #endif
       
       character(len=256)            :: oname
@@ -193,7 +192,7 @@
               nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
            end do
            if ( .not. naiveauxcell )
-     &         call exact_sc_size(rmaxh,ucell,na_u,xa,nsc)
+     &          call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
         endif
 
         mscell = 0.0_dp
