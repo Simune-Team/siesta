@@ -1,4 +1,31 @@
 ----------------------------------------------------
+February 2, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-286
+Added creation of METIS graph data file (for ndmetis)
+
+* In Util/Sp2METIS a small utility to read
+  in a DM/TSDE file which then analyses the
+  sparsity pattern and creates an input for the
+  ndmetis program to generate a graph partitioned
+  with either weights or no weights.
+
+  This is mainly for other uses if the user needs to post-process
+  the sparsity pattern.
+
+  The procedure:
+      sp2metis [-w] siesta.DM > siesta.graph
+      ndmetis siesta.graph
+  Then a file called siesta.graph.iperm which has the permutations
+  of each index.
+  Using [-w] will create the graph with edge weights.
+
+  Note that the METIS library is not needed to generate the graph.
+
+added:
+  Util/Sp2METIS/
+  Util/Sp2METIS/Makefile
+  Util/Sp2METIS/sp2metis.f90
+
+----------------------------------------------------
 February 1, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-285
 Beautification
 
