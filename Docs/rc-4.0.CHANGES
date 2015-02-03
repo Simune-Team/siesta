@@ -1,6 +1,22 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-02-03                                              rc-4.0-pl-5
+Fixed IO statements for molecularmechanics module
+
+(Nick .P. Andersen)
+
+* IO print-outs was still abundant in parallel runs.
+  Now only the IO node will print out.
+
+* The manual has been corrected to correctly state
+  that any unit is allowed in the MM.* block.
+
+modified:
+  Docs/siesta.tex
+  Src/molecularmechanics.F90
+
+----------------------------------------------------------------------
 2015-01-07                                              rc-4.0-pl-4
 Fix MPI tag in SiestaXC/mesh3d
 
