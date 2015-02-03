@@ -6,6 +6,23 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-02-03  14:30:00 GMT                                     trunk-466
+Fixed IO statements for molecularmechanics module
+
+(Nick .P. Andersen)
+
+* IO print-outs was still abundant in parallel runs.
+  Now only the IO node will print out.
+
+* The manual has been corrected to correctly state
+  that any unit is allowed in the MM.* block.
+
+modified:
+  Docs/siesta.tex
+  Src/molecularmechanics.F90
+
+
+-----------------------------------------------------------------------
 2015-01-07  10:35:00 GMT                                     trunk-465
 Merge fix from rc-4.0: MPI tag in SiestaXC/mesh3d
 

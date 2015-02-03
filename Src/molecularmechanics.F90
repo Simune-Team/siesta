@@ -31,7 +31,7 @@
       subroutine inittwobody()
       use fdf
       use sys,     only : die
-      use parallel,only : Node
+      use parallel,only : IONode
       character(len=80)  :: potential
 
       real(dp), parameter   :: s6_grimme_default = 1.66_dp    ! Fit by Roberto Peverati for DZ basis sets
@@ -66,7 +66,7 @@
 !     Read in data from block
       nMMpot = 0 ! reset to count the actual number of potentials
       if (fdf_block('MM.Potentials',bfdf)) then
-        if (Node.eq.0) then
+        if (IONode) then
           write(6,"(a)") "Reading two-body potentials"
         endif
 
@@ -90,10 +90,10 @@
               endif
               nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
               nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              if (node == 0) then
-                  write(6,"(a,i3,a,i3)") "C6 - two-body potential between ", &
-                  fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-               endif
+              if (IONode) then
+                 write(6,"(a,i3,a,i3)") "C6 - two-body potential between ", &
+                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              endif
               if (nr .ge. 2) then
 !               C6 : Parameter one is C6 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
@@ -115,8 +115,10 @@
               endif
               nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
               nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "C8 - two-body potential between ", &
-                    fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              if (IONode) then
+                 write(6,"(a,i3,a,i3)") "C8 - two-body potential between ", &
+                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              end if
               if (nr .ge. 2) then
 !               C8 : Parameter one is C8 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
@@ -138,8 +140,10 @@
               endif
               nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
               nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "C10 - two-body potential between ", &
-                    fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              if (IONode) then
+                 write(6,"(a,i3,a,i3)") "C10 - two-body potential between ", &
+                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              end if
               if (nr .ge. 2) then
 !               C10 : Parameter one is C10 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
@@ -161,8 +165,10 @@
               endif
               nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
               nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "Harmonic two-body potential between ",   &
-                    fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              if (IONode) then
+                 write(6,"(a,i3,a,i3)") "Harmonic two-body potential between ",   &
+                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              end if
               if (nr .ge. 2) then
 !               Harm : Parameter one is force constant
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Dscale**2)
@@ -184,8 +190,10 @@
               endif
               nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
               nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "Grimme two-body potential between ", &
-                        fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              if (IONode) then
+                 write(6,"(a,i3,a,i3)") "Grimme two-body potential between ", &
+                      fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+              end if
               if (nr.eq.2) then
 !               C6 : Parameter one is C6 coefficient
                 MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
@@ -208,7 +216,7 @@
            d_grimme = fdf_double("MM.Grimme.D",d_grimme_default)
         endif
 
-        if (Node .eq. 0)  call plot_functions()
+        if (IONode)  call plot_functions()
       endif
 
       contains 
@@ -256,7 +264,7 @@
       end subroutine inittwobody
 
       subroutine twobody( na, xa, isa, cell, emm, ifa, fa, istr, stress )
-      use parallel,         only : Node
+      use parallel,         only : IONode
       use units,            only : kbar
       use alloc,            only : re_alloc, de_alloc
 
@@ -688,7 +696,7 @@
 !     Print and add MM contribution to stress
 !
       if (istr.ne.0) then
-        if (Node .eq. 0 .and. nMMpot > 0)  then
+        if (IONode .and. nMMpot > 0)  then
           write(6,'(/,a,6f12.2)')  'MM-Stress (kbar):',   &
                (mm_stress(jx,jx)/kbar,jx=1,3),            &
                 mm_stress(1,2)/kbar,                      &
