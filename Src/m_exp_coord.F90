@@ -34,16 +34,19 @@ module m_exp_coord
 
   private
   public :: istep_weight
+
 #ifdef NCDF_4
+
   public :: exp_coord_init
   public :: exp_coord_next
   public :: exp_coord_weight
   public :: read_exp_coord_options
-#endif
+
+  ! There are only routines present if the NCDF_4 has been compiled
+  ! Hence the contains *MUST* not be there in that case.
 
 contains
 
-#ifdef NCDF_4
   subroutine exp_coord_init(slabel,na_u,inicoor,fincoor)
     use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
