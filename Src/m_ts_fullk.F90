@@ -827,6 +827,10 @@ integer :: i
 
     if ( cE%fake ) return
 
+#ifdef TRANSIESTA_TIMING
+    call timer('TS-prep',1)
+#endif
+
     Z = cE%e
     
     sp => spar(spH)
@@ -909,6 +913,10 @@ integer :: i
     end do
 
 !$OMP end parallel
+
+#ifdef TRANSIESTA_TIMING
+    call timer('TS-prep',2)
+#endif
 
   end subroutine prepare_invGF
    

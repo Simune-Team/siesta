@@ -132,7 +132,7 @@ integer,         intent(in) :: i
 type(_T_), intent(inout)    :: value
 
 if (i > s%data%nvals) then
-   call die("wrong index in get__  __FILE__")
+   call die("wrong index in get__  FSTACK_NAME")
 endif
 value = s%data%val(i)
 end subroutine get__
@@ -144,7 +144,7 @@ integer,        intent(in)  :: i
 type(_T_),          pointer :: valuep
 
 if (i > s%data%nvals) then
-   call die("wrong index in get_pointer__  __FILE__")
+   call die("wrong index in get_pointer__  FSTACK_NAME")
 endif
 valuep => s%data%val(i)
 end function get_pointer__

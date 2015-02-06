@@ -245,7 +245,7 @@ MODULE utils
       read(string, fmt=*, iostat=ierr) s2i
       if (ierr .ne. 0) then
         call die('UTILS module: s2i', 'Integer conversion error',       &
-                 __FILE__, __LINE__, ERROR_UNIT)
+                 'utils.F90', __LINE__, ERROR_UNIT)
       endif
 
       RETURN
@@ -270,7 +270,7 @@ MODULE utils
       read(string, fmt=*, iostat=ierr) s2r
       if (ierr .ne. 0) then
         call die('UTILS module: s2r', 'Real conversion error',          &
-                 __FILE__, __LINE__, ERROR_UNIT)
+                 'utils.F90', __LINE__, ERROR_UNIT)
       endif
 
       RETURN
@@ -374,7 +374,7 @@ MODULE utils
 !------------------------------------------------------------------------- BEGIN
       if (num > 99999 .OR. num < 0) then
         call die('UTILS module: i2s', 'Number is out of range',         &
-                 __FILE__, __LINE__, ERROR_UNIT)
+                 'utils.F90', __LINE__, ERROR_UNIT)
       endif
 
       zero = ICHAR('0')  ! 48 is the ascii code of zero

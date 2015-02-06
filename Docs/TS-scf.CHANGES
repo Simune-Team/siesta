@@ -1,4 +1,36 @@
 ----------------------------------------------------
+February 6, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-288
+Added more timings and removed all __FILE__
+
+* Fixed now uses the vec_proj routine to project
+  the forces.
+
+* Changed all __FILE__ instances to the definite filename
+
+* Added more timings to transiesta
+  It seems that 4.9.2 is much faster than intel compiler! :)
+
+modified:
+  Src/Fstack.T90
+  Src/fdf/utils.F90
+  Src/m_fixed.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+
+----------------------------------------------------
+February 3, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-287
+Bugfix for compilation without NCDF_4
+  
+  * Compilation of m_exp_coord did not work
+    if the NCDF_4 preprocessor was not used.
+  
+  modified:
+    Src/m_exp_coord.F90
+
+----------------------------------------------------
 February 2, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-286
 Added creation of METIS graph data file (for ndmetis)
 

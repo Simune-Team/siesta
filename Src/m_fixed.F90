@@ -144,7 +144,7 @@ contains
   subroutine fixed( cell, stress, na, isa, amass, xa, fa, cstress, cfa, ntcon , &
        magnitude_usage )
 
-    use intrinsic_missing, only : VNORM
+    use intrinsic_missing, only : VNORM, VEC_PROJ
 
     integer,  intent(in)  :: na, isa(na)
     real(dp), intent(in)  :: amass(na), cell(3,3), fa(3,na), stress(3,3), xa(3,na)
@@ -230,8 +230,7 @@ contains
              ia = fixs(if)%a(i)
 
              ! Calculate the force projected onto the fixation vector
-             fxc = sum( fixs(if)%fix(:) * cfa(:,ia) )
-             cfa(:,ia) = cfa(:,ia) - fxc * fixs(if)%fix(:)
+             cfa(:,ia) = cfa(:,ia) - VEC_PROJ( fixs(if)%fix , cfa(:,ia) )
 
           end do
 
@@ -374,8 +373,7 @@ contains
 
           ! only set the molecular force in the
           ! specified direction, project onto the fixation vector
-          fxc = sum(fixs(if)%fix(:) * cf(:))
-          cf(:) = cf(:) - fxc * fixs(if)%fix(:)
+          cf(:) = cf(:) - VEC_PROJ( fixs(if)%fix(:) , cf(:) )
 
           do i = 1 , N
 
@@ -459,8 +457,7 @@ contains
 
           ! only set the molecular force in the
           ! specified direction, project onto the fixation vector
-          fxc = sum(fixs(if)%fix(:) * cf(:))
-          cf(:) = cf(:) - fxc * fixs(if)%fix(:)
+          cf(:) = cf(:) - VEC_PROJ( fixs(if)%fix(:) , cf(:) )
 
           do i = 1 , N
 
@@ -665,8 +662,7 @@ contains
              fixs(ifix)%fix(2) = fdf_breals(pline,2)
              fixs(ifix)%fix(3) = fdf_breals(pline,3)
 
-             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / &
-                  VNORM( fixs(ifix)%fix(:) )
+             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / VNORM( fixs(ifix)%fix(:) )
 
           else
 
@@ -712,8 +708,7 @@ contains
              fixs(ifix)%fix(2) = fdf_breals(pline,2)
              fixs(ifix)%fix(3) = fdf_breals(pline,3)
 
-             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / &
-                  VNORM( fixs(ifix)%fix(:) )
+             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / VNORM( fixs(ifix)%fix(:) )
 
           else
 
@@ -759,8 +754,7 @@ contains
              fixs(ifix)%fix(2) = fdf_breals(pline,2)
              fixs(ifix)%fix(3) = fdf_breals(pline,3)
 
-             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / &
-                  VNORM( fixs(ifix)%fix(:) )
+             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / VNORM( fixs(ifix)%fix(:) )
 
           else
 
