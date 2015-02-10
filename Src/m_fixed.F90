@@ -567,7 +567,7 @@ contains
     ! Look for constraints data block, we also allow another 
     ! constraint block
     if ( .not. fdf_block('GeometryConstraints',bfdf) ) then
-       if ( .not. fdf_block('Geometry.Constraint',bfdf) ) return
+       if ( .not. fdf_block('Geometry.Constraints',bfdf) ) return
     end if
 
 #ifdef DEBUG

@@ -1,4 +1,11 @@
 ----------------------------------------------------
+February 9, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-290
+Bugfix for block name
+
+modified:
+  Src/m_fixed.F90
+
+----------------------------------------------------
 February 9, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-289
 Added new constraints by Z and species index
 
