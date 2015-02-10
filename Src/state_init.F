@@ -48,6 +48,7 @@
 
 #ifdef TRANSIESTA
       use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
+      use m_ts_options, only : opt_TriMat_method
       use m_ts_options, only : onlyS!, UseBulk
       use m_ts_options, only : TS_Analyze, TS_bandwidth_algo
       use m_ts_options, only : N_Elec, Elecs, IsVolt
@@ -409,7 +410,9 @@
      &        Gamma, isc_off)
 
          ! create the tri-diagonal matrix
-         call ts_tri_init()
+         call ts_tri_init( block_dist, sparse_pattern , N_Elec,
+     &        Elecs, IsVolt, ucell, na_u, lasto, nsc, isc_off,
+     &        opt_TriMat_method )
 
          ! print out the pivoting elements
          ! for optimizing the tri-diagonal matrix form

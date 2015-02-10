@@ -66,6 +66,8 @@ contains
     use m_ts_options, only : N_Elec, Elecs
     use m_ts_options, only : IsVolt, Calc_Forces
 
+    use m_ts_options, only : opt_TriMat_method
+
     use m_ts_contour_eq , only : N_Eq_E
     use m_ts_contour_neq, only : N_nEq_E
 
@@ -131,7 +133,9 @@ contains
 
        if ( ts_method == TS_SPARSITY_TRI ) then
           ! initialize the tri-diagonal partition
-          call ts_tri_init()
+          call ts_tri_init( sp_dist, sparse_pattern , N_Elec, &
+               Elecs, IsVolt, ucell, na_u, lasto ,nsc, isc_off, &
+               opt_TriMat_method )
        end if
 
        ! print out estimated memory usage...
@@ -584,10 +588,11 @@ contains
     use m_ts_options, only : IsVolt, Calc_Forces
     use m_ts_options, only : N_mu, N_Elec, Elecs
     use m_ts_contour_neq, only : N_nEq_id
-    use m_ts_tri_init, only : tri_parts, N_tri_part
     use m_ts_sparse, only : ts_sp_uc, tsup_sp_uc, ltsup_sp_sc
     use m_ts_electype
-    use m_ts_tri_scat
+
+    use m_ts_tri_init, only : c_Tri
+    use m_ts_tri_common, only : GFGGF_needed_worksize, nnzs_tri
     use m_ts_method, only : no_Buf
 
     logical, intent(in) :: ts_Gamma ! transiesta Gamma
@@ -656,19 +661,15 @@ contains
     if ( ts_method == TS_SPARSITY_TRI ) then
 
        ! Calculate size of the tri-diagonal matrix
-       i = maxval(TotUsedOrbs(Elecs(:)))
        if ( IsVolt ) then
-          call GFGGF_needed_worksize(N_tri_part,tri_parts, &
-               i, padding, worksize)
+          call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
+               N_Elec, Elecs, padding, worksize)
        else
           padding = 0
           worksize = 0
        end if
 
-       mem = tri_parts(N_tri_part) ** 2
-       do i = 1 , N_tri_part - 1
-          mem = mem + tri_parts(i)*( tri_parts(i) + 2 * tri_parts(i+1) )
-       end do
+       mem = nnzs_tri(c_Tri%n,c_Tri%r)
        mem = (mem * 2 + padding + worksize ) * 16._dp / 1024._dp ** 2
        if ( IONode ) &
             write(*,'(a,f10.2,a)') &

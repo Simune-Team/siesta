@@ -24,17 +24,20 @@
 
 ! Please contact the author before utilization in other routines.
 
-module m_ts_Sparsity2TriMat
+module m_ts_rgn2trimat
 
-  ! we heavily utilise the routines in this module
-  use precision, only : i8b
-  use m_ts_method
-  
+  ! Use regions...
+  use precision, only : dp, i8b
+  use m_region
+
+  use m_ts_electype
+  use m_ts_tri_common, only : needed_mem
+
   implicit none
 
   private
 
-  public :: ts_Sparsity2TriMat
+  public :: ts_rgn2trimat
 
   integer, parameter :: VALID = 0
   integer, parameter :: NONVALID_SIZE = 1
@@ -44,94 +47,135 @@ module m_ts_Sparsity2TriMat
 contains
 
   ! IF parts == 0 will create new partition
-  subroutine ts_Sparsity2TriMat(dit,sp,parts,n_part)
+  subroutine ts_rgn2TriMat(N_Elec, Elecs, IsVolt, &
+       dit, sp, r, parts, n_part, method, last_eq, par)
 
     use class_OrbitalDistribution
     use class_Sparsity
     use create_Sparsity_Union
-    use fdf, only : fdf_get
     use parallel, only : IONode, Node, Nodes
+    use fdf, only : fdf_get
 #ifdef MPI
     use mpi_siesta
 #endif
     use alloc, only : re_alloc, de_alloc
-    use m_ts_electype
-    use m_ts_options, only : opt_TriMat_method
 
+    ! electrodes
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    ! Whether an entire column should be calculated
+    logical, intent(in) :: IsVolt
     ! the distribution
     type(OrbitalDistribution), intent(inout) :: dit
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
+    ! The region that we will create a tri-diagonal matrix on.
+    type(tRgn), intent(in) :: r
     ! The sizes of the parts in the tri-diagonal matrix
     integer, intent(out) :: parts
     integer, pointer :: n_part(:)
+    ! Which kind of method should be used to create the tri-diagonal
+    integer, intent(in) :: method
+    ! Whether we should retain the last partition to a fixed size.
+    integer, intent(in) :: last_eq
+    ! Whether the search should be performed in parallel or not
+    logical, intent(in), optional :: par
+
     ! Local variables
     integer, pointer :: guess_part(:) => null()
     integer, pointer :: mm_col(:,:) => null()
-    integer :: i, no_u, no, guess_parts, max_block
-    logical :: copy_first
+    integer :: i, no, guess_parts, max_block
+    ! In case of parallel
+    integer :: guess_start, guess_step
+    logical :: copy_first, lpar
 #ifdef MPI
     integer :: MPIerror
 #endif
 
-    no_u = nrows_g(sp)
-    no   = no_u - no_Buf
-    if ( no_u <= 3 ) then
+    lpar = .true.
+    if ( present(par) ) lpar = par
+
+    ! This is the size of the regional 3-diagonal matrix
+    no = r%n
+    if ( no <= 3 ) then
        call die('Erroneous sparsity pattern, only 3 orbitals')
     end if
 
     ! Establish a guess on the partition of the tri-diagonal 
     ! matrix...
     call re_alloc(guess_part, 1, no, &
-         routine='tsSp2TM', name='guess_part')
+         routine='tsR2TM', name='guess_part')
     call re_alloc(n_part    , 1, no, &
-         routine='tsSp2TM', name='n_part')
+         routine='tsR2TM', name='n_part')
     guess_part(:) = 0
 
     ! create array containing max-min for each ts-orbital
     call re_alloc(mm_col  , 1, 2, 1, no, &
-         routine='tsSp2TM', name='mm_col')
+         routine='tbtR2TM', name='mm_col')
     do i = 1 , no
-       mm_col(1,i) = min_col(sp,i)
-       mm_col(2,i) = max_col(sp,i)
+       mm_col(:,i) = minmax_col(sp,r,r%r(i))
+       !print '(a,tr1,i5,tr3,2(tr1,i5),tr4,i0)','Orb: ',i,mm_col(:,i),no
     end do
 
-    ! We initialize to the standard 3-tri-diagonal matrix
-    call set_3TriMat(no_u,parts,n_part)
+    parts = 2
+    n_part(1) = no / 2
+    n_part(2) = no / 2 + mod(no,2)
+    if ( last_eq > 0 ) then
+       parts = 2
+       n_part(2) = last_eq
+       n_part(1) = no - last_eq
+       ! Initialize the guess for the 
+       call guess_TriMat_last(no,mm_col,guess_parts,guess_part,last_eq)
+       if ( valid_tri(no,r,mm_col,guess_parts, guess_part,last_eq) == VALID ) then
+          parts = guess_parts
+          n_part(1:parts) = guess_part(1:parts)
+       end if
+    end if
+
+    ! We default to parallel
+    guess_start = 2 + Node
+    guess_step = Nodes
+    if ( .not. lpar ) then
+       guess_start = 2
+       guess_step = 1
+    end if
+
     ! If the first one happens to be the best partition, 
     ! but non-valid, we need to make sure to overwrite it
-    copy_first = ( ts_valid_tri(no,mm_col,parts, n_part) /= VALID ) 
+    copy_first = .false. ! currently TODO THIS COULD BE A PROBLEM
 
     ! If the blocks are known by the user to not exceed a certain
     ! size, then we can greatly reduce the guessing step
     ! for huge systems
     max_block = no / 4
-    max_block = fdf_get('TS.TriMat.Block.Max',max_block)
+    max_block = fdf_get('TS.BTD.Block.Max',max_block)
+#ifdef TBTRANS
+    max_block = fdf_get('TBT.BTD.Block.Max',max_block)
+#endif
     ! In case the orbitals of this region is much smaller than
     ! max-block, then use the half the no
-    if ( max_block >= no ) then
-       max_block = no / 2 
-    end if
+    max_block = min(max_block , no / 2)
     
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
     ! below could be optimized)
-    do i = 2 + Node , max_block , Nodes
+    do i = guess_start , max_block , guess_step
 
        ! Make new guess...
-       call guess_TriMat(no,mm_col,i,guess_parts,guess_part)
+       call guess_TriMat(no,mm_col,i,guess_parts,guess_part,last_eq)
 
        ! If not valid tri-pattern, simply jump...
-       if ( ts_valid_tri(no,mm_col,guess_parts, guess_part) /= VALID ) cycle
-       call full_even_out_parts(opt_TriMat_method, &
-            no,mm_col,guess_parts,guess_part)
+       if ( valid_tri(no,r,mm_col,guess_parts, guess_part,last_eq) /= VALID ) then
+          !print*,guess_part(1:guess_parts)
+          cycle
+       end if
 
-       
-       if ( ts_valid_tri(no,mm_col,guess_parts, guess_part) /= VALID ) then
-          print *,guess_parts,guess_part(1:guess_parts)
-          print *,ts_valid_tri(no,mm_col,guess_parts, guess_part)
-          call die('error on evening out... Programming error.')
+       call full_even_out_parts(N_Elec,Elecs,IsVolt,method, &
+            no,mm_col,guess_parts,guess_part,last_eq)
+
+       if ( last_eq > 0 .and. guess_part(guess_parts) /= last_eq ) then
+          call die('Something went terribly wrong...')
        end if
 
        if ( copy_first ) then
@@ -142,30 +186,32 @@ contains
           cycle
        end if
        
-       call select_better(opt_TriMat_method, &
+       call select_better(method, &
             parts,n_part, guess_parts, guess_part)
        
     end do
 
 #ifdef MPI
-    ! Select the most optimal partition scheme...
-    do i = 0 , Nodes - 1
-       if ( i == Node ) then
-          call MPI_Bcast(parts, 1, MPI_Integer, i, &
-               MPI_Comm_World, MPIerror)
-          call MPI_Bcast(n_part(1), parts, MPI_Integer, i, &
-               MPI_Comm_World, MPIerror)
-       else
-          call MPI_Bcast(guess_parts, 1, MPI_Integer, i, &
-               MPI_Comm_World, MPIerror)
-          call MPI_Bcast(guess_part(1), guess_parts, MPI_Integer, i, &
-               MPI_Comm_World, MPIerror)
-          ! Only all the other nodes are allowed to check...
-          ! TODO this could be made to a communication tree to limit communication
-          call select_better(opt_TriMat_method, &
-               parts,n_part, guess_parts, guess_part)
-       end if
-    end do
+    if ( lpar ) then
+       ! Select the most optimal partition scheme...
+       do i = 0 , Nodes - 1
+          if ( i == Node ) then
+             call MPI_Bcast(parts, 1, MPI_Integer, i, &
+                  MPI_Comm_World, MPIerror)
+             call MPI_Bcast(n_part(1), parts, MPI_Integer, i, &
+                  MPI_Comm_World, MPIerror)
+          else
+             call MPI_Bcast(guess_parts, 1, MPI_Integer, i, &
+                  MPI_Comm_World, MPIerror)
+             call MPI_Bcast(guess_part(1), guess_parts, MPI_Integer, i, &
+                  MPI_Comm_World, MPIerror)
+             ! Only all the other nodes are allowed to check...
+             ! TODO this could be made to a communication tree to limit communication
+             call select_better(method, &
+                  parts,n_part, guess_parts, guess_part)
+          end if
+       end do
+    end if
 #endif
 
     ! Shrink to the found parts
@@ -173,10 +219,11 @@ contains
          routine='tsSp2TM', name='n_part')
     call de_alloc(guess_part,routine='tsSp2TM',name='guess_part')
 
-    if ( parts < 3 ) then
+    if ( parts < 2 ) then
        if ( IONode ) then 
           write(*,'(a)') 'Could not determine an optimal tri-diagonalization &
                &partition'
+          write(*,'(2a)') 'Running on region: ',trim(r%name)
           if ( parts > 0 ) then
              write(*,'(a,i0)') 'Found: ',parts
              write(*,'(1000000(tr1,i0))') n_part
@@ -186,7 +233,6 @@ contains
        end if
        call re_alloc(n_part, 1, 3, routine='tsSp2TM',name='n_part')
        call die('Not yet implemented')
-       call set_3TriMat(no_u,parts,n_part)
 
     end if
 
@@ -197,11 +243,13 @@ contains
     ! even out the partitions.
     ! The most probable thing is that the electrodes are not
     ! contained in the first two parts.
-    i = ts_valid_tri(no,mm_col,parts, n_part)
+    i = valid_tri(no,r,mm_col,parts, n_part,last_eq)
     if ( i /= VALID ) then
+       write(*,'(2a)') 'Running on region: ',trim(r%name)
        write(*,'(a,i0)') 'TranSIESTA system size: ',no
        write(*,'(a,i0)') 'Current parts: ',parts
        write(*,'(10000000(tr1,i0))') n_part
+       write(*,'(a,i0)') 'Current part size: ',sum(n_part(:))
        select case ( i )
        case ( NONVALID_SIZE )
           write(*,'(a)') 'The size is not valid.'
@@ -220,9 +268,8 @@ contains
 
   contains 
 
-    recursive subroutine select_better(method, parts,n_part, guess_parts, guess_part)
-      use m_ts_options, only: N_Elec, Elecs, IsVolt
-      use m_ts_tri_scat, only : ts_needed_mem
+    recursive subroutine select_better(method, parts,n_part, &
+         guess_parts, guess_part)
 
       integer, intent(in)    :: method
       integer, intent(inout) :: parts
@@ -247,8 +294,8 @@ contains
          ! We optimize for memory, i.e. we check for number of elements
          ! in this regard we also check whether we should allocate
          ! a work-array in case of bias calculations.
-         call ts_needed_mem(IsVolt, N_Elec, Elecs, guess_parts,guess_part, guess_work)
-         call ts_needed_mem(IsVolt, N_Elec, Elecs, parts, n_part, part_work)
+         call needed_mem(IsVolt,N_Elec,Elecs,guess_parts,guess_part, guess_work)
+         call needed_mem(IsVolt,N_Elec,Elecs,parts, n_part, part_work)
          
          copy = part_work > guess_work
          if ( .not. copy ) then
@@ -269,18 +316,20 @@ contains
 
     end subroutine select_better
 
-  end subroutine ts_Sparsity2TriMat
+  end subroutine ts_rgn2TriMat
 
-  subroutine guess_TriMat(no,mm_col,first_part,parts,n_part)
-    integer, intent(in) :: no, mm_col(2,no)
+  subroutine guess_TriMat(no,mm_col,first_part,parts,n_part,last_eq)
+
+    integer, intent(in) :: no, mm_col(2,no) ! number of orbitals, max,min
     integer, intent(in) :: first_part
     integer, intent(out) :: parts
     integer, intent(out) :: n_part(:)
+    integer, intent(in) :: last_eq
 
     ! Local variables
     integer :: N
 
-    if ( first_part >= no ) &
+    if ( first_part > no ) &
          call die('Not allowed to do 1 tri-diagonal part')
 
     parts = 1
@@ -289,23 +338,59 @@ contains
     do while ( N < no )
        parts = parts + 1
        if ( parts > size(n_part) ) then
+          print *,'Error',parts,size(n_part)
           call die('Size error when guessing the tri-mat size')
        end if
        call guess_next_part_size(no, mm_col, parts, parts, n_part)
        N = N + n_part(parts)
+       if ( last_eq > 0 ) then
+          ! if a last-part was "forced" we do this here...
+          if ( N + last_eq > no ) then
+             ! We need to add the former part with the "too many"
+             ! orbitals
+             n_part(parts) = n_part(parts) + no - N
+             N = no
+          end if
+       end if
+             
     end do
+
+    if ( last_eq > 0 ) then
+       ! Correct so that we actually do contain the last_eq
+       ! in the last one
+       n_part(parts) = last_eq
+       n_part(parts-1) = n_part(parts-1) + no - sum(n_part(1:parts))
+    end if
 
   end subroutine guess_TriMat
 
-  function calc_nnzs(parts,n_part) result(nnzs)
-    integer, intent(in) :: parts
-    integer, intent(in) :: n_part(parts)
-    integer(i8b) :: i8_part(parts)
-    integer :: nnzs
-    i8_part(:) = n_part(:)
-    ! Calculate size of the tri-diagonal matrix
-    nnzs = sum(i8_part(:)**2) + sum(i8_part(1:parts-1)*i8_part(2:parts))
-  end function calc_nnzs
+  subroutine guess_TriMat_last(no,mm_col,parts,n_part,last_eq)
+
+    integer, intent(in) :: no, mm_col(2,no) ! number of orbitals, max,min
+    integer, intent(out) :: parts
+    integer, intent(out) :: n_part(:)
+    integer, intent(in) :: last_eq
+
+    ! Local variables
+    integer :: N
+
+    parts = 1
+    n_part(1) = last_eq
+    N = n_part(1)
+    do while ( N < no )
+       parts = parts + 1
+       if ( parts > size(n_part) ) then
+          print *,'Error',parts,size(n_part)
+          call die('Size error when guessing the tri-mat size')
+       end if
+       call guess_prev_part_size(no, mm_col, parts, parts, n_part)
+       N = N + n_part(parts)
+    end do
+
+    ! Reverse
+    n_part(1:parts) = n_part(parts:1:-1)
+
+  end subroutine guess_TriMat_last
 
   function faster_parts(np,i4n_part,ng,i4g_part) result(faster)
     integer, intent(in) :: np, i4n_part(np)
@@ -398,14 +483,61 @@ contains
 
   end subroutine guess_next_part_size
 
-  subroutine full_even_out_parts(method,no,mm_col,parts,n_part)
-    use m_ts_options, only : IsVolt, N_Elec, Elecs
-    use m_ts_tri_scat, only : ts_needed_mem
+  ! We will guess the size of this (part) tri-diagonal part by
+  ! searching for the size of the matrix that matches that of the previous 
+  ! part.
+  ! We save it in n_part(part)
+  subroutine guess_prev_part_size(no,mm_col,part,parts,n_part)
+    integer, intent(in) :: no, mm_col(2,no)
+    ! the part we are going to create
+    integer, intent(in) :: part, parts
+    integer, intent(inout) :: n_part(parts)
+    ! Local variables
+    integer :: i, sRow, eRow, mcol
+    
+    ! We are now checking a future part
+    ! Hence we must ensure that the size is what
+    ! is up to the last parts size, and thats it...
+    eRow = no
+    if ( part > 2 ) then
+       do i = 1 , part - 2
+          eRow = eRow - n_part(i)
+       end do
+    end if
+    sRow = eRow - n_part(part-1) + 1
+
+    ! We will check in between the above selected rows and find the 
+    ! difference in size...
+    n_part(part) = 0
+    do i = sRow, eRow
+       ! this is the # of elements from the RHS of the 'part-1'
+       ! part of the tridiagonal matrix and out to the last element of
+       ! this row...
+       mcol = sRow - mm_col(1,i)
+       if ( n_part(part) < mcol ) then
+          n_part(part) = mcol
+       end if
+    end do
+
+    ! In case there is actually no connection, we should
+    ! force the next-part to be 1!
+    if ( n_part(part) == 0 ) then
+       n_part(part) = 1
+    end if
+
+  end subroutine guess_prev_part_size
+
+  subroutine full_even_out_parts(N_Elec,Elecs,IsVolt, &
+       method,no,mm_col,parts,n_part, last_eq)
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    logical, intent(in) :: IsVolt
     integer, intent(in) :: method ! the method used for creating the parts
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
     integer, intent(in) :: parts
     integer, intent(inout) :: n_part(parts)
+    integer, intent(in) :: last_eq
     ! Local variables
     integer :: o_part(parts), mem_part(parts) , i, o_mem, n_mem, idx
 
@@ -414,11 +546,11 @@ contains
        
        do
           o_part(:) = n_part(:)
-          call ts_needed_mem(IsVolt, N_Elec, Elecs, parts,n_part,o_mem)
+          call needed_mem(IsVolt,N_Elec,Elecs,parts,n_part,o_mem)
           do i = 1 , parts
              mem_part(:) = n_part(:)
-             call even_out_parts(no, mm_col, parts, n_part, i)
-             call ts_needed_mem(IsVolt, N_Elec, Elecs, parts,n_part,n_mem)
+             call even_out_parts(no, mm_col, parts, n_part, i, last_eq)
+             call needed_mem(IsVolt,N_Elec,Elecs,parts,n_part,n_mem)
              if ( n_mem > o_mem ) then
                 ! copy back
                 n_part(:) = mem_part(:)
@@ -436,9 +568,8 @@ contains
           do i = 1 , parts
              idx = maxloc(mem_part,dim=1)
              mem_part(idx) = 0
-             call even_out_parts(no, mm_col, parts, n_part, idx)
+             call even_out_parts(no, mm_col, parts, n_part, idx, last_eq)
           end do
-          
           if ( maxval(abs(o_part-n_part)) == 0 ) exit
        end do
 
@@ -446,12 +577,12 @@ contains
 
   end subroutine full_even_out_parts
 
-  subroutine even_out_parts(no,mm_col,parts,n_part, n)
+  subroutine even_out_parts(no,mm_col,parts,n_part, n, last_eq)
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
     integer, intent(in) :: parts
-    integer, intent(inout) :: n_part(parts)
-    integer, intent(in) :: n
+    integer, intent(in out) :: n_part(parts)
+    integer, intent(in) :: n, last_eq
     ! Local variables
     integer :: copy_n_part
     integer :: sRow, eRow
@@ -459,17 +590,27 @@ contains
 
     if ( parts < 2 ) call die('You cannot use tri-diagonalization &
          &without having at least 2 parts')
+    
+    if ( last_eq > 0 .and. n >= parts - 1 ) then
+       ! We need the last one to be of a certain
+       ! size.
+       return
 
+    end if
+    
     if ( parts == 2 ) then
 
-       copy_n_part = 0
        i = 0
-
+       copy_n_part = 0
        do while ( n_part(n) - copy_n_part /= 0 )
           
           ! Copy the current partition so that we can check in the
           ! next iteration...
           copy_n_part = n_part(n)
+
+          ! TODO - consider adding a flag for memory reduced utilization of TRI
+          ! this will require the two electrodes parts to be larger
+          ! than the other parts...
 
           if ( n == 1 ) then
              ! If we have the first part we can always shrink it
@@ -490,7 +631,6 @@ contains
     ! the regions
     if ( n == 1 .or. n == parts ) return
 
-    ! We calculate the min/max rows in the blocks
     sRow = 1
     do i = 1 , n - 1
        sRow = sRow + n_part(i)
@@ -510,8 +650,6 @@ contains
        ! this will require the two electrodes parts to be larger
        ! than the other parts...
 
-       ! all middle parts have some requirements:
-          
        ! 1. if you wish to shrink it left, then:
        !    the first row must not have any elements
        !    extending into the right part
@@ -536,7 +674,7 @@ contains
       if ( p1 > p2 ) then
          p1 = p1 - 1
          p2 = p2 + 1
-         Row = Row + sign
+         Row = Row + sign * 1
       end if
     end subroutine even_if_larger
 
@@ -545,49 +683,32 @@ contains
 ! Min and max column requires that the sparsity pattern
 ! supplied has already stripped off the buffer orbitals.
 ! Otherwise this will fail
-  function max_col(sp,row)
+  function minmax_col(sp,r,row)
     use class_Sparsity
     use geom_helper, only : UCORB
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
+    type(tRgn), intent(in) :: r
     ! the row which we will check for (in TranSIESTA counting)
     integer, intent(in) :: row 
     ! The result
-    integer :: max_col, ptr, nr, j, srow
-    integer, pointer :: l_col(:)
-    call attach(sp,list_col=l_col,nrows_g=nr)
-    srow = ts2s_orb(row)
-    max_col = row
-    do ptr = list_ptr(sp,srow) + 1 , list_ptr(sp,srow) + n_col(sp,srow)
-       j = ucorb(l_col(ptr),nr)
-       if ( orb_type(j) == TYP_BUFFER ) cycle
-       max_col = max(max_col,j - orb_offset(j))
+    integer :: minmax_col(2), ptr, nr, j
+    integer, pointer :: l_col(:), l_ptr(:), ncol(:)
+    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col,nrows_g=nr)
+    minmax_col(:) = rgn_pivot(r,row)
+    do ptr = l_ptr(row) + 1 , l_ptr(row) + ncol(row)
+       j = rgn_pivot(r,ucorb(l_col(ptr),nr))
+       if ( j > 0 ) then
+          if ( j < minmax_col(1) ) minmax_col(1) = j
+          if ( j > minmax_col(2) ) minmax_col(2) = j
+       end if
     end do
-  end function max_col
+  end function minmax_col
 
-  function min_col(sp,row)
-    use class_Sparsity
-    use geom_helper, only : UCORB
-    ! The sparsity pattern
-    type(Sparsity), intent(inout) :: sp
-    ! the row which we will check for (in TranSIESTA counting)
-    integer, intent(in) :: row
-    ! The result
-    integer :: min_col, ptr, nr, j, srow
-    integer, pointer :: l_col(:)
-    call attach(sp,list_col=l_col,nrows_g=nr)
-    srow = ts2s_orb(row)
-    min_col = row
-    do ptr = list_ptr(sp,srow) + 1 , list_ptr(sp,srow) + n_col(sp,srow)
-       j = ucorb(l_col(ptr),nr)
-       if ( orb_type(j) == TYP_BUFFER ) cycle
-       min_col = min(min_col,j - orb_offset(j))
-    end do
-  end function min_col
-
-  function valid_tri(no,mm_col,parts,n_part) result(val) 
+  function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val) 
     integer, intent(in) :: no, mm_col(2,no)
-    integer, intent(in) :: parts, n_part(parts)
+    type(tRgn), intent(in) :: r
+    integer, intent(in) :: parts, n_part(parts), last_eq
     integer :: val
     ! Local variables
     integer :: i, ir, N, Nm1, Np1
@@ -605,7 +726,7 @@ contains
     end if
 
     ! check that all parts are at least size 2
-    if ( any(n_part < 2) ) then
+    if ( any(n_part < 2 ) ) then
        val = NONVALID_SIZE
        return
     end if
@@ -625,6 +746,7 @@ contains
        do ir = N , N + n_part(i) - 1
           if ( mm_col(1,ir) < Nm1 .or. &
                mm_col(2,ir) > Np1 ) then
+             print *,mm_col(1,ir),Nm1,Np1,mm_col(2,ir)
              val = - ir 
              return
           end if
@@ -639,75 +761,17 @@ contains
        end if
     end do
 
-  end function valid_tri
-
-  ! Validation routine for the tri-diagonal splitting
-  ! with a Transiesta tri-diagonal matrix.
-  ! It will first check for the electrode size
-  function ts_valid_tri(no,mm_col,parts,n_part) result(val)
-    use m_ts_electype
-    use m_ts_options, only: N_Elec, Elecs
-    integer, intent(in) :: no, mm_col(2,no)
-    integer, intent(in) :: parts, n_part(parts)
-    integer :: val
-    integer :: i, idx1, idx2, j, c_no
-
-   
-    do i = 1 , N_Elec
-       j = Elecs(i)%idx_o
-       ! Start orbital index
-       idx1 = j - orb_offset(j)
-       ! End orbital index
-       idx2 = idx1 + TotUsedOrbs(Elecs(i)) - 1
-
-       c_no = 0
-       do j = 1 , parts - 1
-          ! this is the last orbital in this part
-          c_no = c_no + n_part(j)
-          if ( idx1 <= c_no ) then
-             ! The electrode starts in this region
-             ! We check that it does not extend beyond the 
-             ! next part.
-             if ( c_no + n_part(j+1) < idx2 ) then
-                val = NONVALID_TS_ELECTRODE
-                return
-             end if
-             exit
-          end if
-       end do
-    end do
-
-    val = valid_tri(no,mm_col,parts,n_part)
-    if ( val /= VALID ) return
-    
-  end function ts_valid_tri
-
-
-  subroutine set_3TriMat(no_u,parts,n_part)
-    use m_ts_electype
-    use m_ts_options, only : N_Elec, Elecs
-    integer, intent(in) :: no_u
-    integer, intent(out) :: parts
-    integer, intent(out) :: n_part(3)
-    integer :: noTS
-
-    noTS = no_u - no_Buf
-    parts = 3
-    ! we need special handling if we only have one electrode
-    if ( N_Elec == 1 ) then
-       n_part(1) = TotUsedOrbs(Elecs(1))
-       n_part(2) = noTS - n_part(1)
-       n_part(2:3) = n_part(2) / 2
-       if ( sum(n_part(1:3)) /= noTS ) then
-          n_part(2) = n_part(2) + noTS - sum(n_part(1:3))
+    if ( last_eq > 0 ) then
+       ! We do not allow something to not end in the requested number 
+       ! of orbitals.
+       if ( n_part(parts) /= last_eq ) then
+          val = NONVALID_SIZE
+          return
        end if
-    else
-       n_part(1) = sum(TotUsedOrbs(Elecs(1:N_Elec-1)))
-       n_part(3) = TotUsedOrbs(Elecs(N_Elec))
-       n_part(2) = noTS - n_part(1) - n_part(3)
     end if
 
-  end subroutine set_3TriMat
 
-end module m_ts_Sparsity2TriMat
+  end function valid_tri
+
+end module m_ts_rgn2trimat
 

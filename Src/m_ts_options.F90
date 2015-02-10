@@ -177,10 +177,10 @@ contains
     end if
 
     ! Reading the Transiesta solution method
-    chars = fdf_get('TS.SolutionMethod','tri')
-    if ( leqi(chars,'sparse') ) then
+    chars = fdf_get('TS.SolutionMethod','BTD')
+    if ( leqi(chars,'full') ) then
        ts_method = TS_SPARSITY
-    else if ( leqi(chars,'tri') ) then
+    else if ( leqi(chars,'BTD') .or. leqi(chars,'tri') ) then
        ts_method = TS_SPARSITY_TRI
 #ifdef MUMPS
     else if ( leqi(chars,'mumps') ) then
@@ -233,13 +233,13 @@ contains
     !   DM_bulk = 2
     end if
 
-    chars = fdf_get('TS.TriMat.Optimize','speed')
+    chars = fdf_get('TS.BTD.Optimize','speed')
     if ( leqi(chars,'speed') ) then
        opt_TriMat_method = 0
     else if ( leqi(chars,'memory') ) then
        opt_TriMat_method = 1
     else
-       call die('Could not determine flag TS.TriMat.Optimize, please &
+       call die('Could not determine flag TS.BTD.Optimize, please &
             &see manual.')
     end if
 
@@ -639,11 +639,12 @@ contains
     ! WILL WORK EVENTUALLY
     if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_update > 0) ) then
        call die('transiesta relaxation is only allowed if you also &
-            &update the cross terms, please set: TS.Elecs.DM.Update cross-terms')
+            &update, at least, the cross terms, please set: &
+            &TS.Elecs.DM.Update [cross-terms|all]')
     end if
     if ( Nmove > 0 .and. .not. Calc_Forces ) then
        call die('transiesta relaxation is based on calculating the forces, &
-            &you cannot relax your system and not require the calculation of forces')
+            &you cannot relax without calculating the forces')
     end if
 
     ! Update the weight function
@@ -744,15 +745,15 @@ contains
           write(*,11) 'Hartree potential will be placed in ramp'
        end if
        if ( ts_method == TS_SPARSITY ) then
-          write(*,10)'Solution method', 'Sparsity pattern'
+          write(*,10)'Solution method', 'Sparsity pattern + full inverse'
        else if ( ts_method == TS_SPARSITY_TRI ) then
-          write(*,10)'Solution method', 'Sparsity pattern with tri-solver'
+          write(*,10)'Solution method', 'Sparsity pattern + BTD'
           if ( opt_TriMat_method == 0 ) then
              chars = 'speed'
           else if  ( opt_TriMat_method == 1 ) then
              chars = 'memory'
           end if
-          write(*,10)'Tri-Mat create algorithm', trim(chars)
+          write(*,10)'BTD creation algorithm', trim(chars)
 #ifdef MUMPS
        else if ( ts_method == TS_SPARSITY_MUMPS ) then
           write(*,10)'Solution method', 'Sparsity pattern + MUMPS library'

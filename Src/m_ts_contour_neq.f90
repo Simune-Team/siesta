@@ -491,11 +491,24 @@ contains
     type(ts_c_idx), intent(in) :: cE
     integer, intent(in) :: iEl, ID
     logical :: has
+    real(dp) :: E
     has = .false.
     if ( cE%fake ) return
     if ( cE%idx(1) /= CONTOUR_NEQ ) return
     
     has = nEq_ID(ID)%El%ID == iEl
+
+    if ( has ) then
+
+       ! Retrieve the real energy of the contour index
+       E = real(nEq_c(cE%idx(2))%c(cE%idx(3)),dp)
+
+       ! We need to check that the energy is within the cutoff
+       ! range of kT from either chemical potentials
+       if ( E < nEq_ID(ID)%E(1) ) has = .false.
+       if ( nEq_ID(ID)%E(2) < E ) has = .false.
+
+    end if
 
   end function has_cE_nEq
 

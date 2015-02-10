@@ -222,6 +222,7 @@ contains
     integer :: ierr
     integer :: io,jo
     integer :: ipvt(no_s)
+    integer, pointer :: p_G(:)
 
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
@@ -254,12 +255,18 @@ contains
 
     end if
 
-!$OMP parallel default(shared) private(io,jo)
+    ! Get pivoting table for the scattering matrix
+    ! Note that we here pivot directly into the
+    ! the same order of the Green function
+    ! to not do it "twice"
+    p_G => El%inDpvt%r
+
+!$OMP parallel default(shared), private(io,jo)
 
     if ( El%Bulk ) then
 
        ! Do:
-       ! \Sigma = Z*S - H - \Sigma_bulk
+       ! work = Z*S - H - (Z*S - H - \Sigma_bulk)
 !$OMP do collapse(2)
        do jo = 1 , no_s
           do io = 1 , no_s
@@ -270,20 +277,36 @@ contains
 
        ! Do
        ! \Gamma ^ T = \Sigma - \Sigma^\dagger
+       if ( associated(p_G) ) then
 !$OMP do
        do jo = 1 , no_s
           do io = 1 , jo - 1
-             GammaT(jo,io) = work(io,jo,2)-dconjg(work(jo,io,2))
-             GammaT(io,jo) = work(jo,io,2)-dconjg(work(io,jo,2))
+             GammaT(jo,io) = work(p_G(io),p_G(jo),2) &
+                  - dconjg(work(p_G(jo),p_G(io),2))
+             GammaT(io,jo) = work(p_G(jo),p_G(io),2) &
+                  - dconjg(work(p_G(io),p_G(jo),2))
+          end do
+          io = p_G(jo)
+          GammaT(jo,jo) = work(io,io,2)-dconjg(work(io,io,2))
+       end do
+!$OMP end do nowait
+       else
+!$OMP do
+       do jo = 1 , no_s
+          do io = 1 , jo - 1
+             GammaT(jo,io) = work(io,jo,2) &
+                  - dconjg(work(jo,io,2))
+             GammaT(io,jo) = work(jo,io,2) &
+                  - dconjg(work(io,jo,2))
           end do
           GammaT(jo,jo) = work(jo,jo,2)-dconjg(work(jo,jo,2))
        end do
 !$OMP end do nowait
-
+       end if
     else
        
        ! Do:
-       ! \Sigma = Z*S - H - \Sigma_bulk
+       ! \Sigma = Z*S - H - (Z*S - H - \Sigma_bulk)
 !$OMP do collapse(2)
        do jo = 1 , no_s
           do io = 1 , no_s
@@ -294,16 +317,32 @@ contains
 
        ! Do
        ! \Gamma ^ T = \Sigma - \Sigma^\dagger
+       if ( associated(p_G) ) then
 !$OMP do 
        do jo = 1 , no_s
           do io = 1 , jo - 1
-             GammaT(jo,io) = Sigma(io,jo)-dconjg(Sigma(jo,io))
-             GammaT(io,jo) = Sigma(jo,io)-dconjg(Sigma(io,jo))
+             GammaT(jo,io) = Sigma(p_G(io),p_G(jo)) &
+                  - dconjg(Sigma(p_G(jo),p_G(io)))
+             GammaT(io,jo) = Sigma(p_G(jo),p_G(io)) &
+                  - dconjg(Sigma(p_G(io),p_G(jo)))
+          end do
+          io = p_G(jo)
+          GammaT(jo,jo) = Sigma(io,io)-dconjg(Sigma(io,io))
+       end do
+!$OMP end do nowait
+       else
+!$OMP do 
+       do jo = 1 , no_s
+          do io = 1 , jo - 1
+             GammaT(jo,io) = Sigma(io,jo) &
+                  - dconjg(Sigma(jo,io))
+             GammaT(io,jo) = Sigma(jo,io) &
+                  - dconjg(Sigma(io,jo))
           end do
           GammaT(jo,jo) = Sigma(jo,jo)-dconjg(Sigma(jo,jo))
        end do
 !$OMP end do nowait
-
+       end if
     end if
 
 !$OMP end parallel 

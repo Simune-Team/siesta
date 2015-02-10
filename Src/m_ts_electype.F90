@@ -140,10 +140,8 @@ module m_ts_electype
      ! The imaginary part in the electrode
      real(dp) :: Eta = 7.3498067e-7_dp ! corresponds to 0.00001 eV
 
-#ifdef TBTRANS
      ! The region of the down-folded region
      type(tRgn) :: o_inD, inDpvt
-#endif
 
      ! The basal plane of the electrode
      type(geo_plane_delta) :: p

@@ -32,6 +32,7 @@ module m_region
   end type tRgn
 
   public :: tRgn
+  public :: rgn_init
   public :: rgn_delete
   public :: rgn_intersection
   public :: rgn_union, rgn_append
@@ -59,8 +60,16 @@ module m_region
   public :: rgn_orb2atom
 
   ! Sorting methods for the regions
+  ! We sort by the number of connections forward
+  ! the maximum number of connections to elements
+  ! not already in the region will be put lastly
   integer, parameter, public :: R_SORT_MAX_FRONT = 1
+  ! We sort by the number of connections backward back into
+  ! the region behind the current region.
+  ! The one with the most connections back will be put first
   integer, parameter, public :: R_SORT_MAX_BACK = 2
+  ! The one that reaches the farthest back into the region
+  integer, parameter, public :: R_SORT_LONGEST_BACK = 3
 
   interface rgn_remove
      module procedure rgn_remove_rgn
@@ -73,6 +82,30 @@ module m_region
   end interface rgn_insert
 
 contains
+
+  ! Easy initialization a region with optional name
+  subroutine rgn_init(r,n,name,val)
+    ! The region containing of size n
+    type(tRgn), intent(inout) :: r
+    ! size of the range
+    integer, intent(in) :: n
+    ! The optional name of the range
+    character(len=*), intent(in), optional :: name
+    ! default value (none will be set if not present)
+    integer, intent(in), optional :: val
+    
+    call rgn_delete(r)
+
+    ! Create with no default values
+    r%n = n
+    allocate(r%r(n))
+    if ( present(val) ) r%r = val
+
+    if ( present(name) ) then
+       r%name = name
+    end if
+    
+  end subroutine rgn_init
 
   ! Get the index of the element that equal 'i'
   ! We refer to this as the pivoting element.
@@ -388,7 +421,7 @@ contains
 
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Integer
-    use mpi_siesta, only : MPI_MAX, MPI_AllReduce
+    use mpi_siesta, only : MPI_MAX, MPI_MIN, MPI_AllReduce
 #endif
 
     ! the region we wish to find the connections to
@@ -453,6 +486,8 @@ contains
           io = index_global_to_local(dit,sr%r(i))
           if ( io <= 0 ) cycle ! the orbital does not exist on this node
           
+          if ( l_ncol(io) == 0 ) cycle
+
           ci = 0
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
              
@@ -539,7 +574,51 @@ contains
        ! We now reverse the values as we then control that the one
        ! with the least connections back, will be placed last
        n_c(:) = maxval(n_c,dim=1) - n_c(:)
-                 
+
+    case ( R_SORT_LONGEST_BACK ) 
+
+       ! we sort and move the orbitals
+       ! back in the rank according to their longest
+       ! range backwards.
+       ! A longer connection back inside of the region
+       ! will move it further back.
+
+       ! Step 1. find the number of connections for
+       ! each orbital in the sorting region
+       
+       do i = 1 , sr%n
+
+          ! Orbital that should be folded from
+          io = index_global_to_local(dit,sr%r(i))
+          if ( io <= 0 ) cycle ! the orbital does not exist on this node
+
+          if ( l_ncol(io) == 0 ) cycle
+
+          ci = r%n
+          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+             
+             ! UC-orb
+             jo = ucorb(l_col(ind),no_u)
+             
+             ! Ensure that it is folding to the same region
+             ci = min(rgn_pivot(r,jo),ci)
+
+          end do
+
+          ! As the region is created "from a frontal search"
+          ! we will reverse the result (maxloc returns the first max)
+          n_c(i) = ci
+
+       end do
+
+#ifdef MPI
+       if ( dist_nodes(dit) > 1 ) then
+          call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
+               MPI_MIN, comm, MPIerror)
+          n_c(1:sr%n) = cur_con(1:sr%n)
+       end if
+#endif
+
     case default
 
        call die('not implemented')
@@ -561,7 +640,7 @@ contains
           ! The index is reversed, reverse back and retrieve
           ! the equivalent orbital
           io = sr%r(sr%n - idx_max + 1)
-          do i = 1 , last_n
+          do i = last_n , 1 , -1
              if ( r%r(i) == io ) then
                 ! swap the positions
                 r%r(i) = r%r(last_n)
@@ -573,6 +652,34 @@ contains
 
           n_c(idx_max) = -1 ! reset connections, we already
                             ! processed the orbital
+
+       end do
+
+       ! We have now sorted the entries according to the maximum
+       ! connections across the existing region.
+
+    case ( R_SORT_LONGEST_BACK )
+
+       last_n = r%n - sr%n + 1
+
+       do jo = 1 , sr%n
+
+          ! The farthest back
+          idx_max = minloc(n_c,dim=1)
+          
+          io = sr%r(idx_max)
+          do i = last_n , r%n
+             if ( r%r(i) == io ) then
+                ! swap the positions
+                r%r(i) = r%r(last_n)
+                r%r(last_n) = io
+                last_n = last_n + 1
+                exit ! we are not going to find it later...
+             end if
+          end do
+
+          n_c(idx_max) = r%n+1 ! reset connections, we already
+                               ! processed the orbital
 
        end do
 
@@ -857,19 +964,18 @@ contains
     type(tRgn), intent(inout) :: r
     ! The limits on the range
     integer, intent(in) :: o1, o2
-    
     integer :: io
-    call rgn_delete(r)
 
-    r%n = abs(o2 - o1) + 1
-    allocate(r%r(r%n))
+    io = abs(o2 - o1) + 1
+    call rgn_init(r,io)
+
     if ( o1 <= o2 ) then
        do io = o1 , o2
           r%r(io-o1+1) = io
        end do
     else
-       do io = o2 , o1
-          r%r(io-o2+1) = io
+       do io = o1 , o2 , -1
+          r%r(o1-io+1) = io
        end do
     end if
 
@@ -966,6 +1072,11 @@ contains
     integer :: i, cr, no
     character(len=R_NAME_LEN) :: tmp
 
+    if ( ar%n == 0 ) then
+       call rgn_delete(or)
+       return
+    end if
+
     ! First calculate size of region in orbital
     ! space
     no = 0
@@ -1005,6 +1116,11 @@ contains
     integer :: io, ia, na, a
     integer :: ca(na_u)
     character(len=R_NAME_LEN) :: tmp
+
+    if ( or%n == 0 ) then
+       call rgn_delete(ar)
+       return
+    end if
 
     ! The maximum number of atoms in the orbital region
     ia = 1

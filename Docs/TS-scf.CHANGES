@@ -1,4 +1,108 @@
 ----------------------------------------------------
+February 10, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-291
+Added full pivoting to BTD format
+
+* Added rgn_init to initialize region
+  without having any entries. This should speed up a few
+  things.
+
+* Allowed to sort regions according to R_SORT_LONGEST_BACK
+  which means that those which connects farthest back
+  into an already sorted region will have highest priority of being
+  added to the list.
+
+* Created an interface for ts_tri_init so that it can be
+  used for tbtrans as well.
+
+* Changed the BTD parts to be contained in a region instead of
+  separate arrays.
+
+* Removed m_ts_Sparsity2TriMat code, being superseeded by the
+  m_ts_rgn2trimat which is more generic and can be used
+  by tbtrans AND transiesta.
+
+* Bugfix for neq contours with certain points not taking part
+  in any contours.
+  It did a dead-loop. Now it correctly skips that integration point.
+
+* Added pivoting table to the elec_se for the scattering matrix.
+  This means that the electrode region inDpvt has the
+  pivot table for the electrode orbitals in the device region.
+  And hence we now pivot the Gamma while creating it to save
+  dublicate work.
+
+* Cleaned up m_ts_method to be able to hold more generic information
+  and made the variables more meaningful.
+  Also added more comments to clarify code.
+  
+  This segment also holds the pivot table for the scattering region.
+  Currently this is only used for the tri-diagonal case.
+
+  Instantiated use of fdf_extra to read in buffer atoms.
+
+* Changed TriMat keywords to BTD to shorten and conform with
+  my litterature.
+  Changed solutionmethod name sparse to full.
+
+  Hence TS.SolutionMethod now has full|BTD|MUMPS
+
+* Updated a few error messages in ts_options
+
+* Updated m_ts_sparse to utilize a generic routine to generate 
+  a calculation region for the Hamiltonian and the overlap.
+
+  Removed references to the monitor module (which is not
+  that good for monitoring these kinds of things)
+
+* ts_tri_init now has several additions.
+  
+  - It allows full pivoting for the tri-diagonal matrix
+  - The user can selectively turn on/off the pivoting.
+  - Removed non-used routines
+
+* Created common tri module which should be used
+  by both transiesta and tbtrans.
+
+  This makes code repo smaller and easier to maintain (if updates
+  are performed both places)
+
+* Added new column inversion routine which simply takes orbital
+  columns and inverts a complete column matrix based on those
+  orbitals.
+
+  This is because pivoting does not complicate the triple product,
+  it only complicates the calculation of the full columns to not
+  be done in big chunks as previously.
+  However, this flexibility could be useful when the pivoting
+  is extremely good vs. regular sparsity pattern.
+
+* Still need to hunt down the most serious bugs introduced by
+  these many changes.
+
+
+removed:
+  Src/m_ts_Sparsity2TriMat.F90
+added:
+  Src/m_ts_rgn2trimat.F90
+  Src/m_ts_tri_common.F90
+modified:
+  Src/Makefile
+  Src/m_region.F90
+  Src/m_transiesta.F90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Src/state_init.F
+
+----------------------------------------------------
 February 9, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-290
 Bugfix for block name
 
