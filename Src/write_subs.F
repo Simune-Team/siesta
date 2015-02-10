@@ -399,7 +399,7 @@
           if (fixspin) then
             if ((iscf .eq. 1).or.muldeb)
      .           write(6,'(/,a12,3a14,a8,a8,a11)')
-     .           'scf: iscf', '   Eharris(eV)', 
+     .           '     iscf', '   Eharris(eV)', 
      .           '      E_KS(eV)', '   FreeEng(eV)', 
      .           '    dDmax', '  Ef_up', '  Ef_dn(eV)'
             write(6,'(a8,i4,3f14.4,f9.5,2f9.4)')
@@ -416,7 +416,7 @@
           else !fixspin
             if ((iscf .eq. 1).or.muldeb)
      .           write(6,'(/,a12,3a14,3a8)')
-     .           'scf: iscf', '   Eharris(eV)', 
+     .           '     iscf', '   Eharris(eV)', 
      .           '      E_KS(eV)', '   FreeEng(eV)', 
      .           '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
             write(6,'(a8,i4,3f14.4,2f8.4,f8.4)')
@@ -466,7 +466,7 @@
 
             if ((iscf .eq. 1).or.muldeb)
      .           write(6,'(/,a12,3a14,a9,a7,a11)')
-     .           'scf: iscf', '   Eharris(eV)',
+     .           '     iscf', '   Eharris(eV)',
      .           '      E_KS(eV)', '   FreeEng(eV)',
      .           '    dDmax', '  Ef_up', '  Ef_dn(eV)'
             write(6,'(a8,i4,3f14.4,f9.5,2f9.4)')
@@ -482,7 +482,7 @@
             endif
          else
           if (iscf .eq. 1) write(6,'(/,a12,3a14,3a8)')
-     .             'scf: iscf', '   Eharris(eV)',
+     .             '     iscf', '   Eharris(eV)',
      .             '      E_KS(eV)', '   FreeEng(eV)',
      .           '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
           write(6,'(a8,i4,3f14.4,2f8.4,f8.4)')
@@ -495,7 +495,7 @@
            if (fixspin) then
               if (iscf .eq. 1)
      .             write(6,'(/,a12,3a14,a9,a7,a11)')
-     .             'ts-scf: iscf', '   Eharris(eV)',
+     .             '        iscf', '   Eharris(eV)',
      .             '      E_KS(eV)', '   FreeEng(eV)',
      .             '    dDmax', '  Ef_up', '  Ef_dn(eV)'
               write(6,'(a8,i4,3f14.4,f9.5,2f8.4)')
@@ -503,7 +503,7 @@
      .             dDmax, (Efs(i)/eV,i=1,2)
            else
               if (iscf .eq. 1) write(6,'(/,a12,3a14,3a8)')
-     .             'ts-scf: iscf', '   Eharris(eV)',
+     .             '        iscf', '   Eharris(eV)',
      .             '      E_KS(eV)', '   FreeEng(eV)',
      .             '   dDmax', '  Ef(eV)', 'dHmx(Ry)'
               write(6,'(a8,i4,3f14.4,2f8.4,f8.4)')

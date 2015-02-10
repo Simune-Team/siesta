@@ -279,7 +279,7 @@ contains
           ! the forces so that the center of the system will be the same.
 
           if ( .not. lmag_use ) then
-             call die('Center of motion does not currently work')
+             call die('Center of motion only works for CG')
           end if
 
        else if ( namec == 'com' ) then
@@ -303,7 +303,7 @@ contains
 
           ! correct the forces so that the center of mass is the same
 
-          call die('Center-of-mass does not currently work')
+          call die('Center of mass does not currently work')
           
        else if ( namec == 'mol' ) then
           
@@ -341,8 +341,8 @@ contains
 
           end do
 
-          ! we constrain (N - 1) * 3 degrees of freedom (only the relative positions are
-          ! constrained)
+          ! we constrain (N - 1) * 3 degrees of freedom 
+          ! (only the relative positions are constrained)
           ntcon = ntcon + ( N - 1 ) * 3
 
        else if ( namec == 'mol-dir' ) then
@@ -523,7 +523,7 @@ contains
        name = 'siesta: Constraint'
        if ( index(r%name,'dir') > 0 ) then
           ! the name should include the fixation vector
-          write(name,'(a,2(tr1,g10.4,'',''),tr1,g10.4,a)') &
+          write(name,'(a,2(tr1,f8.5,'',''),tr1,f8.5,a)') &
                'siesta: Constraint v=[',fixs(if)%fix,']'
        end if
        call rgn_print(r, name = trim(name), seq_max = 12)
@@ -535,7 +535,7 @@ contains
 
   end subroutine print_fixed
   
-  subroutine init_fixed( na )
+  subroutine init_fixed( na , isa , iza )
 
     use fdf
     use fdf_extra
@@ -544,12 +544,14 @@ contains
 
     use m_region
 
-    integer,  intent(in)  :: na
+    integer,  intent(in)  :: na, isa(na), iza(na)
 
     ! Internal variables
     character(len=TYPE_LEN) :: namec
+    character(len=20) :: ctmp
 
     integer :: ifix, i, ix, N
+    logical :: add_dir
 
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline
@@ -562,8 +564,11 @@ contains
     ! No fixation atoms
     N_fix = 0
 
-    ! Look for constraints data block
-    if ( .not. fdf_block('GeometryConstraints',bfdf) ) return
+    ! Look for constraints data block, we also allow another 
+    ! constraint block
+    if ( .not. fdf_block('GeometryConstraints',bfdf) ) then
+       if ( .not. fdf_block('Geometry.Constraint',bfdf) ) return
+    end if
 
 #ifdef DEBUG
     call write_debug( '    PRE init_fixed' )
@@ -580,7 +585,8 @@ contains
        if ( leqi(namec,'position') .or. leqi(namec,'atom') .or. &
             leqi(namec,'molecule') .or. leqi(namec,'molecule-max') .or. &
             leqi(namec,'center') .or. &
-            leqi(namec,'center-of-mass') ) then
+            leqi(namec,'center-of-mass') .or. &
+            leqi(namec,'species-i') .or. leqi(namec,'Z') ) then
 
           ! All these names belong to atomic constraints
           N_fix = N_fix + 1
@@ -602,6 +608,9 @@ contains
        if ( fdf_bnnames(pline) == 0 ) cycle
 
        namec = fdf_bnames(pline,1)
+       ! Indicates whether there should be read in direction
+       ! bound constrictions
+       add_dir = .false.
 
        ! Take those not specific to atomic positions
        if ( leqi(namec,'stress') ) then
@@ -613,6 +622,12 @@ contains
              ix = nint(fdf_bvalues(pline,i))
 
              if ( ix < 1 .or. 6 < ix ) then
+                if ( IONOde ) then
+                   write(*,'(a)') 'Stress constraint:'
+                   write(*,'(6(tr2,i0,'' == '',a,/))') &
+                        1,'aa',2,'bb',3,'cc', &
+                        4,'bc / cb',5,'ca / ac',6,'ab / ba'
+                end if
                 call die('fixed: Stress restriction not &
                      &with expected input [1:6]')
              end if
@@ -628,49 +643,65 @@ contains
 
        ! ****** Now we only look at atomic specifications for constraints ******
           
-       else if ( leqi(namec,'position') .or. leqi(namec,'atom') ) then
+       else if ( leqi(namec,'position') .or. leqi(namec,'atom') .or. &
+            leqi(namec,'species-i') .or. leqi(namec,'Z') ) then
           
           ifix = ifix + 1
 
           ! Create a list of atoms from this line
           call fdf_brange(pline,rr,1,na)
 
-          fixs(ifix)%n = rr%n
-          allocate(fixs(ifix)%a(rr%n))
-          fixs(ifix)%a(:) = rr%r(:)
+          ! Loop through and allocate the correct atoms
+          ix = 0
+          N  = 0
+          if ( leqi(namec,'species-i') ) then
+             do i = 1 , rr%n
+                N = N + count( isa(:) == rr%r(i) )
+                if ( count(rr%r(i) == rr%r) > 1 ) then
+                   call die('Same species indexes are not allowed, please &
+                        &remove dublicate entries')
+                end if
+             end do
+             fixs(ifix)%n = N
+             allocate(fixs(ifix)%a(N))
+
+             do i = 1 , na
+                if ( any( isa(i) == rr%r ) ) then
+                   ix = ix + 1
+                   fixs(ifix)%a(ix) = i
+                end if
+             end do
+
+          else if ( leqi(namec,'Z') ) then
+             do i = 1 , rr%n
+                N = N + count(iza(:) == rr%r(i))
+                if ( count(rr%r(i) == rr%r) > 1 ) then
+                   call die('Same species indexes are not allowed, please &
+                        &remove dublicate entries')
+                end if
+             end do
+             fixs(ifix)%n = N
+             allocate(fixs(ifix)%a(N))
+
+             do i = 1 , na
+                if ( any( iza(i) == rr%r ) ) then
+                   ix = ix + 1
+                   fixs(ifix)%a(ix) = i
+                end if
+             end do
+             
+          else
+             fixs(ifix)%n = rr%n
+             allocate(fixs(ifix)%a(rr%n))
+             fixs(ifix)%a(:) = rr%r(:)
+          end if
 
           ! Clean-up
           call rgn_delete(rr)
 
-          ! Now read in the constraints if available
-          
-          ! Here are two variants
-          ! If no reals exists on this line we will force
-          ! the atoms to not move (i.e. fa = 0)
-          N = fdf_bnreals(pline)
-          if ( N == 0 ) then
+          add_dir = .true.
+          fixs(ifix)%type = 'pos'
 
-             ! We fix them
-             fixs(ifix)%type = 'pos'
-
-          else if ( N == 3 ) then
-
-             ! Fix the direction specified by the 3 reals
-             fixs(ifix)%type = 'pos-dir'
-             
-             fixs(ifix)%fix(1) = fdf_breals(pline,1)
-             fixs(ifix)%fix(2) = fdf_breals(pline,2)
-             fixs(ifix)%fix(3) = fdf_breals(pline,3)
-
-             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / VNORM( fixs(ifix)%fix(:) )
-
-          else
-
-             call die('You *must* specify 0 or 3 real values (not integers) &
-                  &to do a constraint on atomic positions.')
-
-          end if
-             
        else if ( leqi(namec,'molecule') ) then
 
           ! We restrict the entire molecule to move "together"
@@ -687,35 +718,8 @@ contains
           ! Clean-up
           call rgn_delete(rr)
 
-          ! Here are two variants
-          ! If no reals exists on this line we will force
-          ! the atoms to move relative
-          N = fdf_bnreals(pline)
-          if ( N == 0 ) then
-
-             ! We just force the molecule to move together
-             ! i.e. the relative positions will be the same.
-             fixs(ifix)%type = 'mol'
-
-          else if ( N == 3 ) then
-
-             ! Fix the direction specified by the 3 reals
-             ! Once we have calculated the relative displacements
-             ! we fix the movement by these reals
-             fixs(ifix)%type = 'mol-dir'
-             
-             fixs(ifix)%fix(1) = fdf_breals(pline,1)
-             fixs(ifix)%fix(2) = fdf_breals(pline,2)
-             fixs(ifix)%fix(3) = fdf_breals(pline,3)
-
-             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / VNORM( fixs(ifix)%fix(:) )
-
-          else
-
-             call die('You *must* specify 0 or 3 real values (not integers) &
-                  &to do a constraint on a molecule.')
-
-          end if
+          add_dir = .true.
+          fixs(ifix)%type = 'mol'
 
        else if ( leqi(namec,'molecule-max') ) then
 
@@ -733,35 +737,8 @@ contains
           ! Clean-up
           call rgn_delete(rr)
 
-          ! Here are two variants
-          ! If no reals exists on this line we will force
-          ! the atoms to move relative
-          N = fdf_bnreals(pline)
-          if ( N == 0 ) then
-
-             ! We just force the molecule to move together
-             ! i.e. the relative positions will be the same.
-             fixs(ifix)%type = 'mol-max'
-
-          else if ( N == 3 ) then
-
-             ! Fix the direction specified by the 3 reals
-             ! Once we have calculated the relative displacements
-             ! we fix the movement by these reals
-             fixs(ifix)%type = 'mol-max-dir'
-             
-             fixs(ifix)%fix(1) = fdf_breals(pline,1)
-             fixs(ifix)%fix(2) = fdf_breals(pline,2)
-             fixs(ifix)%fix(3) = fdf_breals(pline,3)
-
-             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / VNORM( fixs(ifix)%fix(:) )
-
-          else
-
-             call die('You *must* specify 0 or 3 real values (not integers) &
-                  &to do a constraint on a molecule.')
-
-          end if
+          add_dir = .true.
+          fixs(ifix)%type = 'mol-max'
 
        else if ( leqi(namec,'center-of-mass') ) then
 
@@ -806,6 +783,28 @@ contains
           write(*,'(2a)') 'siesta: Unrecognized geometry &
                &constraint: ',trim(namec)
 
+       end if
+
+       if ( add_dir ) then
+          N = fdf_bnreals(pline)
+          if ( N == 3 ) then
+
+             ! Fix the direction specified by the 3 reals
+             fixs(ifix)%type = trim(fixs(ifix)%type)//'-dir'
+             
+             fixs(ifix)%fix(1) = fdf_breals(pline,1)
+             fixs(ifix)%fix(2) = fdf_breals(pline,2)
+             fixs(ifix)%fix(3) = fdf_breals(pline,3)
+
+             fixs(ifix)%fix(:) = fixs(ifix)%fix(:) / VNORM( fixs(ifix)%fix(:) )
+
+          else if ( N /= 0 ) then
+
+             write(*,'(a,i0,a)')'ERROR: Constraint reading: ',ifix,' was erroneous.'
+             call die('You *must* specify 0 or 3 real values (not integers) &
+                  &to do a constraint in certain directions.')
+
+          end if
        end if
 
     end do

@@ -1,4 +1,28 @@
 ----------------------------------------------------
+February 9, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-289
+Added new constraints by Z and species index
+
+* Two new constraints enables easy access to constraining
+  atoms by their atomic number and/or by their species index.
+
+  For instance to constrain all H in the y direction one can do:
+    Z 1 0. 1. 0.
+  instead of denoting every single H atom.
+  The atomic number is looked up in the ChemicalSpeciesLabel block
+  
+  For constraining all species with index 1 one can do:
+    species-i 1 0. 1. 0.
+  which is looked up in the ChemicalSpeciesLabel block
+
+* The output in the SCF has been cleaned. Now scf is not printed
+  in front of the headline.
+
+modified:
+  Src/m_fixed.F90
+  Src/siesta_init.F
+  Src/write_subs.F
+
+----------------------------------------------------
 February 6, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-288
 Added more timings and removed all __FILE__
 

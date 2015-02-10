@@ -456,7 +456,7 @@
 
       ! initialize the fixed positions (we need to check whether the 
       ! fixed positions make sense)
-      call init_fixed( na_u )
+      call init_fixed( na_u , isa, iza )
       call print_fixed( )
       
 #ifdef TRANSIESTA
