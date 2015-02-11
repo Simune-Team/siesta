@@ -16,7 +16,7 @@ module m_tbt_tri_scat
 
   use precision, only : dp
   use m_ts_tri_scat, only : GF_Gamma_GF
-  use m_ts_tri_scat, only : GFGGF_needed_worksize
+  use m_ts_tri_common, only : GFGGF_needed_worksize
 
   use m_region
   use m_ts_electype
@@ -715,15 +715,17 @@ contains
   end subroutine orb_current
 #endif
 
-  subroutine insert_Self_energy(El,r,off1,n1,off2,n2,M)
+  subroutine insert_Self_energy(n1,n2,M,r,El,off1,off2)
 
-    ! Electrodes...
-    type(Elec), intent(inout) :: El
+    ! The sizes of the matrix
+    integer, intent(in) :: n1, n2
+    complex(dp), intent(inout) :: M(n1,n2)
     ! the region which describes the current segment of insertion
     type(tRgn), intent(in) :: r
-    ! The sizes and offsets of the matrix
-    integer, intent(in) :: off1, n1, off2, n2
-    complex(dp), intent(inout) :: M(n1,n2)
+    ! Electrodes...
+    type(Elec), intent(inout) :: El
+    ! The offsets of the matrix
+    integer, intent(in) :: off1, off2
 
     ! local variables
     integer :: j, je, i, ie, no
@@ -790,15 +792,15 @@ contains
   end subroutine insert_Self_energy
 
 
-  subroutine insert_Self_energy_Dev(Gfinv_tri,Gfinv,El,r)
+  subroutine insert_Self_energy_Dev(Gfinv_tri,Gfinv,r,El)
 
     use class_zTriMat
 
     type(zTriMat), intent(inout) :: GFinv_tri
     complex(dp), intent(inout) :: Gfinv(:)
-    type(Elec), intent(in) :: El
     ! the region which describes the current segment of insertion
     type(tRgn), intent(in) :: r
+    type(Elec), intent(in) :: El
 
     ! local variables
     integer :: j, je, i, ie, ii, idx, no

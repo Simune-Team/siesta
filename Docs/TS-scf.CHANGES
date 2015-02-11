@@ -1,4 +1,45 @@
 ----------------------------------------------------
+February 11, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-292
+Enabled tbtrans to utilize as many routines from TS
+
+* Bugfix for writing zero columns to the sparsity pattern.
+  We really do need to check this in the ncdf_io routines
+
+* Changed tbtrans names to BTD as well.
+
+* tbt_regions now utilise the regions from the ts_method
+  
+* When the sparsity pattern is not fully connected we
+  now also take the first atom to be part of the new
+  connectivity graph. This is sub-optimal but should rarely 
+  occur.
+
+* tbt_tri_init uses the ts_tri_init routines.
+
+* tbt_trik uses transiesta routine to calculate the full Gf
+  column for a certain range.
+
+* Changed a lot of interfaces in tbt_trik to better follow
+  the terminology in transiesta.
+
+removed:
+  Util/TS/TBtrans/m_tbt_sparsity2trimat.F90
+  Util/TS/TBtrans/m_tbt_trimat_invert.F90
+modified:
+  Src/m_ncdf_io.F90
+  Src/m_ts_gf.F90
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_kregions.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 February 10, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-291
 Added full pivoting to BTD format
 

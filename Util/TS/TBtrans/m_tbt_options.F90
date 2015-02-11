@@ -98,24 +98,24 @@ contains
     percent_tracker = max(1,percent_tracker)
 
     ! Reading the Transiesta solution method
-    chars = fdf_get('TBT.SolutionMethod','tri')
-    if ( leqi(chars,'sparse') ) then
+    chars = fdf_get('TBT.SolutionMethod','BTD')
+    if ( leqi(chars,'full') ) then
        !ts_method = TS_SPARSITY
        call die('Currently unsupported solution method: '//trim(chars))
-    else if ( leqi(chars,'tri') ) then
+    else if ( leqi(chars,'BTD').or.leqi(chars,'tri') ) then
        ts_method = TS_SPARSITY_TRI
     else
        call die('Unrecognized TBtrans solution method: '//trim(chars))
     end if
 
-    chars = fdf_get('TS.TriMat.Optimize','speed')
-    chars = fdf_get('TBT.TriMat.Optimize',trim(chars))
+    chars = fdf_get('TS.BTD.Optimize','speed')
+    chars = fdf_get('TBT.BTD.Optimize',trim(chars))
     if ( leqi(chars,'speed') ) then
        opt_TriMat_method = 0
     else if ( leqi(chars,'memory') ) then
        opt_TriMat_method = 1
     else
-       call die('Could not determine flag TBT.TriMat.Optimize, please &
+       call die('Could not determine flag TBT.BTD.Optimize, please &
             &see manual.')
     end if
 

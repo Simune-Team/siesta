@@ -21,9 +21,6 @@ contains
 
   subroutine tbt(TSHS, kT)
 
-#ifdef MPI
-    use mpi_siesta, only : MPI_Barrier, MPI_Comm_World
-#endif
     use units, only : eV
     use alloc, only : re_alloc, de_alloc
 

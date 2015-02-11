@@ -515,7 +515,6 @@ contains
 
 #ifdef MPI
     use mpi_siesta, only : MPI_AllReduce, MPI_Sum, MPI_Integer
-    use mpi_siesta, only : MPI_Comm_World
 #endif
 
     use m_ts_electype

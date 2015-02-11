@@ -2680,9 +2680,6 @@ contains
 
     use m_timestamp, only : datestring
     use nf_ncdf
-#ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD
-#endif
     use m_ts_electype
 
     character(len=*), intent(in) :: fname

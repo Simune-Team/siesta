@@ -9,6 +9,9 @@ module m_tbt_regions
   use m_region
   use class_OrbitalDistribution
   use class_Sparsity
+  ! To re-use as much from transiesta
+  use m_ts_method, only : r_aBuf, r_oBuf
+  use m_ts_method, only : r_aDev => r_aC, r_oDev => r_oC
 
   implicit none
 
@@ -35,10 +38,10 @@ module m_tbt_regions
   type(tRgn), allocatable, target, public :: r_aElpD(:) , r_oElpD(:)
 
   ! the device region (the calculated GF region)
-  type(tRgn), public :: r_aDev, r_oDev
+  public :: r_aDev, r_oDev
 
   ! The buffer region, just for completeness
-  type(tRgn), public :: r_aBuf, r_oBuf
+  public :: r_aBuf, r_oBuf
 
   public :: tbt_init_regions, tbt_read_regions
   public :: tbt_region_options
@@ -57,6 +60,7 @@ contains
 #endif
 
     use m_io_s, only : file_exist
+    use geom_helper, only : iaorb
     use intrinsic_missing, only : SPC_PROJ, VNORM, VEC_PROJ
     use m_ts_electype
     use m_ts_method, only : ts_init_regions
@@ -107,16 +111,8 @@ contains
        call ts_init_regions('TS',N_Elec,Elecs,na_u,lasto)
     end if
 
-    ! populate the buffer region 
-    na = 0
-    do ia = 1 , na_u
-       if ( atom_type(ia) == TYP_BUFFER ) then
-          na = na + 1
-          list_a(na) = ia
-       end if
-    end do
-    call rgn_list(r_aBuf,na,list_a, name = '[A]-buffer')
-    call rgn_Atom2Orb(r_aBuf,na_u,lasto,r_oBuf)
+    ! Re=name the read-in information
+    r_aBuf%name = '[A]-buffer'
     r_oBuf%name = '[O]-buffer'
 
     ! Create the sparsity pattern and remove the buffer atoms...
@@ -155,6 +151,9 @@ contains
        end if
 
     end do
+
+    ! Delete to be ready to populate the device
+    call rgn_delete(r_aDev)
 
     ! Read in device region via the new block
     if ( fdf_block('TBT.Atoms.Device',bfdf) ) then
@@ -412,10 +411,10 @@ contains
        end if
 
        ! Set the names
-       r_oEl(iEl)%name    = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
-       r_aEl(iEl)%name    = '[A]-'//trim(Elecs(iEl)%name)//' folding region'
-       r_oElpD(iEl)%name  = '[O]-'//trim(Elecs(iEl)%name)//' folding El + D'
-       r_aElpD(iEl)%name  = '[A]-'//trim(Elecs(iEl)%name)//' folding El + D'
+       r_oEl(iEl)%name   = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
+       r_aEl(iEl)%name   = '[A]-'//trim(Elecs(iEl)%name)//' folding region'
+       r_oElpD(iEl)%name = '[O]-'//trim(Elecs(iEl)%name)//' folding El + D'
+       r_aElpD(iEl)%name = '[A]-'//trim(Elecs(iEl)%name)//' folding El + D'
        
        ! Check that the electrode down-folded self-energy
        ! is fully contained
@@ -476,6 +475,31 @@ contains
                 exit
              end do
 
+             ! get the atomic index
+             i = iaorb(r_tmp%r(1),lasto)
+                
+             if ( Node == 0 ) then
+                write(*,'(/,a,i0,a)')'WARNING TBT: &
+                     &Random atom ',i,' has been added &
+                     &due to non-completeness of the connectivity &
+                     &graph.'
+                write(*,'(a)')'WARNING TBT: Expect sub-optimal &
+                     &BTD format.'
+             end if
+
+             call rgn_range(r_tmp,lasto(i-1)+1,lasto(i))
+             ! Assert that none of the orbitals exist in the, region
+             do i = 1 , r_tmp%n
+                if ( in_rgn(r_oDev,r_tmp%r(i)) ) then
+                   call die('This is extremely difficult. &
+                        &Please do not sort the BTD format as &
+                        it cannot figure out what to do.')
+                end if
+             end do
+             
+             call rgn_append(r_oDev, r_tmp, r_oDev)
+             cycle
+             
           end if
           ! r_tmp contains the connecting region (except all dwn-folding regions)
 

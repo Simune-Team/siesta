@@ -627,8 +627,8 @@ contains
     use parallel,  only : IONode
     use sys ,      only : die
 #ifdef MPI
-    use mpi_siesta, only: MPI_Double_Precision => MPI_double_precision
-    use mpi_siesta, only: MPI_logical, MPI_comm_world, MPI_Bcast
+    use mpi_siesta, only: MPI_Double_Precision
+    use mpi_siesta, only: MPI_logical, MPI_Bcast
     use mpi_siesta, only: MPI_integer
 #endif
     use m_ts_electype

@@ -25,6 +25,7 @@ module m_tbt_trik
   use m_region
   use m_ts_electype
   use m_ts_sparse_helper, only : create_HS
+  use m_ts_tri_common, only : nnzs_tri
 
   use m_tbt_hs
   use m_tbt_regions, only : sp_uc, sp_dev, r_aDev
@@ -87,9 +88,9 @@ contains
     use m_tbt_tri_init
 
     ! Gf calculation
-    use m_tbt_trimat_invert
+    use m_ts_trimat_invert
 
-    ! Gf.Gamma.Gf
+    ! Gf.Gamma.Gf from ts_tri_scat and all remaining routines
     use m_tbt_tri_scat
 
     use m_tbt_save
@@ -253,7 +254,7 @@ contains
 
     ! Correct the actual padding by subtracting the 
     ! initial size of the tri-diagonal matrix
-    pad_LHS = pad_LHS - tri_elements(DevTri%n,DevTri%r)
+    pad_LHS = pad_LHS - nnzs_tri(DevTri%n,DevTri%r)
 
     ! We now have the maximum size of the electrode down-folding
     ! region.
@@ -274,7 +275,7 @@ contains
     ! to the device region. Here we need to take into account the
     ! work-array size of the GFGGF triple product.
     call GFGGF_needed_worksize(DevTri%n,DevTri%r, &
-         no, pad_RHS, GFGGF_size)
+         N_Elec, Elecs, pad_RHS, GFGGF_size)
 
     ! The minimum padding must be the maximum value of the 
     ! 1) padding required to contain a down-folding region
@@ -292,7 +293,7 @@ contains
     ! self-energies and nothing more.
     ! Here we pad with the missing elements to contain
     ! all self-energies.
-    pad_RHS = tri_elements(DevTri%n,DevTri%r)
+    pad_RHS = nnzs_tri(DevTri%n,DevTri%r)
     io = 0
     do iEl = 1 , N_Elec
        io = io + max(TotUsedOrbs(Elecs(iEl)),Elecs(iEl)%o_inD%n)**2
@@ -718,9 +719,9 @@ contains
           ! *******************
           ! * prep GF^-1      *
           ! *******************
-          call prepare_invGF(cE, zwork_tri, &
+          call prepare_invGF(cE, zwork_tri, r_oDev, &
                N_Elec, Elecs, &
-               spH=spH , spS=spS, r = r_oDev)
+               spH=spH , spS=spS )
 
           ! ********************
           ! * prep GF for scat *
@@ -766,7 +767,7 @@ contains
              ! * calc GF-column *
              ! ******************
              if ( .not. cE%fake ) then
-                call invert_BiasTriMat_col(GF_tri,zwork_tri, &
+                call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                      r_oDev, Elecs(iEl)%o_inD)
              end if
 
@@ -882,7 +883,7 @@ contains
                ! the scattering state
                call proj_Mt_mix(p_E%ME%mol,p_E%idx,El_p%Gamma, p_E%ME%bGk)
 
-               call invert_BiasTriMat_col(GF_tri,zwork_tri, &
+               call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                     r_oDev, p_E%ME%mol%orb)
 
             else
@@ -891,7 +892,7 @@ contains
                no = Elecs(iEl)%o_inD%n
                El_p%Gamma => Elecs(iEl)%Gamma(:)
 
-               call invert_BiasTriMat_col(GF_tri,zwork_tri, &
+               call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                     r_oDev, Elecs(iEl)%o_inD)
 
             end if
@@ -1066,8 +1067,8 @@ contains
   
   ! creation of the GF^{-1} for a certain region
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
-  subroutine prepare_invGF(cE, GFinv_tri, &
-       N_Elec, Elecs, spH, spS, r)
+  subroutine prepare_invGF(cE, GFinv_tri, r, &
+       N_Elec, Elecs, spH, spS)
 
     use class_Sparsity
     use class_zSpData1D
@@ -1082,11 +1083,11 @@ contains
     ! the current energy point
     type(ts_c_idx), intent(in) :: cE
     type(zTriMat), intent(inout) :: GFinv_tri
+    type(tRgn), intent(in) :: r
     integer, intent(in) :: N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
     ! The Hamiltonian and overlap sparse matrices
     type(zSpData1D), intent(inout) :: spH,  spS
-    type(tRgn), intent(in) :: r
 
     ! Local variables
     complex(dp) :: Z
@@ -1126,13 +1127,13 @@ contains
 
        ! Loop on entries here...
        do ju = 1 , r%n
-
+             
           ! Check if the orbital exists in the region
           ! We are dealing with a UC sparsity pattern.
           ind = SFIND(l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)),r%r(ju))
           if ( ind == 0 ) cycle
           ind = l_ptr(io) + ind
-
+          
           ! Notice that we transpose back here...
           ! See symmetrize_HS_kpt
           idx = index(Gfinv_tri,ju,iu)
@@ -1145,7 +1146,7 @@ contains
 !$OMP end do
 
     do io = 1 , N_Elec
-       call insert_self_energy_dev(Gfinv_tri,Gfinv,Elecs(io),r)
+       call insert_self_energy_dev(Gfinv_tri,Gfinv,r,Elecs(io))
     end do
 
 !$OMP end parallel
@@ -1351,7 +1352,7 @@ contains
 
        ! Loop on entries here...
        do ju = 1 , n1
-
+ 
           ! Check if the orbital exists in the region
           ! We are dealing with a UC sparsity pattern.
           ind = SFIND(l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)),r%r(off1+ju))
@@ -1367,7 +1368,7 @@ contains
     end do
 !$OMP end do
 
-    call insert_Self_Energy(El,r,off1,n1,off2,n2,M)
+    call insert_Self_Energy(n1,n2,M,r,El,off1,off2)
 
 !$OMP end parallel
 

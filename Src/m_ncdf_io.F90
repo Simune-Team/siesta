@@ -136,7 +136,7 @@ contains
 
     ! Local variables
     integer, pointer :: ncol(:), l_col(:)
-    integer, allocatable :: ibuf(:)
+    integer, allocatable :: ibuf(:), gncol(:)
     integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n
 #ifdef MPI
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
@@ -214,13 +214,12 @@ contains
     else
 
 #ifdef MPI
-       allocate(ibuf(no_u))
-       call Node_Sp_gncol(0,sp,dit,no_u,ibuf)
-       call ncdf_put_var(ncdf,'n_col',ibuf)
+       allocate(gncol(no_u))
+       call Node_Sp_gncol(0,sp,dit,no_u,gncol)
+       call ncdf_put_var(ncdf,'n_col',gncol)
 
        if ( Node == 0 ) then
-          max_n = maxval(ibuf)
-          deallocate(ibuf)
+          max_n = maxval(gncol)
           allocate(ibuf(max_n))
        end if
 
@@ -238,12 +237,12 @@ contains
                 call ncdf_put_var(ncdf,'list_col',l_col(ind+1:ind+ncol(io)), &
                      count=(/ncol(io)/),start=(/gind/))
                 gind = gind + ncol(io)
-             else
+             else if ( ncol(io) > 0 ) then
                 call MPI_Send( l_col(ind+1) , ncol(io), MPI_Integer, &
                      0, gio, MPI_Comm_World, MPIerror)
              end if
              ind = ind + ncol(io)
-          else if ( Node == 0 ) then
+          else if ( Node == 0 .and. gncol(gio) > 0 ) then
              call MPI_Recv( ibuf(1) , max_n, MPI_Integer, &
                   BNode, gio, MPI_Comm_World, MPIstatus, MPIerror )
              if ( MPIerror /= MPI_Success ) &
@@ -258,6 +257,7 @@ contains
        if ( Node == 0 ) then
           deallocate(ibuf)
        end if
+       deallocate(gncol)
 
 #else
        call ncdf_put_var(ncdf,'n_col',ncol)

@@ -28,7 +28,7 @@ module m_tbt_tri_init
   type(tRgn), allocatable, target :: ElTri(:)
   type(tRgn) :: DevTri
   public :: ElTri, DevTri
-  public :: fold_elements, tri_elements
+  public :: fold_elements
 
   private
   
@@ -41,6 +41,7 @@ contains
     use class_Sparsity
     use create_Sparsity_Union
 
+    use m_ts_rgn2trimat
     use m_ts_electype
 #ifdef MPI
     use mpi_siesta
@@ -50,9 +51,8 @@ contains
 #endif
 
     use m_sparsity_handling
-    use m_tbt_options, only : N_Elec, Elecs
+    use m_tbt_options, only : N_Elec, Elecs, opt_TriMat_method
     use m_tbt_regions
-    use m_tbt_region2trimat
 
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
@@ -86,9 +86,10 @@ contains
 #endif
 
        ! Create tri-diagonal parts for this electrode
-       call tbt_region2TriMat(dit,tmpSp1,r_oElpD(i), &
-            ElTri(i)%n, ElTri(i)%r, last_eq = Elecs(i)%o_inD%n, &
-            par = .false. )
+       ! IF parts == 0 will create new partition
+       call ts_rgn2TriMat(N_Elec, Elecs, .false., &
+            dit, tmpSp1, r_oElpD(i), ElTri(i)%n, ElTri(i)%r, &
+            opt_TriMat_method, last_eq = Elecs(i)%o_inD%n , par = .false. )
        call delete(tmpSp1)
 
     end do
@@ -129,6 +130,7 @@ contains
     use class_Sparsity
     use create_Sparsity_Union
 
+    use m_ts_rgn2trimat
     use m_ts_electype
 #ifdef MPI
     use mpi_siesta
@@ -138,9 +140,8 @@ contains
 #endif
 
     use m_sparsity_handling
-    use m_tbt_options, only : N_Elec, Elecs
+    use m_tbt_options, only : N_Elec, Elecs, opt_TriMat_method
     use m_tbt_regions
-    use m_tbt_region2trimat
 
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
@@ -212,8 +213,9 @@ contains
     call rgn_delete(DevTri)
 
     ! Create tri-diagonal parts for this one...
-    call tbt_region2TriMat(dit,tmpSp2,r_oDev, DevTri%n, DevTri%r, &
-         last_eq = 0)
+    call ts_rgn2TriMat(N_Elec, Elecs, .true., &
+       dit, tmpSp2, r_oDev, DevTri%n, DevTri%r, &
+       opt_TriMat_method, last_eq = 0, par = .false. )
     call delete(tmpSp2) ! clean up
 
     DevTri%name = '[TRI] device region'
@@ -229,17 +231,6 @@ contains
     call timer('tri-init',2)
 
   end subroutine tbt_tri_init
-
-  function tri_elements(N_tri,tri) result(elem)
-    integer, intent(in) :: N_tri, tri(N_tri)
-    integer :: elem, i
-
-    elem = tri(N_tri)**2
-    do i = 1 , N_tri - 1
-       elem = elem + tri(i)*( tri(i) + 2 * tri(i+1) )
-    end do
-    
-  end function tri_elements
 
   function fold_elements(N_tri,tri) result(elem)
     integer, intent(in) :: N_tri, tri(N_tri)

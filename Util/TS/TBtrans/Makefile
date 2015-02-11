@@ -76,6 +76,7 @@ TS_OBJS += m_gauss_fermi_17.o m_ts_aux.o
 
 # The block-tri-diagonal matrix routines
 TS_OBJS += m_ts_tri_scat.o m_trimat_invert.o m_ts_trimat_invert.o
+TS_OBJS += m_ts_tri_common.o m_ts_rgn2trimat.o
 
 # For creating the global-unit-cell sparsity pattern
 TS_OBJS += m_ts_sparse.o m_ts_tdir.o
@@ -84,11 +85,11 @@ TBTOBJS  = $(SIESTA_OBJS) $(TS_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA)
 
 # Add generic tbtrans routines
 TBTOBJS += tbt_init.o tbt_end.o tbt_reinit.o m_tbt_hs.o m_tbt_regions.o
-TBTOBJS += m_tbt_options.o m_tbt_sparsity2trimat.o m_tbt_tri_init.o
+TBTOBJS += m_tbt_options.o m_tbt_tri_init.o
 TBTOBJS += m_tbt_contour.o m_tbt_kpoint.o m_tbt_gf.o
 
 # Different solution methods
-TBTOBJS += m_tbtrans.o m_tbt_trik.o m_tbt_tri_scat.o m_tbt_trimat_invert.o
+TBTOBJS += m_tbtrans.o m_tbt_trik.o m_tbt_tri_scat.o
 TBTOBJS += m_tbt_proj.o m_tbt_diag.o m_tbt_dH.o
 
 # The saving methods
@@ -884,9 +885,9 @@ m_tbt_proj.o: m_io_s.o m_ncdf_io.o m_region.o m_tbt_diag.o m_tbt_hs.o
 m_tbt_proj.o: m_tbt_save.o m_ts_electype.o parallel.o precision.o timestamp.o
 m_tbt_proj.o: units.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
-m_tbt_regions.o: intrinsic_missing.o m_io_s.o m_region.o m_sparsity_handling.o
-m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_sparse.o
-m_tbt_regions.o: parallel.o
+m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_io_s.o m_region.o
+m_tbt_regions.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o
+m_tbt_regions.o: m_ts_method.o m_ts_sparse.o parallel.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_io_s.o m_ncdf_io.o m_region.o
 m_tbt_save.o: m_tbt_hs.o m_ts_electype.o parallel.o precision.o timestamp.o
@@ -898,17 +899,14 @@ m_tbt_sparse_helper.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 m_tbt_sparse_helper.o: m_region.o m_tbt_kregions.o m_ts_electype.o
 m_tbt_sparse_helper.o: m_ts_method.o m_ts_sparse_helper.o parallel.o
 m_tbt_sparse_helper.o: precision.o
-m_tbt_sparsity2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_tbt_sparsity2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
-m_tbt_sparsity2trimat.o: m_tbt_options.o m_ts_electype.o parallel.o precision.o
 m_tbt_tri_init.o: class_OrbitalDistribution.o class_Sparsity.o
 m_tbt_tri_init.o: create_Sparsity_Union.o m_region.o m_sparsity_handling.o
-m_tbt_tri_init.o: m_tbt_options.o m_tbt_regions.o m_tbt_sparsity2trimat.o
-m_tbt_tri_init.o: m_ts_debug.o m_ts_electype.o parallel.o precision.o
+m_tbt_tri_init.o: m_tbt_options.o m_tbt_regions.o m_ts_debug.o m_ts_electype.o
+m_tbt_tri_init.o: m_ts_rgn2trimat.o parallel.o precision.o
 m_tbt_tri_scat.o: alloc.o class_SpData1D.o class_SpData1D.o class_Sparsity.o
 m_tbt_tri_scat.o: class_TriMat.o intrinsic_missing.o m_region.o m_tbt_proj.o
-m_tbt_tri_scat.o: m_ts_cctype.o m_ts_electype.o m_ts_tri_scat.o
-m_tbt_tri_scat.o: m_ts_trimat_invert.o precision.o units.o
+m_tbt_tri_scat.o: m_ts_cctype.o m_ts_electype.o m_ts_tri_common.o
+m_tbt_tri_scat.o: m_ts_tri_scat.o m_ts_trimat_invert.o precision.o units.o
 m_tbt_trik.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_tbt_trik.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
 m_tbt_trik.o: class_Sparsity.o class_TriMat.o intrinsic_missing.o m_iterator.o
@@ -916,11 +914,10 @@ m_tbt_trik.o: m_mat_invert.o m_pivot_array.o m_region.o m_tbt_contour.o
 m_tbt_trik.o: m_tbt_dH.o m_tbt_gf.o m_tbt_hs.o m_tbt_kpoint.o m_tbt_kregions.o
 m_tbt_trik.o: m_tbt_options.o m_tbt_proj.o m_tbt_regions.o m_tbt_save.o
 m_tbt_trik.o: m_tbt_sigma_save.o m_tbt_sparse_helper.o m_tbt_tri_init.o
-m_tbt_trik.o: m_tbt_tri_scat.o m_tbt_trimat_invert.o m_timer.o
-m_tbt_trik.o: m_trimat_invert.o m_ts_cctype.o m_ts_elec_se.o m_ts_electype.o
-m_tbt_trik.o: m_ts_sparse_helper.o parallel.o precision.o units.o
-m_tbt_trimat_invert.o: class_TriMat.o m_region.o m_trimat_invert.o
-m_tbt_trimat_invert.o: m_ts_trimat_invert.o precision.o
+m_tbt_trik.o: m_tbt_tri_scat.o m_timer.o m_trimat_invert.o m_ts_cctype.o
+m_tbt_trik.o: m_ts_elec_se.o m_ts_electype.o m_ts_sparse_helper.o
+m_tbt_trik.o: m_ts_tri_common.o m_ts_trimat_invert.o parallel.o precision.o
+m_tbt_trik.o: units.o
 m_tbtrans.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_tbtrans.o: class_SpData2D.o class_Sparsity.o m_region.o m_tbt_contour.o
 m_tbtrans.o: m_tbt_hs.o m_tbt_kpoint.o m_tbt_kregions.o m_tbt_options.o
@@ -1052,7 +1049,6 @@ m_siesta_move.o: siesta_move.o
 m_state_analysis.o: state_analysis.o
 m_state_init.o: state_init.o
 m_struct_init.o: struct_init.o
-m_tbt_region2trimat.o: m_tbt_sparsity2trimat.o
 m_timer_tree.o: timer_tree.o
 m_timestamp.o: timestamp.o
 m_ts_init.o: ts_init.o
