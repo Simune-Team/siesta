@@ -2,7 +2,7 @@
       module schrodinger_m
 
       use precision,        only: dp
-      use atmparams,        only: nrmax
+      use psop_params,      only: nrmax
 
       implicit none
 

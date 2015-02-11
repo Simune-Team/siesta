@@ -10,23 +10,33 @@
 ! Input required:
 !
 !     The name of the file where the pseudopotential is stored 
-!     (here we assume that this name can be constructed from the systemlabel)
 !     The angular momentum cutoff for KB non-local pseudopotential
-!     (here lmxkb)         
-!     The number of KB projectors per angular momentum shell
+!     (here lmxkb) is fixed by the maximum l in the pseudo file.
+
+!     The number of KB projectors per angular momentum shell is
+!     based on whether there are semicore states or not. There is
+!     currently no support for extra "precision" projectors.
+
 !     The reference energy for the calculation of the KB projectors
+!     is fixed to the Siesta defaults (i.e.: eigenvalue of a bound
+!     state)
 !
-! Output:
-!
-!     the pseudopotential read, of type pseudopotential_t
+!     Implementation note:
+!       
+!     Even though this program is able to deal with .psml files, the
+!     information in them is first converted to the old "Froyen" 
+!     form, which is able to offer the lowest common functionality.
+!     Eventually, support for .psf and .vps files might be discontinued.
 
       use precision,        only: dp
-      use atmparams,        only: nrmax, nkbmx
+      use psop_params,        only: nrmax, nkbmx
       use m_ncps, only: pseudopotential_t => froyen_ps_t, pseudo_read
       use m_pseudooperator, only: radii_ps, vlocal1, vlocal2, KBgen
       use m_semicore_info_froyen, only: get_n_semicore_shells
       use SiestaXC, only: xc_id_t, get_xc_id_from_atom_id, setXC
       use SiestaXC, only: atomxc
+
+      use psop_options
       use m_getopts
       use flib_wxml
 
@@ -36,6 +46,7 @@
 !     INPUT VARIABLES REQUIRED TO GENERATE THE LOCAL PART AND KB PROJECTORS
 !     THEY MUST BE PROVIDED BY THE USER
 !  
+      character(len=200)      :: work_string
       character(len=200)      :: filename
 
       character(len=30)       :: systemlabel ! System label, used to identify
@@ -205,20 +216,37 @@
 
       character(len=200) :: opt_arg, mflnm, ref_line
       character(len=10)  :: opt_name 
-      integer :: nargs, iostat, n_opts, nlabels, iorb, ikb
+      integer :: nargs, iostat, n_opts, nlabels, iorb, ikb, i
 !
 !     Process options
 !
       n_opts = 0
+
+      restricted_grid = .true.
+      new_kb_reference_orbitals = .true.
+      debug_kb_generation = .false.
+      write_ion_plot_files = .false.
+      rmax_ps_check = 0.0_dp
+
       do
-         call getopts('h',opt_name,opt_arg,n_opts,iostat)
+         call getopts('hdKgpR:',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
          select case(opt_name)
+           case ('d')
+              debug_kb_generation = .true.
+           case ('g')
+              restricted_grid = .false.
+           case ('p')
+              write_ion_plot_files = .true.
+           case ('K')
+              new_kb_reference_orbitals = .false.
+           case ('R')
+              read(opt_arg,*) rmax_ps_check
            case ('h')
             call manual()
            case ('?',':')
              write(0,*) "Invalid option: ", opt_arg(1:1)
-             write(0,*) "Usage: mprop [ -d ] [ -h ] MPROP_FILE_ROOT"
+             write(0,*) "Usage: psop [ options ] FILE"
              write(0,*) "Use -h option for manual"
              STOP
           end select
@@ -227,7 +255,7 @@
        nargs = command_argument_count()
        nlabels = nargs - n_opts + 1
        if (nlabels /= 1)  then
-          write(0,*) "Usage: psop [ -h ] FILE"
+          write(0,*) "Usage: psop [ options ] FILE"
           write(0,*) "Use -h option for manual"
           STOP
        endif
@@ -303,10 +331,10 @@
 
 !     Define the reference energies (in Ry) for the calculation of the KB proj.
       allocate( erefkb(nkbmx,0:lmxkb) )
-      erefkb(:,:) = huge(1.0_dp)
+      erefkb(:,:) = huge(1.0_dp)   ! defaults 'a la Siesta'
 ! 
 !     STORE THE IONIC PSEUDOPOTENTIALS IN A LOCAL VARIABLE 
-!     Only the 'down' component is used
+!     Only the 'down'/major component is used
 !
       allocate( vps(nrmax,0:lmxkb) )
 
@@ -479,12 +507,21 @@
 !     Generate xml snippet
 !
       call xml_NewElement(xf,"pseudopotential-operator")
-      call my_add_attribute(xf,"version","0.1")
       call my_add_attribute(xf,"energy_unit","hartree")
       call my_add_attribute(xf,"length_unit","bohr")
 
         call xml_NewElement(xf,"provenance")
           call my_add_attribute(xf,"creator","psop")
+          call get_command(work_string)  ! full command line (F2003)
+          call my_add_attribute(xf,"options",work_string)
+          call xml_NewElement(xf,"source-file")
+          call my_add_attribute(xf,"filename",filename)
+          call my_add_attribute(xf,"creator",psr%method(1))
+          call my_add_attribute(xf,"date",psr%method(2))
+          write(work_string,'(4a10)') (psr%method(i),i=3,6)
+          call my_add_attribute(xf,"method",work_string)
+          call my_add_attribute(xf,"ps-config",psr%text)
+        call xml_EndElement(xf,"source-file")
         call xml_EndElement(xf,"provenance")
 
         call xml_NewElement(xf,"grid")
@@ -574,7 +611,14 @@ end subroutine get_label
       end subroutine my_add_attribute
 
 subroutine manual()
-  write(0,*) "Manual under construction"
+  write(0,*) "Usage: psop [ options ] FILE"
+  write(0,*) " FILE:       Any of .vps, .psf, or .psml"
+  write(0,*) " Options: "
+  write(0,*) " -d                                debug"
+  write(0,*) " -p                 write_ion_plot_files"
+  write(0,*) " -K  use old-style KB reference orbitals"
+  write(0,*) " -g            use unrestricted log grid"
+  write(0,*) " -R rmax_ps_check (bohr) for tail checks"
 end subroutine manual
 
 end program psop

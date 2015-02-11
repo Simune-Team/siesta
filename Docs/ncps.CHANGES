@@ -1,4 +1,35 @@
 ------------------------------------------------------------
+February 11, 2015  Alberto Garcia        trunk-462--ncps-53
+More functionality in psop
+
+Command line options to replicate some of the options in Siesta (notably
+the new KB generation defaults by J. Junquera).
+
+More provenance information, including a summary of the source file
+metadata.
+
+Bug fix in the format for the attribute 'l' in the <proj> element.
+
+General code refactoring, and simplification of the Makefile (the PSML
+library is now considered external)
+
+removed:
+  Util/Pseudo-operator/atom_options.F90
+  Util/Pseudo-operator/test_psml.f90
+added:
+  Util/Pseudo-operator/psml_die.f
+  Util/Pseudo-operator/psop_options.f90
+renamed:
+  Util/Pseudo-operator/atmparams.f => Util/Pseudo-operator/psop_params.f
+modified:
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/precision.F
+  Util/Pseudo-operator/psop.f90
+  Util/Pseudo-operator/schrodinger.F
+  Util/Pseudo-operator/psop_params.f
+
+------------------------------------------------------------
 February 11, 2015  Alberto Garcia        trunk-462--ncps-52
 Optionally use a shorter maximum radius for ps tail check
 

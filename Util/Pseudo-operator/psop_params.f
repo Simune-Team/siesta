@@ -8,41 +8,22 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      module atmparams
+      module psop_params
 
       implicit none 
 !
 !    Hard-wired parameters to be eliminated in the future
 !
 
-C INTEGER  NZETMX   : Maximum number of PAOs or polarization orbitals
-C                     with the same angular  momentum and 
-C                     for the same species.       
-
-         integer, parameter, public  :: nzetmx =    3  
-
 C INTEGER  NKBMX    : Maximum number of Kleinman-Bylander projectors
 C                     for each angular momentum
 
          integer, parameter, public  :: nkbmx  =    2  
 
-C INTEGER  NSMX    : Maximum number of semicore shells for each angular
-C                    momentum present in the atom ( for normal atom nsmx=0)
-
-         integer, parameter, public  :: nsmx  =    2  
-         integer, parameter, public  :: nsemx = 1 + nsmx  
-
-C INTEGER NTBMAX    : Maximum number of points in the tables defining
-C                     orbitals,projectors and local neutral-atom 
-C                     pseudopotential.
-
-         integer, parameter, public  :: ntbmax =  500  
-
 C INTEGER LMAXD     : Maximum angular momentum for both orbitals and 
 C                      projectors.
 
          integer, parameter, public  :: lmaxd  =    4  
-         integer, parameter, public  :: lmx2   = (lmaxd+1)*(lmaxd+1)  
 
 C INTEGER  NRMAX    : Maximum number of points in the functions read
 C                     from file '.vps' or '.psf' (this number is
@@ -56,8 +37,4 @@ C
 
          integer, parameter, public  :: nrmax  = 20000
 
-         integer, parameter, public  :: maxos=2*nzetmx*lmx2*nsemx
-
-         private
-
-      end module atmparams
+      end module psop_params

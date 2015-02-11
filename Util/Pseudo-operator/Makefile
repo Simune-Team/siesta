@@ -3,7 +3,7 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-.PHONY: ncps clean wxml psml
+.PHONY: ncps clean wxml
 #
 default: psop
 #
@@ -16,32 +16,22 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/psml # To pick up mod files
+# Note that PSML is now considered an external library
+# Appropriate symbols should be put in arch.make
+#
+INCFLAGS:=$(INCFLAGS) $(PSML_INCFLAGS)
+#
 INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/wxml # To pick up mod files
 INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/SiestaXC # To pick up mod files
-#
-# If we have compiled libncps.a using XMLF90 instead of FoX,
-# use the appropriate library
-#
-FPPFLAGS:=$(FPPFLAGS) -DHAS_PSML_SUPPORT
-#
-ifneq (,$(findstring DPSML_USE_FOX,$(FPPFLAGS)))
- include $(MAIN_OBJDIR)/Mk/FoX.mk
- LIBS_PSML= $(MAIN_OBJDIR)/libpsml.a $(FOX_LIBS) 
-else
-#
- LIBS_PSML= $(MAIN_OBJDIR)/libpsml.a $(MAIN_OBJDIR)/libxmlparser.a
-endif
 #
 LIBS_XC:= -L$(MAIN_OBJDIR)/SiestaXC -l SiestaXC
 LIBS_WXML:= -L$(MAIN_OBJDIR)/wxml -l wxml
 #
-# Note that machine-specific files are now in top Src directory.
 #
 OBJS = precision.o  \
-	atmparams.o atom_options.o \
+	psop_params.o psop_options.o\
 	psop.o module_pseudo.o schrodinger.o arw.o\
-        local_die.o semicore_info_froyen.o
+        local_die.o psml_die.o semicore_info_froyen.o
 #
 #
 MOD_OBJS=m_ncps.o m_ncps_froyen_ps_t.o	\
@@ -56,20 +46,15 @@ $(COM_OBJS):
 #
 what:
 	echo "VPATH: " $(VPATH)
-psop:  psml wxml $(ALL_OBJS)
+psop:   wxml $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o psop $(ALL_OBJS) \
-        $(LIBS_PSML) $(LIBS_XC) $(LIBS_WXML)
+        $(PSML_LIBS) $(LIBS_XC) $(LIBS_WXML)
 
-#TEST_OBJS= semicore_info.o test_psml.o local_die.o
-TEST_OBJS= test_psml.o local_die.o m_getopts.o f2kcli.o
-#
-test_psml:  psml $(TEST_OBJS)
-	$(FC) $(FFLAGS) $(LDFLAGS) -o test_psml $(TEST_OBJS) $(LIBS_PSML) 
 #
 arw.o:  precision.o 
-module_pseudo.o: atmparams.o precision.o schrodinger.o 
-psop.o: precision.o atmparams.o module_pseudo.o
-schrodinger.o: arw.o precision.o
+module_pseudo.o: psop_params.o precision.o schrodinger.o psop_options.o
+psop.o: precision.o psop_params.o module_pseudo.o psop_options.o
+schrodinger.o: arw.o precision.o psop_params.o
 #
 m_ncps.o: m_ncps_froyen_ps_t.o m_ncps_reader.o m_ncps_translators.o
 m_ncps.o: m_ncps_writers.o
@@ -79,7 +64,6 @@ m_ncps_reader.o: m_ncps_translators.o
 m_ncps_translators.o: m_ncps_froyen_ps_t.o
 m_ncps_writers.o: m_ncps_froyen_ps_t.o
 psop.o: m_getopts.o semicore_info_froyen.o
-test_psml.o: m_getopts.o
 m_getopts.o: f2kcli.o
 #
 clean: 
@@ -87,9 +71,6 @@ clean:
 	rm -f psop *.o  *.a *.pcl *.pc *.mod
 	rm -f *.mod
 #
-psml:
-	@echo "Making sure that the psml library is compiled..."
-	(cd ../../$(OBJDIR)/psml ; make "VPATH=$(VPATH)/psml")
 wxml:
 	@echo "Making sure that the wxml library is compiled..."
 	(cd ../../$(OBJDIR)/wxml ; make "VPATH=$(VPATH)/wxml")
