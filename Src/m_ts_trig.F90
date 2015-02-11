@@ -153,7 +153,7 @@ contains
 ! ******************** Loop variables ************************
     type(itt1) :: Sp
     integer, pointer :: ispin
-    integer :: iEl, iID, ia
+    integer :: iEl, iID
     integer :: iE, imu, io, idx
     integer :: no
     real(dp), parameter :: bkpt(3) = (/0._dp,0._dp,0._dp/)
@@ -718,7 +718,7 @@ contains
 ! ******************** Loop variables ************************
     type(itt1) :: Sp
     integer, pointer :: ispin
-    integer :: ia, iEl, io, idx
+    integer :: iEl, io, idx
     integer :: no
     real(dp), parameter :: bkpt(3) = (/0._dp,0._dp,0._dp/)
 ! ************************************************************

@@ -159,7 +159,7 @@ contains
 ! ******************** Loop variables ************************
     type(itt2) :: SpKp
     integer, pointer :: ispin, ikpt
-    integer :: iEl, iID, ia
+    integer :: iEl, iID
     integer :: iE, imu, io, idx
     integer :: no
 ! ************************************************************
@@ -745,7 +745,7 @@ contains
 ! ******************** Loop variables ************************
     type(itt2) :: SpKp
     integer, pointer :: ispin, ikpt
-    integer :: ia, iEl, io, idx
+    integer :: iEl, io, idx
     integer :: no
 #ifdef MPI
     integer :: MPIerror

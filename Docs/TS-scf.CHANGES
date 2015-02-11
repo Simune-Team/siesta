@@ -1,4 +1,15 @@
 ----------------------------------------------------
+February 11, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-294
+Removed unused variables from ts routines
+
+modified:
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/ts_show_regions.f90
+
+----------------------------------------------------
 February 11, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-293
 Constraints can now also clear constraints imposed.
 

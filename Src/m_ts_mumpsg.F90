@@ -46,7 +46,7 @@ contains
        Hs, Ss, DM, EDM, Ef, kT)
 
     use units, only : eV, Pi
-    use parallel, only : Node, Nodes, IONode
+    use parallel, only : Node, Nodes
 #ifdef MPI
     use mpi_siesta
 #endif

@@ -18,7 +18,7 @@ subroutine ts_show_regions(ucell,na_u,xa,N_Elec,Elecs)
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-  integer :: ia, i, ia_mid, v
+  integer :: ia, i, ia_mid
 
   if ( .not. IONode ) return
 
