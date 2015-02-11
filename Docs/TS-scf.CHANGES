@@ -1,4 +1,22 @@
 ----------------------------------------------------
+February 11, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-293
+Constraints can now also clear constraints imposed.
+
+* This is handy if you have a huge system and want to constrain
+  a few scattered atoms.
+
+  Then you can do:
+    Z 6 # constrain all carbon atoms
+    Z 79 # constrain all gold atoms
+    clear 45 87 # remove all previous constraints on index 45 and 87
+    clear-prev 46 # remove previous constraint on index 46
+
+  This makes constraints much more agile and flexible.
+
+modified:
+  Src/m_fixed.F90
+
+----------------------------------------------------
 February 11, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-292
 Enabled tbtrans to utilize as many routines from TS
 

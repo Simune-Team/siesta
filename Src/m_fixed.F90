@@ -159,7 +159,7 @@ contains
     integer :: ix, jx, ia
     integer :: if, N, i
     character(len=TYPE_LEN) :: namec
-    real(dp) :: fxc, ca(3), am, cf(3)
+    real(dp) :: ca(3), am, cf(3)
     logical :: lmag_use
 
 #ifdef DEBUG
@@ -548,15 +548,14 @@ contains
 
     ! Internal variables
     character(len=TYPE_LEN) :: namec
-    character(len=20) :: ctmp
 
-    integer :: ifix, i, ix, N
+    integer :: sfix, ifix, i, ix, N
     logical :: add_dir
 
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline
 
-    type(tRgn) :: rr
+    type(tRgn) :: rr, r_tmp
 
     ! Initialise stress constraints to unconstrained state
     xs(:) = 0._dp
@@ -642,6 +641,42 @@ contains
 
 
        ! ****** Now we only look at atomic specifications for constraints ******
+
+       else if ( leqi(namec,'clear') .or. &
+            leqi(namec,'clear-previous') .or. leqi(namec,'clear-prev') ) then
+
+          ! This is a special option which removes all atoms in 
+          ! the list for all currently found constraints (or the previous).
+          ! This lets one do pretty complex constraints.
+          
+          ! For instance if one have a system of Au -- C -- Au with a 
+          ! C being a hexagon attached to one Au on both sides, then bulk Au.
+          ! Then one can relax that one Au and the C by this constraint
+          !   Z 79
+          !   clear 11 45
+          call fdf_brange(pline,rr,1,na)
+          call rgn_sort(rr) ! sort to fasten the search 
+
+          ! Loop through all fixes that has been requested
+          sfix = 1
+          if ( leqi(namec,'clear-previous') ) sfix = ifix
+          if ( leqi(namec,'clear-prev') ) sfix = ifix
+          do ix = sfix , ifix
+             ! easy skip (easier than if)
+             if ( rr%n == 0 ) cycle
+
+             ! Remove all cleared atoms
+             call rgn_list(r_tmp,fixs(ix)%n,fixs(ix)%a)
+             call rgn_complement(rr,r_tmp,r_tmp)
+             if ( r_tmp%n /= fixs(ix)%n ) then
+                deallocate(fixs(ix)%a)
+                fixs(ix)%n = r_tmp%n
+                allocate(fixs(ix)%a(r_tmp%n))
+                fixs(ix)%a = r_tmp%r
+             end if
+             call rgn_delete(r_tmp)
+
+          end do
           
        else if ( leqi(namec,'position') .or. leqi(namec,'atom') .or. &
             leqi(namec,'species-i') .or. leqi(namec,'Z') ) then
@@ -696,9 +731,6 @@ contains
              fixs(ifix)%a(:) = rr%r(:)
           end if
 
-          ! Clean-up
-          call rgn_delete(rr)
-
           add_dir = .true.
           fixs(ifix)%type = 'pos'
 
@@ -715,9 +747,6 @@ contains
           allocate(fixs(ifix)%a(rr%n))
           fixs(ifix)%a(:) = rr%r(:)
 
-          ! Clean-up
-          call rgn_delete(rr)
-
           add_dir = .true.
           fixs(ifix)%type = 'mol'
 
@@ -733,9 +762,6 @@ contains
           fixs(ifix)%n = rr%n
           allocate(fixs(ifix)%a(rr%n))
           fixs(ifix)%a(:) = rr%r(:)
-
-          ! Clean-up
-          call rgn_delete(rr)
 
           add_dir = .true.
           fixs(ifix)%type = 'mol-max'
@@ -754,9 +780,6 @@ contains
           allocate(fixs(ifix)%a(rr%n))
           fixs(ifix)%a(:) = rr%r(:)
 
-          ! Clean-up
-          call rgn_delete(rr)
-
           fixs(ifix)%type = 'com'
 
        else if ( leqi(namec,'center') ) then
@@ -772,9 +795,6 @@ contains
           fixs(ifix)%n = rr%n
           allocate(fixs(ifix)%a(rr%n))
           fixs(ifix)%a(:) = rr%r(:)
-
-          ! Clean-up
-          call rgn_delete(rr)
 
           fixs(ifix)%type = 'center'
 
@@ -806,6 +826,8 @@ contains
 
           end if
        end if
+
+       call rgn_delete(rr)
 
     end do
 
