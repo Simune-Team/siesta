@@ -446,17 +446,32 @@ contains
     ! This seems like the best choice when looking
     ! at TB models where number of connections is the same
     ia1 = r_oDev%n
-    if ( fdf_get('TBT.Atoms.Device.Sort',.true.) ) then
+    g = fdf_get('TBT.Atoms.Device.Sort',trim(Elecs(1)%name))
+    if ( leqi(g,'none') ) then
 
+       ! do nothing, it should not be sorted.
+
+    else
+       
        call rgn_copy(r_oDev, r_Dev)
 
-       ! We select all the atoms from the left electrode
+       ! We select all the atoms from the specified electrode
        ! that connect into the device
        ! This forces the initial search-pattern
        ! to use the "electrode-surface" as an initial SP guess
        ! Note that the connecting electrode orbitals are already
        ! sorted wrt. back-connectivity
-       call rgn_copy(Elecs(1)%o_inD,r_oDev)
+
+       ! Figure out which electrode has been given
+       call rgn_delete(r_oDev)
+       do i = 1 , N_Elec
+          if ( Elecs(i)%name == g ) &
+               call rgn_copy(Elecs(i)%o_inD,r_oDev)
+       end do
+       if ( r_oDev%n == 0 ) then
+          call die('Could not determine sorting electrode. &
+               &Please provide a valid electrode name or none.')
+       end if
        
        do
 

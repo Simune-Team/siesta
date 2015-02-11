@@ -1,4 +1,15 @@
 ----------------------------------------------------
+February 11, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-295
+Enabled sorting by electrode in tbtrans
+
+* The BTD format can now be sorted according to	
+  a user-controlled electrode, instead of the first
+  one.
+
+modified:
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 February 11, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-294
 Removed unused variables from ts routines
 
