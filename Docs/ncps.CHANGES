@@ -1,5 +1,15 @@
 ------------------------------------------------------------
-January 14, 2014  Alberto Garcia        trunk-462--ncps-49
+February 11, 2015  Alberto Garcia        trunk-462--ncps-50
+Remove dependency on radial.f in meshsubs
+
+Use rchlocal function instead.
+
+modified:
+  Src/Makefile
+  Src/meshsubs.F
+
+------------------------------------------------------------
+January 14, 2015  Alberto Garcia        trunk-462--ncps-49
 Enhance psop and projector accessor functions
 
 * The KB generation program psop in Util/PseudoOperator has been enhanced to

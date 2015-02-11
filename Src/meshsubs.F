@@ -781,9 +781,8 @@ C ----------------------------------------------------------------------
 C real    Chlocal(ntpl)     : Sum of diffuse ionic charge densities
 C ----------------------------------------------------------------------
       use precision, only: dp, grid_p
-      use atmfuncs,  only: rcut, psch
+      use atmfuncs,  only: rcut, psch, rchlocal
       use atm_types, only: species
-      use radial,    only: rad_func
       use mesh,      only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
       implicit none
 C     Passed arguments
@@ -793,8 +792,6 @@ C     Passed arguments
 C     Internal variables
       integer                   :: ia, iop, ip, ip0, is, isp, iua
       real(dp)                  :: dx(3), grpsch(3), r, ra, pschloc
-      type(rad_func), pointer  :: func   
- 
 !------------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '      PRE LocalChargeOnMesh' )
@@ -806,8 +803,7 @@ C     Initialise array to zero
         if (ipa(ia)==0) cycle ! Atomic sphere does not intersec my Box
         iua = indxua(ia)
         is = isa(ia)
-        func => species(is)%chlocal
-        ra = func%cutoff
+        ra = rchlocal(is)
 C       Loop over mesh points inside rmax
         do iop = 1,mop
           ip0 = indexp( ipa(ia) + idop(iop) )
@@ -852,9 +848,8 @@ C real    ModelCore(ntpl)     : Sum of model core charge densities
 C ----------------------------------------------------------------------
 
       use precision,     only : dp, grid_p
-      use atmfuncs, only: rcut, psch, izofis, zvalfis
+      use atmfuncs, only: rcut, psch, izofis, zvalfis, rchlocal
       use atm_types, only : species
-      use radial, only : rad_func
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
 
       implicit none
@@ -875,8 +870,6 @@ C
       real(dp) dx(3), grpsch(3), r, ra, charge_ratio
       real(dp) core_charge, beta, pschloc
 
-      type(rad_func), pointer            :: func
-
 C Initialise array to zero
       ModelCore(1:ntpl) = 0.0_grid_p
 
@@ -884,8 +877,7 @@ C Initialise array to zero
         if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
         iua = indxua(ia)
         is = isa(ia)
-        func => species(is)%chlocal
-        ra = func%cutoff
+        ra = rchlocal(is)
 
         ! We will take advantage of the existing "local charge"
         ! by rescaling.
