@@ -56,7 +56,7 @@ CONTAINS
         character(len=40):: method_string
         character(len=1), dimension(0:4) :: &
                          sym = (/ "s", "p", "d", "f", "g" /)
-        integer          :: libxc_ids(2)
+        integer          :: libxc_ids(2), n_xcfuncs
         integer          :: status
 
         ! These are the "current" ATOM parameters
@@ -77,15 +77,25 @@ CONTAINS
         ! This needs to be generalized
         p%gen_zval     = ps_GenerationZval(ps)
         
-!       To be completed!!
-!       Need to include "universal" codes, such as those in LibXC
 !
-        libxc_ids = ps_LibxcIdArray(ps)
-        call get_xc_id_from_libxc(libxc_ids,xc_id,status)
+!       Partial support for libxc functionals
+!       (no single-functional cases, no 'cocktails')
+!
+        n_xcfuncs = ps_NLibXCFunctionals(ps)
+        if (n_xcfuncs == 2) then
+           do i = 1, n_xcfuncs
+              libxc_ids(i) = ps_LibxcId(ps,i)
+           enddo
+           call get_xc_id_from_libxc(libxc_ids,xc_id,status)
+        else
+           write(6,"(a,2i4)") "Cannot handle libxc cases with nfunc/=2..."
+           status = -1
+        endif
+
         if (status == 0) then
-           write(6,"(a,2i4)") "Using libxc ids: ", libxc_ids(:)
-           write(6,"(a)") trim(xc_id_to_string(xc_id))
-           p%icorr = xc_id%atom_id
+              write(6,"(a,2i4)") "Using libxc ids: ", libxc_ids(:)
+              write(6,"(a)") trim(xc_id_to_string(xc_id))
+              p%icorr = xc_id%atom_id
         else
            ! Fall back to querying a possible XC annotation
            call get_annotation_value(ps_XCAnnotation(ps),  &

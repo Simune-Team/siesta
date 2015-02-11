@@ -50,7 +50,7 @@ dep:
 include arch.make
 include Mk/FoX.mk
 
-INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
+INCFLAGS:= $(NETCDF_INCFLAGS) $(PSML_INCFLAGS) $(INCFLAGS)
 # For removing any -ipo compilation in sub directories...
 # Later compilers are also having this enabled, and it lets you
 # specify what to not be used in libraries.
@@ -162,7 +162,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_rhog.o rhofft.o m_diis.o compute_energies.o \
         class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o\
 	m_ncps_reader.o m_ncps_translators.o m_ncps.o m_ncps_froyen_reader.o\
-        m_ncps_writers.o m_ncps_froyen_ps_t.o
+        m_ncps_writers.o m_ncps_froyen_ps_t.o psml_die.o
 #--------------------------------------------------------------
 
 INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
@@ -174,12 +174,6 @@ FC_SERIAL?=$(FC_DEFAULT)
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
 	(cd xmlparser ; $(MAKE) VPATH="$(VPATH)/xmlparser" \
-	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
-#
-PSML=libpsml.a
-$(PSML): 
-	(cd psml ; $(MAKE) VPATH="$(VPATH)/psml" \
-	MAIN_OBJDIR="$(MAIN_OBJDIR)" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 #--------------------------------------------------------------
@@ -265,10 +259,10 @@ check-siesta:
 #
 siesta: check-siesta what version \
                 $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-                $(PSML) $(COMP_LIBS) $(ALL_OBJS) 
+                $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML)  \
-               $(XC) $(PSML) $(XMLPARSER) $(MPI_INTERFACE) \
+               $(XC) $(XMLPARSER) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) $(LIBS) 
 #
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
@@ -297,11 +291,11 @@ check-ts:
 #
 transiesta: check-ts what version \
             $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
-            $(WXML) $(XMLPARSER) $(PSML) \
+            $(WXML) $(XMLPARSER)  \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
-               $(WXML) $(XMLPARSER) $(PSML) \
+               $(WXML) $(XMLPARSER)  \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) $(LIBS)
 #
@@ -316,7 +310,6 @@ clean:
 	(cd fdf ; $(MAKE) clean)
 	@if [ -d FoX ] ; then (cd FoX ; touch arch.make ; $(MAKE) distclean) ; fi
 	(cd xmlparser ; $(MAKE) clean)
-	(cd psml ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
@@ -597,7 +590,7 @@ meshdscf.o: precision.o
 meshphi.o: alloc.o precision.o
 meshsubs.o: alloc.o atm_types.o atmfuncs.o cellsubs.o cellxc_mod.o chkgmx.o
 meshsubs.o: fft1d.o mesh.o meshphi.o moremeshsubs.o parallel.o parallelsubs.o
-meshsubs.o: precision.o siesta_cml.o sys.o
+meshsubs.o: precision.o radial.o siesta_cml.o sys.o
 metaforce.o: alloc.o parallel.o precision.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_pulay.o m_spin.o

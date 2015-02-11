@@ -1,4 +1,24 @@
 ------------------------------------------------------------
+February 11, 2015  Alberto Garcia        trunk-462--ncps-51
+Take psml as an external library. Update libxc support
+
+As psml is in rapid flux and it is being separately developed,
+Siesta is now built with an external copy of the library. The
+old psml code is still kept in Src/psml for now, pending a decision
+on whether the library will be included in the source distribution when
+it is stable. (There is a new file Src/Sys/example-psml.make showing how
+to include the relevant symbols.)
+
+The libxc support in the Froyen translator has been updated.
+
+added:
+  Src/Sys/example-psml.make
+  Src/psml_die.F90
+modified:
+  Src/Makefile
+  Src/m_ncps_translators.f90
+
+------------------------------------------------------------
 February 11, 2015  Alberto Garcia        trunk-462--ncps-50
 Remove dependency on radial.f in meshsubs
 
