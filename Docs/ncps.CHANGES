@@ -1,4 +1,21 @@
 ------------------------------------------------------------
+February 11, 2015  Alberto Garcia        trunk-462--ncps-52
+Optionally use a shorter maximum radius for ps tail check
+
+In atom.F, routine radii_ps, there is a check for the minimum r at
+which the V_l behave as -2*Zval/r. In some datasets, numerical
+oscillations at large r might confuse the (very simple) algorithm.
+For these cases, a new fdf variable can be specified. For example:
+
+rmax-ps-check 12.0 bohr
+
+will start the check at 12 bohr instead of 80 bohr (or whatever
+(large) maximum range of the grid).
+
+modified:
+  Src/atom.F
+
+------------------------------------------------------------
 February 11, 2015  Alberto Garcia        trunk-462--ncps-51
 Take psml as an external library. Update libxc support
 

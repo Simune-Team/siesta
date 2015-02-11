@@ -1278,7 +1278,7 @@ C
         integer,  intent(out)   ::  nrgauss
         real(dp), intent(out)   ::  rgauss, rgauss2
 
-        real(dp) dincv, r
+        real(dp) dincv, r, rmax_ps_check
         integer ir, l, nrgauss2
 
         real(dp), parameter     ::  eps=1.0d-4
@@ -1290,8 +1290,15 @@ C
         nrgauss=0
         nrgauss2=0
 
+
+!       Choose a large but not huge "infinity" for
+!       the check on potentials, say 12 bohr.
+!
+        Rmax_ps_check = fdf_physical("Rmax.PS.Check",rofi(nrval),"Bohr")
+
         do l=0,lmxkb-1
           do ir=nrval,2,-1
+            if (rofi(ir) > Rmax_ps_check) cycle
             dincv=abs(vps(ir,l)-vps(ir,lmxkb))
             if (dincv.gt.eps) exit
           enddo
@@ -1304,6 +1311,7 @@ C
 !
         do l=0,lmxkb
           do ir=nrval,2,-1
+            if (rofi(ir) > Rmax_ps_check) cycle
             r=rofi(ir)
             dincv=abs(vps(ir,l)*r+2.0_dp*zval)
             if (dincv.gt.eps) exit
