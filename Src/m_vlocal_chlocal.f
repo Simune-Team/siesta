@@ -4,13 +4,41 @@
 
       implicit none
 
-      public :: compute_vlocal_chlocal
+      public :: compute_vlocal_chlocal, chlocal_from_vlocal
+      public :: get_psml_vlocal
 
       private
 
       integer, parameter :: dp = selected_real_kind(10,100)
 
       CONTAINS
+
+      subroutine get_psml_vlocal(atm_label,rofi,nrval,Zval,vlocal)
+      use m_psml
+
+      character(len=*), intent(in)  :: atm_label
+      real(dp), intent(in)          :: rofi(:)
+      integer, intent(in)           :: nrval
+      real(dp), intent(in)          :: Zval
+      real(dp), intent(out)         :: vlocal(:)
+
+      type(ps_t) :: ps
+      integer    :: ir
+      
+      call ps_destroy(ps)
+      call psml_reader(trim(atm_label)//".psml",ps)
+
+      if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
+         call die("Zval mismatch in psml file")
+      endif
+
+      do ir = 1, nrval
+         vlocal(ir) = 2.0_dp * ps_EvaluateLocalPotential(ps,rofi(ir))
+      enddo
+
+      write(6,"(a)") "Got Vlocal from " // trim(atm_label)//".psml file"
+
+      end subroutine get_psml_vlocal
 
       subroutine compute_vlocal_chlocal(rofi,nrval,drdi,s,Zval,
      $                                  lmxkb, vps,
@@ -48,11 +76,7 @@
 !  
 ! Calculate local pseudopotential
 ! 
-!     if (rgauss2.gt.1.3d0*rgauss) then
-
-            ! For tests
-
-            if (.true.) then
+      if (rgauss2.gt.1.3d0*rgauss) then
 
               write(6,'(a)') "Using large-core scheme for Vlocal"
 
@@ -417,7 +441,7 @@ C   If third derivative fit
         enddo 
 
       ! Test the general-purpose routine
-      call chlocal_from_vlocal(rofi, vlocal, drdi, s, a, nrval,
+      call chlocal_from_vlocal(rofi, vlocal, drdi, a, nrval,
      $                         Zval, other_nchloc, other_chlocal)
 
 C     Once we have the local potential we define the 'local-pseudopotential 
@@ -527,7 +551,7 @@ C If third derivative fit
 
         end subroutine vlocal_as_fit
 
-      subroutine chlocal_from_vlocal(rofi, vlocal, drdi, s, a, nrval,
+      subroutine chlocal_from_vlocal(rofi, vlocal, drdi, a, nrval,
      $                               Zval, nchloc, chlocal)
 
       use flib_spline
@@ -536,7 +560,7 @@ C If third derivative fit
       ! the details of the fit for r < rgauss
       ! It should work for an arbitrary vlocal
 
-        real(dp), intent(in)    :: rofi(:), drdi(:), s(:), vlocal(:)
+        real(dp), intent(in)    :: rofi(:), drdi(:), vlocal(:)
         real(dp), intent(in)    :: a, Zval
         integer,  intent(in)    :: nrval
         real(dp), intent(out)   :: chlocal(:)
@@ -594,7 +618,7 @@ C     between the ions
         do ir = 1, nchloc-1
            qtot = qtot - 4*pi*rofi(ir)**2 * chlocal(ir) * drdi(ir)
         enddo
-        print *, "qtot in chlocal_from_vlocal: ", qtot
+!        print *, "qtot in chlocal_from_vlocal: ", qtot
 
         do ir=1,nchloc-1
           chlocal(ir)=zval*chlocal(ir)/qtot

@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+February 12, 2015  Alberto Garcia        trunk-462--ncps-55
+Implement reading of vlocal from PSML file
+
+(Work in progress)
+
+modified:
+  Src/atom.F
+  Src/m_vlocal_chlocal.f
+
+------------------------------------------------------------
 February 12, 2015  Alberto Garcia        trunk-462--ncps-54
 Split-off vlocal/chlocal calculation from atom.F
 

@@ -94,6 +94,8 @@
      .                       split_norm,filtercut_in,basp)
 
         use m_vlocal_chlocal, only: compute_vlocal_chlocal
+        use m_vlocal_chlocal, only: chlocal_from_vlocal
+        use m_vlocal_chlocal, only: get_psml_vlocal
 
         implicit none
 
@@ -464,11 +466,18 @@ c    .          'atom: The above configuration will be used ',
 ! 
           if (flting.gt.0.0d0) then
 
-             call compute_vlocal_chlocal(rofi,nrval,drdi,s,Zval,
-     $                                   lmxkb, vps, 
-     $                                   a, b, nicore,
-     $                                   nchloc,chlocal,
-     $                                   vlocal)
+             if (fdf_boolean('Use.PSML.Vlocal',.false.)) then
+                call get_psml_vlocal(atm_label,rofi,nrval,Zval,vlocal)
+                call chlocal_from_vlocal(rofi, vlocal, drdi,
+     $                         a, nrval,
+     $                         Zval, nchloc, chlocal)
+             else
+                call compute_vlocal_chlocal(rofi,nrval,drdi,s,Zval,
+     $                                      lmxkb, vps, 
+     $                                      a, b, nicore,
+     $                                      nchloc,chlocal,
+     $                                      vlocal)
+             endif
 
 ! 
 ! Save local-pseudopotential charge
