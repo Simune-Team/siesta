@@ -162,7 +162,8 @@ OBJS =  automatic_cell.o atom_options.o \
         m_rhog.o rhofft.o m_diis.o compute_energies.o \
         class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o\
 	m_ncps_reader.o m_ncps_translators.o m_ncps.o m_ncps_froyen_reader.o\
-        m_ncps_writers.o m_ncps_froyen_ps_t.o psml_die.o
+        m_ncps_writers.o m_ncps_froyen_ps_t.o psml_die.o \
+        m_vlocal_chlocal.o
 #--------------------------------------------------------------
 
 INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
@@ -323,8 +324,8 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: m_filter.o m_ncps.o m_recipes.o old_atmfuncs.o periodic_table.o
-atom.o: precision.o sys.o
+atom.o: m_filter.o m_ncps.o m_recipes.o m_vlocal_chlocal.o old_atmfuncs.o
+atom.o: periodic_table.o precision.o sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -573,6 +574,7 @@ m_ts_options.o: files.o m_fdf_global.o m_ts_contour.o m_ts_global_vars.o
 m_ts_options.o: m_ts_io.o parallel.o precision.o siesta_options.o sys.o units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
+m_vlocal_chlocal.o: flib_spline.o
 m_wallclock.o: m_walltime.o
 m_zminim.o: files.o parallel.o parallelsubs.o precision.o siesta_options.o
 m_zminim.o: sys.o
@@ -590,7 +592,7 @@ meshdscf.o: precision.o
 meshphi.o: alloc.o precision.o
 meshsubs.o: alloc.o atm_types.o atmfuncs.o cellsubs.o cellxc_mod.o chkgmx.o
 meshsubs.o: fft1d.o mesh.o meshphi.o moremeshsubs.o parallel.o parallelsubs.o
-meshsubs.o: precision.o radial.o siesta_cml.o sys.o
+meshsubs.o: precision.o siesta_cml.o sys.o
 metaforce.o: alloc.o parallel.o precision.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_pulay.o m_spin.o

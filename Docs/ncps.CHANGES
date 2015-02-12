@@ -1,4 +1,23 @@
 ------------------------------------------------------------
+February 12, 2015  Alberto Garcia        trunk-462--ncps-54
+Split-off vlocal/chlocal calculation from atom.F
+
+In preparation for the use of an arbitrary vlocal, the code
+that deals with vlocal and chlocal has been split off into
+a new module m_vlocal_chlocal.f.
+
+Apart from the old relevant routines, a new one that gets chlocal 
+from an arbitrary vlocal has been prepared. There are still some
+issues to clarify, mostly dealing with the cutoff to use, and the
+comparison with the old results. (Work in progress)
+
+added:
+  Src/m_vlocal_chlocal.f
+modified:
+  Src/Makefile
+  Src/atom.F
+
+------------------------------------------------------------
 February 11, 2015  Alberto Garcia        trunk-462--ncps-53
 More functionality in psop
 
