@@ -156,7 +156,7 @@ contains
     no_Buf = r_oBuf%n
 
     ! Create the "pivoting" array
-    call rgn_range(r_pvt,1,lasto(na_u)-r_oBuf%n)
+    call rgn_init(r_pvt,lasto(na_u)-r_oBuf%n)
     ia = 0
     do i = 1 , lasto(na_u)
        if ( orb_type(i) == TYP_BUFFER ) cycle

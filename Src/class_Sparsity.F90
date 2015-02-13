@@ -120,7 +120,7 @@ module class_Sparsity
     integer, intent(in)           :: nrows, nrows_g, nnzs
     integer, intent(in)           :: num(:), listptr(:)
     integer, intent(in), optional :: list(:)
-    character(len=*), intent(in)  :: name
+    character(len=*), intent(in), optional  :: name
     integer, intent(in), optional :: ncols, ncols_g
 
    ! We release the previous incarnation

@@ -31,9 +31,15 @@ module m_region
      logical :: sorted = .false.
   end type tRgn
 
-  public :: tRgn
+  ! A linked list of regions
+  type :: tRgnLL
+     type(tRgn) :: rgn
+     type(tRgnLL), pointer :: next => null()
+  end type tRgnLL
+
+  public :: tRgn, tRgnLL
   public :: rgn_init
-  public :: rgn_delete
+  public :: rgn_delete, rgnll_delete
   public :: rgn_intersection
   public :: rgn_union, rgn_append
   public :: rgn_union_complement, rgn_complement
@@ -45,6 +51,7 @@ module m_region
   public :: rgn_print
   public :: rgn_copy
   public :: in_rgn, rgn_pivot
+  public :: rgn_push, rgn_pop
 #ifdef MPI
   public :: rgn_MPI_union
   public :: rgn_MPI_Bcast
@@ -82,6 +89,21 @@ module m_region
   end interface rgn_insert
 
 contains
+
+  recursive subroutine rgnll_delete(rll)
+    type(tRgnLL), intent(inout) :: rll
+
+    ! clean the region
+    call rgn_delete(rll%rgn)
+
+    if ( associated(rll%next) ) then
+       call rgnll_delete(rll%next)
+       deallocate(rll%next)
+       nullify(rll%next)
+    end if
+    
+  end subroutine rgnll_delete
+
 
   ! Easy initialization a region with optional name
   subroutine rgn_init(r,n,name,val)
@@ -132,9 +154,9 @@ contains
        return
     end if
     if ( r%sorted ) then
-       in = SFIND(r%r(:),i) > 0
+       in = SFIND(r%r(1:r%n),i) > 0
     else
-       in = any(i == r%r)
+       in = any(i == r%r(1:r%n))
     end if
   end function in_rgn
 
@@ -147,9 +169,13 @@ contains
     if ( from%n == 0 ) then
        call rgn_delete(to)
        to%name = from%name
-    else
+    else if ( .not. associated(to%r,from%r) ) then
        call rgn_list(to,from%n,from%r,name=from%name)
        to%sorted = from%sorted
+!    else
+       ! The to and from have the same memory address
+       ! Hence we can skip copying anything
+       !print*,'skipping copy, same rgn'
     end if
   end subroutine rgn_copy
 
@@ -749,7 +775,7 @@ contains
     allocate(ct(r1%n+r2%n))
 
     ! Copy over r1
-    ct(1:r1%n) = r1%r(:)
+    ct(1:r1%n) = r1%r(1:r1%n)
 
     it = r1%n
     do i = 1 , r2%n
@@ -792,9 +818,9 @@ contains
     allocate(ct(it))
 
     ! Copy over r1
-    ct(1:r1%n) = r1%r(:)
+    ct(1:r1%n) = r1%r(1:r1%n)
     ! Copy over r2
-    ct(r1%n+1:it) = r2%r(:)
+    ct(r1%n+1:it) = r2%r(1:r2%n)
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
@@ -864,9 +890,9 @@ contains
     if ( i == 0 ) call die('Error in algorithm')
     allocate(itmp(rout%n+rin%n))
     itmp(1:i) = rout%r(1:i)
-    itmp(i+1:i+rin%n) = rin%r(:)
+    itmp(i+1:i+rin%n) = rin%r(1:rin%n)
     j = i + rin%n + 1
-    itmp(j:) = rout%r(i+1:)
+    itmp(j:) = rout%r(i+1:rout%n)
     call rgn_list(rout,size(itmp),itmp)
     deallocate(itmp)
 
@@ -1001,7 +1027,7 @@ contains
   subroutine rgn_sort(r)
     type(tRgn), intent(inout) :: r
     if ( r%n > 0 ) then
-       r%r(:) = SORT(r%r(:))
+       r%r(1:r%n) = SORT(r%r(1:r%n))
        r%sorted = .true.
     end if
   end subroutine rgn_sort
@@ -1211,7 +1237,48 @@ contains
     end if
 
   end subroutine rgn_print
+
+  function rgn_push(r,val) result(good)
+    type(tRgn), intent(inout) :: r
+    integer, intent(in) :: val
+    logical :: good
+
+    good = ( size(r%r) > r%n ) 
+    if ( .not. good ) return
+
+    r%n = r%n + 1
+    r%r(r%n) = val
     
+  end function rgn_push
+
+  ! Popping of an index of a region
+  function rgn_pop(r,idx,val) result(out)
+    type(tRgn), intent(inout) :: r
+    integer, intent(in), optional :: val, idx
+    integer :: out, i
+
+    if ( r%n == 0 ) then
+       out = 0
+       return
+    end if
+
+    if ( present(idx) ) then
+       i = idx
+    else if ( present(val) ) then
+       i = rgn_pivot(r,val)
+    else
+       i = 1 
+    end if
+
+    ! get the value
+    out = r%r(i)
+    if ( r%n > 1 .and. i < r%n ) then
+       ! remove it
+       r%r(i:r%n-1) = r%r(i+1:r%n)
+    end if
+    r%n = r%n - 1
+    
+  end function rgn_pop
 
 #ifdef MPI
   subroutine rgn_MPI_union(dit,r)
@@ -1245,7 +1312,7 @@ contains
     ! the data, then we b-cast it...
     if ( dist_node(dit) == 0 ) then
        if ( r%n > 0 ) then
-          rd(1:r%n) = r%r(:)
+          rd(1:r%n) = r%r(1:r%n)
        end if
        ct = r%n + 1
        do iN = 1 , dist_nodes(dit) - 1

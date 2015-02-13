@@ -56,8 +56,8 @@
       use m_ts_global_vars, only: TSrun, TSmode
       use sys, only : bye
       use m_ts_io, only : fname_TSHS, ts_write_tshs
-      use m_ts_sparse, only : ts_sparse_init, ts_sp_uc, ts_Optimize
-      use m_ts_tri_init, only : ts_tri_init
+      use m_ts_sparse, only : ts_sparse_init, ts_sp_uc
+      use m_ts_tri_init, only : ts_tri_init, ts_tri_analyze
       use files, only: slabel, label_length
 #endif
 #ifdef CDF
@@ -400,8 +400,6 @@
 
       ! When the user requests to only do an analyzation, we can call
       ! appropriate routines and quit
-      ! TODO, probably, there should be other analyzations that a user can
-      ! request, and then a more general way to do this should be encouraged.
       if ( TS_Analyze ) then
 
          ! Force the creation of the full sparsity pattern
@@ -410,19 +408,9 @@
      &        Gamma, isc_off)
 
          ! create the tri-diagonal matrix
-         call ts_tri_init( block_dist, sparse_pattern , N_Elec,
-     &        Elecs, IsVolt, ucell, na_u, lasto, nsc, isc_off,
+         call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
+     &        Elecs, ucell, na_u, lasto, nsc, isc_off,
      &        opt_TriMat_method )
-
-         ! print out the pivoting elements
-         ! for optimizing the tri-diagonal matrix form
-         
-         ! If you change this output statement then please
-         ! revisit the TSAnalyzeSort utility for updating the correct
-         ! search region.
-         if (IONode) write(*,'(a)')'transiesta: Central region...'
-         call ts_Optimize(ts_sp_uc,N_Elec, Elecs, na_u, lasto, xa, 
-     &        TS_bandwidth_algo)
 
          ! Bye also waits for all processors
          call bye('transiesta analyzation performed')

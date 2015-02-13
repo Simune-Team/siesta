@@ -41,22 +41,20 @@ contains
 
     ! The new sparsity pattern
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, allocatable :: num(:), listptr(:), list(:)
-    integer :: ia, ja, io, lio, ind, indx, idx
-    integer :: no_l, no_u, nnzs
-    integer :: a_c(na_u), ic
+    integer, allocatable :: a_c(:), num(:), listptr(:), list(:)
+    integer :: ia, ja, io, lio, ind, indx
+    integer :: no_l, no_u, n_nzs
+    integer :: ic
 
     call attach(in,nrows=no_l,nrows_g=no_u, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
     if ( no_u /= no_l ) call die('Error in conversion SpOrb2SpAt')
 
+    allocate(a_c(na_u))
     allocate(num(na_u))
-    a_c(:) = 0
     do ia = 1 , na_u
        ! we figure out the number of atom
        ! connections for each atom
-
-       num(ia) = 0
 
        ! Initialize count
        ic = 0
@@ -65,15 +63,16 @@ contains
           ! Check the local orbital
           lio = index_global_to_local(dit,io)
           if ( lio <= 0 ) cycle
+          if ( l_ncol(lio) == 0 ) cycle
 
           do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
           
              ! Get connecting atom
              ja = iaorb(l_col(ind),lasto)
              if ( ic == 0 ) then
-                ic = ic + 1
-                a_c(1) = ja
-             else if ( .not. any(ja == a_c(1:ic)) ) then
+                ic = 1 
+                a_c(ic) = ja
+             else if ( all(a_c(1:ic) /= ja) ) then
                 ic = ic + 1
                 a_c(ic) = ja
              end if
@@ -90,15 +89,22 @@ contains
     allocate(listptr(na_u))
     listptr(1) = 0
     do ia = 2 , na_u
-       listptr(ia) = listptr(ia-1) + num(ia)
+       listptr(ia) = listptr(ia-1) + num(ia-1)
     end do
 
-    nnzs = listptr(na_u) + num(na_u)
+    n_nzs = listptr(na_u) + num(na_u)
 
     ! Create actual sparsity pattern 
-    allocate(list(nnzs))
-    indx = 1
+    allocate(list(n_nzs))
+    indx = 0
     do ia = 1 , na_u
+
+       ! Quick skip
+       if ( num(ia) == 0 ) cycle
+       if ( listptr(ia) /= indx ) then
+          print *,ia,listptr(ia),indx
+          call die('SpOrb2SpAt: Could not assert sparsity ptr')
+       end if
 
        ! Initialize count
        ic = 0
@@ -107,15 +113,16 @@ contains
           ! Check the local orbital
           lio = index_global_to_local(dit,io)
           if ( lio <= 0 ) cycle
+          if ( l_ncol(lio) == 0 ) cycle
 
           do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
              ! Get connecting atom
              ja = iaorb(l_col(ind),lasto)
              if ( ic == 0 ) then
-                ic = ic + 1
-                a_c(1) = ja
-             else if ( .not. any(ja == a_c(1:ic)) ) then
+                ic = 1 
+                a_c(ic) = ja
+             else if ( all(a_c(1:ic) /= ja) ) then
                 ic = ic + 1
                 a_c(ic) = ja
              end if
@@ -124,21 +131,22 @@ contains
        
        end do
 
-       num(idx:idx+ic-1) = a_c(1:ic)
+       if ( num(ia) /= ic ) call die('SpOrb2SpAtom: Error in second count')
+       list(indx+1:indx+ic) = a_c(1:ic)
        indx = indx + ic
        
     end do
-    if ( nnzs /= indx ) then
-       call die('Could not ensure sparsity pattern')
+    if ( n_nzs /= indx ) then
+       call die('SpOrb2SpAtom: Could not ensure sparsity pattern')
     end if
 
     ! Create new sparsity pattern and copy over
-    call newSparsity(out,na_u,na_u,nnzs,num,listptr,list, &
-         name='Atomic ('//name(in)//')', &
+    call newSparsity(out,na_u,na_u,n_nzs,num,listptr,list, &
+         name='Atomic ('//trim(name(in))//')', &
          ncols=na_u,ncols_g=na_u)
 
     ! Clean up
-    deallocate(num,listptr,list)
+    deallocate(num,listptr,list,a_c)
 
   end subroutine SpOrb_to_SpAtom
 
@@ -160,7 +168,7 @@ contains
     ! ** local variables
     ! tssp variables
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer :: no_l, no_u, nnzs
+    integer :: no_l, no_u, n_nzs
     integer, allocatable :: num(:), listptr(:), list(:)
     integer :: lio, io, ind, indx, is
 
@@ -225,10 +233,10 @@ contains
        listptr(lio) = listptr(lio-1) + num(lio-1)
     end do
 
-    nnzs = listptr(no_l) + num(no_l)
+    n_nzs = listptr(no_l) + num(no_l)
 
     ! Create actual sparsity pattern 
-    allocate(list(nnzs))
+    allocate(list(n_nzs))
     indx = 0
     do lio = 1 , no_l
 
@@ -260,14 +268,14 @@ contains
        end do
        
     end do
-    if ( nnzs /= indx ) then
+    if ( n_nzs /= indx ) then
        call die('Could not ensure sparsity pattern')
     end if
 
     call rgn_delete(rin)
 
     ! Create new sparsity pattern and copy over
-    call newSparsity(out,no_l,no_u,nnzs,num,listptr,list, &
+    call newSparsity(out,no_l,no_u,n_nzs,num,listptr,list, &
          name='T '//trim(name(in)), &
          ncols=ncols(in),ncols_g=ncols_g(in))
     
@@ -289,7 +297,7 @@ contains
     ! ** local variables
     ! tssp variables
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer :: no_l, no_u, nnzs
+    integer :: no_l, no_u, n_nzs
     integer, allocatable :: num(:), listptr(:), list(:)
     integer :: lio, io, ind, jo, indx
     type(tRgn) :: sr
@@ -341,10 +349,10 @@ contains
        listptr(lio) = listptr(lio-1) + num(lio-1)
     end do
 
-    nnzs = listptr(no_l) + num(no_l)
+    n_nzs = listptr(no_l) + num(no_l)
 
     ! Create actual sparsity pattern 
-    allocate(list(nnzs))
+    allocate(list(n_nzs))
     indx = 0
     do lio = 1 , no_l
 
@@ -363,7 +371,7 @@ contains
        end do
        
     end do
-    if ( nnzs /= indx ) then
+    if ( n_nzs /= indx ) then
        call die('Could not ensure sparsity pattern')
     end if
 
@@ -371,7 +379,7 @@ contains
     call rgn_delete(sr)
 
     ! Create new sparsity pattern and copy over
-    call newSparsity(out,no_l,no_u,nnzs,num,listptr,list, &
+    call newSparsity(out,no_l,no_u,n_nzs,num,listptr,list, &
          name='T '//trim(name(in)), &
          ncols=ncols(in),ncols_g=ncols_g(in))
 
@@ -426,7 +434,7 @@ contains
     ! ** local variables
     ! tssp variables
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer :: no_l, no_u, nnzs
+    integer :: no_l, no_u, n_nzs
     integer, allocatable :: num(:), listptr(:), list(:)
     integer :: lio, io, ind, jo, indx, ridx
     type(tRgn) :: sr1, sr2
@@ -496,10 +504,10 @@ contains
        listptr(lio) = listptr(lio-1) + num(lio-1)
     end do
 
-    nnzs = listptr(no_l) + num(no_l)
+    n_nzs = listptr(no_l) + num(no_l)
 
     ! Create actual sparsity pattern 
-    allocate(list(nnzs))
+    allocate(list(n_nzs))
     indx = 0
     do lio = 1 , no_l
 
@@ -531,7 +539,7 @@ contains
        end do
        
     end do
-    if ( nnzs /= indx ) then
+    if ( n_nzs /= indx ) then
        call die('Could not ensure sparsity pattern')
     end if
 
@@ -539,7 +547,7 @@ contains
     call rgn_delete(sr1,sr2)
 
     ! Create new sparsity pattern and copy over
-    call newSparsity(out,no_l,no_u,nnzs,num,listptr,list, &
+    call newSparsity(out,no_l,no_u,n_nzs,num,listptr,list, &
          name='T '//trim(name(in)), &
          ncols=ncols(in),ncols_g=ncols_g(in))
 

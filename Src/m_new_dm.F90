@@ -80,6 +80,7 @@
       use units, only : eV
       use m_ts_global_vars,only: TSrun
       use m_ts_electype, only : copy_DM
+      use m_ts_options, only : Ts_analyze
       use m_ts_options, only : N_Elec, Elecs, DM_bulk
       use m_ts_method
       use m_energies, only: Ef
@@ -213,7 +214,7 @@
 
 #ifdef TRANSIESTA
       ! In case we will immediately start a transiesta run
-      if ( TSrun .and. DMinit ) then
+      if ( TSrun .and. DMinit .and. (.not. TS_analyze ) ) then
          ! In transiesta we can always initialize
          ! the density matrix with the bulk-values
          ! so as to "fix" the density in the leads

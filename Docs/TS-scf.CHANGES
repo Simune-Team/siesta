@@ -1,4 +1,100 @@
 ----------------------------------------------------
+February 13, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-296
+Implemented various automatic pivoting methods for TS
+
+* Implemented generic pivoting algorithms which consists
+  of:
+
+    Cuthill-Mckee
+    reverse Cuthill-Mckee
+    Gibbs-Poole-Stockmeyer
+    reverse Gibbs-Poole-Stockmeyer (not mentioned in litterature)
+    Generalized Gibbs-Poole-Stockmeyer
+    reverse Generalized Gibbs-Poole-Stockmeyer (not mentioned in litterature)
+  
+  All methods can be used directly on siesta sparsity patterns
+  and can be used to pivot matrix elements to reduce bandwidth and
+  profile of matrices.
+
+* As TranSIESTA can take full advantage of pivoting
+  elements we now implement various ways to select between
+  optimum pivoting schemes.
+
+  By calling the option: TS.BTD.Sort
+  the user can select between various ways of sorting the sparsity
+  pattern:
+    [[orb|atom]+]none
+    [[orb|atom]+]<Elec-name>
+    [[orb|atom]+]CM
+    [[orb|atom]+]rev-CM
+    [[orb|atom]+]GPS
+    [[orb|atom]+]rev-GPS
+    [[orb|atom]+]GGPS
+    [[orb|atom]+]rev-GGPS
+
+  They will sort the sparsity pattern according to either the orbital
+  sparse pattern or the nuclear/atom sparsity pattern.
+  Needless to say will the atomic sparsity pattern be greatly reduced
+  and will generally generate equal bandwidths of the orbital 
+  for obvious reasons.
+
+  The default is atom+<Elec-1> which provides an apt compromise between
+  speed and generated BTD format.
+
+  The GGPS does seem to produce smaller bandwidth matrices, but it takes 
+  longer time to execute.
+
+* If the user calls TS.Analyze it will print out the 
+  BTD format diagnostics for all pivoting choices.
+  This is an easy way to test all methods and can easily be 
+  done on one core.
+
+  Hence the analyse routine has been heavily restructured
+  and it now resides in m_ts_tri_init.
+
+* Bugfix in class_sparsity, an the name should be optional.
+
+* For m_region we have a few additions bug-fixes
+
+  Added a type of linked list for the region.
+  A tool for deleting the linked list also exists.
+
+  - All instances of %r(:) has been changed to:
+    %r(1:%n) to enable push/pop lists with regions.
+    (this is controlled solely by the %n parameter)
+  - Routines for pushing/popping elements have been added
+  - Copying a region will now take into account if 
+    copying to the same region (done via associated(r1%r,r2%r))
+    This proves useful as we can limit the number of copies
+    after processing a region.
+
+* Bugfix when converting a sparsity pattern to an atomic sparsity
+  pattern. 
+  An erroneous copy was done so that the list of pointers were
+  erroneous.
+
+* Removed the ts_optimize code, it is now not needed.
+
+* It will now not be recommended to users to sort their
+  structure. It is simply not needed! :)
+  However, when very complex systems occur they should
+  resort to try and analyze their pivoting schemes to
+  minimize their memory requirements/maximize performance.
+
+added:
+  Src/m_pivot.F90
+  Src/m_pivot_methods.F90
+modified:
+  Src/class_Sparsity.F90
+  Src/m_new_dm.F90
+  Src/m_region.F90
+  Src/m_sparsity_handling.F90
+  Src/m_ts_method.f90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri_init.F90
+  Src/state_init.F
+
+----------------------------------------------------
 February 11, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-295
 Enabled sorting by electrode in tbtrans
 

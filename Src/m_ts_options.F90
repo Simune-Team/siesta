@@ -748,6 +748,8 @@ contains
           write(*,10)'Solution method', 'Sparsity pattern + full inverse'
        else if ( ts_method == TS_SPARSITY_TRI ) then
           write(*,10)'Solution method', 'Sparsity pattern + BTD'
+          chars = fdf_get('TS.BTD.Sort',trim(Elecs(1)%name))
+          write(*,10)'BTD sorting method', trim(chars)
           if ( opt_TriMat_method == 0 ) then
              chars = 'speed'
           else if  ( opt_TriMat_method == 1 ) then

@@ -1,0 +1,99 @@
+!
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996- .
+!
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+! This code segment has been fully created by:
+! Nick Papior Andersen, 2015, nickpapior@gmail.com
+! Please conctact the author, prior to re-using this code.
+
+! This module can process a sparsity pattern and/or as subset
+! of the sparsity pattern and create a pivot table which can
+! be determined by an algorithm.
+
+module m_pivot
+
+  use m_region
+
+  implicit none
+
+  public 
+
+  integer, parameter :: PVT_CUTHILL_MCKEE     = 1 
+  integer, parameter :: PVT_REV_CUTHILL_MCKEE = 2
+  integer, parameter :: PVT_GPS = 3
+  integer, parameter :: PVT_REV_GPS = 4
+  integer, parameter :: PVT_GGPS = 5
+  integer, parameter :: PVT_REV_GGPS = 6
+
+contains
+
+  ! Main routine to create pivot table for the sparsity pattern
+  ! The sparse pattern MUST not be distributed.
+  subroutine sp_pvt(sp,pvt,method,sub,start)
+    use class_Sparsity
+    use m_pivot_methods
+    
+    type(Sparsity), intent(inout) :: sp
+    ! The pivot table returned
+    type(tRgn), intent(inout) :: pvt
+    integer, intent(in) :: method
+    ! The subset-region where the pivot table should be considered
+    type(tRgn), intent(in), optional :: sub
+    ! Certain algorithms (Cuthill-Mckee can choose rather
+    ! arbitrary starting points, hence we can force it to start
+    ! amongst any of these)
+    type(tRgn), intent(in), optional :: start
+
+    type(tRgn) :: lsub
+    integer :: n, n_nzs
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+
+    ! the sparse pattern is an intrinsically good way
+    ! to deal with pivoting routines
+    ! It intrinsically holds the degree of each graph point
+    ! and swapping/queing becomes easy
+
+    ! Check that we have a UC sparsity pattern
+    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows_g = n , nnzs = n_nzs)
+    if ( maxval(l_col) > n ) then
+       call die('sp_pvt: Sparsity pattern is not an UC &
+            &sparse pattern, several matrix blocks are appended.')
+    end if
+
+    if ( present(sub) ) then
+       call rgn_copy(sub,lsub)
+    else
+       call rgn_range(lsub,1,n)
+    end if
+
+    ! Call the appropriate routine
+    if      ( method == PVT_CUTHILL_MCKEE     ) then
+       call Cuthill_Mckee(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, &
+            start = start )
+    else if ( method == PVT_REV_CUTHILL_MCKEE ) then
+       call rev_Cuthill_Mckee(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, &
+            start = start )
+    else if ( method == PVT_GPS               ) then
+       call GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+    else if ( method == PVT_REV_GPS           ) then
+       call rev_GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+    else if ( method == PVT_GGPS              ) then
+       call GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+    else if ( method == PVT_REV_GGPS          ) then
+       call rev_GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+    else
+       call die('m_pivot: Programming error, unknown method')
+    end if
+
+    call rgn_delete(lsub)
+    
+  end subroutine sp_pvt
+    
+end module m_pivot
