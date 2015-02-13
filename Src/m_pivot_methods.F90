@@ -963,6 +963,18 @@ contains
        ! 1. Add the current connectivity graph
        !    to the pivot table and increment level
        iLvl = iLvl + 1
+
+       !  If the connectivity happens to be zero,
+       !  we need to add an arbitrary element with lowest degree
+       !  In TS this will probably be one of the worst choices, yet
+       !  it is hard to select another node on another basis.
+       if ( con%n == 0 ) then
+          call rgn_copy(sub,rtmp)
+          ! this limits rtmp to those not chosen
+          call rgn_complement(rskip,rtmp,rtmp)
+          call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,rtmp,con)
+          if ( con%n > 0 ) con%n = 1
+       end if
        call rgn_copy(con,rtmp) ! rtmp is used to generate the next connectivity
 
        do while ( con%n > 0 )

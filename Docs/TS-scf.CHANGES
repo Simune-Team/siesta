@@ -1,4 +1,16 @@
 ----------------------------------------------------
+February 13, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-298
+Bugfix for non-connected graphs in pivot_methods
+
+* When the graph is not complete, the [G]GPS algorithms
+  would stall.
+
+  This has been fixed
+
+modified:
+  Src/m_pivot_methods.F90
+
+----------------------------------------------------
 February 13, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-297
 Removed references to old bandwidth module
 
