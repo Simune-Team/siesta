@@ -1,4 +1,62 @@
 ----------------------------------------------------
+February 13, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-299
+Speeded up pivot methods hugely
+
+* Improvements to m_region.
+
+  Several routines which searches in the regions
+  by some way or another now defaults to copy the
+  searched array and sort it.
+  This will greatly increase performance for huge
+  arrays, whereas for small arrays the overhead will
+  be very small.
+
+  All appropriate routines have received attention for this.
+    
+  If the searching arrays are already sorted it will not
+  copy and sort, it will merely fake a copy (pointers)
+
+* By implementing the rgn_sort nearly all places 
+  we aquire a very good speed for searching the pivot
+  methods.
+
+  'profile' and 'bandwidth' are now _much_ faster
+
+* A small change/improvement in the level structure
+  graph.
+  The level structure is now generated from the connectivity
+  graph in the order they are added (via their degree)
+  This improves the stability and makes it less prone to
+  be dependent on initial sorting of orbitals/atoms.
+
+* Checking the tri-diagonal scheme for extremely large
+  matrices has a better default value for capping the 
+  BTD size.
+  It will calculate a maximum block size dependent on the first
+  element in the tri-diagonal matrix.
+
+  For _very_ long systems this is extremely appropriate
+  as it can more than halve the search space (doubles the speed)
+
+  TODO consider making the search space more smart.
+
+* When analyzing huge systems it seems dubious that the user would 
+  want to wait for the orbital pivoting routines.
+
+  Hence we default to only search the atomic sparsity pattern.
+  The user can select to create the full analysis via
+   TS.BTD.Analyze all # or just not atom
+
+* Changed the output of the analysis to also print out an 
+  estimate of the memory for the static BTD matrices.
+  
+modified:
+  Src/m_pivot_methods.F90
+  Src/m_region.F90
+  Src/m_ts_rgn2trimat.F90
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
 February 13, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-298
 Bugfix for non-connected graphs in pivot_methods
 

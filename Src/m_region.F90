@@ -137,10 +137,16 @@ contains
     type(tRgn), intent(in) :: r
     integer, intent(in) :: i
     integer :: idx
-    do idx = 1 , r%n
-       if ( r%r(idx) == i ) return
-    end do
-    idx = 0
+    if ( r%sorted ) then
+       idx = 0
+       if ( r%n == 0 ) return
+       idx = SFIND(r%r(1:r%n),i)
+    else
+       do idx = 1 , r%n
+          if ( r%r(idx) == i ) return
+       end do
+       idx = 0
+    end if
   end function rgn_pivot
 
   ! Check whether an element exists in this region.
@@ -446,7 +452,7 @@ contains
   subroutine rgn_sp_sort(r,dit,sp, sr, method)
 
 #ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Integer
+    use mpi_siesta, only : MPI_Integer
     use mpi_siesta, only : MPI_MAX, MPI_MIN, MPI_AllReduce
 #endif
 
@@ -726,8 +732,20 @@ contains
     type(tRgn), intent(inout) :: ir
 
     ! ** local variables
+    type(tRgn) :: sr
     integer :: i, it
     integer, allocatable :: ct(:)
+
+    ! Having a sorted array will greatly increase performance
+    ! at minimal memory cost
+    if ( r2%sorted ) then
+       sr%sorted = .true.
+       sr%n = r2%n
+       sr%r => r2%r
+    else
+       call rgn_copy(r2,sr)
+       call rgn_sort(sr)
+    end if
 
     if ( r1%n == 0 .or. r2%n == 0 ) then
        call rgn_delete(ir)
@@ -739,11 +757,13 @@ contains
 
     do i = 1 , r1%n
        
-       if ( .not. in_rgn(r2,r1%r(i)) ) cycle
+       if ( .not. in_rgn(sr,r1%r(i)) ) cycle
        it = it + 1
        ct(it) = r1%r(i)
 
     end do
+
+    if ( .not. r2%sorted ) call rgn_delete(sr)
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
@@ -762,6 +782,7 @@ contains
 
     ! ** local variables
     integer :: i, it
+    type(tRgn) :: sr
     integer, allocatable :: ct(:)
 
     if ( r1%n == 0 ) then
@@ -774,18 +795,33 @@ contains
 
     allocate(ct(r1%n+r2%n))
 
+    ! Having a sorted array will greatly increase performance
+    ! at minimal memory cost
+    if ( r1%sorted ) then
+       sr%sorted = .true.
+       sr%n = r1%n
+       sr%r => r1%r
+    else
+       call rgn_copy(r1,sr)
+       call rgn_sort(sr)
+    end if
+
     ! Copy over r1
     ct(1:r1%n) = r1%r(1:r1%n)
 
     it = r1%n
     do i = 1 , r2%n
        
-       if ( any(r2%r(i) == ct(1:it)) ) cycle
+       if ( in_rgn(sr,r2%r(i)) ) cycle
+       ! the above does not remove dublicates in r2 :(
+       !if ( any(r2%r(i) == ct(1:it)) ) cycle
 
        it = it + 1
        ct(it) = r2%r(i)
 
     end do
+
+    if ( .not. r1%sorted ) call rgn_delete(sr)
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
@@ -907,6 +943,7 @@ contains
     type(tRgn), intent(inout) :: cr
 
     ! ** local variables
+    type(tRgn) :: sr
     integer :: i, it
     integer, allocatable :: ct(:)
 
@@ -921,14 +958,27 @@ contains
 
     allocate(ct(r2%n))
 
+    ! Having a sorted array will greatly increase performance
+    ! at minimal memory cost
+    if ( r1%sorted ) then
+       sr%sorted = .true.
+       sr%n = r1%n
+       sr%r => r1%r
+    else
+       call rgn_copy(r1,sr)
+       call rgn_sort(sr)
+    end if
+
     it = 0
     do i = 1 , r2%n
-       if ( in_rgn(r1,r2%r(i)) ) cycle
+       if ( in_rgn(sr,r2%r(i)) ) cycle
 
        it = it + 1
        ct(it) = r2%r(i)
 
     end do
+
+    if ( .not. r1%sorted ) call rgn_delete(sr)
 
     ! Copy the list over
     call rgn_list(cr,it,ct(1:it))
@@ -947,6 +997,7 @@ contains
     type(tRgn), intent(inout) :: cr
 
     ! ** local variables
+    type(tRgn) :: sr
     integer :: i, it
     integer, allocatable :: ct(:)
 
@@ -961,21 +1012,46 @@ contains
 
     allocate(ct(r1%n+r2%n))
 
+    if ( r2%sorted ) then
+       sr%sorted = .true.
+       sr%n = r2%n
+       sr%r => r2%r
+    else
+       call rgn_copy(r2,sr)
+       call rgn_sort(sr)
+    end if
+
     it = 0
     do i = 1 , r1%n
-       if ( in_rgn(r2,r1%r(i)) ) cycle
+       if ( in_rgn(sr,r1%r(i)) ) cycle
 
        it = it + 1
        ct(it) = r1%r(i)
 
     end do
+    if ( r2%sorted ) then
+       sr%n = 0
+       nullify(sr%r)
+    else
+       call rgn_delete(sr)
+    end if
+    if ( r1%sorted ) then
+       sr%sorted = .true.
+       sr%n = r1%n
+       sr%r => r1%r
+    else
+       call rgn_copy(r1,sr)
+       call rgn_sort(sr)
+    end if
     do i = 1 , r2%n
-       if ( in_rgn(r1,r2%r(i)) ) cycle
+       if ( in_rgn(sr,r2%r(i)) ) cycle
 
        it = it + 1
        ct(it) = r2%r(i)
 
     end do
+
+    if ( .not. r1%sorted ) call rgn_delete(sr)
 
     ! Copy the list over
     call rgn_list(cr,it,ct(1:it))
@@ -1248,6 +1324,8 @@ contains
 
     r%n = r%n + 1
     r%r(r%n) = val
+    ! pushing a value will (ultimately) destroy sorted array
+    r%sorted = .false.
     
   end function rgn_push
 

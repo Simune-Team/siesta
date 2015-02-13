@@ -120,7 +120,7 @@ contains
     III_b = .false.
 
     ! Find a set of pseudo-peripherals using the GPS algorithm
-    call pseudo_peripheral(n,nnzs,n_col,l_ptr,l_col,sub,vs%v, &
+    call pseudo_peripheral(D_LOW,n,nnzs,n_col,l_ptr,l_col,sub,vs%v, &
          small_wd = tmp, priority = priority)
     width = tmp(1) ! the s \in L_ec where the width is the smallest
     depth = tmp(2) ! the depth of s
@@ -143,7 +143,12 @@ contains
     N_lvl = lvl_depth(vs%v%lvl)
 
     ! extract the nodes at the last level to search for all 
-    call lvl_struct_extract(vs%v%pvt,vs%v%lvl,N_lvl,S)
+    call lvl_struct_extract(vs%v%pvt,vs%v%lvl,N_lvl,r)
+    
+    ! *** 
+    !    Change, we sort according to the highest degree
+    ! ***
+    call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,r,S)
 
     ! For the case that the first minimum width, maximum depth
     ! has not been added to the 'u' set, we add it
@@ -598,6 +603,7 @@ contains
 #ifdef PVT_DEBUG
     write(*,*)'   smallest degree pseudo-peripheral ',etr,deg
 #endif
+
     if ( etr /= r%r(1) ) then
        ! We need to swap the level structure
        do i = 1 , lvl%n
@@ -623,7 +629,6 @@ contains
        call rgn_init(con,sub%n)
 
        if ( il == 1 ) then
-
 
           ! Initialize renum
           suc = rgn_push(renum,etr)
@@ -673,7 +678,7 @@ contains
               ! allocated)
              call rgn_init(con,sub%n)
              con%n = 0
-
+             call rgn_sort(S)
              call graph_connect(renum%r(i),n,nnzs,n_col,l_ptr,l_col,con, &
                   skip = S)
           end if
@@ -800,7 +805,7 @@ contains
     call rgn_delete(pvt)
 
     ! Find a set of pseudo-peripherals using the GPS algorithm
-    call pseudo_peripheral(n,nnzs,n_col,l_ptr,l_col,sub,lvl, &
+    call pseudo_peripheral(D_LOW,n,nnzs,n_col,l_ptr,l_col,sub,lvl, &
          priority = priority)
     depth = lvl_depth(lvl%lvl)
 #ifdef PVT_DEBUG
@@ -854,18 +859,29 @@ contains
   function bandwidth(n,nnzs,n_col,l_ptr,l_col,sub) result(beta)
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
     type(tRgn), intent(in) :: sub
+    type(tRgn) :: s_sub, pvt
     integer :: beta
     integer :: i, j, ind, idx
     beta = 0
+
+    call rgn_copy(sub,s_sub)
+    call rgn_sort(s_sub)
+    call rgn_init(pvt,sub%n)
+    do i = 1 , sub%n
+       j = rgn_pivot(s_sub,sub%r(i))
+       pvt%r(j) = i
+    end do
     
     do i = 1 , sub%n
        idx = sub%r(i)
        do ind = l_ptr(idx) + 1 , l_ptr(idx) + n_col(idx)
           ! figure out the pivoting place
-          j = rgn_pivot(sub,l_col(ind))
-          beta = max(beta,i-j)
+          j = rgn_pivot(s_sub,l_col(ind))
+          beta = max(beta,i-pvt%r(j))
        end do
     end do
+
+    call rgn_delete(s_sub,pvt)
 
   end function bandwidth
 
@@ -873,20 +889,31 @@ contains
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
     type(tRgn), intent(in) :: sub
     integer(i8b) :: p
+    type(tRgn) :: s_sub, pvt
     integer :: beta
     integer :: i, j, ind, idx
     p = 0
+
+    call rgn_copy(sub,s_sub)
+    call rgn_sort(s_sub)
+    call rgn_init(pvt,sub%n)
+    do i = 1 , sub%n
+       j = rgn_pivot(s_sub,sub%r(i))
+       pvt%r(j) = i
+    end do
     
     do i = 1 , sub%n
        idx = sub%r(i)
        beta = 0
        do ind = l_ptr(idx) + 1 , l_ptr(idx) + n_col(idx)
           ! figure out the pivoting place
-          j = rgn_pivot(sub,l_col(ind))
-          beta = max(beta,i-j)
+          j = rgn_pivot(s_sub,l_col(ind))
+          beta = max(beta,i-pvt%r(j))
        end do
        p = p + beta
     end do
+
+    call rgn_delete(s_sub,pvt)
 
   end function profile
 
@@ -938,8 +965,11 @@ contains
     integer :: i, iidx, etr, iLvl
     logical :: suc
     
+    ! by sorting, taking the complement is much faster
+    call rgn_copy(sub,rtmp)
+    call rgn_sort(rtmp)
     call rgn_range(rskip_def,1,n)
-    call rgn_complement(sub,rskip_def,rskip_def)
+    call rgn_complement(rtmp,rskip_def,rskip_def)
 
     ! initialize the pivoting array
     call rgn_init(pvt,sub%n)
@@ -969,9 +999,8 @@ contains
        !  In TS this will probably be one of the worst choices, yet
        !  it is hard to select another node on another basis.
        if ( con%n == 0 ) then
-          call rgn_copy(sub,rtmp)
           ! this limits rtmp to those not chosen
-          call rgn_complement(rskip,rtmp,rtmp)
+          call rgn_complement(rskip,sub,rtmp)
           call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,rtmp,con)
           if ( con%n > 0 ) con%n = 1
        end if
@@ -996,16 +1025,18 @@ contains
        !    This will loop on all previously connected entries.
        !    We create a new connectivity graph and let it be
        !    added on the following loop
+       ! 2a. Note that on entry con%n == 0
        ! Create a skip region to not "get back" in the list
-       call rgn_union(rtmp,pvt,rskip)
-       call rgn_append(rskip,rskip_def,rskip)
+       call rgn_append(pvt,rskip_def,rskip)
        call rgn_sort(rskip) ! speeds it up
        do i = 1 , rtmp%n
-
           ! Find connections from followed entry
-          call graph_connect(rtmp%r(i),n,nnzs,n_col,l_ptr,l_col,con_c, &
+          ! we pick-up the entry in the order they were added
+          ! to 'pvt'
+          etr = pvt%r(pvt%n-rtmp%n+i)
+          call graph_connect(etr,n,nnzs,n_col,l_ptr,l_col,con_c, &
                skip = rskip)
-          call rgn_union(con_c,con,con)
+          call rgn_union(con,con_c,con)
 
        end do
        
@@ -1038,8 +1069,10 @@ contains
     
   end subroutine lvl_struct_extract
 
-  subroutine pseudo_peripheral(n,nnzs,n_col,l_ptr,l_col,sub,lvs,&
+  subroutine pseudo_peripheral(method,n,nnzs,n_col,l_ptr,l_col,sub,lvs,&
        small_wd, priority)
+    ! The method for the degree search
+    integer, intent(in) :: method
     ! the dimensionality of the system
     integer, intent(in) :: n, nnzs
     ! The sparse pattern
@@ -1062,7 +1095,7 @@ contains
 
     ! Algorithm I
     !   (i) -- pick arbitrary node with minimal degree
-    idx = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,sub, priority = priority)
+    idx = idx_degree(method,n,nnzs,n_col,l_ptr,l_col,sub, priority = priority)
     !   (ii/iii) -- search for deepest level structure in these peripherals
 #ifdef PVT_DEBUG
     write(*,*)'   first v set: ',sub%r(idx)
@@ -1083,7 +1116,7 @@ contains
        call lvl_struct_extract(lvs%pvt,lvs%lvl,depth,S)
 
        ! Sort by the degree of the nodes (lowest to highest)
-       call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,S,pvt)
+       call sort_degree(method,n,nnzs,n_col,l_ptr,l_col,S,pvt)
        call rgn_copy(pvt,S)
        
        do i = 1 , S%n
@@ -1209,8 +1242,10 @@ contains
     ! we do not back-track already processed elements
     call rgn_init(pvtQ,n)
     pvtQ%n = 0
+    call rgn_copy(sub,con)
+    call rgn_sort(con)
     do i = 1 , n
-       if ( .not. in_rgn(sub,i) ) then
+       if ( .not. in_rgn(con,i) ) then
           suc = rgn_push(pvtQ,i)
        end if
     end do
@@ -1219,6 +1254,9 @@ contains
     call rgn_init(con,sub%n)
 
     do while ( pvt%n < sub%n )
+
+       ! Sort to speed up searching...
+       call rgn_sort(pvtQ)
 
        ! 1. If the queue is empty we add the one with the lowest
        !    degree
@@ -1235,6 +1273,8 @@ contains
 
           suc = rgn_push(Q,etr)
           suc = rgn_push(pvtQ,etr)
+
+          call rgn_sort(pvtQ)
 
        end if
 

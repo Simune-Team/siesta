@@ -132,13 +132,14 @@ contains
        end if
     end if
 
-    ! We default to parallel
-    guess_start = 2 + Node
-    guess_step = Nodes
-    if ( .not. lpar ) then
-       guess_start = 2
-       guess_step = 1
-    end if
+    ! We need not look at the smallest BTD sizes
+    ! they will not give anything productive.
+    ! Hence, we can for huge systems, decrease the search
+    ! space to increase performance.
+    guess_start = 10
+    if ( lpar ) guess_start = guess_start + Node
+    guess_step = 1
+    if ( lpar ) guess_step = Nodes
 
     ! If the first one happens to be the best partition, 
     ! but non-valid, we need to make sure to overwrite it
@@ -147,13 +148,17 @@ contains
     ! If the blocks are known by the user to not exceed a certain
     ! size, then we can greatly reduce the guessing step
     ! for huge systems
-    max_block = no / 4
+    i = mm_col(2,1)
+    ! the maximum size must be all that the first one connects to
+    ! the mean and then (to be sure) we take 3/4 of that.
+    i = sum(mm_col(2,1:i)) / i / 4 * 3
+    max_block = min( no / 4 , i )
     max_block = fdf_get('TS.BTD.Block.Max',max_block)
 #ifdef TBTRANS
     max_block = fdf_get('TBT.BTD.Block.Max',max_block)
 #endif
     ! In case the orbitals of this region is much smaller than
-    ! max-block, then use the half the no
+    ! max-block, then use the half 'no'
     max_block = min(max_block , no / 2)
     
     ! We loop over all possibilities from the first part having size

@@ -426,6 +426,7 @@ contains
        ucell, na_u, lasto , nsc, isc_off , method )
     
     use parallel, only : IONode
+    use fdf, only : fdf_get, leqi
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif
@@ -527,7 +528,13 @@ contains
     call tri(r_pvt)
 
     orb_atom_switch: do orb_atom = 1 , 2
+    ! The user can skip the orbital analysis if it takes too long
     if ( orb_atom == 1 ) then
+       ! We default to only looking at the atomic sparsity
+       ! pattern. This is *much* faster and does provide
+       ! a very near optimal sparse pattern. 
+       ! The user can select to do both.
+       if ( leqi(fdf_get('TS.BTD.Analyze','atom'),'atom') ) cycle
        corb = 'orb'
 
        call rgn_copy(r_pvt,full)
@@ -717,19 +724,19 @@ contains
               seq_max = 10 , indent = 3 )
          
          pad = no_u_TS ** 2
-         write(*,'(tr3,a,2(i0,'' / ''),f8.6)') &
-              'Matrix elements in tri / full / fraction: ', &
-              els,pad,real(els,dp)/real(pad,dp)
+         write(*,'(tr3,a,i0,'' / '',f9.5)') &
+              'Matrix elements in tri / % of full: ', &
+              els , real(els,dp)/real(pad,dp) * 100._dp
       end if
       
       ! Get the padding for the array to hold the entire column
       call GFGGF_needed_worksize(ctri%n, ctri%r, &
            N_Elec, Elecs, pad, work)
-      prof = pad + work + els * 2
+      prof = pad + work + els * 2 ! total mem
       if ( IONode ) then
-         write(*,'(tr3,a,t40,i10)') 'Bias padding + work elements: ', &
-              pad + work
          write(*,'(tr3,a,t30,i20)') 'BTD x 2 + padding + work: ', prof
+         write(*,'(tr3,a,t39,f8.2,a)') 'Rough variable MEM required: ', &
+              real(prof,dp) * 16._dp / 1024._dp ** 2,' MB'
       end if
 
       call rgn_delete(ctri)
