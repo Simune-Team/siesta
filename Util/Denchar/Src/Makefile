@@ -318,7 +318,6 @@ listsc.o: alloc.o
 local_DOS.o: atomlist.o dhscf.o files.o kpoint_grid.o m_energies.o m_eo.o
 local_DOS.o: m_forces.o m_gamma.o m_ntm.o m_spin.o parallel.o siesta_geom.o
 local_DOS.o: siesta_options.o sparse_matrices.o sys.o
-m_bandwidth.o: alloc.o parallel.o
 m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o m_fdf_global.o parallel.o precision.o sys.o
 m_broyden_mixing.o: alloc.o m_broyddj.o m_mpi_utils.o parallel.o precision.o
@@ -517,13 +516,12 @@ m_ts_mumpsk.o: m_ts_electype.o m_ts_gf.o m_ts_kpoints.o m_ts_method.o
 m_ts_mumpsk.o: m_ts_mumps_init.o m_ts_mumps_scat.o m_ts_options.o m_ts_sparse.o
 m_ts_mumpsk.o: m_ts_sparse_helper.o m_ts_weight.o parallel.o precision.o
 m_ts_mumpsk.o: units.o
-m_ts_options.o: alloc.o files.o intrinsic_missing.o m_bandwidth.o m_io_s.o
-m_ts_options.o: m_monitor.o m_ts_cctype.o m_ts_charge.o m_ts_chem_pot.o
-m_ts_options.o: m_ts_contour.o m_ts_contour_eq.o m_ts_contour_neq.o
-m_ts_options.o: m_ts_electype.o m_ts_global_vars.o m_ts_hartree.o m_ts_io.o
-m_ts_options.o: m_ts_io_contour.o m_ts_method.o m_ts_mumps_init.o m_ts_tdir.o
-m_ts_options.o: m_ts_weight.o parallel.o precision.o siesta_options.o sys.o
-m_ts_options.o: units.o
+m_ts_options.o: alloc.o files.o intrinsic_missing.o m_io_s.o m_ts_cctype.o
+m_ts_options.o: m_ts_charge.o m_ts_chem_pot.o m_ts_contour.o m_ts_contour_eq.o
+m_ts_options.o: m_ts_contour_neq.o m_ts_electype.o m_ts_global_vars.o
+m_ts_options.o: m_ts_hartree.o m_ts_io.o m_ts_io_contour.o m_ts_method.o
+m_ts_options.o: m_ts_mumps_init.o m_ts_tdir.o m_ts_weight.o parallel.o
+m_ts_options.o: precision.o siesta_options.o sys.o units.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
 m_ts_rgn2trimat.o: m_ts_electype.o m_ts_tri_common.o parallel.o precision.o

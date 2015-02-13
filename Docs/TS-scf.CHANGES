@@ -1,4 +1,16 @@
 ----------------------------------------------------
+February 13, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-297
+Removed references to old bandwidth module
+
+* Removed bandwidth module and all references to it
+
+removed:
+  Src/m_bandwidth.f90
+modified:
+  Src/m_ts_options.F90
+  Src/state_init.F
+
+----------------------------------------------------
 February 13, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-296
 Implemented various automatic pivoting methods for TS
 

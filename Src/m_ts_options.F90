@@ -60,7 +60,6 @@ module m_ts_options
   ! The user can request to analyze the system, returning information about the 
   ! tri-diagonalization partition and the contour
   logical :: TS_Analyze = .false.
-  integer :: TS_bandwidth_algo = 0
   
 contains
   
@@ -98,9 +97,6 @@ contains
 #ifdef MUMPS
     use m_ts_mumps_init, only : MUMPS_mem, MUMPS_ordering, MUMPS_block
 #endif
-
-    use m_monitor
-    use m_bandwidth
 
     implicit none
     
@@ -245,30 +241,6 @@ contains
 
     ! Determine whether the user wishes to only do an analyzation
     TS_Analyze = fdf_get('TS.Analyze',.false.)
-    if ( TS_Analyze ) then
-       ! Default
-       TS_bandwidth_algo = 0
-       chars = fdf_get('TS.BandwidthReduction','reverse-CutHill-Mckee')
-       i = index(chars,'-')
-       if ( i > 0 ) then
-          if ( leqi(chars(1:i-1),'reverse') .or. &
-               leqi(chars(1:i-1),'rev') ) then
-             TS_bandwidth_algo = BW_REVERSE
-             chars = chars(i+1:)
-          end if
-       end if
-       if ( leqi(chars,'cuthill-mckee') .or. &
-            leqi(chars,'cm') ) then
-          TS_bandwidth_algo = TS_bandwidth_algo + BW_CUTHILL_MCKEE
-       else if ( leqi(chars,'cuthill-mckee-priority') .or. &
-            leqi(chars,'cm-p') ) then
-          TS_bandwidth_algo = TS_bandwidth_algo + BW_CUTHILL_MCKEE_PRIORITY
-       else if ( leqi(chars,'papior') ) then
-          TS_bandwidth_algo = TS_bandwidth_algo + BW_PAPIOR
-       else
-          call die('Unrecognized option for Bandwidth algorithm: '//trim(chars))
-       end if
-    end if
     
     chars = fdf_get('TS.ChargeCorrection','none')
     TS_RHOCORR_METHOD = 0
@@ -717,23 +689,6 @@ contains
        write(*,1) 'Save H and S matrices', TS_HS_save
        if ( TS_Analyze ) then
           write(*,11)'Will analyze bandwidth of LCAO sparse matrix and quit'
-          chars = ''
-          i = TS_bandwidth_algo
-          if ( TS_bandwidth_algo >= BW_REVERSE ) then
-             chars = 'reverse-'
-             i = TS_bandwidth_algo - BW_REVERSE
-          end if
-          select case ( i ) 
-          case ( BW_CUTHILL_MCKEE ) 
-             chars = trim(chars)//'Cuthill-Mckee'
-          case ( BW_CUTHILL_MCKEE_PRIORITY ) 
-             chars = trim(chars)//'Cuthill-Mckee with T-dir priority'
-          case ( BW_PAPIOR ) 
-             chars = trim(chars)//'Papior'
-          case default 
-             call die('Unrecognized bandwidth algorithm')
-          end select
-          write(*,10)'Bandwidth algorithm',trim(chars)
        end if
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'
        if ( ts_tdir < 1 ) then

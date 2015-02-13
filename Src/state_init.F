@@ -49,8 +49,8 @@
 #ifdef TRANSIESTA
       use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
       use m_ts_options, only : opt_TriMat_method
-      use m_ts_options, only : onlyS!, UseBulk
-      use m_ts_options, only : TS_Analyze, TS_bandwidth_algo
+      use m_ts_options, only : onlyS
+      use m_ts_options, only : TS_Analyze
       use m_ts_options, only : N_Elec, Elecs, IsVolt
       use m_ts_electype
       use m_ts_global_vars, only: TSrun, TSmode
