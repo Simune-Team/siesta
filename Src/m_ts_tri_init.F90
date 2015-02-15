@@ -438,6 +438,9 @@ contains
     use m_sparsity_handling
 
     use m_pivot
+#ifdef GRAPHVIZ
+    use m_pivot_methods, only : sp2graphviz
+#endif
 
     use m_ts_electype
     use m_ts_sparse, only : ts_sp_calculation
@@ -465,7 +468,7 @@ contains
     type(OrbitalDistribution) :: fdit
     type(Sparsity) :: tmpSp1, tmpSp2
 
-    integer :: no_u_TS, i, iEl, no
+    integer :: no_u_TS, i, j, iEl, no
 
     integer :: n, n_nzs
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
@@ -570,6 +573,29 @@ contains
        end do
 
     end if
+
+#ifdef GRAPHVIZ
+    call attach(tmpSp2, n_col = ncol, list_ptr = l_ptr, &
+         list_col = l_col , nrows_g = n , nnzs = n_nzs )
+    call rgn_init(r_El,n)
+    r_El%r(:) = 0
+    do iEl = 1 , N_Elec
+       if ( orb_atom == 1 ) then
+          j = Elecs(iEl)%idx_o
+          no = TotUsedOrbs(Elecs(iEl))
+       else
+          j = Elecs(iEl)%idx_a
+          no = TotUsedAtoms(Elecs(iEl))
+       end if
+       do i = j , j - 1 + no
+          r_El%r(i) = iEl
+       end do
+    end do
+    call sp2graphviz('GRAPHVIZ_'//trim(corb)//'.gv', &
+         n,n_nzs,ncol,l_ptr,l_col,types=r_El%r)
+    call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
+         list_col = l_col , nrows_g = n , nnzs = n_nzs )
+#endif
 
     do iEl = 1 , N_Elec
        if ( IONode ) write(*,fmt) trim(corb),trim(Elecs(iEl)%name)

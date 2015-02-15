@@ -1,4 +1,14 @@
 ----------------------------------------------------
+February 14, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-301
+Added graphviz code to create graphs from sparse patterns
+
+* Enabled the creation of graphs from sparsity patterns.
+
+modified:
+  Src/m_pivot_methods.F90
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
 February 14, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-300
 Added Z information to TBT_Geom, enabled bond-current saving
 

@@ -31,6 +31,10 @@ module m_pivot_methods
 
   public :: bandwidth, profile
 
+#ifdef GRAPHVIZ
+  public :: sp2graphviz
+#endif
+
   private
 
   ! Degree determining parameters.
@@ -240,13 +244,13 @@ contains
        etr = S%r(i)
        
        call level_struct(n,nnzs,n_col,l_ptr,l_col,etr,sub,pvt,lvl,priority)
-       j = lvl_depth(lvl)
+       k = lvl_depth(lvl)
        
        ! If the depth is the same as found in vs%v
        ! then we can add it
-       if ( N_lvl < j ) then
+       if ( N_lvl < k ) then
           call die('We have apparently not found the perfect peripheral v')
-       else if ( j == N_lvl ) then
+       else if ( N_lvl == k .or. depth == k ) then
           ! add it to the list
           if ( ps%v%pvt%n > 0 ) then
              allocate(ps%next)
@@ -305,7 +309,7 @@ contains
     do while ( S%n > 0 )
        
        ! Figure out the entry
-       etr = rgn_pop(S,1)
+       etr = rgn_pop(S)
 
        ! Create the level-set
        ps => vs
@@ -319,6 +323,10 @@ contains
           lvl_set(N_v+i) = N_lvl + 1 - ps%v%lvl%r(idx)
           ps => ps%next
        end do
+
+#ifdef PVT_DEBUG
+       write(*,'(a,1000(tr1,i0))')' II-(a) -- level set etr / ',etr,lvl_set
+#endif
        
        ! (a) -- simple case, we add all individually
        j = minval(lvl_set(:))
@@ -351,7 +359,7 @@ contains
     N_sub = 0
     do while ( S%n > 0 ) 
 
-       etr = rgn_pop(S,1)
+       etr = rgn_pop(S)
 
        call rgn_range(con,etr,etr)
        i = 0
@@ -598,7 +606,6 @@ contains
     end do
     ! We should now have found the end-point with the smallest 
     ! degree (according to the LOW_SUM method)
-    ! If the entry has changed 
 
 #ifdef PVT_DEBUG
     write(*,*)'   smallest degree pseudo-peripheral ',etr,deg
@@ -1470,5 +1477,90 @@ contains
     end select
 
   end function degree
+
+#ifdef GRAPHVIZ
+  subroutine sp2graphviz(file,n,nnzs,n_col,l_ptr,l_col,types,method)
+    character(len=*), intent(in) :: file
+    integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
+    ! Methods applied
+    integer, intent(in), optional :: types(n)
+    integer, intent(in), optional :: method
+
+    character(len=4) :: con
+    integer :: i, j, ind, lmethod
+
+    lmethod = 1
+    if ( present(method) ) lmethod = 1
+
+    open(unit=555,file=trim(file),form='formatted')
+
+    select case ( lmethod ) 
+
+    case ( 1 ) ! GRAPH
+       write(555,'(a)') 'graph G {'
+       con = ' -- '
+    case ( 2 ) ! DI-GRAPH
+       write(555,'(a)') 'digraph G {'
+       con = ' -> '
+    end select
+
+    ! Tell graphviz to print out the edges first
+    write(555,'(a)') 'rankdir = LR;'
+    write(555,'(a)') 'outputorder = edgesfirst;'
+    write(555,'(a)') 'overlap = scale;'
+
+    if ( present(types) ) then
+       ind = maxval(types)
+       if ( ind > 4 ) call die('Can not re-present more than 4 different &
+            &types.')
+       do j = 1 , ind
+          select case ( j )
+          case ( 1 )
+             write(555,'(a)') 'node [shape=box style=filled fillcolor=blue] ;'
+          case ( 2 )
+             write(555,'(a)') 'node [shape=box style=filled fillcolor=red] ;'
+          case ( 3 )
+             write(555,'(a)') 'node [shape=box style=filled fillcolor=green] ;'
+          case ( 4 )
+             write(555,'(a)') 'node [shape=box style=filled fillcolor=purple] ;'
+          end select
+          do i = 1 , n
+             if ( types(i) == j ) then
+                write(555,'(tr1,i0)',advance='no') i
+             end if
+          end do
+          write(555,'(tr1,a)') ';'
+       end do
+    end if
+    ! Default node color:
+    write(555,'(a)') 'node [shape=box style=filled fillcolor=black fontcolor=white] ;'
+    ! Default edge color:
+    write(555,'(a)') 'edge [color=gray] ;'
+
+    do i = 1 , n
+       do ind = l_ptr(i) + 1 , l_ptr(i) + n_col(i)
+          write(555,'(i0,a,i0,'';'')') i,con,l_col(ind)
+       end do
+    end do
+
+    if ( present(types) ) then
+       ind = maxval(types)
+       do j = 1 , ind
+          ! Rank them similarly
+          write(555,'(tr1,a)',advance='no') '{ rank=same;'
+          do i = 1 , n
+             if ( types(i) == j ) then
+                write(555,'(tr1,i0)',advance='no') i
+             end if
+          end do
+          write(555,'(tr1,a)') '}'
+       end do
+    end if
+
+    write(555,'(a)') '}'
+    close(555)
+
+  end subroutine sp2graphviz
+#endif
 
 end module m_pivot_methods
