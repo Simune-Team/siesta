@@ -101,6 +101,219 @@ class SIESTA_UNITS(object):
     Ry = 13.60580
     Bohr = 0.529177
 
+class PeriodicTable(object):
+    """ 
+    Very basic periodic table, not very pretty as it
+    was generated using reg-exps.
+    """
+    def __getitem__(self,key):
+        if key == 'H': return 1
+        if key == 1: return 'H'
+        if key == 'D': return 1001
+        if key == 1001: return 'D'
+        if key == 'He': return 2
+        if key == 2: return 'He'
+        if key == 'Li': return 3
+        if key == 3: return 'Li'
+        if key == 'Be': return 4
+        if key == 4: return 'Be'
+        if key == 'B': return 5
+        if key == 5: return 'B'
+        if key == 'C': return 6
+        if key == 6: return 'C'
+        if key == 'N': return 7
+        if key == 7: return 'N'
+        if key == 'O': return 8
+        if key == 8: return 'O'
+        if key == 'F': return 9
+        if key == 9: return 'F'
+        if key == 'Ne': return 10
+        if key == 10: return 'Ne'
+        if key == 'Na': return 11
+        if key == 11: return 'Na'
+        if key == 'Mg': return 12
+        if key == 12: return 'Mg'
+        if key == 'Al': return 13
+        if key == 13: return 'Al'
+        if key == 'Si': return 14
+        if key == 14: return 'Si'
+        if key == 'P': return 15
+        if key == 15: return 'P'
+        if key == 'S': return 16
+        if key == 16: return 'S'
+        if key == 'Cl': return 17
+        if key == 17: return 'Cl'
+        if key == 'Ar': return 18
+        if key == 18: return 'Ar'
+        if key == 'K': return 19
+        if key == 19: return 'K'
+        if key == 'Ca': return 20
+        if key == 20: return 'Ca'
+        if key == 'Sc': return 21
+        if key == 21: return 'Sc'
+        if key == 'Ti': return 22
+        if key == 22: return 'Ti'
+        if key == 'V': return 23
+        if key == 23: return 'V'
+        if key == 'Cr': return 24
+        if key == 24: return 'Cr'
+        if key == 'Mn': return 25
+        if key == 25: return 'Mn'
+        if key == 'Fe': return 26
+        if key == 26: return 'Fe'
+        if key == 'Co': return 27
+        if key == 27: return 'Co'
+        if key == 'Ni': return 28
+        if key == 28: return 'Ni'
+        if key == 'Cu': return 29
+        if key == 29: return 'Cu'
+        if key == 'Zn': return 30
+        if key == 30: return 'Zn'
+        if key == 'Ga': return 31
+        if key == 31: return 'Ga'
+        if key == 'Ge': return 32
+        if key == 32: return 'Ge'
+        if key == 'As': return 33
+        if key == 33: return 'As'
+        if key == 'Se': return 34
+        if key == 34: return 'Se'
+        if key == 'Br': return 35
+        if key == 35: return 'Br'
+        if key == 'Kr': return 36
+        if key == 36: return 'Kr'
+        if key == 'Rb': return 37
+        if key == 37: return 'Rb'
+        if key == 'Sr': return 38
+        if key == 38: return 'Sr'
+        if key == 'Y': return 39
+        if key == 39: return 'Y'
+        if key == 'Zr': return 40
+        if key == 40: return 'Zr'
+        if key == 'Nb': return 41
+        if key == 41: return 'Nb'
+        if key == 'Mo': return 42
+        if key == 42: return 'Mo'
+        if key == 'Tc': return 43
+        if key == 43: return 'Tc'
+        if key == 'Ru': return 44
+        if key == 44: return 'Ru'
+        if key == 'Rh': return 45
+        if key == 45: return 'Rh'
+        if key == 'Pd': return 46
+        if key == 46: return 'Pd'
+        if key == 'Ag': return 47
+        if key == 47: return 'Ag'
+        if key == 'Cd': return 48
+        if key == 48: return 'Cd'
+        if key == 'In': return 49
+        if key == 49: return 'In'
+        if key == 'Sn': return 50
+        if key == 50: return 'Sn'
+        if key == 'Sb': return 51
+        if key == 51: return 'Sb'
+        if key == 'Te': return 52
+        if key == 52: return 'Te'
+        if key == 'I': return 53
+        if key == 53: return 'I'
+        if key == 'Xe': return 54
+        if key == 54: return 'Xe'
+        if key == 'Cs': return 55
+        if key == 55: return 'Cs'
+        if key == 'Ba': return 56
+        if key == 56: return 'Ba'
+        if key == 'La': return 57
+        if key == 57: return 'La'
+        if key == 'Ce': return 58
+        if key == 58: return 'Ce'
+        if key == 'Pr': return 59
+        if key == 59: return 'Pr'
+        if key == 'Nd': return 60
+        if key == 60: return 'Nd'
+        if key == 'Pm': return 61
+        if key == 61: return 'Pm'
+        if key == 'Sm': return 62
+        if key == 62: return 'Sm'
+        if key == 'Eu': return 63
+        if key == 63: return 'Eu'
+        if key == 'Gd': return 64
+        if key == 64: return 'Gd'
+        if key == 'Tb': return 65
+        if key == 65: return 'Tb'
+        if key == 'Dy': return 66
+        if key == 66: return 'Dy'
+        if key == 'Ho': return 67
+        if key == 67: return 'Ho'
+        if key == 'Er': return 68
+        if key == 68: return 'Er'
+        if key == 'Tm': return 69
+        if key == 69: return 'Tm'
+        if key == 'Yb': return 70
+        if key == 70: return 'Yb'
+        if key == 'Lu': return 71
+        if key == 71: return 'Lu'
+        if key == 'Hf': return 72
+        if key == 72: return 'Hf'
+        if key == 'Ta': return 73
+        if key == 73: return 'Ta'
+        if key == 'W': return 74
+        if key == 74: return 'W'
+        if key == 'Re': return 75
+        if key == 75: return 'Re'
+        if key == 'Os': return 76
+        if key == 76: return 'Os'
+        if key == 'Ir': return 77
+        if key == 77: return 'Ir'
+        if key == 'Pt': return 78
+        if key == 78: return 'Pt'
+        if key == 'Au': return 79
+        if key == 79: return 'Au'
+        if key == 'Hg': return 80
+        if key == 80: return 'Hg'
+        if key == 'Tl': return 81
+        if key == 81: return 'Tl'
+        if key == 'Pb': return 82
+        if key == 82: return 'Pb'
+        if key == 'Bi': return 83
+        if key == 83: return 'Bi'
+        if key == 'Po': return 84
+        if key == 84: return 'Po'
+        if key == 'At': return 85
+        if key == 85: return 'At'
+        if key == 'Rn': return 86
+        if key == 86: return 'Rn'
+        if key == 'Fr': return 87
+        if key == 87: return 'Fr'
+        if key == 'Ra': return 88
+        if key == 88: return 'Ra'
+        if key == 'Ac': return 89
+        if key == 89: return 'Ac'
+        if key == 'Th': return 90
+        if key == 90: return 'Th'
+        if key == 'Pa': return 91
+        if key == 91: return 'Pa'
+        if key == 'U': return 92
+        if key == 92: return 'U'
+        if key == 'Np': return 93
+        if key == 93: return 'Np'
+        if key == 'Pu': return 94
+        if key == 94: return 'Pu'
+        if key == 'Am': return 95
+        if key == 95: return 'Am'
+        if key == 'Cm': return 96
+        if key == 96: return 'Cm'
+        if key == 'Bk': return 97
+        if key == 97: return 'Bk'
+        if key == 'Cf': return 98
+        if key == 98: return 'Cf'
+        if key == 'Es': return 99
+        if key == 99: return 'Es'
+        if key == 'Fm': return 100
+        if key == 100: return 'Fm'
+        if key == 'Md': return 101
+        if key == 101: return 'Md'
+        if key == 'No': return 102
+        if key == 102: return 'No'
+
 class TBT_Geom(SIESTA_UNITS):
     """
     Geometry object handling atomic coordinates in a supercell
@@ -128,6 +341,9 @@ class TBT_Geom(SIESTA_UNITS):
         is supplied all atoms have the same number of orbitals,
         whereas providing a array will set the number of orbitals
         individually.
+    Z     : (1) array_like/integer, optional
+        atomic number of the atoms in the geometry. 
+        Defaults to Hydrogen.
     update_sc : (False), boolean, optional
         If ``False`` it will initialise size of the super-cell to
         be one connection in all directions.
@@ -150,16 +366,22 @@ class TBT_Geom(SIESTA_UNITS):
         Total number of orbitals 
     dR   : float
         Maximum orbital range.
+    Z    : (na_u)
+        Atomic number of atom.
     proximity: (None), integer
         Limits the search space for large geometries when finding the
         closests atoms.
         ``proximity`` narrows the search to the ``+-proximity`` nearest atoms.
         If ``None`` it will search all atoms.
     """
-    def __init__(self,cell,xa,dR=2.5,n_orb=1,update_sc=False):
+    def __init__(self,cell,xa,dR=2.5,n_orb=1,Z=1,update_sc=False):
         self.cell = np.asarray(cell)
         self.xa = np.asarray(xa)
         self.na_u = len(xa)
+        self.Z = np.zeros((self.na_u,),np.int)
+        if Z is not None:
+            self.Z[:] = Z
+        self.Z = np.asarray(self.Z)
         if isinstance(n_orb,int):
             # We have a fixed number of orbitals per
             # atom
@@ -202,19 +424,31 @@ class TBT_Geom(SIESTA_UNITS):
             variables and return a geometry from those quantities.
         """
         nf = nc.Dataset(fname,'r')
-        xa = np.asarray(nf.variables['xa'][:]) * self.Bohr
-        cell = np.asarray(nf.variables['cell'][:]) * self.Bohr
-        lasto = np.asarray(nf.variables['lasto'][:])
-        nsc = np.asarray(nf.variables['nsc'][:])
+        xa = np.asarray(nf.variables['xa'][:]) * TBT_Geom.Bohr
+        cell  = np.asarray(nf.variables['cell'][:]) * TBT_Geom.Bohr
+        lasto = np.asarray(nf.variables['lasto'][:],np.int)
+        nsc   = np.asarray(nf.variables['nsc'][:],np.int)
+        Z = None
+        if 'BASIS' in nf.groups:
+            bg = nf.groups['BASIS']
+            b_idx = np.array(bg.variables['basis'][:],np.int)
+            # Loop all basis-sets and get the atomic number
+            n_b = len(bg.groups)
+            zb = np.zeros((n_b,),np.int)
+            for basis in bg.groups:
+                ID = bg.groups[basis].ID
+                bZ = bg.groups[basis].Atomic_number
+                zb[ID-1] = int(bZ)
+            Z = zb[b_idx - 1]
         nf.close()
         n_orb = np.diff(lasto)
         n_orb = np.append(lasto[0],n_orb)
         # Create new geometry
-        g = TBT_Geom(cell=cell,xa=xa,n_orb=n_orb)
-        g.update_sc(nsc=int(nsc) // 2)
+        g = TBT_Geom(cell=cell,xa=xa,n_orb=n_orb,Z=Z)
+        g.update_sc(nsc=nsc // 2)
         return g
 
-    def __init_new(self,cell,xa,n_orb,update_sc=False):
+    def __init_new(self,cell,xa,n_orb,Z=None,update_sc=False):
         """
         Internal routine to easily handle initialization
         of a new geometry, however if the user
@@ -222,7 +456,7 @@ class TBT_Geom(SIESTA_UNITS):
         we copy the nsc and isc_off from the local 
         copy.
         """
-        g = TBT_Geom(cell,xa,dR=self.dR,n_orb=n_orb,update_sc=update_sc)
+        g = TBT_Geom(cell,xa,dR=self.dR,n_orb=n_orb,Z=Z,update_sc=update_sc)
         if not update_sc:
             g.nsc = np.copy(self.nsc)
             g.isc_off = np.copy(self.isc_off)
@@ -299,7 +533,7 @@ class TBT_Geom(SIESTA_UNITS):
                     self.isc_off[i,1] = iy
                     self.isc_off[i,2] = iz
 
-    def xyz(self,fname=None,species='H'):
+    def xyz(self,fname=None):
         """
         Creates an xyz file for showing in visual programs
         
@@ -307,18 +541,14 @@ class TBT_Geom(SIESTA_UNITS):
         ----------
         fname : str 
             Filename to save the xyz format in.
-        species : str/list
-            List of species for all the atoms.
-            If a ``str`` is passed the same specie is used
-            for all atoms, if a list is passed every atom has
-            its designated specie.
         """
         if fname:
             # In case the species is a string we expand it
-            if isinstance(species,str):
-                lbl = [species] * self.na_u
-            else:
-                lbl = species
+            ptbl = PeriodicTable()
+            def spec(i):
+                if isinstance(i,str): return i
+                return ptbl[i]
+            lbl = [spec(l) for l in self.Z]
             with open(fname,'w') as fh:
                 fh.write(str(self.na_u)+'\n\n')
                 for ia in xrange(self.na_u):
@@ -330,7 +560,7 @@ class TBT_Geom(SIESTA_UNITS):
         """
         # Create a copy of this geometry
         return self.__init_new(np.copy(self.cell),np.copy(self.xa),
-                               n_orb=np.diff(self.lasto))
+                               n_orb=np.diff(self.lasto),Z=np.copy(self.Z))
 
     def remove(self,idx_a,update_sc=False):
         """
@@ -346,13 +576,13 @@ class TBT_Geom(SIESTA_UNITS):
             Whether the super-cell size should be recalculated using
             ``self.dR``.
         """
-        xa = np.copy(self.xa)
         # truncate atoms requested
         idx = np.setdiff1d(np.arange(self.na_u),idx_a,assume_unique=True)
+        xa = self.xa[idx,:]
         orbs = np.diff(self.lasto)[idx]
-        xa = xa[idx,:]
+        Z = self.Z[idx]
         return self.__init_new(np.copy(self.cell),xa,
-                               n_orb=orbs,
+                               n_orb=orbs,Z=Z,
                                update_sc=update_sc)
 
     def tile(self,reps,axis,update_sc=False):
@@ -392,20 +622,18 @@ class TBT_Geom(SIESTA_UNITS):
         cell = np.copy(self.cell)
         cell[axis,:] *= reps
         # Pre-allocate geometry
-        # Start the repetition
-        xa = np.copy(self.xa)
-        orbs = np.diff(self.lasto) 
         # Our first repetition *must* be with
         # the later coordinate
         # Copy the entire structure
-        xa = np.tile(xa,(reps,1))
-        orbs = np.tile(orbs,(reps,1))
+        xa = np.tile(self.xa,(reps,1))
+        Z = np.tile(self.Z,reps)
+        orbs = np.tile(np.diff(self.lasto),reps)
         # Single cell displacements
         dx = np.dot(np.arange(reps)[:,None],self.cell[axis,:][None,:])
         # Correct the unit-cell offsets
         xa[0:self.na_u*reps,:] += np.repeat(dx,self.na_u,axis=0)
         # Create the geometry and return it
-        return self.__init_new(cell,xa,n_orb=orbs,update_sc=update_sc)
+        return self.__init_new(cell,xa,n_orb=orbs,Z=Z,update_sc=update_sc)
 
     def repeat(self,reps,axis,update_sc=False):
         """
@@ -462,9 +690,11 @@ class TBT_Geom(SIESTA_UNITS):
         cell = np.copy(self.cell)
         cell[axis,:] *= reps
         # Pre-allocate geometry
-        xa = np.zeros((self.na_u*reps,3),np.float)
+        new_na_u = self.na_u * reps
+        xa = np.zeros((new_na_u,3),np.float)
+        Z = np.zeros((new_na_u,),np.float)
         n_orb = np.diff(self.lasto)
-        orbs = np.zeros((xa.shape[0],),np.int)
+        orbs = np.zeros((new_na_u,),np.int)
         dx = np.dot(np.arange(reps)[:,None],self.cell[axis,:][None,:])
         # Start the repetition
         ja = 0
@@ -473,10 +703,11 @@ class TBT_Geom(SIESTA_UNITS):
             # First add the basic atomic coordinate,
             # then add displacement for each repetition.
             xa[ja:ja+reps,:] = self.xa[ia,:][None,:] + dx[:,:]
+            Z[ja:ja+reps] = self.Z[ia]
             orbs[ja:ja+reps] = n_orb[ia]
             ja += reps
         # Create the geometry and return it
-        return self.__init_new(cell,xa,n_orb=orbs,update_sc=update_sc)
+        return self.__init_new(cell,xa,n_orb=orbs,Z=Z,update_sc=update_sc)
 
     def append(self,other,axis,update_sc=False):
         """
@@ -509,10 +740,11 @@ class TBT_Geom(SIESTA_UNITS):
         xa = np.append(self.xa,
                        self.cell[axis,:][None,:] + other.xa,
                        axis=0)
+        Z = np.append(self.Z,other.Z)
         cell = np.copy(self.cell)
         cell[axis,:] += other.cell[axis,:]
         orbs = np.append(np.diff(self.lasto),np.diff(other.lasto))
-        return self.__init_new(cell,xa,n_orb=orbs,update_sc=update_sc)
+        return self.__init_new(cell,xa,n_orb=orbs,Z=Z,update_sc=update_sc)
 
     def a2o(self,ia):
         """
@@ -1459,6 +1691,7 @@ def graphene_uc(alat=1.42):
                   cell=np.array([[3.,     0.,  0.],
                                  [0., 2*sq3h,  0.],
                                  [0.,     0., 10.]],np.float),
+                  Z = 6,
                   dR=2.05) # third nearest neighbour
     gr.xa   *= alat
     gr.cell *= alat
@@ -1531,7 +1764,7 @@ def TB_square():
     cell = np.identity(3,np.float)
     cell[2,2] = 2.
     SQ = TBT_Geom(xa=np.zeros([1,3],np.float),
-                  cell=cell, dR=1.1)
+                  cell=cell, Z=1 , dR=1.1)
     
     # Extend the square lattice to a
     # 2 by 1 electrode [x by y]
@@ -1773,7 +2006,7 @@ if __name__ == '__main__':
     HS.save('HOLE_D_zz.nc',Ef=TB['U'])
 
     # Save an xyz file to let the user view the geometry
-    HOLE.xyz('HOLE_zz.xyz',species='C')
+    HOLE.xyz('HOLE_zz.xyz')
 
     # Just for fun, create a HUGE graphene flake
     print('Starting time... '+str(datetime.datetime.now().time()))
@@ -1800,6 +2033,6 @@ if __name__ == '__main__':
     print('Converting to CSR sparsity format and saving NetCDF file...')
     HS.save('HUGE_D_zz.nc',Ef=TB['U'])
 
-    HUGE.xyz('HUGE_zz.xyz',species='C')
+    HUGE.xyz('HUGE_zz.xyz')
 
     print('Ending time... '+str(datetime.datetime.now().time()))

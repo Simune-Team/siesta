@@ -70,6 +70,7 @@ class TBTFile(object):
     def xa(self):
         """ Returns the atomic coordinates """
         return self._get_Data('xa')
+
     @property
     def kpt(self):
         """ Returns the k-points """
@@ -78,11 +79,26 @@ class TBTFile(object):
     def wkpt(self):
         """ Returns the k-point weights """
         return self._get_Data('wkpt')
+
     @property
     def E(self):
         """ Returns the energies that resides in the file """
         return self._get_Data('E')
 
+    @property
+    def na_u(self):
+        """ Returns number of atoms in the cell """
+        return int(len(self.nc.dimensions['na_u']))
+
+    @property
+    def na(self):
+        """ Returns number of atoms in the device region """
+        return int(len(self.nc.dimensions['na_d']))
+
+    @property
+    def no_u(self):
+        """ Returns number of orbitals in the unit-cell """
+        return int(len(self.nc.dimensions['no_u']))
     @property
     def no(self):
         """ Returns the size of the projected region """
@@ -94,16 +110,29 @@ class TBTFile(object):
         return np.array(self.nc.variables['a_dev'][:],np.int)
 
     @property
+    def lasto(self):
+        """ Returns the last orbital of the equivalent atom """
+        return self._get_Data('lasto')
+
+    @property
     def pivot(self):
         """ Returns the pivot table """
         return self._get_Data('pivot')
 
-    def atom2orb(self,atoms):
+    def o2a(self,orbs):
+        """ Returns an array of of atoms for where the orbitals
+        reside.
+        """
+        if isinstance(orbs,int) or isinstance(orbs,np.int32):
+            return np.where(orbs < self.lasto)[0][0]
+        return np.array([np.where(o < self.lasto)[0][0] for o in orbs])
+
+    def a2o(self,atoms):
         """ Returns an array of integers corresponding 
         to the orbitals of the input atoms """
         tatm = np.array(atoms)
-        lasto = np.zeros((len(self.nc.dimensions['na_u'])+1,),np.int)
-        lasto[1:] = self._get_Data('lasto')
+        lasto = np.zeros((self.na_u+1,),np.int)
+        lasto[1:] = self.lasto
         # Count the new size
         a_no = np.sum(lasto[tatm] - lasto[tatm-1])
         orbs = np.zeros((a_no,),np.int)
@@ -114,12 +143,12 @@ class TBTFile(object):
             i += n
         return orbs
 
-    def atom2idx(self,atoms):
+    def a2idx(self,atoms):
         """ Returns an array of integers corresponding 
         to the orbitals of the input atoms """
-        return self.orb2idx(self.atom2orb(atoms))
+        return self.o2idx(self.a2o(atoms))
 
-    def orb2idx(self,orbs):
+    def o2idx(self,orbs):
         """ Returns an array of integers corresponding 
         to the orbitals of the input orbitals """
         # Locate the equivalent orbitals in
@@ -134,6 +163,7 @@ class TBTFile(object):
                 if t: g = g.groups[t]
         return self._kavg(np.array(g.variables[var]),k_avg)
 
+    @property
     def elecs(self):
         """ Returns a list of electrodes """
         elecs = self.nc.groups.keys()
@@ -193,6 +223,79 @@ class TBTFile(object):
     def mu(self,El):
         """ Returns the chemical potential of the electrode """
         return self._get_Data('mu',[El])
+
+    def kT(self,El):
+        """ Returns the temperature of the electrode """
+        return self._get_Data('kT',[El])
+
+    def Jij(self,El,k_avg=True):
+        """ Returns the orbital current of the electrode in a scipy
+        csr matrix format """
+        # Create csr sparse formats.
+        # We import here as the user might not want to
+        # rely on this feature.
+        from scipy.sparse import csr_matrix
+        
+        # First read in the sparse matrix information
+        col = np.array(self.nc.variables['list_col'][:],np.int) - 1
+        tmp = np.cumsum(self.nc.variables['n_col'][:])
+        s = len(tmp)
+        ptr = np.zeros((s+1,),np.int)
+        ptr[1:] = tmp[:]
+        del tmp
+        J = self._get_Data('J',[El],k_avg=k_avg)
+        if len(J.shape) == 2:
+            return J, csr_matrix((J[0,:],col,ptr),shape=(s,s))
+        return J, csr_matrix((J[0,0,:],col,ptr),shape=(s,s))
+
+    def Jij2Ja(self,Jij):
+        """ Returns the total current flowing through each atom.
+        
+        It requires a sparse matrix return from ``self.Jij`` that
+        contains the orbital current.
+
+        It returns the atomic current on all atoms in the device
+        region.
+        Note that the returned atomic current is for the all atoms
+        even those not in ``self.a_dev.``
+        """
+        # Convert to csr format (just ensure it)
+        tmp = Jij.tocsr()
+        Ja = np.zeros((self.na_u,),np.float)
+        atoms = self.a_dev
+        lasto = np.append([0],self.lasto)
+        for ia in atoms:
+            Ja[ia-1] = np.sum(np.sqrt((tmp[lasto[ia-1]:lasto[ia],:].multiply(
+                            tmp[lasto[ia-1]:lasto[ia],:])).data))
+        return Ja
+    
+    def Jij2Jab(self,Jij):
+        """ Returns the total current flowing through each atom.
+        
+        It requires a sparse matrix return from ``self.Jij`` that
+        contains the orbital current.
+
+        It returns the atomic current on all atoms in the device
+        region.
+        Note that the returned atomic current is for the all atoms
+        even those not in ``self.a_dev.``
+        """
+        # Create csr sparse formats.
+        # We import here as the user might not want to
+        # rely on this feature.
+        from scipy.sparse import lil_matrix
+
+        # Convert to csr format (just ensure it)
+        Jab = lil_matrix((self.na_u,self.na_u))
+
+        # Faster to loop across data
+        tmp = Jij.tocoo()
+        # Loop over all orbitals
+        for jo,io,d in zip(tmp.row,tmp.col,tmp.data):
+            ja = self.o2a(jo)
+            ia = self.o2a(io)
+            Jab[ja,ia] += d
+        return Jab
 
 class TBTProjFile(TBTFile):
     """ We inherit the TBT.nc file object. Many of the quantities are similar """
@@ -348,11 +451,11 @@ def main():
             if o:
                 # we have only a subset of the orbitals
                 for ia in a:
-                    ob = Tf.atom2orb([ia])
+                    ob = Tf.a2o([ia])
                     # we need to correct the python indices
                     orbs.append(ob[np.array(o,np.int)-1].tolist())
             else:
-                orbs.append(Tf.atom2orb(a).tolist())
+                orbs.append(Tf.a2o(a).tolist())
 
     # We also remove dublicates by passing it through a set
     atoms = list(set(itertools.chain.from_iterable(atoms)))
@@ -364,7 +467,7 @@ def main():
         print('Will project DOS onto atoms: ',atoms)
         del atoms
         orbs.sort()
-        orbs = Tf.orb2idx(orbs)
+        orbs = Tf.o2idx(orbs)
     else:
         print('Will project DOS onto all device atoms.')
         orbs = np.arange(Tf.no)
@@ -448,7 +551,7 @@ def process_tbt(args,Tf,k_idx,orbs):
     fac_DOS = 1. / len(orbs)
 
     # Grab different electrodes in this file
-    elecs = Tf.elecs()
+    elecs = Tf.elecs
 
     # Get the energies (they are in Ry)
     E = Tf.E * Tf.Ry

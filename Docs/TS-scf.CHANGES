@@ -1,4 +1,38 @@
 ----------------------------------------------------
+February 14, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-300
+Added Z information to TBT_Geom, enabled bond-current saving
+
+* Added atomic number information to TBT_Geom. 
+  Copy, tile and repeat transfers this information.
+  
+  A few bug-fixes regarding tile of the structure has been fixed.
+
+  When saving the xyz file it now uses the Z information.
+
+* The data extraction tool for tbt_data.py.
+  It now implements a few
+  properties to extract number of orbitals/atoms in the unit-cell
+  and device region.
+
+  Implementation of o2a/a2o.
+
+  Added extraction of kT for the electrodes.
+
+  Added extraction of Jij and Jij2Ja and Jij2Jab.
+
+  To call those routines one does:
+
+    Jij, Jijcsr = tb.Jij(El)
+    Ja = tb.Jij2Ja(Jijcsr)
+    Jab = tb.Jij2Jab(Jijcsr)
+
+  and then Jab contains the atom to atom current.
+
+  A loop like this:
+    for ja,ia,d in zip(Jab.row,Jab.col,Jab.data):
+        print("From {0} to {1} I={2}".format(ia,ja,d))
+
+----------------------------------------------------
 February 13, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-299
 Speeded up pivot methods hugely
 
