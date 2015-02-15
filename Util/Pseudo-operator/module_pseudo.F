@@ -656,7 +656,6 @@ C**** If third derivative fit
             call my_add_attribute(xf,"l",lsymb(l))
             call my_add_attribute(xf,"n",str(ikb))
             call my_add_attribute(xf,"ekb",str(0.5_dp*ekb(ikb,l)))
-            call my_add_attribute(xf,"set","major")
             call my_add_attribute(xf,"type","KB")
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")

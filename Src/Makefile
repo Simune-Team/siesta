@@ -50,7 +50,7 @@ dep:
 include arch.make
 include Mk/FoX.mk
 
-INCFLAGS:= $(NETCDF_INCFLAGS) $(PSML_INCFLAGS) $(INCFLAGS)
+INCFLAGS:= $(NETCDF_INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) $(INCFLAGS)
 # For removing any -ipo compilation in sub directories...
 # Later compilers are also having this enabled, and it lets you
 # specify what to not be used in libraries.
@@ -161,8 +161,7 @@ OBJS =  automatic_cell.o atom_options.o \
         save_density_matrix.o \
         m_rhog.o rhofft.o m_diis.o compute_energies.o \
         class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o\
-	m_ncps_reader.o m_ncps_translators.o m_ncps.o m_ncps_froyen_reader.o\
-        m_ncps_writers.o m_ncps_froyen_ps_t.o psml_die.o \
+        psml_die.o \
         m_vlocal_chlocal.o
 #--------------------------------------------------------------
 
@@ -324,7 +323,7 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: m_filter.o m_ncps.o m_recipes.o m_vlocal_chlocal.o old_atmfuncs.o
+atom.o: m_filter.o m_recipes.o m_vlocal_chlocal.o old_atmfuncs.o
 atom.o: periodic_table.o precision.o sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
@@ -334,10 +333,9 @@ bands.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o m_gamma.o
 bands.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o writewave.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: m_ncps.o precision.o radial.o sys.o xml.o
-basis_specs.o: basis_types.o chemical.o m_ncps.o periodic_table.o precision.o
-basis_specs.o: sys.o
-basis_types.o: alloc.o atmparams.o m_ncps.o precision.o sys.o
+basis_io.o: precision.o radial.o sys.o xml.o
+basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o sys.o
+basis_types.o: alloc.o atmparams.o precision.o sys.o
 bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o m_recipes.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
@@ -528,16 +526,10 @@ m_iodm.o: sys.o
 m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
+m_kbgen.o: atom_options.o basis_specs.o
 m_kinetic.o: precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
-m_ncps.o: m_ncps_froyen_ps_t.o m_ncps_reader.o m_ncps_translators.o
-m_ncps.o: m_ncps_writers.o
-m_ncps_froyen_reader.o: flib_spline.o m_ncps_froyen_ps_t.o
-m_ncps_reader.o: m_ncps_froyen_ps_t.o m_ncps_froyen_reader.o
-m_ncps_reader.o: m_ncps_translators.o
-m_ncps_translators.o: m_ncps_froyen_ps_t.o
-m_ncps_writers.o: m_ncps_froyen_ps_t.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
@@ -651,7 +643,7 @@ projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: atom_options.o flib_spline.o m_ncps.o precision.o sys.o
+pseudopotential.o: atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o

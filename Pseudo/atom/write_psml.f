@@ -52,7 +52,7 @@
 
         case('rel') 
           polattrib   = 'no'
-          relattrib   = 'yes'
+          relattrib   = 'dirac'
 
         case('nrl') 
           polattrib   = 'no'
@@ -88,7 +88,7 @@
       call xml_AddXMLDeclaration(xf,"UTF-8")
 
       call xml_NewElement(xf,"psml")
-      call my_add_attribute(xf,"version","0.7")
+      call my_add_attribute(xf,"version","0.8")
       call my_add_attribute(xf,"energy_unit","hartree")
       call my_add_attribute(xf,"length_unit","bohr")
 
@@ -121,7 +121,7 @@
           call my_add_attribute(xf,"atomic-number",str(znuc))
           call my_add_attribute(xf,"z-pseudo",str(zion))
           call my_add_attribute(xf,"flavor",ray(3)//ray(4))
-          call my_add_attribute(xf,"relativistic",relattrib)
+          call my_add_attribute(xf,"relativity",relattrib)
           call my_add_attribute(xf,"polarized",polattrib)
           call my_add_attribute(xf,"core-corrections",coreattrib)
  
@@ -174,17 +174,25 @@
           call xml_EndElement(xf,"grid-data")
         call xml_EndElement(xf,"grid")
 
-        call xml_NewElement(xf,"semilocal-potentials")
-          call my_add_attribute(xf,"npots-major",str(npotd))
-          call my_add_attribute(xf,"npots-minor",str(npotu))
   
 ! Down pseudopotentials follows
 ! (Major)
 
+        if (npotd > 0) then
+           call xml_NewElement(xf,"semilocal-potentials")
+           if (relattrib=="dirac") then
+              call my_add_attribute(xf,"set","scalar_relativistic")
+           else 
+              if (polattrib=="yes") then
+                 call my_add_attribute(xf,"set","spin_average")
+              else
+                 call my_add_attribute(xf,"set","non_relativistic")
+              endif
+           endif
+
       vpsd: do ivps = 1, lmax
            if (indd(ivps) .eq. 0) cycle
            call xml_NewElement(xf,"vps")
-             call my_add_attribute(xf,"set","major")
              call my_add_attribute(xf,"n",str(no(indd(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"rc",str(rc(ivps)))
@@ -200,12 +208,26 @@
            call xml_EndElement(xf,"vps")
          enddo vpsd
 
+         call xml_EndElement(xf,"semilocal-potentials")
+      endif
+!
 ! Up pseudopotentials follows
-! (Minor)
+! 
+
+        if (npotu > 0) then
+
+           call xml_NewElement(xf,"semilocal-potentials")
+           if (relattrib=="dirac") then
+              call my_add_attribute(xf,"set","spin_orbit")
+           else 
+              if (polattrib=="yes") then
+                 call my_add_attribute(xf,"set","spin_difference")
+              endif
+           endif
+
          vpsu: do ivps = 1, lmax
            if (indu(ivps) .eq. 0) cycle
            call xml_NewElement(xf,"vps")
-             call my_add_attribute(xf,"set","minor")
              call my_add_attribute(xf,"n",str(no(indu(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"rc",str(rc(ivps)))
@@ -222,19 +244,24 @@
            call xml_EndElement(xf,"vps")
         enddo vpsu
         call xml_EndElement(xf,"semilocal-potentials")
+        endif
 
 ! Dump of the pseudowave functions
         call xml_NewElement(xf,"pseudo-wave-functions")
-          call my_add_attribute(xf,"npswfs",str(nshells_stored))
-          call my_add_attribute(xf,"npswfs-major",str(nshells_stored))
-          call my_add_attribute(xf,"npswfs-minor",str(0))
-  
+        if (relattrib=="dirac") then
+           call my_add_attribute(xf,"set","scalar_relativistic")
+        else
+           if (polattrib=="yes") then
+              call my_add_attribute(xf,"set","spin_average")
+           else
+              call my_add_attribute(xf,"set","non_relativistic")
+           endif
+        endif
         ! We only write the "test" wavefunctions ("major" = "average")
         pswfd: do i = 1, nshells_stored
            call xml_NewElement(xf,"pswf")
              call my_add_attribute(xf,"n",str(n_pswf(i)))
              call my_add_attribute(xf,"l",il(l_pswf(i)+1))
-             call my_add_attribute(xf,"set","major")
              call xml_NewElement(xf,"radfunc")
 
                call xml_NewElement(xf,"data")

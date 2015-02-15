@@ -72,13 +72,13 @@ program fhi2psml
   call xml_AddXMLDeclaration(xf,"UTF-8")
 
   call xml_NewElement(xf,"psml")
-  call my_add_attribute(xf,"version","0.7")
+  call my_add_attribute(xf,"version","0.8")
   call my_add_attribute(xf,"energy_unit","hartree")
   call my_add_attribute(xf,"length_unit","bohr")
 
   call xml_NewElement(xf,"provenance")
   call my_add_attribute(xf,"creator","FHIPP98-2003")
-  call my_add_attribute(xf,"translator","fhi2psml v0.2")
+  call my_add_attribute(xf,"translator","fhi2psml v0.3")
   call my_add_attribute(xf,"date","01-01-01")
   call xml_NewElement(xf,"input-file")
   call my_add_attribute(xf,"name","fort.20")
@@ -189,7 +189,7 @@ program fhi2psml
   if (nonrel) then
      relattrib = "no"
   else
-     relattrib = "yes"
+     relattrib = "scalar"
   endif
   if (polarized) then
      polattrib = "yes"
@@ -297,7 +297,7 @@ program fhi2psml
   call my_add_attribute(xf,"atomic-number",str(znuc))
   call my_add_attribute(xf,"z-pseudo",str(zion))
   call my_add_attribute(xf,"flavor",psflavor)
-  call my_add_attribute(xf,"relativistic",relattrib)
+  call my_add_attribute(xf,"relativity",relattrib)
   call my_add_attribute(xf,"polarized",polattrib)
   call my_add_attribute(xf,"core-corrections",coreattrib)
 
@@ -371,13 +371,15 @@ program fhi2psml
   enddo
 
   call xml_NewElement(xf,"semilocal-potentials")
-  call my_add_attribute(xf,"npots-major",str(npots))
-  call my_add_attribute(xf,"npots-minor","0")
+  if (relattrib=="scalar") then
+     call my_add_attribute(xf,"set","scalar_relativistic")
+  else
+     call my_add_attribute(xf,"set","non_relativistic")
+  endif
   !         
   allocate(f0(nr))
   vpsd: do i = 1, npots
      call xml_NewElement(xf,"vps")
-     call my_add_attribute(xf,"set","major")
      call my_add_attribute(xf,"n",str(nn(i)))
      call my_add_attribute(xf,"l",lsymb(ll(i)))
      call my_add_attribute(xf,"rc",str(rc(i)))
@@ -396,9 +398,11 @@ program fhi2psml
 
   ! Dump of the pseudowave functions
   call xml_NewElement(xf,"pseudo-wave-functions")
-  call my_add_attribute(xf,"npswfs",str(npots))
-  call my_add_attribute(xf,"npswfs-major",str(npots))
-  call my_add_attribute(xf,"npswfs-minor","0")
+  if (relattrib=="scalar") then
+     call my_add_attribute(xf,"set","scalar_relativistic")
+  else
+     call my_add_attribute(xf,"set","non_relativistic")
+  endif
 
   ! Down pseudowave function follows
 
@@ -406,7 +410,6 @@ program fhi2psml
      call xml_NewElement(xf,"pswf")
      call my_add_attribute(xf,"n",str(nn(i)))
      call my_add_attribute(xf,"l",lsymb(ll(i)))
-     call my_add_attribute(xf,"set","major")
 
      call xml_NewElement(xf,"radfunc")
 

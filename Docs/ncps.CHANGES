@@ -1,4 +1,30 @@
 ------------------------------------------------------------
+February 15, 2015  Alberto Garcia        trunk-462--ncps-56
+Update code to PSML version 0.8. Offload ncps library
+
+Atom and Fhi2pmsl now write v0.8 PSML files.
+
+Siesta and psop process also v0.8 PSML files.
+
+The ncps library is now considered external.
+
+removed:
+  Src/m_ncps.f90
+  Src/m_ncps_froyen_ps_t.f90
+  Src/m_ncps_froyen_reader.f
+  Src/m_ncps_reader.f
+  Src/m_ncps_translators.f90
+  Src/m_ncps_writers.f90
+modified:
+  Pseudo/atom/fhi2psml.f90
+  Pseudo/atom/write_psml.f
+  Src/Makefile
+  Src/Sys/example-psml.make
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+
+------------------------------------------------------------
 February 12, 2015  Alberto Garcia        trunk-462--ncps-55
 Implement reading of vlocal from PSML file
 

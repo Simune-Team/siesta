@@ -214,6 +214,8 @@
       real(dp)                 :: r2         ! Local variables
       integer                  :: nkb        ! Number of KB projectors
 
+      character(len=60)        :: set
+
       character(len=200) :: opt_arg, mflnm, ref_line
       character(len=10)  :: opt_name 
       integer :: nargs, iostat, n_opts, nlabels, iorb, ikb, i
@@ -549,7 +551,13 @@
             call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"local-potential")
 
+      if (irelt == 1) then
+         set = "scalar_relativistic"
+      else
+         set = "non_relativistic"
+      endif
       call xml_NewElement(xf,"projectors")
+      call my_add_attribute(xf,"set",trim(set))
 
       call KBgen( is, a, b, rofi, drdi, s, &
                  vps, vlocal, ve, nrval, Zval, lmxkb, &
