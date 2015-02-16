@@ -31,7 +31,7 @@ module m_fixed
 
   private
 
-  integer, parameter :: TYPE_LEN = 30
+  integer, parameter :: TYPE_LEN = 20
   type tFix
      ! Number of atoms belonging to this fix
      integer :: n = 0
@@ -305,7 +305,7 @@ contains
 
           call die('Center of mass does not currently work')
           
-       else if ( namec == 'mol' ) then
+       else if ( namec == 'rigid' ) then
           
           ! Calculate total force on the molecule
           ! this is done using the center-of-force method
@@ -345,7 +345,7 @@ contains
           ! (only the relative positions are constrained)
           ntcon = ntcon + ( N - 1 ) * 3
 
-       else if ( namec == 'mol-dir' ) then
+       else if ( namec == 'rigid-dir' ) then
           
           ! Calculate total force on the molecule
           ! this is done using the center-of-force method
@@ -391,7 +391,7 @@ contains
           ! hence we remove N degrees of freedom
           ntcon = ntcon + N
          
-       else if ( namec == 'mol-max' ) then
+       else if ( namec == 'rigid-max' ) then
           
           ! Calculate total force on the molecule
           ! this is done using the center-of-force method
@@ -431,7 +431,7 @@ contains
           ! constrained)
           ntcon = ntcon + ( N - 1 ) * 3
 
-       else if ( namec == 'mol-max-dir' ) then
+       else if ( namec == 'rigid-max-dir' ) then
           
           ! Calculate total force on the molecule
           ! this is done using the center-of-force method
@@ -582,6 +582,7 @@ contains
        namec = fdf_bnames(pline,1)
 
        if ( leqi(namec,'position') .or. leqi(namec,'atom') .or. &
+            leqi(namec,'rigid') .or. leqi(namec,'rigid-max') .or. &
             leqi(namec,'molecule') .or. leqi(namec,'molecule-max') .or. &
             leqi(namec,'center') .or. &
             leqi(namec,'center-of-mass') .or. &
@@ -734,7 +735,7 @@ contains
           add_dir = .true.
           fixs(ifix)%type = 'pos'
 
-       else if ( leqi(namec,'molecule') ) then
+       else if ( leqi(namec,'rigid') .or. leqi(namec,'molecule') ) then
 
           ! We restrict the entire molecule to move "together"
 
@@ -748,9 +749,9 @@ contains
           fixs(ifix)%a(:) = rr%r(:)
 
           add_dir = .true.
-          fixs(ifix)%type = 'mol'
+          fixs(ifix)%type = 'rigid'
 
-       else if ( leqi(namec,'molecule-max') ) then
+       else if ( leqi(namec,'rigid-max') .or. leqi(namec,'molecule-max') ) then
 
           ! We restrict the entire molecule to move "together"
 
@@ -764,7 +765,7 @@ contains
           fixs(ifix)%a(:) = rr%r(:)
 
           add_dir = .true.
-          fixs(ifix)%type = 'mol-max'
+          fixs(ifix)%type = 'rigid-max'
 
        else if ( leqi(namec,'center-of-mass') ) then
 
@@ -790,7 +791,13 @@ contains
           ifix = ifix + 1
 
           ! Create a list of atoms from this line
-          call fdf_brange(pline,rr,1,na)
+          if ( (fdf_bntokens(pline) == 4 .and. fdf_bnreals(pline) == 3) &
+               .or. fdf_bntokens(pline) == 1 ) then
+             ! this line specifies all atoms (shorthand)
+             call rgn_range(rr,1,na)
+          else
+             call fdf_brange(pline,rr,1,na)
+          end if
 
           fixs(ifix)%n = rr%n
           allocate(fixs(ifix)%a(rr%n))
@@ -800,7 +807,7 @@ contains
 
        else if ( IONode ) then
           
-          write(*,'(2a)') 'siesta: Unrecognized geometry &
+          write(*,'(2a)') 'WARNING: Skipping unrecognized geometry &
                &constraint: ',trim(namec)
 
        end if

@@ -1558,8 +1558,8 @@ contains
                 if ( k == j ) then
                    write(555,'(3a)') '{ edge [color="',trim(edges(k)),'"]'
                 else
-                   write(555,'(5a)') '{ edge [color="',trim(edges(k)),';0.5:', &
-                        trim(colors(j)),'"]'
+                   write(555,'(5a)') '{ edge [color="',trim(edges(j)),';0.5:', &
+                        trim(edges(k)),'"]'
                 end if
                 write(555,'(i0,2a)',advance='no') i,con,' {'
                 do ind = l_ptr(i) + 1 , l_ptr(i) + n_col(i)

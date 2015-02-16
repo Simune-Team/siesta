@@ -1,4 +1,25 @@
 ----------------------------------------------------
+February 15, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-303
+Added default siesta constraints to the list
+
+* m_fixed now accepts rigid as an input (same as molecule).
+
+  Also the manual specified that supplying center
+  as a whole would automatically be equivalent to
+    center from 1 to -1
+  hence this abbreviation is implemented.
+
+  Reduced string length to 20.
+
+* Reversed the colouring of the gradient edges in the 
+  GRAPHVIZ output as one can then connect "backwards".
+
+modified:
+  Src/m_fixed.F90
+  Src/m_pivot_methods.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 February 15, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-302
 Added colors to edges, added buffer atoms
 
