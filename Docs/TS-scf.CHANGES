@@ -1,4 +1,11 @@
 ----------------------------------------------------
+February 15, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-304
+Forgot .or. in ts_init
+
+modified:
+  Src/ts_init.F90
+
+----------------------------------------------------
 February 15, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-303
 Added default siesta constraints to the list
 

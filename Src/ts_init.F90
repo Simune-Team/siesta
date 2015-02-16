@@ -117,7 +117,7 @@ contains
        do i = 1 , N_Elec
           do ia = Elecs(i)%idx_a , Elecs(i)%idx_a + TotUsedAtoms(Elecs(i)) - 1
              if ( .not. ( is_constr(ia,'rigid') .or. is_constr(ia,'rigid-dir') &
-                  is_constr(ia,'rigid-max') .or. is_constr(ia,'rigid-max-dir') &
+                  .or. is_constr(ia,'rigid-max') .or. is_constr(ia,'rigid-max-dir') &
                   .or. is_fixed(ia) ) ) then
                 call die('All electrode atoms *MUST* be &
                      &fixed while doing transiesta geometry optimizations. &
