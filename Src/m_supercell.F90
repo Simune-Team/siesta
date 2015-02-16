@@ -207,11 +207,16 @@ contains
     integer :: ia, na_l, n_nzs
 
 #ifdef MPI
-    call set_blocksizedefault(Nodes,na_u,ia)
-    call newDistribution(ia,MPI_Comm_World,dit,name='AG-dist')
-    na_l = num_local_elements(dit,na_u)
-    call atom_graph_generate( negl, ucell, na_u, isa, xa, ag, dit , &
-         set_xijo = .false. )
+    if ( na_u > Nodes ) then ! We can only distribute something if all have something
+       call set_blocksizedefault(Nodes,na_u,ia)
+       call newDistribution(ia,MPI_Comm_World,dit,name='AG-dist')
+       na_l = num_local_elements(dit,na_u)
+       call atom_graph_generate( negl, ucell, na_u, isa, xa, ag, dit , &
+            set_xijo = .false. )
+    else
+       call atom_graph_generate( negl, ucell, na_u, isa, xa, ag , &
+            set_xijo = .false. )
+    end if
 #else
     na_l = na_u
     call atom_graph_generate( negl, ucell, na_u, isa, xa, ag , &

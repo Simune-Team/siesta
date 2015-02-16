@@ -579,19 +579,15 @@ contains
          list_col = l_col , nrows_g = n , nnzs = n_nzs )
     call rgn_init(r_El,n)
     r_El%r(:) = 0
-    do iEl = 1 , N_Elec
+    do j = 1 , n
        if ( orb_atom == 1 ) then
-          j = Elecs(iEl)%idx_o
-          no = TotUsedOrbs(Elecs(iEl))
+          r_El%r(j) = orb_type(j)
        else
-          j = Elecs(iEl)%idx_a
-          no = TotUsedAtoms(Elecs(iEl))
+          r_El%r(j) = atom_type(j)
        end if
-       do i = j , j - 1 + no
-          r_El%r(i) = iEl
-       end do
     end do
-    call sp2graphviz('GRAPHVIZ_'//trim(corb)//'.gv', &
+    if ( IONode ) &
+         call sp2graphviz('GRAPHVIZ_'//trim(corb)//'.gv', &
          n,n_nzs,ncol,l_ptr,l_col,types=r_El%r)
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
          list_col = l_col , nrows_g = n , nnzs = n_nzs )

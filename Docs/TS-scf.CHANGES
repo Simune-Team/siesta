@@ -1,4 +1,26 @@
 ----------------------------------------------------
+February 15, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-302
+Added colors to edges, added buffer atoms
+
+* The GRAPHVIZ print-out now differs between buffer
+  atoms and electrodes.
+
+  Buffer atoms will now be put in a separate graph.
+
+  Bugfix for IONode print-out. Only the IO node should 
+  write out stuff.
+
+* Bugfix in supercell calculation, when the distribution
+  is too big for the number of atoms it errored out.
+  Hence if the number of atoms is larger than the # of
+  nodes we should not process it as distributed.
+
+modified:
+  Src/m_pivot_methods.F90
+  Src/m_supercell.F90
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
 February 14, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-301
 Added graphviz code to create graphs from sparse patterns
 

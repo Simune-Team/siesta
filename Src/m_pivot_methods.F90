@@ -1486,8 +1486,11 @@ contains
     integer, intent(in), optional :: types(n)
     integer, intent(in), optional :: method
 
+    !                                               gray      blue      red       green     purple
+    character(len=7), parameter :: edges(0:4)  = (/'#D8D8D8','#5882FA','#FA5858','#58FA58','#AC58FA'/)
+    character(len=7), parameter :: colors(0:4) = (/'#000000','#2E2EFE','#FF0000','#00FF00','#A901DB'/)
     character(len=4) :: con
-    integer :: i, j, ind, lmethod
+    integer :: i, j, k, ind, lmethod, max_types
 
     lmethod = 1
     if ( present(method) ) lmethod = 1
@@ -1497,32 +1500,36 @@ contains
     select case ( lmethod ) 
 
     case ( 1 ) ! GRAPH
-       write(555,'(a)') 'graph G {'
+       write(555,'(a)') 'strict graph G {'
        con = ' -- '
     case ( 2 ) ! DI-GRAPH
-       write(555,'(a)') 'digraph G {'
+       write(555,'(a)') 'strict digraph G {'
        con = ' -> '
     end select
 
     ! Tell graphviz to print out the edges first
-    write(555,'(a)') 'rankdir = LR;'
     write(555,'(a)') 'outputorder = edgesfirst;'
+    ! show them in increasing rank-order, from left to right
+    write(555,'(a)') 'rankdir = LR;'
+    ! scale the diagram to show everything (makes the image very large)
     write(555,'(a)') 'overlap = scale;'
+    ! try to decrease overlaps of edges with nodes, hence paths between nodes
+    ! will be clearer
+    write(555,'(a)') 'splines = spline;'
+    
+    if ( present(types) ) then
+       max_types = maxval(types)
+    end if
 
     if ( present(types) ) then
-       ind = maxval(types)
-       if ( ind > 4 ) call die('Can not re-present more than 4 different &
+       if ( max_types > 4 ) call die('Can not re-present more than 4 different &
             &types.')
-       do j = 1 , ind
+       do j = 0 , max_types
           select case ( j )
-          case ( 1 )
-             write(555,'(a)') 'node [shape=box style=filled fillcolor=blue] ;'
-          case ( 2 )
-             write(555,'(a)') 'node [shape=box style=filled fillcolor=red] ;'
-          case ( 3 )
-             write(555,'(a)') 'node [shape=box style=filled fillcolor=green] ;'
-          case ( 4 )
-             write(555,'(a)') 'node [shape=box style=filled fillcolor=purple] ;'
+          case ( 0 , 1 )
+             write(555,'(a)') 'node [shape=box style=filled fillcolor="'//trim(colors(j))//'" fontcolor=white]'
+          case default
+             write(555,'(a)') 'node [shape=box style=filled fillcolor="'//trim(colors(j))//'"]'
           end select
           do i = 1 , n
              if ( types(i) == j ) then
@@ -1532,33 +1539,89 @@ contains
           write(555,'(tr1,a)') ';'
        end do
     end if
-    ! Default node color:
-    write(555,'(a)') 'node [shape=box style=filled fillcolor=black fontcolor=white] ;'
-    ! Default edge color:
+    ! Default edge
     write(555,'(a)') 'edge [color=gray] ;'
 
-    do i = 1 , n
-       do ind = l_ptr(i) + 1 , l_ptr(i) + n_col(i)
-          write(555,'(i0,a,i0,'';'')') i,con,l_col(ind)
-       end do
-    end do
-
     if ( present(types) ) then
-       ind = maxval(types)
-       do j = 1 , ind
+
+       ! print everything with respect to types
+       do i = 1 , n 
+          ! Always show node (sometimes it could not connect)
+          if ( types(i) < 0 ) cycle
+          call print_node(i)
+          if ( n_col(i) <= 1 ) cycle
+          do k = 0 , max_types
+             if ( k /= types(i) ) cycle
+             ! Create all edges with type connections
+             do j = 0 , max_types
+                ! print out the edges it connects to
+                if ( k == j ) then
+                   write(555,'(3a)') '{ edge [color="',trim(edges(k)),'"]'
+                else
+                   write(555,'(5a)') '{ edge [color="',trim(edges(k)),';0.5:', &
+                        trim(colors(j)),'"]'
+                end if
+                write(555,'(i0,2a)',advance='no') i,con,' {'
+                do ind = l_ptr(i) + 1 , l_ptr(i) + n_col(i)
+                   if ( l_col(ind) <= i ) cycle
+                   if ( j /= types(l_col(ind)) ) cycle
+                   write(555,'(tr1,i0)',advance='no') l_col(ind)
+                end do
+                write(555,'(a)') '} }'
+             end do
+          end do
+       end do
+
+       do k = 1 , max_types
           ! Rank them similarly
           write(555,'(tr1,a)',advance='no') '{ rank=same;'
           do i = 1 , n
-             if ( types(i) == j ) then
+             if ( types(i) == k ) then
                 write(555,'(tr1,i0)',advance='no') i
              end if
           end do
           write(555,'(tr1,a)') '}'
        end do
+
+       ! Rank them similarly
+       if ( any(types < 0) ) then
+          write(555,'(tr1,a)') 'subgraph BUF {'
+          write(555,'(tr1,a)') 'rank=same;'
+          write(555,'(a)') 'node [shape=box style=filled fillcolor=white fontcolor=black]'
+          do i = 1 , n
+             if ( types(i) < 0 ) then
+                write(555,'(i0)') i
+             end if
+          end do
+          write(555,'(tr1,a)') '}'
+       end if
+
+    else
+       
+       do i = 1 , n
+          call print_node(i)
+          if ( n_col(i) <= 1 ) cycle
+          ! Write out the label of the node
+          write(555,'(i0,2a)',advance='no') i,con,' {'
+          do ind = l_ptr(i) + 1 , l_ptr(i) + n_col(i)
+             if ( l_col(ind) == i ) cycle
+             write(555,'(tr1,i0)',advance='no') l_col(ind)
+          end do
+          write(555,'(a)') '}'
+       end do
+
     end if
 
     write(555,'(a)') '}'
     close(555)
+
+  contains
+
+    subroutine print_node(i)
+      integer, intent(in) :: i
+      ! Write out the label of the node
+      write(555,'(i0,'' [label="'',i0,'' ('',i0,'')"]'')') i,i,n_col(i)-1
+    end subroutine print_node
 
   end subroutine sp2graphviz
 #endif
