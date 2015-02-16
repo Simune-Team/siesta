@@ -1,4 +1,17 @@
 ----------------------------------------------------
+February 15, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-305
+Bugfix for Makefile added option to tbt_tb
+
+* The makefile had an erroneous object linked in
+
+* If the user supplies dR to a geometry it forces to update
+  the super-cell
+
+modified:
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/Makefile
+
+----------------------------------------------------
 February 15, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-304
 Forgot .or. in ts_init
 

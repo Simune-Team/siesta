@@ -374,7 +374,7 @@ class TBT_Geom(SIESTA_UNITS):
         ``proximity`` narrows the search to the ``+-proximity`` nearest atoms.
         If ``None`` it will search all atoms.
     """
-    def __init__(self,cell,xa,dR=2.5,n_orb=1,Z=1,update_sc=False):
+    def __init__(self,cell,xa,dR=None,n_orb=1,Z=1,update_sc=False):
         self.cell = np.asarray(cell)
         self.xa = np.asarray(xa)
         self.na_u = len(xa)
@@ -392,7 +392,12 @@ class TBT_Geom(SIESTA_UNITS):
             self.lasto = np.cumsum(
                 np.append(np.array([0],np.int),np.asarray(n_orb,np.int)))
         self.no_u = int(self.lasto[-1])
-        self.dR = dR
+        if dR:
+            self.dR = dR
+            update_sc = True
+        else:
+            self.dR = 2.5
+        self.proximity = None
 
         # Force the calculation of the super-cells from an orbital
         # range consideration
