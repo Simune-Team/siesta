@@ -123,7 +123,7 @@ contains
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1),no_s,ipvt,Sigma,no_s,ierr)
        if ( ierr /= 0 ) &
-            write(*,*) 'Inversion of surface Greens function failed'
+            write(*,'(a,i0)') 'Inversion of surface Greens function failed: ',ierr
        
     end if
 
@@ -178,9 +178,8 @@ contains
 
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
-
        if ( ierr /= 0 ) &
-            write(*,*) 'Inversion of surface Greens function failed'
+            write(*,'(a,i0)') 'Inversion of surface Greens function failed: ',ierr
 
     end if
 
@@ -248,10 +247,8 @@ contains
 
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
-
-       if ( ierr /= 0 ) then
-          write(*,*) 'Inversion of surface Greens function failed'
-       end if
+       if ( ierr /= 0 ) &
+            write(*,'(a,i0)') 'Inversion of surface Greens function failed: ',ierr
 
     end if
 

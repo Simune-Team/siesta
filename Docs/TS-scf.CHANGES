@@ -1,4 +1,12 @@
 ----------------------------------------------------
+February 17, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-306
+Added print-out of error code for LAPACK routines
+
+modified:
+  Src/m_ts_elec_se.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 February 15, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-305
 Bugfix for Makefile added option to tbt_tb
 

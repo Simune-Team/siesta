@@ -1261,6 +1261,9 @@ contains
 
        ! Calculate: [An-1 - Yn-1] ^-1 Cn
        call zgesv(p(ip-1),p(ip),A,p(ip-1),ipiv,C,p(ip-1),ierr)
+       if ( ierr /= 0 ) then
+          write(*,'(a,i0)') 'Inversion of down-projection failed: ',ierr
+       end if
        ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
 #ifdef USE_GEMM3M
        call zgemm3m( &
