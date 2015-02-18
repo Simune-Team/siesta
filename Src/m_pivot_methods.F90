@@ -1424,7 +1424,7 @@ contains
              deg = cdeg
           else if ( cdeg == deg .and. present(priority) ) then
              ! ** this should never happen if idx == 0
-             if ( priority(etr) < priority(sub%r(idx)) ) then
+             if ( priority(sub%r(idx)) < priority(etr) ) then
                 idx = i
              end if
           end if
@@ -1434,7 +1434,7 @@ contains
              deg = cdeg
           else if ( cdeg == deg .and. present(priority) ) then
              ! ** this should never happen if idx == 0
-             if ( priority(etr) < priority(sub%r(idx)) ) then
+             if ( priority(sub%r(idx)) < priority(etr) ) then
                 idx = i
              end if
           end if
@@ -1444,7 +1444,7 @@ contains
              deg = cdeg
           else if ( cdeg == deg .and. present(priority) ) then
              ! ** this should never happen if idx == 0
-             if ( priority(etr) < priority(sub%r(idx)) ) then
+             if ( priority(sub%r(idx)) < priority(etr) ) then
                 idx = i
              end if
           end if

@@ -487,8 +487,8 @@ contains
        ! memory.
        n = which_part(M,idx_Elec)
        sN = nrows_g(M,n)
-       ii = 0
-       do
+       ii = 1
+       do while ( i_Elec + ii <= r_col%n )
           i = rgn_pivot(r,r_col%r(i_Elec+ii))
           ! In case it is not consecutive
           if ( i - idx_Elec /= ii ) exit
@@ -496,7 +496,6 @@ contains
           ! we cut the block size here.
           if ( n /= which_part(M,i) ) exit
           ii = ii + 1
-          if ( i_Elec + ii > r_col%n ) exit
        end do
        ! The consecutive memory block is this size 'ii'
        call rgn_list(rB,ii,r_col%r(i_Elec:i_Elec+ii-1))

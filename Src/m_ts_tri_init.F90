@@ -82,11 +82,11 @@ contains
     integer :: idx, no
     integer :: i, io, els, iEl, no_u_TS
     integer :: padding, worksize
-    character(len=NAME_LEN) :: ctmp
+    character(len=NAME_LEN) :: ctmp, csort
     logical :: sort_orb
     
     ! Regions used for sorting the device region
-    type(tRgn) :: r_tmp, r_Els
+    type(tRgn) :: r_tmp, r_Els, priority
     
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
 
@@ -133,13 +133,14 @@ contains
     ! Get sorting method, we default to sort
     ! the BTD matrix according to the connection
     ! scheme of the first electrode.
-    ctmp = fdf_get('TS.BTD.Sort',trim(Elecs(1)%name))
+    csort = fdf_get('TS.BTD.Sort','atom+'//trim(Elecs(1)%name))
+    ctmp = csort
     ! we default to do atomic sorting, faster and very consistent
     sort_orb = (index(ctmp,'orb') > 0)
     if ( sort_orb ) then
        ! the specification is orb something
        i = index(ctmp,'orb')
-       ctmp(i:i+2) = ' '
+       ctmp(i:i+3) = ' ' ! also remove +
        ! Prepare total region with all electrodes
        call rgn_range(r_Els,Elecs(1)%idx_o, &
             Elecs(1)%idx_o-1+TotUsedOrbs(Elecs(1)))
@@ -152,10 +153,18 @@ contains
 
        no_u_TS = nrows_g(tmpSp2) - no_Buf
 
+       ! Create priority list
+       call rgn_init(priority,nrows_g(tmpSp2))
+       call crt_El_priority(N_Elec,Elecs,priority,is_orb = .true.)
+
     else
        ! in case the user supplies 'atom+something'
        i = index(ctmp,'atom')
-       if ( i > 0 ) ctmp(i:i+3) = ' '
+       if ( i > 0 ) then
+          ctmp(i:i+4) = ' ' ! also remove +
+       else
+          csort = 'atom+'//trim(csort)
+       end if
        ! We are doing atomic comparison
        call rgn_range(r_Els,Elecs(1)%idx_a, &
             Elecs(1)%idx_a-1+TotUsedAtoms(Elecs(1)))
@@ -173,10 +182,11 @@ contains
 
        no_u_TS = nrows_g(tmpSp2) - na_Buf
 
+       ! Create priority list
+       call rgn_init(priority,nrows_g(tmpSp2))
+       call crt_El_priority(N_Elec,Elecs,priority,is_orb = .false.)
+
     end if
-    ! Remove all '+' in the string
-    i = index(ctmp,'+')
-    if ( i > 0 ) ctmp(i:i) = ' '
     ! Left adjust the string
     ctmp = ADJUSTL(ctmp)
     if ( leqi(ctmp,'none') ) then
@@ -188,25 +198,55 @@ contains
 
        call sp_pvt(tmpSp2,r_pvt, PVT_CUTHILL_MCKEE, r_tmp, start = r_Els)
 
+    else if ( leqi(ctmp,'CM+priority') ) then
+
+       call sp_pvt(tmpSp2,r_pvt, PVT_CUTHILL_MCKEE, r_tmp, start = r_Els, &
+            priority = priority%r )
+
     else if ( leqi(ctmp,'rev-CM') ) then
 
        call sp_pvt(tmpSp2,r_pvt, PVT_REV_CUTHILL_MCKEE, r_tmp, start = r_Els)
+
+    else if ( leqi(ctmp,'rev-CM+priority') ) then
+
+       call sp_pvt(tmpSp2,r_pvt, PVT_REV_CUTHILL_MCKEE, r_tmp, start = r_Els , &
+            priority = priority%r )
 
     else if ( leqi(ctmp,'GPS') ) then
 
        call sp_pvt(tmpSp2,r_pvt, PVT_GPS, r_tmp)
 
+    else if ( leqi(ctmp,'GPS+priority') ) then
+
+       call sp_pvt(tmpSp2,r_pvt, PVT_GPS, r_tmp , &
+            priority = priority%r )
+
     else if ( leqi(ctmp,'rev-GPS') ) then
 
        call sp_pvt(tmpSp2,r_pvt, PVT_REV_GPS, r_tmp)
+
+    else if ( leqi(ctmp,'rev-GPS+priority') ) then
+
+       call sp_pvt(tmpSp2,r_pvt, PVT_REV_GPS, r_tmp , &
+            priority = priority%r )
 
     else if ( leqi(ctmp,'GGPS') ) then
 
        call sp_pvt(tmpSp2,r_pvt, PVT_GGPS, r_tmp)
 
+    else if ( leqi(ctmp,'GGPS+priority') ) then
+
+       call sp_pvt(tmpSp2,r_pvt, PVT_GGPS, r_tmp , &
+            priority = priority%r )
+
     else if ( leqi(ctmp,'rev-GGPS') ) then
 
        call sp_pvt(tmpSp2,r_pvt, PVT_REV_GGPS, r_tmp)
+
+    else if ( leqi(ctmp,'rev-GGPS+priority') ) then
+
+       call sp_pvt(tmpSp2,r_pvt, PVT_REV_GGPS, r_tmp , &
+            priority = priority%r )
 
     else ! the user *must* have supplied an electrode
 
@@ -216,7 +256,7 @@ contains
           if ( Elecs(i)%name == ctmp ) iEl = i
        end do
        if ( iEl == 0 ) then
-          print *,ctmp
+          print *,csort
           call die('Could find the electrode in &
                &TS.BTD.Sort in the list of electrodes, &
                &please correct sorting method.')
@@ -315,7 +355,7 @@ contains
        tmpSp2 = tmpSp1
 
     end if
-    call rgn_delete(r_tmp,r_Els)
+    call rgn_delete(r_tmp,r_Els,priority)
 
     ! Recalculate number of orbitals in TS
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
@@ -356,8 +396,7 @@ contains
           Elecs(i)%o_inD%r(io) = r_pvt%r(r_tmp%r(io))
        end do
 
-       ! Create the pivot table for the electrode scattering
-       ! matrix
+       ! Create the pivot table for the electrode scattering matrix
        call rgn_copy(Elecs(i)%o_inD,Elecs(i)%inDpvt)
        Elecs(i)%inDpvt%r = Elecs(i)%inDpvt%r - idx + 1
 
@@ -372,8 +411,10 @@ contains
     call sp_to_file(4000,tmpSp2)
 #endif
 
+    ! Get the current sorting method
     if ( IONode ) &
-         write(*,'(/,a)') 'transiesta: Determining an optimal tri-matrix...'
+         write(*,'(/,2a)') 'transiesta: Determining an optimal &
+         &tri-matrix using: ',trim(csort)
 
     ! Create a new tri-diagonal matrix, do it in parallel
     call ts_rgn2TriMat(N_Elec, Elecs, IsVolt, &
@@ -412,6 +453,13 @@ contains
        write(*,'(a,i0)') 'transiesta: Padding + work elements: ', &
             padding + worksize
     end if
+    do iEl = 1 , N_Elec
+       i = consecutive_Elec_orb(Elecs(iEl),r_pvt)
+       if ( IONode ) then
+          write(*,'(3a,i0,a)') 'transiesta: Electrode ',trim(Elecs(iEl)%name), &
+               ' splitting Gamma ',i-1,' times.'
+       end if
+    end do
 
     ! Check that we can contain the full column
     if ( maxval(TotUsedOrbs(Elecs)) * no_u_TS > els ) then
@@ -468,7 +516,7 @@ contains
     type(OrbitalDistribution) :: fdit
     type(Sparsity) :: tmpSp1, tmpSp2
 
-    integer :: no_u_TS, i, j, iEl, no
+    integer :: no_u_TS, i, j, iEl, no, no_El
 
     integer :: n, n_nzs
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
@@ -477,7 +525,7 @@ contains
     character(len=4) :: corb
     
     ! Regions used for sorting the device region
-    type(tRgn) :: r_tmp, r_Els, r_El, full
+    type(tRgn) :: r_tmp, r_Els, r_El, full, priority
     integer :: orb_atom
     
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
@@ -545,11 +593,15 @@ contains
        ! Prepare total region with all electrodes
        call rgn_range(r_Els,Elecs(1)%idx_o, &
             Elecs(1)%idx_o-1+TotUsedOrbs(Elecs(1)))
-       do i = 2 , N_Elec
-          call rgn_range(r_tmp,Elecs(i)%idx_o, &
-               Elecs(i)%idx_o-1+TotUsedOrbs(Elecs(i)))
+       do iEl = 2 , N_Elec
+          call rgn_range(r_tmp,Elecs(iEl)%idx_o, &
+               Elecs(iEl)%idx_o-1+TotUsedOrbs(Elecs(iEl)))
           call rgn_append(r_Els,r_tmp,r_Els)
        end do
+
+       ! Create priority list
+       call rgn_init(priority,n)
+       call crt_El_priority(N_Elec,Elecs,priority,is_orb = .true.)
 
     else
        corb = 'atom'
@@ -566,11 +618,15 @@ contains
        ! Prepare total region with all electrodes
        call rgn_range(r_Els,Elecs(1)%idx_a, &
             Elecs(1)%idx_a-1+TotUsedAtoms(Elecs(1)))
-       do i = 2 , N_Elec
-          call rgn_range(r_tmp,Elecs(i)%idx_a, &
-               Elecs(i)%idx_a-1+TotUsedAtoms(Elecs(i)))
+       do iEl = 2 , N_Elec
+          call rgn_range(r_tmp,Elecs(iEl)%idx_a, &
+               Elecs(iEl)%idx_a-1+TotUsedAtoms(Elecs(iEl)))
           call rgn_append(r_Els,r_tmp,r_Els)
        end do
+
+       ! Create priority list
+       call rgn_init(priority,na_u)
+       call crt_El_priority(N_Elec,Elecs,priority,is_orb = .false.)
 
     end if
 
@@ -649,7 +705,6 @@ contains
     end do
 
     if ( IONode ) write(*,fmt) trim(corb),'CM'
-
     call sp_pvt(tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
@@ -659,7 +714,26 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'rev-CM'
-    call sp_pvt(tmpSp2,r_tmp, PVT_REV_CUTHILL_MCKEE, sub = full, start = r_Els)
+    call reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'CM+priority'
+    call sp_pvt(tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els, &
+         priority = priority%r)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'rev-CM+priority'
+    call reverse(r_tmp)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -677,7 +751,25 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'rev-GPS'
-    call sp_pvt(tmpSp2,r_tmp, PVT_REV_GPS, sub = full)
+    call reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'GPS+priority'
+    call sp_pvt(tmpSp2,r_tmp, PVT_GPS, sub = full, priority = priority%r)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'rev-GPS+priority'
+    call reverse(r_tmp)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -695,7 +787,25 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'rev-GGPS'
-    call sp_pvt(tmpSp2,r_tmp, PVT_REV_GGPS, sub = full)
+    call reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'GGPS+priority'
+    call sp_pvt(tmpSp2,r_tmp, PVT_GGPS, sub = full, priority = priority%r)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'rev-GGPS+priority'
+    call reverse(r_tmp)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -705,7 +815,7 @@ contains
 
     end do orb_atom_switch
 
-    call rgn_delete(r_tmp,r_Els,r_El)
+    call rgn_delete(r_tmp,r_Els,r_El,priority)
 
     call delete(tmpSp1) ! clean up
     call delete(tmpSp2)
@@ -721,7 +831,7 @@ contains
       use m_pivot_methods, only : bandwidth, profile
       type(tRgn), intent(in) :: r_pvt
 
-      integer :: bw, els, pad, work
+      integer :: bw, els, pad, work, i
       integer(i8b) :: prof
       type(tRgn) :: ctri
 
@@ -760,11 +870,122 @@ contains
          write(*,'(tr3,a,t39,f8.2,a)') 'Rough variable MEM required: ', &
               real(prof,dp) * 16._dp / 1024._dp ** 2,' MB'
       end if
+      do i = 1 , N_Elec
+         work = consecutive_Elec_orb(Elecs(i),r_pvt)
+         if ( IONode ) then
+            write(*,'(tr3,2a,t39,i0)') trim(Elecs(i)%name), &
+                 ' splitting Gamma:',work-1
+         end if
+      end do
 
       call rgn_delete(ctri)
       
     end subroutine tri
+
+    subroutine reverse(pvt)
+      type(tRgn), intent(inout) :: pvt
+      integer :: i, tmp
+
+      ! Reverse the list
+      do i = 1 , pvt%n / 2
+         tmp = pvt%r(i)
+         pvt%r(i) = pvt%r(pvt%n+1-i)
+         pvt%r(pvt%n+1-i) = tmp
+      end do
+
+    end subroutine reverse
       
   end subroutine ts_tri_analyze
+
+  subroutine crt_El_priority(N_Elec,Elecs,pr,is_orb)
+    use m_ts_electype
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    type(tRgn), intent(inout) :: pr ! Needs to be pre-allocated
+    logical :: is_orb
+    integer :: i, iEl, no, j, start, end
+    
+    ! Initialize
+    pr%r = 0
+    do iEl = 1 , N_Elec
+       if ( is_orb ) then
+          start = Elecs(iEl)%idx_o
+          no = TotUsedOrbs(Elecs(iEl))
+       else
+          start = Elecs(iEl)%idx_a
+          no = TotUsedAtoms(Elecs(iEl))
+       end if
+       end = start + no - 1
+       ! For negative we have only connections forward.
+       ! Hence we expect the atoms to be sorted "forwardly"
+       ! This need not be the case, but for now we do this
+       ! TODO align the atoms in direction of the unit-cell
+       ! to figure out the correct "direction"
+       if ( Elecs(iEl)%inf_dir == INF_NEGATIVE ) then
+          i = no
+          do j = start , end
+             pr%r(j) = i
+             i = i - 1
+          end do
+       else
+          i = 1
+          do j = start , end
+             pr%r(j) = i
+             i = i + 1
+          end do
+       end if
+    end do
+
+  end subroutine crt_El_priority
+
+  function consecutive_Elec_orb(El,r) result(con)
+    use m_ts_electype
+    type(Elec), intent(in) :: El
+    type(tRgn), intent(in) :: r
+    type(tRgn) :: o_inD, r_tmp
+    integer :: con
+    integer :: i_Elec, io, idx_Elec, idx, no
+
+    idx = El%idx_o
+    no = TotUsedOrbs(El)
+
+    ! Create the pivoting table for the electrodes
+    call rgn_init(r_tmp,no)
+    do io = 0 , no - 1
+       ! equals the io'th orbital index in the 
+       !           TS region.  io == ts_i
+       r_tmp%r(io+1) = rgn_pivot(r,idx+io)
+    end do
+       
+    ! Sort it to be able to gather the indices
+    ! in the correct order
+    call rgn_sort(r_tmp)
+    ! pivot the o_inD back
+    call rgn_init(o_inD,no)
+    do io = 1 , no 
+       o_inD%r(io) = r%r(r_tmp%r(io))
+    end do
+
+    con    = 0
+    i_Elec = 1
+    do while ( i_Elec <= o_inD%n ) 
+
+       idx_Elec = rgn_pivot(r,o_inD%r(i_Elec))
+       io = 1
+       do while ( i_Elec + io <= o_inD%n ) 
+          idx = rgn_pivot(r,o_inD%r(i_Elec+io))
+          ! In case it is not consecutive
+          if ( idx - idx_Elec /= io ) exit
+          io = io + 1
+       end do
+       con = con + 1
+
+       i_Elec = i_Elec + io
+
+    end do
+
+    call rgn_delete(r_tmp,o_inD)
+
+  end function consecutive_Elec_orb
 
 end module m_ts_tri_init

@@ -1,4 +1,26 @@
 ----------------------------------------------------
+February 18, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-308
+Added priority ordering, added information about Gamma splits.
+
+* Pivoting using a priority scheme has been added.
+  This will _only_ matter if the ordering of the electrodes
+  are sub-optimal.
+
+* When pivoting electrodes we can come in situations where
+  the Gamma is not consecutive in columns. 
+  The user will be given this information in the output of how
+  many times it will split the G.Gamma.G calculation.
+
+  Typically the fewer the better, however, the bigger the electrode
+  the less importance this has. So this has to be the users choice.
+
+modified:
+  Src/m_pivot.F90
+  Src/m_pivot_methods.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_trimat_invert.F90
+
+----------------------------------------------------
 February 18, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-307
 Changed diag state return as optional
 

@@ -35,7 +35,7 @@ contains
 
   ! Main routine to create pivot table for the sparsity pattern
   ! The sparse pattern MUST not be distributed.
-  subroutine sp_pvt(sp,pvt,method,sub,start)
+  subroutine sp_pvt(sp,pvt,method,sub,start,priority)
     use class_Sparsity
     use m_pivot_methods
     
@@ -49,6 +49,8 @@ contains
     ! arbitrary starting points, hence we can force it to start
     ! amongst any of these)
     type(tRgn), intent(in), optional :: start
+    ! The priority of the rows, optional
+    integer, intent(in), optional :: priority(:)
 
     type(tRgn) :: lsub
     integer :: n, n_nzs
@@ -76,18 +78,18 @@ contains
     ! Call the appropriate routine
     if      ( method == PVT_CUTHILL_MCKEE     ) then
        call Cuthill_Mckee(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, &
-            start = start )
+            start = start , priority = priority )
     else if ( method == PVT_REV_CUTHILL_MCKEE ) then
        call rev_Cuthill_Mckee(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, &
-            start = start )
+            start = start , priority = priority  )
     else if ( method == PVT_GPS               ) then
-       call GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+       call GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
     else if ( method == PVT_REV_GPS           ) then
-       call rev_GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+       call rev_GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
     else if ( method == PVT_GGPS              ) then
-       call GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+       call GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
     else if ( method == PVT_REV_GGPS          ) then
-       call rev_GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+       call rev_GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
     else
        call die('m_pivot: Programming error, unknown method')
     end if
