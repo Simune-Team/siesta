@@ -189,7 +189,9 @@ class TBTFile(object):
                 return D
         else:
             DATA.shape = (len(self.wk),-1)
-            D = np.sum(DATA[k_avg,:] * self.wk[k_avg,None],axis=0)
+            D = DATA[k_avg,:] * self.wk[k_avg,None]
+            if len(D.shape) > 1:
+                D = np.sum(D,axis=0)
             D.shape = tmp[1:]
             return D
         return DATA

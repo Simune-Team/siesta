@@ -136,21 +136,35 @@ contains
 
   subroutine calc_Eig_Gamma(spH,spS,orb,eig,state)
     use m_ts_sparse_helper, only : create_U
+
     type(dSpData2D), intent(inout) :: spH
     type(dSpData1D), intent(inout) :: spS
     type(tRgn), intent(in) :: orb
-    real(dp), intent(out) :: eig(orb%n), state(orb%n,orb%n)
+    real(dp), intent(out) :: eig(orb%n)
+    real(dp), intent(out), target, optional :: state(orb%n,orb%n)
 
     type(OrbitalDistribution), pointer :: dit
     type(Sparsity), pointer :: sp
     integer :: no, info
     integer :: i, j, n_nzs
-    real(dp), pointer :: H(:,:), S(:)
+    real(dp), pointer :: H(:,:), S(:), lstate(:,:)
     real(dp), allocatable :: H_UT(:), S_UT(:), work(:)
     integer :: lwork, liwork
     integer, allocatable :: iwork(:)
+    ! Character to denote whether only eigenvalue or +eigenstates
+    character(len=1) :: NV
 
     no = orb%n
+    
+    if ( present(state) ) then
+       NV = 'V'
+       lstate => state(:,:)
+       ! if ( size(lstate,1) /= orb%n )
+       ! if ( size(lstate,2) /= orb%n )
+    else
+       NV = 'N'
+       nullify(lstate) ; allocate(lstate(1,1))
+    end if
 
     ! Re-create H_UT, S_UT in UT format
     allocate(H_UT(no*(no+1)/2),S_UT(no*(no+1)/2))
@@ -158,7 +172,7 @@ contains
     lwork = 3 * no
     if ( use_DC ) then
        ! Do a work-size query
-       call dspgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+       call dspgvd(1,NV,'U', no, H_UT, S_UT, eig, lstate, no, &
             S_UT(1), -1, liwork, -1, info)
        lwork = max(no,nint(S_UT(1)))
        allocate(iwork(liwork))
@@ -174,11 +188,11 @@ contains
     call create_U(dit, sp, no, orb, n_nzs, H(:,1), H_UT)
 
     if ( use_DC ) then
-       call dspgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+       call dspgvd(1,NV,'U', no, H_UT, S_UT, eig, lstate, no, &
             work, lwork, iwork, liwork, info)
        deallocate(iwork)
     else
-       call dspgv(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+       call dspgv(1,NV,'U', no, H_UT, S_UT, eig, lstate, no, &
             work, info)
     end if
 
@@ -205,14 +219,17 @@ contains
           work(1)    = eig(j)
           eig(j)     = eig(i)
           eig(i)     = work(1)
-          ! switch eigenvector
-          work(1:no) = state(:,j)
-          state(:,j) = state(:,i)
-          state(:,i) = work(1:no)
+          if ( NV == 'V' ) then
+             ! switch eigenvector
+             work(1:no) = lstate(:,j)
+             lstate(:,j) = lstate(:,i)
+             lstate(:,i) = work(1:no)
+          end if
        end if
     end do
 
     deallocate(work)
+    if ( NV == 'N' ) deallocate(lstate)
 
   end subroutine calc_Eig_Gamma
 
@@ -339,7 +356,7 @@ contains
     real(dp), intent(in) :: sc_off(3,nsc)
     type(tRgn), intent(in) :: orb
     real(dp), intent(out) :: eig(orb%n)
-    complex(dp), intent(out) :: state(orb%n,orb%n)
+    complex(dp), intent(out), target, optional :: state(orb%n,orb%n)
     real(dp), intent(in) :: kpt(3)
 
     type(OrbitalDistribution), pointer :: dit
@@ -349,10 +366,22 @@ contains
     real(dp), pointer :: H(:,:), S(:)
     real(dp), allocatable :: rwork(:)
     complex(dp), allocatable :: H_UT(:), S_UT(:), work(:)
+    complex(dp), pointer :: lstate(:,:)
     integer :: lwork, lrwork, liwork
     integer, allocatable :: iwork(:)
+    character(len=1) :: NV
 
     no = orb%n
+
+    if ( present(state) ) then
+       NV = 'V'
+       lstate => state(:,:)
+       ! if ( size(lstate,1) /= orb%n )
+       ! if ( size(lstate,2) /= orb%n )
+    else
+       NV = 'N'
+       nullify(lstate) ; allocate(lstate(1,1))
+    end if
 
     ! Re-create H_UT, S_UT in UT format
     allocate(H_UT(no*(no+1)/2),S_UT(no*(no+1)/2))
@@ -361,7 +390,7 @@ contains
     lrwork = 3 * no
     if ( use_DC ) then
        ! work-size query
-       call zhpgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+       call zhpgvd(1,NV,'U', no, H_UT, S_UT, eig, lstate, no, &
             S_UT(1), -1, eig, -1, liwork, -1, info)
        lwork = max(no,nint(real(S_UT(1),dp)))
        lrwork = nint(eig(1))
@@ -379,11 +408,11 @@ contains
     call create_U(dit, sp, no, orb, n_nzs, nsc, H(:,1), sc_off,H_UT, kpt)
 
     if ( use_DC ) then
-       call zhpgvd(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+       call zhpgvd(1,NV,'U', no, H_UT, S_UT, eig, lstate, no, &
             work, lwork, rwork, lrwork, iwork, liwork, info)
        deallocate(iwork)
     else
-       call zhpgv(1,'V','U', no, H_UT, S_UT, eig, state, no, &
+       call zhpgv(1,NV,'U', no, H_UT, S_UT, eig, lstate, no, &
          work, rwork, info)
     end if
 
@@ -410,10 +439,12 @@ contains
           rwork(1)   = eig(j)
           eig(j)     = eig(i)
           eig(i)     = rwork(1)
-          ! switch eigenvector
-          work(1:no) = state(:,j)
-          state(:,j) = state(:,i)
-          state(:,i) = work(1:no)
+          if ( NV == 'V' ) then
+             ! switch eigenvector
+             work(1:no)  = lstate(:,j)
+             lstate(:,j) = lstate(:,i)
+             lstate(:,i) = work(1:no)
+          end if
        end if
     end do
     

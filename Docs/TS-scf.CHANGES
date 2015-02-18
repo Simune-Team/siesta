@@ -1,4 +1,29 @@
 ----------------------------------------------------
+February 18, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-307
+Changed diag state return as optional
+
+* Changed the diagonalization routine to have the
+  eigenstates as optional output.
+
+  This could turn into a nice feature to calculate
+  the band-structure of various Hamiltonians.
+
+* The k-regions now only allow to calculate k-kp
+  by specifying regions with periodicity.
+  Hence the Gamma region must not exist if periodic
+  elements exists.
+
+  It is easier to cope and forces the user to think about
+  the consequences.
+
+* Small bugfix for returning non k-averaged data.
+
+modified:
+  Util/TS/TBtrans/m_tbt_diag.F90
+  Util/TS/TBtrans/m_tbt_kregions.F90
+  Util/TS/TBtrans/tbt_data.py
+
+----------------------------------------------------
 February 17, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-306
 Added print-out of error code for LAPACK routines
 

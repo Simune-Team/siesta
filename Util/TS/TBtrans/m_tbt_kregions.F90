@@ -82,11 +82,10 @@ contains
 
     ! If the user does not request k->k', do not read in
     if ( .not. fdf_get('TBT.Region.k',.false.) ) return
-    if ( IONode ) write(*,*) ! new-line
 
      ! Warn the user about possible mis-use of regions
     if ( IONode ) then
-       write(*,'(a)') 'tbtrans: WARNING'
+       write(*,'(/,a)') 'tbtrans: WARNING'
        write(*,'(a)') 'tbtrans: Using k-regions is not recommended &
             &unless you really know what you are doing.'
        write(*,'(a)') 'tbtrans: WARNING'
@@ -100,21 +99,43 @@ contains
     end do
     n_k = 0
 
-    if ( fdf_block('TBT.Atoms.k',bfdf) ) then
-       call crt_read_k(bfdf,na_u)
-    else
-       call crt_connect_k(N_Elec, Elecs, &
-            dit, sp, na_u, xa, lasto, nsc, isc_off)
-    end if
+    if ( .not. fdf_block('TBT.Atoms.k',bfdf) ) &
+         call die('tbtrans: k-regions, could not read &
+         &different periodic regions. See %block TBT.Atoms.k')
+    call crt_read_k(bfdf,na_u)
 
-    ! Assert that the regions all have at least one
-    ! atom
+    ! Get the atoms which connects to a super-cell to check
+    ! whether they are all in a k-region.
+    call get_connect_k(N_Elec, Elecs, &
+         dit, sp, na_u, xa, lasto, nsc, isc_off, r1)
+
+    ! Assert that the regions all have at least one atom
     do il = 1 , n_k
+       ! Sort to fasten the search, and stream-line
+       ! their usage
+       call rgn_sort(r_k(il)%atm)
        if ( r_k(il)%atm%n == 0 ) then
           call die('Region: '//trim(r_k(il)%atm%name)//' &
                &is empty, this is not allowed.')
        end if
+       i = r1%n
+       do while ( i > 0 ) 
+          if ( in_rgn(r_k(il)%atm,r1%r(i)) ) then
+             if ( 0 > rgn_pop(r1,i) ) iEl = 0
+          end if
+          i = i - 1
+       end do
     end do
+
+    ! If there are still elements in r1 we definitely have
+    ! an error
+    if ( r1%n /= 0 ) then
+       r1%name = 'Periodic atoms'
+       call rgn_print(r1)
+       call die('Could not assert all periodic atoms to be &
+            &k-region.')
+    end if
+    call rgn_delete(r1)
 
     ! Assert that each electrode "only" exists in one
     ! periodicity region (we do not allow the user
@@ -258,8 +279,8 @@ contains
 
   end subroutine tbt_init_kRegions
 
-  subroutine crt_connect_k(N_Elec, Elecs, &
-       dit,sp, na_u, xa, lasto, nsc, isc_off)
+  subroutine get_connect_k(N_Elec, Elecs, &
+       dit,sp, na_u, xa, lasto, nsc, isc_off, r_per)
     
     use fdf
     use precision, only : dp
@@ -281,6 +302,8 @@ contains
     real(dp), intent(in) :: xa(3,na_u)
     ! the supercell information
     integer, intent(in) :: nsc(3), isc_off(3,product(nsc))
+    ! The atoms which are periodic
+    type(tRgn), intent(inout) :: r_per
 
     ! ** local variables
     integer :: no_l, no_u
@@ -288,10 +311,7 @@ contains
     integer :: na
     integer, allocatable :: a_list(:)
     logical :: periodic
-    type(tRgn) :: rG, roG, r1, r2
-    integer :: i, io, il, ia
-    type(tRgn), allocatable :: rl(:)
-    integer, allocatable :: ilist(:)
+    integer :: io, ia
 
     call attach(sp,nrows=no_l,nrows_g=no_u, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
@@ -302,101 +322,27 @@ contains
     allocate(a_list(na_u))
     do ia = 1 , na_u
 
+       periodic = .false. ! in-case l_ncol == 0
        do io = lasto(ia-1) + 1 , lasto(ia)
+          if ( l_ncol(io) == 0 ) cycle
           periodic = any(l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io)) > no_u)
           if ( periodic ) exit
        end do
-       if ( .not. periodic ) then
+       if ( periodic ) then
           na = na + 1
           a_list(na) = ia
        end if
 
     end do
 
-    ! Create list of Gamma atoms
-    call rgn_list(rG,na,a_list)
+    call rgn_list(r_per,na,a_list)
+
     deallocate(a_list)
-    call rgn_sort(rG)
-    call rgn_Atom2Orb(rG,na_u,lasto,roG)
-    
-    ! For each atom not in the Gamma region we
-    ! create a connection and figure out all regions where no
-    ! interactions cross the Gamma region.
-    n_k = 0
-    do ia = 1 , na_u
-       if ( in_rgn(rG,ia) ) cycle
 
-       ! We have a new k-region
-       call rgn_range(r1,lasto(ia-1)+1,lasto(ia))
+    ! Sort it to search better
+    call rgn_sort(r_per)
 
-       do
-
-          call rgn_sp_connect(r1, dit, sp, r2, except = roG)
-
-          if ( r2%n == 0 ) exit
-
-          call rgn_append(r1,r2,r1)
-
-       end do
-       ! in case no new region is found, quickly skip it
-       ! this might happen for buffer atoms.
-       if ( r1%n == 0 ) cycle
-
-       ! r1 now contains the orbitals of the next k-region
-       if ( n_k == 0 ) then
-          allocate(r_k(0:1))
-       else
-          allocate(rl(n_k))
-          do i = 1 , n_k
-             call rgn_copy(r_k(i)%atm,rl(i))
-          end do
-          deallocate(r_k) ; allocate(r_k(0:n_k+1))
-          do i = 1 , n_k
-             call rgn_copy(rl(i),r_k(i)%atm)
-          end do
-          deallocate(rl)
-       end if
-       n_k = n_k + 1
-       
-       call rgn_Orb2Atom(r1,na_u,lasto,r_k(n_k)%atm)
-       call rgn_sort(r_k(n_k)%atm)
-
-       ! To ensure that we do not create a region
-       ! per-atom, we add the just found k-region to the
-       ! Gamma-region. In this way we cannot create
-       ! any two regions having the same atoms
-       call rgn_append(rG,r_k(n_k)%atm,r1)
-       call rgn_copy(r1,rG)
-       call rgn_sort(rG)
-       call rgn_Atom2Orb(rG,na_u,lasto,roG)
-
-    end do
-
-    ! Get how many number of different letters
-    ! we need to make unique names
-    ! We use the letters of the alphabet (we have 26 different)
-    ia = n_k / 26 + 1
-    allocate(ilist(ia))
-    ilist(:) = 65
-    ! Initialize all names
-    do il = 1 , n_k
-       r_k(il)%atm%name = ' '
-       do i = 1 , ia
-          r_k(il)%atm%name = trim(r_k(il)%atm%name) // achar(ilist(i))
-       end do
-       do i = ia , 1 , -1
-          if ( ilist(i) < 90 ) then
-             ilist(i) = ilist(i) + 1
-             exit
-          else
-             ilist(i) = 65
-          end if
-       end do
-    end do
-    call rgn_delete(rG,roG,r1,r2)
-    deallocate(ilist)
-
-  end subroutine crt_connect_k
+  end subroutine get_connect_k
 
   subroutine crt_read_k(bfdf,na_u)
     
