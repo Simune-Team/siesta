@@ -503,7 +503,9 @@ contains
     type(ts_c_idx), intent(in) :: c
     integer, intent(in) :: ID
     integer, intent(out) :: idx
+#ifdef TS_CHECKS
     if ( c%idx(1) /= CONTOUR_EQ ) call die('Could not locate ID')
+#endif
     call ID2idx_cw(Eq_c(c%idx(2)),ID,idx)
   end subroutine ID2idx_cidx
 

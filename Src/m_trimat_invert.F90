@@ -91,6 +91,7 @@ contains
     logical :: piv_initialized
     logical, allocatable :: lc_parts(:)
 
+#ifndef TS_NOCHECKS
     if ( parts(M) /= parts(Minv) ) then
        call die('Could not calculate the inverse on non equal sized &
             &matrices')
@@ -105,13 +106,16 @@ contains
     if ( .not. piv_initialized ) then
        call die('Pivoting array for inverting matrix not set.')
     end if
+#endif
 
     ! Figure out if the calc_parts is correctly sized
     allocate(lc_parts(parts(M)))
     if ( present(calc_parts) ) then
+#ifndef TS_NOCHECKS
        if ( size(calc_parts) /= parts(M) ) then
           call die('Wrong size of calculation parts. Please correct code')
        end if
+#endif
        ! Copy over values
        lc_parts(:) = calc_parts(:)
        do n = 1 , parts(M)
@@ -341,17 +345,21 @@ contains
     complex(dp), pointer :: ztmp(:), Xn(:), Cnp2(:)
     integer :: sN, sNp1, sNp1SQ, sNp2, ierr
 
+#ifndef TS_NOCHECKS
     if ( n < 1 .or. parts(M) <= n .or. parts(M) /= parts(Minv) ) then
        call die('Could not calculate Xn on these matrices')
     end if
+#endif
     ! Collect all matrix sizes for this step...
     sN     = nrows_g(M,n)
     sNp1   = nrows_g(M,n+1)
     sNp1SQ = sNp1 ** 2
+#ifndef TS_NOCHECKS
     if ( nz < sNp1SQ ) then
        call die('Work array in Xn calculation not sufficiently &
             &big.')
     end if
+#endif
 
     ! Copy over the Bn array
     Cnp2 => val(M   ,n+1,n)
@@ -408,17 +416,21 @@ contains
     complex(dp), pointer :: ztmp(:), Yn(:), Bnm2(:)
     integer :: sN, sNm1, sNm1SQ, sNm2, ierr
 
+#ifndef TS_NOCHECKS
     if ( n < 2 .or. parts(M) < n .or. parts(M) /= parts(Minv) ) then
        call die('Could not calculate Yn on these matrices')
     end if
+#endif
     ! Collect all matrix sizes for this step...
     sN     = nrows_g(M,n)
     sNm1   = nrows_g(M,n-1)
     sNm1SQ = sNm1 ** 2
+#ifndef TS_NOCHECKS
     if ( nz < sNm1SQ ) then
        call die('Work array in Yn calculation not sufficiently &
             &big.')
     end if
+#endif
 
     ! Copy over the Cn array
     Bnm2 => val(M   ,n-1,n)

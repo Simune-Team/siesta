@@ -68,6 +68,7 @@ contains
     logical :: piv_initialized
 
     np = parts(M)
+#ifndef TS_NOCHECKS
     if ( np /= parts(Minv) ) then
        call die('Could not calculate the inverse on non equal sized &
             &matrices')
@@ -75,13 +76,16 @@ contains
     if ( np == 1 ) then
        call die('This matrix is not tri-diagonal')
     end if
+#endif
     piv_initialized = .true.
+#ifndef TS_NOCHECKS
     do n = 1 , np
        if ( Npiv < nrows_g(M,n) ) piv_initialized = .false.
     end do
     if ( .not. piv_initialized ) then
        call die('Pivoting array for inverting matrix not set.')
     end if
+#endif
 
     call timer('V_TM_Pinv',1)
 
@@ -181,7 +185,7 @@ contains
     ! In this routine M should have been processed through invert_PrepTriMat
     ! So M contains all *needed* inv(Mnn) and all Xn/Cn+1 and Yn/Bn-1.
     ! So we will save the result in Minv
-
+#ifndef TS_NOCHECKS
     if ( parts(M) /= parts(Minv) ) then
        call die('Could not calculate the inverse on non equal sized &
             &matrices')
@@ -200,6 +204,7 @@ contains
     if ( parts(M) /= size(calc_parts) ) then
        call die('Error in code, calc_parts, not consistent')
     end if
+#endif
 
     call timer('V_TM_inv',1)
 
@@ -211,9 +216,11 @@ contains
 
     sPart = which_part(M,idx_o)
     ePart = which_part(M,idx_o+no-1)
+#ifndef TS_NOCHECKS
     if ( sPart < 1 ) call die('Error in the Bias inversion, sPart')
     if ( ePart - sPart + 1 > 2 ) call die('Error in trimat partition')
     if ( ePart > parts(M) ) call die('Error in the Bias inversion, ePart')
+#endif
 
     ! Point to the matrices
     z => val(Minv)
@@ -242,8 +249,10 @@ contains
        ! the electrode in the 'n' diagonal part
        sColF = max(idx_o          ,  1)
        eColF = min(idx_o + no - 1 , sN)
+#ifndef TS_NOCHECKS
        if ( eColF < sColF ) &
             call die('Here: Something went wrong')
+#endif
        sIdxF = (sColF-1) * sN + 1
        eIdxF =  eColF    * sN
 
@@ -263,8 +272,10 @@ contains
        sIdxT = (sColT-1) * sN + 1
        eIdxT =  eColT    * sN
 
+#ifndef TS_NOCHECKS
        if ( eIdxT - sIdxT /= eIdxF - sIdxF ) & 
             call die('Error in determining column')
+#endif
 !$OMP parallel workshare default(shared)
        Mpinv(sIdxT:eIdxT) = Mp(sIdxF:eIdxF)
 !$OMP end parallel workshare
@@ -435,7 +446,7 @@ contains
     ! In this routine M should have been processed through invert_PrepTriMat
     ! So M contains all *needed* inv(Mnn) and all Xn/Cn+1 and Yn/Bn-1.
     ! So we will save the result in Minv
-
+#ifndef TS_NOCHECKS
     if ( parts(M) /= parts(Minv) ) then
        call die('Could not calculate the inverse on non equal sized &
             &matrices')
@@ -443,7 +454,7 @@ contains
     if ( parts(M) == 1 ) then
        call die('This matrix is not tri-diagonal')
     end if
-
+#endif
     call timer('V_TM_inv',1)
 
     nr = nrows_g(M)
@@ -464,9 +475,11 @@ contains
        sPart = min(sPart,which_part(M,s))
        ePart = max(ePart,which_part(M,s))
     end do
+#ifndef TS_NOCHECKS
     if ( sPart < 1 ) call die('Error in the Bias inversion, sPart')
     if ( ePart - sPart + 1 > 2 ) call die('Error in trimat partition')
     if ( ePart > np ) call die('Error in the Bias inversion, ePart')
+#endif
 
     ! Point to the matrices
     z => val(Minv)
@@ -531,8 +544,10 @@ contains
 !print *,trim(El%name),sIdxT,eIdxT,sIdxF,eIdxF
 !print *,trim(El%name),eIdxT-sIdxT,eIdxF-sIdxF
 
+#ifndef TS_NOCHECKS
        if ( eIdxT - sIdxT /= eIdxF - sIdxF ) & 
             call die('Error in determining column')
+#endif
 
        ! Copy over diagonal block
 !$OMP parallel workshare default(shared)

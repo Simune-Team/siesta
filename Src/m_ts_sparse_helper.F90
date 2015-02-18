@@ -188,12 +188,14 @@ contains
        ! if there is no contribution in this row
        if ( kn /= 0 ) then
 
+#ifndef TS_NOCHECKS
        ! The io orbitals are in the range [1;no_u_TS]
        ! This should be redundant as it is catched by kn==0
        if ( orb_type(io) == TYP_BUFFER ) then
           call die('Error in code, &
                &please contact Nick Papior Andersen nickpapior@gmail.com')
        end if
+#endif
 
        ! Loop number of entries in the row... (index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -352,10 +354,12 @@ contains
           rin  = l_ptr(jo)
           ! TODO, this REQUIRES that l_col(:) is sorted
           rind = rin + SFIND(l_col(rin+1:rin+l_ncol(jo)),io)
+#ifndef TS_NOCHECKS
           ! We do a check, just to be sure...
           if ( rind <= rin ) &
                call die('ERROR symmetrization orbital does not &
                &exist.')
+#endif
 
           ! Symmetrize (notice that we transpose here!)
           ! See prep_GF
@@ -470,11 +474,13 @@ contains
        ! if there is no contribution in this row
        if ( k_ncol(io) /= 0 ) then
 
+#ifndef TS_NOCHECKS
        ! The io orbitals are in the range [1;no_u]
        if ( orb_type(io) == TYP_BUFFER ) then
           call die('Error in programming: Contact &
                &Nick Papior Andersen: nickpapior@gmail.com')
        end if
+#endif
 
        ! Loop number of entries in the row... (in the index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -606,9 +612,11 @@ contains
           if ( iEl > 0 ) then
              jEl = orb_type(jo)
              if ( jEl /= iEl ) then
+#ifndef TS_NOCHECKS
                 if ( jEl /= TYP_DEVICE ) &
                      call die('Programming error, &
                      &contact Nick Papior Andersen, nickpapior@gmail.com')
+#endif
              else if ( Elecs(jEl)%bulk ) then
                 ! we must refrain from shifting the fermi-level
                 ! it has already been done... This should never occur though
@@ -622,10 +630,12 @@ contains
           rin  = l_ptr(jo)
           ! TODO, this REQUIRES that l_col(:) is sorted
           rind = rin + SFIND(l_col(rin+1:rin+l_ncol(jo)),io)
+#ifndef TS_NOCHECKS
           ! We do a check, just to be sure...
           if ( rind <= rin ) &
                call die('ERROR symmetrization orbital does not &
                &exist.')
+#endif
 
           ! Symmetrize (for Gamma, transposed is the same!)
           dS(ind) = 0.5_dp * ( dS(ind) + dS(rind) )

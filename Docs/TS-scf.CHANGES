@@ -1,4 +1,19 @@
 ----------------------------------------------------
+February 18, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-309
+Removed some checks with transiesta to speed it up
+
+* Certain checks are not necessary as they have
+  been asserted so many times.
+  By compiling with TS_NOCHECKS it skips those.
+
+modified:
+  Src/m_trimat_invert.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_trimat_invert.F90
+
+----------------------------------------------------
 February 18, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-308
 Added priority ordering, added information about Gamma splits.
 

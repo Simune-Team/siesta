@@ -97,12 +97,16 @@ contains
     integer :: ierr, io, jo
     integer :: ipvt(no_s)
 
+#ifndef TS_NOCHECKS
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2 ) call die('Size of work-array is &
          &too small')
+#endif
 
     if ( nq == 1 ) then
+#ifndef TS_NOCHECKS
        if ( no_u /= no_s ) call die('no_E/=no_s')
+#endif
 
        ! When no repetition we save it "as is"
 !$OMP parallel do default(shared), private(io,jo), collapse(2)
@@ -155,9 +159,11 @@ contains
     integer :: io, jo
     integer :: ipvt(no_s)
 
+#ifndef TS_NOCHECKS
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
          &too small')
+#endif
        
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
          El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
@@ -223,9 +229,11 @@ contains
     integer :: ipvt(no_s)
     integer, pointer :: p_G(:)
 
+#ifndef TS_NOCHECKS
     ! THis should never happen (work is TS-region!)
     if ( nwork < no_s**2*2 ) call die('Size of work-array is &
          &too small')
+#endif
 
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
          El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
@@ -372,7 +380,9 @@ contains
     real(dp) :: qPi(3,nq), wq
 
     if ( nq == 1 ) then
+#ifndef TS_NOCHECKS
        if ( no_u /= no_s ) call die('no_E/=no_s')
+#endif
 
        ! In case the pre-expansion is not done on H, S
        if ( El%pre_expand == 1 .and. product(El%Rep) > 1 ) then
