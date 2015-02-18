@@ -33,7 +33,7 @@
       endif
 
       do ir = 1, nrval
-         vlocal(ir) = 2.0_dp * ps_EvaluateLocalPotential(ps,rofi(ir))
+         vlocal(ir) = 2.0_dp * ps_LocalPotential_Value(ps,rofi(ir))
       enddo
 
       write(6,"(a)") "Got Vlocal from " // trim(atm_label)//".psml file"

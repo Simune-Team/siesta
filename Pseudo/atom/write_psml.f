@@ -22,7 +22,7 @@
       integer npotd, npotu
       double precision  :: zion
 
-      character*4      :: polattrib, relattrib, coreattrib
+      character*10      :: polattrib, relattrib, coreattrib
       character*10     :: ray(6)
       character*30 xcfuntype, xcfunparam
 
@@ -192,7 +192,7 @@
 
       vpsd: do ivps = 1, lmax
            if (indd(ivps) .eq. 0) cycle
-           call xml_NewElement(xf,"vps")
+           call xml_NewElement(xf,"slps")
              call my_add_attribute(xf,"n",str(no(indd(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"rc",str(rc(ivps)))
@@ -205,7 +205,7 @@
 !               call xml_AddArray(xf, 0.5d0 * viod(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
-           call xml_EndElement(xf,"vps")
+           call xml_EndElement(xf,"slps")
          enddo vpsd
 
          call xml_EndElement(xf,"semilocal-potentials")
@@ -227,7 +227,7 @@
 
          vpsu: do ivps = 1, lmax
            if (indu(ivps) .eq. 0) cycle
-           call xml_NewElement(xf,"vps")
+           call xml_NewElement(xf,"slps")
              call my_add_attribute(xf,"n",str(no(indu(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"rc",str(rc(ivps)))
@@ -241,7 +241,7 @@
 !                 call xml_AddArray(xf, 0.5d0 * viou(ivps,2:nr))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
-           call xml_EndElement(xf,"vps")
+           call xml_EndElement(xf,"slps")
         enddo vpsu
         call xml_EndElement(xf,"semilocal-potentials")
         endif
@@ -292,7 +292,6 @@
            call my_add_attribute(xf,"matching-radius",str(rc_core))
            call my_add_attribute(xf,"number-of-continuous-derivatives",
      $                               str(n_of_continuous_derivs))
-           call xml_NewElement(xf,"annotation")
            if (n_of_continuous_derivs == 1) then
               call my_add_attribute(xf,"method",
      $             "Original Louie-Froyen-Cohen")
@@ -300,7 +299,6 @@
               call my_add_attribute(xf,"method",
      $             "Three-parameter Martins")
            endif
-           call xml_EndElement(xf,"annotation")
 
            call xml_NewElement(xf,"radfunc")
 

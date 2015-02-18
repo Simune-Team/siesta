@@ -45,10 +45,10 @@ $prog
 #
 cp VPSOUT ../$name.vps
 cp VPSFMT ../$name.psf
-[ -r VPSXML ] && cp VPSXML ../$name.xml
+[ -r PSML ] && cp PSML ../$name.psml
 #
 echo "==> Output data in directory $name"
-echo "==> Pseudopotential in $name.vps and $name.psf (and maybe in $name.xml)"
+echo "==> Pseudopotential in $name.vps, $name.psf, and $name.psml)"
 #
 #  Copy plotting scripts
 #

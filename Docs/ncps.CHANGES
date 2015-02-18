@@ -1,4 +1,26 @@
 ------------------------------------------------------------
+February 18, 2015  Alberto Garcia        trunk-462--ncps-57
+Update atom, psop to latest psml library. pg.sh creates .psml
+
+Fix bug in length of relattrib in write_psml.
+Replace vps by slps, n by seq in proj, kind by type in vloc.
+
+Update vlocal_chlocal processing file to latest syntax.
+
+Add script for psml handling in tests. Add Si.psml test file.
+
+added:
+  Tests/Pseudos/Si.psml
+  Tests/test.psml.mk
+modified:
+  Docs/ncps.CHANGES
+  Pseudo/atom/Tutorial/Utils/pg.sh
+  Pseudo/atom/write_psml.f
+  Src/m_vlocal_chlocal.f
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+
+------------------------------------------------------------
 February 15, 2015  Alberto Garcia        trunk-462--ncps-56
 Update code to PSML version 0.8. Offload ncps library
 
