@@ -80,7 +80,7 @@ contains
     type(Sparsity) :: tmpSp1, tmpSp2
 
     integer :: idx, no
-    integer :: i, io, els, iEl, no_u_TS
+    integer :: i, io, els, iEl, no_u_TS, n
     integer :: padding, worksize
     character(len=NAME_LEN) :: ctmp, csort
     logical :: sort_orb
@@ -151,11 +151,8 @@ contains
        end do
        call rgn_copy(r_pvt,r_tmp)
 
-       no_u_TS = nrows_g(tmpSp2) - no_Buf
-
-       ! Create priority list
-       call rgn_init(priority,nrows_g(tmpSp2))
-       call crt_El_priority(N_Elec,Elecs,priority,is_orb = .true.)
+       n = nrows_g(tmpSp2)
+       no_u_TS = n - no_Buf
 
     else
        ! in case the user supplies 'atom+something'
@@ -180,13 +177,15 @@ contains
        !     not re-construct it
        ! ***
 
-       no_u_TS = nrows_g(tmpSp2) - na_Buf
-
-       ! Create priority list
-       call rgn_init(priority,nrows_g(tmpSp2))
-       call crt_El_priority(N_Elec,Elecs,priority,is_orb = .false.)
+       n = nrows_g(tmpSp2)
+       no_u_TS = n - na_Buf
 
     end if
+
+    ! Create priority list
+    call rgn_init(priority,n)
+    call crt_El_priority(N_Elec,Elecs,priority,is_orb = sort_orb )
+
     ! Left adjust the string
     ctmp = ADJUSTL(ctmp)
     if ( leqi(ctmp,'none') ) then
@@ -196,56 +195,56 @@ contains
 
     else if ( leqi(ctmp,'CM') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_CUTHILL_MCKEE, r_tmp, start = r_Els)
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_CUTHILL_MCKEE, r_tmp, start = r_Els)
 
     else if ( leqi(ctmp,'CM+priority') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_CUTHILL_MCKEE, r_tmp, start = r_Els, &
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_CUTHILL_MCKEE, r_tmp, start = r_Els, &
             priority = priority%r )
 
     else if ( leqi(ctmp,'rev-CM') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_REV_CUTHILL_MCKEE, r_tmp, start = r_Els)
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_CUTHILL_MCKEE, r_tmp, start = r_Els)
 
     else if ( leqi(ctmp,'rev-CM+priority') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_REV_CUTHILL_MCKEE, r_tmp, start = r_Els , &
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_CUTHILL_MCKEE, r_tmp, start = r_Els , &
             priority = priority%r )
 
     else if ( leqi(ctmp,'GPS') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_GPS, r_tmp)
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_GPS, r_tmp)
 
     else if ( leqi(ctmp,'GPS+priority') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_GPS, r_tmp , &
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_GPS, r_tmp , &
             priority = priority%r )
 
     else if ( leqi(ctmp,'rev-GPS') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_REV_GPS, r_tmp)
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_GPS, r_tmp)
 
     else if ( leqi(ctmp,'rev-GPS+priority') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_REV_GPS, r_tmp , &
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_GPS, r_tmp , &
             priority = priority%r )
 
     else if ( leqi(ctmp,'GGPS') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_GGPS, r_tmp)
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_GGPS, r_tmp)
 
     else if ( leqi(ctmp,'GGPS+priority') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_GGPS, r_tmp , &
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_GGPS, r_tmp , &
             priority = priority%r )
 
     else if ( leqi(ctmp,'rev-GGPS') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_REV_GGPS, r_tmp)
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_GGPS, r_tmp)
 
     else if ( leqi(ctmp,'rev-GGPS+priority') ) then
 
-       call sp_pvt(tmpSp2,r_pvt, PVT_REV_GGPS, r_tmp , &
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_GGPS, r_tmp , &
             priority = priority%r )
 
     else ! the user *must* have supplied an electrode
@@ -573,7 +572,7 @@ contains
 
     ! Attach the sparsity pattern
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
-         list_col = l_col , nrows_g = n , nnzs = n_nzs )
+         list_col = l_col , nrows_g = no , nnzs = n_nzs )
 
     if ( IONode ) write(*,fmt) 'orb','none'
     call tri(r_pvt)
@@ -599,10 +598,6 @@ contains
           call rgn_append(r_Els,r_tmp,r_Els)
        end do
 
-       ! Create priority list
-       call rgn_init(priority,n)
-       call crt_El_priority(N_Elec,Elecs,priority,is_orb = .true.)
-
     else
        corb = 'atom'
 
@@ -624,15 +619,17 @@ contains
           call rgn_append(r_Els,r_tmp,r_Els)
        end do
 
-       ! Create priority list
-       call rgn_init(priority,na_u)
-       call crt_El_priority(N_Elec,Elecs,priority,is_orb = .false.)
-
     end if
+
+    n = nrows_g(tmpSp2)
+
+    ! Create priority list
+    call rgn_init(priority,no)
+    call crt_El_priority(N_Elec,Elecs,priority,is_orb = orb_atom == 1 )
 
 #ifdef GRAPHVIZ
     call attach(tmpSp2, n_col = ncol, list_ptr = l_ptr, &
-         list_col = l_col , nrows_g = n , nnzs = n_nzs )
+         list_col = l_col , nnzs = n_nzs )
     call rgn_init(r_El,n)
     r_El%r(:) = 0
     do j = 1 , n
@@ -644,9 +641,9 @@ contains
     end do
     if ( IONode ) &
          call sp2graphviz('GRAPHVIZ_'//trim(corb)//'.gv', &
-         n,n_nzs,ncol,l_ptr,l_col,types=r_El%r)
+         n,n_nzs,ncol,l_ptr,l_col, types = r_El%r )
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
-         list_col = l_col , nrows_g = n , nnzs = n_nzs )
+         list_col = l_col , nnzs = n_nzs )
 #endif
 
     do iEl = 1 , N_Elec
@@ -705,7 +702,7 @@ contains
     end do
 
     if ( IONode ) write(*,fmt) trim(corb),'CM'
-    call sp_pvt(tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els)
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -723,7 +720,7 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'CM+priority'
-    call sp_pvt(tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els, &
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els, &
          priority = priority%r)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
@@ -742,7 +739,7 @@ contains
     end if
     
     if ( IONode ) write(*,fmt) trim(corb),'GPS'
-    call sp_pvt(tmpSp2,r_tmp, PVT_GPS, sub = full)
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_GPS, sub = full)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -760,7 +757,7 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'GPS+priority'
-    call sp_pvt(tmpSp2,r_tmp, PVT_GPS, sub = full, priority = priority%r)
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_GPS, sub = full, priority = priority%r)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -778,7 +775,7 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'GGPS'
-    call sp_pvt(tmpSp2,r_tmp, PVT_GGPS, sub = full)
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_GGPS, sub = full)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -796,7 +793,7 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'GGPS+priority'
-    call sp_pvt(tmpSp2,r_tmp, PVT_GGPS, sub = full, priority = priority%r)
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_GGPS, sub = full, priority = priority%r)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -835,9 +832,8 @@ contains
       integer(i8b) :: prof
       type(tRgn) :: ctri
 
-
-      bw   = bandwidth(n,n_nzs,ncol,l_ptr,l_col,r_pvt)
-      prof = profile(n,n_nzs,ncol,l_ptr,l_col,r_pvt)
+      bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
+      prof = profile(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
       if ( IONode ) then
          write(*,'(tr3,a,t23,i10,/,tr3,a,t13,i20)') &
               'Bandwidth: ',bw,'Profile: ',prof

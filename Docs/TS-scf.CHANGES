@@ -1,4 +1,17 @@
 ----------------------------------------------------
+February 19, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-311
+Intel compilers sucks, assumed shaped optional arrays correction
+ 
+* Passing an assumed shape array with optional attribute
+  only works in certain environments.
+  The intel compiler seg-faults with no additional warning.
+  
+modified:
+  Src/m_pivot.F90
+  Src/m_region.F90
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
 February 19, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-310
 Enabled next/prev in opposite sides of contours
 

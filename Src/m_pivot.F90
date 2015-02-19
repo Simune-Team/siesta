@@ -35,10 +35,12 @@ contains
 
   ! Main routine to create pivot table for the sparsity pattern
   ! The sparse pattern MUST not be distributed.
-  subroutine sp_pvt(sp,pvt,method,sub,start,priority)
+  subroutine sp_pvt(n,sp,pvt,method,sub,start,priority)
     use class_Sparsity
     use m_pivot_methods
     
+    ! The size of the full sparsity pattern
+    integer, intent(in) :: n
     type(Sparsity), intent(inout) :: sp
     ! The pivot table returned
     type(tRgn), intent(inout) :: pvt
@@ -50,10 +52,10 @@ contains
     ! amongst any of these)
     type(tRgn), intent(in), optional :: start
     ! The priority of the rows, optional
-    integer, intent(in), optional :: priority(:)
+    integer, intent(in), optional :: priority(n)
 
     type(tRgn) :: lsub
-    integer :: n, n_nzs
+    integer :: n_nzs
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
 
     ! the sparse pattern is an intrinsically good way
@@ -63,7 +65,7 @@ contains
 
     ! Check that we have a UC sparsity pattern
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows_g = n , nnzs = n_nzs)
+         nnzs = n_nzs)
     if ( maxval(l_col) > n ) then
        call die('sp_pvt: Sparsity pattern is not an UC &
             &sparse pattern, several matrix blocks are appended.')

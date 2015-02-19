@@ -409,7 +409,7 @@ contains
 
     ! We now have a list of orbitals that needs to be folded to
     ! Copy the list over
-    call rgn_list(cr,it,ct(1:it))
+    call rgn_list(cr,it,ct)
 
     deallocate(ct)
 
