@@ -1,4 +1,38 @@
 ----------------------------------------------------
+February 19, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-310
+Enabled next/prev in opposite sides of contours
+
+* When defining contours in transiesta/tbtrans one
+  can use prev/next in the same block to make
+  arbitrary shifts:
+     from 0. eV to prev + 5 kT
+  which results in a 5 kT window.
+  This is really handy to remove redundant energies.
+
+* When setting the fermi level by TS.Fermi.Initial
+  the EDM should be shifted according to the difference
+  in energy. This only has an effect if one uses TS.Fermi.Initial
+  and a TSDE file has been read in.
+
+* Tbtrans contour specification is now referenced by:
+    TBT.Contours
+  and NOT TBT.Contours.Window.
+  This is to make it easier to remember and makes more sense.
+
+* Updated ts2ts to reflect the above changes.
+  
+  Also instantiated the new default which is:
+    TS.Elecs.DM.Update cross-terms
+  
+modified:
+  Src/m_new_dm.F90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_io_ctype.f90
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/ts2ts/ts2ts.f90
+
+----------------------------------------------------
 February 18, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-309
 Removed some checks with transiesta to speed it up
 

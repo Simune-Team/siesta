@@ -94,7 +94,11 @@ contains
     logical :: found
 
     n = 0
-    found = fdf_block(trim(prefix)//'.Contours.'//trim(suffix),bfdf)
+    if ( len_trim(suffix) == 0 ) then
+       found = fdf_block(trim(prefix)//'.Contours',bfdf)
+    else
+       found = fdf_block(trim(prefix)//'.Contours.'//trim(suffix),bfdf)
+    end if
     if ( .not. found ) return
 
     ! first count the number of electrodes
@@ -121,7 +125,11 @@ contains
     name = ' '
 
     n = 0
-    found = fdf_block(trim(prefix)//'.Contours.'//trim(suffix),bfdf)
+    if ( len_trim(suffix) == 0 ) then
+       found = fdf_block(trim(prefix)//'.Contours',bfdf)
+    else
+       found = fdf_block(trim(prefix)//'.Contours.'//trim(suffix),bfdf)
+    end if
     if ( .not. found ) return
 
     ! first count the number of electrodes
@@ -567,7 +575,6 @@ contains
             leqi(g,'previous') .or. &
             leqi(g,'next') ) then
           c = trim(g)
-          return ! RETURN
 
        else if ( leqi(g,'inf') ) then
           ! note: we have already added sign
@@ -820,6 +827,15 @@ contains
           call die('The contour segment is not attached &
                &to a previous segment (prev does not exist).')
        end if
+    end if
+
+    ! Correct if 'b' connects 'a' through prev, or 'a' to 'b' 
+    ! through next
+    if ( index(cur%ca,'next') > 0 ) then
+       cur%a = cur%a + cur%b
+    end if
+    if ( index(cur%cb,'prev') > 0 .or. index(cur%cb,'previous') > 0 ) then
+       cur%b = cur%b + cur%a
     end if
 
     ! we can compare bounds

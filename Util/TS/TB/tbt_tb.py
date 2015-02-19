@@ -1061,7 +1061,6 @@ class TBT_Model(SIESTA_UNITS):
     """
     def __init__(self,geom,max_connection=None):
         self.geom = geom
-        self.no_u = geom.no_u
         # We first find the maximal number of connections per atom
         max_n = 0
         if max_connection:
@@ -1074,6 +1073,16 @@ class TBT_Model(SIESTA_UNITS):
 
         self.max_n = max_n
         self.reset()
+
+    @propetry
+    def no_u(self):
+        """ Returns the number of orbitals for the geometry """
+        return self.geom.no_u
+
+    @propetry
+    def na_u(self):
+        """ Returns the number of atoms for the geometry """
+        return self.geom.na_u
 
     def _reset_sp(self):
         """ Reset the sparsity pattern """

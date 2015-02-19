@@ -63,7 +63,7 @@ contains
     ! per-electrode input
 
     ! Bias-window setup
-    call my_setup('Window',N_tbt,tbt_c,tbt_io,maxval(mus(:)%kT))
+    call my_setup(' ',N_tbt,tbt_c,tbt_io,maxval(mus(:)%kT))
     
     tmp = fdf_get('TS.Voltage',0._dp,'Ry')
     Volt = fdf_get('TBT.Voltage',tmp,'Ry')
@@ -160,7 +160,11 @@ contains
          end if
             
       end do
-      call ts_fix_contour(tbt_io(N_tbt))
+      if ( N_tbt > 1 ) then
+         call ts_fix_contour(tbt_io(N_tbt), prev = tbt_io(N_tbt-1) )
+      else
+         call ts_fix_contour(tbt_io(N_tbt))
+      end if
 
       ! setup the contour
       do i = 1 , N_tbt
@@ -335,15 +339,15 @@ contains
     integer :: i
 
     if ( IONode ) then
-       write(*,'(2a)') '%block ',trim(prefix)//'.Contours.Window'
+       write(*,'(2a)') '%block ',trim(prefix)//'.Contours'
        do i = 1 , N_tbt
           write(*,'(tr4,a)') trim(tbt_io(i)%name)
        end do
-       write(*,'(2a,/)') '%endblock ',trim(prefix)//'.Contours.Window'
+       write(*,'(2a,/)') '%endblock ',trim(prefix)//'.Contours'
     end if
 
     do i = 1 , N_tbt
-       call ts_print_contour_block(trim(prefix)//'.Contour.Window.',tbt_io(i))
+       call ts_print_contour_block(trim(prefix)//'.Contour.',tbt_io(i))
     end do
 
   end subroutine print_contour_tbt_block
@@ -368,7 +372,7 @@ contains
     do i = 1 , N_tbt
        chars = '  '//trim(tbt_io(i)%part)
        write(*,opt_c) 'Contour name',trim(prefix)// &
-            '.Contour.Window.'//trim(tbt_io(i)%name)
+            '.Contour.'//trim(tbt_io(i)%name)
        call write_e(trim(chars)//' contour E_min',tbt_io(i)%a)
        call write_e(trim(chars)//' contour E_max',tbt_io(i)%b)
        write(*,opt_int) trim(chars)//' contour points',tbt_io(i)%N

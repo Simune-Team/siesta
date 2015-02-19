@@ -145,12 +145,12 @@ program ts2ts
   ! in the original implementation this meant only update the central region
   ! as such I thought the key-word could be interpreted as DMCR == DM-crossterms
   ! So I have "spelled it out"
-  UpdateDMCR = .not. fdf_get('TS.UpdateDMCROnly',.true.)
+  UpdateDMCR = .not. fdf_get('TS.UpdateDMCROnly',.false.)
   ReUse      = .not. fdf_get('TS.calcGF',.true.)
   ReUse      = fdf_get('TS.ReUseGF',ReUse)
 
   ! Start to write out the information...
-  write(*,'(a,a)')'TS.Voltage ',trim(c_Volt)
+  write(*,'(a,a)') 'TS.Voltage ',trim(c_Volt)
   call nl
 
   ! Start with writing out the buffer atoms:
@@ -259,12 +259,12 @@ program ts2ts
   write(*,'(a)') '# TBtrans options'
   call nl
   write(*,'(a,a)')'TBT.Elecs.Eta ',trim(c_GFEta)
-  call sblock('TBT.Contours.Window')
+  call sblock('TBT.Contours')
   write(*,'(tr2,a)') 'neq'
-  call eblock('TBT.Contours.Window')
+  call eblock('TBT.Contours')
 
   call nl
-  call wcont('Window.neq','line','mid-rule', &
+  call wcont('neq','line','mid-rule', &
        c_TBTmin,c_TBTmax,cD=c_TBTdE,prefix='TBT')
 
   call nl

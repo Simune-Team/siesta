@@ -105,7 +105,7 @@
       integer :: na_a, na_dev
       integer, allocatable :: allowed_a(:)
       logical :: set_Ef
-      real(dp) :: old_Ef
+      real(dp) :: old_Ef, diff_Ef
 #endif
 
       if (IOnode) then
@@ -294,6 +294,14 @@
 
             old_Ef = Ef
             Ef = fdf_get('TS.Fermi.Initial',Ef,'Ry')
+            if ( init_method == 2 ) then
+               ! As the fermi-level has been read in from a previous
+               ! calculation (TSDE), the EDM should only be shifted by the difference
+               diff_Ef = Ef - old_Ef
+            else
+               ! Setting diff_Ef has no meaning
+               diff_Ef = Ef
+            end if
             
             if ( IONode ) then
             write(*,*) ! new-line
@@ -313,7 +321,7 @@
          iElec =  nnzs(sparse_pattern) * nspin
          DM    => val(DMnew)
          EDM   => val(EDMnew)
-         call daxpy(iElec,Ef,DM(1,1),1,EDM(1,1),1)
+         call daxpy(iElec,diff_Ef,DM(1,1),1,EDM(1,1),1)
 
       end if
 #endif

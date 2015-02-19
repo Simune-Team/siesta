@@ -238,6 +238,8 @@ contains
                &cut-off [eV].'
           write(*,'(a,g12.5)')'Specified cut-off: ',rtmp/eV
           write(*,'(a,g12.5)')'Minimum energy in bias contour: ',min_E/eV
+          write(*,'(a)')'Assert that all contours have at least 2 points to &
+               &contain both end-points.'
        end if
        rtmp = mus(i)%mu + cutoff_kT * mus(i)%kT
        if ( rtmp - max_E > 0.000001_dp ) then
@@ -247,6 +249,8 @@ contains
                &cut-off [eV].'
           write(*,'(a,g12.5)')'Specified cut-off: ',rtmp/eV
           write(*,'(a,g12.5)')'Maximum energy in bias contour: ',max_E/eV
+          write(*,'(a)')'Assert that all contours have at least 2 points to &
+               &contain both end-points.'
        end if
     end do
     if ( err ) &
