@@ -1189,20 +1189,29 @@ contains
        xa_o(:) = -this_xa(:,1) + xa(:,this%idx_a)
 
        if ( IONode ) then
-          write(*,'(a)') "Coordinates from the electrode repeated &
-               &out to an FDF file"
-          write(*,'(a,i0,a)') "NOTICE: that these coordinates are &
-               &arranged with respect to atom ", this%idx_a," in your FDF file"
-          write(*,'(a)') "NOTICE: that you need to add the species label again"
-          write(*,'(a,3(tr1,g10.4))') "Maximal offset in position (Ang):",max_xa/Ang
-          write(*,'(a)') "For the same species in the electrode you can do:"
-          write(*,'(a,/)') "awk '{print $1,$2,$3,1}' <OUT-file>"
-          write(*,'(t3,3a20)') "X (Ang)","Y (Ang)","Z (Ang)"
+          i = this%idx_a
+          j = this%idx_a + TotUsedAtoms(this) - 1
+          write(*,'(a,e10.5,a)') 'The electrode coordinates does not overlap within the &
+               &required accuracy: ',xa_EPS/Ang,' Ang'
+          write(*,'(a,3(tr1,g10.4))') 'The maximal offset vector is (Ang):',max_xa/Ang
+          write(*,'(2(a,i0),2a)') 'The system coordinates of atoms ',i,' to ',j,  &
+               ' does not coincide with the electrode coordinates found in: ',trim(this%HSfile)
+          write(*,'(a)') 'This is a requirement to place the self-energy terms correctly.'
+          write(*,'(a,/,2(a,i0),a)') 'To ensure the electrode coordinates conform with &
+               &the system coordinates you can take the following list of coordinates','and &
+               &replace atoms ',i,' to ',j,' in your system AtomicCoordinatesAndAtomicSpecies block'
+          write(*,'(a,i0,a)') 'NOTICE: The listed coordinates are already arranged &
+               &with respect to atom ',i,' in your system AtomicCoordinatesAndAtomicSpecies block'
+          write(*,'(a)') 'NOTICE: You have to add the correct species label for the atoms'
+          write(*,'(a)') 'NOTICE: You can possibly do this by using this awk-command on this output:'
+          write(*,'(a,/)') "        awk '{print $1,$2,$3,1}' <OUT-file>"
+
+          write(*,'(t3,3a20)') 'X (Ang)','Y (Ang)','Z (Ang)'
           iaa = this%idx_a
           do ia = 1 , this%na_used
-             do k=0,this%Rep(3)-1
-             do j=0,this%Rep(2)-1
-             do i=0,this%Rep(1)-1
+             do k = 0 , this%Rep(3)-1
+             do j = 0 , this%Rep(2)-1
+             do i = 0 , this%Rep(1)-1
                 write(*,'(t2,3(tr1,f20.10))') &
                      (this_xa(1,ia)+xa_o(1)+sum(cell(1,:)*(/i,j,k/)))/Ang, &
                      (this_xa(2,ia)+xa_o(2)+sum(cell(2,:)*(/i,j,k/)))/Ang, &
@@ -1213,7 +1222,7 @@ contains
           end do
           
        end if
-     
+       
     end if
 
     iaa = this%idx_a
