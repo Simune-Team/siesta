@@ -461,6 +461,8 @@ clean:
 	(cd xmlparser ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
+	@if [ -d fvar ] ; then (cd fvar && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
+	@if [ -d NCDF ] ; then (cd NCDF && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )
 

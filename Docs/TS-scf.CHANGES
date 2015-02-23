@@ -1,4 +1,15 @@
 ----------------------------------------------------
+February 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-313
+Ensured that Make clean works for fvar and NCDF
+
+* The Makefile did not take the correct directories
+  into account when cleaning. It now does.
+
+modified:
+  Src/Makefile
+  Src/NCDF/Makefile
+
+----------------------------------------------------
 February 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-312
 Clarified error message when coordinates does not coincide
 
