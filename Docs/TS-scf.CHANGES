@@ -1,4 +1,17 @@
 ----------------------------------------------------
+February 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-314
+Transiesta will die if the siesta DM does not converge
+
+* If the user asks for a transiesta run and the 
+  siesta run does not converge it will now kill the job.
+
+  This ensures that no TSHS file is generated without
+  some-kind of convergence has been achieved.
+
+modified:
+  Src/siesta_forces.F
+
+----------------------------------------------------
 February 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-313
 Ensured that Make clean works for fvar and NCDF
 

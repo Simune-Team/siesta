@@ -272,6 +272,13 @@
         call die('SCF did not converge in maximum number of steps.')
       endif
 
+#ifdef TRANSIESTA
+      if ( TSmode.and.TSinit.and.(.not. SCFConverged) ) then
+         call die('SCF did not converge before proceeding to transiesta
+     &calculation')
+      end if
+#endif
+
       if (.not. mix_after_convergence) then
          ! Save final DM_out for further analysis offline
          call save_density_matrix("dmout")
