@@ -76,7 +76,7 @@ contains
     use m_io_s, only : file_exist
 
     use m_ts_cctype
-    use m_ts_global_vars, only : TSmode, ts_istep
+    use m_ts_global_vars, only : TSmode
     use m_ts_io, only : ts_read_TSHS_opt
 
     use m_ts_contour
@@ -131,9 +131,6 @@ contains
        write(*,*)
        write(*,11) repeat('*', 62)
     end if
-
-    ! Set ts_istep default
-    ts_istep = 0
 
     ! Read in general values that should be used in the electrode generation
     ! I.e. these FDF-parameters are used for diagon runs with transiesta

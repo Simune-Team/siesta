@@ -47,7 +47,7 @@
 #ifdef TRANSIESTA
       use m_ts_options, only : N_Elec
       use m_ts_method
-      use m_ts_global_vars,      only: TSmode, ts_istep, TSrun
+      use m_ts_global_vars,      only: TSmode, TSinit, TSrun
       use siesta_geom,           only: nsc, na_u, xa, ucell, isc_off
       use atomlist,              only: no_u, lasto, Qtot
       use sparse_matrices,       only: sparse_pattern, block_dist
@@ -80,11 +80,6 @@
       type(dict) :: d_sav
 #endif
 
-#ifdef TRANSIESTA
-      ! Used in force constant runs
-      ts_istep = istep
-#endif /* TRANSIESTA */
-      
 !---------------------------------------------------------------------- BEGIN
 
 !     Initialization tasks for a given geometry
@@ -116,15 +111,15 @@
          ! Save the settings
          call cdf_save_settings('SIESTA.nc')
 
-         ! Save the basis set
-         call cdf_save_basis('SIESTA.nc')
-
          d_sav = ('sp'.kv.1)//('S'.kv.1)
          d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)
          d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
          d_sav = d_sav//('isc_off'.kv.1)
          call cdf_save_state('SIESTA.nc',d_sav)
          call delete(d_sav)
+
+         ! Save the basis set
+         call cdf_save_basis('SIESTA.nc')
 
       end if
 #endif
@@ -229,7 +224,7 @@
         end if
 #endif
 
-        if (monitor_forces_in_scf)  call compute_forces()
+        if (monitor_forces_in_scf) call compute_forces()
 
         if ((.not. SCFconverged) .or. mix_after_convergence) then
            ! Mix for next step
@@ -292,7 +287,7 @@
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
 
-      call post_scf_work( iscf )
+      call post_scf_work( istep , iscf )
 
       call state_analysis( istep )
 
@@ -317,7 +312,7 @@
       fa_old(:,:) = fa(:,:)
       Hsave(:,:) = H(:,:)
 !$OMP end parallel workshare
-      call final_H_f_stress(iscf)
+      call final_H_f_stress( istep , iscf , save_HS = .false. )
 !$OMP parallel workshare default(shared)
       H(:,:) = Hsave(:,:)
 !$OMP end parallel workshare

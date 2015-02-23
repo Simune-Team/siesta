@@ -1,4 +1,35 @@
 ----------------------------------------------------
+February 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-315
+Removed writing of HS if monitor_forces_inSCF
+
+* When monitoring forces in scf it is not necessary
+  to save the HS files all the time (it makes no sense)
+  
+  Hence, we now pass an optional logical to let the
+  routine decide whether it should be saved or not.
+
+* Fully removed ts_istep from the code.
+  It was ALWAYS the same as istep.
+
+  We now pass istep down through the routines.
+
+* In ts_mumps_init we now force the output to be:
+    ICNTL(4) = 2
+  as version 5 has changed some default variables.
+
+* Moved basis savings down to the bottom as opening 
+  a NetCDF file takes time due to reading in of the
+  full variable/attribute tree (albeight only names etc.)
+
+modified:
+  Src/final_H_f_stress.F
+  Src/m_ts_global_vars.f90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_options.F90
+  Src/post_scf_work.F
+  Src/siesta_forces.F
+
+----------------------------------------------------
 February 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-314
 Transiesta will die if the siesta DM does not converge
 

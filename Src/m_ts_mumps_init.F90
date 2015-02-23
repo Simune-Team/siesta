@@ -54,8 +54,10 @@ contains
 
     mum%JOB = -1 ! initialise
     call zMUMPS(mum)
-    call mum_err(mum, &
-         'MUMPS initialization had an error.')
+    call mum_err(mum, 'MUMPS initialization had an error.')
+
+    ! print out control (verbosity)
+    mum%ICNTL(4) = 2
 
     ! Setup the control parameters
     mum%ICNTL(5) = 0 ! assembled format
@@ -100,8 +102,7 @@ contains
     ! factorization strategy
     mum%JOB = 1
     call zMUMPS(mum)
-    call mum_err(mum, &
-         'MUMPS analysis step had an error.')
+    call mum_err(mum, 'MUMPS analysis step had an error.')
 
     ! Write out estimated memory requirements
     iu = mum%ICNTL(1)

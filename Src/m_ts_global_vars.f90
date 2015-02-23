@@ -11,8 +11,6 @@ module m_ts_global_vars
   ! Controls the change from diagon to transiesta solver
   logical :: TSinit = .false. , TSrun = .false.
 
-  integer :: ts_istep ! FC step in phonon calculation
-
 contains
 
   subroutine ts_method_init( start )

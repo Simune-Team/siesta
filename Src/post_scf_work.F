@@ -4,7 +4,7 @@
 
       CONTAINS
 
-      subroutine post_scf_work( iscf )
+      subroutine post_scf_work( istep, iscf )
 
       USE m_final_H_f_stress, only: final_H_f_stress
       USE siesta_options
@@ -27,7 +27,8 @@
       use m_gamma
       implicit none
 
-      integer, intent(in)  :: iscf
+      ! MD-step, SCF-step
+      integer, intent(in)  :: istep , iscf
 
       integer  :: io, is
       external :: plcharge
@@ -83,7 +84,7 @@
          endif
       endif
 
-      call final_H_f_stress( iscf )
+      call final_H_f_stress( istep , iscf )
 
       ! These energies are computed with a different DM from those in the
       ! last SCF step, except if mixing the Hamiltonian, in which case they

@@ -3,7 +3,7 @@
       public :: final_H_f_stress
       CONTAINS
 
-      subroutine final_H_f_stress( iscf )
+      subroutine final_H_f_stress( istep, iscf , save_HS )
 
       USE siesta_options
       use sparse_matrices
@@ -44,19 +44,22 @@
 #endif
 #ifdef TRANSIESTA
       use files,        only : slabel, label_length
-      use m_ts_global_vars, only : TSrun, ts_istep
+      use m_ts_global_vars, only : TSrun
       use m_ts_options, only : TS_HS_save
       use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
       use m_ts_io,      only : ts_write_TSHS,fname_TSHS
 #endif /* TRANSIESTA */
       implicit none
 
-      integer,   intent(in) :: iscf
+      ! MD-step, SCF-step
+      integer,   intent(in) :: istep, iscf
+      logical,   intent(in), optional :: save_HS
       real(dp)              :: stressl(3,3)
       real(dp), pointer     :: fal(:,:)   ! Local-node part of atomic F
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
+      logical :: lsave_HS
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
@@ -176,6 +179,12 @@
 #endif
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
 
+      ! Determine whether anything should be saved
+      ! If not, return immediately
+      lsave_HS = .true.
+      if ( present(save_HS) ) lsave_HS = save_HS
+      if ( .not. lsave_HS ) return
+
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
       if (savehs) then
@@ -194,8 +203,8 @@
 #endif
 #ifdef TRANSIESTA
       if (TS_HS_save) then
-         if ( idyn.eq.6 ) then
-            io_istep   = ts_istep
+         if ( idyn == 6 ) then
+            io_istep   = istep
             io_iadispl = ia1
             fname = fname_TSHS(slabel,io_istep,io_iadispl,.false.)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
