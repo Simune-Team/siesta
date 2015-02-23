@@ -292,13 +292,9 @@
       endif
 
       write(oname,"(a,i0)") "sparsity for geom step ", istep
-      call newSparsity(sparse_pattern,no_l,no_u,
-     $                 maxnh,numh,listhptr,listh,oname)
-      ! make numh, listhptr, listh point to the sparsity pattern
-      deallocate(numh,listhptr,listh)
-      call attach(sparse_pattern,n_col=numh,list_ptr=listhptr,
-     &     list_col=listh)
-
+      call pntSparsity(sparse_pattern,no_l,no_u,
+     &                 numh,listhptr,listh,oname)
+      
       ! Copy over xijo array (we can first do it here... :( )
       call newdData2D(tmp_2D,xijo,'xijo')
       deallocate(xijo)
@@ -310,12 +306,12 @@
 
       write(oname,"(a,i0)") "H_vkb in state_init at geom step ", istep
       call newdSpData1D(sparse_pattern,block_dist,H_vkb_1D,name=oname)
-      if (ionode) call print_type(H_vkb_1D)
+      !if (ionode) call print_type(H_vkb_1D)
 
       write(oname,"(a,i0)") "EDM in state_init at geom step ", istep
       call newdSpData2D(sparse_pattern,nspin,block_dist,EDM_2D,
      &     name=oname)
-      if (ionode) call print_type(EDM_2D)
+      !if (ionode) call print_type(EDM_2D)
       Escf => val(EDM_2D)
 
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
@@ -326,12 +322,12 @@
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       write(oname,"(a,i0)") "H in state_init at geom step ", istep
       call newdSpData2D(sparse_pattern,nspin,block_dist,H_2D,name=oname)
-      if (ionode) call print_type(H_2D)
+      !if (ionode) call print_type(H_2D)
       H => val(H_2D)
 
       write(oname,"(a,i0)") "H_kin in state_init at geom step ", istep
       call newdSpData1D(sparse_pattern,block_dist,H_kin_1D,name=oname)
-      if (ionode) call print_type(H_kin_1D)
+      !if (ionode) call print_type(H_kin_1D)
 
       write(oname,"(a,i0)") "S in state_init at geom step ", istep
       call newdSpData1D(sparse_pattern,block_dist,S_1D,name=oname)

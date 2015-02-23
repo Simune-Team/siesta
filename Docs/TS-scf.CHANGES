@@ -1,4 +1,28 @@
 ----------------------------------------------------
+February 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-316
+Removed print-out of 4 arrays, skip sparse copy
+
+* Removed the print-out of 4 SpData2D arrays which
+  were always the same.
+  Instead we now print-out the last of them to 
+  still let the user see the sparsity information
+  without cluttering the output.
+
+* Added a new pntSparsity routine to create a sparsity
+  pattern by pointers.
+  This of course forces the user to know what the contents
+  of it was before.
+  It is used in state_init as sparse_pattern and numh,listptr,listh
+  are never deallocated both.
+
+* Removed unused CPP flag in m_ts_contour_eq
+
+modified:
+  Src/class_Sparsity.F90
+  Src/m_ts_contour_eq.f90
+  Src/state_init.F
+
+----------------------------------------------------
 February 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-315
 Removed writing of HS if monitor_forces_inSCF
 
