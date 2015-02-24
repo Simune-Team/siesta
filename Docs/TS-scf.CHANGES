@@ -1,4 +1,17 @@
 ----------------------------------------------------
+February 24, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-317
+Changed pretty print for MUMPS
+
+* Also tested against the latest MUMPS 5.0.0.
+  It does not seem to have a huge impact on performance
+  for simple systems. Maybe for bigger systems this
+  becomes better.
+
+modified:
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+
+----------------------------------------------------
 February 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-316
 Removed print-out of 4 arrays, skip sparse copy
 

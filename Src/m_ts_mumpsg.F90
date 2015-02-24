@@ -248,8 +248,7 @@ contains
 
     do while ( .not. itt_step(Sp) )
 
-       write(mum%ICNTL(1),'(/,/,a,i0,/,/)') &
-            '### Solving for spin: ',ispin
+       write(mum%ICNTL(1),'(/,a,i0,/)') '### Solving for spin: ',ispin
 
        call init_DM(sp_dist, sparse_pattern, &
             n_nzs, DM(:,ispin), EDM(:,ispin), &

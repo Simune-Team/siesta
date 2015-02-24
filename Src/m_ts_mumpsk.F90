@@ -246,8 +246,7 @@ contains
 
        if ( itt_stepped(SpKp,1) ) then ! spin has incremented
 
-          write(mum%ICNTL(1),'(/,/,a,i0,/,/)') &
-               '### Solving for spin: ',ispin
+          write(mum%ICNTL(1),'(/,a,i0,/)') '### Solving for spin: ',ispin
 
           call init_DM(sp_dist, sparse_pattern, &
                n_nzs, DM(:,ispin), EDM(:,ispin), &
@@ -261,7 +260,7 @@ contains
        kw = 0.5_dp / Pi * ts_kweight(ikpt)
        if ( nspin == 1 ) kw = kw * 2._dp
 
-       write(mum%ICNTL(1),'(/,/,a,i0,a,3(tr1,g10.4),/,/)') &
+       write(mum%ICNTL(1),'(/,a,i0,a,3(tr1,g10.4),/)') &
             '### Solving for kpt: ',ikpt,' Bohr^-1:',kpt
 
 #ifdef TRANSIESTA_TIMING
