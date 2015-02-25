@@ -20,7 +20,7 @@ module m_tbt_proj
   use precision, only : dp
   use m_region
   use m_ts_electype
-  use m_tbt_save, only : tNodeE
+  use m_tbt_save, only : tNodeE, save_parallel
 #ifdef NCDF_4
   use nf_ncdf, only : NF90_MAX_NAME
 #endif
@@ -1249,7 +1249,7 @@ contains
     use m_io_s, only : file_exist
 
     use dictionary
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
     use m_ncdf_io, only : cdf_w_Sp
     use m_timestamp, only : datestring
 #ifdef MPI
@@ -2025,7 +2025,7 @@ contains
     use parallel, only : Node, Nodes
 
     use dictionary
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
     use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
@@ -2204,7 +2204,7 @@ contains
     use class_dSpData1D
 
     use dictionary
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
     use mpi_siesta, only : MPI_Send, MPI_Recv
@@ -2360,7 +2360,7 @@ contains
 
     use parallel, only : Node, Nodes
 
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only: MPI_Send, MPI_Recv, MPI_Get_Count
     use mpi_siesta, only: MPI_STATUS_SIZE
@@ -2586,7 +2586,7 @@ contains
 
     use parallel, only : Node, Nodes
 
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only: MPI_Send, MPI_Recv, MPI_Get_Count
     use mpi_siesta, only: MPI_STATUS_SIZE, MPI_STATUSES_IGNORE

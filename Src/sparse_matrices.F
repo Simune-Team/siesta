@@ -40,8 +40,7 @@
       CONTAINS
 
       subroutine resetSparseMatrices( )
-      use alloc,           only : de_alloc
-      implicit none
+      use alloc, only : de_alloc
 
       call de_alloc( Dold, 'Dold', 'sparseMat' )
       call delete( DM_2D ) ; nullify(Dscf)
@@ -51,8 +50,8 @@
       call delete( S_1D ) ; nullify(S)
       call delete( xij_2D ) ; nullify(xijo)
       call delete( H_2D ) ; nullify(H)
-      call delete( sparse_pattern ) ; nullify(numh,listhptr,listh)
       call delete( DM_history )
+      call delete( sparse_pattern ) ; nullify(numh,listhptr,listh)
       call delete( block_dist )
 
       end subroutine resetSparseMatrices

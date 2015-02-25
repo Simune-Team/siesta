@@ -230,7 +230,7 @@ class TBTFile(object):
         """ Returns the temperature of the electrode """
         return self._get_Data('kT',[El])
 
-    def Jij(self,El,k_avg=True):
+    def Jij(self,El,k_avg=True,E=None):
         """ Returns the orbital current of the electrode in a scipy
         csr matrix format """
         # Create csr sparse formats.
@@ -245,7 +245,13 @@ class TBTFile(object):
         ptr = np.zeros((s+1,),np.int)
         ptr[1:] = tmp[:]
         del tmp
-        J = self._get_Data('J',[El],k_avg=k_avg)
+        if E is None:
+            J = self._get_Data('J',[El],k_avg=k_avg)
+        else:
+            # if the user requests a specific energy-point, then we
+            # only return the csr matrix
+            J = self._kavg(np.array(self.nc.groups[El].variables['J'][:,E,:]),k_avg)
+            return csr_matrix((J[:],col,ptr),shape=(s,s))
         if len(J.shape) == 2:
             return J, csr_matrix((J[0,:],col,ptr),shape=(s,s))
         return J, csr_matrix((J[0,0,:],col,ptr),shape=(s,s))
@@ -287,7 +293,7 @@ class TBTFile(object):
         # rely on this feature.
         from scipy.sparse import lil_matrix
 
-        # Convert to csr format (just ensure it)
+        # Convert to lil format (just ensure it)
         Jab = lil_matrix((self.na_u,self.na_u))
 
         # Faster to loop across data
@@ -297,7 +303,7 @@ class TBTFile(object):
             ja = self.o2a(jo)
             ia = self.o2a(io)
             Jab[ja,ia] += d
-        return Jab
+        return Jab.tocsr()
 
 class TBTProjFile(TBTFile):
     """ We inherit the TBT.nc file object. Many of the quantities are similar """

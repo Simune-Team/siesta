@@ -1074,12 +1074,12 @@ class TBT_Model(SIESTA_UNITS):
         self.max_n = max_n
         self.reset()
 
-    @propetry
+    @property
     def no_u(self):
         """ Returns the number of orbitals for the geometry """
         return self.geom.no_u
 
-    @propetry
+    @property
     def na_u(self):
         """ Returns the number of atoms for the geometry """
         return self.geom.na_u

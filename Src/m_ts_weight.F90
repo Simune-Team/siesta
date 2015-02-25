@@ -251,9 +251,6 @@ contains
        ! can set the equivalent atom_w to 2 * maximum value
        ! This will force the nearest electrode to contribute the
        ! most. :)
-       if ( N_Elec > 2 ) then
-          call die('Check this code segment')
-       end if
        tmp = maxval(atom_neq)
        allocate(atom_w(N_mu,na_u))
        l_atom: do ia = 1 , na_u

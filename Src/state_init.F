@@ -291,9 +291,16 @@
          call setup_ordern_indexes(no_l, no_u, Nodes)
       endif
 
+      ! I would like to skip this alloc/move/dealloc/attach
+      ! by allowing sparsity to have pointer targets.
+      ! However, this poses a problem with intel compilers,
+      ! as it apparently errors out when de-allocating a target pointer
       write(oname,"(a,i0)") "sparsity for geom step ", istep
-      call pntSparsity(sparse_pattern,no_l,no_u,
-     &                 numh,listhptr,listh,oname)
+      call newSparsity(sparse_pattern,no_l,no_u,maxnh,
+     &     numh,listhptr,listh, name = oname)
+      deallocate(numh,listhptr,listh)
+      call attach(sparse_pattern, 
+     &     n_col = numh, list_ptr = listhptr, list_col = listh )
       
       ! Copy over xijo array (we can first do it here... :( )
       call newdData2D(tmp_2D,xijo,'xijo')

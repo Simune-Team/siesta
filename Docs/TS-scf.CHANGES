@@ -1,4 +1,40 @@
 ----------------------------------------------------
+February 24, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-318
+Bugfix for intel compilers bugfix for tbt_*.py
+
+* Intel compilers did not like my pntSparsity routine.
+  Hence, we now use the old way of copying, deallocating,
+  associating again.
+
+* All references with use parallel and use nf_ncdf needs
+  the use nf_ncdf, ncdf_parallel => parallel
+  to not have two names.
+
+* Moved Util/TS/TBtrans/tbt_data.py to Util/TS/TB/tbt_data.py
+  to streamline the data.
+  
+* Bugfix for property statements in tbt_data.py
+
+* Allowed direct energy index of bond-current retrieval in
+  tbt_data.
+
+* Updated Util/TS/README file.
+
+renamed:
+  Util/TS/TBtrans/tbt_data.py => Util/TS/TB/tbt_data.py
+modified:
+  Src/class_Sparsity.F90
+  Src/m_ts_weight.F90
+  Src/sparse_matrices.F
+  Src/state_init.F
+  Util/TS/README
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TB/tbt_data.py
+
+----------------------------------------------------
 February 24, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-317
 Changed pretty print for MUMPS
 

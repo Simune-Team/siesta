@@ -38,6 +38,7 @@ module m_tbt_save
   end type tNodeE
   public :: tNodeE
   public :: MPI_BcastNode
+  public :: save_parallel
 
 contains
 
@@ -114,7 +115,7 @@ contains
     use m_io_s, only : file_exist
 
     use dictionary
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
     use m_ncdf_io, only : cdf_w_Sp
     use m_timestamp, only : datestring
 #ifdef MPI
@@ -491,7 +492,7 @@ contains
 
     use parallel, only : Node
 
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast
     use mpi_siesta, only : MPI_Integer
@@ -576,7 +577,7 @@ contains
   subroutine cdf_get_kpt_idx(fname,bkpt,ikpt)
 
     use parallel, only : Node
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast
     use mpi_siesta, only : MPI_Integer
@@ -656,7 +657,7 @@ contains
 
   subroutine cdf_save_E(fname,nE)
     use parallel, only : Node, Nodes
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
     character(len=*), intent(in) :: fname
     type(tNodeE), intent(in) :: nE
 
@@ -690,7 +691,7 @@ contains
     use parallel, only : Node, Nodes
 
     use dictionary
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
     use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
@@ -877,7 +878,7 @@ contains
     use class_dSpData1D
 
     use dictionary
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
     use mpi_siesta, only : MPI_Send, MPI_Recv
@@ -949,7 +950,7 @@ contains
 
     use parallel, only : Node
 
-    use nf_ncdf
+    use nf_ncdf, ncdf_parallel => parallel
 
     ! We step the k-point index to indicate that we 
     ! have calculated all k-points.
@@ -971,16 +972,17 @@ contains
   ! Routine for reading in the TBT.nc file
   ! and convert it to regular transmission files.
   subroutine state_cdf2ascii(fname,nspin,ispin,N_Elec,Elecs,save_DATA)
-    use parallel, only : Node
 
+    use parallel, only : Node
     use units, only : eV
+
     use variable
     use dictionary
+    use nf_ncdf, ncdf_parallel => parallel
 
     use m_interpolate, only : crt_pivot
 
     use m_timestamp, only : datestring
-    use nf_ncdf
     use m_ts_electype
 
     character(len=*), intent(in) :: fname

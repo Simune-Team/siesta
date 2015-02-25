@@ -4,7 +4,7 @@ module class_Sparsity
   
   implicit none
   
-  public :: newSparsity, pntSparsity
+  public :: newSparsity
   public :: print_type
   public :: attach
   public :: nrows, nrows_g
@@ -174,62 +174,73 @@ module class_Sparsity
 
   end subroutine newSparsity
 
-  subroutine pntSparsity(sp,nrows,nrows_g,num,listptr,list,name, &
-       ncols,ncols_g)
-
-    type(Sparsity), intent(inout) :: sp
-
-    integer, intent(in)           :: nrows, nrows_g
-    integer, pointer              :: num(:), listptr(:), list(:)
-    character(len=*), intent(in)  :: name
-    integer, intent(in), optional :: ncols, ncols_g
-
-   ! We release the previous incarnation
-   ! This means that we relinquish access to the previous
-   ! memory location. It will be deallocated when nobody
-   ! else is using it.
-
-    call init(sp)
-    
-    sp%data%name = trim(name)
-
-    if ( size(num) /= nrows ) then
-       call die('pntSparsity: n_col size does not match nrows')
-    end if
-    if ( size(listptr) /= nrows ) then
-       call die('pntSparsity: list_ptr size does not match nrows')
-    end if
-
-    ! Make pointers
-    sp%data%n_col    => num(:)
-    sp%data%list_ptr => listptr(:)
-    sp%data%list_col => list(:)
-
-    sp%data%nrows   = nrows
-    sp%data%nrows_g = nrows_g
-    if ( present(ncols_g) ) then
-       sp%data%ncols_g = ncols_g
-    else
-       ! We default it to a Block-cyclic distribution, hence
-       ! the number of columns is the same as the number of 
-       ! global rows (we cannot guess super-cells, that would indeed be amazing)
-       sp%data%ncols_g = nrows_g
-    end if
-    if ( present(ncols) ) then
-       sp%data%ncols = ncols
-    else
-       ! Again, block cyclic has the maximum number of columns
-       ! in each block
-       sp%data%ncols = sp%data%ncols_g
-    end if
-    sp%data%nnzs = sum(num(1:nrows))
-    if ( size(list) /= sp%data%nnzs ) then
-       call die('pntSparsity: list size does not match sum(n_col)')
-    end if
-
-    call tag_new_object(sp)
-
-  end subroutine pntSparsity
+! This works beautifully with gfortran, but intel creeps out
+! when destroying the object. :(
+!  subroutine pntSparsity(sp,nrows,nrows_g,num,listptr,list,name, &
+!       ncols,ncols_g)
+!    
+!    use alloc, only : alloc_count
+!
+!    type(Sparsity), intent(inout) :: sp
+!
+!    integer, intent(in)           :: nrows, nrows_g
+!    integer, pointer              :: num(:), listptr(:), list(:)
+!    character(len=*), intent(in)  :: name
+!    integer, intent(in), optional :: ncols, ncols_g
+!
+!   ! We release the previous incarnation
+!   ! This means that we relinquish access to the previous
+!   ! memory location. It will be deallocated when nobody
+!   ! else is using it.
+!
+!    call init(sp)
+!    
+!    sp%data%name = trim(name)
+!
+!    if ( size(num) /= nrows ) then
+!       call die('pntSparsity: n_col size does not match nrows')
+!    end if
+!    if ( size(listptr) /= nrows ) then
+!       call die('pntSparsity: list_ptr size does not match nrows')
+!    end if
+!
+!    ! Make pointers
+!    sp%data%n_col    => num(:)
+!    sp%data%list_ptr => listptr(:)
+!    sp%data%list_col => list(:)
+!    
+!    sp%data%nrows   = nrows
+!    sp%data%nrows_g = nrows_g
+!    if ( present(ncols_g) ) then
+!       sp%data%ncols_g = ncols_g
+!    else
+!       ! We default it to a Block-cyclic distribution, hence
+!       ! the number of columns is the same as the number of 
+!       ! global rows (we cannot guess super-cells, that would indeed be amazing)
+!       sp%data%ncols_g = nrows_g
+!    end if
+!    if ( present(ncols) ) then
+!       sp%data%ncols = ncols
+!    else
+!       ! Again, block cyclic has the maximum number of columns
+!       ! in each block
+!       sp%data%ncols = sp%data%ncols_g
+!    end if
+!    sp%data%nnzs = sum(num(1:nrows))
+!    if ( size(list) /= sp%data%nnzs ) then
+!       call die('pntSparsity: list size does not match sum(n_col)')
+!    end if
+!
+!    ! Track the sparsity count, this *might* produce wrong
+!    ! count of memory!
+!    ! TODO CHECK MEMORY COUNT
+!    call alloc_count( nrows, 'I', 'n_col '// trim(sp%data%name), "Sparsity" )
+!    call alloc_count( nrows, 'I', 'list_ptr '// trim(sp%data%name), "Sparsity" )
+!    call alloc_count( sp%data%nnzs, 'I', 'list_col '// trim(sp%data%name), "Sparsity" )
+!
+!    call tag_new_object(sp)
+!
+!  end subroutine pntSparsity
   
   pure function nrowsSparsity(this) result (n)
     type(Sparsity), intent(in) :: this

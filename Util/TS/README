@@ -6,11 +6,7 @@ These programs has been developed by:
   Nick Papior Andersen, nickpapior<at>gmail.com
 
 - AnalyzeSort
-  this directory contains a python script that can sort an FDF
-  structure according to the output of TranSIESTA if one uses
-  the flag:
-    TS.Analyze T
-  Refer to the manual for additional information
+  Deprecated module, not used any-more.
 
 - tselecs.sh
   This small scripts eases the creation of several electrodes
@@ -25,8 +21,6 @@ These programs has been developed by:
   calculating the transmission and other quantities from the 
   TSHS files output from TranSIESTA.
 
-  Note the additional utility: tbt_data.py
-  which allows easy extraction of the data from the NetCDF files.
 
 - ts2ts
   A small utility which takes an old input file for TranSIESTA
@@ -39,8 +33,8 @@ These programs has been developed by:
   Easy usage will append to the FDF file:
     ts2ts run.fdf >> run.fdf
 
-  REMARK: It will only read in TranSIESTA options and thus
-          also only print TranSIESTA options. 
+  REMARK: It will only read in TranSIESTA/TBtrans options and thus
+          also only print TranSIESTA/TBtrans options. 
 	  It will not copy any other FDF-flags.
 
 - tshs2tshs
@@ -49,3 +43,22 @@ These programs has been developed by:
    0 : old TSHS format (compatible with all programs)
    1 : new TSHS format (not compatible with all programs), but 
        have a drastic memory decrease  
+
+- TB
+  This directory contains two modules:
+
+  * tbt_data.py
+    Allows easy extraction of TBtrans data from the NetCDF files.
+
+    Notice that one should import this file in to their projects
+    to easily get data from the NetCDF files in a consistent manner.
+    
+  * tbt_tb.py
+    Allows creation of tight-binding models in Python to make them
+    interfaced to TBtrans.
+    If you run tbt_tb.py it will produce a few examples as given in
+    the Examples folder.
+
+    Notice that one should import this file in to their projects
+    and do other fancy things outside of that file.
+    
