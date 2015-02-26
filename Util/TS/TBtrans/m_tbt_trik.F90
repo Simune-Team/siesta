@@ -1056,7 +1056,19 @@ contains
     ! conversion of the TBT.nc file to the regular txt files
     ! We should have plenty of memory to do this.
     if ( ('proj-only'.nin.save_DATA).and.('Sigma-only'.nin.save_DATA) ) then
-       call state_cdf2ascii(cdf_fname,TSHS%nspin,ispin,N_Elec,Elecs,save_DATA)
+
+       ! We will guesstimate the current using the weights
+       ! First we need to copy them over, we use S
+       iE_N = N_tbt_E()
+       nullify(S)
+       allocate(S(iE_N))
+       do iE = 1 , iE_N
+          cE = tbt_E(iE)
+          call c2weight(cE,S(iE))
+       end do
+       call state_cdf2ascii(cdf_fname,TSHS%nspin,ispin,N_Elec,Elecs, &
+            iE_N,S,save_DATA)
+       deallocate(S)
     end if
 #else
     call end_save(iounits,N_Elec,save_DATA)

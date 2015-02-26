@@ -32,6 +32,7 @@ module m_tbt_contour
   public :: io_contour_tbt
   public :: N_tbt_E
   public :: tbt_E
+  public :: c2weight
 
   private
 
@@ -324,6 +325,17 @@ contains
 
   end function get_c
 
+  subroutine c2weight(c,W)
+    type(ts_c_idx), intent(in) :: c
+    real(dp), intent(out) :: W
+    ! local variables
+    type(ts_cw), pointer :: cw
+
+    cw => tbt_c(c%idx(2))
+    W = cw%w(c%idx(3),1)
+
+  end subroutine c2weight
+  
   function N_TBT_E() result(N)
     integer :: N, i
     N = 0
@@ -387,10 +399,9 @@ contains
 
   end subroutine print_contour_tbt_options
 
-  subroutine io_contour_tbt(slabel,suffix)
+  subroutine io_contour_tbt(slabel)
     use parallel, only : IONode
     character(len=*), intent(in) :: slabel
-    character(len=*), intent(in), optional :: suffix
 
 ! *********************
 ! * LOCAL variables   *
@@ -401,9 +412,9 @@ contains
     if ( .not. IONode ) return
 
     call io_assign( iu )
-    open( iu, file=trim(slabel)//'.TBTCC', status='unknown' )
+    open( iu, file=trim(slabel)//'.TBT.CC', status='unknown' )
     write(iu,'(a)') '# Contour path for the transport part'
-    write(iu,'(a,a12,2(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]'
+    write(iu,'(a,a12,3(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','Weight'
 
     cidx%idx(1) = CONTOUR_TBT
 
@@ -431,7 +442,7 @@ contains
     end if
 
     do i = 1 , size(c%c)
-       write(iu,'(2(e13.6,tr1))') c%c(i) / eV
+       write(iu,'(3(e13.6,tr1))') c%c(i) / eV,real(c%w(i,1),dp) / eV
     end do
 
   end subroutine io_contour_c

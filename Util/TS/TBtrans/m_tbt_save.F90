@@ -971,7 +971,7 @@ contains
 
   ! Routine for reading in the TBT.nc file
   ! and convert it to regular transmission files.
-  subroutine state_cdf2ascii(fname,nspin,ispin,N_Elec,Elecs,save_DATA)
+  subroutine state_cdf2ascii(fname,nspin,ispin,N_Elec,Elecs,N_E,rW,save_DATA)
 
     use parallel, only : Node
     use units, only : eV
@@ -989,16 +989,19 @@ contains
     integer, intent(in) :: nspin, ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
+    integer, intent(in) :: N_E
+    real(dp), intent(in) :: rW(N_E)
     type(dict), intent(in) :: save_DATA
 
     character(len=250) :: ascii_file, tmp
     type(hNCDF) :: ncdf, grp
     logical :: exist
-    integer :: iEl, jEl
+    integer :: iEl, jEl, i
     integer :: NE, nkpt, no_d
     real(dp), allocatable :: rkpt(:,:), rwkpt(:)
     real(dp), allocatable :: rE(:)
     real(dp), allocatable :: r2(:,:), r3(:,:,:)
+    real(dp) :: Current, V
     integer, allocatable :: pvt(:)
 
     ! In case we are doing something parallel, 
@@ -1013,6 +1016,8 @@ contains
 
     ! First we read in all dimensions
     call ncdf_inq_dim(ncdf,'ne',len=NE)
+    if ( NE /= N_E ) call die('Error when re-reading the number of &
+         &energy-points')
     call ncdf_inq_dim(ncdf,'nkpt',len=nkpt)
     call ncdf_inq_dim(ncdf,'no_d',len=no_d)
 
@@ -1058,6 +1063,10 @@ contains
     ! As the arrays "could" be pretty large we
     ! reduce the requirement here...
     deallocate(r3)
+
+    if ( Node == 0 .and. N_Elec > 1 ) then
+       write(*,'(/,a)')'Currents (ensure entire Fermi function window):'
+    end if
 
     ! We should now be able to create all the files
     do iEl = 1 , N_Elec
@@ -1107,7 +1116,7 @@ contains
           else
              call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
           end if
-
+          
           ! Save transmission
           if ( nkpt > 1 ) then
              call name_save(ispin,nspin,ascii_file,end='TRANS', &
@@ -1119,11 +1128,35 @@ contains
                El1=Elecs(iEl), El2=Elecs(jEl))
           call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Transmission',&
                '# Transmission, k-averaged')
+
+          ! The array r2 now contains the k-averaged transmission.
+          ! Now we calculate the current
+          ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
+          Current = 0._dp
+          do i = 1 , NE
+             ! We have rE in eV, hence the conversion
+             Current = Current + r2(i,1) * rW(i) * nf(rE(i)*eV, &
+                  Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
+                  Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
+          end do
+          Current = Current / eV * 38.73_dp * 1.e-6_dp
+          V = ( Elecs(iEl)%mu%mu - Elecs(jEl)%mu%mu ) / eV
+
+          if ( Node == 0 ) then
+             write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
+                  ' -> ',trim(Elecs(jEl)%name),' V [V] / I [A]: ', &
+                  V, ' V / ',Current,' A'
+          end if
+
        end do
        
        deallocate(r2)
 
     end do
+
+    if ( Node == 0 ) then
+       write(*,*) ! new-line
+    end if
 
     ! Clean-up
     deallocate(rE,rkpt,rwkpt,pvt)
@@ -1173,6 +1206,12 @@ contains
       call io_close(iu)
       
     end subroutine save_DAT
+
+    elemental function nf(E,E1,kT1,E2,kT2)
+      real(dp), intent(in) :: E,E1,kT1,E2,kT2
+      real(dp) :: nf
+      nf = 1._dp/(1._dp+exp((E-E1)/kT1)) - 1._dp/(1._dp+exp((E-E2)/kT2))
+    end function nf
 
   end subroutine state_cdf2ascii
 

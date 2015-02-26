@@ -1,4 +1,32 @@
 ----------------------------------------------------
+February 26, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-319
+Corrected written weights to correspond to energies
+
+* Tbtrans now also calculates the current by the contours
+  given. However, it is fully up to the user to ensure that
+  the Fermi-function is totally encapsulated.
+
+  For this reason is the tbtrans contour also written (with
+  weights used for calculating the current)
+
+  The currents will be written for all electrode connections 
+  in a list.
+
+  This only works for the NCDF compilation.
+
+* Added a note when calculating the orbital currents AND
+  using TRS. The represented bond-currents *must* be calculated
+  using the entire k-space, otherwise they will be mis-represented.
+
+modified:
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 February 24, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-318
 Bugfix for intel compilers bugfix for tbt_*.py
 

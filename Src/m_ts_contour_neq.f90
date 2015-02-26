@@ -834,7 +834,7 @@ contains
        ! The weight has a factor of -i, hence we need to move that into a
        ! real quantity
        write(unit,'(3(e13.6,tr1))') nEq_c(c%idx(2))%c(c%idx(3)) / eV, &
-            real(dcmplx(0._dp,1._dp)*W,dp)
+            real(dcmplx(0._dp,1._dp)*W,dp) / eV
        
     end do
 

@@ -1188,7 +1188,7 @@ contains
        cidx%e      = c%c(i)
        cidx%idx(3) = i
        call c2weight_eq(cidx,idx,1._dp,W,ZW)
-       write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W
+       write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV
     end do
     
   end subroutine io_contour_c

@@ -169,7 +169,6 @@ contains
     Elecs(:)%Bulk  = fdf_get('TBT.Elecs.Bulk',Elecs(1)%Bulk)
 
     ! We default to not calculate the band-bottom...
-    ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
     Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF.ReUse',.true.)
     Elecs(:)%ReUseGF = fdf_get('TBT.Elecs.GF.ReUse',Elecs(1)%ReUseGF)
     rtmp             = fdf_get('TS.Elecs.Eta',0.00001*eV,'Ry')
@@ -310,9 +309,9 @@ contains
     if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
        save_DATA = save_DATA // ('orb-current'.kv.1)
     else if ( ltmp .and. IONode ) then
-       write(*,'(a)')'WARNING: Will not calculate the orbital currents, &
+       write(*,'(a,/,a)')'WARNING: Will not calculate the orbital currents, &
             &the spectral function needs to be calculated for this to &
-            &apply.'
+            &apply.','Set TBT.DOS.A T to calculate orbital currents.'
     end if
 
     !i = fdf_get('TBT.T.Eig',0)
@@ -359,11 +358,25 @@ contains
 #endif
     call init_save_options( )
 
+    if ( ('orb-current' .in.save_DATA) ) then
+       ltmp = .not. fdf_get('SpinSpiral',.false.)
+       ltmp = fdf_get('TBT.Symmetry.TimeReversal',ltmp)
+       if ( IONode .and. ltmp ) then
+          write(*,'(a,/,a)') 'WARNING: k-averaging orbital currents with &
+               &time-reversal symmetry will not reproduce','the correct &
+               &orbital current. Set TBT.Symmetry.TimeReversal F'
+       end if
+    end if
+
+
     if ( IONode ) then
        
        call print_contour_tbt_options( 'TBT' )
 
     end if
+
+    ! save the used weights and energy-points.
+    call io_contour_tbt(slabel)
 
 1   format('tbt_options: ',a,t53,'=',4x,l1)
 5   format('tbt_options: ',a,t53,'=',i5,a)
