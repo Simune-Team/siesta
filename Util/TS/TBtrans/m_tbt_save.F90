@@ -1139,7 +1139,7 @@ contains
                   Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
                   Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
           end do
-          Current = Current / eV * 38.73_dp * 1.e-6_dp
+          Current = Current / eV * 3.87404e-5_dp ! e**2 / h (not 2)
           V = ( Elecs(iEl)%mu%mu - Elecs(jEl)%mu%mu ) / eV
 
           if ( Node == 0 ) then
