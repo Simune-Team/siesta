@@ -1,4 +1,33 @@
 ----------------------------------------------------
+February 26, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-321
+Added phtrans to tbtrans
+
+* Now tbtrans comes in a variant called:
+  phtrans
+  It enables the calculation of phononic
+  transport. 
+
+  It is based on a previously implementation
+  in the old tbtrans_rep.
+  Here one can use phtrans by compiling:
+    make phtrans
+  instead of
+    make tbtrans
+
+  Internally should everything be as in the old one.
+  I decided to split them up so the user can immediately 
+  see their difference (instead of an fdf flag)
+
+modified:
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_gf.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 February 26, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-320
 Changed I constant to single number
 

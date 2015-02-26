@@ -1524,7 +1524,11 @@ contains
 
     end if
 
+#ifdef TBT_PHONON
+    dic = dic//('info'.kv.'Frequency points')//('unit'.kv.'Ry')
+#else
     dic = dic//('info'.kv.'Energy points')//('unit'.kv.'Ry')
+#endif
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
          atts = dic)
     call delete(dic)

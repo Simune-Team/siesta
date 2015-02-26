@@ -361,7 +361,11 @@ contains
 
     end if
 
+#ifdef TBT_PHONON
+    dic = dic//('info'.kv.'Frequency points')//('unit'.kv.'Ry')
+#else
     dic = dic//('info'.kv.'Energy points')//('unit'.kv.'Ry')
+#endif
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
          atts = dic, chunks = (/1/) )
     call delete(dic)
@@ -1001,7 +1005,9 @@ contains
     real(dp), allocatable :: rkpt(:,:), rwkpt(:)
     real(dp), allocatable :: rE(:)
     real(dp), allocatable :: r2(:,:), r3(:,:,:)
+#ifndef TBT_PHONON
     real(dp) :: Current, V
+#endif
     integer, allocatable :: pvt(:)
 
     ! In case we are doing something parallel, 
@@ -1064,9 +1070,11 @@ contains
     ! reduce the requirement here...
     deallocate(r3)
 
+#ifndef TBT_PHONON
     if ( Node == 0 .and. N_Elec > 1 ) then
        write(*,'(/,a)')'Currents (ensure entire Fermi function window):'
     end if
+#endif
 
     ! We should now be able to create all the files
     do iEl = 1 , N_Elec
@@ -1129,6 +1137,7 @@ contains
           call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Transmission',&
                '# Transmission, k-averaged')
 
+#ifndef TBT_PHONON
           ! The array r2 now contains the k-averaged transmission.
           ! Now we calculate the current
           ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
@@ -1147,6 +1156,7 @@ contains
                   ' -> ',trim(Elecs(jEl)%name),' V [V] / I [A]: ', &
                   V, ' V / ',Current,' A'
           end if
+#endif
 
        end do
        
@@ -1154,9 +1164,11 @@ contains
 
     end do
 
+#ifndef TBT_PHONON
     if ( Node == 0 ) then
        write(*,*) ! new-line
     end if
+#endif
 
     ! Clean-up
     deallocate(rE,rkpt,rwkpt,pvt)
@@ -1207,11 +1219,13 @@ contains
       
     end subroutine save_DAT
 
+#ifndef TBT_PHONON
     elemental function nf(E,E1,kT1,E2,kT2)
       real(dp), intent(in) :: E,E1,kT1,E2,kT2
       real(dp) :: nf
       nf = 1._dp/(1._dp+exp((E-E1)/kT1)) - 1._dp/(1._dp+exp((E-E2)/kT2))
     end function nf
+#endif
 
   end subroutine state_cdf2ascii
 

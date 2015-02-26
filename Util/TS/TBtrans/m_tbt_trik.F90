@@ -168,6 +168,9 @@ contains
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
     real(dp) :: kpt(3), bkpt(3), wkpt
+#ifdef TBT_PHONON
+    real(dp) :: omega
+#endif
     integer :: n_kpt
 #ifdef NCDF_4
 #ifdef CONTINUATION_NOT_WORKING
@@ -596,6 +599,16 @@ contains
           ! B-cast all nodes current energy segment
           call MPI_BcastNode(iE_N, cE%E, nE)
 
+#ifdef TBT_PHONON
+          ! Retrieve the frequency before converting energy to 
+          ! (\omega + \eta) ** 2 * 2 (we use factor two everywhere)
+          ! Note that we do it after broad-casting to 
+          ! save the frequency in the out-files.
+          ! nE is used without alteration. :)
+          omega = real(cE%e,dp) * 2._dp
+          cE%e = cE%e * cE%e
+#endif
+
           ! Print out information about current progress.
           ! We print out a progress report every 5 %
           ! Calculate progress
@@ -749,7 +762,11 @@ contains
           if ( 'DOS-Gf' .in. save_DATA ) then
              if ( .not. cE%fake ) then
                 call GF_DOS(r_oDev,Gf_tri,spS,DOS(:,1),nzwork,zwork)
+#ifdef TBT_PHONON
+                DOS(:,1) = omega * DOS(:,1)
+#else
                 if ( TSHS%nspin == 1 ) DOS(:,1) = 2._dp * DOS(:,1)
+#endif
              end if
           end if
 
@@ -787,7 +804,11 @@ contains
                 if ( .not. cE%fake ) then
                    ! Calculate the DOS in from the spectral function
                    call A_DOS(r_oDev,zwork_tri,spS,DOS(:,1+iEl))
+#ifdef TBT_PHONON
+                   DOS(:,1+iEl) = omega * DOS(:,1+iEl)
+#else
                    if ( TSHS%nspin == 1 ) DOS(:,1+iEl) = 2._dp * DOS(:,1+iEl)
+#endif
                 end if
 
 #ifdef NCDF_4
@@ -864,7 +885,11 @@ contains
             !if ( 'DOS-Gf' .in. save_DATA ) then
             !   if ( .not. cE%fake ) then
             !      call GF_DOS(r_oDev,Gf_tri,spS,DOS(:,1),nzwork,zwork)
+#ifdef TBT_PHONON
+            !       DOS(:,1) = omega * DOS(:,1)
+#else
             !      if ( TSHS%nspin == 1 ) DOS(:,1) = 2._dp * DOS(:,1)
+#endif
             !   end if
             !end if
 
@@ -904,7 +929,11 @@ contains
             if ( ('proj-DOS-A' .in. save_DATA) .and. p_E%idx > 0 ) then
                ! Calculate the DOS from the spectral function
                call A_DOS(r_oDev,zwork_tri,spS,pDOS(:,2,ipt))
+#ifdef TBT_PHONON
+               pDOS(:,2,ipt) = omega * pDOS(:,2,ipt)
+#else
                if ( TSHS%nspin == 1 ) pDOS(:,2,ipt) = 2._dp * pDOS(:,2,ipt)
+#endif
 
 #ifdef NCDF_4
                 if ( 'proj-orb-current' .in. save_DATA ) then

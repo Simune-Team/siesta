@@ -95,6 +95,9 @@ contains
        c = tbt_E(i)
        ! We ensure to add the comple imaginary value
        ce(i) = dcmplx(real(c%e,dp),El%Eta)
+#ifdef TBT_PHONON
+       ce(i) = ce(i) * ce(i) 
+#endif
     end do
        
     ! We return if we should not calculate it

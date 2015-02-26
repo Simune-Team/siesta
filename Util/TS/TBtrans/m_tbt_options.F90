@@ -326,6 +326,9 @@ contains
     call tbt_read_contour_options(N_Elec, Elecs, N_mu, mus)
 
     if ( IONode ) then
+#ifdef TBT_PHONON
+       write(*,11) 'Phonon transport'
+#endif
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'
        write(*,6) 'Voltage', Volt/eV,'Volts'
        write(*,1) 'Saving DOS from Greens function',('DOS-Gf'.in.save_DATA)

@@ -81,7 +81,10 @@ TS_OBJS += m_ts_tri_common.o m_ts_rgn2trimat.o
 # For creating the global-unit-cell sparsity pattern
 TS_OBJS += m_ts_sparse.o m_ts_tdir.o
 
-TBTOBJS  = $(SIESTA_OBJS) $(TS_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA)
+DEP_OBJS = $(SIESTA_OBJS) $(TS_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA)
+
+# To separate tbtrans objects from siesta/transiesta
+TBTOBJS  = 
 
 # Add generic tbtrans routines
 TBTOBJS += tbt_init.o tbt_end.o tbt_reinit.o m_tbt_hs.o m_tbt_regions.o
@@ -168,14 +171,29 @@ tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
 #tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DUSE_GEMM3M
 # If the user only wants to compile against NetCDF-4 for tbtrans
 tbtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
-tbtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(TBTOBJS) $(SYSOBJ)
+tbtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) $(SYSOBJ)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
-              $(TBTOBJS) $(MPI_INTERFACE)  \
+              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
               $(FDF) $(COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
+
+# We append the -DTBTRANS as some special routines
+# which could take advantage of this preprocessing flag
+# Tbtrans has TBT_PHONON flags to compile special capabilities
+phtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS -DTBT_PHONON
+# If the user only wants to compile against NetCDF-4 for tbtrans
+phtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
+phtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) $(SYSOBJ)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o phtrans \
+              $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
+              $(FDF) $(COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
+
+clean-tbt:
+	@echo "==> Cleaning tbtrans-only object, and executable files"
+	-rm -f tbtrans phtrans $(TBTOBJS)
 
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	-rm -f tbtrans *.o *.a *.mod
+	-rm -f tbtrans phtrans *.o *.a *.mod
 	-rm -rf ./fdf
 	-rm -rf ./MPI
 	-rm -rf ./fvar
@@ -188,7 +206,7 @@ dep:
 		*.f90 *.F90 *.f *.F
 
 # Assert that FDF is compiled on before hand
-$(TBTOBJS): $(FDF)
+$(DEP_OBJS): $(FDF)
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o

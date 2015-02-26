@@ -52,6 +52,9 @@ contains
     type(ts_mu), intent(in), target :: mus(N_mu)
     
     real(dp) :: Volt, tmp
+#ifdef TBT_PHONON
+    integer :: i
+#endif
 
     ! broadening
     tbt_Eta = fdf_get('TBT.Contours.Eta',0._dp,'Ry')
@@ -84,8 +87,13 @@ contains
        tbt_c(1)%c_io => tbt_io(1)
        tbt_io(1)%part = 'line'
        tbt_io(1)%name = 'neq'
+#ifdef TBT_PHONON
+       tbt_io(1)%ca = '0. eV'
+       tbt_io(1)%a  = 0._dp
+#else
        tbt_io(1)%ca = '-2. eV'
        tbt_io(1)%a  = - 2._dp * eV
+#endif
        tbt_io(1)%cb = '2. eV'
        tbt_io(1)%b  =  2._dp * eV
        ! number of points
@@ -99,6 +107,15 @@ contains
        call setup_tbt_contour(tbt_c(1), tbt_Eta)
 
     end if
+
+#ifdef TBT_PHONON
+    do i = 1 , N_tbt
+       if ( tbt_io(i)%a < 0._dp ) then
+          call die('Phonon transport is only defined for positive &
+               &frequencies. Please correct your input.')
+       end if
+    end do
+#endif
 
     ! TODO correct empty cycles, i.e. if two line contours are neighbours 
     ! then we have overlying energy points...
