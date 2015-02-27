@@ -522,13 +522,21 @@ c    .          'atom: The above configuration will be used ',
 ! 
             s(2:nrval) = drdi(2:nrval)*drdi(2:nrval)
             s(1) = s(2)
+
+            if (fdf_boolean("Use.PSML.KB.Projectors",.false.)) then
+               call get_psml_kbprojs(is,atm_label,a,b,rofi,nrval,Zval,
+     $                               lmxkb,nkbmax(is))
+
+            else
+
 !
 ! Calculation of the Kleinman-Bylander projector functions
 ! 
-            call KBgen(is, a,b,rofi,drdi,s,
+               call KBgen(is, a,b,rofi,drdi,s,
      .                 vps, vlocal, ve, nrval, Zval, lmxkb, 
      .                 nkbl, erefkb, nkb) 
-            nkbmax(is) = nkb
+               nkbmax(is) = nkb
+            endif
 
           elseif(flting.lt.0.0d0) then 
 !
@@ -1469,7 +1477,7 @@ C We follow the scheme proposed by Blochl, PRB 41, 5414 (1990)
               sum=sum+
      .          vij(jkb)*rphi2(ir,jkb)/(vii(jkb)+1.0d-20)
             enddo
-            rphi2(ir,ikb)=rphi(ir)-sum
+            rphi2(ir,ikb)=rphi(ir)-sum ! AG** ????
           enddo
         endif
 
@@ -2471,7 +2479,6 @@ C  Kleinman-Bylander projectors.
 C  Written by D. Sanchez-Portal, Aug. 1998.
 C  Modified by DSP to allow more than one projector per l, July 1999.
 C
-              
         implicit none
 
         integer l, nrc,is, ikb 
@@ -2496,6 +2503,10 @@ C
 C
 C Interpolation to generate tables with KB projectors
 C
+!       This assumes that the routine is going to be called
+!       with increasing values of l, and sequentially for
+!       the different projectors for each l.
+!
         indx=0
         do il=0,l-1
           indx=indx+nkblsave(il,is)
@@ -2549,6 +2560,108 @@ C
      &              yp1, ypn, tab2(1:ntbmax,-indx,is) )
 
         end subroutine comkb
+
+      subroutine get_psml_kbprojs(is,atm_label,a,b,rofi,nrval,Zval,
+     $                            lmxkb,nkb)
+      use m_psml
+
+      integer, intent(in)           :: is ! species index, for comkb...
+      character(len=*), intent(in)  :: atm_label
+      real(dp), intent(in)          :: rofi(:)
+      real(dp), intent(in)          :: a
+      real(dp), intent(in)          :: b
+      integer, intent(in)           :: nrval
+      real(dp), intent(in)          :: Zval
+      integer, intent(in)           :: lmxkb
+      integer, intent(out)          :: nkb
+
+      type(ps_t) :: ps
+      integer    :: ir, l, ikb, nrc, nscalar, nkbl
+      integer, allocatable  :: idx(:), idxl(:)
+      real(dp), allocatable :: proj(:)
+      real(dp)   :: ekb, rc
+      
+      real(dp), parameter  :: eps_kb=1.0d-6  ! From kbproj
+
+      call ps_destroy(ps)
+      call psml_reader(trim(atm_label)//".psml",ps)
+
+      write(6,"(a)") "Reading KB projs from "
+     $                    // trim(atm_label)//".psml file"
+
+      if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
+         call die("Zval mismatch in psml file")
+      endif
+
+      select case (trim(ps_Relativity(ps)))
+       case ("dirac","scalar")
+          nscalar = ps_Number_Of_Projectors(ps,SET_SREL)
+          if (nscalar == 0)
+     $         call die("Cannot find scalar-relativistic projectors")
+          idx = ps_Projector_Indexes(ps,SET_SREL)
+       case ("no")
+          if (ps_IsSpinPolarized(ps)) then
+             nscalar = ps_Number_Of_Projectors(ps,SET_SPINAVE)
+             if (nscalar == 0)
+     $         call die("Cannot find spin-averaged projectors")
+             idx = ps_Projector_Indexes(ps,SET_SPINAVE)
+          else
+             nscalar = ps_Number_Of_Projectors(ps,SET_NONREL)
+             if (nscalar == 0)
+     $            call die("Cannot find non-relativistic projectors")
+             idx = ps_Projector_Indexes(ps,SET_NONREL)
+          endif
+       end select
+          
+       write(6,'(/,a)') 'PSML: Kleinman-Bylander projectors: '
+
+       nkb = 0
+       allocate(proj(nrval))
+
+       do l = 0, lmxkb
+          idxl = ps_Projector_Indexes_byL(ps,l,idx)
+          nkbl = size(idxl)
+          nkblsave(l,is) = nkbl
+          do ikb = 1, nkbl
+             ekb = 2.0_dp * ps_Projector_Ekb(ps,idxl(ikb))
+             do ir = 2, nrval
+                proj(ir) = ps_Projector_Value(ps,idxl(ikb),rofi(ir))
+     $                        / (rofi(ir)**(l+1))
+             enddo
+             proj(1) =  extrapolate_to_zero(rofi,proj)
+
+             ! Find cutoff
+             do ir = nrval, 2, -1
+                if (abs(proj(ir)) > eps_kb) exit
+             enddo
+             nrc = ir + 1
+             rc = rofi(nrc)
+
+             ! Print info
+             write(6,'(3x,a,i2,2(3x,a,f10.6))')
+     .                  'l=',l, 'rc=',rc, 'Ekb=',ekb
+             ! Store in common block
+             call comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc)
+             nkb = nkb + (2*l+1)
+          enddo
+       enddo
+       write(6,'(/,a, i4)')
+     .'PSML: Total number of  Kleinman-Bylander projectors: ', nkb
+
+       deallocate(proj)
+
+       CONTAINS
+
+        function extrapolate_to_zero(x,f) result (val)
+        real(dp), intent(in), dimension(:)  :: x, f
+        real(dp)                            :: val
+
+        ! Simple linear extrapolation
+        val = f(2) + (f(3)-f(2))*(x(1)-x(2))/(x(3)-x(2))
+
+        end function extrapolate_to_zero
+       end subroutine get_psml_kbprojs
+
 !
         subroutine KBgen(is, a,b,rofi,drdi,s, 
      .         vps, vlocal, ve, nrval, Zval, lmxkb, 
@@ -2556,7 +2669,6 @@ C
 
         use basis_specs, only: restricted_grid
         use atom_options, only: new_kb_reference_orbitals
-
 
 C
 C Call routines for 1) the generation of the Kleinman-Bylander projectors,

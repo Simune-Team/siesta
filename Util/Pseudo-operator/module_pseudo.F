@@ -649,8 +649,14 @@ C**** If third derivative fit
 
           rc(ikb,l)=rofi(nrc)
 
-          write(filename,"(a,i1,a,i1)")  "KBProj.", l, ".", ikb
+          write(filename,"(a,i1,a,i1)")  "KBproj-rl+1.", l, ".", ikb
           call file_out(nrc,rofi,proj,trim(filename)) 
+
+          ! Restore factor of r**(l+1) (See in KBproj)
+          ! for compliance with PSML standard
+          do ir = 1, nrval
+             proj(ir) = proj(ir) * rofi(ir)**(l+1)
+          enddo
 
             call xml_NewElement(xf,"proj")
             call my_add_attribute(xf,"l",lsymb(l))
@@ -659,7 +665,7 @@ C**** If third derivative fit
             call my_add_attribute(xf,"type","KB")
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf, 0.5_dp * proj(1:nrval))
+                 call xml_AddArray(xf, proj(1:nrval))
                call xml_EndElement(xf,"data")
              call xml_EndElement(xf,"radfunc")
             call xml_EndElement(xf,"proj")
