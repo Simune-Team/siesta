@@ -101,218 +101,136 @@ class SIESTA_UNITS(object):
     Ry = 13.60580
     Bohr = 0.529177
 
+_periodic_table = {
+    'Actinium' : 89 , 'Ac' : 89 , '89' : 89, 89 : 89,
+    'Aluminum' : 13 , 'Al' : 13 , '13' : 13, 13 : 13,
+    'Americium' : 95 , 'Am' : 95 , '95' : 95, 95 : 95,
+    'Antimony' : 51 , 'Sb' : 51 , '51' : 51, 51 : 51,
+    'Argon' : 18 , 'Ar' : 18 , '18' : 18, 18 : 18,
+    'Arsenic' : 33 , 'As' : 33 , '33' : 33, 33 : 33,
+    'Astatine' : 85 , 'At' : 85 , '85' : 85, 85 : 85,
+    'Barium' : 56 , 'Ba' : 56 , '56' : 56, 56 : 56,
+    'Berkelium' : 97 , 'Bk' : 97 , '97' : 97, 97 : 97,
+    'Beryllium' : 4 , 'Be' : 4 , '4' : 4, 4 : 4,
+    'Bismuth' : 83 , 'Bi' : 83 , '83' : 83, 83 : 83,
+    'Bohrium' : 107 , 'Bh' : 107 , '107' : 107, 107 : 107,
+    'Boron' : 5 , 'B' : 5 , '5' : 5, 5 : 5,
+    'Bromine' : 35 , 'Br' : 35 , '35' : 35, 35 : 35,
+    'Cadmium' : 48 , 'Cd' : 48 , '48' : 48, 48 : 48,
+    'Calcium' : 20 , 'Ca' : 20 , '20' : 20, 20 : 20,
+    'Californium' : 98 , 'Cf' : 98 , '98' : 98, 98 : 98,
+    'Carbon' : 6 , 'C' : 6 , '6' : 6, 6 : 6,
+    'Cerium' : 58 , 'Ce' : 58 , '58' : 58, 58 : 58,
+    'Cesium' : 55 , 'Cs' : 55 , '55' : 55, 55 : 55,
+    'Chlorine' : 17 , 'Cl' : 17 , '17' : 17, 17 : 17,
+    'Chromium' : 24 , 'Cr' : 24 , '24' : 24, 24 : 24,
+    'Cobalt' : 27 , 'Co' : 27 , '27' : 27, 27 : 27,
+    'Copper' : 29 , 'Cu' : 29 , '29' : 29, 29 : 29,
+    'Curium' : 96 , 'Cm' : 96 , '96' : 96, 96 : 96,
+    'Darmstadtium' : 110 , 'Ds' : 110 , '110' : 110, 110 : 110,
+    'Dubnium' : 105 , 'Db' : 105 , '105' : 105, 105 : 105,
+    'Dysprosium' : 66 , 'Dy' : 66 , '66' : 66, 66 : 66,
+    'Einsteinium' : 99 , 'Es' : 99 , '99' : 99, 99 : 99,
+    'Erbium' : 68 , 'Er' : 68 , '68' : 68, 68 : 68,
+    'Europium' : 63 , 'Eu' : 63 , '63' : 63, 63 : 63,
+    'Fermium' : 100 , 'Fm' : 100 , '100' : 100, 100 : 100,
+    'Fluorine' : 9 , 'F' : 9 , '9' : 9, 9 : 9,
+    'Francium' : 87 , 'Fr' : 87 , '87' : 87, 87 : 87,
+    'Gadolinium' : 64 , 'Gd' : 64 , '64' : 64, 64 : 64,
+    'Gallium' : 31 , 'Ga' : 31 , '31' : 31, 31 : 31,
+    'Germanium' : 32 , 'Ge' : 32 , '32' : 32, 32 : 32,
+    'Gold' : 79 , 'Au' : 79 , '79' : 79, 79 : 79,
+    'Hafnium' : 72 , 'Hf' : 72 , '72' : 72, 72 : 72,
+    'Hassium' : 108 , 'Hs' : 108 , '108' : 108, 108 : 108,
+    'Helium' : 2 , 'He' : 2 , '2' : 2, 2 : 2,
+    'Holmium' : 67 , 'Ho' : 67 , '67' : 67, 67 : 67,
+    'Hydrogen' : 1 , 'H' : 1 , '1' : 1, 1 : 1,
+    'Indium' : 49 , 'In' : 49 , '49' : 49, 49 : 49,
+    'Iodine' : 53 , 'I' : 53 , '53' : 53, 53 : 53,
+    'Iridium' : 77 , 'Ir' : 77 , '77' : 77, 77 : 77,
+    'Iron' : 26 , 'Fe' : 26 , '26' : 26, 26 : 26,
+    'Krypton' : 36 , 'Kr' : 36 , '36' : 36, 36 : 36,
+    'Lanthanum' : 57 , 'La' : 57 , '57' : 57, 57 : 57,
+    'Lawrencium' : 103 , 'Lr' : 103 , '103' : 103, 103 : 103,
+    'Lead' : 82 , 'Pb' : 82 , '82' : 82, 82 : 82,
+    'Lithium' : 3 , 'Li' : 3 , '3' : 3, 3 : 3,
+    'Lutetium' : 71 , 'Lu' : 71 , '71' : 71, 71 : 71,
+    'Magnesium' : 12 , 'Mg' : 12 , '12' : 12, 12 : 12,
+    'Manganese' : 25 , 'Mn' : 25 , '25' : 25, 25 : 25,
+    'Meitnerium' : 109 , 'Mt' : 109 , '109' : 109, 109 : 109,
+    'Mendelevium' : 101 , 'Md' : 101 , '101' : 101, 101 : 101,
+    'Mercury' : 80 , 'Hg' : 80 , '80' : 80, 80 : 80,
+    'Molybdenum' : 42 , 'Mo' : 42 , '42' : 42, 42 : 42,
+    'Neodymium' : 60 , 'Nd' : 60 , '60' : 60, 60 : 60,
+    'Neon' : 10 , 'Ne' : 10 , '10' : 10, 10 : 10,
+    'Neptunium' : 93 , 'Np' : 93 , '93' : 93, 93 : 93,
+    'Nickel' : 28 , 'Ni' : 28 , '28' : 28, 28 : 28,
+    'Niobium' : 41 , 'Nb' : 41 , '41' : 41, 41 : 41,
+    'Nitrogen' : 7 , 'N' : 7 , '7' : 7, 7 : 7,
+    'Nobelium' : 102 , 'No' : 102 , '102' : 102, 102 : 102,
+    'Osmium' : 76 , 'Os' : 76 , '76' : 76, 76 : 76,
+    'Oxygen' : 8 , 'O' : 8 , '8' : 8, 8 : 8,
+    'Palladium' : 46 , 'Pd' : 46 , '46' : 46, 46 : 46,
+    'Phosphorus' : 15 , 'P' : 15 , '15' : 15, 15 : 15,
+    'Platinum' : 78 , 'Pt' : 78 , '78' : 78, 78 : 78,
+    'Plutonium' : 94 , 'Pu' : 94 , '94' : 94, 94 : 94,
+    'Polonium' : 84 , 'Po' : 84 , '84' : 84, 84 : 84,
+    'Potassium' : 19 , 'K' : 19 , '19' : 19, 19 : 19,
+    'Praseodymium' : 59 , 'Pr' : 59 , '59' : 59, 59 : 59,
+    'Promethium' : 61 , 'Pm' : 61 , '61' : 61, 61 : 61,
+    'Protactinium' : 91 , 'Pa' : 91 , '91' : 91, 91 : 91,
+    'Radium' : 88 , 'Ra' : 88 , '88' : 88, 88 : 88,
+    'Radon' : 86 , 'Rn' : 86 , '86' : 86, 86 : 86,
+    'Rhenium' : 75 , 'Re' : 75 , '75' : 75, 75 : 75,
+    'Rhodium' : 45 , 'Rh' : 45 , '45' : 45, 45 : 45,
+    'Rubidium' : 37 , 'Rb' : 37 , '37' : 37, 37 : 37,
+    'Ruthenium' : 44 , 'Ru' : 44 , '44' : 44, 44 : 44,
+    'Rutherfordium' : 104 , 'Rf' : 104 , '104' : 104, 104 : 104,
+    'Samarium' : 62 , 'Sm' : 62 , '62' : 62, 62 : 62,
+    'Scandium' : 21 , 'Sc' : 21 , '21' : 21, 21 : 21,
+    'Seaborgium' : 106 , 'Sg' : 106 , '106' : 106, 106 : 106,
+    'Selenium' : 34 , 'Se' : 34 , '34' : 34, 34 : 34,
+    'Silicon' : 14 , 'Si' : 14 , '14' : 14, 14 : 14,
+    'Silver' : 47 , 'Ag' : 47 , '47' : 47, 47 : 47,
+    'Sodium' : 11 , 'Na' : 11 , '11' : 11, 11 : 11,
+    'Strontium' : 38 , 'Sr' : 38 , '38' : 38, 38 : 38,
+    'Sulfur' : 16 , 'S' : 16 , '16' : 16, 16 : 16,
+    'Tantalum' : 73 , 'Ta' : 73 , '73' : 73, 73 : 73,
+    'Technetium' : 43 , 'Tc' : 43 , '43' : 43, 43 : 43,
+    'Tellurium' : 52 , 'Te' : 52 , '52' : 52, 52 : 52,
+    'Terbium' : 65 , 'Tb' : 65 , '65' : 65, 65 : 65,
+    'Thallium' : 81 , 'Tl' : 81 , '81' : 81, 81 : 81,
+    'Thorium' : 90 , 'Th' : 90 , '90' : 90, 90 : 90,
+    'Thulium' : 69 , 'Tm' : 69 , '69' : 69, 69 : 69,
+    'Tin' : 50 , 'Sn' : 50 , '50' : 50, 50 : 50,
+    'Titanium' : 22 , 'Ti' : 22 , '22' : 22, 22 : 22,
+    'Tungsten' : 74 , 'W' : 74 , '74' : 74, 74 : 74,
+    'Ununbium' : 112 , 'Uub' : 112 , '112' : 112, 112 : 112,
+    'Ununhexium' : 116 , 'Uuh' : 116 , '116' : 116, 116 : 116,
+    'Ununoctium' : 118 , 'Uuo' : 118 , '118' : 118, 118 : 118,
+    'Ununpentium' : 115 , 'Uup' : 115 , '115' : 115, 115 : 115,
+    'Ununquadium' : 114 , 'Uuq' : 114 , '114' : 114, 114 : 114,
+    'Ununseptium' : 117 , 'Uus' : 117 , '117' : 117, 117 : 117,
+    'Ununtrium' : 113 , 'Uut' : 113 , '113' : 113, 113 : 113,
+    'Ununium' : 111 , 'Uuu' : 111 , '111' : 111, 111 : 111,
+    'Uranium' : 92 , 'U' : 92 , '92' : 92, 92 : 92,
+    'Vanadium' : 23 , 'V' : 23 , '23' : 23, 23 : 23,
+    'Xenon' : 54 , 'Xe' : 54 , '54' : 54, 54 : 54,
+    'Ytterbium' : 70 , 'Yb' : 70 , '70' : 70, 70 : 70,
+    'Yttrium' : 39 , 'Y' : 39 , '39' : 39, 39 : 39,
+    'Zinc' : 30 , 'Zn' : 30 , '30' : 30, 30 : 30,
+    'Zirconium' : 40 , 'Zr' : 40 , '40' : 40, 40 : 40,
+    }
+
 class PeriodicTable(object):
     """ 
     Very basic periodic table, not very pretty as it
     was generated using reg-exps.
     """
     def __getitem__(self,key):
-        if key == 'H': return 1
-        if key == 1: return 'H'
-        if key == 'D': return 1001
-        if key == 1001: return 'D'
-        if key == 'He': return 2
-        if key == 2: return 'He'
-        if key == 'Li': return 3
-        if key == 3: return 'Li'
-        if key == 'Be': return 4
-        if key == 4: return 'Be'
-        if key == 'B': return 5
-        if key == 5: return 'B'
-        if key == 'C': return 6
-        if key == 6: return 'C'
-        if key == 'N': return 7
-        if key == 7: return 'N'
-        if key == 'O': return 8
-        if key == 8: return 'O'
-        if key == 'F': return 9
-        if key == 9: return 'F'
-        if key == 'Ne': return 10
-        if key == 10: return 'Ne'
-        if key == 'Na': return 11
-        if key == 11: return 'Na'
-        if key == 'Mg': return 12
-        if key == 12: return 'Mg'
-        if key == 'Al': return 13
-        if key == 13: return 'Al'
-        if key == 'Si': return 14
-        if key == 14: return 'Si'
-        if key == 'P': return 15
-        if key == 15: return 'P'
-        if key == 'S': return 16
-        if key == 16: return 'S'
-        if key == 'Cl': return 17
-        if key == 17: return 'Cl'
-        if key == 'Ar': return 18
-        if key == 18: return 'Ar'
-        if key == 'K': return 19
-        if key == 19: return 'K'
-        if key == 'Ca': return 20
-        if key == 20: return 'Ca'
-        if key == 'Sc': return 21
-        if key == 21: return 'Sc'
-        if key == 'Ti': return 22
-        if key == 22: return 'Ti'
-        if key == 'V': return 23
-        if key == 23: return 'V'
-        if key == 'Cr': return 24
-        if key == 24: return 'Cr'
-        if key == 'Mn': return 25
-        if key == 25: return 'Mn'
-        if key == 'Fe': return 26
-        if key == 26: return 'Fe'
-        if key == 'Co': return 27
-        if key == 27: return 'Co'
-        if key == 'Ni': return 28
-        if key == 28: return 'Ni'
-        if key == 'Cu': return 29
-        if key == 29: return 'Cu'
-        if key == 'Zn': return 30
-        if key == 30: return 'Zn'
-        if key == 'Ga': return 31
-        if key == 31: return 'Ga'
-        if key == 'Ge': return 32
-        if key == 32: return 'Ge'
-        if key == 'As': return 33
-        if key == 33: return 'As'
-        if key == 'Se': return 34
-        if key == 34: return 'Se'
-        if key == 'Br': return 35
-        if key == 35: return 'Br'
-        if key == 'Kr': return 36
-        if key == 36: return 'Kr'
-        if key == 'Rb': return 37
-        if key == 37: return 'Rb'
-        if key == 'Sr': return 38
-        if key == 38: return 'Sr'
-        if key == 'Y': return 39
-        if key == 39: return 'Y'
-        if key == 'Zr': return 40
-        if key == 40: return 'Zr'
-        if key == 'Nb': return 41
-        if key == 41: return 'Nb'
-        if key == 'Mo': return 42
-        if key == 42: return 'Mo'
-        if key == 'Tc': return 43
-        if key == 43: return 'Tc'
-        if key == 'Ru': return 44
-        if key == 44: return 'Ru'
-        if key == 'Rh': return 45
-        if key == 45: return 'Rh'
-        if key == 'Pd': return 46
-        if key == 46: return 'Pd'
-        if key == 'Ag': return 47
-        if key == 47: return 'Ag'
-        if key == 'Cd': return 48
-        if key == 48: return 'Cd'
-        if key == 'In': return 49
-        if key == 49: return 'In'
-        if key == 'Sn': return 50
-        if key == 50: return 'Sn'
-        if key == 'Sb': return 51
-        if key == 51: return 'Sb'
-        if key == 'Te': return 52
-        if key == 52: return 'Te'
-        if key == 'I': return 53
-        if key == 53: return 'I'
-        if key == 'Xe': return 54
-        if key == 54: return 'Xe'
-        if key == 'Cs': return 55
-        if key == 55: return 'Cs'
-        if key == 'Ba': return 56
-        if key == 56: return 'Ba'
-        if key == 'La': return 57
-        if key == 57: return 'La'
-        if key == 'Ce': return 58
-        if key == 58: return 'Ce'
-        if key == 'Pr': return 59
-        if key == 59: return 'Pr'
-        if key == 'Nd': return 60
-        if key == 60: return 'Nd'
-        if key == 'Pm': return 61
-        if key == 61: return 'Pm'
-        if key == 'Sm': return 62
-        if key == 62: return 'Sm'
-        if key == 'Eu': return 63
-        if key == 63: return 'Eu'
-        if key == 'Gd': return 64
-        if key == 64: return 'Gd'
-        if key == 'Tb': return 65
-        if key == 65: return 'Tb'
-        if key == 'Dy': return 66
-        if key == 66: return 'Dy'
-        if key == 'Ho': return 67
-        if key == 67: return 'Ho'
-        if key == 'Er': return 68
-        if key == 68: return 'Er'
-        if key == 'Tm': return 69
-        if key == 69: return 'Tm'
-        if key == 'Yb': return 70
-        if key == 70: return 'Yb'
-        if key == 'Lu': return 71
-        if key == 71: return 'Lu'
-        if key == 'Hf': return 72
-        if key == 72: return 'Hf'
-        if key == 'Ta': return 73
-        if key == 73: return 'Ta'
-        if key == 'W': return 74
-        if key == 74: return 'W'
-        if key == 'Re': return 75
-        if key == 75: return 'Re'
-        if key == 'Os': return 76
-        if key == 76: return 'Os'
-        if key == 'Ir': return 77
-        if key == 77: return 'Ir'
-        if key == 'Pt': return 78
-        if key == 78: return 'Pt'
-        if key == 'Au': return 79
-        if key == 79: return 'Au'
-        if key == 'Hg': return 80
-        if key == 80: return 'Hg'
-        if key == 'Tl': return 81
-        if key == 81: return 'Tl'
-        if key == 'Pb': return 82
-        if key == 82: return 'Pb'
-        if key == 'Bi': return 83
-        if key == 83: return 'Bi'
-        if key == 'Po': return 84
-        if key == 84: return 'Po'
-        if key == 'At': return 85
-        if key == 85: return 'At'
-        if key == 'Rn': return 86
-        if key == 86: return 'Rn'
-        if key == 'Fr': return 87
-        if key == 87: return 'Fr'
-        if key == 'Ra': return 88
-        if key == 88: return 'Ra'
-        if key == 'Ac': return 89
-        if key == 89: return 'Ac'
-        if key == 'Th': return 90
-        if key == 90: return 'Th'
-        if key == 'Pa': return 91
-        if key == 91: return 'Pa'
-        if key == 'U': return 92
-        if key == 92: return 'U'
-        if key == 'Np': return 93
-        if key == 93: return 'Np'
-        if key == 'Pu': return 94
-        if key == 94: return 'Pu'
-        if key == 'Am': return 95
-        if key == 95: return 'Am'
-        if key == 'Cm': return 96
-        if key == 96: return 'Cm'
-        if key == 'Bk': return 97
-        if key == 97: return 'Bk'
-        if key == 'Cf': return 98
-        if key == 98: return 'Cf'
-        if key == 'Es': return 99
-        if key == 99: return 'Es'
-        if key == 'Fm': return 100
-        if key == 100: return 'Fm'
-        if key == 'Md': return 101
-        if key == 101: return 'Md'
-        if key == 'No': return 102
-        if key == 102: return 'No'
+        ak = np.asarray([key])
+        ak.shape = (-1,) # flatten it
+        return np.array([_periodic_table[i] for i in ak],np.int)
 
 class TBT_Geom(SIESTA_UNITS):
     """
@@ -341,9 +259,13 @@ class TBT_Geom(SIESTA_UNITS):
         is supplied all atoms have the same number of orbitals,
         whereas providing a array will set the number of orbitals
         individually.
-    Z     : (1) array_like/integer, optional
-        atomic number of the atoms in the geometry. 
+    Z     : (1) array_like and/or integer/string, optional
+        atomic number or name of the atoms in the geometry. 
         Defaults to Hydrogen.
+        Examples:
+          >>> ``Z = 'Carbon'`` # makes all atoms Carbon atoms.
+          >>> ``Z = ['Carbon','H']`` # alternates between C and H atoms, for all len(xa) % 2 == 0.
+
     update_sc : (False), boolean, optional
         If ``False`` it will initialise size of the super-cell to
         be one connection in all directions.
@@ -379,9 +301,21 @@ class TBT_Geom(SIESTA_UNITS):
         self.xa = np.asarray(xa)
         self.na_u = len(xa)
         self.Z = np.zeros((self.na_u,),np.int)
-        if Z is not None:
-            self.Z[:] = Z
-        self.Z = np.asarray(self.Z)
+        # Convert to integers
+        ptbl = PeriodicTable()
+        if isinstance(Z,list) or isinstance(Z,np.ndarray):
+            # number of times we can repeat
+            reps = self.na_u // len(Z)
+            if self.na_u % len(Z) != 0:
+                # We do not have it correctly formatted (either an integer
+                # repeatable part, full, or a single)
+                raise ValueError('Number of atoms is not divisible with length of Z array. ' +
+                                 'Hence we cannot create alternation structure.')
+            if reps > 1:
+                # Repeat it 
+                Z = np.tile(Z,reps)
+        self.Z[:] = ptbl[Z]
+        del ptbl # clean-up
         if isinstance(n_orb,int):
             # We have a fixed number of orbitals per
             # atom
@@ -548,16 +482,11 @@ class TBT_Geom(SIESTA_UNITS):
             Filename to save the xyz format in.
         """
         if fname:
-            # In case the species is a string we expand it
-            ptbl = PeriodicTable()
-            def spec(i):
-                if isinstance(i,str): return i
-                return ptbl[i]
-            lbl = [spec(l) for l in self.Z]
             with open(fname,'w') as fh:
                 fh.write(str(self.na_u)+'\n\n')
                 for ia in xrange(self.na_u):
-                    fh.write(lbl[ia]+' {0:.5f} {1:.5f} {2:.5f}\n'.format(*self.xa[ia,:]))
+                    fh.write(str(self.Z[ia]) +
+                             ' {0:.5f} {1:.5f} {2:.5f}\n'.format(*self.xa[ia,:]))
 
     def copy(self):
         """
@@ -1705,7 +1634,7 @@ def graphene_uc(alat=1.42):
                   cell=np.array([[3.,     0.,  0.],
                                  [0., 2*sq3h,  0.],
                                  [0.,     0., 10.]],np.float),
-                  Z = 6,
+                  Z = 'Carbon',
                   dR=2.05) # third nearest neighbour
     gr.xa   *= alat
     gr.cell *= alat
@@ -1778,7 +1707,7 @@ def TB_square():
     cell = np.identity(3,np.float)
     cell[2,2] = 2.
     SQ = TBT_Geom(xa=np.zeros([1,3],np.float),
-                  cell=cell, Z=1 , dR=1.1)
+                  cell=cell, Z='Au' , dR=1.1)
     
     # Extend the square lattice to a
     # 2 by 1 electrode [x by y]

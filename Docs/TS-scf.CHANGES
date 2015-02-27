@@ -1,4 +1,30 @@
 ----------------------------------------------------
+February 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-322
+Made the periodic table in tbt_tb actually work
+
+* The easy periodic table has been corrected to it
+  now works for these entries (and returns the Z corresponding
+  to the input):
+    - full name, 'Hydrogen'
+    - short name, 'H'
+    - integer, 1
+    - str integer, '1'
+  This makes it versatile enough to be used.
+
+* When setting the Z one can now use everything from the periodic
+  table as input.
+  Furthermore, when creating a structure one can supply a short
+  list of Z which will be repeated out.
+  Example: if you have a N*2 atomic unit cell with alternating species 
+  you can do Z = [<species-1>,<species-2>]
+  and it will correctly repeat it out.
+
+  When comparing one _have_ to do so by the species number of the atom.
+
+modified:
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 February 26, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-321
 Added phtrans to tbtrans
 
