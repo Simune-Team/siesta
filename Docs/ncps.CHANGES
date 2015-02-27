@@ -1,4 +1,42 @@
 ------------------------------------------------------------
+February 27, 2015  Alberto Garcia        trunk-462--ncps-59
+Fix KB cutoff calculation. Options for chlocal cutoff. ps tails
+
+There was a factor of r**l missing in the calculation of the
+effective cutoff for the KB projectors upon reading them from
+the PSML file.
+
+The cutoffs for chlocal are not completely consistent in the different
+parts of the code. Several options and debugging outputs have been
+introduced to explore the issue:
+
+        use-charge-cutoff-for-large-core (default .false.)
+
+will force the use of 4*pi*r*r*chlocal as the function to cutoff, instead
+of r*V_local+2*Z_val.
+
+The pseudopotential tails were cut in atom using a simple
+exp(-5*(r-rc)) function, which introduces a discontinuity in the first
+derivative of the potentials... this resulted in oscillations in
+chlocal, beyond the fitting point, when using the large-core scheme.
+A new tapering function with continuous derivatives is used instead if
+the option
+
+%define SMOOTH_TAIL_CUTOFF
+
+is given in the ATOM input file.
+
+%define DO_NOT_CUT_TAILS
+
+will do as it says.
+
+modified:
+  Pseudo/atom/wrapup.f
+  Src/atom.F
+  Src/m_vlocal_chlocal.f
+  Util/Pseudo-operator/module_pseudo.F
+
+------------------------------------------------------------
 February 27, 2015  Alberto Garcia        trunk-462--ncps-58
 Allow Siesta to read KB projectors from a PSML file
 

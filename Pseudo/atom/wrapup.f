@@ -820,12 +820,48 @@ c
 c     Generalized cutoff function
 c
       double precision r
+
+      logical defined
+      double precision vander
+      external defined
+      external vander
 c
 c     Standard cutoff
 c
-      cutoff_function = exp(-5.d0*r)
+      if (defined('DO_NOT_CUT_TAILS')) then
+         cutoff_function = 1.d0
+      else if (defined('SMOOTH_TAIL_CUTOFF')) then
+         cutoff_function = vander(1.d0,3.d0*r)
+      else
+         cutoff_function = exp(-5.d0*r)
+      endif
 
       end
+
+!      The famous "Vanderbilt generalized cutoff"
+!
+       function vander(a,x) result(f)
+       integer, parameter :: dp = kind(1.d0)
+       real(dp), intent(in) :: a    ! Generalized gaussian shape
+       real(dp), intent(in) :: x    
+       real(dp)             :: f
+
+       real(dp), parameter :: log10_e = 0.4343
+       real(dp), parameter :: exp_range = (range(1.0_dp)-1)/log10_e
+
+!!     real(dp), parameter :: exp_range = 40.0_dp
+       real(dp)   :: gexp
+
+       gexp = sinh(a*x)/sinh(a)
+       gexp = gexp*gexp
+
+       if (gexp .lt. exp_range) then
+          f=exp(-gexp)  
+       else
+          f = 0.0_dp
+       endif
+
+       end function vander
 
 
 

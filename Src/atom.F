@@ -2631,8 +2631,9 @@ C
              proj(1) =  extrapolate_to_zero(rofi,proj)
 
              ! Find cutoff
+             ! For compatibility with Siesta, do it on proj*r**l !!!
              do ir = nrval, 2, -1
-                if (abs(proj(ir)) > eps_kb) exit
+                if (abs((rofi(ir)**l)*proj(ir)) > eps_kb) exit
              enddo
              nrc = ir + 1
              rc = rofi(nrc)

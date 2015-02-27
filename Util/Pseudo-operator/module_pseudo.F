@@ -899,6 +899,13 @@ C**** If third derivative fit
 !     that should read:
 !     v_{ln}^{KB} = [ < \phi_ln | \delta V_{l} | \phi_{ln} > ]^(-1)
 !     Note the radial part of the KB projector is divided by r**(l+1)
+
+!     The cutoffs computed above are based on "dincv", which is the same as
+!     "vphi" below. Hence one has to multiply proj by r**l before re-computing
+!     any cutoffs. If reading the standard PSML proj, which is Siesta's proj
+!     multiplied by r**(l+1), one has to *divide* it by r before re-computing
+!     the cutoffs.
+
       do 30 ir = 2, nrc
         r        = rofi(ir)
         vl       = ( vps(ir) - vlocal(ir) )

@@ -311,6 +311,8 @@ C     Scaling factor for local-pseudopot. charge
           chlocal(ir)=chlocal(ir)/(4.0_dp*pi*r*r)
 !
 !     Poor man's cutoff!! Largely irrelevant?
+!     This might introduce discontinuities. It is better
+!     to use one of the standard tapering functions. **AG
 !      
           if (r.gt.1.1_dp*Rchloc) then
             vlocal(ir)=(-2.0_dp)*zval/rofi(ir)
@@ -338,17 +340,18 @@ C
 C
 C Internal variables
 C
-        integer :: other_nchloc
+        integer :: other_nchloc, nchloc_vlocal, nchloc_charge
         real(dp), allocatable :: other_chlocal(:)
 
         real(dp) 
      .    vlc, r, dev, dev2, dev3, var1, var2, var3, v1, v2, v3, v4,
      .    dm11, dm12, dm13, dm21, dm22, dm23, dm31, dm32, dm33, 
-     .    g0, g1, g2, g3, g4, d2g, d2u, cons, a2b4, qtot, pi   
+     .    g0, g1, g2, g3, g4, d2g, d2u, cons, a2b4, qtot, pi, ch
         integer 
      .    ndevfit, ir  
 
-        real(dp), parameter  :: eps=1.0d-5
+        real(dp), parameter  :: eps_vlocal=1.0d-5  ! this is eps
+        real(dp), parameter  :: eps_charge=1.0d-4  ! for charge criterion
         real(dp) :: q1, q2
         allocate(other_chlocal(size(chlocal)))
 
@@ -475,8 +478,8 @@ C     between the ions
           g2=vlocal(ir)*rofi(ir)
 !
 !        To determine the chlocal cutoff, use the reduced_vlocal cutoff
-!
-          if (abs(g2+2.0_dp*zval).lt.eps) exit   !exit loop
+!        Comment this out for clarity (see below)
+!          if (abs(g2+2.0_dp*zval).lt.eps) exit   !exit loop  !eps_vlocal
 
           if (ir.gt.nrgauss) then  
 
@@ -538,11 +541,61 @@ C If third derivative fit
 
           endif
         enddo              
+
+!     Decouple the different operations performed in the
+!     above loop:
+!      1. computation of the -Z/r-based cutoff
+!      2. calculation of chlocal
+!      3. computation of qtot
+
+!     2. has now been performed above, for the whole range
 !
+!     1. 
+!     "vlocal" option for cutoff
 !     This sets the cutoff point for chlocal in a rather
-!     arbitrary way, as that in which Vlocal "equals" 2Z/r
+!     arbitrary way, as that in which Vlocal is close to
+!     -Z/r (see test inside the loop).
 !
-        nchloc=ir          
+!     For consistency with the other method, the cutoff
+!     should be based on the charge itself.
+
+        do ir=1,nrval-1
+           g2=vlocal(ir)*rofi(ir)
+           if (abs(g2+2.0_dp*zval).lt.eps_vlocal) exit !exit loop
+        enddo
+        nchloc_vlocal = ir          
+
+!
+!     "charge" option for cutoff
+!
+        do ir = nrval, 1, -1
+           r = rofi(ir)
+           ch = 4*pi*r*r*chlocal(ir)
+           if (abs(ch) .gt. eps_charge) exit
+        enddo
+        nchloc_charge = ir
+
+        ! Choose
+        if (fdf_boolean("use-charge-cutoff-for-large-core",
+     $                  .false.)) then
+           nchloc = nchloc_charge
+           write(6,"(a,i3,f10.6)") "Choosing charge chloc cutoff:",
+     $          nchloc, rofi(nchloc)
+        else
+           ! classic behavior
+           nchloc = nchloc_vlocal
+           write(6,"(a,i3,f10.6)") "Choosing vlocal chloc cutoff:",
+     $          nchloc, rofi(nchloc)
+        endif
+
+        ! Now compute qtot only up to nchloc
+        qtot = 0.0_dp
+        do ir=1,nchloc-1
+           r = rofi(ir)
+           ch = 4*pi*r*r*chlocal(ir)*drdi(ir)
+           qtot = qtot - ch
+        enddo
+        write(6,"(a,f14.8)") "qtot up to nchloc:", qtot
 
         do ir=1,nchloc-1
           chlocal(ir)=zval*chlocal(ir)/qtot
@@ -585,11 +638,12 @@ C If third derivative fit
         ! local variables
 
         real(dp), parameter  :: eps=1.0d-5
+        real(dp), parameter  :: eps_charge=1.0d-4 ! To match
         real(dp) :: qtot
         real(dp) :: pi
         integer  :: ir
 
-        real(dp), allocatable :: f(:), f2(:)
+        real(dp), allocatable :: f(:), f2(:), charge(:)
         integer :: status
 
 C     Once we have the local potential we define the 'local-pseudopotential 
@@ -605,7 +659,7 @@ C     between the ions
 !
 !       Calculation based on splines
 !
-        allocate (f(nrval), f2(nrval))
+        allocate (f(nrval), f2(nrval), charge(nrval))
         do ir = 1, nrval
            f(ir) = rofi(ir)*vlocal(ir)
         enddo
@@ -621,6 +675,8 @@ C     between the ions
            if (abs(f(ir)+2.0_dp*zval).lt.eps) exit   !exit loop
         enddo
         nchloc = ir
+        write(6,"(a,i4,f10.6)") "nchloc from rV+2Z: ",
+     $       nchloc, rofi(nchloc)
 
         ! Do we need the whole range, or would it be better to
         ! work with a restricted range? 
@@ -631,14 +687,23 @@ C     between the ions
 
         do ir = 2, nrval
            chlocal(ir) = - f2(ir) / (rofi(ir)*8*pi)
+           charge(ir) =  4*pi*rofi(ir)**2 * chlocal(ir)
         enddo
         chlocal(1) =  extrapolate_to_zero(rofi,chlocal)
+
+        ! New way to compute nchloc
+        do ir = nrval, 1, -1
+           if (abs(charge(ir)).gt.eps_charge) exit
+        enddo
+        nchloc=ir+1
+        write(6,"(a,i4,f10.6)") "nchloc from 4*pi*r*r*chloc: ",
+     $       nchloc, rofi(nchloc)
 
         qtot = 0.0_dp
         do ir = 1, nchloc-1
            qtot = qtot - 4*pi*rofi(ir)**2 * chlocal(ir) * drdi(ir)
         enddo
-!        print *, "qtot in chlocal_from_vlocal: ", qtot
+        print *, "qtot in chlocal_from_vlocal up to nchloc: ", qtot
 
         do ir=1,nchloc-1
           chlocal(ir)=zval*chlocal(ir)/qtot
