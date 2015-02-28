@@ -123,7 +123,7 @@ class TBTFile(object):
         """ Returns an array of of atoms for where the orbitals
         reside.
         """
-        if isinstance(orbs,int) or isinstance(orbs,np.int32):
+        if isinstance(orbs,int) or isinstance(orbs,(np.int16,np.int32)):
             return np.where(orbs < self.lasto)[0][0]
         return np.array([np.where(o < self.lasto)[0][0] for o in orbs])
 

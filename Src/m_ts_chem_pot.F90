@@ -194,6 +194,10 @@ contains
     if ( .not. found ) return
 
     info(:) = .false.
+#ifdef TBTRANS
+    ! Tbtrans does not need the equilbrium contour information
+    info(2) = .true.
+#endif
 
     ! Initialize the temperature for this chemical potential
     this%kT  = kT

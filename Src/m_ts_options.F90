@@ -336,9 +336,20 @@ contains
     ! detect how many electrodes we have
     N_Elec = fdf_nElec('TS',Elecs)
     if ( N_Elec < 1 ) then
-       call die('Please see the manual for how to construct an example &
-            &electrode configuration (or use Util/TS/tselecs.sh)')
+       ! We initialize to 2 electrodes (Left/Right)
+       N_Elec = 2
+       allocate(Elecs(N_Elec))
+       Elecs(1)%name = 'Left'
+       Elecs(1)%ID = 1
+       Elecs(2)%name = 'Right'
+       Elecs(2)%ID = 2
+       ! if they do-not exist, the user will be told
+       if ( IONode ) then
+          c = '(''transiesta: ***'',a)'
+          write(*,c)'No electrode names were found, default Left/Right are expected'
+       end if
     end if
+
     ! If only one electrode you are not allowed to move the fermi-level
     ! of the electrode. That should be done by other means (i.e. use NetCharge)
     if ( N_Elec == 1 ) then

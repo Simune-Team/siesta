@@ -57,9 +57,9 @@ module m_tbt_options
 
 #ifdef NCDF_4
   ! Save file names for data files
-  character(len=500), save :: cdf_fname = ' '
-  character(len=500), save :: cdf_fname_sigma = ' '
-  character(len=500), save :: cdf_fname_proj = ' '
+  character(len=400), save :: cdf_fname = ' '
+  character(len=400), save :: cdf_fname_sigma = ' '
+  character(len=400), save :: cdf_fname_proj = ' '
 #endif
 
 contains
@@ -154,8 +154,19 @@ contains
     N_Elec = fdf_nElec('TBT',Elecs)
     if ( N_Elec < 1 ) N_Elec = fdf_nElec('TS',Elecs)
     if ( N_Elec < 1 ) then
-       call die('Please see the manual for how to construct an example &
-            &electrode configuration (or use Util/TS/tselecs.sh)')
+       ! We initialize to 2 electrodes (Left/Right)
+       N_Elec = 2
+       allocate(Elecs(N_Elec))
+       Elecs(1)%name = 'Left'
+       Elecs(1)%ID = 1
+       Elecs(2)%name = 'Right'
+       Elecs(2)%ID = 2
+       ! if they do-not exist, the user will be told
+       if ( IONode ) then
+          chars = '(''tbtrans: ***'',a)'
+          write(*,chars) 'No electrode names were found, &
+               &default Left/Right are expected'
+       end if
     end if
 
     ! Setup default parameters for the electrodes

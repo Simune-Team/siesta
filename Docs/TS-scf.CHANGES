@@ -1,4 +1,69 @@
 ----------------------------------------------------
+February 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-323
+Default electrode names are now Left/Right
+
+* Default names for electrodes in transiesta/tbtrans
+  are now Left/Right.
+
+  The most often setup is this, and forcing users to
+  create a simple block seems dubious.
+
+* Pure tight-binding calculations need now not define
+  the contours for the chemical potentials.
+
+  Together with the fact that chemical potentials
+  are defaulted to Left/Right the user can now create
+  a minimal input of the form:
+
+    %block TBT.Contours
+      neq
+    %endblock TBT.Contours
+    %block TBT.Contour.neq
+      part line
+       from -2.5 eV to 2.5 eV
+          delta .025 eV
+          method mid-rule
+    %endblock TBT.Contour.neq
+
+    TBT.TSHS device.nc
+    %block TBT.Elec.Left
+      TSHS 2x2.nc
+      chemical-potential Left
+      semi-inf-direction -a2
+      electrode-position 1
+    %endblock
+    %block TBT.Elec.Right
+      TSHS 2x2.nc
+      chemical-potential Right
+      semi-inf-direction +a2
+      electrode-position end -1
+    %endblock
+
+  This is very convenient for tight-binding codes.
+
+* Improved the usage of the periodic table.
+  
+  Elements can now be given arbitrarily with strings, list of strings
+  etc.
+  
+* tbt_tb now implements a repeat function for the n_orb and Z
+  arguments for an initial structure.
+
+  If a list of size smaller than the number of atoms, it will
+  try and repeat it out to occupy the full structure.
+
+  If they do not match it will raise an error.
+
+renamed:
+  Src/m_ts_chem_pot.f90 => Src/m_ts_chem_pot.F90
+modified:
+  Src/m_ts_options.F90
+  Util/TS/TB/tbt_data.py
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/m_tbt_options.F90
+  Src/m_ts_chem_pot.F90
+
+----------------------------------------------------
 February 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-322
 Made the periodic table in tbt_tb actually work
 
