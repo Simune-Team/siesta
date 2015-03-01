@@ -1,4 +1,15 @@
 ----------------------------------------------------
+March 1, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-324
+Changed units in displacement print-out
+
+* The units of displacement has been changed to
+  Ang instead of Bohr
+
+modified:
+  Src/Makefile
+  Src/state_init.F
+
+----------------------------------------------------
 February 27, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-323
 Default electrode names are now Left/Right
 

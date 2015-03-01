@@ -11,6 +11,7 @@
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
+      use units,             only: Ang
 
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Hold
@@ -132,7 +133,7 @@
             ix = mod(istep-1,6)+1
             ixdispl = (ix - mod(ix-1,2) +1)/2
             write(6,'(28(" "),a,i6)') 'in direction    ', ixdispl
-            write(6,'(28(" "),a,f8.4,a)') 'by       ', dx, ' Bohr'
+            write(6,'(28(" "),a,f8.4,a)') 'by       ', dx/Ang, ' Ang'
           endif
 
         case (8)
