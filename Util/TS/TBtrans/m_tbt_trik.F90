@@ -169,6 +169,7 @@ contains
     type(ts_c_idx) :: cE
     real(dp) :: kpt(3), bkpt(3), wkpt
 #ifdef TBT_PHONON
+    type(ts_c_idx) :: cOmega
     real(dp) :: omega
 #endif
     integer :: n_kpt
@@ -567,6 +568,15 @@ contains
           iE_N = iE + Nodes - Node
           if ( cE%fake ) iE_N = 0
 
+#ifdef TBT_PHONON
+          ! Retrieve the frequency before converting energy to 
+          ! (\omega + i \eta) ** 2 
+          omega = 2._dp * real(cE%e,dp)
+          ! Copy data, and form (omega + i eta)**2
+          cOmega = cE
+          cOmega%e = cE%e * cE%e
+#endif
+
 #ifdef NCDF_4
 #ifdef CONTINUATION_NOT_WORKING
 
@@ -598,16 +608,6 @@ contains
 
           ! B-cast all nodes current energy segment
           call MPI_BcastNode(iE_N, cE%E, nE)
-
-#ifdef TBT_PHONON
-          ! Retrieve the frequency before converting energy to 
-          ! (\omega + \eta) ** 2 * 2 (we use factor two everywhere)
-          ! Note that we do it after broad-casting to 
-          ! save the frequency in the out-files.
-          ! nE is used without alteration. :)
-          omega = real(cE%e,dp) * 2._dp
-          cE%e = cE%e * cE%e
-#endif
 
           ! Print out information about current progress.
           ! We print out a progress report every 5 %
@@ -659,6 +659,7 @@ contains
 
           call timer('read-GS',2)
 
+
 #ifdef NCDF_4
 #ifdef CONTINUATION_NOT_WORKING
           ! In case it has already been calculated
@@ -686,8 +687,13 @@ contains
                   non_Eq = .false. ) 
 
              ! Down-fold immediately :)
+#ifdef TBT_PHONON
+             call downfold_SE(cOmega,Elecs(iEl), spH, spS, &
+                  r_oElpD(iEl), ElTri(iEl)%n, ElTri(iEl)%r, nzwork,zwork)
+#else
              call downfold_SE(cE,Elecs(iEl), spH, spS, &
                   r_oElpD(iEl), ElTri(iEl)%n, ElTri(iEl)%r, nzwork,zwork)
+#endif
 
           end do
 
@@ -732,9 +738,15 @@ contains
           ! *******************
           ! * prep GF^-1      *
           ! *******************
+#ifdef TBT_PHONON
+          call prepare_invGF(cOmega, zwork_tri, r_oDev, &
+               N_Elec, Elecs, &
+               spH=spH , spS=spS )
+#else
           call prepare_invGF(cE, zwork_tri, r_oDev, &
                N_Elec, Elecs, &
                spH=spH , spS=spS )
+#endif
 
           ! ********************
           ! * prep GF for scat *
@@ -814,7 +826,11 @@ contains
 #ifdef NCDF_4
                 if ( 'orb-current' .in. save_DATA ) then
 
+#ifdef TBT_PHONON
+                   call orb_current(cOmega,spH,spS,zwork_tri,r_oDev,orb_J)
+#else
                    call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
+#endif
 
                    ! We need to save it immediately, we
                    ! do not want to have several arrays in the
@@ -938,7 +954,11 @@ contains
 #ifdef NCDF_4
                 if ( 'proj-orb-current' .in. save_DATA ) then
 
+#ifdef TBT_PHONON
+                   call orb_current(cOmega,spH,spS,zwork_tri,r_oDev,orb_J)
+#else
                    call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
+#endif
 
                    ! We need to save it immediately, we
                    ! do not want to have several arrays in the

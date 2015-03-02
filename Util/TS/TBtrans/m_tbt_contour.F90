@@ -90,15 +90,18 @@ contains
 #ifdef TBT_PHONON
        tbt_io(1)%ca = '0. eV'
        tbt_io(1)%a  = 0._dp
+       tbt_io(1)%cb = '0.5 eV'
+       tbt_io(1)%b  =  0.5_dp * eV
+       tbt_io(1)%cd = '0.0025 eV'
+       tbt_io(1)%d = 0.0025_dp * eV
 #else
        tbt_io(1)%ca = '-2. eV'
        tbt_io(1)%a  = - 2._dp * eV
-#endif
        tbt_io(1)%cb = '2. eV'
        tbt_io(1)%b  =  2._dp * eV
-       ! number of points
        tbt_io(1)%cd = '0.01 eV'
        tbt_io(1)%d = 0.01_dp * eV
+#endif
        tbt_io(1)%method = 'mid-rule'
        call ts_fix_contour(tbt_io(1))
 

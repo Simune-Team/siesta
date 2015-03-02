@@ -288,7 +288,11 @@ contains
        call ncdf_def_dim(ncdf,'na_b',a_Buf%n) ! number of buffer-atoms
     end if
 
+#ifdef TBT_PHONON
+    dic = ('source'.kv.'PHtrans')
+#else
     dic = ('source'.kv.'TBtrans')
+#endif
 
     tmp = datestring()
     dic = dic//('date'.kv.tmp(1:10))
@@ -344,7 +348,7 @@ contains
     end if
 
     if ( 'DOS-Gf' .in. save_DATA ) then
-       dic = dic//('info'.kv.'Density of states')
+       dic = dic//('info'.kv.'Density of states')//('unit'.kv.'1/Ry')
        call ncdf_def_var(ncdf,'DOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
             atts = dic , chunks = (/r%n,1,1/) , compress_lvl = cmp_lvl )
     end if
@@ -434,7 +438,8 @@ contains
        call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
        if ( 'DOS-A' .in. save_DATA ) then
-          dic = ('info'.kv.'Spectral function density of states')
+          dic = ('info'.kv.'Spectral function density of states')// &
+               ('unit'.kv.'1/Ry')
           call ncdf_def_var(grp,'ADOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
                atts = dic, chunks = (/r%n,1,1/) , compress_lvl=cmp_lvl)
        end if
@@ -1053,6 +1058,10 @@ contains
 
        ! Get DOS
        call ncdf_get_var(ncdf,'DOS',r3)
+       ! Correct unit, from 1/Ry to 1/eV
+!$OMP parallel workshare default(shared)
+       r3 = r3 * eV
+!$OMP end parallel workshare
        
        if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='DOS')
@@ -1094,6 +1103,10 @@ contains
        if ( 'DOS-A' .in. save_DATA ) then
           
           call ncdf_get_var(grp,'ADOS',r3)
+          ! Correct unit, from 1/Ry to 1/eV
+!$OMP parallel workshare default(shared)
+          r3 = r3 * eV
+!$OMP end parallel workshare
           
           if ( nkpt > 1 ) then
              call name_save(ispin,nspin,ascii_file,end='ADOS',El1=Elecs(iEl))
@@ -1556,7 +1569,7 @@ contains
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
-       call save_DAT(iounits(cu),DOS(:,1))
+       call save_DAT(iounits(cu),DOS(:,1),fact=eV)
 
        cu = cu + 1
 
@@ -1574,7 +1587,7 @@ contains
        
        if ( 'DOS-A' .in. save_DATA ) then
 
-          call save_DAT(iounits(cu),DOS(:,1+iEl))
+          call save_DAT(iounits(cu),DOS(:,1+iEl),fact=eV)
           
           cu = cu + 1
           
@@ -1606,9 +1619,10 @@ contains
 
   contains
     
-    subroutine save_DAT(iu,DATA)
+    subroutine save_DAT(iu,DATA,fact)
       integer, intent(in) :: iu
       real(dp), intent(in) :: DATA(:)
+      real(dp), intent(in), optional :: fact
 
       integer :: iN, i, ND
       real(dp) :: rnd
@@ -1618,6 +1632,7 @@ contains
       else
          rnd = 1._dp / ND
       end if
+      if ( present(fact) ) rnd = rnd * fact
 
       if ( Node == 0 ) then
          do iN = 0 , Nodes - 1

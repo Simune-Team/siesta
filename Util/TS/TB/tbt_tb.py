@@ -88,7 +88,7 @@ from __future__ import print_function
 
 # Load needed modules
 import copy, os, datetime
-import itertools as it
+import itertools as it, warnings
 import numpy as np
 import netCDF4 as nc
 
@@ -100,6 +100,43 @@ class SIESTA_UNITS(object):
     # SIESTA/tbtrans requires Ry and Bohr
     Ry = 13.60580
     Bohr = 0.529177
+
+class OutputFile(object):
+    """ Class to easily open/close/read output files from programs """
+    def __init__(self,filename):
+        self.file = filename
+    
+    def __enter__(self):
+        """ Opens the output file and returns the handle """
+        self.fh = open(self.file,'r')
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.fh.close()
+        del self.fh # clean-up so that it does not exist
+        return False
+
+    def step_to(self,keyword):
+        """ Steps the file-handle until the keyword is found in the output """
+        found = False
+        while not found:
+            l = self.fh.readline()
+            found = l.find(keyword) >= 0
+            if l == '': break # readline() keeps spitting out '' if EOF
+            
+        # sometimes the line contains information, as a
+        # default we return the line found
+        return found, l
+
+    def read_model(self,na_u,dtype=np.float):
+        """ Abstract for reading a model """
+        raise NotImplementedError('`read_model` has not been implemented yet, '+
+                                  'please do so to achieve full functionality.')
+
+    def read_geom(self):
+        """ Abstract for reading a geometry """
+        raise NotImplementedError('`read_geom` has not been implemented yet, '+
+                                  'please do so to achieve full functionality.')
 
 class TBT_Geom(SIESTA_UNITS):
     """
@@ -175,11 +212,11 @@ class TBT_Geom(SIESTA_UNITS):
         self.Z = np.zeros((self.na_u,),np.int)
         # Convert to integers
         ptbl = PeriodicTable()
-        if isinstance(Z,list) or isinstance(Z,np.ndarray):
+        if isinstance(Z,(list,np.ndarray)):
             Z = self._repeat(Z,self.na_u)
         self.Z[:] = ptbl.Z(Z)
         del ptbl # clean-up
-        if isinstance(n_orb,int):
+        if isinstance(n_orb,(int,np.int,np.int16,np.int32)):
             # We have a fixed number of orbitals per
             # atom
             self.lasto = np.arange(self.na_u+1) * n_orb
@@ -275,11 +312,69 @@ class TBT_Geom(SIESTA_UNITS):
         we copy the nsc and isc_off from the local 
         copy.
         """
-        g = TBT_Geom(cell,xa,dR=self.dR,n_orb=n_orb,Z=Z,update_sc=update_sc)
+        g = self.__class__(cell,xa,dR=self.dR,
+                           n_orb=n_orb,Z=Z,
+                           update_sc=update_sc)
         if not update_sc:
             g.nsc = np.copy(self.nsc)
             g.isc_off = np.copy(self.isc_off)
         return g
+
+    def sub(self,atoms,cell=None,update_sc=False):
+        """
+        Returns a subset of atoms from the geometry.
+
+        Indices passed *MUST* be unique.
+
+        Parameters
+        ----------
+        atoms  : array_like
+            indices of all atoms to be removed.
+        cell   : (``self.cell`), array_like, optional
+            the new associated cell of the geometry
+        update_sc : (False), boolean, optional
+            Whether the super-cell size should be recalculated using
+            ``self.dR``.
+        """
+        if cell is None: cell = self.cell
+        return self.__init_new(cell,self.xa[atoms,:], 
+                               n_orb = np.diff(self.lasto)[atoms],
+                               Z = self.Z[atoms])
+
+    def cut(self,axis,seps=2):
+        """
+        Returns a subset of atoms from the geometry by cutting the 
+        geometry into ``seps`` parts along the direction ``axis``.
+        It will then _only_ return the first cut.
+        
+        This will effectively change the unit-cell in the ``axis`` as-well
+        as removing ``self.na_u/seps`` atoms.
+        It requires that ``self.na_u % seps == 0``.
+
+        REMARK: You need to ensure that all atoms within the first 
+        cut out region are within the primary unit-cell.
+
+        Doing ``geom.cut(1).tile(2,axis=1)``, could for symmetric setups,
+        be equivalent to a no-op operation. A `UserWarning` will be issued
+        if this is not the case.
+
+        Parameters
+        ----------
+        axis  : integer
+           the axis that will be cut
+        seps  : (2), integer, optional
+           number of times the structure will be cut.
+        """
+        if self.na_u % seps != 0:
+            raise ValueError('The system cannot be cut into {0} different '+
+                             'pieces. Please check your geometry and input.'.format(seps))
+        # Cut down cell
+        cell = np.copy(self.cell)
+        cell[axis,:] /= seps
+        new = self.sub(np.arange(self.na_u//seps),cell=cell)
+        if not np.allclose(new.tile(seps,axis=axis).xa,self.xa):
+            warnings.warn('The cut structure cannot be re-created by tiling', UserWarning) 
+        return new
 
     def update_sc(self,dR=None,nsc=None):
         """ Updates the number of supercells
@@ -377,7 +472,7 @@ class TBT_Geom(SIESTA_UNITS):
         return self.__init_new(np.copy(self.cell),np.copy(self.xa),
                                n_orb=np.diff(self.lasto),Z=np.copy(self.Z))
 
-    def remove(self,idx_a,update_sc=False):
+    def remove(self,atoms,update_sc=False):
         """
         Remove atoms from the geometry.
 
@@ -385,20 +480,15 @@ class TBT_Geom(SIESTA_UNITS):
 
         Parameters
         ----------
-        idx_a  : array_like
+        atoms  : array_like
             indices of all atoms to be removed.
         update_sc : (False), boolean, optional
             Whether the super-cell size should be recalculated using
             ``self.dR``.
         """
         # truncate atoms requested
-        idx = np.setdiff1d(np.arange(self.na_u),idx_a,assume_unique=True)
-        xa = self.xa[idx,:]
-        orbs = np.diff(self.lasto)[idx]
-        Z = self.Z[idx]
-        return self.__init_new(np.copy(self.cell),xa,
-                               n_orb=orbs,Z=Z,
-                               update_sc=update_sc)
+        idx = np.setdiff1d(np.arange(self.na_u),atoms,assume_unique=True)
+        return self.sub(idx)
 
     def tile(self,reps,axis,update_sc=False):
         """ 
@@ -563,7 +653,7 @@ class TBT_Geom(SIESTA_UNITS):
 
     def a2o(self,ia):
         """
-        Returns an atomic index to the first orbital of said atom
+        Returns an orbital index of the first orbital of said atom.
         This is particularly handy if you want to create
         TB models with more than one orbital per atom.
 
@@ -588,6 +678,17 @@ class TBT_Geom(SIESTA_UNITS):
 
         """
         return self.lasto[ia % self.na_u] + (ia // self.na_u) * self.no_u
+
+    def o2a(self,io):
+        """
+        Returns an atomic index corresponding to the orbital indicies.
+
+        This is not particurlaly fast.
+        """
+        rlasto = self.lasto[::-1]
+        iio = np.asarray([io]).flatten()
+        a = [self.na_u - np.argmax(rlasto <= i) for i in iio]
+        return np.asarray(a)
 
     def coords(self,isc=[0,0,0],idx=None):
         """
@@ -627,6 +728,15 @@ class TBT_Geom(SIESTA_UNITS):
         for i in xrange(self.isc_off.shape[0]):
             if np.all(self.isc_off[i,:] == asc): return i
         raise Exception('Could not find supercell index')
+
+    def o2sc(self,o):
+        """
+        Returns the super-cell index for a specific orbital.
+
+        Hence one can easily figure out the supercell
+        """
+        idx = np.where(self.no_u * np.arange(np.product(self.nsc)) <= o )[0][0]
+        return self.isc_off[idx,:]
 
     def close_sc(self,xyz_ia,isc=[0,0,0],dR=None,idx=None,ret_coord=False):
         """
@@ -671,7 +781,7 @@ class TBT_Geom(SIESTA_UNITS):
         else:
             ddR = np.array((dR,),np.float).flatten()
         ioff = 0
-        if isinstance(xyz_ia,int):
+        if isinstance(xyz_ia,(int,np.int,np.int16,np.int32)):
             off = self.xa[xyz_ia,:]
             # Get atomic coordinate in principal cell
             if self.proximity:
@@ -776,7 +886,7 @@ class TBT_Geom(SIESTA_UNITS):
                 ix, xx = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR,idx=idx,ret_coord=True)
             else:
                 ix = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR,idx=idx)
-            if isinstance(ix,list):
+            if isinstance(ix,(list,np.ndarray)):
                 # we have a list of arrays
                 if idx_a is None:
                     idx_a = [x + na for x in ix]
@@ -894,6 +1004,79 @@ class TBT_Model(SIESTA_UNITS):
         """ Returns the number of atoms for the geometry """
         return self.geom.na_u
 
+    def sub(self,atoms,cell=None):
+        """ Creates a sub-set of the current model from the input
+        geometry. """
+        # Reduce the sparsity pattern
+        raise NotImplementedError('Taking sub partitions of TB-models '+
+                                  'have not been implemented, see cut.')
+
+    def cut(self,axis,seps=2):
+        """ 
+        Cuts the tight-binding model into different parts.
+
+        Creates a tight-binding model by retaining the parameters
+        for the cut-out region.
+
+        Parameters
+        ----------
+        axis  : integer
+           the axis that will be cut
+        seps  : (2), integer, optional
+           number of times the structure will be cut.
+        """
+        # Create new geometry
+        with warnings.catch_warnings(record=True) as w:
+            # Cause all warnings to always be triggered.
+            warnings.simplefilter("always")
+            geom = self.geom.cut(axis,seps)
+            # Check whether the warning exists
+            if len(w) > 0:
+                if issubclass(w[-1].category,UserWarning):
+                    raise ValueError('You cannot cut a tight-binding model '+
+                                     'if the structure cannot be recreated using tiling constructs.')
+        
+        # Ok, so now we know we have a correct geometry, and 
+        # we are now ready to create the sparsity pattern
+        # Reduce the sparsity pattern, first create the new one
+        tb = self.__class__(geom,max_connection=self.max_n)
+
+        # Now we need to re-create the tight-binding model
+        H, S = self.tocsr()
+        # they are created similarly, hence the following
+        # should keep their order
+        H, S = H.tocoo(), S.tocoo()
+
+        # Copy elements
+        # get off-set for direction
+        isc = np.zeros((3,),np.int)
+        isc[axis] = 1
+        pos = geom.no_u * geom.sc_idx(isc)
+        isc[axis] = -1
+        neg = geom.no_u * geom.sc_idx(isc)
+        sc2 = 0
+        for jo, io, iH, iS in zip(H.row,H.col,H.data,S.data):
+            if jo >= geom.no_u: continue
+            # Get index of super-cell equivalent in io
+            #i_s = self.o2sc(io)
+            
+            if io >= geom.no_u * 2:
+                # we disregard H02
+                sc2 += 1
+                continue
+            elif io >= geom.no_u:
+                io = io % geom.no_u
+                tb[jo,io+pos] = (iH,iS)
+                tb[io,jo+neg] = (iH,iS)
+            else:
+                tb[jo,io] = (iH,iS)
+                tb[jo,io] = (iH,iS)
+
+        if sc2 > 0:
+            warnings.warn('The cut structure has {0} connections crossing 2 cell boundaries.'.format(sc2), UserWarning) 
+
+        return tb
+
     def _reset_sp(self):
         """ Reset the sparsity pattern """
         # To increase performance of creating
@@ -948,6 +1131,7 @@ class TBT_Model(SIESTA_UNITS):
                 # Update actual pointer position
                 self.ptr[io] = ptr
                 no = self.ncol[io]
+                if no == 0: continue
                 self.col[ptr:ptr+no]  = self.col[cptr:cptr+no]
                 self.HS[ptr:ptr+no,:] = self.HS[cptr:cptr+no,:]
                 # we also assert no two connections
@@ -971,10 +1155,24 @@ class TBT_Model(SIESTA_UNITS):
         for io in xrange(self.geom.no_u):
             ptr = self.ptr[io]
             no  = self.ncol[io]
+            if no == 0: continue
             # Sort the indices
             si = np.argsort(self.col[ptr:ptr+no])
             self.col[ptr:ptr+no]  = self.col[ptr+si]
             self.HS[ptr:ptr+no,:] = self.HS[ptr+si,:]
+
+    def __getitem__(self,key):
+        """
+        Returns the value of the index.
+
+        Currently this does not work for slices.
+        """
+        i, j = key
+        ind = np.where(self.col[self.ptr[i]:self.ptr[i]+self.ncol[i]] == j)[0]
+        if len(ind) > 0:
+            return self.HS[self.ptr[i]+ind[0],:]
+        else:
+            return 0., 0.
 
     def __setitem__(self,key,val):
         """
@@ -987,7 +1185,7 @@ class TBT_Model(SIESTA_UNITS):
         """
         # unpack index
         i , j = key
-        if not isinstance(i,int):
+        if not isinstance(i,(int,np.int,np.int16,np.int32)):
             # Recursively handle index,index = val
             # designators.
             if len(i) > 1: 
@@ -1016,7 +1214,7 @@ class TBT_Model(SIESTA_UNITS):
             lj = jj.shape[0]
 
             # the values corresponding to idx already exists, we overwrite that value
-            if isinstance(j,int):
+            if isinstance(j,(int,np.int,np.int16,np.int32)):
                 ix = ptr + np.where(j == self.col[ptr:ptr+ncol])[0][0]
                 self.HS[ix,:] = val
             else:
@@ -1058,18 +1256,17 @@ class TBT_Model(SIESTA_UNITS):
         
         This method depends on scipy.
         """
-        try:
-            if self._finalized: pass
-        except:
-            self.finalize()
+        self.finalize()
+
         # Create csr sparse formats.
         # We import here as the user might not want to
         # rely on this feature.
         from scipy.sparse import csr_matrix
+        shape = (self.no_u,self.no_u*np.product(self.geom.nsc))
         if self.HS.shape[1] == 1:
-            return csr_matrix((self.HS[:,0],self.col,self.ptr))
-        return (csr_matrix((self.HS[:,0],self.col,self.ptr)), \
-                    csr_matrix((self.HS[:,1],self.col,self.ptr)))
+            return csr_matrix((self.HS[:,0],self.col,self.ptr),shape=shape)
+        return (csr_matrix((self.HS[:,0],self.col,self.ptr),shape=shape), \
+                    csr_matrix((self.HS[:,1],self.col,self.ptr),shape=shape))
 
     def _save_sparsity(self,nf,zlib=0):
         """
@@ -1213,6 +1410,154 @@ class TBT_Model(SIESTA_UNITS):
         st.variables['ElectronicTemperature'][:] = 0.025 / self.Ry
 
         nf.close()
+
+    @staticmethod
+    def read_output(output,geom=None,model=None):
+        """
+        Creates a TB model based on an ``OutputFile`` object.
+
+        The object should incorporate routines called `read_geom` and
+        `read_model` to retrieve the geometry and the tight-binding matrix.
+        """
+        if model is None: model = TBT_Model
+        with output:
+
+            if geom is None:
+                # Read in the structure
+                geom = output.read_geom()
+
+            # Read in tight-binding matrix
+            mod = output.read_model(geom.na_u)
+
+        # completed reading the matrix
+        # convert to local sparse format
+        mod = mod.tocoo()
+
+        # get maximum connection
+        max_n = np.amax(mod.col)
+        tb = model(geom,max_connection = max_n)
+
+        # Copy elements
+        for jo,io,d in zip(mod.row,mod.col,mod.data):
+            if jo == io:
+                tb[jo,io] = (d,1.)
+            else:
+                tb[jo,io] = (d,0.)
+        del mod
+        return tb
+
+    @staticmethod
+    def read_output_periodic(output,V=[],geom=None,model=None):
+        """
+        Creates a TB model based on an ``OutputFile`` object.
+        The object should incorporate routines called `read_geom` and
+        `read_model` to retrieve the geometry and the tight-binding model.
+
+        This routine reads in a periodic output by first reading in
+        the geometry, then it will read in the following k-points
+        based on the `V` list.
+        
+        ``x in V``:
+          Dyn(x=1/2) and Dyn(x=1/4)
+        ``y in V``:
+          Dyn(y=1/2) and Dyn(y=1/4)
+        ``z in V``:
+          Dyn(z=1/2) and Dyn(z=1/4)
+
+        Each of these directions allows one to find H0, Vx, Vy and Vz.
+
+        REMARK: Currently this routine cannot calculate Vxy, Vx-y, and all non-orthogonal V's.
+
+        """
+        if model is None: model = TBT_Model
+
+        # First we create a list of all the k-points.
+        if not V:
+            raise RuntimeWarning('You have not requested any coupling directions, '+
+                                 'reverting to only reading intrinsic dynamical matrix (the first one encountered).')
+            return self.read_output(output)
+
+        if len(V) > 1:
+            raise RuntimeWarning('You have not requested more than one coupling direction, '+
+                                 'the couplings are currently not separated for non-orthogonal directions!')
+            return self.read_output(output)
+
+        dyns = []
+        with output:
+
+            # get geometry
+            if geom is None:
+                geom = output.read_geom()
+            
+            # get all models
+            mods = output.read_models(geom.na_u)
+
+        # small helper function to find the equivalent
+        def find_model(mods,q):
+            for qq,mat in mods:
+                if np.allclose(q,qq,rtol=1.e-6):
+                    return mat
+            raise ValueError('Output file: '+str(output.file)+
+                             ' does not contain the q-point: '+str(q))
+
+        # Convert models to H, V and V^\dagger
+        V = [dir.lower() for dir in V]
+        # get maximum connections
+        max_col = np.amax(dyns[0][1].col)
+        # ensure that the number of supercells are correctly set
+        nsc = np.zeros((3,))
+        if 'x' in V: nsc[0] = 1
+        if 'y' in V: nsc[1] = 1
+        if 'z' in V: nsc[2] = 1
+        geom.update_sc(nsc=nsc)
+
+        # We just ensure a large enough connection scheme (2**4)
+        tb = model(geom,max_connection = max_col * 16)
+
+        for dir in V:
+            if dir == 'x':
+                d = 0
+                q1 = np.array([0.25,0.,0.])
+                q2 = np.array([0.5 ,0.,0.])
+                sc = np.array([1,0,0],np.int)
+            elif dir == 'y':
+                d = 1
+                q1 = np.array([0.,0.25,0.])
+                q2 = np.array([0.,0.5 ,0.])
+                sc = np.array([0,1,0],np.int)
+            elif dir == 'z':
+                d = 2
+                q1 = np.array([0.,0.,0.25])
+                q2 = np.array([0.,0.,0.5 ])
+                sc = np.array([0,0,1],np.int)
+
+            # find the dynamical matrices
+            TB1 = find_model(matrices,q1)
+            TBV = find_model(matrices,q2)
+
+            TBV.data = ( TB1.data[:].real + TB1.data[:].imag - 
+                         TBV.data[:]
+                         ) * 0.5
+
+            # Assign the coupling matrix for V and V^\dagger
+            sc_off = geom.no_u * geom.sc_idx( sc)
+            sc_ofd = geom.no_u * geom.sc_idx(-sc)
+            for jo, io, d in zip(TBV.row,TBV.col,TBV.data):
+                tb[jo,io+sc_off] = (d,0.)
+                tb[io,jo+sc_ofd] = (d,0.)
+
+        # Calculate H and V
+        TBH = TB1.real
+
+        # Create H 
+        for jo,io,d in zip(TBH.row,TBH.col,TBH.data):
+            if jo == io:
+                tb[jo,io] = (d,1.)
+            else:
+                tb[jo,io] = (d,0.)
+
+        return tb
+
 
 class TBT_dH(TBT_Model):
     """
@@ -1367,11 +1712,11 @@ class TBT_dH(TBT_Model):
             # point, this warning will proceed...
             # I.e. even though the variable has not been set, it will WARN
             # Hence we out-comment this for now...
-            print('WARNING: Overwriting k-point {0} and energy point {1} correction.'.format(ik,iE))
+            warnings.warn('Overwriting k-point {0} and energy point {1} correction.'.format(ik,iE), UserWarning) 
         elif lvl == 3 and E_warn:
-            print('WARNING: Overwriting energy point {0} correction.'.format(iE))
+            warnings.warn('Overwriting energy point {0} correction.'.format(iE), UserWarning) 
         elif lvl == 2 and k_warn:
-            print('WARNING: Overwriting k-point {0} correction.'.format(ik))
+            warnings.warn('Overwriting k-point {0} correction.'.format(ik), UserWarning) 
         
         # Check that the sparsity pattern for the Hamiltonian
         # matches the sparsity found in the file (if it exists)
@@ -1438,7 +1783,6 @@ class TBT_dH(TBT_Model):
 
         # Cleanup
         nf.close()
-
 
 _P_TBL_Z = {
     'Actinium' : 89 , 'Ac' : 89 , '89' : 89, 89 : 89,
@@ -1929,6 +2273,126 @@ class PeriodicTable(object):
         'Zirconium' : 'Zr' , 'Zr' : 'Zr' , '40' : 'Zr', 40 : 'Zr',
         }
 
+    _atomic_mass = {
+        1 : 1.00794 ,
+        2 : 4.002602 ,
+        3 : 6.941 ,
+        4 : 9.012182 ,
+        5 : 10.811 ,
+        6 : 12.0107 ,
+        7 : 14.0067 ,
+        8 : 15.9994 ,
+        9 : 18.9984032 ,
+        10 : 20.1797 ,
+        11 : 22.98976928 ,
+        12 : 24.3050 ,
+        13 : 26.9815386 ,
+        14 : 28.0855 ,
+        15 : 30.973762 ,
+        16 : 32.065 ,
+        17 : 35.453 ,
+        18 : 39.948 ,
+        19 : 39.0983 ,
+        20 : 40.078 ,
+        21 : 44.955912 ,
+        22 : 47.867 ,
+        23 : 50.9415 ,
+        24 : 51.9961 ,
+        25 : 54.938045 ,
+        26 : 55.845 ,
+        27 : 58.933195 ,
+        28 : 58.6934 ,
+        29 : 63.546 ,
+        30 : 65.409 ,
+        31 : 69.723 ,
+        32 : 72.64 ,
+        33 : 74.92160 ,
+        34 : 78.96 ,
+        35 : 79.904 ,
+        36 : 83.798 ,
+        37 : 85.4678 ,
+        38 : 87.62 ,
+        39 : 88.90585 ,
+        40 : 91.224 ,
+        41 : 92.906 ,
+        42 : 95.94 ,
+        43 : 98 ,
+        44 : 101.07 ,
+        45 : 102.905 ,
+        46 : 106.42 ,
+        47 : 107.8682 ,
+        48 : 112.411 ,
+        49 : 114.818 ,
+        50 : 118.710 ,
+        51 : 121.760 ,
+        52 : 127.60 ,
+        53 : 126.904 ,
+        54 : 131.293 ,
+        55 : 132.9054519 ,
+        56 : 137.327 ,
+        57 : 138.90547 ,
+        58 : 140.116 ,
+        59 : 140.90765 ,
+        60 : 144.242 ,
+        61 : 145 ,
+        62 : 150.36 ,
+        63 : 151.964 ,
+        64 : 157.25 ,
+        65 : 158.92535 ,
+        66 : 162.500 ,
+        67 : 164.930 ,
+        68 : 167.259 ,
+        69 : 168.93421 ,
+        70 : 173.04 ,
+        71 : 174.967 ,
+        72 : 178.49 ,
+        73 : 180.94788 ,
+        74 : 183.84 ,
+        75 : 186.207 ,
+        76 : 190.23 ,
+        77 : 192.217 ,
+        78 : 195.084 ,
+        79 : 196.966569 ,
+        80 : 200.59 ,
+        81 : 204.3833 ,
+        82 : 207.2 ,
+        83 : 208.98040 ,
+        84 : 210 ,
+        85 : 210 ,
+        86 : 220 ,
+        87 : 223 ,
+        88 : 226 ,
+        89 : 227 ,
+        91 : 231.03588 ,
+        90 : 232.03806 ,
+        93 : 237 ,
+        92 : 238.02891 ,
+        95 : 243 ,
+        94 : 244 ,
+        96 : 247 ,
+        97 : 247 ,
+        98 : 251 ,
+        99 : 252 ,
+        100 : 257 ,
+        101 : 258 ,
+        102 : 259 ,
+        103 : 262 ,
+        104 : 261 ,
+        105 : 262 ,
+        106 : 266 ,
+        107 : 264 ,
+        108 : 277 ,
+        109 : 268 ,
+        110 : 271 ,
+        111 : 272 ,
+        112 : 285 ,
+        113 : 284 ,
+        114 : 289 ,
+        115 : 288 ,
+        116 : 292 ,
+        118 : 293 ,
+        }
+
     def Z_int(self,key):
         """ Returns the Z number """
         ak = np.asarray([key])
@@ -1945,6 +2409,9 @@ class PeriodicTable(object):
         if len(ak) == 1: return self._Z_short[ak[0]]
         return [self._Z_short[i] for i in ak]
 
+    def atomic_mass(self,key):
+        Z = self.Z_int(key)
+        return np.array([self._atomic_mass[i] for i in Z])
 
 
 # According to 

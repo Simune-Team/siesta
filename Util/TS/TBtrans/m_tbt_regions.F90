@@ -927,17 +927,18 @@ contains
        if ( verb > 7 ) &
             call rgn_print(r_oEl  (i) , seq_max = 10 )
        if ( verb > 3 ) then
-          call rgn_union(r_aDev,r_aElpD(i),r)
+          call rgn_intersection(r_aElpD(i),r_aDev,r)
           r%name = '[A]-'//trim(Elecs(i)%name)//' folding in D'
           call rgn_print(r, seq_max = 12 )
        end if
        if ( verb > 7 ) then
-          call rgn_union(r_oDev,r_oElpD(i),r)
+          call rgn_intersection(r_oElpD(i),r_oDev,r)
           r%name = '[O]-'//trim(Elecs(i)%name)//' folding in D'
           call rgn_print(r, seq_max = 10 )
        end if
     end do
 
+    ! Clean-up
     call rgn_delete(r)
 
   end subroutine tbt_print_regions

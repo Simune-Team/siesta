@@ -588,6 +588,9 @@ contains
        if ( c%idx(1) /= 1 ) then
           ! In this case the energy is the eta value of the electrode
           c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
+#ifdef TBT_PHONON
+          c%e = c%e * c%e
+#endif
        end if
        if ( Elecs(i)%out_of_core ) then
           ! Set k-point for calculating expansion

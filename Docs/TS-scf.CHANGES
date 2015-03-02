@@ -1,4 +1,121 @@
 ----------------------------------------------------
+March 2, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-325
+Fixed units in DOS for tbtrans, added pht_tb
+
+* Bugfixes for different eta values for each
+  electrode. This now also works in-core.
+
+* TBT_PHONON has been added to m_ts_gf and m_ts_elec_se
+  as they are needed for specific electrode eta values.
+
+* DOS of tbtrans has always been in 1/Ry. However, the
+  energy specified in the output file is eV, hence
+  we now convert the DOS to 1/eV to make units
+  aligned.
+  
+  Note that we still normalize with respect to number 
+  of orbitals in device.
+
+  This has been updated in both tbtrans AND tbt_data.py.
+  And in NCDF and non-NCDF version.
+
+* Bugfix for printing the downfolding regions.
+  It did not matter, but it was printing the wrong list.
+  
+* Added OutputFile to tbt_tb so that tight-binding models
+  and/or geometries can be read in a generic way by creating
+  a custom class to parse any file.
+
+  The idea is that instead of having a static model, one can
+  now create any tight-binding model by supplying a parser.
+
+  The only requirement is that:
+  A) The output file shall inherit OutputFile
+  B) It should implement read_geom to read geometries
+  C) It should implement read_model to read models
+
+  The OutputFile object consists of creating a file
+  object so that it needs to be used like:
+
+  with outputfile:
+     geom = outputfile.read_geom()
+     model = outputfile.read_model(geom.na_u)
+  
+  and you are done.
+  The file it contains is parsed linearly, so if the geometry is
+  not defined first, one can pass another geometry object to define
+  it outside.
+
+  See pht_tb.py for an example of parsing the GULP output.
+
+* Bugfixes, enhancements to tbt_tb:
+
+  For TBT_Geom:
+  1) arguments that were int, can now also be any numpy int.
+  2) Added a .sub () which takes a subset of atoms
+     and returns a new structure. 
+     Thus you can take any subset by passing a list of atoms.
+  3) .cut() returns an easy cut of the geometry.
+     Say if you want half the structure in the x-direction, 
+       new_cut =   .cut(axis=0,seps=2)
+     and the structure will be half the size, in terms of atoms
+     and cell-size.
+
+     This is handy for taking periodic stuff and mingling with it.
+  4) Added an a2o to convert an atom index to first orbital index.
+  5) Added an o2sc to convert an orbital index to the supercell
+     offsets, i.e. isc for that orbital.
+  
+  For TBT_Model:
+  1) .sub() has been added, but currently does not work.
+  2) .cut() has been added and works for non-periodic models.
+     Hence if you cut a model in half, it will create the correct
+     H0 and V, V^\dagger.
+  3) Added the __getitem__ which currently only allows direct
+     retrieval, you can't do slices.
+     However, it is handy if you wish to update certain elements
+     as __add__ has not been implemented.
+
+     In case the element does not exist will it return 0.,0.
+  4) Bugfix for tocsr(), it now calls finalize properly.
+  5) Implemented a static read_output which takes an
+     OutputFile object and reads the first matrix it sees
+     (defined by the object) and returns a TBT_Model
+     based on the findings, currently it does not implement
+     a cutoff value.
+  6) read_output_periodic has also been implemented but not
+     tested, I do not know if it works.
+
+  Made print statements in the TBT_dH object to warnings.
+  Now the user has to catch the warnings, or disable them.
+
+* Added atomic masses to the periodic table.
+
+* For phtrans the following changes:
+
+  The default energy grid is now from 0 -> 0.5 @ dE = 0.0025
+
+  The TBT.nc file now says "source == PHtrans"
+  
+  Added units to the DOS/ADOS variables in the NetCDF files.
+
+  Had to abstract the cE to cE and cOmega to be able to
+  have both omega + iEta and (omega + iEta) ** 2.
+  
+added:
+  Util/TS/TB/pht_tb.py
+modified:
+  Src/m_ts_elec_se.F90
+  Src/m_ts_gf.F90
+  Util/TS/TB/tbt_data.py
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 March 1, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-324
 Changed units in displacement print-out
 

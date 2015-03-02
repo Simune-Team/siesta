@@ -521,8 +521,8 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
     # Get the energies (they are in Ry)
     E = Tf.E * Tf.Ry
 
-    # Normalize to number of orbitals in sub-space
-    fac_DOS = 1. / len(orbs)
+    # Normalize to number of orbitals in sub-space (DOS is in 1/Ry)
+    fac_DOS = 1. / len(orbs) / Tf.Ry
     
     for proj in projs:
 
@@ -556,7 +556,7 @@ def process_tbt(args,Tf,k_idx,orbs):
     """ Processes the TBT.nc file """
 
     # Normalize to number of orbitals in sub-space
-    fac_DOS = 1. / len(orbs)
+    fac_DOS = 1. / len(orbs) / Tf.Ry
 
     # Grab different electrodes in this file
     elecs = Tf.elecs

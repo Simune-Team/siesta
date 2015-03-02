@@ -37,6 +37,7 @@ contains
 
     logical,  intent(in), optional :: non_Eq
 
+    complex(dp) :: E
     integer :: nou, no, nq
     logical :: lnon_Eq
 
@@ -52,11 +53,18 @@ contains
        nq = 1
     end if
 
+    ! Save energy
+    E = cE%e
+
     lnon_Eq = .false.
     if ( present(non_Eq) ) lnon_Eq = non_Eq
 
     if ( lnon_Eq ) then
-       call UC_expansion_Sigma_GammaT(cE%e, &
+       E = dcmplx(real(cE%e,dp),El%Eta)
+#ifdef TBT_PHONON
+       E = E * E
+#endif
+       call UC_expansion_Sigma_GammaT(E, &
             nou,no,El, nq, &
             El%GA,El%Sigma,El%Gamma,nwork,work)
     else
@@ -64,7 +72,13 @@ contains
           call UC_expansion_Sigma_Bulk(nou,no,El, nq, &
                El%GA,El%Sigma,nwork,work)
        else
-          call UC_expansion_Sigma(cE%e,nou,no,El, nq, &
+          if ( cE%idx(1) /= 1 ) then ! .not. CONTOUR_EQ
+             E = dcmplx(real(cE%e,dp),El%Eta)
+#ifdef TBT_PHONON
+             E = E * E
+#endif
+          end if
+          call UC_expansion_Sigma(E,nou,no,El, nq, &
                El%GA,El%Sigma,nwork,work)
        end if
     end if

@@ -189,7 +189,7 @@ phtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) $(S
 
 clean-tbt:
 	@echo "==> Cleaning tbtrans-only object, and executable files"
-	-rm -f tbtrans phtrans $(TBTOBJS)
+	-rm -f tbtrans phtrans $(TBTOBJS) m_ts_gf.o m_ts_elec_se.o
 
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
