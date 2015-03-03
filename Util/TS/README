@@ -61,4 +61,11 @@ These programs has been developed by:
 
     Notice that one should import this file in to their projects
     and do other fancy things outside of that file.
-    
+
+  * pht_tb.py
+    Creation of PHtrans files to calculate phonon transport.
+
+    This is an extension of tbt_tb.py
+
+    It currently can convert GULP output to input for 
+    phtrans.    

@@ -1,4 +1,28 @@
 ----------------------------------------------------
+March 3, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-328
+Added GULP examples and added to README in TS
+
+* Added example of how to use GULP for three cases
+  1) Pristine graphene in the armchair direction
+  2) Pristine graphene in the zig-zag direction
+  3) Bulk Si
+
+* Added note in the README for pht_tb.py
+
+added:
+  Util/TS/TB/GULP/
+  Util/TS/TB/GULP/AC.fdf
+  Util/TS/TB/GULP/Si.fdf
+  Util/TS/TB/GULP/Si.gin
+  Util/TS/TB/GULP/Si.py
+  Util/TS/TB/GULP/ZZ.fdf
+  Util/TS/TB/GULP/ac.gin
+  Util/TS/TB/GULP/gr.py
+  Util/TS/TB/GULP/zz.gin
+modified:
+  Util/TS/README
+
+----------------------------------------------------
 March 3, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-327
 Notification of PHtrans moved
 
