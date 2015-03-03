@@ -37,8 +37,8 @@ class GULP(OutputFile):
         """
         if not hasattr(self,'fh'):
             # The file-handle has not been opened
-            with self:
-                return self.read_model(na_u,dtype=dtype)
+            with self as fh:
+                return fh.read_model(na_u,dtype=dtype)
 
         from scipy.sparse import lil_matrix
         
@@ -100,8 +100,8 @@ class GULP(OutputFile):
         """
         if not hasattr(self,'fh'):
             # The file-handle has not been opened
-            with self:
-                return self.read_models(na_u)
+            with self as fh:
+                return fh.read_models(na_u)
 
         # skip to region with dynamical matrices
         self.step_to('Phonon Calculation')
@@ -129,8 +129,8 @@ class GULP(OutputFile):
         """
         if not hasattr(self,'fh'):
             # The file-handle has not been opened
-            with self:
-                return self.read_geom()
+            with self as fh:
+                return fh.read_geom()
 
         Z = None
         xa = None
@@ -172,8 +172,11 @@ class GULP(OutputFile):
         
         if Z is None or cell is None or xa is None:
             raise ValueError('Could not read in cell information and/or coordinates')
-        
-        return PHT_Geom(cell,xa,Z=Z)
+
+        geom = PHT_Geom(cell,xa,Z=Z)
+        # We update the supercell accordingly
+        geom.update_sc(nsc=np.zeros((3,),np.int))
+        return geom
     
 
 class PHT_Model(TBT_Model):

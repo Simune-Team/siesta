@@ -138,6 +138,28 @@ class OutputFile(object):
         raise NotImplementedError('`read_geom` has not been implemented yet, '+
                                   'please do so to achieve full functionality.')
 
+class BinaryOutputFile(OutputFile):
+    """ Class to easily open/close/read output files from programs """
+    def __init__(self,filename):
+        self.file = filename
+    
+    def __enter__(self):
+        """ Opens the output file and returns the handle """
+        raise NotImplementedError('Binary files need explicit __enter__ commands')
+
+    def __exit__(self, type, value, traceback):
+        raise NotImplementedError('Binary files need explicit __exit__ commands')
+
+    def read_model(self,na_u,dtype=np.float):
+        """ Abstract for reading a model """
+        raise NotImplementedError('`read_model` has not been implemented yet, '+
+                                  'please do so to achieve full functionality.')
+
+    def read_geom(self):
+        """ Abstract for reading a geometry """
+        raise NotImplementedError('`read_geom` has not been implemented yet, '+
+                                  'please do so to achieve full functionality.')
+
 class TBT_Geom(SIESTA_UNITS):
     """
     Geometry object handling atomic coordinates in a supercell
@@ -729,13 +751,13 @@ class TBT_Geom(SIESTA_UNITS):
             if np.all(self.isc_off[i,:] == asc): return i
         raise Exception('Could not find supercell index')
 
-    def o2sc(self,o):
+    def o2isc(self,o):
         """
         Returns the super-cell index for a specific orbital.
 
         Hence one can easily figure out the supercell
         """
-        idx = np.where(self.no_u * np.arange(np.product(self.nsc)) <= o )[0][0]
+        idx = np.where( o < self.no_u * np.arange(1,np.product(self.nsc)+1) )[0][0]
         return self.isc_off[idx,:]
 
     def close_sc(self,xyz_ia,isc=[0,0,0],dR=None,idx=None,ret_coord=False):
@@ -1005,8 +1027,17 @@ class TBT_Model(SIESTA_UNITS):
         return self.geom.na_u
 
     def sub(self,atoms,cell=None):
-        """ Creates a sub-set of the current model from the input
-        geometry. """
+        """ 
+        Creates a sub-set of the current model from the input
+        geometry.
+
+        Parameters
+        ----------
+        atoms  : array_like
+           the atoms that will be used to create a new structure.
+        cell  : (None), array_like, optional
+           if provided this will be the new cell for the geometry
+        """
         # Reduce the sparsity pattern
         raise NotImplementedError('Taking sub partitions of TB-models '+
                                   'have not been implemented, see cut.')
@@ -1036,44 +1067,87 @@ class TBT_Model(SIESTA_UNITS):
                     raise ValueError('You cannot cut a tight-binding model '+
                                      'if the structure cannot be recreated using tiling constructs.')
         
-        # Ok, so now we know we have a correct geometry, and 
-        # we are now ready to create the sparsity pattern
-        # Reduce the sparsity pattern, first create the new one
-        tb = self.__class__(geom,max_connection=self.max_n)
-
         # Now we need to re-create the tight-binding model
         H, S = self.tocsr()
         # they are created similarly, hence the following
         # should keep their order
-        H, S = H.tocoo(), S.tocoo()
+
+        # First we need to figure out how long the interaction range is
+        # in the cut-direction
+        # We initialize to be the same as the parent direction
+        nsc = self.geom.nsc // 2
+        nsc[axis] = 0 # we count it
+        isc = np.zeros((3,),np.int)
+        isc[axis] -= 1
+        out = False
+        while not out:
+            # Get supercell index
+            isc[axis] += 1
+            try:
+                idx = self.geom.sc_idx(isc)
+            except: break
+            # Figure out how long it interacts
+            sub = H[0:geom.no_u,idx*self.no_u:(idx+1)*self.no_u].indices[:]
+            if len(sub) == 0: break
+            c_max = np.amax(sub)
+            # Count the number of cells it interacts with
+            i = (c_max % self.no_u) // geom.no_u
+            ic = idx * self.no_u
+            for j in range(i):
+                idx = ic + geom.no_u * j
+                # We need to ensure that every "in between" index exists
+                # if it does not we discard those indices
+                if len(np.where( 
+                        np.logical_and(idx <= sub, 
+                                       sub < idx + geom.no_u)
+                        )[0]) == 0:
+                    i = j - 1
+                    out = True
+                    break
+            nsc[axis] = isc[axis] * seps + i
+            
+            if out:
+                warnings.warn('Cut the connection at {0} in direction {1}.'.format(nsc[axis],axis), UserWarning) 
+
+            
+        # Update number of super-cells
+        geom.update_sc(nsc=nsc)
+
+        # Now we have a correct geometry, and 
+        # we are now ready to create the sparsity pattern
+        # Reduce the sparsity pattern, first create the new one
+        tb = self.__class__(geom,max_connection=self.max_n)
+
+        def sco2sco(M,o,m,axis,seps):
+            # Converts an o from M to m
+            isc = np.copy( M.o2isc(o) )
+            isc[axis] *= seps
+            # Count cell-offset
+            i = (o % M.no_u) // m.no_u
+            isc[axis] += i
+            # find the equivalent cell in m
+            try:
+                # If a fail happens it is due to a discarded
+                # interaction across a non-interacting region
+                return ( o % m.no_u, 
+                        m.sc_idx( isc) * m.no_u, 
+                        m.sc_idx(-isc) * m.no_u)
+            except:
+                return None, None, None
 
         # Copy elements
-        # get off-set for direction
-        isc = np.zeros((3,),np.int)
-        isc[axis] = 1
-        pos = geom.no_u * geom.sc_idx(isc)
-        isc[axis] = -1
-        neg = geom.no_u * geom.sc_idx(isc)
-        sc2 = 0
-        for jo, io, iH, iS in zip(H.row,H.col,H.data,S.data):
-            if jo >= geom.no_u: continue
-            # Get index of super-cell equivalent in io
-            #i_s = self.o2sc(io)
-            
-            if io >= geom.no_u * 2:
-                # we disregard H02
-                sc2 += 1
-                continue
-            elif io >= geom.no_u:
-                io = io % geom.no_u
-                tb[jo,io+pos] = (iH,iS)
-                tb[io,jo+neg] = (iH,iS)
-            else:
-                tb[jo,io] = (iH,iS)
-                tb[jo,io] = (iH,iS)
+        for jo in xrange(geom.no_u):
 
-        if sc2 > 0:
-            warnings.warn('The cut structure has {0} connections crossing 2 cell boundaries.'.format(sc2), UserWarning) 
+            # make smaller cut
+            sH = H[jo,:]
+            sS = S[jo,:]
+
+            for io, iH, iS in zip(sH.indices,sH.data,sS.data):
+                # Get the equivalent orbital in the smaller cell
+                o, ofp, ofm = sco2sco(self.geom,io,tb.geom,axis,seps)
+                if o is None: continue
+                tb[jo,o+ofp] = iH, iS
+                tb[o,jo+ofm] = iH, iS
 
         return tb
 
@@ -1420,14 +1494,14 @@ class TBT_Model(SIESTA_UNITS):
         `read_model` to retrieve the geometry and the tight-binding matrix.
         """
         if model is None: model = TBT_Model
-        with output:
+        with output as fh:
 
             if geom is None:
                 # Read in the structure
-                geom = output.read_geom()
+                geom = fh.read_geom()
 
             # Read in tight-binding matrix
-            mod = output.read_model(geom.na_u)
+            mod = fh.read_model(geom.na_u)
 
         # completed reading the matrix
         # convert to local sparse format
@@ -1483,14 +1557,14 @@ class TBT_Model(SIESTA_UNITS):
             return self.read_output(output)
 
         dyns = []
-        with output:
+        with output as fh:
 
             # get geometry
             if geom is None:
-                geom = output.read_geom()
+                geom = fh.read_geom()
             
             # get all models
-            mods = output.read_models(geom.na_u)
+            mods = fh.read_models(geom.na_u)
 
         # small helper function to find the equivalent
         def find_model(mods,q):

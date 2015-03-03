@@ -1,4 +1,40 @@
 ----------------------------------------------------
+March 3, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-326
+Completed generic cut routine
+
+* tbt_tb model now implements a fully generic routine
+  which enables one to cut models into smaller parts while
+  retaining all information (i.e. all V1, V2, Vn are generated).
+
+  This enables one to take a very large model, and cut it down
+  to a periodic one to take advantage of k-points.
+
+  It does so by first counting the size of the new super-cell,
+  then afterwards it will fill it.
+
+* Geom, changed o2sc to o2isc to conform with the other names.
+  Also it had a bug which made it return the wrong index.
+
+* Added documentation in some places.
+
+* Added a custom BinaryOutputFile which is a baseclass that
+  should be used to process binary files, currently it is not
+  used anywhere.
+
+* When using the OutputFile class we should use the handle that
+  it returns, in case the handle is different from it-self.
+
+  Hence, we now use:
+    >> with output as fh:
+    >>    fh.read_geom
+  to really make it generic. Even though the standard OutputFile
+  returns `self` it is future proof for binary output files.
+
+modified:
+  Util/TS/TB/pht_tb.py
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 March 2, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-325
 Fixed units in DOS for tbtrans, added pht_tb
 
