@@ -8,6 +8,13 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module aux_proj
+      ! Kludge to pass info to comkb while using the new psop lib
+      integer, parameter, private :: dp = selected_real_kind(10,100)
+      integer, public :: is
+      real(dp), public :: a, b
+      end module aux_proj
+
       module atom
 
       use precision, only: dp
@@ -17,6 +24,7 @@
       use basis_types, only: basis_parameters
       use basis_types, only: ground_state_t
       use atom_options, only: write_ion_plot_files, debug_kb_generation
+      use atom_options, only: new_kb_reference_orbitals
       use m_filter, only: kcphi, filter, gen_filteret, gen_pol_filteret
 
 !----------------------------------------------------------------
@@ -93,9 +101,11 @@
      .                       ISIN,RINN,VCTE,qcoe,qyuk,qwid,
      .                       split_norm,filtercut_in,basp)
 
-        use m_vlocal_chlocal, only: compute_vlocal_chlocal
-        use m_vlocal_chlocal, only: chlocal_from_vlocal
-        use m_vlocal_chlocal, only: get_psml_vlocal
+        use m_psop, only: compute_vlocal_chlocal
+        use m_psop, only: chlocal_from_vlocal
+        use m_psop, only: kbgen
+        use basis_specs, only: restricted_grid
+        use aux_proj, only: is, a, b
 
         implicit none
 
@@ -111,7 +121,7 @@
         integer, intent(in) :: nkbl(0:lmaxd) 
 !       Number of Kleinman-Bylander projectors for each angular momentum
 
-        real(dp), intent(in) :: erefkb(nkbmx,0:lmaxd)
+        real(dp), intent(inout) :: erefkb(nkbmx,0:lmaxd)
 !       Reference energies (in Ry) for the calculation  of the KB projectors
 
         integer, intent(IN) :: lmxo 
@@ -243,14 +253,13 @@
      .    red_vlocal(nrmax)
 
         real(dp) 
-     .    pi, a, b, zval, flting,
+     .    pi, zval, flting,
      .    ex, ec, dx, dc, r2, chgvps
      
       
         real(dp) Rchloc
 
-        character
-     .    icorr*2, irel*3, nicore*4 
+        character icorr*2, irel*3, nicore*4 
 
         integer 
      .    iz, nrval, ir , nrgauss, nchloc, nzcontr, l, nVna,
@@ -258,7 +267,11 @@
     
         logical  new
    
-        integer is
+        logical  :: fit_3derivs, use_charge_cutoff, force_chlocal_method
+        logical  :: ignore_ghosts
+        real(dp) :: rmax_ps_check
+        real(dp) :: kb_rmax
+        character(len=40) :: vlocal_type
 
         call setup_filtering()
 
@@ -467,16 +480,39 @@ c    .          'atom: The above configuration will be used ',
           if (flting.gt.0.0d0) then
 
              if (fdf_boolean('Use.PSML.Vlocal',.false.)) then
-                call get_psml_vlocal(atm_label,rofi,nrval,Zval,vlocal)
+                call get_psml_vlocal(atm_label,rofi,nrval,Zval,vlocal,
+     $                               vlocal_type)
+
+                use_charge_cutoff = .true.
+                if (trim(vlocal_type)=="siesta-fit") then
+                   use_charge_cutoff = .false.
+                endif
+
                 call chlocal_from_vlocal(rofi, vlocal, drdi,
      $                         a, nrval,
-     $                         Zval, nchloc, chlocal)
+     $                         Zval, nchloc, chlocal,
+     $                         use_charge_cutoff)
              else
+
+                force_chlocal_method =
+     $                 fdf_boolean("vlocal-from-chlocal",.false.)
+                Rmax_ps_check =
+     $                 fdf_physical("Rmax.PS.Check",rofi(nrval),"Bohr")
+                fit_3derivs = fdf_boolean("Vlocal.Fit.3derivs",.false.)
+                use_charge_cutoff =
+     $                 fdf_boolean("use-charge-cutoff-for-large-core",
+     $                  .false.)
+
                 call compute_vlocal_chlocal(rofi,nrval,drdi,s,Zval,
      $                                      lmxkb, vps, 
      $                                      a, b, nicore,
      $                                      nchloc,chlocal,
-     $                                      vlocal)
+     $                                      vlocal,
+     $                         force_chlocal_method,
+     $                         rmax_ps_check,
+     $                         fit_3derivs,
+     $                         use_charge_cutoff,
+     $                         vlocal_type)
              endif
 
 ! 
@@ -532,9 +568,19 @@ c    .          'atom: The above configuration will be used ',
 !
 ! Calculation of the Kleinman-Bylander projector functions
 ! 
+            ignore_ghosts = fdf_boolean('Atom.Ignore.Ghosts',.false.)
+            kb_rmax = fdf_physical("KB.Rmax", 0.0_dp, "Bohr")
+            
                call KBgen(is, a,b,rofi,drdi,s,
      .                 vps, vlocal, ve, nrval, Zval, lmxkb, 
-     .                 nkbl, erefkb, nkb) 
+     .                 nkbl, erefkb, nkb,
+     $                 new_kb_reference_orbitals,
+     $                 restricted_grid,
+     $                 debug_kb_generation,
+     $                 ignore_ghosts,
+     $                 kb_rmax,
+     $                 process_proj=store_kbproj)
+
                nkbmax(is) = nkb
             endif
 
@@ -694,6 +740,125 @@ c    .          'atom: The above configuration will be used ',
 
         end subroutine atom_main
 !
+      subroutine  store_kbproj(l,ikb,ekb,nrc,erefkb,dkbcos,
+     $                       nrval,rofi,proj)
+
+      use aux_proj, only: a, b, is
+
+      integer, parameter :: dp = selected_real_kind(10,100)
+!
+! Custom routine to process the information about each projector
+! This version for classic Siesta
+!
+      integer, intent(in)  :: l
+      integer, intent(in)  :: ikb
+      integer, intent(in)  :: nrc
+      real(dp), intent(in) :: ekb
+      real(dp), intent(in) :: erefkb
+      real(dp), intent(in) :: dkbcos
+      integer, intent(in)  :: nrval
+      real(dp), intent(in) :: rofi(:)
+      real(dp), intent(in) :: proj(:)
+
+      real(dp) :: rc
+      rc = rofi(nrc)
+
+! Common block with the information about the  KB projectors
+
+      call comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc)
+!
+      end subroutine store_kbproj
+
+      subroutine comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc)
+C
+C  Creates the common block with all the information about the 
+C  Kleinman-Bylander projectors.
+C  Written by D. Sanchez-Portal, Aug. 1998.
+C  Modified by DSP to allow more than one projector per l, July 1999.
+C
+        implicit none
+
+        integer l, nrc,is, ikb 
+
+        real(dp) rc, ekb, proj(nrmax), a, b,
+     .    rofi(nrmax)  
+        character(len=40) filename
+C
+C Internal variables
+C
+        integer indx, itb, nr, nmax, nmin, nn, il
+        real(dp) delt, r, vphi, dy, yp1, ypn
+        integer ir, nrckb
+C
+C Number of points used by polint for the interpolation
+C
+        integer npoint
+        parameter(npoint=4)
+        integer lun
+C
+        rctb(ikb,l,is)=rc 
+C
+C Interpolation to generate tables with KB projectors
+C
+!       This assumes that the routine is going to be called
+!       with increasing values of l, and sequentially for
+!       the different projectors for each l.
+!
+        indx=0
+        do il=0,l-1
+          indx=indx+nkblsave(il,is)
+        enddo 
+        indx=indx+ikb
+        if (ikb.gt.nkblsave(l,is)) then
+          write(6,'(/,2a,i3,a,i3)')
+     .      'comKB: ERROR: Maximum number of KB projectors',
+     .      ' for l=',l,' must be', nkblsave(l,is)
+          call die 
+        endif 
+
+        delt=rc/(dble(ntbmax-1)+1.0d-20) 
+        if (delt.gt.deltmax) then
+          write(6,'(a)')
+     .    'comKB: WARNING It might be a good idea to increase'
+          write(6,'(a)')
+     .    'comKB: WARNING parameter ntbmax (in file atmparams.f) '
+          write(6,'(a,i6)')
+     .    'comKB: WARNING to at least ntbmax = ', 
+     .    nint(Rc/deltmax)+2
+        endif
+
+        table(1,-indx,is)=delt
+        table(2,-indx,is)=ekb
+
+        if (debug_kb_generation) then
+          nrckb = nint(log(rc/b+1.0d0)/a)+1
+          write(filename,"(a,i1)")
+     .          trim(global_label) // "-KBProj.", indx
+          call file_out(nrckb,rofi,proj,filename)
+        endif
+!
+        do itb=1,ntbmax-1
+          r=delt*(itb-1)
+          nr=nint(log(r/b+1.0d0)/a)+1
+          nmin=max(1,nr-npoint)
+          nmax=min(nrc,nr+npoint)
+          nn=nmax-nmin+1
+          call polint(rofi(nmin),proj(nmin),nn,r,vphi,dy)
+          table(itb+2,-indx,is)=vphi
+        enddo 
+        table(ntbmax+2,-indx,is)=0.0d0
+C
+C Table with the second derivative
+C
+        yp1=0.0d0
+        ypn=huge(1.d0)
+
+        call spline(delt, table(3:2+ntbmax,-indx,is), ntbmax,
+     &              yp1, ypn, tab2(1:ntbmax,-indx,is) )
+
+        end subroutine comkb
+
+
         subroutine setup_filtering()
       
         filtering_requested = .false.
@@ -1298,270 +1463,6 @@ C
         enddo 
             
         end subroutine schro_eq
-             
-
-        subroutine ghost(Zval,rofi,vps,vlocal,
-     .                   ve,s,drdi,nrval,l,a,b,
-     .                   nrc,eigenl,rphi,ighost)
-
-C     This routine checks the possible existence of ghost states. 
-C     Input:
-C     vps(*)    : pseudopotential for angular momentum l
-C     vlocal(*) : local pseudopotential
-C     rphi (*)  : first radial pseudowavefunctions for Vps.
-C     eigenl    : eigenvalue 
-C     
-C     Output:
-C     Sets ighost to 1 if it finds a ghost state.
-C     ighost is a saved variable in the caller.
-C     
-C     Written by D. Sanchez-Portal, Aug. 1998
-C     
-        integer, intent(in)   :: nrval,l
-        integer, intent(inout)   :: nrc
-        integer, intent(inout)  :: ighost
-
-        real(dp), intent(in) :: zval, a, b, eigenl
-        real(dp), intent(in) :: rofi(:), vps(:), vlocal(:), ve(:)
-        real(dp), intent(in) :: s(:), drdi(:), rphi(:)
-C
-C Internal variables
-C
-        real(dp)   dnrm, avgv, phi,
-     .    elocal1, elocal2, g(nrmax), vl, vphi, dkbcos
-
-        integer  ir, nprin, nnode
-!
-!     Compares the reference energy with the eigenvalues of the
-!     local potential, for ghost analysis.
-!
-! ATTENTION , 'Ve' is the screenig potential generated from valence
-! pseudo-charge given by the pseudopotential generation program
-
-!!!      write(6,*) 'Entering ghost: l, eigenl', l, eigenl
-C
-C Calculate KB-cosine
-C
-        nrc=min(nrc,nrval)
-        dnrm=0.0d0
-        avgv=0.0d0
-        do 30 ir=2,nrc
-          vl=(vps(ir)-vlocal(ir))
-          phi=rphi(ir)
-          vphi=vl*phi
-          dnrm=dnrm+vphi*vphi*drdi(ir)
-          avgv=avgv+vphi*phi*drdi(ir)
- 30     continue
-        dkbcos=dnrm/(avgv+1.0d-20)
-C
-C Ghost analysis
-C
-!
-!     Do not compute the second eigenvalue it it is not necessary
-!
-        if (dkbcos.lt.0d0) then
-
-          nprin=l+1
-          nnode = 1
-          call schro_eq(Zval,rofi,vlocal,ve,s,drdi,
-     .                  nrval,l,a,b,nnode,nprin,
-     .                  elocal1,g)
-
-!          if (eigenl.gt.elocal1) then
-          if (above_significatively(eigenl,elocal1)) then
-            write(6,"(a,i3,/,a,g20.10,/,a,2g20.10)")
-     .           'GHOST: WARNING: Ghost state for L =', l,
-     .           ' dkbcos: ', dkbcos,
-     .           ' eigenl, eigenl - elocal1: ', eigenl, eigenl - elocal1
-            ighost=1
-          else
-            write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
-          endif
-
-        elseif (dkbcos.gt.0.0d0) then
-
-          nprin=l+1
-          nnode = 2
-          call schro_eq(Zval,rofi,vlocal,ve,s,drdi,
-     .                  nrval,l,a,b,nnode,nprin,
-     .                  elocal2,g)
-
-!          if (eigenl.gt.elocal2) then
-          if (above_significatively(eigenl,elocal2)) then
-            write(6,"(a,i3,/,a,g20.10,/,a,2g20.10)")
-     .           'GHOST: WARNING: Ghost state for L =', l,
-     .           ' dkbcos: ', dkbcos,
-     .           ' eigenl, eigenl - elocal2: ', eigenl, eigenl - elocal2
-            ighost=1
-          else
-            write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
-          endif
-
-        elseif (dkbcos.eq.0.0d0) then
-
-          write(6,"('GHOST: vps = vlocal, no ghost for L =',i3)") l
-
-        endif
-
-c     write(6,*) 'GHOST: Ground state vlocal for L=',l,elocal1
-c     write(6,*) 'GHOST: First excited state for L=',l,elocal2
-
-        CONTAINS
-
-        function above_significatively(x,y) result (gt)
-        real(dp), intent(in) :: x, y
-        logical              :: gt
-
-        ! Request that x is "well over" y in case of noise.
-        ! This is an "absolute noise" for now.
-
-        real(dp), parameter :: eps = 1.e-8_dp
-
-        gt = (x .gt. y + eps)
-
-        end function above_significatively
-
-        end subroutine ghost
-
-
-      subroutine KBproj(ikb,rofi,drdi,vps,vlocal,nrwf,l,rphi,
-     .    dkbcos,ekb,proj,nrc)  
-C
-C  This routine calculates the Kleinman-Bylander projector
-C  with angular momentum l.
-C
-C  Written by D. Sanchez-Portal, Aug. 1998
-C  Modified by DSP to allow more than one projector per l, July 1999.
-C
-        implicit none
-
-        ! ikb is the KB index for this l
-        integer, intent(in)   :: ikb, nrwf, l
-        real(dp), intent(in)  :: rofi(*),vps(*),drdi(*),
-     .                           rphi(*), vlocal(*)
-        real(dp), intent(out) :: proj(*), dkbcos, ekb
-        integer, intent(out)  :: nrc
-C
-C Internal variables
-C
-
-        real(dp) 
-     .    dnrm, vl, vphi, avgv, r, phi, dknrm,
-     .    dincv, rc, sum, vij(nkbmx)
-
-        real(dp), save :: rphi2(nrmax,nkbmx), vii(nkbmx)
-
-        integer   ir, jkb
-
-        real(dp), parameter  :: eps=1.0d-6
-
-C We need to orthogonalize to the previous projectors. 
-C We follow the scheme proposed by Blochl, PRB 41, 5414 (1990)
-        if (ikb.eq.1) then 
-          do ir=1,nrwf
-            rphi2(ir,1)=rphi(ir)
-          enddo 
-        else
-          do jkb=1,ikb-1
-            sum=0.0d0
-            do ir=1,nrwf
-              vl=vps(ir)-vlocal(ir)
-              sum=sum+
-     .          rphi(ir)*vl*rphi2(ir,jkb)*drdi(ir)
-            enddo
-            vij(jkb)=sum
-          enddo
-          do ir=1,nrwf
-            sum=0.0d0
-            do jkb=1,ikb-1
-              sum=sum+
-     .          vij(jkb)*rphi2(ir,jkb)/(vii(jkb)+1.0d-20)
-            enddo
-            rphi2(ir,ikb)=rphi(ir)-sum ! AG** ????
-          enddo
-        endif
-
-C Normalize the new function            
-        dnrm=0.0d0
-        do ir=1,nrwf
-          dnrm=dnrm
-     .      + drdi(ir)*(rphi2(ir,ikb)**2)
-        enddo 
-        dnrm=sqrt(dnrm)
-        if (dnrm.lt.eps) then 
-          do ir=1,nrwf
-            rphi2(ir,ikb)=0.0d0
-          enddo 
-        else
-          do ir=1,nrwf
-            rphi2(ir,ikb)=rphi2(ir,ikb)/dnrm
-          enddo 
-        endif
-
-        dnrm=0.0d0
-        avgv=0.0d0
-        do 10 ir=2,nrwf
-          r=rofi(ir)
-          vl=(vps(ir)-vlocal(ir))
-          phi=rphi2(ir,ikb)
-          vphi=vl*phi
-          dnrm=dnrm+vphi*vphi*drdi(ir)
-          avgv=avgv+vphi*phi*drdi(ir)
-  10    continue
-        vii(ikb)=avgv
-
-        ekb=dnrm/(avgv+1.0d-20)
-        dknrm=1.0d0/(sqrt(dnrm)+1.0d-20)
-        dkbcos=avgv*dknrm
-C
-C Define the cut-off radii for the kb projectors
-C
-C Warning these radii should be quite short, if it is not the case
-C something is probably wrong in this part of the program.
-C It will display a warning if Rc>4.5 a.u.or Rc < 0.5a.u.!!!!!!!!!!!!
-C
-        do 20 ir=nrwf,2,-1 
-          phi=(rphi2(ir,ikb)/rofi(ir))*dknrm
-          dincv=abs((vps(ir)-vlocal(ir))*phi)
-          if (dincv.gt.eps) then 
-            if (ir.ge.nrwf-1) then
-              write(6,"(2a,/,2a)") 'KBproj: WARNING: ',
-     .          'KB projector does not decay to zero',
-     .          'KBproj: WARNING: ',       
-     .        'parameter Rmax in routine KBgen should be increased'
-            endif
-            goto 21
-          endif 
-20      continue
-
-21      nrc=ir+1
-        rc=rofi(nrc)
-      
-        if (rc.lt.0.5d0) then
-          write(6,"('KBproj: WARNING: Rc(',i2,')=',f12.4)")l,rc
-          write(6,"(2a)") 'KBproj: WARNING: ',
-     .            'Cut of radius for the KB projector too small' 
-        elseif(rc.gt.4.5d0) then
-          write(6,"('KBproj: WARNING: Rc(',i2,')=',f12.4)")l,rc
-          write(6,"(2a)") 'KBproj: WARNING: ',
-     .            'Cut of radius for the KB projector too big'
-          write(6,"(2a)") 'KBproj: WARNING: ',
-     .            'Increasing the tolerance parameter eps'
-          write(6,"(a)") 'KBproj: WARNING: might be a good idea'
-        endif
-
-        do 30 ir=2,nrc
-          r=rofi(ir)
-          vl=(vps(ir)-vlocal(ir))
-          phi=rphi2(ir,ikb)/r
-          vphi=vl*phi*dknrm
-          proj(ir)=vphi/r**l
-30      continue
-        ! Extrapolation of quadratic function to r=0
-        proj(1)= ( proj(2)*rofi(3)**2 - proj(3)*rofi(2)**2 ) /
-     .                   ( rofi(3)**2 - rofi(2)**2 )
-
-        end subroutine KBproj
 
         subroutine xc_check(icorr)
 
@@ -2472,94 +2373,36 @@ C potential
           
         end subroutine read_vps
 !
-        subroutine comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc)
-C
-C  Creates the common block with all the information about the 
-C  Kleinman-Bylander projectors.
-C  Written by D. Sanchez-Portal, Aug. 1998.
-C  Modified by DSP to allow more than one projector per l, July 1999.
-C
-        implicit none
+      subroutine get_psml_vlocal(atm_label,rofi,nrval,Zval,vlocal,
+     $                           vlocal_type)
+      use m_psml
 
-        integer l, nrc,is, ikb 
+      character(len=*), intent(in)  :: atm_label
+      real(dp), intent(in)          :: rofi(:)
+      integer, intent(in)           :: nrval
+      real(dp), intent(in)          :: Zval
+      real(dp), intent(out)         :: vlocal(:)
+      character(len=*), intent(out) :: vlocal_type
 
-        real(dp) rc, ekb, proj(nrmax), a, b,
-     .    rofi(nrmax)  
-        character(len=40) filename
-C
-C Internal variables
-C
-        integer indx, itb, nr, nmax, nmin, nn, il
-        real(dp) delt, r, vphi, dy, yp1, ypn
-        integer ir, nrckb
-C
-C Number of points used by polint for the interpolation
-C
-        integer npoint
-        parameter(npoint=4)
-        integer lun
-C
-        rctb(ikb,l,is)=rc 
-C
-C Interpolation to generate tables with KB projectors
-C
-!       This assumes that the routine is going to be called
-!       with increasing values of l, and sequentially for
-!       the different projectors for each l.
-!
-        indx=0
-        do il=0,l-1
-          indx=indx+nkblsave(il,is)
-        enddo 
-        indx=indx+ikb
-        if (ikb.gt.nkblsave(l,is)) then
-          write(6,'(/,2a,i3,a,i3)')
-     .      'comKB: ERROR: Maximum number of KB projectors',
-     .      ' for l=',l,' must be', nkblsave(l,is)
-          call die 
-        endif 
+      type(ps_t) :: ps
+      integer    :: ir
+      
+      call ps_destroy(ps)
+      call psml_reader(trim(atm_label)//".psml",ps)
 
-        delt=rc/(dble(ntbmax-1)+1.0d-20) 
-        if (delt.gt.deltmax) then
-          write(6,'(a)')
-     .    'comKB: WARNING It might be a good idea to increase'
-          write(6,'(a)')
-     .    'comKB: WARNING parameter ntbmax (in file atmparams.f) '
-          write(6,'(a,i6)')
-     .    'comKB: WARNING to at least ntbmax = ', 
-     .    nint(Rc/deltmax)+2
-        endif
+      if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
+         call die("Zval mismatch in psml file")
+      endif
 
-        table(1,-indx,is)=delt
-        table(2,-indx,is)=ekb
+      do ir = 1, nrval
+         vlocal(ir) = 2.0_dp * ps_LocalPotential_Value(ps,rofi(ir))
+      enddo
 
-        if (debug_kb_generation) then
-          nrckb = nint(log(rc/b+1.0d0)/a)+1
-          write(filename,"(a,i1)")
-     .          trim(global_label) // "-KBProj.", indx
-          call file_out(nrckb,rofi,proj,filename)
-        endif
-!
-        do itb=1,ntbmax-1
-          r=delt*(itb-1)
-          nr=nint(log(r/b+1.0d0)/a)+1
-          nmin=max(1,nr-npoint)
-          nmax=min(nrc,nr+npoint)
-          nn=nmax-nmin+1
-          call polint(rofi(nmin),proj(nmin),nn,r,vphi,dy)
-          table(itb+2,-indx,is)=vphi
-        enddo 
-        table(ntbmax+2,-indx,is)=0.0d0
-C
-C Table with the second derivative
-C
-        yp1=0.0d0
-        ypn=huge(1.d0)
-
-        call spline(delt, table(3:2+ntbmax,-indx,is), ntbmax,
-     &              yp1, ypn, tab2(1:ntbmax,-indx,is) )
-
-        end subroutine comkb
+      vlocal_type = ps_LocalPotential_Type(ps)
+      write(6,"(a)") "Got Vlocal (" // trim(vlocal_type) //
+     $                ") from " // trim(atm_label)//".psml file"
+      
+      end subroutine get_psml_vlocal
 
       subroutine get_psml_kbprojs(is,atm_label,a,b,rofi,nrval,Zval,
      $                            lmxkb,nkb)
@@ -2663,192 +2506,6 @@ C
         end function extrapolate_to_zero
        end subroutine get_psml_kbprojs
 
-!
-        subroutine KBgen(is, a,b,rofi,drdi,s, 
-     .         vps, vlocal, ve, nrval, Zval, lmxkb, 
-     .         nkbl, erefkb, nkb)
-
-        use basis_specs, only: restricted_grid
-        use atom_options, only: new_kb_reference_orbitals
-
-C
-C Call routines for 1) the generation of the Kleinman-Bylander projectors,
-C 2) Cheking for the presence of ghost states and 3), the storage of 
-C all the information in the corresponding common blocks.
-C
-C  Written D. Sanchez-Portal, Aug. 1998.
-C  Modified by DSP to allow more than one projector per l, July 1999.
-C
-
-        implicit none
-
-        real(dp) 
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
-     .    drdi(nrmax), s(nrmax), ve(nrmax),vlocal(nrmax),
-     .    Zval, erefkb(nkbmx,0:lmaxd)
-
-        integer
-     .    nrval, lmxkb, nkb, is, nkbl(0:lmaxd)
-C
-C Internal variables
-C
-        integer 
-     .    l,nprin, nnodes, ighost, nrwf, ikb, ir,
-     .    nrc, nrlimit
-        real(dp)
-     .    rc(nkbmx,0:lmaxd), dkbcos(nkbmx,0:lmaxd),
-     .    ekb(nkbmx,0:lmaxd)
-               
-        real(dp)
-     .    rphi(nrmax,nkbmx), rmax, dnrm, 
-     .    proj(nrmax)
-                 
-C  The atomic wavefunctions and/or its energy derivatives are
-C  calculated only inside a sphere of radius Rmax. To define the
-C  KB projectors they will not be needed very far from the nucleus,
-C  and this limitation simplifies the handling of not bound states
-C 
-        real(dp) :: Rmax_kb_default 
-C
-        save ighost
-        data ighost / 0 /
-
-        ! As suggested by Javier Junquera
-        if (new_kb_reference_orbitals) then
-           Rmax_kb_default = 60.0d0
-        else
-           Rmax_kb_default = 6.0d0
-        endif
-        rmax = fdf_physical("KB.Rmax", Rmax_kb_default, "Bohr")
-
-        nrwf=nint(log(Rmax/b+1.0d0)/a)+1
-        nrwf=min(nrwf,nrval)
-        if (restricted_grid)  nrwf=nrwf+1-mod(nrwf,2)
-        
-        ! As suggested by Javier Junquera
-        if (new_kb_reference_orbitals) then
-           nrlimit = nrwf
-        else
-           nrlimit = nrval
-        endif
-
-        do l=0,lmxkb
-          do ir=1,nrmax
-            do ikb=1,nkbmx
-              rphi(ir,ikb)=0.0d0
-            enddo 
-            proj(ir)=0.0d0
-          enddo
-          do ikb= 1, nkbl(l)
-C
-C Atomic wavefunctions and eigenvalues
-C for the construction of the KB projectors
-C
-C If the reference energies have not been specifed, the eigenstates
-C with the condition of being zero at r(nrval) will be used.
-C       
-           if (erefkb(ikb,l).ge.1.0d3) then             
-             nnodes=ikb
-             nprin=l+1
-
-             call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
-     .                     nrlimit,l,a,b,nnodes,nprin,
-     .                     erefkb(ikb,l),rphi(1,ikb)) 
-C Normalization of the eigenstates inside a sphere of radius Rmax
-             dnrm=0.0d0
-             do ir=1,nrwf
-               dnrm=dnrm+drdi(ir)*rphi(ir,ikb)**2
-             enddo 
-             dnrm=sqrt(dnrm)
-             do ir=1,nrwf
-               rphi(ir,ikb)=rphi(ir,ikb)/dnrm
-             enddo 
-C
-           elseif((erefkb(ikb,l).le.-1.0d3).and.
-     .       (ikb.gt.1) ) then 
-C If the energy is specified to be 1000 Ry, the energy derivative
-C of the previous wavefunction will be used
-C
-             call energ_deriv(a,rofi,rphi(1,ikb-1),vps(1,l),
-     .                        ve,drdi,nrwf,l,erefkb(ikb-1,l),
-     .                        rphi(1,ikb),nrval)
-             erefkb(ikb,l)=0.0d0
-C
-           else 
-C If the reference energies have been specified, we just use them
-C
-             call rphi_vs_e(a,b,rofi,vps(1,l),
-     .                      ve,nrval,l,erefkb(ikb,l),
-     .                      rphi(1,ikb),Rmax)
-C
-           endif 
-C
-C Ghost analysis
-C 
-           if (nkbl(l).eq.1) then
-             call ghost(Zval,rofi,vps(:,l),vlocal,
-     .                  ve,s,drdi,nrlimit,l,a,b,nrwf,
-     .                  erefkb(ikb,l),rphi(:,ikb),ighost)
-           else 
-             if (ikb.eq.1)
-     .         write(6,'(a,i3,/a)') 
-     .         'KBgen: More than one KB projector for l=',l,
-     .         'KBgen: ghost states analysis will be not performed'
-           endif
-C
-C KB Projectors
-C
-           call KBproj(ikb,rofi,drdi,vps(1,l),vlocal,nrwf,l,
-     .                rphi(1,ikb),dkbcos(ikb,l),ekb(ikb,l),proj,nrc)
-
-C
-           rc(ikb,l)=rofi(nrc)
-C
-C Common block with the information about the  KB projectors
-C
-          call comKB(is,a,b,rofi,proj,
-     .                 l,ikb,rc(ikb,l),ekb(ikb,l),nrc)
-C
-
-          enddo 
-         enddo   
-        
-         if (ighost.eq.1) then
-            write(6,"(2a)")'KBgen: WARNING: ',
-     .            'Ghost states have been detected'
-            write(6,"(2a)")'KBgen: WARNING: ',
-     .            'Some parameter should be changed in the '
-            write(6,"(2a)")'KBgen: WARNING: ',
-     .            'pseudopotential generation procedure.'
-            if (fdf_boolean('Atom.Ignore.Ghosts',.false.)) then
-               write(6,"(a)") " KBgen: *** Warning Ignored by User"
-               ighost = 0
-            else
-               call die
-            endif
-         endif
-
-         write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
-         do l=0,lmxkb
-           do ikb=1, nkbl(l)
-              write(6,'(3x,a,i2,4(3x,a,f10.6))')
-     .        'l=',l, 'rc=',rc(ikb,l), 'el=',erefkb(ikb,l), 
-     .        'Ekb=',ekb(ikb,l),'kbcos=',dkbcos(ikb,l)
-           enddo
-         enddo
-C
-C Total number of Kleinman-Bylander projectors
-C
-           nkb=0
-           do l=0,lmxkb
-              do ikb=1,nkbl(l)
-                 nkb=nkb+(2*l+1) 
-              enddo 
-           enddo 
-           write(6,'(/,a, i4)')
-     .'KBgen: Total number of  Kleinman-Bylander projectors: ', nkb
-C
-        end subroutine KBgen
 !
         subroutine Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                       vps, ve, vePAO, nrval, lmxo,nsemic, 
@@ -6527,159 +6184,6 @@ C
         enddo 
 
         end subroutine bessel
-!
-!
-        subroutine energ_deriv(a,r,psi,vps,
-     .      ve,drdi,nrc,l,el,psidev,nrval)
-      
-        implicit none
-C
-C  This routine calculate the energy derivative of 
-C  a given wavefunction.
-C  The routine solve and inhomogeneus version of 
-C  Schrodinger eqn.  
-C  It is not an optimized algorithm!!!!!!!!!!!!!!!!!
-C  Written by Daniel Sanchez-Portal, July 1999
-C 
-        integer  l, nrmin, nrval, ir, nrc   
-
-        real(dp)  r(nrval),psi(nrval),psidev(nrval),
-     .    el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval), 
-     .    hi, dnrm, cons, a, ortog, dnrm2
-        
-        parameter(nrmin=1) 
-
-C
-        nrc=min(nrc,nrval)
- 
-C Solving the inhomogeneus Schrodinger equation
-        do ir=2,nrc
-          hi=vps(ir)+ve(ir)+l*(l+1)/r(ir)**2-el
-          hi=hi*(drdi(ir)**2)
-          hi=hi+0.25d0*a**2
-          h(ir)=hi
-        enddo 
-        h(1)=h(2)
-          
-        cons=psi(nrmin+1)/(vps(nrmin+1)+ve(nrmin+1)-el)
-        cons=cons/r(nrmin+1)**(l+1) 
-        g(1)=0.0d0
-        do ir=1,nrmin+1
-          g(ir)=cons*(r(ir)**(l+1))/sqrt(drdi(ir))
-        enddo 
-
-        do ir=nrmin+2,nrc
-          hi=-((psi(ir)+10.0d0*psi(ir-1)
-     .         +psi(ir-2))/12.0d0)
-
-          hi=hi+(10.0d0*h(ir-1)*g(ir-1)+h(ir-2)*g(ir-2))/12.0d0
- 
-          hi=hi+2.0d0*g(ir-1)-g(ir-2)
-
-          g(ir)=hi/(1.0d0-h(ir)/12.0d0)
-
-        enddo 
-C
-C Orthogonalize the energy derivative to the original wavefunction
-C and normalize
-C
-        dnrm2=0.0d0
-        ortog=0.0d0
-        do ir=1, nrc
-          g(ir)=g(ir)*sqrt(drdi(ir))
-          dnrm2=dnrm2+drdi(ir)*(psi(ir)**2)
-          ortog=ortog+drdi(ir)*g(ir)*psi(ir)
-        enddo
-        dnrm=0.0d0
-        do ir=1, nrc
-          g(ir)=g(ir)-ortog*psi(ir)/dnrm2
-          dnrm=dnrm+drdi(ir)*(g(ir)**2)
-        enddo 
-        dnrm=sqrt(dnrm)
-        do ir=1,nrc
-          psidev(ir)=g(ir)/dnrm
-        enddo
-
-        end subroutine energ_deriv
-!
-        subroutine rphi_vs_e(a,b,r,vps,
-     .      ve,nrval,l,el,rphi,rmax)
-
-        use basis_specs, only: restricted_grid
-
-C
-C   Calculate the atomic 
-C   radial wavefunction of the pseudopotential Vps, with angular
-C   momentum  l, and energy el, inside r<Rmax
-C   The Schrodinger equation is solved using a simple Numerov 
-C   scheme. Rmax should not be taken too big. 
-C   D. Sanchez-Portal, July 1999.
-C
-        real(dp) a, b
-        integer nrval
-        real(dp) r(nrval),
-     .   el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval),
-     .   rphi(nrval), rmax, dnrm
-
-        real(dp) big, dexpa, ab, hi
-        parameter (big=1.0d6)
-        integer  l, nrc, jr, ir
-
-        dexpa=exp(a)
-        ab=a*b
-        do ir=1,nrval
-          drdi(ir)=ab
-          ab=dexpa*ab
-        enddo
-
-        
-        do ir=2,nrval
-          hi=vps(ir)+ve(ir)+dble(l*(l+1))/r(ir)**2-el
-          hi=hi*(drdi(ir)**2)
-          hi=hi+0.25d0*a**2
-          h(ir)=hi
-        enddo
-        h(1)=h(2)
-
-         
-        g(1)=0.0d0
-        g(2)=1.0d0
-        nrc=nint(log(rmax/b+1.0d0)/a)+1
-        nrc=min(nrc,nrval)
-        if (restricted_grid) nrc=nrc+1-mod(nrc,2)
-        do ir=3,nrc
-
-          hi=(10.0d0*h(ir-1)*g(ir-1)+h(ir-2)*g(ir-2))/12.0d0
-
-          hi=hi+2.0d0*g(ir-1)-g(ir-2)
-
-          g(ir)=hi/(1.0d0-h(ir)/12.0d0)
-            
-          if (abs(g(ir)).gt.big) then 
-            dnrm=0.0d0
-            do jr=1,ir
-              dnrm=dnrm+drdi(jr)*(g(jr)*sqrt(drdi(jr)))**2
-            enddo 
-            dnrm=sqrt(dnrm)
-            do jr=1,ir
-              g(jr)=g(jr)/dnrm
-            enddo 
-          endif 
-        enddo
-C
-C Normalize the wavefunction
-C
-        dnrm=0.0d0
-        do ir=1, nrc
-          g(ir)=g(ir)*sqrt(drdi(ir))
-          dnrm=dnrm+drdi(ir)*(g(ir)**2)
-        enddo
-        dnrm=sqrt(dnrm)
-        do ir=1, nrc
-          rphi(ir)=g(ir)/dnrm
-        enddo
-          
-        end subroutine rphi_vs_e
 !
 !   This is duplicate with redbasis.F...
 !

@@ -14,4 +14,11 @@ module psop_options
   logical :: restricted_grid        
   real(dp) :: rmax_ps_check          ! For ps tail checks
 
+  real(dp) :: kb_rmax       = 0.0_dp ! 
+  logical ::  ignore_ghosts = .false.
+                                            ! For vlocal generation
+  logical ::  force_chlocal_method = .false.
+  logical ::  fit_3derivs = .false.
+  logical ::  use_charge_cutoff = .false.
+
 end module psop_options

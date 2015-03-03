@@ -19,7 +19,7 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 # Note that PSML is now considered an external library
 # Appropriate symbols should be put in arch.make
 #
-INCFLAGS:=$(INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS)
+INCFLAGS:=$(INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) $(PSOPLIB_INCFLAGS)
 #
 INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/wxml # To pick up mod files
 INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/SiestaXC # To pick up mod files
@@ -28,9 +28,8 @@ LIBS_XC:= -L$(MAIN_OBJDIR)/SiestaXC -l SiestaXC
 LIBS_WXML:= -L$(MAIN_OBJDIR)/wxml -l wxml
 #
 #
-OBJS = precision.o  \
-	psop_params.o psop_options.o\
-	psop.o module_pseudo.o schrodinger.o arw.o\
+OBJS = 	psop_options.o\
+	psop.o local_xml.o write_proj_psml.o \
         local_die.o psml_die.o semicore_info_froyen.o
 #
 #
@@ -45,15 +44,13 @@ what:
 	echo "VPATH: " $(VPATH)
 psop:   wxml $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o psop $(ALL_OBJS) \
-        $(NCPS_LIBS) $(PSML_LIBS) $(LIBS_XC) $(LIBS_WXML)
+        $(NCPS_LIBS) $(PSOPLIB_LIBS) $(PSML_LIBS) $(LIBS_XC) $(LIBS_WXML)
 
 #
-arw.o:  precision.o 
-module_pseudo.o: psop_params.o precision.o schrodinger.o psop_options.o
-psop.o: precision.o psop_params.o module_pseudo.o psop_options.o
-schrodinger.o: arw.o precision.o psop_params.o
+psop.o: psop_options.o local_xml.o write_proj_psml.o
 #
 psop.o: m_getopts.o semicore_info_froyen.o
+write_proj_psml.o: local_xml.o
 m_getopts.o: f2kcli.o
 #
 clean: 

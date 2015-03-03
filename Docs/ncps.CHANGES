@@ -1,4 +1,21 @@
 ------------------------------------------------------------
+March 3, 2015  Alberto Garcia        trunk-462--ncps-60
+Put the psop code into a library and use it for everything
+
+The (external) library psoplib now contains the code to generate
+vlocal and the KB projectors. 
+Some rough edges still need to be ironed out.
+
+removed:
+  Src/m_vlocal_chlocal.f
+modified:
+  Src/Makefile
+  Src/atom.F
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/psop.f90
+  Util/Pseudo-operator/psop_options.f90
+
+------------------------------------------------------------
 February 27, 2015  Alberto Garcia        trunk-462--ncps-59
 Fix KB cutoff calculation. Options for chlocal cutoff. ps tails
 

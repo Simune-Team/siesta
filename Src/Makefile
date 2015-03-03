@@ -50,7 +50,8 @@ dep:
 include arch.make
 include Mk/FoX.mk
 
-INCFLAGS:= $(NETCDF_INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) $(INCFLAGS)
+INCFLAGS:= $(NETCDF_INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) \
+           $(PSOPLIB_INCFLAGS) $(INCFLAGS)
 # For removing any -ipo compilation in sub directories...
 # Later compilers are also having this enabled, and it lets you
 # specify what to not be used in libraries.
@@ -161,8 +162,7 @@ OBJS =  automatic_cell.o atom_options.o \
         save_density_matrix.o \
         m_rhog.o rhofft.o m_diis.o compute_energies.o \
         class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o\
-        psml_die.o \
-        m_vlocal_chlocal.o
+        psml_die.o 
 #--------------------------------------------------------------
 
 INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
@@ -323,8 +323,8 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
-atom.o: m_filter.o m_recipes.o m_vlocal_chlocal.o old_atmfuncs.o
-atom.o: periodic_table.o precision.o sys.o
+atom.o: m_filter.o m_recipes.o old_atmfuncs.o periodic_table.o precision.o
+atom.o: sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -566,7 +566,6 @@ m_ts_options.o: files.o m_fdf_global.o m_ts_contour.o m_ts_global_vars.o
 m_ts_options.o: m_ts_io.o parallel.o precision.o siesta_options.o sys.o units.o
 m_ts_scattering.o: m_ts_aux_rout.o parallel.o precision.o sys.o units.o
 m_ts_voltage.o: m_ts_options.o mesh.o parallel.o precision.o units.o
-m_vlocal_chlocal.o: flib_spline.o
 m_wallclock.o: m_walltime.o
 m_zminim.o: files.o parallel.o parallelsubs.o precision.o siesta_options.o
 m_zminim.o: sys.o
@@ -734,6 +733,8 @@ state_init.o: m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o m_spin.o
 state_init.o: m_steps.o m_ts_io.o m_ts_options.o new_dm.o overlap.o parallel.o
 state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
 state_init.o: sparse_matrices.o sys.o write_subs.o zmatrix.o
+store_kbproj.o: atom.o
+store_kbproj.o: atom.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_iostruct.o
 struct_init.o: m_mpi_utils.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_master.o siesta_options.o zmatrix.o
@@ -769,6 +770,7 @@ zm_broyden_optim.o: units.o zmatrix.o
 zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
+aux_proj.o: atom.o
 band.o: bands.o
 diagmemory.o: memoryinfo.o
 fsiesta.o: fsiesta_pipes.o

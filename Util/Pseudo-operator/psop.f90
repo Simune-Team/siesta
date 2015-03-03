@@ -6,6 +6,7 @@
 !
 ! Written by Javier Junquera using code from atom.F in Siesta.
 ! Re-written by A. Garcia to use the PSML library
+! Re-written again by A. Garcia to use the standalone psop lib.
 !
 ! Input required:
 !
@@ -28,19 +29,24 @@
 !     form, which is able to offer the lowest common functionality.
 !     Eventually, support for .psf and .vps files might be discontinued.
 
-      use precision,        only: dp
-      use psop_params,        only: nrmax, nkbmx
       use m_ncps, only: pseudopotential_t => froyen_ps_t, pseudo_read
-      use m_pseudooperator, only: radii_ps, vlocal1, vlocal2, KBgen
+
+      use m_psop, only: kbgen, compute_vlocal_chlocal
+      use m_psop, only: nrmax, nkbmx
+
       use m_semicore_info_froyen, only: get_n_semicore_shells
       use SiestaXC, only: xc_id_t, get_xc_id_from_atom_id, setXC
       use SiestaXC, only: atomxc
 
       use psop_options
       use m_getopts
+
+      use local_xml, only: xf
       use flib_wxml
 
       implicit none
+
+      integer, parameter :: dp = selected_real_kind(10,100)
 
 !
 !     INPUT VARIABLES REQUIRED TO GENERATE THE LOCAL PART AND KB PROJECTORS
@@ -69,7 +75,6 @@
 !
       type(pseudopotential_t) :: psr
       type(xc_id_t)           :: xc_id
-      type(xmlf_t)            :: xf
       integer                 :: status
 
       integer  :: max_l_ps
@@ -117,17 +122,6 @@
       real(dp)                 :: Zval       ! Valence charge of the atom   
                                              !   (directly read from the 
                                              !   pseudopotential file)
-      integer                  :: nrgauss    ! Number of points in the logarith.
-                                             !   grid required to describe the
-                                             !   KB projectors
-                                             !   Output of radii_ps.
-      real(dp)                 :: rgauss     ! Approximately the maximum cut-off
-                                             !   radius used in the
-                                             !   pseudopotential generation.
-                                             !   Output of radii_ps.
-      real(dp)                 :: rgauss2    ! Radius where the pseudopotentials
-                                             !   reach  the asymptotic behaviour
-                                             !   2*Zval/r.
 !
 !     VARIABLES READ FROM THE PSEUDO FILE
 !
@@ -215,10 +209,13 @@
       integer                  :: nkb        ! Number of KB projectors
 
       character(len=60)        :: set
+      character(len=40)        :: method_used  !  "siesta-fit" or "-charge"
 
       character(len=200) :: opt_arg, mflnm, ref_line
       character(len=10)  :: opt_name 
       integer :: nargs, iostat, n_opts, nlabels, iorb, ikb, i
+
+      external :: write_proj_psml
 !
 !     Process options
 !
@@ -227,6 +224,13 @@
       restricted_grid = .true.
       new_kb_reference_orbitals = .true.
       debug_kb_generation = .false.
+      ignore_ghosts = .false.
+      kb_rmax       = 0.0_dp
+
+      force_chlocal_method = .false.
+      fit_3derivs = .false.
+      use_charge_cutoff = .false.
+
       write_ion_plot_files = .false.
       rmax_ps_check = 0.0_dp
 
@@ -243,7 +247,15 @@
            case ('K')
               new_kb_reference_orbitals = .false.
            case ('R')
+              read(opt_arg,*) kb_rmax
+           case ('C')
               read(opt_arg,*) rmax_ps_check
+           case ('3')
+              fit_3derivs = .true.
+           case ('f')
+              force_chlocal_method = .true.
+           case ('c')
+              use_charge_cutoff = .true.
            case ('h')
             call manual()
            case ('?',':')
@@ -367,72 +379,27 @@
          functl = xc_id%siestaxc_id%family
          author = xc_id%siestaxc_id%authors
       else
-         print *, "**** Cannot process XC info ***"
+         call die("**** Cannot process XC info ***")
          functl = "LDA"
          author = "PZ"
       endif
       call setxc(1,(/functl/),(/author/),(/1.0_dp/),(/1.0_dp/))
+
+      if (rmax_ps_check == 0.0_dp) rmax_ps_check = rofi(nrval)
+
+      allocate (vlocal(nrmax), chlocal(nrmax))
+
+      call compute_vlocal_chlocal(rofi,nrval,drdi,s,Zval,  &
+                                  lmxkb, vps,        &
+                                  a, b, nicore,      &
+                                  nchloc,chlocal,    &
+                                  vlocal,                &
+                                  force_chlocal_method,  &
+                                  rmax_ps_check,         &
+                                  fit_3derivs,           &
+                                  use_charge_cutoff,     &
+                                  method_used)
 !
-!     COMPUTE THE LOCAL PART OF THE PSEUDOPOTENTIAL
-!
-!     Rgauss is approximately the maximum cut-off radius used in the
-!     pseudopotential generation.
-!     Rgauss is determined by comparison of the pseudopot.
-!     Corresponding to different l (this is not possible if we have
-!     just one pseudopotential shell)
-!     Rgauss2 is the radius where the pseudopotentials reach  the
-!     asymptotic behaviour 2*Zval/r.
-!     For just one pseudopotential Rgauss is taken equal to Rgauss2
-!
-      call radii_ps( vps, rofi, Zval, nrval, lmxkb, &
-                    nrgauss, rgauss, rgauss2 )
-
-! 
-!     Calculate local pseudopotential
-!
-      allocate( vlocal(nrmax)  )
-      allocate( chlocal(nrmax) )
-
-      if( rgauss2 .gt. 1.3_dp * rgauss ) then
-        write(6,'(a)') 'Using large-core scheme for Vlocal'
-
-!       In this case the atom core is so big that we do not have an asymptotic
-!       of 2*Zval/r until Rgauss2 (> Rc) . To retain the same asymptotic
-!       behaviour as in the pseudopotentials we modify the definition
-!       of the local potential, making it join the Vps's smoothly at rgauss.
-!
-        write(6,'(/,a,f10.5)') 'atom: Estimated core radius ', rgauss2
-        if( nicore .eq. 'nc ') &
-         write(6,'(/,2a)')'atom: Including non-local core corrections', &
-                          ' could be a good idea'
-
-!       As all potentials are equal beyond rgauss, we can just use the
-!       s-potential here.
-        call vlocal2( Zval, nrval, a, rofi, drdi, s, vps(:,0), &
-                     nrgauss, vlocal, nchloc, chlocal )
-
-      else
-!       In this case the pseudopotential reach to asymptotic behaviour 2*Zval/r
-!       for a radius approximately equal to Rc. We build a generalized-gaussian
-!       "local charge density" and set Vlocal as the potential generated by
-!       it. Note that chlocal is negative.
-        call vlocal1( Zval, nrval, a, rofi, drdi, s, rgauss, &
-                     vlocal, nchloc, chlocal )
-      endif
-
-!
-! Save local-pseudopotential charge
-! 
-      rchloc=rofi(nchloc)
-      write(6,'(2a,f10.5)') 'atom: Maximum radius for' , &
-       ' 4*pi*r*r*local-pseudopot. charge ',rchloc
-
-!!     For debugging
-!      do ir = 1, nrval
-!        write(6,*) rofi(ir), vlocal(ir), chlocal(ir)
-!      enddo
-!!     End debugging
-
 !
 !     COMPUTE THE NON-LOCAL KLEINMAN-BYLANDER PROJECTORS
 !
@@ -543,7 +510,7 @@
         call xml_EndElement(xf,"grid")
 
         call xml_NewElement(xf,"local-potential")
-            call my_add_attribute(xf,"type","Siesta-vlocal")
+            call my_add_attribute(xf,"type",trim(method_used))
             call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
                  call xml_AddArray(xf, 0.5_dp * vlocal(1:nrval))
@@ -561,7 +528,13 @@
 
       call KBgen( is, a, b, rofi, drdi, s, &
                  vps, vlocal, ve, nrval, Zval, lmxkb, &
-                 nkbl, erefkb, nkb, xf )
+                 nkbl, erefkb, nkb,     &
+                 new_kb_reference_orbitals, &
+                 restricted_grid,   &
+                 debug_kb_generation, &
+                 ignore_ghosts,       &
+                 kb_rmax,             &
+                 process_proj=write_proj_psml)
 
       call xml_EndElement(xf,"projectors")
 
