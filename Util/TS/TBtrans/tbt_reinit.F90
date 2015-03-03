@@ -58,8 +58,13 @@ subroutine tbt_reinit( sname , slabel )
   if (Node.eq.0) then
      write(6,'(/a)') &
           '                           ************************ '
+#ifdef TBT_PHONON
+     write(6,'(a)') &
+          '                           *  WELCOME TO PHTrans  * '
+#else
      write(6,'(a)') &
           '                           *  WELCOME TO TBTrans  * '
+#endif
      write(6,'(a)') &
           '                           ************************ '
 ! ..................

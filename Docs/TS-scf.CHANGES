@@ -1,4 +1,17 @@
 ----------------------------------------------------
+March 3, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-327
+Notification of PHtrans moved
+
+* For PHtrans it now says:
+   WELCOME to PHtrans
+  instead of TBtrans
+  Removed Phonon transport in m_tbt_options
+
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/tbt_reinit.F90
+
+----------------------------------------------------
 March 3, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-326
 Completed generic cut routine
 
