@@ -133,7 +133,7 @@ contains
     ! Get sorting method, we default to sort
     ! the BTD matrix according to the connection
     ! scheme of the first electrode.
-    csort = fdf_get('TS.BTD.Sort','atom+'//trim(Elecs(1)%name))
+    csort = fdf_get('TS.BTD.Pivot','atom+'//trim(Elecs(1)%name))
     ctmp = csort
     ! we default to do atomic sorting, faster and very consistent
     sort_orb = (index(ctmp,'orb') > 0)
@@ -257,7 +257,7 @@ contains
        if ( iEl == 0 ) then
           print *,csort
           call die('Could find the electrode in &
-               &TS.BTD.Sort in the list of electrodes, &
+               &TS.BTD.Pivot in the list of electrodes, &
                &please correct sorting method.')
        end if
 
@@ -520,7 +520,7 @@ contains
     integer :: n, n_nzs
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
 
-    character(len=40), parameter :: fmt = '(/,''TS.BTD.Sort '',a,''+'',a)'
+    character(len=40), parameter :: fmt = '(/,''TS.BTD.Pivot '',a,''+'',a)'
     character(len=4) :: corb
     
     ! Regions used for sorting the device region
