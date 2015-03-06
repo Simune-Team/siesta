@@ -1,4 +1,16 @@
 ----------------------------------------------------
+March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-330
+Enabled complete parallel build by make -j NPROCS
+
+* Just re-arranged library dependencies and forced
+  libraries to be built sequentially, then running
+  make -j NPROCS will work.
+
+modified:
+  Src/Makefile
+  Util/TS/TBtrans/Makefile
+
+----------------------------------------------------
 March 5, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-329
 Renamed TS.BTD.Sort to TS.BTD.Pivot
 

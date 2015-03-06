@@ -40,16 +40,22 @@ SIESTA_OBJS= precision.o sys.o m_io.o alloc.o memoryinfo.o memory.o pxf.o \
              m_fdf_global.o paste.o reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o cdiag.o m_spin.o \
-	     zheevds.o debugmpi.o find_kgrid.o
+	     zheevds.o debugmpi.o find_kgrid.o die.o
 
 # Siesta timings
 SIESTA_OBJS += m_walltime.o timer_tree.o m_timer.o timer.o
 
 # Add specific class objects
-SIESTA_OBJS += die.o m_uuid.o object_debug.o class_Sparsity.o \
-        class_OrbitalDistribution.o \
+# class Objects
+SIESTA_OBJS += class_OrbitalDistribution.o \
+	class_Sparsity.o \
+	class_Data1D.o class_Data2D.o \
 	class_SpData1D.o class_SpData2D.o \
-	class_Data1D.o class_Data2D.o
+	class_TriMat.o \
+        m_uuid.o object_debug.o
+# As the classes are based on inputs we force the dependency to
+# alloc
+class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o
 
 # Some of NPA modules
 SIESTA_OBJS += intrinsic_missing.o geom_helper.o m_io_s.o m_sparse.o
@@ -60,11 +66,15 @@ SIESTA_OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
 SIESTA_OBJS += m_region.o m_sparsity_handling.o m_pivot_array.o
 SIESTA_OBJS += m_ncdf_io.o
 
+# Geometry modules
+SIESTA_OBJS += m_geom_aux.o m_geom_objects.o
+SIESTA_OBJS += m_geom_box.o m_geom_coord.o m_geom_square.o m_geom_plane.o
+
 # The needed transiesta objects
 TS_OBJS  = m_ts_electype.o m_ts_method.o m_ts_chem_pot.o
 TS_OBJS += m_ts_electrode.o m_ts_elec_se.o m_ts_gf.o
 TS_OBJS += m_ts_cctype.o m_ts_sparse_helper.o
-TS_OBJS += m_ts_io.o m_ts_iodm.o m_ts_io_ctype.o m_ts_debug.o class_TriMat.o
+TS_OBJS += m_ts_io.o m_ts_iodm.o m_ts_io_ctype.o m_ts_debug.o
 TS_OBJS += m_ts_io_contour.o m_gauss_quad.o
 
 # These could be left out, however, there are dependencies
@@ -81,7 +91,7 @@ TS_OBJS += m_ts_tri_common.o m_ts_rgn2trimat.o
 # For creating the global-unit-cell sparsity pattern
 TS_OBJS += m_ts_sparse.o m_ts_tdir.o
 
-DEP_OBJS = $(SIESTA_OBJS) $(TS_OBJS) $(MOD_TOBJS) $(SYSOBJ) $(EXTRA)
+DEP_OBJS = $(SIESTA_OBJS) $(TS_OBJS) $(SYSOBJ) $(EXTRA)
 
 # To separate tbtrans objects from siesta/transiesta
 TBTOBJS  = 
@@ -105,24 +115,23 @@ TBTOBJS += m_tbt_kregions.o m_tbt_sparse_helper.o
 TBTOBJS += tbtrans.o
 
 # Interfaces to libraries
-FDF=libfdf.a
-FDF_MAKEFILE=$(VPATH)/fdf/makefile
-FDF_INCFLAGS:=-I$(VPATH)/fdf -I../MPI $(INCFLAGS)
-$(FDF): 
-	-mkdir -p fdf
-	(cd fdf ; \
-	$(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
-	"ARCH_MAKE=../$(ARCH_MAKE)" \
-	"INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module)
-
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
-$(MPI_INTERFACE): 
+libmpi_f90.a: 
 	-mkdir -p MPI
 	(cd MPI ; \
-	$(MAKE) -f $(MPI_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
+	$(MAKE) -f $(MPI_MAKEFILE) -j 1 "FC=$(FC)" "VPATH=$(VPATH)/MPI" \
 	"MAKEFILES=$(MPI_MAKEFILE)" "ARCH_MAKE=../$(ARCH_MAKE)" \
 	"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module_built)
 
+FDF=libfdf.a
+FDF_MAKEFILE=$(VPATH)/fdf/makefile
+FDF_INCFLAGS:=-I$(VPATH)/fdf -I../MPI $(INCFLAGS)
+$(FDF): $(MPI_INTERFACE)
+	-mkdir -p fdf
+	(cd fdf ; \
+	$(MAKE) -f $(FDF_MAKEFILE) -j 1 "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+	"ARCH_MAKE=../$(ARCH_MAKE)" \
+	"INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module)
 
 #######################
 #  TS-TBT libs:
@@ -138,7 +147,7 @@ FVAR=libvardict.a
 FVAR_MAKEFILE=$(VPATH)/fvar/Makefile
 $(FVAR): 
 	-mkdir -p fvar
-	(cd fvar ; $(MAKE) -f $(FVAR_MAKEFILE) \
+	(cd fvar ; $(MAKE) -f $(FVAR_MAKEFILE) -j 1 \
 		"VPATH=$(VPATH)/fvar" \
 		"FC=$(FC_SERIAL)" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
@@ -153,7 +162,7 @@ NCDF=libncdf.a
 NCDF_MAKEFILE=$(VPATH)/NCDF/src/Makefile
 $(NCDF): $(FVAR)
 	-mkdir -p NCDF/src
-	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) \
+	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) -j 1 \
 		"VPATH=$(VPATH)/NCDF/src" "LIBVARDICT=$(FVAR)" \
 		"DIR_FVAR=$(VPATH)/fvar" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
@@ -164,6 +173,13 @@ $(NCDF): $(FVAR)
 
 #######################
 
+# All objects require the FDF library
+# In practice they do not but it greatly simplifies the logic
+# here.
+# This will setup the correct compilation sequence as
+# FDF => MPI
+$(DEP_OBJS): $(FDF) $(COMP_LIBS) $(FVAR)
+$(TBTOBJS): $(DEP_OBJS)
 
 # We append the -DTBTRANS as some special routines
 # which could take advantage of this preprocessing flag
@@ -171,7 +187,7 @@ tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
 #tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DUSE_GEMM3M
 # If the user only wants to compile against NetCDF-4 for tbtrans
 tbtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
-tbtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) $(SYSOBJ)
+tbtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
               $(FDF) $(COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
@@ -182,7 +198,7 @@ tbtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) $(S
 phtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS -DTBT_PHONON
 # If the user only wants to compile against NetCDF-4 for tbtrans
 phtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
-phtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) $(SYSOBJ)
+phtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o phtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
               $(FDF) $(COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
@@ -836,7 +852,8 @@ state_init.o: m_pulay.o m_rmaxh.o m_sparse.o m_spin.o m_steps.o m_supercell.o
 state_init.o: m_test_io.o m_ts_charge.o m_ts_electype.o m_ts_global_vars.o
 state_init.o: m_ts_io.o m_ts_options.o m_ts_sparse.o m_ts_tri_init.o overlap.o
 state_init.o: parallel.o proximity_check.o siesta_cml.o siesta_geom.o
-state_init.o: siesta_options.o sparse_matrices.o sys.o write_subs.o zmatrix.o
+state_init.o: siesta_options.o sparse_matrices.o sys.o units.o write_subs.o
+state_init.o: zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_exp_coord.o
 struct_init.o: m_iostruct.o m_mpi_utils.o m_steps.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o

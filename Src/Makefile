@@ -11,7 +11,7 @@
 # given in the SIESTA license, as signed by all legitimate users.
 #
 #
-# Makefile for siesta
+# Makefile for SIESTA
 #
 # Remove implicit rules (including for Modula-2, which just confuses matters)
 .SUFFIXES:
@@ -24,9 +24,10 @@ AR ?= ar
 RANLIB ?= ranlib
 
 default: what siesta #  fsiesta_pipes.o libSiestaForces.a
+lib: libSiestaXC.a libfdf.a libSiestaForces.a
 
 configure: configure.ac aclocal.m4
-	autoconf ${<D}/configure.ac
+	@autoconf ${<D}/configure.ac
 
 M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAGS.m4  \
  m4/ACX_MPI.m4             m4/TW_CHECK_FC_TR15580.m4  m4/TW_FC_ID.m4        \
@@ -37,7 +38,7 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
  m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4    m4/TW_FC_KINDS.m4
 
 aclocal.m4: $(M4_FILES)
-	cat ${<D}/$(M4_FILES)  > aclocal.m4
+	cat ${<D}/$(M4_FILES) > aclocal.m4
 
 dep:
 	-if [ $(VPATH) = "." ] ; then \
@@ -177,6 +178,9 @@ OBJS += class_OrbitalDistribution.o \
 	class_Fstack_Pair_SpData1D.o \
 	class_TriMat.o m_trimat_invert.o \
         m_uuid.o object_debug.o
+# As the classes are based on inputs we force the dependency to
+# alloc
+class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o
 
 OBJS += m_rhog.o rhofft.o m_diis.o compute_energies.o
 
@@ -250,7 +254,7 @@ $(FoX_configured):
 
 # Then we want to make FoX itself. Like so:
 $(FoX_built): $(FoX_configured)
-	(cd FoX; $(MAKE) )
+	(cd FoX; $(MAKE) -j 1 )
 
 # Now ensure that building FoX is inserted into the dependency chain.
 # Routines using FoX:
@@ -268,22 +272,29 @@ state_init.o struct_init.o write_subs.o xml.o: $(FoX_built)
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
-	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" \
+	(cd xmlparser ; $(MAKE) -j 1 "VPATH=$(VPATH)/xmlparser" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 
 #--------------------------------------------------------------
-XC=libSiestaXC.a
-$(XC): 
-	(cd SiestaXC ; $(MAKE) \
-                    "VPATH_ROOT=$(VPATH)"  \
-	            "INCFLAGS=-I../MPI" \
-		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
+libmpi_f90.a: 
+	@(cd MPI ; $(MAKE) -j 1 \
+                    "VPATH=$(VPATH)/MPI" \
+                    "FPP_FLAGS=$(FPP_FLAGS)" \
+                    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" )
 
 #--------------------------------------------------------------
 FDF=libfdf.a
-$(FDF): 
-	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" \
+$(FDF): $(MPI_INTERFACE)
+	(cd fdf ; $(MAKE) -j 1 "VPATH=$(VPATH)/fdf" \
 		    "FPPFLAGS=$(FPPFLAGS)" \
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
+
+#--------------------------------------------------------------
+XC=libSiestaXC.a
+$(XC): $(FDF)
+	(cd SiestaXC ; $(MAKE) -j 1 \
+                    "VPATH_ROOT=$(VPATH)"  \
+	            "INCFLAGS=-I../MPI" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 
 #######################
@@ -298,7 +309,7 @@ $(FDF):
 #  https://github.com/zerothi/fvar
 FVAR=libvardict.a
 $(FVAR): 
-	(cd fvar ; $(MAKE) "VPATH=$(VPATH)/fvar" \
+	(cd fvar ; $(MAKE) -j 1 "VPATH=$(VPATH)/fvar" \
 	            "FC=$(FC_SERIAL)" \
 		    "ARCH_MAKE=$(PWD)/arch.make" \
 		    "FPPFLAGS=$(FPPFLAGS) -UMPI" \
@@ -310,7 +321,7 @@ $(FVAR):
 #  https://github.com/zerothi/ncdf
 NCDF=libncdf.a
 $(NCDF): $(FVAR)
-	(cd NCDF ; $(MAKE) "VPATH=$(VPATH)/NCDF" \
+	(cd NCDF ; $(MAKE) -j 1 "VPATH=$(VPATH)/NCDF" \
 		"LIBVARDICT=$(FVAR)" \
 		"DIR_FVAR=$(VPATH)/fvar" \
 		"ARCH_MAKE=$(PWD)/arch.make" \
@@ -321,43 +332,35 @@ $(NCDF): $(FVAR)
 
 #######################
 
-# Routines using fdf calls.
-dhscf.o iolwf.o  grdsam.o : $(FDF)
-recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
-redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
-coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
-readsp.o eggbox.o iopipes.o : $(FDF)
-atom.o basis_io.o basis_specs.o: $(FDF)
-
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 
-# Interfaces to libraries
-libmpi_f90.a: 
-	@(cd MPI ; $(MAKE) \
-                    "VPATH=$(VPATH)/MPI" \
-                    "FPP_FLAGS=$(FPP_FLAGS)" \
-                    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" )
+# All objects require the XC library (in theory)
+# In practice they do not but it greatly simplifies the logic
+# here.
+# This will setup the correct compilation sequence as
+# XC => FDF => MPI
+$(ALL_OBJS): $(XC) $(COMP_LIBS)
 
 # Libraries that might need to be compiled
 
 libblas.a: Libs/blas.f
 	@echo "==> Compiling libblas.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libblas.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" libblas.a)
 liblapack.a: Libs/lapack.f
 	@echo "==> Compiling liblapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" liblapack.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" liblapack.a)
 linalg.a: Libs/blas.f Libs/lapack.f
 	@echo "==> Compiling linalg.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" linalg.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" linalg.a)
 dc_lapack.a:  Libs/dc_lapack.f
 	@echo "==> Compiling dc_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" dc_lapack.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" dc_lapack.a)
 zgesv_lapack.a:  Libs/zgesv_lapack.f
 	@echo "==> Compiling zgesv_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" zgesv_lapack.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" zgesv_lapack.a)
 essl_lapack.a: Libs/essl_lapack.f
 	@echo "==> Compiling essl_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
+	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
 
 version: version.F90
 	@echo
