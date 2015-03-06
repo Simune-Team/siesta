@@ -44,7 +44,7 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    ! The Green's function column
+    ! The Green function column
     type(zTriMat), intent(inout) :: Gf_tri
     type(Elec), intent(in) :: El ! contains: i (Sigma - Sigma^dagger) ^T
     integer, intent(in) :: no ! The dimension of i (Sigma - Sigma^dagger) ^T

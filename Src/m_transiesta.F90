@@ -113,7 +113,7 @@ contains
     real(dp), pointer :: Q_Ef(:,:) => null()
 
     ! Open GF files...
-    ! Read-in header of Green's functions
+    ! Read-in header of Green functions
     ! Prepare for the calculation
     ! We read in the k-points that the electrode was generated with.
     ! Furthermore we read in the expansion q-points

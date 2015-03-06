@@ -128,7 +128,7 @@ module m_ts_electype
      type(dSpData2D) :: H00, H01
      type(dSpData1D) :: S00, S01
 
-     ! These arrays are used to construct the full Hamiltonian and overlap and Green's function
+     ! These arrays are used to construct the full Hamiltonian and overlap and Green function
      complex(dp), pointer :: HA(:,:,:), SA(:,:,:), GA(:)
 
      ! Arrays needed to partition the scattering matrix and self-energies
@@ -370,7 +370,7 @@ contains
              this%pre_expand = 2
           else if ( leqi(tmp,'Green') .or. &
                leqi(tmp,'surface') ) then
-             ! We expand only the surface Green's function
+             ! We expand only the surface Green function
              this%pre_expand = 1
           else if ( leqi(tmp,'none') ) then
              ! We do not expand anything

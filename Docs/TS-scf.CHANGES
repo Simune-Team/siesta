@@ -1,4 +1,35 @@
 ----------------------------------------------------
+March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-333
+Changed Green's/Greens function to Green function
+
+* Clarified some output in tbtrans/phtrans
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_full_scat.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_mumps_scat.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_tri_common.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Src/ts_init.F90
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-332
 Enabled reading from the first argument given to siesta/tbtrans
 

@@ -449,7 +449,11 @@ contains
        call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
             atts = dic)
        call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
+#ifdef TBT_PHONON
+       dic = dic//('info'.kv.'Phonon temperature')
+#else
        dic = dic//('info'.kv.'Electronic temperature')
+#endif
        call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
             atts = dic)
        call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
@@ -1068,11 +1072,11 @@ contains
        if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='DOS')
           call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,no_d,r3,'DOS', &
-               '# DOS calculated from the Greens function, k-resolved')
+               '# DOS calculated from the Green function, k-resolved')
        end if
        call name_save(ispin,nspin,ascii_file,end='AVDOS')
        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,no_d,r3,'DOS', &
-            '# DOS calculated from the Greens function, k-averaged')
+            '# DOS calculated from the Green function, k-averaged')
 
     end if
 
@@ -1244,7 +1248,11 @@ contains
       
       write(iu,'(a)') trim(header)
       write(iu,'(a)') '# Date: '//trim(tmp)
+#ifdef TBT_PHONON
+      write(iu,'(a,a9,tr1,a16)')"#","Omega [eV]", value
+#else
       write(iu,'(a,a9,tr1,a16)')"#","E [eV]", value
+#endif
       do ik = 1 , nkpt 
          if ( nkpt > 1 ) then
             write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &

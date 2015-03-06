@@ -141,7 +141,7 @@ contains
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1),no_s,ipvt,Sigma,no_s,ierr)
        if ( ierr /= 0 ) &
-            write(*,'(a,i0)') 'Inversion of surface Greens function failed: ',ierr
+            write(*,'(a,i0)') 'Inversion of surface Green function failed: ',ierr
        
     end if
 
@@ -199,7 +199,7 @@ contains
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
        if ( ierr /= 0 ) &
-            write(*,'(a,i0)') 'Inversion of surface Greens function failed: ',ierr
+            write(*,'(a,i0)') 'Inversion of surface Green function failed: ',ierr
 
     end if
 
@@ -270,7 +270,7 @@ contains
        ! We have the matrix to invert in the first no_s**2 values.
        call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
        if ( ierr /= 0 ) &
-            write(*,'(a,i0)') 'Inversion of surface Greens function failed: ',ierr
+            write(*,'(a,i0)') 'Inversion of surface Green function failed: ',ierr
 
     end if
 
@@ -436,7 +436,7 @@ contains
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
-       ! surface Green's function
+       ! surface Green function
 !$OMP parallel default(shared)
 
 !$OMP do private(iq)
@@ -573,7 +573,7 @@ contains
        ! If we use bulk values in the electrodes
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
-       ! surface Green's function
+       ! surface Green function
 !$OMP parallel default(shared)
 
 !$OMP do private(iq)

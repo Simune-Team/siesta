@@ -557,7 +557,7 @@ contains
        ! Prepare for next segment
        Mp => Mp(sIdxF:)
 
-       ! Calculate the off-diagonal Green's function in the regions
+       ! Calculate the off-diagonal Green function in the regions
        ! of interest
        do in = n - 1 , sPart , - 1
 
@@ -591,7 +591,7 @@ contains
        Mp => val(M,n,n)
        Mp => Mp(sIdxF:)
 
-       ! Calculate the off-diagonal Green's function in the regions
+       ! Calculate the off-diagonal Green function in the regions
        ! of interest
        do in = n + 1 , ePart
 

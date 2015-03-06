@@ -341,7 +341,7 @@ contains
           call timer('TS_MUMPS_SOLVE',2)
 #endif
           
-          ! ** At this point we have calculated the Green's function
+          ! ** At this point we have calculated the Green function
 
           ! ****************
           ! * save GF      *
@@ -457,7 +457,7 @@ contains
           call mum_err(mum, &
                'MUMPS failed the nEq. inversion, check the output log')
 
-          ! ** At this point we have calculated the Green's function
+          ! ** At this point we have calculated the Green function
 
           ! ****************
           ! * save GF      *

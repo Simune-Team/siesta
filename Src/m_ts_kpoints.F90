@@ -19,7 +19,7 @@ module m_ts_kpoints
 !===================== K-POINT RELATED VARIABLES ============================== 
 !==============================================================================
 ! Contains data structures and routines to deal with the kpoint-grid
-! for the self-consistent calculation with Green's Functions.
+! for the self-consistent calculation with Green Functions.
 ! Original verison modified so that the kpoint sampling is done for the
 ! direction perpendicular to the transport directins
 ! Version created to integrate TRANSIESTA in siesta2.3

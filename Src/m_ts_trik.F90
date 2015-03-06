@@ -372,7 +372,7 @@ contains
              call invert_TriMat(zwork_tri,GF_tri,calc_parts)
           end if
           
-          ! ** At this point we have calculated the Green's function
+          ! ** At this point we have calculated the Green function
 
           ! ****************
           ! * save GF      *
@@ -484,7 +484,7 @@ contains
           end if
 
           ! ** At this point we have calculated the needed
-          ! ** information to create the Green's function column
+          ! ** information to create the Green function column
           ! ** for all the electrodes
 
 #ifdef TS_DEV
@@ -919,7 +919,7 @@ contains
     type(zSpData2D), intent(inout) :: EDM
     complex(dp), intent(in) :: EDMfact
 
-    ! The Green's function
+    ! The Green function
     type(zTriMat), intent(inout) :: GF_tri
     type(tRgn), intent(in) :: r, pvt
     integer, intent(in) :: N_Elec

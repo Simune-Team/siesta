@@ -40,7 +40,7 @@ contains
     type(zMUMPS_STRUC), intent(inout) :: mum
     integer, intent(in) :: no_u_TS ! no. states in contact region
     integer, intent(in) :: no      ! no. states for all electrodes
-    ! The Green's function (it has to be the column that corresponds to the electrode)
+    ! The Green function (it has to be the column that corresponds to the electrode)
     complex(dp), intent(inout) :: GF(no_u_TS,no)
 
 ! *********************

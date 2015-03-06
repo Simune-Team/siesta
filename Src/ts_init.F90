@@ -166,7 +166,7 @@ contains
        ! GF generation:
        do i = 1 , N_Elec
 
-          ! initialize the electrode for Green's function calculation
+          ! initialize the electrode for Green function calculation
           call init_Electrode_HS(Elecs(i))
 
           call do_Green(Elecs(i), &

@@ -20,7 +20,7 @@ module m_ts_electrode
 
   private
 
-  ! Accuracy of the surface-Green's function
+  ! Accuracy of the surface-Green function
   real(dp), parameter :: accur = 1.e-15_dp
   ! BLAS parameters
   complex(dp), parameter :: z_1  = dcmplx(1._dp,0._dp)
@@ -30,7 +30,7 @@ module m_ts_electrode
 contains
 
 
-  ! Calculates the surface Green's function for the electrodes
+  ! Calculates the surface Green function for the electrodes
   ! Handles both the left and right one
   ! this is the Sancho, Sancho and Rubio algorithm
   subroutine SSR_sGreen_DOS(no,ZE,H00,S00,H01,S01,GS, &
@@ -40,13 +40,13 @@ contains
        
 ! ***************** INPUT **********************************************
 ! integer     no      : Number of orbitals in the electrode
-! complex(dp) ZE      : The energy of the Green's function evaluation
+! complex(dp) ZE      : The energy of the Green function evaluation
 ! complex(dp) H00     : Hamiltonian within the first unit cell (discarding T-direction)
 ! complex(dp) S00     : Overlap matrix within the first unit cell (discarding T-direction)
 ! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in T-direction)
 ! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in T-direction)
 ! ***************** OUTPUT *********************************************
-! complex(dp) GS      : Surface Green's function of the electrode
+! complex(dp) GS      : Surface Green function of the electrode
 ! **********************************************************************
     use m_pivot_array, only : ipiv
     use m_mat_invert
@@ -248,7 +248,7 @@ contains
        end if
     end if
 
-    ! Invert to get the Surface Green's function
+    ! Invert to get the Surface Green function
     call mat_invert(gsL,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
 
     if ( ierr /= 0 ) then
@@ -256,7 +256,7 @@ contains
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
-    ! Invert to get the Surface Green's function
+    ! Invert to get the Surface Green function
     call mat_invert(gsR,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
 
     if ( ierr /= 0 ) then
@@ -264,7 +264,7 @@ contains
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
-    ! Invert to obtain the bulk Green's function
+    ! Invert to obtain the bulk Green function
     call mat_invert(GB,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
 
     if ( ierr /= 0 ) then
@@ -382,7 +382,7 @@ contains
 
   end subroutine SSR_sGreen_DOS
 
-  ! Calculates the surface Green's function for the electrodes
+  ! Calculates the surface Green function for the electrodes
   ! Handles both the left and right one
   ! this is the Sancho, Sancho and Rubio algorithm
   subroutine SSR_sGreen_NoDOS(no,ZE,H00,S00,H01,S01,GS, &
@@ -391,13 +391,13 @@ contains
        
 ! ***************** INPUT **********************************************
 ! integer     no      : Number of orbitals in the electrode
-! complex(dp) ZE      : The energy of the Green's function evaluation
+! complex(dp) ZE      : The energy of the Green function evaluation
 ! complex(dp) H00     : Hamiltonian within the first unit cell (discarding T-direction)
 ! complex(dp) S00     : Overlap matrix within the first unit cell (discarding T-direction)
 ! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in T-direction)
 ! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in T-direction)
 ! ***************** OUTPUT *********************************************
-! complex(dp) GS      : Surface Green's function of the electrode
+! complex(dp) GS      : Surface Green function of the electrode
 ! **********************************************************************
     use m_pivot_array, only : ipiv
     use m_mat_invert
@@ -575,7 +575,7 @@ contains
 
     if ( present(final_invert) ) then
        if ( final_invert ) then
-          ! Invert to get the Surface Green's function
+          ! Invert to get the Surface Green function
           call mat_invert(GS,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
        end if
     else
@@ -629,13 +629,13 @@ contains
 
 ! ##################################################################
 ! ## Driver subroutine for calculating the (ideal)                ##
-! ## Handles both Left and Right surface Greens function.         ## 
+! ## Handles both Left and Right surface Green function.          ## 
 ! ##                            By                                ##
 ! ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
 ! ##                 Updated by : Nick Papior Andersen            ##
 ! ## It has now been parallelized to speed up electrode           ##
-! ## surface Green's function generation.                         ##
-! ## It generates the surface Green's function by handling        ##
+! ## surface Green function generation.                           ##
+! ## It generates the surface Green function by handling          ##
 ! ## repetition as well.                                          ##
 ! ##################################################################
 
@@ -705,7 +705,7 @@ contains
     ! Expanded arrays
     complex(dp), pointer :: X(:) => null()
 
-    ! Green's function variables
+    ! Green function variables
     complex(dp), pointer :: GS(:)
     complex(dp), pointer :: Hq(:), Sq(:), Gq(:)
     complex(dp) :: ZEnergy, zDOS
@@ -769,7 +769,7 @@ contains
     sc_off = matmul(El%ucell,El%isc_off)
     
     if (IONode) then
-       write(*,'(/,2a)') "Creating Green's function file for: ",trim(name(El))
+       write(*,'(/,2a)') 'Creating Green function file for: ',trim(name(El))
 
        bkpt(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * nq &
             * El%no_used ** 2 / 1024._dp ** 2
@@ -818,7 +818,7 @@ contains
             " Fermi level shift in electrode (chemical potential) : ",El%mu%mu/eV,' eV'
     end if
 
-    ! Initialize Green's function and Hamiltonian arrays
+    ! Initialize Green function and Hamiltonian arrays
     nullify(GS)
     if ( nS /= nuS ) then
        allocate(GS(nS))
@@ -838,7 +838,7 @@ contains
 
     ! Point the hamiltonian and the overlap to the work array
     ! The work-array is only used for calculation the surface
-    ! Green's function and
+    ! Green function and
     Hq => zwork(1:nuS*nq)
     Sq => zwork(nuS*nq+1:nuS*nq*2)
     if ( size(zwork) >= nS * 9 + nuS*nq ) then
@@ -870,7 +870,7 @@ contains
     end if
 
 !******************************************************************
-!           Start Green's function calculation
+!           Start Green function calculation
 !******************************************************************
     
     if (IONode) then
@@ -939,7 +939,7 @@ contains
     ! prepare the iteration counter
     allocate(iters(nq,NEn,nkpnt,2))
     if ( IONode ) then
-       ! TODO when adding new surface-Green's functions schemes, please update here
+       ! TODO when adding new surface-Green functions schemes, please update here
        write(*,'(1x,a)') 'Lopez Sancho, Lopez Sancho & Rubio recursive &
             &surface self-energy calculation...'
        write(*,'(1x,a,i0)') 'Total self-energy calculations: ',nq*NEn*nkpnt
@@ -1066,7 +1066,7 @@ contains
                    GS => Gq((    iqpt-1)*nS+1:      iqpt *nS)
                 end if
 
-                ! Calculate the surface Green's function
+                ! Calculate the surface Green function
                 ! Zenergy is wrt. to the system Fermi-level
                 if ( CalcDOS ) then
                    call SSR_sGreen_DOS(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
@@ -1084,7 +1084,7 @@ contains
                    
                 end if
                   
-                ! Copy over surface Green's function
+                ! Copy over surface Green function
                 i = (iqpt-1)*nuS
                 if ( nS /= nuS ) then
                    if ( is_left ) then
@@ -1109,7 +1109,7 @@ contains
                    if ( nq == 1 ) then
                       ! We invert back here, instead of in
                       ! the SCF (this is important as the
-                      ! decreased size of the surface-Greens function
+                      ! decreased size of the surface-Green function
                       ! would otherwise yield a different result)
                       call mat_invert(Gq(1:nuS),zwork(1:nuS),&
                            nuou_E, &
@@ -1197,7 +1197,7 @@ contains
              end do
 !$OMP end parallel do
              i_std = sqrt(i_std/real(NEn*nq*nkpnt,dp))
-             ! TODO if new surface-Green's function scheme is implemented, fix here
+             ! TODO if new surface-Green function scheme is implemented, fix here
              write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
                   &Mean/std iterations: ', i_mean             , i_std
              write(*,'(1x,a,i10,'' / '',i10)')     'Lopez Sancho, Lopez Sancho & Rubio: &
@@ -1208,7 +1208,7 @@ contains
 
     end do
 !*******************************************************************
-!         Green's function calculation is done
+!         Green function calculation is done
 !*******************************************************************
 
     deallocate(iters)
@@ -1517,7 +1517,7 @@ contains
     complex(dp), pointer :: zHS(:) => null()
     real(dp), allocatable :: sc_off(:,:)
 
-    ! Green's function variables
+    ! Green function variables
     complex(dp), pointer :: GS(:)
 
     ! size requirement
@@ -1660,7 +1660,7 @@ contains
             8*nS,zwork, &
             final_invert = final_invert)
 
-       ! Copy over surface Green's function
+       ! Copy over surface Green function
        ! first we need to determine the correct placement
        call copy_over(is_left,nuo_E,GS,nuou_E,El%GA(ios:ioe),off)
 

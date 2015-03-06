@@ -167,7 +167,7 @@ contains
     if (ierr/=0) call die('Could not allocate space for zwork')
     call memory('A','Z',nzwork,'transiesta')
 
-    ! We only need a partial size of the Green's function
+    ! We only need a partial size of the Green function
     no = no_u_TS
     do iEl = 1 , N_Elec
        if ( Elecs(iEl)%DM_update == 0 ) then ! no elements in electrode are updated
@@ -351,7 +351,7 @@ close(io)
 
           end if
           
-          ! ** At this point we have calculated the Green's function
+          ! ** At this point we have calculated the Green function
 
           ! ****************
           ! * save GF      *
@@ -470,7 +470,7 @@ write(io) GF(no_u_TS*totusedorbs(Elecs(1))+1:no_u_TS * sum(totusedorbs(Elecs)))
 close(io)
 #endif
 
-          ! ** At this point we have calculated the Green's function
+          ! ** At this point we have calculated the Green function
 
           ! ****************
           ! * save GF      *
@@ -606,7 +606,7 @@ close(io)
     complex(dp), intent(in) :: EDMfact
     ! The size of GF
     integer, intent(in) :: no1, no2
-    ! The Green's function
+    ! The Green function
     complex(dp), intent(in) :: GF(no1,no2)
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)

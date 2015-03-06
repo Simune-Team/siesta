@@ -348,7 +348,7 @@ contains
     if ( IONode ) then
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'
        write(*,6) 'Voltage', Volt/eV,'Volts'
-       write(*,1) 'Saving DOS from Greens function',('DOS-Gf'.in.save_DATA)
+       write(*,1) 'Saving DOS from Green function',('DOS-Gf'.in.save_DATA)
        if ( 'DOS-A-all' .in. save_DATA ) then
           write(*,1) 'Saving DOS from all spectral functions',.true.
        else if ( 'DOS-A' .in. save_DATA ) then

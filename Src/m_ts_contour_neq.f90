@@ -127,7 +127,7 @@ contains
     ! device region as well.
     nEq_Eta = fdf_get('TS.Contours.nEq.Eta',0._dp,'Ry')
     if ( nEq_Eta < 0._dp ) call die('ERROR: nEq_Eta < 0, we do not allow &
-         &for using the advanced Greens function, please correct.')
+         &for using the advanced Green function, please correct.')
 
     ! Temperature cut-off for the tail integrals
     cutoff_kT = fdf_get('TS.Contours.nEq.Fermi.Cutoff',5._dp)
@@ -728,7 +728,7 @@ contains
     if ( .not. IONode ) return
     
     write(*,opt_n) '        >> non-Equilibrium contour << '
-    write(*,opt_g_u) 'non-Equilibrium Greens function Eta',nEq_Eta/eV,'eV'
+    write(*,opt_g_u) 'non-Equilibrium Green function Eta',nEq_Eta/eV,'eV'
     write(*,opt_g_u) 'Fermi-function cut-off',cutoff_kT,'kT'
     do i = 1 , N_nEq
        chars = '  '//trim(nEq_io(i)%part)

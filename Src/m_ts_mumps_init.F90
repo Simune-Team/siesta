@@ -318,7 +318,7 @@ contains
     complex(dp), pointer :: Gf(:)
     integer :: iEl, no, i, j, io, ind
 
-    ! We only need a partial size of the Green's function
+    ! We only need a partial size of the Green function
     no = sum(TotUsedOrbs(Elecs))
 
     call allocate_mum(mum,no*no_u_TS,N_Elec,Elecs,GF)

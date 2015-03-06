@@ -13,7 +13,7 @@
 !
 module m_ts_GF
 !
-! Routines that are used for reading the Green's function files.
+! Routines that are used for reading the Green function files.
 ! It is very closely related to m_ts_electrode (consider moving it to there)
 ! 
 ! This module constitutes the routines that are needed to ensure the
@@ -101,11 +101,11 @@ contains
     ! If it does not find the file, calculate the GF
     if ( exist ) then
        if (IONode ) then
-          write(*,*) "Electrode Green's function file: '"//&
-               trim(El%GFfile)//"' already exist."
+          write(*,*) 'Electrode Green function file: '//&
+               trim(El%GFfile)//' already exist.'
           if ( .not. cReUseGF ) then
-             write(*,*)"Green's function file '"//&
-                  trim(El%GFfile)//"' is requested overwritten."
+             write(*,*)'Green function file '//&
+                  trim(El%GFfile)//' is requested overwritten.'
           end if
        end if
     else
@@ -138,11 +138,11 @@ contains
 
     else
 
-       ! Check that the Green's functions are correct!
+       ! Check that the Green functions are correct!
        ! This is needed as create_Green returns if user requests not to
        ! overwrite an already existing file.
        ! This check will read in the number of orbitals and atoms in the
-       ! electrode surface Green's function.
+       ! electrode surface Green function.
        ! Check the GF file
        if ( IONode ) then
           call io_assign(uGF)
@@ -234,11 +234,11 @@ contains
     ! If it does not find the file, calculate the GF
     if ( exist ) then
        if (IONode ) then
-          write(*,*) "Electrode Green's function file: '"//&
-               trim(El%GFfile)//"' already exist."
+          write(*,*) 'Electrode Green function file: '//&
+               trim(El%GFfile)//' already exist.'
           if ( .not. cReUseGF ) then
-             write(*,*)"Green's function file '"//&
-                  trim(El%GFfile)//"' is requested overwritten."
+             write(*,*)'Green function file '//&
+                  trim(El%GFfile)//' is requested overwritten.'
           end if
        end if
     else
@@ -258,11 +258,11 @@ contains
 
     else
 
-       ! Check that the Green's functions are correct!
+       ! Check that the Green functions are correct!
        ! This is needed as create_Green returns if user requests not to
        ! overwrite an already existing file.
        ! This check will read in the number of orbitals and atoms in the
-       ! electrode surface Green's function.
+       ! electrode surface Green function.
        ! Check the GF file
        if ( IONode ) then
           call io_assign(uGF)
@@ -481,7 +481,7 @@ contains
 #ifdef MPI
        if ( IONode .and. iNode == Node ) then
 #endif
-          ! read in surface Green's function
+          ! read in surface Green function
           read(uGF) El%GA
 #ifdef MPI
        else if ( IONode ) then
@@ -614,10 +614,10 @@ contains
 
 
 ! This routine requires a call to check_Green before.
-! It will return the k-points of the electrode Green's function file
+! It will return the k-points of the electrode Green function file
 
 ! ##################################################################
-! ##            Read-in header of Greens function file            ##
+! ##            Read-in header of Green function file             ##
 ! ##                            By                                ##
 ! ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
 ! ##                                                              ##
@@ -682,7 +682,7 @@ contains
 
        ! Check Fermi shift
        if ( dabs(El%mu%mu-mu) > EPS ) then
-          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*)"The chemical shift in the electrode does not match the &
                &required shift!"
           write(*,'(2(a,f12.6))')"Found: ",mu,", expected: ",El%mu%mu
@@ -691,28 +691,28 @@ contains
 
        ! Check # of energy points
        if (NEn .ne. c_NEn) then
-          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: NEn=',NEn,' expected:', c_NEn
           errorGF = .true.
        end if
 
        ! Check # of atoms
        if (na .ne. El%na_used) then
-          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: na_u=',na,' expected:', El%na_used
           errorGF = .true.
        end if
 
        ! Check # of q-points
        if ( any(El%Rep /= fReps) ) then
-          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: unexpected no. q-points'
           errorGF = .true.
        end if
 
        ! Check # of k-points
        if ( nkpar .ne. c_nkpar ) then
-          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: Unexpected number of kxy-points'
           write(*,*) 'read_Green: ERROR: nkpt=',nkpar,' expected:', c_nkpar
           errorGF = .true.
@@ -720,21 +720,21 @@ contains
 
        ! Check # of spin
        if (nspin .ne. El%nspin ) then
-          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: nspin=',nspin,' expected:', El%nspin
           errorGF = .true.
        end if
 
        ! Check # of orbitals
        if (no .ne. El%no_used) then
-          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: no=',no,' expected:', El%no_used
           errorGF = .true.
        end if
 
        if ( product(El%Rep) > 1 ) then
           if ( pre_expand /= El%pre_expand ) then
-             write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+             write(*,*)"ERROR: Green function file: "//trim(curGFfile)
              write(*,*) 'read_Green: ERROR: pre-expansion not consistent'
              errorGF = .true.
           end if
@@ -755,7 +755,7 @@ contains
 
 
 ! ##################################################################
-! ##    Check header of Greens function file against settings     ##
+! ##    Check header of Green function file against settings      ##
 ! ##                            By                                ##
 ! ##      Nick Papior Andersen, nickpapior@gmail.com              ##
 ! ##                                                              ##
@@ -775,7 +775,7 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-! file for reading, Green's function file
+! file for reading, Green function file
     integer, intent(in)        :: funit
     type(Elec), intent(in)     :: El
     real(dp), intent(in)       :: c_ucell(3,3) ! Unit cell of the CONTACT
@@ -789,7 +789,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-! Return whether it is a correct Green's function file
+! Return whether it is a correct Green function file
     logical, intent(out)       :: errorGF
 
 ! ***********************
@@ -838,13 +838,13 @@ contains
     read(funit) mu
 
     if ( El%nspin /= nspin ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Number of spin is wrong!"
        write(*,'(2(a,i2))') "Found: ",nspin,", expected: ",El%nspin
        localErrorGf = .true.
     end if
     if ( any(abs(El%ucell-ucell) > EPS) ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Unit-cell is not consistent!"
        write(*,*) "Found (Ang):"
        write(*,'(3(3(tr1,f10.5),/))') ucell/Ang
@@ -853,13 +853,13 @@ contains
        localErrorGf = .true.
     end if
     if ( El%na_used /= na ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Number of atoms is wrong!"
        write(*,'(2(a,i2))') "Found: ",na,", expected: ",El%na_used
        localErrorGf = .true.
     end if
     if ( El%no_used /= no ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Number of orbitals is wrong!"
        write(*,'(2(a,i2))') "Found: ",no,", expected: ",El%no_used
        localErrorGf = .true.
@@ -876,7 +876,7 @@ contains
        end do
     end do
     if ( eXa ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Atomic coordinates are wrong:"
        write(*,'(1x,a,t35,a)') &
             "Structure of GF electrode","| Electrode:"
@@ -892,7 +892,7 @@ contains
     deallocate(xa)
 
     if ( any(lasto - El%lasto_used /= 0) ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Number of orbitals on used atoms is wrong!"
        write(*,'(a,1000i3)') "Found    lasto: ",lasto
        write(*,'(a,1000i3)') "Expected lasto: ",El%lasto_used
@@ -901,7 +901,7 @@ contains
     deallocate(lasto)
 
     if ( any(El%Rep(:)/=fReps(:)) ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Number of repetitions is wrong!"
        write(*,'(2(a,i3))') "Found RepA1: ",fReps(1),", expected: ",El%Rep(1)
        write(*,'(2(a,i3))') "Found RepA2: ",fReps(2),", expected: ",El%Rep(2)
@@ -910,13 +910,13 @@ contains
     end if
     if ( product(El%Rep) > 1 ) then
        if ( pre_expand /= El%pre_expand ) then
-          write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*)"Expecting a pre-expanded self-energy!"
           localErrorGf = .true.
        end if
     end if
     if ( abs(El%mu%mu-mu) > EPS ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"The chemical shift in the electrode does not match the &
             &required shift!"
        write(*,'(2(a,f12.6))')"Found: ",mu,", expected: ",El%mu%mu
@@ -930,7 +930,7 @@ contains
     read(funit) kpar,wkpar
 
     if ( c_nkpar /= nkpar ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Number of k-points is wrong!"
        write(*,'(2(a,i4))') "Found: ",nkpar,", expected: ",c_nkpar
        localErrorGf = .true.
@@ -976,7 +976,7 @@ contains
 
     ! Check energy points
     if ( c_NEn /= NEn ) then
-       write(*,*)"ERROR: Green's function file: "//trim(curGFfile)
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Number of energy points is not as expected!"
        write(*,'(2(a,i4))') "Found: ",NEn,", expected: ",c_NEn
        localErrorGf = .true.

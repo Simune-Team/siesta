@@ -50,7 +50,7 @@ contains
     type(Elec), intent(in) :: El
     integer, intent(in) :: no_u_TS ! no. states in contact region
     integer, intent(in) :: no      ! no. states for all electrodes
-    ! The Green's function (it has to be the column that corresponds to the electrode)
+    ! The Green function (it has to be the column that corresponds to the electrode)
     complex(dp), intent(inout) :: GF(no_u_TS,no)
     ! A work array for doing the calculation... (nwork has to be larger than no_u_TS)
     integer,     intent(in)    :: nwork
@@ -185,7 +185,7 @@ subroutine my_symmetrize(N,M)
 #endif
 
 ! ##################################################################
-! ## Calculating Full Greens functions of                         ## 
+! ## Calculating Full Green functions of                          ## 
 ! ##                                                              ##          
 ! ##                            By                                ##
 ! ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
@@ -231,7 +231,7 @@ subroutine my_symmetrize(N,M)
     
     ! Invert directly
     call zgesv(no_u_TS,no_u_TS,GFinv,no_u_TS,ipvt,GF,no_u_TS,ierr)            
-    if ( ierr /= 0 ) call die('GF: Could not invert the Greens function')
+    if ( ierr /= 0 ) call die('GF: Could not invert the Green function')
        
     call timer('GFT',2)  
 
@@ -243,7 +243,7 @@ subroutine my_symmetrize(N,M)
 
 
 ! ##################################################################
-! ## Calculating Greens functions in the reigon of the electrodes ## 
+! ## Calculating Green functions in the reigon of the electrodes  ## 
 ! ##                                                              ##          
 ! ##  Fully created by Nick Papior Andersen, nickpapior@gmail.com ##
 ! ##################################################################
@@ -287,7 +287,7 @@ subroutine my_symmetrize(N,M)
     no = sum(TotUsedOrbs(Elecs(:)))
     if ( no == 0 ) call die('GFB: Error in contour setup')
     if ( no * no_u_TS > size(GF) ) &
-         call die('GFB: Wrong size of Greens function')
+         call die('GFB: Wrong size of Green function')
 
     ! Create the RHS for inversion...
     GF(:) = dcmplx(0._dp,0._dp)
@@ -304,7 +304,7 @@ subroutine my_symmetrize(N,M)
 
     ! Invert directly
     call zgesv(no_u_TS,o,GFinv,no_u_TS,ipvt,GF,no_u_TS,i)
-    if ( i /= 0 ) call die('GFB: Could not invert the Greens function')
+    if ( i /= 0 ) call die('GFB: Could not invert the Green function')
        
     call timer('GFTB',2)  
 
@@ -316,7 +316,7 @@ subroutine my_symmetrize(N,M)
 
 
 ! ##################################################################
-! ## Calculating Full Greens functions of                         ## 
+! ## Calculating Full Green functions of                          ## 
 ! ##                                                              ##          
 ! ##                            By                                ##
 ! ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
@@ -371,7 +371,7 @@ subroutine my_symmetrize(N,M)
        end if
     end do
     if ( no * no_u_TS > size(GF) ) &
-         call die('GFP: Wrong size of Greens function')
+         call die('GFP: Wrong size of Green function')
 
     ! initialize
     GF(:) = dcmplx(0._dp,0._dp)
@@ -391,7 +391,7 @@ subroutine my_symmetrize(N,M)
 
     ! Invert directly
     call zgesv(no_u_TS,no,GFinv,no_u_TS,ipvt,GF,no_u_TS,i)
-    if ( i /= 0 ) call die('GFP: Could not invert the Greens function')
+    if ( i /= 0 ) call die('GFP: Could not invert the Green function')
 
     call timer('GFT_P',2)
 

@@ -400,7 +400,7 @@ contains
     if ( .not. IONode ) return
     
     write(*,opt_n) '             >> TBtrans contour << '
-    write(*,opt_g_u) 'non-Equilibrium Greens function Eta',tbt_Eta/eV,'eV'
+    write(*,opt_g_u) 'non-Equilibrium Green function Eta',tbt_Eta/eV,'eV'
     do i = 1 , N_tbt
        chars = '  '//trim(tbt_io(i)%part)
        write(*,opt_c) 'Contour name',trim(prefix)// &
