@@ -301,17 +301,18 @@ contains
 
     ! Read in the chemical potentials
     N_mu = fdf_nmu('TS',mus)
+    err = .true.
     if ( N_mu < 1 ) then
+       err = .false.
        N_mu = fdffake_mu(mus,kT,Volt)
-    else
-       do i = 1 , N_mu
-          ! Default things that could be of importance
-          if ( .not. fdf_mu('TS',mus(i),kT,Volt) ) then
-             call die('Could not find chemical potential: ' &
-                  //trim(name(mus(i))))
-          end if
-       end do
     end if
+    do i = 1 , N_mu
+       ! Default things that could be of importance
+       if ( err .and. .not. fdf_mu('TS',mus(i),kT,Volt) ) then
+          call die('Could not find chemical potential: ' &
+               //trim(name(mus(i))))
+       end if
+    end do
 
     ! We consider 10 Kelvin to be the minimum allowed
     ! temperature difference of the leads.

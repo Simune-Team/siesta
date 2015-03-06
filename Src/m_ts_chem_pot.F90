@@ -197,6 +197,9 @@ contains
 #ifdef TBTRANS
     ! Tbtrans does not need the equilbrium contour information
     info(2) = .true.
+#ifdef TBT_PHONON
+    info(1) = .true.
+#endif
 #endif
 
     ! Initialize the temperature for this chemical potential
@@ -274,7 +277,7 @@ contains
 
       character(len=200) :: ln
 
-      if ( allocated(con) ) call die("Contour already found.")
+      if ( allocated(con) ) deallocate(con)
 
       ! we need to read in the equilibrium contour
       ! skip to "begin"

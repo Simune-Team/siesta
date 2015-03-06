@@ -1,4 +1,29 @@
 ----------------------------------------------------
+March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-331
+Allowed reading in from default blocks
+
+* Chemical potentials now allow reading in
+  using the default names without having to specify
+    %block TS.ChemPots
+  
+* Clarified a few die statements in tbtrans
+
+* Added heat flow calculation to phtrans, it now
+  spits out the heat-flow. 
+  The user can calculate the heat conductance using
+  the data in the .TBT.nc file.
+
+* Added OpenMP statements in the save routine, should
+  only matter for extreme energy-points simulation,
+  or extreme orbitals else it will be a small overhead.
+
+modified:
+  Src/m_ts_chem_pot.F90
+  Src/m_ts_options.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-330
 Enabled complete parallel build by make -j NPROCS
 

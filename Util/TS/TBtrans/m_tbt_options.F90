@@ -128,23 +128,32 @@ contains
     if ( N_mu < 1 ) then
        N_mu = fdf_nmu('TS',mus)
     end if
+    ltmp = .true.
     if ( N_mu < 1 ) then
+       ltmp = .false.
        N_mu = fdffake_mu(mus,kT,Volt)
-    else
-       do i = 1 , N_mu
-          ! Default things that could be of importance
-          if ( fdf_mu('TBT',mus(i),kT,Volt) ) then
-             ! success
-          else if ( fdf_mu('TS',mus(i),kT,Volt) ) then
-             ! success
-          else
-             call die('Could not find chemical potential: ' &
-                  //trim(name(mus(i))))
-          end if
-          ! Attach the ID
-          mus(i)%ID = i
-       end do
     end if
+    do i = 1 , N_mu
+       ! Default things that could be of importance
+       if ( fdf_mu('TBT',mus(i),kT,Volt) ) then
+          ! success
+       else if ( fdf_mu('TS',mus(i),kT,Volt) ) then
+          ! success
+       else if ( ltmp ) then
+          call die('Could not find chemical potential: ' &
+               //trim(name(mus(i))))
+       end if
+    end do
+#ifdef TBT_PHONON
+    ! Phonon transport cannot define different chemical potentials
+    ! Furthermore, they should be zero
+    do i = 1 , N_mu
+       if ( abs(mus(i)%mu) > 1.e-10 * eV ) then
+          call die('Phonon transport does not define chemical &
+               &potentials. I.e. you cannot lift the frequency spetra.')
+       end if
+    end do
+#endif
 
     ! To determine the same coordinate nature of the electrodes
     Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')

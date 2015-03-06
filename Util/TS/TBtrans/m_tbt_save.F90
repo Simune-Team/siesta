@@ -186,8 +186,8 @@ contains
             MPI_Comm_World,MPIerror)
 #endif
        if ( .not. sme ) then
-          call die('Dimensions in the TBT.nc file does not conform &
-               &to the current simulation.')
+          call die('Dimensions in the '//trim(fname)//' file &
+               &does not conform to the current simulation.')
        end if
 
        ! Check the variables
@@ -204,8 +204,8 @@ contains
             MPI_Comm_World,MPIerror)
 #endif
        if ( .not. sme ) then
-          call die('pivot, lasto, xa or a_buf in the TBT.nc file does &
-               &not conform to the current simulation.')
+          call die('pivot, lasto, xa or a_buf in the '//trim(fname)//' &
+               &file does not conform to the current simulation.')
        end if
 
        if ( .not. isGamma ) then
@@ -241,7 +241,7 @@ contains
                   &energy range ***'
           end if
 
-          call die('Currently the TBT.nc file exists, &
+          call die('Currently the '//trim(fname)//' file exists, &
                &we do not currently implement a continuation scheme.')
           
           return
@@ -983,7 +983,7 @@ contains
   subroutine state_cdf2ascii(fname,nspin,ispin,N_Elec,Elecs,N_E,rW,save_DATA)
 
     use parallel, only : Node
-    use units, only : eV
+    use units, only : eV, Kelvin
 
     use variable
     use dictionary
@@ -1010,7 +1010,9 @@ contains
     real(dp), allocatable :: rkpt(:,:), rwkpt(:)
     real(dp), allocatable :: rE(:)
     real(dp), allocatable :: r2(:,:), r3(:,:,:)
-#ifndef TBT_PHONON
+#ifdef TBT_PHONON
+    real(dp) :: Flow, dT
+#else
     real(dp) :: Current, V
 #endif
     integer, allocatable :: pvt(:)
@@ -1079,7 +1081,11 @@ contains
     ! reduce the requirement here...
     deallocate(r3)
 
-#ifndef TBT_PHONON
+#ifdef TBT_PHONON
+    if ( Node == 0 .and. N_Elec > 1 ) then
+       write(*,'(/,a)')'Heatflow (ensure freqency range covers temperature tails):'
+    end if
+#else
     if ( Node == 0 .and. N_Elec > 1 ) then
        write(*,'(/,a)')'Currents (ensure entire Fermi function window):'
     end if
@@ -1150,23 +1156,54 @@ contains
           call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Transmission',&
                '# Transmission, k-averaged')
 
-#ifndef TBT_PHONON
           ! The array r2 now contains the k-averaged transmission.
+#ifdef TBT_PHONON
+          ! Now we calculate the heat-flow
+          ! nb function is: nb(E-E1) - nb(E-E2) IMPORTANT
+          Flow = 0._dp
+!$OMP parallel do default(shared), private(i), &
+!$OMP&reduction(+:Flow)
+          do i = 1 , NE
+             ! We have rE in eV, hence the conversion
+             Flow = Flow + r2(i,1) * rW(i) * rE(i) * nb(rE(i)*eV, &
+                  Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
+                  Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
+          end do
+!$OMP end parallel do
+
+          ! rE is already in eV, r2 and nb are unit-less
+          ! rW is in Ry => / eV
+          !     eV to 1 / s => / hbar[eV s]
+          !     1 / s to 1 / fs => / 1e15
+          Flow = Flow / eV / 0.658211928_dp
+          dT = ( Elecs(iEl)%mu%kT - Elecs(jEl)%mu%kT ) / Kelvin
+
+          if ( Node == 0 ) then
+             write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
+                  ' -> ',trim(Elecs(jEl)%name),', dT [K] / E-flow [eV/fs]: ', &
+                  dT, ' K / ',Flow,' eV/fs'
+          end if
+#else
           ! Now we calculate the current
           ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
           Current = 0._dp
+!$OMP parallel do default(shared), private(i), &
+!$OMP&reduction(+:Current)
           do i = 1 , NE
              ! We have rE in eV, hence the conversion
              Current = Current + r2(i,1) * rW(i) * nf(rE(i)*eV, &
                   Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
                   Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
           end do
+!$OMP end parallel do
+
+          ! rW is in Ry => / eV
           Current = Current / eV * 3.87404e-5_dp ! e**2 / h (not 2)
           V = ( Elecs(iEl)%mu%mu - Elecs(jEl)%mu%mu ) / eV
 
           if ( Node == 0 ) then
              write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
-                  ' -> ',trim(Elecs(jEl)%name),' V [V] / I [A]: ', &
+                  ' -> ',trim(Elecs(jEl)%name),', V [V] / I [A]: ', &
                   V, ' V / ',Current,' A'
           end if
 #endif
@@ -1177,11 +1214,9 @@ contains
 
     end do
 
-#ifndef TBT_PHONON
     if ( Node == 0 ) then
        write(*,*) ! new-line
     end if
-#endif
 
     ! Clean-up
     deallocate(rE,rkpt,rwkpt,pvt)
@@ -1221,9 +1256,13 @@ contains
          end do
          if ( nkpt > 1 ) then
             if ( ik == 1 ) then
+!$OMP parallel workshare default(shared)
                DAT(:,:,1) = DAT(:,:,1) * wkpt(ik)
+!$OMP end parallel workshare
             else
+!$OMP parallel workshare default(shared)
                DAT(:,:,1) = DAT(:,:,1) + DAT(:,:,ik) * wkpt(ik)
+!$OMP end parallel workshare
             end if
          end if
       end do
@@ -1232,11 +1271,17 @@ contains
       
     end subroutine save_DAT
 
-#ifndef TBT_PHONON
+#ifdef TBT_PHONON
+    elemental function nb(E,E1,kT1,E2,kT2)
+      real(dp), intent(in) :: E,E1,kT1,E2,kT2
+      real(dp) :: nb
+      nb = 1._dp/(exp((E-E1)/kT1)-1._dp) - 1._dp/(exp((E-E2)/kT2)-1._dp)
+    end function nb
+#else
     elemental function nf(E,E1,kT1,E2,kT2)
       real(dp), intent(in) :: E,E1,kT1,E2,kT2
       real(dp) :: nf
-      nf = 1._dp/(1._dp+exp((E-E1)/kT1)) - 1._dp/(1._dp+exp((E-E2)/kT2))
+      nf = 1._dp/(exp((E-E1)/kT1)+1._dp) - 1._dp/(exp((E-E2)/kT2)+1._dp)
     end function nf
 #endif
 
