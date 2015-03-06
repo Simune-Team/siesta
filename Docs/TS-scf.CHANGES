@@ -1,4 +1,21 @@
 ----------------------------------------------------
+March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-332
+Enabled reading from the first argument given to siesta/tbtrans
+
+* Instead of doing pipes siesta/transiesta/tbtrans can
+  now read from the first file given on the command line.
+  
+  This will prohibit the creation of the INPUT_TMP.*
+  files.
+
+  In case the compiler does not support this,
+  do -DNO_F2003 to disable this feature.
+
+modified:
+  Src/reinit.F
+  Util/TS/TBtrans/tbt_reinit.F90
+
+----------------------------------------------------
 March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-331
 Allowed reading in from default blocks
 

@@ -34,7 +34,7 @@ C
       character(len=*), intent(out) :: sname
 
 C  Internal variables .................................................
-      character(len=20) filein, fileout
+      character(len=50) filein, fileout
 
       integer  ::  count, length, lun, lun_tmp, iostat
       character :: slabel_default*59, sname_default*20, line*256
@@ -68,6 +68,25 @@ c
      $          'Siesta is reading its input from file INPUT_DEBUG'
            filein = 'INPUT_DEBUG'
 
+#ifndef NO_F2003
+        else if ( command_argument_count() > 0 ) then
+
+           ! Get file-name from input line
+           filein = ' '
+           call get_command_argument(1,filein,length)
+           if ( length > len(filein) ) then
+              call die ('The argument is too long to be retrieved, &
+     &please limit your-self to 50 characters for the input file') 
+           end if
+           inquire(file=filein,exist=debug_input)
+           if ( .not. debug_input ) then
+              call die('Input file '//trim(filein)//' does not exist? &
+     &Have you specified the wrong file-name?') 
+           end if
+           
+           write(*,'(/,2a)') 'reinit: Reading from ',trim(filein)
+
+#endif
         else
 
            if (input_file/=' ') then   ! Read data from given file
