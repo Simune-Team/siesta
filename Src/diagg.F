@@ -139,15 +139,10 @@ C Solve eigenvalue problem
       do ispin = 1,nspin
         call timer( 'r-eigvec', 1 )
         call timer( 'r-buildHS', 1 )
-!$OMP parallel default(shared), private(io,j,ind,jo)
-
-!$OMP workshare
-        Saux(:,:) = 0.0d0
-        Haux(:,:) = 0.0d0
-!$OMP end workshare
-
-!$OMP do
+!$OMP parallel do default(shared), private(io,j,ind,jo)
         do io = 1,nuo
+          Saux(:,io) = 0._dp
+          Haux(:,io) = 0._dp
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
@@ -155,8 +150,7 @@ C Solve eigenvalue problem
             Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
           enddo
         enddo
-!$OMP end do nowait
-!$OMP end parallel
+!$OMP end parallel do
         call timer( 'r-buildHS', 2 )
         call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
      &              psi(1,1,ispin), neigwanted, iscf, ierror )
@@ -168,15 +162,10 @@ C Check error flag and take appropriate action
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
 C Repeat diagonalisation with increased memory to handle clustering
-!$OMP parallel default(shared), private(io,j,ind,jo)
-
-!$OMP workshare
-          Saux(:,:) = 0.0d0
-          Haux(:,:) = 0.0d0
-!$OMP end workshare
-
-!$OMP do
+!$OMP parallel do default(shared), private(io,j,ind,jo)
           do io = 1,nuo
+            Saux(:,io) = 0._dp
+            Haux(:,io) = 0._dp
             do j = 1,numh(io)
               ind = listhptr(io) + j
               jo = listh(ind)
@@ -184,8 +173,7 @@ C Repeat diagonalisation with increased memory to handle clustering
               Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
             enddo
           enddo
-!$OMP end do nowait
-!$OMP end parallel
+!$OMP end parallel do
           call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
      &                psi(1,1,ispin), nuotot, iscf, ierror )
         endif

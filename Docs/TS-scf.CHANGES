@@ -1,4 +1,14 @@
 ----------------------------------------------------
+March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-334
+Speeded up buildD/H 
+
+* Small changes in diagk and diagg
+
+modified:
+  Src/diagg.F
+  Src/diagk.F
+
+----------------------------------------------------
 March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-333
 Changed Green's/Greens function to Green function
 
