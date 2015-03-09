@@ -1,4 +1,42 @@
 ----------------------------------------------------
+March 9, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-335
+Corrected bond-currents for k-points
+
+* The calculation of the bond-currents are
+  done using Im(Hij * Aji - Hij^* * Aij)
+  Which was not done previously.
+
+  Also bond-currents might not work for
+  non-orthogonal basis sets. We allow this, even
+  if we do not suspect it to work.
+  Note that it seems to produce "a meaningful" result
+  for the 4 terminal carbon chains. Maybe that example
+  is too easy.
+
+  This means that if bond-currents are calculated
+  using a non-orthogonal overlap we subtract S * Ef from the
+  Hamiltonian. Should it be E? Well, non-orthogonality is not
+  defined.
+
+* Changed tbt_data to be able to default to return
+  the symmetrized bond-currents.
+  I.e. it will add J_ij to J_ab if J_ij > 0,
+  else J_ba will be added the negative value.
+  This creates an uni-directional bond-current.
+
+  If one wants all the bond-currents one can still do
+  that by passing "symmetry=False".
+
+* Removed initial update_sc.
+  It _has_ to be the users responsibility.
+
+modified:
+  Util/TS/TB/tbt_data.py
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 March 8, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-334
 Speeded up buildD/H 
 

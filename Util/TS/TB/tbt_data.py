@@ -123,7 +123,7 @@ class TBTFile(object):
         """ Returns an array of of atoms for where the orbitals
         reside.
         """
-        if isinstance(orbs,int) or isinstance(orbs,(np.int16,np.int32)):
+        if isinstance(orbs,(int,np.int16,np.int32)):
             return np.where(orbs < self.lasto)[0][0]
         return np.array([np.where(o < self.lasto)[0][0] for o in orbs])
 
@@ -277,16 +277,20 @@ class TBTFile(object):
                             tmp[lasto[ia-1]:lasto[ia],:])).data))
         return Ja
     
-    def Jij2Jab(self,Jij):
+    def Jij2Jab(self,Jij,symmetry=True):
         """ Returns the total current flowing through each atom.
         
         It requires a sparse matrix return from ``self.Jij`` that
         contains the orbital current.
+        
+        If ``symmetry`` is ``True`` it will only return one of the 
+        bond currents, the one which is positive.
 
         It returns the atomic current on all atoms in the device
         region.
         Note that the returned atomic current is for the all atoms
-        even those not in ``self.a_dev.``
+        even those not in ``self.a_dev``, they are just zero outside
+        the device region.
         """
         # Create csr sparse formats.
         # We import here as the user might not want to
@@ -298,11 +302,17 @@ class TBTFile(object):
 
         # Faster to loop across data
         tmp = Jij.tocoo()
-        # Loop over all orbitals
-        for jo,io,d in zip(tmp.row,tmp.col,tmp.data):
-            ja = self.o2a(jo)
-            ia = self.o2a(io)
-            Jab[ja,ia] += d
+        if symmetry:
+            for ja,ia,d in zip(self.o2a(tmp.row),self.o2a(tmp.col),tmp.data*.5):
+                if ia == ja: continue
+                if d > 0:
+                    Jab[ja,ia] += d
+                else:
+                    Jab[ia,ja] -= d
+        else:
+            for ja,ia,d in zip(self.o2a(tmp.row),self.o2a(tmp.col),tmp.data):
+                if ia == ja: continue # it is zero anyway
+                Jab[ja,ia] += d
         return Jab.tocsr()
 
 class TBTProjFile(TBTFile):

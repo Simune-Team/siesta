@@ -435,6 +435,10 @@ contains
     if ( ('orb-current'.in.save_DATA) .or. &
          ('proj-orb-current'.in.save_DATA) ) then
        call newdSpData1D(sp_dev,fdist,orb_J,name='TBT orb_J')
+       ! Initialize to 0, it will be overwritten for all
+       ! values, so there is no need to initialize it
+       ! in the orb_current routine
+       call init_val(orb_J)
     end if
 #endif
 
@@ -824,13 +828,11 @@ contains
                 end if
 
 #ifdef NCDF_4
-                if ( 'orb-current' .in. save_DATA ) then
-
-#ifdef TBT_PHONON
-                   call orb_current(cOmega,spH,spS,zwork_tri,r_oDev,orb_J)
-#else
-                   call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
-#endif
+                if ( ('orb-current' .in. save_DATA) .and. .not.cE%fake) then
+                   
+                   ! The energy is related to the Fermi-level of the system
+                   ! We have already shifted H to 0.
+                   call orb_current(0._dp,spH,spS,zwork_tri,r_oDev,orb_J)
 
                    ! We need to save it immediately, we
                    ! do not want to have several arrays in the
@@ -952,13 +954,9 @@ contains
 #endif
 
 #ifdef NCDF_4
-                if ( 'proj-orb-current' .in. save_DATA ) then
+                if ( ('proj-orb-current' .in. save_DATA) .and. .not.cE%fake) then
 
-#ifdef TBT_PHONON
-                   call orb_current(cOmega,spH,spS,zwork_tri,r_oDev,orb_J)
-#else
-                   call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
-#endif
+                   call orb_current(0._dp,spH,spS,zwork_tri,r_oDev,orb_J)
 
                    ! We need to save it immediately, we
                    ! do not want to have several arrays in the

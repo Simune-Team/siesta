@@ -226,7 +226,7 @@ class TBT_Geom(SIESTA_UNITS):
         ``proximity`` narrows the search to the ``+-proximity`` nearest atoms.
         If ``None`` it will search all atoms.
     """
-    def __init__(self,cell,xa,dR=None,n_orb=1,Z=1,update_sc=False):
+    def __init__(self,cell,xa,dR=2.5,n_orb=1,Z=1,update_sc=False):
         self.cell = np.asarray(cell)
         self.xa = np.asarray(xa)
         self.xa.shape = (-1,3)
@@ -249,11 +249,7 @@ class TBT_Geom(SIESTA_UNITS):
             self.lasto = np.cumsum(
                 np.append(np.array([0],np.int),np.asarray(n_orb,np.int)))
         self.no_u = int(self.lasto[-1])
-        if dR:
-            self.dR = dR
-            update_sc = True
-        else:
-            self.dR = 2.5
+        self.dR = dR
         self.proximity = None
 
         # Force the calculation of the super-cells from an orbital
@@ -908,7 +904,7 @@ class TBT_Geom(SIESTA_UNITS):
                 ix, xx = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR,idx=idx,ret_coord=True)
             else:
                 ix = self.close_sc(xyz_ia,self.isc_off[s,:],dR=dR,idx=idx)
-            if isinstance(ix,(list,np.ndarray)):
+            if isinstance(ix,list):
                 # we have a list of arrays
                 if idx_a is None:
                     idx_a = [x + na for x in ix]
@@ -933,8 +929,7 @@ class TBT_Geom(SIESTA_UNITS):
                     if ret_coord: 
                         xa = np.append(xa,xx)
                         xa.shape = (-1,3)
-        if ret_coord: 
-            return idx_a,xa
+        if ret_coord: return idx_a,xa
         return idx_a
         
 

@@ -630,18 +630,18 @@ contains
   end subroutine A_Gamma
 
 #ifdef NCDF_4
-  subroutine orb_current(cE,spH,spS,A_tri,r,orb_J)
+  subroutine orb_current(Ef,spH,spS,A_tri,r,orb_J)
 
     use class_Sparsity
     use class_zSpData1D
     use class_dSpData1D
     use class_zTriMat
-    use m_ts_cctype, only : ts_c_idx
     use intrinsic_missing, only : SFIND
 
-    type(ts_c_idx), intent(in) :: cE
+    real(dp), intent(in) :: Ef
     type(zSpData1D), intent(inout) :: spH, spS
     type(zTriMat), intent(inout) :: A_tri
+    ! The region that specifies the size of orb_J
     type(tRgn), intent(in) :: r
     type(dSpData1D), intent(inout) :: orb_J
 
@@ -650,19 +650,14 @@ contains
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 
-    real(dp) :: E
     complex(dp), pointer :: H(:), S(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
-    integer :: io, iu, ind, iind, idx, ju
-
-    if ( cE%fake ) return
+    integer :: iu, io, ind, iind, idx, ju, jo
 
 #ifdef TBTRANS_TIMING
     call timer('orb-current',1)
 #endif
-
-    E = real(cE%e,dp)
 
     sp => spar(spH)
     H  => val (spH)
@@ -675,19 +670,24 @@ contains
 
     A => val(A_tri)
 
-    ! Initialize
-!$OMP parallel do default(shared), private(iu,io,ju,iind,ind,idx)
+!$OMP parallel do default(shared), private(iu,io,ju,jo,iind,ind,idx)
     do iu = 1, r%n
        io = r%r(iu)
-       if ( i_ncol(io) /= 0 ) then
 
-       J(i_ptr(io)+1:i_ptr(io)+i_ncol(io)) = 0._dp
+#ifndef TS_NOCHECKS
+       if ( i_col(io) == 0 ) call die('orb_current: J has zero columns &
+            &for at least one row')
+#endif
 
        ! Loop on entries here...
        do ju = 1 , r%n
-          iind = SFIND(i_col(i_ptr(io)+1:i_ptr(io)+i_ncol(io)),r%r(ju))
+          ! We search the transposed sparse J matrix as 
+          ! nnzs(H) > nnzs(J), always.
+          ! J(iind) = J(jo,io)
+          jo = r%r(ju)
+          iind = SFIND(i_col(i_ptr(jo)+1:i_ptr(jo)+i_ncol(jo)),io)
           if ( iind == 0 ) cycle
-          iind = i_ptr(io) + iind
+          iind = i_ptr(jo) + iind
 
           ! Check if the orbital exists in the region
           ! We are dealing with a UC sparsity pattern.
@@ -695,16 +695,26 @@ contains
           ! the device region is a subset of the full sparsity
           ! pattern
           ind = l_ptr(io) + &
-               SFIND(l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io)),i_col(iind))
+               SFIND(l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io)),jo)
+
+          ! H(ind) = H(io,jo) ^ T = H(jo,io)
 
           ! Notice that H and S are transposed
+          jo  = index(A_tri,iu,ju)
           idx = index(A_tri,ju,iu)
-          
-          ! Jnm = Hmn * Im[A_nm]
-          J(iind) = ( H(ind) - E * S(ind) ) * aimag( A(idx) ) 
-       end do
 
-       end if
+          ! Jji = - Im(Hji * A_ij + Hji^* * A_ji)
+          ! I think we need a factor 1/2, but as the units
+          ! are more or less never used, I refrain from
+          ! dividing by two!
+          ! Currently we calculate it using the intrinsic
+          ! overlap matrix, however bond-currents are 
+          ! not well defined for non-orthogonal basis sets.
+          ! Hence, one should not expect this to behave expectedly
+          J(iind) = - aimag( ( H(ind) - Ef * S(ind) ) * A(jo) - &
+               dconjg( H(ind) - Ef * S(ind) ) * A(idx) )
+          
+       end do
     end do
 !$OMP end parallel do
 
