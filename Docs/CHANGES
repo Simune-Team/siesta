@@ -6,6 +6,18 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-03-04  10:50:00 GMT                                     trunk-467
+Fix import of idyn in save_density_matrix (rc-4.0)
+
+* The idyn variable was not imported from siesta_options 
+  in standard "siesta" mode
+
+(thanks to J. Junquera)
+
+modified:
+  Src/save_density_matrix.F
+
+-----------------------------------------------------------------------
 2015-02-03  14:30:00 GMT                                     trunk-466
 Fixed IO statements for molecularmechanics module
 

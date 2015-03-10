@@ -1,6 +1,18 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-03-04                                              rc-4.0-pl-6
+Fix import of idyn in save_density_matrix
+
+* The idyn variable was not imported from siesta_options 
+  in standard "siesta" mode
+
+(thanks to J. Junquera)
+
+modified:
+  Src/save_density_matrix.F
+
+----------------------------------------------------------------------
 2015-02-03                                              rc-4.0-pl-5
 Fixed IO statements for molecularmechanics module
 
