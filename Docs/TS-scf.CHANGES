@@ -1,4 +1,14 @@
 ----------------------------------------------------
+March 10, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-337
+Shifting of H is done for only the Fermi-level, not E
+
+* Apparent bug-fix for bond-currents with non-orthogonal
+  basis set. It is not correct, but it makes more sense.
+
+modified:
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+
+----------------------------------------------------
 March 10, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-336
 Re-inserted the energy dependence of H with respect to S for BC
 

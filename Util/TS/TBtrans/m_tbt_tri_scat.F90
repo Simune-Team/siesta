@@ -677,7 +677,12 @@ contains
     call timer('orb-current',1)
 #endif
 
-    E = real(cE%e,dp)
+    !E = real(cE%e,dp)
+    ! We shift to the Hamiltonian to the Fermi level
+    ! which ensures that the Hamiltonian is invariant under
+    ! changed potential.
+    ! As H is already shifted to Ef we just use:
+    E = 0._dp
 
     sp => spar(spH)
     H  => val (spH)
