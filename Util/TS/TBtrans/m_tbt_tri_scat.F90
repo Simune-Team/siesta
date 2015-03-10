@@ -81,7 +81,9 @@ contains
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
     
     ! Initialize DOS to 0
+!$OMP parallel workshare default(shared)
     DOS(:) = 0._dp
+!$OMP end parallel workshare
 
     off2 = 0
     np = parts(Gf_tri)
@@ -149,7 +151,9 @@ contains
 
     end do
 
+!$OMP parallel workshare default(shared)
     DOS(:) = DOS(:) / Pi
+!$OMP end parallel workshare
 
 #ifdef TBTRANS_TIMING
     call timer('GF-DOS',2)
@@ -200,7 +204,9 @@ contains
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
     
     ! Initialize DOS to 0
+!$OMP parallel workshare default(shared)
     DOS(:) = 0._dp
+!$OMP end parallel workshare
 
     off2 = 0
     np = parts(Gf_tri)
@@ -328,7 +334,9 @@ contains
 
     end do
 
+!$OMP parallel workshare default(shared)
     DOS(:) = DOS(:) / Pi
+!$OMP end parallel workshare
 
   contains
 
@@ -385,7 +393,9 @@ contains
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! Initialize DOS to 0
+!$OMP parallel workshare default(shared)
     DOS(:) = 0._dp
+!$OMP end parallel workshare
 
     off2 = 0
     np = parts(A_tri)
@@ -432,7 +442,11 @@ contains
     end do
 
     ! The spectral function has a factor two
+
+!$OMP parallel workshare default(shared)
     DOS(:) = DOS(:) / (2._dp * Pi)
+!$OMP end parallel workshare
+
 
 #ifdef TBTRANS_TIMING
     call timer('A-DOS',2)
@@ -630,15 +644,16 @@ contains
   end subroutine A_Gamma
 
 #ifdef NCDF_4
-  subroutine orb_current(Ef,spH,spS,A_tri,r,orb_J)
+  subroutine orb_current(cE,spH,spS,A_tri,r,orb_J)
 
     use class_Sparsity
     use class_zSpData1D
     use class_dSpData1D
     use class_zTriMat
+    use m_ts_cctype, only : ts_c_idx
     use intrinsic_missing, only : SFIND
 
-    real(dp), intent(in) :: Ef
+    type(ts_c_idx), intent(in) :: cE
     type(zSpData1D), intent(inout) :: spH, spS
     type(zTriMat), intent(inout) :: A_tri
     ! The region that specifies the size of orb_J
@@ -653,11 +668,16 @@ contains
     complex(dp), pointer :: H(:), S(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
+    real(dp) :: E
     integer :: iu, io, ind, iind, idx, ju, jo
+
+    if ( cE%fake ) return
 
 #ifdef TBTRANS_TIMING
     call timer('orb-current',1)
 #endif
+
+    E = real(cE%e,dp)
 
     sp => spar(spH)
     H  => val (spH)
@@ -667,6 +687,8 @@ contains
     i_sp => spar(orb_J)
     J    => val (orb_J)
     call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
+
+    ! We do not initialize J as every entry is overwritten
 
     A => val(A_tri)
 
@@ -703,7 +725,7 @@ contains
           jo  = index(A_tri,iu,ju)
           idx = index(A_tri,ju,iu)
 
-          ! Jji = - Im(Hji * A_ij + Hji^* * A_ji)
+          ! Jji = - Im(Hji A_ij - Hji^* A_ji)
           ! I think we need a factor 1/2, but as the units
           ! are more or less never used, I refrain from
           ! dividing by two!
@@ -711,8 +733,8 @@ contains
           ! overlap matrix, however bond-currents are 
           ! not well defined for non-orthogonal basis sets.
           ! Hence, one should not expect this to behave expectedly
-          J(iind) = - aimag( ( H(ind) - Ef * S(ind) ) * A(jo) - &
-               dconjg( H(ind) - Ef * S(ind) ) * A(idx) )
+          J(iind) = - aimag( ( H(ind) - E * S(ind) ) * A(jo) - &
+               dconjg( H(ind) - E * S(ind) ) * A(idx) )
           
        end do
     end do
@@ -744,9 +766,7 @@ contains
     call timer('insert-SE',1)
 #endif
 
-!$OMP single
     El%idx_o = El%idx_o - 1
-!$OMP end single ! IMPLICIT BARRIER
     no = TotUsedOrbs(El)
 
     ! We are dealing with the intrinsic electrode
@@ -756,7 +776,7 @@ contains
     ! not bulk) A non-bulk electrode
 
     if ( El%Bulk ) then
-!$OMP do private(j,je,i,ie)
+!$OMP parallel do default(shared), private(j,je,i,ie)
        do j = 1 , n2
           je = r%r(off2+j) - El%idx_o
           if ( 1 <= je .and. je <= no ) then
@@ -771,9 +791,9 @@ contains
           end do
           end if
        end do
-!$OMP end do
+!$OMP end parallel do
     else
-!$OMP do private(j,je,i,ie)
+!$OMP parallel do default(shared), private(j,je,i,ie)
        do j = 1 , n2
           je = r%r(off2+j) - El%idx_o
           if ( 1 <= je .and. je <= no ) then
@@ -788,12 +808,10 @@ contains
           end do
           end if
        end do
-!$OMP end do
+!$OMP end parallel do
     end if
     
-!$OMP single
     El%idx_o = El%idx_o + 1
-!$OMP end single ! IMPLICIT BARRIER
 
 #ifdef TBTRANS_TIMING
     call timer('insert-SE',2)
@@ -825,7 +843,7 @@ contains
     ! is always considered to be "non-bulk" as
     ! we have it downfolded.
 
-!$OMP do private(j,ii,je,i,ie,idx)
+!$OMP parallel do default(shared), private(j,ii,je,i,ie,idx)
     do j = 1 , no
        ii = (j-1)*no
        ! grab the index in the full tri-diagonal matrix
@@ -839,7 +857,7 @@ contains
           
        end do
     end do
-!$OMP end do nowait
+!$OMP end parallel do
 
 #ifdef TBTRANS_TIMING
     call timer('insert-SED',2)

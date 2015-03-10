@@ -1,4 +1,22 @@
 ----------------------------------------------------
+March 10, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-336
+Re-inserted the energy dependence of H with respect to S for BC
+
+* Added bond-currents the energy specification again.
+
+* Changed DOS initialization and normalization to also
+  be threaded.
+
+* Moved threading of self-energies into the subroutine.
+  I am not too sure about the specs for the OpenMP routines
+  but this is for now a more safe choice (let me note that I have
+  not had troubles with it!)
+
+modified:
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 March 9, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-335
 Corrected bond-currents for k-points
 

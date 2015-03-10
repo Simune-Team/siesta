@@ -828,11 +828,13 @@ contains
                 end if
 
 #ifdef NCDF_4
-                if ( ('orb-current' .in. save_DATA) .and. .not.cE%fake) then
-                   
-                   ! The energy is related to the Fermi-level of the system
-                   ! We have already shifted H to 0.
-                   call orb_current(0._dp,spH,spS,zwork_tri,r_oDev,orb_J)
+                if ( 'orb-current' .in. save_DATA ) then
+
+#ifdef TBT_PHONON
+                   call orb_current(cOmega,spH,spS,zwork_tri,r_oDev,orb_J)
+#else
+                   call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
+#endif
 
                    ! We need to save it immediately, we
                    ! do not want to have several arrays in the
@@ -954,10 +956,14 @@ contains
 #endif
 
 #ifdef NCDF_4
-                if ( ('proj-orb-current' .in. save_DATA) .and. .not.cE%fake) then
+                if ( 'proj-orb-current' .in. save_DATA ) then
 
-                   call orb_current(0._dp,spH,spS,zwork_tri,r_oDev,orb_J)
-
+#ifdef TBT_PHONON
+                   call orb_current(cOmega,spH,spS,zwork_tri,r_oDev,orb_J)
+#else
+                   call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
+#endif
+                   
                    ! We need to save it immediately, we
                    ! do not want to have several arrays in the
                    ! memory
@@ -1202,13 +1208,13 @@ contains
 
        end if
     end do
-!$OMP end do
+!$OMP end do nowait
+
+!$OMP end parallel
 
     do io = 1 , N_Elec
        call insert_self_energy_dev(Gfinv_tri,Gfinv,r,Elecs(io))
     end do
-
-!$OMP end parallel
 
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
@@ -1400,10 +1406,9 @@ contains
 
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
-!$OMP parallel default(shared), private(iu,io,ind,ju)
 
     ! We will only loop in the region
-!$OMP do
+!$OMP parallel do default(shared), private(iu,io,ind,ju)
     do iu = 1 , n2
        io = r%r(off2+iu) ! get the orbital in the sparsity pattern
 
@@ -1428,11 +1433,9 @@ contains
        end do
        end if
     end do
-!$OMP end do
+!$OMP end parallel do
 
     call insert_Self_Energy(n1,n2,M,r,El,off1,off2)
-
-!$OMP end parallel
 
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
