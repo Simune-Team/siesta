@@ -1,4 +1,13 @@
 ----------------------------------------------------
+March 10, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-338
+Corrected equations for i->i transmission
+
+modified:
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 March 10, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-337
 Shifting of H is done for only the Fermi-level, not E
 

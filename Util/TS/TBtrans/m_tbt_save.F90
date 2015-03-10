@@ -1191,21 +1191,25 @@ contains
           ! Now we calculate the current
           ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
           Current = 0._dp
+          if ( iEl == jEl ) then
+             ! Do nothing
+          else
 !$OMP parallel do default(shared), private(i), &
 !$OMP&reduction(+:Current)
-          do i = 1 , NE
-             ! We have rE in eV, hence the conversion
-             Current = Current + r2(i,1) * rW(i) * nf(rE(i)*eV, &
-                  Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
-                  Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
-          end do
+             do i = 1 , NE
+                ! We have rE in eV, hence the conversion
+                Current = Current + r2(i,1) * rW(i) * nf2(rE(i)*eV, &
+                     Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
+                     Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
+             end do
 !$OMP end parallel do
+          end if
 
           ! rW is in Ry => / eV
           Current = Current / eV * 3.87404e-5_dp ! e**2 / h (not 2)
           V = ( Elecs(iEl)%mu%mu - Elecs(jEl)%mu%mu ) / eV
 
-          if ( Node == 0 ) then
+          if ( Node == 0 .and. iEl /= jEl ) then
              write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
                   ' -> ',trim(Elecs(jEl)%name),', V [V] / I [A]: ', &
                   V, ' V / ',Current,' A'
@@ -1286,10 +1290,15 @@ contains
       nb = 1._dp/(exp((E-E1)/kT1)-1._dp) - 1._dp/(exp((E-E2)/kT2)-1._dp)
     end function nb
 #else
-    elemental function nf(E,E1,kT1,E2,kT2)
+    elemental function nf2(E,E1,kT1,E2,kT2)
       real(dp), intent(in) :: E,E1,kT1,E2,kT2
+      real(dp) :: nf2
+      nf2 = nf(E,E1,kT1) - nf(E,E2,kT2)
+    end function nf2
+    elemental function nf(E,Ef,kT)
+      real(dp), intent(in) :: E,Ef,kT
       real(dp) :: nf
-      nf = 1._dp/(exp((E-E1)/kT1)+1._dp) - 1._dp/(exp((E-E2)/kT2)+1._dp)
+      nf = 1._dp/(exp((E-Ef)/kT)+1._dp)
     end function nf
 #endif
 

@@ -594,13 +594,14 @@ contains
   ! It takes the spectral function and multiplies it with
   ! the scattering matrix of the down-projected self-energy
   ! and calculates the transmission.
-  subroutine A_Gamma(A_tri,El,T)
+  subroutine A_Gamma(A_tri,El,T,same_lead)
 
     use class_zTriMat
 
     type(zTriMat), intent(inout) :: A_tri ! Spectral function
     type(Elec), intent(in) :: El
     real(dp), intent(out) :: T
+    logical, intent(in) :: same_lead
 
     complex(dp), pointer :: A(:)
     integer :: i, j, scat, n
@@ -623,6 +624,7 @@ contains
     ! memory layout in the tri-diagonal case.
 
     n = El%inDpvt%n
+    if ( .not. same_lead ) then
 !$OMP parallel do default(shared), &
 !$OMP&private(j,scat,i), reduction(-:T)
     do j = 1 , n
@@ -636,6 +638,23 @@ contains
        end do
     end do
 !$OMP end parallel do
+    else
+!$OMP parallel do default(shared), &
+!$OMP&private(j,scat,i), reduction(+:T)
+    do i = 1 , n
+       scat = (i-1) * n
+       do j = 1 , n
+          ! This algorithm requires El%Gamma to be transposed (and not
+          ! with factor i),
+          ! see: m_elec_se
+          ! Note that as i is not "swallowed" in \Gamma, this is actually
+          ! correct (calculated from \phi_L -> <psi|\dot N_L|\psi>
+          T = T + aimag( A(index(A_tri,El%inDpvt%r(i),El%inDpvt%r(j))) * &
+               conjg(El%Gamma(scat+j)) )
+       end do
+    end do
+!$OMP end parallel do
+    end if
 
 #ifdef TBTRANS_TIMING
     call timer('A-Gamma',2)

@@ -869,7 +869,7 @@ contains
                 ! the block spectral function
 
                 if ( .not. cE%fake ) then
-                   call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
+                   call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl),jEl==iEl)
                 end if
                 
              end do
@@ -988,14 +988,16 @@ contains
                   El_p%inDpvt%r => p_E%ME%mol%pvt%r
                   call proj_Mt_mix(p_E%ME%mol,p_E%idx, El_p%Gamma, p_E%ME%bGk)
                   
-                  call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
+                  call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt), &
+                       proj_T(ipt)%L%ME%El%ID == proj_T(ipt)%R(jEl)%ME%El%ID)
                   
                else
                   
                   iEl = -p_E%idx
-
-                  call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))
-
+                  
+                  call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt), &
+                       proj_T(ipt)%L%ME%El%ID == Elecs(iEl)%ID)
+                  
                end if
 
             end do
