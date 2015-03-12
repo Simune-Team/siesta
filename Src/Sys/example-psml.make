@@ -8,7 +8,7 @@
 # Use of this software constitutes agreement with the full conditions
 # given in the SIESTA license, as signed by all legitimate users.
 #
-SIESTA_ARCH=gfortran-nolibs-netcdf
+SIESTA_ARCH=gfortran-macosx-netcdf-psml
 #
 #
 FC=gfortran
@@ -23,26 +23,31 @@ RANLIB=echo
 LIBS=  
 SYS=nag
 #
+# This is an external version of FoX. If you
+# uncomment this, the internal version will be
+# used
+#
 FOX_ROOT=$(HOME)/lib/FoX/gfortran
 #
 # --- Edit the location of your netcdf files
 #
 NETCDF_ROOT=/usr/local
 NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
+NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdff
+#
+# --- Edit the location of your psml files
 #
 PSML_ROOT=$(HOME)/S/GIT/psml
 PSML_INCFLAGS=-I$(PSML_ROOT)/src
-#
-NCPS_ROOT=$(HOME)/S/GIT/ncps
-NCPS_INCFLAGS=-I$(NCPS_ROOT)/src
+PSML_LIBS= -L$(PSML_ROOT)/src -lpsml
 #
 FPPFLAGS=-DGFORTRAN -DCDF -DFC_HAVE_FLUSH -DFC_HAVE_ABORT 
 COMP_LIBS=
 #
-NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdff
-PSML_LIBS= -L$(PSML_ROOT)/src -lpsml
-NCPS_LIBS= -L$(NCPS_ROOT)/src -lncps
-LIBS=$(NETCDF_LIBS) $(PSML_LIBS) -framework veclib
+# These are the external libs only
+#
+LIBS=$(NETCDF_LIBS) $(PSML_LIBS)  -framework veclib
+#
 #
 .F.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<

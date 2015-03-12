@@ -264,11 +264,12 @@
         integer 
      .    iz, nrval, ir , nrgauss, nchloc, nzcontr, l, nVna,
      .    irelt, nsm, nvlocal
+        integer :: lmxkb_true
     
         logical  new
    
         logical  :: fit_3derivs, use_charge_cutoff, force_chlocal_method
-        logical  :: ignore_ghosts
+        logical  :: ignore_ghosts, quadratic
         real(dp) :: rmax_ps_check
         real(dp) :: kb_rmax
         character(len=40) :: vlocal_type
@@ -328,6 +329,11 @@
 ! 
           call read_vps(lmxo, lmxkb, nrval,a,b,rofi,drdi,s,vps,
      .        rho, chcore, zval, chgvps, nicore, irel, icorr,basp) 
+
+          ! drdi(:) : derivative of the r(i) function, or equivalently
+          !           distance between points.
+          ! s(:) = sqrt(drdi(:))  *** Note that it will be redefined for
+          !                           the purposes of integration
 
           do ir=1,nrval
             rho(ir)=chgvps*rho(ir)/zval
@@ -483,15 +489,25 @@ c    .          'atom: The above configuration will be used ',
                 call get_psml_vlocal(atm_label,rofi,nrval,Zval,vlocal,
      $                               vlocal_type)
 
+                ! Now we need to reconstruct the chlocal from vlocal
+                ! This is not completely trivial
+
                 use_charge_cutoff = .true.
+                quadratic = .true.   ! shape of chlocal near the origin
+                                     ! we do not really know, except that
+                                     ! in the case of a "siesta-fit"
+                                     ! chlocal is not quadratic, and 
+                                     ! Siesta uses the "vlocal" cutoff.
+
                 if (trim(vlocal_type)=="siesta-fit") then
                    use_charge_cutoff = .false.
+                   quadratic = .false.
                 endif
 
                 call chlocal_from_vlocal(rofi, vlocal, drdi,
-     $                         a, nrval,
+     $                         s, a, nrval,
      $                         Zval, nchloc, chlocal,
-     $                         use_charge_cutoff)
+     $                         use_charge_cutoff,quadratic)
              else
 
                 force_chlocal_method =
@@ -555,13 +571,15 @@ c    .          'atom: The above configuration will be used ',
 !-------------------------------------------------------------------
 ! 
 ! Array S for the Schrodinger eq. integration
+! Note that previously s was sqrt(drdi) !!!!
 ! 
             s(2:nrval) = drdi(2:nrval)*drdi(2:nrval)
             s(1) = s(2)
 
+            lmxkb_true = lmxkb
             if (fdf_boolean("Use.PSML.KB.Projectors",.false.)) then
                call get_psml_kbprojs(is,atm_label,a,b,rofi,nrval,Zval,
-     $                               lmxkb,nkbmax(is))
+     $                               lmxkb_true,nkbmax(is))
 
             else
 
@@ -2243,10 +2261,10 @@ C
 
         if (lmax.lt.linput) then
           write(6,'(a)') 
-     .      'read_vps: ERROR: You must generate a pseudopotential'
+     .      'read_vps: NOTE: Your pseudopotential does not have'
           write(6,'(a,i4)') 
-     .      'read_vps: ERROR: for each L up to ',linput
-          call die
+     .      'read_vps: NOTE: L up to the canonical',linput
+          !! call die  ! do not die any more
         endif
 
         nrval=nr+1 
@@ -2405,7 +2423,7 @@ C potential
       end subroutine get_psml_vlocal
 
       subroutine get_psml_kbprojs(is,atm_label,a,b,rofi,nrval,Zval,
-     $                            lmxkb,nkb)
+     $                            lmxkb_true,nkb)
       use m_psml
 
       integer, intent(in)           :: is ! species index, for comkb...
@@ -2415,11 +2433,12 @@ C potential
       real(dp), intent(in)          :: b
       integer, intent(in)           :: nrval
       real(dp), intent(in)          :: Zval
-      integer, intent(in)           :: lmxkb
+      integer, intent(inout)        :: lmxkb_true
       integer, intent(out)          :: nkb
 
       type(ps_t) :: ps
       integer    :: ir, l, ikb, nrc, nscalar, nkbl
+      integer    :: lmxkb
       integer, allocatable  :: idx(:), idxl(:)
       real(dp), allocatable :: proj(:)
       real(dp)   :: ekb, rc
@@ -2461,10 +2480,11 @@ C potential
        nkb = 0
        allocate(proj(nrval))
 
+       lmxkb = lmxkb_true  ! set to 'in' value
        do l = 0, lmxkb
           idxl = ps_Projector_Indexes_byL(ps,l,idx)
           nkbl = size(idxl)
-          nkblsave(l,is) = nkbl
+          nkblsave(l,is) = nkbl  ! propagate to structures
           do ikb = 1, nkbl
              ekb = 2.0_dp * ps_Projector_Ekb(ps,idxl(ikb))
              do ir = 2, nrval
@@ -2489,6 +2509,15 @@ C potential
              nkb = nkb + (2*l+1)
           enddo
        enddo
+
+       do l = 0, lmxkb
+          if (nkblsave(l,is) > 0)  lmxkb_true = l  ! set 'out' value
+       enddo
+       lmxkbsave(is) = lmxkb_true ! propagate to structures
+       if (lmxkb_true /= lmxkb) then
+          write(6,'(/,a, i4)') 'PSML: lmxkb redefined to: ', lmxkb_true
+       endif
+       
        write(6,'(/,a, i4)')
      .'PSML: Total number of  Kleinman-Bylander projectors: ', nkb
 

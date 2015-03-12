@@ -1,4 +1,94 @@
 ------------------------------------------------------------
+March 12, 2015  Alberto Garcia       trunk-462--ncps-61
+Improvements in psop library. More documentation and build changes.
+
+* The ncps library, containing the utilities related to the handling
+  of the classic Froyen-style pseudopotential data structures used in
+  Siesta is now in Src/ncps, and compiled transparently when needed.
+
+* An improved version of the psop library, containing the code to generate the
+  pseudopotential operator in the classic Siesta style (vlocal, KB
+  projectors), as well as other utilities, such as a generator of
+  chlocal given an arbitrary vlocal) is now in Src/psoplib. It is used
+  by Src/atom.F and by the new code in Pseudo/vnl-operator. There have
+  been some important fixes in some of the routines.
+
+* The directory Pseudo/vnl-operator contains the stand-alone program
+  'psop' to generate Vlocal and KB projectors in the classic Siesta
+  style, previously housed in Util/Pseudo-operator. See the README
+  file for details.
+
+* A new script Pseudo/atom/Tutorial/Utils/pgvnl.sh generates a Siesta-style
+  PSML file directly from an ATOM .inp file. 
+
+* The code in Util/Gen-basis has been upgraded to the new functionality, and
+  a new example provided.
+
+* The new options for PSML handling are now mentioned briefly in the
+  Siesta manual.
+
+* Assorted fixes and documentation, including the addition of
+  'reduced_vlocal' to the .ion files for easier future reference, and
+  an updated Src/Sys/example-psml.make file.
+
+* Removed the obsolete directory Util/pseudo-xml.
+
+removed:
+  Src/psml/
+  Util/Pseudo-operator/
+  Util/pseudo-xml/
+added:
+  Pseudo/atom/Tutorial/Utils/pgvnl.sh
+  Pseudo/vnl-operator/
+  Pseudo/vnl-operator/
+  Pseudo/vnl-operator/README
+  Pseudo/vnl-operator/add-siesta-vnl.sh
+  Pseudo/vnl-operator/local_xml.f90
+  Pseudo/vnl-operator/write_proj_psml.f90
+  Src/ncps
+  Src/psoplib/
+  Src/psoplib/arw.f
+  Src/psoplib/flib_spline.f90
+  Src/psoplib/fortran.mk
+  Src/psoplib/m_interpol.F90
+  Src/psoplib/m_kbgen.F
+  Src/psoplib/m_localgen.f
+  Src/psoplib/m_psop.f90
+  Src/psoplib/makefile
+  Src/psoplib/psop_params.f
+  Src/psoplib/schrodinger.F
+  Src/store_kbproj.f
+  Util/Gen-basis/Examples/O/
+  Util/Gen-basis/Examples/Si/
+  Util/Gen-basis/die.f90
+  Util/Gen-basis/psml_die.F90
+renamed:
+  Util/Gen-basis/Examples/O.psf => Util/Gen-basis/Examples/O/O.psf
+  Util/Gen-basis/Examples/o-basis.fdf => Util/Gen-basis/Examples/O/o-basis.fdf
+  Util/Pseudo-operator/Makefile => Pseudo/vnl-operator/Makefile
+  Util/Pseudo-operator/local_die.F => Pseudo/vnl-operator/local_die.F
+  Util/Pseudo-operator/psml_die.f => Pseudo/vnl-operator/psml_die.f
+  Util/Pseudo-operator/psop.f90 => Pseudo/vnl-operator/psop.f90
+  Util/Pseudo-operator/psop_options.f90 => Pseudo/vnl-operator/psop_options.f90
+  Util/Pseudo-operator/semicore_info.F90 => Pseudo/vnl-operator/semicore_info.F90
+  Util/Pseudo-operator/semicore_info_froyen.f90 => 
+                             Pseudo/vnl-operator/semicore_info_froyen.f90
+modified:
+  Docs/Makefile
+  Docs/siesta.tex
+  Src/Makefile
+  Src/Sys/example-psml.make
+  Src/atom.F
+  Src/basis_io.F
+  Src/obj_setup.sh
+  Util/Gen-basis/Makefile
+  Util/Gen-basis/gen-basis.F
+  Util/Gen-basis/Examples/O/o-basis.fdf
+  Pseudo/vnl-operator/Makefile
+  Pseudo/vnl-operator/psop.f90
+  Pseudo/vnl-operator/semicore_info.F90
+
+------------------------------------------------------------
 March 3, 2015  Alberto Garcia        trunk-462--ncps-60
 Put the psop code into a library and use it for everything
 

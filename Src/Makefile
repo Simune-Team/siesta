@@ -50,8 +50,8 @@ dep:
 include arch.make
 include Mk/FoX.mk
 
-INCFLAGS:= $(NETCDF_INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) \
-           $(PSOPLIB_INCFLAGS) $(INCFLAGS)
+INCFLAGS:= $(NETCDF_INCFLAGS) $(PSML_INCFLAGS) -I./ncps/src \
+           -I./psoplib $(INCFLAGS)
 # For removing any -ipo compilation in sub directories...
 # Later compilers are also having this enabled, and it lets you
 # specify what to not be used in libraries.
@@ -171,15 +171,31 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 #
 #--------------------------------------------------------------
+NCPS=ncps/src/libncps.a
+$(NCPS): 
+	(cd ncps/src ; $(MAKE) VPATH="$(VPATH)/ncps/src" \
+	MAIN_OBJDIR=$(MAIN_OBJDIR) \
+	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
+#
+#--------------------------------------------------------------
+PSOP=psoplib/libpsop.a
+$(PSOP): 
+	(cd psoplib ; $(MAKE) VPATH="$(VPATH)/psoplib" \
+	MAIN_OBJDIR=$(MAIN_OBJDIR) \
+	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
+#
+#--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
 	(cd xmlparser ; $(MAKE) VPATH="$(VPATH)/xmlparser" \
+	MAIN_OBJDIR=$(MAIN_OBJDIR) \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 #--------------------------------------------------------------
 XC=libSiestaXC.a
 $(XC): 
 	(cd SiestaXC ; $(MAKE) \
+	MAIN_OBJDIR=$(MAIN_OBJDIR) \
                     "VPATH_ROOT=$(VPATH)"  \
 	            "INCFLAGS=-I../MPI" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
@@ -187,6 +203,7 @@ $(XC):
 FDF=libfdf.a
 $(FDF): 
 	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" \
+	MAIN_OBJDIR=$(MAIN_OBJDIR) \
 		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 #
@@ -259,11 +276,14 @@ check-siesta:
 #
 siesta: check-siesta what version \
                 $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
+		$(NCPS) $(PSOP) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML)  \
                $(XC) $(XMLPARSER) $(MPI_INTERFACE) \
-               $(COMP_LIBS) $(FOX_LIBS) $(LIBS) 
+               $(COMP_LIBS) $(FOX_LIBS) \
+               $(NCPS) $(PSOP) \
+	       $(LIBS) 
 #
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
 	ar $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
@@ -291,13 +311,16 @@ check-ts:
 #
 transiesta: check-ts what version \
             $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
+            $(NCPS) $(PSOP) \
             $(WXML) $(XMLPARSER)  \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
                $(WXML) $(XMLPARSER)  \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
-               $(COMP_LIBS) $(FOX_LIBS) $(LIBS)
+               $(COMP_LIBS) $(FOX_LIBS) \
+               $(NCPS) $(PSOP) \
+               $(LIBS)
 #
 #
 clean: 
@@ -310,6 +333,8 @@ clean:
 	(cd fdf ; $(MAKE) clean)
 	@if [ -d FoX ] ; then (cd FoX ; touch arch.make ; $(MAKE) distclean) ; fi
 	(cd xmlparser ; $(MAKE) clean)
+	(cd ncps/src ; $(MAKE) clean)
+	(cd psoplib ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
@@ -526,7 +551,6 @@ m_iodm.o: sys.o
 m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
-m_kbgen.o: atom_options.o basis_specs.o
 m_kinetic.o: precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
@@ -733,7 +757,6 @@ state_init.o: m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o m_spin.o
 state_init.o: m_steps.o m_ts_io.o m_ts_options.o new_dm.o overlap.o parallel.o
 state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
 state_init.o: sparse_matrices.o sys.o write_subs.o zmatrix.o
-store_kbproj.o: atom.o
 store_kbproj.o: atom.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_iostruct.o
 struct_init.o: m_mpi_utils.o parallel.o periodic_table.o siesta_cml.o

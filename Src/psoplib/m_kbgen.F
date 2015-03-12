@@ -1,0 +1,776 @@
+
+      module m_kbgen
+
+      use psop_params,      only: nrmax, lmaxd, nkbmx
+      use schrodinger_m,    only: schro_eq, energ_deriv, rphi_vs_e
+
+      implicit none
+
+      integer, parameter, private :: dp = selected_real_kind(10,100)
+
+
+      public :: kbgen
+      private
+
+      CONTAINS
+
+! ----------------------------------------------------------------------
+
+      subroutine KBgen( is, a, b, rofi, drdi, s, 
+     .                  vps, vlocal, ve, nrval, Zval, lmxkb, 
+     .                  nkbl, erefkb, nkb,
+     $                  new_kb_reference_orbitals,
+     $                  restricted_grid,
+     $                  debug_kb_generation,
+     $                  ignore_ghosts,
+     $                  kb_rmax,
+     $                  process_proj)
+
+
+! Call routines for:
+! (1) The generation of the Kleinman-Bylander projectors,
+! (2) cheking for the presence of ghost states, and 
+! (3) the storage of all the information in the corresponding common blocks.
+!
+!  Written D. Sanchez-Portal, Aug. 1998.
+!  Modified by DSP to allow more than one projector per l, July 1999.
+!  Separated in an independent module by JJ, April 2013.
+!
+      implicit none
+
+      integer, intent(in)  :: is            ! Species index
+      integer, intent(in)  :: nrval         ! Number of points in the 
+                                            !   logarithmic grid required to 
+                                            !   describe the valence eigenfunc
+      integer, intent(in)  :: lmxkb         ! Maximum angular momentum of the
+                                            !   KB projector
+      integer, intent(in)  :: nkbl(0:lmaxd) ! Number of KB projectors per 
+                                            !   angular momentum shell
+      real(dp), intent(in) :: rofi(nrmax)   ! Radial logarithmic grid
+      real(dp), intent(in) :: vps(nrmax,0:lmaxd)  
+                                            ! Semilocal components of the 
+                                            !   pseudopotential
+      real(dp), intent(in) :: drdi(nrmax)   ! Distance between consecutive 
+                                            !   points of the logarithmic grid. 
+                                            !   Required to perform radial 
+                                            !   integrals.
+      real(dp), intent(in) :: vlocal(nrmax) ! Local component of the 
+                                            !   pseudopotential
+      real(dp), intent(in) :: Zval          ! Valence charge of the atom
+      real(dp), intent(in) :: a             ! Step parameter of logarithmic grid
+      real(dp), intent(in) :: b             ! Scale parameter of the logari grid
+      real(dp), intent(in) :: ve(:)         ! Screening potential generated from
+                                            !   valence charge pseudo-charge 
+                                            !   given by the pseudopotential 
+                                            !   generation program
+      real(dp), intent(in) :: s(:)          ! Metric function
+      real(dp), intent(inout) :: erefkb(nkbmx,0:lmaxd)  
+                                            ! Reference energies for the 
+                                            !  calculation of KB projectors
+      integer, intent(out) :: nkb           ! Total number of KB projectors
+
+      logical, intent(in)  :: new_kb_reference_orbitals
+      logical, intent(in)  :: restricted_grid
+      logical, intent(in)  :: debug_kb_generation
+      logical, intent(in)  :: ignore_ghosts
+      real(dp), intent(in) :: kb_rmax
+
+      interface
+         subroutine process_proj(l,ikb,ekb,nrc,erefkb,dkbcos,
+     $                           nrval,rofi,proj)
+
+         ! Custom routine to process the information about each projector
+
+         integer, parameter   :: dp = selected_real_kind(10,100)
+         integer, intent(in)  :: l
+         integer, intent(in)  :: ikb
+         integer, intent(in)  :: nrc
+         real(dp), intent(in) :: ekb
+         real(dp), intent(in) :: erefkb
+         real(dp), intent(in) :: dkbcos
+         integer, intent(in)  :: nrval
+         real(dp), intent(in) :: rofi(:)
+         real(dp), intent(in) :: proj(:)
+         end subroutine process_proj
+      end interface
+
+!     Internal variables
+      integer 
+     .  l,nprin, nnodes, ighost, nrwf, ikb, ir,
+     .  nrc, nrlimit
+      real(dp)
+     .  rc(nkbmx,0:lmaxd), dkbcos(nkbmx,0:lmaxd),
+     .  ekb(nkbmx,0:lmaxd)
+               
+      real(dp)
+     .  rphi(nrmax,nkbmx), rmax, dnrm, 
+     .  proj(nrmax)
+
+      character(len=20) :: filename = ""
+                
+!     The atomic wavefunctions and/or its energy derivatives are
+!     calculated only inside a sphere of radius Rmax. To define the
+!     KB projectors they will not be needed very far from the nucleus,
+!     and this limitation simplifies the handling of not bound states.
+!     The default value has been changed from 6.0d0 to 20.0d0 by
+!     J. Junquera for a better comparison with the KB projectors 
+!     generated by Abinit for the non-bonding states.
+
+      real(dp) :: Rmax_kb_default 
+
+      character(len=1), dimension(0:4) ::
+     $                  lsymb = (/'s','p','d','f','g'/)
+
+      save ighost
+      data ighost / 0 /
+
+!     Define the radius of the sphere where the atomic wavefunctions 
+!     will be computed, and the corresponding index of the point 
+!     in the logarithmic grid (nrwf)
+
+      if (new_kb_reference_orbitals) then
+         Rmax_kb_default = 60.0d0
+      else
+         Rmax_kb_default = 6.0d0
+      endif
+      ! Allow finer control by argument, if non-zero
+      if (kb_rmax == 0.0_dp) then
+         rmax = Rmax_kb_default
+      else
+         rmax = kb_rmax
+      endif
+
+      nrwf = nint(log(Rmax/b+1.0d0)/a) + 1
+      nrwf = min(nrwf,nrval)
+      if (restricted_grid)  nrwf=nrwf+1-mod(nrwf,2)  ! Make it odd
+
+      if (new_kb_reference_orbitals) then
+        nrlimit = nrwf
+      else
+        nrlimit = nrval
+      endif
+
+      if (debug_kb_generation) then
+        write(6,*)
+     .    ' new_kb_reference_orbitals = ', new_kb_reference_orbitals
+        write(6,*)
+     .    ' restricted_grid = ', restricted_grid
+        write(6,*)
+     .    ' Rmax_kb_default = ', Rmax_kb_default
+        write(6,*)
+     .    ' KB.Rmax = ', rmax
+        write(6,*)
+     .    ' nrwf, nrval, nrlimit = ', nrwf, nrval, nrlimit
+      endif
+
+
+
+         
+!     Compute the atomic wavefunctions and eigenvalues
+!     for the construction of the KB projectors
+!
+!     Loop over all the angular momenta for which we are going to compute
+!     a KB projector
+      do l = 0, lmxkb  
+!       Initialize the atomic wavefunction and the KB projector
+        do ir = 1, nrmax
+          do ikb = 1, nkbmx
+            rphi(ir,ikb) = 0.0d0
+          enddo 
+          proj(ir) = 0.0d0
+        enddo
+!       For a given angular momentum, more than one KB projector 
+!       might be generated
+        do ikb = 1, nkbl(l)
+ 
+!         If the reference energies have not been specifed, the eigenstates
+!         with the condition of being zero at r(nrwf) will be used.
+!         This is a change introduced by J. Junquera
+!         with respect to the original version, where 
+!         the condition of being zero at r(nrval) was imposed
+
+          if( erefkb(ikb,l) .ge. 1.0d3 ) then             
+            nnodes = ikb
+            nprin  = l+1
+            call schro_eq( Zval, rofi, vps(1,l), ve, s, drdi,
+     .                     nrlimit, l, a, b, nnodes, nprin,
+     .                     erefkb(ikb,l), rphi(1,ikb) ) 
+
+!           Normalization of the eigenstates inside a sphere of radius Rmax  
+            dnrm = 0.0d0
+            do ir = 1, nrwf
+              dnrm =dnrm + drdi(ir) * rphi(ir,ikb)**2
+            enddo 
+            dnrm = sqrt(dnrm)
+            do ir = 1, nrwf
+              rphi(ir,ikb) = rphi(ir,ikb)/dnrm
+            enddo 
+!! For debugging
+!            write(6,'(a,i5)')' # l       = ', l
+!            write(6,'(a,i5)')' # ikb     = ', ikb
+!            write(6,'(a,i5)')' # nnodes  = ', nnodes
+!            write(6,'(a,i5)')' # nprin   = ', nprin
+!            do ir = 1, nrval
+!              write(6,'(3f20.12)')rofi(ir), rphi(ir,ikb)
+!            end do
+!! End debugging
+!           If the energy is specified to be 1000 Ry, the energy derivative
+!           of the previous wavefunction will be used
+          elseif( (erefkb(ikb,l) .le. -1.0d3) .and. (ikb .gt. 1) ) then 
+            call energ_deriv( a, rofi, rphi(1,ikb-1), vps(1,l),
+     .                        ve, drdi, nrwf, l, erefkb(ikb-1,l),
+     .                        rphi(1,ikb), nrval )
+            erefkb(ikb,l) = 0.0d0
+!         If the reference energies have been specified, we just use them
+          else 
+            call rphi_vs_e( a, b, rofi, vps(1,l),
+     .                      ve, nrval, l, erefkb(ikb,l),
+     .                      rphi(1,ikb), Rmax )
+          endif 
+
+!         Search for the existence of ghost states
+!         There is a change with respect to the original version,
+!         Here nrwf is introduced as a variable instead of nrval
+          if( nkbl(l) .eq. 1) then
+            call ghost( Zval, rofi, vps(:,l), vlocal,
+     .                  ve, s, drdi, nrlimit, l, a, b, nrwf,
+     .                  erefkb(ikb,l), rphi(:,ikb), ighost )
+          else 
+            if (ikb.eq.1)
+     .        write(6,'(a,i3,/a)') 
+     .          'KBgen: More than one KB projector for l=',l,
+     .          'KBgen: ghost states analysis will be not performed'
+          endif
+
+!         Compute the KB projectors
+          call KBproj( ikb, rofi, drdi, vps(1,l), vlocal, nrwf, l,
+     .                rphi(1,ikb), dkbcos(ikb,l), ekb(ikb,l), proj, nrc)      
+
+          rc(ikb,l)=rofi(nrc)
+
+          ! User provided routine 
+          call process_proj(l,ikb,ekb(ikb,l),nrc,erefkb(ikb,l),
+     $                      dkbcos(ikb,l),nrval,rofi,proj)
+
+!       End of the loop for all the KB projectors for a given angular shell
+        enddo 
+!     End of the loop over angular momenta shell
+      enddo   
+        
+      if ( ighost .eq. 1 ) then
+         write(6,"(2a)")'KBgen: WARNING: ',
+     .     'Ghost states have been detected'
+         write(6,"(2a)")'KBgen: WARNING: ',
+     .     'Some parameter should be changed in the '
+         write(6,"(2a)")'KBgen: WARNING: ',
+     .     'pseudopotential generation procedure.'
+         if (ignore_ghosts) then
+           write(6,"(a)") " KBgen: *** Warning Ignored by User"
+           ighost = 0
+         else
+           call die("Found ghost states")
+         endif
+      endif
+
+!
+!     Write in the output information regarding the KB projector
+!
+      write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
+      do l = 0, lmxkb
+        do ikb = 1, nkbl(l)
+          write(6,'(3x,a,i2,4(3x,a,f10.6))')
+     .      'l=',l, 'rc=',rc(ikb,l), 'el=',erefkb(ikb,l), 
+     .      'Ekb=',ekb(ikb,l),'kbcos=',dkbcos(ikb,l)
+        enddo
+      enddo
+
+!
+!     Compute the total number of Kleinman-Bylander projectors     
+!
+      nkb = 0
+      do l = 0, lmxkb
+        do ikb = 1, nkbl(l)
+          nkb = nkb + ( 2*l + 1 ) 
+        enddo 
+      enddo 
+      write(6,'(/,a, i4)')
+     .  'KBgen: Total number of  Kleinman-Bylander projectors: ', nkb
+
+      end  subroutine KBgen
+
+! ----------------------------------------------------------------------
+
+      subroutine KBproj( ikb, rofi, drdi, vps, vlocal, nrwf, l, rphi,
+     .                   dkbcos, ekb, proj, nrc )
+
+!  This routine calculates the Kleinman-Bylander projector
+!  with angular momentum l.
+!
+!  Written by D. Sanchez-Portal, Aug. 1998
+!  Modified by DSP to allow more than one projector per l, July 1999.
+!  Separated in an independent module by JJ, April 2013.
+
+      implicit none
+
+      integer,  intent(in)  :: ikb       ! For a given l shell, many KB pro.j
+                                         !   can be generated. 
+                                         !   ikb is the KB index for this l.
+      integer,  intent(in)  :: nrwf      ! Number of radial points required
+                                         !   to store the wave functions
+      integer,  intent(in)  :: l         ! Angular momentum shell for 
+                                         !   which the KB projector
+                                         !   will be computed 
+      real(dp), intent(in)  :: rofi(*)   ! Radial logarithmic grid
+      real(dp), intent(in)  :: vps(*)    ! Semilocal components of the 
+                                         !   pseudopotential
+      real(dp), intent(in)  :: drdi(*)   ! Distance between consecutive points
+                                         !   of the logarithmic grid. 
+                                         !   Required to perform radial integral
+      real(dp), intent(in)  :: rphi(*)   ! Eigenstate of the semilocal pseudopot
+                                         !   screened by the pseudo-valence 
+                                         !   charge density
+      real(dp), intent(in)  :: vlocal(*) ! Local component of the 
+                                         !   pseudopotential
+
+      real(dp), intent(out) :: proj(*)   ! KB projector
+      real(dp), intent(out) :: dkbcos    ! "KB cosine" allows one to distinguish
+                                         !   between an artificially or an 
+                                         !   intrinsically large KB energy
+      real(dp), intent(out) :: ekb       ! "KB energy" that explicitly 
+                                         !   characterizes the strength of the 
+                                         !   KB potential
+      integer,  intent(out) :: nrc       ! Cutoff radii of the KB projector
+
+! Internal variables
+      integer   ir, jkb
+
+      real(dp)
+     .  dnrm, vl, vphi, avgv, r, phi, dknrm,
+     .  dincv, rc, sum, vij(nkbmx)
+
+      real(dp), save ::   rphi2(nrmax,nkbmx), vii(nkbmx)
+
+      real(dp), parameter  :: eps=1.0d-6
+
+!     We need to orthogonalize to the previous projectors.
+!     We follow the scheme proposed by Blochl, PRB 41, 5414 (1990)
+!     as expressed in Eq. (5) of the technical paper of Siesta
+!     [J. M. Soler et al., J. Phys.: Condens. Matter 14, 2745 (2002)]
+!     In the following, rphi2 is $\phi$,
+!     while rphi corresponds to $\psi$ in the paper.
+
+      if( ikb .eq. 1 ) then
+!       For the first KB projector of a given shell, nothing has to be done.
+        do ir = 1, nrwf
+          rphi2(ir,1) = rphi(ir)
+        enddo
+      else
+!       If there are more than one KB projector per shell, 
+!       then we have to orthogonalize the KB projectors with the previous ones.
+        do jkb = 1, ikb-1
+          sum = 0.0d0
+!         In this loop we compute the numerator at the right hand side term
+!         of Eq. (5). 
+          do ir = 1, nrwf
+            vl = vps(ir) - vlocal(ir)
+            sum = sum + rphi(ir) * vl * rphi2(ir,jkb) * drdi(ir)
+          enddo
+          vij(jkb) = sum
+        enddo
+        do ir = 1, nrwf
+          sum = 0.0d0
+!         Here we compute all the operations after the summatory of Eq. (5).
+!         Note that the denominator was computed and saved as vii in a 
+!         previous call to this subroutine
+          do jkb = 1, ikb-1
+            sum = sum + vij(jkb) * rphi2(ir,jkb)/(vii(jkb)+1.0d-20)
+          enddo
+!         Finally, we perform the differentiation in Eq. (5) of the technical
+!         paper of Siesta
+          rphi2(ir,ikb) = rphi(ir) - sum
+        enddo
+      endif
+
+!     Normalize the new orthogonalized function
+      dnrm = 0.0d0
+      do ir = 1, nrwf
+        dnrm = dnrm + drdi(ir) * (rphi2(ir,ikb)**2)
+      enddo
+      dnrm = sqrt(dnrm)
+      if ( dnrm .lt. eps ) then
+        do ir = 1, nrwf
+          rphi2(ir,ikb) = 0.0d0
+        enddo
+      else
+        do ir = 1, nrwf
+          rphi2(ir,ikb) = rphi2(ir,ikb)/dnrm
+        enddo
+      endif
+
+!     Compute the "KB energy" and the "KB cosine"
+      dnrm = 0.0d0
+      avgv = 0.0d0
+      do 10 ir = 2, nrwf
+        r    = rofi(ir)
+        vl   = vps(ir) - vlocal(ir) 
+        phi  = rphi2(ir,ikb)
+        vphi = vl * phi
+!       dnrm is the numerator of Eq. (28) in the paper by
+!       X. Gonze, R. Stumpf, and M. Scheffler, Phys. Rev. B 44, 8503 (1991)
+        dnrm = dnrm + vphi * vphi * drdi(ir)
+!       avgv is the denominator of the previous equation
+        avgv = avgv + vphi * phi  * drdi(ir)
+  10  enddo   
+!     vii is the denominator at the right hand side term of Eq. (5). 
+      vii(ikb) = avgv
+
+!     The "KB energy" is defined in Eq. (28) in the paper by
+!     X. Gonze, R. Stumpf, and M. Scheffler, Phys. Rev. B 44, 8503 (1991)
+      ekb    = dnrm  / (avgv+1.0d-20)
+
+!     The "KB cosine" is defined in Eq. (33) in the paper by
+!     X. Gonze, R. Stumpf, and M. Scheffler, Phys. Rev. B 44, 8503 (1991)
+      dknrm  = 1.0d0 / (sqrt(dnrm)+1.0d-20)
+      dkbcos = avgv * dknrm
+
+!     Define the cut-off radii for the KB projectors
+!     Warning these radii should be quite short, if it is not the case
+!     something is probably wrong in this part of the program.
+!     It will display a warning if Rc > 4.5 a.u. or Rc < 0.5a.u.!
+      do 20 ir = nrwf, 2, -1
+        phi   = ( rphi2(ir,ikb)/rofi(ir) ) * dknrm
+        dincv = abs( (vps(ir)-vlocal(ir) ) * phi )
+        if ( dincv .gt. eps ) then
+          if( ir .ge. nrwf-1 ) then
+            write(6,"(2a,/,2a)") 'KBproj: WARNING: ',
+     .        'KB projector does not decay to zero',
+     .        'KBproj: WARNING: ',
+     .        'parameter Rmax in routine KBgen should be increased'
+          endif
+          goto 21
+        endif
+20    enddo    
+
+21    nrc = ir + 1
+      rc  = rofi(nrc)
+
+      if( rc .lt. 0.5d0 ) then
+        write(6,"('KBproj: WARNING: Rc(',i2,')=',f12.4)")l,rc
+        write(6,"(2a)") 'KBproj: WARNING: ',
+     .    'Cut of radius for the KB projector too small'
+      elseif( rc .gt. 4.5d0 ) then
+        write(6,"('KBproj: WARNING: Rc(',i2,')=',f12.4)")l,rc
+        write(6,"(2a)") 'KBproj: WARNING: ',
+     .    'Cut of radius for the KB projector too big'
+        write(6,"(2a)") 'KBproj: WARNING: ',
+     .    'Increasing the tolerance parameter eps'
+        write(6,"(a)") 'KBproj: WARNING: might be a good idea'
+      endif
+
+!     Define the radial part of the KB projector 
+!     according to Eq. (29) of the paper by
+!     X. Gonze, R. Stumpf, and M. Scheffler, Phys. Rev. B 44, 8503 (1991)
+!     Within this definition, the KB operator reduces to the projector
+!     defined in Eq. (30) of the previous paper, that is equivalent to 
+!     Eq. (2) of the technical paper of Siesta.
+!     Take into account that in the Siesta paper there is a typo in Eq. (3),
+!     that should read:
+!     v_{ln}^{KB} = [ < \phi_ln | \delta V_{l} | \phi_{ln} > ]^(-1)
+!     Note the radial part of the KB projector is divided by r**(l+1)
+
+!     The cutoffs computed above are based on "dincv", which is the same as
+!     "vphi" below. Hence one has to multiply proj by r**l before re-computing
+!     any cutoffs. If reading the standard PSML proj, which is Siesta's proj
+!     multiplied by r**(l+1), one has to *divide* it by r before re-computing
+!     the cutoffs.
+
+      do 30 ir = 2, nrc
+        r        = rofi(ir)
+        vl       = ( vps(ir) - vlocal(ir) )
+        phi      = rphi2(ir,ikb)/r
+        vphi     = vl * phi * dknrm
+        proj(ir) = vphi/r**l
+30    enddo   
+
+! Extrapolation of quadratic function to r=0
+      proj(1)= ( proj(2)*rofi(3)**2 - proj(3)*rofi(2)**2 ) /
+     .         ( rofi(3)**2 - rofi(2)**2 )
+
+      end subroutine KBproj
+
+! ----------------------------------------------------------------------
+
+      subroutine ghost( Zval, rofi, vps, vlocal,
+     .                  ve, s, drdi, nrval, l, a, b,
+     .                  nrc, eigenl, rphi, ighost)
+
+! This routine checks the possible existence of ghost states.
+! Compares the reference energy with the eigenvalues of the
+! local potential, for ghost analysis.
+! We follow the recipe given by Gonze and coworkers in page 8508 of 
+! X. Gonze, R. Stumpf, and M. Scheffler, Phys. Rev. B 44, 8503 (1991)
+!
+! Output:
+! Sets ighost to 1 if it finds a ghost state.
+! ighost is a saved variable in the caller.
+!
+! Written by D. Sanchez-Portal, Aug. 1998
+! Separated in an independent module by JJ, April 2013.
+!
+
+      integer, intent(in)   :: nrval     ! Number of points in the 
+                                         !   logarithmic grid required to 
+                                         !   describe the valence eigenfunction
+                                         !   at the time of solving the
+                                         !   Schrodinger equation to generate
+                                         !   the KB projectors (nrwf in the 
+                                         !   calling subroutine)
+      integer, intent(in)   :: l         ! Angular momentum shell
+      integer, intent(inout):: nrc       ! Number of points in the  
+                                         !   logarithmic grid required to 
+                                         !   describe the KB projectors
+      integer, intent(inout):: ighost    ! Flag that determines whether there
+                                         !   are ghost states for a given shell
+                                         !   0 = no ghost state
+                                         !   1 = no ghost state
+      real(dp), intent(in)  :: zval      ! Valence charge of the atom
+      real(dp), intent(in)  :: a         ! Step parameter of logarithmic grid
+      real(dp), intent(in)  :: b         ! Scale parameter of the logari grid
+      real(dp), intent(in)  :: eigenl    ! Atomic reference eigenvalue  
+      real(dp), intent(in)  :: rofi(:)   ! Radial logarithmic grid
+      real(dp), intent(in)  :: vps(:)    ! Semilocal component of the pseudopot
+                                         !   for the angular momentum l
+      real(dp), intent(in)  :: vlocal(:) ! Local component of the pseudopotent
+      real(dp), intent(in)  :: ve(:)     ! Screening potential generated from
+                                         !   valence charge pseudo-charge 
+                                         !   given by the pseudopotential 
+                                         !   generation program
+      real(dp), intent(in)  :: s(:)      ! Metric function
+      real(dp), intent(in)  :: drdi(:)   ! Distance between consecutive points
+                                         !   of the logarithmic grid. 
+                                         !   Required to perform radial integral
+      real(dp), intent(in)   :: rphi(:)  ! Eigenstate of the semilocal pseudopot
+                                         !   screened by the pseudo-valence 
+                                         !   charge density
+
+
+!     Internal variables
+      real(dp)   dnrm, avgv, phi,
+     .     elocal1, elocal2, g(nrmax), vl, vphi, dkbcos
+
+      integer  ir, nprin, nnode
+
+! Debugging
+!      write(6,*) 'Entering ghost: l, eigenl', l, eigenl
+! End debugging
+
+!     Calculate the "KB energy" as defined in Eq. (28) in the paper by
+!     X. Gonze, R. Stumpf, and M. Scheffler, Phys. Rev. B 44, 8503 (1991)
+      nrc  = min(nrc,nrval)
+      dnrm = 0.0d0
+      avgv = 0.0d0
+      do 30 ir = 2, nrc
+         vl   = vps(ir)-vlocal(ir)
+         phi  = rphi(ir)
+         vphi = vl * phi
+         dnrm = dnrm + vphi * vphi * drdi(ir)
+         avgv = avgv + vphi * phi * drdi(ir)
+ 30   enddo    
+      dkbcos = dnrm/(avgv+1.0d-20)
+
+!     Perform the ghost analysis
+!     We follow the recipe given by Gonze and coworkers in page 8508 of 
+!     X. Gonze, R. Stumpf, and M. Scheffler, Phys. Rev. B 44, 8503 (1991)
+
+!     If the "KB energy" < 0, there is a ghost level under the atomic reference
+!     level if, and only if, the atomic reference eigenvalue is
+!     higher in energy than the ground-state of the local Hamiltonian
+      if ( dkbcos .lt. 0d0 ) then
+
+
+         nprin = l+1
+         nnode = 1
+         call schro_eq( Zval, rofi, vlocal, ve, s, drdi,
+     .                  nrval, l, a, b, nnode, nprin,
+     .                  elocal1, g )
+!         if( eigenl .gt. elocal1 ) then
+         if (above_significatively(eigenl,elocal1)) then
+           write(6,"(a,i3,/,a,g20.10,/,a,2g20.10)")
+     .       'GHOST: WARNING: Ghost state for L =', l,
+     .       ' dkbcos: ', dkbcos,
+     .       ' eigenl, eigenl - elocal1: ', eigenl, eigenl - elocal1
+           ighost = 1
+         else
+           write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
+         endif
+
+!     If the "KB energy" > 0, there is a ghost level under the atomic reference
+!     level if, and only if, the atomic reference eigenvalue is
+!     higher in energy than the first excited level of the local Hamiltonian
+      else if ( dkbcos .gt. 0.0d0 ) then
+
+         nprin = l+1
+         nnode = 2
+         call schro_eq( Zval, rofi, vlocal, ve, s, drdi,
+     .                  nrval, l, a, b, nnode, nprin,
+     .                  elocal2, g )
+
+!         if( eigenl .gt. elocal2 ) then
+         if (above_significatively(eigenl,elocal2)) then
+           write(6,"(a,i3,/,a,g20.10,/,a,2g20.10)")
+     .       'GHOST: WARNING: Ghost state for L =', l,
+     .       ' dkbcos: ', dkbcos,
+     .       ' eigenl, eigenl - elocal2: ', eigenl, eigenl - elocal2
+           ighost = 1
+         else
+           write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
+         endif
+
+      else if (dkbcos.eq.0.0d0) then
+
+         write(6,"('GHOST: vps = vlocal, no ghost for L =',i3)") l
+
+      endif
+
+! Debugging
+!      write(6,*) 'GHOST: Ground state vlocal for L=',l,elocal1
+!      write(6,*) 'GHOST: First excited state for L=',l,elocal2
+! End debugging
+
+        CONTAINS
+
+        function above_significatively(x,y) result (gt)
+        real(dp), intent(in) :: x, y
+        logical              :: gt
+
+        ! Request that x is "well over" y in case of noise.
+        ! This is an "absolute noise" for now.
+
+        real(dp), parameter :: eps = 1.e-8_dp
+
+        gt = (x .gt. y + eps)
+
+        end function above_significatively
+
+      end subroutine ghost
+
+! ----------------------------------------------------------------------
+
+      subroutine radii_ps( vps, rofi, Zval, nrval, lmxkb,
+     .                     nrgauss, rgauss, rgauss2, rmax_ps_check)
+
+
+C     This routine returns the maximum radius for the
+C     Kleinman-Bylander projectors with a standard choice
+C     of the local potential.
+C     Check also at which radius the asymptotic 2*Zval/r
+C     behaviour is achieved.
+C     D. Sanchez-Portal, Aug. 1998
+
+      real(dp), intent(in)    :: Zval       ! Valence charge of the atom
+      integer,  intent(in)    :: nrval      ! Number of points in the 
+                                            !   logarithmic grid required to 
+                                            !   describe the valence eigenfunc
+      real(dp), intent(in)    :: rofi(:)    ! Radial logarithmic grid
+      real(dp), intent(in)    :: vps(:,0:)  ! Semilocal components of the 
+                                            !   pseudopotential
+      integer,  intent(in)    :: lmxkb      ! Maximum angular momentum of the
+                                            !   KB projector
+      integer,  intent(out)   ::  nrgauss   ! Number of points in the logarith.
+                                            !   grid required to describe the 
+                                            !   KB projectors
+      real(dp), intent(out)   ::  rgauss    ! Approximately the maximum cut-off 
+                                            !   radius used in the
+                                            !   pseudopotential generation.
+      real(dp), intent(out)   ::  rgauss2   ! Radius where the pseudopotentials
+                                            !   reach  the asymptotic behaviour
+                                            !   2*Zval/r.
+
+      real(dp), intent(in)    ::  rmax_ps_check
+
+!     Internal variables
+      real(dp) dincv, r
+      integer ir, l, nrgauss2
+
+      real(dp), parameter     ::  eps=1.0d-4
+
+!     Iterate over the possible local potentials
+
+      rgauss   = 0.0_dp
+      rgauss2  = 0.0_dp
+      nrgauss  = 0
+      nrgauss2 = 0
+
+      do l = 0, lmxkb-1
+         do ir = nrval, 2, -1
+            if (rofi(ir) > rmax_ps_check) cycle
+            dincv = abs( vps(ir,l) - vps(ir,lmxkb) )
+            if( dincv .gt. eps ) exit
+         enddo
+         rgauss  = max( rofi(ir), rgauss )
+         nrgauss = max( ir, nrgauss )
+      enddo
+!
+!     New: Use all potentials, not just l=0, since
+!     potentials with larger l can converge later...
+!
+      do l = 0, lmxkb
+         do ir = nrval, 2, -1
+            if (rofi(ir) > rmax_ps_check) cycle
+            r = rofi(ir)
+            dincv = abs( vps(ir,l)*r + 2.0_dp*zval )
+            if( dincv .gt. eps ) exit
+         enddo
+         write(6,'(a,i1,a,f8.4)')
+     .     'V l=', l,' = -2*Zval/r beyond r=', rofi(ir)
+         rgauss2  = max( rofi(ir), rgauss2 )
+         nrgauss2 = max( ir, nrgauss2 )
+      enddo
+
+      if( lmxkb .eq. 0 ) then
+         rgauss  = rgauss2
+         nrgauss = nrgauss2
+      endif
+
+      write(6,'(a,f8.4)') 'All V_l potentials equal beyond r=', rgauss
+      write(6,'(a)')
+     .     'This should be close to max(r_c) in ps generation'
+      write(6,'(a,f8.4)')
+     .     'All pots = -2*Zval/r beyond r=', rgauss2
+
+      end subroutine radii_ps
+
+! ----------------------------------------------------------------------
+      subroutine file_out(n,r,f,name)
+!     Convenience routine to plot radial magnitudes  
+      integer, intent(in)  :: n
+      real(dp), intent(in) :: r(n), f(n)
+      character(len=*), intent(in) :: name
+
+      integer lun, i
+      call get_free_lun(lun)
+      open(unit=lun,file=trim(name),form="formatted",
+     $     action="write",position="rewind",status="unknown")
+      do i=1,n
+         write(lun,*) r(i), f(i)
+      enddo
+      close(lun)
+
+      end subroutine file_out
+
+        subroutine get_free_lun(lun)
+        integer, intent(out) :: lun
+
+        logical :: used
+        integer :: iostat
+
+        do lun= 10,90
+           inquire(unit=lun, opened=used, iostat=iostat)
+           if (iostat .ne. 0) used = .true.
+           if (.not. used) return ! normal return with 'lun' value                                        
+        enddo
+        call die("No luns available")
+
+        end subroutine get_free_lun
+
+      end module m_kbgen

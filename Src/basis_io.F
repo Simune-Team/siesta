@@ -421,8 +421,15 @@ c
      $                          yp1=0.0_dp,ypn=huge(1.0_dp))
 !
 !Core
+         if (spp%there_is_core) then
+            read(lun,*)
+            call radial_read_ascii(spp%core,lun,
+     $                             yp1=0.0_dp,ypn=huge(1.0_dp))
+         endif
+!
+! Reduced Vlocal
          read(lun,*,end=9999)
-         call radial_read_ascii(spp%core,lun,
+         call radial_read_ascii(spp%reduced_vlocal,lun,
      $                          yp1=0.0_dp,ypn=huge(1.0_dp))
 
  9999    continue
@@ -780,7 +787,7 @@ c
             l = spp%pjnl_l(i)
             write(lun,'(2i3,f22.16,2x,a)')
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i),
-     $           " #kb l, n (sequence number), Reference energy"
+     $           " #kb l, n (sequence number), Ekb"
             call radial_dump_ascii(spp%pjnl(i),lun)
 
            if (write_ion_plot_files) then
@@ -792,7 +799,7 @@ c
             write(lun2,'(2a,2i3,f12.5)') "# ",trim(spp%label), 
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i)
             write(lun2,'(a)')
-     $           "#kb l, n (sequence number), Reference energy"
+     $           "#kb l, n (sequence number), Ekb"
             call radial_dump_ascii(spp%pjnl(i),lun2,header=.false.)
             call io_close(lun2)
            endif ! (write_ion_plot_files)
@@ -853,6 +860,13 @@ c
            endif ! (write_ion_plot_files)
 
          endif
+         !
+         ! Write also "reduced Vlocal" to the .ion file
+         ! Smart processors will attempt to read it if present
+         !
+         write(lun,'(a)') "# Reduced Vlocal______________________"
+         call radial_dump_ascii(spp%reduced_vlocal,lun)
+
          call io_close(lun)
 
          CONTAINS

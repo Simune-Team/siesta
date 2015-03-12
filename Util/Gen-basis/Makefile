@@ -30,7 +30,8 @@ dep:
 	sfmakedepend --depend=obj  --modext=o \
           $(TOP_LEVEL)/*.f $(TOP_LEVEL)/*.f90 $(TOP_LEVEL)/*.F $(TOP_LEVEL)/*.F90 
 #
-ARCH_MAKE=../../$(OBJDIR)/arch.make
+MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)
@@ -39,7 +40,11 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:= $(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI
-INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
+NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib
+INCFLAGS:=$(NETCDF_INCFLAGS) \
+          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
+          $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
 #
@@ -54,17 +59,18 @@ OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o m_recipes.o paralle
           atmparams.o old_atmfuncs.o radial.o \
 	  paste.o  flib_spline.o bessph.o radfft.o  sorting.o m_filter.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
-          pseudopotential.o pxf.o dot.o  atom_options.o arw.o  \
+          pxf.o dot.o  atom_options.o arw.o  \
           sys.o timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
-          xc.o bsc_xcmod.o
+          xc.o bsc_xcmod.o psml_die.o
 #
 IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o  atm_types.o\
           atmparams.o radial.o  memory.o chkdim.o\
-	  paste.o pseudopotential.o chemical.o \
+	  paste.o chemical.o \
           basis_specs.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
           flib_spline.o atmfuncs.o spher_harm.o\
-          sys.o  xml.o m_walltime.o ioncat.o $(SYSOBJ)
+          sys.o  xml.o m_walltime.o ioncat.o  psml_die.o die.o \
+          $(SYSOBJ)
 #
 # Compile XC in a private directory, without MPI
 #
@@ -74,21 +80,15 @@ XC_INCFLAGS:=-I $(TOP_LEVEL)/SiestaXC ##$(INCFLAGS)
 $(XC): 
 	(mkdir -p SiestaXC ; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
                           "FC=$(FC)" "VPATH_ROOT=$(TOP_LEVEL)" \
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "ARCH_MAKE=$(ARCH_MAKE)" \
                           "INCFLAGS=$(XC_INCFLAGS)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
                           "FFLAGS=$(FFLAGS)"  module )
 #
-NCPS=libncps.a
-NCPS_MAKEFILE=$(TOP_LEVEL)/nc-pseudo/makefile
-$(NCPS): 
-	(mkdir -p nc-pseudo; cd nc-pseudo ; $(MAKE) -f $(NCPS_MAKEFILE) \
-        "ARCH_MAKE=../$(ARCH_MAKE)" \
-        "VPATH=$(VPATH)/nc-pseudo" \
-	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
-#
+NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
+PSOP=$(MAIN_OBJDIR)/psoplib/libpsop.a
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -97,7 +97,7 @@ FDF_MAKEFILE=$(TOP_LEVEL)/fdf/makefile
 FDF_INCFLAGS:=-I $(TOP_LEVEL)/fdf $(INCFLAGS)
 $(FDF): 
 	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(TOP_LEVEL)/fdf" \
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "ARCH_MAKE=$(ARCH_MAKE)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
@@ -105,11 +105,13 @@ $(FDF):
 #
 gen-basis: $(FDF) $(XC) $(NCPS) $(OBJS_GEN-BASIS)
 	$(FC) -o gen-basis \
-	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) $(NETCDF_LIBS) $(LIBS)
+              $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) \
+              $(NCPS) $(PSOP) $(PSML_LIBS) $(NETCDF_LIBS) $(LIBS)
 #
 ioncat:  $(FDF) $(NCPS) $(IONCAT_OBJS)
 	$(FC) -o ioncat \
-	       $(LDFLAGS) $(IONCAT_OBJS) $(FDF) $(NETCDF_LIBS)
+	       $(LDFLAGS) $(IONCAT_OBJS) $(FDF) \
+              $(NCPS) $(PSOP) $(PSML_LIBS) $(NETCDF_LIBS) $(LIBS)
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
@@ -129,7 +131,7 @@ atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o m_filter.o
 atom.o: m_recipes.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: pseudopotential.o sys.o
+atom.o: sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -138,10 +140,10 @@ bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o parsing.o
 bands.o: precision.o sys.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o sys.o xml.o
+basis_io.o: precision.o radial.o sys.o xml.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
-basis_specs.o: pseudopotential.o sys.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o sys.o
+basis_specs.o: sys.o
+basis_types.o: alloc.o atmparams.o precision.o  sys.o
 bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o m_recipes.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
@@ -380,7 +382,6 @@ projected_DOS.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: bessph.o m_recipes.o precision.o
 radial.o: precision.o xml.o
 rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
@@ -496,7 +497,7 @@ atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: m_filter.o m_recipes.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: pseudopotential.o sys.o
+atom.o: sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -505,10 +506,10 @@ bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o precision.o
 bands.o: sys.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o sys.o xml.o
+basis_io.o: precision.o radial.o sys.o xml.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
-basis_specs.o: pseudopotential.o sys.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o sys.o
+basis_specs.o: sys.o
+basis_types.o: alloc.o atmparams.o precision.o sys.o
 bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o m_recipes.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
@@ -787,7 +788,6 @@ projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o

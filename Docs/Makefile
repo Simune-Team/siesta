@@ -7,6 +7,8 @@ docidx = $(doc).idx
 bibtex = echo "BIBTEX"
 makeidx = makeindex
 
+default: final
+
 pdf: $(doc)
 	@echo "Done"
 

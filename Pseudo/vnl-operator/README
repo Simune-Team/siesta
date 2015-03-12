@@ -1,0 +1,36 @@
+This directory holds a standalone program ('psop') to generate, from a
+pseudopotential file holding semilocal-potential information, a full Vnl
+operator in the classic Siesta style (special Vlocal, plus KB projectors).
+The information is produced in XML, in a form compatible with the PSML format.
+
+The program can read .psf, .vps, and .psml files. It generates a VNL
+file with the information. If the source is a .psml file, the script
+'add-siesta-vnl.sh' can be used to generate a complete PSML file in
+which the VNL section is added, possibly replacing an existing
+<pseudopotential-operator> element.
+
+To build the program, type
+
+ make OBJDIR=Obj_directory 
+
+where Obj_directory is the name of the object directory in which you have
+built the rest of Siesta. If you are using the default Obj directory you
+can just type 'make'.
+
+'psop' accepts command-line options. To see the complete list, type
+ 
+  psop -h
+
+Known limitations:
+
+ -- There is currently no way to tell the program to build several
+    projectors for a given l channel. It will build just one, except
+    when semicore shells are present. In that case it will add one
+    projector per semicore shell.
+
+ -- The reference energies are those used by default by Siesta.
+
+
+
+
+
