@@ -121,7 +121,7 @@ subroutine coordsFromSocket( na, xa, cell )
     host = TRIM(host)//achar(0)
 
     if (IOnode) then
-      print*,myName//"Opening socket fot two-way communication."
+      print'(/,a)',myName//"Opening socket for two-way communication"
       call open_socket(socket, inet, port, host)
     endif
 
@@ -131,15 +131,16 @@ subroutine coordsFromSocket( na, xa, cell )
 ! Read header from socket
   header=""
   if (IOnode) then
-    print'(/,a)',myName//"Receiving coordinates from socket. "
     do
       call readbuffer(socket, header, MSGLEN)
-      if (trim(master)=='ipi') then
+      if (trim(master)=='i-pi') then
         if (trim(header)/='STATUS') exit 
         call writebuffer(socket,"READY       ",MSGLEN)
       elseif (trim(master)=='fsiesta') then
         if (trim(header)/='wait') exit
         call writebuffer(socket,"ready       ",MSGLEN)
+      else
+        call die(myName//'ERROR: unknown master')
       endif ! trim(master)
     enddo
   endif ! IOnode
@@ -238,7 +239,6 @@ subroutine forcesToSocket( na, energy, forces, stress )
 
 ! Write forces to socket
   if (IOnode) then
-    print'(/,a)',myName//"Sending forces to socket. "
     if (trim(master)=='i-pi') then
       do
         call readbuffer(socket, header, MSGLEN)
