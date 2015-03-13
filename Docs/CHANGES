@@ -6,6 +6,100 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-03-04  10:50:00 GMT                                     trunk-467
+Fix import of idyn in save_density_matrix (rc-4.0)
+
+* The idyn variable was not imported from siesta_options 
+  in standard "siesta" mode
+
+(thanks to J. Junquera)
+
+modified:
+  Src/save_density_matrix.F
+
+-----------------------------------------------------------------------
+2015-02-03  14:30:00 GMT                                     trunk-466
+Fixed IO statements for molecularmechanics module
+
+(Nick .P. Andersen)
+
+* IO print-outs was still abundant in parallel runs.
+  Now only the IO node will print out.
+
+* The manual has been corrected to correctly state
+  that any unit is allowed in the MM.* block.
+
+modified:
+  Docs/siesta.tex
+  Src/molecularmechanics.F90
+
+
+-----------------------------------------------------------------------
+2015-01-07  10:35:00 GMT                                     trunk-465
+Merge fix from rc-4.0: MPI tag in SiestaXC/mesh3d
+
+* The variable Mpitag was not initialized, leading to problems whenever
+  its value was not zero or considered as MPI_ANY_TAG in a Recv operation.
+
+(Nick P. Andersen)
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+-----------------------------------------------------------------------
+2014-11-08  16:30:00 GMT                                     trunk-464
+Merge fixes from rc-4.0: constr. forces, MPI compilation, mm.potentials
+
+-- Fabiano Corsetti: Fix output to show constrained forces
+
+* Changed the calling of the iofa and ofc routines inside write_subs,
+  so that the forces with constraints are written to file in each case
+  instead of the uncorrected forces. 
+
+modified:
+  Src/write_subs.F
+
+
+-- Alberto Garcia:   Fix 'clean' rule in  MPI Makefile
+
+The interface library libmpi_f90.a was not removed when issuing a
+'make clean', possibly leading to strange errors if the MPI
+compilation environment was later changed.
+
+modified:
+  Src/MPI/Makefile
+
+-- Nick P Andersen:  Fix shortcomings in reading of empirical potential block
+
+* The number of potential lines is now arbitrary.
+* Units handling has been improved, to allow arbitrary
+  length and energy units.
+
+modified:
+  Src/molecularmechanics.F90
+
+
+-----------------------------------------------------------------------
+2014-11-08  16:15:00 GMT                                     trunk-463
+Added restart file for smooth continuation of annealing runs
+
+* Added the writing and reading of an .ANNEAL_RESTART file, along the
+  same lines of the .VERLET_RESTART file. This fixes a small problem
+  for restarting annealing calculations when a continuous smooth run
+  is desired.
+
+(Fabiano Corsetti)
+
+added:
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+modified:
+  Docs/siesta.tex
+  Src/dynamics.f
+
+-----------------------------------------------------------------------
 2014-05-29  12:40:00 GMT                                     trunk-462
 Improved MPI version of siesta as a subroutine (J.M.Soler)
 

@@ -1,0 +1,79 @@
+** CHANGES (fixes only) on rc-4.0 branch
+
+----------------------------------------------------------------------
+2015-03-04                                              rc-4.0-pl-6
+Fix import of idyn in save_density_matrix
+
+* The idyn variable was not imported from siesta_options 
+  in standard "siesta" mode
+
+(thanks to J. Junquera)
+
+modified:
+  Src/save_density_matrix.F
+
+----------------------------------------------------------------------
+2015-02-03                                              rc-4.0-pl-5
+Fixed IO statements for molecularmechanics module
+
+(Nick .P. Andersen)
+
+* IO print-outs was still abundant in parallel runs.
+  Now only the IO node will print out.
+
+* The manual has been corrected to correctly state
+  that any unit is allowed in the MM.* block.
+
+modified:
+  Docs/siesta.tex
+  Src/molecularmechanics.F90
+
+----------------------------------------------------------------------
+2015-01-07                                              rc-4.0-pl-4
+Fix MPI tag in SiestaXC/mesh3d
+
+* The variable Mpitag was not initialized, leading to problems whenever
+  its value was not zero or considered as MPI_ANY_TAG in a Recv operation.
+
+(Nick P. Andersen)
+
+modified:
+  Src/SiestaXC/mesh3d.F90
+
+----------------------------------------------------------------------
+2014-11-08                                              rc-4.0-pl-3
+Fix output to show constrained forces
+
+* Changed the calling of the iofa and ofc routines inside write_subs,
+  so that the forces with constraints are written to file in each case
+  instead of the uncorrected forces. 
+
+(Fabiano Corsetti)
+
+modified:
+  Src/write_subs.F
+
+
+----------------------------------------------------------------------
+2014-10-07  9:40:00 GMT                                 rc-4.0-pl-2
+Fix 'clean' rule in  MPI Makefile
+
+The interface library libmpi_f90.a was not removed when issuing a
+'make clean', possibly leading to strange errors if the MPI
+compilation environment was later changed.
+
+modified:
+  Src/MPI/Makefile
+
+----------------------------------------------------------------------
+2014-10-07  9:35:00 GMT                                 rc-4.0-pl-1
+Fix shortcomings in reading of empirical potential block
+
+* The number of potential lines is now arbitrary.
+* Units handling has been improved, to allow arbitrary
+  length and energy units.
+
+(Nick P. Andersen)
+
+modified:
+  Src/molecularmechanics.F90
