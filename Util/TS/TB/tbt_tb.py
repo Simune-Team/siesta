@@ -101,64 +101,6 @@ class SIESTA_UNITS(object):
     Ry = 13.60580
     Bohr = 0.529177
 
-class OutputFile(object):
-    """ Class to easily open/close/read output files from programs """
-    def __init__(self,filename):
-        self.file = filename
-    
-    def __enter__(self):
-        """ Opens the output file and returns the handle """
-        self.fh = open(self.file,'r')
-        return self
-
-    def __exit__(self, type, value, traceback):
-        self.fh.close()
-        del self.fh # clean-up so that it does not exist
-        return False
-
-    def step_to(self,keyword):
-        """ Steps the file-handle until the keyword is found in the output """
-        found = False
-        while not found:
-            l = self.fh.readline()
-            found = l.find(keyword) >= 0
-            if l == '': break # readline() keeps spitting out '' if EOF
-            
-        # sometimes the line contains information, as a
-        # default we return the line found
-        return found, l
-
-    def read_model(self,na_u,dtype=np.float):
-        """ Abstract for reading a model """
-        raise NotImplementedError('`read_model` has not been implemented yet, '+
-                                  'please do so to achieve full functionality.')
-
-    def read_geom(self):
-        """ Abstract for reading a geometry """
-        raise NotImplementedError('`read_geom` has not been implemented yet, '+
-                                  'please do so to achieve full functionality.')
-
-class BinaryOutputFile(OutputFile):
-    """ Class to easily open/close/read output files from programs """
-    def __init__(self,filename):
-        self.file = filename
-    
-    def __enter__(self):
-        """ Opens the output file and returns the handle """
-        raise NotImplementedError('Binary files need explicit __enter__ commands')
-
-    def __exit__(self, type, value, traceback):
-        raise NotImplementedError('Binary files need explicit __exit__ commands')
-
-    def read_model(self,na_u,dtype=np.float):
-        """ Abstract for reading a model """
-        raise NotImplementedError('`read_model` has not been implemented yet, '+
-                                  'please do so to achieve full functionality.')
-
-    def read_geom(self):
-        """ Abstract for reading a geometry """
-        raise NotImplementedError('`read_geom` has not been implemented yet, '+
-                                  'please do so to achieve full functionality.')
 
 class TBT_Geom(SIESTA_UNITS):
     """
@@ -286,8 +228,8 @@ class TBT_Geom(SIESTA_UNITS):
         if reps > 1: return np.tile(array,reps)
         return array
 
-    @staticmethod
-    def SIESTA(fname):
+    @classmethod
+    def SIESTA(cls,fname):
         """Creates a geometry from a SIESTA.nc file
 
         Parameters
@@ -301,7 +243,7 @@ class TBT_Geom(SIESTA_UNITS):
         xa = np.asarray(nf.variables['xa'][:]) * TBT_Geom.Bohr
         cell  = np.asarray(nf.variables['cell'][:]) * TBT_Geom.Bohr
         lasto = np.asarray(nf.variables['lasto'][:],np.int)
-        nsc   = np.asarray(nf.variables['nsc'][:],np.int)
+        nsc   = np.asarray(nf.variables['nsc'][:],np.int) // 2
         Z = None
         if 'BASIS' in nf.groups:
             bg = nf.groups['BASIS']
@@ -318,9 +260,14 @@ class TBT_Geom(SIESTA_UNITS):
         n_orb = np.diff(lasto)
         n_orb = np.append(lasto[0],n_orb)
         # Create new geometry
-        g = TBT_Geom(cell=cell,xa=xa,n_orb=n_orb,Z=Z)
-        g.update_sc(nsc=nsc // 2)
+        g = cls(cell=cell,xa=xa,n_orb=n_orb,Z=Z)
+        g.update_sc(nsc=nsc)
         return g
+
+    @property
+    def n_orb(self):
+        """ Returns number of orbitals for the equivalent atom """
+        return np.diff(self.lasto)
 
     def __init_new(self,cell,xa,n_orb,Z=None,update_sc=False):
         """
@@ -337,6 +284,11 @@ class TBT_Geom(SIESTA_UNITS):
             g.nsc = np.copy(self.nsc)
             g.isc_off = np.copy(self.isc_off)
         return g
+
+    @property
+    def no_s(self):
+        """ Number of supercell orbitals """
+        return self.no_u * np.prod(self.nsc)
 
     def sub(self,atoms,cell=None,update_sc=False):
         """
@@ -677,6 +629,14 @@ class TBT_Geom(SIESTA_UNITS):
 
         Then assigning TB parameters look something like:
         (here shown for two orbitals per atom)
+        
+        Parameters
+        ----------
+        ia : list,int
+             Atomic indices
+
+        Examples
+        --------
 
         # Only nearest neighbour interactions
         dR = (.1, 2.)
@@ -702,6 +662,11 @@ class TBT_Geom(SIESTA_UNITS):
         Returns an atomic index corresponding to the orbital indicies.
 
         This is not particurlaly fast.
+
+        Parameters
+        ----------
+        io: list,int
+             List of indices to return the atoms for
         """
         rlasto = self.lasto[::-1]
         iio = np.asarray([io]).flatten()
@@ -934,6 +899,8 @@ class TBT_Geom(SIESTA_UNITS):
         
 
 class TBT_Model(SIESTA_UNITS):
+
+    _GEOM = TBT_Geom
     """
     Tight binding model handler to create a Hamiltonian
     for arbitrary systems.
@@ -1015,6 +982,11 @@ class TBT_Model(SIESTA_UNITS):
     def no_u(self):
         """ Returns the number of orbitals for the geometry """
         return self.geom.no_u
+
+    @property
+    def no_s(self):
+        """ Returns number of orbitals in the super-cell """
+        return self.geom.no_s
 
     @property
     def na_u(self):
@@ -1369,6 +1341,51 @@ class TBT_Model(SIESTA_UNITS):
             v.info = "Supercell column indices in the sparse format"
             v[:] = self.col[:] + 1
 
+    @classmethod
+    def SIESTA(cls,fname='SIESTA.nc',ispin=0):
+        """
+        Reads in a model from a SIESTA.nc file and enables 
+        one to alter the Hamiltonian elements.
+        """
+        
+        # First read the geometry
+        geom = cls._GEOM.SIESTA(fname)
+
+        # We overwrite the elements for the sparsity pattern
+        # so no need to create it any bigger than it is
+        model = cls(geom,max_connection=1)
+
+        nf = nc.Dataset(fname,'r')
+        sg = nf.groups['SPARSE']
+
+        geom.isc_off = np.asarray(nf.groups['SPARSE'].variables['isc_off'][:],np.int)
+        
+        # Use Ef to move H to Ef = 0
+        Ef = float(nf.variables['Ef'][0]) * cls.Ry
+        S = np.array(sg.variables['S'][:],np.float)
+        H = np.array(sg.variables['H'][:],np.float) * cls.Ry
+        # Correct for the Fermi-level (in that way
+        # Ef == 0)
+        for i in range(len(H)):
+            H[i,:] -= Ef * S[:]
+        ncol = np.array(sg.variables['n_col'][:],np.int)
+        # Update maximum number of connections (in case future stuff happens)
+        model.max_n = np.amax(ncol)
+        ptr = np.append(np.array([0],np.int),np.cumsum(ncol))
+        # Ensure that it is flattened
+        ptr.shape = (-1,)
+        col = np.array(sg.variables['list_col'][:],np.int) - 1
+        # Copy information over
+        model.ncol = ncol
+        model.ptr = ptr
+        model.col = col
+        model._nnzs = col.shape[0]
+        # Create new container
+        model.HS = np.empty((model.nnzs,2),np.float)
+        model.HS[:,0] = H[ispin,:]
+        model.HS[:,1] = S[:]
+        return model
+
     def save(self,fname='SIESTA.nc',Ef=0.,zlib=0):
         """
         Saves the current sparse Hamiltonian and overlap to a 
@@ -1480,152 +1497,46 @@ class TBT_Model(SIESTA_UNITS):
 
         nf.close()
 
-    @staticmethod
-    def read_output(output,geom=None,model=None):
+    @classmethod
+    def sparse2model(cls,geom,H,S):
+        """ Returns a model based on the sparse matrices H and S """
+
+        # Now create model, we set H to decide
+        # the actual sparsity, hence we do
+        H = H.tocsr()
+        # Find max_n
+        max_n = 0
+        for i in range(geom.no_u):
+            max_n = max(max_n,H[i,:].getnnz())
+        H = H.tocoo()
+
+        # Assign maximum size (we do it 2 times bigger
+        # to enable the user to extend it a little)
+        model = cls(geom,max_connection=max_n*2)
+
+        # Copy data to the model
+        for jo,io,h in zip(H.row,H.col,H.data):
+            model[jo,io] = (h,S[jo,io])
+
+        return model
+
+    @classmethod
+    def read_input(cls,input,geom=None):
         """
-        Creates a TB model based on an ``OutputFile`` object.
+        Creates a TB model based on an ``TBInputFile`` object.
 
         The object should incorporate routines called `read_geom` and
         `read_model` to retrieve the geometry and the tight-binding matrix.
         """
-        if model is None: model = TBT_Model
-        with output as fh:
+        
+        with input as fh:
 
             if geom is None:
                 # Read in the structure
-                geom = fh.read_geom()
+                geom = fh.read_geom(cls=cls._GEOM)
 
             # Read in tight-binding matrix
-            mod = fh.read_model(geom.na_u)
-
-        # completed reading the matrix
-        # convert to local sparse format
-        mod = mod.tocoo()
-
-        # get maximum connection
-        max_n = np.amax(mod.col)
-        tb = model(geom,max_connection = max_n)
-
-        # Copy elements
-        for jo,io,d in zip(mod.row,mod.col,mod.data):
-            if jo == io:
-                tb[jo,io] = (d,1.)
-            else:
-                tb[jo,io] = (d,0.)
-        del mod
-        return tb
-
-    @staticmethod
-    def read_output_periodic(output,V=[],geom=None,model=None):
-        """
-        Creates a TB model based on an ``OutputFile`` object.
-        The object should incorporate routines called `read_geom` and
-        `read_model` to retrieve the geometry and the tight-binding model.
-
-        This routine reads in a periodic output by first reading in
-        the geometry, then it will read in the following k-points
-        based on the `V` list.
-        
-        ``x in V``:
-          Dyn(x=1/2) and Dyn(x=1/4)
-        ``y in V``:
-          Dyn(y=1/2) and Dyn(y=1/4)
-        ``z in V``:
-          Dyn(z=1/2) and Dyn(z=1/4)
-
-        Each of these directions allows one to find H0, Vx, Vy and Vz.
-
-        REMARK: Currently this routine cannot calculate Vxy, Vx-y, and all non-orthogonal V's.
-
-        """
-        if model is None: model = TBT_Model
-
-        # First we create a list of all the k-points.
-        if not V:
-            raise RuntimeWarning('You have not requested any coupling directions, '+
-                                 'reverting to only reading intrinsic dynamical matrix (the first one encountered).')
-            return self.read_output(output)
-
-        if len(V) > 1:
-            raise RuntimeWarning('You have not requested more than one coupling direction, '+
-                                 'the couplings are currently not separated for non-orthogonal directions!')
-            return self.read_output(output)
-
-        dyns = []
-        with output as fh:
-
-            # get geometry
-            if geom is None:
-                geom = fh.read_geom()
-            
-            # get all models
-            mods = fh.read_models(geom.na_u)
-
-        # small helper function to find the equivalent
-        def find_model(mods,q):
-            for qq,mat in mods:
-                if np.allclose(q,qq,rtol=1.e-6):
-                    return mat
-            raise ValueError('Output file: '+str(output.file)+
-                             ' does not contain the q-point: '+str(q))
-
-        # Convert models to H, V and V^\dagger
-        V = [dir.lower() for dir in V]
-        # get maximum connections
-        max_col = np.amax(dyns[0][1].col)
-        # ensure that the number of supercells are correctly set
-        nsc = np.zeros((3,))
-        if 'x' in V: nsc[0] = 1
-        if 'y' in V: nsc[1] = 1
-        if 'z' in V: nsc[2] = 1
-        geom.update_sc(nsc=nsc)
-
-        # We just ensure a large enough connection scheme (2**4)
-        tb = model(geom,max_connection = max_col * 16)
-
-        for dir in V:
-            if dir == 'x':
-                d = 0
-                q1 = np.array([0.25,0.,0.])
-                q2 = np.array([0.5 ,0.,0.])
-                sc = np.array([1,0,0],np.int)
-            elif dir == 'y':
-                d = 1
-                q1 = np.array([0.,0.25,0.])
-                q2 = np.array([0.,0.5 ,0.])
-                sc = np.array([0,1,0],np.int)
-            elif dir == 'z':
-                d = 2
-                q1 = np.array([0.,0.,0.25])
-                q2 = np.array([0.,0.,0.5 ])
-                sc = np.array([0,0,1],np.int)
-
-            # find the dynamical matrices
-            TB1 = find_model(matrices,q1)
-            TBV = find_model(matrices,q2)
-
-            TBV.data = ( TB1.data[:].real + TB1.data[:].imag - 
-                         TBV.data[:]
-                         ) * 0.5
-
-            # Assign the coupling matrix for V and V^\dagger
-            sc_off = geom.no_u * geom.sc_idx( sc)
-            sc_ofd = geom.no_u * geom.sc_idx(-sc)
-            for jo, io, d in zip(TBV.row,TBV.col,TBV.data):
-                tb[jo,io+sc_off] = (d,0.)
-                tb[io,jo+sc_ofd] = (d,0.)
-
-        # Calculate H and V
-        TBH = TB1.real
-
-        # Create H 
-        for jo,io,d in zip(TBH.row,TBH.col,TBH.data):
-            if jo == io:
-                tb[jo,io] = (d,1.)
-            else:
-                tb[jo,io] = (d,0.)
-
-        return tb
+            return fh.read_model(geom=geom,cls=cls)
 
 
 class TBT_dH(TBT_Model):
@@ -1853,247 +1764,367 @@ class TBT_dH(TBT_Model):
         # Cleanup
         nf.close()
 
-_P_TBL_Z = {
-    'Actinium' : 89 , 'Ac' : 89 , '89' : 89, 89 : 89,
-    'Aluminum' : 13 , 'Al' : 13 , '13' : 13, 13 : 13,
-    'Americium' : 95 , 'Am' : 95 , '95' : 95, 95 : 95,
-    'Antimony' : 51 , 'Sb' : 51 , '51' : 51, 51 : 51,
-    'Argon' : 18 , 'Ar' : 18 , '18' : 18, 18 : 18,
-    'Arsenic' : 33 , 'As' : 33 , '33' : 33, 33 : 33,
-    'Astatine' : 85 , 'At' : 85 , '85' : 85, 85 : 85,
-    'Barium' : 56 , 'Ba' : 56 , '56' : 56, 56 : 56,
-    'Berkelium' : 97 , 'Bk' : 97 , '97' : 97, 97 : 97,
-    'Beryllium' : 4 , 'Be' : 4 , '4' : 4, 4 : 4,
-    'Bismuth' : 83 , 'Bi' : 83 , '83' : 83, 83 : 83,
-    'Bohrium' : 107 , 'Bh' : 107 , '107' : 107, 107 : 107,
-    'Boron' : 5 , 'B' : 5 , '5' : 5, 5 : 5,
-    'Bromine' : 35 , 'Br' : 35 , '35' : 35, 35 : 35,
-    'Cadmium' : 48 , 'Cd' : 48 , '48' : 48, 48 : 48,
-    'Calcium' : 20 , 'Ca' : 20 , '20' : 20, 20 : 20,
-    'Californium' : 98 , 'Cf' : 98 , '98' : 98, 98 : 98,
-    'Carbon' : 6 , 'C' : 6 , '6' : 6, 6 : 6,
-    'Cerium' : 58 , 'Ce' : 58 , '58' : 58, 58 : 58,
-    'Cesium' : 55 , 'Cs' : 55 , '55' : 55, 55 : 55,
-    'Chlorine' : 17 , 'Cl' : 17 , '17' : 17, 17 : 17,
-    'Chromium' : 24 , 'Cr' : 24 , '24' : 24, 24 : 24,
-    'Cobalt' : 27 , 'Co' : 27 , '27' : 27, 27 : 27,
-    'Copper' : 29 , 'Cu' : 29 , '29' : 29, 29 : 29,
-    'Curium' : 96 , 'Cm' : 96 , '96' : 96, 96 : 96,
-    'Darmstadtium' : 110 , 'Ds' : 110 , '110' : 110, 110 : 110,
-    'Dubnium' : 105 , 'Db' : 105 , '105' : 105, 105 : 105,
-    'Dysprosium' : 66 , 'Dy' : 66 , '66' : 66, 66 : 66,
-    'Einsteinium' : 99 , 'Es' : 99 , '99' : 99, 99 : 99,
-    'Erbium' : 68 , 'Er' : 68 , '68' : 68, 68 : 68,
-    'Europium' : 63 , 'Eu' : 63 , '63' : 63, 63 : 63,
-    'Fermium' : 100 , 'Fm' : 100 , '100' : 100, 100 : 100,
-    'Fluorine' : 9 , 'F' : 9 , '9' : 9, 9 : 9,
-    'Francium' : 87 , 'Fr' : 87 , '87' : 87, 87 : 87,
-    'Gadolinium' : 64 , 'Gd' : 64 , '64' : 64, 64 : 64,
-    'Gallium' : 31 , 'Ga' : 31 , '31' : 31, 31 : 31,
-    'Germanium' : 32 , 'Ge' : 32 , '32' : 32, 32 : 32,
-    'Gold' : 79 , 'Au' : 79 , '79' : 79, 79 : 79,
-    'Hafnium' : 72 , 'Hf' : 72 , '72' : 72, 72 : 72,
-    'Hassium' : 108 , 'Hs' : 108 , '108' : 108, 108 : 108,
-    'Helium' : 2 , 'He' : 2 , '2' : 2, 2 : 2,
-    'Holmium' : 67 , 'Ho' : 67 , '67' : 67, 67 : 67,
-    'Hydrogen' : 1 , 'H' : 1 , '1' : 1, 1 : 1,
-    'Indium' : 49 , 'In' : 49 , '49' : 49, 49 : 49,
-    'Iodine' : 53 , 'I' : 53 , '53' : 53, 53 : 53,
-    'Iridium' : 77 , 'Ir' : 77 , '77' : 77, 77 : 77,
-    'Iron' : 26 , 'Fe' : 26 , '26' : 26, 26 : 26,
-    'Krypton' : 36 , 'Kr' : 36 , '36' : 36, 36 : 36,
-    'Lanthanum' : 57 , 'La' : 57 , '57' : 57, 57 : 57,
-    'Lawrencium' : 103 , 'Lr' : 103 , '103' : 103, 103 : 103,
-    'Lead' : 82 , 'Pb' : 82 , '82' : 82, 82 : 82,
-    'Lithium' : 3 , 'Li' : 3 , '3' : 3, 3 : 3,
-    'Lutetium' : 71 , 'Lu' : 71 , '71' : 71, 71 : 71,
-    'Magnesium' : 12 , 'Mg' : 12 , '12' : 12, 12 : 12,
-    'Manganese' : 25 , 'Mn' : 25 , '25' : 25, 25 : 25,
-    'Meitnerium' : 109 , 'Mt' : 109 , '109' : 109, 109 : 109,
-    'Mendelevium' : 101 , 'Md' : 101 , '101' : 101, 101 : 101,
-    'Mercury' : 80 , 'Hg' : 80 , '80' : 80, 80 : 80,
-    'Molybdenum' : 42 , 'Mo' : 42 , '42' : 42, 42 : 42,
-    'Neodymium' : 60 , 'Nd' : 60 , '60' : 60, 60 : 60,
-    'Neon' : 10 , 'Ne' : 10 , '10' : 10, 10 : 10,
-    'Neptunium' : 93 , 'Np' : 93 , '93' : 93, 93 : 93,
-    'Nickel' : 28 , 'Ni' : 28 , '28' : 28, 28 : 28,
-    'Niobium' : 41 , 'Nb' : 41 , '41' : 41, 41 : 41,
-    'Nitrogen' : 7 , 'N' : 7 , '7' : 7, 7 : 7,
-    'Nobelium' : 102 , 'No' : 102 , '102' : 102, 102 : 102,
-    'Osmium' : 76 , 'Os' : 76 , '76' : 76, 76 : 76,
-    'Oxygen' : 8 , 'O' : 8 , '8' : 8, 8 : 8,
-    'Palladium' : 46 , 'Pd' : 46 , '46' : 46, 46 : 46,
-    'Phosphorus' : 15 , 'P' : 15 , '15' : 15, 15 : 15,
-    'Platinum' : 78 , 'Pt' : 78 , '78' : 78, 78 : 78,
-    'Plutonium' : 94 , 'Pu' : 94 , '94' : 94, 94 : 94,
-    'Polonium' : 84 , 'Po' : 84 , '84' : 84, 84 : 84,
-    'Potassium' : 19 , 'K' : 19 , '19' : 19, 19 : 19,
-    'Praseodymium' : 59 , 'Pr' : 59 , '59' : 59, 59 : 59,
-    'Promethium' : 61 , 'Pm' : 61 , '61' : 61, 61 : 61,
-    'Protactinium' : 91 , 'Pa' : 91 , '91' : 91, 91 : 91,
-    'Radium' : 88 , 'Ra' : 88 , '88' : 88, 88 : 88,
-    'Radon' : 86 , 'Rn' : 86 , '86' : 86, 86 : 86,
-    'Rhenium' : 75 , 'Re' : 75 , '75' : 75, 75 : 75,
-    'Rhodium' : 45 , 'Rh' : 45 , '45' : 45, 45 : 45,
-    'Rubidium' : 37 , 'Rb' : 37 , '37' : 37, 37 : 37,
-    'Ruthenium' : 44 , 'Ru' : 44 , '44' : 44, 44 : 44,
-    'Rutherfordium' : 104 , 'Rf' : 104 , '104' : 104, 104 : 104,
-    'Samarium' : 62 , 'Sm' : 62 , '62' : 62, 62 : 62,
-    'Scandium' : 21 , 'Sc' : 21 , '21' : 21, 21 : 21,
-    'Seaborgium' : 106 , 'Sg' : 106 , '106' : 106, 106 : 106,
-    'Selenium' : 34 , 'Se' : 34 , '34' : 34, 34 : 34,
-    'Silicon' : 14 , 'Si' : 14 , '14' : 14, 14 : 14,
-    'Silver' : 47 , 'Ag' : 47 , '47' : 47, 47 : 47,
-    'Sodium' : 11 , 'Na' : 11 , '11' : 11, 11 : 11,
-    'Strontium' : 38 , 'Sr' : 38 , '38' : 38, 38 : 38,
-    'Sulfur' : 16 , 'S' : 16 , '16' : 16, 16 : 16,
-    'Tantalum' : 73 , 'Ta' : 73 , '73' : 73, 73 : 73,
-    'Technetium' : 43 , 'Tc' : 43 , '43' : 43, 43 : 43,
-    'Tellurium' : 52 , 'Te' : 52 , '52' : 52, 52 : 52,
-    'Terbium' : 65 , 'Tb' : 65 , '65' : 65, 65 : 65,
-    'Thallium' : 81 , 'Tl' : 81 , '81' : 81, 81 : 81,
-    'Thorium' : 90 , 'Th' : 90 , '90' : 90, 90 : 90,
-    'Thulium' : 69 , 'Tm' : 69 , '69' : 69, 69 : 69,
-    'Tin' : 50 , 'Sn' : 50 , '50' : 50, 50 : 50,
-    'Titanium' : 22 , 'Ti' : 22 , '22' : 22, 22 : 22,
-    'Tungsten' : 74 , 'W' : 74 , '74' : 74, 74 : 74,
-    'Ununbium' : 112 , 'Uub' : 112 , '112' : 112, 112 : 112,
-    'Ununhexium' : 116 , 'Uuh' : 116 , '116' : 116, 116 : 116,
-    'Ununoctium' : 118 , 'Uuo' : 118 , '118' : 118, 118 : 118,
-    'Ununpentium' : 115 , 'Uup' : 115 , '115' : 115, 115 : 115,
-    'Ununquadium' : 114 , 'Uuq' : 114 , '114' : 114, 114 : 114,
-    'Ununseptium' : 117 , 'Uus' : 117 , '117' : 117, 117 : 117,
-    'Ununtrium' : 113 , 'Uut' : 113 , '113' : 113, 113 : 113,
-    'Ununium' : 111 , 'Uuu' : 111 , '111' : 111, 111 : 111,
-    'Uranium' : 92 , 'U' : 92 , '92' : 92, 92 : 92,
-    'Vanadium' : 23 , 'V' : 23 , '23' : 23, 23 : 23,
-    'Xenon' : 54 , 'Xe' : 54 , '54' : 54, 54 : 54,
-    'Ytterbium' : 70 , 'Yb' : 70 , '70' : 70, 70 : 70,
-    'Yttrium' : 39 , 'Y' : 39 , '39' : 39, 39 : 39,
-    'Zinc' : 30 , 'Zn' : 30 , '30' : 30, 30 : 30,
-    'Zirconium' : 40 , 'Zr' : 40 , '40' : 40, 40 : 40,
-    }
 
-_P_TBL_Z_short = {
-    'Actinium' : 'Ac' , 'Ac' : 'Ac' , '89' : 'Ac', 89 : 'Ac',
-    'Aluminum' : 'Al' , 'Al' : 'Al' , '13' : 'Al', 13 : 'Al',
-    'Americium' : 'Am' , 'Am' : 'Am' , '95' : 'Am', 95 : 'Am',
-    'Antimony' : 'Sb' , 'Sb' : 'Sb' , '51' : 'Sb', 51 : 'Sb',
-    'Argon' : 'Ar' , 'Ar' : 'Ar' , '18' : 'Ar', 18 : 'Ar',
-    'Arsenic' : 'As' , 'As' : 'As' , '33' : 'As', 33 : 'As',
-    'Astatine' : 'At' , 'At' : 'At' , '85' : 'At', 85 : 'At',
-    'Barium' : 'Ba' , 'Ba' : 'Ba' , '56' : 'Ba', 56 : 'Ba',
-    'Berkelium' : 'Bk' , 'Bk' : 'Bk' , '97' : 'Bk', 97 : 'Bk',
-    'Beryllium' : 'Be' , 'Be' : 'Be' , '4' : 'Be', 4 : 'Be',
-    'Bismuth' : 'Bi' , 'Bi' : 'Bi' , '83' : 'Bi', 83 : 'Bi',
-    'Bohrium' : 'Bh' , 'Bh' : 'Bh' , '107' : 'Bh', 107 : 'Bh',
-    'Boron' : 'B' , 'B' : 'B' , '5' : 'B', 5 : 'B',
-    'Bromine' : 'Br' , 'Br' : 'Br' , '35' : 'Br', 35 : 'Br',
-    'Cadmium' : 'Cd' , 'Cd' : 'Cd' , '48' : 'Cd', 48 : 'Cd',
-    'Calcium' : 'Ca' , 'Ca' : 'Ca' , '20' : 'Ca', 20 : 'Ca',
-    'Californium' : 'Cf' , 'Cf' : 'Cf' , '98' : 'Cf', 98 : 'Cf',
-    'Carbon' : 'C' , 'C' : 'C' , '6' : 'C', 6 : 'C',
-    'Cerium' : 'Ce' , 'Ce' : 'Ce' , '58' : 'Ce', 58 : 'Ce',
-    'Cesium' : 'Cs' , 'Cs' : 'Cs' , '55' : 'Cs', 55 : 'Cs',
-    'Chlorine' : 'Cl' , 'Cl' : 'Cl' , '17' : 'Cl', 17 : 'Cl',
-    'Chromium' : 'Cr' , 'Cr' : 'Cr' , '24' : 'Cr', 24 : 'Cr',
-    'Cobalt' : 'Co' , 'Co' : 'Co' , '27' : 'Co', 27 : 'Co',
-    'Copper' : 'Cu' , 'Cu' : 'Cu' , '29' : 'Cu', 29 : 'Cu',
-    'Curium' : 'Cm' , 'Cm' : 'Cm' , '96' : 'Cm', 96 : 'Cm',
-    'Darmstadtium' : 'Ds' , 'Ds' : 'Ds' , '110' : 'Ds', 110 : 'Ds',
-    'Dubnium' : 'Db' , 'Db' : 'Db' , '105' : 'Db', 105 : 'Db',
-    'Dysprosium' : 'Dy' , 'Dy' : 'Dy' , '66' : 'Dy', 66 : 'Dy',
-    'Einsteinium' : 'Es' , 'Es' : 'Es' , '99' : 'Es', 99 : 'Es',
-    'Erbium' : 'Er' , 'Er' : 'Er' , '68' : 'Er', 68 : 'Er',
-    'Europium' : 'Eu' , 'Eu' : 'Eu' , '63' : 'Eu', 63 : 'Eu',
-    'Fermium' : 'Fm' , 'Fm' : 'Fm' , '100' : 'Fm', 100 : 'Fm',
-    'Fluorine' : 'F' , 'F' : 'F' , '9' : 'F', 9 : 'F',
-    'Francium' : 'Fr' , 'Fr' : 'Fr' , '87' : 'Fr', 87 : 'Fr',
-    'Gadolinium' : 'Gd' , 'Gd' : 'Gd' , '64' : 'Gd', 64 : 'Gd',
-    'Gallium' : 'Ga' , 'Ga' : 'Ga' , '31' : 'Ga', 31 : 'Ga',
-    'Germanium' : 'Ge' , 'Ge' : 'Ge' , '32' : 'Ge', 32 : 'Ge',
-    'Gold' : 'Au' , 'Au' : 'Au' , '79' : 'Au', 79 : 'Au',
-    'Hafnium' : 'Hf' , 'Hf' : 'Hf' , '72' : 'Hf', 72 : 'Hf',
-    'Hassium' : 'Hs' , 'Hs' : 'Hs' , '108' : 'Hs', 108 : 'Hs',
-    'Helium' : 'He' , 'He' : 'He' , '2' : 'He', 2 : 'He',
-    'Holmium' : 'Ho' , 'Ho' : 'Ho' , '67' : 'Ho', 67 : 'Ho',
-    'Hydrogen' : 'H' , 'H' : 'H' , '1' : 'H', 1 : 'H',
-    'Indium' : 'In' , 'In' : 'In' , '49' : 'In', 49 : 'In',
-    'Iodine' : 'I' , 'I' : 'I' , '53' : 'I', 53 : 'I',
-    'Iridium' : 'Ir' , 'Ir' : 'Ir' , '77' : 'Ir', 77 : 'Ir',
-    'Iron' : 'Fe' , 'Fe' : 'Fe' , '26' : 'Fe', 26 : 'Fe',
-    'Krypton' : 'Kr' , 'Kr' : 'Kr' , '36' : 'Kr', 36 : 'Kr',
-    'Lanthanum' : 'La' , 'La' : 'La' , '57' : 'La', 57 : 'La',
-    'Lawrencium' : 'Lr' , 'Lr' : 'Lr' , '103' : 'Lr', 103 : 'Lr',
-    'Lead' : 'Pb' , 'Pb' : 'Pb' , '82' : 'Pb', 82 : 'Pb',
-    'Lithium' : 'Li' , 'Li' : 'Li' , '3' : 'Li', 3 : 'Li',
-    'Lutetium' : 'Lu' , 'Lu' : 'Lu' , '71' : 'Lu', 71 : 'Lu',
-    'Magnesium' : 'Mg' , 'Mg' : 'Mg' , '12' : 'Mg', 12 : 'Mg',
-    'Manganese' : 'Mn' , 'Mn' : 'Mn' , '25' : 'Mn', 25 : 'Mn',
-    'Meitnerium' : 'Mt' , 'Mt' : 'Mt' , '109' : 'Mt', 109 : 'Mt',
-    'Mendelevium' : 'Md' , 'Md' : 'Md' , '101' : 'Md', 101 : 'Md',
-    'Mercury' : 'Hg' , 'Hg' : 'Hg' , '80' : 'Hg', 80 : 'Hg',
-    'Molybdenum' : 'Mo' , 'Mo' : 'Mo' , '42' : 'Mo', 42 : 'Mo',
-    'Neodymium' : 'Nd' , 'Nd' : 'Nd' , '60' : 'Nd', 60 : 'Nd',
-    'Neon' : 'Ne' , 'Ne' : 'Ne' , '10' : 'Ne', 10 : 'Ne',
-    'Neptunium' : 'Np' , 'Np' : 'Np' , '93' : 'Np', 93 : 'Np',
-    'Nickel' : 'Ni' , 'Ni' : 'Ni' , '28' : 'Ni', 28 : 'Ni',
-    'Niobium' : 'Nb' , 'Nb' : 'Nb' , '41' : 'Nb', 41 : 'Nb',
-    'Nitrogen' : 'N' , 'N' : 'N' , '7' : 'N', 7 : 'N',
-    'Nobelium' : 'No' , 'No' : 'No' , '102' : 'No', 102 : 'No',
-    'Osmium' : 'Os' , 'Os' : 'Os' , '76' : 'Os', 76 : 'Os',
-    'Oxygen' : 'O' , 'O' : 'O' , '8' : 'O', 8 : 'O',
-    'Palladium' : 'Pd' , 'Pd' : 'Pd' , '46' : 'Pd', 46 : 'Pd',
-    'Phosphorus' : 'P' , 'P' : 'P' , '15' : 'P', 15 : 'P',
-    'Platinum' : 'Pt' , 'Pt' : 'Pt' , '78' : 'Pt', 78 : 'Pt',
-    'Plutonium' : 'Pu' , 'Pu' : 'Pu' , '94' : 'Pu', 94 : 'Pu',
-    'Polonium' : 'Po' , 'Po' : 'Po' , '84' : 'Po', 84 : 'Po',
-    'Potassium' : 'K' , 'K' : 'K' , '19' : 'K', 19 : 'K',
-    'Praseodymium' : 'Pr' , 'Pr' : 'Pr' , '59' : 'Pr', 59 : 'Pr',
-    'Promethium' : 'Pm' , 'Pm' : 'Pm' , '61' : 'Pm', 61 : 'Pm',
-    'Protactinium' : 'Pa' , 'Pa' : 'Pa' , '91' : 'Pa', 91 : 'Pa',
-    'Radium' : 'Ra' , 'Ra' : 'Ra' , '88' : 'Ra', 88 : 'Ra',
-    'Radon' : 'Rn' , 'Rn' : 'Rn' , '86' : 'Rn', 86 : 'Rn',
-    'Rhenium' : 'Re' , 'Re' : 'Re' , '75' : 'Re', 75 : 'Re',
-    'Rhodium' : 'Rh' , 'Rh' : 'Rh' , '45' : 'Rh', 45 : 'Rh',
-    'Rubidium' : 'Rb' , 'Rb' : 'Rb' , '37' : 'Rb', 37 : 'Rb',
-    'Ruthenium' : 'Ru' , 'Ru' : 'Ru' , '44' : 'Ru', 44 : 'Ru',
-    'Rutherfordium' : 'Rf' , 'Rf' : 'Rf' , '104' : 'Rf', 104 : 'Rf',
-    'Samarium' : 'Sm' , 'Sm' : 'Sm' , '62' : 'Sm', 62 : 'Sm',
-    'Scandium' : 'Sc' , 'Sc' : 'Sc' , '21' : 'Sc', 21 : 'Sc',
-    'Seaborgium' : 'Sg' , 'Sg' : 'Sg' , '106' : 'Sg', 106 : 'Sg',
-    'Selenium' : 'Se' , 'Se' : 'Se' , '34' : 'Se', 34 : 'Se',
-    'Silicon' : 'Si' , 'Si' : 'Si' , '14' : 'Si', 14 : 'Si',
-    'Silver' : 'Ag' , 'Ag' : 'Ag' , '47' : 'Ag', 47 : 'Ag',
-    'Sodium' : 'Na' , 'Na' : 'Na' , '11' : 'Na', 11 : 'Na',
-    'Strontium' : 'Sr' , 'Sr' : 'Sr' , '38' : 'Sr', 38 : 'Sr',
-    'Sulfur' : 'S' , 'S' : 'S' , '16' : 'S', 16 : 'S',
-    'Tantalum' : 'Ta' , 'Ta' : 'Ta' , '73' : 'Ta', 73 : 'Ta',
-    'Technetium' : 'Tc' , 'Tc' : 'Tc' , '43' : 'Tc', 43 : 'Tc',
-    'Tellurium' : 'Te' , 'Te' : 'Te' , '52' : 'Te', 52 : 'Te',
-    'Terbium' : 'Tb' , 'Tb' : 'Tb' , '65' : 'Tb', 65 : 'Tb',
-    'Thallium' : 'Tl' , 'Tl' : 'Tl' , '81' : 'Tl', 81 : 'Tl',
-    'Thorium' : 'Th' , 'Th' : 'Th' , '90' : 'Th', 90 : 'Th',
-    'Thulium' : 'Tm' , 'Tm' : 'Tm' , '69' : 'Tm', 69 : 'Tm',
-    'Tin' : 'Sn' , 'Sn' : 'Sn' , '50' : 'Sn', 50 : 'Sn',
-    'Titanium' : 'Ti' , 'Ti' : 'Ti' , '22' : 'Ti', 22 : 'Ti',
-    'Tungsten' : 'W' , 'W' : 'W' , '74' : 'W', 74 : 'W',
-    'Ununbium' : 'Uub' , 'Uub' : 'Uub' , '112' : 'Uub', 112 : 'Uub',
-    'Ununhexium' : 'Uuh' , 'Uuh' : 'Uuh' , '116' : 'Uuh', 116 : 'Uuh',
-    'Ununoctium' : 'Uuo' , 'Uuo' : 'Uuo' , '118' : 'Uuo', 118 : 'Uuo',
-    'Ununpentium' : 'Uup' , 'Uup' : 'Uup' , '115' : 'Uup', 115 : 'Uup',
-    'Ununquadium' : 'Uuq' , 'Uuq' : 'Uuq' , '114' : 'Uuq', 114 : 'Uuq',
-    'Ununseptium' : 'Uus' , 'Uus' : 'Uus' , '117' : 'Uus', 117 : 'Uus',
-    'Ununtrium' : 'Uut' , 'Uut' : 'Uut' , '113' : 'Uut', 113 : 'Uut',
-    'Ununium' : 'Uuu' , 'Uuu' : 'Uuu' , '111' : 'Uuu', 111 : 'Uuu',
-    'Uranium' : 'U' , 'U' : 'U' , '92' : 'U', 92 : 'U',
-    'Vanadium' : 'V' , 'V' : 'V' , '23' : 'V', 23 : 'V',
-    'Xenon' : 'Xe' , 'Xe' : 'Xe' , '54' : 'Xe', 54 : 'Xe',
-    'Ytterbium' : 'Yb' , 'Yb' : 'Yb' , '70' : 'Yb', 70 : 'Yb',
-    'Yttrium' : 'Y' , 'Y' : 'Y' , '39' : 'Y', 39 : 'Y',
-    'Zinc' : 'Zn' , 'Zn' : 'Zn' , '30' : 'Zn', 30 : 'Zn',
-    'Zirconium' : 'Zr' , 'Zr' : 'Zr' , '40' : 'Zr', 40 : 'Zr',
-    }
+class TBFile(object):
+    """ Class to contain a file used in the tight-binding model """
+    _mode = None
+    def __init__(self,filename):
+        self.file = filename
+
+    def __enter__(self):
+        """ Opens the output file and returns the handle """
+        self.fh = open(self.file,self._mode)
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.fh.close()
+        del self.fh # clean-up so that it does not exist
+        return False
+
+class TBInputFile(TBFile):
+    """ Class to easily open/close/read output files from programs """
+
+    _mode = 'r'
+    _comment = '#'
+
+    def readline(self):
+        """ Reads the next line of the file """
+        l = self.fh.readline()
+        while l.startswith(self._comment):
+            l = self.fh.readline()
+        return l
+
+    def step_to(self,keyword):
+        """ Steps the file-handle until the keyword is found in the output """
+        # If keyword is a list, it just matches one of the inputs
+        found = False
+        if isinstance(keyword,(list,np.ndarray)):
+            while not found:
+                l = self.readline()
+                for key in keyword:
+                    found = found or (l.find(key) >= 0)
+                if l == '': break # readline() keeps spitting out '' if EOF
+                    
+        else:
+            while not found:
+                l = self.readline()
+                found = l.find(keyword) >= 0
+                if l == '': break # readline() keeps spitting out '' if EOF
+            
+        # sometimes the line contains information, as a
+        # default we return the line found
+        return found, l
+
+    def read_geom(self,cls=TBT_Geom):
+        """ Reading a geometry in regular TB format """
+        if not hasattr(self,'fh'):
+            # The file-handle has not been opened
+            with self as fh:
+                return fh.read_geom(cls=cls)
+
+        cell = np.zeros((3,3),np.float)
+        Z = []
+        xa = []
+        n_orb = []
+
+        nsc = np.zeros((3,),np.int)
+
+        def Z2no(i,no):
+            try:
+                # pure atomic number
+                return int(i),no
+            except:
+                # both atomic number and no
+                j = i.replace('[',' ').replace(']',' ').split()
+                return int(j[0]),int(j[1])
+        
+        # The format of the geometry file is
+        keys = ['atoms','cell','supercells','nsc']
+        for _ in range(len(keys)):
+            f, l = self.step_to(keys)
+            l = l.strip()
+            if 'supercells' in l.lower() or 'nsc' in l.lower():
+                # We have everything in one line
+                l = l.split()[1:]
+                for i in range(3): nsc[i] = int(l[i])
+            elif 'cell' in l.lower():
+                if 'begin' in l.lower():
+                    for i in range(3):
+                        l = self.readline().split()
+                        cell[i,0] = float(l[0])
+                        cell[i,1] = float(l[1])
+                        cell[i,2] = float(l[2])
+                    self.readline() # step past the block
+                else:
+                    # We have everything in one line
+                    l = l.split()[1:]
+                    for i in range(3):
+                        cell[i,i] = float(l[i])
+            elif 'atoms' in l.lower():
+                l = self.readline()
+                while not l.startswith('end'):
+                    ls = l.split()
+                    try:
+                        no = int(ls[4])
+                    except:
+                        no = 1
+                    z, no = Z2no(ls[0],no)
+                    Z.append(z)
+                    n_orb.append(no)
+                    xa.append([float(f) for f in ls[1:4]])
+                    l = self.readline()
+                xa = np.array(xa,np.float)
+                xa.shape = (-1,3)
+                n_orb = np.array(n_orb,np.int)
+                self.readline() # step past the block
+
+        # Return the geometry
+        geom = cls(cell,xa,Z=Z,n_orb=n_orb)
+        geom.update_sc(nsc=nsc)
+        #for i, s in enumerate(sc):
+        #    geom = geom.tile(s,axis=i)
+        return geom
+
+    def read_model(self,geom=None,hermitian=True,dtype=np.float,cls=TBT_Model):
+        """ Abstract for reading a model """
+        if not hasattr(self,'fh'):
+            # The file-handle has not been opened
+            with self as fh:
+                return fh.read_model(geom=geom,dtype=dtype,cls=cls)
+
+        if geom is None:
+            geom = self.read_geom(cls=cls._GEOM)
+
+        # With the geometry in place we can read in the entire matrix
+        # Create a new sparse matrix
+        from scipy.sparse import lil_matrix
+        H = lil_matrix( (geom.no_u,geom.no_s) , dtype=dtype)
+        S = lil_matrix( (geom.no_u,geom.no_s) , dtype=dtype)
+
+        def i2o(geom,i):
+            try:
+                # pure orbital
+                return int(i)
+            except:
+                # ia[o]
+                # atom ia and the orbital o
+                j = i.replace('[',' ').replace(']',' ').split()
+                return geom.a2o(int(j[0])) + int(j[1])
+        
+        # Start reading in the supercells
+        found, l = self.step_to('matrix')
+        while found:
+            # Get supercell
+            ls = l.split()
+            try:
+                isc = np.array([int(ls[i]) for i in range(2,5)],np.int)
+            except:
+                isc = np.array([0,0,0],np.int)
+            off1 = geom.sc_idx(isc) * geom.no_u
+            off2 = geom.sc_idx(-isc) * geom.no_u
+            l = self.readline()
+            while not l.startswith('end'):
+                ls = l.split()
+                jo = i2o(geom,ls[0])
+                io = i2o(geom,ls[1])
+                h = float(ls[2])
+                try:
+                    s = float(ls[3])
+                except:
+                    s = 0.
+                H[jo,io+off1] = h
+                S[jo,io+off1] = s
+                if hermitian: 
+                    S[io,jo+off2] = s
+                    H[io,jo+off2] = h
+                l = self.readline()
+            found, l = self.step_to('matrix')
+
+        return cls.sparse2model(geom,H,S)
+
+
+class TBOutputFile(TBFile):
+    """ Class to easily open/close/read output files from programs """
+    _mode = 'w'
+
+    def write(self,*args):
+        """
+        Wrapper for the file-handle write statement
+
+        Args passed directly to file()
+        """
+        self.fh.write(*args)
+
+    def write_geom(self,geom,**kwargs):
+        """
+        Writes the geometry to the output file
+
+        Parameters
+        ----------
+        geom: TBT_Geom
+              The geometry we wish to write
+        """
+        if not hasattr(self,'fh'):
+            # The file-handle has not been opened
+            with self as fh:
+                fh.write_geom(geom)
+            return
+
+        # The format of the geometry file is
+        # for now, pretty stringent
+        # Get cell_fmt
+        cell_fmt = '.5f'
+        if 'fmt' in kwargs: cell_fmt = kwargs['fmt']
+        if 'cell_fmt' in kwargs: cell_fmt = kwargs['cell_fmt']
+        xa_fmt = '.4e'
+        if 'fmt' in kwargs: xa_fmt = kwargs['fmt']
+        if 'xa_fmt' in kwargs: xa_fmt = kwargs['xa_fmt']
+
+
+        self.write('begin cell\n')
+        # Write the cell
+        fmt_str = '  {{0:{0}}} {{1:{0}}} {{2:{0}}}\n'.format(cell_fmt)
+        for i in range(3):
+            self.write(fmt_str.format(*geom.cell[i,:]))
+        self.write('end cell\n')
+
+        # Write number of super cells in each direction
+        self.write('\nsupercells {0:d} {1:d} {2:d}\n'.format(*(geom.nsc//2)))
+        
+        # Write all atomic positions along with the specie type
+        self.write('\nbegin atoms\n')
+        fmt1_str = '  {{0:d}} {{1:{0}}} {{2:{0}}} {{3:{0}}}\n'.format(xa_fmt)
+        fmt2_str = '  {{0:d}}[{{1:d}}] {{2:{0}}} {{3:{0}}} {{4:{0}}}\n'.format(xa_fmt)
+
+        for ia in range(geom.na_u):
+            no = geom.n_orb[ia]
+            if no == 1:
+                self.write(fmt1_str.format(geom.Z[ia],*geom.xa[ia,:]))
+            else:
+                self.write(fmt2_str.format(geom.Z[ia],no,*geom.xa[ia,:]))
+
+        self.write('end atoms\n')
+
+    def write_model(self,model,hermitian=True,**kwargs):
+        """ 
+        Writes the model in the file according to the TB format.
+
+        Parameters
+        ----------
+        model: TBT_Geom
+           Writes the model to the file format. Saves the matrix specifications
+        hermitian: boolean
+           Whether the saved data should be written in a Hermitian way, or
+           all data should be written.
+           If this is true it will check the data for Hermiticity and decide
+           based on that.
+           By writing it Hermitianly we can reduce the written information
+           by 50%.
+        """
+        if not hasattr(self,'fh'):
+            # The file-handle has not been opened
+            with self as fh:
+                fh.write_model(model)
+            return
+
+        from scipy.sparse import triu
+
+        # We default to the advanced layuot if we have more than one 
+        # orbital on any one atom
+        advanced = kwargs.get('advanced',np.any(model.geom.n_orb > 1))
+
+        fmt = kwargs.get('fmt','g')
+        if advanced:
+            fmt1_str = ' {{0:d}}[{{1:d}}] {{2:d}}[{{3:d}}] {{4:{0}}}\n'.format(fmt)
+            fmt2_str = ' {{0:d}}[{{1:d}}] {{2:d}}[{{3:d}}] {{4:{0}}} {{5:{0}}}\n'.format(fmt)
+        else:
+            fmt1_str = ' {{0:d}} {{1:d}} {{2:{0}}}\n'.format(fmt)
+            fmt2_str = ' {{0:d}} {{1:d}} {{2:{0}}} {{3:{0}}}\n'.format(fmt)
+
+        # Easier to retrieve elements
+        geom = model.geom
+
+        # We currently force the model to be finalized
+        # before we can write it
+        # This should be easily circumvented
+        H, S = model.tocsr()
+        # If the model is Hermitian we can
+        # do with writing out half the entries
+        if hermitian:
+            herm_acc = kwargs.get('herm_acc',1e-6)
+            # We check whether it is Hermitian
+            for i, isc in enumerate(geom.isc_off):
+                oi = i * geom.no_u
+                oj = geom.sc_idx(-isc) * geom.no_u
+                # get the difference between the ^\dagger elements
+                diff = H[:,oi:oi+geom.no_u] - H[:,oj:oj+geom.no_u].transpose()
+                diff.eliminate_zeros()
+                diff = diff.tocoo()
+                if np.any(np.abs(diff.data) > herm_acc):
+                    amax = np.amax(np.abs(diff.data))
+                    warnings.warn('The model could not be asserted to be Hermitian within the accuracy required ({0}).'.format(amax), UserWarning) 
+                    hermitian = False
+
+        if hermitian:
+            # Remove all double stuff
+            for i, isc in enumerate(geom.isc_off):
+                if np.any(isc < 0):
+                    # We have ^\dagger element, remove it
+                    o = i * geom.no_u
+                    # Ensure that we remove all nullified quantities
+                    # (setting elements to zero will add them internally
+                    #  :(, hence this actually constructs the full matrix
+                    H[:,o:o+geom.no_u] = 0.
+                    H.eliminate_zeros()
+                    S[:,o:o+geom.no_u] = 0.
+                    S.eliminate_zeros()
+            o = geom.sc_idx(np.zeros((3,),np.int))
+            # Get upper-triangular matrix of the unit-cell H and S
+            ut = triu(H[:,o:o+geom.no_u],k=0).tocsr()
+            H[:,o:o+geom.no_u] = 0.
+            H[:,o:o+geom.no_u] = ut[:,:]
+            H.eliminate_zeros()
+            ut = triu(S[:,o:o+geom.no_u],k=0).tocsr()
+            S[:,o:o+geom.no_u] = 0.
+            S[:,o:o+geom.no_u] = ut[:,:]
+            S.eliminate_zeros()
+            del ut
+            
+            # Ensure that S and H have the same sparsity pattern
+            S = S.tocoo()
+            for jo,io,s in zip(S.row,S.col,S.data):
+                H[jo,io] = H[jo,io]
+            S = S.tocsr()
+                            
+        # Start writing of the model
+        # We loop on all super-cells
+        for i, isc in enumerate(geom.isc_off):
+            # Check that we have any contributions in this
+            # sub-section
+            Hsub = H[:,i*geom.no_u:(i+1)*geom.no_u].tocoo()
+            Ssub = S[:,i*geom.no_u:(i+1)*geom.no_u].tocsr()
+            if Hsub.getnnz() == 0: continue
+            # We have a contribution, write out the information
+            self.write('\nbegin matrix {0:d} {1:d} {2:d}\n'.format(*isc))
+            if advanced:
+                for jo,io,h in zip(Hsub.row,Hsub.col,Hsub.data):
+                    s = Ssub[jo,io]
+                    o = np.array((jo,io),np.int)
+                    a = geom.o2a(o)
+                    o = o - geom.a2o(a)
+                    if s == 0.:
+                        self.write(fmt1_str.format(a[0],o[0],a[1],o[1],h))
+                    else:
+                        self.write(fmt2_str.format(a[0],o[0],a[1],o[1],h,s))
+            else:
+                for jo,io,h in zip(Hsub.row,Hsub.col,Hsub.data):
+                    s = Ssub[jo,io]
+                    if s == 0.:
+                        self.write(fmt1_str.format(jo,io,h))
+                    else:
+                        self.write(fmt2_str.format(jo,io,h,s))
+            self.write('end matrix {0:d} {1:d} {2:d}\n'.format(*isc))
+
 
 class PeriodicTable(object):
     """ 
@@ -2385,7 +2416,7 @@ class PeriodicTable(object):
         40 : 91.224 ,
         41 : 92.906 ,
         42 : 95.94 ,
-        43 : 98 ,
+        43 : 98. ,
         44 : 101.07 ,
         45 : 102.905 ,
         46 : 106.42 ,
@@ -2403,7 +2434,7 @@ class PeriodicTable(object):
         58 : 140.116 ,
         59 : 140.90765 ,
         60 : 144.242 ,
-        61 : 145 ,
+        61 : 145. ,
         62 : 150.36 ,
         63 : 151.964 ,
         64 : 157.25 ,
@@ -2426,40 +2457,40 @@ class PeriodicTable(object):
         81 : 204.3833 ,
         82 : 207.2 ,
         83 : 208.98040 ,
-        84 : 210 ,
-        85 : 210 ,
-        86 : 220 ,
-        87 : 223 ,
-        88 : 226 ,
-        89 : 227 ,
+        84 : 210. ,
+        85 : 210. ,
+        86 : 220. ,
+        87 : 223. ,
+        88 : 226. ,
+        89 : 227. ,
         91 : 231.03588 ,
         90 : 232.03806 ,
-        93 : 237 ,
+        93 : 237. ,
         92 : 238.02891 ,
-        95 : 243 ,
-        94 : 244 ,
-        96 : 247 ,
-        97 : 247 ,
-        98 : 251 ,
-        99 : 252 ,
-        100 : 257 ,
-        101 : 258 ,
-        102 : 259 ,
-        103 : 262 ,
-        104 : 261 ,
-        105 : 262 ,
-        106 : 266 ,
-        107 : 264 ,
-        108 : 277 ,
-        109 : 268 ,
-        110 : 271 ,
-        111 : 272 ,
-        112 : 285 ,
-        113 : 284 ,
-        114 : 289 ,
-        115 : 288 ,
-        116 : 292 ,
-        118 : 293 ,
+        95 : 243. ,
+        94 : 244. ,
+        96 : 247. ,
+        97 : 247. ,
+        98 : 251. ,
+        99 : 252. ,
+        100 : 257. ,
+        101 : 258. ,
+        102 : 259. ,
+        103 : 262. ,
+        104 : 261. ,
+        105 : 262. ,
+        106 : 266. ,
+        107 : 264. ,
+        108 : 277. ,
+        109 : 268. ,
+        110 : 271. ,
+        111 : 272. ,
+        112 : 285. ,
+        113 : 284. ,
+        114 : 289. ,
+        115 : 288. ,
+        116 : 292. ,
+        118 : 293. ,
         }
 
     def Z_int(self,key):
@@ -2617,6 +2648,9 @@ def TB_save(fname,Geom,TB = _TB_graphene['D'],alat=1.42):
     # This concludes the sparsity pattern
     # Save it
     HS.save(fname,Ef=TB['U'])
+    with TBOutputFile(fname.replace('.nc','.tb')) as fh:
+        fh.write_geom(HS.geom)
+        fh.write_model(HS)
 
 def TB_square():
     """
@@ -2744,8 +2778,13 @@ def TB_square():
         TB_dev[ia,idx_a[1]] = nn
     # Now save the TB models to corresponding NetCDF-4 files
     TB_el.save('SQUARE_EL.nc')
+    with TBOutputFile('SQUARE_EL.tb') as fh:
+        fh.write_geom(TB_el.geom)
+        fh.write_model(TB_el)
     TB_dev.save('SQUARE_DEV.nc')
-
+    with TBOutputFile('SQUARE_DEV.tb') as fh:
+        fh.write_geom(TB_dev.geom)
+        fh.write_model(TB_dev)
 
     ############################
     #    To showcase the dH    #

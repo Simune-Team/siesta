@@ -1,4 +1,156 @@
 ----------------------------------------------------
+March 14, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-339
+Changed input/output tight-binding models
+
+* Changed the classes which handles input output format
+  for tight-binding models.
+  
+  Input is now an input for the TB module. Output is for saving the data
+  in a specific format.
+
+  The basic idea is that one can transfer geometries and TB-models
+  to other input/output formats by supplying simple classes
+  which implements two routines:
+    read_geom/write_geom
+    read_model/write_model
+
+* Created intrinsic TB format for saving creating TB models in python.
+  
+  It is a pure text file which uses a few keywords to create the
+  model.
+
+  First the cell vectors are defined using:
+ 
+    begin cell 
+       A[0] A[1] A[2]
+       B[0] B[1] B[2]
+       C[0] C[1] C[2]
+    end cell
+
+  to describe number of auxilliary supercells one writes
+  
+    supercells 1 1 0
+
+  which means it has one auxilliary supercell in A and B directions
+  (i.e. both +A and -A and +B and -B) it defaults to 0 0 0.
+
+  Then the atoms are defined in this block:
+
+    begin atoms
+      Z x y z
+      ...
+    end atoms
+  which is a list of atoms.
+  To denote how many orbitals each atom has you can either do:
+
+    Z[no] x y z
+  or
+    Z x y z no
+  which will associate 'no' orbitals with that atom. 'no' defaults
+  to 1 in which case it need not be specified.
+
+  Now you have to create the tight-binding matrix
+
+    begin matrix <super_cell>
+      io jo H <S>
+      ...
+    end matrix
+
+  where 'io' and 'jo' are orbital indices. The internals will complain
+  if you set erroneous orbital indices.
+  'H' is the Hamiltonian element for the 'io'->'jo' element and '<S>' is
+  the overlap for that same connection (the overlap defaults to 0 in which case 
+  it is not needed)
+
+  'io' and 'jo' can be typeset either in orbital index or the atom[orb] index:
+
+  So for a model with 3 atoms each with 3 orbitals this table corresponds
+  to the same indices:
+
+    0 = 0[0]
+    1 = 0[1]
+    2 = 0[2]
+    3 = 1[0]
+    4 = 1[1]
+    5 = 1[2]
+    6 = 2[0]
+    7 = 2[1]
+    8 = 2[2]
+
+  This is handy if you have many orbitals and you wish to easier be able
+  to identify which orbitals belong to which.
+
+  The matrix notation does the following:
+
+    begin matrix
+     ...
+    end matrix
+  will be equivalent to
+    begin matrix 0 0 0
+     ...
+    end matrix 0 0 0
+  which means the unit-cell interactions.
+
+    begin matrix 1 0 0
+     ...
+    end matrix
+  means that this block describes all interactions with
+  the +A direction auxilliary supercell.
+  Hence
+  
+    begin matrix 1 0 0
+     0[1] 0[0] H S
+    end matrix
+  sets the interaction between the second orbital on the first
+  atom (in the unitcell '0[1]') with the first orbital on the 
+  first atom in the neighbouring cell in the +A direction.
+
+  To exemplify one can write a one atom cell with 2D periodicity with
+  nearest neighbour interactions as these matrices (on-site 0, nn = -1
+  and orthogonal basis-set)
+
+   begin matrix 0 0 0
+     0 0 0 1
+   end matrix 0 0 0
+   begin matrix 1 0 0
+     0 0 -1
+   end matrix 1 0 0
+   begin matrix 0 1 0
+     0 0 -1
+   end matrix 0 1 0
+
+  note that the input files assume Hermiticity which halves the needed
+  input.
+
+  The outputfile for the standard file format will write out assuming
+  Hermiticity (if requested and the model _is_ Hermitian, it checks for 
+  this).  
+
+  The tests related to tbt_tb.py also writes out these files
+  for the equivalent .nc files to let the user see them in action.
+
+* Changed a lot of the staticmethods to classmethods so that
+  the parent class is inhereted.
+
+* Added reading of a SIESTA.nc file for the TBT_Model which not
+  only enables reading TB parameters from a SIESTA calculation 
+  but also allows re-reading data from created structures.
+
+* Added n_orb to the geometry object to allow retrieval of number
+  of orbitals per atom.
+
+  Also added no_s to get number of orbitals in the supercell.
+
+  Also added these to the model which simply is a wrapper for
+     self.geom.<>
+
+* Removed dictionaries related to the periodic table.
+
+modified:
+  Util/TS/TB/pht_tb.py
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 March 10, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-338
 Corrected equations for i->i transmission
 
