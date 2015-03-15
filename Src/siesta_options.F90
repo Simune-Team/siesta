@@ -1119,7 +1119,6 @@ MODULE siesta_options
 #ifdef NCDF_4
     else if (leqi(dyntyp,'explicit')) then
       idyn = 9
-      
 #endif
     else
       call die('Invalid Option selected - value of MD.TypeOfRun not recognised')

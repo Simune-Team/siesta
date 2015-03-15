@@ -27,13 +27,9 @@ module m_exp_coord
   implicit none
 
   ! The file we will save the explicit coordinates to
-  character(len=350), save :: expCoordFile
-
-! Options for each point
-  real(dp), save :: istep_weight
+  character(len=250), save :: expCoordFile
 
   private
-  public :: istep_weight
 
 #ifdef NCDF_4
 
@@ -144,7 +140,6 @@ contains
     call ncdf_get_var(ncdf,'xa',xa,start=(/1,1,istep/))
     ! Check the unit of the variable...
     
-    call ncdf_get_var(ncdf,'weight',istep_weight,start=(/istep/))
     call ncdf_close(ncdf)
 
     ! Save the current reached explicit coordinate step...
@@ -158,7 +153,6 @@ contains
 
 #ifdef MPI
     call MPI_Bcast(xa,3*na_u,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(istep_weight,1,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
 #endif
     
   end subroutine exp_coord_next
@@ -176,7 +170,7 @@ contains
 ! **************************
 ! * INPUT variables        *
 ! **************************
-    integer, intent(in), optional :: istep
+    integer, intent(in) :: istep
 
 ! **************************
 ! * Local variables        *
@@ -186,20 +180,14 @@ contains
     integer :: MPIerror
 #endif
     
-    if ( present(istep) ) then
-           
-       ! First check for the existance of the coordinate file
-       call ncdf_open(ncdf,trim(expCoordFile))
-       call ncdf_get_var(ncdf,'weight',exp_coord_weight,start=(/istep/))
-       call ncdf_close(ncdf)
+    ! First check for the existance of the coordinate file
+    call ncdf_open(ncdf,trim(expCoordFile))
+    call ncdf_get_var(ncdf,'w',exp_coord_weight,start=(/istep/))
+    call ncdf_close(ncdf)
 
 #ifdef MPI
-       call MPI_Bcast(exp_coord_weight,1,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
+    call MPI_Bcast(exp_coord_weight,1,MPI_Double_Precision,0,MPI_Comm_World,MPIerror)
 #endif
-    else
-       ! This variable is already bcast!
-       exp_coord_weight = istep_weight
-    end if
 
   end function exp_coord_weight
 

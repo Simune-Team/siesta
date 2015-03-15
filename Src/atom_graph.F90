@@ -26,8 +26,6 @@ module atom_graph
   ! This atom_graph structure is also useful to perform domain-decomposition
   ! of the orbitals (not implemented yet).
 
-  ! The code could be easily parallelized, distributing the atoms over processors.
-
   ! Example of call sequence (in siesta_init, for example):
 
   ! use atom_graph, only: atom_graph_generate, atom_graph_print, tAtomGraph
@@ -408,7 +406,7 @@ contains
 !      print "(a,2(2x,3f10.4))", "xi+xij, xj: ", xi+xij, xj
       y = xi + xij - xj
 !      print "(a,(2x,3f10.4))", "y: ", y
-      y = matmul(rcell,y)
+      y = matmul(y,rcell)
 !      print "(a,(2x,3f10.4))", "lattice y: ", y
       sc = nint(y)
 !      print "(a,3i4)", "sc: ", sc

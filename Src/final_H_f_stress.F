@@ -195,7 +195,11 @@
 #ifdef CDF
 #ifdef NCDF_4
       if ( write_cdf ) then
-         dic_save = ('H'.kv.1)//('fa'.kv.1)//('stress'.kv.1)
+         dic_save = ('fa'.kv.1)//('stress'.kv.1)
+         if ( savehs ) dic_save = dic_save //('H'.kv.1)
+#ifdef TRANSIESTA
+         if ( TS_HS_save ) dic_save = dic_save //('H'.kv.1)
+#endif
          call cdf_save_state('SIESTA.nc',dic_save)
          call delete(dic_save)
       end if

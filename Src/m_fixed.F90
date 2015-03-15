@@ -56,6 +56,11 @@ module m_fixed
   ! Use constr routine
   logical, save :: use_constr = .false.
 
+  ! Fix angles
+  logical, save :: cell_angle(3) = .false. ! alpha, beta, gamma
+  ! Fix cell-vectors
+  logical, save :: cell_vector(3) = .false. ! A1, A2, A3
+
 contains
 
   subroutine resetFixedPointers( )
@@ -80,8 +85,8 @@ contains
   ! Written by J.M.Soler. Feb., 1998
   ! Modified by P. Ordejon to output the total number of constraints
   !    imposed.  June, 2003
-  ! Modified by Nick Papior Andersen for additional constraint types and
-  !    printing of explicite constraints.
+  ! Rewritten by Nick Papior Andersen for additional constraint types and
+  !    printing of explicit constraints.
   !    January, 2015
   ! *********** INPUT ****************************************************
   ! real*8  cell(3,3)    : Lattice vectors
@@ -193,6 +198,56 @@ contains
     cstress(1,3) = cstress(1,3) - xs(5) * cstress(1,3)
     cstress(1,2) = cstress(1,2) - xs(6) * cstress(1,2)
     cstress(2,1) = cstress(2,1) - xs(6) * cstress(2,1)
+
+    ! apply cell-constraints. This corresponds to 
+    ! stress release.
+    do if = 1 , 3
+       if ( cell_vector(if) ) then
+          cstress(:,if) = 0._dp
+          cstress(if,:) = 0._dp
+       end if
+    end do
+    if ( cell_angle(1) ) then
+       ! alpha angle, ang(B,C)
+       ! kill A
+       cstress(2:3,1) = 0._dp
+       cstress(1,2:3) = 0._dp
+       ! stress-directions will be symmetrized
+       cf(1) = ( cstress(2,2) + cstress(3,3) ) * .5_dp
+       cf(2) = ( cstress(2,3) + cstress(3,2) ) * .5_dp
+       cstress(2,2) = cf(1)
+       cstress(3,3) = cf(1)
+       cstress(2,3) = cf(2)
+       cstress(3,2) = cf(2)
+    end if
+    if ( cell_angle(2) ) then
+       ! beta angle, ang(A,C)
+       ! kill B
+       cstress(1,2) = 0._dp
+       cstress(3,2) = 0._dp
+       cstress(2,1) = 0._dp
+       cstress(2,3) = 0._dp
+       ! stress-directions will be symmetrized
+       cf(1) = ( cstress(1,1) + cstress(3,3) ) * .5_dp
+       cf(2) = ( cstress(1,3) + cstress(3,1) ) * .5_dp
+       cstress(1,1) = cf(1)
+       cstress(3,3) = cf(1)
+       cstress(1,3) = cf(2)
+       cstress(3,1) = cf(2)
+    end if
+    if ( cell_angle(3) ) then
+       ! gamma angle, ang(A,B)
+       ! kill C
+       cstress(1:2,3) = 0._dp
+       cstress(3,1:2) = 0._dp
+       ! stress-directions will be symmetrized
+       cf(1) = ( cstress(1,1) + cstress(2,2) ) * .5_dp
+       cf(2) = ( cstress(1,2) + cstress(2,1) ) * .5_dp
+       cstress(1,1) = cf(1)
+       cstress(2,2) = cf(1)
+       cstress(1,2) = cf(2)
+       cstress(2,1) = cf(2)
+    end if
 
     lmag_use = .false.
     if ( present(magnitude_usage) ) lmag_use = magnitude_usage
@@ -510,6 +565,20 @@ contains
        write(*,'(3(2(tr2,e11.4),/))') xs(:)
     end if
 
+    if ( cell_angle(1) ) &
+         write(*,'(a)') 'siesta: Constrain alpha (23)'
+    if ( cell_angle(2) ) &
+         write(*,'(a)') 'siesta: Constrain beta (13)'
+    if ( cell_angle(3) ) &
+         write(*,'(a)') 'siesta: Constrain gamma (12)'
+
+    if ( cell_vector(1) ) &
+         write(*,'(a)') 'siesta: Constraint (vector): A'
+    if ( cell_vector(2) ) &
+         write(*,'(a)') 'siesta: Constraint (vector): B'
+    if ( cell_vector(3) ) &
+         write(*,'(a)') 'siesta: Constraint (vector): C'
+
     if ( N_fix == 0 ) return
 
     if ( N_fix > 1 ) then
@@ -640,6 +709,42 @@ contains
 
           use_constr = .true.
 
+
+       else if ( leqi(namec,'cellangle') .or. &
+            leqi(namec,'cell-angle') ) then
+
+          N = fdf_bnnames(pline)
+          
+          do i = 2 , N
+             namec = fdf_bnames(pline,i)
+             ! Fix alpha angle
+             if ( leqi(namec,'alpha') ) then
+                cell_angle(1) = .true.
+             else if ( leqi(namec,'beta') ) then
+                cell_angle(2) = .true.
+             else if ( leqi(namec,'gamma') ) then
+                cell_angle(3) = .true.
+             end if
+          end do
+
+       else if ( leqi(namec,'cellside') .or. &
+            leqi(namec,'cell-side') .or. &
+            leqi(namec,'cellvector') .or. &
+            leqi(namec,'cell-vector') ) then
+
+          N = fdf_bnnames(pline)
+          
+          do i = 2 , N
+             namec = fdf_bnames(pline,i)
+             ! Fix alpha angle
+             if ( leqi(namec,'a1') .or. leqi(namec,'a') ) then
+                cell_vector(1) = .true.
+             else if ( leqi(namec,'a2') .or. leqi(namec,'b') ) then
+                cell_vector(2) = .true.
+             else if ( leqi(namec,'a3') .or. leqi(namec,'c') ) then
+                cell_vector(3) = .true.
+             end if
+          end do
 
        ! ****** Now we only look at atomic specifications for constraints ******
 

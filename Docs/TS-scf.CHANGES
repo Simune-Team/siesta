@@ -1,4 +1,38 @@
 ----------------------------------------------------
+March 14, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-340
+Added cell constraints for equal sided vectors, bugfix for atom_graph
+
+* Cell constraints cannot easily be implemented for 
+  skewed axis as the cell strain is symmetrized and thus
+  the new cell will be "bigger" for the longer cell vector.
+
+  Hence if one wishes to fix angles one should ensure this.
+  SIESTA will not let you know.
+
+* Bugfix for atom_graph, a reciprocal cell times vector
+  was reversed.
+  Hence skewed angle atom-graphs always created the wrong
+  super-cell.
+  
+  I had anticipated this, but only found the error now!
+
+  Now everything regarding the supercell seems to work 
+  beautifully :)
+
+* Removed saving of the Hamiltonian unless asked for
+  in SIESTA.nc
+
+* Clean-up in COORDS.nc module.
+
+modified:
+  Src/atom_graph.F90
+  Src/final_H_f_stress.F
+  Src/m_exp_coord.F90
+  Src/m_fixed.F90
+  Src/m_ncdf_siesta.F90
+  Src/siesta_options.F90
+
+----------------------------------------------------
 March 14, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-339
 Changed input/output tight-binding models
 
