@@ -29,7 +29,8 @@ dep:
 	sfmakedepend --depend=obj  --modext=o \
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 
 #
-ARCH_MAKE=../../$(OBJDIR)/arch.make
+MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)
@@ -38,7 +39,10 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
-INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
+NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+INCFLAGS:=$(NETCDF_INCFLAGS)\
+          $(NCPS_INCFLAGS) \
+          $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
 #
@@ -64,27 +68,29 @@ FDF_MAKEFILE=$(VPATH)/fdf/makefile
 FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
 $(FDF):
 	(mkdir -p fdf; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "ARCH_MAKE=$(ARCH_MAKE)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-MIXPS_OBJS= f2kcli.o flib_spline.o atom_options.o pseudopotential.o \
+MIXPS_OBJS= f2kcli.o flib_spline.o atom_options.o \
             sys.o m_io.o io.o alloc.o pxf.o parallel.o periodic_table.o \
-            memory.o memoryinfo.o mixps.o
-
-mixps:  $(FDF) $(MIXPS_OBJS)
+            memory.o memoryinfo.o mixps.o psml_die.o die.o
+#
+NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
+#
+mixps:  $(FDF) $(MIXPS_OBJS) $(NCPS)
 	$(FC) -o mixps \
-	       $(LDFLAGS) $(MIXPS_OBJS)   $(FDF) 
+	       $(LDFLAGS) $(MIXPS_OBJS) $(NCPS)  $(FDF) $(PSML_LIBS)
 #----------------------------------------------------------------------------
 FRACTIONAL_OBJS= f2kcli.o sys.o m_io.o alloc.o flib_spline.o fractional.o \
-                 atom_options.o  memory.o memoryinfo.o pseudopotential.o  \
-                 io.o pxf.o parallel.o periodic_table.o
+                 atom_options.o  memory.o memoryinfo.o  \
+                 io.o pxf.o parallel.o periodic_table.o psml_die.o die.o
 
-fractional: $(FDF) $(FRACTIONAL_OBJS)
+fractional: $(FDF) $(FRACTIONAL_OBJS) $(NCPS)
 	$(FC) -o fractional \
-	       $(LDFLAGS) $(FRACTIONAL_OBJS)  $(FDF) 
+	       $(LDFLAGS) $(FRACTIONAL_OBJS)  $(NCPS) $(FDF) $(PSML_LIBS)
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
@@ -100,7 +106,7 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o m_filter.o
-atom.o: old_atmfuncs.o periodic_table.o precision.o pseudopotential.o recipes.o
+atom.o: old_atmfuncs.o periodic_table.o precision.o recipes.o
 atom.o: sys.o xcmod.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
@@ -110,10 +116,10 @@ bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o parsing.o
 bands.o: precision.o sys.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o sys.o xml.o
+basis_io.o: precision.o  radial.o sys.o xml.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
-basis_specs.o: pseudopotential.o sys.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o sys.o
+basis_specs.o: sys.o
+basis_types.o: alloc.o atmparams.o precision.o  sys.o
 bessph.o: parallel.o precision.o sys.o
 bonds.o: alloc.o atmfuncs.o mneighb.o precision.o recipes.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
@@ -193,7 +199,7 @@ fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o parsing.o precision.o
 flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
-fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
+fractional.o: f2kcli.o periodic_table.o precision.o  sys.o
 get_target_stress.o: m_mpi_utils.o parallel.o precision.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
@@ -301,7 +307,7 @@ mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
 mixer.o: m_ts_io.o m_ts_options.o parallel.o siesta_geom.o siesta_options.o
 mixer.o: sparse_matrices.o
-mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
+mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o 
 mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
@@ -350,7 +356,6 @@ projected_DOS.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o precision.o recipes.o
 radial.o: precision.o xml.o
 rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o

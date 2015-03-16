@@ -33,7 +33,8 @@ dep:
 	@mv tmp.Makefile Makefile
 #
 #
-ARCH_MAKE=../../../$(OBJDIR)/arch.make
+MAIN_OBJDIR:=$(shell cd -P -- ../../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)
@@ -42,6 +43,8 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
+NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+INCFLAGS:=$(NCPS_INCFLAGS) $(INCFLAGS)
 
 #
 # Uncomment the following line for debugging support
@@ -79,7 +82,7 @@ FDF_MAKEFILE=$(TOP_LEVEL)/fdf/makefile
 FDF_INCFLAGS:=-I $(TOP_LEVEL)/fdf $(INCFLAGS)
 $(FDF): 
 	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(TOP_LEVEL)/fdf" \
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "ARCH_MAKE=$(ARCH_MAKE)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
@@ -93,24 +96,25 @@ MOD_OBJS=precision.o parallel.o debugmpi.o sys.o m_io.o alloc.o memoryinfo.o lis
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o parallelsubs.o \
          schecomm.o sparse_matrices.o \
-         files.o flib_spline.o pseudopotential.o chemical.o xml.o \
+         files.o flib_spline.o chemical.o xml.o \
          domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
-         spatial.o timer_local.o 
+         spatial.o timer_local.o  die.o
 #
 COM_OBJS_DENCHAR=$(OBJS_DENCHAR) $(SYSOBJ)
 ALL_OBJS_DENCHAR=$(MOD_OBJS) $(COM_OBJS_DENCHAR)
 #
-
-denchar: $(FDF)  $(ALL_OBJS_DENCHAR)
+NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
+#
+denchar: $(FDF)  $(ALL_OBJS_DENCHAR) $(NCPS)
 	$(FC) -o denchar \
-	       $(LDFLAGS) $(ALL_OBJS_DENCHAR) $(FDF) $(METIS_LIB)
+	       $(LDFLAGS) $(ALL_OBJS_DENCHAR) $(FDF) $(NCPS) $(METIS_LIB)
 #
 
 clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f denchar *.o  *.a
 	rm -f *.mod
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=$(ARCH_MAKE)" clean)
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
@@ -121,7 +125,7 @@ atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: m_filter.o m_recipes.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: pseudopotential.o sys.o
+atom.o: sys.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
@@ -130,10 +134,10 @@ bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o precision.o
 bands.o: sys.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o sys.o xml.o
+basis_io.o: precision.o radial.o sys.o xml.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
-basis_specs.o: pseudopotential.o sys.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o sys.o
+basis_specs.o: sys.o
+basis_types.o: alloc.o atmparams.o precision.o sys.o
 bessph.o: precision.o sys.o
 bonds.o: alloc.o atmfuncs.o m_recipes.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
@@ -403,7 +407,6 @@ projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
 radial.o: alloc.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o

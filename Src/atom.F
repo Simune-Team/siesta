@@ -269,6 +269,7 @@
         logical  new
    
         logical  :: fit_3derivs, use_charge_cutoff, force_chlocal_method
+        logical  :: use_psml_vlocal, use_psml_kb_projectors
         logical  :: ignore_ghosts, quadratic
         real(dp) :: rmax_ps_check
         real(dp) :: kb_rmax
@@ -485,7 +486,8 @@ c    .          'atom: The above configuration will be used ',
 ! 
           if (flting.gt.0.0d0) then
 
-             if (fdf_boolean('Use.PSML.Vlocal',.false.)) then
+             use_psml_vlocal = fdf_boolean('Use.PSML.Vlocal',.false.)
+             if (use_psml_vlocal) then
                 call get_psml_vlocal(atm_label,rofi,nrval,Zval,vlocal,
      $                               vlocal_type)
 
@@ -577,7 +579,12 @@ c    .          'atom: The above configuration will be used ',
             s(1) = s(2)
 
             lmxkb_true = lmxkb
-            if (fdf_boolean("Use.PSML.KB.Projectors",.false.)) then
+            use_psml_kb_projectors =
+     $           fdf_boolean("Use.PSML.KB.Projectors",.false.)
+            if (use_psml_kb_projectors) then
+               if (.not. use_psml_vlocal) then
+                  call die("Must use PSML vlocal with PSML projectors")
+               endif
                call get_psml_kbprojs(is,atm_label,a,b,rofi,nrval,Zval,
      $                               lmxkb_true,nkbmax(is))
 
@@ -2410,6 +2417,11 @@ C potential
 
       if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
+      endif
+
+      if (.not. ps_HasPSOperator(ps)) then
+         call die("PSML file does not have " //
+     $            "a <pseudopotential-operator> section")
       endif
 
       do ir = 1, nrval

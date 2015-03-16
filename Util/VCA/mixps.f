@@ -4,8 +4,8 @@
 !     Pseudopotential mixer
 !
       use precision,       only: dp
-      use pseudopotential, only: pseudopotential_t,
-     $                           pseudo_read, pseudo_write_formatted
+      use m_ncps, only: pseudopotential_t => froyen_ps_t
+      use m_ncps, only: pseudo_read, pseudo_write_formatted
       use periodic_table,  only: cnfig, qvlofz
       use sys,             only: die
       use flib_spline

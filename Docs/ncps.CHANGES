@@ -1,4 +1,28 @@
 ------------------------------------------------------------
+March 16, 2015  Alberto Garcia       trunk-462--ncps-62
+Fix compilation of Denchar and VCA utilities. Cosmetics
+
+* Update the makefiles for Denchar and the VCA utilities.
+
+* Sanity checks in fdf psml-related keywords.
+
+* Remove obsolete file Src/pseudopotential.f.
+
+removed:
+  Src/pseudopotential.f
+  Src/store_kbproj.f
+added:
+  Util/VCA/die.f90
+  Util/VCA/psml_die.F90
+modified:
+  Src/Makefile
+  Src/atom.F
+  Util/Denchar/Src/Makefile
+  Util/VCA/Makefile
+  Util/VCA/fractional.f
+  Util/VCA/mixps.f
+
+------------------------------------------------------------
 March 12, 2015  Alberto Garcia       trunk-462--ncps-61
 Improvements in psop library. More documentation and build changes.
 
