@@ -1,0 +1,9 @@
+# Siesta options to run as a force server for fsiesta
+
+MD.TypeOfRun      master
+Master.code       fsiesta
+Master.interface  socket
+Master.address    localhost
+Master.port       10001
+Master.unix       false
+

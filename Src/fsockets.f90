@@ -87,7 +87,7 @@ CONTAINS
     CHARACTER(LEN=1024), INTENT(IN) :: host
     CHARACTER(LEN=1,KIND=C_CHAR) :: chost(1024)
     CALL fstr2cstr(host, chost)
-    CALL open_csocket(psockfd, inet, port, host)
+    CALL open_csocket(psockfd, inet, port, chost)
   END SUBROUTINE
 
   SUBROUTINE create_socket(psockfd, inet, port, host)      
@@ -97,7 +97,7 @@ CONTAINS
     CHARACTER(LEN=1024), INTENT(IN) :: host
     CHARACTER(LEN=1,KIND=C_CHAR) :: chost(1024)
     CALL fstr2cstr(host, chost)
-    CALL create_csocket(psockfd, inet, port, host)
+    CALL create_csocket(psockfd, inet, port, chost)
   END SUBROUTINE
    
   SUBROUTINE fstr2cstr(fstr, cstr, plen)

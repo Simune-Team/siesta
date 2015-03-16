@@ -19,7 +19,7 @@
 #
 VPATH=.
 #
-default: what siesta #  fsiesta_pipes.o libSiestaForces.a
+default: what siesta  # fsiesta_pipes.o fsiesta_sockets.o libSiestaForces.a
 #
 configure: configure.ac aclocal.m4
 	autoconf ${<D}/configure.ac
@@ -809,7 +809,9 @@ zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 band.o: bands.o
 diagmemory.o: memoryinfo.o
-fsiesta.o: fsiesta_pipes.o
+fsiesta.o: fsiesta_pipes.o fsiesta_sockets.o
+fsiesta_sockets.o: fsockets.o
+fsockets.o: sockets.o
 listsc_module.o: listsc.o
 m_bessph.o: bessph.o
 m_born_charge.o: born_charge.o

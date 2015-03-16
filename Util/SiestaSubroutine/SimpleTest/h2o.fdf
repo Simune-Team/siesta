@@ -21,3 +21,6 @@ PAO.BasisSize     SZ
 PAO.EnergyShift   0.5 eV
 
 MD.TypeOfRun      forces
+
+%include socket.fdf
+

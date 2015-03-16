@@ -69,11 +69,14 @@ PUBLIC :: &
 PRIVATE  ! Nothing is declared public beyond this point
 
 ! Private module parameters
-  integer,          parameter :: unit_len = 12
-  character(len=*), parameter :: siesta_xunit = 'bohr'
-  character(len=*), parameter :: siesta_eunit = 'ry'
-  character(len=*), parameter ::    ipi_xunit = 'bohr'
-  character(len=*), parameter ::    ipi_eunit = 'hartree'
+! WARNING: IPI_MSGLEN and MSGLEN must be equal in i-PI and fsiesta, respectively
+  integer,                 parameter ::   IPI_MSGLEN = 12
+  integer,                 parameter ::       MSGLEN = 80
+  integer,                 parameter ::     unit_len = 32
+  character(len=unit_len), parameter :: siesta_xunit = 'bohr'
+  character(len=unit_len), parameter :: siesta_eunit = 'ry'
+  character(len=unit_len), parameter ::    ipi_xunit = 'bohr'
+  character(len=unit_len), parameter ::    ipi_eunit = 'hartree'
 
 ! Private module variables
   integer, save :: socket
@@ -98,16 +101,15 @@ subroutine coordsFromSocket( na, xa, cell )
 
 ! Local parameters
   character(len=*),parameter:: myName='coordsFromSocket '
-  INTEGER, PARAMETER :: MSGLEN=12
 
 ! Local variables and arrays
-  logical, save  :: firstTime = .true.
-  LOGICAL        :: isunix
-  CHARACTER*12   :: code, header
-  CHARACTER*1024 :: parbuffer, host
-  INTEGER        :: inet, port, n
-  REAL*8         :: aux(9), c(9)
-  REAL*8,ALLOCATABLE:: x(:)
+  logical, save            :: firstTime = .true.
+  LOGICAL                  :: isunix
+  CHARACTER(len=MSGLEN)    :: header, message
+  CHARACTER(len=1024)      :: host
+  INTEGER                  :: inet, port, n
+  REAL(dp)                 :: aux(9), c(9)
+  REAL(dp),ALLOCATABLE     :: x(:)
 
 ! Open the socket, shared by the receive and send sides of communication
   if (firstTime) then
@@ -118,10 +120,10 @@ subroutine coordsFromSocket( na, xa, cell )
 
     inet = 1
     if (isunix) inet=0
-    host = TRIM(host)//achar(0)
 
     if (IOnode) then
-      print'(/,a)',myName//"Opening socket for two-way communication"
+      print'(/,a,2i8,a)', &
+        myName//'opening socket. inet,port,host=',inet,port,trim(host)
       call open_socket(socket, inet, port, host)
     endif
 
@@ -129,23 +131,34 @@ subroutine coordsFromSocket( na, xa, cell )
   end if ! (firstTime .and. IOnode)
 
 ! Read header from socket
-  header=""
+  header = ''
   if (IOnode) then
     do
-      call readbuffer(socket, header, MSGLEN)
       if (trim(master)=='i-pi') then
-        if (trim(header)/='STATUS') exit 
-        call writebuffer(socket,"READY       ",MSGLEN)
+        call readbuffer(socket, header, IPI_MSGLEN)
+        if (trim(header)/='STATUS') exit ! do loop
+        message = "READY"
+        call writebuffer(socket, message, IPI_MSGLEN)
       elseif (trim(master)=='fsiesta') then
-        if (trim(header)/='wait') exit
-        call writebuffer(socket,"ready       ",MSGLEN)
+        call readbuffer(socket, header, MSGLEN)
+        if (trim(header)=='quit') then
+          message = "quitting"
+          call writebuffer(socket, message, MSGLEN)
+          call die(myName//'stopping siesta process upon master request')
+        elseif (trim(header)=='wait') then
+          message = "ready"
+          call writebuffer(socket, message, MSGLEN)
+          cycle ! do loop
+        else
+          exit ! do loop
+        endif
       else
         call die(myName//'ERROR: unknown master')
       endif ! trim(master)
     enddo
   endif ! IOnode
 #ifdef MPI
-  call MPI_Bcast(header, 12, MPI_Character, 0, MPI_Comm_World, MPIerror)
+  call MPI_Bcast(header, MSGLEN, MPI_Character, 0, MPI_Comm_World, MPIerror)
 #endif
 
 ! Read cell vectors from socket, as a single buffer vector
@@ -160,7 +173,7 @@ subroutine coordsFromSocket( na, xa, cell )
       call readbuffer(socket, master_eunit, unit_len)
       call readbuffer(socket, c, 9)
     else
-      call die(myName//'Unexpected message from master')
+      call die(myName//'ERROR: unexpected header: '//trim(message))
     end if
   endif
 
@@ -180,14 +193,22 @@ subroutine coordsFromSocket( na, xa, cell )
     if (n/=na) call die(myName//'ERROR: unexpected number of atoms')
   endif
 
-! Read atomic coordinates
+! Read and broadcast atomic coordinates
   allocate(x(3*na))
-  if (ionode) call readbuffer(socket, x, 3*na)
+  if (IOnode) call readbuffer(socket, x, 3*na)
 #ifdef MPI
   call MPI_Bcast(x,3*na, MPI_Double_Precision,0, MPI_Comm_World, MPIerror)
 #endif
   xa = RESHAPE( x, (/3,na/) )
   deallocate(x)
+
+! Read trailing message
+  if (IOnode .and. master=='fsiesta') then
+    call readbuffer(socket, message, MSGLEN)
+    if (message/='end_coords') then
+      call die(myName//'ERROR: unexpected trailer:'//trim(message))
+    end if
+  endif
 
 ! Print coordinates and cell vectors received
   print '(/,4a,/,(3f12.6))', myName,'cell (',trim(master_xunit),') =', cell
@@ -214,12 +235,11 @@ subroutine forcesToSocket( na, energy, forces, stress )
 
 ! Local parameters
   character(len=*),parameter:: myName='forcesToSocket '
-  INTEGER, PARAMETER :: MSGLEN=12
 
 ! Local variables and arrays
-  CHARACTER*12      :: header
-  real*8            :: e, s(9), vir(9)
-  real*8,allocatable:: f(:)
+  character(len=MSGLEN):: header, message
+  real(dp)             :: e, s(9), vir(9)
+  real(dp),allocatable :: f(:)
 
 ! Copy input to local variables
   allocate(f(3*na))
@@ -241,13 +261,19 @@ subroutine forcesToSocket( na, energy, forces, stress )
   if (IOnode) then
     if (trim(master)=='i-pi') then
       do
-        call readbuffer(socket, header, MSGLEN)
-        if (trim(header)/='STATUS') exit
-        call writebuffer(socket,"HAVEDATA    ",MSGLEN)
+        call readbuffer(socket, header, IPI_MSGLEN)
+        if (trim(header)=='STATUS') then        ! inform i-pi of my status
+          message = 'HAVEDATA'
+          call writebuffer(socket,message,IPI_MSGLEN)
+          cycle ! do loop
+        elseif (trim(header)=='GETFORCE') then  ! proceed to send forces
+          exit ! do loop
+        else
+          call die(myName//'ERROR: unexpected header from i-pi')
+        endif
       enddo
-      if (trim(header)/='GETFORCE') &
-          call die(myName//'ERROR in socket communication!') 
-      call writebuffer(socket,"FORCEREADY  ",MSGLEN)
+      message = 'FORCEREADY'
+      call writebuffer(socket,message,IPI_MSGLEN)
       call writebuffer(socket,e)
       call writebuffer(socket,na)
       call writebuffer(socket,f,3*na)
@@ -258,18 +284,19 @@ subroutine forcesToSocket( na, energy, forces, stress )
       ! centres, etc. one must return the number of characters, then
       ! the string. here we just send back zero characters.
       call writebuffer(socket,0)
-!      call writebuffer(socket,'')  ! would this not be clearer?
     elseif (trim(master)=='fsiesta') then
-      do
-        call readbuffer(socket, header, MSGLEN)
-        if (trim(header)/='wait') exit
-      enddo
-      call writebuffer(socket,'begin_forces',12)
+!      do
+!        call readbuffer(socket, header, MSGLEN)
+!        if (trim(header)/='wait') exit
+!      enddo
+      message = 'begin_forces'
+      call writebuffer(socket,message,MSGLEN)
       call writebuffer(socket,e)
       call writebuffer(socket,s,9)
       call writebuffer(socket,na)
       call writebuffer(socket,f,3*na)
-      call writebuffer(socket,'end_forces',10)
+      message = 'end_forces'
+      call writebuffer(socket,message,MSGLEN)
     else
       call die(myName//'ERROR: unknown master')
     endif ! trim(master)

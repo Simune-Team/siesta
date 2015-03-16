@@ -150,7 +150,6 @@ Args:
       sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
       if (sockfd < 0) { perror("Error creating socket"); exit(-1); }
     
-    
       if (bind(sockfd, res->ai_addr, res->ai_addrlen) < 0) 
       { perror("Error binding to INET server socket."); }
       
@@ -165,7 +164,6 @@ Args:
       sockfd = accept(sockfd,  (struct sockaddr *)&their_addr, &sin_size);
       if (sockfd < 0) 
       { perror("Error creating INET communication socket: wrong port or server unreachable"); exit(-1); }
-      
    }
    else
    {  
