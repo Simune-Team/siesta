@@ -1,4 +1,29 @@
 ------------------------------------------------------------
+March 16, 2015  Alberto Garcia       trunk-467--ncps-62
+Merge with trunk-467
+
+467: Fix import of idyn in save_density_matrix (rc-4.0)
+466: Fixed IO statements for molecularmechanics...
+465: Merge fix from rc-4.0: MPI tag in SiestaXC...
+464: Merge fixes from rc-4.0: constr. forces, MPI com...
+463: Added restart file for smooth continuation of annealin...
+
+added:
+  Docs/rc-4.0.CHANGES
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Src/SiestaXC/mesh3d.F90
+  Src/dynamics.f
+  Src/molecularmechanics.F90
+  Src/save_density_matrix.F
+  Src/write_subs.F
+
+------------------------------------------------------------
 March 16, 2015  Alberto Garcia       trunk-462--ncps-62
 Fix compilation of Denchar and VCA utilities. Cosmetics
 
