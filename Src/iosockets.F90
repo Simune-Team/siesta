@@ -51,7 +51,7 @@ module iosockets
   use parallel,     only: IOnode
   use fdf
   use m_fdf_global, only: fdf_global_get
-  use f90sockets,   only: open_socket, writebuffer, readbuffer
+  use f90sockets,   only: open_socket, writebuffer, readbuffer, close_socket
   use sys,          only: die, bye
   use m_mpi_utils,  only: broadcast
   use cellSubs,     only: volcel
@@ -122,8 +122,8 @@ subroutine coordsFromSocket( na, xa, cell )
     if (isunix) inet=0
 
     if (IOnode) then
-      print'(/,a,2i8,a)', &
-        myName//'opening socket. inet,port,host=',inet,port,trim(host)
+      print'(/,a,i4,i8,2x,a)', &
+        myName//'opening socket: inet,port,host=',inet,port,trim(host)
       call open_socket(socket, inet, port, host)
     endif
 
@@ -144,7 +144,8 @@ subroutine coordsFromSocket( na, xa, cell )
         if (trim(header)=='quit') then
           message = "quitting"
           call writebuffer(socket, message, MSGLEN)
-          call die(myName//'stopping siesta process upon master request')
+          call close_socket(socket)
+          call die(myName//'STOP requested by driver')
         elseif (trim(header)=='wait') then
           message = "ready"
           call writebuffer(socket, message, MSGLEN)
@@ -306,9 +307,9 @@ subroutine forcesToSocket( na, energy, forces, stress )
   print '(/,a,f12.6)',      myName// &
     'energy ('//trim(master_eunit)//') =', e
   print '(  a,/,(3f12.6))', myName// &
-    'forces ('//trim(master_eunit)//'/'//trim(master_xunit)//') =', f
-  print '(  a,/,(3f12.6))', myName// &
     'stress ('//trim(master_eunit)//'/'//trim(master_xunit)//'^3) =', s
+  print '(  a,/,(3f12.6))', myName// &
+    'forces ('//trim(master_eunit)//'/'//trim(master_xunit)//') =', f
   deallocate(f)
 
 end subroutine forcesToSocket

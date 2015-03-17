@@ -107,7 +107,6 @@ Args:
       { perror("Error opening UNIX socket: path unavailable, or already existing"); exit(-1); }
    }
 
-
    *psockfd=sockfd;
 }
 
@@ -128,7 +127,7 @@ Args:
 */
 
 {
-   int sockfd, ai_err;
+   int sockfd, newsockfd, ai_err;
 
    if (*inet>0)
    {  // creates an internet socket
@@ -162,7 +161,7 @@ Args:
         
       // makes connection
       sockfd = accept(sockfd,  (struct sockaddr *)&their_addr, &sin_size);
-      if (sockfd < 0) 
+      if (newsockfd < 0) 
       { perror("Error creating INET communication socket: wrong port or server unreachable"); exit(-1); }
    }
    else
@@ -207,7 +206,6 @@ Args:
    if (n < 0) { perror("Error writing to socket: server has quit or connection broke"); exit(-1); }
 }
 
-
 void readbuffer(int *psockfd, char *data, int* plen)
 /* Reads from a socket.
 
@@ -228,6 +226,17 @@ Args:
    {  nr=read(sockfd,&data[n],len-n); n+=nr; }
 
    if (n == 0) { perror("Error reading from socket: server has quit or connection broke"); exit(-1); }
+}
+
+void close_socket(int *psockfd)
+/* Destroys a server socket.
+
+Args:
+   psockfd: The id of the socket that will be closed
+*/
+
+{
+   if (close(*psockfd)!=0) { perror("Error closing socket"); exit(-1); }
 }
 
 

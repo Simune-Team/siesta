@@ -76,6 +76,11 @@ MODULE F90SOCKETS
       TYPE(C_PTR), VALUE                   :: pdata
       INTEGER(KIND=C_INT)                  :: plen
     END SUBROUTINE readbuffer_csocket   
+
+    SUBROUTINE close_csocket(psockfd) BIND(C, name="close_socket")
+      USE ISO_C_BINDING
+      INTEGER(KIND=C_INT)                  :: psockfd
+    END SUBROUTINE close_csocket
   END INTERFACE
 
 CONTAINS
@@ -194,6 +199,13 @@ CONTAINS
     INTEGER, INTENT(IN)                      :: psockfd, plen
     REAL(KIND=8), INTENT(OUT), TARGET       :: fdata(plen)
     CALL readbuffer_csocket(psockfd, c_loc(fdata(1)), 8*plen)
+  END SUBROUTINE
+
+  SUBROUTINE close_socket(psockfd)      
+    USE ISO_C_BINDING  
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: psockfd
+    CALL close_csocket(psockfd)
   END SUBROUTINE
 
 END MODULE
