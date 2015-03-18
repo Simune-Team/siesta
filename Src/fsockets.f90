@@ -25,13 +25,71 @@
 !Contains both the functions that transmit data to the socket and read the data
 !back out again once finished, and the function which opens the socket initially.
 
-!Functions:
-!   open_socket: Opens a socket with the required host server, socket type and
-!      port number.
-!   create_socket: Creates a (server) socket with the required host server, 
-!      socket type and port number.
-!   write_buffer: Writes a string to the socket.
-!   read_buffer: Reads data from the socket.
+! Public functions provided by this module (with overloaded names):
+!
+!  SUBROUTINE create_socket(psockfd, inet, port, host)  
+!    Creates and opens a server socket and begins listening to it
+!    INTEGER,         INTENT(OUT):: psockfd ! socket file descriptor, to be
+!                                             used to call read/write_buffer
+!    INTEGER,         INTENT(IN) :: inet    ! socket type (0=>unix, 1=>inet)
+!    INTEGER,         INTENT(IN) :: port    ! socket port number 
+!    CHARACTER(LEN=*),INTENT(IN) :: host    ! host name ('localhost' or IP addr)
+!
+!  SUBROUTINE open_socket(psockfd, inet, port, host)      
+!    Opens a client socket and connects it to the server
+!    INTEGER,         INTENT(OUT):: psockfd ! socket file descriptor, to be
+!                                             used to call read/write_buffer
+!    INTEGER,         INTENT(IN) :: inet    ! socket type (0=>unix, 1=>inet)
+!    INTEGER,         INTENT(IN) :: port    ! server's socket port number 
+!    CHARACTER(LEN=*),INTENT(IN) :: host    ! server's host name
+!
+!  SUBROUTINE close_socket(psockfd) 
+!    Closes a socket (server or client)     
+!    INTEGER,         INTENT(IN) :: psockfd ! socket file descriptor
+!
+!  SUBROUTINE writebuffer(psockfd, fstring, plen)
+!    Sends a character string through the socket
+!    INTEGER,         INTENT(IN) :: psockfd ! socket file descriptor
+!    CHARACTER(LEN=*),INTENT(IN) :: fstring ! string to be sent
+!    INTEGER,         INTENT(IN) :: plen    ! string length
+!
+!  SUBROUTINE writebuffer(psockfd, fdata)
+!    Sends an integer number through the socket
+!    INTEGER,         INTENT(IN) :: psockfd ! socket file descriptor
+!    INTEGER,         INTENT(IN) :: fdata   ! number to be sent
+!
+!  SUBROUTINE writebuffer(psockfd, fdata)
+!    Sends a double-precision number through the socket
+!    INTEGER,         INTENT(IN) :: psockfd ! socket file descriptor
+!    REAL(KIND=8),    INTENT(IN) :: fdata   ! number to be sent
+!
+!  SUBROUTINE writebuffer(psockfd, fdata, plen)
+!    Sends a double-precision vector through the socket
+!    INTEGER,            INTENT(IN) :: psockfd      ! socket file descriptor
+!    REAL(KIND=8),TARGET,INTENT(IN) :: fdata(plen)  ! vector to be sent
+!    INTEGER,            INTENT(IN) :: plen         ! vector length
+!
+!  SUBROUTINE readbuffer(psockfd, fstring, plen)
+!    Receives a character string through the socket
+!    INTEGER,         INTENT(IN) :: psockfd ! socket file descriptor
+!    CHARACTER(LEN=*),INTENT(OUT):: fstring ! string to be received
+!    INTEGER,         INTENT(IN) :: plen    ! string length
+!
+!  SUBROUTINE readbuffer(psockfd, fdata)
+!    Receives an integer number through the socket
+!    INTEGER,         INTENT(IN) :: psockfd ! socket file descriptor
+!    INTEGER,         INTENT(OUT):: fdata   ! number to be received
+!
+!  SUBROUTINE readbuffer(psockfd, fdata)
+!    Receives a double-precision number through the socket
+!    INTEGER,         INTENT(IN) :: psockfd ! socket file descriptor
+!    REAL(KIND=8),    INTENT(OUT):: fdata   ! number to be received
+!
+!  SUBROUTINE readbuffer(psockfd, fdata, plen)
+!    Receives a double-precision vector through the socket
+!    INTEGER,            INTENT(IN) :: psockfd      ! socket file descriptor
+!    REAL(KIND=8),TARGET,INTENT(OUT):: fdata(plen)  ! vector to be received
+!    INTEGER,            INTENT(IN) :: plen         ! vector length
 
 MODULE F90SOCKETS
   USE ISO_C_BINDING
@@ -86,30 +144,33 @@ MODULE F90SOCKETS
 CONTAINS
    
   SUBROUTINE open_socket(psockfd, inet, port, host)      
+    USE ISO_C_BINDING
     IMPLICIT NONE
-    INTEGER, INTENT(IN) :: inet, port
-    INTEGER, INTENT(OUT) :: psockfd
-    CHARACTER(LEN=1024), INTENT(IN) :: host
+    INTEGER, INTENT(IN)                       :: inet, port
+    INTEGER, INTENT(OUT)                      :: psockfd
+    CHARACTER(LEN=*), INTENT(IN)              :: host
     CHARACTER(LEN=1,KIND=C_CHAR) :: chost(1024)
     CALL fstr2cstr(host, chost)
     CALL open_csocket(psockfd, inet, port, chost)
   END SUBROUTINE
 
   SUBROUTINE create_socket(psockfd, inet, port, host)      
+    USE ISO_C_BINDING
     IMPLICIT NONE
-    INTEGER, INTENT(IN) :: inet, port
-    INTEGER, INTENT(OUT) :: psockfd
-    CHARACTER(LEN=1024), INTENT(IN) :: host
+    INTEGER, INTENT(IN)                       :: inet, port
+    INTEGER, INTENT(OUT)                      :: psockfd
+    CHARACTER(LEN=*), INTENT(IN)              :: host
     CHARACTER(LEN=1,KIND=C_CHAR) :: chost(1024)
     CALL fstr2cstr(host, chost)
     CALL create_csocket(psockfd, inet, port, chost)
   END SUBROUTINE
    
   SUBROUTINE fstr2cstr(fstr, cstr, plen)
+    USE ISO_C_BINDING
     IMPLICIT NONE
-    CHARACTER(LEN=*), INTENT(IN) :: fstr
+    CHARACTER(LEN=*), INTENT(IN)              :: fstr
     CHARACTER(LEN=1,KIND=C_CHAR), INTENT(OUT) :: cstr(:)
-    INTEGER, INTENT(IN), OPTIONAL :: plen
+    INTEGER, INTENT(IN), OPTIONAL             :: plen
     INTEGER i,n
     IF (PRESENT(plen)) THEN
        n = plen
@@ -128,7 +189,7 @@ CONTAINS
   SUBROUTINE writebuffer_d (psockfd, fdata)
     USE ISO_C_BINDING
     INTEGER, INTENT(IN)                      :: psockfd
-    REAL(KIND=8), INTENT(IN)                :: fdata
+    REAL(KIND=8), INTENT(IN)                 :: fdata
     REAL(KIND=C_DOUBLE), TARGET              :: cdata
     cdata = fdata
     CALL writebuffer_csocket(psockfd, c_loc(cdata), 8)
@@ -158,14 +219,14 @@ CONTAINS
   SUBROUTINE writebuffer_dv(psockfd, fdata, plen)
     USE ISO_C_BINDING  
     INTEGER, INTENT(IN)                      :: psockfd, plen
-    REAL(KIND=8), INTENT(IN), TARGET        :: fdata(plen)
+    REAL(KIND=8), INTENT(IN), TARGET         :: fdata(plen)
     CALL writebuffer_csocket(psockfd, c_loc(fdata(1)), 8*plen)
   END SUBROUTINE
 
   SUBROUTINE readbuffer_d (psockfd, fdata)
     USE ISO_C_BINDING
     INTEGER, INTENT(IN)                      :: psockfd
-    REAL(KIND=8), INTENT(OUT)               :: fdata
+    REAL(KIND=8), INTENT(OUT)                :: fdata
     REAL(KIND=C_DOUBLE), TARGET              :: cdata
     CALL readbuffer_csocket(psockfd, c_loc(cdata), 8)
     fdata=cdata
@@ -197,14 +258,14 @@ CONTAINS
   SUBROUTINE readbuffer_dv(psockfd, fdata, plen)
     USE ISO_C_BINDING  
     INTEGER, INTENT(IN)                      :: psockfd, plen
-    REAL(KIND=8), INTENT(OUT), TARGET       :: fdata(plen)
+    REAL(KIND=8), INTENT(OUT), TARGET        :: fdata(plen)
     CALL readbuffer_csocket(psockfd, c_loc(fdata(1)), 8*plen)
   END SUBROUTINE
 
   SUBROUTINE close_socket(psockfd)      
     USE ISO_C_BINDING  
     IMPLICIT NONE
-    INTEGER, INTENT(IN) :: psockfd
+    INTEGER, INTENT(IN)                      :: psockfd
     CALL close_csocket(psockfd)
   END SUBROUTINE
 
