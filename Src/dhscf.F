@@ -1278,7 +1278,17 @@ C ----------------------------------------------------------------------
       if (TSmode.and.IsVolt.and.TSrun) then
          ! This routine expects a sequential array,
          ! in whatever distribution
+#ifdef TRANSIESTA_VOLTAGE_DEBUG
+!$OMP parallel workshare default(shared)
+         Vaux(:) = 0._dp
+!$OMP end parallel workshare
+#endif
          call ts_voltage( cell, ntpl, Vaux )
+#ifdef TRANSIESTA_VOLTAGE_DEBUG
+         call write_grid_netcdf( cell, ntm, 1, ntpl, Vaux, 
+     &        "TransiestaHartreePotential")
+         call bye('transiesta debug for Hartree potential')
+#endif
       endif
 #endif /* TRANSIESTA */
 

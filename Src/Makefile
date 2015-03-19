@@ -433,6 +433,7 @@ TS_OBJS += m_ts_tri_init.o m_ts_tri_common.o \
 # MUMPS method
 TS_OBJS += m_ts_mumps_init.o m_ts_mumpsg.o m_ts_mumpsk.o m_ts_mumps_scat.o
 
+ts: transiesta
 transiesta: FPPFLAGS+=$(DEFS_PREFIX) -DTRANSIESTA 
 transiesta: DEFS+=$(DEFS_PREFIX) -DTRANSIESTA
 check-ts:

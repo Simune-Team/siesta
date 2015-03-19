@@ -95,10 +95,12 @@ C     Find maximun planewave cutoff
       call CHKGMX( K0, B, Mesh, G2MAX )
 
 C     Copy density to complex array
+!$OMP parallel do default(shared), private(I)
       do I = 1, NP
         CG(1,I) = RHO(I)
         CG(2,I) = 0.0_grid_p
       enddo
+!$OMP end parallel do
 
 C     Find fourier transform of density
       call fft( CG, Mesh, -1 )
@@ -137,6 +139,9 @@ C     Multiply by 8*PI/G2 to get the potential
       if (Pz-1.lt.NRemZ) J3max = J3max + NSM
       J3max = min(J3max,NG3-1)
 
+!$OMP parallel do default(shared), 
+!$OMP&private(J3,J3L,I3,J2,J2L,I2,J1,I1,G,G2), 
+!$OMP&private(J,VG,DU,U,C)
       do J3 = J3min,J3max
         J3L = J3 - J3min 
         if (J3.gt.NG3/2) then
@@ -181,6 +186,7 @@ C     Multiply by 8*PI/G2 to get the potential
           enddo
         enddo
       enddo
+!$OMP end parallel do
 
       NG = Mesh(1)*Mesh(2)*Mesh(3)
       U = 0.5_dp * U * VOLUME / DBLE(NG)**2
@@ -196,9 +202,11 @@ C     Go back to real space
       call fft( CG, Mesh, +1 )
 
 C     Copy potential to array V
+!$OMP parallel do default(shared), private(I)
       do I = 1, NP
         V(I) = CG(1,I)
       enddo
+!$OMP end parallel do
  
 C     Free local memory
       call de_alloc( CG, 'CG', 'poison' )

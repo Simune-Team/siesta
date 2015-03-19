@@ -437,7 +437,7 @@ contains
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
        ! surface Green function
-!$OMP parallel default(shared)
+!$OMP parallel default(shared), private(wq)
 
 !$OMP do private(iq)
        do iq = 1 , nq 
@@ -445,10 +445,8 @@ contains
        end do
 !$OMP end do
 
-!$OMP master
-       ! Save some multiplications :)
+       ! Save some multiplications
        wq = log(1._dp / real(nq,dp))
-!$OMP end master
 
 ! Create the single execution for creating tasks
 !$OMP single
@@ -574,7 +572,7 @@ contains
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
        ! surface Green function
-!$OMP parallel default(shared)
+!$OMP parallel default(shared), private(wq)
 
 !$OMP do private(iq)
        do iq = 1 , nq 
@@ -582,10 +580,8 @@ contains
        end do
 !$OMP end do
 
-!$OMP master
        ! Save some multiplications
        wq = log(1._dp / real(nq,dp))
-!$OMP end master
 
 ! Create the single execution for creating tasks
 !$OMP single

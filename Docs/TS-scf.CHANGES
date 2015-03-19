@@ -1,4 +1,38 @@
 ----------------------------------------------------
+March 19, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-341
+Added threading to small part of fft routine
+
+* The fft.F have now simple threading in a very
+  small part of the code.
+
+  I have checked for correctness using gnu-4.9.2
+
+* Change wq to private variable in threading for 
+  electrode expansion as it is used frequently and
+  it is a single constant variable.
+
+* Enabled compilaition of transiesta using:
+   make ts
+  which is a shorter version than transiesta.
+
+* Added debug statement to save the applied
+  potential in transiesta.
+  If you compile with
+   -DTRANSIESTA_VOLTAGE_DEBUG
+  transiesta will die right after it has saved
+  the potential file for the initial guess for the
+  applied bias.
+
+  This is handy to debug N-electrode bias.
+
+modified:
+  Src/Makefile
+  Src/dhscf.F
+  Src/fft.F
+  Src/m_ts_elec_se.F90
+  Src/poison.F
+
+----------------------------------------------------
 March 14, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-340
 Added cell constraints for equal sided vectors, bugfix for atom_graph
 
