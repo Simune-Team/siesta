@@ -77,7 +77,8 @@ contains
        if ( IONode .and. len_trim(Hartree_fname) == 0 ) then
           write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
        else if ( IONode .and. len_trim(Hartree_fname) > 0 ) then
-          write(*,'(a)')'ts_voltage: User supplied Poisson solution'
+          write(*,'(2a)')'ts_voltage: User supplied Poisson solution in file ',&
+               trim(Hartree_fname)
        end if
        ! Find the lowest and highest chemical potential
        V_low = huge(1._dp)
@@ -136,7 +137,7 @@ contains
     ! same
     if ( ts_tdir > 0 ) then
        call ts_ramp_elec(ucell,ntpl,Vscf)
-#ifdef NCDF
+#ifdef NCDF_4
     else if ( len_trim(Hartree_fname) > 0 ) then
        call ts_ncdf_Voltage(Hartree_fname,'V',ntpl,Vscf)
 #endif
@@ -516,7 +517,7 @@ contains
 
   end subroutine print_ts_voltage
 
-#ifdef NCDF
+#ifdef NCDF_4
   ! Read in a potential file from a NetCDF file.
   ! Thus the potential landscape can be fully customized by the user.
   ! We note that the potential landscape need only be calculated
@@ -524,18 +525,22 @@ contains
   ! the solution to the Poisson equation is linearly dependent on the BC
   subroutine ts_ncdf_voltage(fname,V_name, npt,V)
     use precision, only: grid_p
+#ifdef MPI
+    use mpi_siesta, only : MPI_Comm_World, MPI_Bcast, MPI_Grid_Real
+#endif
+    use m_ncdf_io, only : cdf_r_grid
     use nf_ncdf
-    use dictionary
-    use variable
     
     character(len=*), intent(in) :: fname, V_name
     integer, intent(in) :: npt
     real(grid_p), intent(inout) :: V(npt)
     
     type(hNCDF) :: ncdf
-    type(dict) :: atts
-    real(grid_p) :: Vmin, Vmax, fact
+    real(grid_p) :: Vmm(2), fact
     real(grid_p), allocatable :: tmpV(:)
+#ifdef MPI
+    integer :: MPIerror
+#endif
 
     ! All nodes should allocate an auxilliary grid
     allocate(tmpV(npt))
@@ -544,19 +549,25 @@ contains
     call ncdf_open(ncdf,fname)
 
     ! Read in the grid
-    call cdf_r_grid(ncdf,trim(V_name),lnpt,tmpV)
+    call cdf_r_grid(ncdf,trim(V_name),npt,tmpV)
 
     ! retrieve the max min from the file
-    call ncdf_get_var(ncdf,trim(V_name)//'min',Vmin)
-    call ncdf_get_var(ncdf,trim(V_name)//'max',Vmax)
+    call ncdf_get_var(ncdf,trim(V_name)//'min',Vmm(1))
+    call ncdf_get_var(ncdf,trim(V_name)//'max',Vmm(2))
+#ifdef MPI
+    call MPI_Bcast(Vmm,2,MPI_Grid_Real,0,MPI_Comm_World,MPIerror)
+#endif
 
     call ncdf_close(ncdf)
 
     ! Correct the limits so that we align to the current potential
-    fact = ( V_high - V_low ) / ( Vmax - Vmin ) 
+    fact = ( V_high - V_low ) / ( Vmm(2) - Vmm(1) ) 
+    ! Align the bottom potentials so that the range becomes
+    ! correct
+    Vmm(1) = V_low - Vmm(1) * fact
 
-!$OMP parallel workshare default(shared), firstprivate(fact)
-    V = V + tmpV * fact
+!$OMP parallel workshare default(shared), firstprivate(fact,Vmm)
+    V = V + tmpV * fact + Vmm(1)
 !$OMP end parallel workshare
     
     deallocate(tmpV)

@@ -1,4 +1,19 @@
 ----------------------------------------------------
+March 21, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-345
+Tested the user defined potential profile
+
+* Some small bugs were fixed and now it can handle applied
+  bias in parallel as well as single core.
+
+* Only allowed user defined potential profile when using
+  NCDF_4 library.
+
+modified:
+  Src/m_ncdf_io.F90
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 March 21, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-344
 Fixed print-out of Hartree potential
 

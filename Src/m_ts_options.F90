@@ -150,7 +150,7 @@ contains
     Vha_fix    = fdf_get('Hartree.Fix',.false.)
     c          = fdf_get('Hartree.Fix.Plane','A3')
 
-    ! Pre-select the transport direction
+    ! Pre-select the "transport direction"
     if ( leqi(c,'A1').or.leqi(c,'A') ) then
        ts_tdir = 1
        c = 'A1'
@@ -406,7 +406,6 @@ contains
     ! first electrode is the "left"
     ! last electrode is the "right"
     ! the remaining electrodes have their chemical potential at 0
-    ! Currently the transport direction for all electrodes is the default
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
     Elecs(:)%Eta  = fdf_get('TS.Contours.nEq.Eta',0.00001_dp*eV,'Ry')
@@ -502,10 +501,12 @@ contains
     ! electrodes
     ! The user can also specify it using a file
     chars = fdf_get('TS.Hartree','ramp')
+#ifdef NCDF_4
     if ( file_exist(chars) ) then
        Hartree_fname = trim(chars)
        ts_tdir = 0
     else
+#endif
        Hartree_fname = ' '
        if ( ts_tdir > 0 ) then
           if ( leqi(chars,'ramp') ) then
@@ -513,11 +514,18 @@ contains
           else if ( leqi(chars,'elec-box') ) then
              ts_tdir = - N_Elec
           else
+#ifdef NCDF_4
              call die('Error in specifying how the Hartree potential &
                   &should be placed. [ramp|elec-box|NetCDF-file]')
+#else
+             call die('Error in specifying how the Hartree potential &
+                  &should be placed. [ramp|elec-box]')
+#endif
           end if
        end if
+#ifdef NCDF_4
     end if
+#endif
 
     ! If the Hartree-potential is not a ramp, then we do not allow
     ! fixing from one place
@@ -908,8 +916,8 @@ contains
           end do
        end do
 
-       if ( ts_tdir < 0 ) then
-          write(*,11) '*** TranSIESTA transport directions are individual ***'
+       if ( ts_tdir < 1 ) then
+          write(*,11) '*** TranSIESTA semi-infinite directions are individual ***'
           write(*,11) '*** It is heavily adviced to have any electrodes with no &
                &periodicity'
           write(*,11) '    in the transverse directions be located as far from any &

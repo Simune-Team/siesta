@@ -29,6 +29,7 @@ module m_ncdf_io
 
 #ifdef NCDF_4
   public :: cdf_init_mesh
+  public :: cdf_r_grid
   public :: cdf_w_grid
 
   public :: cdf_w_sp
@@ -1294,7 +1295,7 @@ contains
           
           ! First save it's own data
           lb(:) = distr%box(1,:,0) 
-          nel(:) = distr%box(2,:,0) - distr%box(1,:,0) + 1
+          nel(:) = distr%box(2,:,0) - lb(:) + 1
           
           if ( present(idx) ) then
              call ncdf_put_var(ncdf,name,grid, &
@@ -1425,9 +1426,13 @@ contains
              
           end do
 
+          if ( mnpt > lnpt ) then
+             deallocate(gb)
+          end if
+
           ! Retrieve it's own data
           lb(:) = distr%box(1,:,0) 
-          nel(:) = distr%box(2,:,0) - distr%box(1,:,0) + 1
+          nel(:) = distr%box(2,:,0) - lb(:) + 1
 
           if ( present(idx) ) then
              call ncdf_get_var(ncdf,name,grid, &
@@ -1438,10 +1443,6 @@ contains
                   start=lb, count=nel )
           end if
           
-          if ( mnpt > lnpt ) then
-             deallocate(gb)
-          end if
-
        else
           call MPI_Recv(grid,lnpt,MPI_grid_real,0, &
                Node,MPI_Comm_World,MPIstat,MPIerror)
