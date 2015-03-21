@@ -194,7 +194,7 @@ contains
 
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
-    
+
     ! Read in information about the voltage placement.
     chars = fdf_get('TS.Hartree.Position','central')
     VoltageInC = .true.
@@ -429,7 +429,6 @@ contains
        end if
     end if
 
-    ! We default to not calculate the band-bottom...
     ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
     ! whether or not the electrodes should be re-instantiated
     call fdf_deprecated('TS.CalcGF','TS.Elecs.GF.ReUse')
