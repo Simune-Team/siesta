@@ -16,6 +16,8 @@ module m_ts_options
   ! Controls to save the TSHS file
   logical :: TS_HS_save = .true.
   logical :: TS_DE_save = .false.
+  ! Whether the siesta calculation should also fix the hartree potential
+  logical :: Vha_fix = .true.
   ! whether we should only save the overlap matricx
   logical :: onlyS = .false. 
   ! whether we will use the bias-contour
@@ -138,6 +140,24 @@ contains
     TS_DE_save = fdf_get('TS.DE.Save',.false.)
     onlyS      = fdf_get('TS.onlyS',.false.)
     onlyS      = fdf_get('TS.S.Save',onlyS)
+    ! Enables pure siesta runs to fix the Hartree potential such that
+    ! a restart from siesta is possible in transiesta
+    ! This will only work for two electrodes, or if the plane
+    ! coincides with the electrode plane
+    Vha_fix    = fdf_get('Hartree.Fix',.false.)
+    c          = fdf_get('Hartree.Fix.Plane','A3')
+
+    ! Pre-select the transport direction
+    if ( leqi(c,'A1').or.leqi(c,'A') ) then
+       ts_tdir = 1
+       c = 'A1'
+    else if ( leqi(c,'A2').or.leqi(c,'B') ) then
+       ts_tdir = 2
+       c = 'A2'
+    else if ( leqi(c,'A3').or.leqi(c,'C') ) then
+       ts_tdir = 3
+       c = 'A3'
+    end if
 
     if ( TS_HS_save .and. FixSpin ) then
        write(*,*) 'Fixed spin not possible with Transiesta!'
@@ -149,6 +169,16 @@ contains
        if ( IONode ) then
           write(*,1) 'Save H and S matrices', TS_HS_save
           write(*,1) 'Save DM and EDM matrices', TS_DE_save
+          if ( Vha_fix ) then
+             write(*,10) 'Fix Hartree potential at cell boundary', trim(c)
+          else
+             write(*,11) 'Do not fix Hartree potential'
+             if ( TS_DE_save ) then
+                write(*,11) '*** If you do not use Hartree.Fix you cannot &
+                     &use the TSDE file for restart in TranSIESTA.'
+                write(*,11) '*** Please note this!'
+             end if
+          end if
           write(*,1) 'Save S and quit (onlyS)', onlyS
           write(*,11) repeat('*', 62)
           write(*,*)
@@ -156,11 +186,14 @@ contains
        return
     end if
 
+    ! In transiesta this HAS to be true !
+    Vha_fix = .true.
+
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
     
     ! Read in information about the voltage placement.
-    chars = fdf_get('TS.HartreePotential.Position','central')
+    chars = fdf_get('TS.Hartree.Position','central')
     VoltageInC = .true.
     if ( leqi(trim(chars),'cell') ) then
        VoltageInC = .false.
@@ -466,7 +499,7 @@ contains
     ! setups, we can still force it to use the basal plane of the 
     ! electrodes
     if ( ts_tdir > 0 ) then
-       chars = fdf_get('TS.HartreePotential','ramp')
+       chars = fdf_get('TS.Hartree','ramp')
        if ( leqi(chars,'ramp') ) then
           ! do nothing
        else if ( leqi(chars,'elec-box') ) then
@@ -480,7 +513,7 @@ contains
     ! If the Hartree-potential is not a ramp, then we do not allow
     ! fixing from one place
     if ( ts_tdir > 0 ) then
-       elec_basal_plane = fdf_get('TS.HartreePotential.BasalPlane',.false.)
+       elec_basal_plane = fdf_get('TS.Hartree.BasalPlane',.false.)
     else
        elec_basal_plane = .true.
     end if

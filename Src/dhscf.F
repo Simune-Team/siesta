@@ -662,7 +662,7 @@ C     Modules
 
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode, TSrun
-      use m_ts_options, only: IsVolt
+      use m_ts_options, only: IsVolt, Vha_fix
       use m_ts_voltage, only : ts_voltage
       use m_ts_hartree, only : ts_hartree_fix
 #endif /* TRANSIESTA */
@@ -1197,7 +1197,7 @@ C ----------------------------------------------------------------------
 
 #ifdef TRANSIESTA
       ! We require that even the SIESTA potential is "fixed"
-      if (TSmode) call ts_hartree_fix( ntpl , Vaux )
+      if (Vha_fix) call ts_hartree_fix( ntpl , Vaux )
 #endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm

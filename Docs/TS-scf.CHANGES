@@ -1,4 +1,26 @@
 ----------------------------------------------------
+March 21, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-342
+Fix of Hartree potential is now possible in siesta
+
+* When transiesta runs it fixes the Hartree potential
+  to disable a "floating" Fermi level.
+
+  For restart purposes one can not just run siesta
+  and use the TSDE file as the Fermi level does not coincide
+  with the fixed Hartree potential. 
+
+  Hence we now add options:
+     Hartree.Fix [T|F]
+  which enables such capabilities.
+
+* Changed all options of HartreePotential
+  to the shorter Hartree.
+
+modified:
+  Src/dhscf.F
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 March 19, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-341
 Added threading to small part of fft routine
 
