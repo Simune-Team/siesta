@@ -1246,11 +1246,11 @@ contains
 
   end subroutine cdf_r_d2D
   
-  subroutine cdf_w_grid(ncdf,name,mesh,lnpt,grid,idx)
+  subroutine cdf_w_grid(ncdf,name,lnpt,grid,idx)
 
     type(hNCDF), intent(inout) :: ncdf
     character(len=*), intent(in) :: name
-    integer, intent(in) :: mesh(3), lnpt
+    integer, intent(in) :: lnpt
     real(grid_p), intent(in) :: grid(lnpt)
     integer, intent(in), optional :: idx
 
@@ -1350,6 +1350,114 @@ contains
 #endif
   
   end subroutine cdf_w_grid
+
+  subroutine cdf_r_grid(ncdf,name,lnpt,grid,idx)
+
+    type(hNCDF), intent(inout) :: ncdf
+    character(len=*), intent(in) :: name
+    integer, intent(in) :: lnpt
+    real(grid_p), intent(inout), target :: grid(lnpt)
+    integer, intent(in), optional :: idx
+
+#ifdef MPI
+    integer :: MPIstat(MPI_STATUS_SIZE)
+    integer :: MPIerror, mnpt
+    integer :: lb(3), nel(3), iN, inpt
+    real(grid_p), pointer :: gb(:) => null()
+#endif
+
+#ifdef MPI
+
+    if ( parallel_io(ncdf) ) then
+
+       ! Ensure collective writing
+       call ncdf_par_access(ncdf,name=name,access=NF90_COLLECTIVE)
+
+       lb(:)  = distr%box(1,:,Node)
+       nel(:) = distr%box(2,:,Node) - lb(:) + 1
+
+       if ( present(idx) ) then
+          call ncdf_get_var(ncdf,name,grid, &
+               start=(/lb(1),lb(2),lb(3),idx/), &
+               count=(/nel(1),nel(2),nel(3),1/) )          
+       else
+          call ncdf_get_var(ncdf,name,grid, start=lb, count=nel )
+       end if
+   
+    else
+
+       mnpt = 0
+       do iN = 0 , Nodes - 1
+          nel(:) = distr%box(2,:,iN) - distr%box(1,:,iN) + 1
+          mnpt = max(mnpt,product(nel))
+       end do
+       
+       ! The main node can safely write the data...
+       if ( Node == 0 ) then
+          
+          if ( mnpt > lnpt ) then
+             ! allocate, the IO node have a smaller
+             ! space than the others
+             allocate(gb(mnpt))
+          else
+             gb => grid
+          end if
+                    
+          ! Loop on the remaining nodes
+          do iN = 1 , Nodes - 1
+     
+             lb(:) = distr%box(1,:,iN) 
+             nel(:) = distr%box(2,:,iN) - lb(:) + 1
+             inpt = product(nel)
+             
+             if ( present(idx) ) then
+                call ncdf_get_var(ncdf,name,gb(1:inpt), &
+                     start=(/lb(1),lb(2),lb(3),idx/), &
+                     count=(/nel(1),nel(2),nel(3),1/) )
+             else
+                call ncdf_get_var(ncdf,name,gb(1:inpt), &
+                     start=lb, count=nel )
+             end if
+
+             ! we send data to the iN'th node.
+             call MPI_Send(gb,inpt,MPI_grid_real,iN,iN, &
+                  MPI_Comm_World,MPIerror)
+             
+          end do
+
+          ! Retrieve it's own data
+          lb(:) = distr%box(1,:,0) 
+          nel(:) = distr%box(2,:,0) - distr%box(1,:,0) + 1
+
+          if ( present(idx) ) then
+             call ncdf_get_var(ncdf,name,grid, &
+                  start=(/lb(1),lb(2),lb(3),idx/), &
+                  count=(/nel(1),nel(2),nel(3),1/) )
+          else
+             call ncdf_get_var(ncdf,name,grid, &
+                  start=lb, count=nel )
+          end if
+          
+          if ( mnpt > lnpt ) then
+             deallocate(gb)
+          end if
+
+       else
+          call MPI_Recv(grid,lnpt,MPI_grid_real,0, &
+               Node,MPI_Comm_World,MPIstat,MPIerror)
+       end if
+       
+    end if
+
+#else
+    if ( present(idx) ) then
+       call ncdf_get_var(ncdf,name,grid,start=(/1,1,1,idx/))
+    else
+       call ncdf_get_var(ncdf,name,grid)
+    end if
+#endif
+  
+  end subroutine cdf_r_grid
 
 #else
   subroutine dummy()

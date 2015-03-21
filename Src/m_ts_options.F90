@@ -51,6 +51,9 @@ module m_ts_options
   ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
   logical :: VoltageInC = .false.
 
+  ! File name for reading in the grid for the Hartree potential
+  character(len=100) :: Hartree_fname = ' '
+
   ! A quantity describing the accuracy of the coordinates of the 
   ! electrodes.
   ! * Should only be edited by experienced users *
@@ -498,15 +501,21 @@ contains
     ! In case the transport direction is "fixed" in two terminal
     ! setups, we can still force it to use the basal plane of the 
     ! electrodes
-    if ( ts_tdir > 0 ) then
-       chars = fdf_get('TS.Hartree','ramp')
-       if ( leqi(chars,'ramp') ) then
-          ! do nothing
-       else if ( leqi(chars,'elec-box') ) then
-          ts_tdir = - N_Elec
-       else
-          call die('Error in specifying how the Hartree potential &
-               &should be placed. [ramp|elec-box]')
+    ! The user can also specify it using a file
+    chars = fdf_get('TS.Hartree','ramp')
+    if ( file_exist(chars) ) then
+       Hartree_fname = trim(chars)
+    else
+       Hartree_fname = ' '
+       if ( ts_tdir > 0 ) then
+          if ( leqi(chars,'ramp') ) then
+             ! do nothing
+          else if ( leqi(chars,'elec-box') ) then
+             ts_tdir = - N_Elec
+          else
+             call die('Error in specifying how the Hartree potential &
+                  &should be placed. [ramp|elec-box|NetCDF-file]')
+          end if
        end if
     end if
 
@@ -774,14 +783,19 @@ contains
        end select
        if ( IsVolt ) then
           write(*,6) 'Voltage', Volt/eV,'Volts'
-          if ( ts_tdir > 0 ) then
-             if ( VoltageInC ) then
-                write(*,11) 'Voltage drop across central region'
-             else
-                write(*,11) 'Voltage drop across entire cell'    
-             end if
+          if ( len_trim(Hartree_fname) > 0 ) then
+             write(*,10) 'User supplied Hartree potential', &
+                  trim(Hartree_fname)
           else
-             write(*,11) 'Voltage lifted locally on electrodes'    
+             if ( ts_tdir > 0 ) then
+                if ( VoltageInC ) then
+                   write(*,11) 'Voltage drop across central region'
+                else
+                   write(*,11) 'Voltage drop across entire cell'    
+                end if
+             else
+                write(*,11) 'Voltage lifted locally on electrodes'    
+             end if
           end if
           if ( has_T_gradient ) then
              write(*,11) 'Thermal non-equilibrium in electrode distributions' 
