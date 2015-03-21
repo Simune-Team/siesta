@@ -1,4 +1,38 @@
 ----------------------------------------------------
+March 21, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-343
+Allowed reading in of Hartree potential from a NCDF file
+
+* Using the keyword:
+    TS.Hartree.Grid 
+  the user can specify a file name which should contain these
+  variables:
+    V
+    Vminmax
+  which are used to expand the grid to the internal applied 
+  potential.
+  As the solution to any Poisson equation with linearly 
+  dependent BC we need only solve the Poisson equation one time
+  and then we can simply multiply with the difference to retrieve
+  the correct potential landscape.
+
+  This is what we do.
+
+  NOTE: Needs to be tested
+
+* Added cdf_r_grid to the ncdf_io module.
+
+* Changed interface to ncdf_io grid, the mesh variable
+  was not needed. Possibly it should be re-added to make
+  it more modular. But currently it is not needed.
+
+modified:
+  Src/dhscf.F
+  Src/m_ncdf_io.F90
+  Src/m_ncdf_siesta.F90
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 March 21, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-342
 Fix of Hartree potential is now possible in siesta
 

@@ -51,6 +51,9 @@ module m_ts_options
   ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
   logical :: VoltageInC = .false.
 
+  ! File name for reading in the grid for the Hartree potential
+  character(len=100) :: Hartree_fname = ' '
+
   ! A quantity describing the accuracy of the coordinates of the 
   ! electrodes.
   ! * Should only be edited by experienced users *
@@ -191,6 +194,15 @@ contains
 
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
+
+    ! Decide whether the hartree potential is provided
+    ! by the user
+    chars = fdf_get('TS.Hartree.Grid','NONE')
+    if ( file_exist(chars) ) then
+       Hartree_fname = trim(chars)
+    else
+       Hartree_fname = ' '
+    end if
     
     ! Read in information about the voltage placement.
     chars = fdf_get('TS.Hartree.Position','central')
@@ -774,14 +786,19 @@ contains
        end select
        if ( IsVolt ) then
           write(*,6) 'Voltage', Volt/eV,'Volts'
-          if ( ts_tdir > 0 ) then
-             if ( VoltageInC ) then
-                write(*,11) 'Voltage drop across central region'
-             else
-                write(*,11) 'Voltage drop across entire cell'    
-             end if
+          if ( len_trim(Hartree_fname) > 0 ) then
+             write(*,10) 'User supplied Hartree potential', &
+                  trim(Hartree_fname)
           else
-             write(*,11) 'Voltage lifted locally on electrodes'    
+             if ( ts_tdir > 0 ) then
+                if ( VoltageInC ) then
+                   write(*,11) 'Voltage drop across central region'
+                else
+                   write(*,11) 'Voltage drop across entire cell'    
+                end if
+             else
+                write(*,11) 'Voltage lifted locally on electrodes'    
+             end if
           end if
           if ( has_T_gradient ) then
              write(*,11) 'Thermal non-equilibrium in electrode distributions' 

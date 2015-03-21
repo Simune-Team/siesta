@@ -46,9 +46,9 @@ module m_ts_voltage
   integer, save :: left_elec_mesh_idx = 0
   integer, save :: right_elec_mesh_idx = huge(1)
 
-  ! The corresponding bias' for the two different
-  ! electrodes
-  real(dp), save :: left_V = 0._dp
+  ! The corresponding bias for either the left electrode
+  real(dp), save :: V_low = 0._dp
+  real(dp), save :: V_high = 0._dp
 
 contains
 
@@ -65,6 +65,7 @@ contains
     real(dp),      intent(in) :: xa(3,na_u)
     integer,       intent(in) :: meshG(3), nsm
 
+    real(dp) :: tmp
     integer :: iElL, iElR
 
     if ( IONode ) then
@@ -76,12 +77,28 @@ contains
        if ( IONode ) then
           write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
        end if
+       ! Find the lowest and highest chemical potential
+       V_low = huge(1._dp)
+       V_high = -huge(1._dp)
+       do iElL = 1 , size(Elecs)
+          V_low = min(Elecs(iElL)%mu%mu,V_low)
+          V_high = max(Elecs(iElL)%mu%mu,V_high)
+       end do
+       if ( Volt < 0._dp ) then
+          ! with a negative bias, we have to reverse
+          ! the high-low
+          tmp = V_high
+          V_high = V_low
+          V_low = tmp
+       end if
+
        return
+
     end if
 
     ! set the left chemical potential
     call get_elec_indices(na_u, xa, iElL, iElR)
-    left_V = Elecs(iElL)%mu%mu
+    V_low = Elecs(iElL)%mu%mu
     call print_ts_voltage(ucell)
 
     if ( VoltageInC ) then
@@ -98,6 +115,7 @@ contains
 
   subroutine ts_voltage(ucell, ntpl, Vscf)
     use precision,    only : grid_p
+    use m_ts_options, only : Hartree_fname
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
@@ -116,6 +134,10 @@ contains
     ! same
     if ( ts_tdir > 0 ) then
        call ts_ramp_elec(ucell,ntpl,Vscf)
+#ifdef NCDF
+    else if ( len_trim(Hartree_fname) > 0 ) then
+       call ts_ncdf_Voltage(Hartree_fname,'Vh',ntpl,Vscf)
+#endif
     else
        call ts_elec_only(ntpl,Vscf)
     end if
@@ -174,7 +196,7 @@ contains
                 end if
                 
                 imesh = imesh + 1
-                Vscf(imesh) = Vscf(imesh) + left_V - dF*idT
+                Vscf(imesh) = Vscf(imesh) + V_low - dF*idT
              end do
           end do
        end do
@@ -198,7 +220,7 @@ contains
              end if
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh) = Vscf(imesh) + left_V - dF*idT
+                Vscf(imesh) = Vscf(imesh) + V_low - dF*idT
              end do
           end do
        end do
@@ -224,7 +246,7 @@ contains
           do i2 = 1,meshl(2)
              do i1 = 1,meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh) = Vscf(imesh) + left_V - dF*idT
+                Vscf(imesh) = Vscf(imesh) + V_low - dF*idT
              end do
           end do
        end do
@@ -485,11 +507,59 @@ contains
     end do
 
     if ( IONode ) then
-       write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias @bottom ', left_V/eV,'V'
+       write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias @bottom ', V_low/eV,'V'
        write(*,'(a,3(f6.3,a))')'ts_voltage: In unit cell direction = {', &
             vcdir(1),',',vcdir(2),',',vcdir(3),'}'
     end if
 
   end subroutine print_ts_voltage
+
+#ifdef NCDF
+  ! Read in a potential file from a NetCDF file.
+  ! Thus the potential landscape can be fully customized by the user.
+  ! We note that the potential landscape need only be calculated
+  ! for one V, direct interpolation is possible as 
+  ! the solution to the Poisson equation is linearly dependent on the BC
+  subroutine ts_ncdf_voltage(fname,V_name, npt,V)
+    use precision, only: grid_p
+    use nf_ncdf
+    use dictionary
+    use variable
+    
+    character(len=*), intent(in) :: fname, V_name
+    integer, intent(in) :: npt
+    real(grid_p), intent(inout) :: V(npt)
+    
+    type(hNCDF) :: ncdf
+    type(dict) :: atts
+    real(grid_p) :: Vminmax(2), fact
+    real(grid_p), allocatable :: tmpV(:)
+
+    ! All nodes should allocate an auxilliary grid
+    allocate(tmpV(npt))
+
+    ! Open the file
+    call ncdf_open(ncdf,fname)
+
+    ! Read in the grid
+    call cdf_r_grid(ncdf,trim(V_name),lnpt,tmpV)
+
+    ! retrieve the max min from the file
+    call ncdf_get_var(ncdf,trim(V_name)//'minmax',Vminmax)
+
+    call ncdf_close(ncdf)
+
+    ! Correct the limits so that we align to the current potential
+    fact = ( V_high - V_low ) / ( Vminmax(2) - Vminmax(1) ) 
+
+!$OMP parallel workshare default(shared), firstprivate(fact)
+    V = V + tmpV * fact
+!$OMP end parallel workshare
+    
+    deallocate(tmpV)
+
+  end subroutine ts_ncdf_voltage
+
+#endif
 
 end module m_ts_voltage
