@@ -504,6 +504,7 @@ contains
     chars = fdf_get('TS.Hartree','ramp')
     if ( file_exist(chars) ) then
        Hartree_fname = trim(chars)
+       ts_tdir = 0
     else
        Hartree_fname = ' '
        if ( ts_tdir > 0 ) then
@@ -743,11 +744,11 @@ contains
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'
        if ( ts_tdir < 1 ) then
           write(*,11) 'Transport individually selected for electrodes'
-          write(*,11) 'Hartree potential will be placed in electrode box'
+          write(*,11) 'Fixing the Hartree potential at electrode plane'
        else
           write(chars,'(a,i0)') 'A',ts_tdir
           write(*,10) 'Transport along unit-cell vector',trim(chars)
-          write(*,11) 'Hartree potential will be placed in ramp'
+          write(*,10) 'Fixing the Hartree potential at plane',trim(chars)
        end if
        if ( ts_method == TS_SPARSITY ) then
           write(*,10)'Solution method', 'Sparsity pattern + full inverse'
@@ -787,13 +788,14 @@ contains
                   trim(Hartree_fname)
           else
              if ( ts_tdir > 0 ) then
+                write(*,11) 'Hartree potential as linear ramp'
                 if ( VoltageInC ) then
-                   write(*,11) 'Voltage drop across central region'
+                   write(*,11) 'Hartree potential ramp across central region'
                 else
-                   write(*,11) 'Voltage drop across entire cell'    
+                   write(*,11) 'Hartree potential ramp across entire cell'    
                 end if
              else
-                write(*,11) 'Voltage lifted locally on electrodes'    
+                write(*,11) 'Hartree potential will be placed in electrode box'
              end if
           end if
           if ( has_T_gradient ) then

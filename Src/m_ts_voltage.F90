@@ -54,7 +54,7 @@ contains
 
   subroutine ts_init_voltage(ucell,na_u,xa,meshG,nsm)
     use parallel, only : IONode
-    use m_ts_options, only : VoltageInC, Elecs, Volt
+    use m_ts_options, only : VoltageInC, Elecs, Volt, Hartree_fname
     use units, only : eV
 
 ! ***********************
@@ -74,8 +74,10 @@ contains
     end if
 
     if ( ts_tdir < 1 ) then
-       if ( IONode ) then
+       if ( IONode .and. len_trim(Hartree_fname) == 0 ) then
           write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
+       else if ( IONode .and. len_trim(Hartree_fname) > 0 ) then
+          write(*,'(a)')'ts_voltage: User supplied Poisson solution'
        end if
        ! Find the lowest and highest chemical potential
        V_low = huge(1._dp)

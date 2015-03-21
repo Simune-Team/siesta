@@ -1,4 +1,12 @@
 ----------------------------------------------------
+March 21, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-344
+Fixed print-out of Hartree potential
+
+modified:
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 March 21, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-343
 Allowed reading in of Hartree potential from a NCDF file
 
