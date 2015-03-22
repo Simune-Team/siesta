@@ -1,4 +1,26 @@
 ----------------------------------------------------
+March 22, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-346
+Bugfix for DOS calculations and interp
+
+* DOS calculations where erroneous for off diagonal
+  terms with varying block sizes.
+
+* Streamlined the interpolation of the Hamiltonian and
+  overlap matrices.
+  It now is more stringent.
+
+* Forgot to copy over n-spin in case of interpolation of
+  TSHS files which made it non-conforming to any electrode.
+
+* Changed maximum filename length to 250 chars, this
+  should be more than enough.
+
+modified:
+  Util/TS/TBtrans/m_tbt_hs.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+
+----------------------------------------------------
 March 21, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-345
 Tested the user defined potential profile
 

@@ -96,7 +96,7 @@ contains
           no_i = nrows_g(Gf_tri,in)
 
           if ( in < n ) then
-             off1 = off2 - no_o
+             off1 = off2 - no_i
           else if ( n < in ) then
              off1 = off2 + no_o
           else
@@ -274,7 +274,7 @@ contains
           no_i = nrows_g(Gf_tri,in)
 
           if ( in < n ) then
-             off1 = off2 - no_o
+             off1 = off2 - no_i
           else if ( n < in ) then
              off1 = off2 + no_o
           else
@@ -410,7 +410,7 @@ contains
           no_i = nrows_g(A_tri,in)
 
           if ( in < n ) then
-             off1 = off2 - no_o
+             off1 = off2 - no_i
           else if ( n < in ) then
              off1 = off2 + no_o
           else

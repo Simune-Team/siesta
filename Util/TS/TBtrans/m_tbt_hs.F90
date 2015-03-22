@@ -45,7 +45,7 @@ module m_tbt_hs
 
   ! A list of hamiltonian files and their biases
   type :: tHSfile
-     character(len=500) :: HSfile ! The Hamiltonian file
+     character(len=250) :: HSfile ! The Hamiltonian file
      real(dp) :: Volt ! The bias
   end type tHSfile
 
@@ -233,7 +233,6 @@ contains
     ! The files (we read them all in...)
     type(tTSHS), allocatable :: files(:)
 
-    type(Sparsity), pointer :: sp
     type(OrbitalDistribution), pointer :: dit
     integer :: iHS
 
@@ -277,35 +276,32 @@ contains
 
           ! We know the sparsity pattern is the same...
           ! So align them
-          sp => spar(files(iHS)%H_2D)
-          sp = files(iHS-1)%sp
-          ! The first file must have the exact same
-          ! overlap matrix.... however, we do not check !
-          files(iHS)%S_1D = files(iHS-1)%S_1D
-          files(iHS)%sp = files(iHS-1)%sp
-          ! Now we should have lost the 
-          ! sparsity pattern.
+          call set_vars_HS(files(1),files(iHS))
+
+       else
+          
+          ! Align the distributions (S and H have same distribution
+          dit => dist(files(iHS)%S_1D)
+          files(iHS)%dit = dit
 
        end if
-
-       ! copy over the distribution.
-       dit => dist(files(iHS)%S_1D)
-       files(iHS)%dit = dit
 
     end do
 
     ! Debug prints, delete when we now the above "trick" works.
-    call print_type(files(N_HS)%sp)
-    call print_type(files(N_HS)%S_1D)
-    call print_type(files(N_HS)%H_2D)
+!    call print_type(files(1)%sp)
+!    call print_type(files(1)%H_2D)
+!    call print_type(files(N_HS)%sp)
+!    call print_type(files(N_HS)%S_1D)
+!    call print_type(files(N_HS)%H_2D)
 
     ! Now we interpolate the 
     call dSpData2D_interp(N_HS,files(:)%H_2D,tHS(:)%Volt,Volt)
 
     ! Now files(1) contains the interpolated values
     ! copy files(1) to the original one...
+    TSHS%nspin = files(1)%nspin
     TSHS%dit = files(1)%dit
-    call print_type(TSHS%dit)
     TSHS%sp = files(1)%sp
     TSHS%S_1D = files(1)%S_1D
     TSHS%H_2D = files(1)%H_2D
@@ -318,10 +314,10 @@ contains
     TSHS%cell = files(1)%cell
 
     do iHS = 1 , N_HS
-       call delete(files(iHS)%dit)
-       call delete(files(iHS)%sp)
-       call delete(files(iHS)%S_1D)
        call delete(files(iHS)%H_2D)
+       call delete(files(iHS)%S_1D)
+       call delete(files(iHS)%sp)
+       call delete(files(iHS)%dit)
        ! do not delete the xa, lasto, isc_off arrays
        ! of the first instance, we point to them!
        if ( iHS > 1 ) then
@@ -329,6 +325,9 @@ contains
           deallocate(files(iHS)%xa)
           deallocate(files(iHS)%lasto)
        end if
+       nullify(files(iHS)%isc_off)
+       nullify(files(iHS)%xa)
+       nullify(files(iHS)%lasto)
     end do
 
     deallocate(files)
@@ -365,6 +364,27 @@ contains
       call reduce_spin_size(ispin,file%H_2D,file%S_1D,Ef)
 
     end subroutine read_HS
+
+    subroutine set_vars_HS(def,other)
+      type(tTSHS), intent(inout) :: def, other
+
+      type(Sparsity), pointer :: sp
+      type(OrbitalDistribution), pointer :: dit
+
+      sp => spar(other%S_1D)
+      sp = def%sp
+      sp => spar(other%H_2D)
+      sp = def%sp
+
+      dit => dist(other%S_1D)
+      dit = def%dit
+      dit => dist(other%H_2D)
+      dit = def%dit
+
+      other%dit = def%dit
+      other%sp = def%sp
+
+    end subroutine set_vars_HS
     
   end subroutine prep_next_HS
   

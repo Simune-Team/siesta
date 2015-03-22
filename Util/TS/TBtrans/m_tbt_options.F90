@@ -57,9 +57,9 @@ module m_tbt_options
 
 #ifdef NCDF_4
   ! Save file names for data files
-  character(len=400), save :: cdf_fname = ' '
-  character(len=400), save :: cdf_fname_sigma = ' '
-  character(len=400), save :: cdf_fname_proj = ' '
+  character(len=250) :: cdf_fname = ' '
+  character(len=250) :: cdf_fname_sigma = ' '
+  character(len=250) :: cdf_fname_proj = ' '
 #endif
 
 contains
