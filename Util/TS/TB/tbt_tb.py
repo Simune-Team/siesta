@@ -90,7 +90,15 @@ from __future__ import print_function
 import copy, os, datetime
 import itertools as it, warnings
 import numpy as np
-import netCDF4 as nc
+try:
+    import netCDF4 as nc
+except:
+    # Fake an object to always throw errors if called
+    # The user can still use this module without netCDF4py installed
+    class nc(object):
+        def __getitem__(self,key):
+            raise Exception('netCDF4 could not be imported. Please install to take full advantage.')
+        __getattr__ = __getitem__
 
 class SIESTA_UNITS(object):
     """
@@ -433,6 +441,50 @@ class TBT_Geom(SIESTA_UNITS):
                 for ia in xrange(self.na_u):
                     fh.write(ptbl.Z_short(self.Z[ia]) +
                              ' {0:.5f} {1:.5f} {2:.5f}\n'.format(*self.xa[ia,:]))
+
+    def fdf(self,fname=None,fmt='.5f'):
+        """
+        Creates an xyz file for showing in visual programs
+        
+        Parameters
+        ----------
+        fname : str 
+            Filename to save the FDF format in.
+        """
+        if fname:
+            ptbl = PeriodicTable()
+            with open(fname,'w') as fh:
+                # Write out the cell
+                fh.write('LatticeConstant 1. Ang\n')
+                fh.write('%block LatticeVectors\n')
+                for i in range(3):
+                    fh.write(' {0} {1} {2}\n'.format(*self.cell[i,:]))
+                fh.write('%endblock LatticeVectors\n\n')
+                fh.write('AtomicCoordinatesFormat Ang\n')
+                fh.write('%block AtomicCoordinatesAndAtomicSpecies\n')
+
+                fmt_str = ' {{2:{0}}} {{3:{0}}} {{4:{0}}} {{0}} # {{1}}\n'.format(fmt)
+                # Count for the species
+                spec = {}
+                ispec = 0
+                for ia in xrange(self.na_u):
+                    if self.Z[ia] in spec:
+                        sp = spec[self.Z[ia]]
+                    else:
+                        ispec += 1
+                        spec[self.Z[ia]] = ispec
+                        sp = ispec
+                    fh.write(fmt_str.format(sp,ia+1,*self.xa[ia,:]))
+                fh.write('%endblock AtomicCoordinatesAndAtomicSpecies\n\n')
+
+                # Write out species
+                # First swap key and value
+                spec = dict(zip(spec.values(), spec.keys()))
+                fh.write('NumberOfSpecies {0}\n'.format(ispec))
+                fh.write('%block ChemicalSpeciesLabel\n')
+                for i in range(ispec):
+                    fh.write(' {0} {1} {2}\n'.format(i+1,spec[i+1],ptbl.Z_short(spec[i+1])))
+                fh.write('%endblock ChemicalSpeciesLabel\n')
 
     def copy(self):
         """

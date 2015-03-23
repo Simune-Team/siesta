@@ -1,4 +1,18 @@
 ----------------------------------------------------
+March 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-348
+Basic fdf writer to the geometry object, made NC optional
+
+* Importing NetCDF4 is now optional in tbt_tb as it
+  can then be used to create structures.
+  Calling the save function will merely raise an Error
+
+* A simple fdf writer has been created for the geometry
+  object which makes it easy to convert to input files
+
+modified:
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 March 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-347
 Graphene structure in TB can retrieve a non-square
 
