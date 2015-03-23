@@ -4,6 +4,8 @@
 # %queue sh queue.sh $jobName 8    # real queuing of jobs on 8 cores/job
 %queue touch $jobName.queued 8      # testing dummy (does not run anything)
 
+%files *.fdf dummyFile             # to use with dummy queue
+
 %result energy pressure virial
 
 %list Pseudo

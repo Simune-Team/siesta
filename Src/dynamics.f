@@ -1438,9 +1438,11 @@ C real*8 temp           : Instantaneous system temperature
 C real*8 pressin        : Instantaneous system pressure 
 C *****************************************************************************
 
+      logical
+     .   found
 
       integer 
-     .   natoms,ntcon,istep,ianneal,iunit
+     .   natoms,ntcon,istep,ianneal,iunit,iacc
 
       real(dp)
      .  bulkm,dt,fa(3,natoms),h(3,3),kin,
@@ -1521,16 +1523,32 @@ C Calculate scaled coordinates (referred to matrix H) at current time
 
 C Initialize variables if current time step is the first of the simulation
       if (istep .eq. 1) then
-        do ia = 1,natoms
-          xaold(1:3) = xa(1:3,ia) - dt*va(1:3,ia)
-     $         + (dt2/2.0_dp) * fovermp * fa(1:3,ia) / ma(ia)
-!         sold(1:3,ia) = matmul(hi,xaold(1:3))
-          do i= 1, 3
-            do k= 1, 3
-              sold(k,ia) = sold(k,ia) + hi(k,i)*xaold(i)
+        if (IOnode) then
+          restart_file = trim(slabel) // '.ANNEAL_RESTART'
+          inquire(file=restart_file, exist=found)
+        end if
+        call broadcast(found)
+        if (found) then
+          if (IOnode) then
+            call io_assign(iacc)
+            open(unit=iacc, file=restart_file, form='formatted',
+     $           status='old', action='read', position='rewind')
+            read(iacc,*) sold
+            call io_close(iacc)
+          endif
+          call broadcast(sold)
+        else
+          do ia = 1,natoms
+            xaold(1:3) = xa(1:3,ia) - dt*va(1:3,ia)
+     $           + (dt2/2.0_dp) * fovermp * fa(1:3,ia) / ma(ia)
+!           sold(1:3,ia) = matmul(hi,xaold(1:3))
+            do i= 1, 3
+              do k= 1, 3
+                sold(k,ia) = sold(k,ia) + hi(k,i)*xaold(i)
+              enddo
             enddo
           enddo
-        enddo
+        endif
       endif
 C ..................
 
@@ -1718,6 +1736,16 @@ C Deallocate local memory
       call de_alloc( s, 's', 'anneal' )
 
 !!!      taurelax = taurelax - dt
+
+      if (IOnode) then
+        restart_file = trim(slabel) // '.ANNEAL_RESTART'
+        call io_assign(iacc)
+        open(unit=iacc, file=restart_file, form='formatted',
+     $       status='unknown', action='write', position='rewind')
+        write(iacc,*) sold
+        call io_close(iacc)
+      endif
+
       end subroutine anneal
 
 

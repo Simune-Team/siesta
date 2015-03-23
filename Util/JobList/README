@@ -17,6 +17,10 @@ by the following example:
 # This is a comment. Next line specifies the queueing command
 %queue mpirun -np 8 siesta < $jobName.fdf > $jobName.out
 
+# This specifies the required data files
+# If not specified, the default is '*.fdf *.vps *.psf *.ion queue.sh'
+%files *.fdf *.psf
+
 # This specifies some magnitudes to be collected from the results
 # This is done a posteriory, not affecting the job execution
 %result energy maxForce
@@ -75,20 +79,20 @@ by the following example:
   job termination, independently of the %result specifications.
 - Job directories are further organized in parent directories for each
   list or sub-list, with the names given in the %list statements.
-- The %queue and %result statements can be placed and repeated anywhere
-  (with the same or different values). They act only from their appearence
-  until the end of the list in which they are (including its sub-lists). 
-  This allows to do different things in different jobs (e.g. to use a 
-  different number of cores for each job). Within a list, the last %queue
-  or %result statement is used.
+- The %queue, %files, and %result statements can be placed and repeated 
+  anywhere (with the same or different values). They act only from their 
+  appearence until the end of the list in which they are (including its 
+  sub-lists). This allows to do different things in different jobs (e.g. 
+  to use a different number of cores for each job). Within a list, the 
+  last %queue, %files, or %result statement is used.
 - If some of the jobs hang or crash, you may kill them, correct any 
   deficiencies in the input files, and type again 'runJobs < myTests'
   AFTER the successful jobs have finished. The succesfull jobs will not
   be resubmitted. Successful termination is assumed either by the
   presence of the file 0_NORMAL_EXIT (handled by newer versions of Siesta)
   or, as a fallback, by the presence of a SystemLabel.EIG file. 
-  Thus, you can force re-submission of a job by erasing these files in 
-  its directory (or avoid re-submission by creating or 'touch'ing one of them).
+  Thus, you can force re-submission of a job by erasing these files in its 
+  directory (or avoid re-submission by creating or 'touch'ing one of them).
 
 The other utilities are:
 

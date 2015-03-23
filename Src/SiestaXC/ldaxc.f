@@ -160,6 +160,7 @@ C *****************************************************************
 C  Finds local exchange energy density and potential
 C  Adapted by J.M.Soler from routine velect of Froyen's 
 C    pseudopotential generation program. Madrid, Jan'97. Version 0.5.
+C  Relativistic exchange modified by JMS, May.2014
 C **** Input ******************************************************
 C INTEGER IREL    : relativistic-exchange switch (0=no, 1=yes)
 C INTEGER NSP     : spin-polarizations (1=>unpolarized, 2=>polarized)
@@ -182,24 +183,25 @@ C *****************************************************************
 
       real(dp), parameter :: zero = 0.0_dp, one = 1.0_dp
       real(dp), parameter :: pfive = 0.5_dp, opf = 1.5_dp
-      real(dp), parameter :: C014 = 0.014_dp
+!      real(dp), parameter :: c = 137.035999_dp       ! speed of light in a.u.
+!      real(dp), parameter :: C014 = 0.014_dp         ! (9*pi/4)^(1/3)/c
+      real(dp), parameter :: C014 = 0.0140047747_dp  ! updated JMS, May.2014
 
-      real(dp) :: pi, trd, ftrd, tftm, a0
-      real(dp) :: alp, d1, d2, d, z, fz, fzp, rs, vxp, exp_var
-      real(dp) :: beta, sb, vxf, exf, alb
+      real(dp) :: a0, alp, sb, rs
+      real(dp) :: pi, trd, ftrd, tftm
+      real(dp) :: d1, d2, d, z, fz, fzp, vxp, exp_var
+      real(dp) :: beta, vxf, exf, alb
+      real(dp) :: dBETAdD, dETAdD, dGAMMAdD, dPHIdD, dKFdD
+      real(dp) :: ETA, GAMMA, KF, PHI
 
       PI=4*ATAN(ONE)
       TRD = ONE/3
       FTRD = 4*TRD
-      TFTM = 2**FTRD-2
-      A0 = (4/(9*PI))**TRD
-
-C X-alpha parameter:       
-      ALP = 2 * TRD
+      TFTM = 2._dp**FTRD-2
 
       IF (NSP .EQ. 2) THEN
-        D1 = MAX(DS(1),0.D0)
-        D2 = MAX(DS(2),0.D0)
+        D1 = MAX(DS(1),ZERO)
+        D2 = MAX(DS(2),ZERO)
         D = D1 + D2
         IF (D .LE. ZERO) THEN
           EX = ZERO
@@ -221,19 +223,24 @@ C X-alpha parameter:
         FZ = ZERO
         FZP = ZERO
       ENDIF
+
+      A0 = (4/(9*PI))**TRD 
+      ALP = 2 * TRD                      ! X-alpha parameter
       RS = (3 / (4*PI*D) )**TRD
-      VXP = -(3*ALP/(2*PI*A0*RS))
-      EXP_VAR = 3*VXP/4
+      VXP = -(3*ALP/(2*PI*A0*RS))        ! VX=-KF/PI
+      EXP_VAR = 3*VXP/4                  ! epsX=-3*KF/4/PI
       IF (IREL .EQ. 1) THEN
-        BETA = C014/RS
+        ! Ref: MacDonald and Vosco, J.Phys C 12, 2977 (1979)
+        BETA = C014/RS                   ! ratio of Fermi to light speed
         SB = SQRT(1+BETA*BETA)
         ALB = LOG(BETA+SB)
         VXP = VXP * (-PFIVE + OPF * ALB / (BETA*SB))
         EXP_VAR = EXP_VAR * (ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
       ENDIF
-      VXF = 2**TRD*VXP
-      EXF = 2**TRD*EXP_VAR
+
       IF (NSP .EQ. 2) THEN
+        VXF = 2**TRD*VXP
+        EXF = 2**TRD*EXP_VAR
         VX(1) = VXP + FZ*(VXF-VXP) + (1-Z)*FZP*(EXF-EXP_VAR)
         VX(2) = VXP + FZ*(VXF-VXP) - (1+Z)*FZP*(EXF-EXP_VAR)
         EX    = EXP_VAR + FZ*(EXF-EXP_VAR)
