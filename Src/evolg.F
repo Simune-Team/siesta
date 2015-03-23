@@ -71,8 +71,7 @@ C
       implicit none
 
 #ifdef MPI
-      integer 
-     .  MPIerror
+
 #endif
       
       integer

@@ -167,9 +167,6 @@ C
 
 #ifdef MPI
 
-      integer 
-
-     .  MPIerror
 
 #endif
 

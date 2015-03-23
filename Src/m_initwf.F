@@ -14,7 +14,7 @@
      .                  maxo, numh, listhptr, listh, 
      .                  H, S, qtot,
      .                  gamma, xij, indxuo, nk, kpoint, wk,
-     .                  eo, qo, nuotot,ef, istpp)
+     .                  eo, qo, nuotot,ef, istpp,totime)
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors,
 C for given Hamiltonian and Overlap matrices (including
@@ -86,7 +86,7 @@ C
       use sys, only: die
 #ifdef MPI
       use mpi_siesta,   only : mpi_bcast, mpi_comm_world,
-     $                         mpi_logical
+     $                         mpi_logical, mpi_double_precision
 #endif
       use wavefunctions
 c maz. added ClProj.
@@ -106,7 +106,7 @@ c maz. added ClProj.
      .  eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk), 
      .  qo(maxo,maxspn,nk), S(maxnh), wk(nk), 
      .  xij(3,maxnh), qspiral(3), qtot,  ef, temp, nelect, entrp,
-     . qomax,qtol
+     . qomax,qtol, totime
        
       character 
      .   sname*30, fname*33, paste*33
@@ -555,7 +555,7 @@ C Free local arrays
 C If block on reading versus calculate wavefunctions   
       
 
-      call  iowavef('write',wavef,nuotot,nk,nspin,istpp)
+      call  iowavef('write',wavef,nuotot,nk,nspin,istpp,totime)
 C Stop time counter ...................................................
       call timer( 'initwf', 2 )
 C .......................
@@ -689,7 +689,7 @@ C Solve eigenvalue problem .........................................
               enddo
              endif
 #ifdef MPI
-              call MPI_Bcast(aux,nuotot,DAT_double,BNode,
+              call MPI_Bcast(aux,nuotot,mpi_double_precision,BNode,
      .           MPI_Comm_World,MPIerror)
 #endif   
           
@@ -852,7 +852,7 @@ c         do ie = 1,wavef%nocck(ik,ispin)
                enddo
               endif
 #ifdef MPI
-            call MPI_Bcast(aux(1,1),2*nuotot,DAT_double,
+            call MPI_Bcast(aux(1,1),2*nuotot,mpi_double_precision,
      .        BNode,MPI_Comm_World,MPIerror)
 #endif
            ioc=ioc+1

@@ -18,7 +18,7 @@
       use m_mixer
       use m_rhog,                only: mix_rhog, compute_charge_diff
       USE siesta_options
-      use parallel,     only : IOnode
+      use parallel,     only : IOnode, Nodes
       use m_state_analysis
       use m_steps
       use sys, only : die, bye
@@ -64,7 +64,7 @@
 #endif /* TRANSIESTA */
       implicit none
 
-      integer, intent(in)  :: istep
+      integer, intent(inout)  :: istep
 
       integer  :: iscf
       logical  :: first, last_step, SCFconverged
@@ -89,7 +89,14 @@
       
 !---------------------------------------------------------------------- BEGIN
 
-
+      if (td_elec_dyn .or. writetdwf) then
+!     Siesta tddft is not parallel yet.
+#ifdef MPI
+        call die('siesta_tddft: ERROR: tddft flavor of siesta ' //
+     &           'is not parallel yet. Compile and run' //
+     &            ' it in serial mode')
+#endif
+      end if
 
 !     Initialization tasks for a given geometry
       call state_init( istep )
@@ -113,6 +120,8 @@
 
       
       if (td_elec_dyn) then     !tddft
+
+
       istmove = istep-1
       call read_dynoptions ()
       
@@ -239,7 +248,7 @@
       call initwf(no_s, nspin, nspin, no_l, maxnh, no_u,
      &            numh, listhptr, listh, H, S, qtot,
      &            gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     &            eo, qo, no_u, EF7, istpp)
+     &            eo, qo, no_u, EF7, istpp,totime)
       end if
 
 
@@ -260,14 +269,23 @@
       ! Read the initial wavefunctions. 
       
       IF (istep==1) THEN
-       call iowavef('read',wavef,no_u,nkpnt,nspin, istpp)
-       etotfile  =  paste( slabel, '.etot_vs_time'  )
+       call iowavef('read',wavef,no_u,nkpnt,nspin, istpp,rstart_time)
+         istep=istpp+1
       ! istep=istpp
       END IF 
 
 
 
-      DO itded = 1,ntded  !tddft loop
+      DO itded = 1,ntded  !TDED loop
+
+
+         if(IONode) then
+           write(6,'(/a)')
+     & '                     ************************       '
+           write(6,*)'                 TDED Step    =', itded
+           write(6,'(/a)')
+     & '                     ************************       '
+        end if
  
       call setup_hamiltonian( itded )
       dt_tded= dt/ntded
@@ -278,41 +296,39 @@
      &            Dscf, Escf, no_u, dt_tded)
 
 ! The total simulation time mainly for plotting
-       totime = (istep*dt - dt) + (itded*dt_tded) + rstart_time 
+       totime = (istep*dt - dt) + (itded*dt_tded-dt_tded) + rstart_time 
 
       call compute_energies (itded)
       call final_H_f_stress (itded)
       call post_scf_work( itded )
       call state_analysis( istep )
-      call ioetot(totime, Etot, istep)
-
-      call write_td_dipol(totime, istep) 
-
-      write(6,*)'E0      = ',E0/eV
-      write(6,*)'DEna    = ',DEna/eV
-      write(6,*)'DUscf   = ',DUscf/eV
-      write(6,*)'DUext   = ',DUext/eV
-      write(6,*)'Exc     = ',Exc/eV
-      write(6,*)'Ecorrec = ',Ecorrec/eV
-      write(6,*)'Emad    = ',Emad/eV
+           if (etot_time) then
+           call ioetot(totime, Etot, istep, itded, ntded,rstart_time)
+           endif
+           if (dip_time) then
+           call write_td_dipol(totime, istep, itded, ntded,rstart_time) 
+           endif
+           if (eigen_time) then
+           call ioeigenvalues (eo,no_u,nspin,wavef%nocck,nspin,nkpnt, 
+     &                       totime,rstart_time, istp, itded,ntded)
+           endif
 
 ! To save the TD-wavefunctions and Density matrix to restart
 !        mod_tded = mod(itded, tdednwrite)
 !
 !        if(mod_tded .eq. 0) then
 !            call iowavef('write',wavef,no_u,nkpnt,nspin, istep)
-!            call save_density_matrix("dmout")
+!           call save_density_matrix("dmout")
 !        end if
 !
-        END DO !  itded
+        END DO !  TDED loop
 
 ! To save the TD-wavefunctions and Density matrix to restart
         mod_md   = mod(istep, tdednwrite)
 
         if(mod_md .eq. 0) then
-            call iowavef('write',wavef,no_u,nkpnt,nspin, istpp)
+            call iowavef('write',wavef,no_u,nkpnt,nspin, istpp,totime)
             call save_density_matrix("dmout")
-        write(6,*) 'After saving .DM and .TDWF print &&&&  =',tdednwrite
         end if
 
 

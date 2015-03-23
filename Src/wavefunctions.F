@@ -42,7 +42,7 @@
        
        end subroutine alloc_wavef
    
-       subroutine iowavef(task,func,nuotot,nk,nspin,istpp)
+       subroutine iowavef(task,func,nuotot,nk,nspin,istpp,totime)
 
        use parallel
        use fdf
@@ -50,12 +50,12 @@
        use mpi
 #endif
        use elec_dyn_options
-       use siesta_options, only: rstart_time, totime
        type (occ_wavef), intent(inout)  :: func
        integer, intent(in)  :: nuotot
        integer, intent(in)  :: nk
-       integer, intent(inout) :: istpp
        integer, intent(in)  :: nspin
+       integer, intent(inout) :: istpp
+       double precision, intent(inout) :: totime
        character*(*), intent(in):: task
     
 C Internal variables and arrays
@@ -112,7 +112,7 @@ C Find file name
           call io_assign(unit1)
           open( unit1, file=fname, form='unformatted',
      .      status='unknown' )
-          read(unit1) istpp, rstart_time
+          read(unit1) istpp, totime
           read(unit1) nuototread, nkread, nspinread
           if(nkread.ne.nk) stop 'iowavef: nk inconsistent '
           if(nuototread.ne.nuotot) stop 'iowavef: nuotot inconsistent ' 

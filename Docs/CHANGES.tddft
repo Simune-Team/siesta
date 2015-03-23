@@ -1,3 +1,35 @@
+2015-03-23  15:00 CET Rafi Ullah <rafijee@gmail.com>  trunk-458-tddft-3
+
+Fixed some bugs, updated the siesta manual, added tests and reference 
+outputs.
+
+added:
+
+  Tests/Reference/TDDFT_h2o1.out
+  Tests/Reference/TDDFT_h2o2.out
+  Tests/TDDFT_h2o/
+  Tests/TDDFT_h2o/Makefile
+  Tests/TDDFT_h2o/TDDFT_h2o.pseudos
+  Tests/TDDFT_h2o/TDDFT_h2o1.fdf
+  Tests/TDDFT_h2o/TDDFT_h2o2.fdf
+  Tests/test_tddft.mk
+
+modified:
+
+  Docs/CHANGES.tddft
+  Docs/siesta.tex
+  Src/Makefile
+  Src/elec_dyn_options.F
+  Src/evolg.F
+  Src/evolk.F
+  Src/m_initwf.F
+  Src/m_iodipol.F90
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+  Src/wavefunctions.F
+  Tests/Makefile
+  version.info
+
 2014-12-11  16:00 CET Rafi Ullah <rafijee@gmail.com>  trunk-458-tddft-2
 
 Daniel Sanchez-Portal's tddft implimentation has been integrated

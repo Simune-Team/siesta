@@ -1,10 +1,13 @@
+! This is a legacy module from Daniel's old TDDFT code. 
+! Most part of it is now redundant. 
+! Needs cleaning up and a possible merger into siesta_options 
+! Rafi Ullah February 2015.
  
        module elec_dyn_options 
-
+       use files,   only : slabel
        use precision
        use fdf
        use m_fdf_global
-       use siesta_options, only: totime, rstart_time
        use m_steps 
 #ifdef MPI
        use mpi
@@ -191,7 +194,6 @@ C Number of "substeps" larger or equal than 1
           if(Nelecsubsteps.lt.1) Nelecsubsteps=1
           call fdf_global_get(ElecDynPC,'MD.ElecDynPC',.false.)
           call fdf_global_get(EigenvsTime,'WriteEigenvsTime', .false. )
-          call fdf_global_get(EtotvsTime,'WriteEtotvsTime',.true.) 
           call fdf_global_get(onlyelectrons,'MD.OnlyElectrons', .false.)
           usesaveTDWF_default=.false.
           call fdf_global_get(usesaveTDWF,'MD.UseSaveTDWF',
@@ -243,7 +245,9 @@ C       end function tottime
        logical frstme
        save iu 
 
-      if(frstme) then 
+       character*33 paste
+      if(frstme) then
+        dipolefile = paste (slabel, '.dipol_vs_time') 
         call io_assign( iu )
         fform='formatted'
         open( iu, file=dipolefile, form=fform, status='unknown' )
@@ -251,51 +255,56 @@ C       end function tottime
       endif
       if(itimestep.gt.initstep) then 
        write(iu,'(4f15.6)') 
-     .    totime,
+C     .    totime,
      .    dipole(1),dipole(2), dipole(3)
       endif
       if(itimestep.eq.finalstep) call io_close(iu)
 
       end subroutine iodipole
 
-      subroutine ioetot(totime, etot, istp)
+      subroutine ioetot(totime, etot, istp, itd, ntd,rstart_time)
 
-      double precision totime, etot, eV
+      double precision totime, etot, eV, rstart_time
       logical frstme
-      integer iu, istp
+      integer iu, istp, itd, ntd
+       character*33 paste
       character*15 fform
       data frstme /.true./
       save frstme, iu, eV
        if(frstme) then
+          etotfile = paste (slabel, '.etot_vs_time')
           call io_assign( iu )
           fform='formatted'
           open( iu, file=etotfile, form=fform,POSITION='APPEND',
      .         status='unknown' )
           frstme = .false. 
           eV=1.d0 / 13.60580d0
-          write(iu, *) '# Time                Etot'
        end if
+       if (totime .gt. rstart_time) then
           write(iu,'(2f15.6)') 
      .         totime, etot/eV
-       
+       end if
 
-       if (istp .eq. fincoor) call io_close(iu)
+       if (istp .eq. fincoor .and. itd .eq. ntd) call io_close(iu)
 
       end subroutine ioetot 
  
-      subroutine ioeigenvalues (eigen,maxo,maxspn,nocc,nspin,nk, istp)   
+      subroutine ioeigenvalues (eigen,maxo,maxspn,nocc,nspin,nk, totime,
+     .                            rstart_time, istp, itd,ntd)   
  
-      integer maxo, maxspn,nspin, nk, istp
+      integer maxo, maxspn,nspin, nk, istp, itd, ntd
       double precision eigen(maxo,maxspn,nk)
-      double precision eV 
+      double precision eV , totime, rstart_time
       integer nocc(nk,nspin)
       integer ik,ispin,ie, iu
       logical frstme
       character*15 fform
+       character*33 paste
       data frstme /.true./
       save frstme, iu, eV
        
-        if(frstme) then
+        if(rstart_time .eq. 0.00_dp) then
+          eigenfile = paste (slabel, '.eigen_vs_time')
           call io_assign( iu )
           fform='formatted'
           open( iu, file=eigenfile, form=fform, status='unknown' )
@@ -306,13 +315,14 @@ C       end function tottime
           eV=1.d0 / 13.60580d0
           frstme=.false.
         endif
-         
+        
+        if (totime .gt. rstart_time) then
            write(iu,'(11f12.5,/,(5x,10f12.5))') 
      .        totime,
      .        (((eigen(ie,ispin,ik)/eV,ie=1,nocc(ik,ispin)),
      .        ispin=1,nspin),ik=1,nk)
-      if(istp.eq.fincoor) call io_close(iu)
-
+        end if
+       if (istp .eq. fincoor .and. itd .eq. ntd) call io_close(iu)
       end subroutine ioeigenvalues
 
 ! maz kin_host,kin_proj

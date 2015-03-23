@@ -734,8 +734,8 @@ siesta_end.o: alloc.o bands.o densematrix.o fixed.o m_dscfcomm.o m_pulay.o
 siesta_end.o: m_rhog.o m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o
 siesta_end.o: parallel.o siesta_cml.o siesta_cmlsubs.o siesta_master.o
 siesta_end.o: sparse_matrices.o timestamp.o
-elec_dyn_options.o: m_fdf_global.o siesta_options.o m_steps.o
-wavefunctions.o: elec_dyn_options.o siesta_options.o
+elec_dyn_options.o: m_fdf_global.o m_steps.o files.o
+wavefunctions.o: elec_dyn_options.o 
 m_initwf.o: elec_dyn_options.o wavefunctions.o fermid.o
 evolk.o: elec_dyn_options.o wavefunctions.o
 evolg.o: elec_dyn_options.o wavefunctions.o

@@ -89,11 +89,14 @@ MODULE siesta_options
   logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
   logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
  
-!Rafi Feb 17, 2014 
+!TDDFT Feb 17, 2014 
   logical :: writetdwf      ! To write the wavefuctions at the end of SCF. These
                             ! would serve as the initial states for time evolution
                             ! of KS states in TD-DFT.
-  logical :: td_elec_dyn    ! It might be redudant
+  logical :: td_elec_dyn    ! To do TDDFT calculation on second run
+  logical :: etot_time     ! Write Etot vs time during TDDFT
+  logical :: eigen_time    ! Write instataneous energy of the electronic states in TDDFT
+  logical :: dip_time      ! Write dipol moment againstan time in TDDFT 
   integer :: itded          ! a TDDFT counterpart of iscf
   integer :: ntded          ! Number of TDED steps in each MD iteration. 
                             ! Or total number of TDED steps in an only electron calcuation
@@ -1052,8 +1055,7 @@ MODULE siesta_options
     endif
 
 
-!TD-DFT options
-!Rafi      
+!TD-DFT options      
            td_elec_dyn = .false. 
            writetdwf = fdf_get('WriteInitialTDWF',.false.)
            if(writetdwf) then
@@ -1062,8 +1064,10 @@ MODULE siesta_options
                               = ',writetdwf
              endif
            endif
-
-          ntded  = fdf_get('TDED.Nsteps',ntded_default)
+           etot_time  =  fdf_get('WriteEtotvsTime',.true.)
+           eigen_time =  fdf_get('WriteEigenvsTime',.false.)        
+           dip_time   =  fdf_get('WriteDipolevsTime',.false.)
+           ntded  = fdf_get('TDED.Nsteps',ntded_default)
           if (ionode) then
             write(6,4) 'redata: Max. number of TDED Iter         = ',ntded
           end if
