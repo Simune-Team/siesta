@@ -1,4 +1,11 @@
 ----------------------------------------------------
+March 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-349
+Forgot to add NumberOfAtoms to the fdf
+
+modified:
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 March 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-348
 Basic fdf writer to the geometry object, made NC optional
 

@@ -460,6 +460,7 @@ class TBT_Geom(SIESTA_UNITS):
                 for i in range(3):
                     fh.write(' {0} {1} {2}\n'.format(*self.cell[i,:]))
                 fh.write('%endblock LatticeVectors\n\n')
+                fh.write('NumberOfAtoms {0}\n'.format(self.na_u))
                 fh.write('AtomicCoordinatesFormat Ang\n')
                 fh.write('%block AtomicCoordinatesAndAtomicSpecies\n')
 
