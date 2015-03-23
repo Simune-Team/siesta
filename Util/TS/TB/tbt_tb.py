@@ -1290,7 +1290,7 @@ class TBT_Model(SIESTA_UNITS):
         """
         return np.sum(self.ncol)
 
-    def tocsr(self):
+    def tocsr(self,k=None):
         """
         Returns a CSR sparse matrix for both the Hamiltonian
         and the overlap matrix using the scipy package.
@@ -1303,11 +1303,31 @@ class TBT_Model(SIESTA_UNITS):
         # We import here as the user might not want to
         # rely on this feature.
         from scipy.sparse import csr_matrix
-        shape = (self.no_u,self.no_u*np.product(self.geom.nsc))
-        if self.HS.shape[1] == 1:
-            return csr_matrix((self.HS[:,0],self.col,self.ptr),shape=shape)
-        return (csr_matrix((self.HS[:,0],self.col,self.ptr),shape=shape), \
-                    csr_matrix((self.HS[:,1],self.col,self.ptr),shape=shape))
+        if k is None:
+            shape = (self.no_u,self.no_u*np.product(self.geom.nsc))
+            if self.HS.shape[1] == 1:
+                return csr_matrix((self.HS[:,0],self.col,self.ptr),shape=shape)
+            return (csr_matrix((self.HS[:,0],self.col,self.ptr),shape=shape), \
+                        csr_matrix((self.HS[:,1],self.col,self.ptr),shape=shape))
+        else:
+            import scipy.linalg as sla
+            # Setup the Hamiltonian for this k-point
+            shape = (self.no_u,self.no_u*np.product(self.geom.nsc))
+            Hfull = csr_matrix((self.HS[:,0],self.col,self.ptr),shape=shape)
+            Sfull = csr_matrix((self.HS[:,1],self.col,self.ptr),shape=shape)
+            shape = (self.no_u,self.no_u)
+            H = csr_matrix(shape)
+            S = csr_matrix(shape)
+            # Get the reciprocal lattice vectors dotted with k
+            rcell = sla.inv(self.geom.cell.copy())
+            kr = np.dot(np.asarray(k),rcell) * np.pi * 2.
+            for si in range(np.product(self.geom.nsc)):
+                isc = self.geom.isc_off[si,:]
+                phase = np.exp(1j*np.dot(kr,np.dot(self.geom.cell,isc)))
+                H += Hfull[:,si*self.no_u:(si+1)*self.no_u] * phase
+                S += Sfull[:,si*self.no_u:(si+1)*self.no_u] * phase
+            del Hfull, Sfull
+            return H,S
 
     def _save_sparsity(self,nf,zlib=0):
         """
@@ -2538,14 +2558,17 @@ _TB_graphene = {
         'eZ' : -2.7,
         # Hubbard U
         'U'  : 0. ,
+        'Ef' : 0.,
         },
     }
 # Define set B
 _TB_graphene['B'] = copy.deepcopy(_TB_graphene['A'])
 _TB_graphene['B']['U'] = 2.0
+_TB_graphene['B']['Ef'] = 2.
 # Define set C
 _TB_graphene['C'] = copy.deepcopy(_TB_graphene['B'])
 _TB_graphene['C']['n2'] = -0.2
+_TB_graphene['C']['Ef'] = 2.6
 # Define set D
 _TB_graphene['D'] = copy.deepcopy(_TB_graphene['C'])
 _TB_graphene['D']['n3'] = -0.18
@@ -2561,6 +2584,7 @@ _TB_graphene['F'].update({
         's1' : 0.11 ,
         's2' : 0.045,
         's3' : 0.065,
+        'Ef' : 2.62427745665,
         })
 # Define set G
 _TB_graphene['G'] = copy.deepcopy(_TB_graphene['D'])
@@ -2572,26 +2596,43 @@ _TB_graphene['G'].update({
         's2' : 0.018,
         's3' : 0.026,
         'U'  : 0.   ,
+        'Ef' : 0.231501057082,
         })
+
+# To get the Fermi levels we calculate the first eigenvalue at
+# the K-point (the Dirac point is the Fermi-level)
+#uc_gr = graphene_uc(alat=alat,square=False))
+#H, S = uc_gr.tocsr([1./3,2./3.,0])
+#EF = sp.linalg.eigh(H.todense(),S.todense(),eigvals_only=True,overwrite_a=False,overwrite_b=False)[0]
+
 
 # Define a generic geometry for a square graphene unit-cell
 # To create any arbitrary unit-cell, simple use the repeat
 # function. :)
-def graphene_uc(alat=1.42):
+def graphene_uc(alat=1.42,square=True):
     """
     Returns a generic graphene unit-cell with user set lattice
     parameter.
     """
     sq3h  = 3.**.5 * 0.5
-    gr = TBT_Geom(xa=np.array([[ 0.,   0., 0.],
-                               [ 2.,   0., 0.],
-                               [0.5, sq3h, 0.],
-                               [1.5, sq3h, 0.] ],np.float),
-                  cell=np.array([[3.,     0.,  0.],
-                                 [0., 2*sq3h,  0.],
-                                 [0.,     0., 10.]],np.float),
-                  Z = 'Carbon',
-                  dR=2.05) # third nearest neighbour
+    if square:
+        gr = TBT_Geom(xa=np.array([[ 0.,   0., 0.],
+                                   [ 2.,   0., 0.],
+                                   [0.5, sq3h, 0.],
+                                   [1.5, sq3h, 0.] ],np.float),
+                      cell=np.array([[3.,     0.,  0.],
+                                     [0., 2*sq3h,  0.],
+                                     [0.,     0., 10.]],np.float),
+                      Z = 'Carbon',
+                      dR=2.05) # third nearest neighbour
+    else:
+        gr = TBT_Geom(xa=np.array([[ 0., 0., 0.],
+                                   [ 1., 0., 0.]],np.float),
+                      cell=np.array([[1.5, sq3h,  0.],
+                                     [1.5,-sq3h,  0.],
+                                     [ 0.,   0., 10.]],np.float),
+                      Z = 'Carbon',
+                      dR=2.05) # third nearest neighbour
     gr.xa   *= alat
     gr.cell *= alat
     gr.dR   *= alat
