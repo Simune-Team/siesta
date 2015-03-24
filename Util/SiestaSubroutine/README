@@ -45,7 +45,7 @@ To use the package, you must:
      Master.interface  socket     # ( pipes | socket | mpi)
      Master.address    localhost  # e.g. 150.242.7.140
      Master.port       10001      # 10000+siesta_process_order
-     Master.unix       false      # socket type: false=>inet, true=>unix
+     Master.socketType inet       # ( inet | unix )
 
 2) Write a main program or subroutine(s) of your own that contains:
  - A 'use fsiesta' statement in each routine with any of the following calls.

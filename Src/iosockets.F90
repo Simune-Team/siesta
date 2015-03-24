@@ -81,8 +81,8 @@ PRIVATE  ! Nothing is declared public beyond this point
 ! Private module variables
   integer, save :: socket
   real(dp),save :: cellv
-  character(len=unit_len),save:: master='unknown'
-  character(len=32),      save:: master_eunit='unknown', &
+  character(len=32),      save:: master='unknown', stype='unknown'
+  character(len=unit_len),save:: master_eunit='unknown', &
                                  master_xunit='unknown'
 #ifdef MPI
   integer :: MPIerror
@@ -104,7 +104,6 @@ subroutine coordsFromSocket( na, xa, cell )
 
 ! Local variables and arrays
   logical, save            :: firstTime = .true.
-  LOGICAL                  :: isunix
   CHARACTER(len=MSGLEN)    :: header, message
   CHARACTER(len=1024)      :: host
   INTEGER                  :: inet, port, n
@@ -115,11 +114,16 @@ subroutine coordsFromSocket( na, xa, cell )
   if (firstTime) then
     call fdf_global_get(master, "Master.code", "fsiesta")
     call fdf_global_get(host,   "Master.address", "localhost")
-    call fdf_global_get(port,   "Master.port", 31415)
-    call fdf_global_get(isunix, "Master.unix", .false.)
+    call fdf_global_get(port,   "Master.port", 10001)
+    call fdf_global_get(stype,  "Master.socketType", "inet")
 
-    inet = 1
-    if (isunix) inet=0
+    if (leqi(stype,'unix')) then
+      inet = 0
+    elseif (leqi(stype,'inet')) then
+      inet = 1
+    else
+      call die(myName//'ERROR: unknown socket type '//trim(stype))
+    endif
 
     if (IOnode) then
       print'(/,a,i4,i8,2x,a)', &
@@ -134,12 +138,12 @@ subroutine coordsFromSocket( na, xa, cell )
   header = ''
   if (IOnode) then
     do
-      if (trim(master)=='i-pi') then
+      if (leqi(master,'i-pi')) then
         call readbuffer(socket, header, IPI_MSGLEN)
         if (trim(header)/='STATUS') exit ! do loop
         message = "READY"
         call writebuffer(socket, message, IPI_MSGLEN)
-      elseif (trim(master)=='fsiesta') then
+      elseif (leqi(master,'fsiesta')) then
         call readbuffer(socket, header)
         if (trim(header)=='quit') then
           call writebuffer(socket,'quitting')
@@ -153,7 +157,7 @@ subroutine coordsFromSocket( na, xa, cell )
         endif
       else
         call die(myName//'ERROR: unknown master')
-      endif ! trim(master)
+      endif ! leqi(master)
     enddo
   endif ! IOnode
 #ifdef MPI
@@ -162,12 +166,12 @@ subroutine coordsFromSocket( na, xa, cell )
 
 ! Read cell vectors from socket, as a single buffer vector
   if (IOnode) then
-    if (master=="i-pi" .and. trim(header)=="POSDATA") then 
+    if (leqi(master,"i-pi") .and. trim(header)=="POSDATA") then 
       call readbuffer(socket, c, 9)
       call readbuffer(socket, aux, 9)    ! not used in siesta
       master_xunit = ipi_xunit
       master_eunit = ipi_eunit
-    elseif (master=="fsiesta" .and. trim(header)=="begin_coords") then
+    elseif (leqi(master,"fsiesta") .and. trim(header)=="begin_coords") then
       call readbuffer(socket, master_xunit)
       call readbuffer(socket, master_eunit)
       call readbuffer(socket, c, 9)
@@ -202,7 +206,7 @@ subroutine coordsFromSocket( na, xa, cell )
   deallocate(x)
 
 ! Read trailing message
-  if (IOnode .and. master=='fsiesta') then
+  if (IOnode .and. leqi(master,'fsiesta')) then
     call readbuffer(socket, message)
     if (message/='end_coords') then
       call die(myName//'ERROR: unexpected trailer:'//trim(message))
@@ -258,7 +262,7 @@ subroutine forcesToSocket( na, energy, forces, stress )
 
 ! Write forces to socket
   if (IOnode) then
-    if (trim(master)=='i-pi') then
+    if (leqi(master,'i-pi')) then
       do
         call readbuffer(socket, header, IPI_MSGLEN)
         if (trim(header)=='STATUS') then        ! inform i-pi of my status
@@ -283,7 +287,7 @@ subroutine forcesToSocket( na, energy, forces, stress )
       ! centres, etc. one must return the number of characters, then
       ! the string. here we just send back zero characters.
       call writebuffer(socket,0)
-    elseif (trim(master)=='fsiesta') then
+    elseif (leqi(master,'fsiesta')) then
 !      do
 !        call readbuffer(socket, header)
 !        if (trim(header)/='wait') exit
@@ -296,7 +300,7 @@ subroutine forcesToSocket( na, energy, forces, stress )
       call writebuffer(socket,'end_forces')
     else
       call die(myName//'ERROR: unknown master')
-    endif ! trim(master)
+    endif ! leqi(master)
   end if ! IOnode
 
 ! Print energy, forces, and stress tensor sent to master
