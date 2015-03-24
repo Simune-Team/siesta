@@ -21,7 +21,7 @@ program simple
   call siesta_units( 'Ang', 'eV' )
 
 ! Launch a siesta process using two MPI processes
-  call siesta_launch( 'h2o', nnodes=2, localhost=.true. )
+  call siesta_launch( 'h2o', nnodes=2 )
   print*, 'siesta launched'
 
 ! Find forces

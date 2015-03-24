@@ -45,9 +45,10 @@
 !   mpirun process will be launched. In this case, the mpi launching
 !   command (e.g., "mpiexec <options> -n ") can be specified in the 
 !   optional argument mpi_launcher
-! - localhost=.false. is assumed by default, if not present at siesta_launch,
-!   or if siesta_launch is not called. In these cases, the IP address of the
-!   driver program's host must be given as Master.address in siesta .fdf file
+! - localhost=.true. is assumed by default, if not present at siesta_launch,
+!   or if siesta_launch is not called. 
+! - If localhost=.false., the IP address of the driver program's host must 
+!   be given as Master.address in siesta .fdf file.
 ! - If siesta_units is not called, length='Ang', energy='eV' are
 !   used by default. If it is called more than once, the units in the
 !   last call become in effect.
@@ -315,7 +316,7 @@ subroutine open_new_socket( label, localhost )
   if (present(localhost)) then
     local = localhost
   else
-    local = .false.
+    local = .true.
   endif
   if (local) then
     host = 'localhost'

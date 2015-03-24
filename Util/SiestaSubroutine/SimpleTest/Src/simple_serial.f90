@@ -20,7 +20,7 @@ program simple
   call siesta_units( 'Ang', 'eV' )
 
 ! Launch a siesta process
-  call siesta_launch( 'h2o', localhost=.true. )
+  call siesta_launch( 'h2o' )
   print*, 'siesta launched'
 
 ! Find forces
