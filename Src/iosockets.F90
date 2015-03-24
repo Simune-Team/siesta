@@ -140,15 +140,13 @@ subroutine coordsFromSocket( na, xa, cell )
         message = "READY"
         call writebuffer(socket, message, IPI_MSGLEN)
       elseif (trim(master)=='fsiesta') then
-        call readbuffer(socket, header, MSGLEN)
+        call readbuffer(socket, header)
         if (trim(header)=='quit') then
-          message = "quitting"
-          call writebuffer(socket, message, MSGLEN)
+          call writebuffer(socket,'quitting')
           call close_socket(socket)
           call die(myName//'STOP requested by driver')
         elseif (trim(header)=='wait') then
-          message = "ready"
-          call writebuffer(socket, message, MSGLEN)
+          call writebuffer(socket,'ready')
           cycle ! do loop
         else
           exit ! do loop
@@ -170,11 +168,11 @@ subroutine coordsFromSocket( na, xa, cell )
       master_xunit = ipi_xunit
       master_eunit = ipi_eunit
     elseif (master=="fsiesta" .and. trim(header)=="begin_coords") then
-      call readbuffer(socket, master_xunit, unit_len)
-      call readbuffer(socket, master_eunit, unit_len)
+      call readbuffer(socket, master_xunit)
+      call readbuffer(socket, master_eunit)
       call readbuffer(socket, c, 9)
     else
-      call die(myName//'ERROR: unexpected header: '//trim(message))
+      call die(myName//'ERROR: unexpected header: '//trim(header))
     end if
   endif
 
@@ -205,7 +203,7 @@ subroutine coordsFromSocket( na, xa, cell )
 
 ! Read trailing message
   if (IOnode .and. master=='fsiesta') then
-    call readbuffer(socket, message, MSGLEN)
+    call readbuffer(socket, message)
     if (message/='end_coords') then
       call die(myName//'ERROR: unexpected trailer:'//trim(message))
     end if
@@ -287,17 +285,15 @@ subroutine forcesToSocket( na, energy, forces, stress )
       call writebuffer(socket,0)
     elseif (trim(master)=='fsiesta') then
 !      do
-!        call readbuffer(socket, header, MSGLEN)
+!        call readbuffer(socket, header)
 !        if (trim(header)/='wait') exit
 !      enddo
-      message = 'begin_forces'
-      call writebuffer(socket,message,MSGLEN)
+      call writebuffer(socket,'begin_forces')
       call writebuffer(socket,e)
       call writebuffer(socket,s,9)
       call writebuffer(socket,na)
       call writebuffer(socket,f,3*na)
-      message = 'end_forces'
-      call writebuffer(socket,message,MSGLEN)
+      call writebuffer(socket,'end_forces')
     else
       call die(myName//'ERROR: unknown master')
     endif ! trim(master)

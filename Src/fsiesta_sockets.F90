@@ -201,20 +201,18 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 
 ! Write coordinates to socket
   socket = p(ip)%socket
-  message = 'begin_coords'
-  call writebuffer( socket, message, MSGLEN )
-  call writebuffer( socket, xunit, 32 )
-  call writebuffer( socket, eunit, 32 )
+  call writebuffer( socket, 'begin_coords' )
+  call writebuffer( socket, xunit )
+  call writebuffer( socket, eunit )
   call writebuffer( socket, c, 9 )
   call writebuffer( socket, na )
   call writebuffer( socket, reshape(xa,(/3*na/)), 3*na )
-  message = 'end_coords'
-  call writebuffer( socket, message, MSGLEN )
+  call writebuffer( socket, 'end_coords' )
 
 ! Read forces from socket
-  call readbuffer( socket, message, MSGLEN )
+  call readbuffer( socket, message )
   if (message=='error') then
-    call readbuffer( socket, message, MSGLEN )
+    call readbuffer( socket, message )
     call die( 'siesta_forces: siesta ERROR:' // trim(message))
   else if (message/='begin_forces') then
     call die('siesta_forces: ERROR: unexpected header:' // trim(message))
@@ -227,7 +225,7 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
     call die()
   end if
   call readbuffer( socket, f, 3*na )
-  call readbuffer( socket, message, MSGLEN )
+  call readbuffer( socket, message )
   if (message/='end_forces') then
     call die('siesta_forces: ERROR: unexpected trailer:' // trim(message))
   end if
@@ -279,9 +277,8 @@ subroutine siesta_quit_process(label)
 
     print*,'siesta_quit: stopping siesta process ',trim(label)
     socket = p(ip)%socket
-    message = 'quit'
-    call writebuffer(socket,message,MSGLEN)  ! Send quit signal to server
-    call readbuffer(socket,message,MSGLEN)   ! Receive response
+    call writebuffer(socket,'quit')  ! Send quit signal to server
+    call readbuffer(socket,message)  ! Receive response
     if (message == 'quitting') then  ! Check answer
       if (ip < np) then              ! Move last process to this slot
         p(ip)%label  = p(np)%label

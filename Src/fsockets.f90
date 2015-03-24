@@ -51,7 +51,8 @@
 !    Sends a character string through the socket
 !    INTEGER,         INTENT(IN) :: psockfd ! socket file descriptor
 !    CHARACTER(LEN=*),INTENT(IN) :: fstring ! string to be sent
-!    INTEGER,         INTENT(IN) :: plen    ! string length
+!    INTEGER,OPTIONAL,INTENT(IN) :: plen    ! string length. If present,
+!                                             it must match that at readbuffer
 !
 !  SUBROUTINE writebuffer(psockfd, fdata)
 !    Sends an integer number through the socket
@@ -73,7 +74,8 @@
 !    Receives a character string through the socket
 !    INTEGER,         INTENT(IN) :: psockfd ! socket file descriptor
 !    CHARACTER(LEN=*),INTENT(OUT):: fstring ! string to be received
-!    INTEGER,         INTENT(IN) :: plen    ! string length
+!    INTEGER,OPTIONAL,INTENT(IN) :: plen    ! string length. If present,
+!                                             it must match that at writebuffer
 !
 !  SUBROUTINE readbuffer(psockfd, fdata)
 !    Receives an integer number through the socket
@@ -207,13 +209,22 @@ CONTAINS
     USE ISO_C_BINDING
     INTEGER, INTENT(IN)                      :: psockfd
     CHARACTER(LEN=*), INTENT(IN)             :: fstring
-    INTEGER, INTENT(IN)                      :: plen
+    INTEGER,OPTIONAL, INTENT(IN)             :: plen
     INTEGER                                  :: i
-    CHARACTER(LEN=1, KIND=C_CHAR), TARGET    :: cstring(plen)
-    DO i = 1,plen
+    INTEGER(KIND=C_INT), TARGET              :: flen
+    CHARACTER(LEN=1, KIND=C_CHAR), POINTER   :: cstring(:)
+    IF (PRESENT(plen)) THEN
+      flen = plen
+    ELSE
+      flen = LEN(fstring)
+      CALL writebuffer_csocket(psockfd, c_loc(flen), 4)
+    ENDIF
+    allocate( cstring(flen) )
+    DO i = 1,flen
       cstring(i) = fstring(i:i)
     ENDDO
-    CALL writebuffer_csocket(psockfd, c_loc(cstring(1)), plen)
+    CALL writebuffer_csocket(psockfd, c_loc(cstring(1)), flen)
+    deallocate( cstring )
   END SUBROUTINE
 
   SUBROUTINE writebuffer_dv(psockfd, fdata, plen)
@@ -245,14 +256,22 @@ CONTAINS
     USE ISO_C_BINDING
     INTEGER, INTENT(IN)                      :: psockfd
     CHARACTER(LEN=*), INTENT(OUT)            :: fstring
-    INTEGER, INTENT(IN)                      :: plen
+    INTEGER,OPTIONAL, INTENT(IN)             :: plen
     INTEGER                                  :: i
-    CHARACTER(LEN=1, KIND=C_CHAR), TARGET    :: cstring(plen)
-    CALL readbuffer_csocket(psockfd, c_loc(cstring(1)), plen)
+    INTEGER(KIND=C_INT), TARGET              :: clen
+    CHARACTER(LEN=1, KIND=C_CHAR), POINTER   :: cstring(:)
+    IF (PRESENT(plen)) THEN
+      clen = plen
+    ELSE
+      CALL readbuffer_csocket(psockfd, c_loc(clen), 4)
+    ENDIF
+    allocate( cstring(clen) )
+    CALL readbuffer_csocket(psockfd, c_loc(cstring(1)), clen)
     fstring=""   
-    DO i = 1,plen
+    DO i = 1,min(clen,len(fstring))
       fstring(i:i) = cstring(i)
     ENDDO
+    deallocate( cstring )
   END SUBROUTINE
 
   SUBROUTINE readbuffer_dv(psockfd, fdata, plen)
