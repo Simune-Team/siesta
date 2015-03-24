@@ -1,4 +1,15 @@
 ----------------------------------------------------
+March 24, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-351
+Changed default XML.Write to false
+
+* Writing the xml code is an annoyance and rarely
+  used.
+  The user should enable it if needed.
+
+modified:
+  Src/siesta_cmlsubs.F90
+
+----------------------------------------------------
 March 24, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-350
 Enabled negative numbers in fdf_extra
 
