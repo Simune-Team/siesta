@@ -16,12 +16,13 @@
 ! Used modules
 !   f90sockets : support for socket communications (in file fsockets.f90)
 ! Usage:
-!   call siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
+!   call siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
 !     character(len=*),intent(in) :: label  : Name of siesta process
 !                                             (prefix of its .fdf file)
 !     integer,optional,intent(in) :: nnodes : Number of MPI nodes
 !     integer,optional,intent(in) :: mpi_comm : not used in this version
-!     character(len=*),intent(in),optional:: mpi_launcher : e.g. 'mpirun -np 8'
+!     character(len=*),intent(in),optional:: launcher : full launch command
+!     logical,optional,intent(in) :: localhost : will siesta run at localhost?
 !
 !   call siesta_units( length, energy )
 !     character(len=*),intent(in) :: length : Physical unit of length
@@ -44,16 +45,19 @@
 !   mpirun process will be launched. In this case, the mpi launching
 !   command (e.g., "mpiexec <options> -n ") can be specified in the 
 !   optional argument mpi_launcher
+! - localhost=.false. is assumed by default, if not present at siesta_launch,
+!   or if siesta_launch is not called. In these cases, the IP address of the
+!   driver program's host must be given as Master.address in siesta .fdf file
 ! - If siesta_units is not called, length='Ang', energy='eV' are
 !   used by default. If it is called more than once, the units in the
 !   last call become in effect.
 ! - The physical units set by siesta_units are used for all the siesta
 !   processes launched
 ! - If siesta_forces is called without a previous call to siesta_launch
-!   for that label, it assumes that the siesta process has been launched
-!   (and the communication socket created) externally in the shell.
-!   In this case, siesta_forces only opens its end of the socket and begins
-!   communication through them.
+!   for that label, it assumes that the siesta process will be launched
+!   externally in the shell (AFTER the driver program calls siesta_forces).
+!   In this case, siesta_forces creates the socket and waits until siesta
+!   connects to it.
 ! - If argument cell is not present in the call to siesta_forces, or if
 !   the cell has zero volume, it is assumed that the system is a molecule,
 !   and a supercell is generated automatically by siesta so that the 
@@ -86,7 +90,7 @@ PRIVATE ! Nothing is declared public beyond this point
   type proc
     private
     character(len=256) :: label     ! name of siesta process
-    character(len=1024):: host      ! hostname of the siesta process
+    character(len=1024):: host      ! host IP address of the siesta process
     integer            :: inet      ! communication socket type
     integer            :: port      ! port number for the commun. socket
     integer            :: socket    ! socket id
@@ -112,18 +116,18 @@ CONTAINS
 
 !---------------------------------------------------
 
-subroutine siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
+subroutine siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
   implicit none
-  character(len=*),  intent(in) :: label
-  integer, optional, intent(in) :: nnodes
-  integer, optional, intent(in) :: mpi_comm
-  character(len=*),  intent(in), optional :: mpi_launcher
+  character(len=*),          intent(in) :: label
+  integer,         optional, intent(in) :: nnodes
+  integer,         optional, intent(in) :: mpi_comm
+  character(len=*),optional, intent(in) :: launcher
+  logical,         optional, intent(in) :: localhost
 
-  character(len=32) :: host
-  character(len=80) :: task, mpi_command
-  integer           :: ip, isocket
+  character(len=1024):: task
+  integer            :: ip, isocket
 
-!  print*, 'siesta_launch: launching process ', trim(label)
+  print*, 'siesta_launch: launching process ', trim(label)
 
 ! Check that siesta process does not exist already
   if (idx(label) /= 0) &
@@ -131,22 +135,19 @@ subroutine siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
             ' already launched'
 
 ! Start siesta process
-  if (present(nnodes) .and. nnodes>1) then
-     if (present(mpi_launcher)) then
-        mpi_command = mpi_launcher
-     else
-        mpi_command =  'mpirun -np '
-     endif
-    write(task,*) trim(mpi_command),  nnodes, ' siesta < ', &
-        trim(label)//'.fdf > ', trim(label)//'.out &'
+  if (present(launcher)) then
+    task = launcher
+  elseif (present(nnodes) .and. nnodes>1) then
+    write(task,*) ' mpirun -np ', nnodes, &
+                  ' siesta < ', trim(label)//'.fdf > ', trim(label)//'.out &'
   else
-    write(task,*) 'siesta < ', trim(label)//'.fdf > ', trim(label)//'.out &'
-  end if
+    write(task,*) ' siesta < ', trim(label)//'.fdf > ', trim(label)//'.out &'
+  endif
   print*,'siesta_launch: task = ',trim(task)
   call system(task)
 
 ! Create and open new socket for communication with siesta process
-  call open_new_socket(label)
+  call open_new_socket(label,localhost)
 
 end subroutine siesta_launch
 
@@ -297,13 +298,35 @@ end subroutine siesta_quit_process
 
 !---------------------------------------------------
 
-subroutine open_new_socket( label )
+subroutine open_new_socket( label, localhost )
   implicit none
-  character(len=*), intent(in) :: label
+  character(len=*),intent(in) :: label
+  logical,optional,intent(in) :: localhost
+
+  integer,parameter:: iu=87
+  character(len=32):: host
+  logical          :: local
 
 ! Check that process does not exist already
   if (idx(label) /= 0) &
     print*, 'fsiesta ERROR: siesta process ', trim(label),' exists already'
+
+! Get my IP address, unless socket communication is local
+  if (present(localhost)) then
+    local = localhost
+  else
+    local = .false.
+  endif
+  if (local) then
+    host = 'localhost'
+  else
+    call system("ifconfig eth0 | awk '/inet / { print $2 }'" // &
+                "| sed 's/addr://' > my_ip_addr")
+    open(iu,file='my_ip_addr')
+    read(iu,*) host
+    close(iu)
+!    call system("rm -f my_ip_addr")
+  endif
 
 ! Store data of process
   np = np+1              ! present number of processes
@@ -312,7 +335,7 @@ subroutine open_new_socket( label )
     stop 'fsiesta ERROR: parameter max_procs too small'
   else
     p(np)%label = label
-    p(np)%host = 'localhost'
+    p(np)%host = host
     p(np)%inet = 1
     p(np)%port = 10000+totp
   end if
