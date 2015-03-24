@@ -1,4 +1,19 @@
 ----------------------------------------------------
+March 24, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-350
+Enabled negative numbers in fdf_extra
+
+* When using the list method we had previously
+  not enabled the possibility of doing negative
+  indices (handling of wrap-arounds).
+  Now we do.
+
+* Changed default of Gf.Reuse to true.
+
+modified:
+  Src/fdf_extra.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 March 23, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-349
 Forgot to add NumberOfAtoms to the fdf
 

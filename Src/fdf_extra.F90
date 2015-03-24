@@ -67,6 +67,10 @@ contains
           ! Read in actual list
           call fdf_blists(pline,1,i1,list(n+1:n+i1))
 
+          do i = 1 , i1
+             list(n+i) = correct(list(n+i),low,high)
+          end do
+
           ! update n
           n = n + i1
           

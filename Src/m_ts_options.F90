@@ -428,11 +428,10 @@ contains
        end if
     end if
 
-    ! TODO move to TS.Analyze step..., no need to have this in TS-scheme...
     ! whether or not the electrodes should be re-instantiated
     call fdf_deprecated('TS.CalcGF','TS.Elecs.GF.ReUse')
     call fdf_deprecated('TS.ReUseGF','TS.Elecs.GF.ReUse')
-    err = fdf_get('TS.ReUseGF',.false.)
+    err = fdf_get('TS.ReUseGF',.true.)
     Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF.ReUse',err)
 
     ! whether all calculations should be performed
