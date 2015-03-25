@@ -1683,6 +1683,7 @@ contains
        call de_alloc(zHS, routine='next_GS')
     end if
 
+    deallocate(sc_off)
     call clear_mat_inversion()
 
   contains

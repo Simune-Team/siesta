@@ -245,6 +245,7 @@ contains
 
        if ( n_k /= 0 ) then
           deallocate(kpt,wkpt)
+          nullify(kpt,wkpt)
        end if
 #endif
 
@@ -253,7 +254,7 @@ contains
        ! the spin-index is zero for all,
        ! and one of the allowed spin indices if
        ! a specific one is requested...
-       if ( spin_idx > 0 ) exit
+       if ( ispin == spin_idx ) exit
 
     end do
 

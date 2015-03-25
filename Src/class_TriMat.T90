@@ -114,11 +114,11 @@
     type(TYPE_NAME_) :: thisData
     call de_alloc( thisData%mat, &
             name="val "//trim(thisData%name),routine=STR_TYPE_NAME)	
-    call de_alloc( thisData%tri_info, &
-            name="info "//trim(thisData%name),routine=STR_TYPE_NAME)
     nullify(thisData%tri_nrows)
     nullify(thisData%tri_crows)
     nullify(thisData%tri_cidx)
+    call de_alloc( thisData%tri_info, &
+            name="info "//trim(thisData%name),routine=STR_TYPE_NAME)
   end subroutine delete_Data
 
   elemental function nrows_gTriMat(this) result (n)

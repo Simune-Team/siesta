@@ -497,6 +497,7 @@ contains
 #endif
 
     ! If we should not save the mean, we return immediately.
+    if ( .not. sigma_save ) return
     if ( .not. sigma_mean_save ) return
 
     if ( Node /= 0 ) then

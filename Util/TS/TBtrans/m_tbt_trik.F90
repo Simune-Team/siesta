@@ -133,7 +133,7 @@ contains
     real(dp), pointer :: H(:,:), S(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
-    logical, pointer :: calc_parts(:) => null()
+    logical, allocatable :: calc_parts(:)
 ! ************************************************************
 
 ! ********************** Result arrays ***********************
@@ -343,14 +343,14 @@ contains
 
        ! we need only allocate two work-arrays for
        ! Gf.G.Gf^\dagger
-       call re_alloc(GFGGF_work,1,GFGGF_size,routine='tbtrans')
+       call re_alloc(GFGGF_work,1,GFGGF_size,routine='tri_k')
 
     end if
 
     ! Currently we do not do the quadruple product 
     if ( TT_size > 0 .and. .false. ) then
        ! We must allocate it...
-       call re_alloc(TT_work,1,TT_size,routine='tbtrans')
+       call re_alloc(TT_work,1,TT_size,routine='tri_k')
     end if
 
     ! Initialize the tri-diagonal inversion routine
@@ -405,7 +405,7 @@ contains
     allocate(DOS(r_oDev%n,N_Elec+1))
 
     ! Initialize which parts to calculate
-    call re_alloc(calc_parts,1,DevTri%n)
+    allocate(calc_parts(DevTri%n))
     calc_parts(:) = .true.
     ! If the user ONLY wants the transmission function then we
     ! should tell the program not to calculate any more
@@ -1064,8 +1064,7 @@ contains
 
     deallocate(nE%iE,nE%E)
 
-    deallocate(DOS)
-    call de_alloc(calc_parts)
+    deallocate(DOS,calc_parts)
 
     if ( GFGGF_size > 0 ) then
        call de_alloc(GFGGF_work,routine='tri_k')
@@ -1080,7 +1079,7 @@ contains
 
     call clean_dH( )
 
-    if ( N_proj_T > 0 ) then
+    if ( N_proj_ME > 0 ) then
        deallocate(El_p%Sigma)
        deallocate(bTk,pDOS)
     end if
@@ -1102,8 +1101,8 @@ contains
     ! We can safely delete the orbital distribution, it is local
     call delete(fdist)
 
-    call clear_TriMat_inversion()
     call clear_BiasTriMat_inversion()
+    call clear_TriMat_inversion()
     call clear_mat_inversion()
 
 #ifdef NCDF_4

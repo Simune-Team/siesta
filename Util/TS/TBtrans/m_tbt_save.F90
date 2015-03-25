@@ -359,16 +359,16 @@ contains
        call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
             atts = dic)
        call delete(dic)
-       dic = dic//('info'.kv.'k point weights')
+       dic = ('info'.kv.'k point weights')
        call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
             atts = dic , chunks = (/1/) )
 
     end if
 
 #ifdef TBT_PHONON
-    dic = dic//('info'.kv.'Frequency points')//('unit'.kv.'Ry')
+    dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
 #else
-    dic = dic//('info'.kv.'Energy points')//('unit'.kv.'Ry')
+    dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
          atts = dic, chunks = (/1/) )
@@ -428,6 +428,8 @@ contains
     end if
 
     do iEl = 1 , N_Elec
+
+       call delete(dic)
 
        if ( iEl == N_Elec ) then
           ! check if all are calculated
@@ -1039,10 +1041,8 @@ contains
     call ncdf_inq_dim(ncdf,'no_d',len=no_d)
 
     ! Allocate space
-    allocate(rE(NE),rkpt(3,nkpt),rwkpt(nkpt))
-    allocate(r3(no_d,NE,nkpt))
-    ! Create pivot table
-    allocate(pvt(NE))
+    allocate(rE(NE),pvt(NE))
+    allocate(rkpt(3,nkpt),rwkpt(nkpt))
 
     ! Read in common information
     call ncdf_get_var(ncdf,'E',rE)
@@ -1062,6 +1062,8 @@ contains
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
+       allocate(r3(no_d,NE,nkpt))
+
        ! Get DOS
        call ncdf_get_var(ncdf,'DOS',r3)
        ! Correct unit, from 1/Ry to 1/eV
@@ -1078,12 +1080,9 @@ contains
        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,no_d,r3,'DOS', &
             '# DOS calculated from the Green function, k-averaged')
 
-    end if
+       deallocate(r3)
 
-    ! Clean-up here.
-    ! As the arrays "could" be pretty large we
-    ! reduce the requirement here...
-    deallocate(r3)
+    end if
 
 #ifdef TBT_PHONON
     if ( Node == 0 .and. N_Elec > 1 ) then
@@ -1106,13 +1105,14 @@ contains
                ('T-all'.nin. save_DATA) ) cycle
        end if
 
-       allocate(r3(no_d,NE,nkpt))
 
        call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
        if ( 'DOS-A' .in. save_DATA ) then
-          
+
+          allocate(r3(no_d,NE,nkpt))
           call ncdf_get_var(grp,'ADOS',r3)
+
           ! Correct unit, from 1/Ry to 1/eV
 !$OMP parallel workshare default(shared)
           r3 = r3 * eV
@@ -1126,10 +1126,11 @@ contains
           call name_save(ispin,nspin,ascii_file,end='AVADOS',El1=Elecs(iEl))
           call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,no_d,r3,'DOS', &
                '# DOS calculated from the spectral function, k-averaged')
+
+          deallocate(r3)
           
        end if
 
-       deallocate(r3)
        allocate(r2(NE,nkpt))
 
        do jEl = 1 , N_Elec

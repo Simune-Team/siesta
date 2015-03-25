@@ -1,4 +1,21 @@
 ----------------------------------------------------
+March 25, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-353
+Fixed a small possible memory problem for old intel compilers
+
+* I have checked and re-checked a possibly memory leak in NCDF
+  It seems related to the HDF5-layer which does caching.
+  Hence there is nothing that seems related to my implementation.
+
+modified:
+  Src/class_TriMat.T90
+  Src/m_ts_electrode.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 March 25, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-352
 Enabled tolerance changes in ts
 

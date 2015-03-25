@@ -100,10 +100,10 @@ contains
     ! Reading the Transiesta solution method
     chars = fdf_get('TBT.SolutionMethod','BTD')
     if ( leqi(chars,'full') ) then
-       !ts_method = TS_SPARSITY
+       !ts_method = TS_FULL
        call die('Currently unsupported solution method: '//trim(chars))
     else if ( leqi(chars,'BTD').or.leqi(chars,'tri') ) then
-       ts_method = TS_SPARSITY_TRI
+       ts_method = TS_BTD
     else
        call die('Unrecognized TBtrans solution method: '//trim(chars))
     end if
