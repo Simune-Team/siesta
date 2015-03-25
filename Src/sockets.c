@@ -127,7 +127,7 @@ Args:
 */
 
 {
-   int sockfd, newsockfd, ai_err;
+   int sockfd, ai_err;
 
    if (*inet>0)
    {  // creates an internet socket
@@ -161,7 +161,7 @@ Args:
         
       // makes connection
       sockfd = accept(sockfd,  (struct sockaddr *)&their_addr, &sin_size);
-      if (newsockfd < 0) 
+      if (sockfd < 0) 
       { perror("Error creating INET communication socket: wrong port or server unreachable"); exit(-1); }
    }
    else
