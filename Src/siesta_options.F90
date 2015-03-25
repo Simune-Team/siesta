@@ -660,6 +660,7 @@ MODULE siesta_options
 
     ! Density Matrix Tolerance for achieving Self-Consistency
     dDtol = fdf_get('DM.Tolerance',dDtol_default)
+    dDtol = fdf_get('SCF.DM.Tolerance',dDtol)
     if (ionode) then
       write(6,7) 'redata: DM Tolerance for SCF',dDtol
     endif

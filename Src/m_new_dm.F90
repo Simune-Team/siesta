@@ -370,8 +370,10 @@
                                 ! levels at the appropriate relative position, so it is
                                 ! stored in the TSDE file.
       use m_ts_global_vars,only: ts_method_init, TSmode, TSinit, TSrun
-      use m_ts_options,   only : TS_scf_mode, ts_wmix
-      use siesta_options, only : wmix
+      use m_ts_options,   only : TS_scf_mode
+      use m_ts_options,   only : val_swap
+      use m_ts_options,   only : ts_wmix, ts_Dtol, ts_Htol
+      use siesta_options, only : wmix, dDtol, dHtol
 #endif /* TRANSIESTA */
 
       implicit          none
@@ -398,7 +400,6 @@
 #ifdef TRANSIESTA
       logical                        :: TSDE_found
       type(dSpData2D)                :: EDMread
-      real(dp)                       :: tmp 
 #endif
 #ifdef TIMING_IO
       integer :: i
@@ -558,11 +559,10 @@
 
       if ( TSrun ) then
 
-         ! Correct the mixing weight
-         ! if we are in transiesta
-         tmp     = wmix
-         wmix    = ts_wmix
-         ts_wmix = tmp
+         ! Correct the convergence parameters in transiesta
+         call val_swap(wmix,ts_wmix)
+         call val_swap(dDtol,ts_Dtol)
+         call val_swap(dHtol,ts_Htol)
          
       end if
       

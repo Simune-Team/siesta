@@ -20,9 +20,9 @@ module m_transiesta
 
   use m_ts_sparse, only : ts_sparse_init
   use m_ts_method, only : ts_method
-  use m_ts_method, only : TS_SPARSITY, TS_SPARSITY_TRI
+  use m_ts_method, only : TS_FULL, TS_BTD
 #ifdef MUMPS
-  use m_ts_method, only : TS_SPARSITY_MUMPS
+  use m_ts_method, only : TS_MUMPS
 #endif
 
   use m_ts_tri_init, only : ts_tri_init
@@ -131,7 +131,7 @@ contains
             ucell, nsc, na_u, xa, lasto, sp_dist, sparse_pattern, Gamma, &
             isc_off)
 
-       if ( ts_method == TS_SPARSITY_TRI ) then
+       if ( ts_method == TS_BTD ) then
           ! initialize the tri-diagonal partition
           call ts_tri_init( sp_dist, sparse_pattern , N_Elec, &
                Elecs, IsVolt, ucell, na_u, lasto ,nsc, isc_off, &
@@ -239,7 +239,7 @@ contains
 
        call open_GF(N_Elec,Elecs,uGF,NEn,.false.)
        
-       if ( ts_method == TS_SPARSITY ) then
+       if ( ts_method == TS_FULL ) then
           if ( ts_Gamma ) then
              call ts_fullg(N_Elec,Elecs, &
                   nq, uGF, nspin, na_u, lasto, &
@@ -254,7 +254,7 @@ contains
                   no_u, n_nzs, &
                   H, S, DM, EDM, Ef, kT)
           end if
-       else if ( ts_method == TS_SPARSITY_TRI ) then
+       else if ( ts_method == TS_BTD ) then
           if ( ts_Gamma ) then
              call ts_trig(N_Elec,Elecs, &
                   nq, uGF, nspin, na_u, lasto, &
@@ -270,7 +270,7 @@ contains
                   H, S, DM, EDM, Ef, kT)
           end if
 #ifdef MUMPS
-       else if ( ts_method == TS_SPARSITY_MUMPS ) then
+       else if ( ts_method == TS_MUMPS ) then
           if ( ts_Gamma ) then
              call ts_mumpsg(N_Elec,Elecs, &
                   nq, uGF, nspin, na_u, lasto, &
@@ -315,7 +315,7 @@ contains
 
           call open_GF(N_Elec,Elecs,uGF,1,.true.)
           
-          if ( ts_method == TS_SPARSITY ) then
+          if ( ts_method == TS_FULL ) then
 !             if ( ts_Gamma ) then
 !                call ts_fullg_Fermi(N_Elec,Elecs, &
 !                     nq, uGF, nspin, na_u, lasto, &
@@ -332,7 +332,7 @@ contains
 !             end if
              call die('Currently this correction &
                   &does not function with sparse')
-          else if ( ts_method == TS_SPARSITY_TRI ) then
+          else if ( ts_method == TS_BTD ) then
              if ( ts_Gamma ) then
                 call ts_trig_Fermi(N_Elec,Elecs, &
                      nq, uGF, nspin, na_u, lasto, &
@@ -348,7 +348,7 @@ contains
                      H, S, DM, Ef, kT, Qtot, converged)
              end if
 #ifdef MUMPS
-          else if ( ts_method == TS_SPARSITY_MUMPS ) then
+          else if ( ts_method == TS_MUMPS ) then
 !             if ( ts_Gamma ) then
 !                call ts_mumpsg_Fermi(N_Elec,Elecs, &
 !                     nq, uGF, nspin, na_u, lasto, &
@@ -658,7 +658,7 @@ contains
             mem,'MB'
     end if
 
-    if ( ts_method == TS_SPARSITY_TRI ) then
+    if ( ts_method == TS_BTD ) then
 
        ! Calculate size of the tri-diagonal matrix
        if ( IsVolt ) then
@@ -675,7 +675,7 @@ contains
             write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of tri-diagonal matrices: ', &
             mem,'MB'
-    else if ( ts_method == TS_SPARSITY ) then
+    else if ( ts_method == TS_FULL ) then
        ! Calculate size of the full matrices
        ! Here we calculate number of electrodes not needed to update the cross-terms
        no_E = sum(TotUsedOrbs(Elecs),Elecs(:)%DM_update==0)
@@ -694,7 +694,7 @@ contains
             'transiesta: Memory usage of full matrices: ', &
             mem,'MB'
 #ifdef MUMPS
-    else if ( ts_method == TS_SPARSITY_MUMPS ) then
+    else if ( ts_method == TS_MUMPS ) then
        if ( IONode ) then
           write(*,'(a)')'transiesta: Memory usage is determined by MUMPS.'
           write(*,'(a)')'transiesta: Search in TS_MUMPS_<Node>.dat for: ### Minimum memory.'

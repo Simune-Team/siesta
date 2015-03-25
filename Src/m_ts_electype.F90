@@ -92,7 +92,7 @@ module m_ts_electype
                               ! == 1 means update cross-terms
                               ! == 2 means update everything (no matter Bulk)
      ! whether to re-calculate the GF-file
-     logical :: ReUseGF = .false. 
+     logical :: ReUseGF = .true.
      ! Create a GF-file or re-calculate the self-energies everytime
      logical :: out_of_core = .true. 
      ! In case of 'out_of_core == .false.' we can reduce the number of operations
@@ -416,7 +416,7 @@ contains
           if ( fdf_bnnames(pline) < 2 ) call die('GF-file not supplied')
           this%GFfile = trim(fdf_bnames(pline,2))
 
-       else if ( leqi(ln,'GF-ReUse') ) then
+       else if ( leqi(ln,'GF.ReUse') ) then
 
           this%ReUseGF = fdf_bboolean(pline,1,after=1)
 
@@ -489,7 +489,7 @@ contains
           if ( fdf_bnnames(pline) < 2 ) call die('tbt.GF-file not supplied')
           this%GFfile = trim(fdf_bnames(pline,2))
 
-       else if ( leqi(ln,'tbt.GF-ReUse') ) then
+       else if ( leqi(ln,'tbt.GF.ReUse') ) then
 
           this%ReUseGF = fdf_bboolean(pline,1,after=1)
 

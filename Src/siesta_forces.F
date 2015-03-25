@@ -351,7 +351,8 @@
       use precision,             only: dp
       use parallel,              only: IONode
       use class_dSpData2D
-      use siesta_options,        only: fire_mix, wmix, broyden_maxit
+      use siesta_options,        only: fire_mix, broyden_maxit
+      use siesta_options,        only: wmix, dDtol, dHtol
 
       use sparse_matrices, only : DM_2D, EDM_2D
       use atomlist, only: no_u, lasto
@@ -362,10 +363,11 @@
       use m_ts_global_vars,      only: TSinit, TSrun
       use m_ts_method
       use m_ts_options,          only: N_Elec, Elecs
-      use m_ts_options,          only: ts_wmix, DM_bulk
+      use m_ts_options,          only: DM_bulk
+      use m_ts_options,          only: val_swap
+      use m_ts_options,          only: ts_wmix, ts_Dtol, ts_Htol
       use m_ts_electype
 
-      real(dp) :: tmp
       integer :: iEl, na_a
       integer, allocatable :: allowed_a(:)
       real(dp), pointer :: DM(:,:), EDM(:,:)
@@ -380,11 +382,11 @@
       TSrun  = .true.     ! whether transiesta is running
       iscf   = 0
       
-      ! DANGER (when going back to the DIAGON run, we should re-instantiate
-      ! the original mixing value)
-      tmp     = wmix
-      wmix    = ts_wmix
-      ts_wmix = tmp
+      ! DANGER (when/if going back to the DIAGON run, we should
+      ! re-instantiate the original mixing value)
+      call val_swap(wmix,ts_wmix)
+      call val_swap(dDtol,ts_Dtol)
+      call val_swap(dHtol,ts_Htol)
       
       ! From now on, a new mixing cycle starts,
       ! Check in mixer.F for new mixing schemes.

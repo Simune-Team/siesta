@@ -1,4 +1,32 @@
 ----------------------------------------------------
+March 25, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-352
+Enabled tolerance changes in ts
+
+* The DM/H tolerance can now selectively be set in
+  transiesta runs.
+  Hence a high tolerance in siesta and low in transiesta
+  is a valid input (and probably can be beneficial).
+  
+* Changed internal variable names for ts solution methods
+  to better reflect their meaning, the SPARSITY has
+  been removed as that is implicit in all solution methods.
+
+* Changed the default of re-using a Gf-file to true.
+  The user has to remove the file if re-running a calculation
+  with changed parameters.
+
+modified:
+  Src/m_new_dm.F90
+  Src/m_transiesta.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/ts_init.F90
+
+----------------------------------------------------
 March 24, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-351
 Changed default XML.Write to false
 

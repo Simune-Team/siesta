@@ -9,21 +9,21 @@ module m_ts_method
   
   ! This is the transiesta version utilizing the 
   ! full sparsity pattern of SIESTA.
-  integer, parameter :: TS_SPARSITY = 1
+  integer, parameter :: TS_FULL = 1
 
   ! This is the transiesta version utilizing the 
   ! full sparsity pattern of SIESTA as well 
   ! as the heavily optimized tri-diagonalization
-  integer, parameter :: TS_SPARSITY_TRI = 2
+  integer, parameter :: TS_BTD = 2
 
   ! This is the transiesta version utilizing the 
   ! full sparsity pattern of SIESTA as well 
   ! as the MUMPS library
-  integer, parameter :: TS_SPARSITY_MUMPS = 3
+  integer, parameter :: TS_MUMPS = 3
 
   ! The default solution method (it will be reset
   ! after option reading)
-  integer :: ts_method = TS_SPARSITY_TRI
+  integer :: ts_method = TS_BTD
 
   ! The buffer atoms have type = -1, dev = 0, Electrodes = E_idx
   integer, parameter :: TYP_BUFFER = -1

@@ -19,7 +19,7 @@ module m_ts_init
 
 contains
 
-  subroutine ts_init(wmix, kT, nspin, ucell, na_u, xa, lasto, no_u, inicoor, fincoor )
+  subroutine ts_init(nspin, ucell, na_u, xa, lasto, no_u, inicoor, fincoor )
   ! Routine for initializing everything related to the Transiesta package.
   ! This is to comply with the SIESTA way of initializing at the beginning
   ! and make the code more managable.
@@ -56,8 +56,6 @@ contains
 ! *********************
 ! * INPUT variables   *
 ! *********************
-    real(dp), intent(in) :: wmix
-    real(dp), intent(in) :: kT
     integer, intent(in)  :: nspin
     real(dp), intent(in) :: ucell(3,3)
     integer, intent(in)  :: na_u
@@ -71,6 +69,7 @@ contains
 ! *********************
     integer :: i, ia
     integer :: nC, nTS
+    real(dp) :: mean_kT
 
     if ( isolve .eq. SOLVE_TRANSI ) then
        TSmode = .true.
@@ -80,7 +79,7 @@ contains
     end if
 
     ! Read in options for transiesta
-    call read_ts_options( wmix, kT, ucell , Nmove, na_u , xa, lasto )
+    call read_ts_options(ucell , Nmove, na_u , xa, lasto )
     ! Setup the k-points, must be done after options reading 
     ! (determine the transport direction)
     if ( TSmode .and. .not. onlyS ) then
@@ -95,11 +94,13 @@ contains
     ! If onlyS we do not need to do anything about the electrodes
     if ( onlyS ) return
 
-    ! Check the electrodes
+    ! Check the electrodes (calculate mean temperature)
+    mean_kT = 0._dp
     do i = 1 , N_Elec
        call check_Elec(Elecs(i), nspin,ucell, na_u, xa, lasto, &
             Elecs_xa_EPS, &
             kcell=ts_kscell, kdispl=ts_kdispl)
+       mean_kT = mean_kT + Elecs(i)%mu%kT / N_Elec
     end do
 
     ! Check that an eventual CGrun will fix all electrodes and 
@@ -175,7 +176,7 @@ contains
 
           if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
              
-             call do_Green_Fermi(kT, Elecs(i), &
+             call do_Green_Fermi(mean_kT, Elecs(i), &
                   ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
                   Elecs_xa_Eps, .false. )
 

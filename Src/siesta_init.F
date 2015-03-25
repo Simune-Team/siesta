@@ -460,8 +460,7 @@
       call print_fixed( )
       
 #ifdef TRANSIESTA
-      call ts_init(wmix,temp,nspin,ucell,na_u,xa,lasto,no_u,
-     &     inicoor,fincoor)
+      call ts_init(nspin,ucell,na_u,xa,lasto,no_u,inicoor,fincoor)
 #endif
 
 !     Output memory use before main loop

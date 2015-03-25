@@ -2,6 +2,10 @@ module m_ts_options
 
   use precision, only : dp
   use siesta_options, only : FixSpin, isolve, SOLVE_TRANSI
+
+  ! SIESTA-options also read by transiesta
+  use siesta_options, only : wmix, kT => Temp, dDtol, dHtol
+
   use sys, only : die
 
   use m_ts_electype
@@ -12,6 +16,18 @@ module m_ts_options
 
   public
   save
+
+  ! ###### SIESTA-options ######
+  ! The following options override the siesta settings upon
+  ! entering the transiesta SCF
+
+  ! The mixing weight in the transiesta cycles...
+  real(dp) :: ts_wmix ! = wmix
+  ! The tolerance
+  real(dp) :: ts_Dtol ! = tolerance for density matrix
+  real(dp) :: ts_Htol ! = tolerance for Hamiltonian
+
+  ! ###### end SIESTA-options #####
 
   ! Controls to save the TSHS file
   logical :: TS_HS_save = .true.
@@ -59,16 +75,13 @@ module m_ts_options
   ! * Should only be edited by experienced users *
   real(dp) :: Elecs_xa_EPS = 1.e-4_dp
 
-  ! The mixing weight in the transiesta cycles...
-  real(dp) :: ts_wmix ! = wmix
-
   ! The user can request to analyze the system, returning information about the 
   ! tri-diagonalization partition and the contour
   logical :: TS_Analyze = .false.
   
 contains
   
-  subroutine read_ts_options( wmix, kT, ucell, Nmove, na_u, xa, lasto)
+  subroutine read_ts_options(ucell, Nmove, na_u, xa, lasto)
 
     use alloc
     use files, only : slabel
@@ -108,9 +121,8 @@ contains
 ! *******************
 ! * INPUT variables *
 ! *******************
-    real(dp), intent(in) :: wmix, kT
-    real(dp),intent(in) :: ucell(3,3)
-    integer, intent(in) :: Nmove, na_u, lasto(0:na_u)
+    real(dp), intent(in) :: ucell(3,3)
+    integer,  intent(in) :: Nmove, na_u, lasto(0:na_u)
     real(dp), intent(in) :: xa(3,na_u)
 
 ! *******************
@@ -194,6 +206,8 @@ contains
 
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
+    ts_Dtol = fdf_get('SCF.TS.DM.Tolerance',dDTol)
+    ts_Htol = fdf_get('SCF.TS.H.Tolerance',dHTol)
 
     ! Read in information about the voltage placement.
     chars = fdf_get('TS.Hartree.Position','central')
@@ -208,12 +222,12 @@ contains
     ! Reading the Transiesta solution method
     chars = fdf_get('TS.SolutionMethod','BTD')
     if ( leqi(chars,'full') ) then
-       ts_method = TS_SPARSITY
+       ts_method = TS_FULL
     else if ( leqi(chars,'BTD') .or. leqi(chars,'tri') ) then
-       ts_method = TS_SPARSITY_TRI
+       ts_method = TS_BTD
 #ifdef MUMPS
     else if ( leqi(chars,'mumps') ) then
-       ts_method = TS_SPARSITY_MUMPS
+       ts_method = TS_MUMPS
 #endif
     else
        call die('Unrecognized Transiesta solution method: '//trim(chars))
@@ -283,15 +297,21 @@ contains
        TS_RHOCORR_METHOD = TS_RHOCORR_BUFFER
     else if ( leqi(chars,'fermi') ) then
        TS_RHOCORR_METHOD = TS_RHOCORR_FERMI
+       ! Currently this method only works for BTD solution method
+       if ( ts_method /= TS_BTD ) then
+          call die('Fermi correction only works with BTD solution method')
+       end if
     end if
     TS_RHOCORR_FERMI_TOLERANCE = &
          fdf_get('TS.ChargeCorrection.Fermi.Tolerance',0.01_dp)
     ! Factor for charge-correction
-    TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',0.75_dp)
     if ( TS_RHOCORR_METHOD == TS_RHOCORR_BUFFER ) then
+       TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',0.75_dp)
        if ( 1.0_dp < TS_RHOCORR_FACTOR ) then
           call die("Charge correction factor must be in the range [0;1]")
        endif
+    else
+       TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',2._dp)
     end if
     if ( TS_RHOCORR_FACTOR < 0.0_dp ) then
        call die("Charge correction factor must be larger than 0")
@@ -757,10 +777,10 @@ contains
           write(*,10) 'Transport along unit-cell vector',trim(chars)
           write(*,10) 'Fixing the Hartree potential at plane',trim(chars)
        end if
-       if ( ts_method == TS_SPARSITY ) then
-          write(*,10)'Solution method', 'Sparsity pattern + full inverse'
-       else if ( ts_method == TS_SPARSITY_TRI ) then
-          write(*,10)'Solution method', 'Sparsity pattern + BTD'
+       if ( ts_method == TS_FULL ) then
+          write(*,10)'Solution method', 'Full inverse'
+       else if ( ts_method == TS_BTD ) then
+          write(*,10)'Solution method', 'BTD'
           chars = fdf_get('TS.BTD.Pivot','atom+'//trim(Elecs(1)%name))
           write(*,10)'BTD pivoting method method', trim(chars)
           if ( opt_TriMat_method == 0 ) then
@@ -770,11 +790,13 @@ contains
           end if
           write(*,10)'BTD creation algorithm', trim(chars)
 #ifdef MUMPS
-       else if ( ts_method == TS_SPARSITY_MUMPS ) then
-          write(*,10)'Solution method', 'Sparsity pattern + MUMPS library'
+       else if ( ts_method == TS_MUMPS ) then
+          write(*,10)'Solution method', 'MUMPS'
 #endif
        end if
-       write(*,8) 'TranSIESTA SCF cycle mixing weight',ts_wmix
+       write(*,8) 'SCF-TS mixing weight',ts_wmix
+       write(*,9) 'SCF-TS DM tolerance',ts_Dtol
+       write(*,9) 'SCF-TS Hamiltonian tolerance',ts_Htol
 
        select case ( TS_scf_mode )
        case ( 0 )
@@ -1154,10 +1176,19 @@ contains
 6   format('ts_options: ',a,t53,'=',f10.4,tr1,a)
 7   format('ts_options: ',a,t53,'=',f12.6,tr1,a)
 8   format('ts_options: ',a,t53,'=',f10.4)
+9   format('ts_options: ',a,t53,'=',tr1,e9.3)
 10  format('ts_options: ',a,t53,'=',4x,a)
 11  format('ts_options: ',a)
 15  format('ts_options: ',a,t53,'= ',i0,' x ',i0,' x ',i0)
     
   end subroutine read_ts_options
+
+  subroutine val_swap(v1,v2)
+    real(dp), intent(inout) :: v1, v2
+    real(dp) :: tmp
+    tmp = v1
+    v1  = v2
+    v2  = tmp
+  end subroutine val_swap
   
 end module m_ts_options
