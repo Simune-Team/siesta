@@ -30,11 +30,14 @@
 !     of matrix elements?
 
       qsol = 0.0_dp
+!$OMP parallel do default(shared), collapse(2),
+!$OMP&private(ispin,io), reduction(+:qsol)
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
           qsol = qsol + Dscf(io,ispin) * s(io)
         enddo
       enddo
+!$OMP end parallel do
 #ifdef MPI
       call globalize_sum(qsol,buffer1)
       qsol = buffer1
@@ -67,7 +70,10 @@
       ! Actually normalize only if not disallowed by the user
       !
       if (normalize_dm_during_scf) then
-         call normalize()
+!$OMP parallel workshare default(shared)
+         Dscf(1:maxnh,1:nspin) = Dscf(1:maxnh,1:nspin) * qtot/qsol
+         Escf(1:maxnh,1:nspin) = Escf(1:maxnh,1:nspin) * qtot/qsol
+!$OMP end parallel workshare
       else
          if (IOnode) then
             write(6,'(a,g15.6)')
@@ -75,14 +81,6 @@
      &           log10(abs((qsol/qtot)-1.0_dp))
          endif
       endif
-
-      CONTAINS
-
-      subroutine normalize()
-      Dscf(1:maxnh,1:nspin) = Dscf(1:maxnh,1:nspin) * qtot/qsol
-      Escf(1:maxnh,1:nspin) = Escf(1:maxnh,1:nspin) * qtot/qsol
-      end subroutine normalize
-      
 
       END subroutine normalize_dm
 

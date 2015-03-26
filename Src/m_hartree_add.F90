@@ -149,6 +149,10 @@ contains
     count_is(:) = 0
 
     ! We do a loop in the local grid
+!$OMP parallel do default(shared), &
+!$OMP firstprivate(offset_r,dMesh,dL), &
+!$OMP private(iz,llZ,iy,llYZ,ix,iC,ll,i), &
+!$OMP reduction(+:count_is)
     do iz = 0 , meshl(3) - 1
        llZ(:) = offset_r + iz*dL(:,3)
        do iy = 0 , meshl(2) - 1
@@ -221,6 +225,7 @@ contains
           end do
        end do
     end do
+!$OMP end parallel do
 
 #ifdef MPI
     ! Sum the counts
@@ -341,8 +346,11 @@ contains
 
     ! The mesh is running along:
     !  x-direction, then y, then z
-    imesh = 0
+!$OMP parallel do default(shared), &
+!$OMP firstprivate(offset_r,dMesh,dL), &
+!$OMP private(iz,llZ,iy,llYZ,ix,ll,i,imesh)
     do iz = 0 , meshl(3) - 1
+       imesh = iz * meshl(2) * meshl(1)
        llZ(:) = offset_r(:) + iz*dL(:,3)
        do iy = 0 , meshl(2) - 1
           llYZ(:) = iy*dL(:,2) + llZ(:)
@@ -414,12 +422,8 @@ contains
           end do
        end do
     end do 
+!$OMP end parallel do
 
-    if ( imesh /= npt_l ) then
-       call die('Geometry.Hartree did not loop on all points. Something &
-            &needs to be checked.')
-    end if
-    
   end subroutine hartree_add
 
   ! Routine for initialization of the options

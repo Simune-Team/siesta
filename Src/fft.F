@@ -218,11 +218,13 @@ C  FFT in Y direction
 C
       if (LocalPoints) then
         nft = size(ft)
+!$OMP parallel do default(shared), private(i,IOffSet)
         do i=0,n3l-1
           IOffSet=2*n1lf*n2*i
           call gpfa(ft(IOffSet+1:nft),ft(IOffSet+2:nft),trigs(:,2),
      .            2*n1lf,2,n2,n1lf,-isn)
         enddo
+!$OMP end parallel do
       endif
 C
 C  Redistribute data back to original form
@@ -266,11 +268,13 @@ C
 C
 C  FFT in Y direction
 C
+!$OMP parallel do default(shared), private(i,IOffSet)
       do i=0,n3-1
          IOffSet=2*n1*n2*i
          call gpfa(f(IOffSet+1:nf),f(IOffSet+2:nf),trigs(:,2),
      .             2*n1,2,n2,n1,-isn)
       enddo
+!$OMP end parallel do
 C
 C  FFT in Z direction
 C
@@ -282,9 +286,11 @@ C  Scale values
 C
       if (LocalPoints.and.isn.gt.0) then
         scale=1.0_dp/dble(ng)
+!$OMP parallel do default(shared), private(i)
         do i=1,2*n
           f(i)=f(i)*scale
         enddo
+!$OMP end parallel do
       endif
 
       call timer( 'fft', 2 )

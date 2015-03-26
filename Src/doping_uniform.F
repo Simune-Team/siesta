@@ -161,7 +161,9 @@ C     Threshold charge for points where background is added
         call die('ERROR: wrong task in doping_uniform.F')
       endif
 
+!$OMP parallel workshare default(shared)
       where (rhoatm >  threshold_charge_per_spin) rho = rho + fact
+!$OMP end parallel workshare
 
       end subroutine doping_uniform
 

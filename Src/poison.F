@@ -141,7 +141,7 @@ C     Multiply by 8*PI/G2 to get the potential
 
 !$OMP parallel do default(shared), 
 !$OMP&private(J3,J3L,I3,J2,J2L,I2,J1,I1,G,G2), 
-!$OMP&private(J,VG,DU,U,C)
+!$OMP&private(J,VG,DU,C), reduction(+:U,STRESS)
       do J3 = J3min,J3max
         J3L = J3 - J3min 
         if (J3.gt.NG3/2) then

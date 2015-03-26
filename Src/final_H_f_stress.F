@@ -84,16 +84,20 @@
 #endif  /* TRANSIESTA */
 
 !     Initialize Hamiltonian ........................................
+!$OMP parallel workshare default(shared)
       H = 0.0_dp
+!$OMP end parallel workshare
 
 !     Initialize forces and stress ...................
       nullify(fal)
       call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'final_H_f_stress' )
 
+!$OMP parallel workshare default(shared)
       fa(1:3,1:na_u)   = 0.0_dp
       fal(1:3,1:na_u)  = 0.0_dp
       stress(1:3,1:3)  = 0.0_dp
       stressl(1:3,1:3) = 0.0_dp  ! fal already initialized
+!$OMP end parallel workshare
 
 ! Neutral-atom: energy, forces and stress ............................
       call naefs( na_u, na_s, scell, xa, indxua, rmaxv,
@@ -170,12 +174,16 @@
       call re_alloc( fatmp, 1, 3, 1, na_u, 'fatmp', 'final_H_f_stress' )
       call globalize_sum(stressl(1:3,1:3),stresstmp(1:3,1:3))
       call globalize_sum( fal(1:3,1:na_u), fatmp(1:3,1:na_u) )
+!$OMP parallel workshare default(shared)
       stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
+!$OMP end parallel workshare
       call de_alloc( fatmp, 'fatmp', 'final_H_f_stress' )
 #else
+!$OMP parallel workshare default(shared)
       stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
+!$OMP end parallel workshare
 #endif
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
 

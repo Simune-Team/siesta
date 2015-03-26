@@ -1,4 +1,28 @@
 ----------------------------------------------------
+March 26, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-355
+Added OpenMP statements several new places, bugfix
+
+* Bugfix for OpenMP in poisson.
+  A variable in poisson should have been reduced.
+
+* Enabling threading in these routines:
+
+   hartree_add
+   charge_add
+   doping_uniform
+   mesh_subs
+
+modified:
+  Src/doping_uniform.F
+  Src/fft.F
+  Src/final_H_f_stress.F
+  Src/m_charge_add.F90
+  Src/m_hartree_add.F90
+  Src/meshsubs.F
+  Src/normalize_dm.F
+  Src/poison.F
+
+----------------------------------------------------
 March 26, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-354
 Added gaussian spheres to the geometry modules
 
