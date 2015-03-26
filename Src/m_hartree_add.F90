@@ -104,6 +104,13 @@ module m_hartree_add
   end type h_coord_exp
   type(h_coord_exp), allocatable :: c_e(:)
 
+  integer :: N_c_g = 0
+  type h_coord_gauss
+     type(geo_coord_gauss) :: geo
+     real(dp) :: hartree
+  end type h_coord_gauss
+  type(h_coord_gauss), allocatable :: c_g(:)
+
 contains
 
   ! We need to initialize information about the grid which we distribute in
@@ -204,6 +211,12 @@ contains
                 end if
                 iC = iC + 1
              end do
+             do i = 1 , N_c_g
+                if ( voxel_in(c_g(i)%geo,ll, dMesh) ) then
+                   count_is(iC) = count_is(iC) + 1
+                end if
+                iC = iC + 1
+             end do
              
           end do
        end do
@@ -261,6 +274,11 @@ contains
     do i = 1 , N_c_e
        tot_hartree = tot_hartree + c_e(i)%hartree
        call hartree_print('Exp. spheres',c_e(i)%hartree,count_is(iC))
+       iC = iC + 1
+    end do
+    do i = 1 , N_c_g
+       tot_hartree = tot_hartree + c_g(i)%hartree
+       call hartree_print('Gaussian spheres',c_g(i)%hartree,count_is(iC))
        iC = iC + 1
     end do
 
@@ -386,6 +404,12 @@ contains
                         voxel_val(c_e(i)%geo,ll,dMesh) * c_e(i)%hartree
                 end if
              end do
+             do i = 1 , N_c_g
+                if ( voxel_in(c_g(i)%geo,ll, dMesh) ) then
+                   Vscf(imesh) = Vscf(imesh) + &
+                        voxel_val(c_g(i)%geo,ll,dMesh) * c_g(i)%hartree
+                end if
+             end do
 
           end do
        end do
@@ -500,6 +524,14 @@ contains
        call fgeo_read('Geometry.Hartree', N_c_e, c_e(:)%geo, &
             c_e(:)%hartree , par_unit='Ry')
        N_geom = N_geom + N_c_e
+    end if
+
+    call fgeo_count('Geometry.Hartree', GEOM_COORD_GAUSS, N_c_g)
+    if ( N_c_g > 0 ) then
+       allocate(c_g(N_c_g))
+       call fgeo_read('Geometry.Hartree', N_c_g, c_g(:)%geo, &
+            c_g(:)%hartree , par_unit='Ry')
+       N_geom = N_geom + N_c_g
     end if
 
   end subroutine read_hartree_add

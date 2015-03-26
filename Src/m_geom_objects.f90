@@ -17,6 +17,7 @@
 !    m_geom_plane
 !    m_geom_square
 !    m_geom_coord
+!    m_geom_box
 
 module m_geom_objects
 
@@ -39,6 +40,7 @@ module m_geom_objects
      module procedure voxel_in_square_exp
      module procedure voxel_in_box_delta
      module procedure voxel_in_coord_exp
+     module procedure voxel_in_coord_gauss
   end interface 
 
   interface voxel_val
@@ -50,6 +52,7 @@ module m_geom_objects
      module procedure voxel_val_square_exp
      module procedure voxel_val_box_delta
      module procedure voxel_val_coord_exp
+     module procedure voxel_val_coord_gauss
   end interface 
 
   interface fgeo_read
@@ -61,6 +64,7 @@ module m_geom_objects
      module procedure fgeo_read_square_exp
      module procedure fgeo_read_box_delta
      module procedure fgeo_read_coord_exp
+     module procedure fgeo_read_coord_gauss
   end interface 
 
 end module m_geom_objects

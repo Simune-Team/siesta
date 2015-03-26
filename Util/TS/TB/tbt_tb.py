@@ -441,6 +441,7 @@ class TBT_Geom(SIESTA_UNITS):
                 for ia in xrange(self.na_u):
                     fh.write(ptbl.Z_short(self.Z[ia]) +
                              ' {0:.5f} {1:.5f} {2:.5f}\n'.format(*self.xa[ia,:]))
+                fh.write('\n')
 
     def fdf(self,fname=None,fmt='.5f'):
         """

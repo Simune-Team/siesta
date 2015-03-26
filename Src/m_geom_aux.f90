@@ -21,16 +21,22 @@ module m_geom_aux
 
   ! integer requests for types
   integer, parameter :: GEOM_NONE = 0
+
+  ! Plane geometries
   integer, parameter :: GEOM_PLANE_DELTA = 100
   integer, parameter :: GEOM_PLANE_GAUSS = 101
   integer, parameter :: GEOM_PLANE_EXP   = 102
 
+  ! Square geometries
   integer, parameter :: GEOM_SQUARE_DELTA = 200
   integer, parameter :: GEOM_SQUARE_GAUSS = 201
   integer, parameter :: GEOM_SQUARE_EXP   = 202
 
+  ! Coordinate geometries
   integer, parameter :: GEOM_COORD_EXP = 300
+  integer, parameter :: GEOM_COORD_GAUSS = 301
 
+  ! 3D boxes
   integer, parameter :: GEOM_BOX_DELTA = 400
 
 contains
@@ -135,6 +141,8 @@ contains
           
              if ( leqi(g_t,'exp') ) then
                 t = GEOM_COORD_EXP
+             else if ( leqi(g_t,'gauss') ) then
+                t = GEOM_COORD_GAUSS
              end if
 
           end if

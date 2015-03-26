@@ -116,6 +116,14 @@ module m_charge_add
   end type c_coord_exp
   type(c_coord_exp), allocatable :: c_e(:)
 
+  integer :: N_c_g = 0
+  type c_coord_gauss
+     type(geo_coord_gauss) :: geo
+     real(dp) :: charge
+     real(dp) :: dRho
+  end type c_coord_gauss
+  type(c_coord_gauss), allocatable :: c_g(:)
+
 contains
 
   ! We need to initialize information about the grid which we distribute
@@ -240,6 +248,13 @@ contains
                 end if
                 iC = iC + 1
              end do
+             do i = 1 , N_c_g
+                if ( voxel_in(c_g(i)%geo,ll, dMesh) ) then
+                   count_is(iC) = count_is(iC) + 1
+                   val_sum(iC)  = val_sum(iC) + voxel_val(c_g(i)%geo,ll,dMesh)
+                end if
+                iC = iC + 1
+             end do
              
           end do
        end do
@@ -310,6 +325,12 @@ contains
        tot_char = tot_char + c_e(i)%charge
        call calc_dRho_print('Exp. spheres', &
             c_e(i)%charge,dVol,val_sum(iC),c_e(i)%dRho,count_is(iC))
+       iC = iC + 1
+    end do
+    do i = 1 , N_c_g
+       tot_char = tot_char + c_g(i)%charge
+       call calc_dRho_print('Gaussian spheres', &
+            c_g(i)%charge,dVol,val_sum(iC),c_g(i)%dRho,count_is(iC))
        iC = iC + 1
     end do
 
@@ -442,6 +463,12 @@ contains
                 if ( voxel_in(c_e(i)%geo,ll, dMesh) ) then
                    DRho(imesh) = DRho(imesh) + lsign * &
                         voxel_val(c_e(i)%geo,ll,dMesh) * c_e(i)%dRho
+                end if
+             end do
+             do i = 1 , N_c_g
+                if ( voxel_in(c_g(i)%geo,ll, dMesh) ) then
+                   DRho(imesh) = DRho(imesh) + lsign * &
+                        voxel_val(c_g(i)%geo,ll,dMesh) * c_g(i)%dRho
                 end if
              end do
 
@@ -643,6 +670,23 @@ contains
        end if
        N_geom = N_geom + N_c_e
        char_net = char_net + sum(c_e(:)%charge)
+    end if
+
+    call fgeo_count('ChargeGeometries', GEOM_COORD_GAUSS, N_c_g)
+    i = 0
+    if ( N_c_g == 0 ) then
+       call fgeo_count('Geometry.Charge', GEOM_COORD_GAUSS, N_c_g)
+       i = 1
+    end if
+    if ( N_c_g > 0 ) then
+       allocate(c_g(N_c_g))
+       if ( i == 0 ) then
+          call fgeo_read('ChargeGeometries', N_c_g, c_g(:)%geo, c_g(:)%charge)
+       else
+          call fgeo_read('Geometry.Charge', N_c_g, c_g(:)%geo, c_g(:)%charge)
+       end if
+       N_geom = N_geom + N_c_g
+       char_net = char_net + sum(c_g(:)%charge)
     end if
     
   end subroutine read_charge_add

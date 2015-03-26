@@ -1,4 +1,20 @@
 ----------------------------------------------------
+March 26, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-354
+Added gaussian spheres to the geometry modules
+
+* Enabling gaussian spheres for charges and Hartree add
+  Gaussian spheres can better simulate core charges and 
+  potentials than exponential curves. 
+
+modified:
+  Src/m_charge_add.F90
+  Src/m_geom_aux.f90
+  Src/m_geom_coord.f90
+  Src/m_geom_objects.f90
+  Src/m_hartree_add.F90
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 March 25, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-353
 Fixed a small possible memory problem for old intel compilers
 
