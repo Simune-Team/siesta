@@ -1,4 +1,22 @@
 ----------------------------------------------------
+March 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-357
+Clarification of reflection for projections
+
+* Projections and reflection still not functioning 
+  correct. It should now be calculated, but it is 
+  not saved.
+
+* Removed chunking for T variables in nc file.
+
+* Bugfix for eigenvalues for projections using phtrans.
+
+modified:
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 March 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-356
 Added reflection coefficient
 

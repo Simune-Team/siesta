@@ -1293,7 +1293,7 @@ contains
 #ifdef MPI
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
-    
+
     ! There is nothing to initialize
     if ( N_mol == 0 ) return
 
@@ -1308,7 +1308,7 @@ contains
     end if
 
     if ( exist ) then
-       
+
        ! We just make sure the indices are correct
        ! We do not assure the projections
        ! This will actually allow the user to replace
@@ -1370,7 +1370,7 @@ contains
           dic = ('atom'.kvp.mols(im)%atom%r)//('orb'.kvp.mols(im)%orb%r)
           call ncdf_assert(grp,is_same,vars = dic )
           call check(dic,is_same,'Projection atom list &
-                  &does not conform to the current simulation.',.false.)
+               &does not conform to the current simulation.',.false.)
 
           ! The variable 'eig' have to be present,
           ! We do not save the wave-function. 
@@ -1379,12 +1379,12 @@ contains
           dic = ('eig'.kv.1)
           call ncdf_assert(grp,is_same,has_vars=dic)
           call check(dic,is_same,'Projection eigen values &
-                  &does not exist in the current simulation.')
+               &does not exist in the current simulation.')
 
           ! Loop all groups
           Np = size(mols(im)%proj)
           do ip = 1 , Np
-             
+
              call ncdf_open_grp(grp,mols(im)%proj(ip)%name,grp2)
 
              dic = ('nlvl'.kv.mols(im)%proj(ip)%n)
@@ -1396,15 +1396,15 @@ contains
              do iE = 1 , r_tmp%n
                 r_tmp%r(iE) = mols(im)%lvls%r(r_tmp%r(iE))
              end do
-             
+
              ! Check the levels
              dic = ('lvl'.kvp.r_tmp%r)
              call ncdf_assert(grp2,is_same,vars = dic )
              call check(dic,is_same,'Projection level list &
                   &does not conform to the current simulation.',.false.)
-             
+
           end do
-          
+
        end do
 
        ! The number of energy points must
@@ -1439,7 +1439,7 @@ contains
     end if
 
     call timer('proj_init',1)
-    
+
     ! For easiness we do not parallelize this
     ! Typically molecules are also much smaller
     ! and needs only one diagonalization
@@ -1467,7 +1467,11 @@ contains
        call ncdf_def_dim(ncdf,'na_b',a_Buf%n)
     end if
 
+#ifdef TBT_PHONON
+    dic = ('source'.kv.'PHtrans projection')
+#else
     dic = ('source'.kv.'TBtrans projection')
+#endif
 
     tmp = datestring()
     dic = dic//('date'.kv.tmp(1:10))
@@ -1525,9 +1529,9 @@ contains
     end if
 
 #ifdef TBT_PHONON
-    dic = dic//('info'.kv.'Frequency points')//('unit'.kv.'Ry')
+    dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
 #else
-    dic = dic//('info'.kv.'Energy points')//('unit'.kv.'Ry')
+    dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
          atts = dic)
@@ -1548,7 +1552,7 @@ contains
     ! This ensures that a continuation can check for 
     ! the same k-points in the same go.
     if ( .not. isGamma ) then
-       
+
        allocate(rv(3,nkpt))
        do i = 1 , nkpt
           call kpoint_convert(TSHS%cell,kpt(:,i),rv(:,i),1)
@@ -1636,7 +1640,7 @@ contains
                (/'no  ','nlvl','nkpt'/),atts=dic, &
                compress_lvl = cmp_lvl , chunks = (/no,mols(im)%lvls%n,1/) ) 
        end if
-       
+
        ! Define variables to contain the molecule
        dic = ('info'.kv.'Molecule atoms')
        call ncdf_def_var(grp,'atom',NF90_INT,(/'na'/),atts=dic)
@@ -1680,9 +1684,9 @@ contains
           ! Create the DOS variable (actually just kb_SD * bGfk)
           !dic = dic//('info'.kv.'Single projected density of states <|Gf|>kb_SD')
           !call ncdf_def_var(grp,'DOS',NF90_DOUBLE,(/'no  ','nlvl','ne  ','nkpt'/), atts = dic)
-          
+
        end if
-       
+
        ! Number of projections on this molecule...
        Np = size(mols(im)%proj)
 
@@ -1691,7 +1695,7 @@ contains
 
           call ncdf_def_grp(grp,mols(im)%proj(ip)%name,grp2)
           call ncdf_def_dim(grp2,'nlvl',mols(im)%proj(ip)%n)
-          
+
           dic = dic//('info'.kv.'State levels associated with this projection')
           call ncdf_def_var(grp2,'lvl',NF90_INT,(/'nlvl'/), atts = dic)
           ! Create the correct indices
@@ -1712,40 +1716,59 @@ contains
           !dic = dic//('info'.kv.'Projected density of states <|Gf|>kb_SD')
           !call ncdf_def_var(grp2,'DOS',NF90_DOUBLE,(/'no  ','ne  ','nkpt'/), atts = dic)
 
-          ! Loop all transport stuff and create the variables
-          ! needed
+          ! Loop all transport stuff and create the variables needed
           Elec_p: do iE = 1 , N_Elec
              do it = 1 , N_proj_T
+                call delete(dic)
                 if ( ProjMolEl_same(proj_T(it)%L, &
                      Elecs(iE),mols(im),ip) ) then
                    ! we have transport from this electrode molecular projection
                    call ncdf_def_grp(grp2,trim(Elecs(iE)%name),grp3)
 
+                   dic = ('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
+                   call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
+                        atts = dic)
+                   call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
+#ifdef TBT_PHONON
+                   dic = dic//('info'.kv.'Phonon temperature')
+#else
+                   dic = dic//('info'.kv.'Electronic temperature')
+#endif
+                   call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
+                        atts = dic)
+                   call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
+
                    if ( 'proj-DOS-A' .in. save_DATA ) then
                       dic = dic//('info'.kv.'Spectral function density of states')
+                      dic = dic//('unit'.kv.'1/Ry')
                       call ncdf_def_var(grp3,'ADOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
                            atts = dic, &
                            compress_lvl = cmp_lvl, chunks = (/r%n,1,1/))
                    end if
 
+                   call delete(dic)
+
                    if ( 'proj-orb-current' .in. save_DATA ) then
                       dic = ('info'.kv.'Orbital current')
-
                       call ncdf_def_var(grp2,'J',NF90_DOUBLE,(/'nnzs'/), &
                            atts = dic, compress_lvl = cmp_lvl , &
                            chunks = (/nnzs_dev/) )
-                      
+
                    end if
-                   
-                   dic = dic//('info'.kv.'Transmission')
 
                    ! Now we create all transport related quantities
                    do ipt = 1 , size(proj_T(it)%R)
+
+                      dic = dic//('info'.kv.'Transmission')
 
                       i = proj_T(it)%R(ipt)%idx
                       if ( i < 0 ) then
                          tmp = trim(Elecs(-i)%name)
                          if ( i == -iE ) then
+                            dic = dic//('info'.kv.'Gf transmission')
+                            call ncdf_def_var(grp3,trim(tmp)//'.T',NF90_DOUBLE, (/'ne  ','nkpt'/), &
+                                 atts = dic)
+                            dic = dic//('info'.kv.'Reflection')
                             tmp = trim(tmp)//'.R'
                          else
                             tmp = trim(tmp)//'.T'
@@ -1753,6 +1776,10 @@ contains
                       else
                          tmp = proj_ME_name(proj_T(it)%R(ipt))
                          if ( proj_T(it)%R(ipt)%ME%El == Elecs(iE) ) then
+                            dic = dic//('info'.kv.'Gf transmission')
+                            call ncdf_def_var(grp3,trim(tmp)//'.T',NF90_DOUBLE, (/'ne  ','nkpt'/), &
+                                 atts = dic)
+                            dic = dic//('info'.kv.'Reflection')
                             tmp = trim(tmp)//'.R'
                          else
                             tmp = trim(tmp)//'.T'
@@ -1761,9 +1788,9 @@ contains
 
                       call ncdf_def_var(grp3,tmp,NF90_DOUBLE, (/'ne  ','nkpt'/), &
                            atts = dic)
-                      
+
                    end do
-                   
+
                    ! this electrode will only occur once
                    cycle Elec_p
 
@@ -1775,17 +1802,16 @@ contains
        call delete(dic)
        call rgn_delete(r_tmp)
 
-       ! Allocate space for calculating the Eigen-values of
-       ! the MPSH
+       ! Allocate space for calculating the eigen-values of the MPSH
        allocate(eig(no))
        if ( isGamma ) then 
           allocate(rS_sq(no,no),rv(no,no))
        else
           allocate(zS_sq(no,no),zv(no,no))
        end if
-       
-    ikpt: do ik = 1 + Node , mol_nkpt , Nodes
 
+    ikpt: do ik = 1 + Node , mol_nkpt , Nodes
+       
        if ( isGamma ) then 
           ! We know that ik == mol_nkpt == 1
           call calc_sqrt_S(TSHS%S_1D,mols(im)%orb,rS_sq)
@@ -1793,7 +1819,7 @@ contains
           call calc_sqrt_S(TSHS%S_1D,product(TSHS%nsc),TSHS%sc_off, &
                mols(im)%orb,zS_sq,kpt(:,ik))
        end if
-          
+       
        if ( isGamma ) then
           call calc_Eig(TSHS%H_2D,TSHS%S_1D,mols(im)%orb,eig,rv)
           call norm_Eigenstate(mols(im)%orb%n,rv,rS_sq)
@@ -1802,6 +1828,17 @@ contains
                TSHS%sc_off,mols(im)%orb,eig,zv,kpt(:,ik))
           call norm_Eigenstate(mols(im)%orb%n,zv,zS_sq)
        end if
+
+#ifdef TBT_PHONON
+       ! Calculate the frequency
+       do iEf = 1 , no 
+          if ( eig(iEf) > 0._dp ) then
+             eig(iEf) =  sqrt( eig(iEf))
+          else
+             eig(iEf) = -sqrt(-eig(iEf))
+          end if
+       end do
+#endif
           
        ! figure out the Ef level
        do iEf = 1 , no 
@@ -1965,6 +2002,10 @@ contains
           end if
           tmp = proj_ME_name(proj_T(it)%R(ipt))
           if ( proj_T(it)%R(ipt)%ME%El == Elecs(-i) ) then
+             dic = dic//('info'.kv.'Gf transmission')
+             call ncdf_def_var(grp,trim(tmp)//'.T',NF90_DOUBLE, (/'ne  ','nkpt'/), &
+                  atts = dic)
+             dic = dic//('info'.kv.'Reflection')
              tmp = trim(tmp)//'.R'
           else
              tmp = trim(tmp)//'.T'
@@ -1988,14 +2029,14 @@ contains
             &and energy levels might shift.'
     end if
 
+    call timer('proj_init',2)
+
 #ifdef MPI
     ! This ensures the timing is correct
     ! AND that the below die command will not be 
     ! executed prematurely.
     call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
-
-    call timer('proj_init',2)
 
     if ( fdf_get('TBT.Projs.Init',.false.) ) then
        call die('You have requested to only initialize the &

@@ -233,7 +233,7 @@ contains
        ! We allocate data segment for retaining all information
        ! We need to save bGammak, T->N_Elec
        ! In this data array we save 3 quantities:
-       allocate(bTk(io,N_proj_T))
+       allocate(bTk(io+1,N_proj_T))
        allocate(pDOS(r_oDev%n,2,N_proj_T))
 
     end if
@@ -938,9 +938,13 @@ contains
                     r_oDev, p_E%ME%mol%orb)
 
                if ( 'proj-T-reflect' .in. save_DATA ) then
-                  ! I am not sure this will work!
-                  !call Gf_Gamma(zwork_tri,El_pElecs(iEl),T(N_Elec+1,iEl))
+                  ! Copy over pivoting table and the size
+                  El_p%inDpvt%n =  p_E%ME%mol%pvt%n
+                  El_p%inDpvt%r => p_E%ME%mol%pvt%r
+                  call Gf_Gamma(zwork_tri,El_p, &
+                       bTk(size(proj_T(ipt)%R)+1,ipt))
                end if
+
 
             else
                
@@ -953,7 +957,8 @@ contains
 
                if ( 'proj-T-reflect' .in. save_DATA ) then
                   ! This should work, but I currently do not allow it :(
-                  !call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
+                  call Gf_Gamma(zwork_tri,Elecs(iEl), &
+                       bTk(1+size(proj_T(ipt)%R),ipt))
                end if
 
             end if
@@ -1000,7 +1005,7 @@ contains
                if ( p_E%idx > 0 ) then
 
                   El_p%Gamma => El_p%Sigma(:)
-                  El_p%inDpvt%n = p_E%ME%mol%pvt%n
+                  El_p%inDpvt%n =  p_E%ME%mol%pvt%n
                   El_p%inDpvt%r => p_E%ME%mol%pvt%r
                   call proj_Mt_mix(p_E%ME%mol,p_E%idx, El_p%Gamma, p_E%ME%bGk)
                   

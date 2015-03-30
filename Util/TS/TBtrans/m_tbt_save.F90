@@ -481,7 +481,7 @@ contains
 
              dic = dic//('info'.kv.'Transmission')
              call ncdf_def_var(grp,trim(Elecs(jEl)%name)//'.T',NF90_DOUBLE,(/'ne  ','nkpt'/), &
-                  atts = dic , chunks = (/1/), compress_lvl = cmp_lvl)
+                  atts = dic )
              
           else
 
@@ -489,11 +489,11 @@ contains
              ! and utilise this for saving the reflection.
              dic = dic//('info'.kv.'Reflection')
              call ncdf_def_var(grp,trim(tmp)//'.R',NF90_DOUBLE,(/'ne  ','nkpt'/), &
-                  atts = dic , chunks = (/1/), compress_lvl = cmp_lvl)
+                  atts = dic )
 
-             dic = dic//('info'.kv.'Gf reflection')
+             dic = dic//('info'.kv.'Gf transmission')
              call ncdf_def_var(grp,trim(tmp)//'.T',NF90_DOUBLE,(/'ne  ','nkpt'/), &
-                  atts = dic , chunks = (/1/), compress_lvl = cmp_lvl)
+                  atts = dic )
 
           end if
           

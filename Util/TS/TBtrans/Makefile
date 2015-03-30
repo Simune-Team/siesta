@@ -4,8 +4,6 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 
-# Please see note about Linear-Algebra libraries below
-
 default: what tbtrans 
 
 VPATH:=$(shell pwd)/../../../Src
