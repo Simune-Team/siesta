@@ -357,7 +357,7 @@ contains
           write(*,1) 'Saving DOS from spectral functions',.false.
        end if
        write(*,1) 'Calc. T between all electrodes',('T-all'.in.save_DATA)
-       write(*,1) 'Calc. "reflection"',('T-reflect'.in.save_DATA)
+       write(*,1) 'Calc. reflection',('T-reflect'.in.save_DATA)
        if ( spin_idx == 0 ) then
           write(*,11) 'Calculate for all spin-channels'
        else

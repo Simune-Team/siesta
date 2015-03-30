@@ -491,6 +491,10 @@ contains
              call ncdf_def_var(grp,trim(tmp)//'.R',NF90_DOUBLE,(/'ne  ','nkpt'/), &
                   atts = dic , chunks = (/1/), compress_lvl = cmp_lvl)
 
+             dic = dic//('info'.kv.'Gf reflection')
+             call ncdf_def_var(grp,trim(tmp)//'.T',NF90_DOUBLE,(/'ne  ','nkpt'/), &
+                  atts = dic , chunks = (/1/), compress_lvl = cmp_lvl)
+
           end if
           
        end do
@@ -721,15 +725,15 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     real(dp), intent(in) :: DOS(:,:)
-    real(dp), intent(in) :: T(N_Elec,N_Elec)
+    real(dp), intent(in) :: T(N_Elec+1,N_Elec)
     type(dict), intent(in) :: save_DATA
 
     type(hNCDF) :: ncdf, grp
     integer :: iEl, jEl
-    real(dp) :: rE
-    character(len=20) :: tmp
+    character(len=30) :: tmp, tmp2
 #ifdef MPI
-    integer :: iN, NDOS
+    integer :: iN, NDOS, NT
+    real(dp), allocatable :: rT(:,:,:)
     real(dp), allocatable :: rDOS(:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
@@ -743,6 +747,7 @@ contains
        NDOS = size(DOS,dim=1)
        allocate(rDOS(NDOS))
     end if
+    NT = ( N_Elec + 1 ) * N_Elec
 #endif
 
     ! Open the netcdf file
@@ -799,6 +804,19 @@ contains
        
     end if
 
+#ifdef MPI
+    if ( Node == 0 .and. .not. save_parallel ) then
+       allocate(rT(N_Elec+1,N_Elec,Nodes-1))
+       do iN = 1 , Nodes - 1
+          call MPI_Recv(rT(1,1,iN),NT,Mpi_double_precision, &
+               iN, iN, Mpi_comm_world,status,MPIerror)
+       end do
+    else if ( Node /= 0 .and. .not. save_parallel ) then
+       call MPI_Send(T(1,1),NT,Mpi_double_precision, &
+            0, Node, Mpi_comm_world,MPIerror)
+    end if
+#endif
+
     ! Save transmission function
     do iEl = 1 , N_Elec
        if ( iEl == N_Elec .and. ('T-all' .nin. save_DATA) ) cycle
@@ -812,32 +830,34 @@ contains
           if ( ('T-reflect' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
-          if ( iEl == jEl ) then
-             tmp = trim(Elecs(jEl)%name)//'.R'
+          if ( jEl == iEl ) then
+             tmp  = trim(Elecs(jEl)%name)//'.R'
+             tmp2 = trim(Elecs(jEl)%name)//'.T'
           else
-             tmp = trim(Elecs(jEl)%name)//'.T'
+             tmp  = trim(Elecs(jEl)%name)//'.T'
           end if
 
           ! Save data
-       
           if ( nE%iE(Node) > 0 ) then
              call ncdf_put_var(grp,tmp,T(jEl,iEl),start = (/nE%iE(Node),ikpt/) )
+             if ( iEl == jEl ) then
+                call ncdf_put_var(grp,tmp2,T(N_Elec+1,iEl), &
+                     start = (/nE%iE(Node),ikpt/) )
+             end if
           end if
        
 #ifdef MPI
-          if ( .not. save_parallel ) then
-             if ( Node == 0 ) then
-                do iN = 1 , Nodes - 1
-                   if ( nE%iE(iN) > 0 ) then
-                      call MPI_Recv(rE,1,Mpi_double_precision, &
-                           iN, iN, Mpi_comm_world,status,MPIerror)
-                      call ncdf_put_var(grp,tmp,rE,start = (/nE%iE(iN),ikpt/) )
+          if ( Node == 0 .and. .not. save_parallel ) then
+             do iN = 1 , Nodes - 1
+                if ( nE%iE(iN) > 0 ) then
+                   call ncdf_put_var(grp,tmp,rT(jEl,iEl,iN), &
+                        start = (/nE%iE(iN),ikpt/) )
+                   if ( iEl == jEl ) then
+                      call ncdf_put_var(grp,tmp2,rT(N_Elec+1,iEl,iN), &
+                           start = (/nE%iE(iN),ikpt/) )
                    end if
-                end do
-             else if ( nE%iE(Node) > 0 ) then
-                call MPI_Send(T(jEl,iEl),1,Mpi_double_precision, &
-                     0, Node, Mpi_comm_world,MPIerror)
-             end if
+                end if
+             end do
           end if
 #endif
 
@@ -848,6 +868,7 @@ contains
        
 #ifdef MPI
     if ( allocated(rDOS) ) deallocate(rDOS)
+    if ( allocated(rT) ) deallocate(rT)
 #endif
 
 #ifdef TBTRANS_TIMING
@@ -1015,7 +1036,8 @@ contains
     integer :: NE, nkpt, no_d
     real(dp), allocatable :: rkpt(:,:), rwkpt(:)
     real(dp), allocatable :: rE(:)
-    real(dp), allocatable :: r2(:,:), r3(:,:,:)
+    real(dp), allocatable, target :: r3(:,:,:)
+    real(dp), pointer :: r2(:,:)
 #ifdef TBT_PHONON
     real(dp) :: Flow, dT
 #else
@@ -1131,7 +1153,8 @@ contains
           
        end if
 
-       allocate(r2(NE,nkpt))
+       allocate(r3(NE,nkpt,2))
+       r2 => r3(:,:,1)
 
        do jEl = 1 , N_Elec
           ! Calculating iEl -> jEl is the
@@ -1144,7 +1167,20 @@ contains
                iEl == jEl ) cycle
 
           if ( iEl == jEl ) then
-             call ncdf_get_var(grp,trim(Elecs(iEl)%name)//'.R',r2)
+             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.R',r2)
+             if ( nkpt > 1 ) then
+                call name_save(ispin,nspin,ascii_file,end='REFL', El1=Elecs(iEl))
+                call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'Reflection',&
+                     '# Reflection, k-resolved')
+             end if
+             call name_save(ispin,nspin,ascii_file,end='AVREFL', El1=Elecs(iEl))
+             call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Reflection',&
+                  '# Reflection, k-averaged')
+             
+             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r3(:,:,2))
+!$OMP parallel workshare default(shared)
+             r2 = r3(:,:,2) - r2
+!$OMP end parallel workshare
           else
              call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
           end if
@@ -1219,7 +1255,7 @@ contains
 
        end do
        
-       deallocate(r2)
+       deallocate(r3)
 
     end do
 
@@ -1430,6 +1466,24 @@ contains
           if ( ('T-reflect' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
+
+          if ( iEl == jEl ) then
+
+             call name_save(ispin,nspin,ascii_file,end='REFL', &
+                  El1=Elecs(iEl))
+             
+             call io_assign(iu)
+             open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
+             write(iu,'(a)') '# Reflection, k-resolved'
+             write(iu,'(a)') '# Date: '//trim(tmp)
+             write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'Reflection'
+
+             iounits(cu) = iu
+             
+             cu = cu + 1
+
+          end if
+             
           call name_save(ispin,nspin,ascii_file,end='TRANS', &
                El1=Elecs(iEl), El2=Elecs(jEl))
 
@@ -1459,7 +1513,7 @@ contains
     real(dp),   intent(in) :: bkpt(3), wkpt
     integer,    intent(in) :: N_Elec
     type(dict), intent(in) :: save_DATA
-    integer :: cu, iEl, jEl, iu
+    integer :: cu, iEl, jEl
 
     if ( Node /= 0 ) return
     if ( nkpt == 1 ) return
@@ -1468,10 +1522,7 @@ contains
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
-       iu = iounits(cu)
-       write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-            '# kb  = ',bkpt(:) ,'w= ',wkpt
-       
+       call wrt_k(iounits(cu))
        cu = cu + 1
        
     end if
@@ -1488,10 +1539,7 @@ contains
        
        if ( 'DOS-A' .in. save_DATA ) then
 
-          iu = iounits(cu)
-          write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-               '# kb  = ',bkpt(:) ,'w= ',wkpt
-
+          call wrt_k(iounits(cu))
           cu = cu + 1
           
        end if
@@ -1506,16 +1554,28 @@ contains
                jEl < iEl ) cycle
           if ( ('T-reflect' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
-          
-          iu = iounits(cu)
-          write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-               '# kb  = ',bkpt(:) ,'w= ',wkpt
 
+          if ( iEl == jEl ) then
+
+             call wrt_k(iounits(cu))
+             cu = cu + 1
+
+          end if
+          
+          call wrt_k(iounits(cu))
           cu = cu + 1
           
        end do
        
     end do
+
+  contains
+
+    subroutine wrt_k(iu)
+      integer, intent(in) :: iu
+      write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
+           '# kb  = ',bkpt(:) ,'w= ',wkpt
+    end subroutine wrt_k
 
   end subroutine step_kpt_save
 
@@ -1567,6 +1627,11 @@ contains
                jEl < iEl ) cycle
           if ( ('T-reflect' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
+
+          if ( iEl == jEl ) then
+             call io_close(iounits(cu))
+             cu = cu + 1
+          end if
           
           call io_close(iounits(cu))
           cu = cu + 1
@@ -1666,6 +1731,11 @@ contains
                jEl < iEl ) cycle
           if ( ('T-reflect' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
+
+          if ( jEl == iEl ) then
+             call save_DAT(iounits(cu),T(N_Elec+1:N_Elec+1,iEl))
+             cu = cu + 1
+          end if
 
           call save_DAT(iounits(cu),T(jEl:jEl,iEl))
           

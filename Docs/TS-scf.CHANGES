@@ -1,4 +1,25 @@
 ----------------------------------------------------
+March 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-356
+Added reflection coefficient
+
+* When one calculates the reflection from 
+  an electrode we must calculate it like this:
+    Tr[ tt^dagger ] - (G-G^\dagger)\Gamma
+  to obtain the correct flux.
+  
+  That should correspond to the flux entering all
+  other electrodes.
+
+  Currently this works for Gamma-point calculations.
+  TODO find the error in this
+
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 March 26, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-355
 Added OpenMP statements several new places, bugfix
 

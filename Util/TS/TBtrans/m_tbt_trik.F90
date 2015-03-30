@@ -138,7 +138,7 @@ contains
 
 ! ********************** Result arrays ***********************
     real(dp), allocatable :: DOS(:,:)
-    real(dp) :: T(N_Elec,N_Elec)
+    real(dp) :: T(N_Elec+1,N_Elec)
 #ifndef NCDF_4
     ! Units for IO of ASCII files
     integer, allocatable :: iounits(:)
@@ -473,7 +473,7 @@ contains
 #endif
 #else
     ! Allocate units for IO ASCII
-    allocate(iounits(1+N_Elec+N_Elec*N_Elec)) ! maximum number of units
+    allocate(iounits(1+(N_Elec+2)*N_Elec)) ! maximum number of units
     call init_save(iounits,ispin,TSHS%nspin,N_Elec,Elecs, &
          save_DATA)
 #endif
@@ -762,6 +762,7 @@ contains
              !   all_nn = GFDOS
              call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
                   N_Elec, Elecs, all_nn = .true. ) 
+
           end if
 
           call timer('Gf-prep',2)
@@ -802,6 +803,11 @@ contains
              if ( .not. cE%fake ) then
                 call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                      r_oDev, Elecs(iEl)%o_inD)
+
+                if ( 'T-reflect' .in. save_DATA ) then
+                   call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
+                end if
+
              end if
 
              ! This small conversion of data, ensures
@@ -869,7 +875,7 @@ contains
                 ! the block spectral function
 
                 if ( .not. cE%fake ) then
-                   call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl),jEl==iEl)
+                   call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
                 end if
                 
              end do
@@ -931,6 +937,11 @@ contains
                call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                     r_oDev, p_E%ME%mol%orb)
 
+               if ( 'proj-T-reflect' .in. save_DATA ) then
+                  ! I am not sure this will work!
+                  !call Gf_Gamma(zwork_tri,El_pElecs(iEl),T(N_Elec+1,iEl))
+               end if
+
             else
                
                iEl = -p_E%idx
@@ -939,6 +950,11 @@ contains
 
                call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                     r_oDev, Elecs(iEl)%o_inD)
+
+               if ( 'proj-T-reflect' .in. save_DATA ) then
+                  ! This should work, but I currently do not allow it :(
+                  !call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
+               end if
 
             end if
 
@@ -988,15 +1004,13 @@ contains
                   El_p%inDpvt%r => p_E%ME%mol%pvt%r
                   call proj_Mt_mix(p_E%ME%mol,p_E%idx, El_p%Gamma, p_E%ME%bGk)
                   
-                  call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt), &
-                       proj_T(ipt)%L%ME%El%ID == proj_T(ipt)%R(jEl)%ME%El%ID)
+                  call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
                   
                else
                   
                   iEl = -p_E%idx
                   
-                  call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt), &
-                       proj_T(ipt)%L%ME%El%ID == Elecs(iEl)%ID)
+                  call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))
                   
                end if
 
@@ -1349,7 +1363,7 @@ contains
     end if
         
     ! Create Gamma...
-    ! \Gamma ^ T = \Sigma - \Sigma^\dagger
+    ! \Gamma ^ T = (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,ip)
     do j = 1 , no
        ii = no * ( j - 1 )

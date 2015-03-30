@@ -28,6 +28,8 @@ module m_tbt_tri_scat
   public :: A_DOS   ! Spectral function density of states
   public :: GF_DOS  ! Green's function density of states
   public :: A_Gamma ! Calculate the transmission from spectral function . Gamma
+  public :: GF_Gamma ! Calculate the transmission from Green function . Gamma (same-lead contribution)
+
   public :: insert_Self_Energy
   public :: insert_Self_Energy_Dev
 
@@ -594,14 +596,13 @@ contains
   ! It takes the spectral function and multiplies it with
   ! the scattering matrix of the down-projected self-energy
   ! and calculates the transmission.
-  subroutine A_Gamma(A_tri,El,T,same_lead)
+  subroutine A_Gamma(A_tri,El,T)
 
     use class_zTriMat
 
     type(zTriMat), intent(inout) :: A_tri ! Spectral function
     type(Elec), intent(in) :: El
     real(dp), intent(out) :: T
-    logical, intent(in) :: same_lead
 
     complex(dp), pointer :: A(:)
     integer :: i, j, scat, n
@@ -624,7 +625,6 @@ contains
     ! memory layout in the tri-diagonal case.
 
     n = El%inDpvt%n
-    if ( .not. same_lead ) then
 !$OMP parallel do default(shared), &
 !$OMP&private(j,scat,i), reduction(-:T)
     do j = 1 , n
@@ -638,29 +638,168 @@ contains
        end do
     end do
 !$OMP end parallel do
-    else
-!$OMP parallel do default(shared), &
-!$OMP&private(j,scat,i), reduction(+:T)
-    do i = 1 , n
-       scat = (i-1) * n
-       do j = 1 , n
-          ! This algorithm requires El%Gamma to be transposed (and not
-          ! with factor i),
-          ! see: m_elec_se
-          ! Note that as i is not "swallowed" in \Gamma, this is actually
-          ! correct (calculated from \phi_L -> <psi|\dot N_L|\psi>
-          T = T + aimag( A(index(A_tri,El%inDpvt%r(i),El%inDpvt%r(j))) * &
-               conjg(El%Gamma(scat+j)) )
-       end do
-    end do
-!$OMP end parallel do
-    end if
 
 #ifdef TBTRANS_TIMING
     call timer('A-Gamma',2)
 #endif
 
   end subroutine A_Gamma
+
+#ifdef OLD_FOR_VCS
+  subroutine GF_Gamma_old(Gf_tri,El,T)
+
+    use class_zTriMat
+
+    type(zTriMat), intent(inout) :: Gf_tri ! Spectral function
+    type(Elec), intent(in) :: El
+    real(dp), intent(out) :: T
+
+    complex(dp), pointer :: Gf(:)
+    complex(dp) :: zt
+    integer :: i, j, scat, n
+
+#ifdef TBTRANS_TIMING
+    call timer('Gf-Gamma',1)
+#endif
+
+    Gf => val(Gf_tri)
+
+    ! Initialize the transmission.
+    T = 0._dp
+
+    ! This routine is probably the one that should be
+    ! optimized the most
+    ! it does the last transmission product "by element"
+    ! and hence is extremely slow for large scattering matrices.
+    ! However, in tbtrans state at development the pivoting of the
+    ! arrays meant that we could not assure the consecutive 
+    ! memory layout in the tri-diagonal case.
+
+    n = El%inDpvt%n
+!$OMP parallel do default(shared), &
+!$OMP&private(j,scat,i,zt), reduction(+:T)
+    do j = 1 , n
+       scat = (j-1) * n
+       do i = 1 , n
+          ! This algorithm requires El%Gamma to be transposed (and not
+          ! with factor i),
+          ! see: m_elec_se
+          zt = Gf(index(Gf_tri,El%inDpvt%r(i),El%inDpvt%r(j))) &
+               - conjg(Gf(index(Gf_tri,El%inDpvt%r(j),El%inDpvt%r(i))))
+          T = T + real( zt * El%Gamma(scat+i) , dp)
+       end do
+    end do
+!$OMP end parallel do
+
+#ifdef TBTRANS_TIMING
+    call timer('Gf-Gamma',2)
+#endif
+
+  end subroutine GF_Gamma_old
+#endif
+
+  subroutine Gf_Gamma(Gfcol,El,T)
+
+    use class_zTriMat
+    use m_ts_trimat_invert, only : TriMat_Bias_idxs
+    use m_region
+
+    type(zTriMat), intent(inout) :: Gfcol
+    type(Elec), intent(inout) :: El
+    real(dp), intent(out) :: T
+
+    complex(dp), pointer :: Gf(:)
+    complex(dp), pointer :: z(:)
+
+    integer :: no, np
+    integer :: i, ii, i_Elec, idx_Elec
+    integer, allocatable :: cumsum(:)
+    integer :: sN, n
+    type(tRgn) :: rB
+    ! BLAS routines
+    complex(dp), external :: zdotu, zdotc
+
+#ifdef TBTRANS_TIMING
+    call timer('Gf-Gamma',1)
+#endif
+
+    no = El%inDpvt%n
+    np = parts(Gfcol)
+    allocate(cumsum(np))
+    cumsum(1) = 0
+    do n = 2 , np
+       cumsum(n) = cumsum(n-1) + nrows_g(Gfcol,n-1)
+    end do
+
+    ! This code is based on the down-folded self-energies
+    ! which are determined by the col region
+
+    ! Point to the matrices
+    z => val(Gfcol)
+
+    T = 0._dp
+
+    i_Elec = 1
+    do while ( i_Elec <= El%inDpvt%n ) 
+
+       idx_Elec = El%inDpvt%r(i_Elec)
+
+       ! We start by copying over the Mnn in blocks
+
+       ! We start by creating a region of consecutive
+       ! memory.
+       n = which_part(Gfcol,idx_Elec)
+       ii = 1
+       do while ( i_Elec + ii <= El%inDpvt%n )
+          i = El%inDpvt%r(i_Elec+ii)
+          ! In case it is not consecutive
+          if ( i - idx_Elec /= ii ) exit
+          ! In case the block changes, then
+          ! we cut the block size here.
+          if ( n /= which_part(Gfcol,i) ) exit
+          ii = ii + 1
+       end do
+       ! The consecutive memory block is this size 'ii'
+       call rgn_list(rB,ii,El%inDpvt%r(i_Elec:i_Elec+ii-1))
+
+       ! Figure out which part we have Mnn in
+       n = which_part(Gfcol,rB%r(1))
+       sN = nrows_g(Gfcol,n)
+
+       ! get placement of the diagonal block in the column
+       call TriMat_Bias_idxs(Gfcol,no,n,i,ii)
+
+       i = i + rB%r(1) - cumsum(n) - 1
+       Gf => z(i:ii)
+       
+       ! Number of columns that we want to do product of
+       ii = 1
+       do i = 1 , no
+          T = T - zdotu(rB%n,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) ! G \Gamma
+          ii = ii + sN
+       end do
+       ii = (i_Elec - 1) * no + 1
+       do i = 1 , rB%n
+          T = T + zdotc(no,Gf(i),sN,El%Gamma(ii),1) ! G^\dagger \Gamma
+          ii = ii + no
+       end do
+
+       i_Elec = i_Elec + rB%n
+
+    end do
+
+    ! Now we have:
+    !   T = G \Gamma - G^\dagger \Gamma
+
+    call rgn_delete(rB)
+    deallocate(cumsum)
+
+#ifdef TBTRANS_TIMING
+    call timer('Gf-Gamma',2)
+#endif
+    
+  end subroutine Gf_Gamma
+
 
 #ifdef NCDF_4
   subroutine orb_current(cE,spH,spS,A_tri,r,orb_J)
