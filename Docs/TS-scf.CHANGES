@@ -1,4 +1,11 @@
 ----------------------------------------------------
+April 1, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-359
+Changed default Tanh-Sinh precision
+
+modified:
+  Src/m_gauss_quad.f90
+
+----------------------------------------------------
 April 1, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-358
 Changed saved data
 

@@ -181,7 +181,7 @@ contains
     ! I have adapted this method instead as it provides some way
     ! of controlling the precision of the integral.
 
-    lp = 1.e-4_dp
+    lp = 1.e-2_dp
     if ( present(p) ) lp = p
     if ( lp < 0._dp ) call die('Error in precision request &
          &negative numbers can not be precioned.')
@@ -441,7 +441,7 @@ contains
        mu0 = sum(w_Gauss_Jacobi(J(:,1),alpha,beta,a=la,b=lb)*J(:,2))
        deallocate(J)
        call adjust_Int(mu_diff,mu0,lEPS,N_int_mu)
-       print *,mu_diff,mu0
+!       print *,mu_diff,mu0
        if ( mu_diff <= lEPS ) exit
     end do
 
@@ -507,7 +507,7 @@ contains
        mu0 = sum(w_Gauss_Gegenbauer(J(:,1),lambda+.5_dp,a=a,b=b)*J(:,2))
        deallocate(J)
        call adjust_Int(mu_diff,mu0,lEPS,N_int_mu)
-       print *,mu_diff,mu0
+!       print *,mu_diff,mu0
        if ( mu_diff <= lEPS ) exit
     end do
 
@@ -603,7 +603,7 @@ contains
        mu0 = sum(w_Gauss_Chebyshev(J(:,1),a=a,b=b)*J(:,2))
        deallocate(J)
        call adjust_Int(mu_diff,mu0,lEPS,N_int_mu)
-       print *,mu_diff,mu0
+!       print *,mu_diff,mu0
        if ( mu_diff <= lEPS ) exit
     end do
 
@@ -670,7 +670,7 @@ contains
        mu0 = sum((J(:,1)-la)**alpha*J(:,2))
        deallocate(J)
        call adjust_Int(mu_diff,mu0,lEPS,N_int_mu)
-       print *,mu_diff,mu0
+!       print *,mu_diff,mu0
        if ( mu_diff <= lEPS ) exit
     end do
 
