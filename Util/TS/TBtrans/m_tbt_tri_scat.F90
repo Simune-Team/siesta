@@ -744,11 +744,10 @@ contains
 
        idx_Elec = El%inDpvt%r(i_Elec)
 
-       ! We start by copying over the Mnn in blocks
-
-       ! We start by creating a region of consecutive
-       ! memory.
+       ! We start by creating a region of consecutive memory.
        n = which_part(Gfcol,idx_Elec)
+       sN = nrows_g(Gfcol,n)
+
        ii = 1
        do while ( i_Elec + ii <= El%inDpvt%n )
           i = El%inDpvt%r(i_Elec+ii)
@@ -761,10 +760,6 @@ contains
        end do
        ! The consecutive memory block is this size 'ii'
        call rgn_list(rB,ii,El%inDpvt%r(i_Elec:i_Elec+ii-1))
-
-       ! Figure out which part we have Mnn in
-       n = which_part(Gfcol,rB%r(1))
-       sN = nrows_g(Gfcol,n)
 
        ! get placement of the diagonal block in the column
        call TriMat_Bias_idxs(Gfcol,no,n,i,ii)

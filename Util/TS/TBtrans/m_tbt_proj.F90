@@ -1726,17 +1726,17 @@ contains
                    call ncdf_def_grp(grp2,trim(Elecs(iE)%name),grp3)
 
                    dic = ('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
-                   call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
+                   call ncdf_def_var(grp3,'mu',NF90_DOUBLE,(/'one'/), &
                         atts = dic)
-                   call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
+                   call ncdf_put_var(grp3,'mu',Elecs(iE)%mu%mu)
 #ifdef TBT_PHONON
                    dic = dic//('info'.kv.'Phonon temperature')
 #else
                    dic = dic//('info'.kv.'Electronic temperature')
 #endif
-                   call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
+                   call ncdf_def_var(grp3,'kT',NF90_DOUBLE,(/'one'/), &
                         atts = dic)
-                   call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
+                   call ncdf_put_var(grp3,'kT',Elecs(iE)%mu%kT)
 
                    if ( 'proj-DOS-A' .in. save_DATA ) then
                       dic = dic//('info'.kv.'Spectral function density of states')
@@ -1750,7 +1750,7 @@ contains
 
                    if ( 'proj-orb-current' .in. save_DATA ) then
                       dic = ('info'.kv.'Orbital current')
-                      call ncdf_def_var(grp2,'J',NF90_DOUBLE,(/'nnzs'/), &
+                      call ncdf_def_var(grp3,'J',NF90_DOUBLE,(/'nnzs'/), &
                            atts = dic, compress_lvl = cmp_lvl , &
                            chunks = (/nnzs_dev/) )
 
@@ -1838,13 +1838,18 @@ contains
              eig(iEf) = -sqrt(-eig(iEf))
           end if
        end do
-#endif
-          
+
+       ! In phonon transport there is no Fermi-level
+       iEf = 0
+
+#else
        ! figure out the Ef level
        do iEf = 1 , no 
           if ( eig(iEf) > 0._dp ) exit
        end do
        ! iEf now contains the index of the LUMO lvl
+#endif
+          
 
        ! Create attribute to contain the index of the LUMO level
        dic = ('HOMO_index'.kv.iEf-1)

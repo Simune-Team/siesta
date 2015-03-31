@@ -1,4 +1,26 @@
 ----------------------------------------------------
+April 1, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-358
+Changed saved data
+
+* The reflection calculation was correct.
+  We now save the transmitted wave from each
+  electrode (G-G^\dagger)\Gamma and the reflected
+  wave as G \Gamma G^\dagger \Gamma
+  which is easier to plot as the sum equals the
+  total flux to the other electrodes.
+
+* Bugfix for group creations in the projection module.
+
+* Removed fermi-level in projections if doing a phonon
+  transport problem.
+
+modified:
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/ts2ts/ts2ts.f90
+
+----------------------------------------------------
 March 30, 2015 -- Nick P. Andersen    trunk-465-merge-1--ts-scf-357
 Clarification of reflection for projections
 

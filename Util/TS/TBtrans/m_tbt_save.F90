@@ -1010,7 +1010,10 @@ contains
   subroutine state_cdf2ascii(fname,nspin,ispin,N_Elec,Elecs,N_E,rW,save_DATA)
 
     use parallel, only : Node
-    use units, only : eV, Kelvin
+    use units, only : eV
+#ifdef TBT_PHONON
+    use units, only : Kelvin
+#endif
 
     use variable
     use dictionary
@@ -1036,8 +1039,7 @@ contains
     integer :: NE, nkpt, no_d
     real(dp), allocatable :: rkpt(:,:), rwkpt(:)
     real(dp), allocatable :: rE(:)
-    real(dp), allocatable, target :: r3(:,:,:)
-    real(dp), pointer :: r2(:,:)
+    real(dp), allocatable :: r2(:,:), r3(:,:,:)
 #ifdef TBT_PHONON
     real(dp) :: Flow, dT
 #else
@@ -1088,6 +1090,7 @@ contains
 
        ! Get DOS
        call ncdf_get_var(ncdf,'DOS',r3)
+
        ! Correct unit, from 1/Ry to 1/eV
 !$OMP parallel workshare default(shared)
        r3 = r3 * eV
@@ -1153,8 +1156,7 @@ contains
           
        end if
 
-       allocate(r3(NE,nkpt,2))
-       r2 => r3(:,:,1)
+       allocate(r2(NE,nkpt))
 
        do jEl = 1 , N_Elec
           ! Calculating iEl -> jEl is the
@@ -1168,6 +1170,7 @@ contains
 
           if ( iEl == jEl ) then
              call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.R',r2)
+             ! Save the variable to ensure the correct sum in the transmission
              if ( nkpt > 1 ) then
                 call name_save(ispin,nspin,ascii_file,end='REFL', El1=Elecs(iEl))
                 call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'Reflection',&
@@ -1176,11 +1179,10 @@ contains
              call name_save(ispin,nspin,ascii_file,end='AVREFL', El1=Elecs(iEl))
              call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Reflection',&
                   '# Reflection, k-averaged')
-             
-             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r3(:,:,2))
-!$OMP parallel workshare default(shared)
-             r2 = r3(:,:,2) - r2
-!$OMP end parallel workshare
+
+             ! The transmission is now the total incoming wave 
+             ! [G-G^\dagger].\Gamma
+             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
           else
              call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
           end if
@@ -1255,13 +1257,11 @@ contains
 
        end do
        
-       deallocate(r3)
+       deallocate(r2)
 
     end do
 
-    if ( Node == 0 ) then
-       write(*,*) ! new-line
-    end if
+    if ( Node == 0 ) write(*,*) ! new-line
 
     ! Clean-up
     deallocate(rE,rkpt,rwkpt,pvt)
@@ -1732,14 +1732,19 @@ contains
           if ( ('T-reflect' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
-          if ( jEl == iEl ) then
-             call save_DAT(iounits(cu),T(N_Elec+1:N_Elec+1,iEl))
-             cu = cu + 1
-          end if
-
           call save_DAT(iounits(cu),T(jEl:jEl,iEl))
           
           cu = cu + 1
+
+          if ( jEl == iEl ) then
+             ! Note this is reversed according to the 
+             ! creation of the arrays.
+             ! This is because the reflection is 1->1
+             ! and the transmission is the G.\Gamma
+             ! flux. Hence we simply reverse the print-outs.
+             call save_DAT(iounits(cu),T(N_Elec+1:N_Elec+1,iEl))
+             cu = cu + 1
+          end if
 
        end do
        

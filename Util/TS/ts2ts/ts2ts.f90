@@ -146,8 +146,7 @@ program ts2ts
   ! as such I thought the key-word could be interpreted as DMCR == DM-crossterms
   ! So I have "spelled it out"
   UpdateDMCR = .not. fdf_get('TS.UpdateDMCROnly',.false.)
-  ReUse      = .not. fdf_get('TS.calcGF',.true.)
-  ReUse      = fdf_get('TS.ReUseGF',ReUse)
+  ReUse      = fdf_get('TS.ReUseGF',.true.)
 
   ! Start to write out the information...
   write(*,'(a,a)') 'TS.Voltage ',trim(c_Volt)

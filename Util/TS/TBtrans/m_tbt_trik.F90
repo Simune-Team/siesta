@@ -824,7 +824,7 @@ contains
 
              if ( 'DOS-A' .in. save_DATA ) then
                 if ( .not. cE%fake ) then
-                   ! Calculate the DOS in from the spectral function
+                   ! Calculate the DOS from the spectral function
                    call A_DOS(r_oDev,zwork_tri,spS,DOS(:,1+iEl))
 #ifdef TBT_PHONON
                    DOS(:,1+iEl) = omega * DOS(:,1+iEl)
