@@ -391,9 +391,6 @@ contains
        return
     end if
 
-    ! We have not converged
-    converged = .false.
-    
     ! Now we have the difference in Q
     ! Correct the Fermi level so that a change dE DM would 
     ! account for the missing/excess charge.
@@ -404,7 +401,10 @@ contains
     ! right at the Fermi level.
     ! If this is the case we truncate the change in Fermi-level
     ! to the maximum allowed shift...
-    call ts_qc_Fermi_truncate(0._dp,TS_RHOCORR_FERMI_MAX,Q(2))
+    converged = ts_qc_Fermi_truncate(0._dp,TS_RHOCORR_FERMI_MAX,Q(2))
+
+    ! We have not converged
+    converged = .false.
 
     ! As the energy filling must increase for positive
     ! shifting of the Fermi-level we subtract as Q(2) is 
@@ -533,7 +533,9 @@ contains
        end if
 
        ! Truncate to the maximum allowed difference
-       call ts_qc_Fermi_truncate(Ef_min,TS_RHOCORR_FERMI_MAX,Ef)
+       if ( ts_qc_Fermi_truncate(Ef_min,TS_RHOCORR_FERMI_MAX,Ef) ) then
+          ! do nothing
+       end if
 
        ! If we change the fermi-level, just print-out to the user
        if ( abs(Ef_min - Ef) > 0.000001_dp ) then
@@ -556,11 +558,14 @@ contains
 
   end subroutine ts_qc_Fermi_file
 
-  subroutine ts_qc_Fermi_truncate(Ef,max_diff,Ef_new)
+  function ts_qc_Fermi_truncate(Ef,max_diff,Ef_new) result(trunc)
     real(dp), intent(in) :: Ef, max_diff
     real(dp), intent(inout) :: Ef_new
+    logical :: trunc
 
+    trunc = .false.
     if ( abs(Ef_new - Ef) > max_diff ) then
+       trunc = .true.
        if ( Ef_new - Ef > 0._dp ) then
           Ef_new =   max_diff + Ef
        else
@@ -568,7 +573,7 @@ contains
        end if
     end if
 
-  end subroutine ts_qc_Fermi_truncate
+  end function ts_qc_Fermi_truncate
 
   subroutine ts_qc_buffer(N_Elec,Elecs, &
        dit, sp, nspin, n_nzs, DM, EDM, S, Qtot)

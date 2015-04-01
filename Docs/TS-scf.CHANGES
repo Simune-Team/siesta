@@ -1,4 +1,17 @@
 ----------------------------------------------------
+April 2, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-362
+Fermi correction now obeys the truncation limit
+
+* We now obey the truncation value in case the value changes too
+  much.
+  This should disallow consecutive truncations thus totally in
+  changes beyond the limit of Ef change.
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_charge.F90
+
+----------------------------------------------------
 April 2, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-361
 Changed keyword names for transiesta only keywords
 

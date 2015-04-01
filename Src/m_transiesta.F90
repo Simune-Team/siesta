@@ -384,8 +384,8 @@ contains
              call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
 
              ! Truncate to the maximum allowed change in Fermi-level
-             call ts_qc_Fermi_truncate(Q_Ef(i_F,2),TS_RHOCORR_FERMI_MAX, &
-                  Ef)
+             converged = ts_qc_Fermi_truncate(Q_Ef(i_F,2), &
+                  TS_RHOCORR_FERMI_MAX, Ef)
 
              if ( IONode ) then
                 write(*,'(a,e11.4,a)') 'transiesta: cubic spline. dEf = ', &
@@ -395,7 +395,11 @@ contains
              ! Even if we have converged we allow the interpolation
              ! to do a final step. If dQ is very small it should be very
              ! close to the found value.
-             converged = abs(Q_Ef(i_F,1) - Qtot) < TS_RHOCORR_FERMI_TOLERANCE
+             ! If the truncation already is reached we stop as that
+             ! *MUST* be the maximal change.
+             if ( .not. converged ) &
+                  converged = abs(Q_Ef(i_F,1) - Qtot) < &
+                  TS_RHOCORR_FERMI_TOLERANCE
 
           end if
 
