@@ -51,7 +51,6 @@ module m_ts_trimat_invert
 contains
 
   subroutine invert_BiasTriMat_prep(M,Minv, N_Elec,Elecs, has_El, all_nn)
-    use m_mat_invert
     use m_ts_electype
     use m_ts_method, only : orb_offset
 
@@ -719,7 +718,6 @@ contains
   end subroutine TriMat_Bias_idxs
 
   subroutine calc_Mnn_inv_cols(M,Minv,n,sCol,eCol)
-    use m_mat_invert
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n, sCol, eCol
     ! Local variables

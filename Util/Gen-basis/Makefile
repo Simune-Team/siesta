@@ -421,7 +421,7 @@ m_transiesta.o: m_ts_electype.o m_ts_fullg.o m_ts_fullk.o m_ts_gf.o
 m_transiesta.o: m_ts_kpoints.o m_ts_method.o m_ts_mumpsg.o m_ts_mumpsk.o
 m_transiesta.o: m_ts_options.o m_ts_sparse.o m_ts_tri_common.o m_ts_tri_init.o
 m_transiesta.o: m_ts_trig.o m_ts_trik.o parallel.o precision.o units.o
-m_trimat_invert.o: class_TriMat.o m_mat_invert.o m_pivot_array.o precision.o
+m_trimat_invert.o: class_TriMat.o m_pivot_array.o precision.o
 m_ts_aux.o: precision.o
 m_ts_cctype.o: m_gauss_fermi_inf.o m_ts_io_ctype.o precision.o
 m_ts_charge.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
@@ -553,7 +553,7 @@ m_ts_trik.o: m_ts_gf.o m_ts_kpoints.o m_ts_method.o m_ts_options.o
 m_ts_trik.o: m_ts_sparse.o m_ts_sparse_helper.o m_ts_tri_common.o
 m_ts_trik.o: m_ts_tri_init.o m_ts_tri_scat.o m_ts_trimat_invert.o m_ts_weight.o
 m_ts_trik.o: parallel.o precision.o units.o
-m_ts_trimat_invert.o: class_TriMat.o m_mat_invert.o m_pivot_array.o m_region.o
+m_ts_trimat_invert.o: class_TriMat.o m_pivot_array.o m_region.o
 m_ts_trimat_invert.o: m_trimat_invert.o m_ts_electype.o m_ts_method.o
 m_ts_trimat_invert.o: precision.o
 m_ts_voltage.o: intrinsic_missing.o m_geom_box.o m_mesh_node.o m_ncdf_io.o

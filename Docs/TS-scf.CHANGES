@@ -1,4 +1,19 @@
 ----------------------------------------------------
+April 2, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-360
+Small updates to the threading of TS
+
+* Removed the need for the mat_invert in trimat_invert
+  routines.
+
+* Updated a few threading places to better utilize caching
+  for large matrices
+
+modified:
+  Src/m_trimat_invert.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_trimat_invert.F90
+
+----------------------------------------------------
 April 1, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-359
 Changed default Tanh-Sinh precision
 

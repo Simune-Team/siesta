@@ -182,13 +182,12 @@ contains
   end subroutine invert_TriMat
 
   subroutine calc_Mnn_inv(M,Minv,n)
-    use m_mat_invert
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
     ! Local variables
     complex(dp), pointer :: Mp(:), Mpinv(:)
     complex(dp), pointer :: Xn(:), Yn(:), Cn(:), Bn(:)
-    integer :: sNm1, sN, sNp1
+    integer :: sNm1, sN, sNp1, i, j, k
 
     if ( 1 < n )        sNm1 = nrows_g(M,n-1)
                         sN   = nrows_g(M,n)
@@ -256,7 +255,18 @@ contains
 
     ! Retrive the position in the inverted matrix
     Mpinv => val(Minv,n,n)
-    call mat_invert(Mp,Mpinv,sN,method = MI_WORK )
+!$OMP parallel do default(shared), private(i,j,k)
+    do i = 1 , sN
+       k = (i-1)*sN 
+       do j = 1 , sN
+          Mpinv(k+j) = dcmplx(0._dp,0._dp)
+       end do
+       Mpinv(k+i) = dcmplx(1._dp,0._dp)
+    end do
+!$OMP end parallel do
+    
+    call zgesv(sN,sN,Mp,sN,ipiv,Mpinv,sN,k)
+    if ( k /= 0 ) call die('Error on inverting Mnn')
 
   end subroutine calc_Mnn_inv
 
@@ -310,7 +320,7 @@ contains
        ! We can/shall not calculate this
        return
     end if
-    sN   = nrows_g(M,n)
+    sN = nrows_g(M,n)
 
     ! Copy over Yn/Bn-1
     Yn    => Yn_div_Bn_m1(M   ,n)
@@ -319,7 +329,7 @@ contains
     Yn(:) =  Mpinv(:)
 !$OMP end parallel workshare
     ! Do matrix-multiplication
-    Mp     => val(Minv,n,n)
+    Mp    => val(Minv,n,n)
     ! Calculate: Yn/Bn-1 * Mnn
 #ifdef USE_GEMM3M
        call zgemm3m( &

@@ -126,19 +126,16 @@ contains
     do i = 1 , nosq
        gb(i)    = ZE * S00(i) - H00(i)
        alpha(i) = H01(i) - ZE * S01(i)
+
+       ! gs = Z*S00-H00
+       gsL(i) = gb(i)
+       gsR(i) = gb(i)
+
     end do
 !$OMP end do
 
-! gs  = Z*S00-H00
-!$OMP do
-    do i = 1 , nosq
-       gsL(i) = gb(i)
-       gsR(i) = gb(i)
-    end do
-!$OMP end do nowait
-
 ! beta = -(Z*S10-H10)
-!$OMP do private(j,ic,i,ic2)
+!$OMP do private(j,ic,ic2)
     do j = 1 , no
        ic = no * (j-1)
        do i = 1 , no
@@ -159,23 +156,16 @@ contains
        if ( present(iterations) ) &
             iterations = iterations + 1
 
-!$OMP parallel default(shared), private(i)
-
 ! rh = -(Z*S01-H01) ,j<no
 ! rh = -(Z*S10-H10) ,j>no
-!$OMP do
+!$OMP parallel do default(shared), private(i)
        do i = 1, nosq
           rh(i)       = alpha(i)
           rh(nosq+i)  = beta(i)
+          ! w = Z*S00-H00
+          w(i)        = gb(i)
        end do
-!$OMP end do nowait
-
-! w = Z*S00-H00
-!$OMP workshare
-       w(:) = gb(:)
-!$OMP end workshare nowait
-
-!$OMP end parallel
+!$OMP end parallel do
 
 ! rh =  rh1^(-1)*rh
 ! rh =  t0
@@ -433,7 +423,7 @@ contains
 
     real(dp) :: ro
 
-    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,gb
+    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,GB
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE surface_Green' )
@@ -461,7 +451,7 @@ contains
     i = i + nosq
     w => zwork(i+1:i+nosq)
     i = i + nosq
-    gb => zwork(i+1:i+nosq) 
+    GB => zwork(i+1:i+nosq) 
 
 !$OMP parallel default(shared), private(i)
 
@@ -470,8 +460,8 @@ contains
 ! gs  = Z*S00-H00
 !$OMP do 
     do i = 1 , nosq
-       gb(i)    = ZE * S00(i) - H00(i)
-       GS(i)    = gb(i)
+       GB(i)    = ZE * S00(i) - H00(i)
+       GS(i)    = GB(i)
        alpha(i) = H01(i) - ZE * S01(i)
     end do
 !$OMP end do nowait
@@ -485,7 +475,7 @@ contains
           beta(ic+i) = dconjg(H01(ic2)) - ZE * dconjg(S01(ic2))
        end do
     end do
-!$OMP end do
+!$OMP end do nowait
 
 !$OMP end parallel
 
@@ -498,23 +488,17 @@ contains
        if ( present(iterations) ) &
             iterations = iterations + 1
 
-!$OMP parallel default(shared), private(i)
 
 ! rh = -(Z*S01-H01) ,j<no
 ! rh = -(Z*S10-H10) ,j>no
-!$OMP do
+!$OMP parallel do default(shared), private(i)
        do i = 1, nosq
           rh(i)      = alpha(i)
           rh(nosq+i) = beta(i)
+          ! w = Z*S00-H00
+          w(i)       = GB(i)
        end do
-!$OMP end do nowait
-
-! w = Z*S00-H00
-!$OMP workshare
-       w(:) = gb(:)
-!$OMP end workshare nowait
-
-!$OMP end parallel
+!$OMP end parallel do
 
 ! rh =  rh1^(-1)*rh
 ! rh =  t0
@@ -549,7 +533,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_1,gb,no)
+            'N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_1,GB,no)
 
 ! ab    = (Z*S01-H01)*t0
 #ifdef USE_GEMM3M
@@ -563,8 +547,8 @@ contains
 !$OMP parallel do default(shared), private(i), &
 !$OMP&reduction(max:ro)
        do i = 1 , nosq
-          gb(i) = gb(i) + w(i)
-          gs(i) = gs(i) + w(i)
+          GB(i) = GB(i) + w(i)
+          GS(i) = GS(i) + w(i)
 
           ! also do the accuracy calculation
           ro = max(ro,abs(w(i)))
@@ -621,15 +605,9 @@ contains
 
   end subroutine SSR_sGreen_NoDOS
 
-!------------------------------------------------------------------------
-!************************************************************************
-!------------------------------------------------------------------------
-
-
 
 ! ##################################################################
 ! ## Driver subroutine for calculating the (ideal)                ##
-! ## Handles both Left and Right surface Green function.          ## 
 ! ##                            By                                ##
 ! ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
 ! ##                 Updated by : Nick Papior Andersen            ##
@@ -638,7 +616,6 @@ contains
 ! ## It generates the surface Green function by handling          ##
 ! ## repetition as well.                                          ##
 ! ##################################################################
-
   subroutine create_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
        NEn,ce, &
