@@ -1,4 +1,18 @@
 ----------------------------------------------------
+April 2, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-361
+Changed keyword names for transiesta only keywords
+
+* Now the SCF.TS keywords are TS.SCF which makes it
+  more consistent with the TS keywords.
+
+* The SCF.Initialize is now also TS.SCF.Initialize
+  Thus it can be a back-bone for several different
+  implementations if they locally alter the usage.
+
+modified:
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 April 2, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-360
 Small updates to the threading of TS
 

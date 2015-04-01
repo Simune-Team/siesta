@@ -194,7 +194,7 @@ contains
                 write(*,11) '*** Please note this!'
              end if
           end if
-          write(*,1) 'Save S and quit (onlyS)', onlyS
+          write(*,1) 'Only save the overlap matrix S', onlyS
           write(*,11) repeat('*', 62)
           write(*,*)
        end if
@@ -206,8 +206,8 @@ contains
 
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
-    ts_Dtol = fdf_get('SCF.TS.DM.Tolerance',dDTol)
-    ts_Htol = fdf_get('SCF.TS.H.Tolerance',dHTol)
+    ts_Dtol = fdf_get('TS.SCF.DM.Tolerance',dDTol)
+    ts_Htol = fdf_get('TS.SCF.H.Tolerance',dHTol)
 
     ! Read in information about the voltage placement.
     chars = fdf_get('TS.Hartree.Position','central')
@@ -258,6 +258,7 @@ contains
 
     ! currently this does not work
     chars = fdf_get('SCF.Initialize','diagon')
+    chars = fdf_get('TS.SCF.Initialize',chars)
     if ( leqi(chars,'diagon') ) then
        TS_scf_mode = 0
        chars = 'none'
