@@ -143,7 +143,6 @@ contains
     
     use fdf
     use fdf_extra
-    use intrinsic_missing, only: SORT
     use parallel, only : IONode 
 
     use dictionary
@@ -297,7 +296,7 @@ contains
        end if
 
        ! Convert the molecule to orbitals
-       mols(im)%atom%r = SORT(mols(im)%atom%r) ! sort it!
+       call rgn_sort(mols(im)%atom)
        mols(im)%atom%name = 'Atoms'
        ! We check that the projection is completely contained
        ! in the device region, if not then a projection of 
@@ -366,13 +365,24 @@ contains
                    ! read the next one
                    exit
 
-                else if ( leqi(char,'level') ) then
+                else if ( leqi(char,'level') .or. &
+                     leqi(char,'lvl') ) then
 
                    ! We do not know whether all levels
                    ! are below/above the Fermi level.
                    call fdf_brange(pline,r_tmp,-n_orb,n_orb)
                    call rgn_copy(mols(im)%proj(ip),r_tmp2)
                    call rgn_union(r_tmp2,r_tmp,mols(im)%proj(ip))
+
+                else if ( leqi(char,'clear') .or. &
+                     leqi(char,'clear-level') .or. &
+                     leqi(char,'clear-lvl') ) then
+
+                   ! We do not know whether all levels
+                   ! are below/above the Fermi level.
+                   call fdf_brange(pline,r_tmp,-n_orb,n_orb)
+                   call rgn_copy(mols(im)%proj(ip),r_tmp2)
+                   call rgn_complement(r_tmp,r_tmp2, mols(im)%proj(ip))
 
                 end if
 
@@ -392,7 +402,7 @@ contains
              end if
 
              ! Sort the levels
-             mols(im)%proj(ip)%r = SORT(mols(im)%proj(ip)%r)
+             call rgn_sort(mols(im)%proj(ip))
 
              ! Save the name to the levels
              mols(im)%proj(ip)%name = name
@@ -410,7 +420,7 @@ contains
        ! Allocate |> for all unique levels
        allocate(mols(im)%p(n_orb,mols(im)%lvls%n))
        ! Sort the levels
-       mols(im)%lvls%r = SORT(mols(im)%lvls%r)
+       call rgn_sort(mols(im)%lvls)
 
        ! Take all projections and make them index based
        do ip = 1 , N_proj

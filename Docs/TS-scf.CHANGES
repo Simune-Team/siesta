@@ -1,4 +1,38 @@
 ----------------------------------------------------
+April 7, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-364
+Updated projection code to allow clear and use rgn_sort
+
+* Projection regions was not using the rgn_sort routine.
+  Now this is used which should speed up the calculation
+  as the index look-up becomes very fast.
+
+* We also implement the user to type in 'clear' to remove
+  certain molecular levels in a level designation.
+
+modified:
+  Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
+April 7, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-363
+Updated Fermi correction
+
+* Enabled Fermi correction in MUMPS and full
+  methods by doing explicit shift of energy.
+  Indeed this might be _much_ better than calculating
+  Q|Ef as the first guess will be extremely bad anyway.
+
+  TODO: Consider removing the Fermi calculation of the
+  charge.
+
+* Simplified some code in the charge code.
+
+modified:
+  Src/m_interpolate.f90
+  Src/m_transiesta.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 April 2, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-362
 Fermi correction now obeys the truncation limit
 
