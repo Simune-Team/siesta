@@ -306,14 +306,10 @@ contains
     TS_RHOCORR_FERMI_TOLERANCE = &
          fdf_get('TS.ChargeCorrection.Fermi.Tolerance',0.01_dp)
     ! Factor for charge-correction
-    if ( TS_RHOCORR_METHOD == TS_RHOCORR_BUFFER ) then
-       TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',0.75_dp)
-       if ( 1.0_dp < TS_RHOCORR_FACTOR ) then
-          call die("Charge correction factor must be in the range [0;1]")
-       endif
-    else
-       TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',2._dp)
-    end if
+    TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',0.75_dp)
+    if ( 1.0_dp < TS_RHOCORR_FACTOR ) then
+       call die("Charge correction factor must be in the range [0;1]")
+    endif
     if ( TS_RHOCORR_FACTOR < 0.0_dp ) then
        call die("Charge correction factor must be larger than 0")
     endif

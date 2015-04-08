@@ -316,22 +316,11 @@ contains
           call open_GF(N_Elec,Elecs,uGF,1,.true.)
           
           if ( ts_method == TS_FULL ) then
-!             if ( ts_Gamma ) then
-!                call ts_fullg_Fermi(N_Elec,Elecs, &
-!                     nq, uGF, nspin, na_u, lasto, &
-!                     sp_dist, sparse_pattern, &
-!                     no_u, n_nzs, &
-!                     H, S, DM, Ef, kT, Qtot)
-!             else
-!                call ts_fullk_Fermi(N_Elec,Elecs, &
-!                     nq, uGF, &
-!                     ucell, nspin, na_u, lasto, &
-!                     sp_dist, sparse_pattern, &
-!                     no_u, n_nzs, &
-!                     H, S, DM, Ef, kT, Qtot)
-!             end if
-             call die('Currently this correction &
-                  &does not function with sparse')
+             if ( Q_Ef(i_F,1) > Qtot ) then
+                Ef = Ef - 0.01_dp * eV
+             else
+                Ef = Ef + 0.01_dp * eV
+             end if
           else if ( ts_method == TS_BTD ) then
              if ( ts_Gamma ) then
                 call ts_trig_Fermi(N_Elec,Elecs, &
@@ -349,22 +338,11 @@ contains
              end if
 #ifdef MUMPS
           else if ( ts_method == TS_MUMPS ) then
-!             if ( ts_Gamma ) then
-!                call ts_mumpsg_Fermi(N_Elec,Elecs, &
-!                     nq, uGF, nspin, na_u, lasto, &
-!                     sp_dist, sparse_pattern, &
-!                     no_u, n_nzs, &
-!                     H, S, DM, Ef, kT, Qtot)
-!             else
-!                call ts_mumpsk_Fermi(N_Elec,Elecs, &
-!                     nq, uGF, &
-!                     ucell, nspin, na_u, lasto, &
-!                     sp_dist, sparse_pattern, &
-!                     no_u, n_nzs, &
-!                     H, S, DM, Ef, kT, Qtot)
-!             end if
-             call die('Currently this correction &
-                  &does not function with mumps')
+             if ( Q_Ef(i_F,1) > Qtot ) then
+                Ef = Ef - 0.01_dp * eV
+             else
+                Ef = Ef + 0.01_dp * eV
+             end if
 #endif
           else
              

@@ -126,17 +126,11 @@ contains
 #ifdef MPI
     call MPI_AllReduce(Qtmp(0,1),tmp(0,1),size(Qtmp), &
          MPI_Double_Precision,MPI_SUM, MPI_Comm_World,MPIerror)
-    if ( present(Q) ) then
-       Q = tmp
-    else if ( present(Qtot) ) then
-       Qtot = sum(tmp)
-    end if
+    if ( present(Q)    ) Q    = tmp
+    if ( present(Qtot) ) Qtot = sum(tmp)
 #else
-    if ( present(Q) ) then
-       Q = Qtmp
-    else if ( present(Qtot) ) then
-       Qtot = sum(Qtmp)
-    end if
+    if ( present(Q)    ) Q    = Qtmp
+    if ( present(Qtot) ) Qtot = sum(Qtmp)
 #endif
 
   end subroutine ts_get_charges
@@ -490,9 +484,9 @@ contains
              if ( i == 1 ) first_Q(N) = cur(2,i)
              cur(1,i) = cur(1,i) * eV
           end do
-          i = maxval(minloc(cur(2,1:tmp)))
+          i = minloc(cur(2,1:tmp),dim=1)
           Q_Ef(N,:,1) = cur(:,i)
-          i = maxval(maxloc(cur(2,1:tmp)))
+          i = maxloc(cur(2,1:tmp),dim=1)
           Q_Ef(N,:,2) = cur(:,i)
           read(iu,*,iostat=ioerr) ! empty line
        end do
@@ -531,7 +525,6 @@ contains
           Ef = Ef + TS_RHOCORR_FACTOR * ( Ef_min - Ef )
           Ef_min = Ef_max
        end if
-
        ! Truncate to the maximum allowed difference
        if ( ts_qc_Fermi_truncate(Ef_min,TS_RHOCORR_FERMI_MAX,Ef) ) then
           ! do nothing

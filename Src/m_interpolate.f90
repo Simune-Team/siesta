@@ -79,7 +79,7 @@ contains
     ! ordering...
     call crt_pivot(N,x,ipvt)
 
-    if ( x0 < x(ipvt(1)) ) then
+    if ( x0 <= x(ipvt(1)) ) then
        ! Do extrapolation
        b  = (y(ipvt(2)) - y(ipvt(1)))/(x(ipvt(2)) - x(ipvt(1)))
        y0 = y(ipvt(1)) + b * (x0 - x(ipvt(1)))
@@ -171,11 +171,12 @@ contains
        end do
 
        ! Allocate zz 
-       i = N - idx 
+       i = N - idx
        allocate(zz(max(i,2)))
+       zz(1:2) = 0._dp
 
        ! only calculate the necessary z's
-       call loc_prep_spline(N,x,y,ipvt,i,zz)
+       call loc_prep_spline(N,x,y,ipvt,max(i,2),zz)
 
        if ( idx == 1 ) then
           zz(2) = zz(1)
@@ -243,7 +244,7 @@ contains
     real(dp), intent(in) :: x(N), y(N)
     integer, intent(in) :: ipvt(N)
     integer, intent(in):: NZ
-    real(dp), intent(out) :: z(NZ)
+    real(dp), intent(inout) :: z(NZ)
 
     ! Local variables
     integer :: i, iz
