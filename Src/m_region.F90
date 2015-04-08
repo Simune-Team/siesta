@@ -1075,6 +1075,8 @@ contains
        do io = o1 , o2
           r%r(io-o1+1) = io
        end do
+       ! It is sorted
+       r%sorted = .true.
     else
        do io = o1 , o2 , -1
           r%r(o1-io+1) = io

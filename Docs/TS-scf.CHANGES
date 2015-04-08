@@ -1,4 +1,22 @@
 ----------------------------------------------------
+April 7, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-365
+Sorted electrodes in BTD creation to speed it up
+
+* Sorted electrode orbitals/atoms when creating the BTD
+  matrices.
+  This will only slightly speed up the creation.
+
+* When creating a range in rgn_range it will be sorted
+  if created with o1 < o2.
+
+  Hence it reduces the need for calling rgn_sort afterwards.
+
+modified:
+  Src/m_region.F90
+  Src/m_ts_tri_init.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 April 7, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-364
 Updated projection code to allow clear and use rgn_sort
 

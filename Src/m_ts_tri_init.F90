@@ -186,6 +186,9 @@ contains
     call rgn_init(priority,n)
     call crt_El_priority(N_Elec,Elecs,priority,is_orb = sort_orb )
 
+    ! Sort the electrode region to make it faster
+    call rgn_sort(r_Els)
+
     ! Left adjust the string
     ctmp = ADJUSTL(ctmp)
     if ( leqi(ctmp,'none') ) then

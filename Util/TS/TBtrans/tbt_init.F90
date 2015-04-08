@@ -88,7 +88,8 @@ subroutine tbt_init()
 
 #ifdef MPI
      if (Nodes > 1) then
-        write(*,'(/,a,i0,a)') '* Running on ', Nodes, ' nodes in parallel'
+        write(*,'(/,a,i0,tr1,a)') '* Running TBtrans using ', Nodes, &
+             'nodes in parallel'
      else
         write(*,'(/,a)') '* Running in serial mode with MPI'
      endif
@@ -100,6 +101,9 @@ subroutine tbt_init()
 !$    write(*,'(a,i0,a)') &
 !$       '* Running TBtrans using ', &
 !$       omp_get_num_threads(),' OpenMP threads.'
+!$    write(*,'(a,i0,a)') &
+!$       '* Running TBtrans using ', &
+!$       Nodes*omp_get_num_threads(),' processes.'
 !$OMP end master
 !$OMP end parallel
 
