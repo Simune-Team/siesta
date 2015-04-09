@@ -1,4 +1,39 @@
 ----------------------------------------------------
+April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-372
+Added new much better pivoting scheme
+
+* Added a peripheral connectivity graph pivoting
+  scheme which turns out to out-perform the
+  regular connectivity graphs.
+  This might be due to the level structure of restricting
+  certain levels and their sequence of additions.
+
+  For what its worth it actually does seem to outperform
+  the much fancier, and less fancier pivoting schemes.
+
+  It can be used using PCG/rev-PCG
+
+* Added rgn_reverse which superseedes some other 
+  often used routines.
+
+* Added rgn_sp_sort so it exists in two variants.
+  One where the type(Sparsity) gets passed,
+  and one where the index arrays gets passed.
+  
+  They are totally equivalent as the type
+  is a wrapper for the other.
+
+  This makes the sorting algorithm available to the 
+  pivoting methods.
+
+modified:
+  Src/m_pivot.F90
+  Src/m_pivot_methods.F90
+  Src/m_region.F90
+  Src/m_ts_tri_init.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-371
 Small update of output for projections
 

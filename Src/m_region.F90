@@ -50,6 +50,7 @@ module m_region
   public :: rgn_insert
   public :: rgn_print
   public :: rgn_copy
+  public :: rgn_reverse
   public :: in_rgn, rgn_pivot
   public :: rgn_push, rgn_pop
 #ifdef MPI
@@ -59,6 +60,10 @@ module m_region
 
   ! Regions which has to do with sparsity patterns
   public :: rgn_sp_connect
+  interface rgn_sp_sort
+     module procedure rgn_sp_sort_type
+     module procedure rgn_sp_sort_explicit
+  end interface rgn_sp_sort
   public :: rgn_sp_sort
 
   ! Regions which has to do with atoms/orbitals
@@ -449,7 +454,7 @@ contains
   !     I.e. we find the number of connection orbitals for all in 'sr' which 
   !     connects into region 'r'.
   !     We then place 
-  subroutine rgn_sp_sort(r,dit,sp, sr, method)
+  subroutine rgn_sp_sort_type(r,dit,sp, sr, method)
 
 #ifdef MPI
     use mpi_siesta, only : MPI_Integer
@@ -469,10 +474,60 @@ contains
     integer, intent(in) :: method
 
     ! ** local variables
-    type(tRgn) :: r_tmp
-    integer :: no_u, i, io, ci, ind, jo, last_n, idx_max
-    integer, allocatable :: n_c(:), cur_con(:)
+    integer :: n, nzs
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+
+    if ( r%n == 0 ) return
+
+    ! Attach to the sparsity pattern...
+    call attach(sp,nrows_g=n, nnzs=nzs, &
+         n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+
+    call rgn_sp_sort_explicit(r,n,nzs,l_ncol,l_ptr,l_col, &
+         sr,method,dit=dit)
+
+  end subroutine rgn_sp_sort_type
+
+  ! This routine WORKS IN PARALLEL
+  ! Will sort a region of orbitals based on the sparsity
+  ! pattern. In effect this can be used as a pivoting method for
+  ! obtaing the smallest bandwidth of a matrix.
+  ! It currently implements a method which
+  !  -> takes a region 'r' and sort the elements 'sr' in that region
+  !     All orbitals in sr MUST exist in 'r', it checks and dies if this
+  !     is not fulfilled.
+  !     We then allow for two different sorting methods:
+  !  1. Sort according to the maximum connections in front of the region 'sr'
+  !     I.e. we find number of connection orbitals for all in 'sr' which does
+  !     does not connect into region 'r'.
+  !     We then place the most connecting orbital in 'sr' last in region 'r'
+  !  2. Sort according to the maximum connections back to the region 'r'
+  !     I.e. we find the number of connection orbitals for all in 'sr' which 
+  !     connects into region 'r'.
+  !     We then place 
+  subroutine rgn_sp_sort_explicit(r,n,nnzs,n_col,l_ptr,l_col, sr, method,dit)
+
+#ifdef MPI
+    use mpi_siesta, only : MPI_Integer
+    use mpi_siesta, only : MPI_MAX, MPI_MIN, MPI_AllReduce
+#endif
+
+    ! the region we wish to find the connections to
+    type(tRgn), intent(inout) :: r
+    ! The sparsity pattern
+    integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
+    ! the sorting region (i.e. the orbitals that are allowed
+    ! to be pivoted)
+    type(tRgn), intent(inout) :: sr
+    ! The method used for sorting
+    integer, intent(in) :: method
+    ! The distribution
+    type(OrbitalDistribution), intent(in), optional :: dit
+
+    ! ** local variables
+    type(tRgn) :: r_tmp
+    integer :: i, io, ci, ind, jo, last_n, idx_max
+    integer, allocatable :: n_c(:), cur_con(:)
 #ifdef MPI
     integer :: comm
     integer :: MPIerror
@@ -481,12 +536,8 @@ contains
     if ( r%n == 0 ) return
 
 #ifdef MPI
-    comm = dist_comm(dit)
+    if ( present(dit) ) comm = dist_comm(dit)
 #endif
-
-    ! Attach to the sparsity pattern...
-    call attach(sp,nrows_g=no_u, &
-         n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! First we ensure that the lists are the same
     call rgn_intersection(r,sr,r_tmp)
@@ -498,7 +549,7 @@ contains
     ! Prepare the collection arrays
     allocate(n_c(sr%n))
     n_c = 0 ! initialize to ensure MPI reduction
-    allocate(cur_con(no_u))
+    allocate(cur_con(n))
 
     select case ( method ) 
 
@@ -515,16 +566,20 @@ contains
        do i = 1 , sr%n
 
           ! Orbital that should be folded from
-          io = index_global_to_local(dit,sr%r(i))
-          if ( io <= 0 ) cycle ! the orbital does not exist on this node
+          if ( present(dit) ) then
+             io = index_global_to_local(dit,sr%r(i))
+             if ( io <= 0 ) cycle ! the orbital does not exist on this node
+          else
+             io = sr%r(i)
+          end if
           
-          if ( l_ncol(io) == 0 ) cycle
+          if ( n_col(io) == 0 ) cycle
 
           ci = 0
-          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+          do ind = l_ptr(io) + 1 , l_ptr(io) + n_col(io)
              
              ! UC-orb
-             jo = ucorb(l_col(ind),no_u)
+             jo = ucorb(l_col(ind),n)
              
              ! Ensure that it is not folding to the same region
              if ( in_rgn(r,jo) ) cycle
@@ -545,10 +600,12 @@ contains
        end do
 
 #ifdef MPI
-       if ( dist_nodes(dit) > 1 ) then
-          call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
-               MPI_MAX, comm, MPIerror)
-          n_c(1:sr%n) = cur_con(1:sr%n)
+       if ( present(dit) ) then
+          if ( dist_nodes(dit) > 1 ) then
+             call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
+                  MPI_MAX, comm, MPIerror)
+             n_c(1:sr%n) = cur_con(1:sr%n)
+          end if
        end if
 #endif
 
@@ -566,16 +623,20 @@ contains
        do i = 1 , sr%n
 
           ! Orbital that should be folded from
-          io = index_global_to_local(dit,sr%r(i))
-          if ( io <= 0 ) cycle ! the orbital does not exist on this node
+          if ( present(dit) ) then
+             io = index_global_to_local(dit,sr%r(i))
+             if ( io <= 0 ) cycle ! the orbital does not exist on this node
+          else
+             io = sr%r(i)
+          end if
 
-          if ( l_ncol(io) == 0 ) cycle
+          if ( n_col(io) == 0 ) cycle
 
           ci = 0
-          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+          do ind = l_ptr(io) + 1 , l_ptr(io) + n_col(io)
              
              ! UC-orb
-             jo = ucorb(l_col(ind),no_u)
+             jo = ucorb(l_col(ind),n)
              
              ! Ensure that it is folding to the same region
              if ( .not. in_rgn(r,jo) ) cycle
@@ -596,10 +657,12 @@ contains
        end do
 
 #ifdef MPI
-       if ( dist_nodes(dit) > 1 ) then
-          call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
-               MPI_MAX, comm, MPIerror)
-          n_c(1:sr%n) = cur_con(1:sr%n)
+       if ( present(dit) ) then
+          if ( dist_nodes(dit) > 1 ) then
+             call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
+                  MPI_MAX, comm, MPIerror)
+             n_c(1:sr%n) = cur_con(1:sr%n)
+          end if
        end if
 #endif
 
@@ -621,16 +684,20 @@ contains
        do i = 1 , sr%n
 
           ! Orbital that should be folded from
-          io = index_global_to_local(dit,sr%r(i))
-          if ( io <= 0 ) cycle ! the orbital does not exist on this node
+          if ( present(dit) ) then
+             io = index_global_to_local(dit,sr%r(i))
+             if ( io <= 0 ) cycle ! the orbital does not exist on this node
+          else
+             io = sr%r(i)
+          end if
 
-          if ( l_ncol(io) == 0 ) cycle
+          if ( n_col(io) == 0 ) cycle
 
           ci = r%n
-          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+          do ind = l_ptr(io) + 1 , l_ptr(io) + n_col(io)
              
              ! UC-orb
-             jo = ucorb(l_col(ind),no_u)
+             jo = ucorb(l_col(ind),n)
              
              ! Ensure that it is folding to the same region
              ci = min(rgn_pivot(r,jo),ci)
@@ -644,10 +711,12 @@ contains
        end do
 
 #ifdef MPI
-       if ( dist_nodes(dit) > 1 ) then
-          call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
-               MPI_MIN, comm, MPIerror)
-          n_c(1:sr%n) = cur_con(1:sr%n)
+       if ( present(dit) ) then
+          if ( dist_nodes(dit) > 1 ) then
+             call MPI_AllReduce(n_c,cur_con,sr%n,MPI_Integer, &
+                  MPI_MIN, comm, MPIerror)
+             n_c(1:sr%n) = cur_con(1:sr%n)
+          end if
        end if
 #endif
 
@@ -722,7 +791,8 @@ contains
 
     deallocate(n_c,cur_con)
 
-  end subroutine rgn_sp_sort
+  end subroutine rgn_sp_sort_explicit
+
 
   ! Creates a region in terms of the INTERSECTION of two regions 
   subroutine rgn_intersection(r1,r2,ir)
@@ -1109,6 +1179,17 @@ contains
        r%sorted = .true.
     end if
   end subroutine rgn_sort
+
+  subroutine rgn_reverse(r)
+    type(tRgn), intent(inout) :: r
+    integer :: i, tmp
+    ! Reverse the list
+    do i = 1 , r%n / 2
+       tmp = r%r(i)
+       r%r(i) = r%r(r%n+1-i)
+       r%r(r%n+1-i) = tmp
+    end do
+  end subroutine rgn_reverse
 
   subroutine rgn_correct_atom(r,na_u,lasto)
     ! Region which we want to extend with the atoms

@@ -28,6 +28,7 @@ module m_pivot_methods
   public :: Cuthill_Mckee, rev_Cuthill_Mckee
   public :: GPS, rev_GPS
   public :: GGPS, rev_GGPS
+  public :: PCG, rev_PCG
 
   public :: bandwidth, profile
 
@@ -788,16 +789,9 @@ contains
     type(tRgn), intent(inout) :: pvt
     integer, intent(in), optional :: priority(n)
 
-    integer :: i, tmp
-
     call GGPS(n,nnzs,n_col,l_ptr,l_col,sub,pvt, priority=priority)
     
-    ! Reverse the list
-    do i = 1 , pvt%n / 2
-       tmp = pvt%r(i)
-       pvt%r(i) = pvt%r(pvt%n+1-i)
-       pvt%r(pvt%n+1-i) = tmp
-    end do
+    call rgn_reverse(pvt)
 
   end subroutine rev_GGPS
 
@@ -861,18 +855,85 @@ contains
     type(tRgn), intent(inout) :: pvt
     integer, intent(in), optional :: priority(n)
 
-    integer :: i, tmp
-
     call GPS(n,nnzs,n_col,l_ptr,l_col,sub,pvt, priority=priority)
     
-    ! Reverse the list
-    do i = 1 , pvt%n / 2
-       tmp = pvt%r(i)
-       pvt%r(i) = pvt%r(pvt%n+1-i)
-       pvt%r(pvt%n+1-i) = tmp
-    end do
+    call rgn_reverse(pvt)
 
   end subroutine rev_GPS
+
+  ! The PCG algorithm 
+  ! This algorithm uses the connectivity graph to sort each level.
+  ! We use the peripheral search to find the end-points of the 
+  ! peripheral graph. Then we add each level and sort
+  subroutine PCG(n,nnzs,n_col,l_ptr,l_col,sub,pvt,priority)
+    ! the dimensionality of the system
+    integer, intent(in) :: n, nnzs
+    ! The sparse pattern
+    integer, intent(in) :: n_col(n), l_ptr(n), l_col(nnzs)
+    ! The region of interest
+    type(tRgn), intent(in) :: sub
+    ! The currently indexs of the pivoted arrays
+    type(tRgn), intent(inout) :: pvt
+    ! The priority of the rows, optional
+    integer, intent(in), optional :: priority(n)
+    
+    ! The level structure created by the algo_i_ii
+    type(tPvtLvl) :: lvl
+    type(tRgn) :: ipvt, r
+    integer :: d, depth
+
+    ! Ensure it is clean
+    call rgn_delete(pvt)
+
+    ! Find a set of pseudo-peripherals using the GPS algorithm
+    call pseudo_peripheral(D_LOW,n,nnzs,n_col,l_ptr,l_col,sub,lvl, &
+         priority = priority)
+    depth = lvl_depth(lvl%lvl)
+#ifdef PVT_DEBUG
+       write(*,*)'   CGPS found left peripheral ', lvl%pvt%r(1)
+#endif
+    
+    ! Process the pivoting of each level
+    do d = depth , 1 , -1
+
+       ! Order the level according to increasing degree
+       call lvl_struct_extract(lvl%pvt,lvl%lvl,d,ipvt)
+
+#ifdef PVT_DEBUG
+       write(*,*)   '   CGPS processing level ', d, ipvt%n
+       if ( d == depth ) then
+          write(*,*)'   CGPS found right peripheral ', ipvt%r(1)
+       end if
+#endif
+
+       call rgn_append(pvt,ipvt,pvt)
+       if ( pvt%n - ipvt%n == 1 ) then
+          ! Sort everything (the first one is not that great anyway)
+          ! This will only occur if the peripheral search
+          ! returns the first one "last"
+          call rgn_copy(pvt,ipvt)
+       end if
+       call rgn_sp_sort(pvt,n,nnzs,n_col,l_ptr,l_col, &
+            ipvt, R_SORT_MAX_BACK)
+
+    end do
+    
+    call rgn_delete(r,ipvt,lvl%pvt,lvl%lvl)
+    
+  end subroutine PCG
+
+  subroutine rev_PCG(n,nnzs,n_col,l_ptr,l_col,sub,pvt,priority)
+    integer, intent(in) :: n, nnzs
+    integer, intent(in) :: n_col(n), l_ptr(n), l_col(nnzs)
+    type(tRgn), intent(in) :: sub
+    type(tRgn), intent(inout) :: pvt
+    integer, intent(in), optional :: priority(n)
+
+    call PCG(n,nnzs,n_col,l_ptr,l_col,sub,pvt,priority)
+
+    call rgn_reverse(pvt)
+    
+  end subroutine rev_PCG
 
   function bandwidth(n,nnzs,n_col,l_ptr,l_col,sub) result(beta)
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
@@ -1341,17 +1402,10 @@ contains
     type(tRgn), intent(in), optional :: start
     integer, intent(in), optional :: priority(n)
 
-    integer :: i, tmp
-
     call Cuthill_Mckee(n,nnzs,n_col,l_ptr,l_col,sub,pvt, &
          start=start,priority=priority)
 
-    ! Reverse the list
-    do i = 1 , pvt%n / 2
-       tmp = pvt%r(i)
-       pvt%r(i) = pvt%r(pvt%n+1-i)
-       pvt%r(pvt%n+1-i) = tmp
-    end do
+    call rgn_reverse(pvt)
 
   end subroutine rev_Cuthill_Mckee
 

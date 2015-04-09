@@ -30,6 +30,8 @@ module m_pivot
   integer, parameter :: PVT_REV_GPS = 4
   integer, parameter :: PVT_GGPS = 5
   integer, parameter :: PVT_REV_GGPS = 6
+  integer, parameter :: PVT_PCG = 7
+  integer, parameter :: PVT_REV_PCG = 8
 
 contains
 
@@ -90,6 +92,10 @@ contains
        call GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
     else if ( method == PVT_REV_GPS           ) then
        call rev_GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
+    else if ( method == PVT_PCG               ) then
+       call PCG(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
+    else if ( method == PVT_REV_PCG           ) then
+       call rev_PCG(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
     else if ( method == PVT_GGPS              ) then
        call GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
     else if ( method == PVT_REV_GGPS          ) then

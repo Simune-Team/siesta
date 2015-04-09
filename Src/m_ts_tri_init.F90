@@ -232,6 +232,24 @@ contains
        call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_GPS, r_tmp , &
             priority = priority%r )
 
+    else if ( leqi(ctmp,'PCG') ) then
+
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_PCG, r_tmp)
+
+    else if ( leqi(ctmp,'PCG+priority') ) then
+
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_PCG, r_tmp , &
+            priority = priority%r )
+
+    else if ( leqi(ctmp,'rev-PCG') ) then
+
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_PCG, r_tmp)
+
+    else if ( leqi(ctmp,'rev-PCG+priority') ) then
+
+       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_PCG, r_tmp , &
+            priority = priority%r )
+
     else if ( leqi(ctmp,'GGPS') ) then
 
        call sp_pvt(n,tmpSp2,r_pvt, PVT_GGPS, r_tmp)
@@ -714,7 +732,7 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'rev-CM'
-    call reverse(r_tmp)
+    call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -733,7 +751,7 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'rev-CM+priority'
-    call reverse(r_tmp)
+    call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -751,7 +769,7 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'rev-GPS'
-    call reverse(r_tmp)
+    call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -769,7 +787,43 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'rev-GPS+priority'
-    call reverse(r_tmp)
+    call rgn_reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'PCG'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'rev-PCG'
+    call rgn_reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'PCG+priority'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full, priority = priority%r)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+priority'
+    call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -787,7 +841,7 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'rev-GGPS'
-    call reverse(r_tmp)
+    call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -805,7 +859,7 @@ contains
     end if
 
     if ( IONode ) write(*,fmt) trim(corb),'rev-GGPS+priority'
-    call reverse(r_tmp)
+    call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
        call tri(r_tmp)
     else
@@ -881,19 +935,6 @@ contains
       
     end subroutine tri
 
-    subroutine reverse(pvt)
-      type(tRgn), intent(inout) :: pvt
-      integer :: i, tmp
-
-      ! Reverse the list
-      do i = 1 , pvt%n / 2
-         tmp = pvt%r(i)
-         pvt%r(i) = pvt%r(pvt%n+1-i)
-         pvt%r(pvt%n+1-i) = tmp
-      end do
-
-    end subroutine reverse
-      
   end subroutine ts_tri_analyze
 
   subroutine crt_El_priority(N_Elec,Elecs,pr,is_orb)

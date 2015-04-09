@@ -478,7 +478,7 @@ contains
 
        call rgn_copy(r_oDev,r_tmp)
 
-       sp_tmp = sp
+       sp_tmp = sp_uc
 
     else
 
@@ -494,7 +494,7 @@ contains
        call rgn_Orb2Atom(r_tmp,na_u,lasto,r_Els)
        call rgn_copy(r_aDev,r_tmp)
 
-       call SpOrb_to_SpAtom(dit,sp,na_u,lasto,sp_tmp)
+       call SpOrb_to_SpAtom(dit,sp_uc,na_u,lasto,sp_tmp)
 
     end if
 
@@ -563,6 +563,22 @@ contains
     else if ( leqi(g,'rev-GPS+priority') ) then
        
        call sp_pvt(n,sp_tmp,r_tmp2, PVT_REV_GPS, r_Dev, priority = priority%r )
+
+    else if ( leqi(g,'PCG') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_PCG, r_Dev)
+
+    else if ( leqi(g,'PCG+priority') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_PCG, r_Dev, priority = priority%r )
+
+    else if ( leqi(g,'rev-PCG') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_REV_PCG, r_Dev)
+       
+    else if ( leqi(g,'rev-PCG+priority') ) then
+       
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_REV_PCG, r_Dev, priority = priority%r )
        
     else if ( leqi(g,'GGPS') ) then
 
