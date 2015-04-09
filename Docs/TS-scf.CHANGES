@@ -1,4 +1,22 @@
 ----------------------------------------------------
+April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-367
+Added pivoting for tbtrans device region
+
+* The pivoting scheme for TBtrans has been completed.
+
+  It now works as in transiesta with the excerpt that
+  it only works in the device region.
+
+  The advanced methods are not created for retaining certain
+  elements in one or the other end.
+  Hence for now we only allow sorting in the device region.
+
+modified:
+  Src/m_ts_tri_init.F90
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-366
 Bugfix for pivoting scheme
 

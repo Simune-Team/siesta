@@ -59,6 +59,8 @@ contains
     use mpi_siesta, only : MPI_Comm_World, MPI_Barrier
 #endif
 
+    use m_pivot
+
     use m_io_s, only : file_exist
     use geom_helper, only : iaorb
     use intrinsic_missing, only : SPC_PROJ, VNORM, VEC_PROJ
@@ -97,9 +99,10 @@ contains
 
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    character(len=50) :: g
-    integer :: i, ia, ia1, ia2, no_u, iu
-    type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Dev
+    character(len=50) :: g, csort
+    integer :: i, ia, ia1, ia2, no_u, iu, n
+    type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Els, r_Dev, priority
+    logical :: sort_orb
     real(dp) :: p(3), contrib
 
     no_u = lasto(na_u)
@@ -168,8 +171,8 @@ contains
              ! We can read in a range
              call fdf_brange(pline,r_tmp,1,na_u)
              if ( r_tmp%n == 0 ) &
-                  call die('Could not read in any atoms in line of &
-                  &TBT.Atoms.Device')
+                  call die('Could not read in any atoms &
+                  &in line of TBT.Atoms.Device')
              call rgn_union(r_aDev,r_tmp,r_aDev)
              
           end if
@@ -196,7 +199,6 @@ contains
     if ( r_aDev%n == 0 ) then
        call die('Zero atoms are in the device region...???')
     end if
-    ! list_a(1:na) now contains the device region
 
     ! Create device region
     call rgn_Atom2Orb(r_aDev,na_u,lasto,r_oDev)
@@ -238,6 +240,10 @@ contains
        call rgn_Atom2Orb(r_aDev,na_u,lasto,r_oDev)
 
     end if
+
+    ! Makes searching a little faster
+    call rgn_sort(r_aDev)
+    call rgn_sort(r_oDev)
 
 #ifdef TRANSIESTA_DEBUG
     open(file='FULL_SP',unit=1400,form='formatted')
@@ -330,6 +336,11 @@ contains
        call rgn_delete(r_tmp,r_tmp2,r_tmp3)
        return
     end if
+
+    ! Create the electrode down-folding regions.
+    ! Note that sorting according to the more advanced methods
+    ! is not directly applicable as the methods involve non-stringent
+    ! ending elements.
 
     do iEl = 1 , N_Elec
 
@@ -426,12 +437,9 @@ contains
     end do
 
     if ( Node == 0 ) then
-       write(*,'(a)')'tbtrans: Analyzing device sparsity pattern to create optimal tri-diagonal blocks...'
+       write(*,'(a)')'tbtrans: Analyzing device sparsity pattern to &
+            &create optimal tri-diagonal blocks...'
     end if
-
-    ! We need the complement of the device region
-    call rgn_range(r_tmp,1,no_u)
-    call rgn_complement(r_oDev,r_tmp,r_tmp3)
     
     ! We sort the device region based on the
     ! first orbital that the electrode connects the most too.
@@ -445,15 +453,130 @@ contains
     ! then we need not re-sort it.
     ! This seems like the best choice when looking
     ! at TB models where number of connections is the same
-    ia1 = r_oDev%n
-    g = fdf_get('TBT.Atoms.Device.Sort',trim(Elecs(1)%name))
+
+    ! Prepare total region with all electrodes
+    call rgn_copy(Elecs(1)%o_inD,r_tmp)
+    do i = 2 , N_Elec
+       ! We have to use union as they may overlap
+       call rgn_union(r_Els,Elecs(i)%o_inD,r_Els)
+    end do
+
+    csort = 'atom+'//trim(Elecs(1)%name)
+    csort = fdf_get('TS.BTD.Pivot',csort)
+    csort = fdf_get('TBT.BTD.Pivot',csort)
+    csort = fdf_get('TBT.BTD.Pivot.Device',csort)
+    g = csort
+
+    ! we default to do atomic sorting, faster and very consistent
+    sort_orb = index(g,'orb') > 0
+
+    if ( sort_orb ) then
+
+       ! the specification is orb + something
+       i = index(g,'orb')
+       g(i:i+3) = ' ' ! also remove +, we ADJUSTL below
+
+       call rgn_copy(r_oDev,r_tmp)
+
+       sp_tmp = sp
+
+    else
+
+       ! in case the user supplies 'atom+something'
+       i = index(g,'atom')
+       if ( i > 0 ) then
+          g(i:i+4) = ' ' ! also remove +
+       else
+          csort = 'atom+'//trim(csort)
+       end if
+
+       call rgn_copy(r_Els,r_tmp)
+       call rgn_Orb2Atom(r_tmp,na_u,lasto,r_Els)
+       call rgn_copy(r_aDev,r_tmp)
+
+       call SpOrb_to_SpAtom(dit,sp,na_u,lasto,sp_tmp)
+
+    end if
+
+    ! The device region
+    call rgn_copy(r_tmp,r_Dev)
+    ! Sort the electrode region to make it faster
+    call rgn_sort(r_Els)
+
+    ! Now r_tmp contains the copy of the "sub" section
+    ! of the wanted region, i.e. the device region
+    n = nrows_g(sp_tmp)
+
+    ! We need the complement of the device region
+    call rgn_range(r_tmp2,1,n)
+    call rgn_complement(r_Dev,r_tmp2,r_tmp3) ! r_3 == complement of a/oDev
+
+    ! Create priority list
+    ! Currently the priority is hard to create using 
+    ! a down-folded region.
+    ! We cannot assert the semi-infinite sorting, or at least much less
+    call rgn_init(priority,n)
+    call crt_El_priority(N_Elec,Elecs,priority,na_u,lasto, is_orb = sort_orb )
+
+    ! Left adjust the string
+    g = ADJUSTL(g)
+
     if ( leqi(g,'none') ) then
 
        ! do nothing, it should not be sorted.
+       
+    else if ( leqi(g,'CM') ) then
 
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_CUTHILL_MCKEE, r_Dev, start = r_Els)
+
+    else if ( leqi(g,'CM+priority') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_CUTHILL_MCKEE, r_Dev, start = r_Els, &
+            priority = priority%r )
+
+    else if ( leqi(g,'rev-CM') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_REV_CUTHILL_MCKEE, r_Dev, start = r_Els)
+
+    else if ( leqi(g,'rev-CM+priority') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_REV_CUTHILL_MCKEE, r_Dev, start = r_Els , &
+            priority = priority%r )
+
+    else if ( leqi(g,'GPS') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_GPS, r_Dev)
+
+    else if ( leqi(g,'GPS+priority') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_GPS, r_Dev, priority = priority%r )
+
+    else if ( leqi(g,'rev-GPS') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_REV_GPS, r_Dev)
+       
+    else if ( leqi(g,'rev-GPS+priority') ) then
+       
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_REV_GPS, r_Dev, priority = priority%r )
+       
+    else if ( leqi(g,'GGPS') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_GGPS, r_Dev)
+
+    else if ( leqi(g,'GGPS+priority') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_GGPS, r_Dev, priority = priority%r )
+
+    else if ( leqi(g,'rev-GGPS') ) then
+
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_REV_GGPS, r_Dev)
+
+    else if ( leqi(g,'rev-GGPS+priority') ) then
+       
+       call sp_pvt(n,sp_tmp,r_tmp2, PVT_REV_GGPS, r_Dev, priority = priority%r )
+       
     else
        
-       call rgn_copy(r_oDev, r_Dev)
 
        ! We select all the atoms from the specified electrode
        ! that connect into the device
@@ -463,12 +586,23 @@ contains
        ! sorted wrt. back-connectivity
 
        ! Figure out which electrode has been given
-       call rgn_delete(r_oDev)
+       iEl = 0
        do i = 1 , N_Elec
-          if ( Elecs(i)%name == g ) &
-               call rgn_copy(Elecs(i)%o_inD,r_oDev)
+          if ( leqi(Elecs(i)%name,g) ) iEl = i
        end do
-       if ( r_oDev%n == 0 ) then
+       if ( iEl == 0 ) then
+          print *,csort
+          call die('Could find the electrode in &
+               &TBT.BTD.Pivot.Device in the list of electrodes, &
+               &please correct sorting method.')
+       end if
+
+       if ( sort_orb ) then
+          call rgn_copy(Elecs(iEl)%o_inD,r_tmp2)
+       else
+          call rgn_Orb2Atom(Elecs(iEl)%o_inD,na_u,lasto,r_tmp2)
+       end if
+       if ( r_tmp2%n == 0 ) then
           call die('Could not determine sorting electrode. &
                &Please provide a valid electrode name or none.')
        end if
@@ -477,21 +611,25 @@ contains
 
           ! Create the region that connects to the last part of the 
           ! added orbitals
-          call rgn_sp_connect(r_oDev, dit, sp, r_tmp, except = r_tmp3)
+          call rgn_sp_connect(r_tmp2, dit, sp_tmp, r_tmp, except = r_tmp3)
           
-          if ( r_tmp%n == 0 .and. ia1 /= r_oDev%n ) then
+          if ( r_tmp%n == 0 .and. r_Dev%n /= r_tmp2%n ) then
 
              ! In case the connecting region is empty,
              ! say for capacitors we need to force the next region.
              ! In this case, we take some "random" orbital.
              do i = 1 , r_Dev%n
-                if ( in_rgn(r_oDev,r_Dev%r(i)) ) cycle
+                if ( in_rgn(r_tmp2,r_Dev%r(i)) ) cycle
                 call rgn_range(r_tmp,r_Dev%r(i),r_Dev%r(i))
                 exit
              end do
 
              ! get the atomic index
-             i = iaorb(r_tmp%r(1),lasto)
+             if ( sort_orb ) then
+                i = iaorb(r_tmp%r(1),lasto)
+             else
+                i = r_tmp%r(1)
+             end if
                 
              if ( Node == 0 ) then
                 write(*,'(/,a,i0,a)')'WARNING TBT: &
@@ -502,17 +640,18 @@ contains
                      &BTD format.'
              end if
 
-             call rgn_range(r_tmp,lasto(i-1)+1,lasto(i))
-             ! Assert that none of the orbitals exist in the, region
-             do i = 1 , r_tmp%n
-                if ( in_rgn(r_oDev,r_tmp%r(i)) ) then
-                   call die('This is extremely difficult. &
-                        &Please do not sort the BTD format as &
-                        it cannot figure out what to do.')
-                end if
-             end do
+             if ( sort_orb ) then
+                call rgn_range(r_tmp,lasto(i-1)+1,lasto(i))
+             end if
+
+             ! Assert that none of the orbitals exist in the region
+             if ( rgn_overlaps(r_tmp2,r_tmp) ) then
+                call die('This is extremely difficult. &
+                     &Please do not sort the BTD format according to &
+                     &an electrode as it cannot figure out what to do.')
+             end if
              
-             call rgn_append(r_oDev, r_tmp, r_oDev)
+             call rgn_append(r_tmp2, r_tmp, r_tmp2)
              cycle
              
           end if
@@ -523,26 +662,49 @@ contains
 
           ! Append the newly found region that is connecting out to the
           ! full region
-          call rgn_append(r_oDev, r_tmp, r_oDev)
+          call rgn_append(r_tmp2, r_tmp, r_tmp2)
           
           ! we sort the newly attached region
-          call rgn_sp_sort(r_oDev, dit, sp, r_tmp, R_SORT_MAX_BACK )
+          call rgn_sp_sort(r_tmp2, dit, sp_tmp, r_tmp, R_SORT_MAX_BACK )
           
        end do
 
-       call rgn_delete(r_Dev)
+    end if
 
+    ! Check that there is no overlap with the other regions
+    if ( rgn_overlaps(r_tmp3,r_tmp2) ) then
+       call rgn_print(r_Dev)
+       call rgn_print(r_tmp3)
+       call rgn_print(r_tmp2)
+       print *,'Overlapping device, down-folding and/or buffer region...'
+       call die('Error in programming')
+    end if
+
+    ! Check that we have correctly re-captured the device region.
+    if ( .not. sort_orb ) then
+       if ( r_tmp2%n + r_tmp3%n /= na_u .or. &
+            r_tmp2%n /= r_Dev%n ) then
+          print *,r_tmp2%n,r_tmp3%n,na_u,r_Dev%n
+          call die('Error in number of atoms...')
+       end if
+    end if
+
+    ! Create complement of device region
+    call rgn_range(r_tmp,1,no_u)
+    call rgn_complement(r_oDev,r_tmp,r_tmp3) ! r_3 == complement of oDev
+
+    ! Copy over the sorted region
+    if ( sort_orb ) then
+       call rgn_copy(r_tmp2,r_oDev)
+    else
+       call rgn_Atom2Orb(r_tmp2,na_u,lasto,r_oDev)
     end if
     r_oDev%name = '[O]-device'
 
-    ! Check that we have correctly re-captured the device region.
-    if ( rgn_overlaps(r_oDev,r_tmp3) ) then
-       print *,'Overlapping regions...'
-       call die('Error in programming')
-    end if
-    if ( r_oDev%n + r_tmp3%n /= no_u .or. &
-         r_oDev%n /= ia1 ) then
-       print *,r_oDev%n,r_tmp3%n,no_u,ia1
+    ! Check that r_oDev contains all but the folded
+    ! region and the buffer
+    if ( r_oDev%n + r_tmp3%n /= no_u ) then
+       print *,r_oDev%n,r_tmp3%n,no_u
        call die('Error in number of orbitals...')
     end if
 
@@ -635,7 +797,8 @@ contains
     end if
 
     ! Clean-up
-    call rgn_delete(r_tmp,r_tmp2,r_tmp3)
+    call rgn_delete(r_tmp,r_tmp2,r_tmp3,r_Els,priority)
+    call delete(sp_tmp)
 
     if ( Node == 0 ) then
        write(*,'(a)')'tbtrans: Done analyzing sparsity pattern...'
@@ -942,5 +1105,35 @@ contains
     call rgn_delete(r)
 
   end subroutine tbt_print_regions
+
+  subroutine crt_El_priority(N_Elec,Elecs,pr,na_u,lasto,is_orb)
+    use m_ts_electype
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    type(tRgn), intent(inout) :: pr ! Needs to be pre-allocated
+    integer, intent(in) :: na_u, lasto(0:na_u)
+    logical, intent(in) :: is_orb
+    integer :: i, iEl, j
+    type(tRgn) :: rgn
+    
+    ! Initialize
+    pr%r = 0
+    do iEl = 1 , N_Elec
+       if ( is_orb ) then
+          call rgn_copy(Elecs(iEl)%o_inD,rgn)
+       else
+          call rgn_Orb2Atom(Elecs(iEl)%o_inD,na_u,lasto,rgn)
+       end if
+       
+       i = rgn%n
+       do j = 1 , rgn%n
+          pr%r(rgn%r(j)) = i
+          i = i - 1
+       end do
+    end do
+
+    call rgn_delete(rgn)
+
+  end subroutine crt_El_priority
 
 end module m_tbt_regions

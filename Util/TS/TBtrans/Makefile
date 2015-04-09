@@ -62,6 +62,7 @@ SIESTA_OBJS += m_integrate.o m_interpolate.o m_mat_invert.o
 SIESTA_OBJS += m_iterator.o fdf_extra.o
 SIESTA_OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
 SIESTA_OBJS += m_region.o m_sparsity_handling.o m_pivot_array.o
+SIESTA_OBJS += m_pivot.o m_pivot_methods.o
 SIESTA_OBJS += m_ncdf_io.o
 
 # Geometry modules
@@ -919,8 +920,8 @@ m_tbt_proj.o: m_io_s.o m_ncdf_io.o m_region.o m_tbt_diag.o m_tbt_hs.o
 m_tbt_proj.o: m_tbt_save.o m_ts_electype.o parallel.o precision.o timestamp.o
 m_tbt_proj.o: units.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
-m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_io_s.o m_region.o
-m_tbt_regions.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o
+m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_io_s.o m_pivot.o
+m_tbt_regions.o: m_region.o m_sparsity_handling.o m_ts_debug.o m_ts_electype.o
 m_tbt_regions.o: m_ts_method.o m_ts_sparse.o parallel.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_io_s.o m_ncdf_io.o m_region.o

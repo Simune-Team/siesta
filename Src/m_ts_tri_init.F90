@@ -255,7 +255,7 @@ contains
        ! Figure out which electrode has been given
        iEl = 0
        do i = 1 , N_Elec
-          if ( Elecs(i)%name == ctmp ) iEl = i
+          if ( leqi(Elecs(i)%name,ctmp) ) iEl = i
        end do
        if ( iEl == 0 ) then
           print *,csort
@@ -901,7 +901,7 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     type(tRgn), intent(inout) :: pr ! Needs to be pre-allocated
-    logical :: is_orb
+    logical, intent(in) :: is_orb
     integer :: i, iEl, no, j, start, end
     
     ! Initialize
