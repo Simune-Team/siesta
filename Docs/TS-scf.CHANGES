@@ -1,4 +1,16 @@
 ----------------------------------------------------
+April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-366
+Bugfix for pivoting scheme
+
+* The pivoting scheme did not function for
+  sub partitions (say if buffer atoms existed)
+  This should have been corrected now.
+
+modified:
+  Src/m_pivot.F90
+  Src/m_pivot_methods.F90
+
+----------------------------------------------------
 April 7, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-365
 Sorted electrodes in BTD creation to speed it up
 

@@ -73,7 +73,9 @@ contains
 
     if ( present(sub) ) then
        call rgn_copy(sub,lsub)
+       call rgn_sort(lsub)
     else
+       ! This will automatically be sorted
        call rgn_range(lsub,1,n)
     end if
 

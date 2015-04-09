@@ -117,6 +117,8 @@ contains
     integer, allocatable :: lvl_set(:), h(:,:)
     logical :: suc
 
+    call rgn_delete(pvt)
+
     lrange = 0
     if ( present(range) ) lrange = range
 
@@ -133,7 +135,7 @@ contains
 #ifdef PVT_DEBUG
     write(*,*)'   primary set level [depth / width]:       ', &
          lvl_depth(vs%v%lvl),lvl_width(vs%v%lvl)
-    write(*,*)'   s [min width] set level [depth / width]: ',depth,width
+    write(*,*)'   s [min width] set level [depth / width/ etr_small]: ',depth,width,etr_small
 #endif
 
     ! I cannot figure out (iv), it seems they should say 
@@ -147,12 +149,13 @@ contains
     N_lvl = lvl_depth(vs%v%lvl)
 
     ! extract the nodes at the last level to search for all 
-    call lvl_struct_extract(vs%v%pvt,vs%v%lvl,N_lvl,r)
+    call lvl_struct_extract(vs%v%pvt,vs%v%lvl,N_lvl,S)
     
     ! *** 
     !    Change, we sort according to the highest degree
     ! ***
-    call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,r,S)
+    call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,S,r)
+    S%r = rgn_pivot(sub,r%r)
 
     ! For the case that the first minimum width, maximum depth
     ! has not been added to the 'u' set, we add it
@@ -241,7 +244,7 @@ contains
     ps => vs
     N_sub = 1
     do i = 1 , S%n
-       etr = S%r(i)
+       etr = rgn_pivot(sub,S%r(i))
        
        call level_struct(n,nnzs,n_col,l_ptr,l_col,etr,sub,pvt,lvl,priority)
        k = lvl_depth(lvl)
@@ -336,6 +339,9 @@ contains
           suc = rgn_push(lvl,lvl_set(1))
           call rgn_list(r,n_col(etr), &
                l_col(l_ptr(etr)+1:l_ptr(etr)+n_col(etr)) )
+          ! We shall only take those in the sub-region
+          if ( r%n > 0 ) &
+               call rgn_intersection(r,sub,r)
           ! Remove all these from S
           call rgn_complement(r,S,S)
        end if
@@ -351,8 +357,7 @@ contains
     ! We need to handle cases (b) and (c)
 
     ! First create the sub-graphs
-    call rgn_copy(sub,S)
-    call rgn_complement(pvt,S,S)
+    call rgn_complement(pvt,sub,S)
     ! now S contains all elements not added to
     ! the pivoting scheme, create tree
     rll => rll_list
@@ -369,7 +374,13 @@ contains
           etr = con%r(i)
           call rgn_list(r,n_col(etr), &
                l_col(l_ptr(etr)+1:l_ptr(etr)+n_col(etr)) )
-          call rgn_complement(pvt,r,r)
+          ! We shall only take those in the sub-region
+          if ( r%n > 0 ) &
+               call rgn_intersection(r,sub,r)
+          ! Remove those already taken
+          if ( pvt%n > 0 ) &
+               call rgn_complement(pvt,r,r)
+          ! Extend the connectivity graph
           call rgn_union(con,r,con)
        end do
        
@@ -1105,7 +1116,7 @@ contains
     idx = idx_degree(method,n,nnzs,n_col,l_ptr,l_col,sub, priority = priority)
     !   (ii/iii) -- search for deepest level structure in these peripherals
 #ifdef PVT_DEBUG
-    write(*,*)'   first v set: ',sub%r(idx)
+    write(*,*)'   first v set: ',sub%r(idx), idx
 #endif
     
     call level_struct(n,nnzs,n_col,l_ptr,l_col,idx,sub,lvs%pvt,lvs%lvl,priority)
@@ -1124,10 +1135,14 @@ contains
 
        ! Sort by the degree of the nodes (lowest to highest)
        call sort_degree(method,n,nnzs,n_col,l_ptr,l_col,S,pvt)
-       call rgn_copy(pvt,S)
-       
+       ! To get the correct index look up
+       S%r = rgn_pivot(sub,pvt%r)
+
        do i = 1 , S%n
           etr = S%r(i)
+#ifdef PVT_DEBUG
+          write(*,*)'     analyzing degree set: ',i,etr
+#endif
           
           call level_struct(n,nnzs,n_col,l_ptr,l_col,etr,sub,pvt,lvl,priority)
           
@@ -1369,7 +1384,7 @@ contains
   end subroutine graph_connect
     
 
-  ! Returns an index depnedent on the method
+  ! Returns an index dependent on the method
   !   See the D_* variables in the top to see their meaning
   function idx_degree(method,n,nnzs,n_col,l_ptr,l_col,sub,skip,priority) result(idx)
     integer, intent(in) :: method
