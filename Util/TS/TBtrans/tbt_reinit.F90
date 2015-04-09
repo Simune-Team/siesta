@@ -60,10 +60,10 @@ subroutine tbt_reinit( sname , slabel )
           '                           ************************ '
 #ifdef TBT_PHONON
      write(6,'(a)') &
-          '                           *  WELCOME TO PHTrans  * '
+          '                           *  WELCOME TO PHtrans  * '
 #else
      write(6,'(a)') &
-          '                           *  WELCOME TO TBTrans  * '
+          '                           *  WELCOME TO TBtrans  * '
 #endif
      write(6,'(a)') &
           '                           ************************ '
@@ -91,7 +91,7 @@ subroutine tbt_reinit( sname , slabel )
         call get_command_argument(1,filein,length)
         if ( length > len(filein) ) then
            call die('The argument is too long to be retrieved, please &
-                &limit your-self to 50 characters for the input file')
+                &limit to 50 characters for the input file')
         end if
         inquire(file=filein,exist=debug_input)
         if ( .not. debug_input ) then

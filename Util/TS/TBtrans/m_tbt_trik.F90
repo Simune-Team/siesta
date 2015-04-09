@@ -272,6 +272,9 @@ contains
        do it = 1 , N_proj_ME
           no = max(no,proj_ME(it)%mol%orb%n)
        end do
+       ! Fake a too large electrode
+       io = Elecs(1)%o_inD%n
+       Elecs(1)%o_inD%n = no
     end if
 #endif
 
@@ -280,6 +283,13 @@ contains
     ! work-array size of the GFGGF triple product.
     call GFGGF_needed_worksize(DevTri%n,DevTri%r, &
          N_Elec, Elecs, pad_RHS, GFGGF_size)
+
+#ifdef NCDF_4
+    if ( N_proj_ME > 0 ) then
+       ! Reset the too large electrode
+       Elecs(1)%o_inD%n = io
+    end if
+#endif
 
     ! The minimum padding must be the maximum value of the 
     ! 1) padding required to contain a down-folding region

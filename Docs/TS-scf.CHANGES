@@ -1,4 +1,31 @@
 ----------------------------------------------------
+April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-371
+Small update of output for projections
+
+* When creating the NetCDF file we add several new
+  comments which should clarify the content.
+  In particular are the eigenvectors scaled by 
+  sqrt(S) to make the basis set orthogonal.
+
+* Added option to let the user control the normalization
+  of the state vectors.
+
+  In general this should not be needed, hence the default
+  is not to force normalization.
+
+  We expect numerical accuracy to be a slight problem here
+  Hence no normalization.
+
+* Fixed a bug when calculating the needed work size.
+  This only occured when dealing with projections.
+
+modified:
+  Util/TS/TBtrans/m_tbt_diag.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/tbt_reinit.F90
+
+----------------------------------------------------
 April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-370
 Added barrier for tbtrans analyze
 

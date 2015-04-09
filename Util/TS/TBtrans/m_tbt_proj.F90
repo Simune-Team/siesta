@@ -1057,6 +1057,7 @@ contains
     end do
 
     if ( Node == 0 .and. any_skipped ) then
+       write(*,'(a)') 'tbtrans: Certain projections have been skipped'
        write(*,'(a)') 'tbtrans: Check manual for allowing all projections'
     end if
 
@@ -1294,7 +1295,7 @@ contains
     type(dict) :: dic
     character(len=NF90_MAX_NAME) :: tmp
     ! Create allocatables, they are easier to maintain
-    integer :: iEf, mol_nkpt
+    integer :: iLUMO, mol_nkpt
     real(dp), allocatable :: eig(:)
     real(dp), allocatable :: rv(:,:), rS_sq(:,:)
     complex(dp), allocatable :: zv(:,:), zS_sq(:,:)
@@ -1485,7 +1486,9 @@ contains
 
     tmp = datestring()
     dic = dic//('date'.kv.tmp(1:10))
+#ifndef TBT_PHONON
     dic = dic//('info'.kv.'State levels are wrt. HOMO=-1,Ef=0,LUMO=1')
+#endif
     if ( all(TSHS%nsc(:) == 1) ) then
        dic = dic // ('Gamma'.kv.'true')
     else
@@ -1641,7 +1644,7 @@ contains
        call ncdf_def_var(grp,'lvl',NF90_INT,(/'nlvl'/),atts=dic)
        call ncdf_put_var(grp,'lvl',mols(im)%lvls%r)
 
-       dic = ('info'.kv.'e_i|> for unique projections')
+       dic = ('info'.kv.'|i> = S^(1/2)|v_i> for unique projections')
        if ( isGamma ) then
           call ncdf_def_var(grp,'state',NF90_DOUBLE,(/'no  ','nlvl'/),atts=dic , &
                compress_lvl = cmp_lvl , chunks = (/no,mols(im)%lvls%n/) )
@@ -1658,8 +1661,8 @@ contains
        dic = dic//('info'.kv.'Molecule orbitals')
        call ncdf_def_var(grp,'orb',NF90_INT,(/'no'/),atts=dic)
        call ncdf_put_var(grp,'orb',mols(im)%orb%r)
-       dic = dic//('info'.kv.'State e_i|> for all i')
        if ( save_state ) then
+          dic = dic//('info'.kv.'State |i> = S^(1/2)|v_i> for all i')
           if ( isGamma ) then
              call ncdf_def_var(grp,'states',NF90_DOUBLE,(/'no','no'/),atts=dic, &
                   compress_lvl = cmp_lvl , chunks = (/no,no/) )
@@ -1841,30 +1844,37 @@ contains
 
 #ifdef TBT_PHONON
        ! Calculate the frequency
-       do iEf = 1 , no 
-          if ( eig(iEf) > 0._dp ) then
-             eig(iEf) =  sqrt( eig(iEf))
+       do i = 1 , no 
+          if ( eig(i) > 0._dp ) then
+             eig(i) =  sqrt( eig(i))
           else
-             eig(iEf) = -sqrt(-eig(iEf))
+             eig(i) = -sqrt(-eig(i))
           end if
        end do
 
-       ! In phonon transport there is no Fermi-level
-       iEf = 0
+       ! In phonon transport there is no "unoccupied" levels
+       ! However, it makes no sense to count from -size()
+       ! Hence we count from 1
+       iLUMO = 1
 
 #else
-       ! figure out the Ef level
-       do iEf = 1 , no 
-          if ( eig(iEf) > 0._dp ) exit
+       ! figure out the LUMO level
+       do i = 1 , no 
+          if ( eig(i) > 0._dp ) then
+             iLUMO = i
+             exit
+          end if
        end do
-       ! iEf now contains the index of the LUMO lvl
+       ! iLUMO now contains the index of the LUMO lvl
 #endif
           
 
-       ! Create attribute to contain the index of the LUMO level
-       dic = ('HOMO_index'.kv.iEf-1)
+#ifndef TBT_PHONON
+       ! Create attribute to contain the index of the HOMO level
+       dic = ('HOMO_index'.kv.iLUMO-1)
        call ncdf_put_gatt(grp,atts=dic)
        call delete(dic)
+#endif
 
        ! Save the eigen-values
        if ( isGamma ) then
@@ -1896,20 +1906,20 @@ contains
           i = mols(im)%lvls%r(ip)
           if ( i > 0 ) then
              ! We are asking for LU<>+i
-             i = iEf - 1 + i
+             i = i + iLUMO - 1
           else
-             i = iEf + i
+             i = i + iLUMO
           end if
           ! Check that the state actually exists
           if ( i < 1 .or. no < i ) then
-             write(*,'(a)')'tbtrans: Molecule projection eigenvalues:'
+             write(*,'(a)')'tbtrans: Molecule projection eigenvalues [eV]:'
              do i = 1 , no
-                if ( i < iEf ) then
+                if ( i < iLUMO ) then
                    write(*,'(a,tr1,i4,tr1,e12.5)')'Eigenvalue: ', &
-                        i-iEf,eig(i)/eV
+                        i-iLUMO,eig(i)/eV
                 else
                    write(*,'(a,tr1,i4,tr1,e12.5)')'Eigenvalue: ', &
-                        i-iEf+1,eig(i)/eV
+                        i-iLUMO+1,eig(i)/eV
                 end if
              end do
              call die('Requested levels for projections does not exist, &
@@ -2769,11 +2779,11 @@ contains
        p(:) = dcmplx(0._dp,0._dp)
        do i = 1 , mol%proj(ip)%n
           gi = mol%proj(ip)%r(i)
-          ! Create summation <i|Gam|j> * |i>
+          ! Create summation |i> . <i|Gam|j>
           p(:) = p(:) + bGk(gi,gj) * mol%p(:,gi)
        end do
        
-       ! Do last product <i|Gam|j> * |i> <j|
+       ! Do last product |i> . <i|Gam|j> . <j|
        ! and take the transpose
        tmp = dconjg(mol%p(:,gj))
        if ( j == 1 ) then

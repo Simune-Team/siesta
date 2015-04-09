@@ -35,6 +35,10 @@ module m_tbt_diag
 
   logical, save :: use_DC = .false.
 
+  ! We expect numerical accuracy to fluctuate,
+  ! hence we do not normalize.
+  logical, save :: force_NORM = .false.
+
 contains
 
   subroutine init_diag( )
@@ -44,8 +48,12 @@ contains
     ! Let the user decide whether to use divide and conquer
     ! or not...
     use_DC = fdf_get('TBT.DivideAndConquer',.false.)
+    force_NORM = fdf_get('TBT.Normalize',.false.)
+
     if ( Node == 0 ) then
        write(*,'(a,t53,''='',tr4,l1)')'tbt_options: Divide and conquer diagonalization',use_DC
+       write(*,'(a,t53,''='',tr4,l1)')'tbt_options: Assume LAPACK <i|S|j> = delta_ij',.not. force_NORM
+
     end if
 
   end subroutine init_diag
@@ -247,7 +255,12 @@ contains
        call dgemm('N','N',no,1,no,1._dp, &
             S_sq,no, state(1,i),no, &
             0._dp, work(1), no)
-       state(:,i) = work(1:no) / VNORM(work(1:no))
+
+       ! We assume that the LAPACK implementation
+       ! returns a normalized state <i|S|j> = \delta_ij
+       ! In that case the normalization is not needed
+       if ( force_NORM ) &
+            state(:,i) = work(1:no) / VNORM(work(1:no))
 
     end do
     
@@ -466,7 +479,12 @@ contains
        call zgemm('N','N',no,1,no,dcmplx(1._dp,0._dp), &
             S_sq,no, state(1,i),no, &
             dcmplx(0._dp,0._dp), work(1), no)
-       state(:,i) = work(1:no) / VNORM(work(1:no))
+
+       ! We assume that the LAPACK implementation
+       ! returns a normalized state <i|S|j> = \delta_ij
+       ! In that case the normalization is not needed
+       if ( force_NORM ) &
+            state(:,i) = work(1:no) / VNORM(work(1:no))
 
     end do
     
