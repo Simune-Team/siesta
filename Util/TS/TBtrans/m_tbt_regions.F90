@@ -498,6 +498,11 @@ contains
 
     end if
 
+    ! Print out what we found
+    if ( Node == 0 ) then
+       write(*,'(a)')'tbtrans: BTD pivoting scheme in device: '//trim(csort)
+    end if
+
     ! The device region
     call rgn_copy(r_tmp,r_Dev)
     ! Sort the electrode region to make it faster

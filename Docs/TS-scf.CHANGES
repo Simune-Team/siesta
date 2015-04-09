@@ -1,4 +1,17 @@
 ----------------------------------------------------
+April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-370
+Added barrier for tbtrans analyze
+
+* Enabled MPI barrier for analyzation step such	
+  that the BTD format can be written.
+
+* Print-out the method used for pivoting the device region
+
+modified:
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+
+----------------------------------------------------
 April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-369
 Bugfix for last commit
 

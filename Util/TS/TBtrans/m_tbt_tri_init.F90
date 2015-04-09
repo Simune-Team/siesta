@@ -230,6 +230,10 @@ contains
 
     call timer('tri-init',2)
 
+#ifdef MPI
+    call MPI_Barrier(MPI_Comm_World,i)
+#endif
+
   end subroutine tbt_tri_init
 
   function fold_elements(N_tri,tri) result(elem)
