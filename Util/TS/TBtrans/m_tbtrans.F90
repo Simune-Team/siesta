@@ -24,6 +24,8 @@ contains
     use units, only : eV
     use alloc, only : re_alloc, de_alloc
 
+    use fdf, only: fdf_get
+
     use parallel, only : IONode
 
     use class_OrbitalDistribution
@@ -51,8 +53,6 @@ contains
     use m_tbt_kregions, only : n_k, r_k, kregion_step, kregion_k
 
     use m_ts_gf, only : read_Green
-
-    use dictionary
 
 ! ********************
 ! * INPUT variables  *
@@ -88,6 +88,10 @@ contains
 #else
     call tbt_tri_init( TSHS%dit, TSHS%sp )
 #endif
+
+    if ( fdf_get('TBT.Analyze',.false.) ) then
+       call bye('Stopping TBtrans on purpose after analyzation step...')
+    end if
 
     ! Open GF files...
     ! Read-in header of Green's functions
