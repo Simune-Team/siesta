@@ -54,6 +54,8 @@ contains
 
     use m_ts_gf, only : read_Green
 
+    use dictionary
+
 ! ********************
 ! * INPUT variables  *
 ! ********************
@@ -90,7 +92,7 @@ contains
 #endif
 
     if ( fdf_get('TBT.Analyze',.false.) ) then
-       call bye('Stopping TBtrans on purpose after analyzation step...')
+       call die('Stopping TBtrans on purpose after analyzation step...')
     end if
 
     ! Open GF files...

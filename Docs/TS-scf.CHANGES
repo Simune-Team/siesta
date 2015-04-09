@@ -1,4 +1,11 @@
 ----------------------------------------------------
+April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-369
+Bugfix for last commit
+
+modified:
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-368
 Enabled analyzation stop after creation of the BTD format (TBT)
 
