@@ -202,7 +202,9 @@ contains
 
     ! Calculate the atomic graph
     type(tAtomGraph) :: ag
+#ifdef MPI
     type(OrbitalDistribution) :: dit
+#endif
     integer, pointer :: sc(:,:)
     integer :: ia, na_l, n_nzs
 

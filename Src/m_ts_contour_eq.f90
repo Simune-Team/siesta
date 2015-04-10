@@ -300,7 +300,7 @@ contains
           write(*,*) 'Energies are too close: ',Eq_io(cur)%b,mus(i)%mu + 10._dp * mus(i)%kT
           call eq_die('The last contour of the chemical potential: &
                &'//trim(Name(mus(i)))//' lies too close to the &
-               chemical potential. It must be at least 10 kT from mu.')
+               &chemical potential. It must be at least 10 kT from mu.')
        end if
 
     end do

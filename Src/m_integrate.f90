@@ -64,8 +64,10 @@ contains
     real(dp), intent(out) :: x(N), w(N)
     real(dp), intent(in)  :: a, b
 
-    real(dp), parameter :: S_38_E = 6480._dp ** .2_dp
-    real(dp), parameter :: S_3_E  = 2880._dp ** .2_dp
+    ! S_38_E = 6480._dp ** .2_dp
+    real(dp), parameter :: S_38_E = 5.785155024015764_dp
+    ! S_3_E  = 2880._dp ** .2_dp
+    real(dp), parameter :: S_3_E  = 4.919018971698727_dp
 
     real(dp) :: D, mD, curA, curB
     integer :: i, j, mBo, m38
@@ -190,8 +192,10 @@ contains
     real(dp), intent(out) :: x(N), w(N)
     real(dp), intent(in) :: a, b
 
-    real(dp), parameter :: S_38_E = 6480._dp ** .2_dp
-    real(dp), parameter :: S_3_E  = 2880._dp ** .2_dp
+    ! S_38_E = 6480._dp ** .2_dp
+    real(dp), parameter :: S_38_E = 5.785155024015764_dp
+    ! S_3_E  = 2880._dp ** .2_dp
+    real(dp), parameter :: S_3_E  = 4.919018971698727_dp
     real(dp) :: D, mD, curA, curB
     integer :: i, j, m38, m3
 

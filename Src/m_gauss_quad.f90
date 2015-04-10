@@ -417,9 +417,9 @@ contains
     real(dp), allocatable :: J(:,:)
 
     if ( alpha <= -1._dp ) call die('Can not perform Jacobi integration with &
-         wrong alpha, must be larger than -1.')
+         &wrong alpha, must be larger than -1.')
     if ( beta  <= -1._dp ) call die('Can not perform Jacobi integration with &
-         wrong beta, must be larger than -1.')
+         &wrong beta, must be larger than -1.')
 
     la = -1._dp
     lb =  1._dp
@@ -490,7 +490,7 @@ contains
     real(dp), allocatable :: J(:,:)
 
     if ( lambda <= -.5_dp ) call die('Can not perform Gegenbauer integration with &
-         wrong lambda, must be larger than -1/2. If lamda==-1/2 use Chebyshev.')
+         &wrong lambda, must be larger than -1/2. If lamda==-1/2 use Chebyshev.')
     
     lEPS = def_EPS
     if ( present(EPS) ) lEPS = EPS

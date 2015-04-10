@@ -31,6 +31,7 @@ C
      .           atm_label, polorb, semic, nsemic,
      .           cnfigmx, charge, smass, basistype,
      $           rinn, vcte, split_norm
+      use basis_types, only: qcoe, qyuk, qwid, filtercut
       use basis_types, only: write_basis_specs
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
@@ -120,7 +121,8 @@ C Initialise MPI and set processor number
      $           cnfigmx(0:,is),charge(is),
      $           smass(is), basistype(is), is,
      $           rinn(0:,1:,is), vcte(0:,1:,is),
-     $           split_norm(0:,1:,is), basp)
+     $           qcoe(0:,1:,is),qyuk(0:,1:,is),qwid(0:,1:,is),
+     $           split_norm(0:,1:,is), filtercut(0:,1:,is), basp)
          enddo 
 
          call prinput(nsp)

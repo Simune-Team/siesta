@@ -411,7 +411,7 @@ contains
 
       if ( nEq_c(1)%c_io%a > nEq_c(N_nEq)%c_io%b ) then
          call neq_die('The non-equilibrium contours must be in increasing &
-              energy. Even if your bias is negative. Please correct.')
+              &energy. Even if your bias is negative. Please correct.')
       end if
 
     end subroutine my_setup
@@ -583,7 +583,7 @@ contains
 
     if ( c%c_io%N < 1 ) then
        call die('Contour: '//trim(c%c_io%Name)//' has &
-            an errorneous number of points.')
+            &an errorneous number of points.')
     end if
 
     ! get bounds

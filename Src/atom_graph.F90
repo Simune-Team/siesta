@@ -447,7 +447,7 @@ contains
     do lia = 1 , na_l
        ia = index_local_to_global(dit,lia)
 
-       write(*,"(/,a,i3,a,i2,i4)"), "--Neighbors of atom ", &
+       write(*,"(/,a,i3,a,i2,i4)") "--Neighbors of atom ", &
             ia, " spec: ", isa(ia), n_col(lia)
        do j = 1 , n_col(lia)
           ind = l_ptr(lia) + j

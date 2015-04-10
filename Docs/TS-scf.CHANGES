@@ -1,4 +1,28 @@
 ----------------------------------------------------
+April 10, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-373
+Bugfix for certain compilers
+
+* Tried compiling siesta with the sun studio
+  compiler.
+  With this I found several cases of errors
+  which have been fixed.
+
+* Fixed Gen-basis to be compilable with the additions
+  from Javier.
+
+modified:
+  Src/MPI/mpi__include.f90
+  Src/MPI/mpi_siesta.f90
+  Src/atom_graph.F90
+  Src/intrinsic_missing.F90
+  Src/m_gauss_quad.f90
+  Src/m_integrate.f90
+  Src/m_supercell.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Util/Gen-basis/gen-basis.F
+
+----------------------------------------------------
 April 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-372
 Added new much better pivoting scheme
 

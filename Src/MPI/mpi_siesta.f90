@@ -31,9 +31,7 @@ MODULE MPI_SIESTA
         public :: mpi_2double_precision
         public :: mpi_integer, mpi_character, mpi_logical
         public :: mpi_integer8
-#ifndef MPI_OLD
         public :: mpi_packed
-#endif
         public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
         public :: mpi_status_size
         public :: mpi_comm_self

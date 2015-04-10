@@ -977,20 +977,20 @@ contains
   pure function IDX_SPC_PROJ_sp(space,vin) result(idx)
     real(sp), intent(in) :: space(:,:), vin(:)
     integer :: idx
-    real(sp) :: cont(size(vin)), sp(size(vin)), tmp(size(vin))
+    real(sp) :: cont(size(vin)), spc(size(vin)), tmp(size(vin))
     integer :: i
     idx = 1
     ! Find the largest contributing space-vector
     ! We can only compare from normalized vectors
     ! or extremely long vectors with small contribution
     ! might be too large for short vectors with large contribution.
-    sp(:)   = SPC_PROJ(space,vin)
-    sp(:)   = sp(:) / VNORM(sp)
+    spc(:)  = SPC_PROJ(space,vin)
+    spc(:)  = spc(:) / VNORM(spc)
     tmp(:)  = space(:,1) / VNORM(space(:,1))
-    cont(1) = VNORM(VEC_PROJ(tmp,sp))
+    cont(1) = VNORM(VEC_PROJ(tmp,spc))
     do i = 2 , size(vin)
        tmp(:)  = space(:,i) / VNORM(space(:,i))
-       cont(i) = VNORM(VEC_PROJ(tmp,sp))
+       cont(i) = VNORM(VEC_PROJ(tmp,spc))
        if ( cont(idx) < cont(i) ) then
           idx = i
        end if
@@ -1000,16 +1000,16 @@ contains
   pure function IDX_SPC_PROJ_dp(space,vin) result(idx)
     real(dp), intent(in) :: space(:,:), vin(:)
     integer :: idx
-    real(dp) :: cont(size(vin)), sp(size(vin)), tmp(size(vin))
+    real(dp) :: cont(size(vin)), spc(size(vin)), tmp(size(vin))
     integer :: i
     idx = 1
-    sp(:)   = SPC_PROJ(space,vin)
-    sp(:)   = sp(:) / VNORM(sp)
+    spc(:)  = SPC_PROJ(space,vin)
+    spc(:)  = spc(:) / VNORM(spc)
     tmp(:)  = space(:,1) / VNORM(space(:,1))
-    cont(1) = VNORM(VEC_PROJ(tmp,sp))
+    cont(1) = VNORM(VEC_PROJ(tmp,spc))
     do i = 2 , size(vin)
        tmp(:)  = space(:,i) / VNORM(space(:,i))
-       cont(i) = VNORM(VEC_PROJ(tmp,sp))
+       cont(i) = VNORM(VEC_PROJ(tmp,spc))
        if ( cont(idx) < cont(i) ) then
           idx = i
        end if
