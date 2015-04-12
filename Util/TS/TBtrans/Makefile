@@ -4,6 +4,8 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 
+.PHONY: default what dep version clean-tbt clean
+
 default: what tbtrans 
 
 VPATH:=$(shell pwd)/../../../Src
@@ -93,7 +95,7 @@ TS_OBJS += m_ts_sparse.o m_ts_tdir.o
 DEP_OBJS = $(SIESTA_OBJS) $(TS_OBJS) $(SYSOBJ) $(EXTRA)
 
 # To separate tbtrans objects from siesta/transiesta
-TBTOBJS  = 
+TBTOBJS  = version.o
 
 # Add generic tbtrans routines
 TBTOBJS += tbt_init.o tbt_end.o tbt_reinit.o m_tbt_hs.o m_tbt_regions.o
@@ -112,6 +114,23 @@ TBTOBJS += m_tbt_kregions.o m_tbt_sparse_helper.o
 
 # The main program
 TBTOBJS += tbtrans.o
+
+# The version program
+version: version.F90
+	@echo
+	@echo "==> Incorporating information about present compilation (compiler and flags)"
+	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
+		s'TBTRANS_VERSION'$$(cat ${<D}/../../../version.info)'g;\
+		s'FPPFLAGS'$(FPPFLAGS) $(DEFS)'g" $<  > tmp.F90
+	@awk '{if (length>80) { cur=78; \
+		printf "%s&\n",substr($$0,0,78); \
+		while(length-cur>78){ cur=cur+76 ; \
+		printf "&%s&\n",substr($$0,cur-76,76) \
+		} printf "&%s\n",substr($$0,cur)} else { print $$0 }}' tmp.F90 > compinfo.F90
+	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" "DEFS=$(DEFS)" compinfo.o)
+	@mv compinfo.o version.o
+	@echo
+
 
 # Interfaces to libraries
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
@@ -186,7 +205,7 @@ tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
 #tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DUSE_GEMM3M
 # If the user only wants to compile against NetCDF-4 for tbtrans
 tbtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
-tbtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) 
+tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
               $(FDF) $(COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
@@ -197,7 +216,7 @@ tbtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS)
 phtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS -DTBT_PHONON
 # If the user only wants to compile against NetCDF-4 for tbtrans
 phtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
-phtrans: $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS)
+phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o phtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
               $(FDF) $(COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
@@ -219,6 +238,7 @@ dep:
 	-sfmakedepend --depend=obj --modext=o \
 		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
 		*.f90 *.F90 *.f *.F
+	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//" Makefile
 
 # Assert that FDF is compiled on before hand
 $(DEP_OBJS): $(FDF)
@@ -796,7 +816,7 @@ siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
 siesta_analysis.o: m_ntm.o m_partial_charges.o m_spin.o m_steps.o parallel.o
 siesta_analysis.o: projected_DOS.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
-siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o version.o
+siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o 
 siesta_end.o: alloc.o bands.o densematrix.o m_dscfcomm.o m_fixed.o m_pulay.o
 siesta_end.o: m_rhog.o m_wallclock.o meshdscf.o meshphi.o moremeshsubs.o
 siesta_end.o: parallel.o siesta_cml.o siesta_cmlsubs.o siesta_master.o

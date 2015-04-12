@@ -1,4 +1,34 @@
 ----------------------------------------------------
+April 12, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-375
+Added version print-out to tbtrans
+
+* Keeping track of which tbtrans version
+  is being used is highly useful.
+  
+  I have added a version module (copy of siesta version)
+  which prints outs the standard things.
+
+* Added THREADED version printout to version for both
+  siesta/transiesa and tbtrans in the version script.
+
+* Clean-up in siesta Makefile for ancient reference
+  of make dep hack. (tbt_kpoints)
+
+* Added pre-processor flags to the cml output
+
+* Added phony table to tbtrans makefile
+
+added:
+  Util/TS/TBtrans/version.F90
+modified:
+  Src/Makefile
+  Src/siesta_cmlsubs.F90
+  Src/siesta_init.F
+  Src/version.F90
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 April 11, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-374
 Added threading for small region creation
 

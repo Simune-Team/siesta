@@ -74,21 +74,12 @@ subroutine tbt_init()
 
 ! Print version information ...........................................
   if (IOnode) then
-#ifdef MPI
-     write(*,'(a)') 'PARALLEL version'
-#else
-     write(*,'(a)') 'SERIAL version'
-#endif
-#ifdef USE_GEMM3M
-     write(*,'(a)') 'GEMM3M support'
-#endif
-#ifdef CDF
-     write(*,'(a)') 'NetCDF support'
-#endif
+     
+     call prversion()
 
 #ifdef MPI
      if (Nodes > 1) then
-        write(*,'(/,a,i0,tr1,a)') '* Running TBtrans using ', Nodes, &
+        write(*,'(/,a,i0,tr1,a)') '* Running on ', Nodes, &
              'nodes in parallel'
      else
         write(*,'(/,a)') '* Running in serial mode with MPI'
@@ -99,11 +90,9 @@ subroutine tbt_init()
 !$OMP parallel
 !$OMP master
 !$    write(*,'(a,i0,a)') &
-!$       '* Running TBtrans using ', &
-!$       omp_get_num_threads(),' OpenMP threads.'
+!$       '* Running ', omp_get_num_threads(),' OpenMP threads.'
 !$    write(*,'(a,i0,a)') &
-!$       '* Running TBtrans using ', &
-!$       Nodes*omp_get_num_threads(),' processes.'
+!$       '* Running ', Nodes*omp_get_num_threads(),' processes.'
 !$OMP end master
 !$OMP end parallel
 

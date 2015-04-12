@@ -130,15 +130,15 @@
         write(6,'(/,a)')
      &        '* Running in serial mode'
 #endif
-#ifdef TRANSIESTA
 !$OMP parallel
 !$OMP master
 !$    write(*,'(a,i0,a)')
-!$   &    '* Running TranSIESTA using ',
+!$   &    '* Running ',
 !$   &    omp_get_num_threads(),' OpenMP threads.'
+!$    write(*,'(a,i0,a)') '* Running ', &
+!$   &Nodes*omp_get_num_threads(),' processes.'
 !$OMP end master
 !$OMP end parallel
-#endif
          call timestamp('Start of run')
          call wallclock('Start of run')
       endif
