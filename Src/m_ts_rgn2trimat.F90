@@ -112,10 +112,12 @@ contains
     ! create array containing max-min for each ts-orbital
     call re_alloc(mm_col  , 1, 2, 1, no, &
          routine='tbtR2TM', name='mm_col')
+!$OMP parallel do default(shared), private(i)
     do i = 1 , no
        mm_col(:,i) = minmax_col(sp,r,r%r(i))
        !print '(a,tr1,i5,tr3,2(tr1,i5),tr4,i0)','Orb: ',i,mm_col(:,i),no
     end do
+!$OMP end parallel do
 
     parts = 2
     n_part(1) = no / 2
@@ -150,8 +152,8 @@ contains
     ! for huge systems
     i = mm_col(2,1)
     ! the maximum size must be all that the first one connects to
-    ! the mean and then (to be sure) we take 3/4 of that.
-    i = sum(mm_col(2,1:i)) / i / 4 * 3
+    ! the mean
+    i = sum(mm_col(2,1:i)) / i
     max_block = min( no / 4 , i )
     max_block = fdf_get('TS.BTD.Block.Max',max_block)
 #ifdef TBTRANS

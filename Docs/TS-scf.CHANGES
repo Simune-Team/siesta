@@ -1,4 +1,14 @@
 ----------------------------------------------------
+April 11, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-374
+Added threading for small region creation
+
+* We should have a faster initialization of the
+  trimat creation when using threaded env.
+
+modified:
+  Src/m_ts_rgn2trimat.F90
+
+----------------------------------------------------
 April 10, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-373
 Bugfix for certain compilers
 
