@@ -1070,7 +1070,7 @@ contains
   subroutine tbt_print_regions(N_Elec, Elecs)
 
     use parallel, only : Node
-    use fdf, only : fdf_get
+    use m_verbosity, only : verbosity
     use m_ts_electype
     
     integer, intent(in) :: N_Elec
@@ -1078,25 +1078,22 @@ contains
     integer :: i, verb
     type(tRgn) :: r
 
-    ! We define a verbosity, if below 5 do not print regions
-    verb = fdf_get('TBT.Verbosity',5)
-
     if ( Node /= 0 ) return
 
-    if ( verb < 3 ) return
+    if ( verbosity < 3 ) return
 
     ! Print out the buffer regions
     if ( r_aBuf%n > 0 ) then
        call rgn_print(r_aBuf, seq_max = 12 )
-       if ( verb > 7 ) &
+       if ( verbosity > 7 ) &
             call rgn_print(r_oBuf, seq_max = 10 )
     end if
 
     ! Print out the device region
     write(*,'(a,i0)')'tbtrans: # of device region orbitals: ',r_oDev%n
-    if ( verb > 4 ) &
+    if ( verbosity > 4 ) &
          call rgn_print(r_aDev, seq_max = 12 )
-    if ( verb > 7 ) &
+    if ( verbosity > 7 ) &
          call rgn_print(r_oDev, seq_max = 10 )
 
     ! Print out all the electrodes + their projection region
@@ -1106,16 +1103,16 @@ contains
             ' scattering orbitals: ',Elecs(i)%o_inD%n
        write(*,'(3a,i0)')'tbtrans: # of ',trim(Elecs(i)%name), &
             ' down-folding orbitals: ',r_oElpD(i)%n
-       if ( verb > 4 ) &
+       if ( verbosity > 4 ) &
             call rgn_print(r_aEl  (i) , seq_max = 12 )
-       if ( verb > 7 ) &
+       if ( verbosity > 7 ) &
             call rgn_print(r_oEl  (i) , seq_max = 10 )
-       if ( verb > 3 ) then
+       if ( verbosity > 3 ) then
           call rgn_intersection(r_aElpD(i),r_aDev,r)
           r%name = '[A]-'//trim(Elecs(i)%name)//' folding in D'
           call rgn_print(r, seq_max = 12 )
        end if
-       if ( verb > 7 ) then
+       if ( verbosity > 7 ) then
           call rgn_intersection(r_oElpD(i),r_oDev,r)
           r%name = '[O]-'//trim(Elecs(i)%name)//' folding in D'
           call rgn_print(r, seq_max = 10 )

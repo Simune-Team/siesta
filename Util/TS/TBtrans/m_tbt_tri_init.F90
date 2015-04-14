@@ -24,9 +24,11 @@ module m_tbt_tri_init
   implicit none
 
   public :: tbt_tri_init
+  public :: tbt_tri_print_opti
 
   type(tRgn), allocatable, target :: ElTri(:)
   type(tRgn) :: DevTri
+
   public :: ElTri, DevTri
   public :: fold_elements
 
@@ -235,6 +237,53 @@ contains
 #endif
 
   end subroutine tbt_tri_init
+
+  subroutine tbt_tri_print_opti(na_u,lasto,r_oDev)
+    use parallel, only : IONode
+    use m_region
+    use m_verbosity, only : verbosity
+    integer, intent(in) :: na_u, lasto(0:na_u)
+    type(tRgn), intent(in) :: r_oDev
+
+    integer :: cum_sum, li, i, off
+    type(tRgn) :: ro, ra
+
+    if ( .not. IONode ) return
+    if ( verbosity < 2 ) return
+
+    ! In case we have more than two tri-mat regions we can advice
+    ! the user to a minimal tri-mat matrix
+    if ( DevTri%n > 2 ) then
+       cum_sum = DevTri%r(1) + DevTri%r(2)
+       li = 1
+       do i = 2 , DevTri%n - 1
+          if ( DevTri%r(i) + DevTri%r(i+1) < cum_sum ) then
+             li = i
+             cum_sum = DevTri%r(i) + DevTri%r(i+1)
+          end if
+       end do
+       ! We have found the smallest consecutive regions to be li
+       off = 0
+       do i = 1 , li - 1
+          off = off + DevTri%r(i)
+       end do
+       call rgn_list(ro,cum_sum,r_oDev%r(off+1:))
+       call rgn_Orb2Atom(ro,na_u,lasto,ra)
+
+       call rgn_sort(ra)
+
+       write(*,*) ''
+       write(*,*) 'tbtrans: Suggested atoms for fastest transmission calculation:'
+       ra%name = ' '
+       call rgn_print(ra, seq_max = 12)
+       write(*,*) ''
+
+       ! Clean-up
+       call rgn_delete(ro,ra)
+
+    end if
+
+  end subroutine tbt_tri_print_opti
 
   function fold_elements(N_tri,tri) result(elem)
     integer, intent(in) :: N_tri, tri(N_tri)

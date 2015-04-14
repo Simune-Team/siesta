@@ -28,6 +28,7 @@ subroutine tbt_reinit( sname , slabel )
 !
   use parallel,    only : Node
   use fdf
+  use m_verbosity
 
   implicit none
 
@@ -156,6 +157,9 @@ subroutine tbt_reinit( sname , slabel )
   write(fileout,"(a,i5.5,a)") 'fdf-', mod(count,100000), ".log"
 
   call fdf_init(filein,trim(fileout))
+
+  ! Initialize the verbosity setting
+  call init_verbosity('TBT.Verbosity',5)
 
 ! Define Name of the system ...
   sname = fdf_get('SystemName',' ')

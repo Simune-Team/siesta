@@ -1,4 +1,27 @@
 ----------------------------------------------------
+April 14, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-376
+Suggest a minimal device region in tbtrans (TBT)
+
+* Added a verbosity module to have a global variable
+  for verbosity handling.
+  
+* Suggests a device region which is of minimal size in
+  the current device region.
+  Note that this need not be the smallest device region
+  possible for several reasons. 
+  Yet it is a prominent candidate for the best suggestion.
+
+added:
+  Util/TS/TBtrans/m_verbosity.f90
+modified:
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_kregions.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+  Util/TS/TBtrans/tbt_reinit.F90
+
+----------------------------------------------------
 April 12, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-375
 Added version print-out to tbtrans
 

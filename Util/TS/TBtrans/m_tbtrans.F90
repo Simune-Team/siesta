@@ -8,7 +8,7 @@ module m_tbtrans
 
   use m_tbt_hs
 
-  use m_tbt_tri_init, only : tbt_tri_init
+  use m_tbt_tri_init, only : tbt_tri_init, tbt_tri_print_opti
 
   use m_tbt_trik
 
@@ -90,6 +90,10 @@ contains
 #else
     call tbt_tri_init( TSHS%dit, TSHS%sp )
 #endif
+
+    ! Suggest to the user an optimal device region for
+    ! fastest calculation
+    call tbt_tri_print_opti(TSHS%na_u,TSHS%lasto,r_oDev)
 
     if ( fdf_get('TBT.Analyze',.false.) ) then
        call die('Stopping TBtrans on purpose after analyzation step...')

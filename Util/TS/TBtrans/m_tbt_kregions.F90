@@ -569,7 +569,7 @@ contains
   subroutine tbt_print_kRegions( cell )
 
     use parallel, only : IONode
-    use fdf, only : fdf_get
+    use m_verbosity, only : verbosity
 
     use m_tbt_kpoint, only : tbt_iokp
 
@@ -583,7 +583,7 @@ contains
 
     ! Print out information regarding the k regions
 
-    if ( fdf_get('TBT.Verbosity',5) > 3 ) then 
+    if ( verbosity > 3 ) then 
        write(*,'(/,a)') 'tbtrans: k-regions print out, in the permutation order'
        write(*,'(/,a)') 'tbtrans: Gamma region'
        write(g,'(a,i0)') 'nkpt = ',1
