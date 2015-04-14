@@ -1084,17 +1084,15 @@ contains
 
     ! Print out the buffer regions
     if ( r_aBuf%n > 0 ) then
-       call rgn_print(r_aBuf, seq_max = 12 )
-       if ( verbosity > 7 ) &
-            call rgn_print(r_oBuf, seq_max = 10 )
+       call local_print(r_aBuf,.false.)
+       call local_print(r_oBuf,.true.)
     end if
 
     ! Print out the device region
     write(*,'(a,i0)')'tbtrans: # of device region orbitals: ',r_oDev%n
-    if ( verbosity > 4 ) &
-         call rgn_print(r_aDev, seq_max = 12 )
-    if ( verbosity > 7 ) &
-         call rgn_print(r_oDev, seq_max = 10 )
+
+    call local_print(r_aDev,.false.)
+    call local_print(r_oDev,.true.)
 
     ! Print out all the electrodes + their projection region
     do i = 1 , N_Elec
@@ -1103,24 +1101,52 @@ contains
             ' scattering orbitals: ',Elecs(i)%o_inD%n
        write(*,'(3a,i0)')'tbtrans: # of ',trim(Elecs(i)%name), &
             ' down-folding orbitals: ',r_oElpD(i)%n
-       if ( verbosity > 4 ) &
-            call rgn_print(r_aEl  (i) , seq_max = 12 )
-       if ( verbosity > 7 ) &
-            call rgn_print(r_oEl  (i) , seq_max = 10 )
+       call local_print(r_aEl(i),.false.)
+       call local_print(r_oEl(i),.true.)
        if ( verbosity > 3 ) then
           call rgn_intersection(r_aElpD(i),r_aDev,r)
           r%name = '[A]-'//trim(Elecs(i)%name)//' folding in D'
-          call rgn_print(r, seq_max = 12 )
+          call local_print(r, .false. )
        end if
        if ( verbosity > 7 ) then
           call rgn_intersection(r_oElpD(i),r_oDev,r)
           r%name = '[O]-'//trim(Elecs(i)%name)//' folding in D'
-          call rgn_print(r, seq_max = 10 )
+          call local_print(r,.true.)
        end if
     end do
 
     ! Clean-up
     call rgn_delete(r)
+
+  contains
+    
+    subroutine local_print(r_in,is_orb)
+      type(tRgn), intent(in) :: r_in
+      logical, intent(in) :: is_orb
+      type(tRgn) :: r
+      integer :: seq, mid, high
+
+      if ( is_orb ) then
+         seq = 10
+         mid = 7
+         high = 9
+      else
+         seq = 12
+         mid = 4
+         high = 6
+      end if
+
+      if ( verbosity > high ) then
+         ! print-unsorted
+         call rgn_print(r_in, seq_max = seq )
+      else if ( verbosity > mid ) then
+         call rgn_copy(r_in,r)
+         call rgn_sort(r)
+         call rgn_print(r, seq_max = seq )
+         call rgn_delete(r)
+      end if
+
+    end subroutine local_print
 
   end subroutine tbt_print_regions
 

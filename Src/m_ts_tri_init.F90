@@ -458,7 +458,7 @@ contains
             &for the tri-diagonal matrix.'
 
        call rgn_print(c_Tri, name = 'BTD partitions' , &
-            seq_max = 10 )
+            seq_max = 10 , collapse = .false. )
 
        write(*,'(a,i0,a,i0)') 'transiesta: Matrix elements in tri / full: ', &
             els,' / ',no_u_TS**2
@@ -906,7 +906,7 @@ contains
     
       if ( IONode ) then
          call rgn_print(ctri, name = 'BTD partitions' , &
-              seq_max = 10 , indent = 3 )
+              seq_max = 10 , indent = 3 , collapse = .false. )
          
          pad = no_u_TS ** 2
          write(*,'(tr3,a,i0,'' / '',f9.5)') &

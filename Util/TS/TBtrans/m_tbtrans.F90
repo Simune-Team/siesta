@@ -21,6 +21,9 @@ contains
 
   subroutine tbt(TSHS, kT)
 
+#ifdef MPI
+    use mpi_siesta, only : MPI_Barrier, MPI_Comm_World
+#endif
     use units, only : eV
     use alloc, only : re_alloc, de_alloc
 
@@ -96,6 +99,9 @@ contains
     call tbt_tri_print_opti(TSHS%na_u,TSHS%lasto,r_oDev)
 
     if ( fdf_get('TBT.Analyze',.false.) ) then
+#ifdef MPI
+       call MPI_Barrier(MPI_Comm_World,i)
+#endif
        call die('Stopping TBtrans on purpose after analyzation step...')
     end if
 

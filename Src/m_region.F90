@@ -1363,16 +1363,21 @@ contains
 
   end function rgn_overlaps
 
-  subroutine rgn_print(r, name, seq_max, indent)
+  subroutine rgn_print(r, name, seq_max, indent, collapse)
     type(tRgn), intent(in) :: r
     character(len=*), intent(in), optional :: name
     integer, intent(in), optional :: seq_max, indent
+    logical, intent(in), optional :: collapse
  
     character(len=5) :: fmt
-    integer :: i, lseq_max
+    character(len=1) :: end
+    integer :: i, j, k, c, lseq_max
+    logical :: lcollapse
 
     lseq_max = 7
     if ( present(seq_max) ) lseq_max = seq_max
+    lcollapse = .true.
+    if ( present(collapse) ) lcollapse = collapse
 
     fmt = ' '
     if ( present(indent) ) write(fmt,'(a,i0,a)')'tr',indent,','
@@ -1383,16 +1388,70 @@ contains
        write(*,'('//fmt//'a,i0,2a)') 'Region (',r%n,'): ',trim(r%name)
     end if
     write(*,'('//fmt//'tr2,a)',advance='no') '['
-    do i = 1 , r%n - 1
-       write(*,'(tr1,i0,a)',advance='no') r%r(i),','
-       if ( mod(i,lseq_max) == 0 ) then
-          write(*,'(/,'//fmt//'tr3)',advance='no')
-       end if
-    end do
-    if ( r%n > 0 ) then
-       write(*,'(tr1,i0,a)') r%r(r%n),' ]'
+    if ( .not. lcollapse ) then
+       do i = 1 , r%n - 1
+          write(*,'(tr1,i0,a)',advance='no') r%r(i),','
+          if ( mod(i,lseq_max) == 0 ) then
+             write(*,'(/,'//fmt//'tr3)',advance='no')
+          end if
+       end do
     else
-       write(*,'(tr1,a)') ' ]'
+
+       j = 1
+       c = 0
+       do while ( j <= r%n ) 
+
+          ! Count the consecutive numbers
+          k = 0
+          i = j
+          do while ( r%r(i) - r%r(j) == k ) 
+             k = k + 1
+             i = i + 1
+          end do
+
+          if ( k > 1  ) then
+             ! This is a consecutive block
+             if ( lseq_max - c < 2 ) then
+                write(*,'(/,'//fmt//'tr3)',advance='no') !
+                c = 0
+             end if
+             ! Write out the current line
+             write(*,'(tr1,i0,a,i0)',advance='no') &
+                  r%r(j),' -- ',r%r(j+k-1)
+             i = c + 3
+             if ( i >= lseq_max ) then
+                c = 0
+             else
+                c = i
+             end if
+          else
+             ! This is not a consecutive block
+             write(*,'(tr1,i0)',advance='no') r%r(j)
+             c = c + 1
+             if ( mod(c,lseq_max) == 0 ) c = 0
+          end if
+
+          ! Write ending comma
+          if ( j + k < r%n ) write(*,'(a)',advance='no') ','
+
+          if ( c == 0 .and. j + k < r%n ) then
+             ! Should we start a new line
+             write(*,'(/,'//fmt//'tr3)',advance='no')
+          end if
+
+          ! Update the currently reached element
+          j = j + k
+
+       end do
+    end if
+    if ( .not. lcollapse ) then
+       if ( r%n > 0 ) then
+          write(*,'(tr1,i0,a)') r%r(r%n),' ]'
+       else
+          write(*,'(tr1,a)') ' ]'
+       end if
+    else
+       write(*,'(a)') ' ]'
     end if
 
   end subroutine rgn_print

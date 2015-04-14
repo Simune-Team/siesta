@@ -1,4 +1,31 @@
 ----------------------------------------------------
+April 14, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-377
+tRgn prints defaults to print in collapsed form
+
+* The type tRgn had an intrinsic print function.
+
+  Now this print-function can do collapsed print
+  statements which greatly reduces clutter when
+  not needed.
+  
+* Tbtrans defaults to print the atoms in each region
+  in collapsed form, by increasing the verbosity
+  it will only be printed out in non-collapsed form
+  and further increasing it will print the orbitals in
+  collapsed, and even further will print the orbitals
+  in non-collapsed form.
+
+* All BTD format matrices are forced not to be collapsed
+  printed (for obvious reasons)
+
+modified:
+  Src/m_region.F90
+  Src/m_ts_tri_init.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 April 14, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-376
 Suggest a minimal device region in tbtrans (TBT)
 

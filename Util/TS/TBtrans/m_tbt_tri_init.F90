@@ -134,9 +134,6 @@ contains
 
     use m_ts_rgn2trimat
     use m_ts_electype
-#ifdef MPI
-    use mpi_siesta
-#endif
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
 #endif
@@ -224,17 +221,13 @@ contains
 
     if ( IONode ) then
        ! Print out stuff
-       call rgn_print(DevTri, seq_max = 10 )
+       call rgn_print(DevTri, seq_max = 10 , collapse = .false.)
        do i = 1 , N_Elec
-          call rgn_print(ElTri(i), seq_max = 10 )
+          call rgn_print(ElTri(i), seq_max = 10 , collapse = .false.)
        end do
     end if
 
     call timer('tri-init',2)
-
-#ifdef MPI
-    call MPI_Barrier(MPI_Comm_World,i)
-#endif
 
   end subroutine tbt_tri_init
 
@@ -274,6 +267,7 @@ contains
 
        write(*,*) ''
        write(*,*) 'tbtrans: Suggested atoms for fastest transmission calculation:'
+
        ra%name = ' '
        call rgn_print(ra, seq_max = 12)
        write(*,*) ''
