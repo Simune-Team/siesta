@@ -1670,7 +1670,6 @@ contains
     else if ( this%t_dir == 3 ) then
        chars = 'A3'
     end if
-    write(*,f10) '  Transport direction for electrode', trim(chars)
     if ( this%inf_dir == INF_POSITIVE ) then
        chars = 'positive wrt. '//trim(chars)
     else

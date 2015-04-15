@@ -1,4 +1,11 @@
 ----------------------------------------------------
+April 15, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-379
+Removed duplicate entry in the electrode print-out
+
+modified:
+  Src/m_ts_electype.F90
+
+----------------------------------------------------
 April 15, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-378
 Bugfix for OpenMP compilation
 
