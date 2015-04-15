@@ -1,3 +1,37 @@
+April 15, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-380
+Greatly speeded up creation of huge TB models
+
+* By making the geometry an intrinsic iterator
+  based on the connections within a spherical structure
+  we can greatly speed up the contstruction of tight-binding
+  models as we do an _in-line_ proximity tracker.
+
+  Basically we take a random atom, search for the closest atoms
+  (with some user-defined radii), let the user loop across those
+  whilst reducing the enclosed search space to only include those
+  that they interact with.
+  Hence the proximity key has been removed and instead the loop looks
+  like this:
+
+  for ias, idxs in TBT_Geom:
+     for ia in ias:
+        idx_a = dev.close_all(ia, dR = dR, idx = idxs)
+  
+  which is equivalent to
+
+  for ia in len(TBT_Geom):
+     idx_a = dev.close_all(ia, dR = dR)
+
+  The former is much faster.
+
+* Changed update_sc to update
+  update_sc is still present for compatibility (will be
+  removed eventually)
+
+modified:
+  Util/TS/TB/pht_tb.py
+  Util/TS/TB/tbt_tb.py
+
 ----------------------------------------------------
 April 15, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-379
 Removed duplicate entry in the electrode print-out

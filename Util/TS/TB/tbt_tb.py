@@ -100,6 +100,7 @@ except:
             raise Exception('netCDF4 could not be imported. Please install to take full advantage.')
         __getattr__ = __getitem__
 
+
 class SIESTA_UNITS(object):
     """
     Object to retain all SIESTA relevant units
@@ -170,13 +171,16 @@ class TBT_Geom(SIESTA_UNITS):
         Maximum orbital range.
     Z    : (na_u)
         Atomic number of atom.
-    proximity: (None), integer
-        Limits the search space for large geometries when finding the
-        closests atoms.
-        ``proximity`` narrows the search to the ``+-proximity`` nearest atoms.
-        If ``None`` it will search all atoms.
+    iter : 15, integer
+        When using the geometry as an iterator this defines the bunches
+        of data that will be used to reduce the search space.
+        The smaller the number the more often the iterator will search the entire
+        space for close atoms. The sub-space searched will then be small.
+        For a larger number it well search less often but in a larger sub-space.
+        The optimium depends on number of atoms within the sphere `dR * iter`
+        As a rule-of-thumb `dR * iter` should contain ~500-1000 atoms to be efficient.
     """
-    def __init__(self,cell,xa,dR=2.5,n_orb=1,Z=1,update_sc=False):
+    def __init__(self,cell,xa,dR=2.5,n_orb=1,Z=1,update_sc=False,iter=15):
         self.cell = np.asarray(cell)
         self.xa = np.asarray(xa)
         self.xa.shape = (-1,3)
@@ -200,25 +204,90 @@ class TBT_Geom(SIESTA_UNITS):
                 np.append(np.array([0],np.int),np.asarray(n_orb,np.int)))
         self.no_u = int(self.lasto[-1])
         self.dR = dR
-        self.proximity = None
 
         # Force the calculation of the super-cells from an orbital
         # range consideration
         if update_sc: 
-            self.update_sc(dR=dR)
+            self.update(dR=dR)
         else:
             # We force any TB method to be periodic
             # with one supercell connection.
             # Hence any reference will copy this down
-            self.update_sc(nsc=[1,1,1])
+            self.update(nsc=[1,1,1])
 
-        # In case the user wishes to speed
-        # up the calculation of the closest atoms
-        # we allow the user to define a "proximity"
-        # Which drastically can narrow the search space down
-        # by only looking at the ia-proximity:ia+proximity
-        # atoms.
-        self.proximity = None
+        # This defines the amount of dR that will be used in each iterator step
+        self._iter = iter
+
+    def __len__(self):
+        """ Returns number of atoms in this geometry """
+        return self.na_u
+
+    def __iter__(self):
+        """ 
+        Returns two lists with [0] being a list of atoms to be looped and [1] being the atoms that 
+        need searched.
+
+        NOTE: This requires that dR has been set correctly as the maximum interaction range.
+
+        I.e. the loop would look like this:
+        
+        >>> for ias, idxs in TBT_Geom:
+        >>>    for ia in ias:
+        >>>        idx_a = dev.close_all(ia, dR = dR, idx = idxs)
+
+        This iterator is intended for systems with more than 1000 atoms.
+
+        Remark that the iterator used is non-deterministic, i.e. any two iterators need
+        not return the same atoms in any way.
+        """
+
+        # We implement yields as we can then do nested iterators
+        # create a boolean array
+        not_passed = np.empty(len(self),dtype='b')
+        not_passed[:] = True
+        not_passed_N = len(self)
+
+        # The boundaries (ensure complete overlap)
+        dR = ( self.dR * (self._iter - 1), self.dR * (self._iter+.1))
+
+        # loop until all passed are true
+        while not_passed_N > 0:
+            
+            # Take a random non-passed element
+            all_true = np.where(not_passed)[0]
+            # Shuffle should increase the chance of hitting a
+            # completely "fresh" segment, thus we take the most 
+            # atoms at any single time.
+            # Shuffling will cut down needed iterations.
+            np.random.shuffle(all_true)
+            idx = all_true[0]
+            del all_true
+
+            # Now we have found a new index, from which
+            # we want to create the index based stuff on
+            
+            # get all elements within two radii
+            all_idx = self.close_all(idx, dR = dR )
+
+            # Get unit-cell atoms
+            all_idx[0] = self.sc2uc(all_idx[0])
+            # First extend the search-space (before reducing)
+            all_idx[1] = self.sc2uc(np.append(all_idx[1],all_idx[0]))
+
+            # Only select those who have not been runned yet
+            all_idx[0] = all_idx[0][np.where(not_passed[all_idx[0]])[0]]
+            if len(all_idx[0]) == 0:
+                raise ValueError('Internal error, please report to the developers')
+
+            # Tell the next loop to skip those passed
+            not_passed[all_idx[0]] = False
+            # Update looped variables
+            not_passed_N -= len(all_idx[0])
+
+            # Now we want to yield the stuff revealed
+            # all_idx[0] contains the elements that should be looped
+            # all_idx[1] contains the indices that can be searched
+            yield all_idx[0], all_idx[1]
 
     @staticmethod
     def _repeat(array,size):
@@ -269,7 +338,7 @@ class TBT_Geom(SIESTA_UNITS):
         n_orb = np.append(lasto[0],n_orb)
         # Create new geometry
         g = cls(cell=cell,xa=xa,n_orb=n_orb,Z=Z)
-        g.update_sc(nsc=nsc)
+        g.update(nsc=nsc)
         return g
 
     @property
@@ -287,7 +356,7 @@ class TBT_Geom(SIESTA_UNITS):
         """
         g = self.__class__(cell,xa,dR=self.dR,
                            n_orb=n_orb,Z=Z,
-                           update_sc=update_sc)
+                           update_sc=update_sc,iter=self._iter)
         if not update_sc:
             g.nsc = np.copy(self.nsc)
             g.isc_off = np.copy(self.isc_off)
@@ -354,8 +423,10 @@ class TBT_Geom(SIESTA_UNITS):
             warnings.warn('The cut structure cannot be re-created by tiling', UserWarning) 
         return new
 
-    def update_sc(self,dR=None,nsc=None):
-        """ Updates the number of supercells
+    def update(self,dR=None,nsc=None,iter=None):
+        """ Updates the internals of the geometry 
+
+        Mostly used for updating number of supercells.
 
         Parameters
         ----------
@@ -366,10 +437,14 @@ class TBT_Geom(SIESTA_UNITS):
             If provided the super-cell will be forced to this size,
             providing ``[1,1,1]`` tells the geometry that
             interactions are connecting across one cell boundary.
+        iter : (None), integer
+            Changes the number of steps used when iterating
 
-        If no parameters are given ``self.update_sc()`` will
+        If no parameters are given ``self.update()`` will
         use the saved ``self.dR`` size (as given when initialised).
         """
+        if not iter is None:
+            self._iter = iter
         if dR is None:
             # Just update the super-cell, this is
             # if the user has changed the cell size
@@ -424,6 +499,8 @@ class TBT_Geom(SIESTA_UNITS):
                     self.isc_off[i,0] = ix
                     self.isc_off[i,1] = iy
                     self.isc_off[i,2] = iz
+    # compatibility
+    update_sc = update
 
     def xyz(self,fname=None):
         """
@@ -692,21 +769,21 @@ class TBT_Geom(SIESTA_UNITS):
         Examples
         --------
 
-        # Only nearest neighbour interactions
-        dR = (.1, 2.)
-        for ia in xrange(self.na_u):
-            io = self.a2o(ia)
-            idx_a = HUGE.close_all(ia,dR=dR)
-            # first orbital on-site
-            HS[io+0,self.a2o(idx_a[0])+0] = (U1 ,   1. )
-            # second orbital on-site
-            HS[io+1,self.a2o(idx_a[0])+1] = (U2 ,   1. )
-            # orbital hopping to same orbital
-            HS[io+0,self.a2o(idx_a[1])+0] = (t11,   0. )
-            HS[io+1,self.a2o(idx_a[1])+1] = (t22,   0. )
-            # orbital hopping to differing orbital
-            HS[io+0,self.a2o(idx_a[1])+1] = (t12,   0. )
-            HS[io+1,self.a2o(idx_a[1])+0] = (t12,   0. )
+        >>> # Only nearest neighbour interactions
+        >>> dR = (.1, 2.)
+        >>> for ia in xrange(self.na_u):
+        >>>     io = self.a2o(ia)
+        >>>     idx_a = HUGE.close_all(ia,dR=dR)
+        >>>     # first orbital on-site
+        >>>     HS[io+0,self.a2o(idx_a[0])+0] = (U1 ,   1. )
+        >>>     # second orbital on-site
+        >>>     HS[io+1,self.a2o(idx_a[0])+1] = (U2 ,   1. )
+        >>>     # orbital hopping to same orbital
+        >>>     HS[io+0,self.a2o(idx_a[1])+0] = (t11,   0. )
+        >>>     HS[io+1,self.a2o(idx_a[1])+1] = (t22,   0. )
+        >>>     # orbital hopping to differing orbital
+        >>>     HS[io+0,self.a2o(idx_a[1])+1] = (t12,   0. )
+        >>>     HS[io+1,self.a2o(idx_a[1])+0] = (t12,   0. )
 
         """
         return self.lasto[ia % self.na_u] + (ia // self.na_u) * self.no_u
@@ -726,6 +803,10 @@ class TBT_Geom(SIESTA_UNITS):
         iio = np.asarray([io]).flatten()
         a = [self.na_u - np.argmax(rlasto <= i) for i in iio]
         return np.asarray(a)
+
+    def sc2uc(self,atoms):
+        """ Returns atoms from super-cell indices to unit-cell indices (removing dublicates) """
+        return np.unique(atoms % self.na_u)
 
     def coords(self,isc=[0,0,0],idx=None):
         """
@@ -787,9 +868,6 @@ class TBT_Geom(SIESTA_UNITS):
         in the ranges:
            ( x <= dR[0] , dR[0] < x <= dR[1], dR[1] < x <= dR[2] )
 
-        NOTE: This routine can be made faster by setting the
-        ``self.proximity`` value.
-
         Parameters
         ----------
         xyz_ia    : coordinate/index
@@ -821,13 +899,7 @@ class TBT_Geom(SIESTA_UNITS):
         if isinstance(xyz_ia,(int,np.int,np.int16,np.int32)):
             off = self.xa[xyz_ia,:]
             # Get atomic coordinate in principal cell
-            if self.proximity:
-                ioff = max(0,xyz_ia-self.proximity)
-                dxi = np.arange(ioff,min(xyz_ia+self.proximity,self.na_u))
-                dxa = self.coords(isc=isc,idx=dxi) - off[None,:]
-                del dxi
-            else:
-                dxa = self.coords(isc=isc,idx=idx) - off[None,:]
+            dxa = self.coords(isc=isc,idx=idx) - off[None,:]
         else:
             off = xyz_ia
             # The user has passed a coordinate
@@ -1132,7 +1204,7 @@ class TBT_Model(SIESTA_UNITS):
 
             
         # Update number of super-cells
-        geom.update_sc(nsc=nsc)
+        geom.update(nsc=nsc)
 
         # Now we have a correct geometry, and 
         # we are now ready to create the sparsity pattern
@@ -1954,7 +2026,7 @@ class TBInputFile(TBFile):
 
         # Return the geometry
         geom = cls(cell,xa,Z=Z,n_orb=n_orb)
-        geom.update_sc(nsc=nsc)
+        geom.update(nsc=nsc)
         #for i, s in enumerate(sc):
         #    geom = geom.tile(s,axis=i)
         return geom
@@ -2690,7 +2762,7 @@ def graphene_uc(alat=1.42,square=True):
     gr.xa   *= alat
     gr.cell *= alat
     gr.dR   *= alat
-    gr.update_sc()
+    gr.update()
     return gr
 
 def TB_save(fname,Geom,TB = _TB_graphene['D'],alat=1.42):
@@ -2978,7 +3050,7 @@ if __name__ == '__main__':
     Nx = 10 ; Ny = 30
     print('Repeating graphene UC to flake with hole containing '+str(Nx*Ny*GR_na_u)+' atoms...')
     HOLE = graphene_uc(alat).repeat(Nx,axis=0).tile(Ny,axis=1)
-    HOLE.update_sc(nsc=[1,1,0])
+    HOLE.update(nsc=[1,1,0])
     # Remove a hole in the structure
     # We take some atom in the middle of the structure
     mid_atom = GR_na_u * (Nx * Ny) // 2
@@ -3015,23 +3087,18 @@ if __name__ == '__main__':
     Nx = 40 ; Ny = 60
     print('Repeating graphene UC to huge flake containing '+str(Nx*Ny*GR_na_u)+' atoms...')
     HUGE = graphene_uc(alat).repeat(Nx,axis=0).tile(Ny,axis=1)
-    HUGE.update_sc(nsc=[1,1,0])
-    # This will reduce setup time, it only takes into consideration
-    # the closest atoms (in terms of index) corresponding to this
-    # "width". I.e. proximity = 10 means that close_all
-    # only takes these indices into consideration: 
-    #   xa[idx-10:idx+10,:]
-    # If in doubt, do not use this flag...
-    HUGE.proximity = Nx * GR_na_u * 2
+    HUGE.update(nsc=[1,1,0], dR = 2*alat)
+    HUGE._iter = 10
     HS = TBT_Model(HUGE , max_connection = 20)
     dR = ( alat*0.5 , alat+0.1 , 2*sq3h*alat+0.1 , 2*alat+0.1 )
     print('Creating TB parameter Hamiltonian and overlap...')
-    for ia in xrange(HUGE.na_u):
-        idx_a = HUGE.close_all(ia,dR=dR)
-        HS[ia,idx_a[0]] = on
-        HS[ia,idx_a[1]] = nn
-        HS[ia,idx_a[2]] = nnn
-        HS[ia,idx_a[3]] = nnnn
+    for ias, idxs in HUGE:
+        for ia in ias:
+            idx_a = HUGE.close_all(ia,dR=dR, idx = idxs)
+            HS[ia,idx_a[0]] = on
+            HS[ia,idx_a[1]] = nn
+            HS[ia,idx_a[2]] = nnn
+            HS[ia,idx_a[3]] = nnnn
     print('Converting to CSR sparsity format and saving NetCDF file...')
     HS.save('HUGE_D_zz.nc',Ef=TB['U'])
 

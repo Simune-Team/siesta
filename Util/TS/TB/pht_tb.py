@@ -240,5 +240,5 @@ class GULP(PHInputFile):
 
         # Return the geometry
         geom = cls(cell,xa,Z=Z,n_orb=3)
-        geom.update_sc(nsc=np.zeros((3,),np.int))
+        geom.update(nsc=np.zeros((3,),np.int))
         return geom
