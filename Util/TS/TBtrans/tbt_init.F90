@@ -89,10 +89,9 @@ subroutine tbt_init()
 #endif
 !$OMP parallel
 !$OMP master
-!$    write(*,'(a,i0,a)') &
-!$       '* Running ', omp_get_num_threads(),' OpenMP threads.'
-!$    write(*,'(a,i0,a)') &
-!$       '* Running ', Nodes*omp_get_num_threads(),' processes.'
+!$    iEl = omp_get_num_threads()
+!$    write(*,'(a,i0,a)') '* Running ', iEl,' OpenMP threads.'
+!$    write(*,'(a,i0,a)') '* Running ', Nodes*iEl,' processes.'
 !$OMP end master
 !$OMP end parallel
 

@@ -132,11 +132,9 @@
 #endif
 !$OMP parallel
 !$OMP master
-!$    write(*,'(a,i0,a)')
-!$   &    '* Running ',
-!$   &    omp_get_num_threads(),' OpenMP threads.'
-!$    write(*,'(a,i0,a)') '* Running ', &
-!$   &Nodes*omp_get_num_threads(),' processes.'
+!$    i = omp_get_num_threads()
+!$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
+!$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
 !$OMP end master
 !$OMP end parallel
          call timestamp('Start of run')
