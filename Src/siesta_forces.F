@@ -244,7 +244,7 @@
              !To write the initial wavefunctions to be used in a consequent TDDFT
              ! run.
       if(writetdwf) then
-              istpp = istep
+              istpp = 0
       call initwf(no_s, nspin, nspin, no_l, maxnh, no_u,
      &            numh, listhptr, listh, H, S, qtot,
      &            gamma, xijo, indxuo, nkpnt, kpoint, kweight,
@@ -327,7 +327,7 @@
         mod_md   = mod(istep, tdednwrite)
 
         if(mod_md .eq. 0) then
-            call iowavef('write',wavef,no_u,nkpnt,nspin, istpp,totime)
+            call iowavef('write',wavef,no_u,nkpnt,nspin, istep,totime)
             call save_density_matrix("dmout")
         end if
 
