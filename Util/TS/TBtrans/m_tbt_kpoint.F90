@@ -93,7 +93,42 @@ contains
           ctmp = fdf_bnames(pline,1)
 
           ! We have some kind of designation
-          if ( leqi(ctmp,'displacement') .or. &
+          if ( leqi(ctmp(1:5),'diag-') ) then
+
+             if ( fdf_bnintegers(pline) /= 1 ) then
+                call die('Please correct your input, you have not supplied a number in diag-.')
+             end if
+             
+             ctmp = ctmp(6:)
+             if ( leqi(ctmp,'A1') .or. leqi(ctmp,'a') ) then
+                ik = 1
+             else if ( leqi(ctmp,'A2') .or. leqi(ctmp,'b') ) then
+                ik = 2
+             else if ( leqi(ctmp,'A3') .or. leqi(ctmp,'c') ) then
+                ik = 3
+             end if
+             
+             ! Get the diagonal
+             kscell(ik,ik) = max(1,fdf_bnintegers(pline,1))
+             
+          else if ( leqi(ctmp,'diagonal') .or. &
+               leqi(ctmp,'diag') ) then
+             
+             ik = fdf_bnintegers(pline)
+             
+             if ( ik < 3 .and. IONode ) then
+                write(*,'(a)') 'tbtrans: POSSIBLE WARNING'
+                write(*,'(a,i0,a)') 'tbtrans: You have only supplied ', &
+                     ik,' of the 3 diagonal k-cell elements.'
+                write(*,'(a)') 'tbtrans: Will assume this order A1-A2-A3'
+             end if
+             
+             ! Set the diagonal
+             do i = 1 , ik
+                kscell(i,i) = max(1,fdf_bintegers(pline,i))
+             end do
+
+          else if ( leqi(ctmp,'displacement') .or. &
                leqi(ctmp,'displ') ) then
 
              displ(1) = fdf_bvalues(pline,1)
@@ -145,6 +180,10 @@ contains
           end if
 
        else if ( fdf_bnintegers(pline) == 3 ) then
+
+          ! There exists two variants
+          ! 1. Either the user only supplies the diagonal,
+          ! 2. or the full kscell is supplied
 
           do ik = 1 , 3
              kscell(1,ik) = fdf_bintegers(pline,1)
