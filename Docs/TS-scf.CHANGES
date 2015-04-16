@@ -1,4 +1,11 @@
 ----------------------------------------------------
+April 16, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-383
+Added calculation of thermal flux (electronic)
+
+modified:
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 April 16, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-382
 Added help for remembering the graphviz command
 

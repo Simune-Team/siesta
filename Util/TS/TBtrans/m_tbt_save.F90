@@ -1029,6 +1029,7 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: N_E
+    ! This quantity is the dE weight, with dE in Ry units
     real(dp), intent(in) :: rW(N_E)
     type(dict), intent(in) :: save_DATA
 
@@ -1043,7 +1044,7 @@ contains
 #ifdef TBT_PHONON
     real(dp) :: Flow, dT
 #else
-    real(dp) :: Current, V
+    real(dp) :: Current, Power, V, dd
 #endif
     integer, allocatable :: pvt(:)
 
@@ -1230,28 +1231,44 @@ contains
           ! Now we calculate the current
           ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
           Current = 0._dp
+          Power = 0._dp
           if ( iEl == jEl ) then
              ! Do nothing
           else
-!$OMP parallel do default(shared), private(i), &
-!$OMP&reduction(+:Current)
+!$OMP parallel do default(shared), private(i,dd), &
+!$OMP&reduction(+:Current,Power)
              do i = 1 , NE
                 ! We have rE in eV, hence the conversion
-                Current = Current + r2(i,1) * rW(i) * nf2(rE(i)*eV, &
+                dd = r2(i,1) * rW(i) * nf2(rE(i)*eV, &
                      Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
                      Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
+                Current = Current + dd
+                ! rE is in eV, mu is in Ry
+                Power = Power + dd * ( rE(i) - Elecs(iEl)%mu%mu / eV )
              end do
 !$OMP end parallel do
           end if
 
-          ! rW is in Ry => / eV
-          Current = Current / eV * 3.87404e-5_dp ! e**2 / h (not 2)
+          ! This quantity is e / h * [J] / [eV]: [q] / [J] / [s] * [J] / [eV] = [q] / [eV] / [s]
+          ! NOTE: [q] = [J] / [eV] in numeric quantity
+          dd = 3.87405e-05_dp
+
+          ! 1. rW is in [Ry], hence we need to convert to [eV] Ry => / eV
+          ! 2. Current is in [eV], so dividing by [q] / [eV] / [s] yields [A]
+          Current = Current / eV * dd
+          ! 1. rW is in [Ry], hence we need to convert to [eV] Ry => / eV
+          ! 2. Power is in [eV] ** 2, so dividing by [J] / [eV] / [eV] / [s] yields [W]
+          Power = Power / eV * dd
+
           V = ( Elecs(iEl)%mu%mu - Elecs(jEl)%mu%mu ) / eV
 
           if ( Node == 0 .and. iEl /= jEl ) then
              write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
                   ' -> ',trim(Elecs(jEl)%name),', V [V] / I [A]: ', &
                   V, ' V / ',Current,' A'
+             write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
+                  ' -> ',trim(Elecs(jEl)%name),', V [V] / P [W]: ', &
+                  V, ' V / ',Power,' W'
           end if
 #endif
 
