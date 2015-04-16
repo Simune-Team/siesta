@@ -1555,9 +1555,9 @@ contains
     integer, intent(in), optional :: types(n)
     integer, intent(in), optional :: method
 
-    !                                               gray      blue      red       green     purple
-    character(len=7), parameter :: edges(0:4)  = (/'#D8D8D8','#5882FA','#FA5858','#58FA58','#AC58FA'/)
-    character(len=7), parameter :: colors(0:4) = (/'#000000','#2E2EFE','#FF0000','#00FF00','#A901DB'/)
+    !                                               gray      blue      red       green     purple   turkis    orange
+    character(len=7), parameter :: edges(0:6)  = (/'#D8D8D8','#5882FA','#FA5858','#58FA58','#AC58FA','#9DFCF7','#FFD681'/)
+    character(len=7), parameter :: colors(0:6) = (/'#000000','#2E2EFE','#FF0000','#00FF00','#A901DB','#19A099','#FFA600'/)
     character(len=4) :: con
     integer :: i, j, k, ind, lmethod, max_types
 
@@ -1591,8 +1591,10 @@ contains
     end if
 
     if ( present(types) ) then
-       if ( max_types > 4 ) call die('Can not re-present more than 4 different &
-            &types.')
+       if ( max_types > len(edges) - 1 ) then
+          write(*,*) 'Max allowed types: ',len(edges)-1
+          call die('Can not represent more than 4 different types.')
+       end if
        do j = 0 , max_types
           select case ( j )
           case ( 0 , 1 )
