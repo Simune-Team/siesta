@@ -1,4 +1,11 @@
 ----------------------------------------------------
+April 16, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-382
+Added help for remembering the graphviz command
+
+modified:
+  Src/m_pivot_methods.F90
+
+----------------------------------------------------
 April 16, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-381
 Added two new colors to the pivoting GRAPHVIZ
 

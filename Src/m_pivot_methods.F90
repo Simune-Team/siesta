@@ -1548,6 +1548,8 @@ contains
   end function degree
 
 #ifdef GRAPHVIZ
+
+
   subroutine sp2graphviz(file,n,nnzs,n_col,l_ptr,l_col,types,method)
     character(len=*), intent(in) :: file
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
@@ -1565,6 +1567,12 @@ contains
     if ( present(method) ) lmethod = 1
 
     open(unit=555,file=trim(file),form='formatted')
+
+    ! Inform how to process this:
+    write(555,'(a)') '// This command typically produces nice graphs'
+    write(555,'(a)') '// neato -x '//trim(file)
+    write(555,'(a)') '// neato -x -Tpdf '//trim(file)//' -o graph.pdf'
+    write(555,'(a)') '// neato -x -Tpng '//trim(file)//' -o graph.png'
 
     select case ( lmethod ) 
 
