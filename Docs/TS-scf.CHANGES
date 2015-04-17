@@ -1,4 +1,32 @@
 ----------------------------------------------------
+April 17, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-387
+Enabled direct reading of siesta.nc, TB
+
+* Fixed "missing" super-cell indices in the siesta
+  calculation.
+  
+  The array isc_off was only initialized where interactions
+  occured. However, for completeness it makes sense to fill
+  them all.
+
+  We do this by forcing the unit-cell interactions to have index 1.
+
+  Then we populate to get all. This clears any ambiguity of the
+  unit-cell index.
+
+* Added representations of the Geom and Model codes to make them
+  printable.
+
+* Added a2isc where a super-cell atom's supercell can be queried.
+
+* When reading in a SIESTA.nc file the number of supercells are
+  now queried and updated.
+
+modified:
+  Src/m_sparse.F90
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 April 17, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-386
 If only setting iter skip updating nsc, TB
 

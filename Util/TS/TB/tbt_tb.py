@@ -218,6 +218,18 @@ class TBT_Geom(SIESTA_UNITS):
         # This defines the amount of dR that will be used in each iterator step
         self._iter = iter
 
+    def __repr__(self):
+        """ Representation of the object """
+        zu = np.unique(self.Z)
+        s = 'Atoms {0}\nOrbitals {1}\nDifferent species {2}\n'.format(self.na_u,self.no_u,len(zu))
+        s += 'Species:\n'
+        ptbl = PeriodicTable()
+        for z in zu:
+            s += '  {0}\n'.format(ptbl.Z_short(z))
+        s += 'Supercells {0}, {1}, {2}\n'.format(*(self.nsc // 2))
+        s += 'Maximum interaction range {0}'.format(self.dR)
+        return s
+
     def __len__(self):
         """ Returns number of atoms in this geometry """
         return self.na_u
@@ -801,9 +813,9 @@ class TBT_Geom(SIESTA_UNITS):
              List of indices to return the atoms for
         """
         rlasto = self.lasto[::-1]
-        iio = np.asarray([io]).flatten()
+        iio = np.asarray([io % self.no_u]).flatten()
         a = [self.na_u - np.argmax(rlasto <= i) for i in iio]
-        return np.asarray(a)
+        return np.asarray(a) + ( io // self.no_u ) * self.na_u
 
     def sc2uc(self,atoms):
         """ Returns atoms from super-cell indices to unit-cell indices (removing dublicates) """
@@ -847,6 +859,15 @@ class TBT_Geom(SIESTA_UNITS):
         for i in xrange(self.isc_off.shape[0]):
             if np.all(self.isc_off[i,:] == asc): return i
         raise Exception('Could not find supercell index')
+
+    def a2isc(self,a):
+        """
+        Returns the super-cell index for a specific atom
+
+        Hence one can easily figure out the supercell
+        """
+        idx = np.where( a < self.na_u * np.arange(1,np.product(self.nsc)+1) )[0][0]
+        return self.isc_off[idx,:]
 
     def o2isc(self,o):
         """
@@ -1104,6 +1125,16 @@ class TBT_Model(SIESTA_UNITS):
 
         self.max_n = max_n
         self.reset()
+
+    def __len__(self):
+        """ Returns number of interactions in this model """
+        return self.nnzs
+
+    def __repr__(self):
+        """ Representation of the object """
+        s = self.geom.__repr__()
+        s += '\nNumber of non-zero elements {0}'.format(self.nnzs)
+        return s
 
     @property
     def no_u(self):
@@ -1506,15 +1537,15 @@ class TBT_Model(SIESTA_UNITS):
         sg = nf.groups['SPARSE']
 
         geom.isc_off = np.asarray(nf.groups['SPARSE'].variables['isc_off'][:],np.int)
+        geom.nsc = np.amax(geom.isc_off,axis=0) * 2 + 1
         
         # Use Ef to move H to Ef = 0
         Ef = float(nf.variables['Ef'][0]) * cls.Ry
         S = np.array(sg.variables['S'][:],np.float)
-        H = np.array(sg.variables['H'][:],np.float) * cls.Ry
-        # Correct for the Fermi-level (in that way
-        # Ef == 0)
-        for i in range(len(H)):
-            H[i,:] -= Ef * S[:]
+        H = np.array(sg.variables['H'][ispin,:],np.float) * cls.Ry
+        # Correct for the Fermi-level 
+        # In that way Ef == 0
+        H -= Ef * S[:]
         ncol = np.array(sg.variables['n_col'][:],np.int)
         # Update maximum number of connections (in case future stuff happens)
         model.max_n = np.amax(ncol)
@@ -1526,11 +1557,38 @@ class TBT_Model(SIESTA_UNITS):
         model.ncol = ncol
         model.ptr = ptr
         model.col = col
-        model._nnzs = col.shape[0]
+        model._nnzs = len(col)
         # Create new container
         model.HS = np.empty((model.nnzs,2),np.float)
-        model.HS[:,0] = H[ispin,:]
+        model.HS[:,0] = H[:]
         model.HS[:,1] = S[:]
+
+        # One thing missing is the distance of interactions
+        # dR, here we calculate this quantity
+        dR = 0.
+        for ia in xrange(len(geom)):
+            # Loop over all atoms
+            # Gather all orbitals
+            o = geom.a2o(ia)
+            orbs = np.copy(col[ptr[o]:ptr[o]+ncol[o]])
+            # Loop all other orbitals
+            for io in range(o+1,o+ncol[o]):
+                orbs = np.append(orbs,col[ptr[o]:ptr[o]+ncol[o]])
+            orbs = np.unique(orbs)
+            # Get the atoms in the supercell
+            atoms = geom.o2a(orbs)
+            del orbs
+            # Loop on all atoms to find the distance between them
+            for ja in atoms:
+                isc = geom.a2isc(ja)
+                R = geom.coords(isc=isc,idx=geom.sc2uc(ja)) - geom.coords(idx=ia)
+                R.shape = (3,)
+                dR = max(dR,(R[0]**2+R[1]**2+R[2]**2)**.5)
+
+        # Update dR (add 0.1 AA) and the super-cells
+        dR = dR + 0.1
+        model.geom.dR = dR
+
         return model
 
     def save(self,fname='SIESTA.nc',Ef=0.,zlib=0):

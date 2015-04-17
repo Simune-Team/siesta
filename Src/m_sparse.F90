@@ -348,6 +348,7 @@ contains
     integer :: n_s, tm(3), is
     integer :: no_l, no_u
     integer :: lio, io, ind, ia, ja
+    integer :: i1, i2, i3, isc(3), s1, s2, s3
     real(dp) :: xijo(3), rcell(3,3)
 
     lBcast = .false.
@@ -445,6 +446,45 @@ contains
     deallocate(ioff_2)
     end if
 #endif
+
+    ! Correct isc_off for missing elements, otherwise
+    ! we could have an ambiguity.
+    ! Here we force the unit-cell to be the first index
+    do is = 2 , n_s
+       if ( all(isc_off(:,is) == 0) ) then
+          lBcast = .false.
+          ! We need to find a non-existing one
+          ! It appears siesta sets it up "backwards"
+          ! In a rather obscure way...
+          do i3 = 0 , nsc(3)/2
+          do s3 = 1 , -1 , -2
+             isc(3) = i3 * s3
+             do i2 = 0, nsc(2)/2
+             do s2 = 1 , -1 , -2
+                isc(2) = i2 * s2
+                do i1 = 0, nsc(1)/2
+                sc_1: do s1 = 1 , -1 , -2
+                   isc(1) = i1 * s1
+                   if ( all(isc == 0) ) cycle
+                   do io = 1 , n_s
+                      if ( all(isc == isc_off(:,io)) ) cycle sc_1
+                   end do
+                   isc_off(:,is) = isc
+                   lBcast = .true.
+                   exit
+                end do sc_1
+                if ( lBcast ) exit
+                end do
+             if ( lBcast ) exit
+             end do
+             if ( lBcast ) exit
+             end do
+          if ( lBcast ) exit
+          end do
+          if ( lBcast ) exit
+          end do
+       end if
+    end do
     
   end subroutine xij_offset_sp
 
