@@ -1,4 +1,11 @@
 ----------------------------------------------------
+April 17, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-386
+If only setting iter skip updating nsc, TB
+
+modified:
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 April 17, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-385
 Added union of dH sparsity pattern to assert completeness
 

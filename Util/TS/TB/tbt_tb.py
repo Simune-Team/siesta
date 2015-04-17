@@ -445,6 +445,7 @@ class TBT_Geom(SIESTA_UNITS):
         """
         if not iter is None:
             self._iter = iter
+            if dR is None and nsc is None: return
         if dR is None:
             # Just update the super-cell, this is
             # if the user has changed the cell size
