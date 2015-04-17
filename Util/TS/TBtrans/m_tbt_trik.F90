@@ -1436,7 +1436,6 @@ contains
 
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
-
     ! We will only loop in the region
 !$OMP parallel do default(shared), private(iu,io,ind,ju)
     do iu = 1 , n2

@@ -110,11 +110,15 @@ module m_tbt_dH
   ! structure.
   integer, save :: insert_algo = 0
 
-  public :: tTBTdH, dH
+  ! Whether this is used or not
+  logical :: use_dH = .false.
+
+  public :: tTBTdH, dH, use_dH
 
 #ifdef NCDF_4
   public :: init_dH_options
   public :: read_next_dH, clean_dH
+  public :: read_Sp_dH
 #endif
   public :: add_zdH_TriMat, add_zdH_Mat
 
@@ -143,6 +147,8 @@ contains
     integer :: MPIerror
 #endif
 
+    use_dH = .false.
+
     ! Initialize dH to not have any values
     dH%lvl = 0
 
@@ -154,6 +160,9 @@ contains
        fname_dH = ' '
        return
     end if
+
+    ! Tell tbtrans to use it
+    use_dH = .true.
 
     ! Ok, the file exists, lets see if all can see the file...
     cdf_r_parallel = .false.
@@ -445,6 +454,74 @@ contains
 
   end subroutine init_dH_options
 
+  subroutine read_Sp_dH(no_u,sp)
+
+    use class_Sparsity
+    use class_OrbitalDistribution
+
+    use m_sparsity_handling, only : Sp_union
+    use nf_ncdf, ncdf_parallel => parallel
+
+#ifdef MPI
+    use mpi_siesta, only : MPI_Comm_Self
+#endif
+
+    use m_ncdf_io, only : cdf_r_Sp
+
+    ! Read in the sparsity pattern
+    integer, intent(in) :: no_u
+    type(Sparsity), intent(inout) :: sp
+
+    ! Temporary sparsity pattern
+    type(Sparsity) :: sp_tmp
+    type(OrbitalDistribution) :: fdist
+
+    type(hNCDF) :: ndH, grp
+
+    character(len=7) :: igrp
+    logical :: has_level(4)
+    integer :: i 
+
+    call delete(sp)
+
+    ! Return if the file is not used
+    if ( .not. use_dH ) return
+
+#ifdef MPI
+    call newDistribution(no_u,MPI_Comm_Self,fdist,name='TBT-fake dist')
+#else
+    call newDistribution(no_u,-1           ,fdist,name='TBT-fake dist')
+#endif
+
+    if ( cdf_r_parallel ) then
+       call ncdf_open(ndH,fname_dH, mode = IOR(NF90_SHARE,NF90_NOWRITE) , &
+            parallel = .true. )
+    else
+       call ncdf_open(ndH,fname_dH, mode = NF90_NOWRITE )
+    end if
+
+    ! Assign whether they are existing or not
+    has_level(1) = has_lvl1
+    has_level(2) = n_k2 > 0
+    has_level(3) = n_E3 > 0
+    has_level(2) = n_k4 > 0
+
+    do i = 1 , 4
+       write(igrp,'(a,i0)') 'LEVEL-',i
+
+       call ncdf_open_grp(ndH,igrp,grp)
+       call cdf_r_Sp(grp,no_u,sp_tmp, 'SpdH', Bcast = .not. cdf_r_parallel )
+       call Sp_union(fdist,sp_tmp,sp,sp)
+
+    end do
+
+    call delete(fdist)
+    call delete(sp_tmp)
+
+    call ncdf_close(ndH)
+    
+  end subroutine read_Sp_dH
+
   ! Updates the dH type to the current energy-point
   subroutine read_next_dH(no_u,bkpt,nE)
 
@@ -467,7 +544,7 @@ contains
     integer :: MPIerror
 #endif
 
-    if ( len_trim(fname_dH) == 0 ) return
+    if ( .not. use_dH ) return
 
 #ifdef TBTRANS_TIMING
     call timer('read-dH',1)

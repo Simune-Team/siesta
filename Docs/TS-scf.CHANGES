@@ -1,4 +1,18 @@
 ----------------------------------------------------
+April 17, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-385
+Added union of dH sparsity pattern to assert completeness
+
+* The dH sparsity pattern is now added to the sparsity pattern
+  to ensure that every element is used.
+
+modified:
+  Src/m_sparsity_handling.F90
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 April 16, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-384
 Enabled easier tbtrans k-points
 

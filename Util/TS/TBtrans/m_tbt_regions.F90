@@ -1075,7 +1075,7 @@ contains
     
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-    integer :: i, verb
+    integer :: i
     type(tRgn) :: r
 
     if ( Node /= 0 ) return

@@ -283,7 +283,92 @@ contains
     deallocate(num,listptr,list)
 
   end subroutine Sp_remove_crossterms
-  
+
+  ! Create a unified sparsity pattern
+  subroutine Sp_union(dit,sp1,sp2,out)
+    ! The distribution the two sparsity patterns lives in
+    type(OrbitalDistribution), intent(in) :: dit
+    ! sparsity pattern to be unified
+    type(Sparsity), intent(inout) :: sp1, sp2
+    ! sparsity pattern to be unified too
+    type(Sparsity), intent(inout) :: out
+    
+    integer, pointer :: ncol1(:), ptr1(:), col1(:)
+    integer, pointer :: ncol2(:), ptr2(:), col2(:)
+    integer, allocatable :: ncol(:), ptr(:)
+    integer :: no1, no2, no_u
+    integer :: nc, ncg
+    type(tRgn) :: r, r1, r2, rcol
+    integer :: io
+
+    if ( .not. initialized(sp1) ) then
+       if ( .not. initialized(sp2) ) then
+          call delete(out)
+       else
+          ! Point out to sp2
+          out = sp2
+       end if
+       
+       return
+    else if ( .not. initialized(sp2) ) then
+       if ( .not. initialized(sp1) ) then
+          call delete(out)
+       else
+          ! Point out to sp1
+          out = sp1
+       end if
+
+       return
+    end if
+
+    ! Attach the two sparsity patterns
+    call attach(sp1,n_col=ncol1,list_ptr=ptr1,list_col=col1, &
+         nrows=no1,nrows_g=no_u,ncols=nc,ncols_g=ncg)
+    call attach(sp2,n_col=ncol2,list_ptr=ptr2,list_col=col2, &
+         nrows=no2)
+    
+    if ( no1 /= no2 ) then
+       call die('Sp_union: Different distributions for unifying not allowed.')
+    end if
+
+    ! Allocate count of orbitals
+    allocate(ncol(no1),ptr(no1))
+
+    ! Count the new sparsity pattern
+    ! Loop over all the entries 
+    do io = 1 , no1
+
+       ! Create sorted list
+       call rgn_list(r1,ncol1(io),col1(ptr1(io)+1:ptr1(io)+ncol1(io)))
+       call rgn_sort(r1)
+       call rgn_list(r2,ncol2(io),col2(ptr2(io)+1:ptr2(io)+ncol2(io)))
+       call rgn_sort(r2)
+       call rgn_union(r1,r2,r)
+
+       ncol(io) = r%n
+       ptr(io)  = rcol%n
+
+       ! Simultaneously we build col (should NOT be sorted ;) )
+       ! We do this after assigning ptr as we then 
+       ! count that easily
+       if ( r%n > 0 ) call rgn_append(rcol,r,rcol)
+
+    end do
+
+    call rgn_delete(r,r1,r2)
+
+    ! Create new sparsity pattern and copy over
+    call newSparsity(out,no1,no_u,rcol%n,ncol,ptr,rcol%r, &
+         name=trim(name(sp1))//' U '//trim(name(sp2)), &
+         ncols=nc,ncols_g=ncg)
+
+    ! Clean up
+    deallocate(ncol,ptr)
+    
+    call rgn_delete(rcol)
+
+  end subroutine Sp_union
+
   subroutine Sp_remove_region(dit,in,rr,out)
     ! The distribution this sparsity pattern lives in
     type(OrbitalDistribution), intent(in) :: dit
