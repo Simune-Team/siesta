@@ -176,11 +176,14 @@ contains
        method = CC_G_LEGENDRE
     else if ( leqi(str,'tanh-sinh') ) then
        method = CC_TANH_SINH
-    else if ( leqi(str,'simpson-mix') ) then
+    else if ( leqi(str,'simpson-mix') .or. &
+         leqi(str,'simpson') ) then
        method = CC_SIMP_MIX
-    else if ( leqi(str,'boole-mix') ) then
+    else if ( leqi(str,'boole-mix') .or. &
+         leqi(str,'boole') ) then
        method = CC_BOOLE_MIX
-    else if ( leqi(str,'mid-rule') ) then
+    else if ( leqi(str,'mid-rule') .or. &
+         leqi(str,'mid') ) then
        method = CC_MID
     else if ( leqi(str,'g-fermi') ) then
        method = CC_G_NF_0kT
