@@ -760,8 +760,7 @@ contains
           ! Then one can relax that one Au and the C by this constraint
           !   Z 79
           !   clear 11 45
-          call fdf_brange(pline,rr,1,na)
-          call rgn_sort(rr) ! sort to fasten the search 
+          call fix_brange(pline,rr,na)
 
           ! Loop through all fixes that has been requested
           sfix = 1
@@ -790,7 +789,7 @@ contains
           ifix = ifix + 1
 
           ! Create a list of atoms from this line
-          call fdf_brange(pline,rr,1,na)
+          call fix_brange(pline,rr,na)
 
           ! Loop through and allocate the correct atoms
           ix = 0
@@ -847,7 +846,7 @@ contains
           ifix = ifix + 1
 
           ! Create a list of atoms from this line
-          call fdf_brange(pline,rr,1,na)
+          call fix_brange(pline,rr,na)
 
           fixs(ifix)%n = rr%n
           allocate(fixs(ifix)%a(rr%n))
@@ -863,7 +862,7 @@ contains
           ifix = ifix + 1
 
           ! Create a list of atoms from this line
-          call fdf_brange(pline,rr,1,na)
+          call fix_brange(pline,rr,na)
 
           fixs(ifix)%n = rr%n
           allocate(fixs(ifix)%a(rr%n))
@@ -880,7 +879,7 @@ contains
           ifix = ifix + 1
 
           ! Create a list of atoms from this line
-          call fdf_brange(pline,rr,1,na)
+          call fix_brange(pline,rr,na)
 
           fixs(ifix)%n = rr%n
           allocate(fixs(ifix)%a(rr%n))
@@ -901,7 +900,7 @@ contains
              ! this line specifies all atoms (shorthand)
              call rgn_range(rr,1,na)
           else
-             call fdf_brange(pline,rr,1,na)
+             call fix_brange(pline,rr,na)
           end if
 
           fixs(ifix)%n = rr%n
@@ -946,6 +945,43 @@ contains
 #ifdef DEBUG
     call write_debug( '    POS init_fixed' )
 #endif
+
+  contains
+
+    subroutine fix_brange(pline,r,na)
+      type(parsed_line), pointer :: pline
+      type(tRgn), intent(inout) :: r
+      integer, intent(in) :: na
+      integer :: i
+
+      ! Get entire range ( from -na to 2 * na )
+      ! we allow both negative and positive wrap-arounds
+      ! (limit of one wrap-around)
+      call fdf_brange(pline,r,-na,2*na)
+
+      ! Correct all negative
+      do i = 1 , r%n
+         if ( r%r(i) < 0 ) then
+            r%r(i) = na + r%r(i) + 1
+         end if
+         if ( na < r%r(i) ) then
+            r%r(i) = r%r(i) - na
+         end if
+      end do
+
+      ! Sort region
+      call rgn_sort(r)
+
+      ! Remove zero
+      i = rgn_pivot(r, 0)
+      if ( i > 0 ) then
+         i = rgn_pop(r, idx = i)
+      end if
+
+      ! Unique also sorts...
+      call rgn_uniq(r)
+
+    end subroutine fix_brange
 
   end subroutine init_fixed
 

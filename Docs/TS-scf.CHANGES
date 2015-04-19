@@ -1,4 +1,24 @@
 ----------------------------------------------------
+April 19, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-389
+Wrap-around for fixation of atoms done
+
+* Constraints now work from negative crossing 
+  positive.
+
+  A small wrapper routine removes the zero
+  and takes care of the wrap-around.
+
+  We thus allow the range 
+   - na_u -- 2 * na_u
+
+* Added a rgn_uniq routine to remove dublicates
+  (it will automatically sort the region)
+
+modified:
+  Src/m_fixed.F90
+  Src/m_region.F90
+
+----------------------------------------------------
 April 17, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-388
 Added short-hands for integration names (contour)
 

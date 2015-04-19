@@ -9,7 +9,7 @@
 
 module m_region
   
-  use intrinsic_missing, only : UNIQC, SORT, SFIND
+  use intrinsic_missing, only : UNIQ, UNIQC, SORT, SFIND
   use geom_helper, only : UCORB, IAORB
 
   use class_OrbitalDistribution
@@ -46,7 +46,7 @@ module m_region
   public :: rgn_range
   public :: rgn_list
   public :: rgn_overlaps
-  public :: rgn_sort
+  public :: rgn_sort, rgn_uniq
   public :: rgn_insert
   public :: rgn_print
   public :: rgn_copy
@@ -1180,6 +1180,24 @@ contains
     end if
   end subroutine rgn_sort
 
+  subroutine rgn_uniq(r)
+    type(tRgn), intent(inout) :: r
+    character(len=R_NAME_LEN) :: name
+    integer, allocatable :: ct(:)
+    integer :: n
+
+    if ( r%n > 0 ) then
+       name = r%name
+       n = uniqc(r%r(1:r%n))
+       allocate(ct(n))
+       ct(1:n) = uniq(r%r(1:r%n))
+       call rgn_list(r,n,ct,name)
+       call rgn_sort(r)
+       deallocate(ct)
+    end if
+
+  end subroutine rgn_uniq
+
   subroutine rgn_reverse(r)
     type(tRgn), intent(inout) :: r
     integer :: i, tmp
@@ -1370,7 +1388,6 @@ contains
     logical, intent(in), optional :: collapse
  
     character(len=5) :: fmt
-    character(len=1) :: end
     integer :: i, j, k, c, lseq_max
     logical :: lcollapse
 
@@ -1404,9 +1421,11 @@ contains
           ! Count the consecutive numbers
           k = 0
           i = j
-          do while ( r%r(i) - r%r(j) == k ) 
+          do while ( r%r(i) - r%r(j) == k )
              k = k + 1
              i = i + 1
+             ! Ensure we do not by pass the regions
+             if ( i > r%n ) exit
           end do
 
           if ( k > 1  ) then
