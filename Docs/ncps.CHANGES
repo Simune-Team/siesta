@@ -1,4 +1,22 @@
 ------------------------------------------------------------
+April 21, 2015  Alberto Garcia       trunk-467--ncps-63
+Optional linear grid for PSML output from psop
+
+If the option "-l" is given to psop, the <pseudopotential-operator>
+element will have a linear grid for vlocal and the projectors.  Its
+range is determined by the correct representation of vlocal (well into
+the coulomb-tail region).
+
+added:
+  Pseudo/vnl-operator/check_grid.f90
+  Pseudo/vnl-operator/dpnint.f90
+modified:
+  Pseudo/vnl-operator/Makefile
+  Pseudo/vnl-operator/local_xml.f90
+  Pseudo/vnl-operator/psop.f90
+  Pseudo/vnl-operator/write_proj_psml.f90
+
+------------------------------------------------------------
 March 16, 2015  Alberto Garcia       trunk-467--ncps-62
 Merge with trunk-467
 

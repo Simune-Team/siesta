@@ -42,6 +42,8 @@
       use m_getopts
 
       use local_xml, only: xf
+      use local_xml, only: use_linear_grid
+      use local_xml, only: nrl, drl, rl, fval
       use flib_wxml
 
       implicit none
@@ -215,7 +217,9 @@
       character(len=10)  :: opt_name 
       integer :: nargs, iostat, n_opts, nlabels, iorb, ikb, i
 
-      external :: write_proj_psml
+      real(dp) :: rlmax
+
+      external :: write_proj_psml, dpnint, check_grid
 !
 !     Process options
 !
@@ -232,16 +236,19 @@
       use_charge_cutoff = .false.
 
       write_ion_plot_files = .false.
+      use_linear_grid = .false.
       rmax_ps_check = 0.0_dp
 
       do
-         call getopts('hdgpKRC3fc:',opt_name,opt_arg,n_opts,iostat)
+         call getopts('hdglpKRC3fc:',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
          select case(opt_name)
            case ('d')
               debug_kb_generation = .true.
            case ('g')
               restricted_grid = .false.
+           case ('l')
+              use_linear_grid = .true.
            case ('p')
               write_ion_plot_files = .true.
            case ('K')
@@ -399,6 +406,20 @@
                                   fit_3derivs,           &
                                   use_charge_cutoff,     &
                                   method_used)
+
+      rchloc = rofi(nchloc)
+
+      if (use_linear_grid) then
+         ! Choose a range large enough to have Vlocal behave
+         ! as the coulomb potential for Zval
+         rlmax = rchloc + 1.0_dp
+         drl = 0.01_dp           ! Is this fine enough?
+         nrl = rlmax/drl + 1
+         allocate(rl(nrl),fval(nrl))
+         do ir = 1, nrl
+            rl(ir) = drl*(ir-1)
+         enddo
+      endif
 !
 !
 !     COMPUTE THE NON-LOCAL KLEINMAN-BYLANDER PROJECTORS
@@ -494,6 +515,19 @@
         call xml_EndElement(xf,"provenance")
 
         call xml_NewElement(xf,"grid")
+
+        if (use_linear_grid) then
+
+           call my_add_attribute(xf,"npts",str(nrl))
+           call xml_NewElement(xf,"annotation")
+           call my_add_attribute(xf,"type","linear")
+           call my_add_attribute(xf,"drl",str(drl))
+           call xml_EndElement(xf,"annotation")
+           call xml_NewElement(xf,"grid-data")
+             call xml_AddArray(xf,rl(1:nrl))
+           call xml_EndElement(xf,"grid-data")
+
+       else
           call my_add_attribute(xf,"npts",str(nrval))
           call xml_NewElement(xf,"annotation")
            call my_add_attribute(xf,"type","log-atom")
@@ -507,13 +541,21 @@
           call xml_NewElement(xf,"grid-data")
            call xml_AddArray(xf,rofi(1:nrval))
           call xml_EndElement(xf,"grid-data")
-        call xml_EndElement(xf,"grid")
+
+       endif
+       call xml_EndElement(xf,"grid")
 
         call xml_NewElement(xf,"local-potential")
             call my_add_attribute(xf,"type",trim(method_used))
             call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
-                 call xml_AddArray(xf, 0.5_dp * vlocal(1:nrval))
+               if (use_linear_grid) then
+                  call dpnint(rofi,vlocal,nrval,rl,fval,nrl)
+                  call check_grid(rofi,vlocal,nrval,rl,fval,nrl,"vlocal.check")
+                  call xml_AddArray(xf, 0.5_dp * fval(1:nrl))
+               else
+                  call xml_AddArray(xf, 0.5_dp * vlocal(1:nrval))
+               endif
                call xml_EndElement(xf,"data")
             call xml_EndElement(xf,"radfunc")
         call xml_EndElement(xf,"local-potential")
@@ -553,6 +595,10 @@
       deallocate( auxrho  )
       deallocate( erefkb  )
       deallocate( nkbl    )
+
+      if (use_linear_grid) then
+         deallocate(rl,fval)
+      endif
 
 CONTAINS
   
@@ -599,7 +645,8 @@ subroutine manual()
   write(0,*) " -p                 write_ion_plot_files"
   write(0,*) " -K  use old-style KB reference orbitals"
   write(0,*) " -g            use unrestricted log grid"
-  write(0,*) " -R Rmax_kb (bohr) for KB generation"
+  write(0,*) " -l      use linear grid for PSML output"
+  write(0,*) " -R  Rmax_kb (bohr)    for KB generation"
   write(0,*) " -C rmax_ps_Check (bohr) for tail checks"
   write(0,*) " -3  fit Vlocal with continuous 3rd derivative"
   write(0,*) " -f  force 'gaussian charge' method for Vlocal"

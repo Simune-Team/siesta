@@ -1,6 +1,6 @@
 subroutine  write_proj_psml(l,ikb,ekb,nrc,erefkb,dkbcos,nrval,rofi,proj)
 
-  use local_xml, only: xf
+  use local_xml, only: xf, rl, fval, nrl, drl, use_linear_grid
   use flib_wxml
 
   integer, parameter :: dp = selected_real_kind(10,100)
@@ -42,7 +42,13 @@ subroutine  write_proj_psml(l,ikb,ekb,nrc,erefkb,dkbcos,nrval,rofi,proj)
   call my_add_attribute(xf,"type","KB")
   call xml_NewElement(xf,"radfunc")
   call xml_NewElement(xf,"data")
-  call xml_AddArray(xf, f(1:nrval))
+               if (use_linear_grid) then
+                  call dpnint(rofi,f,nrval,rl,fval,nrl)
+                  call xml_AddArray(xf, fval(1:nrl))
+               else
+                  call xml_AddArray(xf, f(1:nrval))
+               endif
+  
   call xml_EndElement(xf,"data")
   call xml_EndElement(xf,"radfunc")
   call xml_EndElement(xf,"proj")

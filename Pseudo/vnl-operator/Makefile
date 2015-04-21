@@ -36,7 +36,8 @@ LIBS_WXML:= -L$(MAIN_OBJDIR)/wxml -l wxml
 #
 OBJS = 	psop_options.o\
 	psop.o local_xml.o write_proj_psml.o \
-        local_die.o psml_die.o semicore_info_froyen.o
+        local_die.o psml_die.o semicore_info_froyen.o\
+        dpnint.o check_grid.o
 #
 #
 MOD_OBJS= m_getopts.o f2kcli.o
