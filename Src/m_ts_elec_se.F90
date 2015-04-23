@@ -449,7 +449,7 @@ contains
        wq = log(1._dp / real(nq,dp))
 
 ! Create the single execution for creating tasks
-!$OMP single
+!$OMP master ! (firstprivate requires master node)
        iow = 0
        do iau = 1 , na_u
         do ia3 = 1 , El%Rep(3)
@@ -487,7 +487,14 @@ contains
         end do !ia2
         end do !ia3
        end do !iau
+
+!$OMP end master
+
        do iq = 2 , nq
+
+!$OMP taskwait
+!$OMP master
+
         iow = 0
         do iau = 1 , na_u
          do ia3 = 1 , El%Rep(3)
@@ -526,9 +533,12 @@ contains
          end do !ia2
          end do !ia3
         end do !iau
+
+!$OMP end master
+
        end do !q-points
 
-!$OMP end single nowait
+!$OMP taskwait
 
 !$OMP end parallel
 
@@ -584,7 +594,7 @@ contains
        wq = log(1._dp / real(nq,dp))
 
 ! Create the single execution for creating tasks
-!$OMP single
+!$OMP master ! firstprivate requires master
        iow = 0
        do iau = 1 , na_u
         do ia3 = 1 , El%Rep(3)
@@ -619,7 +629,14 @@ contains
         end do !ia2
         end do !ia3
        end do !iau
+
+!$OMP end master
+
        do iq = 2 , nq
+
+!$OMP taskwait
+!$OMP master
+
         iow = 0
         do iau = 1 , na_u
          do ia3 = 1 , El%Rep(3)
@@ -654,8 +671,12 @@ contains
          end do !ia2
          end do !ia3
         end do !iau
+
+!$OMP end master
+
        end do !q-points
-!$OMP end single nowait
+
+!$OMP taskwait
 
 !$OMP end parallel
 

@@ -113,7 +113,7 @@ contains
           if ( fdf_bnnames(pline) == 0 ) cycle
        
           g = fdf_bnames(pline,1)
-          if ( leqi(g,'atom') ) then
+          if ( leqi(g,'atom') .or. leqi(g,'position') ) then
 
              call fdf_brange(pline,r_tmp,1,na_u)
              if ( r_aBuf%n == 0 ) then

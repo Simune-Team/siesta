@@ -118,7 +118,7 @@ contains
     gsL => zwork(i+1:i+nosq) 
     gsR => GS
 
-!$OMP parallel default(shared), private(i)
+!$OMP parallel default(shared), private(i,j,ic,ic2)
 
 ! gb    =   Z*S00-H00
 ! alpha = -(Z*S01-H01)
@@ -132,10 +132,10 @@ contains
        gsR(i) = gb(i)
 
     end do
-!$OMP end do
+!$OMP end do nowait
 
 ! beta = -(Z*S10-H10)
-!$OMP do private(j,ic,ic2)
+!$OMP do
     do j = 1 , no
        ic = no * (j-1)
        do i = 1 , no
@@ -453,7 +453,7 @@ contains
     i = i + nosq
     GB => zwork(i+1:i+nosq) 
 
-!$OMP parallel default(shared), private(i)
+!$OMP parallel default(shared), private(i,j,ic,ic2)
 
 ! gb    =   Z*S00-H00
 ! alpha = -(Z*S01-H01)
@@ -467,7 +467,7 @@ contains
 !$OMP end do nowait
 
 ! beta = -(Z*S10-H10)
-!$OMP do private(j,ic,ic2)
+!$OMP do
     do j = 1 , no
        ic = no * (j-1) + 1
        do i = 0 , nom1
@@ -843,7 +843,9 @@ contains
 
     ! Reset bulk DOS
     if ( CalcDOS ) then
+!$OMP parallel workshare default(shared)
        ZBulkDOS(:,:) = dcmplx(0._dp,0._dp)
+!$OMP end parallel workshare
     end if
 
 !******************************************************************
@@ -1157,10 +1159,14 @@ contains
           call MPI_Reduce(iters(1,1,1,1), iters(1,1,1,2), nq*NEn*nkpnt, &
                MPI_Integer, MPI_Sum, 0, MPI_Comm_World, MPIerror)
 #else
+!$OMP parallel workshare
           iters(:,:,:,2) = iters(:,:,:,1)
+!$OMP end parallel workshare
 #endif
           if ( IONode ) then
+!$OMP parallel workshare default(shared)
              i_mean = sum(iters(:,:,:,2)) / real(nq*NEn*nkpnt,dp)
+!$OMP end parallel workshare
              i_std = 0._dp
 !$OMP parallel do default(shared), &
 !$OMP&private(j,i,iqpt), collapse(3), &

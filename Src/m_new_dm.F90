@@ -807,7 +807,7 @@
 
 ! Initialize all paramagnetic
 
-!$OMP single
+!$OMP master
           do ia = 1, na_u
             do io = lasto(ia-1) + 1, lasto(ia)
               call GlobalToLocalOrb(io,Node,Nodes,iio)
@@ -825,13 +825,13 @@
               endif
             enddo
           enddo
-!$OMP end single nowait
+!$OMP end master
 
 !$OMP taskwait
 
 ! Loop on atoms with spin
 
-!$OMP single
+!$OMP master
           do iat = 1, nat
             ia = atom(iat)
 
@@ -888,7 +888,9 @@
             enddo
 
           enddo
-!$OMP end single nowait
+!$OMP end master
+
+!$OMP taskwait
 
 !$OMP end parallel
 
@@ -910,7 +912,7 @@
 !$OMP end workshare
 
 ! Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
-!$OMP single
+!$OMP master
           do io = 1, no_l
             call LocalToGlobalOrb(io,Node,Nodes,iio)
 !$OMP task firstprivate(io,iio), private(in,ind,jo,i1,i2)
@@ -945,7 +947,9 @@
             enddo
 !$OMP end task
           enddo
-!$OMP end single nowait
+!$OMP end master
+
+!$OMP taskwait
 
 !$OMP end parallel
 

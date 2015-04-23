@@ -1,4 +1,24 @@
 ----------------------------------------------------
+April 23, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-390
+Allowed position and atom in buffer specification
+
+* Made it more intuitive by also allowing the 
+  position specification in the buffer block.
+
+* Ensured that the threaded self-energies also 
+  function with 1 openmp thread.
+  Instead of single, one should use master
+  to enable firstprivate in tasks
+
+modified:
+  Src/m_new_dm.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_method.f90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 April 19, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-389
 Wrap-around for fixation of atoms done
 

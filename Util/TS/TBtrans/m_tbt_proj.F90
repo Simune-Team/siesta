@@ -259,7 +259,7 @@ contains
                      &a projection has prematurely ended, correct input.')
              end if
              
-          else if ( leqi(char,'atom') ) then
+          else if ( leqi(char,'atom') .or. leqi(char,'position') ) then
 
              ! Add the atom to the list
              call fdf_brange(pline,r_tmp,1,na_u)
