@@ -1,4 +1,35 @@
 ----------------------------------------------------
+April 26, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-392
+Enabled adding/removing fdf-lines while running
+
+* Added 3 routines to the fdf-system
+
+  - fdf_removelabel:
+    searches through the fdf file input and removes
+    all lines with the label passed
+    It will automatically correct the %first %last
+    quantities in the file_in variable.
+    NOTE this cannot be used with block's in its
+    current state
+
+  - fdf_addline:
+    Adds a new line to the fdf system.
+    It will be parsed like any ordinary
+    added line.
+    NOTE this cannot be used with block's in its
+    current state
+
+  - fdf_overwrite:
+    Calls fdf_removelabel then fdf_addline,
+    to overwrite any label in the fdf-file.
+
+    NOTE this cannot be used with block's in its
+    current state
+
+modified:
+  Src/fdf/fdf.F90
+
+----------------------------------------------------
 April 26, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-391
 Enabled precision control of NetCDF data
 

@@ -147,6 +147,9 @@ MODULE fdf
 ! Test if label is defined
   public :: fdf_defined
 
+! Allow to overwrite things in the FDF
+  public :: fdf_overwrite, fdf_removelabel, fdf_addline
+
 ! Test if a label is used in obsolete or a deprecated state
   public :: fdf_deprecated, fdf_obsolete
 
@@ -1414,6 +1417,105 @@ MODULE fdf
       RETURN
 !--------------------------------------------------------------------------- END
     END SUBROUTINE fdf_initdata
+
+!
+!   Add a line individually to the dynamic list of parsed lines
+!   This can not include block's and is restricted to key values
+!
+    SUBROUTINE fdf_addline(line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)  :: line
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                :: ntok
+      type(parsed_line), pointer :: pline
+      
+!------------------------------------------------------------------------- BEGIN
+
+!     Check if valid data (tokens, non-blank)
+      pline => digest(line)
+        
+      call setmorphol(1, 'l', pline)
+      call fdf_addtoken(line, pline)
+
+      if (fdf_debug2) then
+         write(fdf_log,*) '***FDF_ADDLINE********************************'
+         write(fdf_log,*) 'Line:', TRIM(line)
+         write(fdf_log,*) '**********************************************'
+      endif
+
+    END SUBROUTINE fdf_addline
+
+!
+!   Remove a line from the dynamic list of parsed lines
+!   This can not include block's and is restricted to key values
+!
+    SUBROUTINE fdf_removelabel(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)  :: label
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer  :: mark
+      
+!------------------------------------------------------------------------- BEGIN
+
+      do while ( fdf_locate(label,mark) ) 
+
+         if (fdf_debug2) then
+            write(fdf_log,*) '***FDF_REMOVELABEL*******************************'
+            write(fdf_log,*) 'Line:', TRIM(mark%str)
+            write(fdf_log,*) 'Label:', trim(label)
+            write(fdf_log,*) '**********************************************'
+         endif
+
+         ! To circumvent the first/last line in the fdf-file
+         ! we have to check for the existance of the 
+         ! first/last mark being the one removed.
+         ! That special case *must* correct the first/last
+         ! tokens.
+         if ( associated(mark,target=file_in%first) ) then
+            file_in%first => mark%next
+         end if
+         if ( associated(mark,target=file_in%last) ) then
+            file_in%last => mark%prev
+         end if
+
+         ! Remove the label from the dynamic list
+         call destroy(mark%pline)
+         if ( associated(mark%prev) ) then
+            mark%prev%next => mark%next
+         end if
+         if ( associated(mark%next) ) then
+            mark%next%prev => mark%prev
+         end if
+         DEALLOCATE(mark)
+
+         NULLIFY(mark)
+      end do
+      
+    END SUBROUTINE fdf_removelabel
+
+!   
+!   Overwrite label line in dynamic list of parsed lines
+!
+    SUBROUTINE fdf_overwrite(line)
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)   :: line
+
+!--------------------------------------------------------------- Local Variables
+      type(parsed_line), pointer  :: pline
+      character(len=MAX_LENGTH)   :: label
+
+      pline => digest(line)
+      label = tokens(pline,1)
+      call destroy(pline)
+
+      call fdf_removelabel(label)
+      call fdf_addline(line)
+      
+    END SUBROUTINE fdf_overwrite
 
 !
 !   Add a token to the dynamic list of parsed lines
