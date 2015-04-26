@@ -14,6 +14,7 @@ module m_tbt_save
   public :: init_save_options
   public :: name_save
 #ifdef NCDF_4
+  public :: tbt_cdf_precision
   public :: init_cdf_save
   public :: init_cdf_E_check
   public :: cdf_get_E_idx
@@ -105,6 +106,43 @@ contains
   end subroutine init_save_options
 
 #ifdef NCDF_4
+  subroutine tbt_cdf_precision(name,default,prec)
+
+    use fdf, only : fdf_get, leqi
+    use parallel, only : IONode
+    use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
+
+    character(len=*), intent(in) :: name, default
+    integer, intent(out) :: prec
+
+    character(len=20) :: tmp
+
+    ! Default, unless otherwise stated
+    prec = NF90_DOUBLE
+
+    tmp = fdf_get('TBT.CDF.Precision',default)
+    if ( leqi(tmp,'double') ) then
+       prec = NF90_DOUBLE
+    else if ( leqi(tmp,'single') ) then
+       prec = NF90_FLOAT
+    else if ( leqi(tmp,'float') ) then
+       prec = NF90_FLOAT
+    else if ( IONode ) then
+       write(*,'(a)')'WARNING: Could not recognize TBT.CDF.Precision, &
+            &must be double|single|float, defaults to double.'
+    end if
+    
+    tmp = fdf_get('TBT.CDF.'//trim(name)//'.Precision',tmp)
+    if ( leqi(tmp,'double') ) then
+       prec = NF90_DOUBLE
+    else if ( leqi(tmp,'single') ) then
+       prec = NF90_FLOAT
+    else if ( leqi(tmp,'float') ) then
+       prec = NF90_FLOAT
+    end if
+
+  end subroutine tbt_cdf_precision
+
   subroutine init_cdf_save(fname,TSHS,r,ispin,N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE, &
        a_Dev, a_Buf, sp_dev, &
@@ -155,11 +193,18 @@ contains
     type(dict) :: dic
     logical :: exist, sme, isGamma
     integer :: iEl, jEl, i, nnzs_dev
+    integer :: prec_DOS, prec_T, prec_J
     type(OrbitalDistribution) :: fdit
     real(dp), allocatable :: r2(:,:)
 #ifdef MPI
     integer :: MPIerror
 #endif
+
+    ! In case the user thinks the double precision
+    ! is too much
+    call tbt_cdf_precision('DOS','double',prec_DOS)
+    call tbt_cdf_precision('T','double',prec_T)
+    call tbt_cdf_precision('Current','double',prec_J)
 
     isGamma = all(TSHS%nsc(:) == 1)
 
@@ -349,7 +394,7 @@ contains
 
     if ( 'DOS-Gf' .in. save_DATA ) then
        dic = dic//('info'.kv.'Density of states')//('unit'.kv.'1/Ry')
-       call ncdf_def_var(ncdf,'DOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
+       call ncdf_def_var(ncdf,'DOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
             atts = dic , chunks = (/r%n,1,1/) , compress_lvl = cmp_lvl )
     end if
 
@@ -442,7 +487,7 @@ contains
        if ( 'DOS-A' .in. save_DATA ) then
           dic = ('info'.kv.'Spectral function density of states')// &
                ('unit'.kv.'1/Ry')
-          call ncdf_def_var(grp,'ADOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
+          call ncdf_def_var(grp,'ADOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
                atts = dic, chunks = (/r%n,1,1/) , compress_lvl=cmp_lvl)
        end if
 
@@ -465,7 +510,7 @@ contains
        if ( 'orb-current' .in. save_DATA ) then
           dic = ('info'.kv.'Orbital current')
           
-          call ncdf_def_var(grp,'J',NF90_DOUBLE,(/'nnzs','ne  ','nkpt'/), &
+          call ncdf_def_var(grp,'J',prec_J,(/'nnzs','ne  ','nkpt'/), &
                atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           
        end if
@@ -480,7 +525,7 @@ contains
           if ( iEl /= jEl ) then
 
              dic = dic//('info'.kv.'Transmission')
-             call ncdf_def_var(grp,trim(Elecs(jEl)%name)//'.T',NF90_DOUBLE,(/'ne  ','nkpt'/), &
+             call ncdf_def_var(grp,trim(Elecs(jEl)%name)//'.T',prec_T,(/'ne  ','nkpt'/), &
                   atts = dic )
              
           else
@@ -488,11 +533,11 @@ contains
              ! For the same electrode we retain the group
              ! and utilise this for saving the reflection.
              dic = dic//('info'.kv.'Reflection')
-             call ncdf_def_var(grp,trim(tmp)//'.R',NF90_DOUBLE,(/'ne  ','nkpt'/), &
+             call ncdf_def_var(grp,trim(tmp)//'.R',prec_T,(/'ne  ','nkpt'/), &
                   atts = dic )
 
              dic = dic//('info'.kv.'Gf transmission')
-             call ncdf_def_var(grp,trim(tmp)//'.T',NF90_DOUBLE,(/'ne  ','nkpt'/), &
+             call ncdf_def_var(grp,trim(tmp)//'.T',prec_T,(/'ne  ','nkpt'/), &
                   atts = dic )
 
           end if

@@ -134,7 +134,6 @@ contains
     logical :: has
     ! The positive and negative vertices
     real(dp) :: p(3), n(3)
-    integer :: i
 
     ! We will use the (n,p)-vertex check
     ! We select 2 vertices which are those farthest (n=negative)
@@ -332,7 +331,6 @@ contains
   subroutine fgeo_read_plane_delta(bName, ngeom,geom,params,par_unit)
 
     use intrinsic_missing, only : VNORM
-    use parallel, only : IONode
     use fdf
 
 ! ********************
@@ -408,7 +406,6 @@ contains
   subroutine fgeo_read_plane_gauss(bName, ngeom,geom,params,par_unit)
 
     use intrinsic_missing, only : VNORM
-    use parallel, only : IONode
     use fdf
 
 ! ********************
@@ -489,7 +486,6 @@ contains
   subroutine fgeo_read_plane_exp(bName, ngeom,geom,params,par_unit)
 
     use intrinsic_missing, only : VNORM
-    use parallel, only : IONode
     use fdf
 
 ! ********************

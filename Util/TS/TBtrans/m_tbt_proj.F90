@@ -20,7 +20,7 @@ module m_tbt_proj
   use precision, only : dp
   use m_region
   use m_ts_electype
-  use m_tbt_save, only : tNodeE, save_parallel
+  use m_tbt_save, only : tNodeE, save_parallel, tbt_cdf_precision
 #ifdef NCDF_4
   use nf_ncdf, only : NF90_MAX_NAME
 #endif
@@ -1299,6 +1299,7 @@ contains
     real(dp), allocatable :: eig(:)
     real(dp), allocatable :: rv(:,:), rS_sq(:,:)
     complex(dp), allocatable :: zv(:,:), zS_sq(:,:)
+    integer :: prec_DOS, prec_T, prec_J
     integer :: nnzs_dev
     type(OrbitalDistribution) :: fdit
 #ifdef MPI
@@ -1309,6 +1310,12 @@ contains
     if ( N_mol == 0 ) return
 
     exist = file_exist(fname, Bcast = .true. )
+
+    ! In case the user thinks the double precision
+    ! is too much
+    call tbt_cdf_precision('DOS','double',prec_DOS)
+    call tbt_cdf_precision('T','double',prec_T)
+    call tbt_cdf_precision('Current','double',prec_J)
 
     ! This allows to easily change between algorithms.
     isGamma = all(TSHS%nsc(:) == 1)
@@ -1696,7 +1703,7 @@ contains
 
           ! Create the DOS variable (actually just kb_SD * bGfk)
           !dic = dic//('info'.kv.'Single projected density of states <|Gf|>kb_SD')
-          !call ncdf_def_var(grp,'DOS',NF90_DOUBLE,(/'no  ','nlvl','ne  ','nkpt'/), atts = dic)
+          !call ncdf_def_var(grp,'DOS',prec_DOS,(/'no  ','nlvl','ne  ','nkpt'/), atts = dic)
 
        end if
 
@@ -1727,7 +1734,7 @@ contains
 
           ! Create the DOS variable (actually just kb_SD * bGfk)
           !dic = dic//('info'.kv.'Projected density of states <|Gf|>kb_SD')
-          !call ncdf_def_var(grp2,'DOS',NF90_DOUBLE,(/'no  ','ne  ','nkpt'/), atts = dic)
+          !call ncdf_def_var(grp2,'DOS',prec_DOS,(/'no  ','ne  ','nkpt'/), atts = dic)
 
           ! Loop all transport stuff and create the variables needed
           Elec_p: do iE = 1 , N_Elec
@@ -1754,7 +1761,7 @@ contains
                    if ( 'proj-DOS-A' .in. save_DATA ) then
                       dic = dic//('info'.kv.'Spectral function density of states')
                       dic = dic//('unit'.kv.'1/Ry')
-                      call ncdf_def_var(grp3,'ADOS',NF90_DOUBLE,(/'no_d','ne  ','nkpt'/), &
+                      call ncdf_def_var(grp3,'ADOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
                            atts = dic, &
                            compress_lvl = cmp_lvl, chunks = (/r%n,1,1/))
                    end if
@@ -1763,7 +1770,7 @@ contains
 
                    if ( 'proj-orb-current' .in. save_DATA ) then
                       dic = ('info'.kv.'Orbital current')
-                      call ncdf_def_var(grp3,'J',NF90_DOUBLE,(/'nnzs'/), &
+                      call ncdf_def_var(grp3,'J',prec_J,(/'nnzs'/), &
                            atts = dic, compress_lvl = cmp_lvl , &
                            chunks = (/nnzs_dev/) )
 
@@ -1779,7 +1786,7 @@ contains
                          tmp = trim(Elecs(-i)%name)
                          if ( i == -iE ) then
                             dic = dic//('info'.kv.'Gf transmission')
-                            call ncdf_def_var(grp3,trim(tmp)//'.T',NF90_DOUBLE, (/'ne  ','nkpt'/), &
+                            call ncdf_def_var(grp3,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
                                  atts = dic)
                             dic = dic//('info'.kv.'Reflection')
                             tmp = trim(tmp)//'.R'
@@ -1790,7 +1797,7 @@ contains
                          tmp = proj_ME_name(proj_T(it)%R(ipt))
                          if ( proj_T(it)%R(ipt)%ME%El == Elecs(iE) ) then
                             dic = dic//('info'.kv.'Gf transmission')
-                            call ncdf_def_var(grp3,trim(tmp)//'.T',NF90_DOUBLE, (/'ne  ','nkpt'/), &
+                            call ncdf_def_var(grp3,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
                                  atts = dic)
                             dic = dic//('info'.kv.'Reflection')
                             tmp = trim(tmp)//'.R'
@@ -1799,7 +1806,7 @@ contains
                          end if
                       end if
 
-                      call ncdf_def_var(grp3,tmp,NF90_DOUBLE, (/'ne  ','nkpt'/), &
+                      call ncdf_def_var(grp3,tmp,prec_T, (/'ne  ','nkpt'/), &
                            atts = dic)
 
                    end do
@@ -2028,7 +2035,7 @@ contains
           tmp = proj_ME_name(proj_T(it)%R(ipt))
           if ( proj_T(it)%R(ipt)%ME%El == Elecs(-i) ) then
              dic = dic//('info'.kv.'Gf transmission')
-             call ncdf_def_var(grp,trim(tmp)//'.T',NF90_DOUBLE, (/'ne  ','nkpt'/), &
+             call ncdf_def_var(grp,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
                   atts = dic)
              dic = dic//('info'.kv.'Reflection')
              tmp = trim(tmp)//'.R'
@@ -2036,7 +2043,7 @@ contains
              tmp = trim(tmp)//'.T'
           end if
           
-          call ncdf_def_var(grp,tmp,NF90_DOUBLE, (/'ne  ','nkpt'/), &
+          call ncdf_def_var(grp,tmp,prec_T, (/'ne  ','nkpt'/), &
                atts = dic)
           
        end do

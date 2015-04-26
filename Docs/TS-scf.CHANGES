@@ -1,4 +1,22 @@
 ----------------------------------------------------
+April 26, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-391
+Enabled precision control of NetCDF data
+
+* The Transmission data and the orbital current and
+  the dos data can now explicitly set their saved
+  precisions to decrease file size.
+
+  The DOS/orbital current takes up the most space
+  so this is where the most space can be saved.
+
+* Removed unused variables in m_geom_plane
+
+modified:
+  Src/m_geom_plane.f90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 April 23, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-390
 Allowed position and atom in buffer specification
 
