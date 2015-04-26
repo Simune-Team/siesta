@@ -1,4 +1,28 @@
 ----------------------------------------------------
+April 26, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-393
+Enabled siesta/tbtrans to read certain variables from cmd line
+
+* Using cmd flags one can overwrite single flags in the 
+  fdf-file using:
+    -fdf <label>=<value>:<unit>
+  or simply
+    -fdf <label>=<value>
+  if there is no unit.
+  This can be handy when testing several different variables.
+  
+* For both siesta/tbtrans -L <> overwrites the SystemLabel
+
+* For tbtrans one can set the bias by using:
+    -V V:eV which is equivalent to:
+    -fdf TBT.Voltage=V:eV
+  This will make it redundant to create new fdf files
+  for differing bias'
+
+modified:
+  Src/reinit.F
+  Util/TS/TBtrans/tbt_reinit.F90
+
+----------------------------------------------------
 April 26, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-392
 Enabled adding/removing fdf-lines while running
 

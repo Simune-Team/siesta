@@ -36,8 +36,10 @@ C
 C  Internal variables .................................................
       character(len=50) filein, fileout
 
-      integer  ::  count, length, lun, lun_tmp, iostat
-      character :: slabel_default*59, sname_default*20, line*256
+      integer  ::  count, in, length, lun, lun_tmp, iostat
+      character :: slabel_default*59, sname_default*20
+      character(len=256) :: line, val
+
 
       logical debug_input, file_exists
 
@@ -52,11 +54,22 @@ C Print Welcome and Presentation .......................................
      .   '                           *  WELCOME TO SIESTA  *       '
         write(6,'(a)')
      .   '                           ***********************       '
-C ..................
+
+! ..................
 !
 !       Set name of file to read from. Done only
 !       in the master node.
 !
+#ifndef NO_F2003
+      count = command_argument_count()
+      if ( count > 0 ) then
+         filein = ' '
+         call get_command_argument(count,filein,length)
+         inquire(file=filein,exist=debug_input)
+         if ( .not. debug_input ) count = 0
+      end if
+#endif
+
 c
 c     Choose proper file for fdf processing
 c     (INPUT_DEBUG if it exists or "standard input",
@@ -69,11 +82,11 @@ c
            filein = 'INPUT_DEBUG'
 
 #ifndef NO_F2003
-        else if ( command_argument_count() > 0 ) then
+        else if ( count > 0 ) then
 
            ! Get file-name from input line
            filein = ' '
-           call get_command_argument(1,filein,length)
+           call get_command_argument(count,filein,length)
            if ( length > len(filein) ) then
               call die ('The argument is too long to be retrieved, &
      &please limit your-self to 50 characters for the input file') 
@@ -147,6 +160,53 @@ C Set up fdf ...
 
       call fdf_init(filein,trim(fileout))
 
+#ifndef NO_F2003
+! Read special variables from the command line
+      count = command_argument_count()
+      if ( count > 0 ) then
+         in = 0
+         do while ( in <= count - 1 )
+            
+            in = in + 1
+            call get_command_argument(in,line,length)
+            
+            ! If it is not an option, skip it
+            if ( line(1:1) /= '-' ) cycle
+
+            do while ( line(1:1) == '-' )
+               line = line(2:)
+            end do
+
+            ! We allow these line
+            if ( line(1:3) == 'fdf' ) then
+               if ( in >= count - 1 ) 
+     &              call die('Missing argument on command line')
+               in = in + 1
+               call get_command_argument(in,line,length)
+               
+               ! We allow these variations:
+               !  FDFLabel=0.1:eV
+               !  FDFLabel:0.1:eV
+               !  FDFLabel=0.1=eV
+               line = cmd_tokenize(line)
+               call fdf_overwrite(line)
+               
+            else if ( line(1:1) == 'L' ) then
+               if ( in >= count - 1 ) 
+     &              call die('Missing argument on command line')
+               in = in + 1
+               call get_command_argument(in,line,length)
+               line = cmd_tokenize(line)
+               line = 'SystemLabel '//trim(line)
+               call fdf_overwrite(line)
+               
+            end if
+            
+         end do
+      end if
+#endif
+
+
 C Define Name of the system ...
       sname_default = ' '
       sname = fdf_string('SystemName',sname_default)
@@ -166,4 +226,20 @@ C Define System Label (short name to label files) ...
       endif
 C ...
 
+      contains
+      
+      function cmd_tokenize(line) result(tline)
+      character(len=*), intent(in) :: line
+      character(len=len(line)) :: tline
+      
+      integer :: i, n
+      n = len(tline)
+      tline = line
+      do i = 1 , n
+         if ( tline(i:i) == ':' .or. 
+     &        tline(i:i) == '=' ) then
+            tline(i:i) = ' '
+         end if
+      end do
+      end function cmd_tokenize
       end
