@@ -1,4 +1,11 @@
 ----------------------------------------------------
+April 27, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-394
+Added print-out to assert interpolation
+
+modified:
+  Util/TS/TBtrans/m_tbt_hs.F90
+
+----------------------------------------------------
 April 26, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-393
 Enabled siesta/tbtrans to read certain variables from cmd line
 

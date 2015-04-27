@@ -221,6 +221,8 @@ contains
                                 
   subroutine prep_next_HS(ispin,Volt)
 
+    use parallel, only : IONode
+    use units, only : eV
     use m_ts_io
     use m_sparsity_handling
     use m_handle_sparse, only : reduce_spin_size
@@ -257,10 +259,18 @@ contains
     ! We are requested to read everything...
     allocate(files(N_HS))
 
+    if ( IONode ) then
+       write(*,'(a,f8.4,a)') 'tbtrans: Interpolation of Hamiltonian to ',Volt/eV,' V'
+    end if
+
     do iHS = 1 , N_HS
 
        ! Read in the Hamiltonian
        call read_HS(ispin,tHS(iHS),files(iHS))
+
+       if ( IONode ) then
+          write(*,'(2a,f8.4,a)') '  Hamiltonian ',trim(tHS(iHS)%HSfile),tHS(iHS)%Volt / eV,' V'
+       end if
 
        if ( iHS > 1 ) then
           if ( .not. equivalent(files(iHS-1)%sp,files(iHS)%sp) ) then
