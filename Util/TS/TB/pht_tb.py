@@ -22,8 +22,8 @@ class PHT_Geom(TBT_Geom):
 
     See ``TBT_Geom`` for specifications.
     """
-    def __init__(self,cell,xa,dR=None,n_orb=3,Z=1,update_sc=False):
-        super(PHT_Geom, self).__init__(cell,xa,dR=dR,n_orb=n_orb,Z=Z,update_sc=update_sc)
+    def __init__(self,cell,xa,dR=None,n_orb=3,Z=1,update_sc=False,iter=15):
+        super(PHT_Geom, self).__init__(cell,xa,dR=dR,n_orb=n_orb,Z=Z,update_sc=update_sc,iter=iter)
 
     
 
@@ -182,7 +182,7 @@ class GULP(PHInputFile):
         return cls.sparse2model(geom,dyn,S)
 
 
-    def read_geom(self,keyword="Final ractional coordinates",cls=PHT_Geom):
+    def read_geom(self,keyword="Final fractional coordinates",cls=PHT_Geom):
         """
         Returns a ``PHT_Geom`` by reading a the assigned output file.
 

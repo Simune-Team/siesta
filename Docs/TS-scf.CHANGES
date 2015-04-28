@@ -1,4 +1,11 @@
 ----------------------------------------------------
+April 28, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-395
+Bugfix for pht_tb model
+
+modified:
+  Util/TS/TB/pht_tb.py
+
+----------------------------------------------------
 April 27, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-394
 Added print-out to assert interpolation
 
