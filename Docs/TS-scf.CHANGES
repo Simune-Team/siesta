@@ -1,4 +1,11 @@
 ----------------------------------------------------
+April 29, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-396
+Added schedule printing for threading 
+
+modified:
+  Src/siesta_init.F
+
+----------------------------------------------------
 April 28, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-395
 Bugfix for pht_tb model
 

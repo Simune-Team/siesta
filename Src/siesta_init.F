@@ -68,6 +68,15 @@
 #ifdef NCDF_4
       use nf_ncdf
 #endif
+#ifdef _OPENMP
+      use omp_lib, only : omp_get_num_threads, omp_get_schedule
+      use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+      use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#else
+!$    use omp_lib, only : omp_get_num_threads, omp_get_schedule
+!$    use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+!$    use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#endif
 
       implicit none
 
@@ -80,7 +89,6 @@
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
-!$    integer :: omp_get_num_threads
 
 !------------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
@@ -135,6 +143,19 @@
 !$    i = omp_get_num_threads()
 !$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
 !$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
+!$    call omp_get_schedule(i,is)
+!$    select case ( i )
+!$    case ( OMP_SCHED_STATIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',is
+!$    case ( OMP_SCHED_DYNAMIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    case ( OMP_SCHED_GUIDED ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',is
+!$    case ( OMP_SCHED_AUTO ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule AUTO, chunks ',is
+!$    case default
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',is
+!$    end select
 !$OMP end master
 !$OMP end parallel
          call timestamp('Start of run')
