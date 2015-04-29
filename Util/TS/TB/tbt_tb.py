@@ -2269,6 +2269,7 @@ class TBOutputFile(TBFile):
                     amax = np.amax(np.abs(diff.data))
                     warnings.warn('The model could not be asserted to be Hermitian within the accuracy required ({0}).'.format(amax), UserWarning) 
                     hermitian = False
+                del diff
 
         if hermitian:
             # Remove all double stuff
@@ -2279,20 +2280,25 @@ class TBOutputFile(TBFile):
                     # Ensure that we remove all nullified quantities
                     # (setting elements to zero will add them internally
                     #  :(, hence this actually constructs the full matrix
-                    H[:,o:o+geom.no_u] = 0.
-                    H.eliminate_zeros()
-                    S[:,o:o+geom.no_u] = 0.
-                    S.eliminate_zeros()
+                    # Therefore we do it on a row basis, to limit memory
+                    # requirements
+                    for j in xrange(geom.no_u):
+                        H[j,o:o+geom.no_u] = 0.
+                        H.eliminate_zeros()
+                        S[j,o:o+geom.no_u] = 0.
+                        S.eliminate_zeros()
             o = geom.sc_idx(np.zeros((3,),np.int))
             # Get upper-triangular matrix of the unit-cell H and S
             ut = triu(H[:,o:o+geom.no_u],k=0).tocsr()
-            H[:,o:o+geom.no_u] = 0.
-            H[:,o:o+geom.no_u] = ut[:,:]
-            H.eliminate_zeros()
+            for j in xrange(geom.no_u):
+                H[j,o:o+geom.no_u] = 0.
+                H[j,o:o+geom.no_u] = ut[j,:]
+                H.eliminate_zeros()
             ut = triu(S[:,o:o+geom.no_u],k=0).tocsr()
-            S[:,o:o+geom.no_u] = 0.
-            S[:,o:o+geom.no_u] = ut[:,:]
-            S.eliminate_zeros()
+            for j in xrange(geom.no_u):
+                S[j,o:o+geom.no_u] = 0.
+                S[j,o:o+geom.no_u] = ut[j,:]
+                S.eliminate_zeros()
             del ut
             
             # Ensure that S and H have the same sparsity pattern
@@ -2824,7 +2830,7 @@ def graphene_uc(alat=1.42,square=True):
     gr.update()
     return gr
 
-def TB_save(fname,Geom,TB = _TB_graphene['D'],alat=1.42):
+def TB_save(fname,Geom,TB = _TB_graphene['D'],alat=1.42,save_tb=True):
     """ 
     Creates a TB SIESTA.nc file with a system of a geometry.
     It will automatically create a sparsity pattern based
@@ -2842,7 +2848,7 @@ def TB_save(fname,Geom,TB = _TB_graphene['D'],alat=1.42):
     # Hence we need to build it our-selves :(
 
     # In our one orbital model this will do
-    HS = TBT_Model(Geom)
+    HS = TBT_Model(Geom,max_connection = 20)
 
     # When setting the hopping and overlap you do it by 
     # a tuple assignment
@@ -2859,24 +2865,26 @@ def TB_save(fname,Geom,TB = _TB_graphene['D'],alat=1.42):
     nnnn = (TB['n3'],TB['s3'])
 
     # We add all hoppings
-    for ia in xrange(Geom.na_u):
-        # Retrieve all hoppings (in one go)
-        idx_a = Geom.close_all(ia,dR=dR)
-        # set all on-site hoppings
-        HS[ia,idx_a[0]] = on
-        # set all nearest hoppings
-        HS[ia,idx_a[1]] = nn
-        # set all next-nearest hoppings
-        HS[ia,idx_a[2]] = nnn
-        # set all next-next-nearest hoppings
-        HS[ia,idx_a[3]] = nnn
+    for ias, idxs in Geom:
+        for ia in ias:
+            # Retrieve all hoppings (in one go)
+            idx_a = Geom.close_all(ia,dR=dR,idx=idxs)
+            # set all on-site hoppings
+            HS[ia,idx_a[0]] = on
+            # set all nearest hoppings
+            HS[ia,idx_a[1]] = nn
+            # set all next-nearest hoppings
+            HS[ia,idx_a[2]] = nnn
+            # set all next-next-nearest hoppings
+            HS[ia,idx_a[3]] = nnn
 
     # This concludes the sparsity pattern
     # Save it
-    HS.save(fname,Ef=TB['U'])
-    with TBOutputFile(fname.replace('.nc','.tb')) as fh:
-        fh.write_geom(HS.geom)
-        fh.write_model(HS)
+    HS.save(fname,Ef=TB['Ef'])
+    if save_tb:
+        with TBOutputFile(fname.replace('.nc','.tb')) as fh:
+            fh.write_geom(HS.geom)
+            fh.write_model(HS)
 
 def TB_square():
     """

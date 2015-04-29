@@ -1,4 +1,21 @@
 ----------------------------------------------------
+April 29, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-397
+Enabled short-hand tbtrans k-grid (TBT.k), plus speedup (TB)
+
+* Speeded up the routines in the tbt python code
+  to allow arbitrarily sized systems.
+
+* Bugfix for huge systems when checking for Hermiticity
+  It is now extremely slow, but it does not break memory
+  requirements.
+  Perhaps consider calculation in memory blocks
+  to not call eliminate_zeros that often.
+
+modified:
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+
+----------------------------------------------------
 April 29, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-396
 Added schedule printing for threading 
 
