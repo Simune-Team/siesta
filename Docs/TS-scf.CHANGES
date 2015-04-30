@@ -1,4 +1,17 @@
 ----------------------------------------------------
+April 30, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-398
+Changed print-outs of the expansion k-points when creating TSGF
+
+* For limiting the print-out for many repetitions we limit the 
+  printed quantities.
+
+  It is only print-out statements which has been changed.
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+
+----------------------------------------------------
 April 29, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-397
 Enabled short-hand tbtrans k-grid (TBT.k), plus speedup (TB)
 

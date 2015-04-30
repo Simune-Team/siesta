@@ -36,7 +36,7 @@ module m_ts_electype
   public :: Elec, Name, Elec_idx
   public :: TotUsedAtoms, TotUsedOrbs
   public :: AtomInElec, OrbInElec
-  public :: q_exp
+  public :: q_exp, q_exp_all
 
   public :: fdf_nElec, fdf_elec
 

@@ -760,21 +760,19 @@ contains
        if ( pre_expand ) bkpt(1) = bkpt(1) * nq
        if ( bkpt(1) > 2001._dp ) then
           bkpt(1) = bkpt(1) / 1024._dp
-          write(*,'(a,f10.3,a)') 'Estimated file size: ',bkpt(1),' GB'
+          write(*,'(a,f10.3,a)') ' Estimated file size: ',bkpt(1),' GB'
        else
-          write(*,'(a,f10.3,a)') 'Estimated file size: ',bkpt(1),' MB'
+          write(*,'(a,f10.3,a)') ' Estimated file size: ',bkpt(1),' MB'
        end if
 
-       write(*,*) "Electrodes with transport k-points &
-            & (Bohr**-1) and weights:"
+       write(*,'(a)') " Electrodes with transport k-points [b_i] and weights:"
        do i = 1 , nkpnt
           ! From CONTACT to electrode k-point
           ! First convert to units of reciprocal vectors
           ! Then convert to 1/Bohr in the electrode unit cell coordinates
           call kpoint_convert(ucell,kpoint(:,i),bkpt,1)
-          where (El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
-          call kpoint_convert(El%ucell,bkpt,kpt,-1)
-          write(*,'(i4,2x,4(E14.5))') i, kpt,kweight(i)
+          where ( El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
+          write(*,'(i4,2x,4(E14.5))') i, bkpt,kweight(i)
        end do
 
        ! Show the number of used atoms and orbitals
@@ -784,13 +782,21 @@ contains
             El%no_u,El%no_used
 
        ! We show them in units of Bohr**-1
-       if ( nq > 1 ) then
-          write(*,'(a)') ' q-points for expanding electrode (Bohr**-1):'
-          do i = 1 , nq
-             call kpoint_convert(El%ucell,q_exp(El,i),kpt,-1)
-             write(*,'(i4,2x,4(E14.5))') i,kpt,wq
-          end do
-       end if
+       do i = 1 , 3
+          if ( El%Rep(i) > 1 ) then
+             write(*,'(3(a,i0),a)') ' q_',i,'-points for expanding electrode [b_',i,'] (w=1/',nq,'):'
+             do j = 1 , El%Rep(i)
+                if ( i == 1 ) then
+                   kpt = q_exp_all(El,j,1,1)
+                else if ( i == 2 ) then
+                   kpt = q_exp_all(El,1,j,1)
+                else if ( i == 3 ) then
+                   kpt = q_exp_all(El,1,1,j)
+                end if
+                write(*,'(6x,E14.5)') kpt(i)
+             end do
+          end if
+       end do
        write(*,'(a,f14.5,1x,a)') &
             " Fermi level shift in electrode (chemical potential) : ",El%mu%mu/eV,' eV'
     end if
@@ -872,7 +878,7 @@ contains
        do i = 1 , nkpnt
           ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
           call kpoint_convert(ucell,kpoint(:,i),bkpt,1)
-          where (El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
+          where ( El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
           ! Convert back to reciprocal units (to electrode ucell_E)
           call kpoint_convert(El%ucell,bkpt,kE(:,i),-1)
        end do
@@ -940,7 +946,7 @@ contains
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
        call kpoint_convert(ucell,kpoint(:,ikpt),bkpt,1)
-       where (El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
+       where ( El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
        ! We need to save the k-point for the "expanded" super-cell
        El%bkpt_cur = bkpt
        
