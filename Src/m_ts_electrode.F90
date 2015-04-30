@@ -793,7 +793,7 @@ contains
                 else if ( i == 3 ) then
                    kpt = q_exp_all(El,1,1,j)
                 end if
-                write(*,'(6x,E14.5)') kpt(i)
+                write(*,'(i4,2x,E14.5)') j,kpt(i)
              end do
           end if
        end do
