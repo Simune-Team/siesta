@@ -845,6 +845,13 @@ contains
     type(Elec), intent(in) :: this
     integer, intent(in) :: i,j,k
     real(dp) :: q(3)
+    
+    ! TODO, the current implementation assumes k-symmetry!
+    ! Hence, using repetition with non-symmetry will produce
+    ! wrong results.
+    ! Luckily this is not a problem currently.
+    ! Perhaps one should consider this in tbtrans
+
     q(1) = 1._dp*(i-1) / real(this%Rep(1),dp)
     q(2) = 1._dp*(j-1) / real(this%Rep(2),dp)
     q(3) = 1._dp*(k-1) / real(this%Rep(3),dp)
