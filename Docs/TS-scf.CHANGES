@@ -1,4 +1,18 @@
 ----------------------------------------------------
+May 1, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-401
+Added scalapack debug for [rc]diag
+
+* ScaLAPACK work arrays are calculated by siesta, however,
+  they can be queried.
+  We have added a debug flag which enables one to 
+  compare the queried values against the calculated
+  ones to check for inconsistencies.
+
+modified:
+  Src/cdiag.F
+  Src/rdiag.F
+
+----------------------------------------------------
 April 30, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-400
 Added notice about repetition and k-symmetry
 
