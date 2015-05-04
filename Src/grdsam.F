@@ -219,7 +219,7 @@ c first (normal) call to DHSCF, ihmat=1 --------------------------------------
 
       call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
      &            na, isa, xa, indxua, ntm,
-     &            ifa, istr, 1, 0, filesOut,
+     &            ifa, istr, 1, filesOut,
      &            maxnd, numh, listhptr, listh, Dscf, Datm,
      &            maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &            Exc, Dxc, dipol, stress, fal, stressl)
@@ -308,7 +308,7 @@ c loop sampling on displacements making averages ----------------------------
 
           call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
      &                na, isa, xanew, indxua, ntm,
-     &                ifa, istr, 0, 0, filesOut,
+     &                ifa, istr, 0, filesOut,
      &                maxnd, numh, listhptr, listh, Dscf, Datm,
      &                maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf,
      &                DUext, Exc, Dxc, dipol, stress, fal, stressl)

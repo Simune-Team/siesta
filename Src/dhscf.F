@@ -36,6 +36,8 @@
 
       use precision,      only : dp, grid_p
 
+      implicit none
+
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
       logical                 :: IsDiag, IsEfld, spiral
@@ -421,7 +423,7 @@ C ----------------------------------------------------------------------
 
       subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
      &                  nuotot, nua, na, isa, xa, indxua,
-     &                  ntm, ifa, istr, iHmat, isigneikr, 
+     &                  ntm, ifa, istr, iHmat,
      &                  filesOut, maxnd, numd,
      &                  listdptr, listd, Dscf, datm, maxnh, Hmat,
      &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, 
@@ -456,11 +458,6 @@ C integer istr          : Switch which fixes whether the SCF contrib.
 C                         to stress is calculated and added to stress
 C integer iHmat         : Switch which fixes whether the Hmat matrix
 C                         elements are calculated or not.
-C integer isigneikr     : Switch which fixes whether the matrix elements
-C                         of exp(i k r) are calculated or not.
-C                          0 = not computed.
-C                          1 = compute the matrix elements of exp(i k r).
-C                         -1 = compute the matrix elements of exp(-i k r).
 C type(filesOut_t) filesOut : output file names (If blank => not saved)
 C integer maxnd             : First dimension of listd and Dscf
 C integer numd(nuo)         : Number of nonzero density-matrix
@@ -586,7 +583,7 @@ C     Modules
       implicit none
       integer
      &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
-     &  iaorb(norb), ifa, iHmat, isigneikr, 
+     &  iaorb(norb), ifa, iHmat,
      &  indxua(na), iphorb(norb), isa(na), 
      &  istr, listd(*), listdptr(nuo), ntm(3), numd(nuo)
 
@@ -1486,12 +1483,15 @@ C ----------------------------------------------------------------------
       use m_delk,  only  : delk
       use moreMeshSubs,   only : setMeshDistr
       use moreMeshSubs,   only : UNIFORM, QUADRATIC
+      use parallel,       only : Nodes
+      use mesh,           only : nsm, nsp
 
 !
 !     This is a wrapper to call delk, using some of the module
 !     variables of m_dhscf, but from outside dhscf itself.
 !
-      integer                  :: isigneikr, norb, nuo, nuotot, 
+      integer                  :: isigneikr, 
+     &                            norb, nuo, nuotot, maxnd,
      &                            iaorb(*), iphorb(*), isa(*), 
      &                            numd(nuo),     
      &                            listdptr(nuo), listd(maxnd)
