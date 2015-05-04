@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large February 20, 2014 }
+{\Large November 8, 2014 }
 
 \vspace{1.5cm}
 
@@ -6120,7 +6120,7 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for energy in the molecular mechanics input.
 
-{\it Default value:}  {\tt eV} (Note: Currently this the {\em only} option)
+{\it Default value:}  {\tt eV}
 
 \item[{\bf MM.UnitsDistance}] ({\it units}): \index{MM.UnitsDistance@{\bf
 MM.UnitsDistance}} Specifies the units to be used for distance in the
@@ -6128,7 +6128,7 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for distance in the molecular mechanics input.
 
-{\it Default value:}  {\tt Ang} (Note: Currently this the {\em only} option)
+{\it Default value:}  {\tt Ang}
 
 \item[{\bf MM.Grimme.D}] : \index{MM.Grimme.D@{\bf
 MM.Grimme.D}} Specifies the scale factor $d$ for the scaling function
@@ -7102,10 +7102,11 @@ molecular dynamics, their {\bf positions predicted for next step} and
 SystemLabel is the value of that FDF descriptor (or 'siesta' by
 default).  The shape of the unit cell and its associated 'velocity'
 (in Parrinello-Rahman dynamics) are also stored in this file. For MD
-runs of type Verlet, Parrinello-Rahman, Nose, or
-Nose-Parrinello-Rahman, a file named SystemLabel.VERLET\_RESTART,
-SystemLabel.PR\_RESTART, SystemLabel.NOSE\_RESTART, or
-SystemLabel.NPR\_RESTART, respectively, is created to hold the values
+runs of type Verlet, Parrinello-Rahman, Nose, 
+Nose-Parrinello-Rahman, or Anneal, a file named SystemLabel.VERLET\_RESTART,
+SystemLabel.PR\_RESTART, SystemLabel.NOSE\_RESTART, 
+SystemLabel.NPR\_RESTART, or SystemLabel.ANNEAL\_RESTART, 
+respectively, is created to hold the values
 of auxiliary variables needed for a completely seamless
 continuation. 
 

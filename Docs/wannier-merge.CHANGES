@@ -1,4 +1,28 @@
 ------------------------------------------------------------
+2015-05-04   Alberto Garcia trunk-467--radfunc-5--wannier-6
+Sync to trunk-467
+
+Fix import of idyn in save_density_matrix (rc-4.0)
+Fixed IO statements for molecularmechanics module
+Merge fix from rc-4.0: MPI tag in SiestaXC/mesh3d
+Merge fixes from rc-4.0: constr. forces, MPI compilation, mm.p...
+Added restart file for smooth continuation of annealing runs
+
+added:
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+modified:
+  Docs/siesta.tex
+  Src/MPI/Makefile
+  Src/SiestaXC/mesh3d.F90
+  Src/dynamics.f
+  Src/molecularmechanics.F90
+  Src/save_density_matrix.F
+  Src/write_subs.F
+
+------------------------------------------------------------
 2015-05-04   Alberto Garcia trunk-462--radfunc-5--wannier-6
 Remove delk call from inside of dhscf
 
