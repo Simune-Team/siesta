@@ -595,9 +595,8 @@ m_overkkneig.o: alloc.o atomlist.o parallel.o parallelsubs.o precision.o
 m_overkkneig.o: siesta2wannier90.o siesta_geom.o sparse_matrices.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
-m_planewavematrix.o: alloc.o atomlist.o dhscf.o files.o m_dipol.o m_energies.o
-m_planewavematrix.o: m_ntm.o m_planewavematrixvar.o m_spin.o m_stress.o
-m_planewavematrix.o: precision.o siesta_geom.o sparse_matrices.o
+m_planewavematrix.o: atomlist.o dhscf.o m_planewavematrixvar.o precision.o
+m_planewavematrix.o: siesta_geom.o sparse_matrices.o
 m_planewavematrixvar.o: precision.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o

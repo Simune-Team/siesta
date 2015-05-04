@@ -1,4 +1,26 @@
 ------------------------------------------------------------
+2015-05-04   Alberto Garcia trunk-462--radfunc-5--wannier-6
+Remove delk call from inside of dhscf
+
+A simple routine 'delk_wrapper' lives now in the dhscf
+module, but *outside* dhscf itself. This removes the
+changes to the dhscf interface introduced in the original
+version. Routine planewavematrix has been considerably
+simplified.
+
+(A. Garcia)
+
+modified:
+  Src/Makefile
+  Src/compute_energies.F90
+  Src/dhscf.F
+  Src/grdsam.F
+  Src/local_DOS.F
+  Src/m_planewavematrix.F90
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+
+------------------------------------------------------------
 2014-12-05   Alberto Garcia trunk-462--radfunc-5--wannier-5
 Diagonalize H(k) only once in Wannier interface
 

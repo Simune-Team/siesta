@@ -356,7 +356,7 @@
         dummy_strl = 0.0
         call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 
-     &              ntm, 0, 0, 0, 0, filesOut, 
+     &              ntm, 0, 0, 0, filesOut, 
      &              maxnh, numh, listhptr, listh, Dscf, Datm,
      &              maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &              Exc, Dxc, dipol, dummy_str, fa, dummy_strl )

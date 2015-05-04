@@ -52,7 +52,6 @@ CONTAINS
       integer, intent(in)   :: iscf
 
       integer               :: ihmat, ifa, istr, ispin, io
-      integer               :: isigneikr
 #ifdef MPI
       real(dp) :: buffer1
 #endif
@@ -177,10 +176,9 @@ CONTAINS
 
       ! Remove unwanted arguments...
 
-      isigneikr = 0
       call dhscf( nspin, no_s, iaorb, iphorb, no_l,                         &
                   no_u, na_u, na_s, isa, xa, indxua,                        &
-                  ntm, ifa, istr, ihmat, isigneikr, filesOut,               &
+                  ntm, ifa, istr, ihmat, filesOut,                          &
                   maxnh, numh, listhptr, listh, Dscf, Datm,                 &
                   maxnh, dummy_H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, &
                   Exc, Dxc, dipol, dummy_stress, dummy_fa, dummy_stress)
