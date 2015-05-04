@@ -1480,7 +1480,8 @@ C ----------------------------------------------------------------------
      &                        numd, listdptr, listd,
      &                        nuo,  nuotot, iaorb, iphorb, isa )
 
-      use m_delk,  only  : delk
+      use m_delk,  only  : delk  ! The real workhorse, similar to vmat
+
       use moreMeshSubs,   only : setMeshDistr
       use moreMeshSubs,   only : UNIFORM, QUADRATIC
       use parallel,       only : Nodes
@@ -1496,6 +1497,19 @@ C ----------------------------------------------------------------------
      &                            numd(nuo),     
      &                            listdptr(nuo), listd(maxnd)
 
+! The dhscf module variables used are:
+! nmpl
+! dvol
+! nml
+! nmpl
+! ntml
+! ntpl
+!
+! Some of them might be put somewhere else (mesh?) to allow some
+! of the kitchen-sink functionality of dhscf to be made more modular.
+! For example, this wrapper might live independently if enough mesh
+! information is made available to it.
+
 C ----------------------------------------------------------------------
 C Calculate matrix elements of exp(i \vec{k} \cdot \vec{r})
 C ----------------------------------------------------------------------
@@ -1506,7 +1520,6 @@ C ----------------------------------------------------------------------
      &                         nml, nmpl, ntml, ntpl )
           endif
 
-          ! nmpl and dvol are module variables
           call delk( isigneikr, norb, nmpl, dvol, maxnd,
      &               numd, listdptr, listd,
      &               nuo,  nuotot, iaorb, iphorb, isa )
