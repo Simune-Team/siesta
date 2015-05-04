@@ -74,7 +74,7 @@ module m_planewavematrix
     use files,            only: filesOut_t ! derived type for output file names
 
 !   Used module procedures
-    use m_dhscf,          only: dhscf    ! Mesh subroutine
+    use m_dhscf,          only: delk_wrapper    ! Mesh subroutine
     use alloc,            only: re_alloc ! Re-allocation routine
     use m_planewavematrixvar, only: wavevector ! Wave vector of the plane wave
  
@@ -100,13 +100,9 @@ module m_planewavematrix
 
     fal(1:3,1:na_u)  = 0.0_dp
     stressl(1:3,1:3) = 0.0_dp  
-
-    call dhscf( nspin, no_s, iaorb, iphorb, no_l, no_u, na_u,             &
- &              na_s, isa, xa, indxua, ntm,                               &
- &              0, 0, 0, isigneikr, filesOut,                             &
- &              maxnh, numh, listhptr, listh, Dscf, Datm,                 &
- &              maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf,              &
- &              DUext, Exc, Dxc, dipol, stress, fal, stressl )
+    call delk_wrapper(isigneikr, no_s, maxnh,  &
+                            numh, listhptr, listh,  &
+                            no_l,  no_u, iaorb, iphorb, isa )
  
   endsubroutine planewavematrix
 

@@ -559,7 +559,6 @@ C     Modules
                                         ! points over parallel processors
 #endif /* BSC_CELLXC */
       use m_vmat,  only  : vmat
-      use m_delk,  only  : delk
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -1289,28 +1288,6 @@ C ----------------------------------------------------------------------
          endif
       endif
 
-C ----------------------------------------------------------------------
-C Calculate matrix elements of exp(i \vec{k} \cdot \vec{r})
-C ----------------------------------------------------------------------
-        if (isigneikr .eq. 1 .or. isigneikr .eq. -1) then
-
-          if (nodes.gt.1) then
-            call setMeshDistr( QUADRATIC, nsm, nsp,
-     &                         nml, nmpl, ntml, ntpl )
-          endif
-
-          call delk( isigneikr, norb, nmpl, dvol, maxnd,
-     &               numd, listdptr, listd,
-     &               nuo,  nuotot, iaorb, iphorb, isa )
-
-          if (nodes.gt.1) then
-!           Everything back to UNIFORM, sequential
-            call setMeshDistr( UNIFORM, nsm, nsp,
-     &                         nml, nmpl, ntml, ntpl )
-          endif
-
-        endif
-
 
 #ifdef MPI
 C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
@@ -1501,5 +1478,46 @@ C ----------------------------------------------------------------------
       end subroutine save_bader_charge
 
       end subroutine dhscf
+
+      subroutine delk_wrapper(isigneikr, norb, maxnd,
+     &                        numd, listdptr, listd,
+     &                        nuo,  nuotot, iaorb, iphorb, isa )
+
+      use m_delk,  only  : delk
+      use moreMeshSubs,   only : setMeshDistr
+      use moreMeshSubs,   only : UNIFORM, QUADRATIC
+
+!
+!     This is a wrapper to call delk, using some of the module
+!     variables of m_dhscf, but from outside dhscf itself.
+!
+      integer                  :: isigneikr, norb, nuo, nuotot, 
+     &                            iaorb(*), iphorb(*), isa(*), 
+     &                            numd(nuo),     
+     &                            listdptr(nuo), listd(maxnd)
+
+C ----------------------------------------------------------------------
+C Calculate matrix elements of exp(i \vec{k} \cdot \vec{r})
+C ----------------------------------------------------------------------
+        if (isigneikr .eq. 1 .or. isigneikr .eq. -1) then
+
+          if (nodes.gt.1) then
+            call setMeshDistr( QUADRATIC, nsm, nsp,
+     &                         nml, nmpl, ntml, ntpl )
+          endif
+
+          ! nmpl and dvol are module variables
+          call delk( isigneikr, norb, nmpl, dvol, maxnd,
+     &               numd, listdptr, listd,
+     &               nuo,  nuotot, iaorb, iphorb, isa )
+
+          if (nodes.gt.1) then
+!           Everything back to UNIFORM, sequential
+            call setMeshDistr( UNIFORM, nsm, nsp,
+     &                         nml, nmpl, ntml, ntpl )
+          endif
+
+        endif
+      end subroutine delk_wrapper
 
       end module m_dhscf
