@@ -1,4 +1,11 @@
 ----------------------------------------------------
+May 5, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-402
+Repetition q-points are less disruptive
+
+modified:
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 May 1, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-401
 Added scalapack debug for [rc]diag
 

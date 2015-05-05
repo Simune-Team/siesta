@@ -785,16 +785,16 @@ contains
        do i = 1 , 3
           if ( El%Rep(i) > 1 ) then
              write(*,'(3(a,i0),a)') ' q_',i,'-points for expanding electrode [b_',i,'] (w=1/',nq,'):'
-             do j = 1 , El%Rep(i)
-                if ( i == 1 ) then
-                   kpt = q_exp_all(El,j,1,1)
-                else if ( i == 2 ) then
-                   kpt = q_exp_all(El,1,j,1)
-                else if ( i == 3 ) then
-                   kpt = q_exp_all(El,1,1,j)
-                end if
-                write(*,'(i4,2x,E14.5)') j,kpt(i)
-             end do
+             if ( El%Rep(i) <= 3 ) then
+                write(*,'(5x)',advance='no')
+                do j = 1 , El%Rep(i) - 1
+                   write(*,'(2(i0,a))',advance='no') j-1,'/',El%Rep(i),', '
+                end do
+                write(*,'(i0,a,i0)') El%Rep(i)-1,'/',El%Rep(i)
+             else
+                write(*,'(5x,6(i0,a))') 0,'/',El%Rep(i),', ',1,'/',El%Rep(i),', ... , ', &
+                     El%Rep(i)-1,'/',El%Rep(i)
+             end if
           end if
        end do
        write(*,'(a,f14.5,1x,a)') &
