@@ -1,4 +1,19 @@
 ----------------------------------------------------
+May 5, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-403
+Speeded up init_DM
+
+* Added SFIND to init_DM which always speeds it up.
+  That function is now 100 times faster!
+
+* Transiesta defaults to time the GFGGF function
+  in the BTD solution method. This was a large part
+  of the "missing" timing when looking in the TIMES
+
+modified:
+  Src/m_ts_dm_update.F90
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 May 5, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-402
 Repetition q-points are less disruptive
 

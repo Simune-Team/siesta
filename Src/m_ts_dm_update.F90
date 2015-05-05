@@ -723,6 +723,7 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
     use geom_helper, only : UCORB
+    use intrinsic_missing, only : SFIND
     use parallel, only : Node
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
@@ -736,7 +737,7 @@ contains
 
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
-    integer :: lnr, lio, lind, io, jo, ind, nr
+    integer :: lnr, lio, lind, io, jo, ind, nr, col
 
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=lnr,nrows_g=nr)
@@ -761,27 +762,19 @@ contains
           ! Quickly go past the empty regions... (we have nothing to update)
           if ( lup_ncol(io) /= 0 ) then
 
-          ! Now we loop across the update region
-          ! This one must *per definition* have less elements.
-          ! Hence, we can exploit this, and find equivalent
-          ! super-cell orbitals.
-          ! Ok, this is Gamma (but to be consistent)
-          do ind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
+          ! Do a loop in the local sparsity pattern...
+          do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+             
+             ! Search for unit-cell entry in update sparsity
+             ! pattern (UC)
+             col = UCORB(l_col(lind),nr)
+             jo = lup_ptr(io)
+             ind = SFIND(lup_col(jo+1:jo+lup_ncol(io)),col)
+             if ( ind > 0 ) then
+                DM (lind) = 0._dp
+                EDM(lind) = 0._dp
+             end if
 
-             jo = lup_col(ind)
-
-             ! Do a loop in the local sparsity pattern...
-             do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
-
-                ! We know that the update region is in 
-                ! UC-format. Hence we can compare directly, via
-                ! the orbital index in the unit-cell.
-                if ( UCORB(l_col(lind),nr) == jo ) then
-                   DM (lind) = 0._dp
-                   EDM(lind) = 0._dp
-                end if
-                
-             end do
           end do
           end if
        end do
@@ -793,12 +786,13 @@ contains
        do lio = 1 , lnr
           io = index_local_to_global(dit,lio,Node)
           if ( lup_ncol(io) /= 0 ) then
-          do ind = lup_ptr(io) + 1 , lup_ptr(io) + lup_ncol(io)
-             jo = lup_col(ind)
-             do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
-                if ( UCORB(l_col(lind),nr) == jo ) &
-                     DM(lind) = 0._dp
-             end do
+          do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+             col = UCORB(l_col(lind),nr)
+             jo = lup_ptr(io)
+             ind = SFIND(lup_col(jo+1:jo+lup_ncol(io)),col)
+             if ( ind > 0 ) then
+                DM (lind) = 0._dp
+             end if
           end do
           end if
        end do

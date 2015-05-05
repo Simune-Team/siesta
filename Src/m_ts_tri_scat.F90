@@ -74,10 +74,12 @@ contains
     call write_debug( 'PRE GFGammaGF' )
 #endif
 
-#ifdef TRANSIESTA_TIMING
+#ifndef TBTRANS
     call timer("GFGGF",1)
-#elif TBTRANS_TIMING
+#else
+#ifdef TBTRANS_TIMING
     call timer("GFGGF",1)
+#endif
 #endif
 
     ! tri-diagonal parts information
@@ -164,11 +166,12 @@ contains
        
     end do
        
-
-#ifdef TRANSIESTA_TIMING
+#ifndef TBTRANS
     call timer("GFGGF",2)
-#elif TBTRANS_TIMING
+#else
+#ifdef TBTRANS_TIMING
     call timer("GFGGF",2)
+#endif
 #endif
 
 #ifdef TRANSIESTA_DEBUG
