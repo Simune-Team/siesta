@@ -1,4 +1,27 @@
 ----------------------------------------------------
+May 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-404
+Changed keywords in tbt_data and added more routines [TBT]
+
+* Retrieving information from the projection tbtrans has been
+  eased.
+
+  Now keywords allow retrieval of specific eigenvalues
+  can be performed.
+
+  TBTProjFile.eig(mol,lvl='used')
+  returns only the eigenvalues for the used levels in the
+   molecule.
+
+* tbt_tb, added a species order function to create a dictionary
+  with Z entries, and corresponding species label.
+
+* Added write-out of XV file from the tbt_tb code.
+
+modified:
+  Util/TS/TB/tbt_data.py
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 May 5, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-403
 Speeded up init_DM
 

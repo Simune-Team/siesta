@@ -533,9 +533,57 @@ class TBT_Geom(SIESTA_UNITS):
                              ' {0:.5f} {1:.5f} {2:.5f}\n'.format(*self.xa[ia,:]))
                 fh.write('\n')
 
+    def _species_order(self):
+        """ Returns dictionary with species indices for the atoms.
+        They will be populated in order of appearence"""
+
+        # Count for the species
+        spec = {}
+        ispec = 0
+        for ia in xrange(self.na_u):
+            if self.Z[ia] in spec:
+                sp = spec[self.Z[ia]]
+            else:
+                ispec += 1
+                spec[self.Z[ia]] = ispec
+                sp = ispec
+        return spec
+
+    def XV(self,fname=None):
+        """
+        Creates an XV file for compatibility with SIESTA
+
+        Note the velocity will always be set to 0.
+        
+        Parameters
+        ----------
+        fname : str 
+            Filename to save the XV format in.
+        """
+        if fname:
+            ptbl = PeriodicTable()
+            with open(fname,'w') as fh:
+                # Write unit-cell
+                tmp = np.zeros(6,np.float)
+                for i in range(3):
+                    tmp[0:3] = self.cell[i,:] / self.Bohr
+                    l = (('   ' + '{:18.9f}'*3)*2).format(*tmp)
+                    fh.write(l + '\n')
+                fh.write('{:12d}\n'.format(self.na_u))
+                # Get species order
+                spec = self._species_order()
+                fmt  = '{:3d}{:6d}'
+                fmt += '{:18.9f}'*3 + '   ' + '{:18.9f}'*3
+                fmt += '\n'
+                for ia in xrange(self.na_u):
+                    tmp[0:3] = self.xa[ia,:] / self.Bohr
+                    Z = self.Z[ia]
+                    sp = spec[Z]
+                    fh.write(fmt.format(sp,Z,*tmp))
+
     def fdf(self,fname=None,fmt='.5f'):
         """
-        Creates an xyz file for showing in visual programs
+        Creates an fdf file for SIESTA
         
         Parameters
         ----------
@@ -557,15 +605,9 @@ class TBT_Geom(SIESTA_UNITS):
 
                 fmt_str = ' {{2:{0}}} {{3:{0}}} {{4:{0}}} {{0}} # {{1}}\n'.format(fmt)
                 # Count for the species
-                spec = {}
-                ispec = 0
+                spec = self._species_order()
                 for ia in xrange(self.na_u):
-                    if self.Z[ia] in spec:
-                        sp = spec[self.Z[ia]]
-                    else:
-                        ispec += 1
-                        spec[self.Z[ia]] = ispec
-                        sp = ispec
+                    sp = spec[self.Z[ia]]
                     fh.write(fmt_str.format(sp,ia+1,*self.xa[ia,:]))
                 fh.write('%endblock AtomicCoordinatesAndAtomicSpecies\n\n')
 
@@ -602,7 +644,7 @@ class TBT_Geom(SIESTA_UNITS):
         """
         # truncate atoms requested
         idx = np.setdiff1d(np.arange(self.na_u),atoms,assume_unique=True)
-        return self.sub(idx)
+        return self.sub(idx,update_sc=update_sc)
 
     def tile(self,reps,axis,update_sc=False):
         """ 
@@ -3170,5 +3212,6 @@ if __name__ == '__main__':
     HS.save('HUGE_D_zz.nc',Ef=TB['U'])
 
     HUGE.xyz('HUGE_zz.xyz')
+    HUGE.XV('HUGE_zz.XV')
 
     print('Ending time... '+str(datetime.datetime.now().time()))

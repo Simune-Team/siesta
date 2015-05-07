@@ -331,18 +331,29 @@ class TBTProjFile(TBTFile):
         """ Return all projections of this molecule """
         return list(self.nc.groups[mol].groups.keys())
 
-    def levels(self,mol):
+    def lvl(self,mol,relative=True):
         """ Returns levels of projection molecule """
-        return np.array(self.nc.groups[mol].variables['lvl'][:],np.int)
-
-    def level_eig(self,mol):
-        """ Returns the eigenvalues of the unique projection states
-        for the molecule """
-        lvl = self.levels(mol)
+        if relative:
+            return np.array(self.nc.groups[mol].variables['lvl'][:],np.int)
+        # The user has requested the absolute projection states
+        lvl = self.lvl(mol)
         # Correct for HOMO-index
         H_idx = int(self.nc.groups[mol].HOMO_index)
-        lvl = np.where(lvl < 0 , lvl, lvl - 1) + H_idx
-        return self._get_Data('eig',tree=[mol],k_avg=False)[lvl]
+        return np.where(lvl < 0 , lvl, lvl - 1) + H_idx
+
+    def eig(self,mol,lvl=None,k_avg=False):
+        """ Returns the eigenvalues of the molecule """
+        a = np.asarray(self._get_Data('eig',tree=[mol],k_avg=k_avg))
+        if lvl is None:
+            return a
+        if isinstance(lvl,str):
+            if lvl.lower() in ['used','lvl','level']:
+                lvl = self.lvl(mol,relative=False)
+            else:
+                raise ValueError('lvl argument must be integer list or str in [used,lvl,level]')
+        if len(a.shape) == 1:
+            return a[lvl]
+        return a[None,lvl]
 
     def elecs(self,mol,proj):
         """ Return all projections of this molecule """
@@ -520,13 +531,10 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
 
     # We start by printing out the eigenvalues if requested
     if args.eigs:
-        try:
-            eig = Tf.level_eig(mol) * Tf.Ry
-            print('Gamma eigenvalues [eV]:')
-            print(eig)
-            del eig
-        except: 
-            print('Cannot print k-point resolved eigenvalues...')
+        eig = Tf.eig(mol,lvl='used') * Tf.Ry
+        print('Gamma eigenvalues [eV]:')
+        print(eig)
+        del eig
 
     # Get the energies (they are in Ry)
     E = Tf.E * Tf.Ry
