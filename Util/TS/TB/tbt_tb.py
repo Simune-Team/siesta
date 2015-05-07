@@ -100,6 +100,10 @@ except:
             raise Exception('netCDF4 could not be imported. Please install to take full advantage.')
         __getattr__ = __getitem__
 
+# Check for file-existance
+def _file_exist(fname):
+    """ Returns true if file exists """
+    return os.path.isfile(fname)
 
 class SIESTA_UNITS(object):
     """
@@ -201,7 +205,7 @@ class TBT_Geom(SIESTA_UNITS):
             # The user have specified number of orbitals
             # per atom, explicitly
             self.lasto = np.cumsum(
-                np.append(np.array([0],np.int),np.asarray(n_orb,np.int)))
+                np.append(np.array(0,np.int),np.asarray(n_orb,np.int)))
         self.no_u = int(self.lasto[-1])
         self.dR = dR
 
@@ -220,11 +224,11 @@ class TBT_Geom(SIESTA_UNITS):
 
     def __repr__(self):
         """ Representation of the object """
-        zu = np.unique(self.Z)
-        s = 'Atoms {0}\nOrbitals {1}\nDifferent species {2}\n'.format(self.na_u,self.no_u,len(zu))
+        spec = self._species_order()
+        s = 'Atoms {0}\nOrbitals {1}\nDifferent species {2}\n'.format(self.na_u,self.no_u,len(spec))
         s += 'Species:\n'
         ptbl = PeriodicTable()
-        for z in zu:
+        for z in spec:
             s += '  {0}\n'.format(ptbl.Z_short(z))
         s += 'Supercells {0}, {1}, {2}\n'.format(*(self.nsc // 2))
         s += 'Maximum interaction range {0}'.format(self.dR)
@@ -300,6 +304,9 @@ class TBT_Geom(SIESTA_UNITS):
             # all_idx[0] contains the elements that should be looped
             # all_idx[1] contains the indices that can be searched
             yield all_idx[0], all_idx[1]
+
+        if np.any(not_passed):
+            raise ValueError('Error on iterations. Not all atoms has been visited.')
 
     @staticmethod
     def _repeat(array,size):
@@ -515,24 +522,6 @@ class TBT_Geom(SIESTA_UNITS):
     # compatibility
     update_sc = update
 
-    def xyz(self,fname=None):
-        """
-        Creates an xyz file for showing in visual programs
-        
-        Parameters
-        ----------
-        fname : str 
-            Filename to save the xyz format in.
-        """
-        if fname:
-            ptbl = PeriodicTable()
-            with open(fname,'w') as fh:
-                fh.write(str(self.na_u)+'\n\n')
-                for ia in xrange(self.na_u):
-                    fh.write(ptbl.Z_short(self.Z[ia]) +
-                             ' {0:.5f} {1:.5f} {2:.5f}\n'.format(*self.xa[ia,:]))
-                fh.write('\n')
-
     def _species_order(self):
         """ Returns dictionary with species indices for the atoms.
         They will be populated in order of appearence"""
@@ -549,7 +538,63 @@ class TBT_Geom(SIESTA_UNITS):
                 sp = ispec
         return spec
 
-    def XV(self,fname=None):
+    @classmethod
+    def read(cls,fname):
+        """ Reads a structure from an arbitrary input file """
+        if fname[-3:].upper() == '.XV':
+            return cls.read_XV(fname)
+        elif fname[-3:].lower() == '.nc':
+            return cls.SIESTA(fname)
+        raise NotImplementedError('Reading file: '+fname+' have not been implemented yet.')
+
+    @classmethod
+    def read_XV(cls,fname):
+        """
+        Reads a structure from an XV file
+        """
+        cell = np.empty([3,3],np.float)
+        with open(fname,'r') as fh:
+            for i in range(3):
+                cell[i,:] = np.fromstring(fh.readline(), dtype=float, sep = ' ')[0:3]
+            cell *= cls.Bohr
+            # Read number of atoms
+            na_u = int(fh.readline())
+            Z = np.empty(na_u,np.int)
+            xa = np.empty([na_u,3],np.float)
+            line = np.empty(8,np.float)
+            for i in xrange(na_u):
+                line[:] = np.fromstring(fh.readline(),dtype=float,sep = ' ')[0:8]
+                Z[i] = int(line[1])
+                xa[i,:] = line[2:5]
+            xa *= cls.Bohr
+            return cls(cell=cell,xa=xa,n_orb=1,Z=Z)
+
+    def xyz(self,fname=None,fmt='.5f',overwrite=False):
+        """
+        Creates an xyz file for showing in visual programs
+        
+        Parameters
+        ----------
+        fname : str 
+            Filename to save the xyz format in.
+        fmt   : (.5f) str
+            Format for the output file
+        overwrite:
+            Whether one should overwrite the file if it already exists
+        """
+        if _file_exist(fname) and not overwrite:
+            raise Exception('File: '+fname+' already exists, we do not allow overwriting, please remove file manually.')
+
+        if fname:
+            ptbl = PeriodicTable()
+            with open(fname,'w') as fh:
+                fh.write(str(self.na_u)+'\n\n')
+                fm = (' {:'+fmt+'}') * 3 + '\n'
+                for ia in xrange(self.na_u):
+                    fh.write(ptbl.Z_short(self.Z[ia])+fm.format(*self.xa[ia,:]))
+                fh.write('\n')
+
+    def XV(self,fname=None,overwrite=False):
         """
         Creates an XV file for compatibility with SIESTA
 
@@ -559,9 +604,13 @@ class TBT_Geom(SIESTA_UNITS):
         ----------
         fname : str 
             Filename to save the XV format in.
+        overwrite:
+            Whether one should overwrite the file if it already exists
         """
+        if _file_exist(fname) and not overwrite:
+            raise Exception('File: '+fname+' already exists, we do not allow overwriting, please remove file manually.')
+
         if fname:
-            ptbl = PeriodicTable()
             with open(fname,'w') as fh:
                 # Write unit-cell
                 tmp = np.zeros(6,np.float)
@@ -581,7 +630,7 @@ class TBT_Geom(SIESTA_UNITS):
                     sp = spec[Z]
                     fh.write(fmt.format(sp,Z,*tmp))
 
-    def fdf(self,fname=None,fmt='.5f'):
+    def fdf(self,fname=None,fmt='.5f',overwrite=False):
         """
         Creates an fdf file for SIESTA
         
@@ -589,7 +638,14 @@ class TBT_Geom(SIESTA_UNITS):
         ----------
         fname : str 
             Filename to save the FDF format in.
+        fmt   : (.5f) str
+            Format for the output file
+        overwrite:
+            Whether one should overwrite the file if it already exists
         """
+        if _file_exist(fname) and not overwrite:
+            raise Exception('File: '+fname+' already exists, we do not allow overwriting, please remove file manually.')
+
         if fname:
             ptbl = PeriodicTable()
             with open(fname,'w') as fh:
@@ -752,10 +808,10 @@ class TBT_Geom(SIESTA_UNITS):
         cell[axis,:] *= reps
         # Pre-allocate geometry
         new_na_u = self.na_u * reps
-        xa = np.zeros((new_na_u,3),np.float)
-        Z = np.zeros((new_na_u,),np.float)
+        xa = np.zeros([new_na_u,3],np.float)
+        Z = np.zeros(new_na_u,np.float)
         n_orb = np.diff(self.lasto)
-        orbs = np.zeros((new_na_u,),np.int)
+        orbs = np.zeros(new_na_u,np.int)
         dx = np.dot(np.arange(reps)[:,None],self.cell[axis,:][None,:])
         # Start the repetition
         ja = 0
@@ -956,9 +1012,9 @@ class TBT_Geom(SIESTA_UNITS):
         """
 
         if dR is None:
-            ddR = np.array((self.dR,),np.float)
+            ddR = np.array([self.dR],np.float)
         else:
-            ddR = np.array((dR,),np.float).flatten()
+            ddR = np.array([dR],np.float).flatten()
         ioff = 0
         if isinstance(xyz_ia,(int,np.int,np.int16,np.int32)):
             off = self.xa[xyz_ia,:]
@@ -1591,7 +1647,7 @@ class TBT_Model(SIESTA_UNITS):
         ncol = np.array(sg.variables['n_col'][:],np.int)
         # Update maximum number of connections (in case future stuff happens)
         model.max_n = np.amax(ncol)
-        ptr = np.append(np.array([0],np.int),np.cumsum(ncol))
+        ptr = np.append(np.array(0,np.int),np.cumsum(ncol))
         # Ensure that it is flattened
         ptr.shape = (-1,)
         col = np.array(sg.variables['list_col'][:],np.int) - 1
@@ -1633,7 +1689,7 @@ class TBT_Model(SIESTA_UNITS):
 
         return model
 
-    def save(self,fname='SIESTA.nc',Ef=0.,zlib=0):
+    def save(self,fname='SIESTA.nc',Ef=0.,zlib=0,overwrite=False):
         """
         Saves the current sparse Hamiltonian and overlap to a 
         NetCDF file which is readable by TBtrans.
@@ -1649,11 +1705,11 @@ class TBT_Model(SIESTA_UNITS):
         zlib  : (0) integer
             Compression level of sparse elements, in range [0;9]
         """
-
-        self.finalize()
-
-        if os.path.isfile(fname):
+        if os.path.isfile(fname) and not overwrite:
             raise Exception('File: '+fname+' already exists, we do not allow overwriting, please remove file manually.')
+
+        # No need to finalize if exception cast
+        self.finalize()
 
         nf = nc.Dataset(fname,'w',format='NETCDF4')
 
@@ -1742,6 +1798,22 @@ class TBT_Model(SIESTA_UNITS):
 
         st.variables['ElectronicTemperature'][:] = 0.025 / self.Ry
 
+        # Create the basis group
+        ptbl = PeriodicTable()
+        bs = nf.createGroup('BASIS')
+
+        spec = self.geom._species_order()
+        # Create list of species
+        b = bs.createVariable('basis','i4',('na_u',))
+        b[:] = np.array([spec[z] for z in self.geom.Z],np.int)
+        bs.info = 'Basis of each atom by ID'
+        for i,sp in enumerate(spec):
+            s = bs.createGroup(ptbl.Z_short(sp))
+            s.Atomic_number = np.int32(sp)
+            s.ID = np.int32(i + 1)
+            s.Element = ptbl.Z_short(sp)
+            s.Label = ptbl.Z_short(sp)
+            s.Mass = np.array(ptbl.atomic_mass(sp),np.float)
         nf.close()
 
     @classmethod
@@ -2362,7 +2434,7 @@ class TBOutputFile(TBFile):
             if advanced:
                 for jo,io,h in zip(Hsub.row,Hsub.col,Hsub.data):
                     s = Ssub[jo,io]
-                    o = np.array((jo,io),np.int)
+                    o = np.array([jo,io],np.int)
                     a = geom.o2a(o)
                     o = o - geom.a2o(a)
                     if s == 0.:
@@ -2748,15 +2820,14 @@ class PeriodicTable(object):
 
     def Z_int(self,key):
         """ Returns the Z number """
-        ak = np.asarray([key])
-        ak.shape = (-1,) # flatten it
-        if len(ak) == 1: return self._Z_int[ak[0]]
-        return np.array([self._Z_int[i] for i in ak],np.int)
+        ak = np.asarray([key]).flatten()
+        if len(ak) == 1: return np.int32(self._Z_int[ak[0]])
+        return np.array([self._Z_int[i] for i in ak],np.int32)
 
     Z = Z_int
 
     def Z_short(self,key):
-        """ Returns the Z number """
+        """ Returns the Z name in short """
         ak = np.asarray([key])
         ak.shape = (-1,) # flatten it
         if len(ak) == 1: return self._Z_short[ak[0]]
@@ -2764,6 +2835,7 @@ class PeriodicTable(object):
 
     def atomic_mass(self,key):
         Z = self.Z_int(key)
+        if isinstance(Z,(int,np.int,np.int32)): return self._atomic_mass[Z]
         return np.array([self._atomic_mass[i] for i in Z])
 
 
@@ -2922,7 +2994,7 @@ def TB_save(fname,Geom,TB = _TB_graphene['D'],alat=1.42,save_tb=True):
 
     # This concludes the sparsity pattern
     # Save it
-    HS.save(fname,Ef=TB['Ef'])
+    HS.save(fname,Ef=TB['Ef'],overwrite=True)
     if save_tb:
         with TBOutputFile(fname.replace('.nc','.tb')) as fh:
             fh.write_geom(HS.geom)
@@ -3053,11 +3125,11 @@ def TB_square():
         TB_dev[ia,idx_a[0]] = on
         TB_dev[ia,idx_a[1]] = nn
     # Now save the TB models to corresponding NetCDF-4 files
-    TB_el.save('SQUARE_EL.nc')
+    TB_el.save('SQUARE_EL.nc',overwrite=True)
     with TBOutputFile('SQUARE_EL.tb') as fh:
         fh.write_geom(TB_el.geom)
         fh.write_model(TB_el)
-    TB_dev.save('SQUARE_DEV.nc')
+    TB_dev.save('SQUARE_DEV.nc',overwrite=True)
     with TBOutputFile('SQUARE_DEV.tb') as fh:
         fh.write_geom(TB_dev.geom)
         fh.write_model(TB_dev)
@@ -3079,7 +3151,7 @@ def TB_square():
     ###############################
     for ia in xrange(dev.na_u):
         TB_dH[ia,ia] = 0.1
-    TB_dH.save('SQUARE_dH.nc')
+    TB_dH.save('SQUARE_dH.nc',delete=True)
 
     # Initialize the k-point for level 2 and 4
     kpt = np.zeros((3,),np.float)
@@ -3186,10 +3258,15 @@ if __name__ == '__main__':
         HS[ia,idx_a[2]] = nnn
         HS[ia,idx_a[3]] = nnnn
     print('Converting to CSR sparsity format and saving NetCDF file...')
-    HS.save('HOLE_D_zz.nc',Ef=TB['U'])
+    HS.save('HOLE_D_zz.nc',Ef=TB['U'],overwrite=True)
 
     # Save an xyz file to let the user view the geometry
-    HOLE.xyz('HOLE_zz.xyz')
+    HOLE.xyz('HOLE_zz.xyz',overwrite=True)
+
+    print('Printing representation of HOLE:')
+    print('>>>')
+    print(HOLE)
+    print('<<<')
 
     # Just for fun, create a HUGE graphene flake
     print('Starting time... '+str(datetime.datetime.now().time()))
@@ -3209,9 +3286,17 @@ if __name__ == '__main__':
             HS[ia,idx_a[2]] = nnn
             HS[ia,idx_a[3]] = nnnn
     print('Converting to CSR sparsity format and saving NetCDF file...')
-    HS.save('HUGE_D_zz.nc',Ef=TB['U'])
+    HS.save('HUGE_D_zz.nc',Ef=TB['U'],overwrite=True)
 
-    HUGE.xyz('HUGE_zz.xyz')
-    HUGE.XV('HUGE_zz.XV')
+    HUGE.xyz('HUGE_zz.xyz',overwrite=True)
+    HUGE.XV('HUGE_zz.XV',overwrite=True)
+
+    for f in ['HUGE_zz.XV','HUGE_D_zz.nc']:
+        tmp = TBT_Geom.read(f)
+        if np.all(np.abs(tmp.xa - HUGE.xa) < 1.e-6) and \
+                np.all(np.abs(tmp.cell - HUGE.cell) < 1.e-6):
+            print('Re-read '+f+' and ensured correctly read structure')
+        else:
+            print('Re-read '+f+' did not match present data')
 
     print('Ending time... '+str(datetime.datetime.now().time()))

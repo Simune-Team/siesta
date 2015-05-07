@@ -1,4 +1,24 @@
 ----------------------------------------------------
+May 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-405
+[TBT] update
+
+* Allowed reading of structures from XV and created files
+  from tbt_tb.
+  I.e. we have added the BASIS information to the netcdf
+  file.
+  Currently this is wrong if numerous different basis-sizes
+  for the same element is used... Well, we do not currently
+  use that information.
+
+* All file-creation methods have received an overwrite key
+  to let the user control of the raised errors.
+
+* Bugfixes for integers vs. longs.
+
+modified:
+  Util/TS/TB/tbt_tb.py
+
+----------------------------------------------------
 May 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-404
 Changed keywords in tbt_data and added more routines [TBT]
 
