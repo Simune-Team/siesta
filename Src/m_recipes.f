@@ -16,8 +16,6 @@
       public :: derfc   ! Complementary error function
       public :: four1   ! 1-D fast Fourier transform
       public :: polint  ! Polynomial interpolation
-      public :: spline  ! Set up spline interpolation
-      public :: splint  ! Perform spline interpolation
       public :: sort    ! Sort an array by heapsort method
       public :: tqli    ! With tred2, diagonalizes a real matrix
       public :: tred2   ! Reduction of a real matrix to tridiagonal form
@@ -155,104 +153,6 @@
       END DO ! M
 
       END SUBROUTINE POLINT
-
-
-
-      SUBROUTINE SPLINE(DX,Y,N,YP1,YPN,Y2) 
-!*********************************************************** 
-! Cubic Spline Interpolation. Adapted from Numerical Recipes 
-! routine of same name for a uniform grid and double precision
-! D. Sanchez-Portal, Oct. 1996.
-! Input:
-!   real*8  DX   : x interval between data points
-!   real*8  Y(N) : value of y(x) at data points
-!   integer N    : number of data points
-!   real*8  YP1  : value of dy/dx at X1 (first point)
-!   real*8  YPN  : value of dy/dx at XN (last point)
-! Output:
-!   real*8  Y2(N): array to be used by routine SPLINT
-! Behavior:
-! - If YP1 or YPN are larger than 1E30, the natural spline
-!   condition (d2y/dx2=0) at the corresponding edge point.
-!************************************************************
-
-      IMPLICIT NONE
-      INTEGER  :: N
-      REAL(dp) :: DX, Y(N), YP1, YPN, Y2(N)
-
-      INTEGER  :: I, K
-      REAL(dp) :: QN, P, SIG, U(N), UN
-      REAL(dp), PARAMETER :: YPMAX=0.99D30, 
-     .  HALF=0.5D0, ONE=1.D0, THREE=3.D0, TWO=2.D0, ZERO=0.D0
-    
-      IF (YP1.GT.YPMAX) THEN
-        Y2(1)=ZERO
-        U(1)=ZERO
-      ELSE
-        Y2(1)=-HALF
-        U(1)=(THREE/DX)*((Y(2)-Y(1))/DX-YP1)
-      ENDIF
-      DO I=2,N-1
-        SIG=HALF
-        P=SIG*Y2(I-1)+TWO
-        Y2(I)=(SIG-ONE)/P
-        U(I)=(THREE*( Y(I+1)+Y(I-1)-TWO*Y(I) )/(DX*DX)
-     .       -SIG*U(I-1))/P
-      END DO ! I
-      IF (YPN.GT.YPMAX) THEN
-        QN=ZERO
-        UN=ZERO
-      ELSE
-        QN=HALF
-        UN=(THREE/DX)*(YPN-(Y(N)-Y(N-1))/DX)
-      ENDIF
-      Y2(N)=(UN-QN*U(N-1))/(QN*Y2(N-1)+ONE)
-      DO K=N-1,1,-1
-        Y2(K)=Y2(K)*Y2(K+1)+U(K)
-      END DO ! K
-
-      END SUBROUTINE SPLINE
-
-
-
-      SUBROUTINE SPLINT(DX,YA,Y2A,N,X,Y,DYDX) 
-!***************************************************************
-! Cubic Spline Interpolation. Adapted from Numerical Recipes 
-! routine of same name for a uniform grid, double precision,
-! and to return the function derivative in addition to its value
-! D. Sanchez-Portal, Oct. 1996.
-! Input:
-!   real*8  DX    : x interval between data points
-!   real*8  YA(N) : value of y(x) at data points
-!   real*8  Y2A(N): array returned by routine SPLINE
-!   integer N     : number of data points
-!   real*8  X     : point at which interpolation is desired
-!   real*8  Y     : interpolated value of y(x) at point X
-!   real*8  DYDX  : interpolated value of dy/dx at point X
-!***************************************************************
-
-      IMPLICIT NONE
-      INTEGER  :: N
-      REAL(dp) :: DX, YA(N), Y2A(N), X, Y, DYDX
-
-      INTEGER  :: NHI, NLO
-      REAL(dp) :: A, B
-      REAL(dp), PARAMETER ::
-     .    ONE=1.D0, THREE=3.D0, SIX=6.D0, ZERO=0.D0
-
-      IF (DX.EQ.ZERO) call die('splint: ERROR: DX=0')
-      NLO=INT(X/DX)+1
-      NHI=NLO+1
-      IF (NLO<1 .OR. NHI>N) call die('splint: ERROR: X out of range')
-      A=NHI-X/DX-1
-      B=ONE-A
-      Y=A*YA(NLO)+B*YA(NHI)+
-     .  ((A**3-A)*Y2A(NLO)+(B**3-B)*Y2A(NHI))*(DX**2)/SIX
-      DYDX=(YA(NHI)-YA(NLO))/DX+
-     .     (-((THREE*(A**2)-ONE)*Y2A(NLO))+
-     .     (THREE*(B**2)-ONE)*Y2A(NHI))*DX/SIX
-
-      END SUBROUTINE SPLINT
 
 
       REAL(dp) function derfc(X)
