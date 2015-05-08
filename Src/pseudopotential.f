@@ -12,7 +12,7 @@
 
       use sys, only: die
       use precision, only: dp
-      use flib_spline, only: generate_spline, evaluate_spline
+      use interpolation, only: generate_spline, evaluate_spline
       use atom_options, only: write_ion_plot_files
       
       implicit none

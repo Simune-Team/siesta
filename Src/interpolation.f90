@@ -1,7 +1,7 @@
 !!@LICENSE
 !
 ! ==============================================================================
-! MODULE flib_spline
+! MODULE interpolation
 ! ==============================================================================
 ! Cubic spline interpolation utilities
 ! ==============================================================================
@@ -99,10 +99,25 @@
 !   real(dp) y         ! function value at point x
 !   real(dp) dydx      ! function derivative at point x
 ! ==============================================================================
+! SUBROUTINE polint(XA,YA,N,X,Y,DYDX) 
+!   Lagrange interpolation
+! Input:
+!   real*8  XA(N) : x values of the function y(x) to interpolate
+!   real*8  YA(N) : y values of the function y(x) to interpolate
+!   integer N     : Number of data points
+!   real*8  X     : x value at which the interpolation is desired
+! Output:
+!   real*8  Y     : interpolated value of y(x) at X
+!   real*8  DYDX  : interpolated derivative dy/dx at X
+!                   Notice: this argument has a different meaning
+!                   in the Numerical Recipes' polint subroutine
+! Ref:
+!   W.H.Press et all, Numerical Recipes, Cambridge U.P.
+! ==============================================================================
 ! Written by J.M.Soler and A.Garcia. May.2015
 ! ==============================================================================
 
-MODULE flib_spline
+MODULE interpolation
 
 USE precision, only: dp       ! double precision real kind
 USE sys,       only: die      ! stop with an error message
@@ -115,7 +130,8 @@ PUBLIC :: &
   generate_spline, &! generate spline info
   evaluate_spline, &! evaluate a function at given point(s)
   spline,          &! compatible with Numerical Recipes interface
-  splint            ! compatible with Numerical Recipes interface
+  splint,          &! compatible with Numerical Recipes interface
+  polint            ! Lagrange polynomial interpolation
 
 PRIVATE ! nothing is declared public beyond this point
 
@@ -537,5 +553,53 @@ call interpolate_interval( xl, xh, yi(kl), yi(kh), &
 
 END SUBROUTINE evaluate_spline_dx
 
-END MODULE flib_spline
+!-------------------------------------------------------------------------------
+
+SUBROUTINE polint( xi, yi, n, x, y, dydx )  ! Lagrange interpolation
+
+  implicit none
+  real(dp),intent(in) :: xi(*) ! mesh points
+  real(dp),intent(in) :: yi(*) ! function values at mesh points
+  integer, intent(in) :: n     ! number of mesh points
+  real(dp),intent(in) :: x     ! point at which function is required
+  real(dp),intent(out):: y     ! function value at point x
+  real(dp),intent(out):: dydx  ! function derivative at point x
+
+  integer :: i0, m, nm
+  real(dp):: c(n), d(n), e(n), dcdx(n), dddx(n), dedx(n), dx1(n), dx2(n), dxi(n)
+
+! Neville's algorithm, as described in NR
+  c = yi(1:n)
+  d = yi(1:n)
+  dcdx = 0
+  dddx = 0
+  i0 = n/2
+  y = yi(i0)
+  do m = 1,n-1               ! loop on increasing polynomial order
+    nm = n-m
+    dxi(1:nm) = xi(1:nm)-xi(m+1:n)
+    if (any(dxi(1:nm)==0.0_dp)) &
+      call die('polint: ERROR: two mesh points are equal')
+    dx1(1:nm) = xi(1:nm)-x
+    dx2(1:nm) = xi(m+1:n)-x
+    e(1:nm) = (c(2:nm+1)-d(1:nm))/dxi(1:nm)
+    c(1:nm) = dx1(1:nm)*e(1:nm)
+    d(1:nm) = dx2(1:nm)*e(1:nm)
+    dedx(1:nm) = (dcdx(2:nm+1) - dddx(1:nm)) / dxi(1:nm)
+    dcdx(1:nm) = - e(1:nm) + dx1(1:nm)*dedx(1:nm)
+    dddx(1:nm) = - e(1:nm) + dx2(1:nm)*dedx(1:nm)
+    i0 = i0-1
+    if (2*i0 < nm) then
+      i0 = i0+1
+      y = y+c(i0)
+      dydx = dydx+dcdx(i0)
+    else
+      y = y+d(i0)
+      dydx = dydx+dddx(i0)
+    endif
+  end do
+
+END SUBROUTINE polint
+
+END MODULE interpolation
 

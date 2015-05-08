@@ -12,7 +12,8 @@
 
       use precision
       use xml
-      use flib_spline, only: spline, splint
+      use interpolation, only: spline  ! set spline interpolation
+      use interpolation, only: splint  ! spline interpolation
 
       implicit none
 

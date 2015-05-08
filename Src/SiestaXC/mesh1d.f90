@@ -15,9 +15,9 @@
 ! in a mesh, and to solve some differential equations by Numerov's method
 !-----------------------------------------------------------------
 ! Used module procedures:
-!   m_recipes,   only: polint  ! Polynomial (Lagrange) interpolation
-!   flib_spline, only: spline  ! Sets spline interpolation
-!   flib_spline, only: splint  ! Finds spline interpolation
+!   interpolation, only: polint  ! Polynomial (Lagrange) interpolation
+!   interpolation, only: spline  ! Sets spline interpolation
+!   interpolation, only: splint  ! Finds spline interpolation
 ! Used module types and variables:
 !   precision, only: dp        ! Real double precision type
 !-----------------------------------------------------------------
@@ -350,9 +350,9 @@
 module mesh1D
 
 ! Used module procedures
-use m_recipes,   only: polint  ! Polynomial (Lagrange) interpolation
-use flib_spline, only: spline  ! Sets spline interpolation
-use flib_spline, only: splint  ! Finds spline interpolation
+use interpolation, only: polint  ! Polynomial (Lagrange) interpolation
+use interpolation, only: spline  ! Sets spline interpolation
+use interpolation, only: splint  ! Finds spline interpolation
 
 ! Used module types and variables
 use precision, only: dp      ! Real double precision type

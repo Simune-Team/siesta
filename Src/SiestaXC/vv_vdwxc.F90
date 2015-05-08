@@ -17,8 +17,8 @@
 !  use mesh1D,      only: get_mesh          ! Returns the mesh points
 !  use m_radfft,    only: radfft            ! Radial fast Fourier transform
 !  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-!  use flib_spline, only: spline            ! Sets spline interpolation
-!  use flib_spline, only: splint            ! Calculates spline interpolation
+!  use interpolation, only: spline            ! Sets spline interpolation
+!  use interpolation, only: splint            ! Calculates spline interpolation
 !------------------------------------------------------------------------------
 ! Used module parameters:
 !   use precision,  only: dp                ! Real double precision type
@@ -166,19 +166,19 @@
 MODULE m_vv_vdwxc
 
 ! Used module procedures
-  use sys,         only: die               ! Termination routine
-  use mesh1D,      only: get_mesh          ! Returns the mesh points
-  use m_radfft,    only: radfft            ! Radial fast Fourier transform
-  use alloc,       only: re_alloc          ! Re-allocation routine
-  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-  use flib_spline, only: spline            ! Sets spline interpolation
-  use flib_spline, only: splint            ! Calculates spline interpolation
+  use sys,          only: die              ! Termination routine
+  use mesh1D,       only: get_mesh         ! Returns the mesh points
+  use m_radfft,     only: radfft           ! Radial fast Fourier transform
+  use alloc,        only: re_alloc         ! Re-allocation routine
+  use mesh1D,       only: set_mesh         ! Sets a 1D mesh
+  use interpolation,only: spline           ! Sets spline interpolation
+  use interpolation,only: splint           ! Calculates spline interpolation
 
 ! Used module parameters
-  use precision,   only: dp                ! Real double precision type
+  use precision,    only: dp               ! Real double precision type
 
 #ifdef DEBUG_XC
-  use debugXC,     only: udebug            ! File unit for debug output
+  use debugXC,      only: udebug           ! File unit for debug output
 !  use plot_module, only: plot
 #endif /* DEBUG_XC */
 

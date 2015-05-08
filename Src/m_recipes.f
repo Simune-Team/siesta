@@ -15,7 +15,6 @@
       public :: derf    ! Error function
       public :: derfc   ! Complementary error function
       public :: four1   ! 1-D fast Fourier transform
-      public :: polint  ! Polynomial interpolation
       public :: sort    ! Sort an array by heapsort method
       public :: tqli    ! With tred2, diagonalizes a real matrix
       public :: tred2   ! Reduction of a real matrix to tridiagonal form
@@ -92,67 +91,6 @@
       END DO ! until (N.LE.MMAX)
 
       END SUBROUTINE FOUR1
-
-
-
-      SUBROUTINE POLINT(XA,YA,N,X,Y,DY) 
-!*****************************************************************
-! Polinomic interpolation. Modified and adapted to double 
-! precision from same routine of Numerical Recipes.
-! D. Sanchez-Portal, Oct. 1996
-!*****************************************************************
-! Input:
-!   real*8  XA(N) : x values of the function y(x) to interpolate
-!   real*8  YA(N) : y values of the function y(x) to interpolate
-!   integer N     : Number of data points
-!   real*8  X     : x value at which the interpolation is desired
-! Output:
-!   real*8  Y     : interpolated value of y(x) at X
-!   real*8  DY    : accuracy estimate
-!*****************************************************************
-
-      IMPLICIT NONE
-      INTEGER  :: N
-      REAL(dp) :: XA(N),YA(N), X, Y, DY
-
-      INTEGER  :: I, M, NS
-      REAL(dp) :: C(N), D(N), DEN, DIF, DIFT, HO, HP, W
-      REAL(dp), PARAMETER :: ZERO=0.D0
-
-      NS=1
-      DIF=ABS(X-XA(1))
-      DO I=1,N 
-        DIFT=ABS(X-XA(I))
-        IF (DIFT.LT.DIF) THEN
-          NS=I
-          DIF=DIFT
-        ENDIF
-        C(I)=YA(I)
-        D(I)=YA(I)
-      END DO ! I
-      Y=YA(NS)
-      NS=NS-1
-      DO M=1,N-1
-        DO I=1,N-M
-          HO=XA(I)-X
-          HP=XA(I+M)-X
-          W=C(I+1)-D(I)
-          DEN=HO-HP
-          IF (DEN.EQ.ZERO) call die('polint: ERROR. Two XAs are equal')
-          DEN=W/DEN
-          D(I)=HP*DEN
-          C(I)=HO*DEN
-        END DO ! I
-        IF (2*NS.LT.N-M) THEN
-          DY=C(NS+1)
-        ELSE
-          DY=D(NS)
-          NS=NS-1
-        ENDIF
-        Y=Y+DY
-      END DO ! M
-
-      END SUBROUTINE POLINT
 
 
       REAL(dp) function derfc(X)

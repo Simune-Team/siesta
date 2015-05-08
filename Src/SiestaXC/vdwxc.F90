@@ -30,8 +30,8 @@
 !  use m_radfft,    only: radfft            ! Radial fast Fourier transform
 !  use mesh1D,      only: set_interpolation ! Sets interpolation method
 !  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-!  use flib_spline, only: spline            ! Sets spline interpolation
-!  use flib_spline, only: splint            ! Calculates spline interpolation
+!  use interpolation, only: spline            ! Sets spline interpolation
+!  use interpolation, only: splint            ! Calculates spline interpolation
 !  use m_vv_vdwxc,  only: vv_vdw_beta       ! Parameter beta of VV2010 functionl
 !  use m_vv_vdwxc,  only: vv_vdw_theta      ! Func. theta of VV2010 functional
 !  use m_vv_vdwxc,  only: vv_vdw_get_kmesh  ! Size and values of (kf,kg) mesh
@@ -250,8 +250,8 @@ MODULE m_vdwxc
   use alloc,       only: re_alloc          ! Re-allocation routine
   use mesh1D,      only: set_interpolation ! Sets interpolation method
   use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-  use flib_spline, only: spline            ! Sets spline interpolation
-  use flib_spline, only: splint            ! Calculates spline interpolation
+  use interpolation,only: spline           ! Sets spline interpolation
+  use interpolation,only: splint           ! Calculates spline interpolation
   use m_vv_vdwxc,  only: vv_vdw_beta       ! Parameter beta of VV2010 functional
   use m_vv_vdwxc,  only: vv_vdw_theta      ! Func. theta of VV2010 functional
   use m_vv_vdwxc,  only: vv_vdw_get_kmesh  ! Size and values of (kf,kg) mesh
