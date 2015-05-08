@@ -329,6 +329,7 @@ integer ::  k, n
 ! Get some parameters
 xmin = dat%xmin
 xmax = dat%xmax
+n = size(xi)
 
 ! Check that point is within interpolation range
 if (x<dat%xmin .or. x>dat%xmax) &
@@ -339,7 +340,8 @@ select case(dat%mesh)
 case('lin')      ! linear mesh
   x1 = dat%x1
   dx = dat%dx
-  kl = 1+floor((x-xmin)/dx)
+  kl = 1+floor((x-x1)/dx)
+  kl = min(n-1,max(1,kl))
   kh = kl+1
   xl = x1+(kl-1)*dx
   xh = x1+(kh-1)*dx
@@ -347,10 +349,11 @@ case ('log')     ! logarithmic mesh
   x1 = dat%x1
   a  = dat%a
   b  = dat%b
-  kl = 1+floor(log(1+(x-xmin)/b)/a)
+  kl = 1+floor(log(1+(x-x1)/b)/a)
+  kl = min(n-1,max(1,kl))
   kh = kl+1
-  xl = x1+b*exp((kl-1)*a)
-  xh = x1+b*exp((kh-1)*a)
+  xl = x1+b*(exp((kl-1)*a)-1)
+  xh = x1+b*(exp((kh-1)*a)-1)
 case('gen')      ! general mesh => use bisection
   kl = 1
   kh = n
@@ -535,14 +538,17 @@ real(dp),         intent(out):: y         ! function value at point x
 real(dp),optional,intent(out):: dydx      ! function derivative at point x
 
 integer :: kh, kl
-real(dp):: xh, xl
+real(dp):: xh, xl, xmax, xtol
 
 ! Check that point is within interpolation range
-if (x<0.0_dp .or. x>(n-1)*dx) &
+xmax = (n-1)*dx
+xtol = dx*tol;
+if (x<-xtol .or. x>xmax+xtol) &
   call die('evaluate_spline ERROR: x out of range')
 
 ! Find mesh interval of point x (warning: no check that x is within range)
 kl = 1+floor(x/dx)
+kl = min(n-1,max(1,kl))
 kh = kl+1
 xl = (kl-1)*dx
 xh = (kh-1)*dx
