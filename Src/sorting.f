@@ -95,69 +95,67 @@ C **********************************************************************
 ! *******************************************************************
 
       implicit none
-      integer,parameter:: dp = kind(1.d0)
+      integer, parameter  :: dp = kind(1.d0)
+      real(dp),parameter  :: tol = 1.e-12_dp  ! tolerance for value comparisons
+
       real(dp),intent(in) :: x(m,n)   ! Array with the values to be ordered
       integer, intent(in) :: m, n     ! Dimensions of array x
       integer, intent(out):: indx(n)  ! Increasing order of x(1,:)
 
       integer:: child, child2, k, nFamily, parent
-      real(dp):: age(n)
+      real(dp):: age(n), ageTol
 
       ! Construct the heap (family tree)
-      age = x(1,:)
-      indx = (/(k,k=1,n)/)
-      nFamily = n
-      do parent = n/2,1,-1            ! add 'parents' and sift then down the tree
-        call siftDown( parent, nFamily, age, indx )
+      indx = (/(k,k=1,n)/)            ! initial array order, to be modified
+      age = x(1,:)                    ! this is the array to be ordered
+      ageTol = tol*(maxval(age)-minval(age))  ! tolerance for age comparisons
+      nFamily = n                     ! number of persons in the family tree
+      do parent = n/2,1,-1            ! sift 'parents' down the tree
+        call siftDown(parent)         ! siftDown inherits age and indx arrays
       enddo
 
-      ! Reduce the tree size, retiring its succesive patriarcs (first element)
-      do nFamily = n-1,1,-1          ! nFamily is the new size of the tree
-        call iswap( indx(1), indx(nFamily+1) ) ! swap patriarc and youngest child
-        call siftDown( 1, nFamily, age, indx ) ! now recolocate child in tree
+      ! Reduce the tree size, retiring its succesive patriarchs (first element)
+      do nFamily = n-1,1,-1           ! nFamily is the new size of the tree
+        call swap( indx(1), indx(nFamily+1) ) ! swap patriarch and youngest child
+        call siftDown(1)              ! now recolocate child in tree
       enddo
 
       contains
 
-      subroutine siftDown( person, nFamily, age, indx ) 
-
-      ! place person in family tree
+      subroutine siftDown( person )   ! place person in family tree
 
       implicit none
-      integer, intent(in)   :: person
-      integer, intent(in)   :: nFamily
-      real(dp),intent(in)   :: age(nFamily)
-      integer, intent(inout):: indx(nFamily)
+      integer,intent(in):: person
 
-      real(dp),parameter:: tol = 1.e-12_dp  ! tolerance for age comparisons
+      ! Inherited from ordix: age(:), ageTol, indx(:), nFamily
       integer:: child, child2, parent
 
-      parent = person            ! assume person is a parent
-      do                         ! iterate the sift-down process
-        child = 2*parent         ! first child of parent
-        child2 = child+1         ! second child
-        if (child>nFamily) then  ! parent has no children in family, so that
-          exit                   ! it is already in its right place in the tree
-        elseif (child2<=nFamily) then  ! choose oldest child
-          if (age(indx(child)) < age(indx(child2))-tol) child = child2
+      parent = person                 ! assume person is a parent
+      do                              ! iterate the sift-down process
+        child = 2*parent              ! first child of parent
+        child2 = child+1              ! second child
+        if (child>nFamily) then       ! parent has no children in family
+          exit                        ! => it is already in its right place
+        elseif (child2<=nFamily) then ! choose oldest child
+          if (age(indx(child)) < age(indx(child2))-ageTol) child = child2
         endif
         ! If person (assumed parent) is younger than its child, exchange them
-        if (age(indx(parent)) < age(indx(child))-tol) then
-          call iswap( indx(parent), indx(child) )
+        if (age(indx(parent)) < age(indx(child))-ageTol) then
+          call swap( indx(parent), indx(child) )
           parent = child
-        else                     ! person is already in its right place
+        else                          ! person is already in its right place
           exit
         endif
       enddo
 
       end subroutine siftDown
 
-      subroutine iswap(i,j)  ! exchange integers i and j
+      subroutine swap(i,j)            ! exchange integers i and j
       integer:: i,j,k
       k = i
       i = j
       j = k
-      end subroutine iswap
+      end subroutine swap
 
       END SUBROUTINE ordix
 
