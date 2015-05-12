@@ -1,4 +1,24 @@
 ----------------------------------------------------
+May 12, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-407
+Updated makefiles for siesta and utils
+
+* No real changes
+
+modified:
+  Src/Makefile
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/Sp2METIS/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 May 12, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-406
 TBT Added xa_dev to tbt_data, removed orb_current S
 

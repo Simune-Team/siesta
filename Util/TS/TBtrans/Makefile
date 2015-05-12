@@ -473,7 +473,7 @@ m_geom_box.o: intrinsic_missing.o m_geom_aux.o
 m_geom_coord.o: intrinsic_missing.o m_geom_aux.o parallel.o
 m_geom_objects.o: m_geom_aux.o m_geom_box.o m_geom_coord.o m_geom_plane.o
 m_geom_objects.o: m_geom_square.o
-m_geom_plane.o: intrinsic_missing.o m_geom_aux.o parallel.o
+m_geom_plane.o: intrinsic_missing.o m_geom_aux.o
 m_geom_square.o: intrinsic_missing.o m_geom_aux.o m_geom_plane.o
 m_getopts.o: f2kcli.o
 m_handle_sparse.o: class_OrbitalDistribution.o class_SpData1D.o
@@ -917,7 +917,7 @@ m_tbt_contour.o: m_ts_chem_pot.o m_ts_electype.o m_ts_io_contour.o
 m_tbt_contour.o: m_ts_io_ctype.o parallel.o precision.o units.o
 m_tbt_dH.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_dH.o: class_TriMat.o intrinsic_missing.o m_io_s.o m_ncdf_io.o m_region.o
-m_tbt_dH.o: m_tbt_save.o parallel.o precision.o
+m_tbt_dH.o: m_sparsity_handling.o m_tbt_save.o parallel.o precision.o
 m_tbt_diag.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_tbt_diag.o: class_Sparsity.o intrinsic_missing.o m_region.o
 m_tbt_diag.o: m_ts_sparse_helper.o parallel.o precision.o
@@ -925,7 +925,8 @@ m_tbt_gf.o: m_io_s.o m_tbt_contour.o m_ts_cctype.o m_ts_electrode.o
 m_tbt_gf.o: m_ts_electype.o m_ts_gf.o parallel.o precision.o sys.o
 m_tbt_hs.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_tbt_hs.o: class_Sparsity.o files.o m_handle_sparse.o m_interpolate.o
-m_tbt_hs.o: m_sparsity_handling.o m_ts_io.o m_ts_io_ctype.o precision.o
+m_tbt_hs.o: m_sparsity_handling.o m_ts_io.o m_ts_io_ctype.o parallel.o
+m_tbt_hs.o: precision.o units.o
 m_tbt_kpoint.o: fdf_extra.o files.o find_kgrid.o intrinsic_missing.o m_io_s.o
 m_tbt_kpoint.o: m_ts_electype.o parallel.o precision.o units.o
 m_tbt_kregions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
@@ -960,8 +961,8 @@ m_tbt_tri_init.o: m_tbt_options.o m_tbt_regions.o m_ts_debug.o m_ts_electype.o
 m_tbt_tri_init.o: m_ts_rgn2trimat.o m_verbosity.o parallel.o precision.o
 m_tbt_tri_scat.o: alloc.o class_SpData1D.o class_SpData1D.o class_Sparsity.o
 m_tbt_tri_scat.o: class_TriMat.o intrinsic_missing.o m_region.o m_tbt_proj.o
-m_tbt_tri_scat.o: m_ts_cctype.o m_ts_electype.o m_ts_tri_common.o
-m_tbt_tri_scat.o: m_ts_tri_scat.o m_ts_trimat_invert.o precision.o units.o
+m_tbt_tri_scat.o: m_ts_electype.o m_ts_tri_common.o m_ts_tri_scat.o
+m_tbt_tri_scat.o: m_ts_trimat_invert.o precision.o units.o
 m_tbt_trik.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_tbt_trik.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
 m_tbt_trik.o: class_Sparsity.o class_TriMat.o intrinsic_missing.o m_iterator.o
@@ -974,11 +975,11 @@ m_tbt_trik.o: m_ts_elec_se.o m_ts_electype.o m_ts_sparse_helper.o
 m_tbt_trik.o: m_ts_tri_common.o m_ts_trimat_invert.o parallel.o precision.o
 m_tbt_trik.o: units.o
 m_tbtrans.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
-m_tbtrans.o: class_SpData2D.o class_Sparsity.o m_region.o m_tbt_contour.o
-m_tbtrans.o: m_tbt_hs.o m_tbt_kpoint.o m_tbt_kregions.o m_tbt_options.o
-m_tbtrans.o: m_tbt_proj.o m_tbt_regions.o m_tbt_save.o m_tbt_sigma_save.o
-m_tbtrans.o: m_tbt_tri_init.o m_tbt_trik.o m_ts_electype.o m_ts_gf.o parallel.o
-m_tbtrans.o: precision.o units.o
+m_tbtrans.o: class_SpData2D.o class_Sparsity.o m_region.o m_sparsity_handling.o
+m_tbtrans.o: m_tbt_contour.o m_tbt_dH.o m_tbt_hs.o m_tbt_kpoint.o
+m_tbtrans.o: m_tbt_kregions.o m_tbt_options.o m_tbt_proj.o m_tbt_regions.o
+m_tbtrans.o: m_tbt_save.o m_tbt_sigma_save.o m_tbt_tri_init.o m_tbt_trik.o
+m_tbtrans.o: m_ts_electype.o m_ts_gf.o parallel.o precision.o units.o
 tbt_end.o: alloc.o m_wallclock.o parallel.o timestamp.o
 tbt_init.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o files.o
 tbt_init.o: m_sparsity_handling.o m_spin.o m_tbt_contour.o m_tbt_dH.o
@@ -986,7 +987,7 @@ tbt_init.o: m_tbt_gf.o m_tbt_hs.o m_tbt_kpoint.o m_tbt_kregions.o
 tbt_init.o: m_tbt_options.o m_tbt_proj.o m_tbt_regions.o m_tbt_save.o m_timer.o
 tbt_init.o: m_ts_electrode.o m_ts_electype.o m_wallclock.o parallel.o
 tbt_init.o: precision.o sys.o timestamp.o
-tbt_reinit.o: m_verbosity.o parallel.o
+tbt_reinit.o: m_verbosity.o parallel.o sys.o
 tbtrans.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o m_tbt_hs.o
 tbtrans.o: m_tbt_options.o m_tbt_regions.o m_tbtrans.o
 band.o: bands.o
