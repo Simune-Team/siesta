@@ -832,25 +832,20 @@ contains
                      abs(GFGGF_size), GFGGF_work)
              end if
 
-             if ( 'DOS-A' .in. save_DATA ) then
-                if ( .not. cE%fake ) then
-                   ! Calculate the DOS from the spectral function
-                   call A_DOS(r_oDev,zwork_tri,spS,DOS(:,1+iEl))
-#ifdef TBT_PHONON
-                   DOS(:,1+iEl) = omega * DOS(:,1+iEl)
-#else
-                   if ( TSHS%nspin == 1 ) DOS(:,1+iEl) = 2._dp * DOS(:,1+iEl)
-#endif
-                end if
+             if ( ('DOS-A' .in. save_DATA) .and. .not. cE%fake ) then
 
+                ! Calculate the DOS from the spectral function
+                call A_DOS(r_oDev,zwork_tri,spS,DOS(:,1+iEl))
+#ifdef TBT_PHONON
+                DOS(:,1+iEl) = omega * DOS(:,1+iEl)
+#else
+                if ( TSHS%nspin == 1 ) DOS(:,1+iEl) = 2._dp * DOS(:,1+iEl)
+#endif
+                
 #ifdef NCDF_4
                 if ( 'orb-current' .in. save_DATA ) then
 
-#ifdef TBT_PHONON
-                   call orb_current(cOmega,spH,spS,zwork_tri,r_oDev,orb_J)
-#else
-                   call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
-#endif
+                   call orb_current(spH,zwork_tri,r_oDev,orb_J)
 
                    ! We need to save it immediately, we
                    ! do not want to have several arrays in the
@@ -978,6 +973,7 @@ contains
                  abs(GFGGF_size), GFGGF_work)
 
             if ( ('proj-DOS-A' .in. save_DATA) .and. p_E%idx > 0 ) then
+
                ! Calculate the DOS from the spectral function
                call A_DOS(r_oDev,zwork_tri,spS,pDOS(:,2,ipt))
 #ifdef TBT_PHONON
@@ -985,23 +981,19 @@ contains
 #else
                if ( TSHS%nspin == 1 ) pDOS(:,2,ipt) = 2._dp * pDOS(:,2,ipt)
 #endif
-
+               
 #ifdef NCDF_4
-                if ( 'proj-orb-current' .in. save_DATA ) then
+               if ( 'proj-orb-current' .in. save_DATA ) then
 
-#ifdef TBT_PHONON
-                   call orb_current(cOmega,spH,spS,zwork_tri,r_oDev,orb_J)
-#else
-                   call orb_current(cE,spH,spS,zwork_tri,r_oDev,orb_J)
-#endif
+                  call orb_current(spH,zwork_tri,r_oDev,orb_J)
                    
-                   ! We need to save it immediately, we
-                   ! do not want to have several arrays in the
-                   ! memory
-                   call proj_cdf_save_J(cdf_fname, ikpt, nE, proj_T(ipt)%L, &
-                        orb_J, save_DATA)
-
-                end if
+                  ! We need to save it immediately, we
+                  ! do not want to have several arrays in the
+                  ! memory
+                  call proj_cdf_save_J(cdf_fname, ikpt, nE, proj_T(ipt)%L, &
+                       orb_J, save_DATA)
+                  
+               end if
 #endif
                
             end if

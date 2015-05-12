@@ -797,17 +797,15 @@ contains
 
 
 #ifdef NCDF_4
-  subroutine orb_current(cE,spH,spS,A_tri,r,orb_J)
+  subroutine orb_current(spH,A_tri,r,orb_J)
 
     use class_Sparsity
     use class_zSpData1D
     use class_dSpData1D
     use class_zTriMat
-    use m_ts_cctype, only : ts_c_idx
     use intrinsic_missing, only : SFIND
 
-    type(ts_c_idx), intent(in) :: cE
-    type(zSpData1D), intent(inout) :: spH, spS
+    type(zSpData1D), intent(inout) :: spH
     type(zTriMat), intent(inout) :: A_tri
     ! The region that specifies the size of orb_J
     type(tRgn), intent(in) :: r
@@ -818,28 +816,18 @@ contains
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 
-    complex(dp), pointer :: H(:), S(:)
+    complex(dp), pointer :: H(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
     real(dp) :: E
     integer :: iu, io, ind, iind, idx, ju, jo
 
-    if ( cE%fake ) return
-
 #ifdef TBTRANS_TIMING
     call timer('orb-current',1)
 #endif
 
-    !E = real(cE%e,dp)
-    ! We shift to the Hamiltonian to the Fermi level
-    ! which ensures that the Hamiltonian is invariant under
-    ! changed potential.
-    ! As H is already shifted to Ef we just use:
-    E = 0._dp
-
     sp => spar(spH)
     H  => val (spH)
-    S  => val (spS)
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     i_sp => spar(orb_J)
@@ -877,7 +865,7 @@ contains
           ind = l_ptr(io) + &
                SFIND(l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io)),jo)
 
-          ! H(ind) = H(io,jo) ^ T = H(jo,io)
+          ! H(ind) = H(io,jo) ^ * = H(jo,io)
 
           ! Notice that H and S are transposed
           jo  = index(A_tri,iu,ju)
@@ -890,9 +878,10 @@ contains
           ! Currently we calculate it using the intrinsic
           ! overlap matrix, however bond-currents are 
           ! not well defined for non-orthogonal basis sets.
-          ! Hence, one should not expect this to behave expectedly
-          J(iind) = - aimag( ( H(ind) - E * S(ind) ) * A(jo) - &
-               dconjg( H(ind) - E * S(ind) ) * A(idx) )
+          ! We should not shift the Hamiltonian with respect 
+          ! to the overlap matrix.
+          ! This can easily be seen using the Loewdin basis.
+          J(iind) = - aimag( H(ind) * A(jo) - dconjg( H(ind) ) * A(idx) )
           
        end do
     end do

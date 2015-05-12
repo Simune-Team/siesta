@@ -72,6 +72,11 @@ class TBTFile(object):
         return self._get_Data('xa')
 
     @property
+    def xa_dev(self):
+        """ Returns the atomic coordinates only for the device """
+        return self._get_Data('xa')[self.a_dev,:]
+
+    @property
     def kpt(self):
         """ Returns the k-points """
         return self._get_Data('kpt')

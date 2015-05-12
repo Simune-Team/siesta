@@ -1,4 +1,23 @@
 ----------------------------------------------------
+May 12, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-406
+TBT Added xa_dev to tbt_data, removed orb_current S
+
+* Added xa_dev to fetch the device atoms from the 
+  netcdf file.
+
+* The orbital currents need not the overlap matrix
+  to calculate the correct bond-current. Hence
+  we remove the dependency and the energy passing.
+
+  This is merely a change in the code, and the results
+  where consistent with previous changes.
+
+modified:
+  Util/TS/TB/tbt_data.py
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 May 8, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-405
 [TBT] update
 
