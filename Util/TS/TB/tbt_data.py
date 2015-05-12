@@ -166,7 +166,21 @@ class TBTFile(object):
         if tree:
             for t in tree:
                 if t: g = g.groups[t]
-        return self._kavg(np.array(g.variables[var]),k_avg)
+        tmp = g.variables[var].shape
+        if isinstance(k_avg,bool):
+            if k_avg:
+                nk = len(self.wk)
+                DATA = np.array(g.variables[var][0,...]) * self.wk[0]
+                for i in range(1,nk):
+                    DATA += np.array(g.variables[var][i,:]) * self.wk[i]
+                tmp = tmp[1:]
+            else:
+                DATA = np.array(g.variables[var])
+        else:
+            DATA = np.array(g.variables[var][k_avg,...]) * self.wk[k_avg]
+            tmp = tmp[1:]
+        DATA.shape = tmp
+        return DATA
 
     @property
     def elecs(self):

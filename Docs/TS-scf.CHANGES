@@ -1,4 +1,15 @@
 ----------------------------------------------------
+May 12, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-408
+TBT Limited memory in tbt_data
+
+* When reading large orbital currents the memory
+  requirement was rediculous. 
+  This has been fixed.
+
+modified:
+  Util/TS/TB/tbt_data.py
+
+----------------------------------------------------
 May 12, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-407
 Updated makefiles for siesta and utils
 
