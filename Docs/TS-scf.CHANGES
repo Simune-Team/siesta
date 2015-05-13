@@ -1,4 +1,35 @@
 ----------------------------------------------------
+May 13, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-409
+TBT Bugfixes for projections
+
+* The projections now forces normalization, this
+  should not matter as LAPACK already returns normalized
+  vectors.
+
+* Added debugging of the projection states so that the
+  norm of the eigenvectors are printed. This
+  can help to assert the orthogonality.
+
+* Bugfix for k-resolved projections.
+  The HOMO index could change, we now force the
+  index to be the same. 
+
+* NOTE: It seems projections heavily underestimate
+  MPSH transmissions with large hybridization.
+  It is questionable how accurate the method is
+  at all.
+
+* Changed calc_Eig interface such that the k-point comes
+  before the optional state matrix.
+
+modified:
+  Src/m_ts_sparse_helper.F90
+  Util/TS/TBtrans/m_tbt_diag.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+
+----------------------------------------------------
 May 12, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-408
 TBT Limited memory in tbt_data
 

@@ -309,6 +309,7 @@ contains
        call rgn_delete(r_tmp)
 
        call rgn_Atom2Orb(mols(im)%atom,na_u,lasto,mols(im)%orb)
+       mols(im)%orb%sorted = .false.
        mols(im)%orb%name = 'Orbitals'
 
        ! Save number of orbitals in molecule
@@ -318,7 +319,7 @@ contains
        call rgn_copy(mols(im)%orb,mols(im)%pvt)
        ip = 0
        do i = 1 , o_Dev%n
-          if ( 0 < rgn_pivot(mols(im)%pvt,o_Dev%r(i)) ) then
+          if ( in_rgn(mols(im)%pvt,o_Dev%r(i)) ) then
              ip = ip + 1
              mols(im)%orb%r(ip) = o_Dev%r(i)
           end if
@@ -428,6 +429,9 @@ contains
           call rgn_copy(mols(im)%proj(ip),r_tmp)
 
           mols(im)%proj(ip)%r(:) = rgn_pivot(mols(im)%lvls,r_tmp%r(:))
+          ! * NOTE * 
+          ! Projections are sorted, lvls are sorted, hence
+          ! the pivoting scheme *must* is intrinsically sorted.
 
        end do
 
@@ -605,8 +609,10 @@ contains
                    ! with the molecule region.
                    ! Hence the projection is erroneuos
                    call print_proj(proj_T(it)%L)
+                   call rgn_print(mols(im)%orb)
+                   call rgn_print(Elecs(iE)%o_inD)
                    call die('The scattering states are not fully &
-                        &encapsulated on a projection. This is not allowed.')
+                        &encapsulated on a left projection. This is not allowed.')
                 end if
                 checked(im,iE) = .true.
              end if
@@ -619,12 +625,14 @@ contains
                      Elecs(iE),mols(im),proj_T(it)%R(ip)%idx) ) then
                    call rgn_union(mols(im)%orb,Elecs(iE)%o_inD,r_tmp)
                    if ( r_tmp%n /= mols(im)%orb%n ) then
-                   ! The overlap region does not fully co-incide
-                   ! with the molecule region.
-                   ! Hence the projection is erroneuos
+                      ! The overlap region does not fully co-incide
+                      ! with the molecule region.
+                      ! Hence the projection is erroneuos
                       call print_proj(proj_T(it)%R(ip))
+                      call rgn_print(mols(im)%orb)
+                      call rgn_print(Elecs(iE)%o_inD)
                       call die('The scattering states are not fully &
-                           &encapsulated on a projection. This is not allowed.')
+                           &encapsulated on a right projection. This is not allowed.')
                    end if
                 end if
                 checked(im,iE) = .true.
@@ -1247,7 +1255,7 @@ contains
   subroutine init_Proj_save( fname, TSHS , r, ispin, N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE , a_Dev, a_Buf, sp_dev, save_DATA )
 
-    use parallel, only : Node, Nodes
+    use parallel, only : Node, Nodes, IONode
     use units, only: eV
     use fdf, only : fdf_get
 
@@ -1292,13 +1300,16 @@ contains
     integer :: no, im, Np, ip, i, ik, iN, iE
     integer :: it, ipt
     logical :: exist, is_same, isGamma, save_state
+    logical :: debug_state
     type(dict) :: dic
     character(len=NF90_MAX_NAME) :: tmp
     ! Create allocatables, they are easier to maintain
     integer :: iLUMO, mol_nkpt
     real(dp), allocatable :: eig(:)
     real(dp), allocatable :: rv(:,:), rS_sq(:,:)
+    real(dp) :: dn
     complex(dp), allocatable :: zv(:,:), zS_sq(:,:)
+    complex(dp) :: zn
     integer :: prec_DOS, prec_T, prec_J
     integer :: nnzs_dev
     type(OrbitalDistribution) :: fdit
@@ -1317,12 +1328,25 @@ contains
     call tbt_cdf_precision('T','double',prec_T)
     call tbt_cdf_precision('Current','double',prec_J)
 
+    ! Whether we should print the debug statements...
+    debug_state = fdf_get('TBT.Projs.Debug',.false.)
+
     ! This allows to easily change between algorithms.
     isGamma = all(TSHS%nsc(:) == 1)
     if ( isGamma ) then
        ! We cannot create a k-point resolved projection
        ! using a Gamma-point calculation
        mols(:)%Gamma = .true.
+    end if
+
+    if ( IONode .and. .not. all(mols(:)%Gamma) ) then
+       write(*,'(/a)')'tbtrans: *********'
+       write(*,'(a)') 'tbtrans: k-resolved projections only work if dispersion'
+       write(*,'(a)') 'tbtrans: does not create band-crossings.'
+       write(*,'(a)') 'tbtrans: IT IS YOUR RESPONSIBILITY TO ENSURE THIS!'
+       write(*,'(a)') 'tbtrans: Do specific k-points separately at band-crossings.'
+       write(*,'(a/)')'tbtrans: *********'
+       
     end if
 
     if ( exist ) then
@@ -1830,23 +1854,12 @@ contains
           allocate(zS_sq(no,no),zv(no,no))
        end if
 
-    ikpt: do ik = 1 + Node , mol_nkpt , Nodes
-       
-       if ( isGamma ) then 
-          ! We know that ik == mol_nkpt == 1
-          call calc_sqrt_S(TSHS%S_1D,mols(im)%orb,rS_sq)
-       else if ( ik <= nkpt ) then
-          call calc_sqrt_S(TSHS%S_1D,product(TSHS%nsc),TSHS%sc_off, &
-               mols(im)%orb,zS_sq,kpt(:,ik))
-       end if
-       
+       ! We need to pre-calculate the Fermi-level
+       ! to get a common Fermi-level for all k
        if ( isGamma ) then
           call calc_Eig(TSHS%H_2D,TSHS%S_1D,mols(im)%orb,eig,rv)
-          call norm_Eigenstate(mols(im)%orb%n,rv,rS_sq)
-       else if ( ik <= nkpt ) then
-          call calc_Eig(TSHS%H_2D,TSHS%S_1D,product(TSHS%nsc), &
-               TSHS%sc_off,mols(im)%orb,eig,zv,kpt(:,ik))
-          call norm_Eigenstate(mols(im)%orb%n,zv,zS_sq)
+       else
+          call calc_Eig(TSHS%H_2D,TSHS%S_1D,mols(im)%orb,eig)
        end if
 
 #ifdef TBT_PHONON
@@ -1873,15 +1886,96 @@ contains
           end if
        end do
        ! iLUMO now contains the index of the LUMO lvl
-#endif
-          
 
-#ifndef TBT_PHONON
        ! Create attribute to contain the index of the HOMO level
        dic = ('HOMO_index'.kv.iLUMO-1)
        call ncdf_put_gatt(grp,atts=dic)
        call delete(dic)
+
 #endif
+       
+    ikpt: do ik = 1 + Node , mol_nkpt , Nodes
+
+       if ( debug_state ) then
+          if ( isGamma ) then
+             write(*,'(/a)')'tbt-proj-DEBUG: Gamma-point'
+          else
+             write(*,'(/a,3(f10.5))')'tbt-proj-DEBUG: k-point',kpt(:,ik)
+          end if
+       end if
+       
+       if ( isGamma ) then 
+          ! We know that ik == mol_nkpt == 1
+          call calc_sqrt_S(TSHS%S_1D,mols(im)%orb,rS_sq)
+       else if ( ik <= nkpt ) then
+          call calc_sqrt_S(TSHS%S_1D,product(TSHS%nsc),TSHS%sc_off, &
+               mols(im)%orb,zS_sq,kpt(:,ik))
+       end if
+       
+       if ( isGamma ) then
+          ! We have already calculated the eigen-values
+          call norm_Eigenstate(mols(im)%orb%n,rv,rS_sq)
+       else if ( ik <= nkpt ) then
+          call calc_Eig(TSHS%H_2D,TSHS%S_1D,product(TSHS%nsc), &
+               TSHS%sc_off,mols(im)%orb,eig,kpt(:,ik),zv)
+          call norm_Eigenstate(mols(im)%orb%n,zv,zS_sq)
+       end if
+
+       if ( debug_state ) then
+
+          write(*,'(a)')' <j|S^1/2 S^1/2|i> = \delta_ij'
+
+          ! Ensure the orthogonality
+          if ( isGamma ) then
+             call dgemm('T','N',no,no,no,1._dp, &
+                  rv,no,rv,no, &
+                  0._dp, rS_sq, no)
+             ! Print the norm and the diagonal element
+             do i = 1 , no
+                dn = VNORM(rS_sq(:,i))
+                write(*,'(tr3,i4,2(a,e10.5))') i,' <:|i> = ',dn, &
+                     ' <i|i> = ',rS_sq(i,i)
+             end do
+          else
+             call zgemm('C','N',no,no,no,dcmplx(1._dp,0._dp), &
+                  zv,no,zv,no, &
+                  dcmplx(0._dp,0._dp), zS_sq, no)
+             ! Print the norm and the diagonal element
+             do i = 1 , no
+                zn = VNORM(zS_sq(:,i))
+                write(*,'(tr3,i4,2(a,2(e10.5)))') i,' <:|i> = ',zn, &
+                     ' <i|i> = ',zS_sq(i,i)
+             end do
+          end if
+
+          write(*,'(a)')' \sum S^1/2|i><i|S^1/2 = I'
+
+          ! Ensure that \sum |i><i> = I
+          if ( isGamma ) then
+             rS_sq = 0._dp
+             ! Print the norm and the diagonal element
+             do i = 1 , no
+                call dger(no,no,1._dp,rv(1,i),1,rv(1,i),1,rS_sq(1,1),no)
+             end do
+             do i = 1 , no
+                dn = VNORM(rS_sq(:,i))
+                write(*,'(tr3,i4,2(a,e10.5))') i,' \sum_:i = ',dn, &
+                     ' \sum_ii = ',rS_sq(i,i)
+             end do
+          else
+             zS_sq = 0._dp
+             ! Print the norm and the diagonal element
+             do i = 1 , no
+                call zher(no,no,1._dp,zv(1,i),1,zv(1,i),1,zS_sq(1,1),no)
+             end do
+             do i = 1 , no
+                zn = VNORM(zS_sq(:,i))
+                write(*,'(tr3,i4,2(a,2e10.5))') i,' \sum_:i = ',zn, &
+                     ' \sum_ii = ',zS_sq(i,i)
+             end do
+          end if
+
+       end if
 
        ! Save the eigen-values
        if ( isGamma ) then
@@ -2015,7 +2109,6 @@ contains
 
     ! At this point we still need to add the "non-projected"
     ! LHS projections.
-    dic = dic//('info'.kv.'Transmission')
     do it = 1 , N_proj_T
 
        i = proj_T(it)%L%idx
@@ -2059,6 +2152,7 @@ contains
             &are aligned as you suspect.'
        write(*,'(a)') 'tbtrans: Molecular states hybridize in proximity &
             &and energy levels might shift.'
+       write(*,*) 
     end if
 
     call timer('proj_init',2)
@@ -2787,12 +2881,12 @@ contains
        do i = 1 , mol%proj(ip)%n
           gi = mol%proj(ip)%r(i)
           ! Create summation |i> . <i|Gam|j>
-          p(:) = p(:) + bGk(gi,gj) * mol%p(:,gi)
+          p(:) = p(:) + mol%p(:,gi) * bGk(gi,gj)
        end do
        
        ! Do last product |i> . <i|Gam|j> . <j|
        ! and take the transpose
-       tmp = dconjg(mol%p(:,gj))
+       tmp(:) = dconjg(mol%p(:,gj))
        if ( j == 1 ) then
           do i = 1 , mol%orb%n
              Mt(:,i) = p(i) * tmp(:)
@@ -2836,8 +2930,9 @@ contains
 
        pl => work((j-1)*orb%n+1:j*orb%n)
 
-       ! Note that Mt is a transposed matrix, hence this will work
-       call zgemv('N',orb%n,orb%n,dcmplx(1._dp,0._dp),Mt(1,1),orb%n, &
+       ! Note that Mt is a transposed matrix, hence we need to 
+       ! transpose back
+       call zgemv('T',orb%n,orb%n,dcmplx(1._dp,0._dp),Mt(1,1),orb%n, &
             pl,1,dcmplx(0._dp,0._dp),tmp,1)
 
        ! <i|

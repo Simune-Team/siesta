@@ -36,8 +36,8 @@ module m_tbt_diag
   logical, save :: use_DC = .false.
 
   ! We expect numerical accuracy to fluctuate,
-  ! hence we do not normalize.
-  logical, save :: force_NORM = .false.
+  ! hence we do normalize.
+  logical, save :: force_NORM = .true.
 
 contains
 
@@ -48,7 +48,7 @@ contains
     ! Let the user decide whether to use divide and conquer
     ! or not...
     use_DC = fdf_get('TBT.DivideAndConquer',.false.)
-    force_NORM = fdf_get('TBT.Normalize',.false.)
+    force_NORM = fdf_get('TBT.Normalize',.true.)
 
     if ( Node == 0 ) then
        write(*,'(a,t53,''='',tr4,l1)')'tbt_options: Divide and conquer diagonalization',use_DC
@@ -360,7 +360,7 @@ contains
 
   end subroutine calc_sqrt_S_kpt
 
-  subroutine calc_Eig_kpt(spH,spS,nsc,sc_off,orb,eig,state,kpt)
+  subroutine calc_Eig_kpt(spH,spS,nsc,sc_off,orb,eig,kpt,state)
     use m_ts_sparse_helper, only : create_U
 
     type(dSpData2D), intent(inout) :: spH
@@ -369,8 +369,8 @@ contains
     real(dp), intent(in) :: sc_off(3,nsc)
     type(tRgn), intent(in) :: orb
     real(dp), intent(out) :: eig(orb%n)
-    complex(dp), intent(out), target, optional :: state(orb%n,orb%n)
     real(dp), intent(in) :: kpt(3)
+    complex(dp), intent(out), target, optional :: state(orb%n,orb%n)
 
     type(OrbitalDistribution), pointer :: dit
     type(Sparsity), pointer :: sp

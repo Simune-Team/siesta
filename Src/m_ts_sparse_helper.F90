@@ -724,10 +724,10 @@ contains
           ! as the local sparsity pattern is a super-cell pattern,
           ! we need to check the unit-cell orbital
           ! The unit-cell column index
-          jo = UCORB(l_col(ind),no_u)
+          idx = UCORB(l_col(ind),no_u)
 
           ! If the orbital is not in the region, we skip it
-          jo = rgn_pivot(r,jo)
+          jo = rgn_pivot(r,idx)
           if ( jo <= 0 ) cycle
 
           ! Calculate position
@@ -920,10 +920,10 @@ contains
           ! as the local sparsity pattern is a super-cell pattern,
           ! we need to check the unit-cell orbital
           ! The unit-cell column index
-          jo = UCORB(l_col(ind),no_u)
+          is = UCORB(l_col(ind),no_u)
 
           ! If the orbital is not in the region, we skip it
-          jo = rgn_pivot(r,jo)
+          jo = rgn_pivot(r,is)
           if ( jo <= 0  ) cycle
 
           is = (l_col(ind)-1)/no_u

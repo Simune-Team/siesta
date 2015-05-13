@@ -819,7 +819,6 @@ contains
     complex(dp), pointer :: H(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
-    real(dp) :: E
     integer :: iu, io, ind, iind, idx, ju, jo
 
 #ifdef TBTRANS_TIMING

@@ -745,11 +745,12 @@ contains
        ! region, in order
        ia1 = 0
        do i = 1 , r_oDev%n
-          if ( .not. in_rgn(r_tmp2,r_oDev%r(i)) ) cycle
+          if ( in_rgn(r_tmp2,r_oDev%r(i)) ) then
           
-          ia1 = ia1 + 1
-          Elecs(iEl)%o_inD%r(ia1) = r_oDev%r(i)
+             ia1 = ia1 + 1
+             Elecs(iEl)%o_inD%r(ia1) = r_oDev%r(i)
           
+          end if
        end do
 
        ! create the pivoting table
