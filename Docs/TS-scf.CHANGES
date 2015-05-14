@@ -1,4 +1,14 @@
 ----------------------------------------------------
+May 14, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-410
+Bugfix in short systemlabels
+
+* TSHS file label bugfix with short
+  names.
+
+modified:
+  Src/m_ts_io.F90
+
+----------------------------------------------------
 May 13, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-409
 TBT Bugfixes for projections
 

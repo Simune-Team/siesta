@@ -1401,11 +1401,15 @@ contains
     
     fL = len_trim(fname)
     if ( onlyS ) then
-       if ( fname(fL-5:fL) .ne. '.onlyS' ) then
+       if ( fL < 6 ) then
+          fname = trim(fname)//'.onlyS'
+       else if ( fname(fL-5:fL) .ne. '.onlyS' ) then
           fname = trim(fname)//'.onlyS'
        end if
     else
-       if ( fname(fL-4:fL) .ne. '.TSHS' ) then
+       if ( fL < 5 ) then
+          fname = trim(fname)//'.TSHS'
+       else if ( fname(fL-4:fL) .ne. '.TSHS' ) then
           fname = trim(fname)//'.TSHS'
        end if
     end if
