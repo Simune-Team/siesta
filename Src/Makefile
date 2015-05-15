@@ -162,7 +162,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_trialorbitalclass.o siesta2wannier90.o m_planewavematrixvar.o \
 	delk.o m_planewavematrix.o m_digest_nnkp.o broadcast_projections.o \
 	compute_pw_matrix.o m_writedelk.o mmn.o m_noccbands.o amn.o \
-	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o
+	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o m_orderbands.o
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -358,7 +358,7 @@ clean:
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o
 amn.o: alloc.o atmfuncs.o atomlist.o m_trialorbitalclass.o matel_registry.o
 amn.o: mneighb.o new_matel.o parallel.o parallelsubs.o precision.o
-amn.o: siesta2wannier90.o siesta_geom.o sys.o
+amn.o: siesta2wannier90.o siesta_geom.o sys.o m_orderbands.o
 arw.o: alloc.o parallel.o precision.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o
@@ -463,7 +463,7 @@ diagon.o: alloc.o densematrix.o m_diagon.o m_memory.o parallel.o parallelsubs.o
 diagon.o: precision.o siesta_options.o sys.o
 diagonalizeHk.o: alloc.o atomlist.o densematrix.o m_spin.o parallel.o
 diagonalizeHk.o: parallelsubs.o precision.o siesta2wannier90.o
-diagonalizeHk.o: sparse_matrices.o units.o
+diagonalizeHk.o: sparse_matrices.o units.o m_orderbands.o
 diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
@@ -591,8 +591,10 @@ m_mpi_utils.o: precision.o sys.o
 m_noccbands.o: alloc.o atmfuncs.o m_spin.o parallel.o precision.o siesta_geom.o
 m_noccbands.o: sys.o
 m_options.o: precision.o
+m_orderbands.o: siesta2wannier90.o parallel.o parallelsubs.o alloc.o sys.o
 m_overkkneig.o: alloc.o atomlist.o parallel.o parallelsubs.o precision.o
 m_overkkneig.o: siesta2wannier90.o siesta_geom.o sparse_matrices.o
+m_overkkneig.o: m_orderbands.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_planewavematrix.o: atomlist.o dhscf.o m_planewavematrixvar.o precision.o
@@ -733,6 +735,7 @@ remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
 reord.o: alloc.o precision.o
 reordpsi.o: alloc.o parallel.o parallelsubs.o precision.o siesta2wannier90.o
+reordpsi.o: m_orderbands.o 
 rhofft.o: cellsubs.o fft.o precision.o sys.o
 rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
@@ -837,7 +840,7 @@ vmatsp.o: meshphi.o precision.o
 vmb.o: fixed.o parallel.o precision.o sys.o
 write_inp_wannier.o: alloc.o atmfuncs.o atomlist.o m_ntm.o mneighb.o parallel.o
 write_inp_wannier.o: parallelsubs.o precision.o siesta2wannier90.o
-write_inp_wannier.o: siesta_geom.o
+write_inp_wannier.o: siesta_geom.o m_orderbands.o
 write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_steps.o m_stress.o
 write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o
 write_orb_indx.o: atmfuncs.o cellsubs.o files.o precision.o

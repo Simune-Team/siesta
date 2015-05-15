@@ -170,7 +170,7 @@ subroutine siesta2wannier90
   use m_digest_nnkp, only: chosing_b_vectors ! Subroutine that computes the b
                                          ! vectors that connect each mesh 
                                          ! k-point to its nearest neighbours.
-  use m_digest_nnkp, only: set_excluded_bands   ! Subroutine that choses the 
+  use m_digest_nnkp, only: set_excluded_bands   ! Subroutine that chooses the 
                                                 !   bands that are excluded from
                                                 !   the wannierization procedure
   use m_digest_nnkp, only: number_bands_wannier ! Subroutine that computes the

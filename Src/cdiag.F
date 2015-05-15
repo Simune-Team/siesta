@@ -163,7 +163,6 @@ C Start time count
 !
       BlockSize = BlockSize_orbs * Mcoll
 #endif
-
 C Check whether first call needs to be reset due to a change of algorithm
       if (ResetFirstCall) then
         FirstCall = .true.

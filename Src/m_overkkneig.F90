@@ -6,7 +6,6 @@
   use parallel,             only: Nodes          ! Total number of Nodes
   use parallel,             only: Node           ! Local Node
   use parallel,             only: IONode         ! Input/output node
-  use parallel,             only: BlockSize      ! BlockSize
   use atomlist,             only: iaorb          ! Pointer to atom to which
                                                  !   orbital belongs
   use atomlist,             only: indxuo         ! Index of equivalent orbital
@@ -21,9 +20,6 @@
   use sparse_matrices,      only: xijo           ! Vectors between orbital
                                                  !   centers (sparse)
   use siesta_geom,          only: xa             ! Atomic positions
-  use m_siesta2wannier90,   only: blocksizeincbands! Maximum number of bands
-                                                 !   considered for 
-                                                 !   wannierization per node
   use alloc,                only: re_alloc       ! Allocatation routines
   use alloc,                only: de_alloc       ! Deallocatation routines
 
@@ -34,6 +30,19 @@
   use parallelsubs,         only: GetNodeOrbs    ! Calculates the number of
                                                  !   orbitals stored on the 
                                                  !   local Node.
+  use m_orderbands,       only: which_band_in_node  ! Given a node and a 
+                                                    !   local index,
+                                                    !   this array gives the
+                                                    !   global index of the band
+                                                    !   stored there
+  use m_orderbands,       only: sequential_index_included_bands
+                                                    ! Sequential number of the
+                                                    !   bands included for
+                                                    !   wannierization
+                                                    !   (the bands are listed
+                                                    !   in order of incremental
+                                                    !   energy)
+
   use mpi_siesta
 #endif
 
@@ -136,10 +145,14 @@
                                                  !   on the local node
   integer     :: moccband_global                 ! Global index of the 
                                                  !   occupied band
+  integer     :: moccband_sequential             ! Global index of the 
+                                                 !   occupied band in sequential
+                                                 !   notation
   integer     :: noccband_global                 ! Global index of the 
                                                  !   occupied band
-  integer     :: BlockSizeDiagon                 ! BlockSize used in the 
-                                                 !   diagonalization routines
+  integer     :: noccband_sequential             ! Global index of the 
+                                                 !   occupied band in sequential
+                                                 !   notation
   complex(dp), dimension(:,:), pointer :: auxtmp ! Temporal arrays used to  
   complex(dp), dimension(:,:), pointer :: aux2loc!   broadcast auxiliary
                                                  !   matrices
@@ -273,7 +286,7 @@
 
 #ifdef MPI
 
-! Compute the number of bands stored on Node 0
+! Compute the number of atomic orbitals stored on Node 0
 ! We assume that this is the maximum number of orbitals that will be stored
 ! on any node.
   call GetNodeOrbs( nuotot, 0, Nodes, norb_max_loc)
@@ -324,14 +337,13 @@
     do mband = 1, nbandsocc_loc
 
 !     Identify the global index of the occupied band
-      BlockSizeDiagon = BlockSize
-      BlockSize       = blocksizeincbands
-      call LocalToGlobalOrb( mband, Node, Nodes, moccband_global )
-      BlockSize = BlockSizeDiagon
-!!   For debugging
-!        write(6,'(a,3i5)')' overkkisig: Node, mband, moccband_global = ', &
-! &                                      Node, mband, moccband_global
-!!   End debugging
+       moccband_global     = which_band_in_node(Node,mband)
+       moccband_sequential = sequential_index_included_bands(moccband_global)
+!!      For debugging
+!        write(6,'(a,4i5)')                                            &
+! &        ' overkkisig: Node, mband, moccband_global, sequential = ', &
+! &                      Node, mband, moccband_global, moccband_sequential
+!!      End debugging
 
 !     Loop on all the atomic orbitals of the unit cell
 !     As parallelized now, a given node knows
@@ -345,7 +357,11 @@
         do imu = 1, norb_loc
 !         Identify the global index of the occupied band
           call LocalToGlobalOrb( imu, inode, Nodes, imu_global )
-          aux2(moccband_global,inu) = aux2(moccband_global,inu) +      &
+!!         For debugging
+!          write(6,'(a,4i5)')' overkkneig: Node, inu, imu, imu_global = ',  &
+! &                                        Node, inu, imu, imu_global
+!!         End debugging
+          aux2(moccband_sequential,inu) = aux2(moccband_sequential,inu) +  &
  &            psinei(imu_global,mband) * auxtmp(inu,imu)
         enddo   ! End loop on the sumatory on mu
       enddo     ! End loop on atomic orbitals in the unit cell (nuotot)
@@ -398,11 +414,9 @@
       do inu = 1, nuotot
 #ifdef MPI
 !       Identify the global index of the occupied band
-        BlockSizeDiagon = BlockSize
-        BlockSize       = blocksizeincbands
-        call LocalToGlobalOrb( nband, Node, Nodes, noccband_global )
-        BlockSize = BlockSizeDiagon
-        Mkb(noccband_global,mband) = Mkb(noccband_global,mband) +    &
+        noccband_global     = which_band_in_node(Node,nband)
+        noccband_sequential = sequential_index_included_bands(noccband_global)
+        Mkb(noccband_sequential,mband) = Mkb(noccband_sequential,mband) +    &
           conjg(psiatk(inu,nband)) * aux2(mband,inu)
 #else
         Mkb(nband,mband) = Mkb(nband,mband) +    &

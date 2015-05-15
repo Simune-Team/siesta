@@ -53,6 +53,7 @@ C *********************************************************************
 
       use precision
       use sys
+      use parallel, only: Node
 
       implicit          none
 
@@ -71,6 +72,7 @@ C  Internal variables .............................................
      .  ierror, ind, ispin, iuo, j, jo, juo
       real(dp)
      .  ckxij, kxij, skxij
+
 
 C Solve eigenvalue problem .........................................
       Saux = 0.0d0

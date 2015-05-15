@@ -1484,7 +1484,7 @@ C ----------------------------------------------------------------------
 
       use moreMeshSubs,   only : setMeshDistr
       use moreMeshSubs,   only : UNIFORM, QUADRATIC
-      use parallel,       only : Nodes
+      use parallel,       only : Nodes, Node
       use mesh,           only : nsm, nsp
 
 !

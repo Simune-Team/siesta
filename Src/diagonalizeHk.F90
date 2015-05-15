@@ -62,11 +62,11 @@ subroutine diagonalizeHk( ispin )
 ! 
 ! Moreover, those bands should be distributed among all the available Nodes,
 ! so for the matrix of coefficients:
-! Node 0: bands from  1 to 3   (this Node takes care of three bands)
-! Node 1: bands from  4 to 6   (this Node takes care of three bands)
-! Node 2: bands from  7 to 9   (this Node takes care of three bands)
-! Node 3: does not consider any band (source of inefficiency in the parallel
-!                                     calculation) 
+! Node 0: bands 12, 13, and 20 (this Node takes care of three bands)
+! Node 1: bands 14 and 15      (this Node takes care of two bands)
+! Node 2: bands 16 and 17      (this Node takes care of two bands)
+! Node 3: bands 18 and 19      (this Node takes care of two bands)
+!
 ! The number of bands that each Node takes care is defined in the
 ! variable nincbands_loc
 !
@@ -146,6 +146,12 @@ subroutine diagonalizeHk( ispin )
   use alloc,              only: re_alloc     ! Reallocation routines
   use alloc,              only: de_alloc     ! Deallocation routines
 
+! 
+! Subroutine to order the indices of the different bands after 
+! excluding some of them for wannierization 
+! 
+  use m_orderbands,       only: order_index
+
 #ifdef MPI
   use parallel,           only : BlockSize
   use parallelsubs,       only : GetNodeOrbs
@@ -172,8 +178,11 @@ subroutine diagonalizeHk( ispin )
                             !    will be diagonalized
   integer  :: nhs           ! Variable to dimension the Hamiltonian and Overlap
   integer  :: npsi          ! Variable to dimension the coefficient vector
+  integer  :: nsave         ! Variable to dimension the coefficient vector
 
   real(dp), dimension(:), pointer :: epsilon ! Eigenvalues of the Hamiltonian
+  real(dp), dimension(:), pointer :: psisave ! Coefficients of the wave function
+                                             !   to be saved
 
 #ifdef MPI
   integer  :: BlockSizeDiagon    ! Size of the block required in the standard
@@ -194,9 +203,9 @@ subroutine diagonalizeHk( ispin )
   npsi = 2 * no_u * no_l
 
   nullify( Saux, Haux, psi )
-  call re_alloc( Haux, 1, nhs,  name='Haux', routine='diagonalizeHk' )
-  call re_alloc( Saux, 1, nhs,  name='Saux', routine='diagonalizeHk' )
-  call re_alloc( psi,  1, npsi, name='psi',  routine='diagonalizeHk' )
+  call re_alloc( Haux,     1, nhs,   name='Haux',    routine='diagonalizeHk' )
+  call re_alloc( Saux,     1, nhs,   name='Saux',    routine='diagonalizeHk' )
+  call re_alloc( psi,      1, npsi,  name='psi',     routine='diagonalizeHk' )
 
 ! Allocate memory related with the eigenvalues of the Hamiltonian (epsilon)
 ! and with a local variable where the coefficients of the eigenvector at the
@@ -212,11 +221,15 @@ subroutine diagonalizeHk( ispin )
 ! Here we are going to store only nincbands in a number of Nodes,
 ! and not no_u bands, as before.
      BlockSizeDiagon = BlockSize
-     call set_blocksizedefault(Nodes,nincbands,blocksizeincbands)
-     BlockSize = blocksizeincbands
 !!    For debugging
 !     write(6,'(a,2i5)')' diagonalizeHk: BlockSizeDiagon, Blocksize = ', &
 ! &                                      BlockSizeDiagon, BlockSize
+!!    End debugging
+     call set_blocksizedefault(Nodes,nincbands,blocksizeincbands)
+     BlockSize = blocksizeincbands
+!!    For debugging
+!     write(6,'(a,3i5)')' diagonalizeHk: Node, BlockSizeDiagon, Blocksize = ', &
+! &                                      Node, BlockSizeDiagon, BlockSize
 !!    End debugging
      call GetNodeOrbs(nincbands,Node,Nodes,nincbands_loc)
      BlockSize = BlockSizeDiagon
@@ -230,9 +243,14 @@ subroutine diagonalizeHk( ispin )
  &               1, numkpoints,      &
  &               'coeffs',           &
  &               'diagonalizeHk' )
+
+  nsave= 2 * no_u * nincbands_loc
+  nullify( psisave )
+  call re_alloc( psisave,  1, nsave, name='psisave', routine='diagonalizeHk' )
+
 !! For debugging
-!  write(6,'(a,3i5)')' diagonalizeHk: Node, nincbands, nincbands_loc = ', &
-! &                                   Node, nincbands, nincbands_loc
+!  write(6,'(a,4i5)')' diagonalizeHk: Node, nincbands, nincbands_loc, no_l = ',&
+! &                                   Node, nincbands, nincbands_loc, no_l
 !! End debugging
 
 ! Allocate memory related with the eigenvalues of the Hamiltonian
@@ -247,6 +265,12 @@ subroutine diagonalizeHk( ispin )
   do io = 1, npsi
     psi(io)     = 0.0_dp
   enddo
+
+
+! Set up the arrays that control the indices of the bands to be 
+! considered after excluding some of them for wannierization
+! This is done once and for all the k-points
+  call order_index( no_l, no_u, nincbands )
 
 !
 ! Solve for eigenvectors of H(k) for the k's given in the .nnkp
@@ -263,8 +287,8 @@ kpoints:                                                             &
 
 !!   For debugging
 !    if( IOnode ) then
-!      write(6,'(/,a,3f12.5)')         &
-! &      'diagonalizeHk: kvector = ', kvector
+!      write(6,'(/,a,i5,3f12.5)')         &
+! &      'diagonalizeHk: kvector = ', ik, kvector
 !!      do io = 1, maxnh
 !!        write(6,'(i5,2f12.5)')io, H(io,ispin), S(io)
 !!      enddo 
@@ -283,25 +307,25 @@ kpoints:                                                             &
 !!   degenerate states. 
 !!   There is a phase that is arbitrary and might change from one machine
 !!   to the other. Also, any linear combination of eigenvectors with 
-!!   the same eigenvalue is also a solution of the Hamiltonian,
+!!   the same eigenvalue is also a solution of the Hamiltonian, nincbands
 !!   and the coefficients of the linear combination might be different.
-!    if( Node .eq. 0 ) then
-!!    if( IOnode ) then
-!      do iband = 1, no_u
-!        write(6,'(2i5,f12.5)') ik, iband, epsilon(iband)/eV
-!      enddo
-!      iuo = 0
-!      do iband = 1, no_l
-!        write(6,'(a,3i5,f12.5)')                         &
-! &        'diagonalizeHk: Node, ik, iband, epsilon = ',  &
-! &        Node, ik, iband, epsilon(iband)/eV
-!        do io = 1, no_u
-!          write(6,'(a,i5,2f12.5)')         &
-! &          'diagonalizeHk: io, psi   = ', io, psi(iuo+1), psi(iuo+2)
-!          iuo = iuo + 2
+!     if( Node .eq. 0 ) then
+!!      if( IOnode ) then
+!!      do iband = 1, no_u
+!!        write(6,'(2i5,f12.5)') ik, iband, epsilon(iband)/eV
+!!      enddo
+!        iuo = 0
+!        do iband = 1, no_l
+!          write(6,'(a,3i5,f12.5)')                         &
+! &          'diagonalizeHk: Bef: Node, ik, iband, epsilon = ',  &
+! &          Node, ik, iband, epsilon(iband)/eV
+!          do io = 1, no_u
+!            write(6,'(a,i5,2f12.5)')         &
+! &            'diagonalizeHk: Bef: io, psi   = ', io, psi(iuo+1), psi(iuo+2)
+!            iuo = iuo + 2
+!          enddo 
 !        enddo 
-!      enddo 
-!    endif
+!      endif
 !!   End debugging
 
 !   Store the eigenvalues, while skipping the excluded bands
@@ -312,29 +336,44 @@ kpoints:                                                             &
 !   The coefficients of the included eigenvectors will be stored in coeffs,
 !   bands whose band index ranges from 1 to nincbands correspond
 !   to the bands included for wannierization.
-    call reordpsi( coeffs(:,:,ik), psi, no_l, no_u, numbands(ispin), &
+!   
+!   Some compilers complain if we use a complex variable as the first
+!   argument of reordpsi here, because in the actual subroutine,
+!   the first argument is a double precision array.
+!   That is why we have introduced here a temporary variable
+!   to store the coefficients that will be saved...
+    call reordpsi( psisave, psi, no_l, no_u, numbands(ispin), &
  &                 nincbands_loc )
 
-!   For debugging
-!    if( IOnode ) then
+!   ... and here the temporary variable are stored in complex form here
+    iuo = 0
+    do iband = 1, nincbands_loc
+      do io = 1, no_u
+        coeffs(io,iband,ik) = cmplx(psisave(iuo+1),psisave(iuo+2),kind=dp)
+        iuo = iuo + 2
+      enddo
+    enddo
+
+!!   For debugging
+!    if( Node .eq. 4 ) then
 !      iuo = 0
-!      do iband = 1, nincbands
+!      do iband = 1, no_l
 !        write(6,'(a,2i5,f12.5)')         &
-! &        'diagonalizeHk: ik, iband, eo = ', ik, iband, eo(iband,ik)
+! &        'diagonalizeHk: Aft: ik, iband, eo = ', ik, iband, eo(iband,ik)
 !        do io = 1, no_u
 !          write(6,'(a,i5,2f12.5)')         &
-! &          'diagonalizeHk: io, psi   = ', io, psi(iuo+1), psi(iuo+2)
+! &          'diagonalizeHk: Aft: io, psi   = ', io, psi(iuo+1), psi(iuo+2)
 !          iuo = iuo + 2
 !        enddo 
 !      enddo 
 !    endif
-!    if( IOnode ) then
-!    if( Node .eq. 4 ) then
-!      write(6,'(a,2i5)')' diagonalizeHk: Node, nincbands_loc = ', &
-! &                                       Node, nincbands_loc
+!     if( IOnode ) then
+!!    if( Node .eq. 7 ) then
+!!      write(6,'(a,2i5)')' diagonalizeHk: Node, nincbands_loc = ', &
+!! &                                       Node, nincbands_loc
 !      do iband = 1, nincbands_loc
-!        write(6,'(a,3i5,f12.5)')         &
-! &       'diagonalizeHk: Node, ik, iband, eo = ', Node, ik, iband, eo(iband,ik)
+!!        write(6,'(a,3i5,f12.5)')         &
+!! &       'diagonalizeHk: Node, ik, iband, eo = ', Node, ik, iband, eo(iband,ik)
 !        do io = 1, no_u
 !          write(6,'(a,i5,2f12.5)')         &
 ! &          'diagonalizeHk: io, coeffs = ', io, coeffs(io,iband,ik)
@@ -348,6 +387,7 @@ kpoints:                                                             &
   call de_alloc( Haux,    name='Haux',    routine='diagonalizeHk' )
   call de_alloc( Saux,    name='Saux',    routine='diagonalizeHk' )
   call de_alloc( psi,     name='psi',     routine='diagonalizeHk' )
+  call de_alloc( psisave, name='psisave', routine='diagonalizeHk' )
   call de_alloc( epsilon, name='epsilon', routine='diagonalizeHk' )
 
   call timer('diagonalizeHk',2)

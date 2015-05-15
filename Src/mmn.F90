@@ -180,6 +180,10 @@ subroutine Mmn( ispin )
  &               'coeffs2',         &
  &               'Mmn' )
 
+!! For debugging
+!  write(6,'(a,3i5)')' Mmn, no_u, nincbands_loc = ',  &
+! &  Node, no_u, nincbands_loc
+!! End debugging
 
 kpoints:                         &
   do ik = 1, numkpoints

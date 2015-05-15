@@ -484,9 +484,6 @@ subroutine writeunk( ispin )
                                               !   First  index: orbital
                                               !   Second index: band
                                               !   Third  index: k-point
-  use m_siesta2wannier90, only: blocksizeincbands ! Maximum number of bands
-                                              !   considered for wannierization
-                                              !   per node
   use m_ntm,              only: ntm           ! Number of integration mesh
                                               !   divisions of each cell vector
 #ifdef MPI
@@ -496,7 +493,17 @@ subroutine writeunk( ispin )
   use parallelsubs,       only: LocalToGlobalOrb ! Converts an orbital index
                                                  !   in the local frame 
                                                  !   to the global frame
-  use parallel,           only: BlockSize        ! BlockSize
+  use m_orderbands,       only: which_band_in_node  ! Given a node and a 
+                                                    !   local index,
+                                                    !   this array gives the
+                                                    !   global index of the band
+                                                    !   stored there
+  use m_orderbands,       only: sequential_index_included_bands
+                                                    ! Sequential number of the
+                                                    !   bands included for
+                                                    !   wannierization
+                                                    !   (the bands are listed
+                                                    !   in order of incremental
   use mpi_siesta
 #endif
 
@@ -599,12 +606,8 @@ subroutine writeunk( ispin )
   integer      :: iz           ! Counter for the loop on points along z
   integer      :: iband        ! Counter for the loop on bands
   integer      :: iband_global ! Global index of the band
+  integer      :: iband_sequential ! Global index of the band in sequential 
   integer      :: io           ! Counter for the loop on atomic orbitals
-
-#ifdef MPI
-  integer      :: BlockSizeDiagon ! Value of the BlockSize used during
-                                  !    diagonalization
-#endif
 
 
 ! Start time counter
@@ -675,17 +678,16 @@ kpoints:                 &
 #ifdef MPI
 !   Store the local bands in this node on a complex variable
     do iband = 1, nincbands_loc
-      BlockSizeDiagon = BlockSize
-      BlockSize       = blocksizeincbands
-      call LocalToGlobalOrb( iband, Node, Nodes, iband_global )
-      BlockSize = BlockSizeDiagon
+      iband_global = which_band_in_node(Node,iband)
+      iband_sequential = sequential_index_included_bands(iband_global)
 !! For debugging
-!      write(6,'(a,3i5)')' writeunk: Node, iband, iband_global = ', &
-! &                                  Node, iband, iband_global
+!      write(6,'(a,4i5)')                                       &
+! &      ' writeunk: Node, iband, iband_global, sequential = ', &
+! &                  Node, iband, iband_global, iband_sequential
 !! End debugging
 
       do io = 1, no_u
-        psiloc(io,iband_global) = coeffs(io,iband,ik)
+        psiloc(io,iband_sequential) = coeffs(io,iband,ik)
       enddo
     enddo
 !   Allocate workspace array for global reduction
@@ -760,18 +762,17 @@ kpoints:                 &
 BAND_LOOP:                                                           &
 #ifdef MPI
     do iband = 1, nincbands_loc
-!     Identiy the global index of the local band          
-      BlockSizeDiagon = BlockSize
-      BlockSize       = blocksizeincbands
-      call LocalToGlobalOrb( iband, Node, Nodes, iband_global )
-      BlockSize = BlockSizeDiagon
+!     Identify the global index of the local band          
+       iband_global = which_band_in_node(Node,iband)
+       iband_sequential = sequential_index_included_bands(iband_global)
 !! For debugging
-!      write(6,'(a,3i5)')' writeunk: Node, iband, iband_global = ', &
-! &                                  Node, iband, iband_global
+!       write(6,'(a,4i5)')                                       &
+! &       ' writeunk: Node, iband, iband_global, sequential = ', &
+! &                   Node, iband, iband_global, iband_sequential
 !! End debugging
 #else
     do iband = 1, nincbands
-      iband_global = iband
+      iband_sequential = iband
 #endif
 !     For debugging
 !      write(6,'(a,2i5)')' writeunk, Node, iband = ', Node, iband
@@ -840,15 +841,15 @@ BAND_LOOP:                                                           &
                   call phiatm( ispecie, iso, rvectorarg, phi, grphi )
 !                 Compute the sum that gives the periodic part of the orbital
                   periodicpart = periodicpart +                          &
-                    exponential * psiloc(iorbital0,iband_global) * phi
+                    exponential * psiloc(iorbital0,iband_sequential) * phi
                 endif
               enddo ! Enddo on orbitals that do not vanish
             enddo ! Enddo on atoms that have orbitals that do not vanish 
 #ifdef MPI
-            buffer(iband_global,ix,iy,iz) = periodicpart
+            buffer(iband_sequential,ix,iy,iz) = periodicpart
 !           Transform Bohr^(-3/2) to Ang^(-3/2)
-            buffer(iband_global,ix,iy,iz) = &
- &             buffer(iband_global,ix,iy,iz) * 2.59775721_dp
+            buffer(iband_sequential,ix,iy,iz) = &
+ &             buffer(iband_sequential,ix,iy,iz) * 2.59775721_dp
 #else
             buffer(ix,iy,iz) = periodicpart
 !           Transform Bohr^(-3/2) to Ang^(-3/2)

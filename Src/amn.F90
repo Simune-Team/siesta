@@ -23,7 +23,7 @@ subroutine amn( ispin )
 !   
 !     BEHAVIOUR:
 !     The coefficients of the wave functions are introduced
-!     in amn thorugh the matrix coeffs, computed in diagonalizeHk
+!     in amn through the matrix coeffs, computed in diagonalizeHk
 !     
 !     PARALLELIZATION: 
 !     This subroutine is parallelized on the projectors, so each node
@@ -66,10 +66,6 @@ subroutine amn( ispin )
                                                     !   wannierization
                                                     !   after excluding bands  
                                                     !   in the local Node
-  use m_siesta2wannier90, only: blocksizeincbands   ! Maximum number of bands
-                                                    !   considered for 
-                                                    !   wannierization
-                                                    !   per node
   use m_siesta2wannier90, only: coeffs              ! Coefficients of the
                                                     !   wavefunctions.
                                                     !   First  index: orbital
@@ -93,6 +89,18 @@ subroutine amn( ispin )
   use atmfuncs,           only: orb_gindex          ! Subroutine that gives
                                                     !   the global index of an
                                                     !   atomic orbital
+  use m_orderbands,       only: which_band_in_node  ! Given a node and a 
+                                                    !   local index,
+                                                    !   this array gives the
+                                                    !   global index of the band
+                                                    !   stored there
+  use m_orderbands,       only: sequential_index_included_bands 
+                                                    ! Sequential number of the
+                                                    !   bands included for
+                                                    !   wannierization
+                                                    !   (the bands are listed
+                                                    !   in order of incremental
+                                                    !   energy)
 
 !
 ! Variables for the diagonalization
@@ -111,9 +119,6 @@ subroutine amn( ispin )
   use sys,                only: die          ! Termination routine
 
 #ifdef MPI
-  use parallelsubs,         only: LocalToGlobalOrb ! Converts an orbital index
-                                                 !   in the local frame 
-                                                 !   to the global frame
   use parallelsubs,         only: GetNodeOrbs    ! Calculates the number of
                                                  !   orbitals stored on the 
                                                  !   local Node.
@@ -184,10 +189,10 @@ subroutine amn( ispin )
                                              !   of a projector in the list of
                                              !   functions that will be
                                              !   evaluated by MATEL
-  integer     :: iband_global                ! Global index for a band
 #ifdef MPI
+  integer     :: iband_global                ! Global index for a band
+  integer     :: iband_sequential            ! Sequential index of the band
   integer     :: MPIerror
-  integer     :: BlockSizeDiagon
   complex(dp), dimension(:,:), pointer :: auxloc ! Temporal array for the
                                              !   the global reduction of Amnmat
 #endif 
@@ -275,17 +280,16 @@ kpoints:                 &
 #ifdef MPI
 !   Store the local bands in this node on a complex variable
     do iband = 1, nincbands_loc
-      BlockSizeDiagon = BlockSize
-      BlockSize       = blocksizeincbands
-      call LocalToGlobalOrb( iband, Node, Nodes, iband_global )
-      BlockSize = BlockSizeDiagon
+      iband_global = which_band_in_node(Node,iband)
+      iband_sequential = sequential_index_included_bands(iband_global)
 !! For debugging
-!      write(6,'(a,3i5)')' amn: Node, iband, iband_global = ', &
-! &                             Node, iband, iband_global
+!      write(6,'(a,4i5)')                                         &
+! &      ' amn: Node, iband, iband_global, iband_sequential  = ', &
+! &             Node, iband, iband_global, iband_sequential
 !! End debugging
 
       do io = 1, no_u
-        psiloc(io,iband_global) = coeffs(io,iband,ik)
+        psiloc(io,iband_sequential) = coeffs(io,iband,ik)
       enddo
 
 !!     For debugging
@@ -294,7 +298,8 @@ kpoints:                 &
 !        do io = 1, no_u
 !          write(6,'(a,4i5,2f12.5)')                   &
 ! &          'amn: Node, io, iband, psiloc1 = ',       &
-! &                Node, io, iband, iband_global, psiloc(io,iband_global)
+! &                Node, io, iband, iband_sequential,  &
+! &                psiloc(io,iband_sequential)
 !        enddo
 !      endif
 !!     End debugging

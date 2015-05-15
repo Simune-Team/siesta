@@ -134,9 +134,9 @@ C Internal variables
 C Start time counter 
       call timer( 'KSV_pol', 1 )
 
-! jjunquer
-      write(6,*)' Node, Nodes = ', Node, Nodes
-! end jjunquer
+!! jjunquer
+!      write(6,*)' Node, Nodes = ', Node, Nodes
+!! end jjunquer
 
 C Reading unit cell and calculate the reciprocal cell
       call reclat( ucell, rcell, 1 )
