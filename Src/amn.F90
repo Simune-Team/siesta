@@ -36,7 +36,6 @@ subroutine amn( ispin )
   use parallel,           only: Nodes               ! Total number of Nodes
   use parallel,           only: Node                ! Local Node
   use parallel,           only: IONode              ! Input/output node
-  use parallel,           only: BlockSize           ! BlockSize
   use atomlist,           only: rmaxo               ! Max. cutoff atomic orbital
   use siesta_geom,        only: scell               ! Lattice vector of the
                                                     !   supercell in real space
@@ -89,19 +88,6 @@ subroutine amn( ispin )
   use atmfuncs,           only: orb_gindex          ! Subroutine that gives
                                                     !   the global index of an
                                                     !   atomic orbital
-  use m_orderbands,       only: which_band_in_node  ! Given a node and a 
-                                                    !   local index,
-                                                    !   this array gives the
-                                                    !   global index of the band
-                                                    !   stored there
-  use m_orderbands,       only: sequential_index_included_bands 
-                                                    ! Sequential number of the
-                                                    !   bands included for
-                                                    !   wannierization
-                                                    !   (the bands are listed
-                                                    !   in order of incremental
-                                                    !   energy)
-
 !
 ! Variables for the diagonalization
 !
@@ -122,6 +108,19 @@ subroutine amn( ispin )
   use parallelsubs,         only: GetNodeOrbs    ! Calculates the number of
                                                  !   orbitals stored on the 
                                                  !   local Node.
+  use m_orderbands,       only: which_band_in_node  ! Given a node and a 
+                                                    !   local index,
+                                                    !   this array gives the
+                                                    !   global index of the band
+                                                    !   stored there
+  use m_orderbands,       only: sequential_index_included_bands 
+                                                    ! Sequential number of the
+                                                    !   bands included for
+                                                    !   wannierization
+                                                    !   (the bands are listed
+                                                    !   in order of incremental
+                                                    !   energy)
+
   use mpi_siesta
 #endif
 
