@@ -267,10 +267,12 @@ subroutine diagonalizeHk( ispin )
   enddo
 
 
+#ifdef MPI
 ! Set up the arrays that control the indices of the bands to be 
 ! considered after excluding some of them for wannierization
 ! This is done once and for all the k-points
   call order_index( no_l, no_u, nincbands )
+#endif
 
 !
 ! Solve for eigenvectors of H(k) for the k's given in the .nnkp
