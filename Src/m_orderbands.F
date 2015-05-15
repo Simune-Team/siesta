@@ -83,12 +83,10 @@ C *********************************************************************
       use m_siesta2wannier90, only : blocksizeincbands
       use m_siesta2wannier90, only : nincbands_loc
 
-#ifdef MPI
       use parallel,           only : Node, Nodes, BlockSize 
       use parallelsubs,       only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,       only : GlobalToLocalOrb, WhichNodeOrb
       use alloc,              only : re_alloc, de_alloc
-#endif
 
 !     For debugging
       use sys,                only : die
@@ -105,6 +103,9 @@ C *********************************************************************
       integer 
      .  jband, nodejband
 
+      integer :: n           ! Counter for loops on nodes
+      integer :: noccloc     ! Number of bands in the local node
+                             !    (before excluding bands for diagonalization)
       integer :: ibandl      ! Counter for loops on the local bands 
                              !    on a given node
       integer :: iband_included ! Counter for loops on included bands
@@ -120,10 +121,12 @@ C *********************************************************************
       integer, allocatable, dimension(:) ::  bandspernode ! Counts how many 
                                                           !   bands are stored
                                                           !   on each node
+      integer :: BlockSizeDiagon ! Block size used in the diagonalization
+                                 !   routines (all the orbitals included)
 
 #ifdef MPI
       integer 
-     .  MPIerror, n, noccloc, BlockSizeDiagon
+     .  MPIerror
 #endif
 
 !     Define the maximum number of local bands to be stored in a Node
