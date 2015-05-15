@@ -146,16 +146,16 @@ subroutine diagonalizeHk( ispin )
   use alloc,              only: re_alloc     ! Reallocation routines
   use alloc,              only: de_alloc     ! Deallocation routines
 
+#ifdef MPI
+  use parallel,           only : BlockSize
+  use parallelsubs,       only : GetNodeOrbs
+  use parallelsubs,       only : set_blocksizedefault
 ! 
 ! Subroutine to order the indices of the different bands after 
 ! excluding some of them for wannierization 
 ! 
   use m_orderbands,       only: order_index
 
-#ifdef MPI
-  use parallel,           only : BlockSize
-  use parallelsubs,       only : GetNodeOrbs
-  use parallelsubs,       only : set_blocksizedefault
 #endif
 
 ! For debugging
