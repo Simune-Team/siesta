@@ -1,4 +1,14 @@
 ----------------------------------------------------
+May 18, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-413
+Changed option name to get out the states
+
+* Changed fdf_get from TBT.Proj.<mol>.State
+  to TBT.Proj.<mol>.States
+
+modified:
+  Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
 May 18, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-412
 TBT Saved eigenstates now without S^1/2
 

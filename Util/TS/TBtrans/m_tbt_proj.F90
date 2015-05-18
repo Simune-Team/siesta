@@ -1657,7 +1657,7 @@ contains
        end if
 
        ! Whether the full states are to be saved
-       save_state = fdf_get('TBT.Proj.'//trim(mols(im)%name)//'.State',.false.)
+       save_state = fdf_get('TBT.Proj.'//trim(mols(im)%name)//'.States',.false.)
 
        ! # of orbitals for this molecule
        no = mols(im)%orb%n
