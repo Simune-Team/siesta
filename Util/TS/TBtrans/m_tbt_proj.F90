@@ -1693,7 +1693,7 @@ contains
        call ncdf_def_var(grp,'orb',NF90_INT,(/'no'/),atts=dic)
        call ncdf_put_var(grp,'orb',mols(im)%orb%r)
        if ( save_state ) then
-          dic = dic//('info'.kv.'State |i> = S^(1/2)|v_i> for all i')
+          dic = dic//('info'.kv.'State |i> = |v_i> for all i')
           if ( isGamma ) then
              call ncdf_def_var(grp,'states',NF90_DOUBLE,(/'no','no'/),atts=dic, &
                   compress_lvl = cmp_lvl , chunks = (/no,no/) )
@@ -1704,7 +1704,11 @@ contains
 
           end if
        end if
-       dic = dic//('info'.kv.'Eigenvalues')//('unit'.kv.'Ry')
+#ifdef TBT_PHONON
+       dic = dic//('info'.kv.'Eigen frequency')//('unit'.kv.'Ry')
+#else
+       dic = dic//('info'.kv.'Eigen energy')//('unit'.kv.'Ry')
+#endif
        if ( isGamma ) then
           call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no'/),atts=dic, &
                compress_lvl = cmp_lvl , chunks = (/no/) )
@@ -1868,7 +1872,7 @@ contains
           if ( eig(i) > 0._dp ) then
              eig(i) =  sqrt( eig(i))
           else
-             eig(i) = -sqrt(-eig(i))
+             eig(i) = -sqrt(abs(eig(i)))
           end if
        end do
 
@@ -1903,21 +1907,65 @@ contains
              write(*,'(/a,3(f10.5))')'tbt-proj-DEBUG: k-point',kpt(:,ik)
           end if
        end if
-       
-       if ( isGamma ) then 
-          ! We know that ik == mol_nkpt == 1
-          call calc_sqrt_S(TSHS%S_1D,mols(im)%orb,rS_sq)
-       else if ( ik <= nkpt ) then
-          call calc_sqrt_S(TSHS%S_1D,product(TSHS%nsc),TSHS%sc_off, &
-               mols(im)%orb,zS_sq,kpt(:,ik))
-       end if
-       
+              
        if ( isGamma ) then
-          ! We have already calculated the eigen-values
-          call norm_Eigenstate(mols(im)%orb%n,rv,rS_sq)
+          ! We have already calculated the eigen-values for
+          ! the Gamma point
        else if ( ik <= nkpt ) then
           call calc_Eig(TSHS%H_2D,TSHS%S_1D,product(TSHS%nsc), &
                TSHS%sc_off,mols(im)%orb,eig,kpt(:,ik),zv)
+       end if
+
+       ! Save the eigen-values
+       if ( isGamma ) then
+          call ncdf_put_var(grp,'eig',eig)
+       else
+
+          call ncdf_put_var(grp,'eig',eig,start=(/1,ik/))
+#ifdef MPI
+          if ( Node == 0 ) then
+             ! The eigen-values
+          do iN = 1 , Nodes - 1
+             if ( ik + iN > nkpt ) exit
+             call MPI_Recv(eig,no,MPI_Double_Precision,iN,iN, &
+                  MPI_Comm_World,status,MPIerror)
+             call ncdf_put_var(grp,'eig',eig,start=(/1,ik+iN/))
+          end do
+          else if ( ik <= nkpt ) then
+             call MPI_Send(eig,no,MPI_Double_Precision,0,Node, &
+                  MPI_Comm_World,MPIerror)
+          end if
+#endif
+       end if
+
+       ! Save the states
+       if ( save_state ) then
+          if ( isGamma ) then
+             call ncdf_put_var(grp,'states',rv)
+          else
+             call ncdf_put_var(grp,'states',zv,start=(/1,1,ik/))
+#ifdef MPI
+             if ( Node == 0 ) then
+             do iN = 1 , Nodes - 1
+                if ( ik + iN > nkpt ) exit
+                call MPI_Recv(zS_sq(1,1),no*no,MPI_Double_Complex,iN,iN, &
+                     MPI_Comm_World,status,MPIerror)
+                call ncdf_put_var(grp,'states',zS_sq,start=(/1,1,ik+iN/))
+             end do
+             else if ( ik <= nkpt ) then
+                call MPI_Send(zv(1,1),no*no,MPI_Double_Complex,0,Node, &
+                     MPI_Comm_World,MPIerror)
+             end if
+#endif
+          end if
+       end if
+
+       if ( isGamma ) then
+          call calc_sqrt_S(TSHS%S_1D,mols(im)%orb,rS_sq)
+          call norm_Eigenstate(mols(im)%orb%n,rv,rS_sq)
+       else if ( ik <= nkpt ) then
+          call calc_sqrt_S(TSHS%S_1D,product(TSHS%nsc),TSHS%sc_off, &
+               mols(im)%orb,zS_sq,kpt(:,ik))
           call norm_Eigenstate(mols(im)%orb%n,zv,zS_sq)
        end if
 
@@ -1975,28 +2023,6 @@ contains
              end do
           end if
 
-       end if
-
-       ! Save the eigen-values
-       if ( isGamma ) then
-          call ncdf_put_var(grp,'eig',eig)
-       else
-
-          call ncdf_put_var(grp,'eig',eig,start=(/1,ik/))
-#ifdef MPI
-          if ( Node == 0 ) then
-             ! The eigen-values
-          do iN = 1 , Nodes - 1
-             if ( ik + iN > nkpt ) exit
-             call MPI_Recv(eig,no,MPI_Double_Precision,iN,iN, &
-                  MPI_Comm_World,status,MPIerror)
-             call ncdf_put_var(grp,'eig',eig,start=(/1,ik+iN/))
-          end do
-          else if ( ik <= nkpt ) then
-             call MPI_Send(eig,no,MPI_Double_Precision,0,Node, &
-                  MPI_Comm_World,MPIerror)
-          end if
-#endif
        end if
 
        ! Copy over state levels
@@ -2058,29 +2084,7 @@ contains
 #endif
           
        end if
-       
-       ! Save the states
-       if ( save_state ) then
-          if ( isGamma ) then
-             call ncdf_put_var(grp,'states',rv)
-          else
-             call ncdf_put_var(grp,'states',zv,start=(/1,1,ik/))
-#ifdef MPI
-             if ( Node == 0 ) then
-             do iN = 1 , Nodes - 1
-                if ( ik + iN > nkpt ) exit
-                call MPI_Recv(zv(1,1),no*no,MPI_Double_Complex,iN,iN, &
-                     MPI_Comm_World,status,MPIerror)
-                call ncdf_put_var(grp,'states',zv,start=(/1,1,ik+iN/))
-             end do
-             else if ( ik <= nkpt ) then
-                call MPI_Send(zv(1,1),no*no,MPI_Double_Complex,0,Node, &
-                     MPI_Comm_World,MPIerror)
-             end if
-#endif
-          end if
-       end if
-       
+              
     end do ikpt
 
        if ( isGamma ) then

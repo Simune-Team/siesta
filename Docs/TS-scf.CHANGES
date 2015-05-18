@@ -1,4 +1,15 @@
 ----------------------------------------------------
+May 18, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-412
+TBT Saved eigenstates now without S^1/2
+
+* The saved eigenstates are now saved without
+  S^1/2 so that one can easily deciphere where the 
+  molecular orbitals coexist.
+
+modified:
+  Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
 May 18, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-411
 Changed default poles to 8
 
