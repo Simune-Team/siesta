@@ -1,4 +1,18 @@
 ----------------------------------------------------
+May 18, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-411
+Changed default poles to 8
+
+* Fixed reading output from gulp in the tests
+
+* Changed default number of equilibrium poles to 8.
+
+modified:
+  Src/m_ts_chem_pot.F90
+  Util/TS/TB/GULP/Si.py
+  Util/TS/TB/GULP/gr.py
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 May 14, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-410
 Bugfix in short systemlabels
 

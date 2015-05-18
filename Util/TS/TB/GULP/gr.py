@@ -15,7 +15,7 @@ for out in ['ac','zz']:
     gulp_out = PH.GULP(out + '.gout')
 
     print('Reading output')
-    tb = PH.PHT_Model.read_output(gulp_out)
+    tb = gulp_out.read_model()
     # In GULP correcting for Newtons second law is already obeyed
     tb.correct_Newton()
 

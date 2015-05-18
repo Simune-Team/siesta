@@ -21,7 +21,7 @@ module m_ts_chem_pot
 
   real(dp), public, parameter :: mu_same = 1.e-8_dp
   integer,  public, parameter :: NAME_MU_LEN = 20
-  integer, private, parameter :: def_poles = 6
+  integer, private, parameter :: def_poles = 8
 
   type :: ts_mu
      ! name of the chemical potential

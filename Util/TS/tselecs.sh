@@ -28,7 +28,7 @@ while [ $# -gt 0 ]; do
 	    def=2 ; shift ;;
 	-V|-bias)
 	    volt=$1 ; shift ; shift ;;
-	-2|-3|-4|-5|-6|-7|-8)
+	-2|-3|-4|-5|-6|-7|-8|-9)
 	    # Will produce output for standard TS
 	    def=${opt:1} ; shift ;;
 	-only-el|-only-elec|-only-electrode)
@@ -71,7 +71,7 @@ if [ $help -eq 1 ]; then
     printf "$fmt" "-dE <val>" "real-axis distance between integration points (0.01 eV)"
     echo ""
     echo "There are preset creations of 2,3 and 4 electrodes, call:"
-    echo "    $_this -[2,3,4,5,6,7,8]"
+    echo "    $_this -[2-9]"
     echo "to create the equivalent systems, note that these options can be accompanied by further setup."
     echo ""
     echo "Available options for the chemical potentials:"
@@ -417,7 +417,7 @@ fi
 if [ $print_c -eq 1 ]; then
 
 echo ""
-echo "TS.Contours.Eq.Pole.N 6"
+echo "TS.Contours.Eq.Pole.N 8"
 
 for i in `seq 1 $_mus` ; do
     mu=$(get_opt -mu$i-name 1)
