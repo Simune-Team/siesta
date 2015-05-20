@@ -390,7 +390,7 @@ contains
              end do
 
              ! Remove 0 (Ef) from the levels
-             call rgn_range(r_tmp,0,0)
+             call rgn_init(r_tmp,1,val=0)
              call rgn_complement(r_tmp,mols(im)%proj(ip), &
                   mols(im)%proj(ip))
              call rgn_delete(r_tmp,r_tmp2)

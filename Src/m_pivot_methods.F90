@@ -367,7 +367,7 @@ contains
 
        etr = rgn_pop(S)
 
-       call rgn_range(con,etr,etr)
+       call rgn_init(con,1,val=etr)
        i = 0
        do while ( i < con%n ) 
           ! create connectivity graph

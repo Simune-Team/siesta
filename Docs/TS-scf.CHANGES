@@ -1,4 +1,17 @@
 ----------------------------------------------------
+May 20, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-416
+Changed several rgn to better reflect usage
+
+* Alot of rgn_range has been changed to 
+  rgn_init which better suits the usage.
+
+modified:
+  Src/m_pivot_methods.F90
+  Src/m_ts_tri_init.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 May 20, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-415
 Added pivoting sparsity pattern in the utilities
 

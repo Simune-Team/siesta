@@ -143,7 +143,7 @@ contains
 
        ia1 = Elecs(iEl)%idx_o
        ia2 = ia1 - 1 + TotUsedOrbs(Elecs(iEl))
-       call rgn_range(r_oEl_alone(iEl),ia1,ia2)
+       call rgn_range(r_oEl_alone(iEl), ia1, ia2)
        r_oEl_alone(iEl)%name = '[O]-'//trim(Elecs(iEl)%name)
        
        ! Check that we have a legal region
@@ -505,6 +505,7 @@ contains
 
     ! The device region
     call rgn_copy(r_tmp,r_Dev)
+    call rgn_sort(r_Dev)
     ! Sort the electrode region to make it faster
     call rgn_sort(r_Els)
 
@@ -641,7 +642,7 @@ contains
              ! In this case, we take some "random" orbital.
              do i = 1 , r_Dev%n
                 if ( in_rgn(r_tmp2,r_Dev%r(i)) ) cycle
-                call rgn_range(r_tmp,r_Dev%r(i),r_Dev%r(i))
+                call rgn_init(r_tmp,1,val=r_Dev%r(i))
                 exit
              end do
 
@@ -923,12 +924,12 @@ contains
          call mdie('Error in number of buffer orbitals.')
     ! if buffer atoms exists, we write them
     if ( itmp(1) > 0 ) then
-       call rgn_range(r,1,itmp(1))
+       call rgn_init(r,itmp(1))
        ! write alone electrode, atoms and orbitals
        read(iu,*) (r%r(i),i=1,r%n)
        if ( any(r%r /= r_aBuf%r) ) &
             call mdie('Buffer atoms not equivalent.')
-       call rgn_range(r,1,itmp(2))
+       call rgn_init(r,itmp(2))
        read(iu,*) (r%r(i),i=1,r%n)
        if ( any(r%r /= r_oBuf%r) ) &
             call mdie('Buffer orbitals not equivalent.')
@@ -954,23 +955,23 @@ contains
             'Electrode: '//trim(g))
 
        ! read alone electrode, atoms and orbitals
-       call rgn_range(r,1,r_aEl_alone(iEl)%n)
+       call rgn_init(r,r_aEl_alone(iEl)%n)
        read(iu,*) (r%r(i),i=1,r%n)
        if ( any(r%r /= r_aEl_alone(iEl)%r) ) &
             call mdie('Electrode atom positions are not equivalent.', &
             'Electrode: '//trim(g))
-       call rgn_range(r,1,r_oEl_alone(iEl)%n)
+       call rgn_init(r,r_oEl_alone(iEl)%n)
        read(iu,*) (r%r(i),i=1,r%n)
        if ( any(r%r /= r_oEl_alone(iEl)%r) ) &
             call mdie('Electrode orbital positions are not equivalent.', &
             'Electrode: '//trim(g))
 
        read(iu,*) itmp(1)
-       call rgn_range(r_oEl(iEl),1,itmp(1))
+       call rgn_init(r_oEl(iEl),itmp(1))
        read(iu,*) (r_oEl(iEl)%r(i),i=1,r_oEl(iEl)%n)
 
        read(iu,*) itmp(1)
-       call rgn_range(Elecs(iEl)%o_inD,1,itmp(1))
+       call rgn_init(Elecs(iEl)%o_inD,itmp(1))
        read(iu,*) (Elecs(iEl)%o_inD%r(i),i=1,itmp(1))
 
     end do
@@ -981,7 +982,7 @@ contains
          call mdie('Device region atoms are not the same.', &
          'Please delete file: '//trim(fname)//' or revert the device region block')
     read(iu,*) (r_aDev%r(i),i=1,r_aDev%n)
-    call rgn_range(r_oDev,1,itmp(2))
+    call rgn_init(r_oDev,itmp(2))
     read(iu,*) (r_oDev%r(i),i=1,r_oDev%n)
 
     call io_close(iu)

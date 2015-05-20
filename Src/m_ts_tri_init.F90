@@ -186,6 +186,8 @@ contains
     call rgn_init(priority,n)
     call crt_El_priority(N_Elec,Elecs,priority,is_orb = sort_orb )
 
+    call rgn_sort(r_tmp)
+
     ! Sort the electrode region to make it faster
     call rgn_sort(r_Els)
 
@@ -310,12 +312,12 @@ contains
                 if ( in_rgn(r_pvt,i) ) cycle
                 if ( sort_orb ) then
                    if ( orb_type(i) /= TYP_BUFFER ) then
-                      call rgn_range(r_tmp,i,i)
+                      call rgn_init(r_tmp,1,val=i)
                       exit
                    end if
                 else
                    if ( atom_type(i) /= TYP_BUFFER ) then
-                      call rgn_range(r_tmp,i,i)
+                      call rgn_init(r_tmp,1,val=i)
                       exit
                    end if
                 end if
@@ -641,6 +643,9 @@ contains
        end do
 
     end if
+
+    ! Sort the device region
+    call rgn_sort(full)
 
     n = nrows_g(tmpSp2)
 
