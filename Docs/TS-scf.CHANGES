@@ -1,4 +1,17 @@
 ----------------------------------------------------
+May 20, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-415
+Added pivoting sparsity pattern in the utilities
+
+* Added SpPivot folder which enables pivoting a
+  sparsity pattern read in from DM, TSDE, TSHS
+  files to create GRAPHVIZ graphs
+
+added:
+  Util/SpPivot/
+  Util/SpPivot/Makefile
+  Util/SpPivot/pvtsp.F90
+
+----------------------------------------------------
 May 20, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-414
 Enabled pivoting in graphviz output
 
