@@ -1,4 +1,32 @@
 ----------------------------------------------------
+May 20, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-414
+Enabled pivoting in graphviz output
+
+* Pivoting can be allowed for printing out a
+  graph in graphviz.
+  Pivoting there only makes sense when the
+  graph is not pivoted internally in GRAPHVIZ
+
+* Removed use cellsubs in certain modules
+
+modified:
+  Src/Makefile
+  Src/m_pivot.F90
+  Src/m_pivot_methods.F90
+  Src/m_sparse.F90
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/Sp2METIS/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 May 18, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-413
 Changed option name to get out the states
 

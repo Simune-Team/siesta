@@ -105,7 +105,6 @@ contains
   end function offset2idx
 
   subroutine calc_nsc(cell,na_u,xa,lasto,xij_2D,nsc,Bcast)
-    use cellSubs, only : reclat
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -209,7 +208,6 @@ contains
   ! to create the full xij array...
   subroutine list_col_correct_sp(cell, nsc, na_u, xa, lasto, &
        xij_2D, Bcast)
-    use cellSubs, only : reclat
 
     use class_OrbitalDistribution
     use class_Sparsity
@@ -300,7 +298,6 @@ contains
   subroutine xij_offset_sp(cell,nsc,na_u,xa,lasto, &
        xij_2D,isc_off,Bcast)
     
-    use cellSubs, only : reclat
     use intrinsic_missing, only : VNORM
     use class_OrbitalDistribution
     use class_Sparsity

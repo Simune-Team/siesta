@@ -1550,12 +1550,13 @@ contains
 #ifdef GRAPHVIZ
 
 
-  subroutine sp2graphviz(file,n,nnzs,n_col,l_ptr,l_col,types,method)
+  subroutine sp2graphviz(file,n,nnzs,n_col,l_ptr,l_col,types,method,pvt)
     character(len=*), intent(in) :: file
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
     ! Methods applied
     integer, intent(in), optional :: types(n)
     integer, intent(in), optional :: method
+    type(tRgn), intent(in), optional :: pvt
 
     !                                               gray      blue      red       green     purple   turkis    orange
     character(len=7), parameter :: edges(0:6)  = (/'#D8D8D8','#5882FA','#FA5858','#58FA58','#AC58FA','#9DFCF7','#FFD681'/)
@@ -1573,6 +1574,11 @@ contains
     write(555,'(a)') '// neato -x '//trim(file)
     write(555,'(a)') '// neato -x -Tpdf '//trim(file)//' -o graph.pdf'
     write(555,'(a)') '// neato -x -Tpng '//trim(file)//' -o graph.png'
+    if ( present(pvt) ) then
+       if ( len_trim(pvt%name) > 0 ) then
+          write(555,'(a)') '// Pivoting name: '//trim(pvt%name)
+       end if
+    end if
 
     select case ( lmethod ) 
 
@@ -1612,7 +1618,7 @@ contains
           end select
           do i = 1 , n
              if ( types(i) == j ) then
-                write(555,'(tr1,i0)',advance='no') i
+                write(555,'(tr1,i0)',advance='no') get_col(i,pvt)
              end if
           end do
           write(555,'(tr1,a)') ';'
@@ -1627,7 +1633,7 @@ contains
        do i = 1 , n 
           ! Always show node (sometimes it could not connect)
           if ( types(i) < 0 ) cycle
-          call print_node(i)
+          call print_node(i,pvt)
           if ( n_col(i) <= 1 ) cycle
           do k = 0 , max_types
              if ( k /= types(i) ) cycle
@@ -1640,11 +1646,11 @@ contains
                    write(555,'(5a)') '{ edge [color="',trim(edges(j)),';0.5:', &
                         trim(edges(k)),'"]'
                 end if
-                write(555,'(i0,2a)',advance='no') i,con,' {'
+                write(555,'(i0,2a)',advance='no') get_col(i,pvt),con,' {'
                 do ind = l_ptr(i) + 1 , l_ptr(i) + n_col(i)
                    if ( l_col(ind) <= i ) cycle
                    if ( j /= types(l_col(ind)) ) cycle
-                   write(555,'(tr1,i0)',advance='no') l_col(ind)
+                   write(555,'(tr1,i0)',advance='no') get_col(l_col(ind),pvt)
                 end do
                 write(555,'(a)') '} }'
              end do
@@ -1656,7 +1662,7 @@ contains
           write(555,'(tr1,a)',advance='no') '{ rank=same;'
           do i = 1 , n
              if ( types(i) == k ) then
-                write(555,'(tr1,i0)',advance='no') i
+                write(555,'(tr1,i0)',advance='no') get_col(i,pvt)
              end if
           end do
           write(555,'(tr1,a)') '}'
@@ -1669,7 +1675,7 @@ contains
           write(555,'(a)') 'node [shape=box style=filled fillcolor=white fontcolor=black]'
           do i = 1 , n
              if ( types(i) < 0 ) then
-                write(555,'(i0)') i
+                write(555,'(i0)') get_col(i,pvt)
              end if
           end do
           write(555,'(tr1,a)') '}'
@@ -1678,13 +1684,13 @@ contains
     else
        
        do i = 1 , n
-          call print_node(i)
+          call print_node(i,pvt)
           if ( n_col(i) <= 1 ) cycle
           ! Write out the label of the node
-          write(555,'(i0,2a)',advance='no') i,con,' {'
+          write(555,'(i0,2a)',advance='no') get_col(i,pvt),con,' {'
           do ind = l_ptr(i) + 1 , l_ptr(i) + n_col(i)
              if ( l_col(ind) == i ) cycle
-             write(555,'(tr1,i0)',advance='no') l_col(ind)
+             write(555,'(tr1,i0)',advance='no') get_col(l_col(ind),pvt)
           end do
           write(555,'(a)') '}'
        end do
@@ -1696,10 +1702,23 @@ contains
 
   contains
 
-    subroutine print_node(i)
+    function get_col(col,pvt)
+      integer, intent(in) :: col
+      type(tRgn), intent(in), optional :: pvt
+      integer :: get_col
+      if ( present(pvt) ) then
+         get_col = rgn_pivot(pvt,col)
+      else
+         get_col = col
+      end if
+    end function get_col
+
+    subroutine print_node(i,pvt)
       integer, intent(in) :: i
+      type(tRgn), intent(in), optional :: pvt
       ! Write out the label of the node
-      write(555,'(i0,'' [label="'',i0,'' ('',i0,'')"]'')') i,i,n_col(i)-1
+      write(555,'(i0,'' [label="'',i0,'' ('',i0,'')"]'')') &
+           get_col(i,pvt),get_col(i,pvt),n_col(i)-1
     end subroutine print_node
 
   end subroutine sp2graphviz

@@ -399,7 +399,7 @@ m_rhog.o: alloc.o atomlist.o class_Data1D.o class_Fstack_Pair_Data1D.o
 m_rhog.o: class_Pair_Data1D.o m_diis.o m_mpi_utils.o m_recipes.o m_spin.o
 m_rhog.o: parallel.o precision.o siesta_options.o
 m_rmaxh.o: precision.o
-m_sparse.o: alloc.o cellsubs.o class_OrbitalDistribution.o class_SpData2D.o
+m_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData2D.o
 m_sparse.o: class_Sparsity.o geom_helper.o intrinsic_missing.o parallel.o
 m_sparse.o: precision.o
 m_sparsity_handling.o: class_Data1D.o class_Data2D.o

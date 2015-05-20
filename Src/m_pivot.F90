@@ -85,21 +85,29 @@ contains
     if      ( method == PVT_CUTHILL_MCKEE     ) then
        call Cuthill_Mckee(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, &
             start = start , priority = priority )
+       pvt%name = 'Cuthill-Mckee'
     else if ( method == PVT_REV_CUTHILL_MCKEE ) then
        call rev_Cuthill_Mckee(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, &
             start = start , priority = priority  )
+       pvt%name = 'rev-Cuthill-Mckee'
     else if ( method == PVT_GPS               ) then
        call GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
+       pvt%name = 'Gibbs-Pole-Stockmeyer'
     else if ( method == PVT_REV_GPS           ) then
        call rev_GPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
+       pvt%name = 'rev-Gibbs-Pole-Stockmeyer'
     else if ( method == PVT_PCG               ) then
        call PCG(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
+       pvt%name = 'Peripheral-Connect-Graph'
     else if ( method == PVT_REV_PCG           ) then
        call rev_PCG(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
+       pvt%name = 'rev-Peripheral-Connect-Graph'
     else if ( method == PVT_GGPS              ) then
        call GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
+       pvt%name = 'General-Gibbs-Pole-Stockmeyer'
     else if ( method == PVT_REV_GGPS          ) then
        call rev_GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
+       pvt%name = 'rev-General-Gibbs-Pole-Stockmeyer'
     else
        call die('m_pivot: Programming error, unknown method')
     end if
