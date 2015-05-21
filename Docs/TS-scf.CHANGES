@@ -1,4 +1,15 @@
 ----------------------------------------------------
+May 21, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-421
+TBT Enabled reading TBT.Elec. keys with TS elecs
+
+* When the user specified TS blocks for the electrode
+  the TBT keywords where disregarded.
+  These have now been re-enabled.
+
+modified:
+  Src/m_ts_electype.F90
+
+----------------------------------------------------
 May 21, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-420
 Bugfix for graphviz output and enabled digraph in pvtsp
 

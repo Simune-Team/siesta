@@ -227,21 +227,10 @@ contains
 
     character(len=200) :: bName, name, ln, tmp
 
-    name = trim(this%name)
-    bName = trim(prefix)//'.Elec.'//trim(name)
-    found = fdf_block(trim(bName),bfdf)
-    if ( .not. found ) return
-
     info(:) = .false.
-    idx_a = 0
 
-    ! We default a lot of the options
-    if ( present(name_prefix) ) then
-       this%GFfile = trim(slabel)//'.'//trim(name_prefix)//'GF'//trim(name)
-    else
-       this%GFfile = trim(slabel)//'.'//trim(prefix)//'GF'//trim(name)
-    end if
-    this%na_used = -1
+    bName = trim(prefix)//'.Elec.'//trim(this%name)
+    found = fdf_block(trim(bName),bfdf)
 
     ! Allow the filename to be read in individually
     name = trim(bName)//'.TSHS'
@@ -257,6 +246,21 @@ contains
     if ( fdf_defined(trim(name)) ) this%Rep(3) = fdf_get(name,1)
     name = trim(bName)//'.GF'
     if ( fdf_defined(trim(name)) ) this%GFfile = trim(fdf_get(name,''))
+
+    if ( .not. found ) return
+
+    idx_a = 0
+
+    ! We default a lot of the options
+    if ( len_trim(this%GFfile) == 0 ) then
+       name = 'GF'//trim(this%name)
+       if ( present(name_prefix) ) then
+          this%GFfile = trim(slabel)//'.'//trim(name_prefix)//trim(name)
+       else
+          this%GFfile = trim(slabel)//'.'//trim(prefix)//trim(name)
+       end if
+    end if
+    this%na_used = -1
     
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
