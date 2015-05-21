@@ -1,4 +1,18 @@
 ----------------------------------------------------
+May 21, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-420
+Bugfix for graphviz output and enabled digraph in pvtsp
+
+* The graphviz output was not accepting the method key.
+
+  This has been fixed.
+
+* The SpPivot utility can now create directed graphs.
+
+modified:
+  Src/m_pivot_methods.F90
+  Util/SpPivot/pvtsp.F90
+
+----------------------------------------------------
 May 21, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-419
 Bugfix for tshs2tshs utility compilation
 

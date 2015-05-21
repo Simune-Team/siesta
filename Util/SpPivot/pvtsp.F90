@@ -45,9 +45,10 @@ program pvtsp
   
   logical :: is_graphviz, is_metis, is_atom
   logical :: has_weight
-  integer :: tm(3)
+  integer :: tm(3), graph_method
 
   method = -1
+  graph_method = 1 ! regular graph
   is_atom = .false.
   is_metis = .false.
   is_graphviz = .false.
@@ -81,6 +82,12 @@ program pvtsp
      ! Check if it is atomic sparsity pattern
      if ( fname == '-atom' ) then
         is_atom = .true.
+     end if
+
+     ! Check if it is an digraph
+     if ( fname == '-di' .or. fname == '-digraph' ) then
+        is_graphviz = .true.
+        graph_method = 2
      end if
 
      ! Check the method for pivoting
@@ -217,7 +224,7 @@ program pvtsp
      ! Save the graphviz file
      fmethod = trim(fmethod) // '.gv'
      call sp2graphviz(fmethod,no_u,n_nzs,ncol,l_ptr,l_col, &
-          pvt = pvt )
+          method = graph_method, pvt = pvt )
 #endif
 
   end if
@@ -362,6 +369,7 @@ contains
     write(*,gf) '--help|-h','show this help menu'
     write(*,gf) '--atom','pivot in the atomic sparsity pattern, instead of the orbital(only for TSHS)'
     write(*,gf) '--graphviz|--graph','make graphviz output'
+    write(*,gf) '--digraph|-di','create a directed graph'
     write(*,gf) '--metis','make METIS output (on STDOUT)'
     write(*,gf) '--pvt <method>','pivot according to a specific method'
     write(*,nf) '<method> can be one of the following:'

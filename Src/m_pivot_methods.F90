@@ -1565,27 +1565,30 @@ contains
     integer :: i, j, k, ind, lmethod, max_types
 
     lmethod = 1
-    if ( present(method) ) lmethod = 1
+    if ( present(method) ) lmethod = method
 
     open(unit=555,file=trim(file),form='formatted')
 
-    ! Inform how to process this:
-    write(555,'(a)') '// This command typically produces nice graphs'
-    write(555,'(a)') '// neato -x '//trim(file)
-    write(555,'(a)') '// neato -x -Tpdf '//trim(file)//' -o graph.pdf'
-    write(555,'(a)') '// neato -x -Tpng '//trim(file)//' -o graph.png'
     if ( present(pvt) ) then
        if ( len_trim(pvt%name) > 0 ) then
           write(555,'(a)') '// Pivoting name: '//trim(pvt%name)
        end if
     end if
 
-    select case ( lmethod ) 
+    ! Inform how to process this:
+    write(555,'(a)') '// This command typically produces nice graphs'
 
+    select case ( lmethod ) 
     case ( 1 ) ! GRAPH
+       write(555,'(a)') '// neato -x '//trim(file)
+       write(555,'(a)') '// neato -x -Tpdf '//trim(file)//' -o graph.pdf'
+       write(555,'(a)') '// neato -x -Tpng '//trim(file)//' -o graph.png'
        write(555,'(a)') 'strict graph G {'
        con = ' -- '
     case ( 2 ) ! DI-GRAPH
+       write(555,'(a)') '// dot -x '//trim(file)
+       write(555,'(a)') '// dot -x -Tpdf '//trim(file)//' -o digraph.pdf'
+       write(555,'(a)') '// dot -x -Tpng '//trim(file)//' -o digraph.png'
        write(555,'(a)') 'strict digraph G {'
        con = ' -> '
     end select
@@ -1607,7 +1610,7 @@ contains
     if ( present(types) ) then
        if ( max_types > len(edges) - 1 ) then
           write(*,*) 'Max allowed types: ',len(edges)-1
-          call die('Can not represent more than 4 different types.')
+          call die('Can not represent more than 6 different types.')
        end if
        do j = 0 , max_types
           select case ( j )
