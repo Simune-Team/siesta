@@ -1,6 +1,5 @@
 program tshs2tshs
   
-  use f2kcli
   use units
   use parallel
   use precision, only : dp

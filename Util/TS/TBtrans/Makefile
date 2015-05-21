@@ -203,23 +203,19 @@ $(TBTOBJS): $(DEP_OBJS)
 # which could take advantage of this preprocessing flag
 tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
 #tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DUSE_GEMM3M
-# If the user only wants to compile against NetCDF-4 for tbtrans
-tbtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
-tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) 
+tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
-              $(FDF) $(COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
+              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
 
 # We append the -DTBTRANS as some special routines
 # which could take advantage of this preprocessing flag
 # Tbtrans has TBT_PHONON flags to compile special capabilities
 phtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS -DTBT_PHONON
-# If the user only wants to compile against NetCDF-4 for tbtrans
-phtrans: COMP_LIBS+=$(TBT_COMP_LIBS)
-phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS)
+phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o phtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
-              $(FDF) $(COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
+              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
 
 clean-tbt:
 	@echo "==> Cleaning tbtrans-only object, and executable files"

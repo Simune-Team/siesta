@@ -1,4 +1,18 @@
 ----------------------------------------------------
+May 21, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-418
+Bugfix for tshs2tshs utility compilation
+
+* Later dev had forced the requirement for the
+  fdf library.
+
+modified:
+  Util/COOP/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/TS/tshs2tshs/tshs2tshs.f90
+
+----------------------------------------------------
 May 21, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-417
 Enabled compilation of COOP utilities
 

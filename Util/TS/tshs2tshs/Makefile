@@ -1,9 +1,12 @@
 .SUFFIXES: .f .F .o .a .f90 .F90
 
 VPATH:=$(shell pwd)/../../../Src
+
 OBJDIR=Obj
+
 ARCH_MAKE=../../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
+
 # Set the default non-mpi routines
 FC_DEFAULT  := $(FC)
 FC_SERIAL   ?= $(FC_DEFAULT)
@@ -22,8 +25,8 @@ dep:
 # However, we still compile everything else as though it did not exist
 #FC:=$(FC_SERIAL)         # Make it non-recursive
 
-DEFS:=$(DEFS_PREFIX) $(DEFS) $(DEFS_PREFIX) -UMPI -UNCDF_PARALLEL
-FPPFLAGS:=$(DEFS_PREFIX) $(FPPFLAGS) $(DEFS_PREFIX) -UMPI -UNCDF_PARALLEL
+DEFS:=$(DEFS_PREFIX) $(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UNCDF_PARALLEL
+FPPFLAGS:=$(DEFS_PREFIX) $(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UNCDF_PARALLEL
 INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 
 # Uncomment the following line for debugging support
@@ -32,7 +35,7 @@ INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 SYSOBJ=$(SYS).o
 
 # systematic siesta files
-OBJS = precision.o f2kcli.o parallel.o \
+OBJS = precision.o parallel.o \
         alloc.o pxf.o units.o sys.o die.o \
 	memory.o memoryinfo.o m_io.o io.o \
 	m_sparse.o intrinsic_missing.o geom_helper.o cellsubs.o \
@@ -43,6 +46,8 @@ OBJS += m_uuid.o object_debug.o \
 	class_Sparsity.o class_OrbitalDistribution.o \
 	class_Data1D.o class_Data2D.o \
 	class_SpData1D.o class_SpData2D.o
+
+OBJS += m_ts_contour.o m_ts_io_ctype.o
 
 # Add sys object
 OBJS += $(SYSOBJ)
@@ -91,10 +96,22 @@ $(NCDF): $(FVAR)
 
 #######################
 
-$(EXE): COMP_LIBS += $(TSHS_COMP_LIBS)
-$(EXE): $(COMP_LIBS) $(OBJS)
+# Use the makefile in Src/fdf and all the sources there.
+FDF=libfdf.a
+FDF_MAKEFILE=$(VPATH)/fdf/makefile
+FDF_INCFLAGS:=-I$(VPATH)/fdf $(INCFLAGS)
+$(FDF): 
+	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "DEFS=$(DEFS)" "FPPFLAGS=$(FPPFLAGS)" \
+                          "MPI_INTERFACE= " \
+                          "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
+
+
+$(OBJS): $(FDF) $(COMP_LIBS) $(TSHS_COMP_LIBS)
+$(EXE): $(FDF) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(OBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o $(EXE) \
-		$(OBJS) $(COMP_LIBS) $(LIBS)
+		$(OBJS) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(FDF) $(LIBS)
 
 clean:
 	@echo "==> Cleaning object, library, and executable files"
@@ -779,7 +796,7 @@ zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 m_ts_io_version.o: geom_helper.o precision.o
 tshs2tshs.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
-tshs2tshs.o: class_Sparsity.o f2kcli.o geom_helper.o m_sparse.o m_ts_io.o
+tshs2tshs.o: class_Sparsity.o geom_helper.o m_sparse.o m_ts_io.o
 tshs2tshs.o: m_ts_io_version.o parallel.o precision.o units.o
 band.o: bands.o
 class_cdata1d.o: class_Data1D.o

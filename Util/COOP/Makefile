@@ -743,6 +743,7 @@ fat.o: io_hs.o main_vars.o orbital_set.o read_curves.o
 io.o: sys_local.o
 io_hs.o: main_vars.o precision.o
 iodm_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys_local.o
+m_getopts.o: f2kcli.o
 main_vars.o: m_getopts.o precision.o subs.o units.o
 mprop.o: io_hs.o main_vars.o orbital_set.o read_curves.o subs.o
 orbital_set.o: main_vars.o subs.o
