@@ -1,4 +1,11 @@
 ----------------------------------------------------
+May 21, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-419
+Bugfix for tshs2tshs utility compilation
+
+modified:
+  Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 May 21, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-418
 Bugfix for tshs2tshs utility compilation
 

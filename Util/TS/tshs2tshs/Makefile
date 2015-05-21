@@ -38,7 +38,7 @@ SYSOBJ=$(SYS).o
 OBJS = precision.o parallel.o \
         alloc.o pxf.o units.o sys.o die.o \
 	memory.o memoryinfo.o m_io.o io.o \
-	m_sparse.o intrinsic_missing.o geom_helper.o cellsubs.o \
+	m_sparse.o intrinsic_missing.o geom_helper.o reclat.o \
 	m_io_s.o m_ncdf_io.o m_ts_io.o 
 
 # Add class objects
@@ -46,8 +46,6 @@ OBJS += m_uuid.o object_debug.o \
 	class_Sparsity.o class_OrbitalDistribution.o \
 	class_Data1D.o class_Data2D.o \
 	class_SpData1D.o class_SpData2D.o
-
-OBJS += m_ts_contour.o m_ts_io_ctype.o
 
 # Add sys object
 OBJS += $(SYSOBJ)
@@ -111,7 +109,7 @@ $(FDF):
 $(OBJS): $(FDF) $(COMP_LIBS) $(TSHS_COMP_LIBS)
 $(EXE): $(FDF) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(OBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o $(EXE) \
-		$(OBJS) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(FDF) $(LIBS)
+		$(OBJS) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(FDF) $(LIBS) 
 
 clean:
 	@echo "==> Cleaning object, library, and executable files"
