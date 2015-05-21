@@ -1,4 +1,14 @@
 ----------------------------------------------------
+May 21, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-417
+Enabled compilation of COOP utilities
+
+* Re-enabled the compilation of COOP utilities
+  The Makefile has been updated.
+
+modified:
+  Util/COOP/Makefile
+
+----------------------------------------------------
 May 20, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-416
 Changed several rgn to better reflect usage
 
