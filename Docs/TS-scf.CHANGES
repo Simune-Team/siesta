@@ -1,4 +1,18 @@
 ----------------------------------------------------
+May 22, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-423
+TBT Enabled transmission paths in the Brillouin zone
+
+* Added a 'path' keyword in the TBT.k block to create
+  k-points following paths in the Brillouin zone.
+  
+  This enables the easy creation of transport properties
+  along high symmetry points, as well as creating 
+  k-lines spaced in the Brillouin zone.
+
+modified:
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+
+----------------------------------------------------
 May 22, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-422
 TBT Ensured tbtrans and phtrans were not compiled sim.
 

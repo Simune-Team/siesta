@@ -52,13 +52,17 @@ contains
 
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
-    integer :: i, ik, nkpt, iEl
-    real(dp) :: rcell(3,3), displ(3), ksize(3), rtmp, p(3)
+    integer :: i, ik, j, nkpt, iEl
+    real(dp) :: rcell(3,3), displ(3), ksize(3), rtmp, p(3), q(3)
+    real(dp) :: prev_k(3), next_k(3), k_path_length
     real(dp) :: contrib
     integer :: kscell(3,3)
+    real(dp), allocatable :: tmp3(:,:)
+
     character(len=50) :: ctmp
 
-    logical :: is_list
+    logical :: even_path
+    logical :: is_list, is_path
 
     ! Initialize values
     ksize(:) = 1._dp
@@ -83,6 +87,50 @@ contains
        return
     end if
 
+    is_path = .false.
+    even_path = .false.
+    k_path_length = 0._dp
+    nkpt = 0
+    i = 0
+    ! Pre-read paths if requested (we need to pre-allocate
+    ! number of k-points along path)
+
+    ! We need this to calculate the correct length in the 
+    ! Brillouin zone
+    call reclat(cell,rcell,1)
+
+    do while ( fdf_bnext(bfdf,pline) )
+       if ( fdf_bnnames(pline) > 0 ) then
+          ctmp = fdf_bnames(pline,1)
+          if ( leqi(ctmp,'path') ) then
+             is_path = .true.
+             i = i + 1
+             call read_path(bfdf,pline,rcell,.false.,0._dp,prev_k,next_k,j)
+             call kpoint_convert(rcell,prev_k,p,-2)
+             call kpoint_convert(rcell,next_k,q,-2)
+             p = q - p
+             k_path_length = k_path_length + vnorm(p)
+             nkpt = nkpt + j
+          else if ( leqi(ctmp,'path-even') .or. &
+               leqi(ctmp,'even-path') ) then
+             ! Check if we should make as even a spacing as possible
+             even_path = .true.
+          end if
+       end if
+    end do
+    if ( is_path ) then
+       j = nkpt
+       if ( even_path ) then
+          ! For even paths we cannot assert full range, add a few 
+          ! numbers
+          j = nkpt + i * 2
+       end if
+       allocate(kpt(3,j))
+    end if
+
+    ! Rewind the block to read again
+    call fdf_brewind(bfdf)
+
     ! Read in the blocks
     ik = 0
     is_list = .false.
@@ -93,13 +141,33 @@ contains
           ctmp = fdf_bnames(pline,1)
 
           ! We have some kind of designation
-          if ( leqi(ctmp(1:5),'diag-') ) then
+          if ( is_path ) then
+
+             if ( leqi(ctmp,'path') ) then
+
+                ! Read in options (for even path, j is overwritten)
+                j = nkpt
+                call read_path(bfdf,pline,rcell,even_path,k_path_length,prev_k,next_k,j)
+
+                ! Get dk (the next path curve has the end-point, if prev is used)
+                p = (next_k - prev_k) / real(j,dp)
+                do i = 1 , j
+                   ik = ik + 1
+                   kpt(:,ik) = prev_k + p * (i-1)
+                end do
+                
+             end if
+
+          else if ( leqi(ctmp(1:5),'diag-') .or. &
+               leqi(ctmp(1:9),'diagonal-') ) then
 
              if ( fdf_bnintegers(pline) /= 1 ) then
                 call die('Please correct your input, you have not supplied a number in diag-.')
              end if
              
-             ctmp = ctmp(6:)
+             if ( ctmp(5:5) == '-' ) ctmp = ctmp(6:)
+             if ( ctmp(9:9) == '-' ) ctmp = ctmp(10:)
+
              if ( leqi(ctmp,'A1') .or. leqi(ctmp,'a') ) then
                 ik = 1
              else if ( leqi(ctmp,'A2') .or. leqi(ctmp,'b') ) then
@@ -179,7 +247,7 @@ contains
 
           end if
 
-       else if ( fdf_bnintegers(pline) == 3 ) then
+       else if ( fdf_bnintegers(pline) == 3 .and. .not. is_path ) then
 
           ! There exists two variants
           ! 1. Either the user only supplies the diagonal,
@@ -202,7 +270,35 @@ contains
 
     end do
 
-    if ( .not. is_list ) then
+    if ( is_path ) then
+
+       if ( IONode ) then
+          write(*,'(a)')'tbtrans: k-points are following paths in the Brillouin zone.'
+          write(*,'(a)')'WARNING: The averaged transmission will not necessarily &
+               &reflect the total transmission!'
+       end if
+
+       ! Correct number of k-points
+       ! ik is our loop counter in the above loop
+       nkpt = ik
+
+       if ( nkpt /= size(kpt,dim=2) ) then
+
+          allocate(tmp3(3,nkpt))
+          tmp3 = kpt(:,1:nkpt)
+          deallocate(kpt)
+          nullify(kpt)
+          allocate(kpt(3,nkpt))
+          kpt = tmp3
+          deallocate(tmp3)
+
+       end if
+       
+       ! Allocate weights
+       allocate(wkpt(nkpt))
+       wkpt = 1._dp / nkpt
+
+    else if ( .not. is_list ) then
 
        do iEl = 1 , N_Elec
           ! project the electrode transport direction onto
@@ -275,9 +371,63 @@ contains
     ! Transform the reciprocal units into length
     call reclat(cell,rcell,1)
     do ik = 1 , nkpt
-       ksize(:) = kpt(:,ik)
-       call kpoint_convert(rcell,ksize(:),kpt(:,ik),-2)
+       p(:) = kpt(:,ik)
+       call kpoint_convert(rcell,p(:),kpt(:,ik),-2)
     end do
+
+  contains
+
+    subroutine read_path(bfdf,pline,rcell,even,kl,prev_k,next_k,nkpt)
+      type(block_fdf), intent(inout) :: bfdf
+      type(parsed_line), pointer :: pline
+      real(dp), intent(in) :: rcell(3,3)
+      logical, intent(in) :: even
+      real(dp), intent(in) :: kl
+      real(dp), intent(inout) :: prev_k(3), next_k(3)
+      integer, intent(inout) :: nkpt
+
+      character(len=50) :: ctmp
+      integer :: i
+      real(dp) :: p(3), q(3)
+
+      ! Read number of k-points in this path
+      i = fdf_bintegers(pline,1)
+
+      ! Read from
+      if ( .not. fdf_bnext(bfdf,pline) ) &
+           call die('Could not read from in k-path')
+      if ( fdf_bnnames(pline) > 1 ) then
+         ctmp = fdf_bnames(pline,2)
+         if ( leqi(ctmp,'prev') .or. leqi(ctmp,'previous') ) then
+            ! perfect
+            prev_k = next_k
+         else
+            call die('Could not find previous/prev in the from line')
+         end if
+      else
+         prev_k(1) = fdf_bvalues(pline,1)
+         prev_k(2) = fdf_bvalues(pline,2)
+         prev_k(3) = fdf_bvalues(pline,3)
+      end if
+
+      if ( .not. fdf_bnext(bfdf,pline) ) &
+           call die('Could not read to in k-path')
+      next_k(1) = fdf_bvalues(pline,1)
+      next_k(2) = fdf_bvalues(pline,2)
+      next_k(3) = fdf_bvalues(pline,3)
+
+      if ( even ) then
+         call kpoint_convert(rcell,prev_k,p,-2)
+         call kpoint_convert(rcell,next_k,q,-2)
+         p = q - p
+         ! Calculate the fraction of k-points in this
+         ! segment (nkpt is then the full number of k-points)
+         nkpt = nint(vnorm(p) / kl * nkpt)
+      else
+         nkpt = i
+      end if
+      
+    end subroutine read_path
 
   end subroutine read_kgrid
   
@@ -347,7 +497,7 @@ contains
          dot_product(kpoint(:,1),kpoint(:,1)) < 1.0e-20_dp
     
     call write_k_points()
-    
+
   end subroutine setup_kpoint_grid
   
   subroutine write_k_points()
