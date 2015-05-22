@@ -227,7 +227,7 @@ tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
 tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
-              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
+              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(LIBS)
 
 # We append the -DTBTRANS as some special routines
 # which could take advantage of this preprocessing flag
@@ -236,7 +236,7 @@ phtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS -DTBT_PHONON
 phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o phtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
-              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
+              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(LIBS)
 
 .PHONY: clean-tbt
 clean-tbt:

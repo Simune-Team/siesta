@@ -1,4 +1,11 @@
 ----------------------------------------------------
+May 22, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-424
+TBT Cleaned makefile
+
+modified:
+  Util/TS/TBtrans/Makefile
+
+----------------------------------------------------
 May 22, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-423
 TBT Enabled transmission paths in the Brillouin zone
 
