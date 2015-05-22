@@ -116,6 +116,7 @@ TBTOBJS += m_tbt_kregions.o m_tbt_sparse_helper.o
 TBTOBJS += tbtrans.o
 
 # The version program
+.PHONY: version
 version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
@@ -199,6 +200,26 @@ $(NCDF): $(FVAR)
 $(DEP_OBJS): $(FDF) $(COMP_LIBS) $(FVAR)
 $(TBTOBJS): $(DEP_OBJS)
 
+.PHONY: check-tbtrans
+check-tbtrans:
+	@if [ -f .phtrans ]; then \
+              echo "** You were building phtrans in this directory." ;\
+              echo "** Please type 'make clean' first " ;\
+              false ;\
+	fi
+	@touch .tbtrans
+tbtrans: check-tbtrans
+
+.PHONY: check-phtrans
+check-phtrans:
+	@if [ -f .tbtrans ]; then \
+              echo "** You were building tbtrans in this directory." ;\
+              echo "** Please type 'make clean' first " ;\
+              false ;\
+	fi
+	@touch .phtrans
+phtrans: check-phtrans
+
 # We append the -DTBTRANS as some special routines
 # which could take advantage of this preprocessing flag
 tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
@@ -217,19 +238,24 @@ phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
               $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(LIBS) || echo "***Please see top of Makefile"
 
+.PHONY: clean-tbt
 clean-tbt:
-	@echo "==> Cleaning tbtrans-only object, and executable files"
+	@echo "==> Cleaning tb/ph-trans only object, and executable files"
 	-rm -f tbtrans phtrans $(TBTOBJS) m_ts_gf.o m_ts_elec_se.o
+	-rm -f .phtrans .tbtrans
 
+.PHONY: clean
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	-rm -f tbtrans phtrans *.o *.a *.mod
+	-rm -f .phtrans .tbtrans
 	-rm -rf ./fdf
 	-rm -rf ./MPI
 	-rm -rf ./fvar
 	-rm -rf ./NCDF
 
 # Dependencies
+.PHONY: dep
 dep:
 	-sfmakedepend --depend=obj --modext=o \
 		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
