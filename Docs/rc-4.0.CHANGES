@@ -1,6 +1,14 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-05-25                                              rc-4.0-pl-7
+Cosmetic: declare variable, remove unused export
+
+modified:
+  Src/Fstack.T90
+  Src/m_convergence.f90
+
+----------------------------------------------------------------------
 2015-03-04                                              rc-4.0-pl-6
 Fix import of idyn in save_density_matrix
 
