@@ -1,6 +1,26 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-05-25                                              rc-4.0-pl-8
+Include feature in trunk-463 -- Restart file for annealing runs
+  
+* Added the writing and reading of an .ANNEAL_RESTART file, along the
+  same lines of the .VERLET_RESTART file. This fixes a small problem
+  for restarting annealing calculations when a continuous smooth run
+  is desired.
+  
+(Fabiano Corsetti)
+
+added:
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+modified:
+  Docs/siesta.tex
+  Src/dynamics.f
+
+----------------------------------------------------------------------
 2015-05-25                                              rc-4.0-pl-7
 Cosmetic: declare variable, remove unused export
 
