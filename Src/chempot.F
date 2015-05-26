@@ -892,11 +892,11 @@ C  Internal variables ...
 
       real(dp)
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
-     .  mod, norm, ran3, wr(2)
+     .  mod, norm, randomg, wr(2)
 
       real(dp), dimension(:), pointer ::  hv0, u0, v0
 
-      external  ran3
+      external  randomg
 
 C ...
 
@@ -915,7 +915,7 @@ C ...
 C  Generate an initial normalized random vector ........
       mod=0.0d0
       do i=1,nbasis
-        u0(i)=2.0d0*ran3(-i)-1.
+        u0(i)=2.0d0*randomg(-i)-1.
         mod=mod+u0(i)**2 
       enddo
       mod=sqrt(mod)
@@ -1131,11 +1131,11 @@ C  Internal variables ...
 
       real(dp)
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
-     .  mod, norm, ran3, wr
+     .  mod, norm, randomg, wr
 
       real(dp), dimension(:), pointer :: hv0, u0, v0, v00
 
-      external ran3
+      external randomg
 
 C ...
 
@@ -1156,7 +1156,7 @@ C ...
 C  Generate an initial normalized random vector ........
       mod=0.0d0
       do i=1,nbasis
-        u0(i)=2.0d0*ran3(-i)-1.
+        u0(i)=2.0d0*randomg(-i)-1.
         mod=mod+u0(i)**2 
       enddo
       mod=sqrt(mod)

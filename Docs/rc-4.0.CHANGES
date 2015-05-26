@@ -1,6 +1,20 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-05-26                                              rc-4.0-pl-10
+Replaced random number routine
+
+removed:
+  Src/ran3.f
+added:
+  Src/randomg.f90
+modified:
+  Src/Makefile
+  Src/atomlwf.F
+  Src/chempot.F
+  Src/vmb.F
+
+----------------------------------------------------------------------
 2015-05-26                                              rc-4.0-pl-9
 Some routines from Numerical Recipes reimplemented
 

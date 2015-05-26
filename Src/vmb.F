@@ -158,7 +158,7 @@ C This function assigns velocities to atoms according to the
 C Maxwell-Boltzman distribution.
 C It generates random numbers drawn from the normal distribution,
 C using as input random numbers distributed uniformly from 0 to 1,  
-C which are provided by routine ran3.
+C which are provided by routine randomg.
 C
 C Temperatures in Kelvin
 C Mass in atomic mass units
@@ -184,10 +184,10 @@ C *************************************************************************
 C Internal variables .................
 
       real*8
-     .  arg1, arg2, gauss, med, pi, ran3, var
+     .  arg1, arg2, gauss, med, pi, randomg, var
       
       external
-     .  ran3
+     .  randomg
 
 C ...........
 
@@ -198,9 +198,9 @@ C  For other distributions med may be different from cero.
 C  conversion factor to bohr/fs
       var = var * 0.00172309d0
  
-      arg1 = sqrt((-2.) * log(ran3(iseed)))
+      arg1 = sqrt((-2.) * log(randomg(iseed)))
 
-      arg2 = 2.0d0 * pi * ran3(iseed)
+      arg2 = 2.0d0 * pi * randomg(iseed)
       gauss = arg1 * cos(arg2)
 
       velo = med + var * gauss
