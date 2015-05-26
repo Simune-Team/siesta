@@ -1,6 +1,18 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-05-26                                              rc-4.0-pl-11
+Replaced derf/derfc by Netlib versions
+
+added:
+  Src/errorf.f
+modified:
+  Src/Makefile
+  Src/fermid.F
+  Src/m_recipes.f
+  Src/matel.f
+
+----------------------------------------------------------------------
 2015-05-26                                              rc-4.0-pl-10
 Replaced random number routine
 

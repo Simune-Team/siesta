@@ -89,7 +89,7 @@ OBJS =  automatic_cell.o atom_options.o \
         fft.o dhscf.o constr.o diagk_file.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o doping_uniform.o dot.o  \
-	m_efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
+	m_efield.o egandd.o ener3.o ener3lomem.o errorf.o extrapolon.o \
 	fixed.o interpolation.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
 	iodmhs_netcdf.o iogrid_netcdf.o iolwf.o iozm.o ipack.o iopipes.o \
@@ -464,7 +464,7 @@ electrostatic.o: precision.o radfft.o radial.o sys.o
 ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolon.o: parallel.o precision.o sys.o
-fermid.o: m_recipes.o parallel.o precision.o sys.o
+fermid.o: errorf.o parallel.o precision.o sys.o
 fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
 fft.o: sys.o
 fft1d.o: parallel.o precision.o sys.o
@@ -604,7 +604,7 @@ m_wallclock.o: m_walltime.o
 m_zminim.o: files.o parallel.o parallelsubs.o precision.o siesta_options.o
 m_zminim.o: sys.o
 madelung.o: parallel.o precision.o sys.o
-matel.o: alloc.o atmfuncs.o interpolation.o m_recipes.o parallel.o precision.o
+matel.o: alloc.o atmfuncs.o errorf.o interpolation.o parallel.o precision.o
 matel.o: radfft.o spher_harm.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
@@ -827,6 +827,7 @@ m_doping_uniform.o: doping_uniform.o
 m_dynamics.o: dynamics.o
 m_eandg.o: egandd.o
 m_ener3.o: ener3.o
+m_errorf.o: errorf.o
 m_fermid.o: fermid.o
 m_fft.o: fft.o
 m_final_h_f_stress.o: final_H_f_stress.o

@@ -12,8 +12,6 @@
       implicit none
 
 ! Public procedures provided by this module
-      public :: derf    ! Error function
-      public :: derfc   ! Complementary error function
       public :: four1   ! 1-D fast Fourier transform
       public :: tqli    ! With tred2, diagonalizes a real matrix
       public :: tred2   ! Reduction of a real matrix to tridiagonal form
@@ -91,44 +89,6 @@
 
       END SUBROUTINE FOUR1
 
-
-      REAL(dp) function derfc(X)
-      REAL(dp), intent(in) :: x
-
-C  COMPLEMENTARY ERROR FUNCTION FROM "NUMERICAL RECIPES"
-C  NOTE: SINGLE PRECISION ACCURACY
-
-      REAL(dp) :: z, t
-
-      Z = ABS(X)
-      T = 1.0d0/(1.0d0 + 0.5d0*Z)
-      DERFC=T*EXP(-(Z*Z)-1.26551223D0+T*(1.00002368D0+T*(0.37409196D0+
-     .      T*(0.09678418D0+T*(-0.18628806D0+
-     .      T*(0.27886807D0+T*(-1.13520398D0+
-     .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
-      if (X.LT.0.D0) DERFC=2.D0-DERFC
-
-      end function derfc
-
-
-      REAL(dp) function derf(X)
-      REAL(dp), intent(in) :: x
-
-C  ERROR FUNCTION FROM "NUMERICAL RECIPES"
-C  NOTE: SINGLE PRECISION ACCURACY
-
-      REAL(dp) :: z, t
-
-      Z = ABS(X)
-      T = 1.0d0/(1.0d0 + 0.5d0*Z)
-      DERF= T*EXP(-(Z*Z)-1.26551223D0+T*(1.00002368D0+T*(0.37409196D0+
-     .      T*(0.09678418D0+T*(-0.18628806D0+
-     .      T*(0.27886807D0+T*(-1.13520398D0+
-     .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
-      if (X.LT.0.D0) DERF=2.D0-DERF
-
-      derf = 1.0d0 - derf
-      end function derf
 
       SUBROUTINE TQLI(D,E,N,NP,Z)
 

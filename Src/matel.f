@@ -143,7 +143,7 @@ C Modules -----------------------------------------------------------
       use m_xyz_phiatm
       use interpolation, only: spline  ! set spline interpolation
       use interpolation, only: splint  ! spline interpolation
-      use m_recipes, only: derf
+      use m_errorf, only: derf
       use spher_harm
       use m_radfft
 C -------------------------------------------------------------------
