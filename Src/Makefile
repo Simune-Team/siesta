@@ -543,7 +543,7 @@ m_efield.o: sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
-m_filter.o: bessph.o m_recipes.o radfft.o sorting.o
+m_filter.o: bessph.o precision.o radfft.o sorting.o sys.o
 m_fire.o: parallel.o precision.o
 m_fire_mixing.o: alloc.o m_fdf_global.o m_fire_para.o m_mpi_utils.o parallel.o
 m_fire_mixing.o: precision.o
@@ -569,7 +569,7 @@ m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
-m_recipes.o: precision.o sys.o
+m_recipes.o: precision.o
 m_rhog.o: alloc.o atomlist.o class_Fstack_Pair_Vectors.o class_Pair_Vectors.o
 m_rhog.o: class_Vector.o m_diis.o m_mpi_utils.o m_spin.o parallel.o precision.o
 m_rhog.o: siesta_options.o sorting.o

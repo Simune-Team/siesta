@@ -1,6 +1,15 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-05-26                                              rc-4.0-pl-12
+Replaced tred2/tqli by Lapack calls in m_filter
+
+modified:
+  Src/Makefile
+  Src/m_filter.f90
+  Src/m_recipes.f
+
+----------------------------------------------------------------------
 2015-05-26                                              rc-4.0-pl-11
 Replaced derf/derfc by Netlib versions
 
