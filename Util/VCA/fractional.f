@@ -7,7 +7,6 @@
       use pseudopotential, only: pseudopotential_t,
      $                           pseudo_read, pseudo_write_formatted
       use periodic_table,  only: cnfig, qvlofz
-      use sys,             only: die
       use f2kcli
 
       implicit none
@@ -353,7 +352,7 @@ c
       else
          write(6,9000) name
  9000    format(//'element ',a2,' unknown')
-         call die()
+         call die("Unknown element")
       end if
 
       nucl_z = charge

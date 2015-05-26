@@ -1,6 +1,63 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-05-26                                              rc-4.0-pl-9
+Some routines from Numerical Recipes reimplemented
+
+Some routines from Numerical Recipes have been reimplemented with
+(mostly) the same algorithms.
+
+(Jose Soler, with minor changes by A. Garcia)
+
+  - spline interpolation routines rewritten and moved to interpolation module
+  - polint Lagrange interpolation rewritten and moved to interpolation module
+  - ordix subroutine recoded
+  - chebfd re-styled to remove remaining similarities with NR chebft
+  - choldc and cholsl fully re-styled and renamed as cholDcmp and cholLinSys
+  - zbrent substituted by a simple bisection root finder
+  - amoeba method re-implemented
+
+(+ Interface to external routine 'die' simplified: it now
+   requires a string argument) (A. Garcia)
+
+added:
+  Util/Macroave/Src/local_die.f
+renamed:
+  Src/flib_spline.f90 => Src/interpolation.f90
+modified:
+  Src/Makefile
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh1d.f90
+  Src/SiestaXC/siestaXC.files
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/atom.F
+  Src/bonds.f
+  Src/chempot.F
+  Src/die.F
+  Src/electrostatic.f
+  Src/m_recipes.f
+  Src/m_rhog.F90
+  Src/matel.f
+  Src/pseudopotential.f
+  Src/radial.f
+  Src/sorting.f
+  Util/Denchar/Src/Makefile
+  Util/Macroave/Src/Makefile
+  Util/Macroave/Src/macroave.f
+  Util/Macroave/Src/paste.f
+  Util/Macroave/Src/recipes.f
+  Util/Optimizer/amoeba.f
+  Util/Optimizer/simplex.f90
+  Util/VCA/Makefile
+  Util/VCA/fractional.f
+  Util/VCA/mixps.f
+  version.info
+  Src/interpolation.f90
+
+----------------------------------------------------------------------
 2015-05-25                                              rc-4.0-pl-8
 Include feature in trunk-463 -- Restart file for annealing runs
   

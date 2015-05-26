@@ -32,6 +32,7 @@ C **********************************************************************
 C Modules --------------------------------------------------------------
       USE DEFS_BASIS
       USE DEFS_COMMON
+      use interpolation, only: spline, splint
 
       IMPLICIT NONE
 

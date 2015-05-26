@@ -91,7 +91,7 @@ do
      print *, p(i,:), " --- ", y(i)
    enddo
 
-   call amoeba(p,y,nvars+1,nvars,nvars,ftol,energy,iter,req_itmax=itmax)
+   call amoeba(p,y,nvars,ftol,energy,iter,maxeval=itmax)
 
    print *, "Amoeba cycle finished in ", iter, " iterations."
    print *,  "Points in simplex and values:"
