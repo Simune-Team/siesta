@@ -95,7 +95,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	iodmhs_netcdf.o iogrid_netcdf.o iolwf.o iozm.o ipack.o iopipes.o \
 	iowfs_netcdf.o kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
 	madelung.o matel.o mesh.o meshphi.o meshdscf.o memory.o meshsubs.o metaforce.o \
-        m_check_supercell.o mulliken.o minvec.o m_pulay.o naefs.o \
+        m_check_supercell.o m_fft_gpfa.o mulliken.o minvec.o m_pulay.o naefs.o \
 	new_dm.o normalize_dm.o ordern.o outcell.o outcoor.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	projected_DOS.o propor.o m_partial_charges.o \
@@ -145,7 +145,6 @@ OBJS =  automatic_cell.o atom_options.o \
         m_iodm.o m_sparse.o \
 	m_filter.o \
         m_io.o \
-	m_recipes.o \
 	m_timer.o \
 	moreParallelSubs.o \
 	read_xc_info.o \
@@ -569,7 +568,6 @@ m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
-m_recipes.o: precision.o
 m_rhog.o: alloc.o atomlist.o class_Fstack_Pair_Vectors.o class_Pair_Vectors.o
 m_rhog.o: class_Vector.o m_diis.o m_mpi_utils.o m_spin.o parallel.o precision.o
 m_rhog.o: siesta_options.o sorting.o
@@ -677,7 +675,7 @@ propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
-radfft.o: alloc.o bessph.o m_recipes.o precision.o
+radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 radial.o: alloc.o interpolation.o precision.o xml.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
 read_xc_info.o: parallel.o precision.o sys.o

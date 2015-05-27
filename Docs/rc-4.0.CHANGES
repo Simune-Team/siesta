@@ -1,6 +1,26 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-05-27                                              rc-4.0-pl-13
+Replaced FFT routine by a version based on Temperton's GPFA
+
+Calls to the 'four1' routine have been replaced by calls to
+'fft_gpfa_ez' with the same arguments. This routine lives
+in a new module in 'm_fft_gpfa.F', which also contains the
+legacy code by Temperton and the original entry points.
+
+removed:
+  Src/m_recipes.f
+  Util/Macroave/Src/recipes.f
+added:
+  Src/m_fft_gpfa.F
+modified:
+  Src/Makefile
+  Src/radfft.f
+  Util/Macroave/Src/Makefile
+  Util/Macroave/Src/macroave.f
+
+----------------------------------------------------------------------
 2015-05-26                                              rc-4.0-pl-12
 Replaced tred2/tqli by Lapack calls in m_filter
 
