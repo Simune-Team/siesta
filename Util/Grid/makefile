@@ -55,9 +55,11 @@ cdf_diff: m_grid.o cdf_diff.o
 	$(FC) $(LDFLAGS) -o $@  m_grid.o cdf_diff.o  $(NETCDF_LIBS)
 cdf_diff.o: m_grid.o
 #------------------
-cdf_fft: cdf_fft.o libfft.o
-	$(FC) $(LDFLAGS) -o $@  cdf_fft.o  libfft.o $(NETCDF_LIBS)
+cdf_fft: cdf_fft.o fft3d.o m_fft_gpfa.o local_die.o
+	$(FC) $(LDFLAGS) -o $@  cdf_fft.o \
+               local_die.o fft3d.o m_fft_gpfa.o $(NETCDF_LIBS)
 #
+fft3d.o: m_fft_gpfa.o
 #------------------
 grid2val.o: f2kcli.o
 grid2val: grid2val.o

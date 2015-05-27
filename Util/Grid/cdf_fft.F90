@@ -48,9 +48,9 @@ integer   ::   ispin, iostat, ix, iy, iz, iret
 
 real(dp)  ::    cell(3,3), cell_volume
 real(sp), dimension(:), allocatable :: gridfunc
-complex(sp), dimension(:), allocatable :: aa
+complex(dp), dimension(:), allocatable :: aa
 
-external c3d_fft
+external fft3d
 !-----------------------------------------------------
 
 call check( nf90_open('GridFunc.nc',NF90_NOWRITE,ncid))
@@ -85,9 +85,8 @@ call check( nf90_open('GridFunc.nc',NF90_NOWRITE,ncid))
 
    nc(1:3) = (n(1:3) - 1) /2
    
-   aa = cmplx(gridfunc)
-   call c3d_fft(n1,n2,n3,aa,+1,n1,n2)
-!!!   aa = aa * cell_volume   ! To convert to number of electrons
+   aa = cmplx(gridfunc,kind=dp)
+   call fft3d(aa,(/n1, n2, n3/),+1)
    do ip = 1, size(aa)
       i = modulo(ip-1,n1) + 1
       j = modulo( (ip - i)/n1, n2) + 1
@@ -107,8 +106,10 @@ call check( nf90_open('GridFunc.nc',NF90_NOWRITE,ncid))
 
         call check( nf90_close(ncid) )
 
-write(0,*) "aa(1): ", aa(1)
-write(0,*) "Cell volume * aa(1): ", aa(1)*cell_volume
+!write(0,*) "aa(1): ", aa(1)
+! To convert to number of electrons
+write(0,"(a,f20.6)") "Cell volume * aa(1) (number of electrons): ", &
+           real(aa(1),kind=dp)*cell_volume
 
 CONTAINS
 

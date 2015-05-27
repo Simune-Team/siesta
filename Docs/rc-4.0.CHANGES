@@ -1,6 +1,21 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-05-27                                              rc-4.0-pl-14
+The cdf_fft program now uses Temperton's GPFA package
+
+The cdf_fft program in Util/Grid now uses Temperton's GPFA package.
+
+removed:
+  Util/Grid/libfft.f
+added:
+  Util/Grid/fft3d.f
+  Util/Grid/local_die.f90
+modified:
+  Util/Grid/cdf_fft.F90
+  Util/Grid/makefile
+
+----------------------------------------------------------------------
 2015-05-27                                              rc-4.0-pl-13
 Replaced FFT routine by a version based on Temperton's GPFA
 
