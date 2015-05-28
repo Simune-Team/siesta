@@ -1,6 +1,25 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-05-28                                              rc-4.0-pl-15
+Bugfix for soft confinement charge
+
+* The shell belogning to the orbital setups did not initialize
+  properly if the PAO.Basis block was not defined.
+
+  Now the initialization routine is called before setting up the
+  orbital.
+
+  Also changed the comments about the magnitude of the charge
+  confinement width.
+
+  (Nick P. Andersen)
+
+modified:
+  Src/basis_specs.f
+  Src/basis_types.f
+
+----------------------------------------------------------------------
 2015-05-27                                              rc-4.0-pl-14
 The cdf_fft program now uses Temperton's GPFA package
 
