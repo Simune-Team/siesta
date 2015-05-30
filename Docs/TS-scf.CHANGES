@@ -1,4 +1,17 @@
 ----------------------------------------------------
+May 30, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-425
+Improved SFIND to make it even faster
+
+* Checked against a simple binary search and found it
+  faster.
+
+* Cheched against the recursive function and found it
+  twice as fast!
+
+modified:
+  Src/intrinsic_missing.F90
+
+----------------------------------------------------
 May 22, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-424
 TBT Cleaned makefile
 

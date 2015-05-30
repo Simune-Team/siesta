@@ -78,6 +78,15 @@ module intrinsic_missing
   public :: SORT
   public :: UNIQ, UNIQC
   public :: SFIND
+  interface SFIND
+     module procedure SORTED_FIND, SORTED_CLOSE
+  end interface SFIND
+#ifdef INTRINSIC_MISSING_TEST
+  public :: SORTED_FIND
+  public :: SORTED_REC_FIND
+  public :: SORTED_BINARY_FIND
+#endif
+
 
 ! Elemental functions (can be called on arrays)
   public :: MODP
@@ -694,10 +703,9 @@ contains
 !  3. Returns the index of the value found in the array
 !  4. If the value is not found, return 0
 !  5. If something went wrong, return -1
-  pure function SFIND(array,val,NEAREST) result(idx)
+  pure function SORTED_FIND(array,val) result(idx)
     integer, intent(in) :: array(:)
     integer, intent(in) :: val
-    integer, intent(in), optional :: NEAREST
     ! Used internal variables
     integer :: DA,h,FM, idx
     
@@ -710,19 +718,220 @@ contains
 
     ! The two easiest cases, i.e. they are not in the array...
     if ( val < array(1) ) then
-       if (.not. present(NEAREST) ) return
-       ! We need only handle if the user requests
-       ! *closest above*
-       if ( NEAREST == 1 ) idx = 1
        return
     else if ( val == array(1) ) then
        idx = 1
        return
     else if ( array(DA) < val ) then
-       if (.not. present(NEAREST) ) return
+       return
+    else if ( val == array(DA) ) then
+       idx = DA
+       return
+    end if
+    
+    ! If it is size 1 or 2, we can immediately return,
+    ! we have already checked the first/last index
+    if ( DA <= 2 ) return
+
+    ! An *advanced* search algorithm...
+
+    ! Search the sorted array for an entry
+    ! We know it *must* have one
+    h = DA / 2
+    idx = h ! Start in the middle
+    ! The integer correction (due to round of errors when 
+    ! calculating the new half...
+    FM = MOD(h,2)
+    do while ( h > 0 ) ! While we are still searching...
+
+       if ( h >= 3 ) then
+          h = h + FM
+          ! This will only add 1 every other time 
+          FM = MOD(h,2)
+       end if
+
+       ! integer division is fast
+       h = h / 2
+
+       if ( val < array(idx) ) then
+          ! the value we search for is smaller than 
+          ! the current checked value, hence we step back
+          !print *,'stepping down',i,h
+          idx = idx - h
+       else if ( array(idx) < val ) then
+          ! the value we search for is larger than 
+          ! the current checked value, hence we step forward
+          !print *,'stepping up',i,h
+          idx = idx + h
+       else
+          !print *,'found',i
+          ! We know EXACTLY where we are...
+          return
+          ! We found it!!!
+       end if
+    end do
+          
+    ! We need to ensure a range to search in
+    ! The missing integers are *only* necesseary when 
+    ! the search pattern is in the same direction.
+    ! This can easily be verified...
+    h  = 1 + FM
+
+    ! The missing integer count ensures the correct range
+    FM = max(idx - h, 1 )
+    h  = min(idx + h, DA)
+
+    ! The index will *most* likely be close to 'i'
+    ! Hence we start by searching around it
+    ! However, we know that val /= array(i)
+
+    do idx = FM,  h 
+       if ( val == array(idx) ) return
+    end do
+    
+    ! Default value is *not found*
+    idx = 0
+
+  end function SORTED_FIND
+
+  pure function SORTED_BINARY_FIND(array,val) result(idx)
+    integer, intent(in) :: array(:)
+    integer, intent(in) :: val
+
+    ! Used internal variables
+    integer :: idx
+    integer :: a,b,c,d, e
+
+    ! Retrieve the size of the array we search in
+    d = ubound(array,dim=1)
+
+    ! Initialize to default value
+    idx = 0
+    if ( d == 0 ) return
+
+    ! The two easiest cases, i.e. they are not in the array...
+    if ( val < array(1) ) then
+       return
+    else if ( val == array(1) ) then
+       idx = 1
+       return
+    else if ( array(d) < val ) then
+       return
+    else if ( val == array(d) ) then
+       idx = d
+       return
+    end if
+    
+    ! If it is size 1 or 2, we can immediately return,
+    ! we have already checked the first/last index
+    if ( d <= 2 ) return
+
+    a = 1 
+    c = 1
+    b = d
+
+    do while ( a + 1 < b .or. c + 1 < d ) 
+       e = (a+b)/2
+       if ( array(e) < val ) then
+          a = e
+       else
+          b = e
+       end if
+       e = (c+d)/2
+       if ( array(e) <= val ) then
+          c = e
+       else
+          d = e
+       end if
+    end do
+    idx = c
+    if ( b == c .and. array(idx) /= val ) idx = 0
+
+  end function SORTED_BINARY_FIND
+
+  pure recursive function SORTED_REC_FIND(array,val) result(idx)
+    integer, intent(in) :: array(:)
+    integer, intent(in) :: val
+    ! Used internal variables
+    integer :: DA, idx, tmp
+    
+    ! Retrieve the size of the array we search in
+    DA = ubound(array,dim=1)
+
+    ! Initialize to default value
+    idx = 0
+    if ( DA == 0 ) return
+
+    ! The two easiest cases, i.e. they are not in the array...
+    if ( val < array(1) ) then
+       return
+    else if ( val == array(1) ) then
+       idx = 1
+       return
+    else if ( array(DA) < val ) then
+       return
+    else if ( val == array(DA) ) then
+       idx = DA
+       return
+    end if
+    
+    ! If it is size 1, we can immediately return,
+    ! we have already checked the first index
+    if ( DA <= 2 ) then
+       idx = 0
+       return
+    end if
+
+    idx = DA / 2
+    if ( val <= array(idx) ) then
+       idx = SORTED_REC_FIND(array(1:idx),val)
+    else
+       tmp = SORTED_REC_FIND(array(idx+1:),val)
+       if ( tmp == 0 ) then
+          idx = 0
+       else
+          idx = idx + tmp
+       end if
+    end if
+
+  end function SORTED_REC_FIND
+
+! We add an algorithm for search for SORTED entries
+! This will relieve a lot of programming in other segments
+! of the codes.
+! What it does is the following:
+!  1. Get a sorted array of some size
+!  2. Get a value which should be found in the array
+!  3. Returns the index of the value found in the array
+!  4. If the value is not found, return 0
+!  5. If something went wrong, return -1
+  pure function SORTED_CLOSE(array,val,NEAREST) result(idx)
+    integer, intent(in) :: array(:)
+    integer, intent(in) :: val
+    integer, intent(in) :: NEAREST
+    ! Used internal variables
+    integer :: DA,h,FM, idx
+    
+    ! Retrieve the size of the array we search in
+    DA = ubound(array,dim=1)
+
+    ! Initialize to default value
+    idx = 0
+    if ( DA == 0 ) return
+
+    ! The two easiest cases, i.e. they are not in the array...
+    if ( val < array(1) ) then
+       ! We need only handle if the user requests
+       ! *closest above*
+       if ( NEAREST > 0 ) idx = 1
+       return
+    else if ( val == array(1) ) then
+       idx = 1
+       return
+    else if ( array(DA) < val ) then
        ! We need only handle if the user requests
        ! *closest below*
-       if ( NEAREST == -1 ) idx = DA
+       if ( NEAREST < 0 ) idx = DA
        return
     else if ( val == array(DA) ) then
        idx = DA
@@ -795,47 +1004,41 @@ contains
     ! Hence we start by searching around it
     ! However, we know that val /= array(i)
 
-    if ( present(NEAREST) ) then
-       ! We need to determine the method of indexing
-       if ( NEAREST == -1 ) then
-          do idx = FM, h - 1
-             if ( val == array(idx) ) then
-                return
-             else if ( val < array(idx+1) ) then
-                return
-             end if
-          end do
-          ! This checks for array(h)
-          if ( val == array(h) ) then
-             idx = h
+    ! We need to determine the method of indexing
+    if ( NEAREST < 0 ) then
+       do idx = FM, h - 1
+          if ( val == array(idx) ) then
+             return
+          else if ( val < array(idx+1) ) then
              return
           end if
-       else if ( NEAREST == 0 ) then
-          do idx = FM,  h 
-             if ( val == array(idx) ) return
-          end do
-      else if ( NEAREST == 1 ) then
-         do idx = FM, h 
-            if ( val == array(idx) ) then
-               return
-            else if ( val < array(idx) .and. idx > 1 ) then
-               if ( val > array(idx-1) ) return
-            end if
-         end do
-      else
-          ! ERROR
-          idx = -1
+       end do
+       ! This checks for array(h)
+       if ( val == array(h) ) then
+          idx = h
+          return
        end if
-    else
+    else if ( NEAREST == 0 ) then
        do idx = FM,  h 
           if ( val == array(idx) ) return
        end do
+    else if ( NEAREST > 0 ) then
+       do idx = FM, h 
+          if ( val == array(idx) ) then
+             return
+          else if ( val < array(idx) .and. idx > 1 ) then
+             if ( val > array(idx-1) ) return
+          end if
+       end do
+    else
+       ! ERROR
+       idx = -1
     end if
     
     ! Default value is *not found*
     idx = 0
 
-  end function SFIND
+  end function SORTED_CLOSE
 
   
   ! Matrix operations missing
@@ -1038,8 +1241,12 @@ program test
   integer, parameter :: sp = selected_real_kind(5,10)
   integer, parameter :: dp = selected_real_kind(10,100)
   real(dp) :: cell(3,3), v(3)
+  real :: t1 , t2
 
-  integer :: list(10), i
+  integer :: i, j
+  integer, parameter :: N = 21355
+  integer :: list(N)
+  
 
   cell(:,:) = 0._dp
   cell(1,1) = 10._dp
@@ -1062,6 +1269,46 @@ program test
   v(2) = v(1) / 10._dp
   v(3) = 0._dp
   print *,1,'==',IDX_SPC_PROJ(cell,v)
+
+  do i = 1 , N
+     list(i) = i
+  end do
+
+  call cpu_time(t1)
+  do j = 2 , N
+     do i = 1 , j
+        if ( SORTED_FIND(list(1:j),i) /= i ) print *,'Error',i
+     end do
+     do i = 1 , j
+        if ( SORTED_FIND(list(1:j),i+j) /= 0 ) print *,'Error',i
+     end do
+  end do
+  call cpu_time(t2)
+  print '(a,f10.5,a)','Timing of SORTED_FIND: ',t2-t1,' secs'
+
+  call cpu_time(t1)
+  do j = 2 , N
+     do i = 1 , j
+        if ( SORTED_REC_FIND(list(1:j),i) /= i ) print *,'Error',i
+     end do
+     do i = 1 , j
+        if ( SORTED_REC_FIND(list(1:j),i+j) /= 0 ) print *,'Error',i
+     end do
+  end do
+  call cpu_time(t2)
+  print '(a,f10.5,a)','Timing of SORTED_REC_FIND: ',t2-t1,' secs'
+
+  call cpu_time(t1)
+  do j = 2 , N
+     do i = 1 , j
+        if ( SORTED_BINARY_FIND(list(1:j),i) /= i ) print *,'Error',i
+     end do
+     do i = 1 , j
+        if ( SORTED_BINARY_FIND(list(1:j),i+j) /= 0 ) print *,'Error',i
+     end do
+  end do
+  call cpu_time(t2)
+  print '(a,f10.5,a)','Timing of SORTED_BINARY_FIND: ',t2-t1,' secs'
 
 end program test
 #endif
