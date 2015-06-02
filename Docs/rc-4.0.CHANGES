@@ -1,6 +1,19 @@
 ** CHANGES (fixes only) on rc-4.0 branch
 
 ----------------------------------------------------------------------
+2015-06-02                                              rc-4.0-pl-16
+Remove mentions of NR in the manual. Fix siestaxc makefile
+
+The routines replacing those from NR were not properly accounted
+for in the SiestaXC makefile. Thanks to Nick P. Andersen.
+
+Remove the mention of NR in the manual. Fix the FFT attribution.
+
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/makefile
+
+----------------------------------------------------------------------
 2015-05-28                                              rc-4.0-pl-15
 Bugfix for soft confinement charge
 
