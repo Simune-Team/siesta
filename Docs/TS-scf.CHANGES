@@ -1,4 +1,13 @@
 ----------------------------------------------------
+June 2, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-426
+Scalapack debug printed errors for serial execution
+
+* Removed printout for serial execution
+
+modified:
+  Src/cdiag.F
+
+----------------------------------------------------
 May 30, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-425
 Improved SFIND to make it even faster
 
