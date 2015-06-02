@@ -123,16 +123,16 @@ C  Internal variables .......................................................
 
       real(dp) ::
      .  cg,fact(2),qtot,r,rmax,rr(3),rrmod,
-     .  snor,tiny,ran3,cgval
+     .  snor,tiny,randomg,cgval
 
-      external :: ran3
+      external :: randomg
 
       logical, save :: firstcall = .true., secondodd = .false.
 
       if (firstcall) then
 
 C Initialise random number generator
-        cgval = ran3(-iseed)
+        cgval = randomg(-iseed)
 
         firstcall = .false.
 
@@ -362,7 +362,7 @@ C loop over the neighbors of ia within rcoor
 
               ! Get random number here for reproducibility over numbers of processors
               get_random: do
-                 cgval = (ran3(iseed) - 0.5d0) * 2.0d0
+                 cgval = (randomg(iseed) - 0.5d0) * 2.0d0
                  if (abs(cgval) .ge. 1d-5) exit get_random
               enddo get_random
 

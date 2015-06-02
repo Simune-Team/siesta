@@ -18,9 +18,6 @@
 !   USED module routines:
 ! use m_bessph,  only bessph  ! Spherical bessel functions
 ! use m_radfft,  only radfft  ! Radial fast Fourier transform
-! use m_recipes, only four1   ! 1D Fast Fourier transform
-! use m_recipes, only tqli    ! Eigvals and eigvecs. of a tridiagonal matrix
-! use m_recipes, only tred2   ! Matrix reduction to tridiagonal form
 ! use sorting,   only order   ! Orders a vector by increasing values
 ! use sorting,   only ordix   ! Index of a vector by increasing values
 !
@@ -67,9 +64,6 @@ MODULE m_filter
 ! Used module routines (presently contained within the module, to be moved out):
 USE m_bessph,  only: bessph  ! Spherical bessel functions
 USE m_radfft,  only: radfft  ! Radial fast Fourier transform
-USE m_recipes, only: four1   ! 1D Fast Fourier transform
-USE m_recipes, only: tqli    ! Eigvals and eigvecs. of a tridiagonal matrix
-USE m_recipes, only: tred2   ! Matrix reduction to tridiagonal form
 USE sorting,   only: order   ! Orders a vector by increasing values
 USE sorting,   only: ordix   ! Index of a vector by increasing values
 
@@ -860,21 +854,30 @@ end subroutine gen_pol_filteret
 
   end function lagrange
 
-
 ! ***************************************************************************
-! subroutine rdiag(H,S,n,nm,nml,w,Z,neigvec,iscf,ierror)
+! subroutine filter_rdiag 
 !
-! Simple replacement to subroutine rdiag of siesta
-! J.M.Soler, April 2008
+! Adapted by Emilio Artacho, April 2015, to replace older one of
+! same name of Jose Soler (2008). Using Lapack instead of numerical recipes
+!
+! Note: A tighter version for the simple symmetric eigenvalue problem
+!       using routine DSYEV should be coded a some point.
+!
+! From the rdiag subroutine in Siesta, 
+! used to solve all eigenvalues and eigenvectors of the
+! real general eigenvalue problem  H z = w S z,  with H and S
+! real symmetric matrices.
+! Written by G.Fabricius and J.Soler, March 1998
+! Rewritten by Julian Gale, August 2004
 ! ************************** INPUT ******************************************
 ! real*8 H(nml,nm)                 : Symmetric H matrix
-! real*8 S(nml,nm)                 : Symmetric S matrix, ignored in this version
+! real*8 S(nml,nm)                 : Symmetric S matrix
 ! integer n                        : Order of the generalized  system
 ! integer nm                       : Right hand dimension of H and S matrices
 ! integer nml                      : Left hand dimension of H and S matrices
 !                                    which is greater than or equal to nm
 ! integer neigvec                  : No. of eigenvectors to calculate
-! integer iscf                     : SCF cycle, ignored in this version
+! integer iscf                     : SCF cycle
 ! ************************** OUTPUT *****************************************
 ! real*8 w(nml)                    : Eigenvalues
 ! real*8 Z(nml,nm)                 : Eigenvectors
@@ -884,43 +887,140 @@ end subroutine gen_pol_filteret
 !                                  :  1 = fatal error
 ! ***************************************************************************
 
-subroutine filter_rdiag(H,S,n,nm,nml,w,Z,neigvec,iscf,ierror)
+  subroutine filter_rdiag(H,S,n,nm,nml,w,Z,neigvec,iscf,ierror)
 
-  implicit none
+!  Modules
+
+    use precision
+    use sys,   only : die
+
+    implicit          none
 
 ! Passed variables
-  integer  :: ierror
-  integer  :: iscf
-  integer  :: n
-  integer  :: neigvec
-  integer  :: nm
-  integer  :: nml
-  real(dp) :: H(nml,nm)
-  real(dp) :: S(nml,nm)
-  real(dp) :: w(nml)
-  real(dp) :: Z(nml,nm)
+    integer                 :: ierror
+    integer                 :: iscf
+    integer                 :: n
+    integer                 :: neigvec
+    integer                 :: nm
+    integer                 :: nml
+    real(dp)                :: H(nml,nm)
+    real(dp)                :: S(nml,nm)
+    real(dp)                :: w(nml)
+    real(dp)                :: Z(nml,nm)
 
-! Internal variables and arrays
-  integer :: indx(n)
-  real(dp):: aux(n), c(n,n), e(n)
+! Local variables
+    character            :: jobz
+    character            :: range
+    integer              :: ilaenv
+    integer              :: info
+    integer              :: liwork
+    integer              :: lwork
+    integer              :: nb
+    integer              :: neigok
+    real(dp)             :: vl
+    real(dp)             :: vu
 
-! Diagonalize Hamiltonian
-  c(1:n,1:n) = H(1:n,1:n)
-  call tred2( c, n, n, e, aux )
-  call tqli( e, aux, n, n, c )
+    real(dp),  parameter :: abstol = 1.0e-8_dp
+    real(dp),  parameter :: orfac = 1.0e-3_dp
+    real(dp),  parameter :: zero = 0.0_dp
+    real(dp),  parameter :: one = 1.0_dp
+    real(dp),  parameter :: MemoryFactor = 1.5_dp
 
-! Order eigenvalues and eigenvectors by increasing eigval
-  call ordix( e, 1, n, indx )
-  call order( e, 1, n, indx )
-  call order( c, n, n, indx )
+    integer, allocatable :: ifail(:), iwork(:)
+    real(dp),allocatable :: work(:)
 
-! Copy eigenvectors and eigenvalues to output arrays
-  w = 0
-  Z = 0
-  w(1:neigvec) = e(1:neigvec)
-  Z(1:n,1:neigvec) = c(1:n,1:neigvec)
-  ierror = 0
+!****************************************************************************
+! Setup                                                                     *
+!****************************************************************************
 
-end subroutine filter_rdiag
+! Initialise error flag
+    ierror = 0
+
+! Trap n=1 case, which is not handled correctly otherwise (JMS 2011/07/19)
+    if (n==1) then
+      w(:) = 0._dp
+      w(1) = H(1,1) / S(1,1)
+      Z(:,:) = 0._dp
+      Z(1,1) = 1._dp / sqrt(S(1,1))
+      goto 1000   ! exit point
+    end if
+
+! vl and vu are not currently used, but they must be initialized
+    vl = 0
+    vu = n
+
+! Set general Lapack parameters
+    if (neigvec.gt.0) then
+      jobz   = 'V'
+      range  = 'A'
+    else
+      jobz   = 'N'
+      range  = 'A'
+    endif
+
+! Calculate memory requirements
+    nb = ilaenv(1,'DSYTRD','U',n,-1,-1,-1)
+    lwork = max(8*n,(nb+3)*n)
+    liwork = 5*n
+
+! Scale memory by memory factor
+    lwork = nint(MemoryFactor*dble(lwork))
+
+! Allocate workspace arrays
+    allocate( work(1:lwork) )
+    allocate( iwork(1:liwork) )
+    allocate( ifail(1:n) )
+
+!****************************************************************************
+! Solve standard eigenvalue problem                                         *
+!****************************************************************************
+    call dsyevx(jobz,range,'U',n,H,n,vl,vu,1,neigvec,abstol, &
+                neigok,w,Z,n,work,lwork,iwork,ifail,info)
+
+! Check error flag
+    if (info.ne.0) then
+      ierror = 1
+      if (info.lt.0) then
+        call die('Illegal argument to standard eigensolver')
+      elseif (info.gt.0)   then
+        if (mod(info/2,2).ne.0) then
+          write(6,'(/,''Clustered eigenvectors not converged - '', &
+            ''more memory required'',/)')
+        endif
+        call die('Failure to converge standard eigenproblem')
+      endif
+    endif
+    if (neigok.lt.neigvec) then
+      call die('Insufficient eigenvalues converged in filter_rdiag')
+    endif
+
+!****************************************************************************
+! Back transformation                                                       *
+!****************************************************************************
+    if (neigvec.gt.0) then
+      call dtrsm('Left','U','N','Non-unit',n,neigvec,one,S,n,Z,n)
+    endif
+    if (info.ne.0) then
+      call die('Error in back transformation in filter_rdiag')
+    endif
+ 
+!***************************************************************************
+! Clean up                                                                 *
+!***************************************************************************
+
+! Common exit point 
+  999 continue
+
+! Deallocate workspace arrays
+    deallocate( work )
+    deallocate( iwork )
+    deallocate( ifail )
+
+!  Exit point, excluding deallocations
+1000  continue
+
+    return
+
+  end subroutine filter_rdiag
 
 END MODULE m_filter

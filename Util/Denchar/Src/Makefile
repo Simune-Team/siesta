@@ -93,9 +93,9 @@ MOD_OBJS=precision.o parallel.o debugmpi.o sys.o m_io.o alloc.o memoryinfo.o lis
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o parallelsubs.o \
          schecomm.o sparse_matrices.o \
-         files.o flib_spline.o pseudopotential.o chemical.o xml.o \
+         files.o interpolation.o pseudopotential.o chemical.o xml.o \
          domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
-         spatial.o timer_local.o 
+         spatial.o timer_local.o die.o
 #
 COM_OBJS_DENCHAR=$(OBJS_DENCHAR) $(SYSOBJ)
 ALL_OBJS_DENCHAR=$(MOD_OBJS) $(COM_OBJS_DENCHAR)
@@ -227,7 +227,6 @@ find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
 fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o precision.o
-flib_spline.o: precision.o
 forhar.o: alloc.o mesh.o moremeshsubs.o parallel.o precision.o
 get_target_stress.o: parallel.o precision.o sys.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
@@ -403,9 +402,9 @@ projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
+pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_recipes.o precision.o
-radial.o: alloc.o precision.o xml.o
+radial.o: alloc.o precision.o xml.o interpolation.o
 rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
