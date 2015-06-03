@@ -447,9 +447,9 @@ C For 2D case, copy arrays to new distribution
       d_lrwork = nint(rwork(1))
       d_liwork = iwork(1)
       write(*,'(a,i0,6(a,i10))')'cdiag-debug: Node=',Node,
-     &     ', lwork=', lwork,', lworkq=',d_lwork,
-     &     ', lrwork=',lrwork,', lrworkq=',d_lrwork,
-     &     ', liwork=',liwork,', liworkq=',d_liwork
+     &     ', lwork=', lwork,'>= lworkq=',d_lwork,
+     &     ', lrwork=',lrwork,'>= lrworkq=',d_lrwork,
+     &     ', liwork=',liwork,'>= liworkq=',d_liwork
       endif
 #endif
 

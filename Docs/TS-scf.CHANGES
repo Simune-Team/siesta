@@ -1,4 +1,14 @@
 ----------------------------------------------------
+June 3, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-427
+Added >= to cdiag debugging
+
+* scalapack debug adds an easier comparison
+  check
+
+modified:
+  Src/cdiag.F
+
+----------------------------------------------------
 June 3, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-426
 Merged trunk-469
 
