@@ -1,4 +1,79 @@
 ----------------------------------------------------
+June 3, 2015 -- Nick P. Andersen     trunk-466-merge-1--ts-scf-426
+Merged trunk-466
+
+removed:
+  Src/Fstack.T90
+  Src/m_recipes.f
+  Src/ran3.f
+  Util/Grid/libfft.f
+  Util/Macroave/Src/recipes.f
+added:
+  Src/Fstack.T90
+  Src/errorf.f
+  Src/m_fft_gpfa.F
+  Src/randomg.f90
+  Util/Grid/fft3d.f
+  Util/Grid/local_die.f90
+  Util/Macroave/Src/local_die.f
+renamed:
+  Src/flib_spline.f90 => Src/interpolation.f90
+modified:
+  Docs/CHANGES
+  Docs/rc-4.0.CHANGES
+  Docs/siesta.tex
+  Src/Makefile
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh1d.f90
+  Src/SiestaXC/siestaXC.files
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/atom.F
+  Src/atomlwf.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/bonds.f
+  Src/chempot.F
+  Src/die.F
+  Src/electrostatic.f
+  Src/fermid.F
+  Src/m_convergence.f90
+  Src/m_filter.f90
+  Src/m_rhog.F90
+  Src/matel.f
+  Src/pseudopotential.f
+  Src/radfft.f
+  Src/radial.f
+  Src/sorting.f
+  Src/vmb.F
+  Util/COOP/Makefile
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grid/cdf_fft.F90
+  Util/Grid/makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/Macroave/Src/Makefile
+  Util/Macroave/Src/macroave.f
+  Util/Macroave/Src/paste.f
+  Util/Optimizer/amoeba.f
+  Util/Optimizer/simplex.f90
+  Util/STM/ol-stm/Src/Makefile
+  Util/Sp2METIS/Makefile
+  Util/SpPivot/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+  Util/VCA/fractional.f
+  Util/VCA/mixps.f
+  version.info
+  Src/interpolation.f90
+
+----------------------------------------------------
 June 2, 2015 -- Nick P. Andersen     trunk-465-merge-1--ts-scf-426
 Scalapack debug printed errors for serial execution
 

@@ -288,7 +288,7 @@ CONTAINS
       use parallel,    only : Node, Nodes, ProcessorY
       use alloc, only: re_alloc
       use fdf,   only: fdf_get, fdf_defined
-      use m_recipes, only: sort
+      use sorting, only: ordix
 
       use m_mpi_utils,           only: globalize_max
       use m_mpi_utils,           only: globalize_min
@@ -436,7 +436,9 @@ CONTAINS
       enddo
    enddo
    ! This will work only in serial form for now
-   call sort(n1*n2*n3,g2,gindex)
+   ! Sort by module of G
+   call ordix(g2,1,n1*n2*n3,gindex)
+
    ! Get index of star representatives
    call get_star_reps(g2,gindex,star_index)
 

@@ -17,7 +17,6 @@ type, public :: converger_t
 end type converger_t
 
 public :: set_tolerance, is_converged, add_value, reset
-public :: get_tolerance
 
 CONTAINS
 

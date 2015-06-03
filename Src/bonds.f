@@ -28,8 +28,7 @@ C **********************************************************************
       use precision, only : dp
       use atmfuncs,  only : labelfis
       use units,     only : Ang
-      use m_recipes, only : sort
-      use sorting,   only : order, iorder
+      use sorting,   only : order, iorder, ordix
       use alloc,       only: re_alloc, de_alloc
       use neighbour,   only: jna=>jan, xij, r2ij, maxna=>maxnna
       use neighbour,   only: mneighb, reset_neighbour_arrays
@@ -74,7 +73,7 @@ C Find neighbours of atom IA
               cycle   ! loop over ia
            endif
            ! Sort by distance
-           call sort( nna, r2ij, index )
+           call ordix(r2ij,1,nna,index)
            call iorder( jna, 1, nna, index )
            call order(  r2ij, 1, nna, index )
            call order(  xij, 3, nna, index )

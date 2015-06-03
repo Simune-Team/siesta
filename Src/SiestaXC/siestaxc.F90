@@ -35,7 +35,7 @@
 !   alloc      : (re)allocation utility routines
 !   cellsubs   : routines to find cell volume and reciprocal vectors
 !   debugXC    : routines to set and print a report for debugging XC library
-!   flib_spline: One dimensional cubic spline interpolation routines
+!   interpolation: One dimensional cubic spline interpolation routines
 !   fft1d      : One dimensional Fourier transform
 !   fftr       : Three dimensional Fourier transform of real functions
 !   m_atomXC   : atomXC routine

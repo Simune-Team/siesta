@@ -57,6 +57,7 @@ end interface
 
      subroutine delete_Data(data)
       type(Fstack_) :: data
+      integer :: i
       if (associated(data%val)) then
         do i = 1, data%size
            call delete(data%val(i))

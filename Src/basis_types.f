@@ -508,7 +508,7 @@
       rinn(:,:,:) = 0._dp
       qcoe(:,:,:) = 0._dp
       qyuk(:,:,:) = 0._dp
-      qwid(:,:,:) = 0._dp
+      qwid(:,:,:) = 0.01_dp
       polorb(:,:,:) = 0
       rco(:,:,:,:) = 0._dp
       lambda(:,:,:,:) = 0._dp
