@@ -6,6 +6,15 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-06-02  09:45:00 GMT                                     trunk-469
+Cosmetic fix for errorf.f
+
+Put proper end statements
+
+modified:
+ Src/errorf.f
+
+-----------------------------------------------------------------------
 2015-06-02  07:10:00 GMT                                     trunk-468
 Replacement of NR routines. Fix for charge-conf variables.
 

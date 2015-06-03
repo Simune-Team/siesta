@@ -1,6 +1,14 @@
 ----------------------------------------------------
-June 3, 2015 -- Nick P. Andersen     trunk-466-merge-1--ts-scf-426
-Merged trunk-466
+June 3, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-426
+Merged trunk-469
+
+modified:
+  Docs/CHANGES
+  Src/errorf.f
+
+----------------------------------------------------
+June 3, 2015 -- Nick P. Andersen     trunk-468-merge-1--ts-scf-426
+Merged trunk-468
 
 removed:
   Src/Fstack.T90
