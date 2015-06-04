@@ -26,7 +26,8 @@
       use molecularmechanics, only: inittwobody
       use metaforce,          only: initmeta
       use m_mpi_utils,        only: broadcast
-      use alloc,              only: re_alloc, alloc_report
+      use alloc,              only: re_alloc
+      use memory_log,         only: alloc_report
       use phonon,             only: phonon_num_disps, phonon_setup
       use parallelsubs,       only: getnodeorbs
       use m_iostruct,         only: write_struct, read_struct

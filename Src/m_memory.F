@@ -46,7 +46,7 @@ C Created by J.D. Gale, October 1999
 C
 C Stat and ID keyword arguments added by Alberto Garcia, 2005
 
-      use alloc,    only: alloc_count
+      use memory_log,    only: alloc_count
       use sys, only: die
       use parallel, only: Node
 

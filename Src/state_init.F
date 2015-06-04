@@ -18,7 +18,8 @@
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
      &                             lasto, superc, rmaxv, indxuo
       use atomlist,          only: no_l
-      use alloc,             only: re_alloc, de_alloc, alloc_report
+      use alloc,             only: re_alloc, de_alloc
+      use memory_log,        only: alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
       use m_check_supercell, only: check_sc_factors

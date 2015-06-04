@@ -5,7 +5,7 @@
       CONTAINS
 
       subroutine siesta_end( )
-      use alloc,           only : alloc_report
+      use memory_log,      only : alloc_report
       use siesta_cml,      only : cml_p, mainXML, cmlEndModule
       use siesta_cmlsubs,  only : siesta_cml_exit
       use siesta_master,   only : siesta_subroutine  ! Is siesta a subroutine?

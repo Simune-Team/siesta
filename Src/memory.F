@@ -34,7 +34,7 @@ C
 C Created by J.D. Gale, October 1999
 C
       use parallel, only: Node
-      use alloc,    only: alloc_count
+      use memory_log,    only: alloc_count
 
       implicit none
 
