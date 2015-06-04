@@ -1,8 +1,18 @@
-!!@LICENSE
+! 
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996- .
+! 
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
 !
 ! ==================================================================
 
 ! Written by J.M.Soler. May 2000.
+! Re-organized by A. Garcia, June 2015
+!
 ! ==================================================================
 ! SUBROUTINE alloc_report( level, unit, file, printNow, threshold )
 !   Sets the output file for the allocation report
@@ -98,6 +108,11 @@ MODULE memory_log
 PUBLIC ::             &
   alloc_report,       &! Sets log report defaults
   alloc_count          ! Memory counting for external allocs
+
+public :: memory   ! The old (re-furbished) routine
+
+integer, public :: mem_stat    ! (legacy) For use in calls to allocate 
+                               ! and deallocate
 
 PRIVATE      ! Nothing is declared public beyond this point
 
@@ -541,5 +556,86 @@ if (node==0 .and. peakNode/=0) &
 deallocate( nodeMem, nodePeak )
 
 END SUBROUTINE print_report
+
+subroutine memory( Task, Type, NElements, CallingRoutine, &
+                         stat,id)
+! 
+! This subroutine keeps track of information relating to the use 
+! of dynamic memory
+
+! Input :
+! character*1 Task  : job type = 'A' -> allocate
+!                   :            'D' -> deallocate
+! character*1 Type  : type of variable = 'I' = integer
+!                   :                    'S' = single precision real
+!                   :                    'D' = double precision real
+!                   :                    'X' = grid precision real
+!                   :                    'L' = logical
+!                   :                    'C' = single precision complex
+!                   :                    'Z' = double precision complex
+!                   :                    'S' = character data (we assume takes one word)
+!                   :                    'E' = double precision integer
+! integer NElements : number of array elements being 
+!                   : allocated/deallocated
+! character         :
+!   CallingRoutine  : string containing the name of the calling routine
+
+! Created by J.D. Gale, October 1999
+
+! Stat and ID keyword arguments added by Alberto Garcia, 2005
+
+      use sys, only: die
+
+      implicit none
+
+      integer, intent(in)                 :: NElements
+      character(len=1), intent(in)        :: Task, Type
+      character(len=*), intent(in)        :: CallingRoutine
+      integer, intent(in), optional       :: stat
+      character(len=*), intent(in), optional    :: id
+
+! Local variables
+      integer         :: allocSize
+      character(len=1):: allocType
+
+      if (present(stat)) then
+         if (stat .ne. 0) then
+            if (present(id)) then
+               call die(Task // "-llocation failed in " // &
+                        CallingRoutine // id)
+            else
+               call die(Task // "-llocation failed in " // &
+                        CallingRoutine)
+            endif
+         endif
+      endif
+
+! Call alloc_count routine
+      select case(Type)
+      case('S')
+        allocType = 'R'
+        allocSize = NElements
+      case('C')
+        allocType = 'R'
+        allocSize = NElements*2
+      case('Z')
+        allocType = 'D'
+        allocSize = NElements*2
+      case('X')
+#ifdef GRID_DP
+        allocType = 'D'
+#else
+        allocType = 'R'
+#endif
+        allocSize = NElements
+      case default
+        allocType = Type
+        allocSize = NElements
+      end select
+      if (Task=='D') allocSize = -allocSize
+      call alloc_count( allocSize, allocType, &
+                        name=trim(CallingRoutine)//' unknown' )
+
+   end subroutine memory
 
 END MODULE memory_log

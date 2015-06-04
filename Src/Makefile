@@ -121,7 +121,7 @@ OBJS =  automatic_cell.o atom_options.o \
         precision.o sys.o m_cell.o files.o \
         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o atom.o atmparams.o \
         m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
-        atmfuncs.o listsc.o m_memory.o memory_log.o sorting.o \
+        atmfuncs.o listsc.o memory_log.o sorting.o \
         atomlist.o atm_types.o old_atmfuncs.o radial.o \
         alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
         basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
@@ -375,7 +375,7 @@ bonds.o: alloc.o atmfuncs.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
 born_charge.o: siesta_geom.o siesta_options.o sparse_matrices.o
 broadcast_basis.o: atm_types.o parallel.o radial.o
-broyden_optim.o: m_broyddj_nocomm.o m_memory.o parallel.o precision.o
+broyden_optim.o: m_broyddj_nocomm.o memory_log.o parallel.o precision.o
 broyden_optim.o: siesta_options.o sys.o units.o
 bsc_cellxc.o: alloc.o bsc_xcmod.o cellxc_mod.o mesh.o moremeshsubs.o parallel.o
 bsc_cellxc.o: parallelsubs.o precision.o sys.o
@@ -384,7 +384,7 @@ cart2frac.o: sys.o
 cdiag.o: alloc.o diagmemory.o m_spin.o parallel.o precision.o sys.o
 cell_broyden_optim.o: alloc.o m_broyddj_nocomm.o parallel.o precision.o sys.o
 cell_broyden_optim.o: units.o zmatrix.o
-cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_memory.o parallel.o
+cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o memory_log.o parallel.o
 cell_fire_optim.o: precision.o siesta_options.o sys.o zmatrix.o
 cellsubs.o: precision.o
 cellxc_mod.o: bsc_xcmod.o sys.o
@@ -443,8 +443,8 @@ diagk_file.o: fermid.o iowfs_netcdf.o parallel.o parallelsubs.o precision.o
 diagk_file.o: sys.o writewave.o
 diagkp.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagmemory.o: precision.o
-diagon.o: alloc.o densematrix.o m_diagon.o m_memory.o parallel.o parallelsubs.o
-diagon.o: precision.o siesta_options.o sys.o
+diagon.o: alloc.o densematrix.o m_diagon.o memory_log.o parallel.o
+diagon.o: parallelsubs.o precision.o siesta_options.o sys.o
 diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
@@ -562,7 +562,6 @@ m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
-m_memory.o: memory_log.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
