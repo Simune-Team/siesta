@@ -46,7 +46,7 @@ C Created by J.D. Gale, October 1999
 C
 C Stat and ID keyword arguments added by Alberto Garcia, 2005
 
-      use memoryinfo
+      use alloc,    only: alloc_count
       use sys, only: die
       use parallel, only: Node
 
@@ -59,15 +59,9 @@ C Stat and ID keyword arguments added by Alberto Garcia, 2005
       character(len=*), intent(in), optional    :: id
 
 C Local variables
-      integer    Sign
+      integer         :: allocSize
+      character(len=1):: allocType
 C
-C CAG
-C       if (Node.eq.0) then
-C         write(66,'(a,a,a,a,i10)') "---memory: ", CallingRoutine // " ",
-C      $                          task // " ",
-C      $                          type // " ", nelements
-C         call flush(66)
-C       endif
       if (present(stat)) then
          if (stat .ne. 0) then
             if (present(id)) then
@@ -80,57 +74,31 @@ C       endif
          endif
       endif
 
-C Assign sign of operation based on task
-      if (Task .eq. 'A' .or. Task .eq. 'a') then
-        Sign = +1
-      else
-        Sign = -1
-      endif
-
-C Add number of elements to appropriate pointer
-      if (Type .eq. 'I' .or. Type .eq. 'i') then
-        WordsInteger = WordsInteger + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(1)
-      elseif (Type .eq. 'S' .or. Type .eq. 's') then
-        WordsSP = WordsSP + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(2)
-      elseif (Type .eq. 'D' .or. Type .eq. 'd') then
-        WordsDP = WordsDP + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(3)
-!
-!     Support for flexible precision in grid-related arrays
-!
-      elseif (Type .eq. 'X' .or. Type .eq. 'x') then
+C Call alloc_count routine
+      select case(Type)
+      case('S')
+        allocType = 'R'
+        allocSize = NElements
+      case('C')
+        allocType = 'R'
+        allocSize = NElements*2
+      case('Z')
+        allocType = 'D'
+        allocSize = NElements*2
+      case('X')
 #ifdef GRID_DP
-        WordsDP = WordsDP + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(3)
+        allocType = 'D'
 #else
-        WordsSP = WordsSP + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(2)
+        allocType = 'R'
 #endif
-
-      elseif (Type .eq. 'L' .or. Type .eq. 'l') then
-        WordsLogical = WordsLogical + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(4)
-      elseif (Type .eq. 'C' .or. Type .eq. 'c') then
-        WordsSC = WordsSC + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(5)
-      elseif (Type .eq. 'Z' .or. Type .eq. 'z') then
-        WordsDC = WordsDC + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(6)
-      elseif (Type .eq. 'S' .or. Type .eq. 's') then
-        WordsString = WordsString + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(7)
-      elseif (Type .eq. 'E' .or. Type .eq. 'e') then
-        WordsLongInt  = WordsLongInt + Sign*NElements
-        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(8)
-      endif
-
-C Check whether memory is greater than peak memory so far
-      if (CurrentMemory .gt. PeakMemory) then
-        PeakMemory = CurrentMemory
-        PeakRoutine = CallingRoutine
-      endif
+        allocSize = NElements
+      case default
+        allocType = Type
+        allocSize = NElements
+      end select
+      if (Task=='D') allocSize = -allocSize
+      call alloc_count( allocSize, allocType, 
+     .                  name=trim(CallingRoutine)//' unknown' )
 
       end subroutine memory
 

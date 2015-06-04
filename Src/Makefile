@@ -87,7 +87,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	chempot.o coceri.o coxmol.o cross.o compute_norm.o\
 	denmat.o denmatlomem.o detover.o dfscf.o m_diagon.o diagon.o digcel.o \
         fft.o dhscf.o constr.o diagk_file.o \
-	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
+	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagmemory.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o doping_uniform.o dot.o  \
 	m_efield.o egandd.o ener3.o ener3lomem.o errorf.o extrapolon.o \
 	fixed.o interpolation.o gradient.o gradientlomem.o grdsam.o \
@@ -121,7 +121,7 @@ OBJS =  automatic_cell.o atom_options.o \
         precision.o sys.o m_cell.o files.o \
         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o atom.o atmparams.o \
         m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
-        atmfuncs.o listsc.o memoryinfo.o m_memory.o sorting.o \
+        atmfuncs.o listsc.o m_memory.o sorting.o \
         atomlist.o atm_types.o old_atmfuncs.o radial.o \
         alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
         basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
@@ -381,7 +381,7 @@ bsc_cellxc.o: alloc.o bsc_xcmod.o cellxc_mod.o mesh.o moremeshsubs.o parallel.o
 bsc_cellxc.o: parallelsubs.o precision.o sys.o
 bsc_xcmod.o: parallel.o precision.o sys.o
 cart2frac.o: sys.o
-cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o sys.o
+cdiag.o: alloc.o diagmemory.o m_spin.o parallel.o precision.o sys.o
 cell_broyden_optim.o: alloc.o m_broyddj_nocomm.o parallel.o precision.o sys.o
 cell_broyden_optim.o: units.o zmatrix.o
 cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_memory.o parallel.o
@@ -442,6 +442,7 @@ diagk.o: writewave.o
 diagk_file.o: fermid.o iowfs_netcdf.o parallel.o parallelsubs.o precision.o
 diagk_file.o: sys.o writewave.o
 diagkp.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
+diagmemory.o: precision.o
 diagon.o: alloc.o densematrix.o m_diagon.o m_memory.o parallel.o parallelsubs.o
 diagon.o: precision.o siesta_options.o sys.o
 diagpol.o: precision.o sys.o
@@ -561,7 +562,7 @@ m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
-m_memory.o: memoryinfo.o parallel.o sys.o
+m_memory.o: alloc.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
@@ -606,8 +607,7 @@ matel.o: alloc.o atmfuncs.o errorf.o interpolation.o parallel.o precision.o
 matel.o: radfft.o spher_harm.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
-memory.o: alloc.o memoryinfo.o parallel.o precision.o
-memoryinfo.o: precision.o
+memory.o: alloc.o parallel.o
 mesh.o: precision.o
 meshcomm.o: mesh.o precision.o
 meshdscf.o: alloc.o atomlist.o m_dscfcomm.o meshphi.o parallel.o parallelsubs.o
@@ -677,7 +677,7 @@ proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 radial.o: alloc.o interpolation.o precision.o xml.o
-rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
+rdiag.o: alloc.o diagmemory.o m_diagon.o parallel.o precision.o sys.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
@@ -749,7 +749,7 @@ siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o ioxv.o m_energies.o
 siesta_move.o: m_forces.o m_kinetic.o m_steps.o m_stress.o parallel.o phonon.o
 siesta_move.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o
 siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
-siesta_options.o: files.o memoryinfo.o parallel.o precision.o siesta_cml.o
+siesta_options.o: diagmemory.o files.o parallel.o precision.o siesta_cml.o
 siesta_options.o: sys.o units.o
 sparse_matrices.o: alloc.o precision.o
 spatial.o: precision.o
@@ -801,7 +801,6 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 band.o: bands.o
-diagmemory.o: memoryinfo.o
 fsiesta.o: fsiesta_pipes.o
 listsc_module.o: listsc.o
 m_bessph.o: bessph.o
