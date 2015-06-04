@@ -154,7 +154,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	write_orb_indx.o \
 	m_hs_matrix.o kpoint_convert.o m_glob_sparse.o\
         die.o m_dminim.o m_zminim.o m_svd.o compute_max_diff.o \
-        save_density_matrix.o \
+        save_density_matrix.o alloc_error_report.o\
         m_rhog.o rhofft.o m_diis.o compute_energies.o \
         class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o
 #--------------------------------------------------------------
@@ -349,7 +349,8 @@ clean:
 	(cd SiestaXC ; $(MAKE) clean )
 
 # DO NOT DELETE THIS LINE - used by make depend
-alloc.o: debugmpi.o m_io.o memory_log.o parallel.o precision.o sys.o
+alloc.o: memory_log.o
+alloc_error_report.o: parallel.o
 arw.o: alloc.o parallel.o precision.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
 atm_transfer.o: radial.o sys.o

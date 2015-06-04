@@ -712,7 +712,7 @@ MODULE siestaXC
 ! Extra utilities placed here for non-siesta users
 ! See correspondig modules for usage documentation
   USE fft1d,    only: nfft                 ! Get allowed sizes for FFTs
-  USE alloc,    only: alloc_report         ! Set and print allocation report
+  USE memory_log, only: alloc_report         ! Set and print allocation report
 #ifdef DEBUG_XC
   USE debugXC,  only: setDebugOutputUnit   ! Set debug report
   USE debugXC,  only: closeDebugOutputFile ! Print debug report

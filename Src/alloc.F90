@@ -3,6 +3,7 @@
 ! ==================================================================
 ! Allocation, reallocation, and deallocation utility routines
 ! Written by J.M.Soler. May 2000.
+! Re-organized by A. Garcia, June 2015.
 ! ==================================================================
 ! SUBROUTINE alloc_default( old, new, restore, &
 !                           copy, shrink, imin, routine )
@@ -128,12 +129,6 @@
 MODULE alloc
 
   use memory_log, only: alloc_count
-  use precision, only: sp        ! Single precision real type
-  use precision, only: dp        ! Double precision real type
-  use parallel,  only: ionode    ! Am I the I/O processor?
-  use parallel,  only: parallel_init  ! Initialize parallel variables
-  use sys,       only: die       ! Termination routine
-  use m_io,      only: io_assign ! Get and reserve an available IO unit
 
   implicit none
 
@@ -144,6 +139,22 @@ PUBLIC ::             &
   allocDefaults        ! Derived type to hold allocation defaults
 
 PRIVATE      ! Nothing is declared public beyond this point
+
+integer, parameter :: sp = selected_real_kind(5,10)
+integer, parameter :: dp = selected_real_kind(10,100)
+
+! Interfaces to external routines that must be provided
+! by the calling program
+!
+interface
+   ! Message and integer code
+   ! If 'code' is 0, this is the last call in a series
+   ! (see below for usage)
+   subroutine alloc_error_report(str,code)
+     character(len=*), intent(in) :: str
+     integer, intent(in)          :: code
+   end subroutine alloc_error_report
+end interface
 
   interface de_alloc
     module procedure &
@@ -1539,9 +1550,6 @@ END SUBROUTINE options
 ! ==================================================================
 
 SUBROUTINE alloc_err( ierr, name, routine, bounds )
-#ifdef DEBUG
-      use debugMpi, only : mpiUnit
-#endif
 implicit none
 
 integer,                    intent(in) :: ierr
@@ -1550,40 +1558,32 @@ character(len=*), optional, intent(in) :: routine
 integer, dimension(:,:), optional, intent(in) :: bounds
 
 integer i
+character(len=128) :: msg
 
 if (ierr/=0) then
-  if (ionode) print*, 'alloc_err: allocate status error', ierr
+   write(msg,*) 'alloc_err: allocate status error', ierr
+   call alloc_error_report(trim(msg),1)
   if (present(name).and.present(routine)) then
-    if (ionode) print*, 'alloc_err: array ', name, &
+     write(msg,*) 'alloc_err: array ', name, &
                ' requested by ', routine
+     call alloc_error_report(trim(msg),2)
   elseif (present(name)) then
-    if (ionode) print*, 'alloc_err: array ', name, &
+     write(msg,*) 'alloc_err: array ', name, &
                ' requested by unknown'
+     call alloc_error_report(trim(msg),3)
   elseif (present(routine)) then
-    if (ionode) print* , 'alloc_err: array unknown', &
+     write(msg,*) 'alloc_err: array unknown', &
                ' requested by ', routine
+     call alloc_error_report(trim(msg),4)
   endif
-  if (ionode.and.present(bounds))                            &
-    print '(a,i3,2i10)', ('alloc_err: dim, lbound, ubound:',  &
+  if (present(bounds)) then
+     write(msg,'(a,i3,2i10)') ('alloc_err: dim, lbound, ubound:',  &
           i,bounds(1,i),bounds(2,i),                         &
           i=1,size(bounds,dim=2))            
-#ifdef DEBUG
-  write(mpiUnit,*) 'alloc_err: allocate status error', ierr
-  if (present(name).and.present(routine)) then
-    write(mpiUnit,*) 'alloc_err: array ', name, ' requested by ', routine
-  elseif (present(name)) then
-    write(mpiUnit,*) 'alloc_err: array ', name, ' requested by unknown'
-  elseif (present(routine)) then
-    write(mpiUnit,*) 'alloc_err: array unknown requested by ', routine
+     call alloc_error_report(trim(msg),5)
   endif
-  write(mpiUnit,'(a,i3,2i10)') ('alloc_err: dim, lbound, ubound:', &
-                      i,bounds(1,i),bounds(2,i),         &
-                      i=1,size(bounds,dim=2))
-  call pxfflush(mpiUnit)
-#endif
-
-  call die('alloc_err: allocate error')
 end if
+call alloc_error_report("alloc_err: end of error report",0)
 
 END SUBROUTINE alloc_err
 
