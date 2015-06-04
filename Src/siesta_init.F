@@ -27,7 +27,7 @@
       use metaforce,          only: initmeta
       use m_mpi_utils,        only: broadcast
       use alloc,              only: re_alloc
-      use memory_log,         only: alloc_report
+      use memory_log,         only: memory_report
       use phonon,             only: phonon_num_disps, phonon_setup
       use parallelsubs,       only: getnodeorbs
       use m_iostruct,         only: write_struct, read_struct
@@ -153,9 +153,8 @@
       call siesta_cml_init( )
 
 ! Set timer report file and threshold .................................
-      threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
-     .                   threshold=threshold )
+     .        threshold=fdf_get('timer_report_threshold', 0._dp))
       ! This variable lives in siesta_options
       use_tree_timer = fdf_get('UseTreeTimer', .false.)
 
@@ -168,12 +167,10 @@
       call timer( 'Setup', 1 )
 
 ! Set allocation report level .........................................
-! variables level and threshold imported from module siesta_options
-      level = fdf_get('alloc_report_level', 0)
-      threshold = fdf_get('alloc_report_threshold', 0._dp)
-      call alloc_report( level=level, file=trim(slabel)//'.alloc',
-     .                   threshold=threshold,
-     &                   printNow=.false. )
+      call memory_report( level=fdf_get('alloc_report_level',0),
+     $           file=trim(slabel)//'.alloc',
+     .           threshold=fdf_get('alloc_report_threshold', 0._dp),
+     &           printNow=.false. )
 
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC

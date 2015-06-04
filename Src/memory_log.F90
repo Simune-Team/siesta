@@ -14,7 +14,7 @@
 ! Re-organized by A. Garcia, June 2015
 !
 ! ==================================================================
-! SUBROUTINE alloc_report( level, unit, file, printNow, threshold )
+! SUBROUTINE memory_report( level, unit, file, printNow, threshold )
 !   Sets the output file for the allocation report
 ! INPUT (optional):
 !   integer      :: level     : Level (detail) of report
@@ -30,14 +30,14 @@
 ! level=2 : detailed report created but printed only upon request
 ! level=3 : detailed report printed at every new memory peak
 ! level=4 : print every individual reallocation or deallocation
-!   If unit is present, alloc_report merely takes note of it for
+!   If unit is present, memory_report merely takes note of it for
 ! future use, assuming that it has been already open outside.
 ! In this case, file is not used.
 !   If unit is absent, and file is present, a file with that
 ! name is open for future use.
-!   If both arguments are absent, a file named 'alloc_report'
+!   If both arguments are absent, a file named 'memory_report'
 ! is open for future use.
-!   If alloc_report is called with printNow=.true. several times in
+!   If memory_report is called with printNow=.true. several times in
 ! a program, with the same unit or file argument, the subsequent 
 ! reports are written consecutively in the same file, each with a 
 ! time stamp header.
@@ -52,45 +52,14 @@
 ! on the same file. Otherwise they write on files with the same name 
 ! in their local disks.
 ! ==================================================================---
-! SUBROUTINE alloc_count( delta_size, type, name, routine )
-! INPUT:
-!   integer         :: delta_size : +/-size(array)
-!                                   + => allocation
-!                                   - => deallocation
-!   character       :: type       : 'I' => integer
-!                                   'E' => integer*8
-!                                   'R' => real*4
-!                                   'D' => real*8
-!                                   'L' => logical
-!                                   'S' => character (string)
-! INPUT (optional):
-!   character(len=*) :: name      : Actual array name or a label for it
-!   character(len=*) :: routine   : Name of the calling routine
-!                                   or routine section
-! USAGE:
-!   integer,         allocatable:: intArray(:)
-!   double precision,allocatable:: doubleArray(:)
-!   complex,         allocatable:: complexArray(:)
-!   allocate( intArray(n), doubleArray(n), complexArray(n) )
-!   call alloc_count(   +n, 'I', 'intArray',  programName )
-!   call alloc_count(   +n, 'D', 'doubleArray', programName )
-!   call alloc_count( +2*n, 'R', 'complexArray', programName )
-!   deallocate( intArray, doubleArray, complexArray )
-!   call alloc_count(   -n, 'I', 'intArray',  programName )
-!   call alloc_count(   -n, 'D', 'doubleArray', programName )
-!   call alloc_count( -2*n, 'R', 'complexArray', programName )
-!
-! ==================================================================---
 
 MODULE memory_log
 
-  use precision, only: sp        ! Single precision real type
   use precision, only: dp        ! Double precision real type
   use parallel,  only: Node      ! My processor node index
   use parallel,  only: Nodes     ! Number of parallel processors
   use parallel,  only: ionode    ! Am I the I/O processor?
   use parallel,  only: parallel_init  ! Initialize parallel variables
-  use sys,       only: die       ! Termination routine
   use m_io,      only: io_assign ! Get and reserve an available IO unit
 #ifdef MPI
 !  use mpi_siesta
@@ -106,8 +75,9 @@ MODULE memory_log
   implicit none
 
 PUBLIC ::             &
-  alloc_report,       &! Sets log report defaults
-  alloc_count          ! Memory counting for external allocs
+  memory_report,       &! Sets log report defaults
+  memory_event,        &! Memory counting for allocs
+  type_mem              ! Converter
 
 public :: memory   ! The old (re-furbished) routine
 
@@ -121,11 +91,13 @@ PRIVATE      ! Nothing is declared public beyond this point
     DEFAULT_NAME = 'unknown_name'         ! Array name default
   character(len=*), parameter :: &
     DEFAULT_ROUTINE = 'unknown_routine'   ! Routine name default
+
   integer, save ::               &
     REPORT_LEVEL = 0,            &! Level (detail) of allocation report
     REPORT_UNIT  = 0              ! Output file unit for report
+
   character(len=50), save ::     &
-    REPORT_FILE = 'alloc_report'  ! Output file name for report
+    REPORT_FILE = 'memory_report'  ! Output file name for report
   real(dp), save ::              &
     REPORT_THRESHOLD = 0          ! Memory threshold (in bytes) to print
                                   ! the memory use of any given array 
@@ -152,14 +124,11 @@ PRIVATE      ! Nothing is declared public beyond this point
   character(len=32),   save :: PEAK_ROUTINE = ' '
   integer,             save :: MAX_LEN  = 0
   
-  ! Other common variables
-  integer :: IERR
-
 CONTAINS
 
 ! ==================================================================
 
-SUBROUTINE alloc_report( level, unit, file, printNow, threshold )
+SUBROUTINE memory_report( level, unit, file, printNow, threshold )
 
 implicit none
 
@@ -199,7 +168,7 @@ if (node == 0) then
       end if
     end if
   else if (REPORT_UNIT==0) then   ! No unit has been open yet
-    REPORT_FILE = 'alloc_report'
+    REPORT_FILE = 'memory_report'
     call io_assign(REPORT_UNIT)
     open( REPORT_UNIT, file=REPORT_FILE, status='unknown')
     write(REPORT_UNIT,*) ' '      ! Overwrite previous reports
@@ -223,27 +192,19 @@ if (present(printNow)) then
   if (printNow) call print_report( )
 end if
 
-END SUBROUTINE alloc_report
+END SUBROUTINE memory_report
 
 ! ==================================================================
 ! Internal subroutines
 ! ==================================================================
 
-SUBROUTINE alloc_count( delta_size, type, name, routine )
+SUBROUTINE memory_event( bytes, aname )
 
 implicit none
 
-integer, intent(in)          :: delta_size  ! +/-size(array)
-character, intent(in)        :: type        ! 'I' => integer
-                                            ! 'E' => integer*8
-                                            ! 'R' => real*4
-                                            ! 'D' => real*8
-                                            ! 'L' => logical
-                                            ! 'S' => character (string)
-character(len=*), optional, intent(in) :: name
-character(len=*), optional, intent(in) :: routine
+integer, intent(in)          :: bytes
+character(len=*), intent(in) :: aname
 
-character(len=32)   :: aname, rname, obj_name
 character(len=1)    :: memType, task
 real(DP)            :: delta_mem
 logical             :: newPeak
@@ -251,34 +212,20 @@ logical,  save      :: header_written = .false.
 logical,  save      :: tree_nullified = .false.
 integer             :: memSize
 
-! Set routine name
-if (present(routine)) then
-  rname = routine
-else
-  rname = DEFAULT_routine
-end if
-if (present(name)) then
-  obj_name = name
-else
-  obj_name = DEFAULT_name
-end if
-
-
 if (REPORT_LEVEL <= 0) return
 
-aname = trim(rname) // ' '//trim(obj_name)
 MAX_LEN = max( MAX_LEN, len(trim(aname)) )
 
 ! Find memory increment and total allocated memory
-delta_mem = delta_size * type_mem(type)
+delta_mem = real(bytes,kind=dp)
 TOT_MEM = TOT_MEM + delta_mem
 if (TOT_MEM > PEAK_MEM+0.5_dp) then
   newPeak = .true.
   PEAK_MEM = TOT_MEM
   PEAK_ARRAY = aname
-  PEAK_ROUTINE = rname
+  PEAK_ROUTINE = '-'
 !  print'(/,a,f18.6),a,/)',
-!    'alloc_count: Memory peak =', PEAK_MEM/MBYTE, ' Mbytes'
+!    'memory: Memory peak =', PEAK_MEM/MBYTE, ' Mbytes'
 else
   newPeak = .false.
 end if
@@ -314,10 +261,10 @@ if (REPORT_LEVEL == 4 .and. node == 0) then
      'Routine', 'Name', 'Incr. (MB)', 'Total (MB)'
     header_written = .true.
   end if
-  write(REPORT_UNIT,'(a16,1x,a32,1x,2f15.6)') &
-     rname, aname, delta_mem/MBYTE, TOT_MEM/MBYTE
+  write(REPORT_UNIT,'(a32,1x,2f15.6)') &
+     aname, delta_mem/MBYTE, TOT_MEM/MBYTE
 end if
-END SUBROUTINE alloc_count
+END SUBROUTINE memory_event
 
 ! ==================================================================
 
@@ -354,7 +301,7 @@ case('S')
   type_mem = 1
 case default
   write(message,"(2a)") &
-    'alloc_count: ERROR: unknown type = ', var_type
+    'memory_log: ERROR: unknown type = ', var_type
   call die(trim(message))
 end select
 
@@ -556,7 +503,11 @@ if (node==0 .and. peakNode/=0) &
 deallocate( nodeMem, nodePeak )
 
 END SUBROUTINE print_report
-
+!
+! This routine is called "by hand" when allocations are not
+! handled by the 'alloc' mechanism, which is only suitable
+! for pointers.
+!
 subroutine memory( Task, Type, NElements, CallingRoutine, &
                          stat,id)
 ! 
@@ -584,8 +535,6 @@ subroutine memory( Task, Type, NElements, CallingRoutine, &
 
 ! Stat and ID keyword arguments added by Alberto Garcia, 2005
 
-      use sys, only: die
-
       implicit none
 
       integer, intent(in)                 :: NElements
@@ -595,7 +544,7 @@ subroutine memory( Task, Type, NElements, CallingRoutine, &
       character(len=*), intent(in), optional    :: id
 
 ! Local variables
-      integer         :: allocSize
+      integer         :: allocSize, bytes
       character(len=1):: allocType
 
       if (present(stat)) then
@@ -610,7 +559,6 @@ subroutine memory( Task, Type, NElements, CallingRoutine, &
          endif
       endif
 
-! Call alloc_count routine
       select case(Type)
       case('S')
         allocType = 'R'
@@ -633,8 +581,8 @@ subroutine memory( Task, Type, NElements, CallingRoutine, &
         allocSize = NElements
       end select
       if (Task=='D') allocSize = -allocSize
-      call alloc_count( allocSize, allocType, &
-                        name=trim(CallingRoutine)//' unknown' )
+      bytes = allocSize*type_mem(allocType)
+      call memory_event(bytes,aname=trim(CallingRoutine)//' unknown' )
 
    end subroutine memory
 

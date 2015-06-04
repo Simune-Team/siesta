@@ -89,6 +89,7 @@ interpolation.o: precision.o
 ldaxc.o: precision.o sys.o
 m_io.o: sys.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
+memory_log.o: precision.o parallel.o m_io.o
 mesh1d.o: precision.o
 mesh3d.o: alloc.o debugxc.o parallel.o precision.o sorting.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o

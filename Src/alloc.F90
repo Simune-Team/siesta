@@ -128,8 +128,6 @@
 ! ==================================================================---
 MODULE alloc
 
-  use memory_log, only: alloc_count
-
   implicit none
 
 PUBLIC ::             &
@@ -147,13 +145,20 @@ integer, parameter :: dp = selected_real_kind(10,100)
 ! by the calling program
 !
 interface
-   ! Message and integer code
+   ! Error message and integer code
    ! If 'code' is 0, this is the last call in a series
    ! (see below for usage)
    subroutine alloc_error_report(str,code)
      character(len=*), intent(in) :: str
      integer, intent(in)          :: code
    end subroutine alloc_error_report
+   !
+   ! Logger for memory events
+   !
+   subroutine alloc_memory_event(bytes,name)
+     integer, intent(in)          :: bytes
+     character(len=*), intent(in) :: name
+   end subroutine alloc_memory_event
 end interface
 
   interface de_alloc
@@ -188,14 +193,6 @@ end interface
     DEFAULT_NAME = 'unknown_name'         ! Array name default
   character(len=*), parameter :: &
     DEFAULT_ROUTINE = 'unknown_routine'   ! Routine name default
-  integer, save ::               &
-    REPORT_LEVEL = 0,            &! Level (detail) of allocation report
-    REPORT_UNIT  = 0              ! Output file unit for report
-  character(len=50), save ::     &
-    REPORT_FILE = 'alloc_report'  ! Output file name for report
-  real(dp), save ::              &
-    REPORT_THRESHOLD = 0          ! Memory threshold (in bytes) to print
-                                  ! the memory use of any given array 
 
   ! Derived type to hold allocation default options
   type allocDefaults
@@ -209,28 +206,6 @@ end interface
   ! Object to hold present allocation default options
   type(allocDefaults), save :: DEFAULT
 
-  ! Internal auxiliary type for a binary tree
-  type TREE
-    character(len=80)   :: name  ! Name of an allocated array
-    real(DP)            :: mem   ! Present memory use of the array
-    real(DP)            :: max   ! Maximum memory use of the array
-    real(DP)            :: peak  ! Memory use of the array during
-                                 !   peak of total memory
-    type(TREE), pointer :: left  ! Pointer to data of allocated arrays 
-                                 !   preceeding in alphabetical order
-    type(TREE), pointer :: right ! Pointer to data of allocated arrays 
-                                 !   trailing in alphabetical order
-  end type TREE
-
-  ! Global variables used to store allocation data
-  real(DP),   parameter     :: MBYTE = 1.e6_dp
-  type(TREE), pointer, save :: REPORT_TREE
-  real(DP),            save :: TOT_MEM  = 0._dp
-  real(DP),            save :: PEAK_MEM = 0._dp
-  character(len=80),   save :: PEAK_ARRAY = ' '
-  character(len=32),   save :: PEAK_ROUTINE = ' '
-  integer,             save :: MAX_LEN  = 0
-  
   ! Other common variables
   integer :: IERR
   logical :: ASSOCIATED_ARRAY, NEEDS_ALLOC, NEEDS_COPY, NEEDS_DEALLOC
@@ -302,7 +277,6 @@ call options( b, c, old_bounds, new_bounds, copy, shrink )
 if (NEEDS_DEALLOC .and. .not.NEEDS_COPY) then
   call alloc_count( -size(old_array), type, name, routine )
   deallocate(old_array,stat=IERR)
-  call alloc_err( IERR, name, routine, old_bounds )
 end if
 
 ! Allocate new space
@@ -1582,11 +1556,97 @@ if (ierr/=0) then
           i=1,size(bounds,dim=2))            
      call alloc_error_report(trim(msg),5)
   endif
+  call alloc_error_report("alloc_err: end of error report",0)
 end if
-call alloc_error_report("alloc_err: end of error report",0)
 
 END SUBROUTINE alloc_err
 
 ! ==================================================================
+
+SUBROUTINE alloc_count( delta_size, type, name, routine )
+
+!
+!  This version simply computes the total size and calls
+!  the external routine  alloc_memory_event
+!
+implicit none
+
+integer, intent(in)          :: delta_size  ! +/-size(array)
+character, intent(in)        :: type        ! 'I' => integer
+                                            ! 'E' => integer*8
+                                            ! 'R' => real*4
+                                            ! 'D' => real*8
+                                            ! 'L' => logical
+                                            ! 'S' => character (string)
+character(len=*), optional, intent(in) :: name
+character(len=*), optional, intent(in) :: routine
+
+character(len=32)   :: aname
+integer             :: bytes
+
+! Compound routine+array name
+if (present(name) .and. present(routine)) then
+  aname = trim(routine)//' '//name
+else if (present(name) .and. DEFAULT%routine/=DEFAULT_ROUTINE) then
+  aname = trim(DEFAULT%routine)//' '//name
+else if (present(name)) then
+  aname = name
+else if (present(routine)) then
+  aname = trim(routine)//' '//DEFAULT_NAME
+else if (DEFAULT%routine/=DEFAULT_ROUTINE) then
+  aname = trim(DEFAULT%routine)//' '//DEFAULT_NAME
+else
+  aname = DEFAULT_ROUTINE//' '//DEFAULT_NAME
+end if
+
+! Find memory increment and total allocated memory
+bytes = delta_size * type_mem(type)
+
+call alloc_memory_event(bytes,trim(aname))
+
+CONTAINS
+
+  INTEGER FUNCTION type_mem( var_type )
+!
+! It is not clear that the sizes assumed are universal for
+! non-Cray machines...
+!
+implicit none
+character, intent(in) :: var_type
+character(len=40)     :: message
+
+select case( var_type )
+#ifdef OLD_CRAY
+  case('I')
+    type_mem = 8
+  case('R')
+    type_mem = 8
+  case('L')
+    type_mem = 8
+#else
+  case('I')
+    type_mem = 4
+  case('R')
+    type_mem = 4
+  case('L')
+    type_mem = 4
+#endif
+case('E')
+  type_mem = 8
+case('D')
+  type_mem = 8
+case('S')
+  type_mem = 1
+case default
+  write(message,"(2a)") &
+    'alloc_count: ERROR: unknown type = ', var_type
+  call alloc_error_report(trim(message),0)
+end select
+
+END FUNCTION type_mem
+
+END SUBROUTINE alloc_count
+
+
 
 END MODULE alloc

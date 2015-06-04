@@ -20,7 +20,7 @@
 ! Extra utilities placed here for non-siesta users
 ! See correspondig modules for usage documentation
 !   nfft                 ! Get allowed sizes for FFTs
-!   alloc_report         ! Set and print allocation report
+!   memory_report         ! Set and print allocation report
 !   setDebugOutputUnit   ! Initialize debug report
 !   closeDebugOutputFile ! Print debug report
 !   timer_report         ! Print report of CPU times
@@ -429,7 +429,7 @@
 !
 !******************************************************************************
 !
-! SUBROUTINE alloc_report( level, unit, file, printNow, threshold )
+! SUBROUTINE memory_report( level, unit, file, printNow, threshold )
 !   Sets the output file for the allocation report
 ! INPUT (optional):
 !   integer      :: level     : Level (detail) of report
@@ -445,14 +445,14 @@
 ! level=2 : detailed report created but printed only upon request
 ! level=3 : detailed report printed at every new memory peak
 ! level=4 : print every individual reallocation or deallocation
-!   If unit is present, alloc_report merely takes note of it for
+!   If unit is present, memory_report merely takes note of it for
 ! future use, assuming that it has been already open outside.
 ! In this case, file is not used.
 !   If unit is absent, and file is present, a file with that
 ! name is open for future use.
 !   If both arguments are absent, a file named 'alloc_report'
 ! is open for future use.
-!   If alloc_report is called with printNow=.true. several times in
+!   If memory_report is called with printNow=.true. several times in
 ! a program, with the same unit or file argument, the subsequent 
 ! reports are written consecutively in the same file, each with a 
 ! time stamp header.
@@ -712,7 +712,7 @@ MODULE siestaXC
 ! Extra utilities placed here for non-siesta users
 ! See correspondig modules for usage documentation
   USE fft1d,    only: nfft                 ! Get allowed sizes for FFTs
-  USE memory_log, only: alloc_report         ! Set and print allocation report
+  USE memory_log, only: memory_report         ! Set and print allocation report
 #ifdef DEBUG_XC
   USE debugXC,  only: setDebugOutputUnit   ! Set debug report
   USE debugXC,  only: closeDebugOutputFile ! Print debug report

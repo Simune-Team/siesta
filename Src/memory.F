@@ -34,7 +34,7 @@ C
 C Created by J.D. Gale, October 1999
 C
       use parallel, only: Node
-      use memory_log,    only: alloc_count
+      use memory_log,    only: memory_event, type_mem
 
       implicit none
 
@@ -43,10 +43,9 @@ C
       character(len=*), intent(in)        :: CallingRoutine
 
 C Local variables
-      integer         :: allocSize
+      integer         :: allocSize, bytes
       character(len=1):: allocType
 
-C Call alloc_count routine
       select case(Type)
       case('S')
         allocType = 'R'
@@ -69,7 +68,7 @@ C Call alloc_count routine
         allocSize = NElements
       end select
       if (Task=='D') allocSize = -allocSize
-      call alloc_count( allocSize, allocType, 
-     .                  name=trim(CallingRoutine)//' unknown' )
+      bytes = allocSize*type_mem(allocType)
+      call memory_event(bytes,aname=trim(CallingRoutine)//' unknown' )
 
       end subroutine memory
