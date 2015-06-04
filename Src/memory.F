@@ -69,6 +69,7 @@ C Local variables
       end select
       if (Task=='D') allocSize = -allocSize
       bytes = allocSize*type_mem(allocType)
-      call memory_event(bytes,aname=trim(CallingRoutine)//' unknown' )
+      call memory_event(bytes,
+     $       aname=trim(CallingRoutine)//'@'//'unknown' )
 
       end subroutine memory

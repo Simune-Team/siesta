@@ -1586,17 +1586,17 @@ integer             :: bytes
 
 ! Compound routine+array name
 if (present(name) .and. present(routine)) then
-  aname = trim(routine)//' '//name
+  aname = trim(routine)//'@'//name
 else if (present(name) .and. DEFAULT%routine/=DEFAULT_ROUTINE) then
-  aname = trim(DEFAULT%routine)//' '//name
+  aname = trim(DEFAULT%routine)//'@'//name
 else if (present(name)) then
-  aname = name
+  aname = trim(DEFAULT_ROUTINE)//'@'//name
 else if (present(routine)) then
-  aname = trim(routine)//' '//DEFAULT_NAME
+  aname = trim(routine)//'@'//DEFAULT_NAME
 else if (DEFAULT%routine/=DEFAULT_ROUTINE) then
-  aname = trim(DEFAULT%routine)//' '//DEFAULT_NAME
+  aname = trim(DEFAULT%routine)//'@'//DEFAULT_NAME
 else
-  aname = DEFAULT_ROUTINE//' '//DEFAULT_NAME
+  aname = DEFAULT_ROUTINE//'@'//DEFAULT_NAME
 end if
 
 ! Find memory increment and total allocated memory

@@ -489,7 +489,7 @@ C     If cell has changed then it is necessary to reinitialise coordinates
 !     (Re)allocate atom-mesh arrays
       call allocIpaDistr( distr, na )
       if (na.ne.lastna) then
-        call re_alloc( dxa, 1,3, 1,na, myName//'dxa' )
+        call re_alloc( dxa, 1,3, 1,na, 'dxa', myName )
       endif
       lastna = na
 
