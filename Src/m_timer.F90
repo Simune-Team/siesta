@@ -5,6 +5,10 @@
 ! Provides utility routines for CPU timing
 ! Written by J.M.Soler. July 2009
 !===============================================================================
+
+  !  The user must provide an external function 'use_walltime_in_timer' 
+  !  with the interface specified below to set the value of 'use_walltime'
+!
 ! Used MPI routines and parameters
 !  use mpi_siesta, only: MPI_AllGather
 !  use mpi_siesta, only: MPI_Bcast
@@ -90,6 +94,7 @@
 ! ALGORITHMS:
 !   Calls intrinsic routine cpu_time and stores the present time, associated
 !   to the prog name, for future use by timer_stop
+!   If use_walltime is .true., it uses wall_time instead
 !===============================================================================
 ! SUBROUTINE timer_stop( prog )   
 !   Stops counting time for a program or code section
@@ -219,6 +224,12 @@ PUBLIC:: &
 
 PRIVATE ! Nothing is declared public beyond this point
 
+  interface
+     function use_walltime_in_timer() result(use_walltime)
+       logical :: use_walltime
+     end function use_walltime_in_timer
+  end interface
+
 ! Parameters
   character(len=*),parameter:: myName  = 'timer '
   character(len=*),parameter:: errHead = myName//'ERROR: '
@@ -239,6 +250,7 @@ PRIVATE ! Nothing is declared public beyond this point
   end type times_t
 
 ! Module variables and arrays
+  logical, save :: use_walltime         ! wall-time or cpu-time?
   real(dp),save :: minRepTime = 0.0_dp  ! Min reported CPU time fraction
   integer, save :: nProgs=0             ! Number of timed programs
   type(times_t), target, save:: progData(maxProgs) ! Holds data of timed progs
@@ -280,8 +292,7 @@ subroutine print_report( prog )   ! Write a report of counted times
   writingTimes = .true.
 
 ! Find present CPU time and convert it to double precision
-  call cpu_time( treal )
-  timeNow = treal
+  call current_time(timeNow)
   totalTime = timeNow - time0
   call wall_time( wallTime )
   wallTime = wallTime - wallTime0
@@ -397,15 +408,17 @@ subroutine print_report( prog )   ! Write a report of counted times
           'Calc: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeCalTime), sum(nodeCalTime)/nNodes, totalCalTime, &
           sum(nodeCalTime)/nNodes / maxval(nodeCalTime)
-#ifdef MPI_TIMING
+
         write(iu,'(a,3f12.3,f8.3)') &
           'Comm: Sum, Avge, myNode, Avg/Max =', &
           sum(nodeComTime), sum(nodeComTime)/nNodes, totalComTime, &
           sum(nodeComTime)/nNodes / maxval(nodeComTime)
-#else
-	totalComTime = huge(1.0_dp) ! Avoid division by zero in prog table output
-	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
-#endif
+
+        if (totalComTime < 1.0e-4) then
+           ! Avoid division by zero in prog table output when not timing comms
+           totalComTime = huge(1.0_dp) 
+        endif
+
         write(iu,'(a,3f12.3,f8.3)') &
           'Tot:  Sum, Avge, myNode, Avg/Max =', &
           sum(nodeTotTime), sum(nodeTotTime)/nNodes, totalTime, &
@@ -464,13 +477,14 @@ subroutine print_report( prog )   ! Write a report of counted times
 
       ! Write total communications time
       if (myNode==writerNode) then
-#ifdef MPI_TIMING
+         
+        if (totalComTime > huge(1.0_dp)/2.0_dp) then
+           ! Set back to 0
+           totalComTime = 0.0_dp
+        endif
         write(iu,'(a15,i9,2(f12.3,f9.4))') &
          'MPI total      ', totalComCalls, &
           totalComTime, 1., totalComTime, totalComTime/totalTime
-#else
-	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
-#endif
       endif ! (myNode==writerNode)
 
 
@@ -643,12 +657,11 @@ end subroutine timer_get
 
 subroutine timer_init()   ! Initialize timing
 
-! Internal variables
-  real    :: treal
+  use_walltime = use_walltime_in_timer()
 
   call wall_time( wallTime0 )
-  call cpu_time( treal )       ! Notice single precision
-  time0 = treal
+  call current_time(time0)
+
   nProgs = 0
 
 ! (Re)initialize data array
@@ -710,9 +723,7 @@ subroutine timer_start( prog )   ! Start counting time for a program
 ! Do not change data if writing a report
   if (writingTimes) return
 
-! Find present CPU time and convert it to double precision
-  call cpu_time( treal )         ! Standard Fortran95
-  timeNow = treal
+  call current_time(timeNow)
 
 ! Find program index
   iProg = prog_index( prog )
@@ -750,9 +761,7 @@ subroutine timer_stop( prog )   ! Stop counting time for a program
 ! Do not change data if writing a report
   if (writingTimes) return
 
-! Find present CPU time and convert it to double precision
-  call cpu_time( treal )         ! Standard Fortran95
-  timeNow = treal
+  call current_time(timeNow)
 
 ! Find program index
   iProg = prog_index( prog, found )
@@ -811,6 +820,23 @@ do i=1, maxProgs
 enddo
 end subroutine timer_all_stop
    
+  !------------------------------------------------
+  subroutine current_time(t)
+    !
+    ! CPU or walltime, depending on the setting of 'use_walltime'
+    !
+    use m_walltime, only: wall_time
+    real(dp), intent(out) :: t
+
+    real  :: treal   ! for call to cpu_time
+
+    if (use_walltime) then
+       call wall_time(t)
+    else
+       call cpu_time(treal)
+       t = treal
+    endif
+  end subroutine current_time
 
 END MODULE m_timer
 

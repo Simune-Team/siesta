@@ -45,6 +45,9 @@ module m_timer_tree
   !  specified below to properly abort the calling program in the event
   !  of an error (the routine could simply ignore timing errors...)
   !
+  !  The user must provide an external function 'use_walltime_in_timer' 
+  !  with the interface specified below to set the value of 'use_walltime'
+  !
   ! Alberto Garcia, January 2013-, re-using some pieces of code by Jose Soler
   ! 
   implicit none
@@ -78,7 +81,6 @@ module m_timer_tree
   type(section_t), pointer :: last_active => null()
 
   real(dp)       :: globaltime
-  logical,public :: use_walltime = .true.
 
   type(section_t), pointer :: p
   type(times_t), pointer   :: pd
@@ -86,6 +88,8 @@ module m_timer_tree
   real(dp)                 :: t_current
   real(dp)                 :: deltaTime
   character(len=256) :: msg
+
+  logical, save :: use_walltime
 
 
   public :: timer_on, timer_off, timer_report
@@ -95,6 +99,9 @@ module m_timer_tree
      subroutine die(str)
        character(len=*), intent(in), optional :: str
      end subroutine die
+     function use_walltime_in_timer() result(use_walltime)
+       logical :: use_walltime
+     end function use_walltime_in_timer
   end interface
 
 CONTAINS
@@ -109,6 +116,11 @@ CONTAINS
     ! so that multiple user "trees" can be supported
 
     if (.not. associated(global_section)) then
+       ! Initialization
+       ! Get the value of this variable before
+       ! calling current_time...
+       use_walltime = use_walltime_in_timer()
+       !
        allocate(global_section)
        p => global_section
        p%active = .true.

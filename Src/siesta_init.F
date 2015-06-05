@@ -13,6 +13,8 @@
       use m_struct_init,      only: struct_init
       use siesta_options
       use timer_options,      only: use_tree_timer
+      use timer_options,      only: time_mpi_calls
+      use timer_options,      only: use_walltime
       use sparse_matrices
       use siesta_geom
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
@@ -155,8 +157,10 @@
 ! Set timer report file and threshold .................................
       call timer_report( file=trim(slabel)//'.times', 
      .        threshold=fdf_get('timer_report_threshold', 0._dp))
-      ! This variable lives in siesta_options
+
       use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      time_mpi_calls = fdf_get('time-mpi-calls', .false.)
+      use_walltime = fdf_get('use-walltime', use_tree_timer)
 
 !     Start time counter
 !     Note new placement of this first use, so that
