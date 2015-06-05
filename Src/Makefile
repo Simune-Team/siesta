@@ -609,7 +609,7 @@ matel.o: radfft.o spher_harm.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
 memory.o: memory_log.o parallel.o
-memory_log.o: m_io.o parallel.o precision.o sys.o
+memory_log.o: m_io.o parallel.o precision.o
 mesh.o: precision.o
 meshcomm.o: mesh.o precision.o
 meshdscf.o: alloc.o atomlist.o m_dscfcomm.o meshphi.o parallel.o parallelsubs.o

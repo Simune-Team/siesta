@@ -2,6 +2,8 @@
 !
 ! ==================================================================
 ! Allocation, reallocation, and deallocation utility routines
+! for pointers
+!
 ! Written by J.M.Soler. May 2000.
 ! Re-organized by A. Garcia, June 2015.
 ! ==================================================================
@@ -94,22 +96,21 @@
 ! zero (integer and real), .false. (logical), or blank (character).
 !   If imin>imax for any dimension, the array pointer returns
 ! associated to a zero-size array.
-!   Besides allocating or reallocating the array, re_alloc keeps a count
-! of memory usage (and prints a report in a file previously fixed by a
-! call to alloc_report). Thus, it is not recommended to call re_alloc
-! to reallocate an array not allocated by it the first time.
-!   If name is not present, the memory count associated to the
-! allocation/deallocation is still made, but the allocation report
-! will account the array under the generic name 'unknown'.
-!   The routine argument is NOT used to classify the counting of
-! memory usage. The classification uses only the name argument.
-! This is because a pointer may be allocated in one routine and
-! deallocated in a different one (i.e. when it is used to return an
-! array whose size is not known in advance). However, the routine
-! argument is reported when alloc_report=4, and it is also used to
-! report in which routine the memory peack occurs. If you want the
-! routine name to be used for classification, you should include it
-! as part of the name argument, like in name='matInvert '//'aux'.
+!
+!   Besides allocating or reallocating the array, re_alloc calls
+! the external routine 'alloc_memory_event' with the number
+! of bytes involved in the allocation and a string identifier
+! built from the 'routine' and 'name' arguments: 'routine@name'.
+! Clients of this module can process this information at will.
+!
+!   Error conditions are reported via a callback to the external
+! routine 'alloc_error_report', with a string message and an
+! integer code.
+! Clients of this module can process this information at will.
+!
+! In future, an extra 'stat' argument might be included in the calls
+! to re_alloc and de_alloc for finer control.
+!
 ! ==================================================================---
 ! SUBROUTINE de_alloc( array, name, routine )
 ! INPUT (optional):
@@ -127,7 +128,13 @@
 ! deallocated by dealloc.
 ! ==================================================================---
 MODULE alloc
-
+!
+! This module has no external build dependencies
+! Final executables must resolve the symbols for the two handlers
+!   alloc_memory_event
+!   alloc_error_report
+! with interfaces specified below
+!
   implicit none
 
 PUBLIC ::             &
@@ -1567,7 +1574,8 @@ SUBROUTINE alloc_count( delta_size, type, name, routine )
 
 !
 !  This version simply computes the total size and calls
-!  the external routine  alloc_memory_event
+!  the external routine  alloc_memory_event with the size
+!  in bytes and a string identifier of the form 'routine@name'.
 !
 implicit none
 
@@ -1647,6 +1655,41 @@ END FUNCTION type_mem
 
 END SUBROUTINE alloc_count
 
-
-
 END MODULE alloc
+
+#ifdef __TEST__MODULE__ALLOC__
+! Optional test code
+!
+program testalloc
+use alloc, only: re_alloc, de_alloc
+
+real, pointer :: x(:) => null()
+real(kind=kind(1.d0)), pointer :: y(:,:) => null()
+
+call re_alloc(x,1,10,"x","testalloc")
+call re_alloc(y,-3,4,1,3,"y","testalloc")
+print *, "Shape of x: ", shape(x)
+print *, "Shape of y: ", shape(y)
+call de_alloc(x,"x","testalloc")
+call de_alloc(y,"y","testalloc")
+
+end program testalloc
+!
+! Handlers
+! Note: In systems with weak symbols, these handlers
+! could be compiled marked as such. (Future extension)
+!
+subroutine alloc_memory_event(bytes,name)
+integer, intent(in) :: bytes
+character(len=*), intent(in) :: name
+write(*,*) "alloc: allocated ", bytes, "bytes for "//trim(name)
+end subroutine alloc_memory_event
+
+subroutine alloc_error_report(name,code)
+character(len=*), intent(in) :: name
+integer, intent(in) :: code
+write(*,*) "alloc error: "//trim(name)
+end subroutine alloc_error_report
+
+#endif
+
