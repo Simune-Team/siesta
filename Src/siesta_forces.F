@@ -8,6 +8,10 @@
 
       subroutine siesta_forces(istep)
       use siesta_cml
+#ifdef FLOOK
+      use flook_siesta, only : slua_call, LUA_SCF_LOOP
+      use siesta_dicts
+#endif
       use m_state_init
       use m_setup_hamiltonian
       use m_setup_H0
@@ -96,6 +100,15 @@
 !       -- At the change to a TranSiesta GF run the variable "first"
 !          is implicitly reset to "true".
 
+#ifdef FLOOK
+      ! Add the iscf constant to the list of variables
+      ! that are available only in this part of the
+      ! routine.
+      call dict_variable_add('SCF.Iteration',iscf)
+      call dict_variable_add('SCF.dDmax',dDmax)
+      call dict_variable_add('SCF.dHmax',dHmax)
+      call dict_variable_add('SCF.drhoG',drhog)
+#endif
 
 !     Start of SCF loop
       iscf = 0
@@ -128,6 +141,11 @@
         ! Conditions of exit:
         !  -- At the top, to catch a non-positive nscf
         !  -- At the bottom, based on convergence or # of iterations
+
+#ifdef FLOOK
+        ! Communicate with lua
+        call slua_call(LUA, LUA_SCF_LOOP)
+#endif
 
         iscf = iscf + 1
         if ( iscf > nscf ) EXIT

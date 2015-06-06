@@ -44,6 +44,9 @@
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
+#ifdef FLOOK
+      use flook_siesta, only : slua_call, LUA_ANALYSIS
+#endif
 
       implicit none
 
@@ -78,6 +81,13 @@
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='Finalization')
       endif
+
+#ifdef FLOOK
+      ! Call lua right before doing the analysis,
+      ! possibly changing some of the variables
+      call slua_call(LUA,LUA_ANALYSIS)
+#endif
+
 !
 !     NOTE that the geometry output by the following sections
 !     is that "predicted" for the next MD or relaxation step.

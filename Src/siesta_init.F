@@ -65,6 +65,11 @@
       use m_ts_init, only : ts_init
 #endif
 
+#ifdef FLOOK
+      use siesta_dicts, only : dict_populate
+      use flook_siesta, only : slua_init, slua_call, LUA_INITIALIZE
+#endif
+
 #ifdef NCDF_4
       use nf_ncdf
 #endif
@@ -480,6 +485,19 @@
       
 #ifdef TRANSIESTA
       call ts_init(nspin,ucell,na_u,xa,lasto,no_u,inicoor,fincoor)
+#endif
+
+#ifdef FLOOK
+
+      ! Populate dictionaries
+      call dict_populate()
+
+      ! Initialize LUA handle
+      call slua_init(LUA)
+
+      ! Call a preprocess step right after initialization
+      call slua_call(LUA,LUA_INITIALIZE)
+
 #endif
 
 !     Output memory use before main loop

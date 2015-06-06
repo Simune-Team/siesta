@@ -1,4 +1,57 @@
 ----------------------------------------------------
+June 6, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-428
+Added flook as an scripting language to siesta
+
+- Added flook to siesta.
+  It enables the interaction of siesta/transiesta
+  using lua as a scripting back-end.
+  
+  In principle you can do whatever you want
+  in Lua as long as the variables you want are
+  available by the interface (see siesta_dicts)
+  
+  Using the lua backend provides easy access
+  to create your own MD algorithm (no 
+  need to create constr and re-compile...!!!
+
+  I have created an example for the water molecule
+  in Tests/h2o_lua
+
+  with an accompanying test.
+
+  Please consult the output and explanations
+  in the siesta.lua file as well as the output.
+  
+  Switch the LUA.Script flag to a file that does
+  not exist, and LUA will not be called.
+
+  To enable the flook implementation follow
+  installation instructions of flook
+  at github.com/ElectronicStructureLibrary/flook
+  and add what is mentioned there to the 
+  make file, then compile using:
+    make USE_FLOOK=1
+
+added:
+  Src/flook_siesta.F90
+  Src/siesta_dicts.F90
+  Tests/Reference/h2o_lua.out
+  Tests/h2o_lua/
+  Tests/h2o_lua/h2o.fdf
+  Tests/h2o_lua/h2o.pseudos
+  Tests/h2o_lua/makefile
+  Tests/h2o_lua/siesta.lua
+modified:
+  Src/Makefile
+  Src/siesta_analysis.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/state_analysis.F
+
+----------------------------------------------------
 June 3, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-427
 Added >= to cdiag debugging
 

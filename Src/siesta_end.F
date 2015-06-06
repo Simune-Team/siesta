@@ -28,6 +28,11 @@
       use meshdscf,        only : resetDscfPointers
       use m_dscfcomm,      only : resetdscfComm
       use m_rhog,          only : resetRhog
+#ifdef FLOOK
+      use flook_siesta,    only : slua_close
+      use siesta_options,  only : LUA
+#endif
+
 
       implicit none
 
@@ -38,6 +43,12 @@
 #ifdef DEBUG
       call write_debug( 'PRE SIESTA_END' )
 #endif
+
+#ifdef FLOOK
+      ! Clean up the lua environment
+      call slua_close(LUA)
+#endif
+
 !     Free allocated memory
       call resetSparseMatrices( )
       call resetPulayArrays( )
