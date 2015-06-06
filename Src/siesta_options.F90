@@ -2,6 +2,9 @@ MODULE siesta_options
   USE precision
   USE units
   USE parallel, only: ParallelOverK
+#ifdef FLOOK
+  use flook, only : luaState
+#endif
   implicit none
   PUBLIC
 
@@ -197,6 +200,11 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2
   integer,  parameter :: SOLVE_MINIM  = 3
+
+#ifdef FLOOK
+  ! LUA-handle
+  type(luaState) :: LUA
+#endif
 
       CONTAINS
 

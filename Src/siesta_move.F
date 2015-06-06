@@ -297,7 +297,6 @@
         call write_md_record( istep )
       endif
 
-
    60 continue
 ! Output memory use at the end of this geometry step
       if (cml_p) then

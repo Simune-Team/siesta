@@ -35,6 +35,10 @@
       use m_forces
       use m_intramol_pressure, only: remove_intramol_pressure
 
+#ifdef FLOOK
+      use flook_siesta, only : slua_call, LUA_FORCES
+#endif
+
       implicit none
 
       integer  :: istep
@@ -128,6 +132,16 @@
      &               cstress, cfa, ntcon ,
      &               magnitude_usage = idyn==0 )
       endif
+
+#ifdef FLOOK
+      ! We call it right after using the
+      ! geometry constraints.
+      ! In that way we can use both methods on top
+      ! of each other!
+      ! The easy, already implemented methods in fixed,
+      ! and custom ones in Lua :)
+      call slua_call(LUA, LUA_FORCES)
+#endif
 
 !     Calculate and output Zmatrix forces
       if (lUseZmatrix .and. (idyn.eq.0)) then
