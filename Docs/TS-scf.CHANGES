@@ -1,4 +1,11 @@
 ----------------------------------------------------
+June 7, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-429
+Made lua-test do CG
+
+modified:
+  Tests/h2o_lua/h2o.fdf
+
+----------------------------------------------------
 June 6, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-428
 Added flook as an scripting language to siesta
 

@@ -9,6 +9,9 @@ LUA.Script siesta.lua
 # Debug (create loads of print-out)
 LUA.Debug T
 
+MD.TypeOfRun CG
+MD.NumCGSteps 100
+
 MeshCutoff  50 Ry
 
 %block ChemicalSpeciesLabel
