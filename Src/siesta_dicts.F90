@@ -73,6 +73,8 @@ contains
 
     ! SCF options
     options = options // &
+         ('SCF.MixFirst'.kvp.mix_first_scf_step)
+    options = options // &
          ('SCF.MinIterations'.kvp.min_nscf)
     options = options // &
          ('SCF.MaxIterations'.kvp.nscf)
@@ -98,6 +100,7 @@ contains
          ('SCF.MonitorForces'.kvp.monitor_forces_in_scf)
     options = options // &
          ('ElectronicTemperature'.kvp.temp)
+
     options = options // &
          ('MD.NumSteps'.kvp.nmove)
     options = options // &
@@ -112,6 +115,8 @@ contains
          ('MD.FC.First'.kvp.ia1)
     options = options // &
          ('MD.FC.Last'.kvp.ia2)
+    options = options // &
+         ('MD.Temperature.Target'.kvp.tt)
     
   end subroutine dict_populate_options
 
@@ -141,6 +146,7 @@ contains
          ('geom.xa_last'.kvp.xa_last)
     variables = variables // &
          ('geom.va'.kvp.va)
+
     ! This is an abstraction made
     ! easy for the user.
     ! The forces that are used internally
@@ -159,6 +165,12 @@ contains
          ('geom.species'.kvp.isa)
     variables = variables // &
          ('geom.z'.kvp.iza)
+    variables = variables // &
+         ('geom.last_orbital'.kvp.lasto)
+    variables = variables // &
+         ('geom.mass'.kvp.amass)
+    variables = variables // &
+         ('geom.neutral_charge'.kvp.qa)
 
     ! Add energies
     variables = variables // &

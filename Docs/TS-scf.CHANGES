@@ -1,4 +1,19 @@
 ----------------------------------------------------
+June 8, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-430
+Enabled parallel flook debug
+
+* Enabled parallel debug for flook
+
+* Added more variables to read off in flook.
+
+  Mixfirst, temperature target
+  last orbital, mass, neutral charge.
+
+modified:
+  Src/flook_siesta.F90
+  Src/siesta_dicts.F90
+
+----------------------------------------------------
 June 7, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-429
 Made lua-test do CG
 

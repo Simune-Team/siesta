@@ -26,6 +26,7 @@ module flook_siesta
   ! Internal parameters
   logical, save :: slua_run = .true.
   character(len=512), save, public :: slua_file = ' '
+  ! Debugging flag for both parallel and serial debugging
   logical, save, public :: slua_debug = .false.
 
 contains
@@ -56,7 +57,14 @@ siesta_comm = function (_empty_tbl) end'
 
     ! First retrieve lua file
     slua_file = fdf_get('LUA.Script',' ')
+    ! Default debugging only on the io-node.
     slua_debug = fdf_get('LUA.Debug',.false.)
+    slua_debug = slua_debug .and. IONode 
+    if ( fdf_get('LUA.Debug.Parallel',.false.) ) then
+       ! Only if requesting parallel debug should all processors
+       ! use the debugging.
+       slua_debug = .true.
+    end if
 
     ! Check that all sees the files
     ! Currently this is a limitation of this simple
@@ -131,7 +139,7 @@ siesta_comm = function (_empty_tbl) end'
     write(tmp,'(a,i0)') 'siesta.state = ',state
     call lua_run(LUA, code = tmp )
 
-    if ( slua_debug .and. IONode ) then
+    if ( slua_debug ) then
        write(*,'(a,i0)') 'siesta-lua: calling siesta_comm() @ ',state
     end if
 
@@ -170,7 +178,7 @@ siesta_comm = function (_empty_tbl) end'
 
     type(dict) :: keys
 
-    if ( slua_debug .and. IONode ) then
+    if ( slua_debug ) then
        write(*,'(a,i0)') '  lua: siesta_get, Node = ',Node + 1
     end if
 
@@ -211,7 +219,7 @@ siesta_comm = function (_empty_tbl) end'
     type(luaTbl) :: tbl
     type(dict) :: keys
 
-    if ( slua_debug .and. IONode ) then
+    if ( slua_debug ) then
        write(*,'(a,i0)') '  lua: siesta_return, Node = ',Node + 1
     end if
 
@@ -326,7 +334,7 @@ siesta_comm = function (_empty_tbl) end'
       integer :: lvls
       lvls = 0
       t = which(v)
-      if ( slua_debug .and. IONode ) then
+      if ( slua_debug ) then
          write(*,'(4a)') '    siesta2lua; dtype = ',t,', var = ',trim(key)
       end if
 !      print *,'Attempt storing: ',trim(key), ' type= ',t
@@ -443,7 +451,7 @@ siesta_comm = function (_empty_tbl) end'
       integer :: lvls
       lvls = 0
       t = which(v)
-      if ( slua_debug .and. IONode ) then
+      if ( slua_debug ) then
          write(*,'(4a)') '    lua2siesta; dtype = ',t,', var = ',trim(key)
       end if
       select case ( t )
