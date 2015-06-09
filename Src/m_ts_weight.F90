@@ -193,7 +193,7 @@ contains
 
           ! We are in a buffer region...
           if ( l_ncol(lio) /= 0 ) then
-          io = index_local_to_global(dit,lio,Node)
+          io = index_local_to_global(dit,lio)
           
           ia = iaorb(io,lasto) ! atom-index
           
@@ -301,7 +301,7 @@ contains
        if ( l_ncol(lio) /= 0 ) then
 
        ! The global orbital
-       io = index_local_to_global(dit,lio,Node)
+       io = index_local_to_global(dit,lio)
        
        ! Update the weight of the row-atom
        if ( TS_W /= TS_W_ORB_ORB ) then

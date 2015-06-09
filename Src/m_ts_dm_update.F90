@@ -91,10 +91,13 @@
 module m_ts_dm_update
 
   use precision, only : dp
+  use geom_helper, only : UCORB
+  use intrinsic_missing, only : SFIND
 
   implicit none
   
   private :: dp
+  private :: ucorb, sfind
 
 contains
 
@@ -114,9 +117,6 @@ contains
     use class_Sparsity
     use class_dSpData2D
     use class_zSpData2D
-    use geom_helper, only : UCORB
-    use intrinsic_missing, only : SFIND
-    use parallel, only : Node
 
 ! *********************
 ! * INPUT variables   *
@@ -132,7 +132,7 @@ contains
     ! The supercell offsets
     integer, intent(in) :: n_s
     real(dp), intent(in) :: sc_off(3,0:n_s-1)
-    logical, intent(in), optional :: non_Eq
+    logical, intent(in) :: non_Eq
 
     ! Arrays needed for looping the sparsity
     type(OrbitalDistribution), pointer :: dit
@@ -188,7 +188,7 @@ contains
        do lio = 1 , lnr
 
           if ( l_ncol(lio) /= 0 ) then
-          io = index_local_to_global(dit,lio,Node)
+          io = index_local_to_global(dit,lio)
           if ( up_ncol(io) /= 0 ) then
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -226,7 +226,7 @@ contains
        do lio = 1 , lnr
 
           if ( l_ncol(lio) /= 0 ) then
-          io = index_local_to_global(dit,lio,Node)
+          io = index_local_to_global(dit,lio)
           if ( up_ncol(io) /= 0 ) then
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -239,8 +239,10 @@ contains
              
              rin  = up_ptr(jo)
              rind = rin + SFIND(up_col(rin+1:rin+up_ncol(jo)),io)
+#ifndef TS_NOCHECKS
              if ( rind <= rin ) &
                   call die('ERROR: Conjugated symmetrization point does not exist')
+#endif
 
              jo = (l_col(lind)-1) / nr
              ph = cdexp(dcmplx(0._dp, - &
@@ -272,9 +274,6 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData2D
-    use geom_helper, only : UCORB
-    use intrinsic_missing, only : SFIND
-    use parallel, only : Node
 
 ! *********************
 ! * INPUT variables   *
@@ -341,7 +340,7 @@ contains
        do lio = 1 , lnr
 
           if ( l_ncol(lio) /= 0 ) then
-          io = index_local_to_global(dit,lio,Node)
+          io = index_local_to_global(dit,lio)
           if ( up_ncol(io) /= 0 ) then
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -371,7 +370,7 @@ contains
        do lio = 1 , lnr
 
           if ( l_ncol(lio) /= 0 ) then
-          io = index_local_to_global(dit,lio,Node)
+          io = index_local_to_global(dit,lio)
           if ( up_ncol(io) /= 0 ) then
 
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -402,9 +401,6 @@ contains
     use class_Sparsity
     use class_dSpData2D
     use class_iSpData1D
-    use parallel, only : Node
-    use geom_helper, only : UCORB
-    use intrinsic_missing, only : SFIND
 
 ! *********************
 ! * INPUT variables   *
@@ -559,7 +555,7 @@ contains
        do lio = 1 , lnr
 
           ! obtain the global index of the local orbital.
-          io = index_local_to_global(dit,lio,Node)
+          io = index_local_to_global(dit,lio)
 
           ! Quickly go past the empty regions... (we have nothing to update)
           if ( lup_ncol(io) /= 0 ) then
@@ -604,9 +600,6 @@ contains
     use class_Sparsity
     use class_zSpData2D
 
-    use geom_helper, only : UCORB
-    use intrinsic_missing, only : SFIND
-    use parallel, only : Node
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
     ! Size of the sparsity arrays
@@ -668,7 +661,7 @@ contains
     do lio = 1 , lnr
 
        ! obtain the global index of the local orbital.
-       io = index_local_to_global(dit,lio,Node)
+       io = index_local_to_global(dit,lio)
 
        ! Quickly go past the empty regions... (we have nothing to update)
        if ( lup_ncol(io) /= 0 ) then
@@ -693,9 +686,11 @@ contains
           rin  = lup_ptr(jo)
           ! TODO, this REQUIRES that lup_col(:) is sorted
           rind = rin + SFIND(lup_col(rin+1:rin+lup_ncol(jo)),io)
+#ifndef TS_NOCHECKS
           ! We do a check, just to be sure...
           if ( rind <= rin ) &
                call die('ERROR: Conjugated symmetrization point does not exist')
+#endif
           
           ! The integration is this:
           ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
@@ -722,9 +717,7 @@ contains
     ! The DM and EDM equivalent matrices
     use class_OrbitalDistribution
     use class_Sparsity
-    use geom_helper, only : UCORB
-    use intrinsic_missing, only : SFIND
-    use parallel, only : Node
+
     type(OrbitalDistribution), intent(inout) :: dit
     type(Sparsity), intent(inout) :: sp
     ! Size of the sparsity arrays
@@ -753,14 +746,16 @@ contains
      
        ! This loop is across the local rows...
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,jo,ind,lind)
+!$OMP&private(lio,io,jo,col,ind,lind)
        do lio = 1 , lnr
 
           ! obtain the global index of the local orbital.
-          io = index_local_to_global(dit,lio,Node)
+          io = index_local_to_global(dit,lio)
 
           ! Quickly go past the empty regions... (we have nothing to update)
           if ( lup_ncol(io) /= 0 ) then
+
+          jo = lup_ptr(io)
 
           ! Do a loop in the local sparsity pattern...
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -768,7 +763,6 @@ contains
              ! Search for unit-cell entry in update sparsity
              ! pattern (UC)
              col = UCORB(l_col(lind),nr)
-             jo = lup_ptr(io)
              ind = SFIND(lup_col(jo+1:jo+lup_ncol(io)),col)
              if ( ind > 0 ) then
                 DM (lind) = 0._dp
@@ -782,17 +776,15 @@ contains
 
     else
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,jo,ind,lind)
+!$OMP&private(lio,io,jo,col,ind,lind)
        do lio = 1 , lnr
-          io = index_local_to_global(dit,lio,Node)
+          io = index_local_to_global(dit,lio)
           if ( lup_ncol(io) /= 0 ) then
+          jo = lup_ptr(io)
           do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
              col = UCORB(l_col(lind),nr)
-             jo = lup_ptr(io)
              ind = SFIND(lup_col(jo+1:jo+lup_ncol(io)),col)
-             if ( ind > 0 ) then
-                DM (lind) = 0._dp
-             end if
+             if ( ind > 0 ) DM (lind) = 0._dp
           end do
           end if
        end do

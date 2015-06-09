@@ -963,7 +963,7 @@ contains
 
   subroutine create_sp2sp01(this,IO)
 
-    use parallel, only : IONode, Node
+    use parallel, only : IONode
 
     use class_OrbitalDistribution
 
@@ -1040,7 +1040,7 @@ contains
     do i = 1 , no_l
 
        ! Shift out of the buffer region
-       iio = index_local_to_global(fdist,i,Node)
+       iio = index_local_to_global(fdist,i)
        ia = iaorb(iio,this%lasto)
 
        ! Loop number of entries in the row...
@@ -1362,7 +1362,7 @@ contains
 
   subroutine check_connectivity(this)
 
-    use parallel, only : IONode, Node
+    use parallel, only : IONode
     use units, only : eV
 
     use class_OrbitalDistribution
@@ -1426,7 +1426,7 @@ contains
     do i = 1 , no_l
 
        ! Shift out of the buffer region
-       io = index_local_to_global(fdist,i,Node)
+       io = index_local_to_global(fdist,i)
        ia = iaorb(io,this%lasto)
 
        ! Loop number of entries in the row...

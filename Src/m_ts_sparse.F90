@@ -531,7 +531,7 @@ contains
   subroutine ts_Sparsity_Update(dit,s_sp, N_Elec, Elecs, &
        tsup_sp)
 
-    use parallel, only : IONode, Node
+    use parallel, only : IONode
     use geom_helper, only : UCORB
     use create_Sparsity_SC
     use class_OrbitalDistribution
@@ -595,7 +595,7 @@ contains
     do lio = 1 , no_l
 
        ! Shift out of the buffer region
-       io = index_local_to_global(dit,lio,Node)
+       io = index_local_to_global(dit,lio)
 
        ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
        ict = orb_type(io)

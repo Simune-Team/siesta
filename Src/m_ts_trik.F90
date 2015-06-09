@@ -540,7 +540,7 @@ contains
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      zwork_tri, r_pvt, pvt, &
                      N_Elec, Elecs, &
-                     DMidx=iID, EDMidx=imu )
+                     DMidx=iID, EDMidx=imu)
              end do
           end do
 

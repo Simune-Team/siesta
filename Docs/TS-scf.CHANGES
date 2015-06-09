@@ -1,4 +1,22 @@
 ----------------------------------------------------
+June 9, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-431
+Bugfix for OMP run
+
+* I had introduced col variable which was _shared_.
+  Fixed, now it runs fine again.
+
+* Removed a few references to the index_local_to_global
+  node specification (which is implicit in the communicator)
+
+modified:
+  Src/m_ts_dm_update.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 June 8, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-430
 Enabled parallel flook debug
 

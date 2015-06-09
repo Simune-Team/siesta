@@ -183,7 +183,7 @@ contains
     do lio = 1 , no_l
 
        ! obtain the global index of the orbital.
-       io = index_local_to_global(dit,lio,Node)
+       io = index_local_to_global(dit,lio)
        kn = k_ncol(io)
        ! if there is no contribution in this row
        if ( kn /= 0 ) then
@@ -470,7 +470,7 @@ contains
     do lio = 1 , no_l
 
        ! obtain the global index of the orbital.
-       io = index_local_to_global(dit,lio,Node)
+       io = index_local_to_global(dit,lio)
        ! if there is no contribution in this row
        if ( k_ncol(io) /= 0 ) then
 
