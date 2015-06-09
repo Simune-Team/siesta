@@ -64,7 +64,7 @@ OBJS_DENCHAR = atompla.o planed.o\
         io.o iodm.o itochar.o length.o \
         matvect.o memory.o colinear.o\
 	neighb.o paste.o pxf.o \
-	m_recipes.o radfft.o ranger.o \
+	m_fft_gpfa.o radfft.o ranger.o \
         readwavesx.o rhoofr.o wavofr.o \
         redata_denchar.o local_reinit.o denchar.o \
 	volcel.o wrout.o stsofr.o
@@ -451,7 +451,7 @@ m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
 m_ts_debug.o: precision.o
 m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_ts_dm_update.o: class_SpData2D.o class_Sparsity.o geom_helper.o
-m_ts_dm_update.o: intrinsic_missing.o parallel.o precision.o
+m_ts_dm_update.o: intrinsic_missing.o precision.o
 m_ts_elec_se.o: intrinsic_missing.o m_ts_cctype.o m_ts_electype.o precision.o
 m_ts_elec_se.o: units.o
 m_ts_electrode.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o

@@ -833,7 +833,7 @@ m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
 m_ts_debug.o: precision.o
 m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_ts_dm_update.o: class_SpData2D.o class_Sparsity.o geom_helper.o
-m_ts_dm_update.o: intrinsic_missing.o parallel.o precision.o
+m_ts_dm_update.o: intrinsic_missing.o precision.o
 m_ts_elec_se.o: intrinsic_missing.o m_ts_cctype.o m_ts_electype.o precision.o
 m_ts_elec_se.o: units.o
 m_ts_electrode.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o
