@@ -47,7 +47,7 @@ dep:
 	@mv tmp.Makefile Makefile
 #
 include arch.make
-INCFLAGS:= $(NETCDF_INCFLAGS) $(INCFLAGS)
+INCFLAGS:= -I. $(NETCDF_INCFLAGS) $(INCFLAGS)
 # For removing any -ipo compilation in sub directories...
 # Later compilers are also having this enabled, and it lets you
 # specify what to not be used in libraries.
@@ -170,7 +170,7 @@ FoX_FCFLAGS=`FoX/FoX-config --fcflags`
 FoX_LIBS=`FoX/FoX-config --libs --wcml`
 #
 # And add them to global compiler flags:
-INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS) $(NETCDF_INCFLAGS)
+INCFLAGS:=$(INCFLAGS) $(FoX_FCFLAGS) 
 #
 # First, it needs to be configured. This may have been done
 # by the main SIESTA configure, but in case not:
@@ -213,12 +213,13 @@ $(XMLPARSER):
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 #--------------------------------------------------------------
-XC=libSiestaXC.a
+XC=gridxc/libGridXC.a
 $(XC): 
-	(cd SiestaXC ; $(MAKE) \
-                    "VPATH_ROOT=$(VPATH)"  \
-	            "INCFLAGS=-I../MPI" \
+	(cd gridxc ; $(MAKE) \
+                    "ARCH_MAKE=../arch.make"  \
+                    "VPATH=$(VPATH)/gridxc"  \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
+INCFLAGS:=  $(INCFLAGS) -I./gridxc
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
@@ -347,7 +348,10 @@ clean:
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
-	(cd SiestaXC ; $(MAKE) clean )
+	(cd gridxc; $(MAKE) \
+                    "ARCH_MAKE=../arch.make"  \
+                    "VPATH=$(VPATH)/gridxc"  \
+		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" clean )
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc_error_report.o: parallel.o
@@ -467,8 +471,8 @@ ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: errorf.o parallel.o precision.o sys.o
-fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
-fft.o: sys.o
+fft.o: alloc.o m_fft_gpfa.o m_timer.o mesh.o parallel.o parallelsubs.o
+fft.o: precision.o sys.o
 fft1d.o: parallel.o precision.o sys.o
 final_H_f_stress.o: alloc.o atmfuncs.o atomlist.o dnaefs.o files.o grdsam.o
 final_H_f_stress.o: kinefsm.o m_dipol.o m_energies.o m_forces.o m_gamma.o
@@ -616,8 +620,8 @@ meshdscf.o: alloc.o atomlist.o m_dscfcomm.o meshphi.o parallel.o parallelsubs.o
 meshdscf.o: precision.o
 meshphi.o: alloc.o precision.o
 meshsubs.o: alloc.o atm_types.o atmfuncs.o cellsubs.o cellxc_mod.o chkgmx.o
-meshsubs.o: fft1d.o mesh.o meshphi.o moremeshsubs.o parallel.o parallelsubs.o
-meshsubs.o: precision.o radial.o siesta_cml.o sys.o
+meshsubs.o: m_fft_gpfa.o mesh.o meshphi.o moremeshsubs.o parallel.o
+meshsubs.o: parallelsubs.o precision.o radial.o siesta_cml.o sys.o
 metaforce.o: alloc.o parallel.o precision.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
 mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_pulay.o m_spin.o

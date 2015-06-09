@@ -264,7 +264,7 @@ C     Create extended mesh arrays for the first data distribution
       use precision,     only : dp
       use cellsubs,      only : reclat  ! Finds reciprocal unit cell
       use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
-      use fft1d,         only : nfft    ! Finds allowed value for 1-D FFT
+      use m_fft_gpfa,    only : nfft    ! Finds allowed value for 1-D FFT
       use fdf
       use sys,           only : die, message
 

@@ -24,6 +24,8 @@
       use sys,                only: die, bye
 #ifdef BSC_CELLXC
       use bsc_xcmod,          only: setXC
+#else
+      use gridxc,             only: gridxc_init
 #endif /* BSC_CELLXC */
       use molecularmechanics, only: inittwobody
       use metaforce,          only: initmeta
@@ -179,6 +181,11 @@
 !     Initialise exchange-correlation functional information
 #ifndef BSC_CELLXC
       call read_xc_info()
+#ifdef MPI
+      call gridxc_init(comm=MPI_Comm_World)
+#else
+      call gridxc_init()
+#endif
 #else /* BSC_CELLXC */
       call setXC( )
 #endif /* BSC_CELLXC */

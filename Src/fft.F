@@ -56,8 +56,8 @@
       use sys,          only : die
       use alloc,        only : re_alloc, de_alloc
       use mesh,         only : nsm
-      use fft1d,        only : gpfa        ! 1-D FFT routine
-      use fft1d,        only : setgpfa     ! Sets gpfa routine
+      use m_fft_gpfa,   only : gpfa        ! 1-D FFT routine
+      use m_fft_gpfa,   only : setgpfa=>setgpfa_check     ! Sets gpfa routine
       use m_timer,      only : timer_start ! Start counting CPU time
       use m_timer,      only : timer_stop  ! Stop counting CPU time
 #ifdef MPI

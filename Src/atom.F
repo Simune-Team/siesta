@@ -43,8 +43,8 @@
       use fdf
       use pseudopotential, only: pseudopotential_t
 #ifndef BSC_CELLXC
-      use siestaXC, only: atomXC  ! XC for a spherical charge
-      use siestaXC, only: getXC   ! Returns the XC functional to be used
+      use gridXC, only: atomXC=>gridxc_atomXC  ! XC for a spherical charge
+      use gridXC, only: getXC=>gridxc_getXC ! Returns the XC functional to be used
 #endif /* ! BSC_CELLXC */
 
       implicit none      
