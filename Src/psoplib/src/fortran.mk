@@ -5,10 +5,6 @@ FC=gfortran
 FFLAGS= -O0 -g -fbacktrace 
 LDFLAGS=     
 #
-PSML_ROOT=$(HOME)/code/SIESTA/S2.6/GIT/psml/src
-PSML_INCFLAGS=-I$(PSML_ROOT)
-PSML_LIBS=$(PSML_ROOT)/libpsml.a
-#
 AR=ar
 RANLIB=echo
 #

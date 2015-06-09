@@ -74,7 +74,7 @@ $(FDF):
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-MIXPS_OBJS= f2kcli.o flib_spline.o atom_options.o \
+MIXPS_OBJS= f2kcli.o interpolation.o atom_options.o \
             sys.o m_io.o io.o alloc.o pxf.o parallel.o periodic_table.o \
             memory.o memoryinfo.o mixps.o psml_die.o die.o
 #
@@ -84,7 +84,7 @@ mixps:  $(FDF) $(MIXPS_OBJS) $(NCPS)
 	$(FC) -o mixps \
 	       $(LDFLAGS) $(MIXPS_OBJS) $(NCPS)  $(FDF) $(PSML_LIBS)
 #----------------------------------------------------------------------------
-FRACTIONAL_OBJS= f2kcli.o sys.o m_io.o alloc.o flib_spline.o fractional.o \
+FRACTIONAL_OBJS= f2kcli.o m_io.o alloc.o interpolation.o fractional.o \
                  atom_options.o  memory.o memoryinfo.o  \
                  io.o pxf.o parallel.o periodic_table.o psml_die.o die.o
 
@@ -121,7 +121,7 @@ basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
 basis_specs.o: sys.o
 basis_types.o: alloc.o atmparams.o precision.o  sys.o
 bessph.o: parallel.o precision.o sys.o
-bonds.o: alloc.o atmfuncs.o mneighb.o precision.o recipes.o sorting.o units.o
+bonds.o: alloc.o atmfuncs.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
 born_charge.o: siesta_geom.o siesta_options.o sparse_matrices.o
 broadcast_basis.o: atm_types.o parallel.o radial.o
@@ -197,7 +197,6 @@ find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
 fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o parsing.o precision.o
-flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
 fractional.o: f2kcli.o periodic_table.o precision.o  sys.o
 get_target_stress.o: m_mpi_utils.o parallel.o precision.o units.o
@@ -307,7 +306,7 @@ mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
 mixer.o: m_ts_io.o m_ts_options.o parallel.o siesta_geom.o siesta_options.o
 mixer.o: sparse_matrices.o
-mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o 
+mixps.o: f2kcli.o interpolation.o periodic_table.o precision.o pseudopotential.o
 mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o

@@ -3,9 +3,10 @@
 #
 default:  test_ncps
 #
-MK_DEFAULT=../src/fortran.mk
-MK?=$(MK_DEFAULT)
-include $(MK)
+ARCH_MAKE_DEFAULT=../src/fortran.mk
+ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
+include $(ARCH_MAKE)
+VPATH=.
 #
 OBJFILES= test_ncps.o m_getopts.o die.o psml_die.o
 INCFLAGS= -I../src
@@ -18,4 +19,4 @@ test_ncps: $(OBJFILES) $(LIBS)
 test_ncps.o: m_getopts.o
 #
 clean:
-	rm -f *.o test_ncps *.mod
+	rm -f *.o test_ncps

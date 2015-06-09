@@ -10,19 +10,22 @@ module:  libncps.a
 # of the arch.make file. This must be an absolute path
 #
 #
-NCPS_MK_DEFAULT=fortran.mk
-NCPS_MK?=$(NCPS_MK_DEFAULT)
-include $(NCPS_MK)
+ARCH_MAKE_DEFAULT=fortran.mk
+ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
+include $(ARCH_MAKE)
+VPATH=.
 #
 libxc-compat:
 	@echo "Compiling the libxc-compat library..."
-	(cd libxc-compat ; $(MAKE) VPATH=$(VPATH)/libxc-compat)
+	(cd libxc-compat ; $(MAKE) \
+            ARCH_MAKE=$(ARCH_MAKE)\
+            VPATH=$(VPATH)/libxc-compat)
 #
 OBJFILES= m_ncps.o m_ncps_froyen_reader.o m_ncps_translators.o \
           m_ncps_froyen_ps_t.o m_ncps_reader.o	m_ncps_writers.o \
           flib_spline.o
 #
-INCFLAGS= -I libxc-compat $(PSML_INCFLAGS)
+INCFLAGS:= -I libxc-compat $(PSML_INCFLAGS)
 #
 libncps.a: libxc-compat $(OBJFILES)
 	$(AR) $(ARFLAGS_EXTRA) cru libncps.a $(OBJFILES) libxc-compat/*.o
@@ -33,7 +36,8 @@ dep:
 #
 clean:
 	rm -f *.o *.*d *.a
-	(cd libxc-compat ; $(MAKE) clean )
+	(cd libxc-compat ; $(MAKE) \
+                        "ARCH_MAKE=$(ARCH_MAKE)" clean)
 #
 # DO NOT DELETE THIS LINE - used by make depend
 m_libxc_sxc_translation.o: m_libxc_list.o

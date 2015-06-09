@@ -3,15 +3,16 @@
 #
 #
 default:  libpsop.a
-module:  libpsop.a
+module: libpsop.a
 #
 # We allow for an external specification of the location 
 # of the arch.make file. This must be an absolute path
 #
 #
-PSOP_MK_DEFAULT=fortran.mk
-PSOP_MK?=$(PSOP_MK_DEFAULT)
-include $(PSOP_MK)
+ARCH_MAKE_DEFAULT=fortran.mk
+ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
+include $(ARCH_MAKE)
+VPATH=.
 #
 OBJFILES= m_psop.o m_kbgen.o m_localgen.o schrodinger.o arw.o \
           psop_params.o  flib_spline.o m_interpol.o

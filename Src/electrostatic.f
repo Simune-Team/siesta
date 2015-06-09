@@ -17,7 +17,7 @@
       use atm_types, only: nspecies, species, elec_corr, npairs
       use radial
       use atmfuncs, only: floating, zvalfis, psch
-      use m_recipes, only: polint
+      use interpolation, only: polint  ! polynomial interpolation
       use m_radfft
       use sys, only: die
       use m_bessph, only: bessph   ! Spherical Bessel functions

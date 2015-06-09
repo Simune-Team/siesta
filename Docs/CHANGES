@@ -6,78 +6,132 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
-2015-03-04  10:50:00 GMT                                     trunk-467
-Fix import of idyn in save_density_matrix (rc-4.0)
+2015-06-02  09:45:00 GMT                                     trunk-469
+Cosmetic fix for errorf.f
 
-* The idyn variable was not imported from siesta_options 
-  in standard "siesta" mode
-
-(thanks to J. Junquera)
+Put proper end statements
 
 modified:
-  Src/save_density_matrix.F
+ Src/errorf.f
 
 -----------------------------------------------------------------------
-2015-02-03  14:30:00 GMT                                     trunk-466
-Fixed IO statements for molecularmechanics module
+2015-06-02  07:10:00 GMT                                     trunk-468
+Replacement of NR routines. Fix for charge-conf variables.
 
-(Nick .P. Andersen)
+* Replaced FFT 1d routine by a version based on Temperton's GPFA
+  
+  Calls to the 'four1' routine have been replaced by calls to
+  'fft_gpfa_ez' with the same arguments. This routine lives
+  in a new module in 'm_fft_gpfa.F', which also contains the
+  legacy code by Temperton and the original entry points.
+  
+  The cdf_fft program in Util/Grid now uses Temperton's GPFA package.
 
-* IO print-outs was still abundant in parallel runs.
-  Now only the IO node will print out.
+  (A. Garcia)
 
-* The manual has been corrected to correctly state
-  that any unit is allowed in the MM.* block.
+* Replaced tred2/tqli by Lapack calls in m_filter (E. Artacho)
+  
+* Replaced derf/derfc by Netlib versions          (E. Artacho)
 
-modified:
-  Docs/siesta.tex
-  Src/molecularmechanics.F90
-
-
------------------------------------------------------------------------
-2015-01-07  10:35:00 GMT                                     trunk-465
+* Replaced random number routine                  (E. Artacho)
+  
+* Some routines from Numerical Recipes reimplemented
+  
+  Some routines from Numerical Recipes have been reimplemented with
+  (mostly) the same algorithms.
+  
+  (Jose Soler, with minor changes by A. Garcia)
+  
+    - spline interpolation routines rewritten and moved to interpolation module
+    - polint Lagrange interpolation rewritten and moved to interpolation module
+    - ordix subroutine recoded
+    - chebfd re-styled to remove remaining similarities with NR chebft
+    - choldc and cholsl fully re-styled and renamed as cholDcmp and cholLinSys
+    - zbrent substituted by a simple bisection root finder
+    - amoeba method re-implemented
+  
+  (+ Interface to external routine 'die' simplified: it now
+     requires a string argument) (A. Garcia)
+  
+* Bugfix for soft confinement charge
+  
+    A shell was not initialized properly if the PAO.Basis block was
+    not defined. Now the initialization routine is called before
+    setting up the orbital.
+  
+    Also changed the comments about the magnitude of the charge
+    confinement width.
+  
+    (Nick P. Andersen)
+  
+----------------(Inserted missing records)-----------------------------
+2015-03-04 11:47:32 +0100                            [trunk-467]
+Fix import of idyn in save_density_matrix (rc-4.0) 
+  
+  * The idyn variable was not imported from siesta_options 
+    in standard "siesta" mode
+  
+  (thanks to J. Junquera)
+  
+  modified:
+    Src/save_density_matrix.F
+------------------------------------------------------------
+2015-02-03 15:28:00 +0100                            [trunk-466]
+Fixed IO statements for molecularmechanics module 
+  
+  (Nick .P. Andersen)
+  
+  * IO print-outs was still abundant in parallel runs.
+    Now only the IO node will print out.
+  
+  * The manual has been corrected to correctly state
+    that any unit is allowed in the MM.* block.
+  
+  modified:
+    Docs/siesta.tex
+    Src/molecularmechanics.F90
+------------------------------------------------------------
+2015-01-07 11:35:12 +0100                        [trunk-465]
 Merge fix from rc-4.0: MPI tag in SiestaXC/mesh3d
-
-* The variable Mpitag was not initialized, leading to problems whenever
-  its value was not zero or considered as MPI_ANY_TAG in a Recv operation.
-
-(Nick P. Andersen)
-
-modified:
-  Src/SiestaXC/mesh3d.F90
-
------------------------------------------------------------------------
-2014-11-08  16:30:00 GMT                                     trunk-464
+  
+  * The variable Mpitag was not initialized, leading to problems whenever
+    its value was not zero or considered as MPI_ANY_TAG in a Recv operation.
+  
+  (Nick P. Andersen)
+  
+  modified:
+    Src/SiestaXC/mesh3d.F90
+------------------------------------------------------------
+2014-11-08 17:26:37 +0100                             [trunk-464]
 Merge fixes from rc-4.0: constr. forces, MPI compilation, mm.potentials
-
--- Fabiano Corsetti: Fix output to show constrained forces
-
-* Changed the calling of the iofa and ofc routines inside write_subs,
-  so that the forces with constraints are written to file in each case
-  instead of the uncorrected forces. 
-
-modified:
-  Src/write_subs.F
-
-
--- Alberto Garcia:   Fix 'clean' rule in  MPI Makefile
-
-The interface library libmpi_f90.a was not removed when issuing a
-'make clean', possibly leading to strange errors if the MPI
-compilation environment was later changed.
-
-modified:
-  Src/MPI/Makefile
-
--- Nick P Andersen:  Fix shortcomings in reading of empirical potential block
-
-* The number of potential lines is now arbitrary.
-* Units handling has been improved, to allow arbitrary
-  length and energy units.
-
-modified:
-  Src/molecularmechanics.F90
-
+  
+  -- Fabiano Corsetti: Fix output to show constrained forces
+  
+  * Changed the calling of the iofa and ofc routines inside write_subs,
+    so that the forces with constraints are written to file in each case
+    instead of the uncorrected forces. 
+  
+  modified:
+    Src/write_subs.F
+  
+  
+  -- Alberto Garcia:   Fix 'clean' rule in  MPI Makefile
+  
+  The interface library libmpi_f90.a was not removed when issuing a
+  'make clean', possibly leading to strange errors if the MPI
+  compilation environment was later changed.
+  
+  modified:
+    Src/MPI/Makefile
+  
+  -- Nick P Andersen:  Fix shortcomings in reading of empirical potential block
+  
+  * The number of potential lines is now arbitrary.
+  * Units handling has been improved, to allow arbitrary
+    length and energy units.
+  
+  modified:
+    Src/molecularmechanics.F90
 
 -----------------------------------------------------------------------
 2014-11-08  16:15:00 GMT                                     trunk-463
