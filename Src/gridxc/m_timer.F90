@@ -12,7 +12,6 @@
 !  use mpi, only: MPI_Integer
 !  use mpi, only: MPI_Double_Precision
 !  use mpi, only: MPI_Character
-!  use mpi, only: COMM
 !
 ! Other used module procedures
 !  use sys,        only: die             ! Termination routine
@@ -519,19 +518,11 @@ subroutine print_report( prog )   ! Write a report of counted times
 #endif
         call copyFile( srcNode=writerNode, srcFile=myReportFile, &
                        dstNode=0, dstFile=reportFile, &
-#ifdef MPI
-                       writeOption='append', comm=comm)
-#else
                        writeOption='append')
-#endif
       else ! (reportUnit==0) => use report file name
         call copyFile( srcNode=writerNode, srcFile=myReportFile, &
                        dstNode=0, dstFile=reportFile, &
-#ifdef MPI
-                       writeOption='overwrite', comm=comm )
-#else
                        writeOption='overwrite')
-#endif
       end if ! (reportUnit>0)
 
       deallocate( nodeCalTime, nodeComTime, nodeTotTime )

@@ -1328,12 +1328,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   sumTime2 = myTime**2
 
   ! Add integrated magnitudes from all processors
-#ifdef MPI
-  call miscAllReduce( 'sum', Ex, Ec, Dx, Dc, sumTime, sumTime2, a2=stress, &
-                      comm=comm )
-#else
-  call miscAllReduce( 'sum', Ex, Ec, Dx, Dc, sumTime, sumTime2, a2=stress )
-#endif
+  call miscAllReduce( 'sum', Ex, Ec, Dx, Dc, sumTime, sumTime2, a2=stress)
 
   ! Find average and dispersion of CPU time
   timeAvge = sumTime / nodes

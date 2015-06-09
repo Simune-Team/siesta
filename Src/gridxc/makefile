@@ -57,7 +57,7 @@ clean:
 	@(cd Testers ; $(MAKE) \
                    "ARCH_MAKE=../$(ARCH_MAKE)"\
                         "VPATH=$(VPATH)/Testers" clean)
-	
+#
 # DO NOT DELETE THIS LINE - used by make depend
 am05.o: precision.o sys.o
 atomxc.o: alloc.o debugxc.o ggaxc.o gridxc_config.o ldaxc.o mesh1d.o
@@ -78,7 +78,7 @@ m_timer.o: m_io.o m_walltime.o moreParallelSubs.o precision.o sys.o
 mesh1d.o: interpolation.o precision.o
 mesh3d.o: alloc.o debugxc.o gridxc_config.o precision.o sorting.o sys.o
 minvec.o: cellsubs.o precision.o sorting.o sys.o
-moreParallelSubs.o: alloc.o m_io.o precision.o sys.o
+moreParallelSubs.o: alloc.o m_io.o precision.o sys.o gridxc_config.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
 gridxc.o: atomxc.o cellxc.o debugxc.o ggaxc.o gridxc_config.o ldaxc.o
 gridxc.o: m_fft_gpfa.o m_timer.o mesh3d.o precision.o xcmod.o

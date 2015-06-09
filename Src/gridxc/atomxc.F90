@@ -156,7 +156,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   use sys,     only: die           ! Termination routine
   use xcmod,   only: getXC         ! Returns the XC functional to be used
   use m_ggaxc, only: ggaxc         ! General GGA XC routine
-  use mesh1d,  only: interpolation ! Interpolation routine
+  use mesh1d,  only: interpolation=>interpolation_local ! Interpolation routine
   use m_ldaxc, only: ldaxc         ! General LDA XC routine
 !  use m_filter,only: kcPhi         ! Finds planewave cutoff of a radial func.
   use m_radfft,only: radfft        ! Radial fast Fourier transform

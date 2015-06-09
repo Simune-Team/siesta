@@ -157,6 +157,10 @@ MODULE moreParallelSubs
 
 ! Used MPI procedures and types
 #ifdef MPI
+  use gridxc_config, only : comm => gridxc_comm  ! MPI communicator
+#endif
+
+#ifdef MPI
   use mpi_instr, only: MPI_Send
   use mpi_instr, only: MPI_Recv
   use mpi_instr, only: MPI_Integer
@@ -198,12 +202,7 @@ CONTAINS
 
 !******************************************************************************
 
-#ifdef MPI
-SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption, &
-                     comm )
-#else
 SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption)
-#endif
 
   implicit none
   integer,         intent(in):: srcNode      ! Source processor index
@@ -212,9 +211,6 @@ SUBROUTINE copyFile( srcNode, srcFile, dstNode, dstFile, writeOption)
   integer,         intent(in):: dstNode      ! Destination processor index
   character(len=*),intent(in):: dstFile      ! Destination file name
   character(len=*),intent(in):: writeOption  ! ('append'|'overwrite')
-#ifdef MPI
-  integer,         intent(in):: comm
-#endif
 
 ! Internal parameters
   character(len=*),parameter:: myName  = 'copyFile '
@@ -456,21 +452,13 @@ END SUBROUTINE copyFile
 SUBROUTINE miscAllReduceInt( op, a0, b0, c0, d0, e0, f0, &
                                  a1, b1, c1, &
                                  a2, b2, &
-#ifdef MPI
-                                 a3, comm)
-#else
                                  a3 )
-#endif
-
   implicit none
   character(len=*),intent(in)    :: op  ! ('sum'|'prod'|'max'|'min')
   integer,optional,intent(inout)                 :: a0, b0, c0, d0, e0, f0
   integer,optional,intent(inout),dimension(:)    :: a1, b1, c1
   integer,optional,intent(inout),dimension(:,:)  :: a2, b2
   integer,optional,intent(inout),dimension(:,:,:):: a3
-#ifdef MPI
-  integer,         intent(in):: comm
-#endif
 
   character(len=*),parameter:: myName  = 'miscAllReduceInt '
   character(len=*),parameter:: errHead = myName//'ERROR: '
@@ -642,11 +630,7 @@ END SUBROUTINE miscAllReduceInt
 SUBROUTINE miscAllReduceDouble( op, a0, b0, c0, d0, e0, f0, &
                                     a1, b1, c1, &
                                     a2, b2, &
-#ifdef MPI
-                                 a3, comm)
-#else
-                                 a3 )
-#endif
+                                    a3 )
 
   implicit none
   character(len=*),intent(in)    :: op  ! ('sum'|'prod'|'max'|'min')
@@ -654,9 +638,6 @@ SUBROUTINE miscAllReduceDouble( op, a0, b0, c0, d0, e0, f0, &
   real(dp),optional,intent(inout),dimension(:)    :: a1, b1, c1
   real(dp),optional,intent(inout),dimension(:,:)  :: a2, b2
   real(dp),optional,intent(inout),dimension(:,:,:):: a3
-#ifdef MPI
-  integer,         intent(in):: comm
-#endif
 
   character(len=*),parameter:: myName  = 'miscAllReduceInt '
   character(len=*),parameter:: errHead = myName//'ERROR: '
@@ -825,17 +806,11 @@ END SUBROUTINE miscAllReduceDouble
 
 !******************************************************************************
 
-#ifdef MPI
-character(len=6) function nodeString( comm, node )
-#else
 character(len=6) function nodeString( node )
-#endif
 ! Returns a string with node index, or blank if nNodes<2
 
   implicit none
-#ifdef MPI
-  integer,         intent(in):: comm
-#endif
+
   integer,optional:: node  ! a valid node index 0 <= node <= nNodes-1
 
   character(len=20):: numName

@@ -78,11 +78,7 @@ subroutine closeDebugOutputFile()
     nodeFileName = filePrefix//'.node'//nodeString(iNode)
     call copyFile( srcNode=iNode, srcFile=nodeFileName, &
                    dstNode=0,     dstFile=nodeFileName, &
-#ifdef MPI
-                   writeOption='overwrite', comm=comm )
-#else
                    writeOption='overwrite' )
-#endif
   end do
 
 end subroutine closeDebugOutputFile
