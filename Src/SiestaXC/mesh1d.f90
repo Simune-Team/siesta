@@ -26,7 +26,7 @@
 !   get_mesh,          &! Returns a previously-set 1D mesh
 !   get_n,             &! Returns the number of mesh points
 !   integral,          &! Returns the integral of a function defined in a mesh
-!   interpolation,     &! Returns interpolated values at arbitrary points
+!   interpolation_local,     &! Returns interpolated values at arbitrary points
 !   locate,            &! Given x0, it returns real value i0 such that x(i0)=x0
 !   numerov,           &! Solves d2y/dx2 = f(x,y) = f0(x) + f1(x)*y
 !   set_interpolation, &! Sets interpolation method (lagrange|spline)
@@ -365,7 +365,7 @@ PUBLIC :: &
   get_mesh,          &! Returns a previously-set 1D mesh
   get_n,             &! Returns the number of mesh points
   integral,          &! Returns the integral of a function defined in a mesh
-  interpolation,     &! Returns interpolated values at arbitrary points
+  interpolation_local,     &! Returns interpolated values at arbitrary points
   locate,            &! Given x0, it returns real value i0 such that x(i0)=x0
   numerov,           &! Solves d2y/dx2 = f(x,y) = f0(x) + f1(x)*y
   set_interpolation, &! Sets interpolation method (lagrange|spline)
@@ -747,7 +747,8 @@ end function locate
 
 !----------------------------------------------------------------
 
-function interpolation( nnew, xnew, n, y, x, dx )
+function interpolation_local( nnew, xnew, n, y, x, dx ) &
+           result(interpolation)
 
   implicit none
   integer,            intent(in) :: nnew
@@ -814,7 +815,7 @@ function interpolation( nnew, xnew, n, y, x, dx )
     stop 'interpolation: ERROR: bad interpolation_method parameter'
   end if ! (interpolation_method)
 
-end function interpolation
+end function interpolation_local
 
 !----------------------------------------------------------------
 
