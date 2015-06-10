@@ -19,7 +19,6 @@ C by SIESTA
 C
 C RESTRICTION: Just a single species allowed
 C
-!!      use f2kcli
       use fdf
 
       use precision
@@ -59,16 +58,6 @@ c Reading input for the pseudopotentials and atomic orbitals
       IOnode = (Node .eq. 0)
 
       if (Ionode) then
-!
-!        Problems with mpich command-line argument handling...
-!$$$         narg = command_argument_count()
-!$$$         if (narg == 0) then
-!$$$            filein = "stdin"
-!$$$         else if (narg == 1) then
-!$$$            call get_command_argument(1,filein)
-!$$$         else
-!$$$            stop "too many command-line arguments"
-!$$$         endif
 !
          filein = "stdin"
          call fdf_init(filein,'gen-basis_fdf.log')

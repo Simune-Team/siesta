@@ -1,4 +1,32 @@
 ------------------------------------------------------------
+June 10, 2015  Alberto Garcia       trunk-470--ncps-64
+Sync with trunk for fixes in Util and elsewhere
+
+[470]
+
+removed:
+  Util/Gen-basis/psml_die.F90
+added:
+  Util/Gen-basis/local_die.F
+  Util/STM/ol-stm/Src/handlers.f
+modified:
+  Docs/CHANGES
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/mesh1d.f90
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Gen-basis/gen-basis.F
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/ol-stm/Src/atompla.f
+  Util/STM/ol-stm/Src/extrapolate.f
+  Util/STM/ol-stm/Src/fftw3_mymod.f90
+  Util/STM/ol-stm/Src/readstm.f
+  Util/STM/ol-stm/Src/reinitstm.f
+  Util/STM/ol-stm/Src/stm.f
+  Util/SiestaSubroutine/FmixMD/Src/Makefile
+  Util/build_all.sh*
+
+------------------------------------------------------------
 June 9, 2015  Alberto Garcia       trunk-469--ncps-64
 Sync with trunk, incl. NR code. + Update ncps and psoplib
 
