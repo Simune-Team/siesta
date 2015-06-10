@@ -1,4 +1,11 @@
 ----------------------------------------------------
+June 10, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-435
+Bugfix for NCDF clean
+
+modified:
+  Src/NCDF/Makefile
+
+----------------------------------------------------
 June 10, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-434
 Updated fvar/NCDF to latest commits
 
