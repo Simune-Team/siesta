@@ -38,7 +38,8 @@ dep:
              $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 
 
 #
-ARCH_MAKE=../../../../$(OBJDIR)/arch.make
+MAIN_OBJDIR:=$(shell cd -P -- ../../../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)
@@ -80,7 +81,14 @@ OBJS_STM = atompla.o  \
         redata.o  reinitstm.o stm.o \
 	vacpot.o volcel.o wrout.o handlers.o
 #
-INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
+NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+#PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
+INCFLAGS:=$(NETCDF_INCFLAGS) \
+          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) \
+          $(INCFLAGS)
+INCFLAGS:= $(FFTW_INCFLAGS) $(INCFLAGS)
+#
+NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -91,7 +99,7 @@ $(FDF):
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)"\
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "ARCH_MAKE=$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
 # This is crude but will have to do for now.
@@ -102,20 +110,20 @@ MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
          radial.o spher_harm.o  basis_io.o basis_types.o \
          domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
          sparse_matrices.o interpolation.o m_fft_gpfa.o\
-         files.o   pseudopotential.o chemical.o xml.o
+         files.o chemical.o xml.o
 #
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
 ALL_OBJS_STM=$(MOD_OBJS) $(COM_OBJS_STM)
 #
-stm: $(FDF)  $(ALL_OBJS_STM)
+stm: $(FDF)  $(NCPS) $(ALL_OBJS_STM)
 	$(FC) -o stm \
-	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF) $(FFTW_LIBS) 
+	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF) $(NCPS) $(FFTW_LIBS) 
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f stm *.o  *.a
 	rm -f *.mod
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=$(ARCH_MAKE)" clean)
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: parallel.o precision.o m_io.o sys.o
@@ -125,7 +133,7 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o m_filter.o
-atom.o: old_atmfuncs.o periodic_table.o precision.o pseudopotential.o 
+atom.o: old_atmfuncs.o periodic_table.o precision.o  
 atom.o: sys.o xcmod.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
@@ -135,10 +143,10 @@ bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o parsing.o
 bands.o: precision.o sys.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o sys.o xml.o
+basis_io.o: precision.o  radial.o sys.o xml.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
-basis_specs.o: pseudopotential.o sys.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o sys.o
+basis_specs.o:  sys.o
+basis_types.o: alloc.o atmparams.o precision.o  sys.o
 bessph.o: parallel.o precision.o sys.o
 bonds.o: alloc.o atmfuncs.o mneighb.o precision.o  sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
@@ -372,7 +380,6 @@ projected_DOS.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: alloc.o atom_options.o  precision.o sys.o
 radfft.o: alloc.o precision.o  m_fft_gpfa.o
 radial.o: precision.o xml.o interpolation.o
 rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o

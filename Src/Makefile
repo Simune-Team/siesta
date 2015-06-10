@@ -49,10 +49,16 @@ dep:
 #
 ARCH_MAKE?=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
+#
+#
 include Mk/FoX.mk
 
-INCFLAGS:= $(NETCDF_INCFLAGS) $(PSML_INCFLAGS) -I $(MAIN_OBJDIR)/ncps/src \
-           -I $(MAIN_OBJDIR)/psoplib/src $(INCFLAGS)
+PSML_INCFLAGS=-I $(MAIN_OBJDIR)/psml/src
+NCPS_INCFLAGS=-I $(MAIN_OBJDIR)/ncps/src
+PSOP_INCFLAGS=-I $(MAIN_OBJDIR)/psoplib/src
+INCFLAGS:= $(NETCDF_INCFLAGS)  $(PSML_INCFLAGS) $(NCPS_INCFLAGS) \
+           $(PSOP_INCFLAGS) $(INCFLAGS)
+#
 # For removing any -ipo compilation in sub directories...
 # Later compilers are also having this enabled, and it lets you
 # specify what to not be used in libraries.
@@ -171,10 +177,17 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 #
 #--------------------------------------------------------------
+PSML=psml/src/libpsml.a
+$(PSML): 
+	(cd psml/src ; $(MAKE) VPATH="$(VPATH)/psml/src" \
+	ARCH_MAKE=$(ARCH_MAKE) \
+	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
+#
 NCPS=ncps/src/libncps.a
-$(NCPS): 
+$(NCPS): $(PSML)
 	(cd ncps/src ; $(MAKE) VPATH="$(VPATH)/ncps/src" \
 	ARCH_MAKE=$(ARCH_MAKE) \
+	"PSML_INCFLAGS=$(PSML_INCFLAGS)" \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 #--------------------------------------------------------------
@@ -276,13 +289,13 @@ check-siesta:
 #
 siesta: check-siesta what version \
                 $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-		$(NCPS) $(PSOP) \
+		$(NCPS) $(PSOP) $(PSML)\
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML)  \
                $(XC) $(XMLPARSER) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) \
-               $(NCPS) $(PSOP) \
+               $(NCPS) $(PSOP) $(PSML)\
 	       $(LIBS) 
 #
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
@@ -311,7 +324,7 @@ check-ts:
 #
 transiesta: check-ts what version \
             $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
-            $(NCPS) $(PSOP) \
+            $(NCPS) $(PSOP) $(PSML)\
             $(WXML) $(XMLPARSER)  \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
@@ -319,7 +332,7 @@ transiesta: check-ts what version \
                $(WXML) $(XMLPARSER)  \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) \
-               $(NCPS) $(PSOP) \
+               $(NCPS) $(PSOP) $(PSML)\
                $(LIBS)
 #
 #
@@ -334,6 +347,7 @@ clean:
 	@if [ -d FoX ] ; then (cd FoX ; touch arch.make ; $(MAKE) distclean) ; fi
 	(cd xmlparser ; $(MAKE) clean)
 	(cd ncps/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
+	(cd psml/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	(cd psoplib/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	(cd wxml ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi

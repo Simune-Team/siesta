@@ -40,6 +40,8 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 DEFS:= $(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI
+#
+PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 INCFLAGS:=$(NETCDF_INCFLAGS) \
@@ -88,6 +90,7 @@ $(XC):
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
+PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -105,21 +108,19 @@ $(FDF):
 gen-basis: $(FDF) $(XC) $(NCPS) $(OBJS_GEN-BASIS)
 	$(FC) -o gen-basis \
               $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) \
-              $(NCPS) $(PSOP) $(PSML_LIBS) $(NETCDF_LIBS) $(LIBS)
+              $(NCPS) $(PSOP) $(PSML) $(NETCDF_LIBS) $(LIBS)
 #
 ioncat:  $(FDF) $(NCPS) $(IONCAT_OBJS)
 	$(FC) -o ioncat \
 	       $(LDFLAGS) $(IONCAT_OBJS) $(FDF) \
-              $(NCPS) $(PSOP) $(PSML_LIBS) $(NETCDF_LIBS) $(LIBS)
+              $(NCPS) $(PSOP) $(PSML) $(NETCDF_LIBS) $(LIBS)
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f gen-basis ioncat *.o  *.a
 	rm -f *.mod
-	(mkdir -p fdf; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	rmdir fdf
-	(mkdir -p SiestaXC; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	rmdir SiestaXC
+	rm -rf fdf
+	rm -rf SiestaXC
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: m_io.o parallel.o precision.o sys.o

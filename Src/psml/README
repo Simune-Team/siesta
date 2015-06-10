@@ -1,0 +1,8 @@
+PSML library.
+
+Work in progress.
+
+Documentation is still sketchy.
+
+Building is simple but basic. There is no support yet for 'install' targets.
+Suggestions for improvements are welcome.

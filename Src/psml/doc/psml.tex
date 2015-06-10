@@ -1,0 +1,661 @@
+%\documentclass[prb,showpacs,onecolumn,superscriptaddress,galley]{revtex4-1}
+\documentclass[prb,showpacs,superscriptaddress]{revtex4-1}
+
+%\pdfoutput=1
+
+\usepackage[dvips]{graphicx}
+\usepackage{textcomp}
+\usepackage{verbatim}
+\graphicspath{figs}
+\usepackage{epstopdf}
+\usepackage{color}
+
+%\marginparwidth 2.7in
+
+\def\mvm#1{{\color{blue}~\textsf{[MV: #1]}}}
+\def\jjm#1{{\color{cyan}~\textsf{[JJ: #1]}}}
+\def\xgm#1{{\color{green}~\textsf{[XG: #1]}}}
+\def\agm#1{{\color{red}~\textsf{[AG: #1]}}}
+
+\def\tag#1{\textbf{$<$#1$>$}}
+\def\att#1{\textbf{#1}}
+
+%\unitlength 1cm
+
+\newcommand{\AG}[1]{{\color{red}~\textsf{[AG: #1]}}}
+\parindent=0pt
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+\title {The PSML format and processing library for non-conserving pseudopotential
+        data curation and interoperability}
+
+\author{A. Garcia, J. Junquera, and M. Verstraete}
+\date{\today}
+\maketitle
+
+\section{Introduction}
+
+Data curation enables data discovery and retrieval, maintain
+quality, add value, and provide for re-use over time
+(\url{http://hdl.handle.net/2142/3493}, cited in the Wikipedia article on
+Data Curation). 
+%
+In the context of scientific
+data, a proper curation is essential for the reproducibility of
+research.
+%
+Within computational science, reproducibility might appear to be
+straightforward, amounting to 
+using a specific version of a code, and the appropriate
+input files. But this would be a trivial reproducibility. In reality,
+what is typically sought is to replicate a certain physical result
+with a different code which implements the same basic equations of the
+domain at hand, but with a different set of approximations or details
+of implementation. This latter code will most likely have a different input
+data format, which might not be perfectly mapped to the format
+used by the original code. It is then very important to distill
+(curate) the data so that their essential ontological properties are
+preserved, since it can be assumed that properly implemented codes
+within a domain will share a basic ontology for this domain, and can
+properly interpret its elements.
+
+We are interested in the field of first-principles electronic-structure
+calculations, and in particular in the (large) sub-domain in which
+norm-conserving pseudopotentials are used. \AG{Some more background here}.
+%
+Several well-known programs generate pseudopotentials in a variety of
+formats, tailored to the needs of electronic-structure codes. While
+some generators are now able to output data in different bespoke
+formats, and some simulation codes are now able to read different
+pseudopotential formats, the common historical pattern in the design
+of those formats has been that a generator produced data for a single
+particular simulation code, most likely maintained by the same
+group. This implied that a number of implicit assumptions, shared by
+generator and user, have gone into the formats and fossilized there.
+\AG{Examples: kind of grid, zero-based or not, units, powers of r in
+  functions, normalization, etc}. 
+%
+One can say that there has been a ``projection'' of
+the ontology onto the implementation level specific to the pair of
+programs. Other generators and users aiming at producing or reading
+the same format must juggle both their own ``projections'' and the target
+one. In some cases, some information cannot be replicated.
+%
+This leads to practical problems, not only of programming, but of
+interoperability and reproducibility, which depend on spelling
+out quite a number of details which are not well
+represented for all codes in existing formats. \AG{Examples?}
+
+The solution to the abstract problem is to design a data format that faithfully maps the
+relevant concepts of the domain's ontology. In the context of
+norm-conserving pseudopotentials, the basic ontology is composed of
+radial functions (semilocal pseudopotentials, charge densities,
+projectors, local potentials) plus some metadata that represents
+provenance and documents the type of pseudopotential. \AG{I am not
+  sure that metadata is considered formally a part of the ontology}.
+
+In this paper we present a file format for norm-conserving
+pseudopotential data which is designed to encapsulate as much as
+possible the abstract concepts in the domain's ontology. For example,
+the format, together with its supporting processing library, offers a
+very good approximation to an abstract mathematical function (an
+object which produces a value from its input).
+%
+Our format also provides a rich set of metadata to document the
+provenance (i.e., the generation history) and the generation
+conditions and flavor of the pseudopotential.
+%
+The format is based on XML, and it is by nature extensible, offering a
+basic set of elements and a number of extra features that can be
+exploited for sophisticated uses or future improvements.
+
+This paper is organized as follows: ...
+
+
+\section{The PSML file format}
+\AG{Version 0.8, Feb 15, 2015}
+\label{sec:structure}
+
+\subsection{XML heading information}
+
+\AG{Very minimal. We should provide an URL for reference, even if we do
+ not use namespaces. Mention that a semi-formal schema is appended at
+ the end of the paper.
+}
+\subsection{Root element}
+The root element is \tag{psml}, containing a \att{version} attribute
+for use by parsers, and two attributes to make explicit the
+(mandatory) units used throughout the file: \att{energy-unit}
+(hartree) and \att{length-unit} (bohr).
+
+\subsection{Provenance}
+
+The file should contain metadata concerning its own origin, to
+aid reproducibility. At the minimum, it should contain information
+about the program(s) used to generate or transform the
+pseudopotential, ideally with version numbers and compilation options,
+and provide a copy of any input files fed into the program. The
+information is contained in the \tag{provenance} element, as in the
+example of Table~\ref{table:provenance}. Its internal
+structure is subject to a minimal specification:
+\begin{itemize}
+\item The attribute \att{creator} is mandatory.
+\item If input files are provided, they should be included as
+\tag{input-file} elements with the single attribute \att{name}
+ and no children other than character data.
+For obvious reasons, the name of the file and its detailed content
+will depend on the program used to generate the pseudopotential. The
+name should be a mnemonic reference.
+\item There can be other attributes and children.
+\end{itemize}
+
+%
+ \begin{table}[h]
+    \caption[ ]{ An example of the \tag{provenance} element }
+    \verbatiminput{provenance.txt}
+    \label{table:provenance}
+ \end{table}
+%
+
+\subsection{General computational options}
+
+A number of pieces of basic information are kept in the \tag{header}
+element. These refer to the chemical element and the type of
+calculation.
+
+Element identification is in principle straightforward, with either
+the atomic number or the chemical symbol. However, in the interest of
+generality, and to cover special cases, such as synthetic atoms, etc, the
+chemical symbol can be an arbitrary label, given by the attribute
+\att{atomic-label} (with the convention that when possible the first
+two characters give the standard chemical symbol) and the atomic
+number a real number instead of a simple integer, given by the
+attribute \att{atomic-number}.
+ 
+ The atomic calculation can be done non-relativistically, with
+ scalar-relativistic corrections (i.e., with the mass and Darwin
+ terms)~\cite{Koelling,Takeda}, or with the full Dirac equation,
+ including spin-orbit effects. In the latter case, the
+ pseudopotentials are typically provided in two sets: the
+ degeneracy-averaged $j=l+1/2$ and $j=l-1/2$ components, appropriate
+ for scalar-relativistic use, and the spin-orbit
+ components~\cite{Bachelet-82}.
+
+ It is also possible to carry out a non-relativistic calculation for a
+ spin-polarized reference configuration (using spin-DFT). Standard
+ practice is then to keep only the population-averaged
+ pseudopotentials, as a closed-shell frozen core should not be
+ represented by a spin-dependent potential. (But see
+ Ref.~\onlinecite{Watson-98} for a different point of view.)
+
+ In practice, then, one should always have a primary set of
+ l-dependent $V_l(r)$ potentials, possibly the result of averaging,
+ and, in the case of fully-relativistic calculations, a spin-orbit
+ set. In other cases, the generation program might output the original
+ $lj$ versions in the Dirac case, or the ``up'' and ``down''
+ components for a spin-polarized calculation.
+
+ We cover all these possibilities in PSML by using the optional
+ attributes ``relativity'', with values ``no'' (default when absent),
+ ``scalar'' or ``dirac'', and `polarized'' to indicate whether the
+ calculation is spin-polarized. Further, as
+ detailed below, we provide support for the possible presence of various
+ sets of pseudopotentials.
+
+The pseudopotential construction is fundamentally dependent on the
+core-valence split. In most cases it is clear which states are to be
+considered as ``valence'', and which ones are to be kept in the frozen
+core. However, there are borderline cases in which one has the option
+to treat as ``valence'' so-called ``semicore'' states which are
+relatively shallow and/or exhibit a sizable overlap with proper
+valence states.
+
+This information is provided in the mandatory
+\tag{valence-configuration} element, which contains information about
+the valence configuration used at the time of pseudopotential
+generation, given by the $n$ and $l$ quantum numbers, and the
+electronic occupation of each shell.  Empty shells can be ommitted.
+In ``polarized'' calculations, the spin-up and spin-down occupations
+are also given.  This element has a mandatory attribute
+\att{total-charge} which contains the total integrated valence
+charge $Q_{\rm val}$ for the configuration used to generate the
+pseudopotential.  \AG{If different valence configurations are used to
+  generate different pseudopotential channels, we suggest that the
+  producer code performs one final ``pseudopotential test''
+  calculation for the ground state configuration, and record the
+  appropriate valence configuration here. What really matters is to
+  document the core-valence split.}.
+
+The core configuration can be determined easily from the knowledge of
+the valence shells, but for completeness it can be given in the
+optional \tag{core-configuration} element, with the same structure.
+This tag would be useful in case a given valence shell (say, an
+$f$-shell) is for convenience kept frozen in the core, or if a core-hole
+pseudopotential has been created~\cite{Sandra-cls-paper}.
+
+The difference between the number of protons in the nucleus and the
+sum of the populations of the core shells is the effective atomic
+number of the pseudo-atom $Z_{\rm pseudo}$, which must be given in the
+mandatory attribute \att{z-pseudo}.
+
+The ``pseudization flavor'' or, more properly, a succint identifier
+for the procedure for pseudopotential generation, is encoded in the
+optional \att{flavor} attribute. If not present, its value defaults
+to ``not-unique'', and more specific values can be given per
+pseudization channel (see below).
+
+If non-linear core-corrections~\cite{Louie-82} are present, the
+optional ``core-corrections'' attribute must be set to ``yes''.
+
+One further piece of information is needed to complete the
+general specification of the computational framework: the type of
+exchange-correlation (XC) functional used. With the explosive growth
+in the number of functionals, it is imperative that a robust naming
+convention be used. In the absence of a general registry of
+universally-agreed names, we propose a dual naming scheme. 
+The element \tag{exchange-correlation} contains:
+\begin{itemize}
+\item A mandatory element \tag{libxc-info} that maps whatever XC
+  functional is used in the generation code to the standard set of
+  functionals in the Libxc library~\cite{libxc}. This library supports
+  a large number of functionals, and new ones are added promptly as
+  their details are published. We thus require that
+  pseudopotential-generation programs producing, and programs using
+  the PSML format provide internal tables mapping their standard XC
+  naming schemes to the libXC one. This element has the attribute
+  \att{number-of-functionals}, and as many \tag{functional} elements
+  as indicated by this attribute, with attributes \att{name},
+  \att{id}, and \att{type} as shown in the example
+  of~\ref{tab:header}. These correspond to the Libxc identification
+  standard. Further, to support arbitrary mixtures of functionals, the
+  optional attribute \att{weight} can also be indicated. 
+\item An (optional) element \tag{annotation} can contain any XC
+  identification used by the creator of the file, in the form of
+  attribute-value pairs. This information can be read in an ad-hoc
+  fashion by client programs, but it is obviously not as complete or
+  robust as that contained in the \tag{libxc-info}. For maximum
+  interoperability, client programs should thus implement an interface
+  to Libxc.
+\end{itemize}
+%
+ \begin{table}[h]
+    \caption{ An example of the \tag{header} element }
+    \verbatiminput{header.txt}
+    \label{table:header}
+ \end{table}
+%
+\subsection{Radial functions and grid specification}
+
+At the core of this new format we face the problem of how to store a
+variety of different radial functions (semilocal pseudopotentials,
+projectors, pseudo wave-functions, pseudocore and valence
+charges, etc.) in a radial grid. Most pseudopotential-generation codes
+export their data for their radial functions $f(r)$ as a tabulation
+$\{f(r_i)\}$, where $\{r_i\}$ are discrete values of the radial
+coordinate in an appropriate mesh.
+
+A variety of meshes with different functional forms and
+parametrization details are in common use.  Our preferred way to
+handle this variety of choices is to specify the actual grid point
+data in the file. This is most extensible to any kind of grid, and
+avoids problems of interpretation of the parameters, starting and
+ending points, etc. Furthermore, as explained below, the PSML handling
+library is completely grid-agnostic, since evaluators are provided for
+the relevant functions $f(r)$, in such a way that a client code can
+obtain the value of $f$ at any radial coordinate $r$, in particular at
+the points of a grid of its own choosing. The precision of the
+computed value $f(r)$ is of course dependent on the quality of the
+$f(r_i)$ tabulation in the first place, and producer codes should take
+this issue seriously.
+
+\AG{This problem is a basic one: given a table $f(r_i)$, how far can
+  one go in extracting information from it?. There might be some kind
+  of ``quality-level'' from the producer code, something like: ``I
+  guarantee that if you do a cubic interpolation on this data, you
+  will get the values to 10 significant digits''.}
+%
+
+The format should be flexible enough to allow each radial function to
+use its own grid if needed, while providing for the most common case
+in which all radial functions use a common grid.  Our solution is
+encode the information about each radial function in a \tag{radfunc}
+element, which contains the tabulation data $f(r_i)$ in a \tag{data}
+element. The grid specification uses a cascade scheme with an
+(optional but recommended) top-level \tag{grid} element, optional
+mid-level \tag{grid} elements under certain grouping elements, and at
+the lowest level optional \tag{grid} elements inside the individual
+\tag{radfunc} elements.  The grid $r_i$ for a function is inherited
+from the closest \tag{grid} element at an enclosing level if it is not
+specified in the local \tag{radfunc} element.
+
+The \tag{grid} elements should have a mandatory ``npts'' attribute
+providing the number of points, and a \tag{grid-data} element with the
+grid point data as formatted real numbers with appropriate
+precision. All radial data must be given in bohrs.
+
+For convenience, it is allowed to include a \tag{annotation} element
+as child of \tag{grid}, with appropriate attributes, to provide
+additional information regarding the form of the grid data. The client
+program can process this information if needed.
+%
+
+A technical point should be kept in mind. When processing a PSML file,
+the radial function information is typically stored internally as a
+table on which interpolation is performed to obtain values of the
+function at specific radii. In order to avoid the dangers associated
+with extrapolation, the radial grid must contain as first point $r=0$,
+and any radial magnitudes (pseudopotentials, wave-functions, core or
+valence charges) should be given without extra factors of $r$. In this
+way the processor can unambiguously determine the function values at
+all radial points. When evaluating a function at a point $r$ beyond
+the maximum range of the grid in the PSML file, a processor should
+return:
+%
+\begin{itemize}
+\item -$Z_{\rm pseudo}/r$ for the semi-local and local pseudopotentials.
+\item Zero for projectors, pseudo-wave-functions and valence and pseudo-core
+  charges.
+\end{itemize}
+%
+in keeping with the well-known asymptotic behavior.
+
+
+\subsection{Semilocal Pseudopotentials}
+
+The $l$-dependent (or maybe $lj$ dependent) semilocal components
+$V_l(r)$ of the pseudopotential are classified under
+\tag{semilocal-potentials} elements, with optional attributes:
+              
+ \begin{itemize}
+    \item \att{set}: A string indicating which set the potentials
+      belong to. If missing, the information is obtained from the
+records for the individual potentials (see below).
+
+    \item \att{flavor}: The pseudization flavor. If missing, its
+      value is inherited from the value in the header. It can also
+      be superseded by the records for the individual potentials.
+ \end{itemize}
+
+
+The \att{set} attribute allows the handling of various sets of
+pseudopotentials. Its value is normalized as follows, depending on the
+type of calculation generating the pseudopotential and the way in
+which the code chooses to present the results:
+%
+ \begin{itemize}
+ \item ``non\_relativistic'' for the non-relativistic, non-spin
+   polarized case.
+ \item ``scalar\_relativistic'' if the calculation is
+   scalar-relativistic, or if it is fully relativistic and an
+   ``average'' set of $lj$ semilocal potentials is provided.
+ \item ``spin\_orbit'' if a fully relativistic code provides this
+   combination of $lj$ potentials.
+ \item ``lj'' for a fully relativistic calculation with straight
+   output of the $lj$ channels.
+ \item ``up'' and ``down'',  for a spin-polarized calculation with straight
+   output of the spin channels.
+ \item ``spin\_average'' for the spin-polarized case when the
+   generation code outputs a population-averaged pseudopotential.
+ \item ``spin\_difference'' for the spin-polarized case when the
+   generation code outputs this (rare) combination.
+\end{itemize}
+
+Note that a given code might chose to output its semilocal-potential
+information in two different forms (say, as scalar-relativistic and
+spin-orbit combinations plus the $lj$ form). The format allows this,
+although in this particular case the information can easily be
+converted from one set to the other by client programs.
+
+For extensibility, the format allows two more values for the \att{set}
+attribute, ``user\_extension1'' and ``user\_extension2'', which can
+in principle be used to store custom information while maintaining
+structural and operative compatibility with the format.
+
+The pseudopotentials must be given in hartree.
+
+The \tag{semilocal-potentials} element contains child \tag{slps} elements, 
+which store the information for the individual semilocal
+pseudopotential components.  The attributes of this element identify
+unambiguously the angular momentum shell and set membership:
+
+ \begin{itemize}
+    \item \att{n}: principal quantum number of the
+      pseudized shell.
+    \item \att{l}: angular momentum number of the pseudized shell.
+    \item \att{j}: (compulsory for ``lj'' sets) $j$ quantum number
+    \item \att{s}: (when appropriate) $s$ (spin) quantum number
+    \item \att{rc}: $r_c$ pseudization radius for this shell
+          (in bohr).
+    \item \att{set}: As above, if the \att{set} attribute has not been
+     specified in the parent element, or if it differs \AG{(confusing
+     practice not recommended but allowed)}.
+    \item \att{flavor}: To allow for different schemes for
+      different channels, the value of this attribute, when present,
+      takes precedence over the \att{flavor} attribute in the
+      \tag{header} and the \tag{semilocal-potentials} elements.
+ \end{itemize}
+
+Each \tag{slps} element contains a \tag{radfunc}
+element. The order in which the \tag{slps} elements appear
+is irrelevant.
+
+\subsection{Pseudopotential in fully non-local form}
+
+Most modern electronic-structure codes do not actually use the
+pseudopotential in its semi-local form, but in a more efficient fully non-local
+form based on short-range projectors plus a ``local'' potential:
+\begin{equation}
+\hat{V_{ps}}  = \hat{V}_{\rm local} + \sum_i {|\chi_i> \alpha_i <\chi|}
+\end{equation}
+%
+proposed originally by Kleinman and Bylander~\cite{KB} and generalized
+among others by Blochl, Vanderbilt, and Hamann (refs). 
+
+The information about this operator form of the pseudopotential is
+stored under the \tag{pseudopotential-operator} element, which may
+optionally contain a \tag{grid} element applying to all the elements
+below.
+
+The local potential is given by a \tag{radfunc} element under the
+\tag{local-potential} element, which has the attributes
+
+ \begin{itemize}
+    \item \att{type} Optional but recommended comment about the
+      generation. We suggest the string ``l=X'' when the local
+      potential is taken to be the semi-local component for channel
+      ``X'', and any other succint comment if not.
+ \end{itemize}
+      \AG{In a future version, we might have also:
+ \begin{itemize}
+    \item \att{from-semilocal-channel}: ``yes'' if the local potential is taken
+      as one of the semi-local components.
+    \item \att{l}: (present only if \att{from-semilocal-channel} is
+      ``yes'') angular momentum of the semilocal component used.
+ \end{itemize}}
+
+The information about the projector is stored in 
+\tag{projectors} elements, with the optional attribute \att{set}, as
+above, containing \tag{proj} elements with attributes
+
+ \begin{itemize}
+    \item \att{Ekb}: Prefactor of the projector in the corresponding
+      term of $V_{\rm NL}$.
+                     \AG{choose a more general name...}
+    \item \att{l}: angular momentum number 
+    \item \att{j}: (compulsory for ``lj'' sets) $j$ quantum number
+    \item \att{s}: (when appropriate) $s$ (spin) quantum number
+    \item \att{seq}: sequence number within a given $l$ (or $lj$) shell
+    \item \att{set}: (optional) Takes precence over parent element's value.
+ \end{itemize}
+
+and a \tag{radfunc} element containing the data for the $\chi_i$
+functions in the equation above. These functions are formally
+three-dimensional, including the appropriate spherical harmonic for
+the angular coordinates, and a radial component: $\chi_i=
+\chi_i(r)Y_{lm}(\theta,\phi)$. What is actually stored in the file is
+the function $r\chi_i(r)$, normalized in the one-dimensional sense:
+%
+\begin{equation}
+        \int_{0}^{\infty} r^{2} \left| \chi_i(r) \right|^{2} dr=
+        \int_{0}^{\infty} \left| r\chi_i(r) \right|^{2} = 1,
+        \label{eq:norm}
+\end{equation}
+%
+and proportional to $r^{(l+1)}$ near the origin.
+\AG{Here we are being inconsistent with the general principle of
+  avoiding extra factors of $r$ near the origin. It would be better to
+  store $\chi_i(r)$ directly...}
+
+The value for the \att{Ekb} attribute is in Hartree.
+
+For projectors in the ``dirac'' case, the functionality provided by
+the handling of \att{set} attributes can be very important, as it is
+not straightforward to convert the $lj$ information into
+scalar-relativistic and spin-orbit combinations. For maximum
+interoperability, either producer codes store both the ``lj'' and the
+combination sets, or they output only the ``lj'' set, with the
+expectation that the appropriate routines for conversion are available
+to client programs.
+
+\subsection{Pseudo-wavefunctions}
+
+Pseudo-wavefunctions are typically produced at an intermediate stage in the
+generation (and testing) of a pseudopotential, but they are not
+strictly needed in electronic-structure codes, except in a few cases:
+%
+\begin{itemize}
+\item When atomic-like initial wavefunctions are needed to start the
+  electronic-structure calculation ( which codes?).
+\item When the code uses internally a fully-nonlocal form of the
+  pseudopotential which is constructed from the semilocal form and the
+  pseudowavefunctions.
+\end{itemize}
+  
+While these pseudo-wavefunctions could be generated by the client
+program, we allow for the possibility of including them explicitly in
+the PSML file. This raises some issues and necessitates some choices:
+%
+\begin{itemize}
+\item Are these supposed to be the actual pseudized wave-functions, or
+  the pseudo-valence pswf's generated with the obtained
+  pseudopotential?
+\item When semicore states are present, are these the low-lying
+  shells, or the upper shells?. Should two (or more) pswf's be given
+  then?
+\item Some generation codes use a non-relativistic scheme to
+  ``test'' the pseudopotential and generate pswf's, instead of a
+  scalar-relativistic version. Would the resulting pswfs still useful to
+  generate the nonlocal projectors for all client codes?
+\end{itemize}
+%
+Since our ``set'' approach allows full freedom to generation codes,
+these are free to provide as much information as it is convenient.
+
+Any (optional) pswf data must be included in
+\tag{pseudo-wave-functions} elements, with a \att{set} attribute and
+as much extra metadata as needed \AG{we will not standardize this}.
+
+Each pswf is given in a \tag{pswf} element, with attributes that
+identify the quantum numbers for the shell:
+
+ \begin{itemize}
+    \item \att{n}: principal quantum number of the shell. 
+    \item \att{l}: angular momentum number of the shell.
+    \item \att{j}: (compulsory for ``lj'' sets) $j$ quantum number
+    \item \att{s}: (when appropriate) $s$ (spin) quantum number
+    \item \att{set}: (optional) Takes precence over parent element's value.
+ \end{itemize}
+
+and a \tag{radfunc} element.
+
+The data is for the standard radial part of the wave function
+$R_{n,l}(r)$, and should be normalized:
+      \begin{equation}
+        \int_{0}^{\infty} r^{2} \left| R_{n,l}(r) \right|^{2} dr=
+        \int_{0}^{\infty} \left| u_{n,l}(r) \right|^{2} = 1,
+        \label{eq:norm}
+      \end{equation}
+%
+$R(r)$ is given, rather than $u(r)$, due to the extrapolation
+issues detailed in the section covering the grid.
+
+\subsection{valence-charge}
+
+The pseudo-valence charge density used to de-screen
+the ionic potential during the pseudopotential generation process is
+given by the \tag{valence-charge} element. In most cases, it will
+be the total charge, without regard to any spin or $j$ decomposition, what is
+needed by client codes (in keeping with the averaging of the
+pseudopotential components). The valence charge must be given in a
+child \tag{radfunc} element in a solid-angle-integrated 
+form $q(r)$ normalized so that:
+%
+ \begin{equation}
+    \int_{0}^{\infty} r^2 q(r) dr = Q_{\rm val}.
+    \label{eq:normrhoval}
+ \end{equation}
+%
+where $Q_{\rm val}$ is the total valence charge, as stored in the
+\att{total-charge} attribute of the \tag{valence-configuration}
+element.  Note that for a neutral reference configuration, $Q_{\rm
+  val}$ is numerically equal to $Z_{\rm pseudo}$. If an ionic
+reference configuration was used to generate the pseudopotential,
+client codes might need to apply a renormalization factor $Z_{\rm
+  pseudo}/Q_{\rm val}$, depending on the intended use of the charge
+density information.
+
+\subsection{pseudocore-charge}
+
+An (optional) smoothed charge density matching the density of the core
+electrons beyond a certain radius, for use with a non-linear core
+correction scheme, is introduced by the \tag{pseudocore-charge}, with
+the data in the same solid-angle-integrated form (and implicit units)
+as the valence charge, and with the extra attributes:
+\begin{itemize}
+\item \att{matching-radius}: The point $r_core$ at which the true core
+  density is matched to the pseudo-core density.
+\item \att{number-of-continuous-derivatives}: In the original scheme
+  by Louie et al~\cite{Louie-82}, the pseudo-core charge was
+  represented by a two-parameter formula, providing continuity of the
+  first derivative only. Other typical schemes provide continuity of
+  the second and even higher derivatives. It is expected that the
+  number of continuous derivatives, rather than the detailed form of
+  the matching, is of more interest to a client program. An optional
+  \att{annotation} element with appropriate attributes might be given
+  to document any extra details.
+\end{itemize}
+%
+The \tag{pseudocore-charge} element must appear if the
+\att{core-corrections} attribute of the \tag{header} element has the
+value ``yes''.
+
+\section{Formal specification of the PSML format}
+
+Maybe we can use the readable ``XML-schema'' format to summarize the
+structure of the file?
+
+\section{The PSML library}
+
+This will explain the functionality to read PSML files and the
+mechanisms to extract the information in an almost transparent way.
+
+
+\section{The Siesta-PS compatibility library}
+
+This will document (?)
+\begin{itemize}
+\item The code to construct the Siesta soft local pseudopotential.
+\item The code to build KB projectors used in Siesta
+\end{itemize}
+
+\section{Tools and tips for writers of PS-generation programs}
+(Maybe)
+A short guide to using the wxml library to generate PSML files.
+
+
+%\bibliography{Pseudo_XML.bib}
+
+\end{document}
+

@@ -14,24 +14,26 @@
 # JM Soler, J Nara, A Garcia, E Anglada
 #
 WORK_DIR=$(shell pwd)
-SIESTA_DIR=$(WORK_DIR)/../../../..
-SRC_DIR=$(SIESTA_DIR)/Src
 OBJDIR=Obj
-OBJ_DIR=$(SIESTA_DIR)/$(OBJDIR)
 #
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 #
-VPATH=$(SRC_DIR)
-#
-default: protoNEB clean 
-#
-ARCH_MAKE=$(OBJ_DIR)/arch.make
+MAIN_OBJDIR:=$(shell cd -P -- ../../../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
-# Uncomment the following line for debugging support
+TOP_LEVEL=$(shell pwd)../../../../../Src
+VPATH:=$(TOP_LEVEL)
 #
-#FFLAGS=$(FFLAGS_DEBUG)
+PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
+NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
+INCFLAGS:=$(NETCDF_INCFLAGS) \
+          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
+          $(INCFLAGS)
+#
+default: protoNEB clean 
 #
 # Routines used by pipes version (VPATH knows where they are)
 #
@@ -41,12 +43,19 @@ SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
 XMLPARSER=libxmlparser.a
 XC=libSiestaXC.a
-FoX_LIBS=`$(OBJ_DIR)/FoX/FoX-config --libs --wcml`
+#
+include $(MAIN_OBJDIR)/Mk/FoX.mk
+#
+NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
+PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
+PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
+#
 ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-	$(MPI_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+	$(NCPS) $(PSML) $(PSOP) \
+	$(MPI_INTERFACE) $(COMP_LIBS) $(FOX_LIBS) $(LIBS)
 #
 libs_collected:
-	(cd $(OBJ_DIR) ; \
+	(cd $(MAIN_OBJDIR) ; \
 	make libSiestaForces.a ; \
 	cp -f *.a *.mod $(WORK_DIR) )
 	touch libs_collected

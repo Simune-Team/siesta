@@ -7,7 +7,7 @@ module m_dom_parse
 !  use m_dom_namednodemap
   use m_dom_debug
 
-  use flib_sax
+  use xmlf90_sax
 
   implicit none
   

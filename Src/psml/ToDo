@@ -1,0 +1,7 @@
+-- Add function to get the grid for a particular function...
+-- Clarify which elements can have their own sub-grids (currently only
+pseudopotential-operator and radfunc)
+-- Try to hide the implementation
+-- Try to make it easier to interoperate with C
+-- Write a dumper to PSML from ps_t (useful once we have more converters)
+-- Add schema (see doc directory)

@@ -1,0 +1,17 @@
+<header atomic-label="Bi" atomic-number="83." z-pseudo="15."
+ flavor="Hamann's oncvpsp" relativity="dirac" polarized="no"
+ core-corrections="no">
+<exchange-correlation>
+<annotation oncvpsp-xc-code="3" oncvpsp-xc-type="LDA"
+ oncvpsp-xc-authors="Ceperley-Alder PZ" />
+<libxc-info number-of-functionals="2">
+<functional name="XC_LDA_X" type="XC_EXCHANGE" id="1" />
+<functional name="XC_LDA_C_PZ" type="XC_CORRELATION" id="9" />
+</libxc-info>
+</exchange-correlation>
+<valence-configuration total-valence-charge="15.">
+<shell n="5" l="d" occupation="10." />
+<shell n="6" l="s" occupation="2." />
+<shell n="6" l="p" occupation="3." />
+</valence-configuration>
+</header>

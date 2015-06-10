@@ -40,8 +40,10 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI
 FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
 INCFLAGS:=$(NETCDF_INCFLAGS)\
           $(NCPS_INCFLAGS) \
+          $(PSML_INCFLAGS) \
           $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
@@ -79,18 +81,20 @@ MIXPS_OBJS= f2kcli.o interpolation.o atom_options.o \
             memory.o memoryinfo.o mixps.o psml_die.o die.o
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
+PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
 #
-mixps:  $(FDF) $(MIXPS_OBJS) $(NCPS)
+$(NCPS): $(PSML)
+mixps:  $(FDF) $(MIXPS_OBJS) $(NCPS) $(PSML)
 	$(FC) -o mixps \
-	       $(LDFLAGS) $(MIXPS_OBJS) $(NCPS)  $(FDF) $(PSML_LIBS)
+	       $(LDFLAGS) $(MIXPS_OBJS) $(NCPS) $(PSML) $(FDF) $(PSML_LIBS)
 #----------------------------------------------------------------------------
 FRACTIONAL_OBJS= f2kcli.o m_io.o alloc.o interpolation.o fractional.o \
-                 atom_options.o  memory.o memoryinfo.o  \
+                 atom_options.o  memory.o memoryinfo.o  sys.o \
                  io.o pxf.o parallel.o periodic_table.o psml_die.o die.o
 
-fractional: $(FDF) $(FRACTIONAL_OBJS) $(NCPS)
+fractional: $(FDF) $(FRACTIONAL_OBJS) $(NCPS) $(PSML)
 	$(FC) -o fractional \
-	       $(LDFLAGS) $(FRACTIONAL_OBJS)  $(NCPS) $(FDF) $(PSML_LIBS)
+	       $(LDFLAGS) $(FRACTIONAL_OBJS)  $(NCPS) $(PSML) $(FDF) $(PSML_LIBS)
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
@@ -306,7 +310,7 @@ mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_energies.o
 mixer.o: m_fire_mixing.o m_iodm.o m_mpi_utils.o m_pulay.o m_spin.o m_steps.o
 mixer.o: m_ts_io.o m_ts_options.o parallel.o siesta_geom.o siesta_options.o
 mixer.o: sparse_matrices.o
-mixps.o: f2kcli.o interpolation.o periodic_table.o precision.o pseudopotential.o
+mixps.o: f2kcli.o interpolation.o periodic_table.o precision.o
 mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o

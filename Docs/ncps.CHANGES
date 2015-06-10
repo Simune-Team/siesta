@@ -1,4 +1,19 @@
 ------------------------------------------------------------
+June 10, 2015  Alberto Garcia       trunk-470--ncps-65
+Put psml in source tree. Update building system
+
+added:
+  Src/psml/
+modified:
+  Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/SiestaSubroutine/ProtoNEB/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/VCA/Makefile
+  Util/test-xml/m_dom_parse.f90
+
+------------------------------------------------------------
 June 10, 2015  Alberto Garcia       trunk-470--ncps-64
 Sync with trunk for fixes in Util and elsewhere
 
