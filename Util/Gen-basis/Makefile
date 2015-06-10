@@ -49,10 +49,10 @@ SYSOBJ=$(SYS).o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o m_recipes.o parallel.o \
+OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o parallel.o \
           parsing.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o \
-	  paste.o  flib_spline.o bessph.o radfft.o  sorting.o m_filter.o \
+	  paste.o bessph.o radfft.o m_fft_gpfa.o sorting.o m_filter.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
           pseudopotential.o pxf.o dot.o  atom_options.o arw.o  \
           sys.o timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \

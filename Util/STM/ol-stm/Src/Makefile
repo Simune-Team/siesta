@@ -75,7 +75,7 @@ OBJS_STM = atompla.o  \
         io.o iodm.o itochar.o length.o \
         mainstm.o matvect.o memory.o \
 	neighb.o paste.o pxf.o \
-	m_recipes.o radfft.o ranger.o \
+	radfft.o m_fft_gpfa.o interpolation.o ranger.o \
         readstm.o readwaves.o \
         redata.o  reinitstm.o stm.o \
 	vacpot.o volcel.o wrout.o 
@@ -111,7 +111,7 @@ MOD_OBJS += die.o m_uuid.o object_debug.o class_Sparsity.o \
 
 MOD_OBJS += basis_io.o basis_types.o domain_decom.o
 MOD_OBJS += schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o
-MOD_OBJS += files.o flib_spline.o pseudopotential.o chemical.o xml.o
+MOD_OBJS += files.o pseudopotential.o chemical.o xml.o
 
 
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)

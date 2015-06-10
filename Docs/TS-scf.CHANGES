@@ -1,4 +1,14 @@
 ----------------------------------------------------
+June 10, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-433
+Bugfix for STM/ol-stm and Gen-basis compilation
+
+* References to the old recipes where existing
+
+modified:
+  Util/Gen-basis/Makefile
+  Util/STM/ol-stm/Src/Makefile
+
+----------------------------------------------------
 June 9, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-432
 Denchar compilation fix
 
