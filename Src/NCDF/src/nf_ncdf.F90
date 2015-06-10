@@ -53,21 +53,6 @@
 !     (ncdf,var,type,dims, 
 !               *atts=(dictionary),*compress_lvl,*fill) (the fill variable is not implemented in NetCDF for now)
 
-! The parallel access scheme is governed in this order:
-!  a) open/create files with a wire
-!     1. The wires IO_COMM and IO_PAR is used to determine which processors that
-!        should be co-operating with the NetCDF file
-!     2. TODO : implement an automatic send/recv with those not in the IO_PAR group...
-!  b) open/create files with the optional "comm" flag.
-!     1. The specified communicator is used to do IO-operations
-!     2. 
-!  c) open/create files with optional "parallel" flag in the routines
-!     mean that the file are opened on each processor in NF90_SHARE mode.
-!     1. This will make reading independent on each other, but still allow for some 
-!        parallelization.
-
-
-
 ! A wrapper module for doing netcdf operations
 ! The idea is that this module should be able to do parallel IO when needed
 ! Currently it does not have this implemented, but it provides a wrapper basis
@@ -89,7 +74,12 @@ module nf_ncdf
   integer, private, parameter :: dp = selected_real_kind(p=15)
 
   ! The IONode setting
+#ifdef NCDF_PARALLEL
   logical, save :: IONode = .false.
+#else
+  logical, save :: IONode = .true.
+#endif
+
   private :: IONode
 
   ! Local routines
@@ -109,7 +99,8 @@ module nf_ncdf
      logical            :: parallel = .false.
      ! The mode of the file
      integer            :: mode
-     ! If define < 0, then no enddef, or redefs will be performed
+     ! If define < 0, then it is a netCDF-4 file, enddef will only
+     !                be called if ncdf_enddef is called
      ! If define == 0 then it is in define mode (needed for netCDF-3)
      ! If define == 1 then it is in data   mode (needed for netCDF-3)
      integer            :: define
@@ -374,7 +365,9 @@ contains
           exist = .false.
        end if
     end if
-    this%define = 0
+    if ( iand(NF90_NETCDF4,this%mode) == NF90_NETCDF4 ) then
+       this%define = -1
+    end if
 
     if ( .not. ncdf_participate(this) ) return
 
@@ -405,13 +398,13 @@ contains
 
   end subroutine ncdf_create
 
-  subroutine ncdf_open(this,filename,groupname,mode,parallel,comm,compress_lvl)
+  subroutine ncdf_open(this,filename,group,mode,parallel,comm,compress_lvl)
 #ifdef NCDF_PARALLEL
     use mpi, only : MPI_INFO_NULL
 #endif
     type(hNCDF),    intent(inout)   :: this 
     character(len=*), intent(in) :: filename
-    character(len=*), optional, intent(in) :: groupname
+    character(len=*), optional, intent(in) :: group
     integer, optional, intent(in) :: mode
     logical, optional, intent(in) :: parallel
     integer, optional, intent(in) :: comm
@@ -425,7 +418,11 @@ contains
          compress_lvl=compress_lvl)
 
     ! When we open a file, it will always be in data mode...
-    this%define = 1
+    if ( iand(NF90_NETCDF4,this%mode) == NF90_NETCDF4 ) then
+       this%define = -1
+    else
+       this%define = 1
+    end if
 
     if ( .not. ncdf_participate(this) ) return
     
@@ -459,8 +456,8 @@ contains
     ! Copy so that we can create inquiry
     this%id = this%f_id
     
-    if ( present(groupname) ) then
-       this%grp = '/'//trim(groupname)
+    if ( present(group) ) then
+       this%grp = '/'//trim(group)
        call ncdf_err(nf90_inq_grp_full_ncid(this%f_id, trim(this%grp), this%id))
     end if
 
@@ -1213,7 +1210,8 @@ contains
     call ncdf_err(iret,"Defining variable: "//trim(name)//" in file: "//this)
 
 #ifdef NCDF_4
-    if ( present(chunks) ) then
+    if ( present(chunks) .and. .not. parallel_io(this) ) then
+       if ( chunks(1) > 0 ) then
        ! Set the chunking
        ldims = 1
        do i = 1 , min(size(chunks),size(dims))
@@ -1221,6 +1219,7 @@ contains
        end do
        iret = nf90_def_var_chunking(this%id, id, NF90_CHUNKED, ldims)
        call ncdf_err(iret,"Setting chunk size variable: "//trim(name)//" in file: "//this)
+       end if
     end if
 #endif
 
@@ -1857,9 +1856,8 @@ contains
     ! A NetCDF4 file still needs to define/redefine
     ! in collective manner, yet it is taken care of
     ! internally.
-    if ( this%define < 0 ) return
     if ( this%define == 1 ) return
-    this%define = 1
+    if ( this%define == 0 ) this%define = 1
     if ( .not. ncdf_participate(this) ) return
     i = nf90_enddef(this%id)
     if ( i == nf90_noerr ) return
@@ -1868,7 +1866,7 @@ contains
        ! just tells us that we are already in data-mode
        return
     end if
-    call ncdf_err(i, "End definition segment of file: "//this)
+    call ncdf_err(i,"End definition segment of file: "//this)
 
   end subroutine ncdf_enddef
 
@@ -1885,9 +1883,8 @@ contains
     type(hNCDF), intent(inout) :: this
     integer :: i
     ! Already in define mode:
-    if ( this%define < 0 ) return
     if ( this%define == 0 ) return
-    this%define = 0
+    if ( this%define == 1 ) this%define = 0
     if ( .not. ncdf_participate(this) ) return
     i = nf90_redef(this%id)
     if ( i == nf90_noerr ) return
@@ -1896,8 +1893,7 @@ contains
        ! just tells us that we are already in define-mode
        return
     end if
-    call ncdf_err(i, &
-         "Redef definition segment in file: "//this)
+    call ncdf_err(i,"Redef definition segment in file: "//this)
   end subroutine ncdf_redef
 
 ! ################################################################
@@ -2006,18 +2002,18 @@ contains
   function cat_char_ncdf(char,this) result(cat)
     character(len=*), intent(in) :: char
     type(hNCDF), intent(in) :: this
-    character(len=len(char)+len_trim(this%name)) :: cat
-    cat = char//trim(this%name)
+    character(len=len(char)+len_trim(this%grp)) :: cat
+    cat = char//trim(this%grp)
   end function cat_char_ncdf
 
   function cat_ncdf_char(this,char) result(cat)
     type(hNCDF), intent(in) :: this
     character(len=*), intent(in) :: char
-    character(len=len(char)+len_trim(this%name)) :: cat
-    cat = trim(this%name)//char
+    character(len=len(char)+len_trim(this%grp)) :: cat
+    cat = trim(this%grp)//char
   end function cat_ncdf_char
 
-  subroutine ncdf_IONode(io_Node)
+  subroutine ncdf_IONode(IO_Node)
     logical, intent(in) :: IO_Node
     IONode = IO_Node
   end subroutine ncdf_IONode

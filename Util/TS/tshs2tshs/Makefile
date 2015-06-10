@@ -62,30 +62,30 @@ OBJS += tshs2tshs.o
 # Author: Nick Papior Andersen
 
 # This library can be found at:
-#  https://github.com/zerothi/fvar
-FVAR=libvardict.a
-FVAR_MAKEFILE=$(VPATH)/fvar/Makefile
-$(FVAR): 
-	-mkdir -p fvar
-	(cd fvar ; $(MAKE) -f $(FVAR_MAKEFILE) \
-		"VPATH=$(VPATH)/fvar" \
+#  https://github.com/zerothi/fdict
+FDICT=libvardict.a
+FDICT_MAKEFILE=$(VPATH)/fdict/Makefile
+$(FDICT): 
+	-mkdir -p fdict
+	(cd fdict ; $(MAKE) -f $(FDICT_MAKEFILE) \
+		"VPATH=$(VPATH)/fdict" \
 		"FC=$(FC_SERIAL)" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS)" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
-	@cp -p fvar/*.*d ./
-	cp fvar/$(FVAR) ./
+	@cp -p fdict/*.*d ./
+	cp fdict/$(FDICT) ./
 
 # This library can be found at:
 #  https://github.com/zerothi/ncdf
 NCDF=libncdf.a
 NCDF_MAKEFILE=$(VPATH)/NCDF/src/Makefile
-$(NCDF): COMP_LIBS += $(FVAR)
-$(NCDF): $(FVAR)
+$(NCDF): COMP_LIBS += $(FDICT)
+$(NCDF): $(FDICT)
 	-mkdir -p NCDF/src
 	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) \
-		"VPATH=$(VPATH)/NCDF/src" "LIBVARDICT=$(FVAR)" \
-		"DIR_FVAR=$(VPATH)/fvar" \
+		"VPATH=$(VPATH)/NCDF/src" "LIBVARDICT=$(FDICT)" \
+		"DIR_FDICT=$(VPATH)/fdict" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS)" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
@@ -114,7 +114,7 @@ $(EXE): $(FDF) $(COMP_LIBS) $(TSHS_COMP_LIBS) $(OBJS)
 clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f $(EXE) *.o *.a *.mod
-	-rm -rf ./fvar
+	-rm -rf ./fdict
 	-rm -rf ./NCDF
 
 

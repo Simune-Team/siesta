@@ -316,23 +316,23 @@ endif
 
 # This library can be found at:
 #  https://github.com/zerothi/fdict
-FVAR=libvardict.a
-$(FVAR): 
-	(cd fvar ; $(MAKE) -j 1 "VPATH=$(VPATH)/fvar" \
+FDICT=libvardict.a
+$(FDICT): 
+	(cd fdict ; $(MAKE) -j 1 "VPATH=$(VPATH)/fdict" \
 	            "FC=$(FC_SERIAL)" \
 		    "ARCH_MAKE=$(PWD)/arch.make" \
 		    "FPPFLAGS=$(FPPFLAGS) -UMPI" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
-	@cp -p fvar/*.*d ./
-	cp fvar/$(FVAR) ./
+	@cp -p fdict/*.*d ./
+	cp fdict/$(FDICT) ./
 
 # This library can be found at:
 #  https://github.com/zerothi/ncdf
 NCDF=libncdf.a
-$(NCDF): $(FVAR)
+$(NCDF): $(FDICT)
 	(cd NCDF ; $(MAKE) -j 1 "VPATH=$(VPATH)/NCDF" \
-		"LIBVARDICT=$(FVAR)" \
-		"DIR_FVAR=$(VPATH)/fvar" \
+		"LIBVARDICT=$(FDICT)" \
+		"DIR_FDICT=$(VPATH)/fdict" \
 		"ARCH_MAKE=$(PWD)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS)" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
@@ -474,7 +474,7 @@ clean:
 	(cd xmlparser ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
-	@if [ -d fvar ] ; then (cd fvar && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
+	@if [ -d fdict ] ; then (cd fdict && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
 	@if [ -d NCDF ] ; then (cd NCDF && $(MAKE) "ARCH_MAKE=$(PWD)/arch.make" clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )

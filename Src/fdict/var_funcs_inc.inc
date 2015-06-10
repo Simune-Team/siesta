@@ -1,3 +1,6 @@
+#ifdef COMMENTS
+! For LICENSE, see README.md
+#endif
 #include "settings.inc"
 subroutine ROUTINE(assign_set,VAR)(this,rhs,dealloc)
   type(var), intent(inout) :: this
@@ -40,7 +43,10 @@ subroutine ROUTINE(assign_get,VAR)(lhs,this,success)
 #if DIM > 0
   if (lsuccess) then
     p = transfer(this%enc,p) ! retrieve pointer encoding
-CHECK_SIZE(lsuccess,p%p,lhs,DIM)
+    lsuccess = all(shape(p%p)==shape(lhs))   !&
+     !     .and. all((lbound(p%p) == lbound(lhs))) &
+     !     .and. all((ubound(p%p) == ubound(lhs))) 
+
   end if
 #endif
   if (present(success)) success = lsuccess
@@ -78,6 +84,14 @@ subroutine ROUTINE(associate_get,VAR)(lhs,this,dealloc,success)
 end subroutine ROUTINE(associate_get,VAR)
 subroutine ROUTINE(associate_set,VAR)(this,rhs,dealloc)
   type(var), intent(inout) :: this
+#ifdef COMMENTS
+  ! Setting the intent(inout) ensures that no constants
+  ! will be able to be passed.
+  ! However, the dictionary type does not allow
+  ! this due to OPERATORS, hence we keep it as this
+  ! and proclaim that any user creating a pointer
+  ! to a constant is insane...
+#endif
   VAR_TYPE, intent(in)DIMS, target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc

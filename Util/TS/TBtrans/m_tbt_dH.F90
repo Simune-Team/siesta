@@ -707,9 +707,9 @@ contains
       
       if ( cdf_r_parallel ) then
          call ncdf_open(grp,fname_dH, mode = IOR(NF90_SHARE,NF90_NOWRITE) , &
-              groupname = igrp , parallel = .true. )
+              group = igrp , parallel = .true. )
       else
-         call ncdf_open(grp,fname_dH, mode = NF90_NOWRITE , groupname = igrp )
+         call ncdf_open(grp,fname_dH, mode = NF90_NOWRITE , group = igrp )
       end if
       
       ! First read in sparsity pattern (the user can have

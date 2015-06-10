@@ -161,29 +161,29 @@ $(FDF): $(MPI_INTERFACE)
 # Author: Nick Papior Andersen
 
 # This library can be found at:
-#  https://github.com/zerothi/fvar
-FVAR=libvardict.a
-FVAR_MAKEFILE=$(VPATH)/fvar/Makefile
-$(FVAR): 
-	-mkdir -p fvar
-	(cd fvar ; $(MAKE) -f $(FVAR_MAKEFILE) -j 1 \
-		"VPATH=$(VPATH)/fvar" \
+#  https://github.com/zerothi/fdict
+FDICT=libvardict.a
+FDICT_MAKEFILE=$(VPATH)/fdict/Makefile
+$(FDICT): 
+	-mkdir -p fdict
+	(cd fdict ; $(MAKE) -f $(FDICT_MAKEFILE) -j 1 \
+		"VPATH=$(VPATH)/fdict" \
 		"FC=$(FC_SERIAL)" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS) -UMPI" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" lib)
-	@cp -p fvar/*.*d ./
-	cp fvar/$(FVAR) ./
+	@cp -p fdict/*.*d ./
+	cp fdict/$(FDICT) ./
 
 # This library can be found at:
 #  https://github.com/zerothi/ncdf
 NCDF=libncdf.a
 NCDF_MAKEFILE=$(VPATH)/NCDF/src/Makefile
-$(NCDF): $(FVAR)
+$(NCDF): $(FDICT)
 	-mkdir -p NCDF/src
 	(cd NCDF/src ; $(MAKE) -f $(NCDF_MAKEFILE) -j 1 \
-		"VPATH=$(VPATH)/NCDF/src" "LIBVARDICT=$(FVAR)" \
-		"DIR_FVAR=$(VPATH)/fvar" \
+		"VPATH=$(VPATH)/NCDF/src" "LIBVARDICT=$(FDICT)" \
+		"DIR_FDICT=$(VPATH)/fdict" \
 		"ARCH_MAKE=$(VPATH)/../$(OBJDIR)/arch.make" \
 		"FPPFLAGS=$(FPPFLAGS)" \
 		"FFLAGS=$(FFLAGS:$(IPO_FLAG)=) -I../../" lib)
@@ -197,7 +197,7 @@ $(NCDF): $(FVAR)
 # here.
 # This will setup the correct compilation sequence as
 # FDF => MPI
-$(DEP_OBJS): $(FDF) $(COMP_LIBS) $(FVAR)
+$(DEP_OBJS): $(FDF) $(COMP_LIBS) $(FDICT)
 $(TBTOBJS): $(DEP_OBJS)
 
 .PHONY: check-tbtrans
@@ -224,19 +224,19 @@ phtrans: check-phtrans
 # which could take advantage of this preprocessing flag
 tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
 #tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DUSE_GEMM3M
-tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS) 
+tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(DEP_OBJS) $(TBTOBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
-              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(LIBS)
+              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(LIBS)
 
 # We append the -DTBTRANS as some special routines
 # which could take advantage of this preprocessing flag
 # Tbtrans has TBT_PHONON flags to compile special capabilities
 phtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS -DTBT_PHONON
-phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(DEP_OBJS) $(TBTOBJS)
+phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(DEP_OBJS) $(TBTOBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o phtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
-              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FVAR) $(LIBS)
+              $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(LIBS)
 
 .PHONY: clean-tbt
 clean-tbt:
@@ -251,7 +251,7 @@ clean:
 	-rm -f .phtrans .tbtrans
 	-rm -rf ./fdf
 	-rm -rf ./MPI
-	-rm -rf ./fvar
+	-rm -rf ./fdict
 	-rm -rf ./NCDF
 
 # Dependencies

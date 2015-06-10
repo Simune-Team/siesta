@@ -11,6 +11,9 @@ module tst_ncdf_utils
 
   integer, parameter :: sp = selected_real_kind(p=6)
   integer, parameter :: dp = selected_real_kind(p=14)
+#ifndef NCDF_PARALLEL
+  integer, parameter :: MPI_Comm_World = -1
+#endif
 
   integer, private, save :: Node, Nodes
 
@@ -85,6 +88,8 @@ contains
           call system('ncdump -v v '//file)
           call system('ncdump -k '//file)
        end if
+    else if ( Node == 0 ) then
+       write(*,'(a)')'File: '//trim(file)//' does not exist!'
     end if
   end subroutine check_nc
 

@@ -682,12 +682,12 @@ contains
     ! We just open it (prepending)
 #ifdef MPI
     if ( Nodes > 1 .and. cdf_w_parallel ) then
-       call ncdf_open(ncdf,fname, groupname='GRID', &
+       call ncdf_open(ncdf,fname, group='GRID', &
             mode=ior(NF90_WRITE,NF90_MPIIO), parallel = .true., &
             comm=MPI_Comm_World)
     else
 #endif
-       call ncdf_open(ncdf,fname, groupname='GRID', &
+       call ncdf_open(ncdf,fname, group='GRID', &
             mode=ior(NF90_WRITE,NF90_NETCDF4))
 #ifdef MPI
     end if
@@ -927,7 +927,7 @@ contains
     integer :: MD
 
     ! open the file...
-    call ncdf_open(ncdf,fname,mode=ior(NF90_WRITE,NF90_NETCDF4),groupname='MD')
+    call ncdf_open(ncdf,fname,mode=ior(NF90_WRITE,NF90_NETCDF4),group='MD')
 
     ! Inquire the current size of the MD-variable
     MD = 0

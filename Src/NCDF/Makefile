@@ -1,8 +1,8 @@
 
 # Set the default VPATH
-VPATH?=$(shell pwd)
+VPATH ?= $(shell pwd)
 
-ARCH_MAKE_DEFAULT=arch.make
+ARCH_MAKE_DEFAULT=$(VPATH)/arch.make
 ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
 
@@ -20,18 +20,20 @@ lib:
 ifdef LIBVARDICT
 	@echo "Using pre-built LIBVARDICT: $(LIBVARDICT)"
 else
-	(cd lib/fvar ; make "VPATH=$(VPATH)/lib/fvar" lib)
+	$(MAKE) -C fdict "VPATH=$(VPATH)/fdict" \
+		"ARCH_MAKE=$(ARCH_MAKE)" lib
 endif
-	(cd src ; make "VPATH=$(VPATH)/src" lib)
+	$(MAKE) -C src "VPATH=$(VPATH)/src" lib
 
 .PHONY: test
 test: lib
-	(cd test ; make "VPATH=$(VPATH)/test" all)
+	$(MAKE) -C test "VPATH=$(VPATH)/test" all
 
 .PHONY: clean
 clean:
 ifndef LIBVARDICT
-	@if [ -d lib/fvar ]; then (cd lib/fvar ; make clean) ; fi
+	$(MAKE) -C fdict "VPATH=$(VPATH)/fdict" \
+		"ARCH_MAKE=$(ARCH_MAKE)" clean
 endif
-	(cd src ; make clean)
-	(cd test ; make clean)
+	$(MAKE) -C src clean
+	$(MAKE) -C test clean

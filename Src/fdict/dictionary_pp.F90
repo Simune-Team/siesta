@@ -1,10 +1,9 @@
-! A simple dictionary module for a key-value based system...
-! 
-! This module has entirely been created by:
-! Nick Papior Andersen, copyright 2012.
-! nickpapior@gmail.com
-!
-! Only to be used for not-for-profit development/applications.
+! @LICENSE@, see README.md
+
+!> A dictionary module for the usage of complex data structures
+!! in fortran.
+!! 
+!> \author Nick Papior Andersen, Copyright 2015
 module dictionary
 
   use iso_var_str
@@ -27,12 +26,17 @@ module dictionary
   ! We could consider changing this to a variable size string
   ! However, that will increase the dependencies and will most likely not yield
   ! a better interface.
+  !> Maximum character length of the keys in the dictionary, no 
+  !! index/key can be longer than this.
   integer, parameter, public :: DICT_KEY_LENGTH = 50
   
   ! A parameter returned if not found.
   character(len=DICT_KEY_LENGTH), parameter :: DICT_NOT_FOUND = 'ERROR: key not found'
   public :: DICT_NOT_FOUND
-  
+
+  !> The dictionary container it-self
+  !!
+  !! All contained variables are private.
   type :: dict
      ! We will keep the dictionary private so that any coding
      ! has to use .KEY. and .VAL. etc.
@@ -44,48 +48,63 @@ module dictionary
   ! HASH-comparisons are MUCH faster...
   ! hence we store all values in an incremental fashion in terms
   ! of the HASH-value
-  integer, parameter :: HASH_SIZE = 62171 ! a prime !
-  integer, parameter :: HASH_MULT = 31
-  
+  integer, parameter :: HASH_SIZE = 149087 ! a prime !
+  integer, parameter :: HASH_MULT = 67
+
+  !> Return the length of a dictionary, by internal counting algorithms
   interface len
      module procedure len_
   end interface len
   public :: LEN
 
+  !> Actually count number of elements in the dictionary by forcing the traversing
+  interface llen
+     module procedure llen_
+  end interface llen
+  public :: LLEN
+
+  !> Print out all keys and which data-type it contains as well as the hash-number
   interface print
      module procedure print_
   end interface print
   public :: print
 
   ! Concatenate dicts or list of dicts to list of dicts
+  !> Concatenate, or extend, dictionaries, this can
+  !! be done on it-self `dic = dic // ('key'.kv.1)
   interface operator( // )
      module procedure d_cat_d
   end interface operator( // )
   public :: operator( // )
 
   ! Retrieve the key from a dictionary (unary)
+  !> Returns the key of the current _top_ entry,
   interface operator( .KEY. )
      module procedure key
   end interface operator( .KEY. )
   public :: operator(.KEY.)
 
   ! check whether key exists in dictionary
+  !> Returns .true. if the key exists in the dictionary, else returns false.
   interface operator( .IN. )
      module procedure in
   end interface operator( .IN. )
   public :: operator(.IN.)
 
   ! check whether key not exists in dictionary
+  !> Returns .not. ('key' .in. dict)
   interface operator( .NIN. )
      module procedure nin
   end interface operator( .NIN. )
   public :: operator(.NIN.)
   
   ! Retrieve the value from a dictionary (unary)
+  !> Returns the value from a dictionary by copy
   interface operator( .VAL. )
      module procedure value
   end interface operator( .VAL. )
   public :: operator(.VAL.)
+  !> Returns the value from a dictionary by pointer
   interface operator( .VALP. )
      module procedure value_p
   end interface operator( .VALP. )
@@ -98,34 +117,44 @@ module dictionary
   public :: operator(.HASH.)
 
   ! Checks for two dicts have all the same keys
+  !> Checks whether all keys are the same in two dictionaries.
   interface operator( .EQ. )
      module procedure d_eq_d
   end interface operator( .EQ. )
   public :: operator(.EQ.) ! Overloaded
 
   ! Checks for two dicts do not share any common keys
+  !> Checks whether not all keys are the same in two dictionaries.
   interface operator( .NE. )
      module procedure d_ne_d
   end interface operator( .NE. )
   public :: operator(.NE.) ! Overloaded
 
   ! Steps one time in the dictionary (unary)
+  !> Looping construct.
   interface operator( .NEXT. )
      module procedure d_next
   end interface operator( .NEXT. )
   public :: operator(.NEXT.)
 
   ! Retrieve the first of a dictionary (unary)
+  !> Returns the first entry
   interface operator( .FIRST. )
      module procedure d_first
   end interface operator( .FIRST. )
   public :: operator(.FIRST.)
 
   ! Check whether the dictionary is empty (unary)
+  !> Checks if it is an empty dictionary, i.e. no keys exist
   interface operator( .EMPTY. )
      module procedure d_empty
   end interface operator( .EMPTY. )
   public :: operator(.EMPTY.)
+
+  interface hash_same
+     module procedure hash_same_
+  end interface hash_same
+  public :: hash_same
 
   interface delete
      module procedure delete_
@@ -137,6 +166,11 @@ module dictionary
   end interface remove
   public :: remove
 
+  interface pop
+     module procedure pop_
+  end interface pop
+  public :: pop
+
   interface nullify
      module procedure nullify_
   end interface nullify
@@ -147,23 +181,12 @@ module dictionary
   end interface extend
   public :: extend
 
-  interface assign
-     module procedure dict_key2val
-     !module procedure dict_key2dict
-  end interface assign
-  public :: assign
-
-  interface associate
-     module procedure dict_key_p_val
-     module procedure dict_key_p_dict
-  end interface associate
-  public :: associate
-
   interface which
      module procedure dict_key_which
   end interface which
   public :: which
 
+  public :: assign, associate
 
   ! Create a dictionary type from
 #include "dict_interface.inc"
@@ -193,12 +216,12 @@ contains
     integer :: val
     integer :: i, fac
     val = 0
-    fac = mod(iachar(key(1:1)),4)
+    fac = mod(iachar(key(1:1)),HASH_MULT)
     do i = 1 , min(DICT_KEY_LENGTH,len_trim(key))
        val = val + iachar(key(i:i)) + fac * iachar(key(i:i))
        fac = fac + 1
-       if ( fac > 3 ) then
-          fac = -2
+       if ( fac > HASH_MULT ) then
+          fac = -HASH_MULT + 1
        end if
     end do
     ! A hash has to be distinguished from the "empty"
@@ -245,6 +268,36 @@ contains
     integer :: hash
     hash = d%first%hash
   end function hash
+
+  function hash_same_(this) result(same)
+    type(dict), intent(inout) :: this
+    integer :: same
+    type(d_entry), pointer :: ld
+    integer :: max_now, chash
+    same = 0
+    if ( .empty. this ) return
+
+    ! Initialize
+    max_now = 0
+    ld => this%first
+    chash = ld%hash
+    do while ( associated(ld) )
+       if ( chash == ld%hash ) then
+          max_now = max_now + 1
+       else
+          chash = ld%hash
+          if ( max_now > same ) then
+             same = max_now
+             max_now = 1
+          end if
+       end if
+          
+       ld => ld%next
+    end do
+    if ( max_now > same ) same = max_now
+
+  end function hash_same_
+    
 
   subroutine dict_key2val(val,d,key,dealloc)
     type(var), intent(inout) :: val
@@ -356,8 +409,7 @@ contains
   end subroutine dict_key_p_val
 
   ! Compares two dict types against each other
-  ! Will do comparison, first by hash, and if that matches then
-  ! for the key and value of the dictionaries
+  ! Will do comparison by hash.
   function d_eq_d(d1,d2) result(bool)
     type(dict), intent(in) :: d1,d2
     logical :: bool
@@ -405,22 +457,13 @@ contains
   function d_cat_d(d1,d2) result(d)
     type(dict), intent(in) :: d1,d2
     type(dict) :: d
-    type(d_entry), pointer :: ladd,lnext
     if ( .empty. d1 ) then
        if ( .empty. d2 ) return
        call copy_assign(d2,d)
        return
     end if
     call copy_assign(d1,d)
-    if ( .empty. d2 ) return
-    ladd => d2%first
-    do 
-       ! step ...
-       lnext => ladd%next
-       call d_insert(d,ladd)
-       if ( .not. associated(lnext) ) return
-       ladd => lnext
-    end do
+    call sub_d_cat_d(d,d2)
   end function d_cat_d
 
   ! Concatenate two dictionaries to one dictionary...
@@ -428,16 +471,49 @@ contains
   subroutine sub_d_cat_d(d,d2)
     type(dict), intent(inout) :: d
     type(dict), intent(in) :: d2
-    type(d_entry), pointer :: ladd,lnext
+    type(d_entry), pointer :: ladd, lnext
+    type(dict) :: fd
+    integer :: kh
+    if ( .empty. d ) then
+       if ( .empty. d2 ) return
+       call copy_assign(d2,d)
+       return
+    end if
     if ( .empty. d2 ) return
     ladd => d2%first
+    fd%len = 0
+    fd%first => d%first
     do 
        ! step ...
-       lnext => ladd%next
-       call d_insert(d,ladd)
-       if ( .not. associated(lnext) ) return
+       lnext => ladd%next ! we need to get the next
+       kh = fd%first%hash
+       ! before it gets deassociated
+       call d_insert(fd,ladd)
+       ! Now if the hash has changed it means
+       ! that the algorithm has put the new
+       ! key in front of the first one.
+       ! As this can ONLY occur once
+       ! we know that it must be before
+       ! the d%first as well.
+       ! We hence update d%first and
+       ! do not update the fd%first as it points correctly.
+       if ( kh /= fd%first%hash ) then
+          d%first => fd%first
+       else
+          ! The hash table has not been updated.
+          ! Thus the key has been added afterwards
+          ! and we can safely step in the
+          ! linked list wîth our fake dictionary.
+          ! In case the hash values are equivalent
+          ! then the key will be put in sequence
+          ! of arrival, and thus a deterministic pattern
+          ! is achieved.
+          fd%first => ladd
+       end if
+       if ( .not. associated(lnext) ) exit
        ladd => lnext
     end do
+    d%len = d%len + fd%len
   end subroutine sub_d_cat_d
 
   subroutine d_insert(d,entry)
@@ -505,6 +581,18 @@ contains
     len_ = d%len
   end function len_
 
+  function llen_(this)
+    type(dict), intent(inout) :: this
+    type(d_entry), pointer :: d
+    integer :: llen_
+    llen_ = 0
+    d => this%first
+    do while ( associated(d) ) 
+       llen_ = llen_ + 1
+       d => d%next
+    end do
+  end function llen_
+
   function d_next(d)
     type(dict), intent(in) :: d
     type(dict) :: d_next
@@ -549,7 +637,7 @@ contains
     logical, intent(in), optional :: dealloc
     type(d_entry), pointer :: de, pr
     logical :: ldealloc
-    integer :: kh, lhash
+    integer :: kh
 
     ! We default to de-allocation of everything
     ldealloc = .true.
@@ -574,7 +662,7 @@ contains
        kh = hash_val(key)
 
        pr => this%first
-       if ( kh == hash_val(pr%key) ) then
+       if ( kh == pr%hash ) then
           if ( key == pr%key ) then
              this%first => pr%next
              this%len = this%len - 1 
@@ -593,9 +681,8 @@ contains
        do while ( associated(de) )
           ! We know it is sorted with hash-tags.
           ! So if we are beyond the hash, we just quit.
-          lhash = hash_val(de%key)
-          if ( kh < lhash ) exit ! it does not exist
-          if ( lhash == kh ) then
+          if ( kh < de%hash ) exit ! it does not exist
+          if ( de%hash == kh ) then
              if ( de%key == key ) then
                 pr%next => de%next
                 call delete(de%value,dealloc=ldealloc)
@@ -637,10 +724,68 @@ contains
 
   end subroutine delete_
 
+  subroutine pop_(val,this,key,dealloc)
+    type(var), intent(inout) :: val
+    type(dict), intent(inout) :: this
+    character(len=*), intent(in) :: key
+    logical, intent(in), optional :: dealloc
+    type(d_entry), pointer :: de, pr
+
+    ! Here the default is to de-allocate
+    ! even though we use the association feature
+    ! Hence, we need a variable here
+    logical :: ldealloc
+    integer :: kh
+
+    ldealloc = .true.
+    if ( present(dealloc) ) ldealloc = dealloc
+
+    ! if no keys are present, simply return
+    if ( .not. associated(this%first) ) then
+       this%len = 0
+       call val_delete_request(val,dealloc=ldealloc)
+       return
+    end if
+
+    pr => this%first
+    if ( pr%key == key ) then
+       this%first => pr%next
+       call associate(val,pr%value,dealloc=ldealloc)
+       ! Ensures that the encoding gets removed
+       call nullify(pr%value)
+       deallocate(pr)
+       this%len = this%len - 1
+       return
+    end if
+
+    kh = hash_val(key)
+
+    de => pr%next
+    do while ( associated(de) )
+       ! Check if even exists
+       if ( kh < de%hash ) exit
+       if ( kh == de%hash ) then
+          if ( de%key == key ) then
+             pr%next => de%next
+             call associate(val,de%value,dealloc=ldealloc)
+             ! Ensures that the encoding gets removed
+             call nullify(de%value)
+             deallocate(de)
+             this%len = this%len - 1
+             exit
+          end if
+       end if
+       pr => de
+       de => de%next
+    end do
+
+  end subroutine pop_
+
   elemental subroutine remove_(this,key)
     type(dict), intent(inout) :: this
     character(len=*), intent(in) :: key
     type(d_entry), pointer :: de, pr
+    integer :: kh
 
     ! if no keys are present, simply return
     if ( .not. associated(this%first) ) then
@@ -658,15 +803,21 @@ contains
        return
     end if
 
+    kh = hash_val(key)
+
     de => pr%next
     do while ( associated(de) )
-       if ( de%key == key ) then
-          pr%next => de%next
-          ! Ensures that the encoding gets removed
-          call nullify(de%value)
-          deallocate(de)
-          this%len = this%len - 1
-          exit
+       ! Check if even exists
+       if ( kh < de%hash ) exit
+       if ( kh == de%hash ) then
+          if ( de%key == key ) then
+             pr%next => de%next
+             ! Ensures that the encoding gets removed
+             call nullify(de%value)
+             deallocate(de)
+             this%len = this%len - 1
+             exit
+          end if
        end if
        pr => de
        de => de%next

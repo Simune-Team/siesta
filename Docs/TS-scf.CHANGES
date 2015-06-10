@@ -1,4 +1,99 @@
 ----------------------------------------------------
+June 10, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-434
+Updated fvar/NCDF to latest commits
+
+removed:
+  Src/fvar/
+  Src/fvar/Makefile
+  Src/fvar/dict_funcs_inc.inc
+  Src/fvar/dictionary.F90
+  Src/fvar/dictionary.sh
+  Src/fvar/iso_var_str.f90
+  Src/fvar/settings.inc
+  Src/fvar/settings.sh
+  Src/fvar/setup.sh
+  Src/fvar/test/
+  Src/fvar/test/Makefile
+  Src/fvar/test/tst_char.F90
+  Src/fvar/test/tst_dict.F90
+  Src/fvar/test/tst_dict_dict.F90
+  Src/fvar/test/tst_dict_long.F90
+  Src/fvar/test/tst_dict_mem1.F90
+  Src/fvar/test/tst_dict_mem2.F90
+  Src/fvar/test/tst_dict_mem3.F90
+  Src/fvar/test/tst_dict_overwrite.F90
+  Src/fvar/test/tst_dict_remove.F90
+  Src/fvar/test/tst_dp.F90
+  Src/fvar/test/tst_mem.F90
+  Src/fvar/test/tst_simple.F90
+  Src/fvar/test/tst_sp.F90
+  Src/fvar/test/tst_type.F90
+  Src/fvar/test/tst_utils.F90
+  Src/fvar/var.sh
+  Src/fvar/var_funcs_inc.inc
+  Src/fvar/variable.F90
+added:
+  Src/NCDF/LICENSE
+  Src/NCDF/README
+  Src/NCDF/dist.sh
+  Src/NCDF/log.org
+  Src/NCDF/setup.sh
+  Src/fdict/
+  Src/fdict/LICENSE
+  Src/fdict/Makefile
+  Src/fdict/README.md
+  Src/fdict/dict_funcs_inc.inc
+  Src/fdict/dictionary.sh
+  Src/fdict/dictionary_pp.F90
+  Src/fdict/dist.sh
+  Src/fdict/filter.sed
+  Src/fdict/iso_var_str.f90
+  Src/fdict/log.org
+  Src/fdict/quick_test.sh
+  Src/fdict/settings.inc
+  Src/fdict/settings.sh
+  Src/fdict/setup.sh
+  Src/fdict/test/
+  Src/fdict/test/Makefile
+  Src/fdict/test/tst_char.F90
+  Src/fdict/test/tst_dict.F90
+  Src/fdict/test/tst_dict_dict.F90
+  Src/fdict/test/tst_dict_long.F90
+  Src/fdict/test/tst_dict_mem1.F90
+  Src/fdict/test/tst_dict_mem2.F90
+  Src/fdict/test/tst_dict_mem3.F90
+  Src/fdict/test/tst_dict_mem4.F90
+  Src/fdict/test/tst_dict_overwrite.F90
+  Src/fdict/test/tst_dict_remove.F90
+  Src/fdict/test/tst_dp.F90
+  Src/fdict/test/tst_mem.F90
+  Src/fdict/test/tst_simple.F90
+  Src/fdict/test/tst_sp.F90
+  Src/fdict/test/tst_type.F90
+  Src/fdict/test/tst_utils.F90
+  Src/fdict/var.sh
+  Src/fdict/var_funcs_inc.inc
+  Src/fdict/variable_pp.F90
+modified:
+  Src/Makefile
+  Src/NCDF/Makefile
+  Src/NCDF/src/Makefile
+  Src/NCDF/src/ncdf.sh
+  Src/NCDF/src/ncdf_att_inc.inc
+  Src/NCDF/src/ncdf_var_inc.inc
+  Src/NCDF/src/nf_ncdf.F90
+  Src/NCDF/test/Makefile
+  Src/NCDF/test/tst_ncdf_3.F90
+  Src/NCDF/test/tst_ncdf_4.F90
+  Src/NCDF/test/tst_ncdf_att.F90
+  Src/NCDF/test/tst_ncdf_crt.F90
+  Src/NCDF/test/tst_ncdf_utils.F90
+  Src/m_ncdf_siesta.F90
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/tshs2tshs/Makefile
+
+----------------------------------------------------
 June 10, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-433
 Merge 470 Build fixes in Util and SiestaXC
 

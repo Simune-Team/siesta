@@ -1,27 +1,29 @@
 program tests
 
   use tst_utils
+  use variable
 
   implicit none
   
   integer :: i, N, step
 
-  N = 1000
+  N = 500
   step = 25
 
-  write(*,*)'Remove and delete var'
+  write(*,*)'Running with deallocation'
+  ! 
   ! we should here allocate around 1Gb
   do i = 1 , N
-     call mem_rem(.true.)
+     call mem(.true.)
      if ( mod(i,step) == 0 ) then
         call show_mem
      end if
   end do
 
-  write(*,*)'Remove and NO deallocation'
+  write(*,*)'Running without deallocation'
   ! we should here allocate around 1Gb
   do i = 1 , N
-     call mem_rem(.false.)
+     call mem(.false.)
      if ( mod(i,step) == 0 ) then
         call show_mem
      end if
@@ -29,16 +31,12 @@ program tests
 
 contains
 
-  subroutine mem_rem(dealloc)
+  subroutine mem(dealloc)
     logical, intent(in) :: dealloc
-    type(dict) :: d
     real(dp) :: va(400,400) ! roughly 1.22 MB
     type(var) :: v
-    va = 0.
-    call extend(d,'hello'.kv.va)
-    call associate(v,d,'hello')
-    call remove(d,'hello')
+    call assign(v,va)
     if ( dealloc ) call delete(v)
-  end subroutine mem_rem
+  end subroutine mem
 
 end program tests

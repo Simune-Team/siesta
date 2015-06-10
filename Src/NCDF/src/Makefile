@@ -12,8 +12,16 @@ include $(ARCH_MAKE)
 AR         ?= ar
 ARFLAGS    ?= cru
 RANLIB     ?= ranlib
-PP         ?= cpp -E -P -C
-LIBVARDICT ?= ../lib/fvar/libvardict.a
+
+# Sadly the preprocessor for fortran is a bit of a pain.
+# -C is needed to disregard C-comments (the operator // is a comment!?!)
+# -nostdinc is needed to not include standard includes (which are C comments)
+# -E only preprocess, do not try and compile
+# -P do not add line markers
+PP ?= cpp -E -P -C -nostdinc
+
+LIBVARDICT_DEFAULT = ../fdict/libvardict.a
+LIBVARDICT ?= $(LIBVARDICT_DEFAULT)
 
 .PHONY: default
 default: lib
@@ -24,6 +32,11 @@ PP += $(FPPFLAGS)
 OBJS = nf_ncdf.o
 
 LIB = libncdf.a
+
+# Ensures module are in include path
+ifeq ($(LIBVARDICT),$(LIBVARDICT_DEFAULT))
+$(OBJS): INC += -I$(VPATH)/../fdict
+endif
 
 .PHONY: lib
 lib: $(LIB)

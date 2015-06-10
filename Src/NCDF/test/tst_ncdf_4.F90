@@ -9,6 +9,8 @@ program tst_ncdf_4
 
   implicit none
 
+  character(len=30) :: fname
+
   type(hNCDF) :: ncdf, grp1, grp2
   integer :: Node, Nodes, i, comp_lvl
   type(dict) :: dic
@@ -18,7 +20,8 @@ program tst_ncdf_4
 
   ! Create the netcdf-file
   if ( Nodes > 1 ) then
-     call ncdf_create(ncdf,'NCDF_par_4.nc',&
+     fname = 'NCDF_par_4.nc'
+     call ncdf_create(ncdf,fname, &
           mode=NF90_MPIIO, overwrite=.true., &
           parallel=.true., &
           comm=MPI_Comm_World)
@@ -26,7 +29,8 @@ program tst_ncdf_4
      ! Offset positions are not well defined.
      comp_lvl = 0
   else
-     call ncdf_create(ncdf,'NCDF_seq_4.nc',&
+     fname = 'NCDF_seq_4.nc'
+     call ncdf_create(ncdf,fname, &
           mode=NF90_NETCDF4, overwrite=.true.)
      comp_lvl = 3
   end if
@@ -48,12 +52,15 @@ program tst_ncdf_4
 
   call ncdf_def_grp(ncdf,'info',grp1)
   call ncdf_def_dim(grp1,'N',Nodes*2)
+  call ncdf_def_dim(grp1,'Np1',Nodes*2+1)
   call ncdf_def_var(grp1,'Nodes',NF90_INT,(/'N'/))
-  call ncdf_default(ncdf,access=NF90_COLLECTIVE)
+  call ncdf_def_var(grp1,'Inde',NF90_INT,(/'Np1'/))
+  call ncdf_default(grp1,access=NF90_COLLECTIVE)
+  call ncdf_par_access(grp1,name='Inde',access=NF90_INDEPENDENT)
   call ncdf_def_grp(grp1,'scndlevel',grp2)
   call ncdf_def_dim(grp2,'N',Nodes*2)
   call ncdf_def_var(grp2,'Nodes',NF90_INT,(/'N'/))
-  call ncdf_default(ncdf,access=NF90_COLLECTIVE)
+  call ncdf_default(grp2,access=NF90_COLLECTIVE)
 
   ! print out the leveled netcdf
   call ncdf_print(ncdf)
@@ -64,6 +71,12 @@ program tst_ncdf_4
      if ( mod(i,Nodes) == Node ) then
         call ncdf_put_var(grp1,'Nodes',i,start=(/i/))
         call ncdf_put_var(grp2,'Nodes',i,start=(/i/))
+     end if
+  end do
+
+  do i = 1 , Nodes * 2 + 1
+     if ( mod(i,Nodes) == Node ) then
+        call ncdf_put_var(grp1,'Inde',i,start=(/i/))
      end if
   end do
 
@@ -82,9 +95,9 @@ program tst_ncdf_4
   dic = ('x'.kv.1)//('y'.kv.10)//('z'.kv.2)
   call ncdf_assert(ncdf,assert,dims=dic)
   if ( .not. assert ) then
-     write(*,*) 'ASSERTION NOT FULFILLED'
+     write(*,*) 'ASSERTION NOT FULFILLED',Node
   else
-     write(*,*) 'Fulfilled assertion...'
+     write(*,*) 'Fulfilled assertion...',Node
   end if
 
   ! Groups inherit "unknown" dimensions from their
@@ -92,20 +105,21 @@ program tst_ncdf_4
   dic = dic // ('N'.kv.Nodes * 2)
   call ncdf_assert(grp1,assert,dims=dic)
   if ( .not. assert ) then
-     write(*,*) 'ASSERTION NOT FULFILLED, grp1'
+     write(*,*) 'ASSERTION NOT FULFILLED, grp1',Node
   else
-     write(*,*) 'Fulfilled assertion..., grp1'
+     write(*,*) 'Fulfilled assertion..., grp1',Node
   end if
   call ncdf_assert(grp2,assert,dims=dic)
   call delete(dic)
   if ( .not. assert ) then
-     write(*,*) 'ASSERTION NOT FULFILLED, grp2'
+     write(*,*) 'ASSERTION NOT FULFILLED, grp2',Node
   else
-     write(*,*) 'Fulfilled assertion..., grp2'
+     write(*,*) 'Fulfilled assertion..., grp2',Node
   end if
   
   call ncdf_close(ncdf)
-  call check_nc(''//ncdf)
+
+  call check_nc(fname)
 
 #ifdef NCDF_PARALLEL
   call MPI_Finalize(Nodes)
