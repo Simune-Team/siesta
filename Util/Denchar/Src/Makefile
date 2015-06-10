@@ -67,7 +67,7 @@ OBJS_DENCHAR = atompla.o planed.o\
         io.o iodm.o itochar.o length.o \
         matvect.o memory.o memory_log.o colinear.o\
 	neighb.o paste.o pxf.o \
-	radfft.o ranger.o \
+	radfft.o m_fft_gpfa.o ranger.o \
         readwavesx.o rhoofr.o wavofr.o \
         redata_denchar.o  local_reinit.o denchar.o \
 	volcel.o wrout.o stsofr.o
@@ -92,8 +92,8 @@ $(FDF):
 MOD_OBJS=precision.o parallel.o debugmpi.o sys.o m_io.o alloc.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o parallelsubs.o \
-         m_fft_gpfa.o schecomm.o sparse_matrices.o \
-         files.o interpolation.o pseudopotential.o chemical.o xml.o \
+         schecomm.o sparse_matrices.o interpolation.o\
+         files.o pseudopotential.o chemical.o xml.o \
          domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
          spatial.o timer_local.o die.o alloc_handlers.o
 #
@@ -306,7 +306,6 @@ m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_pulay.o: alloc.o atomlist.o m_spin.o parallel.o precision.o siesta_options.o
 m_pulay.o: sparse_matrices.o sys.o
-: precision.o sys.o
 m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
@@ -402,8 +401,8 @@ projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
-radfft.o: alloc.o bessph.o  precision.o
+pseudopotential.o: alloc.o atom_options.o  precision.o sys.o
+radfft.o: alloc.o bessph.o precision.o m_fft_gpfa.o
 radial.o: alloc.o precision.o xml.o interpolation.o
 rdiag.o: alloc.o m_diagon.o  parallel.o precision.o sys.o
 read_xc_info.o: parallel.o precision.o sys.o
