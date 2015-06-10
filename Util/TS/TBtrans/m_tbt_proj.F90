@@ -1324,9 +1324,9 @@ contains
 
     ! In case the user thinks the double precision
     ! is too much
-    call tbt_cdf_precision('DOS','double',prec_DOS)
-    call tbt_cdf_precision('T','double',prec_T)
-    call tbt_cdf_precision('Current','double',prec_J)
+    call tbt_cdf_precision('DOS','single',prec_DOS)
+    call tbt_cdf_precision('T','single',prec_T)
+    call tbt_cdf_precision('Current','single',prec_J)
 
     ! Whether we should print the debug statements...
     debug_state = fdf_get('TBT.Projs.Debug',.false.)

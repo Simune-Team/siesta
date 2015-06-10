@@ -1,4 +1,16 @@
 ----------------------------------------------------
+June 10, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-436
+TBT: changed default precision
+
+* Stored values in tbtrans are now defaulted
+  to floats.
+  No one used the precision anyway.
+
+modified:
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 June 10, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-435
 Bugfix for NCDF clean
 

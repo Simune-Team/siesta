@@ -118,7 +118,7 @@ contains
     character(len=20) :: tmp
 
     ! Default, unless otherwise stated
-    prec = NF90_DOUBLE
+    prec = NF90_FLOAT
 
     tmp = fdf_get('TBT.CDF.Precision',default)
     if ( leqi(tmp,'double') ) then
@@ -202,9 +202,9 @@ contains
 
     ! In case the user thinks the double precision
     ! is too much
-    call tbt_cdf_precision('DOS','double',prec_DOS)
-    call tbt_cdf_precision('T','double',prec_T)
-    call tbt_cdf_precision('Current','double',prec_J)
+    call tbt_cdf_precision('DOS','single',prec_DOS)
+    call tbt_cdf_precision('T','single',prec_T)
+    call tbt_cdf_precision('Current','single',prec_J)
 
     isGamma = all(TSHS%nsc(:) == 1)
 
