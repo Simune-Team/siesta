@@ -6,6 +6,34 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-06-10  12:30:00 GMT                                     trunk-470
+Build fixes in Util and SiestaXC
+
+* Bring up to date the code in STM/ol-stm.
+
+* Fixes for compilation of various programs
+  in Util after the NR changeover.
+
+added:
+  Util/Gen-basis/local_die.F
+  Util/STM/ol-stm/Src/handlers.f
+modified:
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/mesh1d.f90
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Gen-basis/gen-basis.F
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/ol-stm/Src/atompla.f
+  Util/STM/ol-stm/Src/extrapolate.f
+  Util/STM/ol-stm/Src/fftw3_mymod.f90
+  Util/STM/ol-stm/Src/readstm.f
+  Util/STM/ol-stm/Src/reinitstm.f
+  Util/STM/ol-stm/Src/stm.f
+  Util/SiestaSubroutine/FmixMD/Src/Makefile
+  Util/build_all.sh*
+
+-----------------------------------------------------------------------
 2015-06-02  09:45:00 GMT                                     trunk-469
 Cosmetic fix for errorf.f
 

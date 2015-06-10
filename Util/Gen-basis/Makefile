@@ -49,22 +49,24 @@ SYSOBJ=$(SYS).o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o parallel.o \
-          parsing.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
-          atmparams.o old_atmfuncs.o radial.o \
+OBJS_GEN-BASIS=m_io.o io.o old_atmfuncs.o alloc.o basis_types.o precision.o  parallel.o \
 	  paste.o bessph.o radfft.o m_fft_gpfa.o sorting.o m_filter.o \
-          basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
-          pseudopotential.o pxf.o dot.o  atom_options.o arw.o  \
-          sys.o timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
-          xc.o bsc_xcmod.o
-#
+          atmparams.o radial.o interpolation.o basis_io.o atm_transfer.o atm_types.o \
+          basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o \
+          pseudopotential.o pxf.o dot.o chemical.o atom_options.o arw.o \
+          sys.o xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
+          xc.o bsc_xcmod.o local_die.o
+
 IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
-          parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o  atm_types.o\
-          atmparams.o radial.o  memory.o chkdim.o\
+          parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_transfer.o atm_types.o \
+          atmparams.o radial.o  memory.o chkdim.o \
 	  paste.o pseudopotential.o chemical.o \
           basis_specs.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
-          flib_spline.o atmfuncs.o spher_harm.o\
-          sys.o  xml.o m_walltime.o ioncat.o $(SYSOBJ)
+           atmfuncs.o spher_harm.o interpolation.o \
+          sys.o  xml.o m_walltime.o ioncat.o  local_die.o $(SYSOBJ)
+
+
+
 #
 # Compile XC in a private directory, without MPI
 #

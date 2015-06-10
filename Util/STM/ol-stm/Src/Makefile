@@ -18,10 +18,10 @@
 # Special needs for the use of FFTW
 # You must set these symbols properly, either here or 
 # (better) in your top arch.make
-#
-#FFTW_ROOT=$(HOME)/lib/fftw-ifort
-#FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
-#FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3
+# 
+FFTW_ROOT=/usr/local/Cellar/fftw/3.3.4
+FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
+FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
 #-----------------------------------------
 #
 OBJDIR=Obj
@@ -75,10 +75,10 @@ OBJS_STM = atompla.o  \
         io.o iodm.o itochar.o length.o \
         mainstm.o matvect.o memory.o \
 	neighb.o paste.o pxf.o \
-	radfft.o m_fft_gpfa.o interpolation.o ranger.o \
+	 radfft.o ranger.o \
         readstm.o readwaves.o \
         redata.o  reinitstm.o stm.o \
-	vacpot.o volcel.o wrout.o 
+	vacpot.o volcel.o wrout.o handlers.o
 
 INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
 
@@ -88,34 +88,36 @@ FDF=libfdf.a
 FDF_MAKEFILE=$(VPATH)/fdf/makefile
 FDF_INCFLAGS:=-I$(VPATH)/fdf $(INCFLAGS)
 $(FDF): 
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" \
-		"VPATH=$(VPATH)/fdf" \
-		"FPPFLAGS=$(FPPFLAGS)" \
-		"ARCH_MAKE=../$(ARCH_MAKE)" \
-		"INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+                          "DEFS=$(DEFS)" \
+                          "FPPFLAGS=$(FPPFLAGS)"\
+                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 
-MOD_OBJS = precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
-        atmparams.o atom_options.o atmfuncs.o atm_types.o \
-        radial.o spher_harm.o
+MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
+         atmparams.o atom_options.o atmfuncs.o   atm_types.o \
+         radial.o spher_harm.o  basis_io.o basis_types.o \
+         domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
+         sparse_matrices.o interpolation.o m_fft_gpfa.o\
+         files.o   pseudopotential.o chemical.o xml.o
 
-MOD_OBJS += die.o m_uuid.o object_debug.o class_Sparsity.o \
-        class_OrbitalDistribution.o \
-	class_SpData1D.o class_SpData2D.o \
+# Additional class objects
+CLS_OBJS = m_uuid.o object_debug.o class_Sparsity.o \
+	class_OrbitalDistribution.o \
 	class_Data1D.o class_Data2D.o \
-        class_Geometry.o class_Pair_Geometry_SpData2D.o \
-	class_Fstack_Pair_Geometry_SpData2D.o \
-	sparse_matrices.o
-
-MOD_OBJS += basis_io.o basis_types.o domain_decom.o
-MOD_OBJS += schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o
-MOD_OBJS += files.o pseudopotential.o chemical.o xml.o
+	class_SpData1D.o class_SpData2D.o \
+        class_Geometry.o \
+	class_Pair_Data1D.o \
+	class_Fstack_Pair_Data1D.o \
+	class_Pair_Geometry_SpData2D.o \
+	class_Fstack_Pair_Geometry_SpData2D.o
 
 
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
-ALL_OBJS_STM=$(MOD_OBJS) $(COM_OBJS_STM)
+ALL_OBJS_STM= $(CLS_OBJS) $(MOD_OBJS) $(COM_OBJS_STM)
 
 stm: $(FDF) $(ALL_OBJS_STM)
 	$(FC) -o stm \
@@ -799,7 +801,7 @@ zm_broyden_optim.o: units.o zmatrix.o
 zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
-atompla.o: sys.o
+atompla.o: precision.o sys.o
 extrapolate.o: fftw3_mymod.o precision.o
 mainstm.o: basis_io.o listsc.o parallel.o precision.o
 ranger.o: precision.o

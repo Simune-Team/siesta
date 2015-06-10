@@ -117,14 +117,24 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
 	compat_params.o  pcc_exp.o  change_valence.o pswf_store.o \
 	coreq.o get_unit.o gauleg.o divdif.o symbols.o \
         prversion.o pseudoXML.o pxf.o force_underflow.o
-#
-OBJS= $(MAIN_OBJS) 
-#
+
+
+# NOTE NPA
+# Temporary work-around until ts-scf and trunk merges!!!
+# NOTE NPA
+SIESTA_OBJS= die.o sys.o radfft.o m_fft_gpfa.o parallel.o interpolation.o
+
+SIESTA_OBJS_REMOTE := $(addprefix ../../Src/, $(SIESTA_OBJS))
+
+OBJS = $(SIESTA_OBJS) $(MAIN_OBJS) 
+
+$(OBJS): $(SIESTA_OBJS_REMOTE) 
+
 provide_xml:
 	@echo "Make sure that the wxml library is already compiled."
 	@echo "Otherwise the following command might fail"
 	@echo
-#
+
 pseudoXML.o: provide_xml
 #
 velect.o: $(XC)
@@ -136,7 +146,8 @@ clean:
 	rm -f *.o *.mod atm *.a
 	(cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
                        "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-#
+	(cd ../../$(OBJDIR)/FoX ; touch arch.make ; $(MAKE) distclean)
+
 # DO NOT DELETE THIS LINE - used by make depend
 atm.o: charge.h param.h orbital.h radial.h energy.h elecpot.h
 change_valence.o: charge.h param.h radial.h ion.h
@@ -156,8 +167,8 @@ header.o: param.h orbital.h input.h compat.h radial.h version.h
 hsc.o: param.h orbital.h radial.h energy.h ion.h elecpot.h
 input.o: param.h orbital.h input.h compat.h radial.h version.h
 ker.o: param.h orbital.h radial.h energy.h ion.h elecpot.h
-logder.o: ode_blk.h param.h ode_path.h orbital.h radial.h energy.h ion.h
-logder.o: elecpot.h
+logder.o: param.h orbital.h radial.h energy.h elecpot.h ode_blk.h ode_path.h
+logder.o: ion.h
 nv0pp.o: coeffs.h
 ode.o: ode_blk.h radial.h
 orban.o: param.h radial.h ion.h elecpot.h

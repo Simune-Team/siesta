@@ -39,23 +39,19 @@ FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 #
 #FFLAGS=$(FFLAGS_DEBUG)
 #
-FSIESTA_OBJ=../../../../Src/fsiesta.o      # Client helper routines
-FSIESTA_MOD=../../../../Src/fsiesta.mod    # Client helper module
-PXF_OBJ=../../../../Src/pxf.o              # Portable flush
-
 #
 driver.o: fmixmd.o sample.o
 fmixmd.o: sample.o
 #
-OBJS=fsiesta.o sample.o fmixmd.o driver.o pxf.o
+OBJS=fsiesta_pipes.o sample.o fmixmd.o driver.o pxf.o
 driver : $(OBJS)
 	$(FC) -o driver  $(LDFLAGS) $(OBJS) 
 #
-simple: fsiesta.o simple.o  pxf.o
-	$(FC) $(LDFLAGS) -o simple simple.o fsiesta.o pxf.o
+simple: fsiesta_pipes.o simple.o  pxf.o
+	$(FC) $(LDFLAGS) -o simple simple.o fsiesta_pipes.o pxf.o
 #
-para: fsiesta.o para.o pxf.o
-	$(FC) $(LDFLAGS) -o para para.o fsiesta.o pxf.o
+para: fsiesta_pipes.o para.o pxf.o
+	$(FC) $(LDFLAGS) -o para para.o fsiesta_pipes.o pxf.o
 #
 clean: 
 	@echo "==> Cleaning object and executable files"

@@ -9,15 +9,18 @@ C Coded by J. Junquera May '99
 C Modified by P. Ordejon to include 3D capability; June 2003
 C **********************************************************************
 
-      USE FDF
-      USE SYS
+       use precision, only: dp
+       USE FDF, only: block_fdf, fdf_block, fdf_bline
+       use fdf, only: fdf_bmatch, fdf_bintegers
+       USE PARSE, only: parsed_line, digest, match
+       USE SYS, only: die
 
       IMPLICIT NONE
 
       INTEGER
      .  NA, NATINPLA, INDICES(NA), ISCALE
 
-      DOUBLE PRECISION
+      REAL(DP)
      .  ORIGIN(3), XA(3,NA), MROT(3,3), XAPLANE(3,NA)
 
 C ******* INPUT ********************************************************
@@ -36,20 +39,17 @@ C                          will be rotated
 C REAL*8  XAPLANE(3,NA)  : Atomic coordinates in plane reference frame
 C **********************************************************************
 
-      CHARACTER
-     .  LINE*150
-
       INTEGER 
      .  NATINPL_DEFECT, IDIMEN, IUNIT, IAT, IX
  
-      DOUBLE PRECISION
+      REAL(DP)
      .  VAUX1(3), VAUX2(3)
 
       LOGICAL 
      .  ATINPLA
 
-      TYPE(PARSED_LINE), POINTER :: P
-      TYPE(BLOCK_fdf), POINTER       :: BP
+      TYPE(PARSED_LINE), pointer :: line
+      TYPE(BLOCK_fdf)            :: BP
 
       EXTERNAL 
      .  MATVECT
@@ -69,15 +69,14 @@ C Read fdf data block 'Denchar.AtomsInPlane' ---------------------------
         NATINPL_DEFECT = 0
         NATINPLA = 0
   
-        NULLIFY(BP)
         IF ( .NOT. FDF_BLOCK('Denchar.AtomsInPlane',BP) )  GOTO 2000
 
         LOOP: DO
-          IF (.NOT. FDF_BLINE(BP,p)) EXIT LOOP
-          IF (.NOT. fdf_bmatch(P,"I") ) 
+          IF (.NOT. FDF_BLINE(BP,LINE)) EXIT LOOP
+          IF (.NOT. fdf_bmatch(line,"I") )
      .         CALL DIE("Wrong format in Denchar.AtomsInPlane")
           NATINPLA = NATINPLA + 1
-          INDICES(NATINPLA) = fdf_bintegers(P,1) 
+          INDICES(NATINPLA) = fdf_bintegers(line,1)
         ENDDO LOOP
  2000   CONTINUE
 

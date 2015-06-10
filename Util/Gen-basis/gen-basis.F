@@ -19,7 +19,6 @@ C by SIESTA
 C
 C RESTRICTION: Just a single species allowed
 C
-!!      use f2kcli
       use fdf
 
       use precision
@@ -27,11 +26,10 @@ C
       use basis_types, only: nsp, basis_specs_transfer
       use basis_types, only: iz, lmxkb, nkbl, 
      .           erefkb, lmxo, nzeta, rco, 
-     .           lambda,
+     .           lambda, filtercut,
      .           atm_label, polorb, semic, nsemic,
      .           cnfigmx, charge, smass, basistype,
-     $           rinn, vcte, split_norm
-      use basis_types, only: qcoe, qyuk, qwid, filtercut
+     &           rinn, vcte, qcoe, qyuk, qwid, split_norm
       use basis_types, only: write_basis_specs
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
@@ -43,12 +41,6 @@ C
       use sys,          only : die
       use atom_options, only : get_atom_options, write_ion_plot_files
 C
-C     It has to be MPI-aware since it calls routines down the line...
-C
-#ifdef MPI
-      use mpi_siesta
-#endif
-
       implicit none
 
       integer is
@@ -57,40 +49,16 @@ C
 
       type(basis_def_t), pointer   :: basp
 
-#ifdef MPI
-      integer  MPIerror
-#endif
       external atm_transfer
 
 c Reading input for the pseudopotentials and atomic orbitals 
-C Initialise MPI and set processor number
-#ifdef MPI
-      call MPI_Init( MPIerror )
-      call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
-      call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
 
-      if (.not. fdf_parallel()) then
-        call die('gen-basis: ERROR: FDF module doesn''t have ' //
-                 'parallel support')
-      endif
-#else
       Node =  0
       Nodes = 1
-#endif
 
       IOnode = (Node .eq. 0)
 
       if (Ionode) then
-!
-!        Problems with mpich command-line argument handling...
-!$$$         narg = command_argument_count()
-!$$$         if (narg == 0) then
-!$$$            filein = "stdin"
-!$$$         else if (narg == 1) then
-!$$$            call get_command_argument(1,filein)
-!$$$         else
-!$$$            stop "too many command-line arguments"
-!$$$         endif
 !
          filein = "stdin"
          call fdf_init(filein,'gen-basis_fdf.log')
@@ -121,8 +89,11 @@ C Initialise MPI and set processor number
      $           cnfigmx(0:,is),charge(is),
      $           smass(is), basistype(is), is,
      $           rinn(0:,1:,is), vcte(0:,1:,is),
-     $           qcoe(0:,1:,is),qyuk(0:,1:,is),qwid(0:,1:,is),
-     $           split_norm(0:,1:,is), filtercut(0:,1:,is), basp)
+     &                    qcoe(0:,1:,is),
+     &                    qyuk(0:,1:,is),
+     &                    qwid(0:,1:,is),
+     $                    split_norm(0:,1:,is),
+     &                    filtercut(0:,1:,is), basp)
          enddo 
 
          call prinput(nsp)

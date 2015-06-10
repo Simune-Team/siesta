@@ -64,7 +64,7 @@ OBJS_DENCHAR = atompla.o planed.o\
         io.o iodm.o itochar.o length.o \
         matvect.o memory.o colinear.o\
 	neighb.o paste.o pxf.o \
-	m_fft_gpfa.o radfft.o ranger.o \
+	radfft.o m_fft_gpfa.o ranger.o \
         readwavesx.o rhoofr.o wavofr.o \
         redata_denchar.o local_reinit.o denchar.o \
 	volcel.o wrout.o stsofr.o
@@ -84,26 +84,28 @@ $(FDF):
 
 # This is crude but will have to do for now.
 # Note : precision must be the first module
-MOD_OBJS = precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
+
+MOD_OBJS=precision.o parallel.o debugmpi.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o atm_types.o \
-         radial.o spher_harm.o
+         radial.o spher_harm.o basis_io.o basis_types.o parallelsubs.o \
+         schecomm.o sparse_matrices.o interpolation.o\
+         files.o pseudopotential.o chemical.o xml.o \
+         domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
+         spatial.o timer_local.o die.o
 
-MOD_OBJS += die.o m_uuid.o object_debug.o class_Sparsity.o \
-        class_OrbitalDistribution.o \
-	class_SpData1D.o class_SpData2D.o \
+# Additional class objects
+CLS_OBJS = m_uuid.o object_debug.o class_Sparsity.o \
+	class_OrbitalDistribution.o \
 	class_Data1D.o class_Data2D.o \
-        class_Geometry.o class_Pair_Geometry_SpData2D.o \
-	class_Fstack_Pair_Geometry_SpData2D.o \
-	sparse_matrices.o
-
-MOD_OBJS += basis_io.o basis_types.o domain_decom.o
-MOD_OBJS += schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o
-MOD_OBJS += files.o interpolation.o pseudopotential.o chemical.o xml.o
-
-MOD_OBJS += parallelsubs.o spatial.o timer_local.o 
+	class_SpData1D.o class_SpData2D.o \
+        class_Geometry.o \
+	class_Pair_Data1D.o \
+	class_Fstack_Pair_Data1D.o \
+	class_Pair_Geometry_SpData2D.o \
+	class_Fstack_Pair_Geometry_SpData2D.o
 
 COM_OBJS_DENCHAR=$(OBJS_DENCHAR) $(SYSOBJ)
-ALL_OBJS_DENCHAR=$(MOD_OBJS) $(COM_OBJS_DENCHAR)
+ALL_OBJS_DENCHAR= $(CLS_OBJS) $(MOD_OBJS) $(COM_OBJS_DENCHAR)
 
 
 denchar: $(FDF) $(ALL_OBJS_DENCHAR)

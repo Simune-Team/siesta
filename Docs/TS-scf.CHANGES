@@ -1,4 +1,25 @@
 ----------------------------------------------------
+June 10, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-433
+Merge 470 Build fixes in Util and SiestaXC
+
+added:
+  Util/Gen-basis/local_die.F
+  Util/STM/ol-stm/Src/handlers.f
+modified:
+  Pseudo/atom/Makefile
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/mesh1d.f90
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Gen-basis/gen-basis.F
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/ol-stm/Src/atompla.f
+  Util/STM/ol-stm/Src/extrapolate.f
+  Util/STM/ol-stm/Src/fftw3_mymod.f90
+  Util/STM/ol-stm/Src/stm.f
+  Util/SiestaSubroutine/FmixMD/Src/Makefile
+
+----------------------------------------------------
 June 10, 2015 -- Nick P. Andersen     trunk-469-merge-1--ts-scf-433
 Bugfix for STM/ol-stm and Gen-basis compilation
 
