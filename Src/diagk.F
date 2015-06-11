@@ -209,8 +209,7 @@ C Find weights for local density of states ............................
 *       e2 = e2 - ef
         t = max( temp, 1.e-6_dp )
         rt = 1._dp / t
-!$OMP parallel do, default(shared), collapse(3),
-!$OMP& private(ik,ispin,io)
+!$OMP parallel do default(shared), collapse(3), private(ik,ispin,io)
         do ik = 1,nk
           do ispin = 1,nspin
             do io = 1,nuotot
