@@ -127,7 +127,7 @@ Args:
 */
 
 {
-   int sockfd, ai_err;
+   int sockfd, srvsockfd, ai_err;
 
    if (*inet>0)
    {  // creates an internet socket
@@ -145,44 +145,52 @@ Args:
       ai_err = getaddrinfo(host, service, &hints, &res); 
       if (ai_err!=0) { perror("Error fetching host data. Wrong host name?"); exit(-1); }
 
-      // creates socket
-      sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-      if (sockfd < 0) { perror("Error creating socket"); exit(-1); }
+      // creates listening socket
+      srvsockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
+      if (srvsockfd < 0) { perror("Error creating socket"); exit(-1); }
     
-      if (bind(sockfd, res->ai_addr, res->ai_addrlen) < 0) 
+      if (bind(srvsockfd, res->ai_addr, res->ai_addrlen) < 0) 
       { perror("Error binding to INET server socket."); }
       
       freeaddrinfo(res);
       
-      listen(sockfd,5);
+      listen(srvsockfd,5);
       struct sockaddr_storage their_addr; // connector's address information
       socklen_t sin_size;
       sin_size = sizeof their_addr;
         
-      // makes connection
-      sockfd = accept(sockfd,  (struct sockaddr *)&their_addr, &sin_size);
+      // makes connection and return the socket on which communication occurs
+      sockfd = accept(srvsockfd,  (struct sockaddr *)&their_addr, &sin_size);
       if (sockfd < 0) 
       { perror("Error creating INET communication socket: wrong port or server unreachable"); exit(-1); }
    }
    else
    {  
-      /** struct sockaddr_un serv_addr;
+      struct sockaddr_un serv_addr;
 
+  
+      // creates the socket
+      srvsockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+      
       // fills up details of the socket addres
       memset(&serv_addr, 0, sizeof(serv_addr));
       serv_addr.sun_family = AF_UNIX;
       strcpy(serv_addr.sun_path, "/tmp/ipi_");
       strcpy(serv_addr.sun_path+9, host);
-      // creates a unix socket
-  
-      // creates the socket
-      sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-
-      // connects
-      sockfd = accept(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+      // binds the socket to the descriptor
+	  bind(srvsockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+	  if (srvsockfd < 0) 
+      { perror("Error creating UNIX socket: path unavailable, or already existing"); exit(-1); }
+      
+      // listens on the server socket
+	  listen(srvsockfd,5);
+	  
+      // accepts an incoming connection
+      struct sockaddr_un their_addr; socklen_t their_size=sizeof(their_addr);
+      sockfd = accept(srvsockfd, (struct sockaddr *) &their_addr, &their_size);
+      
       if (sockfd < 0) 
-      { perror("Error creating UNIX socket: path unavailable, or already existing"); exit(-1); }*/
-      perror("Error creating UNIX socket: not implemented :-("); exit(-1);
+      { perror("Error establishing UNIX socket connection"); exit(-1); }      
    }
 
    *psockfd=sockfd;
