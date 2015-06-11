@@ -1,4 +1,14 @@
 ------------------------------------------------------------
+June 11, 2015  Alberto Garcia       trunk-470--ncps-67
+Update building of atom and vnl-operator
+
+Full autonomous support.
+
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/vnl-operator/Makefile
+
+------------------------------------------------------------
 June 11, 2015  Alberto Garcia       trunk-470--ncps-66
 More building tweaks
 

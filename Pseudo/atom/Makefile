@@ -19,7 +19,8 @@ default: atm
 OBJDIR=Obj
 #
 #
-ARCH_MAKE=../../$(OBJDIR)/arch.make
+MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
 # This is needed on some systems to avoid loading the parallel libraries, which
@@ -47,8 +48,6 @@ INCFLAGS=
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 #
-# Note that we hardwire the need to use the configure script in the main Src directory.
-#
 TOP_LEVEL=$(shell pwd)/../../Src
 #
 pseudoXML.o: $(WXML)
@@ -59,22 +58,22 @@ dep:
 	sfmakedepend --depend=obj  --modext=o *.f *.f90 *.F *.F90
 #----------------------------------------------$$$$$
 #
-INCFLAGS:=$(INCFLAGS)  ##### -I../../$(OBJDIR)
-#
 WXML=libwxml.a
 #
 $(WXML): 
 	(cd wxml ; $(MAKE) \
                FFLAGS="$(FFLAGS:$(IPO_FLAG)=)" \
-               "ARCH_MAKE=../$(ARCH_MAKE)"  module)
+               "ARCH_MAKE=$(ARCH_MAKE)"  module)
 #
+# Compile XC in a private directory, without MPI
+##
 XC=libSiestaXC.a
 XC_MAKEFILE=$(TOP_LEVEL)/SiestaXC/makefile
-XC_INCFLAGS:=-I $(TOP_LEVEL)/SiestaXC ##$(INCFLAGS)
+XC_INCFLAGS:=  #   -I $(TOP_LEVEL)/SiestaXC ##$(INCFLAGS)
 $(XC): 
 	(mkdir -p SiestaXC; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
                           "FC=$(FC)" "VPATH_ROOT=$(TOP_LEVEL)" \
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "ARCH_MAKE=$(ARCH_MAKE)" \
                           "INCFLAGS=$(XC_INCFLAGS)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
@@ -108,8 +107,7 @@ fhi2psml: $(WXML) fhi2psml.o
 #
 clean:	
 	rm -f *.o *.mod atm *.a
-	test -d SiestaXC && (cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
-                       "ARCH_MAKE=../$(ARCH_MAKE)" clean)
+	rm -rf SiestaXC
 	(cd wxml ; $(MAKE) clean)
 #
 # DO NOT DELETE THIS LINE - used by make depend

@@ -8,29 +8,28 @@
 default: psop
 #
 OBJDIR=Obj
-VPATH:=$(shell pwd)/../../Src
-MAIN_OBJDIR=../../$(OBJDIR)
-include $(MAIN_OBJDIR)/arch.make
+TOP_LEVEL=$(shell cd -P -- ../../Src && pwd -P)
+VPATH:=$(TOP_LEVEL)
+
+MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
+include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-# Note that PSML is now considered an external library
-# Appropriate symbols should be put in arch.make
-#
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
-PSOPLIB_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib
+PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
+PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 
-NCPS_LIBS=$(MAIN_OBJDIR)/ncps/src/libncps.a
-PSOPLIB_LIBS=$(MAIN_OBJDIR)/psoplib/libpsop.a
+PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
+NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
+PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
 
-INCFLAGS:=$(INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) $(PSOPLIB_INCFLAGS)
+INCFLAGS:=$(INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) $(PSOP_INCFLAGS)
+INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/wxml -I./SiestaXC # To pick up mod files
 #
-INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/wxml # To pick up mod files
-INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/SiestaXC # To pick up mod files
-#
-LIBS_XC:= -L$(MAIN_OBJDIR)/SiestaXC -l SiestaXC
 LIBS_WXML:= -L$(MAIN_OBJDIR)/wxml -l wxml
 #
 #
@@ -47,12 +46,26 @@ ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
 $(COM_OBJS): 
 #
+XC=libSiestaXC.a
+XC_MAKEFILE=$(TOP_LEVEL)/SiestaXC/makefile
+XC_INCFLAGS:=-I $(TOP_LEVEL)/SiestaXC ##$(INCFLAGS)
+$(XC): 
+	(mkdir -p SiestaXC; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
+                          "FC=$(FC)" "VPATH_ROOT=$(TOP_LEVEL)" \
+                          "ARCH_MAKE=$(ARCH_MAKE)" \
+                          "INCFLAGS=$(XC_INCFLAGS)" \
+                          "DEFS=$(DEFS) $(DEFS_PREFIX)-UMPI" \
+                          "FPPFLAGS=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI" \
+                          "MPI_INTERFACE= " \
+                          "FFLAGS=$(FFLAGS)"  module )
+#
 what:
 	echo "VPATH: " $(VPATH)
-psop:   wxml $(ALL_OBJS)
+psop:   wxml $(NCPS) $(PSML) $(PSOP) $(XC) $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o psop $(ALL_OBJS) \
-        $(NCPS_LIBS) $(PSOPLIB_LIBS) $(PSML_LIBS) $(LIBS_XC) $(LIBS_WXML)
-
+        $(NCPS) $(PSOP) $(PSML) $(XC) $(LIBS_WXML)
+#
+$(NCPS): $(PSML)
 #
 psop.o: psop_options.o local_xml.o write_proj_psml.o
 #
@@ -67,7 +80,25 @@ clean:
 #
 wxml:
 	@echo "Making sure that the wxml library is compiled..."
-	(cd ../../$(OBJDIR)/wxml ; make "VPATH=$(VPATH)/wxml")
+	(cd $(MAIN_OBJDIR)/wxml ; make \
+                                     "ARCH_MAKE=$(ARCH_MAKE)"\
+                                     "VPATH=$(VPATH)/wxml")
+$(PSML):
+	@echo "Making sure that the psml library is compiled..."
+	(cd $(MAIN_OBJDIR)/psml/src ; make \
+                                     "ARCH_MAKE=$(ARCH_MAKE)"\
+                                     "VPATH=$(VPATH)/psml/src")
+$(PSOP):
+	@echo "Making sure that the psop library is compiled..."
+	(cd $(MAIN_OBJDIR)/psoplib/src ; make \
+                                     "ARCH_MAKE=$(ARCH_MAKE)"\
+                                     "VPATH=$(VPATH)/psoplib/src")
+$(NCPS):
+	@echo "Making sure that the ncps library is compiled..."
+	(cd $(MAIN_OBJDIR)/ncps/src ; make \
+                                     "ARCH_MAKE=$(ARCH_MAKE)"\
+                                     "PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src"\
+                                     "VPATH=$(VPATH)/ncps/src")
 #
 
 
