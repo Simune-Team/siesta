@@ -1,4 +1,11 @@
 ----------------------------------------------------
+June 11, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-437
+Bugfix for openmp and intel
+
+modified:
+  Src/diagk.F
+
+----------------------------------------------------
 June 10, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-436
 TBT: changed default precision
 

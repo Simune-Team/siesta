@@ -135,7 +135,7 @@ C  Internal variables .............................................
      .  ispin, iuo, j, jo, juo, nd, neigneeded, iu
 
       real(dp)
-     .  ckxij, kxij, qe, ee, skxij, t
+     .  ckxij, kxij, qe, ee, skxij, t, rt
       real(dp) :: qp1, qp2, eqp1, eqp2
 
       real(dp), pointer :: lpsi(:,:)
@@ -197,37 +197,39 @@ C Find new Fermi energy and occupation weights ........................
      .             temp, qtot, qo, ef, Entropy )
       endif
 
-!$OMP parallel default(shared),
-!$OMP&private(t,ik,ispin,io,nd)
+      nd = listdptr(nuo) + numd(nuo)
+
+! NPA:
+! I have tried putting the parallel section out here
+! However, the intel compilers cannot figure it out :(
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
 *       e1 = e1 - ef
 *       e2 = e2 - ef
         t = max( temp, 1.e-6_dp )
-!$OMP do collapse(3)
+        rt = 1._dp / t
+!$OMP parallel do, default(shared), collapse(3),
+!$OMP& private(ik,ispin,io)
         do ik = 1,nk
           do ispin = 1,nspin
             do io = 1,nuotot
               qo(io,ispin,ik) = wk(ik) * 
-     .             ( stepf((eo(io,ispin,ik)-e2)/t) -
-     .               stepf((eo(io,ispin,ik)-e1)/t)) * 2.0_dp/nspin
+     .             ( stepf((eo(io,ispin,ik)-e2)*rt) -
+     .               stepf((eo(io,ispin,ik)-e1)*rt)) * 2.0_dp/nspin
             enddo
           enddo
         enddo
-!$OMP end do nowait
+!$OMP end parallel do
       endif
 
 C New density and energy-density matrices of unit-cell orbitals .......
       if (nuo.gt.0) then
-        nd = listdptr(nuo) + numd(nuo)
-!$OMP workshare
+!$OMP parallel workshare
         Dnew(1:nd,1:nspin) = 0.0_dp
         Enew(1:nd,1:nspin) = 0.0_dp
-!$OMP end workshare nowait
+!$OMP end parallel workshare
       endif
-
-!$OMP end parallel
 
 
   10  continue
