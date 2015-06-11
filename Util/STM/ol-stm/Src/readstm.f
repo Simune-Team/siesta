@@ -51,13 +51,6 @@ C Internal variables ---------------------------------------------------
       INTEGER
      .  IUNIT, NPX_DEFECT, NPY_DEFECT, NPZ_DEFECT
 
-      LOGICAL 
-     .  LEQI
-
-      EXTERNAL 
-     .  LEQI
-
-
 C READ UNITS OF CHARGE DENSITY TO USE
 
       UCD_DEFECT = 'Ele/bohr**3'

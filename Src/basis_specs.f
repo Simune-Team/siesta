@@ -85,7 +85,7 @@
 ! 
 !   The Soft-Confinement parameters 'rinn' and 'vcte' are set to 0.0
 !   The Charge-Confinement parameters 'qcoe', 'qyuk' and 'qwid' 
-!   are set to 0.0, 0.0 and 1.0
+!   are set to 0.0, 0.0 and 0.01
 ! 
 !   rc(1:nzeta) is set to 0.0
 !   lambda(1:nzeta) is set to 1.0  (this is a change from old practice)
@@ -1144,6 +1144,7 @@ c (according to atmass subroutine).
             ls%nn = 1
             allocate(ls%shell(1:1))
             s => ls%shell(1)
+            call initialize(s)
             s%l = l
             s%n = basp%ground_state%n(l)
             if (basp%ground_state%occupied(l)) then
