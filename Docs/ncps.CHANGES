@@ -1,4 +1,23 @@
 ------------------------------------------------------------
+June 11, 2015  Alberto Garcia       trunk-470--ncps-66
+More building tweaks
+
+- Save unitialized EMPTY_ASSOC_LIST in psml
+
+- Force absolute path in ARCH_MAKE in the
+  psml library.
+
+- Define AR in FoX arch.make.in, to enable
+  make to run without implicit rules and
+  variables, if needed.
+
+modified:
+  Src/FoX/arch.make.in
+  Src/psml/src/assoc_list.f90
+  Src/psml/src/makefile
+  Src/psml/src/xmlf90-sax/makefile
+
+------------------------------------------------------------
 June 10, 2015  Alberto Garcia       trunk-470--ncps-65
 Put psml in source tree. Update building system
 

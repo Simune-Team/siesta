@@ -12,7 +12,7 @@ type, public :: assoc_list_t
   character(len=50), allocatable       :: value(:)
 end type assoc_list_t
 
-type(assoc_list_t), public :: EMPTY_ASSOC_LIST 
+type(assoc_list_t), public, save :: EMPTY_ASSOC_LIST 
 
 public :: assoc_list_init
 public :: assoc_list_reset

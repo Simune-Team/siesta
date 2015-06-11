@@ -11,6 +11,7 @@ MOD_DIR=$(compile_prefix)/finclude
 
 FPP=@FPP@
 FC=@FC@
+AR=ar           # AG: June 2015
 RANLIB=@RANLIB@
 
 FFLAGS=@FCFLAGS@

@@ -1,9 +1,9 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .f90 .F90
 #
-PSML_MK_DEFAULT=../fortran.mk
-PSML_MK?=$(PSML_MK_DEFAULT)
-include $(PSML_MK)
+ARCH_MAKE_DEFAULT=../fortran.mk
+ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
+include $(ARCH_MAKE)
 #
 OBJFILES= m_debug.o m_buffer.o m_elstack.o m_dictionary.o m_io.o \
           m_reader.o m_converters.o m_charset.o  m_entities.o \
