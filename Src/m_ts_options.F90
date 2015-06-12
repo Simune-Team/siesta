@@ -112,7 +112,7 @@ contains
     use m_ts_tdir
     use m_ts_hartree, only: elec_basal_plane
 
-#ifdef MUMPS
+#ifdef TRANSIESTA_MUMPS
     use m_ts_mumps_init, only : MUMPS_mem, MUMPS_ordering, MUMPS_block
 #endif
 
@@ -225,7 +225,7 @@ contains
        ts_method = TS_FULL
     else if ( leqi(chars,'BTD') .or. leqi(chars,'tri') ) then
        ts_method = TS_BTD
-#ifdef MUMPS
+#ifdef TRANSIESTA_MUMPS
     else if ( leqi(chars,'mumps') ) then
        ts_method = TS_MUMPS
 #endif
@@ -233,7 +233,7 @@ contains
        call die('Unrecognized Transiesta solution method: '//trim(chars))
     end if
 
-#ifdef MUMPS
+#ifdef TRANSIESTA_MUMPS
     MUMPS_mem   = fdf_get('TS.MUMPS.Mem',20)
     MUMPS_block = fdf_get('TS.MUMPS.BlockingFactor',112)
     chars = fdf_get('TS.MUMPS.Ordering','auto')
@@ -786,9 +786,28 @@ contains
              chars = 'memory'
           end if
           write(*,10)'BTD creation algorithm', trim(chars)
-#ifdef MUMPS
+#ifdef TRANSIESTA_MUMPS
        else if ( ts_method == TS_MUMPS ) then
           write(*,10)'Solution method', 'MUMPS'
+          write(*,5)'MUMPS extra memory', MUMPS_mem,'%'
+          write(*,5)'MUMPS blocking factor', MUMPS_block,''
+          select case ( MUMPS_ordering ) 
+          case ( 7 )
+             write(*,10)'MUMPS ordering', 'auto'
+          case ( 6 )
+             write(*,10)'MUMPS ordering', 'QAMD'
+          case ( 5 )
+             write(*,10)'MUMPS ordering', 'METIS'
+          case ( 4 )
+             write(*,10)'MUMPS ordering', 'PORD'
+          case ( 3 )
+             write(*,10)'MUMPS ordering', 'SCOTCH'
+          case ( 2 )
+             write(*,10)'MUMPS ordering', 'AMF'
+          case ( 0 )
+             write(*,10)'MUMPS ordering', 'AMD'
+          end select
+
 #endif
        end if
        write(*,8) 'SCF-TS mixing weight',ts_wmix

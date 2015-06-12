@@ -21,7 +21,7 @@ module m_transiesta
   use m_ts_sparse, only : ts_sparse_init
   use m_ts_method, only : ts_method
   use m_ts_method, only : TS_FULL, TS_BTD
-#ifdef MUMPS
+#ifdef TRANSIESTA_MUMPS
   use m_ts_method, only : TS_MUMPS
 #endif
 
@@ -33,7 +33,7 @@ module m_transiesta
   use m_ts_trig
   use m_ts_trik
 
-#ifdef MUMPS
+#ifdef TRANSIESTA_MUMPS
   use m_ts_mumpsg
   use m_ts_mumpsk
 #endif
@@ -269,7 +269,7 @@ contains
                   no_u, n_nzs, &
                   H, S, DM, EDM, Ef, kT)
           end if
-#ifdef MUMPS
+#ifdef TRANSIESTA_MUMPS
        else if ( ts_method == TS_MUMPS ) then
           if ( ts_Gamma ) then
              call ts_mumpsg(N_Elec,Elecs, &
@@ -336,7 +336,7 @@ contains
                      no_u, n_nzs, &
                      H, S, DM, Ef, kT, Qtot, converged)
              end if
-#ifdef MUMPS
+#ifdef TRANSIESTA_MUMPS
           else if ( ts_method == TS_MUMPS ) then
              if ( Q_Ef(i_F,1) > Qtot ) then
                 Ef = Ef - 0.01_dp * eV
@@ -675,7 +675,7 @@ contains
             write(*,'(a,f10.2,a)') &
             'transiesta: Memory usage of full matrices: ', &
             mem,'MB'
-#ifdef MUMPS
+#ifdef TRANSIESTA_MUMPS
     else if ( ts_method == TS_MUMPS ) then
        if ( IONode ) then
           write(*,'(a)')'transiesta: Memory usage is determined by MUMPS.'

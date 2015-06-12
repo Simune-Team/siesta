@@ -20,7 +20,7 @@ module m_ts_mumps_init
 
   implicit none
 
-#ifdef MUMPS  
+#ifdef TRANSIESTA_MUMPS 
 
   integer, public, save :: MUMPS_mem = 20
   integer, public, save :: MUMPS_ordering = 7

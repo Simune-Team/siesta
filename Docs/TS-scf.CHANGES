@@ -1,4 +1,25 @@
 ----------------------------------------------------
+June 12, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-439
+Changed -DMUMPS to -DTRANSIESTA_MUMPS
+
+* The name choice of MUMPS was bad. 
+  MUMPS often interfered and was overwritten.
+  Better to use custom names for each flag.
+  
+  We choose TRANSIESTA_MUMPS as it is verbose and non-used
+  elsewere (TS_MUMPS is the solution method)
+
+* Added MUMPS option print-out
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_mumps_scat.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 June 11, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-438
 Bug comma in OMP
 
