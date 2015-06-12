@@ -1,0 +1,64 @@
+-----------------------------------------------------------------------
+2015-06-12   Alberto Garcia     siesta-trunk-470--memory-accounting-10
+Revamped timer interface in gridxc. Build fixes
+
+*    Revamped the timer interface in gridxc
+    
+    Removed the internal timer framework, as it was not really needed
+    in its full glory. If cellxc timing information is needed in the
+    future to fine-tune the load-balancing mechanism, it should be
+    handled in a more light-weight manner.
+    
+    Internal timings are passed over to the calling program through
+    the 'gridxc_timer_*' calls.
+    
+    The MPI subsystem is instrumented for timing also. It calls
+    also the gridxc_timer_* routines if 'time_mpi_calls' is set
+    in 'gridxc_init'.
+
+*    Use package-specific module names in MPI_instr
+    
+    If a program uses several versions of the MPI interfaces,
+    the first appearing in the linking list will be used for
+    everything. This causes problems for package-specific
+    functionality.
+    
+    The modules in MPI_instr are now renamed at the time
+    the 'generate.sh' script is run.
+
+*   Bring in needed fixes in Util and elsewhere
+
+removed:
+  Src/gridxc/m_timer.F90
+  Util/Gen-basis/local_die.F
+added:
+  Util/Gen-basis/handlers.f
+  Util/VCA/handlers.f
+modified:
+  Src/gridxc/MPI_instr/Makefile
+  Src/gridxc/MPI_instr/generate.sh
+  Src/gridxc/MPI_instr/mpi__type_s.f90
+  Src/gridxc/MPI_instr/mpi__type_sv.f90
+  Src/gridxc/MPI_instr/mpi__type_v.f90
+  Src/gridxc/MPI_instr/mpi__type_vs.f90
+  Src/gridxc/MPI_instr/mpi_instr.f90
+  Src/gridxc/MPI_instr/mpi_interfaces.F
+  Src/gridxc/Testers/handlers.f90
+  Src/gridxc/Testers/test3.F90
+  Src/gridxc/atomxc.F90
+  Src/gridxc/cellxc.F90
+  Src/gridxc/fft3d.F90
+  Src/gridxc/gridxc.F90
+  Src/gridxc/gridxc_config.F90
+  Src/gridxc/makefile
+  Src/gridxc/radfft.f
+  Src/obj_setup.sh
+  Src/siesta_init.F
+  Util/Gen-basis/Makefile
+  Util/VCA/Makefile
+
+
+
+
+
+

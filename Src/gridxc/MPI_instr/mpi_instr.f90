@@ -1,10 +1,11 @@
 MODULE MPI_INSTR
 !
-! This is an interface to supplant some MPI routines called by siesta,
-! in order to time-profile them. J.M.Soler. May.2009
+! This is an interface to supplant some MPI routines
+! in order to time-profile them. 
+! J.M.Soler. May.2009
 ! A. Garcia, June 2015
 !
-  USE MPI_INTERFACES,  &! Previously called MPI_INSTR
+  USE MPI_INTERFACES,  &
     trueMPI_BARRIER    => MPI_BARRIER,    & ! Renamed to avoid conflicts
     trueMPI_COMM_RANK  => MPI_COMM_RANK,  &
     trueMPI_COMM_SIZE  => MPI_COMM_SIZE,  &
@@ -68,6 +69,8 @@ MODULE MPI_INSTR
   INTERFACE MPI_WAITALL
     MODULE PROCEDURE myMPI_WAITALL
   END INTERFACE
+
+  private :: timer_mpi
 
 CONTAINS
 
@@ -156,4 +159,11 @@ CONTAINS
     call timer_mpi('MPI_WAITALL',2)
   END SUBROUTINE myMPI_WAITALL
           
+        subroutine timer_mpi(prog,iopt)
+          character(len=*), intent(in) :: prog
+          integer, intent(in)          :: iopt
+          
+          include 'timer_mpi_handler.inc'
+        end subroutine timer_mpi
+
 END MODULE MPI_INSTR

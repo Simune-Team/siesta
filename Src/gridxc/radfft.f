@@ -85,8 +85,6 @@ C *********************************************************************
       USE m_bessph,  only: bessph    ! Spherical Bessel functions
       use m_fft_gpfa,only: fft_gpfa_ez     ! 1D fast Fourier transform
       USE alloc,     only: re_alloc, de_alloc
-!      USE m_timer,   only: timer_start  ! Start counting CPU time
-!      USE m_timer,   only: timer_stop   ! Stop counting CPU time
 
       implicit none
 
@@ -127,8 +125,6 @@ C Internal variable types and dimensions ----------------------------
 !!      real(dp) ::  GG(0:2*NR), FN(2,0:2*NR), P(2,0:L,0:L)
 C -------------------------------------------------------------------
 
-C Start time counter ------------------------------------------------
-*     CALL TIMER_START( 'RADFFT' )
 C
 C     Allocate local memory 
       if (MAXL.eq.-1) nullify(P)
@@ -272,10 +268,6 @@ C Copy from local to output array -----------------------------------
       DO IQ = 0,NQ
         G(IQ) = GG(IQ)
       ENDDO
-C -------------------------------------------------------------------
-
-C Stop time counter ------------------------------------------------
-*     CALL TIMER_STOP( 'RADFFT' )
 C -------------------------------------------------------------------
 
       END SUBROUTINE radfft

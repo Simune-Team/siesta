@@ -22,7 +22,6 @@
 !   nfft                 ! Get allowed sizes for FFTs
 !   setDebugOutputUnit   ! Initialize debug report
 !   closeDebugOutputFile ! Print debug report
-!   timer_report         ! Print report of CPU times
 !   myMeshBox            ! Get my processor mesh box
 !   setMeshDistr         ! Set a distribution of mesh points over processors
 
@@ -44,8 +43,6 @@
 !   m_ldaxc    : routines for LDA XC functionals
 !   m_minvec   : routine to find the basis of shortest lattice vectors
 !   m_radfft   : radial fast Fourier transform
-!   m_timer    : routines to find and print CPU times
-!   m_walltime : Wall-time routine
 !   m_vdwxc    : routines for the Van der Waals functional
 !   m_vv_vdwxc : routines for the Vydrov-VanVoorhis VdW functional
 !   mesh1D     : utilities to manipulate 1D meshes
@@ -446,63 +443,6 @@
 !   call closeDebugOutputUnit()
 !******************************************************************************
 !
-! SUBROUTINE timer_report( prog, unit, file, printNow, threshold )
-! -----------------------------------------------------------------------------
-!   Writes a report file of CPU times stored for one prog, or for all progs if
-!   the prog argument is not present. Program times include those spent in the
-!   subroutines that they call.
-! OPTIONAL INPUT:
-!   character(len=*):: prog      ! Name of program or code section
-!   integer,        :: unit      ! IO file unit (used only in parallel exec.)
-!   character(len=*):: file      ! IO file name (used only in parallel exec.)
-!   logical         :: printNow  ! Print report now?
-!   real(dp)        :: threshold ! Min. fractional time to be reported
-! USAGE:
-!     program myProg
-!     use gridXC, only: timer_report
-!     ...program execution
-!     call timer_report(file='myProg.times',printNow=.true.)
-!     end program myProg
-! - To obtain communication times in parallel execution, 
-!   compile with -DMPI_TIMING
-! BEHAVIOUR:
-! - If prog is not present, or prog=='all', it prints a full report, in the 
-!   specified unit or file, of all the CPU times that have been profiled by 
-!   timer_start--timer_stop. Otherwise, it prints a single line, in the
-!   standard output, of the specified program or code section.
-! - In serial execution, to keep backwards compatibility, the report is written
-!   in the standard output, and arguments unit and file are not used.
-! - In parallel execution, successive reports are overwritten, i.e. only the
-!   last report remains written, unless different files are specified.
-! - If unit is present and unit>0, argument file is not used neither in that
-!   nor in future calls. If unit==0, the present or stored file is used.
-!   If unit is not present and file is present, that file is used in that and
-!   future calls.
-! - If neither unit nor file are present, the (parallel) report is written on
-!   file 'timer_report'
-! - If printNow is not present, the report is NOT written.
-! - If prog name is not found, it stops with an error message.
-! - In the full report, program times are written in the order of the first
-!   call to timer_start
-! - In parallel execution, the reported times are those spent in the node with
-!   the largest total CPU time, excluding communications.
-! - timer_report can be called several times, with different arguments.  
-!   In this case, the last values prevail and get stored for future calls.
-! ALGORITHMS:
-! - In parallel execution, the total calculation time (excluding commun.) of 
-!   all nodes is first found using MPI_All_Gather, and the node with the 
-!   largest value is designed the busyNode that will write the report.
-! - Since the order in which prog times are stored may be different in 
-!   different nodes, the busyNode broadcasts the name(s) of the prog(s) 
-!   whose time(s) it wants to write. Each node then finds its time for that
-!   prog and sends it to the busyNode, so that it can determine and print
-!   the load balancing for that prog (specifically the min/max ratio of the
-!   calculation time spent in that prog by the different nodes).
-! - After the report is written by the busyNode, it is sent using copyFile to 
-!   the root node, that writes it in its file system.
-!
-!******************************************************************************
-!
 ! SUBROUTINE setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
 !                          nNodesX, nNodesY, nNodesZ, nBlock, &
 !                          wlDistr, workload )
@@ -679,7 +619,6 @@ MODULE gridXC
   USE debugXC,  only: setDebugOutputUnit   ! Set debug report
   USE debugXC,  only: closeDebugOutputFile ! Print debug report
 #endif
-  USE m_timer,  only: timer_report         ! Print CPU time report
   USE mesh3d,   only: myMeshBox            ! Get my processor mesh box
   USE mesh3d,   only: setMeshDistr         ! Set a distribution of mesh
                                            ! points over parallel processors

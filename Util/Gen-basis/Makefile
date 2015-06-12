@@ -53,39 +53,40 @@ OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
           parsing.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o interpolation.o \
 	  paste.o   bessph.o radfft.o  sorting.o m_filter.o \
-          basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
+          basis_specs.o atom.o memory.o memory_log.o periodic_table.o\
           pseudopotential.o pxf.o dot.o  atom_options.o arw.o  \
-          sys.o timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
-          xc.o bsc_xcmod.o local_die.o
+          sys.o xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
+          xc.o bsc_xcmod.o handlers.o
 #
 IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o  atm_types.o\
           atmparams.o radial.o  memory.o chkdim.o\
 	  paste.o pseudopotential.o chemical.o \
-          basis_specs.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
+          basis_specs.o memory_log.o periodic_table.o pxf.o \
            atmfuncs.o spher_harm.o interpolation.o\
-          sys.o  xml.o m_walltime.o ioncat.o  local_die.o $(SYSOBJ)
+          sys.o  xml.o m_walltime.o ioncat.o handlers.o $(SYSOBJ)
 #
 # Compile XC in a private directory, without MPI
 #
-XC=libSiestaXC.a
-XC_MAKEFILE=$(TOP_LEVEL)/SiestaXC/makefile
-XC_INCFLAGS:=-I $(TOP_LEVEL)/SiestaXC ##$(INCFLAGS)
+XC=gridxc/libGridXC.a
+XC_MAKEFILE=$(TOP_LEVEL)/gridxc/makefile
+XC_INCFLAGS:=
 $(XC): 
-	(mkdir -p SiestaXC ; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) \
-                          "FC=$(FC)" "VPATH_ROOT=$(TOP_LEVEL)" \
+	(mkdir -p gridxc ; cd gridxc ; $(MAKE) -f $(XC_MAKEFILE) \
+                          "FC=$(FC)" "VPATH=$(TOP_LEVEL)/gridxc" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(XC_INCFLAGS)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
                           "FFLAGS=$(FFLAGS)"  module )
+INCFLAGS:= $(INCFLAGS) -I./gridxc
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
 FDF=libfdf.a
 FDF_MAKEFILE=$(TOP_LEVEL)/fdf/makefile
-FDF_INCFLAGS:=-I $(TOP_LEVEL)/fdf $(INCFLAGS)
+FDF_INCFLAGS:=#-I $(TOP_LEVEL)/fdf $(INCFLAGS)
 $(FDF): 
 	(mkdir -p fdf ; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(TOP_LEVEL)/fdf" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
@@ -106,10 +107,8 @@ clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f gen-basis ioncat *.o  *.a
 	rm -f *.mod
-	(mkdir -p fdf; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	rmdir fdf
-	(mkdir -p SiestaXC; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	rmdir SiestaXC
+	rm -rf fdf
+	rm -rf gridxc
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: m_io.o parallel.o precision.o sys.o
@@ -141,7 +140,7 @@ broadcast_basis.o: atm_types.o parallel.o radial.o
 broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o m_mpi_utils.o
 broyden_optim.o: parallel.o precision.o units.o
 cart2frac.o: sys.o
-cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o sys.o
+cdiag.o: alloc.o m_spin.o  parallel.o precision.o sys.o
 cell_broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o
 cell_broyden_optim.o: m_mpi_utils.o parallel.o precision.o sys.o units.o
 cell_broyden_optim.o: zmatrix.o
@@ -205,9 +204,7 @@ ener3.o: globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o:  parallel.o precision.o sys.o
-fft.o: alloc.o fft1d.o m_timer.o meshsubs.o parallel.o parallelsubs.o
-fft.o: precision.o sys.o
-fft1d.o: parallel.o precision.o sys.o
+
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
 fire_optim.o: precision.o siesta_options.o units.o
@@ -281,7 +278,7 @@ m_iorho.o: parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
-m_memory.o: memoryinfo.o parallel.o sys.o
+memory.o: memory_log.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_pulay.o: alloc.o atomlist.o files.o m_mpi_utils.o m_spin.o parallel.o
@@ -290,7 +287,6 @@ m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o m_fdf_global.o parallel.o precision.o
 m_stress.o: precision.o
-m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 m_ts_aux_rout.o: sys.o
 m_ts_contour.o: files.o m_ts_aux_rout.o m_ts_options.o precision.o sys.o
 m_ts_electrode.o: files.o m_ts_aux_rout.o m_ts_io.o m_ts_kpoints.o
@@ -310,8 +306,7 @@ madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o  precision.o radfft.o spher_harm.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
-memory.o: alloc.o memoryinfo.o parallel.o precision.o
-memoryinfo.o: precision.o
+memory.o: alloc.o  parallel.o precision.o
 meshmatrix.o: alloc.o atomlist.o meshsubs.o parallel.o parallelsubs.o
 meshmatrix.o: precision.o
 meshsubs.o: alloc.o atm_types.o atmfuncs.o cellsubs.o chkgmx.o fft1d.o
@@ -372,7 +367,7 @@ proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o  precision.o sys.o
 radfft.o: bessph.o  precision.o
 radial.o: precision.o xml.o
-rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
+rdiag.o: alloc.o  parallel.o precision.o sys.o
 read_xc_info.o: parallel.o parsing.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: precision.o sys.o
@@ -391,47 +386,15 @@ scfconvergence_test.o: m_wallclock.o parallel.o siesta_cml.o siesta_options.o
 scfconvergence_test.o: write_subs.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
-setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o files.o m_dipol.o
-setup_hamiltonian.o: m_energies.o m_forces.o m_gamma.o m_hsx.o m_mpi_utils.o
-setup_hamiltonian.o: m_ntm.o m_spin.o m_steps.o m_stress.o m_ts_io.o
-setup_hamiltonian.o: m_ts_kpoints.o m_ts_options.o metaforce.o
-setup_hamiltonian.o: molecularmechanics.o nlefsm.o normalize_dm.o overfsm.o
-setup_hamiltonian.o: siesta_cml.o siesta_geom.o siesta_options.o
-setup_hamiltonian.o: sparse_matrices.o sys.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 shaper.o: alloc.o atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
 siesta.o: m_steps.o siesta_analysis.o siesta_end.o siesta_forces.o
 siesta.o: siesta_init.o siesta_move.o
-siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o files.o
-siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
-siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
-siesta_analysis.o: m_ntm.o m_spin.o m_steps.o parallel.o projected_DOS.o
-siesta_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o
-siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o version.o
 siesta_end.o: alloc.o m_wallclock.o parallel.o siesta_cml.o timestamp.o
-siesta_forces.o: compute_dm.o m_convergence.o m_spin.o m_steps.o m_ts_options.o
-siesta_forces.o: mixer.o parallel.o post_scf_work.o scfconvergence_test.o
-siesta_forces.o: setup_hamiltonian.o siesta_cml.o siesta_options.o
-siesta_forces.o: sparse_matrices.o state_analysis.o state_init.o sys.o
-siesta_geom.o: precision.o
-siesta_init.o: alloc.o atomlist.o bands.o densematrix.o files.o ioxv.o
-siesta_init.o: kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
-siesta_init.o: m_energies.o m_eo.o m_fdf_global.o m_forces.o m_gamma.o
-siesta_init.o: m_iostruct.o m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o
-siesta_init.o: m_timer.o m_ts_in_siesta.o m_ts_options.o m_wallclock.o
-siesta_init.o: metaforce.o molecularmechanics.o parallel.o parallelsubs.o
-siesta_init.o: phonon.o projected_DOS.o siesta_cmlsubs.o siesta_geom.o
-siesta_init.o: siesta_options.o sparse_matrices.o struct_init.o sys.o
-siesta_init.o: timestamp.o writewave.o zmatrix.o
-siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
-siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
-siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
-siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
-siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
-siesta_options.o: files.o m_fdf_global.o m_mpi_utils.o memoryinfo.o parallel.o
+siesta_options.o: files.o m_fdf_global.o m_mpi_utils.o  parallel.o
 siesta_options.o: precision.o siesta_cml.o sys.o units.o
 sparse_matrices.o: precision.o
 spatial.o: precision.o
@@ -450,7 +413,6 @@ struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_fdf_global.o m_iostruct.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
-timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 typecell.o: precision.o
 uncell.o: precision.o
@@ -509,7 +471,7 @@ bsc_cellxc.o: alloc.o bsc_xcmod.o cellxc_mod.o meshsubs.o moremeshsubs.o
 bsc_cellxc.o: parallel.o parallelsubs.o precision.o sys.o
 bsc_xcmod.o: parallel.o precision.o sys.o
 cart2frac.o: sys.o
-cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o sys.o
+cdiag.o: alloc.o m_spin.o  parallel.o precision.o sys.o
 cell_broyden_optim.o: alloc.o m_broyddj_nocomm.o parallel.o precision.o sys.o
 cell_broyden_optim.o: units.o zmatrix.o
 cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_memory.o parallel.o
@@ -581,7 +543,6 @@ ener3.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o:  parallel.o precision.o sys.o
-fft.o: alloc.o fft1d.o m_timer.o meshsubs.o parallel.o parallelsubs.o
 fft.o: precision.o sys.o
 fft1d.o: parallel.o precision.o sys.o
 final_H_f_stress.o: alloc.o atmfuncs.o atomlist.o dnaefs.o files.o grdsam.o
@@ -676,7 +637,7 @@ m_iorho.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
-m_memory.o: memoryinfo.o parallel.o sys.o
+m_memory.o:  parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_pulay.o: alloc.o atomlist.o m_spin.o parallel.o precision.o siesta_options.o
@@ -686,7 +647,6 @@ m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
-m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
 m_ts_aux_rout.o: precision.o sys.o
 m_ts_contour.o: files.o m_ts_aux_rout.o m_ts_options.o precision.o sys.o
 m_ts_electrode.o: files.o m_ts_aux_rout.o m_ts_io.o m_ts_kpoints.o
@@ -712,8 +672,8 @@ matel.o: spher_harm.o
 matrixop.o: alloc.o domain_decom.o m_mpi_utils.o parallel.o precision.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
-memory.o: alloc.o memoryinfo.o parallel.o precision.o
-memoryinfo.o: precision.o
+memory.o: alloc.o  parallel.o precision.o
+: precision.o
 meshcomm.o: meshsubs.o precision.o
 meshmatrix.o: alloc.o atomlist.o dscfcomm.o meshsubs.o parallel.o
 meshmatrix.o: parallelsubs.o precision.o
@@ -779,7 +739,7 @@ proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o  precision.o sys.o
 radfft.o: alloc.o bessph.o  precision.o
 radial.o: alloc.o precision.o xml.o
-rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
+rdiag.o: alloc.o m_diagon.o  parallel.o precision.o sys.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
@@ -825,27 +785,8 @@ siesta_cmlsubs.o: files.o parallel.o siesta_cml.o timestamp.o
 siesta_end.o: alloc.o bands.o densematrix.o domain_decom.o fixed.o m_pulay.o
 siesta_end.o: m_wallclock.o moremeshsubs.o parallel.o siesta_cml.o
 siesta_end.o: siesta_cmlsubs.o sparse_matrices.o timestamp.o
-siesta_forces.o: compute_dm.o m_convergence.o m_steps.o m_ts_global_vars.o
-siesta_forces.o: m_ts_options.o mixer.o parallel.o post_scf_work.o
-siesta_forces.o: scfconvergence_test.o setup_H0.o setup_hamiltonian.o
-siesta_forces.o: siesta_cml.o siesta_options.o state_analysis.o state_init.o
-siesta_forces.o: sys.o
 siesta_geom.o: precision.o
-siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
-siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
-siesta_init.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
-siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_timer.o
-siesta_init.o: m_ts_in_siesta.o m_ts_options.o m_wallclock.o metaforce.o
-siesta_init.o: molecularmechanics.o parallel.o parallelsubs.o phonon.o
-siesta_init.o: projected_DOS.o siesta_cmlsubs.o siesta_geom.o siesta_options.o
-siesta_init.o: sparse_matrices.o struct_init.o sys.o timestamp.o writewave.o
-siesta_init.o: zmatrix.o
-siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
-siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
-siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
-siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
-siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
-siesta_options.o: files.o memoryinfo.o parallel.o precision.o siesta_cml.o
+siesta_options.o: files.o parallel.o precision.o siesta_cml.o
 siesta_options.o: sys.o units.o
 slepc_diagon.o: alloc.o domain_decom.o fermid.o precision.o sys.o
 sparse_matrices.o: alloc.o precision.o
@@ -866,7 +807,6 @@ struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_iostruct.o parallel.o periodic_table.o siesta_cml.o
 struct_init.o: siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
-timer.o: m_timer.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 typecell.o: precision.o
 uncell.o: precision.o

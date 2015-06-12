@@ -175,8 +175,7 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   use alloc,   only: allocDefaults ! Derived type for allocation defaults
 #ifdef DEBUG_XC
 !  use m_vdwxc, only: qofrho        ! Returns q(rho,grad_rho)
-!  use m_timer, only: timer_start   ! Start CPU time counter
-!  use m_timer, only: timer_stop    ! Stop CPU time counter
+
   use debugXC, only: udebug        ! Output file unit for debug info
   use debugXC, only: setDebugOutputUnit  ! Sets udebug
 #endif /* DEBUG_XC */
@@ -266,7 +265,6 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
 #ifdef DEBUG_XC
   call setDebugOutputUnit(myNode)   ! Initialize udebug variable
-!  call timer_start( myName )  ! Start time counter
 #endif /* DEBUG_XC */
 
 ! Check dimension of arrays Dens and Vxc
@@ -675,10 +673,6 @@ subroutine atomXC( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
 ! Restore previous allocation defaults
 !  call alloc_default( restore=prevAllocDefaults )
-
-#ifdef DEBUG_XC
-!  call timer_stop( myName )   ! Stop time counter
-#endif /* DEBUG_XC */
 
 #ifdef DEBUG_XC
 !  fileUnit = 57

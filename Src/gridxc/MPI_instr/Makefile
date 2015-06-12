@@ -27,7 +27,7 @@ TEMPLATES= mpi__type_s.f90 mpi__type_sv.f90 mpi__type_v.f90 mpi__type_vs.f90
 #
 INCFLAGS=-I$(MPI_INCLUDE)
 #
-Interfaces.f90 V_S.uses VS.uses: $(TEMPLATES)
+Interfaces.f90 V_S.uses VS.uses int_logical_char.uses: $(TEMPLATES)
 	if [ -z "$(KINDS)" ] ; then  $(MAKE) kind_explorer ; fi
 	@echo "The kind numbers for single and double precision reals follow"
 	sh ${<D}/generate.sh "$(KINDS)"
@@ -35,7 +35,10 @@ Interfaces.f90 V_S.uses VS.uses: $(TEMPLATES)
 kind_explorer: kind_explorer.o
 	$(FC) -o kind_explorer $(LDFLAGS) kind_explorer.o
 #
-mpi_interfaces.o: Interfaces.o V_S.uses VS.uses
+mpi_interfaces.o: Interfaces.o V_S.uses VS.uses int_logical_char.uses
+mpi_instr.o: timer_mpi_handler.inc
+Interfaces.o: timer_mpi_handler.inc
+
 #
 # Note: The copy operation below is only a possible way to
 #       make the module files accessible.
@@ -49,7 +52,7 @@ libmpi_f90.a: mpi_interfaces.o Interfaces.o mpi_instr.o
 	-$(RANLIB) libmpi_f90.a
 #
 clean:
-	@rm -f Interfaces.f90 *.o *.mod
+	@rm -f Interfaces.f90 *.o *.mod *.uses
 	@rm -f module_built *.uses kind_explorer
 	@rm -f *.a
 

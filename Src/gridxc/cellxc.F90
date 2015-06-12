@@ -265,13 +265,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 #ifdef DEBUG_XC
   use debugXC, only: setDebugOutputUnit ! Sets udebug variable
 #endif /* DEBUG_XC */
-  ! For internal use of the library
-  use m_timer, only: timer_get     ! Returns counted times
-  use m_timer, only: timer_start       ! Starts counting time
-  use m_timer, only: timer_stop        ! Stops counting time
   ! To pass info to the caller
-  use sys, only: gridxc_timer_start       ! Starts counting time
-  use sys, only: gridxc_timer_stop        ! Stops counting time
+  use sys, only: timer_start=>gridxc_timer_start       ! Starts counting time
+  use sys, only: timer_stop=>gridxc_timer_stop        ! Stops counting time
 
   use m_vdwxc, only: vdw_localxc   ! Local LDA/GGA xc apropriate for vdW flavour
   use m_vdwxc, only: vdw_decusp    ! Cusp correction to VDW energy
@@ -288,10 +284,6 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 #ifdef DEBUG_XC
   use debugXC,   only: udebug        ! Output file unit for debug info
 #endif /* DEBUG_XC */
-
-#ifdef MPI
-  use gridxc_config, only : comm => gridxc_comm  ! MPI communicator
-#endif
 
   implicit none
 
@@ -420,7 +412,6 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 #endif /* DEBUG_XC */
 
   ! Start time counter
-  call gridxc_timer_start( myName )
   call timer_start( myName )
 
 #ifdef DEBUG_XC
@@ -1317,13 +1308,14 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Restore previous allocation defaults
   call alloc_default( restore=prevAllocDefaults )
 
-  ! Stop time counter
-  call timer_stop( myName )
-  call gridxc_timer_stop( myName )
 
-  ! Get local calculation time (excluding communications)
-  call timer_get( myName, lastTime=totTime, lastCommTime=comTime )
-  myTime = totTime - comTime
+  ! Get local calculation time (excluding communications?)
+  ! cpu or walltime?
+  ! deactivated for now
+  !  call timer_get( myName, lastTime=totTime, lastCommTime=comTime )
+  !  myTime = totTime - comTime
+
+  myTime = 0.0_dp
   sumTime  = myTime
   sumTime2 = myTime**2
 
@@ -1339,6 +1331,9 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     myName//'My CPU time, avge, rel.disp =', &
     myTime, timeAvge, timeDisp/timeAvge
 #endif /* DEBUG_XC */
+
+  ! Stop time counter
+  call timer_stop( myName )
 
 CONTAINS !---------------------------------------------------------------------
 

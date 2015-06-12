@@ -134,7 +134,7 @@ PROGRAM gridXCtest3
 
 #ifdef MPI
   ! Initialize mpi
-  call gridxc_init(comm=MPI_Comm_World)
+  call gridxc_init(comm=MPI_Comm_World,time_mpi_calls=.true.)
 #else
   call gridxc_init()
 #endif

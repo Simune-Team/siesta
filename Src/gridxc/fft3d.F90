@@ -32,7 +32,6 @@
 !   EXTERNAL procedures used:
 ! gpfa    : 1D complex FFT
 ! setgpfa : Initializes gpfa
-! timer   : CPU time counter
 !
 !******************************************************************************
 !
@@ -100,12 +99,10 @@ MODULE m_fft3d
   use mesh3D, only: fftMeshDistr ! Sets mesh distributions for FFTs
   use mesh3D, only: myMeshBox    ! Returns the mesh box of my node
   use mesh3D, only: redistributeMeshData ! Changes data distribution
-  ! For internal use of the library
-  use m_timer,only: timer_start  ! Start counting CPU time
-  use m_timer,only: timer_stop   ! Stop counting CPU time
+
   ! To pass info to the external user
-  use sys,only: gridxc_timer_start  ! Start counting CPU time
-  use sys,only: gridxc_timer_stop   ! Stop counting CPU time
+  use sys,only: timer_start=>gridxc_timer_start  ! Start counting CPU time
+  use sys,only: timer_stop=>gridxc_timer_stop   ! Stop counting CPU time
 
   ! Used module parameters
   use precision,    only: dp           ! Real double precision type
@@ -152,7 +149,6 @@ subroutine fft3d( dat, meshDistr, nMesh, r2k )
 
   ! Start time counter
   call timer_start( myName )
-  call gridxc_timer_start( myName )
 
   ! Get my node's mesh box in input mesh distribution
   call myMeshBox( nMesh, meshDistr, meshBox )
@@ -274,7 +270,6 @@ subroutine fft3d( dat, meshDistr, nMesh, r2k )
         
   ! Stop time counter
   call timer_stop( myName )
-  call gridxc_timer_stop( myName )
 
 end subroutine fft3d
 

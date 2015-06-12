@@ -72,15 +72,15 @@ $(FDF):
 #
 MIXPS_OBJS= f2kcli.o interpolation.o atom_options.o pseudopotential.o \
             sys.o m_io.o io.o alloc.o pxf.o parallel.o periodic_table.o \
-            memory.o memoryinfo.o mixps.o die.o
+            memory.o memory_log.o mixps.o handlers.o
 
 mixps:  $(FDF) $(MIXPS_OBJS)
 	$(FC) -o mixps \
 	       $(LDFLAGS) $(MIXPS_OBJS)   $(FDF) 
 #----------------------------------------------------------------------------
 FRACTIONAL_OBJS= f2kcli.o m_io.o alloc.o interpolation.o fractional.o \
-                 atom_options.o  memory.o memoryinfo.o pseudopotential.o  \
-                 io.o pxf.o parallel.o periodic_table.o die.o sys.o
+                 atom_options.o  memory.o memory_log.o pseudopotential.o  \
+                 io.o pxf.o parallel.o periodic_table.o handlers.o sys.o
 
 fractional: $(FDF) $(FRACTIONAL_OBJS)
 	$(FC) -o fractional \
@@ -122,7 +122,7 @@ broadcast_basis.o: atm_types.o parallel.o radial.o
 broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o m_mpi_utils.o
 broyden_optim.o: parallel.o precision.o units.o
 cart2frac.o: sys.o
-cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o sys.o
+cdiag.o: alloc.o m_spin.o o parallel.o precision.o sys.o
 cell_broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o
 cell_broyden_optim.o: m_mpi_utils.o parallel.o precision.o sys.o units.o
 cell_broyden_optim.o: zmatrix.o
@@ -260,7 +260,7 @@ m_iorho.o: parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
-m_memory.o: memoryinfo.o parallel.o sys.o
+m_memory.o: o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
 m_pulay.o: alloc.o atomlist.o files.o m_mpi_utils.o m_spin.o parallel.o
@@ -288,8 +288,7 @@ madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o precision.o radfft.o recipes.o spher_harm.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
-memory.o: memoryinfo.o parallel.o precision.o
-memoryinfo.o: precision.o
+memory.o: parallel.o precision.o memory_log.o
 meshmatrix.o: alloc.o atomlist.o meshsubs.o parallel.o parallelsubs.o
 meshmatrix.o: precision.o
 meshsubs.o: atm_types.o atmfuncs.o parallel.o parallelsubs.o precision.o
@@ -352,7 +351,7 @@ proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
 radfft.o: alloc.o precision.o recipes.o
 radial.o: precision.o xml.o
-rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
+rdiag.o: alloc.o o parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 recipes.o: sys.o
 redcel.o: precision.o sys.o
@@ -411,7 +410,7 @@ siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
 siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
 siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
-siesta_options.o: files.o m_fdf_global.o m_mpi_utils.o memoryinfo.o parallel.o
+siesta_options.o: files.o m_fdf_global.o m_mpi_utils.o o parallel.o
 siesta_options.o: precision.o siesta_cml.o sys.o units.o
 sparse_matrices.o: precision.o
 spatial.o: precision.o

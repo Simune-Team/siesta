@@ -766,5 +766,12 @@
           CALL     MPI_SCAN(                                            &
      &      SENDBUF, RECVBUF, COUNT, DATATYPE, OP, COMM, IERROR) 
         END SUBROUTINE MPI_SCAN_T
-       
+
+        subroutine timer_mpi(prog,iopt)
+          character(len=*), intent(in) :: prog
+          integer, intent(in)          :: iopt
+          
+          include 'timer_mpi_handler.inc'
+        end subroutine timer_mpi
+
       END MODULE MPI__type_S
