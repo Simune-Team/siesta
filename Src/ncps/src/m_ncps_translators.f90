@@ -334,7 +334,7 @@ CONTAINS
         ! Note this re-scaling to comply with the psf (Froyen)
         ! convention of writing a neutral-atom total valence charge
         !
-        if (abs(p%zval-p%gen_zval) > 1.0-3_dp) then
+        if (abs(p%zval-p%gen_zval) > 1.0e-3_dp) then
            print "(a)", "Rescaling valence charge in psml file to neutral-atom"
            print "(a,2f10.4)", "Zval, GenerationZval:", p%zval, p%gen_zval
            do ir = 2, p%nrval

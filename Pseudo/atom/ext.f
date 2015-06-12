@@ -31,7 +31,10 @@ c
 C     .. Scalar Arguments ..
       integer i
 C     ..
-      if (i .ne. 0) write(6,FMT=9000) i
+      if (i .ne. 0) then
+         write(6,FMT=9000) i
+         write(0,FMT=9000) i
+      endif
  9000 format('stop parameter =',i3)
       close(unit=1)
       close(unit=3)

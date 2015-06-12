@@ -1,4 +1,32 @@
 ------------------------------------------------------------
+June 12, 2015  Alberto Garcia       trunk-470--ncps-68
+Cancel multi-shell capability. Add psml example.
+
+* It turns out that the "multishell" capability (generation of pseudos
+in the presence of several shells with the same l) is harder than
+expected. The tails of the resulting pseudos are very long, as there
+is no perfect cancellation of the AE potential. 
+
+The atom program now aborts if asked to process these cases.
+
+* Added si64-psml example
+
+* Cosmetic fixes
+
+added:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/README
+  Pseudo/atom/Tutorial/PS_Generation/Ti/README
+  Tests/si64-psml/
+  Tests/si64-psml/makefile
+  Tests/si64-psml/si64-psml.fdf
+  Tests/si64-psml/si64-psml.pseudos
+modified:
+  Pseudo/atom/Tutorial/PS_Generation/Guide.txt
+  Pseudo/atom/ext.f
+  Pseudo/atom/pseudo.f
+  Src/ncps/src/m_ncps_translators.f90
+
+------------------------------------------------------------
 June 11, 2015  Alberto Garcia       trunk-470--ncps-67
 Update building of atom and vnl-operator
 

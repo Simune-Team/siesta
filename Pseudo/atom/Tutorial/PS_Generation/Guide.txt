@@ -40,43 +40,21 @@ corrections to the pseudopotential of the "3d in core" case.
 
 A somewhat technical example involving semicore states. Both the 5s
 and 5p states, which are normally thought of as "core states", are put
-in the valence. As previous versions of the program could only use ps
-generation configurations with one state per angular momentum channel,
-the "genuinely valence" 6s state was eliminated from the calculation
-(and also the 6p, not occupied in the atom but involved in scattering
-of solid-state electrons). The atomic configuration for
-pseudopotential generation was thus ionic. The input for this case is
-in Ba.sc-ionic.inp.
-
-Newer versions of the ATOM program do not have this limitation, and
-the full configuration can be used for pseudopotential
-generation. The input for this case is in Ba.sc-full.inp. The
-resulting pseudopotential is almost indistinguisable from the one
-generated with the ionic configuration, which attests to the soundness
-of the pseudopotential approximation. 
-
-In any case, the pseudopotential constructed is not expected to
+in the valence. As the program can only deal with one pseudized state
+per angular momentum channel, this implies the elimination of the
+"genuinely valence" 6s state from the calculation (and also the 6p,
+not occupied in the atom but involved in scattering of solid-state
+electrons). The pseudopotential constructed is not expected to
 reproduce perfectly the 6s and 6p states, as their eigenvalues are
 more than 1 eV from those of the reference states 5s and 5p, but the
 actual results are not bad at all. (Use the "gp pt.gplot" command in
 the test directory. You can change the order of the configurations in
 the Ba.test.inp file to look at the plots in sequence: only the last
-configuration is plotted.)  Note that the 6s and 6p states have a
-node, as they must be orthogonal to the 5s and 5p states,
-respectively.
+configuration is plotted.) Note that the 6s and 6p states have a node, 
+as they must be orthogonal to the 5s and 5p states, respectively.
 
 As explained in the lecture, SIESTA will generate extra
-Kleinman-Bylander projectors associated to the 5s and 5p orbitals.
-
-A technical point: in the "ionic" case, the valence charge density
-written to the pseudopotential file is re-scaled so that the total
-charge is the full valence charge (including semicore states), but its
-range and shape are different from the true full valence charge. This
-has implications for the construction of PAOs by SIESTA.
-
-* Semicore states: Ti
-
-Another example of semicore states.
+Kleinman-Bylander projectors associated to the 5s and 5p orbitals. 
 
 *Fe 
 

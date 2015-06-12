@@ -126,7 +126,9 @@ c
 !
       if (multi_shell) then
         write(6,"(/,a)") "Several valence shells have the same l"
-        write(6,"(a,/)") "Only the lowest-n shells are pseudized"
+        write(6,"(/,a)") "This program cannot deal with this"
+        call ext(899)
+!        write(6,"(a,/)") "Only the lowest-n shells are pseudized"
       endif
 
       write(6,"(a,/)") headline
