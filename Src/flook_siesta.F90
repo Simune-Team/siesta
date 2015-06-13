@@ -162,7 +162,7 @@ siesta_comm = function (_empty_tbl) end'
   ! ! ! ! ! ! !
 
 
-  function slua_get_siesta(state) result(nret)
+  function slua_get_siesta(state) result(nret) bind(c)
     use, intrinsic :: iso_c_binding, only: c_ptr, c_int
 
     use dictionary
@@ -204,7 +204,7 @@ siesta_comm = function (_empty_tbl) end'
 
   end function slua_get_siesta
 
-  function slua_return_siesta(state) result(nret)
+  function slua_return_siesta(state) result(nret) bind(c)
     use, intrinsic :: iso_c_binding, only: c_ptr, c_int
 
     use dictionary
@@ -527,7 +527,7 @@ siesta_comm = function (_empty_tbl) end'
   end subroutine key_split
 
 
-  function slua_siesta_print_objects(state) result(nret)
+  function slua_siesta_print_objects(state) result(nret) bind(c)
     use, intrinsic :: iso_c_binding, only: c_ptr, c_int
 
     use dictionary

@@ -1,4 +1,14 @@
 ----------------------------------------------------
+June 13, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-440
+Forgot bind(c) for flook
+
+* The registered function calls have to be
+  bound to c
+
+modified:
+  Src/flook_siesta.F90
+
+----------------------------------------------------
 June 12, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-439
 Changed -DMUMPS to -DTRANSIESTA_MUMPS
 
