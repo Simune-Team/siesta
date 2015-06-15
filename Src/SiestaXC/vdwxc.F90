@@ -22,7 +22,6 @@
 ! Used module procedures:
 !  use sys,         only: die               ! termination routine
 !  use mesh1D,      only: derivative        ! Derivative of a function in a mesh
-!  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
 !  use m_ggaxc      only: ggaxc             ! General GGA XC routine
 !  use m_ldaxc,     only: ldaxc             ! General LDA XC routine
 !  use mesh1D,      only: integral          ! Integral of a function in a mesh
@@ -31,8 +30,8 @@
 !  use m_radfft,    only: radfft            ! Radial fast Fourier transform
 !  use mesh1D,      only: set_interpolation ! Sets interpolation method
 !  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-!  use m_recipes,   only: spline            ! Sets spline in a uniform mesh
-!  use m_recipes,   only: splint            ! Performs spline interpolation
+!  use interpolation, only: spline            ! Sets spline interpolation
+!  use interpolation, only: splint            ! Calculates spline interpolation
 !  use m_vv_vdwxc,  only: vv_vdw_beta       ! Parameter beta of VV2010 functionl
 !  use m_vv_vdwxc,  only: vv_vdw_theta      ! Func. theta of VV2010 functional
 !  use m_vv_vdwxc,  only: vv_vdw_get_kmesh  ! Size and values of (kf,kg) mesh
@@ -242,7 +241,6 @@ MODULE m_vdwxc
 ! Used module procedures
   use sys,         only: die               ! termination routine
   use mesh1D,      only: derivative        ! Derivative of a function in a mesh
-  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
   use mesh1D,      only: integral          ! Integral of a function in a mesh
   use mesh1D,      only: get_mesh          ! Returns the mesh points
   use mesh1D,      only: get_n             ! Returns the number of mesh points
@@ -252,8 +250,8 @@ MODULE m_vdwxc
   use alloc,       only: re_alloc          ! Re-allocation routine
   use mesh1D,      only: set_interpolation ! Sets interpolation method
   use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-  use m_recipes,   only: spline            ! Sets spline in a uniform mesh
-  use m_recipes,   only: splint            ! Performs spline interpolation
+  use interpolation,only: spline           ! Sets spline interpolation
+  use interpolation,only: splint           ! Calculates spline interpolation
   use m_vv_vdwxc,  only: vv_vdw_beta       ! Parameter beta of VV2010 functional
   use m_vv_vdwxc,  only: vv_vdw_theta      ! Func. theta of VV2010 functional
   use m_vv_vdwxc,  only: vv_vdw_get_kmesh  ! Size and values of (kf,kg) mesh
@@ -934,8 +932,8 @@ subroutine pofq( q0, p0, dp0dq0 )
     p = 0
     do iq = 1,mq
       p(iq,iq) = 1
-      call generate_spline( qmesh, p(:,iq), mq, d2pdq2(:,iq) )
-!      call generate_spline( qmesh, p(:,iq), mq, d2pdq2(:,iq), 0._dp, 0._dp )
+      call spline( qmesh, p(:,iq), mq, 1.e30_dp, 1.e30_dp, d2pdq2(:,iq) )
+!      call spline( qmesh, p(:,iq), mq, 0._dp, 0._dp, d2pdq2(:,iq) )
     end do
     first_call = .false.
   end if

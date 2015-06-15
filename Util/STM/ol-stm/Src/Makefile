@@ -18,10 +18,10 @@
 # Special needs for the use of FFTW
 # You must set these symbols properly, either here or 
 # (better) in your top arch.make
-#
-#FFTW_ROOT=$(HOME)/lib/fftw-ifort
-#FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
-#FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3
+# 
+FFTW_ROOT=/usr/local/Cellar/fftw/3.3.4
+FFTW_INCFLAGS= -I$(FFTW_ROOT)/include
+FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
 #-----------------------------------------
 #
 OBJDIR=Obj
@@ -75,10 +75,10 @@ OBJS_STM = atompla.o  \
         io.o iodm.o itochar.o length.o \
         mainstm.o matvect.o memory.o \
 	neighb.o paste.o pxf.o \
-	m_recipes.o radfft.o ranger.o \
+	 radfft.o ranger.o \
         readstm.o readwaves.o \
         redata.o  reinitstm.o stm.o \
-	vacpot.o volcel.o wrout.o 
+	vacpot.o volcel.o wrout.o handlers.o
 #
 INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
 #
@@ -89,6 +89,8 @@ FDF_MAKEFILE=$(VPATH)/fdf/makefile
 FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
 $(FDF): 
 	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+                          "DEFS=$(DEFS)" \
+                          "FPPFLAGS=$(FPPFLAGS)"\
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
@@ -99,8 +101,8 @@ MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o   atm_types.o \
          radial.o spher_harm.o  basis_io.o basis_types.o \
          domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
-         sparse_matrices.o \
-         files.o flib_spline.o pseudopotential.o chemical.o xml.o
+         sparse_matrices.o interpolation.o m_fft_gpfa.o\
+         files.o   pseudopotential.o chemical.o xml.o
 #
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
 ALL_OBJS_STM=$(MOD_OBJS) $(COM_OBJS_STM)
@@ -123,7 +125,7 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o m_filter.o
-atom.o: old_atmfuncs.o periodic_table.o precision.o pseudopotential.o m_recipes.o
+atom.o: old_atmfuncs.o periodic_table.o precision.o pseudopotential.o 
 atom.o: sys.o xcmod.o
 atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
@@ -138,7 +140,7 @@ basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
 basis_specs.o: pseudopotential.o sys.o
 basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o sys.o
 bessph.o: parallel.o precision.o sys.o
-bonds.o: alloc.o atmfuncs.o mneighb.o precision.o m_recipes.o sorting.o units.o
+bonds.o: alloc.o atmfuncs.o mneighb.o precision.o  sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
 born_charge.o: siesta_geom.o siesta_options.o sparse_matrices.o
 broadcast_basis.o: atm_types.o parallel.o radial.o
@@ -206,17 +208,16 @@ efield.o: siesta_cml.o sys.o
 egandd.o: alloc.o globalise.o m_mpi_utils.o onmod.o onmod.o precision.o sys.o
 eggbox.o: parallel.o parsing.o precision.o
 electrostatic.o: atm_types.o atmfuncs.o atmparams.o precision.o radfft.o
-electrostatic.o: radial.o m_recipes.o sys.o
+electrostatic.o: radial.o  sys.o
 ener3.o: globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: globalise.o m_mpi_utils.o onmod.o precision.o
 extrapolon.o: parallel.o precision.o sys.o
-fermid.o: parallel.o precision.o m_recipes.o sys.o
+fermid.o: parallel.o precision.o  sys.o
 fft3d.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
 fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o parsing.o precision.o
-flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
 get_target_stress.o: m_mpi_utils.o parallel.o precision.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
@@ -309,7 +310,7 @@ m_ts_scattering.o: m_ts_aux_rout.o m_ts_options.o parallelsubs.o precision.o
 m_ts_scattering.o: sys.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
-matel.o: alloc.o atmfuncs.o precision.o radfft.o m_recipes.o spher_harm.o
+matel.o: alloc.o atmfuncs.o precision.o radfft.o  spher_harm.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 md_utils.o: precision.o
 memory.o: memoryinfo.o parallel.o precision.o
@@ -371,12 +372,11 @@ projected_DOS.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
 proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
-pseudopotential.o: alloc.o atom_options.o flib_spline.o precision.o sys.o
-radfft.o: alloc.o precision.o m_recipes.o
-radial.o: precision.o xml.o
+pseudopotential.o: alloc.o atom_options.o  precision.o sys.o
+radfft.o: alloc.o precision.o  m_fft_gpfa.o
+radial.o: precision.o xml.o interpolation.o
 rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
-m_recipes.o: sys.o
 redcel.o: precision.o sys.o
 reinit.o: files.o parallel.o precision.o
 remove_intramol_pressure.o: precision.o zmatrix.o

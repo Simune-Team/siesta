@@ -11,7 +11,7 @@ debugxc.f90
 fft1d.F
 fft3d.f90
 fftr.f90
-flib_spline.f90
+interpolation.f90
 ggaxc.f
 ldaxc.f
 mesh1d.f90
@@ -68,7 +68,7 @@ chkgmx.f
 dhscf.F
 electrostatic.f
 fft.F             New
-flib_spline.f90
+interpolation.f90
 forhar.f
 m_filter.f90
 m_io.f            New

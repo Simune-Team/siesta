@@ -13,7 +13,7 @@
       use precision,  only : dp
       use parallel,   only : IOnode
       use fdf,        only : fdf_boolean, fdf_integer, fdf_string, leqi
-      use m_recipes,  only:  derfc
+      use m_errorf,   only:  derfc
       use sys,        only:  die
 
       implicit none
