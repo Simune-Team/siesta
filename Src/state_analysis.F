@@ -35,7 +35,7 @@
       use m_forces
       use m_intramol_pressure, only: remove_intramol_pressure
 
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
       use flook_siesta, only : slua_call, LUA_FORCES
 #endif
 
@@ -133,7 +133,7 @@
      &               magnitude_usage = idyn==0 )
       endif
 
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
       ! We call it right after using the
       ! geometry constraints.
       ! In that way we can use both methods on top

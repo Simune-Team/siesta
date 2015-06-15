@@ -2,13 +2,13 @@
 module siesta_dicts
 
   use precision, only : dp
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
   use dictionary
 #endif
 
   implicit none
 
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
 
   ! A dictionary for all the options
   type(dict) :: options

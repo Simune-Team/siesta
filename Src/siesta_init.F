@@ -65,7 +65,7 @@
       use m_ts_init, only : ts_init
 #endif
 
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
       use siesta_dicts, only : dict_populate
       use flook_siesta, only : slua_init, slua_call, LUA_INITIALIZE
 #endif
@@ -487,7 +487,7 @@
       call ts_init(nspin,ucell,na_u,xa,lasto,no_u,inicoor,fincoor)
 #endif
 
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
 
       ! Populate dictionaries
       call dict_populate()

@@ -112,7 +112,7 @@ contains
     use m_ts_tdir
     use m_ts_hartree, only: elec_basal_plane
 
-#ifdef TRANSIESTA_MUMPS
+#ifdef SIESTA__MUMPS
     use m_ts_mumps_init, only : MUMPS_mem, MUMPS_ordering, MUMPS_block
 #endif
 
@@ -225,7 +225,7 @@ contains
        ts_method = TS_FULL
     else if ( leqi(chars,'BTD') .or. leqi(chars,'tri') ) then
        ts_method = TS_BTD
-#ifdef TRANSIESTA_MUMPS
+#ifdef SIESTA__MUMPS
     else if ( leqi(chars,'mumps') ) then
        ts_method = TS_MUMPS
 #endif
@@ -233,7 +233,7 @@ contains
        call die('Unrecognized Transiesta solution method: '//trim(chars))
     end if
 
-#ifdef TRANSIESTA_MUMPS
+#ifdef SIESTA__MUMPS
     MUMPS_mem   = fdf_get('TS.MUMPS.Mem',20)
     MUMPS_block = fdf_get('TS.MUMPS.BlockingFactor',112)
     chars = fdf_get('TS.MUMPS.Ordering','auto')
@@ -786,7 +786,7 @@ contains
              chars = 'memory'
           end if
           write(*,10)'BTD creation algorithm', trim(chars)
-#ifdef TRANSIESTA_MUMPS
+#ifdef SIESTA__MUMPS
        else if ( ts_method == TS_MUMPS ) then
           write(*,10)'Solution method', 'MUMPS'
           write(*,5)'MUMPS extra memory', MUMPS_mem,'%'

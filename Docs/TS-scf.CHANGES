@@ -1,4 +1,34 @@
 ----------------------------------------------------
+June 15, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-441
+Streamlined def names
+
+* Instead of having high chance of duplicate
+  def names we resort to this naming scheme:
+
+    SIESTA__X
+
+  where X is a library name, note that
+  there are 2 _ = __ which enables
+  distinct names without having to
+  think about module names etc.
+
+modified:
+  Src/flook_siesta.F90
+  Src/m_transiesta.F90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_mumps_scat.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_options.F90
+  Src/siesta_analysis.F
+  Src/siesta_dicts.F90
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/state_analysis.F
+
+----------------------------------------------------
 June 13, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-440
 Forgot bind(c) for flook
 

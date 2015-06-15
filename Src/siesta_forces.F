@@ -8,7 +8,7 @@
 
       subroutine siesta_forces(istep)
       use siesta_cml
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
       use flook_siesta, only : slua_call, LUA_SCF_LOOP
       use siesta_dicts
 #endif
@@ -100,7 +100,7 @@
 !       -- At the change to a TranSiesta GF run the variable "first"
 !          is implicitly reset to "true".
 
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
       ! Add the iscf constant to the list of variables
       ! that are available only in this part of the
       ! routine.
@@ -142,7 +142,7 @@
         !  -- At the top, to catch a non-positive nscf
         !  -- At the bottom, based on convergence or # of iterations
 
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
         ! Communicate with lua
         call slua_call(LUA, LUA_SCF_LOOP)
 #endif

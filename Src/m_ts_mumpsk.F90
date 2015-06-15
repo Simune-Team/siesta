@@ -18,7 +18,7 @@ module m_ts_mumpsk
 
   use precision, only : dp
 
-#ifdef TRANSIESTA_MUMPS  
+#ifdef SIESTA__MUMPS  
   use m_ts_sparse_helper
 
   use m_ts_dm_update, only : init_DM

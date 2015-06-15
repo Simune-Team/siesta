@@ -1,6 +1,6 @@
 module flook_siesta
 
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
   use flook
 
   use siesta_options
@@ -19,7 +19,7 @@ module flook_siesta
   integer, parameter, public :: LUA_FORCES = 3
   integer, parameter, public :: LUA_ANALYSIS = 4
 
-#ifdef FLOOK
+#ifdef SIESTA__FLOOK
 
   public :: slua_init, slua_call, slua_close
 

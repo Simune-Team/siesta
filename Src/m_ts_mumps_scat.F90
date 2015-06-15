@@ -16,7 +16,7 @@ module m_ts_mumps_scat
 
   use precision, only : dp
 
-#ifdef TRANSIESTA_MUMPS
+#ifdef SIESTA__MUMPS
 
   private
 
