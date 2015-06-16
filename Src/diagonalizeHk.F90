@@ -147,8 +147,6 @@ subroutine diagonalizeHk( ispin )
   use alloc,              only: de_alloc     ! Deallocation routines
 
 #ifdef MPI
-  use parallel,           only : BlockSize
-  use parallelsubs,       only : GetNodeOrbs
   use parallelsubs,       only : set_blocksizedefault
 ! 
 ! Subroutine to order the indices of the different bands after 
@@ -184,11 +182,7 @@ subroutine diagonalizeHk( ispin )
   real(dp), dimension(:), pointer :: psisave ! Coefficients of the wave function
                                              !   to be saved
 
-#ifdef MPI
-  integer  :: BlockSizeDiagon    ! Size of the block required in the standard
-                                 !   diagonalization (when we have to store
-                                 !   all the no_u bands between all the Nodes).
-#endif
+  external, integer :: numroc
 
   call timer('diagonalizeHk',1)
 
@@ -216,23 +210,14 @@ subroutine diagonalizeHk( ispin )
 ! Allocate memory related with the coefficients of the wavefunctions
 #ifdef MPI
 ! Find the number of included bands for Wannierization that will be stored 
-! per node. To compute this we have to change for a moment the 
-! precomputed BlockSize value used for the diagonalization.
-! Here we are going to store only nincbands in a number of Nodes,
-! and not no_u bands, as before.
-     BlockSizeDiagon = BlockSize
-!!    For debugging
-!     write(6,'(a,2i5)')' diagonalizeHk: BlockSizeDiagon, Blocksize = ', &
-! &                                      BlockSizeDiagon, BlockSize
-!!    End debugging
+! per node. Use a block-cyclic distribution of nincbands over Nodes.
+!
      call set_blocksizedefault(Nodes,nincbands,blocksizeincbands)
-     BlockSize = blocksizeincbands
-!!    For debugging
-!     write(6,'(a,3i5)')' diagonalizeHk: Node, BlockSizeDiagon, Blocksize = ', &
-! &                                      Node, BlockSizeDiagon, BlockSize
-!!    End debugging
-     call GetNodeOrbs(nincbands,Node,Nodes,nincbands_loc)
-     BlockSize = BlockSizeDiagon
+
+!     write(6,'(a,3i5)')' diagonalizeHk: Node, Blocksize = ', &
+! &                                      Node, BlockSizeincbands
+
+     nincbands_loc = numroc(nincbands,blocksizeincbands,node,0,nodes)
 # else
      nincbands_loc = nincbands
 #endif

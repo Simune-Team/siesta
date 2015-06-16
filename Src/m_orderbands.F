@@ -83,9 +83,9 @@ C *********************************************************************
       use m_siesta2wannier90, only : blocksizeincbands
       use m_siesta2wannier90, only : nincbands_loc
 
-      use parallel,           only : Node, Nodes, BlockSize 
+      use parallel,           only : Node, Nodes
       use parallelsubs,       only : GetNodeOrbs, LocalToGlobalOrb
-      use parallelsubs,       only : GlobalToLocalOrb, WhichNodeOrb
+      use parallelsubs,       only : GlobalToLocalOrb
       use alloc,              only : re_alloc, de_alloc
 
 !     For debugging
@@ -121,13 +121,12 @@ C *********************************************************************
       integer, allocatable, dimension(:) ::  bandspernode ! Counts how many 
                                                           !   bands are stored
                                                           !   on each node
-      integer :: BlockSizeDiagon ! Block size used in the diagonalization
-                                 !   routines (all the orbitals included)
-
 #ifdef MPI
       integer 
      .  MPIerror
 #endif
+
+      external, integer :: indxg2p
 
 !     Define the maximum number of local bands to be stored in a Node
 !     after wannierization.
@@ -188,6 +187,19 @@ C *********************************************************************
 !! End debugging
 
 !     Set up the indices of the included bands
+!
+!     Note that, in parallel operation, the Scalapack distribution
+!     results in each node handling all the coefficients of no_l
+!     eigenvectors, where no_l is the number of locally handled
+!     orbitals. (When Scalapack is used, the orbital distribution
+!     has to be block-cyclic).
+
+!     In the loop below, no_l is called noccloc.
+!     The global index of each of those noccloc eigenvectors can
+!     be computed with the LocalToGlobalOrb routine. These helper
+!     routines use implicitly the Blocksize determined at the
+!     beginning of the program.
+
       jband = 0 
       do n = 0, Nodes-1 
         call GetNodeOrbs( nuotot, n, Nodes, noccloc )
@@ -197,11 +209,11 @@ C *********************************************************************
             jband = jband + 1
 !           Identify the global band index of the included band
             index_included_band(jband) = ibandg
+
 !           Identify in which node the coefficients of this band will be stored
-            BlockSizeDiagon      = BlockSize
-            BlockSize            = blocksizeincbands
-            call WhichNodeOrb( jband, Nodes, Nodeibandg )
-            BlockSize            = BlockSizeDiagon
+            ! Use scalapack helper routine with the appropriate blocksize
+
+            Nodeibang = indxg2p(jband,blocksizeincbands,0,0,Nodes)
             node_included_band(jband) = Nodeibandg
           endif
         enddo
