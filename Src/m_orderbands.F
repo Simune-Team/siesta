@@ -126,7 +126,7 @@ C *********************************************************************
      .  MPIerror
 #endif
 
-      external, integer :: indxg2p
+      integer, external :: indxg2p
 
 !     Define the maximum number of local bands to be stored in a Node
 !     after wannierization.
@@ -213,7 +213,7 @@ C *********************************************************************
 !           Identify in which node the coefficients of this band will be stored
             ! Use scalapack helper routine with the appropriate blocksize
 
-            Nodeibang = indxg2p(jband,blocksizeincbands,0,0,Nodes)
+            Nodeibandg = indxg2p(jband,blocksizeincbands,0,0,Nodes)
             node_included_band(jband) = Nodeibandg
           endif
         enddo

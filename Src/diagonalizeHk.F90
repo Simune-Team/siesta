@@ -179,10 +179,8 @@ subroutine diagonalizeHk( ispin )
   integer  :: nsave         ! Variable to dimension the coefficient vector
 
   real(dp), dimension(:), pointer :: epsilon ! Eigenvalues of the Hamiltonian
-  real(dp), dimension(:), pointer :: psisave ! Coefficients of the wave function
-                                             !   to be saved
 
-  external, integer :: numroc
+  integer, external :: numroc
 
   call timer('diagonalizeHk',1)
 
@@ -229,14 +227,6 @@ subroutine diagonalizeHk( ispin )
  &               'coeffs',           &
  &               'diagonalizeHk' )
 
-  nsave= 2 * no_u * nincbands_loc
-  nullify( psisave )
-  call re_alloc( psisave,  1, nsave, name='psisave', routine='diagonalizeHk' )
-
-!! For debugging
-!  write(6,'(a,4i5)')' diagonalizeHk: Node, nincbands, nincbands_loc, no_l = ',&
-! &                                   Node, nincbands, nincbands_loc, no_l
-!! End debugging
 
 ! Allocate memory related with the eigenvalues of the Hamiltonian
   nullify( eo )
@@ -272,23 +262,12 @@ kpoints:                                                             &
 !   so we have to multiply then by the reciprocal lattice vector.
     call getkvector( kpointsfrac(:,ik), kvector )
 
-!!   For debugging
-!    if( IOnode ) then
-!      write(6,'(/,a,i5,3f12.5)')         &
-! &      'diagonalizeHk: kvector = ', ik, kvector
-!!      do io = 1, maxnh
-!!        write(6,'(i5,2f12.5)')io, H(io,ispin), S(io)
-!!      enddo 
-!    endif
-!!   End debugging
-
 !   Diagonalize the Hamiltonian for the k-point.
 !   Here, we obtain $\psi_{n} (\vec{k})$, where n runs between 1 and no_l
     call diagpol( ispin, nspin, no_l, no_s, no_u,                             &
  &                maxnh, numh, listhptr, listh, H, S, xijo, indxuo, kvector,  &
  &                epsilon, psi, 2, Haux, Saux )
 
-!!   For debugging
 !!   NOTE OF CAUTION: beware when comparing the coefficients of the
 !!   wave function obtained in differente machines, specially for 
 !!   degenerate states. 
@@ -296,24 +275,7 @@ kpoints:                                                             &
 !!   to the other. Also, any linear combination of eigenvectors with 
 !!   the same eigenvalue is also a solution of the Hamiltonian, nincbands
 !!   and the coefficients of the linear combination might be different.
-!     if( Node .eq. 0 ) then
-!!      if( IOnode ) then
-!!      do iband = 1, no_u
-!!        write(6,'(2i5,f12.5)') ik, iband, epsilon(iband)/eV
-!!      enddo
-!        iuo = 0
-!        do iband = 1, no_l
-!          write(6,'(a,3i5,f12.5)')                         &
-! &          'diagonalizeHk: Bef: Node, ik, iband, epsilon = ',  &
-! &          Node, ik, iband, epsilon(iband)/eV
-!          do io = 1, no_u
-!            write(6,'(a,i5,2f12.5)')         &
-! &            'diagonalizeHk: Bef: io, psi   = ', io, psi(iuo+1), psi(iuo+2)
-!            iuo = iuo + 2
-!          enddo 
-!        enddo 
-!      endif
-!!   End debugging
+
 
 !   Store the eigenvalues, while skipping the excluded bands
     eo(1:numincbands(ispin),ik) = pack(epsilon/eV,.not.isexcluded)
@@ -324,57 +286,14 @@ kpoints:                                                             &
 !   bands whose band index ranges from 1 to nincbands correspond
 !   to the bands included for wannierization.
 !   
-!   Some compilers complain if we use a complex variable as the first
-!   argument of reordpsi here, because in the actual subroutine,
-!   the first argument is a double precision array.
-!   That is why we have introduced here a temporary variable
-!   to store the coefficients that will be saved...
-    call reordpsi( psisave, psi, no_l, no_u, numbands(ispin), &
- &                 nincbands_loc )
-
-!   ... and here the temporary variable are stored in complex form here
-    iuo = 0
-    do iband = 1, nincbands_loc
-      do io = 1, no_u
-        coeffs(io,iband,ik) = cmplx(psisave(iuo+1),psisave(iuo+2),kind=dp)
-        iuo = iuo + 2
-      enddo
-    enddo
-
-!!   For debugging
-!    if( Node .eq. 4 ) then
-!      iuo = 0
-!      do iband = 1, no_l
-!        write(6,'(a,2i5,f12.5)')         &
-! &        'diagonalizeHk: Aft: ik, iband, eo = ', ik, iband, eo(iband,ik)
-!        do io = 1, no_u
-!          write(6,'(a,i5,2f12.5)')         &
-! &          'diagonalizeHk: Aft: io, psi   = ', io, psi(iuo+1), psi(iuo+2)
-!          iuo = iuo + 2
-!        enddo 
-!      enddo 
-!    endif
-!     if( IOnode ) then
-!!    if( Node .eq. 7 ) then
-!!      write(6,'(a,2i5)')' diagonalizeHk: Node, nincbands_loc = ', &
-!! &                                       Node, nincbands_loc
-!      do iband = 1, nincbands_loc
-!!        write(6,'(a,3i5,f12.5)')         &
-!! &       'diagonalizeHk: Node, ik, iband, eo = ', Node, ik, iband, eo(iband,ik)
-!        do io = 1, no_u
-!          write(6,'(a,i5,2f12.5)')         &
-! &          'diagonalizeHk: io, coeffs = ', io, coeffs(io,iband,ik)
-!        enddo 
-!      enddo 
-!    endif
-!!   End debugging
+    call reordpsi( coeffs(1:no_u,1:nincbands_loc,ik), psi, no_l, &
+                   no_u, numbands(ispin), nincbands_loc )
 
   enddo kpoints
 
   call de_alloc( Haux,    name='Haux',    routine='diagonalizeHk' )
   call de_alloc( Saux,    name='Saux',    routine='diagonalizeHk' )
   call de_alloc( psi,     name='psi',     routine='diagonalizeHk' )
-  call de_alloc( psisave, name='psisave', routine='diagonalizeHk' )
   call de_alloc( epsilon, name='epsilon', routine='diagonalizeHk' )
 
   call timer('diagonalizeHk',2)
