@@ -1,4 +1,14 @@
 ----------------------------------------------------
+June 16, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-442
+Enabled negative buffer atom specification
+
+* Instead of giving buffer atoms by direct index
+  one can now utilize negative indices.
+
+modified:
+  Src/m_ts_method.f90
+
+----------------------------------------------------
 June 15, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-441
 Streamlined def names
 

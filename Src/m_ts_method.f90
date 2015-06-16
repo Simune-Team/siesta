@@ -115,7 +115,13 @@ contains
           g = fdf_bnames(pline,1)
           if ( leqi(g,'atom') .or. leqi(g,'position') ) then
 
-             call fdf_brange(pline,r_tmp,1,na_u)
+             call fdf_brange(pline,r_tmp,-na_u,na_u)
+             ! translate to UC atoms
+             do i = 1 , r_tmp%n
+                if ( r_tmp%r(i) < 0 ) then
+                   r_tmp%r(i) = na_u + 1 + r_tmp%r(i)
+                end if
+             end do
              if ( r_aBuf%n == 0 ) then
                 call rgn_copy(r_tmp,r_aBuf)
              else if ( r_tmp%n > 0 ) then
@@ -127,6 +133,9 @@ contains
        end do
 
        if ( r_aBuf%n > 0 ) then
+          call rgn_init(r_tmp,1,val=0)
+          call rgn_complement(r_tmp,r_aBuf,r_aBuf)
+          call rgn_uniq(r_aBuf)
           do i = 1 , r_aBuf%n
              call set_type(TYP_BUFFER,r_aBuf%r(i),na_u,lasto)
           end do
