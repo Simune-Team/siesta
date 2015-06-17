@@ -456,8 +456,10 @@
 
   call de_alloc( aux,    name='aux', routine="overkkneig"    )
   call de_alloc( aux2,   name='aux2', routine="overkkneig"   )
+#ifdef MPI
   call de_alloc( auxtmp, name='auxtmp', routine="overkkneig"   )
   call de_alloc( aux2loc, name='aux2loc', routine="overkkneig"   )
+#endif
 
 ! End time counter
   call timer( 'overkkneig', 2 )

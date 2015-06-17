@@ -1,4 +1,12 @@
 ------------------------------------------------------------
+2015-06-17   Alberto Garcia trunk-467--radfunc-5--wannier-9
+Wrap some items for MPI
+
+modified:
+  Src/m_orderbands.F
+  Src/m_overkkneig.F90
+
+------------------------------------------------------------
 2015-06-17   Alberto Garcia trunk-467--radfunc-5--wannier-8
 Avoid memory leaks and some global reductions
 
