@@ -131,8 +131,8 @@
   complex(dp) :: eikr                            ! Exponential exp(i kxij )
   complex(dp) :: pipj                            ! Product of the coefficients
                                                  !   of the wave functions
-  complex(dp), dimension(:,:), pointer :: aux
-  complex(dp), dimension(:,:), pointer :: aux2
+  complex(dp), dimension(:,:), pointer :: aux => null()
+  complex(dp), dimension(:,:), pointer :: aux2 => null()
 
   integer     :: imu_global                      ! Global index of the atom orbi
 #ifdef MPI
@@ -153,8 +153,8 @@
   integer     :: noccband_sequential             ! Global index of the 
                                                  !   occupied band in sequential
                                                  !   notation
-  complex(dp), dimension(:,:), pointer :: auxtmp ! Temporal arrays used to  
-  complex(dp), dimension(:,:), pointer :: aux2loc!   broadcast auxiliary
+  complex(dp), dimension(:,:), pointer :: auxtmp => null() ! Temporal arrays used to  
+  complex(dp), dimension(:,:), pointer :: aux2loc => null() !   broadcast auxiliary
                                                  !   matrices
 #endif
 
@@ -202,7 +202,6 @@
 ! The second dimension of aux is equal to the number of orbitals
 ! in the local node, nuo, since that is the maximum number of 
 ! orbitals mu (in the previous equation) that can be computed locally
-  nullify( aux )
   call re_alloc( aux, 1, nuotot, 1, nuo, name='aux', routine='overkkneig')
 
   aux(:,:)  = cmplx(0.0_dp,0.0_dp,kind=dp)
@@ -278,7 +277,6 @@
 ! and store it in an auxiliary matrix
 
 ! Allocate local memory
-  nullify( aux2 )
   call re_alloc( aux2, 1, nbandsocc, 1, nuotot,      &
  &               name='aux2', routine='overkkneig' )
 
@@ -302,7 +300,6 @@
 ! auxtmp follows the same structure as aux:
 ! First index: all the atomic orbitals in the unit cell (nuotot)
 ! Second index: maximum number of atomic orbitals stored in a local node
-  nullify( auxtmp )
   call re_alloc( auxtmp, 1, nuotot, 1, norb_max_loc, &
  &               name='auxtmp', routine='overkkneig' )
   auxtmp(:,:)  = cmplx(0.0_dp,0.0_dp,kind=dp)
@@ -369,7 +366,6 @@
   enddo         ! End loop on nodes (inode)
 
 ! Allocate workspace array for global reduction
-  nullify( aux2loc )
   call re_alloc( aux2loc, 1, nbandsocc, 1, nuotot,      &
  &               name='aux2loc', routine='overkkneig' )
 ! Global reduction of aux2loc matrix
@@ -428,7 +424,6 @@
 
 #ifdef MPI
 ! Allocate workspace array for global reduction
-  nullify( aux2loc )
   call re_alloc( aux2loc, 1, nbandsocc, 1, nbandsocc,      &
  &               name='aux2loc', routine='overkkneig' )
 ! Global reduction of aux2loc matrix
@@ -459,8 +454,10 @@
 !  endif
 !! End debugging
 
-  call de_alloc( aux,    name='aux'    )
-  call de_alloc( aux2,   name='aux2'   )
+  call de_alloc( aux,    name='aux', routine="overkkneig"    )
+  call de_alloc( aux2,   name='aux2', routine="overkkneig"   )
+  call de_alloc( auxtmp, name='auxtmp', routine="overkkneig"   )
+  call de_alloc( aux2loc, name='aux2loc', routine="overkkneig"   )
 
 ! End time counter
   call timer( 'overkkneig', 2 )

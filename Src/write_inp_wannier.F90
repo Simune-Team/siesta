@@ -400,7 +400,7 @@ subroutine writeunk( ispin )
 ! Read if !transport_mode=lcr and tran_read_ht=.FALSE. for use in 
 ! automated lcr transportcalculations.
 !
-!￼The periodic part of the Bloch states represented on a
+! The periodic part of the Bloch states represented on a
 ! regular real space grid, 
 ! indexed by k-point p (from 1 to num_kpts) and
 !  spin s (‘1’ for ‘up’, ‘2’ for‘down’).
@@ -438,28 +438,15 @@ subroutine writeunk( ispin )
   use neighbour,          only: x0            ! Position of the point around
                                               !   which we are going to compute
                                               !   the neighbours
-  use neighbour,          only: mneighb       ! Subroutine to compute the
-                                              !   number of neighbours
-  use siesta_geom,        only: isa           ! Species index of each atom
   use siesta_geom,        only: xa            ! Atomic positions
   use siesta_geom,        only: na_u          ! Number of atoms in the unit cell
-  use atomlist,           only: lasto         ! Position of last orbital 
-                                              !   of each atom
-  use atomlist,           only: iphorb        ! Orbital index of each  orbital
-                                              !   in its atom
-  use atomlist,           only: indxuo        ! Index of equivalent orbital  
-                                              !   in "u" cell
   use atomlist,           only: rmaxo         ! Maximum cutoff for atomic orb.
   use atomlist,           only: no_u          ! Number of orbitals in unit cell
-                                              ! NOTE: When running in parallel,
-                                              !   this is core independent
-  use atmfuncs,           only: rcut          ! Function that determines the
-                                              !   cutoff radius of a given
-                                              !   orbital of a given specie
-  use atmfuncs,           only: phiatm        ! Subroutine to compute the
-                                              !   atomic orbital at a point
   use m_siesta2wannier90, only: latvec        ! Lattice vectors in real 
                                               !   space
+
+  use neighbour,          only: mneighb       ! Subroutine to compute the
+                                              !   number of neighbours
   use m_siesta2wannier90, only: numincbands   ! Number of bands for 
                                               !   wannierization
                                               !   after excluding bands  
@@ -535,23 +522,7 @@ subroutine writeunk( ispin )
   logical      :: unk_format, unk_format_default ! Are the UNK files written in 
                                 !   binary (.true.) or ASCII (.false.)
 !
-! Variables related with the mesh point
-!
-  real(dp)     :: rvector(3)    ! Coordinates of the mesh point in real space
-  real(dp)     :: rvectorarg(3) ! Relative position of the orbital center with
-                                !   respect to the real space point
-
-!
-! Variables related with the list of non-vanishing atoms at a given point
-!
-  integer      :: ineig        ! Counter for the loop on neighbours
-  integer      :: nneig        ! Number of non-vanishing atoms at a given point
-  integer      :: iatom        ! Atomic index of the neighbour
-  integer      :: ispecie      ! Atomic species of the neighbour
-  integer      :: iso          ! Orbital index of each orbital in its atom
-  integer      :: iorbital     ! Orbital index
-  integer      :: iorbital0    ! Orbital index in the unit cell
-
+  integer      :: nneig        ! Dummy variable for initialization call
 !
 ! Variables related with the wave function
 !
@@ -562,30 +533,17 @@ subroutine writeunk( ispin )
                                !   eigenvector of the Hamiltonian will be
                                !   computed
   integer      :: nincbands    ! Number of included bands for wannierization
-  real(dp)     :: phi          ! Value of an atomic orbital at a point
-  real(dp)     :: grphi(3)     ! Value of the gradient of an atomic orbital
-                               !   at a given point
-  real(dp)     :: phase        ! Phase of the exponential
-!                  e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
-  complex(dp)  :: exponential  ! Value of the previous exponential
-  complex(dp)  :: periodicpart ! Value of the periodic part of the wavefunc
 
-  complex(dp), dimension(:,:), pointer :: psiloc ! Coefficients of the wave
-                                                 !  function (in complex format)
-
-! periodic part of the wave functions at the point of the mesh
 #ifdef MPI
   integer     :: MPIerror
-  complex(dp), dimension(:,:),     pointer :: auxpsi ! Temporal array for the
-                                             !   the global reduction of psi   
-  complex(dp), dimension(:,:,:,:), pointer :: auxloc ! Temporal array for the
+  complex(dp), dimension(:,:,:,:), pointer :: auxloc => null()! Temporal array for the
                                              !   the global reduction of buffer
-  complex(wannier90dp), pointer :: buffer(:,:,:,:)   ! Variable where the 
+  complex(wannier90dp), pointer :: buffer(:,:,:,:) => null()  ! Variable where the 
                                              !   periodic part of the wave
                                              !   functions at the points of the
                                              !   grid will be computed
 #else
-  complex(wannier90dp), pointer :: buffer(:,:,:)
+  complex(wannier90dp), pointer :: buffer(:,:,:) => null()
 #endif
 
 !
@@ -630,19 +588,7 @@ subroutine writeunk( ispin )
   unk_nz     = fdf_get( 'Siesta2Wannier90.UnkGrid3',      unk_nz_default     )
   unk_format = fdf_get( 'Siesta2Wannier90.UnkGridBinary', unk_format_default )
 
-!! For debugging
-!   write(6,'(a,4i5)')'writeunk: Node, unk_nx, ny, nz =', &
-! &                              Node, unk_nx, unk_ny, unk_nz
-!! End debugging
-
-! Allocate memory for the buffer
-  nullify(buffer)
-
 #ifdef MPI
-!!   For debugging
-!    write(6,'(a,3i5)')' writeunk: Node, nincbands, nincbands_loc = ', &
-! &                                Node, nincbands, nincbands_loc
-!!   End debugging
     call re_alloc( buffer,              &
  &                 1, nincbands,        &
  &                 1, unk_nx,           &
@@ -659,11 +605,6 @@ subroutine writeunk( ispin )
  &                 routine='writeunk' )
 #endif
 
-! Allocate memory related with a local variable where the coefficients 
-! of the eigenvector at the k-point will be stored
-  nullify( psiloc )
-  call re_alloc( psiloc, 1, no_u, 1, nincbands, 'psiloc', 'writeunk' )
-
 kpoints:                 &
   do ik = 1, numkpoints
 !   Compute the wave vector in bohr^-1 for every vector in the list
@@ -671,46 +612,6 @@ kpoints:                 &
 !   Remember that kpointsfrac are read from the .nnkp file in reduced units, 
 !   so we have to multiply then by the reciprocal lattice vector.
     call getkvector( kpointsfrac(:,ik), kvector )
-
-!   Initialize the local coefficient matrix for every k-point
-    psiloc(:,:) = cmplx(0.0_dp, 0.0_dp, kind=dp)
-
-#ifdef MPI
-!   Store the local bands in this node on a complex variable
-    do iband = 1, nincbands_loc
-      iband_global = which_band_in_node(Node,iband)
-      iband_sequential = sequential_index_included_bands(iband_global)
-!! For debugging
-!      write(6,'(a,4i5)')                                       &
-! &      ' writeunk: Node, iband, iband_global, sequential = ', &
-! &                  Node, iband, iband_global, iband_sequential
-!! End debugging
-
-      do io = 1, no_u
-        psiloc(io,iband_sequential) = coeffs(io,iband,ik)
-      enddo
-    enddo
-!   Allocate workspace array for global reduction
-    nullify( auxpsi )
-    call re_alloc( auxpsi, 1, no_u, 1, nincbands,   &
- &                 name='auxpsi', routine='writeunk' )
-!   Global reduction of auxpsi matrix
-    auxpsi(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
-    call MPI_AllReduce( psiloc(1,1), auxpsi(1,1),   &
- &                      no_u*nincbands,             &
- &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
-!   After this reduction, all the nodes know the coefficients of the
-!   wave function for the point ik, for all the bands and for all atomic
-!   orbitals
-    psiloc(:,:) = auxpsi(:,:)
-#else
-    do iband = 1, nincbands
-      do io = 1, no_u
-        psiloc(io,iband) = coeffs(io,iband,ik)
-      enddo
-    enddo
-#endif
-
 !
 !   Initialize neighbour subroutine.
 !   The reallocation of the different arrays is done within neighb,
@@ -720,19 +621,6 @@ kpoints:                 &
     x0(:) = 0.0_dp
     call mneighb( latvec, rmaxo, na_u, xa, 0, 0, nneig )
   
-!!   For debugging
-!    write(6,'(a,f12.5,2x,i10)')    &
-!    write(6,*)    &
-! &    'writeunk: rmaxo, nneig = ', &
-! &        rmaxo, nneig
-!    do io = 1, 3
-!      write(6,'(a,3f15.10)') 'writeunk, latvec =', latvec(:,io)
-!    enddo
-!    do io = 1, na_u
-!      write(6,'(a,i5,3f15.10)') 'writeunk, ia, xa =', io, xa(:,io)
-!    enddo
-!!   End debugging
-
 !   Open the output file
     if( IOnode ) then
       write(unkfilename,"('UNK',i5.5,'.',i1)"), ik, ispin
@@ -756,30 +644,177 @@ kpoints:                 &
       endif
     endif
 
+
+#ifndef MPI
+!
+! The serial version is easy enough
+!
+BAND_LOOP:  do iband = 1, nincbands
+   do iz = 1, unk_nz
+      do iy = 1, unk_ny
+         do ix = 1, unk_nx
+            ! periodicpart is an internal function, for
+            ! clarity
+            buffer(ix,iy,iz) = periodicpart(ix,iy,iz,coeffs(:,iband,ik))
+         enddo
+      enddo
+   enddo
+
+   if( .not. unk_format ) then
+           
+      do iz = 1, unk_nz
+         do iy = 1, unk_ny
+            do ix = 1, unk_nx
+               write(unkfileunit,'(2f12.5)') &
+                   real(buffer(ix,iy,iz)), aimag(buffer(ix,iy,iz))
+            enddo 
+         enddo 
+      enddo  
+   else
+      write(unkfileunit) & 
+           &          (((buffer(ix,iy,iz),ix=1,unk_nx),iy=1,unk_ny),iz=1,unk_nz)
+   endif
+
+enddo  BAND_LOOP
+
+#else
+!
+!   In MPI, the goal of writing directly the UNK files complicates
+!   the logic and forces inefficiencies. This should be rewritten.
+!   Each node should compute its bands and send the info to the master
+!   node with the appropriate tags. The master node can then write
+!   the information to a properly indexed netCDF file.
+!
 !   For each k-point, initialize the buffer in all the nodes
     buffer = cmplx(0.0_dp,0.0_dp,kind=dp)
 
-BAND_LOOP:                                                           &
-#ifdef MPI
-    do iband = 1, nincbands_loc
+BAND_LOOP:   do iband = 1, nincbands_loc
 !     Identify the global index of the local band          
-       iband_global = which_band_in_node(Node,iband)
-       iband_sequential = sequential_index_included_bands(iband_global)
-!! For debugging
-!       write(6,'(a,4i5)')                                       &
-! &       ' writeunk: Node, iband, iband_global, sequential = ', &
-! &                   Node, iband, iband_global, iband_sequential
-!! End debugging
-#else
-    do iband = 1, nincbands
-      iband_sequential = iband
+   iband_global = which_band_in_node(Node,iband)
+   iband_sequential = sequential_index_included_bands(iband_global)
+
+   do iz = 1, unk_nz
+      do iy = 1, unk_ny
+         do ix = 1, unk_nx
+            buffer(iband_sequential,ix,iy,iz) = &
+              periodicpart(ix,iy,iz,coeffs(:,iband,ik))
+         enddo
+      enddo
+   enddo
+enddo  BAND_LOOP
+
+!   A reduction is need since we need all the matrix buffer in IOnode
+!   (to dump it into a file), but the results for some of the bands might
+!   be computed in other nodes.
+
+!   Allocate workspace array for reduction
+!   We assume that the IOnode is the root node...
+
+    if (IOnode) then
+       call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
+            &                 name='auxloc', routine='writeunk' )
+       auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
+    endif
+
+    call MPI_Reduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &
+                     nincbands*unk_nx*unk_ny*unk_nz,                    &
+                     MPI_double_complex,MPI_sum,0,MPI_Comm_World,MPIerror )
+
+    if( IOnode ) then
+      buffer(:,:,:,:) = auxloc(:,:,:,:)
+
+      if( .not. unk_format ) then
+        do iband = 1, nincbands
+          do iz = 1, unk_nz
+            do iy = 1, unk_ny
+              do ix = 1, unk_nx
+                write(unkfileunit,'(2f12.5)')   &
+ &                real(buffer(iband,ix,iy,iz)), aimag(buffer(iband,ix,iy,iz))
+              enddo ! Enddo in ix
+            enddo ! Enddo in iy
+          enddo ! Enddo in iz
+        enddo ! Enddo in bands
+      else
+        do iband = 1, nincbands
+          write(unkfileunit)                                   & 
+ &          ((( buffer(iband,ix,iy,iz), ix = 1, unk_nx ),      &
+ &                                      iy = 1, unk_ny ),      & 
+ &                                      iz = 1, unk_nz )
+        enddo 
+      endif
+    endif  ! IOnode
 #endif
-!     For debugging
-!      write(6,'(a,2i5)')' writeunk, Node, iband = ', Node, iband
-!     End debugging
-      do iz = 1, unk_nz
-        do iy = 1, unk_ny
-          do ix = 1, unk_nx
+
+! Close the output file
+    if( IOnode ) then
+      call io_close(unkfileunit)
+    endif
+
+  enddo kpoints
+
+! Deallocate some of the variables
+#ifdef MPI
+  if (IONode) then
+     call de_alloc( auxloc, name='auxloc', routine='writeunk' )
+  endif
+#endif
+  call de_alloc( buffer, name='buffer', routine='writeunk' )
+
+! End time counter
+  call timer('writeunk',2)
+  return
+
+  1992 call die('swan: Error creating UNK files')
+
+CONTAINS
+
+  ! This function will see the relevant variables by
+  ! host association
+
+  complex(dp) function periodicpart(ix,iy,iz,psi) 
+
+  use siesta_geom,        only: isa           ! Species index of each atom
+  use atomlist,           only: lasto         ! Position of last orbital 
+                                              !   of each atom
+  use atomlist,           only: iphorb        ! Orbital index of each  orbital
+                                              !   in its atom
+  use atomlist,           only: indxuo        ! Index of equivalent orbital  
+                                              !   in "u" cell
+  use atmfuncs,           only: rcut          ! Function that determines the
+                                              !   cutoff radius of a given
+                                              !   orbital of a given specie
+  use atmfuncs,           only: phiatm        ! Subroutine to compute the
+                                              !   atomic orbital at a point
+
+!-----------------------------------------------------------------
+    integer, intent(in) :: ix, iy, iz
+    complex(dp), intent(in) :: psi(:)
+
+
+! Variables related with the mesh point
+!
+  real(dp)     :: rvector(3)    ! Coordinates of the mesh point in real space
+  real(dp)     :: rvectorarg(3) ! Relative position of the orbital center with
+                                !   respect to the real space point
+
+!
+! Variables related with the list of non-vanishing atoms at a given point
+!
+  integer      :: ineig        ! Counter for the loop on neighbours
+  integer      :: iatom        ! Atomic index of the neighbour
+  integer      :: ispecie      ! Atomic species of the neighbour
+  integer      :: iso          ! Orbital index of each orbital in its atom
+  integer      :: iorbital     ! Orbital index
+  integer      :: iorbital0    ! Orbital index in the unit cell
+
+  real(dp)     :: phi          ! Value of an atomic orbital at a point
+  real(dp)     :: grphi(3)     ! Value of the gradient of an atomic orbital
+                               !   at a given point
+  real(dp)     :: phase        ! Phase of the exponential
+!                  e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+  complex(dp)  :: exponential  ! Value of the previous exponential
+
+
             rvector(:) = ( latvec(:,1) * (ix-1) ) / unk_nx             &
  &                     + ( latvec(:,2) * (iy-1) ) / unk_ny             &
  &                     + ( latvec(:,3) * (iz-1) ) / unk_nz
@@ -840,108 +875,16 @@ BAND_LOOP:                                                           &
 !                 \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )
                   call phiatm( ispecie, iso, rvectorarg, phi, grphi )
 !                 Compute the sum that gives the periodic part of the orbital
-                  periodicpart = periodicpart +                          &
-                    exponential * psiloc(iorbital0,iband_sequential) * phi
+                  periodicpart = periodicpart + &
+                                   exponential * psi(iorbital0) * phi
                 endif
               enddo ! Enddo on orbitals that do not vanish
             enddo ! Enddo on atoms that have orbitals that do not vanish 
-#ifdef MPI
-            buffer(iband_sequential,ix,iy,iz) = periodicpart
-!           Transform Bohr^(-3/2) to Ang^(-3/2)
-            buffer(iband_sequential,ix,iy,iz) = &
- &             buffer(iband_sequential,ix,iy,iz) * 2.59775721_dp
-#else
-            buffer(ix,iy,iz) = periodicpart
-!           Transform Bohr^(-3/2) to Ang^(-3/2)
-            buffer(ix,iy,iz) = buffer(ix,iy,iz) * 2.59775721_dp
-#endif
-!!            For debugging
-!             write(6,'(3i5,6f12.5)')ix, iy, iz, rvector(:), buffer(ix,iy,iz)
-!!            End debugging
-          enddo ! Enddo in ix
-        enddo ! Enddo in iy
-      enddo ! Enddo in iz
-
-!     Dump the buffer in the output file
 !
-#ifndef MPI
-      if( IOnode ) then
-        if( .not. unk_format ) then
-          do iz = 1, unk_nz
-            do iy = 1, unk_ny
-              do ix = 1, unk_nx
-                write(unkfileunit,'(2f12.5)') &
- &                real(buffer(ix,iy,iz)), aimag(buffer(ix,iy,iz))
-              enddo ! Enddo in ix
-            enddo ! Enddo in iy
-          enddo ! Enddo in iz
-        else
-          write(unkfileunit) & 
- &          (((buffer(ix,iy,iz),ix=1,unk_nx),iy=1,unk_ny),iz=1,unk_nz)
-        endif
-      endif
-#endif
+!           Transform Bohr^(-3/2) to Ang^(-3/2)
+!
+            periodicpart =  2.59775721_dp * periodicpart
 
-    enddo  BAND_LOOP
-
-!   Global reduction is required because we need all the matrix buffer in IOnode
-!   (to dump it into a file),but the results for some of the bands might
-!   be computed in other nodes.
-#ifdef MPI
-!   Allocate workspace array for global reduction
-    nullify( auxloc )
-    call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
- &                 name='auxloc', routine='writeunk' )
-!   Global reduction of auxloc matrix
-    auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
-    call MPI_AllReduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &
- &                      nincbands*unk_nx*unk_ny*unk_nz,                    &
- &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
-    buffer(:,:,:,:) = auxloc(:,:,:,:)
-
-    if( IOnode ) then
-      if( .not. unk_format ) then
-        do iband = 1, nincbands
-          do iz = 1, unk_nz
-            do iy = 1, unk_ny
-              do ix = 1, unk_nx
-                write(unkfileunit,'(2f12.5)')   &
- &                real(buffer(iband,ix,iy,iz)), aimag(buffer(iband,ix,iy,iz))
-              enddo ! Enddo in ix
-            enddo ! Enddo in iy
-          enddo ! Enddo in iz
-        enddo ! Enddo in bands
-      else
-        do iband = 1, nincbands
-          write(unkfileunit)                                   & 
- &          ((( buffer(iband,ix,iy,iz), ix = 1, unk_nx ),      &
- &                                      iy = 1, unk_ny ),      & 
- &                                      iz = 1, unk_nz )
-        enddo 
-      endif
-    endif
-#endif
-
-! Close the output file
-    if( IOnode ) then
-      call io_close(unkfileunit)
-    endif
-
-  enddo kpoints
-
-! Deallocate some of the variables
-#ifdef MPI
-  call de_alloc( auxloc, name='auxloc', routine='writeunk' )
-  call de_alloc( auxpsi, name='auxpsi', routine='writeunk' )
-#endif
-  call de_alloc( buffer, name='buffer', routine='writeunk' )
-  call de_alloc( psiloc, name='psiloc', routine='writeunk' )
-
-! End time counter
-  call timer('writeunk',2)
-  return
-
-  1992 call die('swan: Error creating UNK files')
-
+          end function periodicpart
 
 end subroutine writeunk

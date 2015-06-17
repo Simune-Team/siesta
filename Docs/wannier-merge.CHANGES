@@ -1,4 +1,143 @@
 ------------------------------------------------------------
+2015-06-17   Alberto Garcia trunk-467--radfunc-5--wannier-8
+Avoid memory leaks and some global reductions
+
+Some pointers were repeatedly 'nullified', hence causing memory leaks.
+
+Uses of global reduction where only a reduction to the IONode was
+needed have been fixed.
+
+Some instances of globalization of band data can be avoided. So far
+only the case of writeunk has been fixed.
+
+modified:
+  Src/amn.F90
+  Src/diagonalizeHk.F90
+  Src/m_orderbands.F
+  Src/m_overkkneig.F90
+  Src/mmn.F90
+  Src/reordpsi.F
+  Src/siesta2wannier90.F90
+  Src/write_inp_wannier.F90
+
+------------------------------------------------------------
+2015-06-15   Alberto Garcia trunk-467--radfunc-5--wannier-7
+Merge re-ordering changes by J. Junquera + sync to trunk-470
+
+  Sync to trunk-470
+  
+   Build fixes in Util and SiestaXC
+   Replacement of NR routines. Fix for charge-conf variables.
+  
+  removed:
+    Src/m_recipes.f
+    Src/ran3.f
+    Util/Grid/libfft.f
+    Util/Macroave/Src/recipes.f
+  added:
+    Src/errorf.f
+    Src/m_fft_gpfa.F
+    Src/randomg.f90
+    Util/Gen-basis/local_die.F
+    Util/Grid/fft3d.f
+    Util/Grid/local_die.f90
+    Util/Macroave/Src/local_die.f
+    Util/STM/ol-stm/Src/handlers.f
+  renamed:
+    Src/flib_spline.f90 => Src/interpolation.f90
+  modified:
+    Docs/siesta.tex
+    Src/Fstack.T90
+    Src/Makefile
+    Src/SiestaXC/atomxc.F90
+    Src/SiestaXC/lib-makefile
+    Src/SiestaXC/makefile
+    Src/SiestaXC/mesh1d.f90
+    Src/SiestaXC/siestaXC.files
+    Src/SiestaXC/siestaxc.F90
+    Src/SiestaXC/vdwxc.F90
+    Src/SiestaXC/vv_vdwxc.F90
+    Src/atom.F
+    Src/atomlwf.F
+    Src/basis_specs.f
+    Src/basis_types.f
+    Src/bonds.f
+    Src/chempot.F
+    Src/die.F
+    Src/electrostatic.f
+    Src/fermid.F
+    Src/m_convergence.f90
+    Src/m_filter.f90
+    Src/m_rhog.F90
+    Src/matel.f
+    Src/new_matel.f
+    Src/pseudopotential.f
+    Src/radfft.f
+    Src/radial.f
+    Src/sorting.f
+    Src/vmb.F
+    Util/Denchar/Src/Makefile
+    Util/Gen-basis/Makefile
+    Util/Gen-basis/gen-basis.F
+    Util/Grid/cdf_fft.F90
+    Util/Grid/makefile
+    Util/Macroave/Src/Makefile
+    Util/Macroave/Src/macroave.f
+    Util/Macroave/Src/paste.f
+    Util/Optimizer/amoeba.f
+    Util/Optimizer/simplex.f90
+    Util/STM/ol-stm/Src/Makefile
+    Util/STM/ol-stm/Src/atompla.f
+    Util/STM/ol-stm/Src/extrapolate.f
+    Util/STM/ol-stm/Src/fftw3_mymod.f90
+    Util/STM/ol-stm/Src/readstm.f
+    Util/STM/ol-stm/Src/reinitstm.f
+    Util/STM/ol-stm/Src/stm.f
+    Util/SiestaSubroutine/FmixMD/Src/Makefile
+    Util/VCA/Makefile
+    Util/VCA/fractional.f
+    Util/VCA/mixps.f
+    Util/build_all.sh
+    Src/interpolation.f90
+
+* Order_bands declared as a subroutine to be used only in a parallel calculation
+
+* The call to order_index is done only in case of a parallel
+  calculation
+
+* Small changes in the tex file to document the number of bands
+  included in the simulation in case of dealing with metals.
+
+* New version of the manual including the different options for the
+  interface with Wannier90
+
+* Small changes in the declaration of some variables that were
+  erroneously declared only if the parallel MPI directive was
+  activated.
+
+* The indices of the bands that each node manages have changed, 
+  according to the new block-cyclic distribution 
+  
+  added:
+    Src/m_orderbands.F
+  modified:
+    Src/Makefile
+    Src/amn.F90                 ! New manage of the indices of the bands,
+                                !   using the arrays populated in m_orderbands.f
+    Src/diagonalizeHk.F90
+    Src/ksv.f                   ! A comment for debugging has been deleted
+    Src/m_overkkneig.F90        ! New manage of the indices of the bands,
+                                !   using the arrays populated in m_orderbands.f
+    Src/parallelsubs.F          ! Special case added if the number of bands
+                                !   is smaller than the number of nodes in 
+                                !   set_blocksizedefault
+    Src/reordpsi.F              ! New manage of the indices of the bands,
+                                !   using the arrays populated in m_orderbands.f
+    Src/siesta2wannier90.F90    ! Typo in one comment corrected
+    Src/write_inp_wannier.F90   ! New manage of the indices of the bands,
+                                !   using the arrays populated in m_orderbands.f
+
+------------------------------------------------------------
 2015-05-04   Alberto Garcia trunk-467--radfunc-5--wannier-6
 Sync to trunk-467
 

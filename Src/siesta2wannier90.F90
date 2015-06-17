@@ -121,11 +121,11 @@ module m_siesta2wannier90
 ! Variables related with the coefficients of the wavefunctions and
 ! eigenvalues at the Wannier90 k-point mesh
 !
-  complex(dp), pointer :: coeffs(:,:,:)  ! Coefficients of the wavefunctions.
+  complex(dp), pointer :: coeffs(:,:,:) => null() ! Coefficients of the wavefunctions.
                                          !   First  index: orbital
                                          !   Second index: band
                                          !   Third  index: k-point
-  real(dp),    pointer :: eo(:,:)        ! Eigenvalues of the Hamiltonian 
+  real(dp),    pointer :: eo(:,:) => null()        ! Eigenvalues of the Hamiltonian 
                                          !   at the numkpoints introduced in
                                          !   kpointsfrac 
                                          !   First  index: band index
@@ -136,7 +136,7 @@ module m_siesta2wannier90
 ! Output matrices
 !
 
- complex(dp), pointer :: Mmnkb(:,:,:,:)  ! Matrix of the overlaps of 
+ complex(dp), pointer :: Mmnkb(:,:,:,:) => null()  ! Matrix of the overlaps of 
                                          !   periodic parts of Bloch waves.
                                          !   <u_{ik}|u_{jk+b}>
                                          !   The first two indices refer to 
@@ -147,7 +147,7 @@ module m_siesta2wannier90
                                          !   Marzari et al., RMP 84, 1419 (2012)
                                          !   The third index refer to the kpoint
                                          !   The fourth index refer to the neig
- complex(dp), pointer :: Amnmat(:,:,:)   ! Projections of a trial function
+ complex(dp), pointer :: Amnmat(:,:,:) => null()  ! Projections of a trial function
                                          !   with a Bloch orbital
                                          !   <\psi_{m k}|g_n>
 
