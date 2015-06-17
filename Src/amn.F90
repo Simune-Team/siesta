@@ -218,10 +218,6 @@ subroutine amn( ispin )
 ! will be computed 
 
   nincbands = numincbands( ispin )
-!! For debugging
-!  write(6,'(a,3i5)')' amn: Node, nincbands, nincbands_loc = ', &
-! &                         Node, nincbands, nincbands_loc
-!! End debugging
 
   call re_alloc( Amnmat,         &
  &               1, nincbands,   &
@@ -260,46 +256,16 @@ kpoints:                 &
 !   Initialize the local coefficient matrix for every k-point
     psiloc(:,:) = cmplx(0.0_dp, 0.0_dp, kind=dp)
 
-!!   For debugging
-!!    if( IOnode ) then
-!    if( Node .eq. 4 ) then
-!      do iband = 1, nincbands_loc
-!        write(6,'(a,i5,f12.5)')         &
-! &        'amn: iband, eo = ', iband, epsilon(iband)
-!        do io = 1, no_u
-!          write(6,'(a,2i5,2f12.5)')         &
-! &          'amn: io, iband, psi   = ', io, iband, coeffs(io,iband,ik)
-!        enddo 
-!      enddo 
-!    endif
-!!   End debugging
-
 #ifdef MPI
 !   Store the local bands in this node on a complex variable
     do iband = 1, nincbands_loc
       iband_global = which_band_in_node(Node,iband)
       iband_sequential = sequential_index_included_bands(iband_global)
-!! For debugging
-!      write(6,'(a,4i5)')                                         &
-! &      ' amn: Node, iband, iband_global, iband_sequential  = ', &
-! &             Node, iband, iband_global, iband_sequential
-!! End debugging
 
       do io = 1, no_u
         psiloc(io,iband_sequential) = coeffs(io,iband,ik)
       enddo
 
-!!     For debugging
-!!      if( IOnode ) then
-!      if( Node .eq. 4 ) then
-!        do io = 1, no_u
-!          write(6,'(a,4i5,2f12.5)')                   &
-! &          'amn: Node, io, iband, psiloc1 = ',       &
-! &                Node, io, iband, iband_sequential,  &
-! &                psiloc(io,iband_sequential)
-!        enddo
-!      endif
-!!     End debugging
     enddo
 !   Allocate workspace array for global reduction
     call re_alloc( auxloc, 1, no_u, 1, nincbands,   &
@@ -321,21 +287,12 @@ kpoints:                 &
     enddo
 #endif
 
-!! For debugging
-!!  if( IOnode ) then
-!  if( Node .eq. 0 ) then
-!    do iband = 1, nincbands
-!      do io = 1, no_u
-!        write(6,'(a,3i5,2f12.5)')                   &
-! &        'amn: Node, io, iband, psiloc = ',       &
-! &              Node, io, iband, psiloc(io,iband)
-!      enddo
-!    enddo
-!  endif
-!! End debugging
-
-
 !   Loop on the projections that will be computed in the local node
+!   It would be better if each node computes all projections for
+!   all its locally stored bands, instead of some projections for
+!   all the bands...  In this way we will save the globalization of
+!   band data.
+!
 #ifdef MPI
     do iproj = 1+Node, numproj, Nodes
 #else
@@ -378,25 +335,6 @@ OrbitalQueue:                                                        &
         phase = -1.0_dp * dot_product( kvector, item%center )
         exponential = exp( iu * phase )
 
-!!       For debugging
-!        write(6,'(/,a,2i5)')               &
-! &        'amn: Node, specie        = ', Node, item%specie
-!        write(6,'(a,2i5)')                 &
-! &        'amn: Node, specieindex   = ', Node, item%specieindex
-!        write(6,'(a,2i5)')                 &
-! &        'amn: Node, globalindex   = ', Node, item%globalindex
-!        write(6,'(a,2i5)')                 &
-! &        'amn: Node, globalindexorb= ', Node, globalindexorbital
-!        write(6,'(a,2i5)')                 &
-! &        'amn: Node, globalindexpro= ', Node, globalindexproj
-!        write(6,'(a,i5,3f12.5)')           &
-! &        'amn: Node, r12           = ', Node, r12
-!        write(6,'(a,i5,f12.5)')            &
-! &        'amn: Node, overlap       = ', Node, overlap
-!        write(6,'(a,i5,3f12.5)')           &
-! &        'amn: Node, gradient      = ', Node, gradient
-!!       End debugging
-
 !       Loop over occupied bands
 Band_loop:                                                           &
         do iband = 1, nincbands
@@ -411,31 +349,36 @@ Band_loop:                                                           &
 
     enddo   ! Loop on projections on the local node
 
-!   Global reduction is required because we need all the matrix Amnmat in IOnode
+!   We need all the matrix Amnmat in IOnode
 !   (to dump it into a file),but the results for some of the bands might
 !   be computed in other nodes.
 #ifdef MPI
-!   Allocate workspace array for global reduction
-    call re_alloc( auxloc, 1, nincbands, 1, numproj,    &
- &                 name='auxloc', routine='Amn' )
-!   Global reduction of auxloc matrix
-    auxloc(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
-    call MPI_AllReduce( Amnmat(1,1,ik), auxloc(1,1),                       &
+!   Allocate workspace array for reduction
+    if (IONode) then
+       call re_alloc( auxloc, 1, nincbands, 1, numproj,    &
+            &                 name='auxloc', routine='Amn' )
+       auxloc(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
+    endif
+
+    call MPI_Reduce( Amnmat(1,1,ik), auxloc(1,1),                       &
  &                      nincbands*numproj,                                 &
- &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
-    Amnmat(:,:,ik) = auxloc(:,:)
+ &                      MPI_double_complex,MPI_sum,0,MPI_Comm_World,MPIerror )
+    if (IONode) then
+       Amnmat(:,:,ik) = auxloc(:,:)
+    endif
 #endif
   enddo kpoints
-
-! Deallocate some of the arrays
-  call de_alloc( psiloc,  'psiloc',  'Amn' )
-#ifdef MPI
-  call de_alloc( auxloc,  'auxloc',  'Amn' )
-#endif
 
 ! Write the Amn overlap matrices in a file, in the format required
 ! by Wannier90
   if( IOnode ) call writeamn( ispin )
+
+! Deallocate some of the arrays
+  call de_alloc( psiloc,  'psiloc',  'Amn' )
+#ifdef MPI
+  if (IOnode) call de_alloc( auxloc,  'auxloc',  'Amn' )
+#endif
+
 
 ! End time counter
   call timer( 'Amn', 2 )
