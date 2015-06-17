@@ -400,7 +400,7 @@ subroutine writeunk( ispin )
 ! Read if !transport_mode=lcr and tran_read_ht=.FALSE. for use in 
 ! automated lcr transportcalculations.
 !
-!￼The periodic part of the Bloch states represented on a
+! The periodic part of the Bloch states represented on a
 ! regular real space grid, 
 ! indexed by k-point p (from 1 to num_kpts) and
 !  spin s (‘1’ for ‘up’, ‘2’ for‘down’).
@@ -438,28 +438,15 @@ subroutine writeunk( ispin )
   use neighbour,          only: x0            ! Position of the point around
                                               !   which we are going to compute
                                               !   the neighbours
-  use neighbour,          only: mneighb       ! Subroutine to compute the
-                                              !   number of neighbours
-  use siesta_geom,        only: isa           ! Species index of each atom
   use siesta_geom,        only: xa            ! Atomic positions
   use siesta_geom,        only: na_u          ! Number of atoms in the unit cell
-  use atomlist,           only: lasto         ! Position of last orbital 
-                                              !   of each atom
-  use atomlist,           only: iphorb        ! Orbital index of each  orbital
-                                              !   in its atom
-  use atomlist,           only: indxuo        ! Index of equivalent orbital  
-                                              !   in "u" cell
   use atomlist,           only: rmaxo         ! Maximum cutoff for atomic orb.
   use atomlist,           only: no_u          ! Number of orbitals in unit cell
-                                              ! NOTE: When running in parallel,
-                                              !   this is core independent
-  use atmfuncs,           only: rcut          ! Function that determines the
-                                              !   cutoff radius of a given
-                                              !   orbital of a given specie
-  use atmfuncs,           only: phiatm        ! Subroutine to compute the
-                                              !   atomic orbital at a point
   use m_siesta2wannier90, only: latvec        ! Lattice vectors in real 
                                               !   space
+
+  use neighbour,          only: mneighb       ! Subroutine to compute the
+                                              !   number of neighbours
   use m_siesta2wannier90, only: numincbands   ! Number of bands for 
                                               !   wannierization
                                               !   after excluding bands  
@@ -535,23 +522,7 @@ subroutine writeunk( ispin )
   logical      :: unk_format, unk_format_default ! Are the UNK files written in 
                                 !   binary (.true.) or ASCII (.false.)
 !
-! Variables related with the mesh point
-!
-  real(dp)     :: rvector(3)    ! Coordinates of the mesh point in real space
-  real(dp)     :: rvectorarg(3) ! Relative position of the orbital center with
-                                !   respect to the real space point
-
-!
-! Variables related with the list of non-vanishing atoms at a given point
-!
-  integer      :: ineig        ! Counter for the loop on neighbours
-  integer      :: nneig        ! Number of non-vanishing atoms at a given point
-  integer      :: iatom        ! Atomic index of the neighbour
-  integer      :: ispecie      ! Atomic species of the neighbour
-  integer      :: iso          ! Orbital index of each orbital in its atom
-  integer      :: iorbital     ! Orbital index
-  integer      :: iorbital0    ! Orbital index in the unit cell
-
+  integer      :: nneig        ! Dummy variable for initialization call
 !
 ! Variables related with the wave function
 !
@@ -562,29 +533,22 @@ subroutine writeunk( ispin )
                                !   eigenvector of the Hamiltonian will be
                                !   computed
   integer      :: nincbands    ! Number of included bands for wannierization
-  real(dp)     :: phi          ! Value of an atomic orbital at a point
-  real(dp)     :: grphi(3)     ! Value of the gradient of an atomic orbital
-                               !   at a given point
-  real(dp)     :: phase        ! Phase of the exponential
-!                  e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
-  complex(dp)  :: exponential  ! Value of the previous exponential
 
   complex(dp), dimension(:,:), pointer :: psiloc ! Coefficients of the wave
                                                  !  function (in complex format)
 
-! periodic part of the wave functions at the point of the mesh
 #ifdef MPI
   integer     :: MPIerror
-  complex(dp), dimension(:,:),     pointer :: auxpsi ! Temporal array for the
+  complex(dp), dimension(:,:),     pointer :: auxpsi => null() ! Temporal array for the
                                              !   the global reduction of psi   
-  complex(dp), dimension(:,:,:,:), pointer :: auxloc ! Temporal array for the
+  complex(dp), dimension(:,:,:,:), pointer :: auxloc => null()! Temporal array for the
                                              !   the global reduction of buffer
-  complex(wannier90dp), pointer :: buffer(:,:,:,:)   ! Variable where the 
+  complex(wannier90dp), pointer :: buffer(:,:,:,:) => null()  ! Variable where the 
                                              !   periodic part of the wave
                                              !   functions at the points of the
                                              !   grid will be computed
 #else
-  complex(wannier90dp), pointer :: buffer(:,:,:)
+  complex(wannier90dp), pointer :: buffer(:,:,:) => null()
 #endif
 
 !
@@ -634,9 +598,6 @@ subroutine writeunk( ispin )
 ! &                              Node, unk_nx, unk_ny, unk_nz
 !! End debugging
 
-! Allocate memory for the buffer
-  nullify(buffer)
-
 #ifdef MPI
 !!   For debugging
 !    write(6,'(a,3i5)')' writeunk: Node, nincbands, nincbands_loc = ', &
@@ -660,7 +621,6 @@ subroutine writeunk( ispin )
 
 ! Allocate memory related with a local variable where the coefficients 
 ! of the eigenvector at the k-point will be stored
-  nullify( psiloc )
   call re_alloc( psiloc, 1, no_u, 1, nincbands, 'psiloc', 'writeunk' )
 
 kpoints:                 &
@@ -679,18 +639,12 @@ kpoints:                 &
     do iband = 1, nincbands_loc
       iband_global = which_band_in_node(Node,iband)
       iband_sequential = sequential_index_included_bands(iband_global)
-!! For debugging
-!      write(6,'(a,4i5)')                                       &
-! &      ' writeunk: Node, iband, iband_global, sequential = ', &
-! &                  Node, iband, iband_global, iband_sequential
-!! End debugging
 
       do io = 1, no_u
         psiloc(io,iband_sequential) = coeffs(io,iband,ik)
       enddo
     enddo
 !   Allocate workspace array for global reduction
-    nullify( auxpsi )
     call re_alloc( auxpsi, 1, no_u, 1, nincbands,   &
  &                 name='auxpsi', routine='writeunk' )
 !   Global reduction of auxpsi matrix
@@ -807,7 +761,6 @@ enddo  BAND_LOOP
 !   IONode.
 
 !   Allocate workspace array for global reduction
-    nullify( auxloc )
     call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
  &                 name='auxloc', routine='writeunk' )
 !   Global reduction of auxloc matrix
@@ -868,7 +821,46 @@ CONTAINS
 
   complex(dp) function periodicpart(ix,iy,iz) 
 
+  use siesta_geom,        only: isa           ! Species index of each atom
+  use atomlist,           only: lasto         ! Position of last orbital 
+                                              !   of each atom
+  use atomlist,           only: iphorb        ! Orbital index of each  orbital
+                                              !   in its atom
+  use atomlist,           only: indxuo        ! Index of equivalent orbital  
+                                              !   in "u" cell
+  use atmfuncs,           only: rcut          ! Function that determines the
+                                              !   cutoff radius of a given
+                                              !   orbital of a given specie
+  use atmfuncs,           only: phiatm        ! Subroutine to compute the
+                                              !   atomic orbital at a point
+
+!-----------------------------------------------------------------
     integer, intent(in) :: ix, iy, iz
+
+
+! Variables related with the mesh point
+!
+  real(dp)     :: rvector(3)    ! Coordinates of the mesh point in real space
+  real(dp)     :: rvectorarg(3) ! Relative position of the orbital center with
+                                !   respect to the real space point
+
+!
+! Variables related with the list of non-vanishing atoms at a given point
+!
+  integer      :: ineig        ! Counter for the loop on neighbours
+  integer      :: iatom        ! Atomic index of the neighbour
+  integer      :: ispecie      ! Atomic species of the neighbour
+  integer      :: iso          ! Orbital index of each orbital in its atom
+  integer      :: iorbital     ! Orbital index
+  integer      :: iorbital0    ! Orbital index in the unit cell
+
+  real(dp)     :: phi          ! Value of an atomic orbital at a point
+  real(dp)     :: grphi(3)     ! Value of the gradient of an atomic orbital
+                               !   at a given point
+  real(dp)     :: phase        ! Phase of the exponential
+!                  e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+  complex(dp)  :: exponential  ! Value of the previous exponential
+
 
             rvector(:) = ( latvec(:,1) * (ix-1) ) / unk_nx             &
  &                     + ( latvec(:,2) * (iy-1) ) / unk_ny             &
