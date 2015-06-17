@@ -534,13 +534,8 @@ subroutine writeunk( ispin )
                                !   computed
   integer      :: nincbands    ! Number of included bands for wannierization
 
-  complex(dp), dimension(:,:), pointer :: psiloc ! Coefficients of the wave
-                                                 !  function (in complex format)
-
 #ifdef MPI
   integer     :: MPIerror
-  complex(dp), dimension(:,:),     pointer :: auxpsi => null() ! Temporal array for the
-                                             !   the global reduction of psi   
   complex(dp), dimension(:,:,:,:), pointer :: auxloc => null()! Temporal array for the
                                              !   the global reduction of buffer
   complex(wannier90dp), pointer :: buffer(:,:,:,:) => null()  ! Variable where the 
@@ -593,16 +588,7 @@ subroutine writeunk( ispin )
   unk_nz     = fdf_get( 'Siesta2Wannier90.UnkGrid3',      unk_nz_default     )
   unk_format = fdf_get( 'Siesta2Wannier90.UnkGridBinary', unk_format_default )
 
-!! For debugging
-!   write(6,'(a,4i5)')'writeunk: Node, unk_nx, ny, nz =', &
-! &                              Node, unk_nx, unk_ny, unk_nz
-!! End debugging
-
 #ifdef MPI
-!!   For debugging
-!    write(6,'(a,3i5)')' writeunk: Node, nincbands, nincbands_loc = ', &
-! &                                Node, nincbands, nincbands_loc
-!!   End debugging
     call re_alloc( buffer,              &
  &                 1, nincbands,        &
  &                 1, unk_nx,           &
@@ -619,10 +605,6 @@ subroutine writeunk( ispin )
  &                 routine='writeunk' )
 #endif
 
-! Allocate memory related with a local variable where the coefficients 
-! of the eigenvector at the k-point will be stored
-  call re_alloc( psiloc, 1, no_u, 1, nincbands, 'psiloc', 'writeunk' )
-
 kpoints:                 &
   do ik = 1, numkpoints
 !   Compute the wave vector in bohr^-1 for every vector in the list
@@ -630,40 +612,6 @@ kpoints:                 &
 !   Remember that kpointsfrac are read from the .nnkp file in reduced units, 
 !   so we have to multiply then by the reciprocal lattice vector.
     call getkvector( kpointsfrac(:,ik), kvector )
-
-!   Initialize the local coefficient matrix for every k-point
-    psiloc(:,:) = cmplx(0.0_dp, 0.0_dp, kind=dp)
-
-#ifdef MPI
-!   Store the local bands in this node on a complex variable
-    do iband = 1, nincbands_loc
-      iband_global = which_band_in_node(Node,iband)
-      iband_sequential = sequential_index_included_bands(iband_global)
-
-      do io = 1, no_u
-        psiloc(io,iband_sequential) = coeffs(io,iband,ik)
-      enddo
-    enddo
-!   Allocate workspace array for global reduction
-    call re_alloc( auxpsi, 1, no_u, 1, nincbands,   &
- &                 name='auxpsi', routine='writeunk' )
-!   Global reduction of auxpsi matrix
-    auxpsi(:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
-    call MPI_AllReduce( psiloc(1,1), auxpsi(1,1),   &
- &                      no_u*nincbands,             &
- &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
-!   After this reduction, all the nodes know the coefficients of the
-!   wave function for the point ik, for all the bands and for all atomic
-!   orbitals    .... WHY???
-
-    psiloc(:,:) = auxpsi(:,:)
-#else
-    do iband = 1, nincbands
-      do io = 1, no_u
-        psiloc(io,iband) = coeffs(io,iband,ik)
-      enddo
-    enddo
-#endif
 !
 !   Initialize neighbour subroutine.
 !   The reallocation of the different arrays is done within neighb,
@@ -707,7 +655,7 @@ BAND_LOOP:  do iband = 1, nincbands
          do ix = 1, unk_nx
             ! periodicpart is an internal function, for
             ! clarity
-            buffer(ix,iy,iz) = periodicpart(ix,iy,iz)
+            buffer(ix,iy,iz) = periodicpart(ix,iy,iz,coeffs(:,iband,ik))
          enddo
       enddo
    enddo
@@ -748,29 +696,33 @@ BAND_LOOP:   do iband = 1, nincbands_loc
    do iz = 1, unk_nz
       do iy = 1, unk_ny
          do ix = 1, unk_nx
-            buffer(iband_sequential,ix,iy,iz) = periodicpart(ix,iy,iz)
+            buffer(iband_sequential,ix,iy,iz) = &
+              periodicpart(ix,iy,iz,coeffs(:,iband,ik))
          enddo
       enddo
    enddo
 enddo  BAND_LOOP
 
-!   Global reduction is required because we need all the matrix buffer in IOnode
-!   (to dump it into a file),but the results for some of the bands might
+!   A reduction is need since we need all the matrix buffer in IOnode
+!   (to dump it into a file), but the results for some of the bands might
 !   be computed in other nodes.
-!   We do not actually need a global reduction, but only a reduction to the
-!   IONode.
 
-!   Allocate workspace array for global reduction
-    call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
- &                 name='auxloc', routine='writeunk' )
-!   Global reduction of auxloc matrix
-    auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
-    call MPI_AllReduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &
- &                      nincbands*unk_nx*unk_ny*unk_nz,                    &
- &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
-    buffer(:,:,:,:) = auxloc(:,:,:,:)
+!   Allocate workspace array for reduction
+!   We assume that the IOnode is the root node...
+
+    if (IOnode) then
+       call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
+            &                 name='auxloc', routine='writeunk' )
+       auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
+    endif
+
+    call MPI_Reduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &
+                     nincbands*unk_nx*unk_ny*unk_nz,                    &
+                     MPI_double_complex,MPI_sum,0,MPI_Comm_World,MPIerror )
 
     if( IOnode ) then
+      buffer(:,:,:,:) = auxloc(:,:,:,:)
+
       if( .not. unk_format ) then
         do iband = 1, nincbands
           do iz = 1, unk_nz
@@ -790,7 +742,7 @@ enddo  BAND_LOOP
  &                                      iz = 1, unk_nz )
         enddo 
       endif
-    endif
+    endif  ! IOnode
 #endif
 
 ! Close the output file
@@ -802,11 +754,11 @@ enddo  BAND_LOOP
 
 ! Deallocate some of the variables
 #ifdef MPI
-  call de_alloc( auxloc, name='auxloc', routine='writeunk' )
-  call de_alloc( auxpsi, name='auxpsi', routine='writeunk' )
+  if (IONode) then
+     call de_alloc( auxloc, name='auxloc', routine='writeunk' )
+  endif
 #endif
   call de_alloc( buffer, name='buffer', routine='writeunk' )
-  call de_alloc( psiloc, name='psiloc', routine='writeunk' )
 
 ! End time counter
   call timer('writeunk',2)
@@ -819,7 +771,7 @@ CONTAINS
   ! This function will see the relevant variables by
   ! host association
 
-  complex(dp) function periodicpart(ix,iy,iz) 
+  complex(dp) function periodicpart(ix,iy,iz,psi) 
 
   use siesta_geom,        only: isa           ! Species index of each atom
   use atomlist,           only: lasto         ! Position of last orbital 
@@ -836,6 +788,7 @@ CONTAINS
 
 !-----------------------------------------------------------------
     integer, intent(in) :: ix, iy, iz
+    complex(dp), intent(in) :: psi(:)
 
 
 ! Variables related with the mesh point
@@ -922,16 +875,13 @@ CONTAINS
 !                 \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )
                   call phiatm( ispecie, iso, rvectorarg, phi, grphi )
 !                 Compute the sum that gives the periodic part of the orbital
-                  periodicpart = periodicpart +                          &
-                    exponential * psiloc(iorbital0,iband_sequential) * phi
+                  periodicpart = periodicpart + &
+                                   exponential * psi(iorbital0) * phi
                 endif
               enddo ! Enddo on orbitals that do not vanish
             enddo ! Enddo on atoms that have orbitals that do not vanish 
-!!            For debugging
-!             write(6,'(3i5,6f12.5)')ix, iy, iz, rvector(:), buffer(ix,iy,iz)
-!!            End debugging
 !
-!           Conver units
+!           Transform Bohr^(-3/2) to Ang^(-3/2)
 !
             periodicpart =  2.59775721_dp * periodicpart
 
