@@ -61,6 +61,7 @@
 !     2 for the second lowest band
 !     and so on
 
+#ifdef MPI
       CONTAINS
 
       subroutine order_index( nuo, nuotot, numincbands )
@@ -121,12 +122,10 @@ C *********************************************************************
       integer, allocatable, dimension(:) ::  bandspernode ! Counts how many 
                                                           !   bands are stored
                                                           !   on each node
-#ifdef MPI
       integer 
      .  MPIerror
-#endif
-
       integer, external :: indxg2p
+
 
 !     Define the maximum number of local bands to be stored in a Node
 !     after wannierization.
@@ -272,5 +271,5 @@ C *********************************************************************
       deallocate(bandspernode)
 
       end subroutine order_index
-
+#endif
       end module m_orderbands
