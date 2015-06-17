@@ -144,7 +144,7 @@ subroutine Mmn( ispin )
   real(dp) :: foldfrac(3)    ! Auxiliar vector to compute the folding vector
   complex(dp) :: eigx        ! Exponential exp^( i * gxij )
 
-  complex(dp), pointer   :: coeffs2(:,:) ! Auxiliary array to store the 
+  complex(dp), pointer   :: coeffs2(:,:) => null()! Auxiliary array to store the 
                                          !    coefficients of the wave function
 
 
@@ -163,7 +163,6 @@ subroutine Mmn( ispin )
 ! $\vec{b}$ runs over all the neighbours of the k-point.
 ! These last two variables are read from the .nnkp file.
   nincbands = numincbands( ispin )
-  nullify( Mmnkb )
   call re_alloc( Mmnkb,          &
  &               1, nincbands,   &
  &               1, nincbands,   &
@@ -173,7 +172,6 @@ subroutine Mmn( ispin )
  &               'Mmn' )
 
 ! Allocate the variable to store the coefficients of the wavefunction
-  nullify( coeffs2 )
   call re_alloc( coeffs2,           &
  &               1, no_u,           &
  &               1, nincbands_loc,  &
@@ -308,6 +306,8 @@ kneighbour:                      &
 ! Write the Mmn overlap matrices in a file, in the format required
 ! by Wannier90
   if( IOnode ) call writemmn( ispin )
+
+  call de_alloc(coeffs2, 'coeffs2', 'Mmn')
 
 ! End time counter
   call timer( 'Mmn', 2 )

@@ -170,7 +170,7 @@ subroutine amn( ispin )
   real(dp) :: kvector(3)      ! k-point vector in the Wannier90 grid
 
 
-  complex(dp), dimension(:,:), pointer :: psiloc ! Coefficients of the wave
+  complex(dp), dimension(:,:), pointer :: psiloc => null() ! Coefficients of the wave
                                              !   function (in complex format)
   complex(dp) :: exponential                 ! Exponential of exp( i * phase )
   complex(dp) :: cstar                       ! Conjugate of the coefficient
@@ -192,7 +192,7 @@ subroutine amn( ispin )
   integer     :: iband_global                ! Global index for a band
   integer     :: iband_sequential            ! Sequential index of the band
   integer     :: MPIerror
-  complex(dp), dimension(:,:), pointer :: auxloc ! Temporal array for the
+  complex(dp), dimension(:,:), pointer :: auxloc => null()! Temporal array for the
                                              !   the global reduction of Amnmat
 #endif 
 
@@ -223,7 +223,6 @@ subroutine amn( ispin )
 ! &                         Node, nincbands, nincbands_loc
 !! End debugging
 
-  nullify( Amnmat )
   call re_alloc( Amnmat,         &
  &               1, nincbands,   &
  &               1, numproj,     &
@@ -236,7 +235,6 @@ subroutine amn( ispin )
 ! of the eigenvector at the k-point will be stored
 ! Only nincbands are retained for wannierization, that is why the
 ! second argument is made equal to nincbands
-  nullify( psiloc )
   call re_alloc( psiloc, 1, no_u, 1, nincbands, 'psiloc', 'Amn' )
 
 ! Assign a global index to the trial functions
@@ -304,7 +302,6 @@ kpoints:                 &
 !!     End debugging
     enddo
 !   Allocate workspace array for global reduction
-    nullify( auxloc )
     call re_alloc( auxloc, 1, no_u, 1, nincbands,   &
  &                 name='auxloc', routine='Amn' )
 !   Global reduction of auxloc matrix
@@ -419,7 +416,6 @@ Band_loop:                                                           &
 !   be computed in other nodes.
 #ifdef MPI
 !   Allocate workspace array for global reduction
-    nullify( auxloc )
     call re_alloc( auxloc, 1, nincbands, 1, numproj,    &
  &                 name='auxloc', routine='Amn' )
 !   Global reduction of auxloc matrix
