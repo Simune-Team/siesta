@@ -568,7 +568,6 @@ subroutine writeunk( ispin )
   real(dp)     :: phase        ! Phase of the exponential
 !                  e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
   complex(dp)  :: exponential  ! Value of the previous exponential
-  complex(dp)  :: periodicpart ! Value of the periodic part of the wavefunc
 
   complex(dp), dimension(:,:), pointer :: psiloc ! Coefficients of the wave
                                                  !  function (in complex format)
@@ -701,7 +700,8 @@ kpoints:                 &
  &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
 !   After this reduction, all the nodes know the coefficients of the
 !   wave function for the point ik, for all the bands and for all atomic
-!   orbitals
+!   orbitals    .... WHY???
+
     psiloc(:,:) = auxpsi(:,:)
 #else
     do iband = 1, nincbands
@@ -710,7 +710,6 @@ kpoints:                 &
       enddo
     enddo
 #endif
-
 !
 !   Initialize neighbour subroutine.
 !   The reallocation of the different arrays is done within neighb,
@@ -720,19 +719,6 @@ kpoints:                 &
     x0(:) = 0.0_dp
     call mneighb( latvec, rmaxo, na_u, xa, 0, 0, nneig )
   
-!!   For debugging
-!    write(6,'(a,f12.5,2x,i10)')    &
-!    write(6,*)    &
-! &    'writeunk: rmaxo, nneig = ', &
-! &        rmaxo, nneig
-!    do io = 1, 3
-!      write(6,'(a,3f15.10)') 'writeunk, latvec =', latvec(:,io)
-!    enddo
-!    do io = 1, na_u
-!      write(6,'(a,i5,3f15.10)') 'writeunk, ia, xa =', io, xa(:,io)
-!    enddo
-!!   End debugging
-
 !   Open the output file
     if( IOnode ) then
       write(unkfilename,"('UNK',i5.5,'.',i1)"), ik, ispin
@@ -756,30 +742,134 @@ kpoints:                 &
       endif
     endif
 
+
+#ifndef MPI
+!
+! The serial version is easy enough
+!
+BAND_LOOP:  do iband = 1, nincbands
+   do iz = 1, unk_nz
+      do iy = 1, unk_ny
+         do ix = 1, unk_nx
+            ! periodicpart is an internal function, for
+            ! clarity
+            buffer(ix,iy,iz) = periodicpart(ix,iy,iz)
+         enddo
+      enddo
+   enddo
+
+   if( .not. unk_format ) then
+           
+      do iz = 1, unk_nz
+         do iy = 1, unk_ny
+            do ix = 1, unk_nx
+               write(unkfileunit,'(2f12.5)') &
+                   real(buffer(ix,iy,iz)), aimag(buffer(ix,iy,iz))
+            enddo 
+         enddo 
+      enddo  
+   else
+      write(unkfileunit) & 
+           &          (((buffer(ix,iy,iz),ix=1,unk_nx),iy=1,unk_ny),iz=1,unk_nz)
+   endif
+
+enddo  BAND_LOOP
+
+#else
+!
+!   In MPI, the goal of writing directly the UNK files complicates
+!   the logic and forces inefficiencies. This should be rewritten.
+!   Each node should compute its bands and send the info to the master
+!   node with the appropriate tags. The master node can then write
+!   the information to a properly indexed netCDF file.
+!
 !   For each k-point, initialize the buffer in all the nodes
     buffer = cmplx(0.0_dp,0.0_dp,kind=dp)
 
-BAND_LOOP:                                                           &
-#ifdef MPI
-    do iband = 1, nincbands_loc
+BAND_LOOP:   do iband = 1, nincbands_loc
 !     Identify the global index of the local band          
-       iband_global = which_band_in_node(Node,iband)
-       iband_sequential = sequential_index_included_bands(iband_global)
-!! For debugging
-!       write(6,'(a,4i5)')                                       &
-! &       ' writeunk: Node, iband, iband_global, sequential = ', &
-! &                   Node, iband, iband_global, iband_sequential
-!! End debugging
-#else
-    do iband = 1, nincbands
-      iband_sequential = iband
+   iband_global = which_band_in_node(Node,iband)
+   iband_sequential = sequential_index_included_bands(iband_global)
+
+   do iz = 1, unk_nz
+      do iy = 1, unk_ny
+         do ix = 1, unk_nx
+            buffer(iband_sequential,ix,iy,iz) = periodicpart(ix,iy,iz)
+         enddo
+      enddo
+   enddo
+enddo  BAND_LOOP
+
+!   Global reduction is required because we need all the matrix buffer in IOnode
+!   (to dump it into a file),but the results for some of the bands might
+!   be computed in other nodes.
+!   We do not actually need a global reduction, but only a reduction to the
+!   IONode.
+
+!   Allocate workspace array for global reduction
+    nullify( auxloc )
+    call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
+ &                 name='auxloc', routine='writeunk' )
+!   Global reduction of auxloc matrix
+    auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
+    call MPI_AllReduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &
+ &                      nincbands*unk_nx*unk_ny*unk_nz,                    &
+ &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
+    buffer(:,:,:,:) = auxloc(:,:,:,:)
+
+    if( IOnode ) then
+      if( .not. unk_format ) then
+        do iband = 1, nincbands
+          do iz = 1, unk_nz
+            do iy = 1, unk_ny
+              do ix = 1, unk_nx
+                write(unkfileunit,'(2f12.5)')   &
+ &                real(buffer(iband,ix,iy,iz)), aimag(buffer(iband,ix,iy,iz))
+              enddo ! Enddo in ix
+            enddo ! Enddo in iy
+          enddo ! Enddo in iz
+        enddo ! Enddo in bands
+      else
+        do iband = 1, nincbands
+          write(unkfileunit)                                   & 
+ &          ((( buffer(iband,ix,iy,iz), ix = 1, unk_nx ),      &
+ &                                      iy = 1, unk_ny ),      & 
+ &                                      iz = 1, unk_nz )
+        enddo 
+      endif
+    endif
 #endif
-!     For debugging
-!      write(6,'(a,2i5)')' writeunk, Node, iband = ', Node, iband
-!     End debugging
-      do iz = 1, unk_nz
-        do iy = 1, unk_ny
-          do ix = 1, unk_nx
+
+! Close the output file
+    if( IOnode ) then
+      call io_close(unkfileunit)
+    endif
+
+  enddo kpoints
+
+! Deallocate some of the variables
+#ifdef MPI
+  call de_alloc( auxloc, name='auxloc', routine='writeunk' )
+  call de_alloc( auxpsi, name='auxpsi', routine='writeunk' )
+#endif
+  call de_alloc( buffer, name='buffer', routine='writeunk' )
+  call de_alloc( psiloc, name='psiloc', routine='writeunk' )
+
+! End time counter
+  call timer('writeunk',2)
+  return
+
+  1992 call die('swan: Error creating UNK files')
+
+CONTAINS
+
+  ! This function will see the relevant variables by
+  ! host association
+
+  complex(dp) function periodicpart(ix,iy,iz) 
+
+    integer, intent(in) :: ix, iy, iz
+
             rvector(:) = ( latvec(:,1) * (ix-1) ) / unk_nx             &
  &                     + ( latvec(:,2) * (iy-1) ) / unk_ny             &
  &                     + ( latvec(:,3) * (iz-1) ) / unk_nz
@@ -845,103 +935,14 @@ BAND_LOOP:                                                           &
                 endif
               enddo ! Enddo on orbitals that do not vanish
             enddo ! Enddo on atoms that have orbitals that do not vanish 
-#ifdef MPI
-            buffer(iband_sequential,ix,iy,iz) = periodicpart
-!           Transform Bohr^(-3/2) to Ang^(-3/2)
-            buffer(iband_sequential,ix,iy,iz) = &
- &             buffer(iband_sequential,ix,iy,iz) * 2.59775721_dp
-#else
-            buffer(ix,iy,iz) = periodicpart
-!           Transform Bohr^(-3/2) to Ang^(-3/2)
-            buffer(ix,iy,iz) = buffer(ix,iy,iz) * 2.59775721_dp
-#endif
 !!            For debugging
 !             write(6,'(3i5,6f12.5)')ix, iy, iz, rvector(:), buffer(ix,iy,iz)
 !!            End debugging
-          enddo ! Enddo in ix
-        enddo ! Enddo in iy
-      enddo ! Enddo in iz
-
-!     Dump the buffer in the output file
 !
-#ifndef MPI
-      if( IOnode ) then
-        if( .not. unk_format ) then
-          do iz = 1, unk_nz
-            do iy = 1, unk_ny
-              do ix = 1, unk_nx
-                write(unkfileunit,'(2f12.5)') &
- &                real(buffer(ix,iy,iz)), aimag(buffer(ix,iy,iz))
-              enddo ! Enddo in ix
-            enddo ! Enddo in iy
-          enddo ! Enddo in iz
-        else
-          write(unkfileunit) & 
- &          (((buffer(ix,iy,iz),ix=1,unk_nx),iy=1,unk_ny),iz=1,unk_nz)
-        endif
-      endif
-#endif
+!           Conver units
+!
+            periodicpart =  2.59775721_dp * periodicpart
 
-    enddo  BAND_LOOP
-
-!   Global reduction is required because we need all the matrix buffer in IOnode
-!   (to dump it into a file),but the results for some of the bands might
-!   be computed in other nodes.
-#ifdef MPI
-!   Allocate workspace array for global reduction
-    nullify( auxloc )
-    call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
- &                 name='auxloc', routine='writeunk' )
-!   Global reduction of auxloc matrix
-    auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
-    call MPI_AllReduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &
- &                      nincbands*unk_nx*unk_ny*unk_nz,                    &
- &                      MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror )
-    buffer(:,:,:,:) = auxloc(:,:,:,:)
-
-    if( IOnode ) then
-      if( .not. unk_format ) then
-        do iband = 1, nincbands
-          do iz = 1, unk_nz
-            do iy = 1, unk_ny
-              do ix = 1, unk_nx
-                write(unkfileunit,'(2f12.5)')   &
- &                real(buffer(iband,ix,iy,iz)), aimag(buffer(iband,ix,iy,iz))
-              enddo ! Enddo in ix
-            enddo ! Enddo in iy
-          enddo ! Enddo in iz
-        enddo ! Enddo in bands
-      else
-        do iband = 1, nincbands
-          write(unkfileunit)                                   & 
- &          ((( buffer(iband,ix,iy,iz), ix = 1, unk_nx ),      &
- &                                      iy = 1, unk_ny ),      & 
- &                                      iz = 1, unk_nz )
-        enddo 
-      endif
-    endif
-#endif
-
-! Close the output file
-    if( IOnode ) then
-      call io_close(unkfileunit)
-    endif
-
-  enddo kpoints
-
-! Deallocate some of the variables
-#ifdef MPI
-  call de_alloc( auxloc, name='auxloc', routine='writeunk' )
-  call de_alloc( auxpsi, name='auxpsi', routine='writeunk' )
-#endif
-  call de_alloc( buffer, name='buffer', routine='writeunk' )
-  call de_alloc( psiloc, name='psiloc', routine='writeunk' )
-
-! End time counter
-  call timer('writeunk',2)
-  return
-
-  1992 call die('swan: Error creating UNK files')
-
+          end function periodicpart
 
 end subroutine writeunk
