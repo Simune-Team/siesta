@@ -47,7 +47,7 @@
       use m_ts_global_vars, only : TSrun
       use m_ts_options, only : TS_HS_save
       use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
-      use m_ts_io,      only : ts_write_TSHS,fname_TSHS
+      use m_ts_io,      only : ts_write_TSHS,fname_TSHS, FC_index
 #endif /* TRANSIESTA */
       implicit none
 
@@ -67,7 +67,7 @@
 #endif
 #ifdef TRANSIESTA
       character(len=label_length+13) :: fname
-      integer :: io_iadispl, io_istep
+      integer :: io_istep, io_ia1
 #endif
 #ifdef CDF
 #ifdef NCDF_4
@@ -214,27 +214,43 @@
 #endif
 #endif
 #ifdef TRANSIESTA
-      if (TS_HS_save) then
+      if ( write_tshs_history ) then
+         ! This is "pure" MD and we only write consecutive numbers
+         ! Together with this you cannot also save FC
+         fname = fname_TSHS(slabel, istep = istep )
+         call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+     &        ucell, nsc, isc_off, na_u, no_s, nspin, 
+     &        ts_kscell, ts_kdispl, 
+     &        xa, lasto, 
+     &        H_2D, S_1D, indxuo,
+     &        Ef, Qtot, Temp, istep, 0)
+      else if ( TS_HS_save ) then
          if ( idyn == 6 ) then
-            io_istep   = istep
-            io_iadispl = ia1
-            fname = fname_TSHS(slabel,io_istep,io_iadispl,.false.)
+            ! Correct the FC indices such that 
+            ! the TSHS format contains, atom displaced, index of 
+            ! displacement:
+            !  1 = -x
+            !  2 = +x
+            !  3 = -y
+            !  4 = +y
+            !  5 = -z
+            !  6 = +z
+            call FC_index(istep,ia1,io_istep,io_ia1)
+            fname = fname_TSHS(slabel,istep = io_istep, ia1 = io_ia1)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
      &           ucell, nsc, isc_off, na_u, no_s, nspin, 
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto, 
      &           H_2D, S_1D, indxuo,
-     &           Ef, Qtot, Temp, io_istep, io_iadispl)
+     &           Ef, Qtot, Temp, io_istep, io_ia1)
          else
-            io_istep = 0
-            io_iadispl = 0
-            fname = fname_TSHS(slabel,io_istep,io_iadispl,.false.)
+            fname = fname_TSHS(slabel)
             call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
      &           ucell, nsc, isc_off, na_u, no_s, nspin,
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto,
      &           H_2D, S_1D, indxuo,
-     &           Ef, Qtot, Temp,        0,   0)
+     &           Ef, Qtot, Temp, 0, 0)
          end if
       endif
 #endif /* TRANSIESTA */

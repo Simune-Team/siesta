@@ -671,11 +671,11 @@ siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
 siesta_init.o: sys.o timer.o timestamp.o ts_init.o writewave.o zmatrix.o
 siesta_master.o: iopipes.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
-siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o ioxv.o m_energies.o
-siesta_move.o: m_exp_coord.o m_forces.o m_kinetic.o m_steps.o m_stress.o
-siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_master.o
-siesta_move.o: siesta_options.o sys.o write_subs.o zm_broyden_optim.o
-siesta_move.o: zm_fire_optim.o zmatrix.o
+siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o
+siesta_move.o: m_energies.o m_exp_coord.o m_forces.o m_kinetic.o m_steps.o
+siesta_move.o: m_stress.o parallel.o phonon.o siesta_cml.o siesta_geom.o
+siesta_move.o: siesta_master.o siesta_options.o sys.o write_subs.o
+siesta_move.o: zm_broyden_optim.o zm_fire_optim.o zmatrix.o
 siesta_options.o: files.o m_charge_add.o m_hartree_add.o memoryinfo.o
 siesta_options.o: parallel.o precision.o siesta_cml.o sys.o units.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpData2D.o

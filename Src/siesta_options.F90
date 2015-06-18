@@ -62,6 +62,10 @@ MODULE siesta_options
   logical :: writic        ! Write the initial atomic ccordinates?
   logical :: varcel        ! Change unit cell during relaxation or dynamics?
   logical :: do_pdos       ! Compute the projected density of states?
+#ifdef TRANSIESTA
+  logical :: write_tshs_history ! Write the MD track of Hamiltonian and overlap matrices in transiesta format
+#endif
+  logical :: write_hs_history ! Write the MD track of Hamiltonian and overlap matrices
   logical :: writedm       ! Write file with density matrix?
   logical :: writedm_cdf   ! Write file with density matrix in netCDF form?
 #ifdef NCDF_4
@@ -1129,6 +1133,10 @@ MODULE siesta_options
     else if (leqi(dyntyp,'explicit')) then
       idyn = 9
 #endif
+#ifdef SIESTA__FLOOK
+   else if (leqi(dyntyp,'lua')) then
+      idyn = 10
+#endif
     else
       call die('Invalid Option selected - value of MD.TypeOfRun not recognised')
     endif
@@ -1275,6 +1283,15 @@ MODULE siesta_options
           call cmlAddParameter( xf    = mainXML,            &
                                 name  = 'MD.TypeOfRun',     &
                                 value = 'Explicit' )
+        endif
+#endif
+#ifdef SIESTA__FLOOK
+     case(10)
+        write(6,3) 'redata: Dynamics option','LUA'
+        if (cml_p) then
+           call cmlAddParameter( xf    = mainXML,        &
+                name  = 'MD.TypeOfRun', &
+                value = 'LUA' )
         endif
 #endif
       end select
@@ -1508,7 +1525,7 @@ MODULE siesta_options
 
     if (idyn==6) then
       if (ionode) then
-        write(6,6) 'redata: Atomic displ for force constants',dx,'  Bohr'
+        write(6,6) 'redata: Atomic displ for force constants',dx/Ang,' Ang'
         write(6,4) 'redata: First atom to move',ia1
         write(6,4) 'redata: Last atom to move',ia2
       endif
@@ -1634,6 +1651,14 @@ MODULE siesta_options
     read_charge_cdf       = fdf_get('SCF.Read.Charge.NetCDF' , .false. )
     read_deformation_charge_cdf = &
     fdf_get('SCF.Read.Deformation.Charge.NetCDF', .false. )
+
+    ! Write the history
+#ifdef TRANSIESTA
+    write_tshs_history = fdf_get('Write.TSHS.History', .false.)
+    if ( write_tshs_history ) &
+         write(*,2) 'redata: Saves TSHS files in MD simulation'
+#endif
+    !write_hs_history = fdf_get('Write.HS.History', .false.)
 
     if (read_charge_cdf .or. read_deformation_charge_cdf) then
        ! We do not really have a faithful initial DM, so avoid mixing

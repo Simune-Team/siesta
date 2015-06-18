@@ -15,8 +15,7 @@
      &                          CartesianForce_to_ZmatForce,
      &                          write_canonical_ucell_and_Zmatrix
       use m_iostruct,    only : write_struct
-      use atomlist,      only : iaorb, iphorb, iza, amass, no_u, lasto,
-     &                          superx
+      use atomlist,      only : iaorb, iphorb, iza, amass, no_u, lasto
       use m_spin,        only : nspin
       use m_fixed,       only : fixed
       use sparse_matrices

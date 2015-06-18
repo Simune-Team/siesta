@@ -52,6 +52,9 @@
 #ifdef NCDF_4
       use m_exp_coord, only : exp_coord_next
 #endif
+#ifdef SIESTA__FLOOK
+      use flook_siesta, only : slua_call, LUA_MOVE
+#endif
 
       implicit none
 
@@ -76,9 +79,12 @@
       ! (electronic structure) has been calculated
       call timer( 'SIMOVE', 1 )
 
-        xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
-        ucell_last(1:3,1:3) = ucell(1:3,1:3)
-        scell_last(1:3,1:3) = scell(1:3,1:3)
+
+!$OMP parallel workshare default(shared)
+      xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
+      ucell_last(1:3,1:3) = ucell(1:3,1:3)
+      scell_last(1:3,1:3) = scell(1:3,1:3)
+!$OMP end parallel
 
 
       Ekinion = 0.0_dp   ! Fossil: already initialized in siesta_init
@@ -198,21 +204,24 @@
         call write_md_record( istep )
 
         ! Undo the last atom displacement
-        if (istep .gt. inicoor) then
+        if ( istep > inicoor ) then ! inicoor == 0
           iadispl = (istep-mod(istep-1,6))/6+ia1
           ix = mod(istep-1,6)+1
           ixdispl = (ix - mod(ix-1,2) +1)/2
           xa(ixdispl,iadispl) = xa(ixdispl,iadispl) - dx
-        endif
+        end if
 
         ! Displace atom by dx
-        if (istep .lt. fincoor) then
+        ! NOTE: MOVE is before istep increment, hence
+        ! fincoor == istep will be the last step and 
+        ! the initial geometry should be retained.
+        if ( istep < fincoor ) then ! fincoor = (ia2-ia1+1)*6
           iadispl = ((istep+1)-mod(istep,6))/6+ia1
           ix = mod(istep,6)+1
           ixdispl = (ix - mod(ix-1,2) +1)/2
-          dx=-dx
+          dx = -dx
           xa(ixdispl,iadispl) = xa(ixdispl,iadispl) + dx
-        endif
+        end if
 
       case (7)
           ! Save last atomic positions and velocities 
@@ -271,6 +280,11 @@
           ! atoms
           va = 0._dp
           goto 60
+#endif
+#ifdef SIESTA__FLOOK
+        case (10)
+           ! Communicate with lua
+           call slua_call(LUA, LUA_MOVE)
 #endif
       end select
 

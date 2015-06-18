@@ -1,4 +1,37 @@
 ----------------------------------------------------
+June 18, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-444
+Enabled TSHS writeout in MD simulations.
+
+* Option Write.TSHS.History creates a track of MD hamiltonians.
+
+* Enabled LUA_MOVE
+  which is a LUA call instead of doing MD calls.
+  Thus it directly interacts with Lua for getting a new 
+  geometry, rather than only at the forces constraints.
+
+* Renamed TSHS output when doing FC runs 
+  <syslabel>.<istep>-<ia-step>.TSHS
+  Thus syslabel can still be <syslabel>.* starred.
+
+* Changed LUA variable names d[DH]max to d[DH] which 
+  does not confuse with the tolerance.
+
+* Added note why the last phonon stepping is not needed.
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/final_H_f_stress.F
+  Src/flook_siesta.F90
+  Src/m_ts_io.F90
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/state_analysis.F
+  Src/state_init.F
+
+----------------------------------------------------
 June 18, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-443
 Q is dQ in SCF to easily see charge convergence
 

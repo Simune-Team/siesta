@@ -105,8 +105,8 @@
       ! that are available only in this part of the
       ! routine.
       call dict_variable_add('SCF.Iteration',iscf)
-      call dict_variable_add('SCF.dDmax',dDmax)
-      call dict_variable_add('SCF.dHmax',dHmax)
+      call dict_variable_add('SCF.dD',dDmax)
+      call dict_variable_add('SCF.dH',dHmax)
       call dict_variable_add('SCF.drhoG',drhog)
 #endif
 

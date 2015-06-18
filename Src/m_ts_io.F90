@@ -10,6 +10,7 @@ module m_ts_io
   public :: ts_write_TSHS
   public :: fname_TSHS
   public :: TSHS_version
+  public :: FC_index
 
   private
 
@@ -1368,53 +1369,72 @@ contains
 
   end subroutine ts_write_TSHS
 
-  function fname_TSHS(slabel,istep,ia1,onlyS) result(fname)
+  function fname_TSHS(slabel,istep,onlyS,ia1) result(fname)
     character(len=*), intent(in) :: slabel
-    integer, intent(inout) :: istep, ia1
-    logical, intent(in) :: onlyS
+    integer, intent(in), optional :: istep
+    integer, intent(in), optional :: ia1
+    logical, intent(in), optional :: onlyS
     character(len=255) :: fname
     integer :: fL
+    logical :: lonlyS
+    integer :: listep, lia1
 
     ! Initialize...
     fname = ' '
 
+    lonlyS = .false.
+    if ( present(onlyS) ) lonlyS = onlyS
+    listep = -1
+    if ( present(istep) ) listep = istep
+    lia1 = 0
+    if ( present(ia1) ) lia1 = ia1
+
     ! This is the criteria for not doing an FCrun
     ! There will never be an atom denoted by index 0
-    if ( ia1 /= 0 ) then
-       if ( istep == 0 ) then
-          ! this is the "clean" FCrun
-          ia1 = 0
+    if ( lia1 /= 0 .and. listep >= 0 ) then
+       if ( listep == 0 ) then
           ! We need the extra 00000's to let python 
           ! sort in a stringent way... :(
-          write(fname,'(a,i5.5)') '_',0
+          write(fname,'(a,i5.5)') '.',0
        else
-          ia1 = (istep-mod(istep-1,6))/6+ia1
-          istep = mod(istep-1,6)+1
           ! Be sure to have the python sorting working by adding
           ! zeroes
-          write(fname,'(a,i5.5,a,i1)') '_',ia1,'-',istep
+          write(fname,'(a,i5.5,a,i1)') '.',lia1,'-',listep
        end if
+       fname = trim(slabel)//trim(fname)
+    else if ( listep >= 0 ) then
+       ! Simply a consecutive number increase.
+       write(fname,'(a,i0)') '.',listep
        fname = trim(slabel)//trim(fname)
     else
        fname = slabel
     end if
     
     fL = len_trim(fname)
-    if ( onlyS ) then
-       if ( fL < 6 ) then
-          fname = trim(fname)//'.onlyS'
-       else if ( fname(fL-5:fL) .ne. '.onlyS' ) then
-          fname = trim(fname)//'.onlyS'
-       end if
+    if ( lonlyS ) then
+       fname = trim(fname)//'.onlyS'
     else
-       if ( fL < 5 ) then
-          fname = trim(fname)//'.TSHS'
-       else if ( fname(fL-4:fL) .ne. '.TSHS' ) then
-          fname = trim(fname)//'.TSHS'
-       end if
+       fname = trim(fname)//'.TSHS'
     end if
 
   end function fname_TSHS
+
+  subroutine FC_index(istep,ia1,ostep,oa1) 
+    integer, intent(in) :: istep
+    integer, intent(in) :: ia1
+    integer, intent(out) :: ostep
+    integer, intent(out) :: oa1
+
+    if ( istep == 0 ) then
+       ostep = 0
+       oa1 = ia1
+    else
+       ostep = mod(istep-1,6) + 1
+       oa1 = (istep - mod(istep-1,6))/6 + ia1
+    end if
+
+  end subroutine FC_index
+
 
   function TSHS_version(fname) result(version)
     character(len=*), intent(in) :: fname

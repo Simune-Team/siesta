@@ -145,11 +145,15 @@
 
        case (9)
           if ( istep == 0 ) then
-             write(6,'(t24,a,i7)')'Explicit coord. initialization'
+             write(6,'(t28,a,i7)')'Explicit coord. initialization'
           else
-             write(6,'(t24,a,i7)')'Explicit coord. step =',istep
+             write(6,'(t28,a,i7)')'Explicit coord. step =',istep
           end if
           if (cml_p) call cmlStartStep(mainXML, type='ECS', index=istep)
+
+       case (10)
+          write(6,'(t28,a,i7)')'LUA coord. step =',istep
+          if (cml_p) call cmlStartStep(mainXML, type='LUA', index=istep)
 
         end select
         write(6,'(2a)') '                        ',
@@ -385,11 +389,9 @@
 #endif
 
 #ifdef TRANSIESTA
-!     If onlyS, Save overlap matrix and exit                       ! MPN
-      if (onlyS) then           ! MPN 
-         i = 0
-         ix = 0
-         fname = fname_TSHS(slabel,i,ix,.true.)
+!     If onlyS, Save overlap matrix and exit
+      if (onlyS) then
+         fname = fname_TSHS(slabel, onlyS = .true. )
          ! We include H as S, well-knowing that we only write one of
          ! them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
@@ -399,8 +401,8 @@
      &        xa, lasto, 
      &        H_2D, S_1D, indxuo, 
      &        dummyEf, dummyQtot, Temp,0,0)
-        call bye( 'Save overlap matrix and exit' ) ! Exit siesta   ! MPN 
-      endif                                                        ! MPN
+        call bye( 'Save overlap matrix and exit' ) ! Exit siesta
+      endif 
 
       ! When the user requests to only do an analyzation, we can call
       ! appropriate routines and quit

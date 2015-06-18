@@ -452,7 +452,7 @@
         call phonon_setup()
         inicoor = 1
         fincoor = phonon_num_disps
-      else if (idyn .eq. 8) then
+      else if (idyn .eq. 8 .or. idyn .eq. 10) then
         inicoor = 0
         fincoor = huge(1)
 #ifdef NCDF_4

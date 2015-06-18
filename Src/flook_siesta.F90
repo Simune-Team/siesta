@@ -17,7 +17,8 @@ module flook_siesta
   integer, parameter, public :: LUA_INITIALIZE = 1
   integer, parameter, public :: LUA_SCF_LOOP = 2
   integer, parameter, public :: LUA_FORCES = 3
-  integer, parameter, public :: LUA_ANALYSIS = 4
+  integer, parameter, public :: LUA_MOVE = 4
+  integer, parameter, public :: LUA_ANALYSIS = 5
 
 #ifdef SIESTA__FLOOK
 
@@ -46,7 +47,8 @@ siesta = { &
     INITIALIZE = 1, &
     SCF_LOOP = 2, &
     FORCES = 3, &
-    ANALYSIS = 4, &
+    MOVE = 4, &
+    ANALYSIS = 5, &
     state = 0, &
     print = function(self,msg) &
        print("Lua-msg: " ..msg) &
