@@ -3745,14 +3745,17 @@ in a restarted calculation to pick up from the appropriate point.
 \item Options affecting which files are written, and when:
   
 For checkpointing,  {\bf WriteDM} and  {\bf WriteH} force the writing
-of the DM (resp. the Hamiltonian) at every scf step.
+of the DM (resp. the Hamiltonian) at every scf step. They are ``on''
+by default.
   
 For later analysis, {\bf WriteDM.end.of.cycle} and
 {\bf WriteH.end.of.cycle} will write DM and/or H at the end of the scf
 cycle. In this case, the objects written depends on the setting of the
 variable {\bf SCF.MixAfterConvergence}, which is {\tt .true.} by
 default for backwards compatibility. The details can be seen in the
-code (in file {\tt siesta\_forces.F}.
+code (in file {\tt siesta\_forces.F}. By default, they are ``on'' or
+``off'' depending on the settings of  {\bf WriteDM} and  {\bf WriteH},
+respectively.
 
 \item By using blocks of orbitals (according to the underlying default
 block-cyclic distribution), the sparse-matrix I/O can be speeded-up

@@ -413,6 +413,8 @@ if( PEXSI_worker ) then
 
 endif
 
+call timer("pexsi-solver", 2)
+
 !------------ End of solver step
 
 if ((mpirank == 0) .and. (verbosity >= 1)) then
@@ -456,6 +458,7 @@ if (PEXSI_worker) then
    m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
 
 endif ! PEXSI_worker
+
 
 ! Prepare m1 to receive the results
 if (SIESTA_worker) then
@@ -507,7 +510,6 @@ if (SIESTA_worker) then
    call de_alloc(m1%numcols,"m1%numcols","pexsi_solver") 
    call de_alloc(m1%cols,   "m1%cols",   "pexsi_solver")
 
-   call timer("pexsi-solver", 2)
    call timer("pexsi", 2)
 
 endif

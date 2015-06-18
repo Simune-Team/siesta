@@ -1,4 +1,16 @@
 ------------------------------------------------------------
+June 18, 2015  A. Garcia        trunk-464--pexsi-v0.8-2
+Fix timing hierarchy in pexsi driver. Manual update
+
+* A timing section was wrongly enclosed in another.
+
+* Document the default values for the DM and H writing options.
+
+modified:
+  Docs/siesta.tex
+  Src/m_pexsi_driver.F90
+
+------------------------------------------------------------
 June 18, 2015  A. Garcia        trunk-464--pexsi-v0.8-1
 Update interface to pexsi-v0.8.0
 
