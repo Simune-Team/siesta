@@ -128,7 +128,15 @@ PEXSI_worker = (mpirank < npPerPole)
 ! -- Prepare plan
 call get_row_col(npPerPole,numProcRow,numProcCol)
 
-outputFileIndex = mpirank
+  ! Set the outputFileIndex to be the pole index.
+  ! Starting from PEXSI v0.8.0, the first processor for each pole outputs
+  ! information
+
+  if( mod( mpirank, npPerPole ) .eq. 0 ) then
+    outputFileIndex = mpirank / npPerPole;
+  else
+    outputFileIndex = -1;
+  endif
 
    plan = f_ppexsi_plan_initialize(&
       World_Comm,&

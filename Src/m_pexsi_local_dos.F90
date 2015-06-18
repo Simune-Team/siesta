@@ -230,7 +230,15 @@ if (PEXSI_worker) then
 ! -- Prepare plan, only for PEXSI_group nodes...
   call get_row_col(npPerPole,numProcRow,numProcCol)
 
-  outputFileIndex = mpirank
+  ! Set the outputFileIndex to be the pole index.
+  ! Starting from PEXSI v0.8.0, the first processor for each pole outputs
+  ! information
+
+  if( mod( mpirank, npPerPole ) .eq. 0 ) then
+    outputFileIndex = mpirank / npPerPole;
+  else
+    outputFileIndex = -1;
+  endif
 !
 ! Note that we only use one pole's worth of processors in
 ! the global PEXSI communicator

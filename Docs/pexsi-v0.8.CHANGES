@@ -1,0 +1,10 @@
+------------------------------------------------------------
+June 18, 2015  A. Garcia        trunk-464--pexsi-v0.8-1
+Update interface to pexsi-v0.8.0
+
+modified:
+  Src/f_ppexsi_interface.f90
+  Src/m_pexsi.f90
+  Src/m_pexsi_dos.F90
+  Src/m_pexsi_local_dos.F90
+

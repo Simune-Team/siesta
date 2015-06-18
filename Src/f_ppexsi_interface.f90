@@ -40,7 +40,7 @@
 !	 such enhancements or derivative works thereof, in binary and source code form.
 !
 !> @file f_interface.f90
-!> @brief FORTRAN interface for PEXSI library using ISO_C_BINDING.
+!> @brief FORTRAN interface for %PEXSI library using ISO_C_BINDING.
 !>
 !> The ISO_C_BINDING feature is included in the FORTRAN 2003 standard, and is
 !> implemented in most modern compilers.
@@ -55,7 +55,8 @@
 !> be avoided on performance grounds).
 !>
 !> @see  c_pexsi_interface.h
-!> @date 2014-04-01
+!> @date 2014-04-01 Initial version
+!> @date 2015-01-21 Interface with unsymmetric version of selected inversion.
 
 ! *********************************************************************
 ! Module for main PEXSI interface routines
@@ -83,8 +84,10 @@ type, bind(C) :: f_ppexsi_options
   real(c_double)         :: numElectronPEXSITolerance
   integer(c_int)         :: matrixType
   integer(c_int)         :: isSymbolicFactorize
+  integer(c_int)         :: isConstructCommPattern
   integer(c_int)         :: ordering
   integer(c_int)         :: npSymbFact
+  integer(c_int)         :: symmetric
   integer(c_int)         :: verbosity
 end type f_ppexsi_options
 
@@ -214,6 +217,35 @@ interface
     integer(c_int), intent(out)            :: info
   end subroutine 
 
+  subroutine f_ppexsi_load_real_unsymmetric_hs_matrix(&
+      plan,&
+      options,&
+      nrows,&
+      nnz,&
+      nnzLocal,&
+      numColLocal,&
+      colptrLocal,&
+      rowindLocal,&
+      HnzvalLocal,&
+      isSIdentity,&
+      SnzvalLocal,&
+      info) &
+      bind(C, Name="PPEXSILoadRealUnsymmetricHSMatrix")
+    use, intrinsic :: iso_c_binding
+    import         :: f_ppexsi_options
+    implicit none
+    integer(c_intptr_t), intent(in), value :: plan
+    type( f_ppexsi_options ), value, intent(in) :: options
+    integer(c_int), value, intent(in)  :: &
+      nrows, nnz, nnzLocal, numColLocal, isSIdentity
+    integer(c_int), intent(in)  :: &
+      colptrLocal(*), rowindLocal(*)
+    real(c_double), intent(in)  :: &
+      HnzvalLocal(*), SnzvalLocal(*)
+    integer(c_int), intent(out)            :: info
+  end subroutine 
+
+
   subroutine f_ppexsi_symbolic_factorize_real_symmetric_matrix(&
       plan,&
       options,&
@@ -232,6 +264,32 @@ interface
       options,&
       info) &
       bind(C, Name="PPEXSISymbolicFactorizeComplexSymmetricMatrix")
+    use, intrinsic :: iso_c_binding
+    import         :: f_ppexsi_options
+    implicit none
+    integer(c_intptr_t), intent(in), value :: plan
+    type( f_ppexsi_options ), value, intent(in) :: options
+    integer(c_int), intent(out)            :: info
+  end subroutine 
+
+  subroutine f_ppexsi_symbolic_factorize_real_unsymmetric_matrix(&
+      plan,&
+      options,&
+      info) &
+      bind(C, Name="PPEXSISymbolicFactorizeRealUnsymmetricMatrix")
+    use, intrinsic :: iso_c_binding
+    import         :: f_ppexsi_options
+    implicit none
+    integer(c_intptr_t), intent(in), value :: plan
+    type( f_ppexsi_options ), value, intent(in) :: options
+    integer(c_int), intent(out)            :: info
+  end subroutine 
+
+  subroutine f_ppexsi_symbolic_factorize_complex_unsymmetric_matrix(&
+      plan,&
+      options,&
+      info) &
+      bind(C, Name="PPEXSISymbolicFactorizeComplexUnsymmetricMatrix")
     use, intrinsic :: iso_c_binding
     import         :: f_ppexsi_options
     implicit none
@@ -314,6 +372,41 @@ interface
     real(c_double), intent(out) :: AinvnzvalLocal(*)
     integer(c_int), intent(out)            :: info
   end subroutine 
+
+  subroutine f_ppexsi_selinv_real_unsymmetric_matrix(&
+      plan,&
+      options,&
+      AnzvalLocal,&
+      AinvnzvalLocal,&
+      info) &
+      bind(C, Name="PPEXSISelInvRealUnsymmetricMatrix")
+    use, intrinsic :: iso_c_binding
+    import         :: f_ppexsi_options
+    implicit none
+    integer(c_intptr_t), intent(in), value :: plan
+    type( f_ppexsi_options ), value, intent(in) :: options
+    real(c_double), intent(in)  :: AnzvalLocal(*)
+    real(c_double), intent(out) :: AinvnzvalLocal(*)
+    integer(c_int), intent(out)            :: info
+  end subroutine 
+
+  subroutine f_ppexsi_selinv_complex_unsymmetric_matrix(&
+      plan,&
+      options,&
+      AnzvalLocal,&
+      AinvnzvalLocal,&
+      info) &
+      bind(C, Name="PPEXSISelInvComplexUnsymmetricMatrix")
+    use, intrinsic :: iso_c_binding
+    import         :: f_ppexsi_options
+    implicit none
+    integer(c_intptr_t), intent(in), value :: plan
+    type( f_ppexsi_options ), value, intent(in) :: options
+    real(c_double), intent(in)  :: AnzvalLocal(*)
+    real(c_double), intent(out) :: AinvnzvalLocal(*)
+    integer(c_int), intent(out)            :: info
+  end subroutine 
+
 
   subroutine f_ppexsi_dft_driver(&
       plan,&
