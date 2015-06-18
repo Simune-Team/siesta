@@ -138,7 +138,7 @@ contains
   ! A subroutine for printing out the charge distribution in the cell
   ! it will currently only handle the full charge distribution, and
   ! not per k-point.
-  subroutine ts_print_charges(N_Elec,Elecs,dit, sp, &
+  subroutine ts_print_charges(N_Elec,Elecs,Qtot,dit, sp, &
        nspin, n_nzs, DM, S, &
        method)
     use parallel, only : IONode
@@ -155,6 +155,8 @@ contains
 ! **********************
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
+    ! The requested number of electrons in the simulation
+    real(dp), intent(in) :: Qtot
     type(OrbitalDistribution), intent(inout) :: dit
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sp
@@ -164,13 +166,17 @@ contains
     real(dp), intent(in) :: DM(n_nzs,nspin), S(n_nzs)
     ! The method by which it should be printed out...
     integer, intent(in), optional :: method
-
+   
 ! **********************
 ! * LOCAL variables    *
 ! **********************
     integer :: i
     real(dp), allocatable :: Q(:,:)
+    real(dp) :: sQtot
     integer :: ispin, lmethod
+
+    ! Requested charge per spin if anti-ferromagnetic
+    sQtot = Qtot / real(nspin,dp)
 
     lmethod = TS_INFO_FULL
     if ( present(method) ) lmethod = method
@@ -183,8 +189,7 @@ contains
     if ( .not. IONode ) return
 
     if ( lmethod == TS_INFO_FULL ) then
-
-       write(*,'(/,a)') 'transiesta: Charge distribution:'
+       write(*,'(/,a,f12.5)') 'transiesta: Charge distribution, target = ',Qtot
        if ( nspin > 1 ) then
           write(*,'(a,3(f12.5,tr1))') &
                'Total charge                  [Q]  :', &
@@ -205,7 +210,6 @@ contains
           end do
           write(*,'(a,2(f12.5,tr1),/)') &
                'Other                         [O]  :',Q(0,1), Q(0,2)
-
        else
           write(*,'(a,f12.5)') &
                'Total charge                  [Q]  :', sum(Q(:,1))
@@ -232,25 +236,25 @@ contains
        do i = 1 , N_Elec
           write(*,'(1x,a8,i0,1x,a8,i0)',advance='no') 'E',i,'C',i
        end do
-       if ( nspin == 2 ) then
-          write(*,'(2(1x,a9))') 'Q','Qtot'
+       if ( nspin > 1 ) then
+          write(*,'(2(1x,a9))') 'dQ','dQtot'
        else
-          write(*,'(1x,a9)') 'Q'
+          write(*,'(1x,a9)') 'dQ'
        end if
        do ispin = 1 , nspin
           write(*,'(a,1x,f9.3)',advance='no') 'ts-q:', Q(2,ispin)
           do i = 1 , N_Elec
              write(*,'(2(1x,f9.3))',advance='no') Q(3+(i-1)*2,ispin),Q(4+(i-1)*2,ispin)
           end do
-          if ( ispin == 2 ) then
-             write(*,'(2(1x,f9.3))') sum(Q(:,ispin)),sum(Q)
+          if ( ispin > 1 .and. ispin == nspin ) then
+             write(*,'(2(1x,es9.3e1))') sum(Q(:,ispin)) - sQtot,sum(Q) - Qtot
           else
-             write(*,'(1x,f9.3)') sum(Q(:,ispin))
+             write(*,'(1x,es9.3e1)') sum(Q(:,ispin)) - sQtot
           end if
        end do
        
     end if
-
+    
     deallocate(Q)
     
   end subroutine ts_print_charges

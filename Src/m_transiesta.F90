@@ -141,7 +141,7 @@ contains
        ! print out estimated memory usage...
        call ts_print_memory(ts_Gamma)
 
-       call ts_print_charges(N_Elec,Elecs, sp_dist, sparse_pattern, &
+       call ts_print_charges(N_Elec,Elecs, Qtot, sp_dist, sparse_pattern, &
             nspin, n_nzs, DM, S)
 
        if ( .not. Calc_Forces .and. IONode ) then
@@ -459,7 +459,7 @@ contains
          sparse_pattern, nspin, n_nzs, DM, EDM, S, Qtot, &
          TS_RHOCORR_METHOD)
 
-    call ts_print_charges(N_Elec,Elecs, sp_dist, sparse_pattern, &
+    call ts_print_charges(N_Elec,Elecs, Qtot, sp_dist, sparse_pattern, &
          nspin, n_nzs, DM, S, method = TS_INFO_SCF)
 
     call timer('TS',2)

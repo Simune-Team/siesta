@@ -1,4 +1,16 @@
 ----------------------------------------------------
+June 18, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-443
+Q is dQ in SCF to easily see charge convergence
+
+* Possibly when the charges are _way_ off this will
+  be a bad choice. However, it can handle up to
+  1e9 charges.
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_charge.F90
+
+----------------------------------------------------
 June 16, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-442
 Enabled negative buffer atom specification
 
