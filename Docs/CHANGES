@@ -6,6 +6,21 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-06-17   8:50:00 GMT                                     trunk-471
+Fix SiestaXC makefile. Clarifiy docs for WriteDenchar
+
+* Fix a typo in SiestaXC/makefile that was preventing
+  the correct processing of the "dist" target.
+  (J. Soler)
+
+* Update the WriteDenchar documentation in the Siesta manual.
+  (G. Huhs)
+
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/makefile
+
+-----------------------------------------------------------------------
 2015-06-10  12:30:00 GMT                                     trunk-470
 Build fixes in Util and SiestaXC
 

@@ -6552,21 +6552,22 @@ printed but the program does not stop.
 \index{denchar}
 
 The program {\tt denchar} in {\tt Util/Denchar} can generate
-charge-density and wavefunction contours.
+charge-density and wavefunction information in real space.
 
 \begin{description}
 
 \item[{\bf WriteDenchar}] ({\it logical}): \index{WriteDenchar@{\bf
-    WriteDenchar}} \index{output!charge density and/or wfs for DENCHAR code}
-  Instructs to write information needed by the utility program DENCHAR
-  (by J. Junquera and P. Ordej\'on) to plot the valence charge density
-  contours (see {\tt Util/Denchar}). The information is written in
-  file {\tt SystemLabel}.PLD.
+    WriteDenchar}} \index{output!charge density and/or wfs for DENCHAR
+  code} Instructs to write information needed by the utility program
+  DENCHAR (by J. Junquera and P. Ordej\'on) to generate valence charge
+  densities and/or wavefunctions in real space (see {\tt
+    Util/Denchar}). The information is written in files {\tt
+    SystemLabel}.PLD and {\tt SystemLabel}.DIM.
 
-{\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
-
-Apart from the PLD file, you will need the Density-Matrix (DM) file
-and/or a wavefunction (WFSX) file. 
+To run DENCHAR you will need, apart from the PLD and DIM files,
+the Density-Matrix (DM) file and/or a wavefunction (WFSX)
+file, and the .ion files containing the information about the basis
+orbitals.
 
 {\it Default value:} {\tt .false.}
 

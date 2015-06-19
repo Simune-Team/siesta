@@ -1,5 +1,13 @@
 ------------------------------------------------------------
-2015-06-17   Alberto Garcia trunk-467--radfunc-5--wannier-9
+2015-06-19   Alberto Garcia trunk-471--radfunc-5--wannier-9
+Sync to trunk-471
+
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/makefile
+
+------------------------------------------------------------
+2015-06-17   Alberto Garcia trunk-470--radfunc-5--wannier-9
 Wrap some items for MPI
 
 modified:
@@ -7,7 +15,7 @@ modified:
   Src/m_overkkneig.F90
 
 ------------------------------------------------------------
-2015-06-17   Alberto Garcia trunk-467--radfunc-5--wannier-8
+2015-06-17   Alberto Garcia trunk-470--radfunc-5--wannier-8
 Avoid memory leaks and some global reductions
 
 Some pointers were repeatedly 'nullified', hence causing memory leaks.
@@ -29,7 +37,7 @@ modified:
   Src/write_inp_wannier.F90
 
 ------------------------------------------------------------
-2015-06-15   Alberto Garcia trunk-467--radfunc-5--wannier-7
+2015-06-15   Alberto Garcia trunk-470--radfunc-5--wannier-7
 Merge re-ordering changes by J. Junquera + sync to trunk-470
 
   Sync to trunk-470
