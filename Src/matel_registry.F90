@@ -23,9 +23,7 @@ module m_matel_registry
   use sys, only: die
 
   use radial, only: rad_func
-  use trialOrbitalClass, only: trialOrbital
-  use trialOrbitalClass, only: getTrialRcut, getTrialLmax
-  use trialOrbitalClass, only: getTrialWaveFunction
+  use trialorbitalclass, only: trialorbital
 
   implicit none
 
@@ -52,14 +50,18 @@ module m_matel_registry
 
   !
   ! B) Trial "Wannier" orbitals, which are hybrids with a maximum l.
-  ! They are defined in module trialOrbitalclass, created by Richard Korytar.
+  ! They are defined in module trialorbitalclass, created by Richard Korytar.
   !
 
   ! This umbrella type can hold either function.
+  ! The lcut and rcut fields are used to avoid the overhead of
+  ! dispatch for queries
 
   type registered_function_t
      type(ext_radfunc_t), pointer :: rf => null()
-     type(trialOrbital), pointer  :: tf => null()
+     type(trialorbital), pointer  :: tf => null()
+     real(dp)        :: rcut = 0.0_dp
+     integer         :: lcut = -huge(1)
   end type registered_function_t
   !
   ! There should be a mechanism to make the size
@@ -74,8 +76,6 @@ module m_matel_registry
   public :: evaluate, rcut, lcut
   public :: evaluate_x, evaluate_y, evaluate_z
   public :: show_pool
-
-  logical, external :: io_node
 
 CONTAINS
 
@@ -115,10 +115,9 @@ CONTAINS
     rf%id%n_indexes = n_indexes
     rf%id%indexes(1:n_indexes) = indexes(:)
 
-    if (io_node()) then
-       print *, "Registered function: "
-       call print_rf(rf)
-    endif
+    ! To speed up queries
+    matel_pool(gindex)%lcut = l
+    matel_pool(gindex)%rcut = func%cutoff
 
   end subroutine register_in_rf_pool
 
@@ -126,9 +125,10 @@ CONTAINS
   !   This is the main entry to the registry for "Wannier" trial orbs
   !
   subroutine register_in_tf_pool(tf,gindex)
-    use trialOrbitalclass, only: print_trialOrb
+    use trialorbitalclass, only: print_trialorb
+    use trialorbitalclass, only: gettrialrcut, gettriallmax
 
-    type(trialOrbital), intent(in) :: tf
+    type(trialorbital), intent(in) :: tf
     integer, intent(out)    :: gindex           ! global index
 
     nfuncs = nfuncs + 1
@@ -138,16 +138,15 @@ CONTAINS
     allocate(matel_pool(gindex)%tf)
     matel_pool(gindex)%tf = tf
 
-    if (io_node()) then
-       print *, "Registered trial Wannier orb: "
-       call print_trialOrb(tf)
-    endif
+    ! To speed up queries
+    matel_pool(gindex)%lcut = gettriallmax(tf)
+    matel_pool(gindex)%rcut = gettrialrcut(tf)
 
   end subroutine register_in_tf_pool
 
 !--------------------------------------------------------------
 subroutine show_pool()
-  use trialOrbitalClass, only: print_trialOrb
+  use trialorbitalclass, only: print_trialorb
 
   integer :: gindex
 
@@ -155,7 +154,7 @@ subroutine show_pool()
      if (associated(matel_pool(gindex)%rf)) then
         call print_rf(matel_pool(gindex)%rf)
      else if (associated(matel_pool(gindex)%tf)) then
-        call print_trialOrb(matel_pool(gindex)%tf)
+        call print_trialorb(matel_pool(gindex)%tf)
      endif
   enddo
 end subroutine show_pool
@@ -167,11 +166,12 @@ end subroutine show_pool
     real(dp)               :: cutoff
 
     if (valid(gindex)) then
-       if (associated(matel_pool(gindex)%rf)) then
-          cutoff = matel_pool(gindex)%rf%func%cutoff
-       else if (associated(matel_pool(gindex)%tf)) then
-          cutoff = getTrialRCut(matel_pool(gindex)%tf)
-       endif
+       cutoff = matel_pool(gindex)%rcut
+!       if (associated(matel_pool(gindex)%rf)) then
+!          cutoff = matel_pool(gindex)%rf%func%cutoff
+!       else if (associated(matel_pool(gindex)%tf)) then
+!          cutoff = gettrialrcut(matel_pool(gindex)%tf)
+!       endif
     else
        call die("Invalid gindex")
     endif
@@ -183,11 +183,12 @@ end subroutine show_pool
     integer                :: l
 
     if (valid(gindex)) then
-       if (associated(matel_pool(gindex)%rf)) then
-          l = matel_pool(gindex)%rf%l
-       else if (associated(matel_pool(gindex)%tf)) then
-          l = getTrialLMax(matel_pool(gindex)%tf)
-       endif
+       l = matel_pool(gindex)%lcut
+!       if (associated(matel_pool(gindex)%rf)) then
+!          l = matel_pool(gindex)%rf%l
+!       else if (associated(matel_pool(gindex)%tf)) then
+!          l = gettriallmax(matel_pool(gindex)%tf)
+!       endif
     else
        call die("Invalid gindex")
     endif
@@ -195,6 +196,8 @@ end subroutine show_pool
 
 !--------------------------------------------------------------
   subroutine evaluate(gindex,r,f,grad)
+  use trialorbitalclass, only: gettrialwavefunction
+
     integer, intent(in)    :: gindex
     real(dp), intent(in)   :: r(3)
     real(dp), intent(out)  :: f
@@ -204,7 +207,7 @@ end subroutine show_pool
        if (associated(matel_pool(gindex)%rf)) then
           call evaluate_ext_radfunc(matel_pool(gindex)%rf,r,f,grad)
        else if (associated(matel_pool(gindex)%tf)) then
-          f = getTrialWaveFunction(matel_pool(gindex)%tf,r)
+          f = gettrialwavefunction(matel_pool(gindex)%tf,r)
           grad = 0.0_dp   ! do not know how to get this...
        endif
     else

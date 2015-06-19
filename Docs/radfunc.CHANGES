@@ -1,4 +1,18 @@
 -------------------------------------------------------------
+June 19, 2015  Alberto Garcia   siesta-trunk-438-radfunc-6
+Add lcut and rcut fields to registered objects. Cosmetics
+
+To avoid dispatching overheads, the registered objects
+have new lcut and rcut fields, initialized at registration
+time.
+
+Removed print statements.
+
+modified:
+  Src/matel_registry.F90
+  Src/register_rfs.F90
+
+-------------------------------------------------------------
 June 27, 2013  Alberto Garcia   siesta-trunk-438-radfunc-5
 Use new matel interface in the whole program
 

@@ -1,5 +1,12 @@
   subroutine register_rfs()
 
+!
+!   Installs a record of the PAO, KB projector, and Vna
+!   radial functions in the global registry used by the
+!   new version of matel.
+!   The registration returns a global index which should be
+!   kept for the invokation of matel.
+!
     use m_matel_registry, only: register_in_rf_pool, show_pool
     use atm_types, only: species_info, species, nspecies
     use radial, only: rad_func
@@ -43,9 +50,13 @@
        m = 0
        call register_in_rf_pool(func,l,m,"vna",(/is/),gindex)
        spp%vna_gindex = gindex
+!!         For debugging
+!          write(6,*)'VNA'
+!          write(6,*)'is, gindex = ', is, gindex 
+!!         End debugging
     enddo
 
-    call show_pool()
+!!    call show_pool()
     
   end subroutine register_rfs
 !
