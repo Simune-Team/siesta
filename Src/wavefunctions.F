@@ -47,7 +47,7 @@
        use parallel
        use fdf
 #ifdef MPI
-       use mpi
+       use mpi_siesta
 #endif
        use elec_dyn_options
        type (occ_wavef), intent(inout)  :: func

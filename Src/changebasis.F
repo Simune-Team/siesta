@@ -78,6 +78,7 @@ C
      $                         mpi_logical
 #endif
       use wavefunctions
+      use MatrixSwitch
 
       implicit none
 
@@ -116,6 +117,8 @@ C  Internal variables .............................................
      .  ik, j, nd
 
       real(dp) skxij,ckxij, kxij, qe
+
+      type(matrix) :: test_S
 
 C Dynamic arraysdd
       complex*16, dimension(:,:,:), allocatable, save :: sqrtS

@@ -64,7 +64,7 @@ C
       use parallel
       use wavefunctions
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
       use elec_dyn_options     
 

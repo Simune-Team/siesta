@@ -10,7 +10,7 @@
        use m_fdf_global
        use m_steps 
 #ifdef MPI
-       use mpi
+       use mpi_siesta
 #endif
 
        implicit none 

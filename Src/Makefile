@@ -222,6 +222,20 @@ $(XC):
 	            "INCFLAGS=-I../MPI" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 #--------------------------------------------------------------
+MS=MatrixSwitch.a
+$(MS): 
+	(cd MatrixSwitch/src ; \
+	 cp $(VPATH)/MatrixSwitch/src/make.inc.example make.inc ; \
+	 $(MAKE) \
+	            "VPATH=$(VPATH)/MatrixSwitch/src" \
+		    "FORTRAN   = $(FC)" \
+		    "OPTS      = $(FFLAGS)" \
+		    "FPPFLAGS  = $(FPPFLAGS) -DLAP -DSLAP -DCONV" \
+		    "RANLIB    = $(RANLIB)" \
+		    "LIBNAME   = MatrixSwitch.a" ; \
+	 cp *.mod *.a ../../ )
+changebasis.o: $(MS)
+#--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
 	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" \
@@ -353,6 +367,7 @@ clean:
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )
+	(cd MatrixSwitch/src ; $(MAKE) clean ; rm make.inc )
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: debugmpi.o m_io.o parallel.o precision.o sys.o

@@ -151,7 +151,7 @@ C
 
 #ifdef MPI
 
-      use mpi
+      use mpi_siesta
 
 #endif
 

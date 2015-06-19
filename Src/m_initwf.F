@@ -612,7 +612,7 @@ C
       use parallel
       use wavefunctions
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -773,7 +773,7 @@ C
       use parallel
       use wavefunctions
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit          none
