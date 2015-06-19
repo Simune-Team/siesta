@@ -1,4 +1,18 @@
 ------------------------------------------------------------
+2015-06-19   Alberto Garcia trunk-471--radfunc-6--wannier-9
+Merge radfunc-6: reduce dispatching overheads
+
+To avoid dispatching overheads, the registered objects
+have new lcut and rcut fields, initialized at registration
+time.
+
+Removed print statements.
+
+modified:
+  Src/matel_registry.F90
+  Src/register_rfs.F90
+
+------------------------------------------------------------
 2015-06-19   Alberto Garcia trunk-471--radfunc-5--wannier-9
 Sync to trunk-471
 
