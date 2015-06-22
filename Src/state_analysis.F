@@ -164,7 +164,7 @@
 
 !     Force output 
       if (IOnode) then
-        call siesta_write_forces()
+        call siesta_write_forces(istep)
         call siesta_write_stress_pressure()
         call wallclock('--- end of geometry step')
       endif

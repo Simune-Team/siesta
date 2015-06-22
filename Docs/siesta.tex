@@ -7177,7 +7177,9 @@ It is not affected by the setting of {\bf LongOutput}.
     WriteForces}}\index{output!forces} If {\tt .true.} it writes the
   atomic forces to the output file at every MD time step or relaxation
   step.  Note that the forces of the last step can be found in the
-  file {\it Systemlabel}.FA .
+  file {\it Systemlabel}.FA. If constraints are used, the file
+   {\it SystemLabel}.{\tt FAC} is also written.
+
 
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
@@ -7424,6 +7426,8 @@ atoms is writen (divided by the value of the displacement),
 in units of eV/\AA$^2$. Each line has the forces in the $x$, $y$
 and $z$ direction for one of the atoms.
 
+(If constraints are used, the file {\it SystemLabel}.{\tt FCC} is
+also written.)
 
 \subsection{Interface to the {\sc PHONON} program}
 \label{sec:phonon-interface}

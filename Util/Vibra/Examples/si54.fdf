@@ -38,3 +38,6 @@ BandLinesScale       pi/a
 
 %endblock BandLines
 
+Eigenvectors         True
+
+

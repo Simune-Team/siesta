@@ -239,9 +239,9 @@
 
 !     Print program's energy decomposition and final forces
       if (IOnode) then
-        call siesta_write_energies( iscf=0, dDmax=0.0_dp,
-     $                                      dHmax=0.0_dp)
-        call siesta_write_forces()
+        call siesta_write_energies( first=.false., iscf=0, dDmax=0.0_dp)
+        ! final == .true. which makes the step counter irrelevant
+        call siesta_write_forces(-1)
         call siesta_write_stress_pressure()
         call write_basis_enthalpy(FreeE,FreeEHarris)
       endif

@@ -27,7 +27,7 @@
 .SUFFIXES:
 .SUFFIXES: .f .o .a 
 #
-default: fcbuild vibrator
+default: fcbuild vibra
 #
 # You should have compiled Siesta in the main Src directory (or
 # in an architecture-specific object directory) before attempting 
@@ -68,24 +68,24 @@ $(FDF):
 BUILD-SRCS= fcbuild.f chkdim.f recoor.f io.f
 BUILD-OBJS=$(BUILD-SRCS:.f=.o)
 
-VIBRA-SRCS= vibrator.f chkdim.f recoor.f hermdp.f paste.f klines.f outbands.f \
+VIBRA-SRCS= vibra.f chkdim.f recoor.f hermdp.f paste.f klines.f outbands.f \
             reclat.f parse.f io.f
 VIBRA-OBJS=$(VIBRA-SRCS:.f=.o)
 
 #
-fcbuild.o vibrator.o:  vibra.h
+fcbuild.o vibra.o:  vibra.h
 #
 fcbuild: $(FDF) $(BUILD-OBJS)
 	$(FC) -o fcbuild \
 	       $(LDFLAGS) $(BUILD-OBJS) $(FDF)
 
-vibrator : $(FDF) $(VIBRA-OBJS) 
-	$(FC) -o vibrator \
+vibra : $(FDF) $(VIBRA-OBJS) 
+	$(FC) -o vibra \
 	       $(LDFLAGS) $(VIBRA-OBJS) $(FDF)
 #
 clean: 
 	@echo "==> Cleaning object and executable files"
-	rm -f fcbuild vibrator *.o *.mod libfdf.a
+	rm -f fcbuild vibra *.o *.mod libfdf.a
 	rm -rf ./fdf
 
 
