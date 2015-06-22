@@ -1,4 +1,12 @@
 ----------------------------------------------------
+June 21, 2015 -- Nick Papior          trunk-470-merge-1--ts-scf-445
+Enabled longer contour names
+
+modified:
+  Src/m_ts_chem_pot.F90
+  Src/m_ts_io_ctype.f90
+
+----------------------------------------------------
 June 18, 2015 -- Nick P. Andersen     trunk-470-merge-1--ts-scf-444
 Enabled TSHS writeout in MD simulations.
 

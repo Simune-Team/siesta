@@ -19,8 +19,9 @@ module m_ts_chem_pot
   use m_ts_io_ctype, only : C_N_NAME_LEN
   implicit none
 
-  real(dp), public, parameter :: mu_same = 1.e-8_dp
   integer,  public, parameter :: NAME_MU_LEN = 20
+
+  real(dp), public, parameter :: mu_same = 1.e-8_dp
   integer, private, parameter :: def_poles = 8
 
   type :: ts_mu

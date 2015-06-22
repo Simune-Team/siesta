@@ -20,7 +20,7 @@ module m_ts_io_ctype
 
   implicit none
 
-  integer, parameter :: C_N_NAME_LEN = 10
+  integer, parameter :: C_N_NAME_LEN = 20
 
   integer, parameter :: c_N = 200
   type :: ts_c_io
