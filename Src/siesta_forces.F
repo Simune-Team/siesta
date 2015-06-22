@@ -217,7 +217,7 @@
       if (ionode) then
          print *, "Max diff in force (eV/Ang): ",
      $        maxval(abs(fa-fa_old))*Ang/eV
-         call siesta_write_forces()
+         call siesta_write_forces(-1)
          call siesta_write_stress_pressure()
       endif
       deallocate(fa_old,Hsave)
