@@ -239,7 +239,7 @@
 
 !     Print program's energy decomposition and final forces
       if (IOnode) then
-        call siesta_write_energies( first=.false., iscf=0, dDmax=0.0_dp)
+        call siesta_write_energies( iscf=0, dDmax=0._dp, dHmax=0._dp)
         ! final == .true. which makes the step counter irrelevant
         call siesta_write_forces(-1)
         call siesta_write_stress_pressure()
