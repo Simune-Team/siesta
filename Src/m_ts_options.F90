@@ -33,7 +33,7 @@ module m_ts_options
   logical :: TS_HS_save = .true.
   logical :: TS_DE_save = .false.
   ! Whether the siesta calculation should also fix the hartree potential
-  logical :: Vha_fix = .true.
+  logical :: Vha_fix = .false.
   ! whether we should only save the overlap matricx
   logical :: onlyS = .false. 
   ! whether we will use the bias-contour
@@ -68,7 +68,7 @@ module m_ts_options
   logical :: VoltageInC = .false.
 
   ! File name for reading in the grid for the Hartree potential
-  character(len=100) :: Hartree_fname = ' '
+  character(len=150) :: Hartree_fname = ' '
 
   ! A quantity describing the accuracy of the coordinates of the 
   ! electrodes.
@@ -807,7 +807,6 @@ contains
           case ( 0 )
              write(*,10)'MUMPS ordering', 'AMD'
           end select
-
 #endif
        end if
        write(*,8) 'SCF-TS mixing weight',ts_wmix

@@ -27,7 +27,6 @@
       use m_dynamics,      only: nose, verlet2, npr, anneal, pr
       use phonon,          only: phonon_setup, phonon_restore_coords,
      .                           phonon_set_coords
-!      use iopipes,         only: forcestopipe, coordsfrompipe
       use m_energies,      only: Ekinion, Etot
       use write_subs
       use m_steps
@@ -79,13 +78,11 @@
       ! (electronic structure) has been calculated
       call timer( 'SIMOVE', 1 )
 
-
 !$OMP parallel workshare default(shared)
       xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
       ucell_last(1:3,1:3) = ucell(1:3,1:3)
       scell_last(1:3,1:3) = scell(1:3,1:3)
-!$OMP end parallel
-
+!$OMP end parallel workshare
 
       Ekinion = 0.0_dp   ! Fossil: already initialized in siesta_init
 
