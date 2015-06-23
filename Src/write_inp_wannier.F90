@@ -538,14 +538,12 @@ subroutine writeunk( ispin )
   integer     :: MPIerror
   complex(dp), dimension(:,:,:,:), pointer :: auxloc => null()! Temporal array for the
                                              !   the global reduction of buffer
+#endif
+
   complex(wannier90dp), pointer :: buffer(:,:,:,:) => null()  ! Variable where the 
                                              !   periodic part of the wave
                                              !   functions at the points of the
                                              !   grid will be computed
-#else
-  complex(wannier90dp), pointer :: buffer(:,:,:) => null()
-#endif
-
 !
 ! Variables related with the input/output
 !
@@ -564,9 +562,10 @@ subroutine writeunk( ispin )
   integer      :: iz           ! Counter for the loop on points along z
   integer      :: iband        ! Counter for the loop on bands
   integer      :: iband_global ! Global index of the band
-  integer      :: iband_sequential ! Global index of the band in sequential 
   integer      :: io           ! Counter for the loop on atomic orbitals
 
+  integer, allocatable  :: iband_sequential(:)
+  complex(dp), allocatable :: tmp_arr(:)
 
 ! Start time counter
   call timer('writeunk',1)
@@ -588,7 +587,6 @@ subroutine writeunk( ispin )
   unk_nz     = fdf_get( 'Siesta2Wannier90.UnkGrid3',      unk_nz_default     )
   unk_format = fdf_get( 'Siesta2Wannier90.UnkGridBinary', unk_format_default )
 
-#ifdef MPI
     call re_alloc( buffer,              &
  &                 1, nincbands,        &
  &                 1, unk_nx,           &
@@ -596,14 +594,8 @@ subroutine writeunk( ispin )
  &                 1, unk_nz,           &
  &                 name = 'buffer',     &
  &                 routine='writeunk' )
-#else
-    call re_alloc( buffer,              &
- &                 1, unk_nx,           &
- &                 1, unk_ny,           &
- &                 1, unk_nz,           &
- &                 name = 'buffer',     &
- &                 routine='writeunk' )
-#endif
+
+    allocate(tmp_arr(1:nincbands), iband_sequential(1:nincbands))
 
 kpoints:                 &
   do ik = 1, numkpoints
@@ -649,16 +641,16 @@ kpoints:                 &
 !
 ! The serial version is easy enough
 !
-BAND_LOOP:  do iband = 1, nincbands
    do iz = 1, unk_nz
       do iy = 1, unk_ny
          do ix = 1, unk_nx
-            ! periodicpart is an internal function, for
-            ! clarity
-            buffer(ix,iy,iz) = periodicpart(ix,iy,iz,coeffs(:,iband,ik))
+            call periodicpart(ix,iy,iz,nincbands,coeffs(:,1:nincbands,ik), &
+                                       buffer(1:nincbands,ix,iy,iz))
          enddo
       enddo
    enddo
+
+BAND_LOOP:  do iband = 1, nincbands
 
    if( .not. unk_format ) then
            
@@ -666,13 +658,13 @@ BAND_LOOP:  do iband = 1, nincbands
          do iy = 1, unk_ny
             do ix = 1, unk_nx
                write(unkfileunit,'(2f12.5)') &
-                   real(buffer(ix,iy,iz)), aimag(buffer(ix,iy,iz))
+                   real(buffer(iband,ix,iy,iz)), aimag(buffer(iband,ix,iy,iz))
             enddo 
          enddo 
       enddo  
    else
       write(unkfileunit) & 
-           &          (((buffer(ix,iy,iz),ix=1,unk_nx),iy=1,unk_ny),iz=1,unk_nz)
+           &          (((buffer(iband,ix,iy,iz),ix=1,unk_nx),iy=1,unk_ny),iz=1,unk_nz)
    endif
 
 enddo  BAND_LOOP
@@ -688,22 +680,29 @@ enddo  BAND_LOOP
 !   For each k-point, initialize the buffer in all the nodes
     buffer = cmplx(0.0_dp,0.0_dp,kind=dp)
 
-BAND_LOOP:   do iband = 1, nincbands_loc
-!     Identify the global index of the local band          
-   iband_global = which_band_in_node(Node,iband)
-   iband_sequential = sequential_index_included_bands(iband_global)
+    do iband = 1, nincbands_loc
+       !     Identify the global index of the local band          
+       iband_global = which_band_in_node(Node,iband)
+       iband_sequential(iband) = sequential_index_included_bands(iband_global)
+    enddo
 
    do iz = 1, unk_nz
       do iy = 1, unk_ny
          do ix = 1, unk_nx
-            buffer(iband_sequential,ix,iy,iz) = &
-              periodicpart(ix,iy,iz,coeffs(:,iband,ik))
+            ! Compute all (local) bands at once
+            call periodicpart(ix,iy,iz,nincbands_loc,coeffs(:,1:nincbands_loc,ik), &
+                                       tmp_arr(1:nincbands_loc))
+            
+            ! Place in the correct global slot
+            do iband = 1, nincbands_loc
+               buffer(iband_sequential(iband),ix,iy,iz) = tmp_arr(iband)
+            enddo
          enddo
       enddo
    enddo
-enddo  BAND_LOOP
 
-!   A reduction is need since we need all the matrix buffer in IOnode
+
+!   A reduction is needed since we need all the matrix buffer in IOnode
 !   (to dump it into a file), but the results for some of the bands might
 !   be computed in other nodes.
 
@@ -760,6 +759,8 @@ enddo  BAND_LOOP
 #endif
   call de_alloc( buffer, name='buffer', routine='writeunk' )
 
+  deallocate(tmp_arr,iband_sequential)
+
 ! End time counter
   call timer('writeunk',2)
   return
@@ -768,10 +769,10 @@ enddo  BAND_LOOP
 
 CONTAINS
 
-  ! This function will see the relevant variables by
+  ! This subroutine will see the relevant variables by
   ! host association
 
-  complex(dp) function periodicpart(ix,iy,iz,psi) 
+  subroutine periodicpart(ix,iy,iz,nbands,psi,values) 
 
   use siesta_geom,        only: isa           ! Species index of each atom
   use atomlist,           only: lasto         ! Position of last orbital 
@@ -788,7 +789,9 @@ CONTAINS
 
 !-----------------------------------------------------------------
     integer, intent(in) :: ix, iy, iz
-    complex(dp), intent(in) :: psi(:)
+    integer, intent(in) :: nbands          ! Number of bands to process
+    complex(dp), intent(in) :: psi(:,:)    ! Coefficients of wfns
+    complex(dp), intent(out) ::  values(:) ! Output values
 
 
 ! Variables related with the mesh point
@@ -812,32 +815,23 @@ CONTAINS
                                !   at a given point
   real(dp)     :: phase        ! Phase of the exponential
 !                  e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+  real(dp)     :: distance
   complex(dp)  :: exponential  ! Value of the previous exponential
 
 
             rvector(:) = ( latvec(:,1) * (ix-1) ) / unk_nx             &
  &                     + ( latvec(:,2) * (iy-1) ) / unk_ny             &
  &                     + ( latvec(:,3) * (iz-1) ) / unk_nz
-!!           For debugging
-!            write(6,'(a,5i4,6f12.5)') &
-! &            'ik, iband, iz, iy, ix, kvector, rvector = ', &
-! &             ik, iband, iz, iy, ix, kvector(:), rvector(:)
-!!           End debugging
-            periodicpart = cmplx(0.0_dp,0.0_dp,kind=dp)
+
+            values(:) = 0.0_dp
 
 !           Find atoms within rmaxo sphere and store them in jan
             x0(:) = rvector(:)
             call mneighb( latvec, rmaxo, na_u, xa, 0, 0, nneig )
-!!   For debugging
-!            do ineig = 1, nneig
-!              write(6,'(a,i5,6f15.10)') &
-! &              'writeunk: jan, xij, r2ij = ', &
-! &              jan(ineig), xij(:,ineig), r2ij(ineig)
-!            enddo
-!!   End debugging
 
             if ( nneig .gt. maxnna )                                     &
  &           call die('swan: insufficient array shapes; see neighb(..)')
+
 !           Loop over atoms in the list of non-vanishing atoms at a given point
             do ineig = 1, nneig
 !             Identify the atomic index.
@@ -860,31 +854,35 @@ CONTAINS
 !             \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )
 !             We change the sign here.
               rvectorarg(:) = -xij(:,ineig)
-!             Loop on all the orbitals of a given atom
-              do iorbital = lasto(iatom-1)+1, lasto(iatom)
-                iso = iphorb(iorbital)
-!               If the point is within the range of the orbital
-                if ( rcut(ispecie,iso)**2 .gt. r2ij(ineig) ) then
-                  iorbital0 = indxuo(iorbital)
 !                 Compute the phase
 !                 e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
 !                 We have to change the sign of rvectorarg again.
                   phase = -1.0_dp * dot_product(kvector,rvectorarg)
                   exponential = exp( phase * cmplx(0.0_dp,1.0_dp,kind=dp) )
+
+              distance = sqrt(r2ij(ineig))
+
+!             Loop on all the orbitals of a given atom
+              do iorbital = lasto(iatom-1)+1, lasto(iatom)
+                iso = iphorb(iorbital)
+!               If the point is within the range of the orbital
+                if ( rcut(ispecie,iso) .gt. distance ) then
+                  iorbital0 = indxuo(iorbital)
 !                 Compute the value of the orbital at the point
 !                 \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )
                   call phiatm( ispecie, iso, rvectorarg, phi, grphi )
 !                 Compute the sum that gives the periodic part of the orbital
-                  periodicpart = periodicpart + &
-                                   exponential * psi(iorbital0) * phi
+!                 for all bands
+                  values(1:nbands) = values(1:nbands) + &
+                                   exponential * psi(iorbital0,1:nbands) * phi
                 endif
               enddo ! Enddo on orbitals that do not vanish
             enddo ! Enddo on atoms that have orbitals that do not vanish 
 !
 !           Transform Bohr^(-3/2) to Ang^(-3/2)
 !
-            periodicpart =  2.59775721_dp * periodicpart
+            values(1:nbands) =  2.59775721_dp * values(1:nbands)
 
-          end function periodicpart
+          end subroutine periodicpart
 
 end subroutine writeunk

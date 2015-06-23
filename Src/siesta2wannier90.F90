@@ -238,11 +238,11 @@ subroutine siesta2wannier90
 !   Compute the overlaps between Bloch states onto trial localized orbitals
     if( towriteamn ) call amn( ispin )
 
-!   Compute the overlaps between Bloch states onto trial localized orbitals
-    if( towriteunk ) call writeunk( ispin )
-
 !   Write the eigenvalues in a file, in the format required by Wannier90
     if( IOnode .and. towriteeig ) call writeeig( ispin )
+
+!   Compute the overlaps between Bloch states onto trial localized orbitals
+    if( towriteunk ) call writeunk( ispin )
 
 !   Compute the vectors that connect each mesh k-point to its nearest neighbours
 !! For debugging

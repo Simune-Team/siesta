@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+2015-06-23   Alberto Garcia trunk-471--radfunc-6--wannier-10
+Optimize writeunk some more
+
+Compute the values of the bands on the grid at
+all once. 
+
+modified:
+  Src/siesta2wannier90.F90
+  Src/write_inp_wannier.F90
+
+------------------------------------------------------------
 2015-06-19   Alberto Garcia trunk-471--radfunc-6--wannier-9
 Merge radfunc-6: reduce dispatching overheads
 
