@@ -23,7 +23,8 @@ VPATH=.
 AR ?= ar
 RANLIB ?= ranlib
 
-default: what siesta #  fsiesta_pipes.o libSiestaForces.a
+default: what siesta  # fsiesta_pipes.o fsiesta_sockets.o libSiestaForces.a
+
 lib: libSiestaXC.a libfdf.a libSiestaForces.a
 
 configure: configure.ac aclocal.m4
@@ -81,7 +82,8 @@ what:
 	@echo "Hit ^C to abort..."
 	@sleep 2
 
-SYSOBJ=$(SYS).o pxf.o
+
+SYSOBJ=$(SYS).o pxf.o sockets.o fsockets.o # includes C socket library and F90 interface
 
 # Note that machine-specific files are now in top Src directory.
 MAIN_OBJ = siesta.o
@@ -97,7 +99,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_efield.o egandd.o ener3.o ener3lomem.o errorf.o extrapolon.o \
 	m_fixed.o interpolation.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
-	iodmhs_netcdf.o iogrid_netcdf.o iolwf.o iozm.o ipack.o iopipes.o \
+	iodmhs_netcdf.o iogrid_netcdf.o iolwf.o iozm.o ipack.o iopipes.o iosockets.o \
 	iowfs_netcdf.o kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
 	madelung.o matel.o mesh.o meshphi.o meshdscf.o memory.o meshsubs.o metaforce.o \
         m_supercell.o mulliken.o minvec.o m_pulay.o naefs.o \
@@ -340,6 +342,26 @@ $(NCDF): $(FDICT)
 	cp NCDF/src/$(NCDF) ./
 
 #######################
+
+
+# Routines using fdf calls. Woefully incomplete, but the $(FDF) target is made first.
+#
+dhscf.o iolwf.o grdsam.o : $(FDF)
+recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
+redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
+coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
+readsp.o eggbox.o iopipes.o : $(FDF)
+
+atom.o basis_io.o basis_specs.o: $(FDF)
+
+
+# C/Fortran sockets library 
+#
+# As it stands, it will use the CC in the default rules
+# Define CC (and maybe CFLAGS) in arch.make for full control
+#
+sockets.o: sockets.c   # Will be picked-up in the VPATH
+	$(CC) -c $(CFLAGS) $<
 
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 
@@ -654,6 +676,7 @@ flook_siesta.o: siesta_options.o
 forhar.o: alloc.o mesh.o moremeshsubs.o parallel.o precision.o
 fsiesta_mpi.o: precision.o siesta_analysis.o siesta_end.o siesta_forces.o
 fsiesta_mpi.o: siesta_init.o siesta_master.o siesta_move.o sys.o
+fsiesta_sockets.o: fsockets.o
 geom_helper.o: intrinsic_missing.o
 get_target_stress.o: parallel.o precision.o sys.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
@@ -682,6 +705,8 @@ iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
 iopipes.o: parallel.o precision.o sys.o
+iosockets.o: cellsubs.o fsockets.o m_fdf_global.o m_mpi_utils.o parallel.o
+iosockets.o: precision.o sys.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
 iozm.o: files.o parallel.o precision.o siesta_geom.o zmatrix.o
@@ -1102,7 +1127,7 @@ siesta_init.o: molecularmechanics.o object_debug.o parallel.o parallelsubs.o
 siesta_init.o: phonon.o projected_DOS.o siesta_cmlsubs.o siesta_dicts.o
 siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
 siesta_init.o: sys.o timer.o timestamp.o ts_init.o writewave.o zmatrix.o
-siesta_master.o: iopipes.o precision.o sys.o
+siesta_master.o: iopipes.o iosockets.o m_fdf_global.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o
 siesta_move.o: m_energies.o m_exp_coord.o m_forces.o m_kinetic.o m_steps.o
@@ -1219,7 +1244,8 @@ class_zspdata1d.o: class_SpData1D.o
 class_zspdata2d.o: class_SpData2D.o
 class_ztrimat.o: class_TriMat.o
 diagmemory.o: memoryinfo.o
-fsiesta.o: fsiesta_pipes.o
+f90sockets.o: fsockets.o
+fsiesta.o: fsiesta_sockets.o
 listsc_module.o: listsc.o
 m_bessph.o: bessph.o
 m_born_charge.o: born_charge.o

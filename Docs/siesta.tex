@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large January 25, 2015}
+{\Large June 29, 2015 }
 
 \vspace{1.5cm}
 
@@ -6594,7 +6594,8 @@ temperature and/or pressure (see variable MD.AnnealOption below)
     Matrix!using phonon@using {\sc Phonon}}.
 
 \item {\tt Forces} (Receive coordinates from, and return forces to, an
-  external driver program, using MPI or Unix pipes for communication.
+  external driver program, using MPI, Unix pipes, or Inet sockets for 
+  communication.
   The routines in module fsiesta allow the user's program to perform
   this communication transparently, as if siesta were a conventional
   force-field subroutine. See {\tt Util/SiestaSubroutine/README} for
@@ -6612,6 +6613,20 @@ Note that some options specified in later variables
 If the system contains just one atom, {\tt CG} is the only
 available dynamics option.
 
+Appart from being able to act as a force subroutine for a driver program that
+uses module fsiesta, {\sc Siesta} is also prepared to communicate with the 
+i-PI code (see {\tt http://epfl-cosmo.github.io/gle4md/index.html?page=ipi}).
+To do this, {\sc Siesta} must be started after i-PI (it acts as a client of
+i-PI, communicating with it through Inet or Unix sockets), and the following 
+lines must be present in the .fdf data file:
+\begin{verbatim}
+     MD.TypeOfRun      Master     # equivalent to 'Forces'
+     Master.code       i-pi       # ( fsiesta | i-pi )
+     Master.interface  socket     # ( pipes | socket | mpi )
+     Master.address    localhost  # or driver's IP, e.g. 150.242.7.140
+     Master.port       10001      # 10000+siesta_process_order
+     Master.socketType inet       # ( inet | unix )
+\end{verbatim}
 
 \subsection{Structural relaxation}
 

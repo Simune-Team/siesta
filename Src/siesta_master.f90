@@ -97,6 +97,9 @@ MODULE siesta_master
   use precision, only: dp              ! Double precision real kind
   use sys,       only: die             ! Termination routine
   use fdf,       only: fdf_convfac     ! Conversion of physical units
+  use m_fdf_global, only: fdf_global_get
+
+  use iosockets, only: coordsFromSocket, forcesToSocket
   use iopipes,   only: coordsFromPipe  ! Read coordinates from pipe
   use iopipes,   only: forcesToPipe    ! Write forces to pipe
 
@@ -159,6 +162,7 @@ subroutine coordsFromMaster( na, xa, cell )
   integer, intent(in) :: na        ! Number of atoms
   real(dp),intent(out):: xa(3,na)  ! Atomic coordinates
   real(dp),intent(out):: cell(3,3) ! Unit cell vectors
+  character*32 :: iface            ! Interface mode
 
 ! In the pipes version, this is where we first know that we are a server
   siesta_server = .true.
@@ -170,8 +174,10 @@ subroutine coordsFromMaster( na, xa, cell )
     else
       call die('coordsFromMaster: ERROR: number-of-atoms mismatch')
     endif
-  else    ! (.not.siesta_subroutine)
-    call coordsFromPipe( na, xa, cell )
+  else  
+    call fdf_global_get(iface, "Master.interface", "pipe")   
+    if ( iface == "pipe") call coordsFromPipe( na, xa, cell )
+    if ( iface == "socket") call coordsFromSocket (na, xa, cell )
   end if ! (siesta_subroutine)
   
 end subroutine coordsFromMaster
@@ -185,6 +191,7 @@ subroutine forcesToMaster( na, Etot, fa, stress )
   real(dp),intent(in):: Etot        ! Total energy
   real(dp),intent(in):: fa(3,na)    ! Atomic forces
   real(dp),intent(in):: stress(3,3) ! Stress tensor
+  character*32 :: iface            ! Interface mode
 
   if (siesta_subroutine) then
     if (na==nAtoms) then
@@ -194,8 +201,10 @@ subroutine forcesToMaster( na, Etot, fa, stress )
     else ! (na/=nAtoms)
       call die('coordsFromMaster: ERROR: number-of-atoms mismatch')
     endif ! (na==nAtoms)
-  else   ! (.not.siesta_subroutine)
-    call forcesToPipe( na, Etot, fa, stress )
+  else  
+    call fdf_global_get(iface, "Master.interface", "pipe")     
+    if ( iface == "pipe") call forcesToPipe( na, Etot, fa, stress )
+    if ( iface == "socket") call forcesToSocket( na, Etot, fa, stress )
   end if ! (siesta_subroutine)
 
 end subroutine forcesToMaster

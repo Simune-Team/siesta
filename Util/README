@@ -85,6 +85,8 @@ JobList:   A suite of programs to generate and dispatch multiple
 
 Scripting: Experimental scripting modules in Python (by A. Garcia)
 
+Sockets: Examples of the use of the f90 sockets interface (by M. Ceriotti)
+
 VCA: Utilities to help in Virtual-Crystal calculations (by A. Garcia)
 
 MM_Examples: Force-field examples

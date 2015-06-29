@@ -261,6 +261,7 @@ flook_siesta.o: siesta_options.o
 forhar.o: alloc.o mesh.o moremeshsubs.o parallel.o precision.o
 fsiesta_mpi.o: precision.o siesta_analysis.o siesta_end.o siesta_forces.o
 fsiesta_mpi.o: siesta_init.o siesta_master.o siesta_move.o sys.o
+fsiesta_sockets.o: fsockets.o
 geom_helper.o: intrinsic_missing.o
 get_target_stress.o: parallel.o precision.o sys.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
@@ -283,12 +284,14 @@ iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o sys.o
 iodm_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 iodmhs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioeig.o: files.o precision.o siesta_cml.o units.o
-iofa.o: files.o precision.o
+iofa.o: files.o precision.o units.o
 iogrid_netcdf.o: alloc.o parallel.o precision.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
 iopipes.o: parallel.o precision.o sys.o
+iosockets.o: cellsubs.o fsockets.o m_fdf_global.o m_mpi_utils.o parallel.o
+iosockets.o: precision.o sys.o
 iowfs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
 iozm.o: files.o parallel.o precision.o siesta_geom.o zmatrix.o
@@ -709,7 +712,7 @@ siesta_init.o: molecularmechanics.o object_debug.o parallel.o parallelsubs.o
 siesta_init.o: phonon.o projected_DOS.o siesta_cmlsubs.o siesta_dicts.o
 siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
 siesta_init.o: sys.o timer.o timestamp.o ts_init.o writewave.o zmatrix.o
-siesta_master.o: iopipes.o precision.o sys.o
+siesta_master.o: iopipes.o iosockets.o m_fdf_global.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o
 siesta_move.o: m_energies.o m_exp_coord.o m_forces.o m_kinetic.o m_steps.o
@@ -826,7 +829,8 @@ class_zspdata1d.o: class_SpData1D.o
 class_zspdata2d.o: class_SpData2D.o
 class_ztrimat.o: class_TriMat.o
 diagmemory.o: memoryinfo.o
-fsiesta.o: fsiesta_pipes.o
+f90sockets.o: fsockets.o
+fsiesta.o: fsiesta_sockets.o
 listsc_module.o: listsc.o
 m_bessph.o: bessph.o
 m_born_charge.o: born_charge.o

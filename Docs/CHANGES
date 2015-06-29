@@ -6,6 +6,62 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-06-29   15:20:00 GMT                                     trunk-473
+Merge code for 'server' operation via sockets and i-PI interface
+
+(Michele Ceriotti, Jose Soler)
+
+* A new infrastructure for socket handling in f90 has been
+implemented by Michele Ceriotti (EPFL), who is also the author
+of the i-PI framework. From its web-page:
+
+  i-PI is a Path Integral Molecular Dynamics (PIMD) wrapper code
+  designed to be used together with ab initio evaluation of the
+  interactions between the atoms. i-PI should be run as a separate
+  program, and communicates with one or more instances of an
+  electronic structure code using internet (or UNIX) sockets. The
+  communication is regulated by a simple protocol, and requires
+  patching the client code to handle the exchange of data with i-PI.
+
+This revision implements the interface to the i-PI protocol. In
+Siesta, the new socket functionality can also be used as a new form of
+'server' operation.
+
+See Util/Sockets for examples of the f90 socket interface,
+Util/SiestaSubroutine for examples of the server operation (including
+via sockets) and Tests/i-pi-test for a simple test of interoperability
+with i-PI.
+
+added:
+  Src/fsiesta_sockets.F90
+  Src/fsockets.f90
+  Src/iosockets.F90
+  Src/sockets.c
+  Tests/ipi-test/
+  Util/SiestaSubroutine/SimpleTest/README
+  Util/SiestaSubroutine/SimpleTest/socket.fdf
+  Util/SiestaSubroutine/SimpleTest/sockets.sh
+  Util/Sockets/
+renamed:
+  Util/SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel.f90 => 
+    Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/fsiesta_mpi.F90
+  Src/fsiesta_pipes.F90
+  Src/siesta_master.f90
+  Src/siesta_options.F90
+  Src/struct_init.F
+  Util/README
+  Util/SiestaSubroutine/FmixMD/Src/para.f90
+  Util/SiestaSubroutine/README
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/h2o.fdf
+  Util/SiestaSubroutine/SimpleTest/test.sh
+  Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+
+-----------------------------------------------------------------------
 2015-06-22   9:35:00 GMT                                     trunk-472
 Revert previous change affecting FA and FC files. FAC/FCC files.
 

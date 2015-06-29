@@ -17,11 +17,23 @@
 #
 #
 
-ROOT="../../../.."
+ROOT=$(cd -P -- "../../.." && pwd -P)
 PSEUDOS=${ROOT}/Tests/Pseudos
 #
 if [ -z "$SIESTA" ] ; then
-      SIESTA=${ROOT}/Obj/siesta
+    if [ ! -z "$OBJDIR" ] ; then
+	SIESTA_DIR=${ROOT}/$OBJDIR
+    fi
+    if [ -z "$SIESTA_DIR" ] ; then
+	SIESTA_DIR=${ROOT}/Obj
+    fi
+    echo "Using Siesta dir: ${SIESTA_DIR}"
+    SIESTA=$(cd -P -- ${SIESTA_DIR} && pwd -P)/siesta
+fi
+
+if [ ! -e "$SIESTA" ] ; then
+   echo "Cannot find $SIESTA"
+   exit
 fi
 echo "Using Siesta executable: $SIESTA"
 #
@@ -41,29 +53,10 @@ cp ${PSEUDOS}/O.psf  .
 ln -sf ${SIESTA} ./siesta
 #
 
-echo ""; echo "simple_pipes_serial"
-../Src/simple_pipes_serial    | tee simple_pipes_serial.out
-mv h2o.out siesta_pipes_serial.out
-
-echo ""; echo "simple_pipes_parallel"
-../Src/simple_pipes_parallel  | tee simple_pipes_parallel.out
-mv h2o.out siesta_pipes_parallel.out
-
-echo ""; echo "simple_mpi_serial"
-../Src/simple_mpi_serial      | tee simple_mpi_serial.out
-mv h2o.out siesta_mpi_serial.out
-
-echo ""; echo "simple_mpi_parallel"
-mpirun -np 2 -output-filename simple_mpi_parallel.out ../Src/simple_mpi_parallel
-mv h2o.out siesta_mpi_parallel.out
-
 cat socket.fdf >> h2o.fdf
 
 echo ""; echo "simple_sockets_serial"
 ../Src/simple_sockets_serial    | tee simple_sockets_serial.out
 mv h2o.out siesta_sockets_serial.out
 
-echo ""; echo "simple_sockets_parallel"
-../Src/simple_sockets_parallel  | tee simple_sockets_parallel.out
-mv h2o.out siesta_sockets_parallel.out
 

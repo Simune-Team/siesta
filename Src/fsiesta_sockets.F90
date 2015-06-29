@@ -8,11 +8,13 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-module fsiesta
-
-! Support routines for siesta-as-a-subroutine in Unix/Linux.
+! module fsiesta
+!
+! Support routines for siesta-as-a-subroutine.
 ! The routines that handle the other side of the communication are
-! in module iopipes of siesta program.
+! in module iosockets of siesta program.
+! Used modules
+!   f90sockets : support for socket communications (in file fsockets.f90)
 ! Usage:
 !   call siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
 !     character(len=*),intent(in) :: label  : Name of siesta process
@@ -21,7 +23,6 @@ module fsiesta
 !     integer,optional,intent(in) :: mpi_comm : not used in this version
 !     character(len=*),intent(in),optional:: launcher : full launch command
 !     logical,optional,intent(in) :: localhost : will siesta run at localhost?
-!                                                (not used in this version)
 !
 !   call siesta_units( length, energy )
 !     character(len=*),intent(in) :: length : Physical unit of length
@@ -44,16 +45,20 @@ module fsiesta
 !   mpirun process will be launched. In this case, the mpi launching
 !   command (e.g., "mpiexec <options> -n ") can be specified in the 
 !   optional argument mpi_launcher
+! - localhost=.true. is assumed by default, if not present at siesta_launch,
+!   or if siesta_launch is not called. 
+! - If localhost=.false., the IP address of the driver program's host must 
+!   be given as Master.address in siesta .fdf file.
 ! - If siesta_units is not called, length='Ang', energy='eV' are
 !   used by default. If it is called more than once, the units in the
 !   last call become in effect.
 ! - The physical units set by siesta_units are used for all the siesta
 !   processes launched
 ! - If siesta_forces is called without a previous call to siesta_launch
-!   for that label, it assumes that the siesta process has been launched
-!   (and the communication pipes created) externally in the shell.
-!   In this case, siesta_forces only opens its end of the pipes and begins
-!   communication through them.
+!   for that label, it assumes that the siesta process will be launched
+!   externally in the shell (AFTER the driver program calls siesta_forces).
+!   In this case, siesta_forces creates the socket and waits until siesta
+!   connects to it.
 ! - If argument cell is not present in the call to siesta_forces, or if
 !   the cell has zero volume, it is assumed that the system is a molecule,
 !   and a supercell is generated automatically by siesta so that the 
@@ -63,19 +68,15 @@ module fsiesta
 !   when the system tends to contract (negative pressure)
 ! - The following events result in a stopping error message:
 !   - siesta_launch is called twice with the same label
-!   - siesta_forces finds a communication error trough the pipes
+!   - siesta_forces finds a communication error trough the socket
 !   - siesta_quit is called without a prior call to siesta_launch or
 !     siesta_forces for that label
-! - If siesta_quit is not called for a launched siesta process, that
-!   process will stay listening indefinitedly to the pipe and will need
-!   to be killed in the shell.
 ! - siesta_units may be called either before or after siesta_launch
-! J.M.Soler and A.Garcia. Nov.2003
+! J.M.Soler, A.Garcia, and M.Ceriotti. Nov.2003, Mar.2015
 
-! *** Note ***
-! Make sure that you have a working "flush" subroutine in your system,
-! otherwise the process might hang.
+MODULE fsiesta
 
+use f90sockets, only: create_socket, writebuffer, readbuffer
 #ifdef __NAG__
   use f90_unix_proc, only: system
 #endif
@@ -86,22 +87,31 @@ PUBLIC :: siesta_launch, siesta_units, siesta_forces, siesta_quit
 
 PRIVATE ! Nothing is declared public beyond this point
 
-! Holds data on siesta processes and their communication pipes
+! Derived type to hold data on siesta processes and their communication sockets
   type proc
     private
-    character(len=80) :: label     ! Name of process
-    integer           :: iuc, iuf  ! I/O units for coords/forces commun.
+    character(len=256) :: label     ! name of siesta process
+    character(len=1024):: host      ! host IP address of the siesta process
+    integer            :: inet      ! communication socket type
+    integer            :: port      ! port number for the commun. socket
+    integer            :: socket    ! socket id
   end type proc
 
 ! Global module variables
-  integer, parameter :: max_procs = 100
-  integer, parameter :: dp = kind(1.d0)
-  type(proc),   save :: p(max_procs)
-  integer,      save :: np=0
-  character(len=32), save :: xunit = 'Ang'
-  character(len=32), save :: eunit = 'eV'
-  character(len=32), save :: funit = 'eV/Ang'
-  character(len=32), save :: sunit = 'eV/Ang**3'
+! WARNING: MSGLEN must be equal in siesta module iosockets
+  integer, parameter :: MSGLEN = 80      ! string length of socket messages
+  integer, parameter :: unit_len = 32    ! string length of physical units
+  integer, parameter :: max_procs = 100  ! max. simultaneous siesta processes
+  integer, parameter :: dp = kind(1.d0)  ! double precision real kind
+  type(proc),   save :: p(max_procs)     ! data of siesta processes
+  integer,      save :: np = 0           ! present number of siesta processes    
+  integer,      save :: totp = 0         ! total siesta processes ever started
+
+! Default driver's physical units (reset by siesta_units)
+  character(len=unit_len), save :: xunit = 'Ang'       ! length unit
+  character(len=unit_len), save :: eunit = 'eV'        ! energy unit
+  character(len=unit_len), save :: funit = 'eV/Ang'    ! force unit
+  character(len=unit_len), save :: sunit = 'eV/Ang**3' ! stress unit
 
 CONTAINS
 
@@ -109,37 +119,21 @@ CONTAINS
 
 subroutine siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
   implicit none
-  character(len=*),         intent(in) :: label
-  integer,         optional,intent(in) :: nnodes
-  integer,         optional,intent(in) :: mpi_comm
-  character(len=*),optional,intent(in) :: launcher
-  logical,         optional,intent(in) :: localhost ! Not used in this version
+  character(len=*),          intent(in) :: label
+  integer,         optional, intent(in) :: nnodes
+  integer,         optional, intent(in) :: mpi_comm
+  character(len=*),optional, intent(in) :: launcher
+  logical,         optional, intent(in) :: localhost
 
-  character(len=32) :: cpipe, fpipe
-  character(len=80) :: task
-  integer           :: ip, iu
+  character(len=1024):: task
+  integer            :: ip, isocket
 
-!  print*, 'siesta_launch: launching process ', trim(label)
+  print*, 'siesta_launch: launching process ', trim(label)
 
-! Check that pipe does not exist already
+! Check that siesta process does not exist already
   if (idx(label) /= 0) &
     print*, 'siesta_launch: ERROR: process for label ', trim(label), &
             ' already launched'
-
-! Create pipes
-  cpipe = trim(label)//'.coords'
-  fpipe = trim(label)//'.forces'
-  task = 'mkfifo '//trim(cpipe)//' '//trim(fpipe)
-  call system(task)
-
-! Open this side of pipes
-  call open_pipes( label )
-
-! Send wait message to coordinates pipe
-  ip = idx( label )
-  iu = p(ip)%iuc
-  write(iu,*) 'wait'
-  call pxfflush(iu)
 
 ! Start siesta process
   if (present(launcher)) then
@@ -152,6 +146,9 @@ subroutine siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
   endif
   print*,'siesta_launch: task = ',trim(task)
   call system(task)
+
+! Create and open new socket for communication with siesta process
+  call open_new_socket(label,localhost)
 
 end subroutine siesta_launch
 
@@ -178,20 +175,20 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
   real(dp), optional, intent(out):: fa(3,na)
   real(dp), optional, intent(out):: stress(3,3)
 
-  integer           :: i, ia, ip, iu, n
-  character(len=80) :: message
-  real(dp)          :: e, f(3,na), s(3,3), c(3,3)
+  integer              :: i, ia, ip, n, socket
+  character(len=MSGLEN):: message
+  real(dp)             :: e, f(3*na), s(9), c(9)
 
-! Find system index
+! Find process index
   ip = idx( label )
   if (ip==0) then
-    call open_pipes( label )
+    call open_new_socket( label )
     ip = idx( label )
   end if
 
 ! Copy unit cell
   if (present(cell)) then
-    c = cell
+    c = reshape(cell,(/9/))
   else
 !**AG: Careful with this ...
     c = 0._dp
@@ -202,41 +199,33 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
   print'(3a,/,(3f12.6))','siesta_forces: cell (',trim(xunit),') =',c
   print'(3a,/,(3f12.6))','siesta_forces: xa (',trim(xunit),') =', xa
 
-! Write coordinates to pipe
-  iu = p(ip)%iuc
-  write(iu,*) 'begin_coords'
-  write(iu,*) trim(xunit)
-  write(iu,*) trim(eunit)
-  do i = 1,3
-    write(iu,*) c(:,i)
-  end do
-  write(iu,*) na
-  do ia = 1,na
-    write(iu,*) xa(:,ia)
-  end do
-  write(iu,*) 'end_coords'
-  call pxfflush(iu)
+! Write coordinates to socket
+  socket = p(ip)%socket
+  call writebuffer( socket, 'begin_coords' )
+  call writebuffer( socket, xunit )
+  call writebuffer( socket, eunit )
+  call writebuffer( socket, c, 9 )
+  call writebuffer( socket, na )
+  call writebuffer( socket, reshape(xa,(/3*na/)), 3*na )
+  call writebuffer( socket, 'end_coords' )
 
-! Read forces from pipe
-  iu = p(ip)%iuf
-  read(iu,*) message
+! Read forces from socket
+  call readbuffer( socket, message )
   if (message=='error') then
-    read(iu,*) message
+    call readbuffer( socket, message )
     call die( 'siesta_forces: siesta ERROR:' // trim(message))
   else if (message/='begin_forces') then
     call die('siesta_forces: ERROR: unexpected header:' // trim(message))
   end if
-  read(iu,*) e
-  read(iu,*) s
-  read(iu,*) n
+  call readbuffer( socket, e )
+  call readbuffer( socket, s, 9 )
+  call readbuffer( socket, n )
   if (n /= na) then
     print*, 'siesta_forces: ERROR: na mismatch: na, n =', na, n
     call die()
   end if
-  do ia = 1,na
-    read(iu,*) f(:,ia)
-  end do
-  read(iu,*) message
+  call readbuffer( socket, f, 3*na )
+  call readbuffer( socket, message )
   if (message/='end_forces') then
     call die('siesta_forces: ERROR: unexpected trailer:' // trim(message))
   end if
@@ -248,12 +237,13 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 
 ! Copy results to output arguments
   if (present(energy)) energy = e
-  if (present(fa))     fa     = f
-  if (present(stress)) stress = s
+  if (present(fa))     fa     = reshape(f,(/3,na/))
+  if (present(stress)) stress = reshape(s,(/3,3/))
 
 end subroutine siesta_forces
 
 !---------------------------------------------------
+
 subroutine siesta_quit( label )
   implicit none
   character(len=*), intent(in) :: label
@@ -262,39 +252,40 @@ subroutine siesta_quit( label )
 
   if (label == 'all') then
     ! Stop all siesta processes
-    do ip = 1,np
+    do ip = np,1,-1
       call siesta_quit_process( p(ip)%label )
     end do
   else
     ! Stop one siesta process
-     call siesta_quit_process( label )
+    call siesta_quit_process( label )
   endif
 
 end subroutine siesta_quit
+
+!---------------------------------------------------
 
 subroutine siesta_quit_process(label)
   implicit none
   character(len=*), intent(in) :: label
 
-  integer :: ip, iuc, iuf
-  character(len=20) message
+  integer :: ip, socket
+  character(len=MSGLEN):: message
 
     ip = idx(label)      ! Find process index
     if (ip==0) &
       call die('siesta_quit: ERROR: unknown label: ' // trim(label))
 
-    iuc = p(ip)%iuc      ! Find cooordinates pipe unit
-    write(iuc,*) 'quit'  ! Send quit signal through pipe
-    call pxfflush(iuc)
-    iuf = p(ip)%iuf                  ! Find forces pipe unit
-    read(iuf,*) message              ! Receive response from pipe
+    print*,'siesta_quit: stopping siesta process ',trim(label)
+    socket = p(ip)%socket
+    call writebuffer(socket,'quit')  ! Send quit signal to server
+    call readbuffer(socket,message)  ! Receive response
     if (message == 'quitting') then  ! Check answer
-      close(iuc,status="delete")     ! Close coordinates pipe
-      close(iuf,status="delete")     ! Close forces pipe
       if (ip < np) then              ! Move last process to this slot
-        p(ip)%label = p(np)%label
-        p(ip)%iuc   = p(np)%iuc
-        p(ip)%iuf   = p(np)%iuf
+        p(ip)%label  = p(np)%label
+        p(ip)%host   = p(np)%host
+        p(ip)%inet   = p(np)%inet
+        p(ip)%port   = p(np)%port
+        p(ip)%socket = p(np)%socket
       end if
       np = np - 1                    ! Remove process
     else
@@ -305,69 +296,52 @@ end subroutine siesta_quit_process
 
 !---------------------------------------------------
 
-subroutine open_pipes( label )
+subroutine open_new_socket( label, localhost )
   implicit none
-  character(len=*), intent(in) :: label
+  character(len=*),intent(in) :: label
+  logical,optional,intent(in) :: localhost
 
-  integer           :: iuc, iuf
-  character(len=80) :: cpipe, fpipe
+  integer,parameter:: iu=87
+  character(len=32):: host
+  logical          :: local
 
-! Check that pipe does not exist already
+! Check that process does not exist already
   if (idx(label) /= 0) &
-    print *, 'open_pipes: ERROR: pipes for ', trim(label), &
-            ' already opened'
+    print*, 'fsiesta ERROR: siesta process ', trim(label),' exists already'
 
-! Get io units for pipes
-  call get_io_units( iuc, iuf )
-
-! Open pipes
-  cpipe = trim(label)//'.coords'
-  fpipe = trim(label)//'.forces'
-  open( unit=iuc, file=cpipe, form="formatted", &
-        status="old", position="asis")
-  open( unit=iuf, file=fpipe, form="formatted", &
-        status="old", position="asis")
+! Get my IP address, unless socket communication is local
+  if (present(localhost)) then
+    local = localhost
+  else
+    local = .true.
+  endif
+  if (local) then
+    host = 'localhost'
+  else
+    call system("ifconfig eth0 | awk '/inet / { print $2 }'" // &
+                "| sed 's/addr://' > my_ip_addr")
+    open(iu,file='my_ip_addr')
+    read(iu,*) host
+    close(iu)
+!    call system("rm -f my_ip_addr")
+  endif
 
 ! Store data of process
-  np = np + 1
+  np = np+1              ! present number of processes
+  totp = totp+1          ! total number of processes that were created
   if (np > max_procs) then
-    stop 'siesta_launch: ERROR: parameter max_procs too small'
+    stop 'fsiesta ERROR: parameter max_procs too small'
   else
     p(np)%label = label
-    p(np)%iuc = iuc
-    p(np)%iuf = iuf
+    p(np)%host = host
+    p(np)%inet = 1
+    p(np)%port = 10000+totp
   end if
 
-end subroutine open_pipes
+! Create socket
+  call create_socket( p(np)%socket, p(np)%inet, p(np)%port, p(np)%host )
 
-!---------------------------------------------------
-
-subroutine get_io_units( iuc, iuf)
-! Finds two available I/O unit numbers
-  implicit none
-  integer, intent(out)  :: iuc, iuf
-
-  integer :: i, ip
-  logical :: unit_used
-
-  iuc = 0
-  iuf = 0
-  do i = 10, 99
-    inquire(unit=i,opened=unit_used)  ! This does not work with pipes
-    do ip = 1,np
-      unit_used = unit_used .or. i==p(ip)%iuc .or. i==p(ip)%iuf
-    end do
-    if (.not. unit_used) then
-      if (iuc==0) then
-        iuc = i
-      else
-        iuf = i
-        return
-      end if
-    endif
-  enddo
-  stop 'fsiesta:get_io_units: ERROR: cannot find free I/O unit'
-end subroutine get_io_units
+end subroutine open_new_socket
 
 !---------------------------------------------------
 
@@ -386,16 +360,12 @@ integer function idx( label )
 end function idx
 
 !---------------------------------------------------
-!
-! Private copy of die
-!
-subroutine die(msg)
-character(len=*), intent(in), optional :: msg
 
-if (present(msg)) then
-   write(6,*) msg
-endif
-STOP
+subroutine die(msg)
+  character(len=*), intent(in), optional :: msg
+  if (present(msg)) write(6,*) trim(msg)
+  stop
 end subroutine die
 
-end module fsiesta
+END MODULE fsiesta
+
