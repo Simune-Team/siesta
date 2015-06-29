@@ -225,7 +225,7 @@ $(FDF):
 		    "FPPFLAGS=$(FPPFLAGS)" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 #
-# Routines using fdf calls.
+# Routines using fdf calls. Woefully incomplete, but the $(FDF) target is made first.
 #
 dhscf.o iolwf.o  grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
@@ -236,8 +236,12 @@ readsp.o eggbox.o iopipes.o : $(FDF)
 atom.o basis_io.o basis_specs.o: $(FDF)
 #
 # C/Fortran sockets library 
-sockets.o: ../Src/sockets.c
-	$(CC) -c $<
+#
+# As it stands, it will use the CC in the default rules
+# Define CC (and maybe CFLAGS) in arch.make for full control
+#
+sockets.o:  sockets.c   # Will be picked-up in the VPATH
+	$(CC) $(CFLAGS)-c $<
 #
 ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
 #

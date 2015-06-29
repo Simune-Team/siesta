@@ -12,6 +12,8 @@ user's program. There are three versions that use different communication modes:
   Inet sockets allow that siesta and the user's program run on different
   computers. Sockets are also used for communication between siesta and 
   the i-PI code: http://epfl-cosmo.github.io/gle4md/index.html?page=ipi
+  (The socket functionality is based on code by M. Ceriotti. See also
+   Util/Sockets)
 - The 'MPI' version requires the user's program to be compiled together
   with siesta, which becomes a true subroutine. Despite its name, this
   version works also in serial mode, not requiring MPI in this case.

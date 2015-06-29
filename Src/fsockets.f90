@@ -184,8 +184,8 @@ CONTAINS
        DO i=1,n
           cstr(i) = fstr(i:i)
        ENDDO
-       cstr(n+1) = C_NULL_CHAR
     END IF
+    cstr(n+1) = C_NULL_CHAR
   END SUBROUTINE
 
   SUBROUTINE writebuffer_d (psockfd, fdata)
