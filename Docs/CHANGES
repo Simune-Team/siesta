@@ -6,6 +6,65 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-06-22   9:35:00 GMT                                     trunk-472
+Revert previous change affecting FA and FC files. FAC/FCC files.
+
+* At revno 464, a change was introduced to output the constrained
+  forces to the FA and FC files.  This had unintended consequences for
+  some analysis tools.
+
+  The change has been reverted, and the FC/FA files are now created as
+  before. In addition, if constraints are used, new FCC/FAC files
+  will be created with the constrained forces.
+
+  The vibra utility will default to use the FCC files if the
+  GeometryConstraints block exists, and in any case the
+  force-constants file to use can be specified with the Vibra.FC fdf
+  option.
+
+  To support these changes, the write_forces subroutine has now 
+  the geometry step as an additional argument.
+
+  The writing of forces has been moved to its appropriate place in the
+  write_subs modules.
+
+* Some more cosmetic changes in the Vibra package.
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/iofa.f
+  Src/ofc.f
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/state_analysis.F
+  Src/write_subs.F
+  Util/Vibra/Docs/CHANGES
+  Util/Vibra/Docs/vibra.tex
+  Util/Vibra/Examples/README
+  Util/Vibra/Examples/si54.bands
+  Util/Vibra/Examples/si54.fdf
+  Util/Vibra/Src/Makefile
+  Util/Vibra/Src/fcbuild.f
+  Util/Vibra/Src/recoor.f
+  Util/Vibra/Src/vibra.f
+
+-----------------------------------------------------------------------
+2015-06-17   8:50:00 GMT                                     trunk-471
+Fix SiestaXC makefile. Clarifiy docs for WriteDenchar
+
+* Fix a typo in SiestaXC/makefile that was preventing
+  the correct processing of the "dist" target.
+  (J. Soler)
+
+* Update the WriteDenchar documentation in the Siesta manual.
+  (G. Huhs)
+
+modified:
+  Docs/siesta.tex
+  Src/SiestaXC/makefile
+
+-----------------------------------------------------------------------
 2015-06-10  12:30:00 GMT                                     trunk-470
 Build fixes in Util and SiestaXC
 

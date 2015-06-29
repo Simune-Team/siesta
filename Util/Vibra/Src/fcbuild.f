@@ -14,7 +14,7 @@
 c *********************************************************************
 c Build supercell coordinates for Force Constant Matrix calculation,
 c for clusters, linear chains, slabs and 3D xtals.
-c Compatible with vibrator.f
+c Compatible with vibra.f
 c
 c Uses the FDF (Flexible Data Format) package (version 0.66.1.5)
 c of J.M.Soler and A. Garcia, 
@@ -57,6 +57,8 @@ c Internal variables ...
 
       data pi / 3.1415926d0 /
       data overflow /.false./
+
+      logical :: has_constr
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -114,6 +116,12 @@ c Lattice constant of unit cell...
       write(6,'(a,f10.5,a)') 'Lattice Constant    = ',alat,'  Bohr'
 c ...
 
+c Whether the constrainst block exists
+      has_constr = fdf_block('GeometryConstraints',bfdf)
+      has_constr = has_constr .or.
+     &     fdf_block('Geometry.Constraints',bfdf)
+c ...
+      
 c Lattice vectors of unit cell...
       if ( fdf_block('LatticeParameters',bfdf) .and.
      .     fdf_block('LatticeVectors',bfdf) ) then
@@ -264,6 +272,17 @@ c  Open file to write ...
       call io_assign(iunit)
       open(unit=iunit,file='FC.fdf',status='new',err=100)
 
+c  Write new constrained file if the GeometryConstraints
+c  block exists
+      if ( has_constr ) then
+         write(iunit,*)
+         write(iunit,'(a)') '# GeometryConstraints block found'
+         write(iunit,'(a)') '# defaulting to constrained FC'
+         write(iunit,'(a,a)') 'Vibra.FC ',trim(slabel)//'.FCC'
+         write(iunit,*)
+      end if
+c ...
+      
 c  Write Number of atoms in Supercell ...
       write(iunit,'(a,i5)') 'NumberOfAtoms       ',nnat
       write(iunit,*) 
@@ -323,6 +342,7 @@ c ...
      . '    ERROR: File FC.fdf already exists!',
      . '********************************************'
       stop
+
       CONTAINS
 
       subroutine die(str)

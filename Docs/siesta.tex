@@ -6389,21 +6389,22 @@ printed but the program does not stop.
 \index{denchar}
 
 The program {\tt denchar} in {\tt Util/Denchar} can generate
-charge-density and wavefunction contours.
+charge-density and wavefunction information in real space.
 
 \begin{description}
 
 \item[{\bf WriteDenchar}] ({\it logical}): \index{WriteDenchar@{\bf
-    WriteDenchar}} \index{output!charge density and/or wfs for DENCHAR code}
-  Instructs to write information needed by the utility program DENCHAR
-  (by J. Junquera and P. Ordej\'on) to plot the valence charge density
-  contours (see {\tt Util/Denchar}). The information is written in
-  file {\tt SystemLabel}.PLD.
+    WriteDenchar}} \index{output!charge density and/or wfs for DENCHAR
+  code} Instructs to write information needed by the utility program
+  DENCHAR (by J. Junquera and P. Ordej\'on) to generate valence charge
+  densities and/or wavefunctions in real space (see {\tt
+    Util/Denchar}). The information is written in files {\tt
+    SystemLabel}.PLD and {\tt SystemLabel}.DIM.
 
-{\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
-
-Apart from the PLD file, you will need the Density-Matrix (DM) file
-and/or a wavefunction (WFSX) file. 
+To run DENCHAR you will need, apart from the PLD and DIM files,
+the Density-Matrix (DM) file and/or a wavefunction (WFSX)
+file, and the .ion files containing the information about the basis
+orbitals.
 
 {\it Default value:} {\tt .false.}
 
@@ -7063,7 +7064,9 @@ It is not affected by the setting of {\bf LongOutput}.
     WriteForces}}\index{output!forces} If {\tt .true.} it writes the
   atomic forces to the output file at every MD time step or relaxation
   step.  Note that the forces of the last step can be found in the
-  file {\it Systemlabel}.FA .
+  file {\it Systemlabel}.FA. If constraints are used, the file
+   {\it SystemLabel}.{\tt FAC} is also written.
+
 
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
@@ -7310,6 +7313,8 @@ atoms is writen (divided by the value of the displacement),
 in units of eV/\AA$^2$. Each line has the forces in the $x$, $y$
 and $z$ direction for one of the atoms.
 
+(If constraints are used, the file {\it SystemLabel}.{\tt FCC} is
+also written.)
 
 \subsection{Interface to the {\sc PHONON} program}
 \label{sec:phonon-interface}

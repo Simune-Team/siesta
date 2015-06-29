@@ -9,7 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 
-      program vibrator
+      program vibra
 
 c *********************************************************************
 c Calculation of vibrational modes for clusters, linear chains, slabs 
@@ -323,7 +323,7 @@ c ...
 
 c Read Force Constants Matrix ...
       call io_assign(iunit2)
-      fname = paste(slabel,'.FC')
+      fname = fdf_string('Vibra.FC',paste(slabel,'.FC'))
       open(iunit2,file=fname,status='old')
       read(iunit2,*)
 c Negative displacements
@@ -618,16 +618,12 @@ c write the eigenvalues and eigenvectors to output data file.
         if (icall .eq. 3) then
           call io_assign(iunit3)
           fname = paste(slabel,'.vectors')
-          open(iunit3,file=fname,status='unknown')
+          open(iunit3,file=fname,status='unknown',position='append')
           if (ik.eq.1) then
+            rewind(iunit3)
 	    write(6,'(/,a)')' Writing eigenvalues and eigenvectors'
 	    write(6,'(2a,/)')' to output file ', fname
-          else
-c         go to end of file
-18          read(iunit3,*,end=28)
-            goto 18
           endif
-28        continue
           write(iunit3,'(/,a,3f12.6)') 'k            = ',
      .                                  q(1),q(2),q(3)
 	  do 20 i=1,3*natoms
