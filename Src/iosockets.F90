@@ -148,7 +148,7 @@ subroutine coordsFromSocket( na, xa, cell )
         if (trim(header)=='quit') then
           call writebuffer(socket,'quitting')
           call close_socket(socket)
-          call die(myName//'STOP requested by driver')
+          call bye(myName//'STOP requested by driver')
         elseif (trim(header)=='wait') then
           call writebuffer(socket,'ready')
           cycle ! do loop
