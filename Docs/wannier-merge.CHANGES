@@ -1,4 +1,57 @@
 ------------------------------------------------------------
+2015-06-30   Alberto Garcia trunk-473--radfunc-6--wannier-10
+Merge trunk-473
+
+473: Merge code for 'server' operation via sockets and i-PI interface
+472: Revert previous change affecting FA and FC files. FAC/FCC files.
+
+added:
+  Src/fsiesta_sockets.F90
+  Src/fsockets.f90
+  Src/iosockets.F90
+  Src/sockets.c
+  Tests/ipi-test/
+  Util/SiestaSubroutine/SimpleTest/README
+  Util/SiestaSubroutine/SimpleTest/socket.fdf
+  Util/SiestaSubroutine/SimpleTest/sockets.sh
+  Util/Sockets/
+renamed:
+  Util/SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel.f90 => 
+       Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+  Util/Vibra/Src/vibrator.f => Util/Vibra/Src/vibra.f
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Src/Makefile
+  Src/fsiesta_mpi.F90
+  Src/fsiesta_pipes.F90
+  Src/iofa.f
+  Src/ofc.f
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_master.f90
+  Src/siesta_options.F90
+  Src/state_analysis.F
+  Src/struct_init.F
+  Src/write_subs.F
+  Util/README
+  Util/SiestaSubroutine/FmixMD/Src/para.f90
+  Util/SiestaSubroutine/README
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/h2o.fdf
+  Util/SiestaSubroutine/SimpleTest/test.sh
+  Util/Vibra/Docs/CHANGES
+  Util/Vibra/Docs/vibra.tex
+  Util/Vibra/Examples/README
+  Util/Vibra/Examples/si54.bands
+  Util/Vibra/Examples/si54.fdf
+  Util/Vibra/Src/Makefile
+  Util/Vibra/Src/fcbuild.f
+  Util/Vibra/Src/recoor.f
+  Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+  Util/Vibra/Src/vibra.f
+
+------------------------------------------------------------
 2015-06-23   Alberto Garcia trunk-471--radfunc-6--wannier-10
 Optimize writeunk some more
 

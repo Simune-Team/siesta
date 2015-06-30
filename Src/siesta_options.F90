@@ -1087,7 +1087,7 @@ MODULE siesta_options
       idyn = 6
     else if (leqi(dyntyp,'phonon')) then
       idyn = 7
-    else if (leqi(dyntyp,'forces')) then
+    else if (leqi(dyntyp,'forces').or.leqi(dyntyp,'master')) then
       idyn = 8
     else
       call die('Invalid Option selected - value of MD.TypeOfRun not recognised')
