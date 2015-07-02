@@ -670,6 +670,7 @@ class TBT_Geom(SIESTA_UNITS):
                 # Write out species
                 # First swap key and value
                 spec = dict(zip(spec.values(), spec.keys()))
+                ispec = len(spec)
                 fh.write('NumberOfSpecies {0}\n'.format(ispec))
                 fh.write('%block ChemicalSpeciesLabel\n')
                 for i in range(ispec):

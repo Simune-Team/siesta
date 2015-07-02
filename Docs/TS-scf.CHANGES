@@ -1,4 +1,15 @@
 ----------------------------------------------------
+July 2, 2015 -- Nick Papior          trunk-473---ts-scf-448
+tbt: moved T-proj timer
+
+* Instead of timing zero loops we check
+  and bypass the timing and zero-loop
+
+modified:
+  Util/TS/TB/tbt_tb.py
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 June 23, 2015 -- Nick Papior          trunk-472---ts-scf-447
 Bugfix for OMP in parallel
 

@@ -902,6 +902,8 @@ contains
 
 #ifdef NCDF_4
 
+          if ( N_proj_T > 0 ) then
+
           call timer('T-proj',1)
 
           ! Calculate the projections
@@ -1028,10 +1030,10 @@ contains
           call timer('T-proj',2)
 
           ! Save the projections
-          if ( N_proj_T > 0 ) then
-             call proj_cdf_save(cdf_fname_proj,N_Elec,Elecs, &
-                  ikpt,nE,N_proj_T,proj_T, &
-                  pDOS, bTk, save_DATA )
+          call proj_cdf_save(cdf_fname_proj,N_Elec,Elecs, &
+               ikpt,nE,N_proj_T,proj_T, &
+               pDOS, bTk, save_DATA )
+
           end if
 #endif
 
