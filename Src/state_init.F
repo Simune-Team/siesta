@@ -17,7 +17,7 @@
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
      &                             lasto, superc, rmaxv, indxuo
-      use atomlist,          only: no_l
+      use atomlist,          only: no_l, iza
       use alloc,             only: re_alloc, de_alloc, alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
@@ -26,6 +26,7 @@
       use zmatrix,           only: lUseZmatrix, write_zmatrix
       use m_energies,        only: Emad
       use write_subs
+      use m_ioxv,            only: ioxv
       use m_steps
       use parallel,          only: IOnode, node, nodes
       use m_spin,            only: nspin
@@ -58,8 +59,10 @@
       integer            :: i, ix, iadispl, ixdispl
       logical            :: auxchanged   ! Auxiliary supercell changed?
       logical            :: folding, folding1
+      logical            :: foundxv  ! dummy for call to ioxv
       external           ::  madelung, timer
       real(dp), external :: volcel
+
 #ifdef TRANSIESTA
       integer                       :: ts_kscell_file(3,3) = 0
       real(dp)                      :: ts_kdispl_file(3) = 0.0
@@ -68,15 +71,11 @@
       integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
       real(dp),             pointer :: dummyH(:,:)
-!     SIESTA External
-      character(len=label_length+5) :: PASTE
 #endif
 !------------------------------------------------------------------------- BEGIN
-      call timer( 'IterMD', 1 )
-#ifdef DEBUG
-      call write_debug( '  PRE state_init' )
-#endif
-      call timer( 'STinit', 1 )
+      call timer( 'IterGeom', 1 )
+
+      call timer( 'state_init', 1 )
 
       istp = istp + 1
 
@@ -102,19 +101,15 @@
             write(6,'(28(" "),a)') 'Undisplaced coordinates'
           else
             iadispl = (istep-mod(istep-1,6))/6+ia1
-            write(6,'(28(" "),a,i6)') 'displace atom   ', iadispl
             ix = mod(istep-1,6)+1
             ixdispl = (ix - mod(ix-1,2) +1)/2
-            write(6,'(28(" "),a,i6)') 'in direction    ', ixdispl
-            write(6,'(28(" "),a,f8.4,a)') 'by       ', dx, ' Bohr'
+            write(6,'(a,i6,a,i3,a,f10.6,a)') 'displace atom ', iadispl,
+     $           ' in direction ', ixdispl, ' by', dx, ' Bohr'
           endif
 
         case (8)
           write(6,'(28(" "),a,i6)') 'Begin Server step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
-!         Find interatomic distances (output in file BONDS)
-          call bonds( ucell, na_u, isa, xa,
-     &                rmax_bonds, trim(slabel)// ".BONDS" )
 
         end select
         write(6,'(2a)') '                        ',
@@ -122,7 +117,18 @@
 
 !       Print atomic coordinates
         call outcoor( ucell, xa, na_u, ' ', writec )
-        call siesta_write_positions()
+
+!       Save structural information in crystallographic format
+!       (in file SystemLabel.STRUCT_OUT),
+!       canonical Zmatrix (if applicable), and CML record
+
+       call siesta_write_positions(moved=.false.)
+       
+       ! Write the XV file for single-point calculations, so that
+       ! it is there at the end for those users who rely on it
+       call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+     &             foundxv)
+
       endif
 
 !     Actualize things if variable cell 
@@ -280,8 +286,8 @@
 #ifdef TRANSIESTA
 !     If onlyS, Save overlap matrix and exit                       ! MPN
       if (onlyS) then                                              ! MPN    
-        fname = paste( slabel, '.onlyS' )
-        fnlength = label_length+6
+        fname = trim(slabel) // '.onlyS'
+        fnlength = len_trim(fname)
         nullify(dummyH)
         call re_alloc( dummyH, 1, maxnh, 1, 1, 'dummyH', 'state_init' )
 
@@ -322,10 +328,8 @@
      &                              istep)
       endif
 #endif
-      call timer( 'STinit', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS state_init' )
-#endif
+      call timer( 'state_init', 2 )
+
 !--------------------------------------------------------------------------- END
       END subroutine state_init
       END module m_state_init
