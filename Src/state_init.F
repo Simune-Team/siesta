@@ -84,15 +84,44 @@
      &                    '=============================='
         select case (idyn)
         case (0)
-          write(6,'(28(" "),a,i6)') 'Begin CG move = ',istep
-          if (cml_p) call cmlStartStep(mainXML, type='CG', index=istp)
+           if (nmove == 0) then
+              write(6,'(28(" "),a)') 'Single-point calculation'
+              if (cml_p) call cmlStartStep(mainXML, type='Single-Point',
+     $                        index=istp)
+           else
+              if (broyden_optim) then
+                 write(6,'(28(" "),a,i6)') 'Begin Broyden opt. move = ',
+     $                istep
+              else if (fire_optim) then
+                 write(6,'(28(" "),a,i6)') 'Begin FIRE opt. move = ',
+     $                istep
+              else
+                 write(6,'(28(" "),a,i6)') 'Begin CG opt. move = ',
+     $                istep
+              end if
+              if (cml_p) call cmlStartStep(mainXML, type='Geom. Optim',
+     $             index=istp)
+           endif
+
 !         Print Z-matrix coordinates
           if (lUseZmatrix) then
              call write_Zmatrix()
           endif
-        case (1:5)
-          write(6,'(28(" "),a,i6)') 'Begin MD step = ',istep
-          if (cml_p) call cmlStartStep(mainXML, type='MD', index=istep)
+        case (1, 3)
+           if (iquench > 0 ) then
+              write(6,'(28(" "),a,i6)') 'Begin MD quenched step = ',
+     $             istep
+              if (cml_p) call cmlStartStep(mainXML, type='MD-quenched',
+     $             index=istep)
+           else
+              write(6,'(28(" "),a,i6)') 'Begin MD step = ',
+     $             istep
+              if (cml_p) call cmlStartStep(mainXML, type='MD',
+     $             index=istep)
+           endif
+        case (2,4,5)
+           write(6,'(28(" "),a,i6)') 'Begin MD step = ', istep
+           if (cml_p) call cmlStartStep(mainXML, type='MD', index=istep)
         case (6)
           write(6,'(28(" "),a,i6)') 'Begin FC step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='FC', index=istep)

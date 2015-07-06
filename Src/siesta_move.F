@@ -193,6 +193,9 @@
         ! are not changed.
          if ( iquench .ne. 0 ) then
             relaxd = all(abs(cfa(1:3,1:na_u)) < ftol)
+            ! We might want to fall back on a different relaxation
+            ! scheme when we reach the slow-moving part
+            ! (check temp_ion?;  check cfa behavior?)
          endif
          if (.not. relaxd) then
             call verlet2(istp, iunit, iquench, na_u, cfa, dt,
