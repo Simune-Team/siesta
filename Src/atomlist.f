@@ -20,7 +20,7 @@
       implicit none
 
       private
-      public :: initatomlists, superc, superx
+      public :: initatomlists, superc
 
 !
 !     Instead of "generic" na, no, and nokb, we use:
