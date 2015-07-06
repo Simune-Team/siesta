@@ -272,13 +272,27 @@ contains
 
     else ! the user *must* have supplied an electrode
 
-       ! Figure out which electrode has been given
+       ! Figure out which electrode(s) has been given
+       ! as a starting point
+       ! Note that for several electrodes one could
+       ! possibly get a better sparsity pattern by 
+       ! using several as a starting point
        iEl = 0
+       call rgn_delete(r_pvt)
        do i = 1 , N_Elec
-          if ( leqi(Elecs(i)%name,ctmp) ) iEl = i
+          if ( sort_contain(ctmp,Elecs(i)%name) ) then
+             io = Elecs(i)%idx_o
+             call rgn_range(r_tmp,io,io-1+TotUsedOrbs(Elecs(i)))
+             if ( iEl == 0 ) then
+                call rgn_copy(r_tmp,r_pvt)
+             else
+                call rgn_union(r_pvt,r_tmp,r_pvt)
+             end if
+             iEl = iEl + 1
+          end if
        end do
        if ( iEl == 0 ) then
-          print *,csort
+          print *,trim(csort)
           call die('Could find the electrode in &
                &TS.BTD.Pivot in the list of electrodes, &
                &please correct sorting method.')
@@ -287,17 +301,17 @@ contains
        ! First we sort our pivot-region to minimize the elements
        ! in the BTD format
        if ( sort_orb ) then
-          i = Elecs(iEl)%idx_o
-          call rgn_range(r_pvt,i,i-1+TotUsedOrbs(Elecs(iEl)))
+          call rgn_copy(r_pvt,r_tmp)
        else
-          i = Elecs(iEl)%idx_a
-          call rgn_range(r_pvt,i,i-1+TotUsedAtoms(Elecs(iEl)))
+          call rgn_Orb2Atom(r_pvt,na_u,lasto,r_tmp)
+          call rgn_copy(r_tmp,r_pvt)
        end if
-       call rgn_copy(r_pvt,r_tmp)
+
        ! we sort the newly attached region
-       call rgn_sp_sort(r_pvt, fdit, tmpSp2, r_tmp, R_SORT_MAX_FRONT )
-       call rgn_copy(r_tmp,r_pvt)
-       call rgn_delete(r_tmp)
+       if ( iEl == 1 ) then
+          call rgn_sp_sort(r_pvt, fdit, tmpSp2, r_tmp, R_SORT_MAX_FRONT )
+       end if
+
        do 
           
           ! Create attached region starting from electrode 1
@@ -489,6 +503,43 @@ contains
             &perform GFGGF calculation. Cannot sustain the full column. &
             &Use the full/MUMPS TS.SolutionMethod instead')
     end if
+
+  contains
+
+    function sort_contain(str,name) result(contain)
+      use m_char, only : lcase
+      character(len=*), intent(in) :: str, name
+      logical :: contain
+
+      character(len=len(str)) :: lstr
+      character(len=len_trim(name)) :: lname
+
+      integer :: i
+
+      contain = .false.
+
+      lstr = lcase(str)
+      lname = lcase(trim(name))
+
+      ! check whether it is in this stuff
+      i = index(lstr,lname)
+      if ( i > 1 ) then
+         contain = scan(lstr(i-1:i-1),'+ ') == 1
+         i = i + len_trim(lname)
+         if ( i <= len(str) ) then
+            contain = contain .and. scan(lstr(i:i),'+ ') == 1
+         end if
+      else if ( i == 1 ) then
+         i = i + len_trim(lname)
+         if ( i <= len(str) ) then
+            contain = scan(lstr(i:i),'+ ') == 1
+         else
+            ! it was found and the string is too short
+            contain = .true.
+         end if
+      end if
+      
+    end function sort_contain
     
   end subroutine ts_tri_init
 

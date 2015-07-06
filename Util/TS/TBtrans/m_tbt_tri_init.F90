@@ -18,7 +18,7 @@
 
 module m_tbt_tri_init
 
-  use precision, only : dp
+  use precision, only : dp, i8b
   use m_region
 
   implicit none
@@ -133,6 +133,7 @@ contains
     use create_Sparsity_Union
 
     use m_ts_rgn2trimat
+    use m_ts_tri_common, only : nnzs_tri_i8b
     use m_ts_electype
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
@@ -151,6 +152,8 @@ contains
 
     type(Sparsity) :: tmpSp1, tmpSp2
     integer :: i
+    real(dp) :: mem
+    integer(i8b) :: els
 
     call timer('tri-init',1)
 
@@ -222,6 +225,19 @@ contains
     if ( IONode ) then
        ! Print out stuff
        call rgn_print(DevTri, seq_max = 10 , collapse = .false.)
+       ! Print out memory estimate
+       els = nnzs_tri_i8b(DevTri%n,DevTri%r)
+       mem = 2._dp * real(els,dp) * 16._dp / 1024._dp ** 2
+       if ( mem > 600._dp ) then
+          ! more than 600 MB we write out GB
+          write(*,'(a,i0,a,f8.2,a)') 'tbtrans: Matrix elements in tri / memory: ', &
+               els,' / ',mem / 1024._dp,' GB'
+       else
+          write(*,'(a,i0,a,f8.2,a)') 'tbtrans: Matrix elements in tri / memory: ', &
+               els,' / ',mem,' MB'
+       end if
+       write(*,'(/,a)') 'tbtrans: Electrodes tri-diagonal matrices'
+       
        do i = 1 , N_Elec
           call rgn_print(ElTri(i), seq_max = 10 , collapse = .false.)
        end do
@@ -231,18 +247,20 @@ contains
 
   end subroutine tbt_tri_init
 
-  subroutine tbt_tri_print_opti(na_u,lasto,r_oDev)
+  subroutine tbt_tri_print_opti(na_u,lasto,r_oDev,N_Elec)
     use parallel, only : IONode
     use m_region
     use m_verbosity, only : verbosity
     integer, intent(in) :: na_u, lasto(0:na_u)
     type(tRgn), intent(in) :: r_oDev
+    integer, intent(in) :: N_Elec
 
     integer :: cum_sum, li, i, off
     type(tRgn) :: ro, ra
 
     if ( .not. IONode ) return
     if ( verbosity < 2 ) return
+    if ( N_Elec > 2 ) return
 
     ! In case we have more than two tri-mat regions we can advice
     ! the user to a minimal tri-mat matrix
@@ -266,7 +284,7 @@ contains
        call rgn_sort(ra)
 
        write(*,*) ''
-       write(*,*) 'tbtrans: Suggested atoms for fastest transmission calculation:'
+       write(*,'(a)') 'tbtrans: Suggested atoms for fastest transmission calculation:'
 
        ra%name = ' '
        call rgn_print(ra, seq_max = 12)

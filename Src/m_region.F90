@@ -467,9 +467,8 @@ contains
     type(OrbitalDistribution), intent(in) :: dit
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
-    ! the sorting region (i.e. the orbitals that are allowed
-    ! to be pivoted)
-    type(tRgn), intent(inout) :: sr
+    ! the sorting region (i.e. the orbitals that are allowed to be pivoted)
+    type(tRgn), intent(in) :: sr
     ! The method used for sorting
     integer, intent(in) :: method
 
@@ -516,9 +515,8 @@ contains
     type(tRgn), intent(inout) :: r
     ! The sparsity pattern
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
-    ! the sorting region (i.e. the orbitals that are allowed
-    ! to be pivoted)
-    type(tRgn), intent(inout) :: sr
+    ! the sorting region (i.e. the orbitals that are allowed to be pivoted)
+    type(tRgn), intent(in) :: sr
     ! The method used for sorting
     integer, intent(in) :: method
     ! The distribution

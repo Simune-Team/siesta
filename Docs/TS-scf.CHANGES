@@ -1,4 +1,46 @@
 ----------------------------------------------------
+July 6, 2015 -- Nick Papior          trunk-473---ts-scf-449
+Enabled multiple electrode sorting
+
+* When pivoting for N > 3 in some cases it
+  can be beneficial to simultaneously use two
+  electrodes as the basis for the starting search
+  pattern.
+
+  This is obivous as the electrodes then "aligns" along
+  the 1D matrix direction.
+
+  This can be acheived using:
+     TS.BTD.Pivot <el-1>+<el-2>+...
+     TBT.BTD.Pivot.Device <el-1>+<el-2>+...
+  which works extremely nice.
+
+  If several electrodes are in effect the initial
+  orbitals will not be sorted according to "max back connection"
+
+* Added m_char which can upper/lower-case any
+  work.
+
+  Routines:
+    lcase(str) returns str in lowercase
+    ucase(str) returns str in uppercase
+    ccase(str,['U','L']) returns str in Upper/lower case
+
+* Added memory usage output in tbtrans (only for BTD matrices)
+
+* Disabled suggestion of minimal transport region if N_Elec > 2
+  as this is not as trivially done.
+
+modified:
+  Src/Makefile
+  Src/m_region.F90
+  Src/m_ts_tri_init.F90
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 July 2, 2015 -- Nick Papior          trunk-473---ts-scf-448
 tbt: moved T-proj timer
 

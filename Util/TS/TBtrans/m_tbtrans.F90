@@ -124,7 +124,7 @@ contains
 
     ! Suggest to the user an optimal device region for
     ! fastest calculation
-    call tbt_tri_print_opti(TSHS%na_u,TSHS%lasto,r_oDev)
+    call tbt_tri_print_opti(TSHS%na_u,TSHS%lasto,r_oDev,N_Elec)
 
     if ( fdf_get('TBT.Analyze',.false.) ) then
 #ifdef MPI

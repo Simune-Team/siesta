@@ -455,7 +455,7 @@ contains
     ! at TB models where number of connections is the same
 
     ! Prepare total region with all electrodes
-    call rgn_copy(Elecs(1)%o_inD,r_tmp)
+    call rgn_copy(Elecs(1)%o_inD,r_Els)
     do i = 2 , N_Elec
        ! We have to use union as they may overlap
        call rgn_union(r_Els,Elecs(i)%o_inD,r_Els)
@@ -600,35 +600,52 @@ contains
     else
        
 
-       ! We select all the atoms from the specified electrode
+       ! We select all the atoms from the specified electrode(s)
        ! that connect into the device
        ! This forces the initial search-pattern
        ! to use the "electrode-surface" as an initial SP guess
        ! Note that the connecting electrode orbitals are already
        ! sorted wrt. back-connectivity
 
-       ! Figure out which electrode has been given
+       ! Figure out which electrode(s) has been given
+       ! as a starting point
+       ! Note that for several electrodes one could
+       ! possibly get a better sparsity pattern by 
+       ! using several as a starting point
        iEl = 0
        do i = 1 , N_Elec
-          if ( leqi(Elecs(i)%name,g) ) iEl = i
+          if ( sort_contain(g,Elecs(i)%name) ) then
+             if ( iEl == 0 ) then
+                call rgn_copy(Elecs(i)%o_inD,r_tmp)
+             else
+                call rgn_union(r_tmp,Elecs(i)%o_inD,r_tmp)
+             end if
+             iEl = iEl + 1
+          end if
        end do
        if ( iEl == 0 ) then
-          print *,csort
+          print *,trim(csort)
           call die('Could find the electrode in &
                &TBT.BTD.Pivot.Device in the list of electrodes, &
                &please correct sorting method.')
        end if
 
        if ( sort_orb ) then
-          call rgn_copy(Elecs(iEl)%o_inD,r_tmp2)
+          call rgn_copy(r_tmp,r_tmp2)
        else
-          call rgn_Orb2Atom(Elecs(iEl)%o_inD,na_u,lasto,r_tmp2)
+          call rgn_Orb2Atom(r_tmp,na_u,lasto,r_tmp2)
+          call rgn_copy(r_tmp2,r_tmp)
        end if
-       if ( r_tmp2%n == 0 ) then
+       if ( r_tmp%n == 0 ) then
           call die('Could not determine sorting electrode. &
                &Please provide a valid electrode name or none.')
        end if
-       
+
+       ! we sort the newly attached region
+       if ( iEl == 1 ) then
+          call rgn_sp_sort(r_tmp2, dit, sp_tmp, r_tmp, R_SORT_MAX_FRONT )
+       end if
+
        do
 
           ! Create the region that connects to the last part of the 
@@ -871,6 +888,43 @@ contains
        end if
 
     end if
+
+  contains
+
+    function sort_contain(str,name) result(contain)
+      use m_char, only : lcase
+      character(len=*), intent(in) :: str, name
+      logical :: contain
+
+      character(len=len(str)) :: lstr
+      character(len=len_trim(name)) :: lname
+
+      integer :: i
+
+      contain = .false.
+
+      lstr = lcase(str)
+      lname = lcase(trim(name))
+
+      ! check whether it is in this stuff
+      i = index(lstr,lname)
+      if ( i > 1 ) then
+         contain = scan(lstr(i-1:i-1),'+ ') == 1
+         i = i + len_trim(lname)
+         if ( i <= len(str) ) then
+            contain = contain .and. scan(lstr(i:i),'+ ') == 1
+         end if
+      else if ( i == 1 ) then
+         i = i + len_trim(lname)
+         if ( i <= len(str) ) then
+            contain = scan(lstr(i:i),'+ ') == 1
+         else
+            ! it was found and the string is too short
+            contain = .true.
+         end if
+      end if
+      
+    end function sort_contain
 
   end subroutine tbt_init_regions
 
