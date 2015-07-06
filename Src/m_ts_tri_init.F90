@@ -281,13 +281,23 @@ contains
        call rgn_delete(r_pvt)
        do i = 1 , N_Elec
           if ( sort_contain(ctmp,Elecs(i)%name) ) then
-             io = Elecs(i)%idx_o
-             call rgn_range(r_tmp,io,io-1+TotUsedOrbs(Elecs(i)))
+             if ( sort_orb ) then
+                io = Elecs(i)%idx_o
+                call rgn_range(r_tmp,io,io-1+TotUsedOrbs(Elecs(i)))
+             else
+                io = Elecs(i)%idx_a
+                call rgn_range(r_tmp,io,io-1+TotUsedAtoms(Elecs(i)))
+             end if
+
              if ( iEl == 0 ) then
                 call rgn_copy(r_tmp,r_pvt)
              else
                 call rgn_union(r_pvt,r_tmp,r_pvt)
              end if
+             
+             ! Sort this region
+             call rgn_sp_sort(r_pvt, fdit, tmpSp2, r_tmp, R_SORT_MAX_FRONT )
+             
              iEl = iEl + 1
           end if
        end do
@@ -298,19 +308,7 @@ contains
                &please correct sorting method.')
        end if
 
-       ! First we sort our pivot-region to minimize the elements
-       ! in the BTD format
-       if ( sort_orb ) then
-          call rgn_copy(r_pvt,r_tmp)
-       else
-          call rgn_Orb2Atom(r_pvt,na_u,lasto,r_tmp)
-          call rgn_copy(r_tmp,r_pvt)
-       end if
-
-       ! we sort the newly attached region
-       if ( iEl == 1 ) then
-          call rgn_sp_sort(r_pvt, fdit, tmpSp2, r_tmp, R_SORT_MAX_FRONT )
-       end if
+       call rgn_copy(r_pvt,r_tmp)
 
        do 
           

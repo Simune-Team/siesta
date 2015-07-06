@@ -1,4 +1,15 @@
 ----------------------------------------------------
+July 6, 2015 -- Nick Papior          trunk-473---ts-scf-451
+Sorting of several electrode BTD
+
+* Fixed BTD format with several electrodes
+  to sort them as they are added.
+
+modified:
+  Src/m_ts_tri_init.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 July 6, 2015 -- Nick Papior          trunk-473---ts-scf-450
 Forgot adding the m_char file
 

@@ -615,11 +615,21 @@ contains
        iEl = 0
        do i = 1 , N_Elec
           if ( sort_contain(g,Elecs(i)%name) ) then
-             if ( iEl == 0 ) then
+             if ( sort_orb ) then
                 call rgn_copy(Elecs(i)%o_inD,r_tmp)
              else
-                call rgn_union(r_tmp,Elecs(i)%o_inD,r_tmp)
+                call rgn_Orb2Atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
              end if
+             
+             if ( iEl == 0 ) then
+                call rgn_copy(r_tmp,r_tmp2)
+             else
+                call rgn_union(r_tmp2,r_tmp,r_tmp2)
+             end if
+             
+             ! Sort this region
+             call rgn_sp_sort(r_tmp2, dit, sp_tmp, r_tmp, R_SORT_MAX_FRONT )
+
              iEl = iEl + 1
           end if
        end do
@@ -630,21 +640,7 @@ contains
                &please correct sorting method.')
        end if
 
-       if ( sort_orb ) then
-          call rgn_copy(r_tmp,r_tmp2)
-       else
-          call rgn_Orb2Atom(r_tmp,na_u,lasto,r_tmp2)
-          call rgn_copy(r_tmp2,r_tmp)
-       end if
-       if ( r_tmp%n == 0 ) then
-          call die('Could not determine sorting electrode. &
-               &Please provide a valid electrode name or none.')
-       end if
-
-       ! we sort the newly attached region
-       if ( iEl == 1 ) then
-          call rgn_sp_sort(r_tmp2, dit, sp_tmp, r_tmp, R_SORT_MAX_FRONT )
-       end if
+       call rgn_copy(r_tmp2,r_tmp)
 
        do
 
