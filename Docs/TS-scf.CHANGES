@@ -1,4 +1,11 @@
 ----------------------------------------------------
+July 6, 2015 -- Nick Papior          trunk-473---ts-scf-450
+Forgot adding the m_char file
+
+added:
+  Src/m_char.f90
+
+----------------------------------------------------
 July 6, 2015 -- Nick Papior          trunk-473---ts-scf-449
 Enabled multiple electrode sorting
 
