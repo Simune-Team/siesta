@@ -13,12 +13,7 @@
 ! index AND the column in the unitcell)
 program tbtrans
 
-  use class_Sparsity
-  use class_dSpData1D
-  use class_dSpData2D
-
   use m_tbt_options, only : kT
-  use m_tbt_regions
   use m_tbt_hs, only : TSHS
 
   use m_tbtrans

@@ -215,12 +215,14 @@ subroutine tbt_reinit( sname , slabel )
            line = 'SystemLabel '//trim(line)
            call fdf_overwrite(line)
 
-        else if ( line(1:4) == 'help' ) then
+        else if ( line(1:4) == 'help' .or. line(1:1) == 'h' ) then
            write(*,'(a)') 'Help for calling the tight-binding transport code'
-           write(*,'(a)') '  -fdf <label>=<value>:<unit>'
+           write(*,'(a)') '  -fdf <label>=<value>[:<unit>]'
            write(*,'(a)') '      Set the label to the corresponding value.'
            write(*,'(a)') '  -V <value>:<unit>'
            write(*,'(a)') '      Short-hand for setting TBT.Voltage.'
+           write(*,'(a)') '  -L <name>'
+           write(*,'(a)') '      Short-hand for setting SystemLabel.'
            write(*,'(a)') '  <fdf-file>'
            write(*,'(a)') '      Use file as fdf-input, you need not to pipe it in.'
            call bye('Help-menu requested, stopping')

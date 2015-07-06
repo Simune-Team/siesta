@@ -798,7 +798,7 @@ rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys.o
 read_xc_info.o: parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
-reinit.o: files.o parallel.o siesta_master.o
+reinit.o: files.o parallel.o siesta_master.o sys.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys.o
 reord.o: alloc.o precision.o
@@ -1018,8 +1018,7 @@ tbt_init.o: m_tbt_options.o m_tbt_proj.o m_tbt_regions.o m_tbt_save.o m_timer.o
 tbt_init.o: m_ts_electrode.o m_ts_electype.o m_wallclock.o parallel.o
 tbt_init.o: precision.o sys.o timestamp.o
 tbt_reinit.o: m_verbosity.o parallel.o sys.o
-tbtrans.o: class_SpData1D.o class_SpData2D.o class_Sparsity.o m_tbt_hs.o
-tbtrans.o: m_tbt_options.o m_tbt_regions.o m_tbtrans.o
+tbtrans.o: m_tbt_hs.o m_tbt_options.o m_tbtrans.o
 band.o: bands.o
 class_cdata1d.o: class_Data1D.o
 class_cdata2d.o: class_Data2D.o

@@ -1,4 +1,27 @@
 ----------------------------------------------------
+July 6, 2015 -- Nick Papior          trunk-473---ts-scf-452
+Added -V -h on transiesta
+
+* 1. Added -V for shorthand TS.Voltage
+  2. Added -h|--help for printing si
+
+* Added a single timing in TBtrans
+
+  Also added a timing of the cdf2ascii
+  to be able to track its actual time usage.
+
+* Removed unecessary modules in tbtrans.F
+
+modified:
+  Src/Makefile
+  Src/reinit.F
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/tbt_reinit.F90
+  Util/TS/TBtrans/tbtrans.F90
+
+----------------------------------------------------
 July 6, 2015 -- Nick Papior          trunk-473---ts-scf-451
 Sorting of several electrode BTD
 

@@ -777,9 +777,12 @@ contains
 
           call timer('Gf-prep',2)
 
+
           ! Only calculate actual transmission if the user
           ! has requested so...
           if ( ('proj-only'.nin.save_DATA) ) then
+
+          call timer('DOS-Gf-A-T',1)
 
           ! We have now calculated all block diagonal entries
           ! of the Green's function.
@@ -886,6 +889,8 @@ contains
              end do
 
           end do
+
+          call timer('DOS-Gf-A-T',2)
 
           ! Save the current gathered data
 #ifdef NCDF_4

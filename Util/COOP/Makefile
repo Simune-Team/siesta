@@ -598,7 +598,7 @@ rdiag.o: alloc.o m_diagon.o memoryinfo.o parallel.o precision.o sys_local.o
 read_xc_info.o: parallel.o precision.o sys_local.o
 readsp.o: parallel.o precision.o sys_local.o
 redcel.o: parallel.o precision.o sys_local.o
-reinit.o: files.o parallel.o siesta_master.o
+reinit.o: files.o parallel.o siesta_master.o sys_local.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o precision.o sys_local.o
 reord.o: alloc.o precision.o

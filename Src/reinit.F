@@ -28,6 +28,7 @@ C
       use fdf
       use files,       only : slabel
       use siesta_master, only: input_file  ! fdf data file
+      use sys, only : bye
 
       implicit none
 
@@ -190,6 +191,16 @@ C Set up fdf ...
                !  FDFLabel=0.1=eV
                line = cmd_tokenize(line)
                call fdf_overwrite(line)
+#ifdef TRANSIESTA
+            else if ( line(1:1) == 'V' ) then
+               if ( in >= count - 1 )
+     &              call die('Missing argument on command line')
+               in = in + 1
+               call get_command_argument(in,line,length)
+               line = cmd_tokenize(line)
+               line = 'TS.Voltage '//trim(line)
+               call fdf_overwrite(line)
+#endif
                
             else if ( line(1:1) == 'L' ) then
                if ( in >= count - 1 ) 
@@ -200,6 +211,20 @@ C Set up fdf ...
                line = 'SystemLabel '//trim(line)
                call fdf_overwrite(line)
                
+            else if ( line(1:4) == 'help' .or. line(1:1) == 'h' ) then
+      write(*,'(a)')'Help for calling the tight-binding transport code'
+      write(*,'(a)')'  -fdf <label>=<value>[:<unit>]'
+      write(*,'(a)')'      Set the label to the corresponding value.'
+#ifdef TRANSIESTA
+      write(*,'(a)')'  -V <value>:<unit>'
+      write(*,'(a)')'      Short-hand for setting TS.Voltage.'
+#endif
+      write(*,'(a)')'  -L <name>'
+      write(*,'(a)')'      Short-hand for setting SystemLabel.'
+      write(*,'(a)')'  <fdf-file>'
+      write(*,'(a)')
+     &     '      Use file as fdf-input, you need not to pipe it in.' 
+      call bye('Help-menu requested, stopping')
             end if
             
          end do

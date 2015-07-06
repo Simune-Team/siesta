@@ -1093,9 +1093,14 @@ contains
 #endif
     integer, allocatable :: pvt(:)
 
+    call timer('cdf2ascii',1)
+
     ! In case we are doing something parallel, 
     ! we simply read in and write them in text based formats
-    if ( Node /= 0 ) return
+    if ( Node /= 0 ) then
+       call timer('cdf2ascii',2)
+       return
+    end if
 
     tmp = datestring()
     tmp = tmp(1:10)
@@ -1329,6 +1334,8 @@ contains
     deallocate(rE,rkpt,rwkpt,pvt)
 
     call ncdf_close(ncdf)
+
+    call timer('cdf2ascii',2)
 
   contains
     
