@@ -1,4 +1,11 @@
 ----------------------------------------------------
+July 7, 2015 -- Nick Papior          trunk-474---ts-scf-457
+Small speedup for clarity
+
+modified:
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
 July 7, 2015 -- Nick Papior          trunk-474---ts-scf-456
 Corrected write_inp_wannier90
 

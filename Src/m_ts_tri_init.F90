@@ -383,8 +383,8 @@ contains
 
     end if
     if ( .not. sort_orb ) then
-       call rgn_atom2orb(r_pvt,na_u,lasto,r_tmp)
-       call rgn_copy(r_tmp,r_pvt)
+       call rgn_copy(r_pvt,r_tmp)
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_pvt)
 
        tmpSp2 = tmpSp1
 
