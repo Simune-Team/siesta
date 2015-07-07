@@ -76,10 +76,11 @@ C
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : rcut, epskb
+      use atmfuncs,      only : rcut, epskb, orb_gindex, kbproj_gindex
       use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour,     only : mneighb, reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
+      use m_new_matel,   only : new_matel
 
       integer, intent(in) ::
      .   maxnh, na, maxnd, nspin, nua
@@ -106,7 +107,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
   
       integer
      .  ia, ikb, ina, ind, ino,
-     .  io, iio, ioa, is, ispin, ix, 
+     .  io, iio, ioa, is, ispin, ix, ig, kg,
      .  j, jno, jo, jx, ka, ko, koa, ks, kua,
      .  nkb, nna, nno, no, nuo, nuotot, maxkba
 
@@ -260,7 +261,9 @@ C               Check maxno - if too small then increase array sizes
                   ikb = ikb + 1
                   ioa = iphorb(io)
                   koa = iphKB(ko)
-                  call MATEL( 'S', ks, is, koa, ioa, xki(1:3,ina),
+                  kg = kbproj_gindex(ks,koa)
+                  ig = orb_gindex(is,ioa)
+                  call new_MATEL( 'S', kg, ig, xki(1:3,ina),
      &                  Ski(ikb,nno), grSki(1:3,ikb,nno) )
                 enddo
 
@@ -357,7 +360,7 @@ C             Pick up contributions to H and restore Di and Vi
       enddo
 
 C     Deallocate local memory
-!      call MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
+!      call new_MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
       call reset_neighbour_arrays( )
       call de_alloc( grSki, 'grSki', 'nlefsm' )
       call de_alloc( Ski, 'Ski', 'nlefsm' )

@@ -64,9 +64,10 @@ C
       use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : rcut
+      use atmfuncs,      only : rcut, orb_gindex
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays 
+      use m_new_matel,   only : new_matel
       use alloc,         only : re_alloc, de_alloc
 
       implicit none
@@ -87,7 +88,7 @@ C
 C Internal variables ..................................................
   
       integer
-     .  ia, ind, io, iio, ioa, is, ispin, ix, 
+     .  ia, ind, io, iio, ioa, is, ispin, ix, ig, jg,
      .  j, ja, jn, jo, joa, js, jua, jx, nnia
 
       real(dp)
@@ -118,6 +119,7 @@ C Allocate local memory
       Ekin = 0.0_dp
 
       do ia = 1,nua
+        is = isa(ia)
         call mneighb( scell, 2.0d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
 
@@ -125,7 +127,7 @@ C Is this orbital on this Node?
           call GlobalToLocalOrb(io,Node,Nodes,iio)
           if (iio.gt.0) then  ! Local orbital
             ioa = iphorb(io)
-            is = isa(ia)
+            ig = orb_gindex(is,ioa)
 
             if (.not. matrix_elements_only) then
                do j = 1,numd(iio)
@@ -143,8 +145,9 @@ C Is this orbital on this Node?
               do jo = lasto(ja-1)+1,lasto(ja)
                 joa = iphorb(jo)
                 js = isa(ja)
+                jg = orb_gindex(js,joa)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call MATEL( 'T', is, js, ioa, joa, xij(1,jn),
+                  call new_MATEL( 'T', ig, jg, xij(1:3,jn),
      .                      Tij, grTij )
                   Ti(jo) = Ti(jo) + Tij
 
@@ -183,7 +186,7 @@ C Is this orbital on this Node?
       enddo
 
 C Deallocate local memory
-!      call MATEL( 'T', 0, 0, 0, 0, xij, Tij, grTij )
+!      call new_MATEL( 'T', 0, 0, 0, 0, xij, Tij, grTij )
       call reset_neighbour_arrays( )
       call de_alloc( Ti, 'Ti', 'kinefsm' )
       if (.not. matrix_elements_only) then
