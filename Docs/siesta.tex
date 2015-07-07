@@ -5891,6 +5891,169 @@ obtained form Tom Archer (archert@tcd.ie).
 \end{description}
 
 \vspace{5pt}
+\subsection{Maximally Localized Wannier Functions. \\
+            Interface with the {\sc wannier90} code}
+
+The interface between {\sc siesta} to {\sc wannier90} has been implemented.
+{\sc wannier90} (http://www.wannier.org) is a code to generate
+maximally localized wannier orbitals according to the original
+Marzari and Vanderbilt recipe.
+
+It is strongly recommended to read the original papers on which this
+method is based and the  documentation of the {\sc wannier90} code.
+Here we shall focus only on those internal {\sc siesta} variables
+required to produce the input files that will be readed and digested
+by {\sc wannier90}.
+
+A complete list of examples and tests (including molecules, metals, 
+semiconductors, insulators, magnetic systems, plotting of Fermi surfaces
+or interpolation of bands), can be downloaded from
+
+ http://personales.unican.es/junqueraj/Wannier-examples.tar.gz
+
+\begin{description}
+\item[{\bf Siesta2Wannier90.WriteMmn}] ({\it logical}):
+\index{Siesta2Wannier90.WriteMmn@{\bf Siesta2Wannier90.WriteMmn}}
+
+This flag determines whether the overlaps between the periodic part
+of the Bloch states at neighbour k-points are computed and dumped into a file
+in the format required by {\sc wannier90}.
+These overlaps are defined in Eq. (27) in the paper by
+N. Marzari {\it et al.}, Review of Modern Physics {\bf 84}, 1419 (2012),
+or Eq. (1.8) of the Wannier Users Guide, Version 1.2.
+
+The k-points for which the overlaps will be computed are defined from
+the {\sc wannier90} input file. It is strongly recommended for the user
+to read the corresponding user guide.
+
+The overlap matrices are written in a file with extension $\tt .mmn$.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteAmn}] ({\it logical}):
+\index{Siesta2Wannier90.WriteAmn@{\bf Siesta2Wannier90.WriteAmn}}
+
+This flag determines whether the overlaps between Bloch states
+onto trial localized orbitals are computed and dumped into a file in the
+format required by {\sc wannier90}
+These projections are defined in Eq. (16) in the paper by
+N. Marzari {\it et al.}, Review of Modern Physics {\bf 84}, 1419 (2012),
+or Eq. (1.8) of the Wannier Users Guide, Version 1.2.
+
+The localized trial functions are defined from
+the {\sc wannier90} input file. It is strongly recommended for the user
+to read the corresponding user guide.
+
+The overlap matrices are written in a file with extension $\tt .amn$.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteEig}] ({\it logical}):
+\index{Siesta2Wannier90.WriteEig@{\bf Siesta2Wannier90.WriteEig}}
+
+Flag that determines whether the Kohn-Sham eigenvalues 
+(in eV) at each point in the Monkhorst-Pack mesh required by {\sc wannier90}.
+This input is mandatory in {\sc wannier90} if any of disentanglement, 
+plot\_bands, plot\_fermi\_surface or hr\_plot options are set to true in 
+{\sc wannier90}.
+
+The eigenvalues are written in a file with extension $\tt .eigW$.
+This extension is chosen to avoid name clashes
+with {\sc siesta}'s standard eigenvalue file in case-insensitive filesystems.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteUnk}] ({\it logical}):
+\index{Siesta2Wannier90.WriteUnk@{\bf Siesta2Wannier90.WriteUnk}}
+
+ Produces UNKXXXXX.X files which contain the periodic
+ part of a Bloch function in the unit cell on a grid given by
+ global unk\_nx, unk\_ny, unk\_nz variables.
+ The name of the output files is assumed to have the previous form,
+ where the XXXXXX before the dot refers to the number of the k-point
+ (from 00001, to the total number of k-points considered,
+ and the X after the dot refers to the spin component (1 or 2)
+
+ The periodic part of the Bloch functions is defined by
+ \begin{equation}
+   u_{n \vec{k}} (\vec{r}) =
+   \sum_{\vec{R} \mu} c_{n \mu}(\vec{k})
+        e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+        \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} ) ,
+\end{equation}
+
+\noindent where $\phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )$
+ is an atomic orbital of the basis set centered on atom $\mu$ in
+ the unit cell $\vec{R}$, and $c_{n \mu}(\vec{k})$ are the coefficients
+ of the wave function, that must be identical that the ones used
+ for wannierization in Mmn.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.UnkGrid1}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid1@{\bf Siesta2Wannier90.UnkGrid1}}
+
+Number of points along the first lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{\tt number of points in the mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGrid2}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid2@{\bf Siesta2Wannier90.UnkGrid2}}
+
+Number of points along the second lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{\tt number of points in the mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGrid3}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid3@{\bf Siesta2Wannier90.UnkGrid3}}
+
+Number of points along the third lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{\tt number of points in the mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGridBinary}] ({\it logical}):
+\index{Siesta2Wannier90.UnkGridBinary@{\bf Siesta2Wannier90.UnkGridBinary}}
+
+Flag that determines whether the periodic part of the wave function in the
+real space grid is written in binary format (default) or in ASCII format.
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf Siesta2Wannier90.NumberOfBands}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBands@{\bf Siesta2Wannier90.NumberOfBands}}
+
+Number of bands in spin unpolarized calculations that will be included 
+in the unitary transformations to find the maximally localized Wannier 
+functions.
+
+{\it Default value:} {\tt Number of occupied bands. In the case of a metal
+with an odd number of electrons, the nearest integer to the number of electrons
+divided by two is used.}
+
+\item[{\bf Siesta2Wannier90.NumberOfBandsUp}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBandsUp@{\bf Siesta2Wannier90.NumberOfBandsUp}}
+
+Number of bands with spin up that will be included in the 
+unitary transformations to find the maximally localized Wannier functions.
+Only read in spin polarized calculations.
+
+{\it Default value:} {\tt number of occupied bands with spin up}
+
+\item[{\bf Siesta2Wannier90.NumberOfBandsDown}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBandsDown@{\bf Siesta2Wannier90.NumberOfBandsDown}}
+
+Number of bands with spin down that will be included in the 
+unitary transformations to find the maximally localized Wannier functions.
+Only read in spin polarized calculations.
+
+{\it Default value:} {\tt number of occupied bands with spin down}
+
+\end{description}
+
+\vspace{5pt}
 \subsection{Systems with net charge or dipole, and electric fields}
 
 \begin{description}

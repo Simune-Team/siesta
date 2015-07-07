@@ -247,6 +247,9 @@
 
       call broadcast_basis( )
 
+      call register_rfs()
+!     call test_register()
+
       atmonly = fdf_get( 'Atom-Setup-Only', .false. )
       if (atmonly) call bye( 'End of atom setup' )
 

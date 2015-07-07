@@ -13,10 +13,11 @@
       use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : rcut
+      use atmfuncs,      only : rcut, orb_gindex
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
+      use m_new_matel,   only : new_matel
 
       implicit none
 
@@ -82,7 +83,7 @@ C *********************************************************************
 C Internal variables ......................................................
   
       integer
-     .  ia, ind, io, ioa, is, ispin, ix, iio, 
+     .  ia, ind, io, ioa, is, ispin, ix, iio, ig, jg,
      .  j, ja, jn, jo, joa, js, jua, jx, nnia
 
       real(dp)
@@ -111,6 +112,7 @@ C Allocate local memory
       Di(1:no) = 0.0d0
 
       do ia = 1,nua
+        is = isa(ia)
         call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
 
@@ -119,6 +121,8 @@ C Is this orbital on this Node?
           if (iio.gt.0) then
 
 C Valid orbital 
+            ioa = iphorb(io)
+            ig = orb_gindex(is,ioa)
             do j = 1,numd(iio)
               ind = listdptr(iio)+j
               jo = listd(ind)
@@ -131,12 +135,11 @@ C Valid orbital
               jua = indxua(ja)
               rij = sqrt( r2ij(jn) )
               do jo = lasto(ja-1)+1,lasto(ja)
-                ioa = iphorb(io)
                 joa = iphorb(jo)
-                is = isa(ia)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call MATEL( 'S', is, js, ioa, joa, xij(1:3,jn),
+                   jg = orb_gindex(js,joa)
+                   call new_MATEL( 'S', ig, jg, xij(1:3,jn),
      .                      Sij, grSij )
                   Si(jo) = Si(jo) + Sij
                   do ix = 1,3
@@ -166,7 +169,7 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-!      call MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
+!      call new_MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
       call de_alloc( Si, 'Si', 'overfsm' )
       call de_alloc( Di, 'Di', 'overfsm' )

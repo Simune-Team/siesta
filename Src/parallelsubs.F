@@ -770,6 +770,8 @@ C Compare number of orbitals against sensible number
 
       if (nuotot.gt.24*Nodes) then
         bs = 24
+      else if (nuotot.lt.Nodes) then
+        bs = 1
       else
 
          bs = nuotot/Nodes + 1

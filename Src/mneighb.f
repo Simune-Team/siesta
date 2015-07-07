@@ -42,6 +42,8 @@
       real(dp),         pointer :: DXAM(:,:), DXNM(:,:)
       real(dp)                  :: celast(nx,nx) = 0.0_dp,
      &                             rglast        = 0.0_dp
+      real(dp),         public  :: x0(nx)    
+
       contains
 
       subroutine mneighb( cell, range, na, xa, ia, isc,
@@ -132,7 +134,6 @@ C     Argument types and dimensions
 
 C    Internal variables
       integer,      save :: iamove(1)     = 0
-      real(dp),     save :: x0(nx)        = 0.0_dp
       logical,      save :: first_time = .true.
       logical            :: samcel
       integer            :: IX, JX
@@ -180,6 +181,15 @@ C     Find neighbours of atom IA
       if (IA .GT. 0) 
      &  call mranger( 'FIND', CELL, range, NA, XA, NA, IAMOVE,
      &                IA, ISC, X0, NNA, MAXNNA )
+
+C     Find neighbours of point centered at x0
+C     (not used unless MODE='FIND')
+C     The point x0 is introduced as a variable of the module
+      if (IA .EQ. 0) then
+       call mranger( 'FIND', CELL, range, NA, XA, NA, IAMOVE,
+     &                IA, ISC, X0, NNA, MAXNNA )
+      endif 
+
       end subroutine mneighb
 
       subroutine mranger( mode, cell, range, na, xa,
@@ -801,7 +811,6 @@ C         Loop on atoms of neighbour cell.
 C         Try first atom in this mesh-cell
           JA = IA1M(JM)
   300     CONTINUE
-
           IF (JA .NE. 0) THEN
 C           Check that single-counting exclusion does not apply
             IF (IA0.LE.0 .OR. ISC.EQ.0 .OR. JA.LE.IA0) THEN
