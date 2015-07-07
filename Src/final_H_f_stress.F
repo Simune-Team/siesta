@@ -6,9 +6,11 @@
       subroutine final_H_f_stress( iscf )
 
       USE siesta_options
-      use sparse_matrices
+      use sparse_matrices, only: numh, listh, listhptr
+      use sparse_matrices, only: S, Dscf, Escf, maxnh, xijo
+      use sparse_matrices, only: H_saved => H  ! Note renaming
+
       use siesta_geom
-      use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
      &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
      &                    rmaxo, no_l
@@ -53,6 +55,8 @@
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
+      ! local copy of H, to avoid overwriting the current Hamiltonian
+      real(dp), pointer     :: h(:,:) => null()  
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
@@ -70,6 +74,7 @@
 !--------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
+      call re_alloc(H, 1,nspin, 1,maxnh, 'H_local','final_H_f_stress')
       H = 0.0_dp
 
 !     Initialize forces and stress ...................
@@ -135,7 +140,8 @@
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 !     Orthonormalization forces ...........................................
-!     **Note that this will re-calculate S also
+!     **Note that this will re-calculate S also, but should get 
+!     the same result
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -164,12 +170,18 @@
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
 #endif
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
+      call de_alloc( H, 'H_local', 'final_H_f_stress' )
 
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
+!
+! Note that we save the Hamiltonian coming out of the scf cycle,
+! not the one computed (from DM_out) in this routine.
+! This call could be moved to a more appropriate place
+!
       if (savehs) then
          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
-     &        maxnh, numh, listhptr, listh, H, S, qtot,
+     &        maxnh, numh, listhptr, listh, H_saved, S, qtot,
      &        temp, xijo)
       endif
 #ifdef TRANSIESTA
@@ -181,7 +193,8 @@
             fname = paste( fname, '.TSHS' )
             iotask='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
+     &                    indxuo, maxnh, numh, listhptr, listh,
+     &                    H_saved, S, 
      &                    qtot, temp, xijo, label_length+5, fname, na_u,
      &                    lasto, isa, ef, ucell, ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, ts_istep, ia1)
@@ -189,7 +202,8 @@
             fname  = paste( slabel, '.TSHS' )
             iotask ='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh, H, S,
+     &                    indxuo, maxnh, numh, listhptr, listh,
+     &                    H_saved, S, 
      &                    qtot, temp, xijo, label_length+5, fname, na_u,
      &                    lasto, isa, ef, ucell,ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, 0, 0 )

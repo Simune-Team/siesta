@@ -179,15 +179,22 @@
          if (MixH) then
              ! We could make sure that we keep the H actually used 
              ! to generate the last DM, if needed.
-             !!!    H = Hold
+             H = Hold
          endif
       endif
 
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
 
+!     Note that this call will no longer overwrite H while computing the
+!     final energies, forces and stresses...
+!
       call post_scf_work( iscf )
 
+!     ... so H at this point is the latest generator of the DM, except
+!     if mixing H beyond self-consistency or terminating the scf loop
+!     without convergence while mixing H
+      
       call state_analysis( istep )
 
       ! If siesta is running as a subroutine, send forces to master program
