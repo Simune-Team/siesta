@@ -1,4 +1,13 @@
 ----------------------------------------------------
+July 7, 2015 -- Nick Papior          trunk-474---ts-scf-456
+Corrected write_inp_wannier90
+
+* Per mail to Alberto, I have implemented my fixe
+
+modified:
+  Src/write_inp_wannier.F90
+
+----------------------------------------------------
 July 7, 2015 -- Nick Papior          trunk-474---ts-scf-455
 Speedup for delk.F90
 

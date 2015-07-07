@@ -503,10 +503,6 @@ subroutine writeunk( ispin )
   integer,  intent(in) :: ispin      ! Spin component
 
 
-! This is copied from constants.f90 in Wannier90-1.1
-! We use it due to i/o compatibility of binary UNKXXX files.
-  integer, parameter :: wannier90dp = selected_real_kind(15,300)
-
 !
 ! Variables related with the discretization of space
 !
@@ -540,16 +536,16 @@ subroutine writeunk( ispin )
                                              !   the global reduction of buffer
 #endif
 
-  complex(wannier90dp), pointer :: buffer(:,:,:,:) => null()  ! Variable where the 
+  complex(dp), pointer :: buffer(:,:,:,:) => null()  ! Variable where the 
                                              !   periodic part of the wave
                                              !   functions at the points of the
                                              !   grid will be computed
 !
 ! Variables related with the input/output
 !
-  character(len=11) :: unkfilename  ! Name of the file where the periodic
-                                    !   part of the wave functions at the
-                                    !   points of the grid will be saved
+  character(len=11) :: unkfilename ! Name of the file where the periodic
+                                   !   part of the wave functions at the
+                                   !   points of the grid will be saved
   integer      :: unkfileunit  ! Logical unit of the file
   integer      :: eof          ! Code error
 
@@ -713,6 +709,8 @@ enddo  BAND_LOOP
        call re_alloc( auxloc, 1, nincbands, 1, unk_nx, 1, unk_ny, 1, unk_nz,  &
             &                 name='auxloc', routine='writeunk' )
        auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
+    else
+       auxloc => buffer
     endif
 
     call MPI_Reduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &
