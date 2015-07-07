@@ -65,6 +65,9 @@ C  Modules
 #ifdef MPI
       use mpi_siesta
 #endif
+#ifdef _OPENMP
+      use omp_lib
+#endif
 
       implicit none
 
@@ -85,13 +88,13 @@ C Internal variables and arrays
       logical                  :: ParallelLocal
       real(dp)                 :: Vij, r2sp, dxsp(3), VClocal(nsp)
 
-      integer,         pointer :: ilc(:),          omp_ilc(:,:),
-     &                            ilocal(:),       omp_ilocal(:,:),
-     &                            iorb(:),         omp_iorb(:,:)
-      real(dp),        pointer :: DscfL(:,:),      omp_DscfL(:,:,:),
-     &                            Clocal(:,:),     omp_Clocal(:,:,:),
-     &                            Vlocal(:,:),     omp_Vlocal(:,:,:),
-     &                            phia(:,:),       omp_phia(:,:,:),
+      integer,         pointer :: ilc(:),
+     &                            ilocal(:),
+     &                            iorb(:)
+      real(dp),        pointer :: DscfL(:,:),  t_DscfL(:,:,:),
+     &                            Clocal(:,:),
+     &                            Vlocal(:,:),
+     &                            phia(:,:),
      &                            r2cut(:)
       integer                  :: NTH, TID
 
@@ -101,13 +104,8 @@ C (not included in the original vmat subroutine)
       real(dp)                 :: kxij, aux(2), dist(3), kpoint(3),
      &                            dxp(3), displaat(3)
       real(dp)                 :: dxpgrid(3,nsp), comkxij(2,nsp)
-      complex(dp),     pointer :: delkmats(:),   omp_delkmats(:,:)
+      complex(dp),     pointer :: delkmats(:), t_delkmats(:,:)
 
-
-#ifdef _OMP_
-      integer                  :: omp_get_num_threads,
-     &                            omp_get_thread_num
-#endif
 #ifdef MPI
       integer                  :: MPIerror
 #endif
@@ -125,8 +123,8 @@ C     Start time counter
       call timer('delk',1)
 
 C  Initialize the matrix elements of exp(i*\vec{k} \vec{r})
-      delkmat(:)      = cmplx(0.0_dp,0.0_dp,kind=dp)
-      kpoint(:)       = dble(iexpikr) * wavevector(:)
+      delkmat(:) = 0.0_dp
+      kpoint(:)  = dble(iexpikr) * wavevector(:)
 
 !! For debugging
 !      kpoint(:) = 0.0_dp
@@ -144,7 +142,7 @@ C     Find atomic cutoff radii
       enddo
 
 C     Set algorithm logical
-      ParallelLocal = (Nodes.gt.1)
+      ParallelLocal = (Nodes > 1)
       lenx  = meshLim(2,1) - meshLim(1,1) + 1
       leny  = meshLim(2,2) - meshLim(1,2) + 1
       lenz  = meshLim(2,3) - meshLim(1,3) + 1
@@ -155,77 +153,73 @@ C     Find value of maxloc
       maxloc  = maxloc2 + minloc
       maxloc  = min( maxloc, no )
       triang  = (maxloc+1)*(maxloc+2)/2
-      if (ParallelLocal) then
-        if (nrowsDscfL.gt.0) then
+      if ( ParallelLocal ) then
+        if ( nrowsDscfL > 0 ) then
           nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
         else
           nvmaxl = 1
         endif
       endif
 
-C     Allocate local memory
-!$OMP   PARALLEL DEFAULT(NONE) SHARED(no,np,nvmax,iaorb,iphorb,
-!$   &    isa,numVs,listVsptr,listVs,dVol,maxloc,maxloc2,
-!$   &    nvmaxl,triang,lenx,leny,lenxy,parallellocal,omp_ilc,
-!$   &    omp_ilocal,omp_iorb,omp_DscfL,omp_delkmats,omp_Clocal,
-!$   &    omp_Vlocal,
-!$   &    omp_phia,r2cut,indxuo,dxa,nsp,xdop,xdsp,NeedDscfL,listdl,
-!$   &    numdl,listdlptr,directphi,endpht,lstpht,listp2,phi,nodes,node)
-!$   &    PRIVATE(i,ia,ic,ii,ijl,il,imp,ind,iop,ip,iphi,is,isp,irealim,
-!$   &    iu,iul,ix,j,jc,jl,last,lasta,lastop,nc,nlocal,nphiloc,Vij,
-!$   &    r2sp,dxsp,VClocal,ilc,ilocal,iorb,DscfL,delkmats,Clocal,
-!$   &    Vlocal,      
-!$   &    phia,nth,tid)
-#ifdef _OMP_
+!     Allocate local memory
+!$OMP parallel default(shared), 
+!$OMP&shared(NTH,t_DscfL,t_delkmats),
+!$OMP&private(TID,last,delkmats,irealim),
+!$OMP&private(ip,nc,nlocal,ic,imp,i,il,iu,iul,ii,ind,j,ijl,jl),
+!$OMP&private(lasta,lastop,ia,is,iop,isp,ix,dxsp,r2sp,nphiloc,iphi,jc),
+!$OMP&private(Vij,VClocal,DscfL,ilocal,ilc,iorb,Vlocal,Clocal,phia),
+!$OMP&private(irel,inmp,dxp,dxpgrid,dist,kxij,iua,displaat,aux)
+
+!$OMP single
+#ifdef _OPENMP
       NTH = omp_get_num_threads( )
-      TID = omp_get_thread_num( ) + 1
 #else
       NTH = 1
+#endif
+!$OMP end single ! implicit barrier, IMPORTANT
+
+#ifdef _OPENMP
+      TID = omp_get_thread_num( ) + 1
+#else
       TID = 1
 #endif
 
-!$OMP SINGLE
-      if (ParallelLocal) then
-        nullify ( omp_DscfL )
-        call re_alloc( omp_DscfL, 1, nvmaxl, 1, 2, 1, NTH, 
-     &                 'DscfL',  'delk' )
+      nullify(Clocal,phia,ilocal,ilc,iorb,Vlocal)
+!$OMP critical
+      ! Perhaps the critical section is not needed,
+      ! however it "tells" the OS to allocate per
+      ! thread, possibly waiting for each thread to
+      ! place the memory in the best position.
+      allocate( Clocal(nsp,maxloc2) )
+      allocate( phia(maxoa,nsp) )
+      allocate( ilocal(no) , ilc(maxloc2) , iorb(maxloc) )
+      allocate( Vlocal(triang,2) )
+!$OMP end critical
+
+!$OMP single
+      if ( ParallelLocal ) then
+         nullify( t_DscfL )
+         call re_alloc( t_DscfL, 1, nvmaxl, 1, 2, 1, NTH, 
+     &        'DscfL',  'delk' )
       else
-        if (NTH.gt.1) then
-          nullify ( omp_delkmats )
-          call re_alloc( omp_delkmats, 1, nvmax, 1, NTH, 
-     &                   'delkmats',  'delk' )
-        endif
+         if ( NTH > 1 ) then
+            nullify( t_delkmats )
+            call re_alloc( t_delkmats, 1, nvmax, 1, NTH, 
+     &           'delkmats',  'delk' )
+         endif
       endif
+!$OMP end single
 
-      nullify ( omp_ilocal,  omp_ilc, omp_iorb, omp_Vlocal,
-     &          omp_Clocal,  omp_phia )
-      call re_alloc( omp_ilocal, 1, no, 1, NTH, 'ilocal', 'delk' )
-      call re_alloc( omp_ilc, 1, maxloc2, 1, NTH, 'ilc', 'delk' )
-      call re_alloc( omp_iorb, 1, maxloc, 1, NTH, 'iorb', 'delk' )
-      call re_alloc( omp_Vlocal, 1, triang, 1, 2, 1, NTH,
-     &               'Vlocal', 'delk' )
-      call re_alloc( omp_Clocal, 1, nsp, 1, maxloc2, 1, NTH,
-     &               'Clocal', 'delk' )
-      call re_alloc( omp_phia, 1, maxoa, 1, nsp, 1, NTH,
-     &               'phia', 'delk' )
-!$OMP END SINGLE
-
-      if (ParallelLocal) then
-        DscfL => omp_DscfL(1:nvmaxl,1:2,TID)
+      if ( ParallelLocal ) then
+        DscfL => t_DscfL(1:nvmaxl,1:2,TID)
         DscfL(1:nvmaxl,1:2) = 0.0_dp
       else
-        if (NTH.gt.1) then
-          delkmats => omp_delkmats(1:nvmax,TID)
+        if ( NTH > 1 ) then
+          delkmats => t_delkmats(1:nvmax,TID)
         else
           delkmats => delkmat
         endif
       endif
-      ilocal     => omp_ilocal(1:no,TID)
-      ilc        => omp_ilc(1:maxloc2,TID)
-      iorb       => omp_iorb(1:maxloc,TID)
-      Vlocal     => omp_Vlocal(1:triang,1:2,TID)
-      Clocal     => omp_Clocal(1:nsp,1:maxloc2,TID)
-      phia       => omp_phia(1:maxoa,1:nsp,TID)
 
 C     Full initializations done only once
       ilocal(1:no)             = 0
@@ -234,7 +228,7 @@ C     Full initializations done only once
       last                     = 0
 
 C     Loop over grid points
-!$OMP DO SCHEDULE(GUIDED,LENXY)
+!$OMP do
       do ip = 1,np
 C       Find number of nonzero orbitals at this point
         nc = endpht(ip) - endpht(ip-1)
@@ -247,22 +241,18 @@ C       Find new required size of Vlocal
         enddo
 
 C       If overflooded, add Vlocal to delkmat and reinitialize it
-        if (nlocal .gt. maxloc) then
+        if (nlocal > maxloc .and. last > 0) then
           do il = 1,last
             i = iorb(il)
             iu = indxuo(i)
-            if (ParallelLocal) then
+            if ( ParallelLocal ) then
               iul = NeedDscfL(iu)
               if (i .eq. iu) then
                 do ii = 1, numdl(iul)
                   ind = listdlptr(iul)+ii
                   j = listdl(ind)
                   jl = ilocal(j)
-                  if (il.gt.jl) then
-                    ijl = il*(il+1)/2 + jl + 1
-                  else
-                    ijl = jl*(jl+1)/2 + il + 1
-                  endif
+                  ijl = idx_ijl(il,jl)
 ! The variables we want to compute in this subroutine are complex numbers
 ! Here, when irealim =1 we refer to the real part, and
 ! when irealim = 2 we refer to the imaginary part
@@ -288,11 +278,7 @@ C       If overflooded, add Vlocal to delkmat and reinitialize it
                   ind = listdlptr(iul)+ii
                   j   = listsc( i, iu, listdl(ind) )
                   jl  = ilocal(j)
-                  if (il.gt.jl) then
-                    ijl = il*(il+1)/2 + jl + 1
-                  else
-                    ijl = jl*(jl+1)/2 + il + 1
-                  endif
+                  ijl = idx_ijl(il,jl)
                   aux(1) = Vlocal(ijl,1) * dcos(kxij) -
      .                     Vlocal(ijl,2) * dsin(kxij)
                   aux(2) = Vlocal(ijl,2) * dcos(kxij) +
@@ -310,12 +296,7 @@ C       If overflooded, add Vlocal to delkmat and reinitialize it
                   ind = listVsptr(iul)+ii
                   j = listVs(ind)
                   jl = ilocal(j)
-                  if (il.gt.jl) then
-                    ijl = il*(il+1)/2 + jl + 1
-                  else
-                    ijl = jl*(jl+1)/2 + il + 1
-                  endif
-
+                  ijl = idx_ijl(il,jl)
                   delkmats(ind) = delkmats(ind) +
      &              dVol * cmplx(Vlocal(ijl,1), Vlocal(ijl,2), kind=dp)
 
@@ -337,11 +318,7 @@ C       If overflooded, add Vlocal to delkmat and reinitialize it
                   ind = listVsptr(iul)+ii
                   j = listsc( i, iu, listVs(ind) )
                   jl = ilocal(j)
-                  if (il.gt.jl) then
-                    ijl = il*(il+1)/2 + jl + 1
-                  else
-                    ijl = jl*(jl+1)/2 + il + 1
-                  endif
+                  ijl = idx_ijl(il,jl)
                   aux(1) = Vlocal(ijl,1) * dcos(kxij) -
      .                     Vlocal(ijl,2) * dsin(kxij)
                   aux(2) = Vlocal(ijl,2) * dcos(kxij) +
@@ -365,11 +342,11 @@ C       If overflooded, add Vlocal to delkmat and reinitialize it
         endif
 
 C  Look for required orbitals not yet in Vlocal
-        if (nlocal .gt. last) then
+        if (nlocal > last) then
           do ic = 1,nc
             imp = endpht(ip-1) + ic
             i = lstpht(imp)
-            if (ilocal(i) .eq. 0) then
+            if (ilocal(i) == 0) then
               last = last + 1
               ilocal(i) = last
               iorb(last) = i
@@ -457,11 +434,7 @@ C             Loop over sub-points
                 Vij = Vij + VClocal(isp) * Clocal(isp,jc)
               enddo
 
-              if (il.gt.jl) then
-                ijl = il*(il+1)/2 + jl + 1
-              else
-                ijl = jl*(jl+1)/2 + il + 1
-              endif
+              ijl = idx_ijl(il,jl)
               if (ic.ne.jc.and.il.eq.jl) then
                 Vlocal(ijl,irealim) = Vlocal(ijl,irealim) + 2.0_dp*Vij
               else
@@ -472,9 +445,10 @@ C             Loop over sub-points
           enddo
         enddo
       enddo
-!$OMP END DO
+!$OMP end do nowait
 
 C  Add final Vlocal to delkmat
+      if ( ParallelLocal .and. last > 0 ) then
       do il = 1,last
         i = iorb(il)
         iu = indxuo(i)
@@ -485,11 +459,7 @@ C  Add final Vlocal to delkmat
               ind = listdlptr(iul)+ii
               j = listdl(ind)
               jl = ilocal(j)
-              if (il.gt.jl) then
-                ijl = il*(il+1)/2 + jl + 1
-              else
-                ijl = jl*(jl+1)/2 + il + 1
-              endif
+              ijl = idx_ijl(il,jl)
               do irealim = 1, 2
                 DscfL(ind,irealim) = DscfL(ind,irealim) + dVol * 
      &            Vlocal(ijl,irealim) 
@@ -512,11 +482,7 @@ C  Add final Vlocal to delkmat
               ind = listdlptr(iul)+ii
               j = listsc( i, iu, listdl(ind) )
               jl = ilocal(j)
-              if (il.gt.jl) then
-                ijl = il*(il+1)/2 + jl + 1
-              else
-                ijl = jl*(jl+1)/2 + il + 1
-              endif
+              ijl = idx_ijl(il,jl)
               aux(1) = Vlocal(ijl,1) * dcos(kxij) -
      .                 Vlocal(ijl,2) * dsin(kxij)
               aux(2) = Vlocal(ijl,2) * dcos(kxij) +
@@ -533,11 +499,7 @@ C  Add final Vlocal to delkmat
               ind = listVsptr(iu)+ii
               j = listVs(ind)
               jl = ilocal(j)
-              if (il.gt.jl) then
-                ijl = il*(il+1)/2 + jl + 1
-              else
-                ijl = jl*(jl+1)/2 + il + 1
-              endif
+              ijl = idx_ijl(il,jl)
               delkmats(ind) = delkmats(ind) +
      .           dVol * cmplx(Vlocal(ijl,1), Vlocal(ijl,2),kind=dp)
             enddo
@@ -558,11 +520,7 @@ C  Add final Vlocal to delkmat
               ind = listVsptr(iu)+ii
               j = listsc( i, iu, listVs(ind) )
               jl = ilocal(j)
-              if (il.gt.jl) then
-                ijl = il*(il+1)/2 + jl + 1
-              else
-                ijl = jl*(jl+1)/2 + il + 1
-              endif
+              ijl = idx_ijl(il,jl)
               aux(1) = Vlocal(ijl,1) * dcos(kxij) -
      .                 Vlocal(ijl,2) * dsin(kxij)
               aux(2) = Vlocal(ijl,2) * dcos(kxij) +
@@ -574,49 +532,47 @@ C  Add final Vlocal to delkmat
         endif
       enddo
 
-!$OMP BARRIER
+      end if
 
-      if (ParallelLocal) then
-!$OMP   DO SCHEDULE(STATIC)
+!$OMP barrier
+
+      if ( ParallelLocal .and. NTH > 1 ) then
+!$OMP do collapse(3)
         do ind = 1, nvmaxl
           do irealim = 1, 2
             do ii = 2, NTH
-              omp_DscfL(ind,irealim,1) = omp_DscfL(ind,irealim,1) +
-     &                                   omp_DscfL(ind,irealim,ii)
+              t_DscfL(ind,irealim,1) = t_DscfL(ind,irealim,1) +
+     &                                   t_DscfL(ind,irealim,ii)
             enddo
           enddo
         enddo
-!$OMP   END DO
-      else if (NTH.gt.1) then
-!$OMP   DO SCHEDULE(STATIC)
+!$OMP end do
+      else if ( NTH > 1 ) then
+!$OMP do collapse(2)
         do ind = 1, nvmax
           do ii = 1, NTH
-            delkmat(ind) = delkmat(ind) + 
-     &                     omp_delkmats(ind,ii)
+            delkmat(ind) = delkmat(ind) + t_delkmats(ind,ii)
           enddo
         enddo
-!$OMP   END DO
+!$OMP end do
       endif
 
-!$OMP END PARALLEL
+      ! Free local memory
+      deallocate(Clocal,phia,ilocal,ilc,iorb,Vlocal)
 
-C     Free memory
-      call de_alloc( omp_phia, 'phia', 'delk' )
-      call de_alloc( omp_Clocal, 'Clocal', 'delk' )
-      call de_alloc( omp_Vlocal, 'Vlocal', 'delk' )
-      call de_alloc( omp_iorb, 'iorb', 'delk' )
-      call de_alloc( omp_ilc, 'ilc', 'delk' )
-      call de_alloc( omp_ilocal, 'ilocal', 'delk' )
-
-      if (ParallelLocal) then
+!$OMP master
+      if ( ParallelLocal ) then
 C       Redistribute Hamiltonian from mesh to orbital based distribution
-        DscfL => omp_DscfL(1:nvmaxl,1:2,1)
-        call matrixMtoOC( nvmaxl, nvmax, numVs, listVsptr, nuo, 
-     &                    DscfL, delkmat )
-        call de_alloc( omp_DscfL, 'DscfL', 'delk' )
-      else if (NTH.gt.1) then
-        call de_alloc( omp_delkmats, 'delkmats', 'delk' )
+         DscfL => t_DscfL(1:nvmaxl,1:2,1)
+         call matrixMtoOC( nvmaxl, nvmax, numVs, listVsptr, nuo, 
+     &        DscfL, delkmat )
+         call de_alloc( t_DscfL, 'DscfL', 'delk' )
+      else if ( NTH > 1 ) then
+         call de_alloc( t_delkmats, 'delkmats', 'delk' )
       endif
+!$OMP end master
+
+!$OMP end parallel
 
       call de_alloc( r2cut, 'r2cut', 'delk' )
 
@@ -630,6 +586,20 @@ C       Redistribute Hamiltonian from mesh to orbital based distribution
 #ifdef DEBUG
       call write_debug( '    POS delk' )
 #endif
-      return
+
+      contains
+
+      ! In any case will the compiler most likely inline this
+      ! small routine. So it should not pose any problem.
+      pure function idx_ijl(i,j) result(ij)
+      integer, intent(in) :: i,j
+      integer :: ij
+      if ( i > j ) then
+         ij = i * (i + 1)/2 + j + 1
+      else
+         ij = j * (j + 1)/2 + i + 1
+      end if
+      end function idx_ijl
+      
       end subroutine delk
       end module m_delk

@@ -1,4 +1,14 @@
 ----------------------------------------------------
+July 7, 2015 -- Nick Papior          trunk-474---ts-scf-453
+Enabled OpenMP in delk.F (wannier90)
+
+* My OpenMP implemtation in vmat has been merged with
+  the delk code.
+
+added:
+  Src/delk.F
+
+----------------------------------------------------
 July 6, 2015 -- Nick Papior          trunk-473---ts-scf-452
 Added -V -h on transiesta
 
