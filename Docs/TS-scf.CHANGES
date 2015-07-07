@@ -1,4 +1,13 @@
 ----------------------------------------------------
+July 7, 2015 -- Nick Papior          trunk-474---ts-scf-454
+Changed delk.F to delk.F90
+
+removed:
+  Src/delk.F
+added:
+  Src/delk.F90
+
+----------------------------------------------------
 July 7, 2015 -- Nick Papior          trunk-474---ts-scf-453
 Enabled OpenMP in delk.F (wannier90)
 
