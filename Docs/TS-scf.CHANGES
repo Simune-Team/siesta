@@ -1,4 +1,13 @@
 ----------------------------------------------------
+July 7, 2015 -- Nick Papior          trunk-474---ts-scf-455
+Speedup for delk.F90
+
+* Same as speedup performed in vmat.F90
+
+modified:
+  Src/delk.F90
+
+----------------------------------------------------
 July 7, 2015 -- Nick Papior          trunk-474---ts-scf-454
 Changed delk.F to delk.F90
 

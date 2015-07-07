@@ -136,7 +136,7 @@ contains
        is = isa(ia)
        io = iphorb(i)
        r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
-    enddo
+    end do
 
 !   Set algorithm logical
     ParallelLocal = (Nodes > 1)
@@ -155,8 +155,8 @@ contains
           nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
        else
           nvmaxl = 1
-       endif
-    endif
+       end if
+    end if
 
 !   Allocate local memory
 !$OMP parallel default(shared), &
@@ -203,8 +203,8 @@ contains
           nullify( t_delkmats )
           call re_alloc( t_delkmats, 1, nvmax, 1, NTH, &
                'delkmats',  'delk' )
-       endif
-    endif
+       end if
+    end if
 !$OMP end single
 
     if ( ParallelLocal ) then
@@ -215,8 +215,8 @@ contains
           delkmats => t_delkmats(1:nvmax,TID)
        else
           delkmats => delkmat
-       endif
-    endif
+       end if
+    end if
 
 !   Full initializations done only once
     ilocal(1:no)             = 0
@@ -235,16 +235,16 @@ contains
           imp = endpht(ip-1) + ic
           i = lstpht(imp)
           if (ilocal(i) .eq. 0) nlocal = nlocal + 1
-       enddo
+       end do
 
 !      If overflooded, add Vlocal to delkmat and reinitialize it
        if (nlocal > maxloc .and. last > 0) then
-          do il = 1,last
-             i = iorb(il)
-             iu = indxuo(i)
-             if ( ParallelLocal ) then
+          if ( ParallelLocal ) then
+             do il = 1,last
+                i = iorb(il)
+                iu = indxuo(i)
                 iul = NeedDscfL(iu)
-                if (i .eq. iu) then
+                if ( i == iu ) then
                    do ii = 1, numdl(iul)
                       ind = listdlptr(iul)+ii
                       j = listdl(ind)
@@ -253,11 +253,8 @@ contains
 ! The variables we want to compute in this subroutine are complex numbers
 ! Here, when irealim =1 we refer to the real part, and
 ! when irealim = 2 we refer to the imaginary part
-                      do irealim = 1, 2
-                         DscfL(ind,irealim) = DscfL(ind,irealim) + dVol * &
-                              Vlocal(ijl,irealim) 
-                      enddo
-                   enddo
+                      DscfL(ind,:) = DscfL(ind,:) + Vlocal(ijl,:) 
+                   end do
                 else
                    ia  = iaorb(i)
                    iua = indxua(ia)
@@ -266,7 +263,7 @@ contains
                            (iatfold(1,ia)*nmsc(1))*cmesh(ix,1)+ &
                            (iatfold(2,ia)*nmsc(2))*cmesh(ix,2)+ &
                            (iatfold(3,ia)*nmsc(3))*cmesh(ix,3)
-                   enddo
+                   end do
                    dist(:) = xa(:,iua) - xa(:,ia) - displaat(:)
                    kxij    = kpoint(1) *  dist(1)  + &
                         kpoint(2) *  dist(2)  + &
@@ -280,24 +277,26 @@ contains
                            Vlocal(ijl,2) * dsin(kxij)
                       aux(2) = Vlocal(ijl,2) * dcos(kxij) + &
                            Vlocal(ijl,1) * dsin(kxij)
-                      do irealim = 1, 2
-                         DscfL(ind,irealim) = DscfL(ind,irealim) + dVol * &
-                              aux(irealim)
-                      enddo
-                   enddo
-                endif
-             else
+                      DscfL(ind,:) = DscfL(ind,:) + aux(:)
+                   end do
+                end if
+             end do
+          else 
+             
+             do il = 1,last
+                i = iorb(il)
+                iu = indxuo(i)
                 call GlobalToLocalOrb( iu, Node, Nodes, iul )
-                if (i .eq. iu) then
+                if (i == iu) then
                    do ii = 1, numVs(iul)
                       ind = listVsptr(iul)+ii
                       j = listVs(ind)
                       jl = ilocal(j)
                       ijl = idx_ijl(il,jl)
                       delkmats(ind) = delkmats(ind) + &
-                           dVol * cmplx(Vlocal(ijl,1), Vlocal(ijl,2), kind=dp)
+                           cmplx(Vlocal(ijl,1), Vlocal(ijl,2), kind=dp)
 
-                   enddo
+                   end do
                 else
                    ia  = iaorb(i)
                    iua = indxua(ia)
@@ -306,7 +305,7 @@ contains
                            (iatfold(1,ia)*nmsc(1))*cmesh(ix,1)+ &
                            (iatfold(2,ia)*nmsc(2))*cmesh(ix,2)+ &
                            (iatfold(3,ia)*nmsc(3))*cmesh(ix,3)
-                   enddo
+                   end do
                    dist(:) = xa(:,iua) - xa(:,ia) - displaat(:)
                    kxij    = kpoint(1) *  dist(1)  + &
                         kpoint(2) *  dist(2)  + &
@@ -322,21 +321,23 @@ contains
                            Vlocal(ijl,1) * dsin(kxij)
 
                       delkmats(ind) = delkmats(ind) + &
-                           dVol * cmplx(aux(1),aux(2),kind=dp)
+                           cmplx(aux(1),aux(2),kind=dp)
 
-                   enddo
-                endif
-             endif
-          enddo
+                   end do
+                end if
+             end do
+
+          end if
+
 !         Reset local arrays
           do ii = 1, last
              ilocal(iorb(ii)) = 0
-          enddo
+          end do
           iorb(1:last) = 0
           ijl = (last+1)*(last+2)/2
           Vlocal(1:ijl,1:2) = 0.0_dp
           last = 0
-       endif
+       end if
 
 !      Look for required orbitals not yet in Vlocal
        if (nlocal > last) then
@@ -347,9 +348,9 @@ contains
                 last = last + 1
                 ilocal(i) = last
                 iorb(last) = i
-             endif
-          enddo
-       endif
+             end if
+          end do
+       end if
 
 !      Loop on first orbital of mesh point
        lasta = 0
@@ -375,13 +376,13 @@ contains
              dxp(ix) = cmesh(ix,1) * inmp(1) + &
                   cmesh(ix,2) * inmp(2) + &
                   cmesh(ix,3) * inmp(3)
-          enddo
+          end do
 
           do isp = 1, nsp
              do ix = 1, 3
                 dxpgrid(ix,isp) = dxp(ix) + xdsp(ix,isp)
-             enddo
-          enddo
+             end do
+          end do
 
 !         Generate or retrieve phi values
           if (DirectPhi) then
@@ -391,24 +392,24 @@ contains
                 do isp = 1,nsp
                    do ix = 1,3
                       dxsp(ix) = xdsp(ix,isp) + xdop(ix,iop) - dxa(ix,ia)
-                   enddo
+                   end do
                    r2sp = sum(dxsp**2)
                    if (r2sp.lt.r2cut(is)) then
                       call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
                    else
                       phia(:,isp) = 0.0_dp
-                   endif
-                enddo
-             endif
+                   end if
+                end do
+             end if
              iphi = iphorb(i)
              do isp = 1,nsp
                 Clocal(isp,ic) = phia(iphi,isp)
-             enddo
+             end do
           else
              do isp = 1,nsp
                 Clocal(isp,ic) = phi(isp,imp)
-             enddo
-          endif
+             end do
+          end if
 
 !         Pre-multiply V and Clocal(,ic)
           do irealim = 1, 2
@@ -419,7 +420,7 @@ contains
                 comkxij(1,isp) = dcos(kxij)
                 comkxij(2,isp) = dsin(kxij)
                 VClocal(isp)   = comkxij(irealim,isp) * Clocal(isp,ic)
-             enddo
+             end do
 
 !            Loop on second orbital of mesh point (only for jc.le.ic)
              do jc = 1,ic
@@ -429,105 +430,106 @@ contains
                 Vij = 0.0_dp
                 do isp = 1,nsp
                    Vij = Vij + VClocal(isp) * Clocal(isp,jc)
-                enddo
+                end do
+
+                if (ic.ne.jc.and.il.eq.jl) then
+                   Vij = Vij * dVol * 2._dp
+                else
+                   Vij = Vij * dVol
+                end if
 
                 ijl = idx_ijl(il,jl)
-                if (ic.ne.jc.and.il.eq.jl) then
-                   Vlocal(ijl,irealim) = Vlocal(ijl,irealim) + 2.0_dp*Vij
-                else
-                   Vlocal(ijl,irealim) = Vlocal(ijl,irealim) + Vij
-                endif
+                Vlocal(ijl,irealim) = Vlocal(ijl,irealim) + Vij
 
-             enddo
-          enddo
-       enddo
-    enddo
+             end do
+          end do
+       end do
+    end do
 !$OMP end do nowait
 
 !   Add final Vlocal to delkmat
     if ( ParallelLocal .and. last > 0 ) then
+
        do il = 1 , last
           i = iorb(il)
           iu = indxuo(i)
-          if (ParallelLocal) then
-             iul = NeedDscfL(iu)
-             if (i .eq. iu) then
-                do ii = 1, numdl(iul)
-                   ind = listdlptr(iul)+ii
-                   j = listdl(ind)
-                   jl = ilocal(j)
-                   ijl = idx_ijl(il,jl)
-                   do irealim = 1, 2
-                      DscfL(ind,irealim) = DscfL(ind,irealim) + &
-                           dVol * Vlocal(ijl,irealim) 
-                   enddo
-                enddo
-             else
-                ia  = iaorb(i)
-                iua = indxua(ia)
-                do ix = 1, 3
-                   displaat(ix) = &
-                        (iatfold(1,ia)*nmsc(1))*cmesh(ix,1)+ &
-                        (iatfold(2,ia)*nmsc(2))*cmesh(ix,2)+ &
-                        (iatfold(3,ia)*nmsc(3))*cmesh(ix,3)
-                enddo
-                dist(:) = xa(:,iua) - xa(:,ia) - displaat(:)
-                kxij    = kpoint(1) * dist(1) + &
-                     kpoint(2) * dist(2) + &
-                     kpoint(3) * dist(3)
-                do ii = 1, numdl(iul)
-                   ind = listdlptr(iul)+ii
-                   j = listsc( i, iu, listdl(ind) )
-                   jl = ilocal(j)
-                   ijl = idx_ijl(il,jl)
-                   aux(1) = Vlocal(ijl,1) * dcos(kxij) - &
-                        Vlocal(ijl,2) * dsin(kxij)
-                   aux(2) = Vlocal(ijl,2) * dcos(kxij) + &
-                        Vlocal(ijl,1) * dsin(kxij)
-                   do irealim = 1, 2
-                      DscfL(ind,irealim) = DscfL(ind,irealim) + &
-                           dVol * aux(irealim) 
-                   enddo
-                enddo
-             endif
+          iul = NeedDscfL(iu)
+          if ( i == iu ) then
+             do ii = 1, numdl(iul)
+                ind = listdlptr(iul)+ii
+                j = listdl(ind)
+                jl = ilocal(j)
+                ijl = idx_ijl(il,jl)
+                DscfL(ind,:) = DscfL(ind,:) + Vlocal(ijl,:) 
+             end do
           else
-             if (i .eq. iu) then
-                do ii = 1, numVs(iu)
-                   ind = listVsptr(iu)+ii
-                   j = listVs(ind)
-                   jl = ilocal(j)
-                   ijl = idx_ijl(il,jl)
-                   delkmats(ind) = delkmats(ind) + &
-                        dVol * cmplx(Vlocal(ijl,1), Vlocal(ijl,2),kind=dp)
-                enddo
-             else
-                ia  = iaorb(i)
-                iua = indxua(ia)
-                do ix = 1, 3
-                   displaat(ix) = &
-                        (iatfold(1,ia)*nmsc(1))*cmesh(ix,1)+ &
-                        (iatfold(2,ia)*nmsc(2))*cmesh(ix,2)+ &
-                        (iatfold(3,ia)*nmsc(3))*cmesh(ix,3)
-                enddo
-                dist(:) = xa(:,iua) - xa(:,ia) - displaat(:)
-                kxij    = kpoint(1) * dist(1) + &
-                     kpoint(2) * dist(2) + &
-                     kpoint(3) * dist(3)
-                do ii = 1, numVs(iu)
-                   ind = listVsptr(iu)+ii
-                   j = listsc( i, iu, listVs(ind) )
-                   jl = ilocal(j)
-                   ijl = idx_ijl(il,jl)
-                   aux(1) = Vlocal(ijl,1) * dcos(kxij) - &
-                        Vlocal(ijl,2) * dsin(kxij)
-                   aux(2) = Vlocal(ijl,2) * dcos(kxij) + &
-                        Vlocal(ijl,1) * dsin(kxij)
-                   delkmats(ind) = delkmats(ind) + &
-                        dVol * cmplx(aux(1),aux(2),kind=dp)
-                enddo
-             endif
-          endif
-       enddo
+             ia  = iaorb(i)
+             iua = indxua(ia)
+             do ix = 1, 3
+                displaat(ix) = &
+                     (iatfold(1,ia)*nmsc(1))*cmesh(ix,1)+ &
+                     (iatfold(2,ia)*nmsc(2))*cmesh(ix,2)+ &
+                     (iatfold(3,ia)*nmsc(3))*cmesh(ix,3)
+             end do
+             dist(:) = xa(:,iua) - xa(:,ia) - displaat(:)
+             kxij    = kpoint(1) * dist(1) + &
+                  kpoint(2) * dist(2) + &
+                  kpoint(3) * dist(3)
+             do ii = 1, numdl(iul)
+                ind = listdlptr(iul)+ii
+                j = listsc( i, iu, listdl(ind) )
+                jl = ilocal(j)
+                ijl = idx_ijl(il,jl)
+                aux(1) = Vlocal(ijl,1) * dcos(kxij) - &
+                     Vlocal(ijl,2) * dsin(kxij)
+                aux(2) = Vlocal(ijl,2) * dcos(kxij) + &
+                     Vlocal(ijl,1) * dsin(kxij)
+                DscfL(ind,:) = DscfL(ind,:) + aux(:) 
+             end do
+          end if
+       end do
+
+    else if ( last > 0 ) then
+
+       do il = 1 , last
+          i = iorb(il)
+          iu = indxuo(i)
+          if ( i == iu ) then
+             do ii = 1, numVs(iu)
+                ind = listVsptr(iu)+ii
+                j = listVs(ind)
+                jl = ilocal(j)
+                ijl = idx_ijl(il,jl)
+                delkmats(ind) = delkmats(ind) + &
+                     cmplx(Vlocal(ijl,1), Vlocal(ijl,2),kind=dp)
+             end do
+          else
+             ia  = iaorb(i)
+             iua = indxua(ia)
+             do ix = 1, 3
+                displaat(ix) = &
+                     (iatfold(1,ia)*nmsc(1))*cmesh(ix,1)+ &
+                     (iatfold(2,ia)*nmsc(2))*cmesh(ix,2)+ &
+                     (iatfold(3,ia)*nmsc(3))*cmesh(ix,3)
+             end do
+             dist(:) = xa(:,iua) - xa(:,ia) - displaat(:)
+             kxij    = kpoint(1) * dist(1) + &
+                  kpoint(2) * dist(2) + &
+                  kpoint(3) * dist(3)
+             do ii = 1, numVs(iu)
+                ind = listVsptr(iu)+ii
+                j = listsc( i, iu, listVs(ind) )
+                jl = ilocal(j)
+                ijl = idx_ijl(il,jl)
+                aux(1) = Vlocal(ijl,1) * dcos(kxij) - &
+                     Vlocal(ijl,2) * dsin(kxij)
+                aux(2) = Vlocal(ijl,2) * dcos(kxij) + &
+                     Vlocal(ijl,1) * dsin(kxij)
+                delkmats(ind) = delkmats(ind) + &
+                     cmplx(aux(1),aux(2),kind=dp)
+             end do
+          end if
+       end do
 
     end if
 
@@ -540,19 +542,19 @@ contains
              do ii = 2, NTH
                 t_DscfL(ind,irealim,1) = t_DscfL(ind,irealim,1) + &
                      t_DscfL(ind,irealim,ii)
-             enddo
-          enddo
-       enddo
+             end do
+          end do
+       end do
 !$OMP end do
     else if ( NTH > 1 ) then
 !$OMP do
        do ind = 1, nvmax
           do ii = 1, NTH
              delkmat(ind) = delkmat(ind) + t_delkmats(ind,ii)
-          enddo
-       enddo
+          end do
+       end do
 !$OMP end do
-    endif
+    end if
 
 !   Free local memory
     deallocate(Clocal,phia,ilocal,ilc,iorb,Vlocal)
@@ -565,7 +567,7 @@ contains
        call de_alloc( t_DscfL, 'DscfL', 'delk' )
     else if ( NTH > 1 ) then
        call de_alloc( t_delkmats, 'delkmats', 'delk' )
-    endif
+    end if
 !$OMP end master
 
 !$OMP end parallel
