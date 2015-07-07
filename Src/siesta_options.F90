@@ -1095,6 +1095,7 @@ MODULE siesta_options
     if (ionode) then
       select case (idyn)
       case(0)
+       if (nmove > 0) then
         if (broyden_optim) then
           write(6,2) 'redata: Dynamics option                  =     '//&
                      'Broyden coord. optimization'
@@ -1158,7 +1159,13 @@ MODULE siesta_options
                                   units='siestaUnits:Ry_Bohr__3' )
           endif
         endif
-
+       else
+          write(6,2) 'redata: Dynamics option                  =     '//&
+                     'Single-point calculation'
+            call cmlAddParameter( xf   = mainXML,        &
+                                  name = 'MD.TypeOfRun', &
+                                  value= 'Single-Point' )
+       endif
       case(1)
         write(6,2) 'redata: Dynamics option                  =     '//&
                    'Verlet MD run'
