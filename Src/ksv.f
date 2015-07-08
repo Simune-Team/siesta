@@ -75,10 +75,7 @@ C
 C  Modules
 C
       use precision,     only : dp
-! jjunquer
-!      use parallel,      only : IOnode
-      use parallel,      only : IOnode, Node, Nodes
-! end jjunquer
+      use parallel,      only : IOnode
       use sys,           only : die
       use atmfuncs,      only : zvalfis
       use densematrix

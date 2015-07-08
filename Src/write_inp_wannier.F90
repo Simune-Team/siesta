@@ -539,7 +539,7 @@ subroutine writeunk( ispin )
   complex(dp), pointer :: buffer(:,:,:,:) => null()  ! Variable where the 
                                              !   periodic part of the wave
                                              !   functions at the points of the
-                                             !   grid will be computed
+                                             !   grid will be stored
 !
 ! Variables related with the input/output
 !
@@ -710,7 +710,8 @@ enddo  BAND_LOOP
             &                 name='auxloc', routine='writeunk' )
        auxloc(:,:,:,:) = cmplx(0.0_dp,0.0_dp,kind=dp)
     else
-       auxloc => buffer
+       auxloc => buffer(:,:,:,:)  ! Un-touched in the other nodes
+                                  ! but has to be defined for checks
     endif
 
     call MPI_Reduce( buffer(1,1,1,1), auxloc(1,1,1,1),                  &

@@ -107,12 +107,12 @@ subroutine compute_pw_matrix( nncount, bvectorsfrac )
 !   to multiply then by the reciprocal lattice vector.
     call getkvector( bvectorsfrac(:,inn), bvector )
 
-    if( IOnode ) then  
-      write(6,'(a)')         &
- &      'compute_pw_matrix: Vector connecting a k-point with its neighbours'
-      write(6,'(a,3f12.5)')  &
- &      'compute_pw_matrix:', bvector(:)
-    endif
+!!$    if( IOnode ) then  
+!!$      write(6,'(a)')         &
+!!$ &      'compute_pw_matrix: Vector connecting a k-point with its neighbours'
+!!$      write(6,'(a,3f12.5)')  &
+!!$ &      'compute_pw_matrix:', bvector(:)
+!!$    endif
 
 !   Call to the subroutine that computes the matrix elements of the plane
 !   wave in the grid (planewavematrix)
