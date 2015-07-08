@@ -1,4 +1,16 @@
 ----------------------------------------------------
+July 8, 2015 -- Nick Papior          trunk-474---ts-scf-458
+Speeded up vmat and rhoofd
+
+* A few modifications ment a big speedup for
+  especially rhoofd. I see it running @ 2/3
+  time for moderate systems.
+
+modified:
+  Src/rhoofd.F90
+  Src/vmat.F90
+
+----------------------------------------------------
 July 7, 2015 -- Nick Papior          trunk-474---ts-scf-457
 Small speedup for clarity
 

@@ -81,7 +81,7 @@ contains
     integer, parameter :: maxoa  = 100  ! Max # of orb/atom
     integer :: i, ia, ic, ii, ijl, il, imp, ind, iop
     integer :: ip, iphi, io, is, isp, ispin, iu, iul
-    integer :: ix, j, jc, jl, last, lasta, lastop
+    integer :: j, jc, jl, last, lasta, lastop
     integer :: maxloc, maxloc2, nc, nlocal, nphiloc
     integer :: nvmaxl, triang, lenx, leny, lenz,lenxy
     logical :: ParallelLocal
@@ -144,7 +144,7 @@ contains
 !$OMP&shared(NTH,t_DscfL,t_Vss), &
 !$OMP&private(TID,last), &
 !$OMP&private(ip,nc,nlocal,ic,imp,i,il,iu,iul,ii,ind,j,ijl,ispin), &
-!$OMP&private(lasta,lastop,ia,is,iop,isp,ix,dxsp,r2sp,nphiloc,iphi,jc,jl), &
+!$OMP&private(lasta,lastop,ia,is,iop,isp,dxsp,r2sp,nphiloc,iphi,jc,jl), &
 !$OMP&private(Vij,VClocal,DscfL,Vss,ilocal,ilc,iorb,Vlocal,Clocal,phia)
 
 !$OMP single
@@ -235,7 +235,7 @@ contains
                       j   = listdl(ind)
                       ijl = idx_ijl(il,ilocal(j))
                       do ispin = 1,nspin
-                         DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) 
+                         DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
                    end do
                 else
@@ -244,7 +244,7 @@ contains
                       j   = LISTSC( i, iu, listdl(ind) )
                       ijl = idx_ijl(il,ilocal(j))
                       do ispin = 1,nspin
-                         DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) 
+                         DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
                    end do
                 end if
@@ -260,7 +260,7 @@ contains
                       j   = listVs(ind)
                       ijl = idx_ijl(il,ilocal(j))
                       do ispin = 1,nspin
-                         Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) 
+                         Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
                    end do
                 else
@@ -269,7 +269,7 @@ contains
                       j   = LISTSC( i, iu, listVs(ind) )
                       ijl = idx_ijl(il,ilocal(j))
                       do ispin = 1,nspin
-                         Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) 
+                         Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                       end do
                    end do
                 end if
@@ -286,7 +286,7 @@ contains
        end if
 
 !      Look for required orbitals not yet in Vlocal
-       if (nlocal > last) then
+       if ( nlocal > last ) then
           do ic = 1,nc
              imp = endpht(ip-1) + ic
              i   = lstpht(imp)
@@ -297,25 +297,24 @@ contains
              end if
           end do
        end if
-       
-!      Loop on first orbital of mesh point
-       lasta = 0
-       lastop = 0
-       do ic = 1,nc
-          imp = endpht(ip-1) + ic
-          i   = lstpht(imp)
-          il  = ilocal(i)
-          iu  = indxuo(i)
-          ia  = iaorb(i)
-          is  = isa(ia)
-          iop = listp2(imp)
-          ilc(ic) = il
 
-!         Generate or retrieve phi values
-          if ( DirectPhi ) then
+!      Check algorithm
+       if ( DirectPhi ) then
+          lasta = 0
+          lastop = 0
+          do ic = 1 , nc
+             imp = endpht(ip-1) + ic
+             i   = lstpht(imp)
+             il  = ilocal(i)
+             ia  = iaorb(i)
+             iop = listp2(imp)
+             ilc(ic) = il
+             
+!            Generate or retrieve phi values
              if ( ia /= lasta .or. iop /= lastop ) then
                 lasta  = ia
                 lastop = iop
+                is = isa(ia)
                 do isp = 1,nsp
                    dxsp(:) = xdsp(:,isp) + xdop(:,iop) - dxa(:,ia)
                    r2sp = sum(dxsp**2)
@@ -327,58 +326,99 @@ contains
                 end do
              end if
              iphi = iphorb(i)
-             do isp = 1,nsp
-                Clocal(isp,ic) = phia(iphi,isp)
-             end do
-          else
-             do isp = 1,nsp
-                Clocal(isp,ic) = phi(isp,imp)
-             end do
-          end if
+             
+             Clocal(:,ic) = phia(iphi,:)
           
-!         Pre-multiply V and Clocal(,ic)
-          do ispin = 1,nspin
+             do ispin = 1 , nspin
 
-             Vij = 0.0_dp
-             do isp = 1,nsp
-                VClocal(isp) = V(isp,ip,ispin) * Clocal(isp,ic)
-                Vij = Vij + VClocal(isp) * Clocal(isp,ic)
-             end do
-             Vij = Vij * dVol
-             ! We immediately calculate the jc == ic value
-             ijl = idx_ijl(il,ilc(ic))
-             Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
-
-!            Loop on second orbital of mesh point (only for jc.lt.ic)
-             do jc = 1, ic - 1
-                jl = ilc(jc)
-
-!               Loop over sub-points
-                Vij = 0.0_dp
+!               Create VClocal for the first orbital of mesh point
+                Vij = 0._dp
                 do isp = 1,nsp
-                   Vij = Vij + VClocal(isp) * Clocal(isp,jc)
+                   VClocal(isp) = V(isp,ip,ispin) * Clocal(isp,ic)
+!                  This is the jc == ic value
+                   Vij = Vij + VClocal(isp) * Clocal(isp,ic)
                 end do
-                if ( il == jl ) then
-                   Vij = Vij * dVol * 2._dp
-                else
-                   Vij = Vij * dVol
-                end if
-
-                ijl = idx_ijl(il,jl)
-
+                
+!               ic == jc, hence we simply do
+                ijl = idx_ijl(il,ilc(ic))
                 Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
 
+!               Loop on second orbital of mesh point
+                do jc = 1 , ic - 1
+                   jl = ilc(jc)
+
+!                  Calculate ic * jc
+                   Vij = 0._dp
+                   do isp = 1,nsp
+                      Vij = Vij + VClocal(isp) * Clocal(isp,jc)
+                   end do
+
+                   ijl = idx_ijl(il,jl)
+                   if ( il == jl ) then
+                      Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij * 2._dp
+                   else
+                      Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
+                   end if
+                   
+                end do
              end do
 
           end do
-       end do
+          
+       else
+
+          do ic = 1 , nc
+             imp = endpht(ip-1) + ic
+             il  = ilocal(lstpht(imp))
+             ilc(ic) = il
+
+             Clocal(:,ic) = phi(:,imp)
+
+             do ispin = 1 , nspin
+
+!               Create VClocal for the first orbital of mesh point
+                Vij = 0._dp
+                do isp = 1 , nsp
+                   VClocal(isp) = V(isp,ip,ispin) * Clocal(isp,ic)
+!                  This is the jc == ic value
+                   Vij = Vij + VClocal(isp) * Clocal(isp,ic)
+                end do
+                
+!               ic == jc, hence we simply do
+                ijl = idx_ijl(il,ilc(ic))
+                Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
+
+!               Loop on second orbital of mesh point
+                do jc = 1 , ic - 1
+                   jl = ilc(jc)
+
+!                  Calculate ic * jc
+                   Vij = 0._dp
+                   do isp = 1 , nsp
+                      Vij = Vij + VClocal(isp) * Clocal(isp,jc)
+                   end do
+
+                   ijl = idx_ijl(il,jl)
+                   if ( il == jl ) then
+                      Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij * 2._dp
+                   else
+                      Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
+                   end if
+                   
+                end do
+             end do
+
+          end do
+
+       end if
+       
     end do
 !$OMP end do nowait
 
 ! Note that this is already performed in parallel!
 !   Add final Vlocal to Vs
     if ( ParallelLocal .and. last > 0 ) then
-       do il = 1,last
+       do il = 1 , last
           i   = iorb(il)
           iu  = indxuo(i)
           iul = NeedDscfL(iu)
@@ -388,7 +428,7 @@ contains
                 j   = listdl(ind)
                 ijl = idx_ijl(il,ilocal(j))
                 do ispin = 1,nspin
-                   DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) 
+                   DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
              end do
           else
@@ -397,13 +437,13 @@ contains
                 j   = LISTSC( i, iu, listdl(ind) )
                 ijl = idx_ijl(il,ilocal(j))
                 do ispin = 1,nspin
-                   DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) 
+                   DscfL(ind,ispin) = DscfL(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
              end do
           end if
        end do
     else if ( last > 0 ) then
-       do il = 1,last
+       do il = 1 , last
           i  = iorb(il)
           iu = indxuo(i)
           if ( i == iu ) then
@@ -412,7 +452,7 @@ contains
                 j   = listVs(ind)
                 ijl = idx_ijl(il,ilocal(j))
                 do ispin = 1,nspin
-                   Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) 
+                   Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
              end do
           else
@@ -421,7 +461,7 @@ contains
                 j   = LISTSC( i, iu, listVs(ind) )
                 ijl = idx_ijl(il,ilocal(j))
                 do ispin = 1,nspin
-                   Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) 
+                   Vss(ind,ispin) = Vss(ind,ispin) + Vlocal(ijl,ispin) * dVol
                 end do
              end do
           end if

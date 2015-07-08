@@ -74,7 +74,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
   integer :: isp, iu, iul, j, jc, last, lasta
   integer :: lastop, maxloc, maxloc2, triang, nc
   integer :: maxndl, nphiloc, lenx, leny, lenxy, lenz
-  real(dp) :: r2sp, dxsp(3), Cij(nsp)
+  real(dp) :: r2sp, dxsp(3)
   integer, pointer :: ilc(:), ilocal(:), iorb(:)
   real(dp), pointer :: r2cut(:), Clocal(:,:), Dlocal(:,:), phia(:,:)
 #ifdef _TRACE_
@@ -118,7 +118,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
      r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
   end do
 
-!     Find size of buffers to store partial copies of Dscf and C
+! Find size of buffers to store partial copies of Dscf and C
   maxloc2 = maxval(endpht(1:np)-endpht(0:np-1))
   maxloc = maxloc2 + minloc
   maxloc = min( maxloc, no )
@@ -134,8 +134,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !$OMP&private(ilocal,ilc,iorb,Dlocal,Clocal,phia), &
 !$OMP&private(ip,nc,ic,imp,i,il,last,j,iu,iul,ii,ind,io), &
 !$OMP&private(ijl,ispin,lasta,lastop,ia,is,iop,isp,iphi), &
-!$OMP&private(jc,nphiloc), &
-!$OMP&private(dxsp,r2sp,Cij)
+!$OMP&private(jc,nphiloc,dxsp,r2sp)
 
 ! Allocate local memory
   nullify ( ilocal, ilc, iorb, Dlocal, Clocal, phia )
@@ -199,18 +198,14 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdlptr(iul) + ii
                     j   = listdl(ind)
                     ijl = idx_ijl(il,ilocal(j))
-                    do ispin = 1,nspin
-                       Dlocal(ijl,ispin) = DscfL(ind,ispin)
-                    end do
+                    Dlocal(ijl,:) = DscfL(ind,:)
                  end do
               else
                  do ii = 1, numdl(iul)
                     ind = listdlptr(iul)+ii
                     j   = LISTSC( i, iu, listdl(ind) )
                     ijl = idx_ijl(il,ilocal(j))
-                    do ispin = 1,nspin
-                       Dlocal(ijl,ispin) = DscfL(ind,ispin)
-                    end do
+                    Dlocal(ijl,:) = DscfL(ind,:)
                  end do
               end if
            else
@@ -220,46 +215,41 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                     ind = listdptr(iul)+ii
                     j   = listd(ind)
                     ijl = idx_ijl(il,ilocal(j))
-                    do ispin = 1,nspin
-                       Dlocal(ijl,ispin) = Dscf(ind,ispin)
-                    end do
+                    Dlocal(ijl,:) = Dscf(ind,:)
                  end do
               else
                  do ii = 1, numd(iul)
                     ind = listdptr(iul)+ii
                     j   = LISTSC( i, iu, listd(ind) )
                     ijl = idx_ijl(il,ilocal(j))
-                    do ispin = 1,nspin
-                       Dlocal(ijl,ispin) = Dscf(ind,ispin)
-                    end do
+                    Dlocal(ijl,:) = Dscf(ind,:)
                  end do
               end if
            end if
         end if
      end do
 
-!    Loop on first orbital of mesh point
-     lasta = 0
-     lastop = 0
-     do ic = 1,nc
-        imp = endpht(ip-1) + ic
-        i   = lstpht(imp)
-        il  = ilocal(i)
-        iu  = indxuo(i)
-        ia  = iaorb(i)
-        is  = isa(ia)
-        iop = listp2(imp)
-        ilc(ic) = il
-
-!       Generate or retrieve phi values
-        if (DirectPhi) then
+!    Check algorithm
+     if ( DirectPhi ) then
+        lasta = 0
+        lastop = 0
+        do ic = 1,nc
+           imp = endpht(ip-1) + ic
+           i   = lstpht(imp)
+           il  = ilocal(i)
+           ia  = iaorb(i)
+           iop = listp2(imp)
+           ilc(ic) = il
+           
+!          Generate or retrieve phi values
            if ( ia /= lasta .or. iop /= lastop ) then
               lasta  = ia
               lastop = iop
-              do isp = 1,nsp
+              is = isa(ia)
+              do isp = 1 , nsp
                  dxsp(:) = xdsp(:,isp) + xdop(:,iop) - dxa(:,ia)
                  r2sp = sum(dxsp**2)
-                 if (r2sp < r2cut(is)) then
+                 if ( r2sp < r2cut(is) ) then
                     call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
                  else
                     phia(:,isp) = 0.0_dp
@@ -267,48 +257,80 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
               end do
            end if
            iphi = iphorb(i)
-           Clocal(:,ic) = dsqrt(2._dp) * phia(iphi,:)
-        else
-           Clocal(:,ic) = dsqrt(2._dp) * phi(:,imp)
-        end if
 
-!       Loop on second orbital of mesh point
-        do jc = 1, ic - 1
-           do isp = 1, nsp
-              Cij(isp) = Clocal(isp,ic) * Clocal(isp,jc)
+!          Retrieve phi values
+           Clocal(:,ic) = dsqrt(2._dp) * phia(iphi,:)
+
+!          Loop on second orbital of mesh point
+           do jc = 1, ic - 1
+              ijl = idx_ijl(il,ilc(jc))
+              
+              do ispin = 1,nspin
+!                Loop over sub-points
+                 do isp = 1,nsp
+                    rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
+                         Dlocal(ijl,ispin) * Clocal(isp,ic) * Clocal(isp,jc)
+                 end do
+              end do
+
            end do
 
-           ijl = idx_ijl(il,ilc(jc))
-
+!          ilc(ic) == il
+           ijl = idx_ijl(il,ilc(ic))
+           
            do ispin = 1,nspin
 !             Loop over sub-points
               do isp = 1,nsp
                  rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
-                      Dlocal(ijl,ispin) * Cij(isp)
+                      Dlocal(ijl,ispin) * 0.5_dp * Clocal(isp,ic) ** 2
               end do
               
            end do
            
         end do
 
-        do isp = 1, nsp
-           Cij(isp) = 0.5_dp * Clocal(isp,ic) ** 2
-        end do
-        
-        ijl = idx_ijl(il,ilc(ic))
-        
-        do ispin = 1,nspin
-!          Loop over sub-points
-           do isp = 1,nsp
-              rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
-                   Dlocal(ijl,ispin) * Cij(isp)
+     else
+
+!       Store values
+        do ic = 1 , nc
+           imp = endpht(ip-1) + ic
+           il  = ilocal(lstpht(imp))
+           ilc(ic) = il
+
+!          Retrieve phi values
+           Clocal(:,ic) = dsqrt(2._dp) * phi(:,imp)
+           
+!          Loop on second orbital of mesh point
+           do jc = 1, ic - 1
+              ijl = idx_ijl(il,ilc(jc))
+              
+              do ispin = 1,nspin
+!                Loop over sub-points
+                 do isp = 1,nsp
+                    rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
+                         Dlocal(ijl,ispin) * Clocal(isp,ic) * Clocal(isp,jc)
+                 end do
+              end do
+
+           end do
+
+!          ilc(ic) == il
+           ijl = idx_ijl(il,ilc(ic))
+           
+           do ispin = 1,nspin
+!             Loop over sub-points
+              do isp = 1,nsp
+                 rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + &
+                      Dlocal(ijl,ispin) * 0.5_dp * Clocal(isp,ic) ** 2
+              end do
+              
            end do
            
         end do
-           
-     end do
 
-!       Restore iorb for next point
+     end if
+     
+!    Restore iorb for next point
      do imp = 1+endpht(ip-1), endpht(ip)
         i  = lstpht(imp)
         il = ilocal(i)
