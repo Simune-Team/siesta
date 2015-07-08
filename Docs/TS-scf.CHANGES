@@ -1,4 +1,17 @@
 ----------------------------------------------------
+July 8, 2015 -- Nick Papior          trunk-474---ts-scf-459
+DirectPhi and OpenMP threading bug-fix
+
+* Calculating the wavefunction on the grid
+  is not thread-safe. Hence we use a critical
+  section.
+
+modified:
+  Src/delk.F90
+  Src/rhoofd.F90
+  Src/vmat.F90
+
+----------------------------------------------------
 July 8, 2015 -- Nick Papior          trunk-474---ts-scf-458
 Speeded up vmat and rhoofd
 

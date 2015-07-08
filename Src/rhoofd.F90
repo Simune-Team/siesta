@@ -250,7 +250,9 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
                  dxsp(:) = xdsp(:,isp) + xdop(:,iop) - dxa(:,ia)
                  r2sp = sum(dxsp**2)
                  if ( r2sp < r2cut(is) ) then
+!$OMP critical
                     call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
+!$OMP end critical
                  else
                     phia(:,isp) = 0.0_dp
                  end if
