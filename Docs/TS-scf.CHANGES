@@ -1,4 +1,13 @@
 ----------------------------------------------------
+July 8, 2015 -- Nick Papior          trunk-474---ts-scf-461
+TBT: bugfix for serial compilation
+
+* Fixed tbtrans compilation in serial
+
+modified:
+  Util/TS/TBtrans/m_tbt_sparse_helper.F90
+
+----------------------------------------------------
 July 8, 2015 -- Nick Papior          trunk-474---ts-scf-460
 Optimized delk in-line with the recent vmat implementation
 

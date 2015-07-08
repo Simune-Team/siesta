@@ -38,7 +38,10 @@ module m_tbt_sparse_helper
 
   use precision, only : dp
   use m_ts_method, only : orb_type, TYP_BUFFER, TYP_DEVICE
-  use m_ts_sparse_helper, only: AllReduce_SpData, symmetrize_HS
+#ifdef MPI
+  use m_ts_sparse_helper, only: AllReduce_SpData
+#endif
+  use m_ts_sparse_helper, only: symmetrize_HS
 
   implicit none
 
