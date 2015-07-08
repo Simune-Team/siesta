@@ -1,4 +1,15 @@
 ----------------------------------------------------
+July 8, 2015 -- Nick Papior          trunk-474---ts-scf-460
+Optimized delk in-line with the recent vmat implementation
+
+* It is now ~3 times faster in the simple example.
+
+modified:
+  Src/delk.F90
+  Src/rhoofd.F90
+  Src/vmat.F90
+
+----------------------------------------------------
 July 8, 2015 -- Nick Papior          trunk-474---ts-scf-459
 DirectPhi and OpenMP threading bug-fix
 

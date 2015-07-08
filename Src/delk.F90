@@ -88,7 +88,7 @@ contains
     integer :: maxloc, maxloc2, nc, nlocal, nphiloc
     integer :: nvmaxl, triang, lenx, leny, lenz,lenxy
     logical :: ParallelLocal
-    real(dp) :: Vij, r2sp, dxsp(3), VClocal(nsp)
+    real(dp) :: Vij(2), r2sp, dxsp(3), VClocal(2,nsp)
 
     integer, pointer :: ilc(:), ilocal(:), iorb(:)
     real(dp), pointer :: DscfL(:,:),  t_DscfL(:,:,:), Clocal(:,:)
@@ -100,7 +100,7 @@ contains
     integer :: irel, iua, irealim, inmp(3)
     real(dp) :: kxij, aux(2), dist(3), kpoint(3)
     real(dp) :: dxp(3), displaat(3)
-    real(dp) :: dxpgrid(3,nsp), comkxij(2,nsp)
+    real(dp) :: dxpgrid(3,nsp)
     complex(dp), pointer :: delkmats(:), t_delkmats(:,:)
 
 #ifdef _TRACE_
@@ -120,7 +120,9 @@ contains
     call timer('delk',1)
 
 !   Initialize the matrix elements of exp(i*\vec{k} \vec{r})
+!$OMP parallel workshare default(shared)
     delkmat(:) = 0.0_dp
+!$OMP end parallel workshare
     kpoint(:)  = dble(iexpikr) * wavevector(:)
 
 !! For debugging
@@ -219,10 +221,10 @@ contains
     end if
 
 !   Full initializations done only once
-    ilocal(1:no)             = 0
-    iorb(1:maxloc)           = 0
-    Vlocal(1:triang,1:2)     = 0.0_dp
-    last                     = 0
+    ilocal(1:no)         = 0
+    iorb(1:maxloc)       = 0
+    Vlocal(1:triang,1:2) = 0.0_dp
+    last                 = 0
 
 !   Loop over grid points
 !$OMP do
@@ -253,7 +255,7 @@ contains
 ! The variables we want to compute in this subroutine are complex numbers
 ! Here, when irealim =1 we refer to the real part, and
 ! when irealim = 2 we refer to the imaginary part
-                      DscfL(ind,:) = DscfL(ind,:) + Vlocal(ijl,:) 
+                      DscfL(ind,:) = DscfL(ind,:) + Vlocal(ijl,:) * dVol
                    end do
                 else
                    ia  = iaorb(i)
@@ -277,7 +279,7 @@ contains
                            Vlocal(ijl,2) * dsin(kxij)
                       aux(2) = Vlocal(ijl,2) * dcos(kxij) + &
                            Vlocal(ijl,1) * dsin(kxij)
-                      DscfL(ind,:) = DscfL(ind,:) + aux(:)
+                      DscfL(ind,:) = DscfL(ind,:) + aux(:) * dVol
                    end do
                 end if
              end do
@@ -294,7 +296,7 @@ contains
                       jl = ilocal(j)
                       ijl = idx_ijl(il,jl)
                       delkmats(ind) = delkmats(ind) + &
-                           cmplx(Vlocal(ijl,1), Vlocal(ijl,2), kind=dp)
+                           cmplx(Vlocal(ijl,1), Vlocal(ijl,2), kind=dp) * dVol
 
                    end do
                 else
@@ -321,7 +323,7 @@ contains
                            Vlocal(ijl,1) * dsin(kxij)
 
                       delkmats(ind) = delkmats(ind) + &
-                           cmplx(aux(1),aux(2),kind=dp)
+                           cmplx(aux(1),aux(2),kind=dp) * dVol
 
                    end do
                 end if
@@ -340,7 +342,7 @@ contains
        end if
 
 !      Look for required orbitals not yet in Vlocal
-       if (nlocal > last) then
+       if ( nlocal > last ) then
           do ic = 1,nc
              imp = endpht(ip-1) + ic
              i = lstpht(imp)
@@ -352,49 +354,40 @@ contains
           end do
        end if
 
-!      Loop on first orbital of mesh point
-       lasta = 0
-       lastop = 0
-       do ic = 1,nc
-          imp     = endpht(ip-1) + ic
-          i       = lstpht(imp)
-          il      = ilocal(i)
-          iu      = indxuo(i)
-          ia      = iaorb(i)
-          iua     = indxua(ia)
-          is      = isa(ia)
-          iop     = listp2(imp)
-          ilc(ic) = il
-
-!         Localize the position of the mesh point
-          irel = idop(iop) + ipa(ia)
-          call ipack( -1, 3, nem, inmp, irel )
-          inmp(:) = inmp(:) + (meshLim(1,:) - 1)
-          inmp(:) = inmp(:) - 2 * ne(:)
-
-          do ix = 1, 3
-             dxp(ix) = cmesh(ix,1) * inmp(1) + &
-                  cmesh(ix,2) * inmp(2) + &
-                  cmesh(ix,3) * inmp(3)
-          end do
-
-          do isp = 1, nsp
-             do ix = 1, 3
-                dxpgrid(ix,isp) = dxp(ix) + xdsp(ix,isp)
+       if ( DirectPhi ) then
+          lasta = 0
+          lastop = 0
+          do ic = 1 , nc
+             imp     = endpht(ip-1) + ic
+             i       = lstpht(imp)
+             il      = ilocal(i)
+             ia      = iaorb(i)
+             iop     = listp2(imp)
+             ilc(ic) = il
+             
+!            Localize the position of the mesh point
+             irel = idop(iop) + ipa(ia)
+             call ipack( -1, 3, nem, inmp, irel )
+             inmp(:) = inmp(:) + (meshLim(1,:) - 1)
+             inmp(:) = inmp(:) - 2 * ne(:)
+             
+             dxp(:) = cmesh(:,1) * inmp(1) + &
+                  cmesh(:,2) * inmp(2) + &
+                  cmesh(:,3) * inmp(3)
+             
+             do isp = 1, nsp
+                dxpgrid(:,isp) = dxp(:) + xdsp(:,isp)
              end do
-          end do
-
-!         Generate or retrieve phi values
-          if (DirectPhi) then
-             if (ia.ne.lasta .or. iop.ne.lastop) then
+             
+!            Generate phi values
+             if ( ia /= lasta .or. iop /= lastop ) then
                 lasta = ia
                 lastop = iop
+                is = isa(ia)
                 do isp = 1,nsp
-                   do ix = 1,3
-                      dxsp(ix) = xdsp(ix,isp) + xdop(ix,iop) - dxa(ix,ia)
-                   end do
+                   dxsp(:) = xdsp(:,isp) + xdop(:,iop) - dxa(:,ia)
                    r2sp = sum(dxsp**2)
-                   if (r2sp.lt.r2cut(is)) then
+                   if ( r2sp < r2cut(is) ) then
 !$OMP critical
                       call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
 !$OMP end critical
@@ -404,48 +397,109 @@ contains
                 end do
              end if
              iphi = iphorb(i)
-             do isp = 1,nsp
-                Clocal(isp,ic) = phia(iphi,isp)
-             end do
-          else
-             do isp = 1,nsp
-                Clocal(isp,ic) = phi(isp,imp)
-             end do
-          end if
+             Clocal(:,ic) = phia(iphi,:)
 
-!         Pre-multiply V and Clocal(,ic)
-          do irealim = 1, 2
-             do isp = 1,nsp
-                kxij           = kpoint(1) * dxpgrid(1,isp) + &
+!            Pre-multiply V and Clocal(,ic)
+             Vij(:) = 0._dp
+             do isp = 1 , nsp
+                kxij = kpoint(1) * dxpgrid(1,isp) + &
                      kpoint(2) * dxpgrid(2,isp) + &
                      kpoint(3) * dxpgrid(3,isp)
-                comkxij(1,isp) = dcos(kxij)
-                comkxij(2,isp) = dsin(kxij)
-                VClocal(isp)   = comkxij(irealim,isp) * Clocal(isp,ic)
+                VClocal(1,isp) = dcos(kxij) * Clocal(isp,ic)
+                VClocal(2,isp) = dsin(kxij) * Clocal(isp,ic)
+                Vij(:) = Vij(:) + VClocal(:,isp) * Clocal(isp,ic)
+             end do
+             
+!            ic == jc, hence we simply do
+             ijl = idx_ijl(il,ilc(ic))
+             Vlocal(ijl,:) = Vlocal(ijl,:) + Vij(:)
+             
+!            Loop on second orbital of mesh point
+             do jc = 1 , ic - 1
+                jl = ilc(jc)
+                
+!               Loop over sub-points
+                Vij(:) = 0.0_dp
+                do isp = 1 , nsp
+                   Vij(:) = Vij(:) + VClocal(:,isp) * Clocal(isp,jc)
+                end do
+                
+                ijl = idx_ijl(il,jl)
+                if ( il == jl ) then
+                   Vlocal(ijl,:) = Vlocal(ijl,:) + Vij(:) * 2._dp
+                else
+                   Vlocal(ijl,:) = Vlocal(ijl,:) + Vij(:)
+                end if
+                
+             end do
+             
+          end do
+          
+       else
+
+!         Loop on first orbital of mesh point
+          do ic = 1 , nc
+             imp     = endpht(ip-1) + ic
+             i       = lstpht(imp)
+             il      = ilocal(i)
+             ia      = iaorb(i)
+             iop     = listp2(imp)
+             ilc(ic) = il
+
+!            Localize the position of the mesh point
+             irel = idop(iop) + ipa(ia)
+             call ipack( -1, 3, nem, inmp, irel )
+             inmp(:) = inmp(:) + (meshLim(1,:) - 1)
+             inmp(:) = inmp(:) - 2 * ne(:)
+
+             dxp(:) = cmesh(:,1) * inmp(1) + &
+                  cmesh(:,2) * inmp(2) + &
+                  cmesh(:,3) * inmp(3)
+
+             do isp = 1, nsp
+                dxpgrid(:,isp) = dxp(:) + xdsp(:,isp)
              end do
 
-!            Loop on second orbital of mesh point (only for jc.le.ic)
-             do jc = 1,ic
+!            Retrieve phi values
+             Clocal(:,ic) = phi(:,imp)
+
+!            Pre-multiply V and Clocal(,ic)
+             Vij(:) = 0._dp
+             do isp = 1 , nsp
+                kxij = kpoint(1) * dxpgrid(1,isp) + &
+                     kpoint(2) * dxpgrid(2,isp) + &
+                     kpoint(3) * dxpgrid(3,isp)
+                VClocal(1,isp) = dcos(kxij) * Clocal(isp,ic)
+                VClocal(2,isp) = dsin(kxij) * Clocal(isp,ic)
+                Vij(:) = Vij(:) + VClocal(:,isp) * Clocal(isp,ic)
+             end do
+
+!            ic == jc, hence we simply do
+             ijl = idx_ijl(il,ilc(ic))
+             Vlocal(ijl,:) = Vlocal(ijl,:) + Vij(:)
+
+!            Loop on second orbital of mesh point
+             do jc = 1 , ic - 1
                 jl = ilc(jc)
 
 !               Loop over sub-points
-                Vij = 0.0_dp
-                do isp = 1,nsp
-                   Vij = Vij + VClocal(isp) * Clocal(isp,jc)
+                Vij(:) = 0.0_dp
+                do isp = 1 , nsp
+                   Vij(:) = Vij(:) + VClocal(:,isp) * Clocal(isp,jc)
                 end do
 
-                if (ic.ne.jc.and.il.eq.jl) then
-                   Vij = Vij * dVol * 2._dp
+                ijl = idx_ijl(il,jl)
+                if ( il == jl ) then
+                   Vlocal(ijl,:) = Vlocal(ijl,:) + Vij(:) * 2._dp
                 else
-                   Vij = Vij * dVol
+                   Vlocal(ijl,:) = Vlocal(ijl,:) + Vij(:)
                 end if
 
-                ijl = idx_ijl(il,jl)
-                Vlocal(ijl,irealim) = Vlocal(ijl,irealim) + Vij
-
              end do
+
           end do
-       end do
+       end if
+
     end do
 !$OMP end do nowait
 
@@ -462,7 +516,7 @@ contains
                 j = listdl(ind)
                 jl = ilocal(j)
                 ijl = idx_ijl(il,jl)
-                DscfL(ind,:) = DscfL(ind,:) + Vlocal(ijl,:) 
+                DscfL(ind,:) = DscfL(ind,:) + Vlocal(ijl,:) * dVol
              end do
           else
              ia  = iaorb(i)
@@ -486,7 +540,7 @@ contains
                      Vlocal(ijl,2) * dsin(kxij)
                 aux(2) = Vlocal(ijl,2) * dcos(kxij) + &
                      Vlocal(ijl,1) * dsin(kxij)
-                DscfL(ind,:) = DscfL(ind,:) + aux(:) 
+                DscfL(ind,:) = DscfL(ind,:) + aux(:) * dVol
              end do
           end if
        end do
@@ -503,7 +557,7 @@ contains
                 jl = ilocal(j)
                 ijl = idx_ijl(il,jl)
                 delkmats(ind) = delkmats(ind) + &
-                     cmplx(Vlocal(ijl,1), Vlocal(ijl,2),kind=dp)
+                     cmplx(Vlocal(ijl,1), Vlocal(ijl,2),kind=dp) * dVol
              end do
           else
              ia  = iaorb(i)
@@ -528,7 +582,7 @@ contains
                 aux(2) = Vlocal(ijl,2) * dcos(kxij) + &
                      Vlocal(ijl,1) * dsin(kxij)
                 delkmats(ind) = delkmats(ind) + &
-                     cmplx(aux(1),aux(2),kind=dp)
+                     cmplx(aux(1),aux(2),kind=dp) * dVol
              end do
           end if
        end do
@@ -539,8 +593,8 @@ contains
 
     if ( ParallelLocal .and. NTH > 1 ) then
 !$OMP do collapse(2)
-       do ind = 1, nvmaxl
-          do irealim = 1, 2
+       do irealim = 1, 2
+          do ind = 1, nvmaxl
              do ii = 2, NTH
                 t_DscfL(ind,irealim,1) = t_DscfL(ind,irealim,1) + &
                      t_DscfL(ind,irealim,ii)
