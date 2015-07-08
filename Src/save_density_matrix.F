@@ -32,6 +32,7 @@
 
       implicit none
 
+      ! This is a just a comment in the caller side, unused for now
       character(len=*), intent(in)   :: id
 
 #ifdef CDF

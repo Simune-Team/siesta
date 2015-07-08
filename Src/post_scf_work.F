@@ -43,7 +43,7 @@
            if (MixH .and. mix_after_convergence) then
               ! probably better to have a logical 'h_is_pure'
               if (ionode) then
-                 write(6,"(a)") "SOLVE_MINIM: " //
+                 write(6,"(a)") ":!: SOLVE_MINIM: " //
      $                "Generating Escf with a modified H..."
               endif
            endif
@@ -77,7 +77,7 @@
          if (mix_after_convergence .and. (.not. MixH)
      $                             .and. (.not. mix_charge)) then
             write(6,"(/,a)")
-     $      "Using DM_mixed to compute the final energy and forces"
+     $      ":!: Using DM_mixed to compute the final energy and forces"
             write(6,"(a)")
      $      "Consider using 'SCF.MixAfterConvergence F', mixing H" //
      $           " or mixing the charge density"

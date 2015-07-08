@@ -305,6 +305,10 @@
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
+!
+!     Here we could also read a Hamiltonian, either to proceed to
+!     the analysis section (with nscf=0) or to start a mix-H scf cycle.
+!
 !     Initialize density matrix
       ! The resizing of Dscf is done inside new_dm
       call new_dm( auxchanged, numh, listhptr, listh, Dscf)

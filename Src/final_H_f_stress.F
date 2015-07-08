@@ -5,10 +5,11 @@
 
       subroutine final_H_f_stress( iscf )
 
-      USE siesta_options
+      USE siesta_options, only: g2cut, savehs, temp
+      USE siesta_options, only: recompute_H_after_scf
       use sparse_matrices, only: numh, listh, listhptr
       use sparse_matrices, only: S, Dscf, Escf, maxnh, xijo
-      use sparse_matrices, only: H_saved => H  ! Note renaming
+      use sparse_matrices, only: H  
 
       use siesta_geom
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -55,8 +56,8 @@
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
-      ! local copy of H, to avoid overwriting the current Hamiltonian
-      real(dp), pointer     :: h(:,:) => null()  
+      ! To avoid overwriting the current Hamiltonian
+      real(dp), pointer     :: H_tmp(:,:) => null()  
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
@@ -74,8 +75,9 @@
 !--------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
-      call re_alloc(H, 1,nspin, 1,maxnh, 'H_local','final_H_f_stress')
-      H = 0.0_dp
+      call re_alloc(H_tmp, 1,maxnh, 1,nspin,
+     $                       'H_tmp','final_H_f_stress')
+      H_tmp = 0.0_dp
 
 !     Initialize forces and stress ...................
       nullify(fal)
@@ -97,7 +99,7 @@
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              min(nspin,2), Dscf, Ekin, fal, stressl, H,
+     &              min(nspin,2), Dscf, Ekin, fal, stressl, H_tmp,
      &              matrix_elements_only=.false. ) 
 #ifdef MPI
 ! Global reduction of energy terms
@@ -110,7 +112,7 @@
       call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
-     &             min(nspin,2), Dscf, Enl, fal, stressl, H,
+     &             min(nspin,2), Dscf, Enl, fal, stressl, H_tmp,
      &             matrix_elements_only=.false. ) 
 
 #ifdef MPI
@@ -135,7 +137,7 @@
       call grdsam( nspin, no_s, iaorb, iphorb, 
      &             no_l, no_u, na_u, na_s, isa, xa, indxua,
      &             ucell, ntm, ifa, istr, maxnh,
-     &             maxnh, numh, listhptr, listh, Dscf, Datm, H,
+     &             maxnh, numh, listhptr, listh, Dscf, Datm, H_tmp,
      &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
@@ -169,8 +171,20 @@
       stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
 #endif
+
+      ! If backward compatibility is requested, recover
+      ! the old behavior with respect to H
+
+      if (recompute_H_after_scf) then
+         if (ionode) then
+            write(6,"(a)") ":!: Updating H after scf cycle" //
+     $                     " as requested by compat. option"
+         endif
+         H = H_tmp
+      endif
+
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
-      call de_alloc( H, 'H_local', 'final_H_f_stress' )
+      call de_alloc( H_tmp, 'H_tmp', 'final_H_f_stress' )
 
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
@@ -181,7 +195,7 @@
 !
       if (savehs) then
          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
-     &        maxnh, numh, listhptr, listh, H_saved, S, qtot,
+     &        maxnh, numh, listhptr, listh, H, S, qtot,
      &        temp, xijo)
       endif
 #ifdef TRANSIESTA
@@ -193,8 +207,7 @@
             fname = paste( fname, '.TSHS' )
             iotask='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh,
-     &                    H_saved, S, 
+     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
      &                    qtot, temp, xijo, label_length+5, fname, na_u,
      &                    lasto, isa, ef, ucell, ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, ts_istep, ia1)
@@ -202,8 +215,7 @@
             fname  = paste( slabel, '.TSHS' )
             iotask ='write'
             call ts_iohs( iotask, gamma, .false., no_u, no_s, nspin,
-     &                    indxuo, maxnh, numh, listhptr, listh,
-     &                    H_saved, S, 
+     &                    indxuo, maxnh, numh, listhptr, listh, H, S, 
      &                    qtot, temp, xijo, label_length+5, fname, na_u,
      &                    lasto, isa, ef, ucell,ts_kscell, ts_kdispl,
      &                    ts_gamma_scf, xa, 0, 0 )

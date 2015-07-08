@@ -5,9 +5,17 @@ MODULE siesta_options
   implicit none
   PUBLIC
 
+  ! Compatibility options
+  ! -- pre 4.0 DM and H flow logic
+  logical :: compat_pre4_DM_H      ! General switch
+  logical :: mix_after_convergence ! Mix DM or H even after convergence
+  logical :: recompute_H_after_scf ! Update H while computing forces
+
+  ! -- pre 4.0 coordinate output logic -- to be implemented
+!!  logical :: compat_pre4_MD_io      ! General switch
+
   logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
-  logical :: mix_after_convergence ! Mix DM or H even after convergence
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
@@ -499,11 +507,20 @@ MODULE siesta_options
           write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
        endif
     endif
-    
-    mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.false.)
+
+    ! Options for pre-4.0 compatibility
+    compat_pre4_DM_H  = fdf_get('Compat-pre4-DM-H',.false.)
+    mix_after_convergence = fdf_get('SCF.MixAfterConvergence',compat_pre4_DM_H)
+    recompute_H_after_scf = fdf_get('SCF.Recompute-H-After-Scf',compat_pre4_DM_H)
+
     if (ionode) then
+       if (compat_pre4_DM_H) then
+          write(6,"(a)") ':!:Next two options activated by pre-4.0 compat. switch'
+       endif
        write(6,1) 'redata: Mix DM or H after convergence    = ',  &
                   mix_after_convergence
+       write(6,1) 'redata: Recompute H after scf cycle      = ',  &
+                  recompute_H_after_scf
     endif
 
     ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
