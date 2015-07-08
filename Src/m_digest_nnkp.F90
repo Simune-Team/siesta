@@ -821,27 +821,12 @@ subroutine set_excluded_bands( ispin, numexcluded, excludedbands, numbands, &
   enddo 
 
   if( IOnode ) then   
-    write(6,'(/,a)')                                                   &
- &    'set_excluded_bands: Number of bands for wannierization     '
-    write(6,'(a,2i5)')                                                 &
- &    'set_excluded_bands: after excluding bands                = ',   &
- &     numincbands
-    write(6,'(a)')                                                     &
- &    'set_excluded_bands: Bands to be wannierized                '
-    do iband = 1, numincbands(ispin)
-      write(6,'(a,i5)')                                                &
- &      'set_excluded_bands: ', isincluded( iband )
-    enddo 
+    write(6,'(/,a,2i5)') 'Number of bands for wannierization ' // &
+                         'after excluding bands:',  numincbands
+    write(6,'(a)') 'Bands to be wannierized: '
+    write(6,'(16i5)') (isincluded( iband ), iband=1, numincbands(ispin))
   endif
  
-!! For debugging
-!    write(6,*)' numbands    = ', Node, numbands(ispin)
-!    write(6,*)' numincbands = ', Node, numincbands(ispin)
-!    do iband = 1, no_u
-!      write(6,*)' iband, isexcluded = ', Node, iband, isexcluded(iband)
-!    enddo
-!! End debugging
-
 end subroutine set_excluded_bands
 
 endmodule m_digest_nnkp

@@ -6,6 +6,25 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-07-08   11:00:00 GMT                                     trunk-475
+Minor fixes and cosmetic changes after Wannier merge
+
+* Associate auxiliary array auxloc in slave nodes even if
+  not used in mpi_reduce call (Nick P. Andersen).
+
+* Add missing files in Test/wannier.
+
+* Streamline the wannier interface output.
+
+added:
+  Tests/wannier/makefile
+  Tests/wannier/wannier.pseudos
+modified:
+  Src/compute_pw_matrix.F90
+  Src/m_digest_nnkp.F90
+  Src/write_inp_wannier.F90
+
+-----------------------------------------------------------------------
 2015-07-07   08:30:00 GMT                                     trunk-474
 Merge code for interoperation with Wannier90
 
