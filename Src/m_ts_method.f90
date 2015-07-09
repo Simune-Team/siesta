@@ -48,19 +48,19 @@ module m_ts_method
   ! This allows to easily convert from one to the other
   type(tRgn) :: r_pvt
 
+  ! Local routine
+  private :: set_type
+
 contains
 
-  subroutine ts_init_regions(prefix,N_Elec, Elecs, na_u, lasto)
+  subroutine ts_init_regions(prefix, na_u, lasto)
 
     use alloc
     use fdf
     use fdf_extra, only : fdf_brange
-    use m_ts_electype
 
     character(len=*), intent(in) :: prefix
-    integer,    intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
-    integer,    intent(in) :: na_u, lasto(0:na_u)
+    integer, intent(in) :: na_u, lasto(0:na_u)
 
     integer :: i, ia
 
@@ -90,15 +90,6 @@ contains
     o_type(:)   = TYP_DEVICE
     o_offset(:) = 0
     
-    ! we have already set the type of the buffers and device
-    ! (as elecs might later on implement distributed
-    !  positions we do it "stupidly")
-    do i = 1 , N_Elec
-       do ia = 1 , TotUsedAtoms(Elecs(i))
-          call set_type(i,Elecs(i)%idx_a - 1 + ia,na_u,lasto)
-       end do
-    end do
-
     ! old options for buffer atoms
     call fdf_obsolete('TS.BufferAtomsLeft')
     call fdf_obsolete('TS.BufferAtomsRight')
@@ -173,32 +164,55 @@ contains
        r_pvt%r(ia) = i
     end do
 
-  contains
+    ! Name the regions
+    r_aBuf%name = '[A]-buffer'
+    r_oBuf%name = '[O]-buffer'
 
-    subroutine set_type(typ,ia,na_u,lasto)
-      integer, intent(in) :: typ, ia, na_u,lasto(0:na_u)
-      integer :: i, no
-      if ( a_type(ia) /= TYP_DEVICE ) then
-         write(*,'(2(a,i0))') 'Trying to set atom ',ia,' to type: ',typ
-         write(*,'(2(a,i0))') 'Atom ',ia,' is already: ',a_type(ia)
+    r_aC%name = '[A]-calculation'
+    r_oC%name = '[O]-calculation'
 
-         call die('Error in setup. Atoms are having two types, check for &
-              &electrode and buffer atom overlap...')
-      end if
-      a_type(ia) = typ
-      o_type(lasto(ia-1)+1:lasto(ia)) = typ
-      if ( typ == TYP_BUFFER ) then
-         do i = ia , na_u
-            a_offset(i) = a_offset(i) + 1
-         end do
-         no = lasto(ia) - lasto(ia-1)
-         do i = lasto(ia-1) + 1 , lasto(na_u)
-            o_offset(i) = o_offset(i) + no
-         end do
-      end if
-    end subroutine set_type
+    r_pvt%name = '[O]-pivot'
 
   end subroutine ts_init_regions
+
+  subroutine ts_init_electrodes(na_u,lasto,N_Elec,Elecs)
+    use m_ts_electype
+
+    integer,    intent(in) :: na_u, lasto(0:na_u)
+    integer,    intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    integer :: iE, ia
+
+    do iE = 1 , N_Elec
+       do ia = 1 , TotUsedAtoms(Elecs(iE))
+          call set_type(iE,Elecs(iE)%idx_a - 1 + ia,na_u,lasto)
+       end do
+    end do
+
+  end subroutine ts_init_electrodes
+
+  subroutine set_type(typ,ia,na_u,lasto)
+    integer, intent(in) :: typ, ia, na_u,lasto(0:na_u)
+    integer :: i, no
+    if ( a_type(ia) /= TYP_DEVICE ) then
+       write(*,'(2(a,i0))') 'Trying to set atom ',ia,' to type: ',typ
+       write(*,'(2(a,i0))') 'Atom ',ia,' is already: ',a_type(ia)
+
+       call die('Error in setup. Atoms are having two types, check for &
+            &electrode and buffer atom overlap...')
+    end if
+    a_type(ia) = typ
+    o_type(lasto(ia-1)+1:lasto(ia)) = typ
+    if ( typ == TYP_BUFFER ) then
+       do i = ia , na_u
+          a_offset(i) = a_offset(i) + 1
+       end do
+       no = lasto(ia) - lasto(ia-1)
+       do i = lasto(ia-1) + 1 , lasto(na_u)
+          o_offset(i) = o_offset(i) + no
+       end do
+    end if
+  end subroutine set_type
   
   elemental function orb_type(io) result(typ)
     use geom_helper, only : UCORB

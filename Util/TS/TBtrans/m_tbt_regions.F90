@@ -107,17 +107,6 @@ contains
 
     no_u = lasto(na_u)
     
-    ! Instantiate regions
-    if ( fdf_defined('TBT.Atoms.Buffer') ) then
-       call ts_init_regions('TBT',N_Elec,Elecs,na_u,lasto)
-    else
-       call ts_init_regions('TS',N_Elec,Elecs,na_u,lasto)
-    end if
-
-    ! Re=name the read-in information
-    r_aBuf%name = '[A]-buffer'
-    r_oBuf%name = '[O]-buffer'
-
     ! Create the sparsity pattern and remove the buffer atoms...
     if ( r_oBuf%n > 0 ) then
        sp_tmp = sp

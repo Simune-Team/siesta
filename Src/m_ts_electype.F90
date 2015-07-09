@@ -56,7 +56,7 @@ module m_ts_electype
 
   ! 300 chars for a full path should be fine
   integer, parameter, public :: FILE_LEN = 300
-  integer, parameter, public :: NAME_LEN = 100
+  integer, parameter, public :: NAME_LEN = 50
 
   integer, parameter, public :: INF_NEGATIVE = 0 ! old 'left'
   integer, parameter, public :: INF_POSITIVE = 1 ! old 'right'
@@ -204,7 +204,7 @@ contains
 
   end function fdf_nElec
 
-  function fdf_Elec(prefix,slabel,this,N_mu,mus,name_prefix) result(found)
+  function fdf_Elec(prefix,slabel,this,N_mu,mus,idx_a,name_prefix) result(found)
     use fdf
     use m_io_s, only : file_exist
     use m_ts_io, only : ts_read_TSHS_opt
@@ -214,6 +214,7 @@ contains
     type(Elec), intent(inout) :: this
     integer, intent(in) :: N_mu
     type(ts_mu), intent(in), target :: mus(N_mu)
+    integer, intent(in), optional :: idx_a
     character(len=*), intent(in), optional :: name_prefix
 
     logical :: found
@@ -223,7 +224,7 @@ contains
     type(parsed_line), pointer :: pline => null()
     logical :: info(5)
     integer :: i, j
-    integer :: idx_a 
+    integer :: cidx_a 
 
     character(len=200) :: bName, name, ln, tmp
 
@@ -249,7 +250,15 @@ contains
 
     if ( .not. found ) return
 
-    idx_a = 0
+    cidx_a = 0
+
+    if ( present(idx_a) ) then
+       if ( idx_a /= 0 ) then
+          this%idx_a = idx_a
+          if ( idx_a < 0 ) cidx_a = -1
+          info(4) = .true.
+       end if
+    end if
 
     ! We default a lot of the options
     if ( len_trim(this%GFfile) == 0 ) then
@@ -339,7 +348,7 @@ contains
           
        else if ( leqi(ln,'electrode-position') .or. &
             leqi(ln,'elec-pos') ) then
-          idx_a      = 0
+          cidx_a     = 0
           this%idx_a = 0
           if ( fdf_bnnames(pline) > 1 ) then
              ! the user is requesting on a string basis
@@ -351,10 +360,11 @@ contains
                    this%idx_a = 1 ! default starting position
                 end if
              else if ( leqi(ln,'end') ) then
-                idx_a      = -1
-                this%idx_a =  0
+                cidx_a = -1
                 if ( fdf_bnintegers(pline) > 0 ) then
                    this%idx_a = fdf_bintegers(pline,1)
+                else
+                   this%idx_a = -1
                 end if
              end if
           else
@@ -612,7 +622,7 @@ contains
     end if
 
     ! if the user has specified text for the electrode position
-    if ( idx_a == -1 ) then
+    if ( cidx_a == -1 ) then
        this%idx_a = this%idx_a + 1 - TotUsedAtoms(this)
     end if
 

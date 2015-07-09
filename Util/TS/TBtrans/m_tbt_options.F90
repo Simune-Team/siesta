@@ -91,6 +91,13 @@ contains
     character(len=200) :: chars
     integer :: i, j
 
+    ! Initialize the buffer regions
+    if ( fdf_defined('TBT.Atoms.Buffer') ) then
+       call ts_init_regions('TBT',na_u,lasto)
+    else
+       call ts_init_regions('TS',na_u,lasto)
+    end if
+    
     ! Read in the temperature
     kT = fdf_get('ElectronicTemperature',1.9e-3_dp,'Ry')
 
@@ -201,15 +208,32 @@ contains
     Elecs(:)%out_of_core = fdf_get('TBT.Elecs.Out-of-core',.false.)
 
     do i = 1 , N_Elec
-       ! Default things that could be of importance
-       if ( fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus) ) then
-          ! success
-       else if ( fdf_Elec('TS',slabel,Elecs(i),N_mu,mus,name_prefix='TBT') ) then
-          ! success
+
+       ! If we only have 2 electrodes we take them 
+       ! as though the atomic indices are the first and last
+       ! respectively.
+       if ( N_Elec == 2 ) then
+          if ( i == 1 ) then
+             err = fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus,idx_a= 1)
+             if ( .not. err ) &
+                  err = fdf_Elec('TS',slabel,Elecs(i),N_mu,mus,idx_a= 1, &
+                  name_prefix = 'TBT' )
+          else
+             err = fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus,idx_a=-1)
+             if ( .not. err ) &
+                  err = fdf_Elec('TS',slabel,Elecs(i),N_mu,mus,idx_a=-1, &
+                  name_prefix = 'TBT' )
+          end if
        else
+          ! Default things that could be of importance
+          err = fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus)
+          if ( .not. err ) &
+               err = fdf_Elec('TS',slabel,Elecs(i),N_mu,mus, &
+               name_prefix = 'TBT' )
+       end if
+       if ( .not. err ) then
           call die('Could not find electrode: '//trim(name(Elecs(i))))
        end if
-       ! set the placement in orbitals
        if ( Elecs(i)%idx_a < 0 ) &
             Elecs(i)%idx_a = na_u + Elecs(i)%idx_a + 1
        if ( Elecs(i)%idx_a < 1 .or. &
@@ -217,6 +241,24 @@ contains
           print *,Elecs(i)%idx_a,na_u
           call die("Electrode position does not exist")
        end if
+       if ( N_Elec == 2 ) then
+          ! Correct for buffer atoms, first electrode steps "up"
+          ! second electrode steps "down"
+          if ( i == 1 ) then
+             j = Elecs(i)%idx_a
+             do while ( a_isBuffer(j) )
+                j = j + 1
+             end do
+             Elecs(i)%idx_a = j
+          else
+             j = Elecs(i)%idx_a + TotUsedAtoms(Elecs(i)) - 1
+             do while ( a_isBuffer(j) )
+                j = j - 1
+             end do
+             Elecs(i)%idx_a = j - TotUsedAtoms(Elecs(i)) + 1
+          end if
+       end if
+       ! set the placement in orbitals
        Elecs(i)%idx_o = lasto(Elecs(i)%idx_a-1)+1
 
        ! we need to correct the GF file name in case of
@@ -238,6 +280,9 @@ contains
        end if
 
     end do
+
+    ! Initialize the electrode regions
+    call ts_init_electrodes(na_u,lasto,N_Elec,Elecs)
 
     ! Populate the electrodes in the chemical potential type
     do i = 1 , N_Elec

@@ -1,4 +1,27 @@
 ----------------------------------------------------
+July 9, 2015 -- Nick Papior          trunk-474---ts-scf-463
+Default electrode positions for N_Elec == 2
+
+* When N_Elec == 2 we assume a Left/Right setup.
+
+  Hence the first electrode starts @ 1, moved
+  by buffer atoms.
+
+  The second electrode starts @ -1 moved by buffer
+  atoms.
+
+  You can now run transiesta/tbtrans calculations with
+  2 electrodes and _only_ set the buffer atoms, TSHS,
+  semi-inf-dir, mu.
+
+modified:
+  Src/m_ts_electype.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 July 9, 2015 -- Nick Papior          trunk-474---ts-scf-462
 TBT: bugfix for orbital currents with NE%Nodes /= 0
 
