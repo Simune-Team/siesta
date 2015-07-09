@@ -40,6 +40,7 @@ contains
     use alloc, only : re_alloc, de_alloc
     use parallel, only : IONode
     use fdf, only : fdf_get, leqi
+    use fdf_extra
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif
@@ -88,6 +89,12 @@ contains
     ! Regions used for sorting the device region
     type(tRgn) :: r_tmp, r_Els, priority
     
+    ! For certain pivoting schemes it can be good to make
+    ! dependencies for the tight-binding model
+    integer :: n_dep, iid, n_add
+    type(tRgn), allocatable :: r_dep(:)
+    type(tRgn) :: r_d
+
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
 
     ! In order to ensure that the electrodes are in the
@@ -272,6 +279,24 @@ contains
 
     else ! the user *must* have supplied an electrode
 
+       ! Read in dependency regions
+       call fdf_bregions('TS.BTD.Pivot.Depend',na_u,n_dep,r_dep)
+       if ( n_dep > 0 ) then
+          ! Transfer to orbital if required
+          do i = 1 , n_dep
+             if ( rgn_overlaps(r_dep(i),r_aBuf) ) then
+                call die('TS.BTD.Pivot.Depend contains atoms&
+                     & in buffer regions.')
+             end if
+          end do
+          if ( sort_orb ) then
+             do i = 1 , n_dep
+                call rgn_copy(r_dep(i),r_tmp)
+                call rgn_Orb2Atom(r_tmp,na_u,lasto,r_dep(i))
+             end do
+          end if
+       end if
+
        ! Figure out which electrode(s) has been given
        ! as a starting point
        ! Note that for several electrodes one could
@@ -308,7 +333,15 @@ contains
                &please correct sorting method.')
        end if
 
-       call rgn_copy(r_pvt,r_tmp)
+       ! Remove all redundant values
+       ! One could argue that they should be added immediately,
+       ! we do not do this... ??
+       if ( n_dep > 0 ) then
+          do iid = 1 , n_dep
+             call rgn_complement(r_pvt,r_dep(iid),r_d)
+             call rgn_copy(r_d,r_dep(iid))
+          end do
+       end if
 
        do 
           
@@ -378,8 +411,47 @@ contains
           
           ! we sort the newly attached region
           call rgn_sp_sort(r_pvt, fdit, tmpSp2, r_tmp, R_SORT_MAX_BACK )
-       
+
+          ! Remove all redundant values
+          if ( n_dep > 0 ) then
+
+             ! Add dependency atoms
+             call rgn_delete(r_d)
+             ! We know that as soon as one atom from any region
+             ! shows up, the remaining atoms are added
+             n_add = -1
+             do while ( n_add /= r_d%n )
+                n_add = r_d%n
+                do iid = 1 , n_dep
+                   ! Check whether the just added region has
+                   ! any overlapping with dependencies
+                   if ( rgn_overlaps(r_tmp,r_dep(iid)) ) then
+                      call rgn_union(r_d,r_dep(iid),r_d)
+                      ! clean-up so that they are not added again
+                      call rgn_delete(r_dep(iid))
+                   end if
+                end do
+             end do
+             
+             ! Remove redundant orbitals/atoms
+             call rgn_complement(r_pvt,r_d,r_tmp)
+             
+             ! Add the new region
+             call rgn_append(r_pvt, r_tmp, r_pvt)
+             call rgn_sp_sort(r_pvt, dit, tmpSp2, r_tmp, R_SORT_MAX_BACK )
+             
+          end if
+          
        end do
+
+       ! Clean up the dependencies
+       if ( n_dep > 0 ) then
+          do iid = 1 , n_dep
+             call rgn_delete(r_dep(iid))
+          end do
+          deallocate(r_dep)
+          call rgn_delete(r_d)
+       end if
 
     end if
     if ( .not. sort_orb ) then

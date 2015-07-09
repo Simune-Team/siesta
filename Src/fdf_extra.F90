@@ -12,7 +12,8 @@ module fdf_extra
   
   public :: fdf_bnext
   public :: fdf_brange
-  
+  public :: fdf_bregions
+
 contains
 
   function fdf_bnext(bfdf,pline) result(has)
@@ -164,5 +165,112 @@ contains
     end function correct
           
   end subroutine fdf_brange
+
+  subroutine fdf_bregions(bName, n, n_r, rgns)
+    
+    ! Name of block
+    character(len=*), intent(in) :: bName
+    ! Wrapper counter
+    integer, intent(in) :: n
+    ! Number of regions found
+    integer, intent(out) :: n_r
+    type(tRgn), intent(inout), allocatable :: rgns(:)
+
+    ! ** local variables
+    type(block_fdf) :: bfdf
+    type(parsed_line), pointer :: pline => null()
+    type(tRgn) :: r1
+    integer :: i, il, ic
+    character(len=50) :: g
+    character(len=50), allocatable :: rlist(:)
+    logical :: found
+
+    n_r = 0
+    if ( allocated(rgns) ) deallocate(rgns)
+
+    ! If the block does not exist, simply return
+    if ( .not. fdf_block(bName,bfdf) ) return
+    
+    ! the initial number of regions
+    il = 0
+    do while ( fdf_bnext(bfdf,pline) ) 
+       il = il + 1
+    end do
+    allocate(rlist(il))
+    call fdf_brewind(bfdf)
+    
+    ! first count number of differently named regions
+    do while ( fdf_bnext(bfdf,pline) ) 
+
+       found = .false.
+       if ( n_r > 0 ) then
+          g = fdf_bnames(pline,1)
+          do i = 1 , n_r
+             if ( leqi(g,rlist(i)) ) then
+                found = .true.
+                exit
+             end if
+          end do
+       end if
+       if ( .not. found ) then
+          n_r = n_r + 1
+          rlist(n_r) = g
+       end if
+
+    end do
+
+    ! Clean-up
+    deallocate(rlist)
+    call fdf_brewind(bfdf)
+
+    allocate(rgns(0:n_r))
+    
+    il = 0
+    do while ( fdf_bnext(bfdf,pline) ) 
+       
+       g = fdf_bnames(pline,1)
+       
+       ! Check if the name already has been read (then
+       ! we accumulate the atoms)
+       found = .false.
+       ic = il + 1
+       if ( il > 0 ) then
+          do i = 1 , il
+             if ( leqi(g,rgns(i)%name) ) then
+                ic = i
+                exit
+             end if
+          end do
+       end if
+       if ( ic == il + 1 ) then
+          ! we have a new name
+          il = ic
+          
+          ! We can read in a range
+          call fdf_brange(pline,r1,1,n)
+          if ( r1%n == 0 ) then
+             print *,'Region: ',trim(g)
+             call die('fdf_extra: Could not read in anything in region!')
+          end if
+          call rgn_union(rgns(il),r1,rgns(il))
+          rgns(il)%name = trim(g)
+          
+       else
+          
+          call fdf_brange(pline,r1,1,n)
+          if ( r1%n == 0 ) then
+             print *,'Region: ',trim(g)
+             call die('fdf_extra: Could not read in anything in region!')
+          end if
+          call rgn_union(rgns(ic),r1,rgns(ic))
+          rgns(ic)%name = trim(g)
+          
+       end if
+       
+    end do
+
+    call rgn_delete(r1)
+    
+  end subroutine fdf_bregions
 
 end module fdf_extra

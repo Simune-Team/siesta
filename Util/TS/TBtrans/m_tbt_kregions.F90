@@ -452,6 +452,8 @@ contains
        
     end do
 
+    call rgn_delete(r1)
+
   end subroutine crt_read_k
 
     ! Subroutine for reading in both the left and right next energy point
