@@ -6,6 +6,134 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-07-08   11:00:00 GMT                                     trunk-475
+Minor fixes and cosmetic changes after Wannier merge
+
+* Associate auxiliary array auxloc in slave nodes even if
+  not used in mpi_reduce call (Nick P. Andersen).
+
+* Add missing files in Test/wannier.
+
+* Streamline the wannier interface output.
+
+added:
+  Tests/wannier/makefile
+  Tests/wannier/wannier.pseudos
+modified:
+  Src/compute_pw_matrix.F90
+  Src/m_digest_nnkp.F90
+  Src/write_inp_wannier.F90
+
+-----------------------------------------------------------------------
+2015-07-07   08:30:00 GMT                                     trunk-474
+Merge code for interoperation with Wannier90
+
+(Javier Junquera, after work by Richard Korytar, and Alberto Garcia)
+
+Siesta can now read the .nnkp file produced by Wannier90 and output
+the *.amn, *.mmn, *.eig (see below), and UNK* files needed by
+post-processing with that program, which generates maximally-localized
+Wannier functions.
+
+The most relevant changes in the code needed to support this
+functionality are detailed below. For practical guidance, see the
+manual, the simple test in Tests/wannier, and the suite of Wannier90
+examples adapted for Siesta in
+
+   http://personales.unican.es/junqueraj/Wannier-examples.tar.gz
+
+
+* To implement support for "projection functions", which might not be
+  pure radial functions, but hybrids with mixed angular momentum and
+  varying spatial orientation, as well as to provide support of
+  arbitrary kinds of radial functions for future developments, the
+  'matel' framework has been extended:
+
+  Matel (actually renamed to 'new_matel') now accepts two generalized
+  indexes instead of the two pairs of indexes previously used. The
+  generalized indexes can represent either a normal "radial function",
+  as in previous Siesta usage, or a "projection function". The indexes
+  are obtained via a "check-in" into a registry of functions, which
+  keeps track of the nature of the functions and provides the needed
+  evaluators and accessors for 'new_matel'.
+
+  The relevant code is in 'matel_registry', 'new_matel', and
+  'register_rfs'. The latter shows how to "register" the usual radial
+  functions for PAOs, KB projectors, etc. 
+
+* Bloch states are computed and saved, instead of being recomputed as
+  needed, to avoid problems with irreproducible random phases and
+  linear combinations within degenerate subspaces.
+
+* At this point the parallelization of the new code is only "over
+  orbitals". It is not yet possible to parallelize the operations over
+  the k-points on the grid. The production of the UNK* files can be
+  slow if there are many k-points and bands.
+
+* There is not yet support for "spinor wavefunctions". In the case of
+  spin-polarized calculations, separate spin-up and spin-down
+  processings are needed.
+
+* There is not yet support for interaction with Wannier90 in "library
+  mode", due to licensing issues.
+
+* The "eigenvalue file" for Wannier90 has extension .eigW to avoid
+  clashes with the standard Siesta eigenvalue file in case-insensitive
+  filesystems.
+
+removed:
+  Src/matel.f
+added:
+  Src/amn.F90
+  Src/broadcast_projections.F
+  Src/compute_pw_matrix.F90
+  Src/delk.F
+  Src/diagonalizeHk.F90
+  Src/m_digest_nnkp.F90
+  Src/m_noccbands.f
+  Src/m_orderbands.F
+  Src/m_overkkneig.F90
+  Src/m_planewavematrix.F90
+  Src/m_planewavematrixvar.F90
+  Src/m_trialorbitalclass.f90
+  Src/m_writedelk.F
+  Src/matel_registry.F90
+  Src/mmn.F90
+  Src/new_matel.f
+  Src/register_rfs.F90
+  Src/reordpsi.F
+  Src/siesta2wannier90.F90
+  Src/write_inp_wannier.F90
+  Tests/wannier/		-- New test
+  Tests/wannier/wannier.fdf
+  Tests/wannier/wannier.nnkp
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/alloc.F90		-- New z3 and z4 generics
+  Src/m_mpi_utils.F
+  Src/atm_types.f       -- Fields for global index storage
+  Src/atmfuncs.f        -- Global index management
+  Src/dhscf.F           -- New routine to compute PW matrix elements
+  Src/mneighb.f         -- Added 'x0' module variable
+  Src/parallelsubs.F	-- Catch special blocksize case
+  Src/mesh.F		-- Extra bookeeping
+  Src/meshdscf.F
+  Src/meshsubs.F
+  Src/kinefsm.f		-- New matel
+  Src/naefs.f
+  Src/nlefsm.f
+  Src/overfsm.f
+  Src/overlap.f
+  Src/phirphi.f
+  Src/phirphi_opt.f
+  Src/siesta_analysis.F		-- Actual w90 processing
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/spher_harm.f		-- Two implementations of YLMEXP.
+
+    
+-----------------------------------------------------------------------
 2015-06-29   15:20:00 GMT                                     trunk-473
 Merge code for 'server' operation via sockets and i-PI interface
 

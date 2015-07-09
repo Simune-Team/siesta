@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large June 29, 2015 }
+{\Large July 7, 2015 }
 
 \vspace{1.5cm}
 
@@ -5759,6 +5759,188 @@ obtained form Tom Archer (archert@tcd.ie).
 {\it Use:} Only used if {\bf MD.TypeOfRun} is {\tt FC}.
 
 {\it Default value:} {\tt false}
+
+\end{description}
+
+\vspace{5pt}
+\subsection{Maximally Localized Wannier Functions. \\
+            Interface with the {\sc wannier90} code}
+
+{\sc wannier90} (http://www.wannier.org) is a code to generate
+maximally localized wannier functions according to the original
+Marzari and Vanderbilt recipe.
+
+It is strongly recommended to read the original papers on which this
+method is based and the  documentation of the {\sc wannier90} code.
+Here we shall focus only on those internal {\sc siesta} variables
+required to produce the files that will be processed
+by {\sc wannier90}.
+
+A complete list of examples and tests (including molecules, metals, 
+semiconductors, insulators, magnetic systems, plotting of Fermi surfaces
+or interpolation of bands), can be downloaded from
+
+ http://personales.unican.es/junqueraj/Wannier-examples.tar.gz
+
+{\bf NOTE}: The Bloch functions produced by a first-principles code
+      have arbitrary phases that depend on the number of processors
+      used and other possibly non-reproducible details of the
+      calculation. In what follows it is essential to maintain
+      consistency in the handling of the overlap and Bloch-funcion
+      files produced and fed to {\sc wannier90}.
+
+\begin{description}
+\item[{\bf Siesta2Wannier90.WriteMmn}] ({\it logical}):
+\index{Siesta2Wannier90.WriteMmn@{\bf Siesta2Wannier90.WriteMmn}}
+
+This flag determines whether the overlaps between the periodic part
+of the Bloch states at neighbour k-points are computed and dumped into a file
+in the format required by {\sc wannier90}.
+These overlaps are defined in Eq. (27) in the paper by
+N. Marzari {\it et al.}, Review of Modern Physics {\bf 84}, 1419 (2012),
+or Eq. (1.7) of the Wannier90 User Guide, Version 2.0.1.
+
+The k-points for which the overlaps will be computed are read from a
+{\tt .nnkp} file produced by {\sc wannier90}. It is strongly
+recommended for the user to read the corresponding user guide.
+
+The overlap matrices are written in a file with extension {\tt .mmn}.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteAmn}] ({\it logical}):
+\index{Siesta2Wannier90.WriteAmn@{\bf Siesta2Wannier90.WriteAmn}}
+
+This flag determines whether the overlaps between Bloch states
+and trial localized orbitals are computed and dumped into a file in the
+format required by {\sc wannier90}.
+These projections are defined in Eq. (16) in the paper by
+N. Marzari {\it et al.}, Review of Modern Physics {\bf 84}, 1419 (2012),
+or Eq. (1.8) of the Wannier90 User Guide, Version 2.0.1.
+
+The localized trial functions to use are taken from the {\tt .nnkp}
+file produced by {\sc wannier90}. It is strongly recommended for the
+user to read the corresponding user guide.
+
+The overlap matrices are written in a file with extension {\tt .amn}.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteEig}] ({\it logical}):
+\index{Siesta2Wannier90.WriteEig@{\bf Siesta2Wannier90.WriteEig}}
+
+Flag that determines whether the Kohn-Sham eigenvalues 
+(in eV) at each point in the Monkhorst-Pack mesh required by {\sc
+  wannier90} are written to file.
+This file is mandatory in {\sc wannier90} if any of disentanglement, 
+plot\_bands, plot\_fermi\_surface or hr\_plot options are set to true in 
+the {\sc wannier90} input file.
+
+The eigenvalues are written in a file with extension {\tt .eigW}.
+This extension is chosen to avoid name clashes
+with {\sc siesta}'s standard eigenvalue file in case-insensitive filesystems.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteUnk}] ({\it logical}):
+\index{Siesta2Wannier90.WriteUnk@{\bf Siesta2Wannier90.WriteUnk}}
+
+ Produces {\tt UNKXXXXX.Y} files which contain the periodic part of a
+ Bloch function in the unit cell on a grid given by global unk\_nx,
+ unk\_ny, unk\_nz variables.  The name of the output files is assumed
+ to have the previous form, where the {\tt XXXXXX} refer to the k-point
+ index (from 00001 to the total number of k-points considered), and
+ the {\tt Y} refers to the spin component (1 or 2)
+
+ The periodic part of the Bloch functions is defined by
+ \begin{equation}
+   u_{n \vec{k}} (\vec{r}) =
+   \sum_{\vec{R} \mu} c_{n \mu}(\vec{k})
+        e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+        \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} ) ,
+\end{equation}
+
+\noindent where $\phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )$
+ is a basis set atomic orbital centered on atom $\mu$ in
+ the unit cell $\vec{R}$, and $c_{n \mu}(\vec{k})$ are the coefficients
+ of the wave function. The latter must be identical to the ones used
+ for wannierization in $M_{mn}$. (See the above comment about
+ arbitrary phases.)
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.UnkGrid1}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid1@{\bf Siesta2Wannier90.UnkGrid1}}
+
+Number of points along the first lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{number of points in the {\sc siesta} mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGrid2}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid2@{\bf Siesta2Wannier90.UnkGrid2}}
+
+Number of points along the second lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{number of points in the {\sc siesta} mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGrid3}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid3@{\bf Siesta2Wannier90.UnkGrid3}}
+
+Number of points along the third lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{number of points in the {\sc siesta} mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGridBinary}] ({\it logical}):
+\index{Siesta2Wannier90.UnkGridBinary@{\bf Siesta2Wannier90.UnkGridBinary}}
+
+Flag that determines whether the periodic part of the wave function in the
+real space grid is written in binary format (default) or in ASCII format.
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf Siesta2Wannier90.NumberOfBands}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBands@{\bf Siesta2Wannier90.NumberOfBands}}
+
+In spin unpolarized calculations, number of bands that will be
+initially considered by {\sc siesta} to generate the information
+required by {\sc wannier90}. Note that it should be at least as large as the
+index of the highest-lying band in the {\sc wannier90} post-processing. For
+example, if the wannierization is going to involve bands 3 to 5, the
+{\sc siesta} number of bands should be at least 5. Bands 1 and 2
+should appear in a ``excluded'' list.
+
+{\it Default value:} {Number of occupied bands. To avoid problems
+  of interpretation, it is strongly advised to avoid relying on the
+  defaults and to specify the number of bands explicitly.}
+
+
+\item[{\bf Siesta2Wannier90.NumberOfBandsUp}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBandsUp@{\bf Siesta2Wannier90.NumberOfBandsUp}}
+
+In spin-polarized calculations, number of bands with spin up that will be
+initially considered by {\sc siesta} to generate the information
+required by {\sc wannier90}. (See above for details.)
+
+{\it Default value:} {Number of occupied bands with spin up. To
+  avoid problems of interpretation, it is strongly advised to avoid
+  relying on the defaults and to specify the number of bands
+  explicitly. }
+
+\item[{\bf Siesta2Wannier90.NumberOfBandsDown}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBandsDown@{\bf Siesta2Wannier90.NumberOfBandsDown}}
+
+In spin-polarized calculations, number of bands with spin down that will be
+initially considered by {\sc siesta} to generate the information
+required by {\sc wannier90}. (See above for details.)
+
+
+{\it Default value:} {Number of occupied bands with spin down. To
+  avoid problems of interpretation, it is strongly advised to avoid
+  relying on the defaults and to specify the number of bands
+  explicitly. }
 
 \end{description}
 
