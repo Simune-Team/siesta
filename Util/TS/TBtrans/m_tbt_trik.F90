@@ -850,15 +850,20 @@ contains
 
                    call orb_current(spH,zwork_tri,r_oDev,orb_J)
 
-                   ! We need to save it immediately, we
-                   ! do not want to have several arrays in the
-                   ! memory
-                   call state_cdf_save_J(cdf_fname, ikpt, nE, Elecs(iEl), &
-                        orb_J, save_DATA)
-
                 end if
 #endif
              end if
+
+#ifdef NCDF_4
+             if ( 'orb-current' .in. save_DATA ) then
+                
+                ! We need to save it immediately, we
+                ! do not want to have several arrays in memory
+                call state_cdf_save_J(cdf_fname, ikpt, nE, Elecs(iEl), &
+                     orb_J, save_DATA)
+                
+             end if
+#endif
              
              do jEl = 1 , N_Elec
                 ! Calculating iEl -> jEl is the
@@ -914,7 +919,21 @@ contains
           ! Calculate the projections
           do ipt = 1 , N_proj_T
 
-             if ( cE%fake ) cycle
+             ! Associate projection
+             call proj_LME_assoc(p_E,proj_T(ipt)%L)
+
+             if ( cE%fake ) then
+#ifdef NCDF_4
+                ! We need to fake the IO node to call the save routine
+                ! this aint pretty, however it relieves a lot of
+                ! superfluous checks in the following block
+                if ( ('proj-orb-current' .in. save_DATA) .and. p_E%idx > 0 ) then
+                   call proj_cdf_save_J(cdf_fname, ikpt, nE, proj_T(ipt)%L, &
+                        orb_J, save_DATA)
+                end if
+#endif
+                cycle
+             end if
             ! We have now calculated all block diagonal entries
             ! of the Green's function.
             ! This means that all necessary information to calculate
@@ -934,8 +953,6 @@ contains
             ! ****************
             ! * Column Gf    *
             ! ****************
-
-            call proj_LME_assoc(p_E,proj_T(ipt)%L)
             if ( p_E%idx > 0 ) then
 
                no = p_E%ME%mol%orb%n
@@ -993,13 +1010,13 @@ contains
                if ( 'proj-orb-current' .in. save_DATA ) then
 
                   call orb_current(spH,zwork_tri,r_oDev,orb_J)
-                   
+
                   ! We need to save it immediately, we
                   ! do not want to have several arrays in the
                   ! memory
                   call proj_cdf_save_J(cdf_fname, ikpt, nE, proj_T(ipt)%L, &
                        orb_J, save_DATA)
-                  
+
                end if
 #endif
                

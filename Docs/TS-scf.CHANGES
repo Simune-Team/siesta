@@ -1,4 +1,11 @@
 ----------------------------------------------------
+July 9, 2015 -- Nick Papior          trunk-474---ts-scf-462
+TBT: bugfix for orbital currents with NE%Nodes /= 0
+
+modified:
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 July 8, 2015 -- Nick Papior          trunk-474---ts-scf-461
 TBT: bugfix for serial compilation
 
