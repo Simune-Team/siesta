@@ -213,7 +213,7 @@ contains
     off = El%idx_o - 1
 
     if ( El%Bulk ) then
-!$OMP do private(j,i,idx,ii)
+!$OMP parallel do default(shared), private(j,i,ii,idx)
        do j = off + 1 , off + no
           ii = (j-off-1) * no
           do i = 1 , no
@@ -221,9 +221,9 @@ contains
              Gfinv(idx) = El%Sigma(ii+i)
           end do
        end do
-!$OMP end do nowait
+!$OMP end parallel do
     else
-!$OMP do private(j,i,idx,ii)
+!$OMP parallel do default(shared), private(j,i,ii,idx)
        do j = off + 1 , off + no
           ii = (j-off-1) * no
           do i = 1 , no
@@ -231,7 +231,7 @@ contains
              Gfinv(idx) = Gfinv(idx) - El%Sigma(ii+i)
           end do
        end do
-!$OMP end do nowait
+!$OMP end parallel do
     end if
     
   end subroutine insert_Self_Energies

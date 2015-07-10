@@ -977,7 +977,7 @@ contains
     type(Elec), intent(in) :: El
 
     ! local variables
-    integer :: j, je, i, ie, ii, idx, no
+    integer :: j, je, i, ii, idx, no
 
 #ifdef TBTRANS_TIMING
     call timer('insert-SED',1)
@@ -989,15 +989,14 @@ contains
     ! is always considered to be "non-bulk" as
     ! we have it downfolded.
 
-!$OMP parallel do default(shared), private(j,ii,je,i,ie,idx)
+!$OMP parallel do default(shared), private(j,ii,je,i,idx)
     do j = 1 , no
        ii = (j-1)*no
        ! grab the index in the full tri-diagonal matrix
        je = El%inDpvt%r(j)
        do i = 1 , no
-          ie = El%inDpvt%r(i)
-          
-          idx = index(GFinv_tri,ie,je)
+
+          idx = index(GFinv_tri,El%inDpvt%r(i),je)
           
           Gfinv(idx) = Gfinv(idx) - El%Sigma(ii+i)
           

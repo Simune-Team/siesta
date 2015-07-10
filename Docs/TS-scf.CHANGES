@@ -1,4 +1,17 @@
 ----------------------------------------------------
+July 10, 2015 -- Nick Papior          trunk-474---ts-scf-466
+Changed OMP threading for ts_tri_scat
+
+* Intel does not like orphan OMP, changed.
+
+modified:
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 July 10, 2015 -- Nick Papior          trunk-474---ts-scf-465
 Cleaned memory several places
 

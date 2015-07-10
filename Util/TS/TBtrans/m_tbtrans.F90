@@ -141,9 +141,7 @@ contains
     ! They are communicated in the routine
 
     ! We need to initialize tbtrans
-    if ( IONode ) then
-       write(*,*) ! new-line
-    end if
+    if ( IONode ) write(*,*) ! new-line
 
     call timer('TBT',1)
 

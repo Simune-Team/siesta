@@ -1018,7 +1018,7 @@ contains
 
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
-    Gfinv  => val(Gfinv_tri)
+    Gfinv => val(Gfinv_tri)
 
 !$OMP parallel default(shared), private(io,iu,ind,idx)
 
@@ -1047,11 +1047,11 @@ contains
     end do
 !$OMP end do
 
+!$OMP end parallel
+
     do io = 1 , N_Elec
        call insert_Self_Energies(Gfinv_tri, Gfinv, pvt, Elecs(io))
     end do
-
-!$OMP end parallel
 
 #ifdef TRANSIESTA_TIMING
     call timer('TS-prep',2)

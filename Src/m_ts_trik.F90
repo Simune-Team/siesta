@@ -1063,11 +1063,11 @@ contains
     end do
 !$OMP end do
 
+!$OMP end parallel
+
     do io = 1 , N_Elec
        call insert_Self_Energies(Gfinv_tri, Gfinv, pvt, Elecs(io))
     end do
-
-!$OMP end parallel
 
 #ifdef TRANSIESTA_TIMING
     call timer('TS-prep',2)
