@@ -218,12 +218,16 @@ CONTAINS
 
         select case (trim(ps_Relativity(ps)))
         case ("dirac")
-           ! Missing logic for the case in which the format
-           ! has an "lj" set
+
            nscalar = ps_Number_Of_Potentials(ps,SET_SREL)
+
            if (nscalar == 0) then
+
+              ! Will get the scalar-relativistic SL potentials
+              ! from the lj set
+
               nlj = ps_Number_Of_Potentials(ps,SET_LJ)
-              if (nlj == 0) call die("Cannot find srel nl potentials for dirac case")
+              if (nlj == 0) call die("Cannot find srel SL potentials for dirac case")
               has_lj = .true.
               idxlj = ps_Potential_Indexes(ps,SET_LJ)
               npotd = 0
@@ -237,16 +241,22 @@ CONTAINS
                     npotu = npotu + 1
                  endif
               enddo
+
            else
+
+              ! We have a scalar-relativistic set
               npotd = nscalar
               idxd = ps_Potential_Indexes(ps,SET_SREL)
               npotu = ps_Number_Of_Potentials(ps,SET_SO)
               if (npotu /= 0) idxu = ps_Potential_Indexes(ps,SET_SO)
               has_sr_so = .true.
+
            endif
+
         case ("scalar")
+
            nscalar = ps_Number_Of_Potentials(ps,SET_SREL)
-           if (nscalar == 0) call die("Cannot find srel nl potentials for srel case")
+           if (nscalar == 0) call die("Cannot find srel SL potentials for srel case")
            npotd = nscalar
            idxd = ps_Potential_Indexes(ps,SET_SREL)
            npotu = 0
@@ -254,12 +264,15 @@ CONTAINS
 
            ! We assume that srel calculations are not polarized...
         case ("no")
+
            if (ps_IsSpinPolarized(ps)) then
               if (     (ps_Number_Of_Potentials(ps,SET_UP) > 0)   &
                   .and.(ps_Number_Of_Potentials(ps,SET_DOWN) > 0) &
                  ) then
 
                  ! We have spin_up and spin_down potentials
+                 ! Will get the average later
+
                  idxd = ps_Potential_Indexes(ps,SET_DOWN)
                  idxu = ps_Potential_Indexes(ps,SET_UP)
                  npotd = size(idxd)
@@ -267,23 +280,29 @@ CONTAINS
                  has_up_down = .true.
 
               else
-                 ! We have (at least) the spin_average
+                 ! We must have (at least) the spin_average
                  npotd = ps_Number_Of_Potentials(ps,SET_SPINAVE)
-                 if (npotd == 0) call die("Cannot get spin-averaged potentials")
+                 if (npotd == 0) call die("Cannot get spin-averaged SL potentials")
                  idxd = ps_Potential_Indexes(ps,SET_SPINAVE)
                  idxu = ps_Potential_Indexes(ps,SET_SPINDIFF)
                  npotu = size(idxu)  ! might be zero
                  has_spin_ave = .true.
               endif
+
            else ! not polarized
+
               npotd = ps_Number_Of_Potentials(ps,SET_NONREL)
-              if (npotd == 0) call die("Cannot get non-relativistic potentials")
+              if (npotd == 0) call die("Cannot get non-relativistic SL potentials")
               idxd = ps_Potential_Indexes(ps,SET_NONREL)
               npotu = 0
               has_nonrel = .true.
+
            endif
+
         case default
+
            call die("Wrong relativity scheme in PSML file")
+
         end select
 
 ! Allocate the radial variables and semilocal potentials
@@ -353,8 +372,8 @@ CONTAINS
 
         if ( (has_sr_so) .or. (has_spin_ave) .or. (has_nonrel) .or. &
              (has_sr)   ) then
-           ! No need for any extra computations
-        do il = 1, p%npotd
+         ! No need for any extra computations
+         do il = 1, p%npotd
           p%ldown(il) = ps_Potential_L(ps,idxd(il))
           nn(il)  =  ps_Potential_N(ps,idxd(il))
           ll(il)  =  ps_Potential_L(ps,idxd(il))
@@ -366,9 +385,9 @@ CONTAINS
 
           enddo
           p%vdown(il,1) = p%vdown(il,2) - r2*(p%vdown(il,3)-p%vdown(il,2))
-        enddo
+         enddo
 
-        do il = 1, p%npotu
+         do il = 1, p%npotu
            p%lup(il) = ps_Potential_L(ps,idxu(il))
            do ir = 2, p%nrval
               p%vup(il,ir) = p%r(ir) * &
@@ -376,8 +395,9 @@ CONTAINS
               p%vup(il,ir) = p%vup(il,ir) * 2.0_dp   ! rydberg
            enddo
           p%vup(il,1) = p%vup(il,2) - r2*(p%vup(il,3)-p%vup(il,2))
-        enddo
+         enddo
 
+        ! if not, we need to get the right averages
         else if (has_lj) then
 
            id = 0

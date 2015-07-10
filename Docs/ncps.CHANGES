@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+July 10, 2015  Alberto Garcia       trunk-470--ncps-70
+NCPS: Change flib_spline->interpolation. More comments
+
+removed:
+  Src/ncps/src/flib_spline.f90
+added:
+  Src/ncps/src/interpolation.f90
+modified:
+  Src/ncps/src/m_ncps_froyen_reader.f
+  Src/ncps/src/m_ncps_translators.f90
+  Src/ncps/src/makefile
+
+------------------------------------------------------------
 July 10, 2015  Alberto Garcia       trunk-470--ncps-69
 PSML: Support systems without proc pointers. Remove nr interpolator
 

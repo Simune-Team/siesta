@@ -23,7 +23,7 @@ libxc-compat:
 #
 OBJFILES= m_ncps.o m_ncps_froyen_reader.o m_ncps_translators.o \
           m_ncps_froyen_ps_t.o m_ncps_reader.o	m_ncps_writers.o \
-          flib_spline.o
+          interpolation.o
 #
 INCFLAGS:= -I libxc-compat $(PSML_INCFLAGS)
 #
@@ -43,7 +43,7 @@ clean:
 m_libxc_sxc_translation.o: m_libxc_list.o
 m_ncps.o: m_ncps_froyen_ps_t.o m_ncps_reader.o m_ncps_translators.o
 m_ncps.o: m_ncps_writers.o
-m_ncps_froyen_reader.o: flib_spline.o m_ncps_froyen_ps_t.o
+m_ncps_froyen_reader.o: interpolation.o m_ncps_froyen_ps_t.o
 m_ncps_reader.o: m_ncps_froyen_ps_t.o m_ncps_froyen_reader.o
 m_ncps_reader.o: m_ncps_translators.o
 m_ncps_translators.o: m_ncps_froyen_ps_t.o
