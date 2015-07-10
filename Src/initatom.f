@@ -109,6 +109,7 @@
         enddo 
 
         call prinput(nsp)
+          ! DO: call destroy(basp) !!  ?? is it safe here?
 
 !       Create the new data structures for atmfuncs.
         call atm_transfer()

@@ -12,13 +12,19 @@
 
       CONTAINS
 
-        subroutine pseudo_read(label,p,new_grid,a,b,rmax,directory)
+        subroutine pseudo_read(label,p,
+     $                         psml_handle,has_psml_ps,
+     $                         new_grid,a,b,rmax,directory)
+
         use m_ncps_froyen_reader,  only: pseudo_read_formatted
         use m_ncps_froyen_reader,  only: pseudo_read_unformatted
         use m_ncps_froyen_reader,  only: pseudo_reparametrize
+        use m_psml,                only: psml_t => ps_t
 
         character(len=*), intent(in)   :: label
         type(pseudopotential_t)        :: p
+        type(psml_t), intent(inout), target :: psml_handle
+        logical, intent(out)           :: has_psml_ps
         logical, intent(in), optional  :: new_grid
         real(dp), intent(in), optional :: a
         real(dp), intent(in), optional :: b
@@ -31,6 +37,8 @@
 
         character(len=200) fname, prefix
         logical found, reparametrize
+
+        has_psml_ps = .false.
 
         reparametrize = .false.
         if (present(new_grid)) then
@@ -71,7 +79,9 @@
               if (found) then
                  write(6,'(/,a,a,/)') 
      .                'Reading pseudopotential from: ', trim(fname)
-                 call pseudo_read_psml(fname,p,reparametrize,a,b,rmax)
+                 call pseudo_read_psml(fname,p,psml_handle,
+     $                                 reparametrize,a,b,rmax)
+                 has_psml_ps = .true.
               else
                  write(6,'(2a,a)') 'pseudo_read: ERROR: ',
      .                'Pseudopotential file not found: ',
@@ -127,7 +137,8 @@
               call pseudo_reparametrize(p,a,b,label,rmax)
            endif
         else if (trim(ext) == ".psml") then
-           call pseudo_read_psml(filename,p,reparametrize,a,b,rmax)
+           call pseudo_read_psml(filename,p,
+     $          reparametrize=reparametrize,a=a,b=b,rmax=rmax)
         else
            write(6,'(2a,a)') 'pseudo_read_from_file: ERROR: ',
      .                'Extension not supported: ', trim(ext)
@@ -137,13 +148,16 @@
         call pseudo_dump(trim(label) // ".psdump",p)
         end subroutine pseudo_read_from_file
 !
-        subroutine pseudo_read_psml(fname,p,reparametrize,a,b,rmax)
+        subroutine pseudo_read_psml(fname,p,
+     $                              psml_handle,
+     $                              reparametrize,a,b,rmax)
 
         use m_psml, only: ps_t, ps_destroy, psml_reader
         use m_ncps_translators, only: ncps_xml2froyen_new
 
         character(len=*), intent(in)              :: fname
         type(pseudopotential_t), intent(out)      :: p
+        type(ps_t), intent(inout), optional, target :: psml_handle
         logical, intent(in), optional  :: reparametrize
         real(dp), intent(in), optional :: a
         real(dp), intent(in), optional :: b
@@ -153,9 +167,17 @@
         ! warning about dangling association...
         type(ps_t), target   :: ps
 
-        call psml_reader(fname,ps)
-        call ncps_xml2froyen_new(ps,p,reparametrize,a,b,rmax)
-        call ps_destroy(ps)
+        if (present(psml_handle)) then
+           ! We pass the actual handle to the caller
+           call psml_reader(fname,psml_handle)
+           call ncps_xml2froyen_new(psml_handle,p,
+     $                              reparametrize,a,b,rmax)
+        else
+           ! We just convert to Froyen form and destroy ps
+           call psml_reader(fname,ps)
+           call ncps_xml2froyen_new(ps,p,reparametrize,a,b,rmax)
+           call ps_destroy(ps)
+        endif
 
         end subroutine pseudo_read_psml
 !----

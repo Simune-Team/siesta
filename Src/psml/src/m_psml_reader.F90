@@ -23,13 +23,17 @@ module m_psml_reader
   implicit none 
 
   character(len=*), intent(in)        :: fname
-  type(ps_t), intent(out), target     :: ps
+  type(ps_t), intent(inout), target   :: ps 
   logical, intent(in), optional       :: debug
 
   type(xml_t)                     :: fxml
   integer :: iostat
 
   ! Clean the object's internal data
+  ! Note that the inout intent allow us
+  ! to do this, and avoid having ps being
+  ! reset by the compiler
+
   call ps_destroy(ps)
 
   ! Associate module pointer, so that the parsed data

@@ -288,11 +288,13 @@ C Sanity checks on values
           synthetic_atoms = .true.
           ! Will set gs later
           call pseudo_read(basp%label,basp%pseudopotential,
+     $         basp%psml_handle,basp%has_psml_ps,
      $         new_grid=reparametrize_pseudos,a=new_a,b=new_b,
      $         rmax=new_rmax)
         else
           call ground_state(abs(int(basp%z)),basp%ground_state)
           call pseudo_read(basp%label,basp%pseudopotential,
+     $         basp%psml_handle,basp%has_psml_ps,
      $         new_grid=reparametrize_pseudos,a=new_a,b=new_b,
      $         rmax=new_rmax)
         endif

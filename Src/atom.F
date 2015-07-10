@@ -487,9 +487,32 @@ c    .          'atom: The above configuration will be used ',
 ! 
           if (flting.gt.0.0d0) then
 
-             use_psml_vlocal = fdf_boolean('Use.PSML.Vlocal',.false.)
+             use_psml_kb_projectors =
+     $           fdf_boolean("Use.PSML.KB.Projectors",.false.)
+             use_psml_vlocal = fdf_boolean('Use.PSML.Vlocal',
+     $                                     use_psml_kb_projectors)
+
+             ! Sanity checks
+             if (use_psml_kb_projectors) then
+               if (.not. use_psml_vlocal) then
+                  call die("Must use PSML vlocal with PSML projectors")
+               endif
+               if (.not. basp%has_psml_ps) then
+                  write(6,"(a)") ":!:" // trim(atm_label)//
+     $              " does not have psml data. Will not read KB projs"
+                  use_psml_kb_projectors = .false.
+               endif
+             endif
+
+             if (use_psml_vlocal .AND. (.not. basp%has_psml_ps)) then
+               write(6,"(a)") ":!:" // trim(atm_label)//
+     $              " does not have psml data. Will not read Vlocal"
+               use_psml_vlocal = .false.
+             endif
+
              if (use_psml_vlocal) then
-                call get_psml_vlocal(atm_label,rofi,nrval,Zval,vlocal,
+                call get_psml_vlocal(basp%psml_handle,atm_label,
+     $                               rofi,nrval,Zval,vlocal,
      $                               vlocal_type)
 
                 ! Now we need to reconstruct the chlocal from vlocal
@@ -580,13 +603,11 @@ c    .          'atom: The above configuration will be used ',
             s(1) = s(2)
 
             lmxkb_true = lmxkb
-            use_psml_kb_projectors =
-     $           fdf_boolean("Use.PSML.KB.Projectors",.false.)
+
             if (use_psml_kb_projectors) then
-               if (.not. use_psml_vlocal) then
-                  call die("Must use PSML vlocal with PSML projectors")
-               endif
-               call get_psml_kbprojs(is,atm_label,a,b,rofi,nrval,Zval,
+
+               call get_psml_kbprojs(is,basp%psml_handle,atm_label,
+     $                               a,b,rofi,nrval,Zval,
      $                               lmxkb_true,nkbmax(is))
 
             else
@@ -2399,10 +2420,11 @@ C potential
           
         end subroutine read_vps
 !
-      subroutine get_psml_vlocal(atm_label,rofi,nrval,Zval,vlocal,
+      subroutine get_psml_vlocal(ps,atm_label,rofi,nrval,Zval,vlocal,
      $                           vlocal_type)
-      use m_psml
+      use m_psml, psml_t => ps_t
 
+      type(psml_t), intent(in)      :: ps         ! psml handle
       character(len=*), intent(in)  :: atm_label
       real(dp), intent(in)          :: rofi(:)
       integer, intent(in)           :: nrval
@@ -2410,12 +2432,8 @@ C potential
       real(dp), intent(out)         :: vlocal(:)
       character(len=*), intent(out) :: vlocal_type
 
-      type(ps_t) :: ps
       integer    :: ir
       
-      call ps_destroy(ps)
-      call psml_reader(trim(atm_label)//".psml",ps)
-
       if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
       endif
@@ -2431,15 +2449,16 @@ C potential
 
       vlocal_type = ps_LocalPotential_Type(ps)
       write(6,"(a)") "Got Vlocal (" // trim(vlocal_type) //
-     $                ") from " // trim(atm_label)//".psml file"
+     $                ") from " // trim(atm_label)//" psml data"
       
       end subroutine get_psml_vlocal
 
-      subroutine get_psml_kbprojs(is,atm_label,a,b,rofi,nrval,Zval,
+      subroutine get_psml_kbprojs(is,ps,atm_label,a,b,rofi,nrval,Zval,
      $                            lmxkb_true,nkb)
-      use m_psml
+      use m_psml, psml_t => ps_t
 
       integer, intent(in)           :: is ! species index, for comkb...
+      type(psml_t), intent(in)      :: ps ! psml handle
       character(len=*), intent(in)  :: atm_label
       real(dp), intent(in)          :: rofi(:)
       real(dp), intent(in)          :: a
@@ -2449,7 +2468,6 @@ C potential
       integer, intent(inout)        :: lmxkb_true
       integer, intent(out)          :: nkb
 
-      type(ps_t) :: ps
       integer    :: ir, l, ikb, nrc, nscalar, nkbl
       integer    :: lmxkb
       integer, allocatable  :: idx(:), idxl(:)
@@ -2458,11 +2476,11 @@ C potential
       
       real(dp), parameter  :: eps_kb=1.0d-6  ! From kbproj
 
-      call ps_destroy(ps)
-      call psml_reader(trim(atm_label)//".psml",ps)
+!      call ps_destroy(ps)
+!      call psml_reader(trim(atm_label)//".psml",ps)
 
       write(6,"(a)") "Reading KB projs from "
-     $                    // trim(atm_label)//".psml file"
+     $                    // trim(atm_label)// " psml data"
 
       if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
@@ -6291,7 +6309,9 @@ C
 
         type(ground_state_t), pointer ::  gs
 
-        write(6,'(/a,58("-"))') 'prinput: Basis input '
+        write(6,'(/,a)') 'prinput: Basis input '
+        write(6,'(a,/,58("-"))') '* WARNING: This information ' //
+     $                          'might be incomplete!!!'
 
         basistype = fdf_string('PAO.BasisType',basistype_default)
         call type_name(basistype) 
@@ -6336,6 +6356,8 @@ C
                 
         write(6,'(/a)')        
      .   '%block PAO.Basis                 # Define Basis set'
+        write(6,'(a)') '# WARNING: This information ' //
+     $                          'might be incomplete!!!'
         do is = 1,ntotsp  
           nshell = 0 
           lo = lmxosave(is)

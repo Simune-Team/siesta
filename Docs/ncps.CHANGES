@@ -1,4 +1,25 @@
 ------------------------------------------------------------
+July 10, 2015  Alberto Garcia       trunk-470--ncps-71
+Psml handles in structures. Clarify psml-use-{vlocal,kb-projs}
+
+* The 'ps' objects for PSML data are now stored in the
+  'basis_parameters' data structure, as a new field 'psml_handle'.
+
+  There is also another field 'has_psml_ps', to facilitate the logic
+  of the program.
+
+* Clarified the use of the psml-use-* flags. In future they might
+  default to 'true' if the element has psml data.
+
+modified:
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/initatom.f
+  Src/ncps/src/m_ncps_reader.f
+  Src/psml/src/m_psml_reader.F90
+
+------------------------------------------------------------
 July 10, 2015  Alberto Garcia       trunk-470--ncps-70
 NCPS: Change flib_spline->interpolation. More comments
 

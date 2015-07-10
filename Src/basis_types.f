@@ -27,6 +27,7 @@
 !
       use atmparams, only: lmaxd, nzetmx, nsemx, nkbmx
       use m_ncps, only: pseudopotential_t => froyen_ps_t
+      use m_psml, only: psml_t => ps_t
       use precision, only: dp
       use sys, only : die
 
@@ -81,6 +82,8 @@
           integer                   ::  z          ! Atomic number
           type(ground_state_t)      ::  ground_state
           type(pseudopotential_t)   ::  pseudopotential
+          type(psml_t)              ::  psml_handle
+          logical                   ::  has_psml_ps
           integer                   ::  lmxo       ! Max l for basis
           integer                   ::  lmxkb      ! Max l for KB projs
           type(lshell_t), pointer   ::  lshell(:)  ! One shell per l 
@@ -222,6 +225,7 @@
 
 !-----------------------------------------------------------------------
       subroutine init_basis_def(p)
+      use m_psml, only: ps_destroy
       type(basis_def_t)          :: p
 
       p%lmxo = -1
@@ -235,6 +239,9 @@
       nullify(p%tmp_shell)
       nullify(p%lshell)
       nullify(p%kbshell)
+      call ps_destroy(p%psml_handle)
+      ! *** To implement
+      ! call pseudo_destroy(p%pseudopotential)
       end subroutine init_basis_def
 
 !-----------------------------------------------------------------------
@@ -270,10 +277,13 @@
 
 !-----------------------------------------------------------------------
       subroutine destroy_basis_def(p)
+      use m_psml, only: ps_destroy
       type(basis_def_t)          :: p
 
       call destroy_lshell(p%lshell)
       call destroy_shell(p%tmp_shell)
+      call ps_destroy(p%psml_handle)
+      ! call pseudo_destroy(p%pseudopotential)
       end subroutine destroy_basis_def
 
 !-----------------------------------------------------------------------
