@@ -168,9 +168,9 @@ contains
     ! thread, possibly waiting for each thread to
     ! place the memory in the best position.
     allocate( Clocal(nsp,maxloc2) )
-    allocate( phia(maxoa,nsp) )
     allocate( ilocal(no) , ilc(maxloc2) , iorb(maxloc) )
     allocate( Vlocal(triang,nspin) )
+    if ( DirectPhi ) allocate( phia(maxoa,nsp) )
 !$OMP end critical
 
 !$OMP single
@@ -496,7 +496,8 @@ contains
     end if
 
 !   Free memory
-    deallocate(Clocal,phia,ilocal,ilc,iorb,Vlocal)
+    deallocate(Clocal,ilocal,ilc,iorb,Vlocal)
+    if ( DirectPhi ) deallocate( phia )
 
 !$OMP master
     if ( ParallelLocal ) then

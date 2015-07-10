@@ -42,7 +42,8 @@
       subroutine resetSparseMatrices( )
       use alloc, only : de_alloc
 
-      call de_alloc( Dold, 'Dold', 'sparseMat' )
+      call de_alloc( Dold, 'Dold', 'state_init' )
+      call de_alloc( Hold, 'Hold', 'state_init' )
       call delete( DM_2D ) ; nullify(Dscf)
       call delete( EDM_2D ) ; nullify(Escf)
       call delete( H_kin_1D )

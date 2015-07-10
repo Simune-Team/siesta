@@ -51,7 +51,7 @@
 
       implicit none
 
-      character(len=*),parameter:: modName = 'm_new_dm '
+      character(len=*),parameter:: modName = 'm_new_dm'
 
       private
       public :: new_dm

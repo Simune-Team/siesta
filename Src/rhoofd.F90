@@ -141,7 +141,7 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 !$OMP critical
   allocate( ilocal(no), ilc(maxloc2), iorb(maxloc) )
   allocate( Dlocal(triang,nspin), Clocal(nsp,maxloc2) )
-  allocate( phia(maxoa,nsp) )
+  if ( DirectPhi ) allocate( phia(maxoa,nsp) )
 !$OMP end critical
 
 ! Initializations
@@ -344,7 +344,8 @@ subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, &
 
 ! Free local memory
 !$OMP critical
-  deallocate( ilocal, ilc, iorb, Dlocal, Clocal, phia )
+  deallocate( ilocal, ilc, iorb, Dlocal, Clocal )
+  if ( DirectPhi ) deallocate( phia )
 !$OMP end critical
 
 !$OMP end parallel

@@ -1,4 +1,20 @@
 ----------------------------------------------------
+July 10, 2015 -- Nick Papior          trunk-474---ts-scf-465
+Cleaned memory several places
+
+* Updated routine names in _alloc statements
+
+* Prohibited unneeded allocation in vmat,delk,rhoofd
+
+modified:
+  Src/atom_graph.F90
+  Src/delk.F90
+  Src/m_new_dm.F90
+  Src/rhoofd.F90
+  Src/sparse_matrices.F
+  Src/vmat.F90
+ 
+----------------------------------------------------
 July 9, 2015 -- Nick Papior          trunk-474---ts-scf-464
 ENH: Enabled dependency atoms when constructing pivot table
 

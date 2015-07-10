@@ -175,8 +175,8 @@ contains
     end if
 
     ! Allocate local arrays that depend on parameters
-    call re_alloc(knakb,1,maxnkb, name="knakb")
-    call re_alloc(rckb,1,maxnkb, name="rckb")
+    call re_alloc(knakb,1,maxnkb, name="knakb",routine="atom_graph")
+    call re_alloc(rckb,1,maxnkb, name="rckb",routine="atom_graph")
 
     isel = 0
     ! Initialize internal data structures in neighb
@@ -221,9 +221,9 @@ contains
                 if ( nnkb == maxnkb ) then
                    maxnkb = maxnkb + 10
                    call re_alloc(knakb,1,maxnkb, &
-                        name="knakb",copy=.true.)
+                        name="knakb",copy=.true.,routine="atom_graph")
                    call re_alloc(rckb,1,maxnkb, &
-                        name="rckb",copy=.true.)
+                        name="rckb",copy=.true.,routine="atom_graph")
                 end if
                 nnkb        = nnkb + 1
                 knakb(nnkb) = kna
@@ -331,9 +331,9 @@ contains
                 if ( nnkb == maxnkb ) then
                    maxnkb = maxnkb + 10
                    call re_alloc(knakb,1,maxnkb, &
-                        name="knakb",copy=.true.)
+                        name="knakb",copy=.true.,routine="atom_graph")
                    call re_alloc(rckb,1,maxnkb, &
-                        name="rckb",copy=.true.)
+                        name="rckb",copy=.true.,routine="atom_graph")
                 end if
                 nnkb        = nnkb + 1
                 knakb(nnkb) = kna
@@ -380,9 +380,9 @@ contains
     end do
 
     ! Deallocate local arrays
-    call de_alloc(index,name="index")
-    call de_alloc(knakb,name="knakb")
-    call de_alloc(rckb,name="rckb")
+    call de_alloc(index,name="index",routine="atom_graph")
+    call de_alloc(knakb,name="knakb",routine="atom_graph")
+    call de_alloc(rckb,name="rckb",routine="atom_graph")
     deallocate(n_col,l_ptr,rkbmax,rorbmax)
 
     ! Clean up, if the distribution has not
