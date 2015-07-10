@@ -21,7 +21,9 @@ character(len=1), dimension(0:4) :: sym = (/ "s", "p", "d", "f", "g" /)
 
 ! Accessor list
 public :: ps_SetDebug
+#ifndef  __NO_PROC_POINTERS__
 public :: ps_SetInterpolator
+#endif
 public :: ps_SetInterpolatorQuality
 !
 public :: ps_AtomicSymbol
@@ -113,6 +115,8 @@ logical, intent(in) :: debug
   global_debug = debug
 end subroutine ps_SetDebug
 
+#ifndef __NO_PROC_POINTERS__
+
 !> Sets the default interpolator and
 !> its quality parameter
 subroutine ps_SetInterpolator(func,nquality)
@@ -124,11 +128,11 @@ use m_interp, only: interpolator, nq
 integer, intent(in) :: nquality
 
 interface
-   subroutine func(npoint,x,y,npts,r,val,debug)
+   subroutine func(nquality,x,y,npts,r,val,debug)
 
      integer, parameter :: dp = selected_real_kind(10,100)
 
-     integer, intent(in)  :: npoint  ! Quality parameter
+     integer, intent(in)  :: nquality  ! Quality parameter
      real(dp), intent(in) :: x(*), y(*)
      integer, intent(in)  :: npts    ! Size of x, y arrays
      real(dp), intent(in) :: r
@@ -141,6 +145,8 @@ end interface
   nq = nquality
 
 end subroutine ps_SetInterpolator
+
+#endif
 
 !> Sets the quality parameter of the current
 !> default interpolator. Useful when we do

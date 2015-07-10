@@ -9,8 +9,10 @@ module m_psml_reader
   use m_psml_core,            only: ps_t, ps_destroy
   use m_psml_parsing_helpers, only: begin_element, end_element, pcdata_chunk
   use m_psml_parsing_helpers, only: pseudo, debug_parsing
-  use m_interp,               only: set_default_interpolator
   use external_interfaces,    only: die => psml_die
+#ifndef __NO_PROC_POINTERS__
+  use m_interp,               only: set_default_interpolator
+#endif
 
 #ifdef PSML_USE_FOX
   use FoX_sax,           only: xml_t, open_xml_file, close_xml_t, parse
@@ -55,10 +57,13 @@ module m_psml_reader
 
  ! Clean up association of module pointer
  pseudo => null()
+
+#ifndef __NO_PROC_POINTERS__
  !
  ! Set default interpolator
  !
  call set_default_interpolator()
+#endif
 
 end subroutine psml_reader
 end module m_psml_reader

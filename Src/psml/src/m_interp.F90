@@ -1,13 +1,31 @@
 module m_interp
 
+! Default quality parameter for interpolator
+integer, public, save                  :: nq = 7
+
+#ifdef __NO_PROC_POINTERS__
+
+! Use a hard-wired interpolator
+
+interface interpolator
+   module procedure dpnint1
+end interface
+
+public :: interpolator
+private :: dpnint1
+
+CONTAINS
+
+#else
+
 ! This is the interface that the interpolators
 ! must have
 interface
-   subroutine interpolate(npoint,x,y,npts,r,val,debug)
+   subroutine interpolate(nquality,x,y,npts,r,val,debug)
 
      integer, parameter :: dp = selected_real_kind(10,100)
 
-     integer, intent(in)  :: npoint  ! Quality parameter
+     integer, intent(in)  :: nquality  ! Quality parameter
      real(dp), intent(in) :: x(*), y(*)
      integer, intent(in)  :: npts    ! Size of x, y arrays
      real(dp), intent(in) :: r
@@ -24,8 +42,6 @@ procedure(interpolate),pointer, public ::  &
 ! is a f2008 feature not yet supported by some compilers...
 !                       interpolator => dpnint1
 
-integer, public, save                  :: nq = 7
-
 public :: set_interpolator, set_default_interpolator
 private :: dpnint1
 
@@ -40,11 +56,11 @@ integer, intent(in) :: nquality
 
 ! We should not need to repeat this...
 interface
-   subroutine func(npoint,x,y,npts,r,val,debug)
+   subroutine func(nquality,x,y,npts,r,val,debug)
 
      integer, parameter :: dp = selected_real_kind(10,100)
 
-     integer, intent(in)  :: npoint  ! Quality parameter
+     integer, intent(in)  :: nquality  ! Quality parameter
      real(dp), intent(in) :: x(*), y(*)
      integer, intent(in)  :: npts    ! Size of x, y arrays
      real(dp), intent(in) :: r
@@ -70,6 +86,8 @@ subroutine set_default_interpolator()
   call set_interpolator(dpnint1,7)
 
 end subroutine set_default_interpolator
+
+#endif    /* For systems without procedure pointers */
 
 !
 ! Copyright (c) 1989-2014 by D. R. Hamann, Mat-Sim Research LLC and Rutgers

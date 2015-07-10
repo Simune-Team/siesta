@@ -1,4 +1,37 @@
 ------------------------------------------------------------
+July 10, 2015  Alberto Garcia       trunk-470--ncps-69
+PSML: Support systems without proc pointers. Remove nr interpolator
+
+* To allow the code to be processed by compilers without support for
+  procedure pointers (a f2003 feature), some blocks of code have
+  been surrounded by a pre-processing symbol
+
+  __NO_PROC_POINTERS__
+
+  Defining this in the arch.make will have the effect of using the
+  hardwired default interpolator (D.R. Hamann's) and removing the
+  routine 'ps_SetInterpolator' from the library. Note that the
+  interpolation order (7 by default) can still be changed with a
+  call to 'ps_SetInterpolatorQuality'.
+
+* The optional interpolator in the example program has been removed
+  due to license issues. The example program has been adapted to this 
+  change and the one above.
+
+removed:
+  Src/psml/examples/interpolate_nr.f90
+renamed:
+  Src/psml/examples/test_psml.f90 => Src/psml/examples/test_psml.F90
+  Src/psml/src/m_interp.f90 => Src/psml/src/m_interp.F90
+  Src/psml/src/m_psml_api.f90 => Src/psml/src/m_psml_api.F90
+modified:
+  Src/psml/examples/makefile
+  Src/psml/src/m_psml_reader.F90
+  Src/psml/examples/test_psml.F90
+  Src/psml/src/m_interp.F90
+  Src/psml/src/m_psml_api.F90
+
+------------------------------------------------------------
 June 12, 2015  Alberto Garcia       trunk-470--ncps-68
 Cancel multi-shell capability. Add psml example.
 

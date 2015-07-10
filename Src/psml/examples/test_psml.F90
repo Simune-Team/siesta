@@ -37,7 +37,16 @@ type(ps_t)   :: ps
 
       real(dp), allocatable   :: raw_r(:), raw_core(:)
 
-      external :: interpolate_nr, interpolate_drh
+      ! There is a copy of dpnint1 inside the library
+      ! This external declaration is to support calls
+      ! to ps_SetInterpolator
+      external :: interpolate_drh
+
+      ! Uncomment the following when a new interpolator
+      ! is added to the source tree. The one used previously
+      ! was removed due to license issues.
+!!      external :: interpolate_other  
+
 !
 !     Process options
 !
@@ -48,8 +57,8 @@ type(ps_t)   :: ps
       Rmax = 4.0_dp   ! default maximum radius for plots
       npts = 200      ! default number of points
 
-      interp_type = "nr"
-      interp_quality = 2  ! this is npoint=2 in NR interpolator
+      interp_type = "drh"
+      interp_quality = 7  ! this is npoint=2 in OTHER interpolator
       do
          call getopts('dR:n:pi:q:',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
@@ -72,8 +81,8 @@ type(ps_t)   :: ps
              write(0,*) " -d for debug output"
              write(0,*) " -R Rmax : maximum range of output grid (def: 4 bohr)"
              write(0,*) " -n npts : number of points of output grid (def: 200)"
-             write(0,*) " -i type : interpolator type (nr, drh)"
-             write(0,*) " -q nq   : interpolator quality (npoint, npoly)"
+             write(0,*) " -i type : interpolator type (drh) ('other' not implemented)"
+             write(0,*) " -q nq   : interpolator quality (npoly for drh)"
              STOP
           end select
        enddo
@@ -97,15 +106,29 @@ call ps_destroy(ps)
 print "(a)", "Processing: " // trim(filename)
 call psml_reader(filename,ps,debug=debug)
 
-if (trim(interp_type)=="nr") then
-   call ps_SetInterpolator(interpolate_nr,interp_quality)
-   print "(a,i3)", "Using NR interpolator with npoint:",interp_quality
+#ifdef __NO_PROC_POINTERS__
+if (trim(interp_type)=="other") then
+   print "(a)", "No support for other interpolators if no proc pointers"
+   STOP 
+endif
+call ps_SetInterpolatorQuality(interp_quality)
+print "(a,i3)", "Using DRH (default) interpolator with npoly:", interp_quality
+
+#else
+
+if (trim(interp_type)=="other") then
+!   call ps_SetInterpolator(interpolate_other,interp_quality)
+!   print "(a,i3)", "Using OTHER interpolator with quality index:",interp_quality
+   print "(a)", "Please implement 'other' interpolator first"
+   STOP 
 else if (trim(interp_type)=="drh") then
    call ps_SetInterpolator(interpolate_drh,interp_quality)
    print "(a,i3)", "Using DRH interpolator with npoly:",interp_quality
 else
    STOP "unknown interpolator"
 endif
+
+#endif
 
 ! Set up our grid
 allocate(r(npts))

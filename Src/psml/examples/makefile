@@ -8,13 +8,18 @@ ARCH_MAKE?=$(ARCH_MAKE_DEFAULT)
 include $(ARCH_MAKE)
 #
 OBJFILES= test_psml.o psml_die.o m_getopts.o\
-          interpolate_nr.o interpolate_drh.o
+          interpolate_drh.o
+#
+# Uncomment the following if you implement a new interpolator
+#
+#EXTRA_OBJS=interpolate_other.o
+#
 INCFLAGS= -I../src
 LIBS= ../src/libpsml.a
 #
-test_psml: $(OBJFILES) $(LIBS)
+test_psml: $(OBJFILES) $(EXTRA_OBJS) $(LIBS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o test_psml $(INCFLAGS) \
-              $(OBJFILES) $(LIBS)
+              $(OBJFILES) $(EXTRA_OBJS) $(LIBS)
 #
 test_psml.o: m_getopts.o
 #
