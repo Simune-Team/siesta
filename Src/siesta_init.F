@@ -136,18 +136,19 @@
           write(6,'(/,a,i0,a)')
      &        '* Running on ', Nodes, ' nodes in parallel'
         else
-          write(6,'(/,a)')
-     &        '* Running in serial mode with MPI'
+          write(6,'(/,a)') '* Running in serial mode with MPI'
         endif
 #else
-        write(6,'(/,a)')
-     &        '* Running in serial mode'
+        write(6,'(/,a)') '* Running in serial mode'
 #endif
 !$OMP parallel
 !$OMP master
 !$    i = omp_get_num_threads()
 !$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
 !$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
+#ifdef _OPENMP
+!$    write(*,'(a,i0,a)') '* OpenMP version ', _OPENMP
+#endif
 !$    call omp_get_schedule(i,is)
 !$    select case ( i )
 !$    case ( OMP_SCHED_STATIC ) 

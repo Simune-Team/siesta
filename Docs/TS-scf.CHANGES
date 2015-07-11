@@ -1,4 +1,12 @@
 ----------------------------------------------------
+July 11, 2015 -- Nick Papior          trunk-474---ts-scf-467
+Streamlined threading information in _init
+
+modified:
+  Src/siesta_init.F
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 July 10, 2015 -- Nick Papior          trunk-474---ts-scf-466
 Changed OMP threading for ts_tri_scat
 

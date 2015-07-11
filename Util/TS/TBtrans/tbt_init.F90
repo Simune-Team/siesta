@@ -43,6 +43,16 @@ subroutine tbt_init()
 
   use m_sparsity_handling
 
+#ifdef _OPENMP
+  use omp_lib, only : omp_get_num_threads, omp_get_schedule
+  use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+  use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#else
+!$use omp_lib, only : omp_get_num_threads, omp_get_schedule
+!$use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+!$use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+#endif
+
   implicit none
 
   integer :: level
@@ -51,13 +61,11 @@ subroutine tbt_init()
   integer :: MPIerror
 #endif
 
-  integer :: iEl
+  integer :: i, is, iEl
   type(Sparsity) :: tmp_sp
   type(dSpData1D) :: tmp_1D
   type(dSpData2D) :: tmp_2D
   character(len=300) :: sname
-!$ integer :: omp_get_num_threads
-
 
   ! Initialise MPI and set processor number
 #ifdef MPI
@@ -89,12 +97,27 @@ subroutine tbt_init()
 #endif
 !$OMP parallel
 !$OMP master
-!$    iEl = omp_get_num_threads()
-!$    write(*,'(a,i0,a)') '* Running ', iEl,' OpenMP threads.'
-!$    write(*,'(a,i0,a)') '* Running ', Nodes*iEl,' processes.'
+!$    i = omp_get_num_threads()
+!$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
+!$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
+#ifdef _OPENMP
+!$    write(*,'(a,i0,a)') '* OpenMP version ', _OPENMP
+#endif
+!$    call omp_get_schedule(i,is)
+!$    select case ( i )
+!$    case ( OMP_SCHED_STATIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',is
+!$    case ( OMP_SCHED_DYNAMIC ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    case ( OMP_SCHED_GUIDED ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',is
+!$    case ( OMP_SCHED_AUTO ) 
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule AUTO, chunks ',is
+!$    case default
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',is
+!$    end select
 !$OMP end master
 !$OMP end parallel
-
      call timestamp('Start of run')
      call wallclock('Start of run')
   endif
