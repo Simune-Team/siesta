@@ -1,4 +1,12 @@
 ----------------------------------------------------
+July 13, 2015 -- Nick Papior          trunk-474---ts-scf-471
+Bugfix for -g bounds check of directory
+
+modified:
+  Src/m_io_s.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 July 13, 2015 -- Nick Papior          trunk-474---ts-scf-470
 Bugfix for -g bounds check
 

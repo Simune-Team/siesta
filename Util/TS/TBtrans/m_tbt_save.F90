@@ -104,8 +104,9 @@ contains
        if ( save_dir(ldir-1:ldir) == '/.' ) save_dir = save_dir(1:ldir-1)
     end if
     ldir = len_trim(save_dir)
-    if ( ldir > 0 ) &
-         if ( save_dir(ldir:ldir) /= '/' ) save_dir = trim(save_dir)//'/'
+    if ( ldir > 0 ) then
+       if ( save_dir(ldir:ldir) /= '/' ) save_dir = trim(save_dir)//'/'
+    end if
 
     if ( save_parallel ) then
        if ( .not. dir_exist(save_dir, all = .true. ) ) then

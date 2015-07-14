@@ -1502,12 +1502,24 @@ contains
     inquire(directory=dir, exist=exist)
 #else
     ldir = len_trim(dir)
-    if ( dir(ldir-1:ldir) == '/.' ) then
-       inquire(file=trim(dir)      , exist=exist)
-    else if ( dir(ldir:ldir) == '/' ) then
-       inquire(file=trim(dir)//'.' , exist=exist)
+    if ( ldir == 0 ) then
+       exist = .true.
+       return
+    end if
+    if ( ldir == 1 ) then
+       if ( dir(ldir:ldir) == '/' ) then
+          inquire(file=trim(dir)//'.' , exist=exist)
+       else
+          inquire(file=trim(dir)//'/.', exist=exist)
+       end if
     else
-       inquire(file=trim(dir)//'/.', exist=exist)
+       if ( dir(ldir-1:ldir) == '/.' ) then
+          inquire(file=trim(dir)      , exist=exist)
+       else if ( dir(ldir:ldir) == '/' ) then
+          inquire(file=trim(dir)//'.' , exist=exist)
+       else
+          inquire(file=trim(dir)//'/.', exist=exist)
+       end if
     end if
 #endif
 
