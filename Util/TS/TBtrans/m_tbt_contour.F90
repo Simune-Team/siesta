@@ -421,6 +421,7 @@ contains
 
   subroutine io_contour_tbt(slabel)
     use parallel, only : IONode
+    use m_tbt_save, only : save_dir
     character(len=*), intent(in) :: slabel
 
 ! *********************
@@ -432,7 +433,7 @@ contains
     if ( .not. IONode ) return
 
     call io_assign( iu )
-    open( iu, file=trim(slabel)//'.TBT.CC', status='unknown' )
+    open( iu, file=trim(save_dir)//trim(slabel)//'.TBT.CC', status='unknown' )
     write(iu,'(a)') '# Contour path for the transport part'
     write(iu,'(a,a12,3(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','Weight'
 
@@ -444,6 +445,8 @@ contains
        call io_contour_c(iu,cidx)
        
     end do
+
+    call io_close( iu )
 
   end subroutine io_contour_tbt
 

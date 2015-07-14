@@ -1,4 +1,21 @@
 ----------------------------------------------------
+July 13, 2015 -- Nick Papior          trunk-474---ts-scf-468
+TBT: Allowed directory output for tbtrans
+
+* Directory output can be done with 
+   tbtrans -D <directory> ! line
+   TBT.Directory.Save <directory> ! FDF
+
+modified:
+  Src/m_io_s.F90
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/tbt_reinit.F90
+
+----------------------------------------------------
 July 11, 2015 -- Nick Papior          trunk-474---ts-scf-467
 Streamlined threading information in _init
 

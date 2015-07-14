@@ -10,6 +10,10 @@ module m_tbt_save
 
   integer, save :: cmp_lvl  = 0
   logical, save :: save_parallel = .false.
+  
+  ! Optional directory
+  character(len=100), save :: save_dir = ' '
+  public :: save_dir
 
   public :: init_save_options
   public :: name_save
@@ -75,6 +79,8 @@ contains
     use parallel, only : Node
 #endif
     use fdf
+    use m_io_s, only : dir_exist
+    integer :: ldir
 
     cmp_lvl = fdf_get('CDF.Compress',0)
     cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
@@ -87,8 +93,28 @@ contains
     end if
 #endif
 
+    save_dir = fdf_get('TBT.Directory.Save',' ')
+    ! Correct with suffix
+    ldir = len_trim(save_dir)
+    if ( save_dir(ldir-1:ldir) == '/.' ) save_dir = save_dir(1:ldir-1)
+    ldir = len_trim(save_dir)
+    if ( save_dir(ldir:ldir) /= '/' ) save_dir = trim(save_dir)//'/'
+
+    if ( save_parallel ) then
+       if ( .not. dir_exist(save_dir, all = .true. ) ) then
+          call die('Directory: '//trim(save_dir)//' not visible &
+               &to all processors, or simply does not exist.')
+       end if
+    else if ( .not. dir_exist(save_dir, Bcast = .true. ) ) then
+       call die('Directory: '//trim(save_dir)//' does not exist.')
+    end if
+
 #ifdef NCDF_4
     if ( Node == 0 ) then
+
+       if ( len_trim(save_dir) > 0 ) then
+          write(*,6)'Storing saved TBT files in',trim(save_dir)
+       end if
 
        if ( cmp_lvl > 0 ) then
           write(*,5) 'Compression level of TBT.nc files',cmp_lvl
@@ -99,6 +125,7 @@ contains
     end if
 
 5   format('tbt_options: ',a,t53,'=',i5,a)
+6   format('tbt_options: ',a,t53,'=',a)
 11  format('tbt_options: ',a)
 
 #endif
@@ -576,7 +603,7 @@ contains
     ! Open the netcdf file
     if ( Node == 0 ) then
 
-       call ncdf_open(ncdf,fname, mode=NF90_NOWRITE)
+       call ncdf_open(ncdf,trim(fname), mode=NF90_NOWRITE)
 
        call ncdf_inq_dim(ncdf,'ne',len=cur_NE)
 
@@ -667,7 +694,7 @@ contains
 
     if ( Node == 0 ) then
        
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+       call ncdf_open(ncdf,trim(fname), mode=NF90_WRITE)
 
        ! Retrieve the attributes 
        call ncdf_inq_dim(ncdf,'nkpt',len=nk)
@@ -722,6 +749,7 @@ contains
   subroutine cdf_save_E(fname,nE)
     use parallel, only : Node, Nodes
     use nf_ncdf, ncdf_parallel => parallel
+
     character(len=*), intent(in) :: fname
     type(tNodeE), intent(in) :: nE
 
@@ -1421,7 +1449,7 @@ contains
     character(len=*), intent(in), optional :: end ! designator of the file
     type(Elec), intent(in), optional :: El1, El2
 
-    fname = trim(slabel)//'.TBT'
+    fname = trim(save_dir)//trim(slabel)//'.TBT'
 
     ! Now figure out the file name
     if ( nspin > 1 ) then

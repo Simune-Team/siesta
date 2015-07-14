@@ -535,6 +535,7 @@ contains
 ! real*8  weight(3,nk) : k-point weight
 ! *******************************************************************
     use files, only : slabel
+    use m_tbt_save, only : save_dir
 
     integer, intent(in) :: nk
     real(dp), intent(in) :: points(3,nk), weight(nk)
@@ -546,10 +547,10 @@ contains
 
     call io_assign( iu )
     if ( present(fend) ) then
-       open( iu, file=trim(slabel)//'.'//trim(fend), &
+       open( iu, file=trim(save_dir)//trim(slabel)//'.'//trim(fend), &
             form='formatted', status='unknown' ) 
     else
-       open( iu, file=trim(slabel)//'.TBTKP', &
+       open( iu, file=trim(save_dir)//trim(slabel)//'.TBT.KP', &
             form='formatted', status='unknown' ) 
     end if
 
@@ -581,8 +582,6 @@ contains
     ! The user has requested to read in 
     ! k-points from a specific file...
     ! We will do that for him/her.
-
-    external :: io_assign, io_close
 
     integer :: iu, ik, ix, stat
 
