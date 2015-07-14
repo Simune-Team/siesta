@@ -1,4 +1,11 @@
 ----------------------------------------------------
+July 13, 2015 -- Nick Papior          trunk-474---ts-scf-470
+Bugfix for -g bounds check
+
+modified:
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 July 13, 2015 -- Nick Papior          trunk-474---ts-scf-469
 Bugfix for overflow
 
