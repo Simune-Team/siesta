@@ -404,11 +404,11 @@ contains
        write(*,1) 'Calc. T between all electrodes',('T-all'.in.save_DATA)
        write(*,1) 'Calc. reflection',('T-reflect'.in.save_DATA)
        if ( spin_idx == 0 ) then
-          write(*,11) 'Calculate for all spin-channels'
+          write(*,11) 'Calculate all spin-channels'
        else
           write(*,11) 'Only calculate for spin-channel',spin_idx
        end if
-       write(*,10)'          >> Electrodes << '
+       write(*,11)'          >> Electrodes << '
        do i = 1 , size(Elecs)
           call print_settings(Elecs(i),'tbt_options')
        end do

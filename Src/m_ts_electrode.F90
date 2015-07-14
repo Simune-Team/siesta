@@ -1218,7 +1218,7 @@ contains
     ! Close file
     if ( IONode ) then
        call io_close(uGF)
-       write(*,'(a)') "Done creating '"//trim(El%GFfile)//"'."  
+       write(*,'(a,/)') "Done creating '"//trim(El%GFfile)//"'."  
     end if
     
     ! Clean up computational arrays

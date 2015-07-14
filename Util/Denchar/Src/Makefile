@@ -809,7 +809,8 @@ transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 ts_init.o: m_fixed.o m_io_s.o m_ts_cctype.o m_ts_charge.o m_ts_electrode.o
 ts_init.o: m_ts_electype.o m_ts_gf.o m_ts_global_vars.o m_ts_kpoints.o
 ts_init.o: m_ts_method.o m_ts_options.o parallel.o siesta_options.o
-ts_show_regions.o: m_ts_electype.o m_ts_method.o parallel.o precision.o units.o
+ts_show_regions.o: m_region.o m_ts_electype.o m_ts_method.o parallel.o
+ts_show_regions.o: precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o
 units.o: precision.o

@@ -1,4 +1,18 @@
 ----------------------------------------------------
+July 13, 2015 -- Nick Papior          trunk-474---ts-scf-472
+Prettified a few output stuff
+
+* Bugfix for intel directory check
+
+modified:
+  Src/Makefile
+  Src/m_io_s.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/ts_show_regions.f90
+
+----------------------------------------------------
 July 13, 2015 -- Nick Papior          trunk-474---ts-scf-471
 Bugfix for -g bounds check of directory
 

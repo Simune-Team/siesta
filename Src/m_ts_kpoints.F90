@@ -131,7 +131,7 @@ contains
        firm_displ = .true.
     else
 
-       if ( IONode ) then
+       if ( IONode .and. TSmode ) then
           write(*,*) 'WARNING !!!'
           write(*,*) 'TS kgrid determined first with 3D cell !!!'
           write(*,*) 'Specifying only cutoff in Electrode AND Scattering calculations might lead to problems !!'
@@ -143,14 +143,13 @@ contains
        endif
 
        ts_kdispl(1:3) = 0.0_dp  ! Might be changed later
+       firm_displ = .false.
 
        ! Find equivalent rounded unit-cell
        call minvec( cell, scmin, ctransf )
        
        expansion_factor = 1
        do j = 1,3
-          ! We cannot create the kscell for the transport direction
-          if ( j == ts_TDIR ) cycle
           factor(j,1:3) = 0
           vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
           factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
@@ -158,14 +157,14 @@ contains
        enddo
        ! Generate actual supercell skeleton
        ts_kscell = matmul(ctransf, factor)
-       
-       ! If the user does not specify the k-points
-       ! we set the transport direction to have 50
-       ! k-points
-       if ( ts_tdir > 0 ) then
-          ts_kscell(ts_tdir,ts_tdir) = 50
-       end if
 
+       if ( expansion_factor == 1 ) then
+          ts_kscell = 0
+          ts_kscell(1,1) = 1
+          ts_kscell(2,2) = 1
+          ts_kscell(3,3) = 1
+       end if
+       
     end if
 
     ! In case of TSmode we have a transiesta run.
@@ -204,9 +203,6 @@ contains
     USE m_find_kgrid, only : find_kgrid
     USE parallel, only  : IONode
     USE precision, only : dp       
-#ifdef MPI
-    USE mpi_siesta, only : MPI_Bcast, MPI_logical, MPI_Comm_World
-#endif
 
     use m_ts_electype
 
@@ -214,19 +210,10 @@ contains
     real(dp), intent(in)   :: ucell(3,3)
     type(Elec), intent(in), optional :: Elecs(:)
 
-#ifdef MPI
-    integer :: MPIerror
-#endif
-
     if (ts_scf_kgrid_first_time) then
 
        nullify(ts_kweight,ts_kpoint)
-       if (IONode) then
-          ts_spiral = fdf_defined('SpinSpiral')
-       endif
-#ifdef MPI
-       call MPI_Bcast(ts_spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+       ts_spiral = fdf_defined('SpinSpiral')
 
        call setup_ts_scf_kscell(ucell, ts_firm_displ, Elecs=Elecs)
 
@@ -269,13 +256,13 @@ contains
     ! Always write the TranSIESTA k-points
     call ts_iokp( ts_nkpnt, ts_kpoint, ts_kweight )
 
-    write(*,'(/,a,i6)')  'transiesta: ts_k-grid: Number of Transport k-points =', ts_nkpnt
-    write(*,'(a)') 'transiesta: ts_k-grid: Supercell and displacements'
-    write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+    write(*,'(/,a,i6)')  'transiesta: k-grid: Number of Green function k-points =', ts_nkpnt
+    write(*,'(a)') 'transiesta: k-grid: Supercell and displacements'
+    write(*,'(a,3i4,3x,f8.3)') 'transiesta: k-grid: ',        &
          (ts_kscell(i,1),i=1,3), ts_kdispl(1)
-    write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+    write(*,'(a,3i4,3x,f8.3)') 'transiesta: k-grid: ',        &
          (ts_kscell(i,2),i=1,3), ts_kdispl(2)
-    write(*,'(a,3i4,3x,f8.3)') 'transiesta: ts_k-grid: ',        &
+    write(*,'(a,3i4,3x,f8.3)') 'transiesta: k-grid: ',        &
          (ts_kscell(i,3),i=1,3), ts_kdispl(3)
     if (cml_p) then
        call cmlStartPropertyList(xf=mainXML, title="Transiesta k-points", &

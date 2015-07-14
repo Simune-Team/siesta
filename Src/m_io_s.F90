@@ -1497,15 +1497,21 @@ contains
     integer :: MPIerror, Com, Node, Nodes
 #endif
 
-    ! Now we have all required information
-#ifdef __INTEL_COMPILER
-    inquire(directory=dir, exist=exist)
-#else
+    ! A directory of length 0 is the "top" directory,
+    ! of course it exists
     ldir = len_trim(dir)
     if ( ldir == 0 ) then
        exist = .true.
        return
+    else if ( ldir == 1 .and. dir(1:1) == '.' ) then
+       exist = .true.
+       return
     end if
+    
+    ! Now we have all required information
+#ifdef __INTEL_COMPILER
+    inquire(directory=dir, exist=exist)
+#else
     if ( ldir == 1 ) then
        if ( dir(ldir:ldir) == '/' ) then
           inquire(file=trim(dir)//'.' , exist=exist)

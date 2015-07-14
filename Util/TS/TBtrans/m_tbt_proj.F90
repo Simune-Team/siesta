@@ -1340,8 +1340,10 @@ contains
        mols(:)%Gamma = .true.
     end if
 
+    if ( IONode ) write(*,*) ! newline
+
     if ( IONode .and. .not. all(mols(:)%Gamma) ) then
-       write(*,'(/a)')'tbtrans: *********'
+       write(*,'(a)')'tbtrans: *********'
        write(*,'(a)') 'tbtrans: k-resolved projections only work if dispersion'
        write(*,'(a)') 'tbtrans: does not create band-crossings.'
        write(*,'(a)') 'tbtrans: IT IS YOUR RESPONSIBILITY TO ENSURE THIS!'
@@ -1478,7 +1480,7 @@ contains
     ! The projection file does not exist.
     ! We need to create it.
     if ( Node == 0 ) then
-       write(*,'(/,a)') 'tbtrans: Initializing projection molecules...'
+       write(*,'(2a)')'tbtrans: Initializing projection data file: ',trim(fname)
     end if
 
     call timer('proj_init',1)

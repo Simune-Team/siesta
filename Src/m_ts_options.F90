@@ -934,7 +934,7 @@ contains
           write(*,7)'Max change in Fermi-level allowed', &
                TS_RHOCORR_FERMI_MAX / eV,'eV'
        end if
-       write(*,10)'          >> Electrodes << '
+       write(*,11)'          >> Electrodes << '
        do i = 1 , size(Elecs)
           call print_settings(Elecs(i),'ts_options', &
                plane = elec_basal_plane , &

@@ -116,12 +116,14 @@ contains
     else if ( .not. dir_exist(save_dir, Bcast = .true. ) ) then
        call die('Directory: '//trim(save_dir)//' does not exist.')
     end if
-
+    
 #ifdef NCDF_4
     if ( Node == 0 ) then
 
        if ( len_trim(save_dir) > 0 ) then
-          write(*,6)'Storing saved TBT files in',trim(save_dir)
+          write(*,6)'Data files stored in folder',trim(save_dir)
+       else
+          write(*,11)'Data files stored in current folder'
        end if
 
        if ( cmp_lvl > 0 ) then
@@ -336,7 +338,7 @@ contains
     else
        
        if ( Node == 0 ) then
-          write(*,'(2a)')'tbtrans: Initializing save file: ',trim(fname)
+          write(*,'(2a)')'tbtrans: Initializing data file: ',trim(fname)
        end if
 
     end if
