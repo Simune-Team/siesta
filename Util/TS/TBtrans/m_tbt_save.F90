@@ -125,7 +125,7 @@ contains
     end if
 
 5   format('tbt_options: ',a,t53,'=',i5,a)
-6   format('tbt_options: ',a,t53,'=',a)
+6   format('tbt_options: ',a,t53,'=',tr1,a)
 11  format('tbt_options: ',a)
 
 #endif

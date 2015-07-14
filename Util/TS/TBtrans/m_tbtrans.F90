@@ -381,7 +381,7 @@ contains
       do iEl = 1 , N_Elec
 
          ! Initialize k-points
-         Elecs(iEl)%bkpt_cur(:) = huge(1._dp)
+         Elecs(iEl)%bkpt_cur(:) = 2352345._dp
 
          if ( Elecs(iEl)%out_of_core ) then
             

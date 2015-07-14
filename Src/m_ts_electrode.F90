@@ -1545,9 +1545,11 @@ contains
     where ( El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
 
     ! whether we already have the H and S set correctly, 
-    ! update accordingly
-    ! it will save a bit of time, but not much
-    same_k = sum(abs(bkpt - El%bkpt_cur)) < 1.e-8_dp
+    ! update accordingly, it will save a bit of time, but not much
+    same_k = .true.
+    do i = 1 , 3
+       same_k = same_k .and. abs( bkpt(i) - El%bkpt_cur(i) ) < 1.e-8_dp
+    end do
     if ( .not. same_k ) El%bkpt_cur = bkpt
     ! In case we do not need the hamiltonian
     ! This will be the case for non-bias points and when using bulk electrode

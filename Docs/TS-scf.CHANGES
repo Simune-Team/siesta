@@ -1,4 +1,19 @@
 ----------------------------------------------------
+July 13, 2015 -- Nick Papior          trunk-474---ts-scf-469
+Bugfix for overflow
+
+* Thanks to Brandimarte
+
+  Rarely an overflow would happen, this has been
+  fixed.
+
+modified:
+  Src/m_transiesta.F90
+  Src/m_ts_electrode.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 July 13, 2015 -- Nick Papior          trunk-474---ts-scf-468
 TBT: Allowed directory output for tbtrans
 
