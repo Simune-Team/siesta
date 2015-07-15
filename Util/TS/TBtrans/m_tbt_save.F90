@@ -75,11 +75,15 @@ contains
     
 
   subroutine init_save_options()
+    use m_verbosity, only: verbosity
 #ifdef NCDF_4
-    use parallel, only : Node
+    use parallel, only : Node, IONode
 #endif
     use fdf
     use m_io_s, only : dir_exist
+#ifdef MPI
+    use mpi_siesta, only : MPI_Barrier, MPI_Comm_World
+#endif
     integer :: ldir
 
     cmp_lvl = fdf_get('CDF.Compress',0)
@@ -106,6 +110,20 @@ contains
     ldir = len_trim(save_dir)
     if ( ldir > 0 ) then
        if ( save_dir(ldir:ldir) /= '/' ) save_dir = trim(save_dir)//'/'
+    end if
+
+    ! First try and create the directory
+    if ( .not. dir_exist(save_dir, Bcast = .true. ) ) then
+       if ( IONode ) then
+          if ( verbosity > 5 ) &
+               write(*,'(2a)') '*** Trying to create non-existing directory: ', &
+               trim(save_dir)
+          ! TODO OS call
+          call system('mkdir -p '//trim(save_dir))
+       end if
+#ifdef MPI
+       call MPI_Barrier(MPI_Comm_World,ldir)
+#endif
     end if
 
     if ( save_parallel ) then
