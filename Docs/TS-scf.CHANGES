@@ -1,4 +1,11 @@
 ----------------------------------------------------
+July 14, 2015 -- Nick Papior          trunk-474---ts-scf-473
+Bug for intel compilation
+
+modified:
+  Src/m_io_s.F90
+
+----------------------------------------------------
 July 13, 2015 -- Nick Papior          trunk-474---ts-scf-472
 Prettified a few output stuff
 

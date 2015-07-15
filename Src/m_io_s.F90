@@ -1489,9 +1489,7 @@ contains
     integer, intent(in), optional :: Comm ! the communicator (default World)
     logical, intent(in), optional :: all ! whether all Nodes sees the file
     logical :: exist
-#ifndef __INTEL_COMPILER
     integer :: ldir
-#endif
 #ifdef MPI
     logical, allocatable :: nexist(:)
     integer :: MPIerror, Com, Node, Nodes
