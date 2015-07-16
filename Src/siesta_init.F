@@ -28,7 +28,6 @@
       use metaforce,          only: initmeta
       use m_mpi_utils,        only: broadcast
       use alloc,              only: re_alloc, alloc_report
-      use phonon,             only: phonon_num_disps, phonon_setup
       use parallelsubs,       only: getnodeorbs
       use m_iostruct,         only: write_struct, read_struct
       use zmatrix,            only: lUseZmatrix
@@ -453,10 +452,8 @@
         inicoor = 0
         fincoor = (ia2-ia1+1)*3*2
       else if (idyn .eq. 7) then
-        call phonon_setup()
-        inicoor = 1
-        fincoor = phonon_num_disps
-      else if (idyn .eq. 8 .or. idyn .eq. 10) then
+        call die( "'PHONON' support is deprecated" )
+      else if (idyn .eq. 8) then
         inicoor = 0
         fincoor = huge(1)
 #ifdef NCDF_4

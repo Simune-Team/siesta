@@ -5,10 +5,14 @@
 
       subroutine final_H_f_stress( istep, iscf , save_HS )
 
-      USE siesta_options
-      use sparse_matrices
+      use siesta_options, only: write_cdf
+      use siesta_options, only: g2cut, savehs, temp
+      use siesta_options, only: recompute_H_after_scf
+      use sparse_matrices, only: numh, listh, listhptr
+      use sparse_matrices, only: S, Dscf, Escf, maxnh, xijo
+      use sparse_matrices, only: H  
+
       use siesta_geom
-      use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
      &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
      &                    rmaxo, no_l, iza
@@ -43,6 +47,8 @@
 #endif
 #endif
 #ifdef TRANSIESTA
+      use siesta_options, only : idyn, ia1, write_tshs_history
+      use sparse_matrices, only: H_2D, S_1D
       use files,        only : slabel, label_length
       use m_ts_global_vars, only : TSrun
       use m_ts_options, only : TS_HS_save
@@ -60,6 +66,8 @@
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
       logical :: lsave_HS
+      ! To avoid overwriting the current Hamiltonian
+      real(dp), pointer     :: H_tmp(:,:) => null()  
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
@@ -84,8 +92,10 @@
 #endif  /* TRANSIESTA */
 
 !     Initialize Hamiltonian ........................................
+      call re_alloc(H_tmp, 1,maxnh, 1,nspin,
+     $              'H_tmp','final_H_f_stress')
 !$OMP parallel workshare default(shared)
-      H = 0.0_dp
+      H_tmp = 0.0_dp
 !$OMP end parallel workshare
 
 !     Initialize forces and stress ...................
@@ -110,7 +120,7 @@
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              min(nspin,2), Dscf, Ekin, fal, stressl, H,
+     &              min(nspin,2), Dscf, Ekin, fal, stressl, H_tmp,
      &              matrix_elements_only=.false. ) 
 #ifdef MPI
 ! Global reduction of energy terms
@@ -123,7 +133,7 @@
       call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
-     &             min(nspin,2), Dscf, Enl, fal, stressl, H,
+     &             min(nspin,2), Dscf, Enl, fal, stressl, H_tmp,
      &             matrix_elements_only=.false. ) 
 
 #ifdef MPI
@@ -148,12 +158,13 @@
       call grdsam( nspin, no_s, iaorb, iphorb, 
      &             no_l, no_u, na_u, na_s, isa, xa, indxua,
      &             ucell, ntm, ifa, istr, maxnh,
-     &             maxnh, numh, listhptr, listh, Dscf, Datm, H,
+     &             maxnh, numh, listhptr, listh, Dscf, Datm, H_tmp,
      &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
 !     Orthonormalization forces ...........................................
-!     **Note that this will re-calculate S also
+!     **Note that this will re-calculate S also, but should get 
+!     the same result
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -185,7 +196,20 @@
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
 !$OMP end parallel workshare
 #endif
+
+      ! If backward compatibility is requested, recover
+      ! the old behavior with respect to H
+
+      if (recompute_H_after_scf) then
+         if (ionode) then
+            write(6,"(a)") ":!: Updating H after scf cycle" //
+     $                     " as requested by compat. option"
+         endif
+         H = H_tmp
+      endif
+
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
+      call de_alloc( H_tmp, 'H_tmp', 'final_H_f_stress' )
 
       ! Determine whether anything should be saved
       ! If not, return immediately
@@ -195,6 +219,11 @@
 
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
+!
+! Note that we save the Hamiltonian coming out of the scf cycle,
+! not the one computed (from DM_out) in this routine.
+! This call could be moved to a more appropriate place
+!
       if (savehs) then
          call write_hsx( gamma, no_u, no_s, nspin, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, Qtot,

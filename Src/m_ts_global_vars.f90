@@ -29,11 +29,10 @@ contains
        TSrun  = .true.
        
        if ( IONode ) then
-          write(*,'(/a,/)')'transiesta: Starting immediately'
-          write(*,'(a)')   '                     ************************'
-          write(*,'(a)')   '                     *   TRANSIESTA BEGIN   *'
-          write(*,'(a,/)') '                     ************************'
+          write(*,'(/a)')'transiesta: Starting immediately'
        end if
+       
+       call ts_print_transiesta()
 
     else
 
@@ -49,5 +48,14 @@ contains
     end if
     
   end subroutine ts_method_init
+
+  subroutine ts_print_transiesta()
+    use parallel, only : IONode
+    if ( IONode ) then
+       write(*,'(/,t22,a)') repeat('*',27)
+       write(*,  '(t22,a)') '*  WELCOME TO TRANSIESTA  *'
+       write(*,'(t22,a,/)') repeat('*',27)
+    end if
+  end subroutine ts_print_transiesta
 
 end module m_ts_global_vars

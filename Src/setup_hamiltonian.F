@@ -64,15 +64,16 @@
 
 !$OMP parallel default(shared), private(ispin,io)
 
-! Save present H matrix
+      if ( MixH ) then
+!        Save present H matrix
 !$OMP do collapse(2)
-      do ispin = 1,nspin
-         do io = 1,maxnh
-            Hold(io,ispin) = H(io,ispin)
+         do ispin = 1,nspin
+            do io = 1,maxnh
+               Hold(io,ispin) = H(io,ispin)
+            enddo
          enddo
-      enddo
 !$OMP end do
-
+      end if
 
       ! Initialize Hamiltonian with the non-SCF part...................
 

@@ -241,11 +241,11 @@ C Initialization to 1 for numerical reasons, later substracted
 
         endif     ! varcel
 
-
         frstme = .false.
       endif                 ! First time
 
 C Allocate local memory
+      nullify(gfa,gxa,ftoln,dxmaxn,rnew)
       call re_alloc( gfa, 1, ndeg, 'gfa', 'zm_broyden_optimizer' )
       call re_alloc( gxa, 1, ndeg, 'gxa', 'zm_broyden_optimizer' )
       call re_alloc( ftoln, 1, ndeg, 'ftoln', 'zm_broyden_optimizer' )
@@ -384,7 +384,10 @@ C Set number of degrees of freedom & variables
 
       endif
 
-      if (relaxd) RETURN   ! Will leave work arrays allocated
+      if (relaxd) then
+         call local_dealloc()
+         RETURN
+      end if
 
       if (.not. broyden_is_setup(br)) then
          call broyden_reset(br,ndeg,maxit,cycle_on_maxit,
@@ -470,12 +473,18 @@ C Return coordinates to correct arrays
 !      print *, "zm_broyden: cell out : ", cell
 !      print *, "zm_broyden: strain out : ", strain
 
+      call local_dealloc()
+
+      contains
+
+      subroutine local_dealloc()
 C Deallocate local memory
       call de_alloc( rnew, 'rnew', 'zm_broyden_optimizer' )
       call de_alloc( dxmaxn, 'dxmaxn', 'zm_broyden_optimizer' )
       call de_alloc( ftoln, 'ftoln', 'zm_broyden_optimizer' )
       call de_alloc( gxa, 'gxa', 'zm_broyden_optimizer' )
       call de_alloc( gfa, 'gfa', 'zm_broyden_optimizer' )
+      end subroutine
 
       end subroutine zm_broyden_optimizer
 

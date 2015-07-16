@@ -8,10 +8,17 @@ MODULE siesta_options
   implicit none
   PUBLIC
 
+  ! Compatibility options
+  ! -- pre 4.0 DM and H flow logic
+  logical :: compat_pre_v4_DM_H      ! General switch
+  logical :: mix_after_convergence ! Mix DM or H even after convergence
+  logical :: recompute_H_after_scf ! Update H while computing forces
+
+  ! -- pre 4.0 coordinate output logic -- to be implemented
+  logical :: compat_pre_v4_dynamics      ! General switch
+
   logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
-  logical :: mix_after_convergence ! Mix DM or H even after convergence
-  logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
   logical :: h_setup_only  ! H Setup only
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
@@ -120,6 +127,7 @@ MODULE siesta_options
   logical :: voropop         ! Perform Voronoi population analysis?
   logical :: partial_charges_at_every_geometry
   logical :: partial_charges_at_every_scf_step
+  logical :: monitor_forces_in_scf ! Compute forces and stresses at every step
 
   logical :: minim_calc_eigenvalues ! Use diagonalization at the end of each MD step to find eigenvalues for OMM
 
@@ -290,7 +298,7 @@ MODULE siesta_options
 !                             4 = Nose thermostat + Parrinello-Rahman MD
 !                             5 = Annealing MD
 !                             6 = Force constants
-!                             7 = Forces for PHONON program
+!                             7 = Deprecated (Forces for PHONON program)
 !                             8 = Force evaluation
 #ifdef NCDF_4
 !                             9 = Explicit evaluation
@@ -361,8 +369,10 @@ MODULE siesta_options
     use units,     only : eV
     use diagmemory,   only: memoryfactor
     use siesta_cml
+    
     use m_charge_add, only : read_charge_add
     use m_hartree_add, only : read_hartree_add
+    use m_target_stress, only: set_target_stress
 
     implicit none
     !----------------------------------------------------------- Input Variables
@@ -547,15 +557,26 @@ MODULE siesta_options
           endif
        endif
     endif
-    
-    if (ionode) then
-      write(6,1) 'redata: Mix Hamiltonian instead of DM', mixH
+
+    if (mixH) then
+       if (ionode) then
+          write(6,1) 'redata: Mix Hamiltonian instead of DM    = ', mixH
+       endif
     endif
 
-    mix_after_convergence = fdf_get('SCF.MixAfterConvergence',.true.)
+    ! Options for pre-4.0 compatibility
+    compat_pre_v4_DM_H  = fdf_get('Compat-pre-v4-DM-H',.false.)
+    mix_after_convergence = fdf_get('SCF.MixAfterConvergence',compat_pre_v4_DM_H)
+    recompute_H_after_scf = fdf_get('SCF.Recompute-H-After-Scf',compat_pre_v4_DM_H)
 
     if (ionode) then
-      write(6,1) 'redata: Mix after SCF convergence', mix_after_convergence
+       if (compat_pre_v4_DM_H) then
+          write(6,"(a)") ':!:Next two options activated by pre-4.0 compat. switch'
+       endif
+       write(6,1) 'redata: Mix DM or H after convergence    = ',  &
+                  mix_after_convergence
+       write(6,1) 'redata: Recompute H after scf cycle      = ',  &
+                  recompute_H_after_scf
     endif
 
 
@@ -1114,7 +1135,13 @@ MODULE siesta_options
 
     ! NB reset below ...
     ! Type of dynamics 
-    dyntyp = fdf_get('MD.TypeOfRun','verlet')
+
+    compat_pre_v4_dynamics = fdf_get('compat-pre-v4-dynamics', .false. )
+    if (compat_pre_v4_dynamics) then
+       dyntyp = fdf_get('MD.TypeOfRun','verlet')
+    else
+       dyntyp = fdf_get('MD.TypeOfRun','cg')
+    endif
 
     if (leqi(dyntyp,'cg')) then
       idyn = 0
@@ -1146,7 +1173,7 @@ MODULE siesta_options
     else if (leqi(dyntyp,'fc')) then
       idyn = 6
     else if (leqi(dyntyp,'phonon')) then
-      idyn = 7
+      call die('Dynamics type "PHONON" is no longer supported')
     else if (leqi(dyntyp,'forces').or.leqi(dyntyp,'master')) then
       idyn = 8
 #ifdef NCDF_4
@@ -1177,6 +1204,7 @@ MODULE siesta_options
     if (ionode) then
       select case (idyn)
       case(0)
+       if (nmove > 0) then
         if (broyden_optim) then
           write(6,3) 'redata: Dynamics option','Broyden coord. optimization'
         elseif (fire_optim) then
@@ -1234,7 +1262,15 @@ MODULE siesta_options
                                   units='siestaUnits:Ry_Bohr__3' )
           endif
         endif
-
+       else
+          write(6,2) 'redata: Dynamics option                  =     '//&
+                     'Single-point calculation'
+          if (cml_p) then
+             call cmlAddParameter( xf   = mainXML,        &
+                                  name = 'MD.TypeOfRun', &
+                                  value= 'Single-Point' )
+          endif
+       endif
       case(1)
         write(6,3) 'redata: Dynamics option','Verlet MD run'
         if (cml_p) then
@@ -1282,12 +1318,7 @@ MODULE siesta_options
         endif
 
       case(7)
-        write(6,3) 'redata: Dynamics option','PHONON forces calculation'
-        if (cml_p) then
-          call cmlAddParameter( xf    = mainXML,        &
-                                name  = 'MD.TypeOfRun', &
-                                value = 'Phonon' )
-        endif
+         ! deprecated
 
       case(8)
         write(6,3) 'redata: Dynamics option','Force evaluation'
@@ -1397,6 +1428,9 @@ MODULE siesta_options
     ! Target Temperature and Pressure
     tt = fdf_get('MD.TargetTemperature',0.0_dp,'K')
     tp = fdf_get('MD.TargetPressure',0.0_dp,'Ry/Bohr**3')
+    !
+    ! Used for now for the call of the PR md routine if quenching
+    if (idyn == 3 .AND. iquench > 0) call set_target_stress()
 
 
     ! Mass of Nose variable
@@ -1540,7 +1574,7 @@ MODULE siesta_options
     ! Check that last atom doesn't exceed total number
     if (idyn.eq.6.and.ia2.gt.na) then
       call die( 'redata: ERROR:'//&
-                'Last atom for phonons is greater than number of atoms.')
+                'Last atom index for FC calculation is > number of atoms.')
     endif
 
     if (idyn==6) then
@@ -1781,6 +1815,8 @@ MODULE siesta_options
     character(len=*), intent(in) :: str
 
     !--------------------------------------------------------------------- BEGIN
+    ! Notify the fdf-.log
+    call fdf_obsolete(str)
     if (ionode) then
       if (fdf_defined(trim(str))) then
         write(6,'(a)') '**Warning: FDF symbol '//trim(str)//&

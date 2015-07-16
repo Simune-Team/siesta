@@ -55,7 +55,7 @@
       use siesta_geom,           only: nsc, na_u, xa, ucell, isc_off
       use atomlist,              only: no_u, lasto, Qtot
       use sparse_matrices,       only: sparse_pattern, block_dist
-      use sparse_matrices,       only: Escf, S, maxnh, xijo
+      use sparse_matrices,       only: Escf, S, maxnh
       use m_spin,                only: nspin
       use m_ts_charge, only : ts_get_charges
       use m_ts_charge,           only: TS_RHOCORR_METHOD
@@ -112,6 +112,13 @@
 
 !     Start of SCF loop
       iscf = 0
+
+      ! This call computes the non-scf part of H and initializes
+      ! the real-space grid structures.
+      ! It might be better to split the two, putting the grid initialization
+      ! into state_init and moving the calculation
+      ! of H_0 to the body of the loop, done if first=.true.
+      ! This would suit "analysis" runs in which nscf = 0
       call setup_H0()
 
 #ifdef NCDF_4
@@ -181,8 +188,6 @@
            call compute_max_diff(Hold,H,dHmax)
         else 
            call setup_hamiltonian( iscf )
-           ! Maybe make sure that Hold = 0 at the beginning?
-           if (.not. first) call compute_max_diff(Hold,H,dHmax) 
            call compute_dm( iscf )
            call compute_max_diff(Dold,Dscf,dDmax)
         end if 
@@ -208,8 +213,8 @@
            SCFconverged = .false.
            if ( IONode ) then
               write(6,"(a,i0)")
-     $         "SCF cycle continued for minimum number of iterations: ",
-     $            min_nscf
+     $         ":!: SCF cycle continued for minimum number"//
+     $             " of iterations: ", min_nscf
            end if
         end if
 
@@ -248,13 +253,17 @@
            ! Mix for next step
            if ( mix_charge ) then
               call mix_rhog(iscf)
-           else
+           else if ( MixH ) then
+              ! Save the DM (which is actually "out") for possible restarts
+              ! In future we might save H
+              call save_density_matrix("out_but_not_final")
               call mixer( iscf )
-           end if
-           ! Save for possible restarts
-           ! Could save H in the future
-           call save_density_matrix("mixed")
-        end if
+           else 
+              call mixer( iscf )
+              ! Save for possible restarts
+              call save_density_matrix("mixed")
+           endif
+        endif
 
         call timer( 'IterSCF', 2 )
 
@@ -277,13 +286,39 @@
 
         if (cml_p) call cmlEndStep(mainXML)
 
-        if ( last_step ) EXIT
+        if ( last_step ) exit
 
-      END DO
+      end do
 
-      if (SCFMustConverge.and.(.not.SCFconverged)) then
-        call die('SCF did not converge in maximum number of steps.')
-      endif
+      if ( SCFconverged ) then
+
+         ! Only if the scf cycle converged before exit it
+         ! is guaranteed that the DM is "pure out" and that
+         ! we can recover the right H if mixing H.
+
+	 ! There are still more cases that could be handled 
+	 ! more transparently with logical state variables
+         ! such as h_is_hdmgen, dm_is_dmout, etc...
+         ! The PEXSI branch contains more logic.
+
+         if (.not. mix_after_convergence) then
+            ! Save final DM_out for further analysis offline
+            call save_density_matrix("dmout")
+            if ( MixH ) then
+               ! Keep the H actually used to generate the last DM
+               H = Hold
+            endif
+         endif
+
+      else
+
+         if (ionode.and..not.harrisfun)
+     &        write(6,"(a)") ':!: SCF did not converge'//
+     $                          ' in maximum number of steps.'
+         if (SCFMustConverge) call die('SCF did not converge' //
+     $                          ' in maximum number of steps.')
+         
+      end if
 
 #ifdef TRANSIESTA
       if ( TSmode.and.TSinit.and.(.not. SCFConverged) ) then
@@ -302,11 +337,19 @@
          end if
       end if
 
+
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
 
-      call post_scf_work( istep , iscf )
+!     Note that this call will no longer overwrite H while computing the
+!     final energies, forces and stresses...
+!
+      call post_scf_work( istep, iscf )
 
+!     ... so H at this point is the latest generator of the DM, except
+!     if mixing H beyond self-consistency or terminating the scf loop
+!     without convergence while mixing H
+      
       call state_analysis( istep )
 
       ! If siesta is running as a subroutine, send forces to master program
@@ -373,12 +416,13 @@
       use siesta_options,        only: wmix, dDtol, dHtol
 
       use sparse_matrices, only : DM_2D, EDM_2D
-      use atomlist, only: no_u, lasto
+      use atomlist, only: lasto
       use siesta_geom, only: nsc, isc_off, na_u, xa, ucell
       use m_pulay,               only: init_pulay_arrays
       use m_energies, only : Ef
 
       use m_ts_global_vars,      only: TSinit, TSrun
+      use m_ts_global_vars,      only: ts_print_transiesta
       use m_ts_method
       use m_ts_options,          only: N_Elec, Elecs
       use m_ts_options,          only: DM_bulk
@@ -419,14 +463,7 @@
       ! the Broyden mixing and the Fire-mixing does
       ! not need to initialize, that is done implicitly
 
-      if ( IONode ) then
-         write(6,'(/a)')
-     &'                          ************************'
-         write(6,'(a)')
-     &'                          *   TRANSIESTA BEGIN   *'
-         write(6,'(a)')
-     &'                          ************************'
-      end if
+      call ts_print_transiesta()
 
       ! In case of transiesta and DM_bulk.
       ! In case we ask for initialization of the DM in bulk

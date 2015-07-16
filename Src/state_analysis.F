@@ -6,26 +6,18 @@
 
       CONTAINS
 
-      subroutine state_analysis( istep  )
+      subroutine state_analysis( istep )
       use siesta_cml
       use m_born_charge, only : born_charge
       use parallel,      only : IOnode
       use m_wallclock,   only : wallclock
-      use zmatrix,       only : lUseZmatrix, iofaZmat, write_Zmatrix,
-     &                          CartesianForce_to_ZmatForce,
-     &                          write_canonical_ucell_and_Zmatrix
-      use m_iostruct,    only : write_struct
-      use atomlist,      only : iaorb, iphorb, iza, amass, no_u, lasto
+      use zmatrix,       only : lUseZmatrix, iofaZmat,
+     &                          CartesianForce_to_ZmatForce
+      use atomlist,      only : iaorb, iphorb, amass, no_u, lasto
       use m_spin,        only : nspin
       use m_fixed,       only : fixed
       use sparse_matrices
       use siesta_geom
-
-      use class_Geometry,  only: newGeometry, Geometry, delete
-      use class_Pair_Geometry_dSpData2D, only: Pair_Geometry_dSpData2D
-      use class_Pair_Geometry_dSpData2D, only: new, delete
-      use class_Fstack_Pair_Geometry_dSpData2D, only: new, max_size
-      use class_Fstack_Pair_Geometry_dSpData2D, only: push
 
       USE siesta_options
       use m_stress
@@ -48,39 +40,14 @@
       external :: eggbox, mulliken
       real(dp), external :: volcel
 
-      character(len=256) :: msg
-      type(Pair_Geometry_dSpData2D)  :: pair
-      type(Geometry)                :: geom
-
 !------------------------------------------------------------------------- BEGIN
-      call timer( 'STanaly', 1 )
+      call timer( 'state_analysis', 1 )
 #ifdef DEBUG
       call write_debug( '  PRE state_analysis' )
 #endif
 
-      if (max_size(DM_history) > 0) then
-
-        ! Save (geom,DM) pair to history stack
-         write(msg,"(a,i0)") "step: ",istep
-         call newGeometry(geom,na_u,ucell,xa,isa,
-     $                 name="Geometry for " // msg)
-         call new(pair,geom,DM_2D,name=" Pair geom,DM for " // msg)
-         call push(DM_history,pair)
-         call delete(pair)
-         call delete(geom)
-      endif
-
-!     Save structural information in crystallographic format,
-!     and canonical Zmatrix (if applicable) before moving the atoms
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='SCF Finalization')   
-      endif
-
-      if (IOnode) then
-        call write_struct( ucell, na_u, isa, iza, xa )
-        if (lUseZmatrix .and. (idyn.eq.0)) then
-          call write_canonical_ucell_and_Zmatrix()
-        endif
       endif
 
 !     Write final Kohn-Sham Energy 
@@ -94,7 +61,7 @@
      .       fmt='r6')
       endif
 
-!     Substract egg box effect form energy
+!     Substract egg box effect from energy
       if (eggbox_block) then
         call eggbox( 'energy', ucell, na_u, isa, ntm, xa, fa, Etot,
      &               eggbox_block )
@@ -184,10 +151,8 @@
       if (cml_p) then
          call cmlEndModule(mainXML)         
       endif 
-      call timer( 'STanaly', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS state_analysis' )
-#endif
+      call timer( 'state_analysis', 2 )
+
 !--------------------------------------------------------------------------- END
       END subroutine state_analysis
 

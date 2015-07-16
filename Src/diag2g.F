@@ -168,7 +168,7 @@ C of referencing has been changed in several places to reflect this.
       endif
       
 !     Check if we are done
-      if (.not.getD) return
+      if (.not.getD) goto 1001
       
 !     Find new Fermi energy and occupation weights 
       call fermid(1, 1, 1, (/0.5_dp/), MColl*maxo, MColl*neigwanted, 
@@ -263,6 +263,8 @@ C of referencing has been changed in several places to reflect this.
           if (BNode .gt. Nodes-1) BNode = 0
         endif
       enddo
+
+ 1001 continue
       
 !     deallocate the arrays
       call memory('D','Z',MColl*nuotot*MColl*nuo,'diag2g')

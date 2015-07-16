@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large July 7, 2015 }
+{\Large July 16, 2015 }
 
 \vspace{1.5cm}
 
@@ -3177,6 +3177,33 @@ for restarts of selfconsistency runs.
   energy and of the forces when mixing the DM.
 
 {\it Default value:} {\tt .false.}
+{\bf NOTE}: This breaks backwards compatibility with previous
+(pre-4.0rc) versions of {\sc Siesta}. To recover the old behavior,
+turn this option on, or use the compatibility switch {\bf
+  compat-pre-v4-dm-h} (see below).
+
+\item[{\bf SCF.RecomputeHAfterScf}] ({\it
+  logical}):\index{SCF!Recomputing H} \index{SCF.RecomputeHAfterScf@{\bf
+    SCF.RecomputeHAfterScf}} Logical
+  variable to indicate whether the Hamiltonian is updated after the
+  scf cycle, while computing the final energy, forces, and stresses.
+  Not recomputing H makes further analysis tasks (such as the
+  computation of band structures) more consistent, as they will be
+  able to use the same H used to generate the last density matrix.
+
+{\it Default value:} {\tt .false.}
+{\bf NOTE}: This breaks backwards compatibility with previous
+(pre-4.0rc) versions of {\sc Siesta}. To recover the old behavior,
+turn this option on, or use the compatibility switch {\bf
+  compat-pre-v4-dm-h} (see below).
+
+\item[{\bf compat-pre-v4-dm-h}] ({\it logical}):
+\index{Backward compatibility}
+\index{SCF!compat-pre4-dm-h} \index{compat-pre4-dm-h@{\bf
+    compat-pre4-dm-h}} If this logical
+  variable is turned on, the above two options regarding mixing after
+  convergence and recomputation of H after the scf cycle will be
+  turned on.
 
 \item[{\bf DM.MixingWeight}] ({\it real}):
 
@@ -6769,11 +6796,6 @@ temperature and/or pressure (see variable MD.AnnealOption below)
 \item {\tt FC} Compute force constants matrix\index{Force Constants
   Matrix} for phonon calculations.
 
-\item {\tt Phonon} Compute forces for a specified set of atomic
-  displacements chosen with the help of the {\sc Phonon}
-  program. \footnote{{\sc Phonon} is \copyright\ copyright by
-    Krzysztof Parlinski} \index{Phonon program} \index{Force Constants
-    Matrix!using phonon@using {\sc Phonon}}.
 
 \item {\tt Forces} (Receive coordinates from, and return forces to, an
   external driver program, using MPI, Unix pipes, or Inet sockets for 
@@ -6788,12 +6810,11 @@ See directory Util/Scripting \index{Scripting} for other driving options.
 
 \end{itemize}
 
-{\it Default value:} {\tt Verlet} ({\tt CG} for one-atom systems)
+{\it Default value:} {\tt CG} (except if {\bf compat-pre-v4-dynamics}
+is set. See the notes below.
 
 Note that some options specified in later variables
 (like quenching) modify the behavior of these MD options.
-If the system contains just one atom, {\tt CG} is the only
-available dynamics option.
 
 Appart from being able to act as a force subroutine for a driver program that
 uses module fsiesta, {\sc Siesta} is also prepared to communicate with the 
@@ -6809,6 +6830,29 @@ lines must be present in the .fdf data file:
      Master.port       10001      # 10000+siesta_process_order
      Master.socketType inet       # ( inet | unix )
 \end{verbatim}
+
+\subsection{Compatibility with pre-v4 versions}
+\index{Backward compatibility}
+
+Starting in the summer of 2015, some changes were made to the behavior
+of the program regarding default dynamics options and choice of
+coordinates to work with during post-processing of the electronic
+structure. The changes are:
+
+\begin{itemize}
+\item The default dynamics option is ``CG'' instead of ``Verlet''.
+\item The coordinates, if moved by the dynamics routines, are reset to
+their values at the previous step for the analysis of the electronic 
+structure (band structure calculations, DOS, LDOS, etc).
+\item Some output files reflect the values of the ``un-moved''
+  coordinates.
+\end{itemize}
+
+To recover the previous behavior, the user can turn on the
+compatibility switch {\bf compat-pre-v4-dynamics}, which is off by
+default.
+
+Note that complete compatibility cannot be perfectly guaranteed.
 
 \subsection{Structural relaxation}
 
@@ -7626,80 +7670,6 @@ and $z$ direction for one of the atoms.
 (If constraints are used, the file {\it SystemLabel}.{\tt FCC} is
 also written.)
 
-\subsection{Interface to the {\sc PHONON} program}
-\label{sec:phonon-interface}
-
-The interface to the {\sc Phonon} program was prepared for an earlier
-version of {\sc Siesta}, but it cannot be maintained properly by the
-developers because we do not use the program. We would appreciate help
-with testing and improving this interface. Alternatively, a script
-driving Siesta can be written instead. See {\tt Util/Scripting}.
-
-Here are the relevant options, active when {\bf MD.TypeOfRun}={\tt Phonon}.
-
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf PhononLabels}] ({\it data block}):
-\index{PhononLabels@{\bf PhononLabels}}
-It provides the mapping\index{Phonon program@{\sc Phonon program}}
-between the species number and those used by the {\sc
-Phonon} program. Note that chemically identical elements might be
-assigned different labels if they are not related by symmetry.
-
-\begin{verbatim}
-         %block PhononLabels
-            1   A   Mg
-            2   B   O
-         %endblock PhononLabels
-\end{verbatim}
-
-The species number is followed by the {\sc
-Phonon} program label and by the chemical symbol.
-
-{\it Use:} This block is mandatory if {\tt MD.TypeOfRun} is {\tt Phonon}.
-
-{\it Default:} No default.
-
-\item[{\bf MD.ATforPhonon}] ({\it data block}): List of ``symmetry
-irreducible'' atomic displacements for which to compute forces. Each
-line gives the fractional displacement for an atom, identified by its
-number in the atom list, and by a one-character code generated by the
-{\sc Phonon} program. These codes are put in correspondence with the
-species labels in block \hbox{\it PhononLabels}).\index{Force
-Constants Matrix!using phonon@using {\sc Phonon}}
-
-\begin{verbatim}
-    %block MD.ATforPhonon
-      0.002358   0.000000   0.000000  L     1
-      0.000000   0.000000   0.003488  L     1
-      0.002358   0.000000   0.000000  A    33
-      0.000000   0.000000   0.003488  A    33
-     -0.002358   0.000000   0.000000  L     1
-      0.000000   0.000000  -0.003488  L     1
-     -0.002358   0.000000   0.000000  A    33
-      0.000000   0.000000  -0.003488  A    33
-    %endblock MD.ATforPhonon
-
-\end{verbatim}
-
-{\it Note:} The presence of this block
-atomatically sets MD.TypeOfRun to {\tt Phonon}.
-
-{\it Default value:} None.
-
-\end{description}
-
-\index{output!molecular dynamics!PHONON forces file}
-If the dynamics option is set to the calculation of the forces for
-selected displacements ({\bf MD.TypeOfRun}={\tt Phonon}, and/or the
-block {\tt MD.ATforPhonon} exists), the forces
-are written in file {\it SystemLabel}.{\tt PHONON}.  The format is the
-following: Comment line, cell vectors in {\AA}, and for each
-displacement: atom displaced and its coordinates plus fractional
-displacement, Cartesian components of forces on all the atoms in units
-of eV/\AA.
 
 \section{TRANSIESTA}
 

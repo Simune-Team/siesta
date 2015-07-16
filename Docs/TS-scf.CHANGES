@@ -1,4 +1,64 @@
 ----------------------------------------------------
+July 15, 2015 -- Nick Papior          trunk-476---ts-scf-474
+Merged trunk-476, bugfix for FC-run
+
+* When performing FC runs the geometry DM was
+  never re-used.
+
+  Now we force the DM from the zero structure
+  to be re-used.
+
+removed:
+  Src/phonon.F
+added:
+  Src/m_target_stress.F
+  Tests/si2x1h-quench/
+  Tests/si2x1h-quench/makefile
+  Tests/si2x1h-quench/si2x1h-quench.fdf
+  Tests/si2x1h-quench/si2x1h-quench.pseudos
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Src/Makefile
+  Src/Orphans/new_dm.F
+  Src/atomlist.f
+  Src/bonds.f
+  Src/dhscf.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/final_H_f_stress.F
+  Src/ioxv.F
+  Src/m_new_dm.F90
+  Src/m_pulay.F90
+  Src/m_ts_global_vars.f90
+  Src/post_scf_work.F
+  Src/save_density_matrix.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/write_subs.F
+  Src/zm_broyden_optim.F
+  Util/COOP/Makefile
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/Sp2METIS/Makefile
+  Util/SpPivot/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 July 14, 2015 -- Nick Papior          trunk-474---ts-scf-474
 TBT: Create sub-directory if non-existing
 

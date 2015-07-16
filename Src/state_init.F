@@ -24,7 +24,7 @@
       use atomlist,          only: iphorb, iphkb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
      &                             lasto, superc, rmaxv, indxuo,
-     &                             no_l
+     &                             no_l, iza
       use alloc,             only: re_alloc, de_alloc, alloc_report
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
@@ -33,6 +33,7 @@
       use zmatrix,           only: lUseZmatrix, write_zmatrix
       use m_energies,        only: Emad
       use write_subs
+      use m_ioxv,            only: ioxv
       use m_steps
       use parallel,          only: IOnode, node, nodes
       use m_spin,            only: nspin
@@ -57,7 +58,7 @@
       use m_ts_global_vars, only: TSrun, TSmode
       use sys, only : bye
       use m_ts_io, only : fname_TSHS, ts_write_tshs
-      use m_ts_sparse, only : ts_sparse_init, ts_sp_uc
+      use m_ts_sparse, only : ts_sparse_init
       use m_ts_tri_init, only : ts_tri_init, ts_tri_analyze
       use files, only: slabel, label_length
 #endif
@@ -82,14 +83,15 @@
       integer            :: i, ix, iadispl, ixdispl
       logical            :: auxchanged   ! Auxiliary supercell changed?
       logical            :: folding, folding1
+      logical            :: foundxv  ! dummy for call to ioxv
       external           ::  madelung, timer
       real(dp), external :: volcel
+
 #ifdef TRANSIESTA
       integer                       :: ts_kscell_file(3,3) = 0
       real(dp)                      :: ts_kdispl_file(3) = 0.0
       logical                       :: ts_Gamma_file = .true.
       character(len=label_length+6) :: fname
-      integer                       :: fnlength
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
 #endif
       
@@ -99,70 +101,105 @@
 
 
 !------------------------------------------------------------------- BEGIN
-      call timer( 'IterMD', 1 )
+      call timer( 'IterGeom', 1 )
 #ifdef DEBUG
       call write_debug( '  PRE state_init' )
 #endif
-      call timer( 'STinit', 1 )
+      call timer( 'state_init', 1 )
 
       istp = istp + 1
 
       if (IOnode) then
-        write(6,'(/2a)') 'siesta:                 ',
-     &                    '=============================='
-        select case (idyn)
-        case (0)
-          write(6,'(28(" "),a,i6)') 'Begin CG move = ',istep
-          if (cml_p) call cmlStartStep(mainXML, type='CG', index=istp)
-!         Print Z-matrix coordinates
-          if (lUseZmatrix) then
-             call write_Zmatrix()
-          endif
-        case (1:5)
-          write(6,'(28(" "),a,i6)') 'Begin MD step = ',istep
-          if (cml_p) call cmlStartStep(mainXML, type='MD', index=istep)
-        case (6)
-          write(6,'(28(" "),a,i6)') 'Begin FC step = ',istep
+      write(6,'(/,t22,a)') repeat('=',36)
+      select case (idyn)
+      case (0)
+         if (nmove == 0) then
+            write(6,'(t25,a)') 'Single-point calculation'
+            if (cml_p) call cmlStartStep(mainXML, type='Single-Point',
+     $           index=istp)
+         else
+            if (broyden_optim) then
+               write(6,'(t25,a,i6)') 'Begin Broyden opt. move = ',
+     $              istep
+            else if (fire_optim) then
+               write(6,'(t25,a,i6)') 'Begin FIRE opt. move = ',
+     $              istep
+            else
+               write(6,'(t25,a,i6)') 'Begin CG opt. move = ',
+     $              istep
+            end if
+            if (cml_p) call cmlStartStep(mainXML, type='Geom. Optim',
+     $           index=istp)
+         endif
+         
+!        Print Z-matrix coordinates
+         if (lUseZmatrix) then
+            call write_Zmatrix()
+         endif
+      case (1, 3)
+         if (iquench > 0 ) then
+            write(6,'(t25,a,i6)') 'Begin MD quenched step = ',
+     $           istep
+            if (cml_p) call cmlStartStep(mainXML, type='MD-quenched',
+     $           index=istep)
+         else
+            write(6,'(t25,a,i6)') 'Begin MD step = ',
+     $           istep
+            if (cml_p) call cmlStartStep(mainXML, type='MD',
+     $             index=istep)
+         endif
+      case (2,4,5)
+         write(6,'(t25,a,i6)') 'Begin MD step = ', istep
+         if (cml_p) call cmlStartStep(mainXML, type='MD', index=istep)
+      case (6)
+          write(6,'(t25,a,i6)') 'Begin FC step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='FC', index=istep)
-
+          
           if (istep .eq. 0) then
-            write(6,'(28(" "),a)') 'Undisplaced coordinates'
-          else
+            write(6,'(t25,a)') 'Undisplaced coordinates'
+         else
             iadispl = (istep-mod(istep-1,6))/6+ia1
-            write(6,'(28(" "),a,i6)') 'displace atom   ', iadispl
             ix = mod(istep-1,6)+1
             ixdispl = (ix - mod(ix-1,2) +1)/2
-            write(6,'(28(" "),a,i6)') 'in direction    ', ixdispl
-            write(6,'(28(" "),a,f8.4,a)') 'by       ', dx/Ang, ' Ang'
-          endif
+            write(6,'(t26,a,i0,/,t26,a,i1,a,f10.6,a)') 'displace atom ',
+     &           iadispl,'in direction ',ixdispl,' by', dx/Ang,' Ang'
+         endif
+         
+      case (8)
+         write(6,'(t25,a,i6)') 'Begin Server step = ',istep
+         if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
+         
+      case (9)
+         if ( istep == 0 ) then
+            write(6,'(t25,a,i7)')'Explicit coord. initialization'
+         else
+            write(6,'(t25,a,i7)')'Explicit coord. step =',istep
+         end if
+         if (cml_p) call cmlStartStep(mainXML, type='ECS', index=istep)
+         
+      case (10)
+         write(6,'(t25,a,i7)')'LUA coord. step =',istep
+         if (cml_p) call cmlStartStep(mainXML, type='LUA', index=istep)
+         
+      end select
+      
+      write(6,'(t22,a)') repeat('=',36)
+      
+!     Print atomic coordinates
+      call outcoor( ucell, xa, na_u, ' ', writec )
 
-        case (8)
-          write(6,'(28(" "),a,i6)') 'Begin Server step = ',istep
-          if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
-!         Find interatomic distances (output in file BONDS)
-          call bonds( ucell, na_u, isa, xa,
-     &                rmax_bonds, trim(slabel)// ".BONDS" )
+!     Save structural information in crystallographic format
+!     (in file SystemLabel.STRUCT_OUT),
+!     canonical Zmatrix (if applicable), and CML record
+      
+      call siesta_write_positions(moved=.false.)
+       
+      endif ! IONode
 
-       case (9)
-          if ( istep == 0 ) then
-             write(6,'(t28,a,i7)')'Explicit coord. initialization'
-          else
-             write(6,'(t28,a,i7)')'Explicit coord. step =',istep
-          end if
-          if (cml_p) call cmlStartStep(mainXML, type='ECS', index=istep)
-
-       case (10)
-          write(6,'(t28,a,i7)')'LUA coord. step =',istep
-          if (cml_p) call cmlStartStep(mainXML, type='LUA', index=istep)
-
-        end select
-        write(6,'(2a)') '                        ',
-     &                    '=============================='
-
-!       Print atomic coordinates
-        call outcoor( ucell, xa, na_u, ' ', writec )
-        call siesta_write_positions()
-      endif
+      ! Write the XV file for single-point calculations, so that
+      ! it is there at the end for those users who rely on it
+      call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+     &           foundxv)
 
 !     Actualize things if variable cell 
       auxchanged = .false.
@@ -327,9 +364,11 @@
       Escf => val(EDM_2D)
 
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
-     .     routine='state_init',copy=.false.,shrink=.true.)
-      call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
-     .     routine='state_init',copy=.false.,shrink=.true.)
+     .     routine='sparseMat',copy=.false.,shrink=.true.)
+      if ( mixH ) then
+         call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
+     .        routine='sparseMat',copy=.false.,shrink=.true.)
+      end if
 
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       write(oname,"(a,i0)") "H in state_init at geom step ", istep
@@ -360,7 +399,12 @@
      &        Bcast=.true.)
       end if
 
-      ! Initialize density matrix
+!
+!     Here we could also read a Hamiltonian, either to proceed to
+!     the analysis section (with nscf=0) or to start a mix-H scf cycle.
+!
+!     Initialize density matrix
+      ! The resizing of Dscf is done inside new_dm
       call new_dm( auxchanged,DM_history,DM_2D,EDM_2D )
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)
@@ -369,7 +413,7 @@
 #ifdef TRANSIESTA
       ! Only part of Escf is updated in TS, so if it is put as zero here
       ! a continuation run gives bad forces.
-      if(.not.TSrun) then
+      if ( .not. TSrun ) then
 !$OMP parallel workshare default(shared)
          Escf(:,:) = 0.0_dp
 !$OMP end parallel workshare
@@ -390,7 +434,7 @@
 
 #ifdef TRANSIESTA
 !     If onlyS, Save overlap matrix and exit
-      if (onlyS) then
+      if ( onlyS ) then
          fname = fname_TSHS(slabel, onlyS = .true. )
          ! We include H as S, well-knowing that we only write one of
          ! them, there is no need to allocate space for no reason!
@@ -401,7 +445,8 @@
      &        xa, lasto, 
      &        H_2D, S_1D, indxuo, 
      &        dummyEf, dummyQtot, Temp,0,0)
-        call bye( 'Save overlap matrix and exit' ) ! Exit siesta
+         call bye( 'Save overlap matrix and exit' ) ! Exit siesta
+         
       endif 
 
       ! When the user requests to only do an analyzation, we can call
@@ -417,9 +462,10 @@
          call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
      &        Elecs, ucell, na_u, lasto, nsc, isc_off,
      &        opt_TriMat_method )
-
+         
          ! Bye also waits for all processors
          call bye('transiesta analyzation performed')
+         
       end if
 
       ! In case the user is requesting a Fermi-correction
@@ -464,10 +510,8 @@
      &                              istep)
       endif
 #endif
-      call timer( 'STinit', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS state_init' )
-#endif
+      call timer( 'state_init', 2 )
+
 !--------------------------------------------------------------------------- END
       END subroutine state_init
       END module m_state_init

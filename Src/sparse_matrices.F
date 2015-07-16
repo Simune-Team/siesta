@@ -40,20 +40,34 @@
       CONTAINS
 
       subroutine resetSparseMatrices( )
-      use alloc, only : de_alloc
 
-      call de_alloc( Dold, 'Dold', 'state_init' )
-      call de_alloc( Hold, 'Hold', 'state_init' )
-      call delete( DM_2D ) ; nullify(Dscf)
-      call delete( EDM_2D ) ; nullify(Escf)
+      use alloc, only : de_alloc
+      implicit none
+
+      call delete( block_dist )
+      call delete( sparse_pattern ) ; nullify(numh,listhptr,listh)
+
       call delete( H_kin_1D )
       call delete( H_vkb_1D )
+
+      call delete( DM_2D ) ; nullify(Dscf)
+      call delete( EDM_2D ) ; nullify(Escf)
       call delete( S_1D ) ; nullify(S)
-      call delete( xij_2D ) ; nullify(xijo)
       call delete( H_2D ) ; nullify(H)
+      call delete( xij_2D ) ; nullify(xijo)
+
       call delete( DM_history )
-      call delete( sparse_pattern ) ; nullify(numh,listhptr,listh)
-      call delete( block_dist )
+
+      call de_alloc( Dold, 'Dold', 'sparseMat' )
+
+      ! Using MixH is bad as several utilities
+      ! are not relying on FoX, better to leave out
+      ! Note that it is nullified from start, 
+      ! and hence de_alloc returns immediately
+      
+      !if ( MixH ) then
+         call de_alloc( Hold, 'Hold', 'sparseMat' )
+      !endif
 
       end subroutine resetSparseMatrices
 

@@ -1143,9 +1143,9 @@
          endif
          return
       else if ((idyn .eq. 6) .OR. (idyn .eq. 7))  then   ! Forces or Phonon series
-         n = 0
+         n = 1
          if (ionode) print "(a)", &
-         "DM_history_depth set to zero for 'Forces' run"
+         "DM_history_depth set to one for 'Forces' run"
          return
       endif
       end subroutine get_allowed_history_depth
