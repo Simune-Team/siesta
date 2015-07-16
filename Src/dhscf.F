@@ -959,6 +959,7 @@ C ----------------------------------------------------------------------
          if (charge_density_only) then
             call timer('DHSCF3',2)
             call timer('DHSCF',2)
+            call de_alloc( DRho, 'DRho', 'dhscf' )
             RETURN
          endif
       endif

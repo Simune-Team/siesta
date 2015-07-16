@@ -175,7 +175,7 @@
          ! to the bounds appropriate to the new sparsity
          nnz=sum(numh)
          call re_alloc(Dscf,1,nnz,1,nspin,name="Dscf",
-     $                 routine="new_dm",copy=.false.,shrink=.true.)
+     $                 routine="sparseMat",copy=.false.,shrink=.true.)
 
          ! Reset DMsaved to null
          call de_alloc(DMsaved,name="DMsaved",routine="new_dm")
