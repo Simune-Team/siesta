@@ -1,4 +1,11 @@
 ----------------------------------------------------
+July 17, 2015 -- Nick Papior          trunk-476---ts-scf-476
+Enhanced test makefile
+
+modified:
+  Tests/Makefile
+
+----------------------------------------------------
 July 17, 2015 -- Nick Papior          trunk-476---ts-scf-475
 Cosmetics fixed
 

@@ -23,36 +23,32 @@
 #
 # See also test.mk for details, and the scripts in Scripts for 
 # examples of other options for batch processing.
-#
-#
+
+SIESTA ?= $(shell pwd)/../Obj/siesta
+
 REFERENCE=../../ref-version/Tests
-#
+
 label=work
-#
-ALL=  h2o h2o_reparam h2o_basis h2o_dos h2o-pop		\
-       floating benzene bessel mgc-force mgco3 si2x1h force_2 born born_spin	\
-       var_cell constant_volume batio3 fe fe_broyden sih si64		\
-       h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr		\
-       md_anneal md_verlet md_nose si_bandpoints sih_fire		\
-       graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid ag ch4	\
-       si_coop born pb_filter_cutoff pb_filter_tol fire_benzene		\
-       fe_clust_noncollinear h_chain n_chain si64_coop si_pdos_kgrid    \
+
+TEST?= h2o h2o_reparam h2o_basis h2o_dos h2o-pop \
+       floating benzene bessel mgc-force mgco3 si2x1h force_2 born born_spin \
+       var_cell constant_volume batio3 fe fe_broyden sih si64 \
+       h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr \
+       md_anneal md_verlet md_nose si_bandpoints sih_fire \
+       graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid ag ch4 \
+       si_coop born pb_filter_cutoff pb_filter_tol fire_benzene \
+       fe_clust_noncollinear h_chain n_chain si64_coop si_pdos_kgrid \
        si2x1h-dipole ar2_vdw graphite_vdw_df sic-slab si-optical OMM_si \
        OMM_h2o
-#
-#
+
 #  Need to add the new tests and generate the reference outputs and xml files.
-#
-#
+
 all:
-	for dir in $(ALL); do\
-	 $(MAKE) -C $$dir completed; \
+	for dir in $(TEST); do\
+	 $(MAKE) -C $$dir SIESTA=$(SIESTA) completed; \
 	done
 
 clean:
-	@for i in $(ALL) ; do \
+	@for i in $(TEST) ; do \
 		(cd $$i ; make clean) ; \
 	done
-#
-
-
