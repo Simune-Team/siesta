@@ -1,4 +1,12 @@
 ----------------------------------------------------
+July 17, 2015 -- Nick Papior          trunk-476---ts-scf-478
+Bugfix for module use
+
+modified:
+  Src/final_H_f_stress.F
+  Src/siesta_analysis.F
+
+----------------------------------------------------
 July 17, 2015 -- Nick Papior          trunk-476---ts-scf-477
 DOC update, changed DM.MixSCF1 T
 

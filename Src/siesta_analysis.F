@@ -42,7 +42,6 @@
       use basis_enthalpy,    only: write_basis_enthalpy
       use m_partial_charges, only: want_partial_charges
       use m_siesta2wannier90, only: siesta2wannier90
-      use siesta_options,     only: w90_processing
 
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
