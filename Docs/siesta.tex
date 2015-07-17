@@ -3892,9 +3892,11 @@ cycle.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf Write.TSHS.History}] ({\it logical}): \index{Write.TSHS.History@{\bf
-        Write.TSHS.History}} \index{output!Hamiltonian history}}\index{output!overlap
-matrix history} If true, a series of TSHS files with names of the form {\tt
+\item[{\bf Write.TSHS.History}] ({\it logical}): 
+ \index{Write.TSHS.History@{\bf Write.TSHS.History}}%
+ \index{output!Hamiltonian history}%
+ \index{output!overlap matrix history}%
+If true, a series of TSHS files with names of the form {\tt
 SystemLabel.N.TSHS} is created to hold the complete history of the Hamiltonian and overlap
 matrix. Each file corresponds to a geometry step. The overlap matrix is stored only once
 per SCF cycle. This option only works with {\sc transiesta}.
@@ -6177,8 +6179,7 @@ NOTE: If the program is fed a starting density matrix from an
 uncorrected calculation (i.e., with an exagerated dipole), the first
 iteration might use a compensating field that is too big, with the
 risk of taking the system out of the convergence basin. In that case,
-it is advisable to use the {\tt DM.MixSCF1}\index{DM.MixSCF1@{\bf
-    DM.MixSCF1}}\index{Slab dipole correction} option to request a mix of the
+it is advisable to use the {\tt DM.MixSCF1}\index{DM.MixSCF1@{\bf DM.MixSCF1}}\index{Slab dipole correction} option to request a mix of the
 input and output density matrices after that first iteration.
 
 (See {\tt Tests/sic-slab})

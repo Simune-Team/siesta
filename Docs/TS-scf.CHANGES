@@ -1,4 +1,16 @@
 ----------------------------------------------------
+July 17, 2015 -- Nick Papior          trunk-476---ts-scf-477
+DOC update, changed DM.MixSCF1 T
+
+* Fixed documentation
+
+* Changed DM.MixSCF1 to .true. by default
+
+modified:
+  Doc/siesta.tex
+  Src/siesta_options.F90
+
+----------------------------------------------------
 July 17, 2015 -- Nick Papior          trunk-476---ts-scf-476
 Enhanced test makefile
 

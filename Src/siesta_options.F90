@@ -617,7 +617,7 @@ MODULE siesta_options
 
     ! Mix density matrix on first SCF step
     ! (mix_first_scf_step)
-    mix_first_scf_step = fdf_get('DM.MixSCF1',.false.)
+    mix_first_scf_step = fdf_get('DM.MixSCF1',.true.)
     !
     if (ionode) then
       write(6,1) 'redata: Mix DM in first SCF step',mix_first_scf_step
