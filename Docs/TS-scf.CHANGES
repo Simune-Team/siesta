@@ -1,4 +1,11 @@
 ----------------------------------------------------
+July 17, 2015 -- Nick Papior          trunk-476---ts-scf-480
+Bugfix for OpenMP compilation
+
+modified:
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 July 17, 2015 -- Nick Papior          trunk-476---ts-scf-479
 TBT implemented bulk DOS
 

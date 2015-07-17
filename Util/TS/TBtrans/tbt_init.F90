@@ -48,9 +48,9 @@ subroutine tbt_init()
   use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
   use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
 #else
-!$use omp_lib, only : omp_get_num_threads, omp_get_schedule
-!$use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
-!$use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
+!$ use omp_lib, only : omp_get_num_threads, omp_get_schedule
+!$ use omp_lib, only : OMP_SCHED_STATIC, OMP_SCHED_DYNAMIC
+!$ use omp_lib, only : OMP_SCHED_GUIDED, OMP_SCHED_AUTO
 #endif
 
   implicit none
@@ -61,8 +61,7 @@ subroutine tbt_init()
   integer :: MPIerror
 #endif
 
-!$integer :: i, is
-
+!$ integer :: i, is
   integer :: iEl
   type(Sparsity) :: tmp_sp
   type(dSpData1D) :: tmp_1D
