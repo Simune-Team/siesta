@@ -1504,11 +1504,38 @@ contains
     real(dp), intent(in) :: xa(3,na_u)
 
     ! Local variables
+    logical :: do_print
     integer  :: i,j,k, ia, iaa
+    real(dp), parameter :: check_xa = 0.0005_dp * Ang
     real(dp) :: xa_o(3), this_xa_o(3), ucell(3,3), tmp(3)
     real(dp), pointer :: this_xa(:,:)
 
     if ( .not. IONode ) return
+
+    this_xa      => this%xa_used
+    xa_o(:)      =  xa(:,this%idx_a)
+    this_xa_o(:) =  this_xa(:,1)
+    ucell        =  this%ucell
+
+    ! We only print out this structure if it does not fit the coordinates
+    do_print = .false.
+    
+    iaa = this%idx_a
+    do ia = 1 , this%na_used
+       do k = 0 , this%Rep(3) - 1
+       do j = 0 , this%Rep(2) - 1
+       do i = 0 , this%Rep(1) - 1
+          tmp(1) = this_xa(1,ia)-this_xa_o(1)+sum(ucell(1,:)*(/i,j,k/))
+          tmp(2) = this_xa(2,ia)-this_xa_o(2)+sum(ucell(2,:)*(/i,j,k/))
+          tmp(3) = this_xa(3,ia)-this_xa_o(3)+sum(ucell(3,:)*(/i,j,k/))
+          do_print = do_print .or. VNORM(xa(:,iaa) - xa_o - tmp) > check_xa
+          iaa = iaa + 1
+       end do
+       end do
+       end do
+    end do
+
+    if ( .not. do_print ) return
 
     write(*,*) trim(this%name)//' unit cell (Ang):'
     write(*,'(2(3(tr1,f10.5),/),3(tr1,f10.5))') this%ucell/Ang
@@ -1517,11 +1544,6 @@ contains
          " Structure of "//trim(this%name)//" electrode","| System electrode:"
     write(*,'(t3,3a10,''  |'',3a10,''  | '',a10)') &
          "X (Ang)","Y (Ang)","Z (Ang)", "X (Ang)","Y (Ang)","Z (Ang)","|r_S-r_E|"
-
-    this_xa      => this%xa_used
-    xa_o(:)      =  xa(:,this%idx_a)
-    this_xa_o(:) =  this_xa(:,1)
-    ucell        =  this%ucell
 
     iaa = this%idx_a
     do ia = 1 , this%na_used

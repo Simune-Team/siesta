@@ -50,7 +50,7 @@ CONTAINS
     if (ionode) then
        write(6,1) 'redata: Non-Collinear-spin run',NonCol
        write(6,1) 'redata: SpinPolarized (Up/Down) run',SPpol
-       write(6,1) 'redata: Number of spin components',nspin
+       write(6,2) 'redata: Number of spin components',nspin
     end if
 
     nullify(efs,qs)
@@ -58,6 +58,8 @@ CONTAINS
     call re_alloc(qs,1,nspin,name="qs",routine="init_spin")
 
 1   format(a,t50,'= ',2x,l1)
+2   format(a,t50,'= ',2x,i1)
+
 
   end subroutine init_spin
 

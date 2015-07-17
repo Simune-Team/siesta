@@ -573,9 +573,9 @@ MODULE siesta_options
        if (compat_pre_v4_DM_H) then
           write(6,"(a)") ':!:Next two options activated by pre-4.0 compat. switch'
        endif
-       write(6,1) 'redata: Mix DM or H after convergence    = ',  &
+       write(6,1) 'redata: Mix DM or H after convergence',  &
                   mix_after_convergence
-       write(6,1) 'redata: Recompute H after scf cycle      = ',  &
+       write(6,1) 'redata: Recompute H after scf cycle',  &
                   recompute_H_after_scf
     endif
 

@@ -1,4 +1,14 @@
 ----------------------------------------------------
+July 17, 2015 -- Nick Papior          trunk-476---ts-scf-475
+Cosmetics fixed
+
+modified:
+  .bzrignore
+  Src/m_spin.F90
+  Src/m_ts_electype.F90
+  Src/siesta_options.F90
+
+----------------------------------------------------
 July 15, 2015 -- Nick Papior          trunk-476---ts-scf-474
 Merged trunk-476, bugfix for FC-run
 
