@@ -61,7 +61,9 @@ subroutine tbt_init()
   integer :: MPIerror
 #endif
 
-  integer :: i, is, iEl
+!$integer :: i, is
+
+  integer :: iEl
   type(Sparsity) :: tmp_sp
   type(dSpData1D) :: tmp_1D
   type(dSpData2D) :: tmp_2D

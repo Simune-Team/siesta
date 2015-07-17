@@ -25,13 +25,16 @@ module m_tbt_save
   public :: cdf_get_kpt_idx
   public :: cdf_save_E
   public :: state_cdf_save
+  public :: state_cdf_save_Elec
   public :: state_cdf_save_J
   public :: state_cdf_save_kpt
   public :: state_cdf2ascii
 #else
   public :: init_save
+  public :: init_save_Elec
   public :: step_kpt_save
   public :: state_save
+  public :: state_save_Elec
   public :: end_save
 #endif
 
@@ -44,6 +47,10 @@ module m_tbt_save
   public :: tNodeE
   public :: MPI_BcastNode
   public :: save_parallel
+
+  ! Local variable to provide common routines
+  ! for saving DOS
+  real(dp), allocatable :: rDOS(:)
 
 contains
 
@@ -76,8 +83,9 @@ contains
 
   subroutine init_save_options()
     use m_verbosity, only: verbosity
+    use parallel, only : IONode
 #ifdef NCDF_4
-    use parallel, only : Node, IONode
+    use parallel, only : Node
 #endif
     use fdf
     use m_io_s, only : dir_exist
@@ -250,6 +258,7 @@ contains
     integer :: iEl, jEl, i, nnzs_dev
     integer :: prec_DOS, prec_T, prec_J
     type(OrbitalDistribution) :: fdit
+    type(tRgn) :: tmpRgn
     real(dp), allocatable :: r2(:,:)
 #ifdef MPI
     integer :: MPIerror
@@ -531,16 +540,48 @@ contains
 
        call delete(dic)
 
+       if ( 'DOS-Elecs' .in. save_DATA ) then
+
+          call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
+
+          call ncdf_def_dim(grp,'no_u',Elecs(iEl)%no_u)
+          call ncdf_def_dim(grp,'na_u',Elecs(iEl)%na_u)
+
+          dic = ('info'.kv.'Last orbitals of the equivalent atom')
+          call ncdf_def_var(grp,'lasto',NF90_INT,(/'na_u'/), &
+               atts = dic)
+          dic = dic//('info'.kv.'Unit cell')
+          dic = dic//('unit'.kv.'Bohr')
+          call ncdf_def_var(grp,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
+               atts = dic)
+          dic = dic//('info'.kv.'Atomic coordinates')
+          dic = dic//('unit'.kv.'Bohr')
+          call ncdf_def_var(grp,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
+               atts = dic , chunks = (/3, Elecs(iEl)%na_u/) )
+          
+          ! Create electrode constant variables
+          call ncdf_put_var(grp,'cell',Elecs(iEl)%ucell)
+          call ncdf_put_var(grp,'xa',Elecs(iEl)%xa)
+          call ncdf_put_var(grp,'lasto',Elecs(iEl)%lasto(1:))
+
+          dic = dic//('info'.kv.'Bulk density of states of electrode')
+          dic = dic//('unit'.kv.'1/Ry')
+          call ncdf_def_var(grp,'DOS',prec_DOS,(/'no_u','ne  ','nkpt'/), &
+               atts = dic, chunks = (/Elecs(iEl)%no_u,1,1/) , compress_lvl=cmp_lvl)
+
+       end if
+
        if ( iEl == N_Elec ) then
           ! check if all are calculated
           if ( ('DOS-A-all' .nin. save_DATA) .and. &
                ('T-all'.nin. save_DATA) ) cycle
        end if
 
-       call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
+       if ( 'DOS-Elecs' .nin. save_DATA ) &
+            call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
        if ( 'DOS-A' .in. save_DATA ) then
-          dic = ('info'.kv.'Spectral function density of states')// &
+          dic = dic//('info'.kv.'Spectral function density of states')// &
                ('unit'.kv.'1/Ry')
           call ncdf_def_var(grp,'ADOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
                atts = dic, chunks = (/r%n,1,1/) , compress_lvl=cmp_lvl)
@@ -599,9 +640,9 @@ contains
           
        end do
 
-       call delete(dic)
-
     end do
+
+    call delete(dic)
 
     call ncdf_close(ncdf)
 
@@ -835,7 +876,6 @@ contains
 #ifdef MPI
     integer :: iN, NDOS, NT
     real(dp), allocatable :: rT(:,:,:)
-    real(dp), allocatable :: rDOS(:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
@@ -882,7 +922,7 @@ contains
 
        ! We save the DOS
        ! This is the DOS from the Green's function
-       call save_DOS(ncdf,'DOS',ikpt,nE,DOS(:,1))
+       call local_save_DOS(ncdf,'DOS',ikpt,nE,NDOS,DOS(1:NDOS,1))
 
     end if
 
@@ -899,7 +939,7 @@ contains
           
           call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
           
-          call save_DOS(grp,'ADOS',ikpt,nE,DOS(:,1+iEl))
+          call local_save_DOS(grp,'ADOS',ikpt,nE,NDOS,DOS(1:NDOS,1+iEl))
 
        end do
        
@@ -976,39 +1016,125 @@ contains
     call timer('cdf-w-T',2)
 #endif
 
-  contains
-
-    subroutine save_DOS(grp,var,ikpt,nE,DOS)
-      type(hNCDF), intent(inout) :: grp
-      character(len=*), intent(in) :: var
-      integer, intent(in) :: ikpt
-      type(tNodeE), intent(in) :: nE
-      real(dp), intent(in) :: DOS(:)
-
-      if ( nE%iE(Node) > 0 ) then
-         call ncdf_put_var(grp,var,DOS,start = (/1,nE%iE(Node),ikpt/) )
-      end if
-      
-#ifdef MPI
-      if ( .not. save_parallel ) then
-         if ( Node == 0 ) then
-            do iN = 1 , Nodes - 1
-               if ( nE%iE(iN) <= 0 ) cycle
-               call MPI_Recv(rDOS,NDOS,Mpi_double_precision,iN,iN, &
-                    Mpi_comm_world,status,MPIerror)
-               call ncdf_put_var(grp,var,rDOS,start = (/1,nE%iE(iN),ikpt/) )
-            end do
-         else if ( nE%iE(Node) > 0 ) then
-            call MPI_Send(DOS,NDOS,Mpi_double_precision,0,Node, &
-                 Mpi_comm_world,MPIerror)
-         end if
-      end if
-#endif
-
-    end subroutine save_DOS
-
   end subroutine state_cdf_save
 
+  subroutine state_cdf_save_Elec(fname, ikpt, nE, N_Elec, Elecs, DOS, &
+       save_DATA)
+    
+    use parallel, only : Nodes
+
+    use dictionary
+    use nf_ncdf, ncdf_parallel => parallel
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD
+#endif
+    use m_ts_electype
+
+    character(len=*), intent(in) :: fname
+    integer, intent(in) :: ikpt
+    type(tNodeE), intent(in) :: nE
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    real(dp), intent(in) :: DOS(:,:)
+    type(dict), intent(in) :: save_DATA
+
+    type(hNCDF) :: ncdf, grp
+    integer :: iEl
+    integer :: N
+
+#ifdef TBTRANS_TIMING
+    call timer('cdf-w-El',1)
+#endif
+
+#ifdef MPI
+    if ( .not. save_parallel .and. Nodes > 1 ) then
+       allocate(rDOS(size(DOS,dim=1)))
+    end if
+#endif
+
+    ! Open the netcdf file
+#ifdef NCDF_PARALLEL
+    if ( save_parallel ) then
+       call ncdf_open(ncdf,fname, mode=NF90_WRITE, &
+            comm = MPI_COMM_WORLD )
+    else
+#endif
+       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+#ifdef NCDF_PARALLEL
+    end if
+#endif
+
+    if ( 'DOS-Elecs' .in. save_DATA ) then
+
+       do iEl = 1 , N_Elec
+          
+          call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
+          
+          N = Elecs(iEl)%no_u
+          call local_save_DOS(grp,'DOS',ikpt,nE,N,DOS(1:N,iEl))
+          
+       end do
+       
+    end if
+
+    call ncdf_close(ncdf)
+       
+#ifdef MPI
+    if ( allocated(rDOS) ) deallocate(rDOS)
+#endif
+
+#ifdef TBTRANS_TIMING
+    call timer('cdf-w-El',2)
+#endif
+
+  end subroutine state_cdf_save_Elec
+
+  subroutine local_save_DOS(grp,var,ikpt,nE,N,DOS)
+
+    use parallel, only : Node, Nodes
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
+    use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
+    use mpi_siesta, only : MPI_Integer, MPI_STATUS_SIZE
+    use mpi_siesta, only : Mpi_double_precision
+#endif
+
+    use nf_ncdf, ncdf_parallel => parallel
+
+    type(hNCDF), intent(inout) :: grp
+    character(len=*), intent(in) :: var
+    integer, intent(in) :: ikpt
+    type(tNodeE), intent(in) :: nE
+    integer, intent(in) :: N
+    real(dp), intent(in) :: DOS(N)
+
+    integer :: iN
+#ifdef MPI
+    integer :: MPIerror, status(MPI_STATUS_SIZE)
+#endif
+
+    if ( nE%iE(Node) > 0 ) then
+       call ncdf_put_var(grp,var,DOS,start = (/1,nE%iE(Node),ikpt/) )
+    end if
+    
+#ifdef MPI
+    if ( .not. save_parallel ) then
+       if ( Node == 0 ) then
+          do iN = 1 , Nodes - 1
+             if ( nE%iE(iN) <= 0 ) cycle
+             call MPI_Recv(rDOS,N,MPI_double_precision,iN,iN, &
+                  Mpi_comm_world,status,MPIerror)
+             call ncdf_put_var(grp,var,rDOS(1:N),start = (/1,nE%iE(iN),ikpt/) )
+          end do
+       else if ( nE%iE(Node) > 0 ) then
+          call MPI_Send(DOS,N,MPI_double_precision,0,Node, &
+               Mpi_comm_world,MPIerror)
+       end if
+    end if
+#endif
+    
+  end subroutine local_save_DOS
+  
   subroutine state_cdf_save_J(fname, ikpt, nE, El, orb_J, save_DATA)
     
     use parallel, only : Node, Nodes
@@ -1138,7 +1264,7 @@ contains
     type(hNCDF) :: ncdf, grp
     logical :: exist
     integer :: iEl, jEl, i
-    integer :: NE, nkpt, no_d
+    integer :: NE, nkpt, no_d, no_e
     real(dp), allocatable :: rkpt(:,:), rwkpt(:)
     real(dp), allocatable :: rE(:)
     real(dp), allocatable :: r2(:,:), r3(:,:,:)
@@ -1229,6 +1355,32 @@ contains
     ! We should now be able to create all the files
     do iEl = 1 , N_Elec
 
+       if ( 'DOS-Elecs' .in. save_DATA ) then
+
+          call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
+
+          no_e = Elecs(iEl)%no_u
+          allocate(r3(no_e,NE,nkpt))
+          call ncdf_get_var(grp,'DOS',r3)
+
+          ! Correct unit, from 1/Ry to 1/eV
+!$OMP parallel workshare default(shared)
+          r3 = r3 * eV
+!$OMP end parallel workshare
+          
+          if ( nkpt > 1 ) then
+             call name_save(ispin,nspin,ascii_file,end='DOS',El1=Elecs(iEl))
+             call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,no_e,r3,'DOS',&
+                  '# Bulk DOS, k-resolved')
+          end if
+          call name_save(ispin,nspin,ascii_file,end='AVDOS',El1=Elecs(iEl))
+          call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,no_e,r3,'DOS', &
+               '# Bulk DOS, k-averaged')
+
+          deallocate(r3)
+
+       end if
+
        ! We do not calculate the last electrode
        ! unless requested
        if ( iEl == N_Elec ) then
@@ -1237,8 +1389,8 @@ contains
                ('T-all'.nin. save_DATA) ) cycle
        end if
 
-
-       call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
+       if ( 'DOS-Elecs' .nin. save_DATA ) &
+            call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
        if ( 'DOS-A' .in. save_DATA ) then
 
@@ -1395,18 +1547,18 @@ contains
 
   contains
     
-    subroutine save_DAT(fname,nkpt,kpt,wkpt,NE,E,ipiv,no_d,DAT,value,header)
+    subroutine save_DAT(fname,nkpt,kpt,wkpt,NE,E,ipiv,no,DAT,value,header)
       character(len=*), intent(in) :: fname
-      integer, intent(in) :: nkpt, NE, no_d, ipiv(NE)
+      integer, intent(in) :: nkpt, NE, no, ipiv(NE)
       real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt), E(NE)
-      real(dp), intent(inout) :: DAT(no_d,NE,nkpt)
+      real(dp), intent(inout) :: DAT(no,NE,nkpt)
       character(len=*), intent(in) :: value, header
       integer :: iu, ik, i
       real(dp) :: rno
-      if ( no_d == 1 ) then
+      if ( no == 1 ) then
          rno = 1._dp
       else
-         rno = 1._dp / no_d
+         rno = 1._dp / no
       end if
       
       call io_assign(iu)
@@ -1514,9 +1666,6 @@ contains
 
     use dictionary
     use m_timestamp, only : datestring
-#ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD
-#endif
     use m_ts_electype
 
     integer, intent(inout) :: iounits(:)
@@ -1628,140 +1777,114 @@ contains
 
   end subroutine init_save
 
-  subroutine step_kpt_save(iounits,nkpt,bkpt,wkpt,N_Elec,save_DATA)
+  subroutine init_save_Elec(iounits,ispin,nspin,N_Elec,Elecs,save_DATA)
     
     use parallel, only : Node
 
     use dictionary
+    use m_timestamp, only : datestring
+    use m_ts_electype
 
-    integer,    intent(in) :: iounits(:), nkpt
-    real(dp),   intent(in) :: bkpt(3), wkpt
-    integer,    intent(in) :: N_Elec
+    integer, intent(inout) :: iounits(:)
+    integer, intent(in)    :: ispin, nspin
+    integer, intent(in)    :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
     type(dict), intent(in) :: save_DATA
-    integer :: cu, iEl, jEl
+
+    character(len=100) :: ascii_file, tmp
+    integer :: iu, cu
+
+    integer :: iEl
+
+    ! Only the IO-Node can prepare the output data.
+    if ( Node /= 0 ) return
+
+    tmp = datestring()
+    tmp = tmp(1:10)
+
+    cu = 1
+
+    if ( 'DOS-Elecs' .in. save_DATA ) then
+
+       do iEl = 1 , N_Elec
+
+          call name_save(ispin,nspin,ascii_file,end='DOS',El1=Elecs(iEl))
+
+          call io_assign(iu)
+          open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
+          write(iu,'(a)') '# Bulk DOS, k-resolved'
+          write(iu,'(a)') '# Date: '//trim(tmp)
+          write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS'
+
+          iounits(cu) = iu
+          
+          cu = cu + 1
+
+       end do
+       
+    end if
+    
+  end subroutine init_save_Elec
+
+  subroutine step_kpt_save(iounits,nkpt,bkpt,wkpt)
+    
+    use parallel, only : Node
+
+    integer, intent(in) :: iounits(:), nkpt
+    real(dp), intent(in) :: bkpt(3), wkpt
+
+    integer :: cu, nu
+    logical :: is_open
 
     if ( Node /= 0 ) return
     if ( nkpt == 1 ) return
 
     cu = 1
+    nu = size(iounits)
 
-    if ( 'DOS-Gf' .in. save_DATA ) then
+    do while ( cu <= nu )
 
-       call wrt_k(iounits(cu))
+       inquire(iounits(cu), opened = is_open)
+       if ( .not. is_open ) exit
+
+       call wrt_k(iounits(cu),bkpt,wkpt)
        cu = cu + 1
-       
-    end if
-
-    do iEl = 1 , N_Elec
-
-       ! We do not calculate the last electrode
-       ! unless requested
-       if ( iEl == N_Elec ) then
-          ! check if all are calculated
-          if ( ('DOS-A-all' .nin. save_DATA) .and. &
-               ('T-all'.nin. save_DATA) ) cycle
-       end if
-       
-       if ( 'DOS-A' .in. save_DATA ) then
-
-          call wrt_k(iounits(cu))
-          cu = cu + 1
-          
-       end if
-       
-       do jEl = 1 , N_Elec
-          
-          ! Calculating iEl -> jEl is the
-          ! same as calculating jEl -> iEl, hence if we
-          ! do not wish to assert this is true, we do not
-          ! calculate this.
-          if ( ('T-all' .nin. save_DATA ) .and. &
-               jEl < iEl ) cycle
-          if ( ('T-reflect' .nin. save_DATA ) .and. &
-               iEl == jEl ) cycle
-
-          if ( iEl == jEl ) then
-
-             call wrt_k(iounits(cu))
-             cu = cu + 1
-
-          end if
-          
-          call wrt_k(iounits(cu))
-          cu = cu + 1
-          
-       end do
        
     end do
 
   contains
 
-    subroutine wrt_k(iu)
+    subroutine wrt_k(iu,bkpt,wkpt)
       integer, intent(in) :: iu
+      real(dp) :: bkpt(3), wkpt
       write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-           '# kb  = ',bkpt(:) ,'w= ',wkpt
+           '# kb = ',bkpt(:) ,'w = ',wkpt
     end subroutine wrt_k
-
+    
   end subroutine step_kpt_save
 
-  subroutine end_save(iounits,N_Elec,save_DATA)
+
+  subroutine end_save(iounits)
     
     use parallel, only : Node
 
-    use dictionary
+    integer, intent(in) :: iounits(:)
 
-    integer,    intent(in) :: iounits(:), N_Elec
-    type(dict), intent(in) :: save_DATA
-    integer :: cu, iEl, jEl
+    integer :: cu, nu
+    logical :: is_open
 
     if ( Node /= 0 ) return
 
     cu = 1
+    nu = size(iounits)
 
-    if ( 'DOS-Gf' .in. save_DATA ) then
+    do while ( cu <= nu )
+
+       inquire(iounits(cu), opened = is_open)
+       if ( .not. is_open ) exit
 
        call io_close(iounits(cu))
        cu = cu + 1
-       
-    end if
-
-    do iEl = 1 , N_Elec
-
-       ! We do not calculate the last electrode
-       ! unless requested
-       if ( iEl == N_Elec ) then
-          ! check if all are calculated
-          if ( ('DOS-A-all' .nin. save_DATA) .and. &
-               ('T-all'.nin. save_DATA) ) cycle
-       end if
-       
-       if ( 'DOS-A' .in. save_DATA ) then
-          
-          call io_close(iounits(cu))
-          cu = cu + 1
-          
-       end if
-       
-       do jEl = 1 , N_Elec
-          
-          ! Calculating iEl -> jEl is the
-          ! same as calculating jEl -> iEl, hence if we
-          ! do not wish to assert this is true, we do not
-          ! calculate this.
-          if ( ('T-all' .nin. save_DATA ) .and. &
-               jEl < iEl ) cycle
-          if ( ('T-reflect' .nin. save_DATA ) .and. &
-               iEl == jEl ) cycle
-
-          if ( iEl == jEl ) then
-             call io_close(iounits(cu))
-             cu = cu + 1
-          end if
-          
-          call io_close(iounits(cu))
-          cu = cu + 1
-          
-       end do
        
     end do
 
@@ -1774,17 +1897,11 @@ contains
   subroutine state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
        save_DATA )
     
-    use parallel, only : Node, Nodes
+    use parallel, only : Nodes
     use units, only : eV
     use m_interpolate, only : crt_pivot
 
     use dictionary
-#ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
-    use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
-    use mpi_siesta, only : MPI_Integer, MPI_STATUS_SIZE
-    use mpi_siesta, only : Mpi_double_precision
-#endif
     use m_ts_electype
 
     integer, intent(in)    :: iounits(:)
@@ -1795,23 +1912,18 @@ contains
     type(dict), intent(in) :: save_DATA
 
     integer :: cu
-    integer :: iEl, jEl
-    real(dp) :: rE
+    integer :: iEl, jEl, N
     integer, allocatable :: ipvt(:)
-#ifdef MPI
-    integer :: NDOS
-    real(dp), allocatable :: rDOS(:)
-    integer :: MPIerror, status(MPI_STATUS_SIZE)
-#endif
 
-    allocate(ipvt(0:Nodes-1))
+    allocate(ipvt(Nodes))
     ipvt = 1
+
+    N = size(DOS,dim=1)
 
 #ifdef MPI
     if ( Nodes > 1 ) then
        call crt_pivot(Nodes,nE%E,ipvt)
-       NDOS = size(DOS,dim=1)
-       allocate(rDOS(NDOS))
+       allocate(rDOS(N))
     end if
 #endif
 
@@ -1822,7 +1934,7 @@ contains
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
-       call save_DAT(iounits(cu),DOS(:,1),fact=eV)
+       call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,1),fact=eV)
 
        cu = cu + 1
 
@@ -1840,7 +1952,7 @@ contains
        
        if ( 'DOS-A' .in. save_DATA ) then
 
-          call save_DAT(iounits(cu),DOS(:,1+iEl),fact=eV)
+          call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,1+iEl),fact=eV)
           
           cu = cu + 1
           
@@ -1857,7 +1969,7 @@ contains
           if ( ('T-reflect' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
-          call save_DAT(iounits(cu),T(jEl:jEl,iEl))
+          call local_save_DAT(iounits(cu),nE,ipvt,1,T(jEl:jEl,iEl))
           
           cu = cu + 1
 
@@ -1867,7 +1979,7 @@ contains
              ! This is because the reflection is 1->1
              ! and the transmission is the G.\Gamma
              ! flux. Hence we simply reverse the print-outs.
-             call save_DAT(iounits(cu),T(N_Elec+1:N_Elec+1,iEl))
+             call local_save_DAT(iounits(cu),nE,ipvt,1,T(N_Elec+1:N_Elec+1,iEl))
              cu = cu + 1
           end if
 
@@ -1880,51 +1992,124 @@ contains
     if ( allocated(rDOS) ) deallocate(rDOS)
 #endif
 
-  contains
-    
-    subroutine save_DAT(iu,DATA,fact)
-      integer, intent(in) :: iu
-      real(dp), intent(in) :: DATA(:)
-      real(dp), intent(in), optional :: fact
-
-      integer :: iN, i, ND
-      real(dp) :: rnd
-      ND = size(DATA)
-      if ( ND == 1 ) then
-         rnd = 1._dp
-      else
-         rnd = 1._dp / ND
-      end if
-      if ( present(fact) ) rnd = rnd * fact
-
-      if ( Node == 0 ) then
-         do iN = 0 , Nodes - 1
-            i = ipvt(iN) ! sorting E
-#ifdef MPI
-            if ( nE%iE(i) <= 0 ) cycle ! if the energy point is fake, discard
-#endif
-            if ( i == 0 ) then ! local node
-               write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(DATA(:)) * rnd
-            else
-#ifdef MPI
-               call MPI_Recv(rDOS,ND,Mpi_double_precision,i,i, &
-                    Mpi_comm_world,status,MPIerror)
-               write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(rDOS(1:ND)) * rnd
-#else
-               call die('Error')
-#endif
-            end if
-         end do
-      else if ( nE%iE(Node) > 0 ) then
-#ifdef MPI
-         call MPI_Send(DATA(1),ND,Mpi_double_precision,0,Node, &
-              Mpi_comm_world,MPIerror)
-#endif
-      end if
-
-    end subroutine save_DAT
-    
   end subroutine state_save
+
+  ! This routine prepares the files for saving ASCII format
+  ! data.
+  ! NOTE that ASCII data will only be created in case
+  ! of Netcdf not being compiled in
+  subroutine state_save_Elec(iounits,nE,N_Elec,Elecs,DOS, &
+       save_DATA )
+    
+    use parallel, only : Nodes
+    use units, only : eV
+    use m_interpolate, only : crt_pivot
+
+    use dictionary
+    use m_ts_electype
+
+    integer, intent(in)    :: iounits(:)
+    type(tNodeE), intent(in) :: nE
+    integer, intent(in)    :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    real(dp), intent(in)   :: DOS(:,:)
+    type(dict), intent(in) :: save_DATA
+
+    integer :: cu, N
+    integer :: iEl
+    integer, allocatable :: ipvt(:)
+
+    allocate(ipvt(Nodes))
+    ipvt = 1
+
+#ifdef MPI
+    if ( Nodes > 1 ) then
+       call crt_pivot(Nodes,nE%E,ipvt)
+       allocate(rDOS(size(DOS,dim=1)))
+    end if
+#endif
+
+    ! Correct for rank indices
+    ipvt(:) = ipvt(:) - 1
+
+    cu = 1
+
+    if ( 'DOS-Elecs' .in. save_DATA ) then
+
+       do iEl = 1 , N_Elec
+
+          N = Elecs(iEl)%no_u
+          call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,iEl),fact=eV)
+          
+          cu = cu + 1
+          
+       end do
+
+    end if
+
+    deallocate(ipvt)
+#ifdef MPI
+    if ( allocated(rDOS) ) deallocate(rDOS)
+#endif
+
+  end subroutine state_save_Elec
+  
+  subroutine local_save_DAT(iu,nE,ipvt,N,DATA,fact)
+    use parallel, only : Node, Nodes
+    use units, only : eV
+
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
+    use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
+    use mpi_siesta, only : MPI_Integer, MPI_STATUS_SIZE
+    use mpi_siesta, only : Mpi_double_precision
+#endif
+
+    integer, intent(in) :: iu
+    type(tNodeE), intent(in) :: nE
+    integer, intent(in) :: ipvt(:), N
+    real(dp), intent(in) :: DATA(N)
+    real(dp), intent(in), optional :: fact
+
+    integer :: iN, i
+    real(dp) :: rnd
+#ifdef MPI
+    integer :: MPIerror, status(MPI_STATUS_SIZE)
+#endif
+
+    if ( N == 1 ) then
+       rnd = 1._dp
+    else
+       rnd = 1._dp / N
+    end if
+    if ( present(fact) ) rnd = rnd * fact
+
+    if ( Node == 0 ) then
+       do iN = 0 , Nodes - 1
+          i = ipvt(iN+1) ! sorting E
+#ifdef MPI
+          if ( nE%iE(i) <= 0 ) cycle ! if the energy point is fake, discard
+#endif
+          if ( i == 0 ) then ! local node
+             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(DATA(:)) * rnd
+          else
+#ifdef MPI
+             call MPI_Recv(rDOS,N,MPI_double_precision,i,i, &
+                  Mpi_comm_world,status,MPIerror)
+             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(rDOS(1:N)) * rnd
+#else
+             call die('Error')
+#endif
+          end if
+       end do
+    else if ( nE%iE(Node) > 0 ) then
+#ifdef MPI
+       call MPI_Send(DATA(1),N,MPI_double_precision,0,Node, &
+            Mpi_comm_world,MPIerror)
+#endif
+    end if
+
+  end subroutine local_save_DAT
 
 #endif
 

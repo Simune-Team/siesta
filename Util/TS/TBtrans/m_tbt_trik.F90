@@ -137,11 +137,13 @@ contains
 ! ************************************************************
 
 ! ********************** Result arrays ***********************
-    real(dp), allocatable :: DOS(:,:)
+    real(dp), allocatable, target :: allDOS(:,:)
+    real(dp), pointer :: DOS(:,:), DOS_El(:,:)
+
     real(dp) :: T(N_Elec+1,N_Elec)
 #ifndef NCDF_4
     ! Units for IO of ASCII files
-    integer, allocatable :: iounits(:)
+    integer, allocatable :: iounits(:), iounits_El(:)
 #else
     ! If the user requests projection molecules
     ! Instead of overwriting the original
@@ -186,7 +188,10 @@ contains
     type(itt1) :: Kp
     integer :: N_E
     integer, pointer :: ikpt
-    integer :: iEl, jEl, it, ipt
+    integer :: iEl, jEl
+#ifdef NCDF_4
+    integer :: ipt, it
+#endif
     integer :: iE, iE_N
     integer :: no, io
     integer :: pad_LHS, pad_RHS
@@ -252,7 +257,11 @@ contains
        ! we need a certain size for the electrode calculation.
        ! Sadly this is "pretty" big.
        if ( .not. Elecs(iEl)%out_of_core ) then
-          pad_LHS = max(pad_LHS,Elecs(iEl)%no_u**2*8)
+          if ( 'DOS-Elecs' .in. save_DATA ) then
+             pad_LHS = max(pad_LHS,Elecs(iEl)%no_u**2*9)
+          else
+             pad_LHS = max(pad_LHS,Elecs(iEl)%no_u**2*8)
+          end if
        end if
     end do
 
@@ -412,7 +421,17 @@ contains
     call newzSpData1D(sp_uc,fdist,spS,name='TBT spS')
 
     ! Allocate data-collecting arrays
-    allocate(DOS(r_oDev%n,N_Elec+1))
+    io = r_oDev%n
+    jEl = 0
+    if ( 'DOS-Elecs' .in. save_DATA ) then
+       ! Allocate density of states for the electrodes
+       do iEl = 1 , N_Elec
+          jEl = max(jEl,Elecs(iEl)%no_u)
+       end do
+    end if
+    allocate(allDOS(max(io,jEl),N_Elec+1))
+    DOS => allDOS(1:r_oDev%n,1:N_Elec+1)
+    DOS_El => allDOS(1:jEl,1:N_Elec)
 
     ! Initialize which parts to calculate
     allocate(calc_parts(DevTri%n))
@@ -484,7 +503,12 @@ contains
 #else
     ! Allocate units for IO ASCII
     allocate(iounits(1+(N_Elec+2)*N_Elec)) ! maximum number of units
+    iounits = -100
     call init_save(iounits,ispin,TSHS%nspin,N_Elec,Elecs, &
+         save_DATA)
+    allocate(iounits_El(N_Elec)) ! maximum number of units
+    iounits_El = -100
+    call init_save_Elec(iounits_El,ispin,TSHS%nspin,N_Elec,Elecs, &
          save_DATA)
 #endif
 
@@ -527,8 +551,8 @@ contains
 
 #ifndef NCDF_4
        ! Step the k-points in the output files
-       call step_kpt_save(iounits,n_kpt,bkpt,wkpt,N_Elec, &
-            save_DATA)
+       call step_kpt_save(iounits,n_kpt,bkpt,wkpt)
+       call step_kpt_save(iounits_El,n_kpt,bkpt,wkpt)
 #endif
 
        ! Start timer
@@ -663,9 +687,26 @@ contains
           ! We have reduced the electrode sizes to only one spin-channel
           ! Hence, it will ALWAYS be the first index
           if ( n_k == 0 ) then
-             call read_next_GS(1, ikpt, bkpt, &
-                  cE, N_Elec, uGF, Elecs, &
-                  nzwork, zwork, .false., forward = .false. )
+             if ( 'DOS-Elecs' .in. save_DATA ) then
+                call read_next_GS(1, ikpt, bkpt, &
+                     cE, N_Elec, uGF, Elecs, &
+                     nzwork, zwork, .false., forward = .false. , &
+                     DOS = DOS_El )
+
+                ! Immediately save the DOS
+#ifdef NCDF_4
+                call state_cdf_save_Elec(cdf_fname, ikpt, nE, N_Elec, Elecs, &
+                     DOS_El, save_DATA)
+#else
+                call state_save_Elec(iounits_El,nE,N_Elec,Elecs,DOS_El, &
+                     save_DATA )
+#endif
+
+             else
+                call read_next_GS(1, ikpt, bkpt, &
+                     cE, N_Elec, uGF, Elecs, &
+                     nzwork, zwork, .false., forward = .false. )
+             end if
           else
              call calc_GS_k(1, cE, N_Elec, Elecs, uGF, &
                   nzwork, zwork)
@@ -1109,7 +1150,8 @@ contains
 
     deallocate(nE%iE,nE%E)
 
-    deallocate(DOS,calc_parts)
+    nullify(DOS,DOS_El)
+    deallocate(allDOS,calc_parts)
 
     if ( GFGGF_size > 0 ) then
        call de_alloc(GFGGF_work,routine='tri_k')
@@ -1170,7 +1212,8 @@ contains
        deallocate(S)
     end if
 #else
-    call end_save(iounits,N_Elec,save_DATA)
+    call end_save(iounits)
+    call end_save(iounits_El)
     deallocate(iounits)
 #endif
 

@@ -34,7 +34,7 @@ contains
   ! Handles both the left and right one
   ! this is the Sancho, Sancho and Rubio algorithm
   subroutine SSR_sGreen_DOS(no,ZE,H00,S00,H01,S01,GS, &
-       zDOS, &
+       DOS, &
        nwork, zwork, &
        iterations, final_invert)
        
@@ -51,6 +51,7 @@ contains
     use m_pivot_array, only : ipiv
     use m_mat_invert
     use precision, only: dp
+    use units, only : Pi
 
 ! ***********************
 ! * INPUT variables     *
@@ -69,7 +70,7 @@ contains
 ! ***********************
     complex(dp), intent(out), target :: GS(no*no)
     complex(dp), pointer :: zwork(:)
-    complex(dp), intent(out) :: zDOS
+    real(dp), intent(inout) :: DOS(no)
 
     integer, intent(out), optional :: iterations
 
@@ -124,12 +125,12 @@ contains
 ! alpha = -(Z*S01-H01)
 !$OMP do
     do i = 1 , nosq
-       gb(i)    = ZE * S00(i) - H00(i)
+       GB(i)    = ZE * S00(i) - H00(i)
        alpha(i) = H01(i) - ZE * S01(i)
 
        ! gs = Z*S00-H00
-       gsL(i) = gb(i)
-       gsR(i) = gb(i)
+       gsL(i) = GB(i)
+       gsR(i) = GB(i)
 
     end do
 !$OMP end do nowait
@@ -163,7 +164,7 @@ contains
           rh(i)       = alpha(i)
           rh(nosq+i)  = beta(i)
           ! w = Z*S00-H00
-          w(i)        = gb(i)
+          w(i)        = GB(i)
        end do
 !$OMP end parallel do
 
@@ -203,7 +204,7 @@ contains
             'N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_0,w,no)
 !$OMP parallel do default(shared), private(i)
        do i = 1 , nosq
-          gb(i)  = gb(i) + w(i)
+          GB(i)  = GB(i) + w(i)
           gsL(i) = gsL(i) + w(i)
        end do
 !$OMP end parallel do
@@ -219,7 +220,7 @@ contains
 !$OMP parallel do default(shared), private(i), &
 !$OMP&reduction(max:ro)
        do i = 1 , nosq
-          gb(i)  = gb(i) + w(i)
+          GB(i)  = GB(i) + w(i)
           gsR(i) = gsR(i) + w(i)
 
           ! also update the criteria
@@ -273,9 +274,9 @@ contains
 
     i = 1
     j = nosq + 1 
-    ! zDOS = Tr{ G_b * S00 + 
-    !            G_l * (H01 - E * S01 ) * G_b * S10 +
-    !            G_r * (H10 - E * S10 ) * G_b * S01   }
+    ! DOS = diag{ G_b * S00 + 
+    !             G_l * (H01 - E * S01 ) * G_b * S10 +
+    !             G_r * (H10 - E * S10 ) * G_b * S01   }
 #ifdef USE_GEMM3M
     call zgemm3m( &
 #else
@@ -287,13 +288,13 @@ contains
 #else
     call zgemm( &
 #endif
-         'N','N',no,no,no,z_1,w    ,no,gb   ,no,z_0,rh(i),no)
+         'N','N',no,no,no,z_1,w    ,no,GB   ,no,z_0,rh(i),no)
 #ifdef USE_GEMM3M
     call zgemm3m( &
 #else
     call zgemm( &
 #endif
-         'C','N',no,no,no,z_1,beta ,no,gb   ,no,z_0,w    ,no)
+         'C','N',no,no,no,z_1,beta ,no,GB   ,no,z_0,w    ,no)
 #ifdef USE_GEMM3M
     call zgemm3m( &
 #else
@@ -305,29 +306,27 @@ contains
 #else
     call zgemm( &
 #endif
-         'N','N',no,no,no,z_1,gb   ,no,s00  ,no,z_0,w    ,no)
+         'N','N',no,no,no,z_1,GB   ,no,S00  ,no,z_0,w    ,no)
 #ifdef USE_GEMM3M
     call zgemm3m( &
 #else
     call zgemm( &
 #endif
-         'N','C',no,no,no,z_1,rh(i),no,s01  ,no,z_1,w    ,no)
+         'N','C',no,no,no,z_1,rh(i),no,S01  ,no,z_1,w    ,no)
 #ifdef USE_GEMM3M
     call zgemm3m( &
 #else
     call zgemm( &
 #endif
-         'N','N',no,no,no,z_1,rh(j),no,s01  ,no,z_1,w    ,no)
+         'N','N',no,no,no,z_1,rh(j),no,S01  ,no,z_1,w    ,no)
 
-    zDOS = 0.0_dp
-!$OMP parallel do default(shared), private(j), &
-!$OMP&reduction(+:zDOS)
+    ! Calculate on-site density of states in the bulk part
+    ! of the electrode
+!$OMP parallel do default(shared), private(j)
     do j = 0 , nom1
-       zDOS = zDOS + w(1+j*(no+1))
+       DOS(j+1) = DOS(j+1) - aimag(w(1+j*(no+1))) / Pi
     end do
 !$OMP end parallel do
-    ! Normalize DOS
-    zDOS = zDOS / real(no,dp)
 
     if ( present(final_invert) ) then
        ! If we do not need to invert it, return the value
@@ -619,7 +618,7 @@ contains
   subroutine create_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
        NEn,ce, &
-       ZBulkDOS)
+       DOS)
 
     use precision,  only : dp
     use parallel  , only : Node, Nodes, IONode
@@ -657,7 +656,7 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out), optional :: ZBulkDOS(NEn,El%nspin) 
+    complex(dp), intent(out), optional :: DOS(El%no_u,NEn,El%nspin) 
 
 ! ***********************
 ! * LOCAL variables     *
@@ -665,6 +664,7 @@ contains
     ! Array for holding converted k-points
     real(dp), allocatable :: kE(:,:)
     real(dp) :: bkpt(3), kpt(3), kq(3), wq
+    real(dp), allocatable :: lDOS(:)
     
     ! Dimensions
     integer :: nq, nspin, n_s
@@ -685,7 +685,7 @@ contains
     ! Green function variables
     complex(dp), pointer :: GS(:)
     complex(dp), pointer :: Hq(:), Sq(:), Gq(:)
-    complex(dp) :: ZEnergy, zDOS
+    complex(dp) :: ZEnergy
 
     ! In order to print information about the recursize algorithm
     integer, allocatable :: iters(:,:,:,:)
@@ -714,7 +714,7 @@ contains
 
     call timer('TS_SE',1)
 
-    CalcDOS = present(ZBulkDOS)
+    CalcDOS = present(DOS)
 
     ! Check input for what to do
     if( El%inf_dir == INF_NEGATIVE ) then
@@ -849,8 +849,9 @@ contains
 
     ! Reset bulk DOS
     if ( CalcDOS ) then
+       allocate(lDOS(nuo_E))
 !$OMP parallel workshare default(shared)
-       ZBulkDOS(:,:) = dcmplx(0._dp,0._dp)
+       DOS(:,:,:) = dcmplx(0._dp,0._dp)
 !$OMP end parallel workshare
     end if
 
@@ -1054,13 +1055,13 @@ contains
                 ! Calculate the surface Green function
                 ! Zenergy is wrt. to the system Fermi-level
                 if ( CalcDOS ) then
+                   lDOS = 0._dp
                    call SSR_sGreen_DOS(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
-                        zDOS,9*nS,zwork, &
+                        lDOS,9*nS,zwork, &
                         iterations=iters(iqpt,iEn,ikpt,1), final_invert = final_invert)
                    
                    ! We also average the k-points.
-                   ZBulkDOS(iEn,ispin) = ZBulkDOS(iEn,ispin) + &
-                        wq * zDOS * kweight(ikpt)
+                   DOS(:,iEn,ispin) = DOS(:,iEn,ispin) + lDOS * wq * kweight(ikpt)
 
                 else
                    call SSR_sGreen_NoDos(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
@@ -1238,9 +1239,9 @@ contains
     call memory('D','Z',size(zHS),'create_green')
     deallocate(zHS)
 
-    if ( pre_expand ) then
-       deallocate(X)
-    end if
+    if ( CalcDOS ) deallocate(lDOS)
+
+    if ( pre_expand ) deallocate(X)
 
     call itt_destroy(it2)
 
@@ -1250,20 +1251,21 @@ contains
     if ( CalcDOS ) then
        ! Sum the bulkdensity of states
        ! Here we can safely use the array as temporary (Gq)
-       allocate(Gq(NEn*nspin))
-       call memory('A','Z',NEn*nspin,'create_green')
-       Gq = 0.0_dp
-       call MPI_AllReduce(ZBulkDOS(1,1),Gq(1),NEn*nspin, MPI_double_complex, &
+       allocate(lDOS(nuo_E*NEn*nspin))
+       call memory('A','D',nuo_E*NEn*nspin,'create_green')
+       call MPI_AllReduce(DOS(1,1,1),lDOS(1),nuo_E*NEn*nspin, MPI_double_precision, &
             MPI_Sum,MPI_Comm_World,MPIerror)
        i = 0
        do j = 1 , nspin
-          do io = 1 , NEn
+          do jo = 1 , NEn
+          do io = 1 , nuo_E
              i = i + 1
-             ZBulkDOS(io,j) = Gq(i)
+             DOS(io,jo,j) = lDOS(i)
+          end do
           end do
        end do
-       call memory('D','Z',NEn*nspin,'create_green')
-       deallocate(Gq)
+       call memory('D','D',nuo_E*NEn*nspin,'create_green')
+       deallocate(lDOS)
     end if
 #endif
 
@@ -1464,7 +1466,7 @@ contains
 
   end subroutine set_electrode_HS_Transfer
 
-  subroutine calc_next_GS_Elec(El,ispin,dbkpt,Z,nzwork,in_zwork)
+  subroutine calc_next_GS_Elec(El,ispin,dbkpt,Z,nzwork,in_zwork,DOS)
     use precision,  only : dp
 
     use m_ts_electype
@@ -1485,6 +1487,8 @@ contains
     complex(dp), intent(in) :: Z
     integer, intent(in) :: nzwork
     complex(dp), intent(inout), target :: in_zwork(nzwork)
+    ! Possibly the bulk density of states from the electrode
+    real(dp), intent(out), optional :: DOS(:)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -1515,10 +1519,11 @@ contains
     integer :: i, ios, ioe, off, n_s
     logical :: is_left, final_invert
     logical :: zHS_allocated
-    logical :: same_k
+    logical :: same_k, calc_DOS
 
     ! Check input for what to do
     is_left = El%inf_dir == INF_NEGATIVE
+    calc_DOS = present(DOS)
 
     ! pre-point to zwork
     zwork => in_zwork(:)
@@ -1534,6 +1539,13 @@ contains
     ! We also need to invert to get the contribution in the
     final_invert = nq /= 1 .or. nuo_E /= nuou_E
     nuouT_E = TotUsedOrbs(El)
+
+    if ( calc_DOS ) then
+       if ( nuo_E > size(DOS) ) &
+            call die('Error in DOS size for calculation bulk DOS')
+       ! Initialize density of states
+       DOS(1:nuo_E) = 0._dp
+    end if
 
     n_s = size(El%isc_off,dim=2)
     allocate(sc_off(3,n_s))
@@ -1558,6 +1570,7 @@ contains
     ! determine whether there is room enough
     size_req(1) = (4 + 1) * nS
     size_req(2) =    8    * nS
+    if ( calc_DOS ) size_req(2) = size_req(2) + nS ! 9 times
     if ( sum(size_req) <= nzwork ) then
 
        ! we have enough room in the regular work-array for everything
@@ -1647,9 +1660,16 @@ contains
        end if
 
        ! calculate the contribution for this q-point
-       call SSR_sGreen_NoDos(nuo_E,Z,H00,S00,H01,S01,GS, &
-            8*nS,zwork, &
-            final_invert = final_invert)
+       if ( calc_DOS ) then
+          call SSR_sGreen_DOS(nuo_E,Z,H00,S00,H01,S01,GS, &
+               DOS(1:nuo_E), &
+               9*nS,zwork, &
+               final_invert = final_invert)
+       else
+          call SSR_sGreen_NoDOS(nuo_E,Z,H00,S00,H01,S01,GS, &
+               8*nS,zwork, &
+               final_invert = final_invert)
+       end if
 
        ! Copy over surface Green function
        ! first we need to determine the correct placement
@@ -1669,6 +1689,16 @@ contains
        ioe = ioe + nuS
 
     end do q_loop
+
+    if ( nq > 1 ) then
+!$OMP parallel workshare default(shared)
+       DOS(1:nuo_E) = DOS(1:nuo_E) / real(nq,dp)
+!$OMP end parallel workshare
+    end if
+
+    ! We do not normalize DOS as this is the DOS for the entire
+    ! replicated device. Hence it can directly be compared against the 
+    ! \sum_(equivalent atoms) DOS
 
     if ( zHS_allocated ) then
        call de_alloc(zHS, routine='next_GS')

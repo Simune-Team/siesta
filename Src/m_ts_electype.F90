@@ -1750,6 +1750,7 @@ contains
     end if
 #endif
     write(*,f9)  '  Electrode imaginary Eta', this%Eta/eV,' eV'
+#ifndef TBTRANS
     if ( present(plane) ) then
     if ( plane ) then
        write(*,f11) '  Hartree fix plane:'
@@ -1766,6 +1767,7 @@ contains
        write(*,f3)  '    box v3',this%box%v(:,3) / Ang, ' Ang'
     end if
     end if
+#endif
 
   end subroutine print_settings
 

@@ -192,10 +192,9 @@ contains
     ! Currently the transport direction for all electrodes is the default
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
-    Elecs(:)%Bulk  = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
-    Elecs(:)%Bulk  = fdf_get('TBT.Elecs.Bulk',Elecs(1)%Bulk)
+    Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
+    Elecs(:)%Bulk = fdf_get('TBT.Elecs.Bulk',Elecs(1)%Bulk)
 
-    ! We default to not calculate the band-bottom...
     Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF.ReUse',.true.)
     Elecs(:)%ReUseGF = fdf_get('TBT.Elecs.GF.ReUse',Elecs(1)%ReUseGF)
     rtmp             = fdf_get('TS.Elecs.Eta',0.00001*eV,'Ry')
@@ -350,7 +349,13 @@ contains
        save_DATA = save_DATA // ('T-all'.kv.1)
     end if
 
-    ! Should we calculate DOS of Green's function
+    ! Should we calculate DOS of electrode bulk Green function
+    ltmp = fdf_get('TBT.DOS.Elecs', .false. )
+    if ( ltmp ) then
+       save_DATA = save_DATA // ('DOS-Elecs'.kv.1)
+    end if
+
+    ! Should we calculate DOS of Green function
     ltmp = fdf_get('TBT.DOS.Gf', N_Elec == 1 )
     if ( ltmp ) then
        save_DATA = save_DATA // ('DOS-Gf'.kv.1)
@@ -393,6 +398,7 @@ contains
     if ( IONode ) then
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'
        write(*,6) 'Voltage', Volt/eV,'Volts'
+       write(*,1) 'Saving DOS from bulk electrodes',('DOS-Elecs'.in.save_DATA)
        write(*,1) 'Saving DOS from Green function',('DOS-Gf'.in.save_DATA)
        if ( 'DOS-A-all' .in. save_DATA ) then
           write(*,1) 'Saving DOS from all spectral functions',.true.

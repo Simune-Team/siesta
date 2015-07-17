@@ -48,7 +48,7 @@ contains
     use m_tbt_kpoint, only : nkpnt, kpoint, kweight
     use m_tbt_options, only : save_DATA
     use m_tbt_options, only : cdf_fname, cdf_fname_sigma, cdf_fname_proj
-    use m_tbt_regions, only : r_aDev, r_aBuf, r_oDev, sp_dev
+    use m_tbt_regions, only : r_aDev, r_aBuf, sp_dev
 
     use m_tbt_save
     use m_tbt_proj, only : N_mol, mols, init_proj_save
@@ -56,6 +56,7 @@ contains
 #else
     use m_tbt_kpoint, only : nkpnt
 #endif
+    use m_tbt_regions, only : r_oDev
     use m_tbt_kregions, only : n_k, r_k, kregion_step, kregion_k
 
     use m_ts_gf, only : read_Green
@@ -75,10 +76,12 @@ contains
 ! ****************** Electrode variables *********************
     integer, allocatable :: nq(:)
 ! ************************************************************
+#ifdef NCDF_4
     ! Temporary variables
     integer :: nkpt
     real(dp), pointer :: kpt(:,:), wkpt(:)
     real(dp) :: k(3)
+#endif
 
 ! * local variables
     integer :: iEl, NEn, no_used, no_used2, ispin, ils, i

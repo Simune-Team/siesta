@@ -508,8 +508,8 @@ contains
   ! Subroutine for reading in both the left and right next energy point
   subroutine read_next_GS(ispin,ikpt, bkpt, cE, &
        N_Elec, uGF, Elecs, &
-       nzwork, zwork, reread, &
-       forward )
+       nzwork, zwork, &
+       reread, forward, DOS )
 
     use parallel, only : IONode
 
@@ -530,6 +530,8 @@ contains
     integer, intent(in) :: nzwork
     complex(dp), intent(inout), target :: zwork(nzwork)
     logical, intent(in), optional :: reread, forward
+    ! When requesting density of states
+    real(dp), intent(out), optional :: DOS(:,:)
 
     integer :: NEReqs, i, j
 #ifdef MPI
@@ -605,8 +607,13 @@ contains
           ! This routine will automatically check
           ! (and SET) the k-point for the electrode.
           ! This is necessary for the expansion to work.
-          call calc_next_GS_Elec(Elecs(i),ispin,bkpt,c%e, &
-               nzwork, zwork)
+          if ( present(DOS) ) then
+             call calc_next_GS_Elec(Elecs(i),ispin,bkpt,c%e, &
+                  nzwork, zwork, DOS(:,i) )
+          else
+             call calc_next_GS_Elec(Elecs(i),ispin,bkpt,c%e, &
+                  nzwork, zwork)
+          end if
        end if
     end do
 

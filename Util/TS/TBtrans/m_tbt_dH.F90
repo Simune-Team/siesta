@@ -72,6 +72,8 @@ module m_tbt_dH
   ! The dH global variable
   type(tTBTdH), save :: dH
 
+#ifdef NCDF_4
+
   ! File name that contains all information.
   character(len=250), save :: fname_dH
   
@@ -101,6 +103,8 @@ module m_tbt_dH
   real(dp), allocatable, save :: bkpt4(:,:)
   integer, save :: n_E4 = 0
   real(dp), allocatable, save :: E4(:)
+
+#endif
 
   ! The algorithm for insertion
   ! If it is 0 it will be assumed that the user

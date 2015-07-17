@@ -103,7 +103,6 @@ contains
        n_nzs, H, S, sc_off, SpArrH, SpArrS, k, &
        nwork, work)
 
-    use parallel, only : Node
     use class_OrbitalDistribution
     use class_Sparsity
     use class_zSpData1D
@@ -395,7 +394,6 @@ contains
        n_nzs, H, S, SpArrH, SpArrS, &
        nwork, work)
 
-    use parallel, only : Node
     use class_OrbitalDistribution
     use class_Sparsity
     use class_dSpData1D

@@ -1,4 +1,44 @@
 ----------------------------------------------------
+July 17, 2015 -- Nick Papior          trunk-476---ts-scf-479
+TBT implemented bulk DOS
+
+* Added DOS calculation of the Bulk Green function
+  for the electrodes.
+
+  Hence:
+   TBT.DOS.Elecs
+  will enable the calculation of the density of states
+  of the bulk Green function.
+
+  It directly enables the comparison of the pristine electrodes
+  against the device being used.
+
+  We note that the bulk DOS will not be calculated if
+  the Green function files are calculated.
+
+  TODO: Enable DOS with Green function files
+
+* tbt_data.py has been updated to take this inte account.
+
+* Tested the non-NetCDF calculation of tbtrans.
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_sparse_helper.F90
+  Util/TS/TB/tbt_data.py
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/m_tbtrans.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 July 17, 2015 -- Nick Papior          trunk-476---ts-scf-478
 Bugfix for module use
 

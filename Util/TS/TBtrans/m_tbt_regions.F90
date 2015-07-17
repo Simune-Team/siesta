@@ -1153,9 +1153,11 @@ contains
     use m_sparsity_handling, only : Sp_retain_rgn
 
     type(dict), intent(in) :: save_DATA
+#ifdef NCDF_4
     type(OrbitalDistribution) :: fdit
 
     integer :: no_u
+#endif
 
     ! Make sure to initialize the device region
     ! sparsity pattern

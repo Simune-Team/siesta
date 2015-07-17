@@ -234,7 +234,7 @@ class TBTFile(object):
 
     def DOS(self,El=None,k_avg=True):
         """ Returns the DOS """
-        if El: return self.ADOS(El,k_avg=k_avg)
+        if El: return self._get_Data('DOS',[El],k_avg=k_avg)
         return self._get_Data('DOS',k_avg=k_avg)
 
     def ADOS(self,El,k_avg=True):
@@ -558,9 +558,6 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
     # Get the energies (they are in Ry)
     E = Tf.E * Tf.Ry
 
-    # Normalize to number of orbitals in sub-space (DOS is in 1/Ry)
-    fac_DOS = 1. / len(orbs) / Tf.Ry
-    
     for proj in projs:
 
         # Loop over all projections associated with this molecule
@@ -573,7 +570,7 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
             # Read in DOS
             try:
                 # Get ADOS and sum on designated orbitals
-                ADOS = np.sum(Tf.ADOS(mol,proj,El,k_avg=k_idx)[:,orbs],axis=-1) * fac_DOS
+                ADOS = np.mean(Tf.ADOS(mol,proj,El,k_avg=k_idx)[:,orbs],axis=-1) / Tf.Ry
             except: 
                 ADOS = None
 
@@ -589,11 +586,9 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
                 print('Saving transmission data in: '+fname)
                 save_txt(fname,E,T=T,ADOS=ADOS,fmt = args.fmt, kpt=args.kpt)
 
+
 def process_tbt(args,Tf,k_idx,orbs):
     """ Processes the TBT.nc file """
-
-    # Normalize to number of orbitals in sub-space
-    fac_DOS = 1. / len(orbs) / Tf.Ry
 
     # Grab different electrodes in this file
     elecs = Tf.elecs
@@ -602,7 +597,7 @@ def process_tbt(args,Tf,k_idx,orbs):
     E = Tf.E * Tf.Ry
     try:
         # Get DOS and sum on designated orbitals
-        DOS = np.sum(Tf.DOS(k_avg=k_idx)[:,orbs],axis=-1) * fac_DOS
+        DOS = np.mean(Tf.DOS(k_avg=k_idx)[:,orbs],axis=-1) / Tf.Ry
     except: 
         DOS = None
 
@@ -612,13 +607,22 @@ def process_tbt(args,Tf,k_idx,orbs):
 
     for el1 in elecs:
         if not Tf.has_Elec(el1): continue
+
+        try:
+            # Get bulk-DOS and sum
+            EDOS = np.mean(Tf.DOS(el1,k_avg=k_idx)[:,:],axis=-1) / Tf.Ry
+        except: 
+            EDOS = None
+        fname = args.prefix+'.TBT.DOS_'+el1
+        save_txt(fname,E,DOS=EDOS, fmt = args.fmt, kpt=args.kpt)
+
         try:
             # Get ADOS and sum on designated orbitals
-            ADOS = np.sum(Tf.ADOS(el1,k_avg=k_idx)[:,orbs],axis=-1) * fac_DOS
+            ADOS = np.mean(Tf.ADOS(el1,k_avg=k_idx)[:,orbs],axis=-1) / Tf.Ry
         except: 
             ADOS = None
 
-        fname = args.prefix+'.TBT.DOS.'+el1
+        fname = args.prefix+'.TBT.ADOS_'+el1
         save_txt(fname,E,ADOS=ADOS, fmt = args.fmt, kpt=args.kpt)
 
         for el2 in elecs:

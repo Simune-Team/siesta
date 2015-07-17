@@ -12,12 +12,12 @@ module m_tbt_sigma_save
 
   private 
 
+#ifdef NCDF_4
   logical, save :: sigma_save      = .false.
   logical, save :: sigma_mean_save = .false.
   logical, save :: sigma_parallel  = .false.
   integer, save :: cmp_lvl    = 0
 
-#ifdef NCDF_4
   public :: init_Sigma_options
   public :: init_Sigma_save
   public :: state_Sigma_save
