@@ -251,7 +251,7 @@
      .    vlocal(nrmax), vxc(nrmax), ve(nrmax),
      .    rho(nrmax), chcore(nrmax), rho_PAO(nrmax), auxrho(nrmax),
      .    vePAO(nrmax), qPAO(0:lmaxd,nsemx), chlocal(nrmax),
-     .    red_vlocal(nrmax)
+     .    red_vlocal(nrmax), vlocal_tmp(nrmax), local_charge(nrmax)
 
         real(dp) 
      .    pi, zval, flting,
@@ -487,8 +487,14 @@ c    .          'atom: The above configuration will be used ',
 ! 
           if (flting.gt.0.0d0) then
 
+             ! By default, use the Projectors and Vlocal 
+             ! in the PSML file if we have them
+             ! Note that a PSML file might not really have them,
+             ! so we need something like basp%has_psml_operator here
+             !
              use_psml_kb_projectors =
-     $           fdf_boolean("Use.PSML.KB.Projectors",.false.)
+     $           fdf_boolean("Use.PSML.KB.Projectors",basp%has_psml_ps)
+
              use_psml_vlocal = fdf_boolean('Use.PSML.Vlocal',
      $                                     use_psml_kb_projectors)
 
@@ -515,6 +521,11 @@ c    .          'atom: The above configuration will be used ',
      $                               rofi,nrval,Zval,vlocal,
      $                               vlocal_type)
 
+                if (write_ion_plot_files) then
+                   call file_out(nrval,rofi,vlocal,
+     .                  trim(global_label)//".Vlocal_psml")
+                endif
+
                 ! Now we need to reconstruct the chlocal from vlocal
                 ! This is not completely trivial
 
@@ -534,6 +545,21 @@ c    .          'atom: The above configuration will be used ',
      $                         s, a, nrval,
      $                         Zval, nchloc, chlocal,
      $                         use_charge_cutoff,quadratic)
+                !
+                ! Sanity check: re-compute Vlocal from chlocal
+                ! using the standard routine, and output to
+                ! debug file
+                !
+                do ir = 1, nrval
+                   local_charge(ir) =  4*pi*rofi(ir)**2 * chlocal(ir)
+                enddo
+                call vhrtre(local_charge,vlocal_tmp,rofi,drdi,s,nrval,a)
+                if (write_ion_plot_files) then
+                   call file_out(nrval,rofi,vlocal_tmp,
+     .                  trim(global_label)//".Vlocal_from_chlocal")
+                endif
+
+                !
              else
 
                 force_chlocal_method =
@@ -787,6 +813,8 @@ c    .          'atom: The above configuration will be used ',
 
         end subroutine atom_main
 !
+!
+!------------------------------------------------------------------
       subroutine  store_kbproj(l,ikb,ekb,nrc,erefkb,dkbcos,
      $                       nrval,rofi,proj)
 

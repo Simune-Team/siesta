@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+July 18, 2015  Alberto Garcia       trunk-470--ncps-72
+Enable psml-use-{vlocal,kb-projs} by default if using psml file
+
+* The psml-use-* flags default to 'true' if the element has psml data.
+  Note that a psml file might not really have an operator
+  section. Full logic will be added later.
+
+modified:
+  Src/atom.F
+
+------------------------------------------------------------
 July 10, 2015  Alberto Garcia       trunk-470--ncps-71
 Psml handles in structures. Clarify psml-use-{vlocal,kb-projs}
 
