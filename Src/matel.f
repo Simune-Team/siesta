@@ -166,10 +166,14 @@ C    distributions for operat='U', in units of the radial interval
 C  FFTOL is the tolerance for considering equal the radial part of
 C    two orbitals.
 C  TINY is a small number to avoid a zero denominator
+!
+!     AG: Enlarged NQ and Q2CUT to deal with non-smooth Vlocals
+!         in foreign PSML files, which affect Vna.
+!
       INTEGER,          PARAMETER :: NRTAB  =  128
-      INTEGER,          PARAMETER :: NQ     =  1024
+      INTEGER,          PARAMETER :: NQ     =  2048
       real(dp),         PARAMETER :: EXPAND =  1.20_dp
-      real(dp),         PARAMETER :: Q2CUT  =  2.50e3_dp
+      real(dp),         PARAMETER :: Q2CUT  =  6.50e3_dp
       real(dp),         PARAMETER :: GWBYDR =  1.5_dp
       real(dp),         PARAMETER :: FFTOL  =  1.e-8_dp
       real(dp),         PARAMETER :: TINY   =  1.e-12_dp

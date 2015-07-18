@@ -1,4 +1,16 @@
 ------------------------------------------------------------
+July 18, 2015  Alberto Garcia       trunk-470--ncps-73
+Increase radial fft parameters to support non-smooth chlocal/vlocal
+
+* Vlocals from psml files might not be smooth in the fourier sense,
+  requiring a higher cutoff and number of points in the fourier
+  transforms in 'electrostatic' and 'matel'.
+
+modified:
+  Src/electrostatic.f
+  Src/matel.f
+
+------------------------------------------------------------
 July 18, 2015  Alberto Garcia       trunk-470--ncps-72
 Enable psml-use-{vlocal,kb-projs} by default if using psml file
 
