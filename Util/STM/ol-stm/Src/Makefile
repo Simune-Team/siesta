@@ -82,13 +82,16 @@ OBJS_STM = atompla.o  \
 	vacpot.o volcel.o wrout.o handlers.o
 #
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
 #PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 INCFLAGS:=$(NETCDF_INCFLAGS) \
           $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) \
+          $(PSML_INCFLAGS) \
           $(INCFLAGS)
 INCFLAGS:= $(FFTW_INCFLAGS) $(INCFLAGS)
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
+PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -115,9 +118,9 @@ MOD_OBJS=precision.o parallel.o sys.o m_io.o alloc.o memoryinfo.o listsc.o  \
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
 ALL_OBJS_STM=$(MOD_OBJS) $(COM_OBJS_STM)
 #
-stm: $(FDF)  $(NCPS) $(ALL_OBJS_STM)
+stm: $(FDF)  $(NCPS) $(PSML) $(ALL_OBJS_STM)
 	$(FC) -o stm \
-	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF) $(NCPS) $(FFTW_LIBS) 
+	       $(LDFLAGS) $(ALL_OBJS_STM) $(FDF) $(NCPS) $(PSML) $(FFTW_LIBS) 
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"

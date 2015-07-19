@@ -36,6 +36,9 @@
       call de_alloc( Eold,        'Eold',        'sparseMat' )
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
+      ! Hold will be null if not mixing H, and thus this call
+      ! will do nothing
+      call de_alloc( Hold,        'Hold',        'sparseMat' )
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
       call de_alloc( H_vkb,       'H_vkb',       'sparseMat' )
       call de_alloc( xijo,        'xijo',        'sparseMat' )

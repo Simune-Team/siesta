@@ -36,6 +36,8 @@
 
       use precision,      only : dp, grid_p
 
+      implicit none
+
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
       logical                 :: IsDiag, IsEfld, spiral
@@ -421,8 +423,8 @@ C ----------------------------------------------------------------------
 
       subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
      &                  nuotot, nua, na, isa, xa, indxua,
-     &                  ntm, ifa, istr, iHmat, filesOut, 
-     &                  maxnd, numd,
+     &                  ntm, ifa, istr, iHmat,
+     &                  filesOut, maxnd, numd,
      &                  listdptr, listd, Dscf, datm, maxnh, Hmat,
      &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, 
      &                  Exc, Dxc, dipol, stress, Fal, stressl,
@@ -581,7 +583,8 @@ C     Modules
       implicit none
       integer
      &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
-     &  iaorb(norb), ifa, iHmat, indxua(na), iphorb(norb), isa(na), 
+     &  iaorb(norb), ifa, iHmat,
+     &  indxua(na), iphorb(norb), isa(na), 
      &  istr, listd(*), listdptr(nuo), ntm(3), numd(nuo)
 
       real(dp)
@@ -615,6 +618,7 @@ C        timer(...)     : Finds CPU times
 C        vmat(...)      : Finds matrix elements of SCF potential
 C        vmatsp(...)    : Finds matrix elements of SCF potential for
 C                         spiral arrangement of spins
+C        delk(...)      : Finds matrix elements of exp(i \vec{k} \cdot \vec{r})
 C real*8 volcel( cell ) : Returns volume of unit cell
 C ----------------------------------------------------------------------
 C Internal variables and arrays:
@@ -955,6 +959,7 @@ C ----------------------------------------------------------------------
          if (charge_density_only) then
             call timer('DHSCF3',2)
             call timer('DHSCF',2)
+            call de_alloc( DRho, 'DRho', 'dhscf' )
             RETURN
          endif
       endif
@@ -1471,5 +1476,62 @@ C ----------------------------------------------------------------------
       end subroutine save_bader_charge
 
       end subroutine dhscf
+
+      subroutine delk_wrapper(isigneikr, norb, maxnd,
+     &                        numd, listdptr, listd,
+     &                        nuo,  nuotot, iaorb, iphorb, isa )
+
+      use m_delk,  only  : delk  ! The real workhorse, similar to vmat
+
+      use moreMeshSubs,   only : setMeshDistr
+      use moreMeshSubs,   only : UNIFORM, QUADRATIC
+      use parallel,       only : Nodes, Node
+      use mesh,           only : nsm, nsp
+
+!
+!     This is a wrapper to call delk, using some of the module
+!     variables of m_dhscf, but from outside dhscf itself.
+!
+      integer                  :: isigneikr, 
+     &                            norb, nuo, nuotot, maxnd,
+     &                            iaorb(*), iphorb(*), isa(*), 
+     &                            numd(nuo),     
+     &                            listdptr(nuo), listd(maxnd)
+
+! The dhscf module variables used are:
+! nmpl
+! dvol
+! nml
+! nmpl
+! ntml
+! ntpl
+!
+! Some of them might be put somewhere else (mesh?) to allow some
+! of the kitchen-sink functionality of dhscf to be made more modular.
+! For example, this wrapper might live independently if enough mesh
+! information is made available to it.
+
+C ----------------------------------------------------------------------
+C Calculate matrix elements of exp(i \vec{k} \cdot \vec{r})
+C ----------------------------------------------------------------------
+        if (isigneikr .eq. 1 .or. isigneikr .eq. -1) then
+
+          if (nodes.gt.1) then
+            call setMeshDistr( QUADRATIC, nsm, nsp,
+     &                         nml, nmpl, ntml, ntpl )
+          endif
+
+          call delk( isigneikr, norb, nmpl, dvol, maxnd,
+     &               numd, listdptr, listd,
+     &               nuo,  nuotot, iaorb, iphorb, isa )
+
+          if (nodes.gt.1) then
+!           Everything back to UNIFORM, sequential
+            call setMeshDistr( UNIFORM, nsm, nsp,
+     &                         nml, nmpl, ntml, ntpl )
+          endif
+
+        endif
+      end subroutine delk_wrapper
 
       end module m_dhscf

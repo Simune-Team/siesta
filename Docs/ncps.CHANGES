@@ -1,4 +1,148 @@
 ------------------------------------------------------------
+July 19, 2015  Alberto Garcia       trunk-470--ncps-74
+Sync with trunk-476
+
+(+ Additional changes to fix compilation issues
+   in Denchar, VCA, STM/ol-stm related to inclusion
+   of 'psml_handle' in 'pseudo_read' and the 'basis_def'
+   structures.
+ + Removal of dependency on 'siesta_options' in
+   'sparse_matrices')
+   
+476: Fix the geometry and DM and H logic for consistency in analysis
+475: Minor fixes and cosmetic changes after Wannier merge
+474: Merge code for interoperation with Wannier90
+473: Merge code for 'server' operation via sockets and i-PI interface
+472: Revert previous change affecting FA and FC files. FAC/FCC files.
+471: Fix SiestaXC makefile. Clarifiy docs for WriteDenchar
+
+removed:
+  Src/matel.f
+  Src/phonon.F
+added:
+  Docs/radfunc.CHANGES
+  Docs/wannier-merge.CHANGES
+  Docs/wannier.CHANGES
+  Src/amn.F90
+  Src/broadcast_projections.F
+  Src/compute_pw_matrix.F90
+  Src/delk.F
+  Src/diagonalizeHk.F90
+  Src/fsiesta_sockets.F90
+  Src/fsockets.f90
+  Src/iosockets.F90
+  Src/m_digest_nnkp.F90
+  Src/m_noccbands.f
+  Src/m_orderbands.F
+  Src/m_overkkneig.F90
+  Src/m_planewavematrix.F90
+  Src/m_planewavematrixvar.F90
+  Src/m_target_stress.F
+  Src/m_trialorbitalclass.f90
+  Src/m_writedelk.F
+  Src/matel_registry.F90
+  Src/mmn.F90
+  Src/new_matel.f
+  Src/register_rfs.F90
+  Src/reordpsi.F
+  Src/siesta2wannier90.F90
+  Src/sockets.c
+  Src/write_inp_wannier.F90
+  Tests/ipi-test/
+  Tests/ipi-test/README
+  Tests/ipi-test/h2o-init.pdb
+  Tests/ipi-test/h2o-ipi.fdf
+  Tests/ipi-test/h2o-ipi.xml
+  Tests/si2x1h-quench/
+  Tests/si2x1h-quench/makefile
+  Tests/si2x1h-quench/si2x1h-quench.fdf
+  Tests/si2x1h-quench/si2x1h-quench.pseudos
+  Tests/wannier/
+  Tests/wannier/makefile
+  Tests/wannier/wannier.fdf
+  Tests/wannier/wannier.nnkp
+  Tests/wannier/wannier.pseudos
+  Util/Denchar/Src/local_die.F
+  Util/SiestaSubroutine/SimpleTest/README
+  Util/SiestaSubroutine/SimpleTest/socket.fdf
+  Util/SiestaSubroutine/SimpleTest/sockets.sh
+  Util/Sockets/
+  Util/Sockets/Makefile
+  Util/Sockets/README
+  Util/Sockets/f2fmaster.f90
+  Util/Sockets/f2fslave.f90
+renamed:
+  Util/SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel.f90 
+     => Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/alloc.F90
+  Src/atm_types.f
+  Src/atmfuncs.f
+  Src/atomlist.f
+  Src/bonds.f
+  Src/dhscf.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/final_H_f_stress.F
+  Src/fixed.F
+  Src/fsiesta_mpi.F90
+  Src/fsiesta_pipes.F90
+  Src/iofa.f
+  Src/ioxv.F
+  Src/kinefsm.f
+  Src/m_check_supercell.f
+  Src/m_mpi_utils.F
+  Src/m_pulay.F90
+  Src/mesh.F
+  Src/meshdscf.F
+  Src/meshsubs.F
+  Src/mneighb.f
+  Src/naefs.f
+  Src/new_dm.F
+  Src/nlefsm.f
+  Src/ofc.f
+  Src/overfsm.f
+  Src/overlap.f
+  Src/parallelsubs.F
+  Src/phirphi.f
+  Src/phirphi_opt.f
+  Src/post_scf_work.F
+  Src/save_density_matrix.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_master.f90
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/spher_harm.f
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/struct_init.F
+  Src/write_subs.F
+  Util/Denchar/Src/Makefile
+  Util/README
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/ol-stm/Src/handlers.f
+  Util/SiestaSubroutine/FmixMD/Src/para.f90
+  Util/SiestaSubroutine/README
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/h2o.fdf
+  Util/SiestaSubroutine/SimpleTest/test.sh
+  Util/VCA/fractional.f
+  Util/VCA/mixps.f
+  Util/Vibra/Docs/vibra.tex
+  Util/Vibra/Examples/si54.fdf
+  Util/Vibra/Src/fcbuild.f
+  Util/Vibra/Src/vibra.f
+  Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+
+
+------------------------------------------------------------
 July 18, 2015  Alberto Garcia       trunk-470--ncps-73
 Increase radial fft parameters to support non-smooth chlocal/vlocal
 

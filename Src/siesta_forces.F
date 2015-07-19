@@ -72,6 +72,14 @@
 
 !     Start of SCF loop
       iscf  = 0
+
+      ! This call computes the non-scf part of H and initializes
+      ! the real-space grid structures.
+      ! It might be better to split the two, putting the grid initialization
+      ! into state_init and moving the calculation
+      ! of H_0 to the body of the loop, done if first=.true.
+      ! This would suit "analysis" runs in which nscf = 0
+      !
       call setup_H0()
 
       DO 
@@ -128,23 +136,29 @@
            SCFconverged = .false.
            if (ionode) then
               write(6,"(a,i0)")
-     $         "SCF cycle continued for minimum number of iterations: ",
-     $            min_nscf
+     $         ":!: SCF cycle continued for minimum number"//
+     $             " of iterations: ", min_nscf
            endif
         endif
 
         if (monitor_forces_in_scf)  call compute_forces()
 
+        ! Mix_after_convergence preserves the old behavior of
+        ! the program.
         if ((.not. SCFconverged) .OR. mix_after_convergence) then
            ! Mix for next step
            if (mix_charge) then
               call mix_rhog(iscf)
-           else
+           else if (MixH) then
+              ! Save the DM (which is actually "out") for possible restarts
+              ! In future we might save H
+              call save_density_matrix("out_but_not_final")
               call mixer( iscf )
+           else 
+              call mixer( iscf )
+              ! Save for possible restarts
+              call save_density_matrix("mixed")
            endif
-           ! Save for possible restarts
-           ! Could save H in the future
-           call save_density_matrix("mixed")
         endif
 
         call timer( 'IterSCF', 2 )
@@ -169,25 +183,47 @@
 
       ENDDO
 
-      if ((SCFMustConverge).and.(.not.SCFconverged)) then
-        call die('SCF did not converge in maximum number of steps.')
+      if (SCFconverged) then
+
+         ! Only if the scf cycle converged before exit it
+         ! is guaranteed that the DM is "pure out" and that
+         ! we can recover the right H if mixing H.
+
+	 ! There are still more cases that could be handled                                                                
+	 ! more transparently with logical state variables
+         ! such as h_is_hdmgen, dm_is_dmout, etc...
+         ! The PEXSI branch contains more logic.
+
+         if (.not. mix_after_convergence) then
+            ! Save final DM_out for further analysis offline
+            call save_density_matrix("dmout")
+            if (MixH) then
+               ! Keep the H actually used to generate the last DM
+               H = Hold
+            endif
+         endif
+
+      else
+
+        if (ionode) write(6,"(a)") ':!: SCF did not converge'//
+     $                              ' in maximum number of steps.'
+        if (SCFMustConverge) call die('SCF did not converge' //
+     $                              ' in maximum number of steps.')
       endif
 
-      if (.not. mix_after_convergence) then
-         ! Save final DM_out for further analysis offline
-         call save_density_matrix("dmout")
-         if (MixH) then
-             ! We could make sure that we keep the H actually used 
-             ! to generate the last DM, if needed.
-             !!!    H = Hold
-         endif
-      endif
 
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
 
+!     Note that this call will no longer overwrite H while computing the
+!     final energies, forces and stresses...
+!
       call post_scf_work( iscf )
 
+!     ... so H at this point is the latest generator of the DM, except
+!     if mixing H beyond self-consistency or terminating the scf loop
+!     without convergence while mixing H
+      
       call state_analysis( istep )
 
       ! If siesta is running as a subroutine, send forces to master program
@@ -217,7 +253,7 @@
       if (ionode) then
          print *, "Max diff in force (eV/Ang): ",
      $        maxval(abs(fa-fa_old))*Ang/eV
-         call siesta_write_forces()
+         call siesta_write_forces(-1)
          call siesta_write_stress_pressure()
       endif
       deallocate(fa_old,Hsave)

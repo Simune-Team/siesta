@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large November 8, 2014 }
+{\Large July 16, 2015 }
 
 \vspace{1.5cm}
 
@@ -3140,6 +3140,33 @@ for restarts of selfconsistency runs.
   energy and of the forces when mixing the DM.
 
 {\it Default value:} {\tt .false.}
+{\bf NOTE}: This breaks backwards compatibility with previous
+(pre-4.0rc) versions of {\sc Siesta}. To recover the old behavior,
+turn this option on, or use the compatibility switch {\bf
+  compat-pre-v4-dm-h} (see below).
+
+\item[{\bf SCF.RecomputeHAfterScf}] ({\it
+  logical}):\index{SCF!Recomputing H} \index{SCF.RecomputeHAfterScf@{\bf
+    SCF.RecomputeHAfterScf}} Logical
+  variable to indicate whether the Hamiltonian is updated after the
+  scf cycle, while computing the final energy, forces, and stresses.
+  Not recomputing H makes further analysis tasks (such as the
+  computation of band structures) more consistent, as they will be
+  able to use the same H used to generate the last density matrix.
+
+{\it Default value:} {\tt .false.}
+{\bf NOTE}: This breaks backwards compatibility with previous
+(pre-4.0rc) versions of {\sc Siesta}. To recover the old behavior,
+turn this option on, or use the compatibility switch {\bf
+  compat-pre-v4-dm-h} (see below).
+
+\item[{\bf compat-pre-v4-dm-h}] ({\it logical}):
+\index{Backward compatibility}
+\index{SCF!compat-pre4-dm-h} \index{compat-pre4-dm-h@{\bf
+    compat-pre4-dm-h}} If this logical
+  variable is turned on, the above two options regarding mixing after
+  convergence and recomputation of H after the scf cycle will be
+  turned on.
 
 
 \item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
@@ -5794,6 +5821,188 @@ obtained form Tom Archer (archert@tcd.ie).
 \end{description}
 
 \vspace{5pt}
+\subsection{Maximally Localized Wannier Functions. \\
+            Interface with the {\sc wannier90} code}
+
+{\sc wannier90} (http://www.wannier.org) is a code to generate
+maximally localized wannier functions according to the original
+Marzari and Vanderbilt recipe.
+
+It is strongly recommended to read the original papers on which this
+method is based and the  documentation of the {\sc wannier90} code.
+Here we shall focus only on those internal {\sc siesta} variables
+required to produce the files that will be processed
+by {\sc wannier90}.
+
+A complete list of examples and tests (including molecules, metals, 
+semiconductors, insulators, magnetic systems, plotting of Fermi surfaces
+or interpolation of bands), can be downloaded from
+
+ http://personales.unican.es/junqueraj/Wannier-examples.tar.gz
+
+{\bf NOTE}: The Bloch functions produced by a first-principles code
+      have arbitrary phases that depend on the number of processors
+      used and other possibly non-reproducible details of the
+      calculation. In what follows it is essential to maintain
+      consistency in the handling of the overlap and Bloch-funcion
+      files produced and fed to {\sc wannier90}.
+
+\begin{description}
+\item[{\bf Siesta2Wannier90.WriteMmn}] ({\it logical}):
+\index{Siesta2Wannier90.WriteMmn@{\bf Siesta2Wannier90.WriteMmn}}
+
+This flag determines whether the overlaps between the periodic part
+of the Bloch states at neighbour k-points are computed and dumped into a file
+in the format required by {\sc wannier90}.
+These overlaps are defined in Eq. (27) in the paper by
+N. Marzari {\it et al.}, Review of Modern Physics {\bf 84}, 1419 (2012),
+or Eq. (1.7) of the Wannier90 User Guide, Version 2.0.1.
+
+The k-points for which the overlaps will be computed are read from a
+{\tt .nnkp} file produced by {\sc wannier90}. It is strongly
+recommended for the user to read the corresponding user guide.
+
+The overlap matrices are written in a file with extension {\tt .mmn}.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteAmn}] ({\it logical}):
+\index{Siesta2Wannier90.WriteAmn@{\bf Siesta2Wannier90.WriteAmn}}
+
+This flag determines whether the overlaps between Bloch states
+and trial localized orbitals are computed and dumped into a file in the
+format required by {\sc wannier90}.
+These projections are defined in Eq. (16) in the paper by
+N. Marzari {\it et al.}, Review of Modern Physics {\bf 84}, 1419 (2012),
+or Eq. (1.8) of the Wannier90 User Guide, Version 2.0.1.
+
+The localized trial functions to use are taken from the {\tt .nnkp}
+file produced by {\sc wannier90}. It is strongly recommended for the
+user to read the corresponding user guide.
+
+The overlap matrices are written in a file with extension {\tt .amn}.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteEig}] ({\it logical}):
+\index{Siesta2Wannier90.WriteEig@{\bf Siesta2Wannier90.WriteEig}}
+
+Flag that determines whether the Kohn-Sham eigenvalues 
+(in eV) at each point in the Monkhorst-Pack mesh required by {\sc
+  wannier90} are written to file.
+This file is mandatory in {\sc wannier90} if any of disentanglement, 
+plot\_bands, plot\_fermi\_surface or hr\_plot options are set to true in 
+the {\sc wannier90} input file.
+
+The eigenvalues are written in a file with extension {\tt .eigW}.
+This extension is chosen to avoid name clashes
+with {\sc siesta}'s standard eigenvalue file in case-insensitive filesystems.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteUnk}] ({\it logical}):
+\index{Siesta2Wannier90.WriteUnk@{\bf Siesta2Wannier90.WriteUnk}}
+
+ Produces {\tt UNKXXXXX.Y} files which contain the periodic part of a
+ Bloch function in the unit cell on a grid given by global unk\_nx,
+ unk\_ny, unk\_nz variables.  The name of the output files is assumed
+ to have the previous form, where the {\tt XXXXXX} refer to the k-point
+ index (from 00001 to the total number of k-points considered), and
+ the {\tt Y} refers to the spin component (1 or 2)
+
+ The periodic part of the Bloch functions is defined by
+ \begin{equation}
+   u_{n \vec{k}} (\vec{r}) =
+   \sum_{\vec{R} \mu} c_{n \mu}(\vec{k})
+        e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+        \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} ) ,
+\end{equation}
+
+\noindent where $\phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )$
+ is a basis set atomic orbital centered on atom $\mu$ in
+ the unit cell $\vec{R}$, and $c_{n \mu}(\vec{k})$ are the coefficients
+ of the wave function. The latter must be identical to the ones used
+ for wannierization in $M_{mn}$. (See the above comment about
+ arbitrary phases.)
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.UnkGrid1}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid1@{\bf Siesta2Wannier90.UnkGrid1}}
+
+Number of points along the first lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{number of points in the {\sc siesta} mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGrid2}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid2@{\bf Siesta2Wannier90.UnkGrid2}}
+
+Number of points along the second lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{number of points in the {\sc siesta} mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGrid3}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid3@{\bf Siesta2Wannier90.UnkGrid3}}
+
+Number of points along the third lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{number of points in the {\sc siesta} mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGridBinary}] ({\it logical}):
+\index{Siesta2Wannier90.UnkGridBinary@{\bf Siesta2Wannier90.UnkGridBinary}}
+
+Flag that determines whether the periodic part of the wave function in the
+real space grid is written in binary format (default) or in ASCII format.
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf Siesta2Wannier90.NumberOfBands}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBands@{\bf Siesta2Wannier90.NumberOfBands}}
+
+In spin unpolarized calculations, number of bands that will be
+initially considered by {\sc siesta} to generate the information
+required by {\sc wannier90}. Note that it should be at least as large as the
+index of the highest-lying band in the {\sc wannier90} post-processing. For
+example, if the wannierization is going to involve bands 3 to 5, the
+{\sc siesta} number of bands should be at least 5. Bands 1 and 2
+should appear in a ``excluded'' list.
+
+{\it Default value:} {Number of occupied bands. To avoid problems
+  of interpretation, it is strongly advised to avoid relying on the
+  defaults and to specify the number of bands explicitly.}
+
+
+\item[{\bf Siesta2Wannier90.NumberOfBandsUp}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBandsUp@{\bf Siesta2Wannier90.NumberOfBandsUp}}
+
+In spin-polarized calculations, number of bands with spin up that will be
+initially considered by {\sc siesta} to generate the information
+required by {\sc wannier90}. (See above for details.)
+
+{\it Default value:} {Number of occupied bands with spin up. To
+  avoid problems of interpretation, it is strongly advised to avoid
+  relying on the defaults and to specify the number of bands
+  explicitly. }
+
+\item[{\bf Siesta2Wannier90.NumberOfBandsDown}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBandsDown@{\bf Siesta2Wannier90.NumberOfBandsDown}}
+
+In spin-polarized calculations, number of bands with spin down that will be
+initially considered by {\sc siesta} to generate the information
+required by {\sc wannier90}. (See above for details.)
+
+
+{\it Default value:} {Number of occupied bands with spin down. To
+  avoid problems of interpretation, it is strongly advised to avoid
+  relying on the defaults and to specify the number of bands
+  explicitly. }
+
+\end{description}
+
+\vspace{5pt}
 \subsection{Systems with net charge or dipole, and electric fields}
 
 \begin{description}
@@ -6420,21 +6629,22 @@ printed but the program does not stop.
 \index{denchar}
 
 The program {\tt denchar} in {\tt Util/Denchar} can generate
-charge-density and wavefunction contours.
+charge-density and wavefunction information in real space.
 
 \begin{description}
 
 \item[{\bf WriteDenchar}] ({\it logical}): \index{WriteDenchar@{\bf
-    WriteDenchar}} \index{output!charge density and/or wfs for DENCHAR code}
-  Instructs to write information needed by the utility program DENCHAR
-  (by J. Junquera and P. Ordej\'on) to plot the valence charge density
-  contours (see {\tt Util/Denchar}). The information is written in
-  file {\tt SystemLabel}.PLD.
+    WriteDenchar}} \index{output!charge density and/or wfs for DENCHAR
+  code} Instructs to write information needed by the utility program
+  DENCHAR (by J. Junquera and P. Ordej\'on) to generate valence charge
+  densities and/or wavefunctions in real space (see {\tt
+    Util/Denchar}). The information is written in files {\tt
+    SystemLabel}.PLD and {\tt SystemLabel}.DIM.
 
-{\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
-
-Apart from the PLD file, you will need the Density-Matrix (DM) file
-and/or a wavefunction (WFSX) file. 
+To run DENCHAR you will need, apart from the PLD and DIM files,
+the Density-Matrix (DM) file and/or a wavefunction (WFSX)
+file, and the .ion files containing the information about the basis
+orbitals.
 
 {\it Default value:} {\tt .false.}
 
@@ -6489,14 +6699,10 @@ temperature and/or pressure (see variable MD.AnnealOption below)
 \item {\tt FC} Compute force constants matrix\index{Force Constants
   Matrix} for phonon calculations.
 
-\item {\tt Phonon} Compute forces for a specified set of atomic
-  displacements chosen with the help of the {\sc Phonon}
-  program. \footnote{{\sc Phonon} is \copyright\ copyright by
-    Krzysztof Parlinski} \index{Phonon program} \index{Force Constants
-    Matrix!using phonon@using {\sc Phonon}}.
 
 \item {\tt Forces} (Receive coordinates from, and return forces to, an
-  external driver program, using MPI or Unix pipes for communication.
+  external driver program, using MPI, Unix pipes, or Inet sockets for 
+  communication.
   The routines in module fsiesta allow the user's program to perform
   this communication transparently, as if siesta were a conventional
   force-field subroutine. See {\tt Util/SiestaSubroutine/README} for
@@ -6507,13 +6713,49 @@ See directory Util/Scripting \index{Scripting} for other driving options.
 
 \end{itemize}
 
-{\it Default value:} {\tt Verlet} ({\tt CG} for one-atom systems)
+{\it Default value:} {\tt CG} (except if {\bf compat-pre-v4-dynamics}
+is set. See the notes below.
 
 Note that some options specified in later variables
 (like quenching) modify the behavior of these MD options.
-If the system contains just one atom, {\tt CG} is the only
-available dynamics option.
 
+Appart from being able to act as a force subroutine for a driver program that
+uses module fsiesta, {\sc Siesta} is also prepared to communicate with the 
+i-PI code (see {\tt http://epfl-cosmo.github.io/gle4md/index.html?page=ipi}).
+To do this, {\sc Siesta} must be started after i-PI (it acts as a client of
+i-PI, communicating with it through Inet or Unix sockets), and the following 
+lines must be present in the .fdf data file:
+\begin{verbatim}
+     MD.TypeOfRun      Master     # equivalent to 'Forces'
+     Master.code       i-pi       # ( fsiesta | i-pi )
+     Master.interface  socket     # ( pipes | socket | mpi )
+     Master.address    localhost  # or driver's IP, e.g. 150.242.7.140
+     Master.port       10001      # 10000+siesta_process_order
+     Master.socketType inet       # ( inet | unix )
+\end{verbatim}
+
+\subsection{Compatibility with pre-v4 versions}
+\index{Backward compatibility}
+
+Starting in the summer of 2015, some changes were made to the behavior
+of the program regarding default dynamics options and choice of
+coordinates to work with during post-processing of the electronic
+structure. The changes are:
+
+\begin{itemize}
+\item The default dynamics option is ``CG'' instead of ``Verlet''.
+\item The coordinates, if moved by the dynamics routines, are reset to
+their values at the previous step for the analysis of the electronic 
+structure (band structure calculations, DOS, LDOS, etc).
+\item Some output files reflect the values of the ``un-moved''
+  coordinates.
+\end{itemize}
+
+To recover the previous behavior, the user can turn on the
+compatibility switch {\bf compat-pre-v4-dynamics}, which is off by
+default.
+
+Note that complete compatibility cannot be perfectly guaranteed.
 
 \subsection{Structural relaxation}
 
@@ -7079,7 +7321,9 @@ It is not affected by the setting of {\bf LongOutput}.
     WriteForces}}\index{output!forces} If {\tt .true.} it writes the
   atomic forces to the output file at every MD time step or relaxation
   step.  Note that the forces of the last step can be found in the
-  file {\it Systemlabel}.FA .
+  file {\it Systemlabel}.FA. If constraints are used, the file
+   {\it SystemLabel}.{\tt FAC} is also written.
+
 
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
@@ -7326,81 +7570,9 @@ atoms is writen (divided by the value of the displacement),
 in units of eV/\AA$^2$. Each line has the forces in the $x$, $y$
 and $z$ direction for one of the atoms.
 
+(If constraints are used, the file {\it SystemLabel}.{\tt FCC} is
+also written.)
 
-\subsection{Interface to the {\sc PHONON} program}
-\label{sec:phonon-interface}
-
-The interface to the {\sc Phonon} program was prepared for an earlier
-version of {\sc Siesta}, but it cannot be maintained properly by the
-developers because we do not use the program. We would appreciate help
-with testing and improving this interface. Alternatively, a script
-driving Siesta can be written instead. See {\tt Util/Scripting}.
-
-Here are the relevant options, active when {\bf MD.TypeOfRun}={\tt Phonon}.
-
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf PhononLabels}] ({\it data block}):
-\index{PhononLabels@{\bf PhononLabels}}
-It provides the mapping\index{Phonon program@{\sc Phonon program}}
-between the species number and those used by the {\sc
-Phonon} program. Note that chemically identical elements might be
-assigned different labels if they are not related by symmetry.
-
-\begin{verbatim}
-         %block PhononLabels
-            1   A   Mg
-            2   B   O
-         %endblock PhononLabels
-\end{verbatim}
-
-The species number is followed by the {\sc
-Phonon} program label and by the chemical symbol.
-
-{\it Use:} This block is mandatory if {\tt MD.TypeOfRun} is {\tt Phonon}.
-
-{\it Default:} No default.
-
-\item[{\bf MD.ATforPhonon}] ({\it data block}): List of ``symmetry
-irreducible'' atomic displacements for which to compute forces. Each
-line gives the fractional displacement for an atom, identified by its
-number in the atom list, and by a one-character code generated by the
-{\sc Phonon} program. These codes are put in correspondence with the
-species labels in block \hbox{\it PhononLabels}).\index{Force
-Constants Matrix!using phonon@using {\sc Phonon}}
-
-\begin{verbatim}
-    %block MD.ATforPhonon
-      0.002358   0.000000   0.000000  L     1
-      0.000000   0.000000   0.003488  L     1
-      0.002358   0.000000   0.000000  A    33
-      0.000000   0.000000   0.003488  A    33
-     -0.002358   0.000000   0.000000  L     1
-      0.000000   0.000000  -0.003488  L     1
-     -0.002358   0.000000   0.000000  A    33
-      0.000000   0.000000  -0.003488  A    33
-    %endblock MD.ATforPhonon
-
-\end{verbatim}
-
-{\it Note:} The presence of this block
-atomatically sets MD.TypeOfRun to {\tt Phonon}.
-
-{\it Default value:} None.
-
-\end{description}
-
-\index{output!molecular dynamics!PHONON forces file}
-If the dynamics option is set to the calculation of the forces for
-selected displacements ({\bf MD.TypeOfRun}={\tt Phonon}, and/or the
-block {\tt MD.ATforPhonon} exists), the forces
-are written in file {\it SystemLabel}.{\tt PHONON}.  The format is the
-following: Comment line, cell vectors in {\AA}, and for each
-displacement: atom displaced and its coordinates plus fractional
-displacement, Cartesian components of forces on all the atoms in units
-of eV/\AA.
 
 \section{TRANSIESTA}
 

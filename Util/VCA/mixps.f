@@ -6,6 +6,7 @@
       use precision,       only: dp
       use m_ncps, only: pseudopotential_t => froyen_ps_t
       use m_ncps, only: pseudo_read, pseudo_write_formatted
+      use m_psml, only: psml_t => ps_t
       use periodic_table,  only: cnfig, qvlofz
       use interpolation,   only: generate_spline, evaluate_spline
       use f2kcli
@@ -14,7 +15,9 @@
 
       type(pseudopotential_t), target :: pot1, pot2, pmix
       type(pseudopotential_t), pointer :: p1, p2, p
+      type(psml_t), target             :: psml1, psml2
       
+      logical  :: has_psml_ps1, has_psml_ps2
       real(dp) :: xmix, z1, z2
       integer  :: i, iostat, nargs, l
       character(len=200) :: name, name1, name2, xmixstr
@@ -31,13 +34,13 @@
 
       call get_command_argument(1,value=name1,status=iostat)
       if (iostat == 0) then
-         call pseudo_read(trim(name1), pot1)
+         call pseudo_read(trim(name1), pot1, psml1, has_psml_ps1)
       else
          call die("Cannot get first argument")
       endif
       call get_command_argument(2,value=name2,status=iostat)
       if (iostat == 0) then
-         call pseudo_read(trim(name2), pot2)
+         call pseudo_read(trim(name2), pot2, psml2, has_psml_ps2)
       else
          call die("Cannot get second argument")
       endif

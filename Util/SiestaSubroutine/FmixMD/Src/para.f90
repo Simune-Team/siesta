@@ -18,7 +18,7 @@ program para
 
   call siesta_units( 'Ang', 'eV' )
 
-  call siesta_launch( 'h2o.fast' , nnodes=2, mpi_launcher="mpiexec -n " )
+  call siesta_launch( 'h2o.fast' , nnodes=2) ! mpi_launcher="mpiexec -n " )
   print*, 'siesta launched'
 
   call siesta_forces( 'h2o.fast', na, xa, energy=e, fa=fa )

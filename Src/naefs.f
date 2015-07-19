@@ -43,9 +43,10 @@ C
 C *********************************************************************
 
       use precision 
-      use atmfuncs,  only: izofis
+      use atmfuncs,  only: izofis, vna_gindex
       use neighbour, only: jna=>jan, xij, mneighb,
      &                     reset_neighbour_arrays
+      use m_new_matel,   only : new_matel
 
       implicit none
 
@@ -60,7 +61,7 @@ C *********************************************************************
       logical, intent(in)  :: forces_and_stress
 
 C Internal variables ......................................................
-      integer  ia, is, ix, ja, jn, js, jx, jua, nnia
+      integer  ia, is, ix, ja, jn, js, jx, jua, nnia, ig, jg
 
       real(dp)  fij(3), pi, vij, volcel, volume 
       
@@ -84,7 +85,9 @@ C Find neighbour atoms
           is = isa(ia)
           js = isa(ja)
           if (izofis(is).gt.0 .and. izofis(js).gt.0) then
-            call MATEL( 'T', is, js, 0, 0, xij(1:3,jn), vij, fij )
+            ig = vna_gindex(is)
+            jg = vna_gindex(js)
+            call new_MATEL( 'T', ig, jg, xij(1:3,jn), vij, fij )
             Ena = Ena + vij / (16.0d0*pi)
             if (forces_and_stress) then
                do ix = 1,3
@@ -102,7 +105,7 @@ C Find neighbour atoms
       enddo
 
 C     Free local memory
-!      call MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
+!      call new_MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
       call reset_neighbour_arrays( )
       call timer( 'naefs', 2 )
       end subroutine naefs

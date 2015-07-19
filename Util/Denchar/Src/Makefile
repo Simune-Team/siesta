@@ -44,7 +44,8 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
-INCFLAGS:=$(NCPS_INCFLAGS) $(INCFLAGS)
+PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
+INCFLAGS:=$(NCPS_INCFLAGS) $(PSML_INCFLAGS) $(INCFLAGS)
 
 #
 # Uncomment the following line for debugging support
@@ -73,7 +74,7 @@ OBJS_DENCHAR = atompla.o planed.o\
 	radfft.o m_fft_gpfa.o ranger.o \
         readwavesx.o rhoofr.o wavofr.o \
         redata_denchar.o  local_reinit.o denchar.o \
-	volcel.o wrout.o stsofr.o
+	volcel.o wrout.o stsofr.o local_die.o
 #
 # Use the makefile in Src/fdf and all the sources there.
 #
@@ -98,16 +99,17 @@ MOD_OBJS=precision.o parallel.o debugmpi.o sys.o m_io.o alloc.o memoryinfo.o lis
          schecomm.o sparse_matrices.o\
          files.o interpolation.o chemical.o xml.o \
          domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
-         spatial.o timer_local.o  die.o
+         spatial.o timer_local.o 
 #
 COM_OBJS_DENCHAR=$(OBJS_DENCHAR) $(SYSOBJ)
 ALL_OBJS_DENCHAR=$(MOD_OBJS) $(COM_OBJS_DENCHAR)
 #
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
+PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
 #
-denchar: $(FDF)  $(ALL_OBJS_DENCHAR) $(NCPS)
+denchar: $(FDF)  $(ALL_OBJS_DENCHAR) $(PSML) $(NCPS) 
 	$(FC) -o denchar \
-	       $(LDFLAGS) $(ALL_OBJS_DENCHAR) $(FDF) $(NCPS) $(METIS_LIB)
+	       $(LDFLAGS) $(ALL_OBJS_DENCHAR) $(FDF) $(NCPS) $(PSML) $(METIS_LIB)
 #
 
 clean:
