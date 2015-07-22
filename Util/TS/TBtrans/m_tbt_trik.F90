@@ -756,7 +756,7 @@ contains
 
 #ifdef NCDF_4
           call state_Sigma_save(cdf_fname_Sigma, ikpt, nE, &
-               N_Elec, Elecs)
+               N_Elec, Elecs, nzwork, zwork)
 
 
           if ( N_proj_ME > 0 ) then

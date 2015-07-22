@@ -1494,7 +1494,7 @@ contains
     ! be restricted to one molecule.
     cmp_lvl = fdf_get('CDF.Compress',0)
     cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
-    cmp_lvl = fdf_get('TBT.Proj.CDF.Compress',cmp_lvl)
+    cmp_lvl = fdf_get('TBT.CDF.Proj.Compress',cmp_lvl)
     if ( cmp_lvl < 0 ) cmp_lvl = 0
     if ( 9 < cmp_lvl ) cmp_lvl = 9
 

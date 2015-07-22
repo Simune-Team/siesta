@@ -1,4 +1,25 @@
 ----------------------------------------------------
+July 22, 2015 -- Nick Papior          trunk-476---ts-scf-482
+TBT: Enhancement, no allocation with Sigma
+
+* Allowed precision of self-energy saved in
+  Sigma.nc files.
+
+* Removed need for allocated memory when saving self
+  energy.
+
+* Changed precision names for nearly all variables with CDF
+  in them. (TBT)
+
+  TODO, consider changing all fdf names by removing CDF in them.
+
+modified:
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 July 22, 2015 -- Nick Papior          trunk-476---ts-scf-481
 Bug, cdf definition flag.
 

@@ -18,6 +18,10 @@ module m_tbt_save
   public :: init_save_options
   public :: name_save
 #ifdef NCDF_4
+  interface tbt_cdf_precision
+     module procedure cdf_precision_real
+     module procedure cdf_precision_cmplx
+  end interface tbt_cdf_precision
   public :: tbt_cdf_precision
   public :: init_cdf_save
   public :: init_cdf_E_check
@@ -169,7 +173,7 @@ contains
   end subroutine init_save_options
 
 #ifdef NCDF_4
-  subroutine tbt_cdf_precision(name,default,prec)
+  subroutine cdf_precision_real(name,default,prec)
 
     use fdf, only : fdf_get, leqi
     use parallel, only : IONode
@@ -203,8 +207,32 @@ contains
     else if ( leqi(tmp,'float') ) then
        prec = NF90_FLOAT
     end if
+    
+  end subroutine cdf_precision_real
 
-  end subroutine tbt_cdf_precision
+  subroutine cdf_precision_cmplx(name,default,prec)
+
+    use parallel, only : IONode
+    use nf_ncdf, only : NF90_FLOAT, NF90_DOUBLE
+    use nf_ncdf, only : NF90_FLOAT_COMPLEX, NF90_DOUBLE_COMPLEX
+
+    character(len=*), intent(in) :: name, default
+    logical, intent(out) :: prec
+
+    integer :: iprec
+
+    ! Retrieve the precision as if it where a real
+    call tbt_cdf_precision(name,default,iprec)
+    select case ( iprec )
+    case ( NF90_FLOAT )
+       prec = NF90_FLOAT_COMPLEX
+    case ( NF90_DOUBLE )
+       prec = NF90_DOUBLE_COMPLEX
+    case default
+       call die('Unrecognized precision for complex value')
+    end select
+
+  end subroutine cdf_precision_cmplx
 
   subroutine init_cdf_save(fname,TSHS,r,ispin,N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE, &

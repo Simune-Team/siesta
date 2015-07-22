@@ -7,6 +7,9 @@ module m_tbt_sigma_save
 
   use m_tbt_hs, only : tTSHS
   use m_tbt_save, only : tNodeE
+#ifdef NCDF_4
+  use m_tbt_save, only : tbt_cdf_precision
+#endif
   
   implicit none
 
@@ -36,17 +39,17 @@ contains
 
     type(dict), intent(inout) :: save_DATA
 
-    sigma_save   = fdf_get('TBT.Sigma.CDF.Save',.false.)
+    sigma_save   = fdf_get('TBT.CDF.Sigma.Save',.false.)
     if ( sigma_save ) then
-       sigma_mean_save = fdf_get('TBT.Sigma.CDF.Save.Mean',.false.)
+       sigma_mean_save = fdf_get('TBT.CDF.Sigma.Save.Mean',.false.)
     end if
     cmp_lvl = fdf_get('CDF.Compress',0)
     cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
-    cmp_lvl = fdf_get('TBT.Sigma.CDF.Compress',cmp_lvl)
+    cmp_lvl = fdf_get('TBT.CDF.Sigma.Compress',cmp_lvl)
     if ( cmp_lvl < 0 ) cmp_lvl = 0
     if ( cmp_lvl > 9 ) cmp_lvl = 9
 #ifdef NCDF_PARALLEL
-    sigma_parallel = fdf_get('TBT.Sigma.CDF.MPI',.false.)
+    sigma_parallel = fdf_get('TBT.CDF.Sigma.MPI',.false.)
     if ( sigma_parallel ) then
        cmp_lvl = 0
     end if
@@ -116,6 +119,7 @@ contains
 
     type(hNCDF) :: ncdf, grp
     type(dict) :: dic
+    logical :: prec_Sigma
     logical :: exist, isGamma, same
     character(len=200) :: char
     integer :: i, iEl
@@ -129,6 +133,8 @@ contains
     isGamma = all(TSHS%nsc(:) == 1)
 
     exist = file_exist(fname, Bcast = .true. )
+
+    call tbt_cdf_precision('Sigma','single',prec_Sigma)
 
     ! in case it already exists...
     if ( exist ) then
@@ -350,7 +356,7 @@ contains
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
        i = Elecs(iEl)%o_inD%n
-       call ncdf_def_var(grp,'Sigma',NF90_DOUBLE_COMPLEX, &
+       call ncdf_def_var(grp,'Sigma',prec_Sigma, &
             (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
             atts = dic , chunks = (/i,i,1,1/) )
        call delete(dic)
@@ -364,7 +370,7 @@ contains
 
   end subroutine init_Sigma_save
 
-  subroutine state_Sigma_save(fname, ikpt, nE, N_Elec, Elecs)
+  subroutine state_Sigma_save(fname, ikpt, nE, N_Elec, Elecs,nzwork,zwork)
 
     use parallel, only : Node, Nodes
 
@@ -383,11 +389,13 @@ contains
     type(tNodeE), intent(in) :: nE
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
+    integer, intent(in) :: nzwork
+    complex(dp), intent(inout), target :: zwork(nzwork)
 
     type(hNCDF) :: ncdf, grp
     integer :: iEl, i, iN
 #ifdef MPI
-    complex(dp), allocatable :: Sigma(:)
+    complex(dp), pointer :: Sigma(:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
@@ -422,7 +430,11 @@ contains
        do iEl = 1 , N_Elec
           i = max(i,Elecs(iEl)%o_inD%n)
        end do
-       allocate(Sigma(i**2))
+       Sigma => zwork(1:i**2)
+       if ( i**2 > nzwork ) then
+          call die('Could not re-use the work array for Sigma &
+               &communication.')
+       end if
     end if
 #endif
 
@@ -442,23 +454,19 @@ contains
           if ( Node == 0 ) then
              do iN = 1 , Nodes - 1
                 if ( nE%iE(iN) <= 0 ) cycle
-                call MPI_Recv(Sigma,i*i,Mpi_double_complex,iN,iN, &
+                call MPI_Recv(Sigma,i*i,MPI_Double_Complex,iN,iN, &
                      Mpi_comm_world,status,MPIerror)
                 call ncdf_put_var(grp,'Sigma',reshape(Sigma(1:i*i),(/i,i/)), &
                      start = (/1,1,nE%iE(iN),ikpt/) )
              end do
           else if ( nE%iE(Node) > 0 ) then
-             call MPI_Send(Elecs(iEl)%Sigma(1),i*i,Mpi_double_complex,0,Node, &
+             call MPI_Send(Elecs(iEl)%Sigma(1),i*i,MPI_Double_Complex,0,Node, &
                   Mpi_comm_world,MPIerror)
           end if
        end if
 #endif
 
     end do
-
-#ifdef MPI
-    if ( allocated(Sigma) ) deallocate(Sigma)
-#endif
 
     call ncdf_close(ncdf)
     
