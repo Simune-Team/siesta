@@ -4,8 +4,9 @@
       CONTAINS
 
       subroutine final_H_f_stress( istep, iscf , save_HS )
-
+#ifdef NCDF_4
       use siesta_options, only: write_cdf
+#endif
       use siesta_options, only: g2cut, savehs, temp
       use siesta_options, only: recompute_H_after_scf
       use sparse_matrices, only: numh, listh, listhptr
