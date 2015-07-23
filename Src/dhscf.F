@@ -1317,7 +1317,7 @@ C ----------------------------------------------------------------------
      &          "ElectrostaticPotential")
         end if
 #else
-        call write_rho( filesOut%vh, cell, ntm, nsm, ntpl, 1, Vscf )
+        call write_rho( filesOut%vh, cell, ntm, nsm, ntpl, 1, Vaux )
         call write_grid_netcdf( cell, ntm, 1, ntpl,
      &       Vaux, "ElectrostaticPotential")
 #endif

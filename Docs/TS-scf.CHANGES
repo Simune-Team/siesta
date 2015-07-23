@@ -1,4 +1,14 @@
 ----------------------------------------------------
+July 23, 2015 -- Nick Papior          trunk-476---ts-scf-483
+Bug: writing DRHO file
+
+* Wrong variable was used for writing when NetCDF was not
+  compiled with.
+  
+modified:
+  Src/dhscf.F
+
+----------------------------------------------------
 July 22, 2015 -- Nick Papior          trunk-476---ts-scf-482
 TBT: Enhancement, no allocation with Sigma
 
