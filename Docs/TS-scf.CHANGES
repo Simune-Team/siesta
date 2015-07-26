@@ -1,4 +1,13 @@
 ----------------------------------------------------
+July 26, 2015 -- Nick Papior          trunk-476---ts-scf-484
+Bug: calculate dos in electrode
+
+* DOS calculation interfered with nq > 1
+  
+modified:
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 July 23, 2015 -- Nick Papior          trunk-476---ts-scf-483
 Bug: writing DRHO file
 

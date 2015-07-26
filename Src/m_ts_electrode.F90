@@ -1690,7 +1690,7 @@ contains
 
     end do q_loop
 
-    if ( nq > 1 ) then
+    if ( calc_DOS .and. nq > 1 ) then
 !$OMP parallel workshare default(shared)
        DOS(1:nuo_E) = DOS(1:nuo_E) / real(nq,dp)
 !$OMP end parallel workshare
