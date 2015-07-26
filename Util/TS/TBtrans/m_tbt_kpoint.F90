@@ -21,6 +21,13 @@ module m_tbt_kpoint
   public :: read_kgrid
   public :: tbt_iokp
 
+  ! The local k-point method
+  integer, parameter :: K_METHOD_MONKHORST_PACK = 1
+  integer, parameter :: K_METHOD_SIMP_MIX = 2
+  integer, parameter :: K_METHOD_BOOLE_MIX = 3
+  integer, parameter :: K_METHOD_GAUSS_LEGENDRE = 4
+  integer, parameter :: K_METHOD_TANH_SINH = 5
+  
 contains
 
   subroutine read_kgrid(bName,N_Elec,Elecs,TRS,cell,kpt,wkpt, &
@@ -35,6 +42,9 @@ contains
     use m_find_kgrid, only : find_kgrid
 
     use m_ts_electype
+
+    use m_integrate
+    use m_gauss_quad
 
     ! INPUT
     character(len=*), intent(in) :: bName
@@ -52,15 +62,16 @@ contains
 
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
-    integer :: i, ik, j, nkpt, iEl
+    integer :: i, ik, j, k, nkpt, iEl
     real(dp) :: rcell(3,3), displ(3), ksize(3), rtmp, p(3), q(3)
     real(dp) :: prev_k(3), next_k(3), k_path_length
     real(dp) :: contrib
-    integer :: kscell(3,3)
+    integer :: kscell(3,3), inkpt(3)
+    real(dp), allocatable :: k3_1(:,:), k3_2(:,:), k3_3(:,:)
     real(dp), allocatable :: tmp3(:,:)
 
     character(len=50) :: ctmp
-
+    integer :: method
     logical :: even_path
     logical :: is_list, is_path
 
@@ -71,7 +82,8 @@ contains
     kscell(1,1) = 1
     kscell(2,2) = 1
     kscell(3,3) = 1
-
+    method = K_METHOD_MONKHORST_PACK
+    
     ! If the block does not exist, simply 
     ! create the Gamma-point
     nullify(kpt,wkpt)
@@ -116,6 +128,29 @@ contains
              ! Check if we should make as even a spacing as possible
              even_path = .true.
           end if
+
+          ! We might as well read the method
+          if ( leqi(ctmp,'method') .and. fdf_bnnames(pline) > 1 ) then
+
+             ! read the method
+             ctmp = fdf_bnames(pline,2)
+             if ( leqi(ctmp,'monkhorst-pack') .or. &
+                  leqi(ctmp,'MP') ) then
+                method = K_METHOD_MONKHORST_PACK
+             else if ( leqi(ctmp,'gauss-legendre') .or. &
+                  leqi(ctmp,'g-legendre') ) then
+                method = K_METHOD_GAUSS_LEGENDRE
+             else if ( leqi(ctmp,'tanh-sinh') ) then
+                method = K_METHOD_TANH_SINH
+             else if ( leqi(ctmp,'simpson-mix') .or. &
+                  leqi(ctmp,'simp-mix') ) then
+                method = K_METHOD_SIMP_MIX
+             else if ( leqi(ctmp,'boole-mix') ) then
+                method = K_METHOD_BOOLE_MIX
+             end if
+
+          end if
+          
        end if
     end do
     if ( is_path ) then
@@ -270,6 +305,20 @@ contains
 
     end do
 
+    ! We do not allow different methods if we do not have a diagonal
+    ! size matrix
+    select case ( method )
+    case ( K_METHOD_MONKHORST_PACK )
+       ! do nothing
+    case default
+       if ( kscell(2,1) /= 0 ) method = K_METHOD_MONKHORST_PACK
+       if ( kscell(3,1) /= 0 ) method = K_METHOD_MONKHORST_PACK
+       if ( kscell(1,2) /= 0 ) method = K_METHOD_MONKHORST_PACK
+       if ( kscell(3,2) /= 0 ) method = K_METHOD_MONKHORST_PACK
+       if ( kscell(1,3) /= 0 ) method = K_METHOD_MONKHORST_PACK
+       if ( kscell(2,3) /= 0 ) method = K_METHOD_MONKHORST_PACK
+    end select
+    
     if ( is_path ) then
 
        if ( IONode ) then
@@ -284,13 +333,13 @@ contains
 
        if ( nkpt /= size(kpt,dim=2) ) then
 
-          allocate(tmp3(3,nkpt))
-          tmp3 = kpt(:,1:nkpt)
+          allocate(k3_1(3,nkpt))
+          k3_1(:,:) = kpt(:,1:nkpt)
           deallocate(kpt)
           nullify(kpt)
           allocate(kpt(3,nkpt))
-          kpt = tmp3
-          deallocate(tmp3)
+          kpt = k3_1
+          deallocate(k3_1)
 
        end if
        
@@ -316,7 +365,7 @@ contains
                 kscell(:,i) = 0
                 kscell(i,:) = 0
                 kscell(i,i) = 1
-                displ(i)   = 0._dp
+                displ(i)    = 0._dp
              end if
           end do
        end do
@@ -324,10 +373,164 @@ contains
        if ( present(kcell) ) kcell = kscell
        if ( present(kdispl) ) kdispl = displ
 
-       call EYE(3, rcell, 2._dp * Pi)
-       call find_kgrid(rcell, kscell, displ, .true., &
-            TRS , &
-            nkpt, kpt, wkpt, rtmp)
+       select case ( method )
+       case ( K_METHOD_MONKHORST_PACK ) 
+          
+          call EYE(3, rcell, 2._dp * Pi)
+          call find_kgrid(rcell, kscell, displ, .true., &
+               TRS , &
+               nkpt, kpt, wkpt, rtmp)
+
+       case default
+
+          allocate( k3_1(kscell(1,1),2) )
+          allocate( k3_2(kscell(2,2),2) )
+          allocate( k3_3(kscell(3,3),2) )
+          k3_1 = 0._dp
+          k3_2 = 0._dp
+          k3_3 = 0._dp
+
+       end select
+          
+       select case ( method )
+       case ( K_METHOD_GAUSS_LEGENDRE )
+
+          ! Create the different grids
+          call Gauss_Legendre_Rec(kscell(1,1),0,-0.5_dp,0.5_dp, &
+               k3_1(:,1), k3_1(:,2) )
+          call Gauss_Legendre_Rec(kscell(2,2),0,-0.5_dp,0.5_dp, &
+               k3_2(:,1), k3_2(:,2) )
+          call Gauss_Legendre_Rec(kscell(3,3),0,-0.5_dp,0.5_dp, &
+               k3_3(:,1), k3_3(:,2) )
+
+       case ( K_METHOD_TANH_SINH )
+
+          ! Create the different grids
+          call TanhSinh_Exact(kscell(1,1), k3_1(:,1), k3_1(:,2), &
+               -0.5_dp, 0.5_dp )
+          call TanhSinh_Exact(kscell(2,2), k3_2(:,1), k3_2(:,2), &
+               -0.5_dp, 0.5_dp )
+          call TanhSinh_Exact(kscell(3,3), k3_3(:,1), k3_3(:,2), &
+               -0.5_dp, 0.5_dp )
+
+       case ( K_METHOD_SIMP_MIX )
+
+          ! Create the different grids
+          call Simpson_38_3_rule(kscell(1,1), k3_1(:,1), k3_1(:,2), &
+               -0.5_dp, 0.5_dp )
+          call Simpson_38_3_rule(kscell(2,2), k3_2(:,1), k3_2(:,2), &
+               -0.5_dp, 0.5_dp )
+          call Simpson_38_3_rule(kscell(3,3), k3_3(:,1), k3_3(:,2), &
+               -0.5_dp, 0.5_dp )
+
+       case ( K_METHOD_BOOLE_MIX )
+
+          ! Create the different grids
+          call Booles_Simpson_38_3_rule(kscell(1,1), k3_1(:,1), k3_1(:,2), &
+               -0.5_dp, 0.5_dp )
+          call Booles_Simpson_38_3_rule(kscell(2,2), k3_2(:,1), k3_2(:,2), &
+               -0.5_dp, 0.5_dp )
+          call Booles_Simpson_38_3_rule(kscell(3,3), k3_3(:,1), k3_3(:,2), &
+               -0.5_dp, 0.5_dp )
+
+       end select
+
+       select case ( method )
+       case ( K_METHOD_MONKHORST_PACK )
+          ! nothing
+       case default
+          
+          if ( TRS ) then
+             
+             ! Cut in half the largest one
+             i = 3
+             if ( kscell(2,2) > kscell(i,i) ) i = 2
+             if ( kscell(1,1) > kscell(i,i) ) i = 1
+             j = kscell(i,i)
+             allocate( tmp3(j/2 + mod(j,2), 2) )
+             j = j/2 + 1
+
+             select case ( i )
+             case ( 1 )
+                tmp3(:,:) = k3_1(j:,:)
+                deallocate(k3_1)
+             case ( 2 )
+                tmp3(:,:) = k3_2(j:,:)
+                deallocate(k3_2)
+             case ( 3 )
+                tmp3(:,:) = k3_3(j:,:)
+                deallocate(k3_3)
+             end select
+             
+             if ( mod(j,2) == 1 ) then
+                tmp3(2:,2) = tmp3(2:,2) * 2._dp
+             else
+                tmp3(:,2)  = tmp3(:,2) * 2._dp
+             end if
+             
+             select case ( i )
+             case ( 1 )
+                allocate( k3_1(size(tmp3,1),2) )
+                k3_1 = tmp3
+             case ( 2 )
+                allocate( k3_2(size(tmp3,1),2) )
+                k3_2 = tmp3
+             case ( 3 )
+                allocate( k3_3(size(tmp3,1),2) )
+                k3_3 = tmp3
+             end select
+             deallocate(tmp3)
+             
+          end if
+          
+       end select
+
+       if ( method /= K_METHOD_MONKHORST_PACK ) then
+          
+       ! Create the k-points
+       inkpt(1) = size(k3_1,1)
+       inkpt(2) = size(k3_2,1)
+       inkpt(3) = size(k3_3,1)
+       nkpt = product(inkpt)
+       allocate( kpt(3,nkpt) )
+       allocate( wkpt(nkpt) )
+
+       ik = 0
+       do k = 1 , inkpt(3)
+       do j = 1 , inkpt(2)
+       do i = 1 , inkpt(1)
+          ik = ik + 1
+          kpt(1,ik) = k3_1(i,1)
+          kpt(2,ik) = k3_2(j,1)
+          kpt(3,ik) = k3_3(k,1)
+          wkpt(ik)  = k3_1(i,2) * k3_2(j,2) * k3_3(k,2)
+       end do
+       end do
+       end do
+
+       deallocate(k3_1)
+       deallocate(k3_2)
+       deallocate(k3_3)
+       
+       end if
+
+    else
+
+       ! Print out warning if the sum of the weights
+       ! does not equal 1
+       contrib = 0._dp
+       do ik = 1 , nkpt
+          contrib = contrib + wkpt(ik)
+       end do
+
+       if ( IONode .and. abs(contrib - 1._dp) > 1.e-7_dp ) then
+          write(*,'(a)')'WARNING: Weights for k-points in &
+               & %block '//trim(bName)//' does not sum to 1.'
+       end if
+
+    end if
+
+    if ( .not. (is_path .or. is_list) ) then
 
        ! Re-scale the k-points to the correct size
        do ik = 1 , nkpt
@@ -348,22 +551,8 @@ contains
           wkpt(:) = wkpt(:) * ksize(ik)
        end do
 
-    else
-
-       ! Print out warning if the sum of the weights
-       ! does not equal 1
-       contrib = 0._dp
-       do ik = 1 , nkpt
-          contrib = contrib + wkpt(ik)
-       end do
-
-       if ( IONode .and. abs(contrib - 1._dp) > 1.e-7_dp ) then
-          write(*,'(a)')'WARNING: Weights for k-points in &
-               & %block '//trim(bName)//' does not sum to 1.'
-       end if
-
     end if
-
+    
     if ( present(is_b) ) then
        if ( is_b ) return
     end if

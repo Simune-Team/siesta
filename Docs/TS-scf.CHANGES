@@ -1,4 +1,14 @@
 ----------------------------------------------------
+July 26, 2015 -- Nick Papior          trunk-476---ts-scf-485
+TBT: Added Gauss-Legendre k-points
+
+* Added different schemes for integrating the
+  k-space
+  
+modified:
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+
+----------------------------------------------------
 July 26, 2015 -- Nick Papior          trunk-476---ts-scf-484
 Bug: calculate dos in electrode
 
