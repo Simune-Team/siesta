@@ -400,6 +400,18 @@ class TBTProjFile(TBTFile):
             if var.endswith('.T') or var.endswith('.R'):
                 yield var,self._get_Data(var,tree=tree,k_avg=k_avg)
 
+    def iter_Teig(self,mol,proj,El,k_avg=True):
+        """ Returns an iterable of different transmissions """
+        if proj is None:
+            grp = self.nc.groups[El]
+            tree = [El]
+        else:
+            grp = self.nc.groups[mol].groups[proj].groups[El]
+            tree = [mol,proj,El]
+        for var in grp.variables.keys():
+            if var.endswith('.T.Eig'):
+                yield var,self._get_Data(var,tree=tree,k_avg=k_avg)
+
     def ADOS(self,mol,proj,El,k_avg=True):
         """ Returns the spectral function DOS from the molecule, projection and electrode """
         return self._get_Data('ADOS',tree=[mol,proj,El],k_avg=k_avg)
@@ -586,7 +598,7 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
             fname = args.prefix+'.TBT.DOS.'+LHS
             save_txt(fname,E,ADOS=ADOS, fmt = args.fmt, kpt=args.kpt)
 
-            for RHS,T in Tf.iter_T(mol,proj,El,k_avg=k_idx):
+            for RHS, T in Tf.iter_T(mol,proj,El,k_avg=k_idx):
                 # Save k-averaged data (remove .[RT] from variable)
                 RHS = RHS[:-2]
                 # As this will produce a lot of file names
@@ -594,6 +606,15 @@ def process_tbt_proj(args,Tf,k_idx,orbs):
                 fname = args.prefix+'.TBT.'+LHS+'_'+RHS+'.'+args.suffix
                 print('Saving transmission data in: '+fname)
                 save_txt(fname,E,T=T,ADOS=ADOS,fmt = args.fmt, kpt=args.kpt)
+
+            for RHS, Teig in Tf.iter_Teig(mol,proj,El,k_avg=k_idx):
+                # Save k-averaged data (remove .[RT] from variable)
+                RHS = RHS[:-6]
+                # As this will produce a lot of file names
+                # we help the user by printing out the filename:
+                fname = args.prefix+'.TBT.'+LHS+'_'+RHS+'.'+args.suffix.replace('TRANS','TEIG')
+                print('Saving transmission eigenvalues data in: '+fname)
+                save_txt(fname,E,Teig=Teig,fmt = args.fmt, kpt=args.kpt)
 
 
 def process_tbt(args,Tf,k_idx,orbs):

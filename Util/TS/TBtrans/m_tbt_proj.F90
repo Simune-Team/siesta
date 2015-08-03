@@ -2313,7 +2313,7 @@ contains
           ! We save the DOS calculated from the spectral function
           if ( 'proj-DOS-A' .in. save_DATA ) then
              
-             call save_DOS(gEl,'ADOS',ikpt,nE,pDOS(:,2,ipt))
+             call save_DOS(gEl,'ADOS',ikpt,nE,NDOS,pDOS(:,2,ipt))
              
           end if
 
@@ -2362,9 +2362,9 @@ contains
 
           if ( nE%iE(Node) > 0 ) then
              call ncdf_put_var(gEl,ctmp,T(ip,ipt),start = (/nE%iE(Node),ikpt/) )
-             if ( N_eigen > 0 .and. .not. same_E ) then
-                call save_DOS(gEl,trim(ctmp)//'.Eig',ikpt,nE,Teig(:,ip,ipt))
-             end if
+          end if
+          if ( N_eigen > 0 .and. .not. same_E ) then
+             call save_DOS(gEl,trim(ctmp)//'.Eig',ikpt,nE,N_eigen,Teig(:,ip,ipt))
           end if
 
 #ifdef MPI
@@ -2388,12 +2388,13 @@ contains
 
   contains
 
-    subroutine save_DOS(grp,var,ikpt,nE,DOS)
+    subroutine save_DOS(grp,var,ikpt,nE,N,DOS)
       type(hNCDF), intent(inout) :: grp
       character(len=*), intent(in) :: var
       integer, intent(in) :: ikpt
       type(tNodeE), intent(in) :: nE
-      real(dp), intent(in) :: DOS(:)
+      integer, intent(in) :: N
+      real(dp), intent(in) :: DOS(N)
 
       if ( nE%iE(Node) > 0 ) then
          call ncdf_put_var(grp,var,DOS,start = (/1,nE%iE(Node),ikpt/) )
@@ -2403,12 +2404,12 @@ contains
       if ( Node == 0 ) then
          do iN = 1 , Nodes - 1
             if ( nE%iE(iN) <= 0 ) cycle
-            call MPI_Recv(rDOS,NDOS,Mpi_double_precision,iN,iN, &
+            call MPI_Recv(rDOS,N,Mpi_double_precision,iN,iN, &
                  Mpi_comm_world,status,MPIerror)
-            call ncdf_put_var(grp,var,rDOS,start = (/1,nE%iE(iN),ikpt/) )
+            call ncdf_put_var(grp,var,rDOS(1:N),start = (/1,nE%iE(iN),ikpt/) )
          end do
       else if ( nE%iE(Node) > 0 ) then
-         call MPI_Send(DOS,NDOS,Mpi_double_precision,0,Node, &
+         call MPI_Send(DOS,N,Mpi_double_precision,0,Node, &
               Mpi_comm_world,MPIerror)
       end if
 #endif

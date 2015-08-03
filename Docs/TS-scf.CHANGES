@@ -1,4 +1,12 @@
 ----------------------------------------------------
+August 3, 2015 -- Nick Papior         trunk-476---ts-scf-489
+ TBT: Bugfix
+
+modified:
+  Util/TS/TB/tbt_data.py
+  Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
 August 3, 2015 -- Nick Papior         trunk-476---ts-scf-488
  TBT: Bugfix
 
