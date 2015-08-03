@@ -277,16 +277,15 @@ contains
     ! The device sparsity pattern
     type(Sparsity), intent(inout) :: sp_dev
     ! Options read from tbt_options
-    type(dict), intent(in) :: save_DATA
+    type(dict), intent(inout) :: save_DATA
 
     character(len=50) :: tmp
     type(hNCDF) :: ncdf, grp
     type(dict) :: dic
     logical :: exist, sme, isGamma
-    integer :: iEl, jEl, i, nnzs_dev
-    integer :: prec_DOS, prec_T, prec_J
+    integer :: iEl, jEl, i, nnzs_dev, N_eigen
+    integer :: prec_DOS, prec_T, prec_Teig, prec_J
     type(OrbitalDistribution) :: fdit
-    type(tRgn) :: tmpRgn
     real(dp), allocatable :: r2(:,:)
 #ifdef MPI
     integer :: MPIerror
@@ -296,9 +295,16 @@ contains
     ! is too much
     call tbt_cdf_precision('DOS','single',prec_DOS)
     call tbt_cdf_precision('T','single',prec_T)
+    call tbt_cdf_precision('T.Eig','single',prec_Teig)
     call tbt_cdf_precision('Current','single',prec_J)
 
     isGamma = all(TSHS%nsc(:) == 1)
+
+    if ( 'T-eig' .in. save_DATA ) then
+       call assign(N_eigen,save_DATA,'T-eig')
+    else
+       N_eigen = 0
+    end if
 
     ! If compiled with net-cdf we ALWAYS save in this format
     exist = file_exist(fname, Bcast = .true. )
@@ -421,6 +427,10 @@ contains
     call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
     call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
+    ! Create eigenvalue dimension, if needed
+    if ( N_eigen > 0 ) then
+       call ncdf_def_dim(ncdf,'neig',N_eigen)
+    end if
     if ( a_Buf%n > 0 ) then
        call ncdf_def_dim(ncdf,'na_b',a_Buf%n) ! number of buffer-atoms
     end if
@@ -651,6 +661,13 @@ contains
              dic = dic//('info'.kv.'Transmission')
              call ncdf_def_var(grp,trim(Elecs(jEl)%name)//'.T',prec_T,(/'ne  ','nkpt'/), &
                   atts = dic )
+
+             if ( N_eigen > 0 ) then
+                dic = dic//('info'.kv.'Transmission eigenvalues')
+                call ncdf_def_var(grp,trim(Elecs(jEl)%name)//'.T.Eig',prec_Teig, &
+                     (/'neig','ne  ','nkpt'/), &
+                     atts = dic )
+             end if
              
           else
 
@@ -875,6 +892,7 @@ contains
   end subroutine cdf_save_E
 
   subroutine state_cdf_save(fname, ikpt, nE, N_Elec, Elecs, DOS, T, &
+       N_eigen, Teig, &
        save_DATA)
     
     use parallel, only : Node, Nodes
@@ -896,13 +914,15 @@ contains
     type(Elec), intent(in) :: Elecs(N_Elec)
     real(dp), intent(in) :: DOS(:,:)
     real(dp), intent(in) :: T(N_Elec+1,N_Elec)
+    integer, intent(in) :: N_eigen
+    real(dp), intent(in) :: Teig(N_eigen,N_Elec,N_Elec)
     type(dict), intent(in) :: save_DATA
 
     type(hNCDF) :: ncdf, grp
-    integer :: iEl, jEl
+    integer :: iEl, jEl, NDOS
     character(len=30) :: tmp, tmp2
 #ifdef MPI
-    integer :: iN, NDOS, NT
+    integer :: iN, NT
     real(dp), allocatable :: rT(:,:,:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
@@ -911,10 +931,15 @@ contains
     call timer('cdf-w-T',1)
 #endif
 
+    NDOS = size(DOS,dim=1)
+           
 #ifdef MPI
     if ( .not. save_parallel .and. Nodes > 1 ) then
-       NDOS = size(DOS,dim=1)
-       allocate(rDOS(NDOS))
+       if ( N_eigen > NDOS ) then
+          allocate(rDOS(N_eigen))
+       else
+          allocate(rDOS(NDOS))
+       end if
     end if
     NT = ( N_Elec + 1 ) * N_Elec
 #endif
@@ -1013,6 +1038,11 @@ contains
                 call ncdf_put_var(grp,tmp2,T(N_Elec+1,iEl), &
                      start = (/nE%iE(Node),ikpt/) )
              end if
+          end if
+
+          if ( N_eigen > 0 .and. iEl /= jEl ) then
+             call local_save_DOS(grp,trim(tmp)//'.Eig',ikpt,nE,&
+                  N_eigen,Teig(:,jEl,iEl))
           end if
        
 #ifdef MPI
@@ -1291,7 +1321,7 @@ contains
     character(len=250) :: ascii_file, tmp
     type(hNCDF) :: ncdf, grp
     logical :: exist
-    integer :: iEl, jEl, i
+    integer :: iEl, jEl, i, N_eigen
     integer :: NE, nkpt, no_d, no_e
     real(dp), allocatable :: rkpt(:,:), rwkpt(:)
     real(dp), allocatable :: rE(:)
@@ -1324,6 +1354,12 @@ contains
          &energy-points')
     call ncdf_inq_dim(ncdf,'nkpt',len=nkpt)
     call ncdf_inq_dim(ncdf,'no_d',len=no_d)
+    call ncdf_inq_dim(ncdf,'neig',exist=exist)
+    if ( exist ) then
+       call ncdf_inq_dim(ncdf,'neig',len=N_eigen)
+    else
+       N_eigen = 0
+    end if
 
     ! Allocate space
     allocate(rE(NE),pvt(NE))
@@ -1444,6 +1480,7 @@ contains
        end if
 
        allocate(r2(NE,nkpt))
+       if ( N_eigen > 0 ) allocate(r3(N_eigen,NE,nkpt))
 
        do jEl = 1 , N_Elec
           ! Calculating iEl -> jEl is the
@@ -1472,6 +1509,9 @@ contains
              call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
           else
              call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
+             if ( N_eigen > 0 ) then
+                call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T.Eig',r3)
+             end if
           end if
           
           ! Save transmission
@@ -1480,11 +1520,23 @@ contains
                   El1=Elecs(iEl), El2=Elecs(jEl))
              call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'Transmission',&
                   '# Transmission, k-resolved')
+             if ( N_eigen > 0 ) then
+                call name_save(ispin,nspin,ascii_file,end='TEIG', &
+                     El1=Elecs(iEl), El2=Elecs(jEl))
+                call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                     '# Transmission eigenvalues, k-resolved')
+             end if
           end if
           call name_save(ispin,nspin,ascii_file,end='AVTRANS', &
                El1=Elecs(iEl), El2=Elecs(jEl))
           call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Transmission',&
                '# Transmission, k-averaged')
+          if ( N_eigen > 0 ) then
+             call name_save(ispin,nspin,ascii_file,end='AVTEIG', &
+                  El1=Elecs(iEl), El2=Elecs(jEl))
+             call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                  '# Transmission eigenvalues, k-averaged')
+          end if
 
           ! The array r2 now contains the k-averaged transmission.
 #ifdef TBT_PHONON
@@ -1561,6 +1613,7 @@ contains
        end do
        
        deallocate(r2)
+       if ( allocated(r3) ) deallocate(r3)
 
     end do
 
@@ -1624,6 +1677,54 @@ contains
       call io_close(iu)
       
     end subroutine save_DAT
+
+    subroutine save_EIG(fname,nkpt,kpt,wkpt,NE,E,ipiv,neig,EIG,value,header)
+      character(len=*), intent(in) :: fname
+      integer, intent(in) :: nkpt, NE, neig, ipiv(NE)
+      real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt), E(NE)
+      real(dp), intent(inout) :: EIG(neig,NE,nkpt)
+      character(len=*), intent(in) :: value, header
+
+      integer :: iu, ik, i
+      character(len=20) :: fmt
+
+      ! Create format
+      write(fmt,'(a,i0,a)')'(f10.5,tr1,',neig,'e16.8)'
+      call io_assign(iu)
+      open( iu, file=trim(fname), form='formatted', status='unknown' ) 
+      
+      write(iu,'(a)') trim(header)
+      write(iu,'(a)') '# Date: '//trim(tmp)
+#ifdef TBT_PHONON
+      write(iu,'(a,a9,tr1,a16)')"#","Omega [eV]", value
+#else
+      write(iu,'(a,a9,tr1,a16)')"#","E [eV]", value
+#endif
+      do ik = 1 , nkpt 
+         if ( nkpt > 1 ) then
+            write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
+                 '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
+         end if
+         do i = 1 , NE
+            ! We sum the orbital contributions
+            write(iu,fmt) E(ipiv(i)),EIG(:,ipiv(i),ik)
+         end do
+         if ( nkpt > 1 ) then
+            if ( ik == 1 ) then
+!$OMP parallel workshare default(shared)
+               EIG(:,:,1) = EIG(:,:,1) * wkpt(ik)
+!$OMP end parallel workshare
+            else
+!$OMP parallel workshare default(shared)
+               EIG(:,:,1) = EIG(:,:,1) + EIG(:,:,ik) * wkpt(ik)
+!$OMP end parallel workshare
+            end if
+         end if
+      end do
+
+      call io_close(iu)
+      
+    end subroutine save_EIG
 
 #ifdef TBT_PHONON
     elemental function nb(E,E1,kT1,E2,kT2)
@@ -1790,7 +1891,7 @@ contains
                El1=Elecs(iEl), El2=Elecs(jEl))
 
           call io_assign(iu)
-          open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
+          open( iu, file=trim(ascii_file), form='formatted', status='unknown')
           write(iu,'(a)') '# Transmission, k-resolved'
           write(iu,'(a)') '# Date: '//trim(tmp)
           write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'Transmission'
@@ -1799,6 +1900,21 @@ contains
           
           cu = cu + 1
 
+          if ( jEl /= iEl .and. ('T-eig' .in. save_DATA) ) then
+             call name_save(ispin,nspin,ascii_file,end='TEIG', &
+                  El1=Elecs(iEl), El2=Elecs(jEl))
+             
+             call io_assign(iu)
+             open( iu, file=trim(ascii_file), form='formatted', status='unknown')
+             write(iu,'(a)') '# Transmission eigenvalues, k-resolved'
+             write(iu,'(a)') '# Date: '//trim(tmp)
+             write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'Eigenvalues'
+             
+             iounits(cu) = iu
+             
+             cu = cu + 1
+          end if
+          
        end do
        
     end do
@@ -1923,6 +2039,7 @@ contains
   ! NOTE that ASCII data will only be created in case
   ! of Netcdf not being compiled in
   subroutine state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
+       N_eigen, Teig, &
        save_DATA )
     
     use parallel, only : Nodes
@@ -1937,6 +2054,8 @@ contains
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     real(dp), intent(in)   :: DOS(:,:), T(:,:)
+    integer, intent(in)    :: N_eigen
+    real(dp), intent(in)   :: Teig(N_eigen,N_Elec,N_Elec)
     type(dict), intent(in) :: save_DATA
 
     integer :: cu
@@ -1951,7 +2070,11 @@ contains
 #ifdef MPI
     if ( Nodes > 1 ) then
        call crt_pivot(Nodes,nE%E,ipvt)
-       allocate(rDOS(N))
+       if ( N_eigen > N ) then
+          allocate(rDOS(N_eigen))
+       else
+          allocate(rDOS(N))
+       end if
     end if
 #endif
 
@@ -1997,10 +2120,6 @@ contains
           if ( ('T-reflect' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
-          call local_save_DAT(iounits(cu),nE,ipvt,1,T(jEl:jEl,iEl))
-          
-          cu = cu + 1
-
           if ( jEl == iEl ) then
              ! Note this is reversed according to the 
              ! creation of the arrays.
@@ -2008,6 +2127,15 @@ contains
              ! and the transmission is the G.\Gamma
              ! flux. Hence we simply reverse the print-outs.
              call local_save_DAT(iounits(cu),nE,ipvt,1,T(N_Elec+1:N_Elec+1,iEl))
+             cu = cu + 1
+          end if
+
+          call local_save_DAT(iounits(cu),nE,ipvt,1,T(jEl:jEl,iEl))
+          
+          cu = cu + 1
+          
+          if ( jEl /= iEl .and. N_eigen > 0 ) then
+             call local_save_EIG(iounits(cu),nE,ipvt,N_eigen,Teig(:,jEl,iEl))
              cu = cu + 1
           end if
 
@@ -2138,6 +2266,57 @@ contains
     end if
 
   end subroutine local_save_DAT
+
+  subroutine local_save_EIG(iu,nE,ipvt,N,EIG)
+    use parallel, only : Node, Nodes
+    use units, only : eV
+
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Gather
+    use mpi_siesta, only : MPI_Send, MPI_Recv, MPI_DOUBLE_COMPLEX
+    use mpi_siesta, only : MPI_Integer, MPI_STATUS_SIZE
+    use mpi_siesta, only : Mpi_double_precision
+#endif
+
+    integer, intent(in) :: iu
+    type(tNodeE), intent(in) :: nE
+    integer, intent(in) :: ipvt(:), N
+    real(dp), intent(in) :: EIG(N)
+
+    integer :: iN, i
+    character(len=20) :: fmt
+#ifdef MPI
+    integer :: MPIerror, status(MPI_STATUS_SIZE)
+#endif
+
+    write(fmt,'(a,i0,a)')'(f10.5,tr1,',N,'e16.8)'
+
+    if ( Node == 0 ) then
+       do iN = 0 , Nodes - 1
+          i = ipvt(iN+1) ! sorting E
+#ifdef MPI
+          if ( nE%iE(i) <= 0 ) cycle ! if the energy point is fake, discard
+#endif
+          if ( i == 0 ) then ! local node
+             write(iu,fmt) nE%E(i) / eV,EIG(:)
+          else
+#ifdef MPI
+             call MPI_Recv(rDOS,N,MPI_double_precision,i,i, &
+                  Mpi_comm_world,status,MPIerror)
+             write(iu,fmt) nE%E(i) / eV,rDOS(1:N)
+#else
+             call die('Error')
+#endif
+          end if
+       end do
+    else if ( nE%iE(Node) > 0 ) then
+#ifdef MPI
+       call MPI_Send(EIG(1),N,MPI_double_precision,0,Node, &
+            Mpi_comm_world,MPIerror)
+#endif
+    end if
+
+  end subroutine local_save_EIG
 
 #endif
 

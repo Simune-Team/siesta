@@ -27,6 +27,7 @@ module m_tbt_trik
   use m_ts_sparse_helper, only : create_HS
   use m_ts_tri_common, only : nnzs_tri
 
+  use m_verbosity, only : verbosity
   use m_tbt_hs
   use m_tbt_regions, only : sp_uc, sp_dev, r_aDev
   use m_tbt_regions, only : r_oDev, r_oEl_alone, r_oElpD
@@ -70,7 +71,7 @@ contains
 
     use m_tbt_kpoint, only : nkpnt, kpoint, kweight
 
-    use m_tbt_options, only : save_DATA, percent_tracker
+    use m_tbt_options, only : save_DATA, percent_tracker, N_eigen
 #ifdef NCDF_4
     use m_tbt_options, only : cdf_fname, cdf_fname_sigma, cdf_fname_proj
     use m_tbt_sigma_save
@@ -141,6 +142,8 @@ contains
     real(dp), pointer :: DOS(:,:), DOS_El(:,:)
 
     real(dp) :: T(N_Elec+1,N_Elec)
+    real(dp), allocatable :: Teig(:,:,:)
+
 #ifndef NCDF_4
     ! Units for IO of ASCII files
     integer, allocatable :: iounits(:), iounits_El(:)
@@ -155,21 +158,22 @@ contains
     type(Elec) :: El_p
     type(tLvlMolEl), pointer :: p_E
     real(dp), allocatable :: pDOS(:,:,:)
-    real(dp), allocatable :: bTk(:,:)
+    real(dp), allocatable :: bTk(:,:), bTkeig(:,:,:)
     type(dSpData1D) :: orb_J
 #endif
 ! ************************************************************
 
 ! ****************** Electrode variables *********************
-    integer :: GFGGF_size ! For the triple-product
+    integer :: nGFGGF ! For the triple-product
     complex(dp), pointer :: GFGGF_work(:) => null()
-    integer :: TT_size ! For the quadrouple product
-    complex(dp), pointer :: TT_work(:) => null()
+    integer :: ntt_work
+    complex(dp), pointer :: tt_work(:), eig(:)
 ! ************************************************************
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
     real(dp) :: kpt(3), bkpt(3), wkpt
+    integer :: info
 #ifdef TBT_PHONON
     type(ts_c_idx) :: cOmega
     real(dp) :: omega
@@ -240,6 +244,9 @@ contains
        ! In this data array we save 3 quantities:
        allocate(bTk(io+1,N_proj_T))
        allocate(pDOS(r_oDev%n,2,N_proj_T))
+       if ( N_eigen > 0 ) then
+          allocate(bTkeig(N_eigen,io+1,N_proj_T))
+       end if
 
     end if
 #endif
@@ -291,8 +298,8 @@ contains
     ! to the device region. Here we need to take into account the
     ! work-array size of the GFGGF triple product.
     call GFGGF_needed_worksize(DevTri%n,DevTri%r, &
-         N_Elec, Elecs, pad_RHS, GFGGF_size)
-
+         N_Elec, Elecs, pad_RHS, nGFGGF)
+       
 #ifdef NCDF_4
     if ( N_proj_ME > 0 ) then
        ! Reset the too large electrode
@@ -305,6 +312,40 @@ contains
     ! 2) padding required to calculate the entire Gf column 
     pad_LHS = max(pad_LHS,pad_RHS)
 
+    ! In case the user requests eigenchannel calculations
+    ! we need to do a work-query from lapack
+    if ( 'T-eig' .in. save_DATA ) then
+       ! 'no' is the maximum Gamma size in device region
+
+       ! In tbtrans we need the GFGGF array
+       ! to be at least the size of the maximum electrode
+       nGFGGF = max(nGFGGF,no**2)
+
+       ! Allocate Teig
+       allocate(Teig(N_eigen,N_Elec,N_Elec))
+       
+       ! pre-allocate arrays for retrieving sizes
+       nullify(zwork)
+       allocate(zwork(1))
+       eig => zwork(:)
+       
+       ! 'no' is the maximum size of the electrodes
+       ! Work-query of eigenvalue calculations
+       call zgeev('N','N',no,zwork,no,eig,zwork,1,zwork,1, &
+            zwork,-1,Teig(1,1,1),info)
+       if ( info /= 0 ) then
+          print *,info
+          call die('zgeev: could not determine optimal workarray &
+               &size.')
+       end if
+       ! Minimum padding (eigenvalues) + lwork size
+       ! The optimal lwork is stored in zwork(1)
+       info = int(dreal(zwork(1))) + no
+       deallocate(zwork)
+       pad_LHS = max(pad_LHS,info)
+
+    end if
+    
     ! Note that padding is the extra size to be able to calculate
     ! the spectral function in the BTD format
 
@@ -323,7 +364,12 @@ contains
     end do
     pad_RHS = io - pad_RHS
     pad_RHS = max(pad_RHS,0) ! truncate at 0
-
+    ! Pad so that GFGGF can be filled, we prefer padding over 
+    ! allocating a new region, 
+    ! this is only preferred in tbtrans as there might be 
+    ! padding any-way.
+    pad_RHS = max(pad_RHS,nGFGGF)
+    
     call newzTriMat(GF_tri,DevTri%n,DevTri%r,'GF', &
          padding = pad_RHS )
 
@@ -340,37 +386,24 @@ contains
        maxwork => zwork(:)
     end if
 
-    ! In case the padding of the RHS is so large that
-    ! we can retain the GFGGF work array in the
-    ! RHS BTD format we do that instead!
-    ! Note that "padding" is from the size of the electrodes
-    ! We expect this to be "very large" if the electrodes are
-    ! very wide.
-    TT_size = maxval(Elecs(:)%o_inD%n) ** 2
-    if ( pad_RHS > GFGGF_size ) then
+    ! Point the work-array for eigenvalue calculation
+    if ( 'T-eig' .in. save_DATA ) then
+       ! 'no' is still maximum Gamma size in the device region
+       ! 'info' is lwork size + eigen size
 
-       GFGGF_work => GFwork(nGfwork-GFGGF_size+1:nGfwork)
-       ! We signal the allocation using a negative number
-       GFGGF_size = - size(GFGGF_work)
-
-       if ( pad_RHS + GFGGF_size > TT_size ) then
-          TT_work => GFwork(nGfwork+GFGGF_size-TT_size+1:nGfwork+GFGGF_size)
-          TT_size = - size(TT_work)
-       end if
-
-    else
-
-       ! we need only allocate two work-arrays for
-       ! Gf.G.Gf^\dagger
-       call re_alloc(GFGGF_work,1,GFGGF_size,routine='tri_k')
+       ! The back of zwork becomes additional work 
+       ! array for eigenvalue calculation
+       tt_work => zwork(nzwork-info+1:nzwork-no)
+       ntt_work = size(tt_work)
+       eig => zwork(nzwork-no+1:nzwork)
 
     end if
 
-    ! Currently we do not do the quadruple product 
-    if ( TT_size > 0 .and. .false. ) then
-       ! We must allocate it...
-       call re_alloc(TT_work,1,TT_size,routine='tri_k')
-    end if
+    ! We have increased padding so that GFGGF can be
+    ! fitted in the back of the array
+    GFGGF_work => GFwork(nGfwork-nGFGGF+1:nGfwork)
+    ! We signal the allocation using a negative number
+    nGFGGF = - size(GFGGF_work)
 
     ! Initialize the tri-diagonal inversion routine
     call init_TriMat_inversion(zwork_tri)
@@ -502,7 +535,7 @@ contains
 #endif
 #else
     ! Allocate units for IO ASCII
-    allocate(iounits(1+(N_Elec+2)*N_Elec)) ! maximum number of units
+    allocate(iounits(1+(N_Elec*2+2)*N_Elec)) ! maximum number of units
     iounits = -100
     call init_save(iounits,ispin,TSHS%nspin,N_Elec,Elecs, &
          save_DATA)
@@ -873,7 +906,7 @@ contains
              if ( .not. cE%fake ) then
                 call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
                      calc_parts, &
-                     abs(GFGGF_size), GFGGF_work)
+                     -nGFGGF, GFGGF_work)
              end if
 
              if ( ('DOS-A' .in. save_DATA) .and. .not. cE%fake ) then
@@ -929,7 +962,19 @@ contains
                 ! the block spectral function
 
                 if ( .not. cE%fake ) then
-                   call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
+                   if ( N_eigen > 0 ) then
+                      io = Elecs(jEl)%inDpvt%n
+                      call A_Gamma_Block(zwork_tri,Elecs(jEl),T(jEl,iEl), &
+                           -nGFGGF, GFGGF_work)
+                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
+                      ! Copy the eigenvalues over
+                      do io = 1 , N_eigen
+                         Teig(io,jEl,iEl) = dreal(eig(io))
+                      end do
+                   else
+                      call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
+                   end if
+                   
                 end if
                 
              end do
@@ -941,9 +986,10 @@ contains
           ! Save the current gathered data
 #ifdef NCDF_4
           call state_cdf_save(cdf_fname, ikpt, nE, N_Elec, Elecs, &
-               DOS, T, save_DATA)
+               DOS, T, N_eigen, Teig, save_DATA)
 #else
           call state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
+               N_eigen, Teig, &
                save_DATA )
 #endif
 
@@ -1035,7 +1081,7 @@ contains
 
             call GF_Gamma_GF(zwork_tri, El_p, no, &
                  (/(.true.,jEl=1,DevTri%n)/), &
-                 abs(GFGGF_size), GFGGF_work)
+                 -nGFGGF, GFGGF_work)
 
             if ( ('proj-DOS-A' .in. save_DATA) .and. p_E%idx > 0 ) then
 
@@ -1075,14 +1121,34 @@ contains
                   El_p%inDpvt%n =  p_E%ME%mol%pvt%n
                   El_p%inDpvt%r => p_E%ME%mol%pvt%r
                   call proj_Mt_mix(p_E%ME%mol,p_E%idx, El_p%Gamma, p_E%ME%bGk)
-                  
-                  call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
+
+                  if ( N_eigen > 0 ) then
+                     io = El_p%inDpvt%n
+                     call A_Gamma_Block(zwork_tri,El_p,bTk(jEl,ipt), &
+                          -nGFGGF, GFGGF_work)
+                     call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
+                     do io = 1 , N_eigen
+                        bTkeig(io,jEl,ipt) = dreal(eig(io))
+                     end do
+                  else
+                     call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
+                  end if
                   
                else
                   
                   iEl = -p_E%idx
                   
-                  call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))
+                  if ( N_eigen > 0 ) then
+                     io = Elecs(iEl)%inDpvt%n
+                     call A_Gamma_Block(zwork_tri,Elecs(iEl),bTk(jEl,ipt), &
+                          -nGFGGF, GFGGF_work)
+                     call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
+                     do io = 1 , N_eigen
+                        bTkeig(io,jEl,ipt) = dreal(eig(io))
+                     end do
+                  else
+                     call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))
+                  end if
                   
                end if
 
@@ -1095,7 +1161,7 @@ contains
           ! Save the projections
           call proj_cdf_save(cdf_fname_proj,N_Elec,Elecs, &
                ikpt,nE,N_proj_T,proj_T, &
-               pDOS, bTk, save_DATA )
+               pDOS, bTk, N_eigen, bTkeig, save_DATA )
 
           end if
 #endif
@@ -1153,10 +1219,6 @@ contains
     nullify(DOS,DOS_El)
     deallocate(allDOS,calc_parts)
 
-    if ( GFGGF_size > 0 ) then
-       call de_alloc(GFGGF_work,routine='tri_k')
-    end if
-
     call delete(spH)
     call delete(spS)
 
@@ -1169,6 +1231,7 @@ contains
     if ( N_proj_ME > 0 ) then
        deallocate(El_p%Sigma)
        deallocate(bTk,pDOS)
+       if ( allocated(bTkeig) ) deallocate(bTkeig)
     end if
 
     call delete(orb_J)

@@ -47,6 +47,8 @@
 !           this is a subroutine as I think a function would produce
 !           a large memory foot-print before it actually saves to the array.
 !           When called on a complex array, only the REAL diagonal is 1.
+!  - TRANSPOSE : transpose matrices
+!  - TRACE : transpose matrices
 !  - ROTATE : returns a vector rotated theta angles (in radians).
 !             For 2D points this rotation is implicitly directioned (in the plane)
 !             For 3D points a direction is [1,2,3] is needed to specify the rotation
@@ -100,6 +102,22 @@ module intrinsic_missing
      module procedure EYE_i_1D
      module procedure EYE_sp_1D, EYE_dp_1D
      module procedure EYE_cp_1D, EYE_zp_1D
+  end interface
+
+  public :: TRANSPOSE
+  interface TRANSPOSE
+     module procedure TRANSPOSE_dp_2D
+     module procedure TRANSPOSE_zp_2D
+     module procedure TRANSPOSE_dp_1D
+     module procedure TRANSPOSE_zp_1D
+  end interface
+
+  public :: TRACE
+  interface TRACE
+     module procedure TRACE_dp_2D
+     module procedure TRACE_zp_2D
+     module procedure TRACE_dp_1D
+     module procedure TRACE_zp_1D
   end interface
 
   ! Calculate the angle between two vectors
@@ -1155,7 +1173,89 @@ contains
     complex(dp), intent(out) :: array(size*size)
     call EYE_zp_2D(size,array)
   end subroutine EYE_zp_1D
-    
+
+  
+  subroutine TRANSPOSE_dp_2D(size,array)
+    integer, intent(in) :: size
+    real(dp), intent(inout) :: array(size,size)
+    integer :: i, j
+    real(dp) :: d
+!$OMP parallel do default(shared), private(i,j,d)
+    do i = 1 , size - 1
+       do j = i + 1 , size
+          d = array(j,i)
+          array(j,i) = array(i,j)
+          array(j,i) = d
+       end do
+    end do
+!$OMP end parallel do
+  end subroutine TRANSPOSE_dp_2D
+  subroutine TRANSPOSE_zp_2D(size,array)
+    integer, intent(in) :: size
+    complex(dp), intent(inout) :: array(size,size)
+    integer :: i, j
+    complex(dp) :: z
+!$OMP parallel do default(shared), private(i,j,z)
+    do i = 1 , size - 1
+       do j = i + 1 , size
+          z = array(j,i)
+          array(j,i) = array(i,j)
+          array(j,i) = z
+       end do
+    end do
+!$OMP end parallel do
+  end subroutine TRANSPOSE_zp_2D
+  
+  subroutine TRANSPOSE_dp_1D(size,array)
+    integer, intent(in) :: size
+    real(dp), intent(inout) :: array(size*size)
+    call TRANSPOSE_dp_2D(size,array)
+  end subroutine TRANSPOSE_dp_1D
+  subroutine TRANSPOSE_zp_1D(size,array)
+    integer, intent(in) :: size
+    complex(dp), intent(inout) :: array(size*size)
+    call TRANSPOSE_zp_2D(size,array)
+  end subroutine TRANSPOSE_zp_1D
+
+
+  function TRACE_dp_2D(size,array) result(T)
+    integer, intent(in) :: size
+    real(dp), intent(in) :: array(size,size)
+    real(dp) :: T
+    integer :: i
+    T = 0._dp
+!$OMP parallel do default(shared), private(i), reduction(+:T)
+    do i = 1 , size
+       T = T + array(i,i)
+    end do
+!$OMP end parallel do
+  end function TRACE_dp_2D 
+  function TRACE_zp_2D(size,array) result(T)
+    integer, intent(in) :: size
+    complex(dp), intent(in) :: array(size,size)
+    complex(dp) :: T
+    integer :: i
+    T = dcmplx(0._dp,0._dp)
+!$OMP parallel do default(shared), private(i), reduction(+:T)
+    do i = 1 , size
+       T = T + array(i,i)
+    end do
+!$OMP end parallel do
+  end function TRACE_zp_2D
+  
+  function TRACE_dp_1D(size,array) result(T)
+    integer, intent(in) :: size
+    real(dp), intent(in) :: array(size*size)
+    real(dp) :: T
+    T = TRACE_dp_2D(size,array)
+  end function TRACE_dp_1D
+  function TRACE_zp_1D(size,array) result(T)
+    integer, intent(in) :: size
+    complex(dp), intent(in) :: array(size*size)
+    complex(dp) :: T
+    T = TRACE_zp_2D(size,array)
+  end function TRACE_zp_1D
+
 
   ! Projections from one direction onto ND space
   pure function SPC_PROJ_sp(space,vin) result(vout)

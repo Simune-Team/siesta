@@ -18,12 +18,14 @@ subroutine tbt_init()
   use nf_ncdf, only : ncdf_IOnode
 #endif
 #ifdef MPI
-    use mpi_siesta, only : MPI_Barrier, MPI_Comm_World
+  use mpi_siesta, only : MPI_Barrier, MPI_Comm_World
 #endif
 
   use class_Sparsity
   use class_dSpData1D
   use class_dSpData2D
+
+  use dictionary
 
   use m_ts_electrode, only : init_Electrode_HS
   use m_ts_electype
@@ -62,7 +64,7 @@ subroutine tbt_init()
 #endif
 
 !$ integer :: i, is
-  integer :: iEl
+  integer :: iEl, itmp, it
   type(Sparsity) :: tmp_sp
   type(dSpData1D) :: tmp_1D
   type(dSpData2D) :: tmp_2D
@@ -252,6 +254,45 @@ subroutine tbt_init()
   call proj_print( N_Elec, Elecs )
 
 #endif
+
+  if ( N_eigen > 0 ) then
+     ! if eigen-value calculation, reduce eigen-values stored
+     itmp = N_eigen
+     do iEl = 1 , N_Elec
+        itmp = min(itmp,Elecs(iEl)%o_inD%n)
+     end do
+#ifdef NCDF_4
+     if ( N_proj_ME > 0 ) then
+        do it = 1 , N_proj_ME
+           itmp = min(itmp,proj_ME(it)%mol%orb%n)
+        end do
+     end if
+#endif
+     if ( Node == 0 .and. itmp /= N_eigen ) then
+        write(*,'(/,a)')'tbtrans: *** Correcting number of T eigenvalues...'
+     end if
+     N_eigen = itmp
+  else if ( N_eigen < 0 ) then
+     itmp = huge(1)
+     do iEl = 1 , N_Elec
+        itmp = min(itmp,Elecs(iEl)%o_inD%n)
+     end do
+#ifdef NCDF_4
+     if ( N_proj_ME > 0 ) then
+        do it = 1 , N_proj_ME
+           itmp = min(itmp,proj_ME(it)%mol%orb%n)
+        end do
+     end if
+#endif
+     if ( Node == 0 ) then
+        write(*,'(/,a,i0)')'tbtrans: *** Maximizing number of T eigenvalues to ',itmp
+     end if
+     N_eigen = itmp
+  end if
+  ! Update N_eigen
+  if ( N_eigen /= 0 ) then
+     save_DATA = save_DATA // ('T-eig'.kv.N_eigen)
+  end if
 
   ! Now we have the sparsity patterns in the correct sparsity
   ! information and we have deleted all un-needed information.

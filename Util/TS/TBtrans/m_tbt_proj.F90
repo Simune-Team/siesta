@@ -120,7 +120,7 @@ module m_tbt_proj
   public :: init_proj_T
   public :: proj_print
   public :: proj_LME_assoc
-  public :: init_Proj_save
+  public :: init_proj_save
   public :: proj_update
   public :: proj_Mt_mix, proj_bMtk
   public :: proj_cdf_save
@@ -1254,7 +1254,7 @@ contains
   end function ProjMolEl_same
   
   ! We only allow Gamma-point projections.
-  subroutine init_Proj_save( fname, TSHS , r, ispin, N_Elec, Elecs, &
+  subroutine init_proj_save( fname, TSHS , r, ispin, N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE , a_Dev, a_Buf, sp_dev, save_DATA )
 
     use parallel, only : Node, Nodes, IONode
@@ -1269,6 +1269,7 @@ contains
     use intrinsic_missing, only : VNORM
     use m_io_s, only : file_exist
 
+    use variable
     use dictionary
     use nf_ncdf, ncdf_parallel => parallel
     use m_ncdf_io, only : cdf_w_Sp
@@ -1294,7 +1295,7 @@ contains
     type(tRgn), intent(in) :: a_Dev
     type(tRgn), intent(in) :: a_Buf
     type(Sparsity), intent(inout) :: sp_dev
-    type(dict), intent(in) :: save_DATA
+    type(dict), intent(inout) :: save_DATA
 
     type(hNCDF) :: ncdf, grp, grp2, grp3
     type(tRgn) :: r_tmp
@@ -1312,8 +1313,8 @@ contains
     real(dp) :: dn
     complex(dp), allocatable :: zv(:,:), zS_sq(:,:)
     complex(dp) :: zn
-    integer :: prec_DOS, prec_T, prec_J
-    integer :: nnzs_dev
+    integer :: prec_DOS, prec_T, prec_Teig, prec_J
+    integer :: nnzs_dev, N_eigen
     type(OrbitalDistribution) :: fdit
 #ifdef MPI
     integer :: MPIerror, status(MPI_STATUS_SIZE)
@@ -1328,7 +1329,14 @@ contains
     ! is too much
     call tbt_cdf_precision('DOS','single',prec_DOS)
     call tbt_cdf_precision('T','single',prec_T)
+    call tbt_cdf_precision('T.Eig','single',prec_Teig)
     call tbt_cdf_precision('Current','single',prec_J)
+
+    if ( 'T-eig' .in. save_DATA ) then
+       call assign(N_eigen,save_DATA,'T-eig')
+    else
+       N_eigen = 0
+    end if
 
     ! Whether we should print the debug statements...
     debug_state = fdf_get('TBT.Projs.Debug',.false.)
@@ -1509,6 +1517,10 @@ contains
     call ncdf_def_dim(ncdf,'no_d',r%n)
     call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED)
     call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
+    ! Create eigenvalue dimension, if needed
+    if ( N_eigen > 0 ) then
+       call ncdf_def_dim(ncdf,'neig',N_eigen)
+    end if
     if ( a_Buf%n > 0 ) then
        call ncdf_def_dim(ncdf,'na_b',a_Buf%n)
     end if
@@ -1822,8 +1834,10 @@ contains
                                  atts = dic)
                             dic = dic//('info'.kv.'Reflection')
                             tmp = trim(tmp)//'.R'
+                            is_same = .true.
                          else
                             tmp = trim(tmp)//'.T'
+                            is_same = .false.
                          end if
                       else
                          tmp = proj_ME_name(proj_T(it)%R(ipt))
@@ -1833,13 +1847,22 @@ contains
                                  atts = dic)
                             dic = dic//('info'.kv.'Reflection')
                             tmp = trim(tmp)//'.R'
+                            is_same = .true.
                          else
                             tmp = trim(tmp)//'.T'
+                            is_same = .false.
                          end if
                       end if
 
                       call ncdf_def_var(grp3,tmp,prec_T, (/'ne  ','nkpt'/), &
                            atts = dic)
+
+                      if ( N_eigen > 0 .and. .not. is_same ) then
+                         dic = dic//('info'.kv.'Transmission eigenvalues')
+                         call ncdf_def_var(grp3,trim(tmp)//'.Eig',prec_Teig, &
+                              (/'neig','ne  ','nkpt'/), &
+                              atts = dic )
+                      end if
 
                    end do
 
@@ -2140,13 +2163,22 @@ contains
                   atts = dic)
              dic = dic//('info'.kv.'Reflection')
              tmp = trim(tmp)//'.R'
+             is_same = .true.
           else
              tmp = trim(tmp)//'.T'
+             is_same = .false.
           end if
           
           call ncdf_def_var(grp,tmp,prec_T, (/'ne  ','nkpt'/), &
                atts = dic)
-          
+
+          if ( N_eigen > 0 .and. .not. is_same ) then
+             dic = dic//('info'.kv.'Transmission eigenvalues')
+             call ncdf_def_var(grp,trim(tmp)//'.Eig',prec_Teig, &
+                  (/'neig','ne  ','nkpt'/), &
+                  atts = dic )
+          end if
+
        end do
 
     end do
@@ -2195,10 +2227,11 @@ contains
       end if
     end subroutine check
 
-  end subroutine init_Proj_save
+  end subroutine init_proj_save
 
   subroutine proj_cdf_save(fname, N_Elec, Elecs, &
        ikpt, nE, N_proj_T, proj_T, pDOS, T, &
+       N_eigen, Teig, &
        save_DATA)
     
     use parallel, only : Node, Nodes
@@ -2222,6 +2255,8 @@ contains
     type(tProjT), intent(in) :: proj_T(N_proj_T)
     real(dp), intent(in) :: pDOS(:,:,:)
     real(dp), intent(in) :: T(:,:)
+    integer, intent(in) :: N_eigen
+    real(dp), intent(in) :: Teig(:,:,:)
     type(dict), intent(in) :: save_DATA
 
     type(hNCDF) :: ncdf, gmol, gproj, gEl
@@ -2239,7 +2274,11 @@ contains
        NT = size(T,dim=1)
        allocate(rT(NT,Nodes-1))
        NDOS = size(pDOS,dim=1)
-       allocate(rDOS(NDOS))
+       if ( N_eigen > NDOS ) then
+          allocate(rDOS(N_eigen))
+       else
+          allocate(rDOS(NDOS))
+       end if
     end if
 #endif
 
@@ -2324,6 +2363,9 @@ contains
 
           if ( nE%iE(Node) > 0 ) then
              call ncdf_put_var(gEl,ctmp,T(ip,ipt),start = (/nE%iE(Node),ikpt/) )
+             if ( N_eigen > 0 .and. .not. same_E ) then
+                call save_DOS(gEl,trim(ctmp)//'.Eig',ikpt,nE,Teig(:,ip,ipt))
+             end if
           end if
 
 #ifdef MPI

@@ -37,6 +37,9 @@ module m_tbt_options
   ! end fi
   type(dict) :: save_DATA
 
+  ! Number of eigenchannels to calculate
+  integer :: N_eigen = 0
+  
   ! IO optimization
   ! Bigger number saves more calculations in memory
   ! But saves IO at each energy point.
@@ -337,6 +340,11 @@ contains
     ! Currently this has not been implemented, as it didn't seem to matter much
     !N_io_step = fdf_get('TBT.IO.Step',1)
 
+    N_eigen = fdf_get('TBT.T.Eig',0)
+    if ( N_eigen /= 0 ) then
+       save_DATA = save_DATA // ('T-eig'.kv.N_eigen)
+    end if
+
     ltmp = fdf_get('TBT.R',N_Elec == 1)
     if ( ltmp ) then
        save_DATA = save_DATA // ('T-reflect'.kv.1)
@@ -384,12 +392,6 @@ contains
             &apply.','Set TBT.DOS.A T to calculate orbital currents.'
     end if
 
-    !i = fdf_get('TBT.T.Eig',0)
-    if ( i > 0 ) then
-       ! currently not working
-       !save_DATA = save_DATA // ('T-eig'.kv.i)
-    end if
-
     ! Will stop after creating the GF files.
     stop_after_GS = fdf_get('TBT.Elecs.GF.Only',.false.)
 
@@ -407,12 +409,13 @@ contains
        else
           write(*,1) 'Saving DOS from spectral functions',.false.
        end if
+       write(*,9) 'Calc. # transmission eigenchannels',N_eigen
        write(*,1) 'Calc. T between all electrodes',('T-all'.in.save_DATA)
        write(*,1) 'Calc. reflection',('T-reflect'.in.save_DATA)
        if ( spin_idx == 0 ) then
           write(*,11) 'Calculate all spin-channels'
        else
-          write(*,11) 'Only calculate for spin-channel',spin_idx
+          write(*,9) 'Only calculate for spin-channel',spin_idx
        end if
        write(*,11)'          >> Electrodes << '
        do i = 1 , size(Elecs)
@@ -455,6 +458,7 @@ contains
 6   format('tbt_options: ',a,t53,'=',f10.4,tr1,a)
 7   format('tbt_options: ',a,t53,'=',f12.6,tr1,a)
 8   format('tbt_options: ',a,t53,'=',f10.4)
+9   format('tbt_options: ',a,t53,'=',3x,i0)
 10  format('tbt_options: ',a,t53,'=',4x,a)
 11  format('tbt_options: ',a)
 15  format('tbt_options: ',a,t53,'= ',i0,' x ',i0,' x ',i0)

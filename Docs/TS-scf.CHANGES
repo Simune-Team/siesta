@@ -1,4 +1,25 @@
 ----------------------------------------------------
+August 3, 2015 -- Nick Papior         trunk-476---ts-scf-486
+ TBT: Added eigenvalue calculation
+
+* Added eigenvalue calculation for the transmission
+  matrix.
+  This is based on the fact that the determinant for the
+  tt matrix is the same as the determinant of the tt block
+  where the trace is taken.
+  Hence we can find the eigenvalues in that sub-matrix.
+
+modified:
+  Src/class_TriMat.T90
+  Src/intrinsic_missing.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 July 26, 2015 -- Nick Papior          trunk-476---ts-scf-485
 TBT: Added Gauss-Legendre k-points
 

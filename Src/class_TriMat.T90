@@ -64,6 +64,7 @@
 
   public :: val
   public :: index, part_index
+  public :: cum_rows
   public :: nrows_g
   public :: parts, which_part
   public :: elements
@@ -100,6 +101,10 @@
   interface val
      module procedure val_TriMat
      module procedure val_TriMat_part
+  end interface
+
+  interface cum_rows
+     module procedure TriMat_crows
   end interface
 
   interface print_type
@@ -280,6 +285,12 @@
 
     p => this%data%mat(s:e)
   end function val_TriMat_part
+
+  function TriMat_crows(this) result(p)
+    type(TYPE_NAME), intent(in) :: this
+    integer, pointer :: p(:) 
+    p => this%data%tri_crows
+  end function TriMat_crows
 
   pure subroutine part_index(this, i_g, part, i_p)
     type(TYPE_NAME), intent(in) :: this

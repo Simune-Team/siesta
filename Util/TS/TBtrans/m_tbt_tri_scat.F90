@@ -15,10 +15,14 @@
 module m_tbt_tri_scat
 
   use precision, only : dp
+  use units, only : Pi
+  use m_region
+
+  use class_zTriMat
+
   use m_ts_tri_scat, only : GF_Gamma_GF
   use m_ts_tri_common, only : GFGGF_needed_worksize
 
-  use m_region
   use m_ts_electype
 
   implicit none
@@ -28,6 +32,8 @@ module m_tbt_tri_scat
   public :: A_DOS   ! Spectral function density of states
   public :: GF_DOS  ! Green's function density of states
   public :: A_Gamma ! Calculate the transmission from spectral function . Gamma
+  public :: A_Gamma_Block ! Calculate the transmission from spectral function . Gamma (in block form)
+  public :: TT_eigen ! Eigenvalue calculation of the transmission eigenvalues
   public :: GF_Gamma ! Calculate the transmission from Green function . Gamma (same-lead contribution)
 
   public :: insert_Self_Energy
@@ -44,6 +50,7 @@ module m_tbt_tri_scat
   complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
   complex(dp), parameter :: z1  = dcmplx( 1._dp, 0._dp)
   complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
+  complex(dp), parameter :: zi  = dcmplx( 0._dp, 1._dp)
 
 contains
 
@@ -56,10 +63,8 @@ contains
   ! This lets us calculate all entries
   subroutine GF_DOS(r,Gf_tri,S_1D,DOS,nwork,work)
     use intrinsic_missing, only : SFIND
-    use class_zTriMat
     use class_Sparsity
     use class_zSpData1D
-    use units, only : Pi
 
     type(tRgn), intent(in) :: r
     type(zTriMat), intent(inout) :: Gf_tri
@@ -173,10 +178,8 @@ contains
   ! all Yn/Bn-1 and all Xn/Cn+1
   ! This lets us calculate all entries
   subroutine GF_DOS_proj(r,Gf_tri,S_1D,N_mol,mols,DOS,bGfk,nwork,work)
-    use class_zTriMat
     use class_Sparsity
     use class_zSpData1D
-    use units, only : Pi
 
     use m_tbt_proj
 
@@ -370,10 +373,8 @@ contains
   ! from a full calculated spectral function
   subroutine A_DOS(r,A_tri,S_1D,DOS)
     use intrinsic_missing, only : SFIND
-    use class_zTriMat
     use class_Sparsity
     use class_zSpData1D
-    use units, only : Pi
 
     type(tRgn), intent(in) :: r
     type(zTriMat), intent(inout) :: A_tri
@@ -456,149 +457,11 @@ contains
 
   end subroutine A_DOS
 
-#ifdef NOT_WORKING_YET
-  ! This routine calculates the Gamma_1.Gf^\dagger.Gamme_2.Gf
-  ! For a column inverted Green's function.
-  ! We assume that the Gf column will stay in the padding of the
-  ! Gf array and the G1.Gf^\dagger.G2.Gf will stay in the front
-  ! of the array.
-  subroutine Gamma_GF_Gamma_GF_Col(Gf_tri, r, El, El2, nwork, work)
-
-    use alloc, only : re_alloc, de_alloc
-
-    use class_zTriMat
-    use m_region
-    use m_ts_trimat_invert, only : TriMat_Bias_idxs
-    use m_ts_electype
-
-    implicit none
-
-! *********************
-! * INPUT variables   *
-! *********************
-    ! The Green's function column (placed in the back of the array)
-    type(zTriMat), intent(inout) :: Gf_tri
-    type(tRgn), intent(in) :: r ! The device region
-    type(Elec), intent(in) :: El  ! contains: i (Sigma - Sigma^dagger) ^T
-    type(Elec), intent(in) :: El2 ! contains: i (Sigma - Sigma^dagger) ^T
-
-! *********************
-! * OUTPUT variables  *
-! *********************
-    integer, intent(in) :: nwork
-    complex(dp), intent(inout) :: work(nwork)
-
-    ! local variables
-    complex(dp), pointer :: fGf(:), Gf(:), GGG(:)
-    integer :: nr, np, no, no2
-    integer :: sIdx, eIdx, snd_sIdx
-    integer :: ip, cp, n, cno, ic
-    integer :: sN, sNc
-
-    call timer("GFGGF-col",1)
-
-    ! tri-diagonal parts information
-    nr  = nrows_g(Gf_tri)
-    no  = El%o_inD%n
-    np  = parts(Gf_tri)
-    no2 = El2%o_inD%n
-
-    ! If we need to calculate the Eigen-channels, we truly 
-    ! need the full column.
-
-    ! We have an offset for the G1.Gf^\dagger.G2.Gf
-    call TriMat_Bias_idxs(Gf_tri,no,1,snd_sIdx,eIdx)
-    snd_sIdx = snd_sIdx - 1
-
-    ! Capture the full elements
-    fGf => val(Gf_tri)
-
-    ip = no * no2
-    do n = 1 , np
-       ip = max(ip,no * nrows_g(Gf_tri,n))
-    end do
-    print *,'Check GFGGF_needed_worksize for no*no2'
-
-    if ( nwork < ip ) then
-       print *,nwork,ip
-       call die('Work size not big enough')
-    end if
-
-    ! As the quadruple matrix product is determined singly 
-    ! by one of the scattering states we can reduce the
-    ! computations greatly by first doing G1.Gf^\dagger.G2
-    ! Then after wards we do [ G1.Gf^\dagger.G2 ] . Gf
-    
-    ! Clean-up work, we need to do several additions
-    ! to this array
-    work(:) = 0._dp
-
-    ! G1.Gf^\dagger.G2
-    i2 = 1
-    ! count number of consecutive indices in the 
-    ! down-folded region.
-    do while ( i2 < no2 )
-
-       ! Figure out if the indices are consecutive
-       ! in the device region
-       ! figure out the current part
-       ic = rgn_pivot(r,El2%o_inD%r(i2))
-       cp = which_part(Gf_tri,ic)
-       e2 = i2
-       do i = 1, no
-          j = rgn_pivot(r,El2%o_inD%r(i2+i))
-          if ( ic + i /= j ) exit
-          if ( cp /= which_part(Gf_tri,j) ) exit
-          e2 = e2 + 1
-       end do
-
-       ! We have now collected a consecutive
-       ! sequence of the Gf^\dagger
-       call TriMat_Bias_idxs(Gf_tri,no,cp,sIdx,eIdx)
-       Gf => fGf(sIdx:eIdx)
-
-       ! As we need to do Gf^\dagger.G2 we here figure out which
-       ! part of Gf^\dagger that "fits" with the G2 matrix product.
-       call part_index(Gf_tri,ic,i,j)
-       if ( i /= cp ) call die('Error...1')
-       ! reduce Gf to the actual thing we want
-       Gf => Gf(j:)
-
-       ! REMEMBER ::: El%Gamma is transposed!
-
-       ! First we do G1.Gf^\dagger
-       ! the start is in the work array (i2)
-       j = nrows_g(cp)
-       i = e2 - i2 + 1
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'T','C',no,i,j, z1, El%Gamma(1), no, &
-            Gf, j, z0, fGf(1), no)
-       ! Complete G1.Gf^\dagger.G2
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','T',no,no2,i, zm1, fGf(1), no, &
-            El2%Gamma(i2), no2, z1, work(1), no)
-
-    end do
-
-  end subroutine Gamma_GF_Gamma_GF_Col
-
-#endif
-
   ! The simplest routine to do the transport calculation
   ! It takes the spectral function and multiplies it with
   ! the scattering matrix of the down-projected self-energy
   ! and calculates the transmission.
   subroutine A_Gamma(A_tri,El,T)
-
-    use class_zTriMat
 
     type(zTriMat), intent(inout) :: A_tri ! Spectral function
     type(Elec), intent(in) :: El
@@ -645,64 +508,174 @@ contains
 
   end subroutine A_Gamma
 
-#ifdef OLD_FOR_VCS
-  subroutine GF_Gamma_old(Gf_tri,El,T)
+  ! On entry A_tri is the spectral function
+  ! on return the first El%o_inD%n x El%o_inD%n will be the
+  ! G.Gamma.Gf.El%Gamma matrix
+  ! This will enable eigenvalue calculators and possibly
+  ! speed up the calculation of the transmission.
+  subroutine A_Gamma_Block(A_tri,El,T,nwork,work)
 
-    use class_zTriMat
-
-    type(zTriMat), intent(inout) :: Gf_tri ! Spectral function
+    use intrinsic_missing, only : transpose, trace
+    
+    type(zTriMat), intent(inout) :: A_tri ! Spectral function
     type(Elec), intent(in) :: El
     real(dp), intent(out) :: T
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout) :: work(nwork)
 
-    complex(dp), pointer :: Gf(:)
-    complex(dp) :: zt
-    integer :: i, j, scat, n
-
+    ! Here we need a double loop
+    integer :: no
+    integer :: i_Elec, ii, isN, in, A_i
+    integer :: j_Elec, jj, jsN, jn, A_j
+    integer, pointer :: crows(:)
+    complex(dp), pointer :: A(:)
+    complex(dp) :: z
+    
 #ifdef TBTRANS_TIMING
-    call timer('Gf-Gamma',1)
+    call timer('A-Block-Gamma',1)
 #endif
 
-    Gf => val(Gf_tri)
+    ! Get data from tri-diagonal matrix
+    crows => cum_rows(A_tri)
 
-    ! Initialize the transmission.
-    T = 0._dp
+    no = El%inDpvt%n
+    if ( no ** 2 > nwork ) then
+       call die('A_Gamma_Block: Insufficient work-size')
+    end if
 
-    ! This routine is probably the one that should be
-    ! optimized the most
-    ! it does the last transmission product "by element"
-    ! and hence is extremely slow for large scattering matrices.
-    ! However, in tbtrans state at development the pivoting of the
-    ! arrays meant that we could not assure the consecutive 
-    ! memory layout in the tri-diagonal case.
+    ! "sadly" Gamma is saved in transposed form, hence
+    ! we transpose, and return it to original form, when returning
+    call transpose(no,El%Gamma)
 
-    n = El%inDpvt%n
-!$OMP parallel do default(shared), &
-!$OMP&private(j,scat,i,zt), reduction(+:T)
-    do j = 1 , n
-       scat = (j-1) * n
-       do i = 1 , n
-          ! This algorithm requires El%Gamma to be transposed (and not
-          ! with factor i),
-          ! see: m_elec_se
-          zt = Gf(index(Gf_tri,El%inDpvt%r(i),El%inDpvt%r(j))) &
-               - conjg(Gf(index(Gf_tri,El%inDpvt%r(j),El%inDpvt%r(i))))
-          T = T + real( zt * El%Gamma(scat+i) , dp)
+    ! This code is based on the down-folded self-energies
+    ! which are determined by the col region
+
+    ! Loop columns
+    i_Elec = 1
+    z = z0
+    do while ( i_Elec <= no ) 
+
+       ! We start by creating a region of consecutive memory.
+       call consecutive_index(A_tri,El,i_Elec,in,ii)
+       isN = nrows_g(A_tri,in)
+
+       ! Get starting placement of column in the current block
+       ! of the spectral function (zero based)
+       if ( in == 1 ) then
+          A_i = El%inDpvt%r(i_Elec) - 1
+       else
+          A_i = El%inDpvt%r(i_Elec) - crows(in-1) - 1
+       end if
+
+       if ( ii == no ) then
+          ! The easy calculation, note that ii == no, only
+          ! if the entire electrode sits in one block
+          A => val(A_tri,in,in)
+          
+#ifdef USE_GEMM3M
+          call zgemm3m( &
+#else
+          call zgemm( &
+#endif
+              'N','N',no,no,no, zi, A(A_i*(isN+1)+1), isN, &
+              El%Gamma(1), no, z0, work(1), no)
+
+          ! Quick break of loop
+          exit
+
+       end if
+
+       ! Loop rows
+       j_Elec = 1
+       do while ( j_Elec <= no ) 
+
+          ! We start by creating a region of consecutive memory.
+          call consecutive_index(A_tri,El,j_Elec,jn,jj)
+          jsN = nrows_g(A_tri,jn)
+
+          ! Get the block with the spectral function
+          A => val(A_tri,jn,in)
+
+          if ( jn == 1 ) then
+             A_j = El%inDpvt%r(j_Elec) - 1
+          else
+             A_j = El%inDpvt%r(j_Elec) - crows(jn-1) - 1
+          end if
+
+          !print *,A_i,i_Elec,ii,A_j,j_Elec,jj
+
+#ifdef USE_GEMM3M
+          call zgemm3m( &
+#else
+          call zgemm( &
+#endif
+              'N','N',jj,no,ii, zi, A(A_i*jsN + A_j + 1), jsN, &
+              El%Gamma(i_Elec), no, z, work(j_Elec), no)
+
+          j_Elec = j_Elec + jj
+
+       end do
+       
+       i_Elec = i_Elec + ii
+       ! Now we have already filled the first entries, sum...
+       z = z1
+
+    end do
+
+    ! Calculate transmission
+    T = dreal(trace(no,work))
+    
+    ! Now we have the square matrix product
+    !   tt = G \Gamma_1 G^\dagger \Gamma_El
+
+    call transpose(no,El%Gamma)
+
+#ifdef TBTRANS_TIMING
+    call timer('A-Block-Gamma',2)
+#endif
+    
+  end subroutine A_Gamma_Block
+
+  subroutine TT_eigen(n,tt,nwork,work,eig)
+    integer, intent(in) :: n
+    complex(dp), intent(inout) :: tt(n*n)
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout) :: work(nwork)
+    complex(dp), intent(inout) :: eig(n)
+
+    real(dp) :: rwork(n*2)
+    complex(dp) :: z
+    integer :: i, j
+
+    ! To remove any singular values we add a 1e-3 to the diagonal
+    do i = 1 , n
+       tt((i-1)*n+i) = tt((i-1)*n+i) + 1.e-3_dp
+    end do
+    call zgeev('N','N',n,tt,n,eig,work(1),1,work(1),1, &
+         work,nwork,rwork,i)
+    if ( i /= 0 ) then
+       print *,i
+       call die('TT_eigen: Could not calculate eigenvalues.')
+    end if
+
+    ! Sort the eigenvalues, and simultaneously shift them back
+    eig(1) = eig(1) - 1.e-3_dp
+    do i = 2 , n
+       eig(i) = eig(i) - 1.e-3_dp
+       do j = 1 , i - 1
+          if ( dreal(eig(j)) < dreal(eig(i)) ) then
+             z = eig(j)
+             eig(j) = eig(i)
+             eig(i) = z
+          end if
        end do
     end do
-!$OMP end parallel do
-
-#ifdef TBTRANS_TIMING
-    call timer('Gf-Gamma',2)
-#endif
-
-  end subroutine GF_Gamma_old
-#endif
-
+    
+  end subroutine TT_eigen
+  
   subroutine Gf_Gamma(Gfcol,El,T)
 
-    use class_zTriMat
     use m_ts_trimat_invert, only : TriMat_Bias_idxs
-    use m_region
 
     type(zTriMat), intent(inout) :: Gfcol
     type(Elec), intent(inout) :: El
@@ -712,7 +685,7 @@ contains
     complex(dp), pointer :: z(:)
 
     integer :: no, np
-    integer :: i, ii, i_Elec, idx_Elec
+    integer :: i, ii, i_Elec
     integer, allocatable :: cumsum(:)
     integer :: sN, n
     type(tRgn) :: rB
@@ -742,22 +715,10 @@ contains
     i_Elec = 1
     do while ( i_Elec <= El%inDpvt%n ) 
 
-       idx_Elec = El%inDpvt%r(i_Elec)
-
        ! We start by creating a region of consecutive memory.
-       n = which_part(Gfcol,idx_Elec)
+       call consecutive_index(Gfcol,El,i_Elec,n,ii)
        sN = nrows_g(Gfcol,n)
 
-       ii = 1
-       do while ( i_Elec + ii <= El%inDpvt%n )
-          i = El%inDpvt%r(i_Elec+ii)
-          ! In case it is not consecutive
-          if ( i - idx_Elec /= ii ) exit
-          ! In case the block changes, then
-          ! we cut the block size here.
-          if ( n /= which_part(Gfcol,i) ) exit
-          ii = ii + 1
-       end do
        ! The consecutive memory block is this size 'ii'
        call rgn_list(rB,ii,El%inDpvt%r(i_Elec:i_Elec+ii-1))
 
@@ -795,6 +756,31 @@ contains
     
   end subroutine Gf_Gamma
 
+  subroutine consecutive_index(Tri,El,current,p,n)
+    type(zTriMat), intent(inout) :: Tri
+    type(Elec), intent(in) :: El
+    integer, intent(in) :: current
+    integer, intent(out) :: p, n
+
+    ! Local variables
+    integer :: idx_Elec, i
+    
+    idx_Elec = El%inDpvt%r(current)
+    p = which_part(Tri,idx_Elec)
+
+    n = 1
+    do while ( current + n <= El%inDpvt%n )
+       i = El%inDpvt%r(current+n)
+       ! In case it is not consecutive
+       if ( i - idx_Elec /= n ) exit
+       ! In case the block changes, then
+       ! we cut the block size here.
+       if ( p /= which_part(Tri,i) ) exit
+       n = n + 1
+    end do
+    
+  end subroutine consecutive_index
+
 
 #ifdef NCDF_4
   subroutine orb_current(spH,A_tri,r,orb_J)
@@ -802,7 +788,6 @@ contains
     use class_Sparsity
     use class_zSpData1D
     use class_dSpData1D
-    use class_zTriMat
     use intrinsic_missing, only : SFIND
 
     type(zSpData1D), intent(inout) :: spH
@@ -967,8 +952,6 @@ contains
 
 
   subroutine insert_Self_energy_Dev(Gfinv_tri,Gfinv,r,El)
-
-    use class_zTriMat
 
     type(zTriMat), intent(inout) :: GFinv_tri
     complex(dp), intent(inout) :: Gfinv(:)
