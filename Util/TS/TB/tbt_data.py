@@ -232,6 +232,15 @@ class TBTFile(object):
             return self._get_Data(E1+'.R',k_avg=k_avg)
         return self._get_Data(E2+'.T',[E1],k_avg=k_avg)
 
+    def Teig(self,E1,E2=None,k_avg=True):
+        """ Returns the transmission function between electrodes
+        E1 and E2 """
+        if not E2: E2 = E1
+        if not E1 in self.nc.groups:
+            # Swap the electrodes, the user may have them confused
+            E1, E2 = E2, E1
+        return self._get_Data(E2+'.T.Eig',[E1],k_avg=k_avg)
+
     def DOS(self,El=None,k_avg=True):
         """ Returns the DOS """
         if El: return self._get_Data('DOS',[El],k_avg=k_avg)
@@ -634,14 +643,23 @@ def process_tbt(args,Tf,k_idx,orbs):
             fname = args.prefix+'.TBT.'+el1+'_'+el2+'.'+args.suffix
             save_txt(fname,E,T,DOS,ADOS, fmt = args.fmt, kpt=args.kpt)
 
+            try:
+                T = Tf.Teig(el1,el2,k_avg=k_idx)
+            except: continue
+            # Save k-averaged data
+            fname = args.prefix+'.TBT.'+el1+'_'+el2+'.'+args.suffix.replace('TRANS','TEIG')
+            save_txt(fname,E,Teig=T, fmt = args.fmt, kpt=args.kpt)
 
 # General text file for saving averaged trans files
-def save_txt(file,E,T=None,DOS=None,ADOS=None,fmt='13.5e',kpt=None):
+def save_txt(file,E,T=None,DOS=None,ADOS=None,Teig=None,fmt='13.5e',kpt=None):
     # Grab length between columns
     cl = int(fmt.split('.')[0])
     # create data stack
     l = [E]
     header  = 'E [eV]'.rjust(cl-2)
+    if not Teig is None:
+        l.append(Teig.T)
+        header += ' ' + 'T eigenvalues'.rjust(cl)
     if not T is None:
         l.append(T)
         header += ' ' + 'T [G0]'.rjust(cl)
