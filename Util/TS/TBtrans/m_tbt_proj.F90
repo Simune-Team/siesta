@@ -1269,8 +1269,7 @@ contains
     use intrinsic_missing, only : VNORM
     use m_io_s, only : file_exist
 
-    use variable
-    use dictionary
+    use dictionary, assign_int => assign
     use nf_ncdf, ncdf_parallel => parallel
     use m_ncdf_io, only : cdf_w_Sp
     use m_timestamp, only : datestring
@@ -1333,7 +1332,7 @@ contains
     call tbt_cdf_precision('Current','single',prec_J)
 
     if ( 'T-eig' .in. save_DATA ) then
-       call assign(N_eigen,save_DATA,'T-eig')
+       call assign_int(N_eigen,save_DATA,'T-eig')
     else
        N_eigen = 0
     end if
