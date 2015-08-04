@@ -314,7 +314,7 @@ contains
 
     ! In case the user requests eigenchannel calculations
     ! we need to do a work-query from lapack
-    if ( 'T-eig' .in. save_DATA ) then
+    if ( N_Eigen > 0 ) then
        ! 'no' is the maximum Gamma size in device region
 
        ! In tbtrans we need the GFGGF array
@@ -326,7 +326,7 @@ contains
        
        ! pre-allocate arrays for retrieving sizes
        nullify(zwork)
-       allocate(zwork(1))
+       allocate(zwork(no))
        eig => zwork(:)
        
        ! 'no' is the maximum size of the electrodes
@@ -340,16 +340,19 @@ contains
        end if
        ! Minimum padding (eigenvalues) + lwork size
        ! The optimal lwork is stored in zwork(1)
-       info = int(dreal(zwork(1))) + no
+       info = zwork(1)
+       info = info + no
        deallocate(zwork)
        pad_LHS = max(pad_LHS,info)
 
     end if
+
     
     ! Note that padding is the extra size to be able to calculate
     ! the spectral function in the BTD format
 
     ! We allocate for the matrix
+    call print_memory('LHS',pad_LHS)
     call newzTriMat(zwork_tri,DevTri%n,DevTri%r,'GFinv', &
          padding = pad_LHS )
 
@@ -370,6 +373,7 @@ contains
     ! padding any-way.
     pad_RHS = max(pad_RHS,nGFGGF)
     
+    call print_memory('RHS',pad_RHS)
     call newzTriMat(GF_tri,DevTri%n,DevTri%r,'GF', &
          padding = pad_RHS )
 
@@ -402,8 +406,6 @@ contains
     ! We have increased padding so that GFGGF can be
     ! fitted in the back of the array
     GFGGF_work => GFwork(nGfwork-nGFGGF+1:nGfwork)
-    ! We signal the allocation using a negative number
-    nGFGGF = - size(GFGGF_work)
 
     ! Initialize the tri-diagonal inversion routine
     call init_TriMat_inversion(zwork_tri)
@@ -527,13 +529,7 @@ contains
     ! Number of energy points
     N_E = N_TBT_E()
 
-#ifdef NCDF_4
-#ifdef CONTINUATION_NOT_WORKING
-    ! We read in the existing energy-points
-    ! and extend it by the current points.
-    call init_cdf_E_check(cdf_fname,calculated_E,N_E)
-#endif
-#else
+#ifndef NCDF_4
     ! Allocate units for IO ASCII
     allocate(iounits(1+(N_Elec*2+2)*N_Elec)) ! maximum number of units
     iounits = -100
@@ -906,7 +902,7 @@ contains
              if ( .not. cE%fake ) then
                 call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
                      calc_parts, &
-                     -nGFGGF, GFGGF_work)
+                     nGFGGF, GFGGF_work)
              end if
 
              if ( ('DOS-A' .in. save_DATA) .and. .not. cE%fake ) then
@@ -965,7 +961,7 @@ contains
                    if ( N_eigen > 0 ) then
                       io = Elecs(jEl)%inDpvt%n
                       call A_Gamma_Block(zwork_tri,Elecs(jEl),T(jEl,iEl), &
-                           -nGFGGF, GFGGF_work)
+                           nGFGGF, GFGGF_work)
                       call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                       ! Copy the eigenvalues over
                       do io = 1 , N_eigen
@@ -1081,7 +1077,7 @@ contains
 
             call GF_Gamma_GF(zwork_tri, El_p, no, &
                  (/(.true.,jEl=1,DevTri%n)/), &
-                 -nGFGGF, GFGGF_work)
+                 nGFGGF, GFGGF_work)
 
             if ( ('proj-DOS-A' .in. save_DATA) .and. p_E%idx > 0 ) then
 
@@ -1125,7 +1121,7 @@ contains
                   if ( N_eigen > 0 ) then
                      io = El_p%inDpvt%n
                      call A_Gamma_Block(zwork_tri,El_p,bTk(jEl,ipt), &
-                          -nGFGGF, GFGGF_work)
+                          nGFGGF, GFGGF_work)
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
@@ -1141,7 +1137,7 @@ contains
                   if ( N_eigen > 0 ) then
                      io = Elecs(iEl)%inDpvt%n
                      call A_Gamma_Block(zwork_tri,Elecs(iEl),bTk(jEl,ipt), &
-                          -nGFGGF, GFGGF_work)
+                          nGFGGF, GFGGF_work)
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
@@ -1279,6 +1275,30 @@ contains
     call end_save(iounits_El)
     deallocate(iounits)
 #endif
+
+  contains
+
+    subroutine print_memory(name,padding)
+      use m_verbosity, only : verbosity
+      use precision, only : i8b
+      use m_ts_tri_common, only : nnzs_tri_i8b
+      character(len=*), intent(in) :: name
+      integer, intent(in) :: padding
+      integer(i8b) :: nsize
+      real(dp) :: mem
+      if ( verbosity > 5 .and. IONode ) then
+         nsize = nnzs_tri_i8b(DevTri%n,DevTri%r)
+         nsize = nsize + padding
+         mem = 2._dp * real(nsize,dp) * 16._dp / 1024._dp ** 2
+         if ( mem > 600._dp ) then
+            write(*,'(3a,i0,a,f8.2,a)') 'tbtrans: ',name,' Green function size / memory: ', &
+                 nsize,' / ',mem / 1024._dp,' GB'
+         else
+            write(*,'(3a,i0,a,f8.2,a)') 'tbtrans: ',name,' Green function size / memory: ', &
+                 nsize,' / ',mem,' MB'
+         end if
+      end if
+    end subroutine print_memory
 
   end subroutine tbt_trik
   

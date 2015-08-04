@@ -552,6 +552,7 @@ contains
 
     ! Loop columns
     i_Elec = 1
+    ! The first column calculation initializes the result
     z = z0
     do while ( i_Elec <= no ) 
 
@@ -597,19 +598,17 @@ contains
           A => val(A_tri,jn,in)
 
           if ( jn == 1 ) then
-             A_j = El%inDpvt%r(j_Elec) - 1
+             A_j = El%inDpvt%r(j_Elec)
           else
-             A_j = El%inDpvt%r(j_Elec) - crows(jn-1) - 1
+             A_j = El%inDpvt%r(j_Elec) - crows(jn-1)
           end if
-
-          !print *,A_i,i_Elec,ii,A_j,j_Elec,jj
 
 #ifdef USE_GEMM3M
           call zgemm3m( &
 #else
           call zgemm( &
 #endif
-              'N','N',jj,no,ii, zi, A(A_i*jsN + A_j + 1), jsN, &
+              'N','N',jj,no,ii, zi, A(A_i*jsN + A_j), jsN, &
               El%Gamma(i_Elec), no, z, work(j_Elec), no)
 
           j_Elec = j_Elec + jj
@@ -647,6 +646,10 @@ contains
     complex(dp) :: z
     integer :: i, j
 
+#ifdef TBTRANS_TIMING
+    call timer('TT-eig',1)
+#endif
+
     ! To remove any singular values we add a 1e-3 to the diagonal
     do i = 1 , n
        tt((i-1)*n+i) = tt((i-1)*n+i) + 1.e-3_dp
@@ -670,6 +673,10 @@ contains
           end if
        end do
     end do
+
+#ifdef TBTRANS_TIMING
+    call timer('TT-eig',2)
+#endif
     
   end subroutine TT_eigen
   

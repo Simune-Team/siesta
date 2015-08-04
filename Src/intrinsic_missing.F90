@@ -1185,7 +1185,7 @@ contains
        do j = i + 1 , size
           d = array(j,i)
           array(j,i) = array(i,j)
-          array(j,i) = d
+          array(i,j) = d
        end do
     end do
 !$OMP end parallel do
@@ -1200,7 +1200,7 @@ contains
        do j = i + 1 , size
           z = array(j,i)
           array(j,i) = array(i,j)
-          array(j,i) = z
+          array(i,j) = z
        end do
     end do
 !$OMP end parallel do

@@ -1,4 +1,23 @@
 ----------------------------------------------------
+August 4, 2015 -- Nick Papior         trunk-476---ts-scf-490
+TBT: Bugfix for eigenvalue calculation
+
+* The transpose function was erroneous
+  which meant errors in the eigenvalue
+  calculation.
+
+  This has been fixed.
+
+* Added explicit memory print-out when verbosity > 5.
+
+* Added missing timer when compiling for TBTRANS_TIMING
+
+modified:
+  Src/intrinsic_missing.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 August 3, 2015 -- Nick Papior         trunk-476---ts-scf-489
  TBT: Bugfix
 
