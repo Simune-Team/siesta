@@ -1833,10 +1833,8 @@ contains
                                  atts = dic)
                             dic = dic//('info'.kv.'Reflection')
                             tmp = trim(tmp)//'.R'
-                            is_same = .true.
                          else
                             tmp = trim(tmp)//'.T'
-                            is_same = .false.
                          end if
                       else
                          tmp = proj_ME_name(proj_T(it)%R(ipt))
@@ -1846,17 +1844,15 @@ contains
                                  atts = dic)
                             dic = dic//('info'.kv.'Reflection')
                             tmp = trim(tmp)//'.R'
-                            is_same = .true.
                          else
                             tmp = trim(tmp)//'.T'
-                            is_same = .false.
                          end if
                       end if
 
                       call ncdf_def_var(grp3,tmp,prec_T, (/'ne  ','nkpt'/), &
                            atts = dic)
 
-                      if ( N_eigen > 0 .and. .not. is_same ) then
+                      if ( N_eigen > 0 ) then
                          dic = dic//('info'.kv.'Transmission eigenvalues')
                          call ncdf_def_var(grp3,trim(tmp)//'.Eig',prec_Teig, &
                               (/'neig','ne  ','nkpt'/), &
@@ -2162,16 +2158,14 @@ contains
                   atts = dic)
              dic = dic//('info'.kv.'Reflection')
              tmp = trim(tmp)//'.R'
-             is_same = .true.
           else
              tmp = trim(tmp)//'.T'
-             is_same = .false.
           end if
           
           call ncdf_def_var(grp,tmp,prec_T, (/'ne  ','nkpt'/), &
                atts = dic)
 
-          if ( N_eigen > 0 .and. .not. is_same ) then
+          if ( N_eigen > 0 ) then
              dic = dic//('info'.kv.'Transmission eigenvalues')
              call ncdf_def_var(grp,trim(tmp)//'.Eig',prec_Teig, &
                   (/'neig','ne  ','nkpt'/), &
@@ -2363,7 +2357,7 @@ contains
           if ( nE%iE(Node) > 0 ) then
              call ncdf_put_var(gEl,ctmp,T(ip,ipt),start = (/nE%iE(Node),ikpt/) )
           end if
-          if ( N_eigen > 0 .and. .not. same_E ) then
+          if ( N_eigen > 0 ) then
              call save_DOS(gEl,trim(ctmp)//'.Eig',ikpt,nE,N_eigen,Teig(:,ip,ipt))
           end if
 

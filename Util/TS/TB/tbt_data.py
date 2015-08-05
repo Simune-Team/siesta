@@ -36,6 +36,7 @@ import netCDF4 as nc
 import datetime
 _TODAY = datetime.date.today().isoformat()
 
+
 # A class to retain information given in a 
 # regular <syslabel>.TBT.nc file.
 class TBTFile(object):
@@ -343,6 +344,7 @@ class TBTFile(object):
                 Jab[ja,ia] += d
         return Jab.tocsr()
 
+
 class TBTProjFile(TBTFile):
     """ We inherit the TBT.nc file object. Many of the quantities are similar """
 
@@ -416,11 +418,13 @@ class TBTProjFile(TBTFile):
         """ Returns the spectral function DOS from the molecule, projection and electrode """
         return self._get_Data('ADOS',tree=[mol,proj,El],k_avg=k_avg)
 
+
 # The user requests a specific set of atoms/orbitals
 import re
 # Compile the reg-exp we search for in the input
 re_a   = re.compile('[,]?([0-9-]+\[[0-9,-]+\]|[0-9-]+)[,]?')
 re_rng = re.compile('[,]?([0-9-]+)[,]?')
+
 
 def parse_rng(s):
     """ Parses a string into a list of ranges 
@@ -442,6 +446,7 @@ def parse_rng(s):
             rng.append(int(tmp[0]))
 
     return rng
+
 
 def main():
 
@@ -558,6 +563,7 @@ def main():
 
     process(args,Tf,k_idx,orbs)
 
+
 def process_tbt_proj(args,Tf,k_idx,orbs):
     """ Processes the TBT.Proj.nc file """
 
@@ -656,20 +662,25 @@ def process_tbt(args,Tf,k_idx,orbs):
         save_txt(fname,E,ADOS=ADOS, fmt = args.fmt, kpt=args.kpt)
 
         for el2 in elecs:
+            end = el1 + '_' + el2
+            if el1 == el2: end = el1
+            end = end + '.' + args.suffix
+
             try:
                 T = Tf.T(el1,el2,k_avg=k_idx)
             except: continue
 
             # Save k-averaged data
-            fname = args.prefix+'.TBT.'+el1+'_'+el2+'.'+args.suffix
+            fname = args.prefix+'.TBT.'+end
             save_txt(fname,E,T,DOS,ADOS, fmt = args.fmt, kpt=args.kpt)
 
             try:
                 T = Tf.Teig(el1,el2,k_avg=k_idx)
             except: continue
             # Save k-averaged data
-            fname = args.prefix+'.TBT.'+el1+'_'+el2+'.'+args.suffix.replace('TRANS','TEIG')
+            fname = args.prefix+'.TBT.'+end.replace('TRANS','TEIG')
             save_txt(fname,E,Teig=T, fmt = args.fmt, kpt=args.kpt)
+
 
 # General text file for saving averaged trans files
 def save_txt(file,E,T=None,DOS=None,ADOS=None,Teig=None,fmt='13.5e',kpt=None):
@@ -700,6 +711,7 @@ def save_txt(file,E,T=None,DOS=None,ADOS=None,Teig=None,fmt='13.5e',kpt=None):
     data = np.vstack(l)
     np.savetxt(file,data.T,header=header,fmt='%'+fmt)
     
+
 if __name__ == '__main__':
     main()
 

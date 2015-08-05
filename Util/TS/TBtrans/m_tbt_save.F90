@@ -677,6 +677,13 @@ contains
              call ncdf_def_var(grp,trim(tmp)//'.R',prec_T,(/'ne  ','nkpt'/), &
                   atts = dic )
 
+             if ( N_eigen > 0 ) then
+                dic = dic//('info'.kv.'Reflection eigenvalues')
+                call ncdf_def_var(grp,trim(tmp)//'.R.Eig',prec_Teig, &
+                     (/'neig','ne  ','nkpt'/), &
+                     atts = dic )
+             end if
+
              dic = dic//('info'.kv.'Gf transmission')
              call ncdf_def_var(grp,trim(tmp)//'.T',prec_T,(/'ne  ','nkpt'/), &
                   atts = dic )
@@ -1040,7 +1047,7 @@ contains
              end if
           end if
 
-          if ( N_eigen > 0 .and. iEl /= jEl ) then
+          if ( N_eigen > 0 ) then
              call local_save_DOS(grp,trim(tmp)//'.Eig',ikpt,nE,&
                   N_eigen,Teig(:,jEl,iEl))
           end if
@@ -1504,6 +1511,18 @@ contains
              call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Reflection',&
                   '# Reflection, k-averaged')
 
+             if ( N_eigen > 0 ) then
+                call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.R.Eig',r3)
+                if ( nkpt > 1 ) then
+                   call name_save(ispin,nspin,ascii_file,end='REIG', El1=Elecs(iEl) )
+                   call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                        '# Reflection eigenvalues, k-resolved')
+                end if
+                call name_save(ispin,nspin,ascii_file,end='AVREIG', El1=Elecs(iEl) )
+                call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                     '# Reflection eigenvalues, k-averaged')
+             end if
+
              ! The transmission is now the total incoming wave 
              ! [G-G^\dagger].\Gamma
              call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
@@ -1511,6 +1530,16 @@ contains
              call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
              if ( N_eigen > 0 ) then
                 call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T.Eig',r3)
+                if ( nkpt > 1 ) then
+                   call name_save(ispin,nspin,ascii_file,end='TEIG', &
+                        El1=Elecs(iEl), El2=Elecs(jEl))
+                   call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                        '# Transmission eigenvalues, k-resolved')
+                end if
+                call name_save(ispin,nspin,ascii_file,end='AVTEIG', &
+                     El1=Elecs(iEl), El2=Elecs(jEl))
+                call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                     '# Transmission eigenvalues, k-averaged')
              end if
           end if
           
@@ -1520,23 +1549,11 @@ contains
                   El1=Elecs(iEl), El2=Elecs(jEl))
              call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'Transmission',&
                   '# Transmission, k-resolved')
-             if ( N_eigen > 0 ) then
-                call name_save(ispin,nspin,ascii_file,end='TEIG', &
-                     El1=Elecs(iEl), El2=Elecs(jEl))
-                call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
-                     '# Transmission eigenvalues, k-resolved')
-             end if
           end if
           call name_save(ispin,nspin,ascii_file,end='AVTRANS', &
                El1=Elecs(iEl), El2=Elecs(jEl))
           call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Transmission',&
                '# Transmission, k-averaged')
-          if ( N_eigen > 0 ) then
-             call name_save(ispin,nspin,ascii_file,end='AVTEIG', &
-                  El1=Elecs(iEl), El2=Elecs(jEl))
-             call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
-                  '# Transmission eigenvalues, k-averaged')
-          end if
 
           ! The array r2 now contains the k-averaged transmission.
 #ifdef TBT_PHONON

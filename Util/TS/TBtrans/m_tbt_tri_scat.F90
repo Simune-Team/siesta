@@ -680,7 +680,7 @@ contains
     
   end subroutine TT_eigen
   
-  subroutine Gf_Gamma(Gfcol,El,T)
+  subroutine GF_Gamma(Gfcol,El,T)
 
     use m_ts_trimat_invert, only : TriMat_Bias_idxs
 
@@ -761,7 +761,7 @@ contains
     call timer('Gf-Gamma',2)
 #endif
     
-  end subroutine Gf_Gamma
+  end subroutine GF_Gamma
 
   subroutine consecutive_index(Tri,El,current,p,n)
     type(zTriMat), intent(inout) :: Tri
