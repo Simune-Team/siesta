@@ -1,4 +1,17 @@
 ----------------------------------------------------
+August 6, 2015 -- Nick Papior         trunk-476---ts-scf-492
+TBT: Better estimation of smallest transmission
+
+* The smallest transmission region is now
+  better calculated.
+
+* Bugfix for checking whether J has zero columns
+
+modified:
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+
+----------------------------------------------------
 August 5, 2015 -- Nick Papior         trunk-476---ts-scf-491
 TBT: Allowed eigenvalues reflection
 

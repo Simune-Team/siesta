@@ -834,7 +834,7 @@ contains
        io = r%r(iu)
 
 #ifndef TS_NOCHECKS
-       if ( i_col(io) == 0 ) call die('orb_current: J has zero columns &
+       if ( i_ncol(io) == 0 ) call die('orb_current: J has zero columns &
             &for at least one row')
 #endif
 

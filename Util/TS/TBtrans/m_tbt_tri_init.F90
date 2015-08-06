@@ -264,34 +264,60 @@ contains
 
     ! In case we have more than two tri-mat regions we can advice
     ! the user to a minimal tri-mat matrix
-    if ( DevTri%n > 2 ) then
-       cum_sum = DevTri%r(1) + DevTri%r(2)
-       li = 1
-       do i = 2 , DevTri%n - 1
-          if ( DevTri%r(i) + DevTri%r(i+1) < cum_sum ) then
-             li = i
-             cum_sum = DevTri%r(i) + DevTri%r(i+1)
-          end if
-       end do
-       ! We have found the smallest consecutive regions to be li
-       off = 0
-       do i = 1 , li - 1
-          off = off + DevTri%r(i)
-       end do
-       call rgn_list(ro,cum_sum,r_oDev%r(off+1:))
-       call rgn_Orb2Atom(ro,na_u,lasto,ra)
 
+    ! In fact we should do this analysis for a sparsity pattern
+    ! without any self-energies added, this would correctly
+    ! get the size of the couplings and can shrink the 
+    ! transmission region based on the mininum connections
+    ! the self-energies will follow.
+
+    if ( DevTri%n > 2 ) then
+       
+       ! We take the minimal region in the middle
+       li = 0
+       cum_sum = huge(1)
+       do i = 2 , DevTri%n - 1
+          if ( DevTri%r(i) < cum_sum ) then
+             li = i
+             cum_sum = DevTri%r(i)
+          end if
+       end do 
+
+       if ( DevTri%r(1) + DevTri%r(2) < cum_sum ) then
+          li = 0
+          cum_sum = DevTri%r(1) + DevTri%r(2)
+          call rgn_list(ro,cum_sum,r_oDev%r)
+       end if
+
+       if ( DevTri%r(DevTri%n-1) + DevTri%r(DevTri%n) < cum_sum ) then
+          li = 0
+          cum_sum = DevTri%r(DevTri%n-1) + DevTri%r(DevTri%n)
+          call rgn_list(ro,cum_sum,r_oDev%r(r_oDev%n-cum_sum+1:))
+       end if
+
+       if ( li > 0 ) then
+          off = 1
+          do i = 1 , li - 1
+             off = off + DevTri%r(i)
+          end do
+          call rgn_list(ro,cum_sum,r_oDev%r(off:))
+       end if
+
+       call rgn_Orb2Atom(ro,na_u,lasto,ra)
+       call rgn_delete(ro)
+
+       ! Sort transmission region atoms
        call rgn_sort(ra)
 
        write(*,*) ''
        write(*,'(a)') 'tbtrans: Suggested atoms for fastest transmission calculation:'
 
-       ra%name = ' '
+       ra%name = '[A]-Fast transmission'
        call rgn_print(ra, seq_max = 12)
        write(*,*) ''
 
        ! Clean-up
-       call rgn_delete(ro,ra)
+       call rgn_delete(ra)
 
     end if
 
@@ -300,13 +326,6 @@ contains
   function fold_elements(N_tri,tri) result(elem)
     integer, intent(in) :: N_tri, tri(N_tri)
     integer :: elem, i, tmp
-
-    if ( N_tri == 2 ) then
-       elem = tri(1)**2
-       elem = elem + tri(1)*( tri(1) + 2 * tri(2) )
-       elem = elem + tri(2) ** 2
-       return
-    end if
 
     elem = 0
     tmp = 0
