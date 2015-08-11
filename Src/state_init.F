@@ -365,7 +365,7 @@
 
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
-      if ( mixH ) then
+      if ( mixH .or. require_hamiltonian_convergence ) then
          call re_alloc(Hold,1,maxnh,1,nspin,name='Hold',
      .        routine='sparseMat',copy=.false.,shrink=.true.)
       end if

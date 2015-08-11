@@ -66,7 +66,7 @@
       ! and hence de_alloc returns immediately
       
       !if ( MixH ) then
-         call de_alloc( Hold, 'Hold', 'sparseMat' )
+      call de_alloc( Hold, 'Hold', 'sparseMat' )
       !endif
 
       end subroutine resetSparseMatrices

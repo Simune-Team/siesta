@@ -144,6 +144,10 @@
       end if
 #endif
 
+      ! The dHmax variable only has meaning for Hamiltonian
+      ! mixing, or when requiring the Hamiltonian to be converged.
+      dHmax = -1._dp
+
       DO 
         ! Conditions of exit:
         !  -- At the top, to catch a non-positive nscf
@@ -188,6 +192,9 @@
            call compute_max_diff(Hold,H,dHmax)
         else 
            call setup_hamiltonian( iscf )
+           if ( require_hamiltonian_convergence ) then
+              call compute_max_diff(Hold,H,dHmax)
+           end if
            call compute_dm( iscf )
            call compute_max_diff(Dold,Dscf,dDmax)
         end if 

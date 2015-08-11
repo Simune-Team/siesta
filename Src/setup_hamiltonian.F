@@ -64,7 +64,7 @@
 
 !$OMP parallel default(shared), private(ispin,io)
 
-      if ( MixH ) then
+      if ( MixH .or. require_hamiltonian_convergence ) then
 !        Save present H matrix
 !$OMP do collapse(2)
          do ispin = 1,nspin

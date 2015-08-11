@@ -1,4 +1,20 @@
 ----------------------------------------------------
+August 11, 2015 -- Nick Papior         trunk-476---ts-scf-493
+Bug: Hamiltonian convergence repaired
+
+* When mixing the density matrix one can now
+  also require that the Hamiltonian is converged.
+
+  This simply requires that Hold also be 
+  allocated
+
+modified:
+  Src/setup_hamiltonian.F
+  Src/siesta_forces.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+----------------------------------------------------
 August 6, 2015 -- Nick Papior         trunk-476---ts-scf-492
 TBT: Better estimation of smallest transmission
 
