@@ -39,7 +39,7 @@ module m_region
 
   public :: tRgn, tRgnLL
   public :: rgn_init
-  public :: rgn_delete, rgnll_delete
+  public :: rgn_delete, rgn_nullify, rgnll_delete
   public :: rgn_intersection
   public :: rgn_union, rgn_append
   public :: rgn_union_complement, rgn_complement
@@ -201,6 +201,15 @@ contains
     r%sorted = .false.
     if ( present(r1) ) call rgn_delete(r1,r2,r3,r4,r5)
   end subroutine rgn_delete
+
+  ! Fully nullifies a region (irrespective of it's current state)
+  recursive subroutine rgn_nullify(r,r1,r2,r3,r4,r5)
+    type(tRgn), intent(inout) :: r
+    type(tRgn), intent(inout), optional :: r1,r2,r3,r4,r5
+    nullify(r%r) ! this pro-hibits the deletion of the array
+    call rgn_delete(r)
+    if ( present(r1) ) call rgn_nullify(r1,r2,r3,r4,r5)
+  end subroutine rgn_nullify
 
   ! Allows removing certain elements from a region.
   subroutine rgn_remove_list(r,n,list,rout)
@@ -1426,7 +1435,7 @@ contains
              if ( i > r%n ) exit
           end do
 
-          if ( k > 1  ) then
+          if ( k > 1 ) then
              ! This is a consecutive block
              if ( lseq_max - c < 2 ) then
                 write(*,'(/,'//fmt//'tr3)',advance='no') !

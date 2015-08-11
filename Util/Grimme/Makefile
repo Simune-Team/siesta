@@ -505,15 +505,13 @@ m_ts_sparse.o: precision.o
 m_ts_sparse_helper.o: class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse_helper.o: class_SpData1D.o class_SpData2D.o class_SpData2D.o
 m_ts_sparse_helper.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
-m_ts_sparse_helper.o: m_region.o m_ts_electype.o m_ts_method.o parallel.o
-m_ts_sparse_helper.o: precision.o
+m_ts_sparse_helper.o: m_region.o m_ts_electype.o m_ts_method.o precision.o
 m_ts_tri_common.o: m_ts_electype.o precision.o
 m_ts_tri_init.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_tri_init.o: create_Sparsity_SC.o create_Sparsity_Union.o fdf_extra.o
-m_ts_tri_init.o: m_char.o m_pivot.o m_pivot_methods.o m_region.o
-m_ts_tri_init.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o
-m_ts_tri_init.o: m_ts_method.o m_ts_rgn2trimat.o m_ts_sparse.o
-m_ts_tri_init.o: m_ts_tri_common.o parallel.o precision.o
+m_ts_tri_init.o: m_pivot.o m_pivot_methods.o m_region.o m_sparsity_handling.o
+m_ts_tri_init.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_rgn2trimat.o
+m_ts_tri_init.o: m_ts_sparse.o m_ts_tri_common.o parallel.o precision.o
 m_ts_tri_scat.o: alloc.o class_TriMat.o m_region.o m_ts_electype.o
 m_ts_tri_scat.o: m_ts_method.o m_ts_trimat_invert.o precision.o
 m_ts_trig.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o

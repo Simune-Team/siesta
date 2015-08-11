@@ -1,4 +1,74 @@
 ----------------------------------------------------
+August 14, 2015 -- Nick Papior         trunk-476---ts-scf-494
+Added FAN pivoting
+
+* Changed the pivoting algorithms to a separate
+  file m_ts_pivot.F90
+
+  This makes one re-use the pivoting scheme
+  in both transiesta and tbtrans without
+  ambiguity.
+
+* When using skewed transport axis the BTD format
+  becomes noturiously bad.
+
+  This is because the closest intersection point is
+  much closer than the farthest point.
+
+  To circumvent this we can employ a "fan" like
+  addition of atoms in the order of their
+  crossing an interface.
+
+  This is done most easily by calculating
+  1. The top-most point in two electrodes
+  2. The average atomic position projected onto
+     the plane that intersects 1. and has the
+     normal vector aligned with the transport
+     direction.
+  3. Find the line that crosses the two planes
+     (in case such a line does not exist,
+      the fan method cannot be employed)
+  4. On this line we find the point that minimizes
+     the square of the distance to the points
+     calculated in 1.
+
+  When adding elements using the connectivity graph
+  we calculate the mean angle between the just
+  added atoms and the point 4. and the plane.
+
+  We can then create a fictious plane that acts
+  as a boundary for adding atoms below such a plane.
+
+  This works in both tbtrans and transiesta
+
+* Added rgn_nullify which simply does not deallocate
+  the region array, otherwise it behaves as rgn_delete
+
+added:
+  Src/m_ts_pivot.F90
+modified:
+  Src/Makefile
+  Src/intrinsic_missing.F90
+  Src/m_region.F90
+  Src/m_transiesta.F90
+  Src/m_ts_tri_init.F90
+  Util/COOP/Makefile
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/Sp2METIS/Makefile
+  Util/SpPivot/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/tbt_init.F90
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 August 11, 2015 -- Nick Papior         trunk-476---ts-scf-493
 Bug: Hamiltonian convergence repaired
 

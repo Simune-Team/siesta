@@ -134,7 +134,7 @@ contains
        if ( ts_method == TS_BTD ) then
           ! initialize the tri-diagonal partition
           call ts_tri_init( sp_dist, sparse_pattern , N_Elec, &
-               Elecs, IsVolt, ucell, na_u, lasto ,nsc, isc_off, &
+               Elecs, IsVolt, ucell, na_u, xa, lasto ,nsc, isc_off, &
                opt_TriMat_method )
        end if
 

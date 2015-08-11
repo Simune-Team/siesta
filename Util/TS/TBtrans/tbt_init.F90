@@ -216,7 +216,8 @@ subroutine tbt_init()
   ! Hence, in order to change the sparsity patterns of the data
   ! we need to retain both!
   tmp_sp = TSHS%sp
-  call tbt_init_regions(N_Elec,Elecs,TSHS%cell,TSHS%na_u,TSHS%lasto, &
+  call tbt_init_regions(N_Elec,Elecs,TSHS%cell, &
+       TSHS%na_u,TSHS%xa,TSHS%lasto, &
        TSHS%dit,tmp_sp, &
        product(TSHS%nsc),TSHS%isc_off)
   call tbt_init_kregions(r_aBuf,N_Elec,Elecs,TSHS%cell, &

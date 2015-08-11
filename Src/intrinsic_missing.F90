@@ -1320,7 +1320,7 @@ contains
   end function IDX_SPC_PROJ_dp
 
 
-  ! Projection of vector onto other vector
+  ! Projection of 'vin' onto 'vec'
   pure function VEC_PROJ_sp(vec,vin) result(vout)
     real(sp), intent(in) :: vec(:), vin(:)
     real(sp) :: vout(size(vec))

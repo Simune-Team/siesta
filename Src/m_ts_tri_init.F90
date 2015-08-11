@@ -21,6 +21,10 @@ module m_ts_tri_init
   use precision, only : dp, i8b
   use m_region
 
+  use m_ts_electype
+
+  use m_ts_pivot
+
   implicit none
 
   ! arrays for containing the tri-diagonal matrix part sizes
@@ -35,7 +39,7 @@ module m_ts_tri_init
 contains
 
   subroutine ts_tri_init( dit, sparse_pattern , N_Elec, Elecs, &
-       IsVolt, ucell, na_u, lasto , nsc, isc_off, method )
+       IsVolt, ucell, na_u, xa, lasto , nsc, isc_off, method )
 
     use alloc, only : re_alloc, de_alloc
     use parallel, only : IONode
@@ -72,6 +76,7 @@ contains
     logical, intent(in) :: IsVolt
     real(dp), intent(in) :: ucell(3,3)
     integer, intent(in) :: na_u, lasto(0:na_u)
+    real(dp), intent(in) :: xa(3,na_u)
     integer, intent(in) :: nsc(3), isc_off(3,product(nsc))
 
     ! The method used to partition the BTD format
@@ -81,20 +86,13 @@ contains
     type(Sparsity) :: tmpSp1, tmpSp2
 
     integer :: idx, no
-    integer :: i, io, els, iEl, no_u_TS, n
+    integer :: i, io, els, iEl, no_u_TS
     integer :: padding, worksize
-    character(len=NAME_LEN) :: ctmp, csort
-    logical :: sort_orb
+    character(len=NAME_LEN) :: csort
     
     ! Regions used for sorting the device region
-    type(tRgn) :: r_tmp, r_Els, priority
+    type(tRgn) :: r_tmp
     
-    ! For certain pivoting schemes it can be good to make
-    ! dependencies for the tight-binding model
-    integer :: n_dep, iid, n_add
-    type(tRgn), allocatable :: r_dep(:)
-    type(tRgn) :: r_d
-
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
 
     ! In order to ensure that the electrodes are in the
@@ -116,7 +114,7 @@ contains
     call ts_Sp_calculation(dit,sparse_pattern,N_Elec,Elecs, &
          ucell, nsc, isc_off, tmpSp2)
     
-    call crtSparsity_SC(tmpSp2,tmpSp1, UC = .TRUE. )
+    call crtSparsity_SC(tmpSp2, tmpSp1, UC = .true. )
 
     ! point to the local (SIESTA-UC) sparsity pattern arrays
     call Sp_to_Spglobal(dit,tmpSp1,tmpSp2)
@@ -133,335 +131,26 @@ contains
        tmpSp1 = tmpSp2
        call crtSparsity_Union(fdit,tmpSp1, &
             idx,idx,no,no, tmpSp2)
+
+       ! Create the o_inD
+       call rgn_range(Elecs(iEl)%o_inD,idx,idx+no-1)
+
     end do
-    
-    tmpSp1 = tmpSp2
+    call delete(tmpSp1) ! clean up
+
+#ifdef TRANSIESTA_DEBUG
+    if(IONode)write(*,*)'Created TS-tri + elecs (4000)'
+    call sp_to_file(4000,tmpSp2)
+#endif
 
     ! Get sorting method, we default to sort
     ! the BTD matrix according to the connection
     ! scheme of the first electrode.
     csort = fdf_get('TS.BTD.Pivot','atom+'//trim(Elecs(1)%name))
-    ctmp = csort
-    ! we default to do atomic sorting, faster and very consistent
-    sort_orb = (index(ctmp,'orb') > 0)
-    if ( sort_orb ) then
-       ! the specification is orb something
-       i = index(ctmp,'orb')
-       ctmp(i:i+3) = ' ' ! also remove +
-       ! Prepare total region with all electrodes
-       call rgn_range(r_Els,Elecs(1)%idx_o, &
-            Elecs(1)%idx_o-1+TotUsedOrbs(Elecs(1)))
-       do i = 2 , N_Elec
-          call rgn_range(r_tmp,Elecs(i)%idx_o, &
-               Elecs(i)%idx_o-1+TotUsedOrbs(Elecs(i)))
-          call rgn_append(r_Els,r_tmp,r_Els)
-       end do
-       call rgn_copy(r_pvt,r_tmp)
-
-       n = nrows_g(tmpSp2)
-       no_u_TS = n - no_Buf
-
-    else
-       ! in case the user supplies 'atom+something'
-       i = index(ctmp,'atom')
-       if ( i > 0 ) then
-          ctmp(i:i+4) = ' ' ! also remove +
-       else
-          csort = 'atom+'//trim(csort)
-       end if
-       ! We are doing atomic comparison
-       call rgn_range(r_Els,Elecs(1)%idx_a, &
-            Elecs(1)%idx_a-1+TotUsedAtoms(Elecs(1)))
-       do i = 2 , N_Elec
-          call rgn_range(r_tmp,Elecs(i)%idx_a, &
-               Elecs(i)%idx_a-1+TotUsedAtoms(Elecs(i)))
-          call rgn_append(r_Els,r_tmp,r_Els)
-       end do
-       call rgn_copy(r_aC,r_tmp)
-       call SpOrb_to_SpAtom(fdit,tmpSp1,na_u,lasto,tmpSp2)
-       ! *** the distribution will always
-       !     be bigger than for the atoms, hence we need
-       !     not re-construct it
-       ! ***
-
-       n = nrows_g(tmpSp2)
-       no_u_TS = n - na_Buf
-
-    end if
-
-    ! Create priority list
-    call rgn_init(priority,n)
-    call crt_El_priority(N_Elec,Elecs,priority,is_orb = sort_orb )
-
-    call rgn_sort(r_tmp)
-
-    ! Sort the electrode region to make it faster
-    call rgn_sort(r_Els)
-
-    ! Left adjust the string
-    ctmp = ADJUSTL(ctmp)
-    if ( leqi(ctmp,'none') ) then
-
-       ! do nothing, the pivoting array
-       ! is already arranged correctly
-
-    else if ( leqi(ctmp,'CM') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_CUTHILL_MCKEE, r_tmp, start = r_Els)
-
-    else if ( leqi(ctmp,'CM+priority') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_CUTHILL_MCKEE, r_tmp, start = r_Els, &
-            priority = priority%r )
-
-    else if ( leqi(ctmp,'rev-CM') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_CUTHILL_MCKEE, r_tmp, start = r_Els)
-
-    else if ( leqi(ctmp,'rev-CM+priority') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_CUTHILL_MCKEE, r_tmp, start = r_Els , &
-            priority = priority%r )
-
-    else if ( leqi(ctmp,'GPS') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_GPS, r_tmp)
-
-    else if ( leqi(ctmp,'GPS+priority') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_GPS, r_tmp , &
-            priority = priority%r )
-
-    else if ( leqi(ctmp,'rev-GPS') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_GPS, r_tmp)
-
-    else if ( leqi(ctmp,'rev-GPS+priority') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_GPS, r_tmp , &
-            priority = priority%r )
-
-    else if ( leqi(ctmp,'PCG') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_PCG, r_tmp)
-
-    else if ( leqi(ctmp,'PCG+priority') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_PCG, r_tmp , &
-            priority = priority%r )
-
-    else if ( leqi(ctmp,'rev-PCG') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_PCG, r_tmp)
-
-    else if ( leqi(ctmp,'rev-PCG+priority') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_PCG, r_tmp , &
-            priority = priority%r )
-
-    else if ( leqi(ctmp,'GGPS') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_GGPS, r_tmp)
-
-    else if ( leqi(ctmp,'GGPS+priority') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_GGPS, r_tmp , &
-            priority = priority%r )
-
-    else if ( leqi(ctmp,'rev-GGPS') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_GGPS, r_tmp)
-
-    else if ( leqi(ctmp,'rev-GGPS+priority') ) then
-
-       call sp_pvt(n,tmpSp2,r_pvt, PVT_REV_GGPS, r_tmp , &
-            priority = priority%r )
-
-    else ! the user *must* have supplied an electrode
-
-       ! Read in dependency regions
-       call fdf_bregions('TS.BTD.Pivot.Depend',na_u,n_dep,r_dep)
-       if ( n_dep > 0 ) then
-          ! Transfer to orbital if required
-          do i = 1 , n_dep
-             if ( rgn_overlaps(r_dep(i),r_aBuf) ) then
-                call die('TS.BTD.Pivot.Depend contains atoms&
-                     & in buffer regions.')
-             end if
-          end do
-          if ( sort_orb ) then
-             do i = 1 , n_dep
-                call rgn_copy(r_dep(i),r_tmp)
-                call rgn_Orb2Atom(r_tmp,na_u,lasto,r_dep(i))
-             end do
-          end if
-       end if
-
-       ! Figure out which electrode(s) has been given
-       ! as a starting point
-       ! Note that for several electrodes one could
-       ! possibly get a better sparsity pattern by 
-       ! using several as a starting point
-       iEl = 0
-       call rgn_delete(r_pvt)
-       do i = 1 , N_Elec
-          if ( sort_contain(ctmp,Elecs(i)%name) ) then
-             if ( sort_orb ) then
-                io = Elecs(i)%idx_o
-                call rgn_range(r_tmp,io,io-1+TotUsedOrbs(Elecs(i)))
-             else
-                io = Elecs(i)%idx_a
-                call rgn_range(r_tmp,io,io-1+TotUsedAtoms(Elecs(i)))
-             end if
-
-             if ( iEl == 0 ) then
-                call rgn_copy(r_tmp,r_pvt)
-             else
-                call rgn_union(r_pvt,r_tmp,r_pvt)
-             end if
-             
-             ! Sort this region
-             call rgn_sp_sort(r_pvt, fdit, tmpSp2, r_tmp, R_SORT_MAX_FRONT )
-             
-             iEl = iEl + 1
-          end if
-       end do
-       if ( iEl == 0 ) then
-          print *,trim(csort)
-          call die('Could find the electrode in &
-               &TS.BTD.Pivot in the list of electrodes, &
-               &please correct sorting method.')
-       end if
-
-       ! Remove all redundant values
-       ! One could argue that they should be added immediately,
-       ! we do not do this... ??
-       if ( n_dep > 0 ) then
-          do iid = 1 , n_dep
-             call rgn_complement(r_pvt,r_dep(iid),r_d)
-             call rgn_copy(r_d,r_dep(iid))
-          end do
-       end if
-
-       do 
-          
-          ! Create attached region starting from electrode 1
-          call rgn_sp_connect(r_pvt, fdit, tmpSp2, r_tmp)
-
-          if ( r_tmp%n == 0 .and. r_pvt%n /= no_u_TS ) then
-
-             ! we need to ensure that all (even non-connected)
-             ! orbitals are taken into account
-             do i = 1 , nrows_g(tmpSp2)
-                ! if it already exists, skip it
-                if ( in_rgn(r_pvt,i) ) cycle
-                if ( sort_orb ) then
-                   if ( orb_type(i) /= TYP_BUFFER ) then
-                      call rgn_init(r_tmp,1,val=i)
-                      exit
-                   end if
-                else
-                   if ( atom_type(i) /= TYP_BUFFER ) then
-                      call rgn_init(r_tmp,1,val=i)
-                      exit
-                   end if
-                end if
-             end do
-
-             if ( r_tmp%n /= 0 ) then
-
-                if ( sort_orb ) then
-                   ! get the atomic index
-                   i = iaorb(r_tmp%r(1),lasto)
-                   call rgn_range(r_tmp,lasto(i-1)+1,lasto(i))
-                else
-                   i = r_tmp%r(1)
-                end if
-                if ( IONode ) then
-                   write(*,'(/,a,i0,a)')'WARNING TS: &
-                        &Random atom ',i,' has been added &
-                        &due to non-completeness of the connectivity &
-                        &graph.'
-                   write(*,'(a)')'WARNING TS: Expect sub-optimal &
-                        &BTD format.'
-                end if
-
-                ! Assert that none of the orbitals exist in the, region
-                do i = 1 , r_tmp%n
-                   if ( in_rgn(r_pvt,r_tmp%r(i)) ) then
-                      call die('This is extremely difficult. &
-                           &Please do not sort the BTD format as &
-                           it cannot figure out what to do.')
-                   end if
-                end do
-
-                call rgn_append(r_pvt, r_tmp, r_pvt)
-                cycle
-
-             end if
-             
-          end if
-          
-          ! If no additional orbitals are found, exit
-          if ( r_tmp%n == 0 ) exit
-
-          ! Append the newly found region that is connecting out to the
-          ! full region
-          call rgn_append(r_pvt, r_tmp, r_pvt)
-          
-          ! we sort the newly attached region
-          call rgn_sp_sort(r_pvt, fdit, tmpSp2, r_tmp, R_SORT_MAX_BACK )
-
-          ! Remove all redundant values
-          if ( n_dep > 0 ) then
-
-             ! Add dependency atoms
-             call rgn_delete(r_d)
-             ! We know that as soon as one atom from any region
-             ! shows up, the remaining atoms are added
-             n_add = -1
-             do while ( n_add /= r_d%n )
-                n_add = r_d%n
-                do iid = 1 , n_dep
-                   ! Check whether the just added region has
-                   ! any overlapping with dependencies
-                   if ( rgn_overlaps(r_tmp,r_dep(iid)) ) then
-                      call rgn_union(r_d,r_dep(iid),r_d)
-                      ! clean-up so that they are not added again
-                      call rgn_delete(r_dep(iid))
-                   end if
-                end do
-             end do
-             
-             ! Remove redundant orbitals/atoms
-             call rgn_complement(r_pvt,r_d,r_tmp)
-             
-             ! Add the new region
-             call rgn_append(r_pvt, r_tmp, r_pvt)
-             call rgn_sp_sort(r_pvt, dit, tmpSp2, r_tmp, R_SORT_MAX_BACK )
-             
-          end if
-          
-       end do
-
-       ! Clean up the dependencies
-       if ( n_dep > 0 ) then
-          do iid = 1 , n_dep
-             call rgn_delete(r_dep(iid))
-          end do
-          deallocate(r_dep)
-          call rgn_delete(r_d)
-       end if
-
-    end if
-    if ( .not. sort_orb ) then
-       call rgn_copy(r_pvt,r_tmp)
-       call rgn_atom2orb(r_tmp,na_u,lasto,r_pvt)
-
-       tmpSp2 = tmpSp1
-
-    end if
-    call rgn_delete(r_tmp,r_Els,priority)
+    call ts_pivot( fdit, tmpSp2, &
+         N_Elec, Elecs, &
+         ucell, na_u, xa, lasto, &
+         r_pvt, csort)
 
     ! Recalculate number of orbitals in TS
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
@@ -512,11 +201,6 @@ contains
     ! Initialize the tri-diagonal container
     call rgn_delete(c_Tri)
 
-#ifdef TRANSIESTA_DEBUG
-    if(IONode)write(*,*)'Created TS-tri + elecs (4000)'
-    call sp_to_file(4000,tmpSp2)
-#endif
-
     ! Get the current sorting method
     if ( IONode ) &
          write(*,'(/,2a)') 'transiesta: Determining an optimal &
@@ -526,7 +210,7 @@ contains
     call ts_rgn2TriMat(N_Elec, Elecs, IsVolt, &
          fdit, tmpSp2, r_pvt, c_Tri%n, c_Tri%r, &
          method, 0, par = .true. )
-    call delete(tmpSp2) ! clean up
+    call delete(tmpSp2) ! clean-up
     call delete(fdit)
 
     c_Tri%name = ' '
@@ -574,43 +258,6 @@ contains
             &Use the full/MUMPS TS.SolutionMethod instead')
     end if
 
-  contains
-
-    function sort_contain(str,name) result(contain)
-      use m_char, only : lcase
-      character(len=*), intent(in) :: str, name
-      logical :: contain
-
-      character(len=len(str)) :: lstr
-      character(len=len_trim(name)) :: lname
-
-      integer :: i
-
-      contain = .false.
-
-      lstr = lcase(str)
-      lname = lcase(trim(name))
-
-      ! check whether it is in this stuff
-      i = index(lstr,lname)
-      if ( i > 1 ) then
-         contain = scan(lstr(i-1:i-1),'+ ') == 1
-         i = i + len_trim(lname)
-         if ( i <= len(str) ) then
-            contain = contain .and. scan(lstr(i:i),'+ ') == 1
-         end if
-      else if ( i == 1 ) then
-         i = i + len_trim(lname)
-         if ( i <= len(str) ) then
-            contain = scan(lstr(i:i),'+ ') == 1
-         else
-            ! it was found and the string is too short
-            contain = .true.
-         end if
-      end if
-      
-    end function sort_contain
-    
   end subroutine ts_tri_init
 
   subroutine ts_tri_analyze( dit, sparse_pattern , N_Elec, Elecs, &
@@ -659,7 +306,7 @@ contains
     type(OrbitalDistribution) :: fdit
     type(Sparsity) :: tmpSp1, tmpSp2
 
-    integer :: no_u_TS, i, j, iEl, no, no_El
+    integer :: no_u_TS, i, j, iEl, no
 
     integer :: n, n_nzs
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
@@ -697,6 +344,7 @@ contains
     ! point to the local (SIESTA-UC) sparsity pattern arrays
     call Sp_to_Spglobal(dit,tmpSp1,tmpSp2)
 
+    call rgn_delete(r_Els)
     do iEl = 1 , N_Elec
 
        i  = Elecs(iEl)%idx_o
@@ -706,6 +354,11 @@ contains
        tmpSp1 = tmpSp2
        call crtSparsity_Union(fdit,tmpSp1, &
             i,i,no,no, tmpSp2)
+
+       ! Create the o_inD
+       call rgn_range(Elecs(iEl)%o_inD,i,i+no-1)
+       call rgn_append(r_Els,Elecs(iEl)%o_inD,r_Els)
+
     end do
 
     ! Write out all pivoting etc. analysis steps
@@ -713,10 +366,6 @@ contains
 
     ! Make a copy
     tmpSp1 = tmpSp2
-
-    ! Attach the sparsity pattern
-    call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
-         list_col = l_col , nrows_g = no , nnzs = n_nzs )
 
     if ( IONode ) write(*,fmt) 'orb','none'
     call tri(r_pvt)
@@ -733,15 +382,6 @@ contains
 
        call rgn_copy(r_pvt,full)
 
-       ! Prepare total region with all electrodes
-       call rgn_range(r_Els,Elecs(1)%idx_o, &
-            Elecs(1)%idx_o-1+TotUsedOrbs(Elecs(1)))
-       do iEl = 2 , N_Elec
-          call rgn_range(r_tmp,Elecs(iEl)%idx_o, &
-               Elecs(iEl)%idx_o-1+TotUsedOrbs(Elecs(iEl)))
-          call rgn_append(r_Els,r_tmp,r_Els)
-       end do
-
     else
        corb = 'atom'
 
@@ -755,13 +395,8 @@ contains
        call rgn_copy(r_aC,full)
 
        ! Prepare total region with all electrodes
-       call rgn_range(r_Els,Elecs(1)%idx_a, &
-            Elecs(1)%idx_a-1+TotUsedAtoms(Elecs(1)))
-       do iEl = 2 , N_Elec
-          call rgn_range(r_tmp,Elecs(iEl)%idx_a, &
-               Elecs(iEl)%idx_a-1+TotUsedAtoms(Elecs(iEl)))
-          call rgn_append(r_Els,r_tmp,r_Els)
-       end do
+       call rgn_orb2atom(r_Els,na_u,lasto,r_tmp)
+       call rgn_copy(r_tmp,r_Els)
 
     end if
 
@@ -772,9 +407,11 @@ contains
 
     ! Create priority list
     call rgn_init(priority,no)
-    call crt_El_priority(N_Elec,Elecs,priority,is_orb = orb_atom == 1 )
+    call crt_El_priority(N_Elec,Elecs,priority, &
+         na_u,lasto,is_orb = orb_atom == 1 )
 
 #ifdef GRAPHVIZ
+    ! Attach sparsity pattern to current designation ('atom' == atom sp)
     call attach(tmpSp2, n_col = ncol, list_ptr = l_ptr, &
          list_col = l_col , nnzs = n_nzs )
     call rgn_init(r_El,n)
@@ -789,18 +426,20 @@ contains
     if ( IONode ) &
          call sp2graphviz('GRAPHVIZ_'//trim(corb)//'.gv', &
          n,n_nzs,ncol,l_ptr,l_col, types = r_El%r )
-    call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
-         list_col = l_col , nnzs = n_nzs )
 #endif
+
+    ! Attach the sparsity pattern of the orbitals
+    call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
+         list_col = l_col , nrows_g = no , nnzs = n_nzs )
+
 
     do iEl = 1 , N_Elec
        if ( IONode ) write(*,fmt) trim(corb),trim(Elecs(iEl)%name)
        if ( orb_atom == 1 ) then
-          i = Elecs(iEl)%idx_o
-          call rgn_range(r_El,i,i-1+TotUsedOrbs(Elecs(iEl)))
+          call rgn_copy(Elecs(iEl)%o_inD,r_El)
        else
-          i = Elecs(iEl)%idx_a
-          call rgn_range(r_El,i,i-1+TotUsedAtoms(Elecs(iEl)))
+          call rgn_copy(Elecs(iEl)%o_inD,r_tmp)
+          call rgn_orb2atom(r_tmp,na_u,lasto,r_El)
        end if
        call rgn_copy(r_El,r_tmp)
        ! we sort the newly attached region
@@ -995,7 +634,7 @@ contains
 
     end do orb_atom_switch
 
-    call rgn_delete(r_tmp,r_Els,r_El,priority)
+    call rgn_delete(r_tmp,r_Els,r_El,full,priority)
 
     call delete(tmpSp1) ! clean up
     call delete(tmpSp2)
@@ -1062,96 +701,5 @@ contains
     end subroutine tri
 
   end subroutine ts_tri_analyze
-
-  subroutine crt_El_priority(N_Elec,Elecs,pr,is_orb)
-    use m_ts_electype
-    integer, intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
-    type(tRgn), intent(inout) :: pr ! Needs to be pre-allocated
-    logical, intent(in) :: is_orb
-    integer :: i, iEl, no, j, start, end
-    
-    ! Initialize
-    pr%r = 0
-    do iEl = 1 , N_Elec
-       if ( is_orb ) then
-          start = Elecs(iEl)%idx_o
-          no = TotUsedOrbs(Elecs(iEl))
-       else
-          start = Elecs(iEl)%idx_a
-          no = TotUsedAtoms(Elecs(iEl))
-       end if
-       end = start + no - 1
-       ! For negative we have only connections forward.
-       ! Hence we expect the atoms to be sorted "forwardly"
-       ! This need not be the case, but for now we do this
-       ! TODO align the atoms in direction of the unit-cell
-       ! to figure out the correct "direction"
-       if ( Elecs(iEl)%inf_dir == INF_NEGATIVE ) then
-          i = no
-          do j = start , end
-             pr%r(j) = i
-             i = i - 1
-          end do
-       else
-          i = 1
-          do j = start , end
-             pr%r(j) = i
-             i = i + 1
-          end do
-       end if
-    end do
-
-  end subroutine crt_El_priority
-
-  function consecutive_Elec_orb(El,r) result(con)
-    use m_ts_electype
-    type(Elec), intent(in) :: El
-    type(tRgn), intent(in) :: r
-    type(tRgn) :: o_inD, r_tmp
-    integer :: con
-    integer :: i_Elec, io, idx_Elec, idx, no
-
-    idx = El%idx_o
-    no = TotUsedOrbs(El)
-
-    ! Create the pivoting table for the electrodes
-    call rgn_init(r_tmp,no)
-    do io = 0 , no - 1
-       ! equals the io'th orbital index in the 
-       !           TS region.  io == ts_i
-       r_tmp%r(io+1) = rgn_pivot(r,idx+io)
-    end do
-       
-    ! Sort it to be able to gather the indices
-    ! in the correct order
-    call rgn_sort(r_tmp)
-    ! pivot the o_inD back
-    call rgn_init(o_inD,no)
-    do io = 1 , no 
-       o_inD%r(io) = r%r(r_tmp%r(io))
-    end do
-
-    con    = 0
-    i_Elec = 1
-    do while ( i_Elec <= o_inD%n ) 
-
-       idx_Elec = rgn_pivot(r,o_inD%r(i_Elec))
-       io = 1
-       do while ( i_Elec + io <= o_inD%n ) 
-          idx = rgn_pivot(r,o_inD%r(i_Elec+io))
-          ! In case it is not consecutive
-          if ( idx - idx_Elec /= io ) exit
-          io = io + 1
-       end do
-       con = con + 1
-
-       i_Elec = i_Elec + io
-
-    end do
-
-    call rgn_delete(r_tmp,o_inD)
-
-  end function consecutive_Elec_orb
 
 end module m_ts_tri_init
