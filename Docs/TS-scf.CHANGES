@@ -1,4 +1,20 @@
 ----------------------------------------------------
+August 14, 2015 -- Nick Papior         trunk-476---ts-scf-496
+Added 2D fan with distance addition
+
+* Like the 2D fan for skewed semi-infinite
+  directions we also allow the fan in direct.
+  In this mode it acts a little different,
+  specifically it cuts the simulation box
+  at points with added atoms and adds them
+  simultaneously, i.e. this is exactly the
+  same as cutting the box along the transport
+  direction.
+
+modified:
+  Src/m_ts_pivot.F90
+
+----------------------------------------------------
 August 14, 2015 -- Nick Papior         trunk-476---ts-scf-495
 Bugfix for makefile
 

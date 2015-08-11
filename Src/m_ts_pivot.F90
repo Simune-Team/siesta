@@ -87,7 +87,7 @@ contains
 
     ! For certain pivoting schemes it can be good to make
     ! dependencies for the tight-binding model
-    logical :: pvt_fan, pvt_orb
+    logical :: pvt_fan, pvt_orb, pvt_fan2d
     integer :: fan_option
     integer :: fan1, fan2
     real(dp) :: p_n(3,2), p_cr(3), p_center(3,2), tmp3(3)
@@ -144,24 +144,6 @@ contains
     ! The size of the sparsity pattern
     n = nrows_g(tmp_Sp)
     n_pvt = c_pvt%n
-
-    ! Check if the fan method should be used
-    pvt_fan = .not. str_contain(pvt_str,'nofan')
-    ! Check the fan-option
-    fan_option = 0
-    if ( str_contain(pvt_str,'fan-mean') ) then
-       fan_option = 0
-    else if ( str_contain(pvt_str,'fan-min') ) then
-       fan_option = -1
-    else if ( str_contain(pvt_str,'fan-max') ) then
-       fan_option = 1
-    else if ( str_contain(pvt_str,'fan') ) then
-       fan_option = 0 ! default mean
-    end if
-    ! No need to fan for anything but two electrodes
-    if ( N_Elec /= 2 ) pvt_fan = .false.
-    ! We do not allow fan method if the sparsity pattern isn't complete
-    if ( .not. lextend ) pvt_fan = .false.
 
     ! Create priority list for electrodes
     call rgn_init(priority,n)
@@ -315,26 +297,26 @@ contains
        if ( iEl == 0 ) then
           print *,trim(pvt_str)
           call die('Could find the electrode in &
-               &TS.BTD.Pivot in the list of electrodes, &
+               &BTD.Pivot in the list of electrodes, &
                &please correct sorting method.')
        end if
-       
+
+       ! We check for the fan-options
+       pvt_fan = .not. str_contain(pvt_str,'nofan')
+       pvt_fan2d = .false.
+       ! No need to fan for anything but two electrodes
+       ! We do not allow fan method if the sparsity pattern isn't complete
+       if ( N_Elec /= 2 .or. .not. lextend ) pvt_fan = .false.
+
+       ! Create the first vector of the fan
        if ( pvt_fan ) then
 
-          if ( fan2 == 0 ) then
-             ! Correct fan2 index
-             if ( fan1 < N_Elec ) then
-                fan2 = fan1 + 1
-             else
-                fan2 = 1
-             end if
-          end if
-          
+          ! Initialize the center
+          p_center = 0._dp
+
           ! Calculate the plane-crossing between the first two electrodes
           p_n(:,1) = Elecs(fan1)%ucell(:,Elecs(fan1)%t_dir)
           p_n(:,1) = p_n(:,1) / VNORM(p_n(:,1))
-          p_n(:,2) = Elecs(fan2)%ucell(:,Elecs(fan2)%t_dir)
-          p_n(:,2) = p_n(:,2) / VNORM(p_n(:,2))
 
           ! Correct sign for electrodes
           if ( Elecs(fan1)%inf_dir == INF_POSITIVE ) then
@@ -342,36 +324,6 @@ contains
           else
              ! do nothing, the direction is good
           end if
-          if ( Elecs(fan2)%inf_dir == INF_NEGATIVE ) then
-             p_n(:,2) = -p_n(:,2)
-          else
-             ! do nothing, the direction is good
-          end if
-          
-          ! Create vector pointing along the line intersecting the
-          ! two planes.
-          call cross(p_n(:,1),p_n(:,2),p_cr)
-
-          ! If the length of the cross-product vector is too small,
-          ! they *must* be parallel planes.
-          pvt_fan = vnorm(p_cr) > 1.e-6_dp
-
-       end if
-       if ( pvt_fan ) then
-          select case ( fan_option )
-          case ( -1 )
-             str_tmp = trim(str_tmp)//'+fan-min'
-          case (  0 ) 
-             str_tmp = trim(str_tmp)//'+fan-mean'
-          case (  1 )
-             str_tmp = trim(str_tmp)//'+fan-max'
-          end select
-
-          ! Normalize vector for line
-          p_cr = p_cr / VNORM(p_cr)
-
-          ! Initialize the center
-          p_center = 0._dp
 
           ! First we find the electrode middle of the plane that
           ! crosses the top
@@ -415,6 +367,98 @@ contains
              p_center(:,1) = p_center(:,1) + tmp3
           end do
           p_center(:,1) = p_center(:,1) / r_tmp%n
+
+          ! Temporary clean-up
+          call rgn_delete(r_tmp)
+
+          ! Check whether the fan should be applied
+
+          if ( fan2 == 0 ) then
+             ! Correct fan2 index
+             if ( fan1 < N_Elec ) then
+                fan2 = fan1 + 1
+             else
+                fan2 = 1
+             end if
+          end if
+          
+          ! Calculate the plane-crossing between the first two electrodes
+          p_n(:,2) = Elecs(fan2)%ucell(:,Elecs(fan2)%t_dir)
+          p_n(:,2) = p_n(:,2) / VNORM(p_n(:,2))
+          if ( Elecs(fan2)%inf_dir == INF_NEGATIVE ) then
+             p_n(:,2) = -p_n(:,2)
+          else
+             ! do nothing, the direction is good
+          end if
+          
+          ! Create vector pointing along the line intersecting the
+          ! two planes.
+          call cross(p_n(:,1),p_n(:,2),p_cr)
+
+          ! If the length of the cross-product vector is too small,
+          ! they *must* be parallel planes.
+          pvt_fan2d = pvt_fan
+          pvt_fan = vnorm(p_cr) > 1.e-6_dp
+
+       end if
+
+       ! Now we can check whether we should apply the fan options
+       if ( pvt_fan2d ) then
+
+          ! We have processed the above and
+          ! will now do the option checking...
+          fan_option = -2
+
+          if ( str_contain(pvt_str,'fan-mean') ) then
+             fan_option = 0
+          else if ( str_contain(pvt_str,'fan-min') ) then
+             fan_option = -1
+          else if ( str_contain(pvt_str,'fan-max') ) then
+             fan_option = 1
+          end if
+          
+          if ( pvt_fan ) then
+             pvt_fan2d = .false.
+
+             ! The 2-electrode fan shall not apply
+             
+             if ( str_contain(pvt_str,'fan') ) then
+                fan_option = 0 ! default mean
+             end if
+             if ( fan_option == -2 ) fan_option = 0
+          
+          else
+
+             ! It is a linear 2-electrode system
+             if ( str_contain(pvt_str,'fan') ) then
+                fan_option = 1 ! default max
+             end if
+             if ( fan_option == -2 ) then
+                ! for 2D and direct electrodes
+                ! we force the user to specify 'fan'
+                ! to get it
+                pvt_fan2d = .false.
+             end if
+             
+          end if
+
+       end if
+       
+       if ( pvt_fan .or. pvt_fan2d ) then
+          select case ( fan_option )
+          case ( -1 )
+             str_tmp = trim(str_tmp)//'+fan-min'
+          case (  0 ) 
+             str_tmp = trim(str_tmp)//'+fan-mean'
+          case (  1 )
+             str_tmp = trim(str_tmp)//'+fan-max'
+          end select
+       end if
+       
+       if ( pvt_fan ) then
+
+          ! Normalize vector for line
+          p_cr = p_cr / VNORM(p_cr)
 
           ! do end-fan electrode
           call rgn_orb2atom(Elecs(fan2)%o_inD,na_u,lasto,r_tmp)
@@ -564,19 +608,21 @@ contains
           ! If no additional orbitals are found, exit
           if ( r_tmp%n == 0 ) exit
 
-          if ( pvt_fan ) then
-
+          if ( pvt_fan .or. pvt_fan2d ) then
+             
              ! We want to add the 'fan' atoms based on the
              ! two electrode system
 
-             ! First we find the angle between 'C' and 
-             ! the atoms based on either min,mean,max methods
              if ( pvt_orb ) then
                 call rgn_orb2atom(r_tmp,na_u,lasto,r_Els)
              else
                 r_Els%n =  r_tmp%n
                 r_Els%r => r_tmp%r
              end if
+             
+          end if
+
+          if ( pvt_fan ) then
 
              ! Calculate max angle between plane and vector 'C'-xa
              select case ( fan_option ) 
@@ -669,6 +715,79 @@ contains
              ! Debugging
              !print *,'Currently applying: ',work(1:2) / 3.1415926353_dp * 180._dp,r_tmp2%n
 
+          else if ( pvt_fan2d ) then
+
+             ! Calculate the plane that we wish to fan about
+             select case ( fan_option ) 
+             case ( -1 )
+                ! minimum
+                work(1) = huge(1._dp)
+             case ( 0 )
+                ! mean
+                work(1) = 0._dp
+             case ( 1 )
+                ! maximum
+                work(1) = 0._dp
+             end select
+             do i = 1 , r_Els%n
+
+                ! Get elec-center -> xa vector,
+                tmp3 = xa(:,r_Els%r(i)) - p_center(:,1)
+                ! Project onto vector
+                tmp3 = VEC_PROJ(p_n(:,1),tmp3)
+                ! Get the length of this projected vector
+                work(2) = vnorm(tmp3)
+                
+                select case ( fan_option ) 
+                case ( -1 )
+                   ! minimum
+                   work(1) = min(work(1),work(2))
+                case ( 0 )
+                   ! mean
+                   work(1) = work(1) + work(2)
+                case ( 1 )
+                   ! maximum
+                   work(1) = max(work(1),work(2))
+                end select
+                
+             end do
+             if ( fan_option == 0 ) work(1) = work(1) / r_Els%n
+
+             ! Now we need to find all atoms below the coordinate
+             if ( .not. pvt_orb ) call rgn_nullify(r_Els)
+
+             ! Create the list of atoms that we should search as 
+             ! possible candidates for adding based on the 'fan'
+             call rgn_complement(r_pvt,c_pvt,r_Els)
+             call rgn_complement(r_tmp,r_Els,r_Els)
+             if ( pvt_orb ) call rgn_orb2atom(r_Els,na_u,lasto,r_Els)
+
+             ! Pre-allocate maximum size of the added atoms
+             call rgn_init(r_tmp2,r_Els%n)
+             r_tmp2%n = 0
+
+             ! 'r_Els' is now the list of atoms that hasn't been processed yet
+             do i = 1 , r_Els%n
+
+                ! Get elec-center -> xa vector,
+                tmp3 = xa(:,r_Els%r(i)) - p_center(:,1)
+                ! Project onto vector
+                tmp3 = VEC_PROJ(p_n(:,1),tmp3)
+
+                ! Check whether the atom should be added
+                if ( work(1) >= vnorm(tmp3) ) then
+                   if ( .not. rgn_push(r_tmp2,r_Els%r(i)) ) then
+                      call die('Error in programming')
+                   end if
+                end if
+                
+             end do
+                   
+          end if
+
+          ! Add the new atoms
+          if ( pvt_fan .or. pvt_fan2d ) then
+
              if ( r_tmp2%n > 0 ) then
                 ! Extend the added region to have the new fanned region
                 if ( pvt_orb ) then
@@ -678,10 +797,10 @@ contains
                    call rgn_append(r_tmp,r_tmp2,r_tmp)
                 end if
              end if
-
+             
              ! Clean-up
              call rgn_delete(r_Els,r_tmp2)
-                
+             
           end if
 
           ! Append the newly found region that is connecting out to the
