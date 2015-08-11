@@ -699,6 +699,11 @@ m_ts_options.o: m_ts_contour_neq.o m_ts_electype.o m_ts_global_vars.o
 m_ts_options.o: m_ts_hartree.o m_ts_io.o m_ts_io_contour.o m_ts_method.o
 m_ts_options.o: m_ts_mumps_init.o m_ts_tdir.o m_ts_weight.o parallel.o
 m_ts_options.o: precision.o siesta_options.o sys.o units.o
+m_ts_pivot.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
+m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o fdf_extra.o
+m_ts_pivot.o: intrinsic_missing.o m_char.o m_pivot.o m_region.o
+m_ts_pivot.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o parallel.o
+m_ts_pivot.o: precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
 m_ts_rgn2trimat.o: m_ts_electype.o m_ts_tri_common.o parallel.o precision.o
@@ -715,8 +720,9 @@ m_ts_tri_common.o: m_ts_electype.o precision.o
 m_ts_tri_init.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_tri_init.o: create_Sparsity_SC.o create_Sparsity_Union.o fdf_extra.o
 m_ts_tri_init.o: m_pivot.o m_pivot_methods.o m_region.o m_sparsity_handling.o
-m_ts_tri_init.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_rgn2trimat.o
-m_ts_tri_init.o: m_ts_sparse.o m_ts_tri_common.o parallel.o precision.o
+m_ts_tri_init.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
+m_ts_tri_init.o: m_ts_rgn2trimat.o m_ts_sparse.o m_ts_tri_common.o parallel.o
+m_ts_tri_init.o: precision.o
 m_ts_tri_scat.o: alloc.o class_TriMat.o m_region.o m_ts_electype.o
 m_ts_tri_scat.o: m_ts_method.o m_ts_trimat_invert.o precision.o
 m_ts_trig.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
@@ -1017,7 +1023,8 @@ m_tbt_proj.o: units.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_char.o m_io_s.o m_pivot.o
 m_tbt_regions.o: m_region.o m_sparsity_handling.o m_ts_debug.o m_ts_electype.o
-m_tbt_regions.o: m_ts_method.o m_ts_sparse.o m_verbosity.o parallel.o
+m_tbt_regions.o: m_ts_method.o m_ts_pivot.o m_ts_sparse.o m_verbosity.o
+m_tbt_regions.o: parallel.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_io_s.o m_ncdf_io.o m_region.o
 m_tbt_save.o: m_tbt_hs.o m_ts_electype.o m_verbosity.o parallel.o precision.o

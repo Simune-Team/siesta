@@ -1,4 +1,11 @@
 ----------------------------------------------------
+August 14, 2015 -- Nick Papior         trunk-476---ts-scf-495
+Bugfix for makefile
+
+modified:
+  Src/Makefile
+
+----------------------------------------------------
 August 14, 2015 -- Nick Papior         trunk-476---ts-scf-494
 Added FAN pivoting
 
