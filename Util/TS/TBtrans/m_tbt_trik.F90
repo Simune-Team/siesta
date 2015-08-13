@@ -1286,12 +1286,12 @@ contains
       integer, intent(in) :: padding
       integer(i8b) :: nsize
       real(dp) :: mem
-      if ( verbosity > 5 .and. IONode ) then
+      if ( verbosity > 4 .and. IONode ) then
          nsize = nnzs_tri_i8b(DevTri%n,DevTri%r)
          nsize = nsize + padding
-         mem = 2._dp * real(nsize,dp) * 16._dp / 1024._dp ** 2
+         mem = real(nsize,dp) * 16._dp / 1024._dp ** 2
          if ( mem > 600._dp ) then
-            write(*,'(3a,i0,a,f8.2,a)') 'tbtrans: ',name,' Green function size / memory: ', &
+            write(*,'(3a,i0,a,f8.3,a)') 'tbtrans: ',name,' Green function size / memory: ', &
                  nsize,' / ',mem / 1024._dp,' GB'
          else
             write(*,'(3a,i0,a,f8.2,a)') 'tbtrans: ',name,' Green function size / memory: ', &

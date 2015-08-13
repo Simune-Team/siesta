@@ -152,7 +152,6 @@ contains
 
     type(Sparsity) :: tmpSp1, tmpSp2
     integer :: i
-    real(dp) :: mem
     integer(i8b) :: els
 
     call timer('tri-init',1)
@@ -227,17 +226,9 @@ contains
        call rgn_print(DevTri, seq_max = 10 , collapse = .false.)
        ! Print out memory estimate
        els = nnzs_tri_i8b(DevTri%n,DevTri%r)
-       mem = 2._dp * real(els,dp) * 16._dp / 1024._dp ** 2
-       if ( mem > 600._dp ) then
-          ! more than 600 MB we write out GB
-          write(*,'(a,i0,a,f8.2,a)') 'tbtrans: Matrix elements in tri / memory: ', &
-               els,' / ',mem / 1024._dp,' GB'
-       else
-          write(*,'(a,i0,a,f8.2,a)') 'tbtrans: Matrix elements in tri / memory: ', &
-               els,' / ',mem,' MB'
-       end if
+       write(*,'(a,i0)') 'tbtrans: Matrix elements in BTD: ', els
+
        write(*,'(/,a)') 'tbtrans: Electrodes tri-diagonal matrices'
-       
        do i = 1 , N_Elec
           call rgn_print(ElTri(i), seq_max = 10 , collapse = .false.)
        end do

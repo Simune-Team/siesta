@@ -1,4 +1,21 @@
 ----------------------------------------------------
+August 14, 2015 -- Nick Papior         trunk-476---ts-scf-497
+Enhancements, verbose and help
+
+* The tbt k-points are not displayed in the
+  output anymore (unless the verbosity is above 5)
+
+* There was a bug in the printing of the memory
+  consumption.
+  The memory consumption is now printed for
+   V > 4
+
+modified:
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  
+----------------------------------------------------
 August 14, 2015 -- Nick Papior         trunk-476---ts-scf-496
 Added 2D fan with distance addition
 

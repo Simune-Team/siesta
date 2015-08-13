@@ -691,15 +691,18 @@ contains
   
   subroutine write_k_points()
     use parallel, only : IONode
+    use m_verbosity, only : verbosity
     
-    integer  :: ik, ix, i
+    integer :: ik, ix, i
 
     if ( .not. IONode ) return 
-    
-    write(*,'(/,a)') 'tbtrans: k-point coordinates (Bohr**-1) and weights:'
-    write(*,'(a,i4,3f12.6,3x,f12.6)') &
-         ('tbtrans: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik), &
-         ik=1,nkpnt)
+
+    if ( verbosity > 5 ) then
+       write(*,'(/,a)') 'tbtrans: k-point coordinates (Bohr**-1) and weights:'
+       write(*,'(a,i4,3f12.6,3x,f12.6)') &
+            ('tbtrans: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik), &
+            ik=1,nkpnt)
+    end if
 
     ! Always write the TranSIESTA k-points
     call tbt_iokp( nkpnt, kpoint, kweight )
