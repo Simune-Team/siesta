@@ -1393,7 +1393,7 @@ contains
           mnpt = max(mnpt,product(nel))
        end do
        
-       ! The main node can safely write the data...
+       ! The main node can safely read the data...
        if ( Node == 0 ) then
           
           if ( mnpt > lnpt ) then

@@ -52,7 +52,7 @@ module m_ts_voltage
 
 contains
 
-  subroutine ts_init_voltage(ucell,na_u,xa,meshG,nsm)
+  subroutine ts_init_voltage(cell,na_u,xa,meshG,nsm)
     use parallel, only : IONode
     use m_ts_options, only : VoltageInC, Elecs, Volt, Hartree_fname
     use units, only : eV
@@ -60,7 +60,7 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    real(dp),      intent(in) :: ucell(3,3)
+    real(dp),      intent(in) :: cell(3,3)
     integer,       intent(in) :: na_u
     real(dp),      intent(in) :: xa(3,na_u)
     integer,       intent(in) :: meshG(3), nsm
@@ -79,7 +79,9 @@ contains
        else if ( IONode .and. len_trim(Hartree_fname) > 0 ) then
           write(*,'(2a)')'ts_voltage: User supplied Poisson solution in file ',&
                trim(Hartree_fname)
+          call ts_ncdf_voltage_assert(Hartree_fname,cell,meshG)
        end if
+
        ! Find the lowest and highest chemical potential
        V_low = huge(1._dp)
        V_high = -huge(1._dp)
@@ -102,11 +104,11 @@ contains
     ! set the left chemical potential
     call get_elec_indices(na_u, xa, iElL, iElR)
     V_low = Elecs(iElL)%mu%mu
-    call print_ts_voltage(ucell)
+    call print_ts_voltage(cell)
 
     if ( VoltageInC ) then
        ! Find the electrode mesh sets
-       call init_elec_indices(ucell, meshG, nsm, na_u, xa)
+       call init_elec_indices(cell, meshG, nsm, na_u, xa)
     else
        ! Simulate the electrodes at the ends
        ! This leverages a double routine
@@ -116,13 +118,13 @@ contains
 
   end subroutine ts_init_voltage
 
-  subroutine ts_voltage(ucell, ntpl, Vscf)
+  subroutine ts_voltage(cell, ntpl, Vscf)
     use precision,    only : grid_p
     use m_ts_options, only : Hartree_fname
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    real(dp),      intent(in) :: ucell(3,3)
+    real(dp),      intent(in) :: cell(3,3)
     integer,       intent(in) :: ntpl
 ! ***********************
 ! * OUTPUT variables    *
@@ -136,7 +138,7 @@ contains
     ! correctly to not have two routines doing the
     ! same
     if ( ts_tdir > 0 ) then
-       call ts_ramp_elec(ucell,ntpl,Vscf)
+       call ts_ramp_elec(cell,ntpl,Vscf)
 #ifdef NCDF_4
     else if ( len_trim(Hartree_fname) > 0 ) then
        call ts_ncdf_Voltage(Hartree_fname,'V',ntpl,Vscf)
@@ -150,14 +152,14 @@ contains
   end subroutine ts_voltage
 
 
-  subroutine ts_ramp_elec(ucell, ntpl, Vscf)
+  subroutine ts_ramp_elec(cell, ntpl, Vscf)
     use precision,    only : grid_p
     use m_ts_options, only : Volt
     use m_mesh_node,  only : meshl, offset_i
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    real(dp),      intent(in) :: ucell(3,3)
+    real(dp),      intent(in) :: cell(3,3)
     integer,       intent(in) :: ntpl
 ! ***********************
 ! * OUTPUT variables    *
@@ -362,7 +364,7 @@ contains
 
   end subroutine get_elec_indices
 
-  subroutine init_elec_indices(ucell, meshG, nsm, na_u, xa)
+  subroutine init_elec_indices(cell, meshG, nsm, na_u, xa)
     use intrinsic_missing, only : VNORM
     use parallel,     only : IONode
     use units,        only : Ang
@@ -372,7 +374,7 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    real(dp), intent(in) :: ucell(3,3)
+    real(dp), intent(in) :: cell(3,3)
     integer,  intent(in) :: meshG(3), nsm, na_u
     real(dp), intent(in) :: xa(3,na_u)
 
@@ -386,7 +388,7 @@ contains
     real(dp) :: ElecL(3), ElecR(3)
 
     if ( N_Elec > 2 ) call die('Not fully implemented, only non-bias with N-electrode')
-    Lvc = VNORM(ucell(:,ts_tdir))
+    Lvc = VNORM(cell(:,ts_tdir))
 
     ! get the left/right electrodes
     call get_elec_indices(na_u,xa,iElL,iElR)
@@ -489,14 +491,14 @@ contains
 
 ! Print out the voltage direction dependent on the cell parameters.
 
-  subroutine print_ts_voltage( ucell )
+  subroutine print_ts_voltage( cell )
     use intrinsic_missing, only : VNORM
     use parallel,     only : IONode
     use units,        only : eV
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    real(dp), intent(in) :: ucell(3,3)
+    real(dp), intent(in) :: cell(3,3)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -504,9 +506,9 @@ contains
     integer  :: i
     real(dp) :: Lvc, vcdir(3)
 
-    Lvc = VNORM(ucell(:,ts_tdir))
+    Lvc = VNORM(cell(:,ts_tdir))
     do i = 1 , 3
-       vcdir(i) = ucell(i,ts_tdir)/Lvc
+       vcdir(i) = cell(i,ts_tdir)/Lvc
     end do
 
     if ( IONode ) then
@@ -573,6 +575,84 @@ contains
     deallocate(tmpV)
 
   end subroutine ts_ncdf_voltage
+
+
+  subroutine ts_ncdf_voltage_assert(fname,cell,nsm)
+
+    use parallel,     only : IONode
+
+    use nf_ncdf
+    use dictionary
+    
+    character(len=*), intent(in) :: fname
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: nsm(3)
+    
+    type(hNCDF) :: ncdf
+    type(dict) :: dic
+    integer :: lnsm(3)
+
+    if ( .not. IONode ) return
+
+    ! Ensure that it will fail if not found
+    lnsm = 0
+
+    call ncdf_open(ncdf,fname)
+
+    ! Get the grid-size, here we just fetch all dimensions
+    ! and find them afterwards
+    call ncdf_inq(ncdf,dict_dim=dic)
+
+    ! We allow the names to be n1/x/a
+    if ( 'a' .in. dic ) then
+       call assign(lnsm(1),dic,'a')
+    else if ( 'n1' .in. dic ) then
+       call assign(lnsm(1),dic,'n1')
+    else if ( 'x' .in. dic ) then
+       call assign(lnsm(1),dic,'x')
+    end if
+
+    ! We allow the names to be n2/y/b
+    if ( 'b' .in. dic ) then
+       call assign(lnsm(2),dic,'b')
+    else if ( 'n2' .in. dic ) then
+       call assign(lnsm(2),dic,'n2')
+    else if ( 'y' .in. dic ) then
+       call assign(lnsm(2),dic,'y')
+    end if
+
+    ! We allow the names to be n3/z/c
+    if ( 'c' .in. dic ) then
+       call assign(lnsm(3),dic,'c')
+    else if ( 'n3' .in. dic ) then
+       call assign(lnsm(3),dic,'n3')
+    else if ( 'z' .in. dic ) then
+       call assign(lnsm(3),dic,'z')
+    end if
+
+    ! Clean up
+    call ncdf_close(ncdf)
+    
+    call delete(dic)
+
+    ! Check variables
+    if ( any(lnsm /= nsm) ) then       
+       
+       write(*,'(a)') 'TS.Hartree file does not contain correct indices'
+       write(*,'(a)') 'Hartree dimensions *MUST* be [a|n1|x]/[b|n2|y]/[c|n3|z]'
+
+       write(*,'(a,3(tr1,i0))') 'transiesta grid size:',nsm
+       write(*,'(a,3(tr1,i0))') 'NetCDF file grid size:',lnsm
+       write(*,'(a)') 'They *MUST* be equivalent.'
+
+       call die('Incorrect grid in NetCDF file for user supplied &
+            &Poisson solution.')
+       
+    else
+       write(*,'(a)') 'ts_voltage: User Poisson solution accepted format'
+    end if
+
+  end subroutine ts_ncdf_voltage_assert
 
 #endif
 

@@ -1,4 +1,16 @@
 ----------------------------------------------------
+August 18, 2015 -- Nick Papior         trunk-476---ts-scf-498
+Enh: Enabled check for dimension size of Hartree
+
+* When the user supplies a Poisson solution
+  it now checks for dimensions of the grid.
+  This makes debugging for the user a lot easier.
+
+modified:
+  Src/m_ncdf_io.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 August 14, 2015 -- Nick Papior         trunk-476---ts-scf-497
 Enhancements, verbose and help
 
