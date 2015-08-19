@@ -24,7 +24,7 @@ module m_ts_hartree
   
   use precision, only : dp
   use m_ts_electype
-  use m_ts_tdir, only : ts_tdir
+  use m_ts_tdir, only : ts_tidx
 
   implicit none
   
@@ -147,13 +147,13 @@ contains
 ! *** NOT GOOD ***
   integer, target :: i10, i20, i30
   integer, pointer :: iT
-  if ( ts_tdir == 1 ) then
+  if ( ts_tidx == 1 ) then
      i10 = 0
      iT => i10
-  else if ( ts_tdir == 2 ) then
+  else if ( ts_tidx == 2 ) then
      i20 = 0
      iT => i20
-  else if ( ts_tdir == 3 ) then
+  else if ( ts_tidx == 3 ) then
      i30 = 0
      iT => i30
   else
@@ -234,7 +234,7 @@ contains
              end do
           end do
        end do
-    else if ( ts_tdir == 1 ) then
+    else if ( ts_tidx == 1 ) then
        do i3 = 1 , meshl(3)
           do i2 = 1 , meshl(2)
              i10 = offset_i(1) - 1
@@ -248,7 +248,7 @@ contains
              end do
           end do
        end do
-    else if ( ts_tdir == 2 ) then
+    else if ( ts_tidx == 2 ) then
        do i3 = 1 , meshl(3)
           i20 = offset_i(2) - 1
           do i2 = 1 , meshl(2)
@@ -262,7 +262,7 @@ contains
              end do
           end do
        end do
-    else if ( ts_tdir == 3 ) then
+    else if ( ts_tidx == 3 ) then
        i30 = offset_i(3) - 1
        do i3 = 1 , meshl(3)
           i30 = i30 + 1

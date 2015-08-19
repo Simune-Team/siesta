@@ -1,4 +1,48 @@
 ----------------------------------------------------
+August 19, 2015 -- Nick Papior         trunk-476---ts-scf-501
+Enabled non-aligned electrodes and simulation cell
+
+* It is now possible to use electrodes which have
+  swapped axis together with transiesta/tbtrans.
+  This is useful as one does not need to
+  take the cell coordinates into consideration.
+  The _only_ thing is the atomic coordinates.
+
+* The electrodes now use a pvt variable
+  to track the pivoting table between simulation
+  cell and electrode cell.
+
+* The meaning of the tdir and tidx variables
+  has changed, see module m_ts_tdir
+  for clarification.
+
+* Bugfix for pivoting algorithm for finding
+  the top-bottom atoms.
+
+* Bug-fix for phonon transport, it should be
+  w^2+iEta, this is now corrected.
+
+* tbtrans now also calls the init_Elec_sim
+  routine (this routine initializes the pvt
+  array)
+
+modified:
+  Src/dhscf.F
+  Src/intrinsic_missing.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/m_ts_pivot.F90
+  Src/m_ts_tdir.f90
+  Src/m_ts_voltage.F90
+  Util/TS/TBtrans/m_tbt_gf.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 August 19, 2015 -- Nick Papior         trunk-476---ts-scf-500
 Added check for unit-cell placement of device
 

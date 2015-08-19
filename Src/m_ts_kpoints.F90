@@ -91,7 +91,6 @@ contains
 #endif
 
     use m_ts_electype
-    use m_ts_tdir
     use m_ts_global_vars, only : TSmode
     use intrinsic_missing, only : SPC_PROJ, VEC_PROJ, VNORM
     

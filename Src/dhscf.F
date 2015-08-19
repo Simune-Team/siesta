@@ -115,7 +115,7 @@
 
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode
-      use m_ts_tdir,      only : ts_tdir
+      use m_ts_tdir,      only : ts_tidx
       use m_ts_options,   only : IsVolt, N_Elec, Elecs
       use m_ts_voltage,   only : ts_init_voltage
       use m_ts_hartree,   only : ts_init_hartree_fix
@@ -452,14 +452,14 @@ C ----------------------------------------------------------------------
      &                'E-field/dipole-correction and transiesta. ',
      &                'I hope you know what you are doing!'
               end if
-              if ( ts_tdir < 1 ) then
+              if ( ts_tidx < 1 ) then
                  call die('Error, electric field and undetermined &
      &transport direction does not make sense!')
               end if
               ! Now we can check the directions of the slab
               if ( dipole_correction ) then
                  if ( shape .eq. 'chain' ) then
-                    field  = cell(1:3,ts_tdir)
+                    field  = cell(1:3,ts_tidx)
                     ortho  = ddot(3,field,1,field,1)
                     field  = field / ortho
                     ortho  = ddot(3,bcell,1,bcell,1)
@@ -473,7 +473,7 @@ C ----------------------------------------------------------------------
                  else if ( shape .eq. 'slab' ) then
                     ! get the field-direction
                     call cross( bcell(1,1), bcell(1,2), field )
-                    ortho = ddot(3,cell(1,ts_tdir),1,field,1) 
+                    ortho = ddot(3,cell(1,ts_tidx),1,field,1) 
                     if ( ortho > 1.e-9_dp ) then
                        call die('Dipole-correction must be &
      &perpendicular to transport direction')
@@ -481,7 +481,7 @@ C ----------------------------------------------------------------------
                  end if
               else
                  field = user_specified_field
-                 ortho = ddot(3,cell(1,ts_tdir),1,field,1)
+                 ortho = ddot(3,cell(1,ts_tidx),1,field,1)
                  if ( ortho > 1.e-9_dp ) then
                     call die('User defined E-field must be &
      &perpendicular to transport direction')

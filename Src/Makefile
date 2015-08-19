@@ -817,10 +817,11 @@ m_new_dm.o: alloc.o atomlist.o class_Data2D.o
 m_new_dm.o: class_Fstack_Pair_Geometry_SpData2D.o class_Geometry.o
 m_new_dm.o: class_OrbitalDistribution.o class_Pair_Geometry_SpData2D.o
 m_new_dm.o: class_SpData2D.o class_Sparsity.o files.o m_energies.o
-m_new_dm.o: m_handle_sparse.o m_iodm.o m_mpi_utils.o m_spin.o m_steps.o m_svd.o
-m_new_dm.o: m_ts_electype.o m_ts_global_vars.o m_ts_iodm.o m_ts_method.o
-m_new_dm.o: m_ts_options.o parallel.o parallelsubs.o parsing.o precision.o
-m_new_dm.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o units.o
+m_new_dm.o: m_handle_sparse.o m_iodm.o m_mpi_utils.o m_os.o m_spin.o m_steps.o
+m_new_dm.o: m_svd.o m_ts_electype.o m_ts_global_vars.o m_ts_iodm.o
+m_new_dm.o: m_ts_method.o m_ts_options.o parallel.o parallelsubs.o parsing.o
+m_new_dm.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+m_new_dm.o: units.o
 m_noccbands.o: alloc.o atmfuncs.o m_spin.o parallel.o precision.o siesta_geom.o
 m_noccbands.o: sys.o
 m_options.o: precision.o
@@ -932,8 +933,8 @@ m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_iodm.o: m_io_s.o m_os.o parallel.o precision.o
 m_ts_kpoints.o: files.o find_kgrid.o intrinsic_missing.o m_ts_electype.o
-m_ts_kpoints.o: m_ts_global_vars.o m_ts_tdir.o minvec.o parallel.o precision.o
-m_ts_kpoints.o: siesta_cml.o siesta_options.o sys.o
+m_ts_kpoints.o: m_ts_global_vars.o minvec.o parallel.o precision.o siesta_cml.o
+m_ts_kpoints.o: siesta_options.o sys.o
 m_ts_method.o: alloc.o fdf_extra.o geom_helper.o m_region.o m_ts_electype.o
 m_ts_mumps_init.o: class_OrbitalDistribution.o class_Sparsity.o
 m_ts_mumps_init.o: create_Sparsity_Union.o m_ts_electype.o m_ts_method.o

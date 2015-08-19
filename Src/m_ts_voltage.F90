@@ -73,7 +73,7 @@ contains
        write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias ', Volt/eV,'V'
     end if
 
-    if ( ts_tdir < 1 ) then
+    if ( ts_tidx < 1 ) then
        if ( IONode .and. len_trim(Hartree_fname) == 0 ) then
           write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
        else if ( IONode .and. len_trim(Hartree_fname) > 0 ) then
@@ -113,7 +113,7 @@ contains
        ! Simulate the electrodes at the ends
        ! This leverages a double routine
        left_elec_mesh_idx  = 1
-       right_elec_mesh_idx = meshG(ts_tdir)
+       right_elec_mesh_idx = meshG(ts_tidx)
     end if
 
   end subroutine ts_init_voltage
@@ -137,7 +137,7 @@ contains
     ! The indices for the full cell is set
     ! correctly to not have two routines doing the
     ! same
-    if ( ts_tdir > 0 ) then
+    if ( ts_tidx > 0 ) then
        call ts_ramp_elec(cell,ntpl,Vscf)
 #ifdef NCDF_4
     else if ( len_trim(Hartree_fname) > 0 ) then
@@ -181,7 +181,7 @@ contains
 
     ! Add the electric field potential to the input potential
     imesh = 0
-    if ( ts_tdir == 1 ) then
+    if ( ts_tidx == 1 ) then
 
        do i3 = 1,meshl(3)
           do i2 = 1,meshl(2)
@@ -206,7 +206,7 @@ contains
           end do
        end do
 
-    else if ( ts_tdir == 2 ) then
+    else if ( ts_tidx == 2 ) then
 
        do i3 = 1,meshl(3)
           do i2 = offset_i(2)+1,offset_i(2)+meshl(2)
@@ -388,7 +388,7 @@ contains
     real(dp) :: ElecL(3), ElecR(3)
 
     if ( N_Elec > 2 ) call die('Not fully implemented, only non-bias with N-electrode')
-    Lvc = VNORM(cell(:,ts_tdir))
+    Lvc = VNORM(cell(:,ts_tidx))
 
     ! get the left/right electrodes
     call get_elec_indices(na_u,xa,iElL,iElR)
@@ -437,11 +437,11 @@ contains
 
     ! Initialize the indices if it does not exist
     left_elec_mesh_idx  = 1
-    right_elec_mesh_idx = meshG(ts_tdir)
+    right_elec_mesh_idx = meshG(ts_tidx)
     
     ! The distance step in the t-direction
-    dLvc = Lvc/max( meshG(ts_tdir), 1 ) !
-    do it = 0 , meshG(ts_tdir) - 1
+    dLvc = Lvc/max( meshG(ts_tidx), 1 ) !
+    do it = 0 , meshG(ts_tidx) - 1
        if ( abs(dLvc * it - left_t_max) < ddleft ) then
           ddleft = abs(dLvc * it - left_t_max)
           left_elec_mesh_idx = it + 1
@@ -463,9 +463,9 @@ contains
                & (0.,0.,0.).'
        end if
        left_elec_mesh_idx  = 1
-       right_elec_mesh_idx = meshG(ts_tdir)
+       right_elec_mesh_idx = meshG(ts_tidx)
     end if
-    if ( left_elec_mesh_idx >= meshG(ts_tdir) ) then
+    if ( left_elec_mesh_idx >= meshG(ts_tidx) ) then
        if ( IONode ) then
           write(*,'(1x,a)') 'WARNING: The voltage ramp could not be placed in &
                &between the electrodes, be sure to have the atomic &
@@ -473,7 +473,7 @@ contains
                & (0.,0.,0.).'
        end if
        left_elec_mesh_idx  = 1
-       right_elec_mesh_idx = meshG(ts_tdir)
+       right_elec_mesh_idx = meshG(ts_tidx)
     end if
 
     ElecL = 0._dp
@@ -482,7 +482,7 @@ contains
     ElecR(ts_tdir) = right_elec_mesh_idx*dLvc/Ang
 
     if ( left_elec_mesh_idx /= 1 .and. &
-         right_elec_mesh_idx /= meshG(ts_tdir) .and. IONode ) then
+         right_elec_mesh_idx /= meshG(ts_tidx) .and. IONode ) then
        write(*,'(a,/,a,3(f9.3,tr1),a,3(tr1,f9.3),a)') 'ts_voltage: Ramp placed between the &
             &cell coordinates (Ang):',' {',ElecL,'} to {',ElecR,' }'
     end if
@@ -506,14 +506,14 @@ contains
     integer  :: i
     real(dp) :: Lvc, vcdir(3)
 
-    Lvc = VNORM(cell(:,ts_tdir))
+    Lvc = VNORM(cell(:,ts_tidx))
     do i = 1 , 3
-       vcdir(i) = cell(i,ts_tdir)/Lvc
+       vcdir(i) = cell(i,ts_tidx)/Lvc
     end do
 
     if ( IONode ) then
        write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias @bottom ', V_low/eV,'V'
-       write(*,'(a,3(f6.3,a))')'ts_voltage: In unit cell direction = {', &
+       write(*,'(a,3(f6.3,a))')'ts_voltage: In unit cartesian direction = {', &
             vcdir(1),',',vcdir(2),',',vcdir(3),'}'
     end if
 

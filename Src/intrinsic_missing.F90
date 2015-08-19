@@ -55,6 +55,7 @@
 !             direction.
 !  - PROJ : A projection method to project a vector onto a certain subspace
 !           Exists only for 3D spaces.
+!  - VEC_PROJ : A projection method to project a vector onto another vector
 
 module intrinsic_missing
 
@@ -153,6 +154,13 @@ module intrinsic_missing
   interface VEC_PROJ
      module procedure VEC_PROJ_sp
      module procedure VEC_PROJ_dp
+  end interface
+
+  ! Projection of a N-D vector onto N-D vector
+  public :: VEC_PROJ_SCA
+  interface VEC_PROJ_SCA
+     module procedure VEC_PROJ_SCA_sp
+     module procedure VEC_PROJ_SCA_dp
   end interface
 
 contains
@@ -1320,16 +1328,28 @@ contains
   end function IDX_SPC_PROJ_dp
 
 
+  pure function VEC_PROJ_SCA_sp(vec,vin) result(a)
+    real(sp), intent(in) :: vec(:), vin(:)
+    real(sp) :: a
+    a = sum(vec*vin) / VNORM(vec)
+  end function VEC_PROJ_SCA_sp
+  pure function VEC_PROJ_SCA_dp(vec,vin) result(a)
+    real(dp), intent(in) :: vec(:), vin(:)
+    real(dp) :: a
+    a = sum(vec*vin) / VNORM(vec)
+  end function VEC_PROJ_SCA_dp
+
+  
   ! Projection of 'vin' onto 'vec'
   pure function VEC_PROJ_sp(vec,vin) result(vout)
     real(sp), intent(in) :: vec(:), vin(:)
     real(sp) :: vout(size(vec))
-    vout = sum(vec*vin) * vec / VNORM(vec)
+    vout = VEC_PROJ_SCA_sp(vec,vin) * vec
   end function VEC_PROJ_sp
   pure function VEC_PROJ_dp(vec,vin) result(vout)
     real(dp), intent(in) :: vec(:), vin(:)
     real(dp) :: vout(size(vec))
-    vout = sum(vec*vin) * vec / VNORM(vec)
+    vout = VEC_PROJ_SCA_dp(vec,vin) * vec
   end function VEC_PROJ_dp
 
 end module intrinsic_missing

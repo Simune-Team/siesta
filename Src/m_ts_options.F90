@@ -109,7 +109,6 @@ contains
     use m_ts_method
     use m_ts_weight
     use m_ts_charge
-    use m_ts_tdir
     use m_ts_hartree, only: elec_basal_plane
 
 #ifdef SIESTA__MUMPS
@@ -164,15 +163,20 @@ contains
 
     ! Pre-select the "transport direction"
     if ( leqi(c,'A1').or.leqi(c,'A') ) then
-       ts_tdir = 1
+       ts_tidx = 1
        c = 'A1'
     else if ( leqi(c,'A2').or.leqi(c,'B') ) then
-       ts_tdir = 2
+       ts_tidx = 2
        c = 'A2'
     else if ( leqi(c,'A3').or.leqi(c,'C') ) then
-       ts_tdir = 3
+       ts_tidx = 3
        c = 'A3'
+    else
+       call die('Hartree.Fix.Plane erroneously setup.')
     end if
+    ! Calculate Cartesian transport direction
+    call eye(3,tmp33)
+    ts_tdir = IDX_SPC_PROJ(tmp33,ucell(:,ts_tidx))
 
     if ( TS_HS_save .and. FixSpin ) then
        write(*,*) 'Fixed spin not possible with Transiesta!'
@@ -516,7 +520,9 @@ contains
     ! Hence we use this as an error-check (also for N_Elec == 1)
     ts_tidx = 0 ! initialize the transport direction cartesian index
     if ( N_Elec /= 2 ) then
+       ! Signals no specific unit-cell direction of transport
        ts_tdir = - N_Elec
+       ts_tidx = - N_Elec
     else
        ! Retrieve the indices of the unit-cell directions
        ! according to the electrode transport directions.
@@ -525,19 +531,20 @@ contains
 
        if ( i == j ) then
           ! The transport direction for the electrodes are the same...
-          ts_tdir = i
+          ts_tidx = i
           
-          ! Calculate Cartesian transport index
+          ! Calculate Cartesian transport direction
           call eye(3,tmp33)
-          ts_tidx = IDX_SPC_PROJ(tmp33,ucell(:,ts_tdir))
+          ts_tdir = IDX_SPC_PROJ(tmp33,ucell(:,ts_tidx))
 
        else
           ! In case we have a skewed transport direction
           ! we have some restrictions...
+          ts_tidx = - N_Elec
           ts_tdir = - N_Elec
        end if
+       
     end if
-
 
     ! The user can selectively decide how the Hartree-fix
     ! is applied
@@ -549,15 +556,15 @@ contains
 #ifdef NCDF_4
     if ( file_exist(chars) ) then
        Hartree_fname = trim(chars)
-       ts_tdir = 0
+       ts_tidx = 0
     else
 #endif
        Hartree_fname = ' '
-       if ( ts_tdir > 0 ) then
+       if ( ts_tidx > 0 ) then
           if ( leqi(chars,'ramp') ) then
              ! do nothing
           else if ( leqi(chars,'elec-box') ) then
-             ts_tdir = - N_Elec
+             ts_tidx = - N_Elec
           else
 #ifdef NCDF_4
              call die('Error in specifying how the Hartree potential &
@@ -574,7 +581,7 @@ contains
 
     ! If the Hartree-potential is not a ramp, then we do not allow
     ! fixing from one place
-    if ( ts_tdir > 0 ) then
+    if ( ts_tidx > 0 ) then
        elec_basal_plane = fdf_get('TS.Hartree.BasalPlane',.false.)
     else
        elec_basal_plane = .true.
@@ -787,12 +794,20 @@ contains
           write(*,11)'Will analyze bandwidth of LCAO sparse matrix and quit'
        end if
        write(*,7) 'Electronic temperature',kT/Kelvin,'K'
-       if ( ts_tdir < 1 ) then
+       if ( ts_tidx < 1 ) then
           write(*,11) 'Transport individually selected for electrodes'
           write(*,11) 'Fixing the Hartree potential at electrode plane'
        else
-          write(chars,'(a,i0)') 'A',ts_tdir
+          write(chars,'(a,i0)') 'A',ts_tidx
           write(*,10) 'Transport along unit-cell vector',trim(chars)
+          select case ( ts_tdir )
+          case ( 1 )
+             write(*,10) 'Transport along Cartesian vector','X'
+          case ( 2 )
+             write(*,10) 'Transport along Cartesian vector','Y'
+          case ( 3 )
+             write(*,10) 'Transport along Cartesian vector','Z'
+          end select
           write(*,10) 'Fixing the Hartree potential at plane',trim(chars)
        end if
        if ( ts_method == TS_FULL ) then
@@ -852,7 +867,7 @@ contains
              write(*,10) 'User supplied Hartree potential', &
                   trim(Hartree_fname)
           else
-             if ( ts_tdir > 0 ) then
+             if ( ts_tidx > 0 ) then
                 write(*,11) 'Hartree potential as linear ramp'
                 if ( VoltageInC ) then
                    write(*,11) 'Hartree potential ramp across central region'
@@ -930,7 +945,7 @@ contains
        do i = 1 , size(Elecs)
           call print_settings(Elecs(i),'ts_options', &
                plane = elec_basal_plane , &
-               box = ts_tdir < 1 .and. IsVolt )
+               box = ts_tidx < 1 .and. IsVolt )
        end do
 
        ! Print the contour information
@@ -995,15 +1010,17 @@ contains
              do j = 1 , 3
                 itmp3(j) = floor( dot(xa(:,i),tmp33(:,j),3) )
              end do
-             select case ( ts_tdir )
+             select case ( ts_tidx )
              case ( 1, 2, 3 )
-                ! Only check this direction
-                if ( itmp3(ts_tdir) < 0 .or. itmp3(ts_tdir) > 0 ) then
+                ! Only check the transport direction
+                ! Note that we have projected onto the unit-cell
+                ! vector, hence tidx and not tdir
+                if ( itmp3(ts_tidx) /= 0 ) then
                    err = .true.
                 end if
              case default
                 do j = 1 , 3
-                   if ( itmp3(j) < 0 .or. itmp3(j) > 0 ) then
+                   if ( itmp3(j) /= 0 ) then
                       err = .true.
                    end if
                 end do
@@ -1024,7 +1041,7 @@ contains
           end if
        end if
 
-       if ( ts_tdir < 1 ) then
+       if ( ts_tidx < 1 ) then
           write(*,11) '*** TranSIESTA semi-infinite directions are individual ***'
           write(*,11) '*** It is heavily adviced to have any electrodes with no &
                &periodicity'
@@ -1040,7 +1057,7 @@ contains
        else if ( .not. elec_basal_plane ) then
           ! The transport direction is well-defined
           ! and the Hartree potential is fixed at the bottom of the
-          ! unit-cell of the A[ts_tdir] direction.
+          ! unit-cell of the A[ts_tidx] direction.
           ! We will let the user know if any atoms co-incide with
           ! the plane as that might hurt convergence a little.
 
@@ -1049,7 +1066,7 @@ contains
           tmp = 0.5 * min_bond_elec
           err = .false.
           do i = 1 , na_u
-             err = abs(xa(ts_tidx,i)) < tmp
+             err = abs(xa(ts_tdir,i)) < tmp
              if ( err ) exit
           end do
           if ( err ) then
@@ -1061,38 +1078,16 @@ contains
 
        ! Check that the unitcell does not extend into the transport direction
        do i = 1 , 3
-          if ( i == ts_tdir .or. ts_tdir <= 0 ) cycle
-          if ( abs(dot(ucell(:,i),ucell(:,ts_tdir),3)) > 1e-7_dp ) then
+          if ( i == ts_tidx .or. ts_tidx <= 0 ) cycle
+          if ( abs(dot(ucell(:,i),ucell(:,ts_tidx),3)) > 1e-7_dp ) then
              write(*,*) "ERROR: Unit cell has the electrode extend into the &
                   &transport direction."
-             write(*,*) dot(ucell(:,i),ucell(:,ts_tdir),3)
+             write(*,*) dot(ucell(:,i),ucell(:,ts_tidx),3)
              write(*,*) "Please change the geometry."
              call die("Electrodes extend into the transport direction. &
                   &Please change the geometry.")
           end if
        end do
-
-       ! Check that the atoms are placed correctly in the unit-cell
-       ! The Hartree potential correction will only be put correctly 
-       ! when the atoms are sorted by z and starting from z == 0
-       if ( IsVolt .and. .not. VoltageInC .and. ts_tdir > 0 ) then
-          tmp = huge(1._dp)
-          do i = 1 , na_u
-             if ( atom_type(i) /= TYP_BUFFER ) then
-                tmp = min(tmp,xa(ts_tidx,i))
-             end if
-          end do
-          tmp = tmp / Ang
-          ! below -.5 or above .5 Ang from the bottom of the unit-cell
-          if ( tmp < -.5_dp .or. .5_dp < tmp ) then
-             write(*,*) &
-                  "ERROR: Atoms must be located within the primary unit-cell &
-                  &and shifted to 0 when dealing with bias."
-             write(*,'(a,g15.6,a)') "Please shift your system in the &
-                  &transport-direction by: ", -tmp,' Ang'
-             call die('System setup wrong, please see output')
-          end if
-       end if
 
        ! If the user has requested to initialize using transiesta
        ! and the user does not utilize the bulk DM, they should be

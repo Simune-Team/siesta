@@ -44,7 +44,7 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif
-    use intrinsic_missing, only: VNORM, VEC_PROJ
+    use intrinsic_missing, only: VNORM, VEC_PROJ, VEC_PROJ_SCA
 
     use class_OrbitalDistribution
     use class_Sparsity
@@ -337,19 +337,15 @@ contains
 
           ! Calculate the top atom
           iEl = 0
-          work(1:4) = 0._dp
+          work(1) = -huge(0._dp)
           do i = 1 , r_tmp%n
              ! we take the largest one by projecting onto the vectors
              tmp3 = xa(:,r_tmp%r(i)) - llsB
-             tmp3 = VEC_PROJ(p_n(:,1),tmp3) * p_n(:,1)
-             if ( all(tmp3 >= 0._dp) ) then
-                ! this means that they point in the same direction
-                work(5) = VNORM(tmp3)
-                if ( work(5) > work(4) ) then
-                   iEl = r_tmp%r(i)
-                   work(1:3) = tmp3
-                   work(4) = work(5)
-                end if
+             work(2) = VEC_PROJ_SCA(p_n(:,1),tmp3)
+             ! this means that they point in the same direction
+             if ( work(2) > work(1) ) then
+                iEl = r_tmp%r(i)
+                work(1) = work(2)
              end if
           end do
           if ( iEl == 0 ) then
@@ -468,21 +464,17 @@ contains
           end do
           llsB = llsB / r_tmp%n
 
-          ! Calculate the top atom
+          ! Calculate the bottom atom
           iEl = 0
-          work(1:4) = 0._dp
+          work(1) = huge(0._dp)
           do i = 1 , r_tmp%n
              ! we take the largest one by projecting onto 
              tmp3 = xa(:,r_tmp%r(i)) - llsB
-             tmp3 = VEC_PROJ(p_n(:,2),tmp3) * p_n(:,2)
-             if ( all(tmp3 <= 0._dp) ) then
-                ! this means that they point in the same direction
-                work(5) = VNORM(tmp3)
-                if ( work(5) > work(4) ) then
-                   iEl = r_tmp%r(i)
-                   work(1:3) = tmp3
-                   work(4) = work(5)
-                end if
+             work(2) = VEC_PROJ_SCA(p_n(:,2),tmp3)
+             ! this means that they point in the same direction
+             if ( work(2) < work(1) ) then
+                iEl = r_tmp%r(i)
+                work(1) = work(2)
              end if
           end do
           if ( iEl == 0 ) then

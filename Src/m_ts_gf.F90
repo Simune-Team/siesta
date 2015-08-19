@@ -533,6 +533,7 @@ contains
     ! When requesting density of states
     real(dp), intent(out), optional :: DOS(:,:)
 
+    real(dp) :: kpt(3)
     integer :: NEReqs, i, j
 #ifdef MPI
     integer :: MPIerror
@@ -583,6 +584,13 @@ contains
     ! of doing the same "repetition" expansion twice, we can live with
     ! that!
     do i = 1 , N_Elec
+
+       ! Pivot the k-point
+       do j = 1 , 3
+          ! Transfer the k-point to the "expanded" supercell
+          kpt(j) = bkpt(Elecs(i)%pvt(j)) / Elecs(i)%Rep(j)
+       end do
+       
        ! If the index for the contour is negative
        ! It means that we are dealing with a Fermi
        ! charge correction
@@ -591,15 +599,12 @@ contains
           ! In this case the energy is the eta value of the electrode
           c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
 #ifdef TBT_PHONON
-          c%e = c%e * c%e
+          c%e = dcmplx(real(cE%e,dp)**2,Elecs(i)%Eta)
 #endif
        end if
        if ( Elecs(i)%out_of_core ) then
           ! Set k-point for calculating expansion
-          Elecs(i)%bkpt_cur = bkpt
-          ! Transfer the k-point to the "expanded" supercell
-          where ( Elecs(i)%Rep > 1 ) &
-               Elecs(i)%bkpt_cur = bkpt / Elecs(i)%Rep
+          Elecs(i)%bkpt_cur = kpt
           call read_next_GS_Elec(uGF(i), NEReqs, &
                ikpt, Elecs(i), c, &
                nzwork, zwork, forward = forward)
@@ -608,10 +613,10 @@ contains
           ! (and SET) the k-point for the electrode.
           ! This is necessary for the expansion to work.
           if ( present(DOS) ) then
-             call calc_next_GS_Elec(Elecs(i),ispin,bkpt,c%e, &
+             call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &
                   nzwork, zwork, DOS(:,i) )
           else
-             call calc_next_GS_Elec(Elecs(i),ispin,bkpt,c%e, &
+             call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &
                   nzwork, zwork)
           end if
        end if
@@ -949,16 +954,20 @@ contains
        ! we need to compare that with those of the CONTACT cell!
        ! The advantage of this is that the GF files can be re-used for
        ! the same system with different lengths between the electrode layers.
-       call kpoint_convert(ucell,kpar(:,i),ktmp,1)
-       ktmp(:) = ktmp(:) * real(fReps(:),dp)
+       call kpoint_convert(ucell,kpar(:,i),kpt,1)
+       do ia = 1 , 3
+          ktmp(El%pvt(ia)) = kpt(ia) * fReps(ia)
+       end do
        call kpoint_convert(c_ucell,ktmp,kpt,-1)
        if ( dabs(c_kpar(1,i)-kpt(1)) > EPS .or. &
             dabs(c_kpar(2,i)-kpt(2)) > EPS .or. &
             dabs(c_kpar(3,i)-kpt(3)) > EPS ) then
           write(*,*)"k-points are not the same:"
           do j = 1 , min(c_nkpar,nkpar)
-             call kpoint_convert(ucell,kpar(:,i),ktmp,1)
-             ktmp(:) = ktmp(:) * real(fReps(:),dp)
+             call kpoint_convert(ucell,kpar(:,i),kpt,1)
+             do ia = 1 , 3
+                ktmp(El%pvt(ia)) = kpt(ia) * fReps(ia)
+             end do
              call kpoint_convert(c_ucell,ktmp,kpt,-1)
              write(*,'(3f12.5,a,3f12.5)') c_kpar(:,j),'  :  ',kpt(:)
           end do

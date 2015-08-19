@@ -83,8 +83,11 @@ module m_ts_electype
      ! transport direction (determines H01)
      ! And is considered with respect to the electrode direction...
      !  t_dir is with respect to the electrode unit-cell
-     !  st_dir is with respect to the current simulation cell 
-     integer :: t_dir = 3 , st_dir = 3
+     integer :: t_dir = 3
+     ! This is the cell pivoting table from the
+     ! electrode unit-cell to the simulation unit-cell
+     ! So: cell(:,pvt(1)) ~= this%ucell(:,1)
+     integer :: pvt(3)
      ! whether the electrode should be bulk
      logical :: Bulk = .true.
      integer :: DM_update = 0 ! This determines the update scheme for the crossterms
@@ -656,7 +659,7 @@ contains
   subroutine init_Elec_sim(this,cell,na_u,xa)
 
     use parallel, only : IONode
-    use intrinsic_missing, only : VNORM, SPC_PROJ, VEC_PROJ
+    use intrinsic_missing, only : VNORM, SPC_PROJ, VEC_PROJ, IDX_SPC_PROJ
 
     ! The electrode that needs to be processed
     type(Elec), intent(inout) :: this
@@ -688,6 +691,17 @@ contains
     end do
     ! Take half the bond-length to get in between two atoms
     min_bond = min_bond * 0.5_dp
+
+    ! Calculate the pivoting table
+    do i = 1 , 3
+       this%pvt(i) = IDX_SPC_PROJ( cell,this%ucell(:,i) )
+    end do
+    if ( sum(this%pvt) /= 6 .or. count(this%pvt==2) /= 1 ) then
+       print *, this%pvt
+       call die('The pivoting table for the electrode unit-cell, &
+            &onto the simulation unit-cell is not unique. &
+            &Please check your simulation cells.')
+    end if
 
     ! Print out a warning if the electrode uses several cell-vectors
     p = SPC_PROJ(cell,this%ucell(:,this%t_dir))
@@ -1156,7 +1170,7 @@ contains
     real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
     real(dp) :: max_xa(3), cur_xa(3)
     real(dp), pointer :: this_xa(:,:)
-
+    integer :: pvt(3)
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -1167,6 +1181,7 @@ contains
     xa_o(:) = xa(:,this%idx_a)
     this_xa_o(:) = this_xa(:,1)
     cell = this%ucell
+    pvt = this%pvt
 
     max_xa = 0._dp
     iaa = this%idx_a
@@ -1310,22 +1325,22 @@ contains
        ! not be either (the repetition will only increase the number of
        ! k-points, hence the above)
        do j = 1 , 3
-          k= this%Rep(j)
+          k = this%Rep(j)
           if ( j == this%t_dir ) cycle
           do i = 1 , 3
              if ( i == this%t_dir ) cycle
              if ( j == i ) then
-                er = er .or. ( this_kcell(i,j) /= kcell(i,j)*k )
+                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
              else 
-                er = er .or. ( this_kcell(i,j) /= kcell(i,j) )
+                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
              end if
           end do
-          er = er .or. ( abs(this_kdispl(j) - kdispl(j)) > 1.e-7_dp )
+          er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
        end do
        
        ! We still require that the offset in the T-direction is the same
        ! is this even necessary?
-       er = er .or. ( abs(this_kdispl(this%t_dir) - kdispl(this%t_dir)) > 1.e-7_dp )
+       er = er .or. ( abs(this_kdispl(this%t_dir) - kdispl(pvt(this%t_dir))) > 1.e-7_dp )
        if ( er .and. IONode ) then
           write(*,'(a)') 'Incompatible k-grids...'
           write(*,'(a)') 'Electrode file k-grid:'
@@ -1337,11 +1352,11 @@ contains
              write(*,'(3(i4,tr1),f8.4)') (kcell(i,j),i=1,3),kdispl(j)
           end do
           write(*,'(a)') 'Electrode file k-grid should be:'
-          this_kcell(:,1) = kcell(:,1) * this%Rep(1)
-          this_kcell(:,2) = kcell(:,2) * this%Rep(2)
-          this_kcell(:,3) = kcell(:,3) * this%Rep(3)
+          this_kcell(:,1) = kcell(:,pvt(1)) * this%Rep(1)
+          this_kcell(:,2) = kcell(:,pvt(2)) * this%Rep(2)
+          this_kcell(:,3) = kcell(:,pvt(3)) * this%Rep(3)
           do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(j)
+             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(pvt(j))
           end do
        end if
 
@@ -1666,7 +1681,6 @@ contains
     call delete(f_DM_2D)
 
   end subroutine copy_DM
-
 
   subroutine print_settings(this,prefix,plane,box)
     use units, only : eV, Ang, Kelvin

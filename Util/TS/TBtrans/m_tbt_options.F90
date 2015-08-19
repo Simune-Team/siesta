@@ -67,7 +67,7 @@ module m_tbt_options
 
 contains
 
-  subroutine tbt_options(spin_idx, na_u, xa, lasto)
+  subroutine tbt_options(spin_idx, cell, na_u, xa, lasto)
 
     use files, only : slabel
     use fdf
@@ -86,6 +86,7 @@ contains
     use m_tbt_contour
 
     integer, intent(in) :: spin_idx, na_u
+    real(dp), intent(in) :: cell(3,3)
     real(dp), intent(in) :: xa(3,na_u)
     integer, intent(in) :: lasto(0:na_u)
 
@@ -280,6 +281,9 @@ contains
                &to ensure that the retarded or advanced self-energy &
                &is exclusively calculated.')
        end if
+
+       ! Initialize electrode parameters
+       call init_Elec_sim(Elecs(i),cell,na_u,xa)
 
     end do
 

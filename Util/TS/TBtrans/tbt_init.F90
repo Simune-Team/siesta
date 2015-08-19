@@ -166,7 +166,8 @@ subroutine tbt_init()
   ! Read in the options
   ! All generic options regarding the electrodes, etc. are read in
   ! here.
-  call tbt_options( spin_idx, TSHS%na_u, TSHS%xa, TSHS%lasto )
+  call tbt_options( spin_idx, TSHS%cell, &
+       TSHS%na_u, TSHS%xa, TSHS%lasto )
 
   ! Setup the k-points
   call setup_kpoint_grid( TSHS%cell, N_Elec, Elecs )

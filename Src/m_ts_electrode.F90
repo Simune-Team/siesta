@@ -770,8 +770,11 @@ contains
           ! From CONTACT to electrode k-point
           ! First convert to units of reciprocal vectors
           ! Then convert to 1/Bohr in the electrode unit cell coordinates
-          call kpoint_convert(ucell,kpoint(:,i),bkpt,1)
-          where ( El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
+          call kpoint_convert(ucell,kpoint(:,i),kpt,1)
+          do j = 1 , 3
+             bkpt(j) = kpt(El%pvt(j))
+             if ( El%Rep(j) > 1 ) bkpt(j) = bkpt(j) / real(El%Rep(j),dp)
+          end do
           write(*,'(i4,2x,4(E14.5))') i, bkpt,kweight(i)
        end do
 
@@ -878,8 +881,11 @@ contains
        call memory('A','D',nkpnt*3,'create_green')
        do i = 1 , nkpnt
           ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-          call kpoint_convert(ucell,kpoint(:,i),bkpt,1)
-          where ( El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
+          call kpoint_convert(ucell,kpoint(:,i),kpt,1)
+          do j = 1 , 3
+             bkpt(j) = kpt(El%pvt(j))
+             if ( El%Rep(j) > 1 ) bkpt(j) = bkpt(j) / real(El%Rep(j),dp)
+          end do
           ! Convert back to reciprocal units (to electrode ucell_E)
           call kpoint_convert(El%ucell,bkpt,kE(:,i),-1)
        end do
@@ -946,8 +952,11 @@ contains
        end if
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-       call kpoint_convert(ucell,kpoint(:,ikpt),bkpt,1)
-       where ( El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
+       call kpoint_convert(ucell,kpoint(:,ikpt),kpt,1)
+       do j = 1 , 3
+          bkpt(j) = kpt(El%pvt(j))
+          if ( El%Rep(j) > 1 ) bkpt(j) = bkpt(j) / real(El%Rep(j),dp)
+       end do
        ! We need to save the k-point for the "expanded" super-cell
        El%bkpt_cur = bkpt
        
@@ -1466,7 +1475,7 @@ contains
 
   end subroutine set_electrode_HS_Transfer
 
-  subroutine calc_next_GS_Elec(El,ispin,dbkpt,Z,nzwork,in_zwork,DOS)
+  subroutine calc_next_GS_Elec(El,ispin,bkpt,Z,nzwork,in_zwork,DOS)
     use precision,  only : dp
 
     use m_ts_electype
@@ -1483,7 +1492,9 @@ contains
 ! ***********************
     type(Elec), intent(inout) :: El
     integer, intent(in) :: ispin
-    real(dp), intent(in) :: dbkpt(3) ! the device k-point in reciprocal units
+    ! the k-point in reciprocal units of the electrode
+    ! also with / Rep
+    real(dp), intent(in) :: bkpt(3)
     complex(dp), intent(in) :: Z
     integer, intent(in) :: nzwork
     complex(dp), intent(inout), target :: in_zwork(nzwork)
@@ -1495,7 +1506,7 @@ contains
 ! ***********************
 
     integer  :: iqpt
-    real(dp) :: bkpt(3), kpt(3), kq(3)
+    real(dp) :: kpt(3), kq(3)
     
     ! Dimensions
     integer :: nq
@@ -1551,11 +1562,6 @@ contains
     allocate(sc_off(3,n_s))
     sc_off = matmul(El%ucell,El%isc_off)
     
-    ! As the input bigger k-point is for the unit-cell of the device
-    ! we need to transfer it to the "expanded" supercell
-    bkpt = dbkpt
-    where ( El%Rep > 1 ) bkpt = bkpt / real(El%Rep,dp)
-
     ! whether we already have the H and S set correctly, 
     ! update accordingly, it will save a bit of time, but not much
     same_k = .true.
