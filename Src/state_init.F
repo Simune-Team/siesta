@@ -7,7 +7,7 @@
 
       subroutine state_init( istep )
       use Kpoint_grid,       only: setup_Kpoint_grid, maxk
-      use m_io_s,            only: file_exist
+      use m_os,              only: file_exist
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options

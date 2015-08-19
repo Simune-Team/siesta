@@ -35,7 +35,7 @@ contains
   subroutine slua_init(LUA)
 
     use fdf, only : fdf_get
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
     
     type(luaState), intent(inout) :: LUA
 

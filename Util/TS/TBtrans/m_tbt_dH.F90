@@ -134,7 +134,7 @@ contains
 
     use parallel, only : Node, Nodes
     use fdf
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
 
     use nf_ncdf, ncdf_parallel => parallel
 

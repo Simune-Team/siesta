@@ -20,7 +20,8 @@ module m_ts_iodm
   use class_OrbitalDistribution
   use class_dSpData2D
   use m_io_s
-  
+  use m_os, only : file_exist
+
   implicit none
   
   private

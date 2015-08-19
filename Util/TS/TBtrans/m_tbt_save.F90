@@ -92,7 +92,7 @@ contains
     use parallel, only : Node
 #endif
     use fdf
-    use m_io_s, only : dir_exist
+    use m_os, only : dir_exist
 #ifdef MPI
     use mpi_siesta, only : MPI_Barrier, MPI_Comm_World
 #endif
@@ -241,7 +241,7 @@ contains
 
     use parallel, only : Node
 
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
 
     use dictionary, assign_int => assign
     use nf_ncdf, ncdf_parallel => parallel

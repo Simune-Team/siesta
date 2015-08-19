@@ -62,7 +62,6 @@ contains
 
     use m_pivot
 
-    use m_io_s, only : file_exist
     use geom_helper, only : iaorb
     use intrinsic_missing, only : SPC_PROJ, VNORM, VEC_PROJ
     use m_ts_electype
@@ -677,7 +676,7 @@ contains
 #endif
 
     use m_ts_electype
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
     use m_region
 
     integer, intent(in) :: N_Elec

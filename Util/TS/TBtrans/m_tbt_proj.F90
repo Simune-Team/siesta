@@ -1267,7 +1267,7 @@ contains
     use class_dSpData2D
 
     use intrinsic_missing, only : VNORM
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
 
     use dictionary, assign_int => assign
     use nf_ncdf, ncdf_parallel => parallel

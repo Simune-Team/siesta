@@ -197,7 +197,7 @@ contains
 ! ***************************************
   subroutine read_exp_coord_options()
     use fdf
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
     ! Get the Name of the NetCDF file which holds the coordinates
     expCoordFile = fdf_get('MD.ExpCoord.File','COORDS.nc')
 

@@ -6,6 +6,7 @@ program sp2metis
   use class_Sparsity
   use geom_helper, only : UCORB
   use m_io_s
+  use m_os, only : file_exist
   use create_sparsity_SC
 
   character(len=250) :: fname

@@ -757,7 +757,7 @@ contains
   ! The user can specify their own k-points
   subroutine tbt_iokp_read(fname,nkpt,kpt,wkpt)
     use parallel, only : Node
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
 #ifdef MPI
     use mpi_siesta
 #endif

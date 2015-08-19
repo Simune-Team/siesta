@@ -21,7 +21,7 @@ contains
        Gamma,Gamma_TS,kscell,kdispl,onlyS,lasto, &
        Bcast)
 
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -674,6 +674,7 @@ contains
     use alloc, only : re_alloc
     use geom_helper,  only : iaorb, ucorb
     use m_io_s
+    use m_os, only : file_exist
     use class_Sparsity
     use class_OrbitalDistribution
     use class_dSpData1D

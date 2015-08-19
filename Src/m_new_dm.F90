@@ -363,6 +363,7 @@
       use class_OrbitalDistribution
       use class_dData2D
       use m_iodm, only : read_dm
+      use m_os, only : file_exist
 #ifdef TRANSIESTA
       use m_ts_iodm
       use m_energies, only: Ef  ! Transiesta uses the EF obtained in a initial SIESTA run
@@ -392,6 +393,8 @@
 
       character(len=*),parameter:: myName = 'initdm'
 
+      ! Enables the user to re-use a specific old DM every time
+      character(len=250) :: old_DM
       integer :: nspin_read
       real(dp), pointer              :: Dscf(:,:)
       integer, pointer, dimension(:) :: numh, listhptr, listh
@@ -414,11 +417,16 @@
          if (IONode) write(*,'(a)',advance='no') &
               'Attempting to read DM, EDM from TSDE file... '
 
+         old_DM = fdf_get('File.TSDE.Init','FILEDOESNOTEXIST')
+         if ( .not. file_exist(old_DM,Bcast=.true.) ) then
+            old_DM = trim(slabel)//'.TSDE'
+         end if
+
 #ifdef TIMING_IO
          call timer('IO-R-TS-DE',1)
          do i = 1 , 100
 #endif
-         call read_ts_dm(trim(slabel)//'.TSDE',nspin,block_dist,no_u, &
+         call read_ts_dm(trim(old_DM),nspin,block_dist,no_u, &
               DMread, EDMread, Ef, TSDE_found )
 #ifdef TIMING_IO
          end do
@@ -450,7 +458,12 @@
          call timer('IO-R-DM',1)
          do i = 1 , 100
 #endif
-         call read_dm(trim(slabel)//'.DM',nspin,block_dist,no_u, &
+         old_DM = fdf_get('File.DM.Init','FILEDOESNOTEXIST')
+         if ( .not. file_exist(old_DM,Bcast=.true.) ) then
+            old_DM = trim(slabel)//'.DM'
+         end if
+
+         call read_dm(trim(old_DM),nspin,block_dist,no_u, &
               DMread, DM_found )
 #ifdef TIMING_IO
          end do

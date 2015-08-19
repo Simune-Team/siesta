@@ -20,7 +20,7 @@ contains
   subroutine bulk_expand(na_u,xa,lasto,cell,nsc,isc_off,DM_2D)
     use fdf
     use class_dSpData1D
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
     use m_iodm, only : read_DM
     use m_ts_io, only : ts_read_TSHS
 

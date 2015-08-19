@@ -41,7 +41,6 @@ contains
   subroutine cdf_init_file(fname,is_md)
     use fdf, only : fdf_get, leqi
     use class_Sparsity
-    use m_io_s, only : file_exist
     use files, only : slabel
     use m_gamma, only : Gamma
     use atomlist, only: no_u, no_s, lasto, Qtot

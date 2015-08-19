@@ -33,7 +33,7 @@ contains
 ! Used modules
     use parallel, only : IONode
 
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
 
     use m_ts_gf,        only : do_Green, do_Green_Fermi
     use m_ts_electrode, only : init_Electrode_HS

@@ -1,4 +1,38 @@
 ----------------------------------------------------
+August 18, 2015 -- Nick Papior         trunk-476---ts-scf-499
+Moved file_exist to separate module
+
+* Created m_os module
+
+* Enabled starting from specific DM files
+  according to FDF flags, this provides more
+  flexibility.
+
+modified:
+  Src/flook_siesta.F90
+  Src/m_exp_coord.F90
+  Src/m_handle_sparse.F90
+  Src/m_io_s.F90
+  Src/m_ncdf_siesta.F90
+  Src/m_new_dm.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_io.F90
+  Src/m_ts_iodm.F90
+  Src/m_ts_options.F90
+  Src/state_init.F
+  Src/ts_init.F90
+  Util/Sp2METIS/sp2metis.f90
+  Util/SpPivot/pvtsp.F90
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/TBtrans/m_tbt_gf.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+
+----------------------------------------------------
 August 18, 2015 -- Nick Papior         trunk-476---ts-scf-498
 Enh: Enabled check for dimension size of Hartree
 

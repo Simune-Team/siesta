@@ -27,7 +27,7 @@ contains
     use mpi_siesta, only : MPI_Comm_World
     use mpi_siesta, only : MPI_Bcast, MPI_Integer, MPI_Logical
 #endif
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
     use m_ts_cctype
     use m_ts_electype
     use m_ts_electrode, only : create_Green

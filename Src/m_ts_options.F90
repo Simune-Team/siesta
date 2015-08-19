@@ -91,7 +91,7 @@ contains
     use units, only: eV, Ang, Kelvin
     use intrinsic_missing, only : VNORM, IDX_SPC_PROJ, EYE
 
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
 
     use m_ts_cctype
     use m_ts_global_vars, only : TSmode

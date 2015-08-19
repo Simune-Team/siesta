@@ -206,7 +206,7 @@ contains
 
   function fdf_Elec(prefix,slabel,this,N_mu,mus,idx_a,name_prefix) result(found)
     use fdf
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
     use m_ts_io, only : ts_read_TSHS_opt
     use m_ts_io_ctype, only : pline_E_parse
 

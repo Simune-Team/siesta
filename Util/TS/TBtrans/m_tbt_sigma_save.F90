@@ -87,7 +87,7 @@ contains
        a_Dev, a_Buf)
 
     use parallel, only : Node
-    use m_io_s, only : file_exist
+    use m_os, only : file_exist
 
     use nf_ncdf, ncdf_parallel => parallel
     use m_timestamp, only : datestring
