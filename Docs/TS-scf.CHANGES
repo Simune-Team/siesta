@@ -1,4 +1,17 @@
 ----------------------------------------------------
+August 19, 2015 -- Nick Papior         trunk-476---ts-scf-500
+Added check for unit-cell placement of device
+
+* All device atoms *must* recide in the unit-cell
+  for the Poisson equation to be correct.
+  Hence we now check that all atoms reside
+  in the unit-cell along the transport direction.
+  Transverse this is not an issue.
+
+modified:
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 August 18, 2015 -- Nick Papior         trunk-476---ts-scf-499
 Moved file_exist to separate module
 

@@ -131,7 +131,7 @@ contains
     real(dp) :: tmp, tmp3(3), tmp33(3,3), min_bond_elec
     logical :: err
     character(len=200) :: c, chars
-    integer :: i, j, idx, idx1, idx2
+    integer :: i, j, idx, idx1, idx2, itmp3(3)
 #ifdef TRANSIESTA_WEIGHT_DEBUG
     integer, allocatable :: ID_mu(:)
     real(dp), allocatable :: rnID(:), rn(:), rw(:)
@@ -176,7 +176,7 @@ contains
 
     if ( TS_HS_save .and. FixSpin ) then
        write(*,*) 'Fixed spin not possible with Transiesta!'
-       write(*,*) 'Electrodes with fixed spin is not possible with Transiesta !'
+       write(*,*) 'Electrodes with fixed spin is not possible with Transiesta!'
        call die('Stopping code')
     end if
 
@@ -538,14 +538,6 @@ contains
        end if
     end if
 
-    ! Check that we can actually start directly in transiesta
-    if ( TS_scf_mode == 1 ) then ! TS-start
-       if ( .not. all(Elecs(:)%DM_update >= 1) ) then
-          write(*,*)'WARNING: Responsibility is now on your side'
-          write(*,*)'WARNING: Requesting immediate start, yet we &
-               &do not update cross-terms.'
-       end if
-    end if
 
     ! The user can selectively decide how the Hartree-fix
     ! is applied
@@ -949,6 +941,15 @@ contains
 
        write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
 
+       ! Check that we can actually start directly in transiesta
+       if ( TS_scf_mode == 1 ) then ! TS-start
+          if ( .not. all(Elecs(:)%DM_update >= 1) ) then
+             write(*,*)'WARNING: Responsibility is now on your side'
+             write(*,*)'WARNING: Requesting immediate start, yet we &
+                  &do not update cross-terms.'
+          end if
+       end if
+
        ! Calculate the number of optimal contour points
        i = mod(N_Eq_E(), Nodes) ! get remaining part of equilibrium contour
        if ( IONode .and. i /= 0 ) then
@@ -958,7 +959,8 @@ contains
           write(*,'(a,i0,a)')'You can add ',i,' more energy points in the &
                &equilibrium contours, for FREE!'
           if ( i/N_mu > 0 ) then
-             write(*,'(a,i0,a)')'This is ',i/N_mu,' more energy points per chemical potential.'
+             write(*,'(a,i0,a)')'This is ',i/N_mu, &
+                  ' more energy points per chemical potential.'
           end if
        end if
 
@@ -970,7 +972,6 @@ contains
        end if
 
        ! Calculate minimum electrode bond-length
-       err = .false.
        min_bond_elec = huge(1._dp)
        do j = 1 , na_u - 1
           if ( .not. a_isElec(j) ) cycle
@@ -980,6 +981,48 @@ contains
              min_bond_elec = min(min_bond_elec,VNORM(xa(:,i)-tmp3))
           end do
        end do
+
+       ! a transiesta calculation requires that all atoms
+       ! are within the unit-cell.
+       ! Otherwise the electrostatic potential will definitely for V /= 0
+       ! be malplaced.
+
+       err = .false.
+       call reclat(ucell,tmp33,0)
+       do i = 1 , na_u
+          if ( .not. a_isBuffer(i) ) then
+             ! Check the index
+             do j = 1 , 3
+                itmp3(j) = floor( dot(xa(:,i),tmp33(:,j),3) )
+             end do
+             select case ( ts_tdir )
+             case ( 1, 2, 3 )
+                ! Only check this direction
+                if ( itmp3(ts_tdir) < 0 .or. itmp3(ts_tdir) > 0 ) then
+                   err = .true.
+                end if
+             case default
+                do j = 1 , 3
+                   if ( itmp3(j) < 0 .or. itmp3(j) > 0 ) then
+                      err = .true.
+                   end if
+                end do
+             end select
+          end if
+          if ( err ) exit
+       end do
+       if ( err .and. IONode ) then
+          write(*,11) '*** Device atomic coordinates are not inside unit-cell.'
+          write(*,11) '*** This is a requirement for bias calculations'
+          write(*,11) '    as the Poisson equation cannot be correctly handled'
+          write(*,11) '    due to inconsistencies with the grid and atomic coordinates'
+          if ( IsVolt ) then
+             call die('Please move device atoms inside the device region in &
+                  &the transport direction.')
+          else
+             write(*,11) '*** Will continue, but will die when running V /= 0 ***'
+          end if
+       end if
 
        if ( ts_tdir < 1 ) then
           write(*,11) '*** TranSIESTA semi-infinite directions are individual ***'
@@ -1004,6 +1047,7 @@ contains
           ! If the distance is less than 0.5 of the minimal bond length we have
           ! the atomic core "close" to the Hartree fix plane, notify the user of this
           tmp = 0.5 * min_bond_elec
+          err = .false.
           do i = 1 , na_u
              err = abs(xa(ts_tidx,i)) < tmp
              if ( err ) exit
