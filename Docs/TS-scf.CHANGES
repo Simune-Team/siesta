@@ -1,4 +1,22 @@
 ----------------------------------------------------
+August 20, 2015 -- Nick Papior         trunk-476---ts-scf-503
+Bugfix for pivoting
+
+* The angles calculating in the pivoting method
+  did not take into account the +- sign for 
+  sine. We now use cos instead and use the
+  angle from the common plane center as a reference.
+  This should be more robust as cos always returns 
+  a positive angle.
+
+  Nevertheless the old *corrected* method still
+  resides as comments, they can be switched 
+  at will.
+
+modified:
+  Src/m_ts_pivot.F90
+
+----------------------------------------------------
 August 20, 2015 -- Nick Papior         trunk-476---ts-scf-502
 Changed electrode ucell to cell
 

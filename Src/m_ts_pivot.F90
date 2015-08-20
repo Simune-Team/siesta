@@ -91,6 +91,7 @@ contains
     integer :: fan_option
     integer :: fan1, fan2
     real(dp) :: p_n(3,2), p_cr(3), p_center(3,2), tmp3(3)
+    real(dp) :: p_cc(3,2)
     ! For linear-least-squares problem
     real(dp) :: llsA(3,2), llsB(3), work(20)
 
@@ -295,8 +296,9 @@ contains
        end do
        
        if ( iEl == 0 ) then
-          print *,trim(pvt_str)
-          call die('Could find the electrode in &
+          print *,'Currently assembled options: ',trim(str_tmp)
+          print *,'Remaining option string: ',trim(pvt_str)
+          call die('Could not find any electrode in &
                &BTD.Pivot in the list of electrodes, &
                &please correct sorting method.')
        end if
@@ -311,14 +313,12 @@ contains
        ! Create the first vector of the fan
        if ( pvt_fan ) then
 
-          ! Initialize the center
-          p_center = 0._dp
-
           ! Calculate the plane-crossing between the first two electrodes
           p_n(:,1) = Elecs(fan1)%cell(:,Elecs(fan1)%t_dir)
           p_n(:,1) = p_n(:,1) / VNORM(p_n(:,1))
 
           ! Correct sign for electrodes
+          ! 1st electrode points inwards
           if ( Elecs(fan1)%inf_dir == INF_POSITIVE ) then
              p_n(:,1) = -p_n(:,1)
           else
@@ -357,6 +357,7 @@ contains
           work(1:3) = xa(:,iEl)
 
           ! Calculate the electrode plane middle coordinate
+          p_center(:,1) = 0._dp
           do i = 1 , r_tmp%n
              tmp3 = xa(:,r_tmp%r(i))
              tmp3 = tmp3 - VEC_PROJ(p_n(:,1),tmp3-work(1:3))
@@ -381,7 +382,8 @@ contains
           ! Calculate the plane-crossing between the first two electrodes
           p_n(:,2) = Elecs(fan2)%cell(:,Elecs(fan2)%t_dir)
           p_n(:,2) = p_n(:,2) / VNORM(p_n(:,2))
-          if ( Elecs(fan2)%inf_dir == INF_NEGATIVE ) then
+          ! 2nd electrode points outwards
+          if ( Elecs(fan2)%inf_dir == INF_POSITIVE ) then
              p_n(:,2) = -p_n(:,2)
           else
              ! do nothing, the direction is good
@@ -394,7 +396,7 @@ contains
           ! If the length of the cross-product vector is too small,
           ! they *must* be parallel planes.
           pvt_fan2d = pvt_fan
-          pvt_fan = vnorm(p_cr) > 1.e-6_dp
+          pvt_fan = VNORM(p_cr) > 1.e-6_dp
 
        end if
 
@@ -486,6 +488,7 @@ contains
           work(1:3) = xa(:,iEl)
 
           ! Calculate the electrode plane middle coordinate
+          p_center(:,2) = 0._dp
           do i = 1 , r_tmp%n
              tmp3 = xa(:,r_tmp%r(i))
              tmp3 = tmp3 - VEC_PROJ(p_n(:,2),tmp3 - work(1:3))
@@ -527,16 +530,23 @@ contains
           ! llsB is now the point that minimizes the distance between
           ! c_1, c_2 and the line that crosses the planes
           llsB = tmp3 + work(1) * p_cr
+
+          ! Create the two vectors pointing from
+          ! the closest point to the center of the surface
+          ! plane
+          p_cc(:,1) = p_center(:,1) - llsB
+          p_cc(:,1) = p_cc(:,1) / VNORM(p_cc(:,1))
+          p_cc(:,2) = p_center(:,2) - llsB
+          p_cc(:,2) = p_cc(:,2) / VNORM(p_cc(:,2))
+
 !!$          print '(a,3(tr1,e10.4))','x_0:',tmp3
 !!$          print '(a,3(tr1,e10.4))','C:',llsB
 !!$          print '(a,3(tr1,e10.4))','t:',work(1)
-!!$
 !!$          print '(a,3(tr1,e10.4))','p_c1:',p_center(:,1)
 !!$          print '(a,3(tr1,e10.4))','p_c2:',p_center(:,2)
 !!$          print '(a,3(tr1,e10.4))','p_c:',p_cr
-
-          ! this should be the point that is closest to the 
-          ! two center points on the plane.
+!!$          print '(a,e10.4)','Angle between plane:', &
+!!$               acos( sum( p_cc(:,1)*p_cc(:,2) ) ) * 180._dp / 3.1415926353_dp
           
        end if
 
@@ -639,13 +649,21 @@ contains
                 ! There exists two planes, and two angles
 
                 ! 1. the planar angle only between the first plane and the vector
-                work(3) = sum( tmp3 * p_n(:,1) )
+                work(3) = sum( tmp3 * p_cc(:,1) )
+                !work(3) = sum( tmp3 * p_n(:,1) )
+
 
                 ! 2. the planar angle only between the second plane and the vector
-                work(4) = sum( tmp3 * p_n(:,2) )
+                work(4) = sum( tmp3 * p_cc(:,2) )
+                !work(4) = sum( tmp3 * p_n(:,2) )
+
 
                 ! Convert to radians
-                work(3:4) = asin(work(3:4))
+                ! We take the absolute as sin differs sign on
+                ! positive and negative angles, we always count one way
+                work(3:4) = acos(work(3:4))
+                !work(3:4) = abs( asin(work(3:4)) )
+                !print *,work(3:4)/3.1415926353_dp*180._dp
 
                 select case( fan_option )
                 case ( -1 ) 
@@ -683,8 +701,10 @@ contains
                 tmp3 = tmp3 / VNORM(tmp3)
 
                 ! 1. the planar angle only between the first plane and the vector
-                work(3) = sum( tmp3 * p_n(:,1) )
-                work(3) = asin(work(3))
+                work(3) = sum( tmp3 * p_cc(:,1) )
+                work(3) = acos(work(3))
+                !work(3) = sum( tmp3 * p_n(:,1) )
+                !work(3) = abs( asin(work(3)) )
                 if ( work(3) <= work(1) ) then
                    if ( .not. rgn_push(r_tmp2,r_Els%r(i)) ) then
                       call die('Error in programming')
@@ -694,8 +714,10 @@ contains
                 end if
 
                 ! 2. the planar angle only between the second plane and the vector
-                work(3) = sum( tmp3 * p_n(:,2) )
-                work(3) = asin(work(3))
+                work(3) = sum( tmp3 * p_cc(:,2) )
+                work(3) = acos(work(3))
+                !work(3) = sum( tmp3 * p_n(:,2) )
+                !work(3) = abs( asin(work(3)) )
                 if ( work(3) >= work(2) ) then
                    if ( .not. rgn_push(r_tmp2,r_Els%r(i)) ) then
                       call die('Error in programming')
@@ -704,8 +726,8 @@ contains
                 
              end do
 
-             ! Debugging
-             !print *,'Currently applying: ',work(1:2) / 3.1415926353_dp * 180._dp,r_tmp2%n
+!!$             ! Debugging
+!!$             print *,'Currently applying: ',work(1:2) / 3.1415926353_dp * 180._dp,r_tmp2%n
 
           else if ( pvt_fan2d ) then
 
@@ -728,7 +750,7 @@ contains
                 ! Project onto vector
                 tmp3 = VEC_PROJ(p_n(:,1),tmp3)
                 ! Get the length of this projected vector
-                work(2) = vnorm(tmp3)
+                work(2) = VNORM(tmp3)
                 
                 select case ( fan_option ) 
                 case ( -1 )
