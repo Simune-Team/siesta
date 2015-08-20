@@ -526,8 +526,8 @@ contains
     else
        ! Retrieve the indices of the unit-cell directions
        ! according to the electrode transport directions.
-       i = IDX_SPC_PROJ(ucell,Elecs(1)%ucell(:,Elecs(1)%t_dir))
-       j = IDX_SPC_PROJ(ucell,Elecs(2)%ucell(:,Elecs(2)%t_dir))
+       i = IDX_SPC_PROJ(ucell,Elecs(1)%cell(:,Elecs(1)%t_dir))
+       j = IDX_SPC_PROJ(ucell,Elecs(2)%cell(:,Elecs(2)%t_dir))
 
        if ( i == j ) then
           ! The transport direction for the electrodes are the same...

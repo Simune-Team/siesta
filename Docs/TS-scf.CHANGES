@@ -1,4 +1,21 @@
 ----------------------------------------------------
+August 20, 2015 -- Nick Papior         trunk-476---ts-scf-502
+Changed electrode ucell to cell
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/m_ts_pivot.F90
+  Src/m_ts_sparse.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 August 19, 2015 -- Nick Papior         trunk-476---ts-scf-501
 Enabled non-aligned electrodes and simulation cell
 

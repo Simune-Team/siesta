@@ -315,7 +315,7 @@ contains
           p_center = 0._dp
 
           ! Calculate the plane-crossing between the first two electrodes
-          p_n(:,1) = Elecs(fan1)%ucell(:,Elecs(fan1)%t_dir)
+          p_n(:,1) = Elecs(fan1)%cell(:,Elecs(fan1)%t_dir)
           p_n(:,1) = p_n(:,1) / VNORM(p_n(:,1))
 
           ! Correct sign for electrodes
@@ -379,7 +379,7 @@ contains
           end if
           
           ! Calculate the plane-crossing between the first two electrodes
-          p_n(:,2) = Elecs(fan2)%ucell(:,Elecs(fan2)%t_dir)
+          p_n(:,2) = Elecs(fan2)%cell(:,Elecs(fan2)%t_dir)
           p_n(:,2) = p_n(:,2) / VNORM(p_n(:,2))
           if ( Elecs(fan2)%inf_dir == INF_NEGATIVE ) then
              p_n(:,2) = -p_n(:,2)

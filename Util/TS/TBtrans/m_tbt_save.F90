@@ -598,7 +598,7 @@ contains
                atts = dic , chunks = (/3, Elecs(iEl)%na_u/) )
           
           ! Create electrode constant variables
-          call ncdf_put_var(grp,'cell',Elecs(iEl)%ucell)
+          call ncdf_put_var(grp,'cell',Elecs(iEl)%cell)
           call ncdf_put_var(grp,'xa',Elecs(iEl)%xa)
           call ncdf_put_var(grp,'lasto',Elecs(iEl)%lasto(1:))
 

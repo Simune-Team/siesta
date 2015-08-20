@@ -174,7 +174,7 @@ contains
        do j = 1 , size(Elecs)
           ! project the electrode transport direction onto
           ! the corresponding unit-cell direction
-          p = SPC_PROJ(cell,Elecs(j)%ucell(:,Elecs(j)%t_dir))
+          p = SPC_PROJ(cell,Elecs(j)%cell(:,Elecs(j)%t_dir))
           ! See which unitcell direction has the highest contribution
           do i = 1 , 3 
              ! project the unit-cell vector onto each cell component

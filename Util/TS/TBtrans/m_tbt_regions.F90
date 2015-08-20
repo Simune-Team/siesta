@@ -257,7 +257,7 @@ contains
        call rgn_union(r_oEl_alone(iEl), r_tmp, r_tmp2)
 
        ! Calculate the transport direction in the device cell.
-       p = SPC_PROJ(cell,Elecs(iEl)%ucell(:,Elecs(iEl)%t_dir))
+       p = SPC_PROJ(cell,Elecs(iEl)%cell(:,Elecs(iEl)%t_dir))
 
        ! Loop over cell vectors
        do i = 1 , 3 

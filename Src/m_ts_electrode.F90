@@ -743,7 +743,7 @@ contains
     ! Calculate offsets
     n_s = size(El%isc_off,dim=2)
     allocate(sc_off(3,n_s))
-    sc_off = matmul(El%ucell,El%isc_off)
+    sc_off = matmul(El%cell,El%isc_off)
     
     if (IONode) then
        write(*,'(/,2a)') 'Creating Green function file for: ',trim(name(El))
@@ -867,7 +867,7 @@ contains
        open(FILE=El%GFfile,UNIT=uGF,FORM='UNFORMATTED')
 
        ! Electrode information
-       write(uGF) El%nspin, El%ucell
+       write(uGF) El%nspin, El%cell
        write(uGF) El%na_used,El%no_used
        write(uGF) El%xa_used, El%lasto_used
        write(uGF) El%Rep(:),El%pre_expand
@@ -887,7 +887,7 @@ contains
              if ( El%Rep(j) > 1 ) bkpt(j) = bkpt(j) / real(El%Rep(j),dp)
           end do
           ! Convert back to reciprocal units (to electrode ucell_E)
-          call kpoint_convert(El%ucell,bkpt,kE(:,i),-1)
+          call kpoint_convert(El%cell,bkpt,kE(:,i),-1)
        end do
        write(uGF) kE,kweight
        call memory('D','D',nkpnt*3,'create_green')
@@ -971,7 +971,7 @@ contains
 
           ! init qpoint in reciprocal lattice vectors
           kpt = bkpt(:) + q_exp(El,iqpt)
-          call kpoint_convert(El%ucell,kpt,kq,-1)
+          call kpoint_convert(El%cell,kpt,kq,-1)
 
           ! Setup the transfer matrix and the intra cell at the k-point and q-point
           ! Calculate transfer matrices @Ef (including the chemical potential)
@@ -1560,7 +1560,7 @@ contains
 
     n_s = size(El%isc_off,dim=2)
     allocate(sc_off(3,n_s))
-    sc_off = matmul(El%ucell,El%isc_off)
+    sc_off = matmul(El%cell,El%isc_off)
     
     ! whether we already have the H and S set correctly, 
     ! update accordingly, it will save a bit of time, but not much
@@ -1653,7 +1653,7 @@ contains
 
        ! init qpoint in reciprocal lattice vectors
        kpt(:) = bkpt(:) + q_exp(El,iqpt)
-       call kpoint_convert(El%ucell,kpt,kq,-1)
+       call kpoint_convert(El%cell,kpt,kq,-1)
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
        call set_electrode_HS_Transfer(ispin, El, n_s,sc_off,kq, &

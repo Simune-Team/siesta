@@ -86,7 +86,7 @@ module m_ts_electype
      integer :: t_dir = 3
      ! This is the cell pivoting table from the
      ! electrode unit-cell to the simulation unit-cell
-     ! So: cell(:,pvt(1)) ~= this%ucell(:,1)
+     ! So: cell(:,pvt(1)) ~= this%cell(:,1)
      integer :: pvt(3)
      ! whether the electrode should be bulk
      logical :: Bulk = .true.
@@ -114,7 +114,7 @@ module m_ts_electype
 
      ! ---v--- Below we have the content of the TSHS file
      integer  :: nspin = 0, na_u = 0, no_u = 0, no_s = 0
-     real(dp) :: ucell(3,3) = 0._dp, Ef = 0._dp, Qtot = 0._dp
+     real(dp) :: cell(3,3) = 0._dp, Ef = 0._dp, Qtot = 0._dp
      real(dp), pointer :: xa(:,:) => null()
      integer,  pointer :: lasto(:) => null()
      type(Sparsity)  :: sp
@@ -555,7 +555,7 @@ contains
 
     ! Read in the number of atoms in the HSfile
     call ts_read_TSHS_opt(this%HSfile,no_u=this%no_u,na_u=this%na_u, &
-         nspin=this%nspin, Ef=this%Ef, ucell=this%ucell, Qtot=this%Qtot, &
+         nspin=this%nspin, Ef=this%Ef, ucell=this%cell, Qtot=this%Qtot, &
          nsc = this%nsc , &
          Bcast=.true.)
 
@@ -694,7 +694,7 @@ contains
 
     ! Calculate the pivoting table
     do i = 1 , 3
-       this%pvt(i) = IDX_SPC_PROJ( cell,this%ucell(:,i) )
+       this%pvt(i) = IDX_SPC_PROJ( cell,this%cell(:,i) )
     end do
     if ( sum(this%pvt) /= 6 .or. count(this%pvt==2) /= 1 ) then
        print *, this%pvt
@@ -704,7 +704,7 @@ contains
     end if
 
     ! Print out a warning if the electrode uses several cell-vectors
-    p = SPC_PROJ(cell,this%ucell(:,this%t_dir))
+    p = SPC_PROJ(cell,this%cell(:,this%t_dir))
     n_cell = 0
     do i = 1 , 3 
 
@@ -726,7 +726,7 @@ contains
     end if
 
     ! The cell-vector along the transport direction.
-    p = this%ucell(:,this%t_dir)
+    p = this%cell(:,this%t_dir)
     ! We add a vector with length of half the minimal bond length
     ! to the vector, to do the averaging 
     ! not on-top of an electrode atom.
@@ -746,7 +746,7 @@ contains
     end if
     
     ! Normal vector to electrode transport direction
-    this%p%n = SPC_PROJ(cell,this%ucell(:,this%t_dir))
+    this%p%n = SPC_PROJ(cell,this%cell(:,this%t_dir))
     this%p%n = this%p%n / VNORM(this%p%n) ! normalize
 
     ! The distance parameter
@@ -785,7 +785,7 @@ contains
        ! cells, we still have an equal weight of the
        ! lifting of the Hartree potential.
        if ( this%nsc(i) == 1 ) then
-          p(:) = p(:) - 0.5_dp * this%ucell(:,i)
+          p(:) = p(:) - 0.5_dp * this%cell(:,i)
        end if
     end do
     ! p now contains the origin of the box
@@ -805,9 +805,9 @@ contains
        ! long (for periodic reasons)
        p(:) = min_bond
        ! Create a unit-vector along the unit-cell direction
-       max_xa(:) = this%ucell(:,i) / VNORM(this%ucell(:,i))
+       max_xa(:) = this%cell(:,i) / VNORM(this%cell(:,i))
        p(:) = VEC_PROJ(max_xa,p)
-       p(:) = this%ucell(:,i) + p(:)
+       p(:) = this%cell(:,i) + p(:)
        this%box%v(:,i) = SPC_PROJ(cell,p)
     end do
 
@@ -966,7 +966,7 @@ contains
     fL = len_trim(fN)
     call ts_read_tshs(fN, &
          onlyS, Gamma_file, TSGamma, &
-         this%ucell, nsc, this%na_u, this%no_u, this%nspin,  &
+         this%cell, nsc, this%na_u, this%no_u, this%nspin,  &
          kscell, kdispl, &
          this%xa, this%lasto, &
          this%sp, this%H, this%S, this%isc_off, &
@@ -1024,7 +1024,7 @@ contains
     tm(:)          = TM_ALL
     tm(this%t_dir) = 0
     call crtSparsity_SC(this%sp,this%sp00, &
-         TM=tm, ucell=this%ucell, &
+         TM=tm, ucell=this%cell, &
          isc_off=this%isc_off)
 
     ! Notice that we create the correct electrode transfer hamiltonian...
@@ -1036,7 +1036,7 @@ contains
        call die('Electrode direction not recognized')
     end if
     call crtSparsity_SC(this%sp,this%sp01, &
-         TM=tm, ucell=this%ucell, &
+         TM=tm, ucell=this%cell, &
          isc_off=this%isc_off)
     
     ! create data
@@ -1180,7 +1180,7 @@ contains
     this_xa => this%xa_used
     xa_o(:) = xa(:,this%idx_a)
     this_xa_o(:) = this_xa(:,1)
-    cell = this%ucell
+    cell = this%cell
     pvt = this%pvt
 
     max_xa = 0._dp
@@ -1434,7 +1434,7 @@ contains
        tm(this%t_dir) = -2
     end if
     call crtSparsity_SC(this%sp,sp02, TM=tm, &
-         ucell=this%ucell, isc_off=this%isc_off)
+         ucell=this%cell, isc_off=this%isc_off)
 
     call attach(this%sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
@@ -1530,7 +1530,7 @@ contains
     this_xa      => this%xa_used
     xa_o(:)      =  xa(:,this%idx_a)
     this_xa_o(:) =  this_xa(:,1)
-    ucell        =  this%ucell
+    ucell        =  this%cell
 
     ! We only print out this structure if it does not fit the coordinates
     do_print = .false.
@@ -1553,7 +1553,7 @@ contains
     if ( .not. do_print ) return
 
     write(*,*) trim(this%name)//' unit cell (Ang):'
-    write(*,'(2(3(tr1,f10.5),/),3(tr1,f10.5))') this%ucell/Ang
+    write(*,'(2(3(tr1,f10.5),/),3(tr1,f10.5))') this%cell/Ang
     
     write(*,'(a,t35,a)') &
          " Structure of "//trim(this%name)//" electrode","| System electrode:"
@@ -1657,7 +1657,7 @@ contains
 
     call expand_spd2spd_2D(i,this%na_used, &
          this%na_u,this%lasto,this%xa,f_DM_2D,&
-         this%ucell, (/1,1,1/), this%Rep, &
+         this%cell, (/1,1,1/), this%Rep, &
          product(this%nsc), this%isc_off, &
          na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, &
          print = .true., allowed_a = allowed)
@@ -1665,7 +1665,7 @@ contains
     if ( is_TSDE ) then
        call expand_spd2spd_2D(i,this%na_used, &
             this%na_u,this%lasto,this%xa,f_EDM_2D, &
-            this%ucell, (/1,1,1/), this%Rep, &
+            this%cell, (/1,1,1/), this%Rep, &
             product(this%nsc), this%isc_off, &
             na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, &
             allowed_a = allowed)

@@ -81,8 +81,8 @@ contains
     ! Easy determination of largest basal plane of electrodes
     area = -1._dp
     do iE = 1 , N_Elec
-       tmp = VOLCEL(Elecs(iE)%ucell)
-       tmp = tmp / VNORM(Elecs(iE)%ucell(:,Elecs(iE)%t_dir))
+       tmp = VOLCEL(Elecs(iE)%cell)
+       tmp = tmp / VNORM(Elecs(iE)%cell(:,Elecs(iE)%t_dir))
        if ( tmp > area ) then
           area =  tmp
           El   => Elecs(iE)

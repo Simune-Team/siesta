@@ -855,13 +855,13 @@ contains
        write(*,'(2(a,i2))') "Found: ",nspin,", expected: ",El%nspin
        localErrorGf = .true.
     end if
-    if ( any(abs(El%ucell-ucell) > EPS) ) then
+    if ( any(abs(El%cell-ucell) > EPS) ) then
        write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Unit-cell is not consistent!"
        write(*,*) "Found (Ang):"
        write(*,'(3(3(tr1,f10.5),/))') ucell/Ang
        write(*,*) "Expected (Ang):"
-       write(*,'(3(3(tr1,f10.5),/))') El%ucell/Ang
+       write(*,'(3(3(tr1,f10.5),/))') El%cell/Ang
        localErrorGf = .true.
     end if
     if ( El%na_used /= na ) then
