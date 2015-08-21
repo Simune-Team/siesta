@@ -1,4 +1,18 @@
 ----------------------------------------------------
+August 21, 2015 -- Nick Papior         trunk-476---ts-scf-506
+Bugfix for space-projection
+
+* Note this has changed the meaning (quite drastically)
+  As it only deals with magnitude.
+  This is also much better as skewed axis is a bad choice.
+
+* Print out the pivoting table for the electrode unit-cell
+
+modified:
+  Src/intrinsic_missing.F90
+  Src/m_ts_electype.F90
+
+----------------------------------------------------
 August 21, 2015 -- Nick Papior         trunk-476---ts-scf-505
 Changed TBT to PHT in phtrans
 

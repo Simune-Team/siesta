@@ -1690,7 +1690,7 @@ contains
     logical, intent(in), optional :: plane, box
 
     character(len=100) :: chars
-    character(len=60) :: f1, f5, f20, f6, f7, f8, f9, f10, f11, f15, f3
+    character(len=60) :: f1, f5, f20, f6, f7, f8, f9, f10, f11, f15, f3, f16
 
     if ( Node /= 0 ) return
     
@@ -1707,8 +1707,11 @@ contains
     f10 = '('''//trim(prefix)//': '',a,t53,''='',4x,a)'
     f11 = '('''//trim(prefix)//': '',a)'
     f15 = '('''//trim(prefix)//': '',a,t53,''= '',2(i0,'' x ''),i0)'
+    f16 = '('''//trim(prefix)//': '',a,t53,''= A'',2(i0,'', A''),i0)'
+
 
     write(*,f11) '>> '//trim(name(this))
+    write(*,f16) '  Electrode cell pivoting: A1, A2, A3', this%pvt
     if ( this%out_of_core ) then
        write(*,f10) '  GF file', trim(this%GFfile)
        write(*,f1)  '  Reuse existing GF-file', this%ReUseGF
