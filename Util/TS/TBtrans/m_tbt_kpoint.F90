@@ -742,8 +742,13 @@ contains
        open( iu, file=trim(save_dir)//trim(slabel)//'.'//trim(fend), &
             form='formatted', status='unknown' ) 
     else
+#ifdef TBT_PHONON
+       open( iu, file=trim(save_dir)//trim(slabel)//'.PHT.KP', &
+            form='formatted', status='unknown' ) 
+#else
        open( iu, file=trim(save_dir)//trim(slabel)//'.TBT.KP', &
             form='formatted', status='unknown' ) 
+#endif
     end if
 
     write(iu,'(i6)') nk

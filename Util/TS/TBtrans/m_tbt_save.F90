@@ -1780,7 +1780,11 @@ contains
     character(len=*), intent(in), optional :: end ! designator of the file
     type(Elec), intent(in), optional :: El1, El2
 
+#ifdef TBT_PHONON
+    fname = trim(save_dir)//trim(slabel)//'.PHT'
+#else
     fname = trim(save_dir)//trim(slabel)//'.TBT'
+#endif
 
     ! Now figure out the file name
     if ( nspin > 1 ) then

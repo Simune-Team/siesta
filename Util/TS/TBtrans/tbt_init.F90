@@ -134,15 +134,25 @@ subroutine tbt_init()
 
   ! Set timer report file and threshold .............................
   threshold = fdf_get('timer_report_threshold', 0._dp)
+#ifdef TBT_PHONON
+  call timer_report( file=trim(slabel)//'.PHT.times', &
+       threshold=threshold )
+#else
   call timer_report( file=trim(slabel)//'.TBT.times', &
        threshold=threshold )
+#endif
 
   ! Set allocation report level .........................................
   ! variables level and threshold imported from module siesta_options
   level = fdf_get('alloc_report_level', 0)
   threshold = fdf_get('alloc_report_threshold', 0._dp)
+#ifdef TBT_PHONON
+  call alloc_report( level=level, file=trim(slabel)//'.PHT.alloc', &
+       threshold=threshold, printNow=.false. )
+#else
   call alloc_report( level=level, file=trim(slabel)//'.TBT.alloc', &
        threshold=threshold, printNow=.false. )
+#endif
 
 #ifdef NCDF_4
   ! In case the user wants to utilize the ncdf library

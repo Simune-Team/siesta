@@ -1,4 +1,20 @@
 ----------------------------------------------------
+August 21, 2015 -- Nick Papior         trunk-476---ts-scf-505
+Changed TBT to PHT in phtrans
+
+* This enables phtrans in same folder
+  as tbtrans.
+
+  Just a convenience.
+
+modified:
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 August 21, 2015 -- Nick Papior         trunk-476---ts-scf-504
 Bugfix for phonon transport
 

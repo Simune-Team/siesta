@@ -93,6 +93,7 @@ contains
     real(dp) :: Volt, rtmp
     logical :: err, ltmp
     character(len=200) :: chars
+    character(len=3) :: name_prefix
     integer :: i, j
 
     ! Initialize the buffer regions
@@ -210,6 +211,12 @@ contains
     ! In tbtrans this is now defaulted to in-core
     Elecs(:)%out_of_core = fdf_get('TBT.Elecs.Out-of-core',.false.)
 
+#ifdef TBT_PHONON
+    name_prefix = 'PHT'
+#else
+    name_prefix = 'TBT'
+#endif
+
     do i = 1 , N_Elec
 
        ! If we only have 2 electrodes we take them 
@@ -217,22 +224,24 @@ contains
        ! respectively.
        if ( N_Elec == 2 ) then
           if ( i == 1 ) then
-             err = fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus,idx_a= 1)
+             err = fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus,idx_a= 1, &
+                  name_prefix = name_prefix)
              if ( .not. err ) &
                   err = fdf_Elec('TS',slabel,Elecs(i),N_mu,mus,idx_a= 1, &
-                  name_prefix = 'TBT' )
+                  name_prefix = name_prefix)
           else
-             err = fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus,idx_a=-1)
+             err = fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus,idx_a=-1, &
+                  name_prefix = name_prefix)
              if ( .not. err ) &
                   err = fdf_Elec('TS',slabel,Elecs(i),N_mu,mus,idx_a=-1, &
-                  name_prefix = 'TBT' )
+                  name_prefix = name_prefix)
           end if
        else
           ! Default things that could be of importance
           err = fdf_Elec('TBT',slabel,Elecs(i),N_mu,mus)
           if ( .not. err ) &
                err = fdf_Elec('TS',slabel,Elecs(i),N_mu,mus, &
-               name_prefix = 'TBT' )
+               name_prefix = name_prefix)
        end if
        if ( .not. err ) then
           call die('Could not find electrode: '//trim(name(Elecs(i))))

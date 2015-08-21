@@ -433,7 +433,11 @@ contains
     if ( .not. IONode ) return
 
     call io_assign( iu )
+#ifdef TBT_PHONON
+    open( iu, file=trim(save_dir)//trim(slabel)//'.PHT.CC', status='unknown' )
+#else
     open( iu, file=trim(save_dir)//trim(slabel)//'.TBT.CC', status='unknown' )
+#endif
     write(iu,'(a)') '# Contour path for the transport part'
     write(iu,'(a,a12,3(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','Weight'
 
