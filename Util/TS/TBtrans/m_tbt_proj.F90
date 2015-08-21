@@ -1892,8 +1892,9 @@ contains
        ! Calculate the frequency
        do i = 1 , no 
           if ( eig(i) > 0._dp ) then
-             eig(i) =  sqrt( eig(i))
+             eig(i) =  sqrt( eig(i) )
           else
+             ! Signal instability
              eig(i) = -sqrt(abs(eig(i)))
           end if
        end do

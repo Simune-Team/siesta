@@ -637,11 +637,11 @@ contains
 
 #ifdef TBT_PHONON
           ! Retrieve the frequency before converting energy to 
-          ! (\omega + i \eta) ** 2 
-          omega = 2._dp * real(cE%e,dp)
-          ! Copy data, and form (omega + i eta)**2
+          ! \omega^2 + i \eta
+          omega = real(cE%e,dp)
+          ! Copy data, and form: \omega**2 + i \eta
           cOmega = cE
-          cOmega%e = cE%e * cE%e
+          cOmega%e = dcmplx(omega**2,dimag(cE%e))
 #endif
 
 #ifdef NCDF_4

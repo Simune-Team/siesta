@@ -1564,7 +1564,7 @@ contains
 !$OMP&reduction(+:Flow)
           do i = 1 , NE
              ! We have rE in eV, hence the conversion
-             Flow = Flow + r2(i,1) * rW(i) * rE(i) * nb(rE(i)*eV, &
+             Flow = Flow + r2(i,1) * rW(i) * rE(i) * nb2(rE(i)*eV, &
                   Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
                   Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
           end do
@@ -1744,10 +1744,15 @@ contains
     end subroutine save_EIG
 
 #ifdef TBT_PHONON
-    elemental function nb(E,E1,kT1,E2,kT2)
+    elemental function nb2(E,E1,kT1,E2,kT2)
       real(dp), intent(in) :: E,E1,kT1,E2,kT2
+      real(dp) :: nb2
+      nb2 = nb(E,E1,kT1) - nb(E,E2,kT2)
+    end function nb2
+    elemental function nb(E,Ef,kT)
+      real(dp), intent(in) :: E,Ef,kT
       real(dp) :: nb
-      nb = 1._dp/(exp((E-E1)/kT1)-1._dp) - 1._dp/(exp((E-E2)/kT2)-1._dp)
+      nb = 1._dp/(exp((E-Ef)/kT)-1._dp)
     end function nb
 #else
     elemental function nf2(E,E1,kT1,E2,kT2)

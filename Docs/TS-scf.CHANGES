@@ -1,4 +1,17 @@
 ----------------------------------------------------
+August 21, 2015 -- Nick Papior         trunk-476---ts-scf-504
+Bugfix for phonon transport
+
+* Bug-fix for phonon transport, it should be
+  w^2+iEta, this is now corrected, everywhere!
+
+modified:
+  Src/m_ts_elec_se.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 August 20, 2015 -- Nick Papior         trunk-476---ts-scf-503
 Bugfix for pivoting
 
