@@ -136,9 +136,9 @@ contains
     ! Read in the chemical potentials
     Volt = fdf_get('TS.Voltage',0._dp,'Ry')
     Volt = fdf_get('TBT.Voltage',Volt,'Ry')
-    N_mu = fdf_nmu('TBT',mus)
+    N_mu = fdf_nmu('TBT',kT,mus)
     if ( N_mu < 1 ) then
-       N_mu = fdf_nmu('TS',mus)
+       N_mu = fdf_nmu('TS',kT,mus)
     end if
     ltmp = .true.
     if ( N_mu < 1 ) then

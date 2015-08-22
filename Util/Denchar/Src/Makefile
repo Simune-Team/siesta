@@ -463,7 +463,7 @@ m_ts_cctype.o: m_gauss_fermi_inf.o m_ts_io_ctype.o precision.o
 m_ts_charge.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_charge.o: geom_helper.o m_interpolate.o m_ts_electype.o m_ts_method.o
 m_ts_charge.o: parallel.o precision.o units.o
-m_ts_chem_pot.o: m_ts_cctype.o m_ts_io_ctype.o parallel.o precision.o
+m_ts_chem_pot.o: m_ts_cctype.o m_ts_io_ctype.o parallel.o precision.o units.o
 m_ts_contour.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_contour_eq.o
 m_ts_contour.o: m_ts_contour_neq.o m_ts_electype.o m_ts_io_contour.o
 m_ts_contour.o: precision.o

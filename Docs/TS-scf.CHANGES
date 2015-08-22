@@ -1,4 +1,38 @@
 ----------------------------------------------------
+August 22, 2015 -- Nick Papior         trunk-476---ts-scf-508
+Enabled energy specification of number of poles
+
+* Instead of supplying number of poles one can now
+  resort to specifying an energy.
+
+  This allows easy changing of temperatures while
+  retaining an "almost" identical complex contour.
+
+* Added more information when printing the poles.
+  I.e. it directly prints the middle point of the contour
+  (i.e. the complex lifting energy)
+
+modified:
+  Src/Makefile
+  Src/m_ts_chem_pot.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_options.F90
+  Util/COOP/Makefile
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/Sp2METIS/Makefile
+  Util/SpPivot/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 August 22, 2015 -- Nick Papior         trunk-476---ts-scf-507
 Added print-out of mean error of integral
 

@@ -452,8 +452,9 @@ contains
       ! local variables
       real(dp) :: alpha
 
-      lift = Pi * kT * (2._dp*(N_poles-1)+1._dp)
-      lift = lift + Pi * kT
+      ! The poles are @ \pi kT, 3\pi kT, 5\pi kT, ...
+      ! Middle point are @ 2\pi kT, 4\pi kT, 6\pi kT
+      lift = Pi * kT * 2._dp * N_poles
       ! this means that we place the line contour right in the middle of two poles!
 
       cR = b - a
@@ -1039,12 +1040,13 @@ contains
   subroutine print_contour_eq_options(prefix)
 
     use parallel, only : IONode
-    use units, only : eV
+    use units, only : eV, Pi
 
     use m_ts_io_contour
 
     character(len=*), intent(in) :: prefix
     character(len=200) :: chars
+    real(dp) :: tmp
     integer :: i
     type(ts_c_opt_ll), pointer :: opt
 
@@ -1057,9 +1059,13 @@ contains
        if ( leqi(eq_io(i)%part,'pole') ) then
           chars = trim(eq_io(i)%part)
           call write_e('Pole chemical potential',eq_io(i)%d)
-          call write_e('Pole chemical potential temperature',eq_io(i)%b, &
+          call write_e('   Chemical potential temperature',eq_io(i)%b, &
                unit = 'K')
-          write(*,opt_int) '  Pole points',eq_io(i)%N
+          write(*,opt_int) '   Number of poles',eq_io(i)%N
+          ! Calculate energy of middle pole-point
+          tmp = Pi * eq_io(i)%b * 2._dp * eq_io(i)%N
+          call write_e('   Top energy point',tmp)
+          
        end if
     end do
 

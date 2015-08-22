@@ -361,7 +361,7 @@ contains
     call fdf_deprecated('TS.UseBulk','TS.Elecs.Bulk')
 
     ! Read in the chemical potentials
-    N_mu = fdf_nmu('TS',mus)
+    N_mu = fdf_nmu('TS',kT,mus)
     err = .true.
     if ( N_mu < 1 ) then
        err = .false.

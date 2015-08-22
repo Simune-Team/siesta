@@ -16,6 +16,8 @@ module m_ts_chem_pot
 
   use precision, only : dp
 
+  use units, only : Pi
+
   use m_ts_io_ctype, only : C_N_NAME_LEN
   implicit none
 
@@ -80,10 +82,11 @@ module m_ts_chem_pot
 
 contains
 
-  function fdf_nmu(prefix,this_n) result(n)
+  function fdf_nmu(prefix,kT,this_n) result(n)
     use fdf
 
     character(len=*), intent(in) :: prefix
+    real(dp), intent(in) :: kT
     type(ts_mu), intent(inout), allocatable :: this_n(:)
     integer :: n
 
@@ -91,7 +94,8 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     integer :: i
-    
+
+    real(dp) :: E_pole
     logical :: found
 
     n = 0
@@ -107,6 +111,11 @@ contains
 
     allocate(this_n(n))
     this_n(:)%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
+    E_pole = fdf_get('TS.Contours.Eq.Pole',-1._dp,'Ry')
+    if ( E_pole > 0._dp ) then
+       call E2Npoles(E_pole,kT,i)
+       this_n(:)%N_poles = i
+    end if
 
     ! rewind to read again
     call fdf_brewind(bfdf)
@@ -137,7 +146,8 @@ contains
     type(ts_mu), intent(inout), allocatable :: this_n(:)
     ! SIESTA temperature
     real(dp), intent(in) :: kT, Volt
-    integer :: n
+    real(dp) :: E_pole
+    integer :: n, n_pole
     ! In case the user whishes to utilise the standard 
     ! transiesta setup we fake the chemical potentials
     n = 2
@@ -145,6 +155,13 @@ contains
 
     ! Read in number of poles
     this_n(:)%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
+    E_pole = fdf_get('TS.Contours.Eq.Pole',-1._dp,'Ry')
+    ! If the energy is larger than zero, the user requests
+    ! number of poles
+    if ( E_pole > 0._dp ) then
+       call E2Npoles(E_pole,kT,n_pole)
+       this_n(:)%N_poles = n_pole
+    end if
 
     ! Set the temperature
     this_n(:)%kT = kT
@@ -188,7 +205,8 @@ contains
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    logical :: info(2)
+    logical :: info(2), bool_E_pole
+    real(dp) :: E_pole
     character(len=200) :: ln
 
     found = fdf_block(trim(prefix)//'.ChemPot.'//trim(Name(this)),bfdf)
@@ -203,6 +221,8 @@ contains
 #endif
 #endif
 
+    bool_E_pole = .false.
+    
     ! Initialize the temperature for this chemical potential
     this%kT  = kT
     this%ckT = ' '
@@ -245,8 +265,20 @@ contains
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('You have not specified a number for &
                &number of poles.')
-          
-          this%N_poles = fdf_bintegers(pline,1)
+
+          if ( bool_E_pole ) then
+             ! do nothing
+          else
+             this%N_poles = fdf_bintegers(pline,1)
+          end if
+
+       else if ( leqi(ln,'contour.eq.pole') ) then
+
+          call pline_E_parse(pline,1,ln, &
+               val = E_pole, kT = kT, before=3)
+
+          call E2Npoles(E_pole, this%kT, this%N_poles)
+          bool_E_pole = .true.
 
        else
           
@@ -427,12 +459,17 @@ contains
     use fdf
     character(len=*), intent(in) :: prefix
     type(ts_mu), intent(in) :: this
+    real(dp) :: E_pole
     integer :: i, def_pole
     character(len=50) :: ln
 
     if ( .not. IONode ) return
 
     def_pole = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
+    E_pole = fdf_get('TS.Contours.Eq.Pole',-1._dp,'Ry')
+    if ( E_pole > 0._dp ) then
+       call E2Npoles(E_pole,this%kT, def_pole)
+    end if
     
     ! Start by writing out the block beginning
     write(*,'(a,a)') '%block '//trim(prefix)//'.ChemPot.',trim(this%name)
@@ -457,6 +494,19 @@ contains
     write(*,'(a,a)') '%endblock '//trim(prefix)//'.ChemPot.',trim(this%name)
     
   end subroutine print_mu_block
+
+  subroutine E2Npoles(E_pole,kT,n_pole)
+    real(dp), intent(in) :: kT, E_pole
+    integer, intent(out) :: n_pole
+    real(dp) :: tmp
+    
+    ! Calculate number of \pi kT
+    tmp = E_pole / ( Pi * kT )
+    ! Using ceiling should also force it to at least
+    ! 1 pole.
+    n_pole = ceiling( tmp / 2._dp )
+    
+  end subroutine E2Npoles
 
   subroutine copy_(this,copy)
     type(ts_mu), intent(inout) :: this, copy
