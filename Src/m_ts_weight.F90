@@ -120,13 +120,13 @@ contains
     type(OrbitalDistribution), pointer :: dit
     real(dp), pointer :: DM(:,:), DMneq(:,:), EDM(:,:)
     integer,  pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer :: nr
+    integer :: nr, n_nzs
     integer :: io, jo, ind, j, is
     integer :: mu_i, mu_j
     integer, allocatable :: ID_mu(:)
     ! For error estimation
-    integer  :: eM_i,eM_j
-    real(dp) :: eM, DMe, ee, ee_i, tmp
+    integer  :: eM_i, eM_j
+    real(dp) :: eM, DMe, ee, ee_i, tmp, m_err
     logical :: hasEDM, is_correlated, is_trace
     ! collecting the error contribution for each atom
     real(dp), allocatable :: atom_w(:,:), atom_neq(:,:)
@@ -144,7 +144,7 @@ contains
     ! (however, we know that they are the same)
     sp => spar(spDM)
     call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=nr,nrows_g=ng)
+         nrows=nr,nrows_g=ng,nnzs=n_nzs)
 
     ! Obtain the values in the arrays...
     DM     => val(spDM)
@@ -295,7 +295,7 @@ contains
 !$OMP parallel do default(shared), &
 !$OMP&private(lio,io,ia1,ia2,j,ind,jo,neq), &
 !$OMP&private(ee,mu_i,ee_i,mu_j,tmp), &
-!$OMP&firstprivate(w)
+!$OMP&firstprivate(w), reduction(+:m_err)
     do lio = 1 , nr
        ! We are in a buffer region...
        if ( l_ncol(lio) /= 0 ) then
@@ -392,6 +392,8 @@ contains
              ee_i = DM(ind,mu_i) + neq(mu_i)
              do mu_j = mu_i + 1 , N_mu
                 tmp = ee_i - DM(ind,mu_j) - neq(mu_j)
+                ! Calculate sum of all errors
+                m_err = m_err + tmp
                 if ( abs(tmp) > abs(ee) ) ee = tmp
              end do
           end do
@@ -426,6 +428,16 @@ contains
     end do
 !$OMP end parallel do
 
+    ! Calculate mean of mean difference
+    ! First calculate number of differences used
+    io = 0
+    do mu_i = 1, N_mu - 1
+       do mu_j = mu_i + 1 , N_mu
+          io = io + 1
+       end do
+    end do
+    m_err = m_err / real(io,dp)
+    
     if ( TS_W /= TS_W_ORB_ORB .and. TS_W /= TS_W_MEAN ) then
        deallocate(atom_w)
     end if
@@ -435,7 +447,7 @@ contains
 #ifdef MPI
     ! remove pointer
     nullify(DM,EDM)
-    allocate(DM(4,Nodes),EDM(4,Nodes))
+    allocate(DM(6,Nodes),EDM(6,Nodes))
 
     io = Node + 1
     ! Initialize
@@ -444,7 +456,9 @@ contains
     DM(2,io) = real(eM_i,dp)
     DM(3,io) = real(eM_j,dp)
     DM(4,io) = DMe
-    call MPI_Reduce(DM(1,1),EDM(1,1),4*Nodes, &
+    DM(5,io) = m_err
+    DM(6,io) = n_nzs
+    call MPI_Reduce(DM(1,1),EDM(1,1),6*Nodes, &
          MPI_Double_Precision, MPI_Sum, 0, MPI_Comm_World, MPIerror)
     if ( IONode ) then
        io   = maxloc(abs(EDM(1,:)),1)
@@ -452,12 +466,18 @@ contains
        eM_i = nint(EDM(2,io))
        eM_j = nint(EDM(3,io))
        DMe  = EDM(4,io)
+       ! Sum of errors
+       m_err = sum( DM(5,:) )
+       n_nzs = nint( sum( DM(6,:) ) )
     endif
     deallocate(DM,EDM)
 #endif
 
+    ! Calculate mean
+    m_err = m_err / real(n_nzs,dp)
+
     call print_error_estimate(IONode,'ts-EE:', &
-         eM,eM_i,eM_j,DMe)
+         eM,eM_i,eM_j,DMe,m_err)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
@@ -468,17 +488,18 @@ contains
   ! ************* Commonly used modules ****************
 
   ! Write out the error-estimate for the current iteration (or, k-point)
-  subroutine print_error_estimate(IONode,a,eM,eM_i,eM_j,DM)
+  subroutine print_error_estimate(IONode,a,eM,eM_i,eM_j,DM,m_err)
     logical, intent(in)  :: IONode
     character(len=*), intent(in) :: a
-    real(dp), intent(in) :: eM, DM
+    real(dp), intent(in) :: eM, DM, m_err
     integer, intent(in)  :: eM_i,eM_j
 
     if ( IONode ) then
-       write(*,'(a,2(tr1,a,''('',i5,'','',i6,'')'',a,g10.5e1))') &
-            trim(a), &
+       write(*,'(a,2(tr1,a,''('',i5,'','',i6,'')'',a,g10.5e1)&
+            &,a,g11.5)') trim(a), &
             'DM_out', eM_i,eM_j,' = ',DM, &
-            ', d_ij', eM_i,eM_j,' = ',eM
+            ', d_ij', eM_i,eM_j,' = ',eM, &
+            '. m_d = ',m_err
     end if
 
   end subroutine print_error_estimate

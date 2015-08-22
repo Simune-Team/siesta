@@ -1,4 +1,16 @@
 ----------------------------------------------------
+August 22, 2015 -- Nick Papior         trunk-476---ts-scf-507
+Added print-out of mean error of integral
+
+* At bias, the mean error is now calculated
+  and printed for the user.
+  This is a small computational task for
+  more information.
+
+modified:
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 August 21, 2015 -- Nick Papior         trunk-476---ts-scf-506
 Bugfix for space-projection
 
