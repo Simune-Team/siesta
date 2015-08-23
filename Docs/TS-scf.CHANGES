@@ -1,4 +1,11 @@
 ----------------------------------------------------
+August 22, 2015 -- Nick Papior         trunk-476---ts-scf-509
+Bugfix for analyze
+
+modified:
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
 August 22, 2015 -- Nick Papior         trunk-476---ts-scf-508
 Enabled energy specification of number of poles
 

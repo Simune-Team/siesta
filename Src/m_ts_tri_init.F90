@@ -367,6 +367,11 @@ contains
     ! Make a copy
     tmpSp1 = tmpSp2
 
+    ! Attach the sparsity pattern of the orbitals
+    ! later (tmpSp2) may be atom
+    call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
+         list_col = l_col , nrows_g = no , nnzs = n_nzs )
+
     if ( IONode ) write(*,fmt) 'orb','none'
     call tri(r_pvt)
 
@@ -428,11 +433,12 @@ contains
          n,n_nzs,ncol,l_ptr,l_col, types = r_El%r )
 #endif
 
+    
     ! Attach the sparsity pattern of the orbitals
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
          list_col = l_col , nrows_g = no , nnzs = n_nzs )
 
-
+    
     do iEl = 1 , N_Elec
        if ( IONode ) write(*,fmt) trim(corb),trim(Elecs(iEl)%name)
        if ( orb_atom == 1 ) then
