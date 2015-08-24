@@ -66,7 +66,7 @@ contains
     use m_ts_options, only : N_Elec, Elecs
     use m_ts_options, only : IsVolt, Calc_Forces
 
-    use m_ts_options, only : opt_TriMat_method
+    use m_ts_options, only : BTD_method
 
     use m_ts_contour_eq , only : N_Eq_E
     use m_ts_contour_neq, only : N_nEq_E
@@ -135,7 +135,7 @@ contains
           ! initialize the tri-diagonal partition
           call ts_tri_init( sp_dist, sparse_pattern , N_Elec, &
                Elecs, IsVolt, ucell, na_u, xa, lasto ,nsc, isc_off, &
-               opt_TriMat_method )
+               BTD_method )
        end if
 
        ! print out estimated memory usage...

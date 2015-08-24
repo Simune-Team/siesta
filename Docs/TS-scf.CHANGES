@@ -1,4 +1,19 @@
 ----------------------------------------------------
+August 24, 2015 -- Nick Papior         trunk-476---ts-scf-510
+Bugfix for DM.Init.Bulk _and_ TS initialization
+
+* When both DM.Init.Bulk and TS initialization was
+  invoked, bad things could happen.
+
+modified:
+  Src/m_handle_sparse.F90
+  Src/m_new_dm.F90
+  Src/m_transiesta.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_options.F90
+  Src/state_init.F
+
+----------------------------------------------------
 August 22, 2015 -- Nick Papior         trunk-476---ts-scf-509
 Bugfix for analyze
 

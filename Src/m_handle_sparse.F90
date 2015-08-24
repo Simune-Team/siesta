@@ -182,10 +182,10 @@ contains
        deallocate(fxa) ; nullify(fxa)
        deallocate(flasto) ; nullify(flasto)
        deallocate(fisc_off) ; nullify(fisc_off)
-
+       
     end do
     if ( Node == 0 ) write(*,*) ! new-line
-
+    
   end subroutine bulk_expand
 
   subroutine expand_spd2spd_2D(s_a,na,na_i,lasto_i,xa_i,in,&

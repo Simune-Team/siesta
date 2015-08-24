@@ -187,7 +187,7 @@
             write(6,"(a)") "Re-using DM from previous geometries..."
          endif
 
-        ! Extrapolation or simple re-structuring
+         ! Extrapolation or simple re-structuring
 
          if (ionode) print "(a,i0)", "N DMs in history: ", n_dms_in_history
          ! if (ionode) call print_type(DM_history)
@@ -244,9 +244,9 @@
                   allowed_a(iElec) = iElec
                end do
             else
-               na_a   = 0
+               na_a = 0
                do iElec = 1 , na_u
-                  if ( .not. a_isDev(iElec) ) na_a   = na_a   + 1
+                  if ( .not. a_isDev(iElec) ) na_a = na_a + 1
                end do
                allocate(allowed_a(na_a))
                na_a = 0 
@@ -272,13 +272,8 @@
                     ucell,DMnew,EDMnew, na_a, allowed_a)
 
                ! We shift the mean by one fraction of the electrode
-               ! Typically we see that the fermi-level rises a bit
-               ! as soon as you go "off-bulk", whence we 
-               ! do this by adding one "ficticious" electrode.
-               ! Estimate fraction of electrode fermi-level
-               ! by the number of atoms...
                if ( set_Ef ) then
-                  Ef = Ef + Elecs(iElec)%Ef / real(N_Elec+1,dp)
+                  Ef = Ef + Elecs(iElec)%Ef / N_Elec
                end if
             
             end do

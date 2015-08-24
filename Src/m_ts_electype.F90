@@ -1607,7 +1607,7 @@ contains
     alloc(3) = associated(this%isc_off)
 
     ! We *must* read in the isc_off array
-    call read_Elec(this, Bcast=.true., io=.false.)
+    call read_Elec(this, Bcast=.true., IO=.false.)
 
     i = len_trim(this%DEfile)
     is_TSDE = ( this%DEfile(i-3:i) == 'TSDE' )
@@ -1626,16 +1626,11 @@ contains
        call die('Bulk electrode expansion, read in sparsity pattern, &
             &does not match the TSHS sparsity pattern.')
     end if
-    sp = this%sp
-    if ( is_TSDE ) then
-       sp => spar(f_EDM_2D)
-       sp = this%sp
-    end if
 
     ! We must delete the additional arrays read in
-    call delete(this%sp)
     call delete(this%H)
     call delete(this%S)
+    call delete(this%sp)
 
     ! TODO, there is some memory that could be leaking with the
     ! electrode arrays.

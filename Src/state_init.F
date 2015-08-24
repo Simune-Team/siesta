@@ -50,7 +50,7 @@
 
 #ifdef TRANSIESTA
       use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
-      use m_ts_options, only : opt_TriMat_method
+      use m_ts_options, only : BTD_method
       use m_ts_options, only : onlyS
       use m_ts_options, only : TS_Analyze
       use m_ts_options, only : N_Elec, Elecs, IsVolt
@@ -461,7 +461,7 @@
          ! create the tri-diagonal matrix
          call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
      &        Elecs, ucell, na_u, lasto, nsc, isc_off,
-     &        opt_TriMat_method )
+     &        BTD_method )
          
          ! Bye also waits for all processors
          call bye('transiesta analyzation performed')

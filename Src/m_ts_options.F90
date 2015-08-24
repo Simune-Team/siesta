@@ -58,7 +58,7 @@ module m_ts_options
   logical :: Calc_Forces = .true.
 
   ! If the energy-contour is not perfectly divisable by the number of nodes then adjust
-  integer :: opt_TriMat_method = 0 ! Optimization method for determining the best tri-diagonal matrix split
+  integer :: BTD_method = 0 ! Optimization method for determining the best tri-diagonal matrix split
   ! 0  == We optimize for speed
   ! 1  == We optimize for memory
 
@@ -287,9 +287,9 @@ contains
 
     chars = fdf_get('TS.BTD.Optimize','speed')
     if ( leqi(chars,'speed') ) then
-       opt_TriMat_method = 0
+       BTD_method = 0
     else if ( leqi(chars,'memory') ) then
-       opt_TriMat_method = 1
+       BTD_method = 1
     else
        call die('Could not determine flag TS.BTD.Optimize, please &
             &see manual.')
@@ -816,9 +816,9 @@ contains
           write(*,10)'Solution method', 'BTD'
           chars = fdf_get('TS.BTD.Pivot','atom+'//trim(Elecs(1)%name))
           write(*,10)'BTD pivoting method method', trim(chars)
-          if ( opt_TriMat_method == 0 ) then
+          if ( BTD_method == 0 ) then
              chars = 'speed'
-          else if  ( opt_TriMat_method == 1 ) then
+          else if  ( BTD_method == 1 ) then
              chars = 'memory'
           end if
           write(*,10)'BTD creation algorithm', trim(chars)
