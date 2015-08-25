@@ -205,7 +205,7 @@ contains
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    logical :: info(2), bool_E_pole
+    logical :: info(2), bool_pole(2)
     real(dp) :: E_pole
     character(len=200) :: ln
 
@@ -221,7 +221,7 @@ contains
 #endif
 #endif
 
-    bool_E_pole = .false.
+    bool_pole = .false.
     
     ! Initialize the temperature for this chemical potential
     this%kT  = kT
@@ -255,7 +255,7 @@ contains
        else if ( leqi(ln,'temp') .or. leqi(ln,'kT') .or. &
             leqi(ln,'Electronic.Temperature') .or. &
             leqi(ln,'ElectronicTemperature') ) then
-          
+
           call pline_E_parse(pline,1,ln, &
                val = this%kT, kT = kT, before=3)
           this%ckT = trim(ln)
@@ -266,19 +266,15 @@ contains
                call die('You have not specified a number for &
                &number of poles.')
 
-          if ( bool_E_pole ) then
-             ! do nothing
-          else
-             this%N_poles = fdf_bintegers(pline,1)
-          end if
+          this%N_poles = fdf_bintegers(pline,1)
+          bool_pole(1) = .true.
 
        else if ( leqi(ln,'contour.eq.pole') ) then
 
           call pline_E_parse(pline,1,ln, &
                val = E_pole, kT = kT, before=3)
 
-          call E2Npoles(E_pole, this%kT, this%N_poles)
-          bool_E_pole = .true.
+          bool_pole(2) = .true.
 
        else
           
@@ -294,6 +290,17 @@ contains
        write(*,*)' - chemical-shift'
        write(*,*)' - contour.eq'
        call die('You have not supplied all chemical potential information')
+    end if
+
+    ! Check whether the Eq.Pole has been set,
+    if ( bool_pole(2) ) then
+       ! Update the number of poles
+       call E2Npoles(E_pole, this%kT, this%N_poles)
+    else if ( .not. bool_pole(1) ) then
+       E_pole = fdf_get('TS.Contours.Eq.Pole',-1._dp,'Ry')
+       if ( E_pole > 0._dp ) then
+          call E2Npoles(E_pole,this%kT,this%N_poles)
+       end if
     end if
 
     if ( this%N_poles < 1 ) then
@@ -499,7 +506,7 @@ contains
     real(dp), intent(in) :: kT, E_pole
     integer, intent(out) :: n_pole
     real(dp) :: tmp
-    
+
     ! Calculate number of \pi kT
     tmp = E_pole / ( Pi * kT )
     ! Using ceiling should also force it to at least

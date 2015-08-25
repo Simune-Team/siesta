@@ -1,4 +1,15 @@
 ----------------------------------------------------
+August 25, 2015 -- Nick Papior         trunk-476---ts-scf-511
+Corrected in-block designation of contour pole energy
+
+* The contour pole energy was not exactly correctly
+  setup as it did not correctly interpret the
+  updated electronic temperature in the lead block.
+
+modified:
+  Src/m_ts_chem_pot.F90
+
+----------------------------------------------------
 August 24, 2015 -- Nick Papior         trunk-476---ts-scf-510
 Bugfix for DM.Init.Bulk _and_ TS initialization
 
