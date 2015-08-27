@@ -98,6 +98,11 @@ contains
     type(zMUMPS_STRUC), intent(inout) :: mum
     integer :: iu
 
+    ! We force the analysis to be done without
+    ! knowing the values of A
+    ! otherwise A contains "spurious" values
+    mum%ICNTL(6) = 1
+
     ! analyse the MUMPS solver, this will determine
     ! factorization strategy
     mum%JOB = 1

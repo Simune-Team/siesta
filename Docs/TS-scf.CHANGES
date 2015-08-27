@@ -1,4 +1,18 @@
 ----------------------------------------------------
+August 27, 2015 -- Nick Papior         trunk-476---ts-scf-513
+Tried forcing MUMPS%ICNTL(6) = 1
+
+* It seems like ICNTL(6) is not read.
+  However, we now force it to be 1
+  which is pivoting only based on entries.
+  This makes sense as the diagonal "should"
+  contain the largest elements, without taking the
+  self-energies into account.
+
+modified:
+  Src/m_ts_mumps_init.F90
+
+----------------------------------------------------
 August 27, 2015 -- Nick Papior         trunk-476---ts-scf-512
 Cleaned the way the pivoting table for cells are handled
 
