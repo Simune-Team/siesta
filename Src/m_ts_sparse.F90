@@ -254,8 +254,6 @@ contains
        ucell, nsc, isc_off, &
        ts_sp)
     
-    use intrinsic_missing, only : IDX_SPC_PROJ
-
     use class_OrbitalDistribution
     use class_Sparsity
     use m_region
@@ -300,7 +298,7 @@ contains
        ! Calculate the transport direction in the device cell.
        ! We expect there to be only one and thus find the transport
        ! direction in the big cell
-       i = IDX_SPC_PROJ(ucell,Elecs(iEl)%cell(:,Elecs(iEl)%t_dir))
+       i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
 
        ! Remove connections from this electrode across the boundary...
        call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, &

@@ -659,7 +659,9 @@ contains
   subroutine init_Elec_sim(this,cell,na_u,xa)
 
     use parallel, only : IONode
-    use intrinsic_missing, only : VNORM, SPC_PROJ, VEC_PROJ, IDX_SPC_PROJ
+    use units, only : Pi
+    use intrinsic_missing, only : VNORM, SPC_PROJ, IDX_SPC_PROJ
+    use intrinsic_missing, only : VEC_PROJ, VEC_PROJ_SCA
 
     ! The electrode that needs to be processed
     type(Elec), intent(inout) :: this
@@ -694,7 +696,21 @@ contains
 
     ! Calculate the pivoting table
     do i = 1 , 3
-       this%pvt(i) = IDX_SPC_PROJ( cell,this%cell(:,i) )
+       this%pvt(i) = IDX_SPC_PROJ( cell,this%cell(:,i), mag=.true.)
+       p = cell(:,this%pvt(i))
+       ! Check that it is indeed positive.
+       ! If the projection is not positive it would result
+       ! in -k instead of k!
+       if ( VEC_PROJ_SCA(p,this%cell(:,i)) < 0._dp ) then
+          print *,trim(this%name),i,this%pvt(i)
+          print *,'System v/|v|: ',p / vnorm(p)
+          print *,'Electrode v/|v|: ',this%cell(:,i) / &
+               vnorm(this%cell(:,i))
+          call die('The electrode cell vector aligning mostly with &
+               &the system cell vector has opposite direction. &
+               &This will result in erroneous k-point sampling. &
+               &Please correct.')
+       end if
     end do
     if ( sum(this%pvt) /= 6 .or. count(this%pvt==2) /= 1 ) then
        print *, this%pvt
@@ -704,18 +720,20 @@ contains
     end if
 
     ! Print out a warning if the electrode uses several cell-vectors
-    p = SPC_PROJ(cell,this%cell(:,this%t_dir))
+    p = this%cell(:,this%t_dir)
+    p = p / VNORM(p)
     n_cell = 0
     do i = 1 , 3 
 
-       ! project the unit-cell vector onto each cell component
-       contrib = VNORM(VEC_PROJ(cell(:,i),p))
+       ! find angle between unit-cell vector and electrode
+       ! transport direction
+       contrib = abs( asin( VEC_PROJ_SCA(cell(:,i),p) ) )
 
-       ! If the contribution in this cell direction is too
-       ! small we consider it not to be important.
-       ! TODO this might in certain skewed examples be a bad choice.
-       if ( contrib < 1.e-6_dp ) cycle
-       n_cell = n_cell + 1
+       ! If the contribution in this cell direction is
+       ! larger than 0.01 degree we consider them to overlap
+       if ( contrib > 0.0001745_dp ) then
+          n_cell = n_cell + 1
+       end if
     end do
     if ( n_cell > 1 .and. IONode ) then
        ! The electrode uses more than one cell-vector
@@ -724,13 +742,32 @@ contains
        write(*,'(a,i0)')'     aligning with ',n_cell,' cell vectors.'
        write(*,'(a)')'     Responsibility has been relieved of transiesta/tbtrans!'
     end if
+    n_cell = 0
+    do i = 1 , 3
+       if ( i == this%t_dir ) cycle
 
-    ! The cell-vector along the transport direction.
-    p = this%cell(:,this%t_dir)
+       ! find angle between unit-cell vector and electrode
+       ! transport direction
+       contrib = abs( asin( VEC_PROJ_SCA(this%cell(:,i),p) ) )
+
+       ! If the contribution in this cell direction is
+       ! larger than 0.01 degree we consider them to overlap
+       if ( contrib > 0.0001745_dp ) then
+          n_cell = n_cell + 1
+       end if
+    end do
+    if ( n_cell > 1 .and. IONode ) then
+       ! The electrodes own semi-infinite direction is
+       ! not uni-directional
+       write(*,'(a)')' *** Electrode '//trim(this%name)//' has the transport direction'
+       write(*,'(a,i0)')'     aligning with ',n_cell,' cell vectors of its own.'
+       write(*,'(a)')'     Responsibility has been relieved of transiesta/tbtrans!'
+    end if
+
     ! We add a vector with length of half the minimal bond length
     ! to the vector, to do the averaging 
     ! not on-top of an electrode atom.
-    p = p / VNORM(p) * min_bond
+    p = p * min_bond
     
     ! Create the basal plane of the electrode
     ! Decide which end of the electrode we use

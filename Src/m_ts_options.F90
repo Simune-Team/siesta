@@ -176,7 +176,7 @@ contains
     end if
     ! Calculate Cartesian transport direction
     call eye(3,tmp33)
-    ts_tdir = IDX_SPC_PROJ(tmp33,ucell(:,ts_tidx))
+    ts_tdir = IDX_SPC_PROJ(tmp33,ucell(:,ts_tidx),mag = .true.)
 
     if ( TS_HS_save .and. FixSpin ) then
        write(*,*) 'Fixed spin not possible with Transiesta!'
@@ -524,10 +524,13 @@ contains
        ts_tdir = - N_Elec
        ts_tidx = - N_Elec
     else
+       
        ! Retrieve the indices of the unit-cell directions
        ! according to the electrode transport directions.
-       i = IDX_SPC_PROJ(ucell,Elecs(1)%cell(:,Elecs(1)%t_dir))
-       j = IDX_SPC_PROJ(ucell,Elecs(2)%cell(:,Elecs(2)%t_dir))
+       ! We have already calculated the pivoting table for
+       ! the electrodes
+       i = Elecs(1)%pvt(Elecs(1)%t_dir)
+       j = Elecs(2)%pvt(Elecs(2)%t_dir)
 
        if ( i == j ) then
           ! The transport direction for the electrodes are the same...

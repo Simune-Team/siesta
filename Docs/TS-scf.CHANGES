@@ -1,4 +1,18 @@
 ----------------------------------------------------
+August 27, 2015 -- Nick Papior         trunk-476---ts-scf-512
+Cleaned the way the pivoting table for cells are handled
+
+* It now captures negative cell components
+  so that users do not accidentially calculate -k for
+  k.
+
+modified:
+  Src/intrinsic_missing.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+
+----------------------------------------------------
 August 25, 2015 -- Nick Papior         trunk-476---ts-scf-511
 Corrected in-block designation of contour pole energy
 

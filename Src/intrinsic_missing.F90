@@ -157,6 +157,7 @@ module intrinsic_missing
   end interface
 
   ! Projection of a N-D vector onto N-D vector
+  ! by keeping the scaling of the onto projected vector
   public :: VEC_PROJ_SCA
   interface VEC_PROJ_SCA
      module procedure VEC_PROJ_SCA_sp
@@ -1285,8 +1286,12 @@ contains
     end do
   end function SPC_PROJ_dp
 
-  pure function IDX_SPC_PROJ_sp(space,vin) result(idx)
+  pure function IDX_SPC_PROJ_sp(space,vin,mag) result(idx)
     real(sp), intent(in) :: space(:,:), vin(:)
+    ! If mag is false (default) it takes the largest
+    ! POSITIVE projection.
+    ! If mag is true it takes the largest MAGNITUDE projection
+    logical, intent(in), optional :: mag
     integer :: idx
     real(sp) :: spc(size(vin))
     integer :: i
@@ -1294,7 +1299,15 @@ contains
     ! Find the largest contributing space-vector
     ! We _only_ compare against the projected
     ! vector onto the normal length of the vector
-    spc(:)  = abs( SPC_PROJ(space,vin) )
+    if ( present(mag) ) then
+       if ( mag ) then
+          spc(:) = abs( SPC_PROJ(space,vin) )
+       else
+          spc(:) = SPC_PROJ(space,vin)
+       end if
+    else
+       spc(:) = SPC_PROJ(space,vin)
+    end if
     ! Find the largest contributing one
     ! it does not matter whether it is plus 
     ! or minus, so long as it its magnitude
@@ -1307,13 +1320,25 @@ contains
     end do
   end function IDX_SPC_PROJ_sp
 
-  pure function IDX_SPC_PROJ_dp(space,vin) result(idx)
+  pure function IDX_SPC_PROJ_dp(space,vin,mag) result(idx)
     real(dp), intent(in) :: space(:,:), vin(:)
+    ! If mag is false (default) it takes the largest
+    ! POSITIVE projection.
+    ! If mag is true it takes the largest MAGNITUDE projection
+    logical, intent(in), optional :: mag
     integer :: idx
     real(dp) :: spc(size(vin))
     integer :: i
     idx = 1
-    spc(:)  = abs( SPC_PROJ(space,vin) )
+    if ( present(mag) ) then
+       if ( mag ) then
+          spc(:) = abs( SPC_PROJ(space,vin) )
+       else
+          spc(:) = SPC_PROJ(space,vin)
+       end if
+    else
+       spc(:) = SPC_PROJ(space,vin)
+    end if
     do i = 2 , size(vin)
        if ( spc(idx) < spc(i) ) then
           idx = i
@@ -1333,7 +1358,6 @@ contains
     a = sum(vec*vin) / VNORM(vec)
   end function VEC_PROJ_SCA_dp
 
-  
   ! Projection of 'vin' onto 'vec'
   pure function VEC_PROJ_sp(vec,vin) result(vout)
     real(sp), intent(in) :: vec(:), vin(:)
