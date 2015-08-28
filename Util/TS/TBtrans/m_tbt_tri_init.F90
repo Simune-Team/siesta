@@ -96,29 +96,28 @@ contains
 
     end do
 
-    do i = 1 , Nodes
-       ! We pass those processors which have no
-       ! electrodes assigned
-       if ( i > N_Elec ) exit
+    ! The i'th processor has the following electrodes
+    do iEl = 1 , N_Elec
 
-       ! The i'th processor has the following electrodes
-       do iEl = i , N_Elec , Nodes
+       ! The node having this electrode is
+       i = iEl - 1
+       do while ( i >= Nodes )
+          i = i - Nodes
+       end do
           
-          ! Set the name 
-          ElTri(iEl)%name = '[TRI] '//trim(Elecs(iEl)%name)
+       ! Set the name 
+       ElTri(iEl)%name = '[TRI] '//trim(Elecs(iEl)%name)
        
 #ifdef MPI
-          call MPI_Bcast(ElTri(iEl)%n,1,MPI_Integer, &
-               i-1,MPI_Comm_World,MPIerror)
-          if ( Node /= i-1 ) then
-             allocate(ElTri(iEl)%r(ElTri(iEl)%n))
-          end if
-          call MPI_Bcast(ElTri(iEl)%r,ElTri(iEl)%n,MPI_Integer, &
-               i-1,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(ElTri(iEl)%n,1,MPI_Integer, &
+            i,MPI_Comm_World,MPIerror)
+       if ( Node /= i ) then
+          allocate(ElTri(iEl)%r(ElTri(iEl)%n))
+       end if
+       call MPI_Bcast(ElTri(iEl)%r,ElTri(iEl)%n,MPI_Integer, &
+            i,MPI_Comm_World,MPIerror)
 #endif
-
-       end do
-
+       
     end do
 
     call timer('tri-init-elec',2)
@@ -216,7 +215,7 @@ contains
     ! Create tri-diagonal parts for this one...
     call ts_rgn2TriMat(N_Elec, Elecs, .true., &
        dit, tmpSp2, r_oDev, DevTri%n, DevTri%r, &
-       opt_TriMat_method, last_eq = 0, par = .false. )
+       opt_TriMat_method, last_eq = 0, par = .true. )
     call delete(tmpSp2) ! clean up
 
     DevTri%name = '[TRI] device region'

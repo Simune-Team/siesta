@@ -94,6 +94,7 @@ contains
 
     lpar = .true.
     if ( present(par) ) lpar = par
+    if ( Nodes == 1 ) lpar = .false.
 
     ! This is the size of the regional 3-diagonal matrix
     no = r%n
@@ -115,7 +116,8 @@ contains
 !$OMP parallel do default(shared), private(i)
     do i = 1 , no
        mm_col(:,i) = minmax_col(sp,r,r%r(i))
-       !print '(a,tr1,i5,tr3,2(tr1,i5),tr4,i0)','Orb: ',i,mm_col(:,i),no
+!       print '(a,tr1,i5,tr3,2(tr1,i5),'' d'',tr1,i4,tr4,i0)', &
+!            'Orb: ',i,mm_col(:,i),mm_col(2,i)-mm_col(1,i),no
     end do
 !$OMP end parallel do
 
@@ -151,9 +153,9 @@ contains
     ! size, then we can greatly reduce the guessing step
     ! for huge systems
     i = mm_col(2,1)
-    ! the maximum size must be all that the first one connects to
-    ! the mean
-    i = sum(mm_col(2,1:i)) / i
+    ! the maximum size must be the maximum size of the connections
+    ! of the first one
+    i = maxval(mm_col(2,1:i) - mm_col(1,1:i),dim=1)
     max_block = min( no / 4 , i )
     max_block = fdf_get('TS.BTD.Block.Max',max_block)
 #ifdef TBTRANS
@@ -162,7 +164,8 @@ contains
     ! In case the orbitals of this region is much smaller than
     ! max-block, then use the half 'no'
     max_block = min(max_block , no / 2)
-    
+    max_block = max(max_block , guess_start)
+
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
@@ -174,7 +177,6 @@ contains
 
        ! If not valid tri-pattern, simply jump...
        if ( valid_tri(no,r,mm_col,guess_parts, guess_part,last_eq) /= VALID ) then
-          !print*,guess_part(1:guess_parts)
           cycle
        end if
 
@@ -201,7 +203,9 @@ contains
 #ifdef MPI
     if ( lpar ) then
        ! Select the most optimal partition scheme...
-       do i = 0 , Nodes - 1
+       ! Only check up-till the largest block that is actually searched
+       guess_step = min(Nodes-1,max_block-guess_step)
+       do i = 0 , guess_step
           if ( i == Node ) then
              call MPI_Bcast(parts, 1, MPI_Integer, i, &
                   MPI_Comm_World, MPIerror)
@@ -348,7 +352,7 @@ contains
           print *,'Error',parts,size(n_part)
           call die('Size error when guessing the tri-mat size')
        end if
-       call guess_next_part_size(no, mm_col, parts, parts, n_part)
+       call guess_next_part_size(no, mm_col, parts, n_part)
        N = N + n_part(parts)
        if ( last_eq > 0 ) then
           ! if a last-part was "forced" we do this here...
@@ -452,11 +456,11 @@ contains
   ! searching for the size of the matrix that matches that of the previous 
   ! part.
   ! We save it in n_part(part)
-  subroutine guess_next_part_size(no,mm_col,part,parts,n_part)
+  subroutine guess_next_part_size(no,mm_col,part,n_part)
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
-    integer, intent(in) :: part, parts
-    integer, intent(inout) :: n_part(parts)
+    integer, intent(in) :: part
+    integer, intent(inout) :: n_part(part)
     ! Local variables
     integer :: i, sRow, eRow, mcol
     
@@ -477,9 +481,7 @@ contains
        ! part of the tridiagonal matrix and out to the last element of
        ! this row...
        mcol = mm_col(2,i) - eRow
-       if ( n_part(part) < mcol ) then
-          n_part(part) = mcol
-       end if
+       n_part(part) = max(n_part(part),mcol)
     end do
 
     ! In case there is actually no connection, we should
@@ -681,7 +683,7 @@ contains
       if ( p1 > p2 ) then
          p1 = p1 - 1
          p2 = p2 + 1
-         Row = Row + sign * 1
+         Row = Row + sign
       end if
     end subroutine even_if_larger
 
@@ -743,6 +745,7 @@ contains
     N = 1
     Nm1 = 1
     Np1 = n_part(1)
+
     do i = 1 , parts
        
        if ( i < parts ) then
@@ -753,7 +756,9 @@ contains
        do ir = N , N + n_part(i) - 1
           if ( mm_col(1,ir) < Nm1 .or. &
                mm_col(2,ir) > Np1 ) then
-             print *,mm_col(1,ir),Nm1,Np1,mm_col(2,ir)
+             ! If this ever occur it suggests that the 
+             ! sparsity pattern is not fully symmetric !
+             print *,i,ir,Nm1,'<=',mm_col(1,ir),mm_col(2,ir),'<=',Np1
              val = - ir 
              return
           end if
@@ -766,6 +771,7 @@ contains
           ! Update the previous part
           Nm1 = Nm1 + n_part(i-1)
        end if
+
     end do
 
     if ( last_eq > 0 ) then

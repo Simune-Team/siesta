@@ -61,6 +61,9 @@ contains
 #endif
 
     use m_pivot
+#ifdef GRAPHVIZ
+    use m_pivot_methods, only : sp2graphviz
+#endif
 
     use geom_helper, only : iaorb
     use intrinsic_missing, only : SPC_PROJ, VNORM, VEC_PROJ
@@ -425,6 +428,14 @@ contains
        ! Collect all electrode down-fold regions into one
        call rgn_union(r_tmp2,r_oEl(iEl),r_tmp2)
 
+#ifdef GRAPHVIZ
+       ! If the user requests GRAPHVIZ output
+       if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. Node == 0 ) then
+          csort = trim(Elecs(iEl)%name) // '.pvt'
+          call sp2graphviz(csort,sp,pvt=r_oEl(iEl))
+       end if
+#endif
+
     end do
 
     if ( Node == 0 ) then
@@ -489,6 +500,14 @@ contains
     call rgn_Orb2Atom(r_oDev,na_u,lasto,r_aDev)
     r_oDev%name = '[O]-device'
     r_aDev%name = '[A]-device'
+#ifdef GRAPHVIZ
+    ! If the user requests GRAPHVIZ output
+    if ( fdf_get('TBT.BTD.Pivot.Graphviz',.false.) .and. Node == 0 ) then
+       csort = 'device.pvt'
+       call sp2graphviz(csort,sp,pvt=r_oDev)
+    end if
+#endif
+
 
     ! The down-folded region can "at-will" be sorted
     ! in the same manner it is seen in the device region.

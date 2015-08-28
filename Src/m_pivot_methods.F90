@@ -34,6 +34,10 @@ module m_pivot_methods
 
 #ifdef GRAPHVIZ
   public :: sp2graphviz
+  interface sp2graphviz
+     module procedure sp2graphviz_sp
+     module procedure sp2graphviz_lists
+  end interface sp2graphviz
 #endif
 
   private
@@ -1549,8 +1553,25 @@ contains
 
 #ifdef GRAPHVIZ
 
+  subroutine sp2graphviz_sp(file,sp,types,method,pvt)
+    use class_Sparsity
+    character(len=*), intent(in) :: file
+    type(Sparsity), intent(inout) :: sp
+    ! Methods applied
+    integer, intent(in), optional :: types(:)
+    integer, intent(in), optional :: method
+    type(tRgn), intent(in), optional :: pvt
 
-  subroutine sp2graphviz(file,n,nnzs,n_col,l_ptr,l_col,types,method,pvt)
+    integer :: n, n_nzs
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+
+    call attach(sp,nrows_g=n,nnzs=n_nzs,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    call sp2graphviz(file,n,n_nzs,ncol,l_ptr,l_col,types,method,pvt)
+
+  end subroutine sp2graphviz_sp
+
+  subroutine sp2graphviz_lists(file,n,nnzs,n_col,l_ptr,l_col,types,method,pvt)
     character(len=*), intent(in) :: file
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
     ! Methods applied
@@ -1724,7 +1745,7 @@ contains
            get_col(i,pvt),get_col(i,pvt),n_col(i)-1
     end subroutine print_node
 
-  end subroutine sp2graphviz
+  end subroutine sp2graphviz_lists
 #endif
 
 end module m_pivot_methods

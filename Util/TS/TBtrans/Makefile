@@ -568,7 +568,7 @@ m_overkkneig.o: precision.o siesta_geom.o sparse_matrices.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_pivot.o: class_Sparsity.o m_pivot_methods.o m_region.o
-m_pivot_methods.o: m_region.o precision.o
+m_pivot_methods.o: class_Sparsity.o m_region.o precision.o
 m_planewavematrix.o: atomlist.o dhscf.o m_planewavematrixvar.o precision.o
 m_planewavematrix.o: siesta_geom.o sparse_matrices.o
 m_planewavematrixvar.o: precision.o
@@ -1021,9 +1021,9 @@ m_tbt_proj.o: m_tbt_save.o m_ts_electype.o parallel.o precision.o timestamp.o
 m_tbt_proj.o: units.o
 m_tbt_regions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_regions.o: geom_helper.o intrinsic_missing.o m_char.o m_os.o m_pivot.o
-m_tbt_regions.o: m_region.o m_sparsity_handling.o m_ts_debug.o m_ts_electype.o
-m_tbt_regions.o: m_ts_method.o m_ts_pivot.o m_ts_sparse.o m_verbosity.o
-m_tbt_regions.o: parallel.o
+m_tbt_regions.o: m_pivot_methods.o m_region.o m_sparsity_handling.o
+m_tbt_regions.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
+m_tbt_regions.o: m_ts_sparse.o m_verbosity.o parallel.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_ncdf_io.o m_os.o m_region.o m_tbt_hs.o
 m_tbt_save.o: m_ts_electype.o m_verbosity.o parallel.o precision.o timestamp.o

@@ -1,4 +1,25 @@
 ----------------------------------------------------
+August 28, 2015 -- Nick Papior         trunk-476---ts-scf-514
+Enabled parallel device BTD formation
+
+* Enabled GRAPHVIZ output in tbtrans for device and and electrode
+  pivoting regions.
+
+* Added GRAPHVIZ routine for sparse class input
+
+* Fixed max_block to the maximum value for the first interaction range.
+
+* Corrected truncation of max_block
+
+* Limited b-casting of the partitions of the electrodes
+
+modified:
+  Src/m_pivot_methods.F90
+  Src/m_ts_rgn2trimat.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+
+----------------------------------------------------
 August 27, 2015 -- Nick Papior         trunk-476---ts-scf-513
 Tried forcing MUMPS%ICNTL(6) = 1
 
