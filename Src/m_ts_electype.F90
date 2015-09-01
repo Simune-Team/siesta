@@ -141,7 +141,7 @@ module m_ts_electype
      complex(dp), pointer :: Gamma(:), Sigma(:)
 
      ! The imaginary part in the electrode
-     real(dp) :: Eta = 7.3498067e-7_dp ! corresponds to 0.00001 eV
+     real(dp) :: Eta = 7.3498067e-6_dp ! corresponds to 0.0001 eV
 
      ! The region of the down-folded region
      type(tRgn) :: o_inD, inDpvt

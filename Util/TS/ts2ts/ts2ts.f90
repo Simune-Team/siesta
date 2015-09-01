@@ -136,9 +136,9 @@ program ts2ts
      c_dVolt = '0.01 eV'
   end if
   ! Read in contour stuff...
-  CCEmin  = fdf_get('TS.ComplexContourEmin',-3._dp,'Ry')
+  CCEmin  = fdf_get('TS.ComplexContourEmin',-35._dp * eV,'Ry')
   call e2a(CCEmin,c_CCEmin)
-  GFEta   = fdf_get('TS.biasContour.Eta',0.000001_dp,'Ry')
+  GFEta   = fdf_get('TS.biasContour.Eta',0.0001_dp*eV,'Ry')
   call e2a(GFEta,c_GFEta,prec=10,force_eV=.false.)
 
   Bulk       = fdf_get('TS.UseBulkInElectrodes',.true.)
@@ -237,7 +237,7 @@ program ts2ts
      write(*,'(a)') '# Consider changing the below "delta <E>" to 0.01 eV.'
 
   end if
-  call wcont('nEq.neq','line','simpson-mix', &
+  call wcont('nEq.neq','line','mid-rule', &
        '-|V|/2 - 5 kT','|V|/2 + 5 kT',cD=c_dVolt)
   call nl
 
@@ -249,7 +249,7 @@ program ts2ts
   Npoints = fdf_get('TS.TBT.Npoints',100)
   call assert(Npoints > 0, 'Points on the tbtrans contour has to be larger than 0')
   call e2a(abs(TBTmax-TBTmin)/Npoints,c_TBTdE,force_eV=.true.)
-  GFEta   = fdf_get('TS.TBT.Eta',0.000001_dp,'Ry')
+  GFEta   = fdf_get('TS.TBT.Eta',0.0001_dp*eV,'Ry')
   call e2a(GFEta,c_GFEta,prec=10,force_eV=.false.)
 
   ! Print out the TBTrans options

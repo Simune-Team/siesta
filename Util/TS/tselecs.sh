@@ -308,12 +308,12 @@ function count {
 	    opt=${opts[$j]}
 	    case $opt in 
 		-${nm}${i}*)
-n=$i ;;
-esac
-let j++
-done
-done
-printf "%b" "$n"
+		    n=$i ;;
+	    esac
+	    let j++
+	done
+    done
+    printf "%b" "$n"
 }
 
 # Save the options 
@@ -334,7 +334,7 @@ reduce
 
 # Energy for the contour
 emin=$(get_opt -emin 1)
-[ ${#emin} -eq 0 ] && emin=-30.
+[ ${#emin} -eq 0 ] && emin=-35.
 emin="$emin eV"
 de=$(get_opt -de 1)
 [ ${#de} -eq 0 ] && de=0.01
@@ -483,7 +483,7 @@ else
     echo "   from ${mus[$i]} - 5 kT to ${mus[$j]}"
 fi
 echo "     delta $de eV"
-echo "      method simpson-mix"
+echo "      method mid-rule"
 echo "%endblock TS.Contour.nEq.neq-$i"
 
 # Sort all chemical potentials
@@ -497,7 +497,7 @@ for i in `seq 3 $((_mus))` ; do
 	echo "   from prev to ${mus[$i]}"
     fi
     echo "     delta $de eV"
-    echo "      method simpson-mix"
+    echo "      method mid-rule"
     echo "%endblock TS.Contour.nEq.neq-$((i-1))"
 done
 

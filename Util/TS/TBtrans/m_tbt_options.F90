@@ -202,7 +202,7 @@ contains
 
     Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF.ReUse',.true.)
     Elecs(:)%ReUseGF = fdf_get('TBT.Elecs.GF.ReUse',Elecs(1)%ReUseGF)
-    rtmp             = fdf_get('TS.Elecs.Eta',0.00001*eV,'Ry')
+    rtmp             = fdf_get('TS.Elecs.Eta',0.0001*eV,'Ry')
     rtmp             = fdf_get('TBT.Elecs.Eta',rtmp,'Ry')
     Elecs(:)%Eta = rtmp
 

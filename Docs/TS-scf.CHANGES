@@ -1,4 +1,27 @@
 ----------------------------------------------------
+September 1, 2015 -- Nick Papior       trunk-476---ts-scf-515
+Changed default parameters for contours
+
+* The non-equilibrium contour should use mid-rule
+  and not simpson per default
+
+* The lower bound is now 35 eV per default.
+
+* The utility functions have have that reflected
+
+* Tested that it works with the au_111_capacitor example
+
+modified:
+  Src/m_ts_chem_pot.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_options.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/ts2ts/ts2ts.f90
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 August 28, 2015 -- Nick Papior         trunk-476---ts-scf-514
 Enabled parallel device BTD formation
 

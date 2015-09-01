@@ -78,8 +78,7 @@ contains
     character(len=C_N_NAME_LEN), allocatable :: tmp(:), nContours(:)
     character(len=C_N_NAME_LEN) :: tmp_one
     integer :: cur, next, prev
-    logical :: isCircle
-    logical :: isTail
+    logical :: isCircle, isTail
 
     call fdf_obsolete('TS.ComplexContour.NPoles')
 
@@ -202,24 +201,24 @@ contains
           if ( tmp_one(2:2) == 'c' ) then
              ! the circle contour
              Eq_io(i)%part = 'circle'
-             Eq_io(i)%N  = 30
-             Eq_io(i)%cN = '30'
+             Eq_io(i)%N = 34
+             write(Eq_io(i)%cN,'(i0)') Eq_io(i)%N
              if ( tmp_one(4:4) == 'l' ) then ! left
-                Eq_io(i)%ca = '-3. Ry + V/2'
-                Eq_io(i)%a  = -3._dp + Volt * .5_dp
+                Eq_io(i)%ca = '-35. eV + V/2'
+                Eq_io(i)%a  = - 35._dp * eV + Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT + V/2'
                 Eq_io(i)%b  = -10._dp * mus(c_mu)%kT + Volt * .5_dp
              else ! must be right
-                Eq_io(i)%ca = '-3. Ry - V/2'
-                Eq_io(i)%a  = -3._dp - Volt * .5_dp
+                Eq_io(i)%ca = '-35. eV - V/2'
+                Eq_io(i)%a  = - 35._dp * eV - Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT - V/2'
                 Eq_io(i)%b  = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
              Eq_io(i)%method = 'g-legendre'
           else
              Eq_io(i)%part = 'tail'
-             Eq_io(i)%N  = 8
-             Eq_io(i)%cN = '8'
+             Eq_io(i)%N = 10
+             write(Eq_io(i)%cN,'(i0)') Eq_io(i)%N
              Eq_io(i)%ca = 'prev'
              if ( tmp_one(4:4) == 'l' ) then ! left
                 Eq_io(i)%a  = -10._dp * mus(c_mu)%kT + Volt * .5_dp

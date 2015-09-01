@@ -159,42 +159,23 @@ contains
        end if
 
        ! We create the default version
-       N_nEq = 3
+       N_nEq = 1
        nullify(nEq_io,nEq_c)
        allocate(nEq_io(N_nEq),nEq_c(N_nEq))
 
        ! Create the integrals
-       nEq_io(1)%part = 'tail'
-       nEq_io(1)%name = 'tail-low'
-       write(nEq_io(1)%ca,'(2(g12.5,a))') mus(j)%mu/eV, &
-            ' eV - ', cutoff_kT * mus(j)%kT / kT ,' kT'
-       nEq_io(1)%a  = mus(j)%mu - cutoff_kT * mus(j)%kT
-       write(nEq_io(1)%cb,'(g12.5,a)') mus(j)%mu/eV,' eV'
-       nEq_io(1)%b  = mus(j)%mu
-       nEq_io(1)%cd = '0.025 eV'
-       nEq_io(1)%d = 0.025_dp * eV
-       nEq_io(1)%method = 'simpson-mix'
-
-       nEq_io(3)%part = 'tail'
-       nEq_io(3)%name = 'tail-high'
-       write(nEq_io(3)%ca,'(g12.5,a)') mus(k)%mu/eV,' eV'
-       nEq_io(3)%a  = mus(k)%mu
-       write(nEq_io(3)%cb,'(2(g12.5,a))') mus(k)%mu/eV, &
-            ' eV + ', cutoff_kT * mus(k)%kT / kT ,' kT'
-       nEq_io(3)%b  = mus(k)%mu + cutoff_kT * mus(k)%kT
-       nEq_io(3)%cd = '0.025 eV'
-       nEq_io(3)%d = 0.025_dp * eV
-       nEq_io(3)%method = 'simpson-mix'
-
-       nEq_io(2)%part = 'line'
-       nEq_io(2)%name = 'neq'
-       nEq_io(2)%ca = nEq_io(1)%cb
-       nEq_io(2)%a  = nEq_io(1)%b
-       nEq_io(2)%cb = nEq_io(3)%ca
-       nEq_io(2)%b  = nEq_io(3)%a
-       nEq_io(2)%cd = '0.01 eV'
-       nEq_io(2)%d = 0.01_dp * eV
-       nEq_io(2)%method = 'simpson-mix'
+       nEq_io(1)%part = 'line'
+       nEq_io(1)%name = 'line'
+       write(nEq_io(1)%ca,'(a,g12.5,a)') &
+            '- ',cutoff_kT * mus(j)%kT / kT ,' kT - |V|/2'
+       ! mus(j)%mu is negative
+       nEq_io(1)%a  = - cutoff_kT * mus(j)%kT + mus(j)%mu
+       write(nEq_io(1)%cb,'(a,g12.5,a)') &
+            '|V|/2 + ',cutoff_kT * mus(k)%kT / kT,' kT'
+       nEq_io(1)%b  = mus(k)%mu + cutoff_kT * mus(k)%kT
+       nEq_io(1)%cd = '0.01 eV'
+       nEq_io(1)%d = 0.01_dp * eV
+       nEq_io(1)%method = 'mid-rule'
 
        do i = 1 , N_nEq
           nEq_c(i)%c_io => nEq_io(i)
@@ -217,14 +198,12 @@ contains
     min_E = huge(1._dp)
     max_E = -huge(1._dp)
     do i = 1 , N_nEq
-       do j = 1 , nEq_c(i)%c_io%N
-          if ( real(nEq_c(i)%c(j),dp) < min_E ) then
-             min_E = real(nEq_c(i)%c(j),dp)
-          end if
-          if ( max_E < real(nEq_c(i)%c(j),dp) ) then
-             max_E = real(nEq_c(i)%c(j),dp)
-          end if
-       end do
+       if ( nEq_c(i)%c_io%a < min_E ) then
+          min_E = nEq_c(i)%c_io%a
+       end if
+       if ( max_E < nEq_c(i)%c_io%b ) then
+          max_E = nEq_c(i)%c_io%b
+       end if
     end do
 
     ! Check that no chemical potential lies more than cut-off from it
