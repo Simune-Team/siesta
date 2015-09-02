@@ -1,4 +1,21 @@
 ----------------------------------------------------
+September 2, 2015 -- Nick Papior       trunk-476---ts-scf-516
+Massive speed up of transmission calculation for non-eigenvalues
+
+* Implemented BLAS routines for the transmission calculation
+  It is now easily 10 times faster for large matrix blocks
+
+  It uses the fact that the Tr[A \Gamma] = dot(A,\Gamma^T)
+  and since \Gamma is already stored in the transpose form
+  a simple dot_product does the trick.
+
+* Started on implementing the life-time code.
+
+modified:
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 September 1, 2015 -- Nick Papior       trunk-476---ts-scf-515
 Changed default parameters for contours
 

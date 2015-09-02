@@ -30,6 +30,9 @@ module m_tbt_trik
   use m_verbosity, only : verbosity
   use m_tbt_hs
   use m_tbt_regions, only : sp_uc, sp_dev, r_aDev
+#ifdef NOT_WORKING
+  use m_tbt_regions, only : r_oEl
+#endif
   use m_tbt_regions, only : r_oDev, r_oEl_alone, r_oElpD
   use m_tbt_regions, only : r_aBuf
   use m_tbt_tri_init, only : ElTri, DevTri
@@ -140,6 +143,12 @@ contains
 ! ********************** Result arrays ***********************
     real(dp), allocatable, target :: allDOS(:,:)
     real(dp), pointer :: DOS(:,:), DOS_El(:,:)
+#ifdef NOT_WORKING
+    type tLife
+       real(dp), allocatable :: life(:)
+    end type tLife
+    type(tLife) :: life(N_Elec)
+#endif
 
     real(dp) :: T(N_Elec+1,N_Elec)
     real(dp), allocatable :: Teig(:,:,:)
@@ -435,6 +444,12 @@ contains
        no = no + io ** 2
 
        ! we have already allocated the H,S, Gamma arrays.
+
+#ifdef NOT_WORKING
+       ! Calculate size of life-time array
+       io = r_oEl(iEl)%n - TotUsedOrbs(Elecs(iEl))
+       allocate(life(iEl)%life(io))
+#endif
 
     end do
 
@@ -777,6 +792,12 @@ contains
 #else
              call downfold_SE(cE,Elecs(iEl), spH, spS, &
                   r_oElpD(iEl), ElTri(iEl)%n, ElTri(iEl)%r, nzwork,zwork)
+#ifdef NOT_WORKING
+             call downfold_SE_life(cE,Elecs(iEl), spH, spS, &
+                  r_oElpD(iEl), ElTri(iEl)%n, ElTri(iEl)%r, life(iEl)%life, &
+                  nzwork,zwork)
+             print *,sum(life(iEl)%life)
+#endif
 #endif
 
           end do
@@ -1540,7 +1561,228 @@ contains
 
   end subroutine downfold_SE
 
-    ! creation of the GF^{-1} for a certain region
+#ifdef NOT_WORKING
+
+  subroutine downfold_SE_life(cE, El, spH, spS,r,np,p,life,nwork,work)
+
+    use class_Sparsity
+    use class_zSpData1D
+    use m_ts_electype
+    use m_ts_cctype, only : ts_c_idx
+
+    use m_mat_invert
+
+    ! the current energy point
+    type(ts_c_idx), intent(in) :: cE
+    ! Electrode, this *REQUIRES* that the down-folding region
+    ! only contains the self-energies of this electrode... :(
+    type(Elec), intent(inout) :: El
+    ! The hamiltonian and overlap
+    type(zSpData1D), intent(in) :: spH, spS
+    ! The region of downfolding... (+ the region connecting to the device..)
+    type(tRgn), intent(in) :: r
+    ! number of parts that constitute the tri-diagonal region
+    integer, intent(in) :: np
+    ! parts associated
+    integer, intent(in) :: p(np)
+    ! The lifetime on the respective orbitals, all the way down
+    real(dp), intent(out) :: life(r%n-El%o_inD%n)
+    ! Work-arrays...
+    integer, intent(in) :: nwork
+    complex(dp), intent(inout), target :: work(nwork)
+
+    ! All our work-arrays...
+    complex(dp), pointer :: A(:), B(:), C(:), Y(:)
+
+    integer :: no, off, i, ii, j, jj, ierr, o_life
+    integer :: ip, itmp
+
+    complex(dp), external :: zdotu
+
+    if ( cE%fake ) return
+
+    ip = maxval(p)
+
+    ! Copy down the downfolded size...
+    no = El%o_inD%n
+
+    if ( p(np) /= no ) then
+       call die('Something went wrong... The last segment MUST be &
+            &equivalent to the down-folded region. No more, no less.')
+    end if
+
+    ! Check that there is space enough in the work array.
+    do ip = 1 , np - 1
+       itmp = p(ip) * p(ip+1) * 2 ! B,C
+       itmp = itmp  + p(ip) ** 2   ! A
+       itmp = itmp  + p(ip+1) ** 2 ! Y
+       if ( itmp > nwork ) then
+          call die('Work array is too small... A, B, C, Y')
+       end if
+    end do
+
+    ! check that the last segment also holds...
+    itmp = p(np-1) ** 2 ! A
+    itmp = itmp + p(np) ** 2 ! Y
+    if ( itmp > nwork ) then ! we do not need y here...
+       call die('Work array is too small..., A, Y-next')
+    end if
+    ! We start by pointing the Y array to the far back of the
+    ! work-array. In that way we ensure that no elements overlap
+    ! and hence we can re-use that array directly
+    
+    ! loop and convert..
+    off = 0
+    do ip = 2 , np 
+
+       ! Set up pointers
+       i = 1
+       A => work(i:i-1+p(ip-1)**2)
+
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A)
+
+       ! Now we can calculate the life-time of the electrons
+       ! The life-time is the g_ii (local Green function)
+       !   Tr[Gf_ii^0\Gamma Gf_ii^0^\dagger \Gamma]
+       ! First calculate Gf, but we retain A
+       
+       ierr = p(ip-1)
+       if ( size(El%Sigma) >= ierr**2 ) then
+          C => El%Sigma
+       else
+          call die('Sigma array too small')
+       end if
+       
+       i = 1 + ierr**2
+       B => work(i:i-1+ierr**2)
+
+       if ( ip > 2 ) then
+!$OMP parallel workshare default(shared)
+          A(:) = A(:) - Y(:)
+!$OMP end parallel workshare
+       else
+          Y => El%Sigma
+       end if
+       
+       ! Calculate Gf^0
+       call mat_invert(A,B,ierr,MI_IN_PLACE_LAPACK)
+       
+       ! Calculate the Gamma function
+       ! \Gamma ^ T = (\Sigma - \Sigma^\dagger)^T
+!$OMP parallel do default(shared), private(j,i,ii,jj)
+       do j = 1 , ierr
+          ii = ierr * ( j - 1 )
+          jj = j - ierr
+          do i = 1 , j - 1
+             ii = ii + 1
+             jj = jj + ierr
+             C(ii) = Y(jj) - dconjg( Y(ii) )
+             C(jj) = Y(ii) - dconjg( Y(jj) )
+          end do
+          ii = ierr*(j-1) + j
+          C(ii) = Y(ii) - dconjg( Y(ii) )
+       end do
+!$OMP end parallel do
+
+       ! Calculate matrix product
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','T',ierr,ierr,ierr,dcmplx(1._dp,0._dp), &
+            A,ierr,C,ierr,dcmplx(0._dp,0._dp),B,ierr)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','C',ierr,ierr,ierr,dcmplx(1._dp,0._dp), &
+            B,ierr,A,ierr,dcmplx(0._dp,0._dp),El%Sigma,ierr)
+
+       ! Calculate trace
+       do i = 1 , ierr
+          ! Calculate offset
+          j = (i-1) * ierr + 1
+          life(off+i) = - real( zdotu(ierr,El%Sigma(j),1,C(j),1) ,dp)
+       end do
+
+       ! Reassign pointers
+       i = 1 + p(ip-1)**2
+       B => work(i:i-1+p(ip)*p(ip-1))
+       i = i + p(ip)*p(ip-1)
+       C => work(i:i-1+p(ip)*p(ip-1))
+
+       ! Ensures that Y is not overwritten
+       i = off + p(ip-1)
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),B)
+
+       ! increment offset
+       off = off + p(ip-1)
+
+       ! re-point Y
+       if ( ip == np ) then
+          ! Sigma should have been emptied by the previous loops :)
+          Y => El%Sigma(:)
+          if ( no /= p(np) ) call die('must be enforced')
+       else
+          Y => work(nwork-p(ip)**2+1:nwork)
+       end if
+
+       ! Calculate: [An-1 - Yn-1] ^-1 Cn
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',p(ip-1),p(ip),p(ip-1),dcmplx(1._dp,0._dp), &
+            A,p(ip-1),B,p(ip-1),dcmplx(0._dp,0._dp),C,p(ip))
+
+       call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B)
+
+       ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',p(ip),p(ip),p(ip-1),dcmplx(1._dp,0._dp), &
+            B,p(ip),C,p(ip-1),dcmplx(0._dp,0._dp),Y,p(ip))
+
+    end do
+
+    ! At this point we should be left with the last segment
+    ! which is the self-energy projected into the device region...
+    if ( r%n /= off + p(np) ) then
+       print *,r%n,off+p(np)
+       call die('Error in regional size, should not be encountered')
+    end if
+        
+    ! Create Gamma...
+    ! \Gamma ^ T = (\Sigma - \Sigma^\dagger)^T
+!$OMP parallel do default(shared), private(j,i,ii,ip)
+    do j = 1 , no
+       ii = no * ( j - 1 )
+       ip = j - no
+       do i = 1 , j - 1
+          ii = ii + 1
+          ip = ip + no
+          El%Gamma(ii) = El%Sigma(ip) - dconjg( El%Sigma(ii) )
+          El%Gamma(ip) = El%Sigma(ii) - dconjg( El%Sigma(ip) )
+       end do
+       ii = no*(j-1) + j
+       El%Gamma(ii) = El%Sigma(ii) - dconjg( El%Sigma(ii) )
+    end do
+!$OMP end parallel do
+
+    ! aaaaannnnnD DONE!
+
+  end subroutine downfold_SE_life
+
+#endif
+
+  
+  ! creation of the GF^{-1} for a certain region
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
   subroutine prep_HS(Z, El, spH, spS, &
        r,off1,n1,off2,n2,M)

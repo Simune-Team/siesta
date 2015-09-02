@@ -457,57 +457,109 @@ contains
 
   end subroutine A_DOS
 
+  
   ! The simplest routine to do the transport calculation
   ! It takes the spectral function and multiplies it with
   ! the scattering matrix of the down-projected self-energy
   ! and calculates the transmission.
+  ! We do this by taking advantage of the transposed scattering
+  ! matrix: \Gamma
   subroutine A_Gamma(A_tri,El,T)
 
     type(zTriMat), intent(inout) :: A_tri ! Spectral function
     type(Elec), intent(in) :: El
     real(dp), intent(out) :: T
 
+    ! Here we need a double loop
+    integer :: no
+    integer :: i_Elec, ii, isN, in, A_i
+    integer :: j_Elec, jj, jsN, jn, A_j
+    integer :: o
+    integer, pointer :: crows(:)
     complex(dp), pointer :: A(:)
-    integer :: i, j, scat, n
 
+    ! External BLAS routine
+    complex(dp), external :: zdotu
+    
 #ifdef TBTRANS_TIMING
     call timer('A-Gamma',1)
 #endif
 
-    A => val(A_tri)
+    ! Get data from tri-diagonal matrix
+    crows => cum_rows(A_tri)
 
-    ! Initialize the transmission.
+    no = El%inDpvt%n
+
+    ! This code is based on the down-folded self-energies
+    ! which are determined by the col region
     T = 0._dp
 
-    ! This routine is probably the one that should be
-    ! optimized the most
-    ! it does the last transmission product "by element"
-    ! and hence is extremely slow for large scattering matrices.
-    ! However, in tbtrans state at development the pivoting of the
-    ! arrays meant that we could not assure the consecutive 
-    ! memory layout in the tri-diagonal case.
+    ! Loop columns
+    i_Elec = 1
+    do while ( i_Elec <= no ) 
 
-    n = El%inDpvt%n
-!$OMP parallel do default(shared), &
-!$OMP&private(j,scat,i), reduction(-:T)
-    do j = 1 , n
-       scat = (j-1) * n
-       do i = 1 , n
-          ! This algorithm requires El%Gamma to be transposed (and not
-          ! with factor i),
-          ! see: m_elec_se
-          T = T - aimag( A(index(A_tri,El%inDpvt%r(i),El%inDpvt%r(j))) * &
-               El%Gamma(scat+i) )
+       ! We start by creating a region of consecutive memory.
+       call consecutive_index(A_tri,El,i_Elec,in,ii)
+       isN = nrows_g(A_tri,in)
+
+       ! Get starting placement of column in the current block
+       ! of the spectral function (zero based)
+       if ( in == 1 ) then
+          A_i = El%inDpvt%r(i_Elec) - 1
+       else
+          A_i = El%inDpvt%r(i_Elec) - crows(in-1) - 1
+       end if
+
+       if ( ii == no ) then
+          ! The easy calculation, note that ii == no, only
+          ! if the entire electrode sits in one block
+          A => val(A_tri,in,in)
+          do o = 0 , no - 1
+             T = T - aimag(zdotu(no,A((A_i+o)*isN+A_i+1),1,El%Gamma(o*no+1),1))
+          end do
+          
+          ! Quick break of loop
+          exit
+
+       end if
+
+       ! Loop rows
+       j_Elec = 1
+       do while ( j_Elec <= no ) 
+
+          ! We start by creating a region of consecutive memory.
+          call consecutive_index(A_tri,El,j_Elec,jn,jj)
+          jsN = nrows_g(A_tri,jn)
+
+          ! Get the block with the spectral function
+          A => val(A_tri,jn,in)
+
+          if ( jn == 1 ) then
+             A_j = El%inDpvt%r(j_Elec)
+          else
+             A_j = El%inDpvt%r(j_Elec) - crows(jn-1)
+          end if
+
+          do o = 0 , ii - 1
+             T = T - aimag(zdotu(jj,A((A_i+o)*jsN+A_j),1, &
+                  El%Gamma((i_Elec-1+o)*no+j_Elec),1))
+          end do
+
+          j_Elec = j_Elec + jj
+
        end do
+       
+       i_Elec = i_Elec + ii
+
     end do
-!$OMP end parallel do
 
 #ifdef TBTRANS_TIMING
     call timer('A-Gamma',2)
 #endif
-
+    
   end subroutine A_Gamma
 
+  
   ! On entry A_tri is the spectral function
   ! on return the first El%o_inD%n x El%o_inD%n will be the
   ! G.Gamma.Gf.El%Gamma matrix
@@ -634,6 +686,7 @@ contains
 #endif
     
   end subroutine A_Gamma_Block
+
 
   subroutine TT_eigen(n,tt,nwork,work,eig)
     integer, intent(in) :: n
