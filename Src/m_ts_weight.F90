@@ -74,6 +74,63 @@ module m_ts_weight
 
 contains
 
+  subroutine read_ts_weight( )
+
+    use fdf, only : fdf_get, leqi
+    character(len=200) :: chars
+    integer :: i
+
+    ! Update the weight function
+    chars = fdf_get('TS.Weight.k.Method','correlated')
+    if ( leqi(chars,'correlated') ) then
+       TS_W_K_METHOD = TS_W_K_CORRELATED
+    else if ( leqi(chars,'uncorrelated') ) then
+       TS_W_K_METHOD = TS_W_K_UNCORRELATED
+    else
+       call die('Could not determine flag TS.Weight.k.Method, &
+            &please see manual.')
+    end if
+
+    ! The default weighting method is correlated if
+    ! atom-atom is utilised
+    TS_W_METHOD = TS_W_CORRELATED
+    chars = fdf_get('TS.Weight.Method','orb-orb')
+    ! first check whether we have correlated weighting
+    i = index(chars,'+')
+    if ( i > 0 ) then
+       ! we do have something else
+       if ( leqi(chars(1:i-1),'correlated') .or. &
+            leqi(chars(1:i-1),'corr') ) then
+          TS_W_METHOD = TS_W_CORRELATED
+       else if ( leqi(chars(1:i-1),'uncorrelated') .or. &
+            leqi(chars(1:i-1),'uncorr') ) then
+          TS_W_METHOD = 0 ! non-correlated
+       else
+          call die('Unrecognized second option for TS.Weight.Method &
+               &must be [[un]correlated+][orb-orb|tr-atom-atom|sum-atom-atom|mean]')
+       end if
+       chars = chars(i+1:)
+    end if
+    if ( leqi(chars,'orb-orb') ) then
+       TS_W_METHOD = TS_W_ORB_ORB
+       ! this does not make sense to make correlated, hence always assign
+    else if ( leqi(chars,'tr-atom-atom') ) then
+       TS_W_METHOD = TS_W_METHOD + TS_W_TR_ATOM_ATOM 
+    else if ( leqi(chars,'tr-atom-orb') ) then
+       TS_W_METHOD = TS_W_METHOD + TS_W_TR_ATOM_ORB
+    else if ( leqi(chars,'sum-atom-atom') ) then
+       TS_W_METHOD = TS_W_METHOD + TS_W_SUM_ATOM_ATOM 
+    else if ( leqi(chars,'sum-atom-orb') ) then
+       TS_W_METHOD = TS_W_METHOD + TS_W_SUM_ATOM_ORB
+    else if ( leqi(chars,'mean') ) then
+       TS_W_METHOD = TS_W_MEAN
+    else
+       call die('Unrecognized option for TS.Weight.Method &
+            &must be [[un]correlated+|][orb-orb|tr-atom-[atom|orb]|sum-atom-[atom|orb]|mean]')
+    end if
+
+  end subroutine read_ts_weight
+
   subroutine weight_DM(N_Elec,Elecs,N_mu, na_u, lasto, &
        spDM, spDMneq, spEDM, n_s, sc_off)
     

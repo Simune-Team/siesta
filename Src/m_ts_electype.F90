@@ -40,12 +40,12 @@ module m_ts_electype
 
   public :: fdf_nElec, fdf_elec
 
-  public :: assign, read_Elec
+  public :: read_Elec
   public :: create_sp2sp01
   public :: print_Elec
   public :: print_settings
-  public :: init_Elec_sim
-  public :: check_Elec, check_connectivity
+  public :: init_Elec_sim, check_Elec_sim
+  public :: check_connectivity
   public :: delete
 
   public :: in_basal_Elec
@@ -672,14 +672,11 @@ contains
     real(dp), intent(in) :: xa(3,na_u)
     
     real(dp) :: p(3), max_xa(3), contrib, min_bond
-    integer :: i, j, n_cell, ia, na
+    integer :: i, j, ia, na
 
     ! First figure out the minimum bond-length
     ia = this%idx_a
     na = TotUsedAtoms(this)
-    if ( na == 1 ) then
-       call die('One atom electrodes are not allowed')
-    end if
 
     min_bond = huge(1._dp)
     do i = 1 , na - 1
@@ -697,20 +694,6 @@ contains
     ! Calculate the pivoting table
     do i = 1 , 3
        this%pvt(i) = IDX_SPC_PROJ( cell,this%cell(:,i), mag=.true.)
-       p = cell(:,this%pvt(i))
-       ! Check that it is indeed positive.
-       ! If the projection is not positive it would result
-       ! in -k instead of k!
-       if ( VEC_PROJ_SCA(p,this%cell(:,i)) < 0._dp ) then
-          print *,trim(this%name),i,this%pvt(i)
-          print *,'System v/|v|: ',p / vnorm(p)
-          print *,'Electrode v/|v|: ',this%cell(:,i) / &
-               vnorm(this%cell(:,i))
-          call die('The electrode cell vector aligning mostly with &
-               &the system cell vector has opposite direction. &
-               &This will result in erroneous k-point sampling. &
-               &Please correct.')
-       end if
     end do
     if ( sum(this%pvt) /= 6 .or. count(this%pvt==2) /= 1 ) then
        print *, this%pvt
@@ -719,50 +702,9 @@ contains
             &Please check your simulation cells.')
     end if
 
-    ! Print out a warning if the electrode uses several cell-vectors
+    ! Calculate planes of the electrodes
     p = this%cell(:,this%t_dir)
     p = p / VNORM(p)
-    n_cell = 0
-    do i = 1 , 3 
-
-       ! find angle between unit-cell vector and electrode
-       ! transport direction
-       contrib = abs( asin( VEC_PROJ_SCA(cell(:,i),p) ) )
-
-       ! If the contribution in this cell direction is
-       ! larger than 0.01 degree we consider them to overlap
-       if ( contrib > 0.0001745_dp ) then
-          n_cell = n_cell + 1
-       end if
-    end do
-    if ( n_cell > 1 .and. IONode ) then
-       ! The electrode uses more than one cell-vector
-       ! to describe the transport direction.
-       write(*,'(a)')' *** Electrode '//trim(this%name)//' has the transport direction'
-       write(*,'(a,i0)')'     aligning with ',n_cell,' cell vectors.'
-       write(*,'(a)')'     Responsibility has been relieved of transiesta/tbtrans!'
-    end if
-    n_cell = 0
-    do i = 1 , 3
-       if ( i == this%t_dir ) cycle
-
-       ! find angle between unit-cell vector and electrode
-       ! transport direction
-       contrib = abs( asin( VEC_PROJ_SCA(this%cell(:,i),p) ) )
-
-       ! If the contribution in this cell direction is
-       ! larger than 0.01 degree we consider them to overlap
-       if ( contrib > 0.0001745_dp ) then
-          n_cell = n_cell + 1
-       end if
-    end do
-    if ( n_cell > 1 .and. IONode ) then
-       ! The electrodes own semi-infinite direction is
-       ! not uni-directional
-       write(*,'(a)')' *** Electrode '//trim(this%name)//' has the transport direction'
-       write(*,'(a,i0)')'     aligning with ',n_cell,' cell vectors of its own.'
-       write(*,'(a)')'     Responsibility has been relieved of transiesta/tbtrans!'
-    end if
 
     ! We add a vector with length of half the minimal bond length
     ! to the vector, to do the averaging 
@@ -850,6 +792,417 @@ contains
 
   end subroutine init_Elec_sim
 
+  ! Initialize variables for the electrode according
+  ! to the simulation variables
+  subroutine check_Elec_sim(this,nspin,s_cell,na_u,xa,xa_EPS,&
+       lasto, Gamma3, &
+       kcell, kdispl )
+
+    use parallel, only : IONode
+    use units, only : Pi, Ang
+    use intrinsic_missing, only : VNORM, SPC_PROJ, IDX_SPC_PROJ
+    use intrinsic_missing, only : VEC_PROJ, VEC_PROJ_SCA
+
+    use m_ts_io, only: ts_read_TSHS_opt
+
+    ! The electrode that needs to be processed
+    type(Elec), intent(inout) :: this
+    ! The number of spin components from the siesta calculation
+    integer, intent(in) :: nspin
+    ! The simulation parameters.
+    ! Unit-cell of simulation cell
+    real(dp), intent(in) :: s_cell(3,3)
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u), xa_EPS ! epsilon for space check
+    ! The last orbital of each atom
+    integer, intent(in) :: lasto(0:na_u)
+    ! Whether we check for Gamma point
+    ! If it is Gamma we do not have as strict requirements
+    logical, intent(in) :: Gamma3(3)
+    ! The transiesta kcell, kdispl
+    integer, intent(in), optional :: kcell(3,3)
+    real(dp), intent(in), optional :: kdispl(3)
+
+    integer :: this_kcell(3,3)
+    real(dp) :: p(3), contrib, min_bond
+    real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
+    real(dp) :: max_xa(3), cur_xa(3)
+    real(dp), pointer :: this_xa(:,:)
+    integer :: i, j, k, n_cell, ia, na, pvt(3), iaa
+    logical :: ldie, er, Gamma
+    
+    na = TotUsedAtoms(this)
+    if ( na == 1 ) then
+       call die('One atom electrodes are not allowed')
+    end if
+
+    ldie = .false.
+
+    ! Copy
+    cell = this%cell
+    pvt = this%pvt
+    this_xa => this%xa_used
+    xa_o(:) = xa(:,this%idx_a)
+    this_xa_o(:) = this_xa(:,1)
+
+    max_xa = 0._dp
+    er = .false.
+    iaa = this%idx_a
+    do ia = 1 , this%na_used
+       
+       do k = 0 , this%Rep(3) - 1
+       do j = 0 , this%Rep(2) - 1
+       do i = 0 , this%Rep(1) - 1
+          ! Calculate repetition vector
+          cur_xa(1) = sum(cell(1,:)*(/i,j,k/))
+          cur_xa(2) = sum(cell(2,:)*(/i,j,k/))
+          cur_xa(3) = sum(cell(3,:)*(/i,j,k/))
+          
+          ! Add the electrode distance for the ELEC atom
+          cur_xa(:) = cur_xa(:) + this_xa(:,ia)-this_xa_o(:)
+          ! Subtract the SYSTEM position
+          cur_xa(:) = cur_xa(:) - xa(:,iaa) + xa_o(:)
+          if ( VNORM(cur_xa) > VNORM(max_xa) ) then
+             max_xa = cur_xa
+             er = er .or. any( abs(max_xa) > xa_EPS )
+          end if
+
+          iaa = iaa + 1
+       end do
+       end do
+       end do
+    end do
+
+    ldie = ldie .or. er
+
+    if ( er .and. IONode ) then
+       iaa = this%idx_a
+
+       ! We need to write out the correct formatting of the electrodes.
+       ! We shift to the first electrode coordinate, and add the 
+       ! first system electrode atom. 
+       ! If the user has the %block AtomicCoord... in:
+       !    LatticeConstant         1. Ang
+       !    AtomicCoordinatesFormat    Ang
+       ! then it is direct copy paste ! :)
+       xa_o(:) = -this_xa(:,1) + xa(:,iaa)
+
+       i = iaa
+       j = iaa + TotUsedAtoms(this) - 1
+       write(*,'(a,e10.5,a)') 'The electrode coordinates does not overlap within the &
+            &required accuracy: ',xa_EPS/Ang,' Ang'
+       write(*,'(a,3(tr1,g10.4))') 'The maximal offset vector is (Ang):',max_xa/Ang
+       write(*,'(2(a,i0),2a)') 'The system coordinates of atoms ',i,' to ',j,  &
+            ' does not coincide with the electrode coordinates found in: ',trim(this%HSfile)
+       write(*,'(a)') 'This is a requirement to place the self-energy terms correctly.'
+       write(*,'(a,/,2(a,i0),a)') 'To ensure the electrode coordinates conform with &
+            &the system coordinates you can take the following list of coordinates','and &
+            &replace atoms ',i,' to ',j,' in your system AtomicCoordinatesAndAtomicSpecies block'
+       write(*,'(a,i0,a)') 'NOTICE: The listed coordinates are already arranged &
+            &with respect to atom ',i,' in your system AtomicCoordinatesAndAtomicSpecies block'
+       write(*,'(a)') 'NOTICE: You have to add the correct species label for the atoms'
+       write(*,'(a)') 'NOTICE: You can possibly do this by using this awk-command on this output:'
+       write(*,'(a,/)') "        awk '{print $1,$2,$3,1}' <OUT-file>"
+       
+       write(*,'(t3,3a20)') 'X (Ang)','Y (Ang)','Z (Ang)'
+       do ia = 1 , this%na_used
+          do k = 0 , this%Rep(3)-1
+          do j = 0 , this%Rep(2)-1
+          do i = 0 , this%Rep(1)-1
+             write(*,'(t2,3(tr1,f20.10))') &
+                  (this_xa(1,ia)+xa_o(1)+sum(cell(1,:)*(/i,j,k/)))/Ang, &
+                  (this_xa(2,ia)+xa_o(2)+sum(cell(2,:)*(/i,j,k/)))/Ang, &
+                  (this_xa(3,ia)+xa_o(3)+sum(cell(3,:)*(/i,j,k/)))/Ang
+          end do
+          end do
+          end do
+       end do
+
+    end if
+
+    iaa = this%idx_a
+    er = .false.
+    do ia = 1 , this%na_used
+       do k = 0 , this%Rep(3) - 1
+       do j = 0 , this%Rep(2) - 1
+       do i = 0 , this%Rep(1) - 1
+
+          ! Check number of orbitals for this electrode
+          ! atom
+          if ( lasto(iaa) - lasto(iaa-1) /= &
+               this%lasto_used(ia) - this%lasto_used(ia-1) ) then
+             er = .true.
+          end if
+
+          iaa = iaa + 1
+       end do
+       end do
+       end do
+    end do
+    
+    ldie = ldie .or. er
+
+    if ( er .and. IONode) then
+       write(*,'(a)') "Number of orbitals per atom in the electrode does not match the system electrode"
+       write(*,'(a)') 'Have you changed your basis size?'
+       write(*,'(t3,3a20)') "ia system","n_orb_el","n_orb_sys"
+       iaa = this%idx_a
+       do ia = 1 , this%na_used
+          do k = 0 , this%Rep(3) - 1
+          do j = 0 , this%Rep(2) - 1
+          do i = 0 , this%Rep(1) - 1
+             
+             ! Check number of orbitals for this electrode
+             ! atom
+             write(*,'(t3,3(i20))')iaa, &
+                  this%lasto_used(ia) - this%lasto_used(ia-1), &
+                  lasto(iaa) - lasto(iaa-1)
+             iaa = iaa + 1
+          end do
+          end do
+          end do
+       end do
+    end if
+
+    if ( nspin /= this%nspin ) then
+       write(*,'(a)') 'ERROR: Electrode: '//trim(this%name)
+       write(*,'(a,i0)') 'Electrode, nspin = ',this%nspin
+       write(*,'(a,i0)') 'transiesta, nspin = ',nspin
+       ldie = .true.
+    end if
+
+    er = .false.
+    if ( present(kcell) .and. this%kcell_check ) then
+       
+       call ts_read_TSHS_opt(this%HSfile, &
+            kscell=this_kcell,kdispl=this_kdispl, &
+            Gamma=Gamma, Bcast=.true.)
+
+       ! If the system is not a Gamma calculation, then the file must
+       ! not be either (the repetition will only increase the number of
+       ! k-points, hence the above)
+       do j = 1 , 3
+          k = this%Rep(j)
+          if ( j == this%t_dir ) cycle
+          do i = 1 , 3
+             if ( i == this%t_dir ) cycle
+             if ( j == i ) then
+                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
+             else 
+                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
+             end if
+          end do
+          er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
+       end do
+       
+       ! We still require that the offset in the T-direction is the same
+       ! is this even necessary?
+       er = er .or. &
+            ( abs(this_kdispl(this%t_dir) - kdispl(pvt(this%t_dir))) > 1.e-7_dp )
+       if ( er .and. IONode ) then
+          
+          write(*,'(a)') 'Incompatible k-grids...'
+          write(*,'(a)') 'Electrode file k-grid:'
+          do j = 1 , 3
+             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),this_kdispl(j)
+          end do
+          write(*,'(a)') 'System k-grid:'
+          do j = 1 , 3
+             write(*,'(3(i4,tr1),f8.4)') (kcell(i,j),i=1,3),kdispl(j)
+          end do
+          write(*,'(a)') 'Electrode file k-grid should be:'
+          do j = 1 , 3
+             this_kcell(:,j) = kcell(:,pvt(j)) * this%Rep(j)
+             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(pvt(j))
+          end do
+          
+       end if
+
+    else
+       
+       call ts_read_TSHS_opt(this%HSfile, Gamma=Gamma, Bcast=.true.)
+
+    end if
+
+    ldie = ldie .or. er
+
+    if ( Gamma ) then
+       write(*,'(a)') 'Electrode: '//trim(this%name)//' is a Gamma-only &
+            &calculation, this is not feasible.'
+       ldie = .true.
+    end if
+
+    if ( ldie ) then
+       call die("The electrode does not conform with the system settings. &
+            &Please correct accordingly.")
+    end if
+
+    ! Ensure that there are no k-points along any mis-aligned
+    ! unit-cells.
+    ! This will allow rotated unit-cells used in transiesta/tbtrans
+    do i = 1 , 3
+       p = s_cell(:,this%pvt(i))
+       ! Check that it is indeed positive.
+       ! If the projection is not positive it would result
+       ! in -k instead of k!
+       if ( VEC_PROJ_SCA(p,this%cell(:,i)) < 0._dp .and. &
+            .not. Gamma3(this%pvt(i)) ) then
+          print *,trim(this%name),i,this%pvt(i)
+          print *,'System v/|v|: ',p / vnorm(p)
+          print *,'Electrode v/|v|: ',this%cell(:,i) / vnorm(this%cell(:,i))
+          call die('The electrode cell vector aligning mostly with &
+               &the system cell vector has opposite direction. &
+               &This will result in erroneous k-point sampling. &
+               &Please correct.')
+       end if
+    end do
+    if ( sum(this%pvt) /= 6 .or. count(this%pvt==2) /= 1 ) then
+       print *, this%pvt
+       call die('The pivoting table for the electrode unit-cell, &
+            &onto the simulation unit-cell is not unique. &
+            &Please check your simulation cells.')
+    end if
+
+    ! Print out a warning if the electrode uses several cell-vectors
+    p = this%cell(:,this%t_dir)
+    p = p / VNORM(p)
+    n_cell = 0
+    do i = 1 , 3 
+
+       ! find angle between unit-cell vector and electrode
+       ! transport direction
+       contrib = abs( asin( VEC_PROJ_SCA(s_cell(:,i),p) ) )
+
+       ! If the contribution in this cell direction is
+       ! larger than 0.01 degree we consider them to overlap
+       if ( contrib > 0.0001745_dp ) then
+          n_cell = n_cell + 1
+       end if
+    end do
+    if ( n_cell > 1 .and. IONode ) then
+       ! The electrode uses more than one cell-vector
+       ! to describe the transport direction.
+       write(*,'(a)')' *** Electrode '//trim(this%name)//' has the transport direction'
+       write(*,'(t5,a,i0,a)')'aligning with ',n_cell,' cell vectors.'
+       write(*,'(t5,a)')'Responsibility has been relieved from &
+            &transiesta/tbtrans!'
+    end if
+    n_cell = 0
+    do i = 1 , 3
+       if ( i == this%t_dir ) cycle
+
+       ! find angle between unit-cell vector and electrode
+       ! transport direction
+       contrib = abs( asin( VEC_PROJ_SCA(this%cell(:,i),p) ) )
+
+       ! If the contribution in this cell direction is
+       ! larger than 0.01 degree we consider them to overlap
+       if ( contrib > 0.0001745_dp ) then
+          n_cell = n_cell + 1
+       end if
+    end do
+    if ( n_cell > 1 .and. IONode ) then
+       ! The electrodes own semi-infinite direction is
+       ! not uni-directional
+       write(*,'(a)')' *** Electrode '//trim(this%name)//' has the transport direction'
+       write(*,'(t5,a,i0,a)')'aligning with ',n_cell,' cell vectors of its own.'
+       write(*,'(t5,a)')'Responsibility has been relieved from &
+            &transiesta/tbtrans!'
+    end if
+
+    ! We add a vector with length of half the minimal bond length
+    ! to the vector, to do the averaging 
+    ! not on-top of an electrode atom.
+    p = p * min_bond
+
+    ! Store the start of the electrode here
+    iaa = this%idx_a
+    
+    ! Create the basal plane of the electrode
+    ! Decide which end of the electrode we use
+    ! TODO, correct for systems not having the last electrode atom
+    ! farthest from the device region (or correct intrinsically)
+    if ( this%inf_dir == INF_POSITIVE ) then
+       ! We need to utilize the last atom
+       this%p%c = xa(:,iaa+na-1)
+       this%p%c = this%p%c + p ! add vector
+    else
+       this%p%c = xa(:,iaa)
+       this%p%c = this%p%c - p ! subtract vector
+    end if
+    
+    ! Normal vector to electrode transport direction
+    this%p%n = SPC_PROJ(s_cell,this%cell(:,this%t_dir))
+    this%p%n = this%p%n / VNORM(this%p%n) ! normalize
+
+    ! The distance parameter
+    this%p%d = sum( this%p%n(:)*this%p%c(:) )
+
+    ! Create the box cell for the electrode
+    ! This enables the Hartree correction for the 
+    ! electrode region
+    ! The box-cell will be extended by the bond-length
+    ! to make "as big as box as viable"
+    min_bond = min_bond * 2._dp ! re-scale to actual bond-length
+    do i = 1 , 3
+       ! Get the lower left corner of the electrode
+       p(i) = minval(xa(i,iaa:iaa+na-1))
+       ! The box extends back one bond-length in each direction.
+       p(i) = p(i) - min_bond
+       ! Get the maximum in each direction
+       ! In principle this should probably be the electrode
+       ! unit-cell vectors, however, for non-periodic electrodes
+       ! this might not be such a good choice.
+       ! The best thing would be to check the periodic directions,
+       ! and in those directions assign the vectors in those directions
+       ! always having the third vector equalling the cell transport
+       ! direction.
+       ! NOTE TODO : this is for now a "stupid" implementation.
+       max_xa(i) = maxval(xa(i,iaa:iaa+na-1))
+       max_xa(i) = max_xa(i) + min_bond
+       this%box%v(:,i) = 0._dp
+       this%box%v(i,i) = max_xa(i) - p(i)
+
+    end do
+    do i = 1 , 3
+       ! If there is no periodicity of the electrode in this
+       ! direction we move the center of the box by the 
+       ! unit-cell. This ensures that for non-periodic
+       ! cells, we still have an equal weight of the
+       ! lifting of the Hartree potential.
+       if ( this%nsc(i) == 1 ) then
+          p(:) = p(:) - 0.5_dp * this%cell(:,i)
+       end if
+    end do
+    ! p now contains the origin of the box
+    this%box%c(:) = p(:)
+    ! For now the box vectors are defined using the unit-cell of
+    ! the electrode.
+    ! Note that we extend the unit-cell by the bond-length
+    ! We will really try to extend the box to be
+    ! as large as possible to retain the potential surrounding
+    ! the electrode as much as possible.
+    ! This is really important for periodic calculations
+    ! where it is necessary to have the lifting potential
+    ! in the entire box of the electrode
+    do i = 1 , 3
+       ! Remember that we start one bond-length "below"
+       ! and the unit-cell is always "one bond length" too
+       ! long (for periodic reasons)
+       p(:) = min_bond
+       ! Create a unit-vector along the unit-cell direction
+       max_xa(:) = this%cell(:,i) / VNORM(this%cell(:,i))
+       p(:) = VEC_PROJ(max_xa,p)
+       p(:) = this%cell(:,i) + p(:)
+       this%box%v(:,i) = SPC_PROJ(s_cell,p)
+    end do
+
+    if ( ldie ) then
+       call die('Erroneous electrode setup, check out-put')
+    end if
+
+  end subroutine check_Elec_sim
+
   function equal_el_el(this1,this2) result(equal)
     type(Elec), intent(in) :: this1, this2
     logical :: equal
@@ -870,30 +1223,6 @@ contains
     equal = trim(this%name) == trim(str)
   end function equal_str_el
 
-  subroutine assign(this,D,HSfile,GFfile, &
-       na_u,na_used,no_u,no_s,no_used, &
-       RepA1,RepA2,RepA3)
-    type(Elec), intent(inout) :: this
-    character, optional, intent(in) :: D
-    character(len=*), intent(in), optional :: HSfile, GFfile
-    integer, intent(in), optional :: na_u, na_used, no_u, no_s, no_used
-    integer, intent(in), optional :: RepA1, RepA2, RepA3
-
-    if (present(D)) call die('Wrong usage of Elec-type assign')
-
-    if (present(HSfile)) this%HSfile = HSfile
-    if (present(GFfile)) this%GFfile = GFfile
-    if (present(na_u)) this%na_u = na_u
-    if (present(na_used)) this%na_used = na_used
-    if (present(no_u)) this%no_u = no_u
-    if (present(no_s)) this%no_s = no_s
-    if (present(no_used)) this%no_used = no_used
-    if (present(RepA1)) this%Rep(1) = RepA1
-    if (present(RepA2)) this%Rep(2) = RepA2
-    if (present(RepA3)) this%Rep(3) = RepA3
-
-  end subroutine assign
-  
   elemental function Name_(this) result(name)
     type(Elec), intent(in) :: this
     character(len=NAME_LEN) :: Name
@@ -1179,249 +1508,7 @@ contains
 
   end subroutine delete_
 
-  ! Routine for checking the validity of the electrode against the 
-  ! system setup in transiesta
-  subroutine check_Elec(this,nspin,ucell,na_u,xa,lasto,xa_EPS, &
-       kcell,kdispl)
-
-    use intrinsic_missing, only : VNORM, SPC_PROJ, VEC_PROJ
-    use parallel, only : IONode
-    use units, only : Ang
-    use m_ts_io, only : ts_read_TSHS_opt
-#ifdef MPI
-    use mpi_siesta, only : MPI_Bcast, MPI_Logical, MPI_Comm_World
-#endif
-
-    type(Elec), intent(inout) :: this
-    integer, intent(in) :: nspin,na_u
-    real(dp), intent(in) :: ucell(3,3)
-    real(dp), intent(in) :: xa(3,na_u)
-    integer, intent(in) :: lasto(0:na_u)
-    real(dp), intent(in) :: xa_EPS
-    integer, intent(in), optional :: kcell(3,3) ! optional as then we can control when to check
-    real(dp), intent(in), optional :: kdispl(3)
-
-    ! Local variables
-    integer :: i,j,k, ia, iaa, this_kcell(3,3)
-    logical :: ldie, er, Gamma
-    real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
-    real(dp) :: max_xa(3), cur_xa(3)
-    real(dp), pointer :: this_xa(:,:)
-    integer :: pvt(3)
-#ifdef MPI
-    integer :: MPIerror
-#endif
-
-    ldie = .false.
-
-    this_xa => this%xa_used
-    xa_o(:) = xa(:,this%idx_a)
-    this_xa_o(:) = this_xa(:,1)
-    cell = this%cell
-    pvt = this%pvt
-
-    max_xa = 0._dp
-    iaa = this%idx_a
-    er = .false.
-    do ia = 1 , this%na_used
-       
-       do k = 0 , this%Rep(3) - 1
-       do j = 0 , this%Rep(2) - 1
-       do i = 0 , this%Rep(1) - 1
-          ! Calculate repetition vector
-          cur_xa(1) = sum(cell(1,:)*(/i,j,k/))
-          cur_xa(2) = sum(cell(2,:)*(/i,j,k/))
-          cur_xa(3) = sum(cell(3,:)*(/i,j,k/))
-          
-          ! Add the electrode distance for the ELEC atom
-          cur_xa(:) = cur_xa(:) + this_xa(:,ia)-this_xa_o(:)
-          ! Subtract the SYSTEM position
-          cur_xa(:) = cur_xa(:) - xa(:,iaa) + xa_o(:)
-          if ( VNORM(cur_xa) > VNORM(max_xa) ) then
-             max_xa = cur_xa
-             er = er .or. any( abs(max_xa) > xa_EPS )
-          end if
-
-          iaa = iaa + 1
-       end do
-       end do
-       end do
-    end do
-
-    ldie = ldie .or. er
-
-    if ( er ) then
-       
-       ! We need to write out the correct formatting of the electrodes.
-       ! We shift to the first electrode coordinate, and add the 
-       ! first system electrode atom. 
-       ! If the user has the %block AtomicCoord... in:
-       !    LatticeConstant         1. Ang
-       !    AtomicCoordinatesFormat    Ang
-       ! then it is direct copy paste ! :)
-       xa_o(:) = -this_xa(:,1) + xa(:,this%idx_a)
-
-       if ( IONode ) then
-          i = this%idx_a
-          j = this%idx_a + TotUsedAtoms(this) - 1
-          write(*,'(a,e10.5,a)') 'The electrode coordinates does not overlap within the &
-               &required accuracy: ',xa_EPS/Ang,' Ang'
-          write(*,'(a,3(tr1,g10.4))') 'The maximal offset vector is (Ang):',max_xa/Ang
-          write(*,'(2(a,i0),2a)') 'The system coordinates of atoms ',i,' to ',j,  &
-               ' does not coincide with the electrode coordinates found in: ',trim(this%HSfile)
-          write(*,'(a)') 'This is a requirement to place the self-energy terms correctly.'
-          write(*,'(a,/,2(a,i0),a)') 'To ensure the electrode coordinates conform with &
-               &the system coordinates you can take the following list of coordinates','and &
-               &replace atoms ',i,' to ',j,' in your system AtomicCoordinatesAndAtomicSpecies block'
-          write(*,'(a,i0,a)') 'NOTICE: The listed coordinates are already arranged &
-               &with respect to atom ',i,' in your system AtomicCoordinatesAndAtomicSpecies block'
-          write(*,'(a)') 'NOTICE: You have to add the correct species label for the atoms'
-          write(*,'(a)') 'NOTICE: You can possibly do this by using this awk-command on this output:'
-          write(*,'(a,/)') "        awk '{print $1,$2,$3,1}' <OUT-file>"
-
-          write(*,'(t3,3a20)') 'X (Ang)','Y (Ang)','Z (Ang)'
-          iaa = this%idx_a
-          do ia = 1 , this%na_used
-             do k = 0 , this%Rep(3)-1
-             do j = 0 , this%Rep(2)-1
-             do i = 0 , this%Rep(1)-1
-                write(*,'(t2,3(tr1,f20.10))') &
-                     (this_xa(1,ia)+xa_o(1)+sum(cell(1,:)*(/i,j,k/)))/Ang, &
-                     (this_xa(2,ia)+xa_o(2)+sum(cell(2,:)*(/i,j,k/)))/Ang, &
-                     (this_xa(3,ia)+xa_o(3)+sum(cell(3,:)*(/i,j,k/)))/Ang
-             end do
-             end do
-             end do
-          end do
-          
-       end if
-       
-    end if
-
-    iaa = this%idx_a
-    er = .false.
-    do ia = 1 , this%na_used
-       do k = 0 , this%Rep(3) - 1
-       do j = 0 , this%Rep(2) - 1
-       do i = 0 , this%Rep(1) - 1
-
-          ! Check number of orbitals for this electrode
-          ! atom
-          if ( lasto(iaa) - lasto(iaa-1) /= &
-               this%lasto_used(ia) - this%lasto_used(ia-1) ) then
-             er = .true.
-          end if
-
-          iaa = iaa + 1
-       end do
-       end do
-       end do
-    end do
-    
-    ldie = ldie .or. er
-    if ( er ) then
-       if ( IONode ) then
-          write(*,'(a)') "Number of orbitals per atom in the electrode does not match the system electrode"
-          write(*,'(a)') 'Have you changed your basis size?'
-          write(*,'(t3,3a20)') "ia system","n_orb_el","n_orb_sys"
-          iaa = this%idx_a
-          do ia = 1 , this%na_used
-             do k = 0 , this%Rep(3) - 1
-             do j = 0 , this%Rep(2) - 1
-             do i = 0 , this%Rep(1) - 1
-
-              ! Check number of orbitals for this electrode
-              ! atom
-                write(*,'(t3,3(i20))')iaa, &
-                     this%lasto_used(ia) - this%lasto_used(ia-1), &
-                     lasto(iaa) - lasto(iaa-1)
-                iaa = iaa + 1
-             end do
-             end do
-             end do
-          end do
-       end if
-
-    end if
-
-    if ( nspin /= this%nspin ) then
-       write(*,*)"ERROR: Electrode: "//trim(this%name)
-       write(*,*) '  nspin=',nspin,' expected:', this%nspin
-       ldie = .true.
-    end if
-
-    er = .false.
-    if ( present(kcell) .and. this%kcell_check ) then
-
-       call ts_read_TSHS_opt(this%HSfile, &
-            kscell=this_kcell,kdispl=this_kdispl, &
-            Gamma=Gamma, &
-            Bcast=.true.)
-
-       ! If the system is not a Gamma calculation, then the file must
-       ! not be either (the repetition will only increase the number of
-       ! k-points, hence the above)
-       do j = 1 , 3
-          k = this%Rep(j)
-          if ( j == this%t_dir ) cycle
-          do i = 1 , 3
-             if ( i == this%t_dir ) cycle
-             if ( j == i ) then
-                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
-             else 
-                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
-             end if
-          end do
-          er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
-       end do
-       
-       ! We still require that the offset in the T-direction is the same
-       ! is this even necessary?
-       er = er .or. ( abs(this_kdispl(this%t_dir) - kdispl(pvt(this%t_dir))) > 1.e-7_dp )
-       if ( er .and. IONode ) then
-          write(*,'(a)') 'Incompatible k-grids...'
-          write(*,'(a)') 'Electrode file k-grid:'
-          do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),this_kdispl(j)
-          end do
-          write(*,'(a)') 'System k-grid:'
-          do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (kcell(i,j),i=1,3),kdispl(j)
-          end do
-          write(*,'(a)') 'Electrode file k-grid should be:'
-          this_kcell(:,1) = kcell(:,pvt(1)) * this%Rep(1)
-          this_kcell(:,2) = kcell(:,pvt(2)) * this%Rep(2)
-          this_kcell(:,3) = kcell(:,pvt(3)) * this%Rep(3)
-          do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(pvt(j))
-          end do
-       end if
-
-    else
-       
-       call ts_read_TSHS_opt(this%HSfile, Gamma=Gamma, Bcast=.true.)
-
-    end if
-
-    ldie = ldie .or. er
-
-#ifdef MPI
-    call MPI_Bcast(ldie,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
-#endif
-
-    if ( Gamma ) then
-       write(*,*) 'Electrode : '//trim(this%name)//' is a Gamma-only calculation &
-            &this is not feasible.'
-       ldie = .true.
-    end if
-
-    if ( ldie ) then
-       call die("The electrode does not conform with the system settings. &
-            &Please correct accordingly.")
-    end if
-
-  end subroutine check_Elec
-
+  
   subroutine check_connectivity(this)
 
     use parallel, only : IONode
@@ -1798,7 +1885,7 @@ contains
        write(*,f11)  '  Will NOT check the kgrid-cell! Ensure sampling!'
     end if
 #endif
-    write(*,f9)  '  Electrode imaginary Eta', this%Eta/eV,' eV'
+    write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
 #ifndef TBTRANS
     if ( present(plane) ) then
     if ( plane ) then

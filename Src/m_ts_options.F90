@@ -1,15 +1,9 @@
 module m_ts_options
 
   use precision, only : dp
-  use siesta_options, only : FixSpin, isolve, SOLVE_TRANSI
 
-  ! SIESTA-options also read by transiesta
-  use siesta_options, only : wmix, kT => Temp, dDtol, dHtol
-
-  use sys, only : die
-
-  use m_ts_electype
-  use m_ts_chem_pot
+  use m_ts_electype, only : Elec
+  use m_ts_chem_pot, only : ts_mu
   use m_ts_tdir
 
   implicit none
@@ -34,14 +28,16 @@ module m_ts_options
   logical :: TS_DE_save = .false.
   ! Whether the siesta calculation should also fix the hartree potential
   logical :: Vha_fix = .false.
-  ! whether we should only save the overlap matricx
-  logical :: onlyS = .false. 
+  ! Fraction of the Hartree potential fix (limits fluctuations)
+  real(dp) :: Vha_frac = 1._dp
   ! whether we will use the bias-contour
   logical :: IsVolt = .false.
   ! Whether the system has an electronic temperature gradient
   logical :: has_T_gradient = .false.
   ! maximum difference between chemical potentials
   real(dp) :: Volt = 0._dp
+  ! The temperature for transiesta calculations
+  real(dp) :: ts_kT
   ! Electrodes and different chemical potentials
   integer :: N_Elec = 0
   type(Elec), allocatable, target :: Elecs(:)
@@ -67,6 +63,10 @@ module m_ts_options
   ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
   logical :: VoltageInC = .false.
 
+  ! If false we use the cell boundary for the Hartree fix, otherwise
+  ! we choose the electrode with the largest basal-palen
+  logical :: elec_basal_plane = .false.
+
   ! File name for reading in the grid for the Hartree potential
   character(len=150) :: Hartree_fname = ' '
 
@@ -78,75 +78,54 @@ module m_ts_options
   ! The user can request to analyze the system, returning information about the 
   ! tri-diagonalization partition and the contour
   logical :: TS_Analyze = .false.
-  
-contains
-  
-  subroutine read_ts_options(ucell, Nmove, na_u, xa, lasto)
 
-    use alloc
-    use files, only : slabel
-    use fdf, only : fdf_get, fdf_deprecated, fdf_obsolete
-    use fdf, only : leqi
-    use parallel, only: IOnode, Nodes
-    use units, only: eV, Ang, Kelvin
+  ! List of private formats for printing information
+  character(len=*), parameter, private :: f1 ='(''ts: '',a,t53,''='',tr4,l1)'
+  character(len=*), parameter, private :: f10='(''ts: '',a,t53,''='',tr4,a)'
+  character(len=*), parameter, private :: f11='(''ts: '',a)'
+  character(len=*), parameter, private :: f5='(''ts: '',a,t53,''='',i5,a)'
+  character(len=*), parameter, private :: f20='(''ts: '',a,t53,''='',i0,'' -- '',i0)'
+  character(len=*), parameter, private :: f6='(''ts: '',a,t53,''='',f10.4,tr1,a)'
+  character(len=*), parameter, private :: f7='(''ts: '',a,t53,''='',f12.6,tr1,a)'
+  character(len=*), parameter, private :: f8='(''ts: '',a,t53,''='',f10.4)'
+  character(len=*), parameter, private :: f9='(''ts: '',a,t53,''='',tr1,e9.3)'
+  character(len=*), parameter, private :: f15='(''ts: '',a,t53,''='',2(tr1,i0,'' x''),'' '',i0)'
+
+contains
+
+
+  ! We have separated the options routines to only deal 
+  ! with their respective parts
+
+  ! > Read generic options for transiesta which has
+  ! nothing to do with the electrodes or the chemical potentials
+  subroutine read_ts_generic( cell )
+
+    use fdf, only : fdf_get, leqi
     use intrinsic_missing, only : VNORM, IDX_SPC_PROJ, EYE
 
-    use m_os, only : file_exist
+    use siesta_options, only : wmix, dDtol, dHtol
 
-    use m_ts_cctype
-    use m_ts_global_vars, only : TSmode
-    use m_ts_io, only : ts_read_TSHS_opt
+    use m_ts_global_vars, only: TSmode, onlyS
+    use m_ts_method, only: TS_FULL, TS_BTD, TS_MUMPS, ts_method
 
-    use m_ts_contour
-    use m_ts_contour_eq,  only : N_Eq_E
-    use m_ts_contour_neq, only : N_nEq_E, contour_nEq_warnings
-#ifdef TRANSIESTA_WEIGHT_DEBUG
-    use m_ts_contour_eq,  only : Eq_E, ID2idx, c2weight_eq
-    use m_ts_contour_neq, only : nEq_E, N_nEq_ID, c2weight_neq, ID2mu, nEq_ID
-#endif
-
-    use m_ts_io_contour
-    use m_ts_method
-    use m_ts_weight
-    use m_ts_charge
-    use m_ts_hartree, only: elec_basal_plane
+    use m_ts_weight, only : read_ts_weight
+    use m_ts_charge, only : read_ts_charge_cor
 
 #ifdef SIESTA__MUMPS
-    use m_ts_mumps_init, only : MUMPS_mem, MUMPS_ordering, MUMPS_block
+    use m_ts_mumps_init, only : read_ts_mumps
 #endif
 
-    implicit none
-    
-! *******************
-! * INPUT variables *
-! *******************
-    real(dp), intent(in) :: ucell(3,3)
-    integer,  intent(in) :: Nmove, na_u, lasto(0:na_u)
-    real(dp), intent(in) :: xa(3,na_u)
+    ! Input variables
+    real(dp), intent(in) :: cell(3,3)
 
-! *******************
-! * LOCAL variables *
-! *******************
-    real(dp) :: tmp, tmp3(3), tmp33(3,3), min_bond_elec
-    logical :: err
+    ! Local variables
+    real(dp) :: tmp33(3,3)
     character(len=200) :: c, chars
-    integer :: i, j, idx, idx1, idx2, itmp3(3)
-#ifdef TRANSIESTA_WEIGHT_DEBUG
-    integer, allocatable :: ID_mu(:)
-    real(dp), allocatable :: rnID(:), rn(:), rw(:)
-    type(ts_c_idx) :: cE
-    complex(dp) :: W, ZW
-#endif
 
-    type(ts_mu) :: tmp_mu
-    ! External routines
-    real(dp) :: dot
-    external :: dot
-
-    if (IOnode) then
-       write(*,*)
-       write(*,11) repeat('*', 62)
-    end if
+    ! This has to be the first routine to be read
+    if ( N_mu /= 0 ) call die('read_ts_generic: error in programming')
+    if ( N_Elec /= 0 ) call die('read_ts_generic: error in programming')
 
     ! Read in general values that should be used in the electrode generation
     ! I.e. these FDF-parameters are used for diagon runs with transiesta
@@ -159,55 +138,28 @@ contains
     ! This will only work for two electrodes, or if the plane
     ! coincides with the electrode plane
     Vha_fix    = fdf_get('Hartree.Fix',.false.)
+    Vha_frac   = fdf_get('Hartree.Fix.Frac',1._dp)
     c          = fdf_get('Hartree.Fix.Plane','A3')
 
     ! Pre-select the "transport direction"
     if ( leqi(c,'A1').or.leqi(c,'A') ) then
        ts_tidx = 1
-       c = 'A1'
     else if ( leqi(c,'A2').or.leqi(c,'B') ) then
        ts_tidx = 2
-       c = 'A2'
     else if ( leqi(c,'A3').or.leqi(c,'C') ) then
        ts_tidx = 3
-       c = 'A3'
     else
        call die('Hartree.Fix.Plane erroneously setup.')
     end if
+
     ! Calculate Cartesian transport direction
     call eye(3,tmp33)
-    ts_tdir = IDX_SPC_PROJ(tmp33,ucell(:,ts_tidx),mag = .true.)
+    ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx),mag = .true.)
 
-    if ( TS_HS_save .and. FixSpin ) then
-       write(*,*) 'Fixed spin not possible with Transiesta!'
-       write(*,*) 'Electrodes with fixed spin is not possible with Transiesta!'
-       call die('Stopping code')
-    end if
-
-    if ( onlyS .or. .not. TSmode ) then
-       if ( IONode ) then
-          write(*,1) 'Save H and S matrices', TS_HS_save
-          write(*,1) 'Save DM and EDM matrices', TS_DE_save
-          if ( Vha_fix ) then
-             write(*,10) 'Fix Hartree potential at cell boundary', trim(c)
-          else
-             write(*,11) 'Do not fix Hartree potential'
-             if ( TS_DE_save ) then
-                write(*,11) '*** If you do not use Hartree.Fix you cannot &
-                     &use the TSDE file for restart in TranSIESTA.'
-                write(*,11) '*** Please note this!'
-             end if
-          end if
-          write(*,1) 'Only save the overlap matrix S', onlyS
-          write(*,11) repeat('*', 62)
-          write(*,*)
-       end if
-       return
-    end if
-
-    ! initialize regions of the electrodes and device
-    ! the number of LCAO orbitals on each atom will not change
-    call ts_init_regions('TS',na_u,lasto)
+    ! Immediately return from transiesta when this occurs
+    ! no settings from the intrinsic transiesta routines
+    ! are needed.
+    if ( onlyS .or. .not. TSmode ) return
 
     ! In transiesta this HAS to be true !
     Vha_fix = .true.
@@ -241,29 +193,6 @@ contains
        call die('Unrecognized Transiesta solution method: '//trim(chars))
     end if
 
-#ifdef SIESTA__MUMPS
-    MUMPS_mem   = fdf_get('TS.MUMPS.Mem',20)
-    MUMPS_block = fdf_get('TS.MUMPS.BlockingFactor',112)
-    chars = fdf_get('TS.MUMPS.Ordering','auto')
-    if ( leqi(chars,'auto') ) then
-       MUMPS_ordering = 7
-    else if ( leqi(chars,'amd') ) then
-       MUMPS_ordering = 0
-    else if ( leqi(chars,'amf') ) then
-       MUMPS_ordering = 2
-    else if ( leqi(chars,'scotch') ) then
-       MUMPS_ordering = 3
-    else if ( leqi(chars,'pord') ) then
-       MUMPS_ordering = 4
-    else if ( leqi(chars,'metis') ) then
-       MUMPS_ordering = 5
-    else if ( leqi(chars,'qamd') ) then
-       MUMPS_ordering = 6
-    else
-       call die('Unknown MUMPS ordering.')
-    end if
-#endif
-
     ! currently this does not work
     chars = fdf_get('SCF.Initialize','diagon')
     chars = fdf_get('TS.SCF.Initialize',chars)
@@ -273,16 +202,6 @@ contains
     else if ( leqi(chars,'transiesta') ) then
        TS_scf_mode = 1
        chars = 'init'
-    end if
-
-    ! Whether we should always set the DM to bulk
-    ! values (by reading in from electrode DM)
-    chars = fdf_get('TS.Elecs.DM.Bulk',trim(chars))
-    DM_bulk = 0
-    if ( leqi(chars,'init') ) then
-       DM_bulk = 1
-    !else if ( leqi(chars,'scf') ) then
-    !   DM_bulk = 2
     end if
 
     chars = fdf_get('TS.BTD.Optimize','speed')
@@ -297,79 +216,64 @@ contains
 
     ! Determine whether the user wishes to only do an analyzation
     TS_Analyze = fdf_get('TS.Analyze',.false.)
-    
-    chars = fdf_get('TS.ChargeCorrection','none')
-    TS_RHOCORR_METHOD = 0
-    if ( leqi(chars,'none') ) then
-       TS_RHOCORR_METHOD = 0
-    else if ( leqi(chars,'b') .or. leqi(chars,'buffer') ) then
-       TS_RHOCORR_METHOD = TS_RHOCORR_BUFFER
-    else if ( leqi(chars,'fermi') ) then
-       TS_RHOCORR_METHOD = TS_RHOCORR_FERMI
-       ! Currently this method only works for BTD solution method
-       if ( ts_method /= TS_BTD ) then
-          call die('Fermi correction only works with BTD solution method')
-       end if
-    end if
-    TS_RHOCORR_FERMI_TOLERANCE = &
-         fdf_get('TS.ChargeCorrection.Fermi.Tolerance',0.01_dp)
-    ! Factor for charge-correction
-    TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',0.75_dp)
-    if ( 1.0_dp < TS_RHOCORR_FACTOR ) then
-       call die("Charge correction factor must be in the range [0;1]")
-    endif
-    if ( TS_RHOCORR_FACTOR < 0.0_dp ) then
-       call die("Charge correction factor must be larger than 0")
-    endif
-    ! Truncation of fermi-level change (default 1.5 eV)
-    TS_RHOCORR_FERMI_MAX = fdf_get('TS.ChargeCorrection.Fermi.Max',0.1102471_dp,'Ry')
+
+    call read_ts_charge_cor( )
+
+#ifdef SIESTA__MUMPS
+    call read_ts_mumps( )
+#endif
+
+    call read_ts_weight( )
 
     ! whether to calculate the forces or not (default calculate everything)
     Calc_Forces = fdf_get('TS.Forces',.true.)
 
+  end subroutine read_ts_generic
+
+  
+  ! > Reads the chemical potentials as well as the applied
+  ! Bias.
+  ! The bias is an intricate part of the chemical potential why it
+  ! is read in here.
+  subroutine read_ts_chem_pot( )
+
+    use fdf, only : fdf_get
+    use units, only: eV, Kelvin
+
+    use siesta_options, only : kT => Temp
+
+    use m_ts_global_vars, only: TSmode, onlyS
+    
+    use m_ts_chem_pot, only : fdf_nmu, fdffake_mu, fdf_mu, name
+
+    implicit none
+    
+! *******************
+! * LOCAL variables *
+! *******************
+    logical :: err
+    integer :: i, j
+    real(dp) :: rtmp
+
+    if ( onlyS .or. .not. TSmode ) return
+
+    ts_kT = fdf_get('TS.ElectronicTemperature',kT,'Ry')
+
     ! The sign can not be chosen from this (several mu, where to define it)
     Volt   = fdf_get('TS.Voltage',0._dp,'Ry') 
     ! Voltage situation is above 0.01 mV
-    IsVolt = abs(Volt/eV) > 0.00001_dp
-
-    ! This should never be used!!!!
-    ! It is required to fix the potential in the cell
-    call fdf_obsolete('TS.UseVFix')
-
-    ! { Entering electrode land... First we describe all the deprecated options
-
-    ! the title of the green's functions are now non-generic
-    call fdf_obsolete('TS.GFTitle')
-
-    ! The regular options for describing the electrodes can not be 
-    ! used anymore...
-    do i = 1 , 2
-       if ( i == 1 ) then
-          chars = 'Left'
-       else
-          chars = 'Right'
-       end if
-       call fdf_obsolete('TS.HSFile'//trim(chars))
-       call fdf_obsolete('TS.GFFile'//trim(chars))
-       call fdf_obsolete('TS.NumUsedAtoms'//trim(chars))
-       call fdf_obsolete('TS.ReplicateA1'//trim(chars))
-       call fdf_obsolete('TS.ReplicateA2'//trim(chars))
-    end do
-
-    ! notice that this does not have the same meaning... 
-    call fdf_deprecated('TS.UpdateDMCROnly','TS.Elecs.DM.Update')
-    call fdf_deprecated('TS.UseBulk','TS.Elecs.Bulk')
+    IsVolt = abs(Volt) > 0.00001_dp * eV
 
     ! Read in the chemical potentials
-    N_mu = fdf_nmu('TS',kT,mus)
+    N_mu = fdf_nmu('TS',ts_kT,mus)
     err = .true.
     if ( N_mu < 1 ) then
        err = .false.
-       N_mu = fdffake_mu(mus,kT,Volt)
+       N_mu = fdffake_mu(mus,ts_kT,Volt)
     end if
     do i = 1 , N_mu
        ! Default things that could be of importance
-       if ( err .and. .not. fdf_mu('TS',mus(i),kT,Volt) ) then
+       if ( err .and. .not. fdf_mu('TS',mus(i),ts_kT,Volt) ) then
           call die('Could not find chemical potential: ' &
                //trim(name(mus(i))))
        end if
@@ -377,23 +281,102 @@ contains
 
     ! We consider 10 Kelvin to be the minimum allowed
     ! temperature difference of the leads.
-    tmp = 10._dp * Kelvin
-    has_T_gradient = .false.
+    rtmp = 10._dp * Kelvin
     do j = 1 , N_mu - 1
        do i = j + 1 , N_mu
-          if ( abs(mus(i)%kT - mus(j)%kT) > tmp ) then
-             has_T_gradient = .true.
+          if ( abs(mus(i)%kT - mus(j)%kT) > rtmp ) then
+             ! If there exists a temperature gradient
+             ! we are in non-equilibrium, hence we need the 
+             ! bias-setup no matter V!
+             IsVolt = .true.
              exit
           end if
        end do
     end do
-    ! If there exists a temperature gradient
-    ! we are in non-equilibrium, hence we need the 
-    ! bias-setup no matter V
-    if ( has_T_gradient ) IsVolt = .true.
+
+  end subroutine read_ts_chem_pot
+
+
+  ! Reads all information regarding the electrodes, nothing more.
+  subroutine read_ts_elec( cell, na_u, xa, lasto)
+
+    use fdf, only : fdf_get, fdf_obsolete, fdf_deprecated, leqi
+    use parallel, only : IONode
+    use intrinsic_missing, only : IDX_SPC_PROJ, EYE
+
+    use m_os, only : file_exist
+
+    use files, only: slabel
+    use units, only: eV
+
+    use m_ts_global_vars, only: TSmode, onlyS
+    
+    use m_ts_chem_pot, only : copy, chem_pot_add_Elec
+
+    use m_ts_electype, only : fdf_nElec, fdf_Elec
+    use m_ts_electype, only : Name, TotUsedOrbs, TotUsedAtoms
+    use m_ts_electype, only : init_Elec_sim
+
+    use m_ts_method, only : ts_init_electrodes, a_isBuffer
+
+    implicit none
+    
+! *******************
+! * INPUT variables *
+! *******************
+    real(dp), intent(in) :: cell(3,3)
+    integer,  intent(in) :: na_u, lasto(0:na_u)
+    real(dp), intent(in) :: xa(3,na_u)
+
+! *******************
+! * LOCAL variables *
+! *******************
+    integer :: i, j
+    real(dp) :: tmp33(3,3)
+    logical :: err
+    character(len=200) :: chars, c
+    type(ts_mu) :: tmp_mu
+
+    if ( onlyS .or. .not. TSmode ) return
+
+    if ( N_mu == 0 ) call die('read_ts_elecs: error in programming')
+
+    ! the title of the green's functions are now non-generic
+    call fdf_obsolete('TS.GFTitle')
+
+    ! The regular options for describing the electrodes can not be 
+    ! used anymore...
+    call fdf_obsolete('TS.HSFileLeft')
+    call fdf_obsolete('TS.GFFileLeft')
+    call fdf_obsolete('TS.NumUsedAtomsLeft')
+    call fdf_obsolete('TS.ReplicateA1Left')
+    call fdf_obsolete('TS.ReplicateA2Left')
+    call fdf_obsolete('TS.HSFileRight')
+    call fdf_obsolete('TS.GFFileRight')
+    call fdf_obsolete('TS.NumUsedAtomsRight')
+    call fdf_obsolete('TS.ReplicateA1Right')
+    call fdf_obsolete('TS.ReplicateA2Right')
+
+    ! notice that this does not have the same meaning... 
+    call fdf_deprecated('TS.UpdateDMCROnly','TS.Elecs.DM.Update')
+    call fdf_deprecated('TS.UseBulk','TS.Elecs.Bulk')
+
+    ! whether or not the electrodes should be re-instantiated
+    call fdf_deprecated('TS.CalcGF','TS.Elecs.GF.ReUse')
+    call fdf_deprecated('TS.ReUseGF','TS.Elecs.GF.ReUse')
 
     ! To determine the same coordinate nature of the electrodes
     Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
+
+    ! Whether we should always set the DM to bulk
+    ! values (by reading in from electrode DM)
+    chars = fdf_get('TS.Elecs.DM.Bulk',trim(chars))
+    DM_bulk = 0
+    if ( leqi(chars,'init') ) then
+       DM_bulk = 1
+    !else if ( leqi(chars,'scf') ) then
+    !   DM_bulk = 2
+    end if
 
     ! detect how many electrodes we have
     N_Elec = fdf_nElec('TS',Elecs)
@@ -407,24 +390,23 @@ contains
        Elecs(2)%ID = 2
        ! if they do-not exist, the user will be told
        if ( IONode ) then
-          c = '(''transiesta: ***'',a)'
+          c = '(''transiesta: *** '',a)'
           write(*,c)'No electrode names were found, default Left/Right are expected'
        end if
     end if
 
-    ! If only one electrode you are not allowed to move the fermi-level
+    ! If only one electrode you are not allowed to move the Fermi-level
     ! of the electrode. That should be done by other means (i.e. use NetCharge)
     if ( N_Elec == 1 ) then
        ! Notice that below the chemical potential gets corrected
        ! EVEN if the user supplied a bias.
        if ( IsVolt .and. IONode ) then
-          c = '(''transiesta: ***'',a)'
+          c = '(''transiesta: *** '',a)'
           write(*,c) 'Single electrode calculations does not allow shifting the chemical potential.'
           write(*,c) 'You should do that by changing the states filled in the system.'
-          write(*,c) 'Consult the manual of how to do this.'
+          write(*,c) 'Consult the manual on how to do this.'
           call die('Please set the chemical potential to zero for your one electrode')
        end if
-       IsVolt = .false.
     end if
 
     ! Setup default parameters for the electrodes
@@ -437,13 +419,20 @@ contains
     Elecs(:)%Eta  = fdf_get('TS.Elecs.Eta',Elecs(1)%Eta,'Ry')
     Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     if ( .not. Elecs(1)%Bulk ) then
+       chars = 'all' ! TODO, allow non-bulk, non-update calls to achieve similarity of
+       !               intermediate step
+
+       ! When non-bulk calculations are used, so we force
+       ! the entire density matrix to be updated.
        Elecs(:)%DM_update = 2
     else
+       chars = 'cross-terms'
        ! default to not update the cross-terms
        c = fdf_get('TS.Elecs.DM.Update','cross-terms')
        if ( leqi(c,'none') ) then
           Elecs(:)%DM_update = 0
-       else if ( leqi(c,'cross-terms') ) then
+       else if ( leqi(c,'cross-terms') .or. &
+            leqi(c,'cross-term') ) then
           Elecs(:)%DM_update = 1
        else if ( leqi(c,'all') ) then
           Elecs(:)%DM_update = 2
@@ -453,11 +442,9 @@ contains
        end if
     end if
 
-    ! whether or not the electrodes should be re-instantiated
-    call fdf_deprecated('TS.CalcGF','TS.Elecs.GF.ReUse')
-    call fdf_deprecated('TS.ReUseGF','TS.Elecs.GF.ReUse')
-    err = fdf_get('TS.ReUseGF',.true.)
-    Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF.ReUse',err)
+    ! Whether we should try and re-use the surface Green function 
+    ! files
+    Elecs(:)%ReUseGF = fdf_get('TS.Elecs.GF.ReUse',.true.)
 
     ! whether all calculations should be performed
     ! "out-of-core" i.e. whether the GF files should be created or not
@@ -509,16 +496,14 @@ contains
        ! set the placement in orbitals
        Elecs(i)%idx_o = lasto(Elecs(i)%idx_a-1)+1
 
-       call init_Elec_sim(Elecs(i),ucell,na_u,xa)
+       ! Initialize the electrode quantities for the
+       ! stored values
+       call init_Elec_sim(Elecs(i), cell, na_u, xa)
 
     end do
 
-    ! Initialize the electrode regions
-    call ts_init_electrodes(na_u,lasto,N_Elec,Elecs)
-
     ! If many electrodes, no transport direction can be specified
     ! Hence we use this as an error-check (also for N_Elec == 1)
-    ts_tidx = 0 ! initialize the transport direction cartesian index
     if ( N_Elec /= 2 ) then
        ! Signals no specific unit-cell direction of transport
        ts_tdir = - N_Elec
@@ -535,10 +520,10 @@ contains
        if ( i == j ) then
           ! The transport direction for the electrodes are the same...
           ts_tidx = i
-          
+
           ! Calculate Cartesian transport direction
           call eye(3,tmp33)
-          ts_tdir = IDX_SPC_PROJ(tmp33,ucell(:,ts_tidx))
+          ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx))
 
        else
           ! In case we have a skewed transport direction
@@ -548,6 +533,107 @@ contains
        end if
        
     end if
+
+    ! In case we are doing equilibrium, fix the chemical potential to the first
+    if ( .not. IsVolt ) then
+
+       ! force it to be zero... can be necessary if considering single electrode
+       ! calculations (assures V == 0)
+       Volt = 0._dp
+
+       ! copy over electrode...
+       call copy(mus(1),tmp_mu)
+       
+       ! Deallocate all strings
+       do i = 1 , N_mu
+          deallocate(mus(i)%Eq_seg)
+       end do
+       deallocate(mus)
+
+       ! create the first chemical potential again
+       N_mu = 1
+       allocate(mus(1))
+       call copy(tmp_mu,mus(1))
+       deallocate(tmp_mu%Eq_seg)
+
+       ! Firmly assure the chemical potential to be zero
+       mus(1)%mu = 0._dp
+       mus(1)%ID = 1
+       
+       ! Assign all electrodes to the same chemical potential
+       do i = 1 , N_Elec
+          Elecs(i)%mu => mus(1)
+       end do
+
+    end if
+
+    ! Populate the electrodes in the chemical potential type
+    do i = 1 , N_Elec
+       err = .true.
+       do j = 1 , N_mu
+          if ( associated(Elecs(i)%mu,target=mus(j)) ) then
+             call chem_pot_add_Elec(mus(j),i)
+             err = .false.
+             exit
+          end if
+       end do
+       if ( err ) then
+          call die('We could not attribute a chemical potential &
+               &to electrode: '//trim(Elecs(i)%name))
+       end if
+    end do
+
+    if ( na_u <= sum(TotUsedAtoms(Elecs)) ) then
+       write(*,'(a)') 'Please stop this madness. What where you thinking?'
+       call die('Electrodes occupy the entire device!!!')
+    end if
+    
+    ! Initialize the electrode regions
+    call ts_init_electrodes(na_u,lasto,N_Elec,Elecs)
+
+  end subroutine read_ts_elec
+
+
+  ! This routine reads options for transiesta after
+  ! having read in the electrodes
+  ! It allows one to do things between reading options
+  subroutine read_ts_after_Elec( cell, nspin, na_u, xa, lasto, &
+       ts_kscell, ts_kdispl)
+
+    use fdf, only : fdf_get, leqi
+    use intrinsic_missing, only : VNORM, IDX_SPC_PROJ, EYE
+
+    use m_os, only : file_exist
+
+    use m_ts_global_vars, only: TSmode, onlyS
+
+    use m_ts_electype, only: check_Elec_sim
+    
+    use m_ts_contour, only: read_contour_options
+    
+    use m_ts_weight, only : read_ts_weight
+    use m_ts_charge, only : read_ts_charge_cor
+
+#ifdef SIESTA__MUMPS
+    use m_ts_mumps_init, only : read_ts_mumps
+#endif
+    
+    ! Input variables
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: nspin, na_u
+    real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in) :: lasto(0:na_u)
+    integer, intent(in) :: ts_kscell(3,3)
+    real(dp), intent(in) :: ts_kdispl(3)
+
+    ! Local variables
+    character(len=200) :: chars
+    integer :: i
+    logical :: Gamma3(3)
+
+    if ( onlyS .or. .not. TSmode ) return
+
+    if ( N_Elec == 0 ) call die('read_ts_after_Elecs: error in programming')
 
     ! The user can selectively decide how the Hartree-fix
     ! is applied
@@ -590,86 +676,359 @@ contains
        elec_basal_plane = .true.
     end if
 
-    if ( .not. IsVolt ) then
-       ! force it to be zero... can be necessary if considering single electrode
-       ! calculations (assures V == 0)
-       Volt = 0._dp
+    ! read in contour options
+    call read_contour_options( N_Elec, Elecs, N_mu, mus, ts_kT, IsVolt, Volt )
 
-       ! copy over electrode...
-       call copy(mus(1),tmp_mu)
-       
-       ! Deallocate all strings
-       do i = 1 , N_mu
-          deallocate(mus(i)%Eq_seg)
-       end do
-       deallocate(mus)
-
-       ! create the first chemical potential again
-       N_mu = 1
-       allocate(mus(1))
-       call copy(tmp_mu,mus(1))
-       deallocate(tmp_mu%Eq_seg)
-
-       ! Firmly assure the chemical potential to be zero
-       mus(1)%mu = 0._dp
-       mus(1)%ID = 1
-       
-       ! Assign all electrodes to the same chemical potential
-       do i = 1 , N_Elec
-          Elecs(i)%mu => mus(1)
-       end do
-
-    end if
-
-    ! We can now check whether two chemical potentials are the same
-    ! We must do this after checking for the equilibrium case as we wish to
-    ! allow users to retain all chemical potentials at 0 eV
-    tmp = 10._dp * Kelvin ! 10 kelvin separates two chemical potential
-    do i = 1 , N_mu - 1
-       do j = i + 1 , N_mu
-          if ( abs(mus(i)%mu - mus(j)%mu) < 0.00001_dp * eV .and. &
-               abs(mus(i)%kT - mus(j)%kT) <= tmp ) then
-             call die('Two chemical potentials: '//trim(name(mus(i)))//' and ' &
-                  //trim(name(mus(j)))//' are the same, in bias calculations this &
-                  &is not allowed.')
-          end if
-       end do
-    end do
-
-    ! Populate the electrodes in the chemical potential type
-    do i = 1 , N_Elec
-       err = .true.
-       do j = 1 , N_mu
-          if ( associated(Elecs(i)%mu,target=mus(j)) ) then
-             call chem_pot_add_Elec(mus(j),i)
-             err = .false.
-             exit
-          end if
-       end do
-       if ( err ) then
-          call die('We could not attribute a chemical potential &
-               &to electrode: '//trim(Elecs(i)%name))
+    ! Check for Gamma in each direction
+    do i = 1 , 3
+       if ( ts_kdispl(i) /= 0._dp ) then
+          Gamma3(i) = .false.
+       else if ( sum(ts_kscell(i,:)) > 1 ) then
+          ! Note it is the off-diagonal for this direction
+          Gamma3(i) = .false.
+       else
+          Gamma3(i) = .true.
        end if
     end do
+          
+    do i = 1 , N_Elec
+       ! Initialize the electrode quantities for the
+       ! stored values
+       call check_Elec_sim(Elecs(i), nspin, cell, na_u, xa, &
+            Elecs_xa_EPS, lasto, Gamma3, ts_kscell, ts_kdispl)
+    end do
 
-    ! check that all electrodes and chemical potentials are paired in
-    ! some way.
+  end subroutine read_ts_after_Elec
+
+  
+  subroutine print_ts_options( )
+
+    use fdf, only: fdf_get, leqi
+    use parallel, only: IOnode
+
+    use units, only: eV, Kelvin
+
+    use m_ts_electype, only: print_settings
+
+    use m_ts_global_vars, only: TSmode, onlyS
+
+    use m_ts_contour, only: print_contour_options
+
+    use m_ts_method, only: TS_FULL, TS_BTD, TS_MUMPS, ts_method, na_Buf
+
+    use m_ts_charge, only: TS_RHOCORR_METHOD, TS_RHOCORR_BUFFER, TS_RHOCORR_FERMI
+    use m_ts_charge, only: TS_RHOCORR_FACTOR, TS_RHOCORR_FERMI_TOLERANCE
+    use m_ts_charge, only: TS_RHOCORR_FERMI_MAX
+
+    use m_ts_weight, only: TS_W_METHOD, TS_W_CORRELATED
+    use m_ts_weight, only: TS_W_ORB_ORB, TS_W_TR_ATOM_ATOM, TS_W_SUM_ATOM_ATOM
+    use m_ts_weight, only: TS_W_TR_ATOM_ORB, TS_W_SUM_ATOM_ORB, TS_W_MEAN
+    use m_ts_weight, only: TS_W_K_METHOD
+    use m_ts_weight, only: TS_W_K_CORRELATED, TS_W_K_UNCORRELATED
+
+#ifdef SIESTA__MUMPS
+    use m_ts_mumps_init, only: MUMPS_mem, MUMPS_ordering, MUMPS_block
+#endif
+
+    implicit none
+    
+! *******************
+! * LOCAL variables *
+! *******************
+    character(len=200) :: chars
+    integer :: i
+
+    if ( .not. IONode ) return
+
+    write(*,*)
+    write(*,f11) repeat('*', 62)
+
+    if ( onlyS .or. .not. TSmode ) then
+       
+       write(*,f1) 'Save H and S matrices', TS_HS_save
+       write(*,f1) 'Save DM and EDM matrices', TS_DE_save
+       if ( Vha_fix ) then
+          select case ( ts_tidx ) 
+          case ( 1 )
+             write(*,f10) 'Fix Hartree potential at cell boundary', 'A1'
+          case ( 2 )
+             write(*,f10) 'Fix Hartree potential at cell boundary', 'A2'
+          case ( 3 )
+             write(*,f10) 'Fix Hartree potential at cell boundary', 'A3'
+          end select
+          write(*,f8) 'Fix Hartree potential fraction', Vha_frac
+       else
+          write(*,f11) 'Do not fix Hartree potential'
+          if ( TS_DE_save ) then
+             write(*,f11) '*** If you do not use Hartree.Fix you cannot &
+                  &use the TSDE file for restart in TranSIESTA.'
+             write(*,f11) '*** Please note this!'
+          end if
+       end if
+       write(*,f1) 'Only save the overlap matrix S', onlyS
+
+       write(*,f11) repeat('*', 62)
+       write(*,*)
+
+       return
+    end if
+
+    write(*,f1) 'Save H and S matrices', TS_HS_save
+    if ( TS_Analyze ) then
+       write(*,f11)'Will analyze bandwidth of LCAO sparse matrix and quit'
+    end if
+    write(*,f7) 'Electronic temperature',ts_kT/Kelvin,'K'
+    if ( ts_tidx < 1 ) then
+       write(*,f11) 'Transport individually selected for electrodes'
+       write(*,f11) 'Fixing the Hartree potential at electrode plane'
+    else
+       write(chars,'(a,i0)') 'A',ts_tidx
+       write(*,f10) 'Transport along unit-cell vector',trim(chars)
+       select case ( ts_tdir )
+       case ( 1 )
+          write(*,f10) 'Transport along Cartesian vector','X'
+       case ( 2 )
+          write(*,f10) 'Transport along Cartesian vector','Y'
+       case ( 3 )
+          write(*,f10) 'Transport along Cartesian vector','Z'
+       end select
+       write(*,f10) 'Fixing the Hartree potential at plane',trim(chars)
+       write(*,f8) 'Fix Hartree potential fraction', Vha_frac
+    end if
+    if ( ts_method == TS_FULL ) then
+       write(*,f10)'Solution method', 'Full inverse'
+    else if ( ts_method == TS_BTD ) then
+       write(*,f10)'Solution method', 'BTD'
+       chars = fdf_get('TS.BTD.Pivot','atom+'//trim(Elecs(1)%name))
+       write(*,f10)'BTD pivoting method method', trim(chars)
+       if ( BTD_method == 0 ) then
+          chars = 'speed'
+       else if  ( BTD_method == 1 ) then
+          chars = 'memory'
+       end if
+       write(*,f10)'BTD creation algorithm', trim(chars)
+#ifdef SIESTA__MUMPS
+    else if ( ts_method == TS_MUMPS ) then
+       write(*,f10)'Solution method', 'MUMPS'
+       write(*,f5)'MUMPS extra memory', MUMPS_mem,'%'
+       write(*,f5)'MUMPS blocking factor', MUMPS_block,''
+       select case ( MUMPS_ordering ) 
+       case ( 7 )
+          write(*,f10)'MUMPS ordering', 'auto'
+       case ( 6 )
+          write(*,f10)'MUMPS ordering', 'QAMD'
+       case ( 5 )
+          write(*,f10)'MUMPS ordering', 'METIS'
+       case ( 4 )
+          write(*,f10)'MUMPS ordering', 'PORD'
+       case ( 3 )
+          write(*,f10)'MUMPS ordering', 'SCOTCH'
+       case ( 2 )
+          write(*,f10)'MUMPS ordering', 'AMF'
+       case ( 0 )
+          write(*,f10)'MUMPS ordering', 'AMD'
+       end select
+#endif
+    end if
+    write(*,f8) 'SCF.TS mixing weight',ts_wmix
+    write(*,f9) 'SCF.TS DM tolerance',ts_Dtol
+    write(*,f9) 'SCF.TS Hamiltonian tolerance',ts_Htol
+
+    select case ( TS_scf_mode )
+    case ( 0 )
+       write(*,f10) 'Initialize DM by','diagon'
+    case ( 1 )
+       write(*,f10) 'Initialize DM by','transiesta'
+    end select
+    select case ( DM_bulk ) 
+    case ( 0 ) 
+       write(*,f11) 'DM for electrodes will not be used'
+    case ( 1 )
+       write(*,f11) 'DM for electrodes will be initialized to bulk'
+    end select
+    if ( IsVolt ) then
+       write(*,f6) 'Voltage', Volt/eV,'Volts'
+       if ( len_trim(Hartree_fname) > 0 ) then
+          write(*,f10) 'User supplied Hartree potential', &
+               trim(Hartree_fname)
+       else
+          if ( ts_tidx > 0 ) then
+             write(*,f11) 'Hartree potential as linear ramp'
+             if ( VoltageInC ) then
+                write(*,f11) 'Hartree potential ramp across central region'
+             else
+                write(*,f11) 'Hartree potential ramp across entire cell'    
+             end if
+          else
+             write(*,f11) 'Hartree potential will be placed in electrode box'
+          end if
+       end if
+       if ( has_T_gradient ) then
+          write(*,f11) 'Thermal non-equilibrium in electrode distributions' 
+       else
+          write(*,f11) 'Thermal equilibrium in electrode distributions' 
+       end if
+
+       chars = 'Non-equilibrium contour weight method'
+       select case ( TS_W_METHOD )
+       case ( TS_W_ORB_ORB )
+          write(*,f10) trim(chars),'orb-orb'
+       case ( TS_W_CORRELATED + TS_W_TR_ATOM_ATOM )
+          write(*,f10) trim(chars),'Correlated Tr[atom]-Tr[atom]'
+       case ( TS_W_TR_ATOM_ATOM )
+          write(*,f10) trim(chars),'Uncorrelated Tr[atom]-Tr[atom]'
+       case ( TS_W_CORRELATED + TS_W_TR_ATOM_ORB )
+          write(*,f10) trim(chars),'Correlated Tr[atom]-orb'
+       case ( TS_W_TR_ATOM_ORB )
+          write(*,f10) trim(chars),'Uncorrelated Tr[atom]-orb'
+       case ( TS_W_CORRELATED + TS_W_SUM_ATOM_ATOM )
+          write(*,f10) trim(chars),'Correlated Sum[atom]-Sum[atom]'
+       case ( TS_W_SUM_ATOM_ATOM )
+          write(*,f10) trim(chars),'Uncorrelated Sum[atom]-Sum[atom]'
+       case ( TS_W_CORRELATED + TS_W_SUM_ATOM_ORB )
+          write(*,f10) trim(chars),'Correlated Sum[atom]-orb'
+       case ( TS_W_SUM_ATOM_ORB )
+          write(*,f10) trim(chars),'Uncorrelated Sum[atom]-orb'
+       case ( TS_W_MEAN )
+          write(*,f10) trim(chars),'Algebraic mean'
+       case default
+          ! This is an easy place for cathing mistakes
+          call die('Error in code, weighting method unrecognized.')
+       end select
+       chars = 'Non-equilibrium contour weight k-method'
+       select case ( TS_W_K_METHOD ) 
+       case ( TS_W_K_CORRELATED )
+          write(*,f10) trim(chars),'Correlated k-points'
+       case ( TS_W_K_UNCORRELATED )
+          write(*,f10) trim(chars),'Uncorrelated k-points'
+       end select
+    else
+       write(*,f11) 'No applied bias'
+    end if
+    if ( .not. Calc_Forces ) then
+       write(*,f11) '*** TranSIESTA will NOT update forces ***'
+    end if
+
+    if ( TS_RHOCORR_METHOD == 0 ) then
+       write(*,f11)'Will not correct charge fluctuations'
+    else if ( TS_RHOCORR_METHOD == TS_RHOCORR_BUFFER ) then ! Correct in buffer
+       if ( 0 < na_Buf ) then
+          write(*,f10)'Charge fluctuation correction','buffer'
+       else
+          call die('Charge correction can not happen in buffer as no buffer &
+               &atoms exist.')
+       end if
+       write(*,f8)'Charge correction factor',TS_RHOCORR_FACTOR
+    else if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then ! Correct fermi-lever
+       write(*,f10)'Charge correction','Fermi-level'
+       write(*,f8)'Charge correction tolerance',TS_RHOCORR_FERMI_TOLERANCE
+       write(*,f8)'Charge correction factor',TS_RHOCORR_FACTOR
+       write(*,f7)'Max change in Fermi-level allowed', &
+            TS_RHOCORR_FERMI_MAX / eV,'eV'
+    end if
+    write(*,f11)'          >> Electrodes << '
+    do i = 1 , size(Elecs)
+       call print_settings(Elecs(i), 'ts', &
+            plane = elec_basal_plane , &
+            box = ts_tidx < 1 .and. IsVolt )
+    end do
+
+    ! Print the contour information
+    call print_contour_options( 'TS' , IsVolt )
+
+    write(*,f11) repeat('*', 62)
+    write(*,*)
+
+  end subroutine print_ts_options
+
+
+  subroutine print_ts_warnings( cell, na_u, xa, Nmove )
+
+    use parallel, only: IONode, Nodes
+    use intrinsic_missing, only : VNORM
+
+    use m_os, only: file_exist
+
+    use units, only: Kelvin, eV, Ang
+    use siesta_options, only: FixSpin
+
+    use m_ts_global_vars, only: TSmode, onlyS
+    use m_ts_chem_pot, only : Name, Eq_segs
+    use m_ts_electype, only : TotUsedAtoms, Name
+
+    use m_ts_method, only : a_isElec, a_isBuffer
+
+    use m_ts_contour_eq, only: N_Eq_E
+    use m_ts_contour_neq, only: contour_neq_warnings
+
+    ! Input variables
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+    integer, intent(in) :: Nmove
+
+    ! Local variables
+    integer :: i, j, idx, idx1, idx2, itmp3(3)
+    real(dp) :: rtmp, tmp3(3), tmp33(3,3), min_bond_elec
+    logical :: err, warn, ltmp
+
+    if ( .not. IONode ) return
+    
+    warn = .false.
+    err = .false.
+
+    write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
+    if ( TS_HS_save .and. FixSpin ) then
+       write(*,*) 'Fixed spin not possible with TranSIESTA!'
+       write(*,*) 'Disable TS.HS.Save or FixSpin'
+       write(*,*) 'Electrodes with fixed spin is not possible with Transiesta!'
+       call die('Fixing spin is not possible in transiesta')
+    end if
+
+    if ( Vha_fix ) then
+       if ( Vha_frac /= 1._dp ) then
+          write(*,'(a)') 'Fraction of Hartree potential is NOT 1.'
+          warn = .true.
+       end if
+       if ( Vha_frac < 0._dp .or. 1._dp < Vha_frac ) then
+          write(*,'(a)') 'Fraction of Hartree potential is below 0.'
+          write(*,'(a)') '  MUST be in range [0;1]'
+          call die('Vha fraction erronously set.')
+       end if
+    end if
+
+    ! Return if not a transiesta calculation
+    if ( onlyS .or. .not. TSmode ) return
+
+    ! Check that all chemical potentials are really different
+    rtmp = 10._dp * Kelvin ! 10 kelvin separates two chemical potential
+    do i = 1 , N_mu - 1
+       do j = i + 1 , N_mu
+          if ( abs(mus(i)%mu - mus(j)%mu) < 0.0001_dp * eV .and. &
+               abs(mus(i)%kT - mus(j)%kT) <= rtmp ) then
+             write(*,'(a)') 'Two chemical potentials: '//trim(name(mus(i)))//' and ' &
+                  //trim(name(mus(j)))//' are the same, in bias calculations this &
+                  &is not allowed.'
+             err = .true.
+          end if
+       end do
+    end do
+
+    ! Check that all chemical potentials are in use
     if ( any(mus(:)%N_El == 0) ) then
-       call die('A/Some chemical potential(s) has not been assigned any electrodes. &
-            &All chemical potentials *MUST* be assigned an electrode')
+       write(*,'(a)') 'A/Some chemical potential(s) have not been assigned any electrodes. &
+            &All chemical potentials *MUST* be assigned an electrode'
+       err = .true.
     end if
 
     ! check that all have at least 2 contour points on the equilibrium contour
     ! the 3rd is the fictive pole segment
     if ( .not. all(Eq_segs(mus(:)) > 2) ) then
-       call die('All chemical potentials does not have at least 2 equilibrium contours')
-    end if
-    
-    if ( na_u <= sum(TotUsedAtoms(Elecs)) ) then
-       call die('Electrodes occupy the entire device!!!')
+       write(*,'(a)') 'All chemical potentials does not have at least &
+            &2 equilibrium contours'
+       err = .true.
     end if
 
-    err = .false.
     ! we need to check that they indeed do not overlap
     do i = 1 , N_Elec
        idx1 = Elecs(i)%idx_a
@@ -677,512 +1036,337 @@ contains
        ! we need to check every electrode,
        ! specifically because if one of the electrodes is fully located
        ! inside the other and we check the "small" one 
+       ltmp = .false.
        do j = 1 , N_Elec
           if ( i == j ) cycle
           idx = Elecs(j)%idx_a
           if ( (idx <= idx1 .and. &
                idx1 < idx + TotUsedAtoms(Elecs(j))) ) then
-             err = .true.
+             ltmp = .true.
           end if
           if ( (idx <= idx2 .and. &
                idx2 < idx + TotUsedAtoms(Elecs(j))) ) then
-             err = .true.
+             ltmp = .true.
           end if
-          if ( err ) then
+          if ( ltmp ) then
              write(*,*) 'Electrode: '//trim(Name(Elecs(i)))
              write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
              idx1 = Elecs(j)%idx_a
              idx2 = idx1 + TotUsedAtoms(Elecs(j)) - 1
              write(*,*) 'Electrode: '//trim(Name(Elecs(j)))
              write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
-             call die('Overlapping electrodes is not physical, please correct.')
+             write(*,'(a)') 'Overlapping electrodes is not physical, please correct.'
+             err = .true.
           end if
        end do
     end do
-
+    
     ! CHECK THIS (we could allow it by only checking the difference...)
-    if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 1.e-9_dp ) then
-       if ( IONode ) then
-          write(*,'(a)') 'Chemical potentials [eV]:'
-          do i = 1 , N_Elec
-             write(*,'(a,f10.5,a)') trim(Name(Elecs(i)))//' at ',Elecs(i)%mu%mu/eV,' eV'
-          end do
-          write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) > 1e-9"'
-          write(*,'(a,f10.5,a)') 'max(ChemPots) at ', maxval(mus(:)%mu)/eV,' eV'
-          write(*,'(a,f10.5,a)') 'min(ChemPots) at ', minval(mus(:)%mu)/eV,' eV'
-          write(*,'(a,f10.5,a)') '|V| at ', abs(Volt)/eV,' eV'
-       end if
-       call die('Chemical potentials are not consistent with the bias applied.')
+    if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 0.0001_dp * eV ) then
+       write(*,'(a)') 'Chemical potentials [eV]:'
+       do i = 1 , N_Elec
+          write(*,'(a,f10.5,a)') trim(Name(Elecs(i)))//' at ',Elecs(i)%mu%mu/eV,' eV'
+       end do
+       write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) > 0.0001 eV"'
+       write(*,'(a,f10.5,a)') 'max(ChemPots) at ', maxval(mus(:)%mu)/eV,' eV'
+       write(*,'(a,f10.5,a)') 'min(ChemPots) at ', minval(mus(:)%mu)/eV,' eV'
+       write(*,'(a,f10.5,a)') '|V| at ', abs(Volt)/eV,' eV'
+       write(*,'(a)') 'Chemical potentials are not consistent with the bias applied.'
+       err = .true.
     end if
 
     ! Check that the bias does not introduce a gating
     if ( any(abs(mus(:)%mu) - abs(Volt) > 1.e-9_dp ) ) then
        write(*,'(a)') 'Chemical potentials must lie in the range [-V;V] with the maximum &
             &difference being V'
-       call die('Chemical potentials must not introduce consistent Ef shift to the system.')
+       write(*,'(a)') 'Chemical potentials must not introduce consistent Ef shift to the system.'
+       err = .true.
     end if
 
-    ! WILL WORK EVENTUALLY
-    if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_update > 0) ) then
-       call die('transiesta relaxation is only allowed if you also &
-            &update, at least, the cross terms, please set: &
-            &TS.Elecs.DM.Update [cross-terms|all]')
-    end if
-    if ( Nmove > 0 .and. .not. Calc_Forces ) then
-       call die('transiesta relaxation is based on calculating the forces, &
-            &you cannot relax without calculating the forces')
-    end if
 
-    ! Update the weight function
-    chars = fdf_get('TS.Weight.k.Method','correlated')
-    if ( leqi(chars,'correlated') ) then
-       TS_W_K_METHOD = TS_W_K_CORRELATED
-    else if ( leqi(chars,'uncorrelated') ) then
-       TS_W_K_METHOD = TS_W_K_UNCORRELATED
-    else
-       call die('Could not determine flag TS.Weight.k.Method, &
-            &please see manual.')
-    end if
-
-    ! The default weighting method is correlated if
-    ! atom-atom is utilised
-    TS_W_METHOD = TS_W_CORRELATED
-    chars = fdf_get('TS.Weight.Method','orb-orb')
-    ! first check whether we have correlated weighting
-    i = index(chars,'+')
-    if ( i > 0 ) then
-       ! we do have something else
-       if ( leqi(chars(1:i-1),'correlated') .or. &
-            leqi(chars(1:i-1),'corr') ) then
-          TS_W_METHOD = TS_W_CORRELATED
-       else if ( leqi(chars(1:i-1),'uncorrelated') .or. &
-            leqi(chars(1:i-1),'uncorr') ) then
-          TS_W_METHOD = 0 ! non-correlated
-       else
-          call die('Unrecognized second option for TS.Weight.Method &
-               &must be [[un]correlated+][orb-orb|tr-atom-atom|sum-atom-atom|mean]')
+    ! Check that we can actually start directly in transiesta
+    if ( TS_scf_mode == 1 ) then ! TS-start
+       if ( .not. all(Elecs(:)%DM_update >= 1) ) then
+          write(*,*)'WARNING: Responsibility is now on your side'
+          write(*,*)'WARNING: Requesting immediate start, yet we &
+               &do not update cross-terms.'
+          warn = .true.
        end if
-       chars = chars(i+1:)
-    end if
-    if ( leqi(chars,'orb-orb') ) then
-       TS_W_METHOD = TS_W_ORB_ORB
-       ! this does not make sense to make correlated, hence always assign
-    else if ( leqi(chars,'tr-atom-atom') ) then
-       TS_W_METHOD = TS_W_METHOD + TS_W_TR_ATOM_ATOM 
-    else if ( leqi(chars,'tr-atom-orb') ) then
-       TS_W_METHOD = TS_W_METHOD + TS_W_TR_ATOM_ORB
-    else if ( leqi(chars,'sum-atom-atom') ) then
-       TS_W_METHOD = TS_W_METHOD + TS_W_SUM_ATOM_ATOM 
-    else if ( leqi(chars,'sum-atom-orb') ) then
-       TS_W_METHOD = TS_W_METHOD + TS_W_SUM_ATOM_ORB
-    else if ( leqi(chars,'mean') ) then
-       TS_W_METHOD = TS_W_MEAN
-    else
-       call die('Unrecognized option for TS.Weight.Method &
-            &must be [[un]correlated+|][orb-orb|tr-atom-[atom|orb]|sum-atom-[atom|orb]|mean]')
-    end if
-
-    ! read in contour options
-    call read_contour_options( N_Elec, Elecs, N_mu, mus, kT, IsVolt, Volt )
-
-    ! Show the deprecated and obsolete labels
-    call fdf_deprecated('TS.TriDiag','TS.SolutionMethod')
-    call fdf_obsolete('TS.FixContactCharge')
-    call fdf_obsolete('TS.KxyPoints')
-    call fdf_obsolete('TS.NKVoltScale')
-
-    if (IONode .and. TSmode ) then
-       write(*,1) 'Save H and S matrices', TS_HS_save
-       if ( TS_Analyze ) then
-          write(*,11)'Will analyze bandwidth of LCAO sparse matrix and quit'
-       end if
-       write(*,7) 'Electronic temperature',kT/Kelvin,'K'
-       if ( ts_tidx < 1 ) then
-          write(*,11) 'Transport individually selected for electrodes'
-          write(*,11) 'Fixing the Hartree potential at electrode plane'
-       else
-          write(chars,'(a,i0)') 'A',ts_tidx
-          write(*,10) 'Transport along unit-cell vector',trim(chars)
-          select case ( ts_tdir )
-          case ( 1 )
-             write(*,10) 'Transport along Cartesian vector','X'
-          case ( 2 )
-             write(*,10) 'Transport along Cartesian vector','Y'
-          case ( 3 )
-             write(*,10) 'Transport along Cartesian vector','Z'
-          end select
-          write(*,10) 'Fixing the Hartree potential at plane',trim(chars)
-       end if
-       if ( ts_method == TS_FULL ) then
-          write(*,10)'Solution method', 'Full inverse'
-       else if ( ts_method == TS_BTD ) then
-          write(*,10)'Solution method', 'BTD'
-          chars = fdf_get('TS.BTD.Pivot','atom+'//trim(Elecs(1)%name))
-          write(*,10)'BTD pivoting method method', trim(chars)
-          if ( BTD_method == 0 ) then
-             chars = 'speed'
-          else if  ( BTD_method == 1 ) then
-             chars = 'memory'
-          end if
-          write(*,10)'BTD creation algorithm', trim(chars)
-#ifdef SIESTA__MUMPS
-       else if ( ts_method == TS_MUMPS ) then
-          write(*,10)'Solution method', 'MUMPS'
-          write(*,5)'MUMPS extra memory', MUMPS_mem,'%'
-          write(*,5)'MUMPS blocking factor', MUMPS_block,''
-          select case ( MUMPS_ordering ) 
-          case ( 7 )
-             write(*,10)'MUMPS ordering', 'auto'
-          case ( 6 )
-             write(*,10)'MUMPS ordering', 'QAMD'
-          case ( 5 )
-             write(*,10)'MUMPS ordering', 'METIS'
-          case ( 4 )
-             write(*,10)'MUMPS ordering', 'PORD'
-          case ( 3 )
-             write(*,10)'MUMPS ordering', 'SCOTCH'
-          case ( 2 )
-             write(*,10)'MUMPS ordering', 'AMF'
-          case ( 0 )
-             write(*,10)'MUMPS ordering', 'AMD'
-          end select
-#endif
-       end if
-       write(*,8) 'SCF-TS mixing weight',ts_wmix
-       write(*,9) 'SCF-TS DM tolerance',ts_Dtol
-       write(*,9) 'SCF-TS Hamiltonian tolerance',ts_Htol
-
-       select case ( TS_scf_mode )
-       case ( 0 )
-          write(*,10) 'Initialize DM by','diagon'
-       case ( 1 )
-          write(*,10) 'Initialize DM by','transiesta'
-       end select
-       select case ( DM_bulk ) 
-       case ( 0 ) 
-          write(*,11) 'DM for electrodes will not be used'
-       case ( 1 )
-          write(*,11) 'DM for electrodes will be initialized to bulk'
-       end select
-       if ( IsVolt ) then
-          write(*,6) 'Voltage', Volt/eV,'Volts'
-          if ( len_trim(Hartree_fname) > 0 ) then
-             write(*,10) 'User supplied Hartree potential', &
-                  trim(Hartree_fname)
-          else
-             if ( ts_tidx > 0 ) then
-                write(*,11) 'Hartree potential as linear ramp'
-                if ( VoltageInC ) then
-                   write(*,11) 'Hartree potential ramp across central region'
-                else
-                   write(*,11) 'Hartree potential ramp across entire cell'    
-                end if
-             else
-                write(*,11) 'Hartree potential will be placed in electrode box'
-             end if
-          end if
-          if ( has_T_gradient ) then
-             write(*,11) 'Thermal non-equilibrium in electrode distributions' 
-          else
-             write(*,11) 'Thermal equilibrium in electrode distributions' 
-          end if
-
-          chars = 'Non-equilibrium contour weight method'
-          select case ( TS_W_METHOD )
-          case ( TS_W_ORB_ORB )
-             write(*,10) trim(chars),'orb-orb'
-          case ( TS_W_CORRELATED + TS_W_TR_ATOM_ATOM )
-             write(*,10) trim(chars),'Correlated Tr[atom]-Tr[atom]'
-          case ( TS_W_TR_ATOM_ATOM )
-             write(*,10) trim(chars),'Uncorrelated Tr[atom]-Tr[atom]'
-          case ( TS_W_CORRELATED + TS_W_TR_ATOM_ORB )
-             write(*,10) trim(chars),'Correlated Tr[atom]-orb'
-          case ( TS_W_TR_ATOM_ORB )
-             write(*,10) trim(chars),'Uncorrelated Tr[atom]-orb'
-          case ( TS_W_CORRELATED + TS_W_SUM_ATOM_ATOM )
-             write(*,10) trim(chars),'Correlated Sum[atom]-Sum[atom]'
-          case ( TS_W_SUM_ATOM_ATOM )
-             write(*,10) trim(chars),'Uncorrelated Sum[atom]-Sum[atom]'
-          case ( TS_W_CORRELATED + TS_W_SUM_ATOM_ORB )
-             write(*,10) trim(chars),'Correlated Sum[atom]-orb'
-          case ( TS_W_SUM_ATOM_ORB )
-             write(*,10) trim(chars),'Uncorrelated Sum[atom]-orb'
-          case ( TS_W_MEAN )
-             write(*,10) trim(chars),'Algebraic mean'
-          case default
-             ! This is an easy place for cathing mistakes
-             call die('Error in code, weighting method unrecognized.')
-          end select
-          chars = 'Non-equilibrium contour weight k-method'
-          select case ( TS_W_K_METHOD ) 
-          case ( TS_W_K_CORRELATED )
-             write(*,10) trim(chars),'Correlated k-points'
-          case ( TS_W_K_UNCORRELATED )
-             write(*,10) trim(chars),'Uncorrelated k-points'
-          end select
-       else
-          write(*,11) 'TranSIESTA no voltage applied'
-       end if
-       if ( .not. Calc_Forces ) then
-          write(*,11) '*** TranSIESTA will NOT update forces ***'
-       end if
-
-       if ( TS_RHOCORR_METHOD == 0 ) then
-          write(*,11)'Will not correct charge fluctuations'
-       else if ( TS_RHOCORR_METHOD == TS_RHOCORR_BUFFER ) then ! Correct in buffer
-          if ( 0 < na_Buf ) then
-             write(*,10)'Charge fluctuation correction','buffer'
-          else
-             call die('Charge correction can not happen in buffer as no buffer &
-                  &atoms exist.')
-          end if
-          write(*,8)'Charge correction factor',TS_RHOCORR_FACTOR
-       else if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then ! Correct fermi-lever
-          write(*,10)'Charge correction','Fermi-level'
-          write(*,8)'Charge correction tolerance',TS_RHOCORR_FERMI_TOLERANCE
-          write(*,8)'Charge correction factor',TS_RHOCORR_FACTOR
-          write(*,7)'Max change in Fermi-level allowed', &
-               TS_RHOCORR_FERMI_MAX / eV,'eV'
-       end if
-       write(*,11)'          >> Electrodes << '
-       do i = 1 , size(Elecs)
-          call print_settings(Elecs(i),'ts_options', &
-               plane = elec_basal_plane , &
-               box = ts_tidx < 1 .and. IsVolt )
-       end do
-
-       ! Print the contour information
-       call print_contour_options( 'TS' , IsVolt )
-       
-       write(*,11) repeat('*', 62)
-       write(*,*)
-
-       write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
-
-       ! Check that we can actually start directly in transiesta
-       if ( TS_scf_mode == 1 ) then ! TS-start
-          if ( .not. all(Elecs(:)%DM_update >= 1) ) then
-             write(*,*)'WARNING: Responsibility is now on your side'
-             write(*,*)'WARNING: Requesting immediate start, yet we &
-                  &do not update cross-terms.'
-          end if
-       end if
-
-       ! Calculate the number of optimal contour points
-       i = mod(N_Eq_E(), Nodes) ! get remaining part of equilibrium contour
-       if ( IONode .and. i /= 0 ) then
-          i = Nodes - i
-          write(*,'(a)')'Without loosing performance you can increase &
-               &the equilibrium integration precision.'
-          write(*,'(a,i0,a)')'You can add ',i,' more energy points in the &
-               &equilibrium contours, for FREE!'
-          if ( i/N_mu > 0 ) then
-             write(*,'(a,i0,a)')'This is ',i/N_mu, &
-                  ' more energy points per chemical potential.'
-          end if
-       end if
-
-       call contour_nEq_warnings()
-
-       if ( .not. Calc_Forces ) then
-          write(*,11) '***       TranSIESTA will NOT update forces       ***'
-          write(*,11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
-       end if
-
-       ! Calculate minimum electrode bond-length
-       min_bond_elec = huge(1._dp)
-       do j = 1 , na_u - 1
-          if ( .not. a_isElec(j) ) cycle
-          tmp3(:) = xa(:,j)
-          do i = j + 1 , na_u
-             if ( .not. a_isElec(i) ) cycle
-             min_bond_elec = min(min_bond_elec,VNORM(xa(:,i)-tmp3))
-          end do
-       end do
-
-       ! a transiesta calculation requires that all atoms
-       ! are within the unit-cell.
-       ! Otherwise the electrostatic potential will definitely for V /= 0
-       ! be malplaced.
-
-       err = .false.
-       call reclat(ucell,tmp33,0)
-       do i = 1 , na_u
-          if ( .not. a_isBuffer(i) ) then
-             ! Check the index
-             do j = 1 , 3
-                itmp3(j) = floor( dot(xa(:,i),tmp33(:,j),3) )
-             end do
-             select case ( ts_tidx )
-             case ( 1, 2, 3 )
-                ! Only check the transport direction
-                ! Note that we have projected onto the unit-cell
-                ! vector, hence tidx and not tdir
-                if ( itmp3(ts_tidx) /= 0 ) then
-                   err = .true.
-                end if
-             case default
-                do j = 1 , 3
-                   if ( itmp3(j) /= 0 ) then
-                      err = .true.
-                   end if
-                end do
-             end select
-          end if
-          if ( err ) exit
-       end do
-       if ( err .and. IONode ) then
-          write(*,11) '*** Device atomic coordinates are not inside unit-cell.'
-          write(*,11) '*** This is a requirement for bias calculations'
-          write(*,11) '    as the Poisson equation cannot be correctly handled'
-          write(*,11) '    due to inconsistencies with the grid and atomic coordinates'
-          if ( IsVolt ) then
-             call die('Please move device atoms inside the device region in &
-                  &the transport direction.')
-          else
-             write(*,11) '*** Will continue, but will die when running V /= 0 ***'
-          end if
-       end if
-
-       if ( ts_tidx < 1 ) then
-          write(*,11) '*** TranSIESTA semi-infinite directions are individual ***'
-          write(*,11) '*** It is heavily adviced to have any electrodes with no &
-               &periodicity'
-          write(*,11) '    in the transverse directions be located as far from any &
-               &cell-boundaries'
-          write(*,11) '    as possible. This has to do with the electrostatic potential &
-               &correction. ***'
-          if ( IsVolt ) then
-             write(*,11) '*** Please ensure electrode unit-cells are as confined as possible.'
-             write(*,11) '    The initial guess for the potential profile is heavily influenced'
-             write(*,11) '    by the electrode unit-cell sizes! ***'
-          end if
-       else if ( .not. elec_basal_plane ) then
-          ! The transport direction is well-defined
-          ! and the Hartree potential is fixed at the bottom of the
-          ! unit-cell of the A[ts_tidx] direction.
-          ! We will let the user know if any atoms co-incide with
-          ! the plane as that might hurt convergence a little.
-
-          ! If the distance is less than 0.5 of the minimal bond length we have
-          ! the atomic core "close" to the Hartree fix plane, notify the user of this
-          tmp = 0.5 * min_bond_elec
-          err = .false.
-          do i = 1 , na_u
-             err = abs(xa(ts_tdir,i)) < tmp
-             if ( err ) exit
-          end do
-          if ( err ) then
-             write(*,'(a,e10.4,a)')'You can with benefit move all atoms &
-                  &in the transport direction by ',tmp/Ang,' Ang to remove atoms from &
-                  &the constant potential plane.'
-          end if
-       end if
-
-       ! Check that the unitcell does not extend into the transport direction
-       do i = 1 , 3
-          if ( i == ts_tidx .or. ts_tidx <= 0 ) cycle
-          if ( abs(dot(ucell(:,i),ucell(:,ts_tidx),3)) > 1e-7_dp ) then
-             write(*,*) "ERROR: Unit cell has the electrode extend into the &
-                  &transport direction."
-             write(*,*) dot(ucell(:,i),ucell(:,ts_tidx),3)
-             write(*,*) "Please change the geometry."
-             call die("Electrodes extend into the transport direction. &
-                  &Please change the geometry.")
-          end if
-       end do
-
-       ! If the user has requested to initialize using transiesta
-       ! and the user does not utilize the bulk DM, they should be
-       ! warned
-       if ( TS_scf_mode == 1 .and. DM_bulk == 0 ) then
-          write(*,'(a)') 'You are not initializing the electrode DM/EDM. &
-               &This may result in very wrong electrostatic potentials close to &
-               &the electrode/device boundary region.'
-       end if
-
-       ! warn the user about suspicous work regarding the electrodes
-       do i = 1 , N_Elec
-
-          if ( .not. Elecs(i)%Bulk ) then
-             write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
-                  &not use bulk Hamiltonian. Be careful here.'
-          end if
-
-          if ( Elecs(i)%DM_update == 0 ) then
-             write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
-                  &not update cross-terms or local region.'
-          end if
-
-          if ( .not. Elecs(i)%kcell_check ) then
-             write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
-                  &not check the k-grid sampling vs. system k-grid &
-                  &sampling. Please ensure appropriate sampling.'
-          end if
-          if ( Elecs(i)%Ef_frac_CT /= 0._dp ) then
-             write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
-                  &shift coupling Hamiltonian with a shift in energy. &
-                  &Be careful here.'
-          end if
-
-          ! if any buffer atoms exist, we should suggest to the user
-          ! to use TS.Elec.<elec> [DM-update cross-terms|all]
-          ! in case any buffer atoms are too close
-          err = .false.
-          do j = 1 , na_u
-             if ( atom_type(j) /= TYP_BUFFER ) cycle
-             do idx = 0 , TotUsedAtoms(Elecs(i)) - 1
-                ! Proximity of 12 Bohr enables this check
-                err = vnorm(xa(:,Elecs(i)%idx_a+idx)-xa(:,j)) < 12._dp
-                if ( err ) exit
-             end do
-             if ( err ) exit
-          end do
-          if ( err .and. Elecs(i)%DM_update == 0 ) then
-             ! some buffer atoms are close to this electrode
-             ! Advice to use dm_update
-             write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' is &
-                  &likely terminated by buffer atoms. It is HIGHLY recommended to add this:', &
-                  '  TS.Elec.'//trim(Name(Elecs(i)))//' DM-update [cross-terms|all]'
-          end if
-
-          ! In case DM_bulk is requested we assert that the file exists
-          err = file_exist(Elecs(i)%DEfile)
-          err = .not. err
-          if ( DM_bulk == 1 .and. err ) then
-             write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' TSDE &
-                  &file cannot be located in: '//trim(Elecs(i)%DEfile)//'.', &
-                  '  Please add TS.DE.Save T to the electrode calculation or &
-                  &specify the exact file position using ''TSDE-file'' in the&
-                  & Elec block.'
-          end if
-          
-       end do
-
-       if ( N_Elec /= 2 .and. any(Elecs(:)%DM_update == 0) ) then
-          write(*,'(a,/,a)') 'Consider updating more elements when doing &
-               &N-electrode calculations. The charge conservation typically &
-               &increases.','  TS.Elecs.DM.Update [cross-terms|all]'
-       end if
-
-    end if
-
-    if ( IONode ) then
-       write(*,'(3a,/)') repeat('*',24), &
-            ' End: TS CHECKS AND WARNINGS ',repeat('*',26)
-    end if
-
-    if ( IONode ) then
-       write(*,'(/,a,/)') '### Transiesta information for FDF-file START ###'
     end if
     
-    call print_mus_block( 'TS' , N_mu , mus)
-
-    call print_contour_block( 'TS' , IsVolt )
-
-    if ( IONode ) then
-       write(*,'(/,a,/)') '### Transiesta information for FDF-file END ###'
+    ! Calculate the number of optimal contour points
+    i = mod(N_Eq_E(), Nodes) ! get remaining part of equilibrium contour
+    if ( i /= 0 ) then
+       i = Nodes - i
+       write(*,'(a)')'Without loosing performance you can increase &
+            &the equilibrium integration precision.'
+       write(*,'(a,i0,a)')'You can add ',i,' more energy points in the &
+            &equilibrium contours, for FREE!'
+       if ( i/N_mu > 0 ) then
+          write(*,'(a,i0,a)')'This is ',i/N_mu, &
+               ' more energy points per chemical potential.'
+       end if
     end if
+    
+    call contour_nEq_warnings()
+    
+    if ( .not. Calc_Forces ) then
+       write(*,f11) '***       TranSIESTA will NOT update forces       ***'
+       write(*,f11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
+       if ( Nmove > 0 ) then
+          write(*,'(a)')'Relaxation with transiesta *REQUIRES* an update of &
+               &the energy density matrix. Will continue at your request.'
+          err = .true.
+       end if
+    end if
+
+    if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_update > 0) ) then
+       write(*,'(a)') 'transiesta relaxation is only allowed if you also &
+            &update, at least, the cross terms, please set: &
+            &TS.Elecs.DM.Update [cross-terms|all]'
+       err = .true.
+    end if
+
+    ! Calculate minimum electrode bond-length
+    min_bond_elec = huge(1._dp)
+    do j = 1 , na_u - 1
+       if ( .not. a_isElec(j) ) cycle
+       tmp3(:) = xa(:,j)
+       do i = j + 1 , na_u
+          if ( .not. a_isElec(i) ) cycle
+          min_bond_elec = min(min_bond_elec,VNORM(xa(:,i)-tmp3))
+       end do
+    end do
+    
+    ! a transiesta calculation requires that all atoms
+    ! are within the unit-cell.
+    ! Otherwise the electrostatic potential will definitely for V /= 0
+    ! be malplaced.
+    
+    ltmp = .false.
+    call reclat(cell,tmp33,0)
+    do i = 1 , na_u
+       if ( .not. a_isBuffer(i) ) then
+          ! Check the index
+          do j = 1 , 3
+             itmp3(j) = floor( dot_product(xa(:,i),tmp33(:,j)) )
+          end do
+          select case ( ts_tidx )
+          case ( 1, 2, 3 )
+             ! Only check the transport direction
+             ! Note that we have projected onto the unit-cell
+             ! vector, hence tidx and not tdir
+             if ( itmp3(ts_tidx) /= 0 ) then
+                ltmp = .true.
+             end if
+          case default
+             do j = 1 , 3
+                if ( itmp3(j) /= 0 ) then
+                   ltmp = .true.
+                end if
+             end do
+          end select
+       end if
+       if ( ltmp ) exit
+    end do
+    if ( ltmp ) then
+       write(*,'(a)') '*** Device atomic coordinates are not inside unit-cell.'
+       write(*,'(a)') '*** This is a requirement for bias calculations'
+       write(*,'(a)') '    as the Poisson equation cannot be correctly handled'
+       write(*,'(a)') '    due to inconsistencies with the grid and atomic coordinates'
+       if ( IsVolt ) then
+          write(*,'(a)') 'Please move device atoms inside the device region in &
+               &the transport direction.'
+          err = .true.
+       else
+          write(*,'(a)') '*** Will continue, but will die when running V /= 0 ***'
+          warn = .true.
+       end if
+    end if
+
+    if ( ts_tidx < 1 ) then
+       write(*,'(a)') '*** TranSIESTA semi-infinite directions are individual ***'
+       write(*,'(a)') '*** It is heavily adviced to have any electrodes with no &
+            &periodicity'
+       write(*,'(a)') '    in the transverse directions be located as far from any &
+            &cell-boundaries'
+       write(*,'(a)') '    as possible. This has to do with the electrostatic potential &
+            &correction. ***'
+       if ( IsVolt ) then
+          write(*,'(a)') '*** Please ensure electrode unit-cells are as confined as possible.'
+          write(*,'(a)') '    I.e. do not add superfluous vacuum if not needed in the &
+               &electrode calculation.'
+          write(*,'(a)') '    The initial guess for the potential profile is heavily influenced'
+          write(*,'(a)') '    by the electrode unit-cell sizes! ***'
+       end if
+    else if ( .not. elec_basal_plane ) then
+       ! The transport direction is well-defined
+       ! and the Hartree potential is fixed at the bottom of the
+       ! unit-cell of the A[ts_tidx] direction.
+       ! We will let the user know if any atoms co-incide with
+       ! the plane as that might hurt convergence a little.
+
+       ! If the distance is less than 0.5 of the minimal bond length we have
+       ! the atomic core "close" to the Hartree fix plane, notify the user of this
+       rtmp = 0.5 * min_bond_elec
+       ltmp = .false.
+       do i = 1 , na_u
+          ltmp = abs(xa(ts_tdir,i)) < rtmp
+          if ( ltmp ) exit
+       end do
+       if ( ltmp ) then
+          write(*,'(a,f9.5,a)')'You can with benefit move all atoms &
+               &in the transport direction by ',rtmp/Ang,' Ang'
+          write(*,'(2a)') 'This removes atoms from the constant &
+               &potential plane. ', &
+               'See %block AtomicCoordinatesOrigin for easy shifts.'
+          warn = .true.
+       end if
+    end if
+
+    ! Check that the unitcell does not extend into the transport direction
+    do i = 1 , 3
+       if ( i == ts_tidx .or. ts_tidx <= 0 ) cycle
+       if ( abs(dot_product(cell(:,i),cell(:,ts_tidx))) > 1e-7_dp ) then
+          write(*,*) "ERROR: Unit cell has the electrode extend into the &
+               &transport direction."
+          write(*,*) dot_product(cell(:,i),cell(:,ts_tidx))
+          write(*,*) "Please change the geometry."
+          err = .true.
+       end if
+    end do
+
+    ! If the user has requested to initialize using transiesta
+    ! and the user does not utilize the bulk DM, they should be
+    ! warned
+    if ( TS_scf_mode == 1 .and. DM_bulk == 0 ) then
+       write(*,'(a)') 'You are not initializing the electrode DM/EDM. &
+            &This may result in very wrong electrostatic potentials close to &
+            &the electrode/device boundary region.'
+       warn = .true.
+    end if
+
+    ! warn the user about suspicous work regarding the electrodes
+    do i = 1 , N_Elec
+
+       if ( .not. Elecs(i)%Bulk ) then
+          write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
+               &not use bulk Hamiltonian. Be careful here.'
+       end if
+
+       if ( Elecs(i)%DM_update == 0 ) then
+          write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
+               &not update cross-terms or local region.'
+          warn = .true.
+       end if
+
+       if ( .not. Elecs(i)%kcell_check ) then
+          write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
+               &not check the k-grid sampling vs. system k-grid &
+               &sampling. Please ensure appropriate sampling.'
+       end if
+       if ( Elecs(i)%Ef_frac_CT /= 0._dp ) then
+          write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
+               &shift coupling Hamiltonian with a shift in energy. &
+               &Be careful here.'
+          warn = .true.
+       end if
+
+       ! if any buffer atoms exist, we should suggest to the user
+       ! to use TS.Elec.<elec> [DM-update cross-terms|all]
+       ! in case any buffer atoms are too close
+       ltmp = .false.
+       do j = 1 , na_u
+          ! skip non-buffer atoms
+          if ( .not. a_isBuffer(j) ) cycle
+          do idx = 0 , TotUsedAtoms(Elecs(i)) - 1
+             ! Proximity of 10 Bohr ~ 5 Ang enables this check
+             ltmp = vnorm(xa(:,Elecs(i)%idx_a+idx)-xa(:,j)) < 10._dp
+             if ( ltmp ) exit
+          end do
+          if ( ltmp ) exit
+       end do
+       if ( ltmp .and. Elecs(i)%DM_update == 0 ) then
+          ! some buffer atoms are close to this electrode
+          ! Advice to use dm_update
+          write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' is &
+               &likely terminated by buffer atoms. It is HIGHLY recommended to add this:', &
+               '  TS.Elec.'//trim(Name(Elecs(i)))//' DM-update [cross-terms|all]'
+          warn = .true.
+       end if
+
+       ! In case DM_bulk is requested we assert that the file exists
+       ltmp = file_exist(Elecs(i)%DEfile)
+       if ( DM_bulk == 1 .and. .not. ltmp ) then
+          write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' TSDE &
+               &file cannot be located in: '//trim(Elecs(i)%DEfile)//'.', &
+               '  Please add TS.DE.Save T to the electrode calculation or &
+               &specify the exact file position using ''TSDE-file'' in the&
+               & TS.Elec block.'
+          warn = .true.
+       end if
+
+    end do
+
+    if ( N_Elec /= 2 .and. any(Elecs(:)%DM_update == 0) ) then
+       write(*,'(a,/,a)') 'Consider updating more elements when doing &
+            &N-electrode calculations. The charge conservation typically &
+            &increases.','  TS.Elecs.DM.Update [cross-terms|all]'
+       warn = .true.
+    end if
+
+    write(*,'(3a,/)') repeat('*',24),' End: TS CHECKS AND WARNINGS ',repeat('*',26)
+
+    if ( warn ) then
+       ! Print BIG warning sign
+
+       write(*,'(tr18,a)') repeat('*',40)
+       write(*,'(tr19,a)') 'TRANSIESTA REPORTED IMPORTANT WARNINGS'
+       write(*,'(tr18,a)') repeat('*',40)
+
+    end if
+
+    if ( err ) then
+       write(*,'(/tr18,a)') repeat('*',30)
+       write(*,'(tr19,a)') 'TRANSIESTA REPORTED ERRORS'
+       write(*,'(tr18,a)') repeat('*',30)
+
+       call die('One or more errors have occured doing transiesta &
+            &initialization, check the output')
+    end if
+    
+  end subroutine print_ts_warnings
+
+
+  subroutine print_ts_blocks( na_u, xa ) 
+
+    use parallel, only : IONode
+    use files, only : slabel
+
+    use m_ts_global_vars, only: TSmode, onlyS
+    use m_ts_chem_pot, only: print_mus_block
+    use m_ts_electype, only: print_elec
+    use m_ts_contour, only: print_contour_block, io_contour
+
+
+    ! Input variables
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+
+    ! Local variables
+    integer :: i
+
+    if ( .not. IONode ) return
+
+    if ( onlyS .or. .not. TSmode ) return
+
+    write(*,'(/,a,/)') '>>> Transiesta block information for FDF-file START <<<'
+    
+    call print_mus_block( 'TS' , N_mu , mus)
+    
+    call print_contour_block( 'TS' , IsVolt )
+    
+    write(*,'(/,a,/)') '>>> Transiesta block information for FDF-file END <<<'
 
     ! write out the contour
     call io_contour(IsVolt, mus, slabel)
@@ -1192,82 +1376,8 @@ contains
        call print_elec(Elecs(i),na_u,xa)
     end do
 
-#ifdef TRANSIESTA_WEIGHT_DEBUG
-    if ( IONode ) then
-       allocate(ID_mu(N_nEq_ID))
-       allocate(rnID(N_nEq_ID),rw(N_mu),rn(N_mu))
-       do i = 1 , N_nEq_ID
-          ID_mu(i) = ID2mu(i)
-          rnID(i) = i
-       end do
-       write(*,'(a)') 'Equilibrium:'
-       tmp = .5_dp / 3.14159265358979323846_dp
-       i = 1
-       cE = Eq_E(i,step=1) ! we read them backwards
-       do while ( cE%exist ) 
-          
-          do j = 1 , N_mu
-             if ( cE%fake ) cycle
-             call ID2idx(cE,mus(j)%ID,idx)
-             if ( idx < 1 ) cycle
-             call c2weight_eq(cE,idx, tmp, W ,ZW)
+  end subroutine print_ts_blocks
 
-             write(*,'(i2,tr1,a10,2(tr1,i2),4(tr1,f10.5))') &
-                  i,trim(mus(j)%name),mus(j)%ID,idx,W,ZW / eV
-          end do
-          i = i + 1
-          cE = Eq_E(i,step=1)
-       end do
-
-       write(*,'(a)') 'Non-equilibrium:'
-       i = 1
-       cE = nEq_E(i,step=1) ! we read them backwards
-       do while ( cE%exist ) 
-          
-          do j = 1 , N_Elec
-             if ( cE%fake ) cycle
-             if ( .not. has_cE(cE,iEl=j) ) cycle
-
-             do idx1 = 1 , N_nEq_ID
-                if ( .not. has_cE(cE,iEl=j,ineq=idx1) ) cycle
-                
-                call c2weight_neq(cE,j,idx1, tmp,W,idx,ZW)
-
-                write(*,'(i2,tr1,a10,2(tr1,i2),4(tr1,f10.5))') &
-                     i,trim(Elecs(j)%name),mus(idx)%ID,idx1,W,ZW / eV
-             end do
-          end do
-
-          i = i + 1
-          cE = nEq_E(i,step=1)
-       end do
-       write(*,'(a)') 'DM_neq: '
-       do i = 1 , N_nEq_ID
-          write(*,'(2(a10,tr1),f10.5)') &
-               trim(Elecs(nEq_ID(i)%iEl)%name),trim(mus(nEq_ID(i)%imu)%name),rnID(i)
-       end do
-       call calc_neq_weight(N_mu,N_nEq_ID,ID_mu,rnID,rn,rw)
-       write(*,'(a)') 'Contrib and weights: '
-       do i = 1 , N_mu
-          write(*,'(a10,2(tr1,f10.5))') trim(mus(i)%name),rn(i),rw(i)
-       end do
-       !call die('Stopping on request! Debugging WEIGHTS!!!')
-    end if
-#endif
-
-
-1   format('ts_options: ',a,t53,'=',4x,l1)
-5   format('ts_options: ',a,t53,'=',i5,a)
-20  format('ts_options: ',a,t53,'= ',i0,' -- ',i0)
-6   format('ts_options: ',a,t53,'=',f10.4,tr1,a)
-7   format('ts_options: ',a,t53,'=',f12.6,tr1,a)
-8   format('ts_options: ',a,t53,'=',f10.4)
-9   format('ts_options: ',a,t53,'=',tr1,e9.3)
-10  format('ts_options: ',a,t53,'=',4x,a)
-11  format('ts_options: ',a)
-15  format('ts_options: ',a,t53,'= ',i0,' x ',i0,' x ',i0)
-    
-  end subroutine read_ts_options
 
   subroutine val_swap(v1,v2)
     real(dp), intent(inout) :: v1, v2

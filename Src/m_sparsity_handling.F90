@@ -918,7 +918,6 @@ contains
     integer :: io, i, j, n_nzs, sp_dim, dim2
     real(dp) :: y(N)
 
-
     ! prep the array assignments...
     do i = 1 , N
        array(i)%v => val(A_2Ds(i))

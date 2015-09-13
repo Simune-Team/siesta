@@ -908,7 +908,7 @@ contains
                 call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                      r_oDev, Elecs(iEl)%o_inD)
 
-                if ( 'T-reflect' .in. save_DATA ) then
+                if ( 'T-sum-out' .in. save_DATA ) then
                    call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
                 end if
 
@@ -963,7 +963,7 @@ contains
                 ! calculate this.
                 if ( ('T-all' .nin. save_DATA ) .and. &
                      jEl < iEl ) cycle
-                if ( ('T-reflect' .nin. save_DATA ) .and. &
+                if ( ('T-sum-out' .nin. save_DATA ) .and. &
                      iEl == jEl ) cycle
 
                 ! Notice that the Gf.G1.Gf.G2 can be performed
@@ -1070,7 +1070,7 @@ contains
                call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                     r_oDev, p_E%ME%mol%orb)
 
-               if ( 'proj-T-reflect' .in. save_DATA ) then
+               if ( 'proj-T-sum-out' .in. save_DATA ) then
                   ! Copy over pivoting table and the size
                   El_p%inDpvt%n =  p_E%ME%mol%pvt%n
                   El_p%inDpvt%r => p_E%ME%mol%pvt%r
@@ -1088,7 +1088,7 @@ contains
                call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                     r_oDev, Elecs(iEl)%o_inD)
 
-               if ( 'proj-T-reflect' .in. save_DATA ) then
+               if ( 'proj-T-sum-out' .in. save_DATA ) then
                   ! This should work, but I currently do not allow it :(
                   call Gf_Gamma(zwork_tri,Elecs(iEl), &
                        bTk(1+size(proj_T(ipt)%R),ipt))

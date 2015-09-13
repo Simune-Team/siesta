@@ -146,7 +146,7 @@
 !$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
 !$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
 #ifdef _OPENMP
-!$    write(*,'(a,i0,a)') '* OpenMP version ', _OPENMP
+!$    write(*,'(a,i0)') '* OpenMP version ', _OPENMP
 #endif
 !$    call omp_get_schedule(i,is)
 !$    select case ( i )

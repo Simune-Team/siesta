@@ -11,6 +11,9 @@ module m_ts_global_vars
   ! Controls the change from diagon to transiesta solver
   logical :: TSinit = .false. , TSrun = .false.
 
+  ! Whether this is an only overlap calculation
+  logical :: onlyS = .false.
+
 contains
 
   subroutine ts_method_init( start )

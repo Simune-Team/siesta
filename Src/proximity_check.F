@@ -11,7 +11,7 @@
       use neighbour,    only : jna=>jan, r2ij, mneighb,
      &                         reset_neighbour_arrays
 #ifdef TRANSIESTA
-      use m_ts_options, only : onlyS
+      use m_ts_global_vars, only : onlyS
 #endif
       implicit none
       real(dp), intent(in)  :: rmax

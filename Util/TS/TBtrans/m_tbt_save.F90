@@ -15,7 +15,7 @@ module m_tbt_save
   character(len=100), save :: save_dir = ' '
   public :: save_dir
 
-  public :: init_save_options
+  public :: init_save_options, print_save_options
   public :: name_save
 #ifdef NCDF_4
   interface tbt_cdf_precision
@@ -147,30 +147,33 @@ contains
        call die('Directory: '//trim(save_dir)//' does not exist.')
     end if
     
-#ifdef NCDF_4
-    if ( Node == 0 ) then
+  end subroutine init_save_options
 
-       if ( len_trim(save_dir) > 0 ) then
-          write(*,6)'Data files stored in folder',trim(save_dir)
-       else
-          write(*,11)'Data files stored in current folder'
-       end if
+  subroutine print_save_options()
 
-       if ( cmp_lvl > 0 ) then
-          write(*,5) 'Compression level of TBT.nc files',cmp_lvl
-       else
-          write(*,11)'No compression of TBT.nc files'
-       end if
+    use parallel, only: IONode
 
+    character(len=*), parameter :: f10='(''tbt: '',a,t53,''='',tr4,a)'
+    character(len=*), parameter :: f11='(''tbt: '',a)'
+    character(len=*), parameter :: f12='(''tbt: '',a,t53,''='',tr2,i0)'
+
+    if ( .not. IONode ) return
+
+    if ( len_trim(save_dir) > 0 ) then
+       write(*,f10)'Data files stored in folder',trim(save_dir)
+    else
+       write(*,f11)'Data files stored in current folder'
     end if
 
-5   format('tbt_options: ',a,t53,'=',i5,a)
-6   format('tbt_options: ',a,t53,'=',tr1,a)
-11  format('tbt_options: ',a)
-
+#ifdef NCDF_4
+    if ( cmp_lvl > 0 ) then
+       write(*,f12) 'Compression level of TBT.nc files',cmp_lvl
+    else
+       write(*,f11)'No compression of TBT.nc files'
+    end if
 #endif
-
-  end subroutine init_save_options
+    
+  end subroutine print_save_options
 
 #ifdef NCDF_4
   subroutine cdf_precision_real(name,default,prec)
@@ -653,7 +656,7 @@ contains
        do jEl = 1 , N_Elec
           if ( ('T-all' .nin. save_DATA ) .and. &
                jEl < iEl ) cycle
-          if ( ('T-reflect' .nin. save_DATA ) .and. &
+          if ( ('T-sum-out' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
           if ( iEl /= jEl ) then
@@ -673,13 +676,13 @@ contains
 
              ! For the same electrode we retain the group
              ! and utilise this for saving the reflection.
-             dic = dic//('info'.kv.'Reflection')
-             call ncdf_def_var(grp,trim(tmp)//'.R',prec_T,(/'ne  ','nkpt'/), &
+             dic = dic//('info'.kv.'Out transmission correction')
+             call ncdf_def_var(grp,trim(tmp)//'.C',prec_T,(/'ne  ','nkpt'/), &
                   atts = dic )
 
              if ( N_eigen > 0 ) then
-                dic = dic//('info'.kv.'Reflection eigenvalues')
-                call ncdf_def_var(grp,trim(tmp)//'.R.Eig',prec_Teig, &
+                dic = dic//('info'.kv.'Out transmission eigenvalues')
+                call ncdf_def_var(grp,trim(tmp)//'.C.Eig',prec_Teig, &
                      (/'neig','ne  ','nkpt'/), &
                      atts = dic )
              end if
@@ -1028,11 +1031,11 @@ contains
        do jEl = 1 , N_Elec
           if ( ('T-all' .nin. save_DATA ) .and. &
                jEl < iEl ) cycle
-          if ( ('T-reflect' .nin. save_DATA ) .and. &
+          if ( ('T-sum-out' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
           if ( jEl == iEl ) then
-             tmp  = trim(Elecs(jEl)%name)//'.R'
+             tmp  = trim(Elecs(jEl)%name)//'.C'
              tmp2 = trim(Elecs(jEl)%name)//'.T'
           else
              tmp  = trim(Elecs(jEl)%name)//'.T'
@@ -1496,31 +1499,31 @@ contains
           ! calculate this.
           if ( ('T-all' .nin. save_DATA ) .and. &
                jEl < iEl ) cycle
-          if ( ('T-reflect' .nin. save_DATA ) .and. &
+          if ( ('T-sum-out' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
           if ( iEl == jEl ) then
-             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.R',r2)
+             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.C',r2)
              ! Save the variable to ensure the correct sum in the transmission
              if ( nkpt > 1 ) then
-                call name_save(ispin,nspin,ascii_file,end='REFL', El1=Elecs(iEl))
-                call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'Reflection',&
-                     '# Reflection, k-resolved')
+                call name_save(ispin,nspin,ascii_file,end='CORR', El1=Elecs(iEl))
+                call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'Correction',&
+                     '# Out transmission correction, k-resolved')
              end if
-             call name_save(ispin,nspin,ascii_file,end='AVREFL', El1=Elecs(iEl))
-             call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Reflection',&
-                  '# Reflection, k-averaged')
+             call name_save(ispin,nspin,ascii_file,end='AVCORR', El1=Elecs(iEl))
+             call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Correction',&
+                  '# Out transmission correction, k-averaged')
 
              if ( N_eigen > 0 ) then
-                call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.R.Eig',r3)
+                call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.C.Eig',r3)
                 if ( nkpt > 1 ) then
-                   call name_save(ispin,nspin,ascii_file,end='REIG', El1=Elecs(iEl) )
+                   call name_save(ispin,nspin,ascii_file,end='CEIG', El1=Elecs(iEl) )
                    call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
-                        '# Reflection eigenvalues, k-resolved')
+                        '# Out transmission correction eigenvalues, k-resolved')
                 end if
-                call name_save(ispin,nspin,ascii_file,end='AVREIG', El1=Elecs(iEl) )
+                call name_save(ispin,nspin,ascii_file,end='AVCEIG', El1=Elecs(iEl) )
                 call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
-                     '# Reflection eigenvalues, k-averaged')
+                     '# Out transmission correction eigenvalues, k-averaged')
              end if
 
              ! The transmission is now the total incoming wave 
@@ -1892,25 +1895,40 @@ contains
           ! calculate this.
           if ( ('T-all' .nin. save_DATA ) .and. &
                jEl < iEl ) cycle
-          if ( ('T-reflect' .nin. save_DATA ) .and. &
+          if ( ('T-sum-out' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
 
           if ( iEl == jEl ) then
 
-             call name_save(ispin,nspin,ascii_file,end='REFL', &
+             call name_save(ispin,nspin,ascii_file,end='CORR', &
                   El1=Elecs(iEl))
              
              call io_assign(iu)
              open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
-             write(iu,'(a)') '# Reflection, k-resolved'
+             write(iu,'(a)') '# Out transmission correction, k-resolved'
              write(iu,'(a)') '# Date: '//trim(tmp)
-             write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'Reflection'
+             write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'Correction'
 
              iounits(cu) = iu
              
              cu = cu + 1
 
+             if ( N_eigen > 0 ) then
+                call name_save(ispin,nspin,ascii_file,end='CEIG', &
+                     El1=Elecs(iEl))
+                
+                call io_assign(iu)
+                open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
+                write(iu,'(a)') '# Out transmission correction eigenvalues, k-resolved'
+                write(iu,'(a)') '# Date: '//trim(tmp)
+                write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'Eigenvalues'
+                
+                iounits(cu) = iu
+                
+                cu = cu + 1
+             end if
+             
           end if
              
           call name_save(ispin,nspin,ascii_file,end='TRANS', &
@@ -1926,7 +1944,7 @@ contains
           
           cu = cu + 1
 
-          if ( jEl /= iEl .and. ('T-eig' .in. save_DATA) ) then
+          if ( jEl /= iEl .and. N_eigen > 0 ) then
              call name_save(ispin,nspin,ascii_file,end='TEIG', &
                   El1=Elecs(iEl), El2=Elecs(jEl))
              
@@ -2143,7 +2161,7 @@ contains
           ! calculate this.
           if ( ('T-all' .nin. save_DATA ) .and. &
                jEl < iEl ) cycle
-          if ( ('T-reflect' .nin. save_DATA ) .and. &
+          if ( ('T-sum-out' .nin. save_DATA ) .and. &
                iEl == jEl ) cycle
 
           if ( jEl == iEl ) then
@@ -2154,6 +2172,12 @@ contains
              ! flux. Hence we simply reverse the print-outs.
              call local_save_DAT(iounits(cu),nE,ipvt,1,T(N_Elec+1:N_Elec+1,iEl))
              cu = cu + 1
+
+             if ( N_eigen > 0 ) then
+                call local_save_EIG(iounits(cu),nE,ipvt,N_eigen,Teig(:,jEl,iEl))
+                cu = cu + 1
+             end if
+
           end if
 
           call local_save_DAT(iounits(cu),nE,ipvt,1,T(jEl:jEl,iEl))

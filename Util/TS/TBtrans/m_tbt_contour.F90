@@ -26,7 +26,7 @@ module m_tbt_contour
   ! this is heavily linked with the CONTOUR_EQ from m_ts_contour_eq
   integer, parameter, public :: CONTOUR_TBT = 5
 
-  public :: tbt_read_contour_options
+  public :: read_contour_options
   public :: print_contour_tbt_options
   public :: print_contour_tbt_block
   public :: io_contour_tbt
@@ -38,7 +38,7 @@ module m_tbt_contour
 
 contains
 
-  subroutine tbt_read_contour_options(N_Elec,Elecs,N_mu,mus)
+  subroutine read_contour_options(N_Elec,Elecs,N_mu,mus)
 
     use parallel, only : Node
     use units, only : eV
@@ -51,7 +51,8 @@ contains
     integer, intent(in) :: N_mu
     type(ts_mu), intent(in), target :: mus(N_mu)
     
-    real(dp) :: Volt, tmp
+    real(dp) :: Volt, tmp, max_kT
+    character(len=C_N_NAME_LEN) :: ctmp
 #ifdef TBT_PHONON
     integer :: i
 #endif
@@ -62,12 +63,13 @@ contains
        write(*,'(a)')'*** NOTICE ***'
        write(*,'(a)')'tbtrans will use the advanced Green function'
     end if
+    max_kT = maxval(mus(:)%kT)
 
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input
 
     ! Bias-window setup
-    call my_setup(' ',N_tbt,tbt_c,tbt_io,maxval(mus(:)%kT))
+    call my_setup(' ',N_tbt,tbt_c,tbt_io,max_kT)
     
     tmp = fdf_get('TS.Voltage',0._dp,'Ry')
     Volt = fdf_get('TBT.Voltage',tmp,'Ry')
@@ -85,24 +87,29 @@ contains
        nullify(tbt_io,tbt_c)
        allocate(tbt_io(N_tbt),tbt_c(N_tbt))
        tbt_c(1)%c_io => tbt_io(1)
-       tbt_io(1)%part = 'line'
-       tbt_io(1)%name = 'neq'
+       ctmp = 'line'
+       if ( ts_exists_contour_block('TBT',' ',ctmp) ) then
+          call ts_read_contour_block('TBT',' ',ctmp,tbt_io(1),max_kT,Volt)
+       else
+          tbt_io(1)%part = 'line'
+          tbt_io(1)%name = ctmp
 #ifdef TBT_PHONON
-       tbt_io(1)%ca = '0. eV'
-       tbt_io(1)%a  = 0._dp
-       tbt_io(1)%cb = '0.5 eV'
-       tbt_io(1)%b  =  0.5_dp * eV
-       tbt_io(1)%cd = '0.0025 eV'
-       tbt_io(1)%d = 0.0025_dp * eV
+          tbt_io(1)%ca = '0. eV'
+          tbt_io(1)%a  = 0._dp
+          tbt_io(1)%cb = '0.5 eV'
+          tbt_io(1)%b  =  0.5_dp * eV
+          tbt_io(1)%cd = '0.0025 eV'
+          tbt_io(1)%d = 0.0025_dp * eV
 #else
-       tbt_io(1)%ca = '-2. eV'
-       tbt_io(1)%a  = - 2._dp * eV
-       tbt_io(1)%cb = '2. eV'
-       tbt_io(1)%b  =  2._dp * eV
-       tbt_io(1)%cd = '0.01 eV'
-       tbt_io(1)%d = 0.01_dp * eV
+          tbt_io(1)%ca = '-2. eV'
+          tbt_io(1)%a  = - 2._dp * eV
+          tbt_io(1)%cb = '2. eV'
+          tbt_io(1)%b  =  2._dp * eV
+          tbt_io(1)%cd = '0.01 eV'
+          tbt_io(1)%d = 0.01_dp * eV
 #endif
-       tbt_io(1)%method = 'mid-rule'
+          tbt_io(1)%method = 'mid-rule'
+       end if
        call ts_fix_contour(tbt_io(1))
 
        ! setup the contour
@@ -203,7 +210,7 @@ contains
 
     end subroutine my_setup
 
-  end subroutine tbt_read_contour_options
+  end subroutine read_contour_options
                                          
 
   ! This routine assures that we have setup all the 
@@ -241,7 +248,7 @@ contains
 
     if ( c%c_io%N < 1 ) then
        call die('Contour: '//trim(c%c_io%Name)//' has &
-            an errorneous number of points.')
+            an erroneous number of points (<1).')
     end if
 
     ! get bounds
@@ -400,7 +407,7 @@ contains
     if ( .not. IONode ) return
     
     write(*,opt_n) '             >> TBtrans contour << '
-    write(*,opt_g_u) 'non-Equilibrium Green function Eta',tbt_Eta/eV,'eV'
+    write(*,opt_g_u) 'Device Green function imaginary Eta',tbt_Eta/eV,'eV'
     do i = 1 , N_tbt
        chars = '  '//trim(tbt_io(i)%part)
        write(*,opt_c) 'Contour name',trim(prefix)// &

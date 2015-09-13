@@ -190,8 +190,8 @@ contains
     ! The update sparsity pattern can be simplied to the H,S sparsity
     ! pattern, if all electrodes have certain options to be the same.
     bool = all(Elecs(:)%Bulk) .and. all(Elecs(:)%DM_update == 1)
-    bool = bool .or. all( .not. Elecs(:)%Bulk )
-    bool = bool .or. all( Elecs(:)%DM_update == 2 )
+    bool = bool .or. &
+         ( all(.not. Elecs(:)%Bulk) .and. all(Elecs(:)%DM_update == 2) )
 
     if ( IONode .and. .not. bool ) then
        write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern:'
@@ -249,7 +249,16 @@ contains
 
   end subroutine ts_sparse_init
 
-  
+
+  ! This routine returns a sparsity pattern which only contains
+  ! orbitals that are in the device + electrode region.
+  ! thus we have removed the following orbitals:
+  !   - buffer
+  !   - cross terms between:
+  !     * electrode-electrode
+  !     * electrode-cross boundaries, say if the electrode
+  !       basis range is extending across the other side electrode
+  !       this ensures no "ghost-transmission"
   subroutine ts_Sp_calculation(dit,s_sp,N_Elec,Elecs, &
        ucell, nsc, isc_off, &
        ts_sp)
@@ -324,11 +333,12 @@ contains
   end subroutine ts_Sp_calculation
 
 
-! Returns the global sparsity pattern for the transiesta region
-! Note that this will automatically detect whether there are
-! cross connections from left-right, AND remove any
-! z-connections (less orbitals to move about, and they should
-! not exist).
+  ! Returns the sparsity pattern of the Hamiltonian and the overlap
+  ! matrix that is used in the Green function calculation.
+  ! It requires the passed sparsity pattern to have removed
+  ! any cross-terms.
+  ! If they are not already removed a more simpler algorithm will
+  ! remove those terms via direct interaction.
   subroutine ts_Sparsity_Global(dit,s_sp, &
        N_Elec, Elecs, ts_sp)
 
@@ -403,7 +413,7 @@ contains
     call delete(sp_global)
 
 #else
-    call crtSparsity_SC(s_sp,sp_uc    , UC=.TRUE.)
+    call crtSparsity_SC(s_sp,sp_uc, UC=.TRUE.)
     uc_n_nzs = nnzs(sp_uc)
 #endif
 
@@ -454,17 +464,9 @@ contains
              ! In order to allow to have the update sparsity pattern
              ! as a subset, we require that the Hamiltonian also
              ! has the electrode interconnects
-             if ( Elecs(iot)%DM_update == 2 ) then
-                UseBulk = .false.
-             else
-                UseBulk = Elecs(iot)%Bulk
-             end if
+             UseBulk = Elecs(iot)%Bulk
           else if ( jot > 0 ) then
-             if ( Elecs(jot)%DM_update == 2 ) then
-                UseBulk = .false.
-             else
-                UseBulk = Elecs(jot)%Bulk
-             end if
+             UseBulk = Elecs(jot)%Bulk
           else
              ! we are definitely not in an electrode
              UseBulk = .true.
@@ -476,17 +478,19 @@ contains
              !  2) no only-electrode connections
              !  3) add cross-terms
 
-             l_HS(ind) = any((/iot,jot/)==TYP_DEVICE)
+             l_HS(ind) = iot == TYP_DEVICE .or. jot == TYP_DEVICE
 
           else
+             
              ! If not usebulk we update everything that is not buffer
              ! We also do not add things that are from one electrode
              ! to another
-             if ( all(0 < (/iot,jot/)) ) then
+             if ( iot > 0 .and. jot > 0 ) then
                 l_HS(ind) = iot == jot
              else
                 l_HS(ind) = .true.
              end if
+             
           end if
 
        end do
@@ -501,6 +505,8 @@ contains
     call crtSparsity_SC(sp_uc,ts_sp,MASK=l_HS)
 
     ! Ensure that it is sorted
+    ! Sorting the sparsity pattern greatly speeds up the Hamiltonian
+    ! and overlap matrix searches
     call attach(ts_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 !$OMP parallel do default(shared), private(io,ind)
     do io = 1 , no_u
@@ -521,11 +527,11 @@ contains
   end subroutine ts_Sparsity_Global
 
 
-! Returns the global sparsity pattern for the transiesta region
-! Note that this will automatically detect whether there are
-! cross connections from left-right, AND remove any
-! z-connections (less orbitals to move about, and they should
-! not exist).
+  ! Returns the global sparsity pattern of the density density
+  ! matrix that is to be updated.
+  ! This may be a sub-set of the Hamiltonian and overlap matrices
+  ! used for creating the Green function, or it could be different,
+  ! depending on the bulkiness and update settings for transiesta.
   subroutine ts_Sparsity_Update(dit,s_sp, N_Elec, Elecs, &
        tsup_sp)
 
@@ -560,8 +566,7 @@ contains
 
     ! search logical to determine the update region...
     logical, allocatable :: lup_DM(:)
-    logical :: direct_LR
-    logical :: UseBulk, DM_CrossTerms
+    logical :: DM_bulk, DM_cross
 
     ! Loop-counters
     integer :: lio, io, ind
@@ -581,14 +586,13 @@ contains
 
     ! Initialize
     lup_DM(:) = .false.
-    direct_LR = .false.
 
     call attach(s_sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
     ! We do not need to check the buffer regions...
     ! We know they will do NOTHING! :)
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,ict,jct,ind,UseBulk,DM_CrossTerms), &
+!$OMP&private(lio,io,ict,jct,ind,DM_bulk,DM_cross), &
 !$OMP&private(i_in_C,j_in_C)
     do lio = 1 , no_l
 
@@ -608,24 +612,22 @@ contains
           if ( jct == TYP_BUFFER ) cycle
 
           if ( ict > 0 ) then
-             if ( Elecs(ict)%DM_update == 2 ) then ! update everything
-                UseBulk = .false.
-             else
-                UseBulk = Elecs(ict)%Bulk
-                DM_CrossTerms = Elecs(ict)%DM_update == 1
-             end if
+             ! Assign that the density matrix, should not be updated
+             DM_bulk = Elecs(ict)%DM_update < 2
+             ! If DM_cross is different from 0, the entire
+             ! electrode region is updated
+             DM_cross = Elecs(ict)%DM_update /= 0
           else if ( jct > 0 ) then
-             if ( Elecs(jct)%DM_update == 2 ) then ! update everything
-                UseBulk = .false.
-             else
-                UseBulk = Elecs(jct)%Bulk
-                DM_CrossTerms = Elecs(jct)%DM_update == 1
-             end if
+             ! Assign that the density matrix, should not be updated
+             DM_bulk = Elecs(ict)%DM_update < 2
+             ! If DM_cross is different from 0, the entire
+             ! electrode region is updated
+             DM_cross = Elecs(ict)%DM_update /= 0
           else
              ! we are definitely not in an electrode
              ! just set it to be updated
-             UseBulk = .false.
-             DM_CrossTerms = .true.
+             DM_bulk = .false.
+             DM_cross = .true.
           end if
 
           ! We check whether it is electrode-connections. 
@@ -633,46 +635,37 @@ contains
           if      ( ict > 0 .and. jct > 0 ) then
              ! Remove connections between electrodes
              ! but maintain same electrode updates if not usebulk
-             if ( ict == jct .and. .not. UseBulk ) then
+             if ( ict == jct .and. .not. DM_bulk ) then
                 lup_DM(ind) = .true.
              else
                 lup_DM(ind) = .false.
              end if
 
-             ! This means that we have an INNER-cell connection
-             !if ( jc == l_col(ind) ) then
-                ! The first super-cell is the home-unit-cell
-                ! hence it means a direct interaction in the unit-cell
-                !print *,orb_type((/ic,jc/))
-                !direct_LR = .true.
-             !end if
-          else if ( UseBulk ) then
-             ! If UseBulk, we can safely update cross-terms
+          else if ( DM_bulk ) then
+             ! If bulk density, we can safely update cross-terms
              ! between the central and the electrodes (the self-energies are the
              ! same)
-             ! This will also remove any electrode terms
-                
+
+             ! Note that this if-statement will never be reached
+             ! if both ict and jct are electrodes.
+             ! We will only be here if either of them is an electrode.
+             
              i_in_C = ict == TYP_DEVICE
              j_in_C = jct == TYP_DEVICE
              
-             if ( DM_CrossTerms ) then
+             if ( DM_cross ) then
                 ! the user has requested to also update cross-terms
-                lup_DM(ind) = i_in_C .or.  j_in_C
+                lup_DM(ind) = i_in_C .or. j_in_C
              else
                 ! the user has requested to ONLY update the central region
                 lup_DM(ind) = i_in_C .and. j_in_C
              end if
 
           else
-             ! If not UseBulk the full Hamiltonian and the 
-             ! self-energy terms are used.
-             ! Hence, everything in the left-central-right
-             ! is updated (note that we are sure to be
-             ! in the range [noBufL+1;no_u-noBufR]
-             ! Otherwise we needed to test that here.
+
+             ! We are not in an electrode, or it is non-bulk.
+             ! Hence, everything is updated.
              lup_DM(ind) = .true.
-             ! It makes no sense to ususe UpdateDMCR in case of not using UseBulk
-             ! as we update something that is not used...
              
           end if
 
@@ -682,22 +675,6 @@ contains
 
     end do
 !$OMP end parallel do
-
-    ! Tell the user about inner-cell connections
-    if ( IONode .and. direct_LR ) then
-       write(*,*) 'WARNING: Cross connections across the &
-            &junction leads to tunneling.'
-       write(*,*) 'WARNING: Transiesta will disregard these &
-            &cross-terms'
-       write(*,*) 'WARNING: Consider increasing the electrodes &
-            &in the transport-direction.'
-       write(0,*) 'WARNING: Cross connections across the &
-            &junction leads to tunneling.'
-       write(0,*) 'WARNING: Transiesta will disregard these &
-            &cross-terms'
-       write(0,*) 'WARNING: Consider increasing the electrodes &
-            &in the transport-direction.'
-    end if
 
     ! We now have a MASK of the actual needed TranSIESTA sparsity pattern
     ! We create the TranSIESTA sparsity pattern

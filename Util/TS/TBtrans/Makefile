@@ -692,12 +692,11 @@ m_ts_mumpsk.o: m_ts_electype.o m_ts_gf.o m_ts_kpoints.o m_ts_method.o
 m_ts_mumpsk.o: m_ts_mumps_init.o m_ts_mumps_scat.o m_ts_options.o m_ts_sparse.o
 m_ts_mumpsk.o: m_ts_sparse_helper.o m_ts_weight.o parallel.o precision.o
 m_ts_mumpsk.o: units.o
-m_ts_options.o: alloc.o files.o intrinsic_missing.o m_os.o m_ts_cctype.o
-m_ts_options.o: m_ts_charge.o m_ts_chem_pot.o m_ts_contour.o m_ts_contour_eq.o
+m_ts_options.o: files.o intrinsic_missing.o m_os.o m_ts_charge.o
+m_ts_options.o: m_ts_chem_pot.o m_ts_contour.o m_ts_contour_eq.o
 m_ts_options.o: m_ts_contour_neq.o m_ts_electype.o m_ts_global_vars.o
-m_ts_options.o: m_ts_hartree.o m_ts_io.o m_ts_io_contour.o m_ts_method.o
-m_ts_options.o: m_ts_mumps_init.o m_ts_tdir.o m_ts_weight.o parallel.o
-m_ts_options.o: precision.o siesta_options.o sys.o units.o
+m_ts_options.o: m_ts_method.o m_ts_mumps_init.o m_ts_tdir.o m_ts_weight.o
+m_ts_options.o: parallel.o precision.o siesta_options.o units.o
 m_ts_pivot.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o fdf_extra.o
 m_ts_pivot.o: intrinsic_missing.o m_char.o m_pivot.o m_region.o
@@ -829,7 +828,7 @@ projected_DOS.o: alloc.o atomlist.o kpoint_grid.o kpoint_pdos.o m_eo.o
 projected_DOS.o: m_gamma.o m_spin.o parallel.o precision.o siesta_geom.o
 projected_DOS.o: siesta_options.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
-proximity_check.o: m_ts_options.o mneighb.o parallel.o precision.o
+proximity_check.o: m_ts_global_vars.o mneighb.o parallel.o precision.o
 proximity_check.o: siesta_geom.o siesta_options.o
 pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o sys.o
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
@@ -1011,9 +1010,10 @@ m_tbt_kpoint.o: m_ts_electype.o m_verbosity.o parallel.o precision.o units.o
 m_tbt_kregions.o: class_OrbitalDistribution.o class_Sparsity.o fdf_extra.o
 m_tbt_kregions.o: m_region.o m_tbt_kpoint.o m_ts_cctype.o m_ts_electrode.o
 m_tbt_kregions.o: m_ts_electype.o m_verbosity.o parallel.o precision.o
-m_tbt_options.o: files.o m_tbt_contour.o m_tbt_diag.o m_tbt_save.o
-m_tbt_options.o: m_tbt_sigma_save.o m_ts_cctype.o m_ts_chem_pot.o
-m_tbt_options.o: m_ts_electype.o m_ts_method.o parallel.o precision.o units.o
+m_tbt_options.o: files.o intrinsic_missing.o m_os.o m_tbt_contour.o m_tbt_dH.o
+m_tbt_options.o: m_tbt_diag.o m_tbt_hs.o m_tbt_save.o m_tbt_sigma_save.o
+m_tbt_options.o: m_ts_chem_pot.o m_ts_electype.o m_ts_method.o m_ts_tdir.o
+m_tbt_options.o: parallel.o precision.o units.o
 m_tbt_proj.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
 m_tbt_proj.o: class_SpData2D.o class_Sparsity.o fdf_extra.o intrinsic_missing.o
 m_tbt_proj.o: m_ncdf_io.o m_os.o m_region.o m_tbt_diag.o m_tbt_hs.o

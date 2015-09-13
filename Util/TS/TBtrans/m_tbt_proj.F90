@@ -175,7 +175,7 @@ contains
     if ( .not. fdf_defined('TBT.Projs') ) return
 
     if ( .not. fdf_block('TBT.Projs',bfdf) ) then
-       call die('TBT.Proj is not a block, please correct')
+       call die('TBT.Projs is not a block, please correct')
     end if
 
     ! Whether we should assert and calculate
@@ -184,9 +184,9 @@ contains
     if ( ltmp ) then
        save_DATA = save_DATA // ('proj-T-all'.kv.1)
     end if
-    ltmp = fdf_get('TBT.Projs.R', ('T-reflect'.in.save_DATA) )
+    ltmp = fdf_get('TBT.Projs.T.Out', ('T-sum-out'.in.save_DATA) )
     if ( ltmp ) then
-       save_DATA = save_DATA // ('proj-T-reflect'.kv.1)
+       save_DATA = save_DATA // ('proj-T-sum-out'.kv.1)
     end if
     ltmp = fdf_get('TBT.Projs.Only', .false. )
     if ( ltmp ) then
@@ -237,7 +237,8 @@ contains
 
        ! Open the block of the molecule
        if ( .not. fdf_block('TBT.Proj.'//trim(name),bfdf) ) then
-          call die('Projection '//trim(name)//' has not been defined.')
+          call die('Projection TBT.Proj.'//trim(name)//' &
+               &has not been defined.')
        end if
 
        ! Reset number of projections for this molecule.
@@ -696,7 +697,7 @@ contains
 
     ! Whether we should calculate all T?
     all_T = ('proj-T-all'.in.save_DATA)
-    reflect = ('proj-T-reflect'.in.save_DATA)
+    reflect = ('proj-T-sum-out'.in.save_DATA)
     any_skipped = .false.
     ! Now all_T determines which projections we will utilize
     ! The regular electrode loop runs:

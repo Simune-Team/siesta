@@ -920,8 +920,11 @@ MODULE siesta_options
 
     ! Electronic temperature for Fermi Smearing ...
     temp = fdf_get('ElectronicTemperature',temp_default,'Ry')
-    if (ionode .and. isolve.eq.SOLVE_DIAGON) then
-      write(6,6) 'redata: Electronic Temperature',temp,'  Ry'
+    if (ionode) then
+       if ( isolve.eq.SOLVE_DIAGON .or. &
+            isolve.eq.SOLVE_TRANSI ) then
+          write(6,6) 'redata: Electronic Temperature',temp,'  Ry'
+       end if
     endif
 
     if (cml_p) then

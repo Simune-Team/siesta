@@ -260,25 +260,12 @@ contains
        call rgn_union(r_oEl_alone(iEl), r_tmp, r_tmp2)
 
        ! Calculate the transport direction in the device cell.
-       p = SPC_PROJ(cell,Elecs(iEl)%cell(:,Elecs(iEl)%t_dir))
-
-       ! Loop over cell vectors
-       do i = 1 , 3 
-
-          ! project the unit-cell vector onto each cell component
-          contrib = VNORM(VEC_PROJ(cell(:,i),p))
-
-          ! If the contribution in this cell direction is too
-          ! small we consider it not to be important.
-          ! TODO this might in certain skewed examples be a bad choice.
-          if ( contrib < 1.e-5_dp ) cycle
-
-          ! Remove connections from this electrode across the boundary...
-          call Sp_remove_crossterms(dit,sp,nsc,isc_off, &
-               i, &
-               sp, r = r_tmp2)
-
-       end do
+       i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
+       
+       ! Remove connections from this electrode across the boundary...
+       call Sp_remove_crossterms(dit,sp,nsc,isc_off, &
+            i, &
+            sp, r = r_tmp2)
 
        sp%data%name = 'TBT-sparsity'
 

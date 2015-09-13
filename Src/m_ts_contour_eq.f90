@@ -1068,7 +1068,7 @@ contains
        end if
     end do
 
-    write(*,opt_n) '          >> Equilibrium contour << '
+    write(*,opt_n) '         >> Equilibrium contour << '
     do i = 1 , N_eq
        if ( .not. leqi(eq_io(i)%part,'pole') ) then
           chars = '  '//trim(eq_io(i)%part)

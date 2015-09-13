@@ -26,6 +26,7 @@ module m_ts_mumps_init
   integer, public, save :: MUMPS_ordering = 7
   integer, public, save :: MUMPS_block = -8 ! blocking factor
 
+  public :: read_ts_mumps
   public :: mum_err
   public :: init_MUMPS
   public :: analyze_MUMPS
@@ -37,6 +38,35 @@ module m_ts_mumps_init
   private
   
 contains
+
+  subroutine read_ts_mumps( )
+
+    use fdf, only : fdf_get, leqi
+    character(len=200) :: chars
+
+    MUMPS_mem   = fdf_get('TS.MUMPS.Mem',20)
+    MUMPS_block = fdf_get('TS.MUMPS.BlockingFactor',112)
+    chars = fdf_get('TS.MUMPS.Ordering','auto')
+    if ( leqi(chars,'auto') ) then
+       MUMPS_ordering = 7
+    else if ( leqi(chars,'amd') ) then
+       MUMPS_ordering = 0
+    else if ( leqi(chars,'amf') ) then
+       MUMPS_ordering = 2
+    else if ( leqi(chars,'scotch') ) then
+       MUMPS_ordering = 3
+    else if ( leqi(chars,'pord') ) then
+       MUMPS_ordering = 4
+    else if ( leqi(chars,'metis') ) then
+       MUMPS_ordering = 5
+    else if ( leqi(chars,'qamd') ) then
+       MUMPS_ordering = 6
+    else
+       call die('Unknown MUMPS ordering.')
+    end if
+
+
+  end subroutine read_ts_mumps
 
   subroutine init_MUMPS(mum,ID)
 #ifdef MPI

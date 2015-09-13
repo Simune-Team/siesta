@@ -1,4 +1,90 @@
 ----------------------------------------------------
+September 13, 2015 -- Nick Papior       trunk-476---ts-scf-517
+Fully changed options parsing and printing for TS and TBT
+
+* The options implementation was sub-optimal.
+  Not as flexible as wanted and put some restrictions.
+
+  Now the options are better separated and a generic
+  electrode checking routine exists so that tbtrans
+  uses the same routines.
+
+  Furthermore we now allow arbitrary unit-cells for the electrodes
+  if there is no k-point sampling along the direction of the
+  "weird" connections.
+  This means that one can do rotated geometries without doing
+  anything wrong.
+
+  The same goes for tbtrans.
+
+* The k-point initiation in tbtrans has been improved.
+  It can now more easily check which method is used for the
+  k-points and is easier to follow, code-wise.
+
+* Added information whether NCDF_4 was compiled with siesta/transiesta,
+  tbtrans
+
+* Changed names of "reflection" transmission.
+  It is in fact the sum of the transmission".
+  So the option is called TBT.T.Out
+  and the Elec-Elec ending corresponds to the 
+  Gf \Gamma Gf^\dagger \Gamma transmission
+  and the Green function transmission corresponds to the correction.
+
+* Enabled bulk Hamiltonian and updating the density matrix.
+  This can be interesting only for convergence tests i think.
+
+* Removed unnecessary routines
+
+* Enabled fraction of Vha fix.
+    Hartree.Fix.Frac 0:1
+  For _hard_ to converge systems a smaller offset tends to stabilize the
+  convergence. However, any shift corresponds to an equal shift in the 
+  Fermi-level, hence the initial diagon calculation also needs to have the
+  same setting (or set the Fermi-level, explicitly)
+
+* Moved onlyS to global_vars
+
+modified:
+  Src/dhscf.F
+  Src/find_kgrid.F
+  Src/m_sparsity_handling.F90
+  Src/m_ts_charge.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_electype.F90
+  Src/m_ts_global_vars.f90
+  Src/m_ts_hartree.F90
+  Src/m_ts_io_contour.f90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_mumps_init.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_weight.F90
+  Src/proximity_check.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/state_init.F
+  Src/ts_init.F90
+  Src/version.F90
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_dH.F90
+  Util/TS/TBtrans/m_tbt_diag.F90
+  Util/TS/TBtrans/m_tbt_hs.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_sigma_save.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/tbt_init.F90
+  Util/TS/TBtrans/tbt_reinit.F90
+  Util/TS/TBtrans/version.F90
+
+----------------------------------------------------
 September 2, 2015 -- Nick Papior       trunk-476---ts-scf-516
 Massive speed up of transmission calculation for non-eigenvalues
 

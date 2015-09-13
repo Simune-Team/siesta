@@ -18,7 +18,7 @@
       character(len=24), save, public          :: accum
       private
       public :: find_kgrid
-
+      public :: trim_kpoint_list
 
       CONTAINS
       subroutine find_kgrid ( cell, kscell, displ, firm_displ,

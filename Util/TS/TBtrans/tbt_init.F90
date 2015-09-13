@@ -63,8 +63,8 @@ subroutine tbt_init()
   integer :: MPIerror
 #endif
 
-!$ integer :: i, is
-  integer :: iEl, itmp, it
+!$ integer :: is
+  integer :: iEl, itmp, it, i
   type(Sparsity) :: tmp_sp
   type(dSpData1D) :: tmp_1D
   type(dSpData2D) :: tmp_2D
@@ -74,7 +74,9 @@ subroutine tbt_init()
 #ifdef MPI
   call MPI_Init(MPIerror)
 #endif
+  
   call parallel_init()
+
   ResetFirstCall =.true.
   ParallelOverK = .true.
 #ifdef MPI
@@ -103,9 +105,6 @@ subroutine tbt_init()
 !$    i = omp_get_num_threads()
 !$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
 !$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
-#ifdef _OPENMP
-!$    write(*,'(a,i0,a)') '* OpenMP version ', _OPENMP
-#endif
 !$    call omp_get_schedule(i,is)
 !$    select case ( i )
 !$    case ( OMP_SCHED_STATIC ) 
@@ -164,7 +163,7 @@ subroutine tbt_init()
   call init_spin()
 
   ! Initialization now complete. Flush stdout.
-  if (IOnode) call pxfflush( 6 )
+  if ( IOnode ) call pxfflush( 6 )
 
   ! Initialize the HSfiles
   ! This will read in the HSfile and determine whether we should
@@ -173,21 +172,29 @@ subroutine tbt_init()
   ! This will also read in the required information about the system
   call tbt_init_HSfile( nspin )
 
-  ! Read in the options
-  ! All generic options regarding the electrodes, etc. are read in
-  ! here.
-  call tbt_options( spin_idx, TSHS%cell, &
-       TSHS%na_u, TSHS%xa, TSHS%lasto )
+  ! Read in generic options
+  call read_tbt_generic(TSHS%na_u, TSHS%lasto)
 
-  ! Setup the k-points
+  ! Read chemical potential
+  call read_tbt_chem_pot( )
+
+  ! Read electrodes
+  call read_tbt_elec(TSHS%cell, TSHS%na_u, TSHS%xa, TSHS%lasto)
+
+  ! Read k-points
   call setup_kpoint_grid( TSHS%cell, N_Elec, Elecs )
 
-  ! Check the electrode coordinates etc.
-  do iEl = 1 , N_Elec
-     call check_Elec(Elecs(iEl), TSHS%nspin, TSHS%cell, &
-          TSHS%na_u, TSHS%xa, TSHS%lasto, &
-          Elecs_xa_EPS)
-  end do
+  ! Read remaining options
+  call read_tbt_after_Elec(TSHS%nspin, TSHS%cell, TSHS%na_u, TSHS%lasto, &
+       TSHS%xa, kscell, kdispl)
+
+  ! Print options
+  call print_tbt_options( TSHS%nspin )
+
+  ! Print warnings
+  call print_tbt_warnings( Gamma )
+
+  if ( IONode ) write(*,'(/a)') 'Electrode information:'
 
   ! We have the contour now, so we can create the GF files
   do iEl = 1 , N_Elec
@@ -256,8 +263,6 @@ subroutine tbt_init()
   call tbt_print_kRegions( TSHS%cell )
 
 #ifdef NCDF_4
-
-  call init_dH_options( )
 
   ! Initialize the projections here.
   call init_proj( TSHS%na_u , TSHS%lasto , r_aDev , r_oDev, save_DATA )

@@ -17,14 +17,14 @@ subroutine tbt_reinit( sname , slabel )
 !     It uses the FDF (Flexible Data Format) package 
 !     of J.M.Soler and A.Garcia
 !
-! Taken from redate. Written by Nick P. Andersen 2015
+! Taken from redata. Written by Nick P. Andersen 2015
 ! **************************** OUTPUT *********************************
 ! character    slabel      : System Label (to name output files)
 ! character(len=*) sname       : System Name
 ! **********************************************************************
 
   use sys, only : bye
-  use parallel,    only : Node
+  use parallel, only : Node
   use fdf
   use m_verbosity
 

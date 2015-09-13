@@ -306,7 +306,7 @@ contains
     type(OrbitalDistribution) :: fdit
     type(Sparsity) :: tmpSp1, tmpSp2
 
-    integer :: no_u_TS, i, j, iEl, no
+    integer :: no_u_TS, i, iEl, no
 
     integer :: n, n_nzs
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
@@ -421,11 +421,11 @@ contains
          list_col = l_col , nnzs = n_nzs )
     call rgn_init(r_El,n)
     r_El%r(:) = 0
-    do j = 1 , n
+    do i = 1 , n
        if ( orb_atom == 1 ) then
-          r_El%r(j) = orb_type(j)
+          r_El%r(i) = orb_type(i)
        else
-          r_El%r(j) = atom_type(j)
+          r_El%r(i) = atom_type(i)
        end if
     end do
     if ( IONode ) &

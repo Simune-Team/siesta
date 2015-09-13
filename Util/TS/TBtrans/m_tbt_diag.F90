@@ -28,7 +28,7 @@ module m_tbt_diag
      module procedure norm_eigenstate_kpt
   end interface norm_Eigenstate
 
-  public :: init_diag
+  public :: init_diag, print_diag
   public :: calc_sqrt_S
   public :: calc_Eig
   public :: norm_Eigenstate
@@ -43,20 +43,24 @@ contains
 
   subroutine init_diag( )
     use fdf
-    use parallel, only : Node
 
     ! Let the user decide whether to use divide and conquer
     ! or not...
     use_DC = fdf_get('TBT.DivideAndConquer',.false.)
     force_NORM = fdf_get('TBT.Normalize',.true.)
 
-    if ( Node == 0 ) then
-       write(*,'(a,t53,''='',tr4,l1)')'tbt_options: Divide and conquer diagonalization',use_DC
-       write(*,'(a,t53,''='',tr4,l1)')'tbt_options: Assume LAPACK <i|S|j> = delta_ij',.not. force_NORM
-
-    end if
-
   end subroutine init_diag
+
+  subroutine print_diag( )
+    use parallel, only : Node
+    character(len=*), parameter :: f1 ='(''tbt: '',a,t53,''='',tr4,l1)'
+
+    if ( Node /= 0 ) return
+    
+    write(*,f1)'Divide and conquer diagonalization',use_DC
+    write(*,f1)'Assume LAPACK <i|S|j> = delta_ij',.not. force_NORM
+    
+  end subroutine print_diag
 
   subroutine calc_sqrt_S_Gamma(spS,orb,S_sq)
     use m_ts_sparse_helper, only : create_U

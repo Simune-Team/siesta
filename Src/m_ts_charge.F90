@@ -41,6 +41,35 @@ module m_ts_charge
 
 contains
 
+  subroutine read_ts_charge_cor( )
+    
+    use fdf, only : fdf_get, leqi
+    character(len=200) :: chars
+    
+    chars = fdf_get('TS.ChargeCorrection','none')
+    TS_RHOCORR_METHOD = 0
+    if ( leqi(chars,'none') ) then
+       TS_RHOCORR_METHOD = 0
+    else if ( leqi(chars,'b') .or. leqi(chars,'buffer') ) then
+       TS_RHOCORR_METHOD = TS_RHOCORR_BUFFER
+    else if ( leqi(chars,'fermi') ) then
+       TS_RHOCORR_METHOD = TS_RHOCORR_FERMI
+    end if
+    TS_RHOCORR_FERMI_TOLERANCE = &
+         fdf_get('TS.ChargeCorrection.Fermi.Tolerance',0.01_dp)
+    ! Factor for charge-correction
+    TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor',0.75_dp)
+    if ( 1.0_dp < TS_RHOCORR_FACTOR ) then
+       call die("Charge correction factor must be in the range [0;1]")
+    endif
+    if ( TS_RHOCORR_FACTOR < 0.0_dp ) then
+       call die("Charge correction factor must be larger than 0")
+    endif
+    ! Truncation of fermi-level change (default 1.5 eV)
+    TS_RHOCORR_FERMI_MAX = fdf_get('TS.ChargeCorrection.Fermi.Max',0.1102471_dp,'Ry')
+
+  end subroutine read_ts_charge_cor
+
   ! Retrive the mulliken charges in each region of the transiesta setup
   subroutine ts_get_charges(N_Elec,dit, sp, nspin, n_nzs, DM, S, Q, Qtot)
 

@@ -21,7 +21,7 @@ module m_tbt_sigma_save
   logical, save :: sigma_parallel  = .false.
   integer, save :: cmp_lvl    = 0
 
-  public :: init_Sigma_options
+  public :: init_Sigma_options, print_Sigma_options
   public :: init_Sigma_save
   public :: state_Sigma_save
   public :: state_Sigma2mean
@@ -59,27 +59,34 @@ contains
        save_DATA = save_DATA // ('Sigma-only'.kv.1)
     end if
 
-    if ( Node == 0 ) then
-
-       write(*,1)'Saving down-folded self-energies',sigma_save
-       write(*,1)'Only calc down-folded self-energies', &
-            ('Sigma-only'.in.save_DATA)
-       if ( sigma_save ) then
-          if ( cmp_lvl > 0 ) then
-             write(*,5)'Compression level of TBT.Sigma.nc files',cmp_lvl
-          else
-             write(*,11)'No compression level of TBT.Sigma.nc files'
-          end if
-          write(*,1)'k-average down-folded self-energies',sigma_mean_save
-       end if
-
-    end if
-
-1   format('tbt_options: ',a,t53,'=',4x,l1)
-5   format('tbt_options: ',a,t53,'=',i5,a)
-11  format('tbt_options: ',a)
-    
   end subroutine init_Sigma_options
+
+  subroutine print_Sigma_options( save_DATA )
+
+    use parallel, only: IONode
+    use dictionary
+
+    type(dict), intent(inout) :: save_DATA
+
+    character(len=*), parameter :: f1 ='(''tbt: '',a,t53,''='',tr4,l1)'
+    character(len=*), parameter :: f12='(''tbt: '',a,t53,''='',tr2,i0)'
+    character(len=*), parameter :: f11='(''tbt: '',a)'
+
+    if ( .not. IONode ) return
+    
+    write(*,f1)'Saving down-folded self-energies',sigma_save
+    if ( .not. sigma_save ) return
+
+    write(*,f1)'Only calc down-folded self-energies', &
+         ('Sigma-only'.in.save_DATA)
+    if ( cmp_lvl > 0 ) then
+       write(*,f12)'Compression level of TBT.Sigma.nc files',cmp_lvl
+    else
+       write(*,f11)'No compression level of TBT.Sigma.nc files'
+    end if
+    write(*,f1)'k-average down-folded self-energies',sigma_mean_save
+
+  end subroutine print_Sigma_options
 
   ! Save the self-energies of the electrodes and
   subroutine init_Sigma_save(fname, TSHS, r, ispin, N_Elec, Elecs, &

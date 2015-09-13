@@ -120,7 +120,7 @@ module m_tbt_dH
   public :: tTBTdH, dH, use_dH
 
 #ifdef NCDF_4
-  public :: init_dH_options
+  public :: init_dH_options, print_dH_options
   public :: read_next_dH, clean_dH
   public :: read_Sp_dH
 #endif
@@ -191,16 +191,6 @@ contains
 
     ! The user cannot decide if only one core
     if ( Nodes == 1 ) cdf_r_parallel = .true.
-
-    if ( Node == 0 ) then
-       write(*,'(/,2a)')'tbtrans: User selected dH file: ', trim(fname_dH)
-       write(*,'(a,l1)')'tbtrans: Reading in parallel  : ', cdf_r_parallel
-       if ( insert_algo == 0 ) then
-         write(*,'(2a)')'tbtrans: Inner loop algorithm : ', 'sparse'
-      else if ( insert_algo == 1 ) then
-         write(*,'(2a)')'tbtrans: Inner loop algorithm : ', 'region'
-      end if
-    end if
 
     ! Read in options
     if ( cdf_r_parallel ) then
@@ -443,20 +433,40 @@ contains
     end if
 #endif
 
-    if ( .not. cdf_r_parallel .and. Node == 0 .and. n_E3+n_k4+n_E4 > 0 ) then
+    call ncdf_close(ndH)
+
+  end subroutine init_dH_options
+
+  subroutine print_dH_options( )
+
+    use parallel, only : IONode
+
+    character(len=*), parameter :: f10='(''tbt: '',a,t53,''='',tr4,a)'
+    character(len=*), parameter :: f11='(''tbt: '',a)'
+    character(len=*), parameter :: f1 ='(''tbt: '',a,t53,''='',tr4,l1)'
+
+    if ( .not. IONode ) return
+    if ( len_trim(fname_dH) == 0 ) then
+       write(*,f11)'No delta-Hamiltonian'
+       return
+    end if
+    
+    write(*,f10)'User selected dH file: ', trim(fname_dH)
+    write(*,f1) 'Reading in parallel  : ', cdf_r_parallel
+    if ( insert_algo == 0 ) then
+       write(*,f10)'Inner loop algorithm : ', 'sparse'
+    else if ( insert_algo == 1 ) then
+       write(*,f10)'Inner loop algorithm : ', 'region'
+    end if
+
+    if ( .not. cdf_r_parallel .and. n_E3+n_k4+n_E4 > 0 ) then
        write(*,'(a)')'tbtrans: WARNING --- Using level 3 or 4 you must, at least, &
             &have all energy-points in the dH file.'
        write(*,'(a)')'tbtrans: WARNING --- This restriction can be circumventet &
             &if you can use a parallel read (this is highly advised).'
     end if
-
-    if ( Node == 0 ) then
-       write(*,*) ! new-line
-    end if
-
-    call ncdf_close(ndH)
-
-  end subroutine init_dH_options
+    
+  end subroutine print_dH_options
 
   subroutine read_Sp_dH(no_u,sp)
 

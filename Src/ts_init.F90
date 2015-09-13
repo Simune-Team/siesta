@@ -47,7 +47,7 @@ contains
     use m_ts_method
     use m_ts_charge
 
-    use m_ts_global_vars, only : TSmode, TSinit
+    use m_ts_global_vars, only : TSmode, TSinit, onlyS
     use siesta_options, only : isolve, SOLVE_TRANSI, Nmove
 
     use m_fixed, only : is_fixed, is_constr
@@ -78,15 +78,35 @@ contains
        TSinit = .true.
     end if
 
-    ! Read in options for transiesta
-    call read_ts_options(ucell , Nmove, na_u , xa, lasto )
-    ! Setup the k-points, must be done after options reading 
-    ! (determine the transport direction)
+    ! initialize regions of the electrodes and device
+    ! the number of LCAO orbitals on each atom will not change
+    call ts_init_regions('TS', na_u, lasto)
+
+    ! Read generic transiesta options
+    call read_ts_generic( ucell )
+
+    ! read the chemical potentials
+    call read_ts_chem_pot( )
+
+    ! read in the electrodes
+    call read_ts_elec( ucell, na_u, xa, lasto )
+
+    ! Read in the k-points
     if ( TSmode .and. .not. onlyS ) then
-       call setup_ts_kpoint_grid( ucell , Elecs=Elecs )
+       call setup_ts_kpoint_grid( ucell , Elecs )
     else
        call setup_ts_kpoint_grid( ucell )
     end if
+
+    ! Read after electrode stuff
+    call read_ts_after_Elec( ucell, nspin, na_u, xa, lasto, &
+         ts_kscell, ts_kdispl)
+
+    ! Print the options
+    call print_ts_options( )
+
+    ! Print all warnings
+    call print_ts_warnings( ucell, na_u, xa, Nmove )
 
     ! If we actually have a transiesta run we need to process accordingly!
     if ( .not. TSmode ) return
@@ -94,12 +114,13 @@ contains
     ! If onlyS we do not need to do anything about the electrodes
     if ( onlyS ) return
 
+    ! Print out the contour blocks etc. for transiesta
+    call print_ts_blocks( na_u, xa )
+
+
     ! Check the electrodes (calculate mean temperature)
     mean_kT = 0._dp
     do i = 1 , N_Elec
-       call check_Elec(Elecs(i), nspin,ucell, na_u, xa, lasto, &
-            Elecs_xa_EPS, &
-            kcell=ts_kscell, kdispl=ts_kdispl)
        mean_kT = mean_kT + Elecs(i)%mu%kT / N_Elec
     end do
 

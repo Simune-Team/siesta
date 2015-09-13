@@ -35,38 +35,34 @@ module m_ts_kpoints
 ! scheme as for SIESTA but puts ts_kscell(3,3)=1 and ts_kdispl(3)=0.0
 !
 !==============================================================================
-! OBS: So far if only a kgrid cutoff is specified the code stops. TO be 
-!      changed in the near future
-!==============================================================================
  
-  logical, public   :: ts_scf_kgrid_first_time = .true.
-  logical, public   :: ts_Gamma
-  integer, public   :: ts_nkpnt             ! Total number of k-points
-  real(dp), public  :: ts_eff_kgrid_cutoff  ! Effective kgrid_cutoff
+  logical, public  :: ts_scf_kgrid_first_time = .true.
+  logical, public  :: ts_Gamma
+  integer, public  :: ts_nkpnt             ! Total number of k-points
+  real(dp), public :: ts_eff_kgrid_cutoff  ! Effective kgrid_cutoff
 
   real(dp), pointer, public :: ts_kweight(:) 
   real(dp), pointer, public :: ts_kpoint(:,:)
 
-  integer,  public, dimension(3,3)  :: ts_kscell = 0
-  real(dp), public, dimension(3)    :: ts_kdispl = 0.0_dp
+  integer,  public :: ts_kscell(3,3) = 0
+  real(dp), public :: ts_kdispl(3) = 0.0_dp
 
-  logical, public     :: ts_user_requested_mp = .false.
-  logical, public     :: ts_user_requested_cutoff = .false.
+  logical, public :: ts_user_requested_mp = .false.
+  logical, public :: ts_user_requested_cutoff = .false.
 
-  logical, public     :: ts_spiral = .false.
-  logical, public     :: ts_firm_displ = .false.
+  logical, public :: ts_spiral = .false.
+  logical, public :: ts_firm_displ = .false.
 
   public :: setup_ts_scf_kscell, setup_ts_kpoint_grid
   public :: ts_write_k_points
 
 contains
 
-  subroutine setup_ts_scf_kscell( cell, firm_displ , Elecs )
+  subroutine setup_ts_scf_kscell( cell, Elecs )
 
 ! ***************** INPUT **********************************************
 ! real*8  cell(3,3)  : Unit cell vectors in real space cell(ixyz,ivec)
-! ***************** OUTPUT *********************************************
-! logical firm_displ   : User-specified displacements (firm)?
+! type(Elec) Elecs(:) : Electrodes
 
 !   The relevant fdf labels are kgrid_cutoff and kgrid_Monkhorst_Pack.
 !   If both are present, kgrid_Monkhorst_Pack has priority. If none is
@@ -90,7 +86,7 @@ contains
     use mpi_siesta
 #endif
 
-    use m_ts_electype
+    use m_ts_electype, only : Elec
     use m_ts_global_vars, only : TSmode
     use intrinsic_missing, only : SPC_PROJ, VEC_PROJ, VNORM
     
@@ -98,21 +94,18 @@ contains
 
 ! Passed variables
     real(dp), intent(in)   :: cell(3,3)
-    logical, intent(out)   :: firm_displ
     type(Elec), intent(in), optional :: Elecs(:)
 
 ! Internal variables
-    integer           i, j,  factor(3,3), expansion_factor
-    real(dp)          scmin(3,3),  vmod, cutoff
-    real(dp)          ctransf(3,3)
+    integer :: i, j,  factor(3,3), expansion_factor
+    real(dp) :: scmin(3,3),  vmod, cutoff
+    real(dp) :: ctransf(3,3)
 
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
 
     real(dp) :: p(3), contrib
     real(dp), parameter :: defcut = 0.0_dp
-    integer, dimension(3,3), parameter :: unit_matrix =  &
-         reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
 
     if ( fdf_block('kgrid_Monkhorst_Pack',bfdf) ) then
        ts_user_requested_mp = .true.
@@ -127,7 +120,7 @@ contains
                   'kgrid_Monkhorst_Pack block' )
           endif
        enddo
-       firm_displ = .true.
+       ts_firm_displ = .true.
     else
 
        if ( IONode .and. TSmode ) then
@@ -142,7 +135,7 @@ contains
        endif
 
        ts_kdispl(1:3) = 0.0_dp  ! Might be changed later
-       firm_displ = .false.
+       ts_firm_displ = .false.
 
        ! Find equivalent rounded unit-cell
        call minvec( cell, scmin, ctransf )
@@ -214,7 +207,7 @@ contains
        nullify(ts_kweight,ts_kpoint)
        ts_spiral = fdf_defined('SpinSpiral')
 
-       call setup_ts_scf_kscell(ucell, ts_firm_displ, Elecs=Elecs)
+       call setup_ts_scf_kscell(ucell, Elecs=Elecs)
 
        ts_scf_kgrid_first_time = .false.
 
@@ -222,7 +215,7 @@ contains
        if ( ts_user_requested_mp    ) then
           ! no need to set up the kscell again
        else
-          call setup_ts_scf_kscell(ucell, ts_firm_displ, Elecs=Elecs)
+          call setup_ts_scf_kscell(ucell, Elecs=Elecs)
        endif
     endif
 

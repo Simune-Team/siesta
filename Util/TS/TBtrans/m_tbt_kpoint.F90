@@ -8,7 +8,7 @@ module m_tbt_kpoint
   save
 
   logical, public :: Gamma
-  integer, public :: nkpnt             ! Total number of k-points
+  integer, public :: nkpnt ! Total number of k-points
 
   real(dp), pointer, public :: kweight(:) 
   real(dp), pointer, public :: kpoint(:,:)
@@ -22,12 +22,15 @@ module m_tbt_kpoint
   public :: tbt_iokp
 
   ! The local k-point method
-  integer, parameter :: K_METHOD_MONKHORST_PACK = 1
-  integer, parameter :: K_METHOD_SIMP_MIX = 2
-  integer, parameter :: K_METHOD_BOOLE_MIX = 3
-  integer, parameter :: K_METHOD_GAUSS_LEGENDRE = 4
-  integer, parameter :: K_METHOD_TANH_SINH = 5
-  
+  integer, public :: K_METHOD = 1
+  integer, parameter, public :: K_METHOD_MONKHORST_PACK = 1
+  integer, parameter, public :: K_METHOD_SIMP_MIX = 2
+  integer, parameter, public :: K_METHOD_BOOLE_MIX = 3
+  integer, parameter, public :: K_METHOD_GAUSS_LEGENDRE = 4
+  integer, parameter, public :: K_METHOD_TANH_SINH = 5
+  integer, parameter, public :: K_METHOD_PATH = 6
+  integer, parameter, public :: K_METHOD_LIST = 7
+
 contains
 
   subroutine read_kgrid(bName,N_Elec,Elecs,TRS,cell,kpt,wkpt, &
@@ -39,7 +42,7 @@ contains
     use fdf_extra, only : fdf_bnext
     use intrinsic_missing, only : EYE, VNORM, SPC_PROJ, VEC_PROJ
     use units, only : Pi
-    use m_find_kgrid, only : find_kgrid
+    use m_find_kgrid, only : find_kgrid, trim_kpoint_list
 
     use m_ts_electype
 
@@ -71,9 +74,7 @@ contains
     real(dp), allocatable :: tmp3(:,:)
 
     character(len=50) :: ctmp
-    integer :: method
     logical :: even_path
-    logical :: is_list, is_path
 
     ! Initialize values
     ksize(:) = 1._dp
@@ -82,13 +83,15 @@ contains
     kscell(1,1) = 1
     kscell(2,2) = 1
     kscell(3,3) = 1
-    method = K_METHOD_MONKHORST_PACK
+    K_METHOD = -1
     
     ! If the block does not exist, simply 
     ! create the Gamma-point
     nullify(kpt,wkpt)
 
     if ( .not. fdf_block(bName,bfdf) ) then
+       K_METHOD = K_METHOD_MONKHORST_PACK
+
        ! the block does not exist, hence the user
        ! requests a Gamma-point.
        allocate(kpt(3,1),wkpt(1))
@@ -96,10 +99,11 @@ contains
        wkpt(:) = 1._dp
        if ( present(kcell) ) kcell = kscell
        if ( present(kdispl) ) kdispl = displ
+       
        return
+       
     end if
 
-    is_path = .false.
     even_path = .false.
     k_path_length = 0._dp
     nkpt = 0
@@ -114,46 +118,64 @@ contains
     do while ( fdf_bnext(bfdf,pline) )
        if ( fdf_bnnames(pline) > 0 ) then
           ctmp = fdf_bnames(pline,1)
+
           if ( leqi(ctmp,'path') ) then
-             is_path = .true.
+             if ( K_METHOD /= -1 ) call die('Do not mix different &
+                  &k-grid methods. Only specify one method.')
+             K_METHOD = K_METHOD_PATH
              i = i + 1
              call read_path(bfdf,pline,rcell,.false.,0._dp,prev_k,next_k,j)
              call kpoint_convert(rcell,prev_k,p,-2)
              call kpoint_convert(rcell,next_k,q,-2)
              p = q - p
-             k_path_length = k_path_length + vnorm(p)
+             k_path_length = k_path_length + VNORM(p)
              nkpt = nkpt + j
+             
           else if ( leqi(ctmp,'path-even') .or. &
                leqi(ctmp,'even-path') ) then
              ! Check if we should make as even a spacing as possible
              even_path = .true.
-          end if
+             
+          else if ( leqi(ctmp,'list') ) then
+             if ( K_METHOD /= -1 ) call die('Do not mix different &
+                  &k-grid methods. Only specify one method.')
 
-          ! We might as well read the method
-          if ( leqi(ctmp,'method') .and. fdf_bnnames(pline) > 1 ) then
+             K_METHOD = K_METHOD_LIST
 
+          else if ( leqi(ctmp,'method') ) then
+             
+             if ( K_METHOD /= -1 ) call die('Do not mix different &
+                  &k-grid methods. Only specify one method.')
+             
              ! read the method
              ctmp = fdf_bnames(pline,2)
              if ( leqi(ctmp,'monkhorst-pack') .or. &
                   leqi(ctmp,'MP') ) then
-                method = K_METHOD_MONKHORST_PACK
+                K_METHOD = K_METHOD_MONKHORST_PACK
              else if ( leqi(ctmp,'gauss-legendre') .or. &
                   leqi(ctmp,'g-legendre') ) then
-                method = K_METHOD_GAUSS_LEGENDRE
+                K_METHOD = K_METHOD_GAUSS_LEGENDRE
              else if ( leqi(ctmp,'tanh-sinh') ) then
-                method = K_METHOD_TANH_SINH
+                K_METHOD = K_METHOD_TANH_SINH
              else if ( leqi(ctmp,'simpson-mix') .or. &
                   leqi(ctmp,'simp-mix') ) then
-                method = K_METHOD_SIMP_MIX
+                K_METHOD = K_METHOD_SIMP_MIX
              else if ( leqi(ctmp,'boole-mix') ) then
-                method = K_METHOD_BOOLE_MIX
+                K_METHOD = K_METHOD_BOOLE_MIX
+             else
+                call die('Could not recognize the k-grid method, &
+                     &please assert you have written something &
+                     &available. Check the manual.')
              end if
 
           end if
           
        end if
     end do
-    if ( is_path ) then
+    ! Reset the method to a pristine Monkhorst-Pack grid
+    ! if none specified
+    if ( K_METHOD == -1 ) K_METHOD = K_METHOD_MONKHORST_PACK
+    if ( K_METHOD == K_METHOD_PATH ) then
        j = nkpt
        if ( even_path ) then
           ! For even paths we cannot assert full range, add a few 
@@ -168,21 +190,21 @@ contains
 
     ! Read in the blocks
     ik = 0
-    is_list = .false.
     do while ( fdf_bnext(bfdf,pline) )
        
        if ( fdf_bnnames(pline) > 0 ) then
-
+          
           ctmp = fdf_bnames(pline,1)
-
+          
           ! We have some kind of designation
-          if ( is_path ) then
-
+          if ( K_METHOD == K_METHOD_PATH ) then
+             
              if ( leqi(ctmp,'path') ) then
 
                 ! Read in options (for even path, j is overwritten)
                 j = nkpt
-                call read_path(bfdf,pline,rcell,even_path,k_path_length,prev_k,next_k,j)
+                call read_path(bfdf,pline,rcell,even_path, &
+                     k_path_length,prev_k,next_k,j)
 
                 ! Get dk (the next path curve has the end-point, if prev is used)
                 p = (next_k - prev_k) / real(j,dp)
@@ -193,6 +215,41 @@ contains
                 
              end if
 
+          else if ( K_METHOD == K_METHOD_LIST ) then
+
+             if ( leqi(ctmp,'list') ) then
+                
+                ! Get number of k-points
+                nkpt = fdf_bintegers(pline,1)
+                ! allocate for the k-points
+                allocate(kpt(3,nkpt),wkpt(nkpt))
+                ! reset all weights to be equal
+                wkpt(1) = -1._dp
+
+                do ik = 1 , nkpt
+                   if ( .not. fdf_bnext(bfdf,pline) ) &
+                        call die('Could not read correct number of k-points in list')
+                   
+                   kpt(1,ik) = fdf_bvalues(pline,1)
+                   kpt(2,ik) = fdf_bvalues(pline,2)
+                   kpt(3,ik) = fdf_bvalues(pline,3)
+
+                   if ( fdf_bnvalues(pline) > 3 ) then
+                      ! fine, read in the weight
+                      wkpt(ik) = fdf_bvalues(pline,4)
+                   else if ( ik > 1 .and. wkpt(1) > 0._dp ) then
+                      call die('Could not read weight for k-point, either &
+                           &supply all, or none (which means equal weight)')
+                   end if
+
+                end do
+
+                if ( wkpt(1) < 0._dp ) then
+                   wkpt(:) = 1._dp / real(nkpt,dp)
+                end if
+
+             end if
+             
           else if ( leqi(ctmp(1:5),'diag-') .or. &
                leqi(ctmp(1:9),'diagonal-') ) then
 
@@ -211,7 +268,7 @@ contains
                 ik = 3
              end if
              
-             ! Get the diagonal
+             ! Set the diagonal
              kscell(ik,ik) = max(1,fdf_bnintegers(pline,1))
              
           else if ( leqi(ctmp,'diagonal') .or. &
@@ -220,7 +277,7 @@ contains
              ik = fdf_bnintegers(pline)
              
              if ( ik < 3 .and. IONode ) then
-                write(*,'(a)') 'tbtrans: POSSIBLE WARNING'
+                write(*,'(/,a)') 'tbtrans: POSSIBLE WARNING'
                 write(*,'(a,i0,a)') 'tbtrans: You have only supplied ', &
                      ik,' of the 3 diagonal k-cell elements.'
                 write(*,'(a)') 'tbtrans: Will assume this order A1-A2-A3'
@@ -243,52 +300,22 @@ contains
              ksize(1) = fdf_bvalues(pline,1)
              ksize(2) = fdf_bvalues(pline,2)
              ksize(3) = fdf_bvalues(pline,3)
-             if ( any(ksize > 1._dp) ) then
+             if ( any(ksize > 1._dp) .or. any(ksize <= 0._dp) ) then
                 call die('The size of the Brillouin zone MUST be &
                      &less than or equal to 1.')
              end if
 
-          else if ( leqi(ctmp,'list') ) then
-
-             ! Get number of k-points
-             nkpt = fdf_bintegers(pline,1)
-             ! allocate for the k-points
-             allocate(kpt(3,nkpt),wkpt(nkpt))
-             ! reset all weights to be equal
-             wkpt(:) = 1._dp / real(nkpt,dp)
-             is_list = .false.
-             do ik = 1 , nkpt
-                if ( .not. fdf_bnext(bfdf,pline) ) &
-                     call die('Could not read correct number of k-points in list')
-
-                if ( ik == 1 .and. fdf_bnvalues(pline) > 3 ) is_list = .true.
-                kpt(1,ik) = fdf_bvalues(pline,1)
-                kpt(2,ik) = fdf_bvalues(pline,2)
-                kpt(3,ik) = fdf_bvalues(pline,3)
-
-                if ( is_list ) then
-                   if ( .not. fdf_bnvalues(pline) > 3 ) then
-                      call die('Could not read weight for k-point, &
-                           &either supply all, or none (which means equal weight)')
-                   end if
-                   wkpt(ik) = fdf_bvalues(pline,4)
-                end if
-
-             end do
-
-             ! This tells the remaining algorithm
-             ! to not create a Monkhorst-Pack grid.
-             is_list = .true.
-
           end if
 
-       else if ( fdf_bnintegers(pline) == 3 .and. .not. is_path ) then
-
-          ! There exists two variants
-          ! 1. Either the user only supplies the diagonal,
-          ! 2. or the full kscell is supplied
+       else if ( fdf_bnvalues(pline) > 3 .and. &
+            K_METHOD /= K_METHOD_PATH .and. &
+            K_METHOD /= K_METHOD_LIST ) then
 
           do ik = 1 , 3
+             if ( fdf_bnintegers(pline) < 3 ) then
+                call die('Could not read three integers from the &
+                     &tbtrans Monkhorst-Pack grid.')
+             end if
              kscell(1,ik) = fdf_bintegers(pline,1)
              kscell(2,ik) = fdf_bintegers(pline,2)
              kscell(3,ik) = fdf_bintegers(pline,3)
@@ -307,19 +334,19 @@ contains
 
     ! We do not allow different methods if we do not have a diagonal
     ! size matrix
-    select case ( method )
+    select case ( K_METHOD )
     case ( K_METHOD_MONKHORST_PACK )
        ! do nothing
     case default
-       if ( kscell(2,1) /= 0 ) method = K_METHOD_MONKHORST_PACK
-       if ( kscell(3,1) /= 0 ) method = K_METHOD_MONKHORST_PACK
-       if ( kscell(1,2) /= 0 ) method = K_METHOD_MONKHORST_PACK
-       if ( kscell(3,2) /= 0 ) method = K_METHOD_MONKHORST_PACK
-       if ( kscell(1,3) /= 0 ) method = K_METHOD_MONKHORST_PACK
-       if ( kscell(2,3) /= 0 ) method = K_METHOD_MONKHORST_PACK
+       if ( kscell(2,1) /= 0 ) K_METHOD = K_METHOD_MONKHORST_PACK
+       if ( kscell(3,1) /= 0 ) K_METHOD = K_METHOD_MONKHORST_PACK
+       if ( kscell(1,2) /= 0 ) K_METHOD = K_METHOD_MONKHORST_PACK
+       if ( kscell(3,2) /= 0 ) K_METHOD = K_METHOD_MONKHORST_PACK
+       if ( kscell(1,3) /= 0 ) K_METHOD = K_METHOD_MONKHORST_PACK
+       if ( kscell(2,3) /= 0 ) K_METHOD = K_METHOD_MONKHORST_PACK
     end select
-    
-    if ( is_path ) then
+
+    if ( K_METHOD == K_METHOD_PATH ) then
 
        if ( IONode ) then
           write(*,'(a)')'tbtrans: k-points are following paths in the Brillouin zone.'
@@ -347,7 +374,7 @@ contains
        allocate(wkpt(nkpt))
        wkpt = 1._dp / nkpt
 
-    else if ( .not. is_list ) then
+    else if ( K_METHOD /= K_METHOD_LIST ) then
 
        do iEl = 1 , N_Elec
           ! project the electrode transport direction onto
@@ -373,8 +400,10 @@ contains
        if ( present(kcell) ) kcell = kscell
        if ( present(kdispl) ) kdispl = displ
 
-       select case ( method )
-       case ( K_METHOD_MONKHORST_PACK ) 
+       select case ( K_METHOD )
+       case ( K_METHOD_MONKHORST_PACK )
+
+          if ( IONode ) write(*,*) ! new-line
           
           call EYE(3, rcell, 2._dp * Pi)
           call find_kgrid(rcell, kscell, displ, .true., &
@@ -386,60 +415,11 @@ contains
           allocate( k3_1(kscell(1,1),2) )
           allocate( k3_2(kscell(2,2),2) )
           allocate( k3_3(kscell(3,3),2) )
-          k3_1 = 0._dp
-          k3_2 = 0._dp
-          k3_3 = 0._dp
 
-       end select
-          
-       select case ( method )
-       case ( K_METHOD_GAUSS_LEGENDRE )
+          call method_MP(K_METHOD,kscell(1,1),k3_1(:,1),k3_1(:,2))
+          call method_MP(K_METHOD,kscell(2,2),k3_2(:,1),k3_2(:,2))
+          call method_MP(K_METHOD,kscell(3,3),k3_3(:,1),k3_3(:,2))
 
-          ! Create the different grids
-          call Gauss_Legendre_Rec(kscell(1,1),0,-0.5_dp,0.5_dp, &
-               k3_1(:,1), k3_1(:,2) )
-          call Gauss_Legendre_Rec(kscell(2,2),0,-0.5_dp,0.5_dp, &
-               k3_2(:,1), k3_2(:,2) )
-          call Gauss_Legendre_Rec(kscell(3,3),0,-0.5_dp,0.5_dp, &
-               k3_3(:,1), k3_3(:,2) )
-
-       case ( K_METHOD_TANH_SINH )
-
-          ! Create the different grids
-          call TanhSinh_Exact(kscell(1,1), k3_1(:,1), k3_1(:,2), &
-               -0.5_dp, 0.5_dp )
-          call TanhSinh_Exact(kscell(2,2), k3_2(:,1), k3_2(:,2), &
-               -0.5_dp, 0.5_dp )
-          call TanhSinh_Exact(kscell(3,3), k3_3(:,1), k3_3(:,2), &
-               -0.5_dp, 0.5_dp )
-
-       case ( K_METHOD_SIMP_MIX )
-
-          ! Create the different grids
-          call Simpson_38_3_rule(kscell(1,1), k3_1(:,1), k3_1(:,2), &
-               -0.5_dp, 0.5_dp )
-          call Simpson_38_3_rule(kscell(2,2), k3_2(:,1), k3_2(:,2), &
-               -0.5_dp, 0.5_dp )
-          call Simpson_38_3_rule(kscell(3,3), k3_3(:,1), k3_3(:,2), &
-               -0.5_dp, 0.5_dp )
-
-       case ( K_METHOD_BOOLE_MIX )
-
-          ! Create the different grids
-          call Booles_Simpson_38_3_rule(kscell(1,1), k3_1(:,1), k3_1(:,2), &
-               -0.5_dp, 0.5_dp )
-          call Booles_Simpson_38_3_rule(kscell(2,2), k3_2(:,1), k3_2(:,2), &
-               -0.5_dp, 0.5_dp )
-          call Booles_Simpson_38_3_rule(kscell(3,3), k3_3(:,1), k3_3(:,2), &
-               -0.5_dp, 0.5_dp )
-
-       end select
-
-       select case ( method )
-       case ( K_METHOD_MONKHORST_PACK )
-          ! nothing
-       case default
-          
           if ( TRS ) then
              
              ! Cut in half the largest one
@@ -480,39 +460,39 @@ contains
                 k3_3 = tmp3
              end select
              deallocate(tmp3)
-             
+
           end if
           
+          ! Create the k-points
+          inkpt(1) = size(k3_1,1)
+          inkpt(2) = size(k3_2,1)
+          inkpt(3) = size(k3_3,1)
+          nkpt = product(inkpt)
+          allocate( kpt(3,nkpt) )
+          allocate( wkpt(nkpt) )
+
+          ik = 0
+          do k = 1 , inkpt(3)
+          do j = 1 , inkpt(2)
+          do i = 1 , inkpt(1)
+             ik = ik + 1
+             kpt(1,ik) = k3_1(i,1)
+             kpt(2,ik) = k3_2(j,1)
+             kpt(3,ik) = k3_3(k,1)
+             wkpt(ik)  = k3_1(i,2) * k3_2(j,2) * k3_3(k,2)
+          end do
+          end do
+          end do
+
+          ! Reduce number of k-points via explicit
+          ! comparison
+          call trim_kpoint_list(nkpt,kpt,wkpt)
+
+          deallocate(k3_1)
+          deallocate(k3_2)
+          deallocate(k3_3)
+
        end select
-
-       if ( method /= K_METHOD_MONKHORST_PACK ) then
-          
-       ! Create the k-points
-       inkpt(1) = size(k3_1,1)
-       inkpt(2) = size(k3_2,1)
-       inkpt(3) = size(k3_3,1)
-       nkpt = product(inkpt)
-       allocate( kpt(3,nkpt) )
-       allocate( wkpt(nkpt) )
-
-       ik = 0
-       do k = 1 , inkpt(3)
-       do j = 1 , inkpt(2)
-       do i = 1 , inkpt(1)
-          ik = ik + 1
-          kpt(1,ik) = k3_1(i,1)
-          kpt(2,ik) = k3_2(j,1)
-          kpt(3,ik) = k3_3(k,1)
-          wkpt(ik)  = k3_1(i,2) * k3_2(j,2) * k3_3(k,2)
-       end do
-       end do
-       end do
-
-       deallocate(k3_1)
-       deallocate(k3_2)
-       deallocate(k3_3)
-       
-       end if
 
     else
 
@@ -530,7 +510,8 @@ contains
 
     end if
 
-    if ( .not. (is_path .or. is_list) ) then
+    if ( K_METHOD /= K_METHOD_LIST .and. &
+         K_METHOD /= K_METHOD_PATH ) then
 
        ! Re-scale the k-points to the correct size
        do ik = 1 , nkpt
@@ -552,7 +533,30 @@ contains
        end do
 
     end if
-    
+
+    ! we search whether there are any k-points
+    ! along the unit-vector for each of the
+    ! semi-infinite directions of the electrodes
+    do iEl = 1 , N_Elec
+
+       ! Get the equivalent index of the semi-infinite
+       ! direction
+       j = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
+
+       ! Check that all k-points in that direction
+       ! is zero
+       do i = 1 , nkpt
+          if ( abs(kpt(j,i)) > 1.d-5 ) then
+             write(*,'(a)') 'You have a k-point along an electrode &
+                  &semi-infinite direction. This will create spurious &
+                  &results and is not allowed.'
+             write(*,'(a)') 'Please correct your input file'
+             call die('Erroneous input of k-points for tbtrans.')
+          end if
+       end do
+       
+    end do
+
     if ( present(is_b) ) then
        if ( is_b ) return
     end if
@@ -618,6 +622,37 @@ contains
       
     end subroutine read_path
 
+    subroutine method_MP(method,n,kpt,wkpt)
+      integer, intent(in) :: method, n
+      real(dp), intent(out) :: kpt(n), wkpt(n)
+      
+      if ( n == 1 ) then
+         kpt(1) = 0._dp
+         wkpt(1) = 1._dp
+         return
+      end if
+      
+      select case ( K_METHOD )
+      case ( K_METHOD_GAUSS_LEGENDRE )
+         
+         call Gauss_Legendre_Rec(n,0,-0.5_dp,0.5_dp, kpt, wkpt)
+
+       case ( K_METHOD_TANH_SINH )
+
+          call TanhSinh_Exact(n, kpt, wkpt, -0.5_dp, 0.5_dp )
+
+       case ( K_METHOD_SIMP_MIX )
+
+          call Simpson_38_3_rule(n, kpt, wkpt, -0.5_dp, 0.5_dp )
+
+       case ( K_METHOD_BOOLE_MIX )
+
+          call Booles_Simpson_38_3_rule(n, kpt, wkpt, -0.5_dp, 0.5_dp )
+
+       end select
+       
+    end subroutine method_MP
+    
   end subroutine read_kgrid
   
   subroutine setup_kpoint_grid( cell , N_Elec, Elecs )
@@ -651,6 +686,8 @@ contains
           write(*,'(2a)')'tbtrans: k-points found in file: ',trim(user_kfile)
           write(*,'(2a)')'tbtrans: *** Responsibility is on your side! ***'
        end if
+
+       K_METHOD = K_METHOD_LIST
 
        call tbt_iokp_read(user_kfile,nkpnt,kpoint,kweight)
 
@@ -695,7 +732,27 @@ contains
     
     integer :: ik, ix, i
 
-    if ( .not. IONode ) return 
+    if ( .not. IONode ) return
+
+    select case ( K_METHOD )
+    case ( K_METHOD_MONKHORST_PACK )
+       write(*,'(a)') 'tbtrans: Monkhorst-Pack grid.'
+    case ( K_METHOD_SIMP_MIX )
+       write(*,'(a)') 'tbtrans: Simpson grid.'
+    case ( K_METHOD_BOOLE_MIX )
+       write(*,'(a)') 'tbtrans: Booles grid.'
+    case ( K_METHOD_GAUSS_LEGENDRE )
+       write(*,'(a)') 'tbtrans: Gauss-Legendre grid.'
+    case ( K_METHOD_TANH_SINH )
+       write(*,'(a)') 'tbtrans: Tanh-Sinh grid.'
+    case ( K_METHOD_PATH )
+       write(*,'(a)') 'tbtrans: User path in Brillouin zone.'
+    case ( K_METHOD_LIST )
+       write(*,'(a)') 'tbtrans: User specified k-points as a list.'
+    case default
+       write(*,'(a)') 'tbtrans: Unknown k-points.'
+       call die('Unsupported, programming error.')
+    end select
 
     if ( verbosity > 5 ) then
        write(*,'(/,a)') 'tbtrans: k-point coordinates (Bohr**-1) and weights:'

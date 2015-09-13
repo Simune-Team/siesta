@@ -707,7 +707,7 @@ contains
     if ( .not. IONode ) return
     
     write(*,opt_n) '        >> non-Equilibrium contour << '
-    write(*,opt_g_u) 'non-Equilibrium Green function Eta',nEq_Eta/eV,'eV'
+    write(*,opt_g_u) 'Device Green function imaginary Eta',nEq_Eta/eV,'eV'
     write(*,opt_g_u) 'Fermi-function cut-off',cutoff_kT,'kT'
     do i = 1 , N_nEq
        chars = '  '//trim(nEq_io(i)%part)

@@ -184,9 +184,11 @@ contains
 #endif
 
   ! Fix the potential
-  subroutine ts_hartree_fix( ntpl , Vscf )
+  subroutine ts_hartree_fix( ntpl , Vscf , Vha_frac )
     use precision, only : grid_p
     use sys, only : die
+    use parallel, only: IONode
+    use units, only: eV
 #ifdef MPI
     use mpi_siesta, only : MPI_AllReduce, MPI_Sum
     use mpi_siesta, only : MPI_Comm_World, MPI_integer
@@ -196,6 +198,7 @@ contains
     
     integer     , intent(in)    :: ntpl
     real(grid_p), intent(inout) :: Vscf(ntpl)
+    real(dp), intent(in) :: Vha_frac
 
 ! Internal variables
     integer :: i1 , i2 , i3
@@ -280,6 +283,9 @@ contains
        call die('Something went extremely wrong...Hartree Fix')
     end if
 
+    ! Scale the correction
+    Vtot = Vtot * Vha_frac
+
 #ifdef MPI
     call MPI_AllReduce(Vtot,temp,1,MPI_double_precision,MPI_Sum, &
          MPI_Comm_World,MPIerror)
@@ -295,6 +301,9 @@ contains
     end if
     
     Vav = Vtot / real(nlp,dp)
+    if ( IONode ) then
+       write(*,'(a,e12.5,a)')'ts-V-corr: ',Vav/eV,' eV'
+    end if
     
     ! Align potential
 !$OMP parallel workshare default(shared)

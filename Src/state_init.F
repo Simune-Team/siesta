@@ -51,11 +51,10 @@
 #ifdef TRANSIESTA
       use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
       use m_ts_options, only : BTD_method
-      use m_ts_options, only : onlyS
       use m_ts_options, only : TS_Analyze
       use m_ts_options, only : N_Elec, Elecs, IsVolt
       use m_ts_electype
-      use m_ts_global_vars, only: TSrun, TSmode
+      use m_ts_global_vars, only: TSrun, TSmode, onlyS
       use sys, only : bye
       use m_ts_io, only : fname_TSHS, ts_write_tshs
       use m_ts_sparse, only : ts_sparse_init

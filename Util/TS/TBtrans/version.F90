@@ -51,7 +51,10 @@ write(6,'(a)') 'SERIAL version'
 
 !$OMP parallel
 !$OMP master
-!$    write(*,'(a)') 'THREADED version'
+!$write(*,'(a)') 'THREADED version'
+#ifdef _OPENMP
+!$write(*,'(a,i0)') '* OpenMP version ', _OPENMP
+#endif
 !$OMP end master
 !$OMP end parallel
 
@@ -60,6 +63,9 @@ write(6,'(a)') 'GEMM3M support'
 #endif
 #ifdef CDF
 write(6,'(a)') 'NetCDF support'
+#endif
+#ifdef NCDF_4
+write(6,'(a)') 'NetCDF-4 support'
 #endif
 
 end subroutine prversion

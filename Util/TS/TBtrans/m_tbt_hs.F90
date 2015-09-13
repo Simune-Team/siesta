@@ -64,14 +64,19 @@ module m_tbt_hs
   ! It is given here for reasons questionable.
   ! However, it is related to the Hamiltonian, so it makes "some" sense
   real(dp) :: Volt
+  ! whether we will use the bias-contour
+  logical :: IsVolt = .false.
 
 contains
 
   subroutine tbt_init_HSfile( nspin )
-    use files, only : slabel
+
     use fdf
-    use m_ts_io_ctype, only : ts_c_bphysical, ts_c_bisphysical
+    use files, only : slabel
+    use units, only : eV
     use m_interpolate
+
+    use m_ts_io_ctype, only : ts_c_bphysical, ts_c_bisphysical
 
     integer, intent(in) :: nspin
     
@@ -85,15 +90,21 @@ contains
     ! Create a pivot table for the Hamiltonians
     integer, allocatable :: ipvt(:)
     character(len=50) :: chars
+    logical :: btmp
     
     ! The bias, you can say, is associated
     ! with the Hamiltonian
     Volt = fdf_get('TS.Voltage',0._dp,'Ry') 
-    Volt = fdf_get('TBT.Voltage',Volt,'Ry') 
+    Volt = fdf_get('TBT.Voltage',Volt,'Ry')
+    ! Voltage situation is above 0.01 mV
+    IsVolt = abs(Volt) > 0.00001_dp * eV
 
     ! Read in device region via the new block
-    if ( fdf_block('TBT.TSHS.Files',bfdf) ) then
+    btmp = fdf_block('TBT.TSHS.Files',bfdf)
+    if ( .not. btmp ) btmp = fdf_block('TBT.HS.Files',bfdf)
 
+    if ( btmp ) then
+       
        ! First we read number of entries
        N_HS = 0
        do while ( fdf_bline(bfdf,pline) ) 
@@ -128,6 +139,8 @@ contains
        call crt_pivot(N_HS,tmpHS(:)%Volt,ipvt)
 
        chars = fdf_get('TBT.TSHS.Interp','spline')
+       chars = fdf_get('TBT.HS.Interp',chars)
+
        if ( leqi(chars,'linear') ) then
 
           ! We only do a linear interpolation...
@@ -186,6 +199,7 @@ contains
        allocate(tHS(1))
 
        tHS(1)%HSfile = fdf_get('TBT.TSHS',trim(slabel)//'.TSHS')
+       tHS(1)%HSfile = fdf_get('TBT.HS',tHS(1)%HSfile)
        tHS(1)%Volt = Volt
 
     end if
@@ -360,7 +374,7 @@ contains
 
       integer :: kscell(3,3), istep, ia1
       real(dp) :: kdispl(3), Qtot, Temp, Ef
-      logical :: onlyS, Gamma, TSGAmma
+      logical :: onlyS, Gamma, TSGamma
       
       ! The easy case is when they have the same number
       call ts_read_TSHS(tHS%HSfile, onlyS, Gamma, TSGamma, &
