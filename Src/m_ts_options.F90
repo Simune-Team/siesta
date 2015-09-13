@@ -945,7 +945,7 @@ contains
   subroutine print_ts_warnings( cell, na_u, xa, Nmove )
 
     use parallel, only: IONode, Nodes
-    use intrinsic_missing, only : VNORM
+    use intrinsic_missing, only : VNORM, VEC_PROJ
 
     use m_os, only: file_exist
 
@@ -968,7 +968,7 @@ contains
     integer, intent(in) :: Nmove
 
     ! Local variables
-    integer :: i, j, idx, idx1, idx2, itmp3(3)
+    integer :: i, j, iEl, idx, idx1, idx2, itmp3(3)
     real(dp) :: rtmp, tmp3(3), tmp33(3,3), min_bond_elec
     logical :: err, warn, ltmp
 
@@ -978,7 +978,7 @@ contains
     err = .false.
 
     write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
-    if ( TS_HS_save .and. FixSpin ) then
+    if ( FixSpin .and. (TS_HS_save .or. TSmode) ) then
        write(*,*) 'Fixed spin not possible with TranSIESTA!'
        write(*,*) 'Disable TS.HS.Save or FixSpin'
        write(*,*) 'Electrodes with fixed spin is not possible with Transiesta!'
@@ -1127,14 +1127,18 @@ contains
        err = .true.
     end if
 
-    ! Calculate minimum electrode bond-length
+    ! Calculate minimum electrode bond-length along the transport
+    ! direction. This is used to ensure correct spacing
     min_bond_elec = huge(1._dp)
-    do j = 1 , na_u - 1
-       if ( .not. a_isElec(j) ) cycle
-       tmp3(:) = xa(:,j)
-       do i = j + 1 , na_u
-          if ( .not. a_isElec(i) ) cycle
-          min_bond_elec = min(min_bond_elec,VNORM(xa(:,i)-tmp3))
+    do iEl = 1 , N_Elec
+       idx1 = Elecs(iEl)%idx_a
+       idx2 = idx1 + TotUsedAtoms(Elecs(iEl)) - 1
+       do j = idx1 , idx2 - 1
+          ! Project the coordinate onto the transport direction
+          do i = j + 1 , idx2
+             tmp3 = VEC_PROJ(cell(:,ts_tidx),xa(:,i) - xa(:,j))
+             min_bond_elec = min(min_bond_elec,VNORM(tmp3))
+          end do
        end do
     end do
     
@@ -1146,27 +1150,26 @@ contains
     ltmp = .false.
     call reclat(cell,tmp33,0)
     do i = 1 , na_u
-       if ( .not. a_isBuffer(i) ) then
-          ! Check the index
+       if ( a_isBuffer(i) ) cycle
+       ! Check the index
+       do j = 1 , 3
+          itmp3(j) = floor( dot_product(xa(:,i),tmp33(:,j)) )
+       end do
+       select case ( ts_tidx )
+       case ( 1, 2, 3 )
+          ! Only check the transport direction
+          ! Note that we have projected onto the unit-cell
+          ! vector, hence tidx and not tdir
+          if ( itmp3(ts_tidx) /= 0 ) then
+             ltmp = .true.
+          end if
+       case default
           do j = 1 , 3
-             itmp3(j) = floor( dot_product(xa(:,i),tmp33(:,j)) )
-          end do
-          select case ( ts_tidx )
-          case ( 1, 2, 3 )
-             ! Only check the transport direction
-             ! Note that we have projected onto the unit-cell
-             ! vector, hence tidx and not tdir
-             if ( itmp3(ts_tidx) /= 0 ) then
+             if ( itmp3(j) /= 0 ) then
                 ltmp = .true.
              end if
-          case default
-             do j = 1 , 3
-                if ( itmp3(j) /= 0 ) then
-                   ltmp = .true.
-                end if
-             end do
-          end select
-       end if
+          end do
+       end select
        if ( ltmp ) exit
     end do
     if ( ltmp ) then
@@ -1211,7 +1214,8 @@ contains
        rtmp = 0.5 * min_bond_elec
        ltmp = .false.
        do i = 1 , na_u
-          ltmp = abs(xa(ts_tdir,i)) < rtmp
+          tmp3 = VEC_PROJ(cell(:,ts_tidx),xa(:,i))
+          ltmp = abs(tmp3(ts_tdir)) < rtmp
           if ( ltmp ) exit
        end do
        if ( ltmp ) then
@@ -1248,10 +1252,13 @@ contains
 
     ! warn the user about suspicous work regarding the electrodes
     do i = 1 , N_Elec
+       idx1 = Elecs(i)%idx_a
+       idx2 = idx1 + TotUsedAtoms(Elecs(i)) - 1
 
        if ( .not. Elecs(i)%Bulk ) then
           write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
-               &not use bulk Hamiltonian. Be careful here.'
+               &not use bulk Hamiltonian.'
+          warn = .true.
        end if
 
        if ( Elecs(i)%DM_update == 0 ) then
@@ -1263,12 +1270,12 @@ contains
        if ( .not. Elecs(i)%kcell_check ) then
           write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
                &not check the k-grid sampling vs. system k-grid &
-               &sampling. Please ensure appropriate sampling.'
+               &sampling. Ensure appropriate sampling.'
        end if
        if ( Elecs(i)%Ef_frac_CT /= 0._dp ) then
           write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
-               &shift coupling Hamiltonian with a shift in energy. &
-               &Be careful here.'
+               &shift coupling Hamiltonian with a shift in energy &
+               &corresponding to the applied bias. Be careful here.'
           warn = .true.
        end if
 
@@ -1279,9 +1286,9 @@ contains
        do j = 1 , na_u
           ! skip non-buffer atoms
           if ( .not. a_isBuffer(j) ) cycle
-          do idx = 0 , TotUsedAtoms(Elecs(i)) - 1
-             ! Proximity of 10 Bohr ~ 5 Ang enables this check
-             ltmp = vnorm(xa(:,Elecs(i)%idx_a+idx)-xa(:,j)) < 10._dp
+          do idx = idx1 , idx2
+             ! Proximity of 4 Ang enables this check
+             ltmp = VNORM(xa(:,idx)-xa(:,j)) < 4._dp * Ang
              if ( ltmp ) exit
           end do
           if ( ltmp ) exit

@@ -701,29 +701,42 @@ contains
             &onto the simulation unit-cell is not unique. &
             &Please check your simulation cells.')
     end if
-
+    
+    ! Create the basal plane of the electrode
+    ! Decide which end of the electrode we use
     ! Calculate planes of the electrodes
     p = this%cell(:,this%t_dir)
     p = p / VNORM(p)
+    j = ia
+    contrib = VEC_PROJ_SCA(p,xa(:,j))
+    if ( this%inf_dir == INF_POSITIVE ) then
+       ! We need to utilize the last atom
+       do i = ia + 1, ia + na - 1
+          if ( VEC_PROJ_SCA(p,xa(:,i)) > contrib ) then
+             j = i
+          end if
+       end do
+    else
+       ! We need to utilize the first atom
+       do i = ia + 1, ia + na - 1
+          if ( VEC_PROJ_SCA(p,xa(:,i)) < contrib ) then
+             j = i
+          end if
+       end do
+    end if
+    this%p%c = xa(:,j)
 
     ! We add a vector with length of half the minimal bond length
     ! to the vector, to do the averaging 
     ! not on-top of an electrode atom.
     p = p * min_bond
-    
-    ! Create the basal plane of the electrode
-    ! Decide which end of the electrode we use
-    ! TODO, correct for systems not having the last electrode atom
-    ! farthest from the device region (or correct intrinsically)
+
     if ( this%inf_dir == INF_POSITIVE ) then
-       ! We need to utilize the last atom
-       this%p%c = xa(:,ia+na-1)
        this%p%c = this%p%c + p ! add vector
     else
-       this%p%c = xa(:,ia)
        this%p%c = this%p%c - p ! subtract vector
     end if
-    
+
     ! Normal vector to electrode transport direction
     this%p%n = SPC_PROJ(cell,this%cell(:,this%t_dir))
     this%p%n = this%p%n / VNORM(this%p%n) ! normalize

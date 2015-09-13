@@ -1,4 +1,20 @@
 ----------------------------------------------------
+September 13, 2015 -- Nick Papior       trunk-476---ts-scf-519
+Improved check for electrode boundaries
+
+* The position of the electrode planes
+  are now more well-defined, even for random
+  coordinates of the electrodes.
+
+* Shortened bond-length check for buffer atoms.
+  Now it has to be within 4 Ang to be "connecting"
+  to an electrode.
+
+modified:
+  Src/m_ts_electype.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 September 13, 2015 -- Nick Papior       trunk-476---ts-scf-518
 Removed kT references in transiesta
 
