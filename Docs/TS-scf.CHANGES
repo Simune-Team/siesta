@@ -1,4 +1,22 @@
 ----------------------------------------------------
+September 13, 2015 -- Nick Papior       trunk-476---ts-scf-518
+Removed kT references in transiesta
+
+* Temperature is electrode specific.
+  So no global temperature is needed.
+
+modified:
+  Src/compute_dm.F
+  Src/m_transiesta.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/siesta_forces.F
+
+----------------------------------------------------
 September 13, 2015 -- Nick Papior       trunk-476---ts-scf-517
 Fully changed options parsing and printing for TS and TBT
 

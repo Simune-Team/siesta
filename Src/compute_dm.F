@@ -120,7 +120,7 @@
 
          call transiesta(iscf,nspin, block_dist, sparse_pattern,
      &        Gamma, ucell, nsc, isc_off, no_u, na_u, lasto, xa, maxnh,
-     &        H, S, Dscf, Escf, Ef, temp, Qtot, .false. )
+     &        H, S, Dscf, Escf, Ef, Qtot, .false. )
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp

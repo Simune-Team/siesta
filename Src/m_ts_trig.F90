@@ -47,7 +47,7 @@ contains
        nq, uGF, nspin, na_u, lasto, &
        sp_dist, sparse_pattern, &
        no_u, n_nzs, &
-       Hs, Ss, DM, EDM, Ef, kT)
+       Hs, Ss, DM, EDM, Ef)
 
     use units, only : eV, Pi
     use parallel, only : Node, Nodes
@@ -114,7 +114,7 @@ contains
     integer, intent(in)  :: n_nzs
     real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
-    real(dp), intent(in) :: Ef, kT
+    real(dp), intent(in) :: Ef
 
 ! ******************* Computational arrays *******************
     integer :: ndwork, nzwork, n_s
@@ -631,7 +631,7 @@ contains
        nq, uGF, nspin, na_u, lasto, &
        sp_dist, sparse_pattern, &
        no_u, n_nzs, &
-       Hs, Ss, DM, Ef, kT, Qtot, converged)
+       Hs, Ss, DM, Ef, Qtot, converged)
 
     use units, only : eV, Pi
     use parallel, only : Node, Nodes
@@ -685,8 +685,8 @@ contains
     integer, intent(in)  :: n_nzs
     real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin)
-    real(dp), intent(in) :: kT, Qtot
     real(dp), intent(inout) :: Ef
+    real(dp), intent(in) :: Qtot
     logical, intent(out) :: converged
 
 ! ******************* Computational arrays *******************

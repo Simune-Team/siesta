@@ -40,7 +40,7 @@ contains
        nq, uGF, nspin, na_u, lasto, &
        sp_dist, sparse_pattern, &
        no_u, n_nzs, &
-       Hs, Ss, DM, EDM, Ef, kT)
+       Hs, Ss, DM, EDM, Ef)
 
     use units, only : eV, Pi
     use parallel, only : Node, Nodes, IONode
@@ -97,7 +97,7 @@ contains
     integer, intent(in)  :: n_nzs
     real(dp), intent(in) :: Hs(n_nzs,nspin), Ss(n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
-    real(dp), intent(in) :: Ef, kT
+    real(dp), intent(in) :: Ef
 
 ! ****************** Electrode variables *********************
     complex(dp), pointer :: GFGGF_work(:) => null()

@@ -243,7 +243,7 @@
               call transiesta(iscf,nspin, 
      &             block_dist, sparse_pattern, Gamma_Scf, ucell, nsc,
      &             isc_off, no_u, na_u, lasto, xa, maxnh, H, S,
-     &             Dscf, Escf, Ef, Temp, Qtot, .true.) 
+     &             Dscf, Escf, Ef, Qtot, .true.) 
            
               ! We will not have not converged as we have just
               ! changed the Fermi-level

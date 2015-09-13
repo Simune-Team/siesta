@@ -48,7 +48,7 @@ contains
   subroutine transiesta(TSiscf,nspin, &
        sp_dist, sparse_pattern, &
        Gamma, ucell, nsc, isc_off, no_u, na_u, lasto, xa, n_nzs, &
-       H, S, DM, EDM, Ef, kT, &
+       H, S, DM, EDM, Ef, &
        Qtot, Fermi_correct)
 
     use units, only : eV
@@ -92,7 +92,7 @@ contains
     integer, intent(in)  :: n_nzs
     real(dp), intent(in) :: H(n_nzs,nspin), S(n_nzs)
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
-    real(dp), intent(in) :: kT, Qtot
+    real(dp), intent(in) :: Qtot
     real(dp), intent(inout) :: Ef
     logical, intent(in) :: Fermi_correct
 
@@ -245,14 +245,14 @@ contains
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, kT)
+                  H, S, DM, EDM, Ef)
           else
              call ts_fullk(N_Elec,Elecs, &
                   nq, uGF, &
                   ucell, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, kT)
+                  H, S, DM, EDM, Ef)
           end if
        else if ( ts_method == TS_BTD ) then
           if ( ts_Gamma ) then
@@ -260,14 +260,14 @@ contains
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, kT)
+                  H, S, DM, EDM, Ef)
           else
              call ts_trik(N_Elec,Elecs, &
                   nq, uGF, &
                   ucell, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, kT)
+                  H, S, DM, EDM, Ef)
           end if
 #ifdef SIESTA__MUMPS
        else if ( ts_method == TS_MUMPS ) then
@@ -276,14 +276,14 @@ contains
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, kT)
+                  H, S, DM, EDM, Ef)
           else
              call ts_mumpsk(N_Elec,Elecs, &
                   nq, uGF, &
                   ucell, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, kT)
+                  H, S, DM, EDM, Ef)
           end if
 #endif
        else
@@ -327,14 +327,14 @@ contains
                      nq, uGF, nspin, na_u, lasto, &
                      sp_dist, sparse_pattern, &
                      no_u, n_nzs, &
-                     H, S, DM, Ef, kT, Qtot, converged)
+                     H, S, DM, Ef, Qtot, converged)
              else
                 call ts_trik_Fermi(N_Elec,Elecs, &
                      nq, uGF, &
                      ucell, nspin, na_u, lasto, &
                      sp_dist, sparse_pattern, &
                      no_u, n_nzs, &
-                     H, S, DM, Ef, kT, Qtot, converged)
+                     H, S, DM, Ef, Qtot, converged)
              end if
 #ifdef SIESTA__MUMPS
           else if ( ts_method == TS_MUMPS ) then
