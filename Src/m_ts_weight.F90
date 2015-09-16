@@ -219,7 +219,7 @@ contains
 
     ! initialize the errors
     eM  = 0._dp
-    DMe = 0._dp
+    m_err = 0._dp
 
     ! Is the data correlated
     is_correlated = TS_W_METHOD >= TS_W_CORRELATED
@@ -502,6 +502,7 @@ contains
     deallocate(ID_mu)
 
 #ifdef MPI
+    if ( Nodes > 1 ) then
     ! remove pointer
     nullify(DM,EDM)
     allocate(DM(6,Nodes),EDM(6,Nodes))
@@ -528,6 +529,7 @@ contains
        n_nzs = nint( sum( DM(6,:) ) )
     endif
     deallocate(DM,EDM)
+    end if
 #endif
 
     ! Calculate mean

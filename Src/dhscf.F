@@ -116,7 +116,7 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode
       use m_ts_tdir,      only : ts_tidx
-      use m_ts_options,   only : IsVolt, N_Elec, Elecs
+      use m_ts_options,   only : IsVolt
       use m_ts_voltage,   only : ts_init_voltage
       use m_ts_hartree,   only : ts_init_hartree_fix
 #endif /* TRANSIESTA */
@@ -428,8 +428,7 @@ C ----------------------------------------------------------------------
 !        Check if we need to add the potential 
 !        corresponding to the voltage-drop.
         if (TSmode) then
-           call ts_init_hartree_fix( cell, nua, xa , ntm , nsm, 
-     &          N_Elec, Elecs)
+           call ts_init_hartree_fix( cell, nua, xa , ntm , nsm)
            if ( IsVolt ) then
               call ts_init_voltage( cell, nua, xa, ntm, nsm)
            end if
@@ -664,9 +663,9 @@ C     Modules
 
 #ifdef TRANSIESTA
       use m_ts_global_vars,only: TSmode, TSrun
-      use m_ts_options, only: IsVolt, Vha_fix, Vha_frac
-      use m_ts_voltage, only : ts_voltage
-      use m_ts_hartree, only : ts_hartree_fix
+      use m_ts_options, only: IsVolt
+      use m_ts_voltage, only: ts_voltage
+      use m_ts_hartree, only: ts_hartree_fix
 #endif /* TRANSIESTA */
       implicit none
       integer
@@ -1202,7 +1201,7 @@ C ----------------------------------------------------------------------
 
 #ifdef TRANSIESTA
       ! We require that even the SIESTA potential is "fixed"
-      if (Vha_fix) call ts_hartree_fix( ntpl , Vaux , Vha_frac )
+      call ts_hartree_fix( ntpl , Vaux )
 #endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm

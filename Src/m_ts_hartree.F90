@@ -22,7 +22,7 @@ module m_ts_hartree
 ! Copy or disemination of all or part of this package is not
 ! permitted without prior and explicit authorization by the author.
   
-  use precision, only : dp
+  use precision, only : grid_p, dp
   use m_ts_electype
   use m_ts_tdir, only : ts_tidx
 
@@ -33,22 +33,103 @@ module m_ts_hartree
 
   ! The idea is to have sub routines in this module to do
   ! various Hartree potential fixes
+  public :: read_ts_hartree_options
   public :: ts_init_hartree_fix
   public :: ts_hartree_fix
+  public :: ts_hartree_elec
 
   ! The electrode that provides the basin of the constant potential
-  type(Elec), pointer :: El => null()
+  type(Elec), pointer, public :: El => null()
 
-  ! Whether we should employ the electrode
-  ! basal plane or not
-  logical, public :: elec_basal_plane = .false.
+  ! Method employed for fixing the Hartree potential
 
+  ! No fixing
+  integer, parameter, public :: TS_HA_NONE = 0
+  ! The boundary plane in the lower part of the transport direction
+  integer, parameter, public :: TS_HA_PLANE = 1
+  ! The boundary plane in the lower part of the first electrode
+  integer, parameter, public :: TS_HA_ELEC = 2
+  ! The entire box of the first electrode
+  integer, parameter, public :: TS_HA_ELEC_BOX = 3
+
+  ! The used method
+  integer, public :: TS_HA = 0
+
+  ! The fraction of the actual fix
+  real(dp), public :: Vha_frac = 1._dp
+  
 contains
 
-  subroutine ts_init_hartree_fix(ucell,na_u,xa,meshG,nsm, N_Elec, Elecs)
+  subroutine read_ts_hartree_options( )
 
-    use units, only : Ang
+    use fdf, only: fdf_get, leqi
+    use m_ts_global_vars, only: TSmode
+
+    character(len=50) :: c
+
+    if ( TSmode ) then
+       if ( ts_tidx > 0 ) then
+          c = fdf_get('Hartree.Fix','plane')
+       else
+          c = fdf_get('Hartree.Fix','elec-plane')
+       end if
+    else
+       c = fdf_get('Hartree.Fix','none')
+    end if
+    c = fdf_get('TS.Hartree.Fix',c)
+    if ( leqi(c,'none') ) then
+       TS_HA = TS_HA_NONE
+    else if ( leqi(c,'plane') ) then
+       TS_HA = TS_HA_PLANE
+    else if ( leqi(c,'elec-plane') .or. leqi(c,'elec') ) then
+       TS_HA = TS_HA_ELEC
+    else if ( leqi(c,'elec-box') ) then
+       TS_HA = TS_HA_ELEC_BOX
+    else
+       ! default to none
+       TS_HA = TS_HA_NONE
+    end if
+    Vha_frac = fdf_get('Hartree.Fix.Frac',1._dp)
+    if ( TSmode .and. TS_HA == TS_HA_NONE ) then
+       ! If transiesta, we *MUST* default to the plane
+       TS_HA = TS_HA_PLANE
+    end if
+
+  end subroutine read_ts_hartree_options
+
+  ! Find the biggest electrode by comparing
+  ! either the plane or the volume of the electrode cells
+  subroutine ts_hartree_elec(N_Elec, Elecs)
+    
     use intrinsic_missing, only: VNORM
+    
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(inout), target :: Elecs(N_Elec)
+    
+    integer :: iE
+    real(dp) :: area, tmp
+    real(dp), external :: volcel
+
+    ! Easy determination of largest basal plane of electrodes
+    area = -1._dp
+    do iE = 1 , N_Elec
+       tmp = VOLCEL(Elecs(iE)%cell)
+       if ( TS_HA == TS_HA_ELEC ) then
+          tmp = tmp / VNORM(Elecs(iE)%cell(:,Elecs(iE)%t_dir))
+       else if ( TS_HA == TS_HA_ELEC_BOX ) then
+          ! do nothing, volume check
+       end if
+       if ( tmp > area ) then
+          area =  tmp
+          El   => Elecs(iE)
+       end if
+    end do
+
+  end subroutine ts_hartree_elec
+  
+  subroutine ts_init_hartree_fix(ucell,na_u,xa,meshG,nsm)
+    
+    use units, only : Ang
     use m_mesh_node, only : meshl, offset_r, dMesh, dL
     use parallel, only : IONode
 #ifdef MPI
@@ -56,57 +137,64 @@ contains
     use mpi_siesta, only : MPI_Comm_World, MPI_integer
 #endif
 
-! ***********************
-! * INPUT variables     *
-! ***********************
+    ! ***********************
+    ! * INPUT variables     *
+    ! ***********************
     real(dp),   intent(in) :: ucell(3,3)
     integer,    intent(in) :: na_u
     real(dp),   intent(in) :: xa(3,na_u)
     integer,    intent(in) :: meshG(3), nsm
-    integer,    intent(in) :: N_Elec
-    type(Elec), intent(inout), target :: Elecs(N_Elec)
 
-    integer :: iE
-    real(dp) :: area, tmp
     integer :: i1, i2, i3, nlp
     real(dp) :: ll(3), llZ(3), llYZ(3)
-    real(dp), external :: volcel
 #ifdef MPI
     integer :: MPIerror
 #endif
 
-    ! We now were to put the Hartree correction 
-    if ( .not. elec_basal_plane ) return
+    ! Quick skip if not fixing
+    if ( TS_HA == TS_HA_NONE ) return
 
-    ! Easy determination of largest basal plane of electrodes
-    area = -1._dp
-    do iE = 1 , N_Elec
-       tmp = VOLCEL(Elecs(iE)%cell)
-       tmp = tmp / VNORM(Elecs(iE)%cell(:,Elecs(iE)%t_dir))
-       if ( tmp > area ) then
-          area =  tmp
-          El   => Elecs(iE)
-       end if
-    end do
+    ! We now were to put the Hartree correction
+    if ( TS_HA /= TS_HA_ELEC .and. &
+         TS_HA /= TS_HA_ELEC_BOX ) return
 
     ! We check that we actually process something...
     nlp = 0
+    if ( TS_HA == TS_HA_ELEC ) then
 !$OMP parallel do default(shared), &
 !$OMP&private(i3,i2,i1,llZ,llYZ,ll), &
 !$OMP&reduction(+:nlp)
-    do i3 = 0 , meshl(3) - 1
-       llZ(:) = offset_r(:) + i3*dL(:,3)
-       do i2 = 0 , meshl(2) - 1
-          llYZ(:) = i2*dL(:,2) + llZ(:)
-          do i1 = 0 , meshl(1) - 1
-             ll(:) = i1*dL(:,1) + llYZ(:)
-             if ( in_basal_Elec(El%p,ll,dMesh) ) then
-                nlp = nlp + 1
-             end if
+       do i3 = 0 , meshl(3) - 1
+          llZ(:) = offset_r(:) + i3*dL(:,3)
+          do i2 = 0 , meshl(2) - 1
+             llYZ(:) = i2*dL(:,2) + llZ(:)
+             do i1 = 0 , meshl(1) - 1
+                ll(:) = i1*dL(:,1) + llYZ(:)
+                if ( in_basal_Elec(El%p,ll,dMesh) ) then
+                   nlp = nlp + 1
+                end if
+             end do
           end do
        end do
-    end do
 !$OMP end parallel do
+    else if ( TS_HA == TS_HA_ELEC_BOX ) then
+!$OMP parallel do default(shared), &
+!$OMP&private(i3,i2,i1,llZ,llYZ,ll), &
+!$OMP&reduction(+:nlp)
+       do i3 = 0 , meshl(3) - 1
+          llZ(:) = offset_r(:) + i3*dL(:,3)
+          do i2 = 0 , meshl(2) - 1
+             llYZ(:) = i2*dL(:,2) + llZ(:)
+             do i1 = 0 , meshl(1) - 1
+                ll(:) = i1*dL(:,1) + llYZ(:)
+                if ( in_Elec(El%box,ll,dMesh) ) then
+                   nlp = nlp + 1
+                end if
+             end do
+          end do
+       end do
+!$OMP end parallel do
+    end if
 
 #ifdef MPI
     call MPI_AllReduce(nlp,i1,1,MPI_integer,MPI_Sum, &
@@ -116,18 +204,18 @@ contains
 
     if ( IONode ) then
        write(*,*)
-       write(*,'(3a)')   'transiesta: Using electrode: ',trim(El%Name),' for Hartree correction'
-       write(*,'(a,i0)') 'transiesta: Number of points used: ',nlp
+       write(*,'(3a)')   'ts: Using electrode: ',trim(El%Name),' for Hartree correction'
+       write(*,'(a,i0)') 'ts: Number of points used: ',nlp
        if ( nlp == 0 ) then
-          write(*,'(a)') 'transiesta: Basal plane of electrode '// &
+          write(*,'(a)') 'ts: Basal plane of electrode '// &
                trim(El%name)//' might be outside of &
                &unit cell.'
-          write(*,'(a)') 'transiesta: Please move structure so this point is &
+          write(*,'(a)') 'ts: Please move structure so this point is &
                inside unit cell (Ang):'
           write(*,'(a,3(tr1,f13.5))') 'transiesta: Point (Ang):',&
                El%p%c/Ang
-          write(*,'(a)') 'transiesta: You can use %block AtomicCoordinatesOrigin'
-          write(*,'(a)') 'transiesta: to easily move the entire structure.'
+          write(*,'(a)') 'ts: You can use %block AtomicCoordinatesOrigin'
+          write(*,'(a)') 'ts: to easily move the entire structure.'
        end if
        write(*,*)
     end if
@@ -184,8 +272,7 @@ contains
 #endif
 
   ! Fix the potential
-  subroutine ts_hartree_fix( ntpl , Vscf , Vha_frac )
-    use precision, only : grid_p
+  subroutine ts_hartree_fix( ntpl , Vscf )
     use sys, only : die
     use parallel, only: IONode
     use units, only: eV
@@ -196,19 +283,21 @@ contains
 #endif
     use m_mesh_node, only : meshl, offset_i, offset_r, dMesh, dL
     
-    integer     , intent(in)    :: ntpl
+    integer, intent(in) :: ntpl
     real(grid_p), intent(inout) :: Vscf(ntpl)
-    real(dp), intent(in) :: Vha_frac
 
-! Internal variables
+    ! Internal variables
     integer :: i1 , i2 , i3
     integer :: imesh, nlp
     integer :: i10, i20, i30
 #ifdef MPI
     integer :: MPIerror
 #endif
-    real(dp) :: Vav, Vtot, temp
+    real(dp) :: Vav, Vtot
     real(dp) :: ll(3), llZ(3), llYZ(3)
+
+    ! Quick skip if not fixing
+    if ( TS_HA == TS_HA_NONE ) return
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE TS_VH_fix' )
@@ -221,7 +310,54 @@ contains
     nlp   = 0
     imesh = 0
 
-    if ( elec_basal_plane ) then
+    select case ( TS_HA )
+    case ( TS_HA_PLANE )
+       if ( ts_tidx == 1 ) then
+          do i3 = 1 , meshl(3)
+             do i2 = 1 , meshl(2)
+                i10 = offset_i(1)
+                do i1 = 1 , meshl(1)
+                   i10 = i10 + 1
+                   imesh = imesh + 1
+                   if ( i10 == 1 ) then
+                      nlp  = nlp + 1
+                      Vtot = Vtot + Vscf(imesh)
+                   end if
+                end do
+             end do
+          end do
+       else if ( ts_tidx == 2 ) then
+          do i3 = 1 , meshl(3)
+             i20 = offset_i(2)
+             do i2 = 1 , meshl(2)
+                i20 = i20 + 1
+                do i1 = 1 , meshl(1)
+                   imesh = imesh + 1
+                   if ( i20 == 1 ) then
+                      nlp  = nlp + 1
+                      Vtot = Vtot + Vscf(imesh)
+                   end if
+                end do
+             end do
+          end do
+       else if ( ts_tidx == 3 ) then
+          i30 = offset_i(3)
+          do i3 = 1 , meshl(3)
+             i30 = i30 + 1
+             do i2 = 1 , meshl(2)
+                do i1 = 1 , meshl(1)
+                   imesh = imesh + 1
+                   if ( i30 == 1 ) then
+                      nlp  = nlp + 1
+                      Vtot = Vtot + Vscf(imesh)
+                   end if
+                end do
+             end do
+          end do
+       else
+          call die('Unknown ts_idx direction, option erronous')
+       end if
+    case ( TS_HA_ELEC )
        ! This is an electrode averaging...
        do i3 = 0 , meshl(3) - 1
           llZ(:) = offset_r(:) + i3*dL(:,3)
@@ -237,59 +373,33 @@ contains
              end do
           end do
        end do
-    else if ( ts_tidx == 1 ) then
-       do i3 = 1 , meshl(3)
-          do i2 = 1 , meshl(2)
-             i10 = offset_i(1) - 1
-             do i1 = 1 , meshl(1)
-                i10 = i10 + 1
+    case ( TS_HA_ELEC_BOX )
+       ! This is an electrode averaging...
+       do i3 = 0 , meshl(3) - 1
+          llZ(:) = offset_r(:) + i3*dL(:,3)
+          do i2 = 0 , meshl(2) - 1
+             llYZ(:) = i2*dL(:,2) + llZ(:)
+             do i1 = 0 , meshl(1) - 1
+                ll(:) = i1*dL(:,1) + llYZ(:)
                 imesh = imesh + 1
-                if ( i10 == 0 ) then
+                if ( in_Elec(El%box,ll,dMesh) ) then
                    nlp  = nlp + 1
                    Vtot = Vtot + Vscf(imesh)
                 end if
              end do
           end do
        end do
-    else if ( ts_tidx == 2 ) then
-       do i3 = 1 , meshl(3)
-          i20 = offset_i(2) - 1
-          do i2 = 1 , meshl(2)
-             i20 = i20 + 1
-             do i1 = 1 , meshl(1)
-                imesh = imesh + 1
-                if ( i20 == 0 ) then
-                   nlp  = nlp + 1
-                   Vtot = Vtot + Vscf(imesh)
-                end if
-             end do
-          end do
-       end do
-    else if ( ts_tidx == 3 ) then
-       i30 = offset_i(3) - 1
-       do i3 = 1 , meshl(3)
-          i30 = i30 + 1
-          do i2 = 1 , meshl(2)
-             do i1 = 1 , meshl(1)
-                imesh = imesh + 1
-                if ( i30 == 0 ) then
-                   nlp  = nlp + 1
-                   Vtot = Vtot + Vscf(imesh)
-                end if
-             end do
-          end do
-       end do
-    else
+    case default
        call die('Something went extremely wrong...Hartree Fix')
-    end if
-
+    end select
+    
     ! Scale the correction
     Vtot = Vtot * Vha_frac
 
 #ifdef MPI
-    call MPI_AllReduce(Vtot,temp,1,MPI_double_precision,MPI_Sum, &
+    call MPI_AllReduce(Vtot,Vav,1,MPI_double_precision,MPI_Sum, &
          MPI_Comm_World,MPIerror)
-    Vtot = temp
+    Vtot = Vav
     call MPI_AllReduce(nlp,i1,1,MPI_integer,MPI_Sum, &
          MPI_Comm_World,MPIerror)
     nlp = i1
@@ -302,7 +412,7 @@ contains
     
     Vav = Vtot / real(nlp,dp)
     if ( IONode ) then
-       write(*,'(a,e12.5,a)')'ts-V-corr: ',Vav/eV,' eV'
+       write(*,'(a,e12.5,a)')'ts-Vha: ',Vav/eV,' eV'
     end if
     
     ! Align potential

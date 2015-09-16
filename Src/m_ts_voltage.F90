@@ -121,14 +121,14 @@ contains
   subroutine ts_voltage(cell, ntpl, Vscf)
     use precision,    only : grid_p
     use m_ts_options, only : Hartree_fname
-! ***********************
-! * INPUT variables     *
-! ***********************
-    real(dp),      intent(in) :: cell(3,3)
-    integer,       intent(in) :: ntpl
-! ***********************
-! * OUTPUT variables    *
-! ***********************
+    ! ***********************
+    ! * INPUT variables     *
+    ! ***********************
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: ntpl
+    ! ***********************
+    ! * OUTPUT variables    *
+    ! ***********************
     real(grid_p), intent(inout) :: Vscf(ntpl)
 
     call timer('ts_volt',1)
@@ -489,8 +489,7 @@ contains
     
   end subroutine init_elec_indices
 
-! Print out the voltage direction dependent on the cell parameters.
-
+  ! Print out the voltage direction dependent on the cell parameters.
   subroutine print_ts_voltage( cell )
     use intrinsic_missing, only : VNORM
     use parallel,     only : IONode

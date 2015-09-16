@@ -9,7 +9,9 @@ module m_ts_electype
 
   use m_geom_plane, only: geo_plane_delta
   use m_geom_plane, only: in_basal_Elec => voxel_in_plane_delta
+
   use m_geom_box, only: geo_box_delta
+  use m_geom_box, only: in_Elec => voxel_in_box_delta
 
   use m_ts_chem_pot, only : ts_mu, name
 
@@ -48,7 +50,7 @@ module m_ts_electype
   public :: check_connectivity
   public :: delete
 
-  public :: in_basal_Elec
+  public :: in_basal_Elec, in_Elec
 
   public :: operator(.eq.)
 
@@ -610,12 +612,6 @@ contains
             &is not allowed.')
     end if
 
-    ! if the electrode does not use a bulk electrode we need to update
-    ! the cross-terms
-    if ( .not. this%Bulk ) then
-       this%DM_update = 2
-    end if
-
                                  ! Same criteria as IsVolt
     if ( this%DM_update > 0 .or. abs(this%mu%mu) < 0.000000735_dp ) then
        ! when updating the cross-terms
@@ -658,7 +654,6 @@ contains
   ! to the simulation variables
   subroutine init_Elec_sim(this,cell,na_u,xa)
 
-    use parallel, only : IONode
     use units, only : Pi
     use intrinsic_missing, only : VNORM, SPC_PROJ, IDX_SPC_PROJ
     use intrinsic_missing, only : VEC_PROJ, VEC_PROJ_SCA
@@ -671,7 +666,8 @@ contains
     integer, intent(in) :: na_u
     real(dp), intent(in) :: xa(3,na_u)
     
-    real(dp) :: p(3), max_xa(3), contrib, min_bond
+    real(dp) :: p(3), max_xa(3), contrib, min_bond, min_t_bond
+    real(dp) :: bond30
     integer :: i, j, ia, na
 
     ! First figure out the minimum bond-length
@@ -688,7 +684,23 @@ contains
           end if
        end do
     end do
+    ! Get bond-length along transport direction
+    ! sin(30^o) = 1/2
+    bond30 = min_bond * 0.5_dp
+    min_t_bond = min_bond
+    do i = 1 , na - 1
+       p(:) = xa(:,ia-1+i)
+       do j = i + 1 , na
+          max_xa = xa(:,ia-1+j) - p
+          contrib = VEC_PROJ_SCA(this%cell(:,this%t_dir),max_xa)
+          if ( abs(contrib) < bond30 ) cycle
+          if ( abs(contrib) < min_t_bond ) then
+             min_t_bond = contrib
+          end if
+       end do
+    end do
     ! Take half the bond-length to get in between two atoms
+    min_t_bond = min_t_bond * 0.5_dp
     min_bond = min_bond * 0.5_dp
 
     ! Calculate the pivoting table
@@ -729,7 +741,7 @@ contains
     ! We add a vector with length of half the minimal bond length
     ! to the vector, to do the averaging 
     ! not on-top of an electrode atom.
-    p = p * min_bond
+    p = p * min_t_bond
 
     if ( this%inf_dir == INF_POSITIVE ) then
        this%p%c = this%p%c + p ! add vector
@@ -837,7 +849,7 @@ contains
     real(dp), intent(in), optional :: kdispl(3)
 
     integer :: this_kcell(3,3)
-    real(dp) :: p(3), contrib, min_bond
+    real(dp) :: p(3), contrib
     real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
     real(dp) :: max_xa(3), cur_xa(3)
     real(dp), pointer :: this_xa(:,:)
@@ -1122,93 +1134,6 @@ contains
        write(*,'(t5,a)')'Responsibility has been relieved from &
             &transiesta/tbtrans!'
     end if
-
-    ! We add a vector with length of half the minimal bond length
-    ! to the vector, to do the averaging 
-    ! not on-top of an electrode atom.
-    p = p * min_bond
-
-    ! Store the start of the electrode here
-    iaa = this%idx_a
-    
-    ! Create the basal plane of the electrode
-    ! Decide which end of the electrode we use
-    ! TODO, correct for systems not having the last electrode atom
-    ! farthest from the device region (or correct intrinsically)
-    if ( this%inf_dir == INF_POSITIVE ) then
-       ! We need to utilize the last atom
-       this%p%c = xa(:,iaa+na-1)
-       this%p%c = this%p%c + p ! add vector
-    else
-       this%p%c = xa(:,iaa)
-       this%p%c = this%p%c - p ! subtract vector
-    end if
-    
-    ! Normal vector to electrode transport direction
-    this%p%n = SPC_PROJ(s_cell,this%cell(:,this%t_dir))
-    this%p%n = this%p%n / VNORM(this%p%n) ! normalize
-
-    ! The distance parameter
-    this%p%d = sum( this%p%n(:)*this%p%c(:) )
-
-    ! Create the box cell for the electrode
-    ! This enables the Hartree correction for the 
-    ! electrode region
-    ! The box-cell will be extended by the bond-length
-    ! to make "as big as box as viable"
-    min_bond = min_bond * 2._dp ! re-scale to actual bond-length
-    do i = 1 , 3
-       ! Get the lower left corner of the electrode
-       p(i) = minval(xa(i,iaa:iaa+na-1))
-       ! The box extends back one bond-length in each direction.
-       p(i) = p(i) - min_bond
-       ! Get the maximum in each direction
-       ! In principle this should probably be the electrode
-       ! unit-cell vectors, however, for non-periodic electrodes
-       ! this might not be such a good choice.
-       ! The best thing would be to check the periodic directions,
-       ! and in those directions assign the vectors in those directions
-       ! always having the third vector equalling the cell transport
-       ! direction.
-       ! NOTE TODO : this is for now a "stupid" implementation.
-       max_xa(i) = maxval(xa(i,iaa:iaa+na-1))
-       max_xa(i) = max_xa(i) + min_bond
-       this%box%v(:,i) = 0._dp
-       this%box%v(i,i) = max_xa(i) - p(i)
-
-    end do
-    do i = 1 , 3
-       ! If there is no periodicity of the electrode in this
-       ! direction we move the center of the box by the 
-       ! unit-cell. This ensures that for non-periodic
-       ! cells, we still have an equal weight of the
-       ! lifting of the Hartree potential.
-       if ( this%nsc(i) == 1 ) then
-          p(:) = p(:) - 0.5_dp * this%cell(:,i)
-       end if
-    end do
-    ! p now contains the origin of the box
-    this%box%c(:) = p(:)
-    ! For now the box vectors are defined using the unit-cell of
-    ! the electrode.
-    ! Note that we extend the unit-cell by the bond-length
-    ! We will really try to extend the box to be
-    ! as large as possible to retain the potential surrounding
-    ! the electrode as much as possible.
-    ! This is really important for periodic calculations
-    ! where it is necessary to have the lifting potential
-    ! in the entire box of the electrode
-    do i = 1 , 3
-       ! Remember that we start one bond-length "below"
-       ! and the unit-cell is always "one bond length" too
-       ! long (for periodic reasons)
-       p(:) = min_bond
-       ! Create a unit-vector along the unit-cell direction
-       max_xa(:) = this%cell(:,i) / VNORM(this%cell(:,i))
-       p(:) = VEC_PROJ(max_xa,p)
-       p(:) = this%cell(:,i) + p(:)
-       this%box%v(:,i) = SPC_PROJ(s_cell,p)
-    end do
 
     if ( ldie ) then
        call die('Erroneous electrode setup, check out-put')

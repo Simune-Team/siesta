@@ -34,7 +34,6 @@
 #ifdef TRANSIESTA
       use m_ts_global_vars, only : TSmode, TSinit, TSrun
       use m_transiesta,     only : transiesta
-      use m_ts_options, only : N_Elec, Elecs
 #endif /* TRANSIESTA */
       implicit none
 !     Input variables

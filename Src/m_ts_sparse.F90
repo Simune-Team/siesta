@@ -78,6 +78,7 @@ contains
 #endif 
     use parallel, only: IONode
 
+    use create_Sparsity_SC
     use m_ts_electype
     use m_ts_method
 #ifdef TRANSIESTA_DEBUG
@@ -145,6 +146,8 @@ contains
        sc_off(:,:) = matmul(ucell,isc_off)
     end if
 
+    ! Removes all buffer atoms, cross-terms between electrodes
+    ! and electrode cross-boundaries.
     call ts_Sp_calculation(dit,sparse_pattern,N_Elec,Elecs, &
          ucell, nsc, isc_off, tmp_sp)
 
@@ -161,9 +164,6 @@ contains
        ! Hence it is still a local sparsity pattern.
        call ts_Sparsity_Update(dit,tmp_sp, N_Elec, Elecs, &
             ltsup_sp_sc)
-       
-       ! assign distribution array
-       !call ts_init_distribution(dit,sparse_pattern)
        
        if ( IONode ) then
           write(*,'(/,a)') 'Created the TranSIESTA local update sparsity pattern:'
@@ -183,8 +183,7 @@ contains
     end if
 
     ! Create the global transiesta H(k), S(k) sparsity pattern
-    call ts_Sparsity_Global(dit,tmp_sp, &
-         N_Elec, Elecs, &
+    call ts_Sparsity_Global(dit,tmp_sp, N_Elec, Elecs, &
          ts_sp_uc)
 
     ! The update sparsity pattern can be simplied to the H,S sparsity
@@ -217,25 +216,46 @@ contains
 #endif
 
     if ( bool ) then
+       ! The sparsity patterns are the same, i.e. the
+       ! update and Hamiltonian sparse matrices are the same.
+       ! We can re-use the sparsity pattern.
 
        tsup_sp_uc = ts_sp_uc
        if ( IONode ) then
           write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern.'
-          write(*,'(a)') 'TranSIESTA global update sparsity pattern same as H,S'
           call print_type(ts_sp_uc)
+          write(*,'(/a)') 'TranSIESTA global update sparsity pattern same as H,S'
        end if
 
     else
 
-       ! Create the update region (a direct subset of ts_sp_uc)
-       call ts_Sparsity_Update(fdit,ts_sp_uc, N_Elec, Elecs, &
-            tsup_sp_uc)
+       ! In this case we cannot be sure that the update sparsity pattern
+       ! is a direct sub-set of the Hamiltonian.
+       ! Hence, we need to create the correct one.
+       ! In this case is is simply a global sparsity of the 
+       !   'ltsup_sp_sc', in case there is an applied bias
+       if ( IsVolt ) then
+          ! Create the unit-cell sparsity pattern
+          call crtSparsity_SC(ltsup_sp_sc, tmp_sp, UC=.TRUE.)
+          ! Convert to the global one
+          call Sp_to_Spglobal(fdit,tmp_sp,tsup_sp_uc)
+          call delete(tmp_sp)
+       else
+          tsup_sp_uc = tmp_sp
+          call delete(tmp_sp)
+          ! Create the unit-cell sparsity pattern
+          call crtSparsity_SC(tsup_sp_uc, tmp_sp, UC=.TRUE.)
+          call delete(tsup_sp_uc)
+          ! Create the update sparsity pattern
+          call ts_Sparsity_Update(fdit,tmp_sp, N_Elec, Elecs, &
+               tsup_sp_uc)
+       end if
        
        if ( IONode ) then
           write(*,'(/,a)') 'Created the TranSIESTA global update sparsity pattern:'
           call print_type(tsup_sp_uc)
        end if
-
+       
     end if
 
 #ifdef TRANSIESTA_DEBUG
@@ -321,10 +341,10 @@ contains
              call rgn_union(r_oE(i),r_tmp1,r_tmp2)
           end do
           call Sp_remove_region2region(dit,ts_sp,r_oE(iEl),r_tmp2,ts_sp)
-          
-          call rgn_delete(r_tmp1,r_tmp2)
        end if
 
+       call rgn_delete(r_tmp1,r_tmp2)
+       
     end do
     do iEl = 1 , N_Elec
        call rgn_delete(r_oE(iEl))
@@ -393,7 +413,7 @@ contains
 
     ! Loop-counters
     integer :: io, jo, ind
-    integer :: iot, jot
+    integer :: ict, jct
     logical :: UseBulk
 
     ! Initialize
@@ -423,9 +443,6 @@ contains
     call sp_to_file(400+Node, sp_uc)
 #endif
 
-    ! Write that we have created it
-    if ( IONode ) call print_type(sp_uc)
-
     ! Now we have the globalized SIESTA Unit-cell pattern, make it 
     ! only to the Transiesta sparsity pattern
 
@@ -443,11 +460,11 @@ contains
     ! We do not need to check the buffer regions...
     ! We know they will do NOTHING! :)
 !$OMP parallel do default(shared), &
-!$OMP&private(io,iot,ind,jo,jot,UseBulk)
+!$OMP&private(io,jo,ind,ict,jct,UseBulk)
     do io = 1 , no_u
 
-       iot = orb_type(io)
-       if ( iot /= TYP_BUFFER ) then
+       ict = orb_type(io)
+       if ( ict /= TYP_BUFFER ) then
 
        ! The index in the pointer array is retrieved
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
@@ -457,36 +474,36 @@ contains
 
           ! If we are in the buffer region, cycle (l_HS(ind) =.false. already)
           ! note, that we have already *checked* ic
-          jot = orb_type(jo)
-          if ( jot == TYP_BUFFER ) cycle
+          jct = orb_type(jo)
+          if ( jct == TYP_BUFFER ) cycle
 
-          if ( iot > 0 ) then
+          if ( ict > 0 ) then
              ! In order to allow to have the update sparsity pattern
              ! as a subset, we require that the Hamiltonian also
              ! has the electrode interconnects
-             UseBulk = Elecs(iot)%Bulk
-          else if ( jot > 0 ) then
-             UseBulk = Elecs(jot)%Bulk
+             UseBulk = Elecs(ict)%Bulk
+          else if ( jct > 0 ) then
+             UseBulk = Elecs(jct)%Bulk
           else
              ! we are definitely not in an electrode
-             UseBulk = .true.
+             ! hence, this will *most* likely get updated
+             UseBulk = .false.
           end if
-             
+
           if ( UseBulk ) then
-             ! here we create the update-density matrix on these criterias:
+             ! here we create the Hamiltonian matrix on these criterias:
              !  1) no electrode-electrode connections
              !  2) no only-electrode connections
              !  3) add cross-terms
 
-             l_HS(ind) = iot == TYP_DEVICE .or. jot == TYP_DEVICE
+             l_HS(ind) = ict == TYP_DEVICE .or. jct == TYP_DEVICE
 
           else
              
-             ! If not usebulk we update everything that is not buffer
-             ! We also do not add things that are from one electrode
-             ! to another
-             if ( iot > 0 .and. jot > 0 ) then
-                l_HS(ind) = iot == jot
+             ! If not bulk we only want to save the Hamiltonian elements
+             ! for the same electrode, otherwise everything is needed
+             if ( ict > 0 .and. jct > 0 ) then
+                l_HS(ind) = ict == jct
              else
                 l_HS(ind) = .true.
              end if
@@ -535,7 +552,6 @@ contains
   subroutine ts_Sparsity_Update(dit,s_sp, N_Elec, Elecs, &
        tsup_sp)
 
-    use parallel, only : IONode
     use geom_helper, only : UCORB
     use create_Sparsity_SC
     use class_OrbitalDistribution
@@ -611,6 +627,11 @@ contains
           jct = orb_type(l_col(ind))
           if ( jct == TYP_BUFFER ) cycle
 
+          ! Remark,
+          !   DM_update == 0 (none)
+          !   DM_update == 1 (cross-terms)
+          !   DM_update == 2 (all)
+
           if ( ict > 0 ) then
              ! Assign that the density matrix, should not be updated
              DM_bulk = Elecs(ict)%DM_update < 2
@@ -618,33 +639,25 @@ contains
              ! electrode region is updated
              DM_cross = Elecs(ict)%DM_update /= 0
           else if ( jct > 0 ) then
-             ! Assign that the density matrix, should not be updated
-             DM_bulk = Elecs(ict)%DM_update < 2
-             ! If DM_cross is different from 0, the entire
-             ! electrode region is updated
-             DM_cross = Elecs(ict)%DM_update /= 0
+             DM_bulk = Elecs(jct)%DM_update < 2
+             DM_cross = Elecs(jct)%DM_update /= 0
           else
              ! we are definitely not in an electrode
              ! just set it to be updated
-             DM_bulk = .false.
              DM_cross = .true.
           end if
 
           ! We check whether it is electrode-connections. 
           ! If, so, they are not used in transiesta:
           if      ( ict > 0 .and. jct > 0 ) then
+
              ! Remove connections between electrodes
-             ! but maintain same electrode updates if not usebulk
+             ! but maintain same electrode updates if not bulk dm
              if ( ict == jct .and. .not. DM_bulk ) then
                 lup_DM(ind) = .true.
-             else
-                lup_DM(ind) = .false.
              end if
 
-          else if ( DM_bulk ) then
-             ! If bulk density, we can safely update cross-terms
-             ! between the central and the electrodes (the self-energies are the
-             ! same)
+          else
 
              ! Note that this if-statement will never be reached
              ! if both ict and jct are electrodes.
@@ -661,12 +674,6 @@ contains
                 lup_DM(ind) = i_in_C .and. j_in_C
              end if
 
-          else
-
-             ! We are not in an electrode, or it is non-bulk.
-             ! Hence, everything is updated.
-             lup_DM(ind) = .true.
-             
           end if
 
        end do
@@ -705,7 +712,7 @@ contains
 ! **********************
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: sub_ncol(:), sub_ptr(:), sub_col(:)
-    integer, pointer :: pnt(:)      => null()
+    integer, pointer :: pnt(:)
 
     integer :: no_l, io, j, sub_ind, ind
 
@@ -721,6 +728,7 @@ contains
     call newiSpData1D(sub_sp,dit,ipnt,name='TS pointer')
     ! Point to the array
     pnt => val(ipnt)
+    ! Initialize to check that we can locate all indices
     pnt(:) = 0
 
     ! Loop in the subset sparsity pattern

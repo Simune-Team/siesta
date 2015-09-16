@@ -1,4 +1,39 @@
 ----------------------------------------------------
+September 16, 2015 -- Nick Papior       trunk-476---ts-scf-520
+Enabled 3 variants of the Hartree fix
+
+* The Hartree correction now comes in 3 variants:
+
+  1) Plane, old method, simple cut through the plane
+     behind the first electrode
+  2) Electrode plane, the largest electrode surface
+     area plane cut
+  3) Entire electrode-box averaging.
+     This actually seems promising.
+
+* Bugfix for bond-length estimations, the projection
+  onto the transport direction was ill-defined leading
+  to 0 length bonds.
+
+* Removed erronously placed code from check_Elec_sim
+
+* Enabled more flexible bulk vs. updating scheme.
+
+* Forgot to initialize the mean error to zero
+
+modified:
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/m_transiesta.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Src/m_ts_voltage.F90
+  Src/m_ts_weight.F90
+  Src/setup_hamiltonian.F
+
+----------------------------------------------------
 September 13, 2015 -- Nick Papior       trunk-476---ts-scf-519
 Improved check for electrode boundaries
 

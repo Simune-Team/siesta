@@ -104,7 +104,7 @@ contains
     integer, allocatable :: nq(:)
 ! ************************************************************
 
-! * local variables
+    ! * local variables
     integer :: iEl, NEn, no_used, no_used2
     logical :: converged
     ! In case of Fermi-correction, we save the previous steps

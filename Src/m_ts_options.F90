@@ -26,10 +26,6 @@ module m_ts_options
   ! Controls to save the TSHS file
   logical :: TS_HS_save = .true.
   logical :: TS_DE_save = .false.
-  ! Whether the siesta calculation should also fix the hartree potential
-  logical :: Vha_fix = .false.
-  ! Fraction of the Hartree potential fix (limits fluctuations)
-  real(dp) :: Vha_frac = 1._dp
   ! whether we will use the bias-contour
   logical :: IsVolt = .false.
   ! Whether the system has an electronic temperature gradient
@@ -62,10 +58,6 @@ module m_ts_options
   ! I.e. if the electrode starts at 10 Ang and the central region ends at 20 Ang
   ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
   logical :: VoltageInC = .false.
-
-  ! If false we use the cell boundary for the Hartree fix, otherwise
-  ! we choose the electrode with the largest basal-palen
-  logical :: elec_basal_plane = .false.
 
   ! File name for reading in the grid for the Hartree potential
   character(len=150) :: Hartree_fname = ' '
@@ -111,6 +103,7 @@ contains
 
     use m_ts_weight, only : read_ts_weight
     use m_ts_charge, only : read_ts_charge_cor
+    use m_ts_hartree, only: read_ts_hartree_options
 
 #ifdef SIESTA__MUMPS
     use m_ts_mumps_init, only : read_ts_mumps
@@ -133,12 +126,11 @@ contains
     TS_DE_save = fdf_get('TS.DE.Save',.false.)
     onlyS      = fdf_get('TS.onlyS',.false.)
     onlyS      = fdf_get('TS.S.Save',onlyS)
+
     ! Enables pure siesta runs to fix the Hartree potential such that
     ! a restart from siesta is possible in transiesta
     ! This will only work for two electrodes, or if the plane
     ! coincides with the electrode plane
-    Vha_fix    = fdf_get('Hartree.Fix',.false.)
-    Vha_frac   = fdf_get('Hartree.Fix.Frac',1._dp)
     c          = fdf_get('Hartree.Fix.Plane','A3')
 
     ! Pre-select the "transport direction"
@@ -152,6 +144,9 @@ contains
        call die('Hartree.Fix.Plane erroneously setup.')
     end if
 
+    ! Read in the settings for the Hartree fixation
+    call read_ts_hartree_options( )
+
     ! Calculate Cartesian transport direction
     call eye(3,tmp33)
     ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx),mag = .true.)
@@ -160,10 +155,7 @@ contains
     ! no settings from the intrinsic transiesta routines
     ! are needed.
     if ( onlyS .or. .not. TSmode ) return
-
-    ! In transiesta this HAS to be true !
-    Vha_fix = .true.
-
+    
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
     ts_Dtol = fdf_get('TS.SCF.DM.Tolerance',dDTol)
@@ -216,6 +208,8 @@ contains
 
     ! Determine whether the user wishes to only do an analyzation
     TS_Analyze = fdf_get('TS.Analyze',.false.)
+
+    call read_ts_hartree_options( )
 
     call read_ts_charge_cor( )
 
@@ -418,28 +412,24 @@ contains
     Elecs(:)%Eta  = fdf_get('TS.Contours.nEq.Eta',0.0001_dp*eV,'Ry')
     Elecs(:)%Eta  = fdf_get('TS.Elecs.Eta',Elecs(1)%Eta,'Ry')
     Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
-    if ( .not. Elecs(1)%Bulk ) then
-       chars = 'all' ! TODO, allow non-bulk, non-update calls to achieve similarity of
-       !               intermediate step
-
-       ! When non-bulk calculations are used, so we force
-       ! the entire density matrix to be updated.
+    if ( Elecs(1)%Bulk ) then
+       ! Default is cross-terms if we use bulk electrodes
+       chars = 'cross-terms'
+    else
+       ! For non-bulk systems, we default to all
+       chars = 'all'
+    end if
+    c = fdf_get('TS.Elecs.DM.Update',trim(chars))
+    if ( leqi(c,'none') ) then
+       Elecs(:)%DM_update = 0
+    else if ( leqi(c,'cross-terms') .or. &
+         leqi(c,'cross-term') ) then
+       Elecs(:)%DM_update = 1
+    else if ( leqi(c,'all') ) then
        Elecs(:)%DM_update = 2
     else
-       chars = 'cross-terms'
-       ! default to not update the cross-terms
-       c = fdf_get('TS.Elecs.DM.Update','cross-terms')
-       if ( leqi(c,'none') ) then
-          Elecs(:)%DM_update = 0
-       else if ( leqi(c,'cross-terms') .or. &
-            leqi(c,'cross-term') ) then
-          Elecs(:)%DM_update = 1
-       else if ( leqi(c,'all') ) then
-          Elecs(:)%DM_update = 2
-       else
-          call die('TS.Elecs.DM.Update [cross-terms,none,all]: &
-               &unrecognized option: '//trim(c))
-       end if
+       call die('TS.Elecs.DM.Update [cross-terms,none,all]: &
+            &unrecognized option: '//trim(c))
     end if
 
     ! Whether we should try and re-use the surface Green function 
@@ -526,13 +516,48 @@ contains
           ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx))
 
        else
+
           ! In case we have a skewed transport direction
           ! we have some restrictions...
           ts_tidx = - N_Elec
           ts_tdir = - N_Elec
+          
        end if
        
     end if
+
+    ! The user can selectively decide how the Hartree-fix
+    ! is applied
+    ! In case the transport direction is "fixed" in two terminal
+    ! setups, we can still force it to use the basal plane of the 
+    ! electrodes
+    ! The user can also specify it using a file
+    chars = fdf_get('TS.Hartree','ramp')
+#ifdef NCDF_4
+    if ( file_exist(chars) ) then
+       Hartree_fname = trim(chars)
+       ts_tidx = 0
+    else
+#endif
+       Hartree_fname = ' '
+       if ( ts_tidx > 0 ) then
+          if ( leqi(chars,'ramp') ) then
+             ! do nothing
+          else if ( leqi(chars,'elec-box') ) then
+             ts_tidx = - N_Elec
+          else
+#ifdef NCDF_4
+             call die('Error in specifying how the Hartree potential &
+                  &should be placed. [ramp|elec-box|NetCDF-file]')
+#else
+             call die('Error in specifying how the Hartree potential &
+                  &should be placed. [ramp|elec-box]')
+#endif
+          end if
+       end if
+#ifdef NCDF_4
+    end if
+#endif
 
     ! In case we are doing equilibrium, fix the chemical potential to the first
     if ( .not. IsVolt ) then
@@ -603,8 +628,6 @@ contains
     use fdf, only : fdf_get, leqi
     use intrinsic_missing, only : VNORM, IDX_SPC_PROJ, EYE
 
-    use m_os, only : file_exist
-
     use m_ts_global_vars, only: TSmode, onlyS
 
     use m_ts_electype, only: check_Elec_sim
@@ -613,6 +636,9 @@ contains
     
     use m_ts_weight, only : read_ts_weight
     use m_ts_charge, only : read_ts_charge_cor
+
+    use m_ts_hartree, only: read_ts_hartree_options
+    use m_ts_hartree, only: ts_hartree_elec
 
 #ifdef SIESTA__MUMPS
     use m_ts_mumps_init, only : read_ts_mumps
@@ -627,54 +653,19 @@ contains
     real(dp), intent(in) :: ts_kdispl(3)
 
     ! Local variables
-    character(len=200) :: chars
     integer :: i
     logical :: Gamma3(3)
 
     if ( onlyS .or. .not. TSmode ) return
 
     if ( N_Elec == 0 ) call die('read_ts_after_Elecs: error in programming')
-
-    ! The user can selectively decide how the Hartree-fix
-    ! is applied
-    ! In case the transport direction is "fixed" in two terminal
-    ! setups, we can still force it to use the basal plane of the 
-    ! electrodes
-    ! The user can also specify it using a file
-    chars = fdf_get('TS.Hartree','ramp')
-#ifdef NCDF_4
-    if ( file_exist(chars) ) then
-       Hartree_fname = trim(chars)
-       ts_tidx = 0
-    else
-#endif
-       Hartree_fname = ' '
-       if ( ts_tidx > 0 ) then
-          if ( leqi(chars,'ramp') ) then
-             ! do nothing
-          else if ( leqi(chars,'elec-box') ) then
-             ts_tidx = - N_Elec
-          else
-#ifdef NCDF_4
-             call die('Error in specifying how the Hartree potential &
-                  &should be placed. [ramp|elec-box|NetCDF-file]')
-#else
-             call die('Error in specifying how the Hartree potential &
-                  &should be placed. [ramp|elec-box]')
-#endif
-          end if
-       end if
-#ifdef NCDF_4
-    end if
-#endif
-
-    ! If the Hartree-potential is not a ramp, then we do not allow
-    ! fixing from one place
-    if ( ts_tidx > 0 ) then
-       elec_basal_plane = fdf_get('TS.Hartree.BasalPlane',.false.)
-    else
-       elec_basal_plane = .true.
-    end if
+    
+    ! Read in options again, at this point we have
+    ! the correct ts_tidx
+    call read_ts_hartree_options( )
+    
+    ! Find the "biggest" electrode
+    call ts_hartree_elec( N_Elec, Elecs )
 
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus, ts_kT, IsVolt, Volt )
@@ -730,12 +721,16 @@ contains
     use m_ts_mumps_init, only: MUMPS_mem, MUMPS_ordering, MUMPS_block
 #endif
 
+    use m_ts_hartree, only: TS_HA, Vha_frac, El
+    use m_ts_hartree, only: TS_HA_NONE, TS_HA_PLANE, TS_HA_ELEC, TS_HA_ELEC_BOX
+
     implicit none
     
 ! *******************
 ! * LOCAL variables *
 ! *******************
     character(len=200) :: chars
+    logical :: ltmp
     integer :: i
 
     if ( .not. IONode ) return
@@ -747,7 +742,8 @@ contains
        
        write(*,f1) 'Save H and S matrices', TS_HS_save
        write(*,f1) 'Save DM and EDM matrices', TS_DE_save
-       if ( Vha_fix ) then
+       select case ( TS_HA )
+       case ( TS_HA_PLANE )
           select case ( ts_tidx ) 
           case ( 1 )
              write(*,f10) 'Fix Hartree potential at cell boundary', 'A1'
@@ -756,15 +752,16 @@ contains
           case ( 3 )
              write(*,f10) 'Fix Hartree potential at cell boundary', 'A3'
           end select
-          write(*,f8) 'Fix Hartree potential fraction', Vha_frac
-       else
+       case ( TS_HA_NONE ) 
           write(*,f11) 'Do not fix Hartree potential'
           if ( TS_DE_save ) then
              write(*,f11) '*** If you do not use Hartree.Fix you cannot &
                   &use the TSDE file for restart in TranSIESTA.'
              write(*,f11) '*** Please note this!'
           end if
-       end if
+       case default
+          call die('Error in coding setup, Vha_fix')
+       end select
        write(*,f1) 'Only save the overlap matrix S', onlyS
 
        write(*,f11) repeat('*', 62)
@@ -780,7 +777,6 @@ contains
     write(*,f7) 'Electronic temperature',ts_kT/Kelvin,'K'
     if ( ts_tidx < 1 ) then
        write(*,f11) 'Transport individually selected for electrodes'
-       write(*,f11) 'Fixing the Hartree potential at electrode plane'
     else
        write(chars,'(a,i0)') 'A',ts_tidx
        write(*,f10) 'Transport along unit-cell vector',trim(chars)
@@ -792,9 +788,18 @@ contains
        case ( 3 )
           write(*,f10) 'Transport along Cartesian vector','Z'
        end select
-       write(*,f10) 'Fixing the Hartree potential at plane',trim(chars)
-       write(*,f8) 'Fix Hartree potential fraction', Vha_frac
     end if
+    select case ( TS_HA )
+    case ( TS_HA_PLANE ) 
+       write(*,f10) 'Fixing Hartree potential at plane',trim(chars)
+    case ( TS_HA_ELEC )
+       write(*,f10) 'Fixing Hartree potential at electrode-plane',trim(El%name)
+    case ( TS_HA_ELEC_BOX )
+       write(*,f10) 'Fixing Hartree potential in electrode-box',trim(El%name)
+    case default
+       call die('Vha, error in option collecting')
+    end select
+    write(*,f8) 'Fix Hartree potential fraction', Vha_frac
     if ( ts_method == TS_FULL ) then
        write(*,f10)'Solution method', 'Full inverse'
     else if ( ts_method == TS_BTD ) then
@@ -927,10 +932,12 @@ contains
             TS_RHOCORR_FERMI_MAX / eV,'eV'
     end if
     write(*,f11)'          >> Electrodes << '
+    ltmp = ts_tidx < 1 .and. IsVolt
+    ltmp = ltmp .or. TS_HA == TS_HA_ELEC_BOX
     do i = 1 , size(Elecs)
        call print_settings(Elecs(i), 'ts', &
-            plane = elec_basal_plane , &
-            box = ts_tidx < 1 .and. IsVolt )
+            plane = TS_HA == TS_HA_ELEC , &
+            box = ltmp)
     end do
 
     ! Print the contour information
@@ -945,7 +952,7 @@ contains
   subroutine print_ts_warnings( cell, na_u, xa, Nmove )
 
     use parallel, only: IONode, Nodes
-    use intrinsic_missing, only : VNORM, VEC_PROJ
+    use intrinsic_missing, only : VNORM, VEC_PROJ, VEC_PROJ_SCA
 
     use m_os, only: file_exist
 
@@ -961,6 +968,9 @@ contains
     use m_ts_contour_eq, only: N_Eq_E
     use m_ts_contour_neq, only: contour_neq_warnings
 
+    use m_ts_hartree, only: TS_HA, Vha_frac
+    use m_ts_hartree, only: TS_HA_NONE, TS_HA_PLANE, TS_HA_ELEC, TS_HA_ELEC_BOX
+
     ! Input variables
     real(dp), intent(in) :: cell(3,3)
     integer, intent(in) :: na_u
@@ -969,7 +979,7 @@ contains
 
     ! Local variables
     integer :: i, j, iEl, idx, idx1, idx2, itmp3(3)
-    real(dp) :: rtmp, tmp3(3), tmp33(3,3), min_bond_elec
+    real(dp) :: rtmp, tmp3(3), tmp33(3,3), min_bond, min_t_bond
     logical :: err, warn, ltmp
 
     if ( .not. IONode ) return
@@ -985,7 +995,15 @@ contains
        call die('Fixing spin is not possible in transiesta')
     end if
 
-    if ( Vha_fix ) then
+    if ( .not. TSmode ) then
+       if ( TS_HA == TS_HA_ELEC ) then
+          call die('Hartree potiental cannot use electrodes without transiesta')
+       else if ( TS_HA == TS_HA_ELEC_BOX ) then
+          call die('Hartree potiental cannot use electrodes without transiesta')
+       end if
+    end if
+
+    if ( TS_HA /= TS_HA_NONE ) then
        if ( Vha_frac /= 1._dp ) then
           write(*,'(a)') 'Fraction of Hartree potential is NOT 1.'
           warn = .true.
@@ -998,10 +1016,26 @@ contains
     end if
 
     ! Return if not a transiesta calculation
-    if ( onlyS .or. .not. TSmode ) return
+    if ( onlyS .or. .not. TSmode ) then
+       write(*,'(3a,/)') repeat('*',24),' End: TS CHECKS AND WARNINGS ',repeat('*',26)
+       return
+    end if
+
+    if ( TS_HA == TS_HA_NONE ) then
+       write(*,*) 'Hartree potiental fix REQUIRED when running transiesta'
+       err = .true.
+    end if
+
+    if ( ts_tidx < 1 .and. TS_HA == TS_HA_PLANE ) then
+       write(*,*) 'Hartree potiental fix *must* be electrode as no transport &
+            &plane is well-defined.'
+       err = .true.
+    end if
 
     ! Check that all chemical potentials are really different
-    rtmp = 10._dp * Kelvin ! 10 kelvin separates two chemical potential
+    ! their energy difference has to be below 0.1 meV and the
+    ! temperature difference has to be below 10 K.
+    rtmp = 10._dp * Kelvin
     do i = 1 , N_mu - 1
        do j = i + 1 , N_mu
           if ( abs(mus(i)%mu - mus(j)%mu) < 0.0001_dp * eV .and. &
@@ -1049,11 +1083,11 @@ contains
              ltmp = .true.
           end if
           if ( ltmp ) then
-             write(*,*) 'Electrode: '//trim(Name(Elecs(i)))
+             write(*,*) 'Electrode: '//trim(Elecs(i)%name)
              write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
              idx1 = Elecs(j)%idx_a
              idx2 = idx1 + TotUsedAtoms(Elecs(j)) - 1
-             write(*,*) 'Electrode: '//trim(Name(Elecs(j)))
+             write(*,*) 'Electrode: '//trim(Elecs(j)%name)
              write(*,'(a,i0,a,i0)') 'Positions: ',idx1,' -- ',idx2 
              write(*,'(a)') 'Overlapping electrodes is not physical, please correct.'
              err = .true.
@@ -1065,7 +1099,7 @@ contains
     if (  maxval(mus(:)%mu) - minval(mus(:)%mu) - abs(Volt) > 0.0001_dp * eV ) then
        write(*,'(a)') 'Chemical potentials [eV]:'
        do i = 1 , N_Elec
-          write(*,'(a,f10.5,a)') trim(Name(Elecs(i)))//' at ',Elecs(i)%mu%mu/eV,' eV'
+          write(*,'(a,f10.5,a)') trim(Elecs(i)%name)//' at ',Elecs(i)%mu%mu/eV,' eV'
        end do
        write(*,'(a)') 'The difference must satisfy: "max(ChemPots)-min(ChemPots) - abs(Volt) > 0.0001 eV"'
        write(*,'(a,f10.5,a)') 'max(ChemPots) at ', maxval(mus(:)%mu)/eV,' eV'
@@ -1129,15 +1163,31 @@ contains
 
     ! Calculate minimum electrode bond-length along the transport
     ! direction. This is used to ensure correct spacing
-    min_bond_elec = huge(1._dp)
+    min_bond = huge(1._dp)
+    min_t_bond = huge(1._dp)
     do iEl = 1 , N_Elec
+       ! Get the system unit-cell transport direction
+       tmp33 = Elecs(iEl)%cell
+       tmp3 = tmp33(:,Elecs(iEl)%t_dir)
+       tmp33(:,Elecs(iEl)%t_dir) = tmp3 / VNORM(tmp3)
        idx1 = Elecs(iEl)%idx_a
        idx2 = idx1 + TotUsedAtoms(Elecs(iEl)) - 1
        do j = idx1 , idx2 - 1
           ! Project the coordinate onto the transport direction
           do i = j + 1 , idx2
-             tmp3 = VEC_PROJ(cell(:,ts_tidx),xa(:,i) - xa(:,j))
-             min_bond_elec = min(min_bond_elec,VNORM(tmp3))
+             tmp3 = xa(:,i) - xa(:,j)
+             min_bond = min(min_bond,VNORM(tmp3))
+          end do
+       end do
+       do j = idx1 , idx2 - 1
+          ! Project the coordinate onto the transport direction
+          do i = j + 1 , idx2
+             tmp3 = VEC_PROJ(tmp33(:,Elecs(iEl)%t_dir),xa(:,i) - xa(:,j))
+             ! As projecting onto a direction may lead the
+             ! bond-length to be zero, we require the minimum
+             ! bond-length to be at least 30^o of the correct bond-length
+             if ( VNORM(tmp3) < 0.5_dp * min_bond ) cycle
+             min_t_bond = min(min_t_bond,VNORM(tmp3))
           end do
        end do
     end do
@@ -1202,30 +1252,33 @@ contains
           write(*,'(a)') '    The initial guess for the potential profile is heavily influenced'
           write(*,'(a)') '    by the electrode unit-cell sizes! ***'
        end if
-    else if ( .not. elec_basal_plane ) then
-       ! The transport direction is well-defined
-       ! and the Hartree potential is fixed at the bottom of the
-       ! unit-cell of the A[ts_tidx] direction.
-       ! We will let the user know if any atoms co-incide with
-       ! the plane as that might hurt convergence a little.
+    end if
 
-       ! If the distance is less than 0.5 of the minimal bond length we have
-       ! the atomic core "close" to the Hartree fix plane, notify the user of this
-       rtmp = 0.5 * min_bond_elec
-       ltmp = .false.
-       do i = 1 , na_u
-          tmp3 = VEC_PROJ(cell(:,ts_tidx),xa(:,i))
-          ltmp = abs(tmp3(ts_tdir)) < rtmp
-          if ( ltmp ) exit
-       end do
-       if ( ltmp ) then
-          write(*,'(a,f9.5,a)')'You can with benefit move all atoms &
-               &in the transport direction by ',rtmp/Ang,' Ang'
-          write(*,'(2a)') 'This removes atoms from the constant &
-               &potential plane. ', &
-               'See %block AtomicCoordinatesOrigin for easy shifts.'
-          warn = .true.
-       end if
+    ! The transport direction is well-defined
+    ! and the Hartree potential is fixed at the bottom of the
+    ! unit-cell of the A[ts_tidx] direction.
+    ! We will let the user know if any atoms co-incide with
+    ! the plane as that might hurt convergence a little.
+    
+    ! If the distance is less than 0.5 of the minimal bond length we have
+    ! the atomic core "close" to the Hartree fix plane, notify the user of this
+    rtmp = 0.5 * min_t_bond
+    ltmp = .false.
+    tmp3 = cell(:,ts_tidx)
+    tmp3 = tmp3 / VNORM(tmp3)
+    do i = 1 , na_u
+       ! skip buffer atoms
+       if ( a_isBuffer(i) ) cycle
+       ltmp = abs( VEC_PROJ_SCA(tmp3,xa(:,i)) ) < rtmp
+       if ( ltmp ) exit
+    end do
+    if ( ltmp ) then
+       write(*,'(a,f9.5,a)')'You can with benefit move all atoms &
+            &in the transport direction by ',rtmp/Ang,' Ang'
+       write(*,'(2a)') 'This removes atoms from the constant &
+            &potential plane. ', &
+            'See %block AtomicCoordinatesOrigin for easy shifts.'
+       warn = .true.
     end if
 
     ! Check that the unitcell does not extend into the transport direction
@@ -1256,24 +1309,30 @@ contains
        idx2 = idx1 + TotUsedAtoms(Elecs(i)) - 1
 
        if ( .not. Elecs(i)%Bulk ) then
-          write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
+          write(*,'(a)') 'Electrode '//trim(Elecs(i)%name)//' will &
                &not use bulk Hamiltonian.'
           warn = .true.
        end if
 
        if ( Elecs(i)%DM_update == 0 ) then
-          write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
+          write(*,'(a)') 'Electrode '//trim(Elecs(i)%name)//' will &
                &not update cross-terms or local region.'
+          warn = .true.
+       end if
+       
+       if ( .not. Elecs(i)%Bulk .and. Elecs(i)%DM_update /= 2 ) then
+          write(*,'(3a)') 'Electrode ',trim(Elecs(i)%name), &
+               ' has non-bulk Hamiltonian and does not update all'
           warn = .true.
        end if
 
        if ( .not. Elecs(i)%kcell_check ) then
-          write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
+          write(*,'(a)') 'Electrode '//trim(Elecs(i)%name)//' will &
                &not check the k-grid sampling vs. system k-grid &
                &sampling. Ensure appropriate sampling.'
        end if
        if ( Elecs(i)%Ef_frac_CT /= 0._dp ) then
-          write(*,'(a)') 'Electrode '//trim(Name(Elecs(i)))//' will &
+          write(*,'(a)') 'Electrode '//trim(Elecs(i)%name)//' will &
                &shift coupling Hamiltonian with a shift in energy &
                &corresponding to the applied bias. Be careful here.'
           warn = .true.
@@ -1296,16 +1355,16 @@ contains
        if ( ltmp .and. Elecs(i)%DM_update == 0 ) then
           ! some buffer atoms are close to this electrode
           ! Advice to use dm_update
-          write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' is &
+          write(*,'(a,/,a)') 'Electrode '//trim(Elecs(i)%name)//' is &
                &likely terminated by buffer atoms. It is HIGHLY recommended to add this:', &
-               '  TS.Elec.'//trim(Name(Elecs(i)))//' DM-update [cross-terms|all]'
+               '  TS.Elec.'//trim(Elecs(i)%name)//' DM-update [cross-terms|all]'
           warn = .true.
        end if
 
        ! In case DM_bulk is requested we assert that the file exists
        ltmp = file_exist(Elecs(i)%DEfile)
        if ( DM_bulk == 1 .and. .not. ltmp ) then
-          write(*,'(a,/,a)') 'Electrode '//trim(Name(Elecs(i)))//' TSDE &
+          write(*,'(a,/,a)') 'Electrode '//trim(Elecs(i)%name)//' TSDE &
                &file cannot be located in: '//trim(Elecs(i)%DEfile)//'.', &
                '  Please add TS.DE.Save T to the electrode calculation or &
                &specify the exact file position using ''TSDE-file'' in the&
