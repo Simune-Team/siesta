@@ -6,6 +6,30 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-09-17   13:25:00 GMT                                     trunk-477
+Fixes: pi/a mode in bands; low-n interpolation; others
+
+* Fix handling of n<3 cases in interpolation.f90 
+* Made global variable 'saved' in matel_registry
+  (J. Soler, with thanks to Nick P. Andersen)
+
+* Fix uninitialized variable in interpolation.f90.
+* Proper check on number of atoms in zmatrix.F.
+* Avoid underflow in sorting.f.
+
+  (Thanks to P. Brandimarte)
+
+* In bands.F, only check for LatticeConstant input
+  in the "pi/a" case.
+
+modified:
+  Src/bands.F
+  Src/interpolation.f90
+  Src/matel_registry.F90
+  Src/sorting.f
+  Src/zmatrix.F
+
+-----------------------------------------------------------------------
 2015-07-16   15:05:00 GMT                                     trunk-476
 Fix the geometry and DM and H logic for consistency in analysis
 
