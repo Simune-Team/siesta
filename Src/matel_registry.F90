@@ -68,7 +68,7 @@ module m_matel_registry
   ! of the pool dynamic.
   !
   integer, parameter :: nmax_funcs = 300
-  type(registered_function_t), dimension(nmax_funcs)  :: matel_pool
+  type(registered_function_t), dimension(nmax_funcs), save :: matel_pool
 
   integer, private    :: nfuncs = 0
 

@@ -30,6 +30,7 @@
 ! Behaviour:
 !   If dydx1 and/or dydxn are not present, assumes d2y/dx2=0 at x(1) and/or x(n)
 !   Returns with stat=-1 if mesh is not monotonic, without any other output
+!   Returns with stat=-2 if n<2, without any other output
 ! Algorithm:
 !   Computes d2y/dx2 at each point, to make y(x) and dy/dx continuous.
 !   The x values are analyzed to check if the mesh is linear, logarithmic,
@@ -201,7 +202,9 @@ real(dp),         intent(in) :: y(n)   ! function value at mesh points
 real(dp),optional,intent(in) :: dydx1  ! dy/dx at x(1)
 real(dp),optional,intent(in) :: dydxn  ! dy/dx at x(n)
 real(dp),optional,intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
-integer, optional,intent(out):: stat   ! error status (-1 if nonmonotonic mesh)
+integer, optional,intent(out):: stat   ! error status:
+                                       !  (-1 if nonmonotonic mesh)
+                                       !  (-2 if n < 2)
 
 ! Internal variables and arrays
 character(len=*),parameter:: myName = 'generate_spline '
@@ -211,27 +214,34 @@ integer :: flag, k
 character(len=3):: meshType
 
 ! Check that mesh is monotonic
-if (all( (x(2:n-1)-x(1:n-2)) * (x(3:n)-x(2:n-1)) > 0.0_dp )) then
+if (n<2) then
+  flag = -2   ! single-point
+elseif (n>2 .and. any( (x(2:n-1)-x(1:n-2)) * (x(3:n)-x(2:n-1)) <= 0.0_dp )) then
+  flag = -1   ! non-monotonic mesh
+else
   flag = 0
-else ! non-monotonic mesh
-  flag = -1
 endif
 if (present(stat)) stat = flag
-if (flag==-1) return
+if (flag<0) return
 
 ! Find if mesh is linear (a=0) or logarithmic
 !   x(k)=x(1)+b*[exp(a*(k-1))-1] => (x(k+1)-x(k))/(x(k)-x(k-1))=exp(a)
-a = log( (x(3)-x(2)) / (x(2)-x(1)) )
-if (all(abs( (x(3:n)-x(2:n-1))/(x(2:n-1)-x(1:n-2)) - exp(a) ) < 1.e-12_dp)) then
-  if (abs(a)<1.e-12_dp) then
-    meshType = 'lin'
-    dx = x(2)-x(1)
-  else  ! try x(k) = x(1) + b*[exp(a*(k-1))-1]
-    meshType = 'log'
-    b = (x(2)-x(1)) / (exp(a)-1)
-  endif
+if (n<3) then
+  meshType = 'lin'
+  dx = x(2)-x(1)
 else
-  meshType = 'gen'
+  a = log( (x(3)-x(2)) / (x(2)-x(1)) )
+  if (all(abs( (x(3:n)-x(2:n-1))/(x(2:n-1)-x(1:n-2))-exp(a) ) < 1.e-12_dp)) then
+    if (abs(a)<1.e-12_dp) then
+      meshType = 'lin'
+      dx = x(2)-x(1)
+    else  ! try x(k) = x(1) + b*[exp(a*(k-1))-1]
+      meshType = 'log'
+      b = (x(2)-x(1)) / (exp(a)-1)
+    endif
+  else
+    meshType = 'gen'
+  endif
 endif
 
 ! Set boundary conditions at end points
@@ -283,7 +293,7 @@ dat%xmax = max(x(1),x(n)) + xtol
 dat%x1 = x(1)
 dat%dx = dx
 dat%a = a
-dat%b = b
+if (dat%mesh == 'log') dat%b = b
 dat%n = n
 dat%x = x
 dat%y = y
