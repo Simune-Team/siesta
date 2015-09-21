@@ -52,6 +52,9 @@
       integer :: i
 #endif
 
+#ifdef DEBUG
+      call write_debug( '    PRE save_density_matrix' )
+#endif
 
 #ifdef CDF
 !     Save density matrix on disk, after mixing, to
@@ -139,6 +142,11 @@
         end if
       end if ! writedm
 #endif /* TRANSIESTA */
+
+#ifdef DEBUG
+      call write_debug( '    POS save_density_matrix' )
+#endif
+      
       end subroutine save_density_matrix
 
       end module m_save_density_matrix

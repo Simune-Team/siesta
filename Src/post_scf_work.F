@@ -42,6 +42,10 @@
       type(Pair_Geometry_dSpData2D)  :: pair
       type(Geometry)                :: geom
 
+#ifdef DEBUG
+      call write_debug( '    PRE post_scf_work' )
+#endif
+
       call timer( 'PostSCF', 1 )
 !
 !     If converged, make one last iteration to find forces and stress
@@ -160,6 +164,10 @@
       end if
 
       call timer( 'PostSCF', 2 )
+
+#ifdef DEBUG
+      call write_debug( '    POS post_scf_work' )
+#endif
 
       END subroutine post_scf_work
 

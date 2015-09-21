@@ -116,6 +116,10 @@ C Internal variables ---------------------------------------------------
 
       type(xmlf_t) :: xf            ! For new XML output
 
+#ifdef DEBUG
+      call write_debug( '    PRE pdos' )
+#endif
+
       call timer( 'pdos', 1)
 
 C Find the intervals between the subdivisions in the energy scale ------
@@ -305,6 +309,10 @@ C Free local arrays ----------------------------------------------------
       call de_alloc( dtot, 'dtot', 'pdos' )
 
       call timer( 'pdos', 2)
+
+#ifdef DEBUG
+      call write_debug( '    POS pdos' )
+#endif
 
       end
 

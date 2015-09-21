@@ -71,6 +71,9 @@
 
       real(dp), external :: volcel
 
+#ifdef DEBUG
+      call write_debug( '    PRE siesta_move' )
+#endif
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -400,6 +403,10 @@
       if (ionode) call pxfflush(6)
 
 !--------------------------------------------------------------------------- END
+
+#ifdef DEBUG
+      call write_debug( '    POS siesta_move' )
+#endif
 
       CONTAINS
 

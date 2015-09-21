@@ -1,4 +1,33 @@
 ----------------------------------------------------
+September 21, 2015 -- Nick Papior       trunk-477---ts-scf-521
+Added many more -DDEBUG statements
+
+* This will enable better debugging with larger optimizations.
+
+* Made small modifications for the transiesta option
+  output
+
+modified:
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/diagk_file.F
+  Src/diagkp.F
+  Src/diagsprl.F
+  Src/fermid.F
+  Src/m_ts_options.F90
+  Src/pdos.F
+  Src/pdosk.F
+  Src/post_scf_work.F
+  Src/rhofft.F
+  Src/save_density_matrix.F
+  Src/setup_H0.F
+  Src/setup_kscell.F
+  Src/siesta_forces.F
+  Src/siesta_move.F
+
+----------------------------------------------------
 September 16, 2015 -- Nick Papior       trunk-476---ts-scf-520
 Enabled 3 variants of the Hartree fix
 

@@ -151,6 +151,9 @@ C  Internal variables .............................................
 C  ....................
 
 C Find eigenvalues and eigenvectors
+#ifdef DEBUG
+      call write_debug( '    PRE diagk_file' )
+#endif
 
       ! Setup netCDF file
       !
@@ -327,6 +330,10 @@ C Global operation to form new density matrix
          call io_close(iu)
       endif
       call close_wfs_netcdf_file()
+
+#ifdef DEBUG
+      call write_debug( '    POS diagk_file' )
+#endif
 
       CONTAINS
 

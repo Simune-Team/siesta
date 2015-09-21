@@ -58,6 +58,10 @@ C Internal variables
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
+#ifdef DEBUG
+      call write_debug( '    PRE setup_kscell' )
+#endif
+
       genlogic = fdf_block('kgrid_Monkhorst_Pack',bfdf)
       if ( genlogic ) then
         do i = 1,3
@@ -99,6 +103,10 @@ C Internal variables
            kscell = unit_matrix
         endif
       endif
+
+#ifdef DEBUG
+      call write_debug( '    POS setup_kscell' )
+#endif
 
       end subroutine setup_kscell
 

@@ -52,6 +52,10 @@ C     Local variables
       integer               :: ispin, ng
       real(dp)              :: VOLUME, b(3,3)
 
+#ifdef DEBUG
+      call write_debug( '    PRE rhofft' )
+#endif
+
 C     Start time counter
       call timer( 'rhofft', 1 )
 
@@ -90,6 +94,10 @@ C     Find reciprocal lattice vectors
 
 C     Stop time counter
       call timer( 'rhofft', 2 )
+
+#ifdef DEBUG
+      call write_debug( '    POS rhofft' )
+#endif
 
       end subroutine rhofft
 

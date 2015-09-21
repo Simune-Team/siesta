@@ -100,6 +100,10 @@ C Internal variables ---------------------------------------------------
 
       external  cdiag
 
+#ifdef DEBUG
+      call write_debug( '    PRE pdosk' )
+#endif
+
 C Initialize some variables
       delta = (E2 - E1)/nhist
 
@@ -334,6 +338,10 @@ C Free workspace array for global reduction
           enddo
         enddo
       enddo
+
+#ifdef DEBUG
+      call write_debug( '    POS pdosk' )
+#endif
 
       return
       end

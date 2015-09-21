@@ -139,6 +139,10 @@ C  Internal variables .............................................
      $                     Enewloc(:,:) => null(),
      $                     xijloc(:,:) => null()
 
+#ifdef DEBUG
+      call write_debug( '    PRE diagkp' )
+#endif
+
 C Globalise list arrays - assumes listh and listd are the same
 
       nullify(numhg, listhptrg)
@@ -517,6 +521,10 @@ C Free local memory
       call de_alloc( listhg, name='listhg', routine= 'diagkp' )
       call de_alloc( listhptrg, name='listhptrg', routine= 'diagkp' )
       call de_alloc( numhg, name='numhg', routine= 'diagkp' )
+
+#ifdef DEBUG
+      call write_debug( '    POS diagkp' )
+#endif
 
       end subroutine diagkp
 #endif

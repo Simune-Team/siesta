@@ -753,7 +753,7 @@ contains
              write(*,f10) 'Fix Hartree potential at cell boundary', 'A3'
           end select
        case ( TS_HA_NONE ) 
-          write(*,f11) 'Do not fix Hartree potential'
+          write(*,f1) 'Fix Hartree potential',.false.
           if ( TS_DE_save ) then
              write(*,f11) '*** If you do not use Hartree.Fix you cannot &
                   &use the TSDE file for restart in TranSIESTA.'
@@ -847,12 +847,12 @@ contains
     end select
     select case ( DM_bulk ) 
     case ( 0 ) 
-       write(*,f11) 'DM for electrodes will not be used'
+       write(*,f10) 'Initial DM for electrodes','this'
     case ( 1 )
-       write(*,f11) 'DM for electrodes will be initialized to bulk'
+       write(*,f10) 'Initial DM for electrodes','electrode DM'
     end select
+    write(*,f6) 'Voltage', Volt/eV,'Volts'
     if ( IsVolt ) then
-       write(*,f6) 'Voltage', Volt/eV,'Volts'
        if ( len_trim(Hartree_fname) > 0 ) then
           write(*,f10) 'User supplied Hartree potential', &
                trim(Hartree_fname)
@@ -868,11 +868,7 @@ contains
              write(*,f11) 'Hartree potential will be placed in electrode box'
           end if
        end if
-       if ( has_T_gradient ) then
-          write(*,f11) 'Thermal non-equilibrium in electrode distributions' 
-       else
-          write(*,f11) 'Thermal equilibrium in electrode distributions' 
-       end if
+       write(*,f1) 'Thermal non-equilibrium in electrode distributions',has_T_gradient
 
        chars = 'Non-equilibrium contour weight method'
        select case ( TS_W_METHOD )
@@ -907,8 +903,6 @@ contains
        case ( TS_W_K_UNCORRELATED )
           write(*,f10) trim(chars),'Uncorrelated k-points'
        end select
-    else
-       write(*,f11) 'No applied bias'
     end if
     if ( .not. Calc_Forces ) then
        write(*,f11) '*** TranSIESTA will NOT update forces ***'

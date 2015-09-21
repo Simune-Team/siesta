@@ -135,6 +135,10 @@ C  Internal variables .............................................
       integer, pointer  :: nuo_LOC(:)
       real(dp), pointer :: psi_tmp(:), paux(:)
 
+#ifdef DEBUG
+      call write_debug( '    PRE diagg' )
+#endif
+
 C Solve eigenvalue problem
       do ispin = 1,nspin
         call timer( 'r-eigvec', 1 )
@@ -188,7 +192,12 @@ C Repeat diagonalisation with increased memory to handle clustering
 
       enddo
 C Check if we are done ................................................
-      if (.not.getD) return
+      if (.not.getD) then
+#ifdef DEBUG
+         call write_debug( '    POS diagg' )
+#endif
+         return
+      end if
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
@@ -288,4 +297,8 @@ C Global operation to form new density matrix
       call timer( 'r-buildD', 2 )
       call de_alloc( nuo_LOC, 'nuo_LOC', 'diagg' )
       call de_alloc( PSI_TMP, 'PSI_TMP', 'diagg' )
+
+#ifdef DEBUG
+      call write_debug( '    POS diagg' )
+#endif
       end

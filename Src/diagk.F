@@ -141,7 +141,11 @@ C  Internal variables .............................................
       real(dp), pointer :: lpsi(:,:)
 
       logical, allocatable :: done_juo(:)
-C  ....................
+C     ....................
+
+#ifdef DEBUG
+      call write_debug( '    POS diagk' )
+#endif
 
       allocate(done_juo(nuotot))
 
@@ -186,7 +190,12 @@ C Note : sign of complex part changed to match change in order of iuo/juo
       enddo
 
 C Check if we are done ................................................
-      if (.not.getD .and. .not. getPSI) return
+      if (.not.getD .and. .not. getPSI) then
+#ifdef DEBUG
+         call write_debug( '    PRE diagk' )
+#endif
+         return
+      end if
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
@@ -437,6 +446,10 @@ C Global operation to form new density matrix
       if (Node .eq. 0) then
          call io_close(iu)
       endif
+
+#ifdef DEBUG
+      call write_debug( '    POS diagk' )
+#endif
 
       CONTAINS
 

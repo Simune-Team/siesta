@@ -37,6 +37,10 @@ C     and initializes data structures on the grid.
 
       real(dp), pointer :: H_val(:)
 
+#ifdef DEBUG
+      call write_debug( '    PRE setup_H0' )
+#endif
+
 !---------------------------------------------------------------------- BEGIN
       call timer('Setup_H0',1)
 
@@ -117,6 +121,10 @@ C     mesh structures for geometry changes
      &                 dummy_fa, dummy_stress)
 
       call timer('Setup_H0',2)
+
+#ifdef DEBUG
+      call write_debug( '    POS setup_H0' )
+#endif
 
 !---------------------------------------------------------------------- END
       END subroutine setup_H0

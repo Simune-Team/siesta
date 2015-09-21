@@ -84,6 +84,10 @@
       type(dict) :: d_sav
 #endif
 
+#ifdef DEBUG
+      call write_debug( '    PRE siesta_forces' )
+#endif
+
 !---------------------------------------------------------------------- BEGIN
 
 !     Initialization tasks for a given geometry
@@ -362,6 +366,10 @@
       ! If siesta is running as a subroutine, send forces to master program
       if (siesta_server) 
      &  call forcesToMaster( na_u, Etot, cfa, cstress )
+
+#ifdef DEBUG
+      call write_debug( '    POS siesta_forces' )
+#endif
 
       CONTAINS
 
