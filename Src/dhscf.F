@@ -607,7 +607,7 @@ C     Modules
       use mesh,          only  : nm => nmeshg
       use parallel,      only  : Node, Nodes
       use atmfuncs,      only  : rcut, rcore
-      use units,         only  : Debye, eV
+      use units,         only  : Debye, eV, Ang
       use fdf
       use sys,           only  : die, bye
       use mesh,          only  : xdsp, nsm, nsp
@@ -1260,7 +1260,7 @@ C ----------------------------------------------------------------------
      $              'Dipole moment in unit cell   =', dipol/Debye, ' D'
 	       write(6,'(a,3f12.6,a)')
      $              'Electric field for dipole correction =',
-     $              field, ' Ry/Bohr/e'
+     $              field/eV*Ang, ' eV/Ang/e'
             endif
          else
             field = user_specified_field

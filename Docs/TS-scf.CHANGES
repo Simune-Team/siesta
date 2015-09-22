@@ -1,4 +1,30 @@
 ----------------------------------------------------
+September 22, 2015 -- Nick Papior       trunk-477---ts-scf-523
+Enabled manual position of the slabdipolecorrection
+
+* An additional block is available for setting the
+  vacuum point where the electric field will originate.
+  This means that for the gate calculations
+  the size of the simulation cell can be drastically
+  reduced.
+
+  This block can be used
+    %block SlabDipoleCorrection.Vacuum
+      <x> <y> <z> <Unit>
+    %endblock
+  
+  The code checks for orbital overlap with the vacuum
+  region. This is not allowed as the constant potential
+  surface cannot be set.
+
+* Changed units for the electric fields to eV/Ang
+  which is easier to read of.
+
+modified:
+  Src/dhscf.F
+  Src/m_efield.F
+
+----------------------------------------------------
 September 22, 2015 -- Nick Papior       trunk-477---ts-scf-522
 Removed doubly defined TRANSIESTA in DEFS
 
