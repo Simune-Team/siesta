@@ -352,8 +352,8 @@ $(NCDF): $(FDICT)
 #######################
 
 
-# Routines using fdf calls. Woefully incomplete, but the $(FDF) target is made first.
-#
+# Routines using fdf calls.
+# Woefully incomplete, but the $(FDF) target is made first.
 dhscf.o iolwf.o grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
@@ -406,13 +406,13 @@ version: version.F90
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
 		s'SIESTA_VERSION'$$(cat ${<D}/../version.info)'g;\
-		s'FPPFLAGS'$(FPPFLAGS) $(DEFS)'g" $<  > tmp.F90
+		s'FPPFLAGS'$(FPPFLAGS)'g" $<  > tmp.F90
 	@awk '{if (length>80) { cur=78; \
 		printf "%s&\n",substr($$0,0,78); \
 		while(length-cur>78){ cur=cur+76 ; \
 		printf "&%s&\n",substr($$0,cur-76,76) \
 		} printf "&%s\n",substr($$0,cur)} else { print $$0 }}' tmp.F90 > compinfo.F90
-	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" "DEFS=$(DEFS)" compinfo.o)
+	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" compinfo.o)
 	@mv compinfo.o version.o
 	@echo
 
@@ -473,8 +473,7 @@ TS_OBJS += m_ts_tri_init.o m_ts_tri_common.o \
 TS_OBJS += m_ts_mumps_init.o m_ts_mumpsg.o m_ts_mumpsk.o m_ts_mumps_scat.o
 
 ts: transiesta
-transiesta: FPPFLAGS+=$(DEFS_PREFIX) -DTRANSIESTA 
-transiesta: DEFS+=$(DEFS_PREFIX) -DTRANSIESTA
+transiesta: FPPFLAGS += -DTRANSIESTA 
 check-ts:
 	@if [ -f .siesta ]; then \
               echo "** You were building plain siesta in this directory." ;\

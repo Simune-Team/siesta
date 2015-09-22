@@ -12,6 +12,7 @@ VPATH:=$(shell pwd)/../../../Src
 OBJDIR=Obj
 ARCH_MAKE=../../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
+
 # Set the default non-mpi routines
 FC_DEFAULT := $(FC)
 FC_SERIAL  ?= $(FC_DEFAULT)
@@ -53,6 +54,7 @@ SIESTA_OBJS += class_OrbitalDistribution.o \
 	class_SpData1D.o class_SpData2D.o \
 	class_TriMat.o \
         m_uuid.o object_debug.o
+
 # As the classes are based on inputs we force the dependency to
 # alloc
 class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o
@@ -123,13 +125,13 @@ version: version.F90
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
 		s'TBTRANS_VERSION'$$(cat ${<D}/../../../version.info)'g;\
-		s'FPPFLAGS'$(FPPFLAGS) $(DEFS)'g" $<  > tmp.F90
+		s'FPPFLAGS'$(FPPFLAGS)'g" $<  > tmp.F90
 	@awk '{if (length>80) { cur=78; \
 		printf "%s&\n",substr($$0,0,78); \
 		while(length-cur>78){ cur=cur+76 ; \
 		printf "&%s&\n",substr($$0,cur-76,76) \
 		} printf "&%s\n",substr($$0,cur)} else { print $$0 }}' tmp.F90 > compinfo.F90
-	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" "DEFS=$(DEFS)" compinfo.o)
+	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" compinfo.o)
 	@mv compinfo.o version.o
 	@echo
 
@@ -223,8 +225,7 @@ phtrans: check-phtrans
 
 # We append the -DTBTRANS as some special routines
 # which could take advantage of this preprocessing flag
-tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS
-#tbtrans: FPPFLAGS+=$(DEFS_PREFIX) -DUSE_GEMM3M
+tbtrans: FPPFLAGS += -DTBTRANS
 tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(DEP_OBJS) $(TBTOBJS) 
 	$(FC) $(FFLAGS) $(LDFLAGS) -o tbtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \
@@ -233,7 +234,7 @@ tbtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) 
 # We append the -DTBTRANS as some special routines
 # which could take advantage of this preprocessing flag
 # Tbtrans has TBT_PHONON flags to compile special capabilities
-phtrans: FPPFLAGS+=$(DEFS_PREFIX) -DTBTRANS -DTBT_PHONON
+phtrans: FPPFLAGS += -DTBTRANS -DTBT_PHONON
 phtrans: version $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(TBT_COMP_LIBS) $(FDICT) $(DEP_OBJS) $(TBTOBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o phtrans \
               $(DEP_OBJS) $(TBTOBJS) $(MPI_INTERFACE)  \

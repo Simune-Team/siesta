@@ -1,4 +1,12 @@
 ----------------------------------------------------
+September 22, 2015 -- Nick Papior       trunk-477---ts-scf-522
+Removed doubly defined TRANSIESTA in DEFS
+
+modified:
+  Src/Makefile
+  Util/TS/TBtrans/Makefile
+
+----------------------------------------------------
 September 21, 2015 -- Nick Papior       trunk-477---ts-scf-521
 Added many more -DDEBUG statements
 
