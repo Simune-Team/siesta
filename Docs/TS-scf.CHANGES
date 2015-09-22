@@ -1,4 +1,11 @@
 ----------------------------------------------------
+September 22, 2015 -- Nick Papior       trunk-477---ts-scf-525
+Small change in logic for clarity in m_efield
+
+modified:
+  Src/m_efield.F
+
+----------------------------------------------------
 September 22, 2015 -- Nick Papior       trunk-477---ts-scf-524
 Reduced complexity of Geometry.Charge|Hartree
 

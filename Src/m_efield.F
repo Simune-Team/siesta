@@ -338,8 +338,8 @@ C        Define the vacuum center
                ! Only check against fields above certain margin
             if ( xmin(ix) < xmax(ix) ) then
                ! stringent ordering
-               if ( nint( xmin(ix) * meshG(ix) ) <= i0(ix) .and. 
-     &              i0(ix) <= nint( xmax(ix) * meshG(ix) ) ) then
+               if ( nint(xmin(ix) * meshG(ix)) <= i0(ix) .and. 
+     &              i0(ix) <= nint(xmax(ix) * meshG(ix)) ) then
                   ! the vacuum specified by the user lies
                   ! in between atomic ranges
       call die('User specified vacuum lies within atomic orbital range. 
@@ -347,8 +347,8 @@ C        Define the vacuum center
                end if
             else
                ! wrapping ordering
-               if ( i0(ix) <= nint( xmin(ix) * meshG(ix) ) .and. 
-     &              i0(ix) >= nint( xmax(ix) * meshG(ix) ) ) then
+               if ( i0(ix) <= nint(xmin(ix) * meshG(ix)) .and. 
+     &              nint(xmax(ix) * meshG(ix)) <= i0(ix) ) then
                   ! the vacuum specified by the user lies
                   ! in between atomic ranges
       call die('User specified vacuum lies within atomic orbital range. 
