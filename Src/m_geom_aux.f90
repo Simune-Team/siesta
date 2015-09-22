@@ -217,10 +217,11 @@ contains
     if ( present(val_offset) ) lval_off = val_offset
     lunit_off = 0
     if ( present(unit_offset) ) lunit_off = unit_offset
+    lunit_off = lunit_off + lval_off
     do i = 1 , size(v)
        if ( lunits ) then
           v(i) = fdf_bvalues(pline,i+lval_off) &
-               * fdf_convfac(fdf_bnames(pline,i+lunit_off),'Bohr') ! Correct for units
+               * fdf_convfac(fdf_bnames(pline,1+lunit_off),'Bohr') ! Correct for units
        else
           v(i) = fdf_bvalues(pline,i+lval_off)
        end if

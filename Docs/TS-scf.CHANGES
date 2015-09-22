@@ -1,4 +1,17 @@
 ----------------------------------------------------
+September 22, 2015 -- Nick Papior       trunk-477---ts-scf-524
+Reduced complexity of Geometry.Charge|Hartree
+
+* All units are now not needed for defining coordinates
+  in the gate blocks.
+
+  They were superfluous, and who will denote two different
+  units on a single line?
+
+modified:
+  Src/m_geom_aux.f90
+
+----------------------------------------------------
 September 22, 2015 -- Nick Papior       trunk-477---ts-scf-523
 Enabled manual position of the slabdipolecorrection
 
