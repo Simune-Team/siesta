@@ -3,7 +3,7 @@
       public :: final_H_f_stress
       CONTAINS
 
-      subroutine final_H_f_stress( istep, iscf , save_HS )
+      subroutine final_H_f_stress( istep, iscf , SCFconverged )
 #ifdef NCDF_4
       use siesta_options, only: write_cdf
 #endif
@@ -60,13 +60,12 @@
 
       ! MD-step, SCF-step
       integer,   intent(in) :: istep, iscf
-      logical,   intent(in), optional :: save_HS
+      logical,   intent(in) :: SCFconverged
       real(dp)              :: stressl(3,3)
       real(dp), pointer     :: fal(:,:)   ! Local-node part of atomic F
       integer               :: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
-      logical :: lsave_HS
       ! To avoid overwriting the current Hamiltonian
       real(dp), pointer     :: H_tmp(:,:) => null()  
 #ifdef MPI
@@ -93,8 +92,7 @@
 #endif  /* TRANSIESTA */
 
 !     Initialize Hamiltonian ........................................
-      call re_alloc(H_tmp, 1,maxnh, 1,nspin,
-     $              'H_tmp','final_H_f_stress')
+      call re_alloc(H_tmp, 1,maxnh, 1,nspin, 'H_tmp','final_H_f_stress')
 !$OMP parallel workshare default(shared)
       H_tmp = 0.0_dp
 !$OMP end parallel workshare
@@ -214,9 +212,7 @@
 
       ! Determine whether anything should be saved
       ! If not, return immediately
-      lsave_HS = .true.
-      if ( present(save_HS) ) lsave_HS = save_HS
-      if ( .not. lsave_HS ) return
+      if ( .not. SCFconverged ) return
 
 ! Save Hamiltonian and overlap matrices ............................
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file

@@ -355,7 +355,7 @@
 !     Note that this call will no longer overwrite H while computing the
 !     final energies, forces and stresses...
 !
-      call post_scf_work( istep, iscf )
+      call post_scf_work( istep, iscf , SCFconverged )
 
 !     ... so H at this point is the latest generator of the DM, except
 !     if mixing H beyond self-consistency or terminating the scf loop
@@ -388,7 +388,7 @@
       fa_old(:,:) = fa(:,:)
       Hsave(:,:) = H(:,:)
 !$OMP end parallel workshare
-      call final_H_f_stress( istep , iscf , save_HS = .false. )
+      call final_H_f_stress( istep , iscf , .false. )
 !$OMP parallel workshare default(shared)
       H(:,:) = Hsave(:,:)
 !$OMP end parallel workshare

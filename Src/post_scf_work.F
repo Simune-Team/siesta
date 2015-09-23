@@ -4,7 +4,7 @@
 
       CONTAINS
 
-      subroutine post_scf_work( istep, iscf )
+      subroutine post_scf_work( istep, iscf, SCFconverged )
 
       USE m_final_H_f_stress, only: final_H_f_stress
       USE siesta_options
@@ -36,7 +36,8 @@
       implicit none
 
       ! MD-step, SCF-step
-      integer, intent(in)  :: istep , iscf
+      integer, intent(in) :: istep , iscf
+      logical, intent(in) :: SCFconverged
 
       character(len=20) :: msg
       type(Pair_Geometry_dSpData2D)  :: pair
@@ -107,7 +108,7 @@
          endif
       endif
 
-      call final_H_f_stress( istep , iscf )
+      call final_H_f_stress( istep , iscf , SCFconverged )
 
       ! These energies are computed with a different DM from those in the
       ! last SCF step, except if mixing the Hamiltonian, in which case they
