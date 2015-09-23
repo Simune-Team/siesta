@@ -236,23 +236,22 @@ contains
        !   'ltsup_sp_sc', in case there is an applied bias
        if ( IsVolt ) then
 
-          ! Create the unit-cell sparsity pattern
+          ! Convert to unit-cell sparsity pattern
           call crtSparsity_SC(ltsup_sp_sc, tmp_sp, UC=.TRUE.)
-          ! Convert to the global one
-          call Sp_to_Spglobal(dit,tmp_sp,tsup_sp_uc)
-          call delete(tmp_sp)
           
        else
 
-          ! Create update region
+          ! Create update region (in local sparsity pattern)
           call ts_Sparsity_Update(dit,tmp_sp, N_Elec, Elecs, &
                tsup_sp_uc)
-          ! Create the unit-cell sparsity pattern
+          ! Convert to unit-cell sparsity pattern
           call crtSparsity_SC(tsup_sp_uc, tmp_sp, UC=.TRUE.)
-          ! Convert to the global one
-          call Sp_to_Spglobal(dit,tmp_sp, tsup_sp_uc)
 
        end if
+
+       ! Convert to the global one
+       call Sp_to_Spglobal(dit,tmp_sp,tsup_sp_uc)
+       call delete(tmp_sp)
        
        if ( IONode ) then
           write(*,'(/,a)') 'Created the TranSIESTA global update sparsity pattern:'

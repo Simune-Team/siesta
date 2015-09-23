@@ -1,4 +1,13 @@
 ----------------------------------------------------
+September 23, 2015 -- Nick Papior       trunk-477---ts-scf-528
+Cleared logic in creation of the update sp
+
+* Removed ambiguous code for clarity.
+
+modified:
+  Src/m_ts_sparse.F90
+
+----------------------------------------------------
 September 23, 2015 -- Nick Papior       trunk-477---ts-scf-527
 Bugfix for creating update region
 
