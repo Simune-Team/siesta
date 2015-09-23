@@ -1,4 +1,24 @@
 ----------------------------------------------------
+September 23, 2015 -- Nick Papior       trunk-477---ts-scf-527
+Bugfix for creating update region
+
+* The update region was ill-defined for H, S
+  not equaling the update sparsity pattern.
+
+* Moved warning of TS_DE creation to the correct
+  part. Makes it more visible.
+
+* Added check of Gamma calculation in tbtrans.
+  One cannot calculate k-resolved transmission with
+  Gamma-only Hamiltonian.
+
+modified:
+  Src/m_ts_dm_update.F90
+  Src/m_ts_options.F90
+  Src/m_ts_sparse.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 September 23, 2015 -- Nick Papior       trunk-477---ts-scf-526
 Refrain from writing the Hamiltonian unless converged
 

@@ -178,7 +178,7 @@ contains
     ! a subset of the SIESTA pattern.
     
     if ( nr /= nrows(up_s) ) call die('The sparsity format is not as &
-         &expected.')
+         &expected k-DM.')
 
     if ( non_Eq ) then
 
@@ -331,7 +331,7 @@ contains
     ! a subset of the SIESTA pattern.
     
     if ( nr /= nrows(up_s) ) call die('The sparsity format is not as &
-         &expected.')
+         &expected G-DM.')
 
     if ( hasEDM ) then
 
@@ -469,7 +469,7 @@ contains
     if ( .not. lUpSpGlobal ) then
 
     if ( lnr /= nrows(s) ) &
-         call die('The sparsity format is not as expected.')
+         call die('The sparsity format is not as expected u-DM.')
 
     if ( hasipnt ) then
 
@@ -652,7 +652,7 @@ contains
     ! a subset of the SIESTA pattern (but still the global sparsity pattern)
 
     if ( nr /= nrows(s) ) call die('The sparsity format is not as &
-         &expected.')
+         &expected uz-DM.')
      
     ! This loop is across the local rows...
 ! No data race will occur
@@ -738,9 +738,8 @@ contains
      
     ! Remember that this is a sparsity pattern which contains
     ! a subset of the SIESTA pattern.
-     
     if ( nr /= nrows(up_sp) ) call die('The sparsity format is not as &
-         &expected.')
+         &expected i-DM.')
 
     if ( Calc_Forces ) then
      

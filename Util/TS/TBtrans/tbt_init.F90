@@ -183,6 +183,11 @@ subroutine tbt_init()
 
   ! Read k-points
   call setup_kpoint_grid( TSHS%cell, N_Elec, Elecs )
+  if ( sum(TSHS%nsc) == 3 .and. .not. Gamma ) then
+     write(*,'(a)')'Please see flag: ForceAuxCell'
+     call die('Transiesta calculation was a Gamma calculation &
+          &while you request transmission k-points.')
+  end if
 
   ! Read remaining options
   call read_tbt_after_Elec(TSHS%nspin, TSHS%cell, TSHS%na_u, TSHS%lasto, &

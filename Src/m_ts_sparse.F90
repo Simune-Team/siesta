@@ -235,20 +235,23 @@ contains
        ! In this case is is simply a global sparsity of the 
        !   'ltsup_sp_sc', in case there is an applied bias
        if ( IsVolt ) then
+
           ! Create the unit-cell sparsity pattern
           call crtSparsity_SC(ltsup_sp_sc, tmp_sp, UC=.TRUE.)
           ! Convert to the global one
-          call Sp_to_Spglobal(fdit,tmp_sp,tsup_sp_uc)
+          call Sp_to_Spglobal(dit,tmp_sp,tsup_sp_uc)
           call delete(tmp_sp)
+          
        else
-          tsup_sp_uc = tmp_sp
-          call delete(tmp_sp)
+
+          ! Create update region
+          call ts_Sparsity_Update(dit,tmp_sp, N_Elec, Elecs, &
+               tsup_sp_uc)
           ! Create the unit-cell sparsity pattern
           call crtSparsity_SC(tsup_sp_uc, tmp_sp, UC=.TRUE.)
-          call delete(tsup_sp_uc)
-          ! Create the update sparsity pattern
-          call ts_Sparsity_Update(fdit,tmp_sp, N_Elec, Elecs, &
-               tsup_sp_uc)
+          ! Convert to the global one
+          call Sp_to_Spglobal(dit,tmp_sp, tsup_sp_uc)
+
        end if
        
        if ( IONode ) then

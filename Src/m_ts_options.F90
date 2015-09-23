@@ -754,11 +754,6 @@ contains
           end select
        case ( TS_HA_NONE ) 
           write(*,f1) 'Fix Hartree potential',.false.
-          if ( TS_DE_save ) then
-             write(*,f11) '*** If you do not use Hartree.Fix you cannot &
-                  &use the TSDE file for restart in TranSIESTA.'
-             write(*,f11) '*** Please note this!'
-          end if
        case default
           call die('Error in coding setup, Vha_fix')
        end select
@@ -1007,8 +1002,13 @@ contains
           write(*,'(a)') '  MUST be in range [0;1]'
           call die('Vha fraction erronously set.')
        end if
+    else if ( TS_DE_save ) then
+       ! means TS_HA == TS_HA_NONE
+       write(*,'(a)') 'If you do not use Hartree.Fix you cannot &
+            &use the TSDE file for restart in TranSIESTA.'
     end if
 
+    
     ! Return if not a transiesta calculation
     if ( onlyS .or. .not. TSmode ) then
        write(*,'(3a,/)') repeat('*',24),' End: TS CHECKS AND WARNINGS ',repeat('*',26)
