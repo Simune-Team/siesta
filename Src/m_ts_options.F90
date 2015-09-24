@@ -75,12 +75,12 @@ module m_ts_options
   character(len=*), parameter, private :: f1 ='(''ts: '',a,t53,''='',tr4,l1)'
   character(len=*), parameter, private :: f10='(''ts: '',a,t53,''='',tr4,a)'
   character(len=*), parameter, private :: f11='(''ts: '',a)'
-  character(len=*), parameter, private :: f5='(''ts: '',a,t53,''='',i5,a)'
+  character(len=*), parameter, private :: f5 ='(''ts: '',a,t53,''='',i5,a)'
   character(len=*), parameter, private :: f20='(''ts: '',a,t53,''='',i0,'' -- '',i0)'
-  character(len=*), parameter, private :: f6='(''ts: '',a,t53,''='',f10.4,tr1,a)'
-  character(len=*), parameter, private :: f7='(''ts: '',a,t53,''='',f12.6,tr1,a)'
-  character(len=*), parameter, private :: f8='(''ts: '',a,t53,''='',f10.4)'
-  character(len=*), parameter, private :: f9='(''ts: '',a,t53,''='',tr1,e9.3)'
+  character(len=*), parameter, private :: f6 ='(''ts: '',a,t53,''='',f10.4,tr1,a)'
+  character(len=*), parameter, private :: f7 ='(''ts: '',a,t53,''='',f12.6,tr1,a)'
+  character(len=*), parameter, private :: f8 ='(''ts: '',a,t53,''='',f10.4)'
+  character(len=*), parameter, private :: f9 ='(''ts: '',a,t53,''='',tr1,e9.3)'
   character(len=*), parameter, private :: f15='(''ts: '',a,t53,''='',2(tr1,i0,'' x''),'' '',i0)'
 
 contains

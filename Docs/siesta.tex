@@ -3317,23 +3317,44 @@ This mixing is done every {\bf DM.NumberKick} cycles.
 
 {\it Default value:} {\tt 0.50}
 
-\item[{\bf DM.Pulay.Avoid.First.After.Kick}] ({\it
-  logical}):\index{SCF!mixing}
-  \index{DM.Pulay.Avoid.First.After.Kick@{\bf
-      DM.Pulay.Avoid.First.After.Kick}}\index{SCF!mixing} Controls
-  whether the first density-matrix residual of the SCF cycle and the
-  first residual after a kick are included in the Pulay history. It
-  can be argued that in these cases the ``output'' DM might be
-  significantly different from the ``input'' DM. To preserve backwards
-  compatibility, these residuals are kept in the Pulay history unless
-  this variable is activated.
+\item[{\bf DM.Pulay.Avoid.First.After.Kick}] ({\it logical}):
+\index{DM.Pulay.Avoid.First.After.Kick@{\bf DM.Pulay.Avoid.First.After.Kick}}
+\index{SCF!mixing} 
+
+Controls whether the first density-matrix residual of the SCF cycle and the first residual
+after a kick are included in the Pulay history. It can be argued that in these cases the
+``output'' DM might be significantly different from the ``input'' DM. To preserve
+backwards compatibility, these residuals are kept in the Pulay history unless this
+variable is activated.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf SCF.Pulay.LinearMixing.Before}] ({\it integer}):
+\index{SCF.Pulay.LinearMixing.Before@{\bf SCF.Pulay.LinearMixing.Before}}
+\index{SCF!mixing!Pulay} 
 
-\item[{\bf SCF.LinearMixingAfterPulay}] ({\it logical}):
-  \index{SCF.LinearMixingAfterPulay@{\bf
-      SCF.LinearMixingAfterPulay}}\index{SCF!mixing!Pulay} 
+Instead of instantly starting the Pulay mixing one can initiate several
+linear mix steps. This prohibits the initial steps in the Pulay history.
+
+This can be particularly useful when \emph{on-the-fly} switches between different solution
+methods.
+
+{\it Default value:} {\tt 0}
+
+\item[{\bf SCF.Pulay.MixingWeight.Before}] ({\it real}):
+\index{SCF.Pulay.MixingWeight.Before@{\bf SCF.Pulay.MixingWeight.Before}}
+\index{SCF!mixing!Pulay}
+
+Proportion $\alpha$ of output $X_{out}$ to be used for the input $X_{in}$ of next SCF
+cycle, for linear mixing steps after a Pulay mixing step if the option {\bf
+    SCF.LinearMixingAfterPulay} is activated.
+
+{\it Default value:} {\tt 0.01}
+
+\item[{\bf SCF.Pulay.LinearMixing.After}] ({\it logical}):
+\index{SCF.Pulay.LinearMixing.After@{\bf SCF.Pulay.LinearMixing.After}}
+\index{SCF.LinearMixingAfterPulay|see{SCF.Pulay.LinearMixing.After}}
+\index{SCF!mixing!Pulay} 
 
 The damping of the DIIS-predicted $X_{in}$ is done to avoid introducing
 linear dependencies into the Pulay history stack. Alternatively (or
@@ -3344,14 +3365,15 @@ the history information.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf SCF.MixingWeightAfterPulay}] ({\it real}):\index{SCF!mixing!Pulay}
-\index{SCF.MixingWeightAfterPulay@{\bf SCF.MixingWeightAfterPulay}}
+\item[{\bf SCF.Pulay.MixingWeight.After}] ({\it real}):
+\index{SCF.Pulay.MixingWeight.After@{\bf SCF.Pulay.MixingWeight.After}}
+\index{SCF.MixingWeightAfterPulay|see{SCF.Pulay.MixingWeight.After}}
 \index{SCF!mixing!Pulay}
 
 Proportion $\alpha$ of output Density Matrix to be used for the input
 Density Matrix of next SCF cycle, for linear mixing
 steps after a Pulay mixing step if the option {\bf
-  SCF.LinearMixingAfterPulay} is activated.
+  SCF.Pulay.LinearMixing.After} is activated.
 
 {\it Default value:} {\tt 0.50}
 
@@ -3365,8 +3387,8 @@ be used to perform the DIIS extrapolation.
 {\it Default value:} {\tt .false.}
 
 \item[{\bf SCF.Pulay.DebugSVD}] ({\it logical}):
-  \index{SCF.Pulay.DebugSVD@{\bf
-      SCF.Pulay.DebugSVD}}\index{SCF!mixing!Pulay!SVD} 
+\index{SCF.Pulay.DebugSVD@{\bf SCF.Pulay.DebugSVD}}
+\index{SCF!mixing!Pulay!SVD} 
 
 Print more information (effective rank, singular values) if the SVD algorithm
 isused to perform the DIIS extrapolation.

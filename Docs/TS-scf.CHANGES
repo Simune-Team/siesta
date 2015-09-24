@@ -1,4 +1,21 @@
 ----------------------------------------------------
+September 24, 2015 -- Nick Papior       trunk-477---ts-scf-529
+Enabled linear mixing in pulay before using pulay
+
+* Initiating linear mixing for a couple of steps tends
+  to help transiesta (not diagon).
+
+* Updated documentation to reflect this change
+
+* Updated flags for Pulay to get decreasing entropy
+  in flags.
+
+modified:
+  Docs/siesta.tex
+  Src/m_pulay.F90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 September 23, 2015 -- Nick Papior       trunk-477---ts-scf-528
 Cleared logic in creation of the update sp
 

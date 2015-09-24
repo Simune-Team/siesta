@@ -8,17 +8,19 @@ module m_pulay
 
   save
 
-  real(dp), pointer  :: auxpul(:,:)  => null()
-  integer            :: n_records_saved = 0
-  real(dp)           :: alpha_pulay
-  real(dp)           :: alpha_after_pulay
-  real(dp)           :: max_dmax_for_pulay
-  integer            :: pulay_minimum_history = 2
-  logical            :: last_was_pulay = .false.
-  logical            :: linear_mixing_after_pulay = .false.
-  logical            :: use_svd_in_pulay = .false.
-  logical            :: debug_svd_in_pulay = .true.
-  real(dp)           :: rcond_svd_pulay = 1.0e-8_dp
+  real(dp), pointer :: auxpul(:,:)  => null()
+  integer           :: n_records_saved = 0
+  real(dp)          :: alpha_pulay
+  real(dp)          :: alpha_before_pulay
+  real(dp)          :: alpha_after_pulay
+  real(dp)          :: max_dmax_for_pulay
+  integer           :: pulay_minimum_history = 2
+  logical           :: last_was_pulay = .false.
+  integer           :: LM_before_pulay = 0
+  logical           :: LM_after_pulay = .false.
+  logical           :: use_svd_in_pulay = .false.
+  logical           :: debug_svd_in_pulay = .true.
+  real(dp)          :: rcond_svd_pulay = 1.0e-8_dp
 
   public :: pulayx, init_pulay_arrays, resetPulayArrays
 
@@ -49,9 +51,16 @@ CONTAINS
 
     alpha_pulay = fdf_get("SCF.Pulay.Damping",-1.0_dp) ! Default will set it to alpha
     alpha_after_pulay = fdf_get("SCF.MixingWeightAfterPulay",0.5_dp)
+
+    alpha_after_pulay = fdf_get("SCF.Pulay.MixingWeight.After",alpha_after_pulay)
+    LM_after_pulay = fdf_get("SCF.LinearMixingAfterPulay",.false.)
+    LM_after_pulay = fdf_get("SCF.Pulay.LinearMixing.After",LM_after_pulay)
+
+    alpha_before_pulay = fdf_get("SCF.Pulay.MixingWeight.Before",0.01_dp)
+    LM_before_pulay = fdf_get("SCF.Pulay.LinearMixing.Before",0)
+
     pulay_minimum_history = fdf_get("SCF.PulayMinimumHistory",2)
     max_dmax_for_pulay = fdf_get("SCF.PulayDmaxRegion",1000.0_dp) ! No effect by default
-    linear_mixing_after_pulay = fdf_get("SCF.LinearMixingAfterPulay",.false.)
     use_svd_in_pulay = fdf_get("SCF.Pulay.UseSVD",.false.)
     debug_svd_in_pulay = fdf_get("SCF.Pulay.DebugSVD",.true.)
     ! Note that 1.0e-6 seems too conservative
@@ -169,7 +178,7 @@ CONTAINS
     integer  MPIerror
     real(dp) :: buffer1
 #endif
-    real(dp) :: ssum
+    real(dp) :: ssum, cur_alpha
     real(dp), dimension(:,:), pointer ::  b, bi
     real(dp), dimension(:), pointer   ::  buffer
     real(dp), dimension(:), pointer   ::  coeff, sigma, rhs, beta
@@ -188,12 +197,12 @@ CONTAINS
        !
        ! Check some input and dimensions 
        numel = sum(numd(1:no_l))
-       call assert(numel == maxnd, "sum(numd) // maxnd")
+       call assert(numel == maxnd, "sum(numd) /= maxnd")
        numel = numel*nspin
-       call assert(numel*maxsav == size(savedm), "maxnd*spin*maxsav // savedm")
+       call assert(numel*maxsav == size(savedm), &
+            "maxnd*spin*maxsav /= savedm")
 
-       !
-       if (size(saveres) .lt. numel*maxsav)                            &
+       if (size(saveres) .lt. numel*maxsav) &
             call die('pulayx: dimensions are too small')
     endif
 
@@ -223,28 +232,34 @@ CONTAINS
 !$OMP end parallel do
 
 #ifdef MPI
-!     Ensure that dmax is the same on all nodes for convergence test/output
-      call globalize_max(dmax,buffer1)
-      dmax = buffer1
+    ! Ensure that dmax is the same on all nodes for convergence test/output
+    call globalize_max(dmax,buffer1)
+    dmax = buffer1
 #endif
 
-    if (  (after_kick .and. avoid_first_after_kick)   &
-               .OR. (last_was_pulay .and. linear_mixing_after_pulay)       &
-               .OR. (dmax > max_dmax_for_pulay) ) then
+    if ( (after_kick .and. avoid_first_after_kick) .or. &
+         (last_was_pulay .and. LM_after_pulay) .or. &
+         (dmax > max_dmax_for_pulay) ) then
 
        ! Do not keep the residual of the very first iteration, or of 
        ! the first iteration after a kick, if so instructed
        ! Or if the deviation is too large
        no_new_information = .true.
     else
+       if ( iscf <= LM_before_pulay ) then
+          ! ensure that we overwrite the old
+          ! history for bookkeeping
+          n_records_saved = 0
+       end if
+
        call WriteCurrentDinAndResidualInStore()
        no_new_information = .false.
        ! updates n_records_saved
     endif
 
-    if (last_was_pulay) then
+    if ( last_was_pulay ) then
        last_was_pulay = .false.
-       if (linear_mixing_after_pulay) then
+       if ( LM_after_pulay ) then
           if (Node==0) write(6,*) "Linear mixing after Pulay step"
           call linear_mixing(alpha_after_pulay)
           RETURN
@@ -255,15 +270,20 @@ CONTAINS
     ! or not enough history
     ! (by default, 2, but it is settable by the user)
     !
-    if (  no_new_information .OR.    &
-       (  n_records_saved < pulay_minimum_history) ) then
+    if ( no_new_information .or. &
+         n_records_saved < pulay_minimum_history .or. &
+         iscf <= LM_before_pulay ) then
 
        ! Could do simply:  
        ! if (iscf > 1 .or. mix1) DMnew = (1.0_dp-alpha)*DMold + alpha*DMnew
        ! DMold = DMnew
 
        if (iscf .gt. 1 .or. mix1) then
-          call linear_mixing(alpha)
+          if ( iscf <= LM_before_pulay ) then
+             call linear_mixing(alpha_before_pulay)
+          else
+             call linear_mixing(alpha)
+          end if
        endif
 
        RETURN
@@ -290,12 +310,14 @@ CONTAINS
     ! sanity check
     call assert(n_records_saved > 1, "N_SCF_records <= 1")
     ! Use only as many records as we have in the history store
-    maxmix= min(n_records_saved, maxsav)
+    maxmix = min(n_records_saved, maxsav)
 
     ! Respect historical value for alpha_pulay if not specified
-    if (alpha_pulay < 0.0_dp) then
-        alpha_pulay = alpha
-     endif
+    if ( alpha_pulay < 0.0_dp ) then
+       cur_alpha = alpha
+    else
+       cur_alpha = alpha_pulay
+    endif
 
     ! Allocate local arrays
     !
@@ -436,7 +458,7 @@ CONTAINS
 !$OMP&private(ind)
           do ind = 1 , maxnd
              dmnew(ind,is) = dmnew(ind,is) + coeff(i) * &
-                  ( res1(ind) + alpha_pulay * res2(ind) )
+                  ( res1(ind) + cur_alpha * res2(ind) )
           end do
 !$OMP end parallel do
        end do
@@ -445,16 +467,16 @@ CONTAINS
     dmold(1:maxnd,1:nspin) = dmnew(1:maxnd,1:nspin)
 !$OMP end parallel workshare
 
-    if (linear_mixing_after_pulay) last_was_pulay = .true.
+    if (LM_after_pulay) last_was_pulay = .true.
 
     ! Deallocate local arrays
-    call de_alloc( b, name='b', routine="pulayx" )
-    call de_alloc( bi, name="bi", routine="pulayx" )
-    call de_alloc( coeff, name="coeff", routine="pulayx" )
-    call de_alloc( rhs, name="rhs", routine="pulayx" )
-    call de_alloc( beta, name="beta", routine="pulayx" )
-    call de_alloc( sigma, name="sigma", routine="pulayx" )
-    call de_alloc( buffer, name="buffer", routine="pulayx" )
+    call de_alloc( b, name='b', routine='pulayx' )
+    call de_alloc( bi, name='bi', routine='pulayx' )
+    call de_alloc( coeff, name='coeff', routine='pulayx' )
+    call de_alloc( rhs, name='rhs', routine='pulayx' )
+    call de_alloc( beta, name='beta', routine='pulayx' )
+    call de_alloc( sigma, name='sigma', routine='pulayx' )
+    call de_alloc( buffer, name='buffer', routine='pulayx' )
 
   CONTAINS
 
