@@ -1,4 +1,15 @@
 ----------------------------------------------------
+September 24, 2015 -- Nick Papior       trunk-477---ts-scf-530
+Bugfix for kpoint grid
+
+* Re-enabling integer 0 as the last displacement variable
+  in the Monkhorst-Pack grid.
+
+modified:
+  Src/class_TriMat.T90
+  Src/kgridinit.F
+
+----------------------------------------------------
 September 24, 2015 -- Nick Papior       trunk-477---ts-scf-529
 Enabled linear mixing in pulay before using pulay
 

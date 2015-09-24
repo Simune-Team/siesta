@@ -328,7 +328,8 @@
 !    if ( p_c == 0 ) print *,'pc'
 !    if ( p_r == 0 ) print *,'pr'
 
-    n = this%data%tri_cidx(p_c) - 1 + i_r
+    n = this%data%tri_cidx(p_c) - 1 + i_r &
+        + (i_c-1) * this%data%tri_nrows(p_r)
 
     ! If the row is greater than or equal to the column
     ! Then we can add the C_pc matrix
@@ -339,8 +340,6 @@
           n = n + this%data%tri_nrows(p_c) ** 2
        end if
     end if
-
-    n = n + (i_c-1) * this%data%tri_nrows(p_r)
 
   end function index_TriMat
        
