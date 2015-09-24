@@ -114,7 +114,11 @@ contains
              ts_kscell(1,i) = fdf_bintegers(pline,1)
              ts_kscell(2,i) = fdf_bintegers(pline,2)
              ts_kscell(3,i) = fdf_bintegers(pline,3)
-             ts_kdispl(i)   = fdf_breals(pline,1)
+             if ( fdf_bnvalues(pline) > 3 ) then
+                ts_kdispl(i) = fdf_bvalues(pline,4)
+             else
+                ts_kdispl(i) = 0._dp
+             end if
           else
              call die( 'setup_ts_scf_kscell: ERROR no data in' // &
                   'kgrid_Monkhorst_Pack block' )
