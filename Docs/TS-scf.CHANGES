@@ -1,4 +1,11 @@
 ----------------------------------------------------
+September 24, 2015 -- Nick Papior       trunk-477---ts-scf-532
+Improved print-out of error in NEGF calculations
+
+modified:
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 September 24, 2015 -- Nick Papior       trunk-477---ts-scf-531
 Bugfix for kpoint grid (all places)
 

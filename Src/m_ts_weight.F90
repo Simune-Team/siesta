@@ -554,11 +554,11 @@ contains
     integer, intent(in)  :: eM_i,eM_j
 
     if ( IONode ) then
-       write(*,'(a,2(tr1,a,''('',i5,'','',i6,'')'',a,g10.5e1)&
+       write(*,'(a,tr1,a,''('',i5,'','',i6,'')'',2(a,g10.5e1)&
             &,a,g11.5)') trim(a), &
-            'DM_out', eM_i,eM_j,' = ',DM, &
-            ', d_ij', eM_i,eM_j,' = ',eM, &
-            '. m_d = ',m_err
+            'DM_ij', eM_i,eM_j,' = ',DM, &
+            ', d_ij = ',eM, &
+            '. mean_d = ',m_err
     end if
 
   end subroutine print_error_estimate
