@@ -132,7 +132,7 @@ C
 C  Internal variables .............................................
       integer
      .  BNode, BTest, ie, ierror, iie, ik, ind, io, iio,
-     .  ispin, iuo, j, jo, juo, nd, neigneeded, iu
+     .  ispin, iuo, j, jo, juo, nd, neigneeded
 
       real(dp)
      .  ckxij, kxij, qe, ee, skxij, t, rt
@@ -242,12 +242,6 @@ C New density and energy-density matrices of unit-cell orbitals .......
 
   10  continue
 
-      if (Node .eq. 0) then
-         call io_assign(iu)
-         open(iu,file="OCCS",form="formatted",status="unknown",
-     $           action="write",position="rewind")
-      endif
-
 C Loop over k points
       do ik = 1,nk
 
@@ -266,10 +260,6 @@ C Compute all eigenvectors if getPSI = .true.
               if (abs(qe).gt.occtol) neigneeded = ie
               ie = ie - 1
             enddo
-          endif
-          if (Node .eq. 0) then
-             write(iu,"(i6,i3,f12.8,i8)")
-     $                  ik, ispin, wk(ik), neigneeded
           endif
 
           call timer( 'c-eigvec', 1 )
@@ -442,14 +432,6 @@ C Global operation to form new density matrix
         enddo
       enddo
       deallocate(done_juo)
-
-      if (Node .eq. 0) then
-         call io_close(iu)
-      endif
-
-#ifdef DEBUG
-      call write_debug( '    POS diagk' )
-#endif
 
       CONTAINS
 

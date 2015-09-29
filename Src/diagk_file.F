@@ -138,7 +138,7 @@ C
 C  Internal variables .............................................
       integer
      .  BNode, BTest, ie, ierror, iie, ik, ind, io, iio,
-     .  ispin, iuo, j, jo, juo, nd, neigneeded, iu
+     .  ispin, iuo, j, jo, juo, nd, neigneeded
 
       real(dp)
      .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
@@ -202,12 +202,6 @@ C Find new Fermi energy and occupation weights ........................
      .             temp, qtot, qo, ef, Entropy )
       endif
 
-      if (Node .eq. 0) then
-         call io_assign(iu)
-         open(iu,file="OCCS",form="formatted",status="unknown",
-     $           action="write",position="rewind")
-      endif
-
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
 *       e1 = e1 - ef
@@ -245,10 +239,6 @@ C Loop over k points
               if (abs(qe).gt.occtol) neigneeded = ie
               ie = ie - 1
             enddo
-            if (Node .eq. 0) then
-             write(iu,"(i6,i3,f12.8,i8)")
-     $              ik, ispin, wk(ik), neigneeded
-            endif
             if (neigneeded > n_eigenvectors) then
                if (Node == 0) then
                   write(6,"(a)") "ERROR: More eigenvectors are needed!"
@@ -326,9 +316,6 @@ C Global operation to form new density matrix
       enddo     ! ik
 
       deallocate(psi_block)
-      if (Node .eq. 0) then
-         call io_close(iu)
-      endif
       call close_wfs_netcdf_file()
 
 #ifdef DEBUG
