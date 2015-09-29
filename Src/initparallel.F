@@ -124,7 +124,18 @@ C Set ProcessorY
 #ifdef MPI
       call set_processorYdefault(Nodes,procYdefault)
       procYval = fdf_integer('processorY',procYdefault)
-      call set_processorY(procYval)
+      ! Sanity check
+      if (procYval > Nodes) then
+         if (Node.eq.0) then
+            write(6,'(a)')
+     .       '* Warning: ProcessorY > Nodes in fdf file. '//
+     $       'Reset to estimated optimal value.'
+         endif
+         call set_processorY(procYdefault)
+      else
+         call set_processorY(procYval)
+      endif
+         
 #else
       call set_processorY(1)
 #endif
@@ -201,7 +212,7 @@ C Output indication of parallel parameters
      .        '* Spatial decomposition: Cutoff = ',rcmax
         else
            write(6,'(/,a,2i4,/)')
-     .        '* ProcessorY, Blocksize: ', procYval, Blocksize
+     .        '* ProcessorY, Blocksize: ', processorY, Blocksize
         endif
         n1 = numroc(no_u,Blocksize,0,0,Nodes)
         nn = numroc(no_u,Blocksize,Nodes-1,0,Nodes)

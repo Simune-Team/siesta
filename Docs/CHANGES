@@ -6,6 +6,29 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-09-29   10:25:00 GMT                                     trunk-478
+Fixes: OCCS file, pdoskp, processorY
+
+* The OCCS file, containing the occupation at each k-point,
+  is now created only during the scf cycle, in 'diagon'. This
+  fixes problems that appeared when 'diagk' was called from
+  other routines.
+  
+* Some arrays in pdoskp were not dimensioned correctly on
+  input in pdoskp.
+
+* Added a sanity check for the user-entered ProcessorY.
+
+(Thanks to Nick P. Andersen)
+
+modified:
+  Src/diagk.F
+  Src/diagk_file.F
+  Src/diagon.F
+  Src/initparallel.F
+  Src/pdoskp.F
+
+-----------------------------------------------------------------------
 2015-09-17   13:25:00 GMT                                     trunk-477
 Fixes: pi/a mode in bands; low-n interpolation; others
 
