@@ -3205,9 +3205,36 @@ turn this option on, or use the compatibility switch {\bf
   convergence and recomputation of H after the scf cycle will be
   turned on.
 
-\item[{\bf DM.MixingWeight}] ({\it real}):
+\item[{\bf SCF.Mix}] ({\it string}):
+\index{SCF.Mix@{\bf SCF.Mix}}
+\index{SCF.Mix@{\bf SCF.Mix}|see{SCF.Mix!Variant}}
 
-\index{DM.MixingWeight@{\bf DM.MixingWeight}}\index{SCF!mixing!linear}
+Select the mixing method in the SCF cycle.
+
+The currently available mixing algorithms are:
+
+\begin{description}
+  \item[linear] Linear mixing
+
+  \item[Pulay] Pulay mixing
+
+  Comes in variants \fdf{original} or \fdf{stable}
+  \item[Broyden] Broyden mixing
+
+  Comes in variants \fdf{original} or \fdf{restart}
+
+\end{description}
+
+
+{\it Default value:} {\tt Pulay}
+
+
+\item[{\bf DM.MixingWeight}] ({\it real}):
+\index{DM.MixingWeight@{\bf DM.MixingWeight}}
+\index{SCF!mixing!linear}
+\index{DM.MixingWeight@{\bf DM.MixingWeight}|see{SCF.Mix.Weight}}
+\index{SCF.Mix.Weight@{\bf SCF.Mix.Weight}}
+
 Proportion $\alpha$ of
 output Density Matrix to be used for the input Density Matrix of
 next SCF cycle (linear mixing):
@@ -3221,6 +3248,16 @@ approaches (i.e. Pulay).
 
 Pulay mixing (also known as DIIS extrapolation) is the method of
 choice for accelerating the convergence of the scf cycle.
+
+\item[{\bf SCF.Mix.Weight}] ({\it real}):
+\index{SCF!mixing!linear}
+\index{DM.MixingWeight@{\bf DM.MixingWeight}|see{SCF.Mix.Weight}}
+\index{SCF.Mix.Weight@{\bf SCF.Mix.Weight}}
+
+The default mixing weight for all mixing methods.
+
+{\it Default value:} {\tt 0.25}
+
 
 \item[{\bf DM.NumberPulay}] ({\it integer}):\index{Pulay mixing}
 \index{DM.NumberPulay@{\bf DM.NumberPulay}}\index{SCF!mixing!Pulay}
@@ -3260,6 +3297,8 @@ performed.
 
 \item[{\bf SCF.Pulay.Damping}] ({\it real}):\index{SCF!mixing}
 \index{SCF.Pulay.Damping@{\bf SCF.Pulay.Damping}}\index{SCF!mixing!Pulay!damping}
+\index{SCF.Pulay.Damping@{\bf SCF.Pulay.Damping}|see{SCF.Mix.Pulay.Damping}}
+
 Proportion $\alpha_P$ of the predicted
 output Density Matrix to be used for the input Density Matrix of
 next SCF cycle in Pulay mixing (see above). Typically, this can be

@@ -1,4 +1,90 @@
 ----------------------------------------------------
+September 29, 2015 -- Nick Papior       trunk-477---ts-scf-534
+New mixing routine, Pulay, Broyden and linear re-implemented
+
+* The old mixing routines where detached and where not linked
+  easily.
+
+  They have been removed and superseeded by this new routine.
+
+  The old routines can easily be re-inserted by deleting
+  a couple of lines in mixer.
+
+  Search for NP and "new mixing"
+
+  Or do (on ts-scf branch):
+    bzr diff -r 990..991 Src/mixer.F Src/siesta_end.F \
+      Src/siesta_forces.F Src/state_init.F Src/siesta_options.F90
+
+* Instead, the SCF mixing (for now) at least exists with the
+  updated routines.
+
+  All variants are fully threaded.
+
+  1) Pulay mixing, heavily improved, faster and has two
+     variants. 
+
+     The old one has a stricter set for inversion.
+     If the inversion fails the second variant is tried.
+     
+
+     The second variant is the stable version of the Pulay
+     algorithm. It has a slightly more complicated 
+     algorithm, but is stable against small residuals and
+     is thus the preferred algorithm.
+
+     For far from singular matrices they yield the
+     same mixing path.
+
+  2) The Broyden has been re-implemented and is now much
+     faster with less memory requirement.
+     
+  3) The fire-mixing does not yet exist, but an error will be given.
+
+  The mixing input flags comes in several new variants.
+
+  The standard is still obeyed but one can decide the method
+  based on 
+
+    SCF.Mix <method> = linear|pulay|broyden
+
+  There are many more options and combinations.
+
+  TODO update manual to reflect all these.
+
+* Enabled history storage for transiesta. I.e. when switching
+  from diagon to transiesta we can keep a number of previous DM
+  states.
+
+  If you change the bias abruptly you can add this to pull back
+  the initial charge flooding.
+
+added:
+  Src/m_mixing.F90
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_ts_options.F90
+  Src/mixer.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_options.F90
+  Src/state_init.F
+  Util/COOP/Makefile
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grimme/Makefile
+  Util/Helpers/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/Sp2METIS/Makefile
+  Util/SpPivot/Makefile
+  Util/TBTrans/Makefile
+  Util/TS/TBtrans/Makefile
+  Util/TS/ts2ts/Makefile
+  Util/TS/tshs2tshs/Makefile
+  Util/VCA/Makefile
+
+----------------------------------------------------
 September 29, 2015 -- Nick Papior       trunk-477---ts-scf-533
 Improved classes and added a new class
 

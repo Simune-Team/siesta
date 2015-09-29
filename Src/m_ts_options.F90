@@ -20,6 +20,7 @@ module m_ts_options
   ! The tolerance
   real(dp) :: ts_Dtol ! = tolerance for density matrix
   real(dp) :: ts_Htol ! = tolerance for Hamiltonian
+  integer :: ts_hist_keep = 0
 
   ! ###### end SIESTA-options #####
 
@@ -158,8 +159,11 @@ contains
     
     ! Read in the mixing for the transiesta cycles
     ts_wmix = fdf_get('TS.MixingWeight',wmix)
-    ts_Dtol = fdf_get('TS.SCF.DM.Tolerance',dDTol)
-    ts_Htol = fdf_get('TS.SCF.H.Tolerance',dHTol)
+    ts_wmix = fdf_get('TS.SCF.Mix.Weight',ts_wmix)
+    ts_Dtol = fdf_get('TS.SCF.Tolerance.DM',dDTol)
+    ts_Htol = fdf_get('TS.SCF.Tolerance.H',dHTol)
+    ts_hist_keep = fdf_get('TS.SCF.Mix.History.Keep',0)
+
 
     ! Read in information about the voltage placement.
     chars = fdf_get('TS.Hartree.Position','central')

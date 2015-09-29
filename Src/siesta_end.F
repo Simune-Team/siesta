@@ -18,7 +18,6 @@
 #ifdef MPI
       use mpi_siesta,      only : MPI_Finalize
 #endif
-      use m_pulay,         only : resetPulayArrays
       use moreMeshSubs,    only : resetMeshDistr
       use densematrix,     only : resetDenseMatrix
       use sparse_matrices, only : resetSparseMatrices
@@ -28,6 +27,9 @@
       use meshdscf,        only : resetDscfPointers
       use m_dscfcomm,      only : resetdscfComm
       use m_rhog,          only : resetRhog
+      ! NP, new mixing
+      use m_mixing_scf,    only : reset_mixing_scf
+
 #ifdef SIESTA__FLOOK
       use flook_siesta,    only : slua_close
       use siesta_options,  only : LUA
@@ -51,7 +53,6 @@
 
 !     Free allocated memory
       call resetSparseMatrices( )
-      call resetPulayArrays( )
       call resetMeshDistr( )
       call resetdscfComm( )
       call resetDenseMatrix( )
@@ -60,6 +61,11 @@
       call resetMeshPhi( )
       call resetDscfPointers( )
       call resetRhog()
+#ifdef OLD_MIXING
+      call resetPulayArrays()
+#endif
+      ! NP, new mixing
+      call reset_mixing_scf( )
 
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )

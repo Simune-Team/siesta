@@ -374,6 +374,9 @@ MODULE siesta_options
     use m_hartree_add, only : read_hartree_add
     use m_target_stress, only: set_target_stress
 
+    use m_mixing_scf, only: scf_mixs
+    use m_mixing, only: mixing_init
+
     implicit none
     !----------------------------------------------------------- Input Variables
     integer, intent(in)  :: na, ns, nspin
@@ -1622,6 +1625,9 @@ MODULE siesta_options
     endif
 #endif
 #endif
+
+    ! Read in mixing parameters (SCF)
+    call mixing_init( scf_mixs )
 
     ! We read in relevant data for ChargeGeometries block
     call read_charge_add( nspin , charnet )

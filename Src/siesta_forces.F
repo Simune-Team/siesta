@@ -20,6 +20,10 @@
       use m_scfconvergence_test
       use m_post_scf_work
       use m_mixer
+      ! NP new mixing
+      use m_mixing_scf, only: mixing_scf_converged
+      use m_mixing_scf, only: mixing_scf_history_clear
+
       use m_rhog,                only: mix_rhog, compute_charge_diff
       use siesta_options
       use parallel,     only : IOnode
@@ -64,15 +68,14 @@
       use m_transiesta,          only: transiesta
       use kpoint_grid, only : gamma_scf
       use m_energies, only : Ef
-      use m_pulay,           only: init_pulay_arrays
 #endif /* TRANSIESTA */
       implicit none
 
       integer, intent(in)  :: istep
 
-      integer            :: iscf
-      logical            :: first, last_step
-      logical            :: SCFconverged
+      integer :: iscf
+      logical :: first, last_step
+      logical :: SCFconverged
       real(dp) :: dDmax     ! Max. change in DM elements
       real(dp) :: dHmax     ! Max. change in H elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
@@ -229,6 +232,11 @@
            end if
         end if
 
+        ! In case the user requests to do a special mixing
+        ! after convergence
+        ! NP new mixing
+        call mixing_scf_converged( SCFconverged ) 
+
 #ifdef TRANSIESTA
         ! In case the user has requested a Fermi-level correction
         ! Then we start by correcting the fermi-level
@@ -240,8 +248,8 @@
            
            if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
 
-              ! First we reset the pulay arrays
-              call init_pulay_arrays()
+              !call mixing_history_clear( scf_mixs )
+              !scf_mix => scf_mixs(1)
               
               ! Call transiesta with fermi-correct
               call transiesta(iscf,nspin, 
@@ -348,6 +356,10 @@
          end if
       end if
 
+      ! NP new mixing
+      ! Clean-up here to limit memory usage
+      call mixing_scf_history_clear( )
+
 
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
@@ -427,14 +439,18 @@
       use precision,             only: dp
       use parallel,              only: IONode
       use class_dSpData2D
+      use class_Fstack_dData1D
+
       use siesta_options,        only: fire_mix, broyden_maxit
       use siesta_options,        only: wmix, dDtol, dHtol
 
       use sparse_matrices, only : DM_2D, EDM_2D
       use atomlist, only: lasto
       use siesta_geom, only: nsc, isc_off, na_u, xa, ucell
-      use m_pulay,               only: init_pulay_arrays
       use m_energies, only : Ef
+      ! NP new mixing
+      use m_mixing_scf, only: scf_mixs, scf_mix
+      use m_mixing, only: mixing_history_clear
 
       use m_ts_global_vars,      only: TSinit, TSrun
       use m_ts_global_vars,      only: ts_print_transiesta
@@ -443,6 +459,7 @@
       use m_ts_options,          only: DM_bulk
       use m_ts_options,          only: val_swap
       use m_ts_options,          only: ts_wmix, ts_Dtol, ts_Htol
+      use m_ts_options,          only: ts_hist_keep
       use m_ts_electype
 
       integer :: iEl, na_a
@@ -467,16 +484,11 @@
       
       ! From now on, a new mixing cycle starts,
       ! Check in mixer.F for new mixing schemes.
-      if ( fire_mix ) then
-         ! do nothing
-      else if ( broyden_maxit == 0 ) then
-         ! so we have to reset the Pulay record keeping
-         call init_pulay_arrays() 
-      else
-         ! do nothing
-      end if
-      ! the Broyden mixing and the Fire-mixing does
-      ! not need to initialize, that is done implicitly
+      ! NP new mixing
+      do iel = 1 , size(scf_mix%stack)
+         call reset(scf_mix%stack(iel), -ts_hist_keep)
+      end do
+      scf_mix => scf_mixs(1)
 
       call ts_print_transiesta()
 

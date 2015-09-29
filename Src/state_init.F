@@ -38,7 +38,10 @@
       use parallel,          only: IOnode, node, nodes
       use m_spin,            only: nspin
       use m_rmaxh
-      use m_pulay,           only: init_pulay_arrays
+      ! NP new mixing
+      use m_mixing,          only: mixing_history_clear
+      use m_mixing_scf,      only: scf_mixs, scf_mix
+
       use m_eo
       use m_gamma
       use files,             only: slabel
@@ -278,6 +281,10 @@
 !     Check if any two atoms are unreasonably close
       call proximity_check(rmax)
 
+      ! Clear history of mixing parameters
+      call mixing_history_clear( scf_mixs )
+      scf_mix => scf_mixs(1)
+
       ! Ensure sparsity pattern is empty
       call delete(sparse_pattern)
       ! sadly deleting the sparse pattern does not necessarily
@@ -422,9 +429,6 @@
       Escf(:,:) = 0.0_dp
 !$OMP end parallel workshare
 #endif /* TRANSIESTA */
-
-!     Check for size of Pulay auxiliary matrices
-      call init_pulay_arrays()
 
 #ifdef TEST_IO
       ! We test the io-performance here
