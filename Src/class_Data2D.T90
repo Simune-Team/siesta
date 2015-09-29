@@ -28,7 +28,7 @@
 ! This will also release the requirement to change the local names.
 ! Only those through public statements should potentially be altered.
 
-  public :: NEW_TYPE, print_type, val, init_val
+  public :: NEW_TYPE, print_type, val, init_val, size
 
   interface NEW_TYPE
      module procedure newData2DfromDimensions
@@ -38,15 +38,19 @@
   interface val
      module procedure valData2D
      module procedure valData2D_Idx
-  end interface val
+  end interface
+
+  interface size
+     module procedure sizeData2D
+  end interface
 
   interface init_val
      module procedure initializeData2D
-  end interface init_val
+  end interface
 
   interface print_type
      module procedure printData2D
-  end interface print_type
+  end interface
 
 !========================
 #include "basic_type.inc"
@@ -148,20 +152,28 @@
     p => this%data%val
   end function valData2D
 
+
   function valData2D_Idx(this,idx1,idx2) result(v)
     type(TYPE_NAME), intent(in) :: this
     integer,         intent(in) :: idx1,idx2
 #ifdef PREC
-    VAR_TYPE(PREC), pointer     :: p(:,:) !=> null()
     VAR_TYPE(PREC)              :: v
 #else
-    VAR_TYPE, pointer     :: p(:,:) !=> null()
-    VAR_TYPE              :: v
+    VAR_TYPE                    :: v
 #endif	
     
-    p => this%data%val
-    v = p(idx1,idx2)
+    v = this%data%val(idx1,idx2)
   end function valData2D_Idx
+
+
+  function sizeData2D(this,dim) result(n)
+    type(TYPE_NAME), intent(in) :: this
+    integer,         intent(in), optional :: dim
+    integer :: n
+    
+    n = size(this%data%val,dim)
+  end function sizeData2D
+
 
   subroutine printData2D(this)
     type(TYPE_NAME), intent(in)  :: this

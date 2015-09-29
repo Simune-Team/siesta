@@ -1,4 +1,64 @@
 ----------------------------------------------------
+September 29, 2015 -- Nick Papior       trunk-477---ts-scf-533
+Improved classes and added a new class
+
+* Added Fstack_Data1D to enable stacks of pure
+  data without pairs.
+  This is useful when doing mixing where a different number
+  of stacks should be used for each mixing algorithm.
+
+  A pair of stacks can be "emulated" by
+  
+    stack(:)
+  
+  and iteration over them. Of course this is slightly more
+  cumbersome but it enables one to do Pairs of more than
+  2 arrays combined.
+
+* Fstack
+
+  1) A new routine
+
+    call reset(stack,N)
+
+  where N is optional:
+
+  If N > 0, N elements will be deleted from the back
+  of the stack.
+
+  If N < 0, N elements will be saved from the front
+  of the stack.
+
+  If N == 0, the entire history will be deleted.
+
+
+  2) Correct initialization and resetting of the size and 
+  number of items.
+
+  3) Fixed print statements.
+
+* Pair
+
+  Fixed print statements
+
+  Removed two unnecessary nullifications.
+
+* Data*D have gotten a SIZE routine which returns the number
+  of elements in the data.
+
+* Added an Fstack_Data1D to enable 1D stacks
+ 
+added:
+  Src/class_Fstack_Data1D.F90
+modified:
+  Src/Fstack.T90
+  Src/Makefile
+  Src/Pair.T90
+  Src/class_Data1D.T90
+  Src/class_Data2D.T90
+  Src/class_Fstack_Pair_Data1D.F90
+
+----------------------------------------------------
 September 24, 2015 -- Nick Papior       trunk-477---ts-scf-532
 Improved print-out of error in NEGF calculations
 

@@ -178,6 +178,7 @@ OBJS += class_OrbitalDistribution.o \
 	class_SpData1D.o class_SpData2D.o \
         restructSpData2D.o extrapolateSpData2D.o \
         class_Geometry.o \
+	class_Fstack_Data1D.o \
 	class_Pair_Data1D.o \
 	class_Fstack_Pair_Data1D.o \
 	class_Pair_Geometry_SpData2D.o \
@@ -569,6 +570,8 @@ class_Data1D.o: class_Data1D.T90 basic_type.inc
 class_Data1D.o: alloc.o
 class_Data2D.o: class_Data2D.T90 basic_type.inc
 class_Data2D.o: alloc.o
+class_Fstack_Data1D.o: Fstack.T90 basic_type.inc
+class_Fstack_Data1D.o: class_Data1D.o class_Data1D.o
 class_Fstack_Pair_Data1D.o: Fstack.T90 basic_type.inc
 class_Fstack_Pair_Data1D.o: class_Pair_Data1D.o class_Pair_Data1D.o
 class_Fstack_Pair_Geometry_SpData2D.o: Fstack.T90 basic_type.inc
@@ -802,6 +805,7 @@ m_mat_invert.o: intrinsic_missing.o m_pivot_array.o precision.o
 m_matio.o: alloc.o parallel.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mesh_node.o: intrinsic_missing.o parallel.o precision.o
+m_mixing.o: alloc.o class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
 m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_monitor.o: parallel.o precision.o
 m_mpi_utils.o: precision.o sys.o
@@ -1262,6 +1266,8 @@ class_ddata2d.o: class_Data2D.o
 class_dspdata1d.o: class_SpData1D.o
 class_dspdata2d.o: class_SpData2D.o
 class_dtrimat.o: class_TriMat.o
+class_fstack_ddata1d.o: class_Fstack_Data1D.o
+class_fstack_gdata1d.o: class_Fstack_Data1D.o
 class_fstack_pair_ddata1d.o: class_Fstack_Pair_Data1D.o
 class_fstack_pair_dspdata1d.o: class_Fstack_Pair_SpData1D.o
 class_fstack_pair_gdata1d.o: class_Fstack_Pair_Data1D.o
@@ -1269,6 +1275,7 @@ class_fstack_pair_geometry_dspdata2d.o: class_Fstack_Pair_Geometry_SpData2D.o
 class_fstack_pair_gspdata1d.o: class_Fstack_Pair_SpData1D.o
 class_fstack_pair_sdata1d.o: class_Fstack_Pair_Data1D.o
 class_fstack_pair_sspdata1d.o: class_Fstack_Pair_SpData1D.o
+class_fstack_sdata1d.o: class_Fstack_Data1D.o
 class_gdata1d.o: class_Data1D.o
 class_gspdata1d.o: class_SpData1D.o
 class_idata1d.o: class_Data1D.o
@@ -1343,6 +1350,7 @@ m_local_dos.o: local_DOS.o
 m_matel_registry.o: matel_registry.o
 m_minvec.o: minvec.o
 m_mixer.o: mixer.o
+m_mixing_scf.o: m_mixing.o
 m_naefs.o: naefs.o
 m_new_matel.o: new_matel.o
 m_nlefsm.o: nlefsm.o

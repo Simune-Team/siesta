@@ -2,7 +2,7 @@ module class_Fstack_Pair_sData1D
 
 use class_Pair_sData1D
 
-character(len=*), parameter :: mod_name="class_Fstack_sData1D.F90"
+character(len=*), parameter :: mod_name="class_Fstack_Pair_sData1D.F90"
 
 #define _T_ Pair_sData1D
 #define FSTACK_NAME Fstack_Pair_sData1D
@@ -15,7 +15,7 @@ module class_Fstack_Pair_dData1D
 
 use class_Pair_dData1D
 
-character(len=*), parameter :: mod_name="class_Fstack_dData1D.F90"
+character(len=*), parameter :: mod_name="class_Fstack_Pair_dData1D.F90"
 
 #define _T_ Pair_dData1D
 #define FSTACK_NAME Fstack_Pair_dData1D

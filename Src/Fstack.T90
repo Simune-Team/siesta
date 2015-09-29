@@ -15,15 +15,15 @@ type Fstack_
     !-------------------------------------
     character(len=256) :: name = "(null Fstack_)"
     type(_T_), pointer :: val(:) => null()
-    integer            :: size
-    integer            :: nvals
+    integer            :: size = 0
+    integer            :: nvals = 0
 end type Fstack_
 
 type FSTACK_NAME
    type(Fstack_), pointer :: data => null()
 end type FSTACK_NAME
 
-public :: new, push, get, get_pointer
+public :: new, push, get, get_pointer, reset
 public :: n_items, max_size, print_type
 
 interface new
@@ -37,6 +37,10 @@ interface get
 end interface
 interface get_pointer
  module procedure get_pointer__
+end interface
+
+interface reset
+ module procedure reset__
 end interface
 
 interface print_type
@@ -64,6 +68,9 @@ end interface
         enddo
         deallocate(data%val)	
       endif
+      ! Reset data
+      data%size = 0
+      data%nvals = 0
      end subroutine delete_Data
 !=============================================================
 
@@ -151,17 +158,75 @@ valuep => s%data%val(i)
 end function get_pointer__
 
 !---------------------------------------------
+! reset oldest history by cyclic shifts and deleting top values
+! Defaults to resetting the entire history
+! If n < 0, keeps min(-n,n_items) history segments
+! If n > 0, deletes min(n,n_items) history segments
+! If n == 0, deletes entire history
+!
+subroutine reset__(this,n)
+type(FSTACK_NAME), intent(inout) :: this
+! Number of elements to keep
+integer, intent(in), optional :: n
+integer :: i, ns, ln, j
+
+ns = n_items(this)
+ln = ns
+if ( present(n) ) ln = n
+
+! There are three options
+
+if ( ln > 0 ) then
+  ! We will delete the first 'ln' entries
+  ln = min(ln,ns)
+
+  ! 'ln' is now the number of elements deleted  
+
+else if ( ln < 0 ) then
+  ! We will keep the first '-ln' entries
+  ln = min(-ln,ns)
+
+  ! Calculate the number of elements to be deleted
+  ln = ns - ln
+
+else
+  ! Delete entire history
+  ln = ns
+end if
+
+if ( ln /= ns ) then
+  ! Cyclic shifts
+  this%data%val = cshift(this%data%val,+ns)
+end if
+
+! delete back values
+j = max_size(this)
+do i = 1 , ln
+  call delete(this%data%val(j))
+  j = j - 1
+  this%data%nvals = this%data%nvals - 1
+end do
+
+end subroutine reset__
+ 
+
+!---------------------------------------------
 subroutine print__(this)
 type(FSTACK_NAME), intent(in) :: this
 
 integer :: i
 
-print "(a,i0,a,i0)", "<" // trim(this%data%name) // ". Slots: ", &
-                this%data%size, " Nvals: ", this%data%nvals
+if (.not. associated(this%data)) then
+   print *, "<Fstack not initialized>"
+   return
+endif
+
+print "(a,i0,a,i0,a)", "<" // trim(this%data%name) // ". Slots: ", &
+                this%data%size, " Nvals: ", this%data%nvals, ">"
 do i=1,this%data%nvals
  call print_type(this%data%val(i))
 enddo
-print "(a,i0)", "<refcount: ", this%data%refCount
+print "(a,i0,a)", "<refcount: ", this%data%refCount, ">"
 
 end subroutine print__
 

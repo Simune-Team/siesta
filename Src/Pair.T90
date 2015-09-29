@@ -93,11 +93,12 @@ type(PAIR_NAME), intent(in) :: this
 
 if (.not. associated(this%data)) then
    print *, "<Pair not initialized>"
+   return
 endif
-print "(a)", "<" // trim(this%data%name)
+print "(a)", "<" // trim(this%data%name) // ">"
 call print_type(this%data%first)
 call print_type(this%data%second)
-print "(a,i0,a)", "refcount: ", this%data%refcount, ">"
+print "(a,i0,a)", "<refcount: ", this%data%refcount, ">"
 end subroutine print__
 
 !---------------------------------------------
@@ -131,7 +132,6 @@ type(_T1_), pointer            :: p
 if (.not. associated(this%data)) then
    call die("Attempt to get pointer to first item of null pair")
 endif
-p => null()
 p => this%data%first
 
 end subroutine firstp__
@@ -144,7 +144,6 @@ type(_T2_), pointer            :: p
 if (.not. associated(this%data)) then
    call die("Attempt to get pointer to second item of null pair")
 endif
-p => null()
 p => this%data%second
 
 end subroutine secondp__
