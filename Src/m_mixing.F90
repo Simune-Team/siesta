@@ -1714,14 +1714,16 @@ contains
   ! Calculate the inverse of a matrix
   subroutine inverse(n, A, B, info )
 
-    integer, intent(in) ::  n
-    real(dp), intent(in)  ::  A(n,n)
-    real(dp), intent(out) ::  B(n,n)
+    integer, intent(in) :: n
+    real(dp), intent(in)  :: A(n,n)
+    real(dp), intent(out) :: B(n,n)
     integer, intent(out) :: info
 
     integer :: i, j
     ! Local arrays
     real(dp) :: pm(n,n), work(n*4), err
+    ! Relative tolerance dependent on the magnitude
+    real(dp), parameter :: etol = 1.e-6_dp
     integer :: ipiv(n)
 
     ! initialize info
@@ -1757,9 +1759,9 @@ contains
           end if
 
           ! This is pretty strict tolerance!
-          if ( abs(err) > 1.e-8_dp ) then
+          if ( abs(err) > etol ) then
              ! Signal failure in inversion
-             info = -100
+             info = - n - 1
              return
           end if
 

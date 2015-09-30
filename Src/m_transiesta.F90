@@ -559,6 +559,7 @@ contains
   subroutine ts_print_memory(ts_Gamma)
     
     use parallel, only : IONode
+    use precision, only : i8b
 
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World
@@ -578,62 +579,90 @@ contains
     use m_ts_method, only : no_Buf
 
     logical, intent(in) :: ts_Gamma ! transiesta Gamma
-    integer :: i, f, no_E
+    integer :: i, no_E, no_used
+    integer(i8b) :: nel
     integer :: padding, worksize
-    real(dp) :: mem, tmp_mem
+    real(dp) :: mem, dmem, zmem, tmp_mem
 #ifdef MPI
     integer :: MPIerror
 #endif
 
     ! estimate the amount of memory used...
+    dmem = 0._dp
+    zmem = 0._dp
+
+    ! Add electrode sizes
+    mem = 0._dp
+    do i = 1 , N_Elec
+
+       no_used = Elecs(i)%no_used
+       no_E = TotUsedOrbs(Elecs(i))
+
+       if ( IsVolt .or. .not. Elecs(i)%Bulk ) then
+          ! Hamiltonian and overlap
+          if ( Elecs(i)%pre_expand > 1 ) then
+             mem = mem + no_E ** 2 * 2
+          else
+             mem = mem + no_E * no_used * 2
+          end if
+       end if
+
+       if ( IsVolt ) then
+          mem = mem + no_E ** 2 ! GS/Gamma
+       else
+          if ( Elecs(i)%pre_expand > 0 ) then
+             mem = mem + no_E ** 2
+          else
+             mem = mem + no_E * no_used
+          end if
+       end if
+       
+    end do
+    ! Sadly we do not differentiate between Gamma and non-gamma
+    zmem = zmem + mem
+
     ! H and S
-    i = nnzs(ts_sp_uc)
-    mem = i * 2
+    nel = nnzs(ts_sp_uc) * 2
+    if ( ts_Gamma ) then
+       dmem = dmem + nel
+    else
+       zmem = zmem + nel
+    end if
 
     ! global sparsity update
-    i = nnzs(tsup_sp_uc)
-    mem = mem + i * max(N_mu,N_nEq_id)
-    if ( Calc_Forces ) mem = mem + i * N_mu
-    if ( ts_Gamma ) then
-       mem = mem * 8._dp
+    nel = nnzs(tsup_sp_uc)
+    if ( Calc_Forces ) then
+       mem = nel * ( max(N_mu,N_nEq_id) + N_mu )
     else
-       mem = mem * 16._dp
+       mem = nel * max(N_mu,N_nEq_id)
+    end if
+    if ( ts_Gamma ) then
+       dmem = dmem + mem
+    else
+       zmem = zmem + mem
     end if
 
     ! local sparsity update
     if ( IsVolt ) then
-       i = nnzs(ltsup_sp_sc)
-       if ( Calc_Forces ) mem = mem + i * N_mu * 8._dp ! always in double 
-       mem = mem + i * ( N_mu + N_nEq_id ) * 8._dp ! always in double
+       nel = nnzs(ltsup_sp_sc)
+       if ( Calc_Forces ) then
+          mem = nel * ( 2 * N_mu + N_nEq_id )
+       else
+          mem = nel * ( N_mu + N_nEq_id )
+       end if
+       ! Bias local sparsity pattern is always
+       ! in double precision
+       dmem = dmem + mem
     end if
 
-    ! Add electrode sizes
-    tmp_mem = 0._dp
-    do i = 1 , N_Elec
-       f = 1
-       if ( IsVolt ) then
-          if ( Elecs(i)%pre_expand > 1 ) f = product(Elecs(i)%Rep)
-          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2 !H,S
-          tmp_mem = tmp_mem + TotUsedOrbs(Elecs(i)) ** 2 ! GS/Gamma
-       else
-          if ( .not. Elecs(i)%Bulk ) then
-             if ( Elecs(i)%pre_expand > 1 ) f = product(Elecs(i)%Rep) ! H,S
-             tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used * 2
-          end if
-          if ( Elecs(i)%pre_expand > 0 ) f = product(Elecs(i)%Rep) ! GS
-          tmp_mem = tmp_mem + f * TotUsedOrbs(Elecs(i)) * Elecs(i)%no_used
-       end if
-       
-    end do
-    mem = mem + tmp_mem * 16._dp
 
-#ifdef MPI
-    call MPI_Reduce(mem,tmp_mem,1, MPI_Double_Precision, MPI_Max, 0, &
-         MPI_Comm_World,MPIerror)
-    mem = tmp_mem
-#endif
+    ! Convert to MB
+    dmem = dmem * 8._dp / 1024._dp ** 2
+    zmem = zmem * 16._dp / 1024._dp ** 2
 
-    mem = mem / 1024._dp ** 2
+    ! Calculate total memory used
+    mem = dmem + zmem
+
     if ( IONode ) then
        write(*,'(/,a,f10.2,a)') &
             'transiesta: Memory usage of sparse arrays and electrodes (static): ', &

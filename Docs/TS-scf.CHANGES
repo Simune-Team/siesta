@@ -1,4 +1,12 @@
 ----------------------------------------------------
+September 30, 2015 -- Nick Papior       trunk-477---ts-scf-535
+Improved memory estimation and reduced inv-tol in mixing
+
+modified:
+  Src/m_mixing.F90
+  Src/m_transiesta.F90
+
+----------------------------------------------------
 September 29, 2015 -- Nick Papior       trunk-477---ts-scf-534
 New mixing routine, Pulay, Broyden and linear re-implemented
 
