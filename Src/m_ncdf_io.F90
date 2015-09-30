@@ -138,7 +138,7 @@ contains
     ! Local variables
     integer, pointer :: ncol(:), l_col(:)
     integer, allocatable :: ibuf(:), gncol(:)
-    integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n
+    integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n, j
 #ifdef MPI
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
@@ -182,7 +182,8 @@ contains
        end if
 
        ind = 1
-       do io = 1 , no_l
+       io = 1
+       do while ( io <= no_l )
 
           ! We loop on each segment until no more
           ! segment exists
@@ -196,17 +197,20 @@ contains
           end if
 
           ! count number of orbitals in this block
-          max_n = count_consecutive(dit,no_u,gio)
+          j = count_consecutive(dit,no_u,gio)
           
           ! Figure out how many this corresponds to in the 
           ! list_col array
-          max_n = sum(ncol(io:io+max_n-1))
+          max_n = sum(ncol(io:io+j-1))
           
           call ncdf_put_var(ncdf,'list_col',l_col(ind:ind+max_n-1), &
                start=(/gind/), count=(/max_n/) )
 
-          ! Update index
+          ! Update sparse index
           ind = ind + max_n
+
+          ! Update row index
+          io = io + j
 
        end do
 
@@ -561,7 +565,7 @@ contains
     type(OrbitalDistribution), pointer :: dit
     type(Sparsity), pointer :: sp
     integer, pointer :: ncol(:), l_col(:)
-    integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n
+    integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n, j
     integer, allocatable :: gcol(:)
     real(dp), pointer :: a(:)
     real(dp), allocatable :: buf(:)
@@ -590,7 +594,8 @@ contains
 #endif
 
        ind = 1
-       do io = 1 , no_l
+       io = 1
+       do while ( io <= no_l )
 
           ! We loop on each segment until no more
           ! segment exists
@@ -604,18 +609,21 @@ contains
           end if
 
           ! count number of orbitals in this block
-          max_n = count_consecutive(dit,no_u,gio)
+          j = count_consecutive(dit,no_u,gio)
           
           ! Figure out how many this corresponds to in the 
           ! list_col array
-          max_n = sum(ncol(io:io+max_n-1))
+          max_n = sum(ncol(io:io+j-1))
           
           call ncdf_put_var(ncdf,vname,a(ind:ind+max_n-1), &
                start=(/gind/), count=(/max_n/) )
 
-          ! Update index
+          ! Update sparse index
           ind = ind + max_n
 
+          ! Update row index
+          io = io + j
+          
        end do
 
        deallocate(gcol)
@@ -851,7 +859,7 @@ contains
     type(OrbitalDistribution), pointer :: dit
     type(Sparsity), pointer :: sp
     integer, pointer :: ncol(:), l_col(:)
-    integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n
+    integer :: no_l, no_u, n_nzs, gio, io, ind, gind, max_n, j
     integer :: is, id2, dim2, sp_dim
     integer, allocatable :: gcol(:)
     real(dp), pointer :: a(:,:)
@@ -889,7 +897,8 @@ contains
 #endif
 
        ind = 1
-       do io = 1 , no_l
+       io = 1
+       do while ( io <= no_l )
 
           ! We loop on each segment until no more
           ! segment exists
@@ -903,11 +912,11 @@ contains
           end if
 
           ! count number of orbitals in this block
-          max_n = count_consecutive(dit,no_u,gio)
+          j = count_consecutive(dit,no_u,gio)
           
           ! Figure out how many this corresponds to in the 
           ! list_col array
-          max_n = sum(ncol(io:io+max_n-1))
+          max_n = sum(ncol(io:io+j-1))
           
        if ( sp_dim == 1 ) then
           do is = 1 , dim2
@@ -919,8 +928,11 @@ contains
                start=(/1,gind/), count=(/dim2,max_n/) )
        end if
 
-          ! Update index
+          ! Update sparse index
           ind = ind + max_n
+
+          ! Update row index
+          io = io + j
 
        end do
 

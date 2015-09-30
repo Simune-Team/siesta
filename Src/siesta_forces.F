@@ -38,6 +38,9 @@
       use m_stress,      only: cstress        ! Constrained stress tensor
       use siesta_master, only: forcesToMaster ! Send forces to master prog
       use siesta_master, only: siesta_server  ! Is siesta a server?
+#ifdef MPI
+      use mpi_siesta, only: MPI_Barrier, MPI_Comm_World
+#endif
 
       use units,         only: eV, Ang
       use sparse_matrices, only: H, Hold, Dold, Dscf
@@ -85,6 +88,9 @@
 #endif
 #ifdef NCDF_4
       type(dict) :: d_sav
+#endif
+#ifdef MPI
+      integer :: MPIerror
 #endif
 
 #ifdef DEBUG
@@ -134,9 +140,15 @@
 
          ! Initialize the file...
          call cdf_init_file('SIESTA.nc',is_MD = .false.)
+#ifdef MPI
+         call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
 
          ! Save the settings
          call cdf_save_settings('SIESTA.nc')
+#ifdef MPI
+         call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
 
          d_sav = ('sp'.kv.1)//('S'.kv.1)
          d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)

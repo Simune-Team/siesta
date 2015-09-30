@@ -1250,35 +1250,38 @@ contains
           write(*,'(a)') '    The initial guess for the potential profile is heavily influenced'
           write(*,'(a)') '    by the electrode unit-cell sizes! ***'
        end if
+
+    else
+
+       ! The transport direction is well-defined
+       ! and the Hartree potential is fixed at the bottom of the
+       ! unit-cell of the A[ts_tidx] direction.
+       ! We will let the user know if any atoms co-incide with
+       ! the plane as that might hurt convergence a little.
+       
+       ! If the distance is less than 0.5 of the minimal bond length we have
+       ! the atomic core "close" to the Hartree fix plane, notify the user of this
+       rtmp = 0.5 * min_t_bond
+       ltmp = .false.
+       tmp3 = cell(:,ts_tidx)
+       tmp3 = tmp3 / VNORM(tmp3)
+       do i = 1 , na_u
+          ! skip buffer atoms
+          if ( a_isBuffer(i) ) cycle
+          ltmp = abs( VEC_PROJ_SCA(tmp3,xa(:,i)) ) < rtmp
+          if ( ltmp ) exit
+       end do
+       if ( ltmp ) then
+          write(*,'(a,f9.5,a)')'You can with benefit move all atoms &
+               &in the transport direction by ',rtmp/Ang,' Ang'
+          write(*,'(2a)') 'This removes atoms from the constant &
+               &potential plane. ', &
+               'See %block AtomicCoordinatesOrigin for easy shifts.'
+          warn = .true.
+       end if
     end if
 
-    ! The transport direction is well-defined
-    ! and the Hartree potential is fixed at the bottom of the
-    ! unit-cell of the A[ts_tidx] direction.
-    ! We will let the user know if any atoms co-incide with
-    ! the plane as that might hurt convergence a little.
     
-    ! If the distance is less than 0.5 of the minimal bond length we have
-    ! the atomic core "close" to the Hartree fix plane, notify the user of this
-    rtmp = 0.5 * min_t_bond
-    ltmp = .false.
-    tmp3 = cell(:,ts_tidx)
-    tmp3 = tmp3 / VNORM(tmp3)
-    do i = 1 , na_u
-       ! skip buffer atoms
-       if ( a_isBuffer(i) ) cycle
-       ltmp = abs( VEC_PROJ_SCA(tmp3,xa(:,i)) ) < rtmp
-       if ( ltmp ) exit
-    end do
-    if ( ltmp ) then
-       write(*,'(a,f9.5,a)')'You can with benefit move all atoms &
-            &in the transport direction by ',rtmp/Ang,' Ang'
-       write(*,'(2a)') 'This removes atoms from the constant &
-            &potential plane. ', &
-            'See %block AtomicCoordinatesOrigin for easy shifts.'
-       warn = .true.
-    end if
-
     ! Check that the unitcell does not extend into the transport direction
     do i = 1 , 3
        if ( i == ts_tidx .or. ts_tidx <= 0 ) cycle

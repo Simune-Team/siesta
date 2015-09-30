@@ -1672,7 +1672,7 @@ MODULE siesta_options
     ! No compression is by far the fastest
     cdf_comp_lvl          = fdf_get('CDF.Compress', 0 )
     if ( Nodes > 1 ) then
-       cdf_w_parallel     = fdf_get('CDF.Write.Parallel', .false. )
+       cdf_w_parallel     = fdf_get('CDF.MPI', .false. )
     else
        cdf_w_parallel     = .false.
     end if
@@ -1686,7 +1686,7 @@ MODULE siesta_options
        ! compression (the offsets cannot be calculated)
        cdf_comp_lvl = 0
     end if
-    cdf_r_parallel = fdf_get('CDF.Read.Parallel', .false. )
+    cdf_r_parallel = fdf_get('CDF.Read.Parallel', cdf_w_parallel )
 
     if ( IONode ) then
     ! Write out

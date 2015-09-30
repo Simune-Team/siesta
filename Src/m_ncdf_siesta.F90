@@ -78,26 +78,8 @@ contains
 #endif
 
     ! We always re-write the file...
-#ifdef MPI
-    if ( Nodes > 1 .and. cdf_w_parallel ) then
-       call ncdf_create(ncdf, fname,&
-            mode=NF90_MPIIO, &
-            parallel = .true., overwrite = .true. , &
-            comm=MPI_Comm_World)
-       ! parallel writes are not allowed with compression
-       ! Offset positions are not well defined.
-       ! Only in case of COLLECTIVE operations
-       ! Currently problems arise when using the parallel version
-       ! I cannot reproduce this error using simple examples. 
-       ! I need to check this some more, it seems related
-       ! to optimizations
-    else
-#endif
-       call ncdf_create(ncdf,fname,&
-            mode=NF90_NETCDF4, overwrite=.true.)
-#ifdef MPI 
-    end if
-#endif
+    call ncdf_create(ncdf,fname, &
+         mode=ior(NF90_WRITE,NF90_NETCDF4), overwrite=.true.)
 
 #ifdef MPI
     tmp = nnzs(sparse_pattern)
@@ -107,9 +89,6 @@ contains
     n_nzs = nnzs(sparse_pattern)
 #endif
 
-    ! controls whether we should set the independent access
-    exists = .true.
-    
     ! First we create all the dimensions
     ! necessary
     d = ('DIMna_u'.kv.na_u)//('DIMno_u'.kv.no_u)
@@ -154,11 +133,7 @@ contains
 
     call delete(dic)
 
-    if ( parallel_io(ncdf) .and. exists ) then
-       ! All are accessed independently
-       call ncdf_default(ncdf,access=NF90_INDEPENDENT)
-    end if
-
+    
     ! Create matrix group
     call ncdf_def_grp(ncdf,'SPARSE',grp)
 
@@ -209,12 +184,6 @@ contains
 !            compress_lvl=cdf_comp_lvl,atts=dic)
 !    end if
 
-    if ( parallel_io(grp) .and. exists ) then
-       ! nearly all sparse matrices are accessed collectively
-       call ncdf_default(grp,access=NF90_COLLECTIVE)
-       call ncdf_par_access(grp,name='isc_off',access=NF90_INDEPENDENT)
-       call ncdf_par_access(grp,name='n_col',access=NF90_INDEPENDENT)
-    end if
 
     ! Delete the dictionary
     call delete(dic)
@@ -307,11 +276,6 @@ contains
             compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
     end if
 
-    if ( parallel_io(grp) .and. exists ) then
-       ! All grids are accessed collectively
-       call ncdf_default(grp,access=NF90_COLLECTIVE)
-    end if
-
     call delete(dic)
 
     call ncdf_def_grp(ncdf,'SETTINGS',grp)
@@ -349,11 +313,6 @@ contains
     dic = dic//('info'.kv.'Mesh cutoff for real space grid')
     call ncdf_def_var(grp,'MeshCutoff',NF90_DOUBLE,(/'one'/), &
          compress_lvl=0, atts=dic)
-
-    if ( parallel_io(grp) .and. exists ) then
-       ! All are accessed independently
-       call ncdf_default(grp,access=NF90_INDEPENDENT)
-    end if
 
     ! Create matrix group
     if ( is_MD ) then
@@ -395,11 +354,6 @@ contains
        call ncdf_def_var(grp,'va',NF90_DOUBLE,(/'xyz ','na_u','MD  '/), &
             compress_lvl=0, atts=dic) ! do not compress unlimited D
 
-       if ( parallel_io(grp) .and. exists ) then
-          ! All are accessed independently
-          call ncdf_default(grp,access=NF90_INDEPENDENT)
-       end if
-
     end if
 
     call delete(dic)
@@ -424,12 +378,6 @@ contains
             compress_lvl=0,atts=dic)
        call delete(dic)
 
-       if ( parallel_io(grp) .and. exists ) then
-          ! All are accessed independently
-          ! The sparse routines force them to be COLLECTIVE
-          call ncdf_default(grp,access=NF90_INDEPENDENT)
-       end if
-       
        ! Add all the electrodes
        do iEl = 1 , N_Elec
           
@@ -451,10 +399,6 @@ contains
                compress_lvl=0,atts=dic)
 
           call delete(dic)
-
-          if ( parallel_io(grp2) .and. exists ) then
-             call ncdf_default(grp2,access=NF90_INDEPENDENT)
-          end if
 
        end do
 
@@ -485,13 +429,8 @@ contains
     call delete(dic)
 
     ! Save the total charge and lasto
-    if ( exists .and. Node == 0 ) then
-       call ncdf_put_var(ncdf,'Qtot',Qtot)
-       call ncdf_put_var(ncdf,'lasto',lasto(1:na_u))
-    else
-       call ncdf_put_var(ncdf,'Qtot',Qtot)
-       call ncdf_put_var(ncdf,'lasto',lasto(1:na_u))
-    end if
+    call ncdf_put_var(ncdf,'Qtot',Qtot)
+    call ncdf_put_var(ncdf,'lasto',lasto(1:na_u))
 
 #ifdef TRANSIESTA
     if ( isolve == SOLVE_TRANSI ) then
@@ -499,11 +438,7 @@ contains
        ! Save all information about the transiesta method
        call ncdf_open_grp(ncdf,'TRANSIESTA',grp)
 
-       if ( exists .and. Node == 0 ) then
-          call ncdf_put_var(grp,'Volt',Volt)
-       else
-          call ncdf_put_var(grp,'Volt',Volt)
-       end if
+       call ncdf_put_var(grp,'Volt',Volt)
        
        ! Add all the electrodes
        do iEl = 1 , N_Elec
@@ -516,20 +451,11 @@ contains
           do i = 1 , tmp
              ibuf(i) = Elecs(iEl)%idx_a + i - 1
           end do
-          if ( exists .and. Node == 0 ) then
-             call ncdf_put_var(grp2,'a_idx',ibuf)
-          else
-             call ncdf_put_var(grp2,'a_idx',ibuf)
-          end if
+          call ncdf_put_var(grp2,'a_idx',ibuf)
           deallocate(ibuf)
           
-          if ( exists .and. Node == 0 ) then
-             call ncdf_put_var(grp2,'mu',Elecs(iEl)%mu%mu)
-             call ncdf_put_var(grp2,'kT',Elecs(iEl)%mu%kT)
-          else
-             call ncdf_put_var(grp2,'mu',Elecs(iEl)%mu%mu)
-             call ncdf_put_var(grp2,'kT',Elecs(iEl)%mu%kT)
-          end if
+          call ncdf_put_var(grp2,'mu',Elecs(iEl)%mu%mu)
+          call ncdf_put_var(grp2,'kT',Elecs(iEl)%mu%kT)
 
        end do
 
@@ -613,8 +539,7 @@ contains
 #ifdef MPI
     if ( Nodes > 1 .and. cdf_w_parallel ) then
        call ncdf_open(ncdf,fname, &
-            mode=ior(NF90_WRITE,NF90_MPIIO), parallel = .true., &
-            comm=MPI_Comm_World)
+            mode=ior(NF90_WRITE,NF90_MPIIO), comm=MPI_Comm_World)
     else
 #endif
        call ncdf_open(ncdf,fname,mode=ior(NF90_WRITE,NF90_NETCDF4))
@@ -682,7 +607,7 @@ contains
 #ifdef MPI
     if ( Nodes > 1 .and. cdf_w_parallel ) then
        call ncdf_open(ncdf,fname, group='GRID', &
-            mode=ior(NF90_WRITE,NF90_MPIIO), parallel = .true., &
+            mode=ior(NF90_WRITE,NF90_MPIIO), &
             comm=MPI_Comm_World)
     else
 #endif

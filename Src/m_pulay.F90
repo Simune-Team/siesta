@@ -402,7 +402,7 @@ CONTAINS
        rhs(maxmix+1) = 1.0_dp
 
        call solve_with_svd(b,rhs,beta,info,rcond=rcond_svd_pulay, &
-                                      rank_out=rank,sigma=sigma)
+            rank_out=rank,sigma=sigma)
 
        if (Node == 0 .AND. debug_svd_in_pulay) then
           print "(a,i2,7g12.5)", "SVD rank, s(i):", rank, sigma(:)
@@ -424,8 +424,8 @@ CONTAINS
        !
        ! If inver was successful, get coefficients for Pulay mixing
        if (info .eq. 0) then
-          do i=1,maxmix
-             coeff(i)=bi(i,maxmix+1)
+          do i= 1 , maxmix
+             coeff(i) = bi(i,maxmix+1)
           enddo
        else
           ! Otherwise, use only last step

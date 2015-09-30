@@ -91,6 +91,9 @@ contains
 #ifdef NCDF_4
     use parallel, only : Node
 #endif
+#ifdef NCDF_PARALLEL
+    use parallel, only : Nodes
+#endif
     use fdf
     use m_os, only : dir_exist
 #ifdef MPI
@@ -103,10 +106,14 @@ contains
     if ( cmp_lvl < 0 ) cmp_lvl = 0
     if ( cmp_lvl > 9 ) cmp_lvl = 9
 #ifdef NCDF_PARALLEL
-    save_parallel = fdf_get('TBT.CDF.MPI',.false.)
+    save_parallel = fdf_get('CDF.MPI',.false.)
+    save_parallel = fdf_get('TBT.CDF.MPI',save_parallel)
+    if ( Nodes == 1 ) save_parallel = .false.
     if ( save_parallel ) then
        cmp_lvl = 0
     end if
+#else
+    save_parallel = .false.
 #endif
 
     save_dir = fdf_get('TBT.Directory.Save',' ')
@@ -127,7 +134,7 @@ contains
     ! First try and create the directory
     if ( .not. dir_exist(save_dir, Bcast = .true. ) ) then
        if ( IONode ) then
-          if ( verbosity > 5 ) &
+          if ( verbosity > 3 ) &
                write(*,'(2a)') '*** Trying to create non-existing directory: ', &
                trim(save_dir)
           ! TODO OS call
@@ -408,28 +415,21 @@ contains
     end if
 
     ! We need to create the file
-#ifdef NCDF_PARALLEL
-    if ( save_parallel ) then
-       call ncdf_create(ncdf,fname, mode=NF90_MPIIO, overwrite=.true., &
-            comm = MPI_COMM_WORLD, &
-            parallel = .true. )
-    else
-       call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true.)
-    end if
-#else
     call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true.)
-#endif
 
     ! Save the current system size
     call ncdf_def_dim(ncdf,'no_u',TSHS%no_u)
     call ncdf_def_dim(ncdf,'na_u',TSHS%na_u)
     ! Even for Gamma, it makes files unified
-    call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED)
+    !call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED) ! Parallel does not work
+    call ncdf_def_dim(ncdf,'nkpt',nkpt)
     call ncdf_def_dim(ncdf,'xyz',3)
     call ncdf_def_dim(ncdf,'one',1)
     call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
-    call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
+    !call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
+    call ncdf_def_dim(ncdf,'ne',NE) ! Parallel does not work
+
     ! Create eigenvalue dimension, if needed
     if ( N_eigen > 0 ) then
        call ncdf_def_dim(ncdf,'neig',N_eigen)
@@ -725,14 +725,10 @@ contains
 #endif
 
     ! Open the netcdf file
-    if ( Node == 0 ) then
-
-       call ncdf_open(ncdf,trim(fname), mode=NF90_NOWRITE)
-
-       call ncdf_inq_dim(ncdf,'ne',len=cur_NE)
-
-    end if
-
+    call ncdf_open(ncdf,trim(fname), mode=NF90_NOWRITE)
+    
+    call ncdf_inq_dim(ncdf,'ne',len=cur_NE)
+    
 #ifdef MPI
     call MPI_BCast(cur_NE,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
 #endif
@@ -873,30 +869,55 @@ contains
   subroutine cdf_save_E(fname,nE)
     use parallel, only : Node, Nodes
     use nf_ncdf, ncdf_parallel => parallel
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD
+#endif
 
     character(len=*), intent(in) :: fname
     type(tNodeE), intent(in) :: nE
 
     type(hNCDF) :: ncdf
+    integer :: iN, idx
+
+    if ( save_parallel ) then
+       
+       ! Open for parallel write
 #ifdef MPI
-    integer :: iN
+       call ncdf_open(ncdf,fname, &
+            mode=ior(NF90_WRITE,NF90_MPIIO), comm=MPI_Comm_World)
+#else
+       call die('ERROR tbt_save A')
 #endif
+       
+       ! Create count
+       idx = nE%iE(Node)
+       if ( idx <= 0 ) then
+          idx = 1
+          iN = 0
+       else
+          iN = 1
+       end if
+       
+       call ncdf_put_var(ncdf,'E',nE%E(Node), &
+            start = (/idx/), count = (/iN/) )
+       
+    else
 
-    ! Open the netcdf file
-    call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-
-    ! We save the energy
-    if ( nE%iE(Node) > 0 ) then
+       ! Open the netcdf file
+       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+       
+       ! We save the energy
+#ifdef MPI
+       do iN = 0 , Nodes - 1
+          if ( nE%iE(iN) <= 0 ) cycle
+          call ncdf_put_var(ncdf,'E',nE%E(iN),start = (/nE%iE(iN)/) )
+       end do
+#else
        call ncdf_put_var(ncdf,'E',nE%E(Node),start = (/nE%iE(Node)/) )
-    end if
-    
-#ifdef MPI
-    do iN = 1 , Nodes - 1
-       if ( nE%iE(iN) <= 0 ) cycle
-       call ncdf_put_var(ncdf,'E',nE%E(iN),start = (/nE%iE(iN)/) )
-    end do
 #endif
-
+       
+    end if
+ 
     call ncdf_close(ncdf)
 
   end subroutine cdf_save_E
@@ -929,10 +950,10 @@ contains
     type(dict), intent(in) :: save_DATA
 
     type(hNCDF) :: ncdf, grp
-    integer :: iEl, jEl, NDOS
+    integer :: iEl, jEl, NDOS, iN, idx(2), cnt(2)
     character(len=30) :: tmp, tmp2
 #ifdef MPI
-    integer :: iN, NT
+    integer :: NT
     real(dp), allocatable :: rT(:,:,:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
@@ -944,7 +965,7 @@ contains
     NDOS = size(DOS,dim=1)
            
 #ifdef MPI
-    if ( .not. save_parallel .and. Nodes > 1 ) then
+    if ( .not. save_parallel ) then
        if ( N_eigen > NDOS ) then
           allocate(rDOS(N_eigen))
        else
@@ -955,31 +976,38 @@ contains
 #endif
 
     ! Open the netcdf file
-#ifdef NCDF_PARALLEL
     if ( save_parallel ) then
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE, &
+       call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
             comm = MPI_COMM_WORLD )
     else
-#endif
        call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-#ifdef NCDF_PARALLEL
-    end if
-#endif
-
-    ! Save the different options given to this routine
-    ! We need to save the energy
-    if ( nE%iE(Node) > 0 ) then
-       call ncdf_put_var(ncdf,'E',nE%E(Node),start = (/nE%iE(Node)/) )
     end if
 
+    if ( save_parallel ) then
+
+       idx(1) = nE%iE(Node)
+       iN = 1
+       if ( idx(1) <= 0 ) then
+          idx(1) = 1
+          iN = 0
+       end if
+       call ncdf_put_var(ncdf,'E',nE%E(Node),start=(/idx(1)/), &
+            count = (/iN/) )
+
+    else
+
+       ! Save the different options given to this routine
+       ! We need to save the energy
 #ifdef MPI
-    if ( Node == 0 .and. .not. save_parallel ) then
-       do iN = 1 , Nodes - 1
-          if ( nE%iE(iN) <= 0 ) cycle
+       do iN = 0 , Nodes - 1
+          if ( nE%iE(Node) <= 0 ) cycle
           call ncdf_put_var(ncdf,'E',nE%E(iN),start = (/nE%iE(iN)/) )
        end do
-    end if
+#else
+       call ncdf_put_var(ncdf,'E',nE%E(Node),start = (/nE%iE(Node)/) )
 #endif
+
+    end if
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
@@ -1041,13 +1069,18 @@ contains
              tmp  = trim(Elecs(jEl)%name)//'.T'
           end if
 
+          idx = (/nE%iE(Node),ikpt/)
+          cnt(:) = 1
+          if ( idx(1) <= 0 ) then
+             cnt = 0
+             idx = 1
+          end if
           ! Save data
-          if ( nE%iE(Node) > 0 ) then
-             call ncdf_put_var(grp,tmp,T(jEl,iEl),start = (/nE%iE(Node),ikpt/) )
-             if ( iEl == jEl ) then
-                call ncdf_put_var(grp,tmp2,T(N_Elec+1,iEl), &
-                     start = (/nE%iE(Node),ikpt/) )
-             end if
+          call ncdf_put_var(grp,tmp,T(jEl,iEl),start = idx, &
+               count = cnt )
+          if ( iEl == jEl ) then
+             call ncdf_put_var(grp,tmp2,T(N_Elec+1,iEl), &
+                  start = idx, count = cnt )
           end if
 
           if ( N_eigen > 0 ) then
@@ -1069,7 +1102,7 @@ contains
              end do
           end if
 #endif
-
+          
        end do
     end do
 
@@ -1115,22 +1148,18 @@ contains
 #endif
 
 #ifdef MPI
-    if ( .not. save_parallel .and. Nodes > 1 ) then
+    if ( .not. save_parallel ) then
        allocate(rDOS(size(DOS,dim=1)))
     end if
 #endif
 
     ! Open the netcdf file
-#ifdef NCDF_PARALLEL
     if ( save_parallel ) then
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE, &
+       call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
             comm = MPI_COMM_WORLD )
     else
-#endif
        call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-#ifdef NCDF_PARALLEL
     end if
-#endif
 
     if ( 'DOS-Elecs' .in. save_DATA ) then
 
@@ -1176,10 +1205,27 @@ contains
     integer, intent(in) :: N
     real(dp), intent(in) :: DOS(N)
 
-    integer :: iN
+    integer :: iN, cnt(3), idx(3)
 #ifdef MPI
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
+
+    if ( save_parallel ) then
+
+       idx = (/1,nE%iE(Node),ikpt/)
+       cnt(1) = N
+       cnt(2) = 1
+       cnt(3) = 1
+       if ( idx(2) <= 0 ) then
+          cnt = 0
+          idx = 1
+       end if
+       call ncdf_put_var(grp,var,DOS,start = idx, &
+            count = cnt )
+
+       return
+
+    end if
 
     if ( nE%iE(Node) > 0 ) then
        call ncdf_put_var(grp,var,DOS,start = (/1,nE%iE(Node),ikpt/) )
@@ -1226,24 +1272,19 @@ contains
     type(dict), intent(in) :: save_DATA
 
     type(hNCDF) :: ncdf, grp
-    integer :: nnzs_dev
+    integer :: nnzs_dev, iN, cnt(3), idx(3)
     real(dp), pointer :: J(:)
 #ifdef MPI
-    integer :: iN
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
     ! Open the netcdf file
-#ifdef NCDF_PARALLEL
     if ( save_parallel ) then
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE, &
+       call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
             comm = MPI_COMM_WORLD )
     else
-#endif
        call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-#ifdef NCDF_PARALLEL
     end if
-#endif
 
     J => val(orb_J)
     nnzs_dev = size(J)
@@ -1252,9 +1293,16 @@ contains
     call ncdf_open_grp(ncdf,trim(El%name),grp)
 
     ! Save the current
-    if ( nE%iE(Node) > 0 ) then
-       call ncdf_put_var(grp,'J',J,start = (/1,nE%iE(Node),ikpt/) )
+    idx = (/1,nE%iE(Node),ikpt/)
+    cnt(1) = nnzs_dev
+    cnt(2) = 1
+    cnt(3) = 1
+    if ( idx(2) <= 0 ) then
+       cnt = 0
+       idx = 1
     end if
+    call ncdf_put_var(grp,'J',J,start = idx, &
+         count = cnt )
 
 #ifdef MPI
     if ( .not. save_parallel ) then
