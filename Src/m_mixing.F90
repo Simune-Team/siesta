@@ -1798,7 +1798,7 @@ contains
        end if
 
        if ( associated(m%next) .and. m%n_itt > 0 ) then
-          write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+          write(*,'(2a,t50,''= '',a)') trim(fmt), &
                '    Following mixing method',trim(m%next%name)
        end if
           

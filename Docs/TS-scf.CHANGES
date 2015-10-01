@@ -1,4 +1,11 @@
 ----------------------------------------------------
+October 1, 2015 -- Nick Papior       trunk-477---ts-scf-536
+Bugfix for print-statement in m_mixing
+
+modified:
+  Src/m_mixing.F90
+
+----------------------------------------------------
 September 30, 2015 -- Nick Papior       trunk-477---ts-scf-535
 Improved memory estimation and reduced inv-tol in mixing
 
