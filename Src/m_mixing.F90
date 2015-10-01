@@ -88,6 +88,7 @@ module m_mixing
   public :: tMixer
   public :: mixing_init, mixing_history_clear
   public :: mixing, mixing_reset
+  public :: mixing_print
 
   public :: MIX_LINEAR, MIX_FIRE, MIX_PULAY, MIX_BROYDEN
 
@@ -288,7 +289,7 @@ contains
        if ( n_lin_before > 0 ) then
           im = im + 1
           m => mixers(im)
-          m%name = 'linear-before'
+          m%name = 'Linear-Before'
           m%m = MIX_LINEAR
           m%n_itt = n_lin_before
           m%w = w_lin_before
@@ -303,11 +304,11 @@ contains
        m%m = get_method(method)
        select case ( m%m )
        case ( MIX_LINEAR )
-          m%name = 'linear'
+          m%name = 'Linear'
        case ( MIX_PULAY )
-          m%name = 'pulay'
+          m%name = 'Pulay'
        case ( MIX_BROYDEN )
-          m%name = 'broyden'
+          m%name = 'Broyden'
        case default
           call die('mix: Unknown mixing option, error.')
        end select
@@ -320,7 +321,7 @@ contains
           ! Signal to switch to this index after
           ! convergence
           mixers(im2)%n_itt = - im
-          m%name = 'linear-after'
+          m%name = 'Linear-After'
           m%m = MIX_LINEAR
           m%w = w_lin_after
           m%n_itt = n_lin_after
@@ -335,7 +336,7 @@ contains
        if ( n_kick > 0 ) then
           im = im + 1
           m => mixers(im)
-          m%name = 'linear-kick'
+          m%name = 'Linear-Kick'
           m%n_itt = 1
           m%m = MIX_LINEAR
           m%w = w_kick
@@ -1709,6 +1710,101 @@ contains
     deallocate(mixs)
 
   end subroutine mixing_reset
+
+  subroutine mixing_print( mixers , prefix )
+    
+    type(tMixer), intent(in), target :: mixers(:)
+    character(len=*), intent(in), optional :: prefix
+
+    type(tMixer), pointer :: m
+    character(len=50) :: lpre, fmt
+
+    integer :: i
+
+    if ( .not. IONode ) return
+
+    lpre = 'SCF'
+    if ( present(prefix) ) lpre = trim(prefix)
+
+    fmt = 'mix.'//trim(lpre)//':'
+
+    ! Print out options for all mixers
+    do i = 1 , size(mixers)
+
+       m => mixers(i)
+
+       select case ( m%m )
+          
+       case ( MIX_LINEAR )
+          
+          write(*,'(2a,t50,''= '',a)') trim(fmt), &
+               ' Linear mixing',trim(m%name)
+          write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
+               '    Mixing weight',m%w
+
+       case ( MIX_PULAY )
+          
+          write(*,'(2a,t50,''= '',a)') trim(fmt), &
+               ' Pulay mixing',trim(m%name)
+
+          if ( m%v == 0 ) then
+             write(*,'(2a,t50,''= '',a)') trim(fmt), &
+                  '    Variant','original'
+          else if ( m%v == 1 ) then
+             write(*,'(2a,t50,''= '',a)') trim(fmt), &
+                  '    Variant','stable'
+          end if
+
+          write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+               '    History steps',m%n_hist
+          write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
+               '    Initial linear mixing weight',m%rv(1)
+          write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
+               '    Damping',m%w
+
+       case ( MIX_BROYDEN )
+          
+          write(*,'(2a,t50,''= '',a)') trim(fmt), &
+               ' Broyden mixing',trim(m%name)
+
+          if ( m%v == 0 ) then
+             write(*,'(2a,t50,''= '',a)') trim(fmt), &
+                  '    Variant','original'
+          else if ( m%v == 1 ) then
+             write(*,'(2a,t50,''= '',a)') trim(fmt), &
+                  '    Variant','restart'
+          end if
+
+          write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+               '    History steps',m%n_hist - 1
+          write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
+               '    Jacobian weight',m%w
+          write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
+               '    Weight prime',m%rv(1)
+          
+       case ( MIX_FIRE )
+          
+          write(*,'(2a,t50,''= '',a)') trim(fmt), &
+               ' Fire mixing',trim(m%name)
+
+       end select
+
+       if ( m%n_itt < 0 ) then
+          write(*,'(2a,t50,''= '',a)') trim(fmt), &
+               '    After convergence mixer',trim(mixers(-m%n_itt)%name)
+       else if ( m%n_itt > 0 ) then
+          write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+               '    Number of mixing iterations',m%n_itt
+       end if
+
+       if ( associated(m%next) .and. m%n_itt > 0 ) then
+          write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+               '    Following mixing method',trim(m%next%name)
+       end if
+          
+    end do
+
+  end subroutine mixing_print
 
 
   ! Calculate the inverse of a matrix

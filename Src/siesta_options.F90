@@ -375,7 +375,7 @@ MODULE siesta_options
     use m_target_stress, only: set_target_stress
 
     use m_mixing_scf, only: scf_mixs
-    use m_mixing, only: mixing_init
+    use m_mixing, only: mixing_init, mixing_print
 
     implicit none
     !----------------------------------------------------------- Input Variables
@@ -593,6 +593,7 @@ MODULE siesta_options
     if (ionode) then
        if (fire_mix) then
           write(6,*) "Fire Mixing"
+#ifdef OLD_MIXING
        else if (broyden_maxit .gt. 0) then
           write(6,5) 'redata: Broyden mixing with', &
                     broyden_maxit, &
@@ -606,6 +607,7 @@ MODULE siesta_options
                    ' iterations'
       else
         write(6,2)'redata: Mixing is linear'
+#endif
       endif
     endif
 
@@ -662,9 +664,11 @@ MODULE siesta_options
 
     ! Density Matrix Mixing  (proportion of output DM in new input DM)
     wmix = fdf_get('DM.MixingWeight',wmix_default)
+#ifdef OLD_MIXING
     if (ionode) then
       write(6,6) 'redata: New DM Mixing Weight',wmix
     endif
+#endif
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML,name='DM.MixingWeight', &
@@ -687,6 +691,7 @@ MODULE siesta_options
     ! Perform linear mixing each nkick SCF iterations (to kick system
     ! when it is pinned in a poorly convergent SCF loop)
     nkick = fdf_get('DM.NumberKick',0)
+#ifdef OLD_MIXING
     if (ionode) then
       if (nkick .ge. 1) then
         write(6,5) 'redata: Kick with linear mixing every',nkick,&
@@ -695,6 +700,7 @@ MODULE siesta_options
         write(6,2)'redata: No kicks to SCF'
       endif
     endif
+#endif
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML,name='DM.NumberKick',     &
@@ -1628,6 +1634,7 @@ MODULE siesta_options
 
     ! Read in mixing parameters (SCF)
     call mixing_init( scf_mixs )
+    call mixing_print( scf_mixs )
 
     ! We read in relevant data for ChargeGeometries block
     call read_charge_add( nspin , charnet )
