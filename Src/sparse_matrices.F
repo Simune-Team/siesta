@@ -24,6 +24,7 @@
 
       subroutine resetSparseMatrices( )
       use alloc,           only : de_alloc
+      use siesta_options, only  : MixH
       implicit none
 
       call de_alloc( listh,       'listh',       'sparseMat' )
@@ -36,6 +37,9 @@
       call de_alloc( Eold,        'Eold',        'sparseMat' )
       call de_alloc( Escf,        'Escf',        'sparseMat' )
       call de_alloc( H,           'H',           'sparseMat' )
+      if (MixH) then
+         call de_alloc( Hold,        'Hold',        'sparseMat' )
+      endif
       call de_alloc( H_kin,       'H_kin',       'sparseMat' )
       call de_alloc( H_vkb,       'H_vkb',       'sparseMat' )
       call de_alloc( xijo,        'xijo',        'sparseMat' )

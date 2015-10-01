@@ -1,4 +1,10 @@
 -------------------------------------------------
+2015-10-01  Alberto Garcia   trunk-478--elpa-2
+Sync to trunk-478. Added MRRR example
+
+* Added Tests/sih-mrrr
+
+-------------------------------------------------
 2014-01-19  Alberto Garcia   trunk-453--elpa-2
 Added real solver based on the MRRR method in Scalapack.
 

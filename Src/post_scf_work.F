@@ -34,9 +34,19 @@
 !     matrix is not calculated inside the SCF step, and
 !     so this must be done now
 
+!     Which Hamiltonian is used in this call? It must be the H
+!     that generated the DM, for consistency
+
       if ((isolve .eq. SOLVE_MINIM) .and.
      &    (.not. PreviousCallDiagon)) then
         if (minim_calc_eigenvalues) then
+           if (MixH .and. mix_after_convergence) then
+              ! probably better to have a logical 'h_is_pure'
+              if (ionode) then
+                 write(6,"(a)") ":!: SOLVE_MINIM: " //
+     $                "Generating Escf with a modified H..."
+              endif
+           endif
           call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      &                numh, listhptr, listh, numh, listhptr, listh, 
      &                H, S, qtot, fixspin, qs, temp, 1.0_dp, -1.0_dp,
@@ -64,11 +74,13 @@
 !     mix one final time after convergence
 
       if (ionode) then
-         if (mix_after_convergence .and. (.not. MixH)) then
+         if (mix_after_convergence .and. (.not. MixH)
+     $                             .and. (.not. mix_charge)) then
             write(6,"(/,a)")
-     $      "Using DM_mixed to compute the final energy and forces"
+     $      ":!: Using DM_mixed to compute the final energy and forces"
             write(6,"(a)")
-     $      "Consider using 'SCF.MixAfterConvergence F' or mixing H"
+     $      "Consider using 'SCF.MixAfterConvergence F', mixing H" //
+     $           " or mixing the charge density"
          else
             write(6,"(/,a)")
      $      "Using DM_out to compute the final energy and forces"

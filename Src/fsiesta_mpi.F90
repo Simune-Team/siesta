@@ -27,15 +27,16 @@
 !
 ! Interfaces of public procedures:
 !
-!   subroutine siesta_launch( label, nnodes, mpi_comm, mpi_launcher )
+!   subroutine siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
 !     character(len=*),intent(in) :: label    : Name of siesta process
 !                                               (prefix of its .fdf file)
 !     integer,optional,intent(in) :: nnodes   : Number of MPI processes
 !                                               reserved for each siesta process
 !     integer,optional,intent(in) :: mpi_comm : MPI communicator defined by the
 !                                               calling program for siesta use
-!     character(len=*),optional,intent(in):: mpi_launcher (not used: MPI must be
-!                                                        started by master prog)
+!     character(len=*),optional,intent(in):: launcher (not used in this version)
+!     logical,optional,intent(in) :: localhost : will siesta run at localhost?
+!                                                (not used in this version)
 !   end subroutine siesta_launch
 !
 !   subroutine siesta_units( length, energy )
@@ -101,6 +102,9 @@
 ! - siesta_units may be called either before or after siesta_launch
 ! - The stress is defined as dE/d(strain)/Volume, with a positive sign
 !   when the system tends to contract (negative pressure)
+! - Output unit 6 should be open explicitly, assigning it to a file, before
+!   calling siesta_launch. Otherwise, the output of print (or write(unit=6)),
+!   after calling siesta_launch, may be written on a file named MAIN_OUTPUT.
 !
 ! Sample usage for serial MD simulation:
 !   use fsiesta, only: siesta_forces, siesta_get
@@ -121,6 +125,8 @@
 !   integer:: error, MPI_Comm_Siesta, myNode, myNudge
 !   integer:: na, nNodes, nNudges, siestaNodes
 !   real*8 :: energy, cell(3,3), stress(3,3), fa(3,maxAtoms), xa(3,maxAtoms)
+!   close(6)
+!   open(6,file='neb.out')
 !   call MPI_Comm_Rank( MPI_Comm_World, myNode, error )
 !   call MPI_Comm_Size( MPI_Comm_World, nNodes, error )
 !   ! Set distribution of MPI processes by
@@ -194,8 +200,6 @@ MODULE fsiesta
                                                               ! MPI_COMM_WORLD
   use mpi_siesta, only: MPI_Comm_Siesta => MPI_Comm_World ! What siesta uses
                                                           ! as MPI_Comm_World
-  use mpi_siesta, only: MPI_Init              ! Initialize MPI
-  use mpi_siesta, only: MPI_Initialized       ! Has MPI been initialized?
   use mpi_siesta, only: MPI_Integer           ! Integer data type
   use mpi_siesta, only: MPI_Character         ! Character data type
   use mpi_siesta, only: MPI_Double_Precision  ! Real double precision type
@@ -215,6 +219,7 @@ PRIVATE ! Nothing is declared public beyond this point
 
 ! Global module variables
   integer,      parameter :: maxLenLabel = 32
+  integer,      parameter :: maxLenFile = 300
   logical,           save :: siesta_launched = .false.
   logical,           save :: siesta_quitted  = .false.
   logical,           save :: analysed = .false.
@@ -225,6 +230,8 @@ PRIVATE ! Nothing is declared public beyond this point
   character(len=32), save :: funit = 'eV/Ang'
   character(len=32), save :: sunit = 'eV/Ang**3'
   character(len=maxLenLabel):: myLabel = ' '
+  character(len=*),parameter:: mainOutFileDef = 'MAIN_OUTPUT'
+  character(len=maxLenFile) :: mainOutFile = mainOutFileDef
 
 interface siesta_get
   module procedure siesta_get_rank0, siesta_get_rank1, siesta_get_rank2
@@ -234,17 +241,19 @@ CONTAINS
 
 !---------------------------------------------------
 
-subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
+subroutine siesta_launch( label, nNodes, mpi_comm, launcher, localhost )
   implicit none
   character(len=*),  intent(in) :: label    ! Name of the siesta process
   integer, optional, intent(in) :: nNodes   ! Number of MPI processes to be used
   integer, optional, intent(in) :: mpi_comm ! MPI communicator to be used
-  character(len=*),optional,intent(in):: mpi_launcher ! Not used in this version
+  character(len=*),optional,intent(in):: launcher  ! Not used in this version
+  logical,         optional,intent(in):: localhost ! Not used in this version
 
 #ifdef MPI
-  logical:: initialized, labelFound
+  logical:: initialized, labelFound, mainOutFileOpened
   integer:: error, iColor, iNode, lenLabel, &
-            myColor, myLenLabel, myNode, nColors, siestaNodes, totNodes
+            myColor, myLenLabel, myNode, mySiestaNode, &
+            nColors, siestaNodes, totNodes
   integer,  allocatable:: color(:)
   character(len=maxLenLabel):: rootLabel
   character(len=maxLenLabel),allocatable:: colorLabel(:), nodeLabel(:)
@@ -344,6 +353,25 @@ subroutine siesta_launch( label, nNodes, mpi_comm, mpi_launcher )
   if (myLabel/=rootLabel) &
     call die('siesta_launch: ERROR: label mismatch in siesta process')
 
+! Store name of output file of the calling program
+  inquire( unit=6, name=mainOutFile )
+  inquire( file=mainOutFile, opened=mainOutFileOpened )
+  if (.not.mainOutFileOpened) mainOutFile = mainOutFileDef
+! DEBUG
+!  if (myNode==0) print*,'siesta_launch: mainOutFile= ',trim(mainOutFile)
+! END DEBUG
+
+! Create a directory for each siesta process, e.g.
+!   mkdir -p H2O_proc07
+!   cp -n H2O_proc07.* *.fdf *.psf *.vps *.ion H2O_proc07 2> /dev/null
+  call MPI_Comm_Rank( MPI_Comm_Siesta, mySiestaNode, error )
+  if (mySiestaNode==0) then
+    call system('mkdir -p '//trim(label))
+    call system('cp -n ' // trim(label) // '.* ' // trim(label))
+    call system('cp -n *.fdf *.vps *.psf *.ion ' &
+                // trim(label) // ' 2> /dev/null')
+  endif
+
 #endif
 
 ! Initialize flags and counters
@@ -413,14 +441,22 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
     call die('siesta_forces: ERROR: input mismatch among MPI processes')
 #endif
 
+#ifdef MPI
+! Change directory and set output file
+  call chdir(trim(label))
+  close(unit=6)
+  open(unit=6, file=trim(label)//'.out', position='append')
+#endif
+
 ! Copy master's coordinates to master repository
   call setCoordsFromMaster( na, xa, myCell )
 
 ! BEGIN DEBUG: Print coords
   if (myNode==0) then
-    print'(/,2a)',         'siesta_forces: label = ', trim(label)
-    print'(3a,/,(3f12.6))','siesta_forces: cell (',trim(xunit),') =',myCell
-    print'(3a,/,(3f12.6))','siesta_forces: xa (',trim(xunit),') =', xa
+    write(6,'(/,2a)'),         'siesta_forces: label = ', trim(label)
+    write(6,'(3a,/,(3f12.6))'),'siesta_forces: cell (',trim(xunit),') =',myCell
+    write(6,'(3a,/,(3f12.6))'),'siesta_forces: xa (',trim(xunit),') =', xa
+    write(6,*) ' '
   end if
 ! END DEBUG
 
@@ -440,9 +476,10 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 
 ! BEGIN DEBUG: Print forces
   if (myNode==0) then
-    print'(/,3a,f12.6)',    'siesta_forces: energy (',trim(eunit),') =', e
-    print'(3a,/,(3f12.6))', 'siesta_forces: stress (',trim(sunit),') =', s
-    print'(3a,/,(3f12.6))', 'siesta_forces: forces (',trim(funit),') =', f
+    write(6,'(/,3a,f12.6)'),    'siesta_forces: energy (',trim(eunit),') =', e
+    write(6,'(3a,/,(3f12.6))'), 'siesta_forces: stress (',trim(sunit),') =', s
+    write(6,'(3a,/,(3f12.6))'), 'siesta_forces: forces (',trim(funit),') =', f
+    write(6,*) ' '
   end if
 ! END DEBUG
 
@@ -453,6 +490,13 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 
 ! Flag that post processing analysis has not been done for this geometry
   analysed = .false.
+
+#ifdef MPI
+! Go back to parent directory and reset output file
+  call chdir('..')
+  close(unit=6)
+  open(unit=6, file=trim(mainOutFile), position='append')
+#endif
 
 end subroutine siesta_forces
 
@@ -503,6 +547,13 @@ recursive subroutine siesta_get_value( label, property, vsize, value, units )
 
   character(len=132):: error, message
 
+#ifdef MPI
+! Change directory and set output file
+  call chdir(trim(label))
+  close(unit=6)
+  open(unit=6, file=trim(label)//'.out', position='append')
+#endif
+
 ! Check that siesta has been launched
   if (.not.siesta_launched) call die('siesta_get: ERROR: siesta not launched')
 
@@ -529,6 +580,13 @@ recursive subroutine siesta_get_value( label, property, vsize, value, units )
     call die( trim(message) )
   end if ! (error=='unknown_property')
 
+#ifdef MPI
+! Go back to parent directory and reset output file
+  call chdir('..')
+  close(unit=6)
+  open(unit=6, file=trim(mainOutFile), position='append')
+#endif
+
 end subroutine siesta_get_value
 
 !---------------------------------------------------
@@ -536,6 +594,13 @@ end subroutine siesta_get_value
 subroutine siesta_quit( label )
   implicit none
   character(len=*), intent(in) :: label
+
+#ifdef MPI
+! Change directory and set output file
+  call chdir(trim(label))
+  close(unit=6)
+  open(unit=6, file=trim(label)//'.out', position='append')
+#endif
 
   if (.not.siesta_launched) then
     call die('siesta_quit: ERROR: no siesta process launched')
@@ -548,6 +613,13 @@ subroutine siesta_quit( label )
 
   siesta_launched = .false.
   siesta_quitted  = .true.
+
+#ifdef MPI
+! Go back to parent directory and reset output file
+  call chdir('..')
+  close(unit=6)
+  open(unit=6, file=trim(mainOutFile), position='append')
+#endif
 
 end subroutine siesta_quit
 

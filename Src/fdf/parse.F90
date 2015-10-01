@@ -31,6 +31,7 @@
 ! * Tokens that can be read as real numbers are assigned to class
 ! 'values' and given a token id 'v'. These are further classified as
 ! 'integers' (id 'i') or 'reals' (id 'r').
+! * A special class is the 'list' which is an integer list 'a'
 ! * All other tokens are tagged as 'names' (id 'n').
 ! 
 ! The recommended usage follows the outline:
@@ -107,12 +108,13 @@
 !    - A 'j' is matched by both an 'integer' and a 'name'.
 !    - A 's' is matched by an 'integer', a 'real', and a 'name'.
 !    - A 'x' is matched by any kind of token.
+!    - A 'a' is matched by a list.
 !
 !    This function can take an optional keyword 'after=' (see below).
 ! 
-! b) Number functions: ntokens ('n|i|r|b|e|l'), nnames ('n'), nreals ('r'),
+! b) Number functions: ntokens ('n|i|r|b|e|l|a'), nnames ('n'), nreals ('r'),
 !                      nintegers ('i'), nvalues ('i|r'), nblocks ('b'),
-!                      nendblocks ('e'), nlabels ('l')
+!                      nendblocks ('e'), nlabels ('l'), nlists('a')
 ! 
 !    These functions return the number of tokens of each kind in 'line':
 ! 
@@ -120,10 +122,10 @@
 ! 
 !    These functions can take an optional keyword 'after=' (see below).
 ! 
-! c) Extraction functions: tokens ('n|i|r|b|e|l'), names ('n'), reals ('r'),
+! c) Extraction functions: tokens ('n|i|r|b|e|l|a'), names ('n'), reals ('r'),
 !                          characters,
 !                          integers ('i'), values ('i|r'), blocks ('b'),
-!                          endblocks ('e'), labels ('l')
+!                          endblocks ('e'), labels ('l'), lists('a') <- a subroutine
 ! 
 !    These functions return a piece of data which corresponds to a token
 !    of the specified kind with sequence number matching the index
@@ -366,6 +368,25 @@ MODULE parse
     END FUNCTION nvalues
 
 !
+!   Return the number of lists in the tokens.
+!
+    FUNCTION nlists(pline, after)
+      implicit none
+!------------------------------------------------- Input Variables
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!------------------------------------------------ Output Variables
+      integer(ip)                       :: nlists
+
+!----------------------------------------------------------- BEGIN
+      nlists = nitems('a', pline, after)
+
+      RETURN
+!------------------------------------------------------------- END
+    END FUNCTION nlists
+
+!
 !   Return the number of names in the tokens.
 !
     FUNCTION nnames(pline, after)
@@ -578,6 +599,177 @@ MODULE parse
       RETURN
 !------------------------------------------------------------- END
     END FUNCTION reals
+
+!
+!   Return a given real token, specifying it by its sequence
+!   number. It is also possible to make the sequence start after
+!   a given token number in the line.
+!
+    SUBROUTINE lists(pline, ind, ni, list, after)
+      implicit none
+!------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!------------------------------------------------ Output Variables
+      integer(ip)                       :: ni, list(ni)
+
+!------------------------------------------------- Local Variables
+      logical                           :: found
+      integer(ip)                       :: i, j, starting_pos
+
+      character(len=MAX_LENGTH)         :: llist, sep
+      type(parsed_line), pointer        :: lpline
+      integer(ip)                       :: iR, lR, uR, sR
+      integer(ip)                       :: ti, lprev, li
+      logical                           :: count, is_del
+
+!----------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: reals', 'Wrong starting position',    &
+                   THIS_FILE, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      i = starting_pos+1
+      j = 0
+      found = .FALSE.
+      count = .FALSE.
+      do while((.not. found) .and. (i .le. pline%ntokens))
+        if (leqi(pline%id(i), 'a')) j = j + 1
+        if (j .eq. ind) then
+
+           found = .TRUE.
+
+           ! Parse token list
+           llist = tokens(pline,i)
+           NULLIFY(lpline)
+           ! The list does have the markers attached (remove them)
+           li = len_trim(llist)-1
+           llist = trim(llist(2:li))
+           lpline => digest(llist)
+
+           ! We now have converted the list into a
+           ! parseable line
+           
+           ! Does the user request length?
+           count = ni <= 0
+           li = 0 ! counter for the number of items in the list
+           ti = 1 ! the token iterator
+           is_del = .false.
+           do while ( ti < lpline%ntokens ) 
+
+              ! First we need to check whether we have a list delimiter next
+              if (leqi(lpline%id(ti+1),'n')) then
+                 sep = names(lpline,1,after=ti)
+                 is_del = leqi(sep,',') ! apparently ',' is not a token
+              end if
+
+              if (leqi(lpline%id(ti+1),'n').and. .not. is_del) then
+                 ! We have a range
+
+                 if ( lpline%ntokens <= ti + 1 ) then
+                    call die('PARSE module: lists', 'Missing end range', &
+                         THIS_FILE, __LINE__)
+                 end if
+                 if ( .not.leqi(lpline%id(ti),'i') .or. &
+                      .not.leqi(lpline%id(ti+2),'i') ) then
+                    call die('PARSE module: lists', 'Range is not well-defined', &
+                         THIS_FILE, __LINE__)
+                 end if
+
+                 ! grab the seperator
+                 sep = names(lpline,1,after=ti)
+                 if ( leqi(sep,'to') .or. &
+                      leqi(sep,'--') .or. &
+                      leqi(sep,'---') ) then
+
+                    ! Sort the range
+                    lR = integers(lpline,1,after=ti-1)
+                    uR = integers(lpline,1,after=ti+1)
+                    sR = 1
+
+                    ! Figure out if we have a step in the range
+                    if ( ti + 3 < lpline%ntokens ) then
+                       if ( leqi(lpline%id(ti+3),'n') .and. &
+                          leqi(lpline%id(ti+4),'i') ) then
+                          sep = names(lpline,1,after=ti+2)
+                          if ( leqi(sep,'step') ) then
+                             sR = integers(lpline,1,after=ti+3)
+                             ! step after the 'step <val>'
+                             ti = ti + 2
+                          end if
+                       end if
+                    end if
+                    
+                    ! Correct sign of stepper
+                    if ( uR < lR ) sR = min(-sR,sR)
+                    do iR = lR , uR, sR
+                       call add_exit(count,li,ni,iR)
+                    end do
+
+                    ! jump across the range
+                    ti = ti + 2
+                 else
+                    call die('PARSE module: lists', 'Unknown token in list', &
+                         THIS_FILE, __LINE__)
+                 end if
+
+              elseif (leqi(lpline%id(ti),'i')) then
+
+                 call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
+              end if
+
+              ti = ti + 1
+              if ( is_del ) then
+                 ti = ti + 1 
+                 is_del = .false.
+              end if
+
+              ! We do a last check to get all entries with
+              if ( ti == lpline%ntokens ) then
+                 if (leqi(lpline%id(ti),'i')) then
+                    call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
+                 end if
+              end if
+           end do
+
+           if ( count ) ni = li
+
+        endif
+        i = i + 1
+      enddo
+
+      if (.not. found) then
+        call die('PARSE module: lists', 'Not enough lists in line',     &
+                 THIS_FILE, __LINE__)
+      endif
+
+      RETURN
+!------------------------------------------------------------- END
+
+    contains
+      
+      subroutine add_exit(is_counting,idx,ni,val)
+        logical, intent(in) :: is_counting
+        integer, intent(inout) :: idx
+        integer, intent(in) :: ni, val
+        idx = idx + 1
+        if ( .not. is_counting ) then
+           if ( idx > ni ) then
+              found = .false.
+           else
+              list(idx) = val
+           end if
+        end if
+      end subroutine add_exit
+
+    END SUBROUTINE lists
 
 !
 !   Return a given [integer|real] token, specifying it by its sequence
@@ -878,10 +1070,10 @@ MODULE parse
                    THIS_FILE, __LINE__, rc=666)
       endif
 
+      pline%line        = line
       do i= 1, ntokens
          pline%first(i) = first(i)
          pline%last(i)  = last(i)
-         pline%line     = line
          pline%id(i)    = token_id(i)
       enddo
 
@@ -904,12 +1096,13 @@ MODULE parse
 
 !------------------------------------------------- Local Variables
       logical                      :: intoken, instring, completed
+      logical                      :: inlist
       integer(ip)                  :: i, c, stringdel
 
 !     Character statement functions
       logical :: is_digit, is_upper, is_lower, is_alpha,                &
                  is_alnum, is_extra, is_tokch
-      logical :: is_comment, is_delstr, is_special
+      logical :: is_comment, is_delstr, is_dellist, is_special
 
       is_digit(i) = (i .ge. 48) .and. (i .le. 57)
       is_upper(i) = (i .ge. 65) .and. (i .le. 90)
@@ -931,6 +1124,9 @@ MODULE parse
 !     String delimiters: "  '  `
       is_delstr(i)  = (i .eq. 34) .or. (i .eq. 39) .or. (i .eq. 96)
 
+!     List delimiters: { }
+      is_dellist(i)  = (i .eq. 123) .or. (i .eq. 125)
+
 !     Special characters which are tokens by themselves: <
       is_special(i) = (i .eq. 60)
 
@@ -939,6 +1135,7 @@ MODULE parse
 
       intoken  = .FALSE.
       instring = .FALSE.
+      inlist   = .FALSE.
       stringdel = 0
 
       i = 1
@@ -948,7 +1145,7 @@ MODULE parse
 
 !       Possible comment...
         if (is_comment(c)) then
-          if (instring) then
+          if (instring.or.inlist) then
             last(ntokens) = i
           else
             completed = .TRUE.
@@ -965,12 +1162,28 @@ MODULE parse
 
 !       Character that forms a token by itself...
         elseif (is_special(c)) then
-          if (.not. instring) then
+          if (.not. instring .and. .not. inlist) then
             ntokens = ntokens + 1
             first(ntokens) = i
             intoken = .FALSE.
           endif
           last(ntokens) = i
+
+!      List delimiter... We only allow single lists, not nested lists
+       elseif (is_dellist(c)) then
+          if (.not. instring .and. .not. inlist) then
+             inlist  = .TRUE.
+             intoken = .TRUE.
+             ntokens = ntokens + 1
+             first(ntokens) = i
+          elseif (inlist) then
+             ! end list (skip last token)
+             intoken = .FALSE.
+             inlist  = .FALSE.
+             last(ntokens) = i
+          else
+             last(ntokens) = i
+          end if
 
 !       String delimiter... make sure it is the right one before closing.
 !       If we are currently in a token, the delimiter is appended to it.
@@ -998,7 +1211,7 @@ MODULE parse
 
 !       Token delimiter...
         else
-          if (instring) then
+          if (instring.or.inlist) then
             last(ntokens) = i
           else
             if (intoken) intoken = .FALSE.
@@ -1033,13 +1246,18 @@ MODULE parse
 
 !------------------------------------------------- Local Variables
       character(len=MAX_LENGTH) :: token, msg
-      integer(ip)               :: i, ierr
+      integer(ip)               :: i, j, ierr
       real(dp)                  :: real_value
 
 !----------------------------------------------------------- BEGIN
       do i= 1, ntokens
         token = line(first(i):last(i))
-        if (is_value(token)) then
+        j = last(i) - first(i) + 1
+        if ( ichar(token(1:1)) .eq. 123 .and. &
+             ichar(token(j:j)) .eq. 125 ) then
+           ! if the token starts with { and ends with }, it will be a list
+           token_id(i) = 'a'
+        elseif (is_value(token)) then
 
 !         This read also serves to double check the token for
 !         real meaning (for example, ".d0" should give an error)
@@ -1088,13 +1306,15 @@ MODULE parse
 !----------------------------------------------------------- BEGIN
 
 !     Check if token_id is a valid morphology id
+!     'a' -> List
 !     'l' -> Label
 !     'b' -> BeginBlock
 !     'e' -> EndBlock
 !     'i' -> Integer
 !     'r' -> Real
 !     'n' -> Name
-      if ((token_id .ne. 'l') .and. (token_id .ne. 'b') .and.           &
+      if ((token_id .ne. 'a') .and. (token_id .ne. 'l') .and. &
+          (token_id .ne. 'b') .and.           &
           (token_id .ne. 'e') .and. (token_id .ne. 'i') .and.           &
           (token_id .ne. 'r') .and. (token_id .ne. 'n')) then        
         write(msg,*) 'Morphology id = ''', token_id,                    &
@@ -1349,6 +1569,12 @@ MODULE parse
                if (.not.(leqi(id,'i') .or.   &
                          leqi(id,'r') .or.   &
                          leqi(id,'n')  )) then
+                  match = .false.
+               endif
+
+          !  a: array (list)
+            else if (leqi(c,'a')) then
+               if (.not.(leqi(id,'a')) ) then
                   match = .false.
                endif
 

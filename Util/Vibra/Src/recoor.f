@@ -117,11 +117,11 @@ c read atomic coordinates and species
      .    then
           do ia = 1,na
             if (.not. fdf_bline(bfdf,pline)) then
-               call die('vibrator: Not enough lines in ' //
+               call die('vibra: Not enough lines in ' //
      .              'AtomicCoordinatesAndAtomicSpecies block')
             endif
             if (.not. fdf_bmatch(pline,'vvviv')) then
-               call die("vibrator: not enough values in Coords line")
+               call die("vibra: not enough values in Coords line")
             endif
 
             xa(1,ia) = fdf_bvalues(pline,1)

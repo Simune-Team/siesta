@@ -27,7 +27,6 @@
       use metaforce,          only: initmeta
       use m_mpi_utils,        only: broadcast
       use alloc,              only: re_alloc, alloc_report
-      use phonon,             only: phonon_num_disps, phonon_setup
       use parallelsubs,       only: getnodeorbs
       use m_iostruct,         only: write_struct, read_struct
       use zmatrix,            only: lUseZmatrix
@@ -134,7 +133,6 @@
       Eharrs  = 0.0_dp
       Eions   = 0.0_dp
       Ekinion = 0.0_dp
-      Elast   = 0.0_dp
       Emad    = 0.0_dp
       Emeta   = 0.0_dp
       Emm     = 0.0_dp
@@ -190,6 +188,9 @@
       call broadcast( ns )
 
       call broadcast_basis( )
+
+      call register_rfs()
+!     call test_register()
 
       atmonly = fdf_get( 'Atom-Setup-Only', .false. )
       if (atmonly) call bye( 'End of atom setup' )
@@ -389,9 +390,7 @@
         inicoor = 0
         fincoor = (ia2-ia1+1)*3*2
       else if (idyn .eq. 7) then
-        call phonon_setup()
-        inicoor = 1
-        fincoor = phonon_num_disps
+        call die( "'PHONON' support is deprecated" )
       else if (idyn .eq. 8) then
         inicoor = 0
         fincoor = huge(1)

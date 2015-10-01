@@ -20,16 +20,21 @@ OBJDIR=Obj
 OBJ_DIR=$(SIESTA_DIR)/$(OBJDIR)
 #
 .SUFFIXES:
-.SUFFIXES: .f .F .o .a .f90 .F90
+.SUFFIXES: .c .f .F .o .a .f90 .F90
 #
 VPATH=$(SRC_DIR)
 #
-#  simple_pipes_serial   : Simple serial test with pipes version
-#  simple_pipes_parallel : Simple parallel test with pipes version
-#  simple_mpi_serial     : Simple serial test with MPI version
-#  simple_mpi_parallel   : Simple parallel test with MPI version
+#  simple_pipes_serial     : Simple serial test with pipes version
+#  simple_pipes_parallel   : Simple parallel test with pipes version
+#  simple_sockets_serial   : Simple serial test with sockets version
+#  simple_sockets_parallel : Simple parallel test with sockets version
+#  simple_mpi_serial       : Simple serial test with MPI version
+#  simple_mpi_parallel     : Simple parallel test with MPI version
 #
+# default: simple_pipes_serial simple_sockets_serial clean
+
 default: simple_pipes_serial simple_pipes_parallel \
+	simple_sockets_serial simple_sockets_parallel \
 	simple_mpi_serial simple_mpi_parallel clean 
 #
 ARCH_MAKE=$(OBJ_DIR)/arch.make
@@ -39,9 +44,10 @@ include $(ARCH_MAKE)
 #
 #FFLAGS=$(FFLAGS_DEBUG)
 #
-# Routines used by pipes version (VPATH knows where they are)
+# Routines used by pipes and sockets versions (VPATH knows where they are)
 #
-FSIESTA= fsiesta_pipes.o pxf.o
+FSIESTA_PIPES= fsiesta_pipes.o pxf.o
+FSIESTA_SOCKETS= fsockets.o sockets.o fsiesta_sockets.o 
 #
 # Siesta libraries used by MPI version
 #
@@ -61,12 +67,22 @@ libs_collected:
 #
 # Pipes version
 #
-simple_pipes_serial: $(FSIESTA) simple_serial.o
-	$(FC) $(LDFLAGS) -o simple_pipes_serial $(FSIESTA) simple_serial.o 
+simple_pipes_serial: $(FSIESTA_PIPES) simple_serial.o
+	$(FC) $(LDFLAGS) -o simple_pipes_serial $(FSIESTA_PIPES) simple_serial.o 
 #
-simple_pipes_parallel: $(FSIESTA) simple_pipes_parallel.o
+simple_pipes_parallel: $(FSIESTA_PIPES) simple_parallel.o
 	$(FC) $(LDFLAGS) -o simple_pipes_parallel \
-	      $(FSIESTA) simple_pipes_parallel.o
+	      $(FSIESTA_PIPES) simple_parallel.o
+#
+# Sockets version
+#
+simple_sockets_serial: $(FSIESTA_SOCKETS) simple_serial.o
+	$(FC) $(LDFLAGS) -o simple_sockets_serial \
+	      $(FSIESTA_SOCKETS) simple_serial.o 
+#
+simple_sockets_parallel: $(FSIESTA_SOCKETS) simple_parallel.o
+	$(FC) $(LDFLAGS) -o simple_sockets_parallel \
+	      $(FSIESTA_SOCKETS) simple_parallel.o
 #
 # MPI version
 #
@@ -88,6 +104,7 @@ clean:
 pristine: 
 	@echo "==> Cleaning all intermediate and executable files"
 	rm -f simple_pipes_serial simple_pipes_parallel 
+	rm -f simple_sockets_serial simple_sockets_parallel 
 	rm -f simple_mpi_serial simple_mpi_parallel
 	rm -f phonons
 	rm -f *.a *.o *.mod libs_collected

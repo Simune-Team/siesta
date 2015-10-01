@@ -34,6 +34,15 @@ conv%counter   = 0
 end subroutine set_tolerance
 
 !--------------------------------------
+function tolerance(conv)
+type(converger_t), intent(in) :: conv
+real(dp)                      :: tolerance
+
+tolerance = conv%tolerance
+
+end function tolerance
+
+!--------------------------------------
 function is_converged(conv) result(converged)
 type(converger_t), intent(in) :: conv
 logical                       :: converged

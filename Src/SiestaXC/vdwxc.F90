@@ -13,6 +13,7 @@
 ! of Vydrov and Van Voorhis. See that module for more information.
 ! Refs: M.Dion et al, PRL 92, 246401 (2004)
 !       J.Klimes et al, JPCM 22, 022201 (2009)
+!       V.R.Cooper, PRB 81, 161104(R) (2010)
 !       K.Lee et al, PRB 82, 081101 (2010)
 !       O.A.Vydrov and T.VanVoorhis, JCP 133, 244103 (2010)
 !       G.Roman-Perez and J.M.Soler, PRL 103, 096102 (2009)
@@ -21,7 +22,6 @@
 ! Used module procedures:
 !  use sys,         only: die               ! termination routine
 !  use mesh1D,      only: derivative        ! Derivative of a function in a mesh
-!  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
 !  use m_ggaxc      only: ggaxc             ! General GGA XC routine
 !  use m_ldaxc,     only: ldaxc             ! General LDA XC routine
 !  use mesh1D,      only: integral          ! Integral of a function in a mesh
@@ -30,8 +30,8 @@
 !  use m_radfft,    only: radfft            ! Radial fast Fourier transform
 !  use mesh1D,      only: set_interpolation ! Sets interpolation method
 !  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-!  use m_recipes,   only: spline            ! Sets spline in a uniform mesh
-!  use m_recipes,   only: splint            ! Performs spline interpolation
+!  use interpolation, only: spline            ! Sets spline interpolation
+!  use interpolation, only: splint            ! Calculates spline interpolation
 !  use m_vv_vdwxc,  only: vv_vdw_beta       ! Parameter beta of VV2010 functionl
 !  use m_vv_vdwxc,  only: vv_vdw_theta      ! Func. theta of VV2010 functional
 !  use m_vv_vdwxc,  only: vv_vdw_get_kmesh  ! Size and values of (kf,kg) mesh
@@ -155,7 +155,7 @@
 !   Sets the functional flavour (author initials) and subsequent parameters
 ! Arguments:
 !   character(len=*),intent(in):: author ! Functnl flavour 
-!                                          ('DRSLL'|'LMKLL'|'KBM')
+!                                     ('DRSLL'|'LMKLL'|'KBM'|'C09'|'BH'|'VV')
 ! Notes:
 ! - If vdw_set_author is not called, author='DRSLL' is set by default
 ! - Stops with an error message if author has not an allowed value
@@ -241,7 +241,6 @@ MODULE m_vdwxc
 ! Used module procedures
   use sys,         only: die               ! termination routine
   use mesh1D,      only: derivative        ! Derivative of a function in a mesh
-  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
   use mesh1D,      only: integral          ! Integral of a function in a mesh
   use mesh1D,      only: get_mesh          ! Returns the mesh points
   use mesh1D,      only: get_n             ! Returns the number of mesh points
@@ -251,8 +250,8 @@ MODULE m_vdwxc
   use alloc,       only: re_alloc          ! Re-allocation routine
   use mesh1D,      only: set_interpolation ! Sets interpolation method
   use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-  use m_recipes,   only: spline            ! Sets spline in a uniform mesh
-  use m_recipes,   only: splint            ! Performs spline interpolation
+  use interpolation,only: spline           ! Sets spline interpolation
+  use interpolation,only: splint           ! Calculates spline interpolation
   use m_vv_vdwxc,  only: vv_vdw_beta       ! Parameter beta of VV2010 functional
   use m_vv_vdwxc,  only: vv_vdw_theta      ! Func. theta of VV2010 functional
   use m_vv_vdwxc,  only: vv_vdw_get_kmesh  ! Size and values of (kf,kg) mesh
@@ -330,7 +329,7 @@ PRIVATE  ! Nothing is declared public beyond this point
   ! Mesh parameters for table of phi(q1,q2,r) and its Fourier transform
   integer, parameter:: nr = 2048             ! Radial mesh points (power of 2)
   integer, parameter:: mq = 30               ! Total number of q mesh points
-  integer, parameter:: nq = mq-1             ! Effective number of q mesh points
+!  integer, parameter:: nq = mq-1             ! Effective number of q mesh points
   real(dp),parameter:: qcut = 5.0_dp         ! Max. value of q mesh
   real(dp),parameter:: dqmaxdqmin = 20.0_dp  ! Last q mesh interval / first one
   real(dp),parameter:: rcut = 100._dp        ! Radial cutoff: r>rcut => phi=0
@@ -933,8 +932,8 @@ subroutine pofq( q0, p0, dp0dq0 )
     p = 0
     do iq = 1,mq
       p(iq,iq) = 1
-      call generate_spline( qmesh, p(:,iq), mq, d2pdq2(:,iq) )
-!      call generate_spline( qmesh, p(:,iq), mq, d2pdq2(:,iq), 0._dp, 0._dp )
+      call spline( qmesh, p(:,iq), mq, 1.e30_dp, 1.e30_dp, d2pdq2(:,iq) )
+!      call spline( qmesh, p(:,iq), mq, 0._dp, 0._dp, d2pdq2(:,iq) )
     end do
     first_call = .false.
   end if
@@ -1323,14 +1322,6 @@ subroutine set_qmesh()
   implicit none
   integer :: nmesh
 
-#ifdef DEBUG_XC
-!      real(dp):: a, b
-!      a = log(20.0_dp) / (20-1)
-!      b = 8.0_dp / (exp(a*(20-1)) - 1)
-!      qcut = b * (exp(a*(nq-1)) - 1)
-!      dqmaxdqmin = exp(a*(nq-1))
-#endif /* DEBUG_XC */
-
   call set_mesh( mq, xmax=qcut, dxndx1=dqmaxdqmin )
   call get_mesh( mq, nmesh, qmesh )
   qmesh_set = .true.
@@ -1441,9 +1432,9 @@ subroutine vdw_get_qmesh( n, q )
   end if
 
   if (.not.qmesh_set) call set_qmesh()
-  n = nq
+  n = mq
   if (present(q)) then
-    nmax = max( nq, size(q) )
+    nmax = max( mq, size(q) )
     q(1:nmax) = qmesh(1:nmax)
   end if
 end subroutine vdw_get_qmesh
@@ -1483,26 +1474,40 @@ subroutine vdw_localxc( iRel, nSpin, D, GD, epsX, epsC, &
 
 ! Call the appropriate GGA functional.
 ! Use aux arrays to avoid overwritting the wrong ones
-  if (vdw_author=='DRSLL') then
+  if (vdw_author=='DRSLL' .or. vdw_author=='drsll' .or. &
+      vdw_author=='DF1' .or. vdw_author=='df1') then
     ! Dion et al, PRL 92, 246401 (2004)
     ! GGA exchange and LDA correlation (we choose PW92 for the later)
     call GGAxc( 'revPBE', iRel, nSpin, D, GD, epsX, epsAux, &
                  dEXdD, dEdDaux, dEXdGD, dEdGDaux )
     call LDAxc( 'PW92', iRel, nSpin, D, epsAux, epsC,  &
                 dEdDaux, dECdD, dVXdD, dVCdD )
-  else if (vdw_author=='LMKLL') then
+  else if (vdw_author=='LMKLL' .or. vdw_author=='lmkll' .or. &
+           vdw_author=='DF2' .or. vdw_author=='df2') then
     ! Lee et al, PRB 82, 081101 (2010)
     call GGAxc( 'PW86R', iRel, nSpin, D, GD, epsX, epsAux, &
                  dEXdD, dEdDaux, dEXdGD, dEdGDaux )
     call LDAxc( 'PW92', iRel, nSpin, D, epsAux, epsC,  &
                 dEdDaux, dECdD, dVXdD, dVCdD )
-  else if (vdw_author=='KBM') then
+  else if (vdw_author=='KBM' .or. vdw_author=='kbm') then
     ! optB88-vdW of Klimes et al, JPCM 22, 022201 (2009)
     call GGAxc( 'B88KBM', iRel, nSpin, D, GD, epsX, epsAux, &
                  dEXdD, dEdDaux, dEXdGD, dEdGDaux )
     call LDAxc( 'PW92', iRel, nSpin, D, epsAux, epsC,  &
                 dEdDaux, dECdD, dVXdD, dVCdD )
-  else if (vdw_author=='VV') then
+  else if (vdw_author=='C09' .or. vdw_author=='c09') then
+    ! C09x-vdWc of Cooper, PRB 81, 161104(R) (2010)
+    call GGAxc( 'C09', iRel, nSpin, D, GD, epsX, epsAux, &
+                 dEXdD, dEdDaux, dEXdGD, dEdGDaux )
+    call LDAxc( 'PW92', iRel, nSpin, D, epsAux, epsC,  &
+                dEdDaux, dECdD, dVXdD, dVCdD )
+  else if (vdw_author=='BH' .or. vdw_author=='bh') then
+    ! Berland and Hyldgaard, PRB 89, 035412 (2014)
+    call GGAxc( 'BH', iRel, nSpin, D, GD, epsX, epsAux, &
+                dEXdD, dEdDaux, dEXdGD, dEdGDaux )
+    call LDAxc( 'PW92', iRel, nSpin, D, epsAux, epsC,  &
+                dEdDaux, dECdD, dVXdD, dVCdD )
+  else if (vdw_author=='VV' .or. vdw_author=='vv') then
     ! Vydrov and VanVoorhis, JCP 133, 244103 (2010)
     ! GGA for both exchange and correlation, but with different flavours
     call GGAxc( 'PW86R', iRel, nSpin, D, GD, epsX, epsAux, &
@@ -1542,7 +1547,7 @@ subroutine vdw_phi( k, phi, dphidk )
   if (.not.kcut_set) stop 'vdw_phi: ERROR: kcut must be previously set'
 
 ! Check argument sizes
-  if (size(phi,1)<nq .or. size(phi,2)<nq) &
+  if (size(phi,1)<mq .or. size(phi,2)<mq) &
     stop 'vdw_phi: ERROR: size(phi) too small'
 
 ! Find phi values at point k
@@ -1557,7 +1562,7 @@ subroutine vdw_phi( k, phi, dphidk )
     b2 = (3*b**2 -1) * dk / 6
     a3 = (a**3 - a) * dk**2 / 6
     b3 = (b**3 - b) * dk**2 / 6
-    do iq2 = 1,nq
+    do iq2 = 1,mq
       do iq1 = 1,iq2
 !        call splint( dk, phik(:,iq1,iq2), d2phidk2(:,iq1,iq2), nk+1, k, &
 !                     phi(iq1,iq2), dphidk(iq1,iq2), pr )
@@ -1580,7 +1585,8 @@ subroutine vdw_set_author( author )
 ! Sets the functional flavour (author initials) and subsequent parameters
 
   implicit none
-  character(len=*),intent(in):: author ! Functnl flavour ('DRSLL'|'LMKLL'|'KBM')
+  character(len=*),intent(in):: author ! Functional flavour 
+                                   ! ('DRSLL'|'LMKLL'|'KBM'|'C09'|'BH'|'VV')
 
   if (author=='DRSLL') then
     ! Dion et al, PRL 92, 246401 (2004)
@@ -1591,8 +1597,14 @@ subroutine vdw_set_author( author )
   else if (author=='KBM') then
     ! optB88-vdW of Klimes et al, JPCM 22, 022201 (2009)
     zab = -0.8491_dp
+  else if (author=='C09') then
+    ! Cooper, PRB 81, 161104(R) (2010)
+    zab = -0.8491_dp
+  else if (author=='BH') then
+    ! Berland and Hyldgaard, PRB 89, 035412 (2014)
+    zab = -0.8491_dp
   else if (author=='VV') then
-    ! Vydrov-VanVoorhis, JCP 133, 244103 (2010)
+    ! Vydrov and Van Voorhis, JCP 133, 244103 (2010)
   else
     stop 'vdw_set_author: ERROR: author not known'
   end if
@@ -1757,9 +1769,9 @@ subroutine vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
   real(dp),intent(out):: theta(:)            ! Expansion of rho*q in qmesh
   real(dp),intent(out):: dtdrho(:,:)         ! dtheta(iq)/drhos
   real(dp),intent(out):: dtdgrho(:,:,:)      ! dtheta(iq)/dgrhos(ix)
-!  real(dp),intent(out):: theta(nq)           ! Expansion of rho*q in qmesh
-!  real(dp),intent(out):: dtdrho(nq,nspin)    ! dtheta(iq)/drhos
-!  real(dp),intent(out):: dtdgrho(3,nq,nspin) ! dtheta(iq)/dgrhos(ix)
+!  real(dp),intent(out):: theta(mq)           ! Expansion of rho*q in qmesh
+!  real(dp),intent(out):: dtdrho(mq,nspin)    ! dtheta(iq)/drhos
+!  real(dp),intent(out):: dtdgrho(3,mq,nspin) ! dtheta(iq)/dgrhos(ix)
 
   integer :: is, ix, ns
   real(dp):: rho, grho(3), dpdq(mq), dqdrho, dqdgrho(3), p(mq), q
@@ -1779,13 +1791,13 @@ subroutine vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
   call qofrho( rho, grho, q, dqdrho, dqdgrho )
   call pofq( q, p, dpdq )
 
-  theta(1:nq) = rho * p(1:nq)
+  theta(1:mq) = rho * p(1:mq)
   dtdrho(:,:) = 0
   dtdgrho(:,:,:) = 0
   do is = 1,ns
-    dtdrho(1:nq,is) = p(1:nq) + rho * dpdq(1:nq) * dqdrho
+    dtdrho(1:mq,is) = p(1:mq) + rho * dpdq(1:mq) * dqdrho
     do ix = 1,3
-      dtdgrho(ix,1:nq,is) = rho * dpdq(1:nq) * dqdgrho(ix)
+      dtdgrho(ix,1:mq,is) = rho * dpdq(1:mq) * dqdgrho(ix)
     end do
   end do
 

@@ -36,6 +36,8 @@
 
       use precision,      only : dp, grid_p
 
+      implicit none
+
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
       logical                 :: IsDiag, IsEfld, spiral
@@ -94,6 +96,9 @@
       use m_doping_uniform,       only: initialize_doping_uniform
       use m_doping_uniform,       only: compute_doping_structs_uniform,
      $                                  doping_active
+      use m_rhog,                 only: rhog, rhog_in
+      use m_rhog,                 only: order_rhog
+      use siesta_options,         only: mix_charge
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -367,6 +372,14 @@ C     DStres is computed but not used later
 !     Always deallocate rhoatm_par, as it was used even if nodes=1
       call de_alloc( rhoatm_par, 'rhoatm_par', 'dhscf_init' )
 
+      if (mix_charge) then
+         call re_alloc( rhog, 1, 2, 1, ntpl, 1, nspin,
+     $                 'Rhog', 'dhscf_init' )
+         call re_alloc( rhog_in, 1, 2, 1, ntpl, 1, nspin,
+     $                 'Rhog_in', 'dhscf_init' )
+         call order_rhog(cell, ntml(1), ntml(2), ntml(3), ntm, nsm)
+      endif
+
 C     Stop time counter for atomic initializations
       call timer( 'DHSCF2', 2 )
 
@@ -410,11 +423,12 @@ C ----------------------------------------------------------------------
 
       subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
      &                  nuotot, nua, na, isa, xa, indxua,
-     &                  ntm, ifa, istr, iHmat, filesOut, 
-     &                  maxnd, numd,
+     &                  ntm, ifa, istr, iHmat,
+     &                  filesOut, maxnd, numd,
      &                  listdptr, listd, Dscf, datm, maxnh, Hmat,
      &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, 
-     &                  Exc, Dxc, dipol, stress, Fal, stressl )
+     &                  Exc, Dxc, dipol, stress, Fal, stressl,
+     &                  use_rhog_in, charge_density_only )
 
 C
 C Calculates the self-consistent field contributions to Hamiltonian
@@ -550,11 +564,15 @@ C     Modules
       use siesta_options, only: read_charge_cdf
       use siesta_options, only: savevna, savebader
       use siesta_options, only: read_deformation_charge_cdf
+      use siesta_options, only: mix_charge
 
       use m_efield,       only: get_field_from_dipole, dipole_correction
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
       use m_doping_uniform,       only: doping_active, doping_uniform
+
+      use m_rhofft,       only: rhofft, FORWARD, BACKWARD
+      use m_rhog,         only: rhog_in, rhog
 
 #ifdef TRANSIESTA
       use m_ts_options, only: UseVFix, TSmode, isVolt
@@ -565,7 +583,8 @@ C     Modules
       implicit none
       integer
      &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
-     &  iaorb(norb), ifa, iHmat, indxua(na), iphorb(norb), isa(na), 
+     &  iaorb(norb), ifa, iHmat,
+     &  indxua(na), iphorb(norb), isa(na), 
      &  istr, listd(*), listdptr(nuo), ntm(3), numd(nuo)
 
       real(dp)
@@ -576,6 +595,9 @@ C     Modules
 
       type(filesOut_t)
      &  filesOut
+
+      logical, intent(in), optional :: use_rhog_in
+      logical, intent(in), optional :: charge_density_only
 
 C ----------------------------------------------------------------------
 C Routines called internally:
@@ -596,6 +618,7 @@ C        timer(...)     : Finds CPU times
 C        vmat(...)      : Finds matrix elements of SCF potential
 C        vmatsp(...)    : Finds matrix elements of SCF potential for
 C                         spiral arrangement of spins
+C        delk(...)      : Finds matrix elements of exp(i \vec{k} \cdot \vec{r})
 C real*8 volcel( cell ) : Returns volume of unit cell
 C ----------------------------------------------------------------------
 C Internal variables and arrays:
@@ -657,6 +680,8 @@ C     Local variables
       real(grid_p) :: aux3(3,1)
       real(grid_p) :: dummy_DVxcdn(1,1,1)
 #endif /* BSC_CELLXC */
+
+      logical :: use_rhog
 
       real(dp), external :: volcel, ddot
 
@@ -737,7 +762,17 @@ C ----------------------------------------------------------------------
 !     The reading routine works in the uniform distribution, in
 !     sequential form
 !
-      if (read_charge_cdf) then
+      if (present(use_rhog_in)) then
+            use_rhog = use_rhog_in
+         else
+            use_rhog = .false.
+      endif
+      if (use_rhog) then
+         ! fourier transform back into drho
+         call rhofft(cell, ntml(1), ntml(2), ntml(3), ntm, nspin,
+     $                  DRho,rhog_in,BACKWARD)
+
+      else if (read_charge_cdf) then
          call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"Rho")
          read_charge_cdf = .false.
       else if (read_deformation_charge_cdf) then
@@ -745,7 +780,7 @@ C ----------------------------------------------------------------------
          do ispin = 1,nspin
             do ip= 1, ntpl
 C             rhoatm and Drho are in sequential mode
-              DRho(ip,ispin) = DRho(ip,ispin) + rhoatm(ip)
+              DRho(ip,ispin) = DRho(ip,ispin) + rhoatm(ip)/nsd
             enddo
          enddo
          read_deformation_charge_cdf = .false.
@@ -791,9 +826,17 @@ C       Set the UNIFORM distribution again and copy DRho to it
      $              nspin, DRho)
            call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
      $               "RhoInit")
+            call timer('DHSCF3',2)
+            call timer('DHSCF',2)
            call bye("STOP after producing RHO_INIT from input DM")
         endif
 
+      endif
+
+      if (mix_charge) then
+         ! Save fourier transform of charge density
+         call rhofft(cell, ntml(1), ntml(2), ntml(3), ntm, nspin,
+     $        DRho,rhog,FORWARD)
       endif
 !
 !     Proper place to integrate Hirshfeld and Voronoi code,
@@ -910,6 +953,15 @@ C ----------------------------------------------------------------------
      &                  DRho )
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
      &                          DRho, "DeltaRho")
+      endif
+
+      if (present(charge_density_only)) then 
+         if (charge_density_only) then
+            call timer('DHSCF3',2)
+            call timer('DHSCF',2)
+            call de_alloc( DRho, 'DRho', 'dhscf' )
+            RETURN
+         endif
       endif
 
 C Transform spin density into sum and difference
@@ -1424,5 +1476,62 @@ C ----------------------------------------------------------------------
       end subroutine save_bader_charge
 
       end subroutine dhscf
+
+      subroutine delk_wrapper(isigneikr, norb, maxnd,
+     &                        numd, listdptr, listd,
+     &                        nuo,  nuotot, iaorb, iphorb, isa )
+
+      use m_delk,  only  : delk  ! The real workhorse, similar to vmat
+
+      use moreMeshSubs,   only : setMeshDistr
+      use moreMeshSubs,   only : UNIFORM, QUADRATIC
+      use parallel,       only : Nodes, Node
+      use mesh,           only : nsm, nsp
+
+!
+!     This is a wrapper to call delk, using some of the module
+!     variables of m_dhscf, but from outside dhscf itself.
+!
+      integer                  :: isigneikr, 
+     &                            norb, nuo, nuotot, maxnd,
+     &                            iaorb(*), iphorb(*), isa(*), 
+     &                            numd(nuo),     
+     &                            listdptr(nuo), listd(maxnd)
+
+! The dhscf module variables used are:
+! nmpl
+! dvol
+! nml
+! nmpl
+! ntml
+! ntpl
+!
+! Some of them might be put somewhere else (mesh?) to allow some
+! of the kitchen-sink functionality of dhscf to be made more modular.
+! For example, this wrapper might live independently if enough mesh
+! information is made available to it.
+
+C ----------------------------------------------------------------------
+C Calculate matrix elements of exp(i \vec{k} \cdot \vec{r})
+C ----------------------------------------------------------------------
+        if (isigneikr .eq. 1 .or. isigneikr .eq. -1) then
+
+          if (nodes.gt.1) then
+            call setMeshDistr( QUADRATIC, nsm, nsp,
+     &                         nml, nmpl, ntml, ntpl )
+          endif
+
+          call delk( isigneikr, norb, nmpl, dvol, maxnd,
+     &               numd, listdptr, listd,
+     &               nuo,  nuotot, iaorb, iphorb, isa )
+
+          if (nodes.gt.1) then
+!           Everything back to UNIFORM, sequential
+            call setMeshDistr( UNIFORM, nsm, nsp,
+     &                         nml, nmpl, ntml, ntpl )
+          endif
+
+        endif
+      end subroutine delk_wrapper
 
       end module m_dhscf

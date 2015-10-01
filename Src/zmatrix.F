@@ -684,6 +684,19 @@ C Loop over molecules
         do m = 1,nZmol
           nStart = nZmolStartAtom(m)
           nAtoms = nZmolAtoms(m)
+
+C PB BEGIN
+C         Check whether any atom info has been read.
+          if (nAtoms .eq. 0) then
+             if (Node .eq. 0) then
+                write (6,'(A)') 'read_Zmatrix: Ill defined Zmatrix:'
+                write (6,'(A,i3)')
+     .               'read_Zmatrix: no atoms defined at molecule', m
+             endif
+             call die()
+          endif
+C PB END
+
 C Second atom
           if (nAtoms.gt.1) then
             if (iZmat(3*nStart+1).ne.nStart) then

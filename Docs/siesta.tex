@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large October 22, 2013 }
+{\Large July 16, 2015 }
 
 \vspace{1.5cm}
 
@@ -813,6 +813,8 @@ atom.
 Pseudopotentials for synthetic atoms can be created using the {\tt
   mixps} and {\tt fractional} programs \index{mixps
   program}\index{fractional program} in the {\tt Util/VCA} directory.
+
+Atomic numbers below -200 represent {\it ghost synthetic atoms}.
 
 {\it Use:} This block is mandatory.
 
@@ -2832,52 +2834,85 @@ and {\tt LSD}.
 Particular parametrization of the
 exchange-correlation functional. Options are:
 \begin{itemize}
-\item {\tt CA} (Ceperley-Alder) \index{CA}
-equivalent to {\tt PZ} (Perdew-Zunger). \index{PZ}
-Local density approximation.
-Ref: Perdew and Zunger, PRB 23, 5075 (1981)
-\item {\tt PW92} (Perdew-Wang-92). \index{PW92}
-Local density approximation.\index{LDA}\index{LSD}
-Ref: Perdew and Wang, PRB, 45, 13244 (1992)
-\item {\tt PBE} (Perdew-Burke-Ernzerhof). Generalized gradients
-approximation.  Ref: Perdew, Burke and Ernzerhof, PRL 77, 3865
-(1996)\index{GGA} \index{PBE}
-\item {\tt revPBE} (Revised Perdew-Burke-Ernzerhof). Generalized gradients
-approximation.  Ref: Y. Zhang and W. Yang, PRL 80, 890
-(1998)\index{GGA} \index{revPBE}
-\item {\tt RPBE} (Revised Perdew-Burke-Ernzerhof). Generalized gradients
-approximation.  Ref: Hammer, Hansen and Norskov PRB 59, 7413
-(1999)\index{GGA} \index{RPBE}
-\item {\tt WC} (Wu-Cohen modification of PBE functional). Generalized gradients
-approximation.  Ref: Z. Wu and R.E. Cohen, PRB 73, 235116 (2006)
-\index{GGA} \index{WC}
-\item {\tt AM05} (Armiento-Mattsson-05). Generalized gradients
-approximation.  Ref: R. Armiento and A.E. Mattsson, PRB 72, 085108 (2005)
-\index{GGA} \index{AM05}
-\item {\tt PBEsol} (Perdew-Burke-Ernzerhof for solids). Generalized gradients
-approximation.  Ref: Perdew et al, PRL 100, 136406
-(2008)\index{GGA} \index{PBEsol}
-\item {\tt LYP} Generalized gradients approximation \index{BLYP}
-that implements Becke gradient exchange functional (A. D.
-Becke, Phys. Rev. A {\bf 38}, 3098 (1988)) and Lee, Yang, Parr
-correlation functional (C. Lee, W. Yang, R. G. Parr, Phys. Rev. B
-{\bf 37}, 785 (1988)), as modified by Miehlich, Savin, Stoll and Preuss,
-Chem. Phys. Lett. {\bf 157}, 200 (1989). See also Johnson, Gill and Pople,
+\item {\tt CA} (equivalent to {\tt PZ}):  \index{CA} \index{PZ}
+(Spin) local density approximation (LDA/LSD). \index{LDA} \index{LSD}
+Quantum Monte Carlo calculation of the homogeneous electron gas 
+by D. M. Ceperley and B. J. Alder, Phys. Rev. Lett. {\bf 45},566 (1980),
+as parametrized by J. P. Perdew and A. Zunger, Phys. Rev B {\bf 23}, 5075 (1981)
+\item {\tt PW92}: \index{PW92}
+LDA/LSD, as parametrized by 
+J. P. Perdew and Y. Wang, Phys. Rev B, {\bf 45}, 13244 (1992)
+\item {\tt PW91}: \index{PW91}
+Generalized gradients approximation (GGA) \index{GGA} of Perdew and Wang. 
+Ref: P\&W, J. Chem. Phys., {\bf 100}, 1290 (1994)
+\item {\tt PBE}: \index{PBE}
+GGA of J. P. Perdew, K. Burke and M. Ernzerhof, 
+Phys. Rev. Lett. {\bf 77}, 3865 (1996) 
+\item {\tt revPBE}: \index{revPBE}
+Modified GGA-PBE functional of Y. Zhang and W. Yang, 
+Phys. Rev. Lett. {\bf 80}, 890 (1998)
+\item {\tt RPBE}: \index{RPBE}
+Modified GGA-PBE functional of 
+B. Hammer, L. B. Hansen and J. K. Norskov Phys. Rev. B {\bf 59}, 7413 (1999)
+\item {\tt WC} \index{WC}
+Modified GGA-PBE functional of 
+Z. Wu and R. E. Cohen, Phys. Rev. B {\bf 73}, 235116 (2006)
+\item {\tt AM05}: \index{AM05}
+Modified GGA-PBE functional of 
+R. Armiento and A. E. Mattsson, Phys. Rev. B {\bf 72}, 085108 (2005)
+\item {\tt PBEsol}: \index{PBEsol}
+Modified GGA-PBE functional of 
+J. P. Perdew et al, Phys. Rev. Lett. {\bf 100}, 136406 (2008)
+\item {\tt PBEJsJrLO}: 
+GGA-PBE functional with parameters $\beta, \mu$, and $\kappa$ fixed by 
+the jellium surface (Js), jellium response (Jr), 
+and Lieb-Oxford bound (LO) criteria, respectively, as described by 
+L. S. Pedroza, A. J. R. da Silva, and K. Capelle, 
+Phys. Rev. B {\bf 79}, 201106(R) (2009), and by 
+M. M. Odashima, K. Capelle, and S. B. Trickey, 
+J. Chem. Theory Comput. {\bf 5}, 798 (2009)
+\item {\tt PBEJsJrHEG}: 
+Same as PBEJsJrLO, with parameter $\kappa$ fixed by the  Lieb-Oxford bound 
+for the low density limit of the homogeneous electron gas (HEG)
+\item {\tt PBEGcGxLO}:
+Same as PBEJsJrLO, with parameters $\beta$ and $\mu$ fixed by the 
+gradient expansion of correlation (Gc) and exchange (Gx), respectively
+\item {\tt PBEGcGxHEG}:
+Same as previous ones, with parameters $\beta,\mu$, and $\kappa$ fixed by 
+the Gc, Gx, and HEG criteria, respectively.
+\item {\tt BLYP} (equivalent to {\tt LYP}): \index{BLYP}
+GGA with Becke exchange (A. D. Becke, Phys. Rev. A {\bf 38}, 3098 (1988)) 
+and Lee-Yang-Parr correlation 
+(C. Lee, W. Yang, R. G. Parr, Phys. Rev. B {\bf 37}, 785 (1988)), 
+as modified by B. Miehlich, A. Savin, H. Stoll, and H. Preuss,
+Chem. Phys. Lett. {\bf 157}, 200 (1989). 
+See also B. G. Johnson, P. M. W. Gill and J. A. Pople,
 J. Chem. Phys. {\bf 98}, 5612 (1993). (Some errors were detected in this
 last paper, so not all of their expressions correspond exactly to those
 implemented in {\sc Siesta})
-\item {\tt DRSLL} van der Waals exchange-correlation density functional of
-M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
+\item {\tt DRSLL} (equivalent to {\tt DF1}): \index{vdW-DF1} \index{DRSLL}
+van der Waals \index{vdW} density functional (vdW-DF) \index{vdW-DF}
+of M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
 Phys. Rev. Lett. {\bf 92}, 246401 (2004), with the efficient implementation of 
-G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009).
-\item {\tt LMKLL} vdW-DF functional of Dion {\it et al} (same as DRSLL)
+G. Rom\'an-P\'erez and J. M. Soler, Phys. Rev. Lett. {\bf 103},  096102 (2009)
+\item {\tt LMKLL} (equivalent to {\tt DF2}): \index{vdW-DF2} \index{LMKLL}
+vdW-DF functional of Dion {\it et al} (same as DRSLL)
 reparametrized by K. Lee, E. Murray, L. Kong, B. I. Lundqvist and 
-D. C. Langreth, PRB 82, 081101 (2010)
-\item {\tt KBM} vdW-DF  functional of Dion {\it et al} (same as DRSLL)
-reparametrized by J.Klimes, D.R.Bowler, and A.Michaelides, 
-JPCM {\bf 22}, 022201 (2010) (optB88-vdW version)
-\item {\tt VV} vdW-DF  functional of O. A. Vydrov and T. Van Voorhis, 
-JCP 133, 244103 (2010)
+D. C. Langreth, Phys. Rev. B {\bf 82}, 081101 (2010)
+\item {\tt KBM}:
+vdW-DF functional of Dion {\it et al} (same as DRSLL)
+with exchange modified by J. Klimes, D. R. Bowler, and A. Michaelides, 
+J. Phys.: Condens. Matter {\bf 22}, 022201 (2010) (optB88-vdW version)
+\item {\tt C09}:
+vdW-DF functional of Dion {\it et al} (same as DRSLL)
+with exchange modified by V. R. Cooper, Phys. Rev. B {\bf 81}, 161104 (2010)
+\item {\tt BH}:
+vdW-DF functional of Dion {\it et al} (same as DRSLL) 
+with exchange modified by 
+K. Berland and P. Hyldgaard, Phys. Rev. B 89, 035412 (2014)
+\item {\tt VV}: 
+vdW-DF functional of O. A. Vydrov and T. Van Voorhis, 
+J. Chem. Phys. {\bf 133}, 244103 (2010)
 
 \end{itemize}
 
@@ -3074,6 +3109,33 @@ for restarts of selfconsistency runs.
   energy and of the forces when mixing the DM.
 
 {\it Default value:} {\tt .false.}
+{\bf NOTE}: This breaks backwards compatibility with previous
+(pre-4.0rc) versions of {\sc Siesta}. To recover the old behavior,
+turn this option on, or use the compatibility switch {\bf
+  compat-pre-v4-dm-h} (see below).
+
+\item[{\bf SCF.RecomputeHAfterScf}] ({\it
+  logical}):\index{SCF!Recomputing H} \index{SCF.RecomputeHAfterScf@{\bf
+    SCF.RecomputeHAfterScf}} Logical
+  variable to indicate whether the Hamiltonian is updated after the
+  scf cycle, while computing the final energy, forces, and stresses.
+  Not recomputing H makes further analysis tasks (such as the
+  computation of band structures) more consistent, as they will be
+  able to use the same H used to generate the last density matrix.
+
+{\it Default value:} {\tt .false.}
+{\bf NOTE}: This breaks backwards compatibility with previous
+(pre-4.0rc) versions of {\sc Siesta}. To recover the old behavior,
+turn this option on, or use the compatibility switch {\bf
+  compat-pre-v4-dm-h} (see below).
+
+\item[{\bf compat-pre-v4-dm-h}] ({\it logical}):
+\index{Backward compatibility}
+\index{SCF!compat-pre4-dm-h} \index{compat-pre4-dm-h@{\bf
+    compat-pre4-dm-h}} If this logical
+  variable is turned on, the above two options regarding mixing after
+  convergence and recomputation of H after the scf cycle will be
+  turned on.
 
 
 \item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
@@ -3319,6 +3381,153 @@ the Broyden mixing (see description of variable {\bf
 norm of their residual ${\rho}^{n}_{out}-{\rho}^{n}_{in}$.
 
 {\it Default value:} {\tt .true.}
+
+
+\end{description}
+
+\subsubsection{Mixing of the Charge Density}
+
+\begin{description}
+
+\item[{\bf MixCharge}] ({\it logical}):
+\index{MixCharge@{\bf MixCharge}}\index{SCF!mixing!Charge}
+
+If set, this enables an experimental feature, in which the fourier
+components of the charge density are mixed, as done in some plane-wave
+codes. (See for example Kresse and Furthm\"uller, Comp. Mat. Sci. 6,
+15-50 (1996), KF in what follows.) Default: {\tt .false.}
+
+\end{description}
+
+The charge mixing is implemented roughly as follows:
+
+\begin{itemize}
+\item The charge density computed in dhscf is fourier-transformed and stored
+in a new module. This is done both for ``$\rho$({\bf G})(in)'' and
+``$\rho$({\bf G})(out)''  (the ``out'' charge is
+computed during the extra call to dhscf for correction of the
+variational character of the Kohn-Sham energy)
+\item The ``in'' and ``out'' charges are mixed (see below), and the
+  resulting ``in'' fourier components are used by dhscf in successive
+  iterations to reconstruct the charge density.
+\item The new arrays needed and the processing of most new options is
+  done in the new module m\_rhog.F90. The fourier-transforms are
+  carried out by code in rhofft.F.
+\item Following standard practice, two options for mixing are offered:
+  \begin{itemize}
+  \item A simple Kerker mixing, with an optional Thomas-Fermi wavevector to 
+  damp the contributions for small G's. The overall mixing weight is
+  the same as for other kinds of mixing, read from {\bf DM.MixingWeight}.
+  \item A DIIS (Pulay) procedure that takes into account a sub-set of
+    the G vectors (those within a smaller cutoff). Optionally, the
+    scalar product used for the construction of the DIIS matrix from
+    the residuals uses a weight factor. 
+
+    The DIIS extrapolation is followed by a  Kerker mixing step.
+
+    The code is m\_diis.F90. The DIIS history is kept in a circular
+    stack, implemented using the new framework for reference-counted
+    types. This might be overkill for this particular use, and there
+    are a few rough edges, but it works well.
+  \end{itemize}
+\end{itemize}
+
+The default convergence criteria remains based on the differences in
+the density matrix, but in this case the differences are from step to
+step, not the more fundamental {\tt DM\_out-DM\_in}. Perhaps some
+other criterion should be made the default (max |Delta rho(G)|,
+convergence of the free-energy...)
+
+Note that with charge mixing the Harris energy as it is currently
+computed in Siesta loses its meaning, since there is no {\tt
+  DM\_in}. The program prints zeroes in the Harris energy field.
+
+Note that the KS energy is correctly computed throughout the scf
+cycle, as there is an extra step for the calculation of the charge
+stemming from {\tt DM\_out}, which also updates the energies. Forces
+and final energies are correctly computed with the final {\tt
+  DM\_out}, regardless of the setting of the option for mixing after
+scf convergence.
+
+Initial tests suggest that charge mixing has some desirable properties
+and could be a drop-in replacement for density-matrix mixing, but many
+more tests are needed to calibrate its efficiency for different kinds
+of systems, and the heuristics for the (perhaps too many) parameters:
+
+\begin{description}
+
+\item[{\bf SCF.Kerker.q0sq}] ({\it physical energy}):
+\index{SCF.Kerker.q0sq@{\bf SCF.Kerker.q0sq}}
+
+Determines the parameter $q_0^2$ featuring in the Kerker
+preconditioning, which is always performed on all components of
+$\rho({\bf G})$, even those treated with the DIIS scheme. 
+
+{\it Default value:} 0.0 Ry.
+
+\item[{\bf SCF.RhoGMixingCutoff}] ({\it physical energy}):
+\index{RhoGMixingCutoff@{\bf RhoGMixingCutoff}}
+
+Determines the sub-set of G vectors which will undergo the DIIS
+procedure.  Only those with kinetic energies below this cutoff will be
+considered.  The optimal extrapolation of the $\rho({\bf G})$ elements will be
+replaced in the fourier series before performing the Kerker
+mixing.
+
+{\it Default value:} 9.0 Ry.
+
+\item[{\bf SCF.RhoG.DIIS.Depth}] ({\it integer}):
+\index{SCF.RhoG.DIIS.Depth@{\bf SCF.RhoG.DIIS.Depth}}
+
+Determines the maximum number of previous steps considered in the DIIS
+procedure. 
+
+{\it Default value:} 0 (no DIIS procedure performed).
+
+{\bf NOTE}: The information from the first scf step is not included in
+the DIIS history. There is no provision yet for any other kind of
+``kick-starting'' procedure. The logic is in m\_rhog (rhog\_mixing routine).
+
+\item[{\bf SCF.RhoG.Metric.Preconditioner.Cutoff}] ({\it physical energy}):
+\index{SCF.RhoG.Metric.Preconditioner.Cutoff{\bf
+    SCF.RhoG.Metric.Preconditioner.Cutoff}}
+
+Determines the value of $q_1^2$ in the weighing of the different {\bf G}
+components in the scalar products among residuals in the DIIS
+procedure. Following the KF ansatz, this parameter is chosen so that
+the smallest (non-zero) {\bf G} has a weight 20 times larger than that of
+the smallest G vector in the DIIS set. 
+
+{\it Default value:} The result of the KF prescription.
+
+\item[{\bf SCF.DebugRhogMixing}] ({\it logical}):
+\index{SCF.DebugRhogMixing@{\bf SCF.DebugRhogMixing}}\index{SCF!mixing!Charge}
+
+Controls the level of debugging output in the mixing procedure
+(basically whether the first few stars worth of Fourier components are
+printed). Note that this feature will only display the components in
+the master node.
+
+Default: {\tt .false.}
+
+\item[{\bf DebugDIIS}] ({\it logical}):
+\index{DebugDIIS@{\bf DebugDIIS}}\index{SCF!mixing!Charge}
+
+Controls the level of debugging output in the DIIS procedure. If set,
+the program prints the DIIS matrix and the extrapolation coefficients.
+
+Default: {\tt .false.}
+
+\item[{\bf SCF.MixCharge.SCF1}] ({\it logical}):
+\index{SCF.MixCharge.SCF1@{\bf SCF.MixCharge.SCF1}}\index{SCF!mixing!Charge}
+
+Logical variable to indicate whether or not the charge is mixed in the
+first SCF cycle. Anecdotal evidence indicates that it might be
+advantageous, at least for calculations started from scratch, to avoid
+that first mixing, and retain the ``out'' charge density as ``in'' for
+the next step. 
+
+Default: {\tt .false.}
 
 
 \end{description}
@@ -3592,6 +3801,10 @@ cycle.
 \subsubsection{Convergence criteria}
 \index{SCF convergence criteria}
 
+{\bf NOTE}: Some of the options below have a {\tt DM} prefix. This is
+for historical reasons, as the density-matrix convergence was
+typically the only criterion for termination of the scf cycle.
+
 \begin{description}
 \item[{\bf DM.Tolerance}] ({\it real}):
 \index{DM.Tolerance@{\bf DM.Tolerance}}
@@ -3606,21 +3819,22 @@ the selfconsistency has been achieved.
 
 
 \item[{\bf DM.Require.Energy.Convergence}] ({\it logical}):
-\index{SCF!mixing!energy convergence}
-\index{DM.Require.Energy.Convergence@{\bf DM.Require.Energy.Convergence}}
-Logical variable to request an additional requirement for
-self-consistency: it is considered achieved when the change in the total energy between cycles
-of the SCF procedure is below {\bf DM.EnergyTolerance} and the
-density matrix change criterion is also satisfied.
+  \index{SCF!mixing!energy convergence}
+  \index{DM.Require.Energy.Convergence@{\bf
+      DM.Require.Energy.Convergence}} Logical variable to request an
+  additional requirement for self-consistency: it is considered
+  achieved when the change in the total (free) energy between cycles
+  of the SCF procedure is below {\bf DM.EnergyTolerance} and the
+  density matrix change criterion is also satisfied.
 
 {\it Default value:} {\tt .false.}
 
 \item[{\bf DM.Energy.Tolerance}] ({\it real energy}):
-\index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}}
-If {\bf DM.Require.Energy.Convergence} is {\tt .true.}, then
-self-consistency is achieved when the change in the total energy between cycles
-of the SCF procedure is below this value and the
-density matrix change criterion is also satisfied.
+  \index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}} If {\bf
+    DM.Require.Energy.Convergence} is {\tt .true.}, then
+  self-consistency is achieved when the change in the total (free)
+  energy between cycles of the SCF procedure is below this value and
+  the density matrix change criterion is also satisfied.
 
 {\it Default value:} {${\tt 10^{-4}}$ eV}
 
@@ -5576,6 +5790,188 @@ obtained form Tom Archer (archert@tcd.ie).
 \end{description}
 
 \vspace{5pt}
+\subsection{Maximally Localized Wannier Functions. \\
+            Interface with the {\sc wannier90} code}
+
+{\sc wannier90} (http://www.wannier.org) is a code to generate
+maximally localized wannier functions according to the original
+Marzari and Vanderbilt recipe.
+
+It is strongly recommended to read the original papers on which this
+method is based and the  documentation of the {\sc wannier90} code.
+Here we shall focus only on those internal {\sc siesta} variables
+required to produce the files that will be processed
+by {\sc wannier90}.
+
+A complete list of examples and tests (including molecules, metals, 
+semiconductors, insulators, magnetic systems, plotting of Fermi surfaces
+or interpolation of bands), can be downloaded from
+
+ http://personales.unican.es/junqueraj/Wannier-examples.tar.gz
+
+{\bf NOTE}: The Bloch functions produced by a first-principles code
+      have arbitrary phases that depend on the number of processors
+      used and other possibly non-reproducible details of the
+      calculation. In what follows it is essential to maintain
+      consistency in the handling of the overlap and Bloch-funcion
+      files produced and fed to {\sc wannier90}.
+
+\begin{description}
+\item[{\bf Siesta2Wannier90.WriteMmn}] ({\it logical}):
+\index{Siesta2Wannier90.WriteMmn@{\bf Siesta2Wannier90.WriteMmn}}
+
+This flag determines whether the overlaps between the periodic part
+of the Bloch states at neighbour k-points are computed and dumped into a file
+in the format required by {\sc wannier90}.
+These overlaps are defined in Eq. (27) in the paper by
+N. Marzari {\it et al.}, Review of Modern Physics {\bf 84}, 1419 (2012),
+or Eq. (1.7) of the Wannier90 User Guide, Version 2.0.1.
+
+The k-points for which the overlaps will be computed are read from a
+{\tt .nnkp} file produced by {\sc wannier90}. It is strongly
+recommended for the user to read the corresponding user guide.
+
+The overlap matrices are written in a file with extension {\tt .mmn}.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteAmn}] ({\it logical}):
+\index{Siesta2Wannier90.WriteAmn@{\bf Siesta2Wannier90.WriteAmn}}
+
+This flag determines whether the overlaps between Bloch states
+and trial localized orbitals are computed and dumped into a file in the
+format required by {\sc wannier90}.
+These projections are defined in Eq. (16) in the paper by
+N. Marzari {\it et al.}, Review of Modern Physics {\bf 84}, 1419 (2012),
+or Eq. (1.8) of the Wannier90 User Guide, Version 2.0.1.
+
+The localized trial functions to use are taken from the {\tt .nnkp}
+file produced by {\sc wannier90}. It is strongly recommended for the
+user to read the corresponding user guide.
+
+The overlap matrices are written in a file with extension {\tt .amn}.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteEig}] ({\it logical}):
+\index{Siesta2Wannier90.WriteEig@{\bf Siesta2Wannier90.WriteEig}}
+
+Flag that determines whether the Kohn-Sham eigenvalues 
+(in eV) at each point in the Monkhorst-Pack mesh required by {\sc
+  wannier90} are written to file.
+This file is mandatory in {\sc wannier90} if any of disentanglement, 
+plot\_bands, plot\_fermi\_surface or hr\_plot options are set to true in 
+the {\sc wannier90} input file.
+
+The eigenvalues are written in a file with extension {\tt .eigW}.
+This extension is chosen to avoid name clashes
+with {\sc siesta}'s standard eigenvalue file in case-insensitive filesystems.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.WriteUnk}] ({\it logical}):
+\index{Siesta2Wannier90.WriteUnk@{\bf Siesta2Wannier90.WriteUnk}}
+
+ Produces {\tt UNKXXXXX.Y} files which contain the periodic part of a
+ Bloch function in the unit cell on a grid given by global unk\_nx,
+ unk\_ny, unk\_nz variables.  The name of the output files is assumed
+ to have the previous form, where the {\tt XXXXXX} refer to the k-point
+ index (from 00001 to the total number of k-points considered), and
+ the {\tt Y} refers to the spin component (1 or 2)
+
+ The periodic part of the Bloch functions is defined by
+ \begin{equation}
+   u_{n \vec{k}} (\vec{r}) =
+   \sum_{\vec{R} \mu} c_{n \mu}(\vec{k})
+        e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}
+        \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} ) ,
+\end{equation}
+
+\noindent where $\phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )$
+ is a basis set atomic orbital centered on atom $\mu$ in
+ the unit cell $\vec{R}$, and $c_{n \mu}(\vec{k})$ are the coefficients
+ of the wave function. The latter must be identical to the ones used
+ for wannierization in $M_{mn}$. (See the above comment about
+ arbitrary phases.)
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf Siesta2Wannier90.UnkGrid1}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid1@{\bf Siesta2Wannier90.UnkGrid1}}
+
+Number of points along the first lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{number of points in the {\sc siesta} mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGrid2}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid2@{\bf Siesta2Wannier90.UnkGrid2}}
+
+Number of points along the second lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{number of points in the {\sc siesta} mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGrid3}] ({\it integer}):
+\index{Siesta2Wannier90.UnkGrid3@{\bf Siesta2Wannier90.UnkGrid3}}
+
+Number of points along the third lattice vector in the grid where
+the periodic part of the wave functions will be plotted.
+
+{\it Default value:}{number of points in the {\sc siesta} mesh along this lattice vector}
+
+\item[{\bf Siesta2Wannier90.UnkGridBinary}] ({\it logical}):
+\index{Siesta2Wannier90.UnkGridBinary@{\bf Siesta2Wannier90.UnkGridBinary}}
+
+Flag that determines whether the periodic part of the wave function in the
+real space grid is written in binary format (default) or in ASCII format.
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf Siesta2Wannier90.NumberOfBands}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBands@{\bf Siesta2Wannier90.NumberOfBands}}
+
+In spin unpolarized calculations, number of bands that will be
+initially considered by {\sc siesta} to generate the information
+required by {\sc wannier90}. Note that it should be at least as large as the
+index of the highest-lying band in the {\sc wannier90} post-processing. For
+example, if the wannierization is going to involve bands 3 to 5, the
+{\sc siesta} number of bands should be at least 5. Bands 1 and 2
+should appear in a ``excluded'' list.
+
+{\it Default value:} {Number of occupied bands. To avoid problems
+  of interpretation, it is strongly advised to avoid relying on the
+  defaults and to specify the number of bands explicitly.}
+
+
+\item[{\bf Siesta2Wannier90.NumberOfBandsUp}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBandsUp@{\bf Siesta2Wannier90.NumberOfBandsUp}}
+
+In spin-polarized calculations, number of bands with spin up that will be
+initially considered by {\sc siesta} to generate the information
+required by {\sc wannier90}. (See above for details.)
+
+{\it Default value:} {Number of occupied bands with spin up. To
+  avoid problems of interpretation, it is strongly advised to avoid
+  relying on the defaults and to specify the number of bands
+  explicitly. }
+
+\item[{\bf Siesta2Wannier90.NumberOfBandsDown}] ({\it integer}):
+\index{Siesta2Wannier90.NumberOfBandsDown@{\bf Siesta2Wannier90.NumberOfBandsDown}}
+
+In spin-polarized calculations, number of bands with spin down that will be
+initially considered by {\sc siesta} to generate the information
+required by {\sc wannier90}. (See above for details.)
+
+
+{\it Default value:} {Number of occupied bands with spin down. To
+  avoid problems of interpretation, it is strongly advised to avoid
+  relying on the defaults and to specify the number of bands
+  explicitly. }
+
+\end{description}
+
+\vspace{5pt}
 \subsection{Systems with net charge or dipole, and electric fields}
 
 \begin{description}
@@ -5933,7 +6329,7 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for energy in the molecular mechanics input.
 
-{\it Default value:}  {\tt eV} (Note: Currently this the {\em only} option)
+{\it Default value:}  {\tt eV}
 
 \item[{\bf MM.UnitsDistance}] ({\it units}): \index{MM.UnitsDistance@{\bf
 MM.UnitsDistance}} Specifies the units to be used for distance in the
@@ -5941,7 +6337,7 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for distance in the molecular mechanics input.
 
-{\it Default value:}  {\tt Ang} (Note: Currently this the {\em only} option)
+{\it Default value:}  {\tt Ang}
 
 \item[{\bf MM.Grimme.D}] : \index{MM.Grimme.D@{\bf
 MM.Grimme.D}} Specifies the scale factor $d$ for the scaling function
@@ -6202,21 +6598,22 @@ printed but the program does not stop.
 \index{denchar}
 
 The program {\tt denchar} in {\tt Util/Denchar} can generate
-charge-density and wavefunction contours.
+charge-density and wavefunction information in real space.
 
 \begin{description}
 
 \item[{\bf WriteDenchar}] ({\it logical}): \index{WriteDenchar@{\bf
-    WriteDenchar}} \index{output!charge density and/or wfs for DENCHAR code}
-  Instructs to write information needed by the utility program DENCHAR
-  (by J. Junquera and P. Ordej\'on) to plot the valence charge density
-  contours (see {\tt Util/Denchar}). The information is written in
-  file {\tt SystemLabel}.PLD.
+    WriteDenchar}} \index{output!charge density and/or wfs for DENCHAR
+  code} Instructs to write information needed by the utility program
+  DENCHAR (by J. Junquera and P. Ordej\'on) to generate valence charge
+  densities and/or wavefunctions in real space (see {\tt
+    Util/Denchar}). The information is written in files {\tt
+    SystemLabel}.PLD and {\tt SystemLabel}.DIM.
 
-{\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
-
-Apart from the PLD file, you will need the Density-Matrix (DM) file
-and/or a wavefunction (WFSX) file. 
+To run DENCHAR you will need, apart from the PLD and DIM files,
+the Density-Matrix (DM) file and/or a wavefunction (WFSX)
+file, and the .ion files containing the information about the basis
+orbitals.
 
 {\it Default value:} {\tt .false.}
 
@@ -6271,14 +6668,10 @@ temperature and/or pressure (see variable MD.AnnealOption below)
 \item {\tt FC} Compute force constants matrix\index{Force Constants
   Matrix} for phonon calculations.
 
-\item {\tt Phonon} Compute forces for a specified set of atomic
-  displacements chosen with the help of the {\sc Phonon}
-  program. \footnote{{\sc Phonon} is \copyright\ copyright by
-    Krzysztof Parlinski} \index{Phonon program} \index{Force Constants
-    Matrix!using phonon@using {\sc Phonon}}.
 
 \item {\tt Forces} (Receive coordinates from, and return forces to, an
-  external driver program, using MPI or Unix pipes for communication.
+  external driver program, using MPI, Unix pipes, or Inet sockets for 
+  communication.
   The routines in module fsiesta allow the user's program to perform
   this communication transparently, as if siesta were a conventional
   force-field subroutine. See {\tt Util/SiestaSubroutine/README} for
@@ -6289,13 +6682,49 @@ See directory Util/Scripting \index{Scripting} for other driving options.
 
 \end{itemize}
 
-{\it Default value:} {\tt Verlet} ({\tt CG} for one-atom systems)
+{\it Default value:} {\tt CG} (except if {\bf compat-pre-v4-dynamics}
+is set. See the notes below.
 
 Note that some options specified in later variables
 (like quenching) modify the behavior of these MD options.
-If the system contains just one atom, {\tt CG} is the only
-available dynamics option.
 
+Appart from being able to act as a force subroutine for a driver program that
+uses module fsiesta, {\sc Siesta} is also prepared to communicate with the 
+i-PI code (see {\tt http://epfl-cosmo.github.io/gle4md/index.html?page=ipi}).
+To do this, {\sc Siesta} must be started after i-PI (it acts as a client of
+i-PI, communicating with it through Inet or Unix sockets), and the following 
+lines must be present in the .fdf data file:
+\begin{verbatim}
+     MD.TypeOfRun      Master     # equivalent to 'Forces'
+     Master.code       i-pi       # ( fsiesta | i-pi )
+     Master.interface  socket     # ( pipes | socket | mpi )
+     Master.address    localhost  # or driver's IP, e.g. 150.242.7.140
+     Master.port       10001      # 10000+siesta_process_order
+     Master.socketType inet       # ( inet | unix )
+\end{verbatim}
+
+\subsection{Compatibility with pre-v4 versions}
+\index{Backward compatibility}
+
+Starting in the summer of 2015, some changes were made to the behavior
+of the program regarding default dynamics options and choice of
+coordinates to work with during post-processing of the electronic
+structure. The changes are:
+
+\begin{itemize}
+\item The default dynamics option is ``CG'' instead of ``Verlet''.
+\item The coordinates, if moved by the dynamics routines, are reset to
+their values at the previous step for the analysis of the electronic 
+structure (band structure calculations, DOS, LDOS, etc).
+\item Some output files reflect the values of the ``un-moved''
+  coordinates.
+\end{itemize}
+
+To recover the previous behavior, the user can turn on the
+compatibility switch {\bf compat-pre-v4-dynamics}, which is off by
+default.
+
+Note that complete compatibility cannot be perfectly guaranteed.
 
 \subsection{Structural relaxation}
 
@@ -6861,7 +7290,9 @@ It is not affected by the setting of {\bf LongOutput}.
     WriteForces}}\index{output!forces} If {\tt .true.} it writes the
   atomic forces to the output file at every MD time step or relaxation
   step.  Note that the forces of the last step can be found in the
-  file {\it Systemlabel}.FA .
+  file {\it Systemlabel}.FA. If constraints are used, the file
+   {\it SystemLabel}.{\tt FAC} is also written.
+
 
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
@@ -6915,10 +7346,11 @@ molecular dynamics, their {\bf positions predicted for next step} and
 SystemLabel is the value of that FDF descriptor (or 'siesta' by
 default).  The shape of the unit cell and its associated 'velocity'
 (in Parrinello-Rahman dynamics) are also stored in this file. For MD
-runs of type Verlet, Parrinello-Rahman, Nose, or
-Nose-Parrinello-Rahman, a file named SystemLabel.VERLET\_RESTART,
-SystemLabel.PR\_RESTART, SystemLabel.NOSE\_RESTART, or
-SystemLabel.NPR\_RESTART, respectively, is created to hold the values
+runs of type Verlet, Parrinello-Rahman, Nose, 
+Nose-Parrinello-Rahman, or Anneal, a file named SystemLabel.VERLET\_RESTART,
+SystemLabel.PR\_RESTART, SystemLabel.NOSE\_RESTART, 
+SystemLabel.NPR\_RESTART, or SystemLabel.ANNEAL\_RESTART, 
+respectively, is created to hold the values
 of auxiliary variables needed for a completely seamless
 continuation. 
 
@@ -7107,81 +7539,9 @@ atoms is writen (divided by the value of the displacement),
 in units of eV/\AA$^2$. Each line has the forces in the $x$, $y$
 and $z$ direction for one of the atoms.
 
+(If constraints are used, the file {\it SystemLabel}.{\tt FCC} is
+also written.)
 
-\subsection{Interface to the {\sc PHONON} program}
-\label{sec:phonon-interface}
-
-The interface to the {\sc Phonon} program was prepared for an earlier
-version of {\sc Siesta}, but it cannot be maintained properly by the
-developers because we do not use the program. We would appreciate help
-with testing and improving this interface. Alternatively, a script
-driving Siesta can be written instead. See {\tt Util/Scripting}.
-
-Here are the relevant options, active when {\bf MD.TypeOfRun}={\tt Phonon}.
-
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf PhononLabels}] ({\it data block}):
-\index{PhononLabels@{\bf PhononLabels}}
-It provides the mapping\index{Phonon program@{\sc Phonon program}}
-between the species number and those used by the {\sc
-Phonon} program. Note that chemically identical elements might be
-assigned different labels if they are not related by symmetry.
-
-\begin{verbatim}
-         %block PhononLabels
-            1   A   Mg
-            2   B   O
-         %endblock PhononLabels
-\end{verbatim}
-
-The species number is followed by the {\sc
-Phonon} program label and by the chemical symbol.
-
-{\it Use:} This block is mandatory if {\tt MD.TypeOfRun} is {\tt Phonon}.
-
-{\it Default:} No default.
-
-\item[{\bf MD.ATforPhonon}] ({\it data block}): List of ``symmetry
-irreducible'' atomic displacements for which to compute forces. Each
-line gives the fractional displacement for an atom, identified by its
-number in the atom list, and by a one-character code generated by the
-{\sc Phonon} program. These codes are put in correspondence with the
-species labels in block \hbox{\it PhononLabels}).\index{Force
-Constants Matrix!using phonon@using {\sc Phonon}}
-
-\begin{verbatim}
-    %block MD.ATforPhonon
-      0.002358   0.000000   0.000000  L     1
-      0.000000   0.000000   0.003488  L     1
-      0.002358   0.000000   0.000000  A    33
-      0.000000   0.000000   0.003488  A    33
-     -0.002358   0.000000   0.000000  L     1
-      0.000000   0.000000  -0.003488  L     1
-     -0.002358   0.000000   0.000000  A    33
-      0.000000   0.000000  -0.003488  A    33
-    %endblock MD.ATforPhonon
-
-\end{verbatim}
-
-{\it Note:} The presence of this block
-atomatically sets MD.TypeOfRun to {\tt Phonon}.
-
-{\it Default value:} None.
-
-\end{description}
-
-\index{output!molecular dynamics!PHONON forces file}
-If the dynamics option is set to the calculation of the forces for
-selected displacements ({\bf MD.TypeOfRun}={\tt Phonon}, and/or the
-block {\tt MD.ATforPhonon} exists), the forces
-are written in file {\it SystemLabel}.{\tt PHONON}.  The format is the
-following: Comment line, cell vectors in {\AA}, and for each
-displacement: atom displaced and its coordinates plus fractional
-displacement, Cartesian components of forces on all the atoms in units
-of eV/\AA.
 
 \section{TRANSIESTA}
 
@@ -8231,20 +8591,13 @@ file), which implements the Perdew-Zunger LDA parametrization of xc,
 is based on routine velect, written by {\bf S.\ Froyen}.
 
 \item
-A small number of routines are modified versions of those from {\em
-  Numerical Recipes. The Art of Scientific Computing} by {\bf
-  W. H.\ Press, S. A.\ Teukolsky, W. T.\ Veterling and
-  B. P.\ Flannery} (Cambridge U.P. 1987-1992), and are kept in file
-recipes.f
-
-\item
 Some standard linear-algebra routines from the {\bf EISPACK}, {\bf
   BLAS}, and {\bf LAPACK}  packages are in files eispack.F, and in
 several files in Libs.
 
 \item
 The serial version of the multivariate fast fourier transform used to
-solve Poisson's equation was written by {\bf R. C. Singleton} in 1968.
+solve Poisson's equation was written by {\bf Clive Temperton}.
 
 \item
 Subroutine iomd.f for writing MD history in files was originally
@@ -8862,6 +9215,29 @@ precision selection
   O(N) routines. 
 
 \end{itemize}
+
+\newpage
+\section{APPENDIX: Data structures and reference counting}
+\index{Reference counting}
+\index{Data Structures}
+
+To implement some of the new features (e.g. charge mixing), {\sc
+  SIESTA} uses new flexible data structures. These are defined and
+handled through a combination and extension of ideas already in the
+Fortran community:
+\begin{itemize}
+\item Simple templating using the ``include file'' mechanism, as for example in
+  the FLIBS project led by Arjen Markus
+  (\url{http://flibs.sourceforge.net}).
+\item The classic reference-counting mechanism to avoid memory leaks, as
+  implemented in the PyF95++ project
+  (\url{http://blockit.sourceforge.net}).
+\end{itemize}
+
+Reference counting makes it much simpler to store data in container
+objects. For example, a circular stack is used in the charge-mixing
+module. A number of future enhancements depend on this paradigm.
+
 
 \addcontentsline{toc}{section}{Index}
 \printindex

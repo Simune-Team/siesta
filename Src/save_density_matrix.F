@@ -15,7 +15,7 @@
       use m_iodm,               only:  write_dm
       use m_spin,               only:  nspin
       use atomlist,             only:  no_l
-      use siesta_options,       only:  writedm, writedm_cdf
+      use siesta_options,       only:  idyn, writedm, writedm_cdf
       use siesta_options,       only:  writedm_cdf_history
       use m_steps,              only:  istp
       use sparse_matrices,      only:  Dscf
@@ -23,7 +23,6 @@
       use iodm_netcdf,          only:  write_dm_netcdf
 #endif
 #ifdef TRANSIESTA
-      use siesta_options,       only:  idyn, writedm
       use sparse_matrices,      only:  Escf
       use m_steps,              only:  istp
       use m_ts_iodm,            only:  write_ts_dm
@@ -31,6 +30,9 @@
       use m_energies,           only:  ef
 #endif
 
+      implicit none
+
+      ! This is a just a comment in the caller side, unused for now
       character(len=*), intent(in)   :: id
 
 #ifdef CDF

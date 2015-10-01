@@ -28,8 +28,7 @@ C **********************************************************************
       use precision, only : dp
       use atmfuncs,  only : labelfis
       use units,     only : Ang
-      use m_recipes, only : sort
-      use sorting,   only : order, iorder
+      use sorting,   only : order, iorder, ordix
       use alloc,       only: re_alloc, de_alloc
       use neighbour,   only: jna=>jan, xij, r2ij, maxna=>maxnna
       use neighbour,   only: mneighb, reset_neighbour_arrays
@@ -74,12 +73,12 @@ C Find neighbours of atom IA
               cycle   ! loop over ia
            endif
            ! Sort by distance
-           call sort( nna, r2ij, index )
+           call ordix(r2ij,1,nna,index)
            call iorder( jna, 1, nna, index )
            call order(  r2ij, 1, nna, index )
            call order(  xij, 3, nna, index )
 
-           write(iu,fmt="(a,i3,1x,a,3f8.4)")
+           write(iu,fmt="(a,i5,1x,a,3f8.4)")
      $       "Neighbors of: ",
      $          ia, trim(labelfis(isa(ia))) // " at: ", xa(:,ia)
 
@@ -88,7 +87,7 @@ C Find neighbours of atom IA
             JS = ISA(JA)
             RIJ = SQRT(R2IJ(IN))
             if (rij > 0.0001_dp) then
-               write(iu,fmt="(i3,1x,a,f8.4,2x,a,3f8.4)")
+               write(iu,fmt="(i5,1x,a,f8.4,2x,a,3f8.4)")
      $           ja, labelfis(js), rij/Ang, "Ang. Really at: ",
      $           xa(:,ia)+xij(:,in)
             endif

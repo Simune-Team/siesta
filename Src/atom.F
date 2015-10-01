@@ -13,7 +13,8 @@
       use precision, only: dp
       use sys,       only: die
       use atmparams
-      use m_recipes, only: spline, polint
+      use interpolation, only: spline  ! set spline interpolation
+      use interpolation, only: polint  ! polynomial interpolation
       use basis_types, only: basis_parameters
       use basis_types, only: ground_state_t
       use atom_options, only: write_ion_plot_files, debug_kb_generation
@@ -274,10 +275,11 @@
       
 !!** AG: Symbol is not adequate. Should use the label
 
-        if (iz.gt.200) then  
+        if (abs(iz).gt.200) then  
           write(6,'(3a,i4,a)')
      .      'atom: Called for (synthetic) ', atm_label,
      .      '  (Z =', iz,')' 
+               if (iz.lt.0) write(6,'(a)') '(Floating basis)'
 
         else if (iz.gt.0) then  
           write(6,'(3a,i4,a)')
@@ -1993,19 +1995,28 @@ C Local variables
         character(len=40)            :: ps_string
 
         ps_string = "Unknown atomic XC code"
-        if (icorr .eq. "ca") ps_string ="Ceperley-Alder"
-        if (icorr .eq. "pw") ps_string ="Perdew-Wang 1992"
-        if (icorr .eq. "pb")
-     .         ps_string ="GGA Perdew, Burke & Ernzerhof 1996"
+        if (icorr .eq. "ca") ps_string ="LDA CA"
+        if (icorr .eq. "pw") ps_string ="LDA PW92"
+        if (icorr .eq. "pb") ps_string ="GGA PBE"
+        if (icorr .eq. "pg") ps_string ="GGA PW91"
         if (icorr .eq. "rp") ps_string ="GGA RPBE"
         if (icorr .eq. "rv") ps_string ="GGA revPBE"
-        if (icorr .eq. "wc") ps_string ="GGA Wu-Cohen"
-        if (icorr .eq. "bl") ps_string ="GGA Becke-Lee-Yang-Parr"
+        if (icorr .eq. "wc") ps_string ="GGA WC"
+        if (icorr .eq. "bl") ps_string ="GGA BLYP"
         if (icorr .eq. "ps") ps_string ="GGA PBEsol"
 #ifndef BSC_CELLXC
+        if (icorr .eq. "jo") ps_string ="GGA PBEJsJrLO"
+        if (icorr .eq. "jh") ps_string ="GGA PBEJsJrHEG"
+        if (icorr .eq. "go") ps_string ="GGA PBEGcGxLO"
+        if (icorr .eq. "gh") ps_string ="GGA PBEGcGxHEG"
         if (icorr .eq. "am") ps_string ="GGA AM05"
-        if (icorr .eq. "vf" .or. icorr .eq. "vw") 
-     $    ps_string ="VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist"
+        if (icorr .eq. "vf" .or. icorr .eq. "vw")
+     .                       ps_string ="VDW DRSLL"
+        if (icorr .eq. "vl") ps_string ="VDW LMKLL"
+        if (icorr .eq. "vk") ps_string ="VDW KBM"
+        if (icorr .eq. "vc") ps_string ="VDW C09"
+        if (icorr .eq. "vb") ps_string ="VDW BH"
+        if (icorr .eq. "vv") ps_string ="VDW VV"
 
 C Get functional(s) being used
         call getXC( nXCfunc, XCfunc, XCauth )
@@ -2024,7 +2035,6 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      .           trim(ps_string), " functional"
 
-
           elseif((XCauth(nf).eq.'PW92').and.
      .      ((XCfunc(nf).eq.'LDA').or.(XCfunc(nf).eq.'LSD'))) then
 
@@ -2033,7 +2043,6 @@ C Loop over functionals
      .          write(6,'(a,1x,2a)')
      .          'xc_check: WARNING: Pseudopotential generated with',
      .           trim(ps_string), " functional"
-
 
           elseif((XCauth(nf).eq.'PBE').and.(XCfunc(nf).eq.'GGA')) then
 
@@ -2044,7 +2053,8 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      .           trim(ps_string), " functional"
 
-          elseif ((XCauth(nf).eq.'LYP').and.(XCfunc(nf).eq.'GGA')) then
+          elseif ((XCauth(nf).eq.'LYP' .or. XCauth(nf).eq.'BLYP').and.
+     .            (XCfunc(nf).eq.'GGA')) then
 
             write(6,'(a)')  'xc_check: GGA Becke Lee Yang Parr'
             if (icorr.ne.'bl'.and.nXCfunc.eq.1) 
@@ -2089,25 +2099,124 @@ C Loop over functionals
      .           trim(ps_string), " functional"
 
 #ifndef BSC_CELLXC
+          elseif((XCauth(nf).eq.'PW91').and.(XCfunc(nf).eq.'GGA')) then
+
+            write(6,'(a)')
+     .       'xc_check: GGA Perdew-Wang 1991'
+            if (icorr.ne.'pg'.and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
+
+          elseif((XCauth(nf).eq.'PBEJsJrLO').and.
+     .           (XCfunc(nf).eq.'GGA')) then
+
+            write(6,'(a)')
+     .       'xc_check: GGA PBE-Js-Jr-LO'
+            if (icorr.ne.'jo'.and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
+
+          elseif((XCauth(nf).eq.'PBEJsJrHEG').and.
+     .           (XCfunc(nf).eq.'GGA')) then
+
+            write(6,'(a)')
+     .       'xc_check: GGA PBE-Js-Jr-HEG'
+            if (icorr.ne.'jh'.and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
+
+          elseif((XCauth(nf).eq.'PBEGcGxLO').and.
+     .           (XCfunc(nf).eq.'GGA')) then
+
+            write(6,'(a)')
+     .       'xc_check: GGA PBE-Gc-Gx-LO'
+            if (icorr.ne.'go'.and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
+
+          elseif((XCauth(nf).eq.'PBEGcGxHEG').and.
+     .           (XCfunc(nf).eq.'GGA')) then
+
+            write(6,'(a)')
+     .       'xc_check: GGA PBE-Gc-Gx-HEG'
+            if (icorr.ne.'gh'.and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
+
           elseif((XCauth(nf).eq.'AM05').and.(XCfunc(nf).eq.'GGA')) 
      .        then
 
             write(6,'(a)')
      .       'xc_check: GGA AM05'
             if (icorr.ne.'am'.and.nXCfunc.eq.1) 
-     $          write(6,'(a,1x,2a)')
+     .          write(6,'(a,1x,2a)')
      .          'xc_check: WARNING: Pseudopotential generated with',
-     $           trim(ps_string), " functional"
+     .           trim(ps_string), " functional"
 
-          elseif ((XCauth(nf).eq.'DRSLL')
-     $                  .and.(XCfunc(nf).eq.'VDW')) then
+          elseif ((XCauth(nf).eq.'DRSLL') .and.
+     .            (XCfunc(nf).eq.'VDW')) then
 
             write(6,'(a)')  
-     $        'xc_check: VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist'
+     .        'xc_check: VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist'
             if ((icorr.ne.'vf' .and. icorr.ne.'vw') .and.nXCfunc.eq.1) 
-     $          write(6,'(a,1x,2a)')
+     .          write(6,'(a,1x,2a)')
      .          'xc_check: WARNING: Pseudopotential generated with',
-     $           trim(ps_string), " functional"
+     .           trim(ps_string), " functional"
+
+          elseif ((XCauth(nf).eq.'LMKLL') .and.
+     .            (XCfunc(nf).eq.'VDW')) then
+
+            write(6,'(a)')  
+     .        'xc_check: VDW Lee-Murray-Kong-Langreth-Lundqvist'
+            if (icorr.ne.'vl' .and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
+
+          elseif ((XCauth(nf).eq.'KBM') .and.
+     .            (XCfunc(nf).eq.'VDW')) then
+
+            write(6,'(a)')  
+     .        'xc_check: VDW Klimes-Bowler-Michaelides'
+            if (icorr.ne.'vk' .and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
+
+          elseif ((XCauth(nf).eq.'C09') .and.
+     .            (XCfunc(nf).eq.'VDW')) then
+
+            write(6,'(a)')  
+     .        'xc_check: VDW Cooper'
+            if (icorr.ne.'vc' .and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
+
+          elseif ((XCauth(nf).eq.'BH') .and.
+     .            (XCfunc(nf).eq.'VDW')) then
+
+            write(6,'(a)')  
+     .        'xc_check: VDW Berland-Hyldgaard'
+            if (icorr.ne.'vb' .and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
+
+          elseif ((XCauth(nf).eq.'VV') .and.
+     .            (XCfunc(nf).eq.'VDW')) then
+
+            write(6,'(a)')  
+     .        'xc_check: VDW Vydrov-vanVoorhis'
+            if (icorr.ne.'vv' .and.nXCfunc.eq.1) 
+     .          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     .           trim(ps_string), " functional"
 
 #endif /* ! BSC_CELLXC */
          else
@@ -6953,7 +7062,7 @@ C
           write(6,'(2(1x,i4),1x,2a)')
      .      is,izofis(is),labelfis(is), 
      .      '    # Species index, atomic number, species label' 
-            if (izofis(is) > 200) synthetic_atoms = .true.
+          if (abs(izofis(is)) > 200) synthetic_atoms = .true.
         enddo 
         write(6,'(a)')
      .    '%endblock ChemicalSpeciesLabel' 
@@ -6966,7 +7075,7 @@ C
      .      '%block SyntheticAtoms   # Valence config'
 
           do is=1,ntotsp
-            if (izofis(is) < 200) cycle
+            if (abs(izofis(is)) < 200) cycle
             gs => basis_parameters(is)%ground_state
             write(6,"(i3)") is
             do i = 0, 3
