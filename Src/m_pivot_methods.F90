@@ -29,6 +29,10 @@ module m_pivot_methods
   public :: GPS, rev_GPS
   public :: GGPS, rev_GGPS
   public :: PCG, rev_PCG
+  
+#ifdef SIESTA__METIS
+  public :: metis_pvt
+#endif
 
   public :: bandwidth, profile
 
@@ -938,6 +942,136 @@ contains
     call rgn_reverse(pvt)
     
   end subroutine rev_PCG
+
+
+#ifdef SIESTA__METIS
+  subroutine metis_pvt(n,nnzs,n_col,l_ptr,l_col,sub,pvt, priority)
+    use iso_c_binding, only: c_int, c_ptr, c_loc
+    integer, intent(in) :: n, nnzs
+    integer, intent(in) :: n_col(n), l_ptr(n), l_col(nnzs)
+    type(tRgn), intent(in) :: sub
+    type(tRgn), intent(inout) :: pvt
+    integer, intent(in), optional :: priority(n)
+
+    ! METIS variables
+    integer(c_int), allocatable :: xadj(:), adjncy(:)
+    integer(c_int), allocatable :: perm(:), iperm(:)
+    integer(c_int), allocatable, target :: w(:)
+    integer(c_int) :: nvtxs, opts(60) ! In 5.0.1 it is 40, but ...
+    type(c_ptr) :: wp
+    integer :: nadj
+
+    interface 
+       integer(c_int) function METIS_NodeND(nvtxs,xadj,adjncy,vwgt, &
+            opts,perm,iperm) bind(C, name="METIS_NodeND")
+         use iso_c_binding, only: c_int, c_ptr
+         integer(c_int) :: nvtxs
+         integer(c_int), dimension(*) :: xadj,adjncy,perm,iperm
+         type(c_ptr), value :: vwgt
+         integer(c_int), dimension(*) :: opts
+       end function METIS_NodeND
+    end interface
+
+    ! variables for the loop
+    integer :: io, i, ptr, ind, nc, j
+
+    call rgn_delete(pvt)
+
+    call METIS_setdefaultoptions(opts)
+    opts(18) = 1
+
+    ! Allocate adjacency graphs
+    allocate(xadj(0:sub%n), perm(sub%n), iperm(sub%n) , w(sub%n) )
+
+    ! First count adjacencies
+    xadj(0) = 0
+    do i = 1 , sub%n
+
+       io = sub%r(i)
+       ptr = l_ptr(io)
+       nc = n_col(io)
+
+       ! Count number of elements in 
+       ! the sub-space
+       nadj = 0
+       do ind = ptr + 1 , ptr + nc
+          if ( in_rgn(sub,l_col(ind)) ) then
+             ! Skip "on-site" connections
+             if ( l_col(ind) /= io ) then
+                nadj = nadj + 1
+             end if
+          end if
+       end do
+       
+       xadj(i) = xadj(i-1) + nadj
+
+       if ( present(priority) ) then
+          w(i) = priority(io)
+       else
+          w(i) = 1
+       end if
+       
+    end do
+
+    ! transfer to local adjacency graph
+    allocate( adjncy(xadj(sub%n)) )
+
+    ! Create adjncy 
+    nadj = 0
+    do i = 1 , sub%n
+
+       io = sub%r(i)
+       ptr = l_ptr(io)
+       nc = n_col(io)
+
+       ! Count number of elements in 
+       ! the sub-space
+       do ind = ptr + 1 , ptr + nc
+          j = rgn_pivot(sub,l_col(ind))
+          if ( j > 0 ) then
+             ! Skip "on-site" connections
+             if ( l_col(ind) /= io ) then
+                nadj = nadj + 1
+                adjncy(nadj) = j
+             end if
+          end if
+       end do
+       
+       if ( nadj /= xadj(i) ) then
+          print *,i,nadj, xadj(i)
+          call die('metis_pvt: Error in creating &
+               &adjacency graph.')
+       end if
+
+    end do
+
+    ! Call metis
+    ! TODO, I think there is a bug, it partitions extremely bad
+    wp = c_loc(w(1))
+    nvtxs = sub%n
+    i = METIS_NodeND(nvtxs, xadj, adjncy, wp, opts, &
+         perm, iperm)
+    if ( i /= 1 ) then ! METIS_OK == 1
+       print *,i
+       call die('pivot_method: metis, error in pivoting.')
+    end if
+
+    ! Clean-up
+    deallocate(xadj,adjncy,iperm)
+
+    call rgn_init(pvt,sub%n)
+
+    ! Transfer pivoting to actual pivoting index
+    do i = 1 , sub%n
+       pvt%r(i) = sub%r(perm(i))
+    end do
+
+    ! Clean-up
+    deallocate(perm,w)
+    
+  end subroutine metis_pvt
+#endif
+
 
   function bandwidth(n,nnzs,n_col,l_ptr,l_col,sub) result(beta)
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)

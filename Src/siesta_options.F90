@@ -1624,10 +1624,12 @@ MODULE siesta_options
 
     want_spatial_decomposition = fdf_get('UseSpatialDecomposition', .false.)
     want_domain_decomposition = fdf_get('UseDomainDecomposition', .false.)
-#ifndef ON_DOMAIN_DECOMP
+#if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
+#else
 #ifdef MPI
     if (want_domain_decomposition) then
-        call die("Need to compile with ON_DOMAIN_DECOMP support")
+       write(*,*)'Need to compile SIESTA__METIS or ON_DOMAIN_DECOMP'
+       call die("Need to compile with ON_DOMAIN_DECOMP support")
     endif
 #endif
 #endif

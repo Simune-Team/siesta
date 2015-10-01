@@ -32,6 +32,9 @@ module m_pivot
   integer, parameter :: PVT_REV_GGPS = 6
   integer, parameter :: PVT_PCG = 7
   integer, parameter :: PVT_REV_PCG = 8
+#ifdef SIESTA__METIS
+  integer, parameter :: PVT_METIS = 9
+#endif
 
 contains
 
@@ -108,6 +111,11 @@ contains
     else if ( method == PVT_REV_GGPS          ) then
        call rev_GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
        pvt%name = 'rev-General-Gibbs-Pole-Stockmeyer'
+#ifdef SIESTA__METIS
+    else if ( method == PVT_METIS ) then
+       call metis_pvt(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+       pvt%name = 'metis'
+#endif
     else
        call die('m_pivot: Programming error, unknown method')
     end if

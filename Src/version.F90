@@ -88,6 +88,9 @@ write(6,'(a)') 'NetCDF support'
 #ifdef NCDF_4
 write(6,'(a)') 'NetCDF-4 support'
 #endif
+#if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
+write(6,'(a)') 'METIS ordering support'
+#endif
 
 end subroutine prversion
 !----------------------------------------------------------

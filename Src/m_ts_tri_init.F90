@@ -638,6 +638,27 @@ contains
        call tri(r_El)
     end if
 
+#ifdef SIESTA__METIS
+    if ( IONode ) write(*,fmt) trim(corb),'metis'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS, sub = full)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+
+    if ( IONode ) write(*,fmt) trim(corb),'metis+priority'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS, sub = full, &
+         priority = priority%r)
+    if ( orb_atom == 1 ) then
+       call tri(r_tmp)
+    else
+       call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+       call tri(r_El)
+    end if
+#endif
+
     end do orb_atom_switch
 
     call rgn_delete(r_tmp,r_Els,r_El,full,priority)

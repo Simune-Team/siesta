@@ -356,7 +356,7 @@ C ==================================================================
 
 !       Use metis library to create a Domain decomposition
         metis_options(1) = 0
-#ifdef ON_DOMAIN_DECOMP
+#if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
         if (nparts .gt. 8 ) then
           call METIS_PartGraphKway( no, jja, iia, dummy, dummy, 0,
      &                              1, nparts, metis_options,
@@ -535,7 +535,7 @@ C ==================================================================
 !       Number interior nodes
         noloc = ginde(2,dom)
         if (noloc.gt.0) then
-#ifdef ON_DOMAIN_DECOMP
+#if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
           call METIS_NodeND( noloc, xadj, adj, 1, metisOpt, perR, invR )
 #endif
 

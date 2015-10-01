@@ -1,4 +1,32 @@
 ----------------------------------------------------
+October 1, 2015 -- Nick Papior       trunk-478---ts-scf-537
+Enabled METIS pivoting in transiesta
+
+* The METIS pivoting should be good, however I cannot
+  seem to get good pivoting from it.
+
+  Currently it exists, but isn't used as it is inferior.
+
+  To compile with metis support simply add
+   -DSIESTA__METIS
+  to the FPPFLAGS.
+
+  Note that ON_DOMAIN_DECOMP and SIESTA__METIS
+  both behaves the same in the order-N method.
+
+  SIESTA__METIS is just more generic than the 
+  other name.
+
+modified:
+  Src/domain_decom.F
+  Src/m_pivot.F90
+  Src/m_pivot_methods.F90
+  Src/m_ts_pivot.F90
+  Src/m_ts_tri_init.F90
+  Src/siesta_options.F90
+  Src/version.F90
+
+----------------------------------------------------
 October 1, 2015 -- Nick Papior       trunk-477---ts-scf-536
 Bugfix for print-statement in m_mixing
 

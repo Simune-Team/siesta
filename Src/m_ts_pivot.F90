@@ -251,6 +251,19 @@ contains
        call sp_pvt(n,tmp_Sp,r_pvt, PVT_REV_GGPS, c_pvt, &
             priority = priority%r )
 
+#ifdef SIESTA__METIS
+    else if ( str_contain(pvt_str,'metis') ) then
+       str_tmp = trim(str_tmp)//'+metis'
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS, c_pvt)
+
+    else if ( str_contain(pvt_str,'metis+priority') ) then
+       str_tmp = trim(str_tmp)//'+metis+priority'
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS, c_pvt, &
+            priority = priority%r)
+#endif
+
     else ! the user *must* have supplied an electrode       
 
        ! prepare the initial pivoting region
