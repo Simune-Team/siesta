@@ -23,7 +23,7 @@ type FSTACK_NAME
    type(Fstack_), pointer :: data => null()
 end type FSTACK_NAME
 
-public :: new, push, get, get_pointer, reset
+public :: new, push, pop, get, get_pointer, reset
 public :: n_items, max_size, print_type
 
 interface new
@@ -31,6 +31,9 @@ interface new
 end interface
 interface push
  module procedure push__
+end interface
+interface pop
+ module procedure pop__
 end interface
 interface get
  module procedure get__
@@ -133,6 +136,28 @@ else
 endif
 end subroutine push__
 
+
+!---------------------------------------------
+! Returns and pops the latest element
+!
+subroutine pop__(s,item)
+type(FSTACK_NAME), intent(inout) :: s
+type(_T_),      intent(inout)    :: item
+
+if (max_size(s) == 0) RETURN
+if (n_items(s) == 0) then
+   call delete(item)
+   RETURN
+endif
+
+! retrieve the latest value
+item = s%data%val(s%data%nvals)
+! Delete the local and decrease counter
+call delete(s%data%val(s%data%nvals))
+s%data%nvals = s%data%nvals - 1
+
+end subroutine pop__
+
 !---------------------------------------------
 subroutine get__(s,i,value)
 type(FSTACK_NAME), intent(in) :: s
@@ -168,7 +193,7 @@ subroutine reset__(this,n)
 type(FSTACK_NAME), intent(inout) :: this
 ! Number of elements to keep
 integer, intent(in), optional :: n
-integer :: i, ns, ln, j
+integer :: i, ns, ln
 
 ns = n_items(this)
 ln = ns
@@ -177,33 +202,35 @@ if ( present(n) ) ln = n
 ! There are three options
 
 if ( ln > 0 ) then
-  ! We will delete the first 'ln' entries
+  ! We will delete the oldest 'ln' entries
   ln = min(ln,ns)
 
   ! 'ln' is now the number of elements deleted  
 
 else if ( ln < 0 ) then
-  ! We will keep the first '-ln' entries
+  ! We will keep the latest '-ln' entries
   ln = min(-ln,ns)
 
-  ! Calculate the number of elements to be deleted
+  ! Calculate the number of oldest elements to be deleted
   ln = ns - ln
+  if ( ln == 0 ) return
 
 else
   ! Delete entire history
   ln = ns
 end if
 
+ns = max_size(this)
 if ( ln /= ns ) then
   ! Cyclic shifts
-  this%data%val = cshift(this%data%val,+ns)
+  this%data%val = cshift(this%data%val,+ln)
 end if
 
-! delete back values
-j = max_size(this)
+! delete back values as the cycling puts them
+! in the back
 do i = 1 , ln
-  call delete(this%data%val(j))
-  j = j - 1
+  call delete(this%data%val(ns))
+  ns = ns - 1
   this%data%nvals = this%data%nvals - 1
 end do
 

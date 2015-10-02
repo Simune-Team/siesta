@@ -1,4 +1,27 @@
 ----------------------------------------------------
+October 2, 2015 -- Nick Papior       trunk-478---ts-scf-538
+Changed mixing algorithm to _only_ use the stable Pulay
+
+* Also implemented the GR Pulay mixing algorithm
+  which in many cases can speed up the convergence.
+
+  It is used via SCF.Mix.Variant gr
+
+* Removed Broyden variant 'restart' as that has been
+  implicitly implemented.
+
+* Changed the Pulay method to only use the stable variant.
+
+  With no speed penalty.
+
+  The stored arrays for the history in pulay is now the
+  double residuals and the residuals.
+
+modified:
+  Src/Fstack.T90
+  Src/m_mixing.F90
+
+----------------------------------------------------
 October 1, 2015 -- Nick Papior       trunk-478---ts-scf-537
 Enabled METIS pivoting in transiesta
 

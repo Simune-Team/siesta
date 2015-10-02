@@ -6,8 +6,13 @@
 ! The Pulay method is implemented in the fast calculation
 ! setup and in the stable method.
 ! The stable method is executed if the inversion fails.
+!  - Stable: G.Kresse and J.Furthmuller, Comp. Mat. Sci. 6, 15, 1996
+!  - gr (guarenteed-reduction) : http://arxiv.org/pdf/cond-mat/0005521.pdf
 
 ! The Broyden scheme is implemented
+
+! All implemented methods employ a restart with variable
+! history saving.
 
 module m_mixing
   
@@ -66,6 +71,10 @@ module m_mixing
      integer :: n_itt = 0
      ! The currently reached iteration
      integer :: cur_itt = 0
+     ! When mod(cur_itt,restart_itt) == 0 the history will
+     ! be "killed"
+     integer :: restart = 1000000000
+     integer :: restart_save = 0
 
      ! The next mixing method following this method
      type(tMixer), pointer :: next => null()
@@ -111,7 +120,7 @@ contains
     type(parsed_line), pointer :: pline
 
     ! number of history steps saved
-    integer :: n_hist, n_kick
+    integer :: n_hist, n_kick, n_restart, n_save
     integer :: n_lin_before, n_lin_after
     real(dp) :: w, w_kick
     real(dp) :: w_lin_before, w_lin_after
@@ -147,6 +156,13 @@ contains
     n_kick = fdf_get('SCF.Mix.Kick',n_kick)
     n_kick = fdf_get(trim(lpre)//'Mix.Kick',n_kick)
 
+    ! Restart after this number of iterations
+    n_restart = fdf_get('SCF.Mix.Restart',0)
+    n_restart = fdf_get(trim(lpre)//'Mix.Restart',n_restart)
+    n_save = fdf_get('SCF.Mix.Restart.Save',1)
+    n_save = fdf_get(trim(lpre)//'Mix.Restart.Save',n_save)
+    n_save = max(0,n_save)
+
     if ( present(prefix) ) then
        w_kick = w
     else
@@ -170,10 +186,12 @@ contains
        n_pulay_orig = n_hist
        n_broy_orig = n_hist
     else
-       n_pulay_orig = fdf_get('DM.NumberPulay',2)
-       n_broy_orig = fdf_get('DM.NumberBroyden',0)
+       ! Let Mix.History decide if the others are not given
+       n_hist = fdf_get('SCF.Mix.History',0)
+       n_pulay_orig = fdf_get('DM.NumberPulay',max(n_hist,2))
+       n_broy_orig = fdf_get('DM.NumberBroyden',max(n_hist,0))
     end if
-    
+
     ! default to pulay history
     n_pulay = fdf_get('SCF.Mix.Pulay.History',n_pulay_orig)
     n_pulay = fdf_get(trim(lpre)//'Mix.Pulay.History',n_pulay)
@@ -247,9 +265,7 @@ contains
 
        ! Allocate different mixers (we always add a linear
        ! mixer in case the user "forgot"
-       allocate(mixers(nm))
-       mixers(:)%w = w
-       mixers(:)%n_hist = n_hist
+       call alloc_init(nm)
 
        ! Rewind to grab names.
        call fdf_brewind(bfdf)
@@ -279,9 +295,7 @@ contains
        if ( n_lin_after > 0 ) nm = nm + 1
        if ( n_kick > 0 ) nm = nm + 1
        
-       allocate(mixers(nm))
-       mixers(:)%w = w
-       mixers(:)%n_hist = n_hist
+       call alloc_init(nm)
 
        ! Current processing index
        im = 0
@@ -388,21 +402,20 @@ contains
          ! no variants
       case ( MIX_PULAY ) 
          v = 0
-         if ( leqi(str,'pulay') .or. leqi(str,'original') ) then
-            ! "non" stable version, might 
-            ! error on inversion
-            v = 0
-         else if ( leqi(str,'kresse') .or. leqi(str,'stable') ) then
+         ! We do not implement tho non-stable version
+         ! There is no need to have an inferior Pulay mixer...
+         if ( leqi(str,'original') .or. &
+              leqi(str,'kresse') .or. leqi(str,'stable') ) then
             ! stable version, will nearly always succeed on inversion
-            v = 1
-         end if
-      case ( MIX_BROYDEN ) 
-         if ( leqi(str,'broyden') .or. leqi(str,'original') ) then
-            ! cycle the history
             v = 0
-         else if ( leqi(str,'restart') ) then
+         else if ( leqi(str,'gr') .or. &
+              leqi(str,'guarenteed-reduction') .or. &
+              leqi(str,'bowler-gillan') ) then
+            ! Guarenteed reduction version
             v = 1
          end if
+      case ( MIX_BROYDEN )
+         v = 0
       case ( MIX_FIRE ) 
          ! no variants
       end select
@@ -418,7 +431,7 @@ contains
       
       ! create block string
       opt = trim(lpre)//'Mix'//trim(lsuf)//'.'//trim(m%name)
-      
+
       ! Read the options for this mixer
       if ( fdf_block(opt,bfdf) ) then
          
@@ -469,6 +482,15 @@ contains
 
                m%n_hist = fdf_bintegers(pline,1)
 
+            else if ( leqi(opt,'restart') ) then
+
+               m%restart = fdf_bintegers(pline,1)
+
+            else if ( leqi(opt,'restart.save') ) then
+
+               m%restart_save = fdf_bintegers(pline,1)
+               m%restart_save = min(0,m%restart_save)
+
             else if ( leqi(opt,'variant') ) then
 
                variant = fdf_bnames(pline,2)
@@ -489,8 +511,6 @@ contains
               &for mixing parameters')
 
       end if
-
-      
 
       ! Initialize generic options for this
       ! mixing scheme
@@ -519,6 +539,16 @@ contains
          m%rv(1) = w_broy_p
 
       end select
+
+      if ( 0 < m%restart .and. m%restart < m%n_hist ) then
+         ! signal to never restart
+         m%restart = 0
+      else if ( m%m == MIX_PULAY .and. m%v == 1 ) then
+         ! Ensure the restart is an even number
+         m%restart = m%restart + mod(m%restart,2)
+      end if
+
+      m%restart_save = min(m%n_hist - 1,m%restart_save)
 
       ! Read the options for this mixer
       if ( fdf_block(opt,bfdf) ) then
@@ -551,6 +581,17 @@ contains
 
     end subroutine read_block
 
+    subroutine alloc_init(n)
+      integer :: n
+
+      allocate(mixers(n))
+      mixers(:)%w = w
+      mixers(:)%n_hist = n_hist
+      mixers(:)%restart = n_restart
+      mixers(:)%restart_save = n_save
+      
+    end subroutine alloc_init
+
   end subroutine mixing_init
 
 
@@ -560,105 +601,40 @@ contains
     integer, intent(in) :: iscf, n
     real(dp), intent(inout) :: oldF(n), newF(n)
 
-    integer :: info, o_ns
-    real(dp) :: rtmp
+    integer :: info
 
-    if ( mix%m == MIX_BROYDEN ) then
-       ! we need to check for first linear thing
-       o_ns = n_items(mix%stack(1))
-    end if
-
-    ! Add history (if needed)
-    call mix_add_history( mix, iscf, n, oldF, newF )
+    ! Step iterator (so first mixing has cur_itt == 1)
+    mix%cur_itt = mix%cur_itt + 1
 
     ! Select mixer
     select case ( mix%m )
 
     case ( MIX_LINEAR )
 
-       if ( debug_mix ) write(*,'(2a)') trim(debug_msg),' linear'
+       if ( debug_mix ) &
+            write(*,'(2a)') trim(debug_msg),' linear'
 
-       call mixing_linear(mix, n, oldF, newF )
+       call mixing_linear(mix, iscf, n, oldF, newF, info)
 
     case ( MIX_PULAY )
        
        if ( debug_mix ) then
-          if ( mix%v == 0 ) then
+          select case ( mix%v )
+          case ( 0 )
              write(*,'(2a)') trim(debug_msg),' Pulay'
-          else
-             write(*,'(2a)') trim(debug_msg),' Pulay, stable'
-          end if
+          case ( 1 )
+             write(*,'(2a)') trim(debug_msg),' Pulay, GR'
+          end select
        end if
 
-       call mixing_pulay(mix, n, oldF, newF , info )
-
-       if ( info /= 0 .and. mix%v == 0 ) then
-
-          ! Switch to the stable Pulay mixer
-          mix%v = 1
-
-          if ( debug_mix ) &
-               write(*,'(2a)') trim(debug_msg), &
-               ' Pulay -- failed, trying stable'
-
-          ! Do stable Pulay mixing (if this fails it will revert
-          ! to linear mixing)
-          call mixing_pulay(mix, n, oldF, newF , info )
-
-          ! swap back to fast method
-          mix%v = 0
-
-       end if
-
-       if ( info /= 0 ) then
-
-          ! All Pulay mixers failed, run linear
-          if ( IONode ) then
-             write(*,'(a)') 'mix: Pulay stable -- failed, > linear'
-          end if
-
-          rtmp = mix%w
-          mix%w = mix%rv(1)
-          call mixing_linear(mix, n, oldF, newF )
-          mix%w = rtmp
-
-       end if
+       call mixing_pulay(mix, iscf, n, oldF, newF , info)
 
     case ( MIX_BROYDEN )
 
-       if ( o_ns == 0 ) then
+       if ( debug_mix ) &
+            write(*,'(2a)') trim(debug_msg),' Broyden'
 
-          if ( debug_mix ) write(*,'(2a)') &
-               trim(debug_msg),' Broyden -- init'
-
-          call mixing_linear(mix, n, oldF, newF)
-
-          ! Signal no error
-          info = 0
-
-       else
-
-          if ( debug_mix ) then
-            if ( mix%v == 0 ) then
-              write(*,'(2a)') trim(debug_msg),' Broyden'
-            else
-              write(*,'(2a)') trim(debug_msg),' Broyden, restart'
-            end if
-          end if
-
-          call mixing_broyden(mix, n, oldF, newF, info)
-
-       end if
-
-       if ( info /= 0 ) then
-
-          if ( IONode ) then
-             write(*,'(a)')'mix: Broyden -- failed, > linear'
-          end if
-          
-          call mixing_linear(mix, n, oldF, newF)
-          
-       end if
+       call mixing_broyden(mix, iscf, n, oldF, newF, info)
        
     end select
 
@@ -666,9 +642,6 @@ contains
 !$OMP parallel workshare default(shared)
     oldF = newF
 !$OMP end parallel workshare
-
-    ! Step iterator
-    mix%cur_itt = mix%cur_itt + 1
     
     ! check whether we should change the mixer
     if ( mix%n_itt == 0 ) then
@@ -693,195 +666,30 @@ contains
     
   end subroutine mixing_2d
 
-  subroutine mix_add_history( mix, iscf, n, oldF, newF )
-    ! The current mixing scheme
-    type(tMixer), pointer :: mix
-    integer, intent(in) :: iscf
-    integer, intent(in) :: n
-    real(dp), intent(inout) :: oldF(n), newF(n)
-
-    select case ( mix%m ) 
-    case ( MIX_LINEAR )
-       if ( is_next(mix,MIX_PULAY) ) then
-          call mix_add_history_pulay(mix, iscf, n, oldF, newF)
-       else if ( is_next(mix,MIX_BROYDEN) ) then
-          call mix_add_history_broyden(mix, iscf, n, oldF, newF, &
-               .true.)
-       end if
-    case ( MIX_PULAY )
-       call mix_add_history_pulay(mix, iscf, n, oldF, newF)
-    case ( MIX_BROYDEN )
-       call mix_add_history_broyden(mix, iscf, n, oldF, newF, .false.)
-    end select
-
-  end subroutine mix_add_history
-
-  subroutine mix_add_history_pulay( mix, iscf, n, oldF, newF )
-    ! The current mixing scheme
-    type(tMixer), pointer :: mix
-    integer, intent(in) :: iscf
-    integer, intent(in) :: n
-    real(dp), intent(inout) :: oldF(n), newF(n)
-
-    ! Temporary fields
-    type(dData1D) :: a1D, b1D
-    real(dp), pointer :: told(:) , tres(:)
-    
-    integer :: in, ni, nm
-
-    ni = n_items(mix%stack(1))
-    nm = max_size(mix%stack(1))
-
-    ! if the history is 0 we need to
-    ! initialize the size of the array
-    if ( ni > 0 ) then
-       in = getnsize(mix)
-       if ( in /= n ) then
-          call die('mixing: Number of elements has changed &
-               &before resetting mixing arrays.')
-       end if
-    end if
-
-    ! If the history is full, simply request the first one
-    if ( ni == nm ) then
-       
-       ! Retrieve first item (copy it so that when we
-       ! push we do not actually delete it)
-       
-       call get(mix%stack(1),1,a1D)
-       call get(mix%stack(2),1,b1D)
-
-    else
-
-       ! Create new history
-       call newdData1D(a1D, n, '(in)')
-       call newdData1D(b1D, n, '(res)')
-
-       ni = ni + 1
-
-    end if
-
-    ! Get old and residue
-    told => val(a1D)
-    tres => val(b1D)
-
-    ! push to stack
-    call push(mix%stack(1), a1D)
-    call delete(a1D)
-    call push(mix%stack(2), b1D)
-    call delete(b1D)
-
-    if ( debug_mix ) &
-         write(*,'(a,2(a,i0))') trim(debug_msg), &
-         ' n_hist = ',ni, ' / ',nm
-
-    ! Store input and residual
-!$OMP parallel do default(shared), private(in)
-    do in = 1 , n
-       told(in) = oldF(in)
-       tres(in) = newF(in) - oldF(in)
-    end do
-!$OMP end parallel do
-
-  end subroutine mix_add_history_pulay
-
-  subroutine mix_add_history_broyden( mix, iscf, n, oldF, newF , &
-       overwrite )
-    ! The current mixing scheme
-    type(tMixer), pointer :: mix
-    integer, intent(in) :: iscf
-    integer, intent(in) :: n
-    real(dp), intent(inout) :: oldF(n), newF(n)
-    ! In case we do linear interpolation before Broyden
-    ! we can still re-use the last iteration from the linear
-    ! mixing. In this case we allow overwriting for n_items == 1 and overwrite
-    logical, intent(in) :: overwrite
-
-    ! Temporary fields
-    type(dData1D) :: a1D, b1D
-    real(dp), pointer :: tres(:) , tJac(:)
-    
-    integer :: ni, nm
-    real(dp) :: jinv0
-
-    jinv0 = mix%w
-    ni = n_items(mix%stack(1))
-    nm = max_size(mix%stack(1))
-
-    if ( ni > 0 .and. .not. overwrite ) return
-
-    if ( ni == 0 ) then
-    
-       ! Create new history
-       call newdData1D(a1D, n, '(res)')
-       call newdData1D(b1D, n, '(Jacobian-res)')
-
-       ! push to stack
-       call push(mix%stack(1), a1D)
-       call push(mix%stack(2), b1D)
-       
-       ni = ni + 1
-
-    else
-
-       ! get pointers
-       call get(mix%stack(1),1,a1D)
-       call get(mix%stack(2),1,b1D)
-
-    end if
-
-    ! Get residual and Jacobian residual
-    tres => val(a1D)
-    tJac => val(b1D)
-
-    ! push to stack
-    call delete(a1D)
-    call delete(b1D)
-
-    if ( debug_mix ) &
-         write(*,'(a,2(a,i0))') trim(debug_msg), &
-         ' n_hist = ',ni, ' / ',nm
-    
-    ! Store input and residual
-!$OMP parallel workshare default(shared)
-    tres = newF - oldF
-    tJac = jinv0 * tres
-!$OMP end parallel workshare
-
-    ! The Broyden scheme updates the history
-    ! subsequently...
-
-  end subroutine mix_add_history_broyden
-
 
   ! Returns the value array from the stack(:)
   ! Returns this array:
-  !    mix%stack(sidx)(hidx)
+  !    mix%stack(sidx)(hidx) ! defaults to the last item
   function getstackval(mix,sidx,hidx) result(d1)
     type(tMixer), intent(in) :: mix
-    integer, intent(in) :: sidx, hidx
+    integer, intent(in) :: sidx
+    integer, intent(in), optional :: hidx
+
     real(dp), pointer :: d1(:)
 
     ! Local arrays
     type(dData1D), pointer :: dD1
-
-    dD1 => get_pointer(mix%stack(sidx),hidx)
+    if ( present(hidx) ) then
+       dD1 => get_pointer(mix%stack(sidx),hidx)
+    else
+       dD1 => get_pointer(mix%stack(sidx), &
+            n_items(mix%stack(sidx)))
+    end if
+    
     d1 => val(dD1)
     
   end function getstackval
 
-
-  function getnsize(mix) result(n)
-    type(tMixer), intent(in) :: mix
-    integer :: n
-    
-    ! Local arrays
-    type(dData1D), pointer :: dD1
-
-    dD1 => get_pointer(mix%stack(1),1)
-    n = size(dD1)
-
-  end function getnsize
 
   ! Returns true if the following 
   ! "advanced" mixer is 'm'
@@ -928,27 +736,16 @@ contains
 
     select case ( mix%m )
     case ( MIX_PULAY )
-       ! if the following one is broyden
-       ! clean history.
-       if ( is_next(mix,MIX_BROYDEN) ) then
-          ! delete all pulay history
-          call reset(mix%stack(1))
-          call reset(mix%stack(2))
-       end if
+
+       call reset(mix%stack(1))
+       call reset(mix%stack(2))
+       call reset(mix%stack(3))
        
     case ( MIX_BROYDEN )
        
-       ! if the following one is broyden
-       ! clean history.
-       if ( is_next(mix,MIX_LINEAR) ) then
-          ! delete all but one BROYDEN history
-          call reset(mix%stack(1), -1)
-          call reset(mix%stack(2), -1)
-       else if ( is_next(mix,MIX_PULAY) ) then
-          ! delete all BROYDEN history
-          call reset(mix%stack(1))
-          call reset(mix%stack(2))
-       end if
+       ! delete all BROYDEN history
+       call reset(mix%stack(1))
+       call reset(mix%stack(2))
        
     end select
 
@@ -963,16 +760,57 @@ contains
     
 
   ! Here the actual mixing methods will be employed
-  subroutine mixing_linear( mix, n, oldF, newF)
+  subroutine mixing_linear( mix, iscf, n, oldF, newF, info)
 
     ! The current mixing method 
     type(tMixer), intent(inout) :: mix
+    integer, intent(in) :: iscf
 
     integer, intent(in) :: n
     real(dp), intent(inout) :: oldF(n), newF(n)
+    integer, intent(out) :: info
 
+    type(tMixer), pointer :: next
+    real(dp), pointer :: tmp1(:), tmp2(:)
     real(dp) :: alpha
     integer :: in
+
+    info = 0
+
+    if ( is_next(mix,MIX_PULAY,next=next) ) then
+
+       ! If the following uses history, add that information
+       ! to the history.
+       call update_res(next%stack(1),n,oldF,newF)
+       if ( next%v /= 1 ) then
+          call update_F(next%stack(3),n,newF)
+       end if
+       
+    else if ( is_next(mix,MIX_BROYDEN,next) ) then
+       
+       ! If the following uses history, add that information
+       ! to the history.
+       call update_res(next%stack(1),n,oldF,newF)
+
+       tmp1 => getstackval(next,1)
+       if ( n_items(next%stack(2)) > 0 ) then
+          tmp2 => getstackval(next,2)
+!$OMP parallel workshare default(shared)
+          tmp2 = next%w * tmp1
+!$OMP end parallel workshare
+       else
+
+          nullify(tmp2)
+          allocate(tmp2(n))
+!$OMP parallel workshare default(shared)
+          tmp2 =  next%w * tmp1
+!$OMP end parallel workshare
+          call push_F(next%stack(2),n,tmp2)
+          deallocate(tmp2)
+
+       end if
+
+    end if
 
     alpha = mix%w
 
@@ -991,9 +829,10 @@ contains
   ! Pulay mixing
   ! This has a variant in case the first (fast)
   ! gets unstable in the inversion algorithm
-  subroutine mixing_pulay( mix, n, oldF, newF, info)
+  subroutine mixing_pulay( mix, iscf, n, oldF, newF, info)
     ! The current mixing method 
     type(tMixer), intent(inout) :: mix
+    integer, intent(in) :: iscf
 
     ! Input/output arrays
     integer, intent(in) :: n
@@ -1002,13 +841,14 @@ contains
     ! run-time information
     integer, intent(out) :: info
 
+    type(dData1D) :: dD1
+
     ! Temporary arrays for local data structures
-    real(dp), dimension(:), pointer :: F
-    real(dp), dimension(:), pointer :: res1, res2
+    real(dp), dimension(:), pointer :: res, rres
     real(dp), dimension(:), pointer :: rres1, rres2
 
-    integer :: ns, nb
-    integer :: i, j, in
+    integer :: nh, ns
+    integer :: i, j
     ! Used arrays
     real(dp), allocatable :: alpha(:), b(:,:), bi(:,:)
     real(dp) :: G, ssum
@@ -1019,249 +859,301 @@ contains
 
     real(dp), external :: ddot
 
-    ! Denote no warning
-    info = 0
-
     ! The Pulay mixing variable is called G
     G = mix%w
 
-    ! Number of saved histories, so far
+    ! The Pulay stacks has this data layout:
+
+    ! - stack(1)
+    !   The residuals for each iteration (n_hist)
+    ! - stack(2)
+    !   The residuals of the residuals for each iteration (n_hist - 1)
+
+    nh = max_size(mix%stack(1))
     ns = n_items(mix%stack(1))
 
-    if ( ns == 1 ) then
+    ! Add the residual to the stack
+    call push_res(mix%stack(1), n, oldF, newF)
 
-       ssum = mix%w
-       mix%w = mix%rv(1)
-       call mixing_linear( mix, n, oldF, newF )
-       mix%w = ssum
+    select case ( mix%v ) 
+    case ( 0 ) ! stable pulay mixing
 
-       return
+       if ( debug_mix ) &
+            write(*,'(a,2(a,i0))') trim(debug_msg), &
+            ' n_hist = ',min(nh,ns+1), ' / ',nh
 
-    end if
+       ns = n_items(mix%stack(1))
+       
+       ! Add the residuals of the residuals if applicable
+       if ( ns >= 2 ) then
 
-    select case ( mix%v )
-    case ( 0 ) ! Default (fast) pulay mixing
-       nb = ns + 1
-       i  = ns
-    case ( 1 ) ! Stable (slow) pulay mixing
-       nb = ns - 1
-       i  = ns - 1
+          call push_rres(mix%stack(2),mix%stack(1))
+
+       else 
+
+          ! Store output F
+          call push_F(mix%stack(3), n, newF)
+
+          ! The first Pulay step will do linear mixing
+          res => getstackval(mix,1)
+
+!$OMP parallel workshare default(shared)
+          newF = oldF + mix%rv(1) * res
+!$OMP end parallel workshare
+
+          return
+
+       end if
+
+       ! Update the residual to reflect the input residual
+       rres1 => getstackval(mix,1,ns-1)
+       rres2 => getstackval(mix,3)
+
+!$OMP parallel workshare default(shared)
+       rres1 = rres1 - rres2 + oldF
+!$OMP end parallel workshare
+       
+       ! Store the output F (we have used it now)
+       call push_F(mix%stack(3), n, newF)
+
+    case ( 1 ) ! Guaranteed reduction Pulay
+
+       ! The history in this scheme is a little obscure... :)
+       if ( mod(mix%cur_itt,2) == 1 ) then
+
+          if ( debug_mix ) &
+               write(*,'(2a)') trim(debug_msg), &
+               ' Direct mixing'
+          
+          ! this will happen on the:
+          !   1, 3, 5, ... iterations
+
+          if ( n_items(mix%stack(2)) > 0 ) then
+
+             ! Update RRes[i-2] to its value that should be used
+             ! subsequently.
+             ! From the previous iteration this array is now
+             ! -Res[i-2]
+             res => getstackval(mix,1)
+             rres => getstackval(mix,2)
+!$OMP parallel workshare default(shared)
+             rres = rres + res
+!$OMP end parallel
+
+          end if
+
+          ! we continue with the input newF, no things to do
+
+          return
+
+       else
+          
+          if ( debug_mix ) &
+               write(*,'(a,2(a,i0))') trim(debug_msg), &
+               ' n_hist = ',min(nh,ns+1), ' / ',nh
+
+          ! now we can calculate the RRes[i]
+          call push_rres(mix%stack(2),mix%stack(1))
+
+       end if
+
     case default
-       call die('mixing: Pulay unknown variant')
+       
+       call die('mixing: Unknown Pulay variant.')
+
     end select
+
+    ! Number of saved residuals, so far
+    ns = n_items(mix%stack(1))
+
+    ! Number of history steps for the double residual
+    nh = n_items(mix%stack(2))
 
     ! Allocate arrays
-    allocate(b(nb,nb),bi(nb,nb),alpha(i))
+    allocate(b(nh,nh),bi(nh,nh),alpha(nh))
 
-    ! Create A_ij coefficients for inversion
-    select case ( mix%v )
-    case ( 0 ) ! Default (fast) pulay mixing
+    ! Solve the Pulay mixing problem
+    call pulay_stable()
 
-       do i = 1 , ns
-
-          ! Get i'th residual array
-          res1 => getstackval(mix,2,i)
-
-          do j = 1 , i
-
-             ! Get j'th residual array
-             res2 => getstackval(mix,2,j)
-
-             ! B(i,j) = B(j,i) = dot_product(Res(i)*Res(j))
-             ssum = ddot(n,res1(1),1,res2(1),1)
-
-             b(i,j) = ssum
-             b(j,i) = ssum
-
-          end do
-
-          ! Now extend the matrix with ones in an extra colum
-          ! and row ...
-          b(i,nb) = 1.0_dp
-          b(nb,i) = 1.0_dp
-
-       end do
-
-       ! ... except in the extra diagonal entry
-       b(nb,nb) = 0.0_dp
-
-    case ( 1 ) ! Stable (slow) pulay mixing
-
-       do i = 1 , nb
-
-          ! Get i'th residual array
-          res1 => getstackval(mix,2,i)
-          rres1 => getstackval(mix,2,i+1)
-
-          do j = 1 , i
-
-             ! Get j'th residual array
-             res2 => getstackval(mix,2,j)
-             rres2 => getstackval(mix,2,j+1)
-
-             ! B(i,j) = B(j,i) = dot_product(Delta Res(i)*Delta Res(j))
-             ssum = 0._dp
-!$OMP parallel do default(shared), private(in), reduction(+:ssum)
-             do in = 1 , n
-                ssum = ssum + (rres1(in)-res1(in)) * &
-                     (rres2(in)-res2(in))
-             end do
-!$OMP end parallel do
-
-             b(i,j) = ssum
-             b(j,i) = ssum
-             
-          end do
-          
-       end do
-       
-    end select
-
-#ifdef MPI
-    ! Global operations, but only for the non-extended entries
-    call MPI_AllReduce(b(1,1),bi(1,1),nb*nb, &
-         MPI_double_precision, MPI_Sum, &
-         MPI_Comm_World,MPIerror)
-    ! copy over reduced arrays
-    b = bi
-    if ( mix%v == 0 ) then
-       b(:,nb) = 1._dp
-       b(nb,:) = 1._dp
-       b(nb,nb) = 0._dp
-    end if
-#endif
-
-    ! Get inverse of matrix
-    call inverse(nb, b, bi, info)
-    if ( info /= 0 ) then
-     
-       ! Deallocate local arrays
-       deallocate(alpha,b,bi)
-
-       ! return immediately, the algorithm
-       ! will try the stable one, then the linear one
-
-       return
-       
-    else ! inversion succeeded
-
-
-    select case ( mix%v )
-       
-    case ( 0 ) ! Default (fast) pulay mixing
-       
-       do i = 1 , ns
-          alpha(i) = bi(i,nb)
-       end do
-       
-    case ( 1 ) ! Stable (slow) pulay mixing
-
-       ! Get current residual
-       res2 => getstackval(mix,2,ns)
-
-       do i = 1 , nb
-          
-          ! Calculate the coefficients on all processors
-          alpha(i) = 0._dp
-             
-          do j = 1 , nb
-             
-             ! Get j'th residual array
-             res1 => getstackval(mix,2,j)
-             rres1 => getstackval(mix,2,j+1)
-             
-             ssum = 0._dp
-!$OMP parallel do default(shared), &
-!$OMP&private(in), reduction(+:ssum)
-             do in = 1 , n
-                ssum = ssum + (rres1(in)-res1(in)) * res2(in)
-             end do
-!$OMP end parallel do
-             
-             alpha(i) = alpha(i) - bi(i,j) * ssum
-             
-          end do
-          
-       end do
-       
-#ifdef MPI
-       ! Reduce the alpha
-       call MPI_AllReduce(alpha(1),b(1,1),nb, &
-            MPI_double_precision, MPI_Sum, &
-            MPI_Comm_World,MPIerror)
-       alpha(:) = b(:,1)
-#endif
-
-    end select
-
-    end if
-
-    ! if debugging print out the different variables
-    if ( debug_mix ) then
-       write(*,'(2a,f10.6,a,100(tr1,e10.4))') &
-            trim(debug_msg),' G = ',G,', alpha = ',alpha
-    end if
-
-    ! Calculate new function
-    select case ( mix%v )
-
-    case ( 0 ) ! Default (fast) pulay mixing
-
-       F => getstackval(mix,1,1)
-       res1 => getstackval(mix,2,1)
-
-!$OMP parallel workshare default(shared)
-       newF(:) = alpha(1) * ( F + G * res1 )
-!$OMP end parallel workshare
-       
-       do i = 2 , ns
-          
-          F => getstackval(mix,1,i)
-          res1 => getstackval(mix,2,i)
-          
-!$OMP parallel workshare default(shared)
-          newF = newF + alpha(i) * ( F + G * res1 )
-!$OMP end parallel workshare
-       
-       end do
-       
-    case ( 1 ) ! Stable (slow) pulay mixing
-
-       ! Read former matrices for mixing .........
-       res1 => getstackval(mix,2,ns)
-
-       ! Copy over input dm, and add the linear mixing
-!$OMP parallel workshare default(shared)
-       newF = oldF + G * res1
-!$OMP end parallel workshare
-       
-       do i = 1 , nb
-
-          ! two consecutive functions and residuals
-          res1 => getstackval(mix,1,i)
-          rres1 => getstackval(mix,2,i)
-          res2 => getstackval(mix,1,i+1)
-          rres2 => getstackval(mix,2,i+1)
-
-!$OMP parallel workshare default(shared)
-          newF = newF + alpha(i) * &
-               ( res2 - res1 + G * ( rres2 - rres1 ) )
-!$OMP end parallel workshare
-          
-       end do
-
-    end select
-    
     ! Deallocate local arrays
     deallocate(alpha,b,bi)
-    
+
+    if ( info /= 0 ) then ! failed inversion, goto linear...
+
+       if ( IONode ) &
+            write(*,'(2a)') trim(debug_msg), &
+            ' Pulay -- failed, > linear'
+
+       res => getstackval(mix,1)
+
+!$OMP parallel workshare default(shared)
+       newF = oldF + mix%rv(1) * res
+!$OMP end parallel workshare
+
+    end if
+
+    ! For the Guaranteed Reduction method we need to 
+    ! update the history...
+    select case ( mix%v )
+    case ( 1 )
+
+       ! In the subsequent iteration we
+       ! do not need Res[i], as we have to update the Res with the
+       ! minimum Res path.
+
+       ! Get the current RRes[i-1] and Res[i]
+       rres => getstackval(mix,2)
+       res => getstackval(mix,1)
+
+       ! Resubtract res to get Res[i-1]
+!$OMP parallel workshare default(shared)
+       rres = rres - res
+!$OMP end parallel
+
+       ! delete the last residual (it is not used anymore)
+       call pop(mix%stack(1),dD1)
+       call delete(dD1)
+
+       ! Update the current residual to reflect the used residual in the algorithm
+       res => getstackval(mix,1,nh)
+!$OMP parallel workshare default(shared)
+       res = res - oldF + newF
+!$OMP end parallel workshare
+
+    end select
+
+    if ( mix%restart > 0 ) then
+    if ( mod(mix%cur_itt,mix%restart) == 0 ) then
+
+       if ( IONode ) then
+          write(*,'(a)')'mix: Pulay -- resetting history'
+       end if
+       ! The user has requested to restart the
+       ! mixing scheme now
+       j = mix%restart_save
+       if ( j == 0 ) then
+          call reset(mix%stack(1))
+          call reset(mix%stack(2))
+          call reset(mix%stack(3))
+       else
+          call reset(mix%stack(1),-j)
+          call reset(mix%stack(2),-j+1)
+       end if
+          
+    end if
+    end if
+
+  contains
+
+    subroutine pulay_stable()
+
+      info = 0
+      
+      ! Create A_ij coefficients for inversion
+      do i = 1 , nh
+         
+         ! Get RRes[i] array
+         rres1 => getstackval(mix,2,i)
+
+         do j = 1 , i
+
+            ! Get RRes[j] array
+            rres2 => getstackval(mix,2,j)
+
+            ! B(i,j) = B(j,i) = dot_product(RRes[i],RRes[j])
+            b(i,j) = ddot(n,rres1,1,rres2,1)
+            b(j,i) = b(i,j)
+
+         end do
+         
+      end do
+      
+#ifdef MPI
+      ! Global operations, but only for the non-extended entries
+      call MPI_AllReduce(b(1,1),bi(1,1),nh*nh, &
+           MPI_double_precision, MPI_Sum, &
+           MPI_Comm_World,MPIerror)
+      ! copy over reduced arrays
+      b = bi
+#endif
+      
+      ! Get inverse of matrix
+      call inverse(nh, b, bi, info)
+      if ( info /= 0 ) then
+         
+         ! return immediately, the algorithm
+         ! will try the stable one, then the linear one
+         
+         return
+         
+      else ! inversion succeeded
+         
+         ! Get current residual
+         res => getstackval(mix,1)
+         
+         do i = 1 , nh
+            
+            ! Calculate the coefficients on all processors
+            alpha(i) = 0._dp
+            
+            do j = 1 , nh
+               
+               ! Get j'th residual array
+               rres => getstackval(mix,2,j)
+               
+               ssum = ddot(n,rres,1,res,1)
+               
+               alpha(i) = alpha(i) - bi(i,j) * ssum
+               
+            end do
+            
+         end do
+         
+#ifdef MPI
+         ! Reduce the alpha
+         call MPI_AllReduce(alpha(1),b(1,1),nh, &
+              MPI_double_precision, MPI_Sum, &
+              MPI_Comm_World,MPIerror)
+         alpha(:) = b(:,1)
+#endif
+      end if
+      
+      ! if debugging print out the different variables
+      if ( debug_mix ) then
+         write(*,'(2a,f10.6,a,100(tr1,e10.4))') &
+              trim(debug_msg),' G = ',G,', alpha = ',alpha
+      end if
+      
+      ! Read former matrices for mixing .........
+      res => getstackval(mix,1,ns)
+      
+      ! Copy over input dm, and add the linear mixing
+!$OMP parallel workshare default(shared)
+      newF = oldF + G * res
+!$OMP end parallel workshare
+      
+      do i = 1 , nh
+         
+         ! Get Res[i] and RRes[i]
+         res => getstackval(mix,1,i)
+         rres => getstackval(mix,2,i)
+         
+!$OMP parallel workshare default(shared)
+         newF = newF + alpha(i) * ( res + G * rres )
+!$OMP end parallel workshare
+         
+      end do
+      
+    end subroutine pulay_stable
+
   end subroutine mixing_pulay
 
 
   ! Broyden mixing
-  subroutine mixing_broyden( mix, n, oldF, newF, info)
+  subroutine mixing_broyden( mix, iscf, n, oldF, newF, info)
     ! The current mixing method 
     type(tMixer), intent(inout) :: mix
+    integer, intent(in) :: iscf
 
     ! Input/output arrays
     integer, intent(in) :: n
@@ -1287,7 +1179,7 @@ contains
 #endif
 
     info = 0
-    
+
     ! Get the initial Jacobian
     jinv0 = mix%w
     
@@ -1300,10 +1192,30 @@ contains
     ns = n_items(mix%stack(1))
     nm = max_size(mix%stack(1))
 
+    if ( debug_mix ) &
+         write(*,'(a,2(a,i0))') trim(debug_msg), &
+         ' n_hist = ',min(nm,ns+1), ' / ',nm
+
     if ( ns == 0 ) then
 
-       ! Signal an error
-       info = -1001
+       ! Add to the history of the residual
+       call push_res(mix%stack(1),n,oldF,newF)
+
+       ! Add new array
+       allocate(F(n))
+       tmp1 => getstackval(mix,1,1)
+!$OMP parallel workshare default(shared)
+       F = tmp1 * jinv0
+!$OMP end parallel workshare
+       call push_F(mix%stack(2),n,F)
+       deallocate(F)
+
+       info = 0
+
+       ! Do linear interpolation
+!$OMP parallel workshare default(shared)
+       newF = oldF + jinv0 * (newF - oldF)
+!$OMP end parallel workshare
 
        return
        
@@ -1525,24 +1437,9 @@ contains
     ! Now add history segment to Broyden
     if ( ns == nm ) then
 
-       if ( mix%v == 0 ) then ! Cycling history
-
-          ! get the data
-          call get(mix%stack(1),1,a1D)
-          call get(mix%stack(2),1,b1D)
-
-       else if ( mix%v == 1 ) then ! Restart history
-          
-          call reset(mix%stack(1))
-          call reset(mix%stack(2))
-
-          ! Create new history
-          call newdData1D(a1D, n, '(res)')
-          call newdData1D(b1D, n, '(Jacobian-res)')
-
-          ns = 1
-
-       end if
+       ! get the data
+       call get(mix%stack(1),1,a1D)
+       call get(mix%stack(2),1,b1D)
 
     else
 
@@ -1570,11 +1467,23 @@ contains
     call push(mix%stack(2), b1D)
     call delete(b1D)
 
-    if ( debug_mix ) &
-         write(*,'(a,2(a,i0))') trim(debug_msg), &
-         ' n_hist = ',ns, ' / ',nm
-
     deallocate(F)
+
+    if ( mix%restart > 0 ) then
+    if ( mod(mix%cur_itt,mix%restart) == 0 ) then
+
+       if ( IONode ) then
+          write(*,'(a)')'mix: Broyden -- resetting history'
+       end if
+
+       ! The user has requested to restart the
+       ! mixing scheme now
+       j = mix%restart_save
+       call reset(mix%stack(1),-j)
+       call reset(mix%stack(2),-j)
+       
+    end if
+    end if
 
   end subroutine mixing_broyden
 
@@ -1583,7 +1492,7 @@ contains
   subroutine mixing_history_clear( mixers )
     type(tMixer), intent(inout), target :: mixers(:)
 
-    type(tMixer), pointer :: m, next
+    type(tMixer), pointer :: m
     integer :: im, is, ns
 
     ! Clean up all arrays and reference counted
@@ -1615,68 +1524,31 @@ contains
 
        select case ( m%m ) 
 
-       case ( MIX_PULAY, MIX_BROYDEN )
+       case ( MIX_PULAY )
+
+          allocate(m%stack(3))
+
+          ! allocate Res'[i], Pulay
+          call new(m%stack(1), m%n_hist)
+          ! allocate Res[i+1] - Res[i], Pulay
+          call new(m%stack(2), m%n_hist-1)
+          ! The out of the latest iteration
+          call new(m%stack(3), 1)
+
+
+       case ( MIX_BROYDEN )
 
           allocate(m%stack(2))
 
-          ! allocate Fin, Pulay
           ! allocate Res[i], Broyden
           call new(m%stack(1), m%n_hist)
-          ! allocate Res[i], Pulay
           ! allocate 'u', Broyden
           call new(m%stack(2), m%n_hist)
 
-          if ( m%n_itt < 0 ) then
-
-             next => mixers(-m%n_itt)
-             ! Also allocate the next one
-             if ( .not. allocated(next%stack) ) then
-                allocate(next%stack(2))
-                
-                next%stack(1) = m%stack(1)
-                next%stack(2) = m%stack(2)
-
-             end if
-             
-          end if
-
        end select
 
     end do
 
-    ! Point the simpler methods to support the later
-    ! versions
-    do im = 1 , size(mixers)
-       m => mixers(im)
-
-       ! In certain cases this can already be
-       ! allocated n_itt < 0
-       if ( allocated(m%stack) ) cycle
-       
-       select case ( m%m ) 
-          
-       case ( MIX_LINEAR )
-          
-          if ( is_next(m,MIX_PULAY,next=next) ) then
-             
-             allocate(m%stack(2))
-
-             m%stack(1) = next%stack(1)
-             m%stack(2) = next%stack(2)
-
-          else if ( is_next(m,MIX_BROYDEN,next=next) ) then
-             
-             allocate(m%stack(2))
-             
-             m%stack(1) = next%stack(1)
-             m%stack(2) = next%stack(2)
-             
-          end if
-
-       end select
-       
-    end do
-    
   end subroutine mixing_history_clear
 
   subroutine mixing_reset( mixs )
@@ -1749,10 +1621,10 @@ contains
 
           if ( m%v == 0 ) then
              write(*,'(2a,t50,''= '',a)') trim(fmt), &
-                  '    Variant','original'
+                  '    Variant','stable'
           else if ( m%v == 1 ) then
              write(*,'(2a,t50,''= '',a)') trim(fmt), &
-                  '    Variant','stable'
+                  '    Variant','GR'
           end if
 
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
@@ -1761,19 +1633,20 @@ contains
                '    Initial linear mixing weight',m%rv(1)
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Damping',m%w
+          if ( m%restart > 0 ) then
+             write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+                  '    Restart steps',m%restart
+             write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+                  '    Restart save steps',m%restart_save
+          end if
 
        case ( MIX_BROYDEN )
           
           write(*,'(2a,t50,''= '',a)') trim(fmt), &
                ' Broyden mixing',trim(m%name)
 
-          if ( m%v == 0 ) then
-             write(*,'(2a,t50,''= '',a)') trim(fmt), &
-                  '    Variant','original'
-          else if ( m%v == 1 ) then
-             write(*,'(2a,t50,''= '',a)') trim(fmt), &
-                  '    Variant','restart'
-          end if
+          !write(*,'(2a,t50,''= '',a)') trim(fmt), &
+          !     '    Variant','original'
 
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                '    History steps',m%n_hist - 1
@@ -1781,6 +1654,12 @@ contains
                '    Jacobian weight',m%w
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Weight prime',m%rv(1)
+          if ( m%restart > 0 ) then
+             write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+                  '    Restart steps',m%restart
+             write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+                  '    Restart save steps',m%restart_save
+          end if
           
        case ( MIX_FIRE )
           
@@ -1865,6 +1744,234 @@ contains
     end do
 
   end subroutine inverse
+
+
+  ! Stack handling routines
+
+  function stack_check(stack,n) result(check)
+    type(Fstack_dData1D), intent(inout) :: stack
+    integer, intent(in) :: n
+    logical :: check
+
+    ! Local arrays
+    type(dData1D), pointer :: dD1
+
+    if ( n_items(stack) == 0 ) then
+       check = .true.
+    else
+
+       ! Check that the stack stored arrays are
+       ! of same size...
+       
+       dD1 => get_pointer(stack,1)
+       check = n == size(dD1)
+
+    end if
+
+  end function stack_check
+    
+
+  subroutine push_F(s_F,n,F)
+    type(Fstack_dData1D), intent(inout) :: s_F
+    integer, intent(in) :: n
+    real(dp), intent(in) :: F(n)
+
+    type(dData1D) :: dD1
+    real(dp), pointer :: sF(:)
+    integer :: in, ns
+
+    if ( .not. stack_check(s_F,n) ) then
+       call die('mixing: history has changed size...')
+    end if
+
+    in = n_items(s_F)
+    ns = max_size(s_F)
+
+    if ( in == ns ) then
+       
+       ! we have to cycle the storage
+       call get(s_F,1,dD1)
+
+    else
+
+       call newdData1D(dD1, n, '(F)')
+
+    end if
+
+    sF => val(dD1)
+
+    call dcopy(n,F,1,sF,1)
+
+    ! Push the data to the stack
+    call push(s_F,dD1)
+
+    ! Delete double reference
+    call delete(dD1)
+
+  end subroutine push_F
+
+  subroutine update_F(s_F,n,F)
+    type(Fstack_dData1D), intent(inout) :: s_F
+    integer, intent(in) :: n
+    real(dp), intent(in) :: F(n)
+
+    type(dData1D), pointer :: dD1
+    real(dp), pointer :: FF(:)
+    integer :: in
+
+    if ( .not. stack_check(s_F,n) ) then
+       call die('mixing: history has changed size...')
+    end if
+
+    in = n_items(s_F)
+
+    if ( in == 0 ) then
+       
+       ! We need to add it as it does not exist
+       call push_F(s_F,n,F)
+
+    else
+
+       ! we have an entry, update the latest
+       dD1 => get_pointer(s_F,in)
+
+       FF => val(dD1)
+
+!$OMP parallel workshare default(shared)
+       FF = F
+!$OMP end parallel workshare
+
+    end if
+
+  end subroutine update_F
+
+  subroutine update_res(s_res,n,oldF,newF)
+    type(Fstack_dData1D), intent(inout) :: s_res
+    integer, intent(in) :: n
+    real(dp), intent(in) :: oldF(n), newF(n)
+
+    type(dData1D), pointer :: dD1
+    real(dp), pointer :: res(:)
+    integer :: in
+
+    if ( .not. stack_check(s_res,n) ) then
+       call die('mixing: history has changed size...')
+    end if
+
+    in = n_items(s_res)
+
+    if ( in == 0 ) then
+       
+       ! We need to add it as it does not exist
+       call push_res(s_res,n,oldF,newF)
+
+    else
+
+       ! we have an entry, update the latest
+       dD1 => get_pointer(s_res,in)
+
+       res => val(dD1)
+
+!$OMP parallel workshare default(shared)
+       res = newF - oldF
+!$OMP end parallel workshare
+
+    end if
+
+  end subroutine update_res
+
+  subroutine push_res(s_res,n,oldF,newF)
+    type(Fstack_dData1D), intent(inout) :: s_res
+    integer, intent(in) :: n
+    real(dp), intent(in) :: oldF(n), newF(n)
+
+    type(dData1D) :: dD1
+    real(dp), pointer :: res(:)
+    integer :: in, ns
+
+    if ( .not. stack_check(s_res,n) ) then
+       call die('mixing: history has changed size...')
+    end if
+
+    in = n_items(s_res)
+    ns = max_size(s_res)
+
+    if ( in == ns ) then
+       
+       ! we have to cycle the storage
+       call get(s_res,1,dD1)
+
+    else
+
+       call newdData1D(dD1, n, '(res)')
+
+    end if
+
+    res => val(dD1)
+
+!$OMP parallel workshare default(shared)
+    res = newF - oldF
+!$OMP end parallel workshare
+
+    ! Push the data to the stack
+    call push(s_res,dD1)
+
+    ! Delete double reference
+    call delete(dD1)
+
+  end subroutine push_res
+
+  subroutine push_rres(s_rres,s_res)
+    type(Fstack_dData1D), intent(inout) :: s_rres
+    type(Fstack_dData1D), intent(in) :: s_res
+
+    type(dData1D) :: dD1
+    type(dData1D), pointer :: rD1
+    real(dp), pointer :: res1(:), res2(:), rres(:)
+    integer :: in, ns
+
+    if ( n_items(s_res) < 2 ) then
+       call die('mixing: Residual residuals cannot be calculated, &
+            &inferior residual size.')
+    end if
+
+    in = n_items(s_res)
+
+    ! First get the value of in
+    rD1 => get_pointer(s_res,in-1)
+    res1 => val(rD1)
+    ! get the value of in
+    rD1 => get_pointer(s_res,in)
+    res2 => val(rD1)
+
+    in = n_items(s_rres)
+    ns = max_size(s_rres)
+
+    if ( in == ns ) then
+       
+       ! we have to cycle the storage
+       call get(s_rres,1,dD1)
+
+    else
+
+       call newdData1D(dD1, size(res1), '(res)')
+
+    end if
+
+    ! Get the residual of the residual
+    rres => val(dD1)
+
+!$OMP parallel workshare default(shared)
+    rres = res2 - res1
+!$OMP end parallel workshare
+
+    ! Push the data to the stack
+    call push(s_rres,dD1)
+
+    ! Delete double reference
+    call delete(dD1)
+
+  end subroutine push_rres
 
 end module m_mixing
 
