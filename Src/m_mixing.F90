@@ -938,7 +938,7 @@ contains
              rres => getstackval(mix,2)
 !$OMP parallel workshare default(shared)
              rres = rres + res
-!$OMP end parallel
+!$OMP end parallel workshare
 
           end if
 
@@ -1005,17 +1005,19 @@ contains
        rres => getstackval(mix,2)
        res => getstackval(mix,1)
 
-       ! Resubtract res to get Res[i-1]
+       ! Resubtract res to get -Res[i-1]
+       ! the RRes[i-1] will be updated in the next loop
 !$OMP parallel workshare default(shared)
        rres = rres - res
-!$OMP end parallel
+!$OMP end parallel workshare
 
-       ! delete the last residual (it is not used anymore)
+       ! delete latest residual
        call pop(mix%stack(1),dD1)
        call delete(dD1)
 
-       ! Update the current residual to reflect the used residual in the algorithm
-       res => getstackval(mix,1,nh)
+       ! Update the current residual to reflect the
+       ! used residual in the algorithm
+       res => getstackval(mix,1)
 !$OMP parallel workshare default(shared)
        res = res - oldF + newF
 !$OMP end parallel workshare
@@ -1532,9 +1534,10 @@ contains
           call new(m%stack(1), m%n_hist)
           ! allocate Res[i+1] - Res[i], Pulay
           call new(m%stack(2), m%n_hist-1)
-          ! The out of the latest iteration
-          call new(m%stack(3), 1)
-
+          if ( m%v == 0 ) then
+             ! The out of the latest iteration
+             call new(m%stack(3), 1)
+          end if
 
        case ( MIX_BROYDEN )
 
@@ -1926,7 +1929,7 @@ contains
     type(Fstack_dData1D), intent(in) :: s_res
 
     type(dData1D) :: dD1
-    type(dData1D), pointer :: rD1
+    type(dData1D), pointer :: pD1
     real(dp), pointer :: res1(:), res2(:), rres(:)
     integer :: in, ns
 
@@ -1938,11 +1941,11 @@ contains
     in = n_items(s_res)
 
     ! First get the value of in
-    rD1 => get_pointer(s_res,in-1)
-    res1 => val(rD1)
+    pD1 => get_pointer(s_res,in-1)
+    res1 => val(pD1)
     ! get the value of in
-    rD1 => get_pointer(s_res,in)
-    res2 => val(rD1)
+    pD1 => get_pointer(s_res,in)
+    res2 => val(pD1)
 
     in = n_items(s_rres)
     ns = max_size(s_rres)

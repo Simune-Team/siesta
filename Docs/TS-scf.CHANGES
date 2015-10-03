@@ -1,4 +1,15 @@
 ----------------------------------------------------
+October 2, 2015 -- Nick Papior       trunk-478---ts-scf-539
+Cleaned up in m_mixing, fixed OpenMP
+
+* Fixed OpenMP in m_mixing
+
+* No code change
+
+modified:
+  Src/m_mixing.F90
+
+----------------------------------------------------
 October 2, 2015 -- Nick Papior       trunk-478---ts-scf-538
 Changed mixing algorithm to _only_ use the stable Pulay
 
