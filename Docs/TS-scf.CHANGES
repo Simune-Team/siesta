@@ -1,4 +1,11 @@
 ----------------------------------------------------
+October 3, 2015 -- Nick Papior       trunk-478---ts-scf-541
+Cleaned code and reduced computation, mixing
+
+modified:
+  Src/m_mixing.F90
+
+----------------------------------------------------
 October 3, 2015 -- Nick Papior       trunk-478---ts-scf-540
 Enabled linear mixing in GR mixing algorithm
 

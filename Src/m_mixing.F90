@@ -866,11 +866,11 @@ contains
     nh = max_size(mix%stack(1))
     ns = n_items(mix%stack(1))
 
-    ! Add the residual to the stack
-    call push_res(mix%stack(1), n, oldF, newF)
-
     select case ( mix%v ) 
     case ( 0 ) ! stable pulay mixing
+
+       ! Add the residual to the stack
+       call push_res(mix%stack(1), n, oldF, newF)
 
        if ( debug_mix ) &
             write(*,'(a,2(a,i0))') trim(debug_msg), &
@@ -912,13 +912,8 @@ contains
 
     case ( 1 ) ! Guaranteed reduction Pulay
 
-       if ( mix%rv(1) < 1._dp ) then
-          ! Correct the residual to have unique path
-          res => getstackval(mix,1)
-!$OMP parallel workshare default(shared)
-          res = res * mix%rv(1)
-!$OMP end parallel workshare
-       end if
+       ! Add the residual to the stack
+       call push_res(mix%stack(1), n, oldF, newF, mix%rv(1))
        
        ! The history in this scheme is a little obscure... :)
        if ( mod(mix%cur_itt,2) == 1 ) then
@@ -941,10 +936,11 @@ contains
 !$OMP parallel workshare default(shared)
              rres = rres + res
 !$OMP end parallel workshare
-
+             
           end if
 
           if ( mix%rv(1) < 1._dp ) then
+             ! do linear mixing
              res => getstackval(mix,1)
 !$OMP parallel workshare default(shared)
              newF = oldF + res
@@ -993,9 +989,16 @@ contains
 
        res => getstackval(mix,1)
 
+       ! The residual already has the scaling
+       if ( mix%v == 1 ) then
 !$OMP parallel workshare default(shared)
-       newF = oldF + mix%rv(1) * res
+          newF = oldF + res
 !$OMP end parallel workshare
+       else
+!$OMP parallel workshare default(shared)
+          newF = oldF + res * mix%rv(1)
+!$OMP end parallel workshare
+       end if
 
     end if
 
@@ -1012,7 +1015,7 @@ contains
        rres => getstackval(mix,2)
        res => getstackval(mix,1)
 
-       ! Resubtract res to get -Res[i-1]
+       ! Resubtract Res[i] to get -Res[i-1]
        ! the RRes[i-1] will be updated in the next loop
 !$OMP parallel workshare default(shared)
        rres = rres - res
@@ -1025,15 +1028,15 @@ contains
        ! Update the current residual to reflect the
        ! used residual in the algorithm
 
-       ! Note that this Res[i] = (F_2 - F_0) * w
-       ! And oldF = old old F + Res[i]
-       ! which means that any later Res[i] will be
-       ! non-scaled and "correct" such that normalization
-       ! is maintained.
+       ! Note that this is Res[i-1] * w = (F^i-1_out - F^i-1_in) * w
        res => getstackval(mix,1)
 !$OMP parallel workshare default(shared)
        res = res - oldF + newF
 !$OMP end parallel workshare
+
+       !  oldF = F^i-1_in + Res[i-1] * w
+       ! which turns
+       !  Res[i] = F^i+1_in - F^i-1_in
        
     end select
 
@@ -1135,8 +1138,10 @@ contains
       
       ! if debugging print out the different variables
       if ( debug_mix ) then
-         write(*,'(2a,f10.6,a,100(tr1,e10.4))') &
-              trim(debug_msg),' G = ',G,', alpha = ',alpha
+         write(*,'(2a,2(f10.6,a),100(tr1,e10.4))') &
+              trim(debug_msg),&
+              ' G = ',G,', sum(alpha) = ',sum(alpha), &
+              ', alpha = ',alpha
       end if
       
       ! Copy over input dm, and add the linear mixing
@@ -1890,10 +1895,11 @@ contains
 
   end subroutine update_res
 
-  subroutine push_res(s_res,n,oldF,newF)
+  subroutine push_res(s_res,n,oldF,newF,alpha)
     type(Fstack_dData1D), intent(inout) :: s_res
     integer, intent(in) :: n
     real(dp), intent(in) :: oldF(n), newF(n)
+    real(dp), intent(in), optional :: alpha
 
     type(dData1D) :: dD1
     real(dp), pointer :: res(:)
@@ -1919,10 +1925,16 @@ contains
 
     res => val(dD1)
 
+    if ( present(alpha) ) then
 !$OMP parallel workshare default(shared)
-    res = newF - oldF
+       res = (newF - oldF) * alpha
 !$OMP end parallel workshare
-
+    else
+!$OMP parallel workshare default(shared)
+       res = newF - oldF 
+!$OMP end parallel workshare
+    end if
+    
     ! Push the data to the stack
     call push(s_res,dD1)
 
@@ -1931,9 +1943,10 @@ contains
 
   end subroutine push_res
 
-  subroutine push_rres(s_rres,s_res)
+  subroutine push_rres(s_rres,s_res,alpha)
     type(Fstack_dData1D), intent(inout) :: s_rres
     type(Fstack_dData1D), intent(in) :: s_res
+    real(dp), intent(in), optional :: alpha
 
     type(dData1D) :: dD1
     type(dData1D), pointer :: pD1
@@ -1971,10 +1984,16 @@ contains
     ! Get the residual of the residual
     rres => val(dD1)
 
+    if ( present(alpha) ) then
 !$OMP parallel workshare default(shared)
-    rres = res2 - res1
+       rres = (res2 - res1) * alpha
 !$OMP end parallel workshare
-
+    else
+!$OMP parallel workshare default(shared)
+       rres = res2 - res1
+!$OMP end parallel workshare
+    end if
+    
     ! Push the data to the stack
     call push(s_rres,dD1)
 
