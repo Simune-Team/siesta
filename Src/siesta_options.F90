@@ -1635,8 +1635,8 @@ MODULE siesta_options
 #endif
 
     ! Read in mixing parameters (SCF)
-    call mixing_init( scf_mixs )
-    call mixing_print( scf_mixs )
+    call mixing_init( 'SCF', scf_mixs )
+    call mixing_print( 'SCF', scf_mixs )
 
     ! We read in relevant data for ChargeGeometries block
     call read_charge_add( nspin , charnet )

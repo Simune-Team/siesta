@@ -1,4 +1,18 @@
 ----------------------------------------------------
+October 3, 2015 -- Nick Papior       trunk-478---ts-scf-540
+Enabled linear mixing in GR mixing algorithm
+
+* Enabled linear mixing in the GR mixing algorithm
+  this tends to be more restrictive in the convergence
+  which may be nice for hard to converge systems.
+  
+* Updated option retrieval of the mixing options
+
+modified:
+  Src/m_mixing.F90
+  Src/siesta_options.F90
+
+----------------------------------------------------
 October 2, 2015 -- Nick Papior       trunk-478---ts-scf-539
 Cleaned up in m_mixing, fixed OpenMP
 

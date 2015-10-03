@@ -1,3 +1,4 @@
+
 ! Module for all mixing methods in a standard way
 
 ! This module implements mixing of the Pulay and Broyden
@@ -107,13 +108,13 @@ module m_mixing
 
 contains
 
-  subroutine mixing_init( mixers , suffix, prefix )
+  subroutine mixing_init( prefix, mixers )
 
     use fdf
 
+    character(len=*), intent(in) :: prefix
     ! The array of mixers (has to be nullified upon entry)
     type(tMixer), allocatable, target :: mixers(:)
-    character(len=*), intent(in), optional :: suffix, prefix
 
     ! Block constructs
     type(block_fdf) :: bfdf
@@ -129,126 +130,101 @@ contains
     integer :: n_pulay, n_pulay_orig
     real(dp) :: w_pulay, w_pulay_damp
 
-    logical :: bool
     type(tMixer), pointer :: m
     integer :: nm, im, im2
-    character(len=10) :: lsuf, lpre
+    character(len=10) :: lp
     character(len=70) :: method, variant, opt, opt2
 
-    lpre = 'SCF.'
-    if ( present(prefix) ) lpre = trim(prefix) // '.'
-    lsuf = ''
-    if ( present(suffix) ) lsuf = '.' // trim(suffix)
+    lp = trim(prefix)//'.'
 
     ! ensure nullification
     if ( allocated(mixers) ) deallocate(mixers)
+
+    ! Standard options
+    w = 0.25_dp
+    w_kick = 0.5_dp
+    n_kick = 0
+    n_pulay_orig = fdf_get('DM.NumberPulay',2)
+    n_broy_orig  = fdf_get('DM.NumberBroyden',0)
     
-    ! General options
-    if ( present(prefix) ) then
-       w = 0.25_dp
+    ! Set standard mixing algorithm
+    if ( n_broy_orig > 0 ) then
+       method = 'broyden'
+       n_hist = n_broy_orig
     else
-       w = fdf_get('DM.MixingWeight',0.25_dp)
+       method = 'pulay'
+       n_hist = n_pulay_orig
     end if
-    w = fdf_get('SCF.Mix.Weight',w)
 
+    ! Only in the case of SCF mixing do we set
+    ! the standard mixing weight and kick-parameters
+    if ( leqi(prefix,'SCF') ) then
+       w      = fdf_get('DM.MixingWeight',w)
+       n_kick = fdf_get('DM.NumberKick',n_kick)
+       w_kick = fdf_get('DM.KickMixingWeight',w_kick)
+       w_pulay = w
+       w_pulay_damp = w
+    end if
 
-    n_kick = fdf_get('DM.NumberKick',0)
-    n_kick = fdf_get('SCF.Mix.Kick',n_kick)
-    n_kick = fdf_get(trim(lpre)//'Mix.Kick',n_kick)
+    ! Retrieve default method for mixing and its variant
+    method  = fdf_get(trim(lp)//'Mix',method)
+    variant = fdf_get(trim(lp)//'Mix.Variant','original')
+    ! Correct the weighting stuff for the special
+    ! variants
+
+    ! update mixing weight and kick mixing weight
+    w      = fdf_get(trim(lp)//'Mix.Weight',w)
+    n_kick = fdf_get(trim(lp)//'Mix.Kick',n_kick)
+    w_kick = fdf_get(trim(lp)//'Mix.Kick.Weight',w_kick)
+
+    ! Get history length
+    n_hist = fdf_get(trim(lp)//'Mix.History',n_hist)
 
     ! Restart after this number of iterations
-    n_restart = fdf_get('SCF.Mix.Restart',0)
-    n_restart = fdf_get(trim(lpre)//'Mix.Restart',n_restart)
-    n_save = fdf_get('SCF.Mix.Restart.Save',1)
-    n_save = fdf_get(trim(lpre)//'Mix.Restart.Save',n_save)
+    n_restart = fdf_get(trim(lp)//'Mix.Restart',0)
+    n_save    = fdf_get(trim(lp)//'Mix.Restart.Save',1)
+    ! negative savings are not allowed
     n_save = max(0,n_save)
 
-    if ( present(prefix) ) then
-       w_kick = w
-    else
-       w_kick = fdf_get('DM.KickMixingWeight',w)
-    end if
-    w_kick = fdf_get('SCF.Mix.Kick.Weight',w_kick)
-    w_kick = fdf_get(trim(lpre)//'Mix.Kick.Weight',w_kick)
-
-    n_lin_before = fdf_get('SCF.Mix.Linear.Before',0)
-    n_lin_before = fdf_get(trim(lpre)//'Mix.Linear.Before',n_lin_before)
-    w_lin_before = fdf_get('SCF.Mix.Linear.Before.Weight',w)
-    w_lin_before = fdf_get(trim(lpre)//'Mix.Linear.Before.Weight',w)
+    n_lin_before = fdf_get(trim(lp)//'Mix.Linear.Before',0)
+    w_lin_before = fdf_get(trim(lp)//'Mix.Linear.Before.Weight',w)
     
-    n_lin_after = fdf_get('SCF.Mix.Linear.After',0)
-    n_lin_after = fdf_get(trim(lpre)//'Mix.Linear.After',n_lin_after)
-    w_lin_after = fdf_get('SCF.Mix.Linear.After.Weight',w)
-    w_lin_after = fdf_get(trim(lpre)//'Mix.Linear.After.Weight',w)
+    n_lin_after = fdf_get(trim(lp)//'Mix.Linear.After',0)
+    w_lin_after = fdf_get(trim(lp)//'Mix.Linear.After.Weight',w)
 
-    ! Get original implementation quantities
-    if ( present(prefix) ) then
-       n_pulay_orig = n_hist
-       n_broy_orig = n_hist
-    else
-       ! Let Mix.History decide if the others are not given
-       n_hist = fdf_get('SCF.Mix.History',0)
-       n_pulay_orig = fdf_get('DM.NumberPulay',max(n_hist,2))
-       n_broy_orig = fdf_get('DM.NumberBroyden',max(n_hist,0))
-    end if
-
-    ! default to pulay history
-    n_pulay = fdf_get('SCF.Mix.Pulay.History',n_pulay_orig)
-    n_pulay = fdf_get(trim(lpre)//'Mix.Pulay.History',n_pulay)
+    ! Update default Pulay options
+    n_pulay    = fdf_get(trim(lp)//'Mix.Pulay.History',n_hist)
     ! Linear mixing weight for pulay 
-    w_pulay = fdf_get('SCF.Mix.Pulay.Weight',w)
-    w_pulay = fdf_get(trim(lpre)//'Mix.Pulay.Weight',w_pulay)
-    ! mixing weight of residual in pulay mixing
-    w_pulay_damp = fdf_get('SCF.Mix.Pulay.Damping',w_pulay)
-    w_pulay_damp = fdf_get(trim(lpre)//'Mix.Pulay.Damping',w_pulay_damp)
-
-    ! default to pulay history
-    n_hist = fdf_get('SCF.Mix.History',n_pulay_orig)
-    n_hist = fdf_get(trim(lpre)//'Mix.History',n_hist)
-
-    n_broy = fdf_get('DM.NumberBroyden',0)
-    n_broy = fdf_get('SCF.Mix.Broyden.History',n_broy)
-    n_broy = fdf_get(trim(lpre)//'Mix.Broyden.History',n_broy)
-    w_broy = fdf_get('SCF.Mix.Broyden.Weight',w)
-    ! Weight for prime
-    w_broy_p = fdf_get('SCF.Mix.Broyden.WeightP',0.01_dp)
-    w_broy_p = fdf_get(trim(lpre)//'Mix.Broyden.WeightP',w_broy_p)
-
-
-    ! Retrieve default method for mixing
-    if ( present(prefix) ) then
-       method = fdf_get('SCF.Mix','pulay')
+    if ( is_variant(method,MIX_PULAY,variant,1) ) then
+       w_pulay = fdf_get(trim(lp)//'Mix.Pulay.Weight',1._dp)
     else
-       if ( n_broy /= 0 ) then
-          method = fdf_get('SCF.Mix','broyden')
-       else
-          method = fdf_get('SCF.Mix','pulay')
-       end if
+       w_pulay = fdf_get(trim(lp)//'Mix.Pulay.Weight',w)
     end if
-    method = fdf_get(trim(lpre)//'Mix',trim(method))
-
-    variant = fdf_get('SCF.Mix.Variant','original')
-    variant = fdf_get(trim(lpre)//'Mix.Variant',trim(variant))
+    ! mixing weight of residual in pulay mixing
+    if ( is_variant(method,MIX_PULAY,variant,1) ) then
+       w_pulay_damp = fdf_get(trim(lp)//'Mix.Pulay.Damping',0._dp)
+    else
+       w_pulay_damp = fdf_get(trim(lp)//'Mix.Pulay.Damping',w_pulay)
+    end if
+           
+    ! Update default Broyden options
+    n_broy   = fdf_get(trim(lp)//'Mix.Broyden.History',n_hist)
+    w_broy   = fdf_get(trim(lp)//'Mix.Broyden.Weight',w)
+    ! Weight for prime
+    w_broy_p = fdf_get(trim(lp)//'Mix.Broyden.WeightP',0.01_dp)
 
     ! Debug options
-    bool = fdf_get('SCF.Mix.Debug',.false.)
-    if ( fdf_get(trim(lpre)//'Mix.Debug',bool) ) then
+    if ( fdf_get(trim(lp)//'Mix.Debug',.false.) ) then
        debug_mix = IONode
        debug_msg = 'mix:'
     end if
-    bool = fdf_get('SCF.Mix.Debug.MPI',.false.)
-    if ( fdf_get(trim(lpre)//'Mix.Debug.MPI',bool) ) then
+    if ( fdf_get(trim(lp)//'Mix.Debug.MPI',.false.) ) then
        debug_mix = .true.
        write(debug_msg,'(a,i0,a)') 'mix (',Node,'):'
     end if
 
     ! Read in blocks of different mixers
-    bool = fdf_block(trim(lpre)//'Mix',bfdf)
-    if ( .not. bool ) then
-       bool = fdf_block('SCF.Mix',bfdf)
-    end if
-
-    if ( bool ) then
+    if ( fdf_block(trim(lp)//'Mix',bfdf) ) then
 
        ! We have a block of mixers
        ! This list _only_ lists all mixing blocks that are to be defined
@@ -422,6 +398,18 @@ contains
 
     end function get_variant
 
+    function is_variant(ms,mm,vs,vm) result(bool)
+      character(len=*), intent(in) :: ms, vs
+      integer, intent(in) :: mm, vm
+      logical :: bool
+      integer :: im
+      bool = .false.
+      im = get_method(ms)
+      if ( im == mm ) then
+         bool = get_variant(im,vs) == vm
+      end if
+    end function is_variant
+
     subroutine read_block(m, force)
       type(tMixer), intent(inout) :: m
       ! Force the block to exist
@@ -430,7 +418,7 @@ contains
       integer :: n
       
       ! create block string
-      opt = trim(lpre)//'Mix'//trim(lsuf)//'.'//trim(m%name)
+      opt = trim(lp)//'Mix.'//trim(m%name)
 
       ! Read the options for this mixer
       if ( fdf_block(opt,bfdf) ) then
@@ -733,6 +721,7 @@ contains
   subroutine mixing_step( mix )
 
     type(tMixer), pointer :: mix
+    integer :: init_itt
 
     select case ( mix%m )
     case ( MIX_PULAY )
@@ -750,8 +739,13 @@ contains
     end select
 
     if ( associated(mix%next) ) then
+       init_itt = 0
        mix => mix%next
-       mix%cur_itt = 0
+       if ( mix%m == MIX_PULAY ) then
+          if ( mix%v /= 1 ) init_itt = 1
+       end if
+       if ( mix%m == MIX_BROYDEN ) init_itt = 1
+       mix%cur_itt = init_itt
        if ( debug_mix ) write(*,'(2a)') &
             trim(debug_msg),' switching mixer...'
     end if
@@ -781,8 +775,8 @@ contains
 
        ! If the following uses history, add that information
        ! to the history.
-       call update_res(next%stack(1),n,oldF,newF)
        if ( next%v /= 1 ) then
+          call update_res(next%stack(1),n,oldF,newF)
           call update_F(next%stack(3),n,newF)
        end if
        
@@ -918,6 +912,14 @@ contains
 
     case ( 1 ) ! Guaranteed reduction Pulay
 
+       if ( mix%rv(1) < 1._dp ) then
+          ! Correct the residual to have unique path
+          res => getstackval(mix,1)
+!$OMP parallel workshare default(shared)
+          res = res * mix%rv(1)
+!$OMP end parallel workshare
+       end if
+       
        ! The history in this scheme is a little obscure... :)
        if ( mod(mix%cur_itt,2) == 1 ) then
 
@@ -942,8 +944,13 @@ contains
 
           end if
 
-          ! we continue with the input newF, no things to do
-
+          if ( mix%rv(1) < 1._dp ) then
+             res => getstackval(mix,1)
+!$OMP parallel workshare default(shared)
+             newF = oldF + res
+!$OMP end parallel workshare
+          end if
+          
           return
 
        else
@@ -1017,11 +1024,17 @@ contains
 
        ! Update the current residual to reflect the
        ! used residual in the algorithm
+
+       ! Note that this Res[i] = (F_2 - F_0) * w
+       ! And oldF = old old F + Res[i]
+       ! which means that any later Res[i] will be
+       ! non-scaled and "correct" such that normalization
+       ! is maintained.
        res => getstackval(mix,1)
 !$OMP parallel workshare default(shared)
        res = res - oldF + newF
 !$OMP end parallel workshare
-
+       
     end select
 
     if ( mix%restart > 0 ) then
@@ -1078,7 +1091,10 @@ contains
       ! copy over reduced arrays
       b = bi
 #endif
-      
+
+      ! Get current residual
+      res => getstackval(mix,1)
+
       ! Get inverse of matrix
       call inverse(nh, b, bi, info)
       if ( info /= 0 ) then
@@ -1089,9 +1105,6 @@ contains
          return
          
       else ! inversion succeeded
-         
-         ! Get current residual
-         res => getstackval(mix,1)
          
          do i = 1 , nh
             
@@ -1125,9 +1138,6 @@ contains
          write(*,'(2a,f10.6,a,100(tr1,e10.4))') &
               trim(debug_msg),' G = ',G,', alpha = ',alpha
       end if
-      
-      ! Read former matrices for mixing .........
-      res => getstackval(mix,1,ns)
       
       ! Copy over input dm, and add the linear mixing
 !$OMP parallel workshare default(shared)
@@ -1586,22 +1596,19 @@ contains
 
   end subroutine mixing_reset
 
-  subroutine mixing_print( mixers , prefix )
+  subroutine mixing_print( prefix, mixers )
     
+    character(len=*), intent(in) :: prefix
     type(tMixer), intent(in), target :: mixers(:)
-    character(len=*), intent(in), optional :: prefix
 
     type(tMixer), pointer :: m
-    character(len=50) :: lpre, fmt
+    character(len=50) :: fmt
 
     integer :: i
 
     if ( .not. IONode ) return
 
-    lpre = 'SCF'
-    if ( present(prefix) ) lpre = trim(prefix)
-
-    fmt = 'mix.'//trim(lpre)//':'
+    fmt = 'mix.'//trim(prefix)//':'
 
     ! Print out options for all mixers
     do i = 1 , size(mixers)
@@ -1633,7 +1640,7 @@ contains
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                '    History steps',m%n_hist
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
-               '    Initial linear mixing weight',m%rv(1)
+               '    Linear mixing weight',m%rv(1)
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Damping',m%w
           if ( m%restart > 0 ) then
