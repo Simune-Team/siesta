@@ -10,6 +10,7 @@
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
       use siesta_options
+      use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
       use sparse_matrices, only: xijo, H, S, H_kin, H_vkb

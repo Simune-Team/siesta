@@ -22,7 +22,6 @@
      $                     broyden_destroy, broyden_init,
      $                     broyden_is_setup
 
-      use alloc,    only : re_alloc, de_alloc
       use parallel, only : ionode
 
       implicit none
@@ -81,8 +80,8 @@ c Internal variables and arrays
       real(dp) :: celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) :: stress_dif(3,3)
 
-      real(dp), pointer ::  rnew(:)
-      real(dp), dimension(:), pointer  :: gxa, gfa, max_step
+      real(dp), allocatable ::  rnew(:)
+      real(dp), dimension(:), allocatable  :: gxa, gfa, max_step
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -236,11 +235,9 @@ C Initialization to 1. for numerical reasons, later substracted --------
 C Variable cell -------------------------------------------------------------
 
       if ( varcel ) then
-        call re_alloc( gfa, 1, numel, 'gfa', 'Broyden_optim' )
-        call re_alloc( gxa, 1, numel, 'gxa', 'Broyden_optim' )
-        call re_alloc( rnew, 1, numel, 'rnew', 'Broyden_optim' )
-        call re_alloc( max_step, 1, numel, 'max_step', 'Broyden_optim' )
 
+         allocate(gfa(1:numel),gxa(1:numel))
+         allocate(rnew(1:numel),max_step(1:numel))
 
         relaxd = .true.
 
@@ -333,12 +330,7 @@ C Transform back if variable cell
 
 
       ! Deallocate local memory
-        call de_alloc( rnew,'rnew', 'Broyden_optim' )
-        call de_alloc( gxa,'gxa', 'Broyden_optim' )
-        call de_alloc( gfa,'gfa', 'Broyden_optim' )
-        call de_alloc( max_step,'max_step', 'Broyden_optim' )
-
-
+        deallocate(rnew,gxa,gfa,max_step)
 
       endif ! variable cell
 

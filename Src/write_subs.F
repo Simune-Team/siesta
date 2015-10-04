@@ -588,7 +588,7 @@
       USE siesta_options
       use siesta_geom
       use siesta_cml
-      use units,      only : Ang
+      use units,      only : Ang, eV
       use m_forces
       use alloc,      only : re_alloc, de_alloc
       implicit none

@@ -41,6 +41,7 @@
 #ifdef TRANSIESTA
 ! TSS Begin
       use files,        only : slabel, label_length
+      use siesta_options, only : idyn, ia1
       use m_ts_global_vars, only : ts_istep
       use m_ts_options, only : savetshs
       use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl

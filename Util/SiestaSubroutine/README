@@ -1,4 +1,8 @@
-
+** Warning
+   Before compiling the programs in this directory, make sure that
+   you have compiled Siesta in Obj (or in the OBJDIR of your choice)
+**   
+   
 This directory documents support for calling siesta as a subroutine from a 
 user's program. There are three versions that use different communication modes:
 - The 'pipes' version uses Unix/Linux pipes for communications between the 
