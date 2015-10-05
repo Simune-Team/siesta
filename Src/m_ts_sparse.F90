@@ -251,7 +251,6 @@ contains
 
        ! Convert to the global one
        call Sp_to_Spglobal(dit,tmp_sp,tsup_sp_uc)
-       call delete(tmp_sp)
        
        if ( IONode ) then
           write(*,'(/,a)') 'Created the TranSIESTA global update sparsity pattern:'

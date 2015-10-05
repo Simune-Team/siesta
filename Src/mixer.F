@@ -28,6 +28,7 @@
       implicit none
 
       real(dp), pointer :: Xin(:,:), Xout(:,:)
+      real(dp), allocatable :: F(:,:)
 
       integer,  intent(in)  :: iscf
 
@@ -78,10 +79,18 @@
      $        XOut, XIn, dummy_dmax)
       endif
 
-#endif 
+#endif
 
+      ! Create residual function to minimize
+      allocate(F(maxnh,nspin))
+!$OMP parallel workshare default(shared)
+      F = Xout - Xin
+!$OMP end parallel workshare
+      
       ! Call mixing routine
-      call mixing( scf_mix, iscf, maxnh, nspin, Xin, Xout )
+      call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout )
+
+      deallocate(F)
 
       ! Print populations at each SCF step, if requested
       ! Note that this is after mixing, which is not

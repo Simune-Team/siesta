@@ -1,4 +1,17 @@
 ----------------------------------------------------
+October 5, 2015 -- Nick Papior       trunk-478---ts-scf-542
+Prepared mixing routine for geometry optimizations
+
+* Still some work to enable mixing algorithms fully generic.
+  Once, that is done the mixing can be used in geometry,
+  and SCF mixing.
+  
+modified:
+  Src/m_mixing.F90
+  Src/m_ts_sparse.F90
+  Src/mixer.F
+
+----------------------------------------------------
 October 3, 2015 -- Nick Papior       trunk-478---ts-scf-541
 Cleaned code and reduced computation, mixing
 
