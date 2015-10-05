@@ -12,6 +12,7 @@
       use atomlist,        only: iza, amass
       use m_ioxv,          only: ioxv
       USE siesta_options
+      use units,           only: Kelvin
       use parallel,        only: IOnode
       use siesta_cml,      only: cml_p, cmlEndStep, mainXML
       use sys,             only: die

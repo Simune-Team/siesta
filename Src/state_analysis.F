@@ -20,6 +20,7 @@
       use siesta_geom
 
       USE siesta_options
+      use units, only: amu, eV
       use m_stress
       use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
       use m_ntm

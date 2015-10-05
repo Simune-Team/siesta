@@ -6,6 +6,76 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-10-04   00:40:00 GMT                                     trunk-479
+Assorted fixes and cleanup. Update reference outputs
+
+- Replace pointers by allocatables in {zm,cell}_broyden_optim.
+- Split-off read_options from siesta_options to reduce
+  dependencies and clarify hidden symbol associations.
+- Remove dependency in sparse_matrices
+- Fix dependencies in makefiles in Util
+- Remove Reference-xml
+- Update Reference-out files
+- Provide a simple-minded mechanism to flag differences in the
+  test outputs ('make check').
+
+removed:
+  Tests/Reference-xml/
+  Tests/Reference/partial.out
+added:
+  Src/read_options.F90
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100/au_100.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_0.25V/au_100.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition/au_100.TEIG
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.AVTRANS
+  Tests/Reference/TranSiesta-TBTrans/ts_au_100_repetition_0.25V/au_100.TEIG
+  Tests/TranSiesta-TBTrans/copy_to_reference.sh
+  Tests/TranSiesta-TBTrans/run_tests.sh
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/cell_broyden_optim.F
+  Src/diagon.F
+  Src/final_H_f_stress.F
+  Src/obj_setup.sh
+  Src/projected_DOS.F
+  Src/proximity_check.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/struct_init.F
+  Src/write_md_record.F
+  Src/write_subs.F
+  Src/zm_broyden_optim.F
+  Tests/Makefile
+  Tests/README
+  Tests/Reference/*
+  Tests/cmp_digest.sh
+  Tests/partial/README
+  Tests/test.mk
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/SiestaSubroutine/README
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/VCA/Makefile
+  Util/build_all.sh
+      
+
+
+	  
+
+
+-----------------------------------------------------------------------
 2015-09-29   10:25:00 GMT                                     trunk-478
 Fixes: OCCS file, pdoskp, processorY
 

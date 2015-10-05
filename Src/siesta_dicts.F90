@@ -73,8 +73,6 @@ contains
 
     ! SCF options
     options = options // &
-         ('SCF.MixFirst'.kvp.mix_first_scf_step)
-    options = options // &
          ('SCF.MinIterations'.kvp.min_nscf)
     options = options // &
          ('SCF.MaxIterations'.kvp.nscf)

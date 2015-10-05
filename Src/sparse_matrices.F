@@ -40,8 +40,8 @@
       CONTAINS
 
       subroutine resetSparseMatrices( )
-
       use alloc, only : de_alloc
+
       implicit none
 
       call delete( block_dist )
@@ -65,9 +65,7 @@
       ! Note that it is nullified from start, 
       ! and hence de_alloc returns immediately
       
-      !if ( MixH ) then
       call de_alloc( Hold, 'Hold', 'sparseMat' )
-      !endif
 
       end subroutine resetSparseMatrices
 

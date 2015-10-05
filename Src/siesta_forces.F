@@ -7,6 +7,8 @@
       CONTAINS
 
       subroutine siesta_forces(istep)
+
+      use precision, only: dp
       use siesta_cml
 #ifdef SIESTA__FLOOK
       use flook_siesta, only : slua_call, LUA_SCF_LOOP

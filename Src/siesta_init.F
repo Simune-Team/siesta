@@ -94,7 +94,9 @@
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
 
-!------------------------------------------------------------------------- BEGIN
+      external :: read_options
+
+!-------------------------------------------------------------------------BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
 ! of a driver program that may have initialized MPI already
 #ifdef MPI

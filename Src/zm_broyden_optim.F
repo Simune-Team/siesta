@@ -55,7 +55,6 @@ C
       use zmatrix,     only : coeffA, coeffB, iNextDept
       use Zmatrix,     only : ZmatForceTolLen, ZmatForceTolAng
       use Zmatrix,     only : ZmatMaxDisplLen, ZmatMaxDisplAng
-      use alloc,       only : re_alloc, de_alloc
 
       implicit none
 
@@ -72,7 +71,7 @@ C Internal variables and arrays
       real(dp)            :: sxx, syy, szz, sxy, sxz, syz
       real(dp)            :: celli(3,3)
       real(dp)            :: stress_dif(3,3)
-      real(dp),   pointer :: gxa(:), gfa(:)
+      real(dp), allocatable :: gxa(:), gfa(:)
       real(dp)            :: force, force1
 
 C Saved internal variables:
@@ -88,7 +87,7 @@ C Saved internal variables:
       real(dp),      save :: precon 
       real(dp),      save :: strain(3,3)  ! Special treatment !!
 
-      real(dp),   pointer :: ftoln(:), dxmaxn(:), rnew(:)
+      real(dp), allocatable :: ftoln(:), dxmaxn(:), rnew(:)
 
       type(broyden_t), save  :: br
       logical, save           :: initialization_done = .false.
@@ -245,11 +244,8 @@ C Initialization to 1 for numerical reasons, later substracted
       endif                 ! First time
 
 C Allocate local memory
-      nullify(gfa,gxa,ftoln,dxmaxn,rnew)
-      call re_alloc( gfa, 1, ndeg, 'gfa', 'zm_broyden_optimizer' )
-      call re_alloc( gxa, 1, ndeg, 'gxa', 'zm_broyden_optimizer' )
-      call re_alloc( ftoln, 1, ndeg, 'ftoln', 'zm_broyden_optimizer' )
-      call re_alloc( dxmaxn, 1, ndeg, 'dxmaxn', 'zm_broyden_optimizer' )
+      allocate(gfa(1:ndeg),gxa(1:ndeg))
+      allocate(ftoln(1:ndeg),dxmaxn(1:ndeg))
 
 !      print *, "zm_broyden: cell in : ", cell
 !      print *, "zm_broyden: strain in : ", strain
@@ -394,7 +390,7 @@ C Set number of degrees of freedom & variables
      $        jinv0,0.01_dp,dxmaxn)
       endif
 
-      call re_alloc( rnew, 1, ndeg, 'rnew', 'zm_broyden_optimizer' )
+      allocate(rnew(1:ndeg))
 
       weight = 1.0_dp
       call broyden_step(br,gxa,gfa,w=weight,newx=rnew)
@@ -478,14 +474,12 @@ C Return coordinates to correct arrays
       contains
 
       subroutine local_dealloc()
-C Deallocate local memory
-      call de_alloc( rnew, 'rnew', 'zm_broyden_optimizer' )
-      call de_alloc( dxmaxn, 'dxmaxn', 'zm_broyden_optimizer' )
-      call de_alloc( ftoln, 'ftoln', 'zm_broyden_optimizer' )
-      call de_alloc( gxa, 'gxa', 'zm_broyden_optimizer' )
-      call de_alloc( gfa, 'gfa', 'zm_broyden_optimizer' )
-      end subroutine
+
+C     Deallocate local memory
+      deallocate(rnew,dxmaxn,ftoln,gxa,gfa)
+
+      end subroutine local_dealloc
 
       end subroutine zm_broyden_optimizer
-
+      
       end module m_zm_broyden_optim

@@ -6,6 +6,7 @@
       subroutine proximity_check( rmax )
       USE precision, only:dp
       USE siesta_options
+      use units, only: Ang
       use siesta_geom
       use parallel,     only : IOnode
       use neighbour,    only : jna=>jan, r2ij, mneighb,
