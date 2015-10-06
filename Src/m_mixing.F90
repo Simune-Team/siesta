@@ -116,14 +116,18 @@ module m_mixing
 
 contains
 
-  subroutine mixing_init( prefix, mixers, Comm )
+  subroutine mixing_init( prefix, mixers, Comm , force)
 
     use fdf
 
     character(len=*), intent(in) :: prefix
     ! The array of mixers (has to be nullified upon entry)
-    type(tMixer), allocatable, target :: mixers(:)
+    type(tMixer), pointer :: mixers(:)
     integer, intent(in), optional :: Comm
+    ! If force is true, it will initialize as an ordinary
+    ! setup. If force is false, then it will return
+    ! immediately if the options have not been provided.
+    logical, intent(in), optional :: force
 
     ! Block constructs
     type(block_fdf) :: bfdf
@@ -141,13 +145,22 @@ contains
 
     type(tMixer), pointer :: m
     integer :: nm, im, im2
+    logical :: bool
     character(len=10) :: lp
     character(len=70) :: method, variant, opt, opt2
 
     lp = trim(prefix)//'.'
 
     ! ensure nullification
-    if ( allocated(mixers) ) deallocate(mixers)
+    call mixing_reset(mixers)
+
+    ! Check for existance
+    if ( present(force) ) then
+       bool = fdf_defined(trim(lp)//'Mix')
+       bool = bool .or. fdf_block(trim(lp)//'Mix',bfdf)
+       bool = (.not. bool) .and. (.not. force)
+       if ( bool ) return
+    end if
 
     ! Standard options
     w = 0.25_dp
@@ -155,6 +168,7 @@ contains
     n_kick = 0
     n_pulay_orig = fdf_get('DM.NumberPulay',2)
     n_broy_orig  = fdf_get('DM.NumberBroyden',0)
+
     
     ! Set standard mixing algorithm
     if ( n_broy_orig > 0 ) then
@@ -1582,13 +1596,13 @@ contains
   end subroutine mixing_history_clear
 
   subroutine mixing_reset( mixs )
-    type(tMixer), allocatable, target :: mixs(:)
+    type(tMixer), pointer :: mixs(:)
     
     type(tMixer), pointer :: m
 
     integer :: im, is, ns
 
-    if ( .not. allocated(mixs) ) return
+    if ( .not. associated(mixs) ) return
 
     do im = 1 , size(mixs)
        m => mixs(im)
@@ -1610,6 +1624,7 @@ contains
     end do
 
     deallocate(mixs)
+    nullify(mixs)
 
   end subroutine mixing_reset
 
@@ -1954,7 +1969,7 @@ module m_mixing_scf
   private
   save
 
-  type(tMixer), allocatable, target :: scf_mixs(:)
+  type(tMixer), pointer :: scf_mixs(:) => null()
   type(tMixer), pointer :: scf_mix => null()
 
   public :: scf_mixs, scf_mix

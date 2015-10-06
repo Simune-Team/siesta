@@ -1,4 +1,28 @@
 ----------------------------------------------------
+October 6, 2015 -- Nick Papior       trunk-479---ts-scf-543
+Bugfix commit, and enabled TS mixing independently
+
+* transiesta mixing can now be specified independently
+  from the siesta mixing parameters.
+
+  This can be useful in certain cases and maximizes
+  customizability
+
+  The mixing parameters can be set with TS.SCF...
+  as like the SCF parameters.
+
+modified:
+  Src/Fstack.T90
+  Src/m_mixing.F90
+  Src/m_new_dm.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_options.F90
+  Src/mixer.F
+  Src/read_options.F90
+  Src/siesta_forces.F
+  Util/build_all.sh
+
+----------------------------------------------------
 October 5, 2015 -- Nick Papior       trunk-479---ts-scf-542
 Merged 479, large merge
 

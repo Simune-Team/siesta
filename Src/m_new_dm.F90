@@ -361,15 +361,19 @@
       use m_os, only : file_exist
 #ifdef TRANSIESTA
       use m_ts_iodm
+      use class_Fstack_dData1D, only: reset
       use m_energies, only: Ef  ! Transiesta uses the EF obtained in a initial SIESTA run
                                 ! to place the electrodes and scattering region energy
                                 ! levels at the appropriate relative position, so it is
                                 ! stored in the TSDE file.
       use m_ts_global_vars,only: ts_method_init, TSmode, TSinit, TSrun
-      use m_ts_options,   only : TS_scf_mode
-      use m_ts_options,   only : val_swap
-      use m_ts_options,   only : ts_wmix, ts_Dtol, ts_Htol
-      use siesta_options, only : wmix, dDtol, dHtol
+      use m_ts_options,   only : TS_scf_mode, ts_hist_keep
+      use m_ts_options,   only : val_swap, ts_scf_mixs
+      use m_ts_options,   only : ts_Dtol, ts_Htol
+      use siesta_options, only : dDtol, dHtol
+
+      use m_mixing, only: mixing_history_clear
+      use m_mixing_scf, only: scf_mixs, scf_mix
 #endif /* TRANSIESTA */
 
       implicit          none
@@ -390,7 +394,7 @@
 
       ! Enables the user to re-use a specific old DM every time
       character(len=250) :: old_DM
-      integer :: nspin_read
+      integer :: nspin_read, i
       real(dp), pointer              :: Dscf(:,:)
       integer, pointer, dimension(:) :: numh, listhptr, listh
       type(dSpData2D)                :: DMread
@@ -398,9 +402,6 @@
 #ifdef TRANSIESTA
       logical                        :: TSDE_found
       type(dSpData2D)                :: EDMread
-#endif
-#ifdef TIMING_IO
-      integer :: i
 #endif
 
 ! Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
@@ -568,9 +569,21 @@
       if ( TSrun ) then
 
          ! Correct the convergence parameters in transiesta
-         call val_swap(wmix,ts_wmix)
          call val_swap(dDtol,ts_Dtol)
          call val_swap(dHtol,ts_Htol)
+
+         ! From now on, a new mixing cycle starts,
+         ! Check in mixer.F for new mixing schemes.
+         ! NP new mixing
+         if ( associated(ts_scf_mixs, target=scf_mixs) ) then
+            do i = 1 , size(scf_mix%stack)
+               call reset(scf_mix%stack(i), -ts_hist_keep)
+            end do
+         else
+            call mixing_history_clear(scf_mixs)
+         end if
+         ! Transfer scf_mixing to the transiesta mixing routine
+         scf_mix => ts_scf_mixs(1)
          
       end if
       

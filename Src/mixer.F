@@ -86,7 +86,7 @@
 !$OMP parallel workshare default(shared)
       F = Xout - Xin
 !$OMP end parallel workshare
-      
+
       ! Call mixing routine
       call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout )
 

@@ -2,6 +2,8 @@ module m_ts_options
 
   use precision, only : dp
 
+  use m_mixing, only: tMixer
+
   use m_ts_electype, only : Elec
   use m_ts_chem_pot, only : ts_mu
   use m_ts_tdir
@@ -15,8 +17,6 @@ module m_ts_options
   ! The following options override the siesta settings upon
   ! entering the transiesta SCF
 
-  ! The mixing weight in the transiesta cycles...
-  real(dp) :: ts_wmix ! = wmix
   ! The tolerance
   real(dp) :: ts_Dtol ! = tolerance for density matrix
   real(dp) :: ts_Htol ! = tolerance for Hamiltonian
@@ -84,6 +84,9 @@ module m_ts_options
   character(len=*), parameter, private :: f9 ='(''ts: '',a,t53,''='',tr1,e9.3)'
   character(len=*), parameter, private :: f15='(''ts: '',a,t53,''='',2(tr1,i0,'' x''),'' '',i0)'
 
+  ! set copy of SCF mixing
+  type(tMixer), pointer :: ts_scf_mixs(:) => null()
+
 contains
 
 
@@ -109,6 +112,9 @@ contains
 #ifdef SIESTA__MUMPS
     use m_ts_mumps_init, only : read_ts_mumps
 #endif
+
+    use m_mixing, only: mixing_init
+    use m_mixing_scf, only: scf_mixs
 
     ! Input variables
     real(dp), intent(in) :: cell(3,3)
@@ -156,10 +162,14 @@ contains
     ! no settings from the intrinsic transiesta routines
     ! are needed.
     if ( onlyS .or. .not. TSmode ) return
+
+    ! Read in the transiesta SCF mixing options
+    call mixing_init('TS.SCF', ts_scf_mixs , force = .false.)
+    if ( .not. associated(ts_scf_mixs) ) then
+       ts_scf_mixs => scf_mixs
+    end if
     
     ! Read in the mixing for the transiesta cycles
-    ts_wmix = fdf_get('TS.MixingWeight',wmix)
-    ts_wmix = fdf_get('TS.SCF.Mix.Weight',ts_wmix)
     ts_Dtol = fdf_get('TS.SCF.Tolerance.DM',dDTol)
     ts_Htol = fdf_get('TS.SCF.Tolerance.H',dHTol)
     ts_hist_keep = fdf_get('TS.SCF.Mix.History.Keep',0)
@@ -703,6 +713,9 @@ contains
 
     use units, only: eV, Kelvin
 
+    use m_mixing, only: mixing_print
+    use m_mixing_scf, only: scf_mixs
+
     use m_ts_electype, only: print_settings
 
     use m_ts_global_vars, only: TSmode, onlyS
@@ -834,7 +847,6 @@ contains
        end select
 #endif
     end if
-    write(*,f8) 'SCF.TS mixing weight',ts_wmix
     write(*,f9) 'SCF.TS DM tolerance',ts_Dtol
     write(*,f9) 'SCF.TS Hamiltonian tolerance',ts_Htol
 
@@ -924,6 +936,14 @@ contains
        write(*,f7)'Max change in Fermi-level allowed', &
             TS_RHOCORR_FERMI_MAX / eV,'eV'
     end if
+
+    ! Print mixing options
+    if ( associated(ts_scf_mixs, target=scf_mixs) ) then
+       write(*,f11)'TS.SCF mixing options same as SCF'
+    else
+       call mixing_print('TS.SCF', ts_scf_mixs)
+    end if
+
     write(*,f11)'          >> Electrodes << '
     ltmp = ts_tidx < 1 .and. IsVolt
     ltmp = ltmp .or. TS_HA == TS_HA_ELEC_BOX

@@ -195,6 +195,8 @@ type(FSTACK_NAME), intent(inout) :: this
 integer, intent(in), optional :: n
 integer :: i, ns, ln
 
+if (.not. associated(this%data)) return
+
 ns = n_items(this)
 ln = ns
 if ( present(n) ) ln = n

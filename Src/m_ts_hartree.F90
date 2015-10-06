@@ -57,7 +57,7 @@ module m_ts_hartree
 
   ! The fraction of the actual fix
   real(dp), public :: Vha_frac = 1._dp
-  
+
 contains
 
   subroutine read_ts_hartree_options( )
@@ -94,7 +94,7 @@ contains
        ! If transiesta, we *MUST* default to the plane
        TS_HA = TS_HA_PLANE
     end if
-
+    
   end subroutine read_ts_hartree_options
 
   ! Find the biggest electrode by comparing
@@ -282,7 +282,7 @@ contains
     use mpi_siesta, only : MPI_double_precision
 #endif
     use m_mesh_node, only : meshl, offset_i, offset_r, dMesh, dL
-    
+
     integer, intent(in) :: ntpl
     real(grid_p), intent(inout) :: Vscf(ntpl)
 
@@ -393,7 +393,7 @@ contains
        call die('Something went extremely wrong...Hartree Fix')
     end select
     
-    ! Scale the correction
+    ! Scale the contribution
     Vtot = Vtot * Vha_frac
 
 #ifdef MPI
@@ -409,8 +409,9 @@ contains
        call die('The partitioning of the basal plane went wrong. &
             &No points are encapsulated.')
     end if
-    
-    Vav = Vtot / real(nlp,dp)
+
+    Vav = Vtot / nlp
+
     if ( IONode ) then
        write(*,'(a,e12.5,a)')'ts-Vha: ',Vav/eV,' eV'
     end if

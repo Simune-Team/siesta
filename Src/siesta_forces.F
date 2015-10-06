@@ -456,7 +456,7 @@
       use class_Fstack_dData1D
 
       use siesta_options,        only: fire_mix, broyden_maxit
-      use siesta_options,        only: wmix, dDtol, dHtol
+      use siesta_options,        only: dDtol, dHtol
 
       use sparse_matrices, only : DM_2D, EDM_2D
       use atomlist, only: lasto
@@ -472,7 +472,8 @@
       use m_ts_options,          only: N_Elec, Elecs
       use m_ts_options,          only: DM_bulk
       use m_ts_options,          only: val_swap
-      use m_ts_options,          only: ts_wmix, ts_Dtol, ts_Htol
+      use m_ts_options,          only: ts_scf_mixs
+      use m_ts_options,          only: ts_Dtol, ts_Htol
       use m_ts_options,          only: ts_hist_keep
       use m_ts_electype
 
@@ -492,17 +493,21 @@
       
       ! DANGER (when/if going back to the DIAGON run, we should
       ! re-instantiate the original mixing value)
-      call val_swap(wmix,ts_wmix)
       call val_swap(dDtol,ts_Dtol)
       call val_swap(dHtol,ts_Htol)
       
       ! From now on, a new mixing cycle starts,
       ! Check in mixer.F for new mixing schemes.
       ! NP new mixing
-      do iel = 1 , size(scf_mix%stack)
-         call reset(scf_mix%stack(iel), -ts_hist_keep)
-      end do
-      scf_mix => scf_mixs(1)
+      if ( associated(ts_scf_mixs, target=scf_mixs) ) then
+         do iel = 1 , size(scf_mix%stack)
+            call reset(scf_mix%stack(iel), -ts_hist_keep)
+         end do
+      else
+         call mixing_history_clear(scf_mixs)
+      end if
+      ! Transfer scf_mixing to the transiesta mixing routine
+      scf_mix => ts_scf_mixs(1)
 
       call ts_print_transiesta()
 

@@ -268,11 +268,11 @@ subroutine read_options( na, ns, nspin )
         write(6,3) 'redata: Write Mulliken Pop.','Atomic and Orbital charges'
      case(2)
         write(6,3)'redata: Write Mulliken Pop.','Atomic and Orbital charges'
-        write(6,10) '','plus Atomic Overlap Populations'
+        write(6,10) 'plus Atomic Overlap Populations'
      case(3)
         write(6,3)'redata: Write Mulliken Pop.','Atomic and Orbital charges'
-        write(6,10) '','plus Atomic Overlap Populations'
-        write(6,10) '','plus Orbital Overlap Populations'
+        write(6,10) 'plus Atomic Overlap Populations'
+        write(6,10) 'plus Orbital Overlap Populations'
      case default
         call die( 'redata: Invalid value for WriteMullikenPop' )
      end select
@@ -1588,16 +1588,16 @@ subroutine read_options( na, ns, nspin )
 
   RETURN
   !-------------------------------------------------------------------- END
-1  format(a,t50,'= ',2x,l1)
+1  format(a,t53,'= ',2x,l1)
 2  format(a)
-3  format(a,t50,'= ',a)
-4  format(a,t50,'= ',i8)
-5  format(a,t50,'= ',i8,a)
-6  format(a,t50,'= ',f10.4,a)
-7  format(a,t50,'= ',f12.6,a)
-8  format(a,t50,'= ',f14.12)
-9  format(a,t50,'= ',f10.4)
-10 format(a,t52,a)
+3  format(a,t53,'= ',a)
+4  format(a,t53,'= ',i8)
+5  format(a,t53,'= ',i8,a)
+6  format(a,t53,'= ',f10.4,a)
+7  format(a,t53,'= ',f12.6,a)
+8  format(a,t53,'= ',f14.12)
+9  format(a,t53,'= ',f10.4)
+10 format(t55,a)
 
 CONTAINS
   subroutine deprecated( str )
