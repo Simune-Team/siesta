@@ -78,19 +78,26 @@ end interface
 !=============================================================
 
 !---------------------------------------------
-function max_size__(s) result (n)
-type(FSTACK_NAME), intent(in) :: s
+function max_size__(this) result (n)
+type(FSTACK_NAME), intent(in) :: this
 integer                     :: n
-
-n = s%data%size
+if (.not. associated(this%data)) then
+  n = 0
+else
+  n = this%data%size
+end if
 end function max_size__
 
 !---------------------------------------------
-function n_items__(s) result (n)
-type(FSTACK_NAME), intent(in) :: s
+function n_items__(this) result (n)
+type(FSTACK_NAME), intent(in) :: this
 integer                    :: n
+if (.not. associated(this%data)) then
+  n = 0
+else
+  n = this%data%nvals
+end if
 
-n = s%data%nvals
 end function n_items__
 
 !---------------------------------------------
@@ -119,20 +126,20 @@ end subroutine new__
 !---------------------------------------------
 ! The most recent item is the highest-numbered
 !
-subroutine push__(s,item)
-type(FSTACK_NAME), intent(inout) :: s
+subroutine push__(this,item)
+type(FSTACK_NAME), intent(inout) :: this
 type(_T_),      intent(in)    :: item
 
-if (max_size(s) == 0) RETURN
+if (max_size(this) == 0) RETURN
 
-if (s%data%nvals == s%data%size) then
+if (this%data%nvals == this%data%size) then
    !! print *, "cycling fstack..."
-   s%data%val = cshift(s%data%val,+1)
-   call delete(s%data%val(s%data%nvals))
-   s%data%val(s%data%nvals) = item         ! Assignment
+   this%data%val = cshift(this%data%val,+1)
+   call delete(this%data%val(this%data%nvals))
+   this%data%val(this%data%nvals) = item    ! Assignment
 else
-   s%data%nvals = s%data%nvals + 1
-   s%data%val(s%data%nvals) = item
+   this%data%nvals = this%data%nvals + 1
+   this%data%val(this%data%nvals) = item
 endif
 end subroutine push__
 
@@ -140,46 +147,46 @@ end subroutine push__
 !---------------------------------------------
 ! Returns and pops the latest element
 !
-subroutine pop__(s,item)
-type(FSTACK_NAME), intent(inout) :: s
+subroutine pop__(this,item)
+type(FSTACK_NAME), intent(inout) :: this
 type(_T_),      intent(inout)    :: item
 
-if (max_size(s) == 0) RETURN
-if (n_items(s) == 0) then
+if (max_size(this) == 0) RETURN
+if (n_items(this) == 0) then
    call delete(item)
    RETURN
 endif
 
 ! retrieve the latest value
-item = s%data%val(s%data%nvals)
+item = this%data%val(this%data%nvals)
 ! Delete the local and decrease counter
-call delete(s%data%val(s%data%nvals))
-s%data%nvals = s%data%nvals - 1
+call delete(this%data%val(this%data%nvals))
+this%data%nvals = this%data%nvals - 1
 
 end subroutine pop__
 
 !---------------------------------------------
-subroutine get__(s,i,value)
-type(FSTACK_NAME), intent(in) :: s
+subroutine get__(this,i,value)
+type(FSTACK_NAME), intent(in) :: this
 integer,         intent(in) :: i
 type(_T_), intent(inout)    :: value
 
-if (i > s%data%nvals) then
+if (i > this%data%nvals) then
    call die("wrong index in get__  FSTACK_NAME")
 endif
-value = s%data%val(i)
+value = this%data%val(i)
 end subroutine get__
 
 !---------------------------------------------
-function get_pointer__(s,i) result(valuep)
-type(FSTACK_NAME), intent(in) :: s
+function get_pointer__(this,i) result(valuep)
+type(FSTACK_NAME), intent(in) :: this
 integer,        intent(in)  :: i
 type(_T_),          pointer :: valuep
 
-if (i > s%data%nvals) then
+if (i > this%data%nvals) then
    call die("wrong index in get_pointer__  FSTACK_NAME")
 endif
-valuep => s%data%val(i)
+valuep => this%data%val(i)
 end function get_pointer__
 
 !---------------------------------------------

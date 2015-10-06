@@ -1,4 +1,24 @@
 ----------------------------------------------------
+October 6, 2015 -- Nick Papior       trunk-479---ts-scf-544
+Bugfix for transition from diagon to transiesta using GR
+
+* When going from diagon to transiesta with GR mixing
+  the counter was not reset which meant that it would
+  crash for any convergence on an even history.
+
+* Ensured that the Fstack always returns an
+  integer when trying to determine its size (it defaults
+  to 0)
+
+added:
+  Src/m_mixing_scf.F90
+modified:
+  Src/Fstack.T90
+  Src/Makefile
+  Src/m_mixing.F90
+  Src/siesta_forces.F
+
+----------------------------------------------------
 October 6, 2015 -- Nick Papior       trunk-479---ts-scf-543
 Bugfix commit, and enabled TS mixing independently
 

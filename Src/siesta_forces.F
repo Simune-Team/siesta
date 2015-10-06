@@ -502,13 +502,16 @@
       if ( associated(ts_scf_mixs, target=scf_mixs) ) then
          do iel = 1 , size(scf_mix%stack)
             call reset(scf_mix%stack(iel), -ts_hist_keep)
+            ! Reset iteration count as certain 
+            ! mixing schemes require this for consistency
+            scf_mix%cur_itt = n_items(scf_mix%stack(iel))
          end do
       else
          call mixing_history_clear(scf_mixs)
       end if
       ! Transfer scf_mixing to the transiesta mixing routine
       scf_mix => ts_scf_mixs(1)
-
+      
       call ts_print_transiesta()
 
       ! In case of transiesta and DM_bulk.
