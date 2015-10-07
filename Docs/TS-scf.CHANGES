@@ -1,4 +1,12 @@
 ----------------------------------------------------
+October 7, 2015 -- Nick Papior       trunk-479---ts-scf-546
+Fixed version compilation such that two compilations are unneccessary
+
+modified:
+  Src/Makefile
+  Util/TS/TBtrans/Makefile
+
+----------------------------------------------------
 October 7, 2015 -- Nick Papior       trunk-479---ts-scf-545
 When fixing geometries it can be handy to fix all
 

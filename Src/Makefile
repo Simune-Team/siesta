@@ -15,7 +15,7 @@
 #
 # Remove implicit rules (including for Modula-2, which just confuses matters)
 .SUFFIXES:
-.SUFFIXES: .f .F .o .a .f90 .F90 .c
+.SUFFIXES: .f .F .f90 .F90 .o .c .a
 
 VPATH=.
 
@@ -277,7 +277,7 @@ $(FoX_built): $(FoX_configured)
 # version (compinfo.o) does not actually need FoX, but making it build after
 # FoX is done avoids a warning as we use the FoX-config script everywhere.
 
-version $(SYSOBJ) $(OBJS) \
+$(SYSOBJ) $(OBJS) \
 basis_io.o efield.o initatom.o ioeig.o kpoint_grid.o meshsubs.o \
 mulliken.o ordern.o outcell.o pdos.o post_scf_work.o radial.o   \
 scfconvergence_test.o setup_hamiltonian.o siesta_analysis.o     \
@@ -313,7 +313,7 @@ $(XC): $(FDF)
 	            "INCFLAGS=-I../MPI" \
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 
-# In case the user requeste compilation of flook
+# In case the user requests compilation of flook
 # we force the compilation of the libvardict
 ifdef USE_FLOOK
 FPPFLAGS += -DFLOOK
@@ -363,7 +363,6 @@ recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
 readsp.o eggbox.o iopipes.o : $(FDF)
-
 atom.o basis_io.o basis_specs.o: $(FDF)
 
 
@@ -405,6 +404,8 @@ essl_lapack.a: Libs/essl_lapack.f
 	@echo "==> Compiling essl_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) -j 1 "VPATH=$(VPATH)/Libs" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" essl_lapack.a)
 
+.PHONY: version.o
+version.o: version
 version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
@@ -416,7 +417,7 @@ version: version.F90
 		while(length-cur>78){ cur=cur+76 ; \
 		printf "&%s&\n",substr($$0,cur-76,76) \
 		} printf "&%s\n",substr($$0,cur)} else { print $$0 }}' tmp.F90 > compinfo.F90
-	@($(MAKE) "FPPFLAGS=$(FPPFLAGS)" compinfo.o)
+	$(MAKE) "FPPFLAGS=$(FPPFLAGS)" compinfo.o
 	@mv compinfo.o version.o
 	@echo
 
@@ -500,6 +501,7 @@ clean:
 	rm -f siesta transiesta *.o  *.a *.pcl *.pc
 	rm -f .siesta .transiesta
 	rm -f *.mod
+	rm -f compinfo.F90 tmp.F90
 	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)

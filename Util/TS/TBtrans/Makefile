@@ -119,7 +119,8 @@ TBTOBJS += m_tbt_kregions.o m_tbt_sparse_helper.o
 TBTOBJS += tbtrans.o
 
 # The version program
-.PHONY: version
+.PHONY: version.o
+version.o: version
 version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
