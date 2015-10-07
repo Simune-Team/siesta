@@ -787,7 +787,7 @@ contains
             leqi(namec,'species-i') .or. leqi(namec,'Z') ) then
           
           ifix = ifix + 1
-
+             
           ! Create a list of atoms from this line
           call fix_brange(pline,rr,na)
 
@@ -953,6 +953,23 @@ contains
       type(tRgn), intent(inout) :: r
       integer, intent(in) :: na
       integer :: i
+      character(len=20) :: opt
+
+      ! If the number of names in this region is more than 1
+      ! it could be an "all" designation
+      if ( fdf_bnnames(pline) >= 2 ) then
+         opt = fdf_bnames(pline,2)
+      else
+         opt = 'none'
+      end if
+
+      if ( leqi(opt,'all') ) then
+
+         ! The user range is everything...
+         call rgn_range(r,1,na)
+         return
+
+      end if
 
       ! Get entire range ( from -na to 2 * na )
       ! we allow both negative and positive wrap-arounds

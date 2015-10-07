@@ -1,4 +1,23 @@
 ----------------------------------------------------
+October 7, 2015 -- Nick Papior       trunk-479---ts-scf-545
+When fixing geometries it can be handy to fix all
+
+* Now allows the keyword 'all' to designate all
+  atoms in the geometry.
+
+  This is handy when only a small subset of atoms
+  are constrained.
+
+  %block Geometry.Constraint
+    atom all
+    clear {50 -- 100}
+    # Apply correct constraints now
+  %endblock
+
+modified:
+  Src/m_fixed.F90
+
+----------------------------------------------------
 October 6, 2015 -- Nick Papior       trunk-479---ts-scf-544
 Bugfix for transition from diagon to transiesta using GR
 
