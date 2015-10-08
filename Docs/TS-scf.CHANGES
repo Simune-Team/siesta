@@ -1,4 +1,13 @@
 ----------------------------------------------------
+October 8, 2015 -- Nick Papior       trunk-479---ts-scf-548
+Bugfix for referencing a non-allocated variable using -g
+
+* Dummy allocate 1 element for arrays not used
+
+modified:
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 October 8, 2015 -- Nick Papior       trunk-479---ts-scf-547
 Added Ozaki continued fraction for the evaluation of Eq
 

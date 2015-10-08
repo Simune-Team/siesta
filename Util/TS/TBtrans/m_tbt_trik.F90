@@ -255,6 +255,8 @@ contains
        allocate(pDOS(r_oDev%n,2,N_proj_T))
        if ( N_eigen > 0 ) then
           allocate(bTkeig(N_eigen,io+1,N_proj_T))
+       else
+          allocate(bTkeig(1,1,1))
        end if
 
     end if
@@ -353,6 +355,11 @@ contains
        info = info + no
        deallocate(zwork)
        pad_LHS = max(pad_LHS,info)
+
+    else
+
+       ! Allocate the minimal Teig
+       allocate(Teig(1,1,1))
 
     end if
 
@@ -1227,9 +1234,10 @@ contains
     write(*,*) 'Completed TBTRANS SPIN'
 #endif
 
-!***********************
-! CLEAN UP
-!***********************
+    !***********************
+    ! CLEAN UP
+    !***********************
+    if ( allocated(Teig) ) deallocate(Teig)
 
     deallocate(nE%iE,nE%E)
 
