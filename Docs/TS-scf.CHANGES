@@ -1,4 +1,25 @@
 ----------------------------------------------------
+October 8, 2015 -- Nick Papior       trunk-479---ts-scf-547
+Added Ozaki continued fraction for the evaluation of Eq
+
+* The continued fraction for the evaluation of the
+  equilibrium EGF integral has been implemented.
+
+  It works very nice but seems not to converge as
+  fast as the regular circle contour.
+
+  To enable the continued fraction methodology
+  simply remove the "begin contour.eq" in the
+  chemical potential block, which means that
+  it will only take the poles.
+
+modified:
+  Src/m_ts_cctype.f90
+  Src/m_ts_chem_pot.F90
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 October 7, 2015 -- Nick Papior       trunk-479---ts-scf-546
 Fixed version compilation such that two compilations are unneccessary
 

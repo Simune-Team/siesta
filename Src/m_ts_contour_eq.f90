@@ -85,7 +85,11 @@ contains
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input
     do i = 1 , N_mu
-       write(mus(i)%Eq_seg(Eq_segs(mus(i))),'(a,i0)') 'pole',i
+       if ( Eq_segs(mus(i)) == 1 ) then
+          mus(i)%Eq_seg(1) = 'cont-frac-'//trim(mus(i)%name)
+       else
+          write(mus(i)%Eq_seg(Eq_segs(mus(i))),'(a,i0)') 'pole',i
+       end if
     end do
 
     ! Count the number of contour segments
@@ -239,12 +243,19 @@ contains
     ! We here create the "fake" pole contours
     j = 1
     do i = N - N_mu + 1, N
+       if ( Eq_segs(mus(j)) == 1 ) then
+          Eq_io(i)%part   = 'cont-frac'
+          Eq_io(i)%method = 'continued-fraction'
+          ! Currently this is just a very high number
+          Eq_io(i)%a = 1.e10_dp * eV ! the continued fraction infinity point
+       else
+          Eq_io(i)%part   = 'pole'
+          Eq_io(i)%method = 'residual'
+          Eq_io(i)%a = mus(j)%mu
+       end if
        ! assign name to the Eq_io
        Eq_io(i)%name   = nContours(i)
        Eq_io(i)%N      = mus(j)%N_poles
-       Eq_io(i)%part   = 'pole'
-       Eq_io(i)%method = 'residual'
-       Eq_io(i)%a = mus(j)%mu
        Eq_io(i)%b = mus(j)%kT ! Save kT in the contour
        Eq_io(i)%d = mus(j)%mu ! save the chemical potential here
        j = j + 1
@@ -260,46 +271,59 @@ contains
           call die('A terrible error has occured, please inform the &
                &developers')
        end if
-       isCircle = leqi(Eq_io(cur)%part,'circle')
-       isTail   = leqi(Eq_io(cur)%part,'tail')
-       if ( Eq_segs(mus(i)) > 2 ) then
-          next = get_c_io_index(mus(i)%Eq_seg(j+1))
-          call ts_fix_contour( Eq_io(cur), next=Eq_io(next) )
-       end if
-       call consecutive_types(Eq_io(cur),isCircle,isTail, &
-            mus(i)%mu, mus(i)%kT)
-          
-       ! we should not check the pole (hence minus 2)
-       do j = 2 , Eq_segs(mus(i)) - 2
-          prev = get_c_io_index(mus(i)%Eq_seg(j-1))
-          cur  = get_c_io_index(mus(i)%Eq_seg(j  ))
-          next = get_c_io_index(mus(i)%Eq_seg(j+1))
-          call ts_fix_contour( Eq_io(cur), &
-               prev=Eq_io(prev), next=Eq_io(next) )
+       ! Two cases can happen,
+       !  1) A continued fraction method
+       !  2) The regular circle contour
+       if ( leqi(Eq_io(cur)%part,'cont-frac') ) then
+          ! The segment _has_ to be alone
+          if ( Eq_segs(mus(i)) > 1 ) then
+             call die('Continued fraction contours &
+                  &are individual and cannot be connected.')
+          end if
+
+       else
+          isCircle = leqi(Eq_io(cur)%part,'circle')
+          isTail   = leqi(Eq_io(cur)%part,'tail')
+          if ( Eq_segs(mus(i)) > 2 ) then
+             next = get_c_io_index(mus(i)%Eq_seg(j+1))
+             call ts_fix_contour( Eq_io(cur), next=Eq_io(next) )
+          end if
           call consecutive_types(Eq_io(cur),isCircle,isTail, &
                mus(i)%mu, mus(i)%kT)
-       end do
+          
+          ! we should not check the pole (hence minus 2)
+          do j = 2 , Eq_segs(mus(i)) - 2
+             prev = get_c_io_index(mus(i)%Eq_seg(j-1))
+             cur  = get_c_io_index(mus(i)%Eq_seg(j  ))
+             next = get_c_io_index(mus(i)%Eq_seg(j+1))
+             call ts_fix_contour( Eq_io(cur), &
+                  prev=Eq_io(prev), next=Eq_io(next) )
+             call consecutive_types(Eq_io(cur),isCircle,isTail, &
+                  mus(i)%mu, mus(i)%kT)
+          end do
 
-       ! don't check the pole
-       j = Eq_segs(mus(i)) - 1
-       cur = get_c_io_index(mus(i)%Eq_seg(j))
-       if ( Eq_segs(mus(i)) > 2 ) then
-          prev = get_c_io_index(mus(i)%Eq_seg(j-1))
-          call ts_fix_contour( Eq_io(cur), prev=Eq_io(prev) )
-       end if
+          ! don't check the pole
+          j = Eq_segs(mus(i)) - 1
+          cur = get_c_io_index(mus(i)%Eq_seg(j))
+          if ( Eq_segs(mus(i)) > 2 ) then
+             prev = get_c_io_index(mus(i)%Eq_seg(j-1))
+             call ts_fix_contour( Eq_io(cur), prev=Eq_io(prev) )
+          end if
+          
+          ! We also check that the circle lies 3 kT below the fermi level
+          call consecutive_types(Eq_io(cur),isCircle,isTail, &
+               mus(i)%mu, mus(i)%kT)
+          
+          ! check that the last contour actually lies on the RHS
+          ! of the chemical potential, at least 10 kT across!
+          if ( Eq_io(cur)%b < mus(i)%mu + 10._dp * mus(i)%kT ) then
+             print *,'Contour name: ',trim(Eq_io(cur)%name)
+             write(*,*) 'Energies are too close: ',Eq_io(cur)%b,mus(i)%mu + 10._dp * mus(i)%kT
+             call eq_die('The last contour of the chemical potential: &
+                  &'//trim(Name(mus(i)))//' lies too close to the &
+                  &chemical potential. It must be at least 10 kT from mu.')
+          end if
 
-       ! We also check that the circle lies 3 kT below the fermi level
-       call consecutive_types(Eq_io(cur),isCircle,isTail, &
-            mus(i)%mu, mus(i)%kT)
-
-       ! check that the last contour actually lies on the RHS
-       ! of the chemical potential, at least 10 kT across!
-       if ( Eq_io(cur)%b < mus(i)%mu + 10._dp * mus(i)%kT ) then
-          print *,'Contour name: ',trim(Eq_io(cur)%name)
-          write(*,*) 'Energies are too close: ',Eq_io(cur)%b,mus(i)%mu + 10._dp * mus(i)%kT
-          call eq_die('The last contour of the chemical potential: &
-               &'//trim(Name(mus(i)))//' lies too close to the &
-               &chemical potential. It must be at least 10 kT from mu.')
        end if
 
     end do
@@ -429,6 +453,11 @@ contains
 
           ! the poles all have the same weight (Pi*kT*2)
           call contour_poles(Eq_c(idx),Eq_c(idx)%c_io%d,mu%kT)
+
+       else if ( leqi(Eq_c(idx)%c_io%part,'cont-frac') ) then
+
+          ! the poles all have the same weight (Pi*kT*2)
+          call contour_continued_fraction(Eq_c(idx),mu,lift)
 
        else
           
@@ -967,6 +996,145 @@ contains
 
   end subroutine contour_poles
 
+
+  subroutine contour_continued_fraction(c,mu,Eta)
+
+    use units, only: Pi
+
+    type(ts_cw), intent(inout) :: c
+    type(ts_mu), intent(in) :: mu
+    ! The lifting into the complex plane
+    real(dp), intent(in) :: Eta
+
+    ! local variables
+    logical :: set_c
+    integer :: i, idx
+    complex(dp) :: cc
+    real(dp), allocatable :: ce(:), cw(:)
+
+    if ( .not. leqi(c%c_io%part,'cont-frac') ) &
+         call die('Contour is not a continued fraction')
+
+    allocate(ce(c%c_io%N-1))
+    allocate(cw(c%c_io%N-1))
+
+    select case ( method(c%c_io) )
+    case ( CC_CONTINUED_FRAC )
+       
+       call Ozaki_residue(c%c_io%N-1,ce,cw)
+
+    case default
+       write(*,*) 'Method for contour ',trim(c%c_io%name), &
+            ' could not be deciphered: ', c%c_io%method
+       call die('Could not determine the pole-integral')
+    end select
+
+    set_c = sum(abs(c%c(:))) == 0._dp
+
+    ! get the index in the ID array (same index in w-array)
+    call ID2idx(c,mu%ID,idx)
+
+    do i = 1 , c%c_io%N - 1
+       
+       ! Calculate current contour point
+       cc = dcmplx(mu%mu, ce(i) * mu%kT)
+       
+       if ( set_c ) then
+          c%c(i) = cc
+       else
+          if ( abs(c%c(i) - cc) > 1.e-10_dp ) then
+             call die('contour_cont_frac: Error on contour match')
+          end if
+       end if
+
+       ! Extra minus in implementation and Im[]
+       ! We also divide the weight by Pi in the loop (and it should
+       ! not exist in the continued fraction scheme)
+       c%w(idx,i) = dcmplx( 0._dp , 2._dp * cw(i) * mu%kT * Pi)
+
+    end do
+
+    ! The zero'th moment lies infinitely far and is from -inf -- inf
+    cc = dcmplx( mu%mu , c%c_io%a )
+    
+    if ( set_c ) then
+       ! The last pole is set
+       c%c(c%c_io%N) = cc
+    else
+       if ( abs(c%c(c%c_io%N) - cc) > 1.e-10_dp ) then
+          call die('contour_cont_frac: Error on contour match')
+       end if
+    end if
+
+    ! The zeroth moment (extra minus in implementation and Im[])
+    ! w = iR, but from -\Im we get w = R
+    ! And remove the loop division by Pi
+    c%w(idx,c%c_io%N) = dcmplx( 0.5_dp * c%c_io%a * Pi, 0._dp)
+
+    deallocate(ce,cw)
+
+  contains
+
+    subroutine Ozaki_residue(N,c,w)
+      ! The number of poles
+      integer, intent(in) :: N
+      real(dp), intent(out) :: c(N), w(N)
+
+      ! Diagonalization matrices
+      real(dp), allocatable :: A(:,:), B(:,:), we(:), work(:)
+      integer :: i, j, nn
+
+      real(dp), external :: ddot
+
+      ! The last weight of the residue problem is the R->infinity
+      ! point. Hence we remove one point from the poles.
+      nn = 2*N
+      allocate(A(nn,nn), B(nn,nn))
+      allocate(we(nn),work(3*nn))
+
+!$OMP parallel workshare default(shared)
+      A = 0._dp
+      B = 0._dp
+!$OMP end parallel workshare
+      do i = 1 , nn - 1
+         B(i,i) = 2._dp * i - 1._dp
+         A(i,i+1) = -0.5_dp
+         A(i+1,i) = -0.5_dp
+      end do
+      B(nn,nn) = 2._dp * nn - 1._dp
+      
+      ! Matrices have been initialized, diagonalize
+      ! to find residues from eigenvalues
+      call dsygv(1,'V','U',nn,A,nn,B,nn,we,work,3*nn,i)
+      if ( i /= 0 ) then
+         write(*,'(a)')'error in Ozaki diagonalization of weights.'
+         call die('Error in diagonalization of weights')
+      end if
+
+
+      ! Transfer weights and eigenvalues
+      j = nn
+      do i = 1 , N
+
+         ! Eigenvalue
+         c(i) = 1._dp / we(j)
+         
+         ! Residual
+         w(i) = - (A(1,j)*c(i))**2 * 0.25_dp
+
+         j = j - 1
+         
+      end do
+
+      ! Checked with Ozaki and got the same
+      !print '(1000(/,2(tr2,f24.12)))',( (/c(i),w(i)/) ,i=1,N)
+
+      deallocate(A,B,we,work)
+
+    end subroutine Ozaki_residue
+    
+  end subroutine contour_continued_fraction
+
   function Eq_E(id,step) result(c)
     integer, intent(in) :: id
     integer, intent(in), optional :: step
@@ -1030,9 +1198,9 @@ contains
     integer :: i
 
     do i = 1 , N_Eq
-       if ( .not. leqi(Eq_io(i)%part,'pole') ) then
-          call ts_print_contour_block(trim(prefix)//'.Contour.',Eq_io(i))
-       end if
+       if ( leqi(Eq_io(i)%part,'pole') ) cycle
+       if ( leqi(Eq_io(i)%part,'cont-frac') ) cycle
+       call ts_print_contour_block(trim(prefix)//'.Contour.',Eq_io(i))
     end do
   end subroutine print_contour_eq_block
 
@@ -1046,54 +1214,62 @@ contains
     character(len=*), intent(in) :: prefix
     character(len=200) :: chars
     real(dp) :: tmp
-    integer :: i
+    integer :: i, N
     type(ts_c_opt_ll), pointer :: opt
 
     if ( .not. IONode ) return
     
     write(*,opt_n) ' ----------------- Contour ----------------- '
 
+    N = 0
     write(*,opt_n) '           >> Residual contour << '
     do i = 1 , N_eq
-       if ( leqi(eq_io(i)%part,'pole') ) then
-          chars = trim(eq_io(i)%part)
+       chars = trim(eq_io(i)%part)
+       if ( .not. (leqi(chars,'pole') .or. &
+            leqi(chars,'cont-frac')) ) cycle
+       N = N + 1
+       if ( leqi(chars,'cont-frac') ) then
+          call write_e('Continued fraction chemical potential',eq_io(i)%d)
+       else
           call write_e('Pole chemical potential',eq_io(i)%d)
-          call write_e('   Chemical potential temperature',eq_io(i)%b, &
-               unit = 'K')
-          write(*,opt_int) '   Number of poles',eq_io(i)%N
+       end if
+       call write_e('   Chemical potential temperature',eq_io(i)%b, &
+            unit = 'K')
+       write(*,opt_int) '   Number of poles',eq_io(i)%N
+       if ( .not. leqi(chars,'cont-frac') ) then
           ! Calculate energy of middle pole-point
           tmp = Pi * eq_io(i)%b * 2._dp * eq_io(i)%N
           call write_e('   Top energy point',tmp)
-          
        end if
     end do
 
-    write(*,opt_n) '         >> Equilibrium contour << '
+    if ( N < N_Eq ) &
+         write(*,opt_n) '         >> Equilibrium contour << '
     do i = 1 , N_eq
-       if ( .not. leqi(eq_io(i)%part,'pole') ) then
-          chars = '  '//trim(eq_io(i)%part)
-          ! the starred contours are "fakes"
-          if ( eq_io(i)%name(1:1) == '*' ) then
-             write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.'//trim(eq_io(i)%name(2:))
-          else
-             write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.'//trim(eq_io(i)%name)
-          end if
-
-          call write_e(trim(chars)//' contour E_min',eq_io(i)%a)
-          call write_e(trim(chars)//' contour E_max',eq_io(i)%b)
-          write(*,opt_int) trim(chars)//' contour points',eq_io(i)%N
-          write(*,opt_c) trim(chars)//' contour method', &
-               trim(longmethod2str(eq_io(i)))
-          opt => eq_io(i)%opt
-          do while ( associated(opt) )
-             if ( len_trim(opt%val) > 0 ) then
-                write(*,opt_cc) '   Option for contour method',trim(opt%opt),trim(opt%val)
-             else
-                write(*,opt_c)  '   Option for contour method',trim(opt%opt)
-             end if
-             opt => opt%next
-          end do
+       if ( leqi(eq_io(i)%part,'pole') ) cycle
+       if ( leqi(eq_io(i)%part,'cont-frac') ) cycle
+       chars = '  '//trim(eq_io(i)%part)
+       ! the starred contours are "fakes"
+       if ( eq_io(i)%name(1:1) == '*' ) then
+          write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.'//trim(eq_io(i)%name(2:))
+       else
+          write(*,opt_c) 'Contour name',trim(prefix)//'.Contour.'//trim(eq_io(i)%name)
        end if
+
+       call write_e(trim(chars)//' contour E_min',eq_io(i)%a)
+       call write_e(trim(chars)//' contour E_max',eq_io(i)%b)
+       write(*,opt_int) trim(chars)//' contour points',eq_io(i)%N
+       write(*,opt_c) trim(chars)//' contour method', &
+            trim(longmethod2str(eq_io(i)))
+       opt => eq_io(i)%opt
+       do while ( associated(opt) )
+          if ( len_trim(opt%val) > 0 ) then
+             write(*,opt_cc) '   Option for contour method',trim(opt%opt),trim(opt%val)
+          else
+             write(*,opt_c)  '   Option for contour method',trim(opt%opt)
+          end if
+          opt => opt%next
+       end do
     end do
     
   end subroutine print_contour_eq_options
@@ -1174,7 +1350,8 @@ contains
 ! Write out the contour to a contour file
   subroutine io_contour_c(unit,cidx,idx)
     use parallel, only : IONode
-    use units, only : eV
+    use units, only : eV, Pi
+    use fdf, only: leqi
     integer, intent(in) :: unit
     type(ts_c_idx), intent(inout) :: cidx
     integer, intent(in) :: idx
@@ -1183,17 +1360,24 @@ contains
 ! * LOCAL variables   *
 ! *********************
     integer :: i
+    logical :: is_cont_frac
     type(ts_cw), pointer :: c
     complex(dp) :: W, ZW
 
     if ( .not. IONode ) return
     c => Eq_c(cidx%idx(2))
 
+    is_cont_frac = leqi(c%c_io%part,'cont-frac')
+    
     do i = 1 , size(c%c)
        cidx%e      = c%c(i)
        cidx%idx(3) = i
        call c2weight_eq(cidx,idx,1._dp,W,ZW)
-       write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV
+       if ( is_cont_frac ) then
+          write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV / Pi
+       else
+          write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV
+       end if
     end do
     
   end subroutine io_contour_c

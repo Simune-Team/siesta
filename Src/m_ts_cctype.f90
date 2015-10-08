@@ -53,6 +53,7 @@ module m_ts_cctype
   integer, parameter :: CC_SIMP_MIX         = 102
   integer, parameter :: CC_BOOLE_MIX        = 103
   integer, parameter :: CC_MID              = 104
+  integer, parameter :: CC_CONTINUED_FRAC   = 105
 
 
   ! Converts a method to a string format
@@ -107,6 +108,8 @@ contains
        str = 'Boole-Simp-3/8'
     case ( CC_MID )
        str = 'Mid-rule'
+    case ( CC_CONTINUED_FRAC )
+       str = 'Continued fraction'
     case default
        call die('Unknown method for the contour')
     end select
@@ -128,6 +131,8 @@ contains
        str = 'Boole-mix'
     case ( CC_MID )
        str = 'Mid-rule'
+    case ( CC_CONTINUED_FRAC )
+       str = 'Continued fraction'
     case default
        call die('Unknown method for the contour')
     end select
@@ -161,6 +166,8 @@ contains
        str = 'Boole-mix'
     case ( CC_MID )
        str = 'Mid-rule'
+    case ( CC_CONTINUED_FRAC )
+       str = 'Continued fraction'
     case default
        call die('Unknown method for the contour')
     end select
@@ -185,6 +192,10 @@ contains
     else if ( leqi(str,'mid-rule') .or. &
          leqi(str,'mid') ) then
        method = CC_MID
+    else if ( leqi(str,'ozaki') .or. &
+         leqi(str,'continued-fraction') .or. &
+         leqi(str,'cont-frac') ) then
+       method = CC_CONTINUED_FRAC
     else if ( leqi(str,'g-fermi') ) then
        method = CC_G_NF_0kT
        do i = G_NF_MIN_kT , G_NF_MAX_kT

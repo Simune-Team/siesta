@@ -647,6 +647,7 @@ contains
     use m_ts_electype, only: check_Elec_sim
     
     use m_ts_contour, only: read_contour_options
+    use m_ts_contour_eq, only: N_Eq, Eq_c
     
     use m_ts_weight, only : read_ts_weight
     use m_ts_charge, only : read_ts_charge_cor
@@ -683,6 +684,16 @@ contains
 
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus, ts_kT, IsVolt, Volt )
+
+    ! Quickly update the forces update if continued fraction
+    ! is used, one need an extra Green function evaluation to
+    ! get the forces correct (iR and -R)
+    do i = 1 , N_Eq
+       if ( leqi(Eq_c(i)%c_io%part,'cont-frac') ) then
+          ! the forces are not updated, dispite the user requests
+          calc_forces = .false.
+       end if
+    end do
 
     ! Check for Gamma in each direction
     do i = 1 , 3
@@ -1075,9 +1086,20 @@ contains
 
     ! check that all have at least 2 contour points on the equilibrium contour
     ! the 3rd is the fictive pole segment
-    if ( .not. all(Eq_segs(mus(:)) > 2) ) then
+    if ( .not. all(Eq_segs(mus(:)) > 0) ) then
        write(*,'(a)') 'All chemical potentials does not have at least &
-            &2 equilibrium contours'
+            &1 equilibrium contours'
+       err = .true.
+    end if
+    if ( .not. all(Eq_segs(mus(:)) /= 2) ) then
+       write(*,'(a)') 'No chemical potential can have only two &
+            &equilibrium contours'
+       write(*,'(a)')'Either of these:'
+       write(*,'(a)')'   1. continued fraction'
+       write(*,'(a)')'  or'
+       write(*,'(a)')'   1. Circle contour'
+       write(*,'(a)')'   2. Tail contour'
+       write(*,'(a)')'   3. Residuals (poles)'
        err = .true.
     end if
 

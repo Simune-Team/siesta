@@ -285,13 +285,6 @@ contains
        end if
 
     end do
-    
-    if ( .not. all(info) ) then
-       write(*,*)'You need to supply at least:'
-       write(*,*)' - chemical-shift'
-       write(*,*)' - contour.eq'
-       call die('You have not supplied all chemical potential information')
-    end if
 
     ! Check whether the Eq.Pole has been set,
     if ( bool_pole(2) ) then
@@ -303,6 +296,44 @@ contains
           call E2Npoles(E_pole,this%kT,this%N_poles)
        end if
     end if
+
+    if ( .not. info(2) ) then
+       ! The contour.eq hasn't been defined
+       ! we assume the user want to use the continued
+       ! fraction method
+       
+       ! we allow this
+       allocate(this%Eq_seg(1))
+       ! The equilibrium here
+       this%Eq_seg(1) = 'cont-frac-'//trim(this%name)
+       
+       if ( bool_pole(2) ) then
+          ! Update the number of poles (only up to 70% as
+          ! they become sparse
+          this%N_poles = int(E_pole * 0.7_dp / Pi / this%kT)
+       else if ( .not. bool_pole(1) ) then
+          ! Another default is 60 * Pi * kT ~ 60 poles
+          ! scale for the sparse top
+          E_pole = Pi * 60._dp * this%kT * 0.7_dp
+          E_pole = fdf_get('TS.Contours.Eq.Pole',E_pole,'Ry')
+          if ( E_pole > 0._dp ) then
+             this%N_poles = int(E_pole / Pi / this%kT)
+          end if
+       end if
+       
+       if ( this%N_poles < 10 ) then
+          call die('The continued fraction method requires at least 10 poles.')
+       end if
+       info(2) = .true.
+    end if
+
+    if ( .not. all(info) ) then
+       write(*,*)'You need to supply at least:'
+       write(*,*)' - chemical-shift'
+       write(*,*)' - contour.eq'
+       call die('You have not supplied all chemical potential information')
+    end if
+
 
     if ( this%N_poles < 1 ) then
        call die('Number of poles must be larger than or equal to 1')
