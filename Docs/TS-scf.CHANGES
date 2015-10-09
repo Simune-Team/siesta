@@ -1,4 +1,38 @@
 ----------------------------------------------------
+October 9, 2015 -- Nick Papior       trunk-479---ts-scf-550
+Added MPI_In_Place to the mpi_siesta code
+
+* Note that this may break some backwards compatibility.
+
+  However, MPI_In_Place has been part of the MPI distribution
+  since the advent of MPI2.
+
+  TODO: Consider changing Src/MPI/mpi__include.f90
+  to be preprocessed
+
+modified:
+  Src/MPI/mpi__include.f90
+
+----------------------------------------------------
+October 8, 2015 -- Nick Papior       trunk-479---ts-scf-549
+Check for Hartree fix of potential placement
+
+* When doing N-electrodes the default box-guess can in
+  certain cases not capture the correct placement of the
+  box.
+
+  When initializing the voltage drop we now check that
+  all electrodes have all their coordinates inside the
+  boxes.
+
+  This is a simple one-time check and captures all 
+  errors created by the user.
+
+modified:
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 October 8, 2015 -- Nick Papior       trunk-479---ts-scf-548
 Bugfix for referencing a non-allocated variable using -g
 

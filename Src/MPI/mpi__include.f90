@@ -68,6 +68,7 @@
         public :: MPI_UNDEFINED
         public :: MPI_BSEND_OVERHEAD
         public :: MPI_KEYVAL_INVALID
+        public :: MPI_IN_PLACE
 
         ! MPI_status
         public :: MPI_STATUS_SIZE
