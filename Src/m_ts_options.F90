@@ -1239,6 +1239,7 @@ contains
     
     ltmp = .false.
     call reclat(cell,tmp33,0)
+
     do i = 1 , na_u
        if ( a_isBuffer(i) ) cycle
        ! Check the index
@@ -1256,14 +1257,15 @@ contains
        case default
           do j = 1 , 3
              if ( itmp3(j) /= 0 ) then
+                write(*,'(i0,''('',i0,''='',i0,'')'',tr1)',advance='no')&
+                     i,j,itmp3(j)
                 ltmp = .true.
              end if
           end do
        end select
-       if ( ltmp ) exit
     end do
     if ( ltmp ) then
-       write(*,'(a)') '*** Device atomic coordinates are not inside unit-cell.'
+       write(*,'(/a)') '*** Device atomic coordinates are not inside unit-cell.'
        write(*,'(a)') '*** This is a requirement for bias calculations'
        write(*,'(a)') '    as the Poisson equation cannot be correctly handled'
        write(*,'(a)') '    due to inconsistencies with the grid and atomic coordinates'

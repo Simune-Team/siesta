@@ -54,8 +54,13 @@ contains
 
   subroutine ts_init_voltage(cell,na_u,xa,meshG,nsm)
     use parallel, only : IONode
-    use m_ts_options, only : VoltageInC, Elecs, Volt, Hartree_fname
-    use units, only : eV
+    use m_ts_electype, only : TotUsedAtoms
+    use m_ts_options, only : Elecs, N_Elec
+    use m_ts_options, only : VoltageInC, Volt, Hartree_fname
+    use units, only : eV, ang
+
+    use m_mesh_node,  only : dMesh
+    use m_geom_box, only : voxel_in_box_delta
 
 ! ***********************
 ! * INPUT variables     *
@@ -65,8 +70,9 @@ contains
     real(dp),      intent(in) :: xa(3,na_u)
     integer,       intent(in) :: meshG(3), nsm
 
-    real(dp) :: tmp
-    integer :: iElL, iElR
+    logical :: bool
+    real(dp) :: tmp, ll(3)
+    integer :: iElL, iElR, iEl, ia, iia
 
     if ( IONode ) then
        write(*,*)
@@ -77,7 +83,8 @@ contains
        if ( IONode .and. len_trim(Hartree_fname) == 0 ) then
           write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
        else if ( IONode .and. len_trim(Hartree_fname) > 0 ) then
-          write(*,'(2a)')'ts_voltage: User supplied Poisson solution in file ',&
+          write(*,'(3a)')'ts_voltage: ', &
+               'User supplied Poisson solution in file ', &
                trim(Hartree_fname)
           call ts_ncdf_voltage_assert(Hartree_fname,cell,meshG)
        end if
@@ -95,6 +102,30 @@ contains
           tmp = V_high
           V_high = V_low
           V_low = tmp
+       end if
+
+       ! Check that all electrode atoms are residing in the boxes
+       ! defined by the electrodes
+       bool = .false.
+       do iEl = 1 , N_Elec
+          do ia = 1 , TotUsedAtoms(Elecs(iEl))
+             iia = Elecs(iEl)%idx_a + ia - 1
+             ll = xa(:,iia)
+             if (.not.voxel_in_box_delta(Elecs(iEl)%box,ll,dMesh)) then
+                if ( IONode ) & 
+                     write(*,'(3a,i0)')'Electrode ', &
+                     trim(Elecs(iEl)%name),&
+                     ' does not reside within the defined Hartree box &
+                     & for the potential. Please ensure unit-cell &
+                     &vectors have the _correct_ direction: ',iia
+                bool = .true.
+             end if
+          end do
+       end do
+
+       if ( bool ) then
+          call die('ts_voltage: Check output, an electrode cannot be &
+               &correctly be applied a bias.')
        end if
 
        return
@@ -262,6 +293,10 @@ contains
 
   subroutine ts_elec_only(ntpl, Vscf)
     use precision,    only : grid_p
+#ifdef MPI
+    use mpi_siesta
+#endif
+
     use m_ts_options, only : N_Elec, Elecs
     use m_mesh_node,  only : meshl, offset_r, dMesh, dL
     use m_geom_box, only : voxel_in_box_delta
@@ -299,7 +334,7 @@ contains
 
              ! Count entries in each geometric object
              do iEl = 1 , N_Elec
-                if ( voxel_in_box_delta(Elecs(iEl)%box, ll, dMesh) ) then
+                if ( voxel_in_box_delta(Elecs(iEl)%box, ll, dMesh)) then
 #ifdef TRANSIESTA_BOX
                    n_V(iEl) = n_V(iEl) + 1
 #endif
@@ -313,6 +348,21 @@ contains
 
 #ifdef TRANSIESTA_BOX
     print '(10(tr1,i8))',n_V,ntpl
+
+#ifdef MPI
+    call MPI_AllReduce(MPI_In_Place,n_V,N_Elec,MPI_Integer,MPI_Sum, &
+         MPI_Comm_World,ix)
+#endif
+
+    if ( any(n_V == 0) ) then
+       iEl = minloc(n_V,1)
+       write(*,'(3a)') 'ts-voltage: Elec-Box ',trim(Elecs(iEl)%name), &
+            ' is not within the device grid box.'
+       call die('ts-voltage: Elec-Box has an electrode outside &
+            &the grid. Check TS output')
+    end if
+
+    deallocate(n_V)
 #endif
 
     if ( imesh /= ntpl ) then
