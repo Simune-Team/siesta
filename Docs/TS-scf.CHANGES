@@ -1,4 +1,32 @@
 ----------------------------------------------------
+October 9, 2015 -- Nick Papior       trunk-479---ts-scf-551
+Bugfix for skewed electrode N-terminals
+
+* The initial Hartree box guess is now estimated purely
+  from the electrode unit-cell box.
+  
+  Thus any non-skewed device unit-cell will not reflect this
+  and the uniqueness of the unit-cell directions becomes
+  essential.
+
+  For the user this should only mean easier usage and more
+  robustness.
+
+* Bugfix in the voxel size in the Cartesian coordinates.
+  Estimated from the voxel cell vectors which is more
+  correct.
+
+  Note that they _can_ have a zero extend in any Cartesian 
+  direction, which is very different from an actual
+  extend in the unit-cell grid.
+
+modified:
+  Src/m_geom_box.f90
+  Src/m_mesh_node.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 October 9, 2015 -- Nick Papior       trunk-479---ts-scf-550
 Added MPI_In_Place to the mpi_siesta code
 

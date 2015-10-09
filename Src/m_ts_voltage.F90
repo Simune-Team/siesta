@@ -59,7 +59,6 @@ contains
     use m_ts_options, only : VoltageInC, Volt, Hartree_fname
     use units, only : eV, ang
 
-    use m_mesh_node,  only : dMesh
     use m_geom_box, only : voxel_in_box_delta
 
 ! ***********************
@@ -71,7 +70,7 @@ contains
     integer,       intent(in) :: meshG(3), nsm
 
     logical :: bool
-    real(dp) :: tmp, ll(3)
+    real(dp) :: tmp, ll(3), zero(3)
     integer :: iElL, iElR, iEl, ia, iia
 
     if ( IONode ) then
@@ -107,11 +106,12 @@ contains
        ! Check that all electrode atoms are residing in the boxes
        ! defined by the electrodes
        bool = .false.
+       zero = 0._dp
        do iEl = 1 , N_Elec
           do ia = 1 , TotUsedAtoms(Elecs(iEl))
-             iia = Elecs(iEl)%idx_a + ia - 1
+             iia = Elecs(iEl)%idx_a - 1 + ia
              ll = xa(:,iia)
-             if (.not.voxel_in_box_delta(Elecs(iEl)%box,ll,dMesh)) then
+             if (.not.voxel_in_box_delta(Elecs(iEl)%box,ll,zero)) then
                 if ( IONode ) & 
                      write(*,'(3a,i0)')'Electrode ', &
                      trim(Elecs(iEl)%name),&
@@ -123,9 +123,9 @@ contains
           end do
        end do
 
-       if ( bool ) then
+       if ( bool .and. len_trim(Hartree_fname) == 0 ) then
           call die('ts_voltage: Check output, an electrode cannot be &
-               &correctly be applied a bias.')
+               &correctly applied a bias.')
        end if
 
        return

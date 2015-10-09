@@ -74,9 +74,10 @@ contains
        ldimX = max(meshG(i),1)
        ! The dimension stepping in each direction.
        dL(:,i) = ucell(:,i) / ldimX
-       ! The mesh box-size
-       dMesh(i) = VNORM(ucell(:,i)) / ldimX
     end do
+    ! The voxel box-size in Cartesian coordinates 
+    ! is calculated by adding all three vectors
+    dMesh = matmul(dL,(/1._dp,1._dp,1._dp/))
 
     ! For nodes == 1 we have no offset
     ! (also some of the arrays are not initialized, which

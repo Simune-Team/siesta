@@ -684,6 +684,7 @@ contains
           end if
        end do
     end do
+
     ! Get bond-length along transport direction
     ! sin(30^o) = 1/2
     bond30 = min_bond * 0.5_dp
@@ -692,13 +693,16 @@ contains
        p(:) = xa(:,ia-1+i)
        do j = i + 1 , na
           max_xa = xa(:,ia-1+j) - p
-          contrib = VEC_PROJ_SCA(this%cell(:,this%t_dir),max_xa)
-          if ( abs(contrib) < bond30 ) cycle
-          if ( abs(contrib) < min_t_bond ) then
+          contrib = abs(VEC_PROJ_SCA(this%cell(:,this%t_dir),max_xa))
+          ! Skip bond-lengths perpendicular to the semi-infinite
+          ! direction.
+          if ( contrib < bond30 ) cycle
+          if ( contrib < min_t_bond ) then
              min_t_bond = contrib
           end if
        end do
     end do
+
     ! Take half the bond-length to get in between two atoms
     min_t_bond = min_t_bond * 0.5_dp
     min_bond = min_bond * 0.5_dp
@@ -719,10 +723,13 @@ contains
     ! Calculate planes of the electrodes
     p = this%cell(:,this%t_dir)
     p = p / VNORM(p)
+
+    ! Select the atom farthest from the device region
+    ! along the semi-infinite direction
     j = ia
     contrib = VEC_PROJ_SCA(p,xa(:,j))
     if ( this%inf_dir == INF_POSITIVE ) then
-       ! We need to utilize the last atom
+       ! We need to utilize the last atom 
        do i = ia + 1, ia + na - 1
           if ( VEC_PROJ_SCA(p,xa(:,i)) > contrib ) then
              j = i
@@ -736,84 +743,54 @@ contains
           end if
        end do
     end if
+    ! Store this atom as the center of the basal plane.
     this%p%c = xa(:,j)
 
     ! We add a vector with length of half the minimal bond length
     ! to the vector, to do the averaging 
     ! not on-top of an electrode atom.
-    p = p * min_t_bond
-
     if ( this%inf_dir == INF_POSITIVE ) then
-       this%p%c = this%p%c + p ! add vector
+       this%p%c = this%p%c + p * min_t_bond ! add vector
     else
-       this%p%c = this%p%c - p ! subtract vector
+       this%p%c = this%p%c - p * min_t_bond ! subtract vector
     end if
 
-    ! Normal vector to electrode transport direction
-    this%p%n = SPC_PROJ(cell,this%cell(:,this%t_dir))
+    ! Normal vector to electrode basal plane.
+    ! This coincides with the electrode semi-infinite direction
+    this%p%n = this%cell(:,this%t_dir)
     this%p%n = this%p%n / VNORM(this%p%n) ! normalize
 
-    ! The distance parameter
-    this%p%d = sum( this%p%n(:)*this%p%c(:) )
+    ! The distance parameter used when calculating
+    ! the +/- voxel placements
+    this%p%d = sum( this%p%n(:) * this%p%c(:) )
 
-    ! Create the box cell for the electrode
-    ! This enables the Hartree correction for the 
-    ! electrode region
-    ! The box-cell will be extended by the bond-length
-    ! to make "as big as box as viable"
-    min_bond = min_bond * 2._dp ! re-scale to actual bond-length
+    ! *** Now we have created the Hartree plane
+    !     where the potential is fixed.         ***
+
+
+    ! *** Calculate the electrode box for N-electrodes
+    ! We do this by:
+    !  1. find the average Cartesian coordinate.
+    !  2. subtract half the unit-cell vector of the
+    !     electrode.
+    !  3. Create the box from the electrode unit-cell
+
     do i = 1 , 3
-       ! Get the lower left corner of the electrode
-       p(i) = minval(xa(i,ia:ia+na-1))
-       ! The box extends back one bond-length in each direction.
-       p(i) = p(i) - min_bond
-       ! Get the maximum in each direction
-       ! In principle this should probably be the electrode
-       ! unit-cell vectors, however, for non-periodic electrodes
-       ! this might not be such a good choice.
-       ! The best thing would be to check the periodic directions,
-       ! and in those directions assign the vectors in those directions
-       ! always having the third vector equalling the cell transport
-       ! direction.
-       ! NOTE TODO : this is for now a "stupid" implementation.
-       max_xa(i) = maxval(xa(i,ia:ia+na-1))
-       max_xa(i) = max_xa(i) + min_bond
-       this%box%v(:,i) = 0._dp
-       this%box%v(i,i) = max_xa(i) - p(i)
+
+       ! Calculate the Cartesian ith contribution
+       contrib = sum(this%cell(i,:)) * 0.5_dp
+
+       ! Calculate average position
+       ! and find the lower left corner of the electrode
+       p(i) = sum(xa(i,ia:ia+na-1)) / na
+       
+       ! transfer to the corner of the Hartree box
+       this%box%c(i) = p(i) - contrib
 
     end do
-    do i = 1 , 3
-       ! If there is no periodicity of the electrode in this
-       ! direction we move the center of the box by the 
-       ! unit-cell. This ensures that for non-periodic
-       ! cells, we still have an equal weight of the
-       ! lifting of the Hartree potential.
-       if ( this%nsc(i) == 1 ) then
-          p(:) = p(:) - 0.5_dp * this%cell(:,i)
-       end if
-    end do
-    ! p now contains the origin of the box
-    this%box%c(:) = p(:)
-    ! For now the box vectors are defined using the unit-cell of
-    ! the electrode.
-    ! Note that we extend the unit-cell by the bond-length
-    ! We will really try to extend the box to be
-    ! as large as possible to retain the potential surrounding
-    ! the electrode as much as possible.
-    ! This is really important for periodic calculations
-    ! where it is necessary to have the lifting potential
-    ! in the entire box of the electrode
-    do i = 1 , 3
-       ! Remember that we start one bond-length "below"
-       ! and the unit-cell is always "one bond length" too
-       ! long (for periodic reasons)
-       p(:) = min_bond
-       ! Create a unit-vector along the unit-cell direction
-       max_xa(:) = this%cell(:,i) / VNORM(this%cell(:,i))
-       p(:) = VEC_PROJ(max_xa,p)
-       p(:) = this%cell(:,i) + p(:)
-       this%box%v(:,i) = SPC_PROJ(cell,p)
-    end do
+
+    ! The box is the same as the electrode
+    this%box%v = this%cell
 
   end subroutine init_Elec_sim
 

@@ -39,11 +39,11 @@ module m_geom_box
   type geo_box_delta
      ! Describing a bounded box which can be described by 3 vectors.
      ! With the three vectors we bound it by:
-     !    ---------------------     --------
+     !    ----------------------     --------
      !    | v1_1 | v2_1 | v3_1 |     | x1_1 |
      !    | v1_2 | v2_2 | v3_2 | x = | x1_2 |
      !    | v1_3 | v2_3 | v3_3 |     | x1_3 |
-     !    ---------------------     --------
+     !    ----------------------     --------
      ! and x = (a,b,c)^T.
      ! Now to be in the bounded box, a, b and c must satisfy:
      !    \{a,b,c\} \in [0;1].
