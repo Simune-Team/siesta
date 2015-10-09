@@ -15,6 +15,7 @@
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
       USE siesta_options
+      use units, only: Debye, eV
       use sparse_matrices, only: maxnh, listh, listhptr, numh
       use sparse_matrices, only: H, S, Dscf, Dold, Eold, xijo
       use sparse_matrices, only: Work=>H_kin  ! For scratch only!

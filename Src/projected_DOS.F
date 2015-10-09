@@ -61,6 +61,8 @@
       use m_eo
       use m_spin,      only: nspin
       use m_gamma
+      use units,       only: eV
+      
       implicit none
 
       type(block_fdf)            :: bfdf

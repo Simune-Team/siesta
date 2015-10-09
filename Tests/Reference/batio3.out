@@ -1,11 +1,12 @@
-Siesta Version:                                        siesta-trunk-300
-Architecture  : nano-intel-mpi
-Compiler flags: /opt/intel/impi/3.1/bin64/mpiifort -w  -O3 -mp
+Siesta Version: siesta-trunk-479
+Architecture  : atto-intel12-openmpi
+Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
+PP flags      : -DCDF -DMPI 
 PARALLEL version
 NetCDF support
 
 * Running on    4 nodes in parallel
->> Start of run:  29-SEP-2009  17:12:57
+>> Start of run:  29-SEP-2015  15:28:58
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -167,40 +168,55 @@ relmxkb: Read Max KB Ang. Momentum=    3 for species O
 <basis_specs>
 ===============================================================================
 Ba                   Z=  56    Mass=  137.33        Charge= 0.70000    
-Lmxo=2 Lmxkb=3     BasisType=split      Semic=T
+Lmxo=2 Lmxkb= 3    BasisType=split      Semic=T
 L=0  Nsemic=1  Cnfigmx=6
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    98.950    
                rinn:    5.9000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    6.3990    
-            lambdas:    1.0000    
+            lambdas:   1.00000    
           n=2  nzeta=2  polorb=0
             splnorm:   0.15000    
                vcte:    97.950    
                rinn:    6.5000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    6.9996      5.9995    
-            lambdas:    1.0000      1.0000    
+            lambdas:   1.00000     1.00000    
 L=1  Nsemic=1  Cnfigmx=6
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    96.950    
                rinn:    6.0900    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    6.5992    
-            lambdas:    1.0000    
+            lambdas:   1.00000    
           n=2  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    94.960    
                rinn:    6.6000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    7.1000    
-            lambdas:    1.0000    
+            lambdas:   1.00000    
 L=2  Nsemic=0  Cnfigmx=5
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    95.950    
                rinn:    6.6000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    7.1000    
-            lambdas:    1.0000    
+            lambdas:   1.00000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=2  erefs: 0.17977+309 0.17977+309
 L=1  Nkbl=2  erefs: 0.17977+309 0.17977+309
@@ -334,40 +350,55 @@ atom: _________________________________________________________________________
 <basis_specs>
 ===============================================================================
 Ti                   Z=  22    Mass=  47.880        Charge=  1.9100    
-Lmxo=2 Lmxkb=3     BasisType=split      Semic=T
+Lmxo=2 Lmxkb= 3    BasisType=split      Semic=T
 L=0  Nsemic=1  Cnfigmx=4
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    93.950    
                rinn:    5.2000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    5.6995    
-            lambdas:    1.0000    
+            lambdas:   1.00000    
           n=2  nzeta=2  polorb=0
             splnorm:   0.15000    
                vcte:    96.470    
                rinn:    5.6000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    6.1000      5.0994    
-            lambdas:    1.0000      1.0000    
+            lambdas:   1.00000     1.00000    
 L=1  Nsemic=1  Cnfigmx=4
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    95.470    
                rinn:    5.2000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    5.6994    
-            lambdas:    1.0000    
+            lambdas:   1.00000    
           n=2  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:   0.50000    
                rinn:    1.7700    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    3.0537    
-            lambdas:    1.0000    
+            lambdas:   1.00000    
 L=2  Nsemic=0  Cnfigmx=3
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
                vcte:    46.050    
                rinn:    4.9500    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    5.9433      4.7001    
-            lambdas:    1.0000      1.0000    
+            lambdas:   1.00000     1.00000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=2  erefs: 0.17977+309 0.17977+309
 L=1  Nkbl=2  erefs: 0.17977+309 0.17977+309
@@ -510,28 +541,37 @@ atom: _________________________________________________________________________
 <basis_specs>
 ===============================================================================
 O                    Z=   8    Mass=  16.000        Charge=-0.28000    
-Lmxo=2 Lmxkb=3     BasisType=split      Semic=F
+Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
                vcte:    40.580    
                rinn:    3.9500    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    4.9527      3.6033    
-            lambdas:    1.0000      1.0000    
+            lambdas:   1.00000     1.00000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
                vcte:    36.780    
                rinn:    4.3500    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    4.9999      3.8975    
-            lambdas:    1.0000      1.0000    
+            lambdas:   1.00000     1.00000    
 L=2  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    21.690    
                rinn:   0.93000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    2.7328    
-            lambdas:    1.0000    
+            lambdas:   1.00000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -733,19 +773,23 @@ redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     NO
 redata: Mesh Cutoff                      =   200.0000  Ry
 redata: Net charge of the system         =     0.0000 |e|
+redata: Min. number of SCF Iter          =        0
 redata: Max. number of SCF Iter          =        2
+redata: Mix DM or H after convergence    =     F
+redata: Recompute H after scf cycle      =     F
 redata: Performing Pulay mixing using    =     3 iterations
 redata: Mix DM in first SCF step ?       =     F
 redata: Write Pulay info on disk?        =     F
+redata: Discard 1st Pulay DM after  kick =     F
 redata: New DM Mixing Weight             =     0.0200
 redata: New DM Occupancy tolerance       = 0.000000000001
 redata: Kick with linear mixing every    =    15 iterations
 redata: DM Mixing Weight for Kicks       =     1.0000
 redata: DM Tolerance for SCF             =     0.000100
-redata: Require Energy convergence for SCF =     F
-redata: DM Energy tolerance for SCF      =     0.000100 eV
+redata: Require (free) Energy convergence in SCF =     F
+redata: DM (free)Energy tolerance for SCF =     0.000010 eV
 redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000100 eV
+redata: DM Harris energy tolerance for SCF =     0.000010 eV
 redata: Using Saved Data (generic)   =     F
 redata: Use continuation files for DM    =     F
 redata: Neglect nonoverlap interactions  =     F
@@ -753,17 +797,15 @@ redata: Method of Calculation            =     Diagonalization
 redata: Divide and Conquer               =     T
 redata: Electronic Temperature           =     0.0006  Ry
 redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Verlet MD run
-redata: Initial MD time step             =        1
-redata:   Final MD time step             =        1
-redata: Length of MD time step           =     1.0000  fs
-redata: Initial Temperature of MD run    =     0.0000  K
-redata: Perform a MD quench              =     F
+redata: Dynamics option                  =     Single-point calculation
 redata: ***********************************************************************
 Total number of electrons:    40.000000
 Total ionic charge:    40.000000
 
-* ProcessorY, Blocksize:    2  18
+* ProcessorY, Blocksize:    2  19
+
+
+* Orbital distribution balance (max,min):    19    15
 
  Kpoints in:          256 . Kpoints trimmed:          256
 
@@ -776,13 +818,11 @@ siesta: k-grid:    0   0   8      0.500
 Naive supercell factors:     6    6    6
 
 superc: Internal auxiliary supercell:     6 x     6 x     6  =     216
-superc: Number of atoms, orbitals, and projectors:   1080 15552 19008
+superc: Number of atoms, orbitals, and projectors:   1080  15552  19008
 
-* Maximum dynamic memory allocated =     3 MB
-
-siesta:                 ==============================
-                            Begin MD step =      1
-                        ==============================
+                     ====================================
+                        Single-point calculation
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Ba
@@ -792,7 +832,7 @@ outcoor: Atomic coordinates (fractional):
     0.50000000    0.50000000    0.00000000   3       5  O
 
 superc: Internal auxiliary supercell:     6 x     6 x     6  =     216
-superc: Number of atoms, orbitals, and projectors:   1080 15552 19008
+superc: Number of atoms, orbitals, and projectors:   1080  15552  19008
 
 outcell: Unit cell vectors (Ang):
         4.005870    0.000000    0.000000
@@ -804,212 +844,302 @@ outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :     64.2822
 New_DM. Step:     1
 Initializing Density Matrix...
+New grid distribution:   1
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
 
 InitMesh: MESH =    36 x    36 x    36 =       46656
+InitMesh: (bp) =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
-
-* Maximum dynamic memory allocated =    35 MB
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+New grid distribution:   2
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+New grid distribution:   3
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+PhiOnMesh: Number of (b)points on node 0 =                 1458
+PhiOnMesh: nlist on node 0 =               152899
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -919.531033
 siesta: Eions   =      5133.559120
 siesta: Ena     =       829.873358
 siesta: Ekin    =      1668.379157
 siesta: Enl     =      -401.365750
-siesta: DEna    =         0.000056
+siesta: DEna    =         0.000057
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
-siesta: Exc     =      -563.482705
+siesta: Exc     =      -563.482723
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -3617.963433
-siesta: Etot    =     -3600.155005
-siesta: FreeEng =     -3600.155005
+siesta: Eharris =     -3617.963457
+siesta: Etot    =     -3600.155021
+siesta: FreeEng =     -3600.155021
 
-siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
-siesta:    1    -3617.9634    -3600.1550    -3600.1550  1.9614 -5.3223
-timer: Routine,Calls,Time,% = IterSCF        1      93.164  90.86
-elaps: Routine,Calls,Wall,% = IterSCF        1      23.301  90.85
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1    -3617.9635    -3600.1550    -3600.1550  1.96137 -5.3223
+timer: Routine,Calls,Time,% =    IterSCF     1       6.007  24.06
+   scf:    2    -3767.0806    -3562.6921    -3562.6936 17.49946 -4.0278
+:!: SCF did not converge in maximum number of steps.
+
+Using DM_out to compute the final energy and forces
 grdsam: Reading %block GridCellSampling
 grdsam: Grid-cell sampling, point   0
 grdsam: Generating displacements for grid-cell sampling
 grdsam: Grid-cell sampling, point   1
+New grid distribution:   1
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+
+InitMesh: MESH =    36 x    36 x    36 =       46656
+InitMesh: (bp) =    18 x    18 x    18 =        5832
+InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+New grid distribution:   2
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+New grid distribution:   3
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+PhiOnMesh: Number of (b)points on node 0 =                 1458
+PhiOnMesh: nlist on node 0 =               152638
 grdsam: Grid-cell sampling, point   2
+New grid distribution:   1
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+
+InitMesh: MESH =    36 x    36 x    36 =       46656
+InitMesh: (bp) =    18 x    18 x    18 =        5832
+InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+New grid distribution:   2
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+New grid distribution:   3
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+PhiOnMesh: Number of (b)points on node 0 =                 1458
+PhiOnMesh: nlist on node 0 =               151846
 grdsam: Grid-cell sampling, point   3
+New grid distribution:   1
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+
+InitMesh: MESH =    36 x    36 x    36 =       46656
+InitMesh: (bp) =    18 x    18 x    18 =        5832
+InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+New grid distribution:   2
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+New grid distribution:   3
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+PhiOnMesh: Number of (b)points on node 0 =                 1458
+PhiOnMesh: nlist on node 0 =               151846
 grdsam: Grid-cell sampling, point   4
+New grid distribution:   1
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+
+InitMesh: MESH =    36 x    36 x    36 =       46656
+InitMesh: (bp) =    18 x    18 x    18 =        5832
+InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+New grid distribution:   2
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+New grid distribution:   3
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+PhiOnMesh: Number of (b)points on node 0 =                 1458
+PhiOnMesh: nlist on node 0 =               151124
 grdsam: Grid-cell sampling, point   5
+New grid distribution:   1
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+
+InitMesh: MESH =    36 x    36 x    36 =       46656
+InitMesh: (bp) =    18 x    18 x    18 =        5832
+InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+New grid distribution:   2
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+New grid distribution:   3
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+PhiOnMesh: Number of (b)points on node 0 =                 1458
+PhiOnMesh: nlist on node 0 =               151681
 grdsam: Grid-cell sampling, point   6
+New grid distribution:   1
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+
+InitMesh: MESH =    36 x    36 x    36 =       46656
+InitMesh: (bp) =    18 x    18 x    18 =        5832
+InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+New grid distribution:   2
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+New grid distribution:   3
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+PhiOnMesh: Number of (b)points on node 0 =                 1458
+PhiOnMesh: nlist on node 0 =               151681
 grdsam: Grid-cell sampling, point   7
+New grid distribution:   1
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
 
-siesta: E_KS(eV) =            -3562.6843
+InitMesh: MESH =    36 x    36 x    36 =       46656
+InitMesh: (bp) =    18 x    18 x    18 =        5832
+InitMesh: Mesh cutoff (required, used) =   200.000   223.210 Ry
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+New grid distribution:   2
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+New grid distribution:   3
+           1       1:   18    1:    9    1:    9
+           2       1:   18    1:    9   10:   18
+           3       1:   18   10:   18    1:    9
+           4       1:   18   10:   18   10:   18
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    90 x    81 x    81 =      590490
+PhiOnMesh: Number of (b)points on node 0 =                 1458
+PhiOnMesh: nlist on node 0 =               151041
 
-siesta: E_KS - E_eggbox =     -3562.6843
+siesta: E_KS(eV) =            -3600.7734
+
+siesta: E_KS - E_eggbox =     -3600.7734
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000006    0.000006    0.000008
-     2    0.000000    0.000002    0.000004
-     3   -0.000034    0.000026    0.000031
-     4    0.000025   -0.000030    0.000032
-     5    0.000017    0.000017   -0.000027
+     1    0.000000    0.000000   -0.000000
+     2    0.000000   -0.000000   -0.000000
+     3   -0.000000   -0.000000    0.000000
+     4   -0.000000   -0.000000    0.000000
+     5   -0.000000    0.000000    0.000000
 ----------------------------------------
-   Tot    0.000014    0.000021    0.000048
+   Tot    0.000000   -0.000000    0.000000
 ----------------------------------------
-   Max    0.000034
-   Res    0.000021    sqrt( Sum f_i^2 / 3N )
+   Max    0.000000
+   Res    0.000000    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.000034    constrained
+   Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):      388.10      388.10      388.09        0.00        0.00        0.00
-(Free)E + p*V (eV/cell)    -3578.2551
-Target enthalpy (eV/cell)    -3562.6843
-
-siesta: Stress tensor (static) (eV/Ang**3):
-         0.242227    0.000000    0.000000
-         0.000000    0.242227    0.000000
-         0.000000    0.000000    0.242226
-
-siesta: Pressure (static):       -388.09449700  kBar
-
-siesta: Stress tensor (total) (eV/Ang**3):
-         0.242227    0.000000    0.000000
-         0.000000    0.242227    0.000000
-         0.000000    0.000000    0.242226
-
-siesta: Pressure (total):       -388.09449700  kBar
-
-siesta: Temp_ion =       0.000 K
-
-* Maximum dynamic memory allocated =    35 MB
+Stress-tensor-Voigt (kbar):     1191.47     1191.47     1191.48       -0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)    -3648.5783
+Target enthalpy (eV/cell)    -3600.7748
 
 siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -991.157790
 siesta: Eions   =      5133.559120
 siesta: Ena     =       829.873358
-siesta: Ekin    =      1871.644336
-siesta: Enl     =      -409.659641
-siesta: DEna    =      -181.352657
-siesta: DUscf   =        63.061776
+siesta: Ekin    =      1677.971314
+siesta: Enl     =      -401.934825
+siesta: DEna    =        -8.297794
+siesta: DUscf   =         0.126351
 siesta: DUext   =         0.000000
-siesta: Exc     =      -602.692327
+siesta: Exc     =      -564.952635
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -3617.963433
-siesta: Etot    =     -3562.684275
-siesta: FreeEng =     -3562.684275
+siesta: Eharris =     -3767.080609
+siesta: Etot    =     -3600.773351
+siesta: FreeEng =     -3600.774841
 
 siesta: Final energy (eV):
-siesta:       Kinetic =    1871.644336
-siesta:       Hartree =     875.397826
+siesta:  Band Struct. =    -991.157790
+siesta:       Kinetic =    1677.971314
+siesta:       Hartree =     786.915106
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -602.692327
-siesta:  Ion-electron =   -3619.199692
-siesta:       Ion-ion =   -2087.834416
+siesta:   Exch.-corr. =    -564.952635
+siesta:  Ion-electron =   -3412.872829
+siesta:       Ion-ion =   -2087.834307
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -3562.684275
+siesta:         Total =   -3600.773351
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:     0.242227    0.000000    0.000000
-siesta:     0.000000    0.242227    0.000000
-siesta:     0.000000    0.000000    0.242226
+siesta:     0.743649   -0.000000   -0.000000
+siesta:    -0.000000    0.743649   -0.000000
+siesta:    -0.000000   -0.000000    0.743653
 
 siesta: Cell volume =         64.282168 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00263816         -0.00263817  Ry/Bohr**3
-siesta:          -0.24222691         -0.24222800  eV/Ang**3
-siesta:        -388.09449700       -388.09623433  kBar
-(Free)E+ p_basis*V_orbitals  =       -3559.481240
-(Free)Eharris+ p_basis*V_orbitals  =       -3577.289668
-
-* Maximum dynamic memory allocated : Node    0 =    35 MB
-* Maximum dynamic memory allocated : Node    1 =    33 MB
-* Maximum dynamic memory allocated : Node    2 =    32 MB
-* Maximum dynamic memory allocated : Node    3 =    33 MB
-
-* Maximum memory occured during matrixMtoO                    
-
-timer: CPU execution times:
-timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1     230.681     230.681   100.00
-timer:  Setup             1       1.950       1.950     0.85
-timer:  bands             1       0.002       0.002     0.00
-timer:  writewave         1       0.004       0.004     0.00
-timer:  KSV_init          1       0.004       0.004     0.00
-timer:  IterMD            1     228.426     228.426    99.02
-timer:  hsparse           1       0.217       0.217     0.09
-timer:  overlap           1       5.132       5.132     2.22
-timer:  IterSCF           1      93.164      93.164    40.39
-timer:  kinefsm           2       2.483       4.965     2.15
-timer:  nlefsm            2      22.488      44.976    19.50
-timer:  DHSCF             9      14.721     132.489    57.43
-timer:  DHSCF1            1       1.002       1.002     0.43
-timer:  DHSCF2            8      10.673      85.385    37.01
-timer:  REORD            70       0.000       0.012     0.01
-timer:  POISON           17       0.015       0.257     0.11
-timer:  DHSCF3            9       2.475      22.273     9.66
-timer:  rhoofd            9       1.903      17.127     7.42
-timer:  cellXC            9       0.019       0.168     0.07
-timer:  vmat              2       2.038       4.075     1.77
-timer:  MolMec            2       0.000       0.000     0.00
-timer:  diagon            1      27.848      27.848    12.07
-timer:  c-eigval        256       0.044      11.220     4.86
-timer:  c-buildHS       256       0.007       1.736     0.75
-timer:  cdiag           512       0.040      20.247     8.78
-timer:  cdiag1          512       0.002       0.954     0.41
-timer:  cdiag2          512       0.005       2.576     1.12
-timer:  cdiag3          512       0.025      12.969     5.62
-timer:  cdiag4          512       0.001       0.528     0.23
-timer:  c-eigvec        256       0.049      12.485     5.41
-timer:  c-buildD        256       0.016       4.115     1.78
-timer:  DHSCF4            8       2.977      23.813    10.32
-timer:  dfscf             8       2.416      19.324     8.38
-timer:  overfsm           1       0.079       0.079     0.03
-timer:  optical           1       0.227       0.227     0.10
-  
-
-elaps: ELAPSED times:
-elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      57.693      57.693   100.00
-elaps:  Setup             1       0.490       0.490     0.85
-elaps:  bands             1       0.000       0.000     0.00
-elaps:  writewave         1       0.002       0.002     0.00
-elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD            1      57.127      57.127    99.02
-elaps:  hsparse           1       0.076       0.076     0.13
-elaps:  overlap           1       1.268       1.268     2.20
-elaps:  IterSCF           1      23.301      23.301    40.39
-elaps:  kinefsm           2       0.619       1.239     2.15
-elaps:  nlefsm            2       6.697      13.394    23.22
-elaps:  DHSCF             9       3.680      33.119    57.41
-elaps:  DHSCF1            1       0.213       0.213     0.37
-elaps:  DHSCF2            8       2.665      21.323    36.96
-elaps:  REORD            70       0.000       0.002     0.00
-elaps:  POISON           17       0.004       0.065     0.11
-elaps:  DHSCF3            9       0.619       5.571     9.66
-elaps:  rhoofd            9       0.478       4.304     7.46
-elaps:  cellXC            9       0.005       0.043     0.08
-elaps:  vmat              2       0.510       1.019     1.77
-elaps:  MolMec            2       0.000       0.000     0.00
-elaps:  diagon            1       6.969       6.969    12.08
-elaps:  c-eigval        256       0.011       2.805     4.86
-elaps:  c-buildHS       256       0.003       0.683     1.18
-elaps:  cdiag           512       0.008       4.317     7.48
-elaps:  cdiag1          512       0.000       0.234     0.40
-elaps:  cdiag2          512       0.001       0.610     1.06
-elaps:  cdiag3          512       0.006       3.284     5.69
-elaps:  cdiag4          512       0.000       0.126     0.22
-elaps:  c-eigvec        256       0.011       2.862     4.96
-elaps:  c-buildD        256       0.005       1.290     2.24
-elaps:  DHSCF4            8       0.751       6.008    10.41
-elaps:  dfscf             8       0.610       4.876     8.45
-elaps:  overfsm           1       0.028       0.028     0.05
-elaps:  optical           1       0.000       0.000     0.00
-  
->> End of run:  29-SEP-2009  17:13:54
+siesta:          -0.00809930         -0.00809930  Ry/Bohr**3
+siesta:          -0.74365019         -0.74365019  eV/Ang**3
+siesta:       -1191.47183206      -1191.47183205  kBar
+(Free)E+ p_basis*V_orbitals  =       -3597.571807
+(Free)Eharris+ p_basis*V_orbitals  =       -3763.879065
+>> End of run:  29-SEP-2015  15:29:45

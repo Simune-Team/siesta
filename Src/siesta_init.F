@@ -71,6 +71,9 @@
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: user_wants_supercell
+
+      external :: read_options
+      
 !------------------------------------------------------------------------- BEGIN
 ! Initialise MPI unless siesta is running as a subroutine 
 ! of a driver program that may have initialized MPI already

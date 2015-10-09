@@ -7,6 +7,8 @@
       CONTAINS
 
       subroutine siesta_forces(istep)
+
+      use precision, only: dp
       use siesta_cml
       use m_state_init
       use m_setup_hamiltonian

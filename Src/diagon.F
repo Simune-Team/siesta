@@ -360,7 +360,9 @@ C Stop time counter
             endif
          enddo
       enddo
-      call io_close(iu)
+      if (Node .eq. 0) then
+         call io_close(iu)
+      endif
       end subroutine output_kpoint_occupation
       end subroutine diagon
 
