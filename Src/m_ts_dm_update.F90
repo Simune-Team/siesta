@@ -144,7 +144,7 @@ contains
     integer :: lnr, lio, lind, io, ind, nr, jo
     integer :: rin, rind
     logical :: hasEDM
-    complex(dp) :: ph
+    complex(dp) :: ph(0:n_s-1)
 
     if ( (.not. initialized(spDM)) .or. (.not. initialized(spuDM)) ) return
 
@@ -180,11 +180,18 @@ contains
     if ( nr /= nrows(up_s) ) call die('The sparsity format is not as &
          &expected k-DM.')
 
+    do jo = 0 , n_s - 1
+       ph(jo) = cdexp(dcmplx(0._dp, -&
+            k(1) * sc_off(1,jo) - &
+            k(2) * sc_off(2,jo) - &
+            k(3) * sc_off(3,jo)))
+    end do
+
     if ( non_Eq ) then
 
 ! No data race will occur, sparsity pattern only tranversed once
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,lind,jo,rind,ind,ph)
+!$OMP&private(lio,io,lind,jo,rind,ind)
        do lio = 1 , lnr
 
           if ( l_ncol(lio) /= 0 ) then
@@ -200,16 +207,12 @@ contains
              if ( ind <= rind ) cycle ! The element does not exist
              
              jo = (l_col(lind)-1) / nr
-             ph = cdexp(dcmplx(0._dp, - &
-                  k(1) * sc_off(1,jo) - &
-                  k(2) * sc_off(2,jo) - &
-                  k(3) * sc_off(3,jo)))
              
              ! The integration is this:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
-             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + aimag( ph*zDu(ind,1:D_dim2) )
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + aimag( ph(jo)*zDu(ind,1:D_dim2) )
              if ( hasEDM ) dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + &
-                  aimag( ph*zEu(ind,1:E_dim2) )
+                  aimag( ph(jo)*zEu(ind,1:E_dim2) )
 
           end do
 
@@ -222,7 +225,7 @@ contains
     else
 
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,lind,jo,rin,rind,ind,ph)
+!$OMP&private(lio,io,lind,jo,rin,rind,ind)
        do lio = 1 , lnr
 
           if ( l_ncol(lio) /= 0 ) then
@@ -245,17 +248,13 @@ contains
 #endif
 
              jo = (l_col(lind)-1) / nr
-             ph = cdexp(dcmplx(0._dp, - &
-                  k(1) * sc_off(1,jo) - &
-                  k(2) * sc_off(2,jo) - &
-                  k(3) * sc_off(3,jo)))
 
              ! This integration is this:
              ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A) dE
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
-                  aimag( ph*(zDu(ind,1:D_dim2) - conjg(zDu(rind,1:D_dim2))) )
+                  aimag( ph(jo)*(zDu(ind,1:D_dim2) - conjg(zDu(rind,1:D_dim2))) )
              if ( hasEDM ) dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + &
-                  aimag( ph*(zEu(ind,1:E_dim2) - conjg(zEu(rind,1:E_dim2))) )
+                  aimag( ph(jo)*(zEu(ind,1:E_dim2) - conjg(zEu(rind,1:E_dim2))) )
 
           end do
 
@@ -621,7 +620,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: lup_ncol(:), lup_ptr(:), lup_col(:)
     complex(dp), pointer :: zD(:,:), zE(:,:)
-    complex(dp) :: ph
+    complex(dp) :: ph(0:n_s-1)
     integer :: lio, io, jo, ind, nr
     integer :: lnr, lind, rin, rind
     logical :: hasEDM
@@ -653,11 +652,18 @@ contains
 
     if ( nr /= nrows(s) ) call die('The sparsity format is not as &
          &expected uz-DM.')
-     
+
+    do jo = 0 , n_s - 1
+       ph(jo) = cdexp(dcmplx(0._dp, -&
+            k(1) * sc_off(1,jo) - &
+            k(2) * sc_off(2,jo) - &
+            k(3) * sc_off(3,jo)))
+    end do
+
     ! This loop is across the local rows...
 ! No data race will occur
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,lind,jo,rind,ind,rin,ph)
+!$OMP&private(lio,io,lind,jo,rind,ind,rin)
     do lio = 1 , lnr
 
        ! obtain the global index of the local orbital.
@@ -695,14 +701,10 @@ contains
           ! The integration is this:
           ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
           jo = (l_col(lind)-1) / nr
-          ph = cdexp(dcmplx(0._dp, - &
-               k(1) * sc_off(1,jo) - &
-               k(2) * sc_off(2,jo) - &
-               k(3) * sc_off(3,jo)))
       
-          DM(lind) = DM(lind) + aimag( ph*(zD(ind,1) - conjg(zD(rind,1))) )
+          DM(lind) = DM(lind) + aimag( ph(jo)*(zD(ind,1) - conjg(zD(rind,1))) )
           if ( hasEDM ) &
-               EDM(lind) = EDM(lind) + aimag( ph*(zE(ind,1) - conjg(zE(rind,1))) )
+               EDM(lind) = EDM(lind) + aimag( ph(jo)*(zE(ind,1) - conjg(zE(rind,1))) )
 
        end do
 
