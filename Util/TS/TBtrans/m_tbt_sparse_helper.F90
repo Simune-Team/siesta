@@ -116,7 +116,7 @@ contains
     integer, pointer :: k_ncol(:), k_ptr(:), k_col(:)
     real(dp) :: bk(3), k(3), rcell(3,3)
     complex(dp), pointer :: zH(:), zS(:)
-    complex(dp) :: ph
+    complex(dp) :: ph(0:n_s-1)
     type(tRgn) :: ro
     type(Sparsity), pointer :: sp_k
     integer :: no_l, lio, io, ind, jo, ind_k, kn, i, il
@@ -142,7 +142,7 @@ contains
     call reclat(cell,rcell,1)
 
 !$OMP parallel default(shared), &
-!$OMP&private(il,i,io,lio,kn,ind,jo,ind_k,ph,bk,k,ro)
+!$OMP&private(il,i,io,lio,kn,ind,jo,ind_k,bk,k,ro)
 
 !$OMP workshare
     zH(:) = dcmplx(0._dp,0._dp)
@@ -161,6 +161,15 @@ contains
           call kregion_k(il,bk)
           call kpoint_convert(rcell,bk,k,-2)
        end if
+       
+!$OMP do 
+       do i = 0 , n_s - 1
+          ph(i) = cdexp(dcmplx(0._dp, &
+               k(1) * sc_off(1,i) + &
+               k(2) * sc_off(2,i) + &
+               k(3) * sc_off(3,i)))
+       end do
+!$OMP end do
 
        ! Convert to orbital space
        call rgn_Atom2Orb(r_k(il)%atm,na_u,lasto,ro)
@@ -206,13 +215,9 @@ contains
           if ( ind_k <= k_ptr(io) ) cycle
 
           jo = (l_col(ind)-1) / no_u
-          ph = cdexp(dcmplx(0._dp, &
-               k(1) * sc_off(1,jo) + &
-               k(2) * sc_off(2,jo) + &
-               k(3) * sc_off(3,jo)))
           
-          zH(ind_k) = zH(ind_k) + H(ind) * ph
-          zS(ind_k) = zS(ind_k) + S(ind) * ph
+          zH(ind_k) = zH(ind_k) + H(ind) * ph(jo)
+          zS(ind_k) = zS(ind_k) + S(ind) * ph(jo)
 
        end do
 

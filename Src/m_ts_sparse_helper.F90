@@ -147,7 +147,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: k_ncol(:), k_ptr(:), k_col(:)
     complex(dp), pointer :: zH(:), zS(:)
-    complex(dp) :: ph
+    complex(dp) :: ph(0:n_s-1)
     type(Sparsity), pointer :: sp_k
     integer :: no_l, lio, io, ind, jo, ind_k, kn
      
@@ -169,8 +169,16 @@ contains
     zH => val(SpArrH)
     zS => val(SpArrS)
 
+    ! Pre-calculate phases
+    do jo = 0 , n_s - 1
+       ph(jo) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,jo) + &
+            k(2) * sc_off(2,jo) + &
+            k(3) * sc_off(3,jo)))
+    end do
+    
 !$OMP parallel default(shared), &
-!$OMP&private(lio,io,kn,ind,jo,ind_k,ph)
+!$OMP&private(lio,io,kn,ind,jo,ind_k)
 
 !$OMP workshare
     zH(:) = dcmplx(0._dp,0._dp)
@@ -225,13 +233,9 @@ contains
           if ( ind_k <= k_ptr(io) ) cycle
 
           jo = (l_col(ind)-1) / no_u
-          ph = cdexp(dcmplx(0._dp, &
-               k(1) * sc_off(1,jo) + &
-               k(2) * sc_off(2,jo) + &
-               k(3) * sc_off(3,jo)))
           
-          zH(ind_k) = zH(ind_k) + H(ind) * ph
-          zS(ind_k) = zS(ind_k) + S(ind) * ph
+          zH(ind_k) = zH(ind_k) + H(ind) * ph(jo)
+          zS(ind_k) = zS(ind_k) + S(ind) * ph(jo)
 
        end do
 
@@ -1002,14 +1006,21 @@ contains
     ! Create loop-variables for doing stuff
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
     integer :: no_l, no_u, lio, io, ind, jo, i, is
-    complex(dp) :: ph
+    complex(dp) :: ph(0:n_s-1)
     
     ! Create all the local sparsity super-cell
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
 
+    do is = 0 , n_s - 1
+       ph(is) = cdexp(dcmplx(0._dp, &
+            k(1) * sc_off(1,is) + &
+            k(2) * sc_off(2,is) + &
+            k(3) * sc_off(3,is)))
+    end do
+
 !$OMP parallel default(shared), &
-!$OMP&private(i,io,lio,ind,jo,is,ph)
+!$OMP&private(i,io,lio,ind,jo,is)
 
 !$OMP workshare
     A_full(:,:) = dcmplx(0._dp,0._dp)
@@ -1042,11 +1053,7 @@ contains
 
           is = (l_col(ind)-1)/no_u
 
-          ph = cdexp(dcmplx(0._dp, &
-               k(1) * sc_off(1,is) + &
-               k(2) * sc_off(2,is) + &
-               k(3) * sc_off(3,is)))
-          A_full(io,jo) = A_full(io,jo) + ph * A(ind)
+          A_full(io,jo) = A_full(io,jo) + ph(is) * A(ind)
 
        end do
 

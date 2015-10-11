@@ -1344,7 +1344,7 @@ contains
     type(Elec), intent(inout) :: El
     integer, intent(in) :: n_s
     real(dp), intent(in) :: sc_off(3,0:n_s-1)
-    real(dp), intent(in)   :: kq(3)   ! k + q-point in [1/Bohr]
+    real(dp), intent(in) :: kq(3)   ! k + q-point in [1/Bohr]
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
@@ -1354,19 +1354,17 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer :: no_u
-    real(dp) :: kqsc, Ef
-    complex(dp) :: ph
+    real(dp) :: Ef
+    complex(dp) :: ph(0:n_s-1)
     integer :: i, j, iuo, juo, ind, is
     integer, pointer :: ncol00(:), l_ptr00(:), l_col00(:)
     integer, pointer :: ncol01(:), l_ptr01(:), l_col01(:)
     real(dp), pointer :: H00(:,:) , S00(:), H01(:,:), S01(:)
-    integer :: t_dir
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE elec_HS_Transfer' )
 #endif
 
-    t_dir = El%t_dir
     ! we need to subtract as the below code shifts to Ef
     Ef    = El%Ef - El%mu%mu
     no_u  = El%no_u ! this has to be the total size of the electrode
@@ -1382,6 +1380,27 @@ contains
     S00 => val(El%S00)
     S01 => val(El%S01)
 
+    select case ( El%t_dir )
+    case ( 1 )
+       do i = 0 , n_s - 1
+          ph(i) = cdexp(dcmplx(0._dp, &
+               kq(2) * sc_off(2,i) + &
+               kq(3) * sc_off(3,i)))
+       end do
+    case ( 2 )
+       do i = 0 , n_s - 1
+          ph(i) = cdexp(dcmplx(0._dp, &
+               kq(1) * sc_off(1,i) + &
+               kq(3) * sc_off(3,i)))
+       end do
+    case ( 3 )
+       do i = 0 , n_s - 1
+          ph(i) = cdexp(dcmplx(0._dp, &
+               kq(1) * sc_off(1,i) + &
+               kq(2) * sc_off(2,i)))
+       end do
+    end select
+
 !$OMP parallel default(shared), private(i)
 
     ! Initialize arrays
@@ -1395,7 +1414,7 @@ contains
 !$OMP end do
 
 ! We will not have any data-race condition here
-!$OMP do private(iuo,j,ind,juo,is,kqsc,ph)
+!$OMP do private(iuo,j,ind,juo,is)
     do iuo = 1 , no_u
 
        ! Create 00
@@ -1403,17 +1422,10 @@ contains
           ind = l_ptr00(iuo) + j
           juo = ucorb(l_col00(ind),no_u)
           is = (l_col00(ind)-1) / no_u
-          kqsc = 0._dp
-          do i = 1 , 3 
-             if ( i == t_dir ) cycle
-             kqsc = kqsc + kq(i) * sc_off(i,is)
-          end do
-
-          ph = cdexp(dcmplx(0._dp,kqsc))
           
           i = iuo+(juo-1)*no_u
-          Hk(i) = Hk(i) + H00(ind,ispin) * ph
-          Sk(i) = Sk(i) + S00(ind)       * ph
+          Hk(i) = Hk(i) + H00(ind,ispin) * ph(is)
+          Sk(i) = Sk(i) + S00(ind)       * ph(is)
        enddo
 
        ! Create 01
@@ -1421,17 +1433,10 @@ contains
           ind = l_ptr01(iuo) + j
           juo = ucorb(l_col01(ind),no_u)
           is = (l_col01(ind)-1) / no_u
-          kqsc = 0._dp
-          do i = 1 , 3 
-             if ( i == t_dir ) cycle
-             kqsc = kqsc + kq(i) * sc_off(i,is)
-          end do
 
-          ph = cdexp(dcmplx(0._dp,kqsc))
-          
           i = iuo+(juo-1)*no_u
-          Hk_T(i) = Hk_T(i) + H01(ind,ispin) * ph
-          Sk_T(i) = Sk_T(i) + S01(ind)       * ph
+          Hk_T(i) = Hk_T(i) + H01(ind,ispin) * ph(is)
+          Sk_T(i) = Sk_T(i) + S01(ind)       * ph(is)
        end do
 
     end do

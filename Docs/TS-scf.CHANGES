@@ -1,4 +1,20 @@
 ----------------------------------------------------
+October 11, 2015 -- Nick Papior       trunk-479---ts-scf-552
+Moved phase calculations outside H, S setup loop
+
+* Creating H and S for a k-point is now _much_
+  faster as it is done outside the big loop.
+
+* Creating the transfer matrices for the self-energy
+  calculations has also moved out the phase calculations
+  outside of the loop and it is now much faster.
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_sparse_helper.F90
+  Util/TS/TBtrans/m_tbt_sparse_helper.F90
+
+----------------------------------------------------
 October 9, 2015 -- Nick Papior       trunk-479---ts-scf-551
 Bugfix for skewed electrode N-terminals
 
