@@ -791,6 +791,15 @@ contains
 
     ! The box is the same as the electrode
     this%box%v = this%cell
+    
+    ! If we do not use all the atoms we need to reduce
+    ! the cell vector in the semi-infinite direction
+    ! for the box
+    if ( this%na_u /= this%na_used ) then
+       contrib = real(this%na_used,dp) / real(this%na_u,dp)
+       i = this%t_dir
+       this%box%v(:,i) = this%box%v(:,i) * contrib
+    end if
 
   end subroutine init_Elec_sim
 

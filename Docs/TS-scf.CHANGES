@@ -1,4 +1,25 @@
 ----------------------------------------------------
+October 11, 2015 -- Nick Papior       trunk-479---ts-scf-554
+N-terminal initial Hartree guess for na_used < na_u fixed
+
+* Bias calculations with N-terminal/elec-box Hartree
+  potentials do now take into consideration when the amount
+  of used atoms are smaller than the available.
+
+modified:
+  Src/m_ts_electype.F90
+
+----------------------------------------------------
+October 11, 2015 -- Nick Papior       trunk-479---ts-scf-553
+Moved phase calculations outside DM transfer loop
+
+* Calculating the DM for k-point calculations are
+  now _much_ faster.
+
+modified:
+  Src/m_ts_dm_update.F90
+
+----------------------------------------------------
 October 11, 2015 -- Nick Papior       trunk-479---ts-scf-552
 Moved phase calculations outside H, S setup loop
 
