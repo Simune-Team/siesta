@@ -1,14 +1,15 @@
+
+! Tangled code
 module m_pexsi_solver
-    use precision, only  : dp
+ use precision, only  : dp
 
-  implicit none
+ implicit none
 
-  public :: pexsi_solver
+ public :: pexsi_solver
 
-  real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
-                              ! used in the heuristics for N_el tolerance
-  public :: prevDmax
-
+ real(dp), save :: prevDmax  ! For communication of max diff in DM in scf loop
+                             ! used in the heuristics for N_el tolerance
+ public :: prevDmax
 
 CONTAINS
 
@@ -53,11 +54,7 @@ use m_pexsi, only: plan, pexsi_initialize_scfloop
     real(dp), intent(out)        :: Entropy ! Entropy/k, dimensionless
     real(dp), intent(in)         :: temp   ! Electronic temperature
     real(dp), intent(in)         :: delta_Ef  ! Estimated shift in E_fermi
-
-#ifndef MPI
-    call die("PEXSI needs MPI")
-#else
-
+!
 type(f_ppexsi_options) :: options
 
 integer :: numTotalPEXSIIter
@@ -112,8 +109,10 @@ external         :: timer
 type(aux_matrix) :: m1, m2
 type(Dist)       :: dist1, dist2
 integer          :: pbs, norbs, scf_step
-
-
+!
+#ifndef MPI
+    call die("PEXSI needs MPI")
+#else
 ! "SIESTA_Worker" means a processor which is in the Siesta subset.
 ! NOTE:  fdf calls will assign values to the whole processor set,
 ! but some other variables will have to be re-broadcast (see examples
@@ -153,6 +152,7 @@ PEXSI_worker = (mpirank < npPerPole)
 
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
+
 
 
 if (SIESTA_worker) then
@@ -217,21 +217,20 @@ endif ! PEXSI worker
 call memory_all("after setting up H+S for PEXSI",World_comm)
 
 
-! Stop mu-iteration if numElectronTolerance is < numElectronTolerance.
-PEXSINumElectronToleranceMin =  &
-         fdf_get("PEXSI.num-electron-tolerance-lower-bound",0.01_dp)
-PEXSINumElectronToleranceMax =  &
-         fdf_get("PEXSI.num-electron-tolerance-upper-bound",0.5_dp)
-
+if (first_call) then
 
 ! Initial guess of chemical potential and containing interval
 ! When using inertia counts, this interval can be wide.
 ! Note that mu, muMin0 and muMax0 are saved variables
-if (first_call) then
-   ! Lower/Upper bound for the chemical potential.
+
    muMin0           = fdf_get("PEXSI.mu-min",-1.0_dp,"Ry")
    muMax0           = fdf_get("PEXSI.mu-max", 0.0_dp,"Ry")
    mu               = fdf_get("PEXSI.mu",-0.60_dp,"Ry")
+
+   PEXSINumElectronToleranceMin =  &
+         fdf_get("PEXSI.num-electron-tolerance-lower-bound",0.01_dp)
+   PEXSINumElectronToleranceMax =  &
+         fdf_get("PEXSI.num-electron-tolerance-upper-bound",0.5_dp)
 
    ! start with largest tolerance
    ! (except if overriden by user)
@@ -271,11 +270,16 @@ call get_current_temperature(pexsi_temperature)
 !
 two_kT = 2.0_dp * pexsi_temperature
 
-!                                                                             
+
 !  New interface.
 if (iscf == 1) then
    call pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
 endif
+
+
+
+!@declare type(f_ppexsi_options) :: options
+
 !
 call f_ppexsi_set_default_options( options )
 
@@ -290,6 +294,7 @@ options%gap      = fdf_get("PEXSI.gap",0.0_dp,"Ry")
 ! deltaE is in theory the spectrum width, but in practice can be much smaller
 ! than | E_max - mu |.  It is found that deltaE that is slightly bigger
 ! than  | E_min - mu | is usually good enough.
+
 options%deltaE     = fdf_get("PEXSI.delta-E",3.0_dp,"Ry") ! Lin: 10 Ry...
 
 ! Ordering flag:
@@ -306,7 +311,7 @@ options%verbosity = verbosity
 
 options%temperature = pexsi_temperature
 options%numElectronPEXSITolerance = PEXSINumElectronTolerance
-!
+
 call f_ppexsi_load_real_symmetric_hs_matrix(&
       plan,&
       options,&
@@ -323,6 +328,7 @@ call f_ppexsi_load_real_symmetric_hs_matrix(&
 
 call check_info(info,"load_real_sym_hs_matrix")
 
+
 if (iscf == 1) then
    ! This is only needed for inertia-counting
    call f_ppexsi_symbolic_factorize_real_symmetric_matrix(&
@@ -338,6 +344,8 @@ if (iscf == 1) then
    call check_info(info,"symbolic_factorize_complex_symmetric_matrix")
 endif
 options%isSymbolicFactorize = 0 ! We do not need it anymore
+
+
 !
 !  do actual solve
 !
@@ -432,9 +440,6 @@ if (PEXSI_worker) then
    bs_energy = totalEnergyS
    eBandH = totalEnergyH
 
-   call de_alloc(FDMnzvalLocal,"FDMnzvalLocal","pexsi_solver")
-   call de_alloc(colPtrLocal,"colPtrLocal","pexsi_solver")
-
    if ((mpirank == 0) .and. (verbosity >= 2)) then
       write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
       write(6,"(a,f12.4)") "#&s Tr(H*DM) (eV) = ", eBandH/eV
@@ -451,14 +456,22 @@ if (PEXSI_worker) then
 
    Entropy = - (free_bs_energy - bs_energy) / temp
 
+endif ! PEXSI_worker
+
+
+if (PEXSI_worker) then
+   ! Prepare m2 to transfer
+
+   call de_alloc(FDMnzvalLocal,"FDMnzvalLocal","pexsi_solver")
+   call de_alloc(colPtrLocal,"colPtrLocal","pexsi_solver")
+
    call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","pexsi_solver")
    call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","pexsi_solver")
 
    m2%vals(1)%data => DMnzvalLocal(1:nnzLocal)
    m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
-
-endif ! PEXSI_worker
-
+   
+endif
 
 ! Prepare m1 to receive the results
 if (SIESTA_worker) then
@@ -515,6 +528,7 @@ if (SIESTA_worker) then
 endif
 
 
+
 call delete(dist1)
 call delete(dist2)
 
@@ -528,11 +542,11 @@ if (PEXSI_worker) then
    call MPI_Comm_Free(PEXSI_Comm, ierr)
    call MPI_Group_Free(PEXSI_Group, ierr)
 endif
-
-
-#endif 
+#endif
 
 CONTAINS
+    
+
 !
 ! This routine encodes the heuristics to compute the
 ! tolerance dynamically.
@@ -722,6 +736,7 @@ write_ok = ((mpirank == 0) .and. (verbosity >= 1))
      ! do nothing. Keep mu, muMin0 and muMax0 as they are inherited
   endif
 end subroutine get_bracket_for_solver
+
 !------------------------------------------------------
 ! If using the "annealing" feature, this routine computes
 ! the current temperature to use in the PEXSI solver
@@ -783,9 +798,9 @@ character(len=*), intent(in) :: str
           call die("Error exit from " // trim(str) // " routine")
        endif
       call pxfflush(6)
-    endif	
-end subroutine check_info
+    endif       
+end subroutine check_info 
 
 end subroutine pexsi_solver
-
 end module m_pexsi_solver
+! End of tangled code
