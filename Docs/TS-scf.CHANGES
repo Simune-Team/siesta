@@ -1,4 +1,57 @@
 ----------------------------------------------------
+October 12, 2015 -- Nick Papior       trunk-479---ts-scf-555
+Greatly speeded up the expansion algorithm (20 times)
+
+* class TriMat now enables retrieval of the elements
+  only associated with the tri-diagonal matrix.
+  This is the default now and reduces the initialization
+  of the inverse matrix to zero by limiting the extend of the
+  matrix.
+
+* The expansion algorithm has been improved to reduce
+  computation time. Even more so for threaded calculations.
+
+  All multiplications have been reduced to a current
+  minimum.
+  Inlining the initial exp(..) does not seem to help speed.
+
+* Speeded up the transfer matrix setup by converting to 2D matrix
+  problem instead of 1D problem.
+
+  This is easily done by the interfacing of 1D -> 2D.
+
+* When calculating the self-energy the transport direction
+  k-point is removed by setting k(t_dir) = 0 for
+  k in units of the reciprocal vectors.
+
+  This is much more stringent than doing the reduction
+  in units of 1/[L] 
+
+* Bugfix for chemical potential setup in tbtrans.
+
+  When chemical potentials are not specified the defaults are
+  used. There was a bug which made them not used and forcing
+  the user to specify them.
+
+  This is now enforced again.
+
+modified:
+  Src/class_TriMat.T90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/m_ts_trimat_invert.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/tbt_end.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 October 11, 2015 -- Nick Papior       trunk-479---ts-scf-554
 N-terminal initial Hartree guess for na_used < na_u fixed
 

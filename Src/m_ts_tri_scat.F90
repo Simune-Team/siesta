@@ -102,7 +102,7 @@ contains
     end do
 
     ! Capture the full elements
-    fGf => val(Gf_tri)
+    fGf => val(Gf_tri,all=.true.)
 
     do n = lsPart , lePart
 

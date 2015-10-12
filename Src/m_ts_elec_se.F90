@@ -388,10 +388,10 @@ contains
 ! * LOCAL variables  *
 ! ********************
     integer :: iq
-    integer :: iow,iau,ia3,ia2,ia1,iuo
-    integer :: jow,jau,ja3,ja2,ja1,juo
-    complex(dp) :: ph, phZ
-    real(dp) :: qPi(3,nq), wq
+    integer :: iow,iau,ia1,ia2,ia3,iuo
+    integer :: jow,jau,ja1,ja2,ja3,juo
+    complex(dp) :: p(3), pZ, qPi
+    real(dp) :: rPi(3), wq
 
     if ( nq == 1 ) then
 #ifndef TS_NOCHECKS
@@ -437,16 +437,14 @@ contains
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
        ! surface Green function
-!$OMP parallel default(shared), private(wq)
-
-!$OMP do private(iq)
-       do iq = 1 , nq 
-          qPi(1:3,iq) = - 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
-       end do
-!$OMP end do
+!$OMP parallel default(shared), private(iq,wq,rPi,qPi,p,pZ), &
+!$OMP&private(jow,jau,ja1,ja2,ja3,juo)
 
        ! Save some multiplications
        wq = log(1._dp / real(nq,dp))
+
+       rPi = 2._dp * Pi * (q_exp(El,1) + El%bkpt_cur)
+       qPi = cdexp(dcmplx(0._dp,rPi(1)))
 
 ! Create the single execution for creating tasks
 !$OMP master ! (firstprivate requires master node)
@@ -457,24 +455,24 @@ contains
         do ia1 = 1 , El%Rep(1)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
-!$OMP task firstprivate(iow,ia1,ia2,ia3,iuo), &
-!$OMP&private(jow,jau,ja1,ja2,ja3,ph,phZ,juo)
+!$OMP task firstprivate(iow,iuo,ia1,ia2,ia3)
+           p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
            jow = 0
            do jau = 1 , na_u
             do ja3 = 1 , El%Rep(3)
+            p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
             do ja2 = 1 , El%Rep(2)
+            p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
             do ja1 = 1 , El%Rep(1)
-              ! The weight 1 / nq is calculated
-              ! intrinsically using the relation x = e^(log(x))
-              ph = cdexp(dcmplx(wq, &
-                    (ia1-ja1)*qPi(1,1) + (ia2-ja2)*qPi(2,1) + (ia3-ja3)*qPi(3,1) ) )
-              phZ = ph * ZEnergy
+              ! This takes one additional phase per iteration
+              p(1) = p(1)*qPi
+              pZ = p(1) * ZEnergy
               do juo = 1 + lasto(jau-1) , lasto(jau)
                jow = jow + 1
                 
-               work(jow,iow,1) = ph * GS(juo,iuo,1)
+               work(jow,iow,1) = p(1) * GS(juo,iuo,1)
                 
-               work(jow,iow,2) = phZ * S(juo,iuo,1) - ph * H(juo,iuo,1)
+               work(jow,iow,2) = pZ * S(juo,iuo,1) - p(1) * H(juo,iuo,1)
                 
               end do !juo
             end do !ja1
@@ -490,9 +488,14 @@ contains
 
 !$OMP end master
 
+       ! Ensure all rPi and qPi have been used
+!$OMP taskwait
+
        do iq = 2 , nq
 
-!$OMP taskwait
+        rPi = 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
+        qPi = cdexp(dcmplx(0._dp,rPi(1)))
+
 !$OMP master
 
         iow = 0
@@ -502,25 +505,24 @@ contains
          do ia1 = 1 , El%Rep(1)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
-!$OMP task firstprivate(iq,iow,ia1,ia2,ia3,iuo), &
-!$OMP&private(jow,jau,ja1,ja2,ja3,ph,phZ,juo)
+!$OMP task firstprivate(iow,iuo,ia1,ia2,ia3)
+            p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
             jow = 0
             do jau = 1 , na_u
              do ja3 = 1 , El%Rep(3)
+             p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
              do ja2 = 1 , El%Rep(2)
+             p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
              do ja1 = 1 , El%Rep(1)
-               ! The weight 1 / nq is calculated
-               ! intrinsically using the relation x = e^(log(x))
-               ph = cdexp(dcmplx(wq, &
-                    (ia1-ja1)*qPi(1,iq) + (ia2-ja2)*qPi(2,iq) + (ia3-ja3)*qPi(3,iq) ) )
-               phZ = ph * ZEnergy
+               p(1) = p(1)*qPi
+               pZ = p(1) * ZEnergy
                do juo = 1 + lasto(jau-1) , lasto(jau)
                   jow = jow + 1
                   
-                  work(jow,iow,1) = work(jow,iow,1) + ph * GS(juo,iuo,iq)
+                  work(jow,iow,1) = work(jow,iow,1) + p(1) * GS(juo,iuo,iq)
    
                   work(jow,iow,2) = work(jow,iow,2) + &
-                       phZ * S(juo,iuo,iq) - ph * H(juo,iuo,iq)
+                       pZ * S(juo,iuo,iq) - p(1) * H(juo,iuo,iq)
    
                end do !juo
              end do !ja1
@@ -536,9 +538,10 @@ contains
 
 !$OMP end master
 
-       end do !q-points
-
+        ! Ensure all rPi and qPi have been used
 !$OMP taskwait
+
+       end do !q-points
 
 !$OMP end parallel
 
@@ -565,10 +568,10 @@ contains
 ! * LOCAL variables  *
 ! ********************
     integer :: iq
-    integer :: iow,iau,ia3,ia2,ia1,iuo
-    integer :: jow,jau,ja3,ja2,ja1,juo
-    complex(dp) :: ph
-    real(dp) :: qPi(3,nq), wq
+    integer :: iau,iow,ia1,ia2,ia3,iuo
+    integer :: jau,jow,ja1,ja2,ja3,juo
+    complex(dp) :: p(3), qPi
+    real(dp) :: rPi(3), wq
 
     if ( nq == 1 ) then
        if ( no_u /= no_s ) call die('no_E/=no_s')
@@ -582,16 +585,14 @@ contains
        ! we need not add the expanded H and S values to get the 
        ! electrode \Sigma. Hence, we need only expand
        ! surface Green function
-!$OMP parallel default(shared), private(wq)
-
-!$OMP do private(iq)
-       do iq = 1 , nq 
-          qPi(1:3,iq) = - 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
-       end do
-!$OMP end do
+!$OMP parallel default(shared), private(iq,wq,rPi,qPi,p), &
+!$OMP&private(jow,jau,ja1,ja2,ja3,juo)
 
        ! Save some multiplications
        wq = log(1._dp / real(nq,dp))
+
+       rPi = 2._dp * Pi * (q_exp(El,1) + El%bkpt_cur)
+       qPi = cdexp(dcmplx(0._dp,rPi(1)))
 
 ! Create the single execution for creating tasks
 !$OMP master ! firstprivate requires master
@@ -602,22 +603,21 @@ contains
         do ia1 = 1 , El%Rep(1)
           do iuo = 1 + lasto(iau-1) , lasto(iau)
            iow = iow + 1
-!$OMP task firstprivate(iow,ia1,ia2,ia3,iuo), &
-!$OMP&private(jow,jau,ja1,ja2,ja3,ph,juo)
+!$OMP task firstprivate(iuo,iow,ia1,ia2,ia3)
+           p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
            jow = 0
            do jau = 1 , na_u
             do ja3 = 1 , El%Rep(3)
+            p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
             do ja2 = 1 , El%Rep(2)
+            p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
             do ja1 = 1 , El%Rep(1)
-             ! The weight 1 / nq is calculated
-             ! intrinsically using the relation x = e^(log(x))
-             ph = cdexp(dcmplx(wq, &
-                  (ia1-ja1)*qPi(1,1) + (ia2-ja2)*qPi(2,1) + (ia3-ja3)*qPi(3,1) ) )
+             p(1) = p(1)*qPi
              do juo = 1 + lasto(jau-1) , lasto(jau)
                jow = jow + 1
-                
-               work(jow,iow) = ph * A(juo,iuo,1)
-                
+               
+               work(jow,iow) = p(1) * A(juo,iuo,1)
+               
              end do !juo
             end do !ja1
             end do !ja2
@@ -632,9 +632,14 @@ contains
 
 !$OMP end master
 
+       ! Ensure all rPi and qPi have been used
+!$OMP taskwait
+
        do iq = 2 , nq
 
-!$OMP taskwait
+        rPi = 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
+        qPi = cdexp(dcmplx(0._dp,rPi(1)))
+
 !$OMP master
 
         iow = 0
@@ -644,23 +649,22 @@ contains
          do ia1 = 1 , El%Rep(1)
            do iuo = 1 + lasto(iau-1) , lasto(iau)
             iow = iow + 1
-!$OMP task firstprivate(iq,iow,ia1,ia2,ia3,iuo), &
-!$OMP&private(jow,jau,ja1,ja2,ja3,ph,juo)
+!$OMP task firstprivate(iuo,iow,ia1,ia2,ia3)
+            p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
             jow = 0
             do jau = 1 , na_u
              do ja3 = 1 , El%Rep(3)
+             p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
              do ja2 = 1 , El%Rep(2)
+             p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
              do ja1 = 1 , El%Rep(1)
-               ! The weight 1 / nq is calculated
-               ! intrinsically using the relation x = e^(log(x))
-               ph = cdexp(dcmplx(wq, &
-                    (ia1-ja1)*qPi(1,iq) + (ia2-ja2)*qPi(2,iq) + (ia3-ja3)*qPi(3,iq) ) )
-               do juo = 1 + lasto(jau-1) , lasto(jau)
-                  jow = jow + 1
-                  
-                  work(jow,iow) = work(jow,iow) + ph * A(juo,iuo,iq)
-   
-               end do !juo
+              p(1) = p(1)*qPi
+              do juo = 1 + lasto(jau-1) , lasto(jau)
+                jow = jow + 1
+                
+                work(jow,iow) = work(jow,iow) + p(1) * A(juo,iuo,iq)
+                 
+              end do !juo
              end do !ja1
              end do !ja2
              end do !ja3
@@ -674,9 +678,10 @@ contains
 
 !$OMP end master
 
-       end do !q-points
-
+        ! Ensure all rPi and qPi have been used
 !$OMP taskwait
+        
+       end do !q-points
 
 !$OMP end parallel
 

@@ -198,7 +198,7 @@ contains
     end if
     call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv', &
          padding=padding)
-    nzwork = elements(zwork_tri)
+    nzwork = elements(zwork_tri,all=.true.)
 
     ! Initialize the tri-diagonal inversion routine
     call init_TriMat_inversion(zwork_tri)
@@ -219,7 +219,7 @@ contains
 
     ! we use the GF as a placement for the self-energies
     no = 0
-    zwork => val(GF_tri)
+    zwork => val(GF_tri,all=.true.)
     do iEl = 1 , N_Elec
 
        ! This seems stupid, however, we never use the Sigma and
@@ -251,7 +251,7 @@ contains
     ! arrays that point to the same.
     ! Generally the zwork need only to retain the value in
     ! one call!
-    zwork => val(zwork_tri)
+    zwork => val(zwork_tri,all=.true.)
 
     ! Create the Fake distribution
     ! The Block-size is the number of orbitals, i.e. all on the first processor
@@ -762,7 +762,7 @@ contains
     n_s = size(sc_off,dim=2)
 
     call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv')
-    nzwork = elements(zwork_tri)
+    nzwork = elements(zwork_tri,all=.true.)
 
     call init_TriMat_inversion(zwork_tri)
 
@@ -774,7 +774,7 @@ contains
     calc_parts(:) = .true.
 
     no = 0
-    zwork => val(GF_tri)
+    zwork => val(GF_tri,all=.true.)
     do iEl = 1 , N_Elec
 
        io = TotUsedOrbs(Elecs(iEl))
@@ -789,7 +789,7 @@ contains
 
     end do
 
-    zwork => val(zwork_tri)
+    zwork => val(zwork_tri,all=.true.)
 
 #ifdef MPI
     call newDistribution(no_u,MPI_Comm_Self,fdist,name='TS-fake dist')

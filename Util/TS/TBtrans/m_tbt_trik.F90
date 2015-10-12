@@ -394,9 +394,9 @@ contains
          padding = pad_RHS )
 
     ! Create the work-array...
-    zwork   => val(zwork_tri)
+    zwork   => val(zwork_tri,all=.true.)
     nzwork  =  size(zwork)
-    Gfwork  => val(Gf_tri)
+    Gfwork  => val(Gf_tri,all=.true.)
     nGfwork =  size(Gfwork)
     if ( nGfwork > nzwork ) then
        nmaxwork = nGfwork
@@ -514,7 +514,6 @@ contains
              calc_parts(jEl) = .true.
           end do
        end do
-
     end if
 
 #ifdef NCDF_4
@@ -791,6 +790,7 @@ contains
              ! loop....
              call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
                   non_Eq = .false. ) 
+
 
              ! Down-fold immediately :)
 #ifdef TBT_PHONON

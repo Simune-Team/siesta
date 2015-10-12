@@ -27,6 +27,11 @@ module m_ts_electrode
   complex(dp), parameter :: z_m1 = dcmplx(-1._dp,0._dp)
   complex(dp), parameter :: z_0  = dcmplx(0._dp,0._dp)
 
+  interface set_HS_transfer
+     module procedure set_HS_Transfer_1d
+     module procedure set_HS_Transfer_2d
+  end interface set_HS_transfer
+
 contains
 
 
@@ -971,12 +976,14 @@ contains
 
           ! init qpoint in reciprocal lattice vectors
           kpt = bkpt(:) + q_exp(El,iqpt)
+          ! Nullify the direction of the semi-infinite direction
+          kpt(El%t_dir) = 0._dp
           call kpoint_convert(El%cell,kpt,kq,-1)
 
           ! Setup the transfer matrix and the intra cell at the k-point and q-point
           ! Calculate transfer matrices @Ef (including the chemical potential)
-          call set_electrode_HS_Transfer(ispin, El, n_s,sc_off, kq, &
-               nS, H00,S00,H01,S01)
+          call set_HS_Transfer(ispin, El, n_s,sc_off, kq, &
+               nuo_E, H00,S00,H01,S01)
 
           i = (iqpt-1)*nuS
           if ( nuo_E /= nuou_E ) then
@@ -1327,8 +1334,8 @@ contains
 ! Create the Hamiltonian for the electrode as well
 ! as creating the transfer matrix.
 !**********
-  subroutine set_electrode_HS_Transfer(ispin,El,n_s,sc_off,kq, &
-       nS,Hk,Sk,Hk_T,Sk_T)
+  subroutine set_HS_Transfer_1d(ispin,El,n_s,sc_off,kq, &
+       no,Hk,Sk,Hk_T,Sk_T)
     use sys, only : die
     use precision, only : dp
     use m_ts_electype
@@ -1340,7 +1347,7 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    integer, intent(in)    :: ispin, nS
+    integer, intent(in)    :: ispin, no
     type(Elec), intent(inout) :: El
     integer, intent(in) :: n_s
     real(dp), intent(in) :: sc_off(3,0:n_s-1)
@@ -1348,15 +1355,42 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), dimension(nS) :: Hk,Sk,Hk_T,Sk_T
+    complex(dp), dimension(no**2) :: Hk,Sk,Hk_T,Sk_T
+
+    call set_HS_Transfer_2d(ispin,El,n_s,sc_off,kq, &
+         no,Hk,Sk,Hk_T,Sk_T)
+    
+  end subroutine set_HS_Transfer_1d
+  
+  subroutine set_HS_Transfer_2d(ispin,El,n_s,sc_off,kq, &
+       no,Hk,Sk,Hk_T,Sk_T)
+    use sys, only : die
+    use precision, only : dp
+    use m_ts_electype
+    use geom_helper, only : ucorb
+    use class_Sparsity
+    use class_dSpData1D
+    use class_dSpData2D
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    integer, intent(in) :: ispin, no
+    type(Elec), intent(inout) :: El
+    integer, intent(in) :: n_s
+    real(dp), intent(in) :: sc_off(3,0:n_s-1)
+    real(dp), intent(in) :: kq(3)   ! k + q-point in [1/Bohr]
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    complex(dp), dimension(no,no) :: Hk, Sk, Hk_T, Sk_T
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer :: no_u
     real(dp) :: Ef
     complex(dp) :: ph(0:n_s-1)
-    integer :: i, j, iuo, juo, ind, is
+    integer :: i, j, io, jo, ind, is
     integer, pointer :: ncol00(:), l_ptr00(:), l_col00(:)
     integer, pointer :: ncol01(:), l_ptr01(:), l_col01(:)
     real(dp), pointer :: H00(:,:) , S00(:), H01(:,:), S01(:)
@@ -1366,10 +1400,9 @@ contains
 #endif
 
     ! we need to subtract as the below code shifts to Ef
-    Ef    = El%Ef - El%mu%mu
-    no_u  = El%no_u ! this has to be the total size of the electrode
+    Ef = El%Ef - El%mu%mu
 
-    if ( no_u ** 2 /= nS ) call die('Wrong size of the electrode array')
+    if ( El%no_u /= no ) call die('Wrong size of the electrode array')
 
     ! retrieve values
     call attach(El%sp00,n_col=ncol00,list_ptr=l_ptr00,list_col=l_col00)
@@ -1380,95 +1413,75 @@ contains
     S00 => val(El%S00)
     S01 => val(El%S01)
 
-    select case ( El%t_dir )
-    case ( 1 )
-       do i = 0 , n_s - 1
-          ph(i) = cdexp(dcmplx(0._dp, &
-               kq(2) * sc_off(2,i) + &
-               kq(3) * sc_off(3,i)))
-       end do
-    case ( 2 )
-       do i = 0 , n_s - 1
-          ph(i) = cdexp(dcmplx(0._dp, &
-               kq(1) * sc_off(1,i) + &
-               kq(3) * sc_off(3,i)))
-       end do
-    case ( 3 )
-       do i = 0 , n_s - 1
-          ph(i) = cdexp(dcmplx(0._dp, &
-               kq(1) * sc_off(1,i) + &
-               kq(2) * sc_off(2,i)))
-       end do
-    end select
+    ! The algorithm outside should take care of the
+    ! nullification of the k-point in the semi-infinite direction
+    do i = 0 , n_s - 1
+       ph(i) = cdexp(dcmplx(0._dp, sum(kq*sc_off(:,i))) )
+    end do
 
-!$OMP parallel default(shared), private(i)
+!$OMP parallel default(shared), private(i,j,io,jo,ind,is)
 
     ! Initialize arrays
-!$OMP do
-    do i = 1, nS
-       Hk(i)   = dcmplx(0._dp,0._dp)
-       Sk(i)   = dcmplx(0._dp,0._dp)
-       Hk_T(i) = dcmplx(0._dp,0._dp)
-       Sk_T(i) = dcmplx(0._dp,0._dp)
-    enddo
-!$OMP end do
+!$OMP workshare
+    Hk = z_0
+    Sk = z_0
+    Hk_T = z_0
+    Sk_T = z_0
+!$OMP end workshare
 
-! We will not have any data-race condition here
-!$OMP do private(iuo,j,ind,juo,is)
-    do iuo = 1 , no_u
+    ! We will not have any data-race condition here
+!$OMP do 
+    do io = 1 , no
 
        ! Create 00
-       do j = 1 , ncol00(iuo)
-          ind = l_ptr00(iuo) + j
-          juo = ucorb(l_col00(ind),no_u)
-          is = (l_col00(ind)-1) / no_u
+       do j = 1 , ncol00(io)
+          ind = l_ptr00(io) + j
+          jo = ucorb(l_col00(ind),no)
+          is = (l_col00(ind)-1) / no
           
-          i = iuo+(juo-1)*no_u
-          Hk(i) = Hk(i) + H00(ind,ispin) * ph(is)
-          Sk(i) = Sk(i) + S00(ind)       * ph(is)
+          Hk(io,jo) = Hk(io,jo) + H00(ind,ispin) * ph(is)
+          Sk(io,jo) = Sk(io,jo) + S00(ind)       * ph(is)
        enddo
 
        ! Create 01
-       do j = 1 , ncol01(iuo)
-          ind = l_ptr01(iuo) + j
-          juo = ucorb(l_col01(ind),no_u)
-          is = (l_col01(ind)-1) / no_u
+       do j = 1 , ncol01(io)
+          ind = l_ptr01(io) + j
+          jo = ucorb(l_col01(ind),no)
+          is = (l_col01(ind)-1) / no
 
-          i = iuo+(juo-1)*no_u
-          Hk_T(i) = Hk_T(i) + H01(ind,ispin) * ph(is)
-          Sk_T(i) = Sk_T(i) + S01(ind)       * ph(is)
+          Hk_T(io,jo) = Hk_T(io,jo) + H01(ind,ispin) * ph(is)
+          Sk_T(io,jo) = Sk_T(io,jo) + S01(ind)       * ph(is)
+          
        end do
 
     end do
 !$OMP end do
 
     ! Symmetrize 00 and make EF the energy-zero
-! We will not have any data-race condition here
-!$OMP do private(iuo,j,juo)
-    do iuo = 1,no_u
-       do juo = 1,iuo-1
-          i = iuo+(juo-1)*no_u
-          j = juo+(iuo-1)*no_u
+    ! We will not have any data-race condition here
+!$OMP do
+    do io = 1 , no
+       do jo = 1 , io - 1
 
-          Sk(j) = 0.5_dp*( Sk(j) + dconjg(Sk(i)) )
-          Sk(i) = dconjg(Sk(j))
+          Sk(io,jo) = 0.5_dp*( Sk(io,jo) + dconjg(Sk(jo,io)) )
+          Sk(jo,io) = dconjg(Sk(io,jo))
 
-          Hk(j) = 0.5_dp*( Hk(j) + dconjg(Hk(i)) ) - Ef * Sk(j)
-          Hk(i) = dconjg(Hk(j))
+          Hk(io,jo) = 0.5_dp*( Hk(io,jo) + dconjg(Hk(jo,io)) ) - &
+               Ef * Sk(io,jo)
+          Hk(jo,io) = dconjg(Hk(io,jo))
 
-          ! Transfer matrix is not symmetric
-          Hk_T(i) = Hk_T(i) - Ef * Sk_T(i)
-          Hk_T(j) = Hk_T(j) - Ef * Sk_T(j)
+          ! Transfer matrix is not symmetric, so do not symmetrize
+          Hk_T(jo,io) = Hk_T(jo,io) - Ef * Sk_T(jo,io)
+          Hk_T(io,jo) = Hk_T(io,jo) - Ef * Sk_T(io,jo)
 
        end do
        
-       i = iuo+(iuo-1)*no_u
-       Sk(i) = Sk(i) - dcmplx(0._dp,dimag(Sk(i)))
-       
-       Hk(i) = Hk(i) - dcmplx(0._dp,dimag(Hk(i))) - Ef * Sk(i)
+       Sk(io,io) = real(Sk(io,io),dp)
+       Hk(io,io) = real(Hk(io,io),dp) - Ef * Sk(io,io)
        
        ! Transfer matrix
-       Hk_T(i) = Hk_T(i) - Ef * Sk_T(i)
+       Hk_T(io,io) = Hk_T(io,io) - Ef * Sk_T(io,io)
+       
     end do
 !$OMP end do nowait
 
@@ -1478,7 +1491,7 @@ contains
     call write_debug( 'POS elec_HS_Transfer' )
 #endif
 
-  end subroutine set_electrode_HS_Transfer
+  end subroutine set_HS_Transfer_2d
 
   subroutine calc_next_GS_Elec(El,ispin,bkpt,Z,nzwork,in_zwork,DOS)
     use precision,  only : dp
@@ -1510,7 +1523,7 @@ contains
 ! * LOCAL variables     *
 ! ***********************
 
-    integer  :: iqpt
+    integer  :: iq
     real(dp) :: kpt(3), kq(3)
     
     ! Dimensions
@@ -1654,20 +1667,22 @@ contains
     off = nuo_E - nuou_E + 1
 
     ! loop over the repeated cell...
-    q_loop: do iqpt = 1 , nq
+    q_loop: do iq = 1 , nq
 
        ! init qpoint in reciprocal lattice vectors
-       kpt(:) = bkpt(:) + q_exp(El,iqpt)
+       kpt(:) = bkpt(:) + q_exp(El,iq)
+       ! Nullify the direction of the semi-infinite direction
+       kpt(El%t_dir) = 0._dp
        call kpoint_convert(El%cell,kpt,kq,-1)
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
-       call set_electrode_HS_Transfer(ispin, El, n_s,sc_off,kq, &
-            nS, H00,S00,H01,S01)
+       call set_HS_Transfer(ispin, El, n_s,sc_off,kq, &
+            nuo_E, H00,S00,H01,S01)
        
        if ( .not. same_k ) then
           ! we only need to copy over the data if we don't already have it calculated
-          call copy_over(is_left,nuo_E,H00,nuou_E,El%HA(:,:,iqpt),off)
-          call copy_over(is_left,nuo_E,S00,nuou_E,El%SA(:,:,iqpt),off)
+          call copy_over(is_left,nuo_E,H00,nuou_E,El%HA(:,:,iq),off)
+          call copy_over(is_left,nuo_E,S00,nuou_E,El%SA(:,:,iq),off)
        end if
 
        ! calculate the contribution for this q-point
@@ -1701,15 +1716,16 @@ contains
 
     end do q_loop
 
+    ! We do not normalize DOS as this is the DOS for the entire
+    ! replicated device. Hence it can directly be compared against the 
+    ! \sum_(equivalent atoms) DOS
+    ! We do however normalize for the number of q-points.
+
     if ( calc_DOS .and. nq > 1 ) then
 !$OMP parallel workshare default(shared)
        DOS(1:nuo_E) = DOS(1:nuo_E) / real(nq,dp)
 !$OMP end parallel workshare
     end if
-
-    ! We do not normalize DOS as this is the DOS for the entire
-    ! replicated device. Hence it can directly be compared against the 
-    ! \sum_(equivalent atoms) DOS
 
     if ( zHS_allocated ) then
        call de_alloc(zHS, routine='next_GS')

@@ -64,7 +64,7 @@ subroutine tbt_init()
 #endif
 
 !$ integer :: is
-  integer :: iEl, itmp, it, i
+  integer :: iEl, itmp, it
   type(Sparsity) :: tmp_sp
   type(dSpData1D) :: tmp_1D
   type(dSpData2D) :: tmp_2D

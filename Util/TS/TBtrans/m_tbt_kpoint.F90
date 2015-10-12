@@ -381,7 +381,7 @@ contains
           ! the corresponding unit-cell direction
           p = SPC_PROJ(cell,Elecs(iEl)%cell(:,Elecs(iEl)%t_dir))
           ! See which unitcell direction has the highest contribution
-          do i = 1 , 3 
+          do i = 1 , 3
              ! project the unit-cell vector onto each cell component
              contrib = VNORM(VEC_PROJ(cell(:,i),p))
              if ( contrib > 1.e-7_dp ) then ! TODO electrode k-points

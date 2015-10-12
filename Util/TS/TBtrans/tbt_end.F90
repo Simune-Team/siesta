@@ -12,11 +12,11 @@ subroutine tbt_end()
   integer :: MPIerror
 #endif
 
-! Stop time counter
+  ! Stop time counter
   call timer( 'tbtrans', 2 )
   call timer( 'all', 3 )
 
-! Print allocation report
+  ! Print allocation report
   call alloc_report( printNow=.true. )
 
   if ( Node == 0 ) then

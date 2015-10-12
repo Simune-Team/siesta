@@ -768,7 +768,7 @@ contains
     ! which are determined by the col region
 
     ! Point to the matrices
-    z => val(Gfcol)
+    z => val(Gfcol,all=.true.)
 
     T = 0._dp
 

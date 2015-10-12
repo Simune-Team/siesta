@@ -222,7 +222,7 @@ contains
 #endif
 
     ! Point to the matrices
-    z => val(Minv)
+    z => val(Minv,all=.true.)
 
     ! First we need to copy over the Mnn with the electrode part!
 
@@ -481,7 +481,7 @@ contains
 #endif
 
     ! Point to the matrices
-    z => val(Minv)
+    z => val(Minv,all=.true.)
 
     ! CHECK
     ! This requires that the o_inD is sorted
@@ -712,7 +712,7 @@ contains
        cum = cum + nrows_g(M,eIdx)
     end do
     ! This is the number of elements already occupied
-    sIdx = elements(M) - no * cum + 1
+    sIdx = elements(M,all=.true.) - no * cum + 1
     eIdx = sIdx + no * nrows_g(M,p) - 1
 
   end subroutine TriMat_Bias_idxs

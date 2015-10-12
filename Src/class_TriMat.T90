@@ -28,6 +28,8 @@
      integer             :: nrows_g
      ! Number of tri-diagonal splits
      integer             :: parts
+     ! Number of padding elements
+     integer             :: padding
 
      ! Single long array to hold all tri-information
      ! Ensures locality of elements
@@ -156,10 +158,17 @@
     n = 0
   end function which_part_TriMat
 
-  elemental function elements_TriMat(this) result(el)
+  elemental function elements_TriMat(this,all) result(el)
     type(TYPE_NAME), intent(in) :: this
+    logical, intent(in), optional :: all
     integer :: el
     el = size(this%data%mat)
+    if ( present(all) ) then
+       if ( all ) then
+      	  return
+       end if
+    end if
+    el = el - this%data%padding
   end function elements_TriMat
   
   subroutine newTriMatFromDimensions(this,parts,tri_nrows,name,padding)
@@ -228,6 +237,12 @@
     end do
     if ( present(padding) ) then
        n = n + padding
+       this%data%padding = padding
+    else
+       this%data%padding = 0
+    end if
+    if ( this%data%padding < 0 ) then
+        call die('TriMat: padding is below zero. This is not allowed.')
     end if
        
     ! Allocate the full tri-diagonal matrix
@@ -239,24 +254,35 @@
   end subroutine newTriMatFromDimensions
 
 
-  function val_TriMat(this) result(p)
+  function val_TriMat(this,all) result(p)
     type(TYPE_NAME), intent(in) :: this
+    logical, intent(in), optional :: all
 #ifdef PREC
-    VAR_TYPE(PREC), pointer     :: p(:) !=> null()
+    VAR_TYPE(PREC), pointer     :: p(:)
 #else
-    VAR_TYPE,       pointer     :: p(:) !=> null()
+    VAR_TYPE,       pointer     :: p(:)
 #endif
-    
-    p => this%data%mat
+    if ( present(all) ) then
+       if ( .not. all ) then
+          p => this%data%mat(1:size(this%data%mat)- &
+              this%data%padding)
+       else
+          p => this%data%mat(:)
+       end if
+    else
+       p => this%data%mat(1:size(this%data%mat)- &
+           this%data%padding)
+    end if
+
   end function val_TriMat
 
   function val_TriMat_part(this,pr,pc) result(p)
     type(TYPE_NAME), intent(in) :: this
     integer, intent(in) :: pr,pc
 #ifdef PREC
-    VAR_TYPE(PREC), pointer     :: p(:) !=> null()
+    VAR_TYPE(PREC), pointer     :: p(:)
 #else
-    VAR_TYPE,       pointer     :: p(:) !=> null()
+    VAR_TYPE,       pointer     :: p(:)
 #endif
     integer :: s,e
 
@@ -353,7 +379,7 @@
     
     print "(3(a,i0),a)", "  <"//STR_TYPE_NAME//":" // trim(this%data%name) // &
                                 " n_parts=",  this%data%parts, &
-                                " elements=",  elements(this), &
+                                " elements=",  elements(this,all=.true.), &
                                 ", refcount: ", refcount(this),">"
   end subroutine printTriMat
 

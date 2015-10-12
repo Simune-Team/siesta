@@ -128,7 +128,7 @@ contains
     ! *******************
     ! * LOCAL variables *
     ! *******************
-    logical :: err, ltmp
+    logical :: err
     integer :: i
 
     ! Read in the temperature
@@ -152,7 +152,9 @@ contains
           ! success
        else if ( fdf_mu('TS',mus(i),kT,Volt) ) then
           ! success
-       else if ( ltmp ) then
+       else if ( err ) then
+          ! only error out if it couldn't be found and forced
+          ! created
           call die('Could not find chemical potential: ' &
                //trim(name(mus(i))))
        end if
