@@ -1,4 +1,29 @@
 ------------------------------------------------------------
+October 11, 2015  A. Garcia        trunk-464--pexsi-v0.8-4
+Use an expert interface instead of the simple driver
+
+Call and handle the inertia-count routine and the "Fermi operator"
+calculator.
+Some rough edges regarding termination conditions and tolerance sizes
+(particularly the "energy width" criterion for inertia-count).
+
+modified:
+  Src/Makefile
+  Src/m_pexsi_driver.F90
+  Src/pexsi-lit.org
+      
+------------------------------------------------------------
+October 11, 2015  A. Garcia        trunk-464--pexsi-v0.8-3
+Use org-mode for tangling pexsi sources
+
+added:
+  Src/pexsi-lit.org
+  Src/tangle.sh
+modified:
+  Src/m_pexsi.f90
+  Src/m_pexsi_driver.F90
+
+------------------------------------------------------------
 June 18, 2015  A. Garcia        trunk-464--pexsi-v0.8-2
 Fix timing hierarchy in pexsi driver. Manual update
 

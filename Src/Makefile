@@ -601,8 +601,8 @@ m_pexsi.o: f_ppexsi_interface.o precision.o
 m_pexsi_dos.o: alloc.o class_Dist.o f_ppexsi_interface.o m_mpi_utils.o
 m_pexsi_dos.o: m_redist_spmatrix.o parallel.o precision.o units.o
 m_pexsi_driver.o: alloc.o class_Dist.o extrae_module.o f_ppexsi_interface.o
-m_pexsi_driver.o: m_mpi_utils.o m_pexsi.o m_redist_spmatrix.o parallel.o
-m_pexsi_driver.o: precision.o siesta_options.o units.o
+m_pexsi_driver.o: m_convergence.o m_mpi_utils.o m_pexsi.o m_redist_spmatrix.o
+m_pexsi_driver.o: parallel.o precision.o siesta_options.o units.o
 m_pexsi_local_dos.o: alloc.o atomlist.o class_Dist.o dhscf.o
 m_pexsi_local_dos.o: f_ppexsi_interface.o files.o m_energies.o m_eo.o
 m_pexsi_local_dos.o: m_forces.o m_gamma.o m_mpi_utils.o m_ntm.o

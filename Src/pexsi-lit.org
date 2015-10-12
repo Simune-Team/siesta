@@ -104,6 +104,8 @@ end subroutine get_row_col
 
 * The pexsi_solver code
 
+** Main structure
+
 This is the main structure of the code. 
 
 #+begin_src f90 :noweb-ref code-structure
@@ -241,18 +243,26 @@ real(dp), pointer, dimension(:) :: &
         HnzvalLocal=>null(), SnzvalLocal=>null(),  &
         DMnzvalLocal => null() , EDMnzvalLocal => null(), &
         FDMnzvalLocal => null()
+
+real(dp), allocatable :: shiftList(:), inertiaList(:)
 !
 logical  :: PEXSI_worker
-real(dp) :: temperature, numElectronExact, numElectron
+real(dp) :: temperature, numElectronExact, numElectronPEXSI
+real(dp) :: numElectronDrvMuPEXSI
 integer  :: npPerPole
 integer  :: mpirank, mpisize, ierr
 integer  :: isSIdentity
+integer  :: numMinICountShifts, numNodesTotal, numShift
 
 real(dp) :: pexsi_temperature, two_kT
 
 real(dp) :: PEXSINumElectronToleranceMin, &
             PEXSINumElectronToleranceMax, &
             PEXSINumElectronTolerance
+integer ::  nInertiaRounds, inertiaMaxIter
+
+real(dp) :: muInertia, deltaMu
+
 real(dp) :: free_bs_energy
 
 !------------
@@ -263,7 +273,6 @@ type(aux_matrix) :: m1, m2
 type(Dist)       :: dist1, dist2
 integer          :: pbs, norbs, scf_step
 #+END_SRC
-
 
 ** Define communicators
 
@@ -309,7 +318,6 @@ pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
 
 #+END_SRC
-
 
 
 ** Re-distribute matrices
@@ -385,42 +393,58 @@ We use the options interface to get a template with default values,
 and then fill in a few custom options based on fdf variables.
 
 #+BEGIN_SRC f90 :noweb-ref set-options
-    
-    !@declare type(f_ppexsi_options) :: options
-    
-    !
-    call f_ppexsi_set_default_options( options )
 
-    options%muPEXSISafeGuard = fdf_get("PEXSI.mu-pexsi-safeguard",0.05_dp,"Ry")
-    options%maxPEXSIIter = fdf_get("PEXSI.mu-max-iter",10)
+  !@declare type(f_ppexsi_options) :: options
 
-    isSIdentity = 0
+  !
+  call f_ppexsi_set_default_options( options )
 
-    options%numPole  = fdf_get("PEXSI.num-poles",40)
-    options%gap      = fdf_get("PEXSI.gap",0.0_dp,"Ry")
+  options%muPEXSISafeGuard = fdf_get("PEXSI.mu-pexsi-safeguard",0.05_dp,"Ry")
+  options%maxPEXSIIter = fdf_get("PEXSI.mu-max-iter",10)
 
-    ! deltaE is in theory the spectrum width, but in practice can be much smaller
-    ! than | E_max - mu |.  It is found that deltaE that is slightly bigger
-    ! than  | E_min - mu | is usually good enough.
+  isSIdentity = 0
 
-    options%deltaE     = fdf_get("PEXSI.delta-E",3.0_dp,"Ry") ! Lin: 10 Ry...
+  options%numPole  = fdf_get("PEXSI.num-poles",40)
+  options%gap      = fdf_get("PEXSI.gap",0.0_dp,"Ry")
 
-    ! Ordering flag:
-    !   1: Use METIS
-    !   0: Use PARMETIS/PTSCOTCH
-    options%ordering = fdf_get("PEXSI.ordering",1)
+  ! deltaE is in theory the spectrum width, but in practice can be much smaller
+  ! than | E_max - mu |.  It is found that deltaE that is slightly bigger
+  ! than  | E_min - mu | is usually good enough.
 
-    ! Number of processors for symbolic factorization
-    ! Only relevant for PARMETIS/PT_SCOTCH
-    options%npSymbFact = fdf_get("PEXSI.np-symbfact",1)
+  options%deltaE     = fdf_get("PEXSI.delta-E",3.0_dp,"Ry") ! Lin: 10 Ry...
 
-    verbosity = fdf_get("PEXSI.verbosity",1)
-    options%verbosity = verbosity
+  ! Ordering flag:
+  !   1: Use METIS
+  !   0: Use PARMETIS/PTSCOTCH
+  options%ordering = fdf_get("PEXSI.ordering",1)
 
-    options%temperature = pexsi_temperature
-    options%numElectronPEXSITolerance = PEXSINumElectronTolerance
+  ! Number of processors for symbolic factorization
+  ! Only relevant for PARMETIS/PT_SCOTCH
+  options%npSymbFact = fdf_get("PEXSI.np-symbfact",1)
+
+  verbosity = fdf_get("PEXSI.verbosity",1)
+  options%verbosity = verbosity
+
+  options%temperature = pexsi_temperature
+  options%numElectronPEXSITolerance = PEXSINumElectronTolerance
+
+  ! Stop inertia count if mu has not changed much from iteration to iteration.
+  ! Also used (doubled) for energy-width criterion
+  options%muInertiaTolerance =  &
+       fdf_get("PEXSI.inertia-mu-tolerance",0.05_dp,"Ry")
+
+  ! One-sided expansion of interval if correct mu falls outside it
+  options%muInertiaExpansion =  &
+       fdf_get("PEXSI.lateral-expansion-inertia",3.0_dp*eV,"Ry") 
+
+
+  ! Other user options
+
+  ! Maximum number of iterations for computing the inertia                                          
+  ! in a given scf step (until a proper bracket is obtained)                                        
+  inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
+
 #+END_SRC
-
 
 ** Load H and S matrices
 
@@ -446,7 +470,6 @@ call f_ppexsi_load_real_symmetric_hs_matrix(&
 call check_info(info,"load_real_sym_hs_matrix")
 
 #+END_SRC
-
 
 
 
@@ -519,7 +542,7 @@ could be done in that case.
 #+BEGIN_SRC f90 :noweb-ref initialize-plan-at-first-step
 
   !  New interface.
-  if (iscf == 1) then
+  if (scf_step == 1) then
      call pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
   endif
 
@@ -531,7 +554,7 @@ This is only done at the beginning of the scf cycle.
 
 #+BEGIN_SRC f90 :noweb-ref factorization
 
-  if (iscf == 1) then
+  if (scf_step == 1) then
      ! This is only needed for inertia-counting
      call f_ppexsi_symbolic_factorize_real_symmetric_matrix(&
           plan, &
@@ -548,75 +571,120 @@ This is only done at the beginning of the scf cycle.
   options%isSymbolicFactorize = 0 ! We do not need it anymore
 #+END_SRC
 
-
-** Set up options and call the simple driver
-
-This is too black of a black box, as there is very little control
+** Call the solver
+*** Solver call structure
+This was too black of a black box, as there is very little control
 of the operations. The most glaring shortcoming is the lack of a
 proper handling of the convergence conditions.
 
-#+BEGIN_SRC f90 :noweb-ref call-driver
+The plan for improvement is to call the inertia counting routine, and
+the fermi-operator calculator, explicitly.
 
+#+BEGIN_SRC f90 :noweb-ref call-driver
   !
-  !  do actual solve
-  !
+  <<determine-number-of-shifts>>
+  numTotalInertiaIter = 0
+
   call timer("pexsi-solver", 1)
 
+  ! This is for the initial phase of the scf loop
   if (need_inertia_counting()) then
-     options%isInertiaCount = 1
-     ! Stop inertia count if mu has not changed much from iteration to iteration.
-     options%muInertiaTolerance =  &
-               fdf_get("PEXSI.inertia-mu-tolerance",0.05_dp,"Ry")
-     ! One-sided expansion of interval if correct mu falls outside it
-     options%muInertiaExpansion =  &
-               fdf_get("PEXSI.lateral-expansion-inertia",3.0_dp*eV,"Ry") 
 
      call get_bracket_for_inertia_count( )  
-     options%muMin0 = muMin0
-     options%muMax0 = muMax0
-     if (mpirank == 0) then
-       write (6,"(a,2f9.4,a)") 'Calling inertiaCount: [', &
-                                        muMin0/eV, muMax0/eV, "] (eV)"
-     endif
+     call do_inertia_count(plan,muMin0,muMax0,muInertia)
+
+     mu = muInertia
 
   else
-     ! Will call the PEXSI solver directly
-     options%isInertiaCount = 0
+
+     !  Maybe there is no need for bracket, just for mu estimation
      call get_bracket_for_solver()
-     options%muMin0 = muMin0
-     options%muMax0 = muMax0
-     options%mu0       = mu
+     
+  endif
+
+  numTotalPEXSIIter = 0
+  solver_loop: do
+
+     if (numTotalPEXSIIter > 10 ) call die("too many PEXSI iterations")
+
      if(mpirank == 0) then
-       write (6,"(a,2f9.4,a,f9.4,a,f9.5)") 'Calling solver directly (eV): [', &
-                                        muMin0/eV, &
-                                        muMax0/eV, &
-                                       "] prev. mu: ", mu/eV, &
-                                       ' Tol: ', PEXSINumElectronTolerance
+        write (6,"(a,f9.4,a,f9.5)") 'Computing DM for mu(eV): ', mu/eV, &
+             ' Tol: ', PEXSINumElectronTolerance
+        write (6,"(a,f9.4,f9.5)") 'Bracket: ', muMin0/eV, muMax0/eV
      endif
 
-  endif
-        
-  call f_ppexsi_dft_driver(&
-    plan,&
-    options,&    ! includes muMin0, muMax0
-    numElectronExact,& ! in
-    mu,&             ! out
-    numElectron,&    ! out
-    muMinInertia,&   ! out
-    muMaxInertia,&   ! out
-    numTotalInertiaIter,&  ! out
-    numTotalPEXSIIter,&    ! out
-    info)
+     call f_ppexsi_calculate_fermi_operator_real(&
+          plan,&
+          options,&
+          mu,&
+          numElectronExact,&
+          numElectronPEXSI,&
+          numElectronDrvMuPEXSI,&
+          info)
 
-  call check_info(info,"dft_driver")
+     call check_info(info,"fermi_operator")
 
-  if (abs(numElectron-numElectronExact) > PEXSINumElectronTolerance) then
-     ! Might take another go, but for now just warn the user and rely on
-     ! the normalization of the DM to try to get the calculation going...
-     if(mpirank == 0) then
-        write(6,*) "PEXSI solver did not converge. DM normalization might work"
+     if (mpirank == 0) then
+        write(6,"(a,f10.4)") "Fermi Operator. mu: ", mu/eV
+        write(6,"(a,f10.4)") "Fermi Operator. numElectron: ", numElectronPEXSI
+        write(6,"(a,f10.4)") "Fermi Operator. dN_e/dmu: ", numElectronDrvMuPEXSI*eV
      endif
-  endif
+
+     numTotalPEXSIIter =  numTotalPEXSIIter + 1
+
+     if (abs(numElectronPEXSI-numElectronExact) > PEXSINumElectronTolerance) then
+
+        deltaMu = - (numElectronPEXSI - numElectronExact) / numElectronDrvMuPEXSI
+
+        if ( ((mu + deltaMu) < muMin0) .or. ((mu + deltaMu) > muMax0) ) then
+           if (mpirank ==0) then
+              write(6,"(a,f9.3)") "DeltaMu: ", deltaMu, " is too big. Falling back to IC"
+           endif
+
+           ! Possibly choose a new bracket
+           call do_inertia_count(plan,muMin0,muMax0,muInertia)
+           mu = muInertia
+           cycle solver_loop
+
+        endif
+        mu = mu + deltaMu
+        cycle solver_loop
+     else
+        ! Converged
+        if (mpirank == 0) then
+           write(6,"(a,f10.4)") "PEXSI solver converged. mu: ", mu
+        endif
+        exit solver_loop
+     endif
+
+  end do solver_loop
+  call timer("pexsi-solver", 2)
+
+#+END_SRC
+
+
+*** Determine number of inertia-count shifts
+
+This is based on the total number of processors available, in such a 
+way that each group of =np-PerPole= processors deals with a shift.
+
+#+BEGIN_SRC f90 :noweb-ref determine-number-of-shifts
+
+! Minimum number of sampling points for inertia counts                                            
+numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
+
+call mpi_comm_size( World_Comm, numNodesTotal, ierr )
+numShift = numNodesTotal/npPerPole
+do
+   if (numShift < numMinICountShifts) then
+      numShift = numShift + numNodesTotal/npPerPole
+   else
+      exit
+   endif
+enddo
+
+allocate(shiftList(numShift), inertiaList(numShift))
+
 #+END_SRC
 
 ** Get output matrices and compute energies
@@ -639,8 +707,6 @@ This section is still done by the PEXSI group processors
 
   endif
 
-  call timer("pexsi-solver", 2)
-
   !------------ End of solver step
 
   if ((mpirank == 0) .and. (verbosity >= 1)) then
@@ -649,7 +715,7 @@ This section is still done by the PEXSI group processors
     write(6,"(a,f12.4)") " #&s muMinInertia: ", muMinInertia
     write(6,"(a,f12.4)") " #&s muMaxInertia: ", muMaxInertia
     write(6,"(a,f12.5,f12.4,2x,a2)") "mu, N_e:", mu/eV, &
-                                      numElectron, "&s"
+                                      numElectronPEXSI, "&s"
   endif
 
   if (PEXSI_worker) then
@@ -775,6 +841,7 @@ This section is still done by the PEXSI group processors
 Several routines 
 
 #+BEGIN_SRC f90 :noweb-ref support-routines
+ <<inertia-count-iteration>>
  <<get-on-the-fly-tolerance>>
  <<need-inertia-counting>>
  <<get-bracket-for-inertia-count>>
@@ -782,6 +849,225 @@ Several routines
  <<get-current-temperature>>
  <<check-info>> 
 #+END_SRC
+
+*** Inertia-count iteration
+#+BEGIN_SRC f90 :noweb-ref inertia-count-iteration
+  subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
+    use iso_c_binding, only : c_intptr_t
+    use m_convergence
+
+    integer(c_intptr_t)      :: plan
+    real(dp), intent(inout)  :: muMin0, muMax0
+    real(dp), intent(out)    :: muInertia
+
+    real(dp)            :: muMinInertia, muMaxInertia
+
+
+    real(dp), parameter ::   eps_inertia = 0.1_dp
+    type(converger_t)   ::   conv_mu
+    logical             ::   bad_lower_bound, bad_upper_bound
+    logical             ::   interval_problem, one_more_round
+    real(dp)            ::   inertia_electron_width
+    real(dp)            ::   inertia_original_electron_width
+    real(dp)            ::   inertia_energy_width
+
+    integer :: imin, imax
+
+     nInertiaRounds = 0
+
+     refine_interval: do
+        <<refine-interval-by-inertia-count>>
+        numTotalInertiaIter = numTotalInertiaIter + 1
+     enddo refine_interval
+     
+   end subroutine do_inertia_count
+#+END_SRC
+    
+**** Refine interval by inertia count
+
+This is the body of the old /expert/ inertia-count loop.
+We begin by setting up the shift list and calling the workhorse
+routine (which does not do anything extra inside, just compute
+the T=0K inertia).
+
+#+BEGIN_SRC f90 :noweb-ref refine-interval-by-inertia-count
+
+     options%muMin0 = muMin0
+     options%muMax0 = muMax0
+
+       if (mpirank == 0) then
+          write (6,"(a,2f9.4,a,a,i4)") 'Calling inertiaCount: [', &
+               muMin0/eV, muMax0/eV, "] (eV)", &
+               " Nshifts: ", numShift
+       endif
+
+       call timer("pexsi-inertia-ct", 1)
+
+       do i = 1, numShift
+         shiftList(i) = muMin0 + (i-1) * (muMax0-muMin0)/(numShift-1)
+       enddo
+
+       call f_ppexsi_inertia_count_real_symmetric_matrix(&
+            plan,&
+            options,&
+            numShift,&
+            shiftList,&
+            inertiaList,&
+            info) 
+            
+       inertiaList(:) = 2 * inertiaList(:)   ! No spin
+
+       call check_info(info,"inertia-count")
+
+       call timer("pexsi-inertia-ct", 2)
+
+#+end_src
+
+Now we need to make sure that the results make sense. First, that
+we had \mu in our starting interval. If not, we immediately expand the
+bounds and go back to the top of the loop.
+
+#+BEGIN_SRC f90 :noweb-ref refine-interval-by-inertia-count
+    interval_problem = .false.
+
+    if(mpirank == 0) then
+       bad_lower_bound = (inertiaList(1) > (numElectronExact - 0.1)) 
+       bad_upper_bound = (inertiaList(numShift) < (numElectronExact + 0.1)) 
+    endif
+
+    call broadcast(bad_lower_bound,comm=World_Comm)
+    call broadcast(bad_upper_bound,comm=World_Comm)
+
+    if (bad_lower_bound) then
+       interval_problem =  .true.
+       muMin0 = muMin0 - options%muInertiaExpansion ! 0.5
+       if (mpirank==0) then
+          write (6,"(a,2f12.4,a,2f10.4)") 'Wrong inertia-count interval (lower end). Counts: ', &
+               inertiaList(1), inertiaList(numShift), &
+               ' New interval: ', muMin0/eV, muMax0/eV
+       endif
+    endif
+    if (bad_upper_bound) then
+       interval_problem =  .true.
+       muMax0 = muMax0 + options%muInertiaExpansion ! 0.5
+       if (mpirank==0) then
+          write (6,"(a,2f12.4,a,2f10.4)") 'Wrong inertia-count interval (upper end). Counts: ', &
+               inertiaList(1), inertiaList(numShift), &
+               ' New interval: ', muMin0/eV, muMax0/eV
+       endif
+    endif
+
+    if (interval_problem) then
+       ! do nothing more, stay in loop
+       cycle refine_interval
+    endif
+#+end_src
+
+If we did have \mu in the interval, we consider this a bona-fide
+inertia-count iteration and update the counter.
+
+Next, we scan the list of inertia values to obtain a new interval for
+\mu. For now, we use the T=0 values, without any broadening.
+
+#+BEGIN_SRC f90 :noweb-ref refine-interval-by-inertia-count       
+
+       nInertiaRounds = nInertiaRounds + 1
+
+       imin = 1; imax = numShift
+
+       do i = 1, numShift
+          if (inertiaList(i) < numElectronExact - eps_inertia) then
+             imin = max(imin,i)
+          endif
+          if (inertiaList(i) > numElectronExact + eps_inertia) then
+             imax = min(imax,i)
+          endif
+       enddo
+       muMaxInertia = shiftList(imax)
+       muMinInertia = shiftList(imin)
+       muInertia = 0.5_dp * (muMaxInertia + muMinInertia)
+       
+       if (mpirank == 0) then
+          write (*,*) 'imin, imax: ', imin, imax
+          write (*,*) 'muMinInertia, muMaxInertia: ', muMinInertia/eV, muMaxInertia/eV
+          write (*,*) 'mu estimated: ', muInertia/eV
+       endif
+#+end_src
+
+Now we have to decide whether we are satisfied with the estimation of
+\mu and the new bracket. We have several possible criteria: the actual
+width in energy of the bracket, the width in "states" (both of the
+original interval and the narrower interval), and the behavior of \mu
+itself with successive iterations.
+
+The problem with the "states" measures is that they depend on the size
+of the system. Energy measures (width and convergence of \mu) are more
+universal. Setting the change in \mu to 0.8 eV is the default, and
+double that for the interval width.
+
+We also exit the loop if we have done too many IC iterations.
+
+#+BEGIN_SRC f90 :noweb-ref refine-interval-by-inertia-count       
+    
+    if (mpirank==0) then
+
+       inertia_energy_width = (muMaxInertia - muMinInertia)
+       ! Note that this is the width of the starting interval...
+       inertia_original_electron_width = (inertiaList(numShift) - inertiaList(1))
+       inertia_electron_width = (inertiaList(imax) - inertiaList(imin))
+
+       write (6,"(a,2f9.4,a,f9.4,3(a,f10.3))") ' -- new bracket (eV): [', &
+            muMinInertia/eV, muMaxInertia/eV,  &
+            "] estimated mu: ", muInertia/eV, &
+            " Nel width: ", inertia_electron_width, &
+            " (Base: ", inertia_original_electron_width, &
+            " ) E width: ", inertia_energy_width/eV
+
+       if (nInertiaRounds == 1) then
+          call reset(conv_mu)
+          call set_tolerance(conv_mu,options%muInertiaTolerance)
+       endif
+       call add_value(conv_mu, muInertia)
+
+       !
+  !!$     one_more_round = .true.
+  !!$     if (inertia_original_electron_width < inertiaNumElectronTolerance) then
+  !!$        write (6,"(a)") 'Leaving inertia loop: electron tolerance'
+  !!$        one_more_round = .false.
+  !!$     endif
+  !!$     if (inertia_electron_width < inertiaMinNumElectronTolerance) then
+  !!$        write (6,"(a)") 'Leaving inertia loop: minimum workable electron tolerance'
+  !!$        one_more_round = .false.
+  !!$     endif
+       if (inertia_energy_width < 2*options%muInertiaTolerance) then
+          write (6,"(a,f12.6)") 'Leaving inertia loop: energy tolerance: ', &
+           2*options%muInertiaTolerance/eV
+          one_more_round = .false.
+       endif
+       if (is_converged(conv_mu)) then
+          write (6,"(a,f12.6)") 'Leaving inertia loop: mu tolerance: ', options%muInertiaTolerance/eV
+          one_more_round = .false.
+       endif
+       if (nInertiaRounds == inertiaMaxIter) then
+          write (6,"(a)") 'Leaving inertia loop: too many rounds'
+          one_more_round = .false.
+       endif
+    endif
+    call broadcast(one_more_round,comm=World_Comm)
+
+    if (one_more_round) then
+       ! stay in loop
+       ! These values should be guarded, in case the refined interval
+       ! is too tight. Use 2*kT
+       ! 
+       muMin0 = muMinInertia - two_kT
+       muMax0 = muMaxInertia + two_kT
+    else
+       exit refine_interval
+    endif
+
+#+END_SRC
+
 
 *** On-the-fly tolerance determination
 #+BEGIN_SRC f90 :noweb-ref get-on-the-fly-tolerance
