@@ -180,6 +180,7 @@ contains
     use fdf, only : fdf_get, fdf_obsolete, fdf_deprecated, leqi
     use parallel, only : IONode
     use intrinsic_missing, only : IDX_SPC_PROJ, EYE
+    use intrinsic_missing, only : VEC_PROJ_SCA, VNORM
 
     use m_os, only : file_exist
 
@@ -210,7 +211,7 @@ contains
     ! *******************
     integer :: i, j
     real(dp) :: tmp33(3,3), rtmp
-    logical :: err
+    logical :: err, bool
     character(len=200) :: chars
 
     if ( N_mu == 0 ) call die('read_tbt_elecs: error in programming')
@@ -362,19 +363,35 @@ contains
        i = Elecs(1)%pvt(Elecs(1)%t_dir)
        j = Elecs(2)%pvt(Elecs(2)%t_dir)
 
-       if ( i == j ) then
-          ! The transport direction for the electrodes are the same...
-          ts_tidx = i
+       bool = i == j
 
+       ! For a single transport direction to be true,
+       ! both the projections _has_ to be 1, exactly!
+       rtmp = VEC_PROJ_SCA(cell(:,i), Elecs(1)%cell(:,Elecs(1)%t_dir))
+       rtmp = rtmp / VNORM(Elecs(1)%cell(:,Elecs(1)%t_dir))
+       bool = bool .and. abs(abs(rtmp) - 1._dp) < 1.e-5_dp
+       rtmp = VEC_PROJ_SCA(cell(:,j), Elecs(2)%cell(:,Elecs(2)%t_dir))
+       rtmp = rtmp / VNORM(Elecs(2)%cell(:,Elecs(2)%t_dir))
+       bool = bool .and. abs(abs(rtmp) - 1._dp) < 1.e-5_dp
+
+       if ( bool ) then
+          
+          ! The transport direction for the electrodes are the same...
+          ! And fully encompassed! We have a single transport
+          ! direction.
+          ts_tidx = i
+          
           ! Calculate Cartesian transport direction
           call eye(3,tmp33)
-          ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx))
-
+          ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx),mag=.true.)
+          
        else
+
           ! In case we have a skewed transport direction
           ! we have some restrictions...
-          ts_tidx = - N_Elec
-          ts_tdir = - N_Elec
+          ts_tidx = -N_Elec
+          ts_tdir = -N_Elec
+          
        end if
 
     end if

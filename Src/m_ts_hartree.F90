@@ -115,6 +115,7 @@ contains
     do iE = 1 , N_Elec
        tmp = VOLCEL(Elecs(iE)%cell)
        if ( TS_HA == TS_HA_ELEC ) then
+          ! calculate cell area of plane by non-semi-inf vectors
           tmp = tmp / VNORM(Elecs(iE)%cell(:,Elecs(iE)%t_dir))
        else if ( TS_HA == TS_HA_ELEC_BOX ) then
           ! do nothing, volume check

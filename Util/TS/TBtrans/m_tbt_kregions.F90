@@ -255,11 +255,11 @@ contains
              ! TRS reduced. Hence we force it to be false
              ! if using offset.
              call read_kgrid(trim(g), &
-                  N_Elec,Elecs,.false.,cell,r_k(il)%kpt,r_k(il)%wkpt, &
+                  .false.,cell,r_k(il)%kpt,r_k(il)%wkpt, &
                   is_b = .true. )
           else
              call read_kgrid(trim(g), &
-                  N_Elec,Elecs,TRS,cell,r_k(il)%kpt,r_k(il)%wkpt, &
+                  TRS,cell,r_k(il)%kpt,r_k(il)%wkpt, &
                   is_b = .true. )
           end if
 

@@ -33,7 +33,7 @@ module m_tbt_kpoint
 
 contains
 
-  subroutine read_kgrid(bName,N_Elec,Elecs,TRS,cell,kpt,wkpt, &
+  subroutine read_kgrid(bName,TRS,cell,kpt,wkpt, &
        is_b, &
        kcell,kdispl)
 
@@ -44,15 +44,13 @@ contains
     use units, only : Pi
     use m_find_kgrid, only : find_kgrid, trim_kpoint_list
 
-    use m_ts_electype
+    use m_ts_tdir, only: ts_tidx
 
     use m_integrate
     use m_gauss_quad
 
     ! INPUT
     character(len=*), intent(in) :: bName
-    integer, intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
     ! Whether time-reversal symmetry applies
     logical, intent(in) :: TRS
     real(dp), intent(in) :: cell(3,3)
@@ -65,7 +63,7 @@ contains
 
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
-    integer :: i, ik, j, k, nkpt, iEl
+    integer :: i, ik, j, k, nkpt
     real(dp) :: rcell(3,3), displ(3), ksize(3), rtmp, p(3), q(3)
     real(dp) :: prev_k(3), next_k(3), k_path_length
     real(dp) :: contrib
@@ -211,6 +209,7 @@ contains
                 do i = 1 , j
                    ik = ik + 1
                    kpt(:,ik) = prev_k + p * (i-1)
+                   call check_zero(kpt(:,ik),ts_tidx)
                 end do
                 
              end if
@@ -233,6 +232,7 @@ contains
                    kpt(1,ik) = fdf_bvalues(pline,1)
                    kpt(2,ik) = fdf_bvalues(pline,2)
                    kpt(3,ik) = fdf_bvalues(pline,3)
+                   call check_zero(kpt(:,ik),ts_tidx)
 
                    if ( fdf_bnvalues(pline) > 3 ) then
                       ! fine, read in the weight
@@ -294,7 +294,8 @@ contains
              displ(1) = fdf_bvalues(pline,1)
              displ(2) = fdf_bvalues(pline,2)
              displ(3) = fdf_bvalues(pline,3)
-
+             call check_zero(displ,ts_tidx)
+             
           else if ( leqi(ctmp,'size') ) then
 
              ksize(1) = fdf_bvalues(pline,1)
@@ -327,6 +328,7 @@ contains
              if ( .not. fdf_bnext(bfdf,pline) ) &
                   call die('Could not read kgrid from block: '//trim(bName))
           end do
+          call check_zero(displ,ts_tidx)
 
        end if
 
@@ -376,26 +378,17 @@ contains
 
     else if ( K_METHOD /= K_METHOD_LIST ) then
 
-       do iEl = 1 , N_Elec
-          ! project the electrode transport direction onto
-          ! the corresponding unit-cell direction
-          p = SPC_PROJ(cell,Elecs(iEl)%cell(:,Elecs(iEl)%t_dir))
-          ! See which unitcell direction has the highest contribution
-          do i = 1 , 3
-             ! project the unit-cell vector onto each cell component
-             contrib = VNORM(VEC_PROJ(cell(:,i),p))
-             if ( contrib > 1.e-7_dp ) then ! TODO electrode k-points
-                ! the contribution along this vector is too much
-                ! to disregard the elongation along this
-                ! direction.
-                ! We *MUST* kill all k-points in this direction
-                kscell(:,i) = 0
-                kscell(i,:) = 0
-                kscell(i,i) = 1
-                displ(i)    = 0._dp
-             end if
-          end do
-       end do
+       if ( ts_tidx > 0 ) then
+          i = ts_tidx
+          ! the contribution along this vector is too much
+          ! to disregard the elongation along this
+          ! direction.
+          ! We *MUST* kill all k-points in this direction
+          kscell(:,i) = 0
+          kscell(i,:) = 0
+          kscell(i,i) = 1
+          displ(i)    = 0._dp
+       end if
 
        if ( present(kcell) ) kcell = kscell
        if ( present(kdispl) ) kdispl = displ
@@ -479,6 +472,7 @@ contains
              kpt(1,ik) = k3_1(i,1)
              kpt(2,ik) = k3_2(j,1)
              kpt(3,ik) = k3_3(k,1)
+             call check_zero(kpt(:,ik),ts_tidx)
              wkpt(ik)  = k3_1(i,2) * k3_2(j,2) * k3_3(k,2)
           end do
           end do
@@ -516,6 +510,7 @@ contains
        ! Re-scale the k-points to the correct size
        do ik = 1 , nkpt
           kpt(:,ik) = kpt(:,ik) * ksize(:)
+          call check_zero(kpt(:,ik),ts_tidx)
        end do
 
        ! Rescale the weights if the size of the
@@ -527,35 +522,12 @@ contains
        do ik = 1 , 3
           ! we do not need to rescale if the number
           ! of k-points in the i'th direction is
-          ! 1. (regardless of what the user says ;))
+          !  !! regardless of what the user says ;) !!
           if ( kscell(ik,ik) == 1 ) cycle
           wkpt(:) = wkpt(:) * ksize(ik)
        end do
 
     end if
-
-    ! we search whether there are any k-points
-    ! along the unit-vector for each of the
-    ! semi-infinite directions of the electrodes
-    do iEl = 1 , N_Elec
-
-       ! Get the equivalent index of the semi-infinite
-       ! direction
-       j = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
-
-       ! Check that all k-points in that direction
-       ! is zero
-       do i = 1 , nkpt
-          if ( abs(kpt(j,i)) > 1.d-5 ) then
-             write(*,'(a)') 'You have a k-point along an electrode &
-                  &semi-infinite direction. This will create spurious &
-                  &results and is not allowed.'
-             write(*,'(a)') 'Please correct your input file'
-             call die('Erroneous input of k-points for tbtrans.')
-          end if
-       end do
-       
-    end do
 
     if ( present(is_b) ) then
        if ( is_b ) return
@@ -569,6 +541,20 @@ contains
     end do
 
   contains
+
+    subroutine check_zero(k,tidx)
+      real(dp), intent(in) :: k(3)
+      integer, intent(in) :: tidx
+      if ( tidx > 0 ) then
+         if ( abs(k(tidx)) > 1.e-5_dp ) then
+            write(*,'(a)') 'An univocal transport direction is existing'
+            write(*,'(a)') 'You should not use k-points in that direction'
+            write(*,'(a)') 'as it is redundant work.'
+            call die('Check the output, you are using redundant k-points.')
+         end if
+      end if
+      
+    end subroutine check_zero
 
     subroutine read_path(bfdf,pline,rcell,even,kl,prev_k,next_k,nkpt)
       type(block_fdf), intent(inout) :: bfdf
@@ -655,17 +641,13 @@ contains
     
   end subroutine read_kgrid
   
-  subroutine setup_kpoint_grid( cell , N_Elec, Elecs )
+  subroutine setup_kpoint_grid( cell )
     
     use fdf, only       : fdf_get, leqi, block_fdf, fdf_block
     use parallel, only  : IONode
 
-    use m_ts_electype
-
     ! Local Variables
     real(dp), intent(in)   :: cell(3,3)
-    integer, intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
 
     real(dp) :: bkpt(3)
     integer :: i
@@ -704,15 +686,15 @@ contains
 
        if ( fdf_block('TBT.k',bfdf) ) then
           call read_kgrid('TBT.k', &
-               N_Elec,Elecs,TRS,cell,kpoint,kweight, &
+               TRS,cell,kpoint,kweight, &
                kcell=kscell,kdispl=kdispl)
        else if ( fdf_block('TBT.kgrid_Monkhorst_Pack',bfdf) ) then
           call read_kgrid('TBT.kgrid_Monkhorst_Pack', &
-               N_Elec,Elecs,TRS,cell,kpoint,kweight, &
+               TRS,cell,kpoint,kweight, &
                kcell=kscell,kdispl=kdispl)
        else
           call read_kgrid('kgrid_Monkhorst_Pack', &
-               N_Elec,Elecs,TRS,cell,kpoint,kweight, &
+               TRS,cell,kpoint,kweight, &
                kcell=kscell,kdispl=kdispl)
        end if
        nkpnt = size(kweight)

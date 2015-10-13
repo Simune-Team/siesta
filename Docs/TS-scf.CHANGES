@@ -1,4 +1,68 @@
 ----------------------------------------------------
+October 13, 2015 -- Nick Papior       trunk-479---ts-scf-556
+Enabled skewed transiesta/tbtrans calculations
+
+* transiesta/tbtrans now enables the calculation of transport
+  in skewed axis systems.
+
+* When determining which cell-directions belong to the electrode
+  we prefer cell vectors which are fully parallel.
+
+  This can easily be checked by projecting and normalizing with
+  both vectors.
+
+* Bugfix for calculating the bond-length in the transport direction
+  for the electrode coordinates.
+
+* Transiesta/tbtrans also enables k-points in directions with
+  semi-inifinite directions.
+
+  The only requirement here is that each electrode with semi-infinite
+  directions with k-points in the same direction says:
+  	     "principal cell is perfect"
+
+* Clarified options output for the electrodes such that it is
+  clear that the options are related to the electrode
+  cell vectors.
+
+  Hence it should be clear that options regarding the electrode
+  are given with respect to the electrode.
+
+* Transport along any direction (skewed as well) makes it
+  tricky to reduce k-points as any direction goes.
+
+  For now we simply reduce one direction if the transport direction
+  is unique.
+
+  However, TS.kgrid_Monkhorst_pack is now enabled which sets the
+  transiesta k-points above the kgrid_Monkhorst_pack if supplied.
+
+* Improved estimation of bond-length along the transport direction
+
+* Speeded up in-core GS calculations by calculating
+  the GS directly in the required array.
+  This will speed up tbtrans calculations in particular.
+
+  When this is the case so will the needed work-size be reduced
+  by one full matrix.
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_kpoints.F90
+  Src/m_ts_options.F90
+  Src/m_ts_tdir.f90
+  Src/m_ts_trimat_invert.F90
+  Src/ts_init.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_kregions.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 October 12, 2015 -- Nick Papior       trunk-479---ts-scf-555
 Greatly speeded up the expansion algorithm (20 times)
 

@@ -275,10 +275,19 @@ contains
        ! we need a certain size for the electrode calculation.
        ! Sadly this is "pretty" big.
        if ( .not. Elecs(iEl)%out_of_core ) then
+          no = Elecs(iEl)%no_u ** 2
           if ( 'DOS-Elecs' .in. save_DATA ) then
-             pad_LHS = max(pad_LHS,Elecs(iEl)%no_u**2*9)
+             if ( Elecs(iEl)%no_u == Elecs(iEl)%no_used ) then
+                pad_LHS = max(pad_LHS,no*8)
+             else
+                pad_LHS = max(pad_LHS,no*9)
+             end if
           else
-             pad_LHS = max(pad_LHS,Elecs(iEl)%no_u**2*8)
+             if ( Elecs(iEl)%no_u == Elecs(iEl)%no_used ) then
+                pad_LHS = max(pad_LHS,no*7)
+             else
+                pad_LHS = max(pad_LHS,no*8)
+             end if
           end if
        end if
     end do
@@ -1405,6 +1414,7 @@ contains
           idx = index(Gfinv_tri,ju,iu)
           
           GFinv(idx) = Z * S(ind) - H(ind)
+          
        end do
 
        end if

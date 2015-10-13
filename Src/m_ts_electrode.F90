@@ -1505,9 +1505,9 @@ contains
 
     use alloc, only : re_alloc, de_alloc
 
-! ***********************
-! * INPUT variables     *
-! ***********************
+    ! ***********************
+    ! * INPUT variables     *
+    ! ***********************
     type(Elec), intent(inout) :: El
     integer, intent(in) :: ispin
     ! the k-point in reciprocal units of the electrode
@@ -1519,10 +1519,9 @@ contains
     ! Possibly the bulk density of states from the electrode
     real(dp), intent(out), optional :: DOS(:)
 
-! ***********************
-! * LOCAL variables     *
-! ***********************
-
+    ! ***********************
+    ! * LOCAL variables     *
+    ! ***********************
     integer  :: iq
     real(dp) :: kpt(3), kq(3)
     
@@ -1531,11 +1530,8 @@ contains
     integer :: nuo_E, nS, nuou_E, nuS, nuouT_E
 
     ! Electrode transfer and hamiltonian matrix
-    complex(dp), pointer :: H00(:) => null()
-    complex(dp), pointer :: H01(:) => null()
-    complex(dp), pointer :: S00(:) => null()
-    complex(dp), pointer :: S01(:) => null()
-    complex(dp), pointer :: zwork(:) => null()
+    complex(dp), pointer :: H00(:), H01(:), S00(:), S01(:)
+    complex(dp), pointer :: zwork(:)
     complex(dp), pointer :: zHS(:) => null()
     real(dp), allocatable :: sc_off(:,:)
 
@@ -1548,14 +1544,12 @@ contains
     integer :: i, ios, ioe, off, n_s
     logical :: is_left, final_invert
     logical :: zHS_allocated
-    logical :: same_k, calc_DOS
+    logical :: same_k, calc_DOS, same_GS
 
     ! Check input for what to do
     is_left = El%inf_dir == INF_NEGATIVE
     calc_DOS = present(DOS)
 
-    ! pre-point to zwork
-    zwork => in_zwork(:)
     zHS_allocated = .false.
 
     ! constants for this electrode
@@ -1563,6 +1557,8 @@ contains
     nS     = nuo_E ** 2
     nuou_E = El%no_used
     nuS    = nuou_E ** 2
+    ! Whether we can store directly in the GS array
+    same_GS = nS == nuS
     ! create expansion q-points (weight of q-points)
     nq     = product(El%Rep)
     ! We also need to invert to get the contribution in the
@@ -1582,18 +1578,23 @@ contains
     
     ! whether we already have the H and S set correctly, 
     ! update accordingly, it will save a bit of time, but not much
-    same_k = .true.
-    do i = 1 , 3
-       same_k = same_k .and. abs( bkpt(i) - El%bkpt_cur(i) ) < 1.e-8_dp
-    end do
-    if ( .not. same_k ) El%bkpt_cur = bkpt
-    ! In case we do not need the hamiltonian
-    ! This will be the case for non-bias points and when using bulk electrode
-    if ( .not. same_k ) same_k = .not. associated(El%HA)
+    same_k = abs( bkpt(1) - El%bkpt_cur(1) ) < 1.e-8_dp
+    same_k = same_k .and. abs( bkpt(2) - El%bkpt_cur(2) ) < 1.e-8_dp
+    same_k = same_k .and. abs( bkpt(3) - El%bkpt_cur(3) ) < 1.e-8_dp
+    if ( .not. same_k ) then
+       El%bkpt_cur = bkpt
+       ! In case we do not need the hamiltonian
+       ! This will be the case for non-bias points and when using bulk electrode
+       same_k = .not. associated(El%HA)
+    end if
 
     ! determine whether there is room enough
-    size_req(1) = (4 + 1) * nS
-    size_req(2) =    8    * nS
+    size_req(1)    = (4 + 1) * nS
+    if ( same_GS ) then
+       size_req(2) =    7    * nS
+    else
+       size_req(2) =    8    * nS
+    end if
     if ( calc_DOS ) size_req(2) = size_req(2) + nS ! 9 times
     if ( sum(size_req) <= nzwork ) then
 
@@ -1607,8 +1608,10 @@ contains
        i = i + nS
        S01 => in_zwork(i+1:i+nS)
        i = i + nS
-       GS  => in_zwork(i+1:i+nS)
-       i = i + nS
+       if ( .not. same_GS ) then
+          GS  => in_zwork(i+1:i+nS)
+          i = i + nS
+       end if
        zwork => in_zwork(i+1:nzwork)
 
     else if ( size_req(2) <= nzwork ) then
@@ -1626,7 +1629,9 @@ contains
        i = i + nS
        S01 => zHS(i+1:i+nS)
        i = i + nS
-       GS  => zHS(i+1:i+nS)
+       if ( .not. same_GS ) then
+          GS  => zHS(i+1:i+nS)
+       end if
        
        ! the work-array fits the input work-array
        zwork => in_zwork(1:nzwork)
@@ -1643,7 +1648,9 @@ contains
        i = i + nS
        S01 => in_zwork(i+1:i+nS)
        i = i + nS
-       GS  => in_zwork(i+1:i+nS)
+       if ( .not. same_GS ) then
+          GS  => in_zwork(i+1:i+nS)
+       end if
 
        call re_alloc(zHS,1,size_req(2),routine='next_GS')
        zHS_allocated = .true.
@@ -1676,13 +1683,18 @@ contains
        call kpoint_convert(El%cell,kpt,kq,-1)
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
-       call set_HS_Transfer(ispin, El, n_s,sc_off,kq, &
+       call set_HS_Transfer(ispin, El, n_s,sc_off, kq, &
             nuo_E, H00,S00,H01,S01)
        
        if ( .not. same_k ) then
           ! we only need to copy over the data if we don't already have it calculated
           call copy_over(is_left,nuo_E,H00,nuou_E,El%HA(:,:,iq),off)
           call copy_over(is_left,nuo_E,S00,nuou_E,El%SA(:,:,iq),off)
+       end if
+
+       if ( same_GS ) then
+          ! Instead of doing a copy, we store it directly
+          GS => El%GA(ios:ioe)
        end if
 
        ! calculate the contribution for this q-point
@@ -1697,9 +1709,11 @@ contains
                final_invert = final_invert)
        end if
 
-       ! Copy over surface Green function
-       ! first we need to determine the correct placement
-       call copy_over(is_left,nuo_E,GS,nuou_E,El%GA(ios:ioe),off)
+       if ( .not. same_GS ) then
+          ! Copy over surface Green function
+          ! first we need to determine the correct placement
+          call copy_over(is_left,nuo_E,GS,nuou_E,El%GA(ios:ioe),off)
+       end if
 
        ! we need to invert back as we don't need to
        ! expand. And the algorithm expects it to be in correct format

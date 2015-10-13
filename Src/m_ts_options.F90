@@ -100,7 +100,7 @@ contains
     use fdf, only : fdf_get, leqi
     use intrinsic_missing, only : VNORM, IDX_SPC_PROJ, EYE
 
-    use siesta_options, only : wmix, dDtol, dHtol
+    use siesta_options, only : dDtol, dHtol
 
     use m_ts_global_vars, only: TSmode, onlyS
     use m_ts_method, only: TS_FULL, TS_BTD, TS_MUMPS, ts_method
@@ -310,7 +310,8 @@ contains
 
     use fdf, only : fdf_get, fdf_obsolete, fdf_deprecated, leqi
     use parallel, only : IONode
-    use intrinsic_missing, only : IDX_SPC_PROJ, EYE
+    use intrinsic_missing, only : IDX_SPC_PROJ, EYE, VNORM
+    use intrinsic_missing, only : VEC_PROJ_SCA
 
     use m_os, only : file_exist
 
@@ -340,8 +341,8 @@ contains
 ! * LOCAL variables *
 ! *******************
     integer :: i, j
-    real(dp) :: tmp33(3,3)
-    logical :: err
+    real(dp) :: tmp33(3,3), rtmp
+    logical :: err, bool
     character(len=200) :: chars, c
     type(ts_mu) :: tmp_mu
 
@@ -521,16 +522,30 @@ contains
        i = Elecs(1)%pvt(Elecs(1)%t_dir)
        j = Elecs(2)%pvt(Elecs(2)%t_dir)
 
-       if ( i == j ) then
-          ! The transport direction for the electrodes are the same...
-          ts_tidx = i
+       bool = i == j
 
+       ! For a single transport direction to be true,
+       ! both the projections _has_ to be 1, exactly!
+       rtmp = VEC_PROJ_SCA(cell(:,i), Elecs(1)%cell(:,Elecs(1)%t_dir))
+       rtmp = rtmp / VNORM(Elecs(1)%cell(:,Elecs(1)%t_dir))
+       bool = bool .and. abs(abs(rtmp) - 1._dp) < 1.e-5_dp
+       rtmp = VEC_PROJ_SCA(cell(:,j), Elecs(2)%cell(:,Elecs(2)%t_dir))
+       rtmp = rtmp / VNORM(Elecs(2)%cell(:,Elecs(2)%t_dir))
+       bool = bool .and. abs(abs(rtmp) - 1._dp) < 1.e-5_dp
+       
+       if ( bool ) then
+          
+          ! The transport direction for the electrodes are the same...
+          ! And fully encompassed! We have a single transport
+          ! direction.
+          ts_tidx = i
+          
           ! Calculate Cartesian transport direction
           call eye(3,tmp33)
-          ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx))
-
+          ts_tdir = IDX_SPC_PROJ(tmp33,cell(:,ts_tidx),mag=.true.)
+          
        else
-
+          
           ! In case we have a skewed transport direction
           ! we have some restrictions...
           ts_tidx = - N_Elec
@@ -1002,8 +1017,9 @@ contains
     integer, intent(in) :: Nmove
 
     ! Local variables
-    integer :: i, j, iEl, idx, idx1, idx2, itmp3(3)
-    real(dp) :: rtmp, tmp3(3), tmp33(3,3), min_bond, min_t_bond
+    integer :: i, j, k, iEl, idx, idx1, idx2, itmp3(3)
+    real(dp) :: rtmp, tmp3(3), tmp33(3,3), bdir(2)
+    real(dp) :: p(3), min_bond, min_t_bond, bond30
     logical :: err, warn, ltmp
 
     if ( .not. IONode ) return
@@ -1204,35 +1220,50 @@ contains
     ! Calculate minimum electrode bond-length along the transport
     ! direction. This is used to ensure correct spacing
     min_bond = huge(1._dp)
-    min_t_bond = huge(1._dp)
     do iEl = 1 , N_Elec
-       ! Get the system unit-cell transport direction
-       tmp33 = Elecs(iEl)%cell
-       tmp3 = tmp33(:,Elecs(iEl)%t_dir)
-       tmp33(:,Elecs(iEl)%t_dir) = tmp3 / VNORM(tmp3)
+
+       ! Get atomic indices
        idx1 = Elecs(iEl)%idx_a
        idx2 = idx1 + TotUsedAtoms(Elecs(iEl)) - 1
+       k = Elecs(iEl)%t_dir
+
+       ! Short-hand for the electrode unit-cell
+       tmp33 = Elecs(iEl)%cell
+              
        do j = idx1 , idx2 - 1
-          ! Project the coordinate onto the transport direction
           do i = j + 1 , idx2
              tmp3 = xa(:,i) - xa(:,j)
              min_bond = min(min_bond,VNORM(tmp3))
           end do
        end do
+
+       ! Get bond-length along transport direction
+       ! sin(30^o) = 1/2
+       bond30 = min_bond * 0.45_dp
+       min_t_bond = min_bond
+       
        do j = idx1 , idx2 - 1
+          ! Get current coordinate
+          p(:) = xa(:,j)
+
           ! Project the coordinate onto the transport direction
           do i = j + 1 , idx2
-             tmp3 = VEC_PROJ(tmp33(:,Elecs(iEl)%t_dir),xa(:,i) - xa(:,j))
+             tmp3 = xa(:,i) - p(:)
+             rtmp = abs(VEC_PROJ_SCA(tmp33(:,k),tmp3))
              ! As projecting onto a direction may lead the
              ! bond-length to be zero, we require the minimum
              ! bond-length to be at least 30^o of the correct bond-length
-             if ( VNORM(tmp3) < 0.5_dp * min_bond ) cycle
-             min_t_bond = min(min_t_bond,VNORM(tmp3))
+             if ( rtmp < bond30 ) cycle
+             if ( rtmp < min_t_bond ) then
+                min_t_bond = rtmp
+             end if
           end do
+          
        end do
+       
     end do
     
-    ! a transiesta calculation requires that all atoms
+    ! A transiesta calculation requires that all atoms
     ! are within the unit-cell.
     ! Otherwise the electrostatic potential will definitely for V /= 0
     ! be malplaced.
@@ -1242,19 +1273,26 @@ contains
 
     do i = 1 , na_u
        if ( a_isBuffer(i) ) cycle
+       
        ! Check the index
        do j = 1 , 3
           itmp3(j) = floor( dot_product(xa(:,i),tmp33(:,j)) )
        end do
+
        select case ( ts_tidx )
        case ( 1, 2, 3 )
+          
           ! Only check the transport direction
           ! Note that we have projected onto the unit-cell
           ! vector, hence tidx and not tdir
           if ( itmp3(ts_tidx) /= 0 ) then
+             write(*,'(i0,''('',i0,''='',i0,'')'',tr1)',advance='no')&
+                  i,ts_tidx,itmp3(ts_tidx)
              ltmp = .true.
           end if
+
        case default
+          
           do j = 1 , 3
              if ( itmp3(j) /= 0 ) then
                 write(*,'(i0,''('',i0,''='',i0,'')'',tr1)',advance='no')&
@@ -1262,10 +1300,13 @@ contains
                 ltmp = .true.
              end if
           end do
+          
        end select
+       
     end do
     if ( ltmp ) then
-       write(*,'(/a)') '*** Device atomic coordinates are not inside unit-cell.'
+       write(*,'(/a)')'atom(cell-dir=neighbour-cell)'
+       write(*,'(a)') '*** Device atomic coordinates are not inside unit-cell.'
        write(*,'(a)') '*** This is a requirement for bias calculations'
        write(*,'(a)') '    as the Poisson equation cannot be correctly handled'
        write(*,'(a)') '    due to inconsistencies with the grid and atomic coordinates'
@@ -1280,6 +1321,7 @@ contains
     end if
 
     if ( ts_tidx < 1 ) then
+
        write(*,'(a)') '*** TranSIESTA semi-infinite directions are individual ***'
        write(*,'(a)') '*** It is heavily adviced to have any electrodes with no &
             &periodicity'
@@ -1305,39 +1347,71 @@ contains
        
        ! If the distance is less than 0.5 of the minimal bond length we have
        ! the atomic core "close" to the Hartree fix plane, notify the user of this
-       rtmp = 0.5 * min_t_bond
-       ltmp = .false.
+       ! Get transport cell vector
        tmp3 = cell(:,ts_tidx)
-       tmp3 = tmp3 / VNORM(tmp3)
+
+       ! bond30 will denote the shift needed for the
+       ! placement in the middle of the cell
+       bdir(1) = huge(1._dp)
+       bdir(2) = 0._dp
+       
+       ltmp = .false.
        do i = 1 , na_u
+          
           ! skip buffer atoms
           if ( a_isBuffer(i) ) cycle
-          ltmp = abs( VEC_PROJ_SCA(tmp3,xa(:,i)) ) < rtmp
-          if ( ltmp ) exit
+
+          ! Project the coordinate onto the transport cell vector
+          rtmp = VEC_PROJ_SCA(tmp3,xa(:,i))
+          
+          ! if it below the cell we have to move it into the
+          ! unit-cell.
+          ! Above we check that the coordinate is within the
+          ! cell so rtmp >= 0.
+          ! Even if it is negative this construct will
+          ! shift it out of the as we use max and -rtmp
+          bdir(1) = min(bdir(1),rtmp)
+          bdir(2) = max(bdir(2),rtmp)
+          
        end do
-       if ( ltmp ) then
+       ! Length of transport direction cell vector
+       rtmp = vnorm(tmp3)
+       tmp3 = tmp3 / rtmp
+       if ( abs(bdir(2) - bdir(1) - rtmp) < 1.e-5_dp ) then
+          ! special case for skewed axis with exact periodicity
+          ! this will for instance happen for graphene
+       end if
+
+       ! Correct the bond-lengths along the transport direction
+       ! This is the "lower" cell boundary.
+       ! We want it to be at least 1/2 a bond-length from the boundary
+       bdir(1) = bdir(1) - min_t_bond * 0.5_dp
+       ! Correct bdir(2) to the cell distance
+       bdir(2) = bdir(2) + min_t_bond * 0.5_dp - rtmp
+       if ( bdir(1) < - bdir(2) ) then
+          rtmp = - bdir(1)
+       else
+          rtmp = - bdir(2)
+       end if
+       ! As the Hartree potential is fixed at the lower boundary
+       ! we only ensure that one
+       rtmp = -bdir(1)
+       
+       ! If the shift is more than 0.01 \AA we tell the user
+       if ( abs(rtmp) > 0.01_dp * Ang ) then
           write(*,'(a,f9.5,a)')'You can with benefit move all atoms &
-               &in the transport direction by ',rtmp/Ang,' Ang'
-          write(*,'(2a)') 'This removes atoms from the constant &
-               &potential plane. ', &
-               'See %block AtomicCoordinatesOrigin for easy shifts.'
+               &in the transport direction using this:'
+          write(*,'(a)') 'If you already have AtomicCoordinatesFormat, add them'
+          write(*,'(tr1,a)') 'AtomicCoordinatesFormat Ang'
+          write(*,'(tr1,a)') '%block AtomicCoordinatesOrigin'
+          write(*,'(tr1,3(tr2,f12.4))') tmp3 * rtmp / Ang
+          write(*,'(tr1,a)') '%endblock AtomicCoordinatesOrigin'
+          write(*,'(a)') 'This removes atoms from the constant &
+               &potential plane.'
           warn = .true.
        end if
     end if
-
     
-    ! Check that the unitcell does not extend into the transport direction
-    do i = 1 , 3
-       if ( i == ts_tidx .or. ts_tidx <= 0 ) cycle
-       if ( abs(dot_product(cell(:,i),cell(:,ts_tidx))) > 1e-7_dp ) then
-          write(*,*) "ERROR: Unit cell has the electrode extend into the &
-               &transport direction."
-          write(*,*) dot_product(cell(:,i),cell(:,ts_tidx))
-          write(*,*) "Please change the geometry."
-          err = .true.
-       end if
-    end do
-
     ! If the user has requested to initialize using transiesta
     ! and the user does not utilize the bulk DM, they should be
     ! warned
@@ -1350,6 +1424,7 @@ contains
 
     ! warn the user about suspicous work regarding the electrodes
     do i = 1 , N_Elec
+
        idx1 = Elecs(i)%idx_a
        idx2 = idx1 + TotUsedAtoms(Elecs(i)) - 1
 

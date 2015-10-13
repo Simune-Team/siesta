@@ -704,16 +704,18 @@ contains
     integer :: cum
 
     cum = nrows_g(M,p)
-
+    eIdx = no * cum - 1
+    
     ! we are requesting the last column,
     ! hence we order the matrix in from the
     ! beginning...
-    do eIdx = p + 1 , parts(M)
-       cum = cum + nrows_g(M,eIdx)
+    do sIdx = p + 1 , parts(M)
+       cum = cum + nrows_g(M,sIdx)
     end do
+    
     ! This is the number of elements already occupied
-    sIdx = elements(M,all=.true.) - no * cum + 1
-    eIdx = sIdx + no * nrows_g(M,p) - 1
+    sIdx = elements(M, all=.true.) - no * cum + 1
+    eIdx = sIdx + eIdx
 
   end subroutine TriMat_Bias_idxs
 

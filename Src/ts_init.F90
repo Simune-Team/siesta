@@ -92,11 +92,7 @@ contains
     call read_ts_elec( ucell, na_u, xa, lasto )
 
     ! Read in the k-points
-    if ( TSmode .and. .not. onlyS ) then
-       call setup_ts_kpoint_grid( ucell , Elecs )
-    else
-       call setup_ts_kpoint_grid( ucell )
-    end if
+    call setup_ts_kpoint_grid( ucell )
 
     ! Read after electrode stuff
     call read_ts_after_Elec( ucell, nspin, na_u, xa, lasto, &

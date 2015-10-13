@@ -58,7 +58,7 @@ module m_ts_kpoints
 
 contains
 
-  subroutine setup_ts_scf_kscell( cell, Elecs )
+  subroutine setup_ts_scf_kscell( cell )
 
 ! ***************** INPUT **********************************************
 ! real*8  cell(3,3)  : Unit cell vectors in real space cell(ixyz,ivec)
@@ -86,28 +86,30 @@ contains
     use mpi_siesta
 #endif
 
-    use m_ts_electype, only : Elec
+    use m_ts_tdir, only: ts_tidx
     use m_ts_global_vars, only : TSmode
-    use intrinsic_missing, only : SPC_PROJ, VEC_PROJ, VNORM
     
     implicit          none
 
-! Passed variables
+    ! Passed variables
     real(dp), intent(in)   :: cell(3,3)
-    type(Elec), intent(in), optional :: Elecs(:)
 
-! Internal variables
-    integer :: i, j,  factor(3,3), expansion_factor
-    real(dp) :: scmin(3,3),  vmod, cutoff
+    ! Internal variables
+    integer :: i, j, factor(3,3), expansion_factor
+    real(dp) :: scmin(3,3), vmod, cutoff
     real(dp) :: ctransf(3,3)
 
     type(block_fdf)            :: bfdf
     type(parsed_line), pointer :: pline
 
-    real(dp) :: p(3), contrib
+    logical :: bool
     real(dp), parameter :: defcut = 0.0_dp
 
-    if ( fdf_block('kgrid_Monkhorst_Pack',bfdf) ) then
+    bool = fdf_block('TS.kgrid_Monkhorst_Pack',bfdf)
+    if ( .not. bool ) &
+         bool = fdf_block('kgrid_Monkhorst_Pack',bfdf)
+       
+    if ( bool ) then
        ts_user_requested_mp = .true.
        do i = 1,3
           if (fdf_bline(bfdf,pline)) then
@@ -125,6 +127,7 @@ contains
           endif
        enddo
        ts_firm_displ = .true.
+       
     else
 
        if ( IONode .and. TSmode ) then
@@ -167,51 +170,33 @@ contains
     ! This means that we truncate the k-points in the transport direction.
     ! However, if we are dealing with an electrode calculation we simply allow it
     ! to have the same cell (the check made will disregard the transport directions k-points)
-    if ( TSmode .and. present(Elecs) ) then
-       do j = 1 , size(Elecs)
-          ! project the electrode transport direction onto
-          ! the corresponding unit-cell direction
-          p = SPC_PROJ(cell,Elecs(j)%cell(:,Elecs(j)%t_dir))
-          ! See which unitcell direction has the highest contribution
-          do i = 1 , 3 
-             ! project the unit-cell vector onto each cell component
-             contrib = VNORM(VEC_PROJ(cell(:,i),p))
-             if ( contrib > 1.e-7_dp ) then ! TODO electrode k-points
-                ! the contribution along this vector is too much
-                ! to disregard the elongation along this
-                ! direction.
-                ! We *MUST* kill all k-points in this direction
-                ts_kscell(:,i) = 0
-                ts_kscell(i,:) = 0
-                ts_kscell(i,i) = 1
-                ts_kdispl(i)   = 0._dp
-             end if
-          end do
-       end do
+    if ( TSmode .and. ts_tidx > 0 ) then
+       i = ts_tidx
+       ts_kscell(:,i) = 0
+       ts_kscell(i,:) = 0
+       ts_kscell(i,i) = 1
+       ts_kdispl(i)   = 0._dp
     end if
     
   end subroutine setup_ts_scf_kscell
   
-  subroutine setup_ts_kpoint_grid( ucell , Elecs )
+  subroutine setup_ts_kpoint_grid( ucell )
     
-! SIESTA Modules
+    ! SIESTA Modules
     USE fdf, only       : fdf_defined
     USE m_find_kgrid, only : find_kgrid
     USE parallel, only  : IONode
     USE precision, only : dp       
 
-    use m_ts_electype
-
-! Local Variables
+    ! Local Variables
     real(dp), intent(in)   :: ucell(3,3)
-    type(Elec), intent(in), optional :: Elecs(:)
 
     if (ts_scf_kgrid_first_time) then
 
        nullify(ts_kweight,ts_kpoint)
        ts_spiral = fdf_defined('SpinSpiral')
 
-       call setup_ts_scf_kscell(ucell, Elecs=Elecs)
+       call setup_ts_scf_kscell(ucell)
 
        ts_scf_kgrid_first_time = .false.
 
@@ -219,7 +204,7 @@ contains
        if ( ts_user_requested_mp    ) then
           ! no need to set up the kscell again
        else
-          call setup_ts_scf_kscell(ucell, Elecs=Elecs)
+          call setup_ts_scf_kscell(ucell)
        endif
     endif
 
