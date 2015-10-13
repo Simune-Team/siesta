@@ -1,4 +1,19 @@
 ------------------------------------------------------------
+October 13, 2015  A. Garcia        trunk-464--pexsi-v0.8-5
+Refine the expert interface for spinless case (work in progress)
+
+Some rough edges still remaining:
+
+- Treatment of the "large jump" in the Newton method
+  (diagnosis criteria and re-bracketing for inertia-count)
+  
+- Centralization and documentation of options.
+
+modified:
+  Src/m_pexsi_driver.F90
+  Src/pexsi-lit.org
+
+------------------------------------------------------------
 October 11, 2015  A. Garcia        trunk-464--pexsi-v0.8-4
 Use an expert interface instead of the simple driver
 

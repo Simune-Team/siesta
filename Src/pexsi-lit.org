@@ -9,6 +9,8 @@
 The /plan/ feature allows, among other things, the re-use of
 factorization information. 
 
+** TODO Maybe integrate the plan handling in the =pexsi_solver= module.
+
 #+BEGIN_SRC f90 :noweb yes :tangle m_pexsi.f90
   module m_pexsi
   use precision, only: dp
@@ -102,7 +104,7 @@ end subroutine get_row_col
 #+END_SRC
 
 
-* The pexsi_solver code
+* The PEXSI solver code
 
 ** Main structure
 
@@ -123,27 +125,21 @@ module m_pexsi_solver
 CONTAINS
 
 <<routine-header>>
-!
 <<routine-variables>>
-!
+!  --------  for serial compilation
 #ifndef MPI
     call die("PEXSI needs MPI")
 #else
 <<define-communicators>>
 <<re-distribute-matrices>>
-
 <<set-tolerance>>
-<<initialize-plan-at-first-step>>
-
 <<set-options>>
-
+<<initialize-plan-at-first-step>>
 <<load-hs-matrices>>
 <<factorization>>
-
 <<call-driver>>
 <<get-matrices-and-energy>>
 <<copy-to-siesta-side>>
-
 <<clean-up>>
 #endif
 
@@ -228,52 +224,97 @@ external         :: timer
 
 ** Define communicators
 
-This section is odd-placed but necessary. FIXME.
+=World_Comm=, which is in principle set to Siesta's copy of
+=MPI_Comm_World=, is the global communicator.
+
+Some variables need to be broadcast since they were assigned only
+by the /SIESTA worker/  subset of nodes. They are renamed for clarity.
+
+=ispin= is an oddity here, but in fact it is referenced only by
+/SIESTA workers/. To be reconsidered later.
+
 #+BEGIN_SRC f90 :noweb-ref routine-variables
-integer          :: norbs, scf_step
-real(dp)         :: delta_Ef
-integer          :: World_Comm
+integer          :: World_Comm, mpirank
+!
+real(dp)  :: temperature, numElectronExact
+integer   :: norbs, scf_step
+real(dp)  :: delta_Ef
+!
+integer  :: ispin
 #+END_SRC
 
 #+BEGIN_SRC f90 :noweb-ref define-communicators
-! "SIESTA_Worker" means a processor which is in the Siesta subset.
 !
+!  Set and Find rank in global communicator
+!
+World_Comm = true_MPI_Comm_World
+call mpi_comm_rank( World_Comm, mpirank, ierr )
+
 ! NOTE:  fdf calls will assign values to the whole processor set,
 ! but some other variables will have to be re-broadcast (see examples
 ! below)
 
-! These variables need to be broadcast since they were assigned only
-! by the SIESTA worker nodes
-
-World_Comm = true_MPI_Comm_World
-
 if (SIESTA_worker) then
+
+   call timer("pexsi", 1)
+
+   ispin = 1
+   if (nspin /=1) then
+      call die("Spin polarization not yet supported in PEXSI")
+   endif
+
    ! rename some intent(in) variables
+
    norbs = no_u
    scf_step = iscf
    delta_Ef = delta_Efermi
+   numElectronExact = qtot 
+
+   ! Note that the energy units for the PEXSI interface are arbitrary, but
+   ! H, the interval limits, and the temperature have to be in the
+   ! same units. Siesta uses Ry units.
+
+   temperature      = temp
+
+   if (mpirank==0) write(6,"(a,f10.2)") &
+               "Electronic temperature (K): ", temperature/Kelvin
 endif
+!
 call broadcast(norbs,comm=World_Comm)
 call broadcast(scf_step,comm=World_Comm)
 call broadcast(delta_Ef,comm=World_Comm)
-! Used by host association, but set only in Siesta side
+call broadcast(numElectronExact,World_Comm)
+call broadcast(temperature,World_Comm)
+! Imported from modules, but set only in Siesta side
 call broadcast(prevDmax,comm=World_Comm)
 call broadcast(dDtol,comm=World_Comm)
 #+END_SRC
 
+Now we need to define the Siesta distribution object and the
+communicator and distribution object for the first team of PEXSI
+workers, for the purposes of re-distribution of the relevant
+matrices. The PEXSI library takes care of further redistribution among
+teams.
+
+Note that the first team of PEXSI workers starts at the root
+node. This means that there is overlap between the Siesta workers and
+the PEXSI workers. While this is in principle more economical (and
+convenient for information exchange), it can pose problems later on.
+
+I will leave it like that, as I do not yet know how to move
+information among disjoint communicators (use of an /intercommunicator/?)
+
 #+BEGIN_SRC f90 :noweb-ref routine-variables
-integer :: PEXSI_Comm
 integer :: PEXSI_Group, World_Group
-integer  :: mpirank, numNodesTotal, ierr
-integer, save  :: npPerPole
+integer :: PEXSI_Comm
+integer :: numNodesTotal, ierr
+integer :: npPerPole
 logical  :: PEXSI_worker
 type(Dist)   :: dist1, dist2
 integer  :: pbs
 #+END_SRC
 
 #+BEGIN_SRC f90 :noweb-ref define-communicators
-!  Find rank in global communicator
-call mpi_comm_rank( World_Comm, mpirank, ierr )
 call mpi_comm_size( World_Comm, numNodesTotal, ierr )
 
 call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
@@ -292,45 +333,17 @@ call MPI_Comm_create(World_Comm, PEXSI_Group,&
 
 PEXSI_worker = (mpirank < npPerPole)
 
+! PEXSI blocksize 
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
 #+end_src
 
 
-
 ** Re-distribute matrices
 
-Two disjoint sections here. FIXME.
-#+BEGIN_SRC f90 :noweb-ref routine-variables
-real(dp) :: temperature, numElectronExact
-integer  :: ispin
-#+END_SRC
-#+BEGIN_SRC f90 :noweb-ref re-distribute-matrices
-
-! This section does not belong here
-if (SIESTA_worker) then
-   call timer("pexsi", 1)
-
-   ispin = 1
-   if (nspin /=1) then
-      call die("Spin polarization not yet supported in PEXSI")
-   endif
-
-   numElectronExact = qtot 
-
-   ! Note that the energy units for the PEXSI interface are arbitrary, but
-   ! H, the interval limits, and the temperature have to be in the
-   ! same units. Siesta uses Ry units.
-
-   temperature      = temp
-
-   if (mpirank==0) write(6,"(a,f10.2)") &
-               "Electronic temperature (K): ", temperature/Kelvin
-
-endif
-call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
-call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
-#+end_src
+This is slightly unseemly, but it works. The =aux_matrix= derived
+types are used to store and retrieve the matrices in either side. The
+code is in external auxiliary modules.
 
 #+BEGIN_SRC f90 :noweb-ref routine-variables
 type(aux_matrix) :: m1, m2
@@ -392,36 +405,12 @@ call memory_all("after setting up H+S for PEXSI",World_comm)
 
 #+END_SRC
 
-** Load H and S matrices
-
-In this version H and S are symmetric. We associate them with the plan
-(I really do not know very well what happens behind the
-scenes. Presumably no copy is made.)
-
-#+BEGIN_SRC f90 :noweb-ref load-hs-matrices
-call f_ppexsi_load_real_symmetric_hs_matrix(&
-      plan,&
-      options,&
-      nrows,&
-      nnz,&
-      nnzLocal,&
-      numColLocal,&
-      colptrLocal,&
-      rowindLocal,&
-      HnzvalLocal,&
-      isSIdentity,&
-      SnzvalLocal,&
-      info) 
-
-call check_info(info,"load_real_sym_hs_matrix")
-
-#+END_SRC
-
-
 ** Set tolerance 
-
 These are wrapped in a test for =first_call=. Some other operations
-could be done in that case.
+could be done in that case. Maybe we can remove the =save='d character
+of some variables (for example, moving the setting of the tolerances outside the
+=first_call= block). Even the bracket and \mu values could maybe be
+passed as arguments.
 
 #+BEGIN_SRC f90 :noweb-ref routine-variables
 real(dp), save :: PEXSINumElectronToleranceMin, &
@@ -469,17 +458,6 @@ real(dp)       :: on_the_fly_tolerance
   endif
 #+END_SRC
 
-
-** Initialize plan at first scf step
-#+BEGIN_SRC f90 :noweb-ref initialize-plan-at-first-step
-
-  !  New interface.
-  if (scf_step == 1) then
-     call pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
-  endif
-
-
-#+END_SRC
 ** Set options
 
 We use the options interface to get a template with default values,
@@ -569,6 +547,40 @@ real(dp)               :: pexsi_temperature, two_kT
 
 #+END_SRC
 
+** Initialize plan at first scf step
+#+BEGIN_SRC f90 :noweb-ref initialize-plan-at-first-step
+
+  !  New interface.
+  if (scf_step == 1) then
+     call pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
+  endif
+
+
+#+END_SRC
+** Load H and S matrices
+
+In this version H and S are symmetric. We associate them with the plan
+(I really do not know very well what happens behind the
+scenes. Presumably no copy is made.)
+
+#+BEGIN_SRC f90 :noweb-ref load-hs-matrices
+call f_ppexsi_load_real_symmetric_hs_matrix(&
+      plan,&
+      options,&
+      nrows,&
+      nnz,&
+      nnzLocal,&
+      numColLocal,&
+      colptrLocal,&
+      rowindLocal,&
+      HnzvalLocal,&
+      isSIdentity,&
+      SnzvalLocal,&
+      info) 
+
+call check_info(info,"load_real_sym_hs_matrix")
+
+#+END_SRC
 
 ** Factorization
 
@@ -694,7 +706,6 @@ integer :: numTotalInertiaIter
   call timer("pexsi-solver", 2)
 
 #+END_SRC
-
 
 ** Get output matrices and compute energies
 

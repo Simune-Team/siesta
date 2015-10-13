@@ -53,24 +53,25 @@ use m_pexsi, only: plan, pexsi_initialize_scfloop
   real(dp), intent(out)        :: Entropy ! Entropy/k, dimensionless
   real(dp), intent(in)         :: temp   ! Electronic temperature
   real(dp), intent(in)         :: delta_Efermi  ! Estimated shift in E_fermi
-!
 integer        :: ih, i
 integer        :: info
 logical        :: write_ok
 !------------
 external         :: timer
-integer          :: norbs, scf_step
-real(dp)         :: delta_Ef
-integer          :: World_Comm
-integer :: PEXSI_Comm
+integer          :: World_Comm, mpirank
+!
+real(dp)  :: temperature, numElectronExact
+integer   :: norbs, scf_step
+real(dp)  :: delta_Ef
+!
+integer  :: ispin
 integer :: PEXSI_Group, World_Group
-integer  :: mpirank, numNodesTotal, ierr
-integer, save  :: npPerPole
+integer :: PEXSI_Comm
+integer :: numNodesTotal, ierr
+integer :: npPerPole
 logical  :: PEXSI_worker
 type(Dist)   :: dist1, dist2
 integer  :: pbs
-real(dp) :: temperature, numElectronExact
-integer  :: ispin
 type(aux_matrix) :: m1, m2
 integer :: nrows, nnz, nnzLocal, numColLocal
 integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
@@ -100,35 +101,54 @@ integer :: numTotalInertiaIter
 real(dp)       :: bs_energy, eBandH, free_bs_energy
 real(dp)       :: buffer1
 real(dp), save :: previous_pexsi_temperature
-!
+!  --------  for serial compilation
 #ifndef MPI
     call die("PEXSI needs MPI")
 #else
-! "SIESTA_Worker" means a processor which is in the Siesta subset.
 !
+!  Set and Find rank in global communicator
+!
+World_Comm = true_MPI_Comm_World
+call mpi_comm_rank( World_Comm, mpirank, ierr )
+
 ! NOTE:  fdf calls will assign values to the whole processor set,
 ! but some other variables will have to be re-broadcast (see examples
 ! below)
 
-! These variables need to be broadcast since they were assigned only
-! by the SIESTA worker nodes
-
-World_Comm = true_MPI_Comm_World
-
 if (SIESTA_worker) then
+
+   call timer("pexsi", 1)
+
+   ispin = 1
+   if (nspin /=1) then
+      call die("Spin polarization not yet supported in PEXSI")
+   endif
+
    ! rename some intent(in) variables
+
    norbs = no_u
    scf_step = iscf
    delta_Ef = delta_Efermi
+   numElectronExact = qtot 
+
+   ! Note that the energy units for the PEXSI interface are arbitrary, but
+   ! H, the interval limits, and the temperature have to be in the
+   ! same units. Siesta uses Ry units.
+
+   temperature      = temp
+
+   if (mpirank==0) write(6,"(a,f10.2)") &
+               "Electronic temperature (K): ", temperature/Kelvin
 endif
+!
 call broadcast(norbs,comm=World_Comm)
 call broadcast(scf_step,comm=World_Comm)
 call broadcast(delta_Ef,comm=World_Comm)
-! Used by host association, but set only in Siesta side
+call broadcast(numElectronExact,World_Comm)
+call broadcast(temperature,World_Comm)
+! Imported from modules, but set only in Siesta side
 call broadcast(prevDmax,comm=World_Comm)
 call broadcast(dDtol,comm=World_Comm)
-!  Find rank in global communicator
-call mpi_comm_rank( World_Comm, mpirank, ierr )
 call mpi_comm_size( World_Comm, numNodesTotal, ierr )
 
 call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
@@ -147,32 +167,9 @@ call MPI_Comm_create(World_Comm, PEXSI_Group,&
 
 PEXSI_worker = (mpirank < npPerPole)
 
+! PEXSI blocksize 
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
-
-! This section does not belong here
-if (SIESTA_worker) then
-   call timer("pexsi", 1)
-
-   ispin = 1
-   if (nspin /=1) then
-      call die("Spin polarization not yet supported in PEXSI")
-   endif
-
-   numElectronExact = qtot 
-
-   ! Note that the energy units for the PEXSI interface are arbitrary, but
-   ! H, the interval limits, and the temperature have to be in the
-   ! same units. Siesta uses Ry units.
-
-   temperature      = temp
-
-   if (mpirank==0) write(6,"(a,f10.2)") &
-               "Electronic temperature (K): ", temperature/Kelvin
-
-endif
-call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
-call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
 if (SIESTA_worker) then
    m1%norbs = norbs
    m1%no_l  = no_l
@@ -220,7 +217,6 @@ call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
 
 call memory_all("after setting up H+S for PEXSI",World_comm)
 
-
 if (first_call) then
 
 ! Initial guess of chemical potential and containing interval
@@ -255,14 +251,6 @@ else
    PEXSINumElectronTolerance =  fdf_get("PEXSI.num-electron-tolerance",&
                                         on_the_fly_tolerance)
 endif
-
-!  New interface.
-if (scf_step == 1) then
-   call pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
-endif
-
-
-
 
 !
 call f_ppexsi_set_default_options( options )
@@ -326,6 +314,12 @@ energyWidthInertiaTolerance =  &
              options%muInertiaTolerance,"Ry")
 
 
+!  New interface.
+if (scf_step == 1) then
+   call pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
+endif
+
+
 call f_ppexsi_load_real_symmetric_hs_matrix(&
       plan,&
       options,&
@@ -358,7 +352,6 @@ if (scf_step == 1) then
    call check_info(info,"symbolic_factorize_complex_symmetric_matrix")
 endif
 options%isSymbolicFactorize = 0 ! We do not need it anymore
-
 !
 numTotalInertiaIter = 0
 
@@ -574,7 +567,6 @@ if (SIESTA_worker) then
    call timer("pexsi", 2)
 
 endif
-
 
 
 call delete(dist1)
