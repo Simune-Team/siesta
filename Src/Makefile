@@ -164,7 +164,7 @@ OBJS =  automatic_cell.o atom_options.o \
         class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o\
         m_dminim.o m_zminim.o \
         m_getopts.o f2kcli.o \
-        m_svd.o m_matio.o m_interpolate.o\
+        m_svd.o m_matio.o\
         rusage.o memory_snapshot.o compute_ebs_shift.o memory_all.o
 #--------------------------------------------------------------
 # FoX whatnot

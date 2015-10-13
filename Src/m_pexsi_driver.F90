@@ -101,12 +101,13 @@ integer  :: numMinICountShifts, numNodesTotal, numShift
 
 real(dp) :: pexsi_temperature, two_kT
 
-real(dp) :: PEXSINumElectronToleranceMin, &
+real(dp), save :: PEXSINumElectronToleranceMin, &
             PEXSINumElectronToleranceMax, &
             PEXSINumElectronTolerance
 integer ::  nInertiaRounds, inertiaMaxIter
-
+real(dp), save :: energyWidthInertiaTolerance
 real(dp) :: muInertia, deltaMu
+real(dp) :: muLower, muUpper
 
 real(dp) :: free_bs_energy
 
@@ -321,7 +322,7 @@ options%temperature = pexsi_temperature
 options%numElectronPEXSITolerance = PEXSINumElectronTolerance
 
 ! Stop inertia count if mu has not changed much from iteration to iteration.
-! Also used (doubled) for energy-width criterion
+
 options%muInertiaTolerance =  &
      fdf_get("PEXSI.inertia-mu-tolerance",0.05_dp,"Ry")
 
@@ -335,6 +336,13 @@ options%muInertiaExpansion =  &
 ! Maximum number of iterations for computing the inertia                                          
 ! in a given scf step (until a proper bracket is obtained)                                        
 inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
+
+! Energy-width termination tolerance for inertia-counting
+! By default, it is the same as the mu tolerance, to match
+! the criterion in the simple DFT driver
+energyWidthInertiaTolerance =  &
+     fdf_get("PEXSI.inertia-energy-width-tolerance", &
+             options%muInertiaTolerance,"Ry")
 
 
 call f_ppexsi_load_real_symmetric_hs_matrix(&
@@ -409,7 +417,10 @@ endif
 numTotalPEXSIIter = 0
 solver_loop: do
 
-   if (numTotalPEXSIIter > 10 ) call die("too many PEXSI iterations")
+   if (numTotalPEXSIIter > options%maxPEXSIIter ) then
+      ! Maybe do not die, and trust further DM normalization to get out of this...
+      call die("too many PEXSI iterations")
+   endif
 
    if(mpirank == 0) then
       write (6,"(a,f9.4,a,f9.5)") 'Computing DM for mu(eV): ', mu/eV, &
@@ -439,13 +450,16 @@ solver_loop: do
    if (abs(numElectronPEXSI-numElectronExact) > PEXSINumElectronTolerance) then
 
       deltaMu = - (numElectronPEXSI - numElectronExact) / numElectronDrvMuPEXSI
+      ! The simple DFT driver uses the size of the jump to flag problems:
+      ! if (abs(deltaMu) > options%muPEXSISafeGuard) then
 
       if ( ((mu + deltaMu) < muMin0) .or. ((mu + deltaMu) > muMax0) ) then
          if (mpirank ==0) then
             write(6,"(a,f9.3)") "DeltaMu: ", deltaMu, " is too big. Falling back to IC"
          endif
 
-         ! Possibly choose a new bracket
+         ! We must choose a new starting bracket, otherwise we will fall into the same
+         ! cycle of values
          call do_inertia_count(plan,muMin0,muMax0,muInertia)
          mu = muInertia
          cycle solver_loop
@@ -704,11 +718,17 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
       enddo
       muMaxInertia = shiftList(imax)
       muMinInertia = shiftList(imin)
-      muInertia = 0.5_dp * (muMaxInertia + muMinInertia)
+      
+      ! Get the band edges by interpolation
+      muLower = interpolate(inertiaList,shiftList,numElectronExact-eps_inertia)
+      muUpper = interpolate(inertiaList,shiftList,numElectronExact+eps_inertia)
+      
+      muInertia = 0.5_dp * (muUpper + muLower)
       
       if (mpirank == 0) then
          write (*,*) 'imin, imax: ', imin, imax
          write (*,*) 'muMinInertia, muMaxInertia: ', muMinInertia/eV, muMaxInertia/eV
+         write (*,*) 'muLower, muUpper: ', muLower/eV, muUpper/eV
          write (*,*) 'mu estimated: ', muInertia/eV
       endif
         
@@ -732,8 +752,9 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
            endif
            call add_value(conv_mu, muInertia)
       
-           !
-      !!$     one_more_round = .true.
+      
+           one_more_round = .true.
+      
       !!$     if (inertia_original_electron_width < inertiaNumElectronTolerance) then
       !!$        write (6,"(a)") 'Leaving inertia loop: electron tolerance'
       !!$        one_more_round = .false.
@@ -742,9 +763,19 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
       !!$        write (6,"(a)") 'Leaving inertia loop: minimum workable electron tolerance'
       !!$        one_more_round = .false.
       !!$     endif
-           if (inertia_energy_width < 2*options%muInertiaTolerance) then
-              write (6,"(a,f12.6)") 'Leaving inertia loop: energy tolerance: ', &
-               2*options%muInertiaTolerance/eV
+      
+           ! This is the first clause of Lin's criterion
+           ! in the simple DFT driver. The second clause is the same as the next one
+           ! when the energy-width tolerance is the same as the mu tolerance (my default)
+           ! I am not sure about the basis for this
+           if (abs(muMaxInertia -numElectronExact) < eps_inertia ) then
+              write (6,"(a,f12.6)") "Leaving inertia loop: |muMaxInertia-N_e|: ", &
+                   abs(muMaxInertia -numElectronExact)
+              one_more_round = .false.
+           endif
+           if (inertia_energy_width < energyWidthInertiaTolerance) then
+              write (6,"(a,f12.6)") 'Leaving inertia loop: energy width tolerance: ', &
+               energyWidthInertiaTolerance/eV
               one_more_round = .false.
            endif
            if (is_converged(conv_mu)) then
@@ -1014,6 +1045,34 @@ endif
 if (mpirank==0) write(6,"(a,f10.2)") &
      "Current PEXSI temperature (K): ", pexsi_temperature/Kelvin
 end subroutine get_current_temperature
+
+function interpolate(xx,yy,x) result(val)
+!
+! Interpolate linearly in the (monotonically increasing!) arrays xx and yy
+!
+integer, parameter :: dp = selected_real_kind(10,100)
+
+real(dp), intent(in) :: xx(:), yy(:)
+real(dp), intent(in) :: x
+real(dp)             :: val
+
+integer :: i, n
+
+n = size(xx)
+if (size(yy) /= n) call die("Mismatch in array sizes in interpolate")
+
+if ( (x < xx(1)) .or. (x > xx(n))) then
+   call die("Interpolate: x not in range")
+endif
+
+do i = 2, n
+   if (x <= xx(i)) then
+      val = yy(i-1) + (x-xx(i-1)) * (yy(i)-yy(i-1))/(xx(i)-xx(i-1))
+      exit
+   endif
+enddo
+
+end function interpolate
 
 subroutine check_info(info,str)
 integer, intent(in) :: info
