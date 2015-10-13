@@ -15,11 +15,10 @@ CONTAINS
 
 ! This version uses separate distributions for Siesta 
 ! (setup_H et al) and PEXSI.
-! It uses the simple KSDFT driver
 !
-  subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
-       maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
-       ef, Entropy, temp, delta_Ef)
+subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
+     maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
+     ef, Entropy, temp, delta_Efermi)
 
     use fdf
     use parallel, only   : SIESTA_worker, BlockSize
@@ -42,45 +41,37 @@ use m_pexsi, only: plan, pexsi_initialize_scfloop
       use extrae_module
 #endif
 
-    implicit          none
+  implicit          none
 
-    integer, intent(in)  :: iscf  ! scf step number
-    integer, intent(in)  :: maxnh, no_u, no_l, nspin
-    integer, intent(in), target  :: listh(maxnh), numh(no_l), listhptr(no_l)
-    real(dp), intent(in), target :: H(maxnh,nspin), S(maxnh)
-    real(dp), intent(in) :: qtot
-    real(dp), intent(out), target:: DM(maxnh,nspin), EDM(maxnh,nspin)
-    real(dp), intent(out)        :: ef  ! Fermi energy
-    real(dp), intent(out)        :: Entropy ! Entropy/k, dimensionless
-    real(dp), intent(in)         :: temp   ! Electronic temperature
-    real(dp), intent(in)         :: delta_Ef  ! Estimated shift in E_fermi
+  integer, intent(in)  :: iscf  ! scf step number
+  integer, intent(in)  :: maxnh, no_u, no_l, nspin
+  integer, intent(in), target  :: listh(maxnh), numh(no_l), listhptr(no_l)
+  real(dp), intent(in), target :: H(maxnh,nspin), S(maxnh)
+  real(dp), intent(in) :: qtot
+  real(dp), intent(out), target:: DM(maxnh,nspin), EDM(maxnh,nspin)
+  real(dp), intent(out)        :: ef  ! Fermi energy
+  real(dp), intent(out)        :: Entropy ! Entropy/k, dimensionless
+  real(dp), intent(in)         :: temp   ! Electronic temperature
+  real(dp), intent(in)         :: delta_Efermi  ! Estimated shift in E_fermi
 !
-type(f_ppexsi_options) :: options
-
-integer :: numTotalPEXSIIter
-integer :: numTotalInertiaIter
-real(dp) :: totalEnergyH
-real(dp) :: totalEnergyS
-real(dp) :: totalFreeEnergy
-
-
-    integer :: PEXSI_Comm, World_Comm
-    integer :: PEXSI_Group, World_Group
-
-    integer :: ispin, maxnhtot, ih, nnzold, i, pexsiFlag
-
-    real(dp), save :: muMin0, muMax0, mu
-    real(dp), save :: muMinInertia, muMaxInertia
-    real(dp), save :: previous_pexsi_temperature
-    logical, save  :: first_call = .true.
-
-    real(dp)       :: bs_energy, eBandH, on_the_fly_tolerance
-
-    integer        :: info
-    integer        :: verbosity
-    logical        :: write_ok
-
-!Lin variables
+integer        :: ih, i
+integer        :: info
+logical        :: write_ok
+!------------
+external         :: timer
+integer          :: norbs, scf_step
+real(dp)         :: delta_Ef
+integer          :: World_Comm
+integer :: PEXSI_Comm
+integer :: PEXSI_Group, World_Group
+integer  :: mpirank, numNodesTotal, ierr
+integer, save  :: npPerPole
+logical  :: PEXSI_worker
+type(Dist)   :: dist1, dist2
+integer  :: pbs
+real(dp) :: temperature, numElectronExact
+integer  :: ispin
+type(aux_matrix) :: m1, m2
 integer :: nrows, nnz, nnzLocal, numColLocal
 integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
 !
@@ -88,67 +79,64 @@ real(dp), pointer, dimension(:) :: &
         HnzvalLocal=>null(), SnzvalLocal=>null(),  &
         DMnzvalLocal => null() , EDMnzvalLocal => null(), &
         FDMnzvalLocal => null()
-
-real(dp), allocatable :: shiftList(:), inertiaList(:)
-!
-logical  :: PEXSI_worker
-real(dp) :: temperature, numElectronExact, numElectronPEXSI
-real(dp) :: numElectronDrvMuPEXSI
-integer  :: npPerPole
-integer  :: mpirank, mpisize, ierr
-integer  :: isSIdentity
-integer  :: numMinICountShifts, numNodesTotal, numShift
-
-real(dp) :: pexsi_temperature, two_kT
-
 real(dp), save :: PEXSINumElectronToleranceMin, &
             PEXSINumElectronToleranceMax, &
             PEXSINumElectronTolerance
-integer ::  nInertiaRounds, inertiaMaxIter
-real(dp), save :: energyWidthInertiaTolerance
-real(dp) :: muInertia, deltaMu
-real(dp) :: muLower, muUpper
-
-real(dp) :: free_bs_energy
-
-!------------
-
-external         :: timer
-
-type(aux_matrix) :: m1, m2
-type(Dist)       :: dist1, dist2
-integer          :: pbs, norbs, scf_step
+logical, save  :: first_call = .true.
+real(dp), save :: muMin0, muMax0, mu
+real(dp)       :: on_the_fly_tolerance
+type(f_ppexsi_options) :: options
+!
+integer                :: isSIdentity
+integer                :: verbosity
+integer                :: inertiaMaxIter
+!
+real(dp), save         :: energyWidthInertiaTolerance
+real(dp)               :: pexsi_temperature, two_kT
+real(dp) :: deltaMu
+real(dp) :: numElectronDrvMuPEXSI, numElectronPEXSI
+integer :: numTotalPEXSIIter
+integer :: numTotalInertiaIter
+real(dp)       :: bs_energy, eBandH, free_bs_energy
+real(dp)       :: buffer1
+real(dp), save :: previous_pexsi_temperature
 !
 #ifndef MPI
     call die("PEXSI needs MPI")
 #else
 ! "SIESTA_Worker" means a processor which is in the Siesta subset.
+!
 ! NOTE:  fdf calls will assign values to the whole processor set,
 ! but some other variables will have to be re-broadcast (see examples
 ! below)
 
+! These variables need to be broadcast since they were assigned only
+! by the SIESTA worker nodes
+
 World_Comm = true_MPI_Comm_World
 
 if (SIESTA_worker) then
-   ! deal with intent(in) variables
+   ! rename some intent(in) variables
    norbs = no_u
    scf_step = iscf
+   delta_Ef = delta_Efermi
 endif
 call broadcast(norbs,comm=World_Comm)
 call broadcast(scf_step,comm=World_Comm)
+call broadcast(delta_Ef,comm=World_Comm)
+! Used by host association, but set only in Siesta side
 call broadcast(prevDmax,comm=World_Comm)
 call broadcast(dDtol,comm=World_Comm)
-
 !  Find rank in global communicator
 call mpi_comm_rank( World_Comm, mpirank, ierr )
-call mpi_comm_size( World_Comm, mpisize, ierr )
+call mpi_comm_size( World_Comm, numNodesTotal, ierr )
 
 call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
 
 ! Group and Communicator for first-pole team of PEXSI workers
 !
 npPerPole  = fdf_get("PEXSI.np-per-pole",4)
-if (npPerPole > mpisize) call die("PEXSI.np-per-pole is too big for MPI size")
+if (npPerPole > numNodesTotal) call die("PEXSI.np-per-pole is too big for MPI size")
 
 call MPI_Comm_Group(World_Comm, World_Group, Ierr)
 call MPI_Group_incl(World_Group, npPerPole,   &
@@ -162,8 +150,7 @@ PEXSI_worker = (mpirank < npPerPole)
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
 
-
-
+! This section does not belong here
 if (SIESTA_worker) then
    call timer("pexsi", 1)
 
@@ -183,6 +170,10 @@ if (SIESTA_worker) then
    if (mpirank==0) write(6,"(a,f10.2)") &
                "Electronic temperature (K): ", temperature/Kelvin
 
+endif
+call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
+call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
+if (SIESTA_worker) then
    m1%norbs = norbs
    m1%no_l  = no_l
    m1%nnzl  = sum(numH(1:no_l))
@@ -223,6 +214,10 @@ if (PEXSI_worker) then
 
 endif ! PEXSI worker
 
+! Make these available to all
+call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
+call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
+
 call memory_all("after setting up H+S for PEXSI",World_comm)
 
 
@@ -261,25 +256,6 @@ else
                                         on_the_fly_tolerance)
 endif
 
-!-----------------------------------------------------------------------------
-
-!
-! Broadcast these to the whole processor set, just in case
-! (They were set only by the Siesta workers)
-!
-call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
-call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
-call MPI_Bcast(numElectronExact,1,MPI_double_precision,0,World_Comm,ierr)
-call MPI_Bcast(temperature,1,MPI_double_precision,0,World_Comm,ierr)
-call MPI_Bcast(delta_Ef,1,MPI_double_precision,0,World_Comm,ierr)
-!
-call get_current_temperature(pexsi_temperature)
-!
-!  Set guard smearing for later use
-!
-two_kT = 2.0_dp * pexsi_temperature
-
-
 !  New interface.
 if (scf_step == 1) then
    call pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
@@ -287,7 +263,6 @@ endif
 
 
 
-!@declare type(f_ppexsi_options) :: options
 
 !
 call f_ppexsi_set_default_options( options )
@@ -318,7 +293,13 @@ options%npSymbFact = fdf_get("PEXSI.np-symbfact",1)
 verbosity = fdf_get("PEXSI.verbosity",1)
 options%verbosity = verbosity
 
+call get_current_temperature(pexsi_temperature)
 options%temperature = pexsi_temperature
+!
+!  Set guard smearing for later use
+!
+two_kT = 2.0_dp * pexsi_temperature
+
 options%numElectronPEXSITolerance = PEXSINumElectronTolerance
 
 ! Stop inertia count if mu has not changed much from iteration to iteration.
@@ -379,22 +360,6 @@ endif
 options%isSymbolicFactorize = 0 ! We do not need it anymore
 
 !
-
-! Minimum number of sampling points for inertia counts                                            
-numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
-
-call mpi_comm_size( World_Comm, numNodesTotal, ierr )
-numShift = numNodesTotal/npPerPole
-do
-   if (numShift < numMinICountShifts) then
-      numShift = numShift + numNodesTotal/npPerPole
-   else
-      exit
-   endif
-enddo
-
-allocate(shiftList(numShift), inertiaList(numShift))
-
 numTotalInertiaIter = 0
 
 call timer("pexsi-solver", 1)
@@ -403,9 +368,7 @@ call timer("pexsi-solver", 1)
 if (need_inertia_counting()) then
 
    call get_bracket_for_inertia_count( )  
-   call do_inertia_count(plan,muMin0,muMax0,muInertia)
-
-   mu = muInertia
+   call do_inertia_count(plan,muMin0,muMax0,mu)
 
 else
 
@@ -460,8 +423,9 @@ solver_loop: do
 
          ! We must choose a new starting bracket, otherwise we will fall into the same
          ! cycle of values
-         call do_inertia_count(plan,muMin0,muMax0,muInertia)
-         mu = muInertia
+
+         call do_inertia_count(plan,muMin0,muMax0,mu)
+
          cycle solver_loop
 
       endif
@@ -480,35 +444,49 @@ call timer("pexsi-solver", 2)
 
 
 if( PEXSI_worker ) then
-  call f_ppexsi_retrieve_real_symmetric_dft_matrix(&
-    plan,&
-    DMnzvalLocal,&
-    EDMnzvalLocal,&
-    FDMnzvalLocal,&
-    totalEnergyH,&
-    totalEnergyS,&
-    totalFreeEnergy,&
-    info)
-  call check_info(info,"retrieve_real_symmetric_dft_matrix")
+   call f_ppexsi_retrieve_real_symmetric_dft_matrix(&
+        plan,&
+        DMnzvalLocal,&
+        EDMnzvalLocal,&
+        FDMnzvalLocal,&
+        eBandH,&          ! Will not be available
+        bs_energy,&
+        free_bs_energy,&
+        info)
+   call check_info(info,"retrieve_real_symmetric_dft_matrix")
 
 endif
 
 !------------ End of solver step
 
 if ((mpirank == 0) .and. (verbosity >= 1)) then
-  write(6,"(a,i3)") " #&s Number of solver iterations: ", numTotalPEXSIIter
-  write(6,"(a,i3)") " #&s Number of inertia iterations: ", numTotalInertiaIter
-  write(6,"(a,f12.4)") " #&s muMinInertia: ", muMinInertia
-  write(6,"(a,f12.4)") " #&s muMaxInertia: ", muMaxInertia
-  write(6,"(a,f12.5,f12.4,2x,a2)") "mu, N_e:", mu/eV, &
-                                    numElectronPEXSI, "&s"
+   write(6,"(a,i3)") " #&s Number of solver iterations: ", numTotalPEXSIIter
+   write(6,"(a,i3)") " #&s Number of inertia iterations: ", numTotalInertiaIter
+   write(6,"(a,f12.5,f12.4,2x,a2)") "mu, N_e:", mu/eV, &
+        numElectronPEXSI, "&s"
 endif
 
 if (PEXSI_worker) then
 
-   free_bs_energy = totalFreeEnergy
-   bs_energy = totalEnergyS
-   eBandH = totalEnergyH
+   free_bs_energy = 0.0_dp
+   bs_energy = 0.0_dp
+   eBandH = 0.0_dp
+   do i = 1,nnzLocal
+      free_bs_energy = free_bs_energy + SnzvalLocal(i) * &
+           ( FDMnzvalLocal(i) )
+      bs_energy = bs_energy + SnzvalLocal(i) * &
+           ( EDMnzvalLocal(i) )
+      eBandH = eBandH + HnzvalLocal(i) * &
+           ( DMnzvalLocal(i) )
+   enddo
+   ! These operations in PEXSI group now
+   call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_comm )
+   ! Note that FDM has an extra term: -mu*N
+   free_bs_energy = buffer1 + mu*numElectronPEXSI
+   call globalize_sum( bs_energy, buffer1, comm=PEXSI_comm )
+   bs_energy = buffer1
+   call globalize_sum( eBandH, buffer1, comm=PEXSI_comm )
+   eBandH = buffer1
 
    if ((mpirank == 0) .and. (verbosity >= 2)) then
       write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
@@ -624,8 +602,8 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
   real(dp), intent(inout)  :: muMin0, muMax0
   real(dp), intent(out)    :: muInertia
 
-  real(dp)            :: muMinInertia, muMaxInertia
-
+  real(dp)            ::   muMinInertia, muMaxInertia
+  integer             ::   nInertiaRounds
 
   real(dp), parameter ::   eps_inertia = 0.1_dp
   type(converger_t)   ::   conv_mu
@@ -634,12 +612,32 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
   real(dp)            ::   inertia_electron_width
   real(dp)            ::   inertia_original_electron_width
   real(dp)            ::   inertia_energy_width
+  real(dp)            ::   muLower, muUpper
+  integer             ::   numMinICountShifts, numShift
+
+  real(dp), allocatable :: shiftList(:), inertiaList(:)
 
   integer :: imin, imax
 
-   nInertiaRounds = 0
+  
+  ! Minimum number of sampling points for inertia counts                                            
+  numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
+  
+  numShift = numNodesTotal/npPerPole
+  do
+     if (numShift < numMinICountShifts) then
+        numShift = numShift + numNodesTotal/npPerPole
+     else
+        exit
+     endif
+  enddo
+  
+  allocate(shiftList(numShift), inertiaList(numShift))
+  
 
-   refine_interval: do
+  nInertiaRounds = 0
+
+  refine_interval: do
       
       options%muMin0 = muMin0
       options%muMax0 = muMax0
@@ -726,10 +724,10 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
       muInertia = 0.5_dp * (muUpper + muLower)
       
       if (mpirank == 0) then
-         write (*,*) 'imin, imax: ', imin, imax
-         write (*,*) 'muMinInertia, muMaxInertia: ', muMinInertia/eV, muMaxInertia/eV
-         write (*,*) 'muLower, muUpper: ', muLower/eV, muUpper/eV
-         write (*,*) 'mu estimated: ', muInertia/eV
+         write (6,"(a,i3,f10.4,i3,f10.4)") 'imin, muMinInertia, imax, muMaxInertia: ',&
+                imin, muMinInertia/eV, imax, muMaxInertia/eV
+         write (6,"(a,2f10.4,a,f10.4)") 'muLower, muUpper: ', muLower/eV, muUpper/eV, &
+              ' mu estimated: ', muInertia/eV
       endif
         
         if (mpirank==0) then
@@ -801,7 +799,9 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
         endif
       
       numTotalInertiaIter = numTotalInertiaIter + 1
-   enddo refine_interval
+  enddo refine_interval
+
+  deallocate(shiftList,inertiaList)
    
  end subroutine do_inertia_count
 
@@ -949,16 +949,16 @@ write_ok = ((mpirank == 0) .and. (verbosity >= 1))
       ! is too narrow. We should broaden it by o(kT)                           
       ! The usefulness of delta_Ef is thus debatable...                        
 
-      muMin0 = muMinInertia + delta_Ef - two_kT
-      muMax0 = muMaxInertia + delta_Ef + two_kT
+      muMin0 = muMin0 + delta_Ef - two_kT
+      muMax0 = muMax0 + delta_Ef + two_kT
    else
       ! Use a large enough interval around the previous estimation of   
       ! mu (the gap edges are not available...)  
       if (write_ok) write(6,"(a)") "&o Inertia-count safe bracket"
 !      muMin0 = min(muLowerEdge - 0.5*safe_width_ic, muMinInertia)
-      muMin0 = min(mu - 0.5*safe_width_ic, muMinInertia)
+      muMin0 = min(mu - 0.5*safe_width_ic, muMin0)
 !      muMax0 = max(muUpperEdge + 0.5*safe_width_ic, muMaxInertia)
-      muMax0 = max(mu + 0.5*safe_width_ic, muMaxInertia)
+      muMax0 = max(mu + 0.5*safe_width_ic, muMax0)
    endif
  else
     if (write_ok) write(6,"(a)") &
