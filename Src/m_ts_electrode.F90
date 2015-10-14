@@ -775,11 +775,7 @@ contains
           ! From CONTACT to electrode k-point
           ! First convert to units of reciprocal vectors
           ! Then convert to 1/Bohr in the electrode unit cell coordinates
-          call kpoint_convert(ucell,kpoint(:,i),kpt,1)
-          do j = 1 , 3
-             bkpt(j) = kpt(El%pvt(j))
-             if ( El%Rep(j) > 1 ) bkpt(j) = bkpt(j) / real(El%Rep(j),dp)
-          end do
+          call Elec_kpt(El,ucell,kpoint(:,i),bkpt, opt = 2)
           write(*,'(i4,2x,4(E14.5))') i, bkpt,kweight(i)
        end do
 
@@ -881,18 +877,13 @@ contains
        ! Write out explicit information about this content
        write(uGF) nkpnt
        ! Notice that we write the k-points for the ELECTRODE
-       ! Do a conversion here
+       ! They will be stored in units of the reciprocal lattice vector
+       !   1/b 
        allocate(kE(3,nkpnt))
        call memory('A','D',nkpnt*3,'create_green')
        do i = 1 , nkpnt
-          ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-          call kpoint_convert(ucell,kpoint(:,i),kpt,1)
-          do j = 1 , 3
-             bkpt(j) = kpt(El%pvt(j))
-             if ( El%Rep(j) > 1 ) bkpt(j) = bkpt(j) / real(El%Rep(j),dp)
-          end do
-          ! Convert back to reciprocal units (to electrode ucell_E)
-          call kpoint_convert(El%cell,bkpt,kE(:,i),-1)
+          ! Store the k-points in units of reciprocal lattice
+          call Elec_kpt(El,ucell,kpoint(:,i),kE(:,i), opt = 2)
        end do
        write(uGF) kE,kweight
        call memory('D','D',nkpnt*3,'create_green')
@@ -957,11 +948,7 @@ contains
        end if
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-       call kpoint_convert(ucell,kpoint(:,ikpt),kpt,1)
-       do j = 1 , 3
-          bkpt(j) = kpt(El%pvt(j))
-          if ( El%Rep(j) > 1 ) bkpt(j) = bkpt(j) / real(El%Rep(j),dp)
-       end do
+       call Elec_kpt(El,ucell,kpoint(:,ikpt),bkpt, opt = 2)
        ! We need to save the k-point for the "expanded" super-cell
        El%bkpt_cur = bkpt
        
@@ -976,8 +963,7 @@ contains
 
           ! init qpoint in reciprocal lattice vectors
           kpt = bkpt(:) + q_exp(El,iqpt)
-          ! Nullify the direction of the semi-infinite direction
-          kpt(El%t_dir) = 0._dp
+          ! Convert to 1/Bohr
           call kpoint_convert(El%cell,kpt,kq,-1)
 
           ! Setup the transfer matrix and the intra cell at the k-point and q-point
@@ -1526,7 +1512,7 @@ contains
     real(dp) :: kpt(3), kq(3)
     
     ! Dimensions
-    integer :: nq
+    integer :: nq, nw
     integer :: nuo_E, nS, nuou_E, nuS, nuouT_E
 
     ! Electrode transfer and hamiltonian matrix
@@ -1589,14 +1575,17 @@ contains
     end if
 
     ! determine whether there is room enough
-    size_req(1)    = (4 + 1) * nS
     if ( same_GS ) then
-       size_req(2) =    7    * nS
+       size_req(1) = 4 * nS
     else
-       size_req(2) =    8    * nS
+       size_req(1) = 5 * nS
     end if
-    if ( calc_DOS ) size_req(2) = size_req(2) + nS ! 9 times
-    if ( sum(size_req) <= nzwork ) then
+    if ( calc_DOS ) then
+       size_req(2) = 9 * nS
+    else
+       size_req(2) = 8 * nS
+    end if
+    if ( size_req(1) + size_req(2) <= nzwork ) then
 
        ! we have enough room in the regular work-array for everything
        i = 0
@@ -1663,6 +1652,8 @@ contains
             &calculation of the self-energies.')
 
     end if
+    ! Get actual size of work-array
+    nw = size(zwork)
 
     call init_mat_inversion(nuo_E)
 
@@ -1678,8 +1669,7 @@ contains
 
        ! init qpoint in reciprocal lattice vectors
        kpt(:) = bkpt(:) + q_exp(El,iq)
-       ! Nullify the direction of the semi-infinite direction
-       kpt(El%t_dir) = 0._dp
+       ! Convert to 1/Bohr
        call kpoint_convert(El%cell,kpt,kq,-1)
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
@@ -1701,11 +1691,11 @@ contains
        if ( calc_DOS ) then
           call SSR_sGreen_DOS(nuo_E,Z,H00,S00,H01,S01,GS, &
                DOS(1:nuo_E), &
-               9*nS,zwork, &
+               nw,zwork, &
                final_invert = final_invert)
        else
           call SSR_sGreen_NoDOS(nuo_E,Z,H00,S00,H01,S01,GS, &
-               8*nS,zwork, &
+               nw,zwork, &
                final_invert = final_invert)
        end if
 

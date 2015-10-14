@@ -276,19 +276,15 @@ contains
        ! Sadly this is "pretty" big.
        if ( .not. Elecs(iEl)%out_of_core ) then
           no = Elecs(iEl)%no_u ** 2
+          ! Determine work array size
+          ! H00, H01, S00 and S01 in the work array
+          io = no * 4
+          if ( Elecs(iEl)%no_u /= Elecs(iEl)%no_used ) io = io + no
+          io = io + no * 8
           if ( 'DOS-Elecs' .in. save_DATA ) then
-             if ( Elecs(iEl)%no_u == Elecs(iEl)%no_used ) then
-                pad_LHS = max(pad_LHS,no*8)
-             else
-                pad_LHS = max(pad_LHS,no*9)
-             end if
-          else
-             if ( Elecs(iEl)%no_u == Elecs(iEl)%no_used ) then
-                pad_LHS = max(pad_LHS,no*7)
-             else
-                pad_LHS = max(pad_LHS,no*8)
-             end if
+             io = io + no
           end if
+          pad_LHS = max(pad_LHS,io)
        end if
     end do
 
@@ -1237,6 +1233,11 @@ contains
 
     end do ! k-point
 
+#ifdef MPI
+    ! Force waiting till everything is done...
+    call MPI_Barrier(MPI_Comm_World,iE)
+#endif
+
     call itt_destroy(Kp)
 
 #ifdef TBTRANS_DEBUG
@@ -1253,10 +1254,10 @@ contains
     nullify(DOS,DOS_El)
     deallocate(allDOS,calc_parts)
 
+    call delete(zwork_tri)
+
     call delete(spH)
     call delete(spS)
-
-    call delete(zwork_tri)
 
 #ifdef NCDF_4
 

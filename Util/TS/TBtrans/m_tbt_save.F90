@@ -82,6 +82,7 @@ contains
     nE%iE(0) = iE
     nE%E(0) = real(cE,dp)
 #endif
+
   end subroutine MPI_BcastNode
     
 
@@ -986,13 +987,13 @@ contains
     if ( save_parallel ) then
 
        idx(1) = nE%iE(Node)
-       iN = 1
+       cnt(1) = 1
        if ( idx(1) <= 0 ) then
           idx(1) = 1
-          iN = 0
+          cnt(1) = 0
        end if
-       call ncdf_put_var(ncdf,'E',nE%E(Node),start=(/idx(1)/), &
-            count = (/iN/) )
+       call ncdf_put_var(ncdf,'E',nE%E(Node),start=idx(1:1), &
+            count = cnt(1:1) )
 
     else
 
@@ -1000,7 +1001,7 @@ contains
        ! We need to save the energy
 #ifdef MPI
        do iN = 0 , Nodes - 1
-          if ( nE%iE(Node) <= 0 ) cycle
+          if ( nE%iE(iN) <= 0 ) cycle
           call ncdf_put_var(ncdf,'E',nE%E(iN),start = (/nE%iE(iN)/) )
        end do
 #else

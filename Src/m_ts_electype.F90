@@ -38,7 +38,7 @@ module m_ts_electype
   public :: Elec, Name, Elec_idx
   public :: TotUsedAtoms, TotUsedOrbs
   public :: AtomInElec, OrbInElec
-  public :: q_exp, q_exp_all
+  public :: q_exp, q_exp_all, Elec_kpt
 
   public :: fdf_nElec, fdf_elec
 
@@ -1158,6 +1158,68 @@ contains
        q = 0._dp
     end if
   end function q_exp
+
+  subroutine Elec_kpt(this,cell,k1,k2,opt)
+    type(Elec), intent(in) :: this
+    ! Device unit-cell
+    real(dp), intent(in) :: cell(3,3)
+    ! Input k-point
+    real(dp), intent(in) :: k1(3)
+    ! Output k-point
+    real(dp), intent(out) :: k2(3)
+    ! Whether or not this is an electrode 'output' k-point.
+    !  opt ==  1, from device k-point [1/Bohr] to electrode k-point [1/Bohr]
+    !  opt ==  2, from device k-point [1/Bohr] to electrode k-point [1/b]
+    !  opt == -1, from electrode k-point [1/Bohr] to device k-point [1/Bohr]
+    !  opt == -2, from electrode k-point [1/Bohr] to device  k-point [1/b]
+    integer, intent(in), optional :: opt
+    
+    ! Local variables
+    integer :: iop
+    real(dp) :: tmp(3)
+
+    iop = 1
+    if ( present(opt) ) iop = opt
+
+    select case ( iop ) 
+    case ( 1 , 2 )
+       
+       ! Convert system-unit-cell kpoint to reciprocal units
+       call kpoint_convert(cell,k1,k2,1)
+       ! Scale with repetition
+       tmp(1) = k2(this%pvt(1)) / this%Rep(1)
+       tmp(2) = k2(this%pvt(2)) / this%Rep(2)
+       tmp(3) = k2(this%pvt(3)) / this%Rep(3)
+       ! Remove semi-infinite direction
+       tmp(this%t_dir) = 0._dp
+
+       if ( iop == 1 ) then
+          ! Convert back to 1 / Bohr
+          call kpoint_convert(this%cell,tmp,k2,-1)
+       else
+          k2 = tmp
+       end if
+
+    case ( -2 , -1 )
+
+       ! Convert from electrode to device
+       ! Convert system-unit-cell kpoint to reciprocal units
+       call kpoint_convert(this%cell,k1,k2,1)
+       ! Scale with repetition
+       tmp(this%pvt(1)) = k2(1) * this%Rep(1)
+       tmp(this%pvt(2)) = k2(2) * this%Rep(2)
+       tmp(this%pvt(3)) = k2(3) * this%Rep(3)
+
+       if ( iop == -1 ) then
+          ! Convert back to 1 / Bohr
+          call kpoint_convert(cell,tmp,k2,-1)
+       else
+          k2 = tmp
+       end if
+
+    end select
+
+  end subroutine Elec_kpt
 
   elemental function TotUsedOrbs(this) result(val)
     type(Elec), intent(in) :: this

@@ -585,11 +585,13 @@ contains
     ! that!
     do i = 1 , N_Elec
 
-       ! Pivot the k-point
-       do j = 1 , 3
-          ! Transfer the k-point to the "expanded" supercell
-          kpt(j) = bkpt(Elecs(i)%pvt(j)) / Elecs(i)%Rep(j)
-       end do
+       ! Transfer the k-point to the "expanded" supercell
+       kpt(1) = bkpt(Elecs(i)%pvt(1)) / Elecs(i)%Rep(1)
+       kpt(2) = bkpt(Elecs(i)%pvt(2)) / Elecs(i)%Rep(2)
+       kpt(3) = bkpt(Elecs(i)%pvt(3)) / Elecs(i)%Rep(3)
+
+       ! Ensure zero in the semi-infinite direction
+       kpt(Elecs(i)%t_dir) = 0._dp
        
        ! If the index for the contour is negative
        ! It means that we are dealing with a Fermi
@@ -954,22 +956,14 @@ contains
        ! we need to compare that with those of the CONTACT cell!
        ! The advantage of this is that the GF files can be re-used for
        ! the same system with different lengths between the electrode layers.
-       call kpoint_convert(ucell,kpar(:,i),kpt,1)
-       do ia = 1 , 3
-          ktmp(El%pvt(ia)) = kpt(ia) * fReps(ia)
-       end do
-       call kpoint_convert(c_ucell,ktmp,kpt,-1)
-       if ( dabs(c_kpar(1,i)-kpt(1)) > EPS .or. &
-            dabs(c_kpar(2,i)-kpt(2)) > EPS .or. &
-            dabs(c_kpar(3,i)-kpt(3)) > EPS ) then
+       call Elec_kpt(El,c_ucell,c_kpar(:,i),kpt, opt = 2)
+       if ( abs(kpar(1,i)-kpt(1)) > EPS .or. &
+            abs(kpar(2,i)-kpt(2)) > EPS .or. &
+            abs(kpar(3,i)-kpt(3)) > EPS ) then
           write(*,*)"k-points are not the same:"
           do j = 1 , min(c_nkpar,nkpar)
-             call kpoint_convert(ucell,kpar(:,i),kpt,1)
-             do ia = 1 , 3
-                ktmp(El%pvt(ia)) = kpt(ia) * fReps(ia)
-             end do
-             call kpoint_convert(c_ucell,ktmp,kpt,-1)
-             write(*,'(3f12.5,a,3f12.5)') c_kpar(:,j),'  :  ',kpt(:)
+             call Elec_kpt(El,c_ucell,c_kpar(:,j),kpt, opt = 2)
+             write(*,'(3f12.5,a,3f12.5)') kpt(:),'  :  ',kpar(:,j)
           end do
           localErrorGf = .true.
           exit

@@ -1,4 +1,32 @@
 ----------------------------------------------------
+October 14, 2015 -- Nick Papior       trunk-479---ts-scf-558
+Bugfix for tbtrans and kpoint saving in GF files
+
+* Bugfix for saving the energy point when the master node
+  did not have a processing energy-point.
+
+* Added an Elec_kpt routine which directly
+  converts a k-point from a unit-cell to an electrode kpoint
+  with the appropriate settings.
+  I.e. scaling with repetition and setting the semi-infinite
+  direction to zero.
+
+* Implemented the Elec_kpt routine several places
+  where the complexity is too high for what the purpose is.
+
+* The GF files now store the k-points in units of the reciprocal
+  lattice vectors as they should have been since the beginning.
+
+  People having old GF files only need to recreate them.
+
+modified:
+  Src/m_ts_electrode.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_gf.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 October 14, 2015 -- Nick Papior       trunk-479---ts-scf-557
 Bugfix for tbtrans OpenMP compilation
 
