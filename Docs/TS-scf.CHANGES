@@ -1,4 +1,17 @@
 ----------------------------------------------------
+October 14, 2015 -- Nick Papior       trunk-479---ts-scf-559
+Print-out was erroneous for spin-determined tbtrans
+
+* The print-out statement of the spin-index was using the
+  e9.3 format designator which makes no sense on integers
+  (that would correspond to a transfer, then print).
+
+  However, it was only for print-out, and nothing more.
+
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+
+----------------------------------------------------
 October 14, 2015 -- Nick Papior       trunk-479---ts-scf-558
 Bugfix for tbtrans and kpoint saving in GF files
 

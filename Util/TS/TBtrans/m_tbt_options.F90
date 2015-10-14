@@ -607,7 +607,7 @@ contains
        if ( spin_idx == 0 ) then
           write(*,f11) 'Calculate all spin-channels'
        else
-          write(*,f9) 'Calculate spin-channel',spin_idx
+          write(*,f12) 'Calculate spin-channel',spin_idx
        end if
     else
        write(*,f11) 'Single spin Hamiltonian'
