@@ -12,13 +12,14 @@ module m_pexsi
 
   CONTAINS
 
-    subroutine pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank)
+    subroutine pexsi_initialize_scfloop(World_Comm,npPerPole,mpirank,info)
       use f_ppexsi_interface
       integer, intent(in) :: npPerPole, mpirank
       integer, intent(in) :: World_Comm
+      integer, intent(out):: info
     
       integer :: numProcRow, numProcCol
-      integer :: outputFileIndex, info
+      integer :: outputFileIndex
     
       call get_row_col(npPerPole,numProcRow,numProcCol)
     
@@ -39,23 +40,16 @@ module m_pexsi
         outputFileIndex,&
         info) 
     
-      if (mpirank == 0) then
-        print *, "Info in plan_initialize: ", info
-      endif
     end subroutine pexsi_initialize_scfloop
     
     
-    subroutine pexsi_finalize_scfloop() ! mpirank)
+    subroutine pexsi_finalize_scfloop()
       use f_ppexsi_interface
-      !  integer, intent(in) :: mpirank
     
       integer :: info
     
       call f_ppexsi_plan_finalize( plan, info )
     
-      !  if (mpirank == 0) then
-      !     print *, "Info in plan_finalize: ", info
-      !  endif
     end subroutine pexsi_finalize_scfloop
     
     subroutine get_row_col(np,nrow,ncol)
