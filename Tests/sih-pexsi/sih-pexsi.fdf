@@ -10,9 +10,13 @@ PEXSI.np-per-pole 4
 PEXSI.num-poles 40
 PEXSI.mu  -0.30 Ry
 
-PEXSI.num-electron-tolerance 1.0d-4
-PEXSI.mu-max-iter     3
-DM.NormalizationTolerance 1.0d-3  # (true_no_electrons/no_electrons) - 1.0 
+PEXSI.num-electron-tolerance-upper-bound 0.01
+PEXSI.num-electron-tolerance-lower-bound 1.0e-3
+PEXSI.inertia-energy-width-tolerance 0.2 eV     
+PEXSI.inertia-mu-tolerance 0.2 eV     
+###PEXSI.num-electron-tolerance 1.0d-4
+PEXSI.mu-max-iter     10
+DM.NormalizationTolerance 1.0d-1  # (true_no_electrons/no_electrons) - 1.0 
 
 PEXSI.ordering 1   # Note this ... apparently needed for small npPerPole
 PEXSI.verbosity 2
@@ -25,8 +29,8 @@ PEXSI.LocalDOS.Energy -3.5141 eV
 PEXSI.LocalDOS.Broadening 0.05 eV
 
 
-WriteDMHS.NetCDF T
-WriteDM.NetCDF T
+WriteDMHS.NetCDF F
+WriteDM.NetCDF F
 WriteDM T
 
 SystemName          H in 64-atom silicon -- PEXSI solver
