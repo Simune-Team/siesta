@@ -16,7 +16,7 @@ CONTAINS
 ! This version uses separate distributions for Siesta 
 ! (setup_H et al) and PEXSI.
 !
-subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
+subroutine pexsi_solver(iscf, no_u, no_l, nspin_in,  &
      maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
      ef, Entropy, temp, delta_Efermi)
 
@@ -44,11 +44,11 @@ use m_pexsi, only: plan, pexsi_initialize_scfloop
   implicit          none
 
   integer, intent(in)  :: iscf  ! scf step number
-  integer, intent(in)  :: maxnh, no_u, no_l, nspin
+  integer, intent(in)  :: maxnh, no_u, no_l, nspin_in
   integer, intent(in), target  :: listh(maxnh), numh(no_l), listhptr(no_l)
-  real(dp), intent(in), target :: H(maxnh,nspin), S(maxnh)
+  real(dp), intent(in), target :: H(maxnh,nspin_in), S(maxnh)
   real(dp), intent(in) :: qtot
-  real(dp), intent(out), target:: DM(maxnh,nspin), EDM(maxnh,nspin)
+  real(dp), intent(out), target:: DM(maxnh,nspin_in), EDM(maxnh,nspin_in)
   real(dp), intent(out)        :: ef  ! Fermi energy
   real(dp), intent(out)        :: Entropy ! Entropy/k, dimensionless
   real(dp), intent(in)         :: temp   ! Electronic temperature
@@ -58,16 +58,16 @@ integer        :: info
 logical        :: write_ok
 !------------
 external         :: timer
-integer          :: World_Comm, mpirank
+integer          :: World_Comm, mpirank, ierr
 !
 real(dp)  :: temperature, numElectronExact
 integer   :: norbs, scf_step
 real(dp)  :: delta_Ef
 !
-integer  :: ispin
+integer   :: nspin
 integer :: PEXSI_Group, World_Group
 integer :: PEXSI_Comm
-integer :: numNodesTotal, ierr
+integer :: numNodesTotal
 integer :: npPerPole
 logical  :: PEXSI_worker
 type(Dist)   :: dist1, dist2
@@ -80,6 +80,8 @@ real(dp), pointer, dimension(:) :: &
         HnzvalLocal=>null(), SnzvalLocal=>null(),  &
         DMnzvalLocal => null() , EDMnzvalLocal => null(), &
         FDMnzvalLocal => null()
+!
+integer :: ispin
 real(dp), save :: PEXSINumElectronToleranceMin, &
             PEXSINumElectronToleranceMax, &
             PEXSINumElectronTolerance
@@ -106,9 +108,11 @@ real(dp), save :: previous_pexsi_temperature
     call die("PEXSI needs MPI")
 #else
 !
-!  Set and Find rank in global communicator
-!
-World_Comm = true_MPI_Comm_World
+! Our global communicator is a duplicate of MPI_Comm_World
+! (recall that MPI_Comm_World is abused in Siesta to describe
+!  its own subset)
+! 
+call MPI_Comm_Dup(true_MPI_Comm_World, World_Comm, ierr)
 call mpi_comm_rank( World_Comm, mpirank, ierr )
 
 ! NOTE:  fdf calls will assign values to the whole processor set,
@@ -117,16 +121,13 @@ call mpi_comm_rank( World_Comm, mpirank, ierr )
 
 if (SIESTA_worker) then
 
-   call timer("pexsi", 1)
+   call timer("pexsi", 1)    ! ** why is this wrapped?
 
-   ispin = 1
-   if (nspin /=1) then
-      call die("Spin polarization not yet supported in PEXSI")
-   endif
-
-   ! rename some intent(in) variables
+   ! rename some intent(in) variables, which are only
+   ! defined for the Siesta subset
 
    norbs = no_u
+   nspin = nspin_in
    scf_step = iscf
    delta_Ef = delta_Efermi
    numElectronExact = qtot 
@@ -146,6 +147,9 @@ call broadcast(scf_step,comm=World_Comm)
 call broadcast(delta_Ef,comm=World_Comm)
 call broadcast(numElectronExact,World_Comm)
 call broadcast(temperature,World_Comm)
+call broadcast(nspin,World_Comm)
+if (nspin >1 ) call die("Spin polarization not implemented yet")
+
 ! Imported from modules, but set only in Siesta side
 call broadcast(prevDmax,comm=World_Comm)
 call broadcast(dDtol,comm=World_Comm)
@@ -171,6 +175,7 @@ PEXSI_worker = (mpirank < npPerPole)
 pbs = norbs/npPerPole
 call newDistribution(pbs,PEXSI_Group,dist2,TYPE_PEXSI,"px dist")
 if (SIESTA_worker) then
+   ispin = 1     ! For now
    m1%norbs = norbs
    m1%no_l  = no_l
    m1%nnzl  = sum(numH(1:no_l))
@@ -395,6 +400,10 @@ solver_loop: do
 
    call check_info(info,"fermi_operator")
 
+   if (nspin == 2) then
+      ! Add numElectronPEXSI/2 and the Drv/2 (internally the routine assumes no spin?)
+   endif
+
    if (mpirank == 0) then
       write(6,"(a,f10.4)") "Fermi Operator. mu: ", mu/eV
       write(6,"(a,f10.4)") "Fermi Operator. numElectron: ", numElectronPEXSI
@@ -447,7 +456,9 @@ if( PEXSI_worker ) then
         free_bs_energy,&
         info)
    call check_info(info,"retrieve_real_symmetric_dft_matrix")
-
+   if (nspin == 2) then
+      ! The matrices have to be divided by two...
+   endif
 endif
 
 !------------ End of solver step
@@ -481,6 +492,12 @@ if (PEXSI_worker) then
    call globalize_sum( eBandH, buffer1, comm=PEXSI_comm )
    eBandH = buffer1
 
+   if (nspin == 2) then
+      ! We can divide by two the energies now instead
+      ! Defer the shift in free_energy above
+      ! and reduce for both spins
+   endif
+   
    if ((mpirank == 0) .and. (verbosity >= 2)) then
       write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
       write(6,"(a,f12.4)") "#&s Tr(H*DM) (eV) = ", eBandH/eV
@@ -572,16 +589,11 @@ endif
 call delete(dist1)
 call delete(dist2)
 
-! Step 3. Clean up */
-
-! We cannot finalize now if we are going to reuse
-! the plan in subsequent iterations...
-! We need an extra module to take care of this
-
 if (PEXSI_worker) then
    call MPI_Comm_Free(PEXSI_Comm, ierr)
    call MPI_Group_Free(PEXSI_Group, ierr)
 endif
+call MPI_Comm_Free(World_Comm, ierr)
 #endif
 
 CONTAINS
@@ -654,7 +666,12 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
              inertiaList,&
              info) 
              
-        inertiaList(:) = 2 * inertiaList(:)   ! No spin
+        if (nspin == 1) then
+           inertiaList(:) = 2 * inertiaList(:)
+        else
+           ! Some kind of All_reduction operation, to add the two inertias
+           ! so that all processors have the complete inertiaList(:)
+        endif
       
         call check_info(info,"inertia-count")
       

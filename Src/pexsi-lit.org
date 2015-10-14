@@ -163,7 +163,7 @@ end module m_pexsi_solver
   ! This version uses separate distributions for Siesta 
   ! (setup_H et al) and PEXSI.
   !
-  subroutine pexsi_solver(iscf, no_u, no_l, nspin,  &
+  subroutine pexsi_solver(iscf, no_u, no_l, nspin_in,  &
        maxnh, numh, listhptr, listh, H, S, qtot, DM, EDM, &
        ef, Entropy, temp, delta_Efermi)
 
@@ -172,11 +172,11 @@ end module m_pexsi_solver
     implicit          none
 
     integer, intent(in)  :: iscf  ! scf step number
-    integer, intent(in)  :: maxnh, no_u, no_l, nspin
+    integer, intent(in)  :: maxnh, no_u, no_l, nspin_in
     integer, intent(in), target  :: listh(maxnh), numh(no_l), listhptr(no_l)
-    real(dp), intent(in), target :: H(maxnh,nspin), S(maxnh)
+    real(dp), intent(in), target :: H(maxnh,nspin_in), S(maxnh)
     real(dp), intent(in) :: qtot
-    real(dp), intent(out), target:: DM(maxnh,nspin), EDM(maxnh,nspin)
+    real(dp), intent(out), target:: DM(maxnh,nspin_in), EDM(maxnh,nspin_in)
     real(dp), intent(out)        :: ef  ! Fermi energy
     real(dp), intent(out)        :: Entropy ! Entropy/k, dimensionless
     real(dp), intent(in)         :: temp   ! Electronic temperature
@@ -230,24 +230,23 @@ external         :: timer
 Some variables need to be broadcast since they were assigned only
 by the /SIESTA worker/  subset of nodes. They are renamed for clarity.
 
-=ispin= is an oddity here, but in fact it is referenced only by
-/SIESTA workers/. To be reconsidered later.
-
 #+BEGIN_SRC f90 :noweb-ref routine-variables
-integer          :: World_Comm, mpirank
+integer          :: World_Comm, mpirank, ierr
 !
 real(dp)  :: temperature, numElectronExact
 integer   :: norbs, scf_step
 real(dp)  :: delta_Ef
 !
-integer  :: ispin
+integer   :: nspin
 #+END_SRC
 
 #+BEGIN_SRC f90 :noweb-ref define-communicators
 !
-!  Set and Find rank in global communicator
-!
-World_Comm = true_MPI_Comm_World
+! Our global communicator is a duplicate of MPI_Comm_World
+! (recall that MPI_Comm_World is abused in Siesta to describe
+!  its own subset)
+! 
+call MPI_Comm_Dup(true_MPI_Comm_World, World_Comm, ierr)
 call mpi_comm_rank( World_Comm, mpirank, ierr )
 
 ! NOTE:  fdf calls will assign values to the whole processor set,
@@ -256,16 +255,13 @@ call mpi_comm_rank( World_Comm, mpirank, ierr )
 
 if (SIESTA_worker) then
 
-   call timer("pexsi", 1)
+   call timer("pexsi", 1)    ! ** why is this wrapped?
 
-   ispin = 1
-   if (nspin /=1) then
-      call die("Spin polarization not yet supported in PEXSI")
-   endif
-
-   ! rename some intent(in) variables
+   ! rename some intent(in) variables, which are only
+   ! defined for the Siesta subset
 
    norbs = no_u
+   nspin = nspin_in
    scf_step = iscf
    delta_Ef = delta_Efermi
    numElectronExact = qtot 
@@ -285,6 +281,9 @@ call broadcast(scf_step,comm=World_Comm)
 call broadcast(delta_Ef,comm=World_Comm)
 call broadcast(numElectronExact,World_Comm)
 call broadcast(temperature,World_Comm)
+call broadcast(nspin,World_Comm)
+if (nspin >1 ) call die("Spin polarization not implemented yet")
+
 ! Imported from modules, but set only in Siesta side
 call broadcast(prevDmax,comm=World_Comm)
 call broadcast(dDtol,comm=World_Comm)
@@ -307,7 +306,7 @@ information among disjoint communicators (use of an /intercommunicator/?)
 #+BEGIN_SRC f90 :noweb-ref routine-variables
 integer :: PEXSI_Group, World_Group
 integer :: PEXSI_Comm
-integer :: numNodesTotal, ierr
+integer :: numNodesTotal
 integer :: npPerPole
 logical  :: PEXSI_worker
 type(Dist)   :: dist1, dist2
@@ -354,9 +353,12 @@ real(dp), pointer, dimension(:) :: &
         HnzvalLocal=>null(), SnzvalLocal=>null(),  &
         DMnzvalLocal => null() , EDMnzvalLocal => null(), &
         FDMnzvalLocal => null()
+!
+integer :: ispin
 #+END_SRC
 #+BEGIN_SRC f90 :noweb-ref re-distribute-matrices
 if (SIESTA_worker) then
+   ispin = 1     ! For now
    m1%norbs = norbs
    m1%no_l  = no_l
    m1%nnzl  = sum(numH(1:no_l))
@@ -665,6 +667,10 @@ integer :: numTotalInertiaIter
 
      call check_info(info,"fermi_operator")
 
+     if (nspin == 2) then
+        ! Add numElectronPEXSI/2 and the Drv/2 (internally the routine assumes no spin?)
+     endif
+
      if (mpirank == 0) then
         write(6,"(a,f10.4)") "Fermi Operator. mu: ", mu/eV
         write(6,"(a,f10.4)") "Fermi Operator. numElectron: ", numElectronPEXSI
@@ -717,69 +723,77 @@ real(dp)       :: bs_energy, eBandH, free_bs_energy
 real(dp)       :: buffer1
 #+END_SRC
 #+BEGIN_SRC f90 :noweb-ref get-matrices-and-energy
-    
-    if( PEXSI_worker ) then
-       call f_ppexsi_retrieve_real_symmetric_dft_matrix(&
-            plan,&
-            DMnzvalLocal,&
-            EDMnzvalLocal,&
-            FDMnzvalLocal,&
-            eBandH,&          ! Will not be available
-            bs_energy,&
-            free_bs_energy,&
-            info)
-       call check_info(info,"retrieve_real_symmetric_dft_matrix")
 
-    endif
+  if( PEXSI_worker ) then
+     call f_ppexsi_retrieve_real_symmetric_dft_matrix(&
+          plan,&
+          DMnzvalLocal,&
+          EDMnzvalLocal,&
+          FDMnzvalLocal,&
+          eBandH,&          ! Will not be available
+          bs_energy,&
+          free_bs_energy,&
+          info)
+     call check_info(info,"retrieve_real_symmetric_dft_matrix")
+     if (nspin == 2) then
+        ! The matrices have to be divided by two...
+     endif
+  endif
 
-    !------------ End of solver step
+  !------------ End of solver step
 
-    if ((mpirank == 0) .and. (verbosity >= 1)) then
-       write(6,"(a,i3)") " #&s Number of solver iterations: ", numTotalPEXSIIter
-       write(6,"(a,i3)") " #&s Number of inertia iterations: ", numTotalInertiaIter
-       write(6,"(a,f12.5,f12.4,2x,a2)") "mu, N_e:", mu/eV, &
-            numElectronPEXSI, "&s"
-    endif
+  if ((mpirank == 0) .and. (verbosity >= 1)) then
+     write(6,"(a,i3)") " #&s Number of solver iterations: ", numTotalPEXSIIter
+     write(6,"(a,i3)") " #&s Number of inertia iterations: ", numTotalInertiaIter
+     write(6,"(a,f12.5,f12.4,2x,a2)") "mu, N_e:", mu/eV, &
+          numElectronPEXSI, "&s"
+  endif
 
-    if (PEXSI_worker) then
+  if (PEXSI_worker) then
 
-       free_bs_energy = 0.0_dp
-       bs_energy = 0.0_dp
-       eBandH = 0.0_dp
-       do i = 1,nnzLocal
-          free_bs_energy = free_bs_energy + SnzvalLocal(i) * &
-               ( FDMnzvalLocal(i) )
-          bs_energy = bs_energy + SnzvalLocal(i) * &
-               ( EDMnzvalLocal(i) )
-          eBandH = eBandH + HnzvalLocal(i) * &
-               ( DMnzvalLocal(i) )
-       enddo
-       ! These operations in PEXSI group now
-       call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_comm )
-       ! Note that FDM has an extra term: -mu*N
-       free_bs_energy = buffer1 + mu*numElectronPEXSI
-       call globalize_sum( bs_energy, buffer1, comm=PEXSI_comm )
-       bs_energy = buffer1
-       call globalize_sum( eBandH, buffer1, comm=PEXSI_comm )
-       eBandH = buffer1
+     free_bs_energy = 0.0_dp
+     bs_energy = 0.0_dp
+     eBandH = 0.0_dp
+     do i = 1,nnzLocal
+        free_bs_energy = free_bs_energy + SnzvalLocal(i) * &
+             ( FDMnzvalLocal(i) )
+        bs_energy = bs_energy + SnzvalLocal(i) * &
+             ( EDMnzvalLocal(i) )
+        eBandH = eBandH + HnzvalLocal(i) * &
+             ( DMnzvalLocal(i) )
+     enddo
+     ! These operations in PEXSI group now
+     call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_comm )
+     ! Note that FDM has an extra term: -mu*N
+     free_bs_energy = buffer1 + mu*numElectronPEXSI
+     call globalize_sum( bs_energy, buffer1, comm=PEXSI_comm )
+     bs_energy = buffer1
+     call globalize_sum( eBandH, buffer1, comm=PEXSI_comm )
+     eBandH = buffer1
 
-       if ((mpirank == 0) .and. (verbosity >= 2)) then
-          write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
-          write(6,"(a,f12.4)") "#&s Tr(H*DM) (eV) = ", eBandH/eV
-          write(6,"(a,f12.4)") "#&s Tr(S*FDM) (eV) = ", (free_bs_energy)/eV
-       endif
+     if (nspin == 2) then
+        ! We can divide by two the energies now instead
+        ! Defer the shift in free_energy above
+        ! and reduce for both spins
+     endif
+     
+     if ((mpirank == 0) .and. (verbosity >= 2)) then
+        write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
+        write(6,"(a,f12.4)") "#&s Tr(H*DM) (eV) = ", eBandH/eV
+        write(6,"(a,f12.4)") "#&s Tr(S*FDM) (eV) = ", (free_bs_energy)/eV
+     endif
 
-       ef = mu
-       ! Note that we use the S*EDM version of the band-structure energy
-       ! to estimate the entropy, by comparing it to S*FDM This looks
-       ! consistent, but note that the EDM is not used in Siesta to
-       ! estimate the total energy, only the DM (via the density) (that
-       ! is, the XC and Hartree correction terms to Ebs going into Etot
-       ! are estimated using the DM)
+     ef = mu
+     ! Note that we use the S*EDM version of the band-structure energy
+     ! to estimate the entropy, by comparing it to S*FDM This looks
+     ! consistent, but note that the EDM is not used in Siesta to
+     ! estimate the total energy, only the DM (via the density) (that
+     ! is, the XC and Hartree correction terms to Ebs going into Etot
+     ! are estimated using the DM)
 
-       Entropy = - (free_bs_energy - bs_energy) / temp
+     Entropy = - (free_bs_energy - bs_energy) / temp
 
-    endif ! PEXSI_worker
+  endif ! PEXSI_worker
 
 #+END_SRC
 
@@ -858,21 +872,22 @@ real(dp)       :: buffer1
 #+END_SRC
    
 ** Clean up
+We cannot finalize the plan now if we are going to reuse
+it in subsequent iterations... This is done by =siesta_forces= at the
+end of the scf cycle.
+
+Here we only clean up the communicators and groups and the distributions.
+
 #+BEGIN_SRC f90 :noweb-ref clean-up
 
   call delete(dist1)
   call delete(dist2)
 
-  ! Step 3. Clean up */
-
-  ! We cannot finalize now if we are going to reuse
-  ! the plan in subsequent iterations...
-  ! We need an extra module to take care of this
-
   if (PEXSI_worker) then
      call MPI_Comm_Free(PEXSI_Comm, ierr)
      call MPI_Group_Free(PEXSI_Group, ierr)
   endif
+  call MPI_Comm_Free(World_Comm, ierr)
 #+END_SRC
    
 ** Support routines
@@ -964,34 +979,39 @@ the T=0K inertia).
 
 #+BEGIN_SRC f90 :noweb-ref refine-interval-by-inertia-count
 
-     options%muMin0 = muMin0
-     options%muMax0 = muMax0
+  options%muMin0 = muMin0
+  options%muMax0 = muMax0
 
-       if (mpirank == 0) then
-          write (6,"(a,2f9.4,a,a,i4)") 'Calling inertiaCount: [', &
-               muMin0/eV, muMax0/eV, "] (eV)", &
-               " Nshifts: ", numShift
-       endif
+    if (mpirank == 0) then
+       write (6,"(a,2f9.4,a,a,i4)") 'Calling inertiaCount: [', &
+            muMin0/eV, muMax0/eV, "] (eV)", &
+            " Nshifts: ", numShift
+    endif
 
-       call timer("pexsi-inertia-ct", 1)
+    call timer("pexsi-inertia-ct", 1)
 
-       do i = 1, numShift
-         shiftList(i) = muMin0 + (i-1) * (muMax0-muMin0)/(numShift-1)
-       enddo
+    do i = 1, numShift
+      shiftList(i) = muMin0 + (i-1) * (muMax0-muMin0)/(numShift-1)
+    enddo
 
-       call f_ppexsi_inertia_count_real_symmetric_matrix(&
-            plan,&
-            options,&
-            numShift,&
-            shiftList,&
-            inertiaList,&
-            info) 
-            
-       inertiaList(:) = 2 * inertiaList(:)   ! No spin
+    call f_ppexsi_inertia_count_real_symmetric_matrix(&
+         plan,&
+         options,&
+         numShift,&
+         shiftList,&
+         inertiaList,&
+         info) 
+         
+    if (nspin == 1) then
+       inertiaList(:) = 2 * inertiaList(:)
+    else
+       ! Some kind of All_reduction operation, to add the two inertias
+       ! so that all processors have the complete inertiaList(:)
+    endif
 
-       call check_info(info,"inertia-count")
+    call check_info(info,"inertia-count")
 
-       call timer("pexsi-inertia-ct", 2)
+    call timer("pexsi-inertia-ct", 2)
 
 #+end_src
 

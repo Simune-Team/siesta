@@ -1,6 +1,7 @@
 
 ! --- Tangled code
 module m_redist_spmatrix
+ implicit none
  type, public :: comm_t
     integer :: src, dst, i1, i2, nitems
  end type comm_t
@@ -261,6 +262,7 @@ CONTAINS
  !--------------------------------------------------
     subroutine do_transfers_int(comms,data1,data2,g1,g2,mpi_comm)
  
+      use mpi
       type(comm_t), intent(in), target     :: comms(:)
       integer, dimension(:), pointer  :: data1
       integer, dimension(:), pointer  :: data2
@@ -373,6 +375,7 @@ CONTAINS
  !--------------------------------------------------
     subroutine do_transfers_dp(comms,data1,data2,g1,g2,mpi_comm)
  
+      use mpi
       integer, parameter :: dp = selected_real_kind(10,100)
  
       type(comm_t), intent(in), target     :: comms(:)
