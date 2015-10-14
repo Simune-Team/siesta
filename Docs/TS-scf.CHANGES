@@ -1,4 +1,11 @@
 ----------------------------------------------------
+October 14, 2015 -- Nick Papior       trunk-479---ts-scf-557
+Bugfix for tbtrans OpenMP compilation
+
+modified:
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 October 13, 2015 -- Nick Papior       trunk-479---ts-scf-556
 Enabled skewed transiesta/tbtrans calculations
 

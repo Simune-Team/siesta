@@ -63,7 +63,6 @@ subroutine tbt_init()
   integer :: MPIerror
 #endif
 
-!$ integer :: is
   integer :: iEl, itmp, it
   type(Sparsity) :: tmp_sp
   type(dSpData1D) :: tmp_1D
@@ -102,21 +101,21 @@ subroutine tbt_init()
 #endif
 !$OMP parallel
 !$OMP master
-!$    i = omp_get_num_threads()
-!$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
-!$    write(*,'(a,i0,a)') '* Running ',Nodes*i,' processes.'
-!$    call omp_get_schedule(i,is)
-!$    select case ( i )
+!$    it = omp_get_num_threads()
+!$    write(*,'(a,i0,a)') '* Running ',it,' OpenMP threads.'
+!$    write(*,'(a,i0,a)') '* Running ',Nodes*it,' processes.'
+!$    call omp_get_schedule(it,itmp)
+!$    select case ( it )
 !$    case ( OMP_SCHED_STATIC ) 
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',is
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',itmp
 !$    case ( OMP_SCHED_DYNAMIC ) 
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',itmp
 !$    case ( OMP_SCHED_GUIDED ) 
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',is
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',itmp
 !$    case ( OMP_SCHED_AUTO ) 
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule AUTO, chunks ',is
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule AUTO, chunks ',itmp
 !$    case default
-!$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',is
+!$    write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',itmp
 !$    end select
 !$OMP end master
 !$OMP end parallel
