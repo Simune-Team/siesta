@@ -59,7 +59,7 @@ CONTAINS
        proc_in_set2 = (myrank2 /= MPI_UNDEFINED)
  
        call mpi_comm_rank(mpi_comm,myid,ierr)
- !      print *, "rank, ing1?, ing2?", myid, proc_in_set1, proc_in_set2
+       print *, "rank, ing1?, ing2?", myid, proc_in_set1, proc_in_set2
        
        ! Figure out the communication needs
        call analyze_comms()
@@ -77,7 +77,7 @@ CONTAINS
           call re_alloc(m2%numcols,1,m2%no_l,"m2%numcols","redistribute_spmatrix")
        endif
  
- !      print *, "About to transfer numcols..."
+       print *, "About to transfer numcols..."
        call do_transfers_int(comms,m1%numcols,m2%numcols, &
                          g1,g2,mpi_comm)
  
@@ -88,6 +88,8 @@ CONTAINS
              nvals = 0
           endif
        endif
+ 
+       ! This operation is suspect .... it could be done later  ***
        call MPI_Bcast(nvals,1,MPI_Integer,0,mpi_comm,ierr)
  !      print *, "rank, nvals: ", myid, nvals
        
@@ -142,12 +144,12 @@ CONTAINS
  !!$            endif
  !!$         enddo
  
- !      print *, "About to transfer cols..."
+       print *, "About to transfer cols..."
        ! Transfer the cols arrays
        call do_transfers_int(commsnnz,m1%cols,m2%cols, &
                          g1, g2, mpi_comm)
  
- !      print *, "About to transfer values..."
+       print *, "About to transfer values..."
        ! Transfer the values arrays
        do j=1, nvals
           if (proc_in_set1) data1 => m1%vals(j)%data
@@ -156,7 +158,7 @@ CONTAINS
                g1,g2,mpi_comm)
        enddo
        nullify(data1,data2)
- !      print *, "Done transfers."
+       print *, "Done transfers."
  
        deallocate(commsnnz)
        deallocate(comms)
@@ -295,20 +297,20 @@ CONTAINS
        allocate(comm_rank1(0:nsize1-1))
        call MPI_Group_translate_ranks( g1, nsize1, (/ (i,i=0,nsize1-1) /), &
                                        basegroup, comm_rank1, ierr )
- !      print "(i4,a,10i3)", myrank, ":Ranks of g1 in base group:", comm_rank1
+       print "(i4,a,10i3)", myrank, ":Ranks of g1 in base group:", comm_rank1
  
        allocate(comm_rank2(0:nsize2-1))
        call MPI_Group_translate_ranks( g2, nsize2, (/ (i,i=0,nsize2-1) /), &
                                        basegroup, comm_rank2, ierr )
- !      print "(i4,a,10i3)", myrank,":Ranks of g2 in base group:", comm_rank2
+       print "(i4,a,10i3)", myrank,":Ranks of g2 in base group:", comm_rank2
  
        call mpi_group_rank(g1,myrank1,ierr)
  !      print "(i4,a,2i3)", myrank,": ierr in rank1: ", ierr
        call mpi_group_rank(g2,myrank2,ierr)
  !      print "(i4,a,2i3)", myrank,": ierr in rank2: ", ierr
        
- !      print "(i4,a,2i3)", myrank,": Ranks in g1 and g2: ", myrank1, myrank2
- !      print "(i4,a,2i3)", myrank,": g1 and g2: ", g1, g2
+       print "(i4,a,2i3)", myrank,": Ranks in g1 and g2: ", myrank1, myrank2
+       print "(i4,a,2i3)", myrank,": g1 and g2: ", g1, g2
  
  
        ! Do the actual transfers. 

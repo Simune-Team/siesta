@@ -276,8 +276,6 @@ call broadcast(delta_Ef,comm=World_Comm)
 call broadcast(numElectronExact,World_Comm)
 call broadcast(temperature,World_Comm)
 call broadcast(nspin,World_Comm)
-if (nspin >1 ) call die("Spin polarization not implemented yet")
-
 ! Imported from modules, but set only in Siesta side
 call broadcast(prevDmax,comm=World_Comm)
 call broadcast(dDtol,comm=World_Comm)
@@ -298,53 +296,113 @@ I will leave it like that, as I do not yet know how to move
 information among disjoint communicators (use of an /intercommunicator/?)
 
 #+BEGIN_SRC f90 :noweb-ref routine-variables
-integer :: PEXSI_Pole_Group, PEXSI_Global_Group
+integer :: PEXSI_Pole_Group, PEXSI_Global_Group, World_Group
+integer, allocatable :: pexsi_pole_ranks_in_world(:)
+integer :: PEXSI_Pole_Group_in_World
+integer :: PEXSI_Pole_Group_in_World_Spin(2)
 integer :: PEXSI_Pole_Comm, PEXSI_Global_Comm, PEXSI_Spin_Comm
 integer :: numNodesTotal
 integer :: npPerPole
 logical  :: PEXSI_worker
-type(Dist)   :: dist1, dist2
+!
+type(Dist)   :: dist1
+type(Dist), target   :: dist2_spin(2)
+type(Dist), pointer :: dist2
 integer  :: pbs, color, global_rank, spin_rank
 #+END_SRC
 
-Define the Siesta distribution
+Define the Siesta distribution. Note that this is known to all nodes.
+
 #+BEGIN_SRC f90 :noweb-ref define-communicators
 call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
 #+end_src
 
 For possibly spin-polarized calculations, we split the communicator
+
+As this example shows, all the processors (0,2, handling spin=1; and
+1,3, handling spin=2) think that they are in g2, since g2 is, by
+definition, PEXSI_Pole_Group.  We need to make two groups, and two
+distributions, per spin. OR, better, do it in World_Comm...
+
+#+BEGIN_EXAMPLE
+About to transfer numcols...
+   0:Ranks of g1 in base group:  0  1  2  3
+   0:Ranks of g2 in base group:  0  2
+   0: Ranks in g1 and g2:   0  0
+   0: g1 and g2:   4  9
+ About to transfer numcols...
+   1:Ranks of g1 in base group:  0  1  2  3
+   1:Ranks of g2 in base group:  1  3
+   1: Ranks in g1 and g2:   1  0
+   1: g1 and g2:   4  9
+ About to transfer numcols...
+   3:Ranks of g1 in base group:  0  1  2  3
+   3:Ranks of g2 in base group:  1  3
+   3: Ranks in g1 and g2:   3  1
+   3: g1 and g2:   4  9
+ About to transfer numcols...
+   2:Ranks of g1 in base group:  0  1  2  3
+   2:Ranks of g2 in base group:  0  2
+   2: Ranks in g1 and g2:   2  1
+   2: g1 and g2:   4  9
+#+END_EXAMPLE
+
 #+BEGIN_SRC f90 :noweb-ref define-communicators
 
-call mpi_comm_size( World_Comm, numNodesTotal, ierr )
+  call mpi_comm_size( World_Comm, numNodesTotal, ierr )
 
-npPerPole  = fdf_get("PEXSI.np-per-pole",4)
-if (nspin*npPerPole > numNodesTotal) call die("PEXSI.np-per-pole is too big for MPI size")
+  npPerPole  = fdf_get("PEXSI.np-per-pole",4)
+  if (nspin*npPerPole > numNodesTotal) call die("PEXSI.np-per-pole is too big for MPI size")
 
-! "Row" communicator for independent PEXSI operations on each spin
-color = mod(mpirank,nspin)    ! {0,1} for nspin = 2, or {0} for nspin = 1
-call MPI_Comm_Split(World_Comm, color, mpirank, PEXSI_Global_Comm, ierr)
+  ! "Row" communicator for independent PEXSI operations on each spin
+  color = mod(mpirank,nspin)    ! {0,1} for nspin = 2, or {0} for nspin = 1
+  call MPI_Comm_Split(World_Comm, color, mpirank, PEXSI_Global_Comm, ierr)
 
-! "Column" communicator for spin reductions
-color = mpirank/nspin       
-call MPI_Comm_Split(World_Comm, color, mpirank, PEXSI_Spin_Comm, ierr)
+  ! "Column" communicator for spin reductions
+  color = mpirank/nspin       
+  call MPI_Comm_Split(World_Comm, color, mpirank, PEXSI_Spin_Comm, ierr)
 
-! Group and Communicator for first-pole team of PEXSI workers
-!
-call MPI_Comm_Group(PEXSI_Global_Comm, PEXSI_Global_Group, Ierr)
-call MPI_Group_incl(PEXSI_Global_Group, npPerPole,   &
-                    (/ (i,i=0,npPerPole-1) /),&
-                    PEXSI_Pole_Group, Ierr)
-call MPI_Comm_create(PEXSI_Global_Comm, PEXSI_Pole_Group,&
-                     PEXSI_Pole_Comm, Ierr)
+  ! Group and Communicator for first-pole team of PEXSI workers
+  !
+  call MPI_Comm_Group(PEXSI_Global_Comm, PEXSI_Global_Group, Ierr)
+  call MPI_Group_incl(PEXSI_Global_Group, npPerPole,   &
+       (/ (i,i=0,npPerPole-1) /),&
+       PEXSI_Pole_Group, Ierr)
+  call MPI_Comm_create(PEXSI_Global_Comm, PEXSI_Pole_Group,&
+       PEXSI_Pole_Comm, Ierr)
 
 
-call mpi_comm_rank( PEXSI_Global_Comm, global_rank, ierr )
-call mpi_comm_rank( PEXSI_Spin_Comm, spin_rank, ierr )
-PEXSI_worker = (global_rank < npPerPole)   ! Could be spin up or spin down
+  call mpi_comm_rank( PEXSI_Global_Comm, global_rank, ierr )
+  call mpi_comm_rank( PEXSI_Spin_Comm, spin_rank, ierr )
+  PEXSI_worker = (global_rank < npPerPole)   ! Could be spin up or spin down
 
-! PEXSI blocksize 
-pbs = norbs/npPerPole
-call newDistribution(pbs,PEXSI_Pole_Group,dist2,TYPE_PEXSI,"px dist")
+  ! PEXSI blocksize 
+  pbs = norbs/npPerPole
+
+  ! Careful with this. For the purposes of matrix transfers, we need the ranks of the Pole group
+  ! in the "bridge" communicator/group (World)
+
+  allocate(pexsi_pole_ranks_in_world(npPerPole))
+  call MPI_Comm_Group(World_Comm, World_Group, Ierr)
+
+  call MPI_Group_translate_ranks( PEXSI_Pole_Group, npPerPole, (/ (i,i=0,npPerPole-1) /), &
+       World_Group, pexsi_pole_ranks_in_world, ierr )
+  call MPI_Group_incl(World_Group, npPerPole,   &
+       pexsi_pole_ranks_in_world,&
+       PEXSI_Pole_Group_in_World, Ierr)
+  deallocate(pexsi_pole_ranks_in_world)
+
+  ! Make the pole group information available to all spins, storing it in an array
+  call MPI_AllGather(PEXSI_Pole_Group_in_World,1,MPI_integer,&
+       PEXSI_Pole_Group_in_World_Spin,1,MPI_integer,PEXSI_Spin_Comm,ierr)
+
+  ! Create distributions known to all nodes
+  do ispin = 1, nspin
+     call newDistribution(pbs,PEXSI_Pole_Group_in_World_Spin(ispin), &
+          dist2_spin(ispin),TYPE_PEXSI,"px dist")
+  enddo
+
+  print *, "mpirank, global_rank, spin_rank:", mpirank, global_rank, spin_rank
 #+end_src
 
 
@@ -355,7 +413,9 @@ types are used to store and retrieve the matrices in either side. The
 code is in external auxiliary modules.
 
 #+BEGIN_SRC f90 :noweb-ref routine-variables
-type(aux_matrix) :: m1, m2
+type(aux_matrix), target :: m1_spin(2)
+type(aux_matrix) :: m2
+type(aux_matrix), pointer :: m1
 integer :: nrows, nnz, nnzLocal, numColLocal
 integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
 !
@@ -368,62 +428,75 @@ integer :: ispin, pexsi_spin
 #+END_SRC
 #+BEGIN_SRC f90 :noweb-ref re-distribute-matrices
 
-    pexsi_spin = spin_rank+1  ! {1,2}
-    ! This is done serially on the Siesta side, each time
-    ! filling in the structures in one PEXSI set
-    do ispin = 1, nspin
+  pexsi_spin = spin_rank+1  ! {1,2}
+  ! This is done serially on the Siesta side, each time
+  ! filling in the structures in one PEXSI set
 
-       if (SIESTA_worker) then
-          m1%norbs = norbs
-          m1%no_l  = no_l
-          m1%nnzl  = sum(numH(1:no_l))
-          m1%numcols => numH
-          m1%cols    => listH
-          allocate(m1%vals(2))
-          m1%vals(1)%data => S(:)
-          m1%vals(2)%data => H(:,ispin)
+  do ispin = 1, nspin
 
-       endif  ! SIESTA_worker
+     m1 => m1_spin(ispin)
 
-       call timer("redist_orbs_fwd", 1)
-       call redistribute_spmatrix(norbs,m1,dist1,m2,dist2,World_Comm)
-       call timer("redist_orbs_fwd", 2)
+     if (SIESTA_worker) then
+        m1%norbs = norbs
+        m1%no_l  = no_l
+        m1%nnzl  = sum(numH(1:no_l))
+        m1%numcols => numH
+        m1%cols    => listH
+        allocate(m1%vals(2))
+        m1%vals(1)%data => S(:)
+        m1%vals(2)%data => H(:,ispin)
 
-       if (PEXSI_worker .and. (pexsi_spin == ispin) ) then
+     endif  ! SIESTA_worker
 
-          nrows = m2%norbs          ! or simply 'norbs'
-          numColLocal = m2%no_l
-          nnzLocal    = m2%nnzl
-          call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,PEXSI_Pole_Comm,ierr)
+     print *, mpirank, " Done with m1 setup for ispin ", ispin
+     call timer("redist_orbs_fwd", 1)
 
-          call re_alloc(colptrLocal,1,numColLocal+1,"colptrLocal","pexsi_solver")
-          colptrLocal(1) = 1
-          do ih = 1,numColLocal
-             colptrLocal(ih+1) = colptrLocal(ih) + m2%numcols(ih)
-          enddo
+     ! Note that we cannot simply wrap this in a pexsi_spin test, as
+     ! there are Siesta nodes in both spin sets.
+     ! We must discriminate the PEXSI workers by the distribution info
+     dist2 => dist2_spin(ispin)
+     call redistribute_spmatrix(norbs,m1,dist1,m2,dist2,World_Comm)
+     
+     call timer("redist_orbs_fwd", 2)
+     print *, mpirank, " Done with redistribution for ispin ", ispin
 
-          rowindLocal => m2%cols
-          SnzvalLocal => m2%vals(1)%data
-          HnzvalLocal => m2%vals(2)%data
+     if (PEXSI_worker .and. (pexsi_spin == ispin) ) then
 
-          call re_alloc(DMnzvalLocal,1,nnzLocal,"DMnzvalLocal","pexsi_solver")
-          call re_alloc(EDMnzvalLocal,1,nnzLocal,"EDMnzvalLocal","pexsi_solver")
-          call re_alloc(FDMnzvalLocal,1,nnzLocal,"FDMnzvalLocal","pexsi_solver")
+        print *, mpirank, global_rank, spin_rank, " will try to get m2 for ispin ", ispin
 
-          call memory_all("after setting up H+S for PEXSI (PEXSI_workers)",PEXSI_Pole_Comm)
+        nrows = m2%norbs          ! or simply 'norbs'
+        numColLocal = m2%no_l
+        nnzLocal    = m2%nnzl
+        call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,PEXSI_Pole_Comm,ierr)
 
-       endif ! PEXSI worker
-    enddo
+        call re_alloc(colptrLocal,1,numColLocal+1,"colptrLocal","pexsi_solver")
+        colptrLocal(1) = 1
+        do ih = 1,numColLocal
+           colptrLocal(ih+1) = colptrLocal(ih) + m2%numcols(ih)
+        enddo
 
-    ! Make these available to all
-    ! (Note that the values are those on process 0, which is in the spin=1 set
-    ! In fact, they are only needed for calls to the interface, so the broadcast
-    ! could be over PEXSI_Global_Comm only.
+        rowindLocal => m2%cols
+        SnzvalLocal => m2%vals(1)%data
+        HnzvalLocal => m2%vals(2)%data
 
-    call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
-    call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
+        call re_alloc(DMnzvalLocal,1,nnzLocal,"DMnzvalLocal","pexsi_solver")
+        call re_alloc(EDMnzvalLocal,1,nnzLocal,"EDMnzvalLocal","pexsi_solver")
+        call re_alloc(FDMnzvalLocal,1,nnzLocal,"FDMnzvalLocal","pexsi_solver")
 
-    call memory_all("after setting up H+S for PEXSI",World_comm)
+        call memory_all("after setting up H+S for PEXSI (PEXSI_workers)",PEXSI_Pole_Comm)
+
+     endif ! PEXSI worker
+  enddo
+
+  ! Make these available to all
+  ! (Note that the values are those on process 0, which is in the spin=1 set
+  ! In fact, they are only needed for calls to the interface, so the broadcast
+  ! could be over PEXSI_Global_Comm only.
+
+  call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
+  call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
+
+  call memory_all("after setting up H+S for PEXSI",World_comm)
 
 #+END_SRC
 
@@ -689,9 +762,10 @@ integer :: numTotalInertiaIter
             info)
 
        call check_info(info,"fermi_operator")
-
-       numElectron_out = 0.5_dp * numElectron_out 
-       numElectronDrvMu_out = 0.5_dp * numElectronDrvMu_out 
+ 
+       ! Per spin
+       numElectron_out = numElectron_out / nspin
+       numElectronDrvMu_out =  numElectronDrvMu_out / nspin
 
        ! Gather the results for both spins on all processors
 
@@ -815,6 +889,9 @@ real(dp)       :: buffer1
      call globalize_sum( eBandH, buffer1, comm=PEXSI_Global_Comm )
      eBandH = buffer1
 
+     ! This output block will be executed only if World's root node is
+     ! in one of the leading pole groups. This might not be so
+
      if ((mpirank == 0) .and. (verbosity >= 2)) then
         write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
         write(6,"(a,f12.4)") "#&s Tr(H*DM) (eV) = ", eBandH/eV
@@ -831,6 +908,7 @@ real(dp)       :: buffer1
 
      Entropy = - (free_bs_energy - bs_energy) / temp
 
+     ! ef and Entropy are now known to the leading-pole processes
   endif ! PEXSI_worker
 
 #+END_SRC
@@ -838,76 +916,83 @@ real(dp)       :: buffer1
 ** Copy information to Siesta side
 
 #+BEGIN_SRC f90 :noweb-ref copy-to-siesta-side
-    
-    do ispin = 1, nspin
 
-       if (PEXSI_worker .and. (pexsi_spin == ispin)) then
-          ! Prepare m2 to transfer
+  do ispin = 1, nspin
 
-          call de_alloc(FDMnzvalLocal,"FDMnzvalLocal","pexsi_solver")
-          call de_alloc(colPtrLocal,"colPtrLocal","pexsi_solver")
+     m1 => m1_spin(ispin)
 
-          call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","pexsi_solver")
-          call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","pexsi_solver")
+     if (PEXSI_worker .and. (pexsi_spin == ispin)) then
+        ! Prepare m2 to transfer
 
-          m2%vals(1)%data => DMnzvalLocal(1:nnzLocal)
-          m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
+        call de_alloc(FDMnzvalLocal,"FDMnzvalLocal","pexsi_solver")
+        call de_alloc(colPtrLocal,"colPtrLocal","pexsi_solver")
 
-       endif
+        call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","pexsi_solver")
+        call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","pexsi_solver")
 
-       ! Prepare m1 to receive the results
-       if (SIESTA_worker) then
-          nullify(m1%vals(1)%data)    ! formerly pointing to S
-          nullify(m1%vals(2)%data)    ! formerly pointing to H
-          deallocate(m1%vals)
-          nullify(m1%numcols)         ! formerly pointing to numH
-          nullify(m1%cols)            ! formerly pointing to listH
-       endif
+        m2%vals(1)%data => DMnzvalLocal(1:nnzLocal)
+        m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
 
-       call timer("redist_orbs_bck", 1)
-       call redistribute_spmatrix(norbs,m2,dist2,m1,dist1,World_Comm)
-       call timer("redist_orbs_bck", 2)
+     endif
 
-       if (PEXSI_worker) then
-          call de_alloc(DMnzvalLocal, "DMnzvalLocal", "pexsi_solver")
-          call de_alloc(EDMnzvalLocal,"EDMnzvalLocal","pexsi_solver")
+     ! Prepare m1 to receive the results
+     if (SIESTA_worker) then
+        nullify(m1%vals(1)%data)    ! formerly pointing to S
+        nullify(m1%vals(2)%data)    ! formerly pointing to H
+        deallocate(m1%vals)
+        nullify(m1%numcols)         ! formerly pointing to numH
+        nullify(m1%cols)            ! formerly pointing to listH
+     endif
 
-          nullify(m2%vals(1)%data)    ! formerly pointing to DM
-          nullify(m2%vals(2)%data)    ! formerly pointing to EDM
-          deallocate(m2%vals)
-          ! allocated in the direct transfer
-          call de_alloc(m2%numcols,"m2%numcols","pexsi_solver")
-          call de_alloc(m2%cols,   "m2%cols",   "pexsi_solver")
-       endif
+     call timer("redist_orbs_bck", 1)
+     dist2 => dist2_spin(ispin)
+     call redistribute_spmatrix(norbs,m2,dist2,m1,dist1,World_Comm)
+     call timer("redist_orbs_bck", 2)
 
-       ! We assume that the root node is common to both communicators
-       if (SIESTA_worker) then
-          call broadcast(ef,comm=SIESTA_Comm)
-          call broadcast(Entropy,comm=SIESTA_Comm)
-          ! In future, m1%vals(1,2) could be pointing to DM and EDM,
-          ! and the 'redistribute' routine check whether the vals arrays are
-          ! associated, to use them instead of allocating them.
-          DM(:,ispin)  = m1%vals(1)%data(:)    
-          EDM(:,ispin) = m1%vals(2)%data(:)    
-          ! Check no_l
-          if (no_l /= m1%no_l) then
-             call die("Mismatch in no_l")
-          endif
-          ! Check listH
-          if (any(listH(:) /= m1%cols(:))) then
-             call die("Mismatch in listH")
-          endif
+     if (PEXSI_worker) then
+        call de_alloc(DMnzvalLocal, "DMnzvalLocal", "pexsi_solver")
+        call de_alloc(EDMnzvalLocal,"EDMnzvalLocal","pexsi_solver")
 
-          call de_alloc(m1%vals(1)%data,"m1%vals(1)%data","pexsi_solver")
-          call de_alloc(m1%vals(2)%data,"m1%vals(2)%data","pexsi_solver")
-          deallocate(m1%vals)
-          ! allocated in the direct transfer
-          call de_alloc(m1%numcols,"m1%numcols","pexsi_solver") 
-          call de_alloc(m1%cols,   "m1%cols",   "pexsi_solver")
+        nullify(m2%vals(1)%data)    ! formerly pointing to DM
+        nullify(m2%vals(2)%data)    ! formerly pointing to EDM
+        deallocate(m2%vals)
+        ! allocated in the direct transfer
+        call de_alloc(m2%numcols,"m2%numcols","pexsi_solver")
+        call de_alloc(m2%cols,   "m2%cols",   "pexsi_solver")
+     endif
 
-       endif
-    enddo
-    call timer("pexsi", 2)
+     ! We assume that Siesta's root node also belongs to one of the
+     ! leading-pole PEXSI communicators.
+     ! Note that by wrapping the broadcasts for SIESTA_workers we
+     ! do not make ef and Entropy known to the non-leading PEXSI processes.
+     
+     if (SIESTA_worker) then
+        call broadcast(ef,comm=SIESTA_Comm)
+        call broadcast(Entropy,comm=SIESTA_Comm)
+        ! In future, m1%vals(1,2) could be pointing to DM and EDM,
+        ! and the 'redistribute' routine check whether the vals arrays are
+        ! associated, to use them instead of allocating them.
+        DM(:,ispin)  = m1%vals(1)%data(:)    
+        EDM(:,ispin) = m1%vals(2)%data(:)    
+        ! Check no_l
+        if (no_l /= m1%no_l) then
+           call die("Mismatch in no_l")
+        endif
+        ! Check listH
+        if (any(listH(:) /= m1%cols(:))) then
+           call die("Mismatch in listH")
+        endif
+
+        call de_alloc(m1%vals(1)%data,"m1%vals(1)%data","pexsi_solver")
+        call de_alloc(m1%vals(2)%data,"m1%vals(2)%data","pexsi_solver")
+        deallocate(m1%vals)
+        ! allocated in the direct transfer
+        call de_alloc(m1%numcols,"m1%numcols","pexsi_solver") 
+        call de_alloc(m1%cols,   "m1%cols",   "pexsi_solver")
+
+     endif
+  enddo
+  call timer("pexsi", 2)
 
 
 #+END_SRC
@@ -970,6 +1055,7 @@ Several routines
     integer             ::   numMinICountShifts, numShift
 
     real(dp), allocatable :: shiftList(:), inertiaList(:)
+    real(dp), allocatable :: inertiaList_out(:)
 
     integer :: imin, imax
 
@@ -1007,6 +1093,7 @@ do
 enddo
 
 allocate(shiftList(numShift), inertiaList(numShift))
+allocate(inertiaList_out(numShift))
 
 #+END_SRC
 
@@ -1019,9 +1106,9 @@ routine (which does not do anything extra inside, just compute
 the T=0K inertia).
 
 #+BEGIN_SRC f90 :noweb-ref refine-interval-by-inertia-count
-
-  options%muMin0 = muMin0
-  options%muMax0 = muMax0
+    
+    options%muMin0 = muMin0
+    options%muMax0 = muMax0
 
     if (mpirank == 0) then
        write (6,"(a,2f9.4,a,a,i4)") 'Calling inertiaCount: [', &
@@ -1032,7 +1119,7 @@ the T=0K inertia).
     call timer("pexsi-inertia-ct", 1)
 
     do i = 1, numShift
-      shiftList(i) = muMin0 + (i-1) * (muMax0-muMin0)/(numShift-1)
+       shiftList(i) = muMin0 + (i-1) * (muMax0-muMin0)/(numShift-1)
     enddo
 
     call f_ppexsi_inertia_count_real_symmetric_matrix(&
@@ -1040,17 +1127,21 @@ the T=0K inertia).
          options,&
          numShift,&
          shiftList,&
-         inertiaList,&
+         inertiaList_out,&
          info) 
-         
-    if (nspin == 1) then
-       inertiaList(:) = 2 * inertiaList(:)
-    else
-       ! Some kind of All_reduction operation, to add the two inertias
-       ! so that all processors have the complete inertiaList(:)
-    endif
 
     call check_info(info,"inertia-count")
+
+    ! All-Reduce to add the (two) spin inertias
+    ! so that all processors have the complete inertiaList(:)
+    call MPI_AllReduce(inertiaList_out, inertiaList, &
+         numShift, MPI_Double_precision, &
+         MPI_Sum, PEXSI_Spin_Comm, ierr)
+
+    ! If nspin=1, each state is doubly occupied
+    ! 
+    inertiaList(:) = 2 * inertiaList_out(:) / nspin
+
 
     call timer("pexsi-inertia-ct", 2)
 

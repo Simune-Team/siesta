@@ -65,14 +65,22 @@ integer   :: norbs, scf_step
 real(dp)  :: delta_Ef
 !
 integer   :: nspin
-integer :: PEXSI_Pole_Group, PEXSI_Global_Group
+integer :: PEXSI_Pole_Group, PEXSI_Global_Group, World_Group
+integer, allocatable :: pexsi_pole_ranks_in_world(:)
+integer :: PEXSI_Pole_Group_in_World
+integer :: PEXSI_Pole_Group_in_World_Spin(2)
 integer :: PEXSI_Pole_Comm, PEXSI_Global_Comm, PEXSI_Spin_Comm
 integer :: numNodesTotal
 integer :: npPerPole
 logical  :: PEXSI_worker
-type(Dist)   :: dist1, dist2
+!
+type(Dist)   :: dist1
+type(Dist), target   :: dist2_spin(2)
+type(Dist), pointer :: dist2
 integer  :: pbs, color, global_rank, spin_rank
-type(aux_matrix) :: m1, m2
+type(aux_matrix), target :: m1_spin(2)
+type(aux_matrix) :: m2
+type(aux_matrix), pointer :: m1
 integer :: nrows, nnz, nnzLocal, numColLocal
 integer, pointer, dimension(:) ::  colptrLocal=> null(), rowindLocal=>null()
 !
@@ -150,8 +158,6 @@ call broadcast(delta_Ef,comm=World_Comm)
 call broadcast(numElectronExact,World_Comm)
 call broadcast(temperature,World_Comm)
 call broadcast(nspin,World_Comm)
-if (nspin >1 ) call die("Spin polarization not implemented yet")
-
 ! Imported from modules, but set only in Siesta side
 call broadcast(prevDmax,comm=World_Comm)
 call broadcast(dDtol,comm=World_Comm)
@@ -174,10 +180,10 @@ call MPI_Comm_Split(World_Comm, color, mpirank, PEXSI_Spin_Comm, ierr)
 !
 call MPI_Comm_Group(PEXSI_Global_Comm, PEXSI_Global_Group, Ierr)
 call MPI_Group_incl(PEXSI_Global_Group, npPerPole,   &
-                    (/ (i,i=0,npPerPole-1) /),&
-                    PEXSI_Pole_Group, Ierr)
+     (/ (i,i=0,npPerPole-1) /),&
+     PEXSI_Pole_Group, Ierr)
 call MPI_Comm_create(PEXSI_Global_Comm, PEXSI_Pole_Group,&
-                     PEXSI_Pole_Comm, Ierr)
+     PEXSI_Pole_Comm, Ierr)
 
 
 call mpi_comm_rank( PEXSI_Global_Comm, global_rank, ierr )
@@ -186,12 +192,39 @@ PEXSI_worker = (global_rank < npPerPole)   ! Could be spin up or spin down
 
 ! PEXSI blocksize 
 pbs = norbs/npPerPole
-call newDistribution(pbs,PEXSI_Pole_Group,dist2,TYPE_PEXSI,"px dist")
+
+! Careful with this. For the purposes of matrix transfers, we need the ranks of the Pole group
+! in the "bridge" communicator/group (World)
+
+allocate(pexsi_pole_ranks_in_world(npPerPole))
+call MPI_Comm_Group(World_Comm, World_Group, Ierr)
+
+call MPI_Group_translate_ranks( PEXSI_Pole_Group, npPerPole, (/ (i,i=0,npPerPole-1) /), &
+     World_Group, pexsi_pole_ranks_in_world, ierr )
+call MPI_Group_incl(World_Group, npPerPole,   &
+     pexsi_pole_ranks_in_world,&
+     PEXSI_Pole_Group_in_World, Ierr)
+deallocate(pexsi_pole_ranks_in_world)
+
+! Make the pole group information available to all spins, storing it in an array
+call MPI_AllGather(PEXSI_Pole_Group_in_World,1,MPI_integer,&
+     PEXSI_Pole_Group_in_World_Spin,1,MPI_integer,PEXSI_Spin_Comm,ierr)
+
+! Create distributions known to all nodes
+do ispin = 1, nspin
+   call newDistribution(pbs,PEXSI_Pole_Group_in_World_Spin(ispin), &
+        dist2_spin(ispin),TYPE_PEXSI,"px dist")
+enddo
+
+print *, "mpirank, global_rank, spin_rank:", mpirank, global_rank, spin_rank
 
 pexsi_spin = spin_rank+1  ! {1,2}
 ! This is done serially on the Siesta side, each time
 ! filling in the structures in one PEXSI set
+
 do ispin = 1, nspin
+
+   m1 => m1_spin(ispin)
 
    if (SIESTA_worker) then
       m1%norbs = norbs
@@ -205,11 +238,21 @@ do ispin = 1, nspin
 
    endif  ! SIESTA_worker
 
+   print *, mpirank, " Done with m1 setup for ispin ", ispin
    call timer("redist_orbs_fwd", 1)
+
+   ! Note that we cannot simply wrap this in a pexsi_spin test, as
+   ! there are Siesta nodes in both spin sets.
+   ! We must discriminate the PEXSI workers by the distribution info
+   dist2 => dist2_spin(ispin)
    call redistribute_spmatrix(norbs,m1,dist1,m2,dist2,World_Comm)
+   
    call timer("redist_orbs_fwd", 2)
+   print *, mpirank, " Done with redistribution for ispin ", ispin
 
    if (PEXSI_worker .and. (pexsi_spin == ispin) ) then
+
+      print *, mpirank, global_rank, spin_rank, " will try to get m2 for ispin ", ispin
 
       nrows = m2%norbs          ! or simply 'norbs'
       numColLocal = m2%no_l
@@ -419,9 +462,10 @@ solver_loop: do
         info)
 
    call check_info(info,"fermi_operator")
-
-   numElectron_out = 0.5_dp * numElectron_out 
-   numElectronDrvMu_out = 0.5_dp * numElectronDrvMu_out 
+ 
+   ! Per spin
+   numElectron_out = numElectron_out / nspin
+   numElectronDrvMu_out =  numElectronDrvMu_out / nspin
 
    ! Gather the results for both spins on all processors
 
@@ -533,6 +577,9 @@ if (PEXSI_worker) then
    call globalize_sum( eBandH, buffer1, comm=PEXSI_Global_Comm )
    eBandH = buffer1
 
+   ! This output block will be executed only if World's root node is
+   ! in one of the leading pole groups. This might not be so
+
    if ((mpirank == 0) .and. (verbosity >= 2)) then
       write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
       write(6,"(a,f12.4)") "#&s Tr(H*DM) (eV) = ", eBandH/eV
@@ -549,10 +596,13 @@ if (PEXSI_worker) then
 
    Entropy = - (free_bs_energy - bs_energy) / temp
 
+   ! ef and Entropy are now known to the leading-pole processes
 endif ! PEXSI_worker
 
 
 do ispin = 1, nspin
+
+   m1 => m1_spin(ispin)
 
    if (PEXSI_worker .and. (pexsi_spin == ispin)) then
       ! Prepare m2 to transfer
@@ -578,6 +628,7 @@ do ispin = 1, nspin
    endif
 
    call timer("redist_orbs_bck", 1)
+   dist2 => dist2_spin(ispin)
    call redistribute_spmatrix(norbs,m2,dist2,m1,dist1,World_Comm)
    call timer("redist_orbs_bck", 2)
 
@@ -593,7 +644,11 @@ do ispin = 1, nspin
       call de_alloc(m2%cols,   "m2%cols",   "pexsi_solver")
    endif
 
-   ! We assume that the root node is common to both communicators
+   ! We assume that Siesta's root node also belongs to one of the
+   ! leading-pole PEXSI communicators.
+   ! Note that by wrapping the broadcasts for SIESTA_workers we
+   ! do not make ef and Entropy known to the non-leading PEXSI processes.
+   
    if (SIESTA_worker) then
       call broadcast(ef,comm=SIESTA_Comm)
       call broadcast(Entropy,comm=SIESTA_Comm)
@@ -658,6 +713,7 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
   integer             ::   numMinICountShifts, numShift
 
   real(dp), allocatable :: shiftList(:), inertiaList(:)
+  real(dp), allocatable :: inertiaList_out(:)
 
   integer :: imin, imax
 
@@ -675,6 +731,7 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
   enddo
   
   allocate(shiftList(numShift), inertiaList(numShift))
+  allocate(inertiaList_out(numShift))
   
 
   nInertiaRounds = 0
@@ -684,36 +741,40 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
       options%muMin0 = muMin0
       options%muMax0 = muMax0
       
-        if (mpirank == 0) then
-           write (6,"(a,2f9.4,a,a,i4)") 'Calling inertiaCount: [', &
-                muMin0/eV, muMax0/eV, "] (eV)", &
-                " Nshifts: ", numShift
-        endif
+      if (mpirank == 0) then
+         write (6,"(a,2f9.4,a,a,i4)") 'Calling inertiaCount: [', &
+              muMin0/eV, muMax0/eV, "] (eV)", &
+              " Nshifts: ", numShift
+      endif
       
-        call timer("pexsi-inertia-ct", 1)
+      call timer("pexsi-inertia-ct", 1)
       
-        do i = 1, numShift
-          shiftList(i) = muMin0 + (i-1) * (muMax0-muMin0)/(numShift-1)
-        enddo
+      do i = 1, numShift
+         shiftList(i) = muMin0 + (i-1) * (muMax0-muMin0)/(numShift-1)
+      enddo
       
-        call f_ppexsi_inertia_count_real_symmetric_matrix(&
-             plan,&
-             options,&
-             numShift,&
-             shiftList,&
-             inertiaList,&
-             info) 
-             
-        if (nspin == 1) then
-           inertiaList(:) = 2 * inertiaList(:)
-        else
-           ! Some kind of All_reduction operation, to add the two inertias
-           ! so that all processors have the complete inertiaList(:)
-        endif
+      call f_ppexsi_inertia_count_real_symmetric_matrix(&
+           plan,&
+           options,&
+           numShift,&
+           shiftList,&
+           inertiaList_out,&
+           info) 
       
-        call check_info(info,"inertia-count")
+      call check_info(info,"inertia-count")
       
-        call timer("pexsi-inertia-ct", 2)
+      ! All-Reduce to add the (two) spin inertias
+      ! so that all processors have the complete inertiaList(:)
+      call MPI_AllReduce(inertiaList_out, inertiaList, &
+           numShift, MPI_Double_precision, &
+           MPI_Sum, PEXSI_Spin_Comm, ierr)
+      
+      ! If nspin=1, each state is doubly occupied
+      ! 
+      inertiaList(:) = 2 * inertiaList_out(:) / nspin
+      
+      
+      call timer("pexsi-inertia-ct", 2)
       
       interval_problem = .false.
       
