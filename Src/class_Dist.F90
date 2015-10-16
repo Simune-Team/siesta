@@ -115,7 +115,7 @@
     iseq = (a%i == b%i)
   end function isequal_
 !
-  subroutine newDistribution_(Blocksize,Group,this,dist_type,name)
+  subroutine newDistribution_(this,Blocksize,Ranks_in_Comm,Ref_Comm,dist_type,name)
      !........................................
      ! Constructor
      !........................................
