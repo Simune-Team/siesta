@@ -646,6 +646,8 @@ contains
     use units, only: eV
     use parallel, only: IONode
 
+    use m_tbt_save, only: save_parallel
+
     use m_tbt_hs, only: Volt
 
     ! Whether the user requests a Gamma calculation
@@ -653,6 +655,10 @@ contains
 
     integer :: i
     logical :: ltmp
+
+    if ( .not. IONode ) return
+
+    write(*,'(3a)') repeat('*',24),' Begin: TBT CHECKS AND WARNINGS ',repeat('*',24)
 
     if ( N_eigen < 0 ) then
        call die('Number of transmission eigenvalues MUST be &
@@ -662,7 +668,7 @@ contains
     if ( ('orb-current' .in.save_DATA) ) then
        ltmp = .not. fdf_get('SpinSpiral',.false.)
        ltmp = fdf_get('TBT.Symmetry.TimeReversal',ltmp)
-       if ( IONode .and. .not. Gamma ) then
+       if ( .not. Gamma ) then
           write(*,'(a,/,a)') 'WARNING: k-averaging orbital currents with &
                &time-reversal symmetry will not reproduce','the correct &
                &orbital current. Set TBT.Symmetry.TimeReversal F'
@@ -691,6 +697,17 @@ contains
             &difference being V'
        call die('Chemical potentials must not introduce consistent Ef shift to the system.')
     end if
+
+#ifdef MPI
+#ifdef NCDF_PARALLEL
+    if ( .not. save_parallel ) then
+       write(*,'(a)') ' ** Speed up the execution by utilizing parallel I/O'
+       write(*,'(a)') '  > TBT.CDF.MPI true'
+    end if
+#endif
+#endif
+
+    write(*,'(3a,/)') repeat('*',24),' End: TBT CHECKS AND WARNINGS ',repeat('*',26)
 
   end subroutine print_tbt_warnings
 

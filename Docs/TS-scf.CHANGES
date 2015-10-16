@@ -1,4 +1,27 @@
 ----------------------------------------------------
+October 15, 2015 -- Nick Papior       trunk-479---ts-scf-560
+Speeded up tbtrans saving of the data, parallel writes
+
+* Restructured writing routines so that the netcdf file
+  will only be opened one time.
+
+* When using parallel writes this means everything
+  as opening a netcdf file in parallel is _very_ time
+  consuming.
+
+  The user is also adviced if TBtrans has been compiled
+  accordingly.
+
+  This even on my local machine speeds up the saving
+  routines substantially.
+
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 October 14, 2015 -- Nick Papior       trunk-479---ts-scf-559
 Print-out was erroneous for spin-determined tbtrans
 

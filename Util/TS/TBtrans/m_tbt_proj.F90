@@ -21,6 +21,8 @@ module m_tbt_proj
   use m_region
   use m_ts_electype
   use m_tbt_save, only : tNodeE, save_parallel
+  use m_tbt_save, only : save_attach_buffer, local_save_DOS
+
 
 #ifdef NCDF_4
   use m_tbt_save, only : tbt_cdf_precision
@@ -2224,7 +2226,7 @@ contains
 
   end subroutine init_proj_save
 
-  subroutine proj_cdf_save(fname, N_Elec, Elecs, &
+  subroutine proj_cdf_save(ncdf, N_Elec, Elecs, &
        ikpt, nE, N_proj_T, proj_T, pDOS, T, &
        N_eigen, Teig, &
        save_DATA)
@@ -2241,7 +2243,7 @@ contains
 #endif
     use m_ts_electype
 
-    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: ikpt
@@ -2254,31 +2256,36 @@ contains
     real(dp), intent(in) :: Teig(:,:,:)
     type(dict), intent(in) :: save_DATA
 
-    type(hNCDF) :: ncdf, gmol, gproj, gEl
+    type(hNCDF) :: gmol, gproj, gEl
     integer :: ipt, ip, iE, i, iN
     character(len=NF90_MAX_NAME) :: cmol, cproj, ctmp
     logical :: same_E
-#ifdef MPI
     integer :: NDOS, NT
-    real(dp), allocatable :: rDOS(:), rT(:,:)
+    integer :: cnt(2), idx(2)
+#ifdef MPI
+    real(dp), allocatable, target :: thisDOS(:)
+    real(dp), allocatable :: rT(:,:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
+    ! Grab size of arrays
+    NDOS = size(pDOS,dim=1)
+    NT = size(T,dim=1)
+
 #ifdef MPI
-    if ( Nodes > 1 ) then
-       NT = size(T,dim=1)
-       allocate(rT(NT,Nodes-1))
-       NDOS = size(pDOS,dim=1)
+    if ( Node == 0 .and. .not. save_parallel ) then
+       ! Allocate the buffer array
        if ( N_eigen > NDOS ) then
-          allocate(rDOS(N_eigen))
+          allocate(thisDOS(N_eigen))
        else
-          allocate(rDOS(NDOS))
+          allocate(thisDOS(NDOS))
        end if
+       call save_attach_buffer(thisDOS)
+       
+       allocate(rT(NT,Nodes-1))
+       
     end if
 #endif
-
-    ! Open the netcdf file
-    call ncdf_open(ncdf,fname, mode=NF90_WRITE)
 
     cmol  = ' '
     cproj = ' '
@@ -2308,24 +2315,26 @@ contains
 
           ! We save the DOS calculated from the spectral function
           if ( 'proj-DOS-A' .in. save_DATA ) then
-             
-             call save_DOS(gEl,'ADOS',ikpt,nE,NDOS,pDOS(:,2,ipt))
+
+             call local_save_DOS(gEl,'ADOS',ikpt,nE,NDOS,pDOS(:,2,ipt))
              
           end if
 
        end if
 
 #ifdef MPI
-       if ( Node == 0 ) then
-          do iN = 1 , Nodes - 1
-             if ( nE%iE(iN) > 0 ) then
-                call MPI_Recv(rT(1,iN),NT,Mpi_double_precision, &
-                     iN, iN, Mpi_comm_world,status,MPIerror)
-             end if
-          end do
-       else if ( nE%iE(Node) > 0 ) then
-          call MPI_Send(T(1,ipt),NT,Mpi_double_precision, &
-               0, Node, Mpi_comm_world,MPIerror)
+       if ( .not. save_parallel ) then
+          if ( Node == 0 ) then
+             do iN = 1 , Nodes - 1
+                if ( nE%iE(iN) > 0 ) then
+                   call MPI_Recv(rT(1,iN),NT,Mpi_double_precision, &
+                        iN, iN, Mpi_comm_world,status,MPIerror)
+                end if
+             end do
+          else if ( nE%iE(Node) > 0 ) then
+             call MPI_Send(T(1,ipt),NT,Mpi_double_precision, &
+                  0, Node, Mpi_comm_world,MPIerror)
+          end if
        end if
 #endif
 
@@ -2356,65 +2365,45 @@ contains
              ctmp = trim(ctmp) // '.T'
           end if
 
-          if ( nE%iE(Node) > 0 ) then
-             call ncdf_put_var(gEl,ctmp,T(ip,ipt),start = (/nE%iE(Node),ikpt/) )
-          end if
-          if ( N_eigen > 0 ) then
-             call save_DOS(gEl,trim(ctmp)//'.Eig',ikpt,nE,N_eigen,Teig(:,ip,ipt))
+          idx = (/nE%iE(Node),ikpt/)
+          cnt(:) = 1
+          if ( idx(1) <= 0 ) then
+             idx(1) = 1
+             ! Denote no storage 
+             cnt = 0
           end if
 
+          ! Store data
+          call ncdf_put_var(gEl,ctmp,T(ip,ipt), start=idx, count=cnt)
+          
 #ifdef MPI
-          do iN = 1 , Nodes - 1
-             if ( nE%iE(iN) > 0 ) then
-                call ncdf_put_var(gEl,ctmp,rT(ip,iN),start = (/nE%iE(iN),ikpt/) )
-             end if
-          end do
+          if ( .not. save_parallel ) then
+             do iN = 1 , Nodes - 1
+                if ( nE%iE(iN) > 0 ) then
+                   call ncdf_put_var(gEl,ctmp,rT(ip,iN), &
+                        start = (/nE%iE(iN),ikpt/) )
+                end if
+             end do
+          end if
 #endif
-       
+
+          if ( N_eigen > 0 ) then
+             call local_save_DOS(gEl,trim(ctmp)//'.Eig',ikpt,nE,&
+                  N_eigen,Teig(:,ip,ipt))
+          end if
+
        end do
 
     end do
 
-    call ncdf_close(ncdf)
-       
 #ifdef MPI
-    if ( allocated(rDOS) ) deallocate(rDOS)
+    if ( allocated(thisDOS) ) deallocate(thisDOS)
     if ( allocated(rT) ) deallocate(rT)
 #endif
 
-  contains
-
-    subroutine save_DOS(grp,var,ikpt,nE,N,DOS)
-      type(hNCDF), intent(inout) :: grp
-      character(len=*), intent(in) :: var
-      integer, intent(in) :: ikpt
-      type(tNodeE), intent(in) :: nE
-      integer, intent(in) :: N
-      real(dp), intent(in) :: DOS(N)
-
-      if ( nE%iE(Node) > 0 ) then
-         call ncdf_put_var(grp,var,DOS,start = (/1,nE%iE(Node),ikpt/) )
-      end if
-      
-#ifdef MPI
-      if ( Node == 0 ) then
-         do iN = 1 , Nodes - 1
-            if ( nE%iE(iN) <= 0 ) cycle
-            call MPI_Recv(rDOS,N,Mpi_double_precision,iN,iN, &
-                 Mpi_comm_world,status,MPIerror)
-            call ncdf_put_var(grp,var,rDOS(1:N),start = (/1,nE%iE(iN),ikpt/) )
-         end do
-      else if ( nE%iE(Node) > 0 ) then
-         call MPI_Send(DOS,N,Mpi_double_precision,0,Node, &
-              Mpi_comm_world,MPIerror)
-      end if
-#endif
-
-    end subroutine save_DOS
-
   end subroutine proj_cdf_save
 
-  subroutine proj_cdf_save_J(fname, ikpt, nE, LME, orb_J, &
+  subroutine proj_cdf_save_J(ncdf, ikpt, nE, LME, orb_J, &
        save_DATA)
 
     use parallel, only : Node, Nodes
@@ -2430,15 +2419,15 @@ contains
 #endif
     use m_ts_electype
 
-    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: ikpt
     type(tNodeE), intent(in) :: nE
     type(tLvlMolEl), intent(inout) :: LME
     type(dSpData1D), intent(inout) :: orb_J
     type(dict), intent(in) :: save_DATA
 
-    type(hNCDF) :: ncdf, gmol, gEl
-    integer :: nnzs_dev
+    type(hNCDF) :: gmol, gEl
+    integer :: nnzs_dev, idx(3), cnt(3)
     real(dp), pointer :: J(:)
 #ifdef MPI
     integer :: iN
@@ -2449,65 +2438,71 @@ contains
     ! Then the user MUST use the rigid form
     if ( LME%idx < 0 ) return
 
-    ! Open the netcdf file
-#ifdef NCDF_PARALLEL
-    if ( save_parallel ) then
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE, &
-            comm = MPI_COMM_WORLD )
-    else
-#endif
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-#ifdef NCDF_PARALLEL
-    end if
-#endif
-
     J => val(orb_J)
     nnzs_dev = size(J)
-    ! We save the orbital current
     
+    ! We save the orbital current
+
     call ncdf_open_grp(ncdf,trim(LME%ME%mol%name),gmol)
     call ncdf_open_grp(gmol,trim(LME%ME%El%name),gEl)
 
-    ! Save the current
-    if ( nE%iE(Node) > 0 ) then
-       call ncdf_put_var(gEl,'J',J,start = (/1,nE%iE(Node),ikpt/) )
-    end if
+    if ( save_parallel ) then
 
+       idx(1) = 1
+       idx(3) = ikpt
+       cnt(1) = nnzs_dev
+       cnt(2) = 1
+       cnt(3) = 1
+       
+       if ( nE%iE(Node) > 0 ) then
+          idx(2) = nE%iE(Node)
+       else
+          idx(2) = 1
+          cnt = 0
+       end if
+       call ncdf_put_var(gEl,'J',J,start = idx, count=cnt)
+       
+    else
+       
+       ! Save the current
+       if ( nE%iE(Node) > 0 ) then
+          call ncdf_put_var(gEl,'J',J,start = (/1,nE%iE(Node),ikpt/) )
+       end if
+       
 #ifdef MPI
-    if ( Node == 0 ) then
-       do iN = 1 , Nodes - 1
-          if ( nE%iE(iN) > 0 ) then
-             call MPI_Recv(J,nnzs_dev,Mpi_double_precision, &
-                  iN, iN, Mpi_comm_world,status,MPIerror)
-             call ncdf_put_var(gEl,'J',J,start = (/1,nE%iE(iN),ikpt/) )
-          end if
-       end do
-    else if ( nE%iE(Node) > 0 ) then
-       call MPI_Send(J(1),nnzs_dev,Mpi_double_precision, &
-            0, Node, Mpi_comm_world,MPIerror)
-    end if
+       if ( Node == 0 ) then
+          do iN = 1 , Nodes - 1
+             if ( nE%iE(iN) > 0 ) then
+                call MPI_Recv(J,nnzs_dev,Mpi_double_precision, &
+                     iN, iN, Mpi_comm_world,status,MPIerror)
+                call ncdf_put_var(gEl,'J',J,start = (/1,nE%iE(iN),ikpt/) )
+             end if
+          end do
+       else if ( nE%iE(Node) > 0 ) then
+          call MPI_Send(J(1),nnzs_dev,Mpi_double_precision, &
+               0, Node, Mpi_comm_world,MPIerror)
+       end if
 #endif
-       
-    call ncdf_close(ncdf)
-       
+    end if
+    
   end subroutine proj_cdf_save_J
   
   ! Returns the projection state for the designated
   ! molecule projection.
-  subroutine proj_update(fname,N_mol,mols,ikpt)
+  subroutine proj_update(ncdf,N_mol,mols,ikpt)
     use nf_ncdf
 #ifdef MPI
     use mpi_siesta, only: MPI_Bcast
     use mpi_siesta, only: MPI_Double_Complex, MPI_Comm_World
 #endif
 
-    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: N_mol
     type(tProjMol), intent(inout) :: mols(N_mol)
     integer, intent(in) :: ikpt
 
     ! Local variables
-    type(hNCDF) :: ncdf, grp
+    type(hNCDF) :: grp
     logical :: exist
     integer :: no, im
     real(dp), allocatable :: rp(:,:)
@@ -2523,14 +2518,9 @@ contains
     ! already read in and we do not need
     ! to do anything here...
     if ( ikpt > 1 ) then
-       exist = .true.
-       do im = 1 , N_mol 
-          exist = exist .and. mols(im)%Gamma
-       end do
+       exist = all(mols(:)%Gamma)
        if ( exist ) return
     end if
-
-    call ncdf_open(ncdf,fname,mode=NF90_NOWRITE)
 
     do im = 1 , N_mol
 
@@ -2556,15 +2546,15 @@ contains
        end if
 
 #ifdef MPI
-       ! B-cast information
-       no = no * mols(im)%lvls%n
-       call MPI_Bcast(mols(im)%p(1,1),no, &
-            MPI_Double_Complex, 0, MPI_Comm_World, MPIerror)
+       if ( .not. save_parallel ) then
+          ! B-cast information
+          no = no * mols(im)%lvls%n
+          call MPI_Bcast(mols(im)%p(1,1),no, &
+               MPI_Double_Complex, 0, MPI_Comm_World, MPIerror)
+       end if
 #endif
 
     end do
-
-    call ncdf_close(ncdf)
 
   end subroutine proj_update
 
@@ -2796,7 +2786,7 @@ contains
   end subroutine proj_cdf_save_S_D
 
   ! Save <|Gamma|>
-  subroutine proj_cdf_save_bGammak(fname,N_proj_ME,proj_ME,ikpt,nE)
+  subroutine proj_cdf_save_bGammak(ncdf,N_proj_ME,proj_ME,ikpt,nE)
     use class_OrbitalDistribution
     use class_Sparsity
     use class_zSpData1D
@@ -2811,82 +2801,128 @@ contains
     use mpi_siesta, only: MPI_Double_Complex, MPI_Comm_World
 #endif
 
-    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: N_proj_ME
     type(tProjMolEl), intent(inout) :: proj_ME(N_proj_ME)
     integer, intent(in) :: ikpt
     type(tNodeE), intent(in) :: nE
 
     ! Local variables
-    type(hNCDF) :: ncdf, gmol
+    type(hNCDF) :: gmol
     integer :: iE, nl
     character(len=NF90_MAX_NAME) :: cmol, ctmp
+    integer :: idx(4), cnt(4)
 #ifdef MPI
     integer :: reqs(N_proj_ME)
     complex(dp), allocatable :: tmp(:)
     integer :: MPIerror, Status(MPI_STATUS_SIZE), iN
 #endif
 
-    ! Open the file for writing
-    call ncdf_open(ncdf,fname, mode = NF90_WRITE)
+    cmol  = ' '
+
+    if ( save_parallel ) then
+
+       idx(:) = 1
+       idx(4) = ikpt
+       
+
+       ! Easy storage
+       do iE = 1 , N_proj_ME
+
+          ! Number of levels on this projection
+          nl = proj_ME(iE)%mol%lvls%n
+
+          ! Reset count
+          cnt(1) = nl
+          cnt(2) = nl
+          cnt(3) = 1
+          cnt(4) = 1
+
+          if ( cmol /= proj_ME(iE)%mol%name ) then
+             cmol = proj_ME(iE)%mol%name
+             call ncdf_open_grp(ncdf,cmol,gmol)
+          end if
+
+          ctmp = trim(proj_ME(iE)%El%name)//'.bGk'
+          
+          ! Now we can save the data
+
+          ! Determine index and count of storages
+          if ( nE%iE(Node) > 0 ) then
+             idx(3) = nE%iE(Node)
+          else
+             ! first index, we *need* to make sure the
+             ! position exists
+             idx(3) = 1
+             ! Tell to not store any data
+             cnt = 0
+          end if
+
+          ! ALL nodes _have_ to participate
+          call ncdf_put_var(gmol,ctmp,proj_ME(iE)%bGk, &
+               start = idx, count=cnt )
+
+       end do
+
+    else
 
 #ifdef MPI
-    ! Find the maximum number of levels
-    nl = 0
-    do iE = 1 , N_proj_ME
-       nl = max(nl,proj_ME(iE)%mol%lvls%n)
-    end do
-    allocate(tmp(nl*nl))
+       ! Find the maximum number of levels
+       nl = 0
+       do iE = 1 , N_proj_ME
+          nl = max(nl,proj_ME(iE)%mol%lvls%n)
+       end do
+       allocate(tmp(nl*nl))
 #endif
-    
-    cmol  = ' '
-    do iE = 1 , N_proj_ME
-
-       ! Number of levels on this projection
-       nl = proj_ME(iE)%mol%lvls%n
-
+       
+       do iE = 1 , N_proj_ME
+          
+          ! Number of levels on this projection
+          nl = proj_ME(iE)%mol%lvls%n
+          
+#ifdef MPI
+          if ( Node /= 0 ) then
+             reqs(iE) = MPI_REQUEST_NULL
+          end if
+#endif
+          
+          if ( cmol /= proj_ME(iE)%mol%name ) then
+             cmol = proj_ME(iE)%mol%name
+             call ncdf_open_grp(ncdf,cmol,gmol)
+          end if
+          
+          ctmp = trim(proj_ME(iE)%El%name)//'.bGk'
+          ! Now we can save the data
+          
+          if ( nE%iE(Node) > 0 ) then
+             call ncdf_put_var(gmol,ctmp,proj_ME(iE)%bGk, &
+                  start = (/1,1,nE%iE(Node),ikpt/) )
+          end if
+#ifdef MPI
+          if ( Node == 0 ) then
+             do iN = 1 , Nodes - 1
+                if ( nE%iE(iN) <= 0 ) cycle
+                call MPI_Recv(tmp,nl*nl,Mpi_double_complex, &
+                     iN, iN, Mpi_comm_world,status,MPIerror)
+                call ncdf_put_var(gmol,ctmp,reshape(tmp,(/nl,nl/)), &
+                     start = (/1,1,nE%iE(iN),ikpt/) )
+             end do
+          else if ( nE%iE(Node) > 0 ) then
+             call MPI_ISend(proj_ME(iE)%bGk,nl*nl,Mpi_double_complex, &
+                  0, Node, Mpi_comm_world,reqs(iE),MPIerror)
+          end if
+#endif
+          
+       end do
+       
 #ifdef MPI
        if ( Node /= 0 ) then
-          reqs(iE) = MPI_REQUEST_NULL
+          call MPI_WaitAll(N_proj_ME,reqs(1),MPI_STATUSES_IGNORE,MPIerror)
        end if
 #endif
-
-       if ( cmol /= proj_ME(iE)%mol%name ) then
-          cmol = proj_ME(iE)%mol%name
-          call ncdf_open_grp(ncdf,cmol,gmol)
-       end if
-
-       ctmp = trim(proj_ME(iE)%El%name)//'.bGk'
-       ! Now we can save the data
-       if ( nE%iE(Node) > 0 ) then
-          call ncdf_put_var(gmol,ctmp,proj_ME(iE)%bGk, &
-               start = (/1,1,nE%iE(Node),ikpt/) )
-       end if
-#ifdef MPI
-       if ( Node == 0 ) then
-          do iN = 1 , Nodes - 1
-             if ( nE%iE(iN) <= 0 ) cycle
-             call MPI_Recv(tmp,nl*nl,Mpi_double_complex, &
-                  iN, iN, Mpi_comm_world,status,MPIerror)
-             call ncdf_put_var(gmol,ctmp,reshape(tmp,(/nl,nl/)), &
-                  start = (/1,1,nE%iE(iN),ikpt/) )
-          end do
-       else if ( nE%iE(Node) > 0 ) then
-          call MPI_ISend(proj_ME(iE)%bGk,nl*nl,Mpi_double_complex, &
-               0, Node, Mpi_comm_world,reqs(iE),MPIerror)
-       end if
-#endif
-
-    end do
-
-#ifdef MPI
-    if ( Node /= 0 ) then
-       call MPI_WaitAll(N_proj_ME,reqs(1),MPI_STATUSES_IGNORE,MPIerror)
+       
     end if
-#endif
-
-    call ncdf_close(ncdf)
-
+    
   end subroutine proj_cdf_save_bGammak
 
   subroutine proj_cdf2ascii(fname,N_proj_T,proj_T,save_DATA)

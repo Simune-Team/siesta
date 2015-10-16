@@ -23,6 +23,7 @@ module m_tbt_save
      module procedure cdf_precision_cmplx
   end interface tbt_cdf_precision
   public :: tbt_cdf_precision
+  public :: open_cdf_save
   public :: init_cdf_save
   public :: init_cdf_E_check
   public :: cdf_get_E_idx
@@ -31,7 +32,6 @@ module m_tbt_save
   public :: state_cdf_save
   public :: state_cdf_save_Elec
   public :: state_cdf_save_J
-  public :: state_cdf_save_kpt
   public :: state_cdf2ascii
 #else
   public :: init_save
@@ -41,6 +41,8 @@ module m_tbt_save
   public :: state_save_Elec
   public :: end_save
 #endif
+
+  public :: save_attach_buffer, local_save_DOS
 
   ! Type to control the energies that is contained
   ! This lets every processor know what the other processors have
@@ -52,10 +54,12 @@ module m_tbt_save
   public :: MPI_BcastNode
   public :: save_parallel
 
+#ifdef MPI
   ! Local variable to provide common routines
   ! for saving DOS
-  real(dp), allocatable :: rDOS(:)
-
+  real(dp), pointer :: rbuff1d(:)
+#endif
+  
 contains
 
   subroutine MPI_BcastNode(iE, cE, nE)
@@ -84,7 +88,32 @@ contains
 #endif
 
   end subroutine MPI_BcastNode
+
+  ! Opens the save file accordingly to the setup parameters
+  subroutine open_cdf_save(fname,ncdf)
+
+    use nf_ncdf, ncdf_parallel => parallel
     
+#ifdef MPI
+    use mpi_siesta, only : MPI_COMM_WORLD
+#endif
+
+    ! The file-name to be opened
+    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
+#ifdef MPI
+    integer :: MPIerror
+#endif
+
+    ! Open the netcdf file
+    if ( save_parallel ) then
+       call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
+            comm = MPI_COMM_WORLD )
+    else
+       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+    end if
+
+  end subroutine open_cdf_save
 
   subroutine init_save_options()
     use m_verbosity, only: verbosity
@@ -867,28 +896,19 @@ contains
 
   end subroutine cdf_get_kpt_idx
 
-  subroutine cdf_save_E(fname,nE)
+  subroutine cdf_save_E(ncdf,nE)
     use parallel, only : Node, Nodes
     use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
     use mpi_siesta, only : MPI_COMM_WORLD
 #endif
 
-    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
     type(tNodeE), intent(in) :: nE
 
-    type(hNCDF) :: ncdf
     integer :: iN, idx
 
     if ( save_parallel ) then
-       
-       ! Open for parallel write
-#ifdef MPI
-       call ncdf_open(ncdf,fname, &
-            mode=ior(NF90_WRITE,NF90_MPIIO), comm=MPI_Comm_World)
-#else
-       call die('ERROR tbt_save A')
-#endif
        
        ! Create count
        idx = nE%iE(Node)
@@ -904,9 +924,6 @@ contains
        
     else
 
-       ! Open the netcdf file
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-       
        ! We save the energy
 #ifdef MPI
        do iN = 0 , Nodes - 1
@@ -918,12 +935,10 @@ contains
 #endif
        
     end if
- 
-    call ncdf_close(ncdf)
 
   end subroutine cdf_save_E
 
-  subroutine state_cdf_save(fname, ikpt, nE, N_Elec, Elecs, DOS, T, &
+  subroutine state_cdf_save(ncdf, ikpt, nE, N_Elec, Elecs, DOS, T, &
        N_eigen, Teig, &
        save_DATA)
     
@@ -939,7 +954,7 @@ contains
 #endif
     use m_ts_electype
 
-    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: ikpt
     type(tNodeE), intent(in) :: nE
     integer, intent(in) :: N_Elec
@@ -950,11 +965,12 @@ contains
     real(dp), intent(in) :: Teig(N_eigen,N_Elec,N_Elec)
     type(dict), intent(in) :: save_DATA
 
-    type(hNCDF) :: ncdf, grp
+    type(hNCDF) :: grp
     integer :: iEl, jEl, NDOS, iN, idx(2), cnt(2)
     character(len=30) :: tmp, tmp2
 #ifdef MPI
     integer :: NT
+    real(dp), allocatable :: thisDOS(:)
     real(dp), allocatable :: rT(:,:,:)
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
@@ -968,21 +984,14 @@ contains
 #ifdef MPI
     if ( .not. save_parallel ) then
        if ( N_eigen > NDOS ) then
-          allocate(rDOS(N_eigen))
+          allocate(thisDOS(N_eigen))
        else
-          allocate(rDOS(NDOS))
+          allocate(thisDOS(NDOS))
        end if
+       call save_attach_buffer(thisDOS)
     end if
     NT = ( N_Elec + 1 ) * N_Elec
 #endif
-
-    ! Open the netcdf file
-    if ( save_parallel ) then
-       call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
-            comm = MPI_COMM_WORLD )
-    else
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-    end if
 
     if ( save_parallel ) then
 
@@ -1083,11 +1092,6 @@ contains
              call ncdf_put_var(grp,tmp2,T(N_Elec+1,iEl), &
                   start = idx, count = cnt )
           end if
-
-          if ( N_eigen > 0 ) then
-             call local_save_DOS(grp,trim(tmp)//'.Eig',ikpt,nE,&
-                  N_eigen,Teig(:,jEl,iEl))
-          end if
        
 #ifdef MPI
           if ( Node == 0 .and. .not. save_parallel ) then
@@ -1103,14 +1107,17 @@ contains
              end do
           end if
 #endif
-          
+
+          if ( N_eigen > 0 ) then
+             call local_save_DOS(grp,trim(tmp)//'.Eig',ikpt,nE,&
+                  N_eigen,Teig(:,jEl,iEl))
+          end if
+
        end do
     end do
 
-    call ncdf_close(ncdf)
-       
 #ifdef MPI
-    if ( allocated(rDOS) ) deallocate(rDOS)
+    if ( allocated(thisDOS) ) deallocate(thisDOS)
     if ( allocated(rT) ) deallocate(rT)
 #endif
 
@@ -1120,7 +1127,7 @@ contains
 
   end subroutine state_cdf_save
 
-  subroutine state_cdf_save_Elec(fname, ikpt, nE, N_Elec, Elecs, DOS, &
+  subroutine state_cdf_save_Elec(ncdf, ikpt, nE, N_Elec, Elecs, DOS, &
        save_DATA)
     
     use parallel, only : Nodes
@@ -1132,7 +1139,7 @@ contains
 #endif
     use m_ts_electype
 
-    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: ikpt
     type(tNodeE), intent(in) :: nE
     integer, intent(in) :: N_Elec
@@ -1140,9 +1147,12 @@ contains
     real(dp), intent(in) :: DOS(:,:)
     type(dict), intent(in) :: save_DATA
 
-    type(hNCDF) :: ncdf, grp
+    type(hNCDF) :: grp
     integer :: iEl
     integer :: N
+#ifdef MPI
+    real(dp), allocatable, target :: thisDOS(:)
+#endif
 
 #ifdef TBTRANS_TIMING
     call timer('cdf-w-El',1)
@@ -1150,17 +1160,10 @@ contains
 
 #ifdef MPI
     if ( .not. save_parallel ) then
-       allocate(rDOS(size(DOS,dim=1)))
+       allocate(thisDOS(size(DOS,dim=1)))
+       call save_attach_buffer(thisDOS)
     end if
 #endif
-
-    ! Open the netcdf file
-    if ( save_parallel ) then
-       call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
-            comm = MPI_COMM_WORLD )
-    else
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-    end if
 
     if ( 'DOS-Elecs' .in. save_DATA ) then
 
@@ -1175,10 +1178,8 @@ contains
        
     end if
 
-    call ncdf_close(ncdf)
-       
 #ifdef MPI
-    if ( allocated(rDOS) ) deallocate(rDOS)
+    if ( allocated(thisDOS) ) deallocate(thisDOS)
 #endif
 
 #ifdef TBTRANS_TIMING
@@ -1186,6 +1187,11 @@ contains
 #endif
 
   end subroutine state_cdf_save_Elec
+
+  subroutine save_attach_buffer(array)
+    real(dp), intent(inout), target :: array(:)
+    rbuff1d => array(:)
+  end subroutine save_attach_buffer
 
   subroutine local_save_DOS(grp,var,ikpt,nE,N,DOS)
 
@@ -1237,9 +1243,9 @@ contains
        if ( Node == 0 ) then
           do iN = 1 , Nodes - 1
              if ( nE%iE(iN) <= 0 ) cycle
-             call MPI_Recv(rDOS,N,MPI_double_precision,iN,iN, &
+             call MPI_Recv(rbuff1d,N,MPI_double_precision,iN,iN, &
                   Mpi_comm_world,status,MPIerror)
-             call ncdf_put_var(grp,var,rDOS(1:N),start = (/1,nE%iE(iN),ikpt/) )
+             call ncdf_put_var(grp,var,rbuff1d(1:N),start = (/1,nE%iE(iN),ikpt/) )
           end do
        else if ( nE%iE(Node) > 0 ) then
           call MPI_Send(DOS,N,MPI_double_precision,0,Node, &
@@ -1250,7 +1256,7 @@ contains
     
   end subroutine local_save_DOS
   
-  subroutine state_cdf_save_J(fname, ikpt, nE, El, orb_J, save_DATA)
+  subroutine state_cdf_save_J(ncdf, ikpt, nE, El, orb_J, save_DATA)
     
     use parallel, only : Node, Nodes
     use class_dSpData1D
@@ -1265,27 +1271,19 @@ contains
 #endif
     use m_ts_electype
 
-    character(len=*), intent(in) :: fname
+    type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: ikpt
     type(tNodeE), intent(in) :: nE
     type(Elec), intent(in) :: El
     type(dSpData1D), intent(inout) :: orb_J
     type(dict), intent(in) :: save_DATA
 
-    type(hNCDF) :: ncdf, grp
+    type(hNCDF) :: grp
     integer :: nnzs_dev, iN, cnt(3), idx(3)
     real(dp), pointer :: J(:)
 #ifdef MPI
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
-
-    ! Open the netcdf file
-    if ( save_parallel ) then
-       call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
-            comm = MPI_COMM_WORLD )
-    else
-       call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-    end if
 
     J => val(orb_J)
     nnzs_dev = size(J)
@@ -1322,32 +1320,8 @@ contains
     end if
 #endif
        
-    call ncdf_close(ncdf)
-       
   end subroutine state_cdf_save_J
 
-  subroutine state_cdf_save_kpt(fname,ikpt)
-
-    use parallel, only : Node
-
-    use nf_ncdf, ncdf_parallel => parallel
-
-    ! We step the k-point index to indicate that we 
-    ! have calculated all k-points.
-    character(len=*), intent(in) :: fname
-    integer, intent(in) :: ikpt
-
-    type(hNCDF) :: ncdf
-
-    if ( Node /= 0 ) return
-
-    call ncdf_open(ncdf,fname, mode=NF90_WRITE)
-
-    call ncdf_put_gatt(ncdf,'k_idx_cur',ikpt)
-
-    call ncdf_close(ncdf)
-
-  end subroutine state_cdf_save_kpt
 
   ! Routine for reading in the TBT.nc file
   ! and convert it to regular transmission files.
@@ -2164,10 +2138,11 @@ contains
     if ( Nodes > 1 ) then
        call crt_pivot(Nodes,nE%E,ipvt)
        if ( N_eigen > N ) then
-          allocate(rDOS(N_eigen))
+          allocate(thisDOS(N_eigen))
        else
-          allocate(rDOS(N))
+          allocate(thisDOS(N))
        end if
+       call save_attach_buffer(thisDOS)
     end if
 #endif
 
@@ -2244,7 +2219,7 @@ contains
 
     deallocate(ipvt)
 #ifdef MPI
-    if ( allocated(rDOS) ) deallocate(rDOS)
+    if ( allocated(thisDOS) ) deallocate(thisDOS)
 #endif
 
   end subroutine state_save
@@ -2273,14 +2248,18 @@ contains
     integer :: cu, N
     integer :: iEl
     integer, allocatable :: ipvt(:)
-
+#ifdef MPI
+    real(dp), allocatable, target :: thisDOS(:)
+#endif
+    
     allocate(ipvt(Nodes))
     ipvt = 1
 
 #ifdef MPI
     if ( Nodes > 1 ) then
        call crt_pivot(Nodes,nE%E,ipvt)
-       allocate(rDOS(size(DOS,dim=1)))
+       allocate(thisDOS(size(DOS,dim=1)))
+       call save_attach_buffer(thisDOS)
     end if
 #endif
 
@@ -2304,7 +2283,7 @@ contains
 
     deallocate(ipvt)
 #ifdef MPI
-    if ( allocated(rDOS) ) deallocate(rDOS)
+    if ( allocated(thisDOS) ) deallocate(thisDOS)
 #endif
 
   end subroutine state_save_Elec
@@ -2349,9 +2328,9 @@ contains
              write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(DATA(:)) * rnd
           else
 #ifdef MPI
-             call MPI_Recv(rDOS,N,MPI_double_precision,i,i, &
+             call MPI_Recv(rbuff1d,N,MPI_double_precision,i,i, &
                   Mpi_comm_world,status,MPIerror)
-             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(rDOS(1:N)) * rnd
+             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(rbuff1d(1:N)) * rnd
 #else
              call die('Error')
 #endif
@@ -2400,9 +2379,9 @@ contains
              write(iu,fmt) nE%E(i) / eV,EIG(:)
           else
 #ifdef MPI
-             call MPI_Recv(rDOS,N,MPI_double_precision,i,i, &
+             call MPI_Recv(rbuff1d,N,MPI_double_precision,i,i, &
                   Mpi_comm_world,status,MPIerror)
-             write(iu,fmt) nE%E(i) / eV,rDOS(1:N)
+             write(iu,fmt) nE%E(i) / eV,rbuff1d(1:N)
 #else
              call die('Error')
 #endif

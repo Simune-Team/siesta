@@ -65,6 +65,7 @@ contains
     use class_zTriMat
 
     use dictionary
+    use nf_ncdf, only: hNCDF, ncdf_close
 
     use m_ts_electype
     ! Self-energy read
@@ -150,13 +151,12 @@ contains
     type(tLife) :: life(N_Elec)
 #endif
 
+    ! The transmission values between the different electrodes
     real(dp) :: T(N_Elec+1,N_Elec)
+    ! The transmission eigenvalues
     real(dp), allocatable :: Teig(:,:,:)
 
-#ifndef NCDF_4
-    ! Units for IO of ASCII files
-    integer, allocatable :: iounits(:), iounits_El(:)
-#else
+#ifdef NCDF_4
     ! If the user requests projection molecules
     ! Instead of overwriting the original
     ! electrode, we instead prepare ONE electrode
@@ -188,13 +188,6 @@ contains
     real(dp) :: omega
 #endif
     integer :: n_kpt
-#ifdef NCDF_4
-#ifdef CONTINUATION_NOT_WORKING
-    real(dp), allocatable :: calculated_E(:)
-    integer :: cdf_ikpt
-    logical :: have_E
-#endif
-#endif
 ! ************************************************************
 
 ! ******************** Loop variables ************************
@@ -209,6 +202,16 @@ contains
     integer :: no, io
     integer :: pad_LHS, pad_RHS
     type(tNodeE) :: nE
+! ************************************************************
+
+! ******************* DATA file variables ********************
+#ifdef NCDF_4
+    ! The netcdf handle for TBT
+    type(hNCDF) :: TBTcdf, PROJcdf
+#else
+    ! Units for IO of ASCII files
+    integer, allocatable :: iounits(:), iounits_El(:)
+#endif
 ! ************************************************************
 
 ! ******************** Timer variables ***********************
@@ -363,7 +366,8 @@ contains
 
     else
 
-       ! Allocate the minimal Teig
+       ! Allocate a dummy Teig for succesfull passing it
+       ! to a routine when compiling with warnings
        allocate(Teig(1,1,1))
 
     end if
@@ -491,7 +495,11 @@ contains
           jEl = max(jEl,Elecs(iEl)%no_u)
        end do
     end if
+    ! this allows us to re-use the data arrays for
+    ! the DOS storages between electrode DOS and device DOS
     allocate(allDOS(max(io,jEl),N_Elec+1))
+    ! Note we point to the same data-segments to reduce memory
+    ! requirement
     DOS => allDOS(1:r_oDev%n,1:N_Elec+1)
     DOS_El => allDOS(1:jEl,1:N_Elec)
 
@@ -555,7 +563,17 @@ contains
     ! Number of energy points
     N_E = N_TBT_E()
 
-#ifndef NCDF_4
+#ifdef NCDF_4
+    ! Open the NetCDF handles
+
+    ! *.TBT.nc file
+    call open_cdf_save(cdf_fname, TBTcdf)
+    if ( N_proj_ME > 0 ) then
+       ! *.TBT.Proj.nc file
+       call open_cdf_save(cdf_fname_proj, PROJcdf)
+    end if
+
+#else
     ! Allocate units for IO ASCII
     allocate(iounits(1+(N_Elec*2+2)*N_Elec)) ! maximum number of units
     iounits = -100
@@ -598,12 +616,6 @@ contains
 
        end if
 
-#ifdef NCDF_4
-#ifdef CONTINUATION_NOT_WORKING
-       call cdf_get_kpt_idx(cdf_fname,bkpt,cdf_ikpt)
-#endif
-#endif
-
 #ifndef NCDF_4
        ! Step the k-points in the output files
        call step_kpt_save(iounits,n_kpt,bkpt,wkpt)
@@ -637,7 +649,7 @@ contains
        if ( N_mol > 0 ) then
 
           ! Read in the projections for this k-point
-          call proj_update(cdf_fname_proj,N_mol,mols,ikpt)
+          call proj_update(PROJcdf,N_mol,mols,ikpt)
 
           ! Calculate the |><| S and save it immediately
           ! For all cases where we need the diagonal of the
@@ -668,35 +680,6 @@ contains
           ! Copy data, and form: \omega**2 + i \eta
           cOmega = cE
           cOmega%e = dcmplx(omega**2,dimag(cE%e))
-#endif
-
-#ifdef NCDF_4
-#ifdef CONTINUATION_NOT_WORKING
-
-          if ( ikpt == 1 .and. iE_N > 0 ) then
-             ! We just update the energy points before checking
-             ! We do not need to do this more than once!
-             iEl = size(calculated_E) - N_E + iE + Nodes - Node
-             calculated_E(iEl) = real(cE%E,dp)
-          end if
-
-          ! Get the index for the energy-point
-          ! If it hasn't been calculated previously
-          ! we should get exactly the same position as before
-          call cdf_get_E_idx(calculated_E,N_E, &
-               cE%E,iE_N,have_E)
-
-          ! In case the point already has been calculated, we skip to
-          ! the next one
-          if ( have_E .and. cdf_ikpt < 0 ) then
-             iE = iE + Nodes
-             cE = tbt_E(iE+Nodes-Node,step=Nodes) ! we read them backwards
-             cycle
-          end if
-
-          ! in case we do not use out-of-core calculations
-          ! we can easily skip all energy points...
-#endif
 #endif
 
           ! B-cast all nodes current energy segment
@@ -750,7 +733,7 @@ contains
 
                 ! Immediately save the DOS
 #ifdef NCDF_4
-                call state_cdf_save_Elec(cdf_fname, ikpt, nE, N_Elec, Elecs, &
+                call state_cdf_save_Elec(TBTcdf, ikpt, nE, N_Elec, Elecs, &
                      DOS_El, save_DATA)
 #else
                 call state_save_Elec(iounits_El,nE,N_Elec,Elecs,DOS_El, &
@@ -768,16 +751,6 @@ contains
           end if
 
           call timer('read-GS',2)
-
-
-#ifdef NCDF_4
-#ifdef CONTINUATION_NOT_WORKING
-          ! In case it has already been calculated
-          ! we skip the remaining calculations
-          ! We first do it here due to the case of 
-          if ( have_E ) cE%fake = .true.
-#endif
-#endif
 
 #ifdef NCDF_4
           ! prepare dH
@@ -835,10 +808,10 @@ contains
              end do
 
              ! Save the energies
-             call cdf_save_E(cdf_fname_proj,nE)
+             call cdf_save_E(PROJcdf,nE)
              
              ! Save the projected values
-             call proj_cdf_save_bGammak(cdf_fname_proj,N_proj_ME,proj_ME, &
+             call proj_cdf_save_bGammak(PROJcdf,N_proj_ME,proj_ME, &
                   ikpt,nE)
 
              call timer('Proj-Gam',2)
@@ -962,7 +935,7 @@ contains
                 
                 ! We need to save it immediately, we
                 ! do not want to have several arrays in memory
-                call state_cdf_save_J(cdf_fname, ikpt, nE, Elecs(iEl), &
+                call state_cdf_save_J(TBTcdf, ikpt, nE, Elecs(iEl), &
                      orb_J, save_DATA)
                 
              end if
@@ -1014,7 +987,7 @@ contains
 
           ! Save the current gathered data
 #ifdef NCDF_4
-          call state_cdf_save(cdf_fname, ikpt, nE, N_Elec, Elecs, &
+          call state_cdf_save(TBTcdf, ikpt, nE, N_Elec, Elecs, &
                DOS, T, N_eigen, Teig, save_DATA)
 #else
           call state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
@@ -1044,7 +1017,7 @@ contains
                 ! this aint pretty, however it relieves a lot of
                 ! superfluous checks in the following block
                 if ( ('proj-orb-current' .in. save_DATA) .and. p_E%idx > 0 ) then
-                   call proj_cdf_save_J(cdf_fname, ikpt, nE, proj_T(ipt)%L, &
+                   call proj_cdf_save_J(PROJcdf, ikpt, nE, proj_T(ipt)%L, &
                         orb_J, save_DATA)
                 end if
 #endif
@@ -1130,7 +1103,7 @@ contains
                   ! We need to save it immediately, we
                   ! do not want to have several arrays in the
                   ! memory
-                  call proj_cdf_save_J(cdf_fname, ikpt, nE, proj_T(ipt)%L, &
+                  call proj_cdf_save_J(PROJcdf, ikpt, nE, proj_T(ipt)%L, &
                        orb_J, save_DATA)
 
                end if
@@ -1188,7 +1161,7 @@ contains
           call timer('T-proj',2)
 
           ! Save the projections
-          call proj_cdf_save(cdf_fname_proj,N_Elec,Elecs, &
+          call proj_cdf_save(PROJcdf,N_Elec,Elecs, &
                ikpt,nE,N_proj_T,proj_T, &
                pDOS, bTk, N_eigen, bTkeig, save_DATA )
 
@@ -1224,10 +1197,6 @@ contains
 
        end do
 
-#ifdef NCDF_4
-       !call state_cdf_save_kpt(cdf_fname,ikpt)
-#endif
-
        ! Stop timer
        call timer_stop('E-loop')
 
@@ -1261,6 +1230,12 @@ contains
 
 #ifdef NCDF_4
 
+    ! Close the netcdf file
+    call ncdf_close(TBTcdf)
+    if ( N_proj_ME > 0 ) then
+       call ncdf_close(PROJcdf)
+    end if
+
     call clean_dH( )
 
     if ( N_proj_ME > 0 ) then
@@ -1270,11 +1245,6 @@ contains
     end if
 
     call delete(orb_J)
-
-#ifdef CONTINUATION_NOT_WORKING
-    ! The index look-up array
-    deallocate(calculated_E)
-#endif
 
     ! Before we delete the Gf tri-diagonal matrix
     ! we need to create the sigma mean if requested.
