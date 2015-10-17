@@ -328,8 +328,8 @@ Define the Siesta distribution. Note that this is known to all nodes.
     allocate(siesta_ranks_in_world(nworkers_SIESTA))
     call MPI_Group_translate_ranks( SIESTA_Group, nworkers_SIESTA, (/ (i,i=0,nworkers_SIESTA-1) /), &
          World_Group, siesta_ranks_in_world, ierr )
-    call newDistribution(dist1,BlockSize,siesta_ranks_in_world,World_Comm, &
-                         TYPE_BLOCK_CYCLIC,"bc dist")
+    call newDistribution(dist1,World_Comm,siesta_ranks_in_world, &
+                         TYPE_BLOCK_CYCLIC,BlockSize,"bc dist")
     deallocate(siesta_ranks_in_world)
 #+end_src
 

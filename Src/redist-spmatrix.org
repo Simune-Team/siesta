@@ -111,13 +111,14 @@ kinds of "inter-communication" that we are doing.
     integer ::  ierr
 
     integer ::  i, io, g1, g2, j, nvals
+    integer ::  comparison, n1, n2, c1, c2
     integer, parameter :: dp = selected_real_kind(10,100)
     real(dp), dimension(:), pointer  :: data1 => null(), data2 => null()
 
     ! The communicators are a sanity check on the ranks
 
-    c1 = communicator(dist1)
-    c2 = communicator(dist2)
+    c1 = ref_comm(dist1)
+    c2 = ref_comm(dist2)
     call MPI_Comm_Compare(c1,c2,comparison,ierr)
 
     select case (comparison)
@@ -150,10 +151,13 @@ kinds of "inter-communication" that we are doing.
        call die("Incompatible bridge and dist communicators")
     end select
 
-    ! Now create groups g1 and g2
+    ! Now create groups g1 and g2.
+    ! (DO NOT trust the internal handles)
     call MPI_Comm_Group(mpi_comm,gg,ierr)
-    call MPI_Group_Incl(gg,nprocs(dist1),ranks(dist1),g1,ierr)
-    call MPI_Group_Incl(gg,nprocs(dist2),ranks(dist2),g2,ierr)
+    n1 = size(ranks_in_ref_comm(dist1))
+    n2 = size(ranks_in_ref_comm(dist2))
+    call MPI_Group_Incl(gg,n1,ranks_in_ref_comm(dist1),g1,ierr)
+    call MPI_Group_Incl(gg,n2,ranks_in_ref_comm(dist2),g2,ierr)
 
     ! The rest is the same as before
 

@@ -622,7 +622,6 @@ m_spin.o: alloc.o parallel.o precision.o
 m_stress.o: precision.o
 m_svd.o: precision.o
 m_timer.o: m_io.o m_walltime.o moreParallelSubs.o parallel.o precision.o sys.o
-m_transfers.o: m_comm.o
 m_ts_aux_rout.o: precision.o sys.o
 m_ts_cctype.o: precision.o
 m_ts_contour.o: m_ts_aux_rout.o m_ts_cctype.o parallel.o precision.o sys.o

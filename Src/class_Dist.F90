@@ -14,7 +14,7 @@
 
 #ifndef MPI
   ! To allow compilation in serial mode
-  integer, parameter, private :: MPI_GROUP_NULL = -huge(1)
+  integer, parameter, private :: MPI_COMM_NULL = -huge(1)
   integer, parameter, private :: MPI_UNDEFINED = -huge(1)
 #endif
 
@@ -40,12 +40,7 @@
      !------------------------
      character(len=256)   :: name = "null Dist"
      !------------------------
-     integer  :: group = -1      ! MPI group
-     integer  :: node = -1       ! MPI rank in group  (my_proc)
-     integer  :: nodes = 0       ! MPI size of group  (nprocs)
-     integer  :: node_io = -1    ! Node capable of IO
-     !------------------------
-     type(distKind)           :: dist_type
+     type(distKind)        :: dist_type
      type(BlockCyclicDist) :: bdist
      type(PEXSIDist)       :: pdist
      !------------------------------------------
@@ -54,8 +49,11 @@
   type Dist
      type(Dist_), pointer :: data => null()
   end type Dist
+  
+  type(Dist_), pointer :: obj => null()
 
-  public :: newDistribution, distType, group
+  public :: newDistribution, distType
+  public :: ref_comm, ranks_in_ref_comm
   public :: num_local_elements, node_handling_element
   public :: index_local_to_global, index_global_to_local
 
@@ -65,9 +63,15 @@
   interface distType
      module procedure dist_type
   end interface
-  interface group
-     module procedure group_
+
+  interface ref_comm
+     module procedure ref_comm_
+  end interface ref_comm
+
+  interface ranks_in_ref_comm
+     module procedure ranks_in_ref_comm_
   end interface
+
   interface num_local_elements
      module procedure num_local_elements_
   end interface
@@ -104,7 +108,7 @@
     type(Dist)  :: this
     type(distKind) :: dtype
   
-    dtype = this%data%dist_type
+    dtype = obj%dist_type
 
   end function dist_type
 
@@ -115,41 +119,77 @@
     iseq = (a%i == b%i)
   end function isequal_
 !
-  subroutine newDistribution_(this,Blocksize,Ranks_in_Comm,Ref_Comm,dist_type,name)
+  subroutine newDistribution_(this,Ref_Comm,Ranks_in_Ref_Comm, &
+       dist_type,Blocksize,name)
      !........................................
      ! Constructor
      !........................................
      type (Dist), intent(inout) :: this
+     integer, intent(in)                       :: ref_comm
+     integer, intent(in)                       :: ranks_in_ref_comm(:)
+     type(distKind), intent(in)                :: dist_type
      integer, intent(in)                       :: Blocksize
-     integer, intent(in)                       :: Group
-     type (distKind), intent(in)               :: dist_type
-     character(len=*), intent(in), optional :: name
+     character(len=*), intent(in), optional    :: name
 
      integer :: error
 
      call init(this)
 
      if (dist_type == TYPE_BLOCK_CYCLIC) then
-        call newDistribution(Blocksize,Group,this%data%bdist,name)
+        call newDistribution(obj%bdist,ref_comm,ranks_in_ref_comm,&
+             BlockSize,name)
      else if (dist_type == TYPE_PEXSI) then
-        call newDistribution(Blocksize,Group,this%data%pdist,name)
+        call newDistribution(obj%pdist,ref_comm,ranks_in_ref_comm,&
+             BlockSize,name)
      else if (dist_type == TYPE_NULL) then
         ! do nothing
      else
         ! do nothing
      end if
 
-     this%data%dist_type = dist_type
+     obj%dist_type = dist_type
 
      if (present(name)) then
-        this%data%name = trim(name)
+        obj%name = trim(name)
      else
-        this%data%name = "(Abstract Distribution from BS and Group)"
+        obj%name = "(Abstract Distribution from BS and Group)"
      endif
      call tag_new_object(this)
 
    end subroutine newDistribution_
 
+!-----------------------------------------------------------
+   function ranks_in_ref_comm_(this) result(ranks)
+     type(Dist), intent(in)  :: this
+     integer, allocatable               :: ranks(:)
+
+     if (dist_type(this) == TYPE_BLOCK_CYCLIC) then
+        ranks =  ranks_in_ref_comm(obj%bdist)
+     else if (dist_type(this) == TYPE_PEXSI) then
+        ranks =  ranks_in_ref_comm(obj%pdist)
+     else if (dist_type(this) == TYPE_NULL) then
+        allocate(ranks(0))
+     else
+        allocate(ranks(0))
+     end if
+
+   end function ranks_in_ref_comm_
+!-----------------------------------------------------------
+   function ref_comm_(this) result(comm)
+     type(Dist), intent(in)  :: this
+     integer                 :: comm
+
+     if (dist_type(this) == TYPE_BLOCK_CYCLIC) then
+        comm =  ref_comm(obj%bdist)
+     else if (dist_type(this) == TYPE_PEXSI) then
+        comm =  ref_comm(obj%pdist)
+     else if (dist_type(this) == TYPE_NULL) then
+        comm = MPI_COMM_NULL
+     else
+        comm = MPI_COMM_NULL
+     end if
+
+   end function ref_comm_
 !-----------------------------------------------------------
    function num_local_elements_(this,nels,Node) result(nl)
      type(Dist), intent(in)  :: this
@@ -158,9 +198,9 @@
      integer                                :: nl
 
      if (dist_type(this) == TYPE_BLOCK_CYCLIC) then
-        nl =  num_local_elements(this%data%bdist,nels,Node)
+        nl =  num_local_elements(obj%bdist,nels,Node)
      else if (dist_type(this) == TYPE_PEXSI) then
-        nl =  num_local_elements(this%data%pdist,nels,Node)
+        nl =  num_local_elements(obj%pdist,nels,Node)
      else if (dist_type(this) == TYPE_NULL) then
         nl = 0
      else
@@ -176,9 +216,9 @@
      integer                                :: ig
 
      if (dist_type(this) == TYPE_BLOCK_CYCLIC) then
-        ig = index_local_to_global(this%data%bdist,il,Node)
+        ig = index_local_to_global(obj%bdist,il,Node)
      else if (dist_type(this) == TYPE_PEXSI) then
-        ig = index_local_to_global(this%data%pdist,il,Node)
+        ig = index_local_to_global(obj%pdist,il,Node)
      else if (dist_type(this) == TYPE_NULL) then
         ig = 0
      else
@@ -194,9 +234,9 @@
      integer                                :: il
 
      if (dist_type(this) == TYPE_BLOCK_CYCLIC) then
-        il = index_global_to_local(this%data%bdist,ig,Node)
+        il = index_global_to_local(obj%bdist,ig,Node)
      else if (dist_type(this) == TYPE_PEXSI) then
-        il = index_global_to_local(this%data%pdist,ig,Node)
+        il = index_global_to_local(obj%pdist,ig,Node)
      else if (dist_type(this) == TYPE_NULL) then
         il = 0
      else
@@ -211,9 +251,9 @@
      integer                                :: proc
 
      if (dist_type(this) == TYPE_BLOCK_CYCLIC) then
-        proc = node_handling_element(this%data%bdist,ig)
+        proc = node_handling_element(obj%bdist,ig)
      else if (dist_type(this) == TYPE_PEXSI) then
-        proc = node_handling_element(this%data%pdist,ig)
+        proc = node_handling_element(obj%pdist,ig)
      else if (dist_type(this) == TYPE_NULL) then
         proc = MPI_UNDEFINED
      else
@@ -221,23 +261,5 @@
      end if
 
    end function node_handling_element_
-
-!-----------------------------------------------------------
-   function group_(this) result(g)
-     type(Dist), intent(in)  :: this
-     integer                 :: g
-
-     if (dist_type(this) == TYPE_BLOCK_CYCLIC) then
-        g =  this%data%bdist%data%group
-     else if (dist_type(this) == TYPE_PEXSI) then
-        g =  this%data%pdist%data%group
-     else if (dist_type(this) == TYPE_NULL) then
-        g = MPI_GROUP_NULL
-     else
-        g = MPI_GROUP_NULL
-     end if
-
-   end function group_
-
 
 end module class_Dist

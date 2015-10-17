@@ -67,15 +67,17 @@ real(dp)  :: delta_Ef
 integer   :: nspin
 integer :: PEXSI_Pole_Group, PEXSI_Global_Group, World_Group
 integer, allocatable :: pexsi_pole_ranks_in_world(:)
+integer  :: nworkers_SIESTA
+integer, allocatable :: siesta_ranks_in_world(:)
 integer :: PEXSI_Pole_Group_in_World
-integer :: PEXSI_Pole_Group_in_World_Spin(2)
+integer, allocatable :: PEXSI_Pole_ranks_in_World_Spin(:,:)
 integer :: PEXSI_Pole_Comm, PEXSI_Global_Comm, PEXSI_Spin_Comm
 integer :: numNodesTotal
 integer :: npPerPole
 logical  :: PEXSI_worker
 !
 type(Dist)   :: dist1
-type(Dist), target   :: dist2_spin(2)
+type(Dist), allocatable, target   :: dist2_spin(:)
 type(Dist), pointer :: dist2
 integer  :: pbs, color, global_rank, spin_rank
 type(aux_matrix), target :: m1_spin(2)
@@ -120,7 +122,10 @@ real(dp), save :: previous_pexsi_temperature
 !
 ! Our global communicator is a duplicate of MPI_Comm_World
 ! (recall that MPI_Comm_World is abused in Siesta to describe
-!  its own subset)
+!  its own subset). 
+!
+! Note that if we are using an already partitioned Siesta process (unlikely)
+! we need to revise the meaning of the true mpi_comm_world  (to be implemented).
 ! 
 call MPI_Comm_Dup(true_MPI_Comm_World, World_Comm, ierr)
 call mpi_comm_rank( World_Comm, mpirank, ierr )
@@ -161,7 +166,13 @@ call broadcast(nspin,World_Comm)
 ! Imported from modules, but set only in Siesta side
 call broadcast(prevDmax,comm=World_Comm)
 call broadcast(dDtol,comm=World_Comm)
-call newDistribution(BlockSize,SIESTA_Group,dist1,TYPE_BLOCK_CYCLIC,"bc dist")
+call MPI_Group_Size(SIESTA_Group, nworkers_SIESTA, ierr)
+allocate(siesta_ranks_in_world(nworkers_SIESTA))
+call MPI_Group_translate_ranks( SIESTA_Group, nworkers_SIESTA, (/ (i,i=0,nworkers_SIESTA-1) /), &
+     World_Group, siesta_ranks_in_world, ierr )
+call newDistribution(dist1,World_Comm,siesta_ranks_in_world, &
+                     TYPE_BLOCK_CYCLIC,BlockSize,"bc dist")
+deallocate(siesta_ranks_in_world)
 
 call mpi_comm_size( World_Comm, numNodesTotal, ierr )
 
@@ -169,6 +180,7 @@ npPerPole  = fdf_get("PEXSI.np-per-pole",4)
 if (nspin*npPerPole > numNodesTotal) call die("PEXSI.np-per-pole is too big for MPI size")
 
 ! "Row" communicator for independent PEXSI operations on each spin
+! The name is a bit misleading
 color = mod(mpirank,nspin)    ! {0,1} for nspin = 2, or {0} for nspin = 1
 call MPI_Comm_Split(World_Comm, color, mpirank, PEXSI_Global_Comm, ierr)
 
@@ -201,20 +213,34 @@ call MPI_Comm_Group(World_Comm, World_Group, Ierr)
 
 call MPI_Group_translate_ranks( PEXSI_Pole_Group, npPerPole, (/ (i,i=0,npPerPole-1) /), &
      World_Group, pexsi_pole_ranks_in_world, ierr )
-call MPI_Group_incl(World_Group, npPerPole,   &
-     pexsi_pole_ranks_in_world,&
-     PEXSI_Pole_Group_in_World, Ierr)
-deallocate(pexsi_pole_ranks_in_world)
 
+! This looks right, but the actual group-handle value (an integer) can (and will) be the same
+! for all processors, regardless of their spin sub-space...
+
+!  call MPI_Group_incl(World_Group, npPerPole,   &
+!       pexsi_pole_ranks_in_world,&
+!     PEXSI_Pole_Group_in_World, Ierr)
+
+! ... so this will not discriminate properly the two distributions
+!
 ! Make the pole group information available to all spins, storing it in an array
-call MPI_AllGather(PEXSI_Pole_Group_in_World,1,MPI_integer,&
-     PEXSI_Pole_Group_in_World_Spin,1,MPI_integer,PEXSI_Spin_Comm,ierr)
+
+!call MPI_AllGather(PEXSI_Pole_Group_in_World,1,MPI_integer,&
+!       PEXSI_Pole_Group_in_World_Spin,1,MPI_integer,PEXSI_Spin_Comm,ierr)
+
+! What we need is to include the actual world ranks in the distribution object
+allocate (PEXSI_Pole_ranks_in_World_Spin(npPerPole,nspin)
+call MPI_AllGather(pexsi_pole_ranks_in_world,npPerPole,MPI_integer,&
+     PEXSI_Pole_Ranks_in_World_Spin,npPerPole,MPI_integer,PEXSI_Spin_Comm,ierr)
 
 ! Create distributions known to all nodes
+allocate(dist2_spin(nspin))
 do ispin = 1, nspin
-   call newDistribution(pbs,PEXSI_Pole_Group_in_World_Spin(ispin), &
-        dist2_spin(ispin),TYPE_PEXSI,"px dist")
+   call newDistribution(dist2_spin(ispin),pbs, &
+                        PEXSI_Pole_Ranks_in_World_Spin(:,ispin), World_Comm, &
+                        TYPE_PEXSI,"px dist")
 enddo
+deallocate(pexsi_pole_ranks_in_world,PEXSI_Pole_Ranks_in_World_Spin)
 
 print *, "mpirank, global_rank, spin_rank:", mpirank, global_rank, spin_rank
 
