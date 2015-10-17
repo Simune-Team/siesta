@@ -138,6 +138,8 @@ contains
     real(dp), pointer :: H(:,:), S(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
+    logical :: calc_GF_DOS
+    logical, allocatable :: prep_El(:)
     logical, allocatable :: A_parts(:)
 ! ************************************************************
 
@@ -504,29 +506,61 @@ contains
     DOS_El => allDOS(1:jEl,1:N_Elec)
 
     ! Initialize which parts to calculate
+    allocate(prep_El(N_Elec))
+    ! Default to all electrode Green function parts
+    prep_El = .true.
+    if ( ('T-all' .nin. save_DATA) .and. &
+         ('DOS-A-all' .nin. save_DATA) ) then
+       
+       ! We only need to prepare the Green function
+       ! for Gf.G.Gf product for all electrodes
+       ! besides the last one.
+       ! Note that calc_GF_DOS has precedence for
+       ! calculating the entire Gf
+       prep_El(N_elec) = .false.
+       
+    end if
+    
     allocate(A_parts(DevTri%n))
-    A_parts(:) = .true.
+    A_parts = .true.
     ! If the user ONLY wants the transmission function then we
     ! should tell the program not to calculate any more
     ! than needed.
-    io = 0
-    if ( 'DOS-Gf' .nin. save_DATA ) io = io + 1
-    if ( 'DOS-A'  .nin. save_DATA ) io = io + 1
-    if ( 'T-eig'  .nin. save_DATA ) io = io + 1
-    if ( io == 3 ) then
+    calc_GF_DOS = 'DOS-Gf' .in. save_DATA
+    if ( 'DOS-A' .nin. save_DATA ) then
 
-       ! This means that we do not need the spectral
-       ! function in other places than where we have 
-       ! the scattering states from the leads.
-       ! Hence we can reduce the calculated parts.
+       ! We have a couple of options that requires
+       ! special parts of the Green function
+
+       ! The first partition is whether we want
+       ! certain quantities from all electrodes
        A_parts(:) = .false.
-       do iEl = 1 , N_Elec
-          do io = 1 , Elecs(iEl)%o_inD%n
-             jEl = which_part(Gf_tri, &
-                  rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
-             A_parts(jEl) = .true.
+       if ( ('T-all' .in. save_DATA) .or. &
+            ('T-sum-out' .in. save_DATA) ) then
+
+          ! We need _all_ diagonal blocks of the spectral function
+          do iEl = 1 , N_Elec
+             do io = 1 , Elecs(iEl)%o_inD%n
+                jEl = which_part(Gf_tri, &
+                     rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
+                A_parts(jEl) = .true.
+             end do
           end do
-       end do
+
+       else
+          
+          ! we only want the spectral function
+          ! for all other electrodes than the first one
+          do iEl = 2 , N_Elec
+             do io = 1 , Elecs(iEl)%o_inD%n
+                jEl = which_part(Gf_tri, &
+                     rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
+                A_parts(jEl) = .true.
+             end do
+          end do
+          
+       end if
+       
     end if
 
 #ifdef NCDF_4
@@ -846,9 +880,19 @@ contains
              ! we want the DOS of the central region.
              ! So possibly we should do:
              !   all_nn = GFDOS
-             call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
-                  N_Elec, Elecs, all_nn = .true. ) 
-
+             if ( calc_GF_DOS ) then
+                call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
+                     N_Elec, Elecs, all_nn = .true. )
+#ifdef NCDF_4
+             else if ( N_proj_T > 0 ) then
+                call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
+                     N_Elec, Elecs, all_nn = .true. )
+#endif
+             else
+                call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
+                     N_Elec, Elecs, has_El = prep_El )
+             end if
+             
           end if
 
           call timer('Gf-prep',2)
@@ -864,8 +908,7 @@ contains
           ! of the Green's function.
           ! This means that all necessary information to calculate
           ! the entire Green's function resides in GF_tri
-
-          if ( 'DOS-Gf' .in. save_DATA ) then
+          if ( calc_GF_DOS ) then
              if ( .not. cE%fake ) then
                 call GF_DOS(r_oDev,Gf_tri,spS,DOS(:,1),nzwork,zwork)
 #ifdef TBT_PHONON
@@ -956,13 +999,6 @@ contains
                 ! have the block diagonal that constitutes the 
                 ! "right" electrode.
                 
-                ! However, potentially the user might request
-                ! calculating the transmission eigenvalues.
-                ! I do not consider that for the moment
-                ! It would require that we calculate the entire
-                ! column, and hence, we cannot just use
-                ! the block spectral function
-
                 if ( .not. cE%fake ) then
                    if ( N_eigen > 0 ) then
                       io = Elecs(jEl)%inDpvt%n
@@ -1223,6 +1259,7 @@ contains
     nullify(DOS,DOS_El)
     deallocate(allDOS)
 
+    deallocate(prep_El)
     deallocate(A_parts)
 
     call delete(zwork_tri)

@@ -1,4 +1,19 @@
 ----------------------------------------------------
+October 17, 2015 -- Nick Papior       trunk-479---ts-scf-564
+TBT: Optimized calculation time for transmission
+
+* When one wants to only calculate the transmission
+  we can reduce the calculation complexity
+  by limiting the arrays needed to be inverted.
+
+  This has no downside other than speeding up
+  calculations.
+
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 October 17, 2015 -- Nick Papior       trunk-479---ts-scf-563
 Pre-expansion bugfix
 

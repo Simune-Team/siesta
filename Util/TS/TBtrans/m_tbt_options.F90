@@ -656,6 +656,7 @@ contains
 
     if ( .not. IONode ) return
 
+    write(*,*) ! new-line
     write(*,'(3a)') repeat('*',24),' Begin: TBT CHECKS AND WARNINGS ',repeat('*',24)
 
     if ( N_eigen < 0 ) then
