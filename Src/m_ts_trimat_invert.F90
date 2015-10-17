@@ -275,10 +275,7 @@ contains
        if ( eIdxT - sIdxT /= eIdxF - sIdxF ) & 
             call die('Error in determining column')
 #endif
-!$OMP parallel workshare default(shared)
-       Mpinv(sIdxT:eIdxT) = Mp(sIdxF:eIdxF)
-!$OMP end parallel workshare
-
+       call zcopy(eIdxT-sIdxT+1,Mp(sIdxF),1,Mpinv(sIdxT),1)
 
        if ( sPart == ePart ) cycle ! we have everything! :)
 
@@ -548,13 +545,11 @@ contains
             call die('Error in determining column')
 #endif
 
-       ! Copy over diagonal block
-!$OMP parallel workshare default(shared)
-       Mpinv(sIdxT:eIdxT) = Mp(sIdxF:eIdxF)
-!$OMP end parallel workshare
-
        ! Prepare for next segment
        Mp => Mp(sIdxF:)
+
+       ! Copy over diagonal block
+       call zcopy(eIdxT-sIdxT+1,Mp(1),1,Mpinv(sIdxT),1)
 
        ! Calculate the off-diagonal Green function in the regions
        ! of interest

@@ -21,8 +21,8 @@ module m_mixing
   use parallel, only: IONode, Node
   use alloc, only: re_alloc, de_alloc
 
-  ! MPI stuff
 #ifdef MPI
+  ! MPI stuff
   use mpi_siesta
 #endif
 
@@ -658,9 +658,7 @@ contains
     end select
 
     ! Copy over new function
-!$OMP parallel workshare default(shared)
-    x1 = x2
-!$OMP end parallel workshare
+    call dcopy(n,x2,1,x1,1)
     
     ! check whether we should change the mixer
     if ( mix%n_itt == 0 ) then
@@ -968,9 +966,7 @@ contains
              ! -Res[i-2]
              res => getstackval(mix,1)
              rres => getstackval(mix,2)
-!$OMP parallel workshare default(shared)
-             rres = rres + res
-!$OMP end parallel workshare
+             call daxpy(n,1._dp,res,1,rres,1)
              
           end if
 
@@ -1052,9 +1048,7 @@ contains
 
        ! Resubtract Res[i] to get -Res[i-1]
        ! the RRes[i-1] will be updated in the next loop
-!$OMP parallel workshare default(shared)
-       rres = rres - res
-!$OMP end parallel workshare
+       call daxpy(n,-1._dp,res,1,rres,1)
 
        ! delete latest residual
        call pop(mix%stack(1),dD1)
@@ -1125,7 +1119,7 @@ contains
       ! Global operations, but only for the non-extended entries
       call MPI_AllReduce(b(1,1),bi(1,1),nh*nh, &
            MPI_double_precision, MPI_Sum, &
-           MPI_Comm_World,MPIerror)
+           mix%Comm,MPIerror)
       ! copy over reduced arrays
       b = bi
 #endif
@@ -1166,7 +1160,7 @@ contains
          ! Reduce the alpha
          call MPI_AllReduce(alpha(1),b(1,1),nh, &
               MPI_double_precision, MPI_Sum, &
-              MPI_Comm_World,MPIerror)
+              mix%Comm,MPIerror)
          alpha(:) = b(:,1)
 #endif
       end if
@@ -1457,9 +1451,7 @@ contains
           x2 = x1 + F1*jinv0 - Jres * b(is,1)
 !$OMP end parallel workshare
        else
-!$OMP parallel workshare default(shared)
-          x2 = x2 - b(is,1) * Jres
-!$OMP end parallel workshare
+          call daxpy(n,-b(is,1),Jres,1,x2,1)
        end if
        
     end do
@@ -1845,7 +1837,7 @@ contains
     sF => val(dD1)
 
     if ( present(fact) ) then
- !$OMP parallel workshare default(shared)
+!$OMP parallel workshare default(shared)
        sF = F * fact
 !$OMP end parallel workshare
     else
@@ -1887,9 +1879,7 @@ contains
 
        FF => val(dD1)
 
-!$OMP parallel workshare default(shared)
-       FF = F
-!$OMP end parallel workshare
+       call dcopy(n,F,1,FF,1)
 
     end if
 

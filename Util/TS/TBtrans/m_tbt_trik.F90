@@ -138,7 +138,7 @@ contains
     real(dp), pointer :: H(:,:), S(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
-    logical, allocatable :: calc_parts(:)
+    logical, allocatable :: A_parts(:)
 ! ************************************************************
 
 ! ********************** Result arrays ***********************
@@ -504,8 +504,8 @@ contains
     DOS_El => allDOS(1:jEl,1:N_Elec)
 
     ! Initialize which parts to calculate
-    allocate(calc_parts(DevTri%n))
-    calc_parts(:) = .true.
+    allocate(A_parts(DevTri%n))
+    A_parts(:) = .true.
     ! If the user ONLY wants the transmission function then we
     ! should tell the program not to calculate any more
     ! than needed.
@@ -519,12 +519,12 @@ contains
        ! function in other places than where we have 
        ! the scattering states from the leads.
        ! Hence we can reduce the calculated parts.
-       calc_parts(:) = .false.
+       A_parts(:) = .false.
        do iEl = 1 , N_Elec
           do io = 1 , Elecs(iEl)%o_inD%n
              jEl = which_part(Gf_tri, &
                   rgn_pivot(r_oDev,Elecs(iEl)%o_inD%r(io)) )
-             calc_parts(jEl) = .true.
+             A_parts(jEl) = .true.
           end do
        end do
     end if
@@ -907,7 +907,7 @@ contains
              ! have any repetition.
              if ( .not. cE%fake ) then
                 call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
-                     calc_parts, &
+                     A_parts, &
                      nGFGGF, GFGGF_work)
              end if
 
@@ -1221,7 +1221,9 @@ contains
     deallocate(nE%iE,nE%E)
 
     nullify(DOS,DOS_El)
-    deallocate(allDOS,calc_parts)
+    deallocate(allDOS)
+
+    deallocate(A_parts)
 
     call delete(zwork_tri)
 

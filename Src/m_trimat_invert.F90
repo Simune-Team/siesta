@@ -182,12 +182,13 @@ contains
   end subroutine invert_TriMat
 
   subroutine calc_Mnn_inv(M,Minv,n)
+    use intrinsic_missing, only: EYE
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
     ! Local variables
     complex(dp), pointer :: Mp(:), Mpinv(:)
     complex(dp), pointer :: Xn(:), Yn(:), Cn(:), Bn(:)
-    integer :: sNm1, sN, sNp1, i, j, k
+    integer :: sNm1, sN, sNp1, i
 
     if ( 1 < n )        sNm1 = nrows_g(M,n-1)
                         sN   = nrows_g(M,n)
@@ -255,18 +256,10 @@ contains
 
     ! Retrive the position in the inverted matrix
     Mpinv => val(Minv,n,n)
-!$OMP parallel do default(shared), private(i,j,k)
-    do i = 1 , sN
-       k = (i-1)*sN 
-       do j = 1 , sN
-          Mpinv(k+j) = dcmplx(0._dp,0._dp)
-       end do
-       Mpinv(k+i) = dcmplx(1._dp,0._dp)
-    end do
-!$OMP end parallel do
+    call EYE(sN,Mpinv)
     
-    call zgesv(sN,sN,Mp,sN,ipiv,Mpinv,sN,k)
-    if ( k /= 0 ) call die('Error on inverting Mnn')
+    call zgesv(sN,sN,Mp,sN,ipiv,Mpinv,sN,i)
+    if ( i /= 0 ) call die('Error on inverting Mnn')
 
   end subroutine calc_Mnn_inv
 
@@ -290,9 +283,7 @@ contains
     ! Copy over Xn/Cn+1
     Xn    => Xn_div_Cn_p1(M   ,n)
     Mpinv => Xn_div_Cn_p1(Minv,n)
-!$OMP parallel workshare default(shared)
-    Xn(:) =  Mpinv(:)
-!$OMP end parallel workshare
+    call zcopy(sN*sNp1,Mpinv,1,Xn,1)
     ! Do matrix-multiplication
     Mp    => val(Minv,n,n)
     ! Calculate: Xn/Cn+1 * Mnn
@@ -325,9 +316,7 @@ contains
     ! Copy over Yn/Bn-1
     Yn    => Yn_div_Bn_m1(M   ,n)
     Mpinv => Yn_div_Bn_m1(Minv,n)
-!$OMP parallel workshare default(shared)
-    Yn(:) =  Mpinv(:)
-!$OMP end parallel workshare
+    call zcopy(sN*sNm1,Mpinv,1,Yn,1)
     ! Do matrix-multiplication
     Mp    => val(Minv,n,n)
     ! Calculate: Yn/Bn-1 * Mnn

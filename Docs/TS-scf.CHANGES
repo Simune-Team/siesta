@@ -1,4 +1,14 @@
 ----------------------------------------------------
+October 17, 2015 -- Nick Papior       trunk-479---ts-scf-561
+Added more blas calls where it can be used instead of array
+
+modified:
+  Src/m_mixing.F90
+  Src/m_trimat_invert.F90
+  Src/m_ts_trimat_invert.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 October 15, 2015 -- Nick Papior       trunk-479---ts-scf-560
 Speeded up tbtrans saving of the data, parallel writes
 
