@@ -1,4 +1,22 @@
 ----------------------------------------------------
+October 17, 2015 -- Nick Papior       trunk-479---ts-scf-563
+Pre-expansion bugfix
+
+* Forgot to initialize the read size of the
+  Green function when using no pre-expansion
+  of the surface Green function
+
+* Added zcopy in elec_se to utilize blas where possible
+
+* Corrected routine names in error print-out statements
+  No code-change
+
+modified:
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+
+----------------------------------------------------
 October 17, 2015 -- Nick Papior       trunk-479---ts-scf-562
 TBT: Fixed times to be written in denoted directory
 

@@ -372,27 +372,33 @@ contains
        iNodeStep = -1
     end if
 
+    ! Initial size of minimal size with q-points
     read_Size_HS = El%no_used ** 2 * product(El%Rep) ! no_GS * no_GS * nq
-    if ( El%pre_expand > 0 ) then
-       ! if a pre-expansion has been performed we 
-       ! correct the size
+    select case ( El%pre_expand )
+    case ( 0 )
+       ! Nothing is pre-expanded
+       read_Size = read_Size_HS
+    case ( 1 )
+       ! Only the Green function is pre-expanded
        read_Size = read_Size_HS * product(El%Rep)
-    end if
-    if ( El%pre_expand > 1 ) then
+    case ( 2 )
+       ! Everything is pre-expanded
+       read_Size = read_Size_HS * product(El%Rep)
        read_Size_HS = read_Size
-    end if
+    end select
 
     ! Check if the number of energy points requested are 
     ! inconsistent
     if ( NEReqs <= 0 ) then
        if(IONode) &
-            write(*,'(a,i0,a)') 'ERROR GetSFE: Requested E-points=', &
-            NEReqs,'< 0'  
+            write(*,'(a,i0,a)') &
+            'ERROR read_next_GS_Elec: Requested E-points=', &
+            NEReqs,'< 0'
        call die('ERROR in reading GF file')
     else if ( Nodes < NEReqs ) then
        if(IONode) &
-            write(*,'(2(a,i0))')  &
-            'ERROR GetSFE: Requested E-points= ', &
+            write(*,'(2(a,i0))') &
+            'ERROR read_next_GS_Elec: Requested E-points= ', &
             NEReqs,' > Nodes = ', Nodes
        call die('ERROR in reading GF file')
     end if
@@ -825,7 +831,7 @@ contains
     real(dp) :: ucell(3,3)
     integer :: iEn, pre_expand
     integer :: i, j, ia
-    real(dp) :: ktmp(3), kpt(3)
+    real(dp) :: kpt(3)
     logical :: localErrorGf, eXa
 
     ! we should only read if the GF-should exist

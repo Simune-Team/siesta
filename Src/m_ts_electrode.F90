@@ -3,12 +3,6 @@ module m_ts_electrode
 ! Routines that are used for Electrodes GFs calculations
 ! Heavily updated by Nick Papior Andersen, 2012
 !
-!=============================================================================
-! CONTAINS:
-!          1) surface_Green
-!          2) create_Green
-!          3) init_electrode_HS
-!          4) set_electrode_HS_Transfer
 
   use precision, only : dp
 
@@ -93,7 +87,7 @@ contains
     complex(dp), dimension(:), pointer :: gsL,gsR
 
 #ifdef TRANSIESTA_DEBUG
-    call write_debug( 'PRE surface_Green' )
+    call write_debug( 'PRE SSR_sGreen_DOS' )
 #endif
 
     ! Initialize counter
@@ -105,7 +99,7 @@ contains
     no2  = 2 * no
     nosq = no * no
 
-    if ( nwork < 9 * nosq ) call die('surface_Green: &
+    if ( nwork < 9 * nosq ) call die('SSR_sGreen_DOS: &
          &Not enough work space')
     i = 0
     rh  => zwork(i+1:i+2*nosq) 
@@ -178,7 +172,7 @@ contains
        call zgesv(no, no2, w, no, ipiv, rh, no, ierr)
 
        if ( ierr /= 0 ) then
-          write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
+          write(*,*) 'ERROR: SSR_sGreen_DOS 1 MATRIX INVERSION FAILED'
           write(*,*) 'ERROR: LAPACK INFO = ',ierr
        end if
 
@@ -248,7 +242,7 @@ contains
     call mat_invert(gsL,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
 
     if ( ierr /= 0 ) then
-       write(*,*) 'ERROR: calc_green GSL MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: SSR_sGreen_DOS GSL MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
@@ -256,7 +250,7 @@ contains
     call mat_invert(gsR,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
 
     if ( ierr /= 0 ) then
-       write(*,*) 'ERROR: calc_green GSR MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: SSR_sGreen_DOS GSR MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
@@ -264,7 +258,7 @@ contains
     call mat_invert(GB,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
 
     if ( ierr /= 0 ) then
-       write(*,*) 'ERROR: calc_green GB MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: SSR_sGreen_DOS GB MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
@@ -345,7 +339,7 @@ contains
 !    call timer('ts_GS',2)
 
 #ifdef TRANSIESTA_DEBUG
-    call write_debug( 'POS surface_Green' )
+    call write_debug( 'POS SSR_sGreen_DOS' )
 #endif
 
   contains
@@ -430,7 +424,7 @@ contains
     complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,GB
 
 #ifdef TRANSIESTA_DEBUG
-    call write_debug( 'PRE surface_Green' )
+    call write_debug( 'PRE SSR_sGreen_NoDOS' )
 #endif
 
     ! Initialize counter
@@ -442,7 +436,7 @@ contains
     no2  = 2 * no
     nosq = no * no
 
-    if ( nwork < 8 * nosq ) call die('surface_Green: &
+    if ( nwork < 8 * nosq ) call die('SSR_sGreen_NoDOS: &
          &Not enough work space')
     i = 0
     rh  => zwork(i+1:i+2*nosq) 
@@ -509,7 +503,7 @@ contains
        call zgesv(no, no2, w, no, ipiv, rh, no, ierr)
 
        if ( ierr /= 0 ) then
-          write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
+          write(*,*) 'ERROR: SSR_sGreen_NoDOS 1 MATRIX INVERSION FAILED'
           write(*,*) 'ERROR: LAPACK INFO = ',ierr
        end if
 
@@ -571,14 +565,14 @@ contains
     end if
 
     if ( ierr /= 0 ) then
-       write(*,*) 'ERROR: calc_green GS MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: SSR_sGreen_NoDOS GS MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
 !    call timer('ts_GS',2)
 
 #ifdef TRANSIESTA_DEBUG
-    call write_debug( 'POS surface_Green' )
+    call write_debug( 'POS SSR_sGreen_NoDOS' )
 #endif
 
   contains
@@ -855,7 +849,7 @@ contains
     if ( CalcDOS ) then
        allocate(lDOS(nuo_E))
 !$OMP parallel workshare default(shared)
-       DOS(:,:,:) = dcmplx(0._dp,0._dp)
+       DOS(:,:,:) = z_0
 !$OMP end parallel workshare
     end if
 
@@ -1041,7 +1035,7 @@ contains
              ! wrt. mu, we don't need to subtract mu again
              ZEnergy = ce(iEn)
              
-! loop over the repeated cell...
+             ! loop over the repeated cell...
              q_loop: do iqpt = 1 , nq
 
                 H00 => zHS((     iqpt-1)*nS+1:      iqpt *nS)

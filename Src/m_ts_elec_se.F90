@@ -108,7 +108,7 @@ contains
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-    integer :: ierr, io, jo
+    integer :: ierr
     integer :: ipvt(no_s)
 
 #ifndef TS_NOCHECKS
@@ -123,13 +123,7 @@ contains
 #endif
 
        ! When no repetition we save it "as is"
-!$OMP parallel do default(shared), private(io,jo), collapse(2)
-       do jo = 1 , no_s
-          do io = 1 , no_s
-             Sigma(io,jo) = GS(io,jo,1)
-          end do
-       end do
-!$OMP end parallel do
+       call zcopy(no_s*no_s,GS(1,1,1),1,Sigma(1,1),1)
 
     else
 
@@ -185,13 +179,7 @@ contains
     if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
-!$OMP parallel do default(shared), private(io,jo), collapse(2)
-       do jo = 1 , no_s
-          do io = 1 , no_s
-             Sigma(io,jo) = GS(io,jo,1)
-          end do
-       end do
-!$OMP end parallel do
+       call zcopy(no_s*no_s,GS(1,1,1),1,Sigma(1,1),1)
 
     else
        call EYE(no_s,Sigma)
@@ -255,13 +243,7 @@ contains
     if ( nq == 1 ) then
 
        ! When no repetition we save it "as is"
-!$OMP parallel do default(shared), private(io,jo), collapse(2)
-       do jo = 1 , no_s
-          do io = 1 , no_s
-             Sigma(io,jo) = GS(io,jo,1)
-          end do
-       end do
-!$OMP end parallel do
+       call zcopy(no_s*no_s,GS(1,1,1),1,Sigma(1,1),1)
        
     else
 
