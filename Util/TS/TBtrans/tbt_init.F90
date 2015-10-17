@@ -67,7 +67,7 @@ subroutine tbt_init()
   type(Sparsity) :: tmp_sp
   type(dSpData1D) :: tmp_1D
   type(dSpData2D) :: tmp_2D
-  character(len=300) :: sname
+  character(len=300) :: sname, fname
 
   ! Initialise MPI and set processor number
 #ifdef MPI
@@ -130,27 +130,23 @@ subroutine tbt_init()
   ! Initialise read .................................................
   call tbt_reinit( sname , slabel )
 
+  ! Initialize save-options so that we can figure
+  ! out the saving directory
+  call init_save_options( )
+
   ! Set timer report file and threshold .............................
   threshold = fdf_get('timer_report_threshold', 0._dp)
-#ifdef TBT_PHONON
-  call timer_report( file=trim(slabel)//'.PHT.times', &
-       threshold=threshold )
-#else
-  call timer_report( file=trim(slabel)//'.TBT.times', &
-       threshold=threshold )
-#endif
+  ! Get file name
+  call name_save(1,1,fname,end='times')
+  call timer_report( file=trim(fname), threshold=threshold )
 
   ! Set allocation report level .........................................
   ! variables level and threshold imported from module siesta_options
   level = fdf_get('alloc_report_level', 0)
   threshold = fdf_get('alloc_report_threshold', 0._dp)
-#ifdef TBT_PHONON
-  call alloc_report( level=level, file=trim(slabel)//'.PHT.alloc', &
+  call name_save(1,1,fname,end='alloc')
+  call alloc_report( level=level, file=trim(fname), &
        threshold=threshold, printNow=.false. )
-#else
-  call alloc_report( level=level, file=trim(slabel)//'.TBT.alloc', &
-       threshold=threshold, printNow=.false. )
-#endif
 
 #ifdef NCDF_4
   ! In case the user wants to utilize the ncdf library

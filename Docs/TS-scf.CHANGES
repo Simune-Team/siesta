@@ -1,4 +1,17 @@
 ----------------------------------------------------
+October 17, 2015 -- Nick Papior       trunk-479---ts-scf-562
+TBT: Fixed times to be written in denoted directory
+
+* When using TBT.Directory the .times and .alloc
+  files did not exist in those directories.
+
+  They are now correctly placed.
+
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 October 17, 2015 -- Nick Papior       trunk-479---ts-scf-561
 Added more blas calls where it can be used instead of array
 

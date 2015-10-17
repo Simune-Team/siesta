@@ -436,7 +436,6 @@ contains
 
     use m_tbt_contour, only: read_contour_options
 
-    use m_tbt_save, only: init_save_options
     use m_tbt_sigma_save, only: init_Sigma_options
     use m_tbt_dH, only: init_dh_options
     
@@ -536,7 +535,6 @@ contains
 
     call init_dH_options( )
 #endif
-    call init_save_options( )
 
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus )
