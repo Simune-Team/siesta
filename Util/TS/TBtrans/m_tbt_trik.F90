@@ -138,7 +138,7 @@ contains
     real(dp), pointer :: H(:,:), S(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
-    logical :: calc_GF_DOS, calc_only_T
+    logical :: calc_GF_DOS
     logical, allocatable :: prep_El(:)
     logical, allocatable :: A_parts(:)
 ! ************************************************************
@@ -574,8 +574,8 @@ contains
        
     end if
 
+    ! Initialize
     if ( 'T-Gf' .in. save_DATA ) then
-       calc_only_T = .true.
        
        ! The only thing we are calculating is the
        ! transmission.
@@ -593,6 +593,7 @@ contains
        end do
 
     end if
+
 
 #ifdef NCDF_4
     if ( ('orb-current'.in.save_DATA) .or. &
@@ -951,7 +952,7 @@ contains
           ! ****************
           ! * Column Gf    *
           ! ****************
-          if ( calc_only_T ) then
+          if ( 'T-Gf' .in. save_DATA ) then
 
              ! We are allowed to calculate the transmission
              ! only by using the diagonal
