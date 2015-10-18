@@ -1,4 +1,55 @@
 ----------------------------------------------------
+October 18, 2015 -- Nick Papior       trunk-479---ts-scf-565
+TBT: Optimized calculation time
+
+* Setting up the Green function is highly dependent on the
+  algorithm for looping the orbitals.
+
+  Now tbtrans will automatically select the fastest method
+  based on a single timing of looping the device or
+  looping the sparsity pattern.
+
+  This can easily in tight-binding calculations
+  cut the setup time in half for large structures.
+
+  This _only_ has influence when the device region
+  is large. For small device regions this has
+  little to no impact.
+
+  Note that the overhead of determining the best
+  algorithm far outweighs the gain in choosing
+  the optimal one.
+
+* Enabled calculating the transmission using only
+  the diagonal part of the Green function.
+
+  When the user only wants to calculate the transmission
+  we allow the user to calculate the transmission using
+  only the diagonal part of the Green function.
+
+  This greatly speeds up the calculation as one
+  does not need to calculate the Green function
+  column, nor do a column.Gamma.column.Gamma
+  product.
+
+  Currently this can be set via TBT.T.Gf
+  but is not default.
+  This should be nearly as fast as when the user
+  selects the minimum 
+
+  The problem is that for large transmissions the
+  precision of the diagonal calculation is not that
+  great.
+
+  TODO consider to do it default.
+
+modified:
+  Src/m_ts_trimat_invert.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 October 17, 2015 -- Nick Papior       trunk-479---ts-scf-564
 TBT: Optimized calculation time for transmission
 

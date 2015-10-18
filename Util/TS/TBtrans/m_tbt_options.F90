@@ -450,7 +450,7 @@ contains
     real(dp), intent(in) :: kdispl(3)
 
     integer :: i
-    logical :: ltmp, Gamma3(3)
+    logical :: ltmp, Gamma3(3), only_T_Gf
     character(len=150) :: chars
     
     ! we must have read the electrodes first
@@ -478,16 +478,20 @@ contains
             &see manual.')
     end if
 
+    only_T_Gf = .true.
+
     ! Whether we should assert and calculate
     ! all transmission amplitudes
     ltmp = fdf_get('TBT.T.Elecs.All',N_Elec == 1)
     if ( ltmp ) then
        save_DATA = save_DATA // ('T-all'.kv.1)
+       only_T_Gf = .false.
     end if
 
     N_eigen = fdf_get('TBT.T.Eig',0)
     if ( N_eigen > 0 ) then
        save_DATA = save_DATA // ('T-eig'.kv.N_eigen)
+       only_T_Gf = .false.
     end if
 
     ! Should we calculate DOS of electrode bulk Green function
@@ -500,25 +504,29 @@ contains
     ltmp = fdf_get('TBT.DOS.Gf', N_Elec == 1 )
     if ( ltmp ) then
        save_DATA = save_DATA // ('DOS-Gf'.kv.1)
+       only_T_Gf = .false.
     end if
 
     ! Should we calculate DOS of spectral function
     ltmp = fdf_get('TBT.DOS.A',N_Elec == 1)
     if ( ltmp ) then
        save_DATA = save_DATA // ('DOS-A'.kv.1)
+       only_T_Gf = .false.
     end if
 
     ! Should we calculate DOS of all spectral functions
     ltmp = fdf_get('TBT.DOS.A.All',N_Elec == 1)
     if ( ltmp ) then
-       save_DATA = save_DATA // ('DOS-A-all'.kv.1)
        save_DATA = save_DATA // ('DOS-A'.kv.1)
+       save_DATA = save_DATA // ('DOS-A-all'.kv.1)
+       only_T_Gf = .false.
     end if
 
     ! Should we calculate orbital current
     ltmp = fdf_get('TBT.Current.Orb', .false. )
     if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
        save_DATA = save_DATA // ('orb-current'.kv.1)
+       only_T_Gf = .false.
     else if ( ltmp .and. IONode ) then
        write(*,'(a,/,a)')'WARNING: Will not calculate the orbital currents, &
             &the spectral function needs to be calculated for this to &
@@ -528,6 +536,16 @@ contains
     ltmp = fdf_get('TBT.T.Out',N_Elec == 1)
     if ( ltmp ) then
        save_DATA = save_DATA // ('T-sum-out'.kv.1)
+       only_T_Gf = .false.
+    end if
+
+    only_T_Gf = only_T_Gf .and. N_Elec == 2
+    if ( only_T_Gf ) then
+       ! TODO, consider changing this to .true.
+       only_T_Gf = fdf_get('TBT.T.Gf',.false.)
+    end if
+    if ( only_T_Gf ) then
+       save_DATA = save_DATA // ('T-Gf'.kv.1)
     end if
 
 #ifdef NCDF_4
@@ -591,6 +609,7 @@ contains
     else
        write(*,f11) 'No applied bias'
     end if
+    write(*,f1) 'Calculate transmission only using diag(Gf)',('T-Gf'.in.save_DATA)
     write(*,f1) 'Saving DOS from bulk electrodes',('DOS-Elecs'.in.save_DATA)
     write(*,f1) 'Saving DOS from Green function',('DOS-Gf'.in.save_DATA)
     if ( 'DOS-A-all' .in. save_DATA ) then
@@ -652,7 +671,7 @@ contains
     logical, intent(in) :: Gamma
 
     integer :: i
-    logical :: ltmp
+    logical :: ltmp, only_T_Gf
 
     if ( .not. IONode ) return
 
@@ -697,6 +716,22 @@ contains
        call die('Chemical potentials must not introduce consistent Ef shift to the system.')
     end if
 
+    ! Print note about TBT.T.Gf
+    only_T_Gf = 'T-all' .nin. save_DATA
+    only_T_Gf = only_T_Gf .and. ('T-eig' .nin. save_DATA)
+    only_T_Gf = only_T_Gf .and. ('DOS-Gf' .nin. save_DATA)
+    only_T_Gf = only_T_Gf .and. ('DOS-A' .nin. save_DATA)
+    only_T_Gf = only_T_Gf .and. ('orb-current' .nin. save_DATA)
+    only_T_Gf = only_T_Gf .and. ('T-sum-out' .nin. save_DATA)
+    only_T_Gf = only_T_Gf .and. N_Elec == 2
+    only_T_Gf = only_T_Gf .and. ('T-Gf' .nin. save_DATA)
+    if ( only_T_Gf ) then
+       write(*,'(a)')' ** Speed up the execution, calculate transmission in diag'
+       write(*,'(a)')'  > TBT.T.Gf true'
+    else
+       write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
+    end if
+    
 #ifdef MPI
 #ifdef NCDF_PARALLEL
     if ( .not. save_parallel ) then

@@ -413,7 +413,7 @@ contains
 
   end subroutine invert_BiasTriMat_col
 
-  subroutine invert_BiasTriMat_rgn(M,Minv,r,r_col)
+  subroutine invert_BiasTriMat_rgn(M,Minv,r,r_col,only_diag)
 
     use m_region
 
@@ -422,6 +422,8 @@ contains
     type(tRgn), intent(in) :: r
     ! The siesta indices for the column we wish to calculate
     type(tRgn), intent(in) :: r_col
+    ! Whether we should only calculate the diagonal Green function
+    logical, intent(in), optional :: only_diag
 
     complex(dp), pointer :: Mpinv(:), Mp(:)
     complex(dp), pointer :: XY(:)
@@ -433,11 +435,10 @@ contains
 
     integer :: nr, np
     integer :: sPart, ePart
-    integer :: i, ii, i_Elec, idx_Elec
+    integer :: i, i_Elec, idx_Elec
     integer :: sIdxF, eIdxF, sIdxT, eIdxT
-    integer :: sN, n, in, s, sNo
+    integer :: sN, n, in, s, sNo, nb
     integer, allocatable :: cumsum(:)
-    type(tRgn) :: rB
 
     ! In this routine M should have been processed through invert_PrepTriMat
     ! So M contains all *needed* inv(Mnn) and all Xn/Cn+1 and Yn/Bn-1.
@@ -496,23 +497,21 @@ contains
        ! memory.
        n = which_part(M,idx_Elec)
        sN = nrows_g(M,n)
-       ii = 1
-       do while ( i_Elec + ii <= r_col%n )
-          i = rgn_pivot(r,r_col%r(i_Elec+ii))
+       nb = 1
+       do while ( i_Elec + nb <= r_col%n )
+          i = rgn_pivot(r,r_col%r(i_Elec+nb))
           ! In case it is not consecutive
-          if ( i - idx_Elec /= ii ) exit
+          if ( i - idx_Elec /= nb ) exit
           ! In case the block changes, then
           ! we cut the block size here.
           if ( n /= which_part(M,i) ) exit
-          ii = ii + 1
+          nb = nb + 1
        end do
-       ! The consecutive memory block is this size 'ii'
-       call rgn_list(rB,ii,r_col%r(i_Elec:i_Elec+ii-1))
-
+       
        ! Copy over this portion of the Mnn array
        
        ! Figure out which part we have Mnn in
-       i = rgn_pivot(r,rB%r(1))
+       i = rgn_pivot(r,r_col%r(i_Elec))
        n = which_part(M,i)
 
        ! get placement of the diagonal block in the column
@@ -522,8 +521,8 @@ contains
        ! Correct the copied elements
        ! Figure out the placement in the copied to array
        ! First we calculate the starting index of the block
-       sIdxT = ( i_Elec -   1 ) * sN + 1
-       eIdxT = ( i_Elec + rB%n - 1) * sN
+       sIdxT = ( i_Elec -    1  ) * sN + 1
+       eIdxT = ( i_Elec + nb - 1) * sN
 
        ! *** Now we have the matrix that we can save the 
        !     block Mnn in
@@ -531,9 +530,9 @@ contains
        ! We now need to figure out the placement of the 
        ! Mnn part that we have already calculated.
        Mp => val(M,n,n)
-       i = rgn_pivot(r,rB%r(1))
+       i = rgn_pivot(r,r_col%r(i_Elec))
        sIdxF = (i-cumsum(n)-1) * sN + 1
-       i = rgn_pivot(r,rB%r(rB%n))
+       i = rgn_pivot(r,r_col%r(i_Elec+nb-1))
        eIdxF = (i-cumsum(n)) * sN
 
        ! Check that we have something correct...
@@ -572,7 +571,7 @@ contains
 #else
           call zgemm( &
 #endif
-               'N','N',sNo,rB%n,sN, &
+               'N','N',sNo,nb,sN, &
                zm1, XY, sNo, Mp(1),sN,z0, Mpinv(sIdxT),sNo)
 
           Mp => Mpinv(sIdxT:)
@@ -606,7 +605,7 @@ contains
 #else
           call zgemm( &
 #endif
-               'N','N',sNo,rB%n,sN, &
+               'N','N',sNo,nb,sN, &
                zm1, XY, sNo, Mp(1),sN,z0, Mpinv(sIdxT),sNo)
 
           Mp => Mpinv(sIdxT:)
@@ -615,10 +614,18 @@ contains
        end do
        
        ! Update current segment of the electrode copied entries.
-       i_Elec = i_Elec + rB%n
+       i_Elec = i_Elec + nb
 
     end do
 
+    if ( present(only_diag) ) then
+       if ( only_diag ) then
+          deallocate(cumsum)
+          call timer('V_TM_inv',2)
+          return
+       end if
+    end if
+    
     ! Now we need to calculate the remaining column
 
     ! We now calculate:
@@ -675,7 +682,6 @@ contains
        
     end do
 
-    call rgn_delete(rB)
     deallocate(cumsum)
 
     ! At this point the total 

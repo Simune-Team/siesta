@@ -35,7 +35,8 @@ module m_tbt_tri_scat
   public :: A_Gamma_Block ! Calculate the transmission from spectral function . Gamma (in block form)
   public :: TT_eigen ! Eigenvalue calculation of the transmission eigenvalues
   public :: GF_Gamma ! Calculate the transmission from Green function . Gamma (same-lead contribution)
-
+  public :: GF_T
+  
   public :: insert_Self_Energy
   public :: insert_Self_Energy_Dev
 
@@ -511,6 +512,7 @@ contains
        end if
 
        if ( ii == no ) then
+          
           ! The easy calculation, note that ii == no, only
           ! if the entire electrode sits in one block
           A => val(A_tri,in,in)
@@ -747,8 +749,7 @@ contains
     integer :: no, np
     integer :: i, ii, i_Elec
     integer, allocatable :: cumsum(:)
-    integer :: sN, n
-    type(tRgn) :: rB
+    integer :: sN, n, nb
     ! BLAS routines
     complex(dp), external :: zdotu, zdotc
 
@@ -773,41 +774,58 @@ contains
     T = 0._dp
 
     i_Elec = 1
-    do while ( i_Elec <= El%inDpvt%n ) 
+    do while ( i_Elec <= no ) 
 
        ! We start by creating a region of consecutive memory.
-       call consecutive_index(Gfcol,El,i_Elec,n,ii)
+       call consecutive_index(Gfcol,El,i_Elec,n,nb)
        sN = nrows_g(Gfcol,n)
-
-       ! The consecutive memory block is this size 'ii'
-       call rgn_list(rB,ii,El%inDpvt%r(i_Elec:i_Elec+ii-1))
 
        ! get placement of the diagonal block in the column
        call TriMat_Bias_idxs(Gfcol,no,n,i,ii)
 
-       i = i + rB%r(1) - cumsum(n) - 1
+       i = i + El%inDpvt%r(i_Elec) - cumsum(n) - 1
        Gf => z(i:ii)
+
+#ifdef TBT_T_G_GAMMA_OLD
        
        ! Number of columns that we want to do product of
        ii = 1
        do i = 1 , no
-          T = T - zdotu(rB%n,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) ! G \Gamma
+          T = T - zdotu(nb,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) ! G \Gamma
           ii = ii + sN
        end do
+       ! Note that Tr[G^\dagger \Gamma] = Tr[ \Gamma G^\dagger ] =
+       !    Tr[(G \Gamma)^\dagger]
+       ! Hence the below calculation shouldn't be necessary
        ii = (i_Elec - 1) * no + 1
-       do i = 1 , rB%n
+       do i = 1 , nb
           T = T + zdotc(no,Gf(i),sN,El%Gamma(ii),1) ! G^\dagger \Gamma
           ii = ii + no
        end do
 
-       i_Elec = i_Elec + rB%n
+#else
+       
+       ! Note that Tr[G^\dagger \Gamma] = Tr[ \Gamma G^\dagger ] =
+       !    Tr[(G \Gamma)^\dagger]
+       ! Hence we only calculate one of the contributions and double
+       ! it after
+       ii = 1
+       do i = 1 , no
+          T = T - zdotu(nb,Gf(ii),1,El%Gamma(i_Elec+(i-1)*no),1) ! G \Gamma
+          ii = ii + sN
+       end do
+       
+#endif
+
+       i_Elec = i_Elec + nb
 
     end do
 
     ! Now we have:
     !   T = G \Gamma - G^\dagger \Gamma
-
-    call rgn_delete(rB)
+#ifndef TBT_T_G_GAMMA_OLD
+    T = T * 2._dp
+#endif
     deallocate(cumsum)
 
 #ifdef TBTRANS_TIMING
@@ -815,6 +833,133 @@ contains
 #endif
     
   end subroutine GF_Gamma
+
+  subroutine GF_T(Gfcol,El,T,nzwork,zwork)
+
+    use intrinsic_missing, only: TRACE
+    use m_ts_trimat_invert, only : TriMat_Bias_idxs
+
+    type(zTriMat), intent(inout) :: Gfcol
+    type(Elec), intent(inout) :: El
+    real(dp), intent(out) :: T
+    integer, intent(in) :: nzwork
+    complex(dp), intent(out) :: zwork(nzwork)
+
+    complex(dp), pointer :: Gf(:)
+    complex(dp), pointer :: z(:)
+
+    integer :: no, np
+    integer :: i, ii, i_Elec
+    integer, allocatable :: cumsum(:)
+    integer :: sN, n
+    integer :: nb
+    ! BLAS routines
+    complex(dp), external :: zdotu, zdotc
+
+#ifdef TBTRANS_TIMING
+    call timer('Gf-T',1)
+#endif
+
+    no = El%inDpvt%n
+    np = parts(Gfcol)
+    allocate(cumsum(np))
+    cumsum(1) = 0
+    do n = 2 , np
+       cumsum(n) = cumsum(n-1) + nrows_g(Gfcol,n-1)
+    end do
+
+#ifndef TS_NOCHECKS
+    if ( no**2 > nzwork ) call die('GF_T: no**2 < nzwork')
+#endif
+
+    ! This code is based on the down-folded self-energies
+    ! which are determined by the col region
+
+    ! Point to the matrices
+    z => val(Gfcol,all=.true.)
+
+    i_Elec = 1
+    do while ( i_Elec <= no ) 
+
+       ! We start by creating a region of consecutive memory.
+       call consecutive_index(Gfcol,El,i_Elec,n,nb)
+       sN = nrows_g(Gfcol,n)
+       
+       ! get placement of the diagonal block in the column
+       call TriMat_Bias_idxs(Gfcol,no,n,i,ii)
+       
+       i = i + El%inDpvt%r(i_Elec) - cumsum(n) - 1
+       Gf => z(i:ii)
+
+       ! Calculate the G \Gamma
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',nb,no,no, z1, Gf(1),sN, &
+            El%Gamma(1), no, z0, zwork(i_Elec), no)
+       
+       i_Elec = i_Elec + nb
+
+    end do
+
+    ! Note that Tr[G^\dagger \Gamma] = Tr[ \Gamma G^\dagger ] =
+    !    Tr[(G \Gamma)^\dagger]
+    ! Now we have:
+    !    = G \Gamma
+    T = - real( TRACE(no,zwork) ,dp) * 2._dp
+
+    ! Now we need to correct for the current electrode
+    ! First we check that we can use the first elements
+    ! of Gfcol as temporary storage
+    call TriMat_Bias_idxs(Gfcol,no,1,i,ii)
+    if ( i < no ** 2 ) then
+       write(*,'(a)') 'Remove TBT.T.Gf from your fdf file. &
+            &It is not possible in your current setup.'
+       call die('GF_T: Size of temporary array not possible.')
+    end if
+    
+    ! Now we can calculate the spectral function for this
+    ! electrode where it lives
+    i_Elec = 1
+    do while ( i_Elec <= no ) 
+       
+       ! We start by creating a region of consecutive memory.
+       call consecutive_index(Gfcol,El,i_Elec,n,nb)
+       sN = nrows_g(Gfcol,n)
+       
+       ! get placement of the diagonal block in the column
+       call TriMat_Bias_idxs(Gfcol,no,n,i,ii)
+       
+       i = i + El%inDpvt%r(i_Elec) - cumsum(n) - 1
+       Gf => z(i:ii)
+
+       i = ( i_Elec-1 ) * no + 1
+       ! Calculate the G \Gamma G^\dagger
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','C',no,nb,no, z1, zwork(1),no, &
+            Gf(1), sN, z0, z(i), no)
+       
+       i_Elec = i_Elec + nb
+
+    end do
+
+    ! The remaining calculation is very easy as we simply
+    ! need to do the sum of the trace
+    T = T + zdotu(no*no,z(1),1,El%Gamma,1)
+
+    deallocate(cumsum)
+
+#ifdef TBTRANS_TIMING
+    call timer('Gf-T',2)
+#endif
+    
+  end subroutine GF_T
 
   subroutine consecutive_index(Tri,El,current,p,n)
     type(zTriMat), intent(inout) :: Tri
@@ -838,7 +983,7 @@ contains
        if ( p /= which_part(Tri,i) ) exit
        n = n + 1
     end do
-    
+
   end subroutine consecutive_index
 
 
