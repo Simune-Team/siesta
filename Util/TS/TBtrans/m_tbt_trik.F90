@@ -183,9 +183,9 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
+    type(tRgn) :: pvt
     real(dp) :: kpt(3), bkpt(3), wkpt
     integer :: info
-    logical :: loop_dev
 #ifdef TBT_PHONON
     type(ts_c_idx) :: cOmega
     real(dp) :: omega
@@ -221,6 +221,12 @@ contains
     real(dp) :: loop_time, init_time
     integer  :: last_progress_print
 ! ************************************************************
+
+    ! Create the back-pivoting region
+    call rgn_init(pvt,nrows_g(TSHS%sp),val=0)
+    do io = 1 , r_oDev%n
+       pvt%r(r_oDev%r(io)) = io
+    end do
 
     H => val(TSHS%H_2D)
     S => val(TSHS%S_1D)
@@ -448,7 +454,7 @@ contains
 
     ! Figure out how to setup the Green function energy
     ! point
-    call decide_prep_algo(zwork_tri,TSHS%sp,r_oDev,loop_dev)
+    !call prep_Gfinv_algo(zwork_tri,TSHS%sp,r_oDev,loop_dev)
 
     ! we use the GF as a placement for the self-energies
     no = 0
@@ -888,13 +894,11 @@ contains
           ! * prep GF^-1      *
           ! *******************
 #ifdef TBT_PHONON
-          call prepare_invGF(cOmega, zwork_tri, r_oDev, &
-               N_Elec, Elecs, &
-               spH , spS , loop_dev)
+          call prepare_invGF(cOmega, zwork_tri, r_oDev, pvt, &
+               N_Elec, Elecs, spH , spS)
 #else
-          call prepare_invGF(cE, zwork_tri, r_oDev, &
-               N_Elec, Elecs, &
-               spH , spS , loop_dev )
+          call prepare_invGF(cE, zwork_tri, r_oDev, pvt, &
+               N_Elec, Elecs, spH , spS)
 #endif
 
           ! ********************
@@ -1304,6 +1308,8 @@ contains
     deallocate(prep_El)
     deallocate(A_parts)
 
+    call rgn_delete(pvt)
+
     call delete(zwork_tri)
 
     call delete(spH)
@@ -1394,8 +1400,8 @@ contains
   
   ! creation of the GF^{-1} for a certain region
   ! this routine will insert the zS-H and \Sigma_{LR} terms in the GF 
-  subroutine prepare_invGF(cE, GFinv_tri, r, &
-       N_Elec, Elecs, spH, spS, loop_dev)
+  subroutine prepare_invGF(cE, GFinv_tri, r, pvt, &
+       N_Elec, Elecs, spH, spS)
 
     use class_Sparsity
     use class_zSpData1D
@@ -1410,12 +1416,11 @@ contains
     ! the current energy point
     type(ts_c_idx), intent(in) :: cE
     type(zTriMat), intent(inout) :: GFinv_tri
-    type(tRgn), intent(in) :: r
+    type(tRgn), intent(in) :: r, pvt
     integer, intent(in) :: N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
     ! The Hamiltonian and overlap sparse matrices
     type(zSpData1D), intent(inout) :: spH,  spS
-    logical, intent(in) :: loop_dev
 
     ! Local variables
     complex(dp) :: Z
@@ -1423,7 +1428,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: H(:), S(:)
     complex(dp), pointer :: Gfinv(:)
-    integer :: io, iu, ind, idx, nr, ju
+    integer :: io, iu, ind, idx, ju
 
     if ( cE%fake ) return
 
@@ -1433,92 +1438,47 @@ contains
     H  => val (spH)
     S  => val (spS)
 
-    call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col, &
-         nrows_g=nr)
+    call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     Gfinv => val(Gfinv_tri)
 
-    if ( loop_dev ) then
-
-       ! This routine loops on the device when searching
-
 !$OMP parallel default(shared), private(iu,io,ind,ju,idx)
 
-       ! Initialize
+    ! Initialize
 !$OMP workshare
-       GFinv(:) = dcmplx(0._dp,0._dp)
+    GFinv(:) = dcmplx(0._dp,0._dp)
 !$OMP end workshare
 
-       ! We will only loop in the central region
-       ! We have constructed the sparse array to only contain
-       ! values in this part...
+    ! We will only loop in the central region
+    ! We have constructed the sparse array to only contain
+    ! values in this part...
 !$OMP do 
-       do iu = 1, r%n
-          io = r%r(iu) ! get the orbital in the big sparsity pattern
-          if ( l_ncol(io) /= 0 ) then
+    do iu = 1, r%n
+       io = r%r(iu) ! get the orbital in the big sparsity pattern
+       if ( l_ncol(io) /= 0 ) then
+          
+       ! Loop over non-zero entries here
+       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-             ! Loop on device here...
-             do ju = 1 , r%n
-                
-                ! Check if the orbital exists in the region
-                ! We are dealing with a UC sparsity pattern.
-                ind = SFIND(l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io)), &
-                     r%r(ju))
-                if ( ind == 0 ) cycle
-                ind = l_ptr(io) + ind
-                
-                ! Notice that we transpose back here...
-                ! See symmetrize_HS_kpt
-                idx = index(Gfinv_tri,ju,iu)
-                
-                GFinv(idx) = Z * S(ind) - H(ind)
-                
-             end do
-             
-          end if
+          ju = pvt%r(l_col(ind))
+          ! If it is zero, then *must* be electrode
+          ! or fold down region.
+          if ( ju == 0 ) cycle
+          
+          ! Notice that we transpose back here...
+          ! See symmetrize_HS_kpt
+          idx = index(Gfinv_tri,ju,iu)
+          
+          GFinv(idx) = Z * S(ind) - H(ind)
+          
        end do
+             
+       end if
+    end do
 !$OMP end do nowait
 
 !$OMP end parallel
 
-    else
-
-!$OMP parallel default(shared), private(iu,io,ind,ju,idx)
-
-       ! Initialize
-!$OMP workshare
-       GFinv(:) = dcmplx(0._dp,0._dp)
-!$OMP end workshare
-
-       ! We will only loop in the central region
-       ! We have constructed the sparse array to only contain
-       ! values in this part...
-!$OMP do 
-       do iu = 1, r%n
-          io = r%r(iu) ! get the orbital in the big sparsity pattern
-          if ( l_ncol(io) /= 0 ) then
-             
-             ! Loop over non-zero entries here
-             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                
-                ju = rgn_pivot(r,l_col(ind))
-                
-                ! Notice that we transpose back here...
-                ! See symmetrize_HS_kpt
-                idx = index(Gfinv_tri,ju,iu)
-                
-                GFinv(idx) = Z * S(ind) - H(ind)
-                
-             end do
-             
-          end if
-       end do
-!$OMP end do nowait
-
-!$OMP end parallel
-
-    end if
- 
     do io = 1 , N_Elec
        call insert_self_energy_dev(Gfinv_tri,Gfinv,r,Elecs(io))
     end do
@@ -1542,7 +1502,13 @@ contains
   ! the device region.
   ! This routine decides which is better by doing a
   ! one-time loop for comparison
-  subroutine decide_prep_algo(dev_tri,sp,r,loop_dev)
+  ! * NOT USED
+  ! This was used in the old setup.
+  ! When one wants to reduce memory requirement
+  ! this can be reinstantiated.
+  ! However, then we are talking about more
+  ! than 2,000,000 elements...
+  subroutine prep_Gfinv_algo(dev_tri,sp,r,loop_dev)
 
     use class_Sparsity
     use class_zTriMat
@@ -1557,9 +1523,9 @@ contains
     integer :: io, iu, ind
     integer :: itot
 #ifdef _OPENMP
-    real(dp) :: t1, t2
+    real(dp) :: t_d, t_s
 #else
-    real :: t1, t2, tt
+    real :: t_d, t_s, tt
 #endif
 
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
@@ -1567,13 +1533,13 @@ contains
     ! search some middle orbital
     io = r%r(r%n/2)
 
-    ! Time the "search sparsity"
+    ! Time: loop_dev
     itot = 0
 #ifdef _OPENMP
-    t1 = omp_get_wtime( )
+    t_d = omp_get_wtime( )
 #else
     call cpu_time( tt )
-    t1 = tt
+    t_d = tt
 #endif
     do iu = 1 , r%n
           
@@ -1587,39 +1553,43 @@ contains
 
     end do
 #ifdef _OPENMP
-    t1 = omp_get_wtime( ) - t1
+    t_d = omp_get_wtime( ) - t_d
 #else
     call cpu_time( tt )
-    t1 = tt - t1
+    t_d = tt - t_d
 #endif
     
     itot = 0
-    ! Time the "search device"
+    ! Time: loop_sparsity
 #ifdef _OPENMP
-    t2 = omp_get_wtime( )
+    t_s = omp_get_wtime( )
 #else
     call cpu_time( tt )
-    t2 = tt
+    t_s = tt
 #endif
     do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
        
        iu = rgn_pivot(r,l_col(ind))
+       ! Important to check this as we cannot ensure
+       ! the entire sparsity pattern in this
+       ! tri-diagonal matrix
+       if ( iu == 0 ) cycle
        itot = itot + iu
        
     end do
 #ifdef _OPENMP
-    t2 = omp_get_wtime( ) - t2
+    t_s = omp_get_wtime( ) - t_s
 #else
     call cpu_time( tt )
-    t2 = tt - t2
+    t_s = tt - t_s
 #endif
 
     ! if the timing for the searching of
-    ! device is slower than looping the
+    ! sparsity is slower than looping the
     ! device, we prefer to loop the device
-    loop_dev = t2 > t1
+    loop_dev = t_s > t_d
 
-  end subroutine decide_prep_algo
+  end subroutine prep_Gfinv_algo
 
   subroutine downfold_SE(cE, El, spH, spS,r,np,p,nwork,work)
 

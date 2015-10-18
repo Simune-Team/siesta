@@ -1,4 +1,16 @@
 ----------------------------------------------------
+October 18, 2015 -- Nick Papior       trunk-479---ts-scf-566
+TBT: Speeded up Green-inv creation
+
+* Used same pivoting scheme as in transiesta
+  to speed up the setup time for the Gf_inv
+  tri-diagonal matrix, again usefull only for large
+  devices.
+  
+modified:
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 October 18, 2015 -- Nick Papior       trunk-479---ts-scf-565
 TBT: Optimized calculation time
 
