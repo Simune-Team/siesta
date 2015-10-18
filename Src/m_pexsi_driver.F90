@@ -590,14 +590,23 @@ if (PEXSI_worker) then
            ( DMnzvalLocal(i) )
    enddo
 
-   ! These operations in Global PEXSI group to reduce over both spins
+   ! First, reduce over the Pole_comm
 
-   call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_Global_Comm )
+   call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_Pole_Comm )
+   free_bs_energy = buffer1 
+   call globalize_sum( bs_energy, buffer1, comm=PEXSI_Pole_Comm )
+   bs_energy = buffer1
+   call globalize_sum( eBandH, buffer1, comm=PEXSI_Pole_Comm )
+   eBandH = buffer1
+
+   ! Now, reduce over both spins
+
+   call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_Spin_Comm )
    ! Note that FDM has an extra term: -mu*N  --- check above
    free_bs_energy = buffer1 + mu*numElectronPEXSI
-   call globalize_sum( bs_energy, buffer1, comm=PEXSI_Global_Comm )
+   call globalize_sum( bs_energy, buffer1, comm=PEXSI_Spin_Comm )
    bs_energy = buffer1
-   call globalize_sum( eBandH, buffer1, comm=PEXSI_Global_Comm )
+   call globalize_sum( eBandH, buffer1, comm=PEXSI_Spin_Comm )
    eBandH = buffer1
 
    ! This output block will be executed only if World's root node is
@@ -698,21 +707,25 @@ do ispin = 1, nspin
 
    endif
 enddo
-deallocate(m1_spin, dist2_spin)
 call timer("pexsi", 2)
 
 
 
 call delete(dist1)
-call delete(dist2)
+do ispin = 1, nspin
+  call delete(dist2_spin(ispin))
+enddo
+deallocate(dist2_spin)
+deallocate(m1_spin)
 
-if (PEXSI_worker) then
-   call MPI_Comm_Free(PEXSI_Pole_Comm, ierr)
-   call MPI_Comm_Free(PEXSI_Spin_Comm, ierr)
-   call MPI_Group_Free(PEXSI_Pole_Group, ierr)
-endif
-call MPI_Group_Free(World_Group, ierr)
+call MPI_Comm_Free(PEXSI_Global_Comm, ierr)
+call MPI_Comm_Free(PEXSI_Pole_Comm, ierr)
+call MPI_Comm_Free(PEXSI_Spin_Comm, ierr)
 call MPI_Comm_Free(World_Comm, ierr)
+!
+call MPI_Group_Free(PEXSI_Global_Group, ierr)
+call MPI_Group_Free(PEXSI_Pole_Group, ierr)
+call MPI_Group_Free(World_Group, ierr)
 #endif
 
 CONTAINS
