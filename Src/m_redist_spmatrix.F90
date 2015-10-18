@@ -26,8 +26,7 @@ module m_redist_spmatrix
 CONTAINS
  subroutine redistribute_spmatrix(norbs,m1,dist1,m2,dist2,mpi_comm)
  
-   use mpi, only: mpi_group_rank, mpi_comm_rank
-   use mpi, only: MPI_UNDEFINED, mpi_integer
+   use mpi
    use class_Dist
    use alloc,       only: re_alloc, de_alloc
  
@@ -43,7 +42,7 @@ CONTAINS
    type(comm_t), dimension(:), allocatable, target :: commsnnz
    type(comm_t), pointer :: c, cnnz
  
-   integer ::  myrank1, myrank2, myid
+   integer ::  myrank1, myrank2, myid, gg
    logical ::  proc_in_set1, proc_in_set2
    integer ::  ierr
  
@@ -52,8 +51,11 @@ CONTAINS
    integer, parameter :: dp = selected_real_kind(10,100)
    real(dp), dimension(:), pointer  :: data1 => null(), data2 => null()
  
+   integer, allocatable :: ranks1(:), ranks2(:)
+ 
    ! The communicators are a sanity check on the ranks
  
+   call mpi_comm_rank(mpi_comm,myid,ierr)
    c1 = ref_comm(dist1)
    c2 = ref_comm(dist2)
    call MPI_Comm_Compare(c1,c2,comparison,ierr)
@@ -91,10 +93,12 @@ CONTAINS
    ! Now create groups g1 and g2.
    ! (DO NOT trust the internal handles)
    call MPI_Comm_Group(mpi_comm,gg,ierr)
-   n1 = size(ranks_in_ref_comm(dist1))
-   n2 = size(ranks_in_ref_comm(dist2))
-   call MPI_Group_Incl(gg,n1,ranks_in_ref_comm(dist1),g1,ierr)
-   call MPI_Group_Incl(gg,n2,ranks_in_ref_comm(dist2),g2,ierr)
+   ranks1 = ranks_in_ref_comm(dist1)
+   ranks2 = ranks_in_ref_comm(dist2)
+   n1 = size(ranks1)
+   n2 = size(ranks2)
+   call MPI_Group_Incl(gg,n1,ranks1,g1,ierr)
+   call MPI_Group_Incl(gg,n2,ranks2,g2,ierr)
  
    ! The rest is the same as before
  
@@ -104,7 +108,6 @@ CONTAINS
    proc_in_set1 = (myrank1 /= MPI_UNDEFINED)
    proc_in_set2 = (myrank2 /= MPI_UNDEFINED)
  
-   call mpi_comm_rank(mpi_comm,myid,ierr)
    print *, "world_rank, rank1, rank2, ing1?, ing2?", myid,  &
         myrank1, myrank2, proc_in_set1, proc_in_set2
  
@@ -209,6 +212,11 @@ CONTAINS
  
    deallocate(commsnnz)
    deallocate(comms)
+ 
+   call MPI_group_free(gg,ierr)
+   call MPI_group_free(g1,ierr)
+   call MPI_group_free(g2,ierr)
+ 
  
  CONTAINS
  
@@ -344,19 +352,17 @@ CONTAINS
        allocate(comm_rank1(0:nsize1-1))
        call MPI_Group_translate_ranks( g1, nsize1, (/ (i,i=0,nsize1-1) /), &
                                        basegroup, comm_rank1, ierr )
-       print "(i4,a,10i3)", myrank, ":Ranks of g1 in base group:", comm_rank1
+ !      print "(i4,a,10i3)", myrank, ":Ranks of g1 in base group:", comm_rank1
  
        allocate(comm_rank2(0:nsize2-1))
        call MPI_Group_translate_ranks( g2, nsize2, (/ (i,i=0,nsize2-1) /), &
                                        basegroup, comm_rank2, ierr )
-       print "(i4,a,10i3)", myrank,":Ranks of g2 in base group:", comm_rank2
+ !      print "(i4,a,10i3)", myrank,":Ranks of g2 in base group:", comm_rank2
  
        call mpi_group_rank(g1,myrank1,ierr)
- !      print "(i4,a,2i3)", myrank,": ierr in rank1: ", ierr
        call mpi_group_rank(g2,myrank2,ierr)
- !      print "(i4,a,2i3)", myrank,": ierr in rank2: ", ierr
        
-       print "(i4,a,2i3)", myrank,": Ranks in g1 and g2: ", myrank1, myrank2
+       print "(i4,a,2i6)", myrank,": Ranks in g1 and g2: ", myrank1, myrank2
        print "(i4,a,2i3)", myrank,": g1 and g2: ", g1, g2
  
  

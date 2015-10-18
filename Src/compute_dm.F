@@ -62,7 +62,9 @@ c$$$      use m_matrixwrite
 
       if (SIESTA_worker) call timer( 'compute_dm', 1 )
 
+#ifdef MPI
       call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
+#endif     
 
       if (SIESTA_worker) then
          ! Save present density matrix 
@@ -92,7 +94,7 @@ c$$$      use m_matrixwrite
       endif
 
       if (isolve .eq. SOLVE_PEXSI) then
-         ! Prototype interface
+      ! Prototype interface
          call pexsi_solver(iscf, no_u, no_l, nspin,
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,

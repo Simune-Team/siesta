@@ -80,7 +80,7 @@ type(Dist)   :: dist1
 type(Dist), allocatable, target   :: dist2_spin(:)
 type(Dist), pointer :: dist2
 integer  :: pbs, color, global_rank, spin_rank
-type(aux_matrix), target :: m1_spin(2)
+type(aux_matrix), allocatable, target :: m1_spin(:)
 type(aux_matrix) :: m2
 type(aux_matrix), pointer :: m1
 integer :: nrows, nnz, nnzLocal, numColLocal
@@ -120,13 +120,8 @@ real(dp), save :: previous_pexsi_temperature
     call die("PEXSI needs MPI")
 #else
 !
-! Our global communicator is a duplicate of MPI_Comm_World
-! (recall that MPI_Comm_World is abused in Siesta to describe
-!  its own subset). 
+! Our global communicator is a duplicate of the passed communicator
 !
-! Note that if we are using an already partitioned Siesta process (unlikely)
-! we need to revise the meaning of the true mpi_comm_world  (to be implemented).
-! 
 call MPI_Comm_Dup(true_MPI_Comm_World, World_Comm, ierr)
 call mpi_comm_rank( World_Comm, mpirank, ierr )
 
@@ -166,18 +161,22 @@ call broadcast(nspin,World_Comm)
 ! Imported from modules, but set only in Siesta side
 call broadcast(prevDmax,comm=World_Comm)
 call broadcast(dDtol,comm=World_Comm)
+call MPI_Comm_Group(World_Comm,World_Group, ierr)
 call MPI_Group_Size(SIESTA_Group, nworkers_SIESTA, ierr)
 allocate(siesta_ranks_in_world(nworkers_SIESTA))
-call MPI_Group_translate_ranks( SIESTA_Group, nworkers_SIESTA, (/ (i,i=0,nworkers_SIESTA-1) /), &
+call MPI_Group_translate_ranks( SIESTA_Group, nworkers_SIESTA, &
+     (/ (i,i=0,nworkers_SIESTA-1) /), &
      World_Group, siesta_ranks_in_world, ierr )
 call newDistribution(dist1,World_Comm,siesta_ranks_in_world, &
                      TYPE_BLOCK_CYCLIC,BlockSize,"bc dist")
 deallocate(siesta_ranks_in_world)
+call MPI_Barrier(World_Comm,ierr)
 
 call mpi_comm_size( World_Comm, numNodesTotal, ierr )
 
 npPerPole  = fdf_get("PEXSI.np-per-pole",4)
-if (nspin*npPerPole > numNodesTotal) call die("PEXSI.np-per-pole is too big for MPI size")
+if (nspin*npPerPole > numNodesTotal) &
+          call die("PEXSI.np-per-pole is too big for MPI size")
 
 ! "Row" communicator for independent PEXSI operations on each spin
 ! The name is a bit misleading
@@ -202,52 +201,48 @@ call mpi_comm_rank( PEXSI_Global_Comm, global_rank, ierr )
 call mpi_comm_rank( PEXSI_Spin_Comm, spin_rank, ierr )
 PEXSI_worker = (global_rank < npPerPole)   ! Could be spin up or spin down
 
+print *, "mpirank, global_rank, spin_rank:", mpirank, global_rank, spin_rank
+call MPI_Barrier(World_Comm,ierr)
+
 ! PEXSI blocksize 
 pbs = norbs/npPerPole
 
-! Careful with this. For the purposes of matrix transfers, we need the ranks of the Pole group
+! Careful with this. For the purposes of matrix transfers,
+! we need the ranks of the Pole group
 ! in the "bridge" communicator/group (World)
 
 allocate(pexsi_pole_ranks_in_world(npPerPole))
 call MPI_Comm_Group(World_Comm, World_Group, Ierr)
 
-call MPI_Group_translate_ranks( PEXSI_Pole_Group, npPerPole, (/ (i,i=0,npPerPole-1) /), &
+call MPI_Group_translate_ranks( PEXSI_Pole_Group, npPerPole, &
+     (/ (i,i=0,npPerPole-1) /), &
      World_Group, pexsi_pole_ranks_in_world, ierr )
 
-! This looks right, but the actual group-handle value (an integer) can (and will) be the same
-! for all processors, regardless of their spin sub-space...
-
-!  call MPI_Group_incl(World_Group, npPerPole,   &
-!       pexsi_pole_ranks_in_world,&
-!     PEXSI_Pole_Group_in_World, Ierr)
-
-! ... so this will not discriminate properly the two distributions
-!
-! Make the pole group information available to all spins, storing it in an array
-
-!call MPI_AllGather(PEXSI_Pole_Group_in_World,1,MPI_integer,&
-!       PEXSI_Pole_Group_in_World_Spin,1,MPI_integer,PEXSI_Spin_Comm,ierr)
-
-! What we need is to include the actual world ranks in the distribution object
-allocate (PEXSI_Pole_ranks_in_World_Spin(npPerPole,nspin)
+! What we need is to include the actual world ranks
+! in the distribution object
+allocate (PEXSI_Pole_ranks_in_World_Spin(npPerPole,nspin))
 call MPI_AllGather(pexsi_pole_ranks_in_world,npPerPole,MPI_integer,&
-     PEXSI_Pole_Ranks_in_World_Spin,npPerPole,MPI_integer,PEXSI_Spin_Comm,ierr)
+     PEXSI_Pole_Ranks_in_World_Spin,npPerPole, &
+     MPI_integer,PEXSI_Spin_Comm,ierr)
 
 ! Create distributions known to all nodes
 allocate(dist2_spin(nspin))
 do ispin = 1, nspin
-   call newDistribution(dist2_spin(ispin),pbs, &
-                        PEXSI_Pole_Ranks_in_World_Spin(:,ispin), World_Comm, &
-                        TYPE_PEXSI,"px dist")
+   print *, "mpirank, ispin, ranks_spin(ispin): ", &
+            mpirank, ispin, PEXSI_Pole_Ranks_in_World_Spin(:,ispin)
+   call newDistribution(dist2_spin(ispin), World_Comm, &
+                        PEXSI_Pole_Ranks_in_World_Spin(:,ispin),  &
+                        TYPE_PEXSI, pbs, "px dist")
 enddo
 deallocate(pexsi_pole_ranks_in_world,PEXSI_Pole_Ranks_in_World_Spin)
+call MPI_Barrier(World_Comm,ierr)
 
-print *, "mpirank, global_rank, spin_rank:", mpirank, global_rank, spin_rank
 
 pexsi_spin = spin_rank+1  ! {1,2}
 ! This is done serially on the Siesta side, each time
 ! filling in the structures in one PEXSI set
 
+allocate(m1_spin(nspin))
 do ispin = 1, nspin
 
    m1 => m1_spin(ispin)
@@ -266,6 +261,7 @@ do ispin = 1, nspin
 
    print *, mpirank, " Done with m1 setup for ispin ", ispin
    call timer("redist_orbs_fwd", 1)
+   call MPI_Barrier(World_Comm,ierr)
 
    ! Note that we cannot simply wrap this in a pexsi_spin test, as
    ! there are Siesta nodes in both spin sets.
@@ -278,7 +274,8 @@ do ispin = 1, nspin
 
    if (PEXSI_worker .and. (pexsi_spin == ispin) ) then
 
-      print *, mpirank, global_rank, spin_rank, " will try to get m2 for ispin ", ispin
+      print *, mpirank, global_rank, spin_rank, &
+           " will try to get m2 for ispin ", ispin
 
       nrows = m2%norbs          ! or simply 'norbs'
       numColLocal = m2%no_l
@@ -658,7 +655,7 @@ do ispin = 1, nspin
    call redistribute_spmatrix(norbs,m2,dist2,m1,dist1,World_Comm)
    call timer("redist_orbs_bck", 2)
 
-   if (PEXSI_worker) then
+   if (PEXSI_worker .and. (pexsi_spin == ispin)) then
       call de_alloc(DMnzvalLocal, "DMnzvalLocal", "pexsi_solver")
       call de_alloc(EDMnzvalLocal,"EDMnzvalLocal","pexsi_solver")
 
@@ -701,6 +698,7 @@ do ispin = 1, nspin
 
    endif
 enddo
+deallocate(m1_spin, dist2_spin)
 call timer("pexsi", 2)
 
 
@@ -710,8 +708,10 @@ call delete(dist2)
 
 if (PEXSI_worker) then
    call MPI_Comm_Free(PEXSI_Pole_Comm, ierr)
+   call MPI_Comm_Free(PEXSI_Spin_Comm, ierr)
    call MPI_Group_Free(PEXSI_Pole_Group, ierr)
 endif
+call MPI_Group_Free(World_Group, ierr)
 call MPI_Comm_Free(World_Comm, ierr)
 #endif
 
@@ -797,7 +797,7 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
       
       ! If nspin=1, each state is doubly occupied
       ! 
-      inertiaList(:) = 2 * inertiaList_out(:) / nspin
+      inertiaList(:) = 2 * inertiaList(:) / nspin
       
       
       call timer("pexsi-inertia-ct", 2)

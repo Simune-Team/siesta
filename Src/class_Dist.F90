@@ -1,5 +1,4 @@
 !
-
   module class_Dist
 #ifdef MPI
     use mpi
@@ -108,6 +107,8 @@
     type(Dist)  :: this
     type(distKind) :: dtype
   
+    obj => this%data
+    
     dtype = obj%dist_type
 
   end function dist_type
@@ -134,6 +135,7 @@
      integer :: error
 
      call init(this)
+     obj => this%data
 
      if (dist_type == TYPE_BLOCK_CYCLIC) then
         call newDistribution(obj%bdist,ref_comm,ranks_in_ref_comm,&
@@ -163,15 +165,23 @@
      type(Dist), intent(in)  :: this
      integer, allocatable               :: ranks(:)
 
+     integer, allocatable :: ranks_tmp(:)
+     integer :: rsize
+
+     ! Probably it is enough with the initial assignment
+     ! for ranks itself ***
      if (dist_type(this) == TYPE_BLOCK_CYCLIC) then
-        ranks =  ranks_in_ref_comm(obj%bdist)
+        ranks_tmp =  ranks_in_ref_comm(obj%bdist)
      else if (dist_type(this) == TYPE_PEXSI) then
-        ranks =  ranks_in_ref_comm(obj%pdist)
+        ranks_tmp =  ranks_in_ref_comm(obj%pdist)
      else if (dist_type(this) == TYPE_NULL) then
-        allocate(ranks(0))
+        allocate(ranks_tmp(0))
      else
-        allocate(ranks(0))
+        allocate(ranks_tmp(0))
      end if
+     rsize = size(ranks_tmp)
+     allocate(ranks(rsize))
+     ranks(:) = ranks_tmp(:)
 
    end function ranks_in_ref_comm_
 !-----------------------------------------------------------

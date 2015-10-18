@@ -155,7 +155,7 @@ CONTAINS
   function id_(this) result(str)
    type(TYPE_NAME), intent(in)  :: this
    character(len=36)            :: str
-   str = this%data%id
+   str = this%data%name
   end function id_
 
   subroutine tag_new_object(this)

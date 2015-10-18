@@ -78,7 +78,13 @@
 
      subroutine delete_Data(spdata)
       type(PEXSIDist_) :: spdata
-      ! do nothing
+      integer :: ierr
+      if (spdata%group /= MPI_GROUP_NULL) then
+         call MPI_Group_free(spdata%group,ierr)
+      endif
+      if (allocated(spdata%ranks_in_ref_comm)) then
+         deallocate(spdata%ranks_in_ref_comm)
+      endif
      end subroutine delete_Data
 
      subroutine newPEXSIDistribution(this, &
@@ -118,6 +124,7 @@
      obj%node = 0
      obj%nodes = 1
 #endif
+     print *, "px: node, ranks in ref: ", obj%node, obj%ranks_in_ref_comm(:)
      obj%node_io = 0
 
      if (present(name)) then

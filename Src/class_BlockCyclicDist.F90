@@ -77,7 +77,14 @@
 
      subroutine delete_Data(spdata)
       type(BlockCyclicDist_) :: spdata
-      ! do nothing
+      !
+      integer :: ierr
+      if (spdata%group /= MPI_GROUP_NULL) then
+         call MPI_Group_free(spdata%group,ierr)
+      endif
+      if (allocated(spdata%ranks_in_ref_comm)) then
+         deallocate(spdata%ranks_in_ref_comm)
+      endif
      end subroutine delete_Data
 
      subroutine newBlockCyclicDistribution(this, &
@@ -110,13 +117,15 @@
      
 #ifdef MPI
      call MPI_Comm_Group(ref_comm,ref_group,error)
-     call MPI_Group_Incl(ref_group,gsize,ranks_in_ref_comm,obj%group,error)
+     call MPI_Group_Incl(ref_group,gsize,obj%ranks_in_ref_comm,obj%group,error)
      call MPI_Group_Rank( obj%Group, obj%node, error )
      call MPI_Group_Size( obj%Group, obj%nodes, error )
+     call MPI_Group_free(ref_group, error)
 #else
      obj%node = 0
      obj%nodes = 1
 #endif
+     print *, "bc: node, ranks in ref: ", obj%node, obj%ranks_in_ref_comm(:)
      obj%node_io = 0
 
      if (present(name)) then
