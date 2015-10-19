@@ -130,7 +130,10 @@ CONTAINS
    print *, "About to transfer numcols..."
    call do_transfers_int(comms,m1%numcols,m2%numcols, &
         g1,g2,mpi_comm)
+   print *, "Transferred numcols."
  
+   ! We need to tell the processes in set 2 how many
+   ! "vals" to expect.
    if (proc_in_set1) then
       if (associated(m1%vals)) then
          nvals = size(m1%vals)
@@ -138,10 +141,11 @@ CONTAINS
          nvals = 0
       endif
    endif
- 
-   ! This operation is suspect .... it could be done later  ***
-   call MPI_Bcast(nvals,1,MPI_Integer,0,mpi_comm,ierr)
-   !      print *, "rank, nvals: ", myid, nvals
+   ! Now do a broadcast within mpi_comm, using as root one
+   ! process in the first set. Let's say the one with rank 0
+   ! in g1, the first in the set, which will have rank=ranks1(1)
+   ! in mpi_comm
+   call MPI_Bcast(nvals,1,MPI_Integer,ranks1(1),mpi_comm,ierr)
  
    ! Now we can figure out how many non-zeros there are
    if (proc_in_set2) then
@@ -151,7 +155,8 @@ CONTAINS
       if (nvals > 0) then
          allocate(m2%vals(nvals))
          do j=1,nvals
-            call re_alloc(m2%vals(j)%data,1,m2%nnzl,"m2%vals(j)%data","redistribute_spmatrix")
+            call re_alloc(m2%vals(j)%data,1,m2%nnzl, &
+                 "m2%vals(j)%data","redistribute_spmatrix")
          enddo
       endif
  
