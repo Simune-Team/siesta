@@ -140,6 +140,7 @@ contains
     ! to calculate
     logical :: calc_GF_DOS
     logical, allocatable :: prep_El(:)
+    integer, allocatable :: part_cols(:,:)
     logical, allocatable :: A_parts(:)
 ! ************************************************************
 
@@ -595,6 +596,9 @@ contains
 
     end if
 
+    ! Transform prep_El to the columns, for once
+    call BiasTrimat_prep(zwork_tri,N_Elec,Elecs,prep_El,part_cols)
+    deallocate(prep_El)
 
 #ifdef NCDF_4
     if ( ('orb-current'.in.save_DATA) .or. &
@@ -913,15 +917,15 @@ contains
              !   all_nn = GFDOS
              if ( calc_GF_DOS ) then
                 call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
-                     N_Elec, Elecs, all_nn = .true. )
+                     all_nn = .true. )
 #ifdef NCDF_4
              else if ( N_proj_T > 0 ) then
                 call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
-                     N_Elec, Elecs, all_nn = .true. )
+                     all_nn = .true. )
 #endif
              else
                 call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
-                     N_Elec, Elecs, has_El = prep_El )
+                     part_cols = part_cols )
              end if
              
           end if
@@ -1315,7 +1319,7 @@ contains
     nullify(DOS,DOS_El)
     deallocate(allDOS)
 
-    deallocate(prep_El)
+    deallocate(part_cols)
     deallocate(A_parts)
 
     call rgn_delete(pvt)

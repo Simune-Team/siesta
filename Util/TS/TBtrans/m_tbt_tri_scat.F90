@@ -968,7 +968,6 @@ contains
     logical, intent(in) :: has_all
 
     real(dp) :: TT(3)
-    integer :: i
 
     select case ( N_Elec ) 
     case ( 1 )

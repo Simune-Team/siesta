@@ -42,6 +42,9 @@ module m_ts_trimat_invert
   complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
 
   public :: invert_BiasTriMat_prep
+#ifdef TBTRANS
+  public :: BiasTriMat_prep
+#endif
   public :: invert_BiasTriMat_col
   public :: invert_BiasTriMat_rgn
   public :: init_BiasTriMat_inversion
@@ -50,22 +53,20 @@ module m_ts_trimat_invert
 
 contains
 
-  subroutine invert_BiasTriMat_prep(M,Minv, N_Elec,Elecs, has_El, all_nn)
-    use m_ts_electype
-#ifndef TBTRANS
-    use m_ts_method, only : orb_offset
-#endif
+  subroutine invert_BiasTriMat_prep(M,Minv, part_cols, all_nn)
 
     type(zTriMat), intent(inout) :: M, Minv
-    integer, intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
-    logical, intent(in), optional :: has_El(N_Elec)
+    ! This is a 3x... list of
+    !  1 == part
+    !  2 == smallest column in the part
+    !  3 == largest column in the part
+    integer, intent(in), optional :: part_cols(:,:)
     logical, intent(in), optional :: all_nn
 
     complex(dp), pointer :: Mpinv(:)
 
-    integer :: sN, sNm1, sNp1, n, np
-    integer :: iEl, idx_o, off, sCol, eCol
+    integer :: n, np, sNm1, sNp1
+    integer :: sCol, eCol, i
     logical :: piv_initialized
 
     np = parts(M)
@@ -109,6 +110,7 @@ contains
 
     piv_initialized = .false.
     if ( present(all_nn) ) piv_initialized = all_nn
+    if ( .not. present(part_cols) ) piv_initialized = .true.
 
     if ( piv_initialized ) then
        
@@ -117,77 +119,18 @@ contains
           call calc_Mnn_inv(M,Minv,n)
        end do
 
-    else if ( present(has_El) ) then
+    else if ( present(part_cols) ) then
 
-#ifndef TBTRANS
-    ! We calculate all the required Mnn
-    ! Here it is permissable to overwrite the old A
-    off = 0
-    do n = 1 , np
-       ! Get part information
-       sN   = nrows_g(M,n)
+       ! This loops an array of parts to invert
+       do i = 1 , size(part_cols,2)
 
-       sCol = huge(1)
-       eCol = -1
-       do iEl = 1 , N_Elec
-          if ( .not. has_El(iEl) ) cycle
-          sNm1 = Elecs(iEl)%idx_o
-          idx_o = sNm1 - orb_offset(sNm1)
-          sNm1 = idx_o
-          sNp1 = idx_o + TotUsedOrbs(Elecs(iEl)) - 1
-          if ( which_part(M,sNm1) <= n .and. &
-               n <= which_part(M,sNp1) ) then
-             ! get number of columns that belongs to
-             ! the electrode in the 'n' diagonal part
-             ! this means we only calculate "what is needed"
-             sCol = min(sCol, max(sNm1 - off ,  1) )
-             eCol = max(eCol, min(sNp1 - off , sN) )
-          end if
-       end do
+          n = part_cols(1,i)
+          sCol = part_cols(2,i)
+          eCol = part_cols(3,i)
 
-       if ( eCol /= -1 ) then
           call calc_Mnn_inv_cols(M,Minv,n,sCol,eCol)
-       end if
-       off = off + sN
-    end do
-
-#else
-
-    ! We need to check the inDpvt region for correct orbitals
-    ! We calculate all the required Mnn
-    ! Here it is permissable to overwrite the old A
-    off = 0
-    do n = 1 , np
-       ! Get part information
-       sN   = nrows_g(M,n)
-
-       sCol = huge(1)
-       eCol = -1
-       do iEl = 1 , N_Elec
-          if ( .not. has_El(iEl) ) cycle
-          sNm1 = minval(Elecs(iEl)%inDpvt%r,dim=1)
-          sNp1 = maxval(Elecs(iEl)%inDpvt%r,dim=1)
-          if ( which_part(M,sNm1) <= n .and. &
-               n <= which_part(M,sNp1) ) then
-             ! get number of columns that belongs to
-             ! the electrode in the 'n' diagonal part
-             ! this means we only calculate "what is needed"
-             sCol = min(sCol, max(sNm1 - off ,  1) )
-             eCol = max(eCol, min(sNp1 - off , sN) )
-          end if
+          
        end do
-
-       if ( eCol /= -1 ) then
-          call calc_Mnn_inv_cols(M,Minv,n,sCol,eCol)
-       end if
-       off = off + sN
-    end do
-
-#endif
-
-    else 
-       
-       call die('Erroneous option, either has_El or all_nn')
 
     end if
 
@@ -201,6 +144,71 @@ contains
     call timer('V_TM_Pinv',2)
 
   end subroutine invert_BiasTriMat_prep
+
+#ifdef TBTRANS
+  subroutine BiasTrimat_prep(M,N_Elec,Elecs,has_El,part_cols)
+
+    use m_ts_electype
+
+    type(zTriMat), intent(inout) :: M
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    logical, intent(in) :: has_El(N_Elec)
+    integer, intent(inout), allocatable :: part_cols(:,:)
+
+    integer :: iEl, off, sCol, eCol
+    integer :: n, np, sN, Ne, sNm1, sNp1
+    integer :: tmp(3,N_Elec)
+
+    np = parts(M)
+
+    Ne = 0
+    off = 0
+    do n = 1 , np
+       ! Get part information
+       sN   = nrows_g(M,n)
+       
+       sCol = huge(1)
+       eCol = -1
+       
+       do iEl = 1 , N_Elec
+          
+          if ( .not. has_El(iEl) ) cycle
+          
+          ! We know that any diagonal region with the
+          ! electrodes will only occupy at most 2 parts
+          ! Hence, it makes no sense to loop them individually
+          sNm1 = minval(Elecs(iEl)%inDpvt%r,dim=1)
+          sNp1 = maxval(Elecs(iEl)%inDpvt%r,dim=1)
+          if ( which_part(M,sNm1) <= n .and. &
+               n <= which_part(M,sNp1) ) then
+             
+             ! get number of columns that belongs to
+             ! the electrode in the 'n' diagonal part
+             ! this means we only calculate "what is needed"
+             sCol = min(sCol, max(sNm1 - off ,  1) )
+             eCol = max(eCol, min(sNp1 - off , sN) )
+             
+          end if
+          
+       end do
+       
+       if ( eCol /= -1 ) then
+          Ne = Ne + 1
+          tmp(1,Ne) = n
+          tmp(2,Ne) = sCol
+          tmp(3,Ne) = eCol
+       end if
+       
+       off = off + sN
+       
+    end do
+
+    allocate(part_cols(3,Ne))
+    part_cols(:,:) = tmp(:,1:Ne)
+    
+  end subroutine BiasTrimat_prep
+#endif
 
   subroutine invert_BiasTriMat_col(M,Minv,El,calc_parts)
 

@@ -150,7 +150,6 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
-    logical     :: has_El(N_Elec)
     real(dp)    :: kw, kpt(3), bkpt(3)
     complex(dp) :: W, ZW
     type(tRgn)  :: pvt
@@ -294,8 +293,6 @@ contains
        ! Gf.G.Gf^\dagger
        call re_alloc(GFGGF_work,1,GFGGF_size,routine='transiesta')
     end if
-
-    has_El = .true.
 
     ! start the itterators
     call itt_init  (SpKp,end1=nspin,end2=ts_nkpnt)
@@ -480,7 +477,7 @@ contains
           ! *******************
           if ( .not. cE%fake ) then
              call invert_BiasTriMat_prep(zwork_tri,GF_tri, &
-                  N_Elec, Elecs, all_nn = .true. )
+                  all_nn = .true. )
           end if
 
           ! ** At this point we have calculated the needed
