@@ -65,13 +65,13 @@ integer   :: norbs, scf_step
 real(dp)  :: delta_Ef
 !
 integer   :: nspin
-integer :: PEXSI_Pole_Group, PEXSI_Global_Group, World_Group
+integer :: PEXSI_Pole_Group, PEXSI_Spatial_Group, World_Group
 integer, allocatable :: pexsi_pole_ranks_in_world(:)
 integer  :: nworkers_SIESTA
 integer, allocatable :: siesta_ranks_in_world(:)
 integer :: PEXSI_Pole_Group_in_World
 integer, allocatable :: PEXSI_Pole_ranks_in_World_Spin(:,:)
-integer :: PEXSI_Pole_Comm, PEXSI_Global_Comm, PEXSI_Spin_Comm
+integer :: PEXSI_Pole_Comm, PEXSI_Spatial_Comm, PEXSI_Spin_Comm
 integer :: numNodesTotal
 integer :: npPerPole
 logical  :: PEXSI_worker
@@ -179,9 +179,9 @@ if (nspin*npPerPole > numNodesTotal) &
           call die("PEXSI.np-per-pole is too big for MPI size")
 
 ! "Row" communicator for independent PEXSI operations on each spin
-! The name is a bit misleading
+! The name refers to "spatial" degrees of freedom.
 color = mod(mpirank,nspin)    ! {0,1} for nspin = 2, or {0} for nspin = 1
-call MPI_Comm_Split(World_Comm, color, mpirank, PEXSI_Global_Comm, ierr)
+call MPI_Comm_Split(World_Comm, color, mpirank, PEXSI_Spatial_Comm, ierr)
 
 ! "Column" communicator for spin reductions
 color = mpirank/nspin       
@@ -189,20 +189,17 @@ call MPI_Comm_Split(World_Comm, color, mpirank, PEXSI_Spin_Comm, ierr)
 
 ! Group and Communicator for first-pole team of PEXSI workers
 !
-call MPI_Comm_Group(PEXSI_Global_Comm, PEXSI_Global_Group, Ierr)
-call MPI_Group_incl(PEXSI_Global_Group, npPerPole,   &
+call MPI_Comm_Group(PEXSI_Spatial_Comm, PEXSI_Spatial_Group, Ierr)
+call MPI_Group_incl(PEXSI_Spatial_Group, npPerPole,   &
      (/ (i,i=0,npPerPole-1) /),&
      PEXSI_Pole_Group, Ierr)
-call MPI_Comm_create(PEXSI_Global_Comm, PEXSI_Pole_Group,&
+call MPI_Comm_create(PEXSI_Spatial_Comm, PEXSI_Pole_Group,&
      PEXSI_Pole_Comm, Ierr)
 
 
-call mpi_comm_rank( PEXSI_Global_Comm, global_rank, ierr )
+call mpi_comm_rank( PEXSI_Spatial_Comm, global_rank, ierr )
 call mpi_comm_rank( PEXSI_Spin_Comm, spin_rank, ierr )
 PEXSI_worker = (global_rank < npPerPole)   ! Could be spin up or spin down
-
-print *, "mpirank, global_rank, spin_rank:", mpirank, global_rank, spin_rank
-call MPI_Barrier(World_Comm,ierr)
 
 ! PEXSI blocksize 
 pbs = norbs/npPerPole
@@ -228,8 +225,6 @@ call MPI_AllGather(pexsi_pole_ranks_in_world,npPerPole,MPI_integer,&
 ! Create distributions known to all nodes
 allocate(dist2_spin(nspin))
 do ispin = 1, nspin
-   print *, "mpirank, ispin, ranks_spin(ispin): ", &
-            mpirank, ispin, PEXSI_Pole_Ranks_in_World_Spin(:,ispin)
    call newDistribution(dist2_spin(ispin), World_Comm, &
                         PEXSI_Pole_Ranks_in_World_Spin(:,ispin),  &
                         TYPE_PEXSI, pbs, "px dist")
@@ -259,9 +254,7 @@ do ispin = 1, nspin
 
    endif  ! SIESTA_worker
 
-   print *, mpirank, " Done with m1 setup for ispin ", ispin
    call timer("redist_orbs_fwd", 1)
-   call MPI_Barrier(World_Comm,ierr)
 
    ! Note that we cannot simply wrap this in a pexsi_spin test, as
    ! there are Siesta nodes in both spin sets.
@@ -270,12 +263,8 @@ do ispin = 1, nspin
    call redistribute_spmatrix(norbs,m1,dist1,m2,dist2,World_Comm)
    
    call timer("redist_orbs_fwd", 2)
-   print *, mpirank, " Done with redistribution for ispin ", ispin
 
    if (PEXSI_worker .and. (pexsi_spin == ispin) ) then
-
-      print *, mpirank, global_rank, spin_rank, &
-           " will try to get m2 for ispin ", ispin
 
       nrows = m2%norbs          ! or simply 'norbs'
       numColLocal = m2%no_l
@@ -304,7 +293,7 @@ enddo
 ! Make these available to all
 ! (Note that the values are those on process 0, which is in the spin=1 set
 ! In fact, they are only needed for calls to the interface, so the broadcast
-! could be over PEXSI_Global_Comm only.
+! could be over PEXSI_Spatial_Comm only.
 
 call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
 call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
@@ -408,7 +397,7 @@ energyWidthInertiaTolerance =  &
              options%muInertiaTolerance,"Ry")
 
 if (scf_step == 1) then
-   call pexsi_initialize_scfloop(PEXSI_Global_Comm,npPerPole,global_rank,info)
+   call pexsi_initialize_scfloop(PEXSI_Spatial_Comm,npPerPole,global_rank,info)
    call check_info(info,"initialize_plan")
 endif
 call f_ppexsi_load_real_symmetric_hs_matrix(&
@@ -539,7 +528,7 @@ solver_loop: do
    else
       ! Converged
       if (mpirank == 0) then
-         write(6,"(a,f10.4)") "PEXSI solver converged. mu: ", mu
+         write(6,"(a,f10.4)") "PEXSI solver converged. mu: ", mu/eV
       endif
       exit solver_loop
    endif
@@ -564,7 +553,8 @@ if( PEXSI_worker ) then
       ! The matrices have to be divided by two...
       DMnzvalLocal(:) = 0.5_dp * DMnzvalLocal(:)
       EDMnzvalLocal(:) = 0.5_dp * EDMnzvalLocal(:)
-      FDMnzvalLocal(:) = 0.5_dp * FDMnzvalLocal(:)  !!! Watch out with this. Internals??
+      !!! Watch out with this. Internals??
+      FDMnzvalLocal(:) = 0.5_dp * FDMnzvalLocal(:)
    endif
 
 endif
@@ -583,7 +573,7 @@ if (PEXSI_worker) then
    eBandH = 0.0_dp
    do i = 1,nnzLocal
       free_bs_energy = free_bs_energy + SnzvalLocal(i) * &
-           ( FDMnzvalLocal(i) )   !!!! Correction for mu*numElectron_out ??
+           ( FDMnzvalLocal(i) ) 
       bs_energy = bs_energy + SnzvalLocal(i) * &
            ( EDMnzvalLocal(i) )
       eBandH = eBandH + HnzvalLocal(i) * &
@@ -602,7 +592,7 @@ if (PEXSI_worker) then
    ! Now, reduce over both spins
 
    call globalize_sum( free_bs_energy, buffer1, comm=PEXSI_Spin_Comm )
-   ! Note that FDM has an extra term: -mu*N  --- check above
+   ! Note that we need an extra term: mu*N for the free energy
    free_bs_energy = buffer1 + mu*numElectronPEXSI
    call globalize_sum( bs_energy, buffer1, comm=PEXSI_Spin_Comm )
    bs_energy = buffer1
@@ -615,7 +605,7 @@ if (PEXSI_worker) then
    if ((mpirank == 0) .and. (verbosity >= 2)) then
       write(6, "(a,f12.4)") "#&s Tr(S*EDM) (eV) = ", bs_energy/eV
       write(6,"(a,f12.4)") "#&s Tr(H*DM) (eV) = ", eBandH/eV
-      write(6,"(a,f12.4)") "#&s Tr(S*FDM) (eV) = ", (free_bs_energy)/eV
+      write(6,"(a,f12.4)") "#&s Tr(S*FDM) + mu*N (eV) = ", (free_bs_energy)/eV
    endif
 
    ef = mu
@@ -718,12 +708,12 @@ enddo
 deallocate(dist2_spin)
 deallocate(m1_spin)
 
-call MPI_Comm_Free(PEXSI_Global_Comm, ierr)
+call MPI_Comm_Free(PEXSI_Spatial_Comm, ierr)
 call MPI_Comm_Free(PEXSI_Pole_Comm, ierr)
 call MPI_Comm_Free(PEXSI_Spin_Comm, ierr)
 call MPI_Comm_Free(World_Comm, ierr)
 !
-call MPI_Group_Free(PEXSI_Global_Group, ierr)
+call MPI_Group_Free(PEXSI_Spatial_Group, ierr)
 call MPI_Group_Free(PEXSI_Pole_Group, ierr)
 call MPI_Group_Free(World_Group, ierr)
 #endif

@@ -125,7 +125,7 @@
      obj%node = 0
      obj%nodes = 1
 #endif
-     print *, "bc: node, ranks in ref: ", obj%node, obj%ranks_in_ref_comm(:)
+!     print *, "bc: node, ranks in ref: ", obj%node, obj%ranks_in_ref_comm(:)
      obj%node_io = 0
 
      if (present(name)) then
