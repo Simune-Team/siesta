@@ -1,4 +1,24 @@
 ------------------------------------------------------------
+October 19, 2015  A. Garcia   trunk-464--pexsi-v0.8-spin-1
+First working version for spin-polarization
+
+This version splits the PEXSI communicator to deal
+with spins completely in parallel. Note that the SIESTA
+side still does them serially.
+
+Some rough edges still remaining:
+
+- Treatment of the "large jump" in the Newton method
+  (diagnosis criteria and re-bracketing for inertia-count)
+  
+- Centralization and documentation of options.
+
+- Cosmetics for output
+
+- Option to treat spin serially in PEXSI
+
+
+------------------------------------------------------------
 October 13, 2015  A. Garcia        trunk-464--pexsi-v0.8-5
 Refine the expert interface for spinless case (work in progress)
 
