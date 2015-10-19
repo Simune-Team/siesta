@@ -108,7 +108,7 @@ real(dp), save         :: energyWidthInertiaTolerance
 real(dp)               :: pexsi_temperature, two_kT
 real(dp) :: deltaMu
 real(dp) :: numElectronDrvMuPEXSI, numElectronPEXSI
-real(dp) :: numElectronSpin(2), numElectronDrvMuSpin(2)
+real(dp), allocatable :: numElectronSpin(:), numElectronDrvMuSpin(:)
 real(dp) :: numElectron_out, numElectronDrvMu_out
 integer :: numTotalPEXSIIter
 integer :: numTotalInertiaIter
@@ -451,10 +451,13 @@ else
 endif
 
 numTotalPEXSIIter = 0
+allocate(numElectronSpin(nspin),numElectronDrvMuSpin(nspin))
+
 solver_loop: do
 
    if (numTotalPEXSIIter > options%maxPEXSIIter ) then
-      ! Maybe do not die, and trust further DM normalization to get out of this...
+      ! Maybe do not die, and trust further DM normalization
+      ! to fix the number of electrons for unstable cases
       call die("too many PEXSI iterations")
    endif
 
@@ -534,6 +537,7 @@ solver_loop: do
    endif
 
 end do solver_loop
+deallocate(numElectronSpin,numElectronDrvMuSpin)
 call timer("pexsi-solver", 2)
 
 
