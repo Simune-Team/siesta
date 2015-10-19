@@ -536,6 +536,12 @@ contains
     if ( ltmp ) then
        save_DATA = save_DATA // ('T-sum-out'.kv.1)
     end if
+    
+    ! We cannot calculate the transmission for more than 3
+    ! electrodes if using the diagonal
+    if ( only_T_Gf .and. N_Elec > 3 ) then
+       only_T_Gf = .false.
+    end if
 
     if ( only_T_Gf ) then
        ! TODO, consider changing this to .true.
@@ -731,9 +737,7 @@ contains
     only_T_Gf = only_T_Gf .and. ('DOS-A' .nin. save_DATA)
     only_T_Gf = only_T_Gf .and. ('orb-current' .nin. save_DATA)
     only_T_Gf = only_T_Gf .and. ('T-Gf' .nin. save_DATA)
-    ! Only advice for 2 electrodes as N_Elec > 2 becomes unstable for symmetric
-    ! junctions
-    only_T_Gf = only_T_Gf .and. N_Elec == 2
+    only_T_Gf = only_T_Gf .and. N_Elec <= 3
     if ( only_T_Gf ) then
        write(*,'(a)')' ** Speed up the execution, calculate transmission in diag'
        write(*,'(a)')'  > TBT.T.Gf true'
@@ -741,7 +745,7 @@ contains
        write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
     end if
 
-    if ( ('T-Gf'.in.save_DATA) .and. N_Elec > 2 ) then
+    if ( ('T-Gf'.in.save_DATA) .and. N_Elec > 3 ) then
        write(*,'(a)')' ** For symmetric junctions/transmission coefficients &
             &TBtrans will die.'
        write(*,'(a)')'    The transmissions cannot be uniquely identified in &

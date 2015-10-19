@@ -967,18 +967,18 @@ contains
     ! Whether or not we have calculated all transmissions
     logical, intent(in) :: has_all
 
-    ! System of equations
-    real(dp), allocatable :: A(:,:), B(:), work(:)
-    real(dp) :: S(N_Elec)
-    integer :: lwork
+    real(dp) :: TT(3)
+    integer :: i
 
-    integer :: i, d, j, Nt, Ne
+    select case ( N_Elec ) 
+    case ( 1 )
 
-    ! For one electrodes, we simply return immediately
-    if ( N_Elec == 1 ) return
+       ! For one electrodes, we simply return immediately
+       return
 
-    ! The simple case is when we have 2 electrodes
-    if ( N_Elec == 2 ) then
+    case ( 2 )
+
+       ! The simple case is when we have 2 electrodes
 
        T(2,1) = T(N_Elec+1,1) - T(1,1)
        if ( has_all ) then
@@ -989,103 +989,33 @@ contains
 
        return
 
-    end if
+    case ( 3 )
 
-    if ( .not. has_all ) then
-       call die('GF_T_solve: Can not separate transmissions.')
-    end if
-
-    ! Setup the real system of equations
-    Nt = 0
-    do i = 1 , N_Elec - 1
-       Nt = Nt + i
-    end do
-
-    ! Determine work-size (we have too much here)
-    lwork = 4 * N_Elec + max(2*N_Elec,Nt)
-    
-    ! Allocate
-    allocate(A(N_Elec,Nt),B(Nt),work(lwork))
-
-    ! Setup RHS and check that we should be able to calculate
-    ! the exact transmission using the diagonal part of the
-    ! Green function
-    Ne = 0
-    do i = 1 , N_Elec
-       B(i) = T(N_Elec+1,i) - T(i,i)
-       if ( i > 1 ) then
-        do j = 1 , i - 1
-           if ( abs(B(i) - B(j)) < 1.e-4_dp ) then
-              Ne = Ne + 1
-           end if
-        end do
+       if ( .not. has_all ) then
+          call die('GF_T_solve: Can not separate transmissions.')
        end if
-    end do
-    if ( Ne > 0 ) then
-       write(*,'(a,i0,a)')'tbt: Transmission from diagonal requires unique &
-            &transmission coefficients. You have ',Ne,' similar coefficients.'
-       write(*,'(a)')'tbt: This happens with symmetric junctions as &
-            &the system is underdetermined.'
-       call die('TBtrans cannot calculate the actual transmission using only &
-            &the diagonal as two coefficients are the same.')
-    end if
-    
-    
-    ! Setup system of equations
-    A = 0._dp
-    d = 0
-    Ne = N_Elec - 1
-    do i = 1 , N_Elec
+       
+    case default
 
-       ! Each partition can be written as
-       ! a sequence of 1'nes, and then 
-       ! a diagonal matrix below.
-       ! Fill rows of A
-       A(i,d+1:d+Ne) = 1._dp
-       ! Add a diagonal below the current electrode
-       do j = 1 , Ne
-          A(i+j,d+j) = 1._dp
-       end do
+       call die('Calculating transmission from underdetermined &
+            &system is not allowed. Remove TBT.T.Gf.')
+   
+    end select
 
-       d = d + Ne
+    ! RHS
+    TT(1) = T(N_Elec+1,1) - T(1,1)
+    TT(2) = T(N_Elec+1,2) - T(2,2)
+    TT(3) = T(N_Elec+1,3) - T(3,3)
 
-       Ne = Ne - 1
-
-    end do
-
-    ! The last two elements of A is also one, always
-    ! This corresponds to fill of 1 and diagonal of size 1 below.
-    A(N_Elec-1:N_Elec,Nt) = 1._dp
-!!$    do i = 1 , N_Elec
-!!$       print'(1000(tr1,f2.0))',A(i,:)
-!!$    end do
-
-    ! Solve the system of equations.
-    ! This is not a fully determined one, but we _know_ it is
-    ! Hence, the linear least squares should provide enough 
-    ! accuracy.
-    ! -1._dp signals machine precision for singular values
-    ! However, there shouldn't be any singular values
-    ! unless the transmission is zero... ???
-    call dgelss(N_Elec,Nt,1,A,N_Elec,B,Nt,S,-1._dp,d,work,lwork,i)
-    if ( i /= 0 .or. d /= N_Elec ) then
-       call die('GF_T_solve: Could not solve using least-squares.')
-    end if
-
-    ! d is the rank of the matrix
-
-    ! Now we have the actual transmissions,
-    ! copy over
-    d = 0
-    do i = 1 , N_Elec - 1
-       do j = i + 1 , N_Elec
-          d = d + 1
-          T(j,i) = B(d)
-          T(i,j) = B(d)
-       end do
-    end do
-
-    deallocate(A,B,work)
+    ! Calculate them exactly
+    ! We do not need LAPACK here as this can
+    ! only be definitely solved for N_Elec == 3
+    T(2,1) = (TT(1) - TT(3) + TT(2)) * 0.5_dp
+    T(1,2) = T(2,1)
+    T(3,1) = TT(1) - T(2,1)
+    T(1,3) = T(3,1)
+    T(3,2) = TT(3) - T(3,1)
+    T(2,3) = T(3,2)
 
   end subroutine GF_T_solve
 

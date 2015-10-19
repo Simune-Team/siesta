@@ -1,4 +1,15 @@
 ----------------------------------------------------
+October 19, 2015 -- Nick Papior       trunk-479---ts-scf-569
+Bugfix for tbtrans with GF transmission only
+
+* I have redone the calculations, they can only
+  be performed with N_Elec <= 3
+
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+
+----------------------------------------------------
 October 19, 2015 -- Nick Papior       trunk-479---ts-scf-568
 Bugfix for tbtrans with GF transmission only
 
