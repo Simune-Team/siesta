@@ -1,4 +1,44 @@
 ----------------------------------------------------
+October 19, 2015 -- Nick Papior       trunk-479---ts-scf-568
+Bugfix for tbtrans with GF transmission only
+
+* Added check for k-points in the semi-infinite direction
+  for electrodes in transiesta.
+  < 5 it will die,
+  < 20 it will give a warning
+
+* Fixed the calculation of transport with diagonal only.
+  The electrode inversion used erroneous columns.
+
+  This has been fixed.
+
+  When calculating the transmission using the diagonal
+  part we now automatically calculate the individual
+  parts for more information. 
+  Note that this cost no extra calculation time.
+
+* Added solver for N_Elec > 2 diagonal calculation.
+
+  This has some deficiencies for symmetric
+  junctions.
+  Hence the exact calculation of the individual i->j
+  cannot be correctly calculated as the system is 
+  underdetermined.
+  It will only work if all transmission coefficients
+  does not depend on each other.
+
+  For safety tbtrans will quit if trying to calculate
+  something it cannot (if two total transmissions are
+  very close tbtrans will die.)
+
+modified:
+  Src/m_ts_electype.F90
+  Src/m_ts_trimat_invert.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 October 18, 2015 -- Nick Papior       trunk-479---ts-scf-567
 TBT: bugfix
 

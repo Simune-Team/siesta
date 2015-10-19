@@ -52,7 +52,9 @@ contains
 
   subroutine invert_BiasTriMat_prep(M,Minv, N_Elec,Elecs, has_El, all_nn)
     use m_ts_electype
+#ifndef TBTRANS
     use m_ts_method, only : orb_offset
+#endif
 
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: N_Elec
@@ -117,30 +119,71 @@ contains
 
     else if ( present(has_El) ) then
 
+#ifndef TBTRANS
     ! We calculate all the required Mnn
     ! Here it is permissable to overwrite the old A
     off = 0
     do n = 1 , np
+       ! Get part information
+       sN   = nrows_g(M,n)
+
+       sCol = huge(1)
+       eCol = -1
        do iEl = 1 , N_Elec
           if ( .not. has_El(iEl) ) cycle
           sNm1 = Elecs(iEl)%idx_o
           idx_o = sNm1 - orb_offset(sNm1)
           sNm1 = idx_o
-          sN   = nrows_g(M,n)
           sNp1 = idx_o + TotUsedOrbs(Elecs(iEl)) - 1
           if ( which_part(M,sNm1) <= n .and. &
                n <= which_part(M,sNp1) ) then
              ! get number of columns that belongs to
              ! the electrode in the 'n' diagonal part
              ! this means we only calculate "what is needed"
-             sCol = max(sNm1 - off ,  1)
-             eCol = min(sNp1 - off , sN)
-             call calc_Mnn_inv_cols(M,Minv,n,sCol,eCol)
-             exit ! the electrode loop
+             sCol = min(sCol, max(sNm1 - off ,  1) )
+             eCol = max(eCol, min(sNp1 - off , sN) )
           end if
        end do
-       off = off + nrows_g(M,n)
+
+       if ( eCol /= -1 ) then
+          call calc_Mnn_inv_cols(M,Minv,n,sCol,eCol)
+       end if
+       off = off + sN
     end do
+
+#else
+
+    ! We need to check the inDpvt region for correct orbitals
+    ! We calculate all the required Mnn
+    ! Here it is permissable to overwrite the old A
+    off = 0
+    do n = 1 , np
+       ! Get part information
+       sN   = nrows_g(M,n)
+
+       sCol = huge(1)
+       eCol = -1
+       do iEl = 1 , N_Elec
+          if ( .not. has_El(iEl) ) cycle
+          sNm1 = minval(Elecs(iEl)%inDpvt%r,dim=1)
+          sNp1 = maxval(Elecs(iEl)%inDpvt%r,dim=1)
+          if ( which_part(M,sNm1) <= n .and. &
+               n <= which_part(M,sNp1) ) then
+             ! get number of columns that belongs to
+             ! the electrode in the 'n' diagonal part
+             ! this means we only calculate "what is needed"
+             sCol = min(sCol, max(sNm1 - off ,  1) )
+             eCol = max(eCol, min(sNp1 - off , sN) )
+          end if
+       end do
+
+       if ( eCol /= -1 ) then
+          call calc_Mnn_inv_cols(M,Minv,n,sCol,eCol)
+       end if
+       off = off + sN
+    end do
+
+#endif
 
     else 
        

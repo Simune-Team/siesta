@@ -485,7 +485,6 @@ contains
     ltmp = fdf_get('TBT.T.Elecs.All',N_Elec == 1)
     if ( ltmp ) then
        save_DATA = save_DATA // ('T-all'.kv.1)
-       only_T_Gf = .false.
     end if
 
     N_eigen = fdf_get('TBT.T.Eig',0)
@@ -536,16 +535,26 @@ contains
     ltmp = fdf_get('TBT.T.Out',N_Elec == 1)
     if ( ltmp ) then
        save_DATA = save_DATA // ('T-sum-out'.kv.1)
-       only_T_Gf = .false.
     end if
 
-    only_T_Gf = only_T_Gf .and. N_Elec == 2
     if ( only_T_Gf ) then
        ! TODO, consider changing this to .true.
        only_T_Gf = fdf_get('TBT.T.Gf',.false.)
     end if
     if ( only_T_Gf ) then
        save_DATA = save_DATA // ('T-Gf'.kv.1)
+
+       ! We get sum-out for free, so save it
+       save_DATA = save_DATA // ('T-sum-out'.kv.1)
+
+       if ( N_Elec > 2 ) then
+          ! When having more than one electrode
+          ! we *must* calculate all transmissions
+          ! to be able to get the actual transmissions
+          ! using the diagonal Green function
+          save_DATA = save_DATA // ('T-all'.kv.1)
+       end if
+
     end if
 
 #ifdef NCDF_4
@@ -717,19 +726,26 @@ contains
     end if
 
     ! Print note about TBT.T.Gf
-    only_T_Gf = 'T-all' .nin. save_DATA
-    only_T_Gf = only_T_Gf .and. ('T-eig' .nin. save_DATA)
+    only_T_Gf = 'T-eig' .nin. save_DATA
     only_T_Gf = only_T_Gf .and. ('DOS-Gf' .nin. save_DATA)
     only_T_Gf = only_T_Gf .and. ('DOS-A' .nin. save_DATA)
     only_T_Gf = only_T_Gf .and. ('orb-current' .nin. save_DATA)
-    only_T_Gf = only_T_Gf .and. ('T-sum-out' .nin. save_DATA)
-    only_T_Gf = only_T_Gf .and. N_Elec == 2
     only_T_Gf = only_T_Gf .and. ('T-Gf' .nin. save_DATA)
+    ! Only advice for 2 electrodes as N_Elec > 2 becomes unstable for symmetric
+    ! junctions
+    only_T_Gf = only_T_Gf .and. N_Elec == 2
     if ( only_T_Gf ) then
        write(*,'(a)')' ** Speed up the execution, calculate transmission in diag'
        write(*,'(a)')'  > TBT.T.Gf true'
     else
        write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
+    end if
+
+    if ( ('T-Gf'.in.save_DATA) .and. N_Elec > 2 ) then
+       write(*,'(a)')' ** For symmetric junctions/transmission coefficients &
+            &TBtrans will die.'
+       write(*,'(a)')'    The transmissions cannot be uniquely identified in &
+            &those circumstances.'
     end if
     
 #ifdef MPI

@@ -186,6 +186,7 @@ contains
     type(tRgn) :: pvt
     real(dp) :: kpt(3), bkpt(3), wkpt
     integer :: info
+    logical :: T_all
 #ifdef TBT_PHONON
     type(ts_c_idx) :: cOmega
     real(dp) :: omega
@@ -221,6 +222,8 @@ contains
     real(dp) :: loop_time, init_time
     integer  :: last_progress_print
 ! ************************************************************
+
+    T_all = 'T-all' .in. save_DATA
 
     ! Create the back-pivoting region
     call rgn_init(pvt,nrows_g(TSHS%sp),val=0)
@@ -520,7 +523,7 @@ contains
     allocate(prep_El(N_Elec))
     ! Default to all electrode Green function parts
     prep_El = .true.
-    if ( ('T-all' .nin. save_DATA) .and. &
+    if ( (.not. T_all) .and. &
          ('DOS-A-all' .nin. save_DATA) ) then
        
        ! We only need to prepare the Green function
@@ -546,7 +549,7 @@ contains
        ! The first partition is whether we want
        ! certain quantities from all electrodes
        A_parts(:) = .false.
-       if ( ('T-all' .in. save_DATA) .or. &
+       if ( T_all .or. &
             ('T-sum-out' .in. save_DATA) ) then
 
           ! We need _all_ diagonal blocks of the spectral function
@@ -581,16 +584,14 @@ contains
        ! transmission.
        ! In this case we can limit the calculation
        ! space to speed things up
-       prep_El(1) = .true.
-       prep_El(2) = .false.
+       prep_El(:) = .true.
+       if ( .not. T_all ) then
+          prep_El(N_Elec) = .false.
+       end if
 
-       ! reset all parts
+       ! reset all parts (A_parts is not used when
+       ! only using the Green function)
        A_parts = .false.
-       do io = 1 , Elecs(1)%o_inD%n
-          jEl = which_part(Gf_tri, &
-               rgn_pivot(r_oDev,Elecs(1)%o_inD%r(io)) )
-          A_parts(jEl) = .true.
-       end do
 
     end if
 
@@ -957,12 +958,20 @@ contains
              ! We are allowed to calculate the transmission
              ! only by using the diagonal
              if ( .not. cE%fake ) then
+                do iEl = 1 , N_Elec
+                   if ( iEl == N_Elec .and. .not. T_all ) cycle
+                   
+                   call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
+                        r_oDev, Elecs(iEl)%o_inD,only_diag=.true.)
+                   
+                   call GF_T(zwork_tri,Elecs(iEl), &
+                        T(N_Elec+1,iEl), T(iEl,iEl), &
+                        nGFGGF,GFGGF_work)
 
-                call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                     r_oDev, Elecs(1)%o_inD,only_diag=.true.)
-
-                call GF_T(zwork_tri,Elecs(1),T(2,1), &
-                     nGFGGF,GFGGF_work)
+                end do
+                
+                ! Retrieve actual transmissions
+                call GF_T_solve(N_Elec,T,T_all)
 
              end if
 
@@ -971,7 +980,7 @@ contains
           ! We loop over all electrodes
           do iEl = 1 , N_Elec
              if ( iEl == N_Elec .and. ( &
-                  ('T-all' .nin. save_DATA) .and. &
+                  (.not. T_all) .and. &
                   ('DOS-A-all' .nin. save_DATA) ) ) cycle
 
              ! ******************
@@ -1034,7 +1043,7 @@ contains
                 ! same as calculating jEl -> iEl, hence if we
                 ! do not wish to assert this is true, we do not
                 ! calculate this.
-                if ( ('T-all' .nin. save_DATA ) .and. &
+                if ( (.not. T_all) .and. &
                      jEl < iEl ) cycle
                 if ( ('T-sum-out' .nin. save_DATA ) .and. &
                      iEl == jEl ) cycle
@@ -1493,6 +1502,7 @@ contains
 
   end subroutine prepare_invGF
 
+#ifdef NOT_USED
   ! There are two variants of populating the
   ! Green function for each energy point.
   ! If you have a very small device region it is
@@ -1591,6 +1601,7 @@ contains
     loop_dev = t_s > t_d
 
   end subroutine prep_Gfinv_algo
+#endif
 
   subroutine downfold_SE(cE, El, spH, spS,r,np,p,nwork,work)
 

@@ -1054,6 +1054,18 @@ contains
           
        end if
 
+       ! Check that there is actually k-points in the transport direction
+       j = this%t_dir
+       i = this_kcell(j,j)
+       if ( i < 20 .and. IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' has very few &
+               &k-points in the semi-infinite direction, at least 20 is recommended.'
+       else if ( i < 5 .and. IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' has exceptionally few &
+               &k-points in the semi-infinite direction, at least 5 is required.'
+          ldie = .true.
+       end if
+
     else
        
        call ts_read_TSHS_opt(this%HSfile, Gamma=Gamma, Bcast=.true.)

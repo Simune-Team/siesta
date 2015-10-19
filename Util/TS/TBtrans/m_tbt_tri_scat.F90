@@ -35,7 +35,7 @@ module m_tbt_tri_scat
   public :: A_Gamma_Block ! Calculate the transmission from spectral function . Gamma (in block form)
   public :: TT_eigen ! Eigenvalue calculation of the transmission eigenvalues
   public :: GF_Gamma ! Calculate the transmission from Green function . Gamma (same-lead contribution)
-  public :: GF_T
+  public :: GF_T, GF_T_solve
   
   public :: insert_Self_Energy
   public :: insert_Self_Energy_Dev
@@ -834,18 +834,17 @@ contains
     
   end subroutine GF_Gamma
 
-  subroutine GF_T(Gfcol,El,T,nzwork,zwork)
+  subroutine GF_T(Gfcol,El,T_Gf,T_self,nzwork,zwork)
 
     use intrinsic_missing, only: TRACE
     use m_ts_trimat_invert, only : TriMat_Bias_idxs
 
     type(zTriMat), intent(inout) :: Gfcol
     type(Elec), intent(inout) :: El
-    real(dp), intent(out) :: T
+    real(dp), intent(out) :: T_Gf, T_self
     integer, intent(in) :: nzwork
     complex(dp), intent(out) :: zwork(nzwork)
 
-    complex(dp), pointer :: Gf(:)
     complex(dp), pointer :: z(:)
 
     integer :: no, np
@@ -854,7 +853,7 @@ contains
     integer :: sN, n
     integer :: nb
     ! BLAS routines
-    complex(dp), external :: zdotu, zdotc
+    complex(dp), external :: zdotu
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-T',1)
@@ -870,6 +869,16 @@ contains
 
 #ifndef TS_NOCHECKS
     if ( no**2 > nzwork ) call die('GF_T: no**2 < nzwork')
+
+    ! First we check that we can use the first elements
+    ! of Gfcol as temporary storage
+    call TriMat_Bias_idxs(Gfcol,no,1,i,ii)
+    if ( i < no ** 2 ) then
+       write(*,'(a)') 'Remove TBT.T.Gf from your fdf file. &
+            &It is not possible in your current setup.'
+       call die('GF_T: Size of temporary array not possible.')
+    end if
+
 #endif
 
     ! This code is based on the down-folded self-energies
@@ -889,7 +898,6 @@ contains
        call TriMat_Bias_idxs(Gfcol,no,n,i,ii)
        
        i = i + El%inDpvt%r(i_Elec) - cumsum(n) - 1
-       Gf => z(i:ii)
 
        ! Calculate the G \Gamma
 #ifdef USE_GEMM3M
@@ -897,7 +905,7 @@ contains
 #else
        call zgemm( &
 #endif
-            'N','N',nb,no,no, z1, Gf(1),sN, &
+            'N','T',nb,no,no, z1, z(i),sN, &
             El%Gamma(1), no, z0, zwork(i_Elec), no)
        
        i_Elec = i_Elec + nb
@@ -908,17 +916,10 @@ contains
     !    Tr[(G \Gamma)^\dagger]
     ! Now we have:
     !    = G \Gamma
-    T = - real( TRACE(no,zwork) ,dp) * 2._dp
+    T_Gf = - real( TRACE(no,zwork) ,dp) * 2._dp
+
 
     ! Now we need to correct for the current electrode
-    ! First we check that we can use the first elements
-    ! of Gfcol as temporary storage
-    call TriMat_Bias_idxs(Gfcol,no,1,i,ii)
-    if ( i < no ** 2 ) then
-       write(*,'(a)') 'Remove TBT.T.Gf from your fdf file. &
-            &It is not possible in your current setup.'
-       call die('GF_T: Size of temporary array not possible.')
-    end if
     
     ! Now we can calculate the spectral function for this
     ! electrode where it lives
@@ -933,9 +934,8 @@ contains
        call TriMat_Bias_idxs(Gfcol,no,n,i,ii)
        
        i = i + El%inDpvt%r(i_Elec) - cumsum(n) - 1
-       Gf => z(i:ii)
 
-       i = ( i_Elec-1 ) * no + 1
+       ii = ( i_Elec-1 ) * no + 1
        ! Calculate the G \Gamma G^\dagger
 #ifdef USE_GEMM3M
        call zgemm3m( &
@@ -943,7 +943,7 @@ contains
        call zgemm( &
 #endif
             'N','C',no,nb,no, z1, zwork(1),no, &
-            Gf(1), sN, z0, z(i), no)
+            z(i), sN, z0, z(ii), no)
        
        i_Elec = i_Elec + nb
 
@@ -951,7 +951,7 @@ contains
 
     ! The remaining calculation is very easy as we simply
     ! need to do the sum of the trace
-    T = T + zdotu(no*no,z(1),1,El%Gamma,1)
+    T_self = - real( zdotu(no*no,z(1),1,El%Gamma(1),1) , dp)
 
     deallocate(cumsum)
 
@@ -960,6 +960,134 @@ contains
 #endif
     
   end subroutine GF_T
+
+  subroutine GF_T_solve(N_Elec,T,has_all)
+    integer, intent(in) :: N_Elec
+    real(dp), intent(inout) :: T(N_Elec+1,N_Elec)
+    ! Whether or not we have calculated all transmissions
+    logical, intent(in) :: has_all
+
+    ! System of equations
+    real(dp), allocatable :: A(:,:), B(:), work(:)
+    real(dp) :: S(N_Elec)
+    integer :: lwork
+
+    integer :: i, d, j, Nt, Ne
+
+    ! For one electrodes, we simply return immediately
+    if ( N_Elec == 1 ) return
+
+    ! The simple case is when we have 2 electrodes
+    if ( N_Elec == 2 ) then
+
+       T(2,1) = T(N_Elec+1,1) - T(1,1)
+       if ( has_all ) then
+          T(1,2) = T(N_Elec+1,2) - T(2,2)
+       else
+          T(1,2) = T(2,1)
+       end if
+
+       return
+
+    end if
+
+    if ( .not. has_all ) then
+       call die('GF_T_solve: Can not separate transmissions.')
+    end if
+
+    ! Setup the real system of equations
+    Nt = 0
+    do i = 1 , N_Elec - 1
+       Nt = Nt + i
+    end do
+
+    ! Determine work-size (we have too much here)
+    lwork = 4 * N_Elec + max(2*N_Elec,Nt)
+    
+    ! Allocate
+    allocate(A(N_Elec,Nt),B(Nt),work(lwork))
+
+    ! Setup RHS and check that we should be able to calculate
+    ! the exact transmission using the diagonal part of the
+    ! Green function
+    Ne = 0
+    do i = 1 , N_Elec
+       B(i) = T(N_Elec+1,i) - T(i,i)
+       if ( i > 1 ) then
+        do j = 1 , i - 1
+           if ( abs(B(i) - B(j)) < 1.e-4_dp ) then
+              Ne = Ne + 1
+           end if
+        end do
+       end if
+    end do
+    if ( Ne > 0 ) then
+       write(*,'(a,i0,a)')'tbt: Transmission from diagonal requires unique &
+            &transmission coefficients. You have ',Ne,' similar coefficients.'
+       write(*,'(a)')'tbt: This happens with symmetric junctions as &
+            &the system is underdetermined.'
+       call die('TBtrans cannot calculate the actual transmission using only &
+            &the diagonal as two coefficients are the same.')
+    end if
+    
+    
+    ! Setup system of equations
+    A = 0._dp
+    d = 0
+    Ne = N_Elec - 1
+    do i = 1 , N_Elec
+
+       ! Each partition can be written as
+       ! a sequence of 1'nes, and then 
+       ! a diagonal matrix below.
+       ! Fill rows of A
+       A(i,d+1:d+Ne) = 1._dp
+       ! Add a diagonal below the current electrode
+       do j = 1 , Ne
+          A(i+j,d+j) = 1._dp
+       end do
+
+       d = d + Ne
+
+       Ne = Ne - 1
+
+    end do
+
+    ! The last two elements of A is also one, always
+    ! This corresponds to fill of 1 and diagonal of size 1 below.
+    A(N_Elec-1:N_Elec,Nt) = 1._dp
+!!$    do i = 1 , N_Elec
+!!$       print'(1000(tr1,f2.0))',A(i,:)
+!!$    end do
+
+    ! Solve the system of equations.
+    ! This is not a fully determined one, but we _know_ it is
+    ! Hence, the linear least squares should provide enough 
+    ! accuracy.
+    ! -1._dp signals machine precision for singular values
+    ! However, there shouldn't be any singular values
+    ! unless the transmission is zero... ???
+    call dgelss(N_Elec,Nt,1,A,N_Elec,B,Nt,S,-1._dp,d,work,lwork,i)
+    if ( i /= 0 .or. d /= N_Elec ) then
+       call die('GF_T_solve: Could not solve using least-squares.')
+    end if
+
+    ! d is the rank of the matrix
+
+    ! Now we have the actual transmissions,
+    ! copy over
+    d = 0
+    do i = 1 , N_Elec - 1
+       do j = i + 1 , N_Elec
+          d = d + 1
+          T(j,i) = B(d)
+          T(i,j) = B(d)
+       end do
+    end do
+
+    deallocate(A,B,work)
+
+  end subroutine GF_T_solve
 
   subroutine consecutive_index(Tri,El,current,p,n)
     type(zTriMat), intent(inout) :: Tri
