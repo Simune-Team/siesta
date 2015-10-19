@@ -89,10 +89,10 @@ not be available for the kinds of "inter-communication" that we are
 doing.
 
 #+BEGIN_SRC f90 :noweb-ref routine-redist-spmatrix
-  subroutine redistribute_spmatrix(norbs,m1,dist1,m2,dist2,mpi_comm)
+  subroutine redistribute_spmatrix(norbs,m1,dist1,m2,dist2,bridge_comm)
 
     use mpi
-    use class_Dist
+    use class_Distribution
     use alloc,       only: re_alloc, de_alloc
 
     implicit none
@@ -100,8 +100,8 @@ doing.
     integer, intent(in)       :: norbs   ! Overall number of rows
     type(aux_matrix) :: m1               ! Source matrix
     type(aux_matrix) :: m2               ! Destination matrix -- it is allocated
-    type(Dist) :: dist1, dist2           ! Distributions
-    integer, intent(in)   :: mpi_comm    ! Umbrella Communicator
+    type(Distribution) :: dist1, dist2           ! Distributions
+    integer, intent(in)   :: bridge_comm    ! Umbrella Communicator
 
     type(comm_t), dimension(:), allocatable, target :: comms
     type(comm_t), dimension(:), allocatable, target :: commsnnz
@@ -120,7 +120,7 @@ doing.
 
     ! The communicators are a sanity check on the ranks
 
-    call mpi_comm_rank(mpi_comm,myid,ierr)
+    call mpi_comm_rank(bridge_comm,myid,ierr)
     c1 = ref_comm(dist1)
     c2 = ref_comm(dist2)
     call MPI_Comm_Compare(c1,c2,comparison,ierr)
@@ -138,15 +138,15 @@ doing.
        call die("Incompatible distribution reference communicators")
     end select
 
-    ! Now check congruence with the provided mpi_comm
+    ! Now check congruence with the provided bridge_comm
     
-    call MPI_Comm_Compare(c1,mpi_comm,comparison,ierr)
+    call MPI_Comm_Compare(c1,bridge_comm,comparison,ierr)
     select case (comparison)
     case (MPI_IDENT)
        ! Communicators are identical
     case (MPI_CONGRUENT)
        ! Communicators have the same group and rank order, but they differ in context
-       ! We will use mpi_comm
+       ! We will use bridge_comm
     case (MPI_SIMILAR)
        ! Rank order is different
        call die("Different rank order in dist communicators and bridge comm")
@@ -157,9 +157,9 @@ doing.
 
     ! Now create groups g1 and g2.
     ! (DO NOT trust the internal handles)
-    call MPI_Comm_Group(mpi_comm,gg,ierr)
-    ranks1 = ranks_in_ref_comm(dist1)
-    ranks2 = ranks_in_ref_comm(dist2)
+    call MPI_Comm_Group(bridge_comm,gg,ierr)
+    call get_ranks_in_ref_comm(dist1, ranks1)
+    call get_ranks_in_ref_comm(dist2, ranks2)
     n1 = size(ranks1)
     n2 = size(ranks2)
     call MPI_Group_Incl(gg,n1,ranks1,g1,ierr)
@@ -173,8 +173,8 @@ doing.
     proc_in_set1 = (myrank1 /= MPI_UNDEFINED)
     proc_in_set2 = (myrank2 /= MPI_UNDEFINED)
 
-!    print *, "world_rank, rank1, rank2, ing1?, ing2?", myid,  &
-!         myrank1, myrank2, proc_in_set1, proc_in_set2
+    print *, "world_rank, rank1, rank2, ing1?, ing2?", myid,  &
+         myrank1, myrank2, proc_in_set1, proc_in_set2
 
     ! Figure out the communication needs
     call analyze_comms()
@@ -192,10 +192,10 @@ doing.
        call re_alloc(m2%numcols,1,m2%no_l,"m2%numcols","redistribute_spmatrix")
     endif
 
-!    print *, "About to transfer numcols..."
+    print *, "About to transfer numcols..."
     call do_transfers_int(comms,m1%numcols,m2%numcols, &
-         g1,g2,mpi_comm)
-!    print *, "Transferred numcols."
+         g1,g2,bridge_comm)
+    print *, "Transferred numcols."
 
     ! We need to tell the processes in set 2 how many
     ! "vals" to expect.
@@ -206,11 +206,11 @@ doing.
           nvals = 0
        endif
     endif
-    ! Now do a broadcast within mpi_comm, using as root one
+    ! Now do a broadcast within bridge_comm, using as root one
     ! process in the first set. Let's say the one with rank 0
     ! in g1, the first in the set, which will have rank=ranks1(1)
-    ! in mpi_comm
-    call MPI_Bcast(nvals,1,MPI_Integer,ranks1(1),mpi_comm,ierr)
+    ! in bridge_comm
+    call MPI_Bcast(nvals,1,MPI_Integer,ranks1(1),bridge_comm,ierr)
 
     ! Now we can figure out how many non-zeros there are
     if (proc_in_set2) then
@@ -264,29 +264,29 @@ doing.
   !!$            endif
   !!$         enddo
 
-!    print *, "About to transfer cols..."
+    print *, "About to transfer cols..."
     ! Transfer the cols arrays
     call do_transfers_int(commsnnz,m1%cols,m2%cols, &
-         g1, g2, mpi_comm)
+         g1, g2, bridge_comm)
 
-!    print *, "About to transfer values..."
+    print *, "About to transfer values..."
     ! Transfer the values arrays
     do j=1, nvals
        if (proc_in_set1) data1 => m1%vals(j)%data
        if (proc_in_set2) data2 => m2%vals(j)%data
        call do_transfers_dp(commsnnz,data1,data2, &
-            g1,g2,mpi_comm)
+            g1,g2,bridge_comm)
     enddo
     nullify(data1,data2)
-!    print *, "Done transfers."
+    print *, "Done transfers."
 
     deallocate(commsnnz)
     deallocate(comms)
+    deallocate(ranks1, ranks2)
 
     call MPI_group_free(gg,ierr)
     call MPI_group_free(g1,ierr)
     call MPI_group_free(g2,ierr)
-
 
   CONTAINS
 
@@ -401,7 +401,7 @@ work well, but it could be changed if needed.
 
 #+BEGIN_SRC f90 :noweb-ref transfers
 !--------------------------------------------------
-   subroutine do_transfers_int(comms,data1,data2,g1,g2,mpi_comm)
+   subroutine do_transfers_int(comms,data1,data2,g1,g2,bridge_comm)
 
      use mpi
      type(comm_t), intent(in), target     :: comms(:)
@@ -409,7 +409,7 @@ work well, but it could be changed if needed.
      integer, dimension(:), pointer  :: data2
      integer, intent(in)                :: g1
      integer, intent(in)                :: g2
-     integer, intent(in)                :: mpi_comm
+     integer, intent(in)                :: bridge_comm
 
      integer                 :: basegroup, nsize1, nsize2, ierr
      integer, allocatable    :: comm_rank1(:), comm_rank2(:)
@@ -427,8 +427,8 @@ work well, but it could be changed if needed.
       ! Find the rank correspondences, in case
       ! there is implicit renumbering at the time of group creation
 
-      call  MPI_Comm_group( mpi_comm, basegroup, ierr )
-      call  MPI_Comm_Rank( mpi_comm, myrank, ierr )
+      call  MPI_Comm_group( bridge_comm, basegroup, ierr )
+      call  MPI_Comm_Rank( bridge_comm, myrank, ierr )
 
       call  MPI_Group_Size( g1, nsize1, ierr )
       call  MPI_Group_Size( g2, nsize2, ierr )
@@ -446,8 +446,8 @@ work well, but it could be changed if needed.
       call mpi_group_rank(g1,myrank1,ierr)
       call mpi_group_rank(g2,myrank2,ierr)
       
-!      print "(i4,a,2i6)", myrank,": Ranks in g1 and g2: ", myrank1, myrank2
-!      print "(i4,a,2i3)", myrank,": g1 and g2: ", g1, g2
+      print "(i4,a,2i6)", myrank,": Ranks in g1 and g2: ", myrank1, myrank2
+      print "(i4,a,2i3)", myrank,": g1 and g2: ", g1, g2
 
 
       ! Do the actual transfers. 
@@ -479,7 +479,7 @@ work well, but it could be changed if needed.
             nrecvs_local = nrecvs_local + 1
             src_in_comm = comm_rank1(c%src)
             call MPI_irecv(data2(c%i2),c%nitems,MPI_integer,src_in_comm, &
-                           i,mpi_comm,local_reqR(nrecvs_local),ierr)
+                           i,bridge_comm,local_reqR(nrecvs_local),ierr)
          endif
       enddo
 
@@ -491,7 +491,7 @@ work well, but it could be changed if needed.
             nsends_local = nsends_local + 1
             dst_in_comm = comm_rank2(c%dst)
             call MPI_isend(data1(c%i1),c%nitems,MPI_integer,dst_in_comm, &
-                        i,mpi_comm,local_reqS(nsends_local),ierr)
+                        i,bridge_comm,local_reqS(nsends_local),ierr)
          endif
       enddo
 
@@ -505,14 +505,14 @@ work well, but it could be changed if needed.
 
 
       ! This barrier is needed, I think
-      call MPI_Barrier(mpi_comm,ierr)
+      call MPI_Barrier(bridge_comm,ierr)
 
       deallocate(local_reqR, local_reqS, statuses)
 
     end subroutine do_transfers_int
 
 !--------------------------------------------------
-   subroutine do_transfers_dp(comms,data1,data2,g1,g2,mpi_comm)
+   subroutine do_transfers_dp(comms,data1,data2,g1,g2,bridge_comm)
 
      use mpi
      integer, parameter :: dp = selected_real_kind(10,100)
@@ -522,7 +522,7 @@ work well, but it could be changed if needed.
      real(dp), dimension(:), pointer :: data2
      integer, intent(in)                :: g1
      integer, intent(in)                :: g2
-     integer, intent(in)                :: mpi_comm
+     integer, intent(in)                :: bridge_comm
 
      integer                 :: basegroup, nsize1, nsize2, ierr
      integer, allocatable    :: comm_rank1(:), comm_rank2(:)
@@ -536,7 +536,7 @@ work well, but it could be changed if needed.
      integer :: myrank1, myrank2, myid
      type(comm_t), pointer :: c
 
-     call  MPI_Comm_Rank( mpi_comm, myid, ierr )
+     call  MPI_Comm_Rank( bridge_comm, myid, ierr )
 !     print *, "Entering transfer_dp"
 !     print *, "rank, Associated data1: ", myid, associated(data1)
 !     print *, "rank, Associated data2: ", myid, associated(data2)
@@ -544,7 +544,7 @@ work well, but it could be changed if needed.
       ! Find the rank correspondences, in case
       ! there is implicit renumbering at the time of group creation
 
-      call  MPI_Comm_group( mpi_comm, basegroup, ierr )
+      call  MPI_Comm_group( bridge_comm, basegroup, ierr )
       call  MPI_Group_Size( g1, nsize1, ierr )
       call  MPI_Group_Size( g2, nsize2, ierr )
       allocate(comm_rank1(0:nsize1-1))
@@ -588,7 +588,7 @@ work well, but it could be changed if needed.
             nrecvs_local = nrecvs_local + 1
             src_in_comm = comm_rank1(c%src)
             call MPI_irecv(data2(c%i2),c%nitems,MPI_Double_Precision,src_in_comm, &
-                           i,mpi_comm,local_reqR(nrecvs_local),ierr)
+                           i,bridge_comm,local_reqR(nrecvs_local),ierr)
          endif
       enddo
 
@@ -600,7 +600,7 @@ work well, but it could be changed if needed.
             nsends_local = nsends_local + 1
             dst_in_comm = comm_rank2(c%dst)
             call MPI_isend(data1(c%i1),c%nitems,MPI_Double_Precision,dst_in_comm, &
-                        i,mpi_comm,local_reqS(nsends_local),ierr)
+                        i,bridge_comm,local_reqS(nsends_local),ierr)
          endif
       enddo
 
@@ -614,7 +614,7 @@ work well, but it could be changed if needed.
 
 
       ! This barrier is needed, I think
-      call MPI_Barrier(mpi_comm,ierr)
+      call MPI_Barrier(bridge_comm,ierr)
 
       deallocate(local_reqR, local_reqS, statuses)
 

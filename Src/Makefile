@@ -159,7 +159,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_redist_spmatrix.o \
         compute_max_diff.o \
         save_density_matrix.o\
-        class_Dist.o class_BlockCyclicDist.o class_PEXSIDist.o\
+        class_Distribution.o\
         m_rhog.o rhofft.o m_diis.o compute_energies.o \
         class_Vector.o class_Pair_Vectors.o class_Fstack_Pair_Vectors.o\
         m_dminim.o m_zminim.o \
@@ -422,6 +422,7 @@ chkgmx.o: cellsubs.o minvec.o precision.o sys.o
 class_BlockCyclicDist.o: basic_type.inc
 class_Dist.o: basic_type.inc
 class_Dist.o: class_BlockCyclicDist.o class_PEXSIDist.o
+class_Distribution.o: basic_type.inc
 class_Fstack_Pair_Vectors.o: Fstack.T90 basic_type.inc
 class_Fstack_Pair_Vectors.o: class_Pair_Vectors.o
 class_PEXSIDist.o: basic_type.inc
@@ -598,12 +599,13 @@ m_options.o: precision.o
 m_partial_charges.o: atmfuncs.o atomlist.o mesh.o meshphi.o parallel.o
 m_partial_charges.o: precision.o siesta_geom.o siesta_options.o sys.o
 m_pexsi.o: f_ppexsi_interface.o precision.o
-m_pexsi_dos.o: alloc.o class_Dist.o f_ppexsi_interface.o m_mpi_utils.o
+m_pexsi_dos.o: alloc.o class_Distribution.o f_ppexsi_interface.o m_mpi_utils.o
 m_pexsi_dos.o: m_redist_spmatrix.o parallel.o precision.o units.o
-m_pexsi_driver.o: alloc.o class_Dist.o extrae_module.o f_ppexsi_interface.o
-m_pexsi_driver.o: m_convergence.o m_mpi_utils.o m_pexsi.o m_redist_spmatrix.o
-m_pexsi_driver.o: parallel.o precision.o siesta_options.o units.o
-m_pexsi_local_dos.o: alloc.o atomlist.o class_Dist.o dhscf.o
+m_pexsi_driver.o: alloc.o class_Distribution.o extrae_module.o
+m_pexsi_driver.o: f_ppexsi_interface.o m_convergence.o m_mpi_utils.o m_pexsi.o
+m_pexsi_driver.o: m_redist_spmatrix.o parallel.o precision.o siesta_options.o
+m_pexsi_driver.o: units.o
+m_pexsi_local_dos.o: alloc.o atomlist.o class_Distribution.o dhscf.o
 m_pexsi_local_dos.o: f_ppexsi_interface.o files.o m_energies.o m_eo.o
 m_pexsi_local_dos.o: m_forces.o m_gamma.o m_mpi_utils.o m_ntm.o
 m_pexsi_local_dos.o: m_redist_spmatrix.o m_spin.o parallel.o precision.o
@@ -612,7 +614,7 @@ m_pexsi_local_dos.o: units.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
-m_redist_spmatrix.o: alloc.o class_Dist.o
+m_redist_spmatrix.o: alloc.o class_Distribution.o
 m_rhog.o: alloc.o atomlist.o class_Fstack_Pair_Vectors.o class_Pair_Vectors.o
 m_rhog.o: class_Vector.o m_diis.o m_mpi_utils.o m_recipes.o m_spin.o parallel.o
 m_rhog.o: precision.o siesta_options.o
@@ -854,6 +856,7 @@ zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
 zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o precision.o siesta_geom.o sys.o units.o
 band.o: bands.o
+class_dist.o: class_Distribution.o
 diagmemory.o: memoryinfo.o
 fsiesta.o: fsiesta_pipes.o
 listsc_module.o: listsc.o

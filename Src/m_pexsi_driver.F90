@@ -27,7 +27,7 @@ subroutine pexsi_solver(iscf, no_u, no_l, nspin_in,  &
     use m_mpi_utils, only: broadcast
     use units,       only: Kelvin, eV
     use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
-    use class_Dist
+    use class_Distribution
     use alloc,             only: re_alloc, de_alloc
     use siesta_options,    only: dDtol
 #ifdef MPI
@@ -76,9 +76,9 @@ integer :: numNodesTotal
 integer :: npPerPole
 logical  :: PEXSI_worker
 !
-type(Dist)   :: dist1
-type(Dist), allocatable, target   :: dist2_spin(:)
-type(Dist), pointer :: dist2
+type(Distribution)   :: dist1
+type(Distribution), allocatable, target   :: dist2_spin(:)
+type(Distribution), pointer :: dist2
 integer  :: pbs, color, global_rank, spin_rank
 type(aux_matrix), allocatable, target :: m1_spin(:)
 type(aux_matrix) :: m2
