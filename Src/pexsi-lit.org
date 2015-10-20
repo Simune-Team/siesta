@@ -1021,10 +1021,17 @@ Here we only clean up the communicators and groups and the distributions.
   deallocate(m1_spin)
 
   call MPI_Comm_Free(PEXSI_Spatial_Comm, ierr)
-  call MPI_Comm_Free(PEXSI_Pole_Comm, ierr)
   call MPI_Comm_Free(PEXSI_Spin_Comm, ierr)
   call MPI_Comm_Free(World_Comm, ierr)
-  !
+
+  ! This communicator was created from a subgroup.
+  ! As such, it is MPI_COMM_NULL for those processes
+  ! not in the subgroup (non PEXSI_workers). Only
+  ! defined communicators can be freed
+  if (PEXSI_worker) then
+     call MPI_Comm_Free(PEXSI_Pole_Comm, ierr)
+  endif
+
   call MPI_Group_Free(PEXSI_Spatial_Group, ierr)
   call MPI_Group_Free(PEXSI_Pole_Group, ierr)
   call MPI_Group_Free(World_Group, ierr)
@@ -1078,8 +1085,8 @@ Several routines
     nInertiaRounds = 0
 
     refine_interval: do
-        <<refine-interval-by-inertia-count>>
         numTotalInertiaIter = numTotalInertiaIter + 1
+        <<refine-interval-by-inertia-count>>
     enddo refine_interval
 
     deallocate(shiftList,inertiaList)

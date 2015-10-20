@@ -713,10 +713,17 @@ deallocate(dist2_spin)
 deallocate(m1_spin)
 
 call MPI_Comm_Free(PEXSI_Spatial_Comm, ierr)
-call MPI_Comm_Free(PEXSI_Pole_Comm, ierr)
 call MPI_Comm_Free(PEXSI_Spin_Comm, ierr)
 call MPI_Comm_Free(World_Comm, ierr)
-!
+
+! This communicator was created from a subgroup.
+! As such, it is MPI_COMM_NULL for those processes
+! not in the subgroup (non PEXSI_workers). Only
+! defined communicators can be freed
+if (PEXSI_worker) then
+   call MPI_Comm_Free(PEXSI_Pole_Comm, ierr)
+endif
+
 call MPI_Group_Free(PEXSI_Spatial_Group, ierr)
 call MPI_Group_Free(PEXSI_Pole_Group, ierr)
 call MPI_Group_Free(World_Group, ierr)
@@ -770,6 +777,7 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
   nInertiaRounds = 0
 
   refine_interval: do
+      numTotalInertiaIter = numTotalInertiaIter + 1
       
       options%muMin0 = muMin0
       options%muMax0 = muMax0
@@ -939,7 +947,6 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
            exit refine_interval
         endif
       
-      numTotalInertiaIter = numTotalInertiaIter + 1
   enddo refine_interval
 
   deallocate(shiftList,inertiaList)

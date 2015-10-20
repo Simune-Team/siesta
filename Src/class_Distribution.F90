@@ -152,8 +152,8 @@ module class_Distribution
     obj%node = 0
     obj%nodes = 1
 #endif
-    print "(i0,a,i0,1x,4i2)", obj%dist_type,  &
-                " node, ranks in ref: ", obj%node, obj%ranks_in_ref_comm(:)
+!    print "(i0,a,i0,1x,4i2)", obj%dist_type,  &
+!                " node, ranks in ref: ", obj%node, obj%ranks_in_ref_comm(:)
     if (present(name)) then
        obj%name = trim(name)
     else

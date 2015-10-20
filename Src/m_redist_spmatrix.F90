@@ -108,8 +108,10 @@ CONTAINS
    proc_in_set1 = (myrank1 /= MPI_UNDEFINED)
    proc_in_set2 = (myrank2 /= MPI_UNDEFINED)
  
-   print *, "world_rank, rank1, rank2, ing1?, ing2?", myid,  &
+   if (proc_in_set1 .or. proc_in_set2) then
+     print "(a,3i6,2l2)", "world_rank, rank1, rank2, ing1?, ing2?", myid,  &
         myrank1, myrank2, proc_in_set1, proc_in_set2
+   endif
  
    ! Figure out the communication needs
    call analyze_comms()
@@ -127,10 +129,10 @@ CONTAINS
       call re_alloc(m2%numcols,1,m2%no_l,"m2%numcols","redistribute_spmatrix")
    endif
  
-   print *, "About to transfer numcols..."
+   if (myid == 0) print *, "About to transfer numcols..."
    call do_transfers_int(comms,m1%numcols,m2%numcols, &
         g1,g2,bridge_comm)
-   print *, "Transferred numcols."
+   if (myid == 0) print *, "Transferred numcols."
  
    ! We need to tell the processes in set 2 how many
    ! "vals" to expect.
@@ -199,12 +201,12 @@ CONTAINS
  !!$            endif
  !!$         enddo
  
-   print *, "About to transfer cols..."
+   if (myid == 0) print *, "About to transfer cols..."
    ! Transfer the cols arrays
    call do_transfers_int(commsnnz,m1%cols,m2%cols, &
         g1, g2, bridge_comm)
  
-   print *, "About to transfer values..."
+   if (myid == 0) print *, "About to transfer values..."
    ! Transfer the values arrays
    do j=1, nvals
       if (proc_in_set1) data1 => m1%vals(j)%data
@@ -213,7 +215,7 @@ CONTAINS
            g1,g2,bridge_comm)
    enddo
    nullify(data1,data2)
-   print *, "Done transfers."
+   if (myid == 0) print *, "Done transfers."
  
    deallocate(commsnnz)
    deallocate(comms)
@@ -367,8 +369,8 @@ CONTAINS
        call mpi_group_rank(g1,myrank1,ierr)
        call mpi_group_rank(g2,myrank2,ierr)
        
-       print "(i4,a,2i6)", myrank,": Ranks in g1 and g2: ", myrank1, myrank2
-       print "(i4,a,2i3)", myrank,": g1 and g2: ", g1, g2
+ !      print "(i4,a,2i6)", myrank,": Ranks in g1 and g2: ", myrank1, myrank2
+ !      print "(i4,a,2i3)", myrank,": g1 and g2: ", g1, g2
  
  
        ! Do the actual transfers. 

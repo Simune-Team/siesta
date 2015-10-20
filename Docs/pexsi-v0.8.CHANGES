@@ -1,4 +1,38 @@
 ------------------------------------------------------------
+October 20, 2015  A. Garcia   trunk-464--pexsi-v0.8-spin-3
+Better support for PEXSI versions
+
+The file f_ppexsi_interface.f90 now "include"s the actual interface
+file from the PEXSI distribution directory. See the new file
+Src/Sys/pexsi-gfortran-openmpi.make for an example of arch.make.
+
+Cosmetics: minimize debugging output.
+
+Some rough edges still remaining:
+
+- Update of estimated mu in inertia-count?
+
+- Treatment of the "large jump" in the Newton method
+  (diagnosis criteria and re-bracketing for inertia-count)
+  
+- Centralization and documentation of options.
+
+- Cosmetics for output
+
+- Option to treat spin serially in PEXSI
+
+added:
+ Src/Sys/pexsi-gfortran-openmpi.make
+modified:
+ Src/Makefile
+ Src/class_Distribution.F90
+ Src/f_ppexsi_interface.f90
+ Src/m_pexsi_driver.F90
+ Src/m_redist_spmatrix.F90
+ Src/pexsi-lit.org
+ Src/redist-spmatrix.org
+
+------------------------------------------------------------
 October 19, 2015  A. Garcia   trunk-464--pexsi-v0.8-spin-2
 Simplify class_Distribution
 
