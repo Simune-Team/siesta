@@ -1,4 +1,46 @@
 ----------------------------------------------------
+October 20, 2015 -- Nick Papior       trunk-479---ts-scf-573
+Enabled out-of-box electrodes for N_elec > 2
+
+* Transiesta calculations with electrodes outside
+  the unit-cell is now possibly with more than
+  2 electrodes.
+
+  The potential box for the electrodes is actually
+  easily located inside the grid.
+
+  This can also be accomblished using OpenMP easily
+  which actually makes the new routine much faster
+  than the old one.
+
+* Added routine for the electrode to return the min/max
+  indices of the large grid from the electrode box.
+
+  The indices _can_ be wrapped around the box meaning
+  that they are not ensured within the principal cell
+
+* Added routine for the mesh_node module to correct for
+  wrap-arounds in grid-indices. (simple modulo routine)
+
+* Enabled TS_HA_ELEC_BOX to also utilize wrap-arounds for
+  Hartree fixes
+
+* Removed check for the atomic coordinates inside the unit-cell
+  when using more than 2 electrodes or requesting
+  Hartree box.
+
+* Improved guess of the Hartree potential in the linear
+  guess for skewed axis.
+
+modified:
+  Src/dhscf.F
+  Src/m_mesh_node.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 October 20, 2015 -- Nick Papior       trunk-479---ts-scf-572
 Sorted individual blocks in BTD format
 

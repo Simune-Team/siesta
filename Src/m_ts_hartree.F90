@@ -110,6 +110,10 @@ contains
     real(dp) :: area, tmp
     real(dp), external :: volcel
 
+    ! if the electrode has already been
+    ! associated, we will not update it
+    if ( associated(El) ) return
+
     ! Easy determination of largest basal plane of electrodes
     area = -1._dp
     do iE = 1 , N_Elec
@@ -273,8 +277,8 @@ contains
 #endif
 
   ! Fix the potential
-  subroutine ts_hartree_fix( ntpl , Vscf )
-    use sys, only : die
+  subroutine ts_hartree_fix( meshG, ntpl , Vscf )
+
     use parallel, only: IONode
     use units, only: eV
 #ifdef MPI
@@ -282,8 +286,10 @@ contains
     use mpi_siesta, only : MPI_Comm_World, MPI_integer
     use mpi_siesta, only : MPI_double_precision
 #endif
+    use m_mesh_node, only: mesh_correct_idx
     use m_mesh_node, only : meshl, offset_i, offset_r, dMesh, dL
 
+    integer, intent(in) :: meshG(3)
     integer, intent(in) :: ntpl
     real(grid_p), intent(inout) :: Vscf(ntpl)
 
@@ -296,6 +302,7 @@ contains
 #endif
     real(dp) :: Vav, Vtot
     real(dp) :: ll(3), llZ(3), llYZ(3)
+    integer :: imin(3), imax(3), idx(3)
 
     ! Quick skip if not fixing
     if ( TS_HA == TS_HA_NONE ) return
@@ -375,21 +382,48 @@ contains
           end do
        end do
     case ( TS_HA_ELEC_BOX )
+       
        ! This is an electrode averaging...
-       do i3 = 0 , meshl(3) - 1
-          llZ(:) = offset_r(:) + i3*dL(:,3)
-          do i2 = 0 , meshl(2) - 1
-             llYZ(:) = i2*dL(:,2) + llZ(:)
-             do i1 = 0 , meshl(1) - 1
-                ll(:) = i1*dL(:,1) + llYZ(:)
-                imesh = imesh + 1
-                if ( in_Elec(El%box,ll,dMesh) ) then
-                   nlp  = nlp + 1
-                   Vtot = Vtot + Vscf(imesh)
-                end if
-             end do
-          end do
+       call Elec_box2grididx(El,meshG,dL,imin,imax)
+       
+       ! Now we have the minimum index for the box encompassing
+       ! the electrode
+       
+       ! Loop the indices, and figure out whether
+       ! each of them lies in the local grid
+!$OMP parallel do default(shared), private(i1,i2,i3,idx,imesh), &
+!$OMP&collapse(3), reduction(+:nlp)
+       do i3 = imin(3) , imax(3)
+        do i2 = imin(2) , imax(2)
+         do i1 = imin(1) , imax(1)
+
+            ! Transform to local grid-points
+            idx = (/i1,i2,i3/)
+            
+            ! Transform the index to the unit-cell index
+            call mesh_correct_idx(meshG,idx)
+
+            ! Figure out if this index lies
+            ! in the current node
+            idx(1) = idx(1) - offset_i(1)
+            if ( 0 < idx(1) .and. idx(1) <= meshl(1) ) then
+             idx(2) = idx(2) - offset_i(2) - 1 ! one more for factor
+             if ( 0 <= idx(2) .and. idx(2) < meshl(2) ) then
+              idx(3) = idx(3) - offset_i(3) - 1 ! one more for factor
+              if ( 0 <= idx(3) .and. idx(3) < meshl(3) ) then
+                 ! Calculate position in local mesh
+                 imesh = idx(1) + idx(2)*meshl(1)
+                 imesh = imesh + idx(3)*meshl(1)*meshl(2)
+                 Vtot = Vtot + Vscf(imesh)
+                 nlp = nlp + 1
+              end if
+             end if
+            end if
+         end do
+        end do
        end do
+!$OMP end parallel do
+       
     case default
        call die('Something went extremely wrong...Hartree Fix')
     end select

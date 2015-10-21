@@ -225,5 +225,19 @@ contains
 
   end subroutine init_mesh_node
 
+  elemental subroutine mesh_correct_idx(mesh,idx)
+    integer, intent(in) :: mesh
+    integer, intent(inout) :: idx
+    ! negative "supercell"
+    do while ( idx <= 0 )
+       idx = idx + mesh
+    end do
+    ! positive "supercell"
+    do while ( mesh < idx )
+       idx = idx - mesh
+    end do
+    
+  end subroutine mesh_correct_idx
+  
 end module m_mesh_node
 

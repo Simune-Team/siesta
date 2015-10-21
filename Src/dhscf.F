@@ -1201,7 +1201,7 @@ C ----------------------------------------------------------------------
 
 #ifdef TRANSIESTA
       ! We require that even the SIESTA potential is "fixed"
-      call ts_hartree_fix( ntpl , Vaux )
+      call ts_hartree_fix( ntm, ntpl , Vaux )
 #endif /* TRANSIESTA */
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
@@ -1287,7 +1287,7 @@ C ----------------------------------------------------------------------
          Vaux(:) = 0._dp
 !$OMP end parallel workshare
 #endif
-         call ts_voltage( cell, ntpl, Vaux )
+         call ts_voltage( cell, ntm, ntpl, Vaux )
 #ifdef TRANSIESTA_VOLTAGE_DEBUG
          call write_grid_netcdf( cell, ntm, 1, ntpl, Vaux, 
      &        "TransiestaHartreePotential")

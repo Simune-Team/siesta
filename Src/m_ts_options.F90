@@ -1265,13 +1265,25 @@ contains
     
     ! A transiesta calculation requires that all atoms
     ! are within the unit-cell.
-    ! Otherwise the electrostatic potential will definitely for V /= 0
-    ! be malplaced.
+    ! However, for N_Elec > 2 calculations this
+    ! is not a requirement as the potential is placed
+    ! irrespective of the actual box.
     
     ltmp = .false.
     call reclat(cell,tmp33,0)
 
     do i = 1 , na_u
+
+       ! If we use a boxed or user-supplied potential
+       ! profile, we need not check the coordinates.
+       ! It is the users responsibility for user-defined
+       ! potential grids.
+       ! The boxed one takes care of grid-points in the periodic picture
+       ! And if the grid-plane does not cut the actual grid, it will
+       ! error out.
+       if ( ts_tidx < 1 ) cycle
+
+       ! Buffer atoms can be where-ever
        if ( a_isBuffer(i) ) cycle
        
        ! Check the index
@@ -1279,29 +1291,14 @@ contains
           itmp3(j) = floor( dot_product(xa(:,i),tmp33(:,j)) )
        end do
 
-       select case ( ts_tidx )
-       case ( 1, 2, 3 )
-          
-          ! Only check the transport direction
-          ! Note that we have projected onto the unit-cell
-          ! vector, hence tidx and not tdir
-          if ( itmp3(ts_tidx) /= 0 ) then
-             write(*,'(i0,''('',i0,''='',i0,'')'',tr1)',advance='no')&
-                  i,ts_tidx,itmp3(ts_tidx)
-             ltmp = .true.
-          end if
-
-       case default
-          
-          do j = 1 , 3
-             if ( itmp3(j) /= 0 ) then
-                write(*,'(i0,''('',i0,''='',i0,'')'',tr1)',advance='no')&
-                     i,j,itmp3(j)
-                ltmp = .true.
-             end if
-          end do
-          
-       end select
+       ! Only check the transport direction
+       ! Note that we have projected onto the unit-cell
+       ! vector, hence tidx and not tdir
+       if ( itmp3(ts_tidx) /= 0 ) then
+          write(*,'(i0,''('',i0,''='',i0,'')'',tr1)',advance='no')&
+               i,ts_tidx,itmp3(ts_tidx)
+          ltmp = .true.
+       end if
        
     end do
     if ( ltmp ) then

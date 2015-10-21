@@ -50,6 +50,8 @@ module m_ts_electype
   public :: check_connectivity
   public :: delete
 
+  public :: Elec_box2grididx
+
   public :: in_basal_Elec, in_Elec
 
   public :: operator(.eq.)
@@ -1252,6 +1254,80 @@ contains
     logical :: in
     in = this%idx_a <= ia .and. ia < (this%idx_a + TotUsedAtoms(this))
   end function AtomInElec
+
+  subroutine Elec_box2grididx(this,mesh,dL,imin,imax)
+    ! Returns grid indices for the minimum and maximum of
+    ! the electrode box
+    type(Elec), intent(in) :: this
+    ! The global mesh size
+    integer, intent(in) :: mesh(3)
+    ! The mesh stepping per increment
+    real(dp), intent(in) :: dL(3,3)
+    ! The minimum/maximum grid indices
+    integer, intent(out) :: imin(3), imax(3)
+
+    real(dp) :: LHS(3,3), RHS(3)
+    integer :: idx(3), i
+
+    ! Initialize the indices
+    imin = huge(1)
+    imax = -huge(1)
+
+    call get_idx(0,0,0,imin,imax)
+    call get_idx(1,0,0,imin,imax)
+    call get_idx(0,1,0,imin,imax)
+    call get_idx(0,0,1,imin,imax)
+    call get_idx(1,1,0,imin,imax)
+    call get_idx(1,0,1,imin,imax)
+    call get_idx(0,1,1,imin,imax)
+    call get_idx(1,1,1,imin,imax)
+
+    ! This pre-step will move them both simultaneously
+    ! as that corresponds to equal shifts and no crossing
+    ! of cell-boundaries
+    do i = 1 , 3
+       do while ( imin(i) <= 0 .and. imax(i) <= 0 )
+          imin(i) = imin(i) + mesh(i)
+          imax(i) = imax(i) + mesh(i)
+       end do
+       do while ( mesh(i) < imin(i) .and. mesh(i) < imax(i) )
+          imin(i) = imin(i) - mesh(i)
+          imax(i) = imax(i) - mesh(i)
+       end do
+    end do
+
+  contains
+    
+    subroutine get_idx(ix,iy,iz,imin,imax)
+      integer, intent(in) :: ix,iy,iz
+      integer, intent(inout) :: imin(3), imax(3)
+      
+      ! Copy the LHS
+      LHS = dL
+      ! Create RHS
+      RHS = this%box%c + this%box%v(:,1) * ix &
+           + this%box%v(:,2) * iy &
+           + this%box%v(:,3) * iz
+      
+      ! Calculate pqosition in the grid
+      call dgesv(3,1,LHS,3,idx,RHS,3,i)
+      if ( i /= 0 ) then
+         call die('ts_voltage: Could not solve linear system.')
+      end if
+      
+      ! Convert to integer position
+      idx = nint(RHS)
+      
+      imin(1) = min(imin(1),idx(1))
+      imin(2) = min(imin(2),idx(2))
+      imin(3) = min(imin(3),idx(3))
+      imax(1) = max(imax(1),idx(1))
+      imax(2) = max(imax(2),idx(2))
+      imax(3) = max(imax(3),idx(3))
+      
+    end subroutine get_idx
+    
+  end subroutine Elec_box2grididx
 
   subroutine read_Elec(this,Bcast,io,ispin)
     use fdf

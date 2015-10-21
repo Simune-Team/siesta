@@ -133,9 +133,10 @@ contains
     end if
 
     ! set the left chemical potential
-    call get_elec_indices(na_u, xa, iElL, iElR)
+    call get_elec_indices(cell,na_u, xa, iElL, iElR)
+    ! this will be the applied bias in the "lower"
+    ! electrode in the unit-cell
     V_low = Elecs(iElL)%mu%mu
-    call print_ts_voltage(cell)
 
     if ( VoltageInC ) then
        ! Find the electrode mesh sets
@@ -147,15 +148,19 @@ contains
        right_elec_mesh_idx = meshG(ts_tidx)
     end if
 
+    ! Print out the coordinates of the ramp placement
+    call print_ts_voltage(cell, meshG )
+
   end subroutine ts_init_voltage
 
-  subroutine ts_voltage(cell, ntpl, Vscf)
+  subroutine ts_voltage(cell, meshG, ntpl, Vscf)
     use precision,    only : grid_p
     use m_ts_options, only : Hartree_fname
     ! ***********************
     ! * INPUT variables     *
     ! ***********************
     real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: meshG(3)
     integer, intent(in) :: ntpl
     ! ***********************
     ! * OUTPUT variables    *
@@ -175,7 +180,7 @@ contains
        call ts_ncdf_Voltage(Hartree_fname,'V',ntpl,Vscf)
 #endif
     else
-       call ts_elec_only(ntpl,Vscf)
+       call ts_elec_only(meshG,ntpl,Vscf)
     end if
 
     call timer('ts_volt',2)
@@ -291,18 +296,26 @@ contains
 
   end subroutine ts_ramp_elec
 
-  subroutine ts_elec_only(ntpl, Vscf)
+  subroutine ts_elec_only(meshG, ntpl, Vscf)
     use precision,    only : grid_p
 #ifdef MPI
     use mpi_siesta
 #endif
 
+    use m_ts_electype
     use m_ts_options, only : N_Elec, Elecs
-    use m_mesh_node,  only : meshl, offset_r, dMesh, dL
+    use m_mesh_node,  only : meshl, dL
+#ifdef TS_HARTREE_OLD
+    use m_mesh_node,  only : dMesh, offset_r
     use m_geom_box, only : voxel_in_box_delta
+#else
+    use m_mesh_node,  only : offset_i, mesh_correct_idx
+#endif
+    
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
+    integer,       intent(in) :: meshG(3)
     integer,       intent(in) :: ntpl
 ! ***********************
 ! * OUTPUT variables    *
@@ -312,8 +325,12 @@ contains
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer  :: ix, iy, iz, iEl, imesh
+    integer  :: i1, i2, i3, iEl, imesh
+#ifdef TS_HARTREE_OLD
     real(dp) :: llZ(3), llYZ(3), ll(3)
+#else
+    integer :: idx(3), imin(3), imax(3)
+#endif
 #ifdef TRANSIESTA_BOX
     integer, allocatable :: n_V(:)
 
@@ -321,17 +338,19 @@ contains
     n_V = 0
 #endif
 
+#ifdef TS_HARTREE_OLD
+    
     ! We do a loop in the local grid
     imesh = 0
-    do iz = 0 , meshl(3) - 1
-       llZ(:) = offset_r(:) + iz*dL(:,3)
-       do iy = 0 , meshl(2) - 1
-          llYZ(:) = iy*dL(:,2) + llZ(:)
-          do ix = 0 , meshl(1) - 1
+    do i3 = 0 , meshl(3) - 1
+       llZ(:) = offset_r(:) + i3*dL(:,3)
+       do i2 = 0 , meshl(2) - 1
+          llYZ(:) = i2*dL(:,2) + llZ(:)
+          do i1 = 0 , meshl(1) - 1
              ! The lower-left corner of the current box
-             ll = ix*dL(:,1) + llYZ
+             ll = i1*dL(:,1) + llYZ
              imesh = imesh + 1
-
+             
              ! Count entries in each geometric object
              do iEl = 1 , N_Elec
                 if ( voxel_in_box_delta(Elecs(iEl)%box, ll, dMesh)) then
@@ -346,12 +365,67 @@ contains
        end do
     end do
 
+    if ( imesh /= ntpl ) then
+       call die('Electrode bias did not loop on all points. Something &
+            &needs to be checked.')
+    end if
+
+#else
+
+    do iEl = 1 , N_Elec
+
+       call Elec_box2grididx(Elecs(iEl),meshG,dL,imin,imax)
+
+       ! Now we have the minimum index for the box encompassing
+       ! the electrode
+
+       ! Loop the indices, and figure out whether
+       ! each of them lies in the local grid
+!$OMP parallel do default(shared), private(i1,i2,i3,idx,imesh), &
+!$OMP&collapse(3)
+       do i3 = imin(3) , imax(3)
+        do i2 = imin(2) , imax(2)
+         do i1 = imin(1) , imax(1)
+
+            ! Transform to local grid-points
+            idx = (/i1,i2,i3/)
+            
+            ! Transform the index to the unit-cell index
+            call mesh_correct_idx(meshG,idx)
+
+            ! Figure out if this index lies
+            ! in the current node
+            idx(1) = idx(1) - offset_i(1)
+            if ( 0 < idx(1) .and. idx(1) <= meshl(1) ) then
+             idx(2) = idx(2) - offset_i(2) - 1 ! one more for factor
+             if ( 0 <= idx(2) .and. idx(2) < meshl(2) ) then
+              idx(3) = idx(3) - offset_i(3) - 1 ! one more for factor
+              if ( 0 <= idx(3) .and. idx(3) < meshl(3) ) then
+                 ! Calculate position in local mesh
+                 imesh = idx(1) + idx(2)*meshl(1)
+                 imesh = imesh + idx(3)*meshl(1)*meshl(2)
+#ifdef TRANSIESTA_BOX
+                 n_V(iEl) = n_V(iEl) + 1
+#endif
+                 Vscf(imesh) = Vscf(imesh) + Elecs(iEl)%mu%mu
+              end if
+             end if
+            end if
+         end do
+        end do
+       end do
+!$OMP end parallel do
+
+    end do
+    
+#endif
+    
 #ifdef TRANSIESTA_BOX
     print '(10(tr1,i8))',n_V,ntpl
 
 #ifdef MPI
     call MPI_AllReduce(MPI_In_Place,n_V,N_Elec,MPI_Integer,MPI_Sum, &
-         MPI_Comm_World,ix)
+         MPI_Comm_World,i1)
 #endif
 
     if ( any(n_V == 0) ) then
@@ -365,20 +439,16 @@ contains
     deallocate(n_V)
 #endif
 
-    if ( imesh /= ntpl ) then
-       call die('Electrode bias did not loop on all points. Something &
-            &needs to be checked.')
-    end if
-
   end subroutine ts_elec_only
 
-  subroutine get_elec_indices(na_u, xa, iElL, iElR)
+  subroutine get_elec_indices(cell,na_u, xa, iElL, iElR)
     use m_ts_electype
     use m_ts_options, only : Elecs
     
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
+    real(dp), intent(in) :: cell(3,3)
     integer,  intent(in) :: na_u
     real(dp), intent(in) :: xa(3,na_u)
 
@@ -391,25 +461,33 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i
-    real(dp) :: tmp
+    real(dp) :: tmp, r, rcell(3,3)
 
-    ! find "lower" electrode
-    tmp = huge(1._dp)
+    ! Initialize
     iElL = 1
     iElR = 2
+
+    ! Calculate the reciprocal cell (without 2Pi)
+    call reclat(cell,rcell,0)
+
+    ! Figure out the lower atom in the transport direction
+    tmp = huge(1._dp)
+
+    ! initialize the lower label
     do i = Elecs(1)%idx_a , Elecs(1)%idx_a + TotUsedAtoms(Elecs(1)) - 1
-       ! Correct for rotated unitcells TODO
-       if ( abs(xa(ts_tdir,i)) < tmp ) then
-          tmp = abs(xa(ts_tdir,i))
-       end if
+       ! Get supercell in the transport direction
+       r = sum(xa(:,i) * rcell(:,ts_tidx))
+       tmp = min(tmp,r)
     end do
     do i = Elecs(2)%idx_a , Elecs(2)%idx_a + TotUsedAtoms(Elecs(2)) - 1
-       ! Correct for rotated unitcells TODO
-       if ( abs(xa(ts_tdir,i)) < tmp ) then
-          tmp = abs(xa(ts_tdir,i))
+       
+       r = sum(xa(:,i) * rcell(:,ts_tidx))
+       if ( r < tmp ) then
           iElL = 2
           iElR = 1
+          return
        end if
+       
     end do
 
   end subroutine get_elec_indices
@@ -432,75 +510,56 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i, it, iElL, iElR
-    real(dp) :: Lvc, dLvc
-    real(dp) :: left_t_max, right_t_min
-    real(dp) :: ddleft, ddright
-    real(dp) :: ElecL(3), ElecR(3)
+    real(dp) :: Lvc, rcell(3,3)
+    real(dp) :: dd, sc
 
     if ( N_Elec > 2 ) call die('Not fully implemented, only non-bias with N-electrode')
     Lvc = VNORM(cell(:,ts_tidx))
 
+    ! Calculate the reciprocal cell (without 2Pi)
+    call reclat(cell,rcell,0)
+
     ! get the left/right electrodes
-    call get_elec_indices(na_u,xa,iElL,iElR)
+    call get_elec_indices(cell,na_u,xa,iElL,iElR)
 
     if ( Elecs(iElL)%Bulk ) then
-       left_t_max  = -huge(1._dp)
+       sc = -huge(1._dp)
     else
-       left_t_max  =  huge(1._dp)
-    end if
-    if ( Elecs(iElR)%Bulk ) then
-       right_t_min =  huge(1._dp)
-    else
-       right_t_min = -huge(1._dp)
+       sc =  huge(1._dp)
     end if
     do i = Elecs(iElL)%idx_a , &
          Elecs(iElL)%idx_a + TotUsedAtoms(Elecs(iElL)) - 1
+       ! Get fraction in the unitcell
+       dd = sum(xa(:,i) * rcell(:,ts_tidx))
        if ( Elecs(iElL)%Bulk ) then
-          ! Correct for rotated unitcells TODO
-          if ( left_t_max < xa(ts_tdir,i) ) then
-             left_t_max = xa(ts_tdir,i)
-          end if
+          sc = max(sc,dd)
        else
-          if ( xa(ts_tdir,i) < left_t_max ) then
-             left_t_max = xa(ts_tdir,i)
-          end if
+          sc = min(sc,dd)
        end if
     end do
-    left_t_max = left_t_max + 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
+    ! Calculate the corresponding placement in the cell
+    ! This is easy as we have the fraction of the
+    ! cell-vector contribution. So we can actually
+    ! simply calculate it
+    left_elec_mesh_idx = nint(sc * meshG(ts_tidx))
+
+    if ( Elecs(iElR)%Bulk ) then
+       sc =  huge(1._dp)
+    else
+       sc = -huge(1._dp)
+    end if
     do i = Elecs(iElR)%idx_a , &
          Elecs(iElR)%idx_a + TotUsedAtoms(Elecs(iElR)) - 1
+       ! Get fraction in the unitcell
+       dd = sum(xa(:,i) * rcell(:,ts_tidx))
        if ( Elecs(iElL)%Bulk ) then
-          ! Correct for rotated unitcells TODO
-          if ( xa(ts_tdir,i) < right_t_min ) then
-             right_t_min = xa(ts_tdir,i)
-          end if
+          sc = min(sc,dd)
        else
-          if ( right_t_min < xa(ts_tdir,i) ) then
-             right_t_min = xa(ts_tdir,i)
-          end if
+          sc = max(sc,dd)
        end if
     end do
-    right_t_min = right_t_min - 0.25_dp ! We add 0.25 Bohr for a small distance to the electrode
+    right_elec_mesh_idx = nint(sc * meshG(ts_tidx))
 
-    ddleft  = huge(1._dp)
-    ddright = huge(1._dp)
-
-    ! Initialize the indices if it does not exist
-    left_elec_mesh_idx  = 1
-    right_elec_mesh_idx = meshG(ts_tidx)
-    
-    ! The distance step in the t-direction
-    dLvc = Lvc/max( meshG(ts_tidx), 1 ) !
-    do it = 0 , meshG(ts_tidx) - 1
-       if ( abs(dLvc * it - left_t_max) < ddleft ) then
-          ddleft = abs(dLvc * it - left_t_max)
-          left_elec_mesh_idx = it + 1
-       end if
-       if ( abs(dLvc * it - right_t_min) < ddright ) then
-          ddright = abs(dLvc * it - right_t_min)
-          right_elec_mesh_idx = it + 1
-       end if
-    end do
 
     ! We correct for the case of users having put the electrode in 
     ! in-correct order in the cell....
@@ -526,45 +585,49 @@ contains
        right_elec_mesh_idx = meshG(ts_tidx)
     end if
 
-    ElecL = 0._dp
-    ElecR = 0._dp
-    ElecL(ts_tdir) = (left_elec_mesh_idx-1)*dLvc/Ang
-    ElecR(ts_tdir) = right_elec_mesh_idx*dLvc/Ang
+    ! Otherwise correct
+    left_elec_mesh_idx = max(1,left_elec_mesh_idx)
+    left_elec_mesh_idx = min(meshG(ts_tidx),left_elec_mesh_idx)
+    right_elec_mesh_idx = max(1,right_elec_mesh_idx)
+    right_elec_mesh_idx = min(meshG(ts_tidx),right_elec_mesh_idx)
 
-    if ( left_elec_mesh_idx /= 1 .and. &
-         right_elec_mesh_idx /= meshG(ts_tidx) .and. IONode ) then
-       write(*,'(a,/,a,3(f9.3,tr1),a,3(tr1,f9.3),a)') 'ts_voltage: Ramp placed between the &
-            &cell coordinates (Ang):',' {',ElecL,'} to {',ElecR,' }'
-    end if
-    
   end subroutine init_elec_indices
 
   ! Print out the voltage direction dependent on the cell parameters.
-  subroutine print_ts_voltage( cell )
+  subroutine print_ts_voltage( cell , meshG )
     use intrinsic_missing, only : VNORM
     use parallel,     only : IONode
-    use units,        only : eV
+    use units,        only : eV, Ang
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
     real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: meshG(3)
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i
-    real(dp) :: Lvc, vcdir(3)
+    real(dp) :: Lvc, vcdir(3), ElL(3), ElR(3)
 
+    if ( .not. IONode ) return
+    
     Lvc = VNORM(cell(:,ts_tidx))
     do i = 1 , 3
        vcdir(i) = cell(i,ts_tidx)/Lvc
     end do
 
-    if ( IONode ) then
-       write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias @bottom ', V_low/eV,'V'
-       write(*,'(a,3(f6.3,a))')'ts_voltage: In unit cartesian direction = {', &
-            vcdir(1),',',vcdir(2),',',vcdir(3),'}'
-    end if
+    write(*,'(a,f6.3,1x,a)')'ts_voltage: Bias @bottom ',V_low/eV,'V'
+    write(*,'(a,3(f6.3,a))')'ts_voltage: Direction vector = {', &
+         vcdir(1),',',vcdir(2),',',vcdir(3),'}'
+
+    ! Print the ramp coordinates
+    vcdir = cell(:,ts_tidx) / meshG(ts_tidx) / Ang
+    ElL = vcdir * (left_elec_mesh_idx - 1)
+    ElR = vcdir *  right_elec_mesh_idx
+    write(*,'(a,/,a,3(f9.3,tr1),a,3(tr1,f9.3),a)') &
+         'ts_voltage: Ramp placed between the &
+         &cell coordinates (Ang):','  {',ElL,'} to {',ElR,' }'
 
   end subroutine print_ts_voltage
 
