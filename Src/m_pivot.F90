@@ -113,7 +113,7 @@ contains
        pvt%name = 'rev-General-Gibbs-Pole-Stockmeyer'
 #ifdef SIESTA__METIS
     else if ( method == PVT_METIS ) then
-       call metis_pvt(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt)
+       call metis_pvt(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, priority = priority)
        pvt%name = 'metis'
 #endif
     else

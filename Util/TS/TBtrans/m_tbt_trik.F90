@@ -135,6 +135,7 @@ contains
     ! The Hamiltonian and overlap sparse matrices
     ! Just as in transiesta, these matrices are transposed.
     type(zSpData1D) :: spH, spS
+    type(Sparsity), pointer :: sp
     real(dp), pointer :: H(:,:), S(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
@@ -232,6 +233,10 @@ contains
        pvt%r(r_oDev%r(io)) = io
     end do
 
+    ! This is important as for dH with bigger
+    ! sparsity patterns we cannot ensure they are the
+    ! same
+    sp => spar(TSHS%H_2D)
     H => val(TSHS%H_2D)
     S => val(TSHS%S_1D)
 
@@ -455,10 +460,6 @@ contains
        no = max(no,maxval(ElTri(iEl)%r))
     end do
     call init_mat_inversion(no)
-
-    ! Figure out how to setup the Green function energy
-    ! point
-    !call prep_Gfinv_algo(zwork_tri,TSHS%sp,r_oDev,loop_dev)
 
     ! we use the GF as a placement for the self-energies
     no = 0
@@ -703,13 +704,13 @@ contains
        ! Work-arrays are for MPI distribution... (reductions)
        iE = size(S)
        if ( n_k == 0 ) then
-          call create_HS(TSHS%dit, TSHS%sp, 0._dp, &
+          call create_HS(TSHS%dit, sp, 0._dp, &
                N_Elec, Elecs, TSHS%no_u, product(TSHS%nsc), &
                iE,H(:,1), S(:), TSHS%sc_off, &
                spH, spS, kpt, &
                nmaxwork, maxwork) ! not used...
        else
-          call create_region_HS(TSHS%dit,TSHS%sp, 0._dp, &
+          call create_region_HS(TSHS%dit,sp, 0._dp, &
                TSHS%cell, n_k, r_k, TSHS%na_u, TSHS%lasto, &
                N_Elec, Elecs, TSHS%no_u, product(TSHS%nsc), &
                iE, H(:,1), S(:), TSHS%sc_off, spH, spS, &

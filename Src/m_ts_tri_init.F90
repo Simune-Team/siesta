@@ -152,6 +152,38 @@ contains
          ucell, na_u, xa, lasto, &
          r_pvt, csort)
 
+    ! In transiesta we can immediately calculate the
+    ! tri-diagonal matrix.
+    ! Then we can re-arrange the pivot indices in each block
+    ! to be as consecutive in each electrode as possible.
+    ! This will greatly speed up complex Gf.G.Gf matrix
+    ! products
+    call rgn_delete(c_Tri)
+
+    ! Get the current sorting method
+    if ( IONode ) &
+         write(*,'(/,2a)') 'transiesta: Determining an optimal &
+         &tri-matrix using: ',trim(csort)
+
+    ! Create a new tri-diagonal matrix, do it in parallel
+    call ts_rgn2TriMat(N_Elec, Elecs, IsVolt, &
+         fdit, tmpSp2, r_pvt, c_Tri%n, c_Tri%r, &
+         method, 0, par = .true. )
+    call delete(tmpSp2) ! clean-up
+    call delete(fdit)
+
+    ! Sort the pivoting table for the electrodes
+    ! such that we reduce the Gf.Gamma.Gf
+    ! However, this also makes it easier to
+    ! insert the self-energy as they become consecutive
+    ! in index
+    call ts_pivot_tri_sort_El(r_pvt,N_Elec,Elecs,c_Tri)
+
+    if ( c_Tri%n < 2 ) then
+       call die('Erroneous transiesta BTD format. &
+            &Check with the developers')
+    end if
+
     ! Recalculate number of orbitals in TS
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
 
@@ -166,9 +198,6 @@ contains
     ! from the non-sorted one (provided that the user have provided
     ! the atoms in sub-optimal order).
 
-    ! This works as creating a new sparsity deletes the previous
-    ! and as it is referenced several times it will not be actually
-    ! deleted...
     do i = 1 , N_Elec
 
        idx = Elecs(i)%idx_o
@@ -197,28 +226,7 @@ contains
 
     end do
     call rgn_delete(r_tmp)
-    
-    ! Initialize the tri-diagonal container
-    call rgn_delete(c_Tri)
 
-    ! Get the current sorting method
-    if ( IONode ) &
-         write(*,'(/,2a)') 'transiesta: Determining an optimal &
-         &tri-matrix using: ',trim(csort)
-
-    ! Create a new tri-diagonal matrix, do it in parallel
-    call ts_rgn2TriMat(N_Elec, Elecs, IsVolt, &
-         fdit, tmpSp2, r_pvt, c_Tri%n, c_Tri%r, &
-         method, 0, par = .true. )
-    call delete(tmpSp2) ! clean-up
-    call delete(fdit)
-
-    c_Tri%name = ' '
-
-    if ( c_Tri%n < 2 ) then
-       call die('Erroneous transiesta BTD format. &
-            &Check with the developers')
-    end if
 
     ! Calculate size of the tri-diagonal matrix
     els = nnzs_tri(c_Tri%n,c_Tri%r)
@@ -638,6 +646,7 @@ contains
        call tri(r_El)
     end if
 
+#ifdef FORCE_METIS
 #ifdef SIESTA__METIS
     if ( IONode ) write(*,fmt) trim(corb),'metis'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS, sub = full)
@@ -658,6 +667,7 @@ contains
        call tri(r_El)
     end if
 #endif
+#endif
 
     end do orb_atom_switch
 
@@ -675,7 +685,7 @@ contains
     ! pivoting scheme
     subroutine tri(r_pvt)
       use m_pivot_methods, only : bandwidth, profile
-      type(tRgn), intent(in) :: r_pvt
+      type(tRgn), intent(inout) :: r_pvt
 
       integer :: bw, els, pad, work, i
       integer(i8b) :: prof
@@ -692,6 +702,13 @@ contains
       call ts_rgn2TriMat(N_Elec, Elecs, .true., &
            fdit, tmpSp1, r_pvt, ctri%n, ctri%r, &
            method, 0, par = .true. )
+
+      ! Sort the pivoting table for the electrodes
+      ! such that we reduce the Gf.Gamma.Gf
+      ! However, this also makes it easier to
+      ! insert the self-energy as they become consecutive
+      ! in index, all-in-all, win-win!
+      call ts_pivot_tri_sort_El(r_pvt,N_Elec,Elecs,ctri)
       
       ! Calculate size of the tri-diagonal matrix
       els = nnzs_tri(ctri%n,ctri%r)
@@ -712,7 +729,7 @@ contains
       prof = pad + work + els * 2 ! total mem
       if ( IONode ) then
          write(*,'(tr3,a,t30,i20)') 'BTD x 2 + padding + work: ', prof
-         write(*,'(tr3,a,t39,f8.2,a)') 'Rough variable MEM required: ', &
+         write(*,'(tr3,a,t39,f8.2,a)') 'Rough estimation of MEMORY: ', &
               real(prof,dp) * 16._dp / 1024._dp ** 2,' MB'
       end if
       do i = 1 , N_Elec

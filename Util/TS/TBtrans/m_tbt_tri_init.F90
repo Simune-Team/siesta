@@ -43,6 +43,7 @@ contains
     use class_Sparsity
     use create_Sparsity_Union
 
+    use m_ts_tri_common, only: ts_pivot_tri_sort_El
     use m_ts_rgn2trimat
     use m_ts_electype
 #ifdef MPI
@@ -109,14 +110,11 @@ contains
        ElTri(iEl)%name = '[TRI] '//trim(Elecs(iEl)%name)
        
 #ifdef MPI
-       call MPI_Bcast(ElTri(iEl)%n,1,MPI_Integer, &
-            i,MPI_Comm_World,MPIerror)
-       if ( Node /= i ) then
-          allocate(ElTri(iEl)%r(ElTri(iEl)%n))
-       end if
-       call MPI_Bcast(ElTri(iEl)%r,ElTri(iEl)%n,MPI_Integer, &
-            i,MPI_Comm_World,MPIerror)
+       call rgn_MPI_Bcast(ElTri(iEl),i)
 #endif
+
+       ! Sort the tri-diagonal blocks
+       call ts_pivot_tri_sort_El(r_oElpD(iEl),1,Elecs(iEl:iEl),ElTri(iEl))
        
     end do
 
@@ -132,7 +130,7 @@ contains
     use create_Sparsity_Union
 
     use m_ts_rgn2trimat
-    use m_ts_tri_common, only : nnzs_tri_i8b
+    use m_ts_tri_common, only : nnzs_tri_i8b, ts_pivot_tri_sort_El
     use m_ts_electype
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
@@ -150,7 +148,8 @@ contains
     type(tRgn), intent(in), optional :: proj(:)
 
     type(Sparsity) :: tmpSp1, tmpSp2
-    integer :: i
+    type(tRgn) :: r_tmp
+    integer :: i, n, iEl
     integer(i8b) :: els
 
     call timer('tri-init',1)
@@ -217,6 +216,49 @@ contains
        dit, tmpSp2, r_oDev, DevTri%n, DevTri%r, &
        BTD_method, last_eq = 0, par = .true. )
     call delete(tmpSp2) ! clean up
+
+    ! Sort the tri-diagonal blocks
+    ! It is probably not needed to sort according to 
+    ! the electrodes as there is _only_ 1 electrode
+    ! in this pivoting table.
+    call ts_pivot_tri_sort_El(r_oDev,N_Elec,Elecs,DevTri)
+
+    ! The down-folded region can "at-will" be sorted
+    ! in the same manner it is seen in the device region.
+    ! We enforce this as it increases the chances of consecutive 
+    ! memory layout.
+    do iEl = 1 , N_Elec
+       
+       ! Sort the region according to the device
+       ! (this ensures that the Gamma function
+       !  is laid out according to the device region)
+       call rgn_copy(Elecs(iEl)%o_inD,r_tmp)
+       call rgn_sort(r_tmp)
+
+       ! Loop on the device region and copy
+       ! region, in order
+       ! This will sort the electrode orbitals in
+       ! the device region, as provided in the electrodes
+       n = 0
+       do i = 1 , r_oDev%n
+          if ( in_rgn(r_tmp,r_oDev%r(i)) ) then
+          
+             n = n + 1
+             ! Sort according to device region
+             Elecs(iEl)%o_inD%r(n) = r_oDev%r(i)
+             ! create the pivoting table
+             Elecs(iEl)%inDpvt%r(n) = i
+
+          end if
+       end do
+
+       ! Copy this information to the ElpD
+       if ( n /= Elecs(iEl)%o_inD%n ) &
+            call die('Error programming, n')
+       i = r_oElpD(iEl)%n
+       r_oElpD(iEl)%r(i-n+1:i) = Elecs(iEl)%o_inD%r(1:n)
+
+    end do
 
     DevTri%name = '[TRI] device region'
 

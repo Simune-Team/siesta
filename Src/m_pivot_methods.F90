@@ -1049,8 +1049,7 @@ contains
     ! TODO, I think there is a bug, it partitions extremely bad
     wp = c_loc(w(1))
     nvtxs = sub%n
-    i = METIS_NodeND(nvtxs, xadj, adjncy, wp, opts, &
-         perm, iperm)
+    i = METIS_NodeND(nvtxs, xadj, adjncy, wp, opts, perm, iperm)
     if ( i /= 1 ) then ! METIS_OK == 1
        print *,i
        call die('pivot_method: metis, error in pivoting.')

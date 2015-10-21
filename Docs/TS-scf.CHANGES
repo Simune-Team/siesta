@@ -1,4 +1,40 @@
 ----------------------------------------------------
+October 20, 2015 -- Nick Papior       trunk-479---ts-scf-572
+Sorted individual blocks in BTD format
+
+* Each block is separate and can be sorted.
+  This means that we can reduce the memory offset
+  when running large calculations.
+
+  This also means that Gf.G.Gf matrix products
+  will maximally split into two pieces.
+  This should drastically increase throughput.
+
+* This is implemented in both transiesta and tbtrans
+
+* Removed METIS pivoting from analysation step
+  Some memory allocation has a bug.
+
+* m_region has been updated.
+
+  rgn_MPI_Bcast now works as intended and the 
+  sorted status is also broadcasted.
+
+* Removed possibility to read/write the pivoting tables.
+  This also means that custom pivoting arrays cannot
+  be created. 
+
+modified:
+  Src/m_pivot.F90
+  Src/m_pivot_methods.F90
+  Src/m_region.F90
+  Src/m_ts_tri_common.F90
+  Src/m_ts_tri_init.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 October 20, 2015 -- Nick Papior       trunk-479---ts-scf-571
 Added print-out of save_parallel for tbtrans
 

@@ -71,6 +71,11 @@ module m_region
   public :: rgn_atom2orb
   public :: rgn_orb2atom
 
+  interface sum
+     module procedure rgn_sum
+  end interface sum
+  public :: rgn_sum, sum
+
   ! Sorting methods for the regions
   ! We sort by the number of connections forward
   ! the maximum number of connections to elements
@@ -123,6 +128,9 @@ contains
     
     call rgn_delete(r)
 
+    ! Quick return for empty region
+    if ( n == 0 ) return
+
     ! Create with no default values
     r%n = n
     allocate(r%r(n))
@@ -133,6 +141,28 @@ contains
     end if
     
   end subroutine rgn_init
+
+  ! From return in pvt the pivoting
+  ! table of r2 in r1.
+  ! Hence:
+  !   pvt%r(1) == rgn_pivot(r1,r2%r(1))
+  subroutine rgn_init_pvt(r1,r2,pvt)
+    type(tRgn), intent(in) :: r1, r2
+    type(tRgn), intent(inout) :: pvt
+
+    integer :: i
+
+    ! Initialize to zero if the elements
+    ! are not aligned
+    call rgn_init(pvt,r2%n,val = 0)
+    pvt%name = trim(r2%name)//' -> '//trim(r1%name)
+    
+    do i = 1 , r2%n
+       pvt%r(i) = rgn_pivot(r1,r2%r(i))
+    end do
+
+  end subroutine rgn_init_pvt
+    
 
   ! Get the index of the element that equal 'i'
   ! We refer to this as the pivoting element.
@@ -1497,6 +1527,19 @@ contains
     
   end function rgn_push
 
+  pure function rgn_sum(r) result(s)
+    type(tRgn), intent(in) :: r
+    integer :: s
+
+    if ( r%n == 0 ) then
+       s = 0
+    else
+       s = sum(r%r)
+    end if
+    
+  end function rgn_sum
+
+
   ! Popping of an index of a region
   function rgn_pop(r,idx,val) result(out)
     type(tRgn), intent(inout) :: r
@@ -1609,25 +1652,33 @@ contains
   end subroutine rgn_MPI_union
 
   subroutine rgn_MPI_Bcast(r,Bnode,Comm)
-    use mpi_siesta, only : MPI_Bcast, MPI_Integer
+    use mpi_siesta, only : MPI_Bcast, MPI_Comm_World
+    use mpi_siesta, only : MPI_Logical, MPI_Integer
+
     type(tRgn), intent(inout) :: r
-    integer, intent(in) :: Bnode, Comm
-    
-    integer :: Node, n
+    integer, intent(in) :: Bnode
+    integer, intent(in), optional :: Comm
+
+    integer :: Node, n, lComm
     integer :: MPIerror
 
-    call MPI_Comm_Rank(Comm,Node,MPIerror)
+    lComm = MPI_COMM_WORLD
+    if ( present(Comm) ) lComm = Comm
+
+    ! Get current node to 
+    call MPI_Comm_Rank(lComm,Node,MPIerror)
 
     n = r%n
-    call MPI_Bcast(n,1,MPI_Integer, Bnode, comm, MPIerror)
-    if ( n == 0 ) return
+    call MPI_Bcast(n,1,MPI_Integer, Bnode, lComm, MPIerror)
     if ( Node /= Bnode ) then
-       ! ensures that it is deleted!
-       call rgn_delete(r)
-       r%n = n
-       allocate(r%r(n))
+       ! ensures that it is having the correct size
+       call rgn_init(r,n)
     end if
-    call MPI_Bcast(r%r(1),r%n,MPI_Integer, Bnode, comm, MPIerror)
+    if ( n == 0 ) return
+    ! B-cast array
+    call MPI_Bcast(r%r(1),r%n,MPI_Integer, Bnode, lComm, MPIerror)
+    ! B-cast sorted token
+    call MPI_Bcast(r%sorted,1,MPI_Logical, Bnode, lComm, MPIerror)
 
   end subroutine rgn_MPI_Bcast
 
