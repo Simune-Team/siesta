@@ -177,6 +177,8 @@ contains
 
     if ( save_parallel ) then
        if ( .not. dir_exist(save_dir, all = .true. ) ) then
+          write(*,'(a)') 'tbt: Parallel IO is not allowed by your &
+               &file-system. Please remove TBT.CDF.MPI from FDF'
           call die('Directory: '//trim(save_dir)//' not visible &
                &to all processors, or simply does not exist.')
        end if
@@ -190,6 +192,7 @@ contains
 
     use parallel, only: IONode
 
+    character(len=*), parameter :: f1 ='(''tbt: '',a,t53,''='',tr4,l1)'
     character(len=*), parameter :: f10='(''tbt: '',a,t53,''='',tr4,a)'
     character(len=*), parameter :: f11='(''tbt: '',a)'
     character(len=*), parameter :: f12='(''tbt: '',a,t53,''='',tr2,i0)'
@@ -208,6 +211,11 @@ contains
     else
        write(*,f11)'No compression of TBT.nc files'
     end if
+#ifdef NCDF_PARALLEL
+    write(*,f1)'Use parallel MPI-IO for NetCDF file',save_parallel
+#else
+    write(*,f11)'Parallel MPI-IO not possible'
+#endif
 #endif
     
   end subroutine print_save_options

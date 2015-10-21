@@ -1,4 +1,15 @@
 ----------------------------------------------------
+October 20, 2015 -- Nick Papior       trunk-479---ts-scf-571
+Added print-out of save_parallel for tbtrans
+
+* Added MPI-IO to the version files of siesta/tbtrans
+
+modified:
+  Src/version.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/version.F90
+
+----------------------------------------------------
 October 19, 2015 -- Nick Papior       trunk-479---ts-scf-570
 TBT: Removed continuous check for the columns
 

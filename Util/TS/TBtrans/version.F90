@@ -66,6 +66,9 @@ write(6,'(a)') 'NetCDF support'
 #endif
 #ifdef NCDF_4
 write(6,'(a)') 'NetCDF-4 support'
+#ifdef NCDF_PARALLEL
+write(6,'(a)') 'NetCDF-4 MPI-IO support'
+#endif
 #endif
 
 end subroutine prversion
