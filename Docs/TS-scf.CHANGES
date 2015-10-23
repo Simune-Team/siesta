@@ -1,4 +1,22 @@
 ----------------------------------------------------
+October 23, 2015 -- Nick Papior       trunk-479---ts-scf-574
+Improved hartree potential placement
+
+* For the ramp the Hartree potential placement
+  is extremely important for optimal convergence.
+
+  We have optimized this by selecting the atomic
+  planes +- a fraction of the inter-layer distance.
+  Of the corresponding electrode.
+  
+  This seems to improve convergence.
+
+modified:
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electype.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 October 20, 2015 -- Nick Papior       trunk-479---ts-scf-573
 Enabled out-of-box electrodes for N_elec > 2
 

@@ -510,7 +510,7 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i, it, iElL, iElR
-    real(dp) :: Lvc, rcell(3,3)
+    real(dp) :: Lvc, rcell(3,3), bdir(3)
     real(dp) :: dd, sc
 
     if ( N_Elec > 2 ) call die('Not fully implemented, only non-bias with N-electrode')
@@ -539,8 +539,13 @@ contains
     end do
     ! Calculate the corresponding placement in the cell
     ! This is easy as we have the fraction of the
-    ! cell-vector contribution. So we can actually
-    ! simply calculate it
+    ! cell-vector contribution. So we can simply calculate it
+    ! Add 0.15 interlayer distance
+    ! NOTE this fraction heavily decides the convergence properties
+    ! This parameter has been optimized for a Gold junction in the 100 direction
+    ! It has to place the ramp, far from atomic centers, but close to the electrode
+    bdir = Elecs(iElL)%dINF_layer * 0.15_dp * cell(:,ts_tidx) / Lvc
+    sc = sc + sum(bdir * rcell(:,ts_tidx))
     left_elec_mesh_idx = nint(sc * meshG(ts_tidx))
 
     if ( Elecs(iElR)%Bulk ) then
@@ -552,12 +557,15 @@ contains
          Elecs(iElR)%idx_a + TotUsedAtoms(Elecs(iElR)) - 1
        ! Get fraction in the unitcell
        dd = sum(xa(:,i) * rcell(:,ts_tidx))
-       if ( Elecs(iElL)%Bulk ) then
+       if ( Elecs(iElR)%Bulk ) then
           sc = min(sc,dd)
        else
           sc = max(sc,dd)
        end if
     end do
+    ! Subtract 0.15 interlayer distance
+    bdir = Elecs(iElR)%dINF_layer * 0.15_dp * cell(:,ts_tidx) / Lvc
+    sc = sc - sum(bdir * rcell(:,ts_tidx))
     right_elec_mesh_idx = nint(sc * meshG(ts_tidx))
 
 

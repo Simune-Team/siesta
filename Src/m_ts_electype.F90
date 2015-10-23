@@ -119,6 +119,9 @@ module m_ts_electype
      ! ---v--- Below we have the content of the TSHS file
      integer  :: nspin = 0, na_u = 0, no_u = 0, no_s = 0
      real(dp) :: cell(3,3) = 0._dp, Ef = 0._dp, Qtot = 0._dp
+     ! The inter-layer distance between succeeding layers along
+     ! the semi-infinite direction
+     real(dp) :: dINF_layer
      real(dp), pointer :: xa(:,:) => null()
      integer,  pointer :: lasto(:) => null()
      type(Sparsity)  :: sp
@@ -215,6 +218,7 @@ contains
 
   function fdf_Elec(prefix,slabel,this,N_mu,mus,idx_a,name_prefix) result(found)
     use fdf
+    use intrinsic_missing, only: VNORM
     use m_os, only : file_exist
     use m_ts_io, only : ts_read_TSHS_opt
     use m_ts_io_ctype, only : pline_E_parse
@@ -234,6 +238,7 @@ contains
     logical :: info(5)
     integer :: i, j
     integer :: cidx_a 
+    real(dp) :: rcell(3,3), rc, o(3)
 
     character(len=200) :: bName, name, ln, tmp
 
@@ -606,6 +611,20 @@ contains
 
     end if
     this%no_used = this%lasto_used(this%na_used)
+
+    ! Calculate the interlayer distance between succeeding layers
+    ! along the semi-infinite direction
+    rc = 0._dp
+    call reclat(this%cell,rcell,0)
+    ! get origo
+    o = minval(this%xa,dim=1)
+    do i = 1 , this%na_u
+       rc = max(rc,abs(sum((this%xa(:,i)-o) * rcell(:,this%t_dir))))
+    end do
+    ! Get distance to the cell boundary
+    rc = 1._dp - rc
+    ! Calculate the inter-layer distance
+    this%dINF_layer = VNORM( rc * this%cell(:,this%t_dir) )
 
     ! We deallocate xa and lasto as they are not needed
     deallocate(this%xa,this%lasto)
@@ -1915,6 +1934,9 @@ contains
     end if
 #endif
     write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
+    write(*,f6)  '  Electrode inter-layer distance (semi-inf-dir)', this%dINF_layer/Ang,' Ang'
+
+
 #ifndef TBTRANS
     if ( present(plane) ) then
     if ( plane ) then

@@ -177,6 +177,9 @@ contains
          El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
 
     if ( nq == 1 ) then
+#ifndef TS_NOCHECKS
+       if ( no_u /= no_s ) call die('no_E/=no_s')
+#endif
 
        ! When no repetition we save it "as is"
        call zcopy(no_s*no_s,GS(1,1,1),1,Sigma(1,1),1)
@@ -241,6 +244,9 @@ contains
          El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
 
     if ( nq == 1 ) then
+#ifndef TS_NOCHECKS
+       if ( no_u /= no_s ) call die('no_E/=no_s')
+#endif
 
        ! When no repetition we save it "as is"
        call zcopy(no_s*no_s,GS(1,1,1),1,Sigma(1,1),1)
