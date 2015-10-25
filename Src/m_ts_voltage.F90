@@ -79,6 +79,7 @@ contains
     end if
 
     if ( ts_tidx < 1 ) then
+
        if ( IONode .and. len_trim(Hartree_fname) == 0 ) then
           write(*,'(a)')'ts_voltage: Lifted locally on each electrode'
        else if ( IONode .and. len_trim(Hartree_fname) > 0 ) then
@@ -137,6 +138,7 @@ contains
     ! this will be the applied bias in the "lower"
     ! electrode in the unit-cell
     V_low = Elecs(iElL)%mu%mu
+    V_high = Elecs(iElR)%mu%mu
 
     if ( VoltageInC ) then
        ! Find the electrode mesh sets
@@ -206,10 +208,10 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i1, i2, i3, idT, imesh
-    real(dp) :: dF
+    real(dp) :: dF, dV
 
     ! field in [0;end]: v = e*x = f*index
-    dF = Volt / real(right_elec_mesh_idx - left_elec_mesh_idx,dp)
+    dF = Volt / real(right_elec_mesh_idx - left_elec_mesh_idx+1,dp)
 
     ! Find quantities in mesh coordinates
     if ( meshl(1) * meshl(2) * meshl(3) /= ntpl ) &
@@ -219,25 +221,27 @@ contains
     imesh = 0
     if ( ts_tidx == 1 ) then
 
-       do i3 = 1,meshl(3)
-          do i2 = 1,meshl(2)
+       do i3 = 1 , meshl(3)
+          do i2 = 1 , meshl(2)
              do i1 = offset_i(1)+1,offset_i(1)+meshl(1)
+
                 ! Check the region
-                if ( i1 <= left_elec_mesh_idx ) then
+                if ( i1 < left_elec_mesh_idx ) then
                    ! We are on the left hand side, hence
                    ! we have the left \mu
-                   idT = 0
+                   dV = V_low
                 else if ( right_elec_mesh_idx < i1 ) then
                    ! We are on the right hand side, hence
                    ! we have the right \mu
-                   idT = right_elec_mesh_idx - left_elec_mesh_idx
+                   dV = V_high
                 else
                    ! We are in between the electrodes
-                   idT = i1 - left_elec_mesh_idx
+                   dV = V_low - dF*(i1-left_elec_mesh_idx)
                 end if
-                
+
                 imesh = imesh + 1
-                Vscf(imesh) = Vscf(imesh) + V_low - dF*idT
+                Vscf(imesh) = Vscf(imesh) + dV
+
              end do
           end do
        end do
@@ -246,23 +250,26 @@ contains
 
        do i3 = 1,meshl(3)
           do i2 = offset_i(2)+1,offset_i(2)+meshl(2)
+
              ! Check the region
-             if ( i2 <= left_elec_mesh_idx ) then
+             if ( i2 < left_elec_mesh_idx ) then
                 ! We are on the left hand side, hence
                 ! we have the left \mu
-                idT = 0
+                dV = V_low
              else if ( right_elec_mesh_idx < i2 ) then
                 ! We are on the right hand side, hence
                 ! we have the right \mu
-                idT = right_elec_mesh_idx - left_elec_mesh_idx
+                dV = V_high
              else
                 ! We are in between the electrodes
-                idT = i2 - left_elec_mesh_idx
+                dV = V_low - dF*(i2-left_elec_mesh_idx)
              end if
-             do i1 = 1,meshl(1)
+             
+             do i1 = 1 , meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh) = Vscf(imesh) + V_low - dF*idT
+                Vscf(imesh) = Vscf(imesh) + dV
              end do
+             
           end do
        end do
        
@@ -271,25 +278,26 @@ contains
        do i3 = offset_i(3)+1,offset_i(3)+meshl(3)
 
           ! Check the region
-          if ( i3 <= left_elec_mesh_idx ) then
+          if ( i3 < left_elec_mesh_idx ) then
              ! We are on the left hand side, hence
              ! we have the left \mu
-             idT = 0
+             dV = V_low
           else if ( right_elec_mesh_idx < i3 ) then
              ! We are on the right hand side, hence
              ! we have the right \mu
-             idT = right_elec_mesh_idx - left_elec_mesh_idx
+             dV = V_high
           else
              ! We are in between the electrodes
-             idT = i3 - left_elec_mesh_idx
+             dV = V_low - dF*(i3-left_elec_mesh_idx)
           end if
 
-          do i2 = 1,meshl(2)
-             do i1 = 1,meshl(1)
+          do i2 = 1 , meshl(2)
+             do i1 = 1 , meshl(1)
                 imesh = imesh + 1
-                Vscf(imesh) = Vscf(imesh) + V_low - dF*idT
+                Vscf(imesh) = Vscf(imesh) + dV
              end do
           end do
+          
        end do
 
     end if
@@ -461,34 +469,22 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     integer  :: i
-    real(dp) :: tmp, r, rcell(3,3)
+    real(dp) :: r1, r2
 
     ! Initialize
     iElL = 1
     iElR = 2
 
-    ! Calculate the reciprocal cell (without 2Pi)
-    call reclat(cell,rcell,0)
+    call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmin = r1)
+    call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx, fmin = r2)
 
-    ! Figure out the lower atom in the transport direction
-    tmp = huge(1._dp)
-
-    ! initialize the lower label
-    do i = Elecs(1)%idx_a , Elecs(1)%idx_a + TotUsedAtoms(Elecs(1)) - 1
-       ! Get supercell in the transport direction
-       r = sum(xa(:,i) * rcell(:,ts_tidx))
-       tmp = min(tmp,r)
-    end do
-    do i = Elecs(2)%idx_a , Elecs(2)%idx_a + TotUsedAtoms(Elecs(2)) - 1
-       
-       r = sum(xa(:,i) * rcell(:,ts_tidx))
-       if ( r < tmp ) then
-          iElL = 2
-          iElR = 1
-          return
-       end if
-       
-    end do
+    if ( r1 < r2 ) then
+       iElL = 1
+       iElR = 2
+    else
+       iElL = 2
+       iElR = 1
+    end if
 
   end subroutine get_elec_indices
 
@@ -496,6 +492,7 @@ contains
     use intrinsic_missing, only : VNORM
     use parallel,     only : IONode
     use units,        only : Ang
+    use fdf, only: fdf_get
     use m_ts_electype
     use m_ts_options, only : N_Elec, Elecs
     
@@ -537,14 +534,30 @@ contains
           sc = min(sc,dd)
        end if
     end do
+    ! Extend if choice added
+    it = fdf_get('TS.Elec.'//trim(Elecs(iElL)%name) &
+         //'.Hartree.Extend', 0)
+    if ( it < 0 ) it = na_u + it ! correct negative indices
+    if ( it > na_u ) call die('ts_voltage: Extend index &
+         &too large.')
+    if ( it > 0 ) then
+       ! Get fraction in the unitcell
+       dd = sum(xa(:,it) * rcell(:,ts_tidx))
+       if ( Elecs(iElL)%Bulk ) then
+          sc = max(sc,dd)
+       else
+          sc = min(sc,dd)
+       end if
+    end if
+    
     ! Calculate the corresponding placement in the cell
     ! This is easy as we have the fraction of the
     ! cell-vector contribution. So we can simply calculate it
-    ! Add 0.15 interlayer distance
+    ! Add 0.2 interlayer distance
     ! NOTE this fraction heavily decides the convergence properties
     ! This parameter has been optimized for a Gold junction in the 100 direction
     ! It has to place the ramp, far from atomic centers, but close to the electrode
-    bdir = Elecs(iElL)%dINF_layer * 0.15_dp * cell(:,ts_tidx) / Lvc
+    bdir = Elecs(iElL)%dINF_layer * 0.2_dp * cell(:,ts_tidx) / Lvc
     sc = sc + sum(bdir * rcell(:,ts_tidx))
     left_elec_mesh_idx = nint(sc * meshG(ts_tidx))
 
@@ -563,8 +576,23 @@ contains
           sc = max(sc,dd)
        end if
     end do
-    ! Subtract 0.15 interlayer distance
-    bdir = Elecs(iElR)%dINF_layer * 0.15_dp * cell(:,ts_tidx) / Lvc
+    ! Extend if choice added
+    it = fdf_get('TS.Elec.'//trim(Elecs(iElR)%name) &
+         //'.Hartree.Extend', 0)
+    if ( it < 0 ) it = na_u + it
+    if ( it > na_u ) call die('ts_voltage: Extend index &
+         &too large.')
+    if ( it > 0 ) then
+       ! Get fraction in the unitcell
+       dd = sum(xa(:,it) * rcell(:,ts_tidx))
+       if ( Elecs(iElR)%Bulk ) then
+          sc = min(sc,dd)
+       else
+          sc = max(sc,dd)
+       end if
+    end if
+    ! Subtract 0.2 interlayer distance
+    bdir = Elecs(iElR)%dINF_layer * 0.2_dp * cell(:,ts_tidx) / Lvc
     sc = sc - sum(bdir * rcell(:,ts_tidx))
     right_elec_mesh_idx = nint(sc * meshG(ts_tidx))
 

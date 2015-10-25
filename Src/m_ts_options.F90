@@ -695,7 +695,7 @@ contains
     call read_ts_hartree_options( )
     
     ! Find the "biggest" electrode
-    call ts_hartree_elec( N_Elec, Elecs )
+    call ts_hartree_elec( N_Elec, Elecs , cell, na_u, xa )
 
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus, ts_kT, IsVolt, Volt )
@@ -828,9 +828,7 @@ contains
        end select
     end if
     select case ( TS_HA )
-    case ( TS_HA_PLANE ) 
-       write(*,f10) 'Fixing Hartree potential at plane',trim(chars)
-    case ( TS_HA_ELEC )
+    case ( TS_HA_PLANE , TS_HA_ELEC )
        write(*,f10) 'Fixing Hartree potential at electrode-plane',trim(El%name)
     case ( TS_HA_ELEC_BOX )
        write(*,f10) 'Fixing Hartree potential in electrode-box',trim(El%name)
@@ -1000,7 +998,7 @@ contains
 
     use m_ts_global_vars, only: TSmode, onlyS
     use m_ts_chem_pot, only : Name, Eq_segs
-    use m_ts_electype, only : TotUsedAtoms, Name
+    use m_ts_electype, only : TotUsedAtoms, Name, Elec_frac
 
     use m_ts_method, only : a_isElec, a_isBuffer
 
@@ -1019,7 +1017,7 @@ contains
     ! Local variables
     integer :: i, j, k, iEl, idx, idx1, idx2, itmp3(3)
     real(dp) :: rtmp, tmp3(3), tmp33(3,3), bdir(2)
-    real(dp) :: p(3), min_bond, min_t_bond, bond30
+    real(dp) :: p(3)
     logical :: err, warn, ltmp
 
     if ( .not. IONode ) return
@@ -1217,52 +1215,6 @@ contains
        err = .true.
     end if
 
-    ! Calculate minimum electrode bond-length along the transport
-    ! direction. This is used to ensure correct spacing
-    min_bond = huge(1._dp)
-    do iEl = 1 , N_Elec
-
-       ! Get atomic indices
-       idx1 = Elecs(iEl)%idx_a
-       idx2 = idx1 + TotUsedAtoms(Elecs(iEl)) - 1
-       k = Elecs(iEl)%t_dir
-
-       ! Short-hand for the electrode unit-cell
-       tmp33 = Elecs(iEl)%cell
-              
-       do j = idx1 , idx2 - 1
-          do i = j + 1 , idx2
-             tmp3 = xa(:,i) - xa(:,j)
-             min_bond = min(min_bond,VNORM(tmp3))
-          end do
-       end do
-
-       ! Get bond-length along transport direction
-       ! sin(30^o) = 1/2
-       bond30 = min_bond * 0.45_dp
-       min_t_bond = min_bond
-       
-       do j = idx1 , idx2 - 1
-          ! Get current coordinate
-          p(:) = xa(:,j)
-
-          ! Project the coordinate onto the transport direction
-          do i = j + 1 , idx2
-             tmp3 = xa(:,i) - p(:)
-             rtmp = abs(VEC_PROJ_SCA(tmp33(:,k),tmp3))
-             ! As projecting onto a direction may lead the
-             ! bond-length to be zero, we require the minimum
-             ! bond-length to be at least 30^o of the correct bond-length
-             if ( rtmp < bond30 ) cycle
-             if ( rtmp < min_t_bond ) then
-                min_t_bond = rtmp
-             end if
-          end do
-          
-       end do
-       
-    end do
-    
     ! A transiesta calculation requires that all atoms
     ! are within the unit-cell.
     ! However, for N_Elec > 2 calculations this
@@ -1341,72 +1293,77 @@ contains
        ! unit-cell of the A[ts_tidx] direction.
        ! We will let the user know if any atoms co-incide with
        ! the plane as that might hurt convergence a little.
-       
-       ! If the distance is less than 0.5 of the minimal bond length we have
-       ! the atomic core "close" to the Hartree fix plane, notify the user of this
-       ! Get transport cell vector
-       tmp3 = cell(:,ts_tidx)
 
-       ! bond30 will denote the shift needed for the
-       ! placement in the middle of the cell
-       bdir(1) = huge(1._dp)
-       bdir(2) = 0._dp
-       
-       ltmp = .false.
-       do i = 1 , na_u
-          
-          ! skip buffer atoms
-          if ( a_isBuffer(i) ) cycle
+       ! Get the electrode fraction of the position
+       call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmin = bdir(1))
+       call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx, fmin = bdir(2))
 
-          ! Project the coordinate onto the transport cell vector
-          rtmp = VEC_PROJ_SCA(tmp3,xa(:,i))
-          
-          ! if it below the cell we have to move it into the
-          ! unit-cell.
-          ! Above we check that the coordinate is within the
-          ! cell so rtmp >= 0.
-          ! Even if it is negative this construct will
-          ! shift it out of the as we use max and -rtmp
-          bdir(1) = min(bdir(1),rtmp)
-          bdir(2) = max(bdir(2),rtmp)
-          
-       end do
-       ! Length of transport direction cell vector
-       rtmp = vnorm(tmp3)
-       tmp3 = tmp3 / rtmp
-       if ( abs(bdir(2) - bdir(1) - rtmp) < 1.e-5_dp ) then
-          ! special case for skewed axis with exact periodicity
-          ! this will for instance happen for graphene
-       end if
-
-       ! Correct the bond-lengths along the transport direction
-       ! This is the "lower" cell boundary.
-       ! We want it to be at least 1/2 a bond-length from the boundary
-       bdir(1) = bdir(1) - min_t_bond * 0.5_dp
-       ! Correct bdir(2) to the cell distance
-       bdir(2) = bdir(2) + min_t_bond * 0.5_dp - rtmp
-       if ( bdir(1) < - bdir(2) ) then
-          rtmp = - bdir(1)
+       ! Determine the electrode closest to the
+       ! lower boundary
+       if ( bdir(1) < bdir(2) ) then
+          ! The first electrode is closest
+          i = 1
+          call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx, fmax = bdir(2))
        else
-          rtmp = - bdir(2)
+          ! The second electrode is closest
+          i = 2
+          call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx, fmax = bdir(1))
        end if
-       ! As the Hartree potential is fixed at the lower boundary
-       ! we only ensure that one
-       rtmp = -bdir(1)
-       
-       ! If the shift is more than 0.01 \AA we tell the user
-       if ( abs(rtmp) > 0.01_dp * Ang ) then
-          write(*,'(a,f9.5,a)')'You can with benefit move all atoms &
-               &in the transport direction using this:'
+
+       ! If the electrode is outside the unit-cell we tell the user
+       tmp3 = cell(:,ts_tidx) / VNORM(cell(:,ts_tidx))
+       if ( bdir(i) < 0._dp ) then
+
+          ! Tell the user to shift the entire structure
+          ! by the offset to origo + 1/2 a bond-length
+
+          ! Origo offset:
+          p = - cell(:,ts_tidx) * bdir(i)
+          p = p + tmp3 * Elecs(i)%dINF_layer
+          ! Bond-length
+          write(*,'(a,f9.5,a)')trim(Elecs(i)%name)//' lies outside &
+               &the unit-cell.'
+          write(*,'(a)')'Please shift the entire structure using the &
+               &following recipe:'
           write(*,'(a)') 'If you already have AtomicCoordinatesFormat, add them'
           write(*,'(tr1,a)') 'AtomicCoordinatesFormat Ang'
           write(*,'(tr1,a)') '%block AtomicCoordinatesOrigin'
-          write(*,'(tr1,3(tr2,f12.4))') tmp3 * rtmp / Ang
+          write(*,'(tr1,3(tr2,f12.4))') p / Ang
           write(*,'(tr1,a)') '%endblock AtomicCoordinatesOrigin'
-          write(*,'(a)') 'This removes atoms from the constant &
-               &potential plane.'
-          warn = .true.
+          err = .true.
+          
        end if
+
+       ! Select the electrode close to the upper cell boundary
+       if ( i == 1 ) then
+          i = 2
+       else
+          i = 1
+       end if
+       if ( 1._dp < bdir(i) ) then
+
+          bdir(i) = bdir(i) - 1._dp
+
+          ! Tell the user to shift the entire structure
+          ! by the offset to origo + 1/2 a bond-length
+
+          ! Origo offset:
+          p = - cell(:,ts_tidx) * bdir(i)
+          p = p - tmp3 * Elecs(i)%dINF_layer
+          ! Bond-length
+          write(*,'(a,f9.5,a)')trim(Elecs(i)%name)//' lies outside &
+               &the unit-cell.'
+          write(*,'(a)')'Please shift the entire structure using the &
+               &following recipe:'
+          write(*,'(a)') 'If you already have AtomicCoordinatesFormat, add them'
+          write(*,'(tr1,a)') 'AtomicCoordinatesFormat Ang'
+          write(*,'(tr1,a)') '%block AtomicCoordinatesOrigin'
+          write(*,'(tr1,3(tr2,f12.4))') p / Ang
+          write(*,'(tr1,a)') '%endblock AtomicCoordinatesOrigin'
+          err = .true.
+          
+       end if
+
     end if
     
     ! If the user has requested to initialize using transiesta

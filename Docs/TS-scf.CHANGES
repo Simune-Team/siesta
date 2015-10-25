@@ -1,4 +1,48 @@
 ----------------------------------------------------
+October 25, 2015 -- Nick Papior       trunk-479---ts-scf-575
+transiesta Hartree changes
+
+* The Hartree fix for transiesta was always performed
+  at the cell boundary.
+
+  Now we calculate the position of the interlayer grid
+  point and average across the _exact_ position between
+  the electrode and the _outside_ layer.
+
+  We always choose a point such that the above is obeyed.
+  Hence for geometries at origo we select the "right"
+  electrode.
+
+  Speeded up the algorithm by calculating the offset
+  directly instead of searching for a single
+  index.
+
+  This also removes the need for non-origo placed
+  geometries in 2-elec uni-directional semi-infinite
+  directions.
+
+* Applied bias is also chosen via the above algorithm.
+  The grid-points are chosen such that the ramp is placed
+  top(Left) + 0.2 * inter-layer distance to the
+  bottom(Right) - 0.2 * inter-laye distance.
+
+  This seems like the best choice.
+
+* An additional keyword for _extending_ the Hartree
+  potential is enabled.
+
+  Hence for extended electrodes where the screening
+  length is long, but the ramp is far from the electrode
+  it may be better to extend the electrode up till close
+  to the actual ramp.
+
+modified:
+  Src/m_ts_electype.F90
+  Src/m_ts_hartree.F90
+  Src/m_ts_options.F90
+  Src/m_ts_voltage.F90
+
+----------------------------------------------------
 October 23, 2015 -- Nick Papior       trunk-479---ts-scf-574
 Improved hartree potential placement
 

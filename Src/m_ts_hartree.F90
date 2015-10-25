@@ -58,6 +58,10 @@ module m_ts_hartree
   ! The fraction of the actual fix
   real(dp), public :: Vha_frac = 1._dp
 
+  ! The grid-index in the transport direction
+  ! where we fix the Hartree potential.
+  integer :: ha_idx = 1
+
 contains
 
   subroutine read_ts_hartree_options( )
@@ -99,20 +103,59 @@ contains
 
   ! Find the biggest electrode by comparing
   ! either the plane or the volume of the electrode cells
-  subroutine ts_hartree_elec(N_Elec, Elecs)
+  subroutine ts_hartree_elec(N_Elec, Elecs, cell, na_u, xa)
     
     use intrinsic_missing, only: VNORM
+    use m_ts_electype, only: Elec_frac
     
     integer, intent(in) :: N_Elec
     type(Elec), intent(inout), target :: Elecs(N_Elec)
-    
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+
     integer :: iE
-    real(dp) :: area, tmp
+    real(dp) :: area, tmp, f1, f2
     real(dp), external :: volcel
 
     ! if the electrode has already been
     ! associated, we will not update it
     if ( associated(El) ) return
+
+    if ( TS_HA == TS_HA_PLANE ) then
+
+       ! The plane can only be chosen with
+       ! 2 electrodes
+       if ( N_Elec /= 2 ) then
+          call die('ts_hartree: Error in fixation of plane.')
+       end if
+       
+       ! Select the electrode which is more than a bond length
+       ! from its boundary
+       call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx,fmin=f1,fmax=f2)
+       call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx,fmin=tmp,fmax=area)
+
+       if ( f1 < tmp ) then
+          ! 1 lie closests to the lower cell-boundary
+          ! check which of f1 or 1-area is bigger
+          if ( f1 < 1._dp - area ) then
+             El => Elecs(2)
+          else
+             El => Elecs(1)
+          end if
+       else
+          ! 2 lie closests to the lower cell-boundary
+          ! check which of tmp or 1-f2 is bigger
+          if ( tmp < 1._dp - f2 ) then
+             El => Elecs(1)
+          else
+             El => Elecs(2)
+          end if
+       end if
+       
+       return
+       
+    end if
 
     ! Easy determination of largest basal plane of electrodes
     area = -1._dp
@@ -132,8 +175,9 @@ contains
 
   end subroutine ts_hartree_elec
   
-  subroutine ts_init_hartree_fix(ucell,na_u,xa,meshG,nsm)
-    
+  subroutine ts_init_hartree_fix(cell,na_u,xa,meshG,nsm)
+
+    use intrinsic_missing, only: VNORM
     use units, only : Ang
     use m_mesh_node, only : meshl, offset_r, dMesh, dL
     use parallel, only : IONode
@@ -145,19 +189,70 @@ contains
     ! ***********************
     ! * INPUT variables     *
     ! ***********************
-    real(dp),   intent(in) :: ucell(3,3)
+    real(dp),   intent(in) :: cell(3,3)
     integer,    intent(in) :: na_u
     real(dp),   intent(in) :: xa(3,na_u)
     integer,    intent(in) :: meshG(3), nsm
 
     integer :: i1, i2, i3, nlp
-    real(dp) :: ll(3), llZ(3), llYZ(3)
+    real(dp) :: ll(3), llZ(3), llYZ(3), rcell(3,3)
 #ifdef MPI
     integer :: MPIerror
 #endif
 
     ! Quick skip if not fixing
     if ( TS_HA == TS_HA_NONE ) return
+
+    if ( TS_HA == TS_HA_PLANE ) then
+
+       call reclat(cell,rcell)
+       
+       ! Calculate the index where we will fix
+       ! the Hartree potential.
+
+       ! 'El' points to the electrode which has the
+       ! cell boundary farthest from the atoms
+
+       ! Calculate the fraction point where we will cut
+       call Elec_frac(El,cell,na_u,xa,ts_tidx, &
+            fmin = llYZ(1), fmax = llYZ(2) )
+
+       ! Unit-cell vector
+       ll = cell(:,ts_tidx)
+       ll = ll / VNORM(ll)
+
+       if ( llYZ(1) < 1._dp - llYZ(2) ) then
+          
+          ! We have a lower index point
+          ! Correct fraction by the interlayer distance
+          llYZ(1) = llYZ(1) - &
+               sum(ll*El%dINF_layer*0.5_dp*rcell(:,ts_tidx))
+          
+       else
+
+          llYZ(1) = llYZ(2) + &
+               sum(ll*El%dINF_layer*0.5_dp*rcell(:,ts_tidx))
+
+       end if
+
+       ! Figure out the index
+       ha_idx = nint(llYZ(1) * meshG(ts_tidx))
+       ha_idx = max(1,ha_idx)
+       ha_idx = min(meshG(ts_tidx),ha_idx)
+
+       if ( IONode ) then
+         write(*,*)
+         write(*,'(3a)')'ts: Using electrode: ',trim(El%Name), &
+              ' for Hartree correction'
+         write(*,'(a,f8.5)')'ts: Grid fraction plane ',llYZ(1)
+         write(*,'(a,3(tr1,f13.5))') 'ts: Grid point plane (Ang):',&
+              llYZ(1)*cell(:,ts_tidx)/Ang
+         write(*,*)
+       end if
+    
+       return
+       
+    end if
 
     ! We now were to put the Hartree correction
     if ( TS_HA /= TS_HA_ELEC .and. &
@@ -217,8 +312,7 @@ contains
                &unit cell.'
           write(*,'(a)') 'ts: Please move structure so this point is &
                inside unit cell (Ang):'
-          write(*,'(a,3(tr1,f13.5))') 'transiesta: Point (Ang):',&
-               El%p%c/Ang
+          write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', El%p%c/Ang
           write(*,'(a)') 'ts: You can use %block AtomicCoordinatesOrigin'
           write(*,'(a)') 'ts: to easily move the entire structure.'
        end if
@@ -294,7 +388,7 @@ contains
     real(grid_p), intent(inout) :: Vscf(ntpl)
 
     ! Internal variables
-    integer :: i1 , i2 , i3
+    integer :: i1 , i2 , i3, i
     integer :: imesh, nlp
     integer :: i10, i20, i30
 #ifdef MPI
@@ -320,52 +414,45 @@ contains
 
     select case ( TS_HA )
     case ( TS_HA_PLANE )
-       if ( ts_tidx == 1 ) then
+       
+       ! Calculate index
+       i = ha_idx - offset_i(ts_tidx)
+       if ( ts_tidx == 1 .and. &
+            0 < i .and. i <= meshl(1) ) then
+          imesh = i
           do i3 = 1 , meshl(3)
              do i2 = 1 , meshl(2)
-                i10 = offset_i(1)
-                do i1 = 1 , meshl(1)
-                   i10 = i10 + 1
-                   imesh = imesh + 1
-                   if ( i10 == 1 ) then
-                      nlp  = nlp + 1
-                      Vtot = Vtot + Vscf(imesh)
-                   end if
-                end do
+                nlp  = nlp + 1
+                Vtot = Vtot + Vscf(imesh)
+                imesh = imesh + meshl(1)
              end do
           end do
-       else if ( ts_tidx == 2 ) then
+       else if ( ts_tidx == 2 .and. &
+            0 < i .and. i <= meshl(2) ) then
           do i3 = 1 , meshl(3)
-             i20 = offset_i(2)
-             do i2 = 1 , meshl(2)
-                i20 = i20 + 1
-                do i1 = 1 , meshl(1)
-                   imesh = imesh + 1
-                   if ( i20 == 1 ) then
-                      nlp  = nlp + 1
-                      Vtot = Vtot + Vscf(imesh)
-                   end if
-                end do
+             imesh = imesh + (i-1)*meshl(1)
+             do i1 = 1 , meshl(1)
+                nlp  = nlp + 1
+                imesh = imesh + 1
+                Vtot = Vtot + Vscf(imesh)
              end do
           end do
-       else if ( ts_tidx == 3 ) then
-          i30 = offset_i(3)
-          do i3 = 1 , meshl(3)
-             i30 = i30 + 1
-             do i2 = 1 , meshl(2)
-                do i1 = 1 , meshl(1)
-                   imesh = imesh + 1
-                   if ( i30 == 1 ) then
-                      nlp  = nlp + 1
-                      Vtot = Vtot + Vscf(imesh)
-                   end if
-                end do
+       else if ( ts_tidx == 3 .and. &
+            0 < i .and. i <= meshl(3) ) then
+          imesh = (i-1)*meshl(1)*meshl(2)
+          do i2 = 1 , meshl(2)
+             do i1 = 1 , meshl(1)
+                nlp  = nlp + 1
+                imesh = imesh + 1
+                Vtot = Vtot + Vscf(imesh)
              end do
           end do
-       else
+       else if ( ts_tidx < 1 .or. 3 < ts_tidx ) then
           call die('Unknown ts_idx direction, option erronous')
        end if
+
     case ( TS_HA_ELEC )
+       
        ! This is an electrode averaging...
        do i3 = 0 , meshl(3) - 1
           llZ(:) = offset_r(:) + i3*dL(:,3)
@@ -381,6 +468,7 @@ contains
              end do
           end do
        end do
+       
     case ( TS_HA_ELEC_BOX )
        
        ! This is an electrode averaging...

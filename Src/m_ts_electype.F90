@@ -50,7 +50,7 @@ module m_ts_electype
   public :: check_connectivity
   public :: delete
 
-  public :: Elec_box2grididx
+  public :: Elec_box2grididx, Elec_frac
 
   public :: in_basal_Elec, in_Elec
 
@@ -238,7 +238,7 @@ contains
     logical :: info(5)
     integer :: i, j
     integer :: cidx_a 
-    real(dp) :: rcell(3,3), rc, o(3)
+    real(dp) :: rcell(3,3), fmin, fmax, rc
 
     character(len=200) :: bName, name, ln, tmp
 
@@ -614,15 +614,16 @@ contains
 
     ! Calculate the interlayer distance between succeeding layers
     ! along the semi-infinite direction
-    rc = 0._dp
+    fmin =  huge(1._dp)
+    fmax = -huge(1._dp)
     call reclat(this%cell,rcell,0)
-    ! get origo
-    o = minval(this%xa,dim=1)
     do i = 1 , this%na_u
-       rc = max(rc,abs(sum((this%xa(:,i)-o) * rcell(:,this%t_dir))))
+       rc = sum(this%xa(:,i) * rcell(:,this%t_dir))
+       fmin = min(fmin,rc)
+       fmax = max(fmax,rc)
     end do
     ! Get distance to the cell boundary
-    rc = 1._dp - rc
+    rc = 1._dp - (fmax-fmin)
     ! Calculate the inter-layer distance
     this%dINF_layer = VNORM( rc * this%cell(:,this%t_dir) )
 
@@ -689,46 +690,12 @@ contains
     integer, intent(in) :: na_u
     real(dp), intent(in) :: xa(3,na_u)
     
-    real(dp) :: p(3), max_xa(3), contrib, min_bond, min_t_bond
-    real(dp) :: bond30
+    real(dp) :: p(3), max_xa(3), contrib
     integer :: i, j, ia, na
 
     ! First figure out the minimum bond-length
     ia = this%idx_a
     na = TotUsedAtoms(this)
-
-    min_bond = huge(1._dp)
-    do i = 1 , na - 1
-       p(:) = xa(:,ia-1+i)
-       do j = i + 1 , na
-          contrib = VNORM(xa(:,ia-1+j)-p)
-          if ( contrib < min_bond ) then
-             min_bond = contrib
-          end if
-       end do
-    end do
-
-    ! Get bond-length along transport direction
-    ! sin(30^o) = 1/2
-    bond30 = min_bond * 0.45_dp
-    min_t_bond = min_bond
-    do i = 1 , na - 1
-       p(:) = xa(:,ia-1+i)
-       do j = i + 1 , na
-          max_xa = xa(:,ia-1+j) - p
-          contrib = abs(VEC_PROJ_SCA(this%cell(:,this%t_dir),max_xa))
-          ! Skip bond-lengths perpendicular to the semi-infinite
-          ! direction.
-          if ( contrib < bond30 ) cycle
-          if ( contrib < min_t_bond ) then
-             min_t_bond = contrib
-          end if
-       end do
-    end do
-
-    ! Take half the bond-length to get in between two atoms
-    min_t_bond = min_t_bond * 0.5_dp
-    min_bond = min_bond * 0.5_dp
 
     ! Calculate the pivoting table
     do i = 1 , 3
@@ -788,22 +755,21 @@ contains
           end if
        end do
     end if
-    ! Store this atom as the center of the basal plane.
     this%p%c = xa(:,j)
 
     ! We add a vector with length of half the minimal bond length
     ! to the vector, to do the averaging 
     ! not on-top of an electrode atom.
+    contrib = this%dINF_layer * 0.5_dp
     if ( this%inf_dir == INF_POSITIVE ) then
-       this%p%c = this%p%c + p * min_t_bond ! add vector
+       this%p%c = this%p%c + p * contrib ! add vector
     else
-       this%p%c = this%p%c - p * min_t_bond ! subtract vector
+       this%p%c = this%p%c - p * contrib ! subtract vector
     end if
 
     ! Normal vector to electrode basal plane.
     ! This coincides with the electrode semi-infinite direction
-    this%p%n = this%cell(:,this%t_dir)
-    this%p%n = this%p%n / VNORM(this%p%n) ! normalize
+    this%p%n = p ! normalized semi-infinite direction vector
 
     ! The distance parameter used when calculating
     ! the +/- voxel placements
@@ -1347,6 +1313,41 @@ contains
     end subroutine get_idx
     
   end subroutine Elec_box2grididx
+
+  ! Returns the fractional coordinates of the
+  ! electrode atoms in the unit-cell.
+  ! It can do so along any of the three cell
+  ! directions.
+  subroutine Elec_frac(this,cell,na_u,xa,dir, &
+       fmin, fmax)
+    type(Elec), intent(in) :: this
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+    ! The cell vector that we will project onto
+    integer, intent(in) :: dir
+    ! Results (optional)
+    real(dp), intent(out), optional :: fmin, fmax
+
+    ! Local variables
+    real(dp) :: lfmin, lfmax, rcell(3,3), r
+    integer :: i
+
+    call reclat(cell,rcell)
+    lfmin =  huge(1._dp)
+    lfmax = -huge(1._dp)
+    do i = this%idx_a , this%idx_a + TotUsedAtoms(this) - 1
+       ! Get supercell in the transport direction
+       r = sum(xa(:,i) * rcell(:,dir))
+       lfmin = min(lfmin,r)
+       lfmax = max(lfmax,r)
+    end do
+
+    if ( present(fmin) ) fmin = lfmin
+    if ( present(fmax) ) fmax = lfmax
+
+  end subroutine Elec_frac
+       
 
   subroutine read_Elec(this,Bcast,io,ispin)
     use fdf
