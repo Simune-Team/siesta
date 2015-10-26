@@ -517,6 +517,8 @@ solver_loop: do
          if (mpirank ==0) then
             write(6,"(a,f9.3)") "DeltaMu: ", deltaMu, " is too big. Falling back to IC"
          endif
+         muMin0 = min(muMin0,mu+deltaMu)
+         muMax0 = max(muMax0,mu+deltaMu)
 
          ! We must choose a new starting bracket, otherwise we will fall into the same
          ! cycle of values

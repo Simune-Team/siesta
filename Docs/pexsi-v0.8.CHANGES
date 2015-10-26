@@ -1,4 +1,21 @@
 ------------------------------------------------------------
+October 26, 2015  A. Garcia   trunk-464--pexsi-v0.8-spin-4
+Update interval when falling back to IC in solver
+
+When the Newton step in the solver falls outside the bracket a new one
+is chosen which includes the jump point. Then a new inertia-count
+cycle begins.
+
+(+ added .make files for MN and Edison)
+
+added:
+  Src/Sys/edison-pexsi.make
+  Src/Sys/marenostrum-pexsi.make
+modified:
+  Src/m_pexsi_driver.F90
+  Src/pexsi-lit.org
+
+------------------------------------------------------------
 October 20, 2015  A. Garcia   trunk-464--pexsi-v0.8-spin-3
 Better support for PEXSI versions
 
