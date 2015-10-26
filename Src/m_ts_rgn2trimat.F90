@@ -140,8 +140,7 @@ contains
     ! they will not give anything productive.
     ! Hence, we can for huge systems, decrease the search
     ! space to increase performance.
-    guess_start = 10
-    if ( lpar ) guess_start = guess_start + Node
+    guess_start = 6 ! lower number more important for TB calcs.
     guess_step = 1
     if ( lpar ) guess_step = Nodes
 
@@ -164,7 +163,10 @@ contains
     ! In case the orbitals of this region is much smaller than
     ! max-block, then use the half 'no'
     max_block = min(max_block , no / 2)
-    max_block = max(max_block , guess_start)
+    max_block = max(max_block , guess_start + guess_step)
+
+    ! Correct starting guess for the node
+    if ( lpar ) guess_start = guess_start + Node
 
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
@@ -204,8 +206,7 @@ contains
     if ( lpar ) then
        ! Select the most optimal partition scheme...
        ! Only check up-till the largest block that is actually searched
-       guess_step = min(Nodes-1,max_block-guess_step)
-       do i = 0 , guess_step
+       do i = 0 , Nodes - 1
           if ( i == Node ) then
              call MPI_Bcast(parts, 1, MPI_Integer, i, &
                   MPI_Comm_World, MPIerror)
@@ -231,6 +232,7 @@ contains
     call de_alloc(guess_part,routine='tsSp2TM',name='guess_part')
 
     if ( parts < 2 ) then
+       
        if ( IONode ) then 
           write(*,'(a)') 'Could not determine an optimal tri-diagonalization &
                &partition'

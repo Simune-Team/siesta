@@ -1,4 +1,11 @@
 ----------------------------------------------------
+October 25, 2015 -- Nick Papior       trunk-479---ts-scf-576
+Bugfix for many nodes and rgn2trimat
+
+modified:
+  Src/m_ts_rgn2trimat.F90
+
+----------------------------------------------------
 October 25, 2015 -- Nick Papior       trunk-479---ts-scf-575
 transiesta Hartree changes
 
