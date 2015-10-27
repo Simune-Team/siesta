@@ -739,6 +739,11 @@ contains
 
     call ncdf_close(ncdf)
 
+#ifdef MPI
+    ! Ensure that the processors are aligned
+    call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+
   end subroutine init_cdf_save
 
   subroutine init_cdf_E_check(fname,E,NE)

@@ -1,4 +1,17 @@
 ----------------------------------------------------
+October 27, 2015 -- Nick Papior       trunk-479---ts-scf-577
+tbt: Alignment of MPI processors for MPI-IO
+
+* When initializing the siesta.TBT.nc file we
+  do it sequentially and hence the other processors
+  may be in problems when they run past the following
+  read.
+  A barrier is added.
+
+modified:
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 October 25, 2015 -- Nick Papior       trunk-479---ts-scf-576
 Bugfix for many nodes and rgn2trimat
 
