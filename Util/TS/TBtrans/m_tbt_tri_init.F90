@@ -99,19 +99,18 @@ contains
 
     ! The i'th processor has the following electrodes
     do iEl = 1 , N_Elec
-
-       ! The node having this electrode is
-       i = iEl - 1
-       do while ( i >= Nodes )
-          i = i - Nodes
-       end do
-          
-       ! Set the name 
-       ElTri(iEl)%name = '[TRI] '//trim(Elecs(iEl)%name)
-       
+                 
 #ifdef MPI
+       ! The node having this electrode is
+       i = mod(iEl-1,Nodes)
+
+       ! B-cast the tri-diagonal matrix from the
+       ! processor
        call rgn_MPI_Bcast(ElTri(iEl),i)
 #endif
+
+       ! Set the name 
+       ElTri(iEl)%name = '[TRI] '//trim(Elecs(iEl)%name)
 
        ! Sort the tri-diagonal blocks
        call ts_pivot_tri_sort_El(r_oElpD(iEl),1,Elecs(iEl:iEl),ElTri(iEl))

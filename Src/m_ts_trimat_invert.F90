@@ -158,7 +158,9 @@ contains
 
     integer :: iEl, off, sCol, eCol
     integer :: n, np, sN, Ne, sNm1, sNp1
-    integer :: tmp(3,N_Elec)
+    ! We need to allow the electrodes to be split
+    ! across two blocks.
+    integer :: tmp(3,N_Elec*2)
 
     np = parts(M)
 

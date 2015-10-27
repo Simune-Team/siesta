@@ -1606,7 +1606,7 @@ contains
        ct = r%n + 1
        do iN = 1 , dist_nodes(dit) - 1
           call MPI_Recv(rd(ct),nt-ct+1,MPI_Integer, &
-               iN,0, comm, MPIstatus, MPIerror)
+               iN, 0, comm, MPIstatus, MPIerror)
           call MPI_Get_Count(MPIstatus, MPI_Integer, it, MPIerror)
           ct = ct + it
        end do
@@ -1674,11 +1674,14 @@ contains
        ! ensures that it is having the correct size
        call rgn_init(r,n)
     end if
+
+    ! If empty-simply return without doing any B-cast
     if ( n == 0 ) return
+    
     ! B-cast array
-    call MPI_Bcast(r%r(1),r%n,MPI_Integer, Bnode, lComm, MPIerror)
+    call MPI_Bcast(r%r(1),r%n, MPI_Integer, Bnode, lComm, MPIerror)
     ! B-cast sorted token
-    call MPI_Bcast(r%sorted,1,MPI_Logical, Bnode, lComm, MPIerror)
+    call MPI_Bcast(r%sorted,1, MPI_Logical, Bnode, lComm, MPIerror)
 
   end subroutine rgn_MPI_Bcast
 
