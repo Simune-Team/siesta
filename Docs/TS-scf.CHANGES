@@ -1,4 +1,18 @@
 ----------------------------------------------------
+October 29, 2015 -- Nick Papior       trunk-479---ts-scf-579
+Removed check for column matrix, fixed padding size
+
+* A check for the column matrix was present, however,
+  since the padding came into existance this is not needed.
+
+* Corrected required padding size. It is now correctly determined
+  and reveals substantial memory reductions.
+
+modified:
+  Src/m_ts_tri_common.F90
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
 October 27, 2015 -- Nick Papior       trunk-479---ts-scf-578
 TBT: Bugfix for number of partitions
 

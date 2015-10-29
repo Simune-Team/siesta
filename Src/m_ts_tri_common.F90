@@ -66,7 +66,7 @@ contains
     ! of the last two parts due to that being calculated
     ! last.
 
-    els = nnzs_tri(N_tri,tri)
+    els = nnzs_tri_i8b(N_tri,tri)
     worksize = maxval(tri(:)) * no_max
 
     ! subtract total column size
@@ -74,40 +74,47 @@ contains
     ! block (with an index shift of 1, so actually previous element
     ! of what is needed)
     tn = els - sum(tri(:)) * no_max
+    ! Initialize the padding
+    padding = 0
 
     cur_n = 0
-    io = 1
     do n = 1 , N_tri
 
-       if ( 1 < n ) &
-            cur_n = cur_n + tri(n-1) * tri(n)
+       ! Calculate the last element needed to be written for
+       ! the triple product using the n'th block of
+       ! the Green function
        cur_n = cur_n + tri(n) ** 2
-       if ( n < N_tri ) &
-            cur_n = cur_n + tri(n) * tri(n+1)
-       
+       if ( n < N_tri ) then
+          ! We fill both the n+1,n and n,n+1 blocks
+          ! using the n'th block of the Green function column
+          cur_n = cur_n + 2 * tri(n) * tri(n+1)
+       end if
+
        if ( cur_n > tn ) then
           ! we have an overlap, calculate overlap
           ! and correct tn
-          ! With ">" we do not need to correct the tn initialization
-          ! of element - 1 as noted above
-          padding = cur_n - tn
-          ! We correct the starting index of tn
-          tn = tn + padding
+          io = cur_n - tn
+          ! We _have_ to extend the padding if previous blocks
+          ! have added padding
+          padding = padding + io
+          ! We correct the starting index of the column matrix
+          tn = tn + io
        end if
        
-       ! we need to retain the column block
-       ! for the next block...
-       ! in that way we can still multiply the previous
-       ! block with the current block.
-       if ( n > 1 ) then
-          tn = tn + tri(n-1) * no_max
-       end if
+       ! update the placement of the retained column matrix
+       ! We are now allowed to overwrite column[tri(n)]
+       tn = tn + tri(n) * no_max
 
     end do
-    tn = tn + tri(N_tri) * no_max
 
-    ! the padding must be the excess size we have appended to the matrix
-    padding = tn - els
+    if ( padding < tri(n) * no_max ) then
+
+       ! Something seems to have gone wrong in the padding-query
+       ! estimation (most likely a bug)
+
+       call die('bug in padding estimation')
+
+    end if
 
   end subroutine GFGGF_needed_worksize
 

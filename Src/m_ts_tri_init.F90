@@ -259,13 +259,6 @@ contains
        end if
     end do
 
-    ! Check that we can contain the full column
-    if ( maxval(TotUsedOrbs(Elecs)) * no_u_TS > els ) then
-       call die('Transiesta tri-diagonal partitioning is too good to &
-            &perform GFGGF calculation. Cannot sustain the full column. &
-            &Use the full/MUMPS TS.SolutionMethod instead')
-    end if
-
   end subroutine ts_tri_init
 
   subroutine ts_tri_analyze( dit, sparse_pattern , N_Elec, Elecs, &
