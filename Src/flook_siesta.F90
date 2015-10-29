@@ -5,7 +5,7 @@ module flook_siesta
 
   use siesta_options
   use siesta_geom
-  use parallel, only : IONode, Node
+  use parallel, only : IONode, Node, Nodes
 
 #endif
 
@@ -62,7 +62,7 @@ siesta_comm = function (_empty_tbl) end'
     ! Default debugging only on the io-node.
     slua_debug = fdf_get('LUA.Debug',.false.)
     slua_debug = slua_debug .and. IONode 
-    if ( fdf_get('LUA.Debug.Parallel',.false.) ) then
+    if ( fdf_get('LUA.Debug.MPI',.false.) ) then
        ! Only if requesting parallel debug should all processors
        ! use the debugging.
        slua_debug = .true.
@@ -115,6 +115,8 @@ siesta_comm = function (_empty_tbl) end'
     ! fortran/lua is 1-based, so why complicate matter for
     ! non-experienced users in siesta internals... 
     write(fortran_msg,'(a,i0)') 'siesta.Node = ',Node + 1
+    call lua_run(LUA, code = fortran_msg )
+    write(fortran_msg,'(a,i0)') 'siesta.Nodes = ',Nodes
     call lua_run(LUA, code = fortran_msg )
     if ( IONode ) then
        call lua_run(LUA, code = 'siesta.IONode = true' )

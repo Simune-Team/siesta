@@ -65,7 +65,7 @@ contains
     options = options // &
          ('Write.DenChar'.kvp.dumpcharge)
     options = options // &
-         ('Write.MullikenPopDenChar'.kvp.mullipop)
+         ('Write.MullikenPop'.kvp.mullipop)
     options = options // &
          ('Write.HirshfeldPop'.kvp.hirshpop)
     options = options // &

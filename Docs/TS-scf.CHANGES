@@ -1,4 +1,20 @@
 ----------------------------------------------------
+October 29, 2015 -- Nick Papior       trunk-479---ts-scf-580
+Added/updated lua stuff
+
+* Added .Nodes to track number of nodes. I think this
+  has limited usage.
+
+* Fixed Mullikenpop variable.
+
+* Changed SCF.Iteration to SCF.iteration
+
+modified:
+  Src/flook_siesta.F90
+  Src/siesta_dicts.F90
+  Src/siesta_forces.F
+
+----------------------------------------------------
 October 29, 2015 -- Nick Papior       trunk-479---ts-scf-579
 Removed check for column matrix, fixed padding size
 
