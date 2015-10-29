@@ -1,4 +1,11 @@
 ----------------------------------------------------
+October 29, 2015 -- Nick Papior       trunk-479---ts-scf-581
+TBT: Bugfix for reference
+
+modified:
+  Src/m_ts_tri_common.F90
+
+----------------------------------------------------
 October 29, 2015 -- Nick Papior       trunk-479---ts-scf-580
 Added/updated lua stuff
 

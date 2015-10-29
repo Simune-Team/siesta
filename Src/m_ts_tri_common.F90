@@ -107,7 +107,7 @@ contains
 
     end do
 
-    if ( padding < tri(n) * no_max ) then
+    if ( padding < tri(N_tri) * no_max ) then
 
        ! Something seems to have gone wrong in the padding-query
        ! estimation (most likely a bug)
