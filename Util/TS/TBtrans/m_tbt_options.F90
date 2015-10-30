@@ -249,7 +249,14 @@ contains
     Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     Elecs(:)%Bulk = fdf_get('TBT.Elecs.Bulk',Elecs(1)%Bulk)
 
-    rtmp = fdf_get('TS.Elecs.Eta',0.0001*eV,'Ry')
+#ifdef TBT_PHONON
+    ! The eta value for Phonons has to be substantially smaller to not
+    ! smear the DOS out completely.
+    rtmp = 1.e-7_dp * eV
+#else
+    rtmp = 1.e-4_dp * eV
+#endif
+    rtmp = fdf_get('TS.Elecs.Eta',rtmp,'Ry')
     rtmp = fdf_get('TBT.Elecs.Eta',rtmp,'Ry')
     Elecs(:)%Eta = rtmp
 

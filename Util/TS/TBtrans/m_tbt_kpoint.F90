@@ -773,7 +773,7 @@ contains
     character(len=*), intent(in), optional :: fend
     external :: io_assign, io_close
 
-! Internal 
+    ! Internal 
     integer :: iu, ik, ix
 
     call io_assign( iu )

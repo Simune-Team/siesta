@@ -93,10 +93,11 @@ contains
     iE = 0
     do i = 1 , N_TBT_E()
        c = tbt_E(i)
-       ! We ensure to add the comple imaginary value
-       ce(i) = dcmplx(real(c%e,dp),El%Eta)
+       ! We ensure to add the complex imaginary value
 #ifdef TBT_PHONON
        ce(i) = dcmplx(real(c%e,dp)**2,El%Eta)
+#else
+       ce(i) = dcmplx(real(c%e,dp),El%Eta)
 #endif
     end do
        

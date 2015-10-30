@@ -428,7 +428,7 @@ contains
 
   subroutine io_contour_tbt(slabel)
     use parallel, only : IONode
-    use m_tbt_save, only : save_dir
+    use m_tbt_save, only : name_save
     character(len=*), intent(in) :: slabel
 
 ! *********************
@@ -436,15 +436,15 @@ contains
 ! *********************
     integer :: iu, i
     type(ts_c_idx) :: cidx
+    character(len=200) :: fname
 
     if ( .not. IONode ) return
 
+    ! Get save name
+    call name_save(1,1,fname,'CC')
+
     call io_assign( iu )
-#ifdef TBT_PHONON
-    open( iu, file=trim(save_dir)//trim(slabel)//'.PHT.CC', status='unknown' )
-#else
-    open( iu, file=trim(save_dir)//trim(slabel)//'.TBT.CC', status='unknown' )
-#endif
+    open( iu, file=trim(fname), status='unknown' )
     write(iu,'(a)') '# Contour path for the transport part'
     write(iu,'(a,a12,3(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','Weight'
 

@@ -1454,7 +1454,7 @@ contains
 
 #ifdef TBT_PHONON
     if ( Node == 0 .and. N_Elec > 1 ) then
-       write(*,'(/,a)')'Heatflow (ensure freqency range covers temperature tails):'
+       write(*,'(/,a)')'Heatflow (ensure frequency range covers temperature tails):'
     end if
 #else
     if ( Node == 0 .and. N_Elec > 1 ) then
@@ -1819,6 +1819,7 @@ contains
     character(len=*), intent(in), optional :: end ! designator of the file
     type(Elec), intent(in), optional :: El1, El2
 
+    fname = ' '
 #ifdef TBT_PHONON
     fname = trim(save_dir)//trim(slabel)//'.PHT'
 #else

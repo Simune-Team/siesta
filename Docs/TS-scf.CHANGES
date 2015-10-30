@@ -1,4 +1,24 @@
 ----------------------------------------------------
+October 30, 2015 -- Nick Papior       trunk-479---ts-scf-582
+TBT: Cleaned TBT_PHONON
+
+* Some TBT_PHONON declarations where not entirely
+  clear. Cleaned up.
+
+* Fixed default Eta value for phonons to be
+  much smaller. The default eta for electron
+  transport is too high and smears out _everything_.
+
+modified:
+  Src/m_ts_elec_se.F90
+  Src/m_ts_gf.F90
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_gf.F90
+  Util/TS/TBtrans/m_tbt_kpoint.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 October 29, 2015 -- Nick Papior       trunk-479---ts-scf-581
 TBT: Bugfix for reference
 

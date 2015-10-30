@@ -605,9 +605,10 @@ contains
        ! If it is different from 1 we do not have an equilibrium contour
        if ( c%idx(1) /= 1 ) then
           ! In this case the energy is the eta value of the electrode
-          c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
 #ifdef TBT_PHONON
           c%e = dcmplx(real(cE%e,dp)**2,Elecs(i)%Eta)
+#else
+          c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
 #endif
        end if
        if ( Elecs(i)%out_of_core ) then

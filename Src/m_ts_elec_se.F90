@@ -60,9 +60,10 @@ contains
     if ( present(non_Eq) ) lnon_Eq = non_Eq
 
     if ( lnon_Eq ) then
-       E = dcmplx(real(cE%e,dp),El%Eta)
 #ifdef TBT_PHONON
        E = dcmplx(real(cE%e,dp)**2,El%Eta)
+#else
+       E = dcmplx(real(cE%e,dp),El%Eta)
 #endif
        call UC_expansion_Sigma_GammaT(E, &
             nou,no,El, nq, &
@@ -73,9 +74,10 @@ contains
                El%GA,El%Sigma,nwork,work)
        else
           if ( cE%idx(1) /= 1 ) then ! .not. CONTOUR_EQ
-             E = dcmplx(real(cE%e,dp),El%Eta)
 #ifdef TBT_PHONON
              E = dcmplx(real(cE%e,dp)**2,El%Eta)
+#else
+             E = dcmplx(real(cE%e,dp),El%Eta)
 #endif
           end if
           call UC_expansion_Sigma(E,nou,no,El, nq, &
