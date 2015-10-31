@@ -1,4 +1,18 @@
 ----------------------------------------------------
+November 1, 2015 -- Nick Papior       trunk-479---ts-scf-583
+Changed print-out of regions
+
+* When having many electrodes the print-out becomes
+  cluttered and scattered.
+
+  Now we print-out the buffer, then electrodes
+  and lastly the entire device region.
+
+modified:
+  Src/m_region.F90
+  Src/ts_show_regions.f90
+
+----------------------------------------------------
 October 30, 2015 -- Nick Papior       trunk-479---ts-scf-582
 TBT: Cleaned TBT_PHONON
 

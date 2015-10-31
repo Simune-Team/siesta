@@ -47,7 +47,7 @@ module m_region
   public :: rgn_list
   public :: rgn_overlaps
   public :: rgn_sort, rgn_uniq
-  public :: rgn_insert
+  public :: rgn_insert, rgn_remove
   public :: rgn_print
   public :: rgn_copy
   public :: rgn_reverse
@@ -255,8 +255,6 @@ contains
        return
     end if
 
-    call rgn_delete(rout)
-    
     allocate(tmp_r(r%n))
     ni = 0
     do i = 1 , r%n
