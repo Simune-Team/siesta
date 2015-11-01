@@ -1,4 +1,24 @@
 ----------------------------------------------------
+November 2, 2015 -- Nick Papior       trunk-479---ts-scf-584
+Changed default contour parameters
+
+* default contour parameters are now 2.5 eV for
+  poles, and we reduced circle contour to 25 points.
+  It is the poles that nearly solely determine the
+  convergence.
+
+* Continued fraction calculations *must* have >= 20
+  poles.
+
+* Lower bound of the energy contour is now 40 eV.
+
+modified:
+  Src/m_ts_chem_pot.F90
+  Src/m_ts_contour_eq.f90
+  Util/TS/ts2ts/ts2ts.f90
+  Util/TS/tselecs.sh
+
+----------------------------------------------------
 November 1, 2015 -- Nick Papior       trunk-479---ts-scf-583
 Changed print-out of regions
 

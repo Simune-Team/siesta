@@ -334,7 +334,7 @@ reduce
 
 # Energy for the contour
 emin=$(get_opt -emin 1)
-[ ${#emin} -eq 0 ] && emin=-35.
+[ ${#emin} -eq 0 ] && emin=-40.
 emin="$emin eV"
 de=$(get_opt -de 1)
 [ ${#de} -eq 0 ] && de=0.01
@@ -417,7 +417,7 @@ fi
 if [ $print_c -eq 1 ]; then
 
 echo ""
-echo "TS.Contours.Eq.Pole.N 8"
+echo "TS.Contours.Eq.Pole 2.5 eV"
 
 for i in `seq 1 $_mus` ; do
     mu=$(get_opt -mu$i-name 1)
@@ -428,7 +428,7 @@ for i in `seq 1 $_mus` ; do
     e=$(mu_e_correct $e)
     [ ${e:0:1} != "-" ] && e="+ $e"
     echo "   from $emin $e to -10 kT $e"
-    echo "     points 30"
+    echo "     points 25"
     echo "      method g-legendre"
     echo "%endblock TS.Contour.C-$mu"
 

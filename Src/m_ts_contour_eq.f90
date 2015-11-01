@@ -205,16 +205,16 @@ contains
           if ( tmp_one(2:2) == 'c' ) then
              ! the circle contour
              Eq_io(i)%part = 'circle'
-             Eq_io(i)%N = 34
+             Eq_io(i)%N = 25
              write(Eq_io(i)%cN,'(i0)') Eq_io(i)%N
              if ( tmp_one(4:4) == 'l' ) then ! left
-                Eq_io(i)%ca = '-35. eV + V/2'
-                Eq_io(i)%a  = - 35._dp * eV + Volt * .5_dp
+                Eq_io(i)%ca = '-40. eV + V/2'
+                Eq_io(i)%a  = - 40._dp * eV + Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT + V/2'
                 Eq_io(i)%b  = -10._dp * mus(c_mu)%kT + Volt * .5_dp
              else ! must be right
-                Eq_io(i)%ca = '-35. eV - V/2'
-                Eq_io(i)%a  = - 35._dp * eV - Volt * .5_dp
+                Eq_io(i)%ca = '-40. eV - V/2'
+                Eq_io(i)%a  = - 40._dp * eV - Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT - V/2'
                 Eq_io(i)%b  = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if

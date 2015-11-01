@@ -12,9 +12,11 @@ program ts2ts
 
   ! strings used to print out energies...
   integer, parameter :: N_char = 50
-  character(len=N_char) :: c_CCEmin, c_GFEta, c_Volt, c_dVolt, c_TBTmin, c_TBTmax, c_TBTdE
+  character(len=N_char) :: c_CCEmin, c_GFEta, c_Volt, c_dVolt, c_Epole
+  character(len=N_char) :: c_TBTmin, c_TBTmax, c_TBTdE
+
   
-  real(dp) :: CCEmin, GFEta, Volt, TBTmin, TBTmax
+  real(dp) :: CCEmin, GFEta, Volt, TBTmin, TBTmax, Epole
   integer :: Nline, Ncircle, Npol, Nvolt, Npoints
 
   logical :: IsVolt, Bulk, UpdateDMCR, ReUse
@@ -33,6 +35,7 @@ program ts2ts
   Npol  = -1
   Ncircle = -1
   Nvolt = -1
+  Epole = 2.5_dp * eV
 
   def_nEq = .false.
   ! Here we start the routines
@@ -50,6 +53,12 @@ program ts2ts
         call get_command_argument(iarg,arg)
         read(arg,'(i10)') Npol
         write(0,'(a)') '# Overwriting number of pole points'
+     case ( '-pole' )
+        iarg = iarg + 1
+        call get_command_argument(iarg,arg)
+        read(arg,'(e10.5)') Epole
+        Epole = Epole * eV
+        write(0,'(a)') '# Overwriting number of poles using energy'
      case ( '-N-line' )
         iarg = iarg + 1
         call get_command_argument(iarg,arg)
@@ -117,10 +126,10 @@ program ts2ts
        Nline   = fdf_get('TS.ComplexContour.NLine',10)
   call assert(Nline > 0, 'Nline has to be larger than 0')
   if ( Npol < 0 ) &
-       Npol    = fdf_get('TS.ComplexContour.NPoles',6)
+       Npol    = fdf_get('TS.ComplexContour.NPoles',16)
   call assert(Npol > 0, 'NPoles has to be larger than 0')
   if ( Ncircle < 0 ) &
-       Ncircle = fdf_get('TS.ComplexContour.NCircle',30)
+       Ncircle = fdf_get('TS.ComplexContour.NCircle',25)
   call assert(NCircle > 0, 'NCircle has to be larger than 0')
   if ( Nvolt < 0 ) &
        Nvolt   = fdf_get('TS.biasContour.NumPoints',5)
@@ -136,10 +145,10 @@ program ts2ts
      c_dVolt = '0.01 eV'
   end if
   ! Read in contour stuff...
-  CCEmin  = fdf_get('TS.ComplexContourEmin',-35._dp * eV,'Ry')
+  CCEmin  = fdf_get('TS.ComplexContourEmin',-40._dp * eV,'Ry')
   call e2a(CCEmin,c_CCEmin)
   GFEta   = fdf_get('TS.biasContour.Eta',0.0001_dp*eV,'Ry')
-  call e2a(GFEta,c_GFEta,prec=10,force_eV=.false.)
+  call e2a(GFEta,c_GFEta,prec=10,force_eV=.true.)
 
   Bulk       = fdf_get('TS.UseBulkInElectrodes',.true.)
   ! in the original implementation this meant only update the central region
@@ -209,7 +218,8 @@ program ts2ts
   call nl
 
   ! Start by writing the contours
-  write(*,'(a,i0)') 'TS.Contours.Eq.Pole.N ',Npol
+  call e2a(Epole,c_Epole,force_eV=.true.)
+  write(*,'(a,a)')'TS.Contours.Eq.Pole ',trim(c_Epole)
   call wcont('c-Left','circle','g-legendre', &
        trim(c_CCEmin)//' + V/2','-10. kT + V/2',Ncircle)
   call wcont('t-Left','tail','g-fermi', 'prev','inf',Nline)
@@ -243,14 +253,14 @@ program ts2ts
 
   ! Read in any tbtrans stuff...
   TBTmin = fdf_get('TS.TBT.Emin',-2._dp*eV,'Ry')
-  call e2a(TBTmin,c_TBTmin)
+  call e2a(TBTmin,c_TBTmin,force_eV=.true.)
   TBTmax = fdf_get('TS.TBT.Emax',2._dp*eV,'Ry')
-  call e2a(TBTmax,c_TBTmax)
+  call e2a(TBTmax,c_TBTmax,force_eV=.true.)
   Npoints = fdf_get('TS.TBT.Npoints',100)
   call assert(Npoints > 0, 'Points on the tbtrans contour has to be larger than 0')
   call e2a(abs(TBTmax-TBTmin)/Npoints,c_TBTdE,force_eV=.true.)
   GFEta   = fdf_get('TS.TBT.Eta',0.0001_dp*eV,'Ry')
-  call e2a(GFEta,c_GFEta,prec=10,force_eV=.false.)
+  call e2a(GFEta,c_GFEta,prec=10,force_eV=.true.)
 
   ! Print out the TBTrans options
   call nl
@@ -454,6 +464,8 @@ contains
     write(0,'(a)') '              set for all bias voltages.'
     write(0,'(a)') '  -N-pole <int> | -N-circle <int> | -N-line <int> :'
     write(0,'(a)') '              overrides the number of points on the equivalent contour'
+    write(0,'(a)') '  -pole <eV>'
+    write(0,'(a)') '              define number of poles with energy'
     write(0,'(a)') ' <fdf>      : the input fdf file that needs conversion.'
     write(0,'(a)') ' -h         : this help.'
     stop
