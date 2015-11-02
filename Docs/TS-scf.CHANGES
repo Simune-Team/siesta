@@ -1,4 +1,14 @@
 ----------------------------------------------------
+November 2, 2015 -- Nick Papior       trunk-479---ts-scf-585
+Fixed pivoting for low orbital TB calculations
+
+* Added more debugging printing for TB calculations
+
+modified:
+  Src/m_ts_rgn2trimat.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 November 2, 2015 -- Nick Papior       trunk-479---ts-scf-584
 Changed default contour parameters
 

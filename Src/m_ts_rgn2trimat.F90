@@ -140,7 +140,9 @@ contains
     ! they will not give anything productive.
     ! Hence, we can for huge systems, decrease the search
     ! space to increase performance.
-    guess_start = 6 ! lower number more important for TB calcs.
+    ! In principle this number should be the lowest number of orbitals
+    ! per atom (for TB == 1)
+    guess_start = 2
     guess_step = 1
     if ( lpar ) guess_step = Nodes
 
@@ -162,8 +164,9 @@ contains
 #endif
     ! In case the orbitals of this region is much smaller than
     ! max-block, then use the half 'no'
-    max_block = min(max_block , no / 2)
     max_block = max(max_block , guess_start + guess_step)
+    max_block = min(max_block , no / 2)
+    guess_start = min(guess_start,max_block)
 
     ! Correct starting guess for the node
     if ( lpar ) guess_start = guess_start + Node

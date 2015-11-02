@@ -355,6 +355,9 @@ contains
        ! We now know how many orbitals that we are down-folding the 
        ! electrode self-energy to
        if ( Elecs(iEl)%o_inD%n == 0 ) then
+          ! Print-out for debugging purposes
+          call rgn_print(r_oDev)
+          call rgn_print(r_oEl(iEl))
           call die('The electrode down-folding region is 0 in the device &
                &region. Please expand your device region.')
        end if
