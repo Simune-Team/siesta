@@ -1,3 +1,4 @@
+-*- mode: Org -*-
 #+TITLE: Literate version of PEXSI driver
 #+AUTHOR: Alberto Garcia
 
@@ -316,7 +317,7 @@ logical  :: PEXSI_worker
 type(Distribution)   :: dist1
 type(Distribution), allocatable, target   :: dist2_spin(:)
 type(Distribution), pointer :: dist2
-integer  :: pbs, color, global_rank, spin_rank
+integer  :: pbs, color, spatial_rank, spin_rank
 #+END_SRC
 
 Define the Siesta distribution. Note that this is known to all nodes.
@@ -364,9 +365,9 @@ For possibly spin-polarized calculations, we split the communicator.
        PEXSI_Pole_Comm, Ierr)
 
 
-  call mpi_comm_rank( PEXSI_Spatial_Comm, global_rank, ierr )
+  call mpi_comm_rank( PEXSI_Spatial_Comm, spatial_rank, ierr )
   call mpi_comm_rank( PEXSI_Spin_Comm, spin_rank, ierr )
-  PEXSI_worker = (global_rank < npPerPole)   ! Could be spin up or spin down
+  PEXSI_worker = (spatial_rank < npPerPole)   ! Could be spin up or spin down
 
   ! PEXSI blocksize 
   pbs = norbs/npPerPole
@@ -639,7 +640,7 @@ real(dp)               :: pexsi_temperature, two_kT
 Each spin-set of PEXSI processors has its own plan.
 #+BEGIN_SRC f90 :noweb-ref initialize-plan-at-first-step
   if (scf_step == 1) then
-     call pexsi_initialize_scfloop(PEXSI_Spatial_Comm,npPerPole,global_rank,info)
+     call pexsi_initialize_scfloop(PEXSI_Spatial_Comm,npPerPole,spatial_rank,info)
      call check_info(info,"initialize_plan")
   endif
 #+END_SRC
@@ -1076,6 +1077,7 @@ Several routines
     real(dp)            ::   inertia_energy_width
     real(dp)            ::   muLower, muUpper
     integer             ::   numMinICountShifts, numShift
+    integer             ::   numNodesSpatial
 
     real(dp), allocatable :: shiftList(:), inertiaList(:)
     real(dp), allocatable :: inertiaList_out(:)
@@ -1098,18 +1100,22 @@ Several routines
 
 **** Determine number of inertia-count shifts
 
-This is based on the total number of processors available, in such a 
-way that each group of =np-PerPole= processors deals with a shift.
+This is based on the total number of processors available per spin, in such a 
+way that each group of =npPerPole= processors deals with a shift. If
+the number of groups is smaller than the total number of shifts,
+several sequential passes are needed, but this is done internally by
+the library. Note that there is a minimum number of shifts, to get
+decent accuracy.
 
 #+BEGIN_SRC f90 :noweb-ref determine-number-of-shifts
 
 ! Minimum number of sampling points for inertia counts                                            
 numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
-
-numShift = numNodesTotal/npPerPole
+call mpi_comm_size( PEXSI_Spatial_Comm, numNodesSpatial, ierr )
+numShift = numNodesSpatial/npPerPole
 do
    if (numShift < numMinICountShifts) then
-      numShift = numShift + numNodesTotal/npPerPole
+      numShift = numShift + numNodesSpatial/npPerPole
    else
       exit
    endif

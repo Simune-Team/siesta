@@ -79,7 +79,7 @@ logical  :: PEXSI_worker
 type(Distribution)   :: dist1
 type(Distribution), allocatable, target   :: dist2_spin(:)
 type(Distribution), pointer :: dist2
-integer  :: pbs, color, global_rank, spin_rank
+integer  :: pbs, color, spatial_rank, spin_rank
 type(aux_matrix), allocatable, target :: m1_spin(:)
 type(aux_matrix) :: m2
 type(aux_matrix), pointer :: m1
@@ -197,9 +197,9 @@ call MPI_Comm_create(PEXSI_Spatial_Comm, PEXSI_Pole_Group,&
      PEXSI_Pole_Comm, Ierr)
 
 
-call mpi_comm_rank( PEXSI_Spatial_Comm, global_rank, ierr )
+call mpi_comm_rank( PEXSI_Spatial_Comm, spatial_rank, ierr )
 call mpi_comm_rank( PEXSI_Spin_Comm, spin_rank, ierr )
-PEXSI_worker = (global_rank < npPerPole)   ! Could be spin up or spin down
+PEXSI_worker = (spatial_rank < npPerPole)   ! Could be spin up or spin down
 
 ! PEXSI blocksize 
 pbs = norbs/npPerPole
@@ -397,7 +397,7 @@ energyWidthInertiaTolerance =  &
              options%muInertiaTolerance,"Ry")
 
 if (scf_step == 1) then
-   call pexsi_initialize_scfloop(PEXSI_Spatial_Comm,npPerPole,global_rank,info)
+   call pexsi_initialize_scfloop(PEXSI_Spatial_Comm,npPerPole,spatial_rank,info)
    call check_info(info,"initialize_plan")
 endif
 call f_ppexsi_load_real_symmetric_hs_matrix(&
@@ -753,6 +753,7 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
   real(dp)            ::   inertia_energy_width
   real(dp)            ::   muLower, muUpper
   integer             ::   numMinICountShifts, numShift
+  integer             ::   numNodesSpatial
 
   real(dp), allocatable :: shiftList(:), inertiaList(:)
   real(dp), allocatable :: inertiaList_out(:)
@@ -762,11 +763,11 @@ subroutine do_inertia_count(plan,muMin0,muMax0,muInertia)
   
   ! Minimum number of sampling points for inertia counts                                            
   numMinICountShifts = fdf_get("PEXSI.inertia-min-num-shifts", 10)
-  
-  numShift = numNodesTotal/npPerPole
+  call mpi_comm_size( PEXSI_Spatial_Comm, numNodesSpatial, ierr )
+  numShift = numNodesSpatial/npPerPole
   do
      if (numShift < numMinICountShifts) then
-        numShift = numShift + numNodesTotal/npPerPole
+        numShift = numShift + numNodesSpatial/npPerPole
      else
         exit
      endif
