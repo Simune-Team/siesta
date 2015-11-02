@@ -1,13 +1,13 @@
 
 ! Tangled code
-module m_pexsi_DOS
+module m_pexsi_dos
     use precision, only  : dp
 
-  public :: pexsi_DOS
+  public :: pexsi_dos
 
 CONTAINS
 
-subroutine pexsi_DOS(no_u, no_l, nspin_in,  &
+subroutine pexsi_dos(no_u, no_l, nspin_in,  &
      maxnh, numh, listhptr, listh, H, S, qtot, ef_in)
 
     use fdf
@@ -401,7 +401,7 @@ deallocate(m1_spin)
 
 if (PEXSI_worker) then
 
-   call de_alloc(colptrLocal,"colptrLocal","pexsi_DOS")
+   call de_alloc(colptrLocal,"colptrLocal","pexsi_dos")
 
    call de_alloc(m2%numcols,"m2%numcols","m_pexsi_dos")
    call de_alloc(m2%cols,"m2%cols","m_pexsi_dos")
@@ -463,5 +463,5 @@ character(len=*), intent(in) :: str
 end subroutine check_info 
 
 end subroutine pexsi_dos
-end module m_pexsi_DOS
+end module m_pexsi_dos
 ! End of tangled code

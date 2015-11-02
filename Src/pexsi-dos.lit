@@ -20,10 +20,10 @@ factorization information.
 This is the main structure of the code. 
 
 #+begin_src f90 :noweb-ref code-structure
-  module m_pexsi_DOS
+  module m_pexsi_dos
       use precision, only  : dp
 
-    public :: pexsi_DOS
+    public :: pexsi_dos
 
   CONTAINS
 
@@ -48,7 +48,7 @@ This is the main structure of the code.
   <<support-routines>>
 
   end subroutine pexsi_dos
-  end module m_pexsi_DOS
+  end module m_pexsi_dos
 #+end_src
 
 #+BEGIN_SRC f90 :noweb yes :tangle m_pexsi_dos.F90 :exports none
@@ -60,7 +60,7 @@ This is the main structure of the code.
 ** Routine header
 
 #+BEGIN_SRC f90 :noweb-ref routine-header
-  subroutine pexsi_DOS(no_u, no_l, nspin_in,  &
+  subroutine pexsi_dos(no_u, no_l, nspin_in,  &
        maxnh, numh, listhptr, listh, H, S, qtot, ef_in)
 
   <<used-modules>>
@@ -614,7 +614,7 @@ distributions.
 
     if (PEXSI_worker) then
 
-       call de_alloc(colptrLocal,"colptrLocal","pexsi_DOS")
+       call de_alloc(colptrLocal,"colptrLocal","pexsi_dos")
 
        call de_alloc(m2%numcols,"m2%numcols","m_pexsi_dos")
        call de_alloc(m2%cols,"m2%cols","m_pexsi_dos")
