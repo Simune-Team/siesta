@@ -65,7 +65,9 @@ contains
     use class_zTriMat
 
     use dictionary
+#ifdef NCDF_4
     use nf_ncdf, only: hNCDF, ncdf_close
+#endif
 
     use m_ts_electype
     ! Self-energy read
@@ -649,9 +651,9 @@ contains
     ! Allocate units for IO ASCII
     allocate(iounits(1+(N_Elec*2+2)*N_Elec)) ! maximum number of units
     iounits = -100
-    call init_save(iounits,ispin,TSHS%nspin,N_Elec,Elecs, &
+    call init_save(iounits,ispin,TSHS%nspin,N_Elec,Elecs, N_eigen, &
          save_DATA)
-    allocate(iounits_El(N_Elec)) ! maximum number of units
+    allocate(iounits_El(N_Elec*2)) ! maximum number of units
     iounits_El = -100
     call init_save_Elec(iounits_El,ispin,TSHS%nspin,N_Elec,Elecs, &
          save_DATA)
@@ -801,15 +803,15 @@ contains
                 call read_next_GS(1, ikpt, bkpt, &
                      cE, N_Elec, uGF, Elecs, &
                      nzwork, zwork, .false., forward = .false. , &
-                     DOS = DOS_El )
+                     DOS = DOS_El , T = T(:,1))
 
                 ! Immediately save the DOS
 #ifdef NCDF_4
                 call state_cdf_save_Elec(TBTcdf, ikpt, nE, N_Elec, Elecs, &
-                     DOS_El, save_DATA)
+                     DOS_El, T(:,1), save_DATA)
 #else
-                call state_save_Elec(iounits_El,nE,N_Elec,Elecs,DOS_El, &
-                     save_DATA )
+                call state_save_Elec(iounits_El,nE,N_Elec,Elecs, &
+                     DOS_El, T(:,1), save_DATA )
 #endif
 
              else

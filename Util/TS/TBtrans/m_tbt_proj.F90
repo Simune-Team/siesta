@@ -21,10 +21,9 @@ module m_tbt_proj
   use m_region
   use m_ts_electype
   use m_tbt_save, only : tNodeE, save_parallel
-  use m_tbt_save, only : save_attach_buffer, local_save_DOS
-
 
 #ifdef NCDF_4
+  use m_tbt_save, only : save_attach_buffer, local_save_DOS
   use m_tbt_save, only : tbt_cdf_precision
   use nf_ncdf, only : NF90_MAX_NAME
 #endif

@@ -515,7 +515,7 @@ contains
   subroutine read_next_GS(ispin,ikpt, bkpt, cE, &
        N_Elec, uGF, Elecs, &
        nzwork, zwork, &
-       reread, forward, DOS )
+       reread, forward, DOS, T )
 
     use parallel, only : IONode
 
@@ -537,7 +537,7 @@ contains
     complex(dp), intent(inout), target :: zwork(nzwork)
     logical, intent(in), optional :: reread, forward
     ! When requesting density of states
-    real(dp), intent(out), optional :: DOS(:,:)
+    real(dp), intent(out), optional :: DOS(:,:), T(:)
 
     real(dp) :: kpt(3)
     integer :: NEReqs, i, j
@@ -623,7 +623,7 @@ contains
           ! This is necessary for the expansion to work.
           if ( present(DOS) ) then
              call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &
-                  nzwork, zwork, DOS(:,i) )
+                  nzwork, zwork, DOS(:,i) , T(i) )
           else
              call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &
                   nzwork, zwork)

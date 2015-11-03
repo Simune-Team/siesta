@@ -487,6 +487,7 @@ contains
 
     only_T_Gf = .true.
 
+
     ! Whether we should assert and calculate
     ! all transmission amplitudes
     ltmp = fdf_get('TBT.T.Elecs.All',N_Elec == 1)
@@ -503,6 +504,13 @@ contains
     ! Should we calculate DOS of electrode bulk Green function
     ltmp = fdf_get('TBT.DOS.Elecs', .false. )
     if ( ltmp ) then
+       save_DATA = save_DATA // ('DOS-Elecs'.kv.1)
+    end if
+
+    ltmp = fdf_get('TBT.T.Bulk',N_Elec == 1)
+    if ( ltmp ) then
+       ! when calculating the DOS for the electrode
+       ! we also get the bulk transmission.
        save_DATA = save_DATA // ('DOS-Elecs'.kv.1)
     end if
 
@@ -570,11 +578,9 @@ contains
 
     end if
 
-#ifdef NCDF_4
     call init_Sigma_options( save_DATA )
 
     call init_dH_options( )
-#endif
 
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus )
@@ -610,10 +616,8 @@ contains
     use m_tbt_contour, only: print_contour_tbt_block
     use m_tbt_save, only: print_save_options
     use m_tbt_diag, only: print_diag
-#ifdef NCDF_4
     use m_tbt_dH, only: print_dH_options
     use m_tbt_sigma_save, only: print_Sigma_options
-#endif
     use m_tbt_hs, only: Volt, IsVolt, spin_idx
 
     integer, intent(in) :: nspin
@@ -632,6 +636,7 @@ contains
        write(*,f11) 'No applied bias'
     end if
     write(*,f1) 'Calculate transmission only using diag(Gf)',('T-Gf'.in.save_DATA)
+    write(*,f1) 'Saving bulk transmission for electrodes',('DOS-Elecs'.in.save_DATA)
     write(*,f1) 'Saving DOS from bulk electrodes',('DOS-Elecs'.in.save_DATA)
     write(*,f1) 'Saving DOS from Green function',('DOS-Gf'.in.save_DATA)
     if ( 'DOS-A-all' .in. save_DATA ) then
@@ -653,10 +658,8 @@ contains
     end if
 
     call print_diag()
-#ifdef NCDF_4
     call print_Sigma_options( save_DATA )
     call print_dH_options()
-#endif
     call print_save_options()
 
     write(*,f11)'          >> Electrodes << '
@@ -693,7 +696,7 @@ contains
     logical, intent(in) :: Gamma
 
     integer :: i
-    logical :: ltmp, only_T_Gf
+    logical :: ltmp
 
     if ( .not. IONode ) return
 
@@ -738,19 +741,14 @@ contains
        call die('Chemical potentials must not introduce consistent Ef shift to the system.')
     end if
 
-    ! Print note about TBT.T.Gf
-    only_T_Gf = 'T-eig' .nin. save_DATA
-    only_T_Gf = only_T_Gf .and. ('DOS-Gf' .nin. save_DATA)
-    only_T_Gf = only_T_Gf .and. ('DOS-A' .nin. save_DATA)
-    only_T_Gf = only_T_Gf .and. ('orb-current' .nin. save_DATA)
-    only_T_Gf = only_T_Gf .and. ('T-Gf' .nin. save_DATA)
-    only_T_Gf = only_T_Gf .and. N_Elec <= 3
-    if ( only_T_Gf ) then
-       write(*,'(a)')' ** Speed up the execution, calculate transmission in diag'
-       write(*,'(a)')'  > TBT.T.Gf true'
-    else
-       write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
+    if ( any(Elecs(:)%out_of_core) ) then
+       if ( 'DOS-Elecs'.in.save_DATA ) then
+          write(*,'(a)')' Disabling electrode DOS calculation, only &
+               &enabled for in-core self-energy calculations.'
+       end if
     end if
+
+    write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
 
     if ( ('T-Gf'.in.save_DATA) .and. N_Elec > 3 ) then
        write(*,'(a)')' ** For symmetric junctions/transmission coefficients &

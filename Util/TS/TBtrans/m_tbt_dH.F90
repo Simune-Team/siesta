@@ -119,8 +119,9 @@ module m_tbt_dH
 
   public :: tTBTdH, dH, use_dH
 
-#ifdef NCDF_4
   public :: init_dH_options, print_dH_options
+
+#ifdef NCDF_4
   public :: read_next_dH, clean_dH
   public :: read_Sp_dH
 #endif
@@ -128,23 +129,25 @@ module m_tbt_dH
 
 contains
 
-#ifdef NCDF_4
-
   subroutine init_dH_options( )
 
     use parallel, only : Node, Nodes
     use fdf
     use m_os, only : file_exist
 
+#ifdef NCDF_4
     use nf_ncdf, ncdf_parallel => parallel
-
+#endif
+    
 #ifdef MPI
     use mpi_siesta, only : MPI_Bcast, MPI_Comm_World
     use mpi_siesta, only : MPI_Integer, MPI_Logical
     use mpi_siesta, only : MPI_Double_Precision
 #endif
 
+#ifdef NCDF_4
     type(hNCDF) :: ndH, grp
+#endif
     character(len=20) :: char
     logical :: exists
 #ifdef MPI
@@ -152,6 +155,8 @@ contains
 #endif
 
     use_dH = .false.
+
+#ifdef NCDF_4
 
     ! Initialize dH to not have any values
     dH%lvl = 0
@@ -435,6 +440,8 @@ contains
 
     call ncdf_close(ndH)
 
+#endif
+
   end subroutine init_dH_options
 
   subroutine print_dH_options( )
@@ -446,6 +453,8 @@ contains
     character(len=*), parameter :: f1 ='(''tbt: '',a,t53,''='',tr4,l1)'
 
     if ( .not. IONode ) return
+
+#ifdef NCDF_4
     if ( len_trim(fname_dH) == 0 ) then
        write(*,f11)'No delta-Hamiltonian'
        return
@@ -465,8 +474,13 @@ contains
        write(*,'(a)')'tbtrans: WARNING --- This restriction can be circumventet &
             &if you can use a parallel read (this is highly advised).'
     end if
+#else
+    write(*,f11)'delta-Hamiltonian not enabled (NetCDF4)'
+#endif
     
   end subroutine print_dH_options
+
+#ifdef NCDF_4
 
   subroutine read_Sp_dH(no_u,sp)
 

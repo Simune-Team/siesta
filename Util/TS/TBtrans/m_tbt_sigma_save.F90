@@ -15,13 +15,14 @@ module m_tbt_sigma_save
 
   private 
 
+  public :: init_Sigma_options, print_Sigma_options
+
 #ifdef NCDF_4
   logical, save :: sigma_save      = .false.
   logical, save :: sigma_mean_save = .false.
   logical, save :: sigma_parallel  = .false.
   integer, save :: cmp_lvl    = 0
 
-  public :: init_Sigma_options, print_Sigma_options
   public :: init_Sigma_save
   public :: state_Sigma_save
   public :: state_Sigma2mean
@@ -29,7 +30,6 @@ module m_tbt_sigma_save
 
 contains
 
-#ifdef NCDF_4
 
   subroutine init_Sigma_options(save_DATA)
 
@@ -38,6 +38,8 @@ contains
     use fdf
 
     type(dict), intent(inout) :: save_DATA
+
+#ifdef NCDF_4
 
     sigma_save   = fdf_get('TBT.CDF.Sigma.Save',.false.)
     if ( sigma_save ) then
@@ -58,7 +60,9 @@ contains
     if ( fdf_get('TBT.Sigma.Only',.false.) ) then
        save_DATA = save_DATA // ('Sigma-only'.kv.1)
     end if
-
+    
+#endif
+    
   end subroutine init_Sigma_options
 
   subroutine print_Sigma_options( save_DATA )
@@ -74,6 +78,7 @@ contains
 
     if ( .not. IONode ) return
     
+#ifdef NCDF_4
     write(*,f1)'Saving down-folded self-energies',sigma_save
     if ( .not. sigma_save ) return
 
@@ -85,8 +90,13 @@ contains
        write(*,f11)'No compression level of TBT.Sigma.nc files'
     end if
     write(*,f1)'k-average down-folded self-energies',sigma_mean_save
+#else
+    write(*,f11)'Saving down-folded self-energies not enabled (NetCDF4)'
+#endif
 
   end subroutine print_Sigma_options
+
+#ifdef NCDF_4
 
   ! Save the self-energies of the electrodes and
   subroutine init_Sigma_save(fname, TSHS, r, ispin, N_Elec, Elecs, &

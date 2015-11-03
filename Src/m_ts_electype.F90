@@ -1935,7 +1935,7 @@ contains
     end if
 #endif
     write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
-    write(*,f6)  '  Electrode inter-layer distance (semi-inf-dir)', this%dINF_layer/Ang,' Ang'
+    write(*,f6)  '  Electrode inter-layer distance (semi-inf)', this%dINF_layer/Ang,' Ang'
 
 
 #ifndef TBTRANS

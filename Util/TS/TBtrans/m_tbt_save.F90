@@ -33,6 +33,7 @@ module m_tbt_save
   public :: state_cdf_save_Elec
   public :: state_cdf_save_J
   public :: state_cdf2ascii
+  public :: local_save_DOS
 #else
   public :: init_save
   public :: init_save_Elec
@@ -42,7 +43,7 @@ module m_tbt_save
   public :: end_save
 #endif
 
-  public :: save_attach_buffer, local_save_DOS
+  public :: save_attach_buffer
 
   ! Type to control the energies that is contained
   ! This lets every processor know what the other processors have
@@ -89,6 +90,8 @@ contains
 
   end subroutine MPI_BcastNode
 
+#ifdef NCDF_4
+
   ! Opens the save file accordingly to the setup parameters
   subroutine open_cdf_save(fname,ncdf)
 
@@ -115,6 +118,8 @@ contains
 
   end subroutine open_cdf_save
 
+#endif
+  
   subroutine init_save_options()
     use m_verbosity, only: verbosity
     use parallel, only : IONode
@@ -629,12 +634,14 @@ contains
           dic = ('info'.kv.'Last orbitals of the equivalent atom')
           call ncdf_def_var(grp,'lasto',NF90_INT,(/'na_u'/), &
                atts = dic)
+          dic = dic//('info'.kv.'Bulk transmission')
+          call ncdf_def_var(grp,'T',prec_T,(/'ne  ','nkpt'/), &
+               atts = dic)
           dic = dic//('info'.kv.'Unit cell')
           dic = dic//('unit'.kv.'Bohr')
           call ncdf_def_var(grp,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
                atts = dic)
           dic = dic//('info'.kv.'Atomic coordinates')
-          dic = dic//('unit'.kv.'Bohr')
           call ncdf_def_var(grp,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
                atts = dic , chunks = (/3, Elecs(iEl)%na_u/) )
           
@@ -1140,15 +1147,16 @@ contains
 
   end subroutine state_cdf_save
 
-  subroutine state_cdf_save_Elec(ncdf, ikpt, nE, N_Elec, Elecs, DOS, &
+  subroutine state_cdf_save_Elec(ncdf, ikpt, nE, N_Elec, Elecs, &
+       DOS, T, &
        save_DATA)
     
-    use parallel, only : Nodes
+    use parallel, only : Node, Nodes
 
     use dictionary
     use nf_ncdf, ncdf_parallel => parallel
 #ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD
+    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Double_Precision
 #endif
     use m_ts_electype
 
@@ -1157,54 +1165,76 @@ contains
     type(tNodeE), intent(in) :: nE
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-    real(dp), intent(in) :: DOS(:,:)
+    real(dp), intent(in) :: DOS(:,:), T(N_Elec)
     type(dict), intent(in) :: save_DATA
 
     type(hNCDF) :: grp
     integer :: iEl
-    integer :: N
+    integer :: N, idx(2), cnt(2)
 #ifdef MPI
+    integer :: iN
     real(dp), allocatable, target :: thisDOS(:)
+    real(dp), allocatable :: rT(:,:)
 #endif
 
 #ifdef TBTRANS_TIMING
     call timer('cdf-w-El',1)
 #endif
 
-#ifdef MPI
-    if ( .not. save_parallel ) then
-       allocate(thisDOS(size(DOS,dim=1)))
-       call save_attach_buffer(thisDOS)
-    end if
-#endif
-
     if ( 'DOS-Elecs' .in. save_DATA ) then
+
+#ifdef MPI
+       if ( .not. save_parallel ) then
+          allocate(thisDOS(size(DOS,dim=1)))
+          call save_attach_buffer(thisDOS)
+          allocate(rT(N_Elec,0:Nodes-1))
+          call MPI_Gather(T(1),N_Elec,Mpi_Double_Precision, &
+               rT(1,0),N_Elec,Mpi_Double_Precision, &
+               0,MPI_COMM_WORLD,iEl)
+       end if
+#endif
 
        do iEl = 1 , N_Elec
           
           call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
+
+          idx = (/nE%iE(Node),ikpt/)
+          cnt(:) = 1
+          if ( idx(1) <= 0 ) then
+             cnt = 0
+             idx = 1
+          end if
+
+          ! DOS-elecs also calculates the transport
+          call ncdf_put_var(grp,'T',T(iEl),start = idx, &
+               count = cnt )
+#ifdef MPI
+          if ( .not. save_parallel ) then
+             do iN = 1 , Nodes - 1
+                if ( nE%iE(iN) <= 0 ) cycle
+                call ncdf_put_var(grp,'T',rT(iEl,iN), &
+                     start = (/nE%iE(iN),ikpt/) )
+             end do
+          end if
+#endif
           
           N = Elecs(iEl)%no_u
           call local_save_DOS(grp,'DOS',ikpt,nE,N,DOS(1:N,iEl))
           
        end do
-       
-    end if
 
 #ifdef MPI
-    if ( allocated(thisDOS) ) deallocate(thisDOS)
+       if ( allocated(thisDOS) ) deallocate(thisDOS)
+       if ( allocated(rT) ) deallocate(rT)
 #endif
+
+    end if
 
 #ifdef TBTRANS_TIMING
     call timer('cdf-w-El',2)
 #endif
 
   end subroutine state_cdf_save_Elec
-
-  subroutine save_attach_buffer(array)
-    real(dp), intent(inout), target :: array(:)
-    rbuff1d => array(:)
-  end subroutine save_attach_buffer
 
   subroutine local_save_DOS(grp,var,ikpt,nE,N,DOS)
 
@@ -1379,14 +1409,11 @@ contains
 #endif
     integer, allocatable :: pvt(:)
 
-    call timer('cdf2ascii',1)
-
     ! In case we are doing something parallel, 
     ! we simply read in and write them in text based formats
-    if ( Node /= 0 ) then
-       call timer('cdf2ascii',2)
-       return
-    end if
+    if ( Node /= 0 ) return
+
+    call timer('cdf2ascii',1)
 
     tmp = datestring()
     tmp = tmp(1:10)
@@ -1464,10 +1491,23 @@ contains
 
     ! We should now be able to create all the files
     do iEl = 1 , N_Elec
+       
+       allocate(r2(NE,nkpt))
 
        if ( 'DOS-Elecs' .in. save_DATA ) then
 
           call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
+
+          ! Get bulk-transmission
+          call ncdf_get_var(grp,'T',r2)
+          if ( nkpt > 1 ) then
+             call name_save(ispin,nspin,ascii_file,end='TRANS',El1=Elecs(iEl))
+             call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'T',&
+                  '# Bulk transmission, k-resolved')
+          end if
+          call name_save(ispin,nspin,ascii_file,end='AVTRANS',El1=Elecs(iEl))
+          call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'T', &
+               '# Bulk transmission, k-averaged')
 
           no_e = Elecs(iEl)%no_u
           allocate(r3(no_e,NE,nkpt))
@@ -1525,7 +1565,6 @@ contains
           
        end if
 
-       allocate(r2(NE,nkpt))
        if ( N_eigen > 0 ) allocate(r3(N_eigen,NE,nkpt))
 
        do jEl = 1 , N_Elec
@@ -1810,6 +1849,12 @@ contains
 
 #endif
 
+
+  subroutine save_attach_buffer(array)
+    real(dp), intent(inout), target :: array(:)
+    rbuff1d => array(:)
+  end subroutine save_attach_buffer
+
   ! Get the file name
   subroutine name_save(ispin,nspin,fname,end,El1,El2)
     use files, only : slabel
@@ -1855,7 +1900,8 @@ contains
   ! data.
   ! NOTE that ASCII data will only be created in case
   ! of Netcdf not being compiled in
-  subroutine init_save(iounits,ispin,nspin,N_Elec,Elecs,save_DATA)
+  subroutine init_save(iounits,ispin,nspin,N_Elec,Elecs, &
+       N_eigen, save_DATA)
     
     use parallel, only : Node
 
@@ -1867,6 +1913,7 @@ contains
     integer, intent(in)    :: ispin, nspin
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
+    integer, intent(in) :: N_eigen
     type(dict), intent(in) :: save_DATA
 
     character(len=100) :: ascii_file, tmp
@@ -2045,6 +2092,18 @@ contains
           
           cu = cu + 1
 
+          call name_save(ispin,nspin,ascii_file,end='TRANS',El1=Elecs(iEl))
+
+          call io_assign(iu)
+          open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
+          write(iu,'(a)') '# Bulk transmission, k-resolved'
+          write(iu,'(a)') '# Date: '//trim(tmp)
+          write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'T'
+
+          iounits(cu) = iu
+          
+          cu = cu + 1
+
        end do
        
     end if
@@ -2141,6 +2200,7 @@ contains
 
     integer :: cu
     integer :: iEl, jEl, N
+    real(dp), allocatable, target :: thisDOS(:)
     integer, allocatable :: ipvt(:)
 
     allocate(ipvt(Nodes))
@@ -2242,7 +2302,8 @@ contains
   ! data.
   ! NOTE that ASCII data will only be created in case
   ! of Netcdf not being compiled in
-  subroutine state_save_Elec(iounits,nE,N_Elec,Elecs,DOS, &
+  subroutine state_save_Elec(iounits,nE,N_Elec,Elecs, &
+       DOS, T, &
        save_DATA )
     
     use parallel, only : Nodes
@@ -2256,7 +2317,7 @@ contains
     type(tNodeE), intent(in) :: nE
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-    real(dp), intent(in)   :: DOS(:,:)
+    real(dp), intent(in)   :: DOS(:,:), T(N_Elec)
     type(dict), intent(in) :: save_DATA
 
     integer :: cu, N
@@ -2289,6 +2350,11 @@ contains
           N = Elecs(iEl)%no_u
           call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,iEl),fact=eV)
           
+          cu = cu + 1
+
+          ! save bulk transmission
+          call local_save_DAT(iounits(cu),nE,ipvt,1,T(iEl))
+
           cu = cu + 1
           
        end do

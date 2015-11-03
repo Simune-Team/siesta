@@ -33,7 +33,7 @@ contains
   ! Handles both the left and right one
   ! this is the Sancho, Sancho and Rubio algorithm
   subroutine SSR_sGreen_DOS(no,ZE,H00,S00,H01,S01,GS, &
-       DOS, &
+       DOS, T, &
        nwork, zwork, &
        iterations, final_invert)
        
@@ -51,6 +51,7 @@ contains
     use m_mat_invert
     use precision, only: dp
     use units, only : Pi
+    use intrinsic_missing, only: transpose
 
 ! ***********************
 ! * INPUT variables     *
@@ -70,6 +71,7 @@ contains
     complex(dp), intent(out), target :: GS(no*no)
     complex(dp), pointer :: zwork(:)
     real(dp), intent(inout) :: DOS(no)
+    real(dp), intent(inout) :: T
 
     integer, intent(out), optional :: iterations
 
@@ -82,9 +84,12 @@ contains
     logical :: as_first
 
     real(dp) :: ro
+    complex(dp) :: zij, zji
 
     complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,gb
     complex(dp), dimension(:), pointer :: gsL,gsR
+    
+    complex(dp), external :: zdotu, zdotc
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE SSR_sGreen_DOS' )
@@ -112,7 +117,7 @@ contains
     i = i + nosq
     w => zwork(i+1:i+nosq)
     i = i + nosq
-    gb => zwork(i+1:i+nosq) 
+    GB => zwork(i+1:i+nosq) 
     i = i + nosq
 
     gsL => zwork(i+1:i+nosq) 
@@ -127,9 +132,9 @@ contains
        GB(i)    = ZE * S00(i) - H00(i)
        alpha(i) = H01(i) - ZE * S01(i)
 
-       ! gs = Z*S00-H00
-       gsL(i) = GB(i)
-       gsR(i) = GB(i)
+       ! zero arrays
+       gsL(i) = z_0
+       gsR(i) = z_0
 
     end do
 !$OMP end do nowait
@@ -139,7 +144,7 @@ contains
     do j = 1 , no
        ic = no * (j-1)
        do i = 1 , no
-          ic2 = j + no*(i-1)
+          ic2 = no*(i-1) + j
           beta(ic+i) = dconjg(H01(ic2)) - ZE * dconjg(S01(ic2))
        end do
     end do
@@ -170,7 +175,6 @@ contains
 ! rh =  rh1^(-1)*rh
 ! rh =  t0
        call zgesv(no, no2, w, no, ipiv, rh, no, ierr)
-
        if ( ierr /= 0 ) then
           write(*,*) 'ERROR: SSR_sGreen_DOS 1 MATRIX INVERSION FAILED'
           write(*,*) 'ERROR: LAPACK INFO = ',ierr
@@ -215,6 +219,7 @@ contains
        call zgemm( &
 #endif
             'N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
+
        ro = -1._dp
 !$OMP parallel do default(shared), private(i), &
 !$OMP&reduction(max:ro)
@@ -238,9 +243,80 @@ contains
        end if
     end if
 
+    ! Invert to obtain the bulk Green function
+    call mat_invert(GB,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: SSR_sGreen_DOS GB MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
+    end if
+    
+    ! Calculate the bulk-transmission (very little work)
+!$OMP parallel do default(shared), private(i,j,ic,ic2,zij,zji)
+    do j = 1 , no
+       do i = 1 , j - 1
+          ic  = (j-1)*no+i
+          ic2 = (i-1)*no+j
+          
+          ! Calculate bulk Hamiltonian and overlap
+          zij = ZE*S00(ic ) - H00(ic )
+          zji = ZE*S00(ic2) - H00(ic2)
+          
+          ! left scattering states
+          alpha(ic)  = gsL(ic ) - dconjg(gsL(ic2))
+          alpha(ic2) = gsL(ic2) - dconjg(gsL(ic ))
+          
+          ! Correct for bulk self-energy + bulk Hamiltonian
+          gsL(ic ) = zij + gsL(ic )
+          gsL(ic2) = zji + gsL(ic2)
+
+          ! right scattering states (transposed)
+          beta(ic2) = gsR(ic ) - dconjg(gsR(ic2))
+          beta(ic ) = gsR(ic2) - dconjg(gsR(ic ))
+
+          ! Correct for bulk self-energy + bulk Hamiltonian
+          gsR(ic ) = zij + gsR(ic )
+          gsR(ic2) = zji + gsR(ic2)
+          
+       end do
+       ic = (j-1)*no+j
+       
+       ! Add bulk Hamiltonian and overlap
+       zij = ZE*S00(ic) - H00(ic)
+       
+       ! left scattering state
+       alpha(ic) = gsL(ic) - dconjg(gsL(ic))
+       
+       ! Correct for bulk self-energy + bulk Hamiltonian
+       gsL(ic) = zij + gsL(ic)
+       
+       ! right scattering state (transposed)
+       beta(ic) = gsR(ic) - dconjg(gsR(ic))
+       
+       ! Correct for bulk self-energy + bulk Hamiltonian
+       gsR(ic) = zij + gsR(ic)
+       
+    end do
+!$OMP end parallel do
+
+    ! Calculate bulk transmision
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',no,no,no,z_1,GB   ,no,alpha,no,z_0,w    ,no)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','C',no,no,no,z_1,w   ,no,GB    ,no,z_0,alpha,no)
+
+    ! Calculate bulk-transmission (same as matrix product + trace)
+    T = T - real(zdotu(nosq,alpha,1,beta,1),dp)
+
     ! Invert to get the Surface Green function
     call mat_invert(gsL,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
-
     if ( ierr /= 0 ) then
        write(*,*) 'ERROR: SSR_sGreen_DOS GSL MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
@@ -248,20 +324,12 @@ contains
 
     ! Invert to get the Surface Green function
     call mat_invert(gsR,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
-
     if ( ierr /= 0 ) then
        write(*,*) 'ERROR: SSR_sGreen_DOS GSR MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
-    ! Invert to obtain the bulk Green function
-    call mat_invert(GB,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
-
-    if ( ierr /= 0 ) then
-       write(*,*) 'ERROR: SSR_sGreen_DOS GB MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',ierr
-    end if
-
+    
     ! We now calculate the density of states...
 !$OMP parallel do default(shared), private(i) 
     do i = 1 , nosq
@@ -271,6 +339,8 @@ contains
     end do
 !$OMP end parallel do
 
+    ! Transpose GB to make the latter dot product easier
+    call transpose(no,GB)
     i = 1
     j = nosq + 1 
     ! DOS = diag{ G_b * S00 + 
@@ -282,50 +352,50 @@ contains
     call zgemm( &
 #endif
          'N','N',no,no,no,z_1,gsL  ,no,alpha,no,z_0,w    ,no)
+    ! Note that GB is transposed, (so transpose back here)
 #ifdef USE_GEMM3M
     call zgemm3m( &
 #else
     call zgemm( &
 #endif
-         'N','N',no,no,no,z_1,w    ,no,GB   ,no,z_0,rh(i),no)
+         'N','T',no,no,no,z_1,w    ,no,GB   ,no,z_0,rh(i),no)
+    ! Note that GB is transposed, (so transpose back here)
 #ifdef USE_GEMM3M
     call zgemm3m( &
 #else
     call zgemm( &
 #endif
-         'C','N',no,no,no,z_1,beta ,no,GB   ,no,z_0,w    ,no)
+         'C','T',no,no,no,z_1,beta ,no,GB   ,no,z_0,rh(j),no)
+    ! Transpose the matrix product to align the following
+    ! dot product (reduces the need to calculate the total
+    ! matrix before we take the trace)
 #ifdef USE_GEMM3M
     call zgemm3m( &
 #else
     call zgemm( &
 #endif
-         'N','N',no,no,no,z_1,gsR  ,no,w    ,no,z_0,rh(j),no)
-#ifdef USE_GEMM3M
-    call zgemm3m( &
-#else
-    call zgemm( &
-#endif
-         'N','N',no,no,no,z_1,GB   ,no,S00  ,no,z_0,w    ,no)
-#ifdef USE_GEMM3M
-    call zgemm3m( &
-#else
-    call zgemm( &
-#endif
-         'N','C',no,no,no,z_1,rh(i),no,S01  ,no,z_1,w    ,no)
-#ifdef USE_GEMM3M
-    call zgemm3m( &
-#else
-    call zgemm( &
-#endif
-         'N','N',no,no,no,z_1,rh(j),no,S01  ,no,z_1,w    ,no)
+         'T','T',no,no,no,z_1,rh(j),no,gsR  ,no,z_0,w    ,no)
 
-    ! Calculate on-site density of states in the bulk part
-    ! of the electrode
-!$OMP parallel do default(shared), private(j)
-    do j = 0 , nom1
-       DOS(j+1) = DOS(j+1) - aimag(w(1+j*(no+1))) / Pi
+    ! We resort to use the zdotu/zdotc to not calculate
+    ! unnessary elements (for large systems this should
+    ! speed it up!) For small systems this has little
+    ! overhead
+    i = 1
+    do j = 1 , no
+       
+       ! Calculate for the bulk
+       ro =    aimag(zdotu(no,GB(i),1,S00(i),1))
+       ! For the left self-energy
+       ro = ro+aimag(zdotc(no,S01(i),1,rh(i),1))
+       ! For the right self-energy
+       ro = ro+aimag(zdotu(no,w(i),1,S01(i),1))
+
+       ! Calculate the total DOS
+       DOS(j) = DOS(j) - ro / Pi
+       
+       i = i + no
+       
     end do
-!$OMP end parallel do
 
     if ( present(final_invert) ) then
        ! If we do not need to invert it, return the value
@@ -617,7 +687,7 @@ contains
   subroutine create_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
        NEn,ce, &
-       DOS)
+       DOS,T)
 
     use precision,  only : dp
     use parallel  , only : Node, Nodes, IONode
@@ -644,18 +714,19 @@ contains
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    type(Elec), intent(inout)     :: El  ! The electrode 
-    integer, intent(in)           :: nkpnt ! Number of k-points
-    real(dp),intent(in)           :: kpoint(3,nkpnt) ! k-points
-    real(dp),intent(in)           :: kweight(nkpnt) ! weights of kpoints
-    real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
-    integer, intent(in)           :: NEn ! Number of energy points
-    complex(dp), intent(in)       :: ce(NEn) ! the energy points
+    type(Elec), intent(inout) :: El  ! The electrode 
+    integer,  intent(in)      :: nkpnt ! Number of k-points
+    real(dp), intent(in)      :: kpoint(3,nkpnt) ! k-points
+    real(dp), intent(in)      :: kweight(nkpnt) ! weights of kpoints
+    real(dp), dimension(3,3)  :: ucell ! The unit cell of the CONTACT
+    integer, intent(in)       :: NEn ! Number of energy points
+    complex(dp), intent(in)   :: ce(NEn) ! the energy points
 
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out), optional :: DOS(El%no_u,NEn,El%nspin) 
+    real(dp), intent(out), optional :: DOS(El%no_u,NEn,El%nspin)
+    real(dp), intent(out), optional :: T(NEn,El%nspin) 
 
 ! ***********************
 ! * LOCAL variables     *
@@ -698,7 +769,7 @@ contains
     ! Counters
     integer :: i, j, io, jo, off
 
-    logical :: CalcDOS, pre_expand
+    logical :: CalcDOS, CalcT, pre_expand
     logical :: is_left, Gq_allocated, final_invert
 
 #ifdef MPI
@@ -714,6 +785,7 @@ contains
     call timer('TS_SE',1)
 
     CalcDOS = present(DOS)
+    CalcT = present(T)
 
     ! Check input for what to do
     if( El%inf_dir == INF_NEGATIVE ) then
@@ -849,8 +921,11 @@ contains
     if ( CalcDOS ) then
        allocate(lDOS(nuo_E))
 !$OMP parallel workshare default(shared)
-       DOS(:,:,:) = z_0
+       DOS(:,:,:) = 0._dp
 !$OMP end parallel workshare
+    end if
+    if ( CalcT ) then
+       T = 0._dp
     end if
 
 !******************************************************************
@@ -1023,7 +1098,7 @@ contains
        end if
        
        Econtour_loop: do iEn = 1, NEn
-          
+
 #ifdef MPI
           ! Every node takes one energy point
           ! This asserts that IONode = Node == 0 will have iEn == 1
@@ -1034,6 +1109,7 @@ contains
              ! as we already have shifted H,S to Ef + mu, and ZEnergy is
              ! wrt. mu, we don't need to subtract mu again
              ZEnergy = ce(iEn)
+             i_mean = 0._dp
              
              ! loop over the repeated cell...
              q_loop: do iqpt = 1 , nq
@@ -1053,11 +1129,12 @@ contains
                 if ( CalcDOS ) then
                    lDOS = 0._dp
                    call SSR_sGreen_DOS(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
-                        lDOS,9*nS,zwork, &
+                        lDOS,i_mean,9*nS,zwork, &
                         iterations=iters(iqpt,iEn,ikpt,1), final_invert = final_invert)
                    
                    ! We also average the k-points.
                    DOS(:,iEn,ispin) = DOS(:,iEn,ispin) + lDOS * wq * kweight(ikpt)
+                   if ( CalcT ) T(iEn,ispin) = T(iEn,ispin) + i_mean
 
                 else
                    call SSR_sGreen_NoDos(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
@@ -1248,19 +1325,40 @@ contains
        ! Sum the bulkdensity of states
        ! Here we can safely use the array as temporary (Gq)
        allocate(lDOS(nuo_E*NEn*nspin))
-       call memory('A','D',nuo_E*NEn*nspin,'create_green')
-       call MPI_AllReduce(DOS(1,1,1),lDOS(1),nuo_E*NEn*nspin, MPI_double_precision, &
+    else if ( CalcT ) then
+       allocate(lDOS(NEn*nspin))
+    end if
+    if ( allocated(lDOS) ) then
+       call memory('A','D',size(lDOS),'create_green')
+    end if
+    
+    if ( CalcDOS ) then
+       call MPI_AllReduce(DOS(1,1,1),lDOS(1),nuo_E*NEn*nspin, &
+            MPI_double_precision, &
             MPI_Sum,MPI_Comm_World,MPIerror)
        i = 0
-       do j = 1 , nspin
-          do jo = 1 , NEn
-          do io = 1 , nuo_E
-             i = i + 1
-             DOS(io,jo,j) = lDOS(i)
-          end do
+       do jo = 1 , nspin
+          do io = 1 , NEn
+             DOS(1:nuo_E,io,jo) = lDOS(i+1:i+nuo_E)
+             i = i + nuo_E
           end do
        end do
-       call memory('D','D',nuo_E*NEn*nspin,'create_green')
+       
+    end if
+    if ( CalcT ) then
+       call MPI_AllReduce(T(1,1),lDOS(1),NEn*nspin, &
+            MPI_double_precision, &
+            MPI_Sum,MPI_Comm_World,MPIerror)
+       i = 0
+       do jo = 1 , nspin
+          T(1:NEn,jo) = lDOS(i+1:i+NEn)
+          i = i + NEn
+       end do
+       
+    end if
+
+    if ( allocated(lDOS) ) then
+       call memory('D','D',size(lDOS),'create_green')
        deallocate(lDOS)
     end if
 #endif
@@ -1473,7 +1571,7 @@ contains
 
   end subroutine set_HS_Transfer_2d
 
-  subroutine calc_next_GS_Elec(El,ispin,bkpt,Z,nzwork,in_zwork,DOS)
+  subroutine calc_next_GS_Elec(El,ispin,bkpt,Z,nzwork,in_zwork,DOS,T)
     use precision,  only : dp
 
     use m_ts_electype
@@ -1497,7 +1595,8 @@ contains
     integer, intent(in) :: nzwork
     complex(dp), intent(inout), target :: in_zwork(nzwork)
     ! Possibly the bulk density of states from the electrode
-    real(dp), intent(out), optional :: DOS(:)
+    ! If the DOS, also BULK transmission
+    real(dp), intent(out), optional :: DOS(:), T
 
     ! ***********************
     ! * LOCAL variables     *
@@ -1529,6 +1628,9 @@ contains
     ! Check input for what to do
     is_left = El%inf_dir == INF_NEGATIVE
     calc_DOS = present(DOS)
+    if ( calc_DOS .and. .not. present(T) ) then
+       call die('Need both DOS and T')
+    end if
 
     zHS_allocated = .false.
 
@@ -1550,6 +1652,7 @@ contains
             call die('Error in DOS size for calculation bulk DOS')
        ! Initialize density of states
        DOS(1:nuo_E) = 0._dp
+       T = 0._dp
     end if
 
     n_s = size(El%isc_off,dim=2)
@@ -1684,7 +1787,7 @@ contains
        ! calculate the contribution for this q-point
        if ( calc_DOS ) then
           call SSR_sGreen_DOS(nuo_E,Z,H00,S00,H01,S01,GS, &
-               DOS(1:nuo_E), &
+               DOS(1:nuo_E), T, &
                nw,zwork, &
                final_invert = final_invert)
        else
