@@ -135,7 +135,7 @@ CONTAINS
 <<initialize-plan-at-first-step>>
 <<load-hs-matrices>>
 <<factorization>>
-<<call-driver>>
+<<solver-structure>>
 <<get-matrices-and-energy>>
 <<copy-to-siesta-side>>
 <<clean-up>>
@@ -289,18 +289,6 @@ workers, for the purposes of re-distribution of the relevant
 matrices. The PEXSI library takes care of further redistribution among
 teams.
 
-Note that the first team of PEXSI workers starts at the root
-node. This means that there is overlap between the Siesta workers and
-the PEXSI workers. While this is in principle more economical (and
-convenient for information exchange), it can pose problems later on.
-
-I will leave it like that, as I do not yet know how to move
-information among disjoint communicators (use of an
-/intercommunicator/?)
-
-For spin, things are a bit more complicated. We need to make sure that
-the distributions are defined (via actual ranks) with respect to the
-same reference bridge communicator. For now, this is World_Comm.
 
 #+BEGIN_SRC f90 :noweb-ref routine-variables
 integer :: PEXSI_Pole_Group, PEXSI_Spatial_Group, World_Group
@@ -335,8 +323,13 @@ Define the Siesta distribution. Note that this is known to all nodes.
   call MPI_Barrier(World_Comm,ierr)
 #+end_src
 
-For possibly spin-polarized calculations, we split the communicator.
+Note that the first team of PEXSI workers starts at the root
+node. This means that there is overlap between the Siesta workers and
+the PEXSI workers. This is in principle more economical, but it means
+that we cannot use the MPI intercommunicator technology to exchange
+information (only non-overlapping groups are allowed).
 
+For possibly spin-polarized calculations, we split the communicator.
 
 #+BEGIN_SRC f90 :noweb-ref define-communicators
 
@@ -372,9 +365,17 @@ For possibly spin-polarized calculations, we split the communicator.
   ! PEXSI blocksize 
   pbs = norbs/npPerPole
 
-  ! Careful with this. For the purposes of matrix transfers,
-  ! we need the ranks of the Pole group
-  ! in the "bridge" communicator/group (World)
+#+end_src
+
+When dealing with spin, we partition the processors in two groups, but
+for the purposes of communication with the Siesta side we still we
+need /all/ the processors to know about the details of the orbital distributions
+involved for /both/ spins. We cannot just use the opaque communicator
+or group handles given by MPI, but we need to define the distributions
+via the actual rank list in the same reference bridge
+communicator. For now, this is World_Comm.
+
+#+BEGIN_SRC f90 :noweb-ref define-communicators
 
   allocate(pexsi_pole_ranks_in_world(npPerPole))
   call MPI_Comm_Group(World_Comm, World_Group, Ierr)
@@ -383,8 +384,8 @@ For possibly spin-polarized calculations, we split the communicator.
        (/ (i,i=0,npPerPole-1) /), &
        World_Group, pexsi_pole_ranks_in_world, ierr )
 
-  ! What we need is to include the actual world ranks
-  ! in the distribution object
+  ! Include the actual world ranks in the distribution object
+
   allocate (PEXSI_Pole_ranks_in_World_Spin(npPerPole,nspin))
   call MPI_AllGather(pexsi_pole_ranks_in_world,npPerPole,MPI_integer,&
        PEXSI_Pole_Ranks_in_World_Spin,npPerPole, &
@@ -399,9 +400,7 @@ For possibly spin-polarized calculations, we split the communicator.
   enddo
   deallocate(pexsi_pole_ranks_in_world,PEXSI_Pole_Ranks_in_World_Spin)
   call MPI_Barrier(World_Comm,ierr)
-
 #+end_src
-
 
 ** Re-distribute matrices
 
@@ -557,7 +556,7 @@ factorization flag and the number of processors per pole.
 
 We also use this section to define other user-level options. This is a
 bit of a mess, since the logic of the /expert/ interface uses a mixed
-grab-bag of =options= entries and /orphan/ entries, such as
+grab-bag of =options= entries and other variables, such as
 =inertiaMaxIter=.
 
 #+BEGIN_SRC f90 :noweb-ref routine-variables
@@ -572,7 +571,6 @@ real(dp)               :: pexsi_temperature, two_kT
 #+end_src
 
 #+BEGIN_SRC f90 :noweb-ref set-options
-
   !
   call f_ppexsi_set_default_options( options )
 
@@ -633,7 +631,6 @@ real(dp)               :: pexsi_temperature, two_kT
   energyWidthInertiaTolerance =  &
        fdf_get("PEXSI.inertia-energy-width-tolerance", &
                options%muInertiaTolerance,"Ry")
-
 #+END_SRC
 
 ** Initialize plan at first scf step
@@ -696,57 +693,75 @@ way to transfer the info from the spin-up to the spin-down manifold.
 #+END_SRC
 
 ** Call the solver
-*** Solver call structure
-This was too black of a black box, as there is very little control
-of the operations. The most glaring shortcoming is the lack of a
-proper handling of the convergence conditions.
 
-The plan for improvement is to call the inertia counting routine, and
-the fermi-operator calculator, explicitly.
+This was too black of a black box, and there was very little control
+of the operations, including the proper handling of the convergence conditions.
+
+The structure of the solver call is now as follows:
 
 #+BEGIN_SRC f90 :noweb-ref routine-variables
-real(dp) :: deltaMu
-real(dp) :: numElectronDrvMuPEXSI, numElectronPEXSI
 real(dp), allocatable :: numElectronSpin(:), numElectronDrvMuSpin(:)
-real(dp) :: numElectron_out, numElectronDrvMu_out
 integer :: numTotalPEXSIIter
 integer :: numTotalInertiaIter
 #+END_SRC
 
-#+BEGIN_SRC f90 :noweb-ref call-driver
+#+BEGIN_SRC f90 :noweb-ref solver-structure
   !
   numTotalInertiaIter = 0
 
   call timer("pexsi-solver", 1)
 
-  ! This is for the initial phase of the scf loop
-  if (need_inertia_counting()) then
-
-     call get_bracket_for_inertia_count( )  
-     call do_inertia_count(plan,muMin0,muMax0,mu)
-
-  else
-
-     !  Maybe there is no need for bracket, just for mu estimation
-     call get_bracket_for_solver()
-
-  endif
+  <<optionally-do-initial-phase-of-inertia-counting>>
 
   numTotalPEXSIIter = 0
   allocate(numElectronSpin(nspin),numElectronDrvMuSpin(nspin))
 
   solver_loop: do
+     <<check-for-solver-iterations>>
+     <<compute-fermi-operator>>
+     numTotalPEXSIIter =  numTotalPEXSIIter + 1
+     <<check-solver-convergence>>
+  end do solver_loop
 
+  deallocate(numElectronSpin,numElectronDrvMuSpin)
+  call timer("pexsi-solver", 2)
+
+#+END_SRC
+
+
+*** Set mu bracket with optional inertia-counting phase
+
+This check for inertia-couting is for the initial phase of the scf loop
+#+BEGIN_SRC f90 :noweb-ref optionally-do-initial-phase-of-inertia-counting
+  if (need_inertia_counting()) then
+     call get_bracket_for_inertia_count( )  
+     call do_inertia_count(plan,muMin0,muMax0,mu)
+  else
+     !  Maybe there is no need for bracket, just for mu estimation
+     call get_bracket_for_solver()
+  endif
+#+end_src
+
+*** Check whether we have reached the maximum number of solver iterations
+#+BEGIN_SRC f90 :noweb-ref check-for-solver-iterations
      if (numTotalPEXSIIter > options%maxPEXSIIter ) then
         ! Maybe do not die, and trust further DM normalization
         ! to fix the number of electrons for unstable cases
         call die("too many PEXSI iterations")
      endif
+#+END_SRC
 
+*** Compute Fermi operator and number of electrons
+#+BEGIN_SRC f90 :noweb-ref routine-variables
+real(dp) :: numElectronDrvMuPEXSI, numElectronPEXSI
+real(dp) :: numElectron_out, numElectronDrvMu_out
+#+END_SRC
+
+#+BEGIN_SRC f90 :noweb-ref compute-fermi-operator
      if(mpirank == 0) then
         write (6,"(a,f9.4,a,f9.5)") 'Computing DM for mu(eV): ', mu/eV, &
              ' Tol: ', PEXSINumElectronTolerance
-        write (6,"(a,f9.4,f9.5)") 'Bracket: ', muMin0/eV, muMax0/eV
+        write (6,"(a,f9.4,f9.5)") 'Monitoring bracket: ', muMin0/eV, muMax0/eV
      endif
 
      call f_ppexsi_calculate_fermi_operator_real(&
@@ -786,9 +801,21 @@ integer :: numTotalInertiaIter
            write(6,"(a,f10.4)") "Fermi Operator. dN_e/dmu: ", numElectronDrvMuPEXSI*eV
         endif
      endif
+#+END_SRC
 
-     numTotalPEXSIIter =  numTotalPEXSIIter + 1
+*** Check convergence of solver
 
+This section could use some more heuristics. The simple DFT driver by
+Lin uses the size of the jump in Newton's step to flag problems and
+fall back to inertia-counting. An alternative is to monitor whether we
+have actually overstepped our bracket, and if so, expand it to contain
+the new point before calling the inertia-counting routine.
+
+#+BEGIN_SRC f90 :noweb-ref routine-variables
+real(dp) :: deltaMu
+#+END_SRC
+
+#+BEGIN_SRC f90 :noweb-ref check-solver-convergence
      if (abs(numElectronPEXSI-numElectronExact) > PEXSINumElectronTolerance) then
 
         deltaMu = - (numElectronPEXSI - numElectronExact) / numElectronDrvMuPEXSI
@@ -799,11 +826,11 @@ integer :: numTotalInertiaIter
            if (mpirank ==0) then
               write(6,"(a,f9.3)") "DeltaMu: ", deltaMu, " is too big. Falling back to IC"
            endif
+
+           ! We choose for now to expand the bracket to include the jumped-to point
+
            muMin0 = min(muMin0,mu+deltaMu)
            muMax0 = max(muMax0,mu+deltaMu)
-
-           ! We must choose a new starting bracket, otherwise we will fall into the same
-           ! cycle of values
 
            call do_inertia_count(plan,muMin0,muMax0,mu)
 
@@ -819,11 +846,6 @@ integer :: numTotalInertiaIter
         endif
         exit solver_loop
      endif
-
-  end do solver_loop
-  deallocate(numElectronSpin,numElectronDrvMuSpin)
-  call timer("pexsi-solver", 2)
-
 #+END_SRC
 
 ** Get output matrices and compute energies
@@ -1042,7 +1064,8 @@ Here we only clean up the communicators and groups and the distributions.
    
 ** Support routines
 
-Several routines 
+Several routines, including the implementation of the inertia-count
+support and bracket handling.
 
 #+BEGIN_SRC f90 :noweb-ref support-routines
  <<inertia-count-iteration>>

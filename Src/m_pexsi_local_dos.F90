@@ -21,9 +21,7 @@ subroutine pexsi_local_dos( )
   use parallel,       only:  SIESTA_worker
   use m_ntm
   use m_forces,       only: fa
-  use m_eo
   use m_spin,         only: nspin, qs, efs
-  use m_gamma
   use m_dhscf,        only: dhscf
 
   implicit none
@@ -37,12 +35,6 @@ subroutine pexsi_local_dos( )
 
   type(filesOut_t)     :: filesOut  ! blank output file names
 
-  ! Find local density of states with Selected Inversion
-  ! Only the first pole group participates 
-  ! in the computation of the selected
-  ! inversion for a single shift.
-  ! In this version, this set coincides with the set of siesta SIESTA_workers.
-
   energy = fdf_get('PEXSI.LocalDOS.Energy',0.0_dp,"Ry")
   broadening = fdf_get('PEXSI.LocalDOS.Broadening',0.01_dp,"Ry")
 
@@ -55,29 +47,28 @@ subroutine pexsi_local_dos( )
      !Find the LDOS in the real space mesh
      filesOut%rho = trim(slabel) // '.LDSI'
      g2max = g2cut
+
+     ! There is too much clutter here, because dhscf is
+     ! a "kitchen-sink" routine that does too many things
+
      call dhscf( nspin, no_s, iaorb, iphorb, no_l, &
           no_u, na_u, na_s, isa, xa_last, indxua,  &
           ntm, 0, 0, 0, filesOut,                  &
           maxnh, numh, listhptr, listh, Dscf, Datm, maxnh, H, &
           Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc, &
           dummy_dipol, dummy_str, fa, dummy_strl )
-     ! next to last argument is dummy here,
-     ! as no forces are calculated
-     ! todo: make all these optional
-
   endif
 
 END subroutine pexsi_local_dos
-!
-  subroutine get_LDOS_SI( no_u, no_l, nspin_in,  &
-       maxnh, numh, listh, H, S,  &
-       LocalDOSDM, energy, broadening)
+subroutine get_LDOS_SI( no_u, no_l, nspin_in,  &
+     maxnh, numh, listh, H, S,  &
+     LocalDOSDM, energy, broadening)
 
       use precision, only  : dp
       use fdf
       use units,       only: eV, pi
       use sys,         only: die
-      use m_mpi_utils, only: globalize_max, broadcast
+      use m_mpi_utils, only: broadcast
       use parallel, only   : SIESTA_worker, BlockSize
       use parallel, only   : SIESTA_Group, SIESTA_Comm
       use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
@@ -96,13 +87,13 @@ END subroutine pexsi_local_dos
     use f_ppexsi_interface, &
           only: f_ppexsi_symbolic_factorize_complex_symmetric_matrix
 
-  implicit          none
+implicit          none
 
-  integer, intent(in)          :: maxnh, no_u, no_l, nspin_in
-  integer, intent(in), target  :: listh(maxnh), numh(no_l)
-  real(dp), intent(in), target :: H(maxnh,nspin_in), S(maxnh)
-  real(dp), intent(in)         :: energy, broadening
-  real(dp), intent(out)        :: LocalDOSDM(maxnh,nspin_in)
+integer, intent(in)          :: maxnh, no_u, no_l, nspin_in
+integer, intent(in), target  :: listh(maxnh), numh(no_l)
+real(dp), intent(in), target :: H(maxnh,nspin_in), S(maxnh)
+real(dp), intent(in)         :: energy, broadening
+real(dp), intent(out)        :: LocalDOSDM(maxnh,nspin_in)
 integer        :: ih, i
 integer        :: info
 logical        :: write_ok
@@ -158,24 +149,13 @@ integer :: loc
 call MPI_Comm_Dup(true_MPI_Comm_World, World_Comm, ierr)
 call mpi_comm_rank( World_Comm, mpirank, ierr )
 
-! NOTE:  fdf calls will assign values to the whole processor set,
-! but some other variables will have to be re-broadcast (see examples
-! below)
-
 call timer("pexsi-ldos", 1)  
 
 if (SIESTA_worker) then
-
    ! rename some intent(in) variables, which are only
    ! defined for the Siesta subset
-
    norbs = no_u
    nspin = nspin_in
-
-   ! Note that the energy units for the PEXSI interface are arbitrary, but
-   ! H, the interval limits, and the temperature have to be in the
-   ! same units. Siesta uses Ry units.
-
 endif
 !
 call broadcast(norbs,comm=World_Comm)
@@ -308,8 +288,6 @@ do ispin = 1, nspin
    endif ! PEXSI worker
 enddo
 
-! ***** FIXME -- probably not needed.
-
 ! Make these available to all
 ! (Note that the values are those on process 0, which is in the spin=1 set
 ! In fact, they are only needed for calls to the interface, so the broadcast
@@ -388,7 +366,7 @@ if (PEXSI_worker) then
            'Processors working on selected inversion: ', npPerPole
    endif
 
-     call timer("pexsi-ldos-selinv", 1)
+   call timer("pexsi-ldos-selinv", 1)
 
    ! Build AnzvalLocal as H-zS, where z=(E,broadening), and treat
    ! it as a one-dimensional real array with 2*nnzlocal entries
@@ -468,11 +446,6 @@ do ispin = 1, nspin
       call de_alloc(m2%cols,   "m2%cols",   "pexsi_ldos")
    endif
 
-   ! We assume that Siesta's root node also belongs to one of the
-   ! leading-pole PEXSI communicators.
-   ! Note that by wrapping the broadcasts for SIESTA_workers we
-   ! do not make ef and Entropy known to the non-leading PEXSI processes.
-   
    if (SIESTA_worker) then
 
       LocalDOSDM(:,ispin)  = m1%vals(1)%data(:)    

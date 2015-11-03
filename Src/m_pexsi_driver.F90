@@ -106,12 +106,12 @@ integer                :: inertiaMaxIter
 !
 real(dp), save         :: energyWidthInertiaTolerance
 real(dp)               :: pexsi_temperature, two_kT
-real(dp) :: deltaMu
-real(dp) :: numElectronDrvMuPEXSI, numElectronPEXSI
 real(dp), allocatable :: numElectronSpin(:), numElectronDrvMuSpin(:)
-real(dp) :: numElectron_out, numElectronDrvMu_out
 integer :: numTotalPEXSIIter
 integer :: numTotalInertiaIter
+real(dp) :: numElectronDrvMuPEXSI, numElectronPEXSI
+real(dp) :: numElectron_out, numElectronDrvMu_out
+real(dp) :: deltaMu
 real(dp)       :: bs_energy, eBandH, free_bs_energy
 real(dp)       :: buffer1
 real(dp), save :: previous_pexsi_temperature
@@ -204,9 +204,6 @@ PEXSI_worker = (spatial_rank < npPerPole)   ! Could be spin up or spin down
 ! PEXSI blocksize 
 pbs = norbs/npPerPole
 
-! Careful with this. For the purposes of matrix transfers,
-! we need the ranks of the Pole group
-! in the "bridge" communicator/group (World)
 
 allocate(pexsi_pole_ranks_in_world(npPerPole))
 call MPI_Comm_Group(World_Comm, World_Group, Ierr)
@@ -215,8 +212,8 @@ call MPI_Group_translate_ranks( PEXSI_Pole_Group, npPerPole, &
      (/ (i,i=0,npPerPole-1) /), &
      World_Group, pexsi_pole_ranks_in_world, ierr )
 
-! What we need is to include the actual world ranks
-! in the distribution object
+! Include the actual world ranks in the distribution object
+
 allocate (PEXSI_Pole_ranks_in_World_Spin(npPerPole,nspin))
 call MPI_AllGather(pexsi_pole_ranks_in_world,npPerPole,MPI_integer,&
      PEXSI_Pole_Ranks_in_World_Spin,npPerPole, &
@@ -231,7 +228,6 @@ do ispin = 1, nspin
 enddo
 deallocate(pexsi_pole_ranks_in_world,PEXSI_Pole_Ranks_in_World_Spin)
 call MPI_Barrier(World_Comm,ierr)
-
 
 pexsi_spin = spin_rank+1  ! {1,2}
 ! This is done serially on the Siesta side, each time
@@ -334,7 +330,6 @@ else
    PEXSINumElectronTolerance =  fdf_get("PEXSI.num-electron-tolerance",&
                                         on_the_fly_tolerance)
 endif
-
 !
 call f_ppexsi_set_default_options( options )
 
@@ -395,7 +390,6 @@ inertiaMaxIter   = fdf_get("PEXSI.inertia-max-iter",5)
 energyWidthInertiaTolerance =  &
      fdf_get("PEXSI.inertia-energy-width-tolerance", &
              options%muInertiaTolerance,"Ry")
-
 if (scf_step == 1) then
    call pexsi_initialize_scfloop(PEXSI_Spatial_Comm,npPerPole,spatial_rank,info)
    call check_info(info,"initialize_plan")
@@ -437,36 +431,29 @@ numTotalInertiaIter = 0
 
 call timer("pexsi-solver", 1)
 
-! This is for the initial phase of the scf loop
 if (need_inertia_counting()) then
-
    call get_bracket_for_inertia_count( )  
    call do_inertia_count(plan,muMin0,muMax0,mu)
-
 else
-
    !  Maybe there is no need for bracket, just for mu estimation
    call get_bracket_for_solver()
-
 endif
 
 numTotalPEXSIIter = 0
 allocate(numElectronSpin(nspin),numElectronDrvMuSpin(nspin))
 
 solver_loop: do
-
    if (numTotalPEXSIIter > options%maxPEXSIIter ) then
       ! Maybe do not die, and trust further DM normalization
       ! to fix the number of electrons for unstable cases
       call die("too many PEXSI iterations")
    endif
-
    if(mpirank == 0) then
       write (6,"(a,f9.4,a,f9.5)") 'Computing DM for mu(eV): ', mu/eV, &
            ' Tol: ', PEXSINumElectronTolerance
-      write (6,"(a,f9.4,f9.5)") 'Bracket: ', muMin0/eV, muMax0/eV
+      write (6,"(a,f9.4,f9.5)") 'Monitoring bracket: ', muMin0/eV, muMax0/eV
    endif
-
+   
    call f_ppexsi_calculate_fermi_operator_real(&
         plan,&
         options,&
@@ -475,23 +462,23 @@ solver_loop: do
         numElectron_out,&
         numElectronDrvMu_out,&
         info)
-
+   
    call check_info(info,"fermi_operator")
- 
+      
    ! Per spin
    numElectron_out = numElectron_out / nspin
    numElectronDrvMu_out =  numElectronDrvMu_out / nspin
-
+   
    ! Gather the results for both spins on all processors
-
+   
    call MPI_AllGather(numElectron_out,1,MPI_Double_precision,&
          numElectronSpin,1,MPI_Double_precision,PEXSI_Spin_Comm,ierr)
    call MPI_AllGather(numElectronDrvMu_out,1,MPI_Double_precision,&
          numElectronDrvMuSpin,1,MPI_Double_precision,PEXSI_Spin_Comm,ierr)
-
+   
    numElectronPEXSI = sum(numElectronSpin(1:nspin))
    numElectronDrvMuPEXSI = sum(numElectronDrvMuSpin(1:nspin))
-
+   
    if (mpirank == 0) then
       write(6,"(a,f10.4)") "Fermi Operator. mu: ", mu/eV
       if (nspin == 2) then
@@ -504,29 +491,27 @@ solver_loop: do
          write(6,"(a,f10.4)") "Fermi Operator. dN_e/dmu: ", numElectronDrvMuPEXSI*eV
       endif
    endif
-
    numTotalPEXSIIter =  numTotalPEXSIIter + 1
-
    if (abs(numElectronPEXSI-numElectronExact) > PEXSINumElectronTolerance) then
-
+   
       deltaMu = - (numElectronPEXSI - numElectronExact) / numElectronDrvMuPEXSI
       ! The simple DFT driver uses the size of the jump to flag problems:
       ! if (abs(deltaMu) > options%muPEXSISafeGuard) then
-
+   
       if ( ((mu + deltaMu) < muMin0) .or. ((mu + deltaMu) > muMax0) ) then
          if (mpirank ==0) then
             write(6,"(a,f9.3)") "DeltaMu: ", deltaMu, " is too big. Falling back to IC"
          endif
+   
+         ! We choose for now to expand the bracket to include the jumped-to point
+   
          muMin0 = min(muMin0,mu+deltaMu)
          muMax0 = max(muMax0,mu+deltaMu)
-
-         ! We must choose a new starting bracket, otherwise we will fall into the same
-         ! cycle of values
-
+   
          call do_inertia_count(plan,muMin0,muMax0,mu)
-
+   
          cycle solver_loop
-
+   
       endif
       mu = mu + deltaMu
       cycle solver_loop
@@ -537,8 +522,8 @@ solver_loop: do
       endif
       exit solver_loop
    endif
-
 end do solver_loop
+
 deallocate(numElectronSpin,numElectronDrvMuSpin)
 call timer("pexsi-solver", 2)
 
