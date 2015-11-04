@@ -1,4 +1,23 @@
 ----------------------------------------------------
+November 4, 2015 -- Nick Papior       trunk-479---ts-scf-586
+TBT: Clarified options, minor bug-fixes
+
+* When using out-of-core electrode calculations
+  we cannot save the electrode DOS,
+  hence we now inform the user and remove the option.
+
+* We also remove the option for T.Gf diagonal calculation
+  with N_Elec > 3.
+
+* Fixed non-MPI compilation.
+
+modified:
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 November 2, 2015 -- Nick Papior       trunk-479---ts-scf-585
 Fixed pivoting for low orbital TB calculations
 

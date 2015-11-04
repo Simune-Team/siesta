@@ -629,7 +629,7 @@ contains
     write(*,*)
     write(*,f11) repeat('*', 62)
 
-    write(*,f6) 'Electronic temperature',kT/Kelvin,'K'
+    write(*,f6) 'Electronic temperature (reference)',kT/Kelvin,'K'
     if ( IsVolt ) then
        write(*,f6) 'Voltage', Volt/eV,'Volts'
     else
@@ -644,6 +644,8 @@ contains
     else
        write(*,f1) 'Saving DOS from spectral functions',('DOS-A' .in. save_DATA)
     end if
+    write(*,f1) 'Saving bond currents (orb-orb)',('orb-current'.in.save_DATA)
+
     write(*,f12) 'Calc. # transmission eigenvalues',N_eigen
     write(*,f1) 'Calc. T between all electrodes',('T-all'.in.save_DATA)
     write(*,f1) 'Calc. total T out of electrodes',('T-sum-out'.in.save_DATA)
@@ -696,7 +698,17 @@ contains
     logical, intent(in) :: Gamma
 
     integer :: i
-    logical :: ltmp
+    logical :: ltmp, rem_DOS_Elecs, rem_T_Gf
+
+    ! Removal of keys
+    rem_DOS_Elecs = 'DOS-Elecs' .in. save_DATA
+    if ( any(Elecs(:)%out_of_core) ) then
+       call remove(save_DATA,'DOS-Elecs')
+    end if
+    rem_T_Gf = 'T-Gf' .in. save_DATA
+    if ( N_Elec > 3 ) then
+       call remove(save_DATA,'T-Gf')
+    end if
 
     if ( .not. IONode ) return
 
@@ -742,19 +754,17 @@ contains
     end if
 
     if ( any(Elecs(:)%out_of_core) ) then
-       if ( 'DOS-Elecs'.in.save_DATA ) then
+       if ( rem_DOS_Elecs ) then
           write(*,'(a)')' Disabling electrode DOS calculation, only &
                &enabled for in-core self-energy calculations.'
        end if
     end if
-
+    
     write(*,'(a)')' ** Use TBT.Atoms.Device for faster execution'
-
-    if ( ('T-Gf'.in.save_DATA) .and. N_Elec > 3 ) then
-       write(*,'(a)')' ** For symmetric junctions/transmission coefficients &
-            &TBtrans will die.'
-       write(*,'(a)')'    The transmissions cannot be uniquely identified in &
-            &those circumstances.'
+    
+    if ( rem_T_Gf .and. N_Elec > 3 ) then
+       write(*,'(a)')' ** Disabling transport calculation using diagonal, &
+            &not possible with N_elec > 3.'
     end if
     
 #ifdef MPI

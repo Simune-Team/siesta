@@ -43,7 +43,9 @@ module m_tbt_save
   public :: end_save
 #endif
 
+#ifdef MPI
   public :: save_attach_buffer
+#endif
 
   ! Type to control the energies that is contained
   ! This lets every processor know what the other processors have
@@ -108,6 +110,7 @@ contains
     integer :: MPIerror
 #endif
 
+#ifdef MPI
     ! Open the netcdf file
     if ( save_parallel ) then
        call ncdf_open(ncdf,fname, mode=ior(NF90_WRITE,NF90_MPIIO), &
@@ -115,6 +118,9 @@ contains
     else
        call ncdf_open(ncdf,fname, mode=NF90_WRITE)
     end if
+#else
+    call ncdf_open(ncdf,fname, mode=NF90_WRITE)
+#endif
 
   end subroutine open_cdf_save
 
@@ -175,10 +181,11 @@ contains
           ! TODO OS call
           call system('mkdir -p '//trim(save_dir))
        end if
-#ifdef MPI
-       call MPI_Barrier(MPI_Comm_World,ldir)
-#endif
     end if
+#ifdef MPI
+    ! It may exist on other nodes
+    call MPI_Barrier(MPI_Comm_World,ldir)
+#endif
 
     if ( save_parallel ) then
        if ( .not. dir_exist(save_dir, all = .true. ) ) then
@@ -592,6 +599,7 @@ contains
     end if
 
     if ( initialized(sp_dev) ) then
+       
        ! In case we need to save the device sparsity pattern
        ! Create dimensions
        nnzs_dev = nnzs(sp_dev)
@@ -1343,8 +1351,7 @@ contains
        cnt = 0
        idx = 1
     end if
-    call ncdf_put_var(grp,'J',J,start = idx, &
-         count = cnt )
+    call ncdf_put_var(grp,'J',J,start = idx, count = cnt )
 
 #ifdef MPI
     if ( .not. save_parallel ) then
@@ -1850,10 +1857,12 @@ contains
 #endif
 
 
+#ifdef MPI
   subroutine save_attach_buffer(array)
     real(dp), intent(inout), target :: array(:)
     rbuff1d => array(:)
   end subroutine save_attach_buffer
+#endif
 
   ! Get the file name
   subroutine name_save(ispin,nspin,fname,end,El1,El2)

@@ -755,7 +755,7 @@ contains
           cOmega = cE
           cOmega%e = dcmplx(omega**2,dimag(cE%e))
 #endif
-
+          
           ! B-cast all nodes current energy segment
           call MPI_BcastNode(iE_N, cE%E, nE)
 
