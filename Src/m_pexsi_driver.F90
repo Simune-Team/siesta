@@ -444,9 +444,14 @@ allocate(numElectronSpin(nspin),numElectronDrvMuSpin(nspin))
 
 solver_loop: do
    if (numTotalPEXSIIter > options%maxPEXSIIter ) then
-      ! Maybe do not die, and trust further DM normalization
+      ! Do not die immediately, and trust further DM normalization
       ! to fix the number of electrons for unstable cases
-      call die("too many PEXSI iterations")
+      ! call die("too many PEXSI iterations")
+      if (mpirank == 0) then
+         write(6,"(a)") " ** Maximum number of PEXSI-solver iterations reached without convergence"
+         write(6,"(a)") " .... an attempt will be made to normalize the density-matrix"
+         write(6,"(a)") " This will succeed or not depending on the normalization tolerance (see manual)"
+      endif
    endif
    if(mpirank == 0) then
       write (6,"(a,f9.4,a,f9.5)") 'Computing DM for mu(eV): ', mu/eV, &

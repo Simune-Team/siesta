@@ -4955,12 +4955,9 @@ from a matrix diagonalization procedure for general systems, including
 metallic systems at low temperature.  
 
 The current implementation of the PEXSI solver in {\sc Siesta} makes
-use of the ``simple Kohn-Sham driver'' interface in the PEXSI library
-(\url{http://pexsi.org}). An ``expert interface'' with finer degree of
-control is planned for a future version.
-
-Note that the PEXSI solver can currently deal only with spinless 
-$\Gamma$-point calculations. 
+use of the full fine-grained-level interface in the PEXSI library
+(\url{http://pexsi.org}), and can deal with spin-polarization, but it
+is still restricted to $\Gamma$-point calculations. 
 
 The following is a brief description of the input-file parameters
 relevant to the workings of the PEXSI solver. For more background, 
@@ -5047,15 +5044,16 @@ this option in that case.
 %
 Number of MPI processes used to perform the PEXSI computations in one
 pole. If the total number of MPI processes is smaller than this number
-times the number of poles, the PEXSI library will compute appropriate
-groups of poles in sequence. The minimum time to solution is achieved
-by increasing this parameter as much as it is reasonable for parallel
-efficiency, and using enough MPI processes to allow complete
-parallelization over poles. On the other hand, the minimum
-computational cost (in the sense of computing budget) is obtained by
-using the minimum value of this parameter which is compatible with the
-memory footprint. The additional parallelization over poles will be
-irrelevant for cost, but it will obviously affect the time to solution.
+times the number of poles (times the spin multiplicity), the PEXSI
+library will compute appropriate groups of poles in sequence. The
+minimum time to solution is achieved by increasing this parameter as
+much as it is reasonable for parallel efficiency, and using enough MPI
+processes to allow complete parallelization over poles. On the other
+hand, the minimum computational cost (in the sense of computing
+budget) is obtained by using the minimum value of this parameter which
+is compatible with the memory footprint. The additional
+parallelization over poles will be irrelevant for cost, but it will
+obviously affect the time to solution.
 
 Internally, {\sc SIESTA} computes the processor grid parameters {\tt
   nprow} and {\tt npcol} for the PEXSI library, with {\tt nprow} $>$=
@@ -5161,8 +5159,8 @@ allows a finer degree of control of the tolerance update.
 \item[{\bf PEXSI.mu-max-iter}] ({\it integer}):
   \index{PEXSI.mu-max-iter@{\bf PEXSI.mu-max-iter}} 
 %
-Maximum number of iterations of the PEXSI solver. Note that in the
-``simple driver'' implementation there is no fallback procedure if the
+Maximum number of iterations of the PEXSI solver. Note that in this
+implementation there is no fallback procedure if the
 solver fails to converge in this number of iterations to the
 prescribed tolerance. In this case, the resulting density matrix might
 still be re-normalized, and the calculation able to continue, if the
@@ -5198,6 +5196,11 @@ this parameter is only relevant if there is no inertia-counting phase.
 \item[{\bf PEXSI.mu-pexsi-safeguard}] ({\it real energy}):
   \index{PEXSI.mu-pexsi-safeguard@{\bf PEXSI.mu-pexsi-safeguard}} 
 %
+{\bf NOTE:} This feature has been deactivated for now. The condition
+for starting a new phase of inertia-counting is that the Newton
+estimation falls outside the current bracket. The bracket is expanded
+accordingly.
+        
 The PEXSI solver uses Newton's method to update the estimate of $\mu$.
 If the attempted change in $\mu$ is larger than {\bf
   PEXSI.mu-pexsi-safeguard}, the solver cycle is stopped and a fresh
@@ -5288,32 +5291,39 @@ direction(s) by this amoount.
 \item[{\bf PEXSI.inertia-mu-tolerance}] ({\it real energy}):
   \index{PEXSI.inertia-mu-tolerance@{\bf PEXSI.inertia-mu-tolerance}} 
 %
-When using the simple driver, the criterion for early termination of the
-inertia-counting phase is based on the size of the resulting bracket, and
-controlled by this parameter. 
-
-NOTE: There is an effective upper limit to the number of
-inertia-counting iterations, based on the initial bracket $(\mu_{\rm
-  min},\mu_{\rm max})$, this tolerance, and the number of points
-inside the bracket at which the inertia counts are computed ({\tt
-  numShift}):
-\begin{verbatim}
-maxiter = max(1, 
-              ceil( log( (muMax0-muMin0)/muInertiaTolerance) /
-              log(numShift) 
-                  )
-              )
-
-It can be as small as 2 for a system with  10 shifts, with
-muMax0-muMin0 = 1 Ryd and muInertiaTolerance = 0.05 Ry.
-\end{verbatim}
-%
-The inertia-counting procedure silently ends after that many iterations, even if
-there is no formal convergence.
+One of the criteria for early termination of the inertia-counting phase.
+The value of the estimated $\mu$ (basically the center of the
+resulting brackets) is monitored, and the cycle stopped if its change
+from one iteration to the next is below this parameter.
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt PEXSI}
 
 {\it Default value:} {\tt 0.05 Ryd}
+
+\item[{\bf PEXSI.inertia-max-iter}] ({\it integer}):
+  \index{PEXSI.inertia-max-iter@{\bf PEXSI.inertia-max-iter}} 
+  Maximum number of inertia-count iterations per cycle.
+
+  {\it Default value:} {\tt 5}
+  
+\item[{\bf PEXSI.inertia-min-num-shifts}] ({\it integer}):
+  \index{PEXSI.inertia-min-num-shifts@{\bf PEXSI.inertia-min-num-shifts}} 
+
+Minimum number of sampling points for inertia counts.
+
+{\it Default value:} {\tt 10}
+  
+
+\item[{\bf PEXSI.inertia-energy-width-tolerance}] ({\it real energy}):
+  \index{PEXSI.inertia-energy-width-tolerance@{\bf PEXSI.inertia-energy-width-tolerance}} 
+%
+One of the criteria for early termination of the inertia-counting
+phase.  The cycle stops if the width of the resulting bracket is
+below this parameter.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt PEXSI}
+
+{\it Default value:} {\tt (The value given to {\bf PEXSI.inertia-mu-tolerance}) }
 
 \end{description}
 
@@ -5463,7 +5473,7 @@ parallel and there will be no extra cost involved.
 The local-density-of-states (LDOS) around a given reference energy  $\varepsilon$,
 representing the contribution to the charge density of the
 states with eigenvalues in the vicinity of $\varepsilon$,
-can be obtained formally by a ``one pole expansion'' with suitable
+can be obtained formally by a ``one-pole expansion'' with suitable
 broadening (see SIESTA-PEXSI paper).  
 
 Apart from the LDOS-specific options below, the ``ordering'',

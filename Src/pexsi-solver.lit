@@ -744,11 +744,16 @@ This check for inertia-couting is for the initial phase of the scf loop
 
 *** Check whether we have reached the maximum number of solver iterations
 #+BEGIN_SRC f90 :noweb-ref check-for-solver-iterations
-     if (numTotalPEXSIIter > options%maxPEXSIIter ) then
-        ! Maybe do not die, and trust further DM normalization
-        ! to fix the number of electrons for unstable cases
-        call die("too many PEXSI iterations")
+  if (numTotalPEXSIIter > options%maxPEXSIIter ) then
+     ! Do not die immediately, and trust further DM normalization
+     ! to fix the number of electrons for unstable cases
+     ! call die("too many PEXSI iterations")
+     if (mpirank == 0) then
+        write(6,"(a)") " ** Maximum number of PEXSI-solver iterations reached without convergence"
+        write(6,"(a)") " .... an attempt will be made to normalize the density-matrix"
+        write(6,"(a)") " This will succeed or not depending on the normalization tolerance (see manual)"
      endif
+  endif
 #+END_SRC
 
 *** Compute Fermi operator and number of electrons

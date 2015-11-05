@@ -171,6 +171,11 @@ OBJS =  automatic_cell.o atom_options.o \
         m_getopts.o f2kcli.o \
         m_svd.o m_matio.o\
         rusage.o memory_snapshot.o compute_ebs_shift.o memory_all.o
+#
+# Special dependency that sfmakedepend cannot grasp for now
+#
+m_pexsi.o m_pexsi_driver.o m_pexsi_dos.o m_pexsi_local_dos.o: f_ppexsi_interface.o
+#
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -606,10 +611,10 @@ m_pexsi_driver.o: alloc.o class_Distribution.o extrae_module.o m_convergence.o
 m_pexsi_driver.o: m_mpi_utils.o m_pexsi.o m_redist_spmatrix.o parallel.o
 m_pexsi_driver.o: precision.o siesta_options.o units.o
 m_pexsi_local_dos.o: alloc.o atomlist.o class_Distribution.o dhscf.o files.o
-m_pexsi_local_dos.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
-m_pexsi_local_dos.o: m_ntm.o m_redist_spmatrix.o m_spin.o parallel.o
-m_pexsi_local_dos.o: precision.o siesta_geom.o siesta_options.o
-m_pexsi_local_dos.o: sparse_matrices.o sys.o units.o
+m_pexsi_local_dos.o: m_energies.o m_forces.o m_mpi_utils.o m_ntm.o
+m_pexsi_local_dos.o: m_redist_spmatrix.o m_spin.o parallel.o precision.o
+m_pexsi_local_dos.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+m_pexsi_local_dos.o: units.o
 m_pulay.o: alloc.o atomlist.o m_mpi_utils.o m_spin.o m_svd.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_recipes.o: precision.o sys.o
