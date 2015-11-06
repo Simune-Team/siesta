@@ -1434,10 +1434,8 @@ contains
          &energy-points')
     call ncdf_inq_dim(ncdf,'nkpt',len=nkpt)
     call ncdf_inq_dim(ncdf,'no_d',len=no_d)
-    call ncdf_inq_dim(ncdf,'neig',exist=exist)
-    if ( exist ) then
-       call ncdf_inq_dim(ncdf,'neig',len=N_eigen)
-    else
+    call ncdf_inq_dim(ncdf,'neig',exist=exist,len=N_eigen)
+    if ( .not. exist ) then
        N_eigen = 0
     end if
 
@@ -1451,6 +1449,7 @@ contains
     rE = rE / eV
     ! Create pivot table
     call crt_pivot(NE,rE,pvt)
+    
     call ncdf_inq_var(ncdf,'kpt',exist=exist)
     if ( exist ) then
        call ncdf_get_var(ncdf,'kpt',rkpt)
@@ -1499,11 +1498,12 @@ contains
     ! We should now be able to create all the files
     do iEl = 1 , N_Elec
        
-       allocate(r2(NE,nkpt))
 
        if ( 'DOS-Elecs' .in. save_DATA ) then
 
           call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
+
+          allocate(r2(NE,nkpt))
 
           ! Get bulk-transmission
           call ncdf_get_var(grp,'T',r2)
@@ -1516,6 +1516,8 @@ contains
           call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'T', &
                '# Bulk transmission, k-averaged')
 
+          deallocate(r2)
+          
           no_e = Elecs(iEl)%no_u
           allocate(r3(no_e,NE,nkpt))
           call ncdf_get_var(grp,'DOS',r3)
@@ -1572,6 +1574,8 @@ contains
           
        end if
 
+       allocate(r2(NE,nkpt))
+       
        if ( N_eigen > 0 ) allocate(r3(N_eigen,NE,nkpt))
 
        do jEl = 1 , N_Elec

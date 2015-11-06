@@ -1,4 +1,18 @@
 ----------------------------------------------------
+November 5, 2015 -- Nick Papior       trunk-479---ts-scf-587
+TS-BT: Removed scaling of repetition DOS
+
+* The bulk electrode DOS was scaled with the number
+  of repetitions meaning that it was not comparable to
+  a device calculation with repetition.
+  We now preserve normalization according to the number
+  of orbitals rather than minimal basis orbitals.
+
+modified:
+  Src/m_ts_electrode.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+
+----------------------------------------------------
 November 4, 2015 -- Nick Papior       trunk-479---ts-scf-586
 TBT: Clarified options, minor bug-fixes
 

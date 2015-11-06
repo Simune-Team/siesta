@@ -1820,13 +1820,6 @@ contains
     ! We do not normalize DOS as this is the DOS for the entire
     ! replicated device. Hence it can directly be compared against the 
     ! \sum_(equivalent atoms) DOS
-    ! We do however normalize for the number of q-points.
-
-    if ( calc_DOS .and. nq > 1 ) then
-!$OMP parallel workshare default(shared)
-       DOS(1:nuo_E) = DOS(1:nuo_E) / real(nq,dp)
-!$OMP end parallel workshare
-    end if
 
     if ( zHS_allocated ) then
        call de_alloc(zHS, routine='next_GS')
