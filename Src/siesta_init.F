@@ -102,7 +102,16 @@
 #ifdef MPI
       call MPI_Initialized( initialized, MPIerror )
       if (.not.initialized) then
-        call MPI_Init( MPIerror )
+#ifdef _OPENMP
+         call MPI_Init_Thread(MPI_Thread_Funneled, i, MPIerror)
+         if ( MPI_Thread_Funneled /= i ) then
+            ! the requested threading level cannot be asserted
+            ! Notify the user
+           write(*,'(a)') '!!! Could not assert funneled threads'
+         end if
+#else
+         call MPI_Init( MPIerror )
+#endif
 #ifdef _TRACE_
         call MPItrace_shutdown( )
 #endif

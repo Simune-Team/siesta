@@ -33,6 +33,11 @@
         public :: mpi_comm_world
         public :: mpi_comm_self
 
+        ! For threaded MPI
+        public :: mpi_thread_single
+        public :: mpi_thread_funneled
+
+
         ! Added by Toby White, <tow21@cam.ac.uk>; 24/03/2005
         ! All of these are in mpich-1.1 and should be visible.
         ! (See mpi-report-1.1/node169

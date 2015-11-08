@@ -38,6 +38,10 @@ MODULE MPI_SIESTA
         public :: mpi_grid_real
         public :: mpi_finalize
 
+!        public :: mpi_thread_single
+        public :: mpi_thread_funneled
+
+
   PUBLIC :: MPI_BARRIER
   INTERFACE MPI_BARRIER
     MODULE PROCEDURE myMPI_BARRIER

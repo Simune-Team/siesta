@@ -19,6 +19,9 @@ subroutine tbt_init()
 #endif
 #ifdef MPI
   use mpi_siesta, only : MPI_Barrier, MPI_Comm_World
+#ifdef _OPENMP
+  use mpi_siesta, only : Mpi_Thread_Funneled
+#endif
 #endif
 
   use class_Sparsity
@@ -71,7 +74,16 @@ subroutine tbt_init()
 
   ! Initialise MPI and set processor number
 #ifdef MPI
-  call MPI_Init(MPIerror)
+#ifdef _OPENMP
+  call MPI_Init_Thread(MPI_Thread_Funneled, it, MPIerror)
+  if ( MPI_Thread_Funneled /= it ) then
+     ! the requested threading level cannot be asserted
+     ! Notify the user
+     write(*,'(a)') '!!! Could not assert funneled threads'
+  end if
+#else
+  call MPI_Init( MPIerror )
+#endif
 #endif
   
   call parallel_init()

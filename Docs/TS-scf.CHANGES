@@ -1,4 +1,19 @@
 ----------------------------------------------------
+November 8, 2015 -- Nick Papior       trunk-479---ts-scf-589
+mpi_init_thread for threaded application
+
+* When using siesta/transiesta/tbtrans
+  in an OpenMP situation we initialize
+  MPI using MPI_Init_Thread(MPI_Thread_Funneled)
+  for safety of memory control.
+
+modified:
+  Src/MPI/mpi__include.f90
+  Src/MPI/mpi_siesta.f90
+  Src/siesta_init.F
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 November 8, 2015 -- Nick Papior       trunk-479---ts-scf-588
 Added libraries to the version file to track full link line
 
