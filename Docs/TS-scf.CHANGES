@@ -1,4 +1,13 @@
 ----------------------------------------------------
+November 8, 2015 -- Nick Papior       trunk-479---ts-scf-588
+Added libraries to the version file to track full link line
+
+modified:
+  Src/Makefile
+  Src/version.F90
+  Util/TS/TBtrans/version.F90
+
+----------------------------------------------------
 November 5, 2015 -- Nick Papior       trunk-479---ts-scf-587
 TS-BT: Removed scaling of repetition DOS
 
