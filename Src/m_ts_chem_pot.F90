@@ -16,7 +16,7 @@ module m_ts_chem_pot
 
   use precision, only : dp
 
-  use units, only : Pi, eV
+  use units, only : Pi, eV, Kelvin
 
   use m_ts_io_ctype, only : C_N_NAME_LEN
   
@@ -240,10 +240,9 @@ contains
                fdf_bnnames(pline) < 2 ) call die('Chemical-shift not supplied')
 
           ! utilize the io_ctype E-parser to grap the chemical potential
-          ! we force the kT-assignments to be zero, and we force the energies to be before
-          ! the last assignment
+          ! we force the energies to be before the last assignment
           call pline_E_parse(pline,1,ln, &
-               val = this%mu, V = Volt, kT = 0._dp, before=3)
+               val = this%mu, V = Volt, kT = kT, before=3)
           this%cmu = trim(ln)
 
           info(1) = .true.
@@ -338,6 +337,9 @@ contains
 
 
     if ( this%N_poles < 1 ) then
+       print '(a)','Electrode: '//trim(this%name)
+       print '(a,i0)',' Number of poles: ',this%N_poles
+       print '(a,f10.2,a)',' Temperature: ', this%kT/Kelvin,' K'
        call die('Number of poles must be larger than or equal to 1')
     end if
 

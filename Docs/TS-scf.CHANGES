@@ -1,4 +1,21 @@
 ----------------------------------------------------
+November 9, 2015 -- Nick Papior       trunk-479---ts-scf-590
+Enabled kT/<integer> in contours, added completed timing
+
+* When reading in the temperature it can be
+  valued to use fractions of the temperature.
+
+  This is now enabled, however it still requires
+  a pre-value to give it a value.
+  This is not exactly the desired way but
+  for now is ok.
+
+modified:
+  Src/m_ts_chem_pot.F90
+  Src/m_ts_io_ctype.f90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 November 8, 2015 -- Nick Papior       trunk-479---ts-scf-589
 mpi_init_thread for threaded application
 

@@ -1364,6 +1364,13 @@ contains
     call clear_TriMat_inversion()
     call clear_mat_inversion()
 
+    ! Calculate total time execution
+    call timer_get('E-loop',totTime=loop_time)
+    loop_time = loop_time - init_time
+    if ( IONode ) then
+       write(*,'(a,f20.3,'' s'')') 'tbt: Completed in ',loop_time
+    end if
+
 #ifdef NCDF_4
     ! Once we have cleaned up we can easily do the
     ! conversion of the TBT.nc file to the regular txt files

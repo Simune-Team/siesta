@@ -501,8 +501,8 @@ contains
     real(dp) :: tmp
     character(len=200) :: g
     logical :: add, get_val, has_V, has_kT, absolute
-    integer :: i, j, stat, offset
-    
+    integer :: i, j, offset
+
     ! initialize the output string
     c = ' '
     ! whether we should collect the value
@@ -604,23 +604,15 @@ contains
              g = g(2:2)//trim(g(4:))
           end if
 
-          ! we still need to make sure that we can interpret the
-          ! bias-fraction
-          if ( leqi(g(2:2),'/') ) then
-             ! read in the bias fraction
-             read(g(3:),'(i9)',iostat=stat) j
-             if ( stat /= 0 ) then
-                call die('Fractional parameter chosen cannot be distinguished: '// &
-                     trim(g)//' expecting '//trim(g(3:)))
-             end if
+          ! Get fraction
+          j = parse_frac(g)
+          if ( j > 1 ) then
              if ( absolute ) then
                 write(g,'(a,i0)') '|V|/',j
              else
                 write(g,'(a,i0)') 'V/',j
              end if
           else
-             ! no fraction
-             j = 1
              if ( absolute ) then
                 g = '|V|'
              else
@@ -666,18 +658,29 @@ contains
              return ! if we can't find
           end if
           
-          if ( leqi(g,'kt') .or. leqi(g,'kbt') ) then
-             ! Read in the former value
-             ! We should not remove pm as that will not be read in
-             g = trim(characters(pline,1,1,after=i-offset))
-             c = trim(c)//' '//trim(g)//' kT'
+          if ( leqi(g(1:2),'kt') .or. leqi(g(1:3),'kbt') ) then
              
+             ! Get fraction and parse to correct format
+             j = parse_frac(g)
+             if ( j > 1 ) then
+                write(g,'(a,i0)') ' kT/',j
+             else
+                g = ' kT'
+             end if
+
              if ( get_val .and. .not. has_kT ) call die('You cannot request &
                   &kT value in this segment')
-             ! get the value...
-             tmp = fdf_bvalues(pline,1,after=i-offset) * kT
 
+             ! Read in the former value
+             ! We should not remove pm as that will not be read in
+             g = trim(characters(pline,1,1,after=i-offset))//trim(g)
+             
+             c = trim(c)//' '//trim(g)
+             
+             ! get the value...
+             tmp = fdf_bvalues(pline,1,after=i-offset) * kT / j
           else
+
              ! this will make the code break if the unit is wrongly assigned...
              tmp = ts_c_bphysical(pline,i-offset,'Ry')
 
@@ -723,6 +726,26 @@ contains
          remove_pm = trim(s)
       end if
     end function remove_pm
+
+    function parse_frac(s) result(frac)
+      character(len=*), intent(in) :: s
+      integer :: frac
+      integer :: i, stat
+
+      ! Always divide by 1 (no fraction)
+      frac = 1
+      ! parenthesis position
+      i = index(s,'/')
+
+      if ( i < 1 ) return
+
+      read(s(i+1:),'(i9)',iostat=stat) frac
+      if ( stat /= 0 ) then
+         call die('Fractional parameter chosen cannot be distinguished: '// &
+              trim(s)//' expecting '//trim(s(i:)))
+      end if
+      
+    end function parse_frac
 
   end subroutine pline_E_parse
 
