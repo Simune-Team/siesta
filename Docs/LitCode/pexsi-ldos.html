@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Literate version of PEXSI LDOS calculator</title>
-<!-- 2015-11-05 Thu 12:35 -->
+<!-- 2015-11-09 Mon 15:28 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Alberto Garcia" />
@@ -633,7 +633,7 @@ code is in external auxiliary modules.
 
       <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">re_alloc</span>(DMnzvalLocal,1,nnzLocal,<span style="color: #8b2252;">"DMnzvalLocal"</span>,<span style="color: #8b2252;">"pexsi_ldos"</span>)
 
-      <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">memory_all</span>(<span style="color: #8b2252;">"after setting up H+S for PEXSI (PEXSI_workers)"</span>,PEXSI_Pole_Comm)
+      <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">memory_all</span>(<span style="color: #8b2252;">"after transferring H+S for PEXSI-LDOS"</span>,PEXSI_Pole_Comm)
 
    <span style="color: #a020f0;">endif</span> <span style="color: #b22222;">! </span><span style="color: #b22222;">PEXSI worker</span>
 <span style="color: #a020f0;">enddo</span>
@@ -646,7 +646,7 @@ code is in external auxiliary modules.
 <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">MPI_Bcast</span>(nrows,1,MPI_integer,0,World_Comm,ierr)
 <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">MPI_Bcast</span>(nnz,1,MPI_integer,0,World_Comm,ierr)
 
-<span style="color: #a020f0;">call</span> <span style="color: #0000ff;">memory_all</span>(<span style="color: #8b2252;">"after setting up H+S for PEXSI"</span>,World_comm)
+<span style="color: #a020f0;">call</span> <span style="color: #0000ff;">memory_all</span>(<span style="color: #8b2252;">"after setting up H+S for PEXSI LDOS"</span>,World_comm)
 </pre>
 </div>
 </div>
@@ -717,11 +717,12 @@ include the first-pole group of nodes&#x2026;
     outputFileIndex = -1;
   <span style="color: #a020f0;">endif</span>
 <span style="color: #b22222;">!</span>
-<span style="color: #b22222;">! </span><span style="color: #b22222;">Note that we only use one pole's worth of processors in</span>
-<span style="color: #b22222;">! </span><span style="color: #b22222;">the global PEXSI communicator</span>
+<span style="color: #b22222;">! </span><span style="color: #b22222;">Note that even though we only use one pole's worth of processors, we</span>
+<span style="color: #b22222;">! </span><span style="color: #b22222;">still use the full spatial PEXSI communicator in the plan.</span>
+<span style="color: #b22222;">! </span><span style="color: #b22222;">Failing to do so leads to an error. This is not sufficiently documented.</span>
 <span style="color: #b22222;">!</span>
   plan = f_ppexsi_plan_initialize(<span style="color: #a020f0;">&amp;</span>
-      PEXSI_Pole_Comm,<span style="color: #a020f0;">&amp;</span>
+      PEXSI_Spatial_Comm,<span style="color: #a020f0;">&amp;</span>
       numProcRow,<span style="color: #a020f0;">&amp;</span>
       numProcCol,<span style="color: #a020f0;">&amp;</span>
       outputFileIndex,<span style="color: #a020f0;">&amp;</span>
@@ -949,11 +950,12 @@ Note that only the first-pole team does this.
 <span style="color: #b22222;">! </span><span style="color: #b22222;">As such, it is MPI_COMM_NULL for those processes</span>
 <span style="color: #b22222;">! </span><span style="color: #b22222;">not in the subgroup (non PEXSI_workers). Only</span>
 <span style="color: #b22222;">! </span><span style="color: #b22222;">defined communicators can be freed</span>
-<span style="color: #b22222;">! </span><span style="color: #b22222;">Also, we finalize the plan here</span>
 <span style="color: #a020f0;">if</span> (PEXSI_worker) <span style="color: #a020f0;">then</span>
-   <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">f_ppexsi_plan_finalize</span>( plan, info )
    <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">MPI_Comm_Free</span>(PEXSI_Pole_Comm, ierr)
 <span style="color: #a020f0;">endif</span>
+
+<span style="color: #b22222;">! </span><span style="color: #b22222;">We finalize the plan here</span>
+<span style="color: #a020f0;">call</span> <span style="color: #0000ff;">f_ppexsi_plan_finalize</span>( plan, info )
 
 <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">MPI_Group_Free</span>(PEXSI_Spatial_Group, ierr)
 <span style="color: #a020f0;">call</span> <span style="color: #0000ff;">MPI_Group_Free</span>(PEXSI_Pole_Group, ierr)
@@ -1028,7 +1030,7 @@ ncol  = <span style="color: #a020f0;">floor</span>(<span style="color: #a020f0;"
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Alberto Garcia</p>
-<p class="date">Created: 2015-11-05 Thu 12:35</p>
+<p class="date">Created: 2015-11-09 Mon 15:28</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

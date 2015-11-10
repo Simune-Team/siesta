@@ -5060,6 +5060,11 @@ Internally, {\sc SIESTA} computes the processor grid parameters {\tt
 {\tt npcol}, and as similar as possible. So it is best to choose {\bf
   PEXSI.np-per-pole} as the product of two similar numbers.
 
+{\bf NOTE}: The total number of MPI processes must be divisible by
+{\bf PEXSI.np-per-pole}. In case of spin-polarized calculations, the
+total number of MPI processes must be divisible by {\bf
+  PEXSI.np-per-pole} times 2.
+
 {\it Default value:} {\tt 4}
 
 \item[{\bf PEXSI.ordering}] ({\it integer}):

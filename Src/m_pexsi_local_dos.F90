@@ -283,7 +283,7 @@ do ispin = 1, nspin
 
       call re_alloc(DMnzvalLocal,1,nnzLocal,"DMnzvalLocal","pexsi_ldos")
 
-      call memory_all("after setting up H+S for PEXSI (PEXSI_workers)",PEXSI_Pole_Comm)
+      call memory_all("after transferring H+S for PEXSI-LDOS",PEXSI_Pole_Comm)
 
    endif ! PEXSI worker
 enddo
@@ -296,7 +296,7 @@ enddo
 call MPI_Bcast(nrows,1,MPI_integer,0,World_Comm,ierr)
 call MPI_Bcast(nnz,1,MPI_integer,0,World_Comm,ierr)
 
-call memory_all("after setting up H+S for PEXSI",World_comm)
+call memory_all("after setting up H+S for PEXSI LDOS",World_comm)
 
 ! -- 
   isSIdentity = 0
@@ -322,11 +322,12 @@ call memory_all("after setting up H+S for PEXSI",World_comm)
     outputFileIndex = -1;
   endif
 !
-! Note that we only use one pole's worth of processors in
-! the global PEXSI communicator
+! Note that even though we only use one pole's worth of processors, we
+! still use the full spatial PEXSI communicator in the plan.
+! Failing to do so leads to an error. This is not sufficiently documented.
 !
   plan = f_ppexsi_plan_initialize(&
-      PEXSI_Pole_Comm,&
+      PEXSI_Spatial_Comm,&
       numProcRow,&
       numProcCol,&
       outputFileIndex,&
@@ -484,11 +485,12 @@ call MPI_Comm_Free(World_Comm, ierr)
 ! As such, it is MPI_COMM_NULL for those processes
 ! not in the subgroup (non PEXSI_workers). Only
 ! defined communicators can be freed
-! Also, we finalize the plan here
 if (PEXSI_worker) then
-   call f_ppexsi_plan_finalize( plan, info )
    call MPI_Comm_Free(PEXSI_Pole_Comm, ierr)
 endif
+
+! We finalize the plan here
+call f_ppexsi_plan_finalize( plan, info )
 
 call MPI_Group_Free(PEXSI_Spatial_Group, ierr)
 call MPI_Group_Free(PEXSI_Pole_Group, ierr)

@@ -1,4 +1,52 @@
 ------------------------------------------------------------
+November 10, 2015  A. Garcia   trunk-464--pexsi-v0.8-spin-7
+Fix communicator bug in LDOS routine
+
+The full spatial communicator must be used for the plan, even
+if we use only a pole's worth of processors.
+
+Insert note in the manual regarding the mandatory divisibility of
+the number of MPI processes by PEXSI.npPerPole.
+
+modified:
+  Src/pexsi-ldos.lit
+  Src/m_pexsi_local_dos.F90
+  Docs/siesta.tex
+  Docs/LitCode/pexsi-ldos.html
+
+------------------------------------------------------------
+November 5, 2015  A. Garcia   trunk-464--pexsi-v0.8-spin-6
+Avoid stopping the program when the solver does not converge. Update documentation.
+
+Rather than stopping the program immediately, we allow the
+density-matrix normalization step to try to recover the correct number
+of electrons. This is non-optimal but can recover from occassional
+instabilities.
+
+Update the manual.
+
+Create Docs/LitCode to hold the .html files produced (manually for now) from
+the .lit files in Src.
+
+added:
+  Docs/LitCode/
+  Docs/LitCode/README
+  Docs/LitCode/pexsi-dos.html
+  Docs/LitCode/pexsi-ldos.html
+  Docs/LitCode/pexsi-lit.html
+  Docs/LitCode/pexsi-solver.html
+  Docs/LitCode/redist-spmatrix.html
+renamed:
+  Src/redist-spmatrix.org => Src/redist-spmatrix.lit
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/m_pexsi_driver.F90
+  Src/makefile.lit
+  Src/pexsi-solver.lit
+  Src/redist-spmatrix.lit
+
+------------------------------------------------------------
 November 2, 2015  A. Garcia   trunk-464--pexsi-v0.8-spin-5
 Implemented DOS and LDOS routines with spin-polarization
 
