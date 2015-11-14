@@ -183,7 +183,7 @@ contains
     integer, allocatable :: ID_mu(:)
     ! For error estimation
     integer  :: eM_i, eM_j
-    real(dp) :: eM, DMe, ee, ee_i, tmp, m_err
+    real(dp) :: eM, DMe, ee, tmp, m_err, e_f, ew
     logical :: hasEDM, is_correlated, is_trace
     ! collecting the error contribution for each atom
     real(dp), allocatable :: atom_w(:,:), atom_neq(:,:)
@@ -219,6 +219,7 @@ contains
 
     ! initialize the errors
     eM  = 0._dp
+    ew  = 0._dp
     m_err = 0._dp
 
     ! Is the data correlated
@@ -351,7 +352,7 @@ contains
 ! DM is accessed individually, so we will never have a data race
 !$OMP parallel do default(shared), &
 !$OMP&private(lio,io,ia1,ia2,j,ind,jo,neq), &
-!$OMP&private(ee,mu_i,ee_i,mu_j,tmp), &
+!$OMP&private(ee,e_f,mu_i,mu_j,tmp), &
 !$OMP&firstprivate(w), reduction(+:m_err)
     do lio = 1 , nr
        ! We are in a buffer region...
@@ -443,40 +444,54 @@ contains
              !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wt: ', ia1,ia2,w,sum(w)
           end if
              
-          ! Do error estimation (capture before update)
-          ee = 0._dp
-          do mu_i = 1 , N_mu - 1
-             ee_i = DM(ind,mu_i) + neq(mu_i)
-             do mu_j = mu_i + 1 , N_mu
-                tmp = ee_i - DM(ind,mu_j) - neq(mu_j)
-                ! Calculate sum of all errors
-                m_err = m_err + tmp
-                if ( abs(tmp) > abs(ee) ) ee = tmp
-             end do
-          end do
-          
 #ifdef TRANSIESTA_WEIGHT_DEBUG
           if ( io == ucorb(jo,ng) .and. io == 28 ) then
              print '(2(a7,3(tr1,f10.5)))','Left',DM(ind,1),neq(1),w(1), &
                   'Right',DM(ind,2),neq(2),w(2)
           end if
 #endif
-          
-          DM(ind,1) = w(1) * ( DM(ind,1) + neq(1) )
-          if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
-          do mu_i = 2 , N_mu
-             DM(ind,1) = DM(ind,1) + &
-                  w(mu_i) * ( DM(ind,mu_i) + neq(mu_i) )
-             if ( hasEDM ) EDM(ind,1) = EDM(ind,1) + &
-                  w(mu_i) * EDM(ind,mu_i)
+
+          ! Calculate each contribution
+          do mu_i = 1 , N_mu
+             DM(ind,mu_i) = DM(ind,mu_i) + neq(mu_i)
           end do
 
+          ! Do error estimation (capture before update)
+          ee = 0._dp
+          do mu_i = 1 , N_mu - 1
+             do mu_j = mu_i + 1 , N_mu
+                tmp = DM(ind,mu_i) - DM(ind,mu_j)
+                ! Calculate sum of all errors
+                m_err = m_err + tmp
+                if ( abs(tmp) > abs(ee) ) ee = tmp
+             end do
+          end do
+          
+          ! Store for later estimation of the "final" error
+          e_f = DM(ind,1)
+          
+          DM(ind,1) = w(1) * DM(ind,1)
+          if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
+          do mu_i = 2 , N_mu
+             DM(ind,1) = DM(ind,1) + w(mu_i) * DM(ind,mu_i)
+             if ( hasEDM ) &
+                  EDM(ind,1) = EDM(ind,1) + w(mu_i) * EDM(ind,mu_i)
+          end do
+
+          ! Calculate error from estimated density
+          e_f = e_f - DM(ind,1)
+          do mu_i = 2 , N_mu
+             tmp = DM(ind,mu_i) - DM(ind,1)
+             if ( abs(tmp) > abs(e_f) ) e_f = tmp
+          end do
+          
           if ( abs(ee) > abs(eM) ) then
 !$OMP critical
              eM   = ee
              eM_i = io
              eM_j = jo
              DMe = DM(ind,1)
+             ew   = e_f
 !$OMP end critical
           end if
 
@@ -505,7 +520,7 @@ contains
     if ( Nodes > 1 ) then
     ! remove pointer
     nullify(DM,EDM)
-    allocate(DM(6,Nodes),EDM(6,Nodes))
+    allocate(DM(7,Nodes),EDM(7,Nodes))
 
     io = Node + 1
     ! Initialize
@@ -516,7 +531,8 @@ contains
     DM(4,io) = DMe
     DM(5,io) = m_err
     DM(6,io) = n_nzs
-    call MPI_Reduce(DM(1,1),EDM(1,1),6*Nodes, &
+    DM(7,io) = ew
+    call MPI_Reduce(DM(1,1),EDM(1,1),7*Nodes, &
          MPI_Double_Precision, MPI_Sum, 0, MPI_Comm_World, MPIerror)
     if ( IONode ) then
        io   = maxloc(abs(EDM(1,:)),1)
@@ -525,9 +541,10 @@ contains
        eM_j = nint(EDM(3,io))
        DMe  = EDM(4,io)
        ! Sum of errors
-       m_err = sum( DM(5,:) )
-       n_nzs = nint( sum( DM(6,:) ) )
-    endif
+       m_err = sum( EDM(5,:) )
+       n_nzs = nint( sum( EDM(6,:) ) )
+       ew = EDM(7,io)
+    end if
     deallocate(DM,EDM)
     end if
 #endif
@@ -536,7 +553,7 @@ contains
     m_err = m_err / real(n_nzs,dp)
 
     call print_error_estimate(IONode,'ts-EE:', &
-         eM,eM_i,eM_j,DMe,m_err)
+         eM,ew,eM_i,eM_j,DMe,m_err)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
@@ -547,18 +564,18 @@ contains
   ! ************* Commonly used modules ****************
 
   ! Write out the error-estimate for the current iteration (or, k-point)
-  subroutine print_error_estimate(IONode,a,eM,eM_i,eM_j,DM,m_err)
+  subroutine print_error_estimate(IONode,a,eM,ew,eM_i,eM_j,DM,m_err)
     logical, intent(in)  :: IONode
     character(len=*), intent(in) :: a
-    real(dp), intent(in) :: eM, DM, m_err
+    real(dp), intent(in) :: eM, ew, DM, m_err
     integer, intent(in)  :: eM_i,eM_j
 
     if ( IONode ) then
-       write(*,'(a,tr1,a,''('',i5,'','',i6,'')'',2(a,g10.5e1)&
+       write(*,'(a,tr1,a,i5,'','',i6,3(a,g10.5e1)&
             &,a,g11.5)') trim(a), &
-            'DM_ij', eM_i,eM_j,' = ',DM, &
-            ', d_ij = ',eM, &
-            '. mean_d = ',m_err
+            'ij(',eM_i,eM_j, '), DM = ',DM, &
+            ', ew = ',ew, ', em = ',eM, &
+            '. avg_m = ',m_err
     end if
 
   end subroutine print_error_estimate

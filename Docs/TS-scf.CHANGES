@@ -1,4 +1,16 @@
 ----------------------------------------------------
+November 14, 2015 -- Nick Papior       trunk-479---ts-scf-591
+Added error from estimated DM in weight
+
+* Fixed average print-out of error estimation
+
+* Added print-out of error between the final density
+  and the individual densities
+
+modified:
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 November 9, 2015 -- Nick Papior       trunk-479---ts-scf-590
 Enabled kT/<integer> in contours, added completed timing
 
