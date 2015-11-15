@@ -1004,6 +1004,18 @@ contains
             kscell=this_kcell,kdispl=this_kdispl, &
             Gamma=Gamma, Bcast=.true.)
 
+       ! Check that there is actually k-points in the transport direction
+       j = this%t_dir
+       i = this_kcell(j,j)
+       if ( i < 20 .and. IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' has very few &
+               &k-points in the semi-infinite direction, at least 20 is recommended.'
+       else if ( i < 5 .and. IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' has exceptionally few &
+               &k-points in the semi-infinite direction, at least 5 is required.'
+          ldie = .true.
+       end if
+
        ! If the system is not a Gamma calculation, then the file must
        ! not be either (the repetition will only increase the number of
        ! k-points, hence the above)
@@ -1021,7 +1033,7 @@ contains
              end if
           end do
        end do
-       
+
        if ( er .and. IONode ) then
           
           write(*,'(a)') 'Incompatible k-grids...'
@@ -1039,18 +1051,6 @@ contains
              write(*,'(3(i4,tr1),f8.4)') (this_kcell(i,j),i=1,3),kdispl(pvt(j))
           end do
           
-       end if
-
-       ! Check that there is actually k-points in the transport direction
-       j = this%t_dir
-       i = this_kcell(j,j)
-       if ( i < 20 .and. IONode ) then
-          write(*,'(a)') 'Electrode: '//trim(this%name)//' has very few &
-               &k-points in the semi-infinite direction, at least 20 is recommended.'
-       else if ( i < 5 .and. IONode ) then
-          write(*,'(a)') 'Electrode: '//trim(this%name)//' has exceptionally few &
-               &k-points in the semi-infinite direction, at least 5 is required.'
-          ldie = .true.
        end if
 
     else

@@ -1,4 +1,11 @@
 ----------------------------------------------------
+November 15, 2015 -- Nick Papior       trunk-479---ts-scf-593
+Moved check of k-points to before we check the correct sampling
+
+modified:
+  Src/m_ts_electype.F90
+
+----------------------------------------------------
 November 14, 2015 -- Nick Papior       trunk-479---ts-scf-592
 TBT: Fixed clean-tbt when recompiling phtrans
 
