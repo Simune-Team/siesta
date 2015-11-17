@@ -1,5 +1,17 @@
 ----------------------------------------------------
-November 17, 2015 -- Nick Papior       trunk-479---ts-scf-594
+November 17, 2015 -- Nick Papior       trunk-479---ts-scf-596
+TS: Enabled print-out of pivoting and sparsity patterns
+
+* To check that the pivoting and BTD really are performing
+  well we enable the write out of all matrices such that
+  a post-processing can be made.
+
+modified:
+  Src/m_ts_rgn2trimat.F90
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
+November 17, 2015 -- Nick Papior       trunk-479---ts-scf-595
 TBT: Added print-out of device sparsity
 
 modified:

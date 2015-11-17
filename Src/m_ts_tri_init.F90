@@ -313,6 +313,7 @@ contains
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
 
     character(len=40), parameter :: fmt = '(/,''TS.BTD.Pivot '',a,''+'',a)'
+    character(len=50) :: fmethod
     character(len=4) :: corb
     
     ! Regions used for sorting the device region
@@ -373,6 +374,7 @@ contains
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
          list_col = l_col , nrows_g = no , nnzs = n_nzs )
 
+    fmethod = 'orb+none'
     if ( IONode ) write(*,fmt) 'orb','none'
     call tri(r_pvt)
 
@@ -439,8 +441,8 @@ contains
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
          list_col = l_col , nrows_g = no , nnzs = n_nzs )
 
-    
     do iEl = 1 , N_Elec
+       fmethod = trim(corb)//'+'//trim(Elecs(iEl)%name)
        if ( IONode ) write(*,fmt) trim(corb),trim(Elecs(iEl)%name)
        if ( orb_atom == 1 ) then
           call rgn_copy(Elecs(iEl)%o_inD,r_El)
@@ -494,6 +496,7 @@ contains
        end if
     end do
 
+    fmethod = trim(corb)//'+CM'
     if ( IONode ) write(*,fmt) trim(corb),'CM'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els)
     if ( orb_atom == 1 ) then
@@ -503,6 +506,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+rev-CM'
     if ( IONode ) write(*,fmt) trim(corb),'rev-CM'
     call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
@@ -512,6 +516,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+CM+priority'
     if ( IONode ) write(*,fmt) trim(corb),'CM+priority'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_CUTHILL_MCKEE, sub = full, start = r_Els, &
          priority = priority%r)
@@ -522,6 +527,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+rev-CM+priority'
     if ( IONode ) write(*,fmt) trim(corb),'rev-CM+priority'
     call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
@@ -531,6 +537,7 @@ contains
        call tri(r_El)
     end if
     
+    fmethod = trim(corb)//'+GPS'
     if ( IONode ) write(*,fmt) trim(corb),'GPS'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_GPS, sub = full)
     if ( orb_atom == 1 ) then
@@ -540,6 +547,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+rev-GPS'
     if ( IONode ) write(*,fmt) trim(corb),'rev-GPS'
     call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
@@ -549,6 +557,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+GPS+priority'
     if ( IONode ) write(*,fmt) trim(corb),'GPS+priority'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_GPS, sub = full, priority = priority%r)
     if ( orb_atom == 1 ) then
@@ -558,6 +567,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+rev-GPS+priority'
     if ( IONode ) write(*,fmt) trim(corb),'rev-GPS+priority'
     call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
@@ -567,6 +577,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+PCG'
     if ( IONode ) write(*,fmt) trim(corb),'PCG'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full)
     if ( orb_atom == 1 ) then
@@ -576,6 +587,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+rev-PCG'
     if ( IONode ) write(*,fmt) trim(corb),'rev-PCG'
     call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
@@ -585,6 +597,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+PCG+priority'
     if ( IONode ) write(*,fmt) trim(corb),'PCG+priority'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_PCG, sub = full, priority = priority%r)
     if ( orb_atom == 1 ) then
@@ -594,6 +607,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+rev-PCG+priority'
     if ( IONode ) write(*,fmt) trim(corb),'rev-PCG+priority'
     call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
@@ -603,6 +617,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+GGPS'
     if ( IONode ) write(*,fmt) trim(corb),'GGPS'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_GGPS, sub = full)
     if ( orb_atom == 1 ) then
@@ -612,6 +627,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+rev-GGPS'
     if ( IONode ) write(*,fmt) trim(corb),'rev-GGPS'
     call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
@@ -621,6 +637,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+GGPS+priority'
     if ( IONode ) write(*,fmt) trim(corb),'GGPS+priority'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_GGPS, sub = full, priority = priority%r)
     if ( orb_atom == 1 ) then
@@ -630,6 +647,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+rev-GGPS+priority'
     if ( IONode ) write(*,fmt) trim(corb),'rev-GGPS+priority'
     call rgn_reverse(r_tmp)
     if ( orb_atom == 1 ) then
@@ -641,6 +659,7 @@ contains
 
 #ifdef FORCE_METIS
 #ifdef SIESTA__METIS
+    fmethod = trim(corb)//'+metis'
     if ( IONode ) write(*,fmt) trim(corb),'metis'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS, sub = full)
     if ( orb_atom == 1 ) then
@@ -650,6 +669,7 @@ contains
        call tri(r_El)
     end if
 
+    fmethod = trim(corb)//'+metis+priority'
     if ( IONode ) write(*,fmt) trim(corb),'metis+priority'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS, sub = full, &
          priority = priority%r)
@@ -678,17 +698,26 @@ contains
     ! pivoting scheme
     subroutine tri(r_pvt)
       use m_pivot_methods, only : bandwidth, profile
+      use fdf, only : fdf_overwrite
       type(tRgn), intent(inout) :: r_pvt
 
       integer :: bw, els, pad, work, i
       integer(i8b) :: prof
       type(tRgn) :: ctri
+      character(len=132) :: fname
 
       bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
       prof = profile(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
       if ( IONode ) then
          write(*,'(tr3,a,t23,i10,/,tr3,a,t13,i20)') &
               'Bandwidth: ',bw,'Profile: ',prof
+      end if
+
+      ! Only if it is defined
+      fname = fdf_get('TS.BTD.Output',' ')
+      if ( len_trim(fname) > 0 ) then
+         fname = 'TS.BTD.Output '//trim(fmethod)
+         call fdf_overwrite(fname)
       end if
 
       ! Create a new tri-diagonal matrix, do it in parallel

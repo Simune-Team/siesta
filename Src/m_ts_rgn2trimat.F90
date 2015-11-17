@@ -59,6 +59,7 @@ contains
     use mpi_siesta
 #endif
     use alloc, only : re_alloc, de_alloc
+    use geom_helper, only: ucorb
 
     ! electrodes
     integer, intent(in) :: N_Elec
@@ -88,6 +89,9 @@ contains
     ! In case of parallel
     integer :: guess_start, guess_step
     logical :: copy_first, lpar
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    character(len=50) :: fname
+    integer :: io, jo, jr, j, ind, no_u, iu, off
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -111,7 +115,7 @@ contains
     guess_part(:) = 0
 
     ! create array containing max-min for each ts-orbital
-    call re_alloc(mm_col  , 1, 2, 1, no, &
+    call re_alloc(mm_col, 1, 2, 1, no, &
          routine='tbtR2TM', name='mm_col')
 !$OMP parallel do default(shared), private(i)
     do i = 1 , no
@@ -229,10 +233,10 @@ contains
     end if
 #endif
 
+    call de_alloc(guess_part,routine='tsSp2TM',name='guess_part')
     ! Shrink to the found parts
     call re_alloc(n_part,1, parts, copy=.true., shrink=.true., &
          routine='tsSp2TM', name='n_part')
-    call de_alloc(guess_part,routine='tsSp2TM',name='guess_part')
 
     if ( parts < 2 ) then
        
@@ -281,6 +285,61 @@ contains
     end if
 
     call de_alloc(mm_col,routine='tsSp2TM',name='mm_col')
+
+    if ( .not. IONode ) return
+
+    fname = fdf_get('TS.BTD.Output',' ')
+    if ( len_trim(fname) == 0 ) return
+    
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows_g=no_u)
+
+    ! Write out the BTD format in a file to easily be processed
+    ! by python
+    call io_assign(iu)
+    open(iu, file=trim(fname)//'.pvt',action='write')
+    write(iu,'(i7)') no
+    do i = 1 , no
+       io = r%r(i)
+       if ( l_ncol(io) == 0 ) cycle
+       do j = 1 , l_ncol(io)
+          ind = l_ptr(io) + j
+          jo = UCORB(l_col(ind),no_u)
+          jr = rgn_pivot(r,jo)
+          if ( jr > i ) cycle ! only print lower half
+          if ( jr <= 0 ) cycle
+          write(iu,'(2(i7,tr1),i1)') i,jr,1
+       end do
+    end do
+    call io_close(iu)
+    call io_assign(iu)
+    open(iu, file=trim(fname)//'.sp',action='write')
+    write(iu,'(i7)') no
+    off = 0
+    do io = 1 , no_u
+       if ( l_ncol(io) == 0 ) cycle
+       if ( rgn_pivot(r,io) <= 0 ) then
+          off = off + 1
+          cycle
+       end if
+       do j = 1 , l_ncol(io)
+          ind = l_ptr(io) + j
+          jo = UCORB(l_col(ind),no_u)
+          if ( jo > io ) cycle ! only print lower half
+          if ( rgn_pivot(r,jo) <= 0 ) cycle
+          write(iu,'(2(i7,tr1),i1)') io-off,jo-off,1
+       end do
+    end do
+    call io_close(iu)
+
+    call io_assign(iu)
+    open(iu, file=trim(fname)//'.btd',action='write')
+    ! write the tri-mat blocks
+    write(iu,'(i7)') parts
+    do i = 1 , parts
+       write(iu,'(i7)') n_part(i)
+    end do
+    call io_close(iu)
 
   contains 
 
@@ -708,7 +767,9 @@ contains
     ! The result
     integer :: minmax_col(2), ptr, nr, j
     integer, pointer :: l_col(:), l_ptr(:), ncol(:)
+    
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col,nrows_g=nr)
+    
     minmax_col(:) = rgn_pivot(r,row)
     do ptr = l_ptr(row) + 1 , l_ptr(row) + ncol(row)
        j = rgn_pivot(r,ucorb(l_col(ptr),nr))
@@ -717,6 +778,7 @@ contains
           if ( j > minmax_col(2) ) minmax_col(2) = j
        end if
     end do
+    
   end function minmax_col
 
   function valid_tri(no,r,mm_col,parts,n_part,last_eq) result(val) 
@@ -787,7 +849,6 @@ contains
           return
        end if
     end if
-
 
   end function valid_tri
 
