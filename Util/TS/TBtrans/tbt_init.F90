@@ -206,7 +206,14 @@ subroutine tbt_init()
   ! Print warnings
   call print_tbt_warnings( Gamma )
 
-  if ( IONode ) write(*,'(/a)') 'Electrode information:'
+  ! Print information regarding the device
+  if ( IONode ) then
+     write(*,'(a)') 'Device information (full):'
+     call print_type(TSHS%sp)
+     write(*,*) ! newline
+  end if
+  
+  if ( IONode ) write(*,'(a)') 'Electrode information:'
 
   ! We have the contour now, so we can create the GF files
   do iEl = 1 , N_Elec

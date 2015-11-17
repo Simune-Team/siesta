@@ -1,4 +1,11 @@
 ----------------------------------------------------
+November 17, 2015 -- Nick Papior       trunk-479---ts-scf-594
+TBT: Added print-out of device sparsity
+
+modified:
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 November 15, 2015 -- Nick Papior       trunk-479---ts-scf-593
 Moved check of k-points to before we check the correct sampling
 
