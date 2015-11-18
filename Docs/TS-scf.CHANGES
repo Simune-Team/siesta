@@ -1,4 +1,12 @@
 ----------------------------------------------------
+November 18, 2015 -- Nick Papior       trunk-479---ts-scf-597
+Defaulted OpenMP schedueling to 32
+
+modified:
+  Src/siesta_init.F
+  Util/TS/TBtrans/tbt_init.F90
+
+----------------------------------------------------
 November 17, 2015 -- Nick Papior       trunk-479---ts-scf-596
 TS: Enabled print-out of pivoting and sparsity patterns
 

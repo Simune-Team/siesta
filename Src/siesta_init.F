@@ -151,7 +151,7 @@
 #else
         write(6,'(/,a)') '* Running in serial mode'
 #endif
-!$OMP parallel
+!$OMP parallel default(shared)
 !$OMP master
 !$    i = omp_get_num_threads()
 !$    write(*,'(a,i0,a)') '* Running ',i,' OpenMP threads.'
@@ -165,6 +165,12 @@
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',is
 !$    case ( OMP_SCHED_DYNAMIC ) 
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    if ( is == 1 ) then
+!$     ! this is the default scheduling, probably the user
+!$     ! have not set the value, predefine it to 32
+!$     is = 32
+!$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',is
+!$    end if
 !$    case ( OMP_SCHED_GUIDED ) 
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',is
 !$    case ( OMP_SCHED_AUTO ) 
@@ -174,6 +180,7 @@
 !$    end select
 !$OMP end master
 !$OMP end parallel
+!$    call omp_set_schedule(i,is)
          call timestamp('Start of run')
          call wallclock('Start of run')
       endif

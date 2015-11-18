@@ -111,7 +111,7 @@ subroutine tbt_init()
 #else
      write(*,'(/,a)') '* Running in serial mode'
 #endif
-!$OMP parallel
+!$OMP parallel default(shared)
 !$OMP master
 !$    it = omp_get_num_threads()
 !$    write(*,'(a,i0,a)') '* Running ',it,' OpenMP threads.'
@@ -122,6 +122,13 @@ subroutine tbt_init()
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule STATIC, chunks ',itmp
 !$    case ( OMP_SCHED_DYNAMIC ) 
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',itmp
+!$    if ( itmp == 1 ) then
+!$     ! this is the default scheduling, probably the user
+!$     ! have not set the value, predefine it to 32
+!$     itmp = 32
+!$     write(*,'(a,i0)')'** OpenMP runtime &
+!$   &schedule DYNAMIC, chunks ',itmp
+!$    end if
 !$    case ( OMP_SCHED_GUIDED ) 
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',itmp
 !$    case ( OMP_SCHED_AUTO ) 
@@ -131,6 +138,7 @@ subroutine tbt_init()
 !$    end select
 !$OMP end master
 !$OMP end parallel
+!$    call omp_set_schedule(it,itmp)
      call timestamp('Start of run')
      call wallclock('Start of run')
   endif
