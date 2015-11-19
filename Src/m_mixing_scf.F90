@@ -30,17 +30,20 @@ contains
     if ( .not. SCFconverged ) return
 
     if ( scf_mix%n_itt < 0 ) then
+
        ! this means that we skip to the 
        ! following algorithm
-       scf_mix => scf_mixs(-scf_mix%n_itt)
+       scf_mix => scf_mix%next
        SCFconverged = .false.
 
        if ( allocated(scf_mix%stack) ) then
 
           do i = 1 , size(scf_mix%stack)
+
              ! delete all but one history
              ! This should be fine
              call reset(scf_mix%stack(i), -1)
+
           end do
 
        end if
@@ -53,12 +56,14 @@ contains
 
   end subroutine mixing_scf_converged
 
+
   subroutine reset_mixing_scf()
 
     nullify(scf_mix)
     call mixing_reset( scf_mixs )
 
   end subroutine reset_mixing_scf
+
 
   subroutine mixing_scf_history_clear( )
     

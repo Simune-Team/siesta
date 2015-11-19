@@ -1,4 +1,35 @@
 ----------------------------------------------------
+November 19, 2015 -- Nick Papior       trunk-479---ts-scf-599
+Small fix in m_mixing
+
+* As the next was implemented it makes sense
+  to use that keyword instead of the -n_itt index
+
+  Hence 
+
+%block SCF.Mix
+  init
+  pulay
+%endblock
+
+%block SCF.Mix.init
+  method pulay
+  next pulay
+  iterations -1
+  w 0.005
+%endblock
+%block SCF.Mix.pulay
+  method pulay
+  w 0.05
+%endblock
+
+  now works as intended.
+
+modified:
+  Src/m_mixing.F90
+  Src/m_mixing_scf.F90
+
+----------------------------------------------------
 November 19, 2015 -- Nick Papior       trunk-479---ts-scf-598
 Cleaned output of sparsity matrices
 

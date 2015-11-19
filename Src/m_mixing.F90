@@ -44,7 +44,7 @@ module m_mixing
   type tMixer
 
      ! Name of mixer
-     character(len=20) :: name
+     character(len=24) :: name
 
      ! The different saved variables per iteration
      ! and their respective stacks
@@ -442,17 +442,20 @@ contains
     end function is_variant
 
     subroutine read_block(m, force)
-      type(tMixer), intent(inout) :: m
+      type(tMixer), pointer :: m
       ! Force the block to exist
       logical, intent(in) :: force
 
+      logical :: is_block
       integer :: n
       
       ! create block string
       opt = trim(lp)//'Mix.'//trim(m%name)
 
+      is_block = fdf_block(opt,bfdf)
+
       ! Read the options for this mixer
-      if ( fdf_block(opt,bfdf) ) then
+      if ( is_block ) then
          
          method = ' '
          variant = ' '
@@ -479,7 +482,7 @@ contains
                nullify(m%next)
 
                opt2 = fdf_bnames(pline,2)
-               do im2 = 2 , nm
+               do im2 = 1 , nm
                   if ( im2 == im ) continue
                   if ( leqi(opt2,mixers(im2)%name) ) then
                      m%next => mixers(im2)
@@ -490,6 +493,11 @@ contains
                if ( .not. associated(m%next) ) then
                   call die('mixing: Could not find next mixer. &
                        &Ensure all mixers exist and their names.')
+               end if
+
+               if ( associated(m%next,target=m) ) then
+                  call die('mixing: Next *must* not be it-self. &
+                       &Please change accordingly.')
                end if
 
             else if ( leqi(opt,'iterations') .or. &
@@ -519,8 +527,6 @@ contains
 
          end do
          
-         call fdf_brewind(bfdf)
-
       else if ( force ) then
 
          write(*,*) 'Could not find block:'
@@ -569,20 +575,22 @@ contains
 
       m%restart_save = min(m%n_hist - 1,m%restart_save)
 
-      ! Read the options for this mixer
-      if ( fdf_block(opt,bfdf) ) then
+      if ( is_block ) then
+
+         ! Read the options for this mixer
+         call fdf_brewind(bfdf)
          
          ! read options
          do while ( fdf_bline(bfdf,pline) )
             if ( fdf_bnnames(pline) == 0 ) cycle
-            
+
             opt = fdf_bnames(pline,1)
 
             if ( leqi(opt,'mixing.weight') .or. &
                  leqi(opt,'alpha') .or. leqi(opt,'w') ) then
-               
+
                m%w = fdf_breals(pline,1)
-               
+
             else if ( leqi(opt,'weightP') .or. &
                  leqi(opt,'w.prime') .or. leqi(opt,'alpha.init') ) then
 
@@ -591,11 +599,11 @@ contains
             else if ( leqi(opt,'damping') ) then
 
                m%w = fdf_breals(pline,1)
-               
+
             end if
 
          end do
-         
+
       end if
 
     end subroutine read_block
@@ -673,6 +681,7 @@ contains
 
   end subroutine mixing_1d
   
+
   subroutine mixing_2d( mix, iscf, n1, n2, x1, F1, x2 )
     type(tMixer), pointer :: mix
     integer, intent(in) :: iscf, n1, n2
@@ -1522,6 +1531,7 @@ contains
 
   end subroutine mixing_broyden
 
+
   ! Deletes all history, 
   ! Possibly reassign number of new histories saved
   subroutine mixing_history_clear( mixers )
@@ -1587,6 +1597,7 @@ contains
 
   end subroutine mixing_history_clear
 
+
   subroutine mixing_reset( mixs )
     type(tMixer), pointer :: mixs(:)
     
@@ -1619,6 +1630,7 @@ contains
     nullify(mixs)
 
   end subroutine mixing_reset
+
 
   subroutine mixing_print( prefix, mixers )
     
@@ -1704,15 +1716,14 @@ contains
 
        if ( m%n_itt < 0 ) then
           write(*,'(2a,t50,''= '',a)') trim(fmt), &
-               '    After convergence mixer',trim(mixers(-m%n_itt)%name)
+               '    After convergence mixer',trim(m%next%name)
        else if ( m%n_itt > 0 ) then
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                '    Number of mixing iterations',m%n_itt
-       end if
-
-       if ( associated(m%next) .and. m%n_itt > 0 ) then
+          if ( associated(m%next) ) then
           write(*,'(2a,t50,''= '',a)') trim(fmt), &
                '    Following mixing method',trim(m%next%name)
+          end if
        end if
           
     end do
