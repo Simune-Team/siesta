@@ -22,7 +22,9 @@ module m_mixing_scf
 contains
 
   subroutine mixing_scf_converged( SCFconverged )
+
     use parallel, only: IONode
+
     logical, intent(inout) :: SCFconverged
     integer :: i
 
@@ -49,7 +51,8 @@ contains
        end if
 
        if ( IONode ) then
-         write(*,'(a)') ':!: SCF cycle continued for different mixer'
+         write(*,'(a,a)') ':!: SCF cycle continuation mixer: ', &
+              trim(scf_mix%name)
        end if
 
     end if

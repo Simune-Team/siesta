@@ -1,4 +1,11 @@
 ----------------------------------------------------
+November 19, 2015 -- Nick Papior       trunk-479---ts-scf-600
+Added print-out of changed mixer
+
+modified:
+  Src/m_mixing_scf.F90
+
+----------------------------------------------------
 November 19, 2015 -- Nick Papior       trunk-479---ts-scf-599
 Small fix in m_mixing
 
