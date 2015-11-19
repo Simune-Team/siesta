@@ -957,16 +957,23 @@ contains
     integer(c_int), allocatable :: xadj(:), adjncy(:)
     integer(c_int), allocatable :: perm(:), iperm(:)
     integer(c_int), allocatable, target :: w(:)
-    integer(c_int) :: nvtxs, opts(60) ! In 5.0.1 it is 40, but ...
+    integer(c_int) :: iret, nvtxs, opts(100) ! In 5.0.1 it is 40, but ...
     type(c_ptr) :: wp
     integer :: nadj
-
-    interface 
+    
+    interface
+       integer(c_int) function METIS_SetDefaultOptions(opts) &
+            bind(C, name="METIS_SetDefaultOptions")
+         use iso_c_binding, only: c_int
+         implicit none
+         integer(c_int), dimension(*) :: opts
+       end function METIS_SetDefaultOptions
        integer(c_int) function METIS_NodeND(nvtxs,xadj,adjncy,vwgt, &
             opts,perm,iperm) bind(C, name="METIS_NodeND")
          use iso_c_binding, only: c_int, c_ptr
+         implicit none
          integer(c_int) :: nvtxs
-         integer(c_int), dimension(*) :: xadj,adjncy,perm,iperm
+         integer(c_int), dimension(*) :: xadj, adjncy, perm, iperm
          type(c_ptr), value :: vwgt
          integer(c_int), dimension(*) :: opts
        end function METIS_NodeND
@@ -977,14 +984,34 @@ contains
 
     call rgn_delete(pvt)
 
-    call METIS_setdefaultoptions(opts)
-    opts(18) = 1
+    ! The following does C-style indexing 
+    ! as the internal METIS structure is a simple offset
+
+!   call METIS_setdefaultoptions(opts)
+    iret = METIS_setdefaultoptions(opts)
+    ! METIS_OK == 1
+    if ( iret /= 1 ) then
+       opts(6) = 256 ! increase debug level and re-run for full dbg-lvl
+       iret = METIS_setdefaultoptions(opts)
+       call die('metis_pvt: Error on initializing default options.')
+    end if
+
+    ! set options
+    opts(3)  =  1 ! CTYPE == Sorted heavy-edge matching
+!    opts(5)  =  1 ! RTYPE == Greedy-based cut and volume refinement
+    opts(7)  = 20 ! NITER(10) == Number of iterations
+    opts(8)  =  1 ! NCUT == Number of cuts
+    opts(10) =  1 ! NO2HOP == does not use 2 hop
+    opts(11) =  1 ! MINCONN == Explicitly minimize the maximum connectivity
+    opts(12) =  1 ! CONTIG == Forces contiguous 
+    opts(13) =  1 ! COMPRESS == compress similar adjacency nodes
+    opts(16) =  1 ! NSEPS(1) == tries in the separator
 
     ! Allocate adjacency graphs
     allocate(xadj(0:sub%n), perm(sub%n), iperm(sub%n) , w(sub%n) )
 
     ! First count adjacencies
-    xadj(0) = 0
+    xadj(0) = 0 ! + 1 : fortran-style
     do i = 1 , sub%n
 
        io = sub%r(i)
@@ -1006,7 +1033,7 @@ contains
        xadj(i) = xadj(i-1) + nadj
 
        if ( present(priority) ) then
-          w(i) = priority(io)
+          w(i) = priority(io) + 1
        else
           w(i) = 1
        end if
@@ -1032,7 +1059,7 @@ contains
              ! Skip "on-site" connections
              if ( l_col(ind) /= io ) then
                 nadj = nadj + 1
-                adjncy(nadj) = j
+                adjncy(nadj) = j - 1 ! + 1 : fortran style
              end if
           end if
        end do
@@ -1046,12 +1073,15 @@ contains
     end do
 
     ! Call metis
-    ! TODO, I think there is a bug, it partitions extremely bad
     wp = c_loc(w(1))
     nvtxs = sub%n
-    i = METIS_NodeND(nvtxs, xadj, adjncy, wp, opts, perm, iperm)
-    if ( i /= 1 ) then ! METIS_OK == 1
-       print *,i
+!   call METIS_NodeND(nvtxs, xadj, adjncy, wp, opts, perm, iperm)
+    iret = METIS_NodeND(nvtxs, xadj, adjncy, wp, opts, perm, iperm)
+    if ( iret /= 1 ) then ! METIS_OK == 1
+       print *,iret
+       opts(6) = 256
+       iret = METIS_NodeND(nvtxs, xadj, adjncy, wp, opts, perm, iperm)
+       print *,iret
        call die('pivot_method: metis, error in pivoting.')
     end if
 
@@ -1060,9 +1090,10 @@ contains
 
     call rgn_init(pvt,sub%n)
 
+
     ! Transfer pivoting to actual pivoting index
     do i = 1 , sub%n
-       pvt%r(i) = sub%r(perm(i))
+       pvt%r(i) = sub%r(perm(i)+1) ! - 1 : fortran style
     end do
 
     ! Clean-up

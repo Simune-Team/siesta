@@ -435,11 +435,14 @@ contains
          call sp2graphviz('GRAPHVIZ_'//trim(corb)//'.gv', &
          n,n_nzs,ncol,l_ptr,l_col, types = r_El%r )
 #endif
-
-    
+  
     ! Attach the sparsity pattern of the orbitals
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
          list_col = l_col , nrows_g = no , nnzs = n_nzs )
+
+
+    ! *** Start analyzing sparsity pattern
+
 
     do iEl = 1 , N_Elec
        fmethod = trim(corb)//'+'//trim(Elecs(iEl)%name)
@@ -657,7 +660,6 @@ contains
        call tri(r_El)
     end if
 
-#ifdef FORCE_METIS
 #ifdef SIESTA__METIS
     fmethod = trim(corb)//'+metis'
     if ( IONode ) write(*,fmt) trim(corb),'metis'
@@ -679,7 +681,6 @@ contains
        call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
        call tri(r_El)
     end if
-#endif
 #endif
 
     end do orb_atom_switch

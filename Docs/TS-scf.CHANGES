@@ -1,4 +1,19 @@
 ----------------------------------------------------
+November 19, 2015 -- Nick Papior       trunk-479---ts-scf-598
+Cleaned output of sparsity matrices
+
+* Now we only write out the pivoted matrix as that
+  reduces disk-space requirement.
+
+* Fixed METIS ordering, however, it does not produce
+  bandwidth reductions. This should be done via other means.
+
+modified:
+  Src/m_pivot_methods.F90
+  Src/m_ts_rgn2trimat.F90
+  Src/m_ts_tri_init.F90
+
+----------------------------------------------------
 November 18, 2015 -- Nick Papior       trunk-479---ts-scf-597
 Defaulted OpenMP schedueling to 32
 

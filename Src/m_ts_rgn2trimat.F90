@@ -295,10 +295,10 @@ contains
          nrows_g=no_u)
 
     ! Write out the BTD format in a file to easily be processed
-    ! by python
+    ! by python, this is the pivoted sparsity pattern
     call io_assign(iu)
-    open(iu, file=trim(fname)//'.pvt',action='write')
-    write(iu,'(i7)') no
+    open(iu, file=trim(fname)//'.sp',action='write')
+    write(iu,'(i0)') no
     do i = 1 , no
        io = r%r(i)
        if ( l_ncol(io) == 0 ) cycle
@@ -308,36 +308,26 @@ contains
           jr = rgn_pivot(r,jo)
           if ( jr > i ) cycle ! only print lower half
           if ( jr <= 0 ) cycle
-          write(iu,'(2(i7,tr1),i1)') i,jr,1
+          write(iu,'(2(i0,tr1),i1)') i, jr, 1
        end do
     end do
     call io_close(iu)
+
     call io_assign(iu)
-    open(iu, file=trim(fname)//'.sp',action='write')
-    write(iu,'(i7)') no
-    off = 0
-    do io = 1 , no_u
-       if ( l_ncol(io) == 0 ) cycle
-       if ( rgn_pivot(r,io) <= 0 ) then
-          off = off + 1
-          cycle
-       end if
-       do j = 1 , l_ncol(io)
-          ind = l_ptr(io) + j
-          jo = UCORB(l_col(ind),no_u)
-          if ( jo > io ) cycle ! only print lower half
-          if ( rgn_pivot(r,jo) <= 0 ) cycle
-          write(iu,'(2(i7,tr1),i1)') io-off,jo-off,1
-       end do
+    open(iu, file=trim(fname)//'.pvt',action='write')
+    write(iu,'(i0)') no
+    do i = 1 , no
+       ! store the pivoting table such that sp[i,j] = orig[ pvt[i] , pvt[j] ]
+       write(iu,'(i0,tr1,i0)') i, r%r(i)
     end do
     call io_close(iu)
 
     call io_assign(iu)
     open(iu, file=trim(fname)//'.btd',action='write')
     ! write the tri-mat blocks
-    write(iu,'(i7)') parts
+    write(iu,'(i0)') parts
     do i = 1 , parts
-       write(iu,'(i7)') n_part(i)
+       write(iu,'(i0)') n_part(i)
     end do
     call io_close(iu)
 
