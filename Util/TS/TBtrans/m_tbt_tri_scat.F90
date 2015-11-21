@@ -20,7 +20,7 @@ module m_tbt_tri_scat
 
   use class_zTriMat
 
-  use m_ts_tri_scat, only : GF_Gamma_GF
+  use m_ts_tri_scat, only : GF_Gamma_GF, dir_GF_Gamma_GF
   use m_ts_tri_common, only : GFGGF_needed_worksize
 
   use m_ts_electype
@@ -42,6 +42,7 @@ module m_tbt_tri_scat
 
   ! From ts_tri_scat
   public :: GF_Gamma_GF
+  public :: dir_GF_Gamma_GF
   public :: GFGGF_needed_worksize
 #ifdef NCDF_4
   public :: orb_current
@@ -748,7 +749,8 @@ contains
 
     integer :: no, np
     integer :: i, ii, i_Elec
-    integer, allocatable :: cumsum(:)
+    integer, pointer :: crows(:)
+
     integer :: sN, n, nb
     ! BLAS routines
     complex(dp), external :: zdotu, zdotc
@@ -759,11 +761,7 @@ contains
 
     no = El%inDpvt%n
     np = parts(Gfcol)
-    allocate(cumsum(np))
-    cumsum(1) = 0
-    do n = 2 , np
-       cumsum(n) = cumsum(n-1) + nrows_g(Gfcol,n-1)
-    end do
+    crows => cum_rows(Gfcol)
 
     ! This code is based on the down-folded self-energies
     ! which are determined by the col region
@@ -783,7 +781,7 @@ contains
        ! get placement of the diagonal block in the column
        call TriMat_Bias_idxs(Gfcol,no,n,i,ii)
 
-       i = i + El%inDpvt%r(i_Elec) - cumsum(n) - 1
+       i = i + El%inDpvt%r(i_Elec) - (crows(n)-sN) - 1
        Gf => z(i:ii)
 
 #ifdef TBT_T_G_GAMMA_OLD
@@ -826,7 +824,6 @@ contains
 #ifndef TBT_T_G_GAMMA_OLD
     T = T * 2._dp
 #endif
-    deallocate(cumsum)
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-Gamma',2)
@@ -849,7 +846,7 @@ contains
 
     integer :: no, np
     integer :: i, ii, i_Elec
-    integer, allocatable :: cumsum(:)
+    integer, pointer :: crows(:)
     integer :: sN, n
     integer :: nb
     ! BLAS routines
@@ -861,11 +858,7 @@ contains
 
     no = El%inDpvt%n
     np = parts(Gfcol)
-    allocate(cumsum(np))
-    cumsum(1) = 0
-    do n = 2 , np
-       cumsum(n) = cumsum(n-1) + nrows_g(Gfcol,n-1)
-    end do
+    crows => cum_rows(Gfcol)
 
 #ifndef TS_NOCHECKS
     if ( no**2 > nzwork ) call die('GF_T: no**2 < nzwork')
@@ -897,7 +890,7 @@ contains
        ! get placement of the diagonal block in the column
        call TriMat_Bias_idxs(Gfcol,no,n,i,ii)
        
-       i = i + El%inDpvt%r(i_Elec) - cumsum(n) - 1
+       i = i + El%inDpvt%r(i_Elec) - (crows(n)-sN) - 1
 
        ! Calculate the G \Gamma
 #ifdef USE_GEMM3M
@@ -933,7 +926,7 @@ contains
        ! get placement of the diagonal block in the column
        call TriMat_Bias_idxs(Gfcol,no,n,i,ii)
        
-       i = i + El%inDpvt%r(i_Elec) - cumsum(n) - 1
+       i = i + El%inDpvt%r(i_Elec) - (crows(n)-sN) - 1
 
        ii = ( i_Elec-1 ) * no + 1
        ! Calculate the G \Gamma G^\dagger
@@ -952,8 +945,6 @@ contains
     ! The remaining calculation is very easy as we simply
     ! need to do the sum of the trace
     T_self = - real( zdotu(no*no,z(1),1,El%Gamma(1),1) , dp)
-
-    deallocate(cumsum)
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-T',2)

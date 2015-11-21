@@ -144,7 +144,7 @@ contains
     logical :: calc_GF_DOS
     logical, allocatable :: prep_El(:)
     integer, allocatable :: part_cols(:,:)
-    logical, allocatable :: A_parts(:)
+    logical, allocatable :: A_parts(:), proj_parts(:)
 ! ************************************************************
 
 ! ********************** Result arrays ***********************
@@ -336,8 +336,13 @@ contains
     ! Calculate the maximum matrix size which corresponds
     ! to the device region. Here we need to take into account the
     ! work-array size of the GFGGF triple product.
-    call GFGGF_needed_worksize(DevTri%n,DevTri%r, &
-         N_Elec, Elecs, pad_RHS, nGFGGF)
+    if ( 'T-Gf' .in. save_DATA ) then
+       call GFGGF_needed_worksize(DevTri%n,DevTri%r, &
+            N_Elec, Elecs, pad_RHS, nGFGGF)
+    else
+       pad_RHS = 0
+       nGFGGF = 0
+    end if
        
 #ifdef NCDF_4
     if ( N_proj_ME > 0 ) then
@@ -348,7 +353,9 @@ contains
 
     ! The minimum padding must be the maximum value of the 
     ! 1) padding required to contain a down-folding region
-    ! 2) padding required to calculate the entire Gf column 
+#ifdef TRANSIESTA_GFGGF_COLUMN
+    ! 2) padding required to calculate the entire Gf column
+#endif
     pad_LHS = max(pad_LHS,pad_RHS)
 
     ! In case the user requests eigenchannel calculations
@@ -454,7 +461,6 @@ contains
 
     ! Initialize the tri-diagonal inversion routine
     call init_TriMat_inversion(zwork_tri)
-    call init_BiasTriMat_inversion(zwork_tri)
 
     ! initialize the matrix inversion tool
     no = maxval(DevTri%r)
@@ -538,6 +544,13 @@ contains
        prep_El(N_elec) = .false.
        
     end if
+
+#ifdef NCDF_4
+    if ( N_proj_ME > 0 ) then
+       allocate(proj_parts(DevTri%n))
+       proj_parts = .true.
+    end if
+#endif
     
     allocate(A_parts(DevTri%n))
     A_parts = .true.
@@ -990,6 +1003,7 @@ contains
                   (.not. T_all) .and. &
                   ('DOS-A-all' .nin. save_DATA) ) ) cycle
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
              ! ******************
              ! * calc GF-column *
              ! ******************
@@ -1001,20 +1015,33 @@ contains
                    call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
                 end if
 
-             end if
-
-             ! This small conversion of data, ensures
-             ! that we do not need to create two EXACT
-             ! same functions.
-             ! Also, the only reason for doing this
-             ! is that the down-folded Gamma will NEVER
-             ! have any repetition.
-             if ( .not. cE%fake ) then
+                ! Tis small conversion of data, ensures
+                ! that we do not need to create two EXACT
+                ! same functions.
+                ! Also, the only reason for doing this
+                ! is that the down-folded Gamma will NEVER
+                ! have any repetition.
                 call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
                      A_parts, &
                      nGFGGF, GFGGF_work)
+                
              end if
-
+#else
+             ! *****************
+             ! * calc A-matrix *
+             ! *****************
+             if ( .not. cE%fake ) then
+                if ( 'T-sum-out' .in. save_DATA ) then
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                        Elecs(iEl), A_parts, &
+                        TrGfG = T(N_Elec+1,iEl))
+                else
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                        Elecs(iEl), A_parts)
+                end if
+             end if
+#endif
+             
              if ( ('DOS-A' .in. save_DATA) .and. .not. cE%fake ) then
 
                 ! Calculate the DOS from the spectral function
@@ -1142,8 +1169,10 @@ contains
             ! * Column Gf    *
             ! ****************
             if ( p_E%idx > 0 ) then
+               
+               call rgn_assoc(El_p%o_inD, p_E%ME%mol%orb)
+               call rgn_assoc(El_p%inDpvt,p_E%ME%mol%pvt)
 
-               no = p_E%ME%mol%orb%n
                ! We have a Left projection
                ! Insert pointer
                El_p%Gamma => El_p%Sigma(:)
@@ -1151,24 +1180,34 @@ contains
                ! the scattering state
                call proj_Mt_mix(p_E%ME%mol,p_E%idx,El_p%Gamma, p_E%ME%bGk)
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
                call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                    r_oDev, p_E%ME%mol%orb)
+                    r_oDev, El_p%o_inD)
 
                if ( 'proj-T-sum-out' .in. save_DATA ) then
-                  ! Copy over pivoting table and the size
-                  El_p%inDpvt%n =  p_E%ME%mol%pvt%n
-                  El_p%inDpvt%r => p_E%ME%mol%pvt%r
                   call Gf_Gamma(zwork_tri,El_p, &
                        bTk(size(proj_T(ipt)%R)+1,ipt))
                end if
-
+#else
+               if ( 'proj-T-sum-out' .in. save_DATA ) then
+                  call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                       El_p, proj_parts, &
+                       TrGfG = bTk(size(proj_T(ipt)%R)+1,ipt) )
+               else
+                  call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                       El_p, proj_parts)
+               end if
+#endif
 
             else
-               
+
+               call rgn_assoc(El_p%o_inD, Elecs(iEl)%o_inD)
+               call rgn_assoc(El_p%inDpvt,Elecs(iEl)%inDpvt)
+
                iEl = -p_E%idx
-               no = Elecs(iEl)%o_inD%n
                El_p%Gamma => Elecs(iEl)%Gamma(:)
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
                call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                     r_oDev, Elecs(iEl)%o_inD)
 
@@ -1177,12 +1216,24 @@ contains
                   call Gf_Gamma(zwork_tri,Elecs(iEl), &
                        bTk(1+size(proj_T(ipt)%R),ipt))
                end if
-
+#else
+               if ( 'T-sum-out' .in. save_DATA ) then
+                  call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                       Elecs(iEl), proj_parts, &
+                       TrGfG = bTk(1+size(proj_T(ipt)%R),ipt))
+               else
+                  call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, &
+                       Elecs(iEl), proj_parts)
+               end if
+#endif
+               
             end if
 
-            call GF_Gamma_GF(zwork_tri, El_p, no, &
-                 (/(.true.,jEl=1,DevTri%n)/), &
+#ifdef TRANSIESTA_GFGGF_COLUMN
+            call GF_Gamma_GF(zwork_tri, El_p, El_p%o_inD%n, &
+                 proj_parts, &
                  nGFGGF, GFGGF_work)
+#endif
 
             if ( ('proj-DOS-A' .in. save_DATA) .and. p_E%idx > 0 ) then
 
@@ -1217,10 +1268,11 @@ contains
 
                ! Re-create the projection electrode
                if ( p_E%idx > 0 ) then
+                  
+                  call rgn_assoc(El_p%o_inD, p_E%ME%mol%orb)
+                  call rgn_assoc(El_p%inDpvt,p_E%ME%mol%pvt)
 
                   El_p%Gamma => El_p%Sigma(:)
-                  El_p%inDpvt%n =  p_E%ME%mol%pvt%n
-                  El_p%inDpvt%r => p_E%ME%mol%pvt%r
                   call proj_Mt_mix(p_E%ME%mol,p_E%idx, El_p%Gamma, p_E%ME%bGk)
 
                   if ( N_eigen > 0 ) then
@@ -1338,6 +1390,7 @@ contains
     call ncdf_close(TBTcdf)
     if ( N_proj_ME > 0 ) then
        call ncdf_close(PROJcdf)
+       deallocate(proj_parts)
     end if
 
     call clean_dH( )
@@ -1360,7 +1413,6 @@ contains
     ! We can safely delete the orbital distribution, it is local
     call delete(fdist)
 
-    call clear_BiasTriMat_inversion()
     call clear_TriMat_inversion()
     call clear_mat_inversion()
 

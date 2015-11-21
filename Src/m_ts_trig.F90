@@ -92,8 +92,10 @@ contains
     ! Gf calculation
     use m_ts_trimat_invert
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
     use m_ts_tri_common, only : GFGGF_needed_worksize
-
+#endif
+    
     ! Gf.Gamma.Gf
     use m_ts_tri_scat
 
@@ -137,10 +139,12 @@ contains
     logical, pointer :: calc_parts(:) => null()
 ! ************************************************************
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
 ! ****************** Electrode variables *********************
     integer :: padding, GFGGF_size ! with IsVolt we need padding and work-array
     complex(dp), pointer :: GFGGF_work(:) => null()
 ! ************************************************************
+#endif
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
@@ -182,6 +186,7 @@ contains
     ! on ALL routines, i.e. they are not used for anything other
     ! than, yes, work.
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require this...
     if ( IsVolt ) then
@@ -193,13 +198,13 @@ contains
     end if
     call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv', &
          padding=padding)
+#else
+    call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv')
+#endif
     nzwork = elements(zwork_tri,all=.true.)
 
     ! Initialize the tri-diagonal inversion routine
     call init_TriMat_inversion(zwork_tri)
-    if ( IsVolt ) then
-       call init_BiasTriMat_inversion(zwork_tri)
-    end if
 
     call newzTriMat(GF_tri,c_Tri%n,c_Tri%r,'GF')
 
@@ -214,7 +219,7 @@ contains
 
     ! we use the GF as a placement for the self-energies
     no = 0
-    zwork  => val(GF_tri,all=.true.)
+    zwork => val(GF_tri,all=.true.)
     do iEl = 1 , N_Elec
 
        ! This seems stupid, however, we never use the Sigma and
@@ -225,9 +230,9 @@ contains
        ! it is required that prepare_GF_inv is called
        ! immediately (which it is)
        ! Hence the GF must NOT be used in between these two calls!
-       io = TotUsedOrbs(Elecs(iEl))
-       Elecs(iEl)%Sigma => zwork(no+1:no+io**2)
-       no = no + io ** 2
+       io = TotUsedOrbs(Elecs(iEl)) ** 2
+       Elecs(iEl)%Sigma => zwork(no+1:no+io)
+       no = no + io
 
        ! if we need the cross-terms we can not skip the blocks
        ! that are fully inside the electrode
@@ -295,11 +300,13 @@ contains
        end if
     end if
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
     if ( IsVolt ) then
        ! we need only allocate one work-array for
        ! Gf.G.Gf^\dagger
        call re_alloc(GFGGF_work,1,GFGGF_size,routine='transiesta')
     end if
+#endif
 
     ! start the itterators
     call itt_init  (Sp,end=nspin)
@@ -500,9 +507,9 @@ contains
              ! ******************
              ! * calc GF-column *
              ! ******************
+#ifdef TRANSIESTA_GFGGF_COLUMN
              call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                   r_pvt, Elecs(iEl)%o_inD)
-
 
 #ifdef TS_DEV
              ! offset and number of orbitals
@@ -519,6 +526,11 @@ contains
              call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
                   calc_parts, GFGGF_size, GFGGF_work)
 
+#else
+             call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_pvt, &
+                  Elecs(iEl), calc_parts)
+#endif
+             
              do iID = 1 , N_nEq_ID
                 
                 if ( .not. has_cE_nEq(cE,iEl,iID) ) cycle
@@ -610,10 +622,11 @@ contains
     call delete(fdist)
 
     call clear_TriMat_inversion()
+#ifdef TRANSIESTA_GFGGF_COLUMN
     if ( IsVolt ) then
-       call clear_BiasTriMat_inversion()
        call de_alloc(GFGGF_work, routine='transiesta')
     end if
+#endif
     call clear_mat_inversion()
 
     call rgn_delete(pvt)

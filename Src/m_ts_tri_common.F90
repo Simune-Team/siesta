@@ -135,11 +135,13 @@ contains
     ! worksize for ONE array
     worksize = nnzs_tri(N_tri,tri)
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
     if ( IsVolt ) then
        call GFGGF_needed_worksize(N_tri, tri, &
             N_Elec, Elecs, pad, n)
        worksize = worksize + pad + n
     end if
+#endif
     
   end subroutine needed_mem
 

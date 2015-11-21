@@ -30,7 +30,6 @@ module m_ts_trimat_invert
   use m_trimat_invert, only : Xn_div_Cn_p1, Yn_div_Bn_m1
 
   use m_pivot_array, only : Npiv, ipiv, init_pivot
-  use m_pivot_array, only : clear_BiasTriMat_inversion => clear_pivot 
   
   implicit none
 
@@ -47,8 +46,6 @@ module m_ts_trimat_invert
 #endif
   public :: invert_BiasTriMat_col
   public :: invert_BiasTriMat_rgn
-  public :: init_BiasTriMat_inversion
-  public :: clear_BiasTriMat_inversion
   public :: TriMat_Bias_idxs
 
 contains
@@ -491,7 +488,7 @@ contains
     integer :: i, i_Elec, idx_Elec
     integer :: sIdxF, eIdxF, sIdxT, eIdxT
     integer :: sN, n, in, s, sNo, nb
-    integer, allocatable :: cumsum(:)
+    integer, pointer :: crows(:)
 
     ! In this routine M should have been processed through invert_PrepTriMat
     ! So M contains all *needed* inv(Mnn) and all Xn/Cn+1 and Yn/Bn-1.
@@ -509,11 +506,7 @@ contains
 
     nr = nrows_g(M)
     np = parts(M)
-    allocate(cumsum(np))
-    cumsum(1) = 0
-    do n = 2 , np
-       cumsum(n) = cumsum(n-1) + nrows_g(M,n-1)
-    end do
+    crows => cum_rows(M)
 
     ! This code is based on the down-folded self-energies
     ! which are determined by the col region
@@ -584,9 +577,9 @@ contains
        ! Mnn part that we have already calculated.
        Mp => val(M,n,n)
        i = rgn_pivot(r,r_col%r(i_Elec))
-       sIdxF = (i-cumsum(n)-1) * sN + 1
+       sIdxF = (i-(crows(n)-sN)-1) * sN + 1
        i = rgn_pivot(r,r_col%r(i_Elec+nb-1))
-       eIdxF = (i-cumsum(n)) * sN
+       eIdxF = (i-(crows(n)-sN)) * sN
 
        ! Check that we have something correct...
 !print *,trim(El%name),sIdxT,eIdxT,sIdxF,eIdxF
@@ -673,7 +666,6 @@ contains
 
     if ( present(only_diag) ) then
        if ( only_diag ) then
-          deallocate(cumsum)
           call timer('V_TM_inv',2)
           return
        end if
@@ -735,8 +727,6 @@ contains
        
     end do
 
-    deallocate(cumsum)
-
     ! At this point the total 
     ! inverted column is placed at the end of
     ! the tri-mat inversion.
@@ -744,6 +734,7 @@ contains
     call timer('V_TM_inv',2)
     
   end subroutine invert_BiasTriMat_rgn
+
 
   ! We will partition the system by:
   ! 1. nrows_g(tri,1) x no
@@ -755,17 +746,15 @@ contains
     ! p is the part that we wish to point to
     integer, intent(in) :: no, p
     integer, intent(out) :: sIdx, eIdx
+    integer, pointer :: crows(:)
+
     integer :: cum
 
+    crows => cum_rows(M)
+    
     cum = nrows_g(M,p)
     eIdx = no * cum - 1
-    
-    ! we are requesting the last column,
-    ! hence we order the matrix in from the
-    ! beginning...
-    do sIdx = p + 1 , parts(M)
-       cum = cum + nrows_g(M,sIdx)
-    end do
+    cum = crows(parts(M)) - crows(p) + cum
     
     ! This is the number of elements already occupied
     sIdx = elements(M, all=.true.) - no * cum + 1
@@ -773,6 +762,7 @@ contains
 
   end subroutine TriMat_Bias_idxs
 
+  
   subroutine calc_Mnn_inv_cols(M,Minv,n,sCol,eCol)
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n, sCol, eCol
@@ -870,22 +860,6 @@ contains
     end if
 
   end subroutine calc_Mnn_inv_cols
-
-  ! We initialize the pivoting array for rotating the inversion
-  subroutine init_BiasTriMat_inversion(M)
-    type(zTriMat), intent(in) :: M
-    integer :: i, N
-
-    N = 0
-    do i = 1 , parts(M)
-       if ( nrows_g(M,i) > N ) then
-          N = nrows_g(M,i)
-       end if
-    end do
-
-    call init_pivot(N)
-
-  end subroutine init_BiasTriMat_inversion
 
 end module m_ts_trimat_invert
     

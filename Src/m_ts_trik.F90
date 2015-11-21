@@ -98,7 +98,9 @@ contains
     ! Gf calculation
     use m_ts_trimat_invert
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
     use m_ts_tri_common, only : GFGGF_needed_worksize
+#endif
 
     ! Gf.Gamma.Gf
     use m_ts_tri_scat
@@ -143,10 +145,12 @@ contains
     logical, pointer :: calc_parts(:) => null()
 ! ************************************************************
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
 ! ****************** Electrode variables *********************
     integer :: padding, GFGGF_size ! with IsVolt we need padding and work-array
     complex(dp), pointer :: GFGGF_work(:) => null()
 ! ************************************************************
+#endif
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
@@ -188,6 +192,7 @@ contains
 
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require this...
+#ifdef TRANSIESTA_GFGGF_COLUMN
     if ( IsVolt ) then
        call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
             N_Elec, Elecs, padding, GFGGF_size)
@@ -197,13 +202,13 @@ contains
     end if
     call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv', &
          padding=padding)
+#else
+    call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv')
+#endif
     nzwork = elements(zwork_tri,all=.true.)
 
     ! Initialize the tri-diagonal inversion routine
     call init_TriMat_inversion(zwork_tri)
-    if ( IsVolt ) then
-       call init_BiasTriMat_inversion(zwork_tri)
-    end if
 
     call newzTriMat(GF_tri,c_Tri%n,c_Tri%r,'GF')
 
@@ -288,11 +293,13 @@ contains
        end if
     end if
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
     if ( IsVolt ) then
        ! we need only allocate one work-array for
        ! Gf.G.Gf^\dagger
        call re_alloc(GFGGF_work,1,GFGGF_size,routine='transiesta')
     end if
+#endif
 
     ! start the itterators
     call itt_init  (SpKp,end1=nspin,end2=ts_nkpnt)
@@ -501,6 +508,7 @@ contains
              ! ******************
              ! * calc GF-column *
              ! ******************
+#ifdef TRANSIESTA_GFGGF_COLUMN
              call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                   r_pvt, Elecs(iEl)%o_inD)
 
@@ -521,8 +529,13 @@ contains
 #ifdef TRANSIESTA_WEIGHT_DEBUG
              print '(a7,tr1,i3,2(tr1,f10.5),tr5,2(tr1,f10.5))', &
                   trim(Elecs(iEl)%name),iE,zwork(index(zwork_tri,28,28)),cE%e
-#endif 
+#endif
 
+#else
+             call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_pvt, &
+                  Elecs(iEl), calc_parts)
+#endif
+             
              do iID = 1 , N_nEq_ID
                 
                 if ( .not. has_cE_nEq(cE,iEl,iID) ) cycle
@@ -632,10 +645,11 @@ contains
     call delete(fdist)
 
     call clear_TriMat_inversion()
+#ifdef TRANSIESTA_GFGGF_COLUMN
     if ( IsVolt ) then
-       call clear_BiasTriMat_inversion()
        call de_alloc(GFGGF_work, routine='transiesta')
     end if
+#endif
     call clear_mat_inversion()
 
     call rgn_delete(pvt)

@@ -938,6 +938,10 @@ contains
        case ( TS_W_K_UNCORRELATED )
           write(*,f10) trim(chars),'Uncorrelated k-points'
        end select
+
+#ifdef TRANSIESTA_GFGGF_COLUMN
+       write(*,f11) 'Old-style column Gf.G.Gf product (slow)'
+#endif
     end if
     if ( .not. Calc_Forces ) then
        write(*,f11) '*** TranSIESTA will NOT update forces ***'

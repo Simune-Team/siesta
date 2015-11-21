@@ -670,15 +670,17 @@ contains
     end if
 
     if ( ts_method == TS_BTD ) then
-
+       
+       padding = 0
+       worksize = 0
+       
+#ifdef TRANSIESTA_GFGGF_COLUMN
        ! Calculate size of the tri-diagonal matrix
        if ( IsVolt ) then
           call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
                N_Elec, Elecs, padding, worksize)
-       else
-          padding = 0
-          worksize = 0
        end if
+#endif
 
        mem = nnzs_tri(c_Tri%n,c_Tri%r)
        mem = (mem * 2 + padding + worksize ) * 16._dp / 1024._dp ** 2

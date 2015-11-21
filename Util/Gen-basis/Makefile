@@ -569,8 +569,8 @@ m_ts_tri_init.o: m_pivot.o m_pivot_methods.o m_region.o m_sparsity_handling.o
 m_ts_tri_init.o: m_ts_debug.o m_ts_electype.o m_ts_method.o m_ts_pivot.o
 m_ts_tri_init.o: m_ts_rgn2trimat.o m_ts_sparse.o m_ts_tri_common.o parallel.o
 m_ts_tri_init.o: precision.o
-m_ts_tri_scat.o: alloc.o class_TriMat.o m_region.o m_ts_electype.o
-m_ts_tri_scat.o: m_ts_method.o m_ts_trimat_invert.o precision.o
+m_ts_tri_scat.o: alloc.o class_TriMat.o m_region.o m_trimat_invert.o
+m_ts_tri_scat.o: m_ts_electype.o m_ts_method.o m_ts_trimat_invert.o precision.o
 m_ts_trig.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_trig.o: class_SpData2D.o class_Sparsity.o class_TriMat.o m_iterator.o
 m_ts_trig.o: m_mat_invert.o m_region.o m_trimat_invert.o m_ts_cctype.o

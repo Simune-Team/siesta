@@ -39,6 +39,7 @@ module m_region
 
   public :: tRgn, tRgnLL
   public :: rgn_init
+  public :: rgn_assoc
   public :: rgn_delete, rgn_nullify, rgnll_delete
   public :: rgn_intersection
   public :: rgn_union, rgn_append
@@ -240,6 +241,26 @@ contains
     call rgn_delete(r)
     if ( present(r1) ) call rgn_nullify(r1,r2,r3,r4,r5)
   end subroutine rgn_nullify
+
+
+  ! Assigns the left region with the right region
+  ! hence, deleting one will create a memory leak if
+  ! not handled carefully
+  subroutine rgn_assoc(lhs,rhs, dealloc)
+    type(tRgn), intent(inout) :: lhs, rhs
+    ! whether a pre-deallocation of the lhs should occur
+    logical, intent(in), optional :: dealloc
+    if ( present(dealloc) ) then
+       if ( dealloc ) call rgn_delete(lhs)
+    end if
+    ! default to nullify
+    call rgn_nullify(lhs)
+    lhs%name = rhs%name
+    lhs%n = rhs%n
+    lhs%r => rhs%r
+    lhs%sorted = rhs%sorted
+
+  end subroutine rgn_assoc
 
   ! Allows removing certain elements from a region.
   subroutine rgn_remove_list(r,n,list,rout)
