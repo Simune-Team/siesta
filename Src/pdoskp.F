@@ -84,7 +84,8 @@ C **********************************************************************
       real(dp)
      .  H(maxnh,nspin), S(maxnh), E1, E2, sigma, 
      .  xij(3,maxnh), kpoint(3,nk), eo(maxo,maxspn,nk),
-     .  Haux(2,nuotot,nuo), Saux(2,nuotot,nuo), psi(2,nuotot,nuo),
+     .  Haux(2,nuotot,nuotot), Saux(2,nuotot,nuotot),
+     .  psi(2,nuotot,nuotot),
      .  dtot(nhist,2), dpr(nhist,nuotot,2), wk(nk)
 
 C Internal variables ---------------------------------------------------

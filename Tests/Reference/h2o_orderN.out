@@ -1,10 +1,12 @@
-Siesta Version:                                        siesta-trunk-300
-Architecture  : nano-intel-mpi
-Compiler flags: ifort -g -O0 -debug full -traceback -C -pg 
-SERIAL version
+Siesta Version: siesta-trunk-479
+Architecture  : atto-intel12-openmpi
+Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
+PP flags      : -DCDF -DMPI 
+PARALLEL version
+NetCDF support
 
-* Running in serial mode
->> Start of run:  29-SEP-2009  20:27:55
+* Running on    4 nodes in parallel
+>> Start of run:  29-SEP-2015  15:38:54
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -65,21 +67,27 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 <basis_specs>
 ===============================================================================
 O                    Z=   8    Mass=  16.000        Charge= 0.17977+309
-Lmxo=1 Lmxkb=3     BasisType=split      Semic=F
+Lmxo=1 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=0
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:    1.0000      1.0000    
+            lambdas:   1.00000     1.00000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=2  polorb=1
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:    1.0000      1.0000    
+            lambdas:   1.00000     1.00000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -195,14 +203,17 @@ atom: _________________________________________________________________________
 <basis_specs>
 ===============================================================================
 H                    Z=   1    Mass=  1.0100        Charge= 0.17977+309
-Lmxo=0 Lmxkb=2     BasisType=split      Semic=F
+Lmxo=0 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=1
           n=1  nzeta=2  polorb=1
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    0.0000      0.0000    
-            lambdas:    1.0000      1.0000    
+            lambdas:   1.00000     1.00000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -312,6 +323,8 @@ H                     1                    # Species label, number of l-shells
 
 prinput: ----------------------------------------------------------------------
 
+Dumping basis to NetCDF file O.ion.nc
+Dumping basis to NetCDF file H.ion.nc
 coor:   Atomic-coordinates input format  =     Cartesian coordinates
 coor:                                          (in Angstroms)
 
@@ -344,19 +357,23 @@ redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     NO
 redata: Mesh Cutoff                      =    50.0000  Ry
 redata: Net charge of the system         =     0.0000 |e|
+redata: Min. number of SCF Iter          =        0
 redata: Max. number of SCF Iter          =       50
+redata: Mix DM or H after convergence    =     F
+redata: Recompute H after scf cycle      =     F
 redata: Mixing is linear
 redata: Mix DM in first SCF step ?       =     F
 redata: Write Pulay info on disk?        =     F
+redata: Discard 1st Pulay DM after  kick =     F
 redata: New DM Mixing Weight             =     0.2500
 redata: New DM Occupancy tolerance       = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks       =     0.5000
 redata: DM Tolerance for SCF             =     0.000100
-redata: Require Energy convergence for SCF =     F
-redata: DM Energy tolerance for SCF      =     0.000100 eV
+redata: Require (free) Energy convergence in SCF =     F
+redata: DM (free)Energy tolerance for SCF =     0.000010 eV
 redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000100 eV
+redata: DM Harris energy tolerance for SCF =     0.000010 eV
 redata: Using Saved Data (generic)   =     F
 redata: Use continuation files for DM    =     F
 redata: Neglect nonoverlap interactions  =     F
@@ -368,37 +385,15 @@ redata: Eta (Fermi level parameter)      =     0.0000  Ry
 redata: Radius of LWFs                   =     9.5000  Bohr
 redata: Use continuation files for LWF   =     F
 redata: Method to build LWFs             =     kim          
-redata: Dynamics option                  =     Verlet MD run
-redata: Initial MD time step             =        1
-redata:   Final MD time step             =        1
-redata: Length of MD time step           =     1.0000  fs
-redata: Initial Temperature of MD run    =     0.0000  K
-redata: Perform a MD quench              =     F
+redata: Dynamics option                  =     Single-point calculation
 redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-  Spatial decomposition data : 
-
-  Cutoff =   2.8105 Angstroms
-
-  Spatial decomposition cells (containing atoms) :
-
-      Ncells    Cell min    Cell length
-  x :      2      0.0000     13.7693
-  y :      2      0.0000     10.8602
-  z :      1      0.0000     10.6222
+* ProcessorY, Blocksize:    2   6
 
 
---------------------------------------------------------------------------------
- Cell   No. of atoms    Atom No.      x            y            z
---------------------------------------------------------------------------------
-     3           1           3      12.3388      11.9676      10.6222
---------------------------------------------------------------------------------
-     4           2           1      13.7693      10.8602      10.6222
-                             2      15.1999      11.9676      10.6222
---------------------------------------------------------------------------------
-
+* Orbital distribution balance (max,min):     6     5
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -409,11 +404,9 @@ siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
 
-* Maximum dynamic memory allocated =     2 MB
-
-siesta:                 ==============================
-                            Begin MD step =      1
-                        ==============================
+                     ====================================
+                        Single-point calculation
+                     ====================================
 
 outcell: Unit cell vectors (Ang):
         7.286412    0.000000    0.000000
@@ -425,33 +418,52 @@ outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :    235.3780
 New_DM. Step:     1
 Initializing Density Matrix...
+New grid distribution:   1
+           1       1:   16    1:    8    1:    6
+           2       1:   16    1:    8    7:   12
+           3       1:   16    9:   15    1:    6
+           4       1:   16    9:   15    7:   12
 
 InitMesh: MESH =    32 x    30 x    24 =       23040
+InitMesh: (bp) =    16 x    15 x    12 =        2880
 InitMesh: Mesh cutoff (required, used) =    50.000    50.384 Ry
-
-* Maximum dynamic memory allocated =     3 MB
+ExtMesh (bp) on 0 =    40 x    36 x    30 =       43200
+New grid distribution:   2
+           1       5:   16    1:    4    1:   12
+           2       1:    4    1:    4    1:   12
+           3       5:   16    5:   15    1:   12
+           4       1:    4    5:   15    1:   12
+New grid distribution:   3
+           1       8:   16    1:    5    1:   12
+           2       1:    7    1:    5    1:   12
+           3       8:   16    6:   15    1:   12
+           4       1:    7    6:   15    1:   12
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    36 x    32 x    36 =       41472
+PhiOnMesh: Number of (b)points on node 0 =                  576
+PhiOnMesh: nlist on node 0 =                 3687
 
 ordern: enum =      8.0000
 
 ordern: ioptlwf =  1
-cgwf: iter =    1      grad =        -315.349961      Eb(Ry) =      -1.263077
+cgwf: iter =    1      grad =        -315.349958      Eb(Ry) =      -1.263077
 cgwf: iter =    2      grad =         -18.585021      Eb(Ry) =      -2.966267
-cgwf: iter =    3      grad =          -6.814930      Eb(Ry) =      -3.403830
-cgwf: iter =    4      grad =          -5.093865      Eb(Ry) =      -3.585050
-cgwf: iter =    5      grad =          -6.676173      Eb(Ry) =      -3.741393
-cgwf: iter =    6      grad =          -6.253398      Eb(Ry) =      -4.063490
-cgwf: iter =    7      grad =          -4.288161      Eb(Ry) =      -4.204675
+cgwf: iter =    3      grad =          -6.814928      Eb(Ry) =      -3.403830
+cgwf: iter =    4      grad =          -5.093864      Eb(Ry) =      -3.585050
+cgwf: iter =    5      grad =          -6.676178      Eb(Ry) =      -3.741393
+cgwf: iter =    6      grad =          -6.253396      Eb(Ry) =      -4.063490
+cgwf: iter =    7      grad =          -4.288158      Eb(Ry) =      -4.204675
 cgwf: iter =    8      grad =          -2.593218      Eb(Ry) =      -4.284137
-cgwf: iter =    9      grad =          -0.914757      Eb(Ry) =      -4.341186
-cgwf: iter =   10      grad =          -0.678320      Eb(Ry) =      -4.367674
+cgwf: iter =    9      grad =          -0.914756      Eb(Ry) =      -4.341186
+cgwf: iter =   10      grad =          -0.678319      Eb(Ry) =      -4.367674
 cgwf: iter =   11      grad =          -0.484946      Eb(Ry) =      -4.384685
 cgwf: iter =   12      grad =          -0.226386      Eb(Ry) =      -4.394212
 cgwf: iter =   13      grad =          -0.195127      Eb(Ry) =      -4.403382
-cgwf: iter =   14      grad =          -0.215444      Eb(Ry) =      -4.409674
+cgwf: iter =   14      grad =          -0.215444      Eb(Ry) =      -4.409673
 cgwf: iter =   15      grad =          -0.208742      Eb(Ry) =      -4.415477
 cgwf: iter =   16      grad =          -0.167107      Eb(Ry) =      -4.421423
 cgwf: iter =   17      grad =          -0.245446      Eb(Ry) =      -4.430076
-cgwf: iter =   18      grad =          -0.307241      Eb(Ry) =      -4.437094
+cgwf: iter =   18      grad =          -0.307242      Eb(Ry) =      -4.437094
 cgwf: iter =   19      grad =          -0.381778      Eb(Ry) =      -4.447976
 cgwf: iter =   20      grad =          -0.286793      Eb(Ry) =      -4.460747
 cgwf: iter =   21      grad =          -0.281675      Eb(Ry) =      -4.471838
@@ -464,7 +476,7 @@ cgwf: iter =   27      grad =          -0.025262      Eb(Ry) =      -4.490097
 cgwf: iter =   28      grad =          -0.037811      Eb(Ry) =      -4.491725
 cgwf: iter =   29      grad =          -0.041102      Eb(Ry) =      -4.492808
 cgwf: iter =   30      grad =          -0.047491      Eb(Ry) =      -4.494001
-cgwf: iter =   31      grad =          -0.032535      Eb(Ry) =      -4.495407
+cgwf: iter =   31      grad =          -0.032535      Eb(Ry) =      -4.495406
 cgwf: iter =   32      grad =          -0.036676      Eb(Ry) =      -4.497148
 cgwf: iter =   33      grad =          -0.022894      Eb(Ry) =      -4.498130
 cgwf: iter =   34      grad =          -0.021306      Eb(Ry) =      -4.498597
@@ -488,7 +500,7 @@ cgwf: iter =   51      grad =          -0.003070      Eb(Ry) =      -4.506217
 cgwf: iter =   52      grad =          -0.002061      Eb(Ry) =      -4.506294
 cgwf: iter =   53      grad =          -0.002195      Eb(Ry) =      -4.506393
 cgwf: iter =   54      grad =          -0.001659      Eb(Ry) =      -4.506473
-cgwf: iter =   55      grad =          -0.002321      Eb(Ry) =      -4.506531
+cgwf: iter =   55      grad =          -0.002321      Eb(Ry) =      -4.506530
 cgwf: iter =   56      grad =          -0.001055      Eb(Ry) =      -4.506574
 cgwf: iter =   57      grad =          -0.002104      Eb(Ry) =      -4.506646
 cgwf: iter =   58      grad =          -0.001794      Eb(Ry) =      -4.506728
@@ -500,17 +512,17 @@ cgwf: iter =   63      grad =          -0.000751      Eb(Ry) =      -4.506947
 cgwf: iter =   64      grad =          -0.000712      Eb(Ry) =      -4.506966
 cgwf: iter =   65      grad =          -0.000373      Eb(Ry) =      -4.506983
 cgwf: iter =   66      grad =          -0.000216      Eb(Ry) =      -4.507000
-cgwf: iter =   67      grad =          -0.000318      Eb(Ry) =      -4.507010
+cgwf: iter =   67      grad =          -0.000318      Eb(Ry) =      -4.507009
 cgwf: iter =   68      grad =          -0.000390      Eb(Ry) =      -4.507019
 cgwf: iter =   69      grad =          -0.000339      Eb(Ry) =      -4.507029
 cgwf: iter =   70      grad =          -0.000444      Eb(Ry) =      -4.507049
 cgwf: iter =   71      grad =          -0.000412      Eb(Ry) =      -4.507067
 cgwf: iter =   72      grad =          -0.000448      Eb(Ry) =      -4.507080
-cgwf: iter =   73      grad =          -0.000283      Eb(Ry) =      -4.507089
+cgwf: iter =   73      grad =          -0.000283      Eb(Ry) =      -4.507088
 cgwf: iter =   74      grad =          -0.000330      Eb(Ry) =      -4.507101
 cgwf: iter =   75      grad =          -0.000202      Eb(Ry) =      -4.507113
 cgwf: iter =   76      grad =          -0.000146      Eb(Ry) =      -4.507120
-cgwf: iter =   77      grad =          -0.000110      Eb(Ry) =      -4.507123
+cgwf: iter =   77      grad =          -0.000110      Eb(Ry) =      -4.507122
 cgwf: iter =   78      grad =          -0.000075      Eb(Ry) =      -4.507127
 cgwf: iter =   79      grad =          -0.000062      Eb(Ry) =      -4.507129
 cgwf: iter =   80      grad =          -0.000074      Eb(Ry) =      -4.507132
@@ -527,7 +539,7 @@ cgwf: iter =   90      grad =          -0.000027      Eb(Ry) =      -4.507148
 cgwf: iter =   91      grad =          -0.000021      Eb(Ry) =      -4.507149
 cgwf: iter =   92      grad =          -0.000017      Eb(Ry) =      -4.507150
 cgwf: iter =   93      grad =          -0.000011      Eb(Ry) =      -4.507150
-cgwf: iter =   94      grad =          -0.000006      Eb(Ry) =      -4.507151
+cgwf: iter =   94      grad =          -0.000006      Eb(Ry) =      -4.507150
 cgwf: iter =   95      grad =          -0.000006      Eb(Ry) =      -4.507151
 cgwf: iter =   96      grad =          -0.000005      Eb(Ry) =      -4.507151
 cgwf: iter =   97      grad =          -0.000011      Eb(Ry) =      -4.507151
@@ -539,7 +551,7 @@ cgwf: iter =  102      grad =          -0.000009      Eb(Ry) =      -4.507153
 cgwf: iter =  103      grad =          -0.000007      Eb(Ry) =      -4.507153
 cgwf: iter =  104      grad =          -0.000004      Eb(Ry) =      -4.507153
 cgwf: iter =  105      grad =          -0.000003      Eb(Ry) =      -4.507153
-cgwf: iter =  106      grad =          -0.000003      Eb(Ry) =      -4.507154
+cgwf: iter =  106      grad =          -0.000003      Eb(Ry) =      -4.507153
 cgwf: iter =  107      grad =          -0.000003      Eb(Ry) =      -4.507154
 cgwf: iter =  108      grad =          -0.000002      Eb(Ry) =      -4.507154
 cgwf: iter =  109      grad =          -0.000003      Eb(Ry) =      -4.507154
@@ -548,7 +560,7 @@ cgwf: iter =  111      grad =          -0.000005      Eb(Ry) =      -4.507154
 cgwf: iter =  112      grad =          -0.000002      Eb(Ry) =      -4.507154
 cgwf: iter =  113      grad =          -0.000003      Eb(Ry) =      -4.507154
 cgwf: iter =  114      grad =          -0.000003      Eb(Ry) =      -4.507154
-cgwf: iter =  115      grad =          -0.000004      Eb(Ry) =      -4.507155
+cgwf: iter =  115      grad =          -0.000004      Eb(Ry) =      -4.507154
 cgwf: iter =  116      grad =          -0.000001      Eb(Ry) =      -4.507155
 
 cgwf:  CG tolerance reached
@@ -557,11 +569,12 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -122.646882
 siesta: Eions   =       815.854478
 siesta: Ena     =       175.154321
 siesta: Ekin    =       341.667405
 siesta: Enl     =       -52.736757
-siesta: DEna    =        -0.000001
+siesta: DEna    =        -0.000002
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
 siesta: Exc     =      -109.951257
@@ -570,90 +583,89 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -466.432257
-siesta: Etot    =      -461.720767
-siesta: FreeEng =      -461.720767
+siesta: Eharris =      -466.432259
+siesta: Etot    =      -461.720768
+siesta: FreeEng =      -461.720768
 
 siesta: iscf =    1
 Eharris(eV) =       -466.4323  E_KS(eV) =       -461.7208  dDmax =  1.4377
 
-timer: Routine,Calls,Time,% = IterSCF        1       7.316  74.74
-elaps: Routine,Calls,Wall,% = IterSCF        1       7.319  74.73
+timer: Routine,Calls,Time,% =    IterSCF     1       0.031   1.41
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.399243      Eb(Ry) =      -3.180208
-cgwf: iter =    2      grad =          -0.686893      Eb(Ry) =      -3.221511
-cgwf: iter =    3      grad =          -0.107747      Eb(Ry) =      -3.229879
-cgwf: iter =    4      grad =          -0.072656      Eb(Ry) =      -3.235189
+cgwf: iter =    1      grad =          -0.399242      Eb(Ry) =      -3.180209
+cgwf: iter =    2      grad =          -0.686892      Eb(Ry) =      -3.221512
+cgwf: iter =    3      grad =          -0.107747      Eb(Ry) =      -3.229880
+cgwf: iter =    4      grad =          -0.072656      Eb(Ry) =      -3.235190
 cgwf: iter =    5      grad =          -0.017117      Eb(Ry) =      -3.237942
-cgwf: iter =    6      grad =          -0.005716      Eb(Ry) =      -3.238527
-cgwf: iter =    7      grad =          -0.005411      Eb(Ry) =      -3.238650
-cgwf: iter =    8      grad =          -0.001215      Eb(Ry) =      -3.238888
-cgwf: iter =    9      grad =          -0.001439      Eb(Ry) =      -3.239060
-cgwf: iter =   10      grad =          -0.001183      Eb(Ry) =      -3.239102
-cgwf: iter =   11      grad =          -0.005164      Eb(Ry) =      -3.239192
-cgwf: iter =   12      grad =          -0.001838      Eb(Ry) =      -3.239353
-cgwf: iter =   13      grad =          -0.001568      Eb(Ry) =      -3.239420
+cgwf: iter =    6      grad =          -0.005716      Eb(Ry) =      -3.238528
+cgwf: iter =    7      grad =          -0.005411      Eb(Ry) =      -3.238651
+cgwf: iter =    8      grad =          -0.001215      Eb(Ry) =      -3.238889
+cgwf: iter =    9      grad =          -0.001439      Eb(Ry) =      -3.239061
+cgwf: iter =   10      grad =          -0.001183      Eb(Ry) =      -3.239103
+cgwf: iter =   11      grad =          -0.005164      Eb(Ry) =      -3.239193
+cgwf: iter =   12      grad =          -0.001838      Eb(Ry) =      -3.239354
+cgwf: iter =   13      grad =          -0.001568      Eb(Ry) =      -3.239421
 cgwf: iter =   14      grad =          -0.000796      Eb(Ry) =      -3.239564
-cgwf: iter =   15      grad =          -0.002597      Eb(Ry) =      -3.239618
-cgwf: iter =   16      grad =          -0.000617      Eb(Ry) =      -3.239673
+cgwf: iter =   15      grad =          -0.002597      Eb(Ry) =      -3.239619
+cgwf: iter =   16      grad =          -0.000617      Eb(Ry) =      -3.239674
 cgwf: iter =   17      grad =          -0.000428      Eb(Ry) =      -3.239692
-cgwf: iter =   18      grad =          -0.000906      Eb(Ry) =      -3.239718
-cgwf: iter =   19      grad =          -0.000261      Eb(Ry) =      -3.239734
-cgwf: iter =   20      grad =          -0.000402      Eb(Ry) =      -3.239756
-cgwf: iter =   21      grad =          -0.000428      Eb(Ry) =      -3.239773
+cgwf: iter =   18      grad =          -0.000906      Eb(Ry) =      -3.239719
+cgwf: iter =   19      grad =          -0.000261      Eb(Ry) =      -3.239735
+cgwf: iter =   20      grad =          -0.000402      Eb(Ry) =      -3.239757
+cgwf: iter =   21      grad =          -0.000427      Eb(Ry) =      -3.239774
 cgwf: iter =   22      grad =          -0.000507      Eb(Ry) =      -3.239790
-cgwf: iter =   23      grad =          -0.000412      Eb(Ry) =      -3.239803
+cgwf: iter =   23      grad =          -0.000412      Eb(Ry) =      -3.239804
 cgwf: iter =   24      grad =          -0.000154      Eb(Ry) =      -3.239824
-cgwf: iter =   25      grad =          -0.000184      Eb(Ry) =      -3.239830
-cgwf: iter =   26      grad =          -0.000393      Eb(Ry) =      -3.239838
-cgwf: iter =   27      grad =          -0.000150      Eb(Ry) =      -3.239850
-cgwf: iter =   28      grad =          -0.000232      Eb(Ry) =      -3.239866
-cgwf: iter =   29      grad =          -0.000354      Eb(Ry) =      -3.239874
-cgwf: iter =   30      grad =          -0.000370      Eb(Ry) =      -3.239888
-cgwf: iter =   31      grad =          -0.000146      Eb(Ry) =      -3.239905
-cgwf: iter =   32      grad =          -0.000249      Eb(Ry) =      -3.239914
-cgwf: iter =   33      grad =          -0.000078      Eb(Ry) =      -3.239918
-cgwf: iter =   34      grad =          -0.000143      Eb(Ry) =      -3.239923
-cgwf: iter =   35      grad =          -0.000107      Eb(Ry) =      -3.239930
-cgwf: iter =   36      grad =          -0.000182      Eb(Ry) =      -3.239936
-cgwf: iter =   37      grad =          -0.000084      Eb(Ry) =      -3.239940
-cgwf: iter =   38      grad =          -0.000060      Eb(Ry) =      -3.239944
-cgwf: iter =   39      grad =          -0.000043      Eb(Ry) =      -3.239945
-cgwf: iter =   40      grad =          -0.000025      Eb(Ry) =      -3.239948
-cgwf: iter =   41      grad =          -0.000035      Eb(Ry) =      -3.239949
-cgwf: iter =   42      grad =          -0.000011      Eb(Ry) =      -3.239950
-cgwf: iter =   43      grad =          -0.000014      Eb(Ry) =      -3.239950
+cgwf: iter =   25      grad =          -0.000184      Eb(Ry) =      -3.239831
+cgwf: iter =   26      grad =          -0.000393      Eb(Ry) =      -3.239839
+cgwf: iter =   27      grad =          -0.000151      Eb(Ry) =      -3.239851
+cgwf: iter =   28      grad =          -0.000232      Eb(Ry) =      -3.239867
+cgwf: iter =   29      grad =          -0.000354      Eb(Ry) =      -3.239875
+cgwf: iter =   30      grad =          -0.000371      Eb(Ry) =      -3.239888
+cgwf: iter =   31      grad =          -0.000146      Eb(Ry) =      -3.239906
+cgwf: iter =   32      grad =          -0.000248      Eb(Ry) =      -3.239915
+cgwf: iter =   33      grad =          -0.000078      Eb(Ry) =      -3.239919
+cgwf: iter =   34      grad =          -0.000141      Eb(Ry) =      -3.239924
+cgwf: iter =   35      grad =          -0.000108      Eb(Ry) =      -3.239931
+cgwf: iter =   36      grad =          -0.000191      Eb(Ry) =      -3.239936
+cgwf: iter =   37      grad =          -0.000081      Eb(Ry) =      -3.239940
+cgwf: iter =   38      grad =          -0.000062      Eb(Ry) =      -3.239944
+cgwf: iter =   39      grad =          -0.000042      Eb(Ry) =      -3.239946
+cgwf: iter =   40      grad =          -0.000028      Eb(Ry) =      -3.239949
+cgwf: iter =   41      grad =          -0.000033      Eb(Ry) =      -3.239950
+cgwf: iter =   42      grad =          -0.000012      Eb(Ry) =      -3.239951
+cgwf: iter =   43      grad =          -0.000014      Eb(Ry) =      -3.239951
 cgwf: iter =   44      grad =          -0.000017      Eb(Ry) =      -3.239952
-cgwf: iter =   45      grad =          -0.000022      Eb(Ry) =      -3.239952
-cgwf: iter =   46      grad =          -0.000041      Eb(Ry) =      -3.239953
-cgwf: iter =   47      grad =          -0.000010      Eb(Ry) =      -3.239954
-cgwf: iter =   48      grad =          -0.000021      Eb(Ry) =      -3.239955
-cgwf: iter =   49      grad =          -0.000014      Eb(Ry) =      -3.239956
-cgwf: iter =   50      grad =          -0.000010      Eb(Ry) =      -3.239956
-cgwf: iter =   51      grad =          -0.000007      Eb(Ry) =      -3.239957
-cgwf: iter =   52      grad =          -0.000005      Eb(Ry) =      -3.239957
-cgwf: iter =   53      grad =          -0.000011      Eb(Ry) =      -3.239957
+cgwf: iter =   45      grad =          -0.000026      Eb(Ry) =      -3.239953
+cgwf: iter =   46      grad =          -0.000036      Eb(Ry) =      -3.239954
+cgwf: iter =   47      grad =          -0.000010      Eb(Ry) =      -3.239955
+cgwf: iter =   48      grad =          -0.000019      Eb(Ry) =      -3.239956
+cgwf: iter =   49      grad =          -0.000015      Eb(Ry) =      -3.239957
+cgwf: iter =   50      grad =          -0.000011      Eb(Ry) =      -3.239957
+cgwf: iter =   51      grad =          -0.000008      Eb(Ry) =      -3.239958
+cgwf: iter =   52      grad =          -0.000007      Eb(Ry) =      -3.239958
+cgwf: iter =   53      grad =          -0.000008      Eb(Ry) =      -3.239958
 cgwf: iter =   54      grad =          -0.000008      Eb(Ry) =      -3.239958
-cgwf: iter =   55      grad =          -0.000005      Eb(Ry) =      -3.239958
-cgwf: iter =   56      grad =          -0.000004      Eb(Ry) =      -3.239958
+cgwf: iter =   55      grad =          -0.000006      Eb(Ry) =      -3.239959
+cgwf: iter =   56      grad =          -0.000004      Eb(Ry) =      -3.239959
 cgwf: iter =   57      grad =          -0.000006      Eb(Ry) =      -3.239959
-cgwf: iter =   58      grad =          -0.000003      Eb(Ry) =      -3.239959
-cgwf: iter =   59      grad =          -0.000005      Eb(Ry) =      -3.239959
-cgwf: iter =   60      grad =          -0.000007      Eb(Ry) =      -3.239959
-cgwf: iter =   61      grad =          -0.000005      Eb(Ry) =      -3.239960
-cgwf: iter =   62      grad =          -0.000005      Eb(Ry) =      -3.239960
-cgwf: iter =   63      grad =          -0.000005      Eb(Ry) =      -3.239960
-cgwf: iter =   64      grad =          -0.000005      Eb(Ry) =      -3.239960
-cgwf: iter =   65      grad =          -0.000006      Eb(Ry) =      -3.239961
-cgwf: iter =   66      grad =          -0.000006      Eb(Ry) =      -3.239961
-cgwf: iter =   67      grad =          -0.000004      Eb(Ry) =      -3.239961
-cgwf: iter =   68      grad =          -0.000005      Eb(Ry) =      -3.239961
+cgwf: iter =   58      grad =          -0.000002      Eb(Ry) =      -3.239960
+cgwf: iter =   59      grad =          -0.000004      Eb(Ry) =      -3.239960
+cgwf: iter =   60      grad =          -0.000009      Eb(Ry) =      -3.239960
+cgwf: iter =   61      grad =          -0.000007      Eb(Ry) =      -3.239961
+cgwf: iter =   62      grad =          -0.000003      Eb(Ry) =      -3.239961
+cgwf: iter =   63      grad =          -0.000004      Eb(Ry) =      -3.239961
+cgwf: iter =   64      grad =          -0.000006      Eb(Ry) =      -3.239961
+cgwf: iter =   65      grad =          -0.000008      Eb(Ry) =      -3.239962
+cgwf: iter =   66      grad =          -0.000004      Eb(Ry) =      -3.239962
+cgwf: iter =   67      grad =          -0.000004      Eb(Ry) =      -3.239962
+cgwf: iter =   68      grad =          -0.000006      Eb(Ry) =      -3.239962
 cgwf: iter =   69      grad =          -0.000002      Eb(Ry) =      -3.239962
-cgwf: iter =   70      grad =          -0.000005      Eb(Ry) =      -3.239962
-cgwf: iter =   71      grad =          -0.000003      Eb(Ry) =      -3.239962
-cgwf: iter =   72      grad =          -0.000001      Eb(Ry) =      -3.239962
-cgwf: iter =   73      grad =          -0.000001      Eb(Ry) =      -3.239962
+cgwf: iter =   70      grad =          -0.000005      Eb(Ry) =      -3.239963
+cgwf: iter =   71      grad =          -0.000002      Eb(Ry) =      -3.239963
+cgwf: iter =   72      grad =          -0.000001      Eb(Ry) =      -3.239963
+cgwf: iter =   73      grad =          -0.000000      Eb(Ry) =      -3.239963
 
 cgwf:  CG tolerance reached
 
@@ -661,69 +673,80 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    2
-Eharris(eV) =       -466.8711  E_KS(eV) =       -465.2451  dDmax =  0.1759
+Eharris(eV) =       -466.8710  E_KS(eV) =       -465.2450  dDmax =  0.1759
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.082183      Eb(Ry) =      -3.657827
-cgwf: iter =    2      grad =          -0.085938      Eb(Ry) =      -3.667809
-cgwf: iter =    3      grad =          -0.015612      Eb(Ry) =      -3.668783
-cgwf: iter =    4      grad =          -0.009422      Eb(Ry) =      -3.669916
-cgwf: iter =    5      grad =          -0.001207      Eb(Ry) =      -3.670136
-cgwf: iter =    6      grad =          -0.000479      Eb(Ry) =      -3.670170
-cgwf: iter =    7      grad =          -0.000853      Eb(Ry) =      -3.670206
-cgwf: iter =    8      grad =          -0.000402      Eb(Ry) =      -3.670236
-cgwf: iter =    9      grad =          -0.000741      Eb(Ry) =      -3.670248
-cgwf: iter =   10      grad =          -0.000265      Eb(Ry) =      -3.670280
-cgwf: iter =   11      grad =          -0.000402      Eb(Ry) =      -3.670292
-cgwf: iter =   12      grad =          -0.000932      Eb(Ry) =      -3.670310
-cgwf: iter =   13      grad =          -0.000362      Eb(Ry) =      -3.670335
-cgwf: iter =   14      grad =          -0.000361      Eb(Ry) =      -3.670348
-cgwf: iter =   15      grad =          -0.000421      Eb(Ry) =      -3.670365
-cgwf: iter =   16      grad =          -0.000343      Eb(Ry) =      -3.670374
-cgwf: iter =   17      grad =          -0.000311      Eb(Ry) =      -3.670388
-cgwf: iter =   18      grad =          -0.000276      Eb(Ry) =      -3.670406
-cgwf: iter =   19      grad =          -0.000266      Eb(Ry) =      -3.670412
-cgwf: iter =   20      grad =          -0.000213      Eb(Ry) =      -3.670420
-cgwf: iter =   21      grad =          -0.000107      Eb(Ry) =      -3.670433
-cgwf: iter =   22      grad =          -0.000136      Eb(Ry) =      -3.670436
-cgwf: iter =   23      grad =          -0.000065      Eb(Ry) =      -3.670438
-cgwf: iter =   24      grad =          -0.000057      Eb(Ry) =      -3.670440
-cgwf: iter =   25      grad =          -0.000104      Eb(Ry) =      -3.670443
-cgwf: iter =   26      grad =          -0.000040      Eb(Ry) =      -3.670446
-cgwf: iter =   27      grad =          -0.000045      Eb(Ry) =      -3.670447
-cgwf: iter =   28      grad =          -0.000063      Eb(Ry) =      -3.670449
-cgwf: iter =   29      grad =          -0.000055      Eb(Ry) =      -3.670451
-cgwf: iter =   30      grad =          -0.000033      Eb(Ry) =      -3.670452
-cgwf: iter =   31      grad =          -0.000054      Eb(Ry) =      -3.670454
-cgwf: iter =   32      grad =          -0.000046      Eb(Ry) =      -3.670456
-cgwf: iter =   33      grad =          -0.000023      Eb(Ry) =      -3.670457
-cgwf: iter =   34      grad =          -0.000035      Eb(Ry) =      -3.670458
-cgwf: iter =   35      grad =          -0.000014      Eb(Ry) =      -3.670459
-cgwf: iter =   36      grad =          -0.000026      Eb(Ry) =      -3.670460
-cgwf: iter =   37      grad =          -0.000019      Eb(Ry) =      -3.670461
-cgwf: iter =   38      grad =          -0.000016      Eb(Ry) =      -3.670461
-cgwf: iter =   39      grad =          -0.000033      Eb(Ry) =      -3.670462
-cgwf: iter =   40      grad =          -0.000032      Eb(Ry) =      -3.670463
-cgwf: iter =   41      grad =          -0.000050      Eb(Ry) =      -3.670465
-cgwf: iter =   42      grad =          -0.000054      Eb(Ry) =      -3.670466
-cgwf: iter =   43      grad =          -0.000041      Eb(Ry) =      -3.670468
-cgwf: iter =   44      grad =          -0.000016      Eb(Ry) =      -3.670469
-cgwf: iter =   45      grad =          -0.000014      Eb(Ry) =      -3.670470
-cgwf: iter =   46      grad =          -0.000003      Eb(Ry) =      -3.670470
-cgwf: iter =   47      grad =          -0.000002      Eb(Ry) =      -3.670470
-cgwf: iter =   48      grad =          -0.000005      Eb(Ry) =      -3.670470
-cgwf: iter =   49      grad =          -0.000002      Eb(Ry) =      -3.670470
-cgwf: iter =   50      grad =          -0.000001      Eb(Ry) =      -3.670470
-cgwf: iter =   51      grad =          -0.000002      Eb(Ry) =      -3.670471
-cgwf: iter =   52      grad =          -0.000001      Eb(Ry) =      -3.670471
-cgwf: iter =   53      grad =          -0.000002      Eb(Ry) =      -3.670471
-cgwf: iter =   54      grad =          -0.000002      Eb(Ry) =      -3.670471
-cgwf: iter =   55      grad =          -0.000003      Eb(Ry) =      -3.670471
-cgwf: iter =   56      grad =          -0.000002      Eb(Ry) =      -3.670471
-cgwf: iter =   57      grad =          -0.000002      Eb(Ry) =      -3.670471
-cgwf: iter =   58      grad =          -0.000001      Eb(Ry) =      -3.670471
-cgwf: iter =   59      grad =          -0.000001      Eb(Ry) =      -3.670471
+cgwf: iter =    1      grad =          -0.082145      Eb(Ry) =      -3.657809
+cgwf: iter =    2      grad =          -0.088329      Eb(Ry) =      -3.667762
+cgwf: iter =    3      grad =          -0.015516      Eb(Ry) =      -3.668760
+cgwf: iter =    4      grad =          -0.009282      Eb(Ry) =      -3.669895
+cgwf: iter =    5      grad =          -0.001211      Eb(Ry) =      -3.670112
+cgwf: iter =    6      grad =          -0.000476      Eb(Ry) =      -3.670146
+cgwf: iter =    7      grad =          -0.000848      Eb(Ry) =      -3.670182
+cgwf: iter =    8      grad =          -0.000396      Eb(Ry) =      -3.670212
+cgwf: iter =    9      grad =          -0.000762      Eb(Ry) =      -3.670225
+cgwf: iter =   10      grad =          -0.000262      Eb(Ry) =      -3.670256
+cgwf: iter =   11      grad =          -0.000404      Eb(Ry) =      -3.670269
+cgwf: iter =   12      grad =          -0.000936      Eb(Ry) =      -3.670286
+cgwf: iter =   13      grad =          -0.000344      Eb(Ry) =      -3.670311
+cgwf: iter =   14      grad =          -0.000372      Eb(Ry) =      -3.670326
+cgwf: iter =   15      grad =          -0.000188      Eb(Ry) =      -3.670334
+cgwf: iter =   16      grad =          -0.000173      Eb(Ry) =      -3.670340
+cgwf: iter =   17      grad =          -0.000354      Eb(Ry) =      -3.670348
+cgwf: iter =   18      grad =          -0.000094      Eb(Ry) =      -3.670354
+cgwf: iter =   19      grad =          -0.000062      Eb(Ry) =      -3.670356
+cgwf: iter =   20      grad =          -0.000094      Eb(Ry) =      -3.670358
+cgwf: iter =   21      grad =          -0.000240      Eb(Ry) =      -3.670364
+cgwf: iter =   22      grad =          -0.000161      Eb(Ry) =      -3.670375
+cgwf: iter =   23      grad =          -0.000218      Eb(Ry) =      -3.670379
+cgwf: iter =   24      grad =          -0.000107      Eb(Ry) =      -3.670384
+cgwf: iter =   25      grad =          -0.000108      Eb(Ry) =      -3.670386
+cgwf: iter =   26      grad =          -0.000037      Eb(Ry) =      -3.670388
+cgwf: iter =   27      grad =          -0.000099      Eb(Ry) =      -3.670390
+cgwf: iter =   28      grad =          -0.000032      Eb(Ry) =      -3.670392
+cgwf: iter =   29      grad =          -0.000033      Eb(Ry) =      -3.670393
+cgwf: iter =   30      grad =          -0.000062      Eb(Ry) =      -3.670394
+cgwf: iter =   31      grad =          -0.000111      Eb(Ry) =      -3.670399
+cgwf: iter =   32      grad =          -0.000085      Eb(Ry) =      -3.670403
+cgwf: iter =   33      grad =          -0.000085      Eb(Ry) =      -3.670405
+cgwf: iter =   34      grad =          -0.000177      Eb(Ry) =      -3.670413
+cgwf: iter =   35      grad =          -0.000103      Eb(Ry) =      -3.670417
+cgwf: iter =   36      grad =          -0.000090      Eb(Ry) =      -3.670420
+cgwf: iter =   37      grad =          -0.000070      Eb(Ry) =      -3.670422
+cgwf: iter =   38      grad =          -0.000080      Eb(Ry) =      -3.670425
+cgwf: iter =   39      grad =          -0.000064      Eb(Ry) =      -3.670426
+cgwf: iter =   40      grad =          -0.000018      Eb(Ry) =      -3.670430
+cgwf: iter =   41      grad =          -0.000039      Eb(Ry) =      -3.670431
+cgwf: iter =   42      grad =          -0.000044      Eb(Ry) =      -3.670432
+cgwf: iter =   43      grad =          -0.000007      Eb(Ry) =      -3.670433
+cgwf: iter =   44      grad =          -0.000015      Eb(Ry) =      -3.670433
+cgwf: iter =   45      grad =          -0.000038      Eb(Ry) =      -3.670435
+cgwf: iter =   46      grad =          -0.000044      Eb(Ry) =      -3.670436
+cgwf: iter =   47      grad =          -0.000020      Eb(Ry) =      -3.670437
+cgwf: iter =   48      grad =          -0.000019      Eb(Ry) =      -3.670439
+cgwf: iter =   49      grad =          -0.000048      Eb(Ry) =      -3.670440
+cgwf: iter =   50      grad =          -0.000019      Eb(Ry) =      -3.670441
+cgwf: iter =   51      grad =          -0.000013      Eb(Ry) =      -3.670441
+cgwf: iter =   52      grad =          -0.000018      Eb(Ry) =      -3.670442
+cgwf: iter =   53      grad =          -0.000012      Eb(Ry) =      -3.670442
+cgwf: iter =   54      grad =          -0.000008      Eb(Ry) =      -3.670443
+cgwf: iter =   55      grad =          -0.000004      Eb(Ry) =      -3.670443
+cgwf: iter =   56      grad =          -0.000005      Eb(Ry) =      -3.670443
+cgwf: iter =   57      grad =          -0.000005      Eb(Ry) =      -3.670443
+cgwf: iter =   58      grad =          -0.000003      Eb(Ry) =      -3.670444
+cgwf: iter =   59      grad =          -0.000007      Eb(Ry) =      -3.670444
+cgwf: iter =   60      grad =          -0.000005      Eb(Ry) =      -3.670444
+cgwf: iter =   61      grad =          -0.000004      Eb(Ry) =      -3.670444
+cgwf: iter =   62      grad =          -0.000003      Eb(Ry) =      -3.670445
+cgwf: iter =   63      grad =          -0.000006      Eb(Ry) =      -3.670445
+cgwf: iter =   64      grad =          -0.000011      Eb(Ry) =      -3.670445
+cgwf: iter =   65      grad =          -0.000019      Eb(Ry) =      -3.670446
+cgwf: iter =   66      grad =          -0.000013      Eb(Ry) =      -3.670447
+cgwf: iter =   67      grad =          -0.000008      Eb(Ry) =      -3.670447
+cgwf: iter =   68      grad =          -0.000002      Eb(Ry) =      -3.670447
+cgwf: iter =   69      grad =          -0.000001      Eb(Ry) =      -3.670447
+cgwf: iter =   70      grad =          -0.000001      Eb(Ry) =      -3.670447
 
 cgwf:  CG tolerance reached
 
@@ -731,53 +754,46 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    3
-Eharris(eV) =       -465.9282  E_KS(eV) =       -465.4678  dDmax =  0.0503
+Eharris(eV) =       -465.9282  E_KS(eV) =       -465.4678  dDmax =  0.0504
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.006617      Eb(Ry) =      -3.794747
-cgwf: iter =    2      grad =          -0.010824      Eb(Ry) =      -3.795476
-cgwf: iter =    3      grad =          -0.001237      Eb(Ry) =      -3.795595
-cgwf: iter =    4      grad =          -0.001279      Eb(Ry) =      -3.795673
-cgwf: iter =    5      grad =          -0.000084      Eb(Ry) =      -3.795706
-cgwf: iter =    6      grad =          -0.000057      Eb(Ry) =      -3.795711
-cgwf: iter =    7      grad =          -0.000029      Eb(Ry) =      -3.795713
-cgwf: iter =    8      grad =          -0.000045      Eb(Ry) =      -3.795714
-cgwf: iter =    9      grad =          -0.000039      Eb(Ry) =      -3.795715
-cgwf: iter =   10      grad =          -0.000040      Eb(Ry) =      -3.795719
-cgwf: iter =   11      grad =          -0.000063      Eb(Ry) =      -3.795721
-cgwf: iter =   12      grad =          -0.000040      Eb(Ry) =      -3.795724
-cgwf: iter =   13      grad =          -0.000079      Eb(Ry) =      -3.795725
-cgwf: iter =   14      grad =          -0.000025      Eb(Ry) =      -3.795728
-cgwf: iter =   15      grad =          -0.000051      Eb(Ry) =      -3.795730
-cgwf: iter =   16      grad =          -0.000019      Eb(Ry) =      -3.795731
-cgwf: iter =   17      grad =          -0.000012      Eb(Ry) =      -3.795732
-cgwf: iter =   18      grad =          -0.000024      Eb(Ry) =      -3.795733
-cgwf: iter =   19      grad =          -0.000009      Eb(Ry) =      -3.795733
-cgwf: iter =   20      grad =          -0.000007      Eb(Ry) =      -3.795733
-cgwf: iter =   21      grad =          -0.000021      Eb(Ry) =      -3.795734
-cgwf: iter =   22      grad =          -0.000020      Eb(Ry) =      -3.795734
-cgwf: iter =   23      grad =          -0.000008      Eb(Ry) =      -3.795735
-cgwf: iter =   24      grad =          -0.000009      Eb(Ry) =      -3.795735
-cgwf: iter =   25      grad =          -0.000007      Eb(Ry) =      -3.795736
-cgwf: iter =   26      grad =          -0.000005      Eb(Ry) =      -3.795736
-cgwf: iter =   27      grad =          -0.000006      Eb(Ry) =      -3.795736
-cgwf: iter =   28      grad =          -0.000006      Eb(Ry) =      -3.795736
-cgwf: iter =   29      grad =          -0.000010      Eb(Ry) =      -3.795737
-cgwf: iter =   30      grad =          -0.000010      Eb(Ry) =      -3.795737
-cgwf: iter =   31      grad =          -0.000014      Eb(Ry) =      -3.795738
-cgwf: iter =   32      grad =          -0.000013      Eb(Ry) =      -3.795738
-cgwf: iter =   33      grad =          -0.000003      Eb(Ry) =      -3.795738
-cgwf: iter =   34      grad =          -0.000002      Eb(Ry) =      -3.795739
-cgwf: iter =   35      grad =          -0.000002      Eb(Ry) =      -3.795739
-cgwf: iter =   36      grad =          -0.000005      Eb(Ry) =      -3.795739
-cgwf: iter =   37      grad =          -0.000004      Eb(Ry) =      -3.795739
-cgwf: iter =   38      grad =          -0.000002      Eb(Ry) =      -3.795739
-cgwf: iter =   39      grad =          -0.000002      Eb(Ry) =      -3.795739
-cgwf: iter =   40      grad =          -0.000002      Eb(Ry) =      -3.795739
-cgwf: iter =   41      grad =          -0.000001      Eb(Ry) =      -3.795739
-cgwf: iter =   42      grad =          -0.000001      Eb(Ry) =      -3.795739
-cgwf: iter =   43      grad =          -0.000001      Eb(Ry) =      -3.795739
+cgwf: iter =    1      grad =          -0.006652      Eb(Ry) =      -3.794879
+cgwf: iter =    2      grad =          -0.008717      Eb(Ry) =      -3.795640
+cgwf: iter =    3      grad =          -0.001303      Eb(Ry) =      -3.795736
+cgwf: iter =    4      grad =          -0.001318      Eb(Ry) =      -3.795813
+cgwf: iter =    5      grad =          -0.000096      Eb(Ry) =      -3.795847
+cgwf: iter =    6      grad =          -0.000047      Eb(Ry) =      -3.795850
+cgwf: iter =    7      grad =          -0.000076      Eb(Ry) =      -3.795854
+cgwf: iter =    8      grad =          -0.000050      Eb(Ry) =      -3.795856
+cgwf: iter =    9      grad =          -0.000076      Eb(Ry) =      -3.795857
+cgwf: iter =   10      grad =          -0.000039      Eb(Ry) =      -3.795861
+cgwf: iter =   11      grad =          -0.000045      Eb(Ry) =      -3.795862
+cgwf: iter =   12      grad =          -0.000074      Eb(Ry) =      -3.795864
+cgwf: iter =   13      grad =          -0.000071      Eb(Ry) =      -3.795866
+cgwf: iter =   14      grad =          -0.000029      Eb(Ry) =      -3.795869
+cgwf: iter =   15      grad =          -0.000018      Eb(Ry) =      -3.795869
+cgwf: iter =   16      grad =          -0.000023      Eb(Ry) =      -3.795870
+cgwf: iter =   17      grad =          -0.000022      Eb(Ry) =      -3.795871
+cgwf: iter =   18      grad =          -0.000010      Eb(Ry) =      -3.795871
+cgwf: iter =   19      grad =          -0.000008      Eb(Ry) =      -3.795871
+cgwf: iter =   20      grad =          -0.000012      Eb(Ry) =      -3.795872
+cgwf: iter =   21      grad =          -0.000030      Eb(Ry) =      -3.795872
+cgwf: iter =   22      grad =          -0.000027      Eb(Ry) =      -3.795874
+cgwf: iter =   23      grad =          -0.000010      Eb(Ry) =      -3.795874
+cgwf: iter =   24      grad =          -0.000004      Eb(Ry) =      -3.795875
+cgwf: iter =   25      grad =          -0.000008      Eb(Ry) =      -3.795875
+cgwf: iter =   26      grad =          -0.000008      Eb(Ry) =      -3.795875
+cgwf: iter =   27      grad =          -0.000009      Eb(Ry) =      -3.795876
+cgwf: iter =   28      grad =          -0.000005      Eb(Ry) =      -3.795876
+cgwf: iter =   29      grad =          -0.000011      Eb(Ry) =      -3.795877
+cgwf: iter =   30      grad =          -0.000022      Eb(Ry) =      -3.795878
+cgwf: iter =   31      grad =          -0.000011      Eb(Ry) =      -3.795878
+cgwf: iter =   32      grad =          -0.000005      Eb(Ry) =      -3.795878
+cgwf: iter =   33      grad =          -0.000012      Eb(Ry) =      -3.795879
+cgwf: iter =   34      grad =          -0.000002      Eb(Ry) =      -3.795879
+cgwf: iter =   35      grad =          -0.000004      Eb(Ry) =      -3.795879
+cgwf: iter =   36      grad =          -0.000003      Eb(Ry) =      -3.795879
 
 cgwf:  CG tolerance reached
 
@@ -785,28 +801,47 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    4
-Eharris(eV) =       -465.8492  E_KS(eV) =       -465.5678  dDmax =  0.0158
+Eharris(eV) =       -465.8491  E_KS(eV) =       -465.5678  dDmax =  0.0196
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000614      Eb(Ry) =      -3.833134
-cgwf: iter =    2      grad =          -0.001131      Eb(Ry) =      -3.833197
-cgwf: iter =    3      grad =          -0.000117      Eb(Ry) =      -3.833210
-cgwf: iter =    4      grad =          -0.000127      Eb(Ry) =      -3.833217
-cgwf: iter =    5      grad =          -0.000010      Eb(Ry) =      -3.833220
-cgwf: iter =    6      grad =          -0.000008      Eb(Ry) =      -3.833221
-cgwf: iter =    7      grad =          -0.000004      Eb(Ry) =      -3.833221
-cgwf: iter =    8      grad =          -0.000005      Eb(Ry) =      -3.833221
-cgwf: iter =    9      grad =          -0.000006      Eb(Ry) =      -3.833221
-cgwf: iter =   10      grad =          -0.000002      Eb(Ry) =      -3.833222
-cgwf: iter =   11      grad =          -0.000003      Eb(Ry) =      -3.833222
-cgwf: iter =   12      grad =          -0.000004      Eb(Ry) =      -3.833222
-cgwf: iter =   13      grad =          -0.000002      Eb(Ry) =      -3.833222
-cgwf: iter =   14      grad =          -0.000005      Eb(Ry) =      -3.833222
-cgwf: iter =   15      grad =          -0.000003      Eb(Ry) =      -3.833222
-cgwf: iter =   16      grad =          -0.000002      Eb(Ry) =      -3.833223
-cgwf: iter =   17      grad =          -0.000003      Eb(Ry) =      -3.833223
-cgwf: iter =   18      grad =          -0.000001      Eb(Ry) =      -3.833223
+cgwf: iter =    1      grad =          -0.000647      Eb(Ry) =      -3.833853
+cgwf: iter =    2      grad =          -0.001210      Eb(Ry) =      -3.833919
+cgwf: iter =    3      grad =          -0.000136      Eb(Ry) =      -3.833932
+cgwf: iter =    4      grad =          -0.000143      Eb(Ry) =      -3.833939
+cgwf: iter =    5      grad =          -0.000016      Eb(Ry) =      -3.833944
+cgwf: iter =    6      grad =          -0.000008      Eb(Ry) =      -3.833944
+cgwf: iter =    7      grad =          -0.000011      Eb(Ry) =      -3.833945
+cgwf: iter =    8      grad =          -0.000007      Eb(Ry) =      -3.833945
+cgwf: iter =    9      grad =          -0.000022      Eb(Ry) =      -3.833946
+cgwf: iter =   10      grad =          -0.000005      Eb(Ry) =      -3.833946
+cgwf: iter =   11      grad =          -0.000004      Eb(Ry) =      -3.833946
+cgwf: iter =   12      grad =          -0.000002      Eb(Ry) =      -3.833946
+cgwf: iter =   13      grad =          -0.000002      Eb(Ry) =      -3.833946
+cgwf: iter =   14      grad =          -0.000004      Eb(Ry) =      -3.833947
+cgwf: iter =   15      grad =          -0.000015      Eb(Ry) =      -3.833947
+cgwf: iter =   16      grad =          -0.000008      Eb(Ry) =      -3.833948
+cgwf: iter =   17      grad =          -0.000008      Eb(Ry) =      -3.833948
+cgwf: iter =   18      grad =          -0.000007      Eb(Ry) =      -3.833948
+cgwf: iter =   19      grad =          -0.000003      Eb(Ry) =      -3.833948
+cgwf: iter =   20      grad =          -0.000003      Eb(Ry) =      -3.833948
+cgwf: iter =   21      grad =          -0.000004      Eb(Ry) =      -3.833949
+cgwf: iter =   22      grad =          -0.000002      Eb(Ry) =      -3.833949
+cgwf: iter =   23      grad =          -0.000007      Eb(Ry) =      -3.833949
+cgwf: iter =   24      grad =          -0.000003      Eb(Ry) =      -3.833949
+cgwf: iter =   25      grad =          -0.000004      Eb(Ry) =      -3.833949
+cgwf: iter =   26      grad =          -0.000004      Eb(Ry) =      -3.833949
+cgwf: iter =   27      grad =          -0.000004      Eb(Ry) =      -3.833950
+cgwf: iter =   28      grad =          -0.000003      Eb(Ry) =      -3.833950
+cgwf: iter =   29      grad =          -0.000002      Eb(Ry) =      -3.833950
+cgwf: iter =   30      grad =          -0.000002      Eb(Ry) =      -3.833950
+cgwf: iter =   31      grad =          -0.000006      Eb(Ry) =      -3.833950
+cgwf: iter =   32      grad =          -0.000004      Eb(Ry) =      -3.833950
+cgwf: iter =   33      grad =          -0.000007      Eb(Ry) =      -3.833951
+cgwf: iter =   34      grad =          -0.000002      Eb(Ry) =      -3.833951
+cgwf: iter =   35      grad =          -0.000003      Eb(Ry) =      -3.833951
+cgwf: iter =   36      grad =          -0.000002      Eb(Ry) =      -3.833951
+cgwf: iter =   37      grad =          -0.000001      Eb(Ry) =      -3.833951
 
 cgwf:  CG tolerance reached
 
@@ -814,17 +849,16 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    5
-Eharris(eV) =       -465.8416  E_KS(eV) =       -465.6367  dDmax =  0.0079
+Eharris(eV) =       -465.8416  E_KS(eV) =       -465.6367  dDmax =  0.0105
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000065      Eb(Ry) =      -3.844591
-cgwf: iter =    2      grad =          -0.000061      Eb(Ry) =      -3.844597
-cgwf: iter =    3      grad =          -0.000016      Eb(Ry) =      -3.844598
-cgwf: iter =    4      grad =          -0.000019      Eb(Ry) =      -3.844599
-cgwf: iter =    5      grad =          -0.000002      Eb(Ry) =      -3.844599
-cgwf: iter =    6      grad =          -0.000001      Eb(Ry) =      -3.844599
-cgwf: iter =    7      grad =           0.000000      Eb(Ry) =      -3.844599
+cgwf: iter =    1      grad =          -0.000057      Eb(Ry) =      -3.844723
+cgwf: iter =    2      grad =          -0.000031      Eb(Ry) =      -3.844729
+cgwf: iter =    3      grad =          -0.000013      Eb(Ry) =      -3.844729
+cgwf: iter =    4      grad =          -0.000005      Eb(Ry) =      -3.844730
+cgwf: iter =    5      grad =          -0.000001      Eb(Ry) =      -3.844730
+cgwf: iter =    6      grad =          -0.000001      Eb(Ry) =      -3.844730
 
 cgwf:  CG tolerance reached
 
@@ -832,16 +866,15 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    6
-Eharris(eV) =       -465.8408  E_KS(eV) =       -465.6878  dDmax =  0.0064
+Eharris(eV) =       -465.8408  E_KS(eV) =       -465.6878  dDmax =  0.0073
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000009      Eb(Ry) =      -3.848113
-cgwf: iter =    2      grad =          -0.000008      Eb(Ry) =      -3.848114
-cgwf: iter =    3      grad =          -0.000004      Eb(Ry) =      -3.848114
-cgwf: iter =    4      grad =          -0.000002      Eb(Ry) =      -3.848114
-cgwf: iter =    5      grad =          -0.000002      Eb(Ry) =      -3.848114
-cgwf: iter =    6      grad =           0.000000      Eb(Ry) =      -3.848114
+cgwf: iter =    1      grad =          -0.000009      Eb(Ry) =      -3.848131
+cgwf: iter =    2      grad =          -0.000009      Eb(Ry) =      -3.848131
+cgwf: iter =    3      grad =          -0.000002      Eb(Ry) =      -3.848132
+cgwf: iter =    4      grad =          -0.000002      Eb(Ry) =      -3.848132
+cgwf: iter =    5      grad =          -0.000001      Eb(Ry) =      -3.848132
 
 cgwf:  CG tolerance reached
 
@@ -849,12 +882,12 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    7
-Eharris(eV) =       -465.8407  E_KS(eV) =       -465.7260  dDmax =  0.0048
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.7260  dDmax =  0.0055
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849150
-cgwf: iter =    2      grad =          -0.000002      Eb(Ry) =      -3.849150
+cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.849047
+cgwf: iter =    2      grad =          -0.000001      Eb(Ry) =      -3.849047
 
 cgwf:  CG tolerance reached
 
@@ -862,11 +895,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    8
-Eharris(eV) =       -465.8407  E_KS(eV) =       -465.7547  dDmax =  0.0036
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.7547  dDmax =  0.0041
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849607
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849519
 
 cgwf:  CG tolerance reached
 
@@ -874,11 +907,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    9
-Eharris(eV) =       -465.8407  E_KS(eV) =       -465.7762  dDmax =  0.0027
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.7762  dDmax =  0.0031
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849924
+cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.849773
 
 cgwf:  CG tolerance reached
 
@@ -886,11 +919,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   10
-Eharris(eV) =       -465.8407  E_KS(eV) =       -465.7923  dDmax =  0.0020
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.7923  dDmax =  0.0023
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.850107
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849926
 
 cgwf:  CG tolerance reached
 
@@ -898,11 +931,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   11
-Eharris(eV) =       -465.8406  E_KS(eV) =       -465.8044  dDmax =  0.0015
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8044  dDmax =  0.0018
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.850205
+cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.849990
 
 cgwf:  CG tolerance reached
 
@@ -910,11 +943,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   12
-Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8135  dDmax =  0.0011
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8135  dDmax =  0.0013
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.850225
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.850007
 
 cgwf:  CG tolerance reached
 
@@ -922,11 +955,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   13
-Eharris(eV) =       -465.8406  E_KS(eV) =       -465.8202  dDmax =  0.0008
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8203  dDmax =  0.0010
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.850211
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849991
 
 cgwf:  CG tolerance reached
 
@@ -934,11 +967,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   14
-Eharris(eV) =       -465.8406  E_KS(eV) =       -465.8254  dDmax =  0.0006
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8254  dDmax =  0.0008
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.850158
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849956
 
 cgwf:  CG tolerance reached
 
@@ -946,11 +979,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   15
-Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8292  dDmax =  0.0005
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8292  dDmax =  0.0006
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.850100
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849912
 
 cgwf:  CG tolerance reached
 
@@ -958,11 +991,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   16
-Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8321  dDmax =  0.0004
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8320  dDmax =  0.0004
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.850030
+cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.849863
 
 cgwf:  CG tolerance reached
 
@@ -970,11 +1003,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   17
-Eharris(eV) =       -465.8406  E_KS(eV) =       -465.8342  dDmax =  0.0003
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8342  dDmax =  0.0003
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849967
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849820
 
 cgwf:  CG tolerance reached
 
@@ -982,11 +1015,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   18
-Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8358  dDmax =  0.0002
+Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8358  dDmax =  0.0003
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849906
+cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.849778
 
 cgwf:  CG tolerance reached
 
@@ -998,7 +1031,7 @@ Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8370  dDmax =  0.0002
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =           0.000000      Eb(Ry) =      -3.849858
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849746
 
 cgwf:  CG tolerance reached
 
@@ -1010,7 +1043,7 @@ Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8379  dDmax =  0.0002
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849813
+cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.849717
 
 cgwf:  CG tolerance reached
 
@@ -1022,7 +1055,7 @@ Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8386  dDmax =  0.0001
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =           0.000000      Eb(Ry) =      -3.849782
+cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.849698
 
 cgwf:  CG tolerance reached
 
@@ -1034,7 +1067,7 @@ Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8391  dDmax =  0.0001
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =           0.000000      Eb(Ry) =      -3.849755
+cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.849681
 
 cgwf:  CG tolerance reached
 
@@ -1045,159 +1078,81 @@ siesta: iscf =   23
 Eharris(eV) =       -465.8407  E_KS(eV) =       -465.8395  dDmax =  0.0001
 
 
-siesta: E_KS(eV) =             -465.8398
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00009460
+SCF cycle converged after   23 iterations
 
-siesta: E_KS - E_eggbox =      -465.8398
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -465.8407
+
+siesta: E_KS - E_eggbox =      -465.8407
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000017    0.057398   -0.000008
+   Tot   -0.000001    0.057266    0.000021
 ----------------------------------------
-   Max    0.722449
-   Res    0.403235    sqrt( Sum f_i^2 / 3N )
+   Max    0.720597
+   Res    0.402146    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.722449    constrained
+   Max    0.720597    constrained
 
-Stress-tensor-Voigt (kbar):      -20.25       -3.71       22.42        0.00        0.00        0.00
-(Free)E + p*V (eV/cell)     -465.7640
-Target enthalpy (eV/cell)     -465.8398
-
-siesta: Stress tensor (static) (eV/Ang**3):
-        -0.012641    0.000000    0.000000
-         0.000000   -0.002317    0.000000
-         0.000000    0.000000    0.013992
-
-siesta: Pressure (static):          0.51586592  kBar
-
-siesta: Stress tensor (total) (eV/Ang**3):
-        -0.012641    0.000000    0.000000
-         0.000000   -0.002317    0.000000
-         0.000000    0.000000    0.013992
-
-siesta: Pressure (total):          0.51586592  kBar
-
-siesta: Temp_ion =       0.000 K
-
-* Maximum dynamic memory allocated =     4 MB
+Stress-tensor-Voigt (kbar):      -20.23       -3.71       22.43        0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -465.7665
+Target enthalpy (eV/cell)     -465.8407
 
 siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -104.755974
 siesta: Eions   =       815.854478
 siesta: Ena     =       175.154321
-siesta: Ekin    =       350.754138
-siesta: Enl     =       -61.950126
-siesta: DEna    =        -1.761221
-siesta: DUscf   =         0.727615
+siesta: Ekin    =       350.761203
+siesta: Enl     =       -61.953434
+siesta: DEna    =        -1.765042
+siesta: DUscf   =         0.727576
 siesta: DUext   =         0.000000
-siesta: Exc     =      -112.910056
+siesta: Exc     =      -112.910802
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -465.840655
-siesta: Etot    =      -465.839808
-siesta: FreeEng =      -465.839808
+siesta: Eharris =      -465.840656
+siesta: Etot    =      -465.840656
+siesta: FreeEng =      -465.840656
 
 siesta: Final energy (eV):
-siesta:       Kinetic =     350.754138
-siesta:       Hartree =     382.605270
+siesta:  Band Struct. =    -104.755974
+siesta:       Kinetic =     350.761203
+siesta:       Hartree =     382.608006
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -112.910056
-siesta:  Ion-electron =   -1072.783289
-siesta:       Ion-ion =     -13.505871
+siesta:   Exch.-corr. =    -112.910802
+siesta:  Ion-electron =   -1072.793189
+siesta:       Ion-ion =     -13.505875
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -465.839808
+siesta:         Total =    -465.840656
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000010   -0.509029   -0.000033
-siesta:      2    0.722449    0.283208    0.000021
-siesta:      3   -0.722442    0.283219    0.000004
+siesta:      1    0.000003   -0.507461    0.000009
+siesta:      2    0.720594    0.282363    0.000006
+siesta:      3   -0.720597    0.282364    0.000006
 siesta: ----------------------------------------
-siesta:    Tot    0.000017    0.057398   -0.000008
+siesta:    Tot   -0.000001    0.057266    0.000021
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.012641    0.000000    0.000000
-siesta:     0.000000   -0.002317    0.000000
-siesta:     0.000000    0.000000    0.013992
+siesta:    -0.012629    0.000000   -0.000000
+siesta:     0.000000   -0.002313    0.000000
+siesta:    -0.000000   -0.000000    0.013997
 
 siesta: Cell volume =        235.378012 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00000351         -0.00001814  Ry/Bohr**3
-siesta:           0.00032197         -0.00166530  eV/Ang**3
-siesta:           0.51586592         -2.66814077  kBar
-(Free)E+ p_basis*V_orbitals  =        -465.254641
-(Free)Eharris+ p_basis*V_orbitals  =        -465.255790
+siesta:           0.00000343         -0.00001816  Ry/Bohr**3
+siesta:           0.00031499         -0.00166698  eV/Ang**3
+siesta:           0.50467838         -2.67082986  kBar
+(Free)E+ p_basis*V_orbitals  =        -465.255489
+(Free)Eharris+ p_basis*V_orbitals  =        -465.255489
 
-siesta: Electric dipole (a.u.)  =    0.000000    0.559017   -0.000002
-siesta: Electric dipole (Debye) =   -0.000001    1.420879   -0.000006
-
-* Maximum dynamic memory allocated : Node    0 =     4 MB
-
-* Maximum memory occured during ranger                        
-
-timer: CPU execution times:
-timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      14.748      14.748   100.00
-timer:  Setup             1       0.380       0.380     2.58
-timer:  bands             1       0.000       0.000     0.00
-timer:  writewave         1       0.002       0.002     0.01
-timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD            1      14.361      14.361    97.38
-timer:  hsparse           1       0.002       0.002     0.01
-timer:  overlap           1       2.088       2.088    14.16
-timer:  IterSCF          23       0.509      11.706    79.38
-timer:  kinefsm           2       0.996       1.992    13.51
-timer:  nlefsm            2       2.357       4.714    31.97
-timer:  DHSCF            24       0.209       5.012    33.99
-timer:  DHSCF1            1       0.051       0.051     0.35
-timer:  DHSCF2            1       0.224       0.224     1.52
-timer:  REORD           194       0.001       0.153     1.04
-timer:  POISON           25       0.021       0.526     3.57
-timer:  DHSCF3           24       0.182       4.374    29.66
-timer:  rhoofd           24       0.088       2.101    14.24
-timer:  cellXC           24       0.019       0.452     3.06
-timer:  vmat             24       0.039       0.935     6.34
-timer:  MolMec            2       0.000       0.000     0.00
-timer:  gradient        362       0.001       0.206     1.40
-timer:  ener3           339       0.001       0.240     1.63
-timer:  denmat           23       0.001       0.016     0.11
-timer:  DHSCF4            1       0.346       0.346     2.35
-timer:  dfscf             1       0.326       0.326     2.21
-timer:  overfsm           1       0.004       0.004     0.03
-timer:  optical           1       0.000       0.000     0.00
-  
-
-elaps: ELAPSED times:
-elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      14.760      14.760   100.00
-elaps:  Setup             1       0.381       0.381     2.58
-elaps:  bands             1       0.000       0.000     0.00
-elaps:  writewave         1       0.001       0.001     0.01
-elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD            1      14.372      14.372    97.37
-elaps:  hsparse           1       0.002       0.002     0.02
-elaps:  overlap           1       2.088       2.088    14.15
-elaps:  IterSCF          23       0.509      11.716    79.38
-elaps:  kinefsm           2       0.997       1.994    13.51
-elaps:  nlefsm            2       2.357       4.714    31.94
-elaps:  DHSCF            24       0.209       5.018    34.00
-elaps:  DHSCF1            1       0.050       0.050     0.34
-elaps:  DHSCF2            1       0.224       0.224     1.52
-elaps:  REORD           194       0.001       0.154     1.05
-elaps:  POISON           25       0.021       0.524     3.55
-elaps:  DHSCF3           24       0.183       4.381    29.68
-elaps:  rhoofd           24       0.088       2.107    14.27
-elaps:  cellXC           24       0.019       0.453     3.07
-elaps:  vmat             24       0.039       0.935     6.33
-elaps:  MolMec            2       0.000       0.000     0.00
-elaps:  gradient        362       0.001       0.204     1.38
-elaps:  ener3           339       0.001       0.243     1.64
-elaps:  denmat           23       0.001       0.016     0.11
-elaps:  DHSCF4            1       0.346       0.346     2.34
-elaps:  dfscf             1       0.326       0.326     2.21
-elaps:  overfsm           1       0.004       0.004     0.03
-elaps:  optical           1       0.000       0.000     0.00
-  
->> End of run:  29-SEP-2009  20:28:09
+siesta: Electric dipole (a.u.)  =    0.000000    0.558910   -0.000002
+siesta: Electric dipole (Debye) =    0.000000    1.420609   -0.000006
+>> End of run:  29-SEP-2015  15:38:57

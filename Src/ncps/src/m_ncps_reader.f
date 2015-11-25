@@ -19,6 +19,7 @@
         use m_ncps_froyen_reader,  only: pseudo_read_formatted
         use m_ncps_froyen_reader,  only: pseudo_read_unformatted
         use m_ncps_froyen_reader,  only: pseudo_reparametrize
+        use m_ncps_writers,  only: pseudo_write_formatted
         use m_psml,                only: psml_t => ps_t
 
         character(len=*), intent(in)   :: label
@@ -93,6 +94,7 @@
         endif
         ! Dump locally
         call pseudo_dump(trim(label) // ".psdump",p)
+        call pseudo_write_formatted(trim(label) // ".out.psf",p)
         end subroutine pseudo_read
 
         subroutine pseudo_read_from_file(filename,p,
@@ -101,6 +103,7 @@
         use m_ncps_froyen_reader,  only: pseudo_read_formatted
         use m_ncps_froyen_reader,  only: pseudo_read_unformatted
         use m_ncps_froyen_reader,  only: pseudo_reparametrize
+        use m_ncps_writers,  only: pseudo_write_formatted
 
         character(len=*), intent(in)   :: filename
         type(pseudopotential_t)        :: p
@@ -146,6 +149,7 @@
         endif
         ! Dump locally
         call pseudo_dump(trim(label) // ".psdump",p)
+        call pseudo_write_formatted(trim(label) // ".out.psf",p)
         end subroutine pseudo_read_from_file
 !
         subroutine pseudo_read_psml(fname,p,

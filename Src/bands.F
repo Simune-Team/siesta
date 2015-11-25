@@ -173,19 +173,19 @@ C Find if there are band-lines data
 
         if ( BandLinesPresent .or. BandPointsPresent ) then
 
-C Find lattice constant
-          alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
-          if (alat .eq. 0.d0) then
-            if (Node .eq.0 ) then
-              write(6,'(a)') 'bands: ERROR: Lattice constant required'
-            endif
-            goto 999
-          endif
 
 C Find scale used in k point data
           scale = fdf_string( 'BandLinesScale', 'pi/a' )
           if (scale .eq. 'pi/a') then
             pi = 4.d0 * atan(1.d0)
+C Find lattice constant
+            alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
+            if (alat .eq. 0.d0) then
+             if (Node .eq.0 ) then
+              write(6,'(a)') 'bands: ERROR: Lattice constant required'
+             endif
+             goto 999
+            endif
           elseif (scale .eq. 'ReciprocalLatticeVectors') then
             call redcel( alat, caux, ucell, mscell )
             call reclat( ucell, rcell, 1 )

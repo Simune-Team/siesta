@@ -68,7 +68,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large July 16, 2015 }
+{\Large October 4, 2015 }
 
 \vspace{1.5cm}
 
@@ -113,9 +113,9 @@
 {\Large \url{http://www.uam.es/siesta}}
 
 \vspace{0.5cm}
-Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
-E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2013
+Copyright \copyright\  The Siesta Group,
+E.Artacho, J.M. Cela, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
+D.S\'anchez-Portal and J.M.Soler, 1996-2015
 
 \end{center}
 
@@ -133,14 +133,10 @@ D.S\'anchez-Portal and J.M.Soler, 1996-2013
 
 {\it This Reference Manual contains descriptions of all the input,
   output and execution features of {\sc Siesta}, but is not really a
-  tutorial introduction to the program. The development team is
-  planning a documentation overhaul that will address this
-  shortcoming. In the meantime, interested users can find tutorial
-  material prepared for {\sc Siesta} schools and workshops at the
-  project's web page} \url{http://www.uam.es/siesta}.
+  tutorial introduction to the program. Interested users can find
+  tutorial material prepared for {\sc Siesta} schools and workshops at
+  the project's web page} \url{http://www.uam.es/siesta}.
 
-
-{\bf NOTE: Almost none of the BSC features are documented yet...}
 
 {\sc Siesta}\index{Siesta@{\sc Siesta}} (Spanish Initiative for
 Electronic Simulations with
@@ -406,7 +402,7 @@ directory. A collection of reference output files can be found in {\tt
   Tests/Reference}. Please note that small numerical and
 formatting differences are to be expected, depending on the compiler.
 (For non-standard execution environments, including queuing systems,
-so can have a look at the Scripts in Tests/Scripts, and see also Sect.~\ref{sec:parallel}.)
+have a look at the Scripts in Tests/Scripts, and see also Sect.~\ref{sec:parallel}.)
 
 Other examples are provided in the {\tt Examples} directory. This
 directory contains basically {\tt .fdf} files and the appropriate
@@ -877,7 +873,6 @@ The name of the files should be:
 \noindent
 where {\it Chemical\_label} corresponds to the label defined in the
 {\bf ChemicalSpeciesLabel} block.
-
 
 \index{PSML format}\index{pseudopotential!PSML format}
 Siesta can handle pseudopotential files in the PSML format
@@ -3771,14 +3766,17 @@ implemented, care must be taken to make sure that the FFT grids in the
 \end{description}
 
 
-
 \subsubsection{Output of density matrix}
 \index{output!density matrix}
+
+{\bf Performance Note}: For large-scale calculations, writing the DM
+at every scf step can have a severe impact on performance. 
 
 \begin{description}
 \item[{\bf WriteDM}] ({\it logical}): \index{WriteDM@{\bf WriteDM}}
 \index{output!density matrix} It determines whether the density matrix
 is output as a binary {\it Systemlabel}.DM file or not.
+
 
 {\it Default value:} {\tt .true.}
 
@@ -5221,7 +5219,7 @@ See the {\bf WriteEigenvalues} descriptor.
 There are two options to obtain the partial density of states
 \begin{itemize}
 \item Using the options below
-\item Using the {\tt Util/COOP/mprop} program the off-line analysis of
+\item Using the {\tt Util/COOP/mprop} program for the off-line analysis of
   the electronic structure in PDOS mode. This method allows the
   flexibility of specifying energy ranges, orbitals, and resolutions
   at will, without re-running {\sc Siesta}. See Sec.~\ref{sec:coop}.

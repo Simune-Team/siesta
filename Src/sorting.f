@@ -108,7 +108,7 @@ C **********************************************************************
       ! Construct the heap (family tree)
       indx = (/(k,k=1,n)/)            ! initial array order, to be modified
       age = x(1,:)                    ! this is the array to be ordered
-      ageTol = tol*(maxval(age)-minval(age))  ! tolerance for age comparisons
+      ageTol = tol*maxval(age) - tol*minval(age)  ! tolerance for age comparisons
       nFamily = n                     ! number of persons in the family tree
       do parent = n/2,1,-1            ! sift 'parents' down the tree
         call siftDown(parent)         ! siftDown inherits age and indx arrays

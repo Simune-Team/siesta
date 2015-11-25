@@ -12,6 +12,11 @@
 
 Automated tests for Siesta.
 
+**Please note that these are meant to execute quickly, and so in most
+cases use parameters which are not appropriate for a converged
+calculation.**
+
+
 A copy of the Tests directory is placed by the Src/obj_setup.sh script
 into the compilation directory (which by default is Obj, but any number of
 compilation directories can be created, as explained in the manual --

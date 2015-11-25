@@ -8,6 +8,7 @@
         use m_steps
         use m_kinetic
         use m_stress, only: tstress
+        use units, only: Ang, kbar
 #ifdef CDF
         use md_out,     only: md_netcdf
 #endif
