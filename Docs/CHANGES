@@ -6,6 +6,16 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-11-26   15:10:00 GMT                                     trunk-481
+Increase the number of allowed iterations in minvec
+
+The default value of 100 was inadequate for the needs of
+k-point supercells for large multipliers.
+
+modified:
+  Src/minvec.f
+      
+-----------------------------------------------------------------------
 2015-11-26   13:50:00 GMT                                     trunk-480
 Fix bug in heapsort routine
 
