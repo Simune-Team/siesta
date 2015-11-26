@@ -6,6 +6,47 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-11-26   15:10:00 GMT                                     trunk-481
+Increase the number of allowed iterations in minvec
+
+The default value of 100 was inadequate for the needs of
+k-point supercells for large multipliers.
+
+modified:
+  Src/minvec.f
+      
+-----------------------------------------------------------------------
+2015-11-26   13:50:00 GMT                                     trunk-480
+Fix bug in heapsort routine
+
+(Thanks to Nick Papior)
+
+* The recent re-implementation of the heapsort algorithm in routine
+  'ordix' in 'sorting.f' (trunk revno 468)  was buggy.
+
+  This affected:
+
+  - The siesta.BONDS file, which did not have optimal ordering of the
+    bond-lengths.
+
+  - Some calculations using k-points, as routine 'minvec', used in the
+    definition of the effective k-point supercell, calls 'ordix'.
+    (The reference outputs for the 'var_cell' and 'si2x1h' tests have
+    been modified.)
+
+  - (probably) The re-use of density-matrix information, as the ordering
+    of interactions in 'hsparse' also depended on 'ordix' through calls to
+    'ordvec'.
+
+  - (maybe) The operation of the "rho-mixing" routines, which use 'ordix'
+    for the sorting of stars.
+
+modified:
+  Src/sorting.f
+  Tests/Reference/si2x1h.out
+  Tests/Reference/var_cell.out
+
+-----------------------------------------------------------------------
 2015-10-04   00:40:00 GMT                                     trunk-479
 Assorted fixes and cleanup. Update reference outputs
 
