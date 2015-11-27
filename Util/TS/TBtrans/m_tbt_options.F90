@@ -249,15 +249,13 @@ contains
     Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     Elecs(:)%Bulk = fdf_get('TBT.Elecs.Bulk',Elecs(1)%Bulk)
 
-#ifdef TBT_PHONON
-    ! The eta value for Phonons has to be substantially smaller to not
-    ! smear the DOS out completely.
-    rtmp = 1.e-7_dp * eV
-#else
     rtmp = 1.e-4_dp * eV
-#endif
     rtmp = fdf_get('TS.Elecs.Eta',rtmp,'Ry')
     rtmp = fdf_get('TBT.Elecs.Eta',rtmp,'Ry')
+#ifdef TBT_PHONON
+    ! eta value needs to be squared as it is phonon spectrum
+    rtmp = rtmp ** 2
+#endif
     Elecs(:)%Eta = rtmp
 
     ! whether all calculations should be performed

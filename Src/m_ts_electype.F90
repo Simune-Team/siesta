@@ -510,6 +510,12 @@ contains
 #endif
           call pline_E_parse(pline,1,ln, &
                val = this%Eta, before=3)
+#ifdef TBTRANS
+#ifdef TBT_PHONON
+          ! eta value needs to be squared as it is phonon spectrum
+          this%Eta = this%Eta ** 2
+#endif
+#endif
 
 #ifdef TBTRANS
        else if ( leqi(ln,'tbt.GF') .or. &
@@ -1934,7 +1940,15 @@ contains
        write(*,f11)  '  Will NOT check the kgrid-cell! Ensure sampling!'
     end if
 #endif
+#ifdef TBTRANS
+#ifdef TBT_PHONON
+    write(*,f9)  '  Electrode self-energy imaginary Eta', sqrt(this%Eta)/eV,' eV'
+#else
     write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
+#endif
+#else
+    write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
+#endif
     write(*,f6)  '  Electrode inter-layer distance (semi-inf)', this%dINF_layer/Ang,' Ang'
 
 

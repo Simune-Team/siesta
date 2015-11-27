@@ -1,4 +1,26 @@
 ----------------------------------------------------
+November 27, 2015 -- Nick Papior       trunk-479---ts-scf-601
+Clarified eta value for phonon transport
+
+* Now the eta value for phonon transport is the phonon
+  energy half-width for the Green function.
+  Hence the "true" eta is eta ** 2.
+  This is easier to follow in the implementation and
+  makes much more sense.
+
+* Enabled compilation of tbtrans/phtrans via:
+   tb/tbt => tbtrans
+   ph/pht => phtrans
+  as short-hands.
+
+modified:
+  Src/m_ts_electype.F90
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_contour.F90
+  Util/TS/TBtrans/m_tbt_options.F90
+
+
+----------------------------------------------------
 November 19, 2015 -- Nick Papior       trunk-479---ts-scf-600
 Added print-out of changed mixer
 

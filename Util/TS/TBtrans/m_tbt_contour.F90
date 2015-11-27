@@ -59,6 +59,10 @@ contains
 
     ! broadening
     tbt_Eta = fdf_get('TBT.Contours.Eta',0._dp,'Ry')
+#ifdef TBT_PHONON
+    ! The half-width is squared as the phonon energy is
+    tbt_Eta = tbt_Eta ** 2
+#endif
     if ( tbt_Eta < 0._dp .and. Node == 0 ) then
        write(*,'(a)')'*** NOTICE ***'
        write(*,'(a)')'tbtrans will use the advanced Green function'
@@ -407,7 +411,12 @@ contains
     if ( .not. IONode ) return
     
     write(*,opt_n) '             >> TBtrans contour << '
+#ifdef TBT_PHONON
+    write(*,opt_g_u) 'Device Green function imaginary Eta', &
+         sqrt(tbt_Eta)/eV,'eV'
+#else
     write(*,opt_g_u) 'Device Green function imaginary Eta',tbt_Eta/eV,'eV'
+#endif
     do i = 1 , N_tbt
        chars = '  '//trim(tbt_io(i)%part)
        write(*,opt_c) 'Contour name',trim(prefix)// &

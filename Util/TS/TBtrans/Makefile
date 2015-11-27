@@ -214,6 +214,10 @@ check-tbtrans:
 	fi
 	@touch .tbtrans
 tbtrans: check-tbtrans
+.PHONY: tb tbt
+tb: tbtrans
+tbt: tbtrans
+
 
 .PHONY: check-phtrans
 check-phtrans:
@@ -224,6 +228,11 @@ check-phtrans:
 	fi
 	@touch .phtrans
 phtrans: check-phtrans
+.PHONY: ph pht
+ph: phtrans
+pht: phtrans
+
+
 
 # We append the -DTBTRANS as some special routines
 # which could take advantage of this preprocessing flag
