@@ -1,4 +1,14 @@
 ----------------------------------------------------
+November 28, 2015 -- Nick Papior       trunk-479---ts-scf-602
+Ensured future weights of non-equilibrium to work
+
+* Forced the weight to be real in case the future implementations
+  use complex numbers.
+
+modified:
+  Src/m_ts_contour_neq.f90
+
+----------------------------------------------------
 November 27, 2015 -- Nick Papior       trunk-479---ts-scf-601
 Clarified eta value for phonon transport
 
