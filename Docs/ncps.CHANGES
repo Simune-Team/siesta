@@ -1,4 +1,17 @@
 ------------------------------------------------------------
+November 29, 2015  Alberto Garcia       trunk-481--ncps-74
+Sync with trunk-481
+
+481: Increase the number of allowed iterations in minvec
+480: Fix bug in heapsort routine
+
+modified:
+  Src/minvec.f
+  Src/sorting.f
+  Tests/Reference/si2x1h.out
+  Tests/Reference/var_cell.out
+
+------------------------------------------------------------
 November 25, 2015  Alberto Garcia       trunk-479--ncps-74
 Sync with trunk-479. More fixes
 

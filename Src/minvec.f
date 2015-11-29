@@ -50,7 +50,7 @@ C *******************************************************************
       real(dp)         AUX(3,3),B(3,3),B2(1,3),BNEW(3),BNEW2,
      .                 EPS,VNEW,V0
 
-      parameter (EPS=1.D-8,NITER=100)
+      parameter (EPS=1.D-8,NITER=10000)
 
       V0=ABS(VOLCEL(B0))
       IF (V0.LT.EPS)
