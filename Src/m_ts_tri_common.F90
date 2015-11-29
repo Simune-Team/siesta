@@ -129,8 +129,10 @@ contains
     integer, intent(in) :: tri(N_tri)
     integer, intent(out) :: worksize
 
+#ifdef TRANSIESTA_GFGGF_COLUMN
     integer :: pad, n
-
+#endif
+    
     ! find at which point they will cross...
     ! worksize for ONE array
     worksize = nnzs_tri(N_tri,tri)

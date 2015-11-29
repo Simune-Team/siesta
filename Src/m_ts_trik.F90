@@ -301,6 +301,13 @@ contains
     end if
 #endif
 
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+    do iel = 1 , n_mu
+       print '(a20,tr1,i3)','k  '//trim(mus(iEl)%name),iel
+    end do
+#endif 
+
+    
     ! start the itterators
     call itt_init  (SpKp,end1=nspin,end2=ts_nkpnt)
     ! point to the index iterators

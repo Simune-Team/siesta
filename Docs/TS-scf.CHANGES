@@ -1,4 +1,20 @@
 ----------------------------------------------------
+November 28, 2015 -- Nick Papior       trunk-479---ts-scf-603
+Removed unused variables, added debug for weights
+
+* Removed unused variables in several routines
+
+* Added debugging for weights in trig
+
+modified:
+  Src/m_ts_electype.F90
+  Src/m_ts_rgn2trimat.F90
+  Src/m_ts_tri_common.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Src/sorting.f
+
+----------------------------------------------------
 November 28, 2015 -- Nick Papior       trunk-479---ts-scf-602
 Ensured future weights of non-equilibrium to work
 

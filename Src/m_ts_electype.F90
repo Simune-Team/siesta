@@ -696,7 +696,7 @@ contains
     integer, intent(in) :: na_u
     real(dp), intent(in) :: xa(3,na_u)
     
-    real(dp) :: p(3), max_xa(3), contrib
+    real(dp) :: p(3), contrib
     integer :: i, j, ia, na
 
     ! First figure out the minimum bond-length

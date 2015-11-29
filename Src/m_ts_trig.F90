@@ -307,7 +307,14 @@ contains
        call re_alloc(GFGGF_work,1,GFGGF_size,routine='transiesta')
     end if
 #endif
+    
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+    do iel = 1 , n_mu
+       print '(a20,tr1,i3)','G  '//trim(mus(iEl)%name),iel
+    end do
+#endif 
 
+    
     ! start the itterators
     call itt_init  (Sp,end=nspin)
     ! point to the index iterators
@@ -525,6 +532,10 @@ contains
              
              call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
                   calc_parts, GFGGF_size, GFGGF_work)
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+             print '(a7,tr1,i3,2(tr1,f10.5),tr5,2(tr1,f10.5))', &
+                  trim(Elecs(iEl)%name),iE,zwork(index(zwork_tri,28,28)),cE%e
+#endif
 
 #else
              call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_pvt, &
@@ -536,6 +547,10 @@ contains
                 if ( .not. has_cE_nEq(cE,iEl,iID) ) cycle
                 
                 call c2weight_neq(cE,iID,kw,W,imu,ZW)
+#ifdef TRANSIESTA_WEIGHT_DEBUG
+                print '(a20,2(tr1,i3),2(tr1,e12.5))', &
+                     trim(Elecs(iEl)%name),iID,imu,W
+#endif 
 
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      zwork_tri, r_pvt, pvt, &

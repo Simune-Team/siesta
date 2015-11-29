@@ -91,7 +91,7 @@ contains
     logical :: copy_first, lpar
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     character(len=50) :: fname
-    integer :: io, jo, jr, j, ind, no_u, iu, off
+    integer :: io, jo, jr, j, ind, no_u, iu
 #ifdef MPI
     integer :: MPIerror
 #endif
