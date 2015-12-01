@@ -543,7 +543,7 @@ close(io)
                      no_u_TS, no_u_TS, zwork, &
                      N_Elec, Elecs, &
                      DMidx=iID, EDMidx=imu, &
-                     has_offset = .false.)
+                     eq = .false.)
              end do
           end do
 
@@ -648,7 +648,7 @@ close(io)
        no1,no2,GF, &
        N_Elec,Elecs, &
        DMidx, EDMidx, &
-       has_offset)
+       eq)
 
     use class_Sparsity
     use class_zSpData2D
@@ -668,7 +668,7 @@ close(io)
     ! the index of the partition
     integer, intent(in) :: DMidx
     integer, intent(in), optional :: EDMidx
-    logical, intent(in), optional :: has_offset
+    logical, intent(in), optional :: eq
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
@@ -676,7 +676,10 @@ close(io)
     complex(dp), pointer :: D(:,:), E(:,:)
     integer :: io, ind, nr
     integer :: iu, ju, i1, i2
-    logical :: lh_off, hasEDM
+    logical :: leq, hasEDM
+
+    leq = .true.
+    if ( present(eq) ) leq = eq
 
     ! Remember that this sparsity pattern HAS to be in Global UC
     s => spar(DM)
@@ -690,11 +693,8 @@ close(io)
     i2 = i1
     if ( present(EDMidx) ) i2 = EDMidx
 
-    lh_off = .true.
-    if ( present(has_offset) ) lh_off = has_offset
-
     if ( hasEDM ) then
-       if ( lh_off ) then
+       if ( leq ) then
 
 !$OMP parallel do default(shared), &
 !$OMP&private(io,iu,ind,ju)
@@ -720,6 +720,7 @@ close(io)
 !$OMP end parallel do
      
        else
+
 !$OMP parallel do default(shared), &
 !$OMP&private(io,iu,ind,ju)
           do io = 1 , nr
@@ -727,8 +728,8 @@ close(io)
              iu = io - orb_offset(io)
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                 ju = l_col(ind) - orb_offset(l_col(ind))
-                D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
-                E(ind,i2) = E(ind,i2) - GF(iu,ju) * EDMfact
+                D(ind,i1) = D(ind,i1) + GF(iu,ju) * DMfact
+                E(ind,i2) = E(ind,i2) + GF(iu,ju) * EDMfact
              end do
              end if
           end do
@@ -737,7 +738,7 @@ close(io)
        end if
     else
 
-       if ( lh_off ) then
+       if ( leq ) then
 !$OMP parallel do default(shared), &
 !$OMP&private(io,iu,ind,ju)
           do io = 1 , nr
@@ -767,7 +768,7 @@ close(io)
              iu = io - orb_offset(io)
              do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
                 ju = l_col(ind) - orb_offset(l_col(ind))
-                D(ind,i1) = D(ind,i1) - GF(iu,ju) * DMfact
+                D(ind,i1) = D(ind,i1) + GF(iu,ju) * DMfact
              end do
              end if
           end do

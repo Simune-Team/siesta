@@ -1,4 +1,23 @@
 ----------------------------------------------------
+December 1, 2015 -- Nick Papior       trunk-479---ts-scf-604
+Clarified complex integration variables for transparency
+
+* The weights have been altered to better reflect the
+  actual calculation.
+  This is only for transparency of the code and has
+  not changed anything
+
+modified:
+  Src/m_ts_contour_neq.f90
+  Src/m_ts_dm_update.F90
+  Src/m_ts_fullg.F90
+  Src/m_ts_fullk.F90
+  Src/m_ts_mumpsg.F90
+  Src/m_ts_mumpsk.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+
+----------------------------------------------------
 November 28, 2015 -- Nick Papior       trunk-479---ts-scf-603
 Removed unused variables, added debug for weights
 

@@ -480,7 +480,7 @@ contains
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      mum, &
                      N_Elec, Elecs, &
-                     DMidx=iID, EDMidx=imu, is_nEq = .true. )
+                     DMidx=iID, EDMidx=imu, eq = .false. )
              end do
           end do
 
@@ -586,7 +586,7 @@ contains
        mum, &
        N_Elec,Elecs, &
        DMidx, EDMidx, &
-       is_nEq)
+       eq)
 
     use class_Sparsity
     use class_dSpData2D
@@ -608,8 +608,7 @@ contains
     ! the index of the partition
     integer, intent(in) :: DMidx
     integer, intent(in), optional :: EDMidx
-    logical, intent(in), optional :: is_nEq
-
+    logical, intent(in), optional :: eq
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
@@ -618,8 +617,11 @@ contains
     complex(dp), pointer :: GF(:)
     integer :: io, jo, ind, ir, nr, Hn, ind_H
     integer :: i1, i2
-    logical :: hasEDM, nEq
+    logical :: hasEDM, leq
 
+    leq = .true.
+    if ( present(eq) ) leq = eq
+    
     ! Remember that this sparsity pattern HAS to be in Global UC
     s => spar(DM)
     call attach(s,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
@@ -632,10 +634,7 @@ contains
     i2 = i1
     if ( present(EDMidx) ) i2 = EDMidx
 
-    nEq = .false.
-    if ( present(is_nEq) ) nEq = is_nEq
-
-    if ( .not. nEq ) then
+    if ( leq ) then
 
     GF => mum%RHS_SPARSE(:)
 
@@ -708,8 +707,8 @@ contains
           if ( ind_H /= l_ptr(io) ) then ! this occurs as mum%A contains
                                          ! the electrode as well
           
-          D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
-          E(ind_H,i2) = E(ind_H,i2) - dimag( GF(ind) * EDMfact )
+          D(ind_H,i1) = D(ind_H,i1) + real( GF(ind) * DMfact  ,dp)
+          E(ind_H,i2) = E(ind_H,i2) + real( GF(ind) * EDMfact ,dp)
 
           end if
              
@@ -727,7 +726,7 @@ contains
           ind_H = l_ptr(io)
           ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
           if ( ind_H /= l_ptr(io) ) then
-             D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
+             D(ind_H,i1) = D(ind_H,i1) + real( GF(ind) * DMfact ,dp)
           end if
        end do
 !$OMP end parallel do

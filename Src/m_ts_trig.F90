@@ -555,7 +555,7 @@ contains
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      zwork_tri, r_pvt, pvt, &
                      N_Elec, Elecs, &
-                     DMidx=iID, EDMidx=imu )
+                     DMidx=iID, EDMidx=imu , eq = .false.)
              end do
           end do
 
@@ -910,7 +910,7 @@ contains
   subroutine add_DM(DM, DMfact, EDM, EDMfact, &
        GF_tri, r, pvt, &
        N_Elec, Elecs, &
-       DMidx,EDMidx)
+       DMidx,EDMidx, eq)
 
     use class_dSpData2D
     use class_Sparsity
@@ -923,7 +923,8 @@ contains
     complex(dp), intent(in) :: DMfact
     type(dSpData2D), intent(inout) :: EDM
     complex(dp), intent(in) :: EDMfact
-
+    logical, intent(in), optional :: eq
+    
     ! The Green function
     type(zTriMat), intent(inout) :: GF_tri
     type(tRgn), intent(in) :: r, pvt
@@ -939,7 +940,10 @@ contains
     real(dp), pointer :: D(:,:), E(:,:)
     complex(dp), pointer :: Gf(:)
     integer :: io, ind, iu, idx, i1, i2
-    logical :: hasEDM
+    logical :: hasEDM, leq
+
+    leq = .true.
+    if ( present(eq) ) leq = eq
 
     s  => spar(DM)
     call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
@@ -953,7 +957,9 @@ contains
 
     Gf => val(Gf_tri)
 
-    if ( hasEDM ) then
+    if ( leq ) then
+       
+     if ( hasEDM ) then
 
 ! We will never loop the same element twice
 ! This is UC sparsity pattern
@@ -977,7 +983,7 @@ contains
        end do
 !$OMP end parallel do
 
-    else
+     else
 
 !$OMP parallel do default(shared), &
 !$OMP&private(io,iu,ind,idx) 
@@ -996,6 +1002,55 @@ contains
        end do
 !$OMP end parallel do
 
+     end if
+
+    else
+
+     if ( hasEDM ) then
+
+! We will never loop the same element twice
+! This is UC sparsity pattern
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,idx) 
+       do iu = 1 , r%n
+          io = r%r(iu)
+          if ( l_ncol(io) /= 0 ) then
+
+          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+
+             idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
+             
+             D(ind,i1) = D(ind,i1) + real( GF(idx) * DMfact  ,dp)
+             E(ind,i2) = E(ind,i2) + real( GF(idx) * EDMfact ,dp)
+             
+          end do
+          
+          end if
+
+       end do
+!$OMP end parallel do
+
+     else
+
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,idx) 
+       do iu = 1 , r%n
+          io = r%r(iu)
+          if ( l_ncol(io) /= 0 ) then
+
+          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+             
+             idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
+             
+             D(ind,i1) = D(ind,i1) + real( GF(idx) * DMfact ,dp)
+             
+          end do
+          end if
+       end do
+!$OMP end parallel do
+
+     end if
+    
     end if
 
   end subroutine add_DM

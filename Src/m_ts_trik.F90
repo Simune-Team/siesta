@@ -557,7 +557,7 @@ contains
                 call add_DM( spuDM, W, spuEDM, ZW, &
                      zwork_tri, r_pvt, pvt, &
                      N_Elec, Elecs, &
-                     DMidx=iID, EDMidx=imu)
+                     DMidx=iID, EDMidx=imu, eq = .false.)
              end do
           end do
 
@@ -871,8 +871,8 @@ contains
        if ( .not. cE%fake ) then
           call invert_TriMat(zwork_tri,GF_tri,calc_parts)
        end if
-          
-       W  = dcmplx(kw,0._dp)
+
+       W = dcmplx(kw,0._dp)
        call add_DM( spuDM, W, spuEDM, W, &
             GF_tri, r_pvt, pvt, N_Elec, Elecs, DMidx=1)
 
@@ -923,7 +923,8 @@ contains
   subroutine add_DM(DM, DMfact, EDM, EDMfact, &
        GF_tri, r, pvt, &
        N_Elec, Elecs, &
-       DMidx,EDMidx)
+       DMidx,EDMidx, &
+       eq)
 
     use class_zSpData2D
     use class_Sparsity
@@ -945,6 +946,7 @@ contains
     ! the index of the partition
     integer, intent(in) :: DMidx
     integer, intent(in), optional :: EDMidx
+    logical, intent(in), optional :: eq
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
@@ -952,8 +954,11 @@ contains
     complex(dp), pointer :: D(:,:), E(:,:)
     complex(dp), pointer :: Gf(:)
     integer :: io, ind, iu, idx, i1, i2
-    logical :: hasEDM
+    logical :: hasEDM, leq
 
+    leq = .true.
+    if ( present(eq) ) leq = eq
+    
     s  => spar(DM)
     call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
     D => val(DM)
@@ -966,7 +971,9 @@ contains
 
     Gf => val(Gf_tri)
 
-    if ( hasEDM ) then
+    if ( leq ) then
+
+     if ( hasEDM ) then
 
 !$OMP parallel do default(shared), &
 !$OMP&private(io,iu,ind,idx)
@@ -986,7 +993,7 @@ contains
        end do
 !$OMP end parallel do
 
-    else
+     else
 
 !$OMP parallel do default(shared), &
 !$OMP&private(io,iu,ind,idx)
@@ -1005,8 +1012,53 @@ contains
        end do
 !$OMP end parallel do
 
-    end if
+     end if
 
+    else
+     
+     if ( hasEDM ) then
+
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,idx)
+       do iu = 1 , r%n
+          io = r%r(iu)
+          if ( l_ncol(io) /= 0 ) then
+
+          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+             
+             idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
+             
+             D(ind,i1) = D(ind,i1) + GF(idx) * DMfact
+             E(ind,i2) = E(ind,i2) + GF(idx) * EDMfact
+             
+          end do
+          end if
+       end do
+!$OMP end parallel do
+
+     else
+
+!$OMP parallel do default(shared), &
+!$OMP&private(io,iu,ind,idx)
+       do iu = 1 , r%n
+          io = r%r(iu)
+          if ( l_ncol(io) /= 0 ) then
+
+          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+
+             idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
+             
+             D(ind,i1) = D(ind,i1) + GF(idx) * DMfact
+             
+          end do
+          end if
+       end do
+!$OMP end parallel do
+
+     end if
+
+    end if
+ 
   end subroutine add_DM
 
   ! creation of the GF^{-1}.

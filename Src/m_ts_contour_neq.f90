@@ -506,8 +506,6 @@ contains
     real(dp) :: E
     type(ts_cw), pointer :: cw
 
-    complex(dp), parameter :: zi = dcmplx(0._dp, -1._dp) 
-
     imu = 0
     W  = 0._dp
     ZW = 0._dp
@@ -536,7 +534,7 @@ contains
     W = k * real(cw%w(c%idx(3),1),dp) * &
          nf(E, &
          nEq_ID(ID)%El%mu%mu, nEq_ID(ID)%El%mu%kT, &
-         nEq_ID(ID)%mu%mu, nEq_ID(ID)%mu%kT ) * zi
+         nEq_ID(ID)%mu%mu, nEq_ID(ID)%mu%kT )
 
     ZW = E * W
 

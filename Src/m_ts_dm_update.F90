@@ -55,12 +55,12 @@
 !
 !          ph = fact * cdexp(dcmplx(0._dp,-kx))
 !
-!          ! The integration is this:
+!          ! The integration is:
 !          ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A)/2 dE + \int Gf^R\Gamma Gf^A dE ]
 !
 !          if ( non_Eq ) then
 !
-!             ! The integration is this:
+!             ! The integration is:
 !             ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
 !             kx = aimag( ph*zDu(ind) )
 !             dD(lind) = dD(lind) + kx
@@ -76,7 +76,7 @@
 !             if ( rind <= rin ) &
 !                  call die('ERROR: Conjugated symmetrization point does not exist')
 !
-!             ! This integration is this:
+!             ! The integration is:
 !             ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A)/2 dE
 !             
 !             dD(lind) = dD(lind) + aimag( ph*(zDu(ind) - conjg(zDu(rind))) )
@@ -109,6 +109,9 @@ contains
   !     2. the global update sparsity pattern (suffix 'u')
   ! The k-point routine is constructed to handle three different methods of doing
   ! the weighting which is performed here.
+  ! Commonly the routines should accept input matrices
+  ! with the _correct_ sign.
+  ! I.e. on entry non_eq should have + and eq should have -
 
   subroutine add_k_DM(spDM,spuDM,D_dim2, spEDM, spuEDM, E_dim2, &
        n_s,sc_off,k, non_Eq)
@@ -189,6 +192,8 @@ contains
 
     if ( non_Eq ) then
 
+     if ( hasEDM ) then
+          
 ! No data race will occur, sparsity pattern only tranversed once
 !$OMP parallel do default(shared), &
 !$OMP&private(lio,io,lind,jo,rind,ind)
@@ -208,11 +213,43 @@ contains
              
              jo = (l_col(lind)-1) / nr
              
-             ! The integration is this:
+             ! The integration is:
              ! \rho = e^{-i.k.R} \int Gf^R\Gamma Gf^A dE
-             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + aimag( ph(jo)*zDu(ind,1:D_dim2) )
-             if ( hasEDM ) dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + &
-                  aimag( ph(jo)*zEu(ind,1:E_dim2) )
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
+                  real( ph(jo)*zDu(ind,1:D_dim2) ,dp)
+             dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + &
+                  real( ph(jo)*zEu(ind,1:E_dim2) ,dp)
+             
+          end do
+
+          end if
+          end if
+
+       end do
+!$OMP end parallel do
+
+     else
+
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,lind,jo,rind,ind)
+       do lio = 1 , lnr
+
+          if ( l_ncol(lio) /= 0 ) then
+          io = index_local_to_global(dit,lio)
+          if ( up_ncol(io) /= 0 ) then
+
+          do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+             
+             jo = UCORB(l_col(lind),nr)
+             
+             rind = up_ptr(io)
+             ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
+             if ( ind <= rind ) cycle ! The element does not exist
+             
+             jo = (l_col(lind)-1) / nr
+             
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
+                  real( ph(jo)*zDu(ind,1:D_dim2) ,dp)
 
           end do
 
@@ -222,8 +259,12 @@ contains
        end do
 !$OMP end parallel do
 
-    else
+      end if
+    
+    else ! non_eq == .false.
 
+     if ( hasEDM ) then
+          
 !$OMP parallel do default(shared), &
 !$OMP&private(lio,io,lind,jo,rin,rind,ind)
        do lio = 1 , lnr
@@ -249,11 +290,11 @@ contains
 
              jo = (l_col(lind)-1) / nr
 
-             ! This integration is this:
-             ! \rho = e^{-i.k.R} \int (Gf^R-Gf^A) dE
+             ! The integration is (- from outside)
+             ! \rho = -\Im e^{-i.k.R} \int (Gf^R-Gf^A) dE
              dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
                   aimag( ph(jo)*(zDu(ind,1:D_dim2) - conjg(zDu(rind,1:D_dim2))) )
-             if ( hasEDM ) dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + &
+             dE(lind,1:E_dim2) = dE(lind,1:E_dim2) + &
                   aimag( ph(jo)*(zEu(ind,1:E_dim2) - conjg(zEu(rind,1:E_dim2))) )
 
           end do
@@ -264,6 +305,47 @@ contains
        end do
 !$OMP end parallel do
 
+    else
+          
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,lind,jo,rin,rind,ind)
+       do lio = 1 , lnr
+
+          if ( l_ncol(lio) /= 0 ) then
+          io = index_local_to_global(dit,lio)
+          if ( up_ncol(io) /= 0 ) then
+
+          do lind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+             
+             jo = UCORB(l_col(lind),nr)
+
+             rind = up_ptr(io)
+             ind = rind + SFIND(up_col(rind+1:rind+up_ncol(io)),jo)
+             if ( ind <= rind ) cycle ! The element does not exist
+             
+             rin  = up_ptr(jo)
+             rind = rin + SFIND(up_col(rin+1:rin+up_ncol(jo)),io)
+#ifndef TS_NOCHECKS
+             if ( rind <= rin ) &
+                  call die('ERROR: Conjugated symmetrization point does not exist')
+#endif
+
+             jo = (l_col(lind)-1) / nr
+
+             ! - from outside
+             dD(lind,1:D_dim2) = dD(lind,1:D_dim2) + &
+                  aimag( ph(jo)*(zDu(ind,1:D_dim2) - conjg(zDu(rind,1:D_dim2))) )
+
+          end do
+
+          end if
+          end if
+
+       end do
+!$OMP end parallel do
+
+     end if
+    
     end if
 
   end subroutine add_k_DM
@@ -337,7 +419,7 @@ contains
 !$OMP parallel do default(shared), &
 !$OMP&private(lio,io,lind,jo,rind,ind)
        do lio = 1 , lnr
-
+          
           if ( l_ncol(lio) /= 0 ) then
           io = index_local_to_global(dit,lio)
           if ( up_ncol(io) /= 0 ) then
@@ -362,8 +444,9 @@ contains
 
        end do
 !$OMP end parallel do
+       
     else
-! No data race condition will ever be encountered
+
 !$OMP parallel do default(shared), &
 !$OMP&private(lio,io,lind,jo,rind,ind)
        do lio = 1 , lnr
@@ -389,6 +472,7 @@ contains
 
        end do
 !$OMP end parallel do
+
     end if
 
   end subroutine add_Gamma_DM
@@ -698,8 +782,8 @@ contains
                call die('ERROR: Conjugated symmetrization point does not exist')
 #endif
           
-          ! The integration is this:
-          ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
+          ! The integration is: (- is from outside)
+          ! \rho = - \Im e^{-i.k.R} [ \int (Gf^R-Gf^A) dE + \int Gf^R\Gamma Gf^A dE ]
           jo = (l_col(lind)-1) / nr
       
           DM(lind) = DM(lind) + aimag( ph(jo)*(zD(ind,1) - conjg(zD(rind,1))) )
