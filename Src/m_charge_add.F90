@@ -491,6 +491,7 @@ contains
   ! provided in the FDF
   subroutine read_charge_add(nspin,char_net)
 
+    use fdf, only: fdf_deprecated, fdf_obsolete
     use intrinsic_missing, only : EYE
 
     integer, intent(in) :: nspin
@@ -508,22 +509,17 @@ contains
     ! As we run through the geometric stuff in
     ! Cartesian coordinates, we do not need to correct
     ! vectors etc., 
-    call eye(3,cell)
+    call EYE(3,cell)
+
+    ! notify about deprecated routines
+    call fdf_deprecated('ChargeGeometries','Geometry.Charge')
+    call fdf_obsolete('ChargeGeometries')
 
     ! We read in the options for the Geometry.Charge block
-    call fgeo_count('ChargeGeometries', GEOM_PLANE_DELTA, N_p_d)
-    i = 0
-    if ( N_p_d == 0 ) then
-       call fgeo_count('Geometry.Charge', GEOM_PLANE_DELTA, N_p_d)
-       i = 1
-    end if
+    call fgeo_count('Geometry.Charge', GEOM_PLANE_DELTA, N_p_d)
     if ( N_p_d > 0 ) then
        allocate(p_d(N_p_d))
-       if ( i == 0 ) then
-          call fgeo_read('ChargeGeometries', N_p_d, p_d(:)%geo, p_d(:)%charge)
-       else
-          call fgeo_read('Geometry.Charge', N_p_d, p_d(:)%geo, p_d(:)%charge)
-       end if
+       call fgeo_read('Geometry.Charge', N_p_d, p_d(:)%geo, p_d(:)%charge)
        N_geom = N_geom + N_p_d
 
        ! Update the charge of the system
@@ -537,19 +533,10 @@ contains
        end do
     end if
 
-    call fgeo_count('ChargeGeometries', GEOM_PLANE_GAUSS, N_p_g)
-    i = 0
-    if ( N_p_g == 0 ) then
-       call fgeo_count('Geometry.Charge', GEOM_PLANE_GAUSS, N_p_g)
-       i = 1
-    end if
+    call fgeo_count('Geometry.Charge', GEOM_PLANE_GAUSS, N_p_g)
     if ( N_p_g > 0 ) then
        allocate(p_g(N_p_g))
-       if ( i == 0 ) then
-          call fgeo_read('ChargeGeometries', N_p_g, p_g(:)%geo, p_g(:)%charge)
-       else
-          call fgeo_read('Geometry.Charge', N_p_g, p_g(:)%geo, p_g(:)%charge)
-       end if
+       call fgeo_read('Geometry.Charge', N_p_g, p_g(:)%geo, p_g(:)%charge)
        N_geom = N_geom + N_p_g
        char_net = char_net + sum(p_g(:)%charge)
 
@@ -558,19 +545,10 @@ contains
        end do
     end if
 
-    call fgeo_count('ChargeGeometries', GEOM_PLANE_EXP, N_p_e)
-    i = 0
-    if ( N_p_e == 0 ) then
-       call fgeo_count('Geometry.Charge', GEOM_PLANE_EXP, N_p_e)
-       i = 1
-    end if
+    call fgeo_count('Geometry.Charge', GEOM_PLANE_EXP, N_p_e)
     if ( N_p_e > 0 ) then
        allocate(p_e(N_p_e))
-       if ( i == 0 ) then
-          call fgeo_read('ChargeGeometries', N_p_e, p_e(:)%geo, p_e(:)%charge)
-       else
-          call fgeo_read('Geometry.Charge', N_p_e, p_e(:)%geo, p_e(:)%charge)
-       end if
+       call fgeo_read('Geometry.Charge', N_p_e, p_e(:)%geo, p_e(:)%charge)
        N_geom = N_geom + N_p_e
        char_net = char_net + sum(p_e(:)%charge)
 
@@ -579,19 +557,10 @@ contains
        end do
     end if
 
-    call fgeo_count('ChargeGeometries', GEOM_SQUARE_DELTA, N_s_d)
-    i = 0
-    if ( N_s_d == 0 ) then
-       call fgeo_count('Geometry.Charge', GEOM_SQUARE_DELTA, N_s_d)
-       i = 1
-    end if
+    call fgeo_count('Geometry.Charge', GEOM_SQUARE_DELTA, N_s_d)
     if ( N_s_d > 0 ) then
        allocate(s_d(N_s_d))
-       if ( i == 0 ) then
-          call fgeo_read('ChargeGeometries', N_s_d, s_d(:)%geo, s_d(:)%charge)
-       else
-          call fgeo_read('Geometry.Charge', N_s_d, s_d(:)%geo, s_d(:)%charge)
-       end if
+       call fgeo_read('Geometry.Charge', N_s_d, s_d(:)%geo, s_d(:)%charge)
        N_geom = N_geom + N_s_d
        char_net = char_net + sum(s_d(:)%charge)
 
@@ -600,19 +569,10 @@ contains
        end do
     end if
 
-    call fgeo_count('ChargeGeometries', GEOM_SQUARE_GAUSS, N_s_g)
-    i = 0
-    if ( N_s_g == 0 ) then
-       call fgeo_count('Geometry.Charge', GEOM_SQUARE_GAUSS, N_s_g)
-       i = 1
-    end if
+    call fgeo_count('Geometry.Charge', GEOM_SQUARE_GAUSS, N_s_g)
     if ( N_s_g > 0 ) then
        allocate(s_g(N_s_g))
-       if ( i == 0 ) then
-          call fgeo_read('ChargeGeometries', N_s_g, s_g(:)%geo, s_g(:)%charge)
-       else
-          call fgeo_read('Geometry.Charge', N_s_g, s_g(:)%geo, s_g(:)%charge)
-       end if
+       call fgeo_read('Geometry.Charge', N_s_g, s_g(:)%geo, s_g(:)%charge)
        N_geom = N_geom + N_s_g
        char_net = char_net + sum(s_g(:)%charge)
 
@@ -621,19 +581,10 @@ contains
        end do
     end if
 
-    call fgeo_count('ChargeGeometries', GEOM_SQUARE_EXP, N_s_e)
-    i = 0
-    if ( N_s_e == 0 ) then
-       call fgeo_count('Geometry.Charge', GEOM_SQUARE_EXP, N_s_e)
-       i = 1
-    end if
+    call fgeo_count('Geometry.Charge', GEOM_SQUARE_EXP, N_s_e)
     if ( N_s_e > 0 ) then
        allocate(s_e(N_s_e))
-       if ( i == 0 ) then
-          call fgeo_read('ChargeGeometries', N_s_e, s_e(:)%geo, s_e(:)%charge)
-       else
-          call fgeo_read('Geometry.Charge', N_s_e, s_e(:)%geo, s_e(:)%charge)
-       end if
+       call fgeo_read('Geometry.Charge', N_s_e, s_e(:)%geo, s_e(:)%charge)
        N_geom = N_geom + N_s_e
        char_net = char_net + sum(s_e(:)%charge)
 
@@ -642,53 +593,26 @@ contains
        end do
     end if
 
-    call fgeo_count('ChargeGeometries', GEOM_BOX_DELTA, N_b_d)
-    i = 0
-    if ( N_b_d == 0 ) then
-       call fgeo_count('Geometry.Charge', GEOM_BOX_DELTA, N_b_d)
-       i = 1
-    end if
+    call fgeo_count('Geometry.Charge', GEOM_BOX_DELTA, N_b_d)
     if ( N_b_d > 0 ) then
        allocate(b_d(N_b_d))
-       if ( i == 0 ) then
-          call fgeo_read('ChargeGeometries', N_b_d, b_d(:)%geo, b_d(:)%charge)
-       else
-          call fgeo_read('Geometry.Charge', N_b_d, b_d(:)%geo, b_d(:)%charge)
-       end if
+       call fgeo_read('Geometry.Charge', N_b_d, b_d(:)%geo, b_d(:)%charge)
        N_geom = N_geom + N_b_d
        char_net = char_net + sum(b_d(:)%charge)
     end if
 
-    call fgeo_count('ChargeGeometries', GEOM_COORD_EXP, N_c_e)
-    i = 0
-    if ( N_c_e == 0 ) then
-       call fgeo_count('Geometry.Charge', GEOM_COORD_EXP, N_c_e)
-       i = 1
-    end if
+    call fgeo_count('Geometry.Charge', GEOM_COORD_EXP, N_c_e)
     if ( N_c_e > 0 ) then
        allocate(c_e(N_c_e))
-       if ( i == 0 ) then
-          call fgeo_read('ChargeGeometries', N_c_e, c_e(:)%geo, c_e(:)%charge)
-       else
-          call fgeo_read('Geometry.Charge', N_c_e, c_e(:)%geo, c_e(:)%charge)
-       end if
+       call fgeo_read('Geometry.Charge', N_c_e, c_e(:)%geo, c_e(:)%charge)
        N_geom = N_geom + N_c_e
        char_net = char_net + sum(c_e(:)%charge)
     end if
 
-    call fgeo_count('ChargeGeometries', GEOM_COORD_GAUSS, N_c_g)
-    i = 0
-    if ( N_c_g == 0 ) then
-       call fgeo_count('Geometry.Charge', GEOM_COORD_GAUSS, N_c_g)
-       i = 1
-    end if
+    call fgeo_count('Geometry.Charge', GEOM_COORD_GAUSS, N_c_g)
     if ( N_c_g > 0 ) then
        allocate(c_g(N_c_g))
-       if ( i == 0 ) then
-          call fgeo_read('ChargeGeometries', N_c_g, c_g(:)%geo, c_g(:)%charge)
-       else
-          call fgeo_read('Geometry.Charge', N_c_g, c_g(:)%geo, c_g(:)%charge)
-       end if
+       call fgeo_read('Geometry.Charge', N_c_g, c_g(:)%geo, c_g(:)%charge)
        N_geom = N_geom + N_c_g
        char_net = char_net + sum(c_g(:)%charge)
     end if

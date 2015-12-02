@@ -1,4 +1,14 @@
 ----------------------------------------------------
+December 2, 2015 -- Nick Papior       trunk-479---ts-scf-605
+Removed obsolete fdf flag for gating
+
+* The ChargeGeometries key has been obsoleted
+  as it was only used in old versions.
+
+modified:
+  Src/m_charge_add.F90
+
+----------------------------------------------------
 December 1, 2015 -- Nick Papior       trunk-479---ts-scf-604
 Clarified complex integration variables for transparency
 
