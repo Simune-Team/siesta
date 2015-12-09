@@ -184,6 +184,7 @@ contains
     ! For error estimation
     integer  :: eM_i, eM_j
     real(dp) :: eM, DMe, ee, tmp, m_err, e_f, ew
+    real(dp) :: EDMe, Em_err, Eee, EeM, Eew, Ee_f
     logical :: hasEDM, is_correlated, is_trace
     ! collecting the error contribution for each atom
     real(dp), allocatable :: atom_w(:,:), atom_neq(:,:)
@@ -191,6 +192,7 @@ contains
     
 #ifdef MPI
     integer :: MPIerror
+    integer :: status(MPI_STATUS_SIZE)
 #endif
 
 #ifdef TRANSIESTA_DEBUG
@@ -221,6 +223,10 @@ contains
     eM  = 0._dp
     ew  = 0._dp
     m_err = 0._dp
+    ! energy density matrix
+    EeM = 0._dp
+    Eew = 0._dp
+    Em_err = 0._dp
 
     ! Is the data correlated
     is_correlated = TS_W_METHOD >= TS_W_CORRELATED
@@ -353,7 +359,8 @@ contains
 !$OMP parallel do default(shared), &
 !$OMP&private(lio,io,ia1,ia2,j,ind,jo,neq), &
 !$OMP&private(ee,e_f,mu_i,mu_j,tmp), &
-!$OMP&firstprivate(w), reduction(+:m_err)
+!$OMP&private(Eee,Ee_f), &
+!$OMP&firstprivate(w), reduction(+:m_err,Em_err)
     do lio = 1 , nr
        ! We are in a buffer region...
        if ( l_ncol(lio) /= 0 ) then
@@ -458,17 +465,26 @@ contains
 
           ! Do error estimation (capture before update)
           ee = 0._dp
+          Eee = 0._dp
           do mu_i = 1 , N_mu - 1
              do mu_j = mu_i + 1 , N_mu
+                ! Density matrix
                 tmp = DM(ind,mu_i) - DM(ind,mu_j)
                 ! Calculate sum of all errors
                 m_err = m_err + tmp
                 if ( abs(tmp) > abs(ee) ) ee = tmp
+
+                ! Energy density matrix
+                tmp = EDM(ind,mu_i) - EDM(ind,mu_j)
+                Em_err = Em_err + tmp
+                if ( abs(tmp) > abs(Eee) ) Eee = tmp
+
              end do
           end do
           
           ! Store for later estimation of the "final" error
-          e_f = DM(ind,1)
+          e_f  = DM(ind,1)
+          Ee_f = EDM(ind,1)
           
           DM(ind,1) = w(1) * DM(ind,1)
           if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
@@ -479,19 +495,27 @@ contains
           end do
 
           ! Calculate error from estimated density
-          e_f = e_f - DM(ind,1)
+          e_f  = e_f  - DM(ind,1)
+          Ee_f = Ee_f - EDM(ind,1)
           do mu_i = 2 , N_mu
              tmp = DM(ind,mu_i) - DM(ind,1)
              if ( abs(tmp) > abs(e_f) ) e_f = tmp
+             tmp = EDM(ind,mu_i) - EDM(ind,1)
+             if ( abs(tmp) > abs(Ee_f) ) Ee_f = tmp
           end do
           
           if ( abs(ee) > abs(eM) ) then
 !$OMP critical
-             eM   = ee
              eM_i = io
              eM_j = jo
-             DMe = DM(ind,1)
+             ! Density matrix
+             eM   = ee
+             DMe  = DM(ind,1)
              ew   = e_f
+             ! Energy density matrix
+             EeM  = Eee
+             EDMe = EDM(ind,1)
+             Eew  = Ee_f
 !$OMP end critical
           end if
 
@@ -519,41 +543,89 @@ contains
 #ifdef MPI
     if ( Nodes > 1 ) then
     ! remove pointer
-    nullify(DM,EDM)
-    allocate(DM(7,Nodes),EDM(7,Nodes))
+    nullify(DM)
 
-    io = Node + 1
-    ! Initialize
-    DM(:,:)  = 0._dp
-    DM(1,io) = eM
-    DM(2,io) = real(eM_i,dp)
-    DM(3,io) = real(eM_j,dp)
-    DM(4,io) = DMe
-    DM(5,io) = m_err
-    DM(6,io) = n_nzs
-    DM(7,io) = ew
-    call MPI_Reduce(DM(1,1),EDM(1,1),7*Nodes, &
-         MPI_Double_Precision, MPI_Sum, 0, MPI_Comm_World, MPIerror)
-    if ( IONode ) then
-       io   = maxloc(abs(EDM(1,:)),1)
-       eM   = EDM(1,io)
-       eM_i = nint(EDM(2,io))
-       eM_j = nint(EDM(3,io))
-       DMe  = EDM(4,io)
-       ! Sum of errors
-       m_err = sum( EDM(5,:) )
-       n_nzs = nint( sum( EDM(6,:) ) )
-       ew = EDM(7,io)
+    allocate(DM(max(6,Nodes),1))
+    
+    ! First figure out which process it is
+    call MPI_Gather(eM,1,MPI_Double_Precision, &
+         DM(1,1),1, MPI_Double_Precision, &
+         0, MPI_Comm_World, MPIerror)
+    if ( Node == 0 ) then
+       ! Figure out which node contains the largest
+       ! error
+       is = 1 - 1
+       tmp = DM(1,1)
+       do io = 2 , Nodes
+          if ( abs(DM(io,1)) > abs(tmp) ) then
+             tmp = DM(io,1)
+             is = io - 1
+          end if
+       end do
     end if
-    deallocate(DM,EDM)
+
+    ! Reduce number of updated elements
+    DM(1,1) = real(n_nzs,dp)
+    DM(2,1) = m_err ! DM mean-error
+    DM(3,1) = Em_err ! EDM mean-error
+    call MPI_Reduce(DM(1,1),DM(4,1),3,MPI_Double_Precision, &
+         MPI_SUM, 0, MPI_Comm_World, MPIerror)
+    n_nzs  = int(DM(4,1))
+    m_err  = DM(5,1)
+    Em_err = DM(6,1)
+
+    ! Clean-up
+    deallocate(DM)
+    nullify(DM)
+
+    ! B-cast node that has the highest value
+    call MPI_Bcast(is,1,MPI_Integer,0, MPI_Comm_World, MPIerror)
+
+    ! Allocate for sending of data
+    allocate(DM(8,1))
+    DM(1,1) = real(eM_i,dp)
+    DM(2,1) = real(eM_j,dp)
+    ! Density matrix
+    DM(3,1) = eM ! maximum difference between mu_i
+    DM(4,1) = DMe ! final density at max-diff
+    DM(5,1) = ew ! maximum difference from final density
+    ! Energy density matrix
+    DM(6,1) = EeM
+    DM(7,1) = EDMe
+    DM(8,1) = Eew
+
+    if ( Node == 0 .and. is == 0 ) then
+       ! do nothing, everything is updated
+    else if ( Node == 0 ) then
+       ! recv from main node
+       call MPI_Recv(DM(1,1),8, MPI_Double_Precision, &
+            is, 0, MPI_Comm_World, status, MPIerror)
+       eM_i = int(DM(1,1))
+       eM_j = int(DM(2,1))
+       eM   = DM(3,1)
+       DMe  = DM(4,1)
+       ew   = DM(5,1)
+       EeM  = DM(6,1)
+       EDMe = DM(7,1)
+       Eew  = DM(8,1)
+    else if ( is == Node ) then
+       ! send to main node
+       call MPI_Send(DM(1,1),8, MPI_Double_Precision, &
+            0, 0, MPI_Comm_World, MPIerror)
+    end if
+    deallocate(DM)
+
     end if
 #endif
 
     ! Calculate mean
-    m_err = m_err / real(n_nzs,dp)
+    m_err  =  m_err / real(n_nzs,dp)
+    Em_err = Em_err / real(n_nzs,dp)
 
-    call print_error_estimate(IONode,'ts-EE:', &
+    call print_error_estimate(IONode,'ts-err-D:', &
          eM,ew,eM_i,eM_j,DMe,m_err)
+    call print_error_estimate(IONode,'ts-err-E:', &
+         EeM,Eew,eM_i,eM_j,EDMe,Em_err)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
@@ -573,7 +645,7 @@ contains
     if ( IONode ) then
        write(*,'(a,tr1,a,i5,'','',i6,3(a,g10.5e1)&
             &,a,g11.5)') trim(a), &
-            'ij(',eM_i,eM_j, '), DM = ',DM, &
+            'ij(',eM_i,eM_j, '), M = ',DM, &
             ', ew = ',ew, ', em = ',eM, &
             '. avg_m = ',m_err
     end if

@@ -1,4 +1,18 @@
 ----------------------------------------------------
+December 9, 2015 -- Nick Papior       trunk-479---ts-scf-608
+Added EDM error print-out
+
+* When calculating the weights we now also calculate the
+  EDM matrix error.
+
+* The logic when reducing the error on all processors
+  has been revamped, it is now much faster at reducing the
+  required quantities.
+  
+modified:
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 December 9, 2015 -- Nick Papior       trunk-479---ts-scf-607
 Fixed write-out of weights for non-equilibrium contour (INFO)
 
