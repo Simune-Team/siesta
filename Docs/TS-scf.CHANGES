@@ -1,4 +1,16 @@
 ----------------------------------------------------
+December 9, 2015 -- Nick Papior       trunk-479---ts-scf-607
+Fixed write-out of weights for non-equilibrium contour (INFO)
+
+* The file containing the contours did not have the correct
+  weights for the non-equilibrium contour due to r1067.
+
+  This has no influence other than information.
+  
+modified:
+  Src/m_ts_contour_neq.f90
+
+----------------------------------------------------
 December 9, 2015 -- Nick Papior       trunk-479---ts-scf-606
 Name correction of Poole
 
