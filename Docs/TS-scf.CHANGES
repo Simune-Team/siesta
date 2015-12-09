@@ -1,4 +1,11 @@
 ----------------------------------------------------
+December 9, 2015 -- Nick Papior       trunk-479---ts-scf-606
+Name correction of Poole
+
+modified:
+  Src/m_pivot.F90
+
+----------------------------------------------------
 December 2, 2015 -- Nick Papior       trunk-479---ts-scf-605
 Removed obsolete fdf flag for gating
 
