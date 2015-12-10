@@ -532,7 +532,7 @@ close(io)
        call add_Gamma_DM(spDMneq, spuDM, D_dim2=N_nEq_id, &
             spEDM=spEDM,  spuEDM=spuEDM, E_dim2=N_mu)
        
-       call weight_DM( N_Elec, Elecs, N_mu, na_u, lasto, &
+       call weight_DM( N_Elec, Elecs, N_mu, mus, na_u, lasto, &
             spDM, spDMneq, spEDM, n_s, sc_off)
        
        call update_DM(sp_dist,sparse_pattern, n_nzs, &
