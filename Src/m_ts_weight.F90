@@ -589,8 +589,9 @@ contains
           io = io + 1
        end do
     end do
-    m_err = m_err / real(io,dp)
-    
+    m_err  = m_err / real(io,dp)
+    Em_err = Em_err / real(io,dp)
+
     if ( TS_W /= TS_W_ORB_ORB .and. TS_W /= TS_W_MEAN ) then
        deallocate(atom_w)
     end if
@@ -608,7 +609,7 @@ contains
     w(2) = EeM
     
     ! First figure out which process it is
-    call MPI_Gather(w,2,MPI_Double_Precision, &
+    call MPI_Gather(w(1),2,MPI_Double_Precision, &
          DM(1,1),2,MPI_Double_Precision, &
          0, MPI_Comm_World, MPIerror)
     if ( Node == 0 ) then

@@ -1,4 +1,13 @@
 ----------------------------------------------------
+December 10, 2015 -- Nick Papior       trunk-479---ts-scf-610
+Fix for average error on EDM in print-out
+
+* Forgot to normalize with number of electrodes
+
+modified:
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 December 10, 2015 -- Nick Papior       trunk-479---ts-scf-609
 Weighting now prints out the DM and EDM individually
 
