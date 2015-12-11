@@ -69,7 +69,7 @@ contains
 ! * OUTPUT variables    *
 ! ***********************
     complex(dp), intent(out), target :: GS(no*no)
-    complex(dp), pointer :: zwork(:)
+    complex(dp), intent(inout), target :: zwork(nwork)
     real(dp), intent(inout) :: DOS(no)
     real(dp), intent(inout) :: T
 
@@ -101,7 +101,7 @@ contains
 !    call timer('ts_GS',1)
 
     nom1 = no - 1
-    no2  = 2 * no
+    no2  = no * 2
     nosq = no * no
 
     if ( nwork < 9 * nosq ) call die('SSR_sGreen_DOS: &
@@ -133,6 +133,9 @@ contains
        alpha(i) = H01(i) - ZE * S01(i)
 
        ! zero arrays
+       ! We do not start with H00 as we then
+       ! will still need to re-adjust when
+       ! calculating the scattering matrices.
        gsL(i) = z_0
        gsR(i) = z_0
 
@@ -234,23 +237,18 @@ contains
        
     end do
 
-    if ( present(final_invert) ) then
-       ! If we do not need to invert it, save it for later.
-       if ( .not. final_invert ) then
-!$OMP parallel workshare default(shared)
-          rh1(1:nosq) = GS(:)
-!$OMP end parallel workshare
-       end if
-    end if
-
+    ! *** Initiate DOS and bulk transmission calculation...
+    
     ! Invert to obtain the bulk Green function
     call mat_invert(GB,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
     if ( ierr /= 0 ) then
        write(*,*) 'ERROR: SSR_sGreen_DOS GB MATRIX INVERSION FAILED'
        write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
-    
-    ! Calculate the bulk-transmission (very little work)
+
+    ! Calculate scattering matrices for left-right self-energy
+    ! and correct the self-energy with the bulk Hamiltonian
+    ! to get the correct self-energy
 !$OMP parallel do default(shared), private(i,j,ic,ic2,zij,zji)
     do j = 1 , no
        do i = 1 , j - 1
@@ -298,6 +296,41 @@ contains
     end do
 !$OMP end parallel do
 
+    
+    ! gsR and GS are the same array
+    ! Hence it we should not return the
+    ! inverted matrix, copy gsR to other
+    ! work-array
+    if ( present(final_invert) ) then
+       if ( .not. final_invert ) then
+
+          ! we return a non-inverted matrix
+          ! hence prohibit the inversion of the matrix
+          ! by moving data to another work-array
+!$OMP parallel workshare default(shared)
+          rh1(1:nosq) = gsR(:)
+!$OMP end parallel workshare
+          gsR => rh1(1:nosq)
+
+       end if
+    end if
+    
+
+    ! Invert to get the Surface Green function (Left)
+    call mat_invert(gsL,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: SSR_sGreen_DOS GSL MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
+    end if
+
+    ! Invert to get the Surface Green function (Right)
+    call mat_invert(gsR,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: SSR_sGreen_DOS GSR MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
+    end if
+    
+
     ! Calculate bulk transmision
 #ifdef USE_GEMM3M
     call zgemm3m( &
@@ -315,21 +348,7 @@ contains
     ! Calculate bulk-transmission (same as matrix product + trace)
     T = T - real(zdotu(nosq,alpha,1,beta,1),dp)
 
-    ! Invert to get the Surface Green function
-    call mat_invert(gsL,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
-    if ( ierr /= 0 ) then
-       write(*,*) 'ERROR: SSR_sGreen_DOS GSL MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',ierr
-    end if
 
-    ! Invert to get the Surface Green function
-    call mat_invert(gsR,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
-    if ( ierr /= 0 ) then
-       write(*,*) 'ERROR: SSR_sGreen_DOS GSR MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',ierr
-    end if
-
-    
     ! We now calculate the density of states...
 !$OMP parallel do default(shared), private(i) 
     do i = 1 , nosq
@@ -396,15 +415,6 @@ contains
        i = i + no
        
     end do
-
-    if ( present(final_invert) ) then
-       ! If we do not need to invert it, return the value
-       if ( .not. final_invert ) then
-!$OMP parallel workshare default(shared)
-          GS(:) = rh1(1:nosq)
-!$OMP end parallel workshare
-       end if
-    end if
 
 !    call timer('ts_GS',2)
 
@@ -476,8 +486,8 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), target :: GS(no*no)
-    complex(dp), target :: zwork(nwork)
+    complex(dp), intent(out), target :: GS(no*no)
+    complex(dp), intent(inout), target :: zwork(nwork)
 
     integer, intent(out), optional :: iterations
 

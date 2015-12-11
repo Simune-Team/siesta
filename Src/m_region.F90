@@ -1360,7 +1360,7 @@ contains
           end do
        end do
     end if
-    
+
   end subroutine rgn_Atom2Orb
 
   subroutine rgn_Orb2Atom(or,na_u,lasto,ar)

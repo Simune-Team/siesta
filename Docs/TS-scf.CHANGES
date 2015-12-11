@@ -1,4 +1,42 @@
 ----------------------------------------------------
+December 10, 2015 -- Nick Papior       trunk-479---ts-scf-611
+TBT: Fix for special cases of DOS.Bulk calculations
+
+* Moved certain checks in elec_se, for clarity.
+
+* Fix for calculating the DOS and correct self-energy
+  with tbtrans.
+
+  I am still not sure why this fixes it,
+  the logic says to me that they are equivalent,
+  although I save a matrix copy. !?!
+  Was it actually a compiler bug?
+
+* Optimized a copy/assoc in rotating block orbitals
+
+* Bugfix for elements in transiesta electrode.
+  This bug would only occur in very rare cases where
+  the electrode scattering matrix takes up 2 full
+  blocks, yet it was a bug.
+
+* Made TBT.Atoms.Device more easy to decipher.
+  We now do it on an atom basis and converts to
+  orbitals in the end.
+
+* Added all () for MPI calls in tbt_save module.
+  This is merely for precaution and shouldn't be necessary.
+
+modified:
+  Src/m_region.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_tri_common.F90
+  Src/m_ts_trimat_invert.F90
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_save.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 December 10, 2015 -- Nick Papior       trunk-479---ts-scf-610
 Fix for average error on EDM in print-out
 

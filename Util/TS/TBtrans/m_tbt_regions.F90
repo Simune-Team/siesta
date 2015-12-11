@@ -172,7 +172,7 @@ contains
           
        end do
        call rgn_delete(r_tmp)
-
+       
     else
        
        ! populate the device region with all but the 
@@ -210,26 +210,26 @@ contains
        if ( r_tmp%n == 0 ) &
             call die('No orbitals connect to the specified device &
             &region. This is not allowed.')
-       call rgn_append(r_oDev,r_tmp,r_oDev)
+
+       ! Convert connecting region to atoms
+       call rgn_Orb2Atom(r_tmp,na_u,lasto,r_oDev)
        call rgn_delete(r_tmp)
-       call rgn_Orb2Atom(r_oDev,na_u,lasto,r_aDev)
-       ! Ensure that we do not have any atoms from the electrodes
-       ! This will make it behave like the "old" tbtrans
-       ! in that we do not correctly capture the DOS as S_C-El /= 0 
-       ! We print to the user when this occurs...
-       na = r_aDev%n
-       ! We remove all "electrode" implicit regions
+       ! Remove all electrodes from the region
        do iEl = 1 , N_Elec
-          call rgn_complement(r_aEl_alone(iEl),r_aDev,r_aDev)
+          call rgn_complement(r_aEl_alone(iEl),r_oDev,r_oDev)
        end do
 
-       if ( na /= r_aDev%n .and. Node == 0 ) then
+       ! Append to device region
+       if ( r_oDev%n > 0 ) then
+          call rgn_append(r_aDev,r_oDev,r_aDev)
+       else if ( Node == 0 ) then
+          ! It only connects to electrodes
           write(*,'(a)')'tbtrans: Device regions &
                &connects directly with electrodes'
           write(*,'(a)')'tbtrans: If the overlap is large this might &
                &produce spurious effects in DOS calculations'
        end if
-
+       
        ! In its current state we force the entire atoms
        ! to be in the orbital connection scheme (even though
        ! some orbitals might not connect...)

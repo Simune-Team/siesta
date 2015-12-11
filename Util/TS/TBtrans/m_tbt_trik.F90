@@ -308,6 +308,13 @@ contains
              io = io + no
           end if
           pad_LHS = max(pad_LHS,io)
+       else if ( sum(Elecs(iEl)%Rep) > 3 ) then
+          ! ensure enough space for the expansion of the
+          ! self-energies, etc.
+          ! TODO when bulk vs. non-bulk the below can
+          ! probably be halved... see m_ts_elec_se.F90
+          no = TotUsedOrbs(Elecs(iEl)) ** 2 * 2
+          pad_LHS = max(pad_LHS,no)
        end if
     end do
 
@@ -343,6 +350,10 @@ contains
        pad_RHS = 0
        nGFGGF = 0
     end if
+#ifdef TRANSIESTA_GFGGF_COLUMN
+    call GFGGF_needed_worksize(DevTri%n,DevTri%r, &
+         N_Elec, Elecs, pad_RHS, nGFGGF)
+#endif
        
 #ifdef NCDF_4
     if ( N_proj_ME > 0 ) then
@@ -481,9 +492,9 @@ contains
        ! it is required that prepare_GF_inv is called
        ! immediately (which it is)
        ! Hence the GF must NOT be used in between these two calls!
-       io = max(TotUsedOrbs(Elecs(iEl)),Elecs(iEl)%o_inD%n)
-       Elecs(iEl)%Sigma => Gfwork(no+1:no+io**2)
-       no = no + io ** 2
+       io = max(TotUsedOrbs(Elecs(iEl)),Elecs(iEl)%o_inD%n) ** 2
+       Elecs(iEl)%Sigma => Gfwork(no+1:no+io)
+       no = no + io
 
        ! we have already allocated the H,S, Gamma arrays.
 
@@ -1015,7 +1026,7 @@ contains
                    call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
                 end if
 
-                ! Tis small conversion of data, ensures
+                ! This small conversion of data, ensures
                 ! that we do not need to create two EXACT
                 ! same functions.
                 ! Also, the only reason for doing this

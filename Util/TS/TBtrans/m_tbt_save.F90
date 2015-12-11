@@ -1193,7 +1193,7 @@ contains
 
 #ifdef MPI
        if ( .not. save_parallel ) then
-          allocate(thisDOS(size(DOS,dim=1)))
+          allocate(thisDOS(size(DOS,1)))
           call save_attach_buffer(thisDOS)
           allocate(rT(N_Elec,0:Nodes-1))
           call MPI_Gather(T(1),N_Elec,Mpi_Double_Precision, &
@@ -1294,12 +1294,12 @@ contains
        if ( Node == 0 ) then
           do iN = 1 , Nodes - 1
              if ( nE%iE(iN) <= 0 ) cycle
-             call MPI_Recv(rbuff1d,N,MPI_double_precision,iN,iN, &
+             call MPI_Recv(rbuff1d(1),N,MPI_double_precision,iN,iN, &
                   Mpi_comm_world,status,MPIerror)
              call ncdf_put_var(grp,var,rbuff1d(1:N),start = (/1,nE%iE(iN),ikpt/) )
           end do
        else if ( nE%iE(Node) > 0 ) then
-          call MPI_Send(DOS,N,MPI_double_precision,0,Node, &
+          call MPI_Send(DOS(1),N,MPI_double_precision,0,Node, &
                Mpi_comm_world,MPIerror)
        end if
     end if
@@ -1358,7 +1358,7 @@ contains
        if ( Node == 0 ) then
           do iN = 1 , Nodes - 1
              if ( nE%iE(iN) > 0 ) then
-                call MPI_Recv(J,nnzs_dev,Mpi_double_precision, &
+                call MPI_Recv(J(1),nnzs_dev,Mpi_double_precision, &
                      iN, iN, Mpi_comm_world,status,MPIerror)
                 call ncdf_put_var(grp,'J',J,start = (/1,nE%iE(iN),ikpt/) )
              end if
@@ -2421,7 +2421,7 @@ contains
              write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(DATA(:)) * rnd
           else
 #ifdef MPI
-             call MPI_Recv(rbuff1d,N,MPI_double_precision,i,i, &
+             call MPI_Recv(rbuff1d(1),N,MPI_double_precision,i,i, &
                   Mpi_comm_world,status,MPIerror)
              write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(rbuff1d(1:N)) * rnd
 #else
@@ -2472,7 +2472,7 @@ contains
              write(iu,fmt) nE%E(i) / eV,EIG(:)
           else
 #ifdef MPI
-             call MPI_Recv(rbuff1d,N,MPI_double_precision,i,i, &
+             call MPI_Recv(rbuff1d(1),N,MPI_double_precision,i,i, &
                   Mpi_comm_world,status,MPIerror)
              write(iu,fmt) nE%E(i) / eV,rbuff1d(1:N)
 #else

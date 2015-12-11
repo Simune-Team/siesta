@@ -121,6 +121,7 @@ contains
        ! This loops an array of parts to invert
        do i = 1 , size(part_cols,2)
 
+          ! Note that these *must* be separate parts
           n = part_cols(1,i)
           sCol = part_cols(2,i)
           eCol = part_cols(3,i)
@@ -129,6 +130,8 @@ contains
           
        end do
 
+    else
+       call die('inv-BTM-prep: Wrong options.')
     end if
 
     ! At this point we have calculated the 

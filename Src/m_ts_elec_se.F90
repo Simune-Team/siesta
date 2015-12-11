@@ -113,12 +113,6 @@ contains
     integer :: ierr
     integer :: ipvt(no_s)
 
-#ifndef TS_NOCHECKS
-    ! THis should never happen (work is TS-region!)
-    if ( nwork < no_s**2 ) call die('Size of work-array is &
-         &too small')
-#endif
-
     if ( nq == 1 ) then
 #ifndef TS_NOCHECKS
        if ( no_u /= no_s ) call die('no_E/=no_s')
@@ -128,6 +122,11 @@ contains
        call zcopy(no_s*no_s,GS(1,1,1),1,Sigma(1,1),1)
 
     else
+
+#ifndef TS_NOCHECKS
+       if ( nwork < no_s ** 2 ) &
+            call die('elec_se-Sig-Bulk: worksize too small. Error')
+#endif
 
        call update_UC_expansion_A(no_u,no_s,El, &
             El%na_used,El%lasto_used,nq,GS,nwork,work(1,1))
@@ -170,11 +169,10 @@ contains
     integer :: ipvt(no_s)
 
 #ifndef TS_NOCHECKS
-    ! THis should never happen (work is TS-region!)
-    if ( nwork < no_s**2*2 ) call die('Size of work-array is &
-         &too small')
+    if ( nwork < no_s ** 2 * 2 ) &
+         call die('elec_se-Sigma: worksize too small. Error')
 #endif
-       
+
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
          El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
 
@@ -237,9 +235,8 @@ contains
     integer, pointer :: p_G(:)
 
 #ifndef TS_NOCHECKS
-    ! THis should never happen (work is TS-region!)
-    if ( nwork < no_s**2*2 ) call die('Size of work-array is &
-         &too small')
+    if ( nwork < no_s ** 2 * 2 ) &
+         call die('elec_se-GT: worksize too small. Error')
 #endif
 
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &

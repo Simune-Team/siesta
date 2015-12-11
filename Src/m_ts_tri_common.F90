@@ -246,10 +246,10 @@ contains
     do iE = 1 , N_Elec
 
 #ifdef TBTRANS
-       call rgn_copy(Elecs(iE)%o_inD,r)
+       call rgn_assoc(r,Elecs(iE)%o_inD)
 #else
        call rgn_range(r,Elecs(iE)%idx_o, &
-            Elecs(iE)%idx_o + TotUsedOrbs(Elecs(iE)))
+            Elecs(iE)%idx_o + TotUsedOrbs(Elecs(iE))-1)
 #endif
 
        ! Figure out the parts of the electrode
@@ -348,20 +348,29 @@ contains
        
     end do
 
+#ifndef TBTRANS
     call rgn_delete(r)
+#endif
        
   contains
 
     function which_part(tri,i) result(n)
       type(tRgn), intent(in) :: tri
       integer, intent(in) :: i
-      integer :: n, t
+      integer :: n
+      integer :: j, t
 
+      n = 0
+      
       t = 0
-      do n = 1 , tri%n
-         t = t + tri%r(n)
-         if ( i <= t ) return
+      do j = 1 , tri%n
+         t = t + tri%r(j)
+         if ( i <= t ) then
+            n = j
+            return
+         end if
       end do
+      
     end function which_part
     
   end subroutine ts_pivot_tri_sort_el
