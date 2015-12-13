@@ -659,6 +659,9 @@ contains
 
     use m_ts_global_vars, only: TSmode, onlyS
 
+    use m_ts_method, only: TS_BTD_A_PROPAGATION, TS_BTD_A_COLUMN
+    use m_ts_method, only: ts_A_method
+
     use m_ts_electype, only: check_Elec_sim
     
     use m_ts_contour, only: read_contour_options
@@ -683,12 +686,28 @@ contains
     real(dp), intent(in) :: ts_kdispl(3)
 
     ! Local variables
+    character(len=50) :: chars
     integer :: i
     logical :: Gamma3(3)
 
     if ( onlyS .or. .not. TSmode ) return
 
     if ( N_Elec == 0 ) call die('read_ts_after_Elecs: error in programming')
+
+    ! Read spectral calculation method for BTD method
+    if ( N_Elec > 3 ) then
+       chars = fdf_get('TS.BTD.Spectral','column')
+    else
+       chars = fdf_get('TS.BTD.Spectral','propagation')
+    end if
+    if ( leqi(chars,'column') ) then
+       ts_A_method = TS_BTD_A_COLUMN
+    else if ( leqi(chars,'propagation') ) then
+       ts_A_method = TS_BTD_A_PROPAGATION
+    else
+       call die('TS.BTD.Spectral option is not column or propagation. &
+            &Please correct input.')
+    end if
     
     ! Read in options again, at this point we have
     ! the correct ts_tidx
@@ -749,6 +768,8 @@ contains
     use m_ts_contour, only: print_contour_options
 
     use m_ts_method, only: TS_FULL, TS_BTD, TS_MUMPS, ts_method, na_Buf
+    use m_ts_method, only: TS_BTD_A_COLUMN, TS_BTD_A_PROPAGATION
+    use m_ts_method, only: ts_A_method
 
     use m_ts_charge, only: TS_RHOCORR_METHOD, TS_RHOCORR_BUFFER, TS_RHOCORR_FERMI
     use m_ts_charge, only: TS_RHOCORR_FACTOR, TS_RHOCORR_FERMI_TOLERANCE
@@ -848,6 +869,16 @@ contains
           chars = 'memory'
        end if
        write(*,f10)'BTD creation algorithm', trim(chars)
+       if ( IsVolt ) then
+          select case ( ts_A_method )
+          case ( TS_BTD_A_PROPAGATION )
+             write(*,f10)'BTD spectral function algorithm','propagation'
+          case ( TS_BTD_A_COLUMN )
+             write(*,f10)'BTD spectral function algorithm','column'
+          case default
+             call die('Error in setup BTD. A calc')
+          end select
+       end if
 #ifdef SIESTA__MUMPS
     else if ( ts_method == TS_MUMPS ) then
        write(*,f10)'Solution method', 'MUMPS'
@@ -938,10 +969,6 @@ contains
        case ( TS_W_K_UNCORRELATED )
           write(*,f10) trim(chars),'Uncorrelated k-points'
        end select
-
-#ifdef TRANSIESTA_GFGGF_COLUMN
-       write(*,f11) 'Old-style column Gf.G.Gf product (slow)'
-#endif
     end if
     if ( .not. Calc_Forces ) then
        write(*,f11) '*** TranSIESTA will NOT update forces ***'
@@ -1078,6 +1105,12 @@ contains
             &plane is well-defined.'
        err = .true.
     end if
+
+    if ( ts_A_method == TS_BTD_A_COLUMN ) then
+       write(*,*) 'Memory usage can be reduced by setting:'
+       write(*,*) '   TS.BTD.Spectral propagation'
+    end if
+
 
     ! Check that all chemical potentials are really different
     ! their energy difference has to be below 0.1 meV and the

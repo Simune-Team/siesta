@@ -438,6 +438,7 @@ contains
     use parallel, only: IONode
 
     use m_ts_method, only: ts_method, TS_BTD
+    use m_ts_method, only: ts_A_method, TS_BTD_A_COLUMN, TS_BTD_A_PROPAGATION
 
     use m_tbt_contour, only: read_contour_options
 
@@ -483,8 +484,24 @@ contains
             &see manual.')
     end if
 
-    only_T_Gf = .true.
+    ! Read spectral calculation method for BTD method
+    if ( N_Elec > 3 ) then
+       chars = fdf_get('TS.BTD.Spectral','column')
+    else
+       chars = fdf_get('TS.BTD.Spectral','propagation')
+    end if
+    chars = fdf_get('TBT.BTD.Spectral',trim(chars))
+    if ( leqi(chars,'column') ) then
+       ts_A_method = TS_BTD_A_COLUMN
+    else if ( leqi(chars,'propagation') ) then
+       ts_A_method = TS_BTD_A_PROPAGATION
+    else
+       call die('TBT.BTD.Spectral option is not column or propagation. &
+            &Please correct input.')
+    end if
 
+    ! initial
+    only_T_Gf = .true.
 
     ! Whether we should assert and calculate
     ! all transmission amplitudes
@@ -562,6 +579,7 @@ contains
     end if
     if ( only_T_Gf ) then
        save_DATA = save_DATA // ('T-Gf'.kv.1)
+       ts_A_method = TS_BTD_A_COLUMN
 
        ! We get sum-out for free, so save it
        save_DATA = save_DATA // ('T-sum-out'.kv.1)
@@ -610,6 +628,8 @@ contains
     use parallel, only: IONode
     use files, only: slabel
 
+    use m_ts_method, only: ts_A_method, TS_BTD_A_COLUMN, TS_BTD_A_PROPAGATION
+
     use m_tbt_contour, only: print_contour_tbt_options, io_contour_tbt
     use m_tbt_contour, only: print_contour_tbt_block
     use m_tbt_save, only: print_save_options
@@ -657,6 +677,24 @@ contains
        write(*,f11) 'Single spin Hamiltonian'
     end if
 
+
+    ! Algorithm choices...
+    select case ( BTD_method )
+    case ( 0 )
+       write(*,f10)'BTD creation algorithm', 'speed'
+    case ( 1 )
+       write(*,f10)'BTD creation algorithm', 'memory'
+    end select
+    select case ( ts_A_method )
+    case ( TS_BTD_A_PROPAGATION )
+       write(*,f10)'BTD spectral function algorithm','propagation'
+    case ( TS_BTD_A_COLUMN )
+       write(*,f10)'BTD spectral function algorithm','column'
+    case default
+       call die('Error in setup BTD. A calc')
+    end select
+
+    
     call print_diag()
     call print_Sigma_options( save_DATA )
     call print_dH_options()

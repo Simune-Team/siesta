@@ -244,15 +244,15 @@ contains
 
     if ( .not. IsVolt ) return
 
-#ifdef TRANSIESTA_GFGGF_COLUMN
-    ! Get the padding for the array to hold the entire column
-    call GFGGF_needed_worksize(c_Tri%n, c_Tri%r, &
-         N_Elec, Elecs, padding, worksize)
-    if ( IONode ) then
-       write(*,'(a,i0)') 'transiesta: Padding + work elements: ', &
-            padding + worksize
+    if ( ts_A_method == TS_BTD_A_COLUMN ) then
+       ! Get the padding for the array to hold the entire column
+       call GFGGF_needed_worksize(c_Tri%n, c_Tri%r, &
+            N_Elec, Elecs, padding, worksize)
+       if ( IONode ) then
+          write(*,'(a,i0)') 'transiesta: Padding + work elements: ', &
+               padding + worksize
+       end if
     end if
-#endif
     do iEl = 1 , N_Elec
        i = consecutive_Elec_orb(Elecs(iEl),r_pvt)
        if ( IONode ) then
@@ -748,13 +748,14 @@ contains
               els , real(els,dp)/real(pad,dp) * 100._dp
       end if
 
-      pad = 0
-      work = 0
-#ifdef TRANSIESTA_GFGGF_COLUMN
-      ! Get the padding for the array to hold the entire column
-      call GFGGF_needed_worksize(ctri%n, ctri%r, &
-           N_Elec, Elecs, pad, work)
-#endif
+      if ( ts_A_method == TS_BTD_A_COLUMN ) then
+         ! Get the padding for the array to hold the entire column
+         call GFGGF_needed_worksize(ctri%n, ctri%r, &
+              N_Elec, Elecs, pad, work)
+      else
+         pad = 0
+         work = 0
+      end if
       prof = pad + work + els * 2 ! total mem
       if ( IONode ) then
          write(*,'(tr3,a,t30,i20)') 'BTD x 2 + padding + work: ', prof

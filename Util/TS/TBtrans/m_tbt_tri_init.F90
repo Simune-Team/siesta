@@ -46,6 +46,9 @@ contains
     use m_ts_tri_common, only: ts_pivot_tri_sort_El
     use m_ts_rgn2trimat
     use m_ts_electype
+    use m_ts_method, only: ts_A_method
+    use m_ts_method, only: TS_BTD_A_COLUMN, TS_BTD_A_PROPAGATION
+
 #ifdef MPI
     use mpi_siesta
 #endif
@@ -62,12 +65,16 @@ contains
 
     type(Sparsity) :: tmpSp1, tmpSp2
     integer :: i, iEl
+    integer :: o_BTD
 
 #ifdef MPI
     integer :: MPIerror
 #endif
 
     call timer('tri-init-elec',1)
+
+    o_BTD = ts_A_method
+    ts_A_method = TS_BTD_A_COLUMN
 
     ! This works as creating a new sparsity deletes the previous
     ! and as it is referenced several times it will not be actually
@@ -96,6 +103,9 @@ contains
        call delete(tmpSp1)
 
     end do
+
+    ! reset variable
+    ts_A_method = o_BTD
 
     ! The i'th processor has the following electrodes
     do iEl = 1 , N_Elec

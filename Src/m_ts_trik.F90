@@ -37,6 +37,7 @@ module m_ts_trik
   use m_ts_tri_init, only : c_Tri
 
   use m_ts_method, only : orb_offset, no_Buf, r_pvt
+  use m_ts_method, only : ts_A_method, TS_BTD_A_COLUMN
   
   implicit none
 
@@ -98,9 +99,7 @@ contains
     ! Gf calculation
     use m_ts_trimat_invert
 
-#ifdef TRANSIESTA_GFGGF_COLUMN
     use m_ts_tri_common, only : GFGGF_needed_worksize
-#endif
 
     ! Gf.Gamma.Gf
     use m_ts_tri_scat
@@ -145,12 +144,10 @@ contains
     logical, pointer :: calc_parts(:) => null()
 ! ************************************************************
 
-#ifdef TRANSIESTA_GFGGF_COLUMN
 ! ****************** Electrode variables *********************
     integer :: padding, GFGGF_size ! with IsVolt we need padding and work-array
     complex(dp), pointer :: GFGGF_work(:) => null()
 ! ************************************************************
-#endif
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
@@ -192,8 +189,7 @@ contains
 
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require this...
-#ifdef TRANSIESTA_GFGGF_COLUMN
-    if ( IsVolt ) then
+    if ( ts_A_method == TS_BTD_A_COLUMN .and. IsVolt ) then
        call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
             N_Elec, Elecs, padding, GFGGF_size)
     else
@@ -202,9 +198,6 @@ contains
     end if
     call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv', &
          padding=padding)
-#else
-    call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv')
-#endif
     nzwork = elements(zwork_tri,all=.true.)
 
     ! Initialize the tri-diagonal inversion routine
@@ -293,13 +286,11 @@ contains
        end if
     end if
 
-#ifdef TRANSIESTA_GFGGF_COLUMN
-    if ( IsVolt ) then
+    if ( ts_A_method == TS_BTD_A_COLUMN .and. IsVolt ) then
        ! we need only allocate one work-array for
        ! Gf.G.Gf^\dagger
        call re_alloc(GFGGF_work,1,GFGGF_size,routine='transiesta')
     end if
-#endif
 
 #ifdef TRANSIESTA_WEIGHT_DEBUG
     do iel = 1 , n_mu
@@ -515,33 +506,33 @@ contains
              ! ******************
              ! * calc GF-column *
              ! ******************
-#ifdef TRANSIESTA_GFGGF_COLUMN
-             call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                  r_pvt, Elecs(iEl)%o_inD)
+             if ( ts_A_method == TS_BTD_A_COLUMN ) then
+              call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
+                   r_pvt, Elecs(iEl)%o_inD)
 
 #ifdef TS_DEV
-             ! offset and number of orbitals
-             no = TotUsedOrbs(Elecs(iEl))
+              ! offset and number of orbitals
+              no = TotUsedOrbs(Elecs(iEl))
 
-             idx = 0
-             do iid = 1 , c_Tri%n
-                write(io) c_Tri%r(iid),no
-                write(io) zwork(idx+1:idx+c_Tri%r(iid)*no)
-                idx = idx + c_Tri%r(iid)*no
-             end do
+              idx = 0
+              do iid = 1 , c_Tri%n
+                 write(io) c_Tri%r(iid),no
+                 write(io) zwork(idx+1:idx+c_Tri%r(iid)*no)
+                 idx = idx + c_Tri%r(iid)*no
+              end do
 #endif
       
-             call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
-                  calc_parts, GFGGF_size, GFGGF_work)
+              call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
+                   calc_parts, GFGGF_size, GFGGF_work)
 #ifdef TRANSIESTA_WEIGHT_DEBUG
-             print '(a7,tr1,i3,2(tr1,f10.5),tr5,2(tr1,f10.5))', &
-                  trim(Elecs(iEl)%name),iE,zwork(index(zwork_tri,28,28)),cE%e
+              print '(a7,tr1,i3,2(tr1,f10.5),tr5,2(tr1,f10.5))', &
+                   trim(Elecs(iEl)%name),iE,zwork(index(zwork_tri,28,28)),cE%e
 #endif
 
-#else
-             call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_pvt, &
-                  Elecs(iEl), calc_parts)
-#endif
+             else
+              call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_pvt, &
+                   Elecs(iEl), calc_parts)
+             end if
              
              do iID = 1 , N_nEq_ID
                 
@@ -652,11 +643,9 @@ contains
     call delete(fdist)
 
     call clear_TriMat_inversion()
-#ifdef TRANSIESTA_GFGGF_COLUMN
-    if ( IsVolt ) then
+    if ( ts_A_method == TS_BTD_A_COLUMN .and. IsVolt ) then
        call de_alloc(GFGGF_work, routine='transiesta')
     end if
-#endif
     call clear_mat_inversion()
 
     call rgn_delete(pvt)

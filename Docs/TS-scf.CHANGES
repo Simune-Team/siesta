@@ -1,4 +1,33 @@
 ----------------------------------------------------
+December 13, 2015 -- Nick Papior       trunk-479---ts-scf-612
+Allowed user determination of Gf.G.Gf product method
+
+* The column product vs. propagation is now a user
+  choice. For N_Elec > 3 it is defaulted to the
+  column product, for fewer electrodes the other
+  method is used.
+
+* Also implemented for tbtrans in the same manner
+
+* Separated memory print-outs for each segment
+  Also the total memory usage is now for the node
+  with the most used memory.
+  
+modified:
+  Src/Makefile
+  Src/m_transiesta.F90
+  Src/m_ts_method.f90
+  Src/m_ts_options.F90
+  Src/m_ts_rgn2trimat.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_trig.F90
+  Src/m_ts_trik.F90
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_options.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 December 10, 2015 -- Nick Papior       trunk-479---ts-scf-611
 TBT: Fix for special cases of DOS.Bulk calculations
 

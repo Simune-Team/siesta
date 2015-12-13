@@ -33,6 +33,10 @@ module m_ts_rgn2trimat
   use m_ts_electype
   use m_ts_tri_common, only : needed_mem
 
+  ! method of BTD matrix
+  use m_ts_method, only: TS_BTD_A_PROPAGATION, TS_BTD_A_COLUMN
+  use m_ts_method, only: ts_A_method
+
   implicit none
 
   private
@@ -204,8 +208,7 @@ contains
           cycle
        end if
        
-       call select_better(method, &
-            parts,n_part, guess_parts, guess_part)
+       call select_better(method, parts,n_part, guess_parts, guess_part)
        
     end do
 
@@ -355,12 +358,13 @@ contains
          copy = faster_parts(parts,n_part,guess_parts,guess_part)
 
       else if ( method == 1 ) then
+         copy = IsVolt .and. ts_A_method == TS_BTD_A_COLUMN
 
          ! We optimize for memory, i.e. we check for number of elements
          ! in this regard we also check whether we should allocate
          ! a work-array in case of bias calculations.
-         call needed_mem(IsVolt,N_Elec,Elecs,guess_parts,guess_part, guess_work)
-         call needed_mem(IsVolt,N_Elec,Elecs,parts, n_part, part_work)
+         call needed_mem(copy,N_Elec,Elecs,guess_parts,guess_part, guess_work)
+         call needed_mem(copy,N_Elec,Elecs,parts, n_part, part_work)
          
          copy = part_work > guess_work
          if ( .not. copy ) then
@@ -603,17 +607,19 @@ contains
     integer, intent(in) :: last_eq
     ! Local variables
     integer :: o_part(parts), mem_part(parts) , i, o_mem, n_mem, idx
+    logical :: btd_column
 
     if ( method == 1 ) then
        ! we have a memory determining thing
+       btd_column = ts_A_method == TS_BTD_A_COLUMN .and. IsVolt
        
        do
           o_part(:) = n_part(:)
-          call needed_mem(IsVolt,N_Elec,Elecs,parts,n_part,o_mem)
+          call needed_mem(btd_column,N_Elec,Elecs,parts,n_part,o_mem)
           do i = 1 , parts
              mem_part(:) = n_part(:)
              call even_out_parts(no, mm_col, parts, n_part, i, last_eq)
-             call needed_mem(IsVolt,N_Elec,Elecs,parts,n_part,n_mem)
+             call needed_mem(btd_column,N_Elec,Elecs,parts,n_part,n_mem)
              if ( n_mem > o_mem ) then
                 ! copy back
                 n_part(:) = mem_part(:)

@@ -25,6 +25,15 @@ module m_ts_method
   ! after option reading)
   integer :: ts_method = TS_BTD
 
+  ! The BTD spectral function calcultation method
+  ! Currently we only do propagation and column methods
+  ! This may be abstracted later for other variants
+  integer, parameter :: TS_BTD_A_PROPAGATION = 0
+  integer, parameter :: TS_BTD_A_COLUMN = 1
+
+  ! The actual method used 
+  integer :: ts_A_method = TS_BTD_A_PROPAGATION
+
   ! The buffer atoms have type = -1, dev = 0, Electrodes = E_idx
   integer, parameter :: TYP_BUFFER = -1
   integer, parameter :: TYP_DEVICE = 0

@@ -720,7 +720,8 @@ m_ts_pivot.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o parallel.o
 m_ts_pivot.o: precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
-m_ts_rgn2trimat.o: m_ts_electype.o m_ts_tri_common.o parallel.o precision.o
+m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o
+m_ts_rgn2trimat.o: precision.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
 m_ts_sparse.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
@@ -763,8 +764,8 @@ m_ts_voltage.o: intrinsic_missing.o m_geom_box.o m_mesh_node.o m_ncdf_io.o
 m_ts_voltage.o: m_ts_electype.o m_ts_options.o m_ts_tdir.o parallel.o
 m_ts_voltage.o: precision.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
-m_ts_weight.o: geom_helper.o m_ts_contour_neq.o m_ts_electype.o parallel.o
-m_ts_weight.o: precision.o
+m_ts_weight.o: geom_helper.o m_ts_chem_pot.o m_ts_contour_neq.o m_ts_electype.o
+m_ts_weight.o: parallel.o precision.o
 m_wallclock.o: m_walltime.o
 m_writedelk.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o
 m_writedelk.o: parallelsubs.o precision.o siesta_geom.o sys.o
@@ -1054,8 +1055,8 @@ m_tbt_sparse_helper.o: precision.o
 m_tbt_tri_init.o: class_OrbitalDistribution.o class_Sparsity.o
 m_tbt_tri_init.o: create_Sparsity_Union.o m_region.o m_sparsity_handling.o
 m_tbt_tri_init.o: m_tbt_options.o m_tbt_regions.o m_ts_debug.o m_ts_electype.o
-m_tbt_tri_init.o: m_ts_rgn2trimat.o m_ts_tri_common.o m_verbosity.o parallel.o
-m_tbt_tri_init.o: precision.o
+m_tbt_tri_init.o: m_ts_method.o m_ts_rgn2trimat.o m_ts_tri_common.o
+m_tbt_tri_init.o: m_verbosity.o parallel.o precision.o
 m_tbt_tri_scat.o: class_SpData1D.o class_SpData1D.o class_Sparsity.o
 m_tbt_tri_scat.o: class_TriMat.o intrinsic_missing.o m_region.o m_tbt_proj.o
 m_tbt_tri_scat.o: m_ts_electype.o m_ts_tri_common.o m_ts_tri_scat.o
@@ -1068,7 +1069,7 @@ m_tbt_trik.o: m_tbt_dH.o m_tbt_gf.o m_tbt_hs.o m_tbt_kpoint.o m_tbt_kregions.o
 m_tbt_trik.o: m_tbt_options.o m_tbt_proj.o m_tbt_regions.o m_tbt_save.o
 m_tbt_trik.o: m_tbt_sigma_save.o m_tbt_sparse_helper.o m_tbt_tri_init.o
 m_tbt_trik.o: m_tbt_tri_scat.o m_timer.o m_trimat_invert.o m_ts_cctype.o
-m_tbt_trik.o: m_ts_elec_se.o m_ts_electype.o m_ts_sparse_helper.o
+m_tbt_trik.o: m_ts_elec_se.o m_ts_electype.o m_ts_method.o m_ts_sparse_helper.o
 m_tbt_trik.o: m_ts_tri_common.o m_ts_trimat_invert.o m_verbosity.o parallel.o
 m_tbt_trik.o: precision.o units.o
 m_tbtrans.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o

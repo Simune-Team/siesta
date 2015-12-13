@@ -20,6 +20,8 @@ module m_transiesta
 
   use m_ts_sparse, only : ts_sparse_init
   use m_ts_method, only : ts_method
+  use m_ts_method, only : ts_A_method, TS_BTD_A_COLUMN
+
   use m_ts_method, only : TS_FULL, TS_BTD
 #ifdef SIESTA__MUMPS
   use m_ts_method, only : TS_MUMPS
@@ -587,12 +589,8 @@ contains
     integer :: MPIerror
 #endif
 
-    ! estimate the amount of memory used...
-    dmem = 0._dp
+    ! Estimate electrode sizes
     zmem = 0._dp
-
-    ! Add electrode sizes
-    mem = 0._dp
     do i = 1 , N_Elec
 
        no_used = Elecs(i)%no_used
@@ -601,27 +599,34 @@ contains
        if ( IsVolt .or. .not. Elecs(i)%Bulk ) then
           ! Hamiltonian and overlap
           if ( Elecs(i)%pre_expand > 1 ) then
-             mem = mem + no_E ** 2 * 2
+             zmem = zmem + no_E ** 2 * 2
           else
-             mem = mem + no_E * no_used * 2
+             zmem = zmem + no_E * no_used * 2
           end if
        end if
 
        if ( IsVolt ) then
-          mem = mem + no_E ** 2 ! GS/Gamma
+          zmem = zmem + no_E ** 2 ! GS/Gamma
        else
           if ( Elecs(i)%pre_expand > 0 ) then
-             mem = mem + no_E ** 2
+             zmem = zmem + no_E ** 2
           else
-             mem = mem + no_E * no_used
+             zmem = zmem + no_E * no_used
           end if
        end if
        
     end do
-    ! Sadly we do not differentiate between Gamma and non-gamma
-    zmem = zmem + mem
+    zmem = zmem * 16._dp / 1024._dp ** 2
+    if ( IONode ) then
+       write(*,'(/,a,t55,f10.2,a)') &
+            'transiesta: mem of electrodes (static): ', &
+            zmem,'MB'
+    end if
+    mem = zmem
 
-    ! H and S
+    ! Global arrays
+    dmem = 0._dp
+    zmem = 0._dp
     nel = nnzs(ts_sp_uc) * 2
     if ( ts_Gamma ) then
        dmem = dmem + nel
@@ -632,89 +637,105 @@ contains
     ! global sparsity update
     nel = nnzs(tsup_sp_uc)
     if ( Calc_Forces ) then
-       mem = nel * ( max(N_mu,N_nEq_id) + N_mu )
+       i = max(N_mu,N_nEq_id) + N_mu
     else
-       mem = nel * max(N_mu,N_nEq_id)
+       i = max(N_mu,N_nEq_id)
     end if
     if ( ts_Gamma ) then
-       dmem = dmem + mem
+       dmem = dmem + nel * i
     else
-       zmem = zmem + mem
+       zmem = zmem + nel * i
     end if
-
-    ! local sparsity update
-    if ( IsVolt ) then
-       nel = nnzs(ltsup_sp_sc)
-       if ( Calc_Forces ) then
-          mem = nel * ( 2 * N_mu + N_nEq_id )
-       else
-          mem = nel * ( N_mu + N_nEq_id )
-       end if
-       ! Bias local sparsity pattern is always
-       ! in double precision
-       dmem = dmem + mem
-    end if
-
-
     ! Convert to MB
     dmem = dmem * 8._dp / 1024._dp ** 2
     zmem = zmem * 16._dp / 1024._dp ** 2
-
-    ! Calculate total memory used
-    mem = dmem + zmem
+    mem = mem + dmem + zmem
 
     if ( IONode ) then
-       write(*,'(/,a,f10.2,a)') &
-            'transiesta: Memory usage of sparse arrays and electrodes (static): ', &
-            mem,'MB'
+       write(*,'(a,t55,f10.2,a)') &
+            'transiesta: mem of global update arrays (static): ', &
+            dmem+zmem,'MB'
+    end if
+
+    ! Local sparsity update
+    if ( IsVolt ) then
+       nel = nnzs(ltsup_sp_sc)
+       if ( Calc_Forces ) then
+          dmem = nel * ( 2 * N_mu + N_nEq_id )
+       else
+          dmem = nel * ( N_mu + N_nEq_id )
+       end if
+       ! Bias local sparsity pattern is always
+       ! in double precision
+       dmem = dmem * 8._dp / 1024._dp ** 2
+       if ( IONode ) then
+          write(*,'(a,t55,f10.2,a)') &
+               'transiesta: mem of master node sparse arrays: ', &
+               dmem,'MB'
+       end if
+       mem = mem + dmem
     end if
 
     if ( ts_method == TS_BTD ) then
-       
+
+       ! initialize padding and work-size query
        padding = 0
        worksize = 0
-       
-#ifdef TRANSIESTA_GFGGF_COLUMN
-       ! Calculate size of the tri-diagonal matrix
-       if ( IsVolt ) then
+
+       if ( ts_A_method == TS_BTD_A_COLUMN .and. IsVolt ) then
+          ! Calculate size of the tri-diagonal matrix
           call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
                N_Elec, Elecs, padding, worksize)
        end if
-#endif
 
-       mem = nnzs_tri(c_Tri%n,c_Tri%r)
-       mem = (mem * 2 + padding + worksize ) * 16._dp / 1024._dp ** 2
+       zmem = nnzs_tri(c_Tri%n,c_Tri%r)
+       zmem = (zmem * 2 + padding + worksize ) * 16._dp / 1024._dp ** 2
        if ( IONode ) &
-            write(*,'(a,f10.2,a)') &
-            'transiesta: Memory usage of tri-diagonal matrices: ', &
-            mem,'MB'
+            write(*,'(a,t55,f10.2,a)') &
+            'transiesta: mem of tri-diagonal matrices: ', &
+            zmem,'MB'
+       mem = mem + zmem
     else if ( ts_method == TS_FULL ) then
        ! Calculate size of the full matrices
        ! Here we calculate number of electrodes not needed to update the cross-terms
        no_E = sum(TotUsedOrbs(Elecs),Elecs(:)%DM_update==0)
        i = nrows_g(ts_sp_uc) - no_Buf
        ! LHS
-       mem = i ** 2
+       zmem = i ** 2
        ! RHS
        if ( IsVolt ) then
-          mem = mem + i * max(i-no_E,sum(TotUsedOrbs(Elecs)))
+          zmem = zmem + i * max(i-no_E,sum(TotUsedOrbs(Elecs)))
        else
-          mem = mem + i * (i-no_E)
+          zmem = zmem + i * (i-no_E)
        end if
-       mem = mem * 16._dp / 1024._dp ** 2
+       zmem = zmem * 16._dp / 1024._dp ** 2
        if ( IONode ) &
-            write(*,'(a,f10.2,a)') &
-            'transiesta: Memory usage of full matrices: ', &
-            mem,'MB'
+            write(*,'(a,t55,f10.2,a)') &
+            'transiesta: mem of full matrices: ', &
+            zmem,'MB'
+       mem = mem + zmem
 #ifdef SIESTA__MUMPS
     else if ( ts_method == TS_MUMPS ) then
        if ( IONode ) then
-          write(*,'(a)')'transiesta: Memory usage is determined by MUMPS.'
+          write(*,'(a)')'transiesta: mem is determined by MUMPS.'
           write(*,'(a)')'transiesta: Search in TS_MUMPS_<Node>.dat for: ### Minimum memory.'
        end if
 #endif
     end if
 
+#ifdef MPI
+    call MPI_Reduce(mem,zmem,1,MPI_Double_Precision, &
+         MPI_MAX, 0, MPI_Comm_World, MPIerror)
+#else
+    zmem = mem
+#endif
+
+    if ( IONode ) then
+       write(*,'(a,t55,f10.2,a)') &
+            'transiesta: Total memory usage: ', &
+            zmem,'MB'
+    end if
+    
   end subroutine ts_print_memory
 
 end module m_transiesta
