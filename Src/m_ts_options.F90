@@ -1032,6 +1032,7 @@ contains
     use m_ts_electype, only : TotUsedAtoms, Name, Elec_frac
 
     use m_ts_method, only : a_isElec, a_isBuffer
+    use m_ts_method, only : ts_A_method, TS_BTD_A_COLUMN
 
     use m_ts_contour_eq, only: N_Eq_E
     use m_ts_contour_neq, only: contour_neq_warnings

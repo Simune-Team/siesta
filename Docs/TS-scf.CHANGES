@@ -1,4 +1,11 @@
 ----------------------------------------------------
+December 14, 2015 -- Nick Papior       trunk-479---ts-scf-613
+Bug for module import
+  
+modified:
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 December 13, 2015 -- Nick Papior       trunk-479---ts-scf-612
 Allowed user determination of Gf.G.Gf product method
 
