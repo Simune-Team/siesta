@@ -1,4 +1,13 @@
 ----------------------------------------------------
+December 14, 2015 -- Nick Papior       trunk-479---ts-scf-614
+Bug for restart.save in mixing
+
+* Fixed number of saved restart numbers
+  
+modified:
+  Src/m_mixing.F90
+
+----------------------------------------------------
 December 14, 2015 -- Nick Papior       trunk-479---ts-scf-613
 Bug for module import
   

@@ -516,7 +516,7 @@ contains
             else if ( leqi(opt,'restart.save') ) then
 
                m%restart_save = fdf_bintegers(pline,1)
-               m%restart_save = min(0,m%restart_save)
+               m%restart_save = max(0,m%restart_save)
 
             else if ( leqi(opt,'variant') ) then
 
@@ -1095,7 +1095,11 @@ contains
           call reset(mix%stack(1),-j)
           call reset(mix%stack(2),-j+1)
        end if
-          
+
+       if ( debug_mix ) &
+            write(*,'(a,a,i0)') trim(debug_msg), &
+            ' saved hist = ',n_items(mix%stack(1))
+       
     end if
     end if
 
@@ -1525,7 +1529,11 @@ contains
        j = mix%restart_save
        call reset(mix%stack(1),-j)
        call reset(mix%stack(2),-j)
-       
+
+       if ( debug_mix ) &
+            write(*,'(a,a,i0)') trim(debug_msg), &
+            ' saved hist = ',n_items(mix%stack(1))
+
     end if
     end if
 
@@ -1743,7 +1751,8 @@ contains
     ! Local arrays
     real(dp) :: pm(n,n), work(n*4), err
     ! Relative tolerance dependent on the magnitude
-    real(dp), parameter :: etol = 1.e-6_dp
+    ! For now we retain the old tolerance
+    real(dp), parameter :: etol = 1.e-4_dp
     integer :: ipiv(n)
 
     ! initialize info
