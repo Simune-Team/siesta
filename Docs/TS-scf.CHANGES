@@ -1,4 +1,25 @@
 ----------------------------------------------------
+December 15, 2015 -- Nick Papior       trunk-479---ts-scf-617
+Implemented restart parameter which can restart history
+
+* The restart parameter enables restarting the history
+  steps when f_k-1 < rp * f_k
+  for some rp.
+
+  Typically rp may be around 0.01.
+  The good thing is that this will typically only restart
+  after a relatively good convergence has been reached.
+
+  This can be combined with either Broyden or Pulay
+  mixing schemes.
+
+  It is activated by setting the restart value in the block
+  to be a real, or via 'restart.p'
+
+modified:
+  Src/m_mixing.F90
+
+----------------------------------------------------
 December 15, 2015 -- Nick Papior       trunk-479---ts-scf-616
 Enabled easier pop-delete sequence of Fstack, fixes in mixing
 

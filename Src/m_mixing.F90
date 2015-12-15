@@ -457,6 +457,7 @@ contains
       ! First read method and variant
       ! Read the options for this mixer
       if ( is_block ) then
+
          method = ' '
          variant = ' '
          
@@ -479,6 +480,11 @@ contains
                
                variant = fdf_bnames(pline,2)
                m%v = get_variant(m%m,variant)
+
+            else if ( leqi(opt,'mixing.weight') .or. &
+                 leqi(opt,'alpha') .or. leqi(opt,'w') ) then
+               
+               m%w = fdf_breals(pline,1)
                
             end if
 
@@ -495,8 +501,14 @@ contains
          m%n_hist = n_pulay
          m%w = w_pulay_damp
 
-         allocate(m%rv(1))
+         allocate(m%rv(-1:1))
          m%rv(1) = w_pulay
+         
+         ! This is the restart parameter
+         ! I.e. if f_k < rp * f
+         ! only works for positive rp
+         m%rv(-1) = huge(1._dp)
+         m%rv(0) = -1._dp
 
       case ( MIX_BROYDEN )
 
@@ -553,7 +565,11 @@ contains
 
             else if ( leqi(opt,'restart') ) then
 
-               m%restart = fdf_bintegers(pline,1)
+               ! if the restart is an integer
+               ! we read it
+               if ( fdf_bnintegers(pline,1) == 1 ) then
+                  m%restart = fdf_bintegers(pline,1)
+               end if
 
             else if ( leqi(opt,'restart.save') ) then
 
@@ -585,8 +601,11 @@ contains
 
          ! allocate temporary array
          n = 1 + m%n_hist * (m%n_hist + 1)
-         allocate(m%rv(n))
+         allocate(m%rv(-1:n))
 
+         ! restart parameter
+         m%rv(-1) = huge(1._dp)
+         m%rv(0) = -1._dp
          m%rv(1) = w_broy_p
 
       end select
@@ -631,6 +650,18 @@ contains
 
                m%w = fdf_breals(pline,1)
 
+            else if ( leqi(opt,'restart') ) then
+
+               ! if the restart is an integer
+               ! we read it
+               if ( fdf_bnreals(pline,1) == 1 ) then
+                  m%rv(0) = fdf_breals(pline,1)
+               end if
+
+            else if ( leqi(opt,'restart.p') ) then
+               
+               m%rv(0) = fdf_bvalues(pline,1)
+               
             end if
 
          end do
@@ -917,14 +948,41 @@ contains
     real(dp) :: G, ssum
 
 #ifdef MPI
+    real(dp) :: dtmp
     integer :: MPIerror
 #endif
 
     real(dp), external :: ddot
 
+    ! Check whether a parameter restart is required
+    if ( mix%rv(0) > 0._dp ) then
+       ! Calculate dot: ||f_k-1||
+       ssum = ddot(n,F1,1,F1,1)
+#ifdef MPI
+       dtmp = ssum
+       call MPI_AllReduce(dtmp,ssum,1, &
+            MPI_double_precision, MPI_Sum, &
+            mix%Comm,MPIerror)
+#endif
+       if ( mix%rv(-1) < mix%rv(0) * ssum ) then
+          ! Signal restart
+          mix%restart = mix%cur_itt
+       end if
+
+       if ( debug_mix .and. mix%cur_itt > 1 ) &
+            write(*,'(a,2(a,e8.3))') trim(debug_msg), &
+            ' ||f_k-1|| < rp * ||f_k||  :  ', &
+            mix%rv(-1), ' < ',mix%rv(0)*ssum
+       
+       ! Store the new residual dot product
+       mix%rv(-1) = ssum
+       
+    end if
+
+    
     ! The Pulay mixing variable is called G
     G = mix%w
-
+    
     ! The Pulay stacks has this data layout:
 
     ! - stack(1)
@@ -934,6 +992,7 @@ contains
 
     nh = max_size(mix%stack(1))
     ns = n_items(mix%stack(1))
+
 
     select case ( mix%v ) 
     case ( 0 ) ! stable pulay mixing
@@ -973,11 +1032,11 @@ contains
        end if
 
        ! Update the residual to reflect the input residual
-       rres1 => getstackval(mix,1,ns-1)
+       res => getstackval(mix,1,ns-1)       
        oF => getstackval(mix,3)
 
 !$OMP parallel workshare default(shared)
-       rres1 = rres1 - oF + x1
+       res = res - oF + x1
        oF = x1 + F1
 !$OMP end parallel workshare
        
@@ -1124,6 +1183,11 @@ contains
           call reset(mix%stack(2),-j+1)
        end if
 
+       if ( mix%rv(0) > 0._dp ) then
+          ! reset restart as it is parametrised
+          mix%restart = 0
+       end if
+
        if ( debug_mix ) &
             write(*,'(a,a,i0)') trim(debug_msg), &
             ' saved hist = ',n_items(mix%stack(1))
@@ -1268,6 +1332,32 @@ contains
 #endif
 
     info = 0
+
+    ! Check whether a parameter restart is required
+    if ( mix%rv(0) > 0._dp ) then
+       ! Calculate dot: ||f_k-1||
+       norm = ddot(n,F1,1,F1,1)
+#ifdef MPI
+       rtmp = norm
+       call MPI_AllReduce(rtmp,norm,1, &
+            MPI_double_precision, MPI_Sum, &
+            mix%Comm,MPIerror)
+#endif
+       if ( mix%rv(-1) < mix%rv(0) * norm ) then
+          ! Signal restart
+          mix%restart = mix%cur_itt
+       end if
+
+       if ( debug_mix .and. mix%cur_itt > 1 ) &
+            write(*,'(a,2(a,e8.3))') trim(debug_msg), &
+            ' ||f_k-1|| < rp * ||f_k||  :  ', &
+            mix%rv(-1), ' < ',mix%rv(0)*norm
+       
+       ! Store the new residual dot product
+       mix%rv(-1) = norm
+       
+    end if
+
 
     ! Get the initial Jacobian
     jinv0 = mix%w
@@ -1558,6 +1648,11 @@ contains
        call reset(mix%stack(1),-j)
        call reset(mix%stack(2),-j)
 
+       if ( mix%rv(0) > 0._dp ) then
+          ! reset restart as it is parametrised
+          mix%restart = 0
+       end if
+
        if ( debug_mix ) &
             write(*,'(a,a,i0)') trim(debug_msg), &
             ' saved hist = ',n_items(mix%stack(1))
@@ -1715,7 +1810,12 @@ contains
                '    Linear mixing weight',m%rv(1)
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Damping',m%w
-          if ( m%restart > 0 ) then
+          if ( m%rv(0) > 0._dp ) then
+             write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
+                  '    Restart parameter',m%rv(0)
+             write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+                  '    Restart save steps',m%restart_save
+          else if ( m%restart > 0 ) then
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                   '    Restart steps',m%restart
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
@@ -1736,7 +1836,12 @@ contains
                '    Jacobian weight',m%w
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Weight prime',m%rv(1)
-          if ( m%restart > 0 ) then
+          if ( m%rv(0) > 0._dp ) then
+             write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
+                  '    Restart parameter',m%rv(0)
+             write(*,'(2a,t50,''= '',i0)') trim(fmt), &
+                  '    Restart save steps',m%restart_save
+          else if ( m%restart > 0 ) then
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                   '    Restart steps',m%restart
              write(*,'(2a,t50,''= '',i0)') trim(fmt), &
