@@ -1,4 +1,11 @@
 ----------------------------------------------------
+December 15, 2015 -- Nick Papior       trunk-479---ts-scf-615
+Reduced the need for initialization of ipvt in interpolation
+
+modified:
+  Src/m_interpolate.F90
+
+----------------------------------------------------
 December 14, 2015 -- Nick Papior       trunk-479---ts-scf-614
 Bug for restart.save in mixing
 

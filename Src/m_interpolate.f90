@@ -27,7 +27,6 @@ contains
     ! Find minimum x
     x_cur = minval(x)
     i_cur = minloc(x,dim=1)
-    ipvt(:) = 0
     ip = 1
     ipvt(1) = i_cur
     do while ( ip < N )
@@ -79,8 +78,10 @@ contains
     ! ordering...
     call crt_pivot(N,x,ipvt)
 
+    ! Do extrapolation
+    !  1. lower x
+    !  2. higher x
     if ( x0 <= x(ipvt(1)) ) then
-       ! Do extrapolation
        b  = (y(ipvt(2)) - y(ipvt(1)))/(x(ipvt(2)) - x(ipvt(1)))
        y0 = y(ipvt(1)) + b * (x0 - x(ipvt(1)))
        return
@@ -131,7 +132,6 @@ contains
     ! If we are out-of-bounds we do extrapolation (from a linear
     ! perspective)
     if ( x0 <= x(ipvt(1)) ) then
-       ! Do extrapolation
        b = (y(ipvt(2)) - y(ipvt(1)))/(x(ipvt(2)) - x(ipvt(1)))
        y0 = y(ipvt(1)) + b * (x0 - x(ipvt(1)))
        return
