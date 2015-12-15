@@ -821,7 +821,40 @@ contains
   subroutine mixing_step( mix )
 
     type(tMixer), pointer :: mix
-    integer :: init_itt
+
+    type(tMixer), pointer :: next => null()
+
+    type(dData1D), pointer :: d1D
+    integer :: i, is, n, init_itt
+
+    ! First try and
+    next => mix%next
+    if ( associated(next) ) then
+
+       ! If the two methods are similar
+       if ( mix%m == next%m .and. allocated(mix%stack) ) then
+          
+          ! They are similar, copy over the history stack
+          do is = 1 , size(mix%stack)
+
+             ! Get maximum size of the current stack,
+             n = n_items(mix%stack(is))
+
+             ! Note that this will automatically tke care of
+             ! wrap-arounds and delete the unneccesry elements
+             do i = 1 , n
+                d1D => get_pointer(mix%stack(is),i)
+                call push(next%stack(is),d1D)
+             end do
+
+             ! nullify
+             nullify(d1D)
+             
+          end do
+          
+       end if
+       
+    end if
 
     select case ( mix%m )
     case ( MIX_PULAY )
@@ -846,8 +879,9 @@ contains
        end if
        if ( mix%m == MIX_BROYDEN ) init_itt = 1
        mix%cur_itt = init_itt
-       if ( debug_mix ) write(*,'(2a)') &
-            trim(debug_msg),' switching mixer...'
+       if ( IONode ) then
+          write(*,'(2a)') trim(debug_msg),' switching mixer...'
+       end if
     end if
 
   end subroutine mixing_step

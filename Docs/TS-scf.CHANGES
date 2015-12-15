@@ -1,4 +1,21 @@
 ----------------------------------------------------
+December 15, 2015 -- Nick Papior       trunk-479---ts-scf-618
+Changing different mixers it now stores the history for same methods
+
+* When changing from one mixer to another now stores the history
+  for the same methods.
+
+  I.e. if first mixer is pulay and the second is also pulay
+  then the history of the first is automatically copied to the
+  second mixer.
+  If this is not desired one simply sets the
+  restart to the number of iterations. And it will be cleared
+  before.
+
+modified:
+  Src/m_mixing.F90
+
+----------------------------------------------------
 December 15, 2015 -- Nick Papior       trunk-479---ts-scf-617
 Implemented restart parameter which can restart history
 
