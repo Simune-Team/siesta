@@ -34,6 +34,7 @@ interface push
 end interface
 interface pop
  module procedure pop__
+ module procedure pop_delete__
 end interface
 interface get
  module procedure get__
@@ -164,6 +165,18 @@ call delete(this%data%val(this%data%nvals))
 this%data%nvals = this%data%nvals - 1
 
 end subroutine pop__
+
+subroutine pop_delete__(this)
+type(FSTACK_NAME), intent(inout) :: this
+
+if (max_size(this) == 0) RETURN
+if (n_items(this) == 0) RETURN
+
+! Delete the local item and decrease counter
+call delete(this%data%val(this%data%nvals))
+this%data%nvals = this%data%nvals - 1
+
+end subroutine pop_delete__
 
 !---------------------------------------------
 subroutine get__(this,i,value)

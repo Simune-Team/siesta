@@ -454,13 +454,11 @@ contains
 
       is_block = fdf_block(opt,bfdf)
 
+      ! First read method and variant
       ! Read the options for this mixer
       if ( is_block ) then
-         
          method = ' '
          variant = ' '
-         
-         ! First read read generic things
          
          ! read options
          do while ( fdf_bline(bfdf,pline) )
@@ -477,7 +475,51 @@ contains
                   m%v = get_variant(m%m,variant)
                end if
 
-            else if ( leqi(opt,'next') ) then
+            else if ( leqi(opt,'variant') ) then
+               
+               variant = fdf_bnames(pline,2)
+               m%v = get_variant(m%m,variant)
+               
+            end if
+
+         end do
+
+      end if
+
+      ! Initialize generic options for this
+      ! mixing scheme
+      select case ( m%m )
+
+      case ( MIX_PULAY )
+
+         m%n_hist = n_pulay
+         m%w = w_pulay_damp
+
+         allocate(m%rv(1))
+         m%rv(1) = w_pulay
+
+      case ( MIX_BROYDEN )
+
+         m%n_hist = n_broy
+
+         m%w = w_broy
+
+      end select
+
+
+      ! Read the options for this mixer
+      if ( is_block ) then
+
+         ! Read the options for this mixer
+         call fdf_brewind(bfdf)
+         
+         ! read options
+         do while ( fdf_bline(bfdf,pline) )
+            if ( fdf_bnnames(pline) == 0 ) cycle
+            
+            opt = fdf_bnames(pline,1)
+            
+            if ( leqi(opt,'next') ) then
 
                nullify(m%next)
 
@@ -517,12 +559,7 @@ contains
 
                m%restart_save = fdf_bintegers(pline,1)
                m%restart_save = max(0,m%restart_save)
-
-            else if ( leqi(opt,'variant') ) then
-
-               variant = fdf_bnames(pline,2)
-               m%v = get_variant(m%m,variant)
-
+            
             end if
 
          end do
@@ -538,24 +575,13 @@ contains
       end if
 
       ! Initialize generic options for this
-      ! mixing scheme
       select case ( m%m )
-
-      case ( MIX_PULAY )
-
-         m%n_hist = n_pulay
-         m%w = w_pulay_damp
-
-         allocate(m%rv(1))
-         m%rv(1) = w_pulay
 
       case ( MIX_BROYDEN )
 
          ! step history as there is 1 extra 0
          ! index
          m%n_hist = m%n_hist + 1
-
-         m%w = w_broy
 
          ! allocate temporary array
          n = 1 + m%n_hist * (m%n_hist + 1)
@@ -566,10 +592,15 @@ contains
       end select
 
       if ( 0 < m%restart .and. m%restart < m%n_hist ) then
-         ! signal to never restart
-         m%restart = 0
-      else if ( m%m == MIX_PULAY .and. m%v == 1 ) then
+         ! change history to one above the restart
+         ! ensures that we can keep the data.
+         m%n_hist = m%restart + 1
+      end if
+
+      if ( m%m == MIX_PULAY .and. m%v == 1 ) then
          ! Ensure the restart is an even number
+         ! for the Guarenteed reduction.
+         ! This ensures correct handling of the F calculations
          m%restart = m%restart + mod(m%restart,2)
       end if
 
@@ -875,8 +906,6 @@ contains
     ! run-time information
     integer, intent(out) :: info
 
-    type(dData1D) :: dD1
-
     ! Temporary arrays for local data structures
     real(dp), dimension(:), pointer :: res, rres, oF
     real(dp), dimension(:), pointer :: rres1, rres2
@@ -1060,8 +1089,7 @@ contains
        call daxpy(n,-1._dp,res,1,rres,1)
 
        ! delete latest residual
-       call pop(mix%stack(1),dD1)
-       call delete(dD1)
+       call pop(mix%stack(1))
 
        ! Update the current residual to reflect the
        ! used residual in the algorithm
@@ -1114,7 +1142,7 @@ contains
          
          ! Get RRes[i] array
          rres1 => getstackval(mix,2,i)
-
+         
          do j = 1 , i
 
             ! Get RRes[j] array

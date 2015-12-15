@@ -1,4 +1,16 @@
 ----------------------------------------------------
+December 15, 2015 -- Nick Papior       trunk-479---ts-scf-616
+Enabled easier pop-delete sequence of Fstack, fixes in mixing
+
+* Fixed case where the history is set in the SCF.Mix block
+  Now we read in the method, initialize and subsequently
+  read in the values again.
+
+modified:
+  Src/Fstack.T90
+  Src/m_mixing.F90
+
+----------------------------------------------------
 December 15, 2015 -- Nick Papior       trunk-479---ts-scf-615
 Reduced the need for initialization of ipvt in interpolation
 
