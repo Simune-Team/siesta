@@ -40,7 +40,6 @@ contains
     use alloc, only : re_alloc, de_alloc
     use parallel, only : IONode
     use fdf, only : fdf_get, leqi
-    use fdf_extra
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif

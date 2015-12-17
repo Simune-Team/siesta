@@ -216,13 +216,16 @@ contains
        call rgn_sort(r_tmp)
        ! pivot the o_inD back
        call rgn_init(Elecs(i)%o_inD,no)
+       call rgn_init(Elecs(i)%inDpvt,no)
        do io = 1 , no 
-          Elecs(i)%o_inD%r(io) = r_pvt%r(r_tmp%r(io))
-       end do
+          Elecs(i)%o_inD%r(io)  = r_pvt%r(r_tmp%r(io))
 
-       ! Create the pivot table for the electrode scattering matrix
-       call rgn_copy(Elecs(i)%o_inD,Elecs(i)%inDpvt)
-       Elecs(i)%inDpvt%r = Elecs(i)%inDpvt%r - idx + 1
+          ! Create the pivot table for the electrode scattering matrix
+          !  (1) = an electrode orbital which is seen first in the device
+          ! Note that this array's meaning is different in TBtrans
+          Elecs(i)%inDpvt%r(io) = Elecs(i)%o_inD%r(io) - idx + 1
+
+       end do
 
     end do
     call rgn_delete(r_tmp)

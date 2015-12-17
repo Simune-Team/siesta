@@ -180,8 +180,9 @@ contains
           ! We know that any diagonal region with the
           ! electrodes will only occupy at most 2 parts
           ! Hence, it makes no sense to loop them individually
-          sNm1 = minval(Elecs(iEl)%inDpvt%r,dim=1)
-          sNp1 = maxval(Elecs(iEl)%inDpvt%r,dim=1)
+          ! Also inDpvt is a sorted array with device indices
+          sNm1 = Elecs(iEl)%inDpvt%r(1)
+          sNp1 = Elecs(iEl)%inDpvt%r(Elecs(iEl)%inDpvt%n)
           if ( which_part(M,sNm1) <= n .and. &
                n <= which_part(M,sNp1) ) then
              

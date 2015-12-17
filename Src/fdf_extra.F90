@@ -56,11 +56,13 @@ contains
           i1 = -1
           call fdf_blists(pline,1,i1,list(n+1:))
           if ( i1 + n > size(list) ) then
+             print *,'Parsed line: ',pline%line
              call die('Number of elements in block list &
                   &is too many to fit the maximal range of the &
                   &list. Please correct.')
           end if
           if ( i1 == 0 ) then
+             print *,'Parsed line: ',pline%line
              call die('A block list with zero elements is not &
                   &allowed, please correct input.')
           end if
@@ -89,11 +91,13 @@ contains
     else if ( fdf_bnnames(pline) == 3 ) then
        g = fdf_bnames(pline,2)
        if ( .not. leqi(g,'from') ) then
+          print *,'Parsed line: ',pline%line
           call die('Error in range block: &
                &from <int> to/plus/minus <int> is ill formatted')
        end if
        g = fdf_bnames(pline,3)
        if ( fdf_bnintegers(pline) < 2 ) then
+          print *,'Parsed line: ',pline%line
           call die('Error in range block &
                &from <int> to/plus/minus <int> is ill formatted')
        end if
@@ -103,6 +107,7 @@ contains
        i1 = correct(i1,low,high)
        i2 = fdf_bintegers(pline,2)
        if ( i1 < low ) then
+          print *,'Parsed line: ',pline%line
           call die('Error in range block: &
                &from <int> is below lowest allowed value')
        end if
@@ -120,17 +125,20 @@ contains
           step = - step
           i2 = i1 - i2 + 1
        else
+          print *,'Parsed line: ',pline%line
           call die('Unrecognized designator of ending range, &
                [to, plus, minus] accepted.')
        end if
        i2 = correct(i2,low,high)
        !print *,i1,i2,step
        if ( high < i2 ) then
+          print *,'Parsed line: ',pline%line
           call die('Error in range block: &
                &to <int> is above highest allowed value')
        end if
        if ( (i1 < i2 .and. step < 0) .or. &
             (i1 > i2 .and. step > 0) ) then
+          print *,'Parsed line: ',pline%line
           call die('Block range is not consecutive')
        end if
        do i = i1 , i2 , step
@@ -138,11 +146,13 @@ contains
           list(n) = i
        end do
     else
+       print *,'Parsed line: ',pline%line
        call die('Error in range block, input not recognized')
     end if
 
     do j = 1 , n
        if ( list(j) < low .or. high < list(j) ) then
+          print *,'Parsed line: ',pline%line
           call die('Error in range block. Input is beyond range')
        end if
     end do

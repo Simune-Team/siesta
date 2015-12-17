@@ -1,4 +1,41 @@
 ----------------------------------------------------
+December 17, 2015 -- Nick Papior       trunk-479---ts-scf-619
+Bugfix for projections
+
+* Added debug statements for fdf_extra
+
+* Streamlined pivoting array creation in ts_tri_init.
+  Should make it slightly faster.
+  Also made tbtrans faster via device pivoting array.
+
+* Added more debug information for lapack when
+  diagonalization errors out.
+
+* The projections needs to re-create the orbital pivoting
+  table after we have sorted the device region according
+  to the tri-diagonal matrix.
+
+* Fixed eigenvalues for k-point projections with TBT_PHONON
+
+* Change zher call which should have been zgerc call.
+
+* Fixed projection saving for non-parallel writes
+
+modified:
+  Src/fdf_extra.F90
+  Src/m_ts_elec_se.F90
+  Src/m_ts_pivot.F90
+  Src/m_ts_sparse_helper.F90
+  Src/m_ts_tri_init.F90
+  Src/m_ts_tri_scat.F90
+  Src/m_ts_trimat_invert.F90
+  Util/TS/TBtrans/Makefile
+  Util/TS/TBtrans/m_tbt_diag.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 December 15, 2015 -- Nick Papior       trunk-479---ts-scf-618
 Changing different mixers it now stores the history for same methods
 

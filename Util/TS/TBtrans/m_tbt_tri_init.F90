@@ -227,9 +227,6 @@ contains
     call delete(tmpSp2) ! clean up
 
     ! Sort the tri-diagonal blocks
-    ! It is probably not needed to sort according to 
-    ! the electrodes as there is _only_ 1 electrode
-    ! in this pivoting table.
     call ts_pivot_tri_sort_El(r_oDev,N_Elec,Elecs,DevTri)
 
     ! The down-folded region can "at-will" be sorted

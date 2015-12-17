@@ -266,6 +266,9 @@ contains
        i = rgn_pivot(pvt,El%o_inD%r(n))
 #ifndef TS_NOCHECKS
        if ( oi > i ) then
+          call rgn_print(pvt)
+          call rgn_print(El%o_inD)
+          print *,n,oi,i
           call die('BTD error in sorting of o_inD for electrode.')
        end if
        oi = i

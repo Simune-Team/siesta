@@ -735,7 +735,7 @@ contains
           ! Calculate position
           ! For Gamma, we do not need the complex conjugate...
           if ( i > jo ) then
-             idx = jo + ( i-1)* i/2
+             idx = jo + (i -1)*i /2
 !$OMP atomic
              A_UT(idx) = A_UT(idx) + 0.5_dp * A(ind)
           else if ( i < jo ) then

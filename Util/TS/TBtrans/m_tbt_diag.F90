@@ -107,9 +107,9 @@ contains
     if ( info /= 0 ) then
        write(*,'(a)')'Error in diagonalization of molecule, S'
        if ( use_DC ) then
-          write(*,'(a,i0)')'LAPACK (dspevd) error message: ',info
+          write(*,'(a,2(tr1,i0))')'LAPACK (dspevd) error message: ',info,no
        else
-          write(*,'(a,i0)')'LAPACK (dspev) error message: ',info
+          write(*,'(a,2(tr1,i0))')'LAPACK (dspev) error message: ',info,no
        end if
        call die('Error in Gamma diagonalization of molecule, S')
     end if
@@ -213,9 +213,9 @@ contains
     if ( info /= 0 ) then
        write(*,'(a)')'Error in diagonalization of molecule, H, S'
        if ( use_DC ) then
-          write(*,'(a,i0)')'LAPACK (dspgvd) error message: ',info
+          write(*,'(a,2(tr1,i0))')'LAPACK (dspgvd) error message:',info,no
        else
-          write(*,'(a,i0)')'LAPACK (dspgv) error message: ',info
+          write(*,'(a,2(tr1,i0))')'LAPACK (dspgv) error message: ',info,no
        end if
        call die('Error in Gamma diagonalization of molecule, H, S')
     end if
@@ -325,9 +325,9 @@ contains
     if ( info /= 0 ) then
        write(*,'(a)')'Error in diagonalization of molecule, S'
        if ( use_DC ) then
-          write(*,'(a,i0)')'LAPACK (zhpevd) error message: ',info
+          write(*,'(a,2(tr1,i0))')'LAPACK (zhpevd) error message: ',info,no
        else
-          write(*,'(a,i0)')'LAPACK (zhpev) error message: ',info
+          write(*,'(a,2(tr1,i0))')'LAPACK (zhpev) error message: ',info,no
        end if
        call die('Error in k-point diagonalization of molecule, S')
     end if
@@ -438,9 +438,9 @@ contains
     if ( info /= 0 ) then
        write(*,'(a)')'Error in diagonalization of molecule, H,S'
        if ( use_DC ) then
-          write(*,'(a,i0)')'LAPACK (zhpgvd) error message: ',info
+          write(*,'(a,2(tr1,i0))')'LAPACK (zhpgvd) error message: ',info,no
        else
-          write(*,'(a,i0)')'LAPACK (zhpgv) error message: ',info
+          write(*,'(a,2(tr1,i0))')'LAPACK (zhpgv) error message: ',info,no
        end if
        call die('Error in k-point diagonalization of molecule, H, S')
     end if

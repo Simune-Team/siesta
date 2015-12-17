@@ -239,6 +239,11 @@ contains
          call die('elec_se-GT: worksize too small. Error')
 #endif
 
+#ifdef TBTRANS
+    call die('elec_se: GT: This routine should never be called in &
+         &TBtrans. Will produce erroneous results.')
+#endif
+
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
          El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
 

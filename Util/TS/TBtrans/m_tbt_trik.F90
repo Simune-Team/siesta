@@ -1178,7 +1178,7 @@ contains
             ! * Column Gf    *
             ! ****************
             if ( p_E%idx > 0 ) then
-               
+
                call rgn_assoc(El_p%o_inD, p_E%ME%mol%orb)
                call rgn_assoc(El_p%inDpvt,p_E%ME%mol%pvt)
 

@@ -162,7 +162,7 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline
     integer :: N_proj, N, n_orb
-    integer :: im, ip, i
+    integer :: im, ip
     character(len=PROJ_NAME_LEN) :: char, name
     type(tRgn) :: r_tmp, r_tmp2
     logical :: ltmp
@@ -319,22 +319,8 @@ contains
        mols(im)%orb%sorted = .false.
        mols(im)%orb%name = 'Orbitals'
 
-       ! Save number of orbitals in molecule
+       ! Retain the number of orbitals
        n_orb = mols(im)%orb%n
-
-       ! Sort the orbitals according to the device region
-       call rgn_copy(mols(im)%orb,mols(im)%pvt)
-       ip = 0
-       do i = 1 , o_Dev%n
-          if ( in_rgn(mols(im)%pvt,o_Dev%r(i)) ) then
-             ip = ip + 1
-             mols(im)%orb%r(ip) = o_Dev%r(i)
-          end if
-       end do
-       if ( ip /= n_orb ) call die('Error in orbitals sorting')
-
-       ! Create the pivot table
-       mols(im)%pvt%r(:) = rgn_pivot(o_Dev,mols(im)%orb%r(:))
 
        ! Re-read, and then we read in the projections... :)
        call fdf_brewind(bfdf)
@@ -1257,8 +1243,8 @@ contains
     end if
     
   end function ProjMolEl_same
-  
-  ! We only allow Gamma-point projections.
+
+  ! Initialize the TBT.Proj.nc file
   subroutine init_proj_save( fname, TSHS , r, ispin, N_Elec, Elecs, &
        nkpt, kpt, wkpt, NE , a_Dev, a_Buf, sp_dev, save_DATA )
 
@@ -1353,14 +1339,40 @@ contains
        mols(:)%Gamma = .true.
     end if
 
+    ! First we re-create the pivoting table for the orbitals
+    do im = 1 , N_mol
+
+       ! Save number of orbitals in molecule
+       no = mols(im)%orb%n
+
+       ! Sort the orbitals according to the device region
+       call rgn_copy(mols(im)%orb,r_tmp)
+       call rgn_sort(r_tmp)
+       ! initialize the pivoting array
+       call rgn_init(mols(im)%pvt,no)
+       ip = 0
+       do i = 1 , r%n
+          if ( in_rgn(r_tmp,r%r(i)) ) then
+             
+             ip = ip + 1
+             mols(im)%orb%r(ip) = r%r(i)
+             mols(im)%pvt%r(ip) = i
+             
+          end if
+       end do
+       if ( ip /= no ) call die('Error in orbitals sorting')
+       
+    end do
+    call rgn_delete(r_tmp)
+
     if ( IONode ) write(*,*) ! newline
 
     if ( IONode .and. .not. all(mols(:)%Gamma) ) then
        write(*,'(a)')'tbtrans: *********'
-       write(*,'(a)') 'tbtrans: k-resolved projections only work if dispersion'
-       write(*,'(a)') 'tbtrans: does not create band-crossings.'
-       write(*,'(a)') 'tbtrans: IT IS YOUR RESPONSIBILITY TO ENSURE THIS!'
-       write(*,'(a)') 'tbtrans: Do specific k-points separately at band-crossings.'
+       write(*,'(a)')'tbtrans: k-resolved projections only work if dispersion'
+       write(*,'(a)')'tbtrans: does not create band-crossings.'
+       write(*,'(a)')'tbtrans: IT IS YOUR RESPONSIBILITY TO ENSURE THIS!'
+       write(*,'(a)')'tbtrans: Do specific k-points separately at band-crossings.'
        write(*,'(a/)')'tbtrans: *********'
        
     end if
@@ -1942,6 +1954,17 @@ contains
        else if ( ik <= nkpt ) then
           call calc_Eig(TSHS%H_2D,TSHS%S_1D,product(TSHS%nsc), &
                TSHS%sc_off,mols(im)%orb,eig,kpt(:,ik),zv)
+#ifdef TBT_PHONON
+          ! Rescale eigenvalues to frequency
+          do i = 1 , no 
+             if ( eig(i) > 0._dp ) then
+                eig(i) =  sqrt( eig(i) )
+             else
+                ! Signal instability
+                eig(i) = -sqrt(abs(eig(i)))
+             end if
+          end do
+#endif
        end if
 
        ! Save the eigen-values
@@ -2019,8 +2042,8 @@ contains
              ! Print the norm and the diagonal element
              do i = 1 , no
                 zn = VNORM(zS_sq(:,i))
-                write(*,'(tr3,i4,2(a,2(e10.5)))') i,' <:|i> = ',zn, &
-                     ' <i|i> = ',zS_sq(i,i)
+                write(*,'(tr3,i4,2(a,2(tr1,e10.5)))') i,' <:|i> =',zn, &
+                     ' <i|i> =',zS_sq(i,i)
              end do
           end if
 
@@ -2042,12 +2065,13 @@ contains
              zS_sq = 0._dp
              ! Print the norm and the diagonal element
              do i = 1 , no
-                call zher(no,no,1._dp,zv(1,i),1,zv(1,i),1,zS_sq(1,1),no)
+                call zgerc(no,no,dcmplx(1._dp,0._dp),zv(1,i),1,zv(1,i),1, &
+                     zS_sq(1,1),no)
              end do
              do i = 1 , no
                 zn = VNORM(zS_sq(:,i))
-                write(*,'(tr3,i4,2(a,2e10.5))') i,' \sum_:i = ',zn, &
-                     ' \sum_ii = ',zS_sq(i,i)
+                write(*,'(tr3,i4,2(a,2(tr1,e10.5)))') i,' \sum_:i =',zn, &
+                     ' \sum_ii =',zS_sq(i,i)
              end do
           end if
 
@@ -2379,7 +2403,7 @@ contains
           call ncdf_put_var(gEl,ctmp,T(ip,ipt), start=idx, count=cnt)
           
 #ifdef MPI
-          if ( .not. save_parallel ) then
+          if ( Node == 0 .and. .not. save_parallel ) then
              do iN = 1 , Nodes - 1
                 if ( nE%iE(iN) > 0 ) then
                    call ncdf_put_var(gEl,ctmp,rT(ip,iN), &
