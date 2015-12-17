@@ -4,7 +4,7 @@
 module:  libxmlparser.a 
 include ../arch.make
 #
-OBJFILES= m_debug.o m_buffer.o m_elstack.o m_dictionary.o m_io.o \
+OBJFILES= m_debug.o m_buffer.o m_elstack.o m_dictionary.o m_xml_io.o \
           m_reader.o m_converters.o m_charset.o  m_entities.o \
           m_xml_error.o  m_fsm.o  m_xml_parser.o xmlf90_sax.o
 
@@ -35,7 +35,7 @@ clean:
 	rm -f *.o *.*d *.a 
 #
 # DO NOT DELETE THIS LINE - used by make depend
-m_reader.o: m_io.o m_debug.o
+m_reader.o: m_xml_io.o m_debug.o
 m_elstack.o: m_buffer.o
 m_dictionary.o: m_buffer.o
 m_entities.o: m_buffer.o m_xml_error.o

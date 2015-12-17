@@ -1,4 +1,15 @@
 ------------------------------------------------------------
+December 17, 2015  Alberto Garcia       trunk-481--ncps-75
+Rename m_io in xmlparser code to m_xml_io to avoid name collision
+
+renamed:
+  Src/xmlparser/m_io.f90 => Src/xmlparser/m_xml_io.f90
+modified:
+  Src/xmlparser/m_reader.f90
+  Src/xmlparser/makefile
+  Src/xmlparser/m_xml_io.f90
+
+------------------------------------------------------------
 November 29, 2015  Alberto Garcia       trunk-481--ncps-74
 Sync with trunk-481
 
