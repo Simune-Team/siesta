@@ -15,19 +15,19 @@ program gnubands
 ! plotting by Gnuplot
 !
 ! This is an update of the venerable "gnubands.f" program, adding options
-! to specify a subset of the bands contained in the .bands file.
+! to specify a subset of the bands contained in the .bands file, select
+! spin, and more.  
 !
-! A. Garcia, May 2012
+! A. Garcia, May 2012, 2015
 !
 ! See also the "fatbands" functionality provided by the program "fat" in
 ! directory Util/COOP and the program "eigfat2plot" in this directory.
 !
-
 ! Updated to be able to extract an energy range and automatic Ef shift
 ! Bugfix for max_bands. It was required that one supplied the -B
 ! option, else it was not set.
 !
-! Nick Papior Andersen, April 2013
+! Nick Papior Andersen, April 2013, 2015
 
   use m_getopts
   use f2kcli
@@ -40,34 +40,43 @@ program gnubands
   
   real(dp), allocatable ::  e(:,:,:), k(:)
   real(dp) :: ef, kmin, kmax, emin, emax
-  real(dp) :: dummy
+  real(dp) :: dummy, delta
 
+  integer :: spin_idx
+  integer :: min_band = 1
+  integer :: max_band = huge(1)
+  logical :: min_band_set = .false.
+  logical :: max_band_set = .false.
 
-  integer  :: min_band =  1
-  integer  :: max_band =  huge(1)
-  logical  :: min_band_set = .false.
-  logical  :: max_band_set = .false.
-
-  integer  :: bands_u = 100 ! Some compilers use 1 for special things
-  integer  :: n_opts, iostat, nargs, nlabels
+  integer :: bands_u = 100 ! Some compilers use 1 for special things
+  integer :: n_opts, iostat, nargs, nlabels
   character(len=132) :: opt_name, opt_arg
   character(len=132) :: bandfile
   integer :: nbands
-  logical :: add_new_line
+  logical :: add_new_line, gnu_ticks
   logical :: Fermi_shift, emin_set, emax_set
+
+  ! Number of lines
+  integer :: nlines
+  real(dp), allocatable :: listk(:)
+  character(len=8), allocatable :: labels(:)
 
   Fermi_shift = .false.
   emin_set = .false.
   emax_set = .false.
+  spin_idx = 0
+  gnu_ticks = .false.
 
-  !
-  !     Process options
-  !
+  ! Process options
   n_opts = 0
   do
-     call getopts('hb:B:Fe:E:',opt_name,opt_arg,n_opts,iostat)
+     call getopts('hb:GB:Fe:E:s:',opt_name,opt_arg,n_opts,iostat)
      if (iostat /= 0) exit
      select case(opt_name)
+     case ('G')
+        gnu_ticks = .true.
+     case ('s')
+        read(opt_arg,*) spin_idx
      case ('F') 
         Fermi_shift = .true.
      case ('e')
@@ -101,12 +110,11 @@ program gnubands
      call get_command_argument(n_opts,value=bandfile,status=iostat)
      if (iostat /= 0) then
         STOP "Cannot get bands file"
-     endif
+     end if
   else if (nlabels /= 1)  then
      call manual()
      STOP
-  endif
-
+  end if
 
   ! If the file-unit is now std-in, then we should open the file
   if ( bands_u /= 5 ) then
@@ -126,6 +134,12 @@ program gnubands
      read(bands_u,*) emin, emax
   end if
   read(bands_u,*) nband, nspin, nk
+  if ( spin_idx /= 0 ) then
+     if ( spin_idx < 1 .and. nspin < spin_idx ) then
+        write(0,"(a)") " ** Selected spin does not exist..."
+        stop
+     end if
+  end if
 
   if (min_band_set .and. (min_band < 1)) then
      write(0,"(a)") " ** Min_band implicitly reset to 1..."
@@ -153,7 +167,25 @@ program gnubands
 
   read(bands_u,*) (k(ik),((e(ib,is,ik),ib=1,nband), is=1,nspin), ik=1,nk)
 
-  ! We cant close std-in
+  ! Read in optional strings for the band lines
+  if ( gnu_ticks ) then
+     read(bands_u,*,iostat=is) nlines
+     if ( nlines > 0 ) then
+        allocate(listk(nlines))
+        allocate(labels(nlines))
+     else
+        ! Errors in reading the ticks
+        write(0,'(a)') '*** Could not read number of labels used for GNUplot...'
+        gnu_ticks = .false.
+     end if
+  end if
+  if ( gnu_ticks ) then
+     do ik = 1 , nlines
+        read(bands_u,*,iostat=is) listk(ik), labels(ik)
+     end do
+  end if
+  
+  ! We can not close std-in
   if ( bands_u /= 5 ) then
      close(bands_u)
   end if
@@ -178,6 +210,11 @@ program gnubands
   if ( Fermi_shift ) then
      write(6,"(a)")  '# Energies are subtracted Ef (zero is Ef)'
   end if
+  if ( spin_idx > 0 ) then
+     write(6,"(a,i0)")  '# Only bands for spin ',spin_idx
+  else if ( nspin > 1 ) then
+     write(6,"(a)")  '# Bands for all spins'
+  end if
   write(6,"(a,f10.4)")  '# E_F               = ', Ef
   write(6,"(a,2f10.4)") '# k_min, k_max      = ', kmin, kmax
   write(6,"(a,2f10.4)") '# E_min, E_max      = ', emin, emax
@@ -189,22 +226,55 @@ program gnubands
   write(6,"(2a,/)") '# ------------------------------------------',   &
        '--------------------------------'
 
-
-  do is = 1, nspin
+  delta = 1.0e-5_dp
+  if ( spin_idx > 0 ) then
+     is = spin_idx
      do ib = min_band, max_band
         add_new_line = .false.
         do ik = 1 , nk
            ! We will only write out in an energy range
-           if ( emin <= e(ib,is,ik) .and. e(ib,is,ik) <= emax ) then
+           if ( emin-delta <= e(ib,is,ik) .and. e(ib,is,ik) <= emax+delta ) then
               add_new_line = .true.
-              write(6,"(2f14.6)") k(ik), e(ib,is,ik)
+              ! write spin variable to differentiate
+              write(6,"(2f14.6,i3)") k(ik), e(ib,is,ik), is
            end if
         end do
         ! If the energy range has no contribution of this
         ! band, then do not add new-lines
         if ( add_new_line ) write(6,'(/)')
-     enddo
-  enddo
+     end do
+  else
+     do is = 1, nspin
+        do ib = min_band, max_band
+           add_new_line = .false.
+           do ik = 1 , nk
+              ! We will only write out in an energy range
+              if ( emin-delta <= e(ib,is,ik) .and. e(ib,is,ik) <= emax+delta ) then
+                 add_new_line = .true.
+                 ! write spin variable to differentiate
+                 write(6,"(2f14.6,i3)") k(ik), e(ib,is,ik), is
+              end if
+           end do
+           ! If the energy range has no contribution of this
+           ! band, then do not add new-lines
+           if ( add_new_line ) write(6,'(/)')
+        end do
+     end do
+  end if
+
+  if ( gnu_ticks ) then
+     ! Print out the tick-marks on stderr
+     write(0,'(a)',advance='no') 'set xtics ('
+     do ik = 1 , nlines
+        write(0,'(a,tr1,f9.6)',advance='no') &
+             '"'//trim(labels(ik))//'"', listk(ik)
+        if ( ik < nlines ) write(0,'(a)',advance='no') ', '
+     end do
+     write(0,'(a)') ')'
+     write(0,'(a)') 'plot "bands.dat" using 1:2:3 with lines lc variable'
+     write(0,'(a)') '# -- Use line below for single-color'
+     write(0,'(a)') '#plot "bands.dat" with lines'
+  end if
 
 contains
 
@@ -217,12 +287,16 @@ contains
     write(0,'(a)') ' Options:'
     write(0,*) ! new line
     write(0,'(a)') '     -h        : print help'
+    write(0,'(a)') '     -G        : print GNUplot commands for correct labels to stderr'
+    write(0,'(a)') '                 Suggested usage: prog options 2> bands.gplot 1> bands.dat'
+    write(0,'(a)') '                  and then: gnuplot -persist bands.gplot'
+    write(0,'(a)') '     -s arg    : only plot selected spin bands [1,nspin]'
     write(0,'(a)') '     -F        : shift energy to Fermi-level'
     write(0,'(a)') '     -b arg    : first band to write'
     write(0,'(a)') '     -B arg    : last band to write'
     write(0,'(a)') '     -e arg    : minimum energy to write'
     write(0,'(a)') '               :   If -F set, will be with respect'
-    write(0,'(a)') '               :   to Fermil level'
+    write(0,'(a)') '               :   to Fermi level'
     write(0,'(a)') '     -E arg    : maximum energy to write'
     write(0,'(a)') '               :   Note, see -e'
   end subroutine manual

@@ -17,7 +17,7 @@
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 #
-all: eigfat2plot new.gnubands gnubands
+all: eigfat2plot new.gnubands
 #
 include ../../$(OBJDIR)/arch.make
 #

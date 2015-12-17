@@ -6,6 +6,37 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-12-17   16:25:00 GMT                                     trunk-482
+New versions of grid2cube and gnubands. Laplacian of grid functions
+
+* Updated new.gnubands in Util/Bands to enhance spin processing
+  and optional production of labels in tick marks.
+
+  (Nick R. Papior)
+  
+* A new experimental program g2c_ng in Util/Grid offers extended
+  and cleaner functionality over the classic grid2cube.
+
+* A new program cdf_laplacian in Util/Grid computes the laplacian
+  of a grid function in netCDF format.
+
+  (A. Garcia)
+  
+added:
+  Util/Grid/cdf_laplacian.F90
+  Util/Grid/g2c_ng.f
+  Util/Grid/m_gridfunc.F90
+  Util/Grid/m_struct.f90
+modified:
+  Util/Bands/Makefile
+  Util/Bands/README
+  Util/Bands/new.gnubands.f90
+  Util/Grid/README
+  Util/Grid/makefile
+  Util/build_all.sh
+		    
+
+-----------------------------------------------------------------------
 2015-11-26   15:10:00 GMT                                     trunk-481
 Increase the number of allowed iterations in minvec
 
