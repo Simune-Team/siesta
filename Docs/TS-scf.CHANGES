@@ -1,4 +1,14 @@
 ----------------------------------------------------
+December 18, 2015 -- Nick Papior       trunk-479---ts-scf-623
+Enabled two types of bond-currents analysis in tbt_data.py
+
+* Now we enable strict bond-currents as well as
+  excess current activity magnitudes
+
+modified:
+  Util/TS/TB/tbt_data.py
+
+----------------------------------------------------
 December 18, 2015 -- Nick Papior       trunk-479---ts-scf-622
 Enabled all systems for propagation spectral function
 

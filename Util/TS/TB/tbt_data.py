@@ -285,7 +285,7 @@ class TBTFile(object):
             return J, csr_matrix((J[0,:],col,ptr),shape=(s,s))
         return J, csr_matrix((J[0,0,:],col,ptr),shape=(s,s))
 
-    def Jij2Ja(self,Jij):
+    def Jij2Ja(self,Jij,activity=True):
         """ Returns the total current flowing through each atom.
         
         It requires a sparse matrix return from ``self.Jij`` that
@@ -295,15 +295,35 @@ class TBTFile(object):
         region.
         Note that the returned atomic current is for the all atoms
         even those not in ``self.a_dev.``
+
+        If ``activity=True`` we return: 
+
+           sqrt( \sum_\nu|J_{I\nu}| * \sum_J |J_{IJ}| )
+
+        else we return
+
+           \sum_J |J_{IJ}|
+
         """
         # Convert to csr format (just ensure it)
         tmp = Jij.tocsr()
         Ja = np.zeros((self.na_u,),np.float)
         atoms = self.a_dev
         lasto = np.append([0],self.lasto)
+        # Calculate individual bond-currents between atoms
         for ia in atoms:
-            Ja[ia-1] = np.sum(np.sqrt((tmp[lasto[ia-1]:lasto[ia],:].multiply(
-                            tmp[lasto[ia-1]:lasto[ia],:])).data))
+            for ja in atoms:
+                # we also include ia == ja (that should be zero anyway)
+                t = tmp[lasto[ia-1]:lasto[ia],lasto[ja-1]:lasto[ja]].data
+                Ja[ia-1] += np.abs(np.sum(t))
+        del t
+        if activity:
+            # Calculate the magnitude current
+            Jb = np.zeros((self.na_u,),np.float)
+            for ia in atoms:
+                Jb[ia-1] = np.sum(np.abs(tmp[lasto[ia-1]:lasto[ia],:].data))
+            # Geometric mean:
+            Ja[:] = np.sqrt(Jb * Ja)
         return Ja
     
     def Jij2Jab(self,Jij,symmetry=True):
