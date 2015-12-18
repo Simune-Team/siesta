@@ -1181,10 +1181,8 @@ contains
 
                call rgn_assoc(El_p%o_inD, p_E%ME%mol%orb)
                call rgn_assoc(El_p%inDpvt,p_E%ME%mol%pvt)
-
-               ! We have a Left projection
-               ! Insert pointer
                El_p%Gamma => El_p%Sigma(:)
+
                ! Here we re-create the projection matrix that replaces
                ! the scattering state
                call proj_Mt_mix(p_E%ME%mol,p_E%idx,El_p%Gamma, p_E%ME%bGk)
@@ -1210,10 +1208,10 @@ contains
 
             else
 
+               iEl = -p_E%idx
+
                call rgn_assoc(El_p%o_inD, Elecs(iEl)%o_inD)
                call rgn_assoc(El_p%inDpvt,Elecs(iEl)%inDpvt)
-
-               iEl = -p_E%idx
                El_p%Gamma => Elecs(iEl)%Gamma(:)
 
                if ( ts_A_method == TS_BTD_A_COLUMN ) then
@@ -1295,7 +1293,7 @@ contains
                   else
                      call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
                   end if
-                  
+
                else
                   
                   iEl = -p_E%idx

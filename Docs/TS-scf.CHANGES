@@ -1,4 +1,27 @@
 ----------------------------------------------------
+December 18, 2015 -- Nick Papior       trunk-479---ts-scf-620
+Fixed, bug, when Gamma is split many times in a single block
+
+* When the scattering matrix was split several times in
+  a block the offset calculation in dir_* triple-product
+  meant that we calculated a wrong triple-product.
+
+  This will only affect tbtrans as the scattering matrices
+  in transiesta was sorted in the blocks (perhaps we should
+  do this in tbtrans as well)
+
+* Fixed correction term in projection CDF file.
+
+* Fixed info for left states being "pure" projection states
+
+* Fixed the left pure state Gamma calculation
+
+modified:
+  Src/m_ts_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_proj.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 December 17, 2015 -- Nick Papior       trunk-479---ts-scf-619
 Bugfix for projections
 

@@ -256,6 +256,7 @@ contains
 
     ! get electrode quantities
     no = El%o_inD%n
+    
     ! intersecting parts
     sPart = huge(1)
     ePart = 0
@@ -329,8 +330,8 @@ contains
     ! of the scattering matrix
     work_allocated = .false.
     ! get tmp work size
-    sIdxF = sIdx ! not-used array in A matrix
-    eIdxF = size(fA) - eIdx + 1 ! not-used array in A matrix
+    sIdxF = sIdx ! not-used array in A matrix [start]
+    eIdxF = size(fA) - eIdx + 1 ! not-used array in A matrix [end]
     if ( idx <= sIdxF ) then
        ! the work-array can be at the start of
        ! the A_tri array
@@ -385,6 +386,16 @@ contains
        ! get orbital index for the current column/row
        idx_Elec = rgn_pivot(pvt,El%o_inD%r(i_Elec))
 
+       ! If we skip to a new block we must add sN
+       ! to account for the new diagonal position
+       if ( 1 < i_Elec ) then
+          ! Note that 'n' and 'sN' are
+          ! from the previous iteration
+          if ( n /= which_part(A_tri,idx_Elec) ) then
+             idx = idx + sN
+          end if
+       end if
+       
        ! We start by copying over the Gfnn in blocks
 
        ! ... create a region of consecutive
@@ -409,6 +420,7 @@ contains
        ! We now need to figure out the placement of the 
        ! Gf part that we have already calculated.
        Gf => val(Gf_tri,n,n)
+       ! first column in the current diagonal block
        i = crows(n) - sN + 1
        sIdxF = (idx_Elec-i) * sN + 1
        eIdxF = (idx_Elec+nb-i) * sN
@@ -484,10 +496,8 @@ contains
        
        ! Update current segment of the electrode copied entries.
        i_Elec = i_Elec + nb
-       ! The last sN is for skipping to the correct diagonal
-       ! part
-       idx = idx + nb * sNc + sN
-
+       idx = idx + nb * sNc
+       
     end do
 
     ! now we have calculated the column for the blocks that

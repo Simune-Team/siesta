@@ -1360,6 +1360,8 @@ contains
              
           end if
        end do
+       ! ensure it is not sorted
+       mols(im)%orb%sorted = .false.
        if ( ip /= no ) call die('Error in orbitals sorting')
        
     end do
@@ -1848,8 +1850,8 @@ contains
                             dic = dic//('info'.kv.'Gf transmission')
                             call ncdf_def_var(grp3,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
                                  atts = dic)
-                            dic = dic//('info'.kv.'Reflection')
-                            tmp = trim(tmp)//'.R'
+                            dic = dic//('info'.kv.'Out transmission correction')
+                            tmp = trim(tmp)//'.C'
                          else
                             tmp = trim(tmp)//'.T'
                          end if
@@ -1859,8 +1861,8 @@ contains
                             dic = dic//('info'.kv.'Gf transmission')
                             call ncdf_def_var(grp3,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
                                  atts = dic)
-                            dic = dic//('info'.kv.'Reflection')
-                            tmp = trim(tmp)//'.R'
+                            dic = dic//('info'.kv.'Out transmission correction')
+                            tmp = trim(tmp)//'.C'
                          else
                             tmp = trim(tmp)//'.T'
                          end if
@@ -2136,7 +2138,7 @@ contains
 #endif
           
        end if
-              
+       
     end do ikpt
 
        if ( isGamma ) then
@@ -2186,9 +2188,10 @@ contains
              dic = dic//('info'.kv.'Gf transmission')
              call ncdf_def_var(grp,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
                   atts = dic)
-             dic = dic//('info'.kv.'Reflection')
-             tmp = trim(tmp)//'.R'
+             dic = dic//('info'.kv.'Out transmission correction')
+             tmp = trim(tmp)//'.C'
           else
+             dic = dic//('info'.kv.'Transmission')
              tmp = trim(tmp)//'.T'
           end if
           
@@ -2218,14 +2221,14 @@ contains
        write(*,*) 
     end if
 
-    call timer('proj_init',2)
-
 #ifdef MPI
     ! This ensures the timing is correct
     ! AND that the below die command will not be 
     ! executed prematurely.
     call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
+
+    call timer('proj_init',2)
 
     if ( fdf_get('TBT.Projs.Init',.false.) ) then
        call die('You have requested to only initialize the &
@@ -2386,7 +2389,7 @@ contains
              end if
           end if
           if ( same_E ) then
-             ctmp = trim(ctmp) // '.R'
+             ctmp = trim(ctmp) // '.C'
           else
              ctmp = trim(ctmp) // '.T'
           end if
@@ -3095,7 +3098,7 @@ contains
 
     ! Local variables
     integer :: i
-    
+
     do i = 1 , r%n
        ! Copy over the projector to the assigned index
        psort(i) = mol%p(rgn_pivot(mol%orb,r%r(i)),il)
