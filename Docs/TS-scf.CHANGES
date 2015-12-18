@@ -1,4 +1,12 @@
 ----------------------------------------------------
+December 18, 2015 -- Nick Papior       trunk-479---ts-scf-621
+Enabled electrode pivoting
+
+modified:
+  Util/TS/TBtrans/m_tbt_regions.F90
+  Util/TS/TBtrans/m_tbt_tri_init.F90
+
+----------------------------------------------------
 December 18, 2015 -- Nick Papior       trunk-479---ts-scf-620
 Fixed, bug, when Gamma is split many times in a single block
 

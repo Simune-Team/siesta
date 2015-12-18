@@ -65,16 +65,12 @@ contains
 
     type(Sparsity) :: tmpSp1, tmpSp2
     integer :: i, iEl
-    integer :: o_BTD
 
 #ifdef MPI
     integer :: MPIerror
 #endif
 
     call timer('tri-init-elec',1)
-
-    o_BTD = ts_A_method
-    ts_A_method = TS_BTD_A_COLUMN
 
     ! This works as creating a new sparsity deletes the previous
     ! and as it is referenced several times it will not be actually
@@ -97,15 +93,12 @@ contains
 
        ! Create tri-diagonal parts for this electrode
        ! IF parts == 0 will create new partition
-       call ts_rgn2TriMat(N_Elec, Elecs, .false., &
+       call ts_rgn2TriMat(1, Elecs(i:i), .false., &
             dit, tmpSp1, r_oElpD(i), ElTri(i)%n, ElTri(i)%r, &
             BTD_method, last_eq = Elecs(i)%o_inD%n , par = .false. )
        call delete(tmpSp1)
 
     end do
-
-    ! reset variable
-    ts_A_method = o_BTD
 
     ! The i'th processor has the following electrodes
     do iEl = 1 , N_Elec

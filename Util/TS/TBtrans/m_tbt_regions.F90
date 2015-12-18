@@ -108,6 +108,7 @@ contains
     character(len=50) :: g, csort
     integer :: i, ia, ia1, ia2, no_u
     type(tRgn) :: r_tmp, r_tmp2, r_tmp3, r_Els, priority
+    real(dp) :: tmp
 
     no_u = lasto(na_u)
     
@@ -332,13 +333,36 @@ contains
        ! This will also reduce the pivoting table (r_oEl) to
        ! _only_ have orbitals from the electrode up to the
        ! device region.
-       csort = fdf_get('TBT.BTD.Pivot.Elecs','atom')
-       csort = trim(csort)//'+'//trim(Elecs(iEl)%name)
+       ! First get the actual sub region that connects
+       ! from the electrode to the device
+       g = 'atom+'//trim(Elecs(iEl)%name)
        call ts_pivot( dit, sp, &
             1, Elecs(iEl:iEl), &
             cell, na_u, xa, lasto, &
-            r_oEl(iEl), csort, extend = .false.)
-
+            r_oEl(iEl), g, extend = .false.)
+       csort = fdf_get('TBT.BTD.Pivot.Elecs',trim(g))
+       csort = fdf_get('TBT.BTD.Pivot.Elec.'//&
+            trim(Elecs(iEl)%name),trim(csort))
+       if ( .not. leqi(g,csort) ) then
+          call ts_pivot( dit, sp, &
+               1, Elecs(iEl:iEl), &
+               cell, na_u, xa, lasto, &
+               r_oEl(iEl), csort)
+          ! if the majority of the electrode pivoting
+          ! elements are in the upper half, then reverse
+          tmp = sum(rgn_pivot(r_oEl(iEl),r_oEl_alone(iEl)%r))
+          ! average position in pivoting array
+          tmp = tmp / r_oEl_alone(iEl)%n
+          if ( tmp > 0.5_dp * r_oEl(iEl)%n ) then
+             ! the actual electrode position
+             ! is primarily placed closer to the device,
+             ! hence we reverse the list to get a
+             ! better sorting
+             call rgn_reverse(r_oEl(iEl))
+          end if
+          
+       end if
+       
        ! This aligns the atoms in the same way the orbitals 
        ! introduce the atoms.
        call rgn_Orb2Atom(r_oEl(iEl), na_u, lasto , r_aEl(iEl))
