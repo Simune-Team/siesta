@@ -1,4 +1,15 @@
 ----------------------------------------------------
+December 18, 2015 -- Nick Papior       trunk-479---ts-scf-622
+Enabled all systems for propagation spectral function
+
+* Instead of disallowing calculating the matrix product
+  we now always allocate, minimum 2MB of memory for the
+  matrix multiplication.
+
+modified:
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 December 18, 2015 -- Nick Papior       trunk-479---ts-scf-621
 Enabled electrode pivoting
 

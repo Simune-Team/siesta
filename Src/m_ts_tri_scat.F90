@@ -227,6 +227,7 @@ contains
     complex(dp), pointer :: fGf(:), fA(:), Gf(:), A(:)
 
     complex(dp), pointer :: ztmp(:)
+    logical :: tmp_allocated
     integer :: nrtmp
     complex(dp), pointer :: zwork(:) => null()
     logical :: work_allocated 
@@ -370,13 +371,19 @@ contains
 
     ! calculate number of rows we can simultaneously
     ! cobe with.
+    ! Calculate a size according to 2 MB
+    i = 2 * 1024._dp**2 / 16._dp / no
+    i = max(2,i)
     nrtmp = size(ztmp) / no
-    if ( nrtmp <= 0 ) then
-       print *,nrtmp
-       call die('Error in getting just a single row of the triple &
-            &product.')
+    if ( nrtmp < i ) then
+       nrtmp = i
+       nullify(ztmp)
+       allocate(ztmp(no*nrtmp))
+       tmp_allocated = .true.
+    else
+       tmp_allocated = .false.
     end if
-    
+
 
     ! Now calculate the column where we need G
     i_Elec = 1
@@ -737,6 +744,10 @@ contains
 
     if ( work_allocated ) then
        deallocate(zwork)
+    end if
+
+    if ( tmp_allocated ) then
+       deallocate(ztmp)
     end if
 
 #ifndef TBTRANS
