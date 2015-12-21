@@ -1,4 +1,13 @@
 ----------------------------------------------------
+December 20, 2015 -- Nick Papior       trunk-482---ts-scf-625
+Bug, fixed deallocate of re-pointed array
+
+* Deallocation of the temporary array was moved.
+
+modified:
+  Src/m_ts_tri_scat.F90
+
+----------------------------------------------------
 December 20, 2015 -- Nick Papior       trunk-482---ts-scf-624
 Enabled easy overwriting the device atoms in tbtrans
 

@@ -587,6 +587,12 @@ contains
     end do
 
 
+    ! Deallocate ztmp if allocated
+    if ( tmp_allocated ) then
+       deallocate(ztmp)
+    end if
+
+
     ! Now we have calculate the triple matrix product for
     ! the diagonal blocks where the scattering matrix
     ! lives.
@@ -741,13 +747,8 @@ contains
 
     end do
 
-
     if ( work_allocated ) then
        deallocate(zwork)
-    end if
-
-    if ( tmp_allocated ) then
-       deallocate(ztmp)
     end if
 
 #ifndef TBTRANS
