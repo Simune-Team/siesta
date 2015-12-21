@@ -1,4 +1,11 @@
 ----------------------------------------------------
+December 20, 2015 -- Nick Papior       trunk-482---ts-scf-624
+Enabled easy overwriting the device atoms in tbtrans
+
+modified:
+  Util/TS/TBtrans/m_tbt_regions.F90
+
+----------------------------------------------------
 December 18, 2015 -- Nick Papior       trunk-479---ts-scf-623
 Enabled two types of bond-currents analysis in tbt_data.py
 

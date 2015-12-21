@@ -98,7 +98,6 @@ contains
     integer, intent(in) :: nsc, isc_off(3,nsc)
 
     integer :: iEl, na
-    integer :: list_a(na_u)
 
     ! A temporary sparsity pattern
     type(Sparsity) :: sp_tmp
@@ -173,22 +172,24 @@ contains
           
        end do
        call rgn_delete(r_tmp)
-       
+
     else
        
        ! populate the device region with all but the 
        ! electrodes and buffer atoms
-       na = 0
-       do ia = 1 , na_u
-          if ( atom_type(ia) == TYP_DEVICE ) then
-             na = na + 1
-             list_a(na) = ia
-          end if
-       end do
-
-       call rgn_list(r_aDev,na,list_a)
+       call rgn_range(r_aDev,1,na_u)
 
     end if
+
+
+    ! We immediately remove the buffer and electrode atoms
+    if ( r_aBuf%n > 0 ) then
+       call rgn_complement(r_aBuf,r_aDev,r_aDev)
+    end if
+    do iEl = 1 , N_Elec
+       call rgn_complement(r_aEl_alone(iEl),r_aDev,r_aDev)
+    end do
+
 
     if ( r_aDev%n == 0 ) then
        call die('Zero atoms are in the device region...???')
@@ -215,6 +216,10 @@ contains
        ! Convert connecting region to atoms
        call rgn_Orb2Atom(r_tmp,na_u,lasto,r_oDev)
        call rgn_delete(r_tmp)
+       ! Remove buffer atoms (in case the electrode is too small)
+       if ( r_aBuf%n > 0 ) then
+          call rgn_complement(r_aBuf,r_oDev,r_oDev)
+       end if
        ! Remove all electrodes from the region
        do iEl = 1 , N_Elec
           call rgn_complement(r_aEl_alone(iEl),r_oDev,r_oDev)
