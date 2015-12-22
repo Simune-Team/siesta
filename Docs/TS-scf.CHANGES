@@ -1,4 +1,11 @@
 ----------------------------------------------------
+December 21, 2015 -- Nick Papior       trunk-482---ts-scf-626
+Added memory print-out for TBtrans
+
+modified:
+  Util/TS/TBtrans/m_tbtrans.F90
+
+----------------------------------------------------
 December 20, 2015 -- Nick Papior       trunk-482---ts-scf-625
 Bug, fixed deallocate of re-pointed array
 

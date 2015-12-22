@@ -221,6 +221,9 @@ contains
           end if
        end do
     end if
+
+    ! Print memory usage (after open_GF)
+    call print_memory
     
     do ils = 1 , TSHS%nspin
 
@@ -335,6 +338,70 @@ contains
     call timer('TBT',2)
 
   contains
+
+    subroutine print_memory()
+
+      use precision, only: i8b
+      use m_verbosity, only : verbosity
+      use m_tbt_regions, only : sp_uc
+
+      integer(i8b) :: nsize
+      real(dp) :: mem, tmem
+      integer :: iEl
+
+      if ( verbosity > 4 .and. IONode ) then
+
+         ! Calculate size of electrodes
+         nsize = 0
+         do iEl = 1 , N_Elec
+            ! These are doubles (not complex)
+            ! hence, we need not count the overlap matrices as they are already
+            ! doubled...
+            nsize = nsize + nnzs(Elecs(iEl)%H00) + nnzs(Elecs(iEl)%H01)
+            if ( .not. Elecs(iEl)%Bulk ) then
+               nsize = nsize + 2 * size(Elecs(iEl)%HA)
+            end if
+            nsize = nsize + size(Elecs(iEl)%Gamma)
+         end do
+
+         tmem = nsize * 16._dp / 1024._dp ** 2
+         if ( tmem > 600._dp ) then
+            write(*,'(a,f8.3,a)') 'tbtrans: Electrode memory: ',tmem / 1024._dp,' GB'
+         else
+            write(*,'(a,f8.3,a)') 'tbtrans: Electrode memory: ',tmem ,' MB'
+         end if
+         
+         ! first the size of the real matrices
+         nsize = nnzs(TSHS%sp)
+#ifdef NCDF_4
+         if ( initialized(sp_dev) ) then
+            nsize = nsize + nnzs(sp_dev)
+         end if
+#endif
+         mem = nsize * 8._dp / 1024._dp ** 2
+         ! Now the complex sparse matrices
+         nsize = nnzs(sp_uc) * 2
+         mem = mem + nsize * 16._dp / 1024._dp ** 2
+         if ( mem > 600._dp ) then
+            write(*,'(a,f8.3,a)') 'tbtrans: Sparse Hamiltonian and overlap memory: ', &
+                 mem / 1024._dp,' GB'
+         else
+            write(*,'(a,f8.3,a)') 'tbtrans: Sparse Hamiltonian and overlap memory: ', &
+                 mem,' MB'
+         end if
+
+         tmem = tmem + mem
+         if ( tmem > 600._dp ) then
+            write(*,'(a,f8.3,a/)') 'tbtrans: Sum of electrode and sparse memory: ', &
+                 tmem / 1024._dp,' GB'
+         else
+            write(*,'(a,f8.3,a/)') 'tbtrans: Sum of electrode and sparse memory: ', &
+                 tmem,' MB'
+         end if
+         
+      end if
+
+    end subroutine print_memory
 
     subroutine init_Electrode_HS(El,spin_idx)
       use class_Sparsity
