@@ -1,4 +1,11 @@
 ----------------------------------------------------
+December 23, 2015 -- Nick Papior       trunk-482---ts-scf-630
+Memory report did not work, fixed
+
+modified:
+  Src/alloc.F90
+
+----------------------------------------------------
 December 23, 2015 -- Nick Papior       trunk-482---ts-scf-629
 Added memory tracking for m_region
 
