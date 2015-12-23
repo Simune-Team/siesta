@@ -1,4 +1,14 @@
 ----------------------------------------------------
+December 23, 2015 -- Nick Papior       trunk-482---ts-scf-628
+Option fix
+
+* Now the default for bulk electrode initialization is
+  set if the user starts immediately from transiesta.
+
+modified:
+  Src/m_ts_options.F90
+
+----------------------------------------------------
 December 23, 2015 -- Nick Papior       trunk-482---ts-scf-627
 Fixes for memory tracking
 

@@ -379,9 +379,14 @@ contains
 
     ! Whether we should always set the DM to bulk
     ! values (by reading in from electrode DM)
-    chars = fdf_get('TS.Elecs.DM.Bulk',trim(chars))
+    if ( TS_scf_mode == 1 ) then
+       chars = 'bulk'
+    else
+       chars = 'diagon'
+    end if
+    chars = fdf_get('TS.Elecs.DM.Init',trim(chars))
     DM_bulk = 0
-    if ( leqi(chars,'init') ) then
+    if ( leqi(chars,'bulk') ) then
        DM_bulk = 1
     !else if ( leqi(chars,'scf') ) then
     !   DM_bulk = 2
@@ -915,7 +920,7 @@ contains
     case ( 0 ) 
        write(*,f10) 'Initial DM for electrodes','this'
     case ( 1 )
-       write(*,f10) 'Initial DM for electrodes','electrode DM'
+       write(*,f10) 'Initial DM for electrodes','bulk DM'
     end select
     write(*,f6) 'Voltage', Volt/eV,'Volts'
     if ( IsVolt ) then
