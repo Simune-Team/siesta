@@ -1,4 +1,11 @@
 ----------------------------------------------------
+December 23, 2015 -- Nick Papior       trunk-482---ts-scf-629
+Added memory tracking for m_region
+
+modified:
+  Src/m_region.F90
+
+----------------------------------------------------
 December 23, 2015 -- Nick Papior       trunk-482---ts-scf-628
 Option fix
 

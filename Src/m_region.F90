@@ -135,6 +135,7 @@ contains
     ! Create with no default values
     r%n = n
     allocate(r%r(n))
+    call memory('A','I',n,'rgn-list')
     if ( present(val) ) r%r = val
 
     if ( present(name) ) then
@@ -227,7 +228,10 @@ contains
     type(tRgn), intent(inout), optional :: r1,r2,r3,r4,r5
     r%name = ' '
     r%n = 0
-    if ( associated(r%r) ) deallocate(r%r)
+    if ( associated(r%r) ) then
+       call memory('D','I',size(r%r),'rgn-list')
+       deallocate(r%r)
+    end if
     nullify(r%r)
     r%sorted = .false.
     if ( present(r1) ) call rgn_delete(r1,r2,r3,r4,r5)
@@ -1222,6 +1226,7 @@ contains
     r%n = n
     if ( n > 0 ) then
        allocate(r%r(n))
+       call memory('A','I',n,'rgn-list')
        r%r(1:n) = list(1:n)
     end if
     if ( present(name) ) r%name = name
@@ -1248,8 +1253,8 @@ contains
        allocate(ct(n))
        ct(1:n) = uniq(r%r(1:r%n))
        call rgn_list(r,n,ct,name)
-       call rgn_sort(r)
        deallocate(ct)
+       call rgn_sort(r)
     end if
 
   end subroutine rgn_uniq
@@ -1308,6 +1313,7 @@ contains
     nullify(r%r)
     if ( r%n > 0 ) then
        allocate(r%r(no))
+       call memory('A','I',no,'rgn-list')
        no = 0
        do i = 1 , na
           do j = lasto(a(i)-1) + 1 , lasto(a(i))
@@ -1352,6 +1358,7 @@ contains
     nullify(or%r)
     if ( no > 0 ) then
        allocate(or%r(no))
+       call memory('A','I',no,'rgn-list')
        no = 0
        do i = 1 , ar%n
           do cr = lasto(ar%r(i)-1) + 1 , lasto(ar%r(i))
