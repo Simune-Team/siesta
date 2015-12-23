@@ -1,4 +1,18 @@
 ----------------------------------------------------
+December 23, 2015 -- Nick Papior       trunk-482---ts-scf-627
+Fixes for memory tracking
+
+* Routine names for re(de) allocating memory had a few
+  issues.
+  Now the allocreport should work fine.
+
+modified:
+  Src/class_TriMat.T90
+  Src/find_kgrid.F
+  Src/m_ts_electrode.F90
+  Src/m_ts_rgn2trimat.F90
+
+----------------------------------------------------
 December 21, 2015 -- Nick Papior       trunk-482---ts-scf-626
 Added memory print-out for TBtrans
 

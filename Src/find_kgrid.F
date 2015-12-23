@@ -202,10 +202,8 @@ C Select reflection plane
         nk = nkr(ir)
       endif
 
-      call re_alloc(points,1,3,1,nk,name='points',
-     $              routine='find_kgrid',copy=.false.)
-      call re_alloc(weight,1,nk,name='weight',
-     $              routine='find_kgrid',copy=.false.)
+      call re_alloc(points,1,3,1,nk,name='k-points', copy=.false.)
+      call re_alloc(weight,1,nk,name='k-weight', copy=.false.)
 
 C Find k points and weights
       w1 = 1.0d0 / nktot
@@ -316,10 +314,8 @@ C Check that weight is normalised
          call io_close( iu )
       endif
 
-      call re_alloc(kpin,1,3,1,nkout,name='points',
-     $              routine='trim_kpoint_list',copy=.false.)
-      call re_alloc(win,1,nkout,name='weight',
-     $              routine='trim_kpoint_list',copy=.false.)
+      call re_alloc(kpin,1,3,1,nkout,name='k-points', copy=.false.)
+      call re_alloc(win,1,nkout,name='k-weight', copy=.false.)
 
       kpin(:,1:nkout) = kpout(:,1:nkout)
       win(1:nkout) = wout(1:nkout)

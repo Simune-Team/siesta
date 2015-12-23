@@ -897,7 +897,7 @@ contains
        i = max(i,n_X)
     end if
     allocate(zwork(i))
-    call memory('A','Z',i,'create_Green')
+    call memory('A','Z',i,'create_green')
 
     ! Point the hamiltonian and the overlap to the work array
     ! The work-array is only used for calculation the surface
@@ -921,7 +921,7 @@ contains
 
     ! all the Hamiltonian and overlaps
     allocate(zHS(nS * nq * 4))
-    call memory('A','Z',nS * nq * 4,'create_Green')
+    call memory('A','Z',nS * nq * 4,'create_green')
 
     ! Prepare for the inversion
     i = max(no_X,nuo_E)

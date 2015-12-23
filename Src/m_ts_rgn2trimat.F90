@@ -120,7 +120,7 @@ contains
 
     ! create array containing max-min for each ts-orbital
     call re_alloc(mm_col, 1, 2, 1, no, &
-         routine='tbtR2TM', name='mm_col')
+         routine='tsR2TM', name='mm_col')
 !$OMP parallel do default(shared), private(i)
     do i = 1 , no
        mm_col(:,i) = minmax_col(sp,r,r%r(i))
@@ -236,10 +236,10 @@ contains
     end if
 #endif
 
-    call de_alloc(guess_part,routine='tsSp2TM',name='guess_part')
+    call de_alloc(guess_part,routine='tsR2TM',name='guess_part')
     ! Shrink to the found parts
     call re_alloc(n_part,1, parts, copy=.true., shrink=.true., &
-         routine='tsSp2TM', name='n_part')
+         routine='tsR2TM', name='n_part')
 
     if ( parts < 2 ) then
        
@@ -254,7 +254,7 @@ contains
              write(*,'(a)') 'None found...'
           end if
        end if
-       call re_alloc(n_part, 1, 3, routine='tsSp2TM',name='n_part')
+       call re_alloc(n_part, 1, 3, routine='tsR2TM',name='n_part')
        call die('Not yet implemented')
 
     end if
@@ -287,7 +287,7 @@ contains
             &You appear to have a special form of electrode.')
     end if
 
-    call de_alloc(mm_col,routine='tsSp2TM',name='mm_col')
+    call de_alloc(mm_col,routine='tsR2TM',name='mm_col')
 
     if ( .not. IONode ) return
 
