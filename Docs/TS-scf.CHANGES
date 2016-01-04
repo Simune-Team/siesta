@@ -1,4 +1,17 @@
 ----------------------------------------------------
+January , 2016 -- Nick Papior       trunk-482---ts-scf-631
+Returning 0 for size of a non-initialized sparse data
+
+- class_Sparsity, class_SpData[12]D now returns 0
+  with nnzs(this) for objects not allocated.
+
+modified:
+  Src/class_SpData1D.T90
+  Src/class_SpData2D.T90
+  Src/class_Sparsity.F90
+  Src/m_pivot_methods.F90
+
+----------------------------------------------------
 December 23, 2015 -- Nick Papior       trunk-482---ts-scf-630
 Memory report did not work, fixed
 

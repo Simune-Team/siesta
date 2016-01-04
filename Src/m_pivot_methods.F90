@@ -1124,6 +1124,7 @@ contains
        do ind = l_ptr(idx) + 1 , l_ptr(idx) + n_col(idx)
           ! figure out the pivoting place
           j = rgn_pivot(s_sub,l_col(ind))
+          if ( j <= 0 ) cycle
           beta = max(beta,i-pvt%r(j))
        end do
     end do
@@ -1155,6 +1156,7 @@ contains
        do ind = l_ptr(idx) + 1 , l_ptr(idx) + n_col(idx)
           ! figure out the pivoting place
           j = rgn_pivot(s_sub,l_col(ind))
+          if ( j <= 0 ) cycle
           beta = max(beta,i-pvt%r(j))
        end do
        p = p + beta

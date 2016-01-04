@@ -196,7 +196,12 @@
     type(TYPE_NAME), intent(in) :: this
     integer                     :: n
 
-    n = nnzs(this%data%sp)
+    if ( initialized(this) ) then
+       n = nnzs(this%data%sp)
+    else
+       n = 0
+    end if
+    
   end function nnzsSpData
 
   function n_colSpData(this) result (p)

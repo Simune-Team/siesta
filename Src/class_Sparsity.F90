@@ -277,7 +277,11 @@ module class_Sparsity
   pure function nnzsSparsity(this) result (n)
     type(Sparsity), intent(in) :: this
     integer                    :: n
-    n = this%data%nnzs
+    if ( initialized(this) ) then
+       n = this%data%nnzs
+    else
+       n = 0
+    end if
   end function nnzsSparsity
 
   function n_colSparsity(this) result (p)
