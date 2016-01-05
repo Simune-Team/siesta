@@ -564,6 +564,12 @@ contains
             &part of the energy (non-zero).')
     end if
 #endif
+
+    ! If the user will not use bulk, and haven't set DM-update,
+    ! default to 'all'
+    if ( .not. info(5) .and. .not. this%Bulk ) then
+       this%DM_update = 2 ! set 'all'
+    end if
     
     if ( .not. file_exist(this%HSfile, Bcast = .true.) ) then
        call die("Electrode file does not exist. &

@@ -1,5 +1,16 @@
 ----------------------------------------------------
-January , 2016 -- Nick Papior       trunk-482---ts-scf-631
+January 5, 2016 -- Nick Papior       trunk-482---ts-scf-632
+Ensure that the default of DM-update is 'all' for non-Bulk
+
+* When an electrode is non-bulk it will now default to
+  update all elements.
+  This can be overwritten by the user.
+
+modified:
+  Src/m_ts_electype.F90
+
+----------------------------------------------------
+January 4, 2016 -- Nick Papior       trunk-482---ts-scf-631
 Returning 0 for size of a non-initialized sparse data
 
 - class_Sparsity, class_SpData[12]D now returns 0
