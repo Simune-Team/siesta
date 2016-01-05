@@ -194,7 +194,7 @@ contains
     real(dp) :: EDMe, Em_err, Eee, EeM, Eew, Ee_f
     logical :: hasEDM, is_correlated, is_trace
     ! collecting the error contribution for each atom
-    real(dp), allocatable :: atom_w(:,:), atom_neq(:,:)
+    real(dp), allocatable :: atom_w(:,:), atom_neq(:,:), cor(:)
     integer :: ng, lio, ia1, ia2, ia, TS_W
     
 #ifdef MPI
@@ -221,6 +221,7 @@ contains
     ! point to the orbital-distribution
     dit => dist(spDM)
 
+    allocate(cor(N_nEq_ID))
     allocate(ID_mu(N_nEq_ID))
     do io = 1 , N_nEq_ID
        ID_mu(io) = ID2mu(io)
@@ -406,7 +407,7 @@ contains
     
 ! DM is accessed individually, so we will never have a data race
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,ia1,ia2,j,ind,jo,neq), &
+!$OMP&private(lio,io,ia1,ia2,j,ind,jo,neq,cor), &
 !$OMP&private(ee,e_f,mu_i,mu_j,tmp), &
 !$OMP&private(Eee,Ee_f), &
 !$OMP&firstprivate(w), reduction(+:m_err,Em_err)
@@ -425,24 +426,25 @@ contains
           ind = l_ptr(lio) + j
           ! Retrieve the connecting orbital
           jo = l_col(ind)
+          cor(:) = DMneq(ind,:)
           
           if ( TS_W == TS_W_ORB_ORB ) then
 
              ! Get the non-equilibrium contribution and the weight associated
              call calc_neq_weight(N_mu,N_nEq_ID,ID_mu, &
-                  DMneq(ind,:),neq,w)
+                  cor,neq,w)
 
           else if ( TS_W == TS_W_MEAN ) then
 
              ! "w" already set
              ! Get the non-equilibrium contribution
-             call calc_neq(N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq)
+             call calc_neq(N_mu,N_nEq_ID,ID_mu,cor,neq)
 
           else ! we have weight per atom "somewhere"
 
              ! To compare the weights... For DEBUGging purposes...
              !call get_neq_weight(N_mu,N_nEq_ID,ID_mu, &
-             !     DMneq(ind,:),neq,w)
+             !     cor,neq,w)
              !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wi: ', ia1,ia2,w
              
              ! Re-calculate the weight for special weighting...
@@ -476,11 +478,11 @@ contains
                 ! do nothing...
                 
              case ( TS_W_TR_ATOM_ORB , TS_W_SUM_ATOM_ORB )
-                   
+
                 ! this ensures that the atomic weights are
                 ! both taken into account, as well as the orb-orb
                 call calc_weight(N_mu,N_nEq_ID,ID_mu, &
-                     DMneq(ind,:) ** 2, neq(:) )
+                     cor ** 2, neq )
                 
                 ! see above for arguments
                 w = sqrt(w(:) * neq(:))
@@ -491,7 +493,7 @@ contains
              end select
              
              ! Get the non-equilibrium contribution
-             call calc_neq(N_mu,N_nEq_ID,ID_mu,DMneq(ind,:),neq)
+             call calc_neq(N_mu,N_nEq_ID,ID_mu,cor,neq)
              
              !write(*,'(a,i2,tr1,i2,4(tr1,g10.5))')'Wt: ', ia1,ia2,w,sum(w)
           end if
@@ -597,6 +599,7 @@ contains
     end if
 
     deallocate(ID_mu)
+    deallocate(cor)
 
 #ifdef MPI
     if ( Nodes > 1 ) then

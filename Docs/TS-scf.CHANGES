@@ -1,4 +1,14 @@
 ----------------------------------------------------
+January 5, 2016 -- Nick Papior       trunk-482---ts-scf-633
+Fixed temporary array creation for the weight
+
+* Long lasting enhancement which prohibits
+  the creation of a temporary array in the weighting scheme.
+
+modified:
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 January 5, 2016 -- Nick Papior       trunk-482---ts-scf-632
 Ensure that the default of DM-update is 'all' for non-Bulk
 
