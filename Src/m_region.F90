@@ -52,6 +52,7 @@ module m_region
   public :: rgn_print
   public :: rgn_copy
   public :: rgn_reverse
+  public :: rgn_wrap
   public :: in_rgn, rgn_pivot
   public :: rgn_push, rgn_pop
 #ifdef MPI
@@ -302,6 +303,36 @@ contains
     call rgn_remove_list(r,rr%n,rr%r,rout)
 
   end subroutine rgn_remove_rgn
+
+
+  ! Returns a list of elements which all
+  ! are between [1;r%n]
+  ! Hence they will be wrapped
+  ! An optional size can be specified
+  ! if the array is shorter
+  subroutine rgn_wrap(r,n)
+    type(tRgn), intent(inout) :: r
+    integer, intent(in), optional :: n
+    integer :: i, ln
+
+    ln = r%n
+    if ( ln <= 0 ) return
+    if ( present(n) ) ln = n
+
+    i = 1
+    do while ( i <= r%n )
+       if ( r%r(i) < 0 ) then
+          r%r(i) = ln + r%r(i) + 1
+       else if ( r%r(i) == 0 ) then
+          r%r(i) = ln
+       else if ( ln < r%r(i) ) then
+          r%r(i) = r%r(i) - ln
+       else
+          i = i + 1
+       end if
+    end do
+
+  end subroutine rgn_wrap
 
 
   ! Generates a new region which connects to 'r'

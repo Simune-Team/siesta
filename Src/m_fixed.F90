@@ -974,17 +974,7 @@ contains
       ! Get entire range ( from -na to 2 * na )
       ! we allow both negative and positive wrap-arounds
       ! (limit of one wrap-around)
-      call fdf_brange(pline,r,-na,2*na)
-
-      ! Correct all negative
-      do i = 1 , r%n
-         if ( r%r(i) < 0 ) then
-            r%r(i) = na + r%r(i) + 1
-         end if
-         if ( na < r%r(i) ) then
-            r%r(i) = r%r(i) - na
-         end if
-      end do
+      call fdf_brange(pline,r,1,na)
 
       ! Sort region
       call rgn_sort(r)

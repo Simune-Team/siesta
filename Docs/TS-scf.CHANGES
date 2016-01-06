@@ -1,4 +1,33 @@
 ----------------------------------------------------
+January 6, 2016 -- Nick Papior       trunk-482---ts-scf-635
+Corrected list inputs so that wrap-arounds for atoms are allowed
+
+* fdf_extra has been updated such that wrap-arounds work correctly.
+
+  However, wrap-arounds are still not implemented in lists via
+  fdf_blists
+
+* Calls to fdf_brange have been updated accordingly.
+
+* Created a rgn_wrap which wraps the elements to the size of
+  the array, or by an optional value.
+
+* For TBT_PHONON the lvls asked for in projections *must* be >= 1.
+  This is now checked.
+
+* tbt_data.py
+  Raise an error when the user requests atoms not in the device region
+  for TBT.
+
+modified:
+  Src/fdf_extra.F90
+  Src/m_fixed.F90
+  Src/m_region.F90
+  Src/m_ts_method.f90
+  Util/TS/TB/tbt_data.py
+  Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
 January 5, 2016 -- Nick Papior       trunk-482---ts-scf-634
 Added explicit square contour
 

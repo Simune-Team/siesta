@@ -101,50 +101,58 @@ contains
           call die('Error in range block &
                &from <int> to/plus/minus <int> is ill formatted')
        end if
-       i1 = fdf_bintegers(pline,1)
-       ! The first index *must* be given 
-       ! as an atom index
-       i1 = correct(i1,low,high)
-       i2 = fdf_bintegers(pline,2)
-       if ( i1 < low ) then
-          print *,'Parsed line: ',pline%line
-          call die('Error in range block: &
-               &from <int> is below lowest allowed value')
-       end if
+
        ! Initialize step
        step = 1
+
+       ! Read in arguments
+       i1 = fdf_bintegers(pline,1)
+       i2 = fdf_bintegers(pline,2)
        if ( fdf_bnintegers(pline) > 2 ) then
-          step = abs(fdf_bnintegers(pline,3))
+          step = fdf_bnintegers(pline,3)
+          if ( step == 0 ) &
+               call die('Stepping MUST be different from 0')
        end if
-       if ( step == 0 ) call die('Stepping MUST be different from 0')
+
        if ( leqi(g,'to') ) then
           ! do nothing....
        else if ( leqi(g,'plus') ) then
           i2 = i1 + i2 - 1
        else if ( leqi(g,'minus') ) then
-          step = - step
+          ! possibly correct step
+          if ( step > 0 ) step = - step
           i2 = i1 - i2 + 1
        else
           print *,'Parsed line: ',pline%line
           call die('Unrecognized designator of ending range, &
                [to, plus, minus] accepted.')
        end if
-       i2 = correct(i2,low,high)
-       !print *,i1,i2,step
-       if ( high < i2 ) then
-          print *,'Parsed line: ',pline%line
-          call die('Error in range block: &
-               &to <int> is above highest allowed value')
+
+       ! Check whether we should correct the list indices
+       if ( i1 < i2 .and. step < 0 ) then
+          ! i1
+          i1 = correct(i1,low,high)
        end if
+       if ( i2 < i1 .and. step > 0 ) then
+          ! i2
+          i2 = correct(i2,low,high)
+       end if
+          
+       ! Check input for list creation
        if ( (i1 < i2 .and. step < 0) .or. &
             (i1 > i2 .and. step > 0) ) then
           print *,'Parsed line: ',pline%line
+          print *,i1,i2,step
           call die('Block range is not consecutive')
        end if
+
+       ! Create list
        do i = i1 , i2 , step
-          n = n + 1 
-          list(n) = i
+          n = n + 1
+          ! correct for wrap-arounds
+          list(n) = correct(i,low,high)
        end do
+
     else
        print *,'Parsed line: ',pline%line
        call die('Error in range block, input not recognized')
@@ -162,7 +170,7 @@ contains
     
   contains
 
-    function correct(in,low,high) result(out)
+    pure function correct(in,low,high) result(out)
       integer, intent(in) :: in, low, high
       integer :: out
       if ( in < low ) then

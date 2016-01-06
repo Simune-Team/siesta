@@ -405,6 +405,15 @@ contains
              call rgn_union(mols(im)%lvls,mols(im)%proj(ip),r_tmp)
              call rgn_copy(r_tmp,mols(im)%lvls)
 
+#ifdef TBT_PHONON
+             if ( any(mols(im)%lvls%r < 1) ) then
+                write(*,*)'Error in specifying phonon eigenstates.'
+                write(*,*)'There is no such thing as a negative indexed &
+                     &phonon eigenstate.'
+                call die('Phonon molecular levels *must* start from 1')
+             end if
+#endif
+
           end if
 
        end do ! loop on reading in projections

@@ -535,7 +535,15 @@ def main():
                 o = []
             
             # Update a to only contain atoms in the device region
+            la = len(a)
             a = [ia for ia in a if ia in dev_a]
+            if len(a) != la:
+                # This is because the user must be warned
+                # if they request something that does not exist.
+                raise ValueError(("\n\nYou have requested an atom not existing "
+                                  "in the device region.\n"
+                                  "Either you have mistaken an atom or "
+                                  "you forgot to add the atom in the device."))
             # in case the atom list is now empty
             if not a: continue
 
