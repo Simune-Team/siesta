@@ -295,12 +295,14 @@ contains
     c%part = fdf_bnames(pline,2)
     if ( leqi(c%part,'circle') ) then
        c%part = 'circle' ! ensures capitalization!!!! DON'T EDIT
+    else if ( leqi(c%part,'square') ) then
+       c%part = 'square'
     else if ( leqi(c%part,'line') ) then
        c%part = 'line'
     else if ( leqi(c%part,'tail') ) then
        c%part = 'tail'
     else
-       call die('Part of the contour could not be recognized as circle|line|tail')
+       call die('Part of the contour could not be recognized as circle|square|line|tail')
     end if
    
 

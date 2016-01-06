@@ -1,4 +1,16 @@
 ----------------------------------------------------
+January 5, 2016 -- Nick Papior       trunk-482---ts-scf-634
+Added explicit square contour
+
+* Added explicit square contour,
+  which is not as good as it is not going "deep" into the
+  complex plane.
+
+modified:
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_io_ctype.f90
+
+----------------------------------------------------
 January 5, 2016 -- Nick Papior       trunk-482---ts-scf-633
 Fixed temporary array creation for the weight
 

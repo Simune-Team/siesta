@@ -78,7 +78,7 @@ contains
     character(len=C_N_NAME_LEN), allocatable :: tmp(:), nContours(:)
     character(len=C_N_NAME_LEN) :: tmp_one
     integer :: cur, next, prev
-    logical :: isCircle, isTail
+    logical :: isStart, isTail
 
     call fdf_obsolete('TS.ComplexContour.NPoles')
 
@@ -275,6 +275,7 @@ contains
        !  1) A continued fraction method
        !  2) The regular circle contour
        if ( leqi(Eq_io(cur)%part,'cont-frac') ) then
+          
           ! The segment _has_ to be alone
           if ( Eq_segs(mus(i)) > 1 ) then
              call die('Continued fraction contours &
@@ -282,13 +283,16 @@ contains
           end if
 
        else
-          isCircle = leqi(Eq_io(cur)%part,'circle')
+          
+          isStart = leqi(Eq_io(cur)%part,'circle') .or. &
+               leqi(Eq_io(cur)%part,'square') 
           isTail   = leqi(Eq_io(cur)%part,'tail')
+          
           if ( Eq_segs(mus(i)) > 2 ) then
              next = get_c_io_index(mus(i)%Eq_seg(j+1))
              call ts_fix_contour( Eq_io(cur), next=Eq_io(next) )
           end if
-          call consecutive_types(Eq_io(cur),isCircle,isTail, &
+          call consecutive_types(Eq_io(cur),isStart,isTail, &
                mus(i)%mu, mus(i)%kT)
           
           ! we should not check the pole (hence minus 2)
@@ -298,7 +302,7 @@ contains
              next = get_c_io_index(mus(i)%Eq_seg(j+1))
              call ts_fix_contour( Eq_io(cur), &
                   prev=Eq_io(prev), next=Eq_io(next) )
-             call consecutive_types(Eq_io(cur),isCircle,isTail, &
+             call consecutive_types(Eq_io(cur),isStart,isTail, &
                   mus(i)%mu, mus(i)%kT)
           end do
 
@@ -311,7 +315,7 @@ contains
           end if
           
           ! We also check that the circle lies 3 kT below the fermi level
-          call consecutive_types(Eq_io(cur),isCircle,isTail, &
+          call consecutive_types(Eq_io(cur),isStart,isTail, &
                mus(i)%mu, mus(i)%kT)
           
           ! check that the last contour actually lies on the RHS
@@ -383,22 +387,23 @@ contains
 
   contains
     
-    subroutine consecutive_types(c_io,isCircle,isTail,mu,kT)
+    subroutine consecutive_types(c_io,isStart,isTail,mu,kT)
       type(ts_c_io), intent(in) :: c_io
-      logical, intent(inout) :: isCircle, isTail
+      logical, intent(inout) :: isStart, isTail
       real(dp), intent(in) :: mu, kT
 
-      if ( leqi(c_io%part,'circle') .and. .not. isCircle ) then
-         call eq_die('The circle contour must be the first contour type &
-              &as well as connected to other circle contours.')
+      if ( (leqi(c_io%part,'circle') .or. leqi(c_io%part,'square')) &
+           .and. .not. isStart ) then
+         call eq_die('The circle/square contour must be the first contour type &
+              &as well as connected to other circle/square contours.')
       end if
-      isCircle = leqi(c_io%part,'circle')
+      isStart = leqi(c_io%part,'circle') .or. leqi(c_io%part,'square')
 
-      if ( isCircle ) then
+      if ( isStart ) then
          ! We need to check whether the contour lies well below the
          ! chemical potential
          if ( c_io%b > mu - 3._dp * kT ) then
-            call eq_die('The circle contour lies too close or across the &
+            call eq_die('The circle/square contour lies too close or across the &
                  &chemical potential. This is not allowed!')
          end if
       end if
@@ -434,13 +439,19 @@ contains
     call calc_Circle(a,b,mu%N_poles,mu%kT,R,cR,lift)
 
     do i = 1 , Eq_segs(mu)
-       
+
+       ! ensures we progress the contour from start to end
+       ! and not in "random" order
        idx = get_c_io_index(mu%Eq_seg(i))
 
        if ( leqi(Eq_c(idx)%c_io%part,'circle') ) then
 
           call contour_Circle(Eq_c(idx),mu,R,cR)
 
+       else if ( leqi(Eq_c(idx)%c_io%part,'square') ) then
+          
+          call contour_Square(Eq_c(idx),mu, lift, idx == 1)
+          
        else if ( leqi(Eq_c(idx)%c_io%part,'line') ) then
 
           call contour_line(Eq_c(idx),mu,lift)
@@ -510,7 +521,8 @@ contains
       b = Eq_c(idx)%c_io%b
       do i = 1 , Eq_segs(mu)
          idx = get_c_io_index(mu%Eq_seg(i))
-         if ( Eq_c(idx)%c_io%type == 'eq' .and. leqi(Eq_c(idx)%c_io%part, 'circle') ) then
+         if ( Eq_c(idx)%c_io%type == 'eq' .and. &
+              leqi(Eq_c(idx)%c_io%part, 'circle') ) then
             b = Eq_c(idx)%c_io%b
          end if
       end do
@@ -569,7 +581,7 @@ contains
     real(dp), allocatable :: ce(:), cw(:)
 
     if ( .not. leqi(c%c_io%part,'circle') ) &
-         call die('Contour is not a line')
+         call die('Contour is not a circle')
    
     ! notice the switch (the circle has increasing contour
     ! from right to left)
@@ -720,6 +732,197 @@ contains
 
   end subroutine contour_Circle
 
+  subroutine contour_Square(c,mu,lift, first)
+    use m_integrate
+    use m_gauss_quad
+    type(ts_cw), intent(inout) :: c
+    type(ts_mu), intent(in) :: mu
+    real(dp), intent(in) :: lift
+    ! Whether this is the start of the square contour
+    logical, intent(in) :: first
+
+    ! local variables
+    character(len=c_N) :: tmpC
+    logical :: set_c
+    complex(dp) :: ztmp
+    integer :: i, idx
+    real(dp) :: a, b, tmp
+    real(dp), allocatable :: ce(:), cw(:)
+
+    if ( .not. leqi(c%c_io%part,'square') ) &
+         call die('Contour is not a square')
+
+    if ( .not. first ) then
+
+       ! if it is after the initial "climb"
+       ! then transfer to line method
+       c%c_io%part = 'line'
+       call contour_line(c,mu,lift)
+       
+       return
+       
+    end if
+
+    ! If this is the first one the path length is:
+    if ( first ) then
+       a = - lift
+       b = c%c_io%b - c%c_io%a
+    else
+       a = c%c_io%a
+       b = c%c_io%b
+    end if
+
+    allocate(ce(c%c_io%N))
+    allocate(cw(c%c_io%N))
+
+    select case ( method(c%c_io) ) 
+    case ( CC_G_LEGENDRE ) 
+
+       if ( c_io_has_opt(c%c_io,'right') ) then
+          
+          deallocate(ce,cw)
+          allocate(ce(c%c_io%N*2))
+          allocate(cw(c%c_io%N*2))
+
+          call Gauss_Legendre_Rec(2*c%c_io%N,0,2._dp*a-b,b,ce,cw)
+
+          do i = 1 ,c%c_io%N
+             ce(i) = ce(i+c%c_io%N)
+             cw(i) = cw(i+c%c_io%N)
+          end do
+
+       else if ( c_io_has_opt(c%c_io,'left') ) then
+          
+          deallocate(ce,cw)
+          allocate(ce(c%c_io%N*2))
+          allocate(cw(c%c_io%N*2))
+
+          call Gauss_Legendre_Rec(2*c%c_io%N,0,a,2._dp*b-a,ce,cw)
+
+       else
+
+          call Gauss_Legendre_Rec(c%c_io%N,0,a,b,ce,cw)
+
+       end if
+
+    case ( CC_TANH_SINH )
+
+       ! we should also gain an option for this
+       if ( c_io_has_opt(c%c_io,'precision') ) then
+          tmpC = c_io_get_opt(c%c_io,'precision')
+          read(tmpC,'(g20.10)') tmp
+       else
+          tmp = 2.e-2_dp * abs(b-a) / real(c%c_io%N,dp)
+          write(tmpC,'(g20.10)') tmp
+          call c_io_add_opt(c%c_io,'precision',tmpC)
+       end if
+
+       if ( c_io_has_opt(c%c_io,'right') ) then
+          deallocate(ce,cw)
+          allocate(ce(c%c_io%N*2))
+          allocate(cw(c%c_io%N*2))
+
+          call TanhSinh_Exact(c%c_io%N*2,ce,cw,2._dp*a-b,b, p=tmp)
+
+          do i = 1 ,c%c_io%N
+             ce(i) = ce(i+c%c_io%N)
+             cw(i) = cw(i+c%c_io%N)
+          end do
+
+       else if ( c_io_has_opt(c%c_io,'left') ) then
+          
+          deallocate(ce,cw)
+          allocate(ce(c%c_io%N*2))
+          allocate(cw(c%c_io%N*2))
+
+          call TanhSinh_Exact(c%c_io%N*2,ce,cw,a,2._dp*b-a, p=tmp)
+
+       else
+
+          call TanhSinh_Exact(c%c_io%N,ce,cw,a,b, p=tmp)
+
+       end if
+
+    case ( CC_BOOLE_MIX )
+
+       call Booles_Simpson_38_3_rule(c%c_io%N, ce, cw, a, b)
+
+    case ( CC_SIMP_MIX )
+       
+       call Simpson_38_3_rule(c%c_io%N,ce,cw,a,b)
+
+    case ( CC_MID )
+       
+       call Mid_Rule(c%c_io%N,ce,cw,a,b)
+
+    case default
+       call die('Unknown method for the square integral, please correct')
+    end select
+
+    ! I know this is "bad" practice, however, zero is a well-defined quantity in FPU
+    set_c = sum(abs(c%c(:))) == 0._dp
+
+    ! get the index in the ID array (same index in w-array)
+    call ID2idx(c,mu%ID,idx)
+
+    do i = 1 , c%c_io%N
+
+       if ( first ) then
+          ! Convert to parameterisation
+          ztmp = sq_par(a,b,ce(i), c%c_io%a, lift)
+       else
+          ! straight forward, boundaries are "correct"
+          ztmp = dcmplx(ce(i), lift)
+       end if
+
+       if ( set_c ) then
+          c%c(i) = ztmp
+       else
+          if ( abs(c%c(i) - ztmp ) > 1.e-10_dp ) then
+             print *,c%c(i),ztmp
+             call die('contours does not match')
+          end if
+       end if
+
+       ! the parameterisation does not alter the fermi function
+       ! importantly we define the band-bottom to have a vanishing
+       ! fermi function quantity.
+       tmp = (real(ztmp,dp) - mu%mu) / mu%kT
+       !ztmp = (ztmp - mu%mu) / mu%kT
+       c%w(idx,i) = cw(i) * nf(tmp)
+
+    end do
+
+    deallocate(ce,cw)
+
+  contains
+
+    function sq_par(a,b,l,eb,lift) result(val)
+      ! Quadrature path
+      real(dp), intent(in) :: a, b
+      ! current point [a;b]
+      real(dp), intent(in) :: l
+      ! The band-bottom position eb == a
+      ! lift is the imaginary final lift of the square
+      real(dp), intent(in) :: eb, lift
+
+      complex(dp) :: val
+
+      ! The bounds of the quadrature path
+      ! also corresponds to the end points
+      ! Hence the corner lies at 0.
+      if ( l <= 0._dp ) then
+         ! l is [-lift;0] for [0;lift]
+         val = dcmplx( eb, lift + l )
+      else
+         ! l is [0;b-a] with a being band-bottom
+         val = dcmplx( eb + l, lift )
+      end if
+      
+    end function sq_par
+    
+  end subroutine contour_Square
+
   subroutine contour_line(c,mu,Eta)
     use m_integrate
     use m_gauss_quad
@@ -732,6 +935,7 @@ contains
     ! local variables
     character(len=c_N) :: tmpC
     logical :: set_c
+    complex(dp) :: ztmp
     integer :: i, idx
     real(dp) :: a,b, tmp
     real(dp), allocatable :: ce(:), cw(:)
@@ -848,7 +1052,8 @@ contains
           end if
        end if
 
-       c%w(idx,i) = cw(i) * nf((ce(i)-mu%mu)/mu%kT)
+       !ztmp = (c%c(i) - mu%mu) / mu%kT
+       c%w(idx,i) = cw(i) * nf((ce(i) - mu%mu) / mu%kT)
 
     end do
 
