@@ -1,4 +1,23 @@
 ----------------------------------------------------
+January 6, 2016 -- Nick Papior       trunk-482---ts-scf-636
+Update to square contour, still errors in sq-calculations
+
+* Using the explicit square contour does still not work.
+
+  I think the parameterisation has to be split up into
+  specific segments as this reduces the need for
+  weight changes.
+
+* Updated the way the equilibrium contour checks its
+  values.
+  It should still work, but it now allows more combinations
+  of next etc.
+
+modified:
+  Src/m_ts_contour_eq.f90
+  Src/m_ts_io_ctype.f90
+
+----------------------------------------------------
 January 6, 2016 -- Nick Papior       trunk-482---ts-scf-635
 Corrected list inputs so that wrap-arounds for atoms are allowed
 

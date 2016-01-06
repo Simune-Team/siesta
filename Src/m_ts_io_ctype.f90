@@ -60,7 +60,21 @@ module m_ts_io_ctype
   end interface copy
   private :: copy_
 
+  interface operator(.eq.)
+     module procedure equal_
+  end interface 
+  private :: equal_
+
 contains
+
+  function equal_(a,b) result(eq)
+    type(ts_c_io), intent(in) :: a, b
+    logical :: eq
+
+    eq = a%name == b%name
+
+  end function equal_
+
 
   subroutine copy_(from,to)
     type(ts_c_io), intent(in) :: from
@@ -470,7 +484,7 @@ contains
 
     if (.not. ts_c_bisphysical(pline,ind) ) then
        call die('PARSE module: ts_c_bphysical', 'Not enough values and names in line',   &
-            'm_ts_io_contour', -1)
+            'm_ts_io_ctype', -1)
     endif
     
     ! Label with value
@@ -527,7 +541,10 @@ contains
        i = i + 1
        if ( present(before) ) then
           !print *,'Before: ',i,before
-          if ( i >= before ) return
+          if ( i >= before ) then
+             c = adjustl(c)
+             return
+          end if
        end if
          
        ! first we need to figure out if we are dealing with 
@@ -576,7 +593,7 @@ contains
        if ( leqi(g,'prev') .or. &
             leqi(g,'previous') .or. &
             leqi(g,'next') ) then
-          c = trim(g)
+          c = trim(c) // ' ' //trim(g)
 
        else if ( leqi(g,'inf') ) then
           ! note: we have already added sign
@@ -591,6 +608,7 @@ contains
 
           ! you can't add/subtract anything meaningful to
           ! "inf" without getting inf again...
+          c = adjustl(c)
           return
 
        else if ( leqi(g(1:1),'v') .or. leqi(g(1:2),'|v') ) then
@@ -650,6 +668,7 @@ contains
        else
 
           if ( offset > 1 ) then
+             c = adjustl(c)
              return ! we have too many things unrecognizable
           end if
 
@@ -657,6 +676,7 @@ contains
           ! check that we have a physical quantity that can be described...
           if ( .not. ts_c_bisphysical(pline,i-offset) ) then
              !print *,'NOT PHY: ',characters(pline,1,2,after=i-offset)
+             c = adjustl(c)
              return ! if we can't find
           end if
           
@@ -716,6 +736,9 @@ contains
        add = .true.
     end do
 
+    ! be sure to adjustl c
+    c = adjustl(c)
+    
   contains
     
     function remove_pm(s)
@@ -818,6 +841,7 @@ contains
     type(ts_c_io), intent(inout) :: cur
     type(ts_c_io), intent(inout), optional :: next, prev
     logical, intent(out), optional :: connected
+    integer :: same_ref
 
     if ( present(connected) ) connected = .true.
 
@@ -856,35 +880,179 @@ contains
 
     ! Correct if 'b' connects 'a' through prev, or 'a' to 'b' 
     ! through next
+    same_ref = 0
     if ( index(cur%ca,'next') > 0 ) then
        cur%a = cur%a + cur%b
+       same_ref = same_ref + 1
     end if
     if ( index(cur%cb,'prev') > 0 .or. index(cur%cb,'previous') > 0 ) then
        cur%b = cur%b + cur%a
+       same_ref = same_ref + 1
+    end if
+    if ( same_ref > 1 ) then
+       write(*,'(a)') 'Erroneous contour: '//trim(cur%name)
+       call die('The contour segment must not reference it self, &
+            &next to prev is NOT allowed.')
     end if
 
     ! we can compare bounds
-    if ( present(prev) ) then
-       if ( abs(cur%a - prev%b) > 1.e-8_dp ) then
-          if ( present(connected) ) then
-             connected = .false.
-          end if
-       end if
+    if ( present(connected) ) then
+       connected = c_io_conn(cur,prev=prev,next=next)
     end if
     
-    if ( present(next) ) then
-       if ( abs(next%a - cur%b) > 1.e-8_dp ) then
-          if ( present(connected) ) then
-             connected = .false.
-          end if
-       end if
-    end if
-
     ! at this point both boundaries MUST exist
     if ( len_trim(cur%cd) > 0 .and. len_trim(cur%cN) == 0 ) then
        cur%N = nint(abs(cur%b - cur%a)/cur%d)
     end if
          
   end subroutine ts_fix_contour
+
+  function c_io_conn(cur,next,prev) result(conn)
+    type(ts_c_io), intent(inout) :: cur
+    type(ts_c_io), intent(inout), optional :: next, prev
+    logical :: conn
+
+    conn = .true.
+    
+    if ( present(prev) ) then
+       if ( abs(cur%a - prev%b) > 1.e-8_dp ) then
+          conn = .false.
+       end if
+    end if
+    if ( present(next) ) then
+       if ( abs(next%a - cur%b) > 1.e-8_dp ) then
+          conn = .false.
+       end if
+    end if
+    
+    ! We do not allow single points
+    if ( abs(cur%a - cur%b) < 1.e-8_dp ) then
+       conn = .false.
+    end if
+    
+  end function c_io_conn
+
+  subroutine ts_fix_contours(N,c_io,Ni,idx)
+
+    use parallel, only: IONode
+    use units, only : eV
+    
+    integer, intent(in) :: N
+    type(ts_c_io), intent(inout) :: c_io(N)
+    integer, intent(in) :: Ni
+    integer, intent(in) :: idx(Ni)
+
+    integer :: i, start, j
+    integer :: cur, next, prev
+    logical :: done
+
+    if ( Ni == 1 ) then
+       call ts_fix_contour( c_io(idx(1)) )
+       return
+    end if
+    
+    do i = 1 , Ni
+       cur = idx(i)
+       if ( 1 < i .and. i < Ni ) then
+          prev = idx(i-1)
+          next = idx(i+1)
+          call ts_fix_contour( c_io(cur), &
+               prev=c_io(prev), next=c_io(next) )
+       else if ( 1 < i ) then
+          prev = idx(i-1)
+          call ts_fix_contour( c_io(cur), &
+               prev=c_io(prev) )
+       else if ( i < Ni ) then
+          next = idx(i+1)
+          call ts_fix_contour( c_io(cur), &
+               next=c_io(next) )
+       else
+          call die('error')
+       end if
+    end do
+
+    call update_done()
+    
+    if ( .not. done ) then
+
+       ! We try to track next
+       start = 1
+       do while ( start <= Ni )
+
+          i = start
+          do
+             cur = idx(i)
+             if ( index(c_io(cur)%cb,'next') == 0 ) exit
+             i = i + 1
+          end do
+
+          do j = i , start , -1
+             cur = idx(j)
+             ! only track forward (we are following)
+             if ( j < Ni ) then
+                next = idx(j+1)
+                call ts_fix_contour( c_io(cur), &
+                     next=c_io(next) )
+             else if ( 1 < j ) then
+                prev = idx(j-1)
+                call ts_fix_contour( c_io(cur) , &
+                     prev=c_io(prev) )
+             else
+                call ts_fix_contour( c_io(cur) )
+             end if
+             
+          end do
+          
+          start = i + 1
+       end do
+
+    end if
+       
+    call update_done()
+    
+    if ( .not. done ) then
+       if ( IONode ) then
+          ! printing the contour segments
+          do i = 1 , Ni
+             call ts_print_contour_block('ERROR.TS.',c_io(idx(i)))
+          end do
+          do i = 1 , Ni
+             write(*,*)c_io(idx(i))%a/eV,c_io(idx(i))%b/eV
+          end do
+       end if
+       call die('Error in contour continuity.')
+    end if
+
+  contains
+
+    subroutine update_done()
+      
+      ! check connection
+      done = .true.
+
+      cur = idx(1)
+      if ( Ni > 1 ) then
+         next = idx(2)
+         done = done .and. &
+              c_io_conn(c_io(cur), next=c_io(next))
+      end if
+      do i = 2 , Ni - 1
+         prev = idx(i-1)
+         cur  = idx(i)
+         next = idx(i+1)
+         done = done .and. &
+              c_io_conn(c_io(cur), &
+              prev=c_io(prev), next=c_io(next))
+      end do
+      cur = idx(Ni)
+      if ( Ni > 1 ) then
+         prev = idx(Ni-1)
+         done = done .and. &
+              c_io_conn(c_io(cur), prev=c_io(prev))
+      end if
+
+    end subroutine update_done
+    
+  end subroutine ts_fix_contours
   
 end module m_ts_io_ctype

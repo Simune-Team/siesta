@@ -77,7 +77,8 @@ contains
     integer :: N
     character(len=C_N_NAME_LEN), allocatable :: tmp(:), nContours(:)
     character(len=C_N_NAME_LEN) :: tmp_one
-    integer :: cur, next, prev
+    integer :: cur
+    integer, allocatable :: idx(:)
     logical :: isStart, isTail
 
     call fdf_obsolete('TS.ComplexContour.NPoles')
@@ -265,8 +266,7 @@ contains
     ! fix the read-in constants
     do i = 1 , N_mu
 
-       j = 1
-       cur      = get_c_io_index(mus(i)%Eq_seg(j))
+       cur      = get_c_io_index(mus(i)%Eq_seg(1))
        if ( cur == 0 ) then
           call die('A terrible error has occured, please inform the &
                &developers')
@@ -283,40 +283,33 @@ contains
           end if
 
        else
+
+          ! first fix the contours (not the poles)
+          k = Eq_segs(mus(i)) - 1
           
+          allocate(idx(k))
+
+          ! Create index-table
+          do j = 1 , k
+             idx(j) = get_c_io_index(mus(i)%Eq_seg(j))
+          end do
+          
+          ! Fix contours
+          call ts_fix_contours(N_Eq, Eq_io, k, idx)
+
+          deallocate(idx)
+
+          ! Check equilibrium settings
           isStart = leqi(Eq_io(cur)%part,'circle') .or. &
                leqi(Eq_io(cur)%part,'square') 
-          isTail   = leqi(Eq_io(cur)%part,'tail')
-          
-          if ( Eq_segs(mus(i)) > 2 ) then
-             next = get_c_io_index(mus(i)%Eq_seg(j+1))
-             call ts_fix_contour( Eq_io(cur), next=Eq_io(next) )
-          end if
-          call consecutive_types(Eq_io(cur),isStart,isTail, &
-               mus(i)%mu, mus(i)%kT)
-          
-          ! we should not check the pole (hence minus 2)
-          do j = 2 , Eq_segs(mus(i)) - 2
-             prev = get_c_io_index(mus(i)%Eq_seg(j-1))
-             cur  = get_c_io_index(mus(i)%Eq_seg(j  ))
-             next = get_c_io_index(mus(i)%Eq_seg(j+1))
-             call ts_fix_contour( Eq_io(cur), &
-                  prev=Eq_io(prev), next=Eq_io(next) )
+          isTail  = leqi(Eq_io(cur)%part,'tail')
+
+          ! we should not check the pole
+          do j = 1 , k
+             cur  = get_c_io_index(mus(i)%Eq_seg(j))
              call consecutive_types(Eq_io(cur),isStart,isTail, &
                   mus(i)%mu, mus(i)%kT)
           end do
-
-          ! don't check the pole
-          j = Eq_segs(mus(i)) - 1
-          cur = get_c_io_index(mus(i)%Eq_seg(j))
-          if ( Eq_segs(mus(i)) > 2 ) then
-             prev = get_c_io_index(mus(i)%Eq_seg(j-1))
-             call ts_fix_contour( Eq_io(cur), prev=Eq_io(prev) )
-          end if
-          
-          ! We also check that the circle lies 3 kT below the fermi level
-          call consecutive_types(Eq_io(cur),isStart,isTail, &
-               mus(i)%mu, mus(i)%kT)
           
           ! check that the last contour actually lies on the RHS
           ! of the chemical potential, at least 10 kT across!
@@ -327,11 +320,11 @@ contains
                   &'//trim(Name(mus(i)))//' lies too close to the &
                   &chemical potential. It must be at least 10 kT from mu.')
           end if
-
+          
        end if
-
+       
     end do
-
+    
     ! Allocate sizes of the contours
     do i = 1 , N_Eq
        ! number of different weights for each energy-point
@@ -425,8 +418,9 @@ contains
     type(ts_mu), intent(in) :: mu
 
     ! Local variables
-    integer :: i, idx
+    integer :: i, j, l, idx
     real(dp) :: a, b, R, cR, lift
+    integer :: sq_prev, sq_next
 
     if ( Eq_segs(mu) == 0 ) &
          call die('Chemical potential: '//trim(Name(mu))//' has &
@@ -449,8 +443,20 @@ contains
           call contour_Circle(Eq_c(idx),mu,R,cR)
 
        else if ( leqi(Eq_c(idx)%c_io%part,'square') ) then
-          
-          call contour_Square(Eq_c(idx),mu, lift, idx == 1)
+
+          ! find the previous and following square
+          sq_prev = idx
+          sq_next = idx
+          do j = 1 , Eq_segs(mu)
+             l = get_c_io_index(mu%Eq_seg(j))
+             if ( leqi(Eq_c(l)%c_io%part,'square') ) then
+                if ( l == idx - 1 ) sq_prev = l
+                if ( l == idx + 1 ) sq_next = l
+             end if
+          end do
+
+          call contour_Square(Eq_c(idx),mu, lift, idx==1, &
+               Eq_c(sq_prev), Eq_c(sq_next))
           
        else if ( leqi(Eq_c(idx)%c_io%part,'line') ) then
 
@@ -478,7 +484,7 @@ contains
        end if
 
     end do
-    
+
   contains
 
     subroutine calc_Circle(a,b,N_poles,kT,R,cR,lift)
@@ -732,45 +738,62 @@ contains
 
   end subroutine contour_Circle
 
-  subroutine contour_Square(c,mu,lift, first)
+  subroutine contour_Square(c,mu,lift, first, prev, next)
     use m_integrate
     use m_gauss_quad
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
     real(dp), intent(in) :: lift
-    ! Whether this is the start of the square contour
+    ! Whether this is the first square contour (starts from 0)
     logical, intent(in) :: first
+    ! the previous and following square contour
+    type(ts_cw), intent(inout) :: prev, next
 
     ! local variables
     character(len=c_N) :: tmpC
     logical :: set_c
     complex(dp) :: ztmp
     integer :: i, idx
+    ! The previous, current and next imaginary part
+    real(dp) :: im(3)
     real(dp) :: a, b, tmp
     real(dp), allocatable :: ce(:), cw(:)
 
     if ( .not. leqi(c%c_io%part,'square') ) &
          call die('Contour is not a square')
 
-    if ( .not. first ) then
-
-       ! if it is after the initial "climb"
-       ! then transfer to line method
-       c%c_io%part = 'line'
-       call contour_line(c,mu,lift)
-       
-       return
-       
+    if ( first .and. .not. (prev%c_io .eq. c%c_io) ) then
+       call die('Error in setting up square contour.')
     end if
 
-    ! If this is the first one the path length is:
+    ! Create parametrization lengths
     if ( first ) then
-       a = - lift
-       b = c%c_io%b - c%c_io%a
-    else
-       a = c%c_io%a
-       b = c%c_io%b
+       im(1) = 0._dp
+    else 
+       im(1) = read_eta(prev, lift)
     end if
+    im(2) = read_eta(c, lift)
+    if ( next%c_io .eq. c%c_io ) then
+       im(3) = lift
+    else
+       ! this is because the following square
+       ! contour steps up!
+       im(3) = im(2)
+    end if
+
+    if ( im(2) < 0._dp ) then
+       call die("Your square contour crosses the real axis. &
+            &This is not allowed")
+    end if
+    
+    ! Create parametrization
+    a = 0._dp
+    ! first a vertical line to the following imaginary part
+    b = abs(im(2) - im(1))
+    ! step along the current contour
+    b = b + c%c_io%b - c%c_io%a
+    ! correct the vertical step
+    b = b + abs(im(3) - im(2))
 
     allocate(ce(c%c_io%N))
     allocate(cw(c%c_io%N))
@@ -865,15 +888,13 @@ contains
     ! get the index in the ID array (same index in w-array)
     call ID2idx(c,mu%ID,idx)
 
+    a = c%c_io%a
+    b = c%c_io%b
+    
     do i = 1 , c%c_io%N
 
-       if ( first ) then
-          ! Convert to parameterisation
-          ztmp = sq_par(a,b,ce(i), c%c_io%a, lift)
-       else
-          ! straight forward, boundaries are "correct"
-          ztmp = dcmplx(ce(i), lift)
-       end if
+       ! Convert to parameterisation
+       ztmp = sq_par(a,b,ce(i), im)
 
        if ( set_c ) then
           c%c(i) = ztmp
@@ -888,8 +909,8 @@ contains
        ! importantly we define the band-bottom to have a vanishing
        ! fermi function quantity.
        tmp = (real(ztmp,dp) - mu%mu) / mu%kT
-       !ztmp = (ztmp - mu%mu) / mu%kT
-       c%w(idx,i) = cw(i) * nf(tmp)
+       ztmp = (ztmp - mu%mu) / mu%kT
+       c%w(idx,i) = cw(i) * nf(ztmp)
 
     end do
 
@@ -897,29 +918,74 @@ contains
 
   contains
 
-    function sq_par(a,b,l,eb,lift) result(val)
-      ! Quadrature path
+    function sq_par(a,b,l,im) result(val)
+      ! start/end energy (real axis)
       real(dp), intent(in) :: a, b
       ! current point [a;b]
       real(dp), intent(in) :: l
-      ! The band-bottom position eb == a
-      ! lift is the imaginary final lift of the square
-      real(dp), intent(in) :: eb, lift
+      ! imaginary parts
+      real(dp), intent(in) :: im(3)
 
+      real(dp) :: c1, c2
       complex(dp) :: val
 
-      ! The bounds of the quadrature path
-      ! also corresponds to the end points
-      ! Hence the corner lies at 0.
-      if ( l <= 0._dp ) then
-         ! l is [-lift;0] for [0;lift]
-         val = dcmplx( eb, lift + l )
+      c1 = abs(im(2) - im(1))
+      c2 = c1 + b - a
+
+      if ( l <= c1 ) then
+         if ( im(2) >= im(1) ) then
+            ! The quadrature will first make a climb
+            val = dcmplx( a, im(1) + l )
+         else
+            ! The quadrature will first make a decent
+            val = dcmplx( a, im(1) - l )
+         end if
+      else if ( l <= c2 ) then
+         ! The quadrature then will follow
+         ! a straight line
+         val = dcmplx( a + l - c1 , im(2) )
       else
-         ! l is [0;b-a] with a being band-bottom
-         val = dcmplx( eb + l, lift )
+         ! last segment
+         if ( im(3) >= im(2) ) then
+            ! The quadrature then will follow
+            ! a positive vertical line
+            val = dcmplx( b , im(2) + (l - c2) )
+         else 
+            ! The quadrature then will follow
+            ! a negative vertical line (reverse meaning of l)
+            val = dcmplx( b , im(2) - (l - c2) )
+         end if
+         
+      end if
+         
+    end function sq_par
+
+    function read_eta(c, lift) result(eta)
+      use parse, only: parsed_line, digest, destroy
+      type(ts_cw), intent(in) :: c
+      real(dp), intent(in) :: lift
+      real(dp) :: eta
+
+      type(parsed_line), pointer :: pline
+      character(len=c_N) :: tmpC
+      
+      if ( c_io_has_opt(c%c_io,'eta-add') ) then
+         tmpC = c_io_get_opt(c%c_io,'eta-add')
+         pline => digest(tmpC)
+         eta = lift + ts_c_bphysical(pline,0,'Ry')
+         call destroy(pline)
+      else if ( c_io_has_opt(c%c_io,'eta') ) then
+         tmpC = c_io_get_opt(c%c_io,'eta')
+         pline => digest(tmpC)
+         eta = ts_c_bphysical(pline,0,'Ry')
+         call destroy(pline)
+      else
+         ! We default to add 1.5 Ry to the square
+         ! to keep it well of the axis
+         eta = lift + 1.5_dp
       end if
       
-    end function sq_par
+    end function read_eta
     
   end subroutine contour_Square
 
