@@ -1,4 +1,23 @@
 ----------------------------------------------------
+January 9, 2016 -- Nick Papior       trunk-482---ts-scf-638
+Updated SE calculations to reduce final inversions
+
+* The algorithm for expanding self-energies was too
+  complex and now we reduce the computations to a
+  minimum.
+
+  Hence self-energy calculations are now slightly faster
+  and any use of self-energies in the loops is also equivalently
+  faster.
+
+  This have sadly changed the TSGF file.
+
+modified:
+  Src/m_ts_elec_se.F90
+  Src/m_ts_electrode.F90
+  Src/m_ts_gf.F90
+
+----------------------------------------------------
 January 8, 2016 -- Nick Papior       trunk-482---ts-scf-637
 Fixed non-force calculations
 

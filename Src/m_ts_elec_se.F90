@@ -128,16 +128,26 @@ contains
             call die('elec_se-Sig-Bulk: worksize too small. Error')
 #endif
 
-       call update_UC_expansion_A(no_u,no_s,El, &
-            El%na_used,El%lasto_used,nq,GS,nwork,work(1,1))
+       if ( El%no_u /= El%no_used ) then
        
-       call EYE(no_s,Sigma)
+          call update_UC_expansion_A(no_u,no_s,El, &
+               El%na_used,El%lasto_used,nq,GS,nwork,work(1,1))
 
-       ! We have the matrix to invert in the first no_s**2 values.
-       call zgesv(no_s,no_s,work(1,1),no_s,ipvt,Sigma,no_s,ierr)
-       if ( ierr /= 0 ) &
-            write(*,'(a,i0)') 'Inversion of surface Green function failed: ',ierr
-       
+          call EYE(no_s,Sigma)
+          
+          ! We have the matrix to invert in the first no_s**2 values.
+          call zgesv(no_s,no_s,work(1,1),no_s,ipvt,Sigma,no_s,ierr)
+          if ( ierr /= 0 ) &
+               write(*,'(a,i0)') &
+               'Inversion of surface Green function failed: ',ierr
+
+       else
+
+          call update_UC_expansion_A(no_u,no_s,El, &
+               El%na_used,El%lasto_used,nq,GS,no_s*no_s,Sigma)
+          
+       end if
+                 
     end if
 
   end subroutine UC_expansion_Sigma_Bulk
@@ -174,8 +184,9 @@ contains
 #endif
 
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
-         El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
-
+         El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork, &
+         Sigma(1,1),work(1,1,2))
+    
     if ( nq == 1 ) then
 #ifndef TS_NOCHECKS
        if ( no_u /= no_s ) call die('no_E/=no_s')
@@ -184,14 +195,20 @@ contains
        ! When no repetition we save it "as is"
        call zcopy(no_s*no_s,GS(1,1,1),1,Sigma(1,1),1)
 
-    else
-       call EYE(no_s,Sigma)
+    else if ( El%no_u /= El%no_used ) then
 
-       ! We have the matrix to invert in the first no_s**2 values.
-       call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+       ! Invert Sigma only when the electrode size is
+       ! reduced, and not pre-expanded
+
+       call zgetrf(no_s, no_s, Sigma, no_s, ipvt, ierr )
        if ( ierr /= 0 ) &
-            write(*,'(a,i0)') 'Inversion of surface Green function failed: ',ierr
-
+            write(*,'(a,i0)') &
+            'Inversion of surface Green (A) function failed: ',ierr
+       call zgetri(no_s, Sigma, no_s, ipvt, work(1,1,1), no_s**2, ierr)
+       if ( ierr /= 0 ) &
+            write(*,'(a,i0)') &
+            'Inversion of surface Green (B) function failed: ',ierr
+       
     end if
 
     ! Do:
@@ -245,7 +262,8 @@ contains
 #endif
 
     call update_UC_expansion(ZEnergy,no_u,no_s,El, &
-         El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork,work(1,1,1))
+         El%na_used,El%lasto_used,nq,El%HA,El%SA,GS,nwork, &
+         Sigma(1,1), work(1,1,2))
 
     if ( nq == 1 ) then
 #ifndef TS_NOCHECKS
@@ -254,16 +272,21 @@ contains
 
        ! When no repetition we save it "as is"
        call zcopy(no_s*no_s,GS(1,1,1),1,Sigma(1,1),1)
+
+    else if ( El%no_u /= El%no_used ) then
        
-    else
-
-       call EYE(no_s,Sigma)
-
-       ! We have the matrix to invert in the first no_s**2 values.
-       call zgesv(no_s,no_s,work(1,1,1),no_s,ipvt,Sigma,no_s,ierr)
+       ! Invert Sigma only when the electrode size is
+       ! reduced, and not pre-expanded
+       
+       call zgetrf(no_s, no_s, Sigma, no_s, ipvt, ierr )
        if ( ierr /= 0 ) &
-            write(*,'(a,i0)') 'Inversion of surface Green function failed: ',ierr
-
+            write(*,'(a,i0)') &
+            'Inversion of surface Green (A) function failed (G): ',ierr
+       call zgetri(no_s, Sigma, no_s, ipvt, work(1,1,1), no_s**2, ierr)
+       if ( ierr /= 0 ) &
+            write(*,'(a,i0)') &
+            'Inversion of surface Green (B) function failed (G): ',ierr
+       
     end if
 
     ! Get pivoting table for the scattering matrix
@@ -361,7 +384,7 @@ contains
   end subroutine UC_expansion_Sigma_GammaT
 
   subroutine update_UC_expansion(ZEnergy,no_u,no_s,El, &
-       na_u,lasto,nq,H,S,GS,nwork,work)
+       na_u,lasto,nq,H,S,GS,nwork,work1,work2)
     use units, only : Pi
 ! ********************
 ! * INPUT variables  *
@@ -375,7 +398,7 @@ contains
 ! * OUTPUT variables *
 ! ********************
     integer,     intent(in)    :: nwork
-    complex(dp), intent(inout) :: work(no_s,no_s,2)
+    complex(dp), intent(inout) :: work1(no_s,no_s), work2(no_s,no_s)
 ! ********************
 ! * LOCAL variables  *
 ! ********************
@@ -393,18 +416,20 @@ contains
        ! In case the pre-expansion is not done on H, S
        if ( El%pre_expand == 1 .and. product(El%Rep) > 1 ) then
 
+          iq = product(El%Rep)
+
+          ! Note that this is because the interface for H and S
           iow = El%no_used
 !$OMP parallel do default(shared), private(iuo,juo), collapse(2)
           do juo = 1 , iow
              do iuo = 1 , no_s
-                work(iuo,juo,1) = ZEnergy * S(iuo,juo,1) - H(iuo,juo,1)
+                work1(iuo,juo) = ZEnergy * S(iuo,juo,1) - H(iuo,juo,1)
              end do
           end do
 !$OMP end parallel do
 
-          iq = product(El%Rep)
           call update_UC_expansion_A(iow,no_s,El,na_u,lasto,&
-               iq,work(1,1,1),nwork,work(1,1,2))
+               iq,work1(1,1),nwork,work2(1,1))
           
        else
 
@@ -414,8 +439,8 @@ contains
 !$OMP parallel do default(shared), private(iuo,juo), collapse(2)
           do juo = 1 , no_s
              do iuo = 1 , no_s
-               !work(iuo,juo,1) = GS(iuo,juo,1)
-                work(iuo,juo,2) = ZEnergy * S(iuo,juo,1) - H(iuo,juo,1)
+               !work1(iuo,juo,1) = GS(iuo,juo,1)
+                work2(iuo,juo) = ZEnergy * S(iuo,juo,1) - H(iuo,juo,1)
              end do
           end do
 !$OMP end parallel do
@@ -462,9 +487,9 @@ contains
               do juo = 1 + lasto(jau-1) , lasto(jau)
                jow = jow + 1
                 
-               work(jow,iow,1) = p(1) * GS(juo,iuo,1)
+               work1(jow,iow) = p(1) * GS(juo,iuo,1)
                 
-               work(jow,iow,2) = pZ * S(juo,iuo,1) - p(1) * H(juo,iuo,1)
+               work2(jow,iow) = pZ * S(juo,iuo,1) - p(1) * H(juo,iuo,1)
                 
               end do !juo
             end do !ja1
@@ -511,9 +536,9 @@ contains
                do juo = 1 + lasto(jau-1) , lasto(jau)
                   jow = jow + 1
                   
-                  work(jow,iow,1) = work(jow,iow,1) + p(1) * GS(juo,iuo,iq)
+                  work1(jow,iow) = work1(jow,iow) + p(1) * GS(juo,iuo,iq)
    
-                  work(jow,iow,2) = work(jow,iow,2) + &
+                  work2(jow,iow) = work2(jow,iow) + &
                        pZ * S(juo,iuo,iq) - p(1) * H(juo,iuo,iq)
    
                end do !juo

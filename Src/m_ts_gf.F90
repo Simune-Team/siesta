@@ -671,6 +671,7 @@ contains
     character(len=FILE_LEN) :: curGFfile  ! Name of the GF file
 
     integer :: nspin,nkpar,na,no,fReps(3),NEn, pre_expand
+    integer :: na_u, no_u
     real(dp) :: mu ! The Fermi energy shift due to a voltage
     real(dp) :: ucell(3,3)
     logical :: errorGf
@@ -691,9 +692,10 @@ contains
 
        ! read electrode information
        read(funit) nspin, ucell
+       read(funit) na_u, no_u ! total atoms and total orbitals
        read(funit) na, no ! used atoms and used orbitals
        read(funit) ! xa, lasto
-       read(funit) fReps(:),pre_expand
+       read(funit) fReps(:), pre_expand
        read(funit) mu
        ! read contour information
        read(funit) nkpar
@@ -718,9 +720,16 @@ contains
        end if
 
        ! Check # of atoms
+       if (na_u .ne. El%na_u) then
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+          write(*,*) 'read_Green: ERROR: na_u=',na_u,' expected:', El%na_u
+          errorGF = .true.
+       end if
+
+       ! Check # of atoms
        if (na .ne. El%na_used) then
           write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-          write(*,*) 'read_Green: ERROR: na_u=',na,' expected:', El%na_used
+          write(*,*) 'read_Green: ERROR: na=',na,' expected:', El%na_used
           errorGF = .true.
        end if
 
@@ -743,6 +752,13 @@ contains
        if (nspin .ne. El%nspin ) then
           write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: nspin=',nspin,' expected:', El%nspin
+          errorGF = .true.
+       end if
+
+       ! Check # of orbitals
+       if (no_u .ne. El%no_u) then
+          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+          write(*,*) 'read_Green: ERROR: no_u=',no_u,' expected:', El%no_u
           errorGF = .true.
        end if
 
@@ -817,6 +833,7 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     real(dp) :: mu ! The energy shift in the Fermi energy
+    integer :: na_u, no_u ! total atoms and orbitals in unit-cell
     integer :: nspin, na, no, nkpar ! spin, # of atoms, # of orbs, # k-points
     integer :: fReps(3) ! # repetitions in x, # repetitions in y
     real(dp), allocatable :: xa(:,:) ! electrode atomic coordinates
@@ -852,6 +869,7 @@ contains
 
     ! Read in electrode information
     read(funit) nspin, ucell
+    read(funit) na_u,no_u
     read(funit) na,no
     allocate(xa(3,na),lasto(na+1))
     read(funit) xa,lasto
@@ -873,15 +891,27 @@ contains
        write(*,'(3(3(tr1,f10.5),/))') El%cell/Ang
        localErrorGf = .true.
     end if
-    if ( El%na_used /= na ) then
+    if ( El%na_u /= na_u ) then
        write(*,*)"ERROR: Green function file: "//trim(curGFfile)
        write(*,*)"Number of atoms is wrong!"
+       write(*,'(2(a,i2))') "Found: ",na_u,", expected: ",El%na_u
+       localErrorGf = .true.
+    end if
+    if ( El%na_used /= na ) then
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+       write(*,*)"Number of used atoms is wrong!"
        write(*,'(2(a,i2))') "Found: ",na,", expected: ",El%na_used
+       localErrorGf = .true.
+    end if
+    if ( El%no_u /= no_u ) then
+       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+       write(*,*)"Number of orbitals is wrong!"
+       write(*,'(2(a,i2))') "Found: ",no_u,", expected: ",El%no_u
        localErrorGf = .true.
     end if
     if ( El%no_used /= no ) then
        write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of orbitals is wrong!"
+       write(*,*)"Number of used orbitals is wrong!"
        write(*,'(2(a,i2))') "Found: ",no,", expected: ",El%no_used
        localErrorGf = .true.
     end if

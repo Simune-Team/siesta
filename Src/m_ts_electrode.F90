@@ -126,19 +126,29 @@ contains
 !$OMP parallel default(shared), private(i,j,ic,ic2)
 
 ! gb    =   Z*S00-H00
-! alpha = -(Z*S01-H01)
 !$OMP do
     do i = 1 , nosq
        GB(i)    = ZE * S00(i) - H00(i)
+    end do
+!$OMP end do nowait
+! alpha = -(Z*S01-H01)
+!$OMP do
+    do i = 1 , nosq
        alpha(i) = H01(i) - ZE * S01(i)
-
-       ! zero arrays
-       ! We do not start with H00 as we then
-       ! will still need to re-adjust when
-       ! calculating the scattering matrices.
+    end do
+!$OMP end do nowait
+    ! zero arrays
+    ! We do not start with H00 as we then
+    ! will still need to re-adjust when
+    ! calculating the scattering matrices.
+!$OMP do
+    do i = 1 , nosq
        gsL(i) = z_0
+    end do
+!$OMP end do nowait
+!$OMP do
+    do i = 1 , nosq
        gsR(i) = z_0
-
     end do
 !$OMP end do nowait
 
@@ -166,14 +176,26 @@ contains
 
 ! rh = -(Z*S01-H01) ,j<no
 ! rh = -(Z*S10-H10) ,j>no
-!$OMP parallel do default(shared), private(i)
+!$OMP parallel default(shared), private(i)
+       
+!$OMP do
        do i = 1, nosq
-          rh(i)       = alpha(i)
-          rh(nosq+i)  = beta(i)
-          ! w = Z*S00-H00
-          w(i)        = GB(i)
+          rh(i)      = alpha(i)
        end do
-!$OMP end parallel do
+!$OMP end do nowait
+!$OMP do
+       do i = 1, nosq
+          rh(nosq+i) = beta(i)
+       end do
+!$OMP end do nowait
+!$OMP do
+       do i = 1, nosq
+          ! w = Z*S00-H00
+          w(i) = GB(i)
+       end do
+!$OMP end do nowait
+       
+!$OMP end parallel
 
 ! rh =  rh1^(-1)*rh
 ! rh =  t0
@@ -208,12 +230,20 @@ contains
        call zgemm( &
 #endif
             'N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_0,w,no)
-!$OMP parallel do default(shared), private(i)
+!$OMP parallel default(shared), private(i)
+
+!$OMP do
        do i = 1 , nosq
           GB(i)  = GB(i) + w(i)
+       end do
+!$OMP end do nowait
+!$OMP do 
+       do i = 1 , nosq
           gsL(i) = gsL(i) + w(i)
        end do
-!$OMP end parallel do
+!$OMP end do nowait
+       
+!$OMP end parallel
 
 ! ab    = (Z*S01-H01)*t0
 #ifdef USE_GEMM3M
@@ -224,16 +254,24 @@ contains
             'N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
 
        ro = -1._dp
-!$OMP parallel do default(shared), private(i), &
-!$OMP&reduction(max:ro)
+!$OMP parallel default(shared), private(i)
+!$OMP do
        do i = 1 , nosq
           GB(i)  = GB(i) + w(i)
+       end do
+!$OMP end do nowait
+!$OMP do
+       do i = 1 , nosq
           gsR(i) = gsR(i) + w(i)
-
-          ! also update the criteria
+       end do
+!$OMP end do nowait
+!$OMP do reduction(max:ro)
+       do i = 1 , nosq
+          ! update the criteria
           ro = max(ro,abs(w(i)))
        end do
-!$OMP end parallel do
+!$OMP end do nowait
+!$OMP end parallel
        
     end do
 
@@ -350,13 +388,19 @@ contains
 
 
     ! We now calculate the density of states...
-!$OMP parallel do default(shared), private(i) 
+!$OMP parallel default(shared), private(i) 
+!$OMP do
     do i = 1 , nosq
        alpha(i) = H01(i) -        ZE  * S01(i)
+    end do
+!$OMP end do nowait
+!$OMP do
+    do i = 1 , nosq
        ! notice, we utilize the relation (H10-z*S10) = (H01-conjg(z)*S01)^H
        beta(i)  = H01(i) - dconjg(ZE) * S01(i)
     end do
-!$OMP end parallel do
+!$OMP end do nowait
+!$OMP end parallel
 
     ! Transpose GB to make the latter dot product easier
     call transpose(no,GB)
@@ -534,16 +578,23 @@ contains
 !$OMP parallel default(shared), private(i,j,ic,ic2)
 
 ! gb    =   Z*S00-H00
-! alpha = -(Z*S01-H01)
-! gs  = Z*S00-H00
 !$OMP do 
     do i = 1 , nosq
        GB(i)    = ZE * S00(i) - H00(i)
+    end do
+!$OMP end do nowait
+! gs  = gb
+!$OMP do 
+    do i = 1 , nosq
        GS(i)    = GB(i)
+    end do
+!$OMP end do nowait
+! alpha = -(Z*S01-H01)
+!$OMP do 
+    do i = 1 , nosq
        alpha(i) = H01(i) - ZE * S01(i)
     end do
 !$OMP end do nowait
-
 ! beta = -(Z*S10-H10)
 !$OMP do
     do j = 1 , no
@@ -567,16 +618,26 @@ contains
             iterations = iterations + 1
 
 
+!$OMP parallel default(shared), private(i)
 ! rh = -(Z*S01-H01) ,j<no
-! rh = -(Z*S10-H10) ,j>no
-!$OMP parallel do default(shared), private(i)
+!$OMP do
        do i = 1, nosq
           rh(i)      = alpha(i)
+       end do
+!$OMP end do nowait
+! rh = -(Z*S10-H10) ,j>no
+!$OMP do
+       do i = 1, nosq
           rh(nosq+i) = beta(i)
+       end do
+!$OMP end do nowait
+!$OMP do
+       do i = 1, nosq
           ! w = Z*S00-H00
           w(i)       = GB(i)
        end do
-!$OMP end parallel do
+!$OMP end do nowait
+!$OMP end parallel
 
 ! rh =  rh1^(-1)*rh
 ! rh =  t0
@@ -622,16 +683,24 @@ contains
             'N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
 
        ro = -1._dp
-!$OMP parallel do default(shared), private(i), &
-!$OMP&reduction(max:ro)
+!$OMP parallel default(shared), private(i)
+!$OMP do
        do i = 1 , nosq
           GB(i) = GB(i) + w(i)
+       end do
+!$OMP end do nowait
+!$OMP do
+       do i = 1 , nosq
           GS(i) = GS(i) + w(i)
-
-          ! also do the accuracy calculation
+       end do
+!$OMP end do nowait
+!$OMP do reduction(max:ro)
+       do i = 1 , nosq
+          ! update the criteria
           ro = max(ro,abs(w(i)))
        end do
-!$OMP end parallel do
+!$OMP end do nowait
+!$OMP end parallel
 
     end do
 
@@ -780,7 +849,7 @@ contains
     integer :: i, j, io, jo, off
 
     logical :: CalcDOS, CalcT, pre_expand
-    logical :: is_left, Gq_allocated, final_invert
+    logical :: is_left, Gq_allocated, reduce_size
 
 #ifdef MPI
     integer :: MPIerror, curNode
@@ -816,7 +885,7 @@ contains
     nq     = product(El%Rep)
     wq     = 1._dp / real(nq,dp)
     ! We also need to invert to get the contribution in the
-    final_invert = nq /= 1 .or. nuo_E /= nuou_E
+    reduce_size = nuo_E /= nuou_E
     no_X = nuou_E * nq
     n_X  = no_X ** 2
     pre_expand = El%pre_expand > 0 .and. nq > 1
@@ -948,9 +1017,10 @@ contains
 
        ! Electrode information
        write(uGF) El%nspin, El%cell
-       write(uGF) El%na_used,El%no_used
+       write(uGF) El%na_u, El%no_u
+       write(uGF) El%na_used, El%no_used
        write(uGF) El%xa_used, El%lasto_used
-       write(uGF) El%Rep(:),El%pre_expand
+       write(uGF) El%Rep(:), El%pre_expand
        write(uGF) El%mu%mu
 
        ! Write out explicit information about this content
@@ -1051,7 +1121,7 @@ contains
                nuo_E, H00,S00,H01,S01)
 
           i = (iqpt-1)*nuS
-          if ( nuo_E /= nuou_E ) then
+          if ( reduce_size ) then
              if( is_left ) then
                 ! Left, we use the last orbitals
                 off = nuo_E - nuou_E + 1
@@ -1078,7 +1148,7 @@ contains
        
        if ( IONode ) then
           write(uGF) ikpt, 1, ce(1) ! k-point and energy point
-          if ( nuo_E /= nuou_E ) then
+          if ( reduce_size ) then
              if ( pre_expand .and. El%pre_expand > 1 ) then
                 call update_UC_expansion_A(nuou_E,no_X,El, &
                      El%na_used,El%lasto_used,nq,Hq,n_X,X)
@@ -1140,7 +1210,7 @@ contains
                    lDOS = 0._dp
                    call SSR_sGreen_DOS(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
                         lDOS,i_mean,9*nS,zwork, &
-                        iterations=iters(iqpt,iEn,ikpt,1), final_invert = final_invert)
+                        iterations=iters(iqpt,iEn,ikpt,1), final_invert = reduce_size)
                    
                    ! We also average the k-points.
                    DOS(:,iEn,ispin) = DOS(:,iEn,ispin) + lDOS * wq * kweight(ikpt)
@@ -1149,13 +1219,13 @@ contains
                 else
                    call SSR_sGreen_NoDos(nuo_E,ZEnergy,H00,S00,H01,S01,GS, &
                         8*nS,zwork, &
-                        iterations=iters(iqpt,iEn,ikpt,1), final_invert = final_invert)
+                        iterations=iters(iqpt,iEn,ikpt,1), final_invert = reduce_size)
                    
                 end if
                   
                 ! Copy over surface Green function
                 i = (iqpt-1)*nuS
-                if ( nS /= nuS ) then
+                if ( reduce_size ) then
                    if ( is_left ) then
                       ! Left, we use the last orbitals
                       off = nuo_E - nuou_E + 1
@@ -1194,13 +1264,15 @@ contains
                 ! Expand this energy-point
                 call update_UC_expansion_A(nuou_E,no_X,El, &
                      El%na_used,El%lasto_used,nq,Gq,n_X,X)
-                call mat_invert(X(1:n_X),zwork(1:n_X),&
-                     no_X, &
-                     MI_IN_PLACE_LAPACK)
+                if ( reduce_size ) then
+                   call mat_invert(X(1:n_X),zwork(1:n_X),&
+                        no_X, &
+                        MI_IN_PLACE_LAPACK)
+                end if
              end if
                 
 
-             if (IONode) then
+             if ( IONode ) then
                 ! Write out calculated information at E point
 
                 if ( iEn /= 1 ) write(uGF) ikpt, iEn, ce(iEn)
@@ -1631,7 +1703,7 @@ contains
     integer :: size_req(2)
     ! Counters
     integer :: i, ios, ioe, off, n_s
-    logical :: is_left, final_invert
+    logical :: is_left, reduce_size
     logical :: zHS_allocated
     logical :: same_k, calc_DOS, same_GS
 
@@ -1654,7 +1726,7 @@ contains
     ! create expansion q-points (weight of q-points)
     nq     = product(El%Rep)
     ! We also need to invert to get the contribution in the
-    final_invert = nq /= 1 .or. nuo_E /= nuou_E
+    reduce_size = nuo_E /= nuou_E
     nuouT_E = TotUsedOrbs(El)
 
     if ( calc_DOS ) then
@@ -1798,12 +1870,12 @@ contains
        if ( calc_DOS ) then
           call SSR_sGreen_DOS(nuo_E,Z,H00,S00,H01,S01,GS, &
                DOS(1:nuo_E), T, &
-               nw,zwork, &
-               final_invert = final_invert)
+               nw, zwork, &
+               final_invert = reduce_size)
        else
           call SSR_sGreen_NoDOS(nuo_E,Z,H00,S00,H01,S01,GS, &
-               nw,zwork, &
-               final_invert = final_invert)
+               nw, zwork, &
+               final_invert = reduce_size)
        end if
 
        if ( .not. same_GS ) then
@@ -1814,11 +1886,10 @@ contains
 
        ! we need to invert back as we don't need to
        ! expand. And the algorithm expects it to be in correct format
-       if ( nq == 1 .and. nuo_E /= nuou_E ) then
+       if ( nq == 1 .and. reduce_size ) then
           call mat_invert(El%GA(ios:ioe),zwork(1:nuS),&
                nuou_E, &
                MI_IN_PLACE_LAPACK)
-             
        end if
 
        ! correct indices of Gamma-array
