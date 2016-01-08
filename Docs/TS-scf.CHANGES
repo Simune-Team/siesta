@@ -1,4 +1,13 @@
 ----------------------------------------------------
+January 8, 2016 -- Nick Papior       trunk-482---ts-scf-637
+Fixed non-force calculations
+
+* I forgot to wrap EDM in hasEDM in m_ts_weight
+
+modified:
+  Src/m_ts_weight.F90
+
+----------------------------------------------------
 January 6, 2016 -- Nick Papior       trunk-482---ts-scf-636
 Update to square contour, still errors in sq-calculations
 

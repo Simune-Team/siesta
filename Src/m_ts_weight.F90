@@ -522,16 +522,18 @@ contains
                 if ( abs(tmp) > abs(ee) ) ee = tmp
 
                 ! Energy density matrix
-                tmp = EDM(ind,mu_i) - EDM(ind,mu_j)
-                Em_err = Em_err + tmp
-                if ( abs(tmp) > abs(Eee) ) Eee = tmp
+                if ( hasEDM ) then
+                     tmp = EDM(ind,mu_i) - EDM(ind,mu_j)
+                     Em_err = Em_err + tmp
+                    if ( abs(tmp) > abs(Eee) ) Eee = tmp
+                end if
 
              end do
           end do
           
           ! Store for later estimation of the "final" error
           e_f  = DM(ind,1)
-          Ee_f = EDM(ind,1)
+          if ( hasEDM ) Ee_f = EDM(ind,1)
           
           DM(ind,1) = w(1) * DM(ind,1)
           if ( hasEDM ) EDM(ind,1) = w(1) * EDM(ind,1)
@@ -543,12 +545,14 @@ contains
 
           ! Calculate error from estimated density
           e_f  = e_f  - DM(ind,1)
-          Ee_f = Ee_f - EDM(ind,1)
+          if ( hasEDM ) Ee_f = Ee_f - EDM(ind,1)
           do mu_i = 2 , N_mu
              tmp = DM(ind,mu_i) - DM(ind,1)
              if ( abs(tmp) > abs(e_f) ) e_f = tmp
-             tmp = EDM(ind,mu_i) - EDM(ind,1)
-             if ( abs(tmp) > abs(Ee_f) ) Ee_f = tmp
+             if ( hasEDM ) then
+                  tmp = EDM(ind,mu_i) - EDM(ind,1)
+                  if ( abs(tmp) > abs(Ee_f) ) Ee_f = tmp
+             end if
           end do
           
           if ( abs(ee) > abs(eM) ) then
@@ -565,6 +569,7 @@ contains
           end if
 !$OMP end critical
           end if
+          if ( hasEDM ) then
           if ( abs(Eee) > abs(EeM) ) then
 !$OMP critical
           if ( abs(Eee) > abs(EeM) ) then
@@ -576,6 +581,7 @@ contains
              Eew   = Ee_f
           end if
 !$OMP end critical
+          end if
           end if
 
        end do
@@ -721,8 +727,10 @@ contains
 
     call print_error_estimate(IONode,'ts-err-D:', &
          eM,ew,eM_i,eM_j,DMe,m_err)
-    call print_error_estimate(IONode,'ts-err-E:', &
-         EeM,Eew,EeM_i,EeM_j,EDMe,Em_err)
+    if ( hasEDM ) then
+         call print_error_estimate(IONode,'ts-err-E:', &
+              EeM,Eew,EeM_i,EeM_j,EDMe,Em_err)
+    end if
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS weightDM' )
