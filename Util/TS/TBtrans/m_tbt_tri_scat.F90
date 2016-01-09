@@ -1036,7 +1036,7 @@ contains
 
 
 #ifdef NCDF_4
-  subroutine orb_current(spH,A_tri,r,orb_J)
+  subroutine orb_current(spH,A_tri,r,orb_J,pvt)
 
     use class_Sparsity
     use class_zSpData1D
@@ -1048,16 +1048,18 @@ contains
     ! The region that specifies the size of orb_J
     type(tRgn), intent(in) :: r
     type(dSpData1D), intent(inout) :: orb_J
+    ! The pivoting region that transfers r%r(iu) to io
+    type(tRgn), intent(in) :: pvt
 
     type(Sparsity), pointer :: i_sp
     integer, pointer :: i_ncol(:), i_ptr(:), i_col(:)
     type(Sparsity), pointer :: sp
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), lcol(:)
 
     complex(dp), pointer :: H(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
-    integer :: iu, io, ind, iind, idx, ju, jo
+    integer :: iu, io, i, ind, iind, idx, ju, jo
 
 #ifdef TBTRANS_TIMING
     call timer('orb-current',1)
@@ -1075,7 +1077,8 @@ contains
 
     A => val(A_tri)
 
-!$OMP parallel do default(shared), private(iu,io,ju,jo,iind,ind,idx)
+!$OMP parallel do default(shared), &
+!$OMP&private(iu,io,ju,jo,i,iind,ind,idx,lcol)
     do iu = 1, r%n
        io = r%r(iu)
 
@@ -1084,41 +1087,46 @@ contains
             &for at least one row')
 #endif
 
-       ! Loop on entries here...
-       do ju = 1 , r%n
-          ! We search the transposed sparse J matrix as 
-          ! nnzs(H) > nnzs(J), always.
-          ! J(iind) = J(jo,io)
-          jo = r%r(ju)
-          iind = SFIND(i_col(i_ptr(jo)+1:i_ptr(jo)+i_ncol(jo)),io)
-          if ( iind == 0 ) cycle
-          iind = i_ptr(jo) + iind
+       ! Get lookup columns for the Hamiltonian
+       lcol => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
+
+       ! Index in sparsity pattern
+       iind = i_ptr(io)
+
+       ! Loop on bond current entries here...
+       do i = 1 , i_ncol(io)
+
+          ! Index in sparsity pattern
+          iind = iind + 1
+
+          ! J(iind) = J(io,jo)
+          jo = i_col(iind)
 
           ! Check if the orbital exists in the region
           ! We are dealing with a UC sparsity pattern.
           ! this wil ALWAYS be non-zero, note that 
           ! the device region is a subset of the full sparsity
           ! pattern
-          ind = l_ptr(io) + &
-               SFIND(l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io)),jo)
+          ind = l_ptr(io) + SFIND(lcol,jo)
 
+          ! Notice that H is transposed
           ! H(ind) = H(io,jo) ^ * = H(jo,io)
 
-          ! Notice that H and S are transposed
+          ! Get spectral function indices
+          ju = pvt%r(jo) ! pivoted orbital index
           jo  = index(A_tri,iu,ju)
           idx = index(A_tri,ju,iu)
 
-          ! Jji = - Im(Hji A_ij - Hji^* A_ji)
-          ! I think we need a factor 1/2, but as the units
-          ! are more or less never used, I refrain from
-          ! dividing by two!
-          ! Currently we calculate it using the intrinsic
-          ! overlap matrix, however bond-currents are 
-          ! not well defined for non-orthogonal basis sets.
-          ! We should not shift the Hamiltonian with respect 
+          ! We skip the pre-factors as the units are never used
+          
+          ! Currently the bond-currents are calculated
+          ! regardless of the non-orthogonality! YES WE KNOW !
+          ! However, we should not shift the Hamiltonian with respect 
           ! to the overlap matrix.
           ! This can easily be seen using the Loewdin basis.
-          J(iind) = - aimag( H(ind) * A(jo) - dconjg( H(ind) ) * A(idx) )
+          
+          ! Jij = Im(A_ij Hji - A_ji Hji^* )
+          J(iind) = aimag( A(jo) * H(ind) - A(idx) * dconjg( H(ind) ) )
           
        end do
     end do

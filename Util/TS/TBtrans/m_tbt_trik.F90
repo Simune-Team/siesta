@@ -1064,7 +1064,7 @@ contains
 #ifdef NCDF_4
                 if ( 'orb-current' .in. save_DATA ) then
 
-                   call orb_current(spH,zwork_tri,r_oDev,orb_J)
+                   call orb_current(spH,zwork_tri,r_oDev,orb_J,pvt)
 
                 end if
 #endif
@@ -1255,7 +1255,7 @@ contains
 #ifdef NCDF_4
                if ( 'proj-orb-current' .in. save_DATA ) then
 
-                  call orb_current(spH,zwork_tri,r_oDev,orb_J)
+                  call orb_current(spH,zwork_tri,r_oDev,orb_J,pvt)
 
                   ! We need to save it immediately, we
                   ! do not want to have several arrays in the

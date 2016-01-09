@@ -1,4 +1,19 @@
 ----------------------------------------------------
+January 9, 2016 -- Nick Papior       trunk-482---ts-scf-639
+Made bond-current calculation slightly faster
+
+* There was no need to do a transpose calculation of the
+  bond current.
+
+  Furthermore as we have introduced the pivoting region
+  we can use that to greatly speedup large bond-current
+  calculations.
+
+modified:
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 January 9, 2016 -- Nick Papior       trunk-482---ts-scf-638
 Updated SE calculations to reduce final inversions
 
