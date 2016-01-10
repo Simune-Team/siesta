@@ -77,7 +77,7 @@ contains
 
     type(Sparsity), pointer :: sp
     complex(dp), pointer :: S(:), Gf(:), Mnn(:), XY(:)
-    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
 
@@ -136,16 +136,17 @@ contains
 
           end if
 
-!$OMP parallel do default(shared), private(j,ii,jo,ind,i)
+!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol)
           do j = 1 , no_o
              ii = (j-1) * no_i
              jo = r%r(off2+j)
+             lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
              ! get the equivalent one in the
              ! overlap matrix
              ! REMEMBER, S is transposed!
              ! Hence we do not need conjg :)
              do i = 1 , no_i
-                ind = SFIND(l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo)),r%r(off1+i))
+                ind = SFIND(lcol,r%r(off1+i))
                 if ( ind == 0 ) cycle
                 ind = l_ptr(jo) + ind
                 DOS(off2+j) = DOS(off2+j) - dimag( Gf(ii+i) * S(ind) )
@@ -316,17 +317,18 @@ contains
 
           end if
 
-!$OMP parallel do default(shared), private(j,ii,jo,ind,i,ip,im,iD)
+!$OMP parallel do default(shared), private(j,ii,jo,ind,i,ip,im,iD,lcol)
           do j = 1 , step_o
              ii = (j-1) * no_i
              iD = off2 + j
              jo = r%r(iD)
+             lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
              ! get the equivalent one in the
              ! overlap matrix
              ! REMEMBER, S is transposed!
              ! Hence we do not need conjg :)
              do i = 1 , no_i
-                ind = SFIND(l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo)),r%r(off1+i))
+                ind = SFIND(lcol,r%r(off1+i))
                 if ( ind == 0 ) cycle
                 ind = l_ptr(jo) + ind
                 DOS(iD) = DOS(iD) - dimag( Gf(ii+i) * S(ind) )
@@ -385,7 +387,7 @@ contains
 
     type(Sparsity), pointer :: sp
     complex(dp), pointer :: S(:), A(:)
-    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
     integer :: off1, off2, n, in
     integer :: jo, ii, i, j, no_o, no_i, ind, np
 
@@ -422,16 +424,17 @@ contains
              off1 = off2
           end if
 
-!$OMP parallel do default(shared), private(j,ii,jo,ind,i)
+!$OMP parallel do default(shared), private(j,ii,jo,ind,i,lcol)
           do j = 1 , no_o
              ii = (j-1) * no_i
              jo = r%r(off2+j)
+             lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
              ! get the equivalent one in the
              ! overlap matrix
              ! REMEMBER, S is transposed!
              ! Hence we are doing it correctly
              do i = 1 , no_i
-                ind = SFIND(l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo)),r%r(off1+i))
+                ind = SFIND(lcol,r%r(off1+i))
                 if ( ind == 0 ) cycle
                 ind = l_ptr(jo) + ind
                 DOS(off2+j) = DOS(off2+j) + dreal( A(ii+i) * S(ind) )
@@ -1036,14 +1039,17 @@ contains
 
 
 #ifdef NCDF_4
-  subroutine orb_current(spH,A_tri,r,orb_J,pvt)
+  subroutine orb_current(spH,spS,cE,A_tri,r,orb_J,pvt)
 
     use class_Sparsity
     use class_zSpData1D
     use class_dSpData1D
     use intrinsic_missing, only : SFIND
 
-    type(zSpData1D), intent(inout) :: spH
+    use m_ts_cctype, only: ts_c_idx
+
+    type(zSpData1D), intent(inout) :: spH, spS
+    type(ts_c_idx) :: cE
     type(zTriMat), intent(inout) :: A_tri
     ! The region that specifies the size of orb_J
     type(tRgn), intent(in) :: r
@@ -1056,17 +1062,23 @@ contains
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), lcol(:)
 
-    complex(dp), pointer :: H(:)
+    complex(dp), pointer :: H(:), S(:)
     complex(dp), pointer :: A(:)
+    complex(dp) :: Hi
     real(dp), pointer :: J(:)
-    integer :: iu, io, i, ind, iind, idx, ju, jo
+    real(dp) :: E
+    integer :: iu, io, i, ind, iind, ju, jo
 
 #ifdef TBTRANS_TIMING
     call timer('orb-current',1)
 #endif
 
+    ! Retrieve energy
+    E = real(cE%e,dp)
+
     sp => spar(spH)
     H  => val (spH)
+    S  => val (spS)
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     i_sp => spar(orb_J)
@@ -1078,7 +1090,7 @@ contains
     A => val(A_tri)
 
 !$OMP parallel do default(shared), &
-!$OMP&private(iu,io,ju,jo,i,iind,ind,idx,lcol)
+!$OMP&private(iu,io,ju,jo,i,iind,ind,Hi,lcol)
     do iu = 1, r%n
        io = r%r(iu)
 
@@ -1109,13 +1121,22 @@ contains
           ! pattern
           ind = l_ptr(io) + SFIND(lcol,jo)
 
+          ! Get H for the current index
+#ifdef TBT_ORB_CURRENT_NO_S
+          Hi = H(ind)
+#else
+          ! We may take the conjugate later as
+          ! E is a real quantity
+          Hi = H(ind) - S(ind) * E
+#endif
+
           ! Notice that H is transposed
           ! H(ind) = H(io,jo) ^ * = H(jo,io)
 
           ! Get spectral function indices
-          ju = pvt%r(jo) ! pivoted orbital index
-          jo  = index(A_tri,iu,ju)
-          idx = index(A_tri,ju,iu)
+          ju  = pvt%r(jo) ! pivoted orbital index
+          ind = index(A_tri,iu,ju)
+          jo  = index(A_tri,ju,iu)
 
           ! We skip the pre-factors as the units are never used
           
@@ -1125,8 +1146,8 @@ contains
           ! to the overlap matrix.
           ! This can easily be seen using the Loewdin basis.
           
-          ! Jij = Im(A_ij Hji - A_ji Hji^* )
-          J(iind) = aimag( A(jo) * H(ind) - A(idx) * dconjg( H(ind) ) )
+          ! Jij = Im( A_ij Hji - A_ji Hji^* )
+          J(iind) = aimag( A(ind) * Hi - A(jo) * dconjg( Hi ) )
           
        end do
     end do

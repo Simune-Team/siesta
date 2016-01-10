@@ -1,4 +1,24 @@
 ----------------------------------------------------
+January 10, 2016 -- Nick Papior       trunk-482---ts-scf-640
+Inserted H - S E for bond currents
+
+* Bond currents are now calculated with shifting the
+  Hamiltonian.
+
+  To compile with the overlap shift do:
+     make
+        Hi = H - S E
+  if you do not want shifting the overlap matrix you
+  need to add this pre-processor flag:
+      -DTBT_ORB_CURRENT_NO_S
+  and then it will be:
+        Hi = H
+
+modified:
+  Util/TS/TBtrans/m_tbt_tri_scat.F90
+  Util/TS/TBtrans/m_tbt_trik.F90
+
+----------------------------------------------------
 January 9, 2016 -- Nick Papior       trunk-482---ts-scf-639
 Made bond-current calculation slightly faster
 

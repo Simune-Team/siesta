@@ -629,7 +629,7 @@ contains
        call newdSpData1D(sp_dev,fdist,orb_J,name='TBT orb_J')
        ! Initialize to 0, it will be overwritten for all
        ! values, so there is no need to initialize it
-       ! in the orb_current routine
+       ! in the orb_current routine (neither here actually)
        call init_val(orb_J)
     end if
 #endif
@@ -1064,8 +1064,12 @@ contains
 #ifdef NCDF_4
                 if ( 'orb-current' .in. save_DATA ) then
 
-                   call orb_current(spH,zwork_tri,r_oDev,orb_J,pvt)
-
+#ifdef TBT_PHONON
+                   call orb_current(spH,spS,cOmega,zwork_tri,r_oDev,orb_J,pvt)
+#else
+                   call orb_current(spH,spS,cE,zwork_tri,r_oDev,orb_J,pvt)
+#endif
+                   
                 end if
 #endif
              end if
@@ -1255,7 +1259,11 @@ contains
 #ifdef NCDF_4
                if ( 'proj-orb-current' .in. save_DATA ) then
 
-                  call orb_current(spH,zwork_tri,r_oDev,orb_J,pvt)
+#ifdef TBT_PHONON
+                  call orb_current(spH,spS,cOmega,zwork_tri,r_oDev,orb_J,pvt)
+#else
+                  call orb_current(spH,spS,cE,zwork_tri,r_oDev,orb_J,pvt)
+#endif
 
                   ! We need to save it immediately, we
                   ! do not want to have several arrays in the
