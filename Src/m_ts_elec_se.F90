@@ -464,7 +464,7 @@ contains
        qPi = cdexp(dcmplx(0._dp,rPi(1)))
 
 ! Create the single execution for creating tasks
-!$OMP master ! (firstprivate requires master node)
+!$OMP single
        iow = 0
        do iau = 1 , na_u
         do ia3 = 1 , El%Rep(3)
@@ -503,17 +503,14 @@ contains
         end do !ia3
        end do !iau
 
-!$OMP end master
-
-       ! Ensure all rPi and qPi have been used
-!$OMP taskwait
+!$OMP end single ! keep implicit barrier (rPi,qPi)
 
        do iq = 2 , nq
 
         rPi = 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
         qPi = cdexp(dcmplx(0._dp,rPi(1)))
 
-!$OMP master
+!$OMP single
 
         iow = 0
         do iau = 1 , na_u
@@ -553,10 +550,7 @@ contains
          end do !ia3
         end do !iau
 
-!$OMP end master
-
-        ! Ensure all rPi and qPi have been used
-!$OMP taskwait
+!$OMP end single ! keep implicit barrier (rPi,qPi)
 
        end do !q-points
 
@@ -612,7 +606,7 @@ contains
        qPi = cdexp(dcmplx(0._dp,rPi(1)))
 
 ! Create the single execution for creating tasks
-!$OMP master ! firstprivate requires master
+!$OMP single
        iow = 0
        do iau = 1 , na_u
         do ia3 = 1 , El%Rep(3)
@@ -647,17 +641,14 @@ contains
         end do !ia3
        end do !iau
 
-!$OMP end master
-
-       ! Ensure all rPi and qPi have been used
-!$OMP taskwait
+!$OMP end single ! keep implicit barrier (rPi,qPi)
 
        do iq = 2 , nq
 
         rPi = 2._dp * Pi * (q_exp(El,iq) + El%bkpt_cur)
         qPi = cdexp(dcmplx(0._dp,rPi(1)))
 
-!$OMP master
+!$OMP single
 
         iow = 0
         do iau = 1 , na_u
@@ -693,11 +684,8 @@ contains
          end do !ia3
         end do !iau
 
-!$OMP end master
+!$OMP end single ! keep implicit barrier (rPi,qPi)
 
-        ! Ensure all rPi and qPi have been used
-!$OMP taskwait
-        
        end do !q-points
 
 !$OMP end parallel

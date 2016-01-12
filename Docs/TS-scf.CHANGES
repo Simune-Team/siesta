@@ -1,4 +1,18 @@
 ----------------------------------------------------
+January 12, 2016 -- Nick Papior       trunk-482---ts-scf-641
+ts_elec_se: Changed omp master to omp single
+
+* single is better suited for the m_ts_elec_se
+  expansion.
+
+  Besides the firstprivate has another meaning for
+  task constructs.
+
+modified:
+  Src/m_new_dm.F90
+  Src/m_ts_elec_se.F90
+
+----------------------------------------------------
 January 10, 2016 -- Nick Papior       trunk-482---ts-scf-640
 Inserted H - S E for bond currents
 
