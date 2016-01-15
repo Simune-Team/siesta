@@ -455,7 +455,7 @@ contains
              end if
           end do
 
-          call contour_Square(Eq_c(idx),mu, lift, idx==1, &
+          call contour_Square(Eq_c(idx),mu, lift, i==1, &
                Eq_c(sq_prev), Eq_c(sq_next))
           
        else if ( leqi(Eq_c(idx)%c_io%part,'line') ) then
@@ -752,11 +752,14 @@ contains
     ! local variables
     character(len=c_N) :: tmpC
     logical :: set_c
-    complex(dp) :: ztmp
-    integer :: i, idx
+    complex(dp) :: ztmp(2)
+    ! Segments
+    integer :: N_seg, Ni(3)
+    real(dp) :: li(3)
+    integer :: i, j, idx
     ! The previous, current and next imaginary part
     real(dp) :: im(3)
-    real(dp) :: a, b, tmp
+    real(dp) :: a, b
     real(dp), allocatable :: ce(:), cw(:)
 
     if ( .not. leqi(c%c_io%part,'square') ) &
@@ -765,6 +768,15 @@ contains
     if ( first .and. .not. (prev%c_io .eq. c%c_io) ) then
        call die('Error in setting up square contour.')
     end if
+
+    ! We need to split the square quadrature up into different parts
+    ! Specifically this is a requirement as the Gaussian quadratures
+    ! does not have an equi spaced distance between abscissas.
+    ! Thus when climbing/descending on the complex contour we find different
+    ! prefactors which is sub-optimal.
+
+    ! Thus we figure out the number of segments and divide it into those
+    ! partitions
 
     ! Create parametrization lengths
     if ( first ) then
@@ -775,191 +787,208 @@ contains
     im(2) = read_eta(c, lift)
     if ( next%c_io .eq. c%c_io ) then
        im(3) = lift
+       N_seg = 3
     else
        ! this is because the following square
        ! contour steps up!
        im(3) = im(2)
+       N_seg = 2
     end if
 
     if ( im(2) < 0._dp ) then
+       print *,'final imaginary part: ',im(2)
        call die("Your square contour crosses the real axis. &
             &This is not allowed")
     end if
-    
-    ! Create parametrization
-    a = 0._dp
-    ! first a vertical line to the following imaginary part
-    b = abs(im(2) - im(1))
-    ! step along the current contour
-    b = b + c%c_io%b - c%c_io%a
-    ! correct the vertical step
-    b = b + abs(im(3) - im(2))
 
+    ! Allocate total weights
     allocate(ce(c%c_io%N))
     allocate(cw(c%c_io%N))
-
-    select case ( method(c%c_io) ) 
-    case ( CC_G_LEGENDRE ) 
-
-       if ( c_io_has_opt(c%c_io,'right') ) then
-          
-          deallocate(ce,cw)
-          allocate(ce(c%c_io%N*2))
-          allocate(cw(c%c_io%N*2))
-
-          call Gauss_Legendre_Rec(2*c%c_io%N,0,2._dp*a-b,b,ce,cw)
-
-          do i = 1 ,c%c_io%N
-             ce(i) = ce(i+c%c_io%N)
-             cw(i) = cw(i+c%c_io%N)
-          end do
-
-       else if ( c_io_has_opt(c%c_io,'left') ) then
-          
-          deallocate(ce,cw)
-          allocate(ce(c%c_io%N*2))
-          allocate(cw(c%c_io%N*2))
-
-          call Gauss_Legendre_Rec(2*c%c_io%N,0,a,2._dp*b-a,ce,cw)
-
-       else
-
-          call Gauss_Legendre_Rec(c%c_io%N,0,a,b,ce,cw)
-
-       end if
-
-    case ( CC_TANH_SINH )
-
-       ! we should also gain an option for this
-       if ( c_io_has_opt(c%c_io,'precision') ) then
-          tmpC = c_io_get_opt(c%c_io,'precision')
-          read(tmpC,'(g20.10)') tmp
-       else
-          tmp = 2.e-2_dp * abs(b-a) / real(c%c_io%N,dp)
-          write(tmpC,'(g20.10)') tmp
-          call c_io_add_opt(c%c_io,'precision',tmpC)
-       end if
-
-       if ( c_io_has_opt(c%c_io,'right') ) then
-          deallocate(ce,cw)
-          allocate(ce(c%c_io%N*2))
-          allocate(cw(c%c_io%N*2))
-
-          call TanhSinh_Exact(c%c_io%N*2,ce,cw,2._dp*a-b,b, p=tmp)
-
-          do i = 1 ,c%c_io%N
-             ce(i) = ce(i+c%c_io%N)
-             cw(i) = cw(i+c%c_io%N)
-          end do
-
-       else if ( c_io_has_opt(c%c_io,'left') ) then
-          
-          deallocate(ce,cw)
-          allocate(ce(c%c_io%N*2))
-          allocate(cw(c%c_io%N*2))
-
-          call TanhSinh_Exact(c%c_io%N*2,ce,cw,a,2._dp*b-a, p=tmp)
-
-       else
-
-          call TanhSinh_Exact(c%c_io%N,ce,cw,a,b, p=tmp)
-
-       end if
-
-    case ( CC_BOOLE_MIX )
-
-       call Booles_Simpson_38_3_rule(c%c_io%N, ce, cw, a, b)
-
-    case ( CC_SIMP_MIX )
-       
-       call Simpson_38_3_rule(c%c_io%N,ce,cw,a,b)
-
-    case ( CC_MID )
-       
-       call Mid_Rule(c%c_io%N,ce,cw,a,b)
-
-    case default
-       call die('Unknown method for the square integral, please correct')
-    end select
-
     ! I know this is "bad" practice, however, zero is a well-defined quantity in FPU
     set_c = sum(abs(c%c(:))) == 0._dp
-
-    ! get the index in the ID array (same index in w-array)
     call ID2idx(c,mu%ID,idx)
 
+    ! the real axis start/end
     a = c%c_io%a
     b = c%c_io%b
-    
-    do i = 1 , c%c_io%N
 
-       ! Convert to parameterisation
-       ztmp = sq_par(a,b,ce(i), im)
+    ! Now 'N_seg' contains number of segments
+    !  dL1 = abs(im(2) - im(1))
+    li(1) = im(2) - im(1)
+    !  dL2 = b - a
+    li(2) = b - a
+    !  dL3 = abs(im(3) - im(2)) ! which may be zero...
+    li(3) = im(3) - im(2)
 
-       if ( set_c ) then
-          c%c(i) = ztmp
-       else
-          if ( abs(c%c(i) - ztmp ) > 1.e-10_dp ) then
-             print *,c%c(i),ztmp
-             call die('contours does not match')
-          end if
-       end if
+    ! Ensure enough points for remaining lines
+    Ni = 2
+    call n_distribute(c%c_io%N, N_seg, li, Ni)
+    if ( any(Ni < 2) ) then
+       call die('Could not divide contour points appropriately. &
+            Choose a different contour method or increase contour points.')
+    end if
 
-       ! the parameterisation does not alter the fermi function
-       ! importantly we define the band-bottom to have a vanishing
-       ! fermi function quantity.
-       tmp = (real(ztmp,dp) - mu%mu) / mu%kT
-       ztmp = (ztmp - mu%mu) / mu%kT
-       c%w(idx,i) = cw(i) * nf(ztmp)
-
+    ! Get first segment
+    call get_abscissas(Ni(1),0._dp,li(1), ce(1), cw(1))
+    ! translate to correct contours
+    do i = 1 , Ni(1)
+       ztmp(1) = dcmplx( a, im(1) + ce(i) )
+       ztmp(2) = dcmplx( 0._dp , 1._dp ) * cw(i)
+       call set_abscissas(c%c(i),c%w(idx,i), ztmp)
     end do
+
+    ! Get first segment
+    call get_abscissas(Ni(2),0._dp,li(2), ce(1), cw(1))
+    ! translate to correct contours
+    j = Ni(1)
+    do i = 1 , Ni(2)
+       ! Convert to parameterisation
+       ztmp(1) = dcmplx( a + ce(i) , im(2) )
+       ztmp(2) = dcmplx( 1._dp , 0._dp ) * cw(i)
+       call set_abscissas(c%c(j+i),c%w(idx,j+i), ztmp)
+    end do
+    
+    if ( N_seg == 3 ) then
+       ! Get first segment
+       call get_abscissas(Ni(3),0._dp,li(3), ce(1), cw(1))
+       ! translate to correct contours
+       j = Ni(1) + Ni(2)
+       do i = 1 , Ni(3)
+          ztmp(1) = dcmplx( b, im(2) + ce(i) )
+          ztmp(2) = dcmplx( 0._dp , 1._dp ) * cw(i)
+          call set_abscissas(c%c(j+i),c%w(idx,j+i), ztmp)
+       end do
+    end if
 
     deallocate(ce,cw)
 
   contains
 
-    function sq_par(a,b,l,im) result(val)
-      ! start/end energy (real axis)
+    subroutine get_abscissas(N,a,b,ce,cw)
+      integer, intent(in) :: N
       real(dp), intent(in) :: a, b
-      ! current point [a;b]
-      real(dp), intent(in) :: l
-      ! imaginary parts
-      real(dp), intent(in) :: im(3)
+      real(dp), intent(inout) :: ce(N), cw(N)
+      real(dp), allocatable :: tce(:), tcw(:)
+      real(dp) :: tmp
 
-      real(dp) :: c1, c2
-      complex(dp) :: val
+      select case ( method(c%c_io) ) 
+      case ( CC_G_LEGENDRE ) 
+         
+         if ( c_io_has_opt(c%c_io,'right') ) then
+            
+            allocate(tce(N*2),tcw(N*2))
+            
+            call Gauss_Legendre_Rec(2*N,0,2._dp*a-b,b,tce,tcw)
+            
+            do i = 1 ,N
+               ce(i) = tce(i+N)
+               cw(i) = tcw(i+N)
+            end do
 
-      c1 = abs(im(2) - im(1))
-      c2 = c1 + b - a
+            deallocate(tce,tcw)
+            
+         else if ( c_io_has_opt(c%c_io,'left') ) then
+            
+            allocate(tce(N*2),tcw(N*2))
+            
+            call Gauss_Legendre_Rec(2*N,0,a,2._dp*b-a,tce,tcw)
 
-      if ( l <= c1 ) then
-         if ( im(2) >= im(1) ) then
-            ! The quadrature will first make a climb
-            val = dcmplx( a, im(1) + l )
+            do i = 1 ,N
+               ce(i) = tce(i)
+               cw(i) = tcw(i)
+            end do
+
+            deallocate(tce,tcw)
+            
          else
-            ! The quadrature will first make a decent
-            val = dcmplx( a, im(1) - l )
-         end if
-      else if ( l <= c2 ) then
-         ! The quadrature then will follow
-         ! a straight line
-         val = dcmplx( a + l - c1 , im(2) )
-      else
-         ! last segment
-         if ( im(3) >= im(2) ) then
-            ! The quadrature then will follow
-            ! a positive vertical line
-            val = dcmplx( b , im(2) + (l - c2) )
-         else 
-            ! The quadrature then will follow
-            ! a negative vertical line (reverse meaning of l)
-            val = dcmplx( b , im(2) - (l - c2) )
-         end if
-         
-      end if
-         
-    end function sq_par
+            
+            call Gauss_Legendre_Rec(N,0,a,b,ce,cw)
 
+         end if
+         
+      case ( CC_TANH_SINH )
+
+         ! we should also gain an option for this
+         if ( c_io_has_opt(c%c_io,'precision') ) then
+            tmpC = c_io_get_opt(c%c_io,'precision')
+            read(tmpC,'(g20.10)') tmp
+         else
+            tmp = 2.e-2_dp * abs(b-a) / real(N,dp)
+            write(tmpC,'(g20.10)') tmp
+            call c_io_add_opt(c%c_io,'precision',tmpC)
+         end if
+
+         if ( c_io_has_opt(c%c_io,'right') ) then
+
+            allocate(tce(N*2),tcw(N*2))
+
+            call TanhSinh_Exact(N*2,tce,tcw,2._dp*a-b,b, p=tmp)
+            
+            do i = 1 ,N
+               ce(i) = tce(i+N)
+               cw(i) = tcw(i+N)
+            end do
+
+         else if ( c_io_has_opt(c%c_io,'left') ) then
+
+            allocate(tce(N*2),tcw(N*2))
+
+            call TanhSinh_Exact(N*2,tce,tcw,a,2._dp*b-a, p=tmp)
+
+            do i = 1 ,N
+               ce(i) = tce(i)
+               cw(i) = tcw(i)
+            end do
+
+            deallocate(tce,tcw)
+
+         else
+
+            call TanhSinh_Exact(N,ce,cw,a,b, p=tmp)
+
+         end if
+
+      case ( CC_BOOLE_MIX )
+       
+         call Booles_Simpson_38_3_rule(N, ce, cw, a, b)
+
+      case ( CC_SIMP_MIX )
+
+         call Simpson_38_3_rule(N,ce,cw,a,b)
+
+      case ( CC_MID )
+
+         call Mid_Rule(N,ce,cw,a,b)
+
+      case default
+         call die('Unknown method for the square integral, please correct')
+      end select
+
+    end subroutine get_abscissas
+
+    subroutine set_abscissas(e,w,ztmp)
+      complex(dp), intent(inout) :: e, w
+      complex(dp), intent(inout) :: ztmp(2)
+      real(dp) :: tmp
+      
+      if ( set_c ) then
+         e = ztmp(1)
+      else
+         if ( abs(e - ztmp(1) ) > 1.e-10_dp ) then
+            print *,e,ztmp(1)
+            call die('contours does not match')
+         end if
+      end if
+      
+      ! the parameterisation does not alter the fermi function
+      ! importantly we define the band-bottom to have a vanishing
+      ! fermi function quantity.
+      tmp = (real(ztmp(1),dp) - mu%mu) / mu%kT
+      ztmp(1) = (ztmp(1) - mu%mu) / mu%kT
+      w = nf(ztmp(1)) * ztmp(2)
+      
+    end subroutine set_abscissas
+    
     function read_eta(c, lift) result(eta)
       use parse, only: parsed_line, digest, destroy
       type(ts_cw), intent(in) :: c
@@ -968,7 +997,7 @@ contains
 
       type(parsed_line), pointer :: pline
       character(len=c_N) :: tmpC
-      
+
       if ( c_io_has_opt(c%c_io,'eta-add') ) then
          tmpC = c_io_get_opt(c%c_io,'eta-add')
          pline => digest(tmpC)
@@ -984,11 +1013,11 @@ contains
          ! to keep it well of the axis
          eta = lift + 1.5_dp
       end if
-      
+
     end function read_eta
     
   end subroutine contour_Square
-
+  
   subroutine contour_line(c,mu,Eta)
     use m_integrate
     use m_gauss_quad
@@ -1001,7 +1030,6 @@ contains
     ! local variables
     character(len=c_N) :: tmpC
     logical :: set_c
-    complex(dp) :: ztmp
     integer :: i, idx
     real(dp) :: a,b, tmp
     real(dp), allocatable :: ce(:), cw(:)

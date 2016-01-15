@@ -1,4 +1,32 @@
 ----------------------------------------------------
+January 15, 2016 -- Nick Papior       trunk-482---ts-scf-642
+Fixed square contours, finally!
+
+* The square contours are now working.
+  When the parameterisation is on one needs a
+  factor i when going "up" and -i when going "down".
+
+  Currently the square method is dividing the square into
+  3 lines as one must not have any quadratures passing
+  the corners.
+
+  It does seem to work really nicely now!
+
+* To help I have added a routine in m_integrate called
+  n_distribute which distributes N points on any number
+  of segments where the lengths are also provided.
+
+  It works for any N segments while the division algorithm
+  is very simple it works.
+
+  This is useful when creating the correct number of
+  quadrature points on the square with 3 segments.
+
+modified:
+  Src/m_integrate.f90
+  Src/m_ts_contour_eq.f90
+
+----------------------------------------------------
 January 12, 2016 -- Nick Papior       trunk-482---ts-scf-641
 ts_elec_se: Changed omp master to omp single
 

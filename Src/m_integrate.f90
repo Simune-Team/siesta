@@ -381,6 +381,59 @@ contains
 
   end subroutine Trapez_2
 
+  ! Distribute 'N' points on segments composed
+  ! of:
+  !   len(1) -- len(2)
+  !   len(2) -- len(3)
+  !    ....
+  ! Do this so that each segment is as evenly distributed
+  ! if there are not enough points to have one on each segment
+  ! a zero will be returned for all segments.
+  subroutine n_distribute(N,N_seg,len,Ni)
+    ! Total number of points
+    integer, intent(in) :: N
+    ! Number of segments
+    integer, intent(in) :: N_seg
+    ! Length specifications of each segment
+    real(dp), intent(in) :: len(N_seg+1)
+    ! Number of returned segments
+    integer, intent(out) :: Ni(N_seg)
+
+    real(dp) :: tot
+    integer :: i
+
+    ! Ensure that there are at least one point per
+    ! segment
+    if ( N < N_seg ) then
+       Ni = 0
+       return
+    end if
+
+    ! first initialize
+    tot = 0._dp
+    do i = 1 , N_seg
+       tot = tot + abs(len(i+1) - len(i))
+    end do
+
+    ! Estimate initial distribution
+    do i = 1 , N_seg
+       Ni(i) = nint(abs(len(i+1) - len(i)) / tot)
+    end do
+
+    ! Even out the number of points
+
+    do while ( sum(Ni) > N )
+       i = maxloc(Ni,1)
+       Ni(i) = Ni(i) - 1
+    end do
+    
+    do while ( sum(Ni) < N )
+       i = minloc(Ni,1)
+       Ni(i) = Ni(i) + 1
+    end do
+    
+  end subroutine n_distribute
+
 end module m_integrate
     
     
