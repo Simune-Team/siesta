@@ -141,7 +141,7 @@ contains
     integer :: n_broy, n_broy_orig
     real(dp) :: w_broy, w_broy_p
     integer :: n_pulay, n_pulay_orig
-    real(dp) :: w_pulay, w_pulay_damp
+    real(dp) :: w_pulay, w_pulay_damp, svd_pulay_cond
 
     type(tMixer), pointer :: m
     integer :: nm, im, im2
@@ -168,7 +168,7 @@ contains
     n_kick = 0
     n_pulay_orig = fdf_get('DM.NumberPulay',2)
     n_broy_orig  = fdf_get('DM.NumberBroyden',0)
-
+    svd_pulay_cond = 1.e-8_dp
     
     ! Set standard mixing algorithm
     if ( n_broy_orig > 0 ) then
@@ -187,7 +187,9 @@ contains
        w_kick = fdf_get('DM.KickMixingWeight',w_kick)
        w_pulay = w
        w_pulay_damp = w
+       svd_pulay_cond = fdf_get('SCF.Pulay.RcondSVD',1.e-8_dp)
     end if
+    
 
     ! Retrieve default method for mixing and its variant
     method  = fdf_get(trim(lp)//'Mix',method)
@@ -229,7 +231,10 @@ contains
     else
        w_pulay_damp = fdf_get(trim(lp)//'Mix.Pulay.Damping',w_pulay)
     end if
-           
+    ! Condition number for SVD
+    svd_pulay_cond = fdf_get(trim(lp)//'Mix.Pulay.SVD.Cond',svd_pulay_cond)
+
+    
     ! Update default Broyden options
     n_broy   = fdf_get(trim(lp)//'Mix.Broyden.History',n_hist)
     w_broy   = fdf_get(trim(lp)//'Mix.Broyden.Weight',w)
@@ -415,11 +420,20 @@ contains
               leqi(str,'kresse') .or. leqi(str,'stable') ) then
             ! stable version, will nearly always succeed on inversion
             v = 0
+         else if ( leqi(str,'original+svd') .or. &
+              leqi(str,'kresse+svd') .or. leqi(str,'stable+svd') ) then
+            ! stable version, will nearly always succeed on inversion
+            v = 2
          else if ( leqi(str,'gr') .or. &
               leqi(str,'guarenteed-reduction') .or. &
               leqi(str,'bowler-gillan') ) then
             ! Guarenteed reduction version
             v = 1
+         else if ( leqi(str,'gr+svd') .or. &
+              leqi(str,'guarenteed-reduction+svd') .or. &
+              leqi(str,'bowler-gillan+svd') ) then
+            ! Guarenteed reduction version
+            v = 3
          end if
       case ( MIX_BROYDEN )
          v = 0
@@ -485,7 +499,7 @@ contains
                  leqi(opt,'alpha') .or. leqi(opt,'w') ) then
                
                m%w = fdf_breals(pline,1)
-               
+
             end if
 
          end do
@@ -501,7 +515,7 @@ contains
          m%n_hist = n_pulay
          m%w = w_pulay_damp
 
-         allocate(m%rv(-1:1))
+         allocate(m%rv(-1:2))
          m%rv(1) = w_pulay
          
          ! This is the restart parameter
@@ -509,6 +523,7 @@ contains
          ! only works for positive rp
          m%rv(-1) = huge(1._dp)
          m%rv(0) = -1._dp
+         m%rv(2) = svd_pulay_cond
 
       case ( MIX_BROYDEN )
 
@@ -575,6 +590,10 @@ contains
 
                m%restart_save = fdf_bintegers(pline,1)
                m%restart_save = max(0,m%restart_save)
+
+            else if ( leqi(opt,'svd.cond') ) then
+
+               m%rv(2) = fdf_bvalues(pline,1)
             
             end if
 
@@ -616,7 +635,7 @@ contains
          m%n_hist = m%restart + 1
       end if
 
-      if ( m%m == MIX_PULAY .and. m%v == 1 ) then
+      if ( m%m == MIX_PULAY .and. any(m%v == (/1,3/)) ) then
          ! Ensure the restart is an even number
          ! for the Guarenteed reduction.
          ! This ensures correct handling of the F calculations
@@ -713,6 +732,10 @@ contains
              write(*,'(2a)') trim(debug_msg),' Pulay'
           case ( 1 )
              write(*,'(2a)') trim(debug_msg),' Pulay, GR'
+          case ( 2 )
+             write(*,'(2a)') trim(debug_msg),' Pulay-SVD'
+          case ( 3 )
+             write(*,'(2a)') trim(debug_msg),' Pulay-SVD, GR'
           end select
        end if
 
@@ -875,7 +898,7 @@ contains
        init_itt = 0
        mix => mix%next
        if ( mix%m == MIX_PULAY ) then
-          if ( mix%v /= 1 ) init_itt = 1
+          if ( any(mix%v == (/0,2/)) ) init_itt = 1
        end if
        if ( mix%m == MIX_BROYDEN ) init_itt = 1
        mix%cur_itt = init_itt
@@ -902,7 +925,6 @@ contains
     type(tMixer), pointer :: next
     real(dp), pointer :: tmp1(:), tmp2(:)
     real(dp) :: alpha
-    integer :: in
 
     info = 0
 
@@ -910,7 +932,7 @@ contains
 
        ! If the following uses history, add that information
        ! to the history.
-       if ( next%v /= 1 ) then
+       if ( any(next%v == (/0,2/)) ) then
           call update_F(next%stack(1),n,F1)
 !$OMP parallel workshare default(shared)
           x2 = x1 + F1
@@ -1029,7 +1051,7 @@ contains
 
 
     select case ( mix%v ) 
-    case ( 0 ) ! stable pulay mixing
+    case ( 0 , 2 ) ! stable pulay mixing
 
        ! Add the residual to the stack
        call push_F(mix%stack(1), n, F1)
@@ -1074,7 +1096,7 @@ contains
        oF = x1 + F1
 !$OMP end parallel workshare
        
-    case ( 1 ) ! Guaranteed reduction Pulay
+    case ( 1 , 3 ) ! Guaranteed reduction Pulay
 
        ! Add the residual to the stack
        call push_F(mix%stack(1), n, F1, mix%rv(1))
@@ -1144,30 +1166,10 @@ contains
     ! Deallocate local arrays
     deallocate(alpha,b,bi)
 
-    if ( info /= 0 ) then ! failed inversion, goto linear...
-
-       if ( IONode ) &
-            write(*,'(2a)') trim(debug_msg), &
-            ' Pulay -- failed, > linear'
-
-       if ( mix%v == 1 ) then
-          ! The residual already has the scaling
-          res => getstackval(mix,1)
-!$OMP parallel workshare default(shared)
-          x2 = x1 + res
-!$OMP end parallel workshare
-       else
-!$OMP parallel workshare default(shared)
-          x2 = x1 + F1 * mix%rv(1)
-!$OMP end parallel workshare
-       end if
-
-    end if
-
     ! For the Guaranteed Reduction method we need to 
     ! update the history...
     select case ( mix%v )
-    case ( 1 )
+    case ( 1 , 3 )
 
        ! In the subsequent iteration we
        ! do not need Res[i], as we have to update the Res with the
@@ -1267,16 +1269,27 @@ contains
       res => getstackval(mix,1)
 
       ! Get inverse of matrix
-      call inverse(nh, b, bi, info)
+      select case ( mix%v )
+      case ( 0 , 1 )
+         call inverse(nh, b, bi, info)
+      case ( 2 , 3 )
+         ! forcefully start the svd routine
+         info = 1
+      end select
+         
       if ( info /= 0 ) then
+
+         ! only inform if we should not use SVD per default
+         if ( IONode .and. any(mix%v==(/0,1/)) ) &
+              write(*,'(2a)') trim(debug_msg), &
+              ' Pulay -- inversion failed, > SVD'
+
+         ! We will first try the SVD routine
+         call svd(nh, b, bi, mix%rv(2), info)
          
-         ! return immediately, the algorithm
-         ! will try the stable one, then the linear one
-         
-         return
-         
-      else ! inversion succeeded
-         
+      end if
+
+      if ( info == 0 ) then
          do i = 1 , nh
             
             ! Calculate the coefficients on all processors
@@ -1302,8 +1315,19 @@ contains
               mix%Comm,MPIerror)
          alpha(:) = b(:,1)
 #endif
+      else
+
+         info = 0
+         
+         ! reset to linear mixing
+         write(*,'(2a)') trim(debug_msg), &
+              ' Pulay -- inversion failed, SVD failed, > linear'
+         
+         alpha = 0._dp
+         alpha(nh) = 1._dp
+         
       end if
-      
+   
       ! if debugging print out the different variables
       if ( debug_mix ) then
          write(*,'(2a,2(f10.6,a),100(tr1,e10.4))') &
@@ -1348,7 +1372,7 @@ contains
     integer, intent(out) :: info
 
     ! Temporary arrays for local data structures
-    real(dp), dimension(:), pointer :: rres, rres1, rres2
+    real(dp), dimension(:), pointer :: rres, rres1
     real(dp), dimension(:), pointer :: tmp1, tmp2, Jres
 
     integer :: is, ns, nm
@@ -1742,7 +1766,7 @@ contains
           call new(m%stack(1), m%n_hist)
           ! allocate Res[i+1] - Res[i], Pulay
           call new(m%stack(2), m%n_hist-1)
-          if ( m%v == 0 ) then
+          if ( any(m%v == (/0,2/)) ) then
              ! The out of the latest iteration
              call new(m%stack(3), 1)
           end if
@@ -1836,6 +1860,12 @@ contains
           else if ( m%v == 1 ) then
              write(*,'(2a,t50,''= '',a)') trim(fmt), &
                   '    Variant','GR'
+          else if ( m%v == 2 ) then
+             write(*,'(2a,t50,''= '',a)') trim(fmt), &
+                  '    Variant','stable-SVD'
+          else if ( m%v == 3 ) then
+             write(*,'(2a,t50,''= '',a)') trim(fmt), &
+                  '    Variant','GR-SVD'
           end if
 
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
@@ -1844,6 +1874,8 @@ contains
                '    Linear mixing weight',m%rv(1)
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
                '    Damping',m%w
+          write(*,'(2a,t50,''= '',e10.4)') trim(fmt), &
+               '    SVD condition',m%rv(2)
           if ( m%rv(0) > 0._dp ) then
              write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
                   '    Restart parameter',m%rv(0)
@@ -1934,38 +1966,132 @@ contains
 
     end if
 
-    ! Copy over to that we can check the accuracy afterwards
-    B = A
+    call lapack_inv()
+    if ( info /= 0 ) call simple_inv()
 
-    call dgetrf(n,n,B,n,ipiv,info)
-    if ( info /= 0 ) return
+  contains
 
-    call dgetri(n,B,n,ipiv,work,n*4,info)
-    if ( info /= 0 ) return
+    subroutine lapack_inv()
 
-    ! Check correcteness
-    pm = matmul(A,B)
+      B = A
 
-    do j = 1 , n 
-       do i = 1 , n
-          if ( i == j ) then
-             err = pm(i,j) - 1._dp
-          else
-             err = pm(i,j)
-          end if
+      call dgetrf(n,n,B,n,ipiv,info)
+      if ( info /= 0 ) return
+      
+      call dgetri(n,B,n,ipiv,work,n*4,info)
+      if ( info /= 0 ) return
 
-          ! This is pretty strict tolerance!
-          if ( abs(err) > etol ) then
-             ! Signal failure in inversion
-             info = - n - 1
-             return
-          end if
+      ! This sets info appropriately
+      call check_inv()
+      
+    end subroutine lapack_inv
+    
+    subroutine simple_inv()
+      
+      real(dp) :: x
+      integer :: k
+      
+      ! Copy over A
+      B = A
+      
+      do i = 1 , n
+         if ( B(i,i) == 0._dp ) then
+            info = -n
+            return
+         end if
+         
+         x = 1._dp / B(i,i)
+         B(i,i) = 1._dp
+         do j = 1 , n
+            B(j,i) = B(j,i) * x
+         end do
 
-       end do
-    end do
+         do k = 1 , n
+            if ( (k-i) /= 0 ) then
+               x = B(i,k)
+               B(i,k) = 0._dp
+               do j = 1 , n
+                  B(j,k) = B(j,k) - B(j,i) * x
+               end do
+            end if
+         end do
+      end do
 
+      ! This sets info appropriately
+      call check_inv()
+
+    end subroutine simple_inv
+
+    subroutine check_inv()
+      
+      ! Check correcteness
+      pm = matmul(A,B)
+      
+      do j = 1 , n 
+         do i = 1 , n
+            if ( i == j ) then
+               err = pm(i,j) - 1._dp
+            else
+               err = pm(i,j)
+            end if
+
+            ! This is pretty strict tolerance!
+            if ( abs(err) > etol ) then
+               ! Signal failure in inversion
+               info = - n - 1
+               return
+            end if
+            
+         end do
+      end do
+      
+    end subroutine check_inv
+    
   end subroutine inverse
 
+
+  ! Calculate the svd of a matrix
+  ! With   ||(Ax - b)|| <<
+  subroutine svd(n, A, B, cond, info )
+
+    integer, intent(in) :: n
+    real(dp), intent(in)  :: A(n,n)
+    real(dp), intent(out) :: B(n,n)
+    real(dp), intent(in) :: cond
+    integer, intent(out) :: info
+
+    ! Local arrays
+    integer :: rank, i
+    character(len=50) :: fmt
+    real(dp) :: AA(n,n), S(n), work(n*5)
+
+    ! Copy A matrix
+    AA = A
+    ! setup pseudo inverse solution for minimizing
+    ! constraints
+    B = 0._dp
+    do i = 1 , n
+       B(i,i) = 1._dp
+    end do
+    call dgelss(n,n,n,AA,n,B,n,S,cond,rank,work,n*5,info)
+    
+    ! if debugging print out the different variables
+    if ( debug_mix ) then
+       ! also mark the rank
+       
+       if ( rank == n ) then
+          ! complete rank
+          write(*,'(2a,100(tr1,e10.4))') &
+               trim(debug_msg),' SVD singular = ',S
+       else
+          ! this prints the location of the SVD rank, if not full
+          write(fmt,'(i0,2a)') rank, '(tr1,e10.4),'' >'',100(tr1,e10.4)'
+          write(*,'(2a,'//trim(fmt)//')') &
+               trim(debug_msg),' SVD singular = ',S
+       end if
+    end if
+    
+  end subroutine svd
 
   ! Stack handling routines
 

@@ -1,4 +1,30 @@
 ----------------------------------------------------
+January 21, 2016 -- Nick Papior       trunk-482---ts-scf-643
+Enabled SVD fallback for pulay mixing
+
+* When the inverse calculation fails we now use
+  SVD as a fallback.
+  
+  Luckily SVD is more robust in finding the appropriate
+  pseudo inverse and is thus optimal.
+  Perhaps we should just always use SVD?
+
+  Well, for large pulay mixing histories doing the
+  inverse first is not any overhead that is noticed.
+
+  In order to selectively _only_ do SVD calculation
+  of the pseudo inverse one can add +svd after any
+  pulay mixing variant.
+
+  Only in the case of SVD failing, for some reason,
+  will linear mixing be used.
+  This should be much more stable!
+
+modified:
+  Src/Makefile
+  Src/m_mixing.F90
+
+----------------------------------------------------
 January 15, 2016 -- Nick Papior       trunk-482---ts-scf-642
 Fixed square contours, finally!
 
