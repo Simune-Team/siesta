@@ -18,7 +18,9 @@ default: linalg.a
 ARCH_MAKE?=../arch.make
 include $(ARCH_MAKE)
 #
-ALL_OBJS= lapack.o dc_lapack.o zgesv_lapack.o zgeev_lapack.o blas.o machine.o
+ALL_OBJS= lapack.o dc_lapack.o zgesv_lapack.o zgeev_lapack.o\
+          svd_omm_lapack.o blas.o machine.o
+#
 # Add machine.o here only if needed...
 DC_OBJS=  dc_lapack.o   # machine.o
 # Used in TranSIESTA

@@ -85,9 +85,15 @@ $(FDF):
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 #
-gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS)
+# Simple hack to link to any compiled lapack/blas code
+#
+link_linalg:
+	[ -f ../../$(OBJDIR)/$(COMP_LIBS) ] && ln -sf ../../$(OBJDIR)/$(COMP_LIBS) .
+
+#
+gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS) link_linalg
 	$(FC) -o gen-basis \
-	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) $(NETCDF_LIBS) $(LIBS)
+	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) $(NETCDF_LIBS) $(COMP_LIBS) $(LIBS)
 #
 ioncat:  $(FDF) $(IONCAT_OBJS)
 	$(FC) -o ioncat \
@@ -97,10 +103,9 @@ clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f gen-basis ioncat *.o  *.a
 	rm -f *.mod
-	(mkdir -p fdf; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	rmdir fdf
-	(mkdir -p SiestaXC; cd SiestaXC ; $(MAKE) -f $(XC_MAKEFILE) "ARCH_MAKE=../$(ARCH_MAKE)" clean)
-	rmdir SiestaXC
+	rm -rf fdf
+	rm -rf SiestaXC
+	rm -f _tmp_deps deps.list  protomake*
 
 ALL_OBJS=$(IONCAT_OBJS) $(OBJS_GEN-BASIS)
 
@@ -546,13 +551,13 @@ m_ts_options.o: m_ts_contour_neq.o m_ts_electype.o m_ts_global_vars.o
 m_ts_options.o: m_ts_hartree.o m_ts_method.o m_ts_mumps_init.o m_ts_tdir.o
 m_ts_options.o: m_ts_weight.o parallel.o precision.o siesta_options.o units.o
 m_ts_pivot.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
-m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o fdf_extra.o
-m_ts_pivot.o: intrinsic_missing.o m_char.o m_pivot.o m_region.o
-m_ts_pivot.o: m_sparsity_handling.o m_ts_debug.o m_ts_electype.o parallel.o
-m_ts_pivot.o: precision.o
+m_ts_pivot.o: create_Sparsity_SC.o create_Sparsity_Union.o intrinsic_missing.o
+m_ts_pivot.o: m_char.o m_pivot.o m_region.o m_sparsity_handling.o m_ts_debug.o
+m_ts_pivot.o: m_ts_electype.o parallel.o precision.o
 m_ts_rgn2trimat.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o
 m_ts_rgn2trimat.o: create_Sparsity_Union.o geom_helper.o m_region.o
-m_ts_rgn2trimat.o: m_ts_electype.o m_ts_tri_common.o parallel.o precision.o
+m_ts_rgn2trimat.o: m_ts_electype.o m_ts_method.o m_ts_tri_common.o parallel.o
+m_ts_rgn2trimat.o: precision.o
 m_ts_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_sparse.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
 m_ts_sparse.o: intrinsic_missing.o m_region.o m_sparsity_handling.o
@@ -595,8 +600,8 @@ m_ts_voltage.o: intrinsic_missing.o m_geom_box.o m_mesh_node.o m_ncdf_io.o
 m_ts_voltage.o: m_ts_electype.o m_ts_options.o m_ts_tdir.o parallel.o
 m_ts_voltage.o: precision.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
-m_ts_weight.o: geom_helper.o m_ts_contour_neq.o m_ts_electype.o parallel.o
-m_ts_weight.o: precision.o
+m_ts_weight.o: geom_helper.o m_ts_chem_pot.o m_ts_contour_neq.o m_ts_electype.o
+m_ts_weight.o: parallel.o precision.o
 m_wallclock.o: m_walltime.o
 m_writedelk.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o
 m_writedelk.o: parallelsubs.o precision.o siesta_geom.o sys.o

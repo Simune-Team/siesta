@@ -6,6 +6,26 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2015-12-18   10:25:00 GMT                                     trunk-483
+Add lapack and blas code in Libs to support OMM and SVD
+
+* To enable quick compilation with no external libraries, some
+  lapack/blas routines have been added to the Src/Libs directory.
+
+  A minimal example of arch.make: Src/Sys/nolibs.make
+
+  Note that some optional features do depend on the availability of
+  external libraries, such as netCDF and fftw.
+  
+added:
+  Src/Libs/svd_omm_lapack.f
+modified:
+  Src/Libs/blas.f
+  Src/Libs/makefile
+  Src/Sys/nolibs.make
+  Util/Gen-basis/Makefile  
+
+-----------------------------------------------------------------------
 2015-12-17   16:25:00 GMT                                     trunk-482
 New versions of grid2cube and gnubands. Laplacian of grid functions
 
