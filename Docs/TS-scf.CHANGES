@@ -1,4 +1,22 @@
 ----------------------------------------------------
+January 23, 2016 -- Nick Papior       trunk-482---ts-scf-645
+Corrected ts-scf-644/r1108
+
+* The message should not contain the electrode name
+
+modified:
+  Util/TS/TBtrans/m_tbt_proj.F90
+  
+----------------------------------------------------
+January 23, 2016 -- Nick Papior       trunk-482---ts-scf-644
+  Made print of projections cleaner for full
+  
+  * Printout cleaning for projections.
+  
+  modified:
+    Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
 January 21, 2016 -- Nick Papior       trunk-482---ts-scf-643
 Enabled SVD fallback for pulay mixing
 

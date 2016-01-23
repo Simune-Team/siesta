@@ -550,8 +550,7 @@ contains
        if ( proj_T(it)%L%idx < 0 ) then
           El_L => Elecs(-proj_T(it)%L%idx)
           if ( first_P ) then
-             write(*,'(3a)') '* Full Gamma_', &
-                  trim(El_L%name),' to projection states'
+             write(*,'(a)') '* Origin non-projected Gamma projections:'
              first_P = .false.
           end if
           
