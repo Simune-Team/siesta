@@ -548,21 +548,22 @@ contains
     first_P = .true.
     do it = 1 , N_proj_T
        if ( proj_T(it)%L%idx < 0 ) then
+          El_L => Elecs(-proj_T(it)%L%idx)
           if ( first_P ) then
-             write(*,'(a)') '*  Full Gamma_L to projection states'
+             write(*,'(3a)') '* Full Gamma_', &
+                  trim(El_L%name),' to projection states'
              first_P = .false.
           end if
-
-          El_L => Elecs(-proj_T(it)%L%idx)
-
+          
           ! We have a single L-projection
-          write(*,'(tr1,2a,''.T -> ['')',advance='no') '- ', trim(El_L%name)
+          write(*,'(tr2,2a,''.T -> ['')',advance='no') '- ', trim(El_L%name)
 
           ! We loop the RHS here
           if ( size(proj_T(it)%R) > 0 ) then
              do ipt = 1 , size(proj_T(it)%R)
                 El => proj_T(it)%R(ipt)%ME%El
                 if ( ipt > 1 ) write(*,'(a)',advance='no') ','
+                if ( mod(ipt,4) == 0 ) write(*,'(/,tr7)',advance='no')
                 if ( proj_T(it)%R(ipt)%idx > 0 ) then
                    mol => proj_T(it)%R(ipt)%ME%mol
                    idx = proj_T(it)%R(ipt)%idx 
