@@ -6,6 +6,19 @@
 ** CHANGES ALONG siesta-4.0 branch
 
 -----------------------------------------------------------------------
+2016-01-28   13:00:00 GMT                                      4.0b-486
+Fix Tests/test.mk and Genbasis makefile
+
+* The reference directory's path was incorrect in Tests/test.mk
+
+* In Util/Gen-basis/Makefile, the treatment of COMP_LIBS did not
+  properly cover all cases.
+
+modified:
+  Tests/test.mk
+  Util/Gen-basis/Makefile
+  
+-----------------------------------------------------------------------
 2015-12-27   21:50:00 GMT                                      4.0b-485
 Fix peak alloc report in MPI
 

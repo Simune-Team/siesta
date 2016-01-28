@@ -10,7 +10,7 @@ SIESTA=../../../siesta
 #SIESTA= mpirun -np 4 ../../../siesta
 #
 #----------------------------------------------------------------------------
-REFERENCE_DIR?=../../Tests/Reference
+REFERENCE_DIR?=../../../Tests/Reference
 REFERENCE_CHECKER?=../cmp_digest.sh
 #
 label=work
