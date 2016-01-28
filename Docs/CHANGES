@@ -6,6 +6,27 @@
 ** CHANGES ALONG siesta-4.0 branch
 
 -----------------------------------------------------------------------
+2016-01-28   13:45:00 GMT                                      4.0b-487
+Prepare GPL release
+
+* Include proper headers
+
+* Add Docs/Contributors.txt and NOTICE.txt files.
+
+* Update READMEs and LICENSE files in several directories.
+
+* Remove Pseudo/atom, Util/test-xml
+
+* Remove DOM files from Src/xmlparser
+
+
+
+
+
+
+
+
+-----------------------------------------------------------------------
 2016-01-28   13:00:00 GMT                                      4.0b-486
 Fix Tests/test.mk and Genbasis makefile
 
