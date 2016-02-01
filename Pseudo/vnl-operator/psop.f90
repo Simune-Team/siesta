@@ -30,7 +30,7 @@
 !     Eventually, support for .psf and .vps files might be discontinued.
 
       use m_ncps, only: pseudopotential_t => froyen_ps_t, pseudo_read
-      use m_psml, only: psml_t => ps_t
+      use m_psml, psml_t => ps_t
 
       use m_psop, only: kbgen, compute_vlocal_chlocal
       use m_psop, only: nrmax, nkbmx
@@ -305,6 +305,14 @@
 !     READ THE PSEUDOPOTENTIAL FILE
 !
       call pseudo_read( systemlabel, psr, psml_handle, has_psml)
+      if (has_psml) then
+         write(6,"(a)") "Processing a PSML file"
+         write(6,"(a)") ps_Creator(psml_handle)
+         !
+         call ps_Delete_LocalPotential(psml_handle)
+         call ps_Delete_NonlocalProjectors(psml_handle)
+         call ps_DumpToPSMLFile(psml_handle,"PSML_RUMP")
+      endif
 !
 !     STORE IN LOCAL VARIABLES SOME OF THE PARAMETERS READ IN THE 
 !     PSEUDOPOTENTIAL, AND DEFINITION OF THE RADIAL LOGARITHMIC GRID

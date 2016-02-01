@@ -148,7 +148,7 @@ CONTAINS
            ! We want to check for grid annotations, in case
            ! the grid is already of the "atom" type
 
-         grid_annotation = ps_GridAnnotation(ps)
+         grid_annotation = ps_GetAnnotation(ps,"grid")
          call get_annotation_value(grid_annotation,  &
               "type",strvalue,status)
 
