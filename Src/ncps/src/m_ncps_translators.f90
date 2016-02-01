@@ -229,7 +229,7 @@ CONTAINS
               nlj = ps_Number_Of_Potentials(ps,SET_LJ)
               if (nlj == 0) call die("Cannot find srel SL potentials for dirac case")
               has_lj = .true.
-              idxlj = ps_Potential_Indexes(ps,SET_LJ)
+              call ps_Get_Potential_Indexes(ps,SET_LJ,idxlj)
               npotd = 0
               npotu = 0
               do i = 1, nlj
@@ -246,9 +246,9 @@ CONTAINS
 
               ! We have a scalar-relativistic set
               npotd = nscalar
-              idxd = ps_Potential_Indexes(ps,SET_SREL)
+              call ps_Get_Potential_Indexes(ps,SET_SREL,idxd)
               npotu = ps_Number_Of_Potentials(ps,SET_SO)
-              if (npotu /= 0) idxu = ps_Potential_Indexes(ps,SET_SO)
+              if (npotu /= 0) call ps_Get_Potential_Indexes(ps,SET_SO,idxu)
               has_sr_so = .true.
 
            endif
@@ -258,7 +258,7 @@ CONTAINS
            nscalar = ps_Number_Of_Potentials(ps,SET_SREL)
            if (nscalar == 0) call die("Cannot find srel SL potentials for srel case")
            npotd = nscalar
-           idxd = ps_Potential_Indexes(ps,SET_SREL)
+           call ps_Get_Potential_Indexes(ps,SET_SREL,idxd)
            npotu = 0
            has_sr = .true.
 
@@ -273,8 +273,8 @@ CONTAINS
                  ! We have spin_up and spin_down potentials
                  ! Will get the average later
 
-                 idxd = ps_Potential_Indexes(ps,SET_DOWN)
-                 idxu = ps_Potential_Indexes(ps,SET_UP)
+                 call ps_Get_Potential_Indexes(ps,SET_DOWN,idxd)
+                 call ps_Get_Potential_Indexes(ps,SET_UP,idxu)
                  npotd = size(idxd)
                  npotu = size(idxu)
                  has_up_down = .true.
@@ -283,8 +283,8 @@ CONTAINS
                  ! We must have (at least) the spin_average
                  npotd = ps_Number_Of_Potentials(ps,SET_SPINAVE)
                  if (npotd == 0) call die("Cannot get spin-averaged SL potentials")
-                 idxd = ps_Potential_Indexes(ps,SET_SPINAVE)
-                 idxu = ps_Potential_Indexes(ps,SET_SPINDIFF)
+                 call ps_Get_Potential_Indexes(ps,SET_SPINAVE,idxd)
+                 call ps_Get_Potential_Indexes(ps,SET_SPINDIFF,idxu)
                  npotu = size(idxu)  ! might be zero
                  has_spin_ave = .true.
               endif
@@ -293,7 +293,7 @@ CONTAINS
 
               npotd = ps_Number_Of_Potentials(ps,SET_NONREL)
               if (npotd == 0) call die("Cannot get non-relativistic SL potentials")
-              idxd = ps_Potential_Indexes(ps,SET_NONREL)
+              call ps_Get_Potential_Indexes(ps,SET_NONREL,idxd)
               npotu = 0
               has_nonrel = .true.
 

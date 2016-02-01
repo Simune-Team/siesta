@@ -1,7 +1,7 @@
 subroutine  write_proj_psml(l,ikb,ekb,nrc,erefkb,dkbcos,nrval,rofi,proj)
 
   use local_xml, only: xf, rl, fval, nrl, drl, use_linear_grid
-  use flib_wxml
+  use xmlf90_wxml
 
   integer, parameter :: dp = selected_real_kind(10,100)
 !
@@ -62,7 +62,7 @@ subroutine  write_proj_psml(l,ikb,ekb,nrc,erefkb,dkbcos,nrval,rofi,proj)
   CONTAINS
 
       subroutine my_add_attribute(xf,name,value)
-      use flib_wxml 
+      use xmlf90_wxml 
       type(xmlf_t), intent(inout)   :: xf
       character(len=*), intent(in)  :: name
       character(len=*), intent(in)  :: value

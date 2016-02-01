@@ -2519,18 +2519,18 @@ C potential
           nscalar = ps_Number_Of_Projectors(ps,SET_SREL)
           if (nscalar == 0)
      $         call die("Cannot find scalar-relativistic projectors")
-          idx = ps_Projector_Indexes(ps,SET_SREL)
+          call ps_Get_Projector_Indexes(ps,SET_SREL,idx)
        case ("no")
           if (ps_IsSpinPolarized(ps)) then
              nscalar = ps_Number_Of_Projectors(ps,SET_SPINAVE)
              if (nscalar == 0)
      $         call die("Cannot find spin-averaged projectors")
-             idx = ps_Projector_Indexes(ps,SET_SPINAVE)
+             call ps_Get_Projector_Indexes(ps,SET_SPINAVE,idx)
           else
              nscalar = ps_Number_Of_Projectors(ps,SET_NONREL)
              if (nscalar == 0)
      $            call die("Cannot find non-relativistic projectors")
-             idx = ps_Projector_Indexes(ps,SET_NONREL)
+             call ps_Get_Projector_Indexes(ps,SET_NONREL,idx)
           endif
        end select
           
@@ -2541,7 +2541,7 @@ C potential
 
        lmxkb = lmxkb_true  ! set to 'in' value
        do l = 0, lmxkb
-          idxl = ps_Projector_Indexes_byL(ps,l,idx)
+          call ps_Get_Projector_Indexes_byL(ps,l,idx,idxl)
           nkbl = size(idxl)
           nkblsave(l,is) = nkbl  ! propagate to structures
           do ikb = 1, nkbl

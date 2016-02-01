@@ -3,7 +3,7 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-.PHONY: clean wxml
+.PHONY: clean
 #
 default: psop
 #
@@ -19,19 +19,18 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
+include $(MAIN_OBJDIR)/Mk/psml.mk
+include $(MAIN_OBJDIR)/Mk/xmlf90.mk
+#
 NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
-PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src
 PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 
-PSML=$(MAIN_OBJDIR)/psml/src/libpsml.a
 NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
 PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
 
 INCFLAGS:=$(INCFLAGS) $(PSML_INCFLAGS) $(NCPS_INCFLAGS) $(PSOP_INCFLAGS)
-INCFLAGS:=$(INCFLAGS) -I$(MAIN_OBJDIR)/wxml -I./SiestaXC # To pick up mod files
-#
-LIBS_WXML:= -L$(MAIN_OBJDIR)/wxml -l wxml
-#
+INCFLAGS:=$(INCFLAGS) $(XMLF90_INCFLAGS) 
+INCFLAGS:=$(INCFLAGS)  -I./SiestaXC # To pick up mod files
 #
 OBJS = 	psop_options.o\
 	psop.o local_xml.o write_proj_psml.o \
@@ -61,9 +60,9 @@ $(XC):
 #
 what:
 	echo "VPATH: " $(VPATH)
-psop:   wxml $(NCPS) $(PSML) $(PSOP) $(XC) $(ALL_OBJS)
+psop:   $(NCPS) $(PSML) $(PSOP) $(XC) $(ALL_OBJS)
 	$(FC) $(FFLAGS) $(LDFLAGS) -o psop $(ALL_OBJS) \
-        $(NCPS) $(PSOP) $(PSML) $(XC) $(LIBS_WXML)
+        $(NCPS) $(PSOP) $(PSML_LIBS) $(XC) $(XMLF90_LIBS)
 #
 $(NCPS): $(PSML)
 #
@@ -78,16 +77,6 @@ clean:
 	rm -f psop *.o  *.a *.pcl *.pc *.mod
 	rm -f *.mod
 #
-wxml:
-	@echo "Making sure that the wxml library is compiled..."
-	(cd $(MAIN_OBJDIR)/wxml ; make \
-                                     "ARCH_MAKE=$(ARCH_MAKE)"\
-                                     "VPATH=$(VPATH)/wxml")
-$(PSML):
-	@echo "Making sure that the psml library is compiled..."
-	(cd $(MAIN_OBJDIR)/psml/src ; make \
-                                     "ARCH_MAKE=$(ARCH_MAKE)"\
-                                     "VPATH=$(VPATH)/psml/src")
 $(PSOP):
 	@echo "Making sure that the psop library is compiled..."
 	(cd $(MAIN_OBJDIR)/psoplib/src ; make \
@@ -97,7 +86,7 @@ $(NCPS):
 	@echo "Making sure that the ncps library is compiled..."
 	(cd $(MAIN_OBJDIR)/ncps/src ; make \
                                      "ARCH_MAKE=$(ARCH_MAKE)"\
-                                     "PSML_INCFLAGS=-I$(MAIN_OBJDIR)/psml/src"\
+                                     "PSML_INCFLAGS=-$(PSML_INCFLAGS)"\
                                      "VPATH=$(VPATH)/ncps/src")
 #
 

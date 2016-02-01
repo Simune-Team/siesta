@@ -45,7 +45,7 @@
       use local_xml, only: xf
       use local_xml, only: use_linear_grid
       use local_xml, only: nrl, drl, rl, fval
-      use flib_wxml
+      use xmlf90_wxml
 
       implicit none
 
@@ -499,24 +499,9 @@
 !
 !     Generate xml snippet
 !
-      call xml_NewElement(xf,"pseudopotential-operator")
-      call my_add_attribute(xf,"energy_unit","hartree")
-      call my_add_attribute(xf,"length_unit","bohr")
-
-        call xml_NewElement(xf,"provenance")
-          call my_add_attribute(xf,"creator","psop")
-          call get_command(work_string)  ! full command line (F2003)
-          call my_add_attribute(xf,"options",work_string)
-          call xml_NewElement(xf,"source-file")
-          call my_add_attribute(xf,"filename",filename)
-          call my_add_attribute(xf,"creator",psr%method(1))
-          call my_add_attribute(xf,"date",psr%method(2))
-          write(work_string,'(4a10)') (psr%method(i),i=3,6)
-          call my_add_attribute(xf,"method",work_string)
-          call my_add_attribute(xf,"ps-config",psr%text)
-        call xml_EndElement(xf,"source-file")
-        call xml_EndElement(xf,"provenance")
-
+        call xml_NewElement(xf,"tmp-wrapper")
+        call xml_NewElement(xf,"local-potential")
+            call my_add_attribute(xf,"type",trim(method_used))
         call xml_NewElement(xf,"grid")
 
         if (use_linear_grid) then
@@ -548,9 +533,7 @@
        endif
        call xml_EndElement(xf,"grid")
 
-        call xml_NewElement(xf,"local-potential")
-            call my_add_attribute(xf,"type",trim(method_used))
-            call xml_NewElement(xf,"radfunc")
+       call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"data")
                if (use_linear_grid) then
                   call dpnint(rofi,vlocal,nrval,rl,fval,nrl)
@@ -568,8 +551,39 @@
       else
          set = "non_relativistic"
       endif
-      call xml_NewElement(xf,"projectors")
+      call xml_NewElement(xf,"nonlocal-projectors")
       call my_add_attribute(xf,"set",trim(set))
+
+              call xml_NewElement(xf,"grid")
+
+        if (use_linear_grid) then
+
+           call my_add_attribute(xf,"npts",str(nrl))
+           call xml_NewElement(xf,"annotation")
+           call my_add_attribute(xf,"type","linear")
+           call my_add_attribute(xf,"drl",str(drl))
+           call xml_EndElement(xf,"annotation")
+           call xml_NewElement(xf,"grid-data")
+             call xml_AddArray(xf,rl(1:nrl))
+           call xml_EndElement(xf,"grid-data")
+
+       else
+          call my_add_attribute(xf,"npts",str(nrval))
+          call xml_NewElement(xf,"annotation")
+           call my_add_attribute(xf,"type","log-atom")
+           call my_add_attribute(xf,"nrval",str(nrval))
+           !   r(i) = a*(exp(b*(i-1))-1)
+           call my_add_attribute(xf,"scale",str(b))
+           call my_add_attribute(xf,"step",str(a))
+          call xml_EndElement(xf,"annotation")
+
+
+          call xml_NewElement(xf,"grid-data")
+           call xml_AddArray(xf,rofi(1:nrval))
+          call xml_EndElement(xf,"grid-data")
+
+       endif
+       call xml_EndElement(xf,"grid")
 
       call KBgen( is, a, b, rofi, drdi, s, &
                  vps, vlocal, ve, nrval, Zval, lmxkb, &
@@ -581,9 +595,9 @@
                  kb_rmax,             &
                  process_proj=write_proj_psml)
 
-      call xml_EndElement(xf,"projectors")
+      call xml_EndElement(xf,"nonlocal-projectors")
+      call xml_EndElement(xf,"tmp-wrapper")
 
-      call xml_EndElement(xf,"pseudopotential-operator")
       call xml_Close(xf)
 
       deallocate( rofi    )

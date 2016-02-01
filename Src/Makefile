@@ -52,12 +52,13 @@ include $(ARCH_MAKE)
 #
 #
 include Mk/FoX.mk
+include Mk/psml.mk
+include Mk/xmlf90.mk
 
-PSML_INCFLAGS=-I $(MAIN_OBJDIR)/psml/src
 NCPS_INCFLAGS=-I $(MAIN_OBJDIR)/ncps/src
 PSOP_INCFLAGS=-I $(MAIN_OBJDIR)/psoplib/src
 INCFLAGS:= $(NETCDF_INCFLAGS)  $(PSML_INCFLAGS) $(NCPS_INCFLAGS) \
-           $(PSOP_INCFLAGS) $(INCFLAGS)
+           $(PSOP_INCFLAGS) $(XMLF90_INCFLAGS) $(INCFLAGS)
 #
 # For removing any -ipo compilation in sub directories...
 # Later compilers are also having this enabled, and it lets you
@@ -182,13 +183,6 @@ INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 #
-#--------------------------------------------------------------
-PSML=psml/src/libpsml.a
-$(PSML): 
-	(cd psml/src ; $(MAKE) VPATH="$(VPATH)/psml/src" \
-	ARCH_MAKE=$(ARCH_MAKE) \
-	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
-#
 NCPS=ncps/src/libncps.a
 $(NCPS): $(PSML)
 	(cd ncps/src ; $(MAKE) VPATH="$(VPATH)/ncps/src" \
@@ -201,13 +195,6 @@ PSOP=psoplib/src/libpsop.a
 $(PSOP): 
 	(cd psoplib/src ; $(MAKE) VPATH="$(VPATH)/psoplib/src" \
 	ARCH_MAKE=$(ARCH_MAKE) \
-	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
-#
-#--------------------------------------------------------------
-XMLPARSER=libxmlparser.a
-$(XMLPARSER): 
-	(cd xmlparser ; $(MAKE) VPATH="$(VPATH)/xmlparser" \
-	MAIN_OBJDIR=$(MAIN_OBJDIR) \
 	FFFLAGS="$(FFLAGS:$(IPO_FLAG)=)" module)
 #
 #--------------------------------------------------------------
@@ -301,14 +288,14 @@ check-siesta:
 	@touch .siesta
 #
 siesta: check-siesta what version \
-                $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
+                $(MPI_INTERFACE) $(FDF) $(XC) \
 		$(NCPS) $(PSOP) $(PSML)\
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
-	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML)  \
-               $(XC) $(XMLPARSER) $(MPI_INTERFACE) \
+	       $(LDFLAGS) $(ALL_OBJS) $(FDF)   \
+               $(XC) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) \
-               $(NCPS) $(PSOP) $(PSML)\
+               $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
 	       $(LIBS) 
 #
 libSiestaForces.a: $(OBJS) $(SYSOBJ)
@@ -338,14 +325,13 @@ check-ts:
 transiesta: check-ts what version \
             $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(XC) \
             $(NCPS) $(PSOP) $(PSML)\
-            $(WXML) $(XMLPARSER)  \
+            $(XMLPARSER)  \
             $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
 	$(FC) -o transiesta \
                $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(XC) \
-               $(WXML) $(XMLPARSER)  \
                $(MPI_INTERFACE) $(NETCDF_INTERFACE) \
                $(COMP_LIBS) $(FOX_LIBS) \
-               $(NCPS) $(PSOP) $(PSML)\
+               $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
                $(LIBS)
 #
 #
@@ -358,11 +344,8 @@ clean:
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
 	@if [ -d FoX ] ; then (cd FoX ; touch arch.make ; $(MAKE) distclean) ; fi
-	(cd xmlparser ; $(MAKE) clean)
 	(cd ncps/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
-	(cd psml/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	(cd psoplib/src ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
-	(cd wxml ; $(MAKE) ARCH_MAKE=$(ARCH_MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd Libs ; $(MAKE) clean )
 	(cd SiestaXC ; $(MAKE) clean )
