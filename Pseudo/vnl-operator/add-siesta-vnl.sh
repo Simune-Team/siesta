@@ -42,17 +42,20 @@ fi
 mkdir $name ; cd $name
 cp ../$file .
 #
+# psop will generate PSML_BASE (with a new provenance
+# record and without any local and nl parts) and VNL,
+# with the new local and nl sections.
+#
 ${psop_prog} $@ $file 2>&1 >| $name.psop.log
 #
-# This will remove any existing VNL section in the file,
-# remove the markup closing the psml element,
-# insert the contents of VNL, and re-add the closing
-# markup
+# This will remove the markup closing the psml element,
+# insert the contents of VNL into the base psml
+# file, and re-add the closing markup, also filtering
+# the artificial wrapper in VNL.
 #
 rm -f _tmp
-sed '/<pseudopotential-operator /,/<\/pseudopotential-operator>/d' $file | \
-                               grep -v "<\/psml>" | cat - VNL > _tmp
-echo "</psml>" | cat _tmp - > PSML_VNL
+grep -v "<\/psml>" PSML_BASE | cat - VNL > _tmp
+echo "</psml>" | cat _tmp - | grep -v 'tmp-wrapper' > PSML_VNL
 cp -p PSML_VNL ../${name}-siesta-vnl.psml
 #
 echo "==> Output data in directory $name"

@@ -81,6 +81,7 @@
       logical                 :: has_psml
       type(xc_id_t)           :: xc_id
       integer                 :: status
+      type(ps_annotation_t)   :: ann
 
       integer  :: max_l_ps
       integer  :: nsemic(0:3)
@@ -309,9 +310,28 @@
          write(6,"(a)") "Processing a PSML file"
          write(6,"(a)") ps_Creator(psml_handle)
          !
-         call ps_Delete_LocalPotential(psml_handle)
-         call ps_Delete_NonlocalProjectors(psml_handle)
-         call ps_DumpToPSMLFile(psml_handle,"PSML_RUMP")
+         call init_annotation(ann,4,status)
+         if (status /= 0) call die("Cannot init annotation")
+         call insert_annotation_pair(ann,"source-id","adfeb-203aed-edca45",status)
+         if (status /= 0) call die("Cannot insert source-id")
+         call insert_annotation_pair(ann,"options","blah blah",status)
+         if (status /= 0) call die("Cannot insert options")
+
+         !
+         if (ps_HasLocalPotential(psml_handle)) then
+            call ps_Delete_LocalPotential(psml_handle)
+            call insert_annotation_pair(ann,"deleted-local-potential","yes",status)
+            if (status /= 0) call die("Cannot insert deletion record")
+         endif
+         if (ps_HasProjectors(psml_handle)) then
+            call ps_Delete_NonLocalProjectors(psml_handle)
+            call insert_annotation_pair(ann,"deleted-nonlocal-projectors","yes",status)
+            if (status /= 0) call die("Cannot insert deletion record")
+         endif
+
+         call ps_AddProvenanceRecord(psml_handle,creator="psop 0.9", &
+                                     date="2016-01-01", annotation=ann)
+         call ps_DumpToPSMLFile(psml_handle,"PSML_BASE")
       endif
 !
 !     STORE IN LOCAL VARIABLES SOME OF THE PARAMETERS READ IN THE 
@@ -552,6 +572,20 @@
                endif
                call xml_EndElement(xf,"data")
             call xml_EndElement(xf,"radfunc")
+
+            call xml_NewElement(xf,"local-charge")
+            call xml_NewElement(xf,"radfunc")
+               call xml_NewElement(xf,"data")
+               if (use_linear_grid) then
+                  call dpnint(rofi,chlocal,nrval,rl,fval,nrl)
+                  call check_grid(rofi,chlocal,nrval,rl,fval,nrl,"chlocal.check")
+                  call xml_AddArray(xf, fval(1:nrl))
+               else
+                  call xml_AddArray(xf, chlocal(1:nrval))
+               endif
+               call xml_EndElement(xf,"data")
+            call xml_EndElement(xf,"radfunc")
+            call xml_EndElement(xf,"local-charge")
         call xml_EndElement(xf,"local-potential")
 
       if (irelt == 1) then
