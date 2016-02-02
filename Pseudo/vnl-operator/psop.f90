@@ -31,6 +31,7 @@
 
       use m_ncps, only: pseudopotential_t => froyen_ps_t, pseudo_read
       use m_psml, psml_t => ps_t
+      use m_uuid
 
       use m_psop, only: kbgen, compute_vlocal_chlocal
       use m_psop, only: nrmax, nkbmx
@@ -217,6 +218,8 @@
       character(len=60)        :: set
       character(len=40)        :: method_used  !  "siesta-fit" or "-charge"
 
+      character(len=512) :: cmd_line
+      character(len=36)  :: id
       character(len=200) :: opt_arg, mflnm, ref_line
       character(len=10)  :: opt_name 
       integer :: nargs, iostat, n_opts, nlabels, iorb, ikb, i
@@ -312,26 +315,40 @@
          !
          call init_annotation(ann,4,status)
          if (status /= 0) call die("Cannot init annotation")
-         call insert_annotation_pair(ann,"source-id","adfeb-203aed-edca45",status)
-         if (status /= 0) call die("Cannot insert source-id")
-         call insert_annotation_pair(ann,"options","blah blah",status)
+         id = ps_GetUUID(psml_handle)
+         call insert_annotation_pair(ann,"source-uuid",id,status)
+         if (status /= 0) call die("Cannot insert source-uuid")
+         call get_command(cmd_line)
+         call insert_annotation_pair(ann,"command-line",trim(cmd_line),status)
          if (status /= 0) call die("Cannot insert options")
 
          !
          if (ps_HasLocalPotential(psml_handle)) then
             call ps_Delete_LocalPotential(psml_handle)
-            call insert_annotation_pair(ann,"deleted-local-potential","yes",status)
-            if (status /= 0) call die("Cannot insert deletion record")
+            call insert_annotation_pair(ann,"local-potential","replaced",status)
+            if (status /= 0) call die("Cannot insert lpot record")
+         else
+            call insert_annotation_pair(ann,"local-potential","inserted",status)
+            if (status /= 0) call die("Cannot insert lpot record")
          endif
+         
          if (ps_HasProjectors(psml_handle)) then
             call ps_Delete_NonLocalProjectors(psml_handle)
-            call insert_annotation_pair(ann,"deleted-nonlocal-projectors","yes",status)
-            if (status /= 0) call die("Cannot insert deletion record")
+            call insert_annotation_pair(ann,"nonlocal-projectors","replaced",status)
+            if (status /= 0) call die("Cannot insert nl record")
+         else
+            call insert_annotation_pair(ann,"nonlocal-projectors","inserted",status)
+            if (status /= 0) call die("Cannot insert nl record")
          endif
 
+         call get_uuid(id)
+         call ps_SetUUID(psml_handle,id)
          call ps_AddProvenanceRecord(psml_handle,creator="psop 0.9", &
-                                     date="2016-01-01", annotation=ann)
+              date="2016-01-01", annotation=ann)
+         
          call ps_DumpToPSMLFile(psml_handle,"PSML_BASE")
+      else
+         call die("This version can only work with PSML files")
       endif
 !
 !     STORE IN LOCAL VARIABLES SOME OF THE PARAMETERS READ IN THE 

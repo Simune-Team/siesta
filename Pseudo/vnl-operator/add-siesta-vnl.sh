@@ -3,7 +3,7 @@
 # add-siesta-vnl.sh -- Script to insert a Siesta-style 
 #                      "pseudopotential-operator" section in a psml file
 #
-# Usage: add-siesta-vnl.sh [psop options] <name.psml>
+# Usage: add-siesta-vnl.sh  <name.psml> [psop options]
 #
 psop_prog=${PSOP_PROGRAM}
 #
@@ -13,9 +13,9 @@ then
    exit
 fi
 #
-if [ "$#" != 1 ] 
+if [ "$#" -lt 1 ] 
 then
-	echo "Usage: $0 [psop options] <name.psml>"
+	echo "Usage: $0 <name.psml> [psop options]"
 	echo "This is a (partial) list of options for psop:"
 	${psop_prog} -h
 	exit

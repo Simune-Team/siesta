@@ -35,7 +35,7 @@ INCFLAGS:=$(INCFLAGS)  -I./SiestaXC # To pick up mod files
 OBJS = 	psop_options.o\
 	psop.o local_xml.o write_proj_psml.o \
         local_die.o psml_die.o semicore_info_froyen.o\
-        dpnint.o check_grid.o
+        dpnint.o check_grid.o m_uuid.o
 #
 #
 MOD_OBJS= m_getopts.o f2kcli.o
@@ -66,7 +66,7 @@ psop:   $(NCPS) $(PSML) $(PSOP) $(XC) $(ALL_OBJS)
 #
 $(NCPS): $(PSML)
 #
-psop.o: psop_options.o local_xml.o write_proj_psml.o
+psop.o: psop_options.o local_xml.o write_proj_psml.o m_uuid.o
 #
 psop.o: m_getopts.o semicore_info_froyen.o
 write_proj_psml.o: local_xml.o
