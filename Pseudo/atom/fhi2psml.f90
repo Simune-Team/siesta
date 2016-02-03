@@ -7,7 +7,7 @@ program fhi2psml
   ! Alberto Garcia, July 24, 2014
   ! Alberto Garcia, December 11, 2014
 
-  use flib_wxml     ! To write XML files
+  use xmlf90_wxml     ! To write XML files
   use m_libxc_list  ! For ease of libxc handling
                     ! The code lives in SiestaXC
   implicit none

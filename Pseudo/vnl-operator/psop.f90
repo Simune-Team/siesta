@@ -596,8 +596,10 @@
                if (use_linear_grid) then
                   call dpnint(rofi,chlocal,nrval,rl,fval,nrl)
                   call check_grid(rofi,chlocal,nrval,rl,fval,nrl,"chlocal.check")
+                  where (abs(fval) < 1.0e-98_dp) fval = 0.0_dp
                   call xml_AddArray(xf, fval(1:nrl))
                else
+                  where (abs(chlocal) < 1.0e-98_dp) chlocal = 0.0_dp
                   call xml_AddArray(xf, chlocal(1:nrval))
                endif
                call xml_EndElement(xf,"data")

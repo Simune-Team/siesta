@@ -779,7 +779,6 @@ c
 c
 c     Write the pseudopotential in XML format
 c
-      call pseudoXML( ray, npotd, npotu, zion, zratio )
       call write_psml( ray, npotd, npotu, zion )
 c
       return

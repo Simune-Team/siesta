@@ -271,7 +271,7 @@
    
         logical  :: fit_3derivs, use_charge_cutoff, force_chlocal_method
         logical  :: use_psml_vlocal, use_psml_kb_projectors
-        logical  :: ignore_ghosts, quadratic
+        logical  :: ignore_ghosts, quadratic, got_chlocal
         real(dp) :: rmax_ps_check
         real(dp) :: kb_rmax
         character(len=40) :: vlocal_type
@@ -519,14 +519,19 @@ c    .          'atom: The above configuration will be used ',
              if (use_psml_vlocal) then
                 call get_psml_vlocal(basp%psml_handle,atm_label,
      $                               rofi,nrval,Zval,vlocal,
-     $                               vlocal_type)
+     $                               vlocal_type,
+     $                               got_chlocal,chlocal,nchloc)
 
                 if (write_ion_plot_files) then
                    call file_out(nrval,rofi,vlocal,
      .                  trim(global_label)//".Vlocal_psml")
                 endif
 
-                ! Now we need to reconstruct the chlocal from vlocal
+                if (got_chlocal) then
+                   ! We got the local charge from the psml file
+                else   
+
+                ! We need to reconstruct the chlocal from vlocal
                 ! This is not completely trivial
 
                 use_charge_cutoff = .true.
@@ -558,6 +563,8 @@ c    .          'atom: The above configuration will be used ',
                    call file_out(nrval,rofi,vlocal_tmp,
      .                  trim(global_label)//".Vlocal_from_chlocal")
                 endif
+
+                endif  ! got_chlocal
 
                 !
              else
@@ -2448,8 +2455,10 @@ C potential
           
         end subroutine read_vps
 !
-      subroutine get_psml_vlocal(ps,atm_label,rofi,nrval,Zval,vlocal,
-     $                           vlocal_type)
+      subroutine get_psml_vlocal(ps,atm_label,rofi,nrval,Zval,
+     $                           vlocal,vlocal_type,
+     $                           got_chlocal,chlocal,nchloc)
+      
       use m_psml, psml_t => ps_t
 
       type(psml_t), intent(in)      :: ps         ! psml handle
@@ -2459,16 +2468,19 @@ C potential
       real(dp), intent(in)          :: Zval
       real(dp), intent(out)         :: vlocal(:)
       character(len=*), intent(out) :: vlocal_type
+      logical, intent(out)          :: got_chlocal
+      real(dp), intent(out)         :: chlocal(:)
+      integer, intent(out)          :: nchloc
 
-      integer    :: ir
+      integer  :: ir
       
       if (abs(ps_ZPseudo(ps)-Zval) > 1.e-8_dp) then
          call die("Zval mismatch in psml file")
       endif
 
-      if (.not. ps_HasPSOperator(ps)) then
+      if (.not. ps_HasLocalPotential(ps)) then
          call die("PSML file does not have " //
-     $            "a <pseudopotential-operator> section")
+     $            "a <local-potential> section")
       endif
 
       do ir = 1, nrval
@@ -2478,7 +2490,25 @@ C potential
       vlocal_type = ps_LocalPotential_Type(ps)
       write(6,"(a)") "Got Vlocal (" // trim(vlocal_type) //
      $                ") from " // trim(atm_label)//" psml data"
-      
+
+      got_chlocal = .false.
+      if (ps_HasLocalCharge(ps)) then
+         write(6,"(a)") "Got Chlocal from " //
+     $                   trim(atm_label)//" psml data"
+         got_chlocal = .true.
+         do ir = 1, nrval
+            chlocal(ir) = ps_LocalCharge_Value(ps,rofi(ir))
+         enddo
+         ! Compute nchloc, assuming proper generation of local charge,
+         ! during which the tail is set to zero.
+         do ir = nrval, 1, -1
+            if (abs(chlocal(ir)) > 0.0_dp) exit 
+         enddo
+         nchloc = ir + 1
+         write(6,"(a,i4,f10.6)") "nchloc from abs(chloc)>0: ",
+     $        nchloc, rofi(nchloc)
+      endif
+
       end subroutine get_psml_vlocal
 
       subroutine get_psml_kbprojs(is,ps,atm_label,a,b,rofi,nrval,Zval,

@@ -2,9 +2,10 @@
 
       subroutine write_psml( ray, npotd, npotu, zion )
 
-      use flib_wxml
+      use xmlf90_wxml
       use SiestaXC, only: xc_id_t, get_xc_id_from_atom_id
       use SiestaXC, only: xc_nfuncs_libxc
+      use m_uuid
 
       implicit none
 
@@ -33,7 +34,9 @@
 !
       integer :: stat
       character(len=132) :: line, msg
-
+      character(len=36)  :: uuid
+      character(len=32000) :: input_buffer
+      
       allocate(f(1:nr))
 
 ! Digest and dump the information about the exchange and correlation functional
@@ -88,9 +91,11 @@
       call xml_AddXMLDeclaration(xf,"UTF-8")
 
       call xml_NewElement(xf,"psml")
-      call my_add_attribute(xf,"version","0.8")
+      call my_add_attribute(xf,"version","0.9")
       call my_add_attribute(xf,"energy_unit","hartree")
       call my_add_attribute(xf,"length_unit","bohr")
+      call get_uuid(uuid)
+      call my_add_attribute(xf,"uuid",uuid)
 
 
       call xml_NewElement(xf,"provenance")
@@ -106,12 +111,14 @@
 !
       open(44,file="INP_COPY",form="formatted",status="old",
      $     position="rewind",action="read")
+      input_buffer = ""
       do
          read(44,fmt="(a)",iostat=stat) line
          if (stat .ne. 0) exit
-         call xml_AddPcData(xf,trim(line),line_feed=.true.)
+         input_buffer = trim(input_buffer) // trim(line) // char(10) 
       enddo
       close(44)
+      call xml_AddCDATASection(xf,trim(input_buffer),.true.)
 !
       call xml_EndElement(xf,"input-file")
       call xml_EndElement(xf,"provenance")
