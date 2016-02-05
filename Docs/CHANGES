@@ -6,6 +6,39 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2016-02-05                                                    trunk-484
+Merge fixes from rel-4.0 branch
+
+* Fix Tests/test.mk and Genbasis makefile
+
+The reference directory's path was incorrect in Tests/test.mk
+
+In Util/Gen-basis/Makefile, the treatment of COMP_LIBS can be improved
+with a form suggested by Pedro Brandimarte, which will work even if
+there are multiple files in COMP_LIBS.
+
+* Fix peak alloc report in MPI
+
+When alloc-report-level is 1 or 3, a report should be printed at every
+peak. This hanged in MPI runs. Now only the root node peaks are
+printed.
+
+(Thanks to Nick R. Papior)
+  
+* Some older .CHANGES files have been moved to the 'branch-changes'
+  directory, and older release notes moved to the
+  'older-release-notes' directory.
+
+modified:
+  Tests/test.mk
+  Util/Gen-basis/Makefile
+  Src/alloc.F90
+  Docs/siesta.tex
+added:
+  Docs/branch-changes/
+  Docs/older-release-notes/
+
+-----------------------------------------------------------------------
 2015-12-18   10:25:00 GMT                                     trunk-483
 Add lapack and blas code in Libs to support OMM and SVD
 
