@@ -91,14 +91,10 @@ $(FDF):
 # Simple hack to link to any compiled lapack/blas code
 # If COMP_LIBS is empty, we do a no-op, else link the library file here.
 #
-ifeq ($(strip $(COMP_LIBS)),)
 link_linalg:
-	touch ./no_comp_libs
-else 
-link_linalg:
-	[ -f ../../$(OBJDIR)/$(COMP_LIBS) ] && ln -sf ../../$(OBJDIR)/$(COMP_LIBS) .
-endif
-
+	for llibs in $(COMP_LIBS); do \
+   [ -f ../../$(OBJDIR)/$$llibs ] && ln -sf ../../$(OBJDIR)/$$llibs . ; \
+	done
 #
 gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS) link_linalg
 	$(FC) -o gen-basis \

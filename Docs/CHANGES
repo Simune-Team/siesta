@@ -3,8 +3,19 @@
 =======================================================================
 
 
-** CHANGES ALONG siesta-4.0 branch
+** CHANGES ALONG rel-4.0-ol branch
 
+-----------------------------------------------------------------------
+2016-02-05                                                  4.0b-ol-487
+Re-fix Genbasis makefile
+
+* In Util/Gen-basis/Makefile, the treatment of COMP_LIBS can be
+  improved with a form suggested by Pedro Brandimarte, which will
+  work even if there are multiple files in COMP_LIBS.
+
+modified:
+  Util/Gen-basis/Makefile
+  
 -----------------------------------------------------------------------
 2016-01-28   13:00:00 GMT                                      4.0b-486
 Fix Tests/test.mk and Genbasis makefile
