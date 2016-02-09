@@ -416,7 +416,7 @@ C For 2D case, copy arrays to new distribution
         call pzgemr2d(n, n, S, 1, 1, desch, s2d, 1, 1, desc_h2d, ictxt)
       endif
 #ifdef SCALAPACK_DEBUG
-      if ( .not.Serial .and. .not.debugged ) then
+      if ( .not. (Serial .or. debugged) ) then
       debugged = .true.
       d_lwork = -1
       d_lrwork = -1

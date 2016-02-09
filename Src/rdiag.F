@@ -369,7 +369,7 @@ C For 2D case, copy arrays to new distribution
         call pdgemr2d(n, n, S, 1, 1, desch, s2d, 1, 1, desc_h2d, ictxt)
       endif
 #ifdef SCALAPACK_DEBUG
-      if ( .not. debugged ) then
+      if ( .not. (Serial .or. debugged) ) then
       debugged = .true.
       d_lwork = -1
       d_liwork = -1
@@ -396,8 +396,8 @@ C For 2D case, copy arrays to new distribution
       d_lwork  = nint(work(1))
       d_liwork = iwork(1)
       write(*,'(a,i0,4(a,i10))')'rdiag-debug: Node=',Node,
-     &     ', lwork=', lwork,', lworkq=',d_lwork,
-     &     ', liwork=',liwork,', liworkq=',d_liwork
+     &     ', lwork=', lwork,'>= lworkq=',d_lwork,
+     &     ', liwork=',liwork,'>= liworkq=',d_liwork
       endif
 #endif
 

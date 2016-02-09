@@ -1,4 +1,14 @@
 ----------------------------------------------------
+February 9, 2016 -- Nick Papior       trunk-484---ts-scf-647
+Fixed SCALAPACK_DEBUG in serial runs
+
+* Add check for serial run with scalapack debug.
+
+modified:
+  Src/cdiag.F
+  Src/rdiag.F
+
+----------------------------------------------------
 February 8, 2016 -- Nick Papior       trunk-484---ts-scf-646
 Merged trunk-484
 
