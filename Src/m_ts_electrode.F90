@@ -752,6 +752,92 @@ contains
 
   end subroutine SSR_sGreen_NoDOS
 
+  ! Print information regarding the Green function file
+  ! In particular the size of the corresponding Green function
+  ! file.
+  subroutine print_Elec_Green(El, NE, nkpt)
+    
+    use precision,  only : dp
+    use parallel, only: IONode
+    use units,      only : eV
+
+    use m_ts_electype
+
+    ! Input variables
+    type(Elec), intent(in) :: El
+    ! Number of energy-points
+    integer :: NE
+    ! Number of k-points
+    integer :: nkpt
+
+    ! Local variables
+    integer :: i, j
+    real(dp) :: b
+    ! Whether the electrode is pre-expanded...
+    integer :: nq
+    logical :: pre_expand
+
+    if ( .not. IONode ) return
+
+    nq = product(El%Rep)
+    pre_expand = El%pre_expand > 0 .and. nq > 1
+
+    write(*,'(/,2a)') 'Calculating all surface Green functions for: ',trim(name(El))
+    write(*,'(a,f14.5,1x,a)') &
+         ' Fermi level shift in electrode (chemical potential) : ',El%mu%mu/eV,' eV'
+
+    ! Show the number of used atoms and orbitals
+    write(*,'(a,i6,'' / '',i6)') ' Atoms available    / used atoms   : ', &
+         El%na_u,El%na_used
+    write(*,'(a,i6,'' / '',i6)') ' Orbitals available / used orbitals: ', &
+         El%no_u,El%no_used
+
+    write(*,'(1x,a,i0)') 'Total self-energy calculations: ',nq*NE*nkpt
+
+    ! We show them in units of Bohr**-1
+    do i = 1 , 3
+       if ( El%Rep(i) > 1 ) then
+          write(*,'(3(a,i0),a)') ' q_',i,'-points for expanding electrode [b_',i,'] (w=1/',nq,'):'
+          if ( El%Rep(i) <= 3 ) then
+             write(*,'(5x)',advance='no')
+             do j = 1 , El%Rep(i) - 1
+                write(*,'(2(i0,a))',advance='no') j-1,'/',El%Rep(i),', '
+             end do
+             write(*,'(i0,a,i0)') El%Rep(i)-1,'/',El%Rep(i)
+          else
+             write(*,'(5x,6(i0,a))') 0,'/',El%Rep(i),', ',1,'/',El%Rep(i),', ... , ', &
+                  El%Rep(i)-1,'/',El%Rep(i)
+          end if
+       end if
+    end do
+
+    write(*,'(2a)') ' Saving surface Green functions in: ',trim(El%GFfile)
+
+    if ( pre_expand .and. El%pre_expand == 1 ) then
+       ! only the SSG is expanded
+       b = El%nspin * nkpt * ( 2 + NE * nq )
+    else
+       b = El%nspin * nkpt * ( 2 + NE ) * nq
+    end if
+
+    ! Correct estimated file-size for fully expanded
+    if ( pre_expand ) b = b * nq
+
+    ! to complex double precision
+    b = b * El%no_used ** 2 * 16._dp
+
+    ! to MB
+    b = b / 1024._dp ** 2
+
+    if ( b > 2001._dp ) then
+       b = b / 1024._dp
+       write(*,'(a,f10.3,a)') ' Estimated file size: ',b,' GB'
+    else
+       write(*,'(a,f10.3,a)') ' Estimated file size: ',b,' MB'
+    end if
+
+  end subroutine print_Elec_Green
+
 
 ! ##################################################################
 ! ## Driver subroutine for calculating the (ideal)                ##
@@ -770,7 +856,6 @@ contains
 
     use precision,  only : dp
     use parallel  , only : Node, Nodes, IONode
-    use units,      only : eV
     use sys ,       only : die
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World
@@ -811,7 +896,6 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     ! Array for holding converted k-points
-    real(dp), allocatable :: kE(:,:)
     real(dp) :: bkpt(3), kpt(3), kq(3), wq
     real(dp), allocatable :: lDOS(:)
     
@@ -875,6 +959,9 @@ contains
        call die("init electrode has received wrong job ID [L,R].")
     endif
 
+    ! Initialize TSGF-file
+    call init_TSGF()
+
     ! capture information from the electrode
     nspin  = El%nspin
     nuo_E  = El%no_u
@@ -894,62 +981,10 @@ contains
     n_s = size(El%isc_off,dim=2)
     allocate(sc_off(3,n_s))
     sc_off = matmul(El%cell,El%isc_off)
+
+    ! Print information on file-size and electrode type.
+    call print_Elec_Green(El, NEn, nkpnt)
     
-    if (IONode) then
-       write(*,'(/,2a)') 'Creating Green function file for: ',trim(name(El))
-
-       bkpt(1) = 16._dp * El%nspin * nkpnt * (2 + NEn) * nq &
-            * El%no_used ** 2 / 1024._dp ** 2
-       if ( pre_expand .and. El%pre_expand == 1 ) then
-          bkpt(1) = 16._dp * El%nspin * nkpnt * 2 &
-               * El%no_used ** 2 / 1024._dp ** 2
-          bkpt(1) = bkpt(1) + 16._dp * El%nspin * nkpnt * NEn * nq &
-               * El%no_used ** 2 / 1024._dp ** 2
-       end if
-       ! Correct estimated file-size
-       if ( pre_expand ) bkpt(1) = bkpt(1) * nq
-       if ( bkpt(1) > 2001._dp ) then
-          bkpt(1) = bkpt(1) / 1024._dp
-          write(*,'(a,f10.3,a)') ' Estimated file size: ',bkpt(1),' GB'
-       else
-          write(*,'(a,f10.3,a)') ' Estimated file size: ',bkpt(1),' MB'
-       end if
-
-       write(*,'(a)') " Electrodes with transport k-points [b_i] and weights:"
-       do i = 1 , nkpnt
-          ! From CONTACT to electrode k-point
-          ! First convert to units of reciprocal vectors
-          ! Then convert to 1/Bohr in the electrode unit cell coordinates
-          call Elec_kpt(El,ucell,kpoint(:,i),bkpt, opt = 2)
-          write(*,'(i4,2x,4(E14.5))') i, bkpt,kweight(i)
-       end do
-
-       ! Show the number of used atoms and orbitals
-       write(*,'(a,i6,'' / '',i6)') ' Atoms available    / used atoms   : ', &
-            El%na_u,El%na_used
-       write(*,'(a,i6,'' / '',i6)') ' Orbitals available / used orbitals: ', &
-            El%no_u,El%no_used
-
-       ! We show them in units of Bohr**-1
-       do i = 1 , 3
-          if ( El%Rep(i) > 1 ) then
-             write(*,'(3(a,i0),a)') ' q_',i,'-points for expanding electrode [b_',i,'] (w=1/',nq,'):'
-             if ( El%Rep(i) <= 3 ) then
-                write(*,'(5x)',advance='no')
-                do j = 1 , El%Rep(i) - 1
-                   write(*,'(2(i0,a))',advance='no') j-1,'/',El%Rep(i),', '
-                end do
-                write(*,'(i0,a,i0)') El%Rep(i)-1,'/',El%Rep(i)
-             else
-                write(*,'(5x,6(i0,a))') 0,'/',El%Rep(i),', ',1,'/',El%Rep(i),', ... , ', &
-                     El%Rep(i)-1,'/',El%Rep(i)
-             end if
-          end if
-       end do
-       write(*,'(a,f14.5,1x,a)') &
-            " Fermi level shift in electrode (chemical potential) : ",El%mu%mu/eV,' eV'
-    end if
-
     ! Initialize Green function and Hamiltonian arrays
     nullify(GS)
     if ( nS /= nuS ) then
@@ -1011,38 +1046,6 @@ contains
 !           Start Green function calculation
 !******************************************************************
     
-    if (IONode) then
-       call io_assign(uGF)
-       open(FILE=El%GFfile,UNIT=uGF,FORM='UNFORMATTED')
-
-       ! Electrode information
-       write(uGF) El%nspin, El%cell
-       write(uGF) El%na_u, El%no_u
-       write(uGF) El%na_used, El%no_used
-       write(uGF) El%xa_used, El%lasto_used
-       write(uGF) El%Rep(:), El%pre_expand
-       write(uGF) El%mu%mu
-
-       ! Write out explicit information about this content
-       write(uGF) nkpnt
-       ! Notice that we write the k-points for the ELECTRODE
-       ! They will be stored in units of the reciprocal lattice vector
-       !   1/b 
-       allocate(kE(3,nkpnt))
-       call memory('A','D',nkpnt*3,'create_green')
-       do i = 1 , nkpnt
-          ! Store the k-points in units of reciprocal lattice
-          call Elec_kpt(El,ucell,kpoint(:,i),kE(:,i), opt = 2)
-       end do
-       write(uGF) kE,kweight
-       call memory('D','D',nkpnt*3,'create_green')
-       deallocate(kE)
-
-       ! write out the contour information
-       write(uGF) NEn
-       write(uGF) ce ! energy points
-    end if
-    
 #ifdef MPI
     if ( IONode ) then
        allocate(reqs(Nodes-1))
@@ -1079,7 +1082,6 @@ contains
        ! TODO when adding new surface-Green functions schemes, please update here
        write(*,'(1x,a)') 'Lopez Sancho, Lopez Sancho & Rubio recursive &
             &surface self-energy calculation...'
-       write(*,'(1x,a,i0)') 'Total self-energy calculations: ',nq*NEn*nkpnt
     end if
 
     ! start up the iterators
@@ -1145,37 +1147,9 @@ contains
           end if
           
        end do HSq_loop
-       
-       if ( IONode ) then
-          write(uGF) ikpt, 1, ce(1) ! k-point and energy point
-          if ( reduce_size ) then
-             if ( pre_expand .and. El%pre_expand > 1 ) then
-                call update_UC_expansion_A(nuou_E,no_X,El, &
-                     El%na_used,El%lasto_used,nq,Hq,n_X,X)
-                write(uGF) X
-                call update_UC_expansion_A(nuou_E,no_X,El, &
-                     El%na_used,El%lasto_used,nq,Sq,n_X,X)
-                write(uGF) X
-             else
-                write(uGF) Hq
-                write(uGF) Sq
-             end if
-          else
-             H00 => zHS(      1:nq*nS  )
-             S00 => zHS(nq*nS+1:nq*nS*2)
-             if ( pre_expand .and. El%pre_expand > 1 ) then
-                call update_UC_expansion_A(nuo_E,no_X,El, &
-                     El%na_used,El%lasto_used,nq,H00,n_X,X)
-                write(uGF) X
-                call update_UC_expansion_A(nuo_E,no_X,El, &
-                     El%na_used,El%lasto_used,nq,S00,n_X,X)
-                write(uGF) X
-             else
-                write(uGF) H00
-                write(uGF) S00
-             end if
-          end if
-       end if
+
+       ! Save Hamiltonian and overlap
+       call store_HS()
        
        Econtour_loop: do iEn = 1, NEn
 
@@ -1271,19 +1245,6 @@ contains
                 end if
              end if
                 
-
-             if ( IONode ) then
-                ! Write out calculated information at E point
-
-                if ( iEn /= 1 ) write(uGF) ikpt, iEn, ce(iEn)
-                if ( pre_expand ) then
-                   write(uGF) X
-                else
-                   write(uGF) Gq
-                end if
-
-             end if
-
 #ifdef MPI
              ! If not IONode we should send message
              ! This message parsing is directly connected to 
@@ -1294,24 +1255,12 @@ contains
                 call MPI_Start(req,MPIerror)
                 call MPI_Wait(req,status,MPIerror)
              end if
+#endif
              
           end if E_Nodes
 
-          ! If IONode, we should receive in each energy point
-          ! There is no need to create a buffer array for the Gq
-          ! We will not use it until we are in the loop again
-          if ( IONode .and. curNode /= Node ) then
-             call MPI_Start(reqs(curNode),MPIerror)
-             if ( iEn /= 1 ) write(uGF) ikpt, iEn, ce(iEn)
-             call MPI_Wait(reqs(curNode),status,MPIerror)
-             if ( pre_expand ) then
-                write(uGF) X
-             else
-                write(uGF) Gq
-             end if
-          end if
-
-#endif
+          ! Save the surface Green function file
+          call store_GS()
 
        end do Econtour_loop
           
@@ -1371,11 +1320,8 @@ contains
     end if
 #endif
 
-    ! Close file
-    if ( IONode ) then
-       call io_close(uGF)
-       write(*,'(a,/)') "Done creating '"//trim(El%GFfile)//"'."  
-    end if
+    ! Close and finish
+    call finish_TSGF()
     
     ! Clean up computational arrays
     if ( nS /= nuS ) then
@@ -1450,8 +1396,116 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS create_Green' )
 #endif
+
+  contains
+
+
+    subroutine init_TSGF()
+      
+      real(dp), allocatable :: kE(:,:)
+
+      if ( .not. IONode ) return
+      
+      call io_assign(uGF)
+      open(FILE=El%GFfile,UNIT=uGF,FORM='UNFORMATTED')
+      
+      ! Electrode information
+      write(uGF) El%nspin, El%cell
+      write(uGF) El%na_u, El%no_u
+      write(uGF) El%na_used, El%no_used
+      write(uGF) El%xa_used, El%lasto_used
+      write(uGF) El%Rep(:), El%pre_expand
+      write(uGF) El%mu%mu
+      
+      ! Write out explicit information about this content
+      write(uGF) nkpnt
+      ! Notice that we write the k-points for the ELECTRODE
+      ! They will be stored in units of the reciprocal lattice vector
+      !   1/b 
+      allocate(kE(3,nkpnt))
+      do i = 1 , nkpnt
+         ! Store the k-points in units of reciprocal lattice
+         call Elec_kpt(El,ucell,kpoint(:,i),kE(:,i), opt = 2)
+      end do
+      write(uGF) kE, kweight
+      deallocate(kE)
+      
+      ! write out the contour information
+      write(uGF) NEn
+      write(uGF) ce ! energy points
+      
+    end subroutine init_TSGF
+
+    subroutine store_HS()
+      
+      if ( .not. IONode ) return
+      ! k-point and energy-point is in front of Hamiltonian
+
+      write(uGF) ikpt, 1, ce(1) ! k-point and energy point
+      if ( reduce_size ) then
+         if ( pre_expand .and. El%pre_expand > 1 ) then
+            call update_UC_expansion_A(nuou_E,no_X,El, &
+                 El%na_used,El%lasto_used,nq,Hq,n_X,X)
+            write(uGF) X
+            call update_UC_expansion_A(nuou_E,no_X,El, &
+                 El%na_used,El%lasto_used,nq,Sq,n_X,X)
+            write(uGF) X
+         else
+            write(uGF) Hq
+            write(uGF) Sq
+         end if
+      else
+         H00 => zHS(      1:nq*nS  )
+         S00 => zHS(nq*nS+1:nq*nS*2)
+         if ( pre_expand .and. El%pre_expand > 1 ) then
+            call update_UC_expansion_A(nuo_E,no_X,El, &
+                 El%na_used,El%lasto_used,nq,H00,n_X,X)
+            write(uGF) X
+            call update_UC_expansion_A(nuo_E,no_X,El, &
+                 El%na_used,El%lasto_used,nq,S00,n_X,X)
+            write(uGF) X
+         else
+            write(uGF) H00
+            write(uGF) S00
+         end if
+      end if
+
+    end subroutine store_HS
+
+    subroutine store_GS()
+      
+      ! Save Surface Green function
+      if ( .not. IONode ) return
+
+#ifdef MPI
+      if ( curNode /= Node ) then
+         call MPI_Start(reqs(curNode),MPIerror)
+         call MPI_Wait(reqs(curNode),status,MPIerror)
+      end if
+#endif
+         
+      ! Write out calculated information at E point
+      if ( iEn /= 1 ) write(uGF) ikpt, iEn, ce(iEn)
+      if ( pre_expand ) then
+         write(uGF) X
+      else
+         write(uGF) Gq
+      end if
+      
+    end subroutine store_GS
+
+    subroutine finish_TSGF()
+      
+      ! Close file
+      if ( .not. IONode ) return
+      
+      call io_close(uGF)
+      write(*,'(a,/)') "Done creating '"//trim(El%GFfile)//"'."  
+
+    end subroutine finish_TSGF
     
   end subroutine create_Green
+
 
   subroutine init_Electrode_HS(El)
     use m_ts_electype

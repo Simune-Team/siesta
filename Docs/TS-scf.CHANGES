@@ -1,4 +1,17 @@
 ----------------------------------------------------
+February 11, 2016 -- Nick Papior       trunk-484---ts-scf-648
+Prepared TSGF for netCDF file format
+
+* Changed the information print-out of the electrodes
+  and made it streamlined.
+  
+  The TSGF creation also accommodates future
+  extension of the netcdf file format.
+
+modified:
+  Src/m_ts_electrode.F90
+
+----------------------------------------------------
 February 9, 2016 -- Nick Papior       trunk-484---ts-scf-647
 Fixed SCALAPACK_DEBUG in serial runs
 
