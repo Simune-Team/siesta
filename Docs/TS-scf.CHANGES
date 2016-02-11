@@ -1,4 +1,44 @@
 ----------------------------------------------------
+February 11, 2016 -- Nick Papior       trunk-484---ts-scf-649
+Removed FD Novaes tbtrans
+
+removed:
+  Util/TBTrans/
+  Util/TBTrans/FDF_STDIN
+  Util/TBTrans/Lowdin.F
+  Util/TBTrans/Makefile
+  Util/TBTrans/README
+  Util/TBTrans/TSiohs.F
+  Util/TBTrans/calc_green.F
+  Util/TBTrans/cdiag_local.f
+  Util/TBTrans/cont.F
+  Util/TBTrans/csolve.f
+  Util/TBTrans/getsfe.F
+  Util/TBTrans/green4.F
+  Util/TBTrans/greeninp.F
+  Util/TBTrans/greensub.F
+  Util/TBTrans/hamil2.F
+  Util/TBTrans/helpers.f
+  Util/TBTrans/m_tbt_gf.F90
+  Util/TBTrans/m_tbt_kpts.F90
+  Util/TBTrans/m_tbt_options.F90
+  Util/TBTrans/matsqrt.F
+  Util/TBTrans/mkCplxContour.F
+  Util/TBTrans/mkRealContour.F
+  Util/TBTrans/mkqgrid.f
+  Util/TBTrans/mtsqrtSYM.f
+  Util/TBTrans/readTSHScdf.F
+  Util/TBTrans/read_green.F
+  Util/TBTrans/reinit_tb.F
+  Util/TBTrans/sethhm2.F
+  Util/TBTrans/setupcontour.F
+  Util/TBTrans/setupkham2.F
+  Util/TBTrans/tbtrans.F
+  Util/TBTrans/teigchana.F
+  Util/TBTrans/transmission.F
+  Util/TBTrans/tsread2.F
+
+----------------------------------------------------
 February 11, 2016 -- Nick Papior       trunk-484---ts-scf-648
 Prepared TSGF for netCDF file format
 
