@@ -8,10 +8,10 @@
       USE siesta_options
       use sparse_matrices
       use siesta_geom
-      use atomlist, only: iaorb, iphorb, lasto, no_u, no_l
+      use atomlist, only: iaorb, iphorb, lasto, no_u, no_l, indxuo ! CC RC
       use m_broyden_mixing
       use m_fire_mixing
-      use m_spin,   only: nspin
+      use m_spin,   only: nspin, h_spin_dim, SpOrb
       use m_pulay
       use parallel, only: IONode
 #ifdef TRANSIESTA
@@ -66,18 +66,19 @@
         end if
 #endif /* TRANSIESTA */
 
+! CC RC  Changed in the following nspin by h_spin_dim
         if (fire_mix) then
           call fire_mixing( iscf, mix, no_l, maxnh,
-     &                      numh(1:no_l), listhptr(1:no_l), nspin,
+     &                      numh(1:no_l), listhptr(1:no_l), h_spin_dim,
      $                      wmix, nkick, wmixkick, Xout, Xin,dummy_dmax)
         else if (broyden_maxit == 0) then
                call pulayx( iiscf, mmix, no_l, maxnh,
-     &                 numh, listhptr, nspin, maxsav, wmix, nkick, 
+     &                 numh, listhptr, h_spin_dim, maxsav, wmix, nkick, 
      .                 wmixkick, XOut, XIn, dummy_dmax)
         else
           call broyden_mixing( iscf, mix, no_l, maxnh,
      &                         numh(1:no_l), listhptr(1:no_l),
-     &                         nspin, wmix, nkick, wmixkick,
+     &                         h_spin_dim, wmix, nkick, wmixkick,
      $                         XOut, XIn, dummy_dmax)
         endif
       endif
@@ -91,9 +92,17 @@
          if (IONode)
      &        write (6,"(/a)")
      &        'siesta: Mulliken populations after mixing'
-        call mulliken( mullipop, nspin, na_u, no_u, maxnh,
+CC RC  osSO 
+         if (SpOrb) then
+          call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+     .                      listh, S, Dscf, isa, lasto, iaorb, iphorb,
+     .                      indxuo )
+         else
+          call mulliken( mullipop, h_spin_dim, na_u, no_u, maxnh,
      &                 numh, listhptr, listh, S, Dscf, isa,
      &                 lasto, iaorb, iphorb )
+         endif
+CC RC 
       endif
 
       call timer( 'MIXER', 2 )

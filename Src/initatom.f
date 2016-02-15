@@ -29,7 +29,7 @@
       use fdf
       use precision
       use basis_types, only: basis_specs_transfer, nsp
-      use basis_types, only: deallocate_spec_arrays
+      use basis_types, only: deallocate_spec_arrays, initialize
       use basis_types, only: iz, lmxkb, nkbl, 
      &           erefkb, lmxo, nzeta, rco, 
      &           lambda, filtercut,
@@ -51,10 +51,15 @@
       use atmparams, only: lmaxd, nkbmx, nsemx, nzetmx
       use atom_options, only: get_atom_options
 
+      use pseudopotential, only: pseudo_read
+    
+      use m_spin, only: SpOrb  
+      use chemical
+
       implicit none
       integer,         intent(out) :: ns   ! Number of species
 !     Internal variables ...................................................
-      integer                      :: is
+      integer                      :: is, isp  ! CC RC Added isp
       logical                      :: user_basis, user_basis_netcdf
       type(basis_def_t),   pointer :: basp
       
@@ -75,9 +80,38 @@
         call read_basis_netcdf(ns)
         call elec_corr_setup()
       else if (user_basis) then
+CC RC
+       SpOrb  = fdf_get('SpinOrbit',.false.)
+
+       write(6,'(a,l)') ' initatom: SpOrb = ', SpOrb
+c       stop 'Stopping in initatom'
+       if(SpOrb) then
+        call read_chemical_types()
+        nsp = number_of_species()
+
+        allocate(basis_parameters(nsp))
+        do isp=1,nsp
+         call initialize(basis_parameters(isp))
+        enddo
+
+        do isp=1,nsp
+         basp=>basis_parameters(isp)
+
+         basp%label = species_label(isp)
+         call pseudo_read(basp%label,basp%pseudopotential)
+        enddo
         write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
         call read_basis_ascii(ns)
         call elec_corr_setup()
+       else
+        write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
+        call read_basis_ascii(ns)
+        call elec_corr_setup()
+       endif
+CC RC
+c        write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
+c        call read_basis_ascii(ns)
+c        call elec_corr_setup()
       else
 !       New routines in basis_specs and basis_types.
         call read_basis_specs()

@@ -41,7 +41,8 @@ CONTAINS
                                  lastkb, no_s, rmaxv, indxua, iphorb, lasto, &
                                  rmaxo, no_l
       use m_ntm,           only: ntm
-      use m_spin,          only: nspin
+      use m_spin,          only: NoMagn, SPpol, NonCol, SpOrb 
+      use m_spin,          only: nspin, h_spin_dim, spinor_dim
       use m_dipol,         only: dipol
       use siesta_geom,     only: na_u, na_s, xa, isa
       use m_rhog,          only: rhog
@@ -66,6 +67,8 @@ CONTAINS
 !     Compute the band-structure energy
 
       call compute_EBS()
+    
+!      stop 'Stopping after calling compute_EBS'
 
 
       ! These energies were calculated in the latest call to
@@ -119,17 +122,58 @@ CONTAINS
    subroutine compute_EBS()
 
       Ebs = 0.0_dp
-      do ispin = 1,nspin
+! CC RC      do ispin = 1,nspin
 !       const factor takes into account that there are two nondiagonal
 !       elements in non-collinear spin density matrix, stored as
 !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
 !       ispin=4 => Imag(D12)
-        const = 1._dp
-        if (ispin .gt. 2) const = 2._dp
+! CC RC        const = 1._dp
+! CC RC        if (ispin .gt. 2) const = 2._dp
+! CC RC        do io = 1,maxnh
+! CC RC          Ebs = Ebs + H(io,ispin) * const * Dscf(io,ispin)
+! CC RC        enddo
+! CC RC      enddo
+
+! CC RC  Added calculation of Ebs for Noncollinear and SO calculations 
+!      write(6,'(a)')        ' Calculating Ebs... '
+!      write(6,'(a,2l2,i5)') ' SpOrb/NonCol/maxnh = ', SpOrb, NonCol, maxnh
+!      write(6,'(a,2i8)')    '        Size Dscf/H = ', size(Dscf), size(H)
+
+
+      if ( SpOrb ) then
         do io = 1,maxnh
-          Ebs = Ebs + H(io,ispin) * const * Dscf(io,ispin)
+!          write(6,'(a,i5,8f12.6)') 'io/Dscf(io,1:8) = ', io, Dscf(io,1:8)
+          Ebs = Ebs      + H(io,1) * ( Dscf(io,1) )   &
+                         + H(io,2) * ( Dscf(io,2) )   &
+                         + H(io,3) * ( Dscf(io,7) )   &
+                         + H(io,4) * ( Dscf(io,8) )   &
+                         - H(io,5) * ( Dscf(io,5) )   &
+                         - H(io,6) * ( Dscf(io,6) )   &
+                         + H(io,7) * ( Dscf(io,3) )   &
+                         + H(io,8) * ( Dscf(io,4) )
         enddo
-      enddo
+        write(6,'(a,f12.8)') '           (SO)Ebs = ', Ebs
+      elseif (NonCol) then
+        do io = 1,maxnh
+!          write(6,'(a,i5,3f12.6)') 'io/D(io,1:3) = ', io, Dscf(io,1:3)
+          Ebs    = Ebs    + H(io,1) * ( Dscf(io,1)  )   &
+                          + H(io,2) * ( Dscf(io,2)  )   &
+                 + 2.0_dp * H(io,3) * ( Dscf(io,3)  )   &
+                 + 2.0_dp * H(io,4) * ( Dscf(io,3)  )
+        enddo
+        write(6,'(a,f12.8)') '   (NC)Ebs = ', Ebs
+      elseif (SPpol)  then
+        do io = 1,maxnh
+          Ebs    = Ebs    + H(io,1) * Dscf(io,1)  &
+                          + H(io,2) * Dscf(io,2)
+        enddo
+      elseif (NoMagn) then
+        do io = 1,maxnh
+          Ebs    = Ebs + H(io,1) *  Dscf(io,1)
+        enddo
+      endif
+! CC RC  
+
 #ifdef MPI
 !     Global reduction 
       call globalize_sum(Ebs,buffer1)
@@ -140,18 +184,56 @@ CONTAINS
     subroutine compute_DEharr()
 
           DEharr = 0.0_dp
-          do ispin = 1,nspin
+! CC RC          do ispin = 1,nspin
              !       const factor takes into account that there are two nondiagonal
              !       elements in non-collinear spin density matrix, stored as
              !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
              !       ispin=4 => Imag(D12)
-             const = 1._dp
-             if (ispin .gt. 2) const = 2._dp
-             do io = 1,maxnh
-                DEharr = DEharr +  &
-                         H(io,ispin) * const * ( Dscf(io,ispin) - Dold(io,ispin) )
-             enddo
-          enddo
+! CC RC             const = 1._dp
+! CC RC             if (ispin .gt. 2) const = 2._dp
+! CC RC             do io = 1,maxnh
+! CC RC                DEharr = DEharr +  &
+! CC RC                         H(io,ispin) * const * ( Dscf(io,ispin) - Dold(io,ispin) )
+! CC RC             enddo
+! CC RC          enddo
+
+! CC RC  Added calculation of Eharris for Noncollinear and SO calculations 
+      write(6,'(a)') ' Calculating DEharr... '
+      write(6,'(a,2l2,i12)') ' SpOrb/NonColl/nh = ', SpOrb, NonCol, maxnh
+      write(6,'(a,2i10)')    '      Size Dscf/H = ', size(Dscf), size(H)
+      if ( SpOrb ) then
+        do io = 1,maxnh
+          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
+                          + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
+                          + H(io,3) * ( Dscf(io,7) - Dold(io,7) )  &
+                          + H(io,4) * ( Dscf(io,8) - Dold(io,8) )  &
+                          - H(io,5) * ( Dscf(io,5) - Dold(io,5) )  &
+                          - H(io,6) * ( Dscf(io,6) - Dold(io,6) )  &
+                          + H(io,7) * ( Dscf(io,3) - Dold(io,3) )  &
+                          + H(io,8) * ( Dscf(io,4) - Dold(io,4) )
+        enddo
+        write(6,'(a,f12.8)') '        (SO)DEharr = ', DEharr
+!        stop 'Stopping after calculate DEharr inside compute_energies'
+      elseif (NonCol) then
+        do io = 1,maxnh
+          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
+                          + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
+                 + 2.0_dp * H(io,3) * ( Dscf(io,3) - Dold(io,3) )  &
+                 + 2.0_dp * H(io,4) * ( Dscf(io,3) - Dold(io,3) )
+        enddo
+        write(6,'(a,f12.8)') '(NC)DEharr = ', DEharr
+      elseif (SPpol)  then
+        do io = 1,maxnh
+          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
+                          + H(io,2) * ( Dscf(io,2) - Dold(io,2) )
+        enddo
+      elseif (NoMagn) then
+        do io = 1,maxnh
+          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )
+        enddo
+      endif
+! CC RC 
+
 #ifdef MPI
           !     Global reduction of DEharr
           call globalize_sum( DEharr, buffer1 )
@@ -176,7 +258,7 @@ CONTAINS
 
       ! Remove unwanted arguments...
 
-      call dhscf( nspin, no_s, iaorb, iphorb, no_l,                         &
+      call dhscf( nspin, h_spin_dim, SpOrb, no_s, iaorb, iphorb, no_l,      &
                   no_u, na_u, na_s, isa, xa, indxua,                        &
                   ntm, ifa, istr, ihmat, filesOut,                          &
                   maxnh, numh, listhptr, listh, Dscf, Datm,                 &
@@ -195,10 +277,10 @@ CONTAINS
 
       Ekin = 0.0_dp
       Enl  = 0.0_dp
-      do ispin = 1,min(nspin,2)
+      do ispin = 1,min(nspin,2)  ! CC RC  It is ok. It has to be spinor_dim 
         do io = 1,maxnh
-          Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
-          Enl  = Enl  + H_vkb(io)* Dscf(io,ispin)
+          Ekin = Ekin + H_kin(io,1) * Dscf(io,ispin)
+          Enl  = Enl  + H_vkb(io,1)* Dscf(io,ispin)
         enddo
       enddo
 #ifdef MPI

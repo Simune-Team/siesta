@@ -3,27 +3,24 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
+! and J.M.Soler, 1996-2006.
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diag2k( nuo, no, maxnh, maxnd, maxo,
+      subroutine diag3k( nuo, no, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr, 
-     .                   listd, H, S, getD, qtot, temp, e1, e2,
+     .                   listd, H, S, getD, getPSI, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
      .                   eo, qo, Dnew, Enew, ef, Entropy,
      .                   psi, nuotot, occtol, iscf)
 
 !
-!     Contributed by Volodymyr Maslyuk
-!      
       use precision
       use sys
       use parallel,      only : Node, Nodes, BlockSize
       use parallelsubs,  only : LocalToGlobalOrb
       use m_fermid,      only : fermid, stepf
-CC RC      use m_spin,        only : MColl
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -38,10 +35,10 @@ C Written by J.Soler, August 1998.
 C Modified by V.M.Garcia, June 2002.
 C Density matrix build and computation of eigenvectors restricted
 C by J.D. Gale November 2004.
-C Corrected by V.V. Maslyuk for parallel case, Mai 2007
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
+C integer maxuo               : Maximum number of basis orbitals
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of listd / DM
 C integer maxo                : First dimension of eo and qo
@@ -60,6 +57,7 @@ C                               indexes for each matrix row
 C real*8  H(maxnh,4)          : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C logical getD                : Find occupations and density matrices?
+C logical getPSI              : Find & print wavefunctions?
 C real*8  qtot                : Number of electrons in unit cell
 C real*8  temp                : Electronic temperature 
 C real*8  e1, e2              : Energy range for density-matrix states
@@ -79,8 +77,8 @@ C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
 C integer iscf                : SCF cycle number
 C *************************** OUTPUT **********************************
-C real*8 eo(maxo*4,nk)        : Eigenvalues
-C real*8 qo(maxo*4,nk)        : Occupations of eigenstates
+C real*8 eo(maxo*2,nk)        : Eigenvalues
+C real*8 qo(maxo*2,nk)        : Occupations of eigenstates
 C real*8 Dnew(maxnd,4)        : Output Density Matrix
 C real*8 Enew(maxnd,4)        : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
@@ -108,12 +106,12 @@ C *********************************************************************
       integer listh(maxnh), listd(maxnd)
       integer listhptr(*), listdptr(*)
       
-      real(dp) Dnew(maxnd,4), Enew(maxnd,4), H(maxnh,4), S(maxnh)
+      real(dp) Dnew(maxnd,8), Enew(maxnd,4), H(maxnh,8), S(maxnh)
       real(dp) kpoint(3,nk), wk(nk), xij(3,maxnh)
       real(dp) e1, e2, ef, eo(maxo*2,nk), qo(maxo*2,nk)
       real(dp) occtol, qtot, temp, Entropy
       
-      logical               getD
+      logical               getD, getPSI
       
 !     TEMPOS, INTERNAL VARIABLES etc.
       
@@ -143,18 +141,16 @@ C *********************************************************************
 !     B E G I N
 !***********************************************************************
 !     define the arrays
-! JFR:  MColl deleted throughout the subroutine
-
       allocate(Haux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag2k')
+      call memory('A','Z',2*nuotot*2*nuo,'diag3k')
       allocate(Saux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag2k')
+      call memory('A','Z',2*nuotot*2*nuo,'diag3k')
       allocate(Dkc(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag2k')
+      call memory('A','Z',2*nuotot*2*nuo,'diag3k')
       allocate(Ekc(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag2k')
-      allocate(caux(2,nuotot))  ! CC RC Chnaged for osSO
-      call memory('A','Z',2*nuotot,'diag2k')
+      call memory('A','Z',2*nuotot*2*nuo,'diag3k')
+      allocate(caux(2,2*nuotot))
+      call memory('A','Z',2*2*nuotot,'diag3k')
       
       eo = 0.0_dp
 
@@ -165,8 +161,7 @@ C *********************************************************************
 ! Indices iuo and juo are for orbital components in the unit cell
 ! while jo is for orbital components in the supercell:
 ! d_{jo} = R + d_{juo}, x_{ij} = d_{jo} - d_{iuo}
-! Since <jo|H|iuo> is computed, the Bloch phase factor is e^(-i k x_{ij}
-! )
+! Since <jo|H|iuo> is computed, the Bloch phase factor is e^(-i k x_{ij} )
 !
 ! The different subroutines build
 ! H_{jo,iuo)^{js,is} = H_{juo,iuo}^{js,is}(R) = <js,jo|H|is,iuo>
@@ -182,11 +177,9 @@ C *********************************************************************
 !            | H(ind,7) + i H(ind,8)   H(ind,2) + i H(ind,6) |
 !
 ! 1. Hermiticity imposes H_{i,j}^{is,js}=H_{j,i}^{js,is}^*
-! 2. Since wave functions are real, if there are no single P or L
-! operators:
+! 2. Since wave functions are real, if there are no single P or L operators:
 !      (a) H_{i,j}^{is,js}=H_{j,i}^{is,js}
-!      (b) These imply spin-box hermiticity:
-!      H_{i,j}^{is,js}=H_{i,j}^{js,is}^*
+!      (b) These imply spin-box hermiticity: H_{i,j}^{is,js}=H_{i,j}^{js,is}^*
 !
 !      (c) Hence
 !
@@ -196,19 +189,12 @@ C *********************************************************************
 !
 !
 
-      
 !     Find eigenvalues at every k point
+
       do ik = 1,nk
       
         Saux = dcmplx(0.0_dp,0.0_dp)
         Haux = dcmplx(0.0_dp,0.0_dp)
-      
-!
-!       Transfer S,H matrices from sparse format in supercell to
-!                                       full format in unit cell
-!
-!       Convention: ispin=1 => H11,       ispin=2 => H22,
-!                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
       
         do iuo = 1,nuo
           do j = 1,numh(iuo)
@@ -218,27 +204,26 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-! JFR: sign change in phase because of orbital ordering j,i & convention for xij = d_j - d_i
             kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
-            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
+     .                            dcmplx(H(ind,1), H(ind,5)) * kphs
+            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
+     .                            dcmplx(H(ind,2), H(ind,6)) * kphs
             Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
      .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
             Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                        + dcmplx(H(ind,3), + H(ind,4)) * kphs
+     .                        + dcmplx(H(ind,7), + H(ind,8)) * kphs
           enddo
         enddo
       
-!        write(6,'(a)') ' diag2k: Calling cdiag1'
 !       Find eigenvalues
 !       Note duplication since the spins are mixed
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo(1,ik),psi,
      .             0,iscf,ierror)
-!        write(6,'(a)') ' diag2k: Leaving cdiag1'
-
+      
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
         endif
@@ -247,23 +232,11 @@ C *********************************************************************
 !-----------------------------------------------------------------------
 !     Check if we are done
 !-----------------------------------------------------------------------
-      if (.not.getD) goto 1001
+      if (.not.getD) return
 !-----------------------------------------------------------------------
       
-!      write(6,'(a)') 'diag2k: Calling fermid after cdiag1'
-!      write(6,'(a,i5)') 'diag2k: --> num of k-points     (nk): ', nk
-!      write(6,'(a)') 'diag2k: --> weights of k-points (wk):  ---'
-!      write(6,'(a,i5)') 'diag2k: --> First dim of E    (maxo): ', maxo
-!      write(6,'(a,i5)') 'diag2k: --> Number of bands (nuotot): ', nuotot
-!      write(6,'(a)') 'diag2k: --> State eigenvalues       :  ---'
-!      write(6,'(a,f12.8)') 'diag2k: --> Temperature       (temp): ',temp
-!      write(6,'(a,f12.8)') 'diag2k: --> Valence charge    (qtot): ',qtot
 !     Find new Fermi energy and occupation weights
       call fermid(2,2,nk,wk,maxo,nuotot,eo,temp,qtot,qo,ef,Entropy)
-!      write(6,'(a)') ' diag2k: Leaving fermid after cdiag1'
-!      write(6,'(a,f12.8)') 'diag2k: --> Fermi energy        (Ef): ',ef
-   
-!      stop 'Stopping in diag2k'
       
 !     Find weights for local density of states
       if (e1 .lt. e2) then
@@ -277,33 +250,26 @@ C *********************************************************************
           enddo
         enddo
       endif
-
-!      write(6,'(a)') ' diag2k: A'
       
 !     New density and energy-density matrices of unit-cell orbitals
       Dnew(:,:) = 0.0_dp
       Enew(:,:) = 0.0_dp
       
 !     Find maximum eigenvector that is required for this k point 
-!      write(6,'(a,i5)') ' diag2k: ik = ', nk
       do ik = 1,nk
         neigneeded = 0
-        ie = 2*nuotot
+        ie = 2*nuotot  ! for mixed spins
         do while (ie.gt.0.and.neigneeded.eq.0)
           qe = qo(ie,ik)
           if (abs(qe).gt.occtol) neigneeded = ie
           ie = ie - 1
         enddo
-!        write(6,'(a,i5)') ' diag2k: ik ', ik 
       
 !       Find eigenvectors 
         Saux = dcmplx(0.0_dp,0.0_dp)
         Haux = dcmplx(0.0_dp,0.0_dp)
-!        write(6,'(a,i5)') ' diag2k: nuo ', nuo
         do iuo = 1,nuo
-!          write(6,'(a,i5)') '   diag2k: numh(iuo) ', numh(iuo) 
           do j = 1,numh(iuo)
-
             ind = listhptr(iuo) + j
             jo = listh(ind)
             juo = indxuo(jo)
@@ -311,39 +277,22 @@ C *********************************************************************
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
             kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
-!            write(6,*) '  diag2k: iuo/j/kxij/kphs = ', 
-!     .             iuo, j, kxij, kphs 
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
-            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+            Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
+     .                            dcmplx(H(ind,1), H(ind,5)) * kphs
+            Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
+     .                            dcmplx(H(ind,2), H(ind,6)) * kphs
             Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
      .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
             Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                        + dcmplx(H(ind,3), + H(ind,4)) * kphs
-
-!            write(6,*) '  diag2k: Saux(1,juo,1,iuo) = ', 
-!     .                            Saux(1,juo,1,iuo) 
-!            write(6,*) '  diag2k: Saux(2,juo,2,iuo) = ', 
-!     .                            Saux(2,juo,2,iuo) 
-!            write(6,*) '  diag2k: Haux(1,juo,1,iuo) = ', 
-!     .                            Haux(1,juo,1,iuo) 
-!            write(6,*) '  diag2k: Haux(2,juo,2,iuo) = ', 
-!     .                            Haux(2,juo,2,iuo) 
-!            write(6,*) '  diag2k: Haux(1,juo,2,iuo) = ', 
-!     .                            Haux(1,juo,2,iuo) 
-!            write(6,*) '  diag2k: Haux(2,juo,1,iuo) = ', 
-!     .                            Haux(2,juo,1,iuo) 
+     .                        + dcmplx(H(ind,7), + H(ind,8)) * kphs
           enddo
         enddo
-
-!        stop 'Stoping after before cdiag second call in diag2k.F sub'
       
-!        write(6,'(a)') ' diag2k: Calling cdiag2'
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
      .             neigneeded,iscf,ierror)
-!        write(6,'(a)') ' diag2k: Leaving cdiag2'
       
 !       Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -364,22 +313,20 @@ C *********************************************************************
       
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
-              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
-              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
+              Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + 
+     .                              dcmplx(H(ind,1), H(ind,5)) * kphs
+              Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + 
+     .                              dcmplx(H(ind,2), H(ind,6)) * kphs
               Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
      .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
               Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                          + dcmplx(H(ind,3), + H(ind,4)) * kphs
+     .                          + dcmplx(H(ind,7), + H(ind,8)) * kphs
             enddo
           enddo
           call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
      .               neigneeded,iscf,ierror)
         endif
       
-!-----------------------------------------------------------------------	     
-!     Store the products of eigenvectors in matrices Dk and Ek
-!     WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
-!-----------------------------------------------------------------------	     
 !***********************************************************************
 ! BUILD NEW DENSITY MATRIX
 !***********************************************************************
@@ -395,25 +342,13 @@ C *********************************************************************
 
 ! The Energy is computed as E = Tr [ D_{i,j} H_{j,i} ]
 !
-! The Density Matrix is not "spin box hermitian" even if H does not
-! contain P or
+! The Density Matrix is not "spin box hermitian" even if H does not contain P or
 ! L operators.
 !
-! Spin-box symmetrization of D inside this present subroutine:
+! Spin-box symmetrization of D:
 ! D_{i,j}(1,2) = 0.5 ( D_{i,j}(1,2) + D_{i,j}(2,1)^* )
-! does not affect the results in any case, since H is spin-box
-! hermitian.
-!
-! The wave function coefficients c_{i,sigma}(ie,k) only satisfy
-! "TR"-related 
-! symmetry relations if the state is collinear (nspin = 2). In this case
-! c_{i,sigma}(ie,k) = c_{i,sigma}(ie, -k)^*
-!
-! For a non-collinear state, the above relation does not hold
-! generically. Hence the
-! full BZ must be used to compute the DM.
+! can not be enforced here.
 
-      
         Dkc  = dcmplx(0.0_dp,0.0_dp)
         Ekc  = dcmplx(0.0_dp,0.0_dp)
         caux = dcmplx(0.0_dp,0.0_dp)
@@ -442,10 +377,6 @@ C *********************************************************************
             do iuo = 1,nuo
               call LocalToGlobalOrb(iuo,Node,Nodes,iio)
               do juo = 1,nuotot
-CC RC
-C    In the JF 3.1.1 version the following matrix elements are
-C    calculated by means of dconj(caux(1,juo)) instead of caux(1,juo)
-C    I will leave it as it is. maybe it needs further revision...
       
 !------- 1,1 -----------------------------------------------------------
                cicj = caux(1,iio) * dconjg(caux(1,juo))
@@ -455,11 +386,11 @@ C    I will leave it as it is. maybe it needs further revision...
                cicj = caux(2,iio) * dconjg(caux(2,juo))
                Dkc(2,juo,2,iuo) = Dkc(2,juo,2,iuo) + qe * cicj
                Ekc(2,juo,2,iuo) = Ekc(2,juo,2,iuo) + ee * cicj
-!------- 2,1 -----------------------------------------------------------
+!------- 1,2 -----------------------------------------------------------
                cicj = caux(1,iio) * dconjg(caux(2,juo))
                Dkc(1,juo,2,iuo) = Dkc(1,juo,2,iuo) + qe * cicj
                Ekc(1,juo,2,iuo) = Ekc(1,juo,2,iuo) + ee * cicj
-!------- 1,2 -----------------------------------------------------------
+!------- 2,1 -----------------------------------------------------------
                cicj = caux(2,iio) * dconjg(caux(1,juo))
                Dkc(2,juo,1,iuo) = Dkc(2,juo,1,iuo) + qe * cicj
                Ekc(2,juo,1,iuo) = Ekc(2,juo,1,iuo) + ee * cicj
@@ -473,12 +404,6 @@ C    I will leave it as it is. maybe it needs further revision...
           endif
         enddo
       
-!       Add contribution to density matrices of unit-cell orbitals
-!       ------------------------------------------------------
-!       | D_{j,i}(1)                 D_{j,i}(3)-i D_{j,i}(4) |
-!       | D_{i,j}(3)+i D_{i,j}(4)    D_{j,i}(2)              |
-!       ------------------------------------------------------
-      
         do iuo = 1,nuo
         do j = 1,numd(iuo)
           ind = listdptr(iuo) + j
@@ -487,145 +412,51 @@ C    I will leave it as it is. maybe it needs further revision...
           kxij = kpoint(1,ik) * xij(1,ind) +
      .           kpoint(2,ik) * xij(2,ind) +
      .           kpoint(3,ik) * xij(3,ind)
-! JFR: the sign in the phase of H_ji is reflected in the DM
           kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
-     
-CC RC  
-C      In the JF's version D11, D22, etc are not time-reversal averaged
-C      I will leave as it is here but maybe it will need major revision
- 
-!         Average k and -k solutions because time-reversal symetry
-!          D11 = 0.5_dp * (Dkc(1,juo,1,iuo) * kphs
-!     .        +    dconjg(Dkc(1,juo,1,iuo) * kphs))
-!      
-!          D22 = 0.5_dp * (Dkc(2,juo,2,iuo) * kphs
-!     .        +    dconjg(Dkc(2,juo,2,iuo) * kphs))
-!          
-!          D12 = 0.5_dp * (Dkc(1,juo,2,iuo) * kphs
-!     .        +    dconjg(Dkc(2,juo,1,iuo) * kphs))
-!      
-!          D21 = 0.5_dp * (Dkc(2,juo,1,iuo) * kphs
-!     .        +    dconjg(Dkc(1,juo,2,iuo) * kphs))
-
+      
           D11 = Dkc(1,juo,1,iuo) * kphs
           D22 = Dkc(2,juo,2,iuo) * kphs
           D12 = Dkc(1,juo,2,iuo) * kphs
           D21 = Dkc(2,juo,1,iuo) * kphs
-
-!          write(6,*) 'D11 = ', D11
-!          write(6,*) 'D22 = ', D22
-!          write(6,*) 'D12 = ', D12
-!          write(6,*) 'D21 = ', D21
-
-      
-! Make DM Spin-box hermitian 
-          D12 = 0.5_dp * (D12 + dconjg(D21))
-          D21 = dconjg(D12)
-
-!          write(6,*) '      '
-!          write(6,*) 'D12 = ', D12
-!          write(6,*) 'D21 = ', D21
       
           Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
           Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
           Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
-!          Dnew(ind,4) = Dnew(ind,4) + dimag(D12)
-          Dnew(ind,4) = Dnew(ind,4) - dimag(D12) ! CC RC osSO
+          Dnew(ind,4) = Dnew(ind,4) - dimag(D12)
+          Dnew(ind,5) = Dnew(ind,5) + dimag(D11) 
+          Dnew(ind,6) = Dnew(ind,6) + dimag(D22)
+          Dnew(ind,7) = Dnew(ind,7) + dreal(D21) 
+          Dnew(ind,8) = Dnew(ind,8) + dimag(D21)
 
-!          write(6,*) 'Dnew(ind,1) = ', Dnew(ind,1)
-!          write(6,*) 'Dnew(ind,2) = ', Dnew(ind,2)
-!          write(6,*) 'Dnew(ind,3) = ', Dnew(ind,3)
-!          write(6,*) 'Dnew(ind,4) = ', Dnew(ind,4)
       
-c          write(6,'(a,i5,4f12.6)') 'ind / Dnew(ind,1:4) = ', 
-c     .            ind, Dnew(ind,1:4)
-
-CC RC  
-C      In the JF's version D11, D22, etc are not time-reversal averaged
-C      I will leave as it is here but maybe it will need major revision
-
-!         Average k and -k solutions because time-reversal symetry
-!          D11 = 0.5_dp * (Ekc(1,juo,1,iuo) * kphs
-!     .        +    dconjg(Ekc(1,juo,1,iuo) * kphs))
-!      
-!          D22 = 0.5_dp * (Ekc(2,juo,2,iuo) * kphs
-!     .        +    dconjg(Ekc(2,juo,2,iuo) * kphs))
-!          
-!          D12 = 0.5_dp * (Ekc(1,juo,2,iuo) * kphs
-!     .        +    dconjg(Ekc(2,juo,1,iuo) * kphs))
-!      
-!          D21 = 0.5_dp * (Ekc(2,juo,1,iuo) * kphs
-!     .        +    dconjg(Ekc(1,juo,2,iuo) * kphs))
-
           D11 = Ekc(1,juo,1,iuo) * kphs
           D22 = Ekc(2,juo,2,iuo) * kphs
           D12 = Ekc(1,juo,2,iuo) * kphs
           D21 = Ekc(2,juo,1,iuo) * kphs
-
-!          write(6,*) 'D11 = ', D11
-!          write(6,*) 'D22 = ', D22
-!          write(6,*) 'D12 = ', D12
-!          write(6,*) 'D21 = ', D21
-
-     
-! Make DM Spin-box hermitian  
-          D12 = 0.5_dp * (D12 + dconjg(D21))
-          D21 = dconjg(D12)
-
-!          write(6,*) '      '
-!          write(6,*) 'D12 = ', D12
-!          write(6,*) 'D21 = ', D21
       
           Enew(ind,1) = Enew(ind,1) + dreal(D11)
           Enew(ind,2) = Enew(ind,2) + dreal(D22)
           Enew(ind,3) = Enew(ind,3) + dreal(D12) 
-!          Enew(ind,4) = Enew(ind,4) + dimag(D12) 
-          Enew(ind,4) = Enew(ind,4) - dimag(D12)  !CC RC osSO
-
-!         stop'diag2k.F: stopping'
+          Enew(ind,4) = Enew(ind,4) - dimag(D12) 
       
         enddo
         enddo
       enddo
-
-c      do io = 1, maxnh
-!       write(6,'(a,i5,4f14.6)') '1 / Dnew(1,1:4) = ', 
-!     .          Dnew(1,1:4)
-!       write(6,'(a,i5,4f14.6)') '2 / Dnew(2,1:4) = ', 
-!     .            Dnew(2,1:4)
-c      enddo
-
- 1001 continue
       
 !     deallocate the arrays
-      call memory('D','Z',2*nuotot*2*nuo,'diag2k')
+      call memory('D','Z',2*nuotot*2*nuo,'diag3k')
       deallocate(Haux)
-      call memory('D','Z',2*nuotot*2*nuo,'diag2k')
+      call memory('D','Z',2*nuotot*2*nuo,'diag3k')
       deallocate(Saux)
-      call memory('D','Z',2*nuotot*2*nuo,'diag2k')
+      call memory('D','Z',2*nuotot*2*nuo,'diag3k')
       deallocate(Dkc)
-      call memory('D','Z',2*nuotot*2*nuo,'diag2k')
+      call memory('D','Z',2*nuotot*2*nuo,'diag3k')
       deallocate(Ekc)
-      call memory('D','Z',2*2*nuotot,'diag2k')
+      call memory('D','Z',2*2*nuotot,'diag3k')
       deallocate(caux)
       
-!        write(160+node,*)'ITERATION'
-!        write(170+node,*)'ITERATION'
-!        do iuo = 1,nuo
-!          do j = 1,numd(iuo)
-!            ind = listdptr(iuo) + j
-!            jo = listd(ind)
-!            juo = indxuo(jo)
-!             write(160+node,'(3i5,4f15.9)')iuo,juo,jo,Dnew(ind,1:4)
-!             write(170+node,'(3i5,4f15.9)')iuo,juo,jo,
-!     .    (Dnew(ind,1)+Dnew(ind,2))*0.5,
-!     .    (Dnew(ind,1)-Dnew(ind,2))*0.5,Dnew(ind,3:4)
-!          enddo
-!        enddo
-!      
-!      call die('maslyuk')
 !***********************************************************************      
       return
-      end subroutine diag2k
+      end subroutine diag3k
 !***********************************************************************      
       

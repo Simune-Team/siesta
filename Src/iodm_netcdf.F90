@@ -27,7 +27,7 @@ implicit none
 ! These module variables should be put into a derived type, and maybe
 ! not all of them are really necessary
 !
-integer norbs_id, nspin_id, nnzs_id, scf_step_id
+integer norbs_id, h_spin_id, nnzs_id, scf_step_id
 integer no_s_id, indxuo_id
 integer numd_id, row_pointer_id, column_id, dm_id
 !
@@ -39,13 +39,13 @@ private
 
 CONTAINS
 
-subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
+subroutine setup_dm_netcdf_file( maxnd, nbasis, h_spin_dim,    &
                                  no_s, indxuo,            &
                                  numd,  listdptr, listd, geom_step)
 
       integer, intent(in)   ::    maxnd  ! First dimension of listd and dm
       integer, intent(in)   ::    nbasis ! Number of atomic orbitals
-      integer, intent(in)   ::    nspin  ! Number of spins 
+      integer, intent(in)   ::    h_spin_dim  ! Number of spins 
       integer, intent(in)   ::    no_s   ! Number of orbitals in supercell
 
       integer, intent(in)   :: indxuo(no_s) ! Mapping of sc to unit cell orbs
@@ -119,7 +119,7 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
 !
       call check( nf90_def_dim(ncid,'norbs',norbs,norbs_id))  !"Number of basis orbitals"
       call check( nf90_def_dim(ncid,'no_s',no_s,no_s_id))      !"Number of orbitals in supercell"
-      call check( nf90_def_dim(ncid,'nspin',nspin,nspin_id))   !"Number of spin components"
+      call check( nf90_def_dim(ncid,'h_spin_dim',h_spin_dim,h_spin_id))   !"Number of spin components"
       call check( nf90_def_dim(ncid,'nnzs',nnzs,nnzs_id))     !"Number of non-zero interactions"
       call check( nf90_def_dim(ncid,'scf_step',NF90_UNLIMITED,scf_step_id)) !"Index of SCF step"
 !
@@ -131,7 +131,7 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
       call check( nf90_put_att(ncid,row_pointer_id,'Description',"Index (minus 1) of the start of a given row"))
       call check( nf90_def_var(ncid,'column',nf90_int,(/nnzs_id/),column_id))
       call check( nf90_put_att(ncid,column_id,'Description',"Column index of a given element"))
-      call check( nf90_def_var(ncid,'dm',nf90_float,(/nnzs_id,nspin_id,scf_step_id/),dm_id))
+      call check( nf90_def_var(ncid,'dm',nf90_float,(/nnzs_id,h_spin_id,scf_step_id/),dm_id))
       call check( nf90_put_att(ncid,dm_id,'Description',"Density matrix"))
 
       if (norbs /= no_s) then
@@ -250,16 +250,16 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
 !
 end subroutine setup_dm_netcdf_file
 
-subroutine write_dm_netcdf( nbasis, maxnd, nspin, dm, overwrite )
+subroutine write_dm_netcdf( nbasis, maxnd, h_spin_dim, dm, overwrite )
 
 use precision, only : dp
 
 integer, intent(in)   ::    nbasis ! Number of basis orbitals (in this node)
 integer, intent(in)   ::    maxnd  ! First dimension of listd and dm
-integer, intent(in)   ::    nspin  ! Number of spins (1 or 2)
+integer, intent(in)   ::    h_spin_dim  ! Number of spins (1 or 2)
 logical, intent(in), optional  :: overwrite    ! Overwrite info along scf_step dimension
 
-real(dp), intent(in)  :: dm(maxnd, nspin)
+real(dp), intent(in)  :: dm(maxnd, h_spin_dim)
 
 integer               :: norbs, nnzs
 integer               :: step_no, step_location
@@ -322,7 +322,7 @@ if (Node == 0) then
    call check( nf90_get_var(ncid,row_pointer_id,global_row_pointer,count=(/norbs/)))
 endif
 
-   do ispin = 1, nspin               ! Outer loop to simplify the logic
+   do ispin = 1, h_spin_dim               ! Outer loop to simplify the logic
                                      ! Cannot send non-contiguous arrays
       do BNode = 0, Nodes - 1
          if (Node == 0) then
@@ -364,9 +364,9 @@ endif
       call de_alloc(dm_buf,name="dm_buf", routine="iodm_netcdf")
 
 #else
-      call check( nf90_put_var(ncid, dm_id, dm(1:maxnd,1:nspin),  & 
+      call check( nf90_put_var(ncid, dm_id, dm(1:maxnd,1:h_spin_dim),  & 
                               start = (/1, 1, step_location /), &
-                              count = (/maxnd, nspin, 1 /) ))
+                              count = (/maxnd, h_spin_dim, 1 /) ))
 #endif
 
 if (Node == 0) then

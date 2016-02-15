@@ -13,7 +13,7 @@
       use units, only: Ang
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dscf, Dold, Escf, Eold, Hold
-      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb
+      use sparse_matrices, only: xijo, H, S, H_kin, H_vkb, H0 ! CC RC Added H0
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, rco, rckb, indxua,
      &                             no_s, rmaxkb, rmaxo, no_u, lastkb,
@@ -30,7 +30,9 @@
       use m_ioxv,            only: ioxv
       use m_steps
       use parallel,          only: IOnode, node, nodes
-      use m_spin,            only: nspin
+      use m_spin,            only: SpOrb
+      use m_spin,            only: nspin, spinor_dim
+      use m_spin,            only: h_spin_dim, e_spin_dim
       use m_rmaxh
       use m_pulay,           only: init_pulay_arrays
       use m_eo
@@ -177,9 +179,10 @@
 !       Will print k-points also
         call setup_Kpoint_grid( ucell )
 
-        call re_alloc( eo, 1, no_u, 1, nspin, 1, maxk, 'eo',
+! CC RC  Changed nspin by spinor_dim
+        call re_alloc( eo, 1, no_u, 1, spinor_dim, 1, maxk, 'eo',
      &                 'state_init')
-        call re_alloc( qo, 1, no_u, 1, nspin, 1, maxk, 'qo',
+        call re_alloc( qo, 1, no_u, 1, spinor_dim, 1, maxk, 'qo',
      &                 'state_init' )
 
 !       Find required supercell
@@ -277,11 +280,11 @@
       endif
 
       ! Note that the resizing of Dscf is done inside new_dm below
-      call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
+      call re_alloc(Dold,1,maxnh,1,h_spin_dim,name='Dold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
-      call re_alloc( Eold, 1, maxnh, 1, nspin, 'Eold',
+      call re_alloc( Eold, 1, maxnh, 1, e_spin_dim, 'Eold',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
-      call re_alloc( Escf, 1, maxnh, 1, nspin, 'Escf',
+      call re_alloc( Escf, 1, maxnh, 1, e_spin_dim, 'Escf',
      .     routine='sparseMat',copy=.false.,shrink=.true.)
 
       if(mixH) then
@@ -291,12 +294,28 @@
 
       
 !     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
-      call re_alloc( H, 1, maxnh, 1, nspin, 'H',
+      call re_alloc( H, 1, maxnh, 1, h_spin_dim, 'H',
      .              routine='sparseMat',shrink=.true.,copy=.false.)
-      call re_alloc(H_kin,1,maxnh,name='H_kin',routine='sparseMat',
-     &              shrink=.true., copy=.false. )
-      call re_alloc(H_vkb,1,maxnh,name='H_vkb',routine='sparseMat',
-     &              shrink=.true., copy=.false. )
+
+! CC RC  Warning!! Check the following
+      if (SpOrb) then
+       call re_alloc(H_kin,1,maxnh,1,h_spin_dim,name='H_kin',
+     &               routine='sparseMat', shrink=.true., copy=.false. )
+       call re_alloc(H_vkb,1,maxnh,1,h_spin_dim,name='H_vkb',
+     &               routine='sparseMat', shrink=.true., copy=.false. )
+       call re_alloc(H0,1,maxnh,1,h_spin_dim,name='H0',
+     $               routine='sparseMat', shrink=.true.,copy=.false.)
+      else
+       call re_alloc(H_kin,1,maxnh,1,1,name='H_kin',routine='sparseMat',
+     &               shrink=.true., copy=.false. )
+       call re_alloc(H_vkb,1,maxnh,1,1,name='H_vkb',routine='sparseMat',
+     &               shrink=.true., copy=.false. )
+       call re_alloc(H0,1,maxnh,1,1,name='H0',routine='sparseMat',
+     &               shrink=.true., copy=.false. )
+      endif
+! CC RC
+
+
       call re_alloc(S,1,maxnh,name='S',routine='sparseMat',
      .              copy=.false.,shrink=.true.)
 

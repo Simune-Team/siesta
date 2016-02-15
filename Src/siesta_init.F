@@ -128,7 +128,7 @@
       nullify(Haux,Saux,psi)
       nullify(Dscf,Dold,Eold,Escf)
       nullify(listh)
-      nullify(H,S)
+      nullify(H,H0,S)
       nullify(xijo)
 
 !     Initialize some variables
@@ -264,7 +264,7 @@
 
 ! Calculate spin populations for fixed spin case...
       if (fixspin) then
-        if (nspin .ne. 2)
+        if (.not.SPpol) !CC RC Changed to the new defined init_spin variables
      &    call die( 'siesta: ERROR: ' //
      &              'You can only fix the spin of the system' //
      &              ' for collinear spin polarized calculations.' )
@@ -272,10 +272,10 @@
           qs(i) = (qtot + (3-2*i)*ts) / 2.0_dp
         enddo
       else
-        qs(1:nspin) = 0.0_dp
+        qs(1:spinor_dim) = 0.0_dp
         if (nspin .le. 2) then
-          do ispin = 1,nspin
-            qs(ispin) = qtot/nspin
+          do ispin = 1,spinor_dim
+            qs(ispin) = qtot/spinor_dim
           enddo
         endif
       endif
@@ -312,8 +312,8 @@
 !     Check number of eigenstates - cannot be larger than number of
 !     basis functions or smaller than number of occupied states + 1
 !     so that the Fermi level can be estimated
-      do is = 1,nspin
-        neigmin = nint(qs(is)/real(3 - min(nspin,2), kind=dp)) + 1
+      do is = 1,spinor_dim
+        neigmin = nint(qs(is)/real(3 - min(spinor_dim,2), kind=dp)) + 1
         neigwanted = max(neigwanted,neigmin)
       enddo
       neigwanted = min(neigwanted,no_u)
@@ -337,8 +337,10 @@
 #endif
 
       nullify(eo,qo)
-      call re_alloc(eo, 1, no_u, 1, nspin, 1, maxk, 'eo', 'siesta_init')
-      call re_alloc(qo, 1, no_u, 1, nspin, 1, maxk, 'qo', 'siesta_init')
+      call re_alloc(eo, 1, no_u, 1, spinor_dim, 1, maxk, 'eo', 
+     &              'siesta_init')
+      call re_alloc(qo, 1, no_u, 1, spinor_dim, 1, maxk, 'qo', 
+     &              'siesta_init')
 
       call setup_bands( )
       gamma = gamma .and. gamma_bands

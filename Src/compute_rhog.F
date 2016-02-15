@@ -18,7 +18,7 @@
       use m_stress
       use m_energies
       use m_ntm
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, h_spin_dim, SpOrb ! CC RC Added 
       use m_dipol
       use alloc, only: re_alloc, de_alloc
       use m_gamma
@@ -26,7 +26,7 @@
 
       implicit none
 
-      real(dp), intent(in):: DM(maxnh,nspin)
+      real(dp), intent(in):: DM(maxnh,h_spin_dim)
 
       real(dp)            :: stressl(3,3)
       real(dp), pointer   :: fal(:,:)   ! Local-node part of atomic F
@@ -53,7 +53,7 @@
 
       ! Will compute rhog if mix_charge is .true., and
       ! then return
-      call dhscf( nspin, no_s, iaorb, iphorb, no_l,
+      call dhscf( nspin, h_spin_dim, SpOrb, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
      .            ntm, ifa, istr, ihmat, filesOut,
      .            maxnh, numh, listhptr, listh, DM, Datm,

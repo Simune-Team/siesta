@@ -8,7 +8,8 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine pdos( NO, NSPIN, MAXSPN, NO_L, MAXNH, 
+      subroutine pdos( NO, h_spin_dim, e_spin_dim,spinor_dim, NO_L, 
+     .                 MAXNH, 
      .                 MAXO, NUMH, LISTHPTR, LISTH, H, S, 
      .                 E1, E2, SIGMA, NHIST,
      .                 GAMMA, XIJ, INDXUO, NK, KPOINT, WK, EO, NO_U )
@@ -18,9 +19,9 @@ C atomic orbitals for a given eigenvalue spectra
 C Written by J. Junquera and E. Artacho, November 1999.
 C ***********  INPUT  **************************************************
 C INTEGER NO                  : Number of basis orbitals in the supercell
-C INTEGER NSPIN               : Spin polarizations (1 or 2)
-C INTEGER MAXSPN              : Second dimension of eo and qo
-C                               (Max number of different spin polarizations)
+C integer h_spin_dim          : Number of spin components of H and D
+C integer e_spin_dim          : Number of spin components of E_dm and of the DOS
+C integer spinor_dim          : Number of spin components of eo
 C INTEGER NO_L               : Maximum number of atomic orbitals in the unit 
 C                               cell. First dimension of eo, qo, last of xij
 C                               Must be at least max(indxuo)
@@ -34,7 +35,7 @@ C INTEGER LISTH(MAXNH)        : Nonzero hamiltonian-matrix element
 C                               column indexes for each matrix row
 C INTEGER LISTHPTR(NUO)       : Pointer to each row (-1) of the
 C                               density matrix
-C REAL*8  H(MAXNH,NSPIN)      : Hamiltonian in sparse format
+C REAL*8  H(MAXNH,h_spin_dim) : Hamiltonian in sparse format
 C REAL*8  S(MAXNH)            : Overlap in sparse format
 C REAL*8  E1, E2              : Energy range for density-matrix states
 C                               (to find local density of states)
@@ -51,7 +52,7 @@ C                               nuo the nuber of orbitals in the unit cell
 C INTEGER NK                  : Number of k points
 C REAL*8  KPOINT(3,NK)        : k point vectors
 C REAL*8  WK(NK)              : k point weights (must sum one)
-C REAL*8  EO(NO_L,MAXSPN,NK) : Eigenvalues
+C REAL*8  EO(NO_L,spinor_dim,NK) : Eigenvalues
 C INTEGER NO_U              : Total number of orbitals in unit cell
 C **********************************************************************
 
@@ -76,14 +77,15 @@ C **********************************************************************
       implicit none
 
       integer
-     .  NO, NSPIN, MAXSPN, NO_L, MAXNH, NK, NHIST, MAXO, NO_U
+     .  NO, E_SPIN_DIM, H_SPIN_DIM, SPINOR_DIM, NO_L, MAXNH, NK, NHIST, 
+     .  MAXO, NO_U
 
       integer 
      .  NUMH(*), LISTH(MAXNH), LISTHPTR(*), INDXUO(NO)
 
       real(dp)
-     .  H(MAXNH,NSPIN), S(MAXNH), E1, E2, SIGMA,  
-     .  XIJ(3,MAXNH), KPOINT(3,NK), WK(NK), EO(MAXO,MAXSPN,NK)
+     .  H(MAXNH,H_SPIN_DIM), S(MAXNH), E1, E2, SIGMA,  
+     .  XIJ(3,MAXNH), KPOINT(3,NK), WK(NK), EO(MAXO,SPINOR_DIM,NK)
 
       logical
      .  gamma
@@ -134,10 +136,10 @@ C Find number of orbitals per unit cell
 #endif
 
 C Check internal dimensions --------------------------------------------
-       if ( nspin.le.2 .and. gamma) then
+       if ( h_spin_dim.le.2 .and. gamma) then
          nhs  = no_u * nuo
-         npsi = no_u * no_l * nspin
-       elseif ( nspin.le.2 .and. .not.gamma) then
+         npsi = no_u * no_l * spinor_dim
+       elseif ( h_spin_dim.le.2 .and. .not.gamma) then
          if (ParallelOverK) then
            nhs  = 2 * no_u * no_u
            npsi = 2 * no_u * no_u
@@ -145,18 +147,25 @@ C Check internal dimensions --------------------------------------------
            nhs  = 2 * no_u * nuo
            npsi = 2 * no_u * nuo
          endif
+       elseif (h_spin_dim.ge.4) then  ! CC RC Added for on-site SO
+         nhs  = 2 * (2*no_u) * (2*nuo)
+         npsi = 2 * (2*no_u) * (2*nuo)
+       else
+         call die('diagon: ERROR: incorrect value of h_spin_dim')
        endif
+
 
 C Allocate local arrays ------------------------------------------------
       call re_alloc( Haux, 1, nhs,  'Haux', 'densematrix' )
       call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
       call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
       nullify( dtot, dpr )
-      call re_alloc( dtot, 1, nhist, 1, 2, 'dtot', 'pdos' )
-      call re_alloc( dpr, 1, nhist, 1, no_u, 1, 2, 'dpr', 'pdos' )
+      call re_alloc( dtot, 1, nhist, 1, e_spin_dim, 'dtot', 'pdos' )
+      call re_alloc( dpr, 1, nhist, 1, no_u, 1, e_spin_dim, 
+     &               'dpr', 'pdos' )
 
 C Initialize the projected density of states ---------------------------
-      do ispin = 1, 2
+      do ispin = 1, e_spin_dim
         do ihist = 1,nhist
           dtot(ihist,ispin) = 0.d0
           do iuo = 1,no_u
@@ -166,26 +175,51 @@ C Initialize the projected density of states ---------------------------
       enddo
 
 C  Call appropiate routine ----------------------------------------------
-      if (nspin.le.2 .and. gamma) then
-        call pdosg( NSPIN, NUO, NO, MAXSPN, MAXNH,
+      if (h_spin_dim.le.2 .and. gamma) then
+        call pdosg( h_spin_dim, NUO, NO, spinor_dim, MAXNH,
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .              E1, E2, NHIST, SIGMA, INDXUO, EO,
      .              HAUX, SAUX, PSI, DTOT, DPR, NO_U )
-      elseif ( nspin.le.2 .and. .not.gamma) then
+      elseif ( h_spin_dim.le.2 .and. .not.gamma) then
         if (ParallelOverK) then
-          call pdoskp( NSPIN, NUO, NO, MAXSPN, MAXNH,
+          call pdoskp( h_spin_dim, NUO, NO, spinor_dim, MAXNH,
      .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .                E1, E2, NHIST, SIGMA, 
      .                XIJ, INDXUO, NK, KPOINT, WK, EO,
      .                HAUX, SAUX, PSI, DTOT, DPR, NO_U )
         else
-          call pdosk( NSPIN, NUO, NO, MAXSPN, MAXNH,
+          call pdosk( h_spin_dim, NUO, NO, spinor_dim, MAXNH,
      .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .                E1, E2, NHIST, SIGMA, 
      .                XIJ, INDXUO, NK, KPOINT, WK, EO,
      .                HAUX, SAUX, PSI, DTOT, DPR, NO_U )
         endif
+      elseif (h_spin_dim == 4 .and. gamma) then
+        call pdos2g( NUO, NO, NO_L, MAXNH,
+     .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
+     .              E1, E2, NHIST, SIGMA, INDXUO, EO,
+     .              HAUX, SAUX, PSI, DTOT, DPR, NO_U )
+      elseif (h_spin_dim == 4 .and. .not. gamma) then
+        call pdos2k( NUO, NO, NO_L, MAXNH,
+     .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
+     .                E1, E2, NHIST, SIGMA,
+     .                XIJ, INDXUO, NK, KPOINT, WK, EO,
+     .                HAUX, SAUX, PSI, DTOT, DPR, NO_U )
+      elseif (h_spin_dim == 8 .and. gamma) then
+        call pdos3g( NUO, NO, NO_L, MAXNH,
+     .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
+     .              E1, E2, NHIST, SIGMA, INDXUO, EO,
+     .              HAUX, SAUX, PSI, DTOT, DPR, NO_U )
+      elseif (h_spin_dim == 8 .and. .not. gamma) then
+        call pdos3k( NUO, NO, NO_L, MAXNH,
+     .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
+     .                E1, E2, NHIST, SIGMA,
+     .                XIJ, INDXUO, NK, KPOINT, WK, EO,
+     .                HAUX, SAUX, PSI, DTOT, DPR, NO_U )
       endif
+
+
+
 
       if (IOnode) then
 C Open file for write on I/O node
@@ -194,12 +228,28 @@ C Open file for write on I/O node
         open(unit=iunit1, file=fnametot, form='formatted', 
      .       status='unknown') 
 
+CC RC Added fo osSO
 C Output histogram
+        if (h_spin_dim .eq. 1) then
          do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            write(iunit1,'(3f20.5)') ener/ev,dtot(ihist,1)*ev,
      .         dtot(ihist,2)*eV
          enddo
+         elseif (h_spin_dim .eq. 2) then
+           do ihist = 1,nhist
+             ENER = E1 + (ihist-1) * delta
+             write(iunit1,'(3f20.5)') ener/ev,dtot(ihist,1)*ev,
+     .           dtot(ihist,2)*eV
+           enddo
+         elseif (h_spin_dim .ge. 4) then
+           do ihist = 1,nhist
+             ENER = E1 + (ihist-1) * delta
+             write(iunit1,'(5f20.5)') ener/ev,dtot(ihist,1)*ev,
+     .           dtot(ihist,2)*eV,dtot(ihist,3)*eV,dtot(ihist,4)*eV
+           enddo
+         endif
+CC RC
 
 C Close file for write
          call io_close(iunit1)
@@ -213,19 +263,20 @@ C New writing
         call io_assign(iunit2)
         open(iunit2,file=fnamepro,form='formatted',status='unknown')
         call xml_NewElement(xf,"pdos")
-        call xml_NewElement(xf,"nspin")
-        call xml_AddCharacters(xf,nspin)
-        call xml_EndElement(xf,"nspin")
+        call xml_NewElement(xf,"e_spin_dim")
+        call xml_AddCharacters(xf,e_spin_dim)
+        call xml_EndElement(xf,"e_spin_dim")
 
         write(iunit2,'(a)') '<pdos>'
-        write(iunit2,'(a,i1,a)') '<nspin>', nspin, '</nspin>'
+        write(iunit2,'(a,i1,a)') 
+     .               '<e_spin_dim>', e_spin_dim,'</e_spin_dim>'
         write(iunit2,'(a,i4,a)') '<norbitals>', no_u, '</norbitals>'
         call xml_NewElement(xf,"energy_values")
         call xml_AddAttribute(xf,"units","eV")
         write(iunit2,'(a)') '<energy_values units="eV">'
 
         nullify( tmp )
-        call re_alloc( tmp, 1, 2*nhist, 'tmp', 'pdos' )
+        call re_alloc( tmp, 1, e_spin_dim*nhist, 'tmp', 'pdos' )
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener/eV
@@ -265,12 +316,18 @@ C New writing
 
 !------------------------------------------------------------
           call xml_NewElement(xf,"data")
-          if (nspin.eq.1) then
+          if (e_spin_dim.eq.1) then
              call xml_AddCharacters(xf,dpr(1:nhist,i,1)*eV)
-          elseif (nspin .eq. 2) then
+          elseif (e_spin_dim .eq. 2) then
              tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)*eV
              tmp(2:2*nhist:2) = dpr(1:nhist,i,2)*eV
              call xml_AddCharacters(xf,tmp(1:2*nhist),fmt="r6")
+          elseif (e_spin_dim .eq. 4) then  ! CC RC  Added for osSO
+             tmp(1:4*nhist-3:4) = dpr(1:nhist,i,1)*eV
+             tmp(2:4*nhist-2:4) = dpr(1:nhist,i,2)*eV
+             tmp(3:4*nhist-1:4) = dpr(1:nhist,i,3)*eV
+             tmp(4:4*nhist:4) = dpr(1:nhist,i,2)*eV
+             call xml_AddCharacters(xf,tmp(1:4*nhist),fmt="r6")
           endif
           call xml_EndElement(xf,"data")
           call xml_EndElement(xf,"orbital")
@@ -278,11 +335,16 @@ C New writing
 
           write(iunit2,'(a)') '<data>'
           do ihist = 1,nhist
-            if (nspin.eq.1) then
+            if (e_spin_dim.eq.1) then
               write(iunit2,'(f10.5)') dpr(ihist,i,1)*eV
-            elseif (nspin .eq. 2) then
+            elseif (e_spin_dim .eq. 2) then
               write(iunit2,'(2f10.5)') dpr(ihist,i,1)*eV,
      .                                 dpr(ihist,i,2)*eV
+            elseif (e_spin_dim .eq. 4) then  ! CC RC Added for osSO
+              write(iunit2,'(4f10.5)') dpr(ihist,i,1)*eV,
+     .                                 dpr(ihist,i,2)*eV,
+     .                                 dpr(ihist,i,3)*eV,
+     .                                 dpr(ihist,i,4)*eV
             endif
           enddo
           write(iunit2,'(a)') '</data>'

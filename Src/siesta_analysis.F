@@ -35,7 +35,8 @@
       use m_energies
       use m_steps
       use m_ntm
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, spinor_dim, h_spin_dim
+      use m_spin,         only: SpOrb, NonCol, SPpol, NoMagn
       use m_dipol
       use m_eo
       use m_forces,          only: fa
@@ -217,7 +218,8 @@
         if (IONode) print "(a)",
      $              "Writing WFSX for selected k-points in "
      $                           // trim(wfs_filename)
-        call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, nwk,
+        call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
+     &              nwk,
      &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      &              nwk, wfk, no_u, gamma, occtol )
       endif
@@ -236,7 +238,8 @@
          wfs_filename = trim(slabel)//".fullBZ.WFSX"
          if (IONode) print "(a)", "Writing WFSX for COOP/COHP in " 
      $                           // trim(wfs_filename)
-         call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxk,
+         call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
+     .        maxk,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .        nkpnt, kpoint, no_u, gamma, occtol)
       endif
@@ -244,7 +247,7 @@
 !     Compute bands
 !**   This uses H,S, and xa
       nullify( ebk )
-      call re_alloc( ebk, 1, no_u, 1, nspin, 1, maxbk,
+      call re_alloc( ebk, 1, no_u, 1, spinor_dim, 1, maxbk,
      &               'ebk', 'siesta_analysis' )
 
       if (nbk.gt.0) then
@@ -260,7 +263,8 @@
      $          use_scf_weights=.false.,
      $          use_energy_window=.false.)
         endif
-        call bands( no_s, nspin, nspin, no_u, no_l, maxnh, maxbk,
+        call bands( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
+     .              maxbk,
      .              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .              .true., nbk, bk, ebk, occtol, getPSI )
         if (IOnode) then
@@ -275,7 +279,7 @@
           if ( writb ) then
             write(6,'(/,a,/,a4,a3,a7)')
      &       'siesta: Band energies (eV):', 'ik', 'is', 'eps'
-            do ispin = 1,min(nspin,2)
+            do ispin = 1,min(nspin,2) ! CC RC Same as ispin=1,spinor_dim
               do ik = 1,nbk
                 write(6,'(i4,i3,10f7.2)')
      &            ik, ispin, (ebk(io,ispin,ik)/eV,io=1,min(10,no_u))
@@ -292,11 +296,11 @@
         if ((isolve.eq.SOLVE_DIAGON .or.
      &       ((isolve.eq.SOLVE_MINIM) .and. minim_calc_eigenvalues))
      &      .and. no_l.lt.1000) then
-          if (nspin .le. 2) then
+          if (h_spin_dim .le. 2) then
             write(6,'(/,a,/,a4,a3,a7)')
      &       'siesta: Eigenvalues (eV):', 'ik', 'is', 'eps'
             do ik = 1,nkpnt
-              do ispin = 1,nspin
+              do ispin = 1,spinor_dim
                 write(6,'(i4,i3,10f7.2)')
      &            ik,ispin,(eo(io,ispin,ik)/eV,io=1,min(10,neigwanted))
                 if (no_u.gt.10) write(6,'(7x,10f7.2)')
@@ -315,11 +319,13 @@
         endif
       endif
 
+CC RC  In ioeig call nspin and spinor_dim are passed as arguments
+C     but maybe it is only necessary spinor_dim!
       if (((isolve.eq.SOLVE_DIAGON).or.
      &     ((isolve.eq.SOLVE_MINIM).and.minim_calc_eigenvalues))
      &    .and.IOnode)
-     &     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk,
-     &                kpoint, kweight)
+     &     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,spinor_dim,
+     &                maxk,kpoint, kweight)
 
 
 !**   This uses H,S, and xa, as it diagonalizes them again
@@ -366,7 +372,11 @@
      .         value=qspin(1)-qspin(2), dictref='siesta:qspin',
      .         units='siestaUnits:spin')
         elseif (nspin .eq. 4) then
+          write(6,'(a,i5,4f12.5)') ' Calling spnvec: nspin, qspin = ',  
+     .           nspin, qspin
           call spnvec( nspin, qspin, qaux, stot, svec )
+          write(6,'(a,5f12.4)') ' Leaving spnvec: qaux,stot,svec= ',
+     .           qaux, stot, svec(1:3)
           if (IOnode) then
             write(6,'(/,a,f12.6)')
      &       'siesta: Total spin polarization (Qup-Qdown) =', stot
@@ -417,12 +427,21 @@
 !     formulas by King-Smith and Vanderbilt
 !     Attention Work is used as an auxiliary array
       if (nkpol.gt.0 .and. .not.bornz) then
-        call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, ucell_last,
-     &               no_u, no_l, no_s, nspin, qspin, 
+        if (NonCol .or. SpOrb) then
+          if (IOnode) then
+            write(6,'(/a)')
+     .       'siesta_analysis: bulk polarization implemented only for'
+            write(6,'(/a)')
+     .       'siesta_analysis: paramagnetic or collinear spin runs'
+          endif
+        else
+         call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, 
+     &               ucell_last,no_u, no_l, no_s, nspin, qspin, 
      &               maxnh, nkpol, numh, listhptr, listh, 
      &               H, S, Work, xijo, indxuo, isa, iphorb, 
      &               iaorb, lasto, shape,
      &               nkpol,kpol,wgthpol, polR, polxyz ) 
+       endif
       endif
 
 !     Calculation of the optical conductivity
@@ -459,7 +478,7 @@
         g2max = g2cut
         dummy_str  = 0.0
         dummy_strl = 0.0
-        call dhscf( nspin, no_s, iaorb, iphorb, no_l,
+        call dhscf( nspin, h_spin_dim, SpOrb, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 
      &              ntm, 0, 0, 0, filesOut, 
      &              maxnh, numh, listhptr, listh, Dscf, Datm,

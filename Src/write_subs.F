@@ -74,6 +74,7 @@
       use m_iostruct,   only: write_struct
       use siesta_cml
       use units
+      use m_spin  ! CC RC  Added
       use m_energies, only: FreeE
       use m_stress, only: stress, kin_stress, mstress, cstress, tstress
 
@@ -298,6 +299,7 @@
      .     'siesta: Ena     =', Ena/eV,
      .     'siesta: Ekin    =', Ekin/eV,
      .     'siesta: Enl     =', Enl/eV,
+     .     'siesta: Eso     =', Eso/eV, ! CC RC Added for osSO
      .     'siesta: DEna    =', DEna/eV,
      .     'siesta: DUscf   =', DUscf/eV,
      .     'siesta: DUext   =', DUext/eV,
@@ -414,15 +416,33 @@
      .             units="siestaUnits:eV", 
      .             dictRef="siesta:Efs", fmt="r7")
             endif
-          else !fixspin
-            if ((iscf .eq. 1).or.muldeb)
-     .           write(6,'(/,a12,3a14,a9,a8)')
-     .           'scf: iscf', '   Eharris(eV)', 
-     .           '      E_KS(eV)', '   FreeEng(eV)', 
-     .           '    dDmax', '  Ef(eV)'
-            write(6,'(a8,i4,3f14.4,f9.5,f8.4)')
-     .           'scf: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
+          else !no fixspin
+
+CC RC  Changed for SO 
+            if ((iscf .eq. 1).or.muldeb) then
+             if (noncol .or. SpOrb) then
+              write(6,'(/,a12,3a17,a11,a12)')
+     .           'siesta: iscf', '   Eharris(eV)',
+     .           '      E_KS(eV)', '   FreeEng(eV)',
+     .           '   dDmax', '  Ef(eV)'
+             else
+              write(6,'(/,a12,3a14,2a8)')
+     .           'siesta: iscf', '   Eharris(eV)',
+     .           '      E_KS(eV)', '   FreeEng(eV)',
+     .           '   dDmax', '  Ef(eV)'
+             endif
+            endif
+            if (noncol .or. SpOrb) then
+             write(6,'(a8,i4,3f17.6,f11.6,f12.6)')
+     .           'scf: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV,
      .           dDmax, Ef/eV
+            else
+             write(6,'(a8,i4,3f14.4,2f8.4)')
+     .           'scf: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV,
+     .           dDmax, Ef/eV
+            endif
+CC RC 
+
             if (cml_p) then
               call cmlAddProperty(xf=mainXML,value=Ef/eV, 
      .             units="siestaUnits:eV", 

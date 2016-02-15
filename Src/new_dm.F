@@ -89,7 +89,7 @@
       USE siesta_options
       use siesta_geom
       use atomlist, only: datm, no_s, iaorb, lasto, no_u, no_l
-      use m_spin,   only: nspin
+      use m_spin,   only: nspin, h_spin_dim, e_spin_dim ! CC RC  Added
       use m_steps, only: istp
       USE m_normalize_dm, only: normalize_dm
       use sparse_matrices, only: Escf     !! To be moved
@@ -174,7 +174,7 @@
          ! This is the point of resizing of the DM
          ! to the bounds appropriate to the new sparsity
          nnz=sum(numh)
-         call re_alloc(Dscf,1,nnz,1,nspin,name="Dscf",
+         call re_alloc(Dscf,1,nnz,1,h_spin_dim,name="Dscf",
      $                 routine="sparseMat",copy=.false.,shrink=.true.)
 
          ! Reset DMsaved to null
@@ -182,7 +182,7 @@
          nullify(DMsaved)
          !
          call initdm(Datm, Dscf, lasto, na_s,
-     .               no_s, no_l, nspin, na_u, no_l, nspin,
+     .               no_s, no_l, h_spin_dim, na_u, no_l, h_spin_dim,
      .               numh, listhptr, listh, iaorb, inspn,
      .               try_to_read_from_file)
          !
@@ -269,7 +269,7 @@
       real(dp), pointer   :: DMtmp(:,:) => null()
       logical   ::  sparsity_has_changed
       real(dp)  ::  msave
-      integer    ::  i, j, ispin, nspin, nnz, new_nnz, is
+      integer    ::  i, j, ispin, h_spin_dim, nnz, new_nnz, is
 
 #ifdef MPI
       integer  MPIerror
@@ -303,16 +303,16 @@
          ! This section now uses a temporary matrix and a safer
          ! restructuring routine.
 
-         nspin = size(DM,dim=2)
+         h_spin_dim = size(DM,dim=2)
          nnz = size(DM,dim=1)      ! This should be sum(numold)
-         call re_alloc(DMtmp,1,nnz,1,nspin,
+         call re_alloc(DMtmp,1,nnz,1,h_spin_dim,
      $                 name="DMtmp",routine="new_dm", shrink=.true.)
          DMtmp(:,:) = DM(:,:)
          new_nnz = sum(num(:))
-         call re_alloc(DM,1,new_nnz,1,nspin,
+         call re_alloc(DM,1,new_nnz,1,h_spin_dim,
      $                 name="DM",routine="new_dm",shrink=.true.)
 
-         do is = 1, nspin
+         do is = 1, h_spin_dim
             call change_sparsity(nrows,
      $                           numold,listptrold,listold,
      $                           num, listptr, list,
@@ -332,16 +332,16 @@
 
          if (sparsity_has_changed) then
             !Fix structure of DMsaved
-            nspin = size(DMsaved,dim=2)
+            h_spin_dim = size(DMsaved,dim=2)
             nnz = size(DMsaved,dim=1)
-            call re_alloc(DMtmp,1,nnz,1,nspin,
+            call re_alloc(DMtmp,1,nnz,1,h_spin_dim,
      $           name="DMtmp",routine="new_dm", shrink=.true.)
             DMtmp(:,:) = DMsaved(:,:)
             new_nnz = sum(num(:))
-            call re_alloc(DMsaved,1,new_nnz,1,nspin,
+            call re_alloc(DMsaved,1,new_nnz,1,h_spin_dim,
      $           name="DMsaved",routine="new_dm",shrink=.true.)
 
-            do is = 1, nspin
+            do is = 1, h_spin_dim
                call change_sparsity(nrows,
      $                              numold,listptrold,listold,
      $                              num, listptr, list,
@@ -354,10 +354,10 @@
          ! Extrapolate DM and update DMsaved
          ! This is a simple linear extrapolation
 
-         nspin = size(DM,dim=2)
+         h_spin_dim = size(DM,dim=2)
          nnz = size(DM,dim=1)
 
-         do ispin = 1, nspin
+         do ispin = 1, h_spin_dim
             do i = 1, nnz
                msave = DM(i,ispin)
                DM(i,ispin) = 2.0_dp * DM(i,ispin) - DMsaved(i,ispin)
@@ -379,11 +379,11 @@
 
          if (allow_dm_extrapolation) then
             ! Copy DM to DMsaved for next iteration
-            nspin = size(DM,dim=2)
+            h_spin_dim = size(DM,dim=2)
             nnz = size(DM,dim=1)
-            call re_alloc(DMsaved,1,nnz,1,nspin,name="DMsaved",
+            call re_alloc(DMsaved,1,nnz,1,h_spin_dim,name="DMsaved",
      $                    routine="new_dm",copy=.false.,shrink=.true.)
-            DMsaved(1:nnz,1:nspin) = DM(1:nnz,1:nspin)
+            DMsaved(1:nnz,1:h_spin_dim) = DM(1:nnz,1:h_spin_dim)
          endif
       endif
 
@@ -405,7 +405,7 @@
 
       end subroutine new_extrapol
       subroutine initdm(Datm, Dscf, lasto, maxa,
-     .                  maxo, maxuo, maxspn, nua, no_l, nspin,
+     .                  maxo, maxuo, maxspn, nua, no_l, h_spin_dim,
      .                  numh, listhptr, listh, iaorb, inspn,
      .                  try_dm_from_file)
 
@@ -437,7 +437,7 @@ c                                if no DM files, no DM.InitSpin, ispin=2
 c                         false: Ferro ordering  (fdf DM.InitSpinAF)
 c integer nua           : Number of atoms in the unit cell
 c integer no_l           : Number of orbitals in the unit cell
-c integer nspin         : Number of spin components
+c integer h_spin_dim         : Number of spin components
 c integer maxa          : Max num. atoms for dimension
 c integer maxo          : Max. number of orbitals (globally)
 c integer maxuo         : Max. number of orbitals (locally)
@@ -449,7 +449,7 @@ c integer listh(:)      :  "
 c integer iaorb(maxo)   : List saying to what atom an orbital belongs
 c double Datm(no)       : Occupations of basis orbitals in free atom
 c ********* OUTPUT **************************************************
-c double Dscf(:,maxspn) : Density matrix in sparse form
+c double Dscf(:,h_spin_dim) : Density matrix in sparse form
 c *******************************************************************
 
 C
@@ -482,7 +482,7 @@ C
       implicit          none
 
       logical           found, inspn, try_dm_from_file
-      integer           no_l, nua, maxo, maxuo, nspin, maxa,
+      integer           no_l, nua, maxo, maxuo, h_spin_dim, maxa,
      .                  maxspn
       integer           lasto(0:maxa), numh(maxuo), iaorb(maxo)
       integer       ::  listhptr(:), listh(:)
@@ -525,7 +525,7 @@ C Internal variables and arrays
       real(dp), pointer :: EDM_tmp(:,:)
 #endif /* TRANSIESTA */
 
-      integer :: nh_tmp, nspin_read, is
+      integer :: nh_tmp, h_spin_dim_read, is
       logical :: same_sp
 
       data maxat / 1000 /
@@ -545,27 +545,28 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
 
 #ifndef TRANSIESTA
-         call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
+         call read_dynamic_dm(nh_tmp, no_l, h_spin_dim_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )
 #else
          found = .false.   ! initialize
          if(TSmode) then ! Transiesta solution method
 C First try to read the .TSDE file
-           call read_dynamic_ts_dm(nh_tmp, no_l, nspin_read, num_tmp, 
-     .             listptr_tmp, list_tmp, D_tmp, EDM_tmp, ef, ts_found )
+           call read_dynamic_ts_dm(nh_tmp, no_l, h_spin_dim_read, 
+     .             num_tmp, listptr_tmp, list_tmp, D_tmp, EDM_tmp, 
+     .             ef, ts_found )
 
 C Print information and do the some TS initializations
            call ts_init_dm(ts_found)
 
 C If it does not find a .TSDE file, try to read a .DM file
            if(.not. ts_found) 
-     .        call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
-     .             listptr_tmp, list_tmp, D_tmp, found )           
+     .        call read_dynamic_dm(nh_tmp, no_l, h_spin_dim_read, 
+     .             num_tmp, listptr_tmp, list_tmp, D_tmp, found )     
 C Either .TSDE or .DM may have been found
            found = ts_found .or. found
          else ! Not Transiesta solution mathod
            ts_found = .false.
-           call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp,
+           call read_dynamic_dm(nh_tmp, no_l, h_spin_dim_read, num_tmp,
      $             listptr_tmp, listd=list_tmp, dm=D_tmp, found=found )
          end if ! Transiesta solution method
 #endif /* TRANSIESTA */
@@ -578,15 +579,15 @@ C If found, check and update, otherwise initialize with neutral atoms
 
       if (found) then
         ! Various degrees of sanity checks
-        if (nspin_read /= nspin) then
+        if (h_spin_dim_read /= h_spin_dim) then
            if (Node.eq.0) then
               write(6,"(a,i6,/,a)")
-     $        "WARNING: Wrong nspin in DM file: ",
-     $             nspin_read,
+     $        "WARNING: Wrong h_spin_dim in DM file: ",
+     $             h_spin_dim_read,
      $        "WARNING: Falling back to atomic initialization of DM."
               write(0,"(a,i6,/,a)")
-     $        "WARNING: Wrong nspin in DM file: ",
-     $             nspin_read,
+     $        "WARNING: Wrong h_spin_dim in DM file: ",
+     $             h_spin_dim_read,
      $        "WARNING: Falling back to atomic initialization of DM."
            endif
            found = .false.
@@ -620,7 +621,7 @@ C If found, check and update, otherwise initialize with neutral atoms
               write(6,*) "Read DM has different structure. Fixing..."
            endif
            nullify(work)
-           do is= 1, nspin
+           do is= 1, h_spin_dim
               call change_sparsity (no_l,num_tmp,listptr_tmp,list_tmp,
      $                                  numh,listhptr,listh,
      $                                  D_tmp(:,is), Dscf(:,is),
@@ -658,13 +659,13 @@ C   double  spin(nat) : what polarization -----------------------------
 
         noncol = .false.
         peratm = fdf_block('DM.InitSpin',bfdf)
-        noncol = .false.
+CC RC        noncol = .false.
         if (Node.eq.0) then
-          if (peratm .and. nspin.lt.2) write(6,'(/,a)')
-     .    'initdm: WARNING: DM.InitSpin not used because nspin < 2'
+          if (peratm .and. h_spin_dim.lt.2) write(6,'(/,a)')
+     .    'initdm: WARNING: DM.InitSpin not used because h_spin_dim < 2'
         endif
 
-        if (peratm .and. nspin.ge.2) then
+        if (peratm .and. h_spin_dim.ge.2) then
 
 C Allocate local memory
           nullify(atom,phi,spin,theta)
@@ -761,17 +762,17 @@ C Print bad-syntax error and stop
             call die(msg)
           endif
 
-          if (noncol .and. nspin.lt.4) then
+          if (noncol .and. h_spin_dim.lt.4) then
             if (Node.eq.0) then
             write(6,'(/,2a)') 'initdm: WARNING: noncolinear spins ',
-     .                 'in DM.InitSpin not used because nspin < 4'
+     .                 'in DM.InitSpin not used because h_spin_dim < 4'
             endif
             noncol = .false.
           endif
 
 C Initialize to 0
 
-          Dscf(:,1:nspin) = 0.0d0
+          Dscf(:,1:h_spin_dim) = 0.0d0
 
 C Initialize all paramagnetic
 
@@ -836,6 +837,18 @@ C   ispin=3 => Real(D12); ispin=4 => Imag(D12)
                       Dscf(ind,2) = (qio - spio * costh) / 2
                       Dscf(ind,3) =   spio * sinth * cosph / 2
                       Dscf(ind,4) = - spio * sinth * sinph / 2
+CC RC  Added
+c                      write(6,'(a,i5,4f12.6)') 'ind/Dscf(ind,1:4) = ',
+c     .             ind, Dscf(ind,1:4)
+                      if ( h_spin_dim .eq. 8 ) then
+                        Dscf(ind,5) = 0.0_dp
+                        Dscf(ind,6) = 0.0_dp
+                        Dscf(ind,7) = Dscf(ind,3)
+                        Dscf(ind,8) = Dscf(ind,4)
+c                   write(6,'(a,i5,4f12.6)') 'ind/Dscf(ind,5:8) = ',
+c     .             ind, Dscf(ind,5:8)
+                      endif
+CC RC
                     else
                       Dscf(ind,1) = (qio + spio) / 2
                       Dscf(ind,2) = (qio - spio) / 2
@@ -858,16 +871,16 @@ c ---------------------------------------------------------------------
         else
 
 C Initialize to 0
-          Dscf(:,1:nspin) = 0.0d0
+          Dscf(:,1:h_spin_dim) = 0.0d0
 
-C Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
+C Automatic, for non magnetic (h_spin_dim=1) or for Ferro or Antiferro -----
           do io = 1, no_l
             call LocalToGlobalOrb(io,Node,Nodes,iio)
             do in = 1,numh(io)
               ind = listhptr(io)+in
               jo = listh(ind)
               if (iio .eq. jo) then
-                if (nspin .eq. 1) then
+                if (h_spin_dim .eq. 1) then
 
 C No spin polarization
 
@@ -903,9 +916,11 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
 
       CONTAINS
 
+CC RC  Changed for osSO  
       subroutine print_initial_spin()
       use m_mpi_utils, only: Globalize_sum
       use sparse_matrices, only: S
+      use m_spin, only: nspin
 
       real(dp) :: qspin(nspin)
       integer  :: io, j, ispin, ind
@@ -936,6 +951,13 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
      .             'initdm: Initial spin polarization (Qup-Qdown) =', 
      .             qspin(1) - qspin(2)
            endif
+CC        elseif (nspin .eq. 4) then
+CC         call spnvec( nspin, qspin, qaux, stot, svec )
+CC          if (IOnode) then
+CC            write(6,'(/,a,f12.6)')
+CC     .       'initdm: Total spin polarization (Qup-Qdown) =', stot
+CC            write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
+CC          endif
         endif
       endif
       end subroutine print_initial_spin

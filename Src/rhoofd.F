@@ -9,7 +9,8 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, 
-     &                   Dscf, rhoscf, nuo, nuotot, iaorb, iphorb, isa )
+     &                   h_spin_dim, Dscf, rhoscf, nuo, nuotot, 
+     &                   iaorb, iphorb, isa, SpOrb )
 C ********************************************************************
 C Finds the SCF density at the mesh points from the density matrix.
 C Written by P.Ordejon and J.M.Soler. May'95.
@@ -33,6 +34,7 @@ C integer nuotot          : Number of orbitals in unit cell in total
 C integer iaorb(*)        : Pointer to atom to which orbital belongs
 C integer iphorb(*)       : Orbital index within each atom
 C integer isa(*)          : Species index of all atoms
+C logical SpOrb          : SpOrb flag
 C *********************** OUTPUT **************************************
 C real    rhoscf(nsp,np)  : SCF density at mesh points
 C *********************************************************************
@@ -59,10 +61,15 @@ C  Modules
       implicit none
 
 C     Argument types and dimensions
+
+      logical
+     .  SpOrb
+
       integer,       intent(in) :: no, np, maxnd, numd(nuo), nspin,
-     &                             nuo, nuotot, iaorb(*), iphorb(*), 
-     &                             isa(*), listdptr(nuo), listd(maxnd)
-      real(dp),      intent(in) :: Dscf(maxnd,nspin)
+     &                             h_spin_dim, nuo, nuotot, iaorb(*), 
+     &                             iphorb(*), isa(*), listdptr(nuo), 
+     &                             listd(maxnd)
+      real(dp),      intent(in) :: Dscf(maxnd,h_spin_dim)
       real(grid_p), intent(out) :: rhoscf(nsp,np,nspin)
       external                  :: memory, timer
 C     Internal variables and arrays
@@ -103,10 +110,11 @@ C     Set algorithm logical
           maxndl = 1
         endif
         nullify(DscfL)
-        call re_alloc( DscfL, 1, maxndl, 1, nspin, 'DscfL', 'rhoofd' )
+        call re_alloc( DscfL, 1, maxndl, 1, h_spin_dim, 
+     &                'DscfL', 'rhoofd' )
 C       Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
-     &                   nspin, Dscf, DscfL )
+     &                   h_spin_dim, Dscf, DscfL )
       endif
 
 C     Find atomic cutoff radii
@@ -214,10 +222,16 @@ C           Copy row i of Dscf into row last of Dlocal
                   else
                     ijl = jl*(jl+1)/2 + il + 1
                   endif
-                  do ispin = 1,nspin
-                    Dij = DscfL(ind,ispin)
-                    Dlocal(ijl,ispin) = Dij
-                  enddo
+CC RC added 
+                  if ( SpOrb ) then
+                    Dlocal(ijl,1) = DscfL(ind,1)
+                    Dlocal(ijl,2) = DscfL(ind,2)
+                    Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
+                    Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
+                  else
+                    Dlocal(ijl,1:nspin) = DscfL(ind,1:nspin)
+                  endif
+CC RC  
                 enddo
               else
                 do ii = 1, numdl(iul)
@@ -229,10 +243,16 @@ C           Copy row i of Dscf into row last of Dlocal
                   else
                     ijl = jl*(jl+1)/2 + il + 1
                   endif
-                  do ispin = 1,nspin
-                    Dij = DscfL(ind,ispin)
-                    Dlocal(ijl,ispin) = Dij
-                  enddo
+CC RC added 
+                  if ( SpOrb ) then
+                    Dlocal(ijl,1) = DscfL(ind,1)
+                    Dlocal(ijl,2) = DscfL(ind,2)
+                    Dlocal(ijl,3) = 0.5*(DscfL(ind,3)+DscfL(ind,7))
+                    Dlocal(ijl,4) = 0.5*(DscfL(ind,4)+DscfL(ind,8))
+                  else
+                    Dlocal(ijl,1:nspin) = DscfL(ind,1:nspin)
+                  endif
+CC RC 
                 enddo
               endif
             else
@@ -247,10 +267,16 @@ C           Copy row i of Dscf into row last of Dlocal
                   else
                     ijl = jl*(jl+1)/2 + il + 1
                   endif
-                  do ispin = 1,nspin
-                    Dij = Dscf(ind,ispin)
-                    Dlocal(ijl,ispin) = Dij
-                  enddo
+CC RC Added
+                  if ( SpOrb ) then
+                    Dlocal(ijl,1) = Dscf(ind,1)
+                    Dlocal(ijl,2) = Dscf(ind,2)
+                    Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
+                    Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
+                  else
+                    Dlocal(ijl,1:nspin) = Dscf(ind,1:nspin)
+                  endif
+CC RC
                 enddo
               else
                 do ii = 1, numd(iul)
@@ -262,10 +288,16 @@ C           Copy row i of Dscf into row last of Dlocal
                   else
                     ijl = jl*(jl+1)/2 + il + 1
                   endif
-                  do ispin = 1,nspin
-                    Dij = Dscf(ind,ispin)
-                    Dlocal(ijl,ispin) = Dij
-                  enddo
+CC RC  Added
+                  if ( SpOrb ) then
+                    Dlocal(ijl,1) = Dscf(ind,1)
+                    Dlocal(ijl,2) = Dscf(ind,2)
+                    Dlocal(ijl,3) = 0.5*(Dscf(ind,3)+Dscf(ind,7))
+                    Dlocal(ijl,4) = 0.5*(Dscf(ind,4)+Dscf(ind,8))
+                  else
+                    Dlocal(ijl,1:nspin) = Dscf(ind,1:nspin)
+                  endif
+CC RC
                 enddo
               endif
             endif

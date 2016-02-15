@@ -87,7 +87,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	chempot.o coceri.o coxmol.o cross.o compute_norm.o\
 	denmat.o denmatlomem.o detover.o dfscf.o m_diagon.o diagon.o digcel.o \
         fft.o dhscf.o constr.o diagk_file.o \
-	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
+	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diag3g.o diag3k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o doping_uniform.o dot.o  \
 	m_efield.o egandd.o ener3.o ener3lomem.o errorf.o extrapolon.o \
 	fixed.o interpolation.o gradient.o gradientlomem.o grdsam.o \
@@ -136,6 +136,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o m_fire.o setup_H0.o \
         get_target_stress.o fire_optim.o zm_fire_optim.o \
         cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
+        pdos2g.o pdos2k.o pdos3g.o pdos3k.o spinorbit.o moments.o \
 	fsiesta_mpi.o \
         final_H_f_stress.o \
         debugmpi.o qsort.o \
@@ -378,7 +379,7 @@ atom_options.o: sys.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 automatic_cell.o: atm_types.o atmfuncs.o parallel.o precision.o units.o
-bands.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o m_gamma.o
+bands.o: alloc.o atmfuncs.o atomlist.o m_spin.o densematrix.o files.o m_gamma.o
 bands.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o writewave.o
 basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
@@ -430,7 +431,7 @@ compute_energies.o: m_mpi_utils.o m_ntm.o m_rhog.o m_spin.o precision.o
 compute_energies.o: siesta_geom.o siesta_options.o sparse_matrices.o
 compute_max_diff.o: atomlist.o m_mpi_utils.o m_spin.o precision.o
 compute_max_diff.o: sparse_matrices.o
-compute_norm.o: m_mpi_utils.o precision.o sparse_matrices.o
+compute_norm.o: m_mpi_utils.o m_spin.o precision.o m_spin.o sparse_matrices.o
 compute_pw_matrix.o: alloc.o m_planewavematrix.o m_planewavematrixvar.o
 compute_pw_matrix.o: parallel.o precision.o siesta2wannier90.o
 compute_pw_matrix.o: sparse_matrices.o
@@ -454,11 +455,13 @@ dfscf.o: meshphi.o parallel.o parallelsubs.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o bsc_xcmod.o cellxc_mod.o delk.o doping_uniform.o
 dhscf.o: files.o forhar.o iogrid_netcdf.o m_efield.o m_iorho.o
 dhscf.o: m_partial_charges.o m_rhog.o m_ts_global_vars.o m_ts_in_siesta.o
-dhscf.o: m_ts_options.o m_ts_voltage.o mesh.o meshdscf.o meshsubs.o
+dhscf.o: m_ts_options.o m_spin.o m_ts_voltage.o mesh.o meshdscf.o meshsubs.o
 dhscf.o: moremeshsubs.o parallel.o parsing.o precision.o rhofft.o
 dhscf.o: siesta_options.o sys.o units.o vmat.o
 diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
+diag3g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
+diag3k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: writewave.o
 diagk.o: compute_norm.o fermid.o parallel.o parallelsubs.o precision.o sys.o
@@ -466,7 +469,7 @@ diagk.o: writewave.o
 diagk_file.o: fermid.o iowfs_netcdf.o parallel.o parallelsubs.o precision.o
 diagk_file.o: sys.o writewave.o
 diagkp.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-diagon.o: alloc.o densematrix.o m_diagon.o m_memory.o parallel.o parallelsubs.o
+diagon.o: alloc.o densematrix.o m_spin.o m_diagon.o m_memory.o parallel.o parallelsubs.o
 diagon.o: precision.o siesta_options.o sys.o
 diagonalizeHk.o: alloc.o atomlist.o densematrix.o m_orderbands.o m_spin.o
 diagonalizeHk.o: parallel.o parallelsubs.o precision.o siesta2wannier90.o
@@ -528,7 +531,7 @@ iocg.o: files.o precision.o sys.o
 iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o sys.o
 iodm_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 iodmhs_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
-ioeig.o: files.o precision.o siesta_cml.o units.o
+ioeig.o: files.o precision.o siesta_cml.o m_spin.o units.o
 iofa.o: files.o precision.o units.o
 iogrid_netcdf.o: alloc.o parallel.o precision.o sys.o
 iokp.o: files.o precision.o
@@ -546,7 +549,7 @@ kgridinit.o: minvec.o parallel.o precision.o sys.o units.o
 kinefsm.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
 kinefsm.o: precision.o
 kpoint_convert.o: precision.o sys.o units.o
-kpoint_grid.o: find_kgrid.o minvec.o parallel.o precision.o siesta_cml.o
+kpoint_grid.o: find_kgrid.o m_spin.o minvec.o parallel.o precision.o siesta_cml.o
 kpoint_grid.o: siesta_options.o sys.o units.o
 kpoint_pdos.o: find_kgrid.o minvec.o parallel.o precision.o siesta_options.o
 kpoint_pdos.o: sys.o units.o
@@ -615,7 +618,7 @@ m_rhog.o: class_Vector.o m_diis.o m_mpi_utils.o m_spin.o parallel.o precision.o
 m_rhog.o: siesta_options.o sorting.o
 m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
-m_spin.o: alloc.o parallel.o precision.o
+m_spin.o: alloc.o parallel.o precision.o m_fdf_global.o sys.o 
 m_stress.o: precision.o
 m_svd.o: precision.o
 m_target_stress.o: parallel.o precision.o sys.o units.o
@@ -671,6 +674,7 @@ mmn.o: parallel.o precision.o siesta2wannier90.o siesta_geom.o
 mmn.o: sparse_matrices.o
 mneighb.o: alloc.o precision.o sys.o
 molecularmechanics.o: alloc.o parallel.o precision.o sys.o units.o
+moments.o: atmfuncs.o parallel.o parallelsubs.o precision.o spinorbit.o
 moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 moremeshsubs.o: alloc.o mesh.o parallel.o precision.o schecomm.o sys.o
 mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
@@ -692,7 +696,7 @@ ofc.o: alloc.o files.o precision.o units.o
 old_atmfuncs.o: alloc.o atmparams.o precision.o sys.o
 on_subs.o: alloc.o onmod.o onmod.o
 onmod.o: precision.o
-optical.o: alloc.o atomlist.o densematrix.o fermid.o files.o parallel.o
+optical.o: alloc.o atomlist.o densematrix.o fermid.o m_spin.o files.o parallel.o
 optical.o: parallelsubs.o precision.o sys.o units.o
 ordern.o: alloc.o cgwf.o chempot.o globalise.o m_mpi_utils.o onmod.o parallel.o
 ordern.o: precision.o siesta_cml.o sys.o units.o
@@ -705,6 +709,10 @@ overlap.o: precision.o
 parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
+pdos2g.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
+pdos2k.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
+pdos3g.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
+pdos3k.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
@@ -767,6 +775,7 @@ setup_hamiltonian.o: m_partial_charges.o m_rhog.o m_spin.o m_steps.o m_stress.o
 setup_hamiltonian.o: m_ts_global_vars.o metaforce.o molecularmechanics.o
 setup_hamiltonian.o: parallel.o siesta_geom.o siesta_options.o
 setup_hamiltonian.o: sparse_matrices.o sys.o
+setup_hamiltonian.o: spinorbit.o 
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
@@ -814,6 +823,9 @@ siesta_move.o: zm_fire_optim.o zmatrix.o
 sparse_matrices.o: alloc.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
+spinorbit.o: atm_types.o atmfuncs.o atmparams.o basis_types.o m_fdf_global.o
+spinorbit.o: m_mpi_utils.o parallel.o parallelsubs.o precision.o
+spinorbit.o: pseudopotential.o sys.o
 state_analysis.o: atomlist.o born_charge.o fixed.o m_energies.o m_forces.o
 state_analysis.o: m_ntm.o m_spin.o m_stress.o m_wallclock.o parallel.o
 state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
@@ -856,7 +868,7 @@ write_subs.o: alloc.o atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o m_ts_global_vars.o parallel.o precision.o
 write_subs.o: siesta_cml.o siesta_geom.o siesta_options.o units.o zmatrix.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o kpoint_grid.o
-writewave.o: parallel.o parallelsubs.o precision.o siesta_geom.o sys.o units.o
+writewave.o: parallel.o parallelsubs.o m_spin.o precision.o siesta_geom.o sys.o units.o
 xc.o: alloc.o bsc_xcmod.o precision.o sys.o
 xml.o: precision.o
 zm_broyden_optim.o: m_broyddj_nocomm.o parallel.o precision.o sys.o units.o

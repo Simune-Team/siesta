@@ -73,6 +73,7 @@ C *********************************************************************
       use precision,    only : dp
       use atomlist,     only : qtot
       use densematrix,  only : Haux, Saux, psi
+      use m_spin,       only : NonCol, SpOrb  ! CC RC  Added 
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
       use alloc
@@ -155,6 +156,18 @@ C     Read optical adsorption parameters
      &               efield,nbands,option,escissor)
 
       if (.not.DoOptical) goto 999
+
+CC RC  Added
+        if (NonCol .or. SpOrb) then
+          write(6,'(/a)')
+     .     'optical: only implemented for paramagnetic or '
+          write(6,'(/a)')
+     .     'optical: collinear spin calculations'
+          goto 999
+        endif
+CC RC  
+
+
 
 C     Unit cell volume
       volume = volcel(ucell)        

@@ -1,0 +1,35 @@
+-----------------------------------------------------------------------------------------------
+2015-11-05   16:45   Ramon Cuadrado  <ramon.cuadrado@cin2.es>  siesta-trunk-479--so-ramon
+On-site implementation of the SO coupling in siesta-trunk-479 version
+
+* Updating the version.info file to siesta-trunk-479--so-ramon branch
+* Some on-site SO subroutines added and modified
+
+added:
+  Docs/CHANGES.so-ramon
+  Src/moments.F
+  Src/spinorbit.f
+modified:
+  Src/Makefile
+  Src/born_charge.F
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/diagon.F
+  Src/grdsam.F
+  Src/iodm_netcdf.F90
+  Src/local_DOS.F
+  Src/m_broyden_mixing.f
+  Src/m_fire_mixing.f
+  Src/m_iodm.F
+  Src/m_pulay.F90
+  Src/m_spin.F90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/optical.F
+  Src/rhoofd.F
+  Src/save_density_matrix.F
+  Src/state_init.F
+  Src/vmat.F
+  Src/write_subs.F
+  Src/writewave.F
+  version.info

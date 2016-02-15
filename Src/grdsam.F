@@ -11,7 +11,7 @@
       module m_grdsam
       public :: grdsam
       CONTAINS
-      subroutine grdsam(nspin, norb, iaorb, iphorb, 
+      subroutine grdsam(nspin, h_spin_dim, SpOrb, norb, iaorb, iphorb, 
      &                  nuo, nuotot, nua, na, isa, xa, indxua,
      &                  cell, ntm, ifa, istr, maxnd,
      &                  maxnh, numh, listhptr, listh, Dscf, Datm, Hmat,
@@ -43,6 +43,8 @@ c
 c Written by E. Artacho. January 1998. 
 c *********************** INPUT TOWARDS DHSCF *******************************
 c integer nspin         : number of spins considered 
+c integer h_spin_dim    : number of spin components of H and D
+c logical SpOrb         : Spin-Orbit flag
 c integer norb          : total number of basis orbitals
 c integer iaorb(norb)   : atom to which each orbital belongs
 c integer iphorb(norb)  : orbital index (within atom) of each orbital
@@ -57,7 +59,7 @@ c integer ifa           : scf contrib to forces calculated or not
 c integer istr          : scf contrib to stress calculated or not
 c integer maxnd         : first dimension of dscf
 c integer maxnh         : first dimension of listh, hmat
-c real*8  dscf(maxnd,nspin): scf DM elements
+c real*8  dscf(maxnd,h_spin_dim): scf DM elements
 c real*8  datm(norb)    : Harris DM diagonal elements
 c **** DHSCF INPUT OR OUTPUT (DEPENDING ON WHETHER MESH IS CALCULATED)*******
 c integer ntm(3)        : number of mesh divisions of each cell vector
@@ -65,7 +67,7 @@ c **** DHSCF INPUT OR OUTPUT (DEPENDING ON ARGUMENT ILH) ********************
 c integer numh(nuo)     : number of nonzero H elements for each row
 c integer listhptr(nuo) : pointer to each row (-1) of H
 c integer listh(maxnh)  : nonzero-H-element column indexes for each row
-c real*8  Hmat(maxnh,nspin): Hamiltonian matrix in sparse form
+c real*8  Hmat(maxnh,h_spin_dim): Hamiltonian matrix in sparse form
 c ************************* DHSCF OUTPUT ******i*****************************
 c real*8  enaatm : integral of vna * rhoatm
 c real*8  enascf : integral of vna * rhoscf
@@ -101,15 +103,17 @@ C
 
       implicit          none
 
-      integer           maxnh, maxnd, na, norb, nspin, nuo, nuotot, 
-     &                  nua, iaorb(norb), ifa, indxua(na), 
+      logical           SpOrb
+
+      integer           maxnh, maxnd, na, norb, nspin, h_spin_dim, 
+     &                  nuo, nuotot, nua, iaorb(norb), ifa, indxua(na), 
      &                  iphorb(norb), isa(na), istr, listh(maxnh),
      &                  listhptr(nuo), numh(nuo), ntm(3)
 
       real(dp)          cell(3,3), datm(norb), dipol(3), 
-     &                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
+     &                  dscf(maxnd,h_spin_dim), DUscf, DUext, Dxc, 
      &                  enaatm, enascf, exc, fa(3,nua),
-     &                  Hmat(maxnh,nspin), stress(3,3),
+     &                  Hmat(maxnh,h_spin_dim), stress(3,3),
      &                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
 
 C Internal variables and arrays
@@ -217,7 +221,8 @@ c first (normal) call to DHSCF, ihmat=1 --------------------------------------
          want_partial_charges = .true.
       endif
 
-      call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
+      call dhscf( nspin, h_spin_dim, SpOrb,
+     &            norb, iaorb, iphorb, nuo, nuotot, nua,
      &            na, isa, xa, indxua, ntm,
      &            ifa, istr, 1, filesOut,
      &            maxnd, numh, listhptr, listh, Dscf, Datm,
@@ -306,7 +311,8 @@ c loop sampling on displacements making averages ----------------------------
      &                      maxnd, numh, listhptr, listh, datm,
      &                      Fal, stressl)
 
-          call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
+          call dhscf( nspin, h_spin_dim, SpOrb,
+     &                norb, iaorb, iphorb, nuo, nuotot, nua,
      &                na, isa, xanew, indxua, ntm,
      &                ifa, istr, 0, filesOut,
      &                maxnd, numh, listhptr, listh, Dscf, Datm,

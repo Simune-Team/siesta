@@ -26,7 +26,7 @@
       CONTAINS
 
       subroutine broyden_mixing(iscf,mix_scf1,nbasis,maxnd,numd,
-     .                   listdptr,nspin,alpha,nkick,alpha_kick,
+     .                   listdptr,h_spin_dim,alpha,nkick,alpha_kick,
      $                   dmnew,dmold,dmax)
 
 C ************************** INPUT **************************************
@@ -37,7 +37,7 @@ C integer maxnd              : First dimension of D.M., and
 C                              maximum number of nonzero elements of D.M.
 C integer numd(:)            : Control vector of D.M.
 C                              (number of nonzero elements of each row)
-C integer nspin              : Spin polarization (1=unpolarized, 2=polarized)
+C integer h_spin_dim         : Spin dimension of D  
 C real*8 alpha               : Mixing parameter (for linear mixing)
 C integer nkick              : A kick is given every nkick iterations
 C real*8 alpha_kick          : Mixing parameter for kicks
@@ -55,12 +55,12 @@ C                              input and output
 
       implicit none
 
-      integer, intent(in) :: iscf,maxnd,nbasis,nspin,nkick
+      integer, intent(in) :: iscf,maxnd,nbasis,h_spin_dim,nkick
       logical, intent(in) :: mix_scf1
       integer, intent(in) ::  numd(:), listdptr(:)
       real(dp), intent(in) :: alpha, alpha_kick
-      real(dp), intent(inout) :: dmnew(maxnd,nspin),
-     $                           dmold(maxnd,nspin)
+      real(dp), intent(inout) :: dmnew(maxnd,h_spin_dim),
+     $                           dmold(maxnd,h_spin_dim)
       real(dp), intent(out) ::  dmax
 
 
@@ -80,7 +80,7 @@ C                              input and output
 
       real(dp) :: global_dnorm, global_dmax,  dnorm, diff, weight
 
-      numel = nspin * sum(numd(1:nbasis))
+      numel = h_spin_dim * sum(numd(1:nbasis))
       call Globalize_sum(numel,global_numel)
 
       if (.not. initialization_done) then
@@ -126,7 +126,7 @@ C                              input and output
 
          dmax = 0.0_dp
          dnorm = 0.0_dp
-         do is = 1,nspin
+         do is = 1,h_spin_dim
             do i = 1,nbasis
                do j = 1,numd(i)
                   k = listdptr(i) + j
@@ -178,7 +178,7 @@ C                              input and output
            i0 = 0
            dmax = 0.0_dp
            dnorm = 0.0_dp
-           do is = 1,nspin
+           do is = 1,h_spin_dim
              do i = 1,nbasis
                do j = 1,numd(i)
                  i0 = i0 + 1
@@ -240,7 +240,7 @@ C                              input and output
 !         Copy back the results
 !
            i0 = 0
-           do is = 1,nspin
+           do is = 1,h_spin_dim
              do i = 1,nbasis
                do j = 1,numd(i)
                  i0 = i0 + 1

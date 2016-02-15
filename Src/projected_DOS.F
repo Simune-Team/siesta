@@ -15,8 +15,9 @@
       USE siesta_options
       use fdf,         only: fdf_block, block_fdf
       use Kpoint_pdos
-      use parallel,    only: IOnode
+      use parallel,    only: IOnode, Nodes ! CC RC Added Nodes
       use siesta_geom, only: ucell
+      use m_spin,      only: h_spin_dim    ! CC RC Added
 
       implicit none
 
@@ -35,6 +36,19 @@
              do_pdos = .false.
           endif
         endif
+
+CC RC  Added
+C  PDOS not computed if on-collinear calculation is run in parallel
+
+      if ( (h_spin_dim .gt. 2) .and. (Nodes .gt. 1) ) then
+       if (IOnode) then
+        write(6,'(a)')
+     .     'projected_DOS: The program is not prepared to compute'
+        write(6,'(a)')
+     .     'projected_DOS: Non-collinear DOS and PDOS in parallel'
+        do_pdos = .false.
+       endif
+      endif
 
       if (do_pdos) then
 
@@ -59,7 +73,7 @@
       use Kpoint_pdos
       use parallel,    only: IOnode
       use m_eo
-      use m_spin,      only: nspin
+      use m_spin,      only: h_spin_dim, e_spin_dim, spinor_dim
       use m_gamma
       use units,       only: eV
       
@@ -106,18 +120,20 @@
 
 ! If the number of k points has increased then reallocate eo and qo
           if (maxk_pdos.gt.maxk) then
-            call re_alloc(eo,1,no_u,1,nspin,1,maxk_pdos,name="eo",
+            call re_alloc(eo,1,no_u,1,spinor_dim,1,maxk_pdos,name="eo",
      .                    routine="projected_dos")
           endif
 
-          call pdos( no_s, nspin, nspin, no_l, maxnh,
+          call pdos( no_s, h_spin_dim, e_spin_dim,spinor_dim, no_l, 
+     .               maxnh,
      .               no_u, numh, listhptr, listh, H, S,
      .               e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
      .               nkpnt_pdos, kpoints_pdos, kweight_pdos, eo,
      .               no_u)
         else
 ! otherwise use the SCF grid 
-          call pdos( no_s, nspin, nspin, no_l, maxnh,
+          call pdos( no_s, h_spin_dim, e_spin_dim,spinor_dim, no_l, 
+     .               maxnh,
      .               no_u, numh, listhptr, listh, H, S,
      .               e1, e2, sigma, nhist,
      .               gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,

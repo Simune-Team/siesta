@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine ioeig(eo, ef, no, ns, nk, maxo, maxs, maxk,
+      subroutine ioeig(eo, ef, no, ns, nk, maxo, spinor_dim, maxk,
      .                 kpoints, kweights)
 
 c *******************************************************************
@@ -19,13 +19,14 @@ c Emilio Artacho, Feb. 1999
       use siesta_cml
       use units, only : eV
       use files, only : slabel, label_length
+      use m_spin, only : SPpol
 
       implicit          none
 
       integer,  intent(in) :: maxo
-      integer,  intent(in) :: maxs
+      integer,  intent(in) :: spinor_dim
       integer,  intent(in) :: maxk
-      real(dp), intent(in) :: eo(maxo, maxs, maxk)
+      real(dp), intent(in) :: eo(maxo, spinor_dim, maxk)
       real(dp), intent(in) :: ef
       integer,  intent(in) :: no
       integer,  intent(in) :: ns
@@ -36,7 +37,7 @@ c Emilio Artacho, Feb. 1999
       external          io_assign, io_close, paste
 
 c Internal 
-      integer           ik, iu, io, is, nspin
+      integer           ik, iu, io, is   !, nspin
 
       character(len=label_length+4), save :: fname
       logical, save                       :: frstme = .true.
@@ -48,16 +49,16 @@ c -------------------------------------------------------------------
         frstme = .false.
       endif
       
-      nspin = min(ns,2)
+c      nspin = min(ns,2)
 
       call io_assign( iu )
       open( iu, file=fname, form='formatted', status='unknown' )      
 
       write(iu,"(f14.4)") ef/eV
-      write(iu,"(3i6)")   no, min(ns,2), nk
+      write(iu,"(3i6)")   no, spinor_dim, nk
       do ik = 1,nk
         write(iu,"(i5,10f12.5,/,(5x,10f12.5))")
-     .          ik, ((eo(io,is,ik)/eV,io=1,no),is=1,nspin)
+     .          ik, ((eo(io,is,ik)/eV,io=1,no),is=1,spinor_dim)
       enddo
 
       call io_close( iu )
@@ -70,9 +71,9 @@ c -------------------------------------------------------------------
         call cmlAddProperty(xf=mainXML, value=nk, 
      .       title='Number of k-points', dictRef='siesta:nkpoints',
      .       units='cmlUnits:countable')
-        do is = 1,nspin
+        do is = 1,spinor_dim
           call cmlStartPropertyList(mainXML, dictRef='siesta:kpt_band')
-          if (nspin.eq.2) then
+          if (SPpol) then
             if (is.eq.1) then
               call cmlAddProperty(xf=mainXML, value="up", 
      .                            dictRef="siesta:spin")
@@ -80,7 +81,7 @@ c -------------------------------------------------------------------
               call cmlAddProperty(xf=mainXML, value="down", 
      .                            dictRef="siesta:spin")
             endif
-          endif
+           endif
           do ik = 1, nk
             call cmlAddKPoint(xf=mainXML, coords=kpoints(:, ik), 
      .                        weight=kweights(ik))

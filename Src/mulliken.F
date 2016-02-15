@@ -505,6 +505,9 @@ C Global reduction of terms
           qtot = temp2(4)
           stot = temp2(5)
 #endif
+! RRR
+!            stot = sqrt(svec(1)**2+svec(2)**2+svec(3)**2)
+! RRR
           if (ionode) then
             write(6,'(a,/,2a8,1x,2f10.5,3x,3f8.3,/)')
      .        repeat('-',64), 'Total', 'Total', qtot, stot, svec
@@ -573,6 +576,9 @@ c ********************************************************************
         sv(1) = st * sinth * cosph
         sv(2) = st * sinth * sinph
         sv(3) = st * costh
+c        sv(1) = 2.*qs(3)
+c        sv(2) = 2.*qs(4) 
+c        sv(3) = qs(1)-qs(2)
       else
         write(6,*) 'spnvec: ERROR: invalid argument ns =', ns
         return

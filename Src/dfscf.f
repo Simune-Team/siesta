@@ -9,7 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine dfscf( ifa, istr, na, no, nuo, nuotot, np, nspin,
-     .                  indxua, isa, iaorb, iphorb,
+     .                  h_spin_dim, SpOrb, indxua, isa, iaorb, iphorb,
      .                  maxnd, numd, listdptr, listd, Dscf, Datm,
      .                  Vscf, Vatm, dvol, VolCel, Fal, Stressl )
 
@@ -25,7 +25,11 @@ C integer no              : Number of basis orbitals
 C integer nuo             : Number of orbitals in unit cell (local)
 C integer nuotot          : Number of orbitals in unit cell (global)
 C integer np              : Number of mesh points (total is nsp*np)
-C integer nspin           : Number of spin components
+C integer nspin           : Number of different spin polarisations
+C                           nspin=1 => Unpolarized, nspin=2 => polarized
+C                           nspin=4 => Noncollinear spin
+C integer h_spin_dim      : Number of spin components of H and D
+C logical SpOrb           : SpOrb flag
 C integer indxua(na)      : Index of equivalent atom in unit cell
 C integer isa(na)         : Species index of each atom
 C integer iaorb(no)       : Atom to which orbitals belong
@@ -34,7 +38,7 @@ C integer maxnd           : First dimension of Dscf
 C integer numd(nuo)       : Number of nonzero elemts in each row of Dscf
 C integer listdptr(nuo)   : Pointer to start of row in listd
 C integer listd(maxnd)    : List of nonzero elements of Dscf
-C real*8  Dscf(maxnd,nspin): Value of nonzero elemens of density matrix
+C real*8  Dscf(maxnd,h_spin_dim): Value of nonzero elemens of density matrix
 C real*8  Datm(nuotot)    : Occupations of basis orbitals in free atom
 C real*4  Vscf(nsp,np,nspin): Value of SCF potential at the mesh points
 C real*4  Vatm(nsp,np)    : Value of Harris potential (Hartree potential
@@ -68,8 +72,11 @@ C  Modules
       implicit none
 
 C  Passed arguments
+      logical  SpOrb
+
       integer, intent(in) ::
-     .   ifa, istr, na, no, nuo, nuotot, np, nspin,  
+     .   ifa, istr, na, no, nuo, nuotot, np, 
+     .   nspin, h_spin_dim,   
      .   indxua(na), isa(na), iaorb(no), iphorb(no), 
      .   maxnd, numd(nuo), listdptr(nuo), listd(maxnd)
 
@@ -77,7 +84,7 @@ C  Passed arguments
      .   Vscf(nsp,np,nspin), Vatm(nsp,np)
 
       real(dp), intent(in) ::
-     .   Datm(nuotot), Dscf(maxnd,nspin), dvol, VolCel
+     .   Datm(nuotot), Dscf(maxnd,h_spin_dim), dvol, VolCel
 
       real(dp), intent(inout) :: Fal(3,*), Stressl(9)
 
@@ -93,7 +100,7 @@ C Internal variables
       real(dp)
      .   CD(nsp), CDV(nsp), DF(12), Dji, dxsp(3,nsp),  
      .   gCi(12,nsp), grada(3,maxoa,nsp),
-     .   phia(maxoa,nsp), rvol, r2sp, r2cut(nsmax), V(nsp,nspin)
+     .   phia(maxoa,nsp), rvol, r2sp, r2cut(nsmax), V(nsp,h_spin_dim)
 !
       integer, pointer, save ::  ibc(:), iob(:)
       real(dp), pointer, save :: C(:,:), D(:,:,:),
@@ -120,7 +127,7 @@ C  Allocate buffers to store partial copies of Dscf and C
       maxb = maxc + minb
       maxb = min( maxb, no )
       call re_alloc( C, 1, nsp, 1, maxc, 'C', 'dfscf' )
-      call re_alloc( D, 0, maxb, 0, maxb, 1, nspin, 'D', 'dfscf' )
+      call re_alloc( D, 0, maxb, 0, maxb, 1, h_spin_dim, 'D', 'dfscf' )
       call re_alloc( gC, 1, 3, 1, nsp, 1, maxc, 'gC', 'dfscf' )
       call re_alloc( ibc, 1, maxc, 'ibc', 'dfscf' )
       call re_alloc( iob, 0, maxb, 'iob', 'dfscf' )
@@ -136,10 +143,11 @@ C  If parallel, allocate temporary storage for Local Dscf
         else
           maxndl = 1
         endif
-        call re_alloc( DscfL, 1, maxndl, 1, nspin, 'DscfL', 'dfscf' )
+        call re_alloc( DscfL, 1, maxndl, 1, h_spin_dim, 
+     .                 'DscfL', 'dfscf' )
 C Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
-     .                   nspin, Dscf, DscfL )
+     .                   h_spin_dim, Dscf, DscfL )
 
       endif
 
@@ -207,6 +215,7 @@ C  last runs circularly over rows of D
             call die('rhoofd: no slot available in D')
    10       continue
 
+CC RC Changed for osSO 
 C  Copy row i of Dscf into row last of D
             j = abs(iob(last))
             if (j.ne.0) ibuff(j) = 0
@@ -221,8 +230,21 @@ C  Copy row i of Dscf into row last of D
                 j = listdl(ind)
                 if (i.ne.iu) j = listsc( i, iu, j )
                 jb = ibuff(j)
-                D(ib,jb,1:nspin) = DscfL(ind,1:nspin)
-                D(jb,ib,1:nspin) = DscfL(ind,1:nspin)
+                D(ib,jb,:) = DscfL(ind,:)
+! JFR           ! We cannot assume symmetry (ib,jb) -- (jb,ib)
+                ! We need to transpose the spin and conjugate
+                if ( SpOrb ) then
+                   D(jb,ib,1) = DscfL(ind,1)
+                   D(jb,ib,2) = DscfL(ind,2)
+                   D(jb,ib,3) = DscfL(ind,7)
+                   D(jb,ib,4) = DscfL(ind,8)
+                   D(jb,ib,5) = -DscfL(ind,5)
+                   D(jb,ib,6) = -DscfL(ind,6)
+                   D(jb,ib,7) = DscfL(ind,3)
+                   D(jb,ib,8) = DscfL(ind,4)
+                else
+                   D(jb,ib,:) = DscfL(ind,:)
+                endif
               enddo
             else
               call GlobalToLocalOrb( iu, Node, Nodes, iul )
@@ -231,13 +253,26 @@ C  Copy row i of Dscf into row last of D
                 j = listd(ind)
                 if (i.ne.iu) j = listsc( i, iu, j )
                 jb = ibuff(j)
-                D(ib,jb,1:nspin) = Dscf(ind,1:nspin)
-                D(jb,ib,1:nspin) = Dscf(ind,1:nspin)
+                D(ib,jb,:) = Dscf(ind,:)
+! JFR           ! We cannot assume symmetry (ib,jb) -- (jb,ib)
+                if ( SpOrb ) then
+                   D(jb,ib,1) = Dscf(ind,1)
+                   D(jb,ib,2) = Dscf(ind,2)
+                   D(jb,ib,3) = Dscf(ind,7)
+                   D(jb,ib,4) = Dscf(ind,8)
+                   D(jb,ib,5) = -Dscf(ind,5)
+                   D(jb,ib,6) = -Dscf(ind,6)
+                   D(jb,ib,7) = Dscf(ind,3)
+                   D(jb,ib,8) = Dscf(ind,4)
+                else
+                   D(jb,ib,:) = Dscf(ind,:)
+                endif                
               enddo
             endif
           endif
           ibc(ic) = ibuff(i)
         enddo
+CC RC 
 
 C  Restore iob for next point
         do imp = 1+endpht(ip-1), endpht(ip)
@@ -294,8 +329,16 @@ C  If stress required. Generate stress derivatives
 C  Copy potential to a double precision array
         V(1:nsp,1:nspin) = Vscf(1:nsp,ip,1:nspin)
 
-C  Factor two for nondiagonal elements for non-collinear spin
-        V(1:nsp,3:nspin) = 2.0_dp * V(1:nsp,3:nspin)
+CC RC Added for osSO
+        if ( h_spin_dim .eq. 4) then
+        V(1:nsp,3:h_spin_dim) = 2.0_dp*V(1:nsp,3:h_spin_dim)
+        endif
+
+        if ( SpOrb ) then
+          V(1:nsp,5:6) = 0.0
+          V(1:nsp,7:8) = V(1:nsp,3:4)
+        endif
+CC RC osSO
 
 C  Loop on first orbital of mesh point
         do ic = 1,nc
@@ -316,7 +359,7 @@ C  Some loops are not done using f90 form as this
 C  leads to much slower execution on machines with stupid f90
 C  compilers at the moment
           CDV(1:nsp) = 0.0_dp
-          do ispin = 1,nspin
+          do ispin = 1,h_spin_dim
 
 C  Loop on second orbital of mesh point
             CD(1:nsp) = 0.0_dp

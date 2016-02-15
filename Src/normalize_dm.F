@@ -30,12 +30,17 @@
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
           qsol = qsol + Dscf(io,ispin) * s(io)
+c          write(6,'(a,2i5,2f12.6)') ' io/ispin/Dscf(io,ispin)/s(io) = ',
+c     &        io, ispin, Dscf(io,ispin), s(io) 
+
         enddo
       enddo
 #ifdef MPI
       call globalize_sum(qsol,buffer1)
       qsol = buffer1
 #endif
+
+c      write(6,'(a,f12.6)') ' qsol = ', qsol 
 
       ! We might consider using abs(qsol-qtot) instead of the fractional accuracy.
       ! For large numbers of electrons one might have a significant net charge
@@ -52,9 +57,11 @@
             endif
          endif
       else
+c         write(6,'(a)') ' normalize_dm: Calculating tol '
          ! In later steps, the lack of normalization is more serious
          ! The tolerance is tighter by default
-         if (abs(qsol/qtot-1._dp) > dm_normalization_tol) then
+!         if (abs(qsol/qtot-1._dp) > dm_normalization_tol) then
+         if (abs(qsol/qtot-1._dp) > 1.d-2) then
             write(msg,'(a,2f20.8)')
      $           'Bad DM normalization: Qtot, Tr[D*S] =', qtot, qsol
             call die(msg)

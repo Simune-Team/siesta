@@ -327,6 +327,16 @@ c
 
       allocate(species(nspecies))
 
+c     if(SpOrb) then
+c
+c     else
+c
+c     endif
+cc
+
+
+
+
       do is = 1, nspecies
         spp                => species(is)
         spp%label          = species_label(is)

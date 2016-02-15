@@ -3,6 +3,7 @@
       function compute_norm(DM,nnz,nspin) result(norm)
       use precision, only: dp
       use sparse_matrices, only: S
+      use m_spin, only: spinor_dim
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -17,7 +18,7 @@
       integer   ::  io, ispin
 
       norm = 0.0_dp
-      do ispin = 1,min(nspin,2)
+      do ispin = 1,spinor_dim
         do io = 1,nnz
           norm = norm + DM(io,ispin) * s(io)
         enddo

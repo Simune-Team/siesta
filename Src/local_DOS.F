@@ -26,6 +26,8 @@
       use m_forces,       only: fa
       use m_eo
       use m_spin,         only: nspin, qs, efs
+      use m_spin,         only: h_spin_dim, e_spin_dim, spinor_dim 
+      use m_spin,         only: SpOrb
       use m_gamma
       use m_dhscf,        only: dhscf
       implicit none
@@ -68,7 +70,9 @@
         if ((isolve .eq. SOLVE_DIAGON) .or.
      .      ((isolve .eq. SOLVE_MINIM) .and.
      .       minim_calc_eigenvalues)) then
-          call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+CC RC  Added three arguments: h_spin_dim, e_spin_dim, spinor_dim
+          call diagon(no_s, h_spin_dim, e_spin_dim, spinor_dim, 
+     .                no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qs, temp, e1, e2,
      .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
@@ -78,7 +82,9 @@
           !Find the LDOS in the real space mesh
           filesOut%rho = paste( slabel, '.LDOS' )
           g2max = g2cut
-          call dhscf( nspin, no_s, iaorb, iphorb, no_l,
+CC RC  Added two arguments: h_spin_dim, SpOrb
+          call dhscf( nspin, h_spin_dim, SpOrb, 
+     .              no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 
      .              ntm, 0, 0, 0, filesOut,
      .              maxnh, numh, listhptr, listh, Dscf, Datm, maxnh, H,

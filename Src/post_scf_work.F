@@ -15,7 +15,8 @@
      &                    iphorb, no_l, qtot
       use m_energies
       use neighbour,   only: maxna=>maxnna   ! For plcharge...
-      use m_spin,         only: nspin, qs, efs
+      use m_spin,         only: nspin, h_spin_dim, e_spin_dim, qs, efs
+      use m_spin,         only: spinor_dim 
       use m_dminim,       only : dminim
       use m_zminim,       only : zminim
       use m_steps,        only : istp
@@ -47,7 +48,8 @@
      $                "Generating Escf with a modified H..."
               endif
            endif
-          call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+          call diagon(no_s, h_spin_dim, e_spin_dim, spinor_dim, 
+     &                no_l, maxnh, maxnh, no_u,
      &                numh, listhptr, listh, numh, listhptr, listh, 
      &                H, S, qtot, fixspin, qs, temp, 1.0_dp, -1.0_dp,
      &                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
@@ -87,7 +89,9 @@
          endif
       endif
 
+!      write(6,'(a)') 'post_scf_work: Getting to final_H_stress '
       call final_H_f_stress( iscf )
+!      write(6,'(a)') 'post_scf_work: Leaving to final_H_stress '
 
 !     Print energies
       DEna = Enascf - Enaatm

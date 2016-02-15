@@ -48,7 +48,9 @@ C     Saved internal variables:
 
       CONTAINS
 
-      subroutine read_dynamic_dm ( maxnd, no_l, nspin, numd, 
+CC RC  Chnaged along the module's subroutines nspin by h_spin_dim
+
+      subroutine read_dynamic_dm ( maxnd, no_l, h_spin_dim, numd, 
      .                     listdptr, listd, dm, found )
 
       ! The only "in" parameter is no_l, to determine the distribution
@@ -60,7 +62,7 @@ C     Saved internal variables:
       ! All pointers should be nullified on entry
 
       integer, intent(out) :: maxnd
-      integer, intent(out) :: nspin
+      integer, intent(out) :: h_spin_dim
 
       integer, pointer     :: numd(:)
       integer, pointer     :: listdptr(:)
@@ -110,9 +112,9 @@ C     Find total number of basis functions over all Nodes
          open( unit1, file=fnamei, form=formin, status='old' )
          rewind(unit1)
          if (fmti) then
-            read(unit1, intfmt) nb, nspin
+            read(unit1, intfmt) nb, h_spin_dim
          else
-            read(unit1) nb, nspin
+            read(unit1) nb, h_spin_dim
          endif
       endif
 
@@ -120,7 +122,7 @@ C     Communicate the values to all Nodes and adjust to allow for
 C     distributed memory before checking the dimensions
 #ifdef MPI
       call MPI_Bcast(nb,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(nspin,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+      call MPI_Bcast(h_spin_dim,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
       ! If the total number of orbitals does not match, bail out
@@ -169,7 +171,7 @@ C     Convert global numd pointer to local form and generate listdptr
 
       ! Allocate density matrix and listd
       call re_alloc( listd, 1, maxnd, 'listd', 'read_dm' )
-      call re_alloc( dm, 1, maxnd, 1, nspin, 'dm', 'read_dm' )
+      call re_alloc( dm, 1, maxnd, 1, h_spin_dim, 'dm', 'read_dm' )
 
 #ifdef MPI
 C     Create buffer arrays for transfering density matrix between nodes and lists
@@ -218,7 +220,7 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       call de_alloc( ibuffer, 'ibuffer', 'read_dm' )
 #endif
 
-      do is = 1,nspin
+      do is = 1,h_spin_dim
          do m = 1,no_u
 #ifdef MPI
             call WhichNodeOrb(m,Nodes,BNode)
@@ -270,7 +272,7 @@ C     Create buffer arrays for transfering density matrix between nodes and list
 
       end subroutine read_dynamic_dm
 !-----------------------      
-      subroutine read_dm ( maxnd, no_l, nspin, numd, 
+      subroutine read_dm ( maxnd, no_l, h_spin_dim, numd, 
      .                     listdptr, listd, dm, found )
 
 C     Reads density matrix from file
@@ -279,7 +281,7 @@ C     Made into a separate routine by Alberto Garcia, August 2007
 C     ********* INPUT ***************************************************
 C     integer   maxnd    : First dimension of listd and dm
 C     integer   no_l   : Number of atomic orbitals
-C     integer   nspin    : Number of spins (1 or 2)
+C     integer   h_spin_dim    : Spin dimension of D
 C     ********* OUTPUT ************
 C     integer numd(no_l)     : Control vector of DM matrix
 C     (number of nonzero elements of each row)
@@ -287,7 +289,7 @@ C     integer listdptr(no_l) : Control vector of DM matrix
 C     (pointer to the start of each row)
 C     integer listd(maxnd)     : Control vector of DM matrix
 C     (list of nonzero elements of each row)
-C     real*8  dm(maxnd,nspin)  : Density matrix
+C     real*8  dm(maxnd,h_spin_dim)  : Density matrix
 C     logical found : Has DM been found in disk? 
 C     *******************************************
 
@@ -297,12 +299,12 @@ C     *******************************************
 
       integer, intent(in) :: maxnd
       integer, intent(in) :: no_l
-      integer, intent(in) :: nspin
+      integer, intent(in) :: h_spin_dim
 
       integer, intent(out) :: numd(no_l)
       integer, intent(out) :: listdptr(no_l)
       integer, intent(out) :: listd(maxnd)
-      real(dp), intent(out) :: dm(maxnd, nspin)
+      real(dp), intent(out) :: dm(maxnd, h_spin_dim)
 
       logical, intent(out) :: found
 
@@ -362,7 +364,7 @@ C     distributed memory before checking the dimensions
 
       ! This checks for equality of spin and number of rows.
       call chkdim( 'iodm', 'no_u', no_u, nb, 0 )
-      call chkdim( 'iodm', 'nspin',  nspin,  ns, 0 )
+      call chkdim( 'iodm', 'h_spin_dim',  h_spin_dim,  ns, 0 )
 
 C     Allocate local buffer array for globalised numd
       nullify(numdg)
@@ -448,7 +450,7 @@ C     Create buffer arrays for transfering density matrix between nodes and list
       call de_alloc( ibuffer, 'ibuffer', 'read_dm' )
 #endif
 
-      do is = 1,nspin
+      do is = 1,h_spin_dim
          do m = 1,no_u
 #ifdef MPI
             call WhichNodeOrb(m,Nodes,BNode)
@@ -500,16 +502,16 @@ C     Create buffer arrays for transfering density matrix between nodes and list
 
       end subroutine read_dm
 !-----------------------      
-      subroutine write_dm (maxnd, no_l, nspin,
+      subroutine write_dm (maxnd, no_l, h_spin_dim,
      $     numd, listdptr, listd, dm)
 
       integer, intent(in) :: maxnd
       integer, intent(in) :: no_l
-      integer, intent(in) :: nspin
+      integer, intent(in) :: h_spin_dim
       integer, intent(in) :: numd(1:no_l)
       integer, intent(in) :: listdptr(1:no_l)
       integer, intent(in) :: listd(maxnd)
-      real(dp), intent(in) :: dm(maxnd,nspin)
+      real(dp), intent(in) :: dm(maxnd,h_spin_dim)
 
       integer :: no_u, m, ml, im, ndmaxg, unit1, is
 #ifdef MPI
@@ -537,9 +539,9 @@ C     Find total number of basis functions over all Nodes
          open( unit1, file=fnameo, form=formout, status='unknown' )
          rewind(unit1)
          if (fmto) then
-            write(unit1, intfmt) no_u, nspin
+            write(unit1, intfmt) no_u, h_spin_dim
          else
-            write(unit1) no_u, nspin
+            write(unit1) no_u, h_spin_dim
          endif
       endif
 
@@ -634,7 +636,7 @@ C     Write out listd array
 #endif
 
 C     Write density matrix
-      do is=1,nspin
+      do is=1,h_spin_dim
          do m=1,no_u
 #ifdef MPI
             call WhichNodeOrb(m,Nodes,BNode)

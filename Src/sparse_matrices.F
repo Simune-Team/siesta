@@ -17,8 +17,13 @@
 
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
-      real(dp), pointer :: H_kin(:) => null()
-      real(dp), pointer :: H_vkb(:) => null()
+C      real(dp), pointer :: H_kin(:) => null()
+C      real(dp), pointer :: H_vkb(:) => null()
+CC RC For osSO the H_kin and H_skb have to  have spin_dim as second 
+C     argument 
+      real(dp), pointer :: H_kin(:,:) => null()
+      real(dp), pointer :: H_vkb(:,:) => null()
+      real(dp), pointer :: H0(:,:) => null()
 
       CONTAINS
 
@@ -45,6 +50,8 @@
       call de_alloc( H_vkb,       'H_vkb',       'sparseMat' )
       call de_alloc( xijo,        'xijo',        'sparseMat' )
       call de_alloc( S,           'S',           'sparseMat' )
+CC RC
+      call de_alloc( H0,          'H0',          'sparseMat' )
 
       end subroutine resetSparseMatrices
 

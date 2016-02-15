@@ -3,20 +3,17 @@
 !
 ! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
 ! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
+! and J.M.Soler, 1996-2006.
 !
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diag2g( nuo, no, maxnh, maxnd, maxo,
+      subroutine diag3g( nuo, no, maxuo, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr,
-     .                   listd, H, S, getD, qtot, temp, e1, e2,
+     .                   listd, H, S, getD, getPSI, qtot, temp, e1, e2,
      .                   eo, qo, Dnew, Enew, ef, Entropy, psi, 
      .                   nuotot, occtol, iscf, neigwanted)
 
-!
-!     Contributed by Volodymyr Maslyuk
-!      
       use precision
       use sys
       use parallel,        only : Node, Nodes, BlockSize
@@ -31,11 +28,12 @@ C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
 C eigenvector, for given Hamiltonian and Overlap matrices.
-C This version is for non-colinear spin at gamma point.
+C This version is for spin-orbit at gamma point.
 C Writen by J.Soler, May and August 1998.
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals on local node
 C integer no                  : Number of basis orbitals
+C integer maxuo               : Maximum number of basis  orbitals
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of Dnew and Enew
 C integer maxo                : First dimension of eo and qo
@@ -94,11 +92,11 @@ C of referencing has been changed in several places to reflect this.
       integer listh(maxnh), numh(nuo), listhptr(nuo)
       integer listd(maxnd), numd(nuo), listdptr(nuo)
       
-      real(dp) Dnew(maxnd,4), e1, e2, ef, Enew(maxnd,4)
-      real(dp) Entropy, eo(maxo*2), H(maxnh,4), qo(maxo*2)
+      real(dp) Dnew(maxnd,8), e1, e2, ef, Enew(maxnd,4)
+      real(dp) Entropy, eo(maxo*2), H(maxnh,8), qo(maxo*2)
       real(dp) qtot, S(maxnh), temp, occtol
       
-      logical               getD
+      logical               getD, getPSI
       
 !     Internal variables .............................................
       real(dp)                       psi(2,2,nuotot,2*nuo)
@@ -107,8 +105,8 @@ C of referencing has been changed in several places to reflect this.
       
       integer           BNode, BTest, ie, ierror, iie, iio
       integer           ind, io, j, jo, nd, iuo, juo
-      real(dp)          ee, pipj, qe, t
-      complex(dp)       cicj, D11, D22, D12, D21
+      real(dp)          ee, qe, t
+      complex(dp)       D11, D22, D12, D21
 #ifdef MPI
       integer MPIerror
 #endif
@@ -118,11 +116,11 @@ C of referencing has been changed in several places to reflect this.
 !***********************************************************************
 !     define the arrays
       allocate(Haux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag2g')
+      call memory('A','Z',2*nuotot*2*nuo,'diag3g')
       allocate(Saux(2,nuotot,2,nuo))
-      call memory('A','Z',2*nuotot*2*nuo,'diag2g')
+      call memory('A','Z',2*nuotot*2*nuo,'diag3g')
       allocate(caux(2,nuotot))
-      call memory('A','Z',2*nuotot,'diag2g')
+      call memory('A','Z',2*nuotot,'diag3g')
 
 !***********************************************************************
 ! BUILD HAMILTONIAN
@@ -139,29 +137,25 @@ C of referencing has been changed in several places to reflect this.
 !            | H(ind,7) + i H(ind,8)   H(ind,2) + i H(ind,6) |
 !
 ! 1. Hermiticity imposes H_{i,j}^{is,js}=H_{j,i}^{js,is}^*
-! 2. Since wave functions are real, if there are no single P or L
-! operators:
+! 2. Since wave functions are real, if there are no single P or L operators:
 !      (a) H_{i,j}^{is,js}=H_{j,i}^{is,js}
-!      (b) These imply spin-box hermiticity:
-!      H_{i,j}^{is,js}=H_{i,j}^{js,is}^*
+!      (b) These imply spin-box hermiticity: H_{i,j}^{is,js}=H_{i,j}^{js,is}^*
 !
 !      (c) Hence
 !
-!                               | H(ind,1)                H(ind,3) - i
-!                               H(ind,4) |
-!           H_{j,i} = H_{i,j} = |
-!           |
-!                               | H(ind,3) + i H(ind,4)   H(ind,2)
-!                               |
+!                               | H(ind,1)                H(ind,3) - i H(ind,4) |
+!           H_{j,i} = H_{i,j} = |                                               |
+!                               | H(ind,3) + i H(ind,4)   H(ind,2)              |
 !
 !
-! The spin-orbit interaction and the orbital part of the Zeeman
-! interaction
-! break the  "spin-box hermiticity" of H. Hence the full format of H is
-! needed
+! The spin-orbit interaction and the orbital part of the Zeeman interaction
+! break the  "spin-box hermiticity" of H. Hence the full format of H is needed
 ! in those cases. 
 !
-      
+! Spin-box symmetrization of D:
+! D_{i,j}(1,2) = 0.5 ( D_{i,j}(1,2) + D_{i,j}(2,1)^* )
+! can not be enforced here.
+
       Saux = dcmplx(0.0_dp, 0.0_dp)
       Haux = dcmplx(0.0_dp, 0.0_dp)
       do io = 1,nuo
@@ -170,14 +164,13 @@ C of referencing has been changed in several places to reflect this.
           jo = listh(ind)
            Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
            Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-           Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-           Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-           Haux(2,jo,1,io) = dcmplx(H(ind,3), H(ind,4))
+           Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
+           Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
            Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-
-c           write(6,'(a,3i5,4f12.6)') 'io/jo/ind/H(ind,1:4) = ',  
-c     .           io, jo, ind, H(ind,1:4)
-
+           Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+        
+c           write(6,'(a,3i5,8f12.6)') 'io/jo/ind/H(ind,1:8) = ',
+c     .           io, jo, ind, H(ind,1:8)
 
         enddo
       enddo
@@ -199,10 +192,10 @@ c     .           io, jo, ind, H(ind,1:4)
             jo = listh(ind)
              Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
              Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-             Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-             Haux(2,jo,1,io) = dcmplx(H(ind,3), H(ind,4))
+             Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
+             Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
              Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+             Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
           enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
@@ -210,11 +203,15 @@ c     .           io, jo, ind, H(ind,1:4)
       endif
       
 !     Check if we are done
-      if (.not.getD) goto 1001
+      if (.not.getD) return
       
 !     Find new Fermi energy and occupation weights 
+!     0.5 is used as weight since nspin is passed as "1" to
+!     the routine. This needs to be cleaned up.
       call fermid(1, 1, 1, (/0.5_dp/), 2*maxo, 2*neigwanted, 
      .                     eo, temp, qtot, qo, ef, Entropy)
+
+!      write(6,'(a,f12.6)') ' Ef = ', ef
       
 !     Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -228,10 +225,10 @@ c     .           io, jo, ind, H(ind,1:4)
 ! BUILD NEW DENSITY MATRIX
 !***********************************************************************
 !
-!                 | ------- 1,1 -------     ------- 1,2 ------- |
+!                 | ------- 1,1 -------     ------- 1,2 --------- |
 !                 | c_{i,up} c_{j,up}^*     c_{i,up} c_{j,down)^* |
-!     D_{i,j} =   |                                             |
-!                 | ------- 2,1 -------     ------- 2,2 ------- |
+!     D_{i,j} =   |                                               |
+!                 | ------- 2,1 -------     ------- 2,2 --------- |
 !                 | c_{i,down} c_{j,up}^*     c_{i,dn} c_{j,dn)^* |
 !
 !             =   | D_{i,j}(1)              D_{i,j}(3)-i D_{i,j}(4) |
@@ -239,14 +236,11 @@ c     .           io, jo, ind, H(ind,1:4)
 
 ! The Energy is computed as E = Tr [ D_{i,j} H_{j,i} ]
 !
-! The Density Matrix is not "spin box hermitian" even if H does not
-! contain P or
+! The Density Matrix is not "spin box hermitian" even if H does not contain P or
 ! L operators. 
 !
-! Spin-box symmetrization of D inside this present subroutine:
-! D_{i,j}(1,2) = 0.5 ( D_{i,j}(1,2) + D_{i,j}(2,1)^* )
-! does not affect the results in any case, since H is spin-box
-! hermitian.
+! If H contains P or L operators, then spin-box "symetrization" of D leads to erroneous
+! results for E
 
       Dnew(:,:) = 0.0_dp
       Enew(:,:) = 0.0_dp
@@ -278,48 +272,28 @@ c     .           io, jo, ind, H(ind,1:4)
             do j = 1,numd(io)
               ind = listdptr(io) + j
               jo = listd(ind)
-      
-!                 | ------- 1,1 -------     ------- 2,1 ------- |
-!                 | c_{j,up} c_{i,up}^*     c_{j,dn} c_{i,up)^* |
-!     D_{j,i} =   |                                             |
-!                 | ------- 1,2 -------     ------- 2,2 ------- |
-!                 | c_{j,up} c_{i,dn}^*     c_{j,dn} c_{i,dn)^* |
-!
 !------- 1,1 -----------------------------------------------------------
-              D11  = dconjg(caux(1,iio)) * caux(1,jo)
+              D11  = caux(1,iio) * dconjg(caux(1,jo))
 !------- 2,2 -----------------------------------------------------------
-              D22  = dconjg(caux(2,iio)) * caux(2,jo)
-!------- 2,1 -----------------------------------------------------------
-              D12  = dconjg(caux(1,iio)) * caux(2,jo)
+              D22  = caux(2,iio) * dconjg(caux(2,jo))
 !------- 1,2 -----------------------------------------------------------
-              D21  = dconjg(caux(2,iio)) * caux(1,jo)
+              D12  = caux(1,iio) * dconjg(caux(2,jo))
+!------- 2,1 -----------------------------------------------------------
+              D21  = caux(2,iio) * dconjg(caux(1,jo))
       
-!------------ Density matrix has to be spin-box hermitian ----------------------
-              D11 = 0.5_dp * (D11 + dconjg(D11))
-              D22 = 0.5_dp * (D22 + dconjg(D22))
-              D12 = 0.5_dp * (D12 + dconjg(D21))
-              D21 = dconjg(D12)
-      
-!       Add contribution to density matrices of unit-cell orbitals
-!       ----------------------------------------------------------------
-!       | D11 = D_{j,i}(1)               D21 = D_{j,i}(3)-i D_{j,i}(4) |
-!       | D12 = D_{i,j}(3)+i D_{i,j}(4)  D22 = D_{j,i}(2)              |
-!       ----------------------------------------------------------------
-!       ----------------------------------------------------------------
-!       | D11 = Dnew(1)                  D21 = Dnew(3)-i Dnew(4)       |
-!       | D12 = Dnew(3)+i Dnew(4)        D22 = Dnew(2)                 |
-!       ----------------------------------------------------------------
               Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
               Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
               Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe
-C              Dnew(ind,4) = Dnew(ind,4) + dimag(D12) * qe
-              Dnew(ind,4) = Dnew(ind,4) - dimag(D12) * qe ! CC RC osSO
+              Dnew(ind,4) = Dnew(ind,4) - dimag(D12) * qe
+              Dnew(ind,5) = Dnew(ind,5) + dimag(D11) * qe
+              Dnew(ind,6) = Dnew(ind,6) + dimag(D22) * qe
+              Dnew(ind,7) = Dnew(ind,7) + dreal(D21) * qe
+              Dnew(ind,8) = Dnew(ind,8) + dimag(D21) * qe
       
               Enew(ind,1) = Enew(ind,1) + dreal(D11) * ee
               Enew(ind,2) = Enew(ind,2) + dreal(D22) * ee
               Enew(ind,3) = Enew(ind,3) + dreal(D12) * ee
-c              Enew(ind,4) = Enew(ind,4) + dimag(D12) * ee
-              Enew(ind,4) = Enew(ind,4) - dimag(D12) * ee  ! CC RC osSO
+              Enew(ind,4) = Enew(ind,4) - dimag(D12) * ee
       
             enddo
           enddo
@@ -331,14 +305,12 @@ c              Enew(ind,4) = Enew(ind,4) + dimag(D12) * ee
         endif
       enddo
 
- 1001 continue
-      
 !     deallocate the arrays
-      call memory('D','Z',2*nuotot*2*nuo,'diag2g')
+      call memory('D','Z',2*nuotot*2*nuo,'diag3g')
       deallocate(Haux)
-      call memory('D','Z',2*nuotot*2*nuo,'diag2g')
+      call memory('D','Z',2*nuotot*2*nuo,'diag3g')
       deallocate(Saux)
-      call memory('D','Z',2*nuotot,'diag2g')
+      call memory('D','Z',2*nuotot,'diag3g')
       deallocate(caux)
 !***********************************************************************
       return

@@ -421,8 +421,9 @@ C ----------------------------------------------------------------------
 !------------------------------------------------------------------------- END
       end subroutine dhscf_init
 
-      subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
-     &                  nuotot, nua, na, isa, xa, indxua,
+      subroutine dhscf( nspin, h_spin_dim, SpOrb,  ! CC RC Added 
+     &                  norb, iaorb, iphorb, nuo, nuotot, nua, na, 
+     &                  isa, xa, indxua,
      &                  ntm, ifa, istr, iHmat,
      &                  filesOut, maxnd, numd,
      &                  listdptr, listd, Dscf, datm, maxnh, Hmat,
@@ -442,6 +443,8 @@ C ----------------------------------------------------------------------
 C integer nspin         : Number of different spin polarisations
 C                         nspin=1 => Unpolarized, nspin=2 => polarized
 C                         nspin=4 => Noncollinear spin
+C integer h_spin_dim    : Number of spin components of H and D
+C logical SpOrb         : Spin-Orbit flag
 C integer norb          : Total number of basis orbitals in supercell
 C integer iaorb(norb)   : Atom to which each orbital belongs
 C integer iphorb(norb)  : Orbital index (within atom) of each orbital
@@ -465,11 +468,11 @@ C                             elements for each matrix row
 C integer listdptr(nuo)     : Pointer to start of rows of density-matrix
 C integer listd(maxnd)      : Nonzero-density-matrix-element column
 C                             indexes for each matrix row
-C real*8  Dscf(maxnd,nspin): SCF density-matrix elements
+C real*8  Dscf(maxnd,h_spin_dim): SCF density-matrix elements
 C real*8  datm(norb)        : Harris density-matrix diagonal elements
 C                             (atomic occupation charges of orbitals)
 C integer maxnh             : First dimension of listh and Hmat
-C real*8  Hmat(maxnh,nspin) : Hamiltonian matrix in sparse form,
+C real*8  Hmat(maxnh,h_spin_dim) : Hamiltonian matrix in sparse form,
 C                             to which are added the matrix elements
 C                                 <ORB_I | DeltaV | ORB_J>, where
 C                             DeltaV = Vna + Vxc(SCF) + 
@@ -532,6 +535,7 @@ C     Modules
       use sys,           only  : die, bye
       use mesh,          only  : xdsp, nsm, nsp
       use parsing
+      use m_spin,        only  : NonCol  
       use m_iorho,       only  : write_rho
       use m_forhar,      only  : forhar
       use alloc,         only  : re_alloc, de_alloc
@@ -581,17 +585,23 @@ C     Modules
       use m_ts_global_vars, only: TSrun
 #endif /* TRANSIESTA */
       implicit none
+
+CC RC
+      logical
+     .   SpOrb
+
       integer
-     &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
+     &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot, h_spin_dim,
      &  iaorb(norb), ifa, iHmat,
      &  indxua(na), iphorb(norb), isa(na), 
      &  istr, listd(*), listdptr(nuo), ntm(3), numd(nuo)
 
       real(dp)
-     &  datm(norb), dipol(3), Dscf(maxnd,nspin),
+     &  datm(norb), dipol(3), Dscf(maxnd,h_spin_dim),
      &  DUext, DUscf, Dxc, Enaatm, Enascf, Exc,
-     &  Hmat(maxnh,nspin), Uatm, Uscf, xa(3,na),
+     &  Hmat(maxnh,h_spin_dim), Uatm, Uscf, xa(3,na),
      &  stress(3,3), Fal(3,nua), stressl(3,3)
+CC RC
 
       type(filesOut_t)
      &  filesOut
@@ -800,8 +810,8 @@ C             rhoatm and Drho are in sequential mode
      &                   iphorb, isa, qspiral )
         else
           call rhoofd( norb, nmpl, maxnd, numd, listdptr, listd,
-     &                 nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
-     &                 iphorb, isa )
+     &                 nspin, h_spin_dim, Dscf, DRho_par,  ! CC RC Added 
+     &                 nuo, nuotot, iaorb, iphorb, isa, SpOrb )
         endif
         ! DRHO_par is here in QUADRATIC, clustered form
 
@@ -1273,9 +1283,9 @@ C ----------------------------------------------------------------------
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
          else
-            call vmat( norb, nmpl, dvol, nspin, Vscf_par, maxnd,
-     &           numd, listdptr, listd, Hmat, nuo,
-     &           nuotot, iaorb, iphorb, isa )
+            call vmat( norb, nmpl, dvol, nspin, h_spin_dim, Vscf_par, 
+     &           maxnd, numd, listdptr, listd, Hmat, nuo,
+     &           nuotot, iaorb, iphorb, isa, SpOrb)
          endif
 
          call de_alloc( Vscf_par,  'Vscf_par', 'dhscf' )
@@ -1411,8 +1421,9 @@ C       Vaux is (minus) the potential which multiplies rhoatm
         call distMeshData( UNIFORM, Vaux,
      &                     QUADRATIC, Vaux_par, TO_CLUSTER )
 
+CC RC
         call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
-     &              indxua, isa, iaorb, iphorb,
+     &              h_spin_dim, SpOrb, indxua, isa, iaorb, iphorb, 
      &              maxnd, numd, listdptr, listd, Dscf, datm,
      &              Vscf_par, Vaux_par, dvol, volume, Fal, stressl )
 

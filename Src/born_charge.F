@@ -13,7 +13,7 @@
       use siesta_geom,    only: na_u, na_s, xa, scell, ucell, isa
       use atomlist,       only: no_u, indxuo, iphorb, iaorb, lasto
       use atomlist,       only: rmaxo, no_s, no_l
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, SPpol, NonCol, SpOrb ! CC RC Added
       use m_ksv,          only: KSV_pol
       use siesta_geom,    only: shape
       use sparse_matrices, only: Work=>H_kin  ! For scratch only!
@@ -38,6 +38,16 @@
 !     It is called only for those steps (even) in which the dx
 !     is positive.
 !
+! CC RC  Added 
+      if (NonCol .or. SpOrb) then
+         if (IOnode) write(6,'(/,a)')
+     .   'born_charge: implemented only for spin-polarized '
+         if (IOnode) write(6,'(/,a)')
+     .   'born_charge: or paramagnetic calculations'
+        RETURN
+      endif
+! CC RC  Added 
+
       if (nkpol.lt.1) then
          if (IOnode) write(6,'(/,a,f12.6)')
      .        'siesta: specify polarization grid for BC calculation'
