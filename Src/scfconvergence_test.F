@@ -117,7 +117,7 @@
             endif
          endif
       
-         write(6,"(a,i4,a)") "SCF cycle converged after ",
+         write(6,"(a,i0,a)") "SCF cycle converged after ",
      $           iscf," iterations"
 
          call pxfflush(6)

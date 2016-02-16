@@ -41,6 +41,8 @@
       use m_mixing,          only: mixing_history_clear
       use m_mixing_scf,      only: scf_mixs, scf_mix
 
+      use m_normalize_dm, only: normalize_dm
+
       use m_eo
       use m_gamma
       use files,             only: slabel
@@ -419,11 +421,13 @@
       ! Only part of Escf is updated in TS, so if it is put as zero here
       ! a continuation run gives bad forces.
       if ( .not. TSrun ) then
+         call normalize_dm( first= .true. )
 !$OMP parallel workshare default(shared)
          Escf(:,:) = 0.0_dp
 !$OMP end parallel workshare
       end if
 #else
+      call normalize_dm( first= .true. )
 !$OMP parallel workshare default(shared)
       Escf(:,:) = 0.0_dp
 !$OMP end parallel workshare

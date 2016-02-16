@@ -34,7 +34,7 @@
 !$OMP&private(ispin,io), reduction(+:qsol)
       do ispin = 1,min(nspin,2)
         do io = 1,maxnh
-          qsol = qsol + Dscf(io,ispin) * s(io)
+          qsol = qsol + Dscf(io,ispin) * S(io)
         enddo
       enddo
 !$OMP end parallel do

@@ -282,7 +282,7 @@ final_H_f_stress.o: m_dipol.o m_energies.o m_forces.o m_gamma.o m_hsx.o
 final_H_f_stress.o: m_mpi_utils.o m_ncdf_siesta.o m_ntm.o m_spin.o m_steps.o
 final_H_f_stress.o: m_stress.o m_ts_global_vars.o m_ts_io.o m_ts_kpoints.o
 final_H_f_stress.o: m_ts_options.o metaforce.o molecularmechanics.o naefs.o
-final_H_f_stress.o: nlefsm.o normalize_dm.o overfsm.o parallel.o siesta_geom.o
+final_H_f_stress.o: nlefsm.o overfsm.o parallel.o siesta_geom.o
 final_H_f_stress.o: siesta_options.o sparse_matrices.o sys.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
@@ -804,9 +804,9 @@ state_init.o: m_energies.o m_eo.o m_gamma.o m_mixing.o m_mixing_scf.o
 state_init.o: m_mpi_utils.o m_new_dm.o m_os.o m_rmaxh.o m_sparse.o m_spin.o
 state_init.o: m_steps.o m_supercell.o m_test_io.o m_ts_charge.o m_ts_electype.o
 state_init.o: m_ts_global_vars.o m_ts_io.o m_ts_options.o m_ts_sparse.o
-state_init.o: m_ts_tri_init.o overlap.o parallel.o proximity_check.o
-state_init.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
-state_init.o: sys.o units.o write_subs.o zmatrix.o
+state_init.o: m_ts_tri_init.o normalize_dm.o overlap.o parallel.o
+state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
+state_init.o: sparse_matrices.o sys.o units.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_exp_coord.o
 struct_init.o: m_iostruct.o m_mpi_utils.o m_steps.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o

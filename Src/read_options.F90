@@ -409,14 +409,15 @@ subroutine read_options( na, ns, nspin )
   endif
 
   ! Mix density matrix on first SCF step (mix)
-  mix = fdf_get('DM.MixSCF1',.true.)
+  mix_scf_first = fdf_get('DM.MixSCF1', &
+       .not. compat_pre_v4_DM_H)
   if (ionode) then
-     write(6,1) 'redata: Mix DM in first SCF step',mix
+     write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
   endif
 
   if (cml_p) then
      call cmlAddParameter( xf=mainXML, name='DM.MixSCF1',   &
-          value=mix, dictRef='siesta:mix' )
+          value=mix_scf_first, dictRef='siesta:mix' )
   endif
 
   ! Use disk or memory to store intermediate Pulay mixing vectors
@@ -1436,7 +1437,7 @@ subroutine read_options( na, ns, nspin )
      nscf      = 1  ! Note change from tradition, since siesta_forces        
      ! now explicitly separates the "compute_forces"        
      ! phase from the rest of the scf cycle.          
-     mix       = .false.
+     mix_scf_first = .false.
      SCFMustConverge = .false.
   endif
 
@@ -1510,7 +1511,7 @@ subroutine read_options( na, ns, nspin )
   !write_hs_history = fdf_get('Write.HS.History', .false.)
 
   if (read_charge_cdf .or. read_deformation_charge_cdf) then
-     mix = .false.
+     mix_scf_first = .false.
   endif
 
   save_initial_charge_density = fdf_get(    &

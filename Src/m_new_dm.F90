@@ -61,7 +61,7 @@
 
 !=====================================================================
 
-      subroutine  new_dm( auxchanged, DM_history, DMnew, EDMnew)
+      subroutine new_dm( auxchanged, DM_history, DMnew, EDMnew)
 
       USE siesta_options
       use siesta_geom,      only: ucell, xa, na_u, isc_off, nsc
@@ -708,7 +708,6 @@
 
         noncol = .false.
         peratm = fdf_block('DM.InitSpin',bfdf)
-        noncol = .false.
         if (Node.eq.0) then
           if (peratm .and. nspin.lt.2) write(6,'(/,a)')             &
           'initdm: WARNING: DM.InitSpin not used because nspin < 2'
@@ -734,7 +733,8 @@
 
             if (ni .eq. 1) then
               if (nat .eq. maxat) then
-                maxatnew = nat + nint(0.1*nat)
+                ! fixed ceiling
+                maxatnew = nat + ceiling(0.1*nat)
 !
                 call re_alloc(atom, 1, maxatnew, 'atom', 'initdm',copy=.true.)
 !
@@ -985,33 +985,37 @@
       real(dp) :: qtmp(nspin)
 #endif
 
-! Print spin polarization
-      if (nspin .ge. 2) then
-        do ispin = 1,nspin
-          qspin(ispin) = 0.0_dp
-          do io = 1,no_l
-            do j = 1,numh(io)
-              ind = listhptr(io)+j
-              qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
-            enddo
-          enddo
-        enddo
+      if ( nspin == 1 ) return
 
+! Print spin polarization
+      do ispin = 1,nspin
+         qspin(ispin) = 0.0_dp
+         do io = 1,no_l
+            do j = 1,numh(io)
+               ind = listhptr(io)+j
+               qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
+            enddo
+         enddo
+      enddo
+      
 #ifdef MPI
-! Global reduction of spin components
-        call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
-        qspin(1:nspin) = qtmp(1:nspin)
+      ! Global reduction of spin components
+      call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
+      qspin(1:nspin) = qtmp(1:nspin)
 #endif
-        if (nspin .eq. 2) then
-           if (IOnode) then
-              write(6,'(/,a,f12.6)')   &
-                  'initdm: Initial spin polarization (Qup-Qdown) =',  &
-                  qspin(1) - qspin(2)
-           endif
-        endif
+      if ( .not. IONode ) return
+      if (nspin .eq. 2) then
+         write(6,'(/,a,f12.6)')   &
+              'initdm: Initial spin polarization (Qup-Qdown) =',  &
+              qspin(1) - qspin(2)
+      else if ( nspin > 2 ) then
+         do j = 1 , nspin
+            write(6,'(/,a,i0,a,f12.6)')   &
+                 'initdm: Initial spin polarization ',j,' =', qspin(j)
+         end do
       endif
       end subroutine print_initial_spin
-
+    
       end subroutine fill_dscf_from_atom_info
 
       subroutine extrapolate_dm_with_coords(DM_history,na_u,xa,sparse_pattern,DMnew)

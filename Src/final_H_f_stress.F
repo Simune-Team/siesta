@@ -40,7 +40,6 @@
       use m_mpi_utils, only: globalize_sum
 #endif
       use parallel, only: IOnode
-      use m_normalize_dm, only : normalize_dm
 #ifdef CDF
 #ifdef NCDF_4
       use dictionary
@@ -83,13 +82,6 @@
 #endif
 #endif
 !------------------------------------------------------------------------- BEGIN
-
-!     Normalize density matrix to exact charge
-#ifdef TRANSIESTA      
-      if (.not.TSrun ) call normalize_dm( first=.false. )
-#else
-      call normalize_dm( first=.false. )
-#endif  /* TRANSIESTA */
 
 !     Initialize Hamiltonian ........................................
       call re_alloc(H_tmp, 1,maxnh, 1,nspin, 'H_tmp','final_H_f_stress')

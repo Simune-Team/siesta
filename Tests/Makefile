@@ -5,6 +5,7 @@
 #
 #          make                      --- Run all tests
 #          make  check               --- Run all tests and check with reference file
+#          make  check-only          --- Run all checks with reference file (run make before)
 #          make  list                --- Show the list of tests
 #
 #          make tests=fe_broyden { check | }     --- Run a single test
@@ -50,13 +51,18 @@ tests=  h2o h2o_reparam h2o_basis h2o_dos h2o-pop		\
 default: all
 
 all:
-	@for dir in $(tests); do\
+	@for dir in $(tests) ; do\
 	 $(MAKE) -C $$dir completed; \
 	done
 
 check:
-	@for dir in $(tests); do\
+	@for dir in $(tests) ; do\
 	 $(MAKE) -C $$dir check; \
+	done
+
+check-only:
+	@for dir in $(tests) ; do\
+	 $(MAKE) -C $$dir check-only ; \
 	done
 
 show:

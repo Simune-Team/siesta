@@ -162,13 +162,12 @@
 
 !     Normalize density matrix to exact charge
 !     Placed here for now to avoid disturbing EHarris
-
 #ifdef TRANSIESTA      
-         if (.not.TSrun ) call normalize_dm( first= .false. )
+      if ( .not. TSrun ) call normalize_dm( first= .false. )
 #else
-         call normalize_dm(first=.false.)
-#endif  /* TRANSIESTA */
-
+      call normalize_dm(first=.false.)
+#endif
+      
       call timer( 'compute_dm', 2 )
 
 !----------------------------------------------------------------- END

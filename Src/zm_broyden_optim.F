@@ -381,8 +381,10 @@ C Set number of degrees of freedom & variables
       endif
 
       if (relaxd) then
+         
          call local_dealloc()
-         RETURN
+         
+         return
       end if
 
       if (.not. broyden_is_setup(br)) then
@@ -397,7 +399,7 @@ C Set number of degrees of freedom & variables
 
 
       ! Transform back
-      if ( varcel) then
+      if ( varcel ) then
 
         ! New cell
         indi = ndeg-6
@@ -476,7 +478,11 @@ C Return coordinates to correct arrays
       subroutine local_dealloc()
 
 C     Deallocate local memory
-      deallocate(rnew,dxmaxn,ftoln,gxa,gfa)
+      if ( allocated(dxmaxn) ) deallocate(dxmaxn)
+      if ( allocated(ftoln) ) deallocate(ftoln)
+      if ( allocated(gxa) ) deallocate(gxa)
+      if ( allocated(gfa) ) deallocate(gfa)
+      if ( allocated(rnew) ) deallocate(rnew)
 
       end subroutine local_dealloc
 

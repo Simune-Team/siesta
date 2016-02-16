@@ -19,6 +19,7 @@ MODULE siesta_options
   ! -- pre 4.0 coordinate output logic -- to be implemented
   logical :: compat_pre_v4_dynamics      ! General switch
 
+  logical :: mix_scf_first ! Mix first SCF step? 
   logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
   logical :: h_setup_only  ! H Setup only
@@ -34,7 +35,6 @@ MODULE siesta_options
   logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
   logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
-  logical :: mix           ! Mix first SCF step? 
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?

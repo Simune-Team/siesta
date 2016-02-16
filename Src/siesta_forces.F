@@ -246,15 +246,10 @@
            end if
         end if
 
-        ! In case the user requests to do a special mixing
-        ! after convergence
-        ! NP new mixing
-        call mixing_scf_converged( SCFconverged ) 
-
 #ifdef TRANSIESTA
         ! In case the user has requested a Fermi-level correction
         ! Then we start by correcting the fermi-level
-        if ( TSrun .and. SCFconverged .and.
+        if ( SCFconverged .and. TSrun .and.
      &       TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
 
            call ts_get_charges(N_Elec, block_dist, sparse_pattern,
@@ -340,8 +335,8 @@
             if ( MixH ) then
                ! Keep the H actually used to generate the last DM
                H = Hold
-            endif
-         endif
+            end if
+         end if
 
       else
 
@@ -360,21 +355,10 @@
       end if
 #endif
 
-      if (.not. mix_after_convergence) then
-         ! Save final DM_out for further analysis offline
-         call save_density_matrix("dmout")
-         if ( MixH ) then
-             ! We could make sure that we keep the H actually used 
-             ! to generate the last DM, if needed.
-             !!!    H = Hold
-         end if
-      end if
-
-      ! NP new mixing
       ! Clean-up here to limit memory usage
       call mixing_scf_history_clear( )
 
-
+      
 !     End of standard SCF loop.
 !     Do one more pass to compute forces and stresses
 

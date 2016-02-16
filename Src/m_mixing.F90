@@ -707,7 +707,8 @@ contains
     ! The current mixing method 
     type(tMixer), pointer :: mix
     integer, intent(in) :: iscf, n
-    real(dp), intent(inout) :: x1(n), F1(n), x2(n)
+    real(dp), intent(in) :: x1(n), F1(n)
+    real(dp), intent(inout) :: x2(n)
 
     integer :: info
 
@@ -750,9 +751,6 @@ contains
        
     end select
 
-    ! Copy over new function
-    call dcopy(n,x2,1,x1,1)
-    
     ! check whether we should change the mixer
     if ( mix%n_itt == 0 ) then
        ! do nothing, we continue, indefinetely
@@ -768,9 +766,11 @@ contains
   
 
   subroutine mixing_2d( mix, iscf, n1, n2, x1, F1, x2 )
+    
     type(tMixer), pointer :: mix
     integer, intent(in) :: iscf, n1, n2
-    real(dp), intent(inout) :: x1(n1,n2), F1(n1,n2), x2(n1,n2)
+    real(dp), intent(in) :: x1(n1,n2), F1(n1,n2)
+    real(dp), intent(inout) :: x2(n1,n2)
 
     ! Simple wrapper for 1D
     call mixing_1d( mix, iscf, n1*n2 , x1(1,1), F1(1,1), x2(1,1) )
@@ -918,8 +918,9 @@ contains
     integer, intent(in) :: iscf
 
     integer, intent(in) :: n
-    real(dp), intent(in) :: x1(n)
-    real(dp), intent(inout) :: F1(n), x2(n)
+    real(dp), intent(in) :: x1(n), F1(n)
+    real(dp), intent(inout) :: x2(n)
+
     integer, intent(out) :: info
 
     type(tMixer), pointer :: next
@@ -988,8 +989,8 @@ contains
 
     ! Input/output arrays
     integer, intent(in) :: n
-    real(dp), intent(in) :: x1(n)
-    real(dp), intent(inout) :: F1(n), x2(n)
+    real(dp), intent(in) :: x1(n), F1(n)
+    real(dp), intent(inout) :: x2(n)
     ! run-time information
     integer, intent(out) :: info
 
@@ -1366,8 +1367,8 @@ contains
 
     ! Input/output arrays
     integer, intent(in) :: n
-    real(dp), intent(in) :: x1(n)
-    real(dp), intent(inout) :: F1(n), x2(n)
+    real(dp), intent(in) :: x1(n), F1(n)
+    real(dp), intent(inout) :: x2(n)
     ! information about algorithm
     integer, intent(out) :: info
 

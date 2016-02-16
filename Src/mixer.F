@@ -7,7 +7,7 @@
       subroutine mixer( iscf )
 
       use precision,        only: dp
-      use siesta_options,   only: mixH
+      use siesta_options,   only: mixH, mix_scf_first
       use siesta_options,   only: mullipop, muldeb
       use sparse_matrices,  only: Dold, Dscf, Hold, H, S
       use sparse_matrices,  only: maxnh, numh, listhptr, listh
@@ -88,7 +88,33 @@
 !$OMP end parallel workshare
 
       ! Call mixing routine
+      ! Xin contains the input element, F contains
+      !  F = Xout - Xin
+      ! Upon exit Xout contains the mixed quantity
       call mixing( scf_mix, iscf, maxnh, nspin, Xin, F, Xout )
+
+      ! Correctly handle mixed quantity
+      ! move over mixed quantity to "input"
+      if ( mix_scf_first ) then
+         
+         ! always allow mixing
+         Xin = Xout
+         
+      else if ( iscf == 1 ) then
+         
+         ! We are not allowed to mix the first SCF
+         ! Remember that Xout contains the MIXED
+         ! quantity and F is the current residual
+         ! hence:
+         !   Xout = Xin + F
+!$OMP parallel workshare default(shared)
+         Xin = Xin + F
+         ! we require that Xin == Xout, so this is
+         ! required:
+         Xout = Xin
+!$OMP end parallel workshare
+
+      end if
 
       deallocate(F)
 
