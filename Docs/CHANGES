@@ -6,6 +6,13 @@
 ** CHANGES ALONG rel-4.0 branch
 
 -----------------------------------------------------------------------
+2016-02-16                                                     4.0b-489
+Replace old copyright notice in Src/Confs
+
+modified:
+  Src/Confs
+  
+-----------------------------------------------------------------------
 2016-02-05                                                     4.0b-488
 Re-fix Genbasis makefile
 
