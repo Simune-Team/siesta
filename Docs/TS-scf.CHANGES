@@ -1,4 +1,13 @@
 ----------------------------------------------------
+February 16, 2016 -- Nick Papior       trunk-484---ts-scf-651
+Cell vector stress constrained fix
+
+- The cell constraints for stress was bugged.
+
+modified:
+  Src/m_fixed.F90
+
+----------------------------------------------------
 February 16, 2016 -- Nick Papior       trunk-484---ts-scf-650
 Fixed minor incompatibilities with trunk
 

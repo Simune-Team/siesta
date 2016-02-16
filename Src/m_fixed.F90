@@ -204,7 +204,6 @@ contains
     do if = 1 , 3
        if ( cell_vector(if) ) then
           cstress(:,if) = 0._dp
-          cstress(if,:) = 0._dp
        end if
     end do
     if ( cell_angle(1) ) then
