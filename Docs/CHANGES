@@ -6,6 +6,54 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2016-02-17                                                    trunk-486
+Fixed auxiliary array usage for ksv and optical
+
+- ksv:
+  This routine used Hkin as a work-array for calculating
+  certain quantities for polarization calculations.
+
+  This may lead to inadvertently destroying reliance
+  across calculations which are not intended.
+
+  This bug has been fixed by introducing the allocation
+  of the work-array in the ksv routine, directly.
+
+  Furthermore, we have explicitly added the => null()
+  when initializing several of the pointers.
+
+- optical:
+  This routine used Eold, Dold and Hkin as
+  work-arrays for calculating optical properties.
+
+  We have fixed these issues and moved allocation into
+  the routine.
+
+  Furthermore there were several "saved" variables
+  which were not needed to be saved.
+
+  All variables were re-calculated on each entry-point.
+  This has also been fixed.
+
+  Streamlined the algorithm for calculating transition-rates.
+
+- phirphi_opt:
+  Reduced memory by ENDLESS.
+  It allocated an enourmous amount of memory of which only 1 element
+  was used at a time.
+  If the full matrix is going to be needed, then re-instantiate the
+  comments !N.
+  The si-optical test yields the same result and I see no problem
+  in the current algorithm.
+
+modified:
+  Src/born_charge.F
+  Src/ksv.f
+  Src/optical.F
+  Src/phirphi_opt.f
+  Src/siesta_analysis.F
+
+-----------------------------------------------------------------------
 2016-02-17                                                    trunk-485
 Add GPL notices and headers
 
