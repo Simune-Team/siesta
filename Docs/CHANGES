@@ -6,6 +6,23 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2016-02-17                                                    trunk-485
+Add GPL notices and headers
+
+* Include proper headers
+* Add Docs/Contributors.txt and NOTICE.txt files.
+* Update READMEs and LICENSE files in several directories.
+* Remove Pseudo/atom, Util/test-xml
+* Remove DOM files from Src/xmlparser
+* Replace old copyright notice in Src/Confs
+
+This revision touches a large number of files due to the
+change in licensing and copyright.
+
+The other major change is the removal of the Pseudo/atom subtree,
+which is now distributed independently.
+
+-----------------------------------------------------------------------
 2016-02-05                                                    trunk-484
 Merge fixes from rel-4.0 branch
 
