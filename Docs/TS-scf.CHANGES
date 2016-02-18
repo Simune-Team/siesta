@@ -1,4 +1,28 @@
 ----------------------------------------------------
+February 18, 2016 -- Nick Papior       trunk-484---ts-scf-652
+Added graphviz output to siesta
+
+- Using the option:
+   Write.Graphviz orbital|atom|atom+orbital
+
+  This will create files named <slabel>.[ORB|ATOM].gv
+  in which there is a comment in the top of the file
+  on how to show the graph.
+
+  Currently the graph does not show colours for the specific
+  species, however, that may easily be added afterwards.
+
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/initparallel.F
+  Src/m_pivot_methods.F90
+  Src/read_options.F90
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+----------------------------------------------------
 February 16, 2016 -- Nick Papior       trunk-484---ts-scf-651
 Cell vector stress constrained fix
 

@@ -34,6 +34,8 @@
 
       ! Orbital distribution descriptor
       type(OrbitalDistribution), public, save :: block_dist
+      ! Always store a single distributor
+      type(OrbitalDistribution), public, save :: single_dist
 
       public :: resetSparseMatrices
 

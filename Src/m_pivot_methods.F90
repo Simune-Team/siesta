@@ -36,13 +36,11 @@ module m_pivot_methods
 
   public :: bandwidth, profile
 
-#ifdef GRAPHVIZ
   public :: sp2graphviz
   interface sp2graphviz
      module procedure sp2graphviz_sp
      module procedure sp2graphviz_lists
   end interface sp2graphviz
-#endif
 
   private
 
@@ -1717,7 +1715,6 @@ contains
 
   end function degree
 
-#ifdef GRAPHVIZ
 
   subroutine sp2graphviz_sp(file,sp,types,method,pvt)
     use class_Sparsity
@@ -1912,6 +1909,5 @@ contains
     end subroutine print_node
 
   end subroutine sp2graphviz_lists
-#endif
 
 end module m_pivot_methods

@@ -681,7 +681,7 @@ subroutine read_options( na, ns, nspin )
      endif
      
 #ifdef TRANSIESTA
-  else if (leqi(method,'transi')) then
+  else if (leqi(method,'transi') .or. leqi(method,'transiesta') ) then
      isolve = SOLVE_TRANSI
      if (ionode) then
         write(*,3) 'redata: Method of Calculation','Transiesta'
@@ -1505,7 +1505,7 @@ subroutine read_options( na, ns, nspin )
   ! Write the history
 #ifdef TRANSIESTA
   write_tshs_history = fdf_get('Write.TSHS.History', .false.)
-  if ( write_tshs_history ) &
+  if ( IONode.and.write_tshs_history ) &
        write(*,2) 'redata: Saves TSHS files in MD simulation'
 #endif
   !write_hs_history = fdf_get('Write.HS.History', .false.)
@@ -1524,6 +1524,38 @@ subroutine read_options( na, ns, nspin )
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   writmd                 = fdf_get( 'WriteMDhistory', .false. )
   writpx                 = fdf_get( 'WriteMDXmol', .not. writec )
+  ! Do options of graphviz
+  ctmp = fdf_get( 'Write.Graphviz', 'none' )
+  write_GRAPHVIZ = 0
+  if ( leqi(ctmp, 'orb') .or. &
+       leqi(ctmp, 'orbital') ) then
+     write_GRAPHVIZ = 1
+  else if ( leqi(ctmp, 'atom') .or. &
+       leqi(ctmp, 'atomic') ) then
+     write_GRAPHVIZ = 2
+  else if ( leqi(ctmp, 'atom+orb') .or. &
+       leqi(ctmp, 'atom+orbital') .or. &
+       leqi(ctmp, 'orbital+atom') .or. &
+       leqi(ctmp, 'orb+atom') .or. leqi(ctmp, 'both') ) then
+     write_GRAPHVIZ = 3
+  else if ( leqi(ctmp,'none') ) then
+     ! do nothing, correct
+  else if ( IONode ) then
+     write(*,2) 'Write.Graphviz input could not be understood. &
+          &Use [orbital|atom|atom+orbital] in the option.'
+  end if
+  if ( IONode ) then
+     select case ( write_GRAPHVIZ )
+     case ( 1 ) 
+        write(*,2) 'redata: Save orbital connectivity graph in GRAPHVIZ format'
+     case ( 2 )
+        write(*,2) 'redata: Save atomic connectivity graph in GRAPHVIZ format'
+     case ( 3 )
+        write(*,2) 'redata: Save atom+orbital connectivity graphs in GRAPHVIZ format'
+     end select
+  end if
+
+  writec                 = fdf_get( 'WriteCoorStep', outlng )
   default                = fdf_get( 'UseSaveData', .false. )
   savehs                 = fdf_get( 'SaveHS', .false. )
   fixauxcell             = fdf_get( 'FixAuxiliaryCell', .false. )

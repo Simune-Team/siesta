@@ -16,8 +16,14 @@
       use sparse_matrices, only: Dscf, Dold, Escf, Hold
       use sparse_matrices, only: xijo, H, S_1D, S, H_kin_1D
       use sparse_matrices, only: H_2D, xij_2D
-      use sparse_matrices, only: sparse_pattern, block_dist
+      use sparse_matrices, only: sparse_pattern
+      use sparse_matrices, only: block_dist, single_dist
       use sparse_matrices, only: H_vkb_1D, DM_2D, EDM_2D, DM_history
+
+
+      use m_sparsity_handling, only: SpOrb_to_SpAtom
+      use m_sparsity_handling, only: Sp_to_Spglobal
+      use m_pivot_methods, only: sp2graphviz
 
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, indxua,
@@ -97,6 +103,7 @@
       character(len=label_length+6) :: fname
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
 #endif
+      type(Sparsity) :: g_Sp
       
       character(len=256)            :: oname
 
@@ -350,7 +357,24 @@
       deallocate(numh,listhptr,listh)
       call attach(sparse_pattern, 
      &     n_col = numh, list_ptr = listhptr, list_col = listh )
-      
+
+      ! In case the user requests to create the connectivity graph
+      if ( write_GRAPHVIZ > 0 ) then
+         ! first create global sparsity pattern...
+         call Sp_to_Spglobal(block_dist, sparse_pattern,
+     &        g_Sp)
+         if ( IONode ) then
+            if ( write_GRAPHVIZ /= 2 )
+     &           call sp2graphviz(trim(slabel)//'.ORB.gv', g_Sp)
+            ! Convert to atomic 
+            if ( write_GRAPHVIZ /= 1 ) then
+               call SpOrb_to_SpAtom(single_dist,g_Sp, na_u,lasto,g_Sp)
+               call sp2graphviz(trim(slabel)//'.ATOM.gv', g_Sp)
+            end if
+         end if
+         call delete(g_Sp)
+      end if
+         
       ! Copy over xijo array (we can first do it here... :( )
       call newdData2D(tmp_2D,xijo,'xijo')
       deallocate(xijo)

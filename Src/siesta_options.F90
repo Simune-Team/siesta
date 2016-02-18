@@ -66,6 +66,9 @@ MODULE siesta_options
   logical :: writb         ! Write band eigenvalues?
   logical :: writec        ! Write atomic coordinates at every geometry step?
   logical :: write_coop    ! Write information for COOP/COHP analysis ?
+
+  ! Create graphviz information to visualize connectivity graph
+  integer :: write_GRAPHVIZ
 !----------------------------------------------------
 ! Wannier90 interface
 !
