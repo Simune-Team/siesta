@@ -11,7 +11,7 @@
       subroutine KSV_pol( nua, na, xa, rmaxo, scell, ucell, nuotot,
      .                    nuo, no, nspin, qspin, maxnh, 
      .                    maxkpol, numh, listhptr, listh, H, S, 
-     .                    AuxSr, xijo, indxuo, isa, iphorb, iaorb, 
+     .                    xijo, indxuo, isa, iphorb, iaorb, 
      .                    lasto, shape, nkpol,kpol,
      .                    wgthpol, polR, polxyz )
 C *********************************************************************
@@ -41,7 +41,6 @@ C integer listh(maxnh)        : Nonzero hamiltonian-matrix element
 C                               column indexes for each matrix row
 C real*8  H(maxnh,spin)       : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
-C real*8  AuxSr(maxnh)        : Auxiliar matrix (outside H0)
 C real*8  xijo(3,maxnh)       : Vectors between orbital centers (sparse)
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
@@ -90,7 +89,7 @@ C
      .                  H(maxnh,nspin), kpol(3,maxkpol), 
      .                  S(maxnh), xijo(3,maxnh),
      .                  polR(3,nspin), polxyz(3,nspin), ucell(3,3),
-     .                  wgthpol(maxkpol), AuxSr(maxnh), 
+     .                  wgthpol(maxkpol), 
      .                  scell(3,3), rmaxo,  xa(3,na)
 C *********************************************************************
 
@@ -103,8 +102,6 @@ C Internal variables
      .  nk, nmeshk(3,3), Nptot, 
      .  notcal(3), nhs, npsi
 
-      integer, dimension(:), pointer ::  muo
-         
       real(dp)
      .  difA, pi, rcell(3,3), uR(3,3),  
      .  displ(3), dsp(3), cutoff, dk(3), detr, deti, 
@@ -113,7 +110,7 @@ C Internal variables
      .  tiny, phase, ph(3,2), Debye,
      .  vaux(3,2), area, J, qspin(2), dq, phaseold(2)
 
-      real(dp), dimension(:), pointer ::  ek
+      real(dp), dimension(:), pointer ::  ek => null()
 
       parameter (Debye  = 0.393430d0)  
 
@@ -121,8 +118,11 @@ C Internal variables
 
       external          ddot, paste, volcel, reclat, memory
 
-      real(dp), dimension(:), pointer :: psi1, psiprev
-
+      integer, dimension(:), pointer ::  muo => null()
+      real(dp), dimension(:), pointer :: psi1 => null()
+      real(dp), dimension(:), pointer :: psiprev => null()
+      real(dp), dimension(:), pointer :: aux => null()
+      
       parameter (  tiny= 1.0d-8  )
 
 C Start time counter 
@@ -204,11 +204,12 @@ C Allocate local memory
       call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
       call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
 
-      nullify( muo, ek, psi1, psiprev )
+      nullify( muo, ek, psi1, psiprev, aux )
       call re_alloc( muo,     1, nuotot, 'muo',     'KSV_pol' )
       call re_alloc( ek,      1, nuotot, 'ek',      'KSV_pol' )
       call re_alloc( psi1,    1, npsi,   'psi1',    'KSV_pol' )
       call re_alloc( psiprev, 1, npsi,   'psiprev', 'KSV_pol' )
+      call re_alloc( aux, 1 , maxnh, 'aux', 'KSV_pol' )
 
 C Initialise psi
       do io = 1,npsi
@@ -332,7 +333,7 @@ C Calculation of the Jacobian
 C Construction of the matrix elements of the scalar product dk*r 
           call phirphi(nua, na, nuo, no, scell, xa, rmaxo,
      .              maxnh, lasto, iphorb, isa,
-     .              numh, listhptr, listh, dk, AuxSr) 
+     .              numh, listhptr, listh, dk, aux) 
 
 C Begin the bidimensional integration over the path integrals
           do ik = 1, nk
@@ -383,7 +384,7 @@ C Store wavefunction for the next point
                 elseif (il.ne.npl) then 
 C Calculate the determinant of the overlap matrix between the 
 C periodic Bloch functions in this k point and in the previous one.   
-                  call detover(psiprev, psi, S, AuxSr,
+                  call detover(psiprev, psi, S, aux,
      .              numh, listhptr, listh, indxuo, no, nuo, xijo, 
      .              maxnh, nuotot, nocc(ispin), kint, dk, 
      .              detr, deti )
@@ -394,7 +395,7 @@ C Store wavefunction for the next point
                 else 
 C Calculate the determinant of the overlap matrix between the
 C periodic Bloch functions in the last k point and the first one
-                  call detover(psiprev, psi1, S, AuxSr,
+                  call detover(psiprev, psi1, S, aux,
      .              numh, listhptr, listh, indxuo, no, nuo, xijo, 
      .              maxnh, nuotot, nocc(ispin), kint, dk, 
      .              detr, deti )
@@ -571,6 +572,7 @@ C Deallocate local memory
       call de_alloc( ek,      'ek',      'KSV_pol' )
       call de_alloc( psi1,    'psi1',    'KSV_pol' )
       call de_alloc( psiprev, 'psiprev', 'KSV_pol' )
+      call de_alloc( aux,     'aux',     'KSV_pol' )
 
       if (nkpol.gt.0.and.IOnode) then
         do ispin = 1,nspin
