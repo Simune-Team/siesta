@@ -90,6 +90,15 @@
         call MPI_Bcast(spp%pjnl_ekb,maxn_pjnl,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
 
+        call MPI_Bcast(spp%n_pjldaunl,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%lmax_ldau_projs,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldaunl_l,maxn_pjnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldaunl_n,maxn_pjnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+
         call MPI_Bcast(spp%norbs,1,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
 
@@ -116,9 +125,22 @@
         call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
 
+        call MPI_Bcast(spp%nprojsldau,1,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+
+        call MPI_Bcast(spp%pjldau_index,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldau_n,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldau_l,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjldau_m,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+
         if (Node.ne.0) then
            allocate(spp%orbnl(spp%n_orbnl))
            allocate(spp%pjnl(spp%n_pjnl))
+           allocate(spp%pjldau(spp%n_pjldaunl))
         endif
         
         do i=1,spp%n_orbnl
@@ -128,6 +150,11 @@
 
         do i=1,spp%n_pjnl
            func=>spp%pjnl(i)
+           call broadcast_radial(func,Node)
+        enddo
+
+        do i=1,spp%n_pjldaunl
+           func=>spp%pjldau(i)
            call broadcast_radial(func,Node)
         enddo
 

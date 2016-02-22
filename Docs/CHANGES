@@ -4,6 +4,51 @@
 
 
 ** CHANGES ALONG trunk
+-----------------------------------------------------------------------
+2016-02-22                                                    trunk-485
+Generation of the LDA+U projections compatible with new matel
+
+* The files that have been added or modified are: 
+- ldau_specs.f:     Module ldau_specs to read the input file,
+                    generate the projectors and populate the derived types.
+- atm_transfer.f:   Call to populate_species_info_ldau to populate the 
+                    variables in the species derived type related with the 
+                    LDA+U projectors.
+- atm_types.f:      New variables related with the LDA+U projectors 
+                    defined in the derived type species. 
+                    Essentially, they are a copy of the corresponding variables
+                    for the KB projector
+- atom.F:           The following subroutines declared public: 
+                    schro_eq, rc_vs_e, build_vsoft
+- basis_specs.f:    The subroutine label2species is declared public.
+                    It will be used afterwards in read_ldau_specs.
+- basis_types.f:    New derived type ldaushell_t defined, and the 
+                    corresponding subroutines for initialization, print, etc 
+                    are introduced.
+- broadcast_basis.F:The broadcast of the species derived type has been 
+                    generalized to include also the corresponding variables 
+                    related with the LDA+U projectors
+- initatom.f:       Here we read the info related with the LDA+U projs 
+                    in the fdf file (calling the subroutine read_ldau_specs) 
+                    and we call the subroutine in charge of generating them
+                    (ldau_proj_gen)
+- register_rfs.F90: Subroutine modified to include the LDA+U projectors 
+                    in the pool
+- Makefile:         Customaty changes to include the new files and dependencies
+
+
+added:
+  Src/ldau_specs.f
+modified:
+  Src/Makefile
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/broadcast_basis.F
+  Src/initatom.f
+  Src/register_rfs.F90
 
 -----------------------------------------------------------------------
 2016-02-05                                                    trunk-484

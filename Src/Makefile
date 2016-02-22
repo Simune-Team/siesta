@@ -125,6 +125,7 @@ OBJS =  automatic_cell.o atom_options.o \
         atomlist.o atm_types.o old_atmfuncs.o radial.o \
         alloc.o spher_harm.o periodic_table.o version.o timestamp.o \
         basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
+	ldau_specs.o \
         onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
         electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
@@ -240,6 +241,7 @@ coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
 readsp.o eggbox.o iopipes.o : $(FDF)
 #
 atom.o basis_io.o basis_specs.o: $(FDF)
+ldau_specs.o: $(FDF)
 #
 # C/Fortran sockets library 
 #
@@ -368,7 +370,7 @@ amn.o: matel_registry.o mneighb.o new_matel.o parallel.o parallelsubs.o
 amn.o: precision.o siesta2wannier90.o siesta_geom.o sys.o
 arw.o: alloc.o parallel.o precision.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
-atm_transfer.o: radial.o sys.o
+atm_transfer.o: radial.o sys.o atmfuncs.o ldau_specs.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
@@ -521,6 +523,7 @@ hsparse.o: sparse_matrices.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o electrostatic.o old_atmfuncs.o precision.o
+initatom.o: ldau_specs.o atom_options.o
 initparallel.o: alloc.o domain_decom.o m_fdf_global.o parallel.o parallelsubs.o
 initparallel.o: precision.o siesta_options.o spatial.o sys.o
 io.o: sys.o
@@ -552,6 +555,9 @@ kpoint_pdos.o: find_kgrid.o minvec.o parallel.o precision.o siesta_options.o
 kpoint_pdos.o: sys.o units.o
 ksv.o: alloc.o atmfuncs.o densematrix.o ksvinit.o parallel.o precision.o sys.o
 ksvinit.o: alloc.o parallel.o precision.o sys.o
+ldau_specs.o: sys.o basis_specs.o basis_types.o atm_types.o atmparams.o
+ldau_specs.o: pseudopotential.o units.o atom.o alloc.o radial.o interpolation.o
+ldau_specs.o: precision.o atom_options.o
 listsc.o: alloc.o
 local_DOS.o: atomlist.o dhscf.o files.o kpoint_grid.o m_energies.o m_eo.o
 local_DOS.o: m_forces.o m_gamma.o m_ntm.o m_spin.o parallel.o siesta_geom.o

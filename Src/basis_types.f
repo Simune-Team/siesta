@@ -73,6 +73,38 @@
           real(dp), pointer         ::  erefkb(:)  ! Reference energies
           !!! type(rad_func), pointer  ::  proj(:) ! Actual projectors
       end type kbshell_t
+
+      type, public :: ldaushell_t
+          integer                   ::  n          ! principal quantum number
+                                                   !   of the atomic orbital
+                                                   !   where the U correction
+                                                   !   will be applied
+          integer                   ::  l          ! angular quantum number 
+                                                   !   of the atomic orbital
+                                                   !   where the U correction
+                                                   !   will be applied
+          real(dp)                  ::  rinn       ! Soft confinement 
+                                                   !   inner radius
+          real(dp)                  ::  vcte       ! Soft confinement potential
+                                                   !  prefactor of the potential
+          real(dp)                  ::  rc         ! rc's for LDA+U projectors
+          integer                   ::  nrc        ! Point in the log grid where
+                                                   !  the LDA+U proj. vanishes
+          real(dp)                  ::  lambda     ! Contraction factors
+          real(dp)                  ::  dnrm_rc    ! Parameter used to determine
+                                                   !   the cutoff radius of the
+                                                   !   Fermi distrib. used 
+                                                   !   to cut the LDA+U proj.
+          real(dp)                  ::  width      ! Width of the Fermi distrib.
+                                                   !   to cut the LDA+U proj.
+          real(dp)                  ::  u          ! Value of the U parameter
+          real(dp)                  ::  j          ! Value of the J parameter
+          !!! type(rad_func), pointer  ::  ldau_proj(:) ! Actual projectors
+                                                   !   all these radial function
+                                                   !   are now defined in the 
+                                                   !   derived type "species"
+                                                   !   in module atm_types
+      end type ldaushell_t
 !
 !     Main data structure
 !
@@ -83,8 +115,10 @@
           type(pseudopotential_t)   ::  pseudopotential
           integer                   ::  lmxo       ! Max l for basis
           integer                   ::  lmxkb      ! Max l for KB projs
+          integer                   ::  lmxldaupj  ! Max l for LDA+U projs
           type(lshell_t), pointer   ::  lshell(:)  ! One shell per l 
           type(kbshell_t), pointer  ::  kbshell(:) ! One KB shell per l
+          type(ldaushell_t), pointer  ::  ldaushell(:) ! One LDA+U shell per l
           real(dp)                  ::  ionic_charge
           real(dp)                  ::  mass   
           !
@@ -97,9 +131,20 @@
           character(len=20)         ::  basis_size
           logical                   ::  semic      ! 
           integer                   ::  nshells_tmp
+          integer                   ::  nldaushells_tmp
           integer                   ::  nkbshells
+          integer                   ::  nldaushells      ! For a given atomic
+                                                         !  species, on how many
+                                                         !  orbitals we are 
+                                                         !  going to apply the
+                                                         !  U correction
+          integer                   ::  nldauprojs_lm    ! How many projectors
+                                                         !  including angular 
+                                                         !  dependencies.
           integer                   ::  lmxkb_requested
+          integer                   ::  lmxldaupj_requested
           type(shell_t), pointer    ::  tmp_shell(:)
+          type(ldaushell_t), pointer::  tmp_ldaushell(:)
       end type basis_def_t
 
       integer, save, public              :: nsp  ! Number of species
@@ -136,11 +181,11 @@
 !-----------------------------------------------------------------------
 
       interface destroy
-        module procedure destroy_shell,
+        module procedure destroy_shell, 
      $                   destroy_lshell, destroy_basis_def
       end interface
       interface initialize
-        module procedure init_shell, init_kbshell,
+        module procedure init_shell, init_kbshell, init_ldaushell,
      $                   init_lshell, init_basis_def
       end interface
 
@@ -148,6 +193,7 @@
       public  :: destroy, copy_shell, initialize
       public  :: write_basis_specs, basis_specs_transfer
       public  :: deallocate_spec_arrays
+      public  :: print_ldaushell
 !---------------------------------------------------------
 
       PRIVATE
@@ -212,6 +258,22 @@
       end subroutine init_kbshell
 
 !-----------------------------------------------------------------------
+      subroutine init_ldaushell(p)
+      type(ldaushell_t)          :: p
+      p%n       = -1
+      p%l       = -1
+      p%rinn    = 0.0_dp
+      p%vcte    = 0.0_dp
+      p%u       = 0.0_dp
+      p%j       = 0.0_dp
+      p%rc      = 0.0_dp
+      p%nrc     = 0
+      p%lambda  = 1.0_dp
+      p%dnrm_rc = 0.9_dp
+      p%width   = 0.5_dp
+      end subroutine init_ldaushell
+
+!-----------------------------------------------------------------------
       subroutine init_lshell(p)
       type(lshell_t)          :: p
 
@@ -226,15 +288,21 @@
 
       p%lmxo = -1
       p%lmxkb = -1
+      p%lmxldaupj = -1
       p%lmxkb_requested = -1
+      p%lmxldaupj_requested = -1
       p%nkbshells = -1
+      p%nldaushells = -1
       p%nshells_tmp = -1
+      p%nldaushells_tmp = -1
       p%label = 'Unknown'
       p%semic = .false.
       p%ionic_charge = huge(1.0_dp)  ! To signal it was not set
       nullify(p%tmp_shell)
+      nullify(p%tmp_ldaushell)
       nullify(p%lshell)
       nullify(p%kbshell)
+      nullify(p%ldaushell)
       end subroutine init_basis_def
 
 !-----------------------------------------------------------------------
@@ -321,6 +389,26 @@
       end subroutine print_kbshell
 
 !-----------------------------------------------------------------------
+      subroutine print_ldaushell(p)
+      type(ldaushell_t)            :: p
+
+      write(6,*) 'LDAUSHELL-------'
+      write(6,'(5x,a25,i20)')   'Principal quantum number',  p%n
+      write(6,'(5x,a25,i20)')   'Angular momentum',          p%l
+      write(6,'(5x,a25,g20.5)') 'Value of the U parameter:', p%u
+      write(6,'(5x,a25,g20.5)') 'Value of the J parameter:', p%j
+      write(6,'(5x,a25,g20.5)') 'Value of the rinn:',        p%rinn
+      write(6,'(5x,a25,g20.5)') 'Value of the vcte:',        p%vcte
+      write(6,'(5x,a25,g20.5)') 'Value of the lambda:',      p%lambda
+      write(6,'(5x,a25,g20.5)') 'Value of the width:',       p%width
+      write(6,'(5x,a25,g20.5)') 'Value of the dnrm_rc:',     p%dnrm_rc
+      write(6,'(5x,a25,g20.5)') 'Value of the rc:',          p%rc
+      write(6,'(5x,a25,i10)')   'Value of the nrc:',         p%nrc
+      write(6,*) '---------------------LDAUSHELL'
+
+      end subroutine print_ldaushell
+
+!-----------------------------------------------------------------------
       subroutine print_lshell(p)
       type(lshell_t)            :: p
 
@@ -363,8 +451,15 @@
          write(6,*) 'No KB SHELLS, lmxkb=', p%lmxkb
          return
       endif
+      if (.not. associated(p%ldaushell)) then
+         write(6,*) 'No LDA+U PROJECTORS, lmxldaupj=', p%lmxldaupj
+         return
+      endif
       do i=0, p%lmxkb
          call print_kbshell(p%kbshell(i))
+      enddo
+      do i=0, p%lmxldaupj
+         call print_ldaushell(p%ldaushell(i))
       enddo
 
       write(6,*) '------------SPECIES'

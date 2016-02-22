@@ -16,7 +16,7 @@
     type(species_info), pointer        :: spp
     type(rad_func), pointer            :: func   
 !
-    integer :: is, io, ko, l, m, gindex
+    integer :: is, io, ko, ldauo, l, m, gindex
 
     do is = 1, nspecies
        spp => species(is)
@@ -26,10 +26,10 @@
           m = spp%orb_m(io)
           call register_in_rf_pool(func,l,m,"orb",(/is,io/),gindex)
           spp%orb_gindex(io) = gindex
-!!         For debugging
-!          write(6,*)'Atomic orbitals'
-!          write(6,*)'is, io, gindex = ', is, io, gindex 
-!!         End debugging
+!         For debugging
+          write(6,*)'Atomic orbitals'
+          write(6,*)'is, io, gindex = ', is, io, gindex 
+!         End debugging
        enddo
     enddo
 
@@ -43,13 +43,30 @@
           io = -ko
           call register_in_rf_pool(func,l,m,"kbproj",(/is,io/),gindex)
           spp%pj_gindex(ko) = gindex
-!!         For debugging
-!          write(6,*)'KB projectors'
-!          write(6,*)'is, ko, gindex = ', is, ko, gindex 
-!!         End debugging
+!         For debugging
+          write(6,*)'KB projectors'
+          write(6,*)'is, ko, gindex = ', is, ko, gindex 
+!         End debugging
        enddo
     enddo
     
+    ! LDA+U projectors
+    do is = 1, nspecies
+       spp => species(is)
+       do ldauo=1,spp%nprojsldau
+          func => spp%pjldau(spp%pjldau_index(ldauo))
+          l = spp%pjldau_l(ldauo)
+          m = spp%pjldau_m(ldauo)
+          io = -ko
+          call register_in_rf_pool(func,l,m,"ldauproj",(/is,io/),gindex)
+          spp%pjldau_gindex(ldauo) = gindex
+!         For debugging
+          write(6,*)'LDA+U projectors'
+          write(6,*)'is, ldauo, gindex = ', is, ldauo, gindex 
+!         End debugging
+       enddo
+    enddo
+
     ! Vna
     do is = 1, nspecies
        spp => species(is)
@@ -58,13 +75,13 @@
        m = 0
        call register_in_rf_pool(func,l,m,"vna",(/is/),gindex)
        spp%vna_gindex = gindex
-!!         For debugging
-!          write(6,*)'VNA'
-!          write(6,*)'is, gindex = ', is, gindex 
-!!         End debugging
+!         For debugging
+          write(6,*)'VNA'
+          write(6,*)'is, gindex = ', is, gindex 
+!         End debugging
     enddo
 
-!!    call show_pool()
+    call show_pool()
     
   end subroutine register_rfs
 !

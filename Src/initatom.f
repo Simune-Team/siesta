@@ -50,6 +50,8 @@
       use electrostatic, only: elec_corr_setup
       use atmparams, only: lmaxd, nkbmx, nsemx, nzetmx
       use atom_options, only: get_atom_options
+      use ldau_specs, only: read_ldau_specs
+      use ldau_specs, only: ldau_proj_gen
 
       implicit none
       integer,         intent(out) :: ns   ! Number of species
@@ -61,6 +63,7 @@
       external atm_transfer
 
       call get_atom_options()
+
 
 !     Reading input for the pseudopotentials and atomic orbitals
       write(6,'(/2a)') 
@@ -82,6 +85,9 @@
 !       New routines in basis_specs and basis_types.
         call read_basis_specs()
         call basis_specs_transfer()
+
+!       Get the parameters for the generation of the LDA+U projectors
+        call read_ldau_specs()
 
         nsmax = nsp             !! For old_atmfuncs
         call allocate_old_arrays()
@@ -106,6 +112,7 @@
      &                    split_norm(0:lmaxd,1:nsemx,is), 
      &                    filtercut(0:lmaxd,1:nsemx,is), basp)
 
+          call ldau_proj_gen(is)
         enddo 
 
         call prinput(nsp)
