@@ -81,7 +81,6 @@
       real(dp),             pointer :: dummyH(:,:)
 #endif
 !------------------------------------------------------------------------- BEGIN
-      call timer( 'IterGeom', 1 )
 
       call timer( 'state_init', 1 )
 

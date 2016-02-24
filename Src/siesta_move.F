@@ -363,7 +363,6 @@
       endif
 
       call timer( 'siesta_move', 2 )
-      call timer( 'IterGeom', 2 )
 ! End of one MD step - flush stdout
       if (ionode) call pxfflush(6)
 

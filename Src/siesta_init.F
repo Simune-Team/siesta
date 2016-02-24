@@ -165,7 +165,7 @@
       call timer_report( file=trim(slabel)//'.times', 
      .                   threshold=threshold )
       ! This variable lives in siesta_options
-      use_tree_timer = fdf_get('UseTreeTimer', .false.)
+      use_tree_timer = fdf_get('UseTreeTimer', .true.)
 
 !     Start time counter
 !     Note new placement of this first use, so that

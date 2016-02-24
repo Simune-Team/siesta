@@ -16,6 +16,7 @@
       subroutine siesta_forces(istep)
 
       use precision, only: dp
+      use fdf, only: fdf_get
       use siesta_cml
       use m_state_init
       use m_setup_hamiltonian
@@ -56,6 +57,7 @@
       real(dp) :: dmax      ! Max. change in DM or H elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
       type(converger_t)  ::  conv_harris, conv_freeE
+      character(len=20) timer_str_scf, timer_str_geom
 
 #ifdef TRANSIESTA
 ! Used in force constant runs
@@ -64,6 +66,14 @@
       
 !---------------------------------------------------------------------- BEGIN
 
+      if (fdf_get("timing-split-geometry-steps",.false.)) then
+         write(timer_str_geom,"(a,i0)") 'IterGeom_', istep
+      else
+         timer_str_geom = 'IterGeom'
+      endif
+
+      call timer( timer_str_geom, 1 )
+      
 !     Initialization tasks for a given geometry
       call state_init( istep )
 
@@ -118,7 +128,13 @@
            endif
         endif
 
-        call timer( 'IterSCF', 1 )
+        if (fdf_get("timing-split-scf-steps",.false.)) then
+           write(timer_str_scf,"(a,i0)") 'IterSCF_', iscf
+        else
+           timer_str_scf = 'IterSCF'
+        endif
+
+        call timer( timer_str_scf, 1 )
         if (cml_p)
      &         call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
        
@@ -170,7 +186,7 @@
            endif
         endif
 
-        call timer( 'IterSCF', 2 )
+        call timer( timer_str_scf, 2 )
 
         call maybe_print_timings()
 
@@ -239,6 +255,7 @@
       if (siesta_server) 
      &  call forcesToMaster( na_u, Etot, cfa, cstress )
 
+      call timer( timer_str_geom, 2 )
 
 !------------------------------------------------------------------------ END
 
@@ -282,10 +299,10 @@
             call timer( 'TS_calc', 3 ) !TSS (only calculating routines)
          end if
       else
-         if (istep.eq.inicoor .and. first ) call timer( 'IterSCF', 3 )    
+         if (istep.eq.inicoor .and. first ) call timer(timer_str_scf,3)    
       endif
 #else
-      if (istep.eq.inicoor .and. first ) call timer( 'IterSCF', 3 )    
+      if (istep.eq.inicoor .and. first ) call timer( timer_str_scf, 3 )    
 #endif
       end subroutine maybe_print_timings
 
