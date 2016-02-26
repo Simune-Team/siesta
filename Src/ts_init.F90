@@ -35,6 +35,8 @@ contains
     use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
     use m_ts_options ! Just everything (easier)
 
+    use m_cite, only: add_citation
+    
     implicit none
 ! *********************
 ! * INPUT variables   *
@@ -57,6 +59,11 @@ contains
 
     ! If we actually have a transiesta run we need to process accordingly!
     if ( TSmode ) then
+
+       ! add citation
+       if ( IONode ) then
+          call add_citation("10.1103/PhysRevB.65.165401")
+       end if
 
        ! Show every region of the Transiesta run
        call ts_show_regions(ucell,na_u,xa, &
