@@ -973,7 +973,7 @@ contains
          trim(debug_msg),' alpha = ',alpha
 
 !$OMP parallel workshare default(shared)
-    x2 = x1 * (1._dp - alpha) + alpha * F1
+    x2 = x1 + alpha * F1
 !$OMP end parallel workshare
 
   end subroutine mixing_linear
@@ -1081,7 +1081,7 @@ contains
 
           ! The first Pulay step will do linear mixing
 !$OMP parallel workshare default(shared)
-          x2 = x1 + (F1 - x1) * mix%rv(1)
+          x2 = x1 + F1 * mix%rv(1)
 !$OMP end parallel workshare
 
           return
@@ -1124,12 +1124,14 @@ contains
              
           end if
 
-          ! do linear mixing
-          ssum = 1._dp - mix%rv(1)
-          res => getstackval(mix,1)
+          if ( mix%rv(1) < 1._dp ) then
+
+             ! do linear mixing
+             res => getstackval(mix,1)
 !$OMP parallel workshare default(shared)
-          x2 = x1 * ssum + res
+             x2 = x1 + res
 !$OMP end parallel workshare
+          end if
           
           return
 
@@ -1443,9 +1445,8 @@ contains
        Jres => getstackval(mix,2)
 
        ! Do linear interpolation
-       rtmp = 1._dp - jinv0
 !$OMP parallel workshare default(shared)
-       x2 = x1 * rtmp + Jres
+       x2 = x1 + Jres
 !$OMP end parallel workshare
 
        return
