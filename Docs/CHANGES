@@ -6,6 +6,26 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2016-02-26                                                    trunk-488
+Add generic citation helper
+
+- It was previously difficult to figure
+  out which papers where of significance when
+  using SIESTA.
+  This addition adds the capability of on-the-fly
+  creation of .bib files for users to easier find
+  the papers that are being used in their corresponding
+  run.
+  
+added:
+  Src/m_cite.F90
+modified:
+  Src/Makefile
+  Src/m_efield.F
+  Src/siesta_init.F
+  Src/ts_init.F90
+
+-----------------------------------------------------------------------
 2016-02-17                                                    trunk-486
 Fixed auxiliary array usage for ksv and optical
 

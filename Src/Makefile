@@ -160,6 +160,10 @@ OBJS =  automatic_cell.o atom_options.o \
 	delk.o m_planewavematrix.o m_digest_nnkp.o broadcast_projections.o \
 	compute_pw_matrix.o m_writedelk.o mmn.o m_noccbands.o amn.o \
 	m_overkkneig.o write_inp_wannier.o diagonalizeHk.o m_orderbands.o
+
+# Add citation package
+OBJS += m_cite.o
+
 #--------------------------------------------------------------
 # FoX whatnot
 #
@@ -568,8 +572,8 @@ m_dipol.o: precision.o
 m_dminim.o: densematrix.o files.o parallel.o parallelsubs.o precision.o
 m_dminim.o: siesta_options.o sys.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
-m_efield.o: atmfuncs.o mesh.o parallel.o precision.o siesta_cml.o siesta_geom.o
-m_efield.o: sys.o units.o
+m_efield.o: atmfuncs.o m_cite.o mesh.o parallel.o precision.o siesta_cml.o
+m_efield.o: siesta_geom.o sys.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
@@ -795,7 +799,7 @@ siesta_forces.o: state_init.o sys.o units.o write_subs.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o bsc_xcmod.o densematrix.o files.o
 siesta_init.o: ioxv.o kpoint_grid.o kpoint_pdos.o ksvinit.o m_check_supercell.o
-siesta_init.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
+siesta_init.o: m_cite.o m_energies.o m_eo.o m_forces.o m_gamma.o m_iostruct.o
 siesta_init.o: m_mpi_utils.o m_rmaxh.o m_spin.o m_steps.o m_timer.o
 siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o parallel.o
 siesta_init.o: parallelsubs.o projected_DOS.o siesta_cmlsubs.o siesta_geom.o
@@ -830,8 +834,8 @@ sys.o: parallel.o
 timer.o: m_timer.o parallel.o sys.o timer_tree.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_init.o: files.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o m_ts_options.o
-ts_init.o: parallel.o
+ts_init.o: files.o m_cite.o m_ts_contour.o m_ts_gf.o m_ts_kpoints.o
+ts_init.o: m_ts_options.o parallel.o
 ts_show_regions.o: parallel.o precision.o units.o
 typecell.o: precision.o
 uncell.o: precision.o

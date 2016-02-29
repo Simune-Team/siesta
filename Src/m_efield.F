@@ -141,6 +141,7 @@
       use parallel,     only: ionode
       use siesta_cml,   only: cml_p, cmlAddProperty, mainXML
       use fdf,          only: fdf_boolean
+      use m_cite, only: add_citation
 
       real(dp) :: input_field(3), orthog_field(3)
       logical  :: orthog
@@ -180,6 +181,9 @@
       dipole_correction = fdf_boolean("SlabDipoleCorrection",.false.)
 
       if (dipole_correction) then
+         if ( IONode ) then
+            call add_citation("10.1103/PhysRevB.59.12301")
+         end if
          if (ionode) write(6,'(/,(a))')
      .        'efield: SlabDipoleCorrection = .true. in input file',
      .        'efield: A dipole layer will be introduced in the vacuum',
