@@ -1,4 +1,21 @@
 ----------------------------------------------------
+March 1, 2016 -- Nick Papior           trunk-485---ts-scf-652
+Add GPL notices and headers
+
+* Include proper headers
+* Add Docs/Contributors.txt and NOTICE.txt files.
+* Update READMEs and LICENSE files in several directories.
+* Remove Pseudo/atom, Util/test-xml
+* Remove DOM files from Src/xmlparser
+* Replace old copyright notice in Src/Confs
+
+This revision touches a large number of files due to the
+change in licensing and copyright.
+
+The other major change is the removal of the Pseudo/atom subtree,
+which is now distributed independently.
+
+----------------------------------------------------
 February 18, 2016 -- Nick Papior       trunk-484---ts-scf-652
 Added graphviz output to siesta
 

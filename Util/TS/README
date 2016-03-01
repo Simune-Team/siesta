@@ -2,8 +2,9 @@ This directory contains several utilities related to TranSIESTA.
 Scripts to help generate input fdf files and do transmission
 analysis are located here.
 
-These programs has been developed by:
-  Nick Papior Andersen, nickpapior<at>gmail.com
+Unless otherwise stated all programs/utilities have been developed
+by:
+  Nick Papior, nickpapior<at>gmail.com
 
 - AnalyzeSort
   Deprecated module, not used any-more.
@@ -20,6 +21,9 @@ These programs has been developed by:
   this directory contains the TBtrans utility which is used for 
   calculating the transmission and other quantities from the 
   TSHS files output from TranSIESTA.
+
+  It also reads NetCDF4 files created by the community utility:
+    github.com/zerothi/sids
 
 
 - ts2ts
@@ -45,6 +49,7 @@ These programs has been developed by:
        have a drastic memory decrease  
 
 - TB
+  *DEPRECATED* Use github.com/zerothi/sids instead
   This directory contains two modules:
 
   * tbt_data.py
