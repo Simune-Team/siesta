@@ -152,6 +152,7 @@
       use fdf,          only: block_fdf, parsed_line, fdf_bline
       use fdf,          only: fdf_bmatch, fdf_convfac, fdf_bvalues
       use units,        only: Ang, eV
+      use m_cite, only: add_citation
 
       real(dp) :: input_field(3), orthog_field(3), cfactor
       logical  :: orthog
@@ -212,6 +213,9 @@
       end if
 
       if (dipole_correction) then
+         if ( IONode ) then
+            call add_citation("10.1103/PhysRevB.59.12301")
+         end if
          if (ionode) write(6,'(/,(a))')
      .        'efield: SlabDipoleCorrection = .true. in input file',
      .        'efield: A dipole layer will be introduced in the vacuum',

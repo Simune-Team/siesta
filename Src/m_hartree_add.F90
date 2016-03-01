@@ -427,6 +427,8 @@ contains
   ! provided in the FDF
   subroutine read_hartree_add( )
 
+    use parallel, only: IONode
+    use m_cite, only: add_citation
     use intrinsic_missing, only : EYE
 
     real(dp) :: cell(3,3)
@@ -533,6 +535,10 @@ contains
        call fgeo_read('Geometry.Hartree', N_c_g, c_g(:)%geo, &
             c_g(:)%hartree , par_unit='Ry')
        N_geom = N_geom + N_c_g
+    end if
+
+    if ( N_geom > 0 .and. IONode ) then
+       call add_citation("10.1039/C5CP04613K")
     end if
 
   end subroutine read_hartree_add

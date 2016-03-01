@@ -103,22 +103,23 @@ C     Internal variables
 #ifdef MPI
       integer                     :: MPIerror
 #endif
-      integer,               save :: nkopt = 0  ! AG ???
+      integer                     :: nkopt
          
       logical                     :: DoOptical
-      logical,               save :: gamma  = .false.
+      logical                     :: gamma
 
       real(dp)                    :: efermiloc
       real(dp),        parameter  :: tiny = 1.0d-9
       real(dp),        parameter  :: ediffmin = 1.0d-3
-      real(dp), pointer, save     :: ekloc(:) => null()
-      real(dp), pointer, save     :: epsimg(:,:) => null()
-      real(dp), pointer, save     :: kopt(:,:) => null()
-      real(dp), pointer, save     :: wgthopt(:) => null()
+      real(dp), pointer           :: epsimg(:,:) => null()
+      real(dp), pointer           :: ekloc(:) => null()
+      real(dp), pointer           :: kopt(:,:) => null()
+      real(dp), pointer           :: wgthopt(:) => null()
 #ifdef MPI
-      real(dp), pointer, save     :: epsbuff(:,:) => null()
+      real(dp), pointer           :: epsbuff(:,:) => null()
 #endif
-      real(dp), pointer, save     :: intraband(:,:) => null()
+      real(dp), pointer           :: intraband(:,:) => null()
+      real(dp), pointer           :: aux(:,:) => null()
       real(dp)
      &  cutoff, displ(3), dmod, dsp, dw, ediff, efield(3),
      &  fsum(2), f1, f2, inplane(3,2), kint(3),
@@ -131,10 +132,6 @@ C     Internal variables
       character(len=12)             :: option
       character(len=1)              :: matrix
 
-      real(dp), pointer ::   AuxSr(:)=>null()   ! Auxiliary matrix 
-      real(dp), pointer ::   AuxSr2(:)=>null()   ! Auxiliary matrix 
-      real(dp), pointer ::   AuxSr3(:)=>null()   ! Auxiliary matrix 
-
       external          io_assign, io_close,
      &                  paste, volcel
 
@@ -143,10 +140,6 @@ C     Internal variables
 #endif
 C     Start time counter 
       call timer( 'optical', 1 )
-
-      call re_alloc( AuxSr, 1, maxnh,  'AuxSr', 'optical' )
-      call re_alloc( AuxSr2, 1, maxnh,  'AuxSr2', 'optical' )
-      call re_alloc( AuxSr3, 1, maxnh,  'AuxSr3', 'optical' )
 
 C     Initialise nbands to maximum number possible 
       nbands = nuotot
@@ -158,10 +151,12 @@ C     Read optical adsorption parameters
       if (.not.DoOptical) goto 999
 
 C     Unit cell volume
-      volume = volcel(ucell)        
+      volume = volcel(ucell)
 
-C     Set initial value of nkopt
+C     Set initial value of nkopt and gamma
       nkopt = 0
+      ngamma = 2
+      gamma = .false.
 
 C     Find the integration grid in reciprocal space   
       nk = nmeshk(1)*nmeshk(2)*nmeshk(3)
@@ -417,7 +412,10 @@ C     Allocate Haux/Saux/psi arrays to required size
       call re_alloc( Haux, 1, maxhs,  'Haux', 'densematrix')
       call re_alloc( Saux, 1, maxhs,  'Saux', 'densematrix')
       call re_alloc( psi,  1, maxpsi, 'psi',  'densematrix')
-  
+
+      ! Allocate auxiliary array for calculating phirphi
+      call re_alloc( aux,  1, maxnh, 1, 3, 'aux', 'optical')
+
 C     What kind of matrix elements will be used.
 C     Real space is possible for molecules and atoms
 C     For infinte media we will need caculate everything
@@ -443,43 +441,29 @@ C     Construction of the matrix elements of the scalar product n*r
       if ( option.eq.'polarized') then 
         call phirphi_opt( nua, na, nuo, no, scell, xa, maxnh, 
      &                    lasto, lastkb, iphorb, iphKB, isa, numh,
-     &                    listhptr, listh, efield, matrix, AuxSr ) 
+     &                    listhptr, listh, efield, matrix, aux(1,1) )
         do io = 1,maxnh
-          AuxSr2(io) = 0.0d0
-          AuxSr3(io) = 0.0d0
+          aux(io,2) = 0.0d0
+          aux(io,3) = 0.0d0
         enddo
       elseif( option.eq.'unpolarized') then
         call phirphi_opt( nua, na, nuo, no, scell, xa, maxnh, lasto,
      &                    lastkb, iphorb, iphKB, isa, numh, listhptr,
-     &                    listh, inplane(1,1), matrix,  AuxSr )
+     &                    listh, inplane(1,1), matrix, aux(1,1) )
         call phirphi_opt( nua, na, nuo, no, scell, xa, maxnh, lasto,
      &                    lastkb, iphorb, iphKB, isa, numh, listhptr,
-     &                    listh, inplane(1,2), matrix, AuxSr2 )
+     &                    listh, inplane(1,2), matrix, aux(1,2) )
         do io = 1,maxnh
-          AuxSr3(io) = 0.0d0
+          aux(io,3) = 0.0d0
         enddo
-      else  
-        do ix = 1,3
-          xv(ix) = 0.0d0
-        enddo
-        xv(1) = 1.0d0
-        call phirphi_opt( nua, na, nuo, no, scell, xa, maxnh, 
-     &                    lasto, lastkb, iphorb, iphKB, isa, numh, 
-     &                    listhptr, listh, xv, matrix, AuxSr )
-        do ix = 1,3
-          xv(ix) = 0.0d0
-        enddo
-        xv(2) = 1.0d0
-        call phirphi_opt( nua, na, nuo, no, scell, xa, maxnh, 
-     &                    lasto, lastkb, iphorb, iphKB, isa, numh, 
-     &                    listhptr, listh, xv, matrix, AuxSr2 )
-        do ix = 1,3
-          xv(ix) = 0.0d0
-        enddo
-        xv(3) = 1.0d0
-        call phirphi_opt( nua, na, nuo, no, scell, xa, maxnh, 
-     &                    lasto, lastkb, iphorb, iphKB, isa, numh,
-     &                    listhptr, listh, xv, matrix, AuxSr3 )
+      else
+         do ix = 1 , 3
+            xv = 0._dp
+            xv(ix) = 1._dp
+            call phirphi_opt( nua, na, nuo, no, scell, xa, maxnh, 
+     &           lasto, lastkb, iphorb, iphKB, isa, numh, 
+     &           listhptr, listh, xv, matrix, aux(1,ix) )
+         end do
       endif
 
 C     Initialize array for the dielectric function
@@ -533,33 +517,13 @@ C DSP May 2010, modified call to subroutine transition_rate
 C information wmin and wmax
 C passed to subroutine transition_rate so only relevant
 C transition probabilities are explicitly calculated.
-            if (ipol.eq.1) then      
-              call transition_rate( ngamma, psi, ek, efermi,
-     .                             ekloc, efermiloc, temp,
-     .                             smooth, wmin, wmax,
-     .                             AuxSr, Haux, Saux, numh, 
-     .                             listhptr, listh, indxuo, no, 
-     .                             nuo, nuotot, xijo, maxnh, nbands, 
-     .                             kint, matrix,intraband)
-            elseif(ipol.eq.2) then 
-              call transition_rate( ngamma, psi, ek, efermi,
-     .                             ekloc, efermiloc, temp,
-     .                             smooth, wmin, wmax,
-     .                             AuxSr2, Haux, Saux, numh, 
-     .                             listhptr, listh, indxuo, no,
-     .                             nuo, nuotot, xijo, maxnh, nbands, 
-     .                             kint, matrix,intraband )
-            else 
-              call transition_rate( ngamma, psi, ek, efermi,
-     .                             ekloc, efermiloc, temp,
-     .                             smooth, wmin, wmax,
-     .                             AuxSr3, Haux, Saux, numh, 
-     .                             listhptr, listh, indxuo, no,
-     .                             nuo, nuotot, xijo, maxnh, nbands, 
-     .                             kint, matrix,intraband)
-            endif          
-
-
+             call transition_rate( ngamma, psi, ek, efermi,
+     .            ekloc, efermiloc, temp,
+     .            smooth, wmin, wmax,
+     .            aux(1,ipol), Haux, Saux, numh, 
+     .            listhptr, listh, indxuo, no, 
+     .            nuo, nuotot, xijo, maxnh, nbands, 
+     .            kint, matrix,intraband)
 
             do ie = 1,nbands
               call GlobalToLocalOrb(ie,Node,Nodes,iie)
@@ -694,14 +658,12 @@ C     This is the only exit point
   999 continue
 
 C     Deallocate internal arrays
-      call de_alloc( AuxSr,     'AuxSr',     'optical' )
-      call de_alloc( AuxSr2,    'AuxSr2',    'optical' )
-      call de_alloc( AuxSr3,    'AuxSr3',    'optical' )
       call de_alloc( epsimg,    'epsimg',    'optical' )
       call de_alloc( intraband, 'intraband', 'optical' )
       call de_alloc( ekloc,     'ekloc',     'optical' )
       call de_alloc( kopt,      'kopt',      'optical' )
       call de_alloc( wgthopt,   'wgthopt',   'optical' )
+      call de_alloc( aux,       'aux',       'optical' )
 
       call timer( 'optical', 2 )
 

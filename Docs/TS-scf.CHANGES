@@ -1,4 +1,14 @@
 ----------------------------------------------------
+March 1, 2016 -- Nick Papior           trunk-488---ts-scf-655
+Merged trunk-488, added citation
+
+- Added citation of the charge/hartree
+  gate models.
+
+- Add a generic citation helper
+- Merge fix for optical/ksv calculations
+
+----------------------------------------------------
 March 1, 2016 -- Nick Papior           trunk-485---ts-scf-654
 Small pending fixes
 

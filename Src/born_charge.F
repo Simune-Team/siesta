@@ -24,7 +24,6 @@
       use m_spin,         only: nspin
       use m_ksv,          only: KSV_pol
       use siesta_geom,    only: shape
-
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif

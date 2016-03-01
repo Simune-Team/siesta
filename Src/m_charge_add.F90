@@ -488,7 +488,9 @@ contains
   ! provided in the FDF
   subroutine read_charge_add(nspin,char_net)
 
+    use parallel, only: IONode
     use fdf, only: fdf_deprecated, fdf_obsolete
+    use m_cite, only: add_citation
     use intrinsic_missing, only : EYE
 
     integer, intent(in) :: nspin
@@ -612,6 +614,10 @@ contains
        call fgeo_read('Geometry.Charge', N_c_g, c_g(:)%geo, c_g(:)%charge)
        N_geom = N_geom + N_c_g
        char_net = char_net + sum(c_g(:)%charge)
+    end if
+
+    if ( N_geom > 0 .and. IONode ) then
+       call add_citation("10.1039/C5CP04613K")
     end if
     
   end subroutine read_charge_add

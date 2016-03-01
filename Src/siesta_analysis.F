@@ -432,7 +432,6 @@
 
 !     Calculation of the bulk polarization using the Berry phase
 !     formulas by King-Smith and Vanderbilt
-
       if (nkpol.gt.0 .and. .not.bornz) then
         call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, ucell_last,
      &               no_u, no_l, no_s, nspin, qspin, 
@@ -443,7 +442,6 @@
       endif
 
 !     Calculation of the optical conductivity
-
       call optical(na_u, na_s, xa_last, scell_last, ucell_last,
      &             no_u, no_l, no_s, nspin, qspin,
      &             maxnh, numh, listhptr, listh, H, S, xijo,
