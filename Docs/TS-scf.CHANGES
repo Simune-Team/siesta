@@ -1,4 +1,16 @@
 ----------------------------------------------------
+March 1, 2016 -- Nick Papior           trunk-485---ts-scf-653
+Add GPL notices and headers for the new ts-scf files
+
+- Extends GPL merge by fixing the headers of all
+  new files in the transiesta branch.
+
+  I have manully gone through a large part of the
+  files to assert their correctness.
+
+  I think everything should be fine now.
+  
+----------------------------------------------------
 March 1, 2016 -- Nick Papior           trunk-485---ts-scf-652
 Add GPL notices and headers
 
