@@ -6,9 +6,6 @@ Unless otherwise stated all programs/utilities have been developed
 by:
   Nick Papior, nickpapior<at>gmail.com
 
-- AnalyzeSort
-  Deprecated module, not used any-more.
-
 - tselecs.sh
   This small scripts eases the creation of several electrodes
   input. It can also be used to initialize a script for TranSIESTA.

@@ -9,8 +9,14 @@
 ! This program has been fully implemented by:
 !  Nick Papior, 2015
 
-! This program will print a ndmetis
-! prepared graph file
+! This pivoting program will pivot atoms in the sparsity
+! pattern by reading in a sparsity pattern from
+! a given SIESTA file.
+! Subsequently the sparsity pattern will be printed
+! out in any of the provided formats.
+! Currently the output formats are:
+! 1. METIS graph
+! 2. GRAPHVIZ input
 program pvtsp
 
   use precision, only : dp
@@ -110,10 +116,10 @@ program pvtsp
         fmethod = 'revCuthillMckee'
      else if ( fname == '-gps' ) then
         method = PVT_GPS
-        fmethod = 'GibbsPoleStockmeyer'
+        fmethod = 'GibbsPooleStockmeyer'
      else if ( fname == '-rev-gps' ) then
         method = PVT_REV_GPS
-        fmethod = 'revGibbsPoleStockmeyer'
+        fmethod = 'revGibbsPooleStockmeyer'
      else if ( fname == '-pcg' ) then
         method = PVT_PCG
         fmethod = 'PeripheralConnectGraph'
@@ -122,10 +128,10 @@ program pvtsp
         fmethod = 'revPeripheralConnectGraph'
      else if ( fname == '-ggps' ) then
         method = PVT_GGPS
-        fmethod = 'GeneralGibbsPoleStockmeyer'
+        fmethod = 'GeneralGibbsPooleStockmeyer'
      else if ( fname == '-rev-ggps' ) then
         method = PVT_REV_GGPS
-        fmethod = 'revGeneralGibbsPoleStockmeyer'
+        fmethod = 'revGeneralGibbsPooleStockmeyer'
      else if ( fname == '-scramble' ) then
         method = 0 ! 0 signals scrambling
         fmethod = 'Scramble'
@@ -231,12 +237,10 @@ program pvtsp
 
      end if
 
-#ifdef GRAPHVIZ
      ! Save the graphviz file
      fmethod = trim(fmethod) // '.gv'
      call sp2graphviz(fmethod,no_u,n_nzs,ncol,l_ptr,l_col, &
           method = graph_method, pvt = pvt )
-#endif
 
   end if
 
@@ -386,12 +390,12 @@ contains
     write(*,nf) '<method> can be one of the following:'
     write(*,fm) '      cm: Cuthill-Mckee'
     write(*,fm) '  rev-cm: reverse Cuthill-Mckee'
-    write(*,fm) '     gps: Gibbs-Pole-Stockmeyer'
-    write(*,fm) ' rev-gps: reverse Gibbs-Pole-Stockmeyer'
+    write(*,fm) '     gps: Gibbs-Poole-Stockmeyer'
+    write(*,fm) ' rev-gps: reverse Gibbs-Poole-Stockmeyer'
     write(*,fm) '     pcg: Peripheral connectivity graph'
     write(*,fm) ' rev-pcg: reverse Peripheral connectivity graph'
-    write(*,fm) '    ggps: General Gibbs-Pole-Stockmeyer'
-    write(*,fm) 'rev-ggps: reverse General Gibbs-Pole-Stockmeyer'
+    write(*,fm) '    ggps: General Gibbs-Poole-Stockmeyer'
+    write(*,fm) 'rev-ggps: reverse General Gibbs-Poole-Stockmeyer'
     write(*,fm) 'scramble: Scramble the sparsity pattern'
     write(*,'(a)')
     write(*,gf) '--unit-cell|-uc','use only the unit-cell sparsity pattern (no periodicity)'

@@ -1,4 +1,29 @@
 ----------------------------------------------------
+March 1, 2016 -- Nick Papior           trunk-485---ts-scf-654
+Small pending fixes
+
+- Removed Util/TS/AnalyzeSort
+
+  Was fully superseeded by the new implementation.
+
+- Removed Util/Sp2METIS
+
+  This functionality is now in SpPivot
+
+- Small spelling errors in pvtsp program.
+
+removed:
+  Util/Sp2METIS/
+  Util/Sp2METIS/Makefile
+  Util/Sp2METIS/sp2metis.f90
+  Util/TS/AnalyzeSort/
+  Util/TS/AnalyzeSort/tsanalyzesort.py
+modified:
+  Util/README
+  Util/SpPivot/pvtsp.F90
+  Util/TS/README
+
+----------------------------------------------------
 March 1, 2016 -- Nick Papior           trunk-485---ts-scf-653
 Add GPL notices and headers for the new ts-scf files
 
