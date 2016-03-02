@@ -93,6 +93,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 1   = Order-N
   !                                                 2   = Transiesta
   !                                                 3   = OMM
+  !                                                 4   = DUMMY
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
   ! real*8  ts               : Total spin of the system
@@ -621,7 +622,13 @@ subroutine read_options( na, ns, nspin )
           value=method, dictRef='siesta:SCFmethod' )
   endif
 
-  if (leqi(method,'diagon')) then
+  if (leqi(method,'dummy')) then
+     isolve = SOLVE_DUMMY
+     if (ionode)  then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ',&
+             'Dummy (For testing)'
+     endif
+  else if (leqi(method,'diagon')) then
      isolve = SOLVE_DIAGON
      ! DivideAndConquer is now the default
      DaC = fdf_get('Diag.DivideAndConquer',.true.)

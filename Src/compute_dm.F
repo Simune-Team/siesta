@@ -75,7 +75,11 @@
         endif
       endif
 
-      if ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
+      if (isolve .eq. SOLVE_DUMMY) then
+         Dscf = Dold
+         Escf = 0.0_dp
+         
+      else if ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,

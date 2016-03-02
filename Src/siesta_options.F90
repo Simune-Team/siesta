@@ -185,5 +185,6 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_ORDERN = 1
   integer,  parameter :: SOLVE_TRANSI = 2
   integer,  parameter :: SOLVE_MINIM  = 3
+  integer,  parameter :: SOLVE_DUMMY  = 4
 
 END MODULE siesta_options
