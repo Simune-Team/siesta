@@ -6,6 +6,30 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2016-03-02                                                    trunk-489
+[merge] Tests fix, REFERENCE_DIR and SIESTA
+
+- After having build siesta in the Obj directory
+  a natural procedure would be to go to Tests
+  and run the tests:
+      make
+  However, the default SIESTA is not pointing to
+  the Obj.
+  Further the REFERENCE_DIR is not pointing to the
+  correct reference directory when in the top Tests
+  directory.
+
+  Hence the procedure is:
+  1. cd Obj
+  2. ../Src/obj_setup.sh
+  3. <create arch.make>
+  4. make
+  5. cd ../Tests/
+  6. make
+
+modified:
+  Tests/test.mk
+
 2016-02-26                                                    trunk-488
 Add generic citation helper
 
@@ -16,7 +40,7 @@ Add generic citation helper
   creation of .bib files for users to easier find
   the papers that are being used in their corresponding
   run.
-  
+
 added:
   Src/m_cite.F90
 modified:
