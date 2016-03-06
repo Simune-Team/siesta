@@ -1,4 +1,11 @@
 ----------------------------------------------------
+March 5, 2016 -- Nick Papior           trunk-490---ts-scf-655
+Merge trunk-490, added automatic read of lengths
+
+- Automatic read of number of atoms/species.
+- Fix of test.mk file.
+
+----------------------------------------------------
 March 1, 2016 -- Nick Papior           trunk-488---ts-scf-655
 Merged trunk-488, added citation
 

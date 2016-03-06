@@ -6,6 +6,67 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
+2016-05-02                                                    trunk-490
+Automatic reading of #atoms, and species without denoting count
+
+- The NumberOfSpecies flag is now not needed any more.
+
+  This reflects an easier usage as it first reads the lines
+  in the ChemicalSpeciesLabel block and counts the number
+  of species from this block.
+
+  A small bug has also been fixed in that the first
+  number is now correctly inserted in the slot
+  that it intents.
+
+  The NumberOfSpecies flag still has precedence in case
+  you want a reduced number of elements.
+
+  +manual
+
+- The NumberOfAtoms is now not needed any more.
+
+  Similar to the NumberOfSpecies flag we now count the
+  number of atoms from the block by default.
+
+  The NumberOfAtoms flag still has precedence in case
+  you want a reduced number of atoms.
+
+  +manual
+
+- Output of chemical species is now more concise and aligned.
+  This is just a visual change.
+
+modified:
+  Docs/siesta.tex
+  Src/chemical.f
+  Src/coor.F
+
+-----------------------------------------------------------------------
+2016-03-02                                                    trunk-489
+[merge] Tests fix, REFERENCE_DIR and SIESTA
+
+- After having build siesta in the Obj directory
+  a natural procedure would be to go to Tests
+  and run the tests:
+      make
+  However, the default SIESTA is not pointing to
+  the Obj.
+  Further the REFERENCE_DIR is not pointing to the
+  correct reference directory when in the top Tests
+  directory.
+
+  Hence the procedure is:
+  1. cd Obj
+  2. ../Src/obj_setup.sh
+  3. <create arch.make>
+  4. make
+  5. cd ../Tests/
+  6. make
+
+modified:
+  Tests/test.mk
+
 2016-02-26                                                    trunk-488
 Add generic citation helper
 
@@ -16,7 +77,7 @@ Add generic citation helper
   creation of .bib files for users to easier find
   the papers that are being used in their corresponding
   run.
-  
+
 added:
   Src/m_cite.F90
 modified:
