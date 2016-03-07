@@ -1,4 +1,18 @@
 ----------------------------------------------------
+March 7, 2016 -- Nick Papior           trunk-492---ts-scf-656
+Merge trunk-492, k-point displacements
+
+- k-points and displacement are now valid across all segments
+  which read a kgrid Monkhorst-Pack
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+----------------------------------------------------
 March 5, 2016 -- Nick Papior           trunk-490---ts-scf-655
 Merge trunk-490, added automatic read of lengths
 

@@ -115,7 +115,6 @@ C Look for kscell or cutoff in input fdf file
             if ( fdf_bnvalues(pline) > 3 ) then
                displ(i) = fdf_bvalues(pline,4)
             else
-               ! the displacement is defaulted to 0
                displ(i) = 0._dp
             end if
           enddo
