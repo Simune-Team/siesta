@@ -114,6 +114,8 @@ C Look for kscell or cutoff in input fdf file
             kscell(3,i) = fdf_bintegers(pline,3)
             if ( fdf_bnvalues(pline) > 3 ) then
                displ(i) = fdf_bvalues(pline,4)
+            else
+               displ(i) = 0._dp
             end if
           enddo
           nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +

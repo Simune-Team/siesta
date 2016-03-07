@@ -142,6 +142,8 @@ MODULE Kpoint_grid
             kscell(3,i) = fdf_bintegers(pline,3)
             if ( fdf_bnvalues(pline) > 3 ) then
               kdispl(i) = fdf_bvalues(pline,4)
+            else
+              kdispl(i) = 0._dp
             end if
          enddo
          firm_displ = .true.
