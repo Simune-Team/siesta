@@ -140,7 +140,9 @@ MODULE Kpoint_grid
             kscell(1,i) = fdf_bintegers(pline,1)
             kscell(2,i) = fdf_bintegers(pline,2)
             kscell(3,i) = fdf_bintegers(pline,3)
-            kdispl(i)   = fdf_breals(pline,1)
+            if ( fdf_bnvalues(pline) > 3 ) then
+              kdispl(i) = fdf_bvalues(pline,4)
+            end if
          enddo
          firm_displ = .true.
 

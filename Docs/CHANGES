@@ -6,7 +6,29 @@
 ** CHANGES ALONG trunk
 
 -----------------------------------------------------------------------
-2016-05-02                                                    trunk-490
+2016-03-07                                                    trunk-491
+Fixed k-grid displacement reading
+
+- There was no need for not reading 0 as a displacement
+  in the kgrid_monkhorst_pack block.
+
+  Previously siesta would error when:
+   %block kgrid_monkhorst_pack
+    1 0 0 0
+    0 1 0 0
+    0 0 1 0
+   %endblock
+  while now this will works
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+-----------------------------------------------------------------------
+2016-03-05                                                    trunk-490
 Automatic reading of #atoms, and species without denoting count
 
 - The NumberOfSpecies flag is now not needed any more.
@@ -43,7 +65,7 @@ modified:
   Src/coor.F
 
 -----------------------------------------------------------------------
-2016-03-02                                                    trunk-489
+2016-03-03                                                    trunk-489
 [merge] Tests fix, REFERENCE_DIR and SIESTA
 
 - After having build siesta in the Obj directory
