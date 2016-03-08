@@ -10,7 +10,7 @@
 !
       subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, 
      &                   h_spin_dim, Dscf, rhoscf, nuo, nuotot, 
-     &                   iaorb, iphorb, isa, SpOrb )
+     &                   iaorb, iphorb, isa )
 C ********************************************************************
 C Finds the SCF density at the mesh points from the density matrix.
 C Written by P.Ordejon and J.M.Soler. May'95.
@@ -34,9 +34,10 @@ C integer nuotot          : Number of orbitals in unit cell in total
 C integer iaorb(*)        : Pointer to atom to which orbital belongs
 C integer iphorb(*)       : Orbital index within each atom
 C integer isa(*)          : Species index of all atoms
-C logical SpOrb          : SpOrb flag
 C *********************** OUTPUT **************************************
 C real    rhoscf(nsp,np)  : SCF density at mesh points
+C *********************************************************************
+C logical SpOrb          : SpOrb flag
 C *********************************************************************
 
 C  Modules
@@ -45,6 +46,7 @@ C  Modules
       use atmfuncs,      only: rcut, all_phi
       use atm_types,     only: nsmax=>nspecies
       use atomlist,      only: indxuo
+      use m_spin,        only: SpOrb
       use listsc_module, only: LISTSC
       use mesh,          only: nsp, dxa, xdop, xdsp, meshLim
       use meshdscf,      only: matrixOtoM
@@ -62,11 +64,8 @@ C  Modules
 
 C     Argument types and dimensions
 
-      logical
-     .  SpOrb
-
       integer,       intent(in) :: no, np, maxnd, numd(nuo), nspin,
-     &                             h_spin_dim, nuo, nuotot, iaorb(*), 
+     &                             nuo, nuotot, iaorb(*), h_spin_dim, 
      &                             iphorb(*), isa(*), listdptr(nuo), 
      &                             listd(maxnd)
       real(dp),      intent(in) :: Dscf(maxnd,h_spin_dim)
@@ -97,6 +96,7 @@ C     Internal variables and arrays
       call MPI_Barrier( MPI_Comm_World, MPIerror )
       call MPItrace_event( 1000, 1 )
 #endif
+
 C     Start time counter
       call timer('rhoofd',1)
 

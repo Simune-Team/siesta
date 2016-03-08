@@ -478,7 +478,7 @@ C     but maybe it is only necessary spinor_dim!
         g2max = g2cut
         dummy_str  = 0.0
         dummy_strl = 0.0
-        call dhscf( nspin, h_spin_dim, SpOrb, no_s, iaorb, iphorb, no_l,
+        call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 
      &              ntm, 0, 0, 0, filesOut, 
      &              maxnh, numh, listhptr, listh, Dscf, Datm,

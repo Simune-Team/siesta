@@ -38,7 +38,7 @@
         endif
 
 CC RC  Added
-C  PDOS not computed if on-collinear calculation is run in parallel
+C  PDOS not computed if non-collinear calculation is run in parallel
 
       if ( (h_spin_dim .gt. 2) .and. (Nodes .gt. 1) ) then
        if (IOnode) then
@@ -73,7 +73,7 @@ C  PDOS not computed if on-collinear calculation is run in parallel
       use Kpoint_pdos
       use parallel,    only: IOnode
       use m_eo
-      use m_spin,      only: h_spin_dim, e_spin_dim, spinor_dim
+      use m_spin,      only: h_spin_dim, spinor_dim
       use m_gamma
       use units,       only: eV
       
@@ -124,7 +124,7 @@ C  PDOS not computed if on-collinear calculation is run in parallel
      .                    routine="projected_dos")
           endif
 
-          call pdos( no_s, h_spin_dim, e_spin_dim,spinor_dim, no_l, 
+          call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
      .               maxnh,
      .               no_u, numh, listhptr, listh, H, S,
      .               e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
@@ -132,7 +132,7 @@ C  PDOS not computed if on-collinear calculation is run in parallel
      .               no_u)
         else
 ! otherwise use the SCF grid 
-          call pdos( no_s, h_spin_dim, e_spin_dim,spinor_dim, no_l, 
+          call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
      .               maxnh,
      .               no_u, numh, listhptr, listh, H, S,
      .               e1, e2, sigma, nhist,

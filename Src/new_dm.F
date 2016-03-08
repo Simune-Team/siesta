@@ -405,7 +405,7 @@
 
       end subroutine new_extrapol
       subroutine initdm(Datm, Dscf, lasto, maxa,
-     .                  maxo, maxuo, maxspn, nua, no_l, h_spin_dim,
+     .                  maxo, maxuo, maxspn, nua, no_l, nspin,
      .                  numh, listhptr, listh, iaorb, inspn,
      .                  try_dm_from_file)
 
@@ -437,7 +437,7 @@ c                                if no DM files, no DM.InitSpin, ispin=2
 c                         false: Ferro ordering  (fdf DM.InitSpinAF)
 c integer nua           : Number of atoms in the unit cell
 c integer no_l           : Number of orbitals in the unit cell
-c integer h_spin_dim         : Number of spin components
+c integer maxspn = nspin = h_spin_dim         : Number of spin components
 c integer maxa          : Max num. atoms for dimension
 c integer maxo          : Max. number of orbitals (globally)
 c integer maxuo         : Max. number of orbitals (locally)
@@ -449,7 +449,7 @@ c integer listh(:)      :  "
 c integer iaorb(maxo)   : List saying to what atom an orbital belongs
 c double Datm(no)       : Occupations of basis orbitals in free atom
 c ********* OUTPUT **************************************************
-c double Dscf(:,h_spin_dim) : Density matrix in sparse form
+c double Dscf(:,h_spin_dim=nspin) : Density matrix in sparse form
 c *******************************************************************
 
 C
@@ -483,7 +483,7 @@ C
 
       logical           found, inspn, try_dm_from_file
       integer           no_l, nua, maxo, maxuo, h_spin_dim, maxa,
-     .                  maxspn
+     .                  maxspn,nspin
       integer           lasto(0:maxa), numh(maxuo), iaorb(maxo)
       integer       ::  listhptr(:), listh(:)
       real(dp), pointer :: Dscf(:,:)
@@ -530,6 +530,8 @@ C Internal variables and arrays
 
       data maxat / 1000 /
       data epsilon / 1.d-8 /
+
+      h_spin_dim = size(Dscf,dim=2)
 
 C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
@@ -772,7 +774,8 @@ C Print bad-syntax error and stop
 
 C Initialize to 0
 
-          Dscf(:,1:h_spin_dim) = 0.0d0
+CC          Dscf(:,1:h_spin_dim) = 0.0d0
+          Dscf(:,:) = 0.0d0
 
 C Initialize all paramagnetic
 
@@ -838,15 +841,11 @@ C   ispin=3 => Real(D12); ispin=4 => Imag(D12)
                       Dscf(ind,3) =   spio * sinth * cosph / 2
                       Dscf(ind,4) = - spio * sinth * sinph / 2
 CC RC  Added
-c                      write(6,'(a,i5,4f12.6)') 'ind/Dscf(ind,1:4) = ',
-c     .             ind, Dscf(ind,1:4)
                       if ( h_spin_dim .eq. 8 ) then
                         Dscf(ind,5) = 0.0_dp
                         Dscf(ind,6) = 0.0_dp
                         Dscf(ind,7) = Dscf(ind,3)
                         Dscf(ind,8) = Dscf(ind,4)
-c                   write(6,'(a,i5,4f12.6)') 'ind/Dscf(ind,5:8) = ',
-c     .             ind, Dscf(ind,5:8)
                       endif
 CC RC
                     else
@@ -871,7 +870,8 @@ c ---------------------------------------------------------------------
         else
 
 C Initialize to 0
-          Dscf(:,1:h_spin_dim) = 0.0d0
+C          Dscf(:,1:h_spin_dim) = 0.0d0
+          Dscf(:,:) = 0.0d0
 
 C Automatic, for non magnetic (h_spin_dim=1) or for Ferro or Antiferro -----
           do io = 1, no_l

@@ -1,0 +1,1833 @@
+Siesta Version: siesta-trunk-479--so-ramon
+Architecture  : ifort_O-1018-2_serial
+Compiler flags: ifort    -w -O2 -mp
+PP flags      : -DGFORTRAN -DFC_HAVE_FLUSH -DFC_HAVE_ABORT           
+SERIAL version
+
+* Running in serial mode
+>> Start of run:   5-MAR-2016  13:51:19
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+SystemName              FePt-L1_0
+SystemLabel             fept
+NumberOfAtoms           2
+NumberOfSpecies         2
+%block Chemical_Species_label
+        1       26      Fe
+        2       78      Pt
+%endblock Chemical_Species_label
+PAO.EnergyShift  100 meV
+PAO.SplitNorm      0.15
+%Block PAO.Basis
+ Fe   2
+   n=4   0   2   P
+    0.0   0.0
+   n=3   2   2
+    0.0   0.0
+ Pt   2
+   n=6     0       2    P
+    0.00000     0.00000
+   n=5     2       2
+    0.00000     0.00000
+%EndBlock PAO.Basis
+AtomicCoordinatesFormat NotScaledCartesianAng
+%block LatticeVectors
+    3.792000000    0.000000000    0.000000000
+    0.000000000    2.793068700    0.000000000
+    0.000000000    0.000000000    2.793068700
+%endblock LatticeVectors
+LatticeConstant  1.0 Ang
+%block AtomicCoordinatesAndAtomicSpecies
+   0.000000000   1.396535500    1.396535500    1
+   1.896000000   0.000000000    0.000000000    2
+%endblock AtomicCoordinatesAndAtomicSpecies
+SpinPolarized           T
+NonCollinearSpin        T
+SpinOrbit               T
+#WriteOrbMom             T
+%block DM.InitSpin
+ 1  +1.  90.  0.
+ 2  +1.  90.  0.
+%endblock DM.InitSpin
+#KgridCutoff         37. Ang
+%block kgrid_Monkhorst_Pack
+  20   0   0    0.5
+   0  41   0    0.0
+   0   0  41    0.0
+%endblock kgrid_Monkhorst_Pack
+xc.functional           GGA
+xc.authors              PBE
+MeshCutoff              2200. Ry
+SolutionMethod          diagon
+ElectronicTemperature   50 meV
+DM.Tolerance            0.5E-4
+MaxSCFIterations        600
+DM.MixingWeight         0.005
+DM.NumberPulay          3
+DM.UseSaveDM            T
+DM.NumberKick           50
+#Diag.DivideAndConquer   F
+WriteMullikenPop       1
+#WriteEigenvalues       T
+WriteForces            T
+WriteCoorStep          T
+#WriteCoorXmol          F
+#WriteMDXmol            F
+#%block ProjectedDensityOfStates
+#-20.00 10.00 0.200 500 eV
+#%endblock ProjectedDensityOfStates
+#MD.TypeOfRun    CG
+#MD.NumCGsteps   100
+#MD.MaxCGDispl   0.10 Ang
+#MD.MaxForceTol  0.01 eV/Ang
+#MD.UseSaveCG   .true.
+#MD.UseSaveXV   .true.
+#MD.MaxStressTol         0.0001 eV/Ang**3
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: FePt-L1_0
+reinit: -----------------------------------------------------------------------
+reinit: System Label: fept                                                        
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:            1  Label: Fe Atomic number:          26
+ Species number:            2  Label: Pt Atomic number:          78
+Ground state valence configuration:   4s02  3d06
+Reading pseudopotential information in formatted form from Fe.psf
+
+Pseudopotential generated from a relativistic atomic calculation
+There are spin-orbit pseudopotentials available
+Spin-orbit interaction is not included in this calculation
+
+Valence configuration for pseudopotential generation:
+4s( 2.00) rc: 2.00
+4p( 0.00) rc: 2.47
+3d( 6.00) rc: 0.59
+4f( 0.00) rc: 2.00
+Ground state valence configuration:   6s01  5d09
+Reading pseudopotential information in formatted form from Pt.psf
+
+Pseudopotential generated from a relativistic atomic calculation
+There are spin-orbit pseudopotentials available
+Spin-orbit interaction is not included in this calculation
+
+Valence configuration for pseudopotential generation:
+6s( 1.00) rc: 2.24
+6p( 0.00) rc: 2.73
+5d( 9.00) rc: 1.24
+5f( 0.00) rc: 2.98
+For Fe, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+ Warning: Empty PAO shell. l =           1
+ Will have a KB projector anyway...
+For Pt, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+ Warning: Empty PAO shell. l =           1
+ Will have a KB projector anyway...
+
+<basis_specs>
+===============================================================================
+Fe                   Z=  26    Mass=  55.850        Charge= 0.17977+309
+Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=4
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:   1.00000     1.00000    
+L=1  Nsemic=0  Cnfigmx=4
+L=2  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:   1.00000     1.00000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for Fe                    (Z =  26)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM 3.2.2 Troullier-Martins                       
+Total valence charge:    8.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+
+xc_check: Exchange-correlation functional:
+xc_check: GGA Perdew, Burke & Ernzerhof 1996
+V l=0 = -2*Zval/r beyond r=  2.7302
+V l=1 = -2*Zval/r beyond r=  2.7302
+V l=2 = -2*Zval/r beyond r=  2.7302
+V l=3 = -2*Zval/r beyond r=  2.7302
+All V_l potentials equal beyond r=  2.4397
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  2.7302
+
+VLOCAL1: 99.0% of the norm of Vloc inside      7.293 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     16.621 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    2.94283
+atom: Maximum radius for r*vlocal+2*Zval:    2.59703
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  2.942828   el= -0.388448   Ekb=  3.456139   kbcos=  0.265108
+   l= 1   rc=  3.017329   el= -0.097629   Ekb=  1.627426   kbcos=  0.233551
+   l= 2   rc=  2.597026   el= -0.553696   Ekb=-41.514142   kbcos= -0.528281
+   l= 3   rc=  3.132630   el=  0.003178   Ekb= -1.805664   kbcos= -0.008400
+
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 4s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    7.329377
+                 energy =   -0.382049
+                kinetic =    0.309407
+    potential(screened) =   -0.691456
+       potential(ionic) =   -5.984815
+
+   izeta = 2
+                 rmatch =    6.152681
+              splitnorm =    0.150000
+                 energy =   -0.326428
+                kinetic =    0.495955
+    potential(screened) =   -0.822384
+       potential(ionic) =   -6.536747
+
+SPLIT: Orbitals with angular momentum L= 2
+
+SPLIT: Basis orbitals for state 3d
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.335693
+                 energy =   -0.547021
+                kinetic =   14.245262
+    potential(screened) =  -14.792283
+       potential(ionic) =  -24.235128
+
+   izeta = 2
+                 rmatch =    2.207499
+              splitnorm =    0.150000
+                 energy =   -0.199409
+                kinetic =   19.876744
+    potential(screened) =  -20.076152
+       potential(ionic) =  -30.388261
+
+POLgen: Perturbative polarization orbital with L=  1
+
+POLgen: Polarization orbital for state 4s
+
+   izeta = 1
+                     rc =    7.329377
+                 energy =   -0.065271
+                kinetic =    0.578079
+    potential(screened) =   -0.643349
+       potential(ionic) =   -5.515187
+atom: Total number of Sankey-type orbitals: 15
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 4s( 2.00)                                                            
+ 4p( 0.00)                                                            
+ 3d( 6.00)                                                            
+Vna: chval, zval:    8.00000   8.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   7.329377
+comcore: Pseudo-core radius Rcore=  3.778693
+
+atom: _________________________________________________________________________
+
+<basis_specs>
+===============================================================================
+Pt                   Z=  78    Mass=  195.08        Charge= 0.17977+309
+Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=6
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:   1.00000     1.00000    
+L=1  Nsemic=0  Cnfigmx=6
+L=2  Nsemic=0  Cnfigmx=5
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:   1.00000     1.00000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for Pt                    (Z =  78)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM 3.2.2 Troullier-Martins                       
+Total valence charge:   10.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+
+xc_check: Exchange-correlation functional:
+xc_check: GGA Perdew, Burke & Ernzerhof 1996
+V l=0 = -2*Zval/r beyond r=  3.0596
+V l=1 = -2*Zval/r beyond r=  3.0596
+V l=2 = -2*Zval/r beyond r=  3.0596
+V l=3 = -2*Zval/r beyond r=  3.0981
+All V_l potentials equal beyond r=  2.9104
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  3.0981
+
+VLOCAL1: 99.0% of the norm of Vloc inside      5.125 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     11.679 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    3.51058
+atom: Maximum radius for r*vlocal+2*Zval:    3.09807
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  3.297886   el= -0.413885   Ekb=  4.454381   kbcos=  0.246717
+   l= 1   rc=  3.381373   el= -0.063071   Ekb=  1.998299   kbcos=  0.230762
+   l= 2   rc=  3.137044   el= -0.454162   Ekb= -5.116612   kbcos= -0.676172
+   l= 3   rc=  3.599455   el=  0.003169   Ekb= -0.935521   kbcos= -0.024370
+
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 6s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    7.158402
+                 energy =   -0.407576
+                kinetic =    0.352573
+    potential(screened) =   -0.760148
+       potential(ionic) =   -7.385835
+
+   izeta = 2
+                 rmatch =    6.009165
+              splitnorm =    0.150000
+                 energy =   -0.341372
+                kinetic =    0.579404
+    potential(screened) =   -0.920777
+       potential(ionic) =   -8.017759
+
+SPLIT: Orbitals with angular momentum L= 2
+
+SPLIT: Basis orbitals for state 5d
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.007350 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    5.044431
+                 energy =   -0.446663
+                kinetic =    4.610144
+    potential(screened) =   -5.056807
+       potential(ionic) =  -13.997492
+
+   izeta = 2
+                 rmatch =    3.021582
+              splitnorm =    0.150000
+                 energy =   -0.194009
+                kinetic =    6.450170
+    potential(screened) =   -6.644179
+       potential(ionic) =  -16.245470
+
+POLgen: Perturbative polarization orbital with L=  1
+
+POLgen: Polarization orbital for state 6s
+
+   izeta = 1
+                     rc =    7.158402
+                 energy =   -0.090110
+                kinetic =    0.622430
+    potential(screened) =   -0.712540
+       potential(ionic) =   -6.949247
+atom: Total number of Sankey-type orbitals: 15
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 6s( 1.00)                                                            
+ 6p( 0.00)                                                            
+ 5d( 9.00)                                                            
+Vna: chval, zval:   10.00000  10.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   7.158402
+comcore: Pseudo-core radius Rcore=  4.130025
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1   26 Fe                      # Species index, atomic number, species label
+    2   78 Pt                      # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+Fe                    2                    # Species label, number of l-shells
+ n=4   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   7.329      6.153   
+   1.000      1.000   
+ n=3   2   2                         # n, l, Nzeta 
+   4.336      2.207   
+   1.000      1.000   
+Pt                    2                    # Species label, number of l-shells
+ n=6   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   7.158      6.009   
+   1.000      1.000   
+ n=5   2   2                         # n, l, Nzeta 
+   5.044      3.022   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                          (in Angstroms)
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   2.63907   2.63907  1        1
+siesta:      3.58292   0.00000   0.00000  2        2
+
+siesta: System type = bulk      
+
+initatomlists: Number of atoms, orbitals, and projectors:      2    30    32
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+m_spin: SpOrb =  T
+redata: Non-magnetic run                =     F
+redata: SpinPolarized run                =     F
+redata: Non-Collinear-spin run           =     F
+redata: Spin-Orbit run                   =     T
+redata: Time-Reversal Symmetry           =     F
+redata: Number of spin components        =     4
+redata: Long output                      =     F
+redata: Number of Atomic Species         =        2
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     Atomic and Orbital charges
+redata: Mesh Cutoff                      =  2200.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Min. number of SCF Iter          =        0
+redata: Max. number of SCF Iter          =      600
+redata: Mix DM or H after convergence    =     F
+redata: Recompute H after scf cycle      =     F
+redata: Performing Pulay mixing using    =     3 iterations
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk?        =     F
+redata: Discard 1st Pulay DM after  kick =     F
+redata: New DM Mixing Weight             =     0.0050
+redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Kick with linear mixing every    =    50 iterations
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.000050
+redata: Require (free) Energy convergence in SCF =     F
+redata: DM (free)Energy tolerance for SCF =     0.000010 eV
+redata: Require Harris convergence for SCF =     F
+redata: DM Harris energy tolerance for SCF =     0.000010 eV
+redata: Using Saved Data (generic)   =     F
+redata: Use continuation files for DM    =     T
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =     Diagonalization
+redata: Divide and Conquer               =     T
+redata: Electronic Temperature           =     0.0037  Ry
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     Single-point calculation
+redata: ***********************************************************************
+Total number of electrons:    18.000000
+Total ionic charge:    18.000000
+ Kpoints in:        16810 . Kpoints trimmed:        16810
+
+siesta: k-grid: Number of k-points = 16810
+siesta: k-grid: Cutoff (effective) =    37.920 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:   20   0   0      0.500
+siesta: k-grid:    0  41   0      0.000
+siesta: k-grid:    0   0  41      0.000
+Naive supercell factors:     7    9    9
+
+superc: Internal auxiliary supercell:     7 x     9 x     9  =     567
+superc: Number of atoms, orbitals, and projectors:   1134  17010  18144
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+outcoor: Atomic coordinates (Ang):                          
+    0.00000000    1.39653550    1.39653550   1       1  Fe
+    1.89600000    0.00000000    0.00000000   2       2  Pt
+
+superc: Internal auxiliary supercell:     7 x     9 x     9  =     567
+superc: Number of atoms, orbitals, and projectors:   1134  17010  18144
+
+outcell: Unit cell vectors (Ang):
+        3.792000    0.000000    0.000000
+        0.000000    2.793069    0.000000
+        0.000000    0.000000    2.793069
+
+outcell: Cell vector modules (Ang)   :    3.792000    2.793069    2.793069
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :     29.5823
+New_DM. Step:     1
+Initializing Density Matrix...
+New grid distribution:   1
+           1       1:   54    1:   40    1:   40
+
+InitMesh: MESH =   108 x    80 x    80 =      691200
+InitMesh: (bp) =    54 x    40 x    40 =       86400
+InitMesh: Mesh cutoff (required, used) =  2200.000  2241.881 Ry
+ExtMesh (bp) on 0 =   278 x   264 x   264 =    19375488
+PhiOnMesh: Number of (b)points on node 0 =                86400
+PhiOnMesh: nlist on node 0 =              8794276
+ diagon: Inside SpOrb and before diag3k
+
+stepf: Fermi-Dirac step function
+           (SO)Ebs =  -9.20880958
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.75382918
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -125.293221
+siesta: Eions   =      1473.891998
+siesta: Ena     =        26.471022
+siesta: Ekin    =      1740.659162
+siesta: Enl     =     -1242.991694
+siesta: Eso     =         0.000000
+siesta: DEna    =        -0.000000
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1268.054008
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2228.063965
+siesta: Etot    =     -2217.807516
+siesta: FreeEng =     -2217.835086
+
+siesta: iscf      Eharris(eV)         E_KS(eV)      FreeEng(eV)      dDmax      Ef(eV)
+   scf:    1     -2228.063965     -2217.807516     -2217.835086   0.682303   -4.067532
+timer: Routine,Calls,Time,% =    IterSCF     1     430.151  85.28
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -21.44531744
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr = -20.08706896
+   scf:    2     -2448.004119     -2174.703477     -2174.707859  32.327761    4.914656
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs =  -9.27092295
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.82344602
+   scf:    3     -2228.933009     -2217.729367     -2217.754444   0.685837   -4.077630
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs =  -9.22110604
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.76450976
+   scf:    4     -2228.201739     -2217.799973     -2217.827108   0.682043   -4.072717
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs =  -9.21658871
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.75119879
+   scf:    5     -2228.048153     -2217.827493     -2217.855091   0.679386   -4.075390
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.00190684
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.41327841
+   scf:    6     -2225.583915     -2219.960931     -2219.988589   0.443146   -4.925184
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.79432443
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.19036608
+   scf:    7     -2224.244814     -2221.654731     -2221.689104   0.568918   -5.641540
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.79090609
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.18812669
+   scf:    8     -2224.233499     -2221.673885     -2221.708286   0.565910   -5.635082
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.52840155
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.11351233
+   scf:    9     -2223.895851     -2222.351425     -2222.381246   0.406583   -5.234876
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.48350160
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.11099196
+   scf:   10     -2223.872512     -2222.362377     -2222.391417   0.387986   -5.176388
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.53760568
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.09929119
+   scf:   11     -2223.886292     -2222.535356     -2222.563363   0.390332   -5.215687
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.54643664
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.08913371
+   scf:   12     -2223.881874     -2222.669138     -2222.695494   0.377795   -5.198566
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.54719825
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.08953005
+   scf:   13     -2223.881003     -2222.662875     -2222.689110   0.377955   -5.197196
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.49135127
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.03361122
+   scf:   14     -2224.031299     -2223.573991     -2223.606023   0.323007   -5.257545
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.47310276
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00152110
+   scf:   15     -2223.993591     -2223.972896     -2224.003729   0.284791   -5.212096
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.47526638
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.03332249
+   scf:   16     -2224.084681     -2223.631302     -2223.663953   0.319143   -5.265975
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.45258936
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.02984282
+   scf:   17     -2224.076273     -2223.670237     -2223.702941   0.310262   -5.244127
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.54334354
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.04977235
+   scf:   18     -2224.095708     -2223.418515     -2223.450900   0.351423   -5.326785
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.53713833
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.03271829
+   scf:   19     -2224.097538     -2223.652379     -2223.684563   0.332641   -5.316729
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.53220439
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.03775447
+   scf:   20     -2224.057644     -2223.543964     -2223.575793   0.336368   -5.298666
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.54248557
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.04026993
+   scf:   21     -2224.137292     -2223.589387     -2223.621957   0.341589   -5.337734
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.53443634
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.03673827
+   scf:   22     -2224.129914     -2223.630060     -2223.662623   0.336528   -5.328579
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.58306991
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06002715
+   scf:   23     -2224.144165     -2223.327448     -2223.359840   0.368918   -5.373462
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.58324281
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.05940506
+   scf:   24     -2224.149841     -2223.341587     -2223.374022   0.368347   -5.375465
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.58796232
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.05841188
+   scf:   25     -2224.150049     -2223.355308     -2223.387690   0.368357   -5.378734
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.56612170
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.05197049
+   scf:   26     -2224.134803     -2223.427703     -2223.460134   0.357734   -5.356480
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.58489047
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06301585
+   scf:   27     -2224.115930     -2223.258549     -2223.290612   0.371977   -5.364450
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.59160814
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.05575103
+   scf:   28     -2224.135046     -2223.376508     -2223.408676   0.366537   -5.375330
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.56476734
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.04934482
+   scf:   29     -2224.091601     -2223.420225     -2223.452150   0.354573   -5.338050
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.60306514
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06170917
+   scf:   30     -2224.126229     -2223.286627     -2223.318547   0.374445   -5.380707
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.59467668
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.05362214
+   scf:   31     -2224.135227     -2223.405655     -2223.437776   0.365167   -5.377238
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.60195647
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.05519214
+   scf:   32     -2224.114162     -2223.363229     -2223.394932   0.367868   -5.373718
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.57479283
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.05957317
+   scf:   33     -2224.132664     -2223.322123     -2223.354505   0.366847   -5.363516
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.55991555
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.05081818
+   scf:   34     -2224.117495     -2223.426073     -2223.458423   0.355417   -5.345823
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.57534978
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06517830
+   scf:   35     -2224.103006     -2223.216203     -2223.248247   0.372047   -5.353149
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.58178958
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06138680
+   scf:   36     -2224.141819     -2223.306602     -2223.339013   0.370115   -5.372304
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.58396915
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06005135
+   scf:   37     -2224.133383     -2223.316337     -2223.348649   0.369449   -5.370841
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.55318012
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06607621
+   scf:   38     -2224.148807     -2223.249787     -2223.282446   0.367513   -5.352782
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.55294210
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06641691
+   scf:   39     -2224.147675     -2223.244020     -2223.276675   0.367772   -5.352253
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.53055399
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.05801988
+   scf:   40     -2224.122967     -2223.333560     -2223.366185   0.355017   -5.325781
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.56524412
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06534738
+   scf:   41     -2224.136369     -2223.247266     -2223.279760   0.369811   -5.357944
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.54986099
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.07139596
+   scf:   42     -2224.128798     -2223.157399     -2223.189955   0.371647   -5.343900
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.55105271
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06393733
+   scf:   43     -2224.089222     -2223.219303     -2223.251424   0.365086   -5.329178
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.55805777
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06740944
+   scf:   44     -2224.139211     -2223.222051     -2223.254633   0.370081   -5.353766
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.54843594
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06738822
+   scf:   45     -2224.129628     -2223.212758     -2223.245353   0.368000   -5.343347
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.58113248
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06490708
+   scf:   46     -2224.143630     -2223.260517     -2223.292903   0.372718   -5.371762
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.58174948
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.06714984
+   scf:   47     -2224.152182     -2223.238555     -2223.271015   0.374840   -5.375445
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.59253058
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.07402895
+   scf:   48     -2224.156793     -2223.149570     -2223.181962   0.383100   -5.385235
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.58347928
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.07843882
+   scf:   49     -2224.131686     -2223.064463     -2223.096685   0.384930   -5.369747
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.60385869
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.07678870
+   scf:   50     -2224.137567     -2223.092795     -2223.124791   0.387647   -5.385804
+Applying kick at iscf:   50
+Re-setting Pulay history
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.08333608
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.66342722
+   scf:   51     -2231.521641     -2222.495183     -2222.529076   1.296079   -1.858509
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.07735440
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.61743199
+   scf:   52     -2230.939492     -2222.538836     -2222.573102   1.182239   -1.999005
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.10684368
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.20783444
+   scf:   53     -2225.673586     -2222.845833     -2222.877391   0.269811   -3.616055
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.20767849
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.10959041
+   scf:   54     -2224.352419     -2222.861354     -2222.880415   0.184092   -4.327026
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.28094177
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.08916999
+   scf:   55     -2224.054614     -2222.841385     -2222.856833   0.179225   -4.649690
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.32182963
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.08562186
+   scf:   56     -2224.010360     -2222.845406     -2222.860686   0.221456   -4.801947
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.32006448
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.07881326
+   scf:   57     -2224.048347     -2222.976030     -2222.990674   0.206976   -4.821409
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.23664267
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.02291455
+   scf:   58     -2224.274196     -2223.962425     -2223.975145   0.065830   -4.689497
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.23560442
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.02035858
+   scf:   59     -2224.282784     -2224.005790     -2224.018495   0.062294   -4.686154
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.34932597
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.02130970
+   scf:   60     -2224.337476     -2224.047541     -2224.060254   0.057894   -4.796687
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.34377153
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.01685098
+   scf:   61     -2224.343203     -2224.113932     -2224.126615   0.045962   -4.782376
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.34560293
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00718343
+   scf:   62     -2224.356779     -2224.259043     -2224.271665   0.023916   -4.760590
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.39178908
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00235592
+   scf:   63     -2224.367553     -2224.335499     -2224.348059   0.023540   -4.774650
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.40542909
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00194878
+   scf:   64     -2224.366761     -2224.340246     -2224.352795   0.025312   -4.776504
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.41544568
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.01520091
+   scf:   65     -2224.335804     -2224.128983     -2224.141590   0.046741   -4.748753
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.41546803
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.01516677
+   scf:   66     -2224.335742     -2224.129386     -2224.141999   0.046129   -4.745758
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.40693103
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00076563
+   scf:   67     -2224.352403     -2224.341986     -2224.354769   0.015465   -4.654787
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.40635237
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00025315
+   scf:   68     -2224.352982     -2224.349538     -2224.362321   0.015164   -4.651860
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38015070
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =   0.00529200
+   scf:   69     -2224.358370     -2224.430372     -2224.442965   0.007048   -4.630513
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.36968661
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =   0.00698438
+   scf:   70     -2224.361180     -2224.456209     -2224.468713   0.010159   -4.622795
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.36821878
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =   0.00143125
+   scf:   71     -2224.361187     -2224.380660     -2224.393173   0.006654   -4.636781
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.36436943
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00140044
+   scf:   72     -2224.361717     -2224.342663     -2224.355166   0.007131   -4.641003
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.35451735
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00072190
+   scf:   73     -2224.364001     -2224.354179     -2224.366641   0.008200   -4.627962
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.35113108
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =   0.00017658
+   scf:   74     -2224.364254     -2224.366656     -2224.379109   0.008217   -4.620005
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.34970417
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =   0.00491058
+   scf:   75     -2224.361312     -2224.428125     -2224.440621   0.013044   -4.592175
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.35018022
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =   0.00546719
+   scf:   76     -2224.360873     -2224.435258     -2224.447764   0.014550   -4.588576
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.35872526
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =   0.00327163
+   scf:   77     -2224.359616     -2224.404129     -2224.416695   0.009747   -4.596700
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.36619552
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =   0.00134902
+   scf:   78     -2224.358630     -2224.376985     -2224.389598   0.005654   -4.604071
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.36684500
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =   0.00117054
+   scf:   79     -2224.358569     -2224.374496     -2224.387113   0.005272   -4.604446
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.37357994
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00113006
+   scf:   80     -2224.358899     -2224.343523     -2224.356159   0.002593   -4.598439
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.37466697
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00143484
+   scf:   81     -2224.358920     -2224.339398     -2224.352040   0.002596   -4.597704
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.37524314
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00145692
+   scf:   82     -2224.358900     -2224.339078     -2224.351720   0.002471   -4.598284
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38049557
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00180132
+   scf:   83     -2224.358815     -2224.334307     -2224.346958   0.002265   -4.602535
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38065025
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00178473
+   scf:   84     -2224.358812     -2224.334530     -2224.347180   0.002242   -4.602770
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38121419
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00155553
+   scf:   85     -2224.358793     -2224.337629     -2224.350278   0.001954   -4.604293
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38101550
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00151353
+   scf:   86     -2224.358796     -2224.338203     -2224.350851   0.001909   -4.604182
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38028771
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00141916
+   scf:   87     -2224.358814     -2224.339505     -2224.352150   0.001815   -4.603505
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38016344
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00141686
+   scf:   88     -2224.358821     -2224.339544     -2224.352189   0.001814   -4.603235
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38040031
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00150206
+   scf:   89     -2224.358840     -2224.338404     -2224.351049   0.001896   -4.602652
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38064515
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00152594
+   scf:   90     -2224.358842     -2224.338080     -2224.350726   0.001911   -4.602716
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38240802
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00159290
+   scf:   91     -2224.358831     -2224.337158     -2224.349808   0.002080   -4.604162
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38288766
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00158511
+   scf:   92     -2224.358827     -2224.337260     -2224.349910   0.002207   -4.604741
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38332059
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00151746
+   scf:   93     -2224.358822     -2224.338175     -2224.350824   0.002257   -4.605620
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38340106
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00148149
+   scf:   94     -2224.358821     -2224.338664     -2224.351312   0.002235   -4.605839
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38231251
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00124990
+   scf:   95     -2224.358841     -2224.341835     -2224.354480   0.001640   -4.604590
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38204942
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00122570
+   scf:   96     -2224.358848     -2224.342171     -2224.354816   0.001541   -4.604127
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38195116
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00127163
+   scf:   97     -2224.358850     -2224.341549     -2224.354196   0.001600   -4.603562
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38194167
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00129353
+   scf:   98     -2224.358852     -2224.341253     -2224.353902   0.001637   -4.603232
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38219443
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00125435
+   scf:   99     -2224.358852     -2224.341786     -2224.354435   0.001570   -4.603551
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38277593
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00121220
+   scf:  100     -2224.358904     -2224.342411     -2224.355047   0.001341   -4.604465
+Applying kick at iscf:  100
+Re-setting Pulay history
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38610446
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00061031
+   scf:  101     -2224.358948     -2224.350644     -2224.363291   0.001880   -4.604740
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38610651
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00060714
+   scf:  102     -2224.358946     -2224.350686     -2224.363333   0.001865   -4.604740
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38618213
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00049547
+   scf:  103     -2224.358928     -2224.352187     -2224.364832   0.001191   -4.604727
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38616540
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00051500
+   scf:  104     -2224.358924     -2224.351917     -2224.364563   0.001362   -4.604705
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38618013
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00049138
+   scf:  105     -2224.358927     -2224.352242     -2224.364887   0.001197   -4.604681
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38617425
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00045195
+   scf:  106     -2224.358926     -2224.352777     -2224.365423   0.001122   -4.604340
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38618938
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00038752
+   scf:  107     -2224.358930     -2224.353658     -2224.366305   0.000878   -4.603996
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38620089
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00036766
+   scf:  108     -2224.358931     -2224.353929     -2224.366576   0.000796   -4.603929
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38621522
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00036002
+   scf:  109     -2224.358932     -2224.354033     -2224.366680   0.000759   -4.603944
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38622521
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00036261
+   scf:  110     -2224.358932     -2224.353998     -2224.366644   0.000770   -4.603989
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38623808
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00036963
+   scf:  111     -2224.358931     -2224.353902     -2224.366548   0.000810   -4.604055
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38624160
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00037339
+   scf:  112     -2224.358931     -2224.353850     -2224.366497   0.000843   -4.604064
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38624368
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00037205
+   scf:  113     -2224.358931     -2224.353869     -2224.366515   0.000849   -4.604047
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38624948
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00034883
+   scf:  114     -2224.358932     -2224.354186     -2224.366833   0.000777   -4.603902
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38625634
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00033709
+   scf:  115     -2224.358933     -2224.354347     -2224.366994   0.000741   -4.603843
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38637342
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00023894
+   scf:  116     -2224.358940     -2224.355689     -2224.368335   0.000449   -4.603570
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38639748
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00023704
+   scf:  117     -2224.358940     -2224.355715     -2224.368360   0.000433   -4.603634
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38640920
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00023807
+   scf:  118     -2224.358940     -2224.355701     -2224.368346   0.000432   -4.603669
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38642103
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00026489
+   scf:  119     -2224.358938     -2224.355334     -2224.367980   0.000585   -4.603747
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38642960
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00026560
+   scf:  120     -2224.358938     -2224.355324     -2224.367970   0.000596   -4.603762
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38646723
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00025604
+   scf:  121     -2224.358939     -2224.355455     -2224.368101   0.000578   -4.603787
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38648044
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00025080
+   scf:  122     -2224.358940     -2224.355527     -2224.368173   0.000564   -4.603783
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38659891
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00017138
+   scf:  123     -2224.358944     -2224.356613     -2224.369257   0.000329   -4.603520
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38661320
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00016059
+   scf:  124     -2224.358945     -2224.356760     -2224.369404   0.000317   -4.603474
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38663709
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00012969
+   scf:  125     -2224.358945     -2224.357181     -2224.369826   0.000310   -4.603219
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38664126
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00012762
+   scf:  126     -2224.358945     -2224.357209     -2224.369854   0.000309   -4.603202
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38670539
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00013586
+   scf:  127     -2224.358945     -2224.357097     -2224.369742   0.000334   -4.603282
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38670590
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00013779
+   scf:  128     -2224.358945     -2224.357070     -2224.369715   0.000336   -4.603303
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38671192
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00014079
+   scf:  129     -2224.358945     -2224.357029     -2224.369674   0.000343   -4.603342
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38676298
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00013516
+   scf:  130     -2224.358946     -2224.357107     -2224.369752   0.000362   -4.603348
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38677237
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00013406
+   scf:  131     -2224.358946     -2224.357122     -2224.369767   0.000362   -4.603351
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38685454
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00012325
+   scf:  132     -2224.358947     -2224.357270     -2224.369915   0.000331   -4.603389
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38685882
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00012215
+   scf:  133     -2224.358947     -2224.357285     -2224.369930   0.000327   -4.603385
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38693827
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00008801
+   scf:  134     -2224.358949     -2224.357752     -2224.370396   0.000208   -4.603180
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38694176
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00008651
+   scf:  135     -2224.358949     -2224.357772     -2224.370416   0.000206   -4.603172
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38703758
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00004629
+   scf:  136     -2224.358950     -2224.358320     -2224.370964   0.000164   -4.602894
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38704848
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00004257
+   scf:  137     -2224.358950     -2224.358371     -2224.371015   0.000159   -4.602873
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38706632
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00004166
+   scf:  138     -2224.358950     -2224.358383     -2224.371027   0.000149   -4.602921
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38706773
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00004129
+   scf:  139     -2224.358950     -2224.358388     -2224.371032   0.000148   -4.602919
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38716594
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00002280
+   scf:  140     -2224.358951     -2224.358640     -2224.371284   0.000087   -4.602915
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38715837
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00002432
+   scf:  141     -2224.358950     -2224.358620     -2224.371264   0.000092   -4.602915
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38718651
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00001968
+   scf:  142     -2224.358951     -2224.358683     -2224.371327   0.000077   -4.602911
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38719414
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00001842
+   scf:  143     -2224.358951     -2224.358700     -2224.371344   0.000073   -4.602906
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38718986
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00001905
+   scf:  144     -2224.358951     -2224.358691     -2224.371336   0.000079   -4.602885
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38718748
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00001936
+   scf:  145     -2224.358950     -2224.358687     -2224.371331   0.000080   -4.602879
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38717518
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00002089
+   scf:  146     -2224.358950     -2224.358666     -2224.371310   0.000088   -4.602856
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38717580
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00002079
+   scf:  147     -2224.358950     -2224.358667     -2224.371312   0.000087   -4.602855
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38719448
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00001792
+   scf:  148     -2224.358950     -2224.358707     -2224.371351   0.000075   -4.602857
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38719723
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00001749
+   scf:  149     -2224.358951     -2224.358713     -2224.371357   0.000074   -4.602857
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38722462
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00001303
+   scf:  150     -2224.358951     -2224.358774     -2224.371418   0.000060   -4.602851
+Applying kick at iscf:  150
+Re-setting Pulay history
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38722507
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00000652
+   scf:  151     -2224.358951     -2224.358862     -2224.371507   0.000076   -4.602557
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38722756
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00000649
+   scf:  152     -2224.358951     -2224.358862     -2224.371507   0.000074   -4.602566
+ diagon: Inside SpOrb and before diag3k
+           (SO)Ebs = -10.38728414
+ Calculating DEharr... 
+ SpOrb/NonColl/nh =  T F       63046
+      Size Dscf/H =     504368    504368
+        (SO)DEharr =  -0.00000573
+   scf:  153     -2224.358951     -2224.358873     -2224.371517   0.000035   -4.602762
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00003470
+SCF cycle converged after  153 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =            -2224.3590
+
+siesta: E_KS - E_eggbox =     -2224.3590
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.000000   -0.000008   -0.000008
+     2   -0.000000   -0.000000   -0.000000
+----------------------------------------
+   Tot   -0.000000   -0.000008   -0.000008
+----------------------------------------
+   Max    0.000008
+   Res    0.000005    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.000008    constrained
+
+Stress-tensor-Voigt (kbar):       41.28       44.09       44.09       -0.00        0.00        0.00
+(Free)E + p*V (eV/cell)    -2225.1683
+Target enthalpy (eV/cell)    -2224.3716
+ 
+moments: Atomic and Orbital Populations and Magnetic Moments:
+
+Species: Fe                  
+
+Atom    Orb           Charge    sqrt(<S>^2)        <(Sx,Sy,Sz)>     sqrt(<L>^2)      <(Lx,Ly,Lz)>
+----------------------------------------------------------------------------------------------------
+   1    1  4s        -0.3891                   0.009  0.000 -0.000               0.000  0.000  0.000
+   1    2  4s         0.9208                  -0.002 -0.000  0.000               0.000  0.000  0.000
+   1    3  3dxy       1.3115                   0.290  0.000  0.000               0.008 -0.000  0.000
+   1    4  3dyz       1.2116                   0.355  0.000 -0.000               0.019 -0.000  0.000
+   1    5  3dz2       1.4223                   0.261 -0.000  0.000               0.014 -0.000  0.000
+   1    6  3dxz       1.3115                   0.290 -0.000 -0.000               0.008 -0.000  0.000
+   1    7  3dx2-y2    1.2837                   0.335 -0.000  0.000               0.005  0.000  0.000
+   1    8  3dxy      -0.0420                   0.010  0.000 -0.000               0.000 -0.000  0.000
+   1    9  3dyz      -0.0300                   0.009  0.000 -0.000              -0.000 -0.000  0.000
+   1   10  3dz2      -0.0604                   0.017  0.000 -0.000              -0.000 -0.000  0.000
+   1   11  3dxz      -0.0420                   0.010  0.000 -0.000               0.000 -0.000  0.000
+   1   12  3dx2-y2   -0.0397                   0.013  0.000 -0.000              -0.000  0.000  0.000
+   1   13  4Ppy       0.3362                  -0.005 -0.000  0.000               0.000  0.000 -0.000
+   1   14  4Ppz       0.3362                  -0.005 -0.000  0.000               0.000  0.000  0.000
+   1   15  4Ppx       0.3267                   0.009 -0.000  0.000               0.000  0.000 -0.000
+----------------------------------------------------------------------------------------------------
+   1      Total       7.8573         1.596     1.596 -0.000  0.000       0.106   0.106 -0.000  0.000
+
+
+Species: Pt                  
+
+Atom    Orb           Charge    sqrt(<S>^2)        <(Sx,Sy,Sz)>     sqrt(<L>^2)      <(Lx,Ly,Lz)>
+----------------------------------------------------------------------------------------------------
+   2   16  6s        -0.3862                   0.024  0.000 -0.000               0.000  0.000  0.000
+   2   17  6s         1.0348                  -0.032 -0.000  0.000               0.000  0.000  0.000
+   2   18  5dxy       1.7632                   0.013 -0.000  0.000               0.003 -0.000  0.000
+   2   19  5dyz       1.8382                   0.007 -0.000  0.000               0.021 -0.000  0.000
+   2   20  5dz2       1.6673                   0.047  0.000 -0.000               0.016 -0.000  0.000
+   2   21  5dxz       1.7632                   0.013 -0.000  0.000               0.003 -0.000  0.000
+   2   22  5dx2-y2    1.7251                   0.037 -0.000  0.000               0.005 -0.000  0.000
+   2   23  5dxy      -0.0154                   0.015  0.000 -0.000              -0.001 -0.000  0.000
+   2   24  5dyz      -0.0057                   0.013  0.000 -0.000              -0.002 -0.000  0.000
+   2   25  5dz2      -0.0163                   0.011  0.000 -0.000              -0.001 -0.000  0.000
+   2   26  5dxz      -0.0154                   0.015  0.000 -0.000              -0.001 -0.000  0.000
+   2   27  5dx2-y2   -0.0132                   0.014  0.000 -0.000              -0.000 -0.000  0.000
+   2   28  6Ppy       0.2639                  -0.015 -0.000  0.000               0.001  0.000 -0.000
+   2   29  6Ppz       0.2639                  -0.015 -0.000  0.000               0.001  0.000  0.000
+   2   30  6Ppx       0.2754                  -0.032 -0.000  0.000               0.000  0.000 -0.000
+----------------------------------------------------------------------------------------------------
+   2      Total      10.1427         0.114     0.114  0.000 -0.000       0.094   0.094 -0.000  0.000
+
+----------------------------------------------------------------------------------------------------
+Total      Total      18.0000         1.710     1.710 -0.000  0.000       0.200   0.200 -0.000  0.000
+
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -141.327311
+siesta: Eions   =      1473.891998
+siesta: Ena     =        26.471022
+siesta: Ekin    =      1696.814948
+siesta: Enl     =     -1217.321811
+siesta: Eso     =        -0.658983
+siesta: DEna    =         5.023508
+siesta: DUscf   =         0.820375
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1261.616012
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2224.358951
+siesta: Etot    =     -2224.358951
+siesta: FreeEng =     -2224.371595
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =    -141.327311
+siesta:       Kinetic =    1696.814948
+siesta:       Hartree =     187.041940
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =   -1261.616012
+siesta:  Ion-electron =   -1804.874781
+siesta:       Ion-ion =   -1041.066063
+siesta:       Ekinion =       0.000000
+siesta:         Total =   -2224.358951
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:     0.025762   -0.000000    0.000000
+siesta:    -0.000000    0.027516    0.000000
+siesta:     0.000000    0.000000    0.027516
+
+siesta: Cell volume =         29.582275 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:          -0.00029332         -0.00029332  Ry/Bohr**3
+siesta:          -0.02693153         -0.02693140  eV/Ang**3
+siesta:         -43.14953747        -43.14933093  kBar
+(Free)E+ p_basis*V_orbitals  =       -2222.652084
+(Free)Eharris+ p_basis*V_orbitals  =       -2222.652084
+ Calling spnvec: nspin, qspin =     4     9.00000     9.00000     1.71031    -0.00000
+ Leaving spnvec: qaux,stot,svec=      18.0000      3.4206      3.4206      0.0000      0.0000
+
+siesta: Total spin polarization (Qup-Qdown) =    3.420610
+siesta: Spin vector =    3.420610    0.000002    0.000002
+
+timer: Elapsed wall time (sec) =   65801.935
+timer: CPU execution times (sec):
+
+Routine            Calls   Time/call    Tot.time        %
+siesta                 1   65786.067   65786.067   100.00
+Setup                  1       8.019       8.019     0.01
+bands                  1       0.000       0.000     0.00
+writewave              1       0.000       0.000     0.00
+KSV_init               1       0.000       0.000     0.00
+IterGeom               1   65777.486   65777.486    99.99
+state_init             1       2.969       2.969     0.00
+hsparse                1       0.095       0.095     0.00
+overlap                1       2.508       2.508     0.00
+Setup_H0               1      63.251      63.251     0.10
+naefs                  2       0.001       0.002     0.00
+MolMec                 2       0.000       0.000     0.00
+kinefsm                2       1.259       2.519     0.00
+nlefsm                 2       6.694      13.389     0.02
+spinorb                2       0.073       0.145     0.00
+DHSCF_Init             1      51.535      51.535     0.08
+DHSCF1                 1       6.598       6.598     0.01
+INITMESH               1       0.000       0.000     0.00
+DHSCF2                 1      44.937      44.937     0.07
+REMESH                 1       7.981       7.981     0.01
+REORD               1252       0.005       6.385     0.01
+PHION                  1      32.121      32.121     0.05
+COMM_BSC            1238       0.005       6.359     0.01
+POISON               155       0.190      29.405     0.04
+fft                  310       0.068      20.938     0.03
+IterSCF              153     428.134   65504.500    99.57
+setup_H              153      93.172   14255.256    21.67
+DHSCF                154      93.870   14456.028    21.97
+DHSCF3               154      93.163   14347.114    21.81
+rhoofd               154      36.285    5587.930     8.49
+cellXC               154       4.250     654.439     0.99
+vmat                 154      52.283    8051.578    12.24
+compute_dm           153     334.852   51232.383    77.88
+diagon               153     334.841   51230.746    77.87
+cdiag            5143860       0.002    9272.149    14.09
+cdiag1           5143860       0.000     509.167     0.77
+cdiag2           5143860       0.000    2181.626     3.32
+cdiag3           5143860       0.001    6225.375     9.46
+cdiag4           5143860       0.000     230.212     0.35
+MIXER                152       0.064       9.713     0.01
+WriteDM              153       0.039       5.949     0.01
+PostSCF                1     206.719     206.719     0.31
+DHSCF4                 1     108.914     108.914     0.17
+dfscf                  1     103.656     103.656     0.16
+overfsm                1       0.031       0.031     0.00
+state_analysis         1       0.008       0.008     0.00
+siesta_move            1       0.000       0.000     0.00
+optical                1       0.000       0.000     0.00
+  
+>> End of run:   6-MAR-2016   8:08:01

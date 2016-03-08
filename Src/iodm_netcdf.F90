@@ -39,13 +39,13 @@ private
 
 CONTAINS
 
-subroutine setup_dm_netcdf_file( maxnd, nbasis, h_spin_dim,    &
+subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
                                  no_s, indxuo,            &
                                  numd,  listdptr, listd, geom_step)
 
       integer, intent(in)   ::    maxnd  ! First dimension of listd and dm
       integer, intent(in)   ::    nbasis ! Number of atomic orbitals
-      integer, intent(in)   ::    h_spin_dim  ! Number of spins 
+      integer, intent(in)   ::    nspin  ! Number of spins 
       integer, intent(in)   ::    no_s   ! Number of orbitals in supercell
 
       integer, intent(in)   :: indxuo(no_s) ! Mapping of sc to unit cell orbs
@@ -119,7 +119,7 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, h_spin_dim,    &
 !
       call check( nf90_def_dim(ncid,'norbs',norbs,norbs_id))  !"Number of basis orbitals"
       call check( nf90_def_dim(ncid,'no_s',no_s,no_s_id))      !"Number of orbitals in supercell"
-      call check( nf90_def_dim(ncid,'h_spin_dim',h_spin_dim,h_spin_id))   !"Number of spin components"
+      call check( nf90_def_dim(ncid,'nspin',nspin,h_spin_id))   !"Number of spin components"
       call check( nf90_def_dim(ncid,'nnzs',nnzs,nnzs_id))     !"Number of non-zero interactions"
       call check( nf90_def_dim(ncid,'scf_step',NF90_UNLIMITED,scf_step_id)) !"Index of SCF step"
 !
@@ -250,19 +250,22 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, h_spin_dim,    &
 !
 end subroutine setup_dm_netcdf_file
 
-subroutine write_dm_netcdf( nbasis, maxnd, h_spin_dim, dm, overwrite )
+subroutine write_dm_netcdf( nbasis, maxnd, nspin, dm, overwrite )
 
 use precision, only : dp
 
 integer, intent(in)   ::    nbasis ! Number of basis orbitals (in this node)
 integer, intent(in)   ::    maxnd  ! First dimension of listd and dm
-integer, intent(in)   ::    h_spin_dim  ! Number of spins (1 or 2)
+integer, intent(in)   ::    nspin  ! Number of spins (1, 2 or 4)
 logical, intent(in), optional  :: overwrite    ! Overwrite info along scf_step dimension
 
-real(dp), intent(in)  :: dm(maxnd, h_spin_dim)
+!! real(dp), intent(in)  :: dm(maxnd, h_spin_dim)
+real(dp), intent(in)  :: dm(:,:)
 
-integer               :: norbs, nnzs
+integer               :: norbs, nnzs, h_spin_dim
 integer               :: step_no, step_location
+
+h_spin_dim = size(dm,dim=2)
 
 #ifdef MPI
       integer, dimension(:), pointer  :: norbs_node => null()

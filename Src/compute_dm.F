@@ -20,8 +20,9 @@
       use m_rmaxh
       use m_eo
 !     CC RC  Added 
-      use m_spin,  only: NonCol, SpOrb, qs, efs
-      use m_spin,  only: nspin, h_spin_dim, spinor_dim, e_spin_dim
+      use m_spin,   only: NonCol, SpOrb, qs, efs
+      use m_spin,   only: nspin, h_spin_dim, spinor_dim, e_spin_dim
+      use m_diagon2,only: diagon
 !     CC RC  
       use m_gamma
       use parallel, only: IONode
@@ -75,48 +76,15 @@ CC RC
         endif
       endif
 
-c      write(6,'(a,3i4)') 'h_spin_dim/e_spin_dim/spinor_dim = ',
-c     &     h_spin_dim, e_spin_dim, spinor_dim
-
-
       if ((isolve .eq. SOLVE_DIAGON) .or. (CallDiagon)) then
-c           if (NonCol) then
-c            write(6,'(a)') '(Compute_dm) Before diagon'
-c            do io = 1,maxnh
-c              write(6,'(i3,a,3f12.6)') io,
-c     .           ': (NC)(Compute_dm)Dscf(io,1:3) = ', Dscf(io,1:3)
-c            enddo
-c           elseif(SpOrb) then
-c            write(6,'(a)') '(Compute_dm) Before diagon'
-c            do io = 1,maxnh
-c              write(6,'(i3,a,6f12.6)') io,
-c     .           ': (SO)(Compute_dm)Dscf(io,3:8) = ', Dscf(io,3:8)
-c            enddo
-c           endif
-c        write(6,'(a)') ' compute_dm: Calling diagon'
-        call diagon(no_s, h_spin_dim, e_spin_dim, spinor_dim, 
+        call diagon(no_s, nspin, spinor_dim, 
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qs, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
-c        write(6,'(a)') ' compute_dm: Leaving diagon'
         Ecorrec = 0.0_dp
-c           if (NonCol) then
-c            write(6,'(a)') '(Compute_dm) After diagon'
-c            do io = 1,maxnh
-c              write(6,'(i3,a,3f12.6)') io,
-c     .           ': (NC)(Compute_dm)Dscf(io,1:3) = ', Dscf(io,1:3)
-c            enddo
-c           elseif(SpOrb) then
-c            write(6,'(a)') '(Compute_dm) After diagon'
-c            do io = 1,maxnh
-c              write(6,'(i3,a,6f12.6)') io,
-c     .           ': (SO)(Compute_dm)Dscf(io,3:8) = ', Dscf(io,3:8)
-c            enddo
-c           endif
-
         PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
@@ -151,7 +119,7 @@ CC RC
 #ifdef TRANSIESTA
 ! TSS Begin
       elseif (TSmode .and. TSinit) then
-        call diagon(no_s, h_spin_dim, e_spin_dim, spinor_dim, 
+        call diagon(no_s, nspin, spinor_dim, 
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh,
      &              H, S, qtot, fixspin, qs, temp, e1, e2,

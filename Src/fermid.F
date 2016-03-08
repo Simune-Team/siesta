@@ -83,8 +83,6 @@ C Local variables
       real(dp), save :: tol = 1.0d-10
       real(dp)       :: sumq, emin, emax, t, drange, wkebuf, w, eik
 
-CC RC
-      real(dp)       :: sum_wk
 
 C Reading whether to do an excited state
       if ( .not. blread) then
@@ -95,17 +93,6 @@ C Reading whether to do an excited state
         endif
         blread = .true.
       endif   
-
-CC RC
-c      sum_wk = 0.0d0
-c      do ik = 1, nk
-c       write(6,'(a,i5,f12.8)') ' ik / wk = ', ik, wk(ik)
-c       sum_wk = sum_wk + wk(ik)
-c      enddo
-c      write(6,'(a,f12.8)') ' sum  wk = ', sum_wk
-c      stop 'Stopping in fermid in trunk'
-CC RC
-
 
 C Zero occupancies, including those not explicitly
 C calculated here if ne < maxe

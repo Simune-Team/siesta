@@ -156,7 +156,6 @@
 
 !     Non-SCF part of total energy
       E0 = -Eions + Ena + Ekin + Enl + Eso ! CC RC Added Eso
-!      write(6,'(a,f12.6)') '----final_H_f_stress: Calculating E0 = ', E0
 
 !     Non-local-pseudop: energy, forces, stress and matrix elements
 !     Add SCF contribution to energy and matrix elements 
@@ -167,7 +166,6 @@
 
       ! This will call dhscf with the final DM coming out of
       ! the scf cycle
-!      write(6,'(a,f12.6)') '----final_H_f_stress: Calling grdsam '
 
       call grdsam( nspin, h_spin_dim, SpOrb, no_s, iaorb, iphorb, 
      &             no_l, no_u, na_u, na_s, isa, xa, indxua,
@@ -176,16 +174,13 @@
      &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &             Exc, Dxc, dipol, fa, stress, fal, stressl )
 
-!      write(6,'(a,f12.6)') '----final_H_f_stress: Leaving grdsam '
 !     Orthonormalization forces ...........................................
 !     **Note that this will re-calculate S also, but should get 
 !     the same result
-!      write(6,'(a,f12.6)') '----final_H_f_stress: Calling overfsm'
       call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              spinor_dim, Escf, fal, stressl, S ) 
-!      write(6,'(a,f12.6)') '----final_H_f_stress: Leaving overfsm'
 
 !     Metadynamics forces
       if (lMetaForce) then

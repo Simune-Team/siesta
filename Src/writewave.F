@@ -35,7 +35,7 @@
       real(dp),   save :: wfs_energy_max =  huge(1.0_dp)
       logical,    save :: wfs_energy_window  = .true.
 
-      public :: setup_wfs_list, setup_wf_kpoints, wwave, writew
+      public :: setup_wfs_list, setup_wf_kpoints, wwave, writew 
 
       CONTAINS
 
@@ -404,7 +404,7 @@ C #X.XXX #Y.YYY #Z.ZZZ
 
       end subroutine initwave
 
-      subroutine wwave( no, h_spin_dim, spinor_dim, maxo, maxuo, maxnh, 
+      subroutine wwave( no, nspin, maxspn, maxo, maxuo, maxnh, 
      .                  maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
      .                  nk, kpoint, nuotot, gamma, occtol)
@@ -414,8 +414,8 @@ C Written by P. Ordejon, June 2003
 C from routine 'bands' written by J.M.Soler
 C **************************** INPUT **********************************
 C integer no                  : Number of basis orbitals
-C integer h_spin_dim          : Number of spin components of H, D
-C integer spinor_dim          : Second dimension of ek
+C integer nspin  = h_spin_dim : Number of spin components of H, D
+C integer maxspn = spinor_dim : Second dimension of ek
 C integer maxo                : First dimension of ek
 C integer maxuo               : Second dimension of H and S
 C integer maxnh               : Maximum number of orbitals interacting  
@@ -427,7 +427,7 @@ C integer listhptr(nuo)       : Pointer to start of each row of the
 C                               hamiltonian matrix
 C integer listh(maxlh)        : Nonzero hamiltonian-matrix element  
 C                               column indexes for each matrix row
-C real*8  H(maxnh,h_spin_dim) : Hamiltonian in sparse form
+C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C real*8  ef                  : Fermi energy
 C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
@@ -461,6 +461,7 @@ C
       use siesta_geom,  only : isa
       use m_spin,       only : NoMagn, SPpol, NonCol, SpOrb, MColl
 
+
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
@@ -468,11 +469,11 @@ C
       implicit          none
 
       integer           maxk, maxnh, maxo, maxuo, nk, no, 
-     .                  h_spin_dim, spinor_dim,
+     .                  h_spin_dim, spinor_dim, nspin, maxspn,
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
      .                  listhptr(*)
       logical           gamma
-      real(dp)          ef, H(maxnh,h_spin_dim), kpoint(3,maxk), 
+      real(dp)          ef, H(:,:), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh), occtol
 
       external          io_assign, io_close, memory
@@ -500,6 +501,9 @@ C Dynamic arrays
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
       logical  SaveParallelOverK
+
+      h_spin_dim=size(H,dim=2)
+
 
 C Get local number of orbitals
 #ifdef MPI
@@ -543,9 +547,9 @@ C      call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
 C      call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
 
 CC RC  ek has different arguments here than in 3.1.1 version that it is:
-C      allocate(ek(spinor_dim,nuo,nuotot)) and the next call to memory
-      allocate(ek(nuotot,spinor_dim,nk))
-      call memory('A','D',spinor_dim*nk*nuotot,'writewave')
+C      allocate(ek(maxspn,nuo,nuotot)) and the next call to memory
+      allocate(ek(nuotot,maxspn,nk))
+      call memory('A','D',maxspn*nk*nuotot,'writewave')
       naux = 2*nuotot*5
       allocate(aux(naux))
       call memory('A','D',naux,'writewave')
@@ -596,12 +600,12 @@ C Open file
           write(6,'(a)') 'writewave: Wave Functions Coefficients'
           write(6,*)
           write(6,'(a26,2x,i6)') 'Number of k-points = ', nk
-          write(6,'(a26,2x,i6)') 'Number of Spins = ', spinor_dim
+          write(6,'(a26,2x,i6)') 'Number of Spins = ', maxspn
           write(6,'(a26,2x,i6)') 'Number of basis orbs = ',nuotot
           write(6,*)
         endif
         write(iu) nk, gamma
-        write(iu) spinor_dim
+        write(iu) maxspn
         write(iu) nuotot
         write(iu) (iaorb(j),labelfis(isa(iaorb(j))),
      .            iphorb(j), cnfigfio(isa(iaorb(j)),iphorb(j)),
@@ -622,7 +626,7 @@ C Call appropriate diagonalization routine
 CC RC Added for on-site SO
       if (NoMagn .or. SPpol) then
        if (gamma) then
-         call diagg( h_spin_dim, h_spin_dim, spinor_dim, !CC RC Check no
+         call diagg( h_spin_dim, h_spin_dim, spinor_dim, !CC RC osSO 
      .               nuo, maxuo, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
@@ -640,8 +644,7 @@ C Handle parallel over K points option which is not allowed for here
          ParallelOverK = .false.
          ResetFirstCall = .true.
             
-         call diagk( h_spin_dim, h_spin_dim, spinor_dim, 
-     .               nuo, no, maxnh, maxnh,    ! CC RC  Check maxuo
+         call diagk( h_spin_dim, nuo, no, maxspn, maxnh, maxnh,    ! CC RC  osSO
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,

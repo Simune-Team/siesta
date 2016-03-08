@@ -68,9 +68,6 @@ CONTAINS
 
       call compute_EBS()
     
-!      stop 'Stopping after calling compute_EBS'
-
-
       ! These energies were calculated in the latest call to
       ! setup_hamiltonian, using as ingredient D_in 
 
@@ -135,14 +132,8 @@ CONTAINS
 ! CC RC      enddo
 
 ! CC RC  Added calculation of Ebs for Noncollinear and SO calculations 
-!      write(6,'(a)')        ' Calculating Ebs... '
-!      write(6,'(a,2l2,i5)') ' SpOrb/NonCol/maxnh = ', SpOrb, NonCol, maxnh
-!      write(6,'(a,2i8)')    '        Size Dscf/H = ', size(Dscf), size(H)
-
-
       if ( SpOrb ) then
         do io = 1,maxnh
-!          write(6,'(a,i5,8f12.6)') 'io/Dscf(io,1:8) = ', io, Dscf(io,1:8)
           Ebs = Ebs      + H(io,1) * ( Dscf(io,1) )   &
                          + H(io,2) * ( Dscf(io,2) )   &
                          + H(io,3) * ( Dscf(io,7) )   &
@@ -152,16 +143,13 @@ CONTAINS
                          + H(io,7) * ( Dscf(io,3) )   &
                          + H(io,8) * ( Dscf(io,4) )
         enddo
-        write(6,'(a,f12.8)') '           (SO)Ebs = ', Ebs
       elseif (NonCol) then
         do io = 1,maxnh
-!          write(6,'(a,i5,3f12.6)') 'io/D(io,1:3) = ', io, Dscf(io,1:3)
           Ebs    = Ebs    + H(io,1) * ( Dscf(io,1)  )   &
                           + H(io,2) * ( Dscf(io,2)  )   &
                  + 2.0_dp * H(io,3) * ( Dscf(io,3)  )   &
                  + 2.0_dp * H(io,4) * ( Dscf(io,3)  )
         enddo
-        write(6,'(a,f12.8)') '   (NC)Ebs = ', Ebs
       elseif (SPpol)  then
         do io = 1,maxnh
           Ebs    = Ebs    + H(io,1) * Dscf(io,1)  &
@@ -198,9 +186,6 @@ CONTAINS
 ! CC RC          enddo
 
 ! CC RC  Added calculation of Eharris for Noncollinear and SO calculations 
-      write(6,'(a)') ' Calculating DEharr... '
-      write(6,'(a,2l2,i12)') ' SpOrb/NonColl/nh = ', SpOrb, NonCol, maxnh
-      write(6,'(a,2i10)')    '      Size Dscf/H = ', size(Dscf), size(H)
       if ( SpOrb ) then
         do io = 1,maxnh
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
@@ -212,8 +197,6 @@ CONTAINS
                           + H(io,7) * ( Dscf(io,3) - Dold(io,3) )  &
                           + H(io,8) * ( Dscf(io,4) - Dold(io,4) )
         enddo
-        write(6,'(a,f12.8)') '        (SO)DEharr = ', DEharr
-!        stop 'Stopping after calculate DEharr inside compute_energies'
       elseif (NonCol) then
         do io = 1,maxnh
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
@@ -221,7 +204,6 @@ CONTAINS
                  + 2.0_dp * H(io,3) * ( Dscf(io,3) - Dold(io,3) )  &
                  + 2.0_dp * H(io,4) * ( Dscf(io,3) - Dold(io,3) )
         enddo
-        write(6,'(a,f12.8)') '(NC)DEharr = ', DEharr
       elseif (SPpol)  then
         do io = 1,maxnh
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
@@ -258,7 +240,7 @@ CONTAINS
 
       ! Remove unwanted arguments...
 
-      call dhscf( nspin, h_spin_dim, SpOrb, no_s, iaorb, iphorb, no_l,      &
+      call dhscf( nspin, no_s, iaorb, iphorb, no_l,      &
                   no_u, na_u, na_s, isa, xa, indxua,                        &
                   ntm, ifa, istr, ihmat, filesOut,                          &
                   maxnh, numh, listhptr, listh, Dscf, Datm,                 &

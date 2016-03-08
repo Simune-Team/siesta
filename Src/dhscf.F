@@ -35,7 +35,7 @@
 !     Some others are scratch, such as nmpl, ntpl, etc
 
       use precision,      only : dp, grid_p
-
+      use m_dfscf,        only : dfscf
       implicit none
 
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
@@ -421,9 +421,8 @@ C ----------------------------------------------------------------------
 !------------------------------------------------------------------------- END
       end subroutine dhscf_init
 
-      subroutine dhscf( nspin, h_spin_dim, SpOrb,  ! CC RC Added 
-     &                  norb, iaorb, iphorb, nuo, nuotot, nua, na, 
-     &                  isa, xa, indxua,
+      subroutine dhscf( nspin, norb, iaorb, iphorb, nuo, 
+     &                  nuotot, nua, na, isa, xa, indxua,
      &                  ntm, ifa, istr, iHmat,
      &                  filesOut, maxnd, numd,
      &                  listdptr, listd, Dscf, datm, maxnh, Hmat,
@@ -443,8 +442,6 @@ C ----------------------------------------------------------------------
 C integer nspin         : Number of different spin polarisations
 C                         nspin=1 => Unpolarized, nspin=2 => polarized
 C                         nspin=4 => Noncollinear spin
-C integer h_spin_dim    : Number of spin components of H and D
-C logical SpOrb         : Spin-Orbit flag
 C integer norb          : Total number of basis orbitals in supercell
 C integer iaorb(norb)   : Atom to which each orbital belongs
 C integer iphorb(norb)  : Orbital index (within atom) of each orbital
@@ -514,6 +511,9 @@ C                         ( Enascf - Enaatm + DUscf + Exc ) / volume
 C                      with respect to the strain tensor, in Ry.
 C                        contributions local to this node
 C ----------------------------------------------------------------------
+C logical SpOrb         : Spin-Orbit flag
+C integer h_spin_dim    : Number of spin components of H and D
+C ----------------------------------------------------------------------
 C Units :
 C ----------------------------------------------------------------------
 C Energies in Rydbergs
@@ -577,6 +577,7 @@ C     Modules
 
       use m_rhofft,       only: rhofft, FORWARD, BACKWARD
       use m_rhog,         only: rhog_in, rhog
+      use m_spin,         only: SpOrb
 
 #ifdef TRANSIESTA
       use m_ts_options, only: UseVFix, TSmode, isVolt
@@ -587,9 +588,6 @@ C     Modules
       implicit none
 
 CC RC
-      logical
-     .   SpOrb
-
       integer
      &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot, h_spin_dim,
      &  iaorb(norb), ifa, iHmat,
@@ -597,9 +595,9 @@ CC RC
      &  istr, listd(*), listdptr(nuo), ntm(3), numd(nuo)
 
       real(dp)
-     &  datm(norb), dipol(3), Dscf(maxnd,h_spin_dim),
+     &  datm(norb), dipol(3), Dscf(:,:),
      &  DUext, DUscf, Dxc, Enaatm, Enascf, Exc,
-     &  Hmat(maxnh,h_spin_dim), Uatm, Uscf, xa(3,na),
+     &  Hmat(:,:), Uatm, Uscf, xa(3,na),
      &  stress(3,3), Fal(3,nua), stressl(3,3)
 CC RC
 
@@ -697,7 +695,7 @@ C     Local variables
 
       external
      &  cross,
-     &  dfscf,  dipole, 
+     &  dipole, 
      &  poison, 
      &  reord, rhooda, rhoofd, rhoofdsp, 
      &  timer, vmatsp, 
@@ -724,6 +722,8 @@ C     Work arrays
 #ifdef DEBUG
       call write_debug( '    PRE DHSCF' )
 #endif
+
+      h_spin_dim=size(Dscf,dim=2)
 !-------------------------------------------------------------------- BEGIN
 C ----------------------------------------------------------------------
 C Start of SCF iteration part
@@ -1283,9 +1283,9 @@ C ----------------------------------------------------------------------
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
          else
-            call vmat( norb, nmpl, dvol, nspin, h_spin_dim, Vscf_par, 
+            call vmat( norb, nmpl, dvol, nspin, Vscf_par, 
      &           maxnd, numd, listdptr, listd, Hmat, nuo,
-     &           nuotot, iaorb, iphorb, isa, SpOrb)
+     &           nuotot, iaorb, iphorb, isa )
          endif
 
          call de_alloc( Vscf_par,  'Vscf_par', 'dhscf' )
@@ -1421,9 +1421,9 @@ C       Vaux is (minus) the potential which multiplies rhoatm
         call distMeshData( UNIFORM, Vaux,
      &                     QUADRATIC, Vaux_par, TO_CLUSTER )
 
-CC RC
+CC RC careful--> Assumed-shape
         call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
-     &              h_spin_dim, SpOrb, indxua, isa, iaorb, iphorb, 
+     &              indxua, isa, iaorb, iphorb, 
      &              maxnd, numd, listdptr, listd, Dscf, datm,
      &              Vscf_par, Vaux_par, dvol, volume, Fal, stressl )
 

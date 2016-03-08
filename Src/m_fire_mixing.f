@@ -26,7 +26,7 @@
       CONTAINS
 
       subroutine fire_mixing(iscf,mix_scf1,nbasis,maxnd,numd,
-     .                   listdptr,h_spin_dim,alpha,nkick,alpha_kick,
+     .                   listdptr,nspin,alpha,nkick,alpha_kick,
      $                   dmnew,dmold,dmax)
 
 C ************************** INPUT **************************************
@@ -37,7 +37,7 @@ C integer maxnd              : First dimension of D.M., and
 C                              maximum number of nonzero elements of D.M.
 C integer numd(:)            : Control vector of D.M.
 C                              (number of nonzero elements of each row)
-C integer h_spin_dim         : Spin dimension of D 
+C integer nspin = h_spin_dim : Spin dimension of D 
 C real*8 alpha               : Mixing parameter (for linear mixing)
 C integer nkick              : A kick is given every nkick iterations
 C real*8 alpha_kick          : Mixing parameter for kicks
@@ -55,14 +55,15 @@ C                              input and output
 
       implicit none
 
-      integer, intent(in) :: iscf,maxnd,nbasis,h_spin_dim,nkick
+      integer, intent(in) :: iscf,maxnd,nbasis,nspin,nkick
       logical, intent(in) :: mix_scf1
       integer, intent(in) ::  numd(:), listdptr(:)
       real(dp), intent(in) :: alpha, alpha_kick
-      real(dp), intent(inout) :: dmnew(maxnd,h_spin_dim),
-     $                           dmold(maxnd,h_spin_dim)
+      real(dp), intent(inout) :: dmnew(:,:),
+     $                           dmold(:,:)
       real(dp), intent(out) ::  dmax
 
+      integer :: h_spin_dim 
 
       logical, save           :: initialization_done = .false.
 
@@ -82,6 +83,9 @@ C                              input and output
       integer        :: fire_nmin
 
       real(dp) :: global_dnorm, global_dmax,  dnorm, diff
+
+CC RC Shoul I do the same for dmold
+      h_spin_dim=size(dmnew,dim=2)
 
        numel = h_spin_dim * sum(numd(1:nbasis))
        call Globalize_sum(numel,global_numel)

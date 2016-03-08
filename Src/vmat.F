@@ -12,9 +12,9 @@
       private
       public :: vmat
       CONTAINS
-      subroutine vmat( no, np, dvol, nspin, h_spin_dim, V, nvmax, 
+      subroutine vmat( no, np, dvol, nspin, V, nvmax, 
      &                 numVs, listVsptr, listVs, Vs, 
-     &                 nuo, nuotot, iaorb, iphorb, isa , SpOrb )
+     &                 nuo, nuotot, iaorb, iphorb, isa )
 
 C ********************************************************************
 C Finds the matrix elements of the potential.
@@ -29,8 +29,6 @@ C integer no              : Number of basis orbitals
 C integer np              : Number of columns in C (local)
 C real*8  dvol            : Volume per mesh point
 C integer nspin           : Number of spin components
-C integer h_spin_dim      : Number of spin components of H and D
-C logical SpOrb           : SpOrb flag
 C real*4  V(np,nspin)     : Value of the potential at the mesh points
 C integer nvmax           : First dimension of listV and Vs, and maxim.
 C                           number of nonzero elements in any row of Vs
@@ -45,12 +43,16 @@ C real*8  Vs(nvmax,h_spin_dim) : Value of nonzero elements in each row
 C                                of Vs to which the potential matrix 
 C                                elements are summed up
 C *********************************************************************
+C integer h_spin_dim      : Number of spin components of H and D
+C logical SpOrb           : SpOrb flag
+C *********************************************************************
 
 C  Modules
       use precision,     only: dp, grid_p
       use atmfuncs,      only: rcut, all_phi
       use atm_types,     only: nsmax=>nspecies
       use atomlist,      only: indxuo
+      use m_spin,        only: SpOrb
       use listsc_module, only: LISTSC
       use mesh,          only: dxa, nsp, xdop, xdsp, meshLim
       use meshdscf,      only: matrixMtoO
@@ -67,15 +69,16 @@ C  Modules
       implicit none
 
 C Argument types and dimensions
-      logical
-     .   SpOrb
+CC RC      logical
+C     .   SpOrb
+
       integer                  :: no, np, nvmax, nuo, nuotot, iaorb(*),
-     &                            nspin, h_spin_dim, iphorb(*), isa(*), 
+     &                            nspin, iphorb(*), isa(*), 
      &                            numVs(nuo),
      &                            listVsptr(nuo), listVs(nvmax)
       real(grid_p), intent(in) :: V(nsp,np,nspin)
       real(dp)                 :: dvol
-      real(dp),         target :: Vs(nvmax,h_spin_dim)
+      real(dp),         target :: Vs(:,:)
 C Internal variables and arrays
       integer,       parameter :: minloc = 1000,  ! Min buffer size
      &                            maxoa  = 100   ! Max # of orb/atom
@@ -86,6 +89,8 @@ C Internal variables and arrays
      &                            nvmaxl, triang, lenx, leny, lenz,lenxy
       logical                  :: ParallelLocal
       real(dp)                 :: Vij, r2sp, dxsp(3), VClocal(nsp)
+
+      integer :: h_spin_dim
 
       integer,         pointer :: ilc(:),    omp_ilc(:,:),
      &                            ilocal(:), omp_ilocal(:,:),
@@ -113,6 +118,9 @@ C Internal variables and arrays
       call MPI_Barrier( MPI_Comm_World, MPIerror )
       call MPItrace_event( 1000, 4 )
 #endif
+
+
+      h_spin_dim=size(Vs,dim=2)
 
 C       Start time counter
       call timer('vmat',1)

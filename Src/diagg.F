@@ -23,9 +23,9 @@ C eigenvector, for given Hamiltonian and Overlap matrices (including
 C spin polarization). Gamma-point version.
 C Writen by J.Soler, August 1998.
 C **************************** INPUT **********************************
-C integer h_spin_dim          : Number of spin components of H and D
-C integer e_spin_dim          : Number of spin components of E_dm  
+C integer h_spin_dim    : Number of spin components of H and D
 C integer spinor_dim          : # of spin components of eo and qo, qs, efs
+C integer e_spin_dim          : Number of spin components of E_dm  
 C integer nuo                 : Number of basis orbitals local to node
 C integer maxuo               : Last dimension of xij
 C                               Must be at least max(indxuo)
@@ -141,6 +141,7 @@ C  Internal variables .............................................
       real(dp), pointer :: psi_tmp(:), paux(:)
 
 CC RC Added for osSO
+  
       if (h_spin_dim /= spinor_dim) then
          call die("Spin size mismatch in diagg")
       endif
@@ -296,4 +297,4 @@ C Global operation to form new density matrix
       call timer( 'r-buildD', 2 )
       call de_alloc( nuo_LOC, 'nuo_LOC', 'diagg' )
       call de_alloc( PSI_TMP, 'PSI_TMP', 'diagg' )
-      end
+      end 

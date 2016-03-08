@@ -8,8 +8,8 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diagk( h_spin_dim, e_spin_dim,  
-     .                  nuo, no, spinor_dim, maxnh, maxnd, 
+      subroutine diagk( h_spin_dim,    
+     .                  nuo, no, maxspn, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, listdptr, 
      .                  listd, H, S, getD, getPSI, fixspin, qtot, qs, 
      .                  temp, e1, e2, xij, indxuo, nk, kpoint, wk,
@@ -23,9 +23,7 @@ C eigenvector, for given Hamiltonian and Overlap matrices (including
 C spin polarization). K-sampling version.
 C Writen by J.Soler, August 1998.
 C **************************** INPUT **********************************
-C integer h_spin_dim          : Number of spin components of H and D
-C integer e_spin_dim          : Number of spin components of E_dm  
-C integer spinor_dim          : # of spin components of eo and qo, qs, efs
+C integer maxspn=spinor_dim   : # of spin components of eo and qo, qs, efs
 C integer nuo                 : Number of basis orbitals in unit cell
 C                               local to this processor
 C integer no                  : Number of basis orbitals in supercell
@@ -75,6 +73,8 @@ C real*8 Enew(maxnd,e_spin_dim): Output Energy-Density Matrix
 C real*8 ef                    : Fermi energy
 C real*8 Entropy               : Electronic entropy
 C *************************** AUXILIARY *******************************
+C integer h_spin_dim          : Number of spin components of H and D
+C integer e_spin_dim          : Number of spin components of E_dm  
 C real*8 Haux(2,nuotot,nuo) : Auxiliary space for the hamiltonian matrix
 C real*8 Saux(2,nuotot,nuo) : Auxiliary space for the overlap matrix
 C real*8 psi(2,nuotot,nuo)  : Auxiliary space for the eigenvectors
@@ -103,12 +103,14 @@ C
       use parallelsubs,  only : LocalToGlobalOrb
       use writewave,     only : writew
       use m_fermid,      only : fermid, fermispin, stepf
+      use m_spin,        only : spinor_dim, e_spin_dim
 #ifdef MPI
       use mpi_siesta
 #endif
       use m_norm
 
       implicit          none
+
 
 #ifdef MPI
       integer 
@@ -117,14 +119,14 @@ C
 
       integer           maxnd, maxnh, maxspn, maxo, nk, no,
      .                  nuo, nuotot, iscf
-      integer           h_spin_dim, e_spin_dim, spinor_dim ! CC RC Added
+      integer           h_spin_dim ! CC RC Added
       integer           indxuo(no), listh(maxnh), numh(nuo),
      .                  listd(maxnd), numd(nuo), listhptr(nuo),
      .                  listdptr(nuo)
       real(dp)          Dnew(maxnd,h_spin_dim), 
      .                  e1, e2, ef, efs(spinor_dim),
      .                  Enew(maxnd,e_spin_dim), Entropy, 
-     .                  eo(maxo,spinor_dim,nk), H(maxnh,h_spin_dim),
+     .                  eo(maxo,spinor_dim,nk), H(maxnh,h_spin_dim), 
      .                  kpoint(3,nk), qo(maxo,spinor_dim,nk), qtot, 
      .                  S(maxnh), temp, wk(nk), occtol,
      .                  xij(3,maxnh), qs(spinor_dim)
@@ -416,4 +418,4 @@ C Global operation to form new density matrix
       end subroutine kludge_copy
 
 
-      end
+      end subroutine diagk

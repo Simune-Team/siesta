@@ -221,7 +221,7 @@ c first (normal) call to DHSCF, ihmat=1 --------------------------------------
          want_partial_charges = .true.
       endif
 
-      call dhscf( nspin, h_spin_dim, SpOrb,
+      call dhscf( nspin,  
      &            norb, iaorb, iphorb, nuo, nuotot, nua,
      &            na, isa, xa, indxua, ntm,
      &            ifa, istr, 1, filesOut,
@@ -311,7 +311,7 @@ c loop sampling on displacements making averages ----------------------------
      &                      maxnd, numh, listhptr, listh, datm,
      &                      Fal, stressl)
 
-          call dhscf( nspin, h_spin_dim, SpOrb,
+          call dhscf( nspin, 
      &                norb, iaorb, iphorb, nuo, nuotot, nua,
      &                na, isa, xanew, indxua, ntm,
      &                ifa, istr, 0, filesOut,

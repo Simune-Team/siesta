@@ -1,4 +1,137 @@
 -----------------------------------------------------------------------------------------------
+2016-3-08   16:57   Ramon Cuadrado  <ramon.cuadrado@icn2.cat>  siesta-trunk-479--so-ramon
+On-site implementation of the SO coupling in siesta-trunk-479 version
+
+* Adding Pt dimer and FePt-L1_0 anisotropy calculation tests for 
+the on-site Spin-Orbit. March 8th 2016 
+
+* Assumed-shape updating for some subroutines. There are however some of them 
+that have to be modified in order to be able to change the number of the arguments
+in the SO branch to have the same number as in trunk-479. (The subroutines are: 
+writewave, diagg, diagk, rhoofd)
+
+added:
+  Tests/SpinOrbit/
+  Tests/SpinOrbit/FePt-L1_0-so/
+  Tests/SpinOrbit/FePt-L1_0-so/README
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/config
+  Tests/SpinOrbit/FePt-L1_0-so/makefile
+  Tests/SpinOrbit/FePt-L1_0-so/script-fept.sh
+  Tests/SpinOrbit/Pt2-so-bis/
+  Tests/SpinOrbit/Pt2-so-bis/README
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/x-axis/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/y-axis/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/z-axis/
+  Tests/SpinOrbit/Pt2-so-bis/config
+  Tests/SpinOrbit/Pt2-so-bis/makefile
+  Tests/SpinOrbit/Pt2-so-bis/script-pt2.sh
+modified:
+  Src/bands.F
+  Src/compute_dm.F
+  Src/compute_energies.F90
+  Src/compute_rhog.F
+  Src/dfscf.f
+  Src/dhscf.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/diagon.F
+  Src/fermid.F
+  Src/final_H_f_stress.F
+  Src/grdsam.F
+  Src/iodm_netcdf.F90
+  Src/local_DOS.F
+  Src/m_broyden_mixing.f
+  Src/m_fire_mixing.f
+  Src/m_iodm.F
+  Src/new_dm.F
+  Src/pdos.F
+  Src/post_scf_work.F
+  Src/projected_DOS.F
+  Src/rhoofd.F
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/state_init.F
+  Src/vmat.F
+  Src/writewave.F
+unknown:
+  Src-so.save/
+  log
+  log.old
+  Obj/.siesta
+  Obj/FoX/
+  Obj/Libs/
+  Obj/MPI/
+  Obj/Makefile
+  Obj/SiestaXC/
+  Obj/Tests/
+  Obj/arch.make
+  Obj/arch.make.parallel
+  Obj/arch.make.serial
+  Obj/compinfo.F90
+  Obj/fdf/
+  Obj/psiesta-trunk+so
+  Obj/siesta
+  Obj/ssiesta-trunk+so
+  Obj/tmp.F90
+  Obj/work.pcl
+  Obj/wxml/
+  Obj/xmlparser/
+  Src/config.log
+  Src/config.status
+  Src/diag2k.F.ramonSO
+
+
+-----------------------------------------------------------------------------------------------
 2015-11-05   16:45   Ramon Cuadrado  <ramon.cuadrado@cin2.es>  siesta-trunk-479--so-ramon
 On-site implementation of the SO coupling in siesta-trunk-479 version
 

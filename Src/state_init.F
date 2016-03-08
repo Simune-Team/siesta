@@ -297,7 +297,7 @@
       call re_alloc( H, 1, maxnh, 1, h_spin_dim, 'H',
      .              routine='sparseMat',shrink=.true.,copy=.false.)
 
-! CC RC  Warning!! Check the following
+! CC RC  It seems that it is ok. Maybe it'd be good to check it!  
       if (SpOrb) then
        call re_alloc(H_kin,1,maxnh,1,h_spin_dim,name='H_kin',
      &               routine='sparseMat', shrink=.true., copy=.false. )

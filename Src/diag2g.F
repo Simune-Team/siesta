@@ -174,11 +174,6 @@ C of referencing has been changed in several places to reflect this.
            Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
            Haux(2,jo,1,io) = dcmplx(H(ind,3), H(ind,4))
            Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-
-c           write(6,'(a,3i5,4f12.6)') 'io/jo/ind/H(ind,1:4) = ',  
-c     .           io, jo, ind, H(ind,1:4)
-
-
         enddo
       enddo
       

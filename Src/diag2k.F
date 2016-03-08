@@ -232,12 +232,10 @@ C *********************************************************************
           enddo
         enddo
       
-!        write(6,'(a)') ' diag2k: Calling cdiag1'
 !       Find eigenvalues
 !       Note duplication since the spins are mixed
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo(1,ik),psi,
      .             0,iscf,ierror)
-!        write(6,'(a)') ' diag2k: Leaving cdiag1'
 
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
@@ -250,20 +248,8 @@ C *********************************************************************
       if (.not.getD) goto 1001
 !-----------------------------------------------------------------------
       
-!      write(6,'(a)') 'diag2k: Calling fermid after cdiag1'
-!      write(6,'(a,i5)') 'diag2k: --> num of k-points     (nk): ', nk
-!      write(6,'(a)') 'diag2k: --> weights of k-points (wk):  ---'
-!      write(6,'(a,i5)') 'diag2k: --> First dim of E    (maxo): ', maxo
-!      write(6,'(a,i5)') 'diag2k: --> Number of bands (nuotot): ', nuotot
-!      write(6,'(a)') 'diag2k: --> State eigenvalues       :  ---'
-!      write(6,'(a,f12.8)') 'diag2k: --> Temperature       (temp): ',temp
-!      write(6,'(a,f12.8)') 'diag2k: --> Valence charge    (qtot): ',qtot
 !     Find new Fermi energy and occupation weights
       call fermid(2,2,nk,wk,maxo,nuotot,eo,temp,qtot,qo,ef,Entropy)
-!      write(6,'(a)') ' diag2k: Leaving fermid after cdiag1'
-!      write(6,'(a,f12.8)') 'diag2k: --> Fermi energy        (Ef): ',ef
-   
-!      stop 'Stopping in diag2k'
       
 !     Find weights for local density of states
       if (e1 .lt. e2) then
@@ -278,14 +264,11 @@ C *********************************************************************
         enddo
       endif
 
-!      write(6,'(a)') ' diag2k: A'
-      
 !     New density and energy-density matrices of unit-cell orbitals
       Dnew(:,:) = 0.0_dp
       Enew(:,:) = 0.0_dp
       
 !     Find maximum eigenvector that is required for this k point 
-!      write(6,'(a,i5)') ' diag2k: ik = ', nk
       do ik = 1,nk
         neigneeded = 0
         ie = 2*nuotot
@@ -294,14 +277,11 @@ C *********************************************************************
           if (abs(qe).gt.occtol) neigneeded = ie
           ie = ie - 1
         enddo
-!        write(6,'(a,i5)') ' diag2k: ik ', ik 
       
 !       Find eigenvectors 
         Saux = dcmplx(0.0_dp,0.0_dp)
         Haux = dcmplx(0.0_dp,0.0_dp)
-!        write(6,'(a,i5)') ' diag2k: nuo ', nuo
         do iuo = 1,nuo
-!          write(6,'(a,i5)') '   diag2k: numh(iuo) ', numh(iuo) 
           do j = 1,numh(iuo)
 
             ind = listhptr(iuo) + j
@@ -311,8 +291,6 @@ C *********************************************************************
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
             kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
-!            write(6,*) '  diag2k: iuo/j/kxij/kphs = ', 
-!     .             iuo, j, kxij, kphs 
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
@@ -323,27 +301,11 @@ C *********************************************************************
             Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
      .                        + dcmplx(H(ind,3), + H(ind,4)) * kphs
 
-!            write(6,*) '  diag2k: Saux(1,juo,1,iuo) = ', 
-!     .                            Saux(1,juo,1,iuo) 
-!            write(6,*) '  diag2k: Saux(2,juo,2,iuo) = ', 
-!     .                            Saux(2,juo,2,iuo) 
-!            write(6,*) '  diag2k: Haux(1,juo,1,iuo) = ', 
-!     .                            Haux(1,juo,1,iuo) 
-!            write(6,*) '  diag2k: Haux(2,juo,2,iuo) = ', 
-!     .                            Haux(2,juo,2,iuo) 
-!            write(6,*) '  diag2k: Haux(1,juo,2,iuo) = ', 
-!     .                            Haux(1,juo,2,iuo) 
-!            write(6,*) '  diag2k: Haux(2,juo,1,iuo) = ', 
-!     .                            Haux(2,juo,1,iuo) 
           enddo
         enddo
 
-!        stop 'Stoping after before cdiag second call in diag2k.F sub'
-      
-!        write(6,'(a)') ' diag2k: Calling cdiag2'
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
      .             neigneeded,iscf,ierror)
-!        write(6,'(a)') ' diag2k: Leaving cdiag2'
       
 !       Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -512,33 +474,16 @@ C      I will leave as it is here but maybe it will need major revision
           D12 = Dkc(1,juo,2,iuo) * kphs
           D21 = Dkc(2,juo,1,iuo) * kphs
 
-!          write(6,*) 'D11 = ', D11
-!          write(6,*) 'D22 = ', D22
-!          write(6,*) 'D12 = ', D12
-!          write(6,*) 'D21 = ', D21
-
       
 ! Make DM Spin-box hermitian 
           D12 = 0.5_dp * (D12 + dconjg(D21))
           D21 = dconjg(D12)
 
-!          write(6,*) '      '
-!          write(6,*) 'D12 = ', D12
-!          write(6,*) 'D21 = ', D21
-      
           Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
           Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
           Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
 !          Dnew(ind,4) = Dnew(ind,4) + dimag(D12)
           Dnew(ind,4) = Dnew(ind,4) - dimag(D12) ! CC RC osSO
-
-!          write(6,*) 'Dnew(ind,1) = ', Dnew(ind,1)
-!          write(6,*) 'Dnew(ind,2) = ', Dnew(ind,2)
-!          write(6,*) 'Dnew(ind,3) = ', Dnew(ind,3)
-!          write(6,*) 'Dnew(ind,4) = ', Dnew(ind,4)
-      
-c          write(6,'(a,i5,4f12.6)') 'ind / Dnew(ind,1:4) = ', 
-c     .            ind, Dnew(ind,1:4)
 
 CC RC  
 C      In the JF's version D11, D22, etc are not time-reversal averaged
@@ -562,38 +507,20 @@ C      I will leave as it is here but maybe it will need major revision
           D12 = Ekc(1,juo,2,iuo) * kphs
           D21 = Ekc(2,juo,1,iuo) * kphs
 
-!          write(6,*) 'D11 = ', D11
-!          write(6,*) 'D22 = ', D22
-!          write(6,*) 'D12 = ', D12
-!          write(6,*) 'D21 = ', D21
-
      
 ! Make DM Spin-box hermitian  
           D12 = 0.5_dp * (D12 + dconjg(D21))
           D21 = dconjg(D12)
 
-!          write(6,*) '      '
-!          write(6,*) 'D12 = ', D12
-!          write(6,*) 'D21 = ', D21
-      
           Enew(ind,1) = Enew(ind,1) + dreal(D11)
           Enew(ind,2) = Enew(ind,2) + dreal(D22)
           Enew(ind,3) = Enew(ind,3) + dreal(D12) 
 !          Enew(ind,4) = Enew(ind,4) + dimag(D12) 
           Enew(ind,4) = Enew(ind,4) - dimag(D12)  !CC RC osSO
 
-!         stop'diag2k.F: stopping'
-      
         enddo
         enddo
       enddo
-
-c      do io = 1, maxnh
-!       write(6,'(a,i5,4f14.6)') '1 / Dnew(1,1:4) = ', 
-!     .          Dnew(1,1:4)
-!       write(6,'(a,i5,4f14.6)') '2 / Dnew(2,1:4) = ', 
-!     .            Dnew(2,1:4)
-c      enddo
 
  1001 continue
       

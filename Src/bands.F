@@ -339,7 +339,7 @@ C This is the only exit point
       end subroutine initbands
 
 
-      subroutine bands( no_s, h_spin_dim, spinor_dim, 
+      subroutine bands( no_s, nspin, maxspn, 
      .                  no_u, no_l, maxnh, maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
      .                  writeb, nk, kpoint, ek, occtol, getPSI )
@@ -352,8 +352,8 @@ C WFS options by A. Garcia, April 2012
 
 C **************************** INPUT **********************************
 C integer no_s                : Number of basis orbitals in supercell
-C integer h_spin_dim
-C integer spinor_dim
+C integer nspin  = h_spin_dim 
+C integer maxspn = spinor_dim 
 C integer maxnh               : Maximum number of orbitals interacting
 C                               with any orbital
 C integer maxk                : Last dimension of kpoint and ek
@@ -363,7 +363,7 @@ C integer listhptr(no_l)       : Pointer to start of each row of the
 C                               hamiltonian matrix
 C integer listh(maxlh)        : Nonzero hamiltonian-matrix element
 C                               column indexes for each matrix row
-C real*8  H(maxnh,h_spin_dim) : Hamiltonian in sparse form
+C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C real*8  ef                  : Fermi energy
 C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
@@ -381,7 +381,7 @@ C integer nk                  : Number of band k points
 C real*8  kpoint(3,maxk)      : k point vectors
 C real*8  occtol              : Occupancy threshold for DM build
 C *************************** OUTPUT **********************************
-C real*8  ek(no_u,spinor_dim,maxk) : Eigenvalues
+C real*8  ek(no_u,maxspn,maxk) : Eigenvalues
 C *************************** UNITS ***********************************
 C Lengths in atomic units (Bohr).
 C k vectors in reciprocal atomic units.
@@ -416,15 +416,17 @@ CC RC  Added for osSO
 
       implicit          none
 
-      integer  ::   nspin
+      integer  ::   nspin, h_spin_dim
       integer  ::   maxk, maxnh, maxspn, no_u, no_l, nk, no_s,
      .              indxuo(no_s), listh(maxnh), numh(no_l),
-     .              listhptr(*), h_spin_dim, spinor_dim, nuo
+     .              listhptr(*), nuo
       logical  ::   writeb
-      real(dp) ::   ef, ek(no_u,spinor_dim,maxk),
-     .              H(maxnh,h_spin_dim), kpoint(3,maxk),
+      real(dp) ::   ef, ek(no_u,maxspn,maxk),
+     .              H(:,:), kpoint(3,maxk),
      .              S(maxnh), xij(3,maxnh), occtol
       logical, intent(in) :: getPSI
+
+
 
       character(len=label_length+6) :: paste
       external ::       io_assign, io_close, paste, memory
@@ -451,6 +453,9 @@ C Dynamic arrays
       data getD /.false./
 
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
+
+
+      h_spin_dim = size(H,dim=2)
 
 C Get number of local orbitals
 #ifdef MPI
@@ -498,7 +503,6 @@ CC RC Changing nhs for osSO
      .            symfio(isa(iaorb(j)),iphorb(j)), j=1,no_u)
 
         call io_close(iu_wfs)
-
       endif
 
 C Find the band energies
@@ -522,7 +526,7 @@ C Handle parallel over K points option which is not allowed for here
 CC RC  Note: In this case h_spin_dim = e_spin_dim because of we have 
 CC           NoMagn or SPpol calculation
 
-        call diagk( h_spin_dim, h_spin_dim, no_l, no_s, spinor_dim, 
+        call diagk( h_spin_dim, no_l, no_s, maxspn, 
      .              maxnh, maxnh,  ! CC RC Added arguments for osSO
      .              no_u, numh, listhptr, listh, numh, listhptr,
      .              listh, H, S, getD, getPSI, fixspin, qtot, qs, temp,
@@ -581,7 +585,7 @@ C Find and write the ranges of k and ek
      .      path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
      .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
-          do ispin = 1,spinor_dim
+          do ispin = 1,maxspn
             do io = 1, no_u
               emax = max( emax, ek(io,ispin,ik) )
               emin = min( emin, ek(io,ispin,ik) )
@@ -595,7 +599,7 @@ C Write path for BandLines but not for BandPoints
 C Write eigenvalues
 CC RC Added for osSO
         if ( h_spin_dim .le. 2 ) then
-         write(iu,*) no_u, spinor_dim, nk
+         write(iu,*) no_u, maxspn, nk
          path = 0.d0
          do ik = 1,nk
            if (nlines .ge. 0) then
@@ -605,11 +609,11 @@ CC RC Added for osSO
      .                             (kpoint(3,ik)-kpoint(3,ik-1))**2 )
              write(iu,'(f10.6,10f12.4,/,(10x,10f12.4))')
      .         path, ((ek(io,ispin,ik)/eV,io=1,no_u),
-     .         ispin=1,spinor_dim)
+     .         ispin=1,maxspn)
            else
              write(iu,'(3f9.5,8f12.4,/,(27x,8f12.4))')
      .         kpoint(1,ik), kpoint(2,ik), kpoint(3,ik),
-     .            ((ek(io,ispin,ik)/eV,io=1,no_u),ispin=1,spinor_dim)
+     .            ((ek(io,ispin,ik)/eV,io=1,no_u),ispin=1,maxspn)
            endif
          enddo
         else if (h_spin_dim .ge. 4) then
@@ -623,11 +627,11 @@ CC RC Added for osSO
      .                              (kpoint(3,ik)-kpoint(3,ik-1))**2 )
               write(iu,'(f10.6,10f12.4,/,(10x,10f12.4))')
      .          path, ((ek(io,ispin,ik)/eV,io=1,no_u),
-     .          ispin=1,spinor_dim)
+     .          ispin=1,maxspn)
             else
               write(iu,'(3f9.5,8f12.4,/,(27x,8f12.4))')
      .          kpoint(1,ik), kpoint(2,ik), kpoint(3,ik),
-     .             ((ek(io,ispin,ik)/eV,io=1,no_u),ispin=1,spinor_dim)
+     .             ((ek(io,ispin,ik)/eV,io=1,no_u),ispin=1,maxspn)
             endif
           enddo
         else

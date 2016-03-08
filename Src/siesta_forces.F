@@ -82,19 +82,8 @@
       ! of H_0 to the body of the loop, done if first=.true.
       ! This would suit "analysis" runs in which nscf = 0
       !
-! CC RC
-!      write(6,'(a)') ' Calling setup_H0: '
 
-!         write(6,'(a)') ' '
-!         write(6,'(a)') ' ++++++++++ Getting setup_H0 ++++++++++'
-!         write(6,'(a)') ' '
       call setup_H0()
-
-!         write(6,'(a)') ' '
-!         write(6,'(a)') ' ++++++++++ Leavinging setup_H0 ++++++++++'
-!         write(6,'(a)') ' '
-!      write(6,'(a)') ' Leaving setup_H0: '
-!      stop 'Stopping after setup_H0 '
 
       DO 
         ! Conditions of exit:
@@ -133,28 +122,11 @@
            call setup_hamiltonian( iscf )
            call compute_max_diff(Hold,H,dmax)
         else 
-!         write(6,'(a)') ' '
-!        write(6,'(a)') '++++++++++ Getting setup_hamiltonian ++++++++++'
-!         write(6,'(a)') ' '
            call setup_hamiltonian( iscf )
-!         write(6,'(a)') ' '
-!        write(6,'(a)') '++++++++++ Leaving setup_hamiltonian ++++++++++'
-!         write(6,'(a)') ' '
-!         write(6,'(a)') '++++++++++ Getting compute_dm ++++++++++'
-!         write(6,'(a)') ' '
            call compute_dm( iscf )
-!         write(6,'(a)') ' '
-!         write(6,'(a)') '++++++++++ Leaving compute_dm ++++++++++'
-!         write(6,'(a)') ' '
            call compute_max_diff(Dold,Dscf,dmax)
         end if 
-!         write(6,'(a)') ' '
-!         write(6,'(a)') '++++++++++ Getting compute_energies ++++++++++'
-!         write(6,'(a)') ' '
         call compute_energies(iscf)
-!         write(6,'(a)') ' '
-!         write(6,'(a)') '++++++++++ Leaving compute_energies ++++++++++'
-!         stop 'Stopping after leave compute_energies'
         if (mix_charge) then
            call compute_charge_diff(drhog)
         endif
@@ -173,12 +145,9 @@
         endif
 
         
-!        write(6,'(a,l3)') ' ++++++ Calling compute_forces, ',
-!     &       monitor_forces_in_scf
         if (monitor_forces_in_scf)  call compute_forces()
-!        write(6,'(a)') ' ++++++ Leaving compute_forces '
-
         ! Mix_after_convergence preserves the old behavior of
+
         ! the program.
         if ((.not. SCFconverged) .OR. mix_after_convergence) then
            ! Mix for next step
@@ -283,9 +252,7 @@
       allocate(Hsave(size(H,dim=1),size(H,dim=2)))
       fa_old = fa
       Hsave(:,:) = H(:,:)
-!      write(6,'(a)') ' ++++++ Getting final_H_f_stress '
       call final_H_f_stress(iscf)
-!      write(6,'(a)') ' ++++++ Leaving final_H_f_stress '
       H(:,:) = Hsave(:,:)
       if (ionode) then
          print *, "Max diff in force (eV/Ang): ",

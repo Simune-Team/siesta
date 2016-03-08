@@ -8,8 +8,14 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_dfscf  ! CC RC Assumed-shape
+   
+      public  :: dfscf
+    
+      contains
+
       subroutine dfscf( ifa, istr, na, no, nuo, nuotot, np, nspin,
-     .                  h_spin_dim, SpOrb, indxua, isa, iaorb, iphorb,
+     .                  indxua, isa, iaorb, iphorb,
      .                  maxnd, numd, listdptr, listd, Dscf, Datm,
      .                  Vscf, Vatm, dvol, VolCel, Fal, Stressl )
 
@@ -28,8 +34,6 @@ C integer np              : Number of mesh points (total is nsp*np)
 C integer nspin           : Number of different spin polarisations
 C                           nspin=1 => Unpolarized, nspin=2 => polarized
 C                           nspin=4 => Noncollinear spin
-C integer h_spin_dim      : Number of spin components of H and D
-C logical SpOrb           : SpOrb flag
 C integer indxua(na)      : Index of equivalent atom in unit cell
 C integer isa(na)         : Species index of each atom
 C integer iaorb(no)       : Atom to which orbitals belong
@@ -50,6 +54,9 @@ C *********************** INPUT and OUTPUT ****************************
 C real*8  Fal(3,*)       : Atomic forces (contribution added on output)
 C real*8  Stressl(3,3)    : Stress tensor
 C *********************************************************************
+C integer h_spin_dim      : Number of spin components of H and D
+C logical SpOrb           : SpOrb flag
+C *********************************************************************
 C    6  10        20        30        40        50        60        7072
 
 C  Modules
@@ -68,15 +75,16 @@ C  Modules
       use parallel,      only: Nodes, Node
       use sys,           only: die
       use parallelsubs,  only: GlobalToLocalOrb
+      use m_spin,        only: SpOrb
 
       implicit none
 
-C  Passed arguments
-      logical  SpOrb
+C  Passed arguments  
+CC RC      logical  SpOrb  ! Assumed-shape
 
       integer, intent(in) ::
      .   ifa, istr, na, no, nuo, nuotot, np, 
-     .   nspin, h_spin_dim,   
+     .   nspin,
      .   indxua(na), isa(na), iaorb(no), iphorb(no), 
      .   maxnd, numd(nuo), listdptr(nuo), listd(maxnd)
 
@@ -84,7 +92,7 @@ C  Passed arguments
      .   Vscf(nsp,np,nspin), Vatm(nsp,np)
 
       real(dp), intent(in) ::
-     .   Datm(nuotot), Dscf(maxnd,h_spin_dim), dvol, VolCel
+     .   Datm(nuotot), Dscf(:,:), dvol, VolCel
 
       real(dp), intent(inout) :: Fal(3,*), Stressl(9)
 
@@ -100,13 +108,23 @@ C Internal variables
       real(dp)
      .   CD(nsp), CDV(nsp), DF(12), Dji, dxsp(3,nsp),  
      .   gCi(12,nsp), grada(3,maxoa,nsp),
-     .   phia(maxoa,nsp), rvol, r2sp, r2cut(nsmax), V(nsp,h_spin_dim)
+     .   phia(maxoa,nsp), rvol, r2sp, r2cut(nsmax), V(nsp,size(Dscf,2))
+
 !
       integer, pointer, save ::  ibc(:), iob(:)
       real(dp), pointer, save :: C(:,:), D(:,:,:),
      .                           gC(:,:,:), xgC(:,:,:)
       logical ::           Parallel_Run, nullified=.false.
       type(allocDefaults) oldDefaults
+  
+      integer :: h_spin_dim ! CC RC Assumed-shape
+
+CC RC   Assumed-shape
+
+c      maxnd=size(Dscf,dim=1)
+      h_spin_dim=size(Dscf,dim=2)
+
+
 
 C  Start time counter
       call timer('dfscf',1)
@@ -418,4 +436,7 @@ C  Restore old allocation defaults
       call alloc_default( restore=oldDefaults )
 
       call timer('dfscf',2)
-      end
+ 
+      end subroutine dfscf
+
+      end module m_dfscf

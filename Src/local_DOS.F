@@ -28,6 +28,7 @@
       use m_spin,         only: nspin, qs, efs
       use m_spin,         only: h_spin_dim, e_spin_dim, spinor_dim 
       use m_spin,         only: SpOrb
+      use m_diagon2,      only: diagon
       use m_gamma
       use m_dhscf,        only: dhscf
       implicit none
@@ -71,7 +72,7 @@
      .      ((isolve .eq. SOLVE_MINIM) .and.
      .       minim_calc_eigenvalues)) then
 CC RC  Added three arguments: h_spin_dim, e_spin_dim, spinor_dim
-          call diagon(no_s, h_spin_dim, e_spin_dim, spinor_dim, 
+          call diagon(no_s, nspin, spinor_dim, 
      .                no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qs, temp, e1, e2,
@@ -83,7 +84,7 @@ CC RC  Added three arguments: h_spin_dim, e_spin_dim, spinor_dim
           filesOut%rho = paste( slabel, '.LDOS' )
           g2max = g2cut
 CC RC  Added two arguments: h_spin_dim, SpOrb
-          call dhscf( nspin, h_spin_dim, SpOrb, 
+          call dhscf( nspin,   
      .              no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 
      .              ntm, 0, 0, 0, filesOut,
