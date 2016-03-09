@@ -76,6 +76,7 @@ clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f psop *.o  *.a *.pcl *.pc *.mod
 	rm -f *.mod
+	rm -fr SiestaXC
 #
 $(PSOP):
 	@echo "Making sure that the psop library is compiled..."

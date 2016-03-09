@@ -1,4 +1,88 @@
 ------------------------------------------------------------
+March 9, 2016  Alberto Garcia       trunk-481--psml-76
+Cosmetic changes in .mk files and vnl-operator Makefile
+
+* Insert comment about needed symbols in Src/Sys/.mk files
+
+* Update clean target in Pseudo/vnl-operator/Makefile
+
+*** + Change of branch name to trunk-psml
+    + Consolidation of recent changelogs into psml.CHANGES
+      (follow)
+------------------------------------------------------------
+revno: 513
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Wed 2016-02-03 12:14:34 +0100
+message:
+  Read <local-charge> in Siesta. Update ATOM psml output
+  
+  * Siesta can now read chlocal from <local-charge> if this element is
+    present in the PSML file. The cutoff is assumed to be given by the
+    first non-zero value.
+    (+ filter very small values in psop for this element)
+  
+  * Update ATOM's PSML output to version 0.9, including uuids. Use
+    external xmlf90 library.
+    
+------------------------------------------------------------
+revno: 512
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Tue 2016-02-02 16:13:24 +0100
+message:
+  Update psop to handle uuids and action records
+  
+  * Psop records the uuid of the source PSML file, and stamps the new
+    PSML file with a new one. (Added Src/m_uuid.f90 from FoX)
+  
+  * Fix the informational message of the add-vnl.sh script regarding
+    the placement of psop options.
+------------------------------------------------------------
+revno: 511
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Tue 2016-02-02 11:46:12 +0100
+message:
+  Update psop to add provenance record and chlocal
+  
+  * Psop (when reading a PSML file) will add a new provenance
+  record using the new "ps_edit" functionality in libpsml.
+  
+  * The generated PSML section will have also a <local-charge> (chlocal)
+  element.
+  
+  * Updated the add-vnl.sh script (it works with PSML files only)
+------------------------------------------------------------
+revno: 510
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Mon 2016-02-01 16:34:39 +0100
+message:
+  Explicitly delete the local and nonlocal sections from input file
+  
+  Using the new "ps_Delete" functions (which actually needed an overhaul
+  of the grid handling in libpsml), the local and non-local sections of
+  the psml structure are deleted by psop itself and dumped to PSML_RUMP.
+  
+  modified:
+    Pseudo/vnl-operator/psop.f90
+    Src/ncps/src/m_ncps_translators.f90
+------------------------------------------------------------
+revno: 509
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Mon 2016-02-01 10:22:34 +0100
+message:
+  Start update to v0.9. External xmlf90 and libpsml.
+  
+  xmlf90 and libpsml are now external to the package (at least to psop).
+  The local potential and nonlocal-projectors are wrapped in a temporary
+  root element for XML compliance of the VNL fragment file.
+
+( -- end consolidation of recent logs)
+
+------------------------------------------------------------
 December 17, 2015  Alberto Garcia       trunk-481--ncps-75
 Rename m_io in xmlparser code to m_xml_io to avoid name collision
 

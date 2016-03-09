@@ -1,8 +1,8 @@
 # PSML helper mk
 #
-PSML_ROOT=$(HOME)/lib/psml/0.9/gfortran-5.2.0
-PSML_INCFLAGS=$(PSML_ROOT)/include
-INCFLAGS:= $(INCFLAGS) $(PSML_INCFLAGS)
+# You need to define PSML_ROOT in the main arch.make file
+# to point to your installation of libpsml.
 #
+PSML_INCFLAGS=$(PSML_ROOT)/include
 PSML_LIBS=$(PSML_ROOT)/lib/libpsml.a
 #

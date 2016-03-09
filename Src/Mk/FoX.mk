@@ -1,5 +1,9 @@
 # FoX helper snippets
 #
+# If you define FOX_ROOT in the main arch.make file
+# to point to your installation of FoX, the library
+# will not be recompiled.
+#
 ifeq ($(strip $(FOX_ROOT)),)
 # Compile in source...
 FOX_OBJ_ROOT=$(MAIN_OBJDIR)/FoX
