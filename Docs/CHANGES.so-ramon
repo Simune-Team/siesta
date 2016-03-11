@@ -1,9 +1,9 @@
 -----------------------------------------------------------------------------------------------
-2016-3-08   16:57   Ramon Cuadrado  <ramon.cuadrado@icn2.cat>  siesta-trunk-479--so-ramon
+2016-3-11   10:15   Ramon Cuadrado  <ramon.cuadrado@icn2.cat>  siesta-trunk-479--so-ramon
 On-site implementation of the SO coupling in siesta-trunk-479 version
 
 * Adding Pt dimer and FePt-L1_0 anisotropy calculation tests for 
-the on-site Spin-Orbit. March 8th 2016 
+the on-site Spin-Orbit. March 11th 2016 
 
 * Assumed-shape updating for some subroutines. There are however some of them 
 that have to be modified in order to be able to change the number of the arguments
