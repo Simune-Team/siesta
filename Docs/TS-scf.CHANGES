@@ -1,4 +1,11 @@
 ----------------------------------------------------
+March 14, 2016 -- Nick Papior          trunk-492---ts-scf-657
+Removed printing of empty edges for graphviz
+
+modified:
+  Src/m_pivot_methods.F90
+
+----------------------------------------------------
 March 7, 2016 -- Nick Papior           trunk-492---ts-scf-656
 Merge trunk-492, k-point displacements
 

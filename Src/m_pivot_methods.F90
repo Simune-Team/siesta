@@ -1744,6 +1744,9 @@ contains
     character(len=7), parameter :: colors(0:6) = (/'#000000','#2E2EFE','#FF0000','#00FF00','#A901DB','#19A099','#FFA600'/)
     character(len=4) :: con
     integer :: i, j, k, ind, lmethod, max_types
+    ! Array to hold edges in each sub-group
+    integer :: nedge
+    integer, allocatable :: edge(:)
 
     lmethod = 1
     if ( present(method) ) lmethod = method
@@ -1788,6 +1791,9 @@ contains
        max_types = maxval(types)
     end if
 
+    ! Allocate number of edges
+    allocate(edge(maxval(n_col)))
+
     if ( present(types) ) then
        if ( max_types > len(edges) - 1 ) then
           write(*,*) 'Max allowed types: ',len(edges)-1
@@ -1823,6 +1829,18 @@ contains
              if ( k /= types(i) ) cycle
              ! Create all edges with type connections
              do j = 0 , max_types
+
+                ! get edges for this node
+                nedge = 0
+                do ind = l_ptr(i) + 1 , l_ptr(i) + n_col(i)
+                   if ( l_col(ind) <= i ) cycle
+                   if ( j /= types(l_col(ind)) ) cycle
+                   nedge = nedge + 1
+                   edge(nedge) = l_col(ind)
+                end do
+
+                if ( nedge == 0 ) cycle
+                
                 ! print out the edges it connects to
                 if ( k == j ) then
                    write(555,'(3a)') '{ edge [color="',trim(edges(k)),'"]'
@@ -1831,10 +1849,8 @@ contains
                         trim(edges(k)),'"]'
                 end if
                 write(555,'(i0,2a)',advance='no') get_col(i,pvt),con,' {'
-                do ind = l_ptr(i) + 1 , l_ptr(i) + n_col(i)
-                   if ( l_col(ind) <= i ) cycle
-                   if ( j /= types(l_col(ind)) ) cycle
-                   write(555,'(tr1,i0)',advance='no') get_col(l_col(ind),pvt)
+                do ind = 1 , nedge
+                   write(555,'(tr1,i0)',advance='no') get_col(edge(ind),pvt)
                 end do
                 write(555,'(a)') '} }'
              end do
@@ -1880,6 +1896,8 @@ contains
        end do
 
     end if
+
+    deallocate(edge)
 
     write(555,'(a)') '}'
     close(555)
