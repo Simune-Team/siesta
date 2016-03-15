@@ -2172,7 +2172,8 @@ contains
     end do 
 
     ! Loop on all electrode projections
-    dic = dic//('info'.kv.'Projected scattering state <i|Gam|j>')
+    dic = dic//('info'.kv.'Projected scattering rate <i|Gam|j>')
+    dic = dic//('unit'.kv.'Ry')
     do it = 1 , N_proj_ME
       
        call ncdf_open_grp(ncdf,trim(proj_ME(it)%mol%name),grp)
@@ -2185,6 +2186,9 @@ contains
             compress_lvl = cmp_lvl , chunks = (/i,i,1,1/) )
 
     end do
+
+    ! clean-up
+    call delete(dic)
 
     ! At this point we still need to add the "non-projected"
     ! LHS projections.

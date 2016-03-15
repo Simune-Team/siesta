@@ -1,4 +1,13 @@
 ----------------------------------------------------
+March 15, 2016 -- Nick Papior          trunk-492---ts-scf-658
+Added energy denotion of the scattering projection
+
+- The projected scalars are rates for the scattering states
+
+modified:
+  Util/TS/TBtrans/m_tbt_proj.F90
+
+----------------------------------------------------
 March 14, 2016 -- Nick Papior          trunk-492---ts-scf-657
 Removed printing of empty edges for graphviz
 
